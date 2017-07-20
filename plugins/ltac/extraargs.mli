@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Grammar_API
 open Tacexpr
 open Names
 open Constrexpr

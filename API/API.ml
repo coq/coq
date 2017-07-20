@@ -39,15 +39,15 @@ module Context = Context
 module Vars = Vars
 module Term = Term
 module Mod_subst = Mod_subst
-(* module Cbytecodes *)
+module Cbytecodes = Cbytecodes
 (* module Copcodes *)
-(* module Cemitcodes *)
+module Cemitcodes = Cemitcodes
 (* module Nativevalues *)
 (* module Primitives *)
 module Opaqueproof = Opaqueproof
 module Declareops = Declareops
 module Retroknowledge = Retroknowledge
-(* module Conv_oracle *)
+module Conv_oracle = Conv_oracle
 (* module Pre_env *)
 (* module Cbytegen *)
 (* module Nativelambda *)
@@ -166,7 +166,7 @@ module Unification = Unification
 (* interp                                                                     *)
 (******************************************************************************)
 module Stdarg = Stdarg
-(* module Genintern *)
+module Genintern = Genintern
 module Constrexpr_ops = Constrexpr_ops
 module Notation_ops = Notation_ops
 module Ppextend = Ppextend
@@ -216,6 +216,15 @@ module Printer = Printer
 module Ppvernac = Ppvernac
 
 (******************************************************************************)
+(* Parsing                                                                    *)
+(******************************************************************************)
+module Tok = Tok
+module CLexer = CLexer
+module Pcoq = Pcoq
+module Egramml = Egramml
+(* Egramcoq *)
+
+(******************************************************************************)
 (* Tactics                                                                    *)
 (******************************************************************************)
 (* module Dnet *)
@@ -249,7 +258,7 @@ module Himsg = Himsg
 module ExplainErr = ExplainErr
 (* module Class *)
 module Locality = Locality
-(* module Metasyntax *)
+module Metasyntax = Metasyntax
 (* module Auto_ind_decl *)
 module Search = Search
 (* module Indschemes *)
@@ -258,7 +267,7 @@ module Command = Command
 module Classes = Classes
 (* module Record *)
 (* module Assumptions *)
-(* module Vernacinterp *)
+module Vernacinterp = Vernacinterp
 module Mltop = Mltop
 module Topfmt = Topfmt
 module Vernacentries = Vernacentries
@@ -268,3 +277,9 @@ module Vernacentries = Vernacentries
 (******************************************************************************)
 module Vernac_classifier = Vernac_classifier
 module Stm = Stm
+
+(******************************************************************************)
+(* Highparsing                                                               *)
+(******************************************************************************)
+module G_vernac = G_vernac
+module G_proofs = G_proofs

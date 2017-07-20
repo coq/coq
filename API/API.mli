@@ -33,21 +33,42 @@ end
 (************************************************************************)
 module Names :
 sig
-  module Id : module type of struct include Names.Id end
 
-  module MBId : sig
-    type t = Names.MBId.t
+  open Util
+
+  module Id :
+  sig
+    type t
     val equal : t -> t -> bool
-    val to_id : t -> Names.Id.t
-    val repr : t -> int * Names.Id.t * Names.DirPath.t
-    val debug_to_string : t -> string
+    val compare : t -> t -> int
+    val hash : t -> int
+    val is_valid : string -> bool
+    val of_bytes : bytes -> t
+    val of_string : string -> t
+    val of_string_soft : string -> t
+    val to_string : t -> string
+    val print : t -> Pp.std_ppcmds
+
+    module Set  : Set.S with type elt = t
+    module Map  : Map.ExtS with type key = t and module Set := Set
+    module Pred : Predicate.S with type elt = t
+    module List : List.MonoS with type elt = t
+    val hcons : t -> t
   end
 
-  type evaluable_global_reference = Names.evaluable_global_reference =
-    | EvalVarRef of Id.t
-    | EvalConstRef of Names.Constant.t
-
-  module Name : module type of struct include Names.Name end
+  module Name :
+  sig
+    type t = Anonymous     (** anonymous identifier *)
+	   | Name of Id.t  (** non-anonymous identifier *)
+    val mk_name : Id.t -> t
+    val is_anonymous : t -> bool
+    val is_name : t -> bool
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+    val hcons : t -> t
+    val print : t -> Pp.std_ppcmds
+  end
 
   type name = Name.t =
     | Anonymous
@@ -56,7 +77,7 @@ sig
 
   module DirPath :
   sig
-    type t = Names.DirPath.t
+    type t
     val empty : t
     val make : Id.t list -> t
     val repr : t -> Id.t list
@@ -64,23 +85,31 @@ sig
     val to_string : t -> string
   end
 
+  module MBId : sig
+    type t
+    val equal : t -> t -> bool
+    val to_id : t -> Id.t
+    val repr : t -> int * Id.t * DirPath.t
+    val debug_to_string : t -> string
+  end
+
   module Label :
   sig
-    type t = Names.Label.t
+    type t
     val make : string -> t
     val equal : t -> t -> bool
     val compare : t -> t -> int
-    val of_id : Names.Id.t -> t
-    val to_id : t -> Names.Id.t
+    val of_id : Id.t -> t
+    val to_id : t -> Id.t
     val to_string : t -> string
   end
 
   module ModPath :
   sig
-    type t = Names.ModPath.t =
-           | MPfile of Names.DirPath.t
-           | MPbound of MBId.t
-           | MPdot of t * Label.t
+    type t =
+      | MPfile of DirPath.t
+      | MPbound of MBId.t
+      | MPdot of t * Label.t
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val hash : t -> int
@@ -91,7 +120,7 @@ sig
 
   module KerName :
   sig
-    type t = Names.KerName.t
+    type t
     val make : ModPath.t -> DirPath.t -> Label.t -> t
     val make2 : ModPath.t -> Label.t -> t
     val modpath : t -> ModPath.t
@@ -108,39 +137,43 @@ sig
 
   module Constant :
   sig
-    type t = Names.Constant.t
+    type t
     val equal : t -> t -> bool
-    val make1 : Names.KerName.t -> t
-    val make2 : Names.ModPath.t -> Label.t -> t
-    val make3 : Names.ModPath.t -> Names.DirPath.t -> Label.t -> t
-    val repr3 : t -> Names.ModPath.t * Names.DirPath.t * Label.t
-    val canonical : t -> Names.KerName.t
-    val user : t -> Names.KerName.t
+    val make1 : KerName.t -> t
+    val make2 : ModPath.t -> Label.t -> t
+    val make3 : ModPath.t -> DirPath.t -> Label.t -> t
+    val repr3 : t -> ModPath.t * DirPath.t * Label.t
+    val canonical : t -> KerName.t
+    val user : t -> KerName.t
     val label : t -> Label.t
   end
 
   module MutInd :
   sig
-    type t = Names.MutInd.t
-    val make1 : Names.KerName.t -> t
-    val make2 : Names.ModPath.t -> Label.t -> t
+    type t
+    val make1 : KerName.t -> t
+    val make2 : ModPath.t -> Label.t -> t
     val equal : t -> t -> bool
-    val repr3 : t -> Names.ModPath.t * Names.DirPath.t * Label.t
-    val canonical : t -> Names.KerName.t
-    val modpath : t -> Names.ModPath.t
+    val repr3 : t -> ModPath.t * DirPath.t * Label.t
+    val canonical : t -> KerName.t
+    val modpath : t -> ModPath.t
     val label : t -> Label.t
-    val user : t -> Names.KerName.t
+    val user : t -> KerName.t
     val print : t -> Pp.std_ppcmds
   end
 
   module Projection :
   sig
-    type t = Names.Projection.t
+    type t
     val make : Constant.t -> bool -> t
     val map : (Constant.t -> Constant.t) -> t -> t
     val constant : t -> Constant.t
     val equal : t -> t -> bool
   end
+
+  type evaluable_global_reference =
+    | EvalVarRef of Id.t
+    | EvalConstRef of Constant.t
 
   type inductive = MutInd.t * int
   val eq_ind : inductive -> inductive -> bool
@@ -149,25 +182,31 @@ sig
   val eq_constructor : constructor -> constructor -> bool
   val constructor_hash : constructor -> int
 
-  module MPset : module type of struct include Names.MPset end
-  module MPmap : module type of struct include Names.MPmap end
-  module KNset : module type of struct include Names.KNset end
-  module KNmap : module type of struct include Names.KNmap end
-  module Cset : module type of struct include Names.Cset end
-  module Cset_env : module type of struct include Names.Cset_env end
-  module Cmap : module type of struct include Names.Cmap end
-  module Cmap_env : module type of struct include Names.Cmap_env end
-  module Cpred : module type of struct include  Names.Cpred end
-  module Mindset : module type of struct include Names.Mindset end
-  module Mindmap : module type of struct include Names.Mindmap end
-  module Mindmap_env : module type of struct include Names.Mindmap_env end
-  module Indmap : module type of struct include Names.Indmap end
-                                   with type key = inductive
-  module Indmap_env : module type of struct include Names.Indmap_env end
-  module Constrmap : module type of struct include Names.Constrmap end
-  module Constrmap_env : module type of struct include Names.Constrmap_env end
+  module MPset : Set.S with type elt = ModPath.t
+  module MPmap : Map.ExtS with type key = ModPath.t and module Set := MPset
+
+  module KNset  : CSig.SetS with type elt = KerName.t
+  module KNpred : Predicate.S with type elt = KerName.t
+  module KNmap  : Map.ExtS with type key = KerName.t and module Set := KNset
+
+  module Cpred : Predicate.S with type elt = Constant.t
+  module Cset : CSig.SetS with type elt = Constant.t
+  module Cset_env  : CSig.SetS with type elt = Constant.t
+
+  module Cmap : Map.ExtS with type key = Constant.t and module Set := Cset
+  module Cmap_env : Map.ExtS with type key = Constant.t and module Set := Cset_env
+
+  module Mindset : CSig.SetS with type elt = MutInd.t
+  module Mindmap : Map.ExtS with type key = MutInd.t and module Set := Mindset
+  module Mindmap_env : CSig.MapS with type key = MutInd.t
+
+  module Indmap : CSig.MapS with type key = inductive
+  module Constrmap : CSig.MapS with type key = constructor
+  module Indmap_env : CSig.MapS with type key = inductive
+  module Constrmap_env : CSig.MapS with type key = constructor
 
   type transparent_state = Id.Pred.t * Cpred.t
+
   val empty_transparent_state : transparent_state
   val full_transparent_state : transparent_state
   val var_full_transparent_state : transparent_state
@@ -186,9 +225,8 @@ sig
   [@@ocaml.deprecated "alias of API.Names.ModPath.t"]
 
   type variable = Id.t
-  [@@ocaml.deprecated "alias of API.Names.Id.t"]
 
-  type 'a tableKey = 'a Names.tableKey =
+  type 'a tableKey =
     | ConstKey of 'a
     | VarKey of Id.t
     | RelKey of Int.t
@@ -273,7 +311,9 @@ sig
 
   val debug_string_of_con : Constant.t -> string
 
-  module Idset : module type of struct include Id.Set end
+  type identifier = Id.t
+  module Idset  : Set.S with type elt = identifier and type t = Id.Set.t
+
 end
 
 module Univ :
@@ -281,22 +321,30 @@ sig
 
   module Level :
   sig
-    type t = Univ.Level.t
+    type t
     val set : t
     val pr : t -> Pp.std_ppcmds
   end
 
-  module LSet : module type of struct include Univ.LSet end
+  type universe_level = Level.t
+
+  module LSet :
+  sig
+    include CSig.SetS with type elt = universe_level
+    val pr : (Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
+  end
 
   module Universe :
   sig
-    type t = Univ.Universe.t
+    type t
     val pr : t -> Pp.std_ppcmds
   end
 
+  type universe = Universe.t
+
   module Instance :
   sig
-    type t = Univ.Instance.t
+    type t
     val empty : t
     val of_array : Level.t array -> t
     val to_array : t -> Level.t array
@@ -307,13 +355,19 @@ sig
 
   val out_punivs : 'a puniverses -> 'a
 
-  module Constraint : module type of struct include Univ.Constraint end
+  type constraint_type = Lt | Le | Eq
+
+  type univ_constraint = universe_level * constraint_type * universe_level
+
+  module Constraint : sig
+    include Set.S with type elt = univ_constraint
+  end
 
   type 'a constrained = 'a * Constraint.t
 
   module UContext :
   sig
-    type t = Univ.UContext.t
+    type t
     val empty : t
   end
 
@@ -321,7 +375,7 @@ sig
 
   module AUContext :
   sig
-    type t = Univ.AUContext.t
+    type t
     val empty : t
   end
 
@@ -329,20 +383,20 @@ sig
 
   module CumulativityInfo :
   sig
-    type t = Univ.CumulativityInfo.t
+    type t
   end
 
   type cumulativity_info = CumulativityInfo.t
 
   module ACumulativityInfo :
   sig
-    type t = Univ.ACumulativityInfo.t
+    type t
   end
   type abstract_cumulativity_info = ACumulativityInfo.t
 
   module ContextSet :
   sig
-    type t = Univ.ContextSet.t
+    type t
     val empty : t
     val of_context : UContext.t -> t
     val to_context : t -> UContext.t
@@ -350,15 +404,26 @@ sig
 
   type 'a in_universe_context_set = 'a * ContextSet.t
   type 'a in_universe_context = 'a * UContext.t
-  type constraint_type = Univ.constraint_type
 
   type universe_context_set = ContextSet.t
 
   type universe_set = LSet.t
 
   type 'a constraint_function = 'a -> 'a -> Constraint.t -> Constraint.t
-  type universe_subst = Univ.universe_subst
-  type universe_level_subst = Univ.universe_level_subst
+
+  module LMap :
+  sig
+    include CMap.ExtS with type key = universe_level and module Set := LSet
+
+    val union : 'a t -> 'a t -> 'a t
+    val diff : 'a t -> 'a t -> 'a t
+    val subst_union : 'a option t -> 'a option t -> 'a option t
+    val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
+  end
+
+  type 'a universe_map = 'a LMap.t
+  type universe_subst = universe universe_map
+  type universe_level_subst = universe_level universe_map
 
   val enforce_leq : Universe.t constraint_function
   val pr_uni : Universe.t -> Pp.std_ppcmds
@@ -371,33 +436,33 @@ end
 
 module UGraph :
 sig
-  type t = UGraph.t
+  type t
   val pr_universes : (Univ.Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
 end
 
 module Esubst :
 sig
-  type 'a subs = 'a Esubst.subs
+  type 'a subs
   val subs_id : int -> 'a subs
 end
 
 module Sorts :
 sig
-  type contents = Sorts.contents = Pos | Null
-  type t = Sorts.t =
+  type contents = Pos | Null
+  type t =
          | Prop of contents
          | Type of Univ.Universe.t
   val is_prop : t -> bool
   val hash : t -> int
 
-  type family = Sorts.family = InProp | InSet | InType
+  type family = InProp | InSet | InType
   val family : t -> family
 end
 
 module Evar :
 sig
   (** Unique identifier of some {i evar} *)
-  type t = Evar.t
+  type t
 
   (** Recover the underlying integer. *)
   val repr : t -> int
@@ -405,7 +470,8 @@ sig
   val equal : t -> t -> bool
 
   (** a set of unique identifiers of some {i evars} *)
-  module Set : module type of struct include Evar.Set end
+  module Set : Set.S with type elt = t
+  module Map : CMap.ExtS with type key = t and module Set := Set
 
 end
 
@@ -413,12 +479,12 @@ module Constr :
 sig
   open Names
 
-  type t = Constr.t
+  type t
 
   type constr = t
   type types = t
 
-  type cast_kind = Constr.cast_kind =
+  type cast_kind =
                  | VMcast
                  | NATIVEcast
                  | DEFAULTcast
@@ -443,16 +509,16 @@ sig
   type ('constr, 'types) pcofixpoint =
     int * ('constr, 'types) prec_declaration
 
-  type case_style = Constr.case_style =
+  type case_style =
       LetStyle | IfStyle | LetPatternStyle | MatchStyle
     | RegularStyle (** infer printing form from number of constructor *)
 
-  type case_printing = Constr.case_printing =
+  type case_printing =
     { ind_tags : bool list; (** tell whether letin or lambda in the arity of the inductive type *)
       cstr_tags : bool list array; (** tell whether letin or lambda in the signature of each constructor *)
       style     : case_style }
 
-  type case_info = Constr.case_info =
+  type case_info =
     { ci_ind        : inductive;      (* inductive type to which belongs the value that is being matched *)
       ci_npar       : int;            (* number of parameters of the above inductive type *)
       ci_cstr_ndecls : int array;     (* For each constructor, the corresponding integer determines
@@ -466,7 +532,7 @@ sig
       ci_pp_info    : case_printing   (* not interpreted by the kernel *)
     }
 
-  type ('constr, 'types, 'sort, 'univs) kind_of_term = ('constr, 'types, 'sort, 'univs) Constr.kind_of_term =
+  type ('constr, 'types, 'sort, 'univs) kind_of_term =
      | Rel       of int
      | Var       of Id.t
      | Meta      of metavariable
@@ -531,7 +597,7 @@ sig
     sig
       (* local declaration *)
       (* local declaration *)
-      type ('constr, 'types) pt = ('constr, 'types) Context.Rel.Declaration.pt =
+      type ('constr, 'types) pt =
         | LocalAssum of Names.Name.t * 'types            (** name, type *)
         | LocalDef of Names.Name.t * 'constr * 'types    (** name, value, type *)
 
@@ -625,7 +691,7 @@ sig
     module Declaration :
     sig
       (** local declaration *)
-      type ('constr, 'types) pt = ('constr, 'types) Context.Named.Declaration.pt =
+      type ('constr, 'types) pt =
         | LocalAssum of Names.Id.t * 'types             (** identifier, type *)
         | LocalDef of Names.Id.t * 'constr * 'types     (** identifier, value, type *)
 
@@ -752,7 +818,6 @@ module Term :
 sig
 
   type sorts_family = Sorts.family = InProp | InSet | InType
-  [@@deprecated "alias of API.Sorts.family"]
 
   type contents = Sorts.contents = Pos | Null
 
@@ -779,19 +844,18 @@ sig
   type pconstant = Names.Constant.t puniverses
   type pinductive = Names.inductive puniverses
   type pconstructor = Names.constructor puniverses
-  type case_style = Term.case_style =
-                  | LetStyle
-                  | IfStyle
-                  | LetPatternStyle
-                  | MatchStyle
-                  | RegularStyle
+  type case_style = Constr.case_style =
+    | LetStyle
+    | IfStyle
+    | LetPatternStyle
+    | MatchStyle
+    | RegularStyle
 
-
-  type case_printing = Term.case_printing =
-                         { ind_tags  : bool list;
-                           cstr_tags : bool list array;
-                           style     : case_style
-                         }
+  type case_printing = Constr.case_printing =
+    { ind_tags  : bool list;
+      cstr_tags : bool list array;
+      style     : case_style
+    }
 
   type case_info = Constr.case_info =
     { ci_ind        : Names.inductive;
@@ -803,8 +867,10 @@ sig
 
   type ('constr, 'types) pfixpoint =
     (int array * int) * ('constr, 'types) prec_declaration
+
   type ('constr, 'types) pcofixpoint =
     int * ('constr, 'types) prec_declaration
+
   type ('constr, 'types, 'sort, 'univs) kind_of_term = ('constr, 'types, 'sort, 'univs) Constr.kind_of_term =
      | Rel       of int
      | Var       of Names.Id.t
@@ -917,12 +983,12 @@ sig
    *)
   val eq_constr_nounivs : constr -> constr -> bool
 
-  type ('constr, 'types) kind_of_type = ('constr, 'types) Term.kind_of_type =
-                                      | SortType   of Sorts.t
-                                      | CastType   of 'types * 'types
-                                      | ProdType   of Names.Name.t * 'types * 'types
-                                      | LetInType  of Names.Name.t * 'constr * 'types * 'types
-                                      | AtomicType of 'constr * 'constr array
+  type ('constr, 'types) kind_of_type =
+    | SortType   of Sorts.t
+    | CastType   of 'types * 'types
+    | ProdType   of Names.Name.t * 'types * 'types
+    | LetInType  of Names.Name.t * 'constr * 'types * 'types
+    | AtomicType of 'constr * 'constr array
 
   val kind_of_type : types -> (constr, types) kind_of_type
 
@@ -952,9 +1018,9 @@ end
 
 module Mod_subst :
 sig
-  type substitution = Mod_subst.substitution
-  type 'a substituted = 'a Mod_subst.substituted
-  type delta_resolver = Mod_subst.delta_resolver
+  type delta_resolver
+  type substitution
+  type 'a substituted
 
   val force_constr : Constr.t substituted -> Constr.t
 
@@ -973,25 +1039,38 @@ end
 
 module Opaqueproof :
 sig
-  type opaquetab = Opaqueproof.opaquetab
-  type opaque = Opaqueproof.opaque
+  type opaquetab
+  type opaque
   val empty_opaquetab : opaquetab
   val force_proof : opaquetab -> opaque -> Constr.t
+end
+
+module Cbytecodes :
+sig
+  type tag = int
+  type reloc_table = (tag * int) array
+end
+
+module Cemitcodes :
+sig
+  type to_patch_substituted
 end
 
 module Decl_kinds :
 sig
   type polymorphic = bool
   type cumulative_inductive_flag = bool
-  type recursivity_kind = Decl_kinds.recursivity_kind =
+  type recursivity_kind =
     | Finite
     | CoFinite
     | BiFinite
-  type locality = Decl_kinds.locality =
+
+  type locality =
     | Discharge
     | Local
     | Global
-  type definition_object_kind = Decl_kinds.definition_object_kind =
+
+  type definition_object_kind =
     | Definition
     | Coercion
     | SubClass
@@ -1004,7 +1083,7 @@ sig
     | IdentityCoercion
     | Instance
     | Method
-  type theorem_kind = Decl_kinds.theorem_kind =
+  type theorem_kind =
     | Theorem
     | Lemma
     | Fact
@@ -1012,19 +1091,19 @@ sig
     | Property
     | Proposition
     | Corollary
-  type goal_object_kind = Decl_kinds.goal_object_kind =
+  type goal_object_kind =
     | DefinitionBody of definition_object_kind
     | Proof of theorem_kind
   type goal_kind = locality * polymorphic * goal_object_kind
-  type assumption_object_kind = Decl_kinds.assumption_object_kind =
+  type assumption_object_kind =
     | Definitional
     | Logical
     | Conjectural
-  type logical_kind = Decl_kinds.logical_kind =
+  type logical_kind =
     | IsAssumption of assumption_object_kind
     | IsDefinition of definition_object_kind
     | IsProof of theorem_kind
-  type binding_kind = Decl_kinds.binding_kind =
+  type binding_kind =
     | Explicit
     | Implicit
   type private_flag = bool
@@ -1033,12 +1112,12 @@ end
 
 module Retroknowledge :
 sig
-  type action = Retroknowledge.action
-  type nat_field = Retroknowledge.nat_field =
+  type action
+  type nat_field =
     | NatType
     | NatPlus
     | NatTimes
-  type n_field = Retroknowledge.n_field =
+  type n_field =
     | NPositive
     | NType
     | NTwice
@@ -1047,7 +1126,7 @@ sig
     | NPhiInv
     | NPlus
     | NTimes
-  type int31_field = Retroknowledge.int31_field =
+  type int31_field =
     | Int31Bits
     | Int31Type
     | Int31Constructor
@@ -1073,44 +1152,60 @@ sig
     | Int31Lor
     | Int31Land
     | Int31Lxor
-  type field = Retroknowledge.field =
+  type field =
     | KInt31 of string * int31_field
+end
+
+module Conv_oracle :
+sig
+  type level
 end
 
 module Declarations :
 sig
-  type recarg = Declarations.recarg =
+
+  open Names
+
+  type recarg =
     | Norec
     | Mrec of Names.inductive
     | Imbr of Names.inductive
   type wf_paths = recarg Rtree.t
-  type inline = Declarations.inline
-  type constant_def = Declarations.constant_def =
+  type inline = int option
+  type constant_def =
                     | Undef of inline
                     | Def of Constr.t Mod_subst.substituted
                     | OpaqueDef of Opaqueproof.opaque
-  type template_arity = Declarations.template_arity = {
+  type template_arity = {
     template_param_levels : Univ.Level.t option list;
     template_level : Univ.Universe.t;
   }
 
-  type ('a, 'b) declaration_arity = ('a, 'b) Declarations.declaration_arity =
+  type ('a, 'b) declaration_arity =
     | RegularArity of 'a
     | TemplateArity of 'b
 
   type constant_type = (Constr.types, Context.Rel.t * template_arity) declaration_arity
-  type constant_universes = Declarations.constant_universes
-  type projection_body = Declarations.projection_body = {
+
+  type constant_universes =
+    | Monomorphic_const of Univ.universe_context
+    | Polymorphic_const of Univ.abstract_universe_context
+
+  type projection_body = {
         proj_ind : Names.MutInd.t;
         proj_npars : int;
         proj_arg : int;
         proj_type : Constr.types;
-        proj_eta : Constr.t * Constr.types;
+        proj_eta  : Constr.t * Constr.types;
         proj_body : Constr.t;
       }
-  type typing_flags = Declarations.typing_flags
 
-  type constant_body = Declarations.constant_body = {
+  type typing_flags = {
+    check_guarded : bool;
+    check_universes : bool;
+  }
+
+  type constant_body = {
         const_hyps : Context.Named.t;
         const_body : constant_def;
         const_type : constant_type;
@@ -1120,10 +1215,18 @@ sig
         const_inline_code : bool;
         const_typing_flags : typing_flags;
       }
-  type one_inductive_body = Declarations.one_inductive_body = {
+
+  type regular_inductive_arity = {
+    mind_user_arity : Constr.types;
+    mind_sort : Sorts.t;
+  }
+
+  type inductive_arity = (regular_inductive_arity, template_arity) declaration_arity
+
+  type one_inductive_body = {
         mind_typename : Names.Id.t;
         mind_arity_ctxt : Context.Rel.t;
-        mind_arity : Declarations.inductive_arity;
+        mind_arity : inductive_arity;
         mind_consnames : Names.Id.t array;
         mind_user_lc : Constr.types array;
         mind_nrealargs : int;
@@ -1137,43 +1240,47 @@ sig
         mind_nb_args : int;
         mind_reloc_tbl :  Cbytecodes.reloc_table;
       }
-  type ('ty,'a) functorize = ('ty,'a) Declarations.functorize =
+
+  type ('ty,'a) functorize =
                            | NoFunctor of 'a
                            | MoreFunctor of Names.MBId.t * 'ty * ('ty,'a) functorize
-  type with_declaration = Declarations.with_declaration =
+
+  type with_declaration =
                         | WithMod of Names.Id.t list * Names.ModPath.t
                         | WithDef of Names.Id.t list * Constr.t Univ.in_universe_context
 
-  type module_alg_expr = Declarations.module_alg_expr =
+  type module_alg_expr =
                        | MEident of Names.ModPath.t
                        | MEapply of module_alg_expr * Names.ModPath.t
                        | MEwith of module_alg_expr * with_declaration
 
-  type abstract_inductive_universes = Declarations.abstract_inductive_universes =
+  type abstract_inductive_universes =
   | Monomorphic_ind of Univ.universe_context
   | Polymorphic_ind of Univ.abstract_universe_context
   | Cumulative_ind of Univ.abstract_cumulativity_info
 
-  type mutual_inductive_body = Declarations.mutual_inductive_body = {
+  type record_body = (Id.t * Constant.t array * projection_body array) option
+  
+  type mutual_inductive_body = {
         mind_packets : one_inductive_body array;
-        mind_record : Declarations.record_body option;
+        mind_record : record_body option;
         mind_finite : Decl_kinds.recursivity_kind;
         mind_ntypes : int;
         mind_hyps : Context.Named.t;
         mind_nparams : int;
         mind_nparams_rec : int;
         mind_params_ctxt : Context.Rel.t;
-        mind_universes : Declarations.abstract_inductive_universes;
+        mind_universes : abstract_inductive_universes;
         mind_private : bool option;
-        mind_typing_flags : Declarations.typing_flags;
+        mind_typing_flags : typing_flags;
       }
    and module_expression = (module_type_body,module_alg_expr) functorize
-   and module_implementation = Declarations.module_implementation =
+   and module_implementation =
                              | Abstract
                                | Algebraic of module_expression
                              | Struct of module_signature
                              | FullStruct
-   and module_body = Declarations.module_body =
+   and module_body =
                        { mod_mp : Names.ModPath.t;
                          mod_expr : module_implementation;
                          mod_type : module_signature;
@@ -1185,7 +1292,7 @@ sig
    and module_signature = (module_type_body,structure_body) functorize
    and module_type_body = module_body
    and structure_body = (Names.Label.t * structure_field_body) list
-   and structure_field_body = Declarations.structure_field_body =
+   and structure_field_body =
                             | SFBconst of constant_body
                             | SFBmind of mutual_inductive_body
                             | SFBmodule of module_body
@@ -1201,11 +1308,44 @@ end
 
 module Entries :
 sig
-  type mutual_inductive_entry = Entries.mutual_inductive_entry
+
+  open Names
+  open Constr
+
+  type local_entry =
+    | LocalDefEntry   of constr
+    | LocalAssumEntry of constr
+
+  type inductive_universes =
+    | Monomorphic_ind_entry of Univ.universe_context
+    | Polymorphic_ind_entry of Univ.universe_context
+    | Cumulative_ind_entry of Univ.cumulativity_info
+
+  type one_inductive_entry = {
+    mind_entry_typename : Id.t;
+    mind_entry_arity : constr;
+    mind_entry_template : bool; (* Use template polymorphism *)
+    mind_entry_consnames : Id.t list;
+    mind_entry_lc : constr list }
+
+  type mutual_inductive_entry = {
+    mind_entry_record : (Names.Id.t option) option;
+    (** Some (Some id): primitive record with id the binder name of the record
+        in projections.
+        Some None: non-primitive record *)
+    mind_entry_finite : Decl_kinds.recursivity_kind;
+    mind_entry_params : (Id.t * local_entry) list;
+    mind_entry_inds : one_inductive_entry list;
+    mind_entry_universes : inductive_universes;
+    (* universe constraints and the constraints for subtyping of
+       inductive types in the block. *)
+    mind_entry_private : bool option;
+  }
+
   type inline = int option
   type 'a proof_output = Constr.t Univ.in_universe_context_set * 'a
   type 'a const_entry_body = 'a proof_output Future.computation
-  type 'a definition_entry = 'a Entries.definition_entry =
+  type 'a definition_entry =
                                { const_entry_body   : 'a const_entry_body;
                                  (* List of section variables *)
                                  const_entry_secctx : Context.Named.t option;
@@ -1217,8 +1357,12 @@ sig
                                  const_entry_opaque      : bool;
                                  const_entry_inline_code : bool }
   type parameter_entry = Context.Named.t option * bool * Constr.types Univ.in_universe_context * inline
-  type projection_entry = Entries.projection_entry
-  type 'a constant_entry = 'a Entries.constant_entry =
+
+  type projection_entry = {
+    proj_entry_ind : MutInd.t;
+    proj_entry_arg : int }
+
+  type 'a constant_entry =
                          | DefinitionEntry of 'a definition_entry
                          | ParameterEntry of parameter_entry
                          | ProjectionEntry of projection_entry
@@ -1226,14 +1370,15 @@ end
 
 module Environ :
 sig
-  type env = Environ.env
-  type named_context_val = Environ.named_context_val
-  type ('constr, 'types) punsafe_judgment = ('constr, 'types) Environ.punsafe_judgment =
+  type env
+  type named_context_val
+
+  type ('constr, 'types) punsafe_judgment =
     {
       uj_val : 'constr;
       uj_type : 'types
     }
-  type 'types punsafe_type_judgment = 'types Environ.punsafe_type_judgment = {
+  type 'types punsafe_type_judgment = {
     utj_val : 'types;
     utj_type : Sorts.t }
 
@@ -1245,7 +1390,7 @@ sig
   val push_rec_types : Term.rec_declaration -> env -> env
   val lookup_rel : int -> env -> Context.Rel.Declaration.t
   val lookup_named : Names.Id.t -> env -> Context.Named.Declaration.t
-  val lookup_named_val : Names.Id.t -> Environ.named_context_val -> Context.Named.Declaration.t
+  val lookup_named_val : Names.Id.t -> named_context_val -> Context.Named.Declaration.t
   val lookup_constant : Names.Constant.t -> env -> Declarations.constant_body
   val opaque_tables : env -> Opaqueproof.opaquetab
   val is_projection : Names.Constant.t -> env -> bool
@@ -1262,16 +1407,18 @@ sig
   val constant_opt_value_in : env -> Names.Constant.t Univ.puniverses -> Constr.t option
   val fold_named_context_reverse :
     ('a -> Context.Named.Declaration.t -> 'a) -> init:'a -> env -> 'a
-  val evaluable_named  : Names.Id.t -> Environ.env -> bool
+  val evaluable_named  : Names.Id.t -> env -> bool
   val push_context_set : ?strict:bool -> Univ.ContextSet.t -> env -> env
 end
 
 module CClosure :
 sig
-  type fconstr = CClosure.fconstr
-  type clos_infos = CClosure.clos_infos
+
   type table_key = Names.Constant.t Univ.puniverses Names.tableKey
-  type fterm = CClosure.fterm =
+
+  type fconstr
+
+  type fterm =
     | FRel of int
     | FAtom of Constr.t (** Metas and Sorts *)
     | FCast of fconstr * Constr.cast_kind * fconstr
@@ -1290,18 +1437,27 @@ sig
     | FLIFT of int * fconstr
     | FCLOS of Constr.t * fconstr Esubst.subs
     | FLOCKED
+
   module RedFlags : sig
-    type reds = CClosure.RedFlags.reds
-    type red_kind = CClosure.RedFlags.red_kind
+    type reds
+    type red_kind
     val mkflags : red_kind list -> reds
     val fBETA : red_kind
     val fCOFIX : red_kind
-    val fCONST : Names.Constant.t -> CClosure.RedFlags.red_kind
+    val fCONST : Names.Constant.t -> red_kind
     val fFIX : red_kind
     val fMATCH : red_kind
     val fZETA : red_kind
     val red_add_transparent : reds -> Names.transparent_state -> reds
   end
+
+  type 'a infos_cache
+  type 'a infos = {
+    i_flags : RedFlags.reds;
+    i_cache : 'a infos_cache }
+
+  type clos_infos = fconstr infos
+
   val mk_clos : fconstr Esubst.subs -> Constr.t -> fconstr
   val mk_atom : Constr.t -> fconstr
   val mk_clos_deep :
@@ -1326,7 +1482,7 @@ end
 module Reduction :
 sig
   exception NotConvertible
-  type conv_pb = Reduction.conv_pb =
+  type conv_pb =
                | CONV
                | CUMUL
 
@@ -1347,7 +1503,59 @@ end
 
 module Type_errors :
 sig
-  type type_error = Type_errors.type_error
+
+  open Names
+  open Term
+  open Environ
+
+  type 'constr pguard_error =
+    (** Fixpoints *)
+    | NotEnoughAbstractionInFixBody
+    | RecursionNotOnInductiveType of 'constr
+    | RecursionOnIllegalTerm of int * (env * 'constr) * int list * int list
+    | NotEnoughArgumentsForFixCall of int
+    (** CoFixpoints *)
+    | CodomainNotInductiveType of 'constr
+    | NestedRecursiveOccurrences
+    | UnguardedRecursiveCall of 'constr
+    | RecCallInTypeOfAbstraction of 'constr
+    | RecCallInNonRecArgOfConstructor of 'constr
+    | RecCallInTypeOfDef of 'constr
+    | RecCallInCaseFun of 'constr
+    | RecCallInCaseArg of 'constr
+    | RecCallInCasePred of 'constr
+    | NotGuardedForm of 'constr
+    | ReturnPredicateNotCoInductive of 'constr
+
+  type arity_error =
+    | NonInformativeToInformative
+    | StrongEliminationOnNonSmallType
+    | WrongArity
+
+  type ('constr, 'types) ptype_error =
+    | UnboundRel of int
+    | UnboundVar of variable
+    | NotAType of ('constr, 'types) punsafe_judgment
+    | BadAssumption of ('constr, 'types) punsafe_judgment
+    | ReferenceVariables of identifier * 'constr
+    | ElimArity of pinductive * sorts_family list * 'constr * ('constr, 'types) punsafe_judgment
+                   * (sorts_family * sorts_family * arity_error) option
+    | CaseNotInductive of ('constr, 'types) punsafe_judgment
+    | WrongCaseInfo of pinductive * case_info
+    | NumberBranches of ('constr, 'types) punsafe_judgment * int
+    | IllFormedBranch of 'constr * pconstructor * 'constr * 'constr
+    | Generalization of (Name.t * 'types) * ('constr, 'types) punsafe_judgment
+    | ActualType of ('constr, 'types) punsafe_judgment * 'types
+    | CantApplyBadType of
+        (int * 'constr * 'constr) * ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
+    | CantApplyNonFunctional of ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
+    | IllFormedRecBody of 'constr pguard_error * Name.t array * int * env * ('constr, 'types) punsafe_judgment array
+    | IllTypedRecBody of
+        int * Name.t array * ('constr, 'types) punsafe_judgment array * 'types array
+    | UnsatisfiedConstraints of Univ.Constraint.t
+
+  type type_error = (constr, types) ptype_error
+
   exception TypeError of Environ.env * type_error
 end
 
@@ -1387,8 +1595,8 @@ end
 
 module Safe_typing :
 sig
-  type private_constants = Safe_typing.private_constants
-  val mk_pure_proof : Constr.t -> Safe_typing.private_constants Entries.proof_output
+  type private_constants
+  val mk_pure_proof : Constr.t -> private_constants Entries.proof_output
 end
 
 (************************************************************************)
@@ -1406,88 +1614,99 @@ sig
   type advanced_flag = bool
   type rec_flag = bool
 
-  type 'a or_by_notation = 'a Misctypes.or_by_notation =
+  type 'a or_by_notation =
     | AN of 'a
     | ByNotation of (string * string option) Loc.located
-  type 'a or_var = 'a Misctypes.or_var =
+
+  type 'a or_var =
                  | ArgArg of 'a
                  | ArgVar of Names.Id.t Loc.located
+
   type 'a and_short_name = 'a * Names.Id.t Loc.located option
-  type glob_level = Misctypes.glob_level
-  type 'a glob_sort_gen = 'a Misctypes.glob_sort_gen =
-    | GProp
-    | GSet
-    | GType of 'a
+
+  type 'a glob_sort_gen =
+    | GProp (** representation of [Prop] literal *)
+    | GSet  (** representation of [Set] literal *)
+    | GType of 'a (** representation of [Type] literal *)
+
+  type level_info = Names.Name.t Loc.located option
+  type glob_level = level_info glob_sort_gen
+
   type sort_info = Names.Name.t Loc.located list
   type glob_sort = sort_info glob_sort_gen
-  type 'a cast_type = 'a Misctypes.cast_type =
+
+  type case_style = Term.case_style =
+    | LetStyle
+    | IfStyle
+    | LetPatternStyle
+    | MatchStyle
+    | RegularStyle (** infer printing form from number of constructor *)
+
+  type 'a cast_type =
                     | CastConv of 'a
                     | CastVM of 'a
                     | CastCoerce
                     | CastNative of 'a
-  type 'constr intro_pattern_expr = 'constr Misctypes.intro_pattern_expr =
+
+  type 'constr intro_pattern_expr =
     | IntroForthcoming of bool
     | IntroNaming of intro_pattern_naming_expr
     | IntroAction of 'constr intro_pattern_action_expr
-   and intro_pattern_naming_expr = Misctypes.intro_pattern_naming_expr =
-     | IntroIdentifier of Names.Id.t
-     | IntroFresh of Names.Id.t
-     | IntroAnonymous
-   and 'constr intro_pattern_action_expr = 'constr Misctypes.intro_pattern_action_expr =
-     | IntroWildcard
-     | IntroOrAndPattern of 'constr or_and_intro_pattern_expr
-     | IntroInjection of ('constr intro_pattern_expr) Loc.located list
-     | IntroApplyOn of 'constr Loc.located * 'constr intro_pattern_expr Loc.located
-     | IntroRewrite of bool
-   and 'constr or_and_intro_pattern_expr = 'constr Misctypes.or_and_intro_pattern_expr =
-     | IntroOrPattern of ('constr intro_pattern_expr) Loc.located list list
-     | IntroAndPattern of ('constr intro_pattern_expr) Loc.located list
-  type quantified_hypothesis = Misctypes.quantified_hypothesis =
+  and intro_pattern_naming_expr =
+    | IntroIdentifier of Names.Id.t
+    | IntroFresh of Names.Id.t
+    | IntroAnonymous
+  and 'constr intro_pattern_action_expr =
+    | IntroWildcard
+    | IntroOrAndPattern of 'constr or_and_intro_pattern_expr
+    | IntroInjection of ('constr intro_pattern_expr) Loc.located list
+    | IntroApplyOn of 'constr Loc.located * 'constr intro_pattern_expr Loc.located
+    | IntroRewrite of bool
+  and 'constr or_and_intro_pattern_expr =
+    | IntroOrPattern of ('constr intro_pattern_expr) Loc.located list list
+    | IntroAndPattern of ('constr intro_pattern_expr) Loc.located list
+
+  type quantified_hypothesis =
     | AnonHyp of int
     | NamedHyp of Names.Id.t
+
   type 'a explicit_bindings = (quantified_hypothesis * 'a) Loc.located list
-  type 'a bindings = 'a Misctypes.bindings =
+
+  type 'a bindings =
     | ImplicitBindings of 'a list
     | ExplicitBindings of 'a explicit_bindings
     | NoBindings
+
   type 'a with_bindings = 'a * 'a bindings
-  type 'a core_destruction_arg = 'a Misctypes.core_destruction_arg =
+
+  type 'a core_destruction_arg =
     | ElimOnConstr of 'a
     | ElimOnIdent of Names.Id.t Loc.located
     | ElimOnAnonHyp of int
-  type inversion_kind = Misctypes.inversion_kind =
+
+  type inversion_kind =
     | SimpleInversion
     | FullInversion
     | FullInversionClear
-  type multi = Misctypes.multi =
+
+  type multi =
     | Precisely of int
     | UpTo of int
     | RepeatStar
     | RepeatPlus
-  type 'id move_location = 'id Misctypes.move_location =
+  type 'id move_location =
     | MoveAfter of 'id
     | MoveBefore of 'id
     | MoveFirst
     | MoveLast
-  type 'a destruction_arg = clear_flag * 'a core_destruction_arg
-end
 
-module Extend :
-sig
-  type ('self, 'a) symbol = ('self, 'a) Extend.symbol
-  type 'a user_symbol = 'a Extend.user_symbol =
-    | Ulist1 of 'a user_symbol
-    | Ulist1sep of 'a user_symbol * string
-    | Ulist0 of 'a user_symbol
-    | Ulist0sep of 'a user_symbol * string
-    | Uopt of 'a user_symbol
-    | Uentry of 'a
-    | Uentryl of 'a * int
+  type 'a destruction_arg = clear_flag * 'a core_destruction_arg
+
 end
 
 module Locus :
 sig
-  type 'a occurrences_gen = 'a Locus.occurrences_gen =
+  type 'a occurrences_gen =
   | AllOccurrences
   | AllOccurrencesBut of 'a list (** non-empty *)
   | NoOccurrences
@@ -1495,10 +1714,10 @@ sig
   type occurrences = int occurrences_gen
   type occurrences_expr = (int Misctypes.or_var) occurrences_gen
   type 'a with_occurrences = occurrences_expr * 'a
-  type hyp_location_flag = Locus.hyp_location_flag =
+  type hyp_location_flag =
                              InHyp | InHypTypeOnly | InHypValueOnly
   type 'a hyp_location_expr = 'a with_occurrences * hyp_location_flag
-  type 'id clause_expr = 'id Locus.clause_expr =
+  type 'id clause_expr =
   { onhyps : 'id hyp_location_expr list option;
     concl_occs : occurrences_expr }
   type clause = Names.Id.t clause_expr
@@ -1547,14 +1766,18 @@ end
 
 module Libnames :
 sig
-  type full_path = Libnames.full_path
-  val pr_path : Libnames.full_path -> Pp.std_ppcmds
+
+  open Util
+  open Names
+
+  type full_path
+  val pr_path : full_path -> Pp.std_ppcmds
   val make_path : Names.DirPath.t -> Names.Id.t -> full_path
   val eq_full_path : full_path -> full_path -> bool
   val dirpath : full_path -> Names.DirPath.t
   val path_of_string : string -> full_path
 
-  type qualid = Libnames.qualid
+  type qualid
   val make_qualid : Names.DirPath.t -> Names.Id.t -> qualid
   val qualid_eq : qualid -> qualid -> bool
   val repr_qualid : qualid -> Names.DirPath.t * Names.Id.t
@@ -1565,8 +1788,8 @@ sig
   val qualid_of_dirpath : Names.DirPath.t -> qualid
   val qualid_of_ident : Names.Id.t -> qualid
 
-  type reference = Libnames.reference =
-    | Qualid of Libnames.qualid Loc.located
+  type reference =
+    | Qualid of qualid Loc.located
     | Ident of Names.Id.t Loc.located
   val loc_of_reference : reference -> Loc.t option
   val qualid_of_reference : reference -> qualid Loc.located
@@ -1580,23 +1803,26 @@ sig
   val string_of_path : full_path -> string
   val basename : full_path -> Names.Id.t
 
-  type object_name = Libnames.full_path * Names.KerName.t
+  type object_name = full_path * Names.KerName.t
   type object_prefix = Names.DirPath.t * (Names.ModPath.t * Names.DirPath.t)
 
-  module Dirset : module type of struct include Libnames.Dirset end
-  module Dirmap : module type of struct include  Libnames.Dirmap end
-  module Spmap : module type of struct include Libnames.Spmap end
+  module Dirset : Set.S with type elt = DirPath.t
+  module Dirmap : Map.ExtS with type key = DirPath.t and module Set := Dirset
+  module Spmap  : CSig.MapS with type key = full_path
 end
 
 module Globnames :
 sig
-  type global_reference = Globnames.global_reference =
+
+  open Util
+
+  type global_reference =
     | VarRef of Names.Id.t
     | ConstRef of Names.Constant.t
     | IndRef of Names.inductive
     | ConstructRef of Names.constructor
 
-  type extended_global_reference = Globnames.extended_global_reference =
+  type extended_global_reference =
                                  | TrueGlobal of global_reference
                                  | SynDef of Names.KerName.t
 
@@ -1606,10 +1832,14 @@ sig
    *   - pretty printing (of user provided names/aliases) are implemented by
    *     the _env ones
    *)
-  module Refset : module type of struct include Globnames.Refset end
-  module Refmap : module type of struct include Globnames.Refmap end
-  module Refset_env : module type of struct include Globnames.Refset_env end
-  module Refmap_env : module type of struct include Globnames.Refmap_env end
+  module Refset : CSig.SetS with type elt = global_reference
+  module Refmap : Map.ExtS
+    with type key = global_reference and module Set := Refset
+
+  module Refset_env : CSig.SetS with type elt = global_reference
+  module Refmap_env : Map.ExtS
+    with type key = global_reference and module Set := Refset_env
+
   module RefOrdered :
   sig
     type t = global_reference
@@ -1626,7 +1856,7 @@ sig
   val global_of_constr : Constr.t -> global_reference
 
   val subst_global : Mod_subst.substitution -> global_reference -> global_reference * Constr.t
-  val destConstructRef : Globnames.global_reference -> Names.constructor
+  val destConstructRef : global_reference -> Names.constructor
 
   val reference_of_constr : Constr.t -> global_reference
   [@@ocaml.deprecated "alias of API.Globnames.global_of_constr"]
@@ -1636,14 +1866,14 @@ end
 
 module Libobject :
 sig
-  type obj = Libobject.obj
-  type 'a substitutivity = 'a Libobject.substitutivity =
+  type obj
+  type 'a substitutivity =
                          | Dispose
                            | Substitute of 'a
                          | Keep of 'a
                          | Anticipate of 'a
-  type 'a object_declaration = 'a Libobject.object_declaration =
-                                 {
+
+  type 'a object_declaration =   {
                                    object_name : string;
                                    cache_function : Libnames.object_name * 'a -> unit;
                                    load_function : int -> Libnames.object_name * 'a -> unit;
@@ -1661,18 +1891,19 @@ end
 module Summary :
 sig
 
-  type frozen = Summary.frozen
+  type frozen
+  type marshallable
 
-  type marshallable = Summary.marshallable
-  type 'a summary_declaration = 'a Summary.summary_declaration =
+  type 'a summary_declaration =
     { freeze_function : marshallable -> 'a;
       unfreeze_function : 'a -> unit;
       init_function : unit -> unit; }
+
   val ref : ?freeze:(marshallable -> 'a -> 'a) -> name:string -> 'a -> 'a ref
   val declare_summary : string -> 'a summary_declaration -> unit
   module Local :
   sig
-    type 'a local_ref = 'a Summary.Local.local_ref
+    type 'a local_ref
     val ref : ?freeze:('a -> 'a) -> name:string -> 'a -> 'a local_ref
     val (:=) : 'a local_ref -> 'a -> unit
     val (!) : 'a local_ref -> 'a
@@ -1696,9 +1927,9 @@ sig
   val shortest_qualid_of_tactic : Names.KerName.t -> Libnames.qualid
   val basename_of_global : Globnames.global_reference -> Names.Id.t
 
-  type visibility = Nametab.visibility =
-                  | Until of int
-                  | Exactly of int
+  type visibility =
+    | Until of int
+    | Exactly of int
 
   val push_tactic : visibility -> Libnames.full_path -> Names.KerName.t -> unit
   val error_global_not_found : ?loc:Loc.t -> Libnames.qualid -> 'a
@@ -1739,7 +1970,7 @@ end
 module Lib : sig
   type is_type = bool
   type export = bool option
-  type node = Lib.node =
+  type node =
             | Leaf of Libobject.obj (* FIX: horrible hack (wrt. Enrico) *)
             | CompilingLibrary of Libnames.object_prefix
             | OpenedModule of is_type * export * Libnames.object_prefix * Summary.frozen
@@ -1790,7 +2021,7 @@ end
 module Goptions :
 sig
   type option_name = string list
-  type 'a option_sig = 'a Goptions.option_sig =
+  type 'a option_sig =
     {
       optdepr  : bool;
       optname  : string;
@@ -1798,7 +2029,9 @@ sig
       optread  : unit -> 'a;
       optwrite : 'a -> unit
     }
-  type 'a write_function = 'a Goptions.write_function
+
+  type 'a write_function = 'a -> unit
+
   val declare_bool_option  : ?preprocess:(bool -> bool) ->
                              bool option_sig   -> bool write_function
   val declare_int_option   : ?preprocess:(int option -> int option) ->
@@ -1810,7 +2043,7 @@ end
 
 module Keys :
 sig
-  type key = Keys.key
+  type key
   val constr_key : ('a -> ('a, 't, 'u, 'i) Constr.kind_of_term) -> 'a -> key option
   val declare_equiv_keys : key -> key -> unit
   val pr_keys : (Globnames.global_reference -> Pp.std_ppcmds) -> Pp.std_ppcmds
@@ -1818,14 +2051,16 @@ end
 
 module Coqlib :
 sig
-  type coq_eq_data = Coqlib.coq_eq_data = { eq   : Globnames.global_reference;
-                                            ind  : Globnames.global_reference;
-                                            refl : Globnames.global_reference;
-                                            sym  : Globnames.global_reference;
-                                            trans: Globnames.global_reference;
-                                            congr: Globnames.global_reference;
-                                          }
-  type coq_sigma_data = Coqlib.coq_sigma_data = {
+
+  type coq_eq_data = { eq   : Globnames.global_reference;
+                       ind  : Globnames.global_reference;
+                       refl : Globnames.global_reference;
+                       sym  : Globnames.global_reference;
+                       trans: Globnames.global_reference;
+                       congr: Globnames.global_reference;
+                     }
+
+  type coq_sigma_data = {
       proj1 : Globnames.global_reference;
       proj2 : Globnames.global_reference;
       elim  : Globnames.global_reference;
@@ -1878,8 +2113,8 @@ end
 
 module Universes :
 sig
-  type universe_binders = Universes.universe_binders
-  type universe_opt_subst = Universes.universe_opt_subst
+  type universe_binders
+  type universe_opt_subst
   val fresh_inductive_instance : Environ.env -> Names.inductive -> Term.pinductive Univ.in_universe_context_set
   val new_Type : Names.DirPath.t -> Term.types
   val type_of_global : Globnames.global_reference -> Term.types Univ.in_universe_context_set
@@ -1888,11 +2123,11 @@ sig
   val new_sort_in_family : Sorts.family -> Sorts.t
   val pr_with_global_universes : Univ.Level.t -> Pp.std_ppcmds
   val pr_universe_opt_subst : universe_opt_subst -> Pp.std_ppcmds
-  type universe_constraint = Universes.universe_constraint
+  type universe_constraint
 
   module Constraints :
   sig
-    type t = Universes.Constraints.t
+    type t
     val pr : t -> Pp.std_ppcmds
   end
 
@@ -1901,28 +2136,29 @@ end
 
 module UState :
 sig
-  type t = UState.t
+  type t
   val context : t -> Univ.UContext.t
   val context_set : t -> Univ.ContextSet.t
   val of_context_set : Univ.ContextSet.t -> t
 
-  type rigid = UState.rigid =
+  type rigid =
     | UnivRigid
     | UnivFlexible of bool
 
 end
 
+(* XXX: Moved from intf *)
 module Evar_kinds :
 sig
-  type obligation_definition_status = Evar_kinds.obligation_definition_status =
-                                    | Define of bool
-                                    | Expand
+  type obligation_definition_status =
+    | Define of bool
+    | Expand
 
-  type matching_var_kind = Evar_kinds.matching_var_kind =
+  type matching_var_kind =
     | FirstOrderPatVar of Names.Id.t
     | SecondOrderPatVar of Names.Id.t
 
-  type t = Evar_kinds.t =
+  type t =
          | ImplicitArg of Globnames.global_reference * (int * Names.Id.t option)
                           * bool (** Force inference *)
          | BinderType of Names.Name.t
@@ -1935,7 +2171,7 @@ sig
          | ImpossibleCase
          | MatchingVar of matching_var_kind
          | VarInstance of Names.Id.t
-         | SubEvar of Evd.evar
+         | SubEvar of Constr.existential_key
 end
 
 module Evd :
@@ -1952,23 +2188,23 @@ sig
 
   module Store :
   sig
-    type t = Evd.Store.t
+    type t
     val empty : t
   end
 
   module Filter :
   sig
-    type t = Evd.Filter.t
+    type t
     val repr : t -> bool list option
   end
 
   (** This value defines the refinement of a given {i evar} *)
-  type evar_body = Evd.evar_body =
+  type evar_body =
               | Evar_empty (** given {i evar} was not yet refined *)
               | Evar_defined of Constr.t (** given {i var} was refined to the indicated term *)
 
   (** all the information we have concerning some {i evar} *)
-  type evar_info = Evd.evar_info =
+  type evar_info =
     {
       evar_concl : Constr.t;
       evar_hyps : Environ.named_context_val;
@@ -1990,21 +2226,33 @@ sig
 
   (* evar map *)
 
-  type evar_map = Evd.evar_map
+  type evar_map
   type open_constr = evar_map * Constr.t
+
+  open Util
+
+  module Metaset : Set.S with type elt = Constr.metavariable
 
   type rigid = UState.rigid =
     | UnivRigid
     | UnivFlexible of bool
 
-    type 'a freelisted = 'a Evd.freelisted = {
+    type 'a freelisted = {
           rebus : 'a;
-          freemetas : Evd.Metaset.t
+          freemetas : Metaset.t
         }
-    type instance_status = Evd.instance_status
-    type clbinding = Evd.clbinding =
+
+    type instance_constraint = IsSuperType | IsSubType | Conv
+
+    type instance_typing_status =
+        CoerceToType | TypeNotProcessed | TypeProcessed
+
+    type instance_status = instance_constraint * instance_typing_status
+
+    type clbinding =
       | Cltyp of Names.Name.t * Constr.t freelisted
       | Clval of Names.Name.t * (Constr.t freelisted * instance_status) * Constr.t freelisted
+
     val empty : evar_map
     val from_env : Environ.env -> evar_map
     val find : evar_map -> Evar.t -> evar_info
@@ -2057,7 +2305,7 @@ sig
       end
     end
 
-  type 'a sigma = 'a Evd.sigma = {
+  type 'a sigma = {
         it : 'a ;
         sigma : evar_map
       }
@@ -2074,11 +2322,8 @@ sig
   val union_evar_universe_context : UState.t -> UState.t -> UState.t
   val merge_universe_context : evar_map -> UState.t -> evar_map
 
-  type unsolvability_explanation = Evd.unsolvability_explanation =
-                                 | SeveralInstancesFound of int
-
-  module Metaset : module type of struct include Evd.Metaset end
-                                  with type elt = Constr.metavariable
+  type unsolvability_explanation =
+    | SeveralInstancesFound of int
 
   (** Return {i ids} of all {i evars} that occur in a given term. *)
   val evars_of_term : Constr.t -> Evar.Set.t
@@ -2100,26 +2345,31 @@ sig
   val fresh_sort_in_family : ?loc:Loc.t -> ?rigid:rigid -> Environ.env -> evar_map -> Sorts.family -> evar_map * Sorts.t
 end
 
+(* XXX: moved from intf *)
 module Constrexpr :
 sig
-  type binder_kind = Constrexpr.binder_kind =
+
+  type binder_kind =
                    | Default of Decl_kinds.binding_kind
                    | Generalized of Decl_kinds.binding_kind * Decl_kinds.binding_kind * bool
-  type explicitation = Constrexpr.explicitation =
+
+  type explicitation =
                      | ExplByPos of int * Names.Id.t option
                      | ExplByName of Names.Id.t
   type sign = bool
   type raw_natural_number = string
-  type prim_token = Constrexpr.prim_token =
-                  | Numeral of raw_natural_number * sign
-                  | String of string
+  type prim_token =
+    | Numeral of raw_natural_number * sign
+    | String of string
+
   type notation = string
   type instance_expr = Misctypes.glob_level list
   type proj_flag = int option
-  type abstraction_kind = Constrexpr.abstraction_kind =
-                        | AbsLambda
-                        | AbsPi
-  type cases_pattern_expr_r = Constrexpr.cases_pattern_expr_r =
+  type abstraction_kind =
+    | AbsLambda
+    | AbsPi
+
+  type cases_pattern_expr_r =
     | CPatAlias of cases_pattern_expr * Names.Id.t
     | CPatCstr  of Libnames.reference
       * cases_pattern_expr list option * cases_pattern_expr list
@@ -2137,7 +2387,7 @@ sig
    and cases_pattern_notation_substitution =
      cases_pattern_expr list * cases_pattern_expr list list
 
-   and constr_expr_r = Constrexpr.constr_expr_r =
+   and constr_expr_r =
      | CRef     of Libnames.reference * instance_expr option
      | CFix     of Names.Id.t Loc.located * fix_expr list
      | CCoFix   of Names.Id.t Loc.located * cofix_expr list
@@ -2158,7 +2408,7 @@ sig
             * constr_expr * constr_expr
      | CHole   of Evar_kinds.t option * Misctypes.intro_pattern_naming_expr * Genarg.raw_generic_argument option
      | CPatVar of Names.Id.t
-     | CEvar   of Glob_term.existential_name * (Names.Id.t * constr_expr) list
+     | CEvar   of Names.Id.t * (Names.Id.t * constr_expr) list
      | CSort   of Misctypes.glob_sort
      | CCast   of constr_expr * constr_expr Misctypes.cast_type
      | CNotation of notation * constr_notation_substitution
@@ -2182,12 +2432,12 @@ sig
    and cofix_expr =
      Names.Id.t Loc.located * local_binder_expr list * constr_expr * constr_expr
 
-   and recursion_order_expr = Constrexpr.recursion_order_expr =
+   and recursion_order_expr =
                             | CStructRec
                               | CWfRec of constr_expr
                             | CMeasureRec of constr_expr * constr_expr option
 
-   and local_binder_expr = Constrexpr.local_binder_expr =
+   and local_binder_expr =
      | CLocalAssum   of Names.Name.t Loc.located list * binder_kind * constr_expr
      | CLocalDef     of Names.Name.t Loc.located * constr_expr * constr_expr option
      | CLocalPattern of (cases_pattern_expr * constr_expr option) Loc.located
@@ -2201,12 +2451,11 @@ sig
   type constr_pattern_expr = constr_expr
 end
 
-
 module Genredexpr :
 sig
 
   (** The parsing produces initially a list of [red_atom] *)
-  type 'a red_atom = 'a Genredexpr.red_atom =
+  type 'a red_atom =
     | FBeta
     | FMatch
     | FFix
@@ -2216,7 +2465,7 @@ sig
     | FDeltaBut of 'a list
 
   (** This list of atoms is immediately converted to a [glob_red_flag] *)
-  type 'a glob_red_flag = 'a Genredexpr.glob_red_flag = {
+  type 'a glob_red_flag = {
       rBeta : bool;
       rMatch : bool;
       rFix : bool;
@@ -2227,7 +2476,7 @@ sig
     }
 
   (** Generic kinds of reductions *)
-  type ('a,'b,'c) red_expr_gen = ('a,'b,'c) Genredexpr.red_expr_gen =
+  type ('a,'b,'c) red_expr_gen =
     | Red of bool
     | Hnf
     | Simpl of 'b glob_red_flag*('b,'c) Util.union Locus.with_occurrences option
@@ -2241,7 +2490,7 @@ sig
     | CbvVm of ('b,'c) Util.union Locus.with_occurrences option
     | CbvNative of ('b,'c) Util.union Locus.with_occurrences option
 
-  type ('a,'b,'c) may_eval = ('a,'b,'c) Genredexpr.may_eval =
+  type ('a,'b,'c) may_eval =
     | ConstrTerm of 'a
     | ConstrEval of ('a,'b,'c) red_expr_gen * 'a
     | ConstrContext of Names.Id.t Loc.located * 'a
@@ -2253,12 +2502,14 @@ sig
   type raw_red_expr = (r_trm, r_cst, r_pat) red_expr_gen
 end
 
+(* XXX: end of moved from intf *)
+
 module EConstr :
 sig
-  type t = EConstr.t
+  type t
   type constr = t
   type types = t
-  type unsafe_judgment = EConstr.unsafe_judgment
+  type unsafe_judgment = (constr, types) Environ.punsafe_judgment
   type named_declaration = (constr, types) Context.Named.Declaration.pt
   type named_context = (constr, types) Context.Named.pt
   type rel_context = (constr, types) Context.Rel.pt
@@ -2266,7 +2517,7 @@ sig
   type existential = constr Constr.pexistential
   module ESorts :
   sig
-    type t = EConstr.ESorts.t
+    type t
     (** Type of sorts up-to universe unification. Essentially a wrapper around
       Sorts.t so that normalization is ensured statically. *)
 
@@ -2281,7 +2532,7 @@ sig
 
   module EInstance :
   sig
-    type t = EConstr.EInstance.t
+    type t
     (** Type of universe instances up-to universe unification. Similar to
       {ESorts.t} for {Univ.Instance.t}. *)
 
@@ -2424,8 +2675,14 @@ end
 (* XXX: Located manually from intf *)
 module Pattern :
 sig
-  type case_info_pattern = Pattern.case_info_pattern
-  type constr_pattern = Pattern.constr_pattern =
+
+  type case_info_pattern =
+    { cip_style : Misctypes.case_style;
+      cip_ind : Names.inductive option;
+      cip_ind_tags : bool list option; (** indicates LetIn/Lambda in arity *)
+      cip_extensible : bool (** does this match end with _ => _ ? *) }
+
+  type constr_pattern =
     | PRef of Globnames.global_reference
     | PVar of Names.Id.t
     | PEvar of Evar.t * constr_pattern array
@@ -2567,7 +2824,7 @@ sig
   type lazy_msg = unit -> Pp.std_ppcmds
   module Info :
   sig
-    type tree = Proofview_monad.Info.tree
+    type tree
   end
 end
 
@@ -2603,7 +2860,11 @@ sig
   val clear_hyps_in_evi : Environ.env -> Evd.evar_map ref -> Environ.named_context_val ->
                           EConstr.types -> Names.Id.Set.t -> Environ.named_context_val * EConstr.types
 
-  exception ClearDependencyError of Names.Id.t * Evarutil.clear_dependency_error
+  type clear_dependency_error =
+    | OccurHypInSimpleClause of Names.Id.t option
+    | EvarTypingBreak of Constr.existential
+
+  exception ClearDependencyError of Names.Id.t * clear_dependency_error
   val undefined_evars_of_term : Evd.evar_map -> EConstr.constr -> Evar.Set.t
   val e_new_evar :
       Environ.env -> Evd.evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
@@ -2621,15 +2882,16 @@ end
 
 module Proofview :
 sig
-  type proofview = Proofview.proofview
-  type entry = Proofview.entry
-  type +'a tactic = 'a Proofview.tactic
-  type telescope = Proofview.telescope =
+  type proofview
+  type entry
+  type +'a tactic
+  type telescope =
     | TNil of Evd.evar_map
     | TCons of Environ.env * Evd.evar_map * EConstr.types * (Evd.evar_map -> EConstr.constr -> telescope)
+
   module NonLogical :
   sig
-    type +'a t = 'a Proofview.NonLogical.t
+    type +'a t
     val make : (unit -> 'a) -> 'a t
     val return : 'a -> 'a t
     val ( >> ) : unit t -> 'a t -> 'a t
@@ -2640,7 +2902,7 @@ sig
     val print_notice : Pp.std_ppcmds -> unit t
     val print_info : Pp.std_ppcmds -> unit t
     val run : 'a t -> 'a
-    type 'a ref = 'a Proofview.NonLogical.ref
+    type 'a ref
     val ref : 'a -> 'a ref t
     val ( := ) : 'a ref -> 'a -> unit t
     val ( ! ) : 'a ref -> 'a t
@@ -2693,7 +2955,7 @@ sig
 
   module Goal :
   sig
-    type 'a t = 'a Proofview.Goal.t
+    type 'a t
     val enter : ([ `LZ ] t -> unit tactic) -> unit tactic
     val hyps : 'a t -> EConstr.named_context
     val nf_enter : ([ `NF ] t -> unit tactic) -> unit tactic
@@ -2734,7 +2996,7 @@ end
 
 module Ftactic :
 sig
-  type +'a focus = 'a Ftactic.focus
+  type +'a focus
   type +'a t = 'a focus Proofview.tactic
   val return : 'a -> 'a t
   val run : 'a t -> ('a -> unit Proofview.tactic) -> unit Proofview.tactic
@@ -2760,9 +3022,9 @@ module Geninterp :
 sig
   module Val :
   sig
-    type 'a typ = 'a Geninterp.Val.typ
-    type t = Geninterp.Val.t = Dyn : 'a typ * 'a -> t
-    type 'a tag = 'a Geninterp.Val.tag =
+    type 'a typ
+    type t = Dyn : 'a typ * 'a -> t
+    type 'a tag =
                 | Base : 'a typ -> 'a tag
                 | List : 'a tag -> 'a list tag
                 | Opt : 'a tag -> 'a option tag
@@ -2778,8 +3040,8 @@ sig
   end
   module TacStore :
   sig
-    type t = Geninterp.TacStore.t
-    type 'a field = 'a Geninterp.TacStore.field
+    type t
+    type 'a field
     val empty : t
     val field : unit -> 'a field
     val get : t -> 'a field -> 'a option
@@ -2787,9 +3049,10 @@ sig
     val remove : t -> 'a field -> t
     val merge : t -> t -> t
   end
-  type interp_sign = Geninterp.interp_sign =
-                       {lfun : Val.t Names.Id.Map.t;
-                        extra : TacStore.t }
+  type interp_sign = {
+    lfun : Val.t Names.Id.Map.t;
+    extra : TacStore.t
+  }
   type ('glb, 'top) interp_fun = interp_sign -> 'glb -> 'top Ftactic.t
   val register_interp0 :
     ('raw, 'glb, 'top) Genarg.genarg_type -> ('glb, Val.t) interp_fun -> unit
@@ -2801,12 +3064,12 @@ end
 (* XXX: Located manually from intf *)
 module Glob_term :
 sig
-  type cases_pattern_r = Glob_term.cases_pattern_r =
+  type cases_pattern_r =
     | PatVar  of Names.Name.t
     | PatCstr of Names.constructor * cases_pattern list * Names.Name.t
   and cases_pattern = cases_pattern_r CAst.t
   type existential_name = Names.Id.t
-  type glob_constr_r = Glob_term.glob_constr_r =
+  type glob_constr_r =
     | GRef of Globnames.global_reference * Misctypes.glob_level list option
         (** An identifier that represents a reference to an object defined
             either in the (global) environment or in the (local) context. *)
@@ -2832,14 +3095,14 @@ sig
 
    and glob_decl = Names.Name.t * Decl_kinds.binding_kind * glob_constr option * glob_constr
 
-   and fix_recursion_order = Glob_term.fix_recursion_order =
-                           | GStructRec
-                             | GWfRec of glob_constr
-                           | GMeasureRec of glob_constr * glob_constr option
+   and fix_recursion_order =
+     | GStructRec
+     | GWfRec of glob_constr
+     | GMeasureRec of glob_constr * glob_constr option
 
-   and fix_kind = Glob_term.fix_kind =
-                | GFix of ((int option * fix_recursion_order) array * int)
-                | GCoFix of int
+   and fix_kind =
+     | GFix of ((int option * fix_recursion_order) array * int)
+     | GCoFix of int
 
    and predicate_pattern =
      Names.Name.t * (Names.inductive * Names.Name.t list) Loc.located option
@@ -2855,11 +3118,11 @@ sig
        of its free variables. Intended for use when these variables are taken
        from the Ltac environment. *)
 
-   type closure = Glob_term.closure = {
+   type closure = {
      idents : Names.Id.t Names.Id.Map.t;
      typed  : Pattern.constr_under_binders Names.Id.Map.t ;
      untyped: closed_glob_constr Names.Id.Map.t }
-   and closed_glob_constr = Glob_term.closed_glob_constr = {
+   and closed_glob_constr = {
      closure: closure;
      term: glob_constr }
 
@@ -2884,11 +3147,12 @@ end
 module Notation_term :
 sig
   type scope_name = string
-  type notation_var_instance_type = Notation_term.notation_var_instance_type =
+  type notation_var_instance_type =
                                   | NtnTypeConstr | NtnTypeOnlyBinder | NtnTypeConstrList | NtnTypeBinderList
-  type tmp_scope_name = Notation_term.tmp_scope_name
+  type tmp_scope_name = scope_name
+
   type subscopes = tmp_scope_name option * scope_name list
-  type notation_constr = Notation_term.notation_constr =
+  type notation_constr =
                        | NRef of Globnames.global_reference
                        | NVar of Names.Id.t
                        | NApp of notation_constr * notation_constr list
@@ -2927,6 +3191,8 @@ sig
   type or_and_intro_pattern = delayed_open_constr Misctypes.or_and_intro_pattern_expr Loc.located
 end
 
+(* XXX: end of moved from intf *)
+
 (************************************************************************)
 (* End of modules from engine/                                          *)
 (************************************************************************)
@@ -2950,29 +3216,32 @@ end
 
 module Pretype_errors :
 sig
-  type unification_error = Pretype_errors.unification_error
-  type subterm_unification_error = Pretype_errors.subterm_unification_error
-  type pretype_error = Pretype_errors.pretype_error =
-                     | CantFindCaseType of EConstr.constr
-                     | ActualTypeNotCoercible of EConstr.unsafe_judgment * EConstr.types * unification_error
-                     | UnifOccurCheck of Evar.t * EConstr.constr
-                     | UnsolvableImplicit of Evar.t * Evd.unsolvability_explanation option
-                     | CannotUnify of EConstr.constr * EConstr.constr * unification_error option
-                     | CannotUnifyLocal of EConstr.constr * EConstr.constr * EConstr.constr
-                     | CannotUnifyBindingType of EConstr.constr * EConstr.constr
-                     | CannotGeneralize of EConstr.constr
-                     | NoOccurrenceFound of EConstr.constr * Names.Id.t option
-                     | CannotFindWellTypedAbstraction of EConstr.constr * EConstr.constr list * (Environ.env * Pretype_errors.type_error) option
-                     | WrongAbstractionType of Names.Name.t * EConstr.constr * EConstr.types * EConstr.types
-                     | AbstractionOverMeta of Names.Name.t * Names.Name.t
-                     | NonLinearUnification of Names.Name.t * EConstr.constr
-                     | VarNotFound of Names.Id.t
-                     | UnexpectedType of EConstr.constr * EConstr.constr
-                     | NotProduct of EConstr.constr
-                     | TypingError of Pretype_errors.type_error
-                     | CannotUnifyOccurrences of subterm_unification_error
-                     | UnsatisfiableConstraints of
-                         (Evar.t * Evar_kinds.t) option * Evar.Set.t option
+  type unification_error
+  type subterm_unification_error
+
+  type type_error = (EConstr.t, EConstr.types) Type_errors.ptype_error
+
+  type pretype_error =
+    | CantFindCaseType of EConstr.constr
+    | ActualTypeNotCoercible of EConstr.unsafe_judgment * EConstr.types * unification_error
+    | UnifOccurCheck of Evar.t * EConstr.constr
+    | UnsolvableImplicit of Evar.t * Evd.unsolvability_explanation option
+    | CannotUnify of EConstr.constr * EConstr.constr * unification_error option
+    | CannotUnifyLocal of EConstr.constr * EConstr.constr * EConstr.constr
+    | CannotUnifyBindingType of EConstr.constr * EConstr.constr
+    | CannotGeneralize of EConstr.constr
+    | NoOccurrenceFound of EConstr.constr * Names.Id.t option
+    | CannotFindWellTypedAbstraction of EConstr.constr * EConstr.constr list * (Environ.env * type_error) option
+    | WrongAbstractionType of Names.Name.t * EConstr.constr * EConstr.types * EConstr.types
+    | AbstractionOverMeta of Names.Name.t * Names.Name.t
+    | NonLinearUnification of Names.Name.t * EConstr.constr
+    | VarNotFound of Names.Id.t
+    | UnexpectedType of EConstr.constr * EConstr.constr
+    | NotProduct of EConstr.constr
+    | TypingError of type_error
+    | CannotUnifyOccurrences of subterm_unification_error
+    | UnsatisfiableConstraints of
+        (Evar.t * Evar_kinds.t) option * Evar.Set.t option
 
   exception PretypeError of Environ.env * Evd.evar_map * pretype_error
   val error_var_not_found : ?loc:Loc.t -> Names.Id.t -> 'b
@@ -2989,7 +3258,7 @@ sig
     Evd.evar_map -> EConstr.constr -> EConstr.constr * EConstr.constr list
 
   type e_reduction_function = Environ.env -> Evd.evar_map -> EConstr.constr -> Evd.evar_map * EConstr.constr
-  type state = Reductionops.state
+  type state
 
   val clos_whd_flags : CClosure.RedFlags.reds -> reduction_function
   val nf_beta : local_reduction_function
@@ -3017,22 +3286,22 @@ sig
   val pr_state : state -> Pp.std_ppcmds
   module Stack :
   sig
-    type 'a t = 'a Reductionops.Stack.t
+    type 'a t
     val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
   end
   module Cst_stack :
   sig
-    type t = Reductionops.Cst_stack.t
+    type t
     val pr : t -> Pp.std_ppcmds
   end
 end
 
 module Inductiveops :
 sig
-  type inductive_family = Inductiveops.inductive_family
-  type inductive_type = Inductiveops.inductive_type =
+  type inductive_family
+  type inductive_type =
     | IndType of inductive_family * EConstr.constr list
-  type constructor_summary = Inductiveops.constructor_summary =
+  type constructor_summary =
     {
       cs_cstr : Term.pconstructor;
       cs_params : Constr.t list;
@@ -3063,8 +3332,8 @@ end
 
 module Impargs :
 sig
-  type implicit_status = Impargs.implicit_status
-  type implicit_side_condition = Impargs.implicit_side_condition
+  type implicit_status
+  type implicit_side_condition
   type implicits_list = implicit_side_condition * implicit_status list
   type manual_explicitation = Constrexpr.explicitation * (bool * bool * bool)
   type manual_implicits = manual_explicitation list
@@ -3104,12 +3373,14 @@ end
 
 module Recordops :
 sig
-  type cs_pattern = Recordops.cs_pattern =
+
+  type cs_pattern =
                   | Const_cs of Globnames.global_reference
                   | Prod_cs
                   | Sort_cs of Sorts.family
                   | Default_cs
-  type obj_typ = Recordops.obj_typ = {
+
+  type obj_typ = {
         o_DEF : Constr.t;
         o_CTX : Univ.AUContext.t;
         o_INJ : int option;      (** position of trivial argument *)
@@ -3117,6 +3388,7 @@ sig
         o_TPARAMS : Constr.t list; (** ordered *)
         o_NPARAMS : int;
         o_TCOMPS : Constr.t list }
+
   val lookup_projections : Names.inductive -> Names.Constant.t option list
   val lookup_canonical_conversion : (Globnames.global_reference * cs_pattern) -> Constr.t * obj_typ
   val find_projection_nparams : Globnames.global_reference -> int
@@ -3149,13 +3421,6 @@ sig
   val map_red_expr_gen : ('a -> 'd) -> ('b -> 'e) -> ('c -> 'f) ->
                          ('a,'b,'c) Genredexpr.red_expr_gen -> ('d,'e,'f) Genredexpr.red_expr_gen
   val map_cast_type : ('a -> 'b) -> 'a Misctypes.cast_type -> 'b Misctypes.cast_type
-end
-
-module Stm :
-sig
-  type state = Stm.state
-  val state_of_id :
-    Stateid.t -> [ `Valid of state option | `Expired | `Error of exn ]
 end
 
 module Glob_ops :
@@ -3233,21 +3498,145 @@ sig
 end
 
 (* XXX: Located manually from intf *)
+module Tok :
+sig
+
+  type t =
+  | KEYWORD of string
+  | PATTERNIDENT of string
+  | IDENT of string
+  | FIELD of string
+  | INT of string
+  | STRING of string
+  | LEFTQMARK
+  | BULLET of string
+  | EOI
+
+end
+
+module CLexer :
+sig
+  val add_keyword : string -> unit
+  val remove_keyword : string -> unit
+  val is_keyword : string -> bool
+  val keywords : unit -> CString.Set.t
+
+  type keyword_state
+  val set_keyword_state : keyword_state -> unit
+  val get_keyword_state : unit -> keyword_state
+
+  val check_ident : string -> unit
+  val terminal : string -> Tok.t
+
+  include Grammar.GLexerType with type te = Tok.t
+end
+
+module Extend :
+sig
+
+  type gram_assoc = NonA | RightA | LeftA
+
+  type gram_position =
+    | First
+    | Last
+    | Before of string
+    | After of string
+    | Level of string
+
+  type production_level =
+    | NextLevel
+    | NumLevel of int
+
+  type 'a entry = 'a Grammar.GMake(CLexer).Entry.e
+
+  type 'a user_symbol =
+    | Ulist1 of 'a user_symbol
+    | Ulist1sep of 'a user_symbol * string
+    | Ulist0 of 'a user_symbol
+    | Ulist0sep of 'a user_symbol * string
+    | Uopt of 'a user_symbol
+    | Uentry of 'a
+    | Uentryl of 'a * int
+
+  type ('self, 'a) symbol =
+    | Atoken : Tok.t -> ('self, string) symbol
+    | Alist1 : ('self, 'a) symbol -> ('self, 'a list) symbol
+    | Alist1sep : ('self, 'a) symbol * ('self, _) symbol -> ('self, 'a list) symbol
+    | Alist0 : ('self, 'a) symbol -> ('self, 'a list) symbol
+    | Alist0sep : ('self, 'a) symbol * ('self, _) symbol -> ('self, 'a list) symbol
+    | Aopt : ('self, 'a) symbol -> ('self, 'a option) symbol
+    | Aself : ('self, 'self) symbol
+    | Anext : ('self, 'self) symbol
+    | Aentry : 'a entry -> ('self, 'a) symbol
+    | Aentryl : 'a entry * int -> ('self, 'a) symbol
+    | Arules : 'a rules list -> ('self, 'a) symbol
+
+  and ('self, _, 'r) rule =
+    | Stop : ('self, 'r, 'r) rule
+    | Next : ('self, 'a, 'r) rule * ('self, 'b) symbol -> ('self, 'b -> 'a, 'r) rule
+
+  and ('a, 'r) norec_rule = { norec_rule : 's. ('s, 'a, 'r) rule }
+
+  and 'a rules =
+    | Rules : ('act, Loc.t -> 'a) norec_rule * 'act -> 'a rules
+
+  type ('lev,'pos) constr_entry_key_gen =
+    | ETName | ETReference | ETBigint
+    | ETBinder of bool
+    | ETConstr of ('lev * 'pos)
+    | ETPattern
+    | ETOther of string * string
+    | ETConstrList of ('lev * 'pos) * Tok.t list
+    | ETBinderList of bool * Tok.t list
+
+  type side = Left | Right
+
+  type production_position =
+    | BorderProd of side * gram_assoc option
+    | InternalProd
+
+  type constr_prod_entry_key =
+    (production_level,production_position) constr_entry_key_gen
+
+  type simple_constr_prod_entry_key =
+    (production_level,unit) constr_entry_key_gen
+
+  type 'a production_rule =
+    | Rule : ('a, 'act, Loc.t -> 'a) rule * 'act -> 'a production_rule
+
+  type 'a single_extend_statment =
+    string option *
+    (** Level *)
+    gram_assoc option *
+    (** Associativity *)
+    'a production_rule list
+  (** Symbol list with the interpretation function *)
+
+  type 'a extend_statment =
+    gram_position option *
+    'a single_extend_statment list
+end
+
+(* XXX: Located manually from intf *)
 module Vernacexpr :
 sig
+  open Misctypes
+  open Constrexpr
+  open Libnames
+
   type instance_flag  = bool option
   type coercion_flag = bool
   type inductive_flag = Decl_kinds.recursivity_kind
   type lname = Names.Name.t Loc.located
   type lident = Names.Id.t Loc.located
-  type opacity_flag = Vernacexpr.opacity_flag =
+  type opacity_flag =
                     | Opaque of lident list option
                     | Transparent
   type locality_flag = bool
-  type inductive_kind = Vernacexpr.inductive_kind =
+  type inductive_kind =
     | Inductive_kw | CoInductive | Variant | Record | Structure | Class of bool
 
-  type vernac_type = Vernacexpr.vernac_type =
+  type vernac_type =
                    | VtStartProof of vernac_start
                    | VtSideff of vernac_sideff_type
                    | VtQed of vernac_qed_type
@@ -3256,92 +3645,119 @@ sig
                    | VtQuery of vernac_part_of_script * Feedback.route_id
                    | VtStm of vernac_control * vernac_part_of_script
                    | VtUnknown
-   and vernac_qed_type = Vernacexpr.vernac_qed_type =
-                       | VtKeep
-                         | VtKeepAsAxiom
-                         | VtDrop
+   and vernac_qed_type =
+     | VtKeep
+     | VtKeepAsAxiom
+     | VtDrop
    and vernac_start = string * opacity_guarantee * Names.Id.t list
    and vernac_sideff_type = Names.Id.t list
    and vernac_part_of_script = bool
-   and vernac_control = Vernacexpr.vernac_control =
-                      | VtWait
-                        | VtJoinDocument
-                        | VtBack of Stateid.t
-   and opacity_guarantee = Vernacexpr.opacity_guarantee =
-                         | GuaranteesOpacity
-                           | Doesn'tGuaranteeOpacity
-   and proof_step = Vernacexpr.proof_step = {
-         parallel : [ `Yes of solving_tac * anon_abstracting_tac | `No ];
-         proof_block_detection : proof_block_name option
-       }
+   and vernac_control =
+     | VtWait
+     | VtJoinDocument
+     | VtBack of Stateid.t
+   and opacity_guarantee =
+     | GuaranteesOpacity
+     | Doesn'tGuaranteeOpacity
+   and proof_step = {
+     parallel : [ `Yes of solving_tac * anon_abstracting_tac | `No ];
+     proof_block_detection : proof_block_name option
+   }
    and solving_tac = bool
    and anon_abstracting_tac = bool
    and proof_block_name = string
-  type vernac_when = Vernacexpr.vernac_when =
-                   | VtNow
-                   | VtLater
+
+  type vernac_when =
+    | VtNow
+    | VtLater
+
   type verbose_flag = bool
 
   type obsolete_locality = bool
 
-  type lstring = Vernacexpr.lstring
+  type lstring
   type 'a with_coercion = coercion_flag * 'a
   type scope_name = string
   type decl_notation = lstring * Constrexpr.constr_expr * scope_name option
   type constructor_expr = (lident * Constrexpr.constr_expr) with_coercion
   type 'a with_notation = 'a * decl_notation list
-  type local_decl_expr = Vernacexpr.local_decl_expr =
+
+  type local_decl_expr =
     | AssumExpr of lname * Constrexpr.constr_expr
     | DefExpr of lname * Constrexpr.constr_expr * Constrexpr.constr_expr option
+
   type 'a with_priority = 'a * int option
   type 'a with_instance = instance_flag * 'a
-  type constructor_list_or_record_decl_expr = Vernacexpr.constructor_list_or_record_decl_expr =
+  type constructor_list_or_record_decl_expr =
     | Constructors of constructor_expr list
     | RecordDecl of lident option * local_decl_expr with_instance with_priority with_notation list
+
   type plident = lident * lident list option
+
   type inductive_expr = plident with_coercion * Constrexpr.local_binder_expr list * Constrexpr.constr_expr option * inductive_kind * constructor_list_or_record_decl_expr
 
-  type syntax_modifier = Vernacexpr.syntax_modifier
-  type class_rawexpr = Vernacexpr.class_rawexpr
-  type definition_expr = Vernacexpr.definition_expr
-  type proof_expr = Vernacexpr.proof_expr
-  type proof_end = Vernacexpr.proof_end =
+  type syntax_modifier =
+    | SetItemLevel of string list * Extend.production_level
+    | SetLevel of int
+    | SetAssoc of Extend.gram_assoc
+    | SetEntryType of string * Extend.simple_constr_prod_entry_key
+    | SetOnlyParsing
+    | SetOnlyPrinting
+    | SetCompatVersion of Flags.compat_version
+    | SetFormat of string * string Loc.located
+
+  type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
+
+  type definition_expr =
+    | ProveBody of local_binder_expr list * constr_expr
+    | DefineBody of local_binder_expr list * Genredexpr.raw_red_expr option * constr_expr
+                    * constr_expr option
+  type proof_expr =
+    plident option * (local_binder_expr list * constr_expr)
+
+  type proof_end =
     | Admitted
     | Proved of opacity_flag * lident option
+
   type fixpoint_expr = plident * (Names.Id.t Loc.located option * Constrexpr.recursion_order_expr) * Constrexpr.local_binder_expr list * Constrexpr.constr_expr * Constrexpr.constr_expr option
-  type cofixpoint_expr = Vernacexpr.cofixpoint_expr
-  type scheme = Vernacexpr.scheme
-  type section_subset_expr = Vernacexpr.section_subset_expr
-  type module_binder = Vernacexpr.module_binder
-  type vernac_argument_status = Vernacexpr.vernac_argument_status
-  type vernac_implicit_status = Vernacexpr.vernac_implicit_status
-  type module_ast_inl = Vernacexpr.module_ast_inl
+
+  type cofixpoint_expr
+
+  type scheme
+
+  type section_subset_expr
+
+  type module_binder
+
+  type vernac_argument_status
+  type vernac_implicit_status
+  type module_ast_inl
   type extend_name = string * int
-  type simple_binder = Vernacexpr.simple_binder
-  type option_value = Vernacexpr.option_value
-  type showable = Vernacexpr.showable
-  type bullet = Vernacexpr.bullet
-  type stm_vernac = Vernacexpr.stm_vernac
-  type comment = Vernacexpr.comment
-  type register_kind = Vernacexpr.register_kind
-  type locatable = Vernacexpr.locatable
-  type search_restriction = Vernacexpr.search_restriction
-  type searchable = Vernacexpr.searchable
-  type printable = Vernacexpr.printable
-  type option_ref_value = Vernacexpr.option_ref_value
-  type onlyparsing_flag = Vernacexpr.onlyparsing_flag
-  type reference_or_constr = Vernacexpr.reference_or_constr
+  type simple_binder
+  type option_value
+  type showable
+  type bullet
+  type stm_vernac
+  type comment
+  type register_kind
+  type locatable
+  type search_restriction
+  type searchable
+  type printable
+  type option_ref_value
+  type onlyparsing_flag
+  type reference_or_constr
 
-  type hint_mode = Vernacexpr.hint_mode
+  type hint_mode
 
-  type 'a hint_info_gen = 'a Vernacexpr.hint_info_gen =
+  type 'a hint_info_gen =
     { hint_priority : int option;
       hint_pattern : 'a option }
 
   type hint_info_expr = Constrexpr.constr_pattern_expr hint_info_gen
 
-  type hints_expr = Vernacexpr.hints_expr =
-    | HintsResolve of (Vernacexpr.hint_info_expr * bool * reference_or_constr) list
+  type hints_expr =
+    | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
     | HintsImmediate of reference_or_constr list
     | HintsUnfold of Libnames.reference list
     | HintsTransparency of Libnames.reference list * bool
@@ -3349,16 +3765,16 @@ sig
     | HintsConstructors of Libnames.reference list
     | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
 
-  type 'a module_signature = 'a Vernacexpr.module_signature =
+  type 'a module_signature =
     | Enforce of 'a (** ... : T *)
     | Check of 'a list (** ... <: T1 <: T2, possibly empty *)
 
-  type inline = Vernacexpr.inline =
+  type inline =
     | NoInline
     | DefaultInline
     | InlineAt of int
 
-  type vernac_expr = Vernacexpr.vernac_expr =
+  type vernac_expr =
   | VernacLoad of verbose_flag * string
   | VernacTime of vernac_expr Loc.located
   | VernacRedirect of string * vernac_expr Loc.located
@@ -3490,7 +3906,7 @@ sig
   | VernacProgram of vernac_expr
   | VernacPolymorphic of bool * vernac_expr
   | VernacLocal of bool * vernac_expr
-  and goal_selector = Vernacexpr.goal_selector =
+  and goal_selector =
     | SelectNth of int
     | SelectList of (int * int) list
     | SelectId of Names.Id.t
@@ -3500,10 +3916,11 @@ sig
     plident * Constrexpr.local_binder_expr list * Constrexpr.constr_expr option * constructor_expr list
 end
 
+(* XXX: end manual intf move *)
 
 module Typeclasses :
 sig
-  type typeclass = Typeclasses.typeclass = {
+  type typeclass = {
     cl_univs : Univ.AUContext.t;
     cl_impl : Globnames.global_reference;
     cl_context : (Globnames.global_reference * bool) option list * Context.Rel.t;
@@ -3513,9 +3930,11 @@ sig
     cl_strict : bool;
     cl_unique : bool;
   }
-   and direction = Typeclasses.direction
-  type instance = Typeclasses.instance
+  and direction
+
+  type instance
   type evar_filter = Evar.t -> Evar_kinds.t -> bool
+
   val resolve_typeclasses : ?fast_path:bool -> ?filter:evar_filter -> ?unique:bool ->
                             ?split:bool -> ?fail:bool -> Environ.env -> Evd.evar_map -> Evd.evar_map
   val set_resolvable : Evd.Store.t -> bool -> Evd.Store.t
@@ -3529,9 +3948,9 @@ end
 
 module Classops :
 sig
-  type coe_index = Classops.coe_index
+  type coe_index
   type inheritance_path = coe_index list
-  type cl_index = Classops.cl_index
+  type cl_index
 
   val hide_coercion : Globnames.global_reference -> int option
   val lookup_path_to_sort_from : Environ.env -> Evd.evar_map -> EConstr.types ->
@@ -3565,13 +3984,14 @@ end
 
 module Pretyping :
 sig
-  type typing_constraint = Pretyping.typing_constraint =
-                         | OfType of EConstr.types
-                         | IsType
-                         | WithoutTypeConstraint
+  type typing_constraint =
+    | OfType of EConstr.types
+    | IsType
+    | WithoutTypeConstraint
 
   type inference_hook = Environ.env -> Evd.evar_map -> Evar.t -> Evd.evar_map * EConstr.constr
-  type inference_flags = Pretyping.inference_flags = {
+
+  type inference_flags = {
       use_typeclasses : bool;
       solve_unification_constraints : bool;
       use_hook : inference_hook option;
@@ -3606,29 +4026,28 @@ end
 
 module Unification :
 sig
-  type core_unify_flags = Unification.core_unify_flags =
-                            {
-                              modulo_conv_on_closed_terms : Names.transparent_state option;
-                              use_metas_eagerly_in_conv_on_closed_terms : bool;
-                              use_evars_eagerly_in_conv_on_closed_terms : bool;
-                              modulo_delta : Names.transparent_state;
-                              modulo_delta_types : Names.transparent_state;
-                              check_applied_meta_types : bool;
-                              use_pattern_unification : bool;
-                              use_meta_bound_pattern_unification : bool;
-                              frozen_evars : Evar.Set.t;
-                              restrict_conv_on_strict_subterms : bool;
-                              modulo_betaiota : bool;
-                              modulo_eta : bool;
-                            }
-  type unify_flags = Unification.unify_flags =
-                       {
-                         core_unify_flags : core_unify_flags;
-                         merge_unify_flags : core_unify_flags;
-                         subterm_unify_flags : core_unify_flags;
-                         allow_K_in_toplevel_higher_order_unification : bool;
-                         resolve_evars : bool
-                       }
+  type core_unify_flags = {
+    modulo_conv_on_closed_terms : Names.transparent_state option;
+    use_metas_eagerly_in_conv_on_closed_terms : bool;
+    use_evars_eagerly_in_conv_on_closed_terms : bool;
+    modulo_delta : Names.transparent_state;
+    modulo_delta_types : Names.transparent_state;
+    check_applied_meta_types : bool;
+    use_pattern_unification : bool;
+    use_meta_bound_pattern_unification : bool;
+    frozen_evars : Evar.Set.t;
+    restrict_conv_on_strict_subterms : bool;
+    modulo_betaiota : bool;
+    modulo_eta : bool;
+  }
+  type unify_flags =
+    {
+      core_unify_flags : core_unify_flags;
+      merge_unify_flags : core_unify_flags;
+      subterm_unify_flags : core_unify_flags;
+      allow_K_in_toplevel_higher_order_unification : bool;
+      resolve_evars : bool
+    }
   val default_no_delta_unify_flags : unit -> unify_flags
   val w_unify : Environ.env -> Evd.evar_map -> Reduction.conv_pb -> ?flags:unify_flags -> EConstr.constr -> EConstr.constr -> Evd.evar_map
   val elim_flags : unit -> unify_flags
@@ -3643,6 +4062,41 @@ end
 (************************************************************************)
 (* Modules from interp/                                              *)
 (************************************************************************)
+
+module Genintern :
+sig
+  open Genarg
+
+  module Store : Store.S
+
+  type glob_sign = {
+    ltacvars : Names.Id.Set.t;
+    genv : Environ.env;
+    extra : Store.t;
+  }
+
+  val empty_glob_sign : Environ.env -> glob_sign
+
+  type ('raw, 'glb) intern_fun = glob_sign -> 'raw -> glob_sign * 'glb
+
+
+  val generic_intern : (raw_generic_argument, glob_generic_argument) intern_fun
+
+  type 'glb subst_fun = Mod_subst.substitution -> 'glb -> 'glb
+  val generic_substitute : Genarg.glob_generic_argument subst_fun
+
+  type 'glb ntn_subst_fun = Tactypes.glob_constr_and_expr Names.Id.Map.t -> 'glb -> 'glb
+
+  val register_intern0 : ('raw, 'glb, 'top) genarg_type ->
+    ('raw, 'glb) intern_fun -> unit
+
+  val register_subst0 : ('raw, 'glb, 'top) genarg_type ->
+    'glb subst_fun -> unit
+
+  val register_ntn_subst0 : ('raw, 'glb, 'top) genarg_type ->
+    'glb ntn_subst_fun -> unit
+
+end
 
 module Stdarg :
 sig
@@ -3713,10 +4167,12 @@ end
 
 module Ppextend :
 sig
+
   type precedence = int
-  type parenRelation = Ppextend.parenRelation =
-                     | L | E | Any | Prec of precedence
+  type parenRelation =
+    | L | E | Any | Prec of precedence
   type tolerability = precedence * parenRelation
+
 end
 
 module Notation :
@@ -3768,13 +4224,15 @@ end
 
 module Constrintern :
 sig
-  type ltac_sign = Constrintern.ltac_sign = {
-        ltac_vars : Names.Id.Set.t;
-        ltac_bound : Names.Id.Set.t;
-        ltac_extra : Genintern.Store.t;
-      }
-  type var_internalization_data = Constrintern.var_internalization_data
-  type var_internalization_type = Constrintern.var_internalization_type =
+  type ltac_sign = {
+    ltac_vars : Names.Id.Set.t;
+    ltac_bound : Names.Id.Set.t;
+    ltac_extra : Genintern.Store.t;
+  }
+
+  type var_internalization_data
+
+  type var_internalization_type =
     | Inductive of Names.Id.t list * bool
     | Recursive
     | Method
@@ -3828,18 +4286,24 @@ end
 
 module Declare :
 sig
-  type internal_flag = Declare.internal_flag =
+  type internal_flag =
     | UserAutomaticRequest
     | InternalTacticRequest
     | UserIndividualRequest
+
   type constant_declaration = Safe_typing.private_constants Entries.constant_entry * Decl_kinds.logical_kind
-  type section_variable_entry = Declare.section_variable_entry =
+
+  type section_variable_entry =
     | SectionLocalDef of Safe_typing.private_constants Entries.definition_entry
     | SectionLocalAssum of Term.types Univ.in_universe_context_set * Decl_kinds.polymorphic * bool
+
   type variable_declaration = Names.DirPath.t * section_variable_entry * Decl_kinds.logical_kind
+
   val declare_constant :
     ?internal:internal_flag -> ?local:bool -> Names.Id.t -> ?export_seff:bool -> constant_declaration -> Names.Constant.t
+
   val declare_universe_context : Decl_kinds.polymorphic -> Univ.ContextSet.t -> unit
+
   val declare_definition :
     ?internal:internal_flag -> ?opaque:bool -> ?kind:Decl_kinds.definition_object_kind ->
     ?local:bool -> ?poly:Decl_kinds.polymorphic -> Names.Id.t -> ?types:Constr.t ->
@@ -3922,7 +4386,7 @@ end
 
 module Proof_type :
 sig
-  type prim_rule = Proof_type.prim_rule =
+  type prim_rule =
     | Cut of bool * bool * Names.Id.t * Term.types
     | Refine of Constr.t
 
@@ -3931,7 +4395,7 @@ end
 
 module Logic :
 sig
-  type refiner_error = Logic.refiner_error =
+  type refiner_error =
   | BadType of Constr.t * Constr.t * Constr.t
   | UnresolvedBindings of Names.Name.t list
   | CannotApply of Constr.t * Constr.t
@@ -3953,8 +4417,9 @@ end
 
 module Proof :
 sig
-  type proof = Proof.proof
-  type 'a focus_kind = 'a Proof.focus_kind
+  type proof
+  type 'a focus_kind
+
   val run_tactic : Environ.env ->
                    unit Proofview.tactic -> proof -> proof * (bool * Proofview_monad.Info.tree)
   val unshelve : proof -> proof
@@ -3975,28 +4440,31 @@ end
 
 module Proof_global :
 sig
-  type proof_mode = Proof_global.proof_mode = {
+  type proof_mode = {
       name : string;
       set : unit -> unit ;
       reset : unit -> unit
     }
   type proof_universes = UState.t * Universes.universe_binders option
-  type proof_object = Proof_global.proof_object = {
-        id : Names.Id.t;
-        entries : Safe_typing.private_constants Entries.definition_entry list;
-        persistence : Decl_kinds.goal_kind;
-        universes: proof_universes;
-      }
-  type proof_ending = Proof_global.proof_ending =
+  type proof_object = {
+    id : Names.Id.t;
+    entries : Safe_typing.private_constants Entries.definition_entry list;
+    persistence : Decl_kinds.goal_kind;
+    universes: proof_universes;
+  }
+
+  type proof_ending =
   | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry *
                   proof_universes
   | Proved of Vernacexpr.opacity_flag *
               Vernacexpr.lident option *
               proof_object
-  type proof_terminator = Proof_global.proof_terminator
-  type lemma_possible_guards = Proof_global.lemma_possible_guards
-  type universe_binders = Proof_global.universe_binders
+
+  type proof_terminator
+  type lemma_possible_guards
+  type universe_binders
   type closed_proof = proof_object * proof_terminator
+
   val make_terminator : (proof_ending -> unit) -> proof_terminator
   val start_dependent_proof :
     Names.Id.t -> ?pl:universe_binders -> Decl_kinds.goal_kind ->
@@ -4155,22 +4623,25 @@ end
 
 module Clenv :
 sig
-  type hole = Clenv.hole = {
-        hole_evar : EConstr.constr;
-        hole_type : EConstr.types;
-        hole_deps  : bool;
-        hole_name : Names.Name.t;
-      }
-  type clause = Clenv.clause = {
-        cl_holes : hole list;
-        cl_concl : EConstr.types;
-      }
+
+  type hole = {
+    hole_evar : EConstr.constr;
+    hole_type : EConstr.types;
+    hole_deps  : bool;
+    hole_name : Names.Name.t;
+  }
+
+  type clause = {
+    cl_holes : hole list;
+    cl_concl : EConstr.types;
+  }
+
   val make_evar_clause : Environ.env -> Evd.evar_map -> ?len:int -> EConstr.types ->
                          (Evd.evar_map * clause)
   val solve_evar_clause : Environ.env -> Evd.evar_map -> bool -> clause -> EConstr.constr Misctypes.bindings ->
                           Evd.evar_map
-  type clausenv = Clenv.clausenv
-  val pr_clenv : Clenv.clausenv -> Pp.std_ppcmds
+  type clausenv
+  val pr_clenv : clausenv -> Pp.std_ppcmds
 end
 
 (************************************************************************)
@@ -4181,7 +4652,179 @@ end
 (* Modules from parsing/                                                *)
 (************************************************************************)
 
+module Pcoq :
+sig
 
+  open Loc
+  open Names
+  open Extend
+  open Vernacexpr
+  open Genarg
+  open Constrexpr
+  open Libnames
+  open Misctypes
+  open Genredexpr
+
+  module Gram : sig
+    include Grammar.S with type te = Tok.t
+
+    type 'a entry = 'a Entry.e
+    type internal_entry = Tok.t Gramext.g_entry
+    type symbol = Tok.t Gramext.g_symbol
+    type action = Gramext.g_action
+    type production_rule = symbol list * action
+    type single_extend_statment =
+      string option * Gramext.g_assoc option * production_rule list
+    type extend_statment =
+      Gramext.position option * single_extend_statment list
+
+    type coq_parsable
+
+    val parsable : ?file:string -> char Stream.t -> coq_parsable
+    val action : 'a -> action
+    val entry_create : string -> 'a entry
+    val entry_parse : 'a entry -> coq_parsable -> 'a
+    val entry_print : Format.formatter -> 'a entry -> unit
+    val with_parsable : coq_parsable -> ('a -> 'b) -> 'a -> 'b
+
+    (* Apparently not used *)
+    val srules' : production_rule list -> symbol
+    val parse_tokens_after_filter : 'a entry -> Tok.t Stream.t -> 'a
+
+  end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e
+
+  val parse_string : 'a Gram.entry -> string -> 'a
+  val eoi_entry : 'a Gram.entry -> 'a Gram.entry
+  val map_entry : ('a -> 'b) -> 'a Gram.entry -> 'b Gram.entry
+
+  type gram_universe
+
+  val uprim   : gram_universe
+  val uconstr : gram_universe
+  val utactic : gram_universe
+  val uvernac : gram_universe
+
+  val register_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry -> unit
+
+  val genarg_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry
+
+  val create_generic_entry : gram_universe -> string ->
+    ('a, rlevel) abstract_argument_type -> 'a Gram.entry
+
+  module Prim :
+  sig
+    open Names
+    open Libnames
+    val preident : string Gram.entry
+    val ident : Id.t Gram.entry
+    val name : Name.t located Gram.entry
+    val identref : Id.t located Gram.entry
+    val pidentref : (Id.t located * (Id.t located list) option) Gram.entry
+    val pattern_ident : Id.t Gram.entry
+    val pattern_identref : Id.t located Gram.entry
+    val base_ident : Id.t Gram.entry
+    val natural : int Gram.entry
+    val bigint : Constrexpr.raw_natural_number Gram.entry
+    val integer : int Gram.entry
+    val string : string Gram.entry
+    val lstring : string located Gram.entry
+    val qualid : qualid located Gram.entry
+    val fullyqualid : Id.t list located Gram.entry
+    val reference : reference Gram.entry
+    val by_notation : (string * string option) Loc.located Gram.entry
+    val smart_global : reference or_by_notation Gram.entry
+    val dirpath : DirPath.t Gram.entry
+    val ne_string : string Gram.entry
+    val ne_lstring : string located Gram.entry
+    val var : Id.t located Gram.entry
+  end
+
+  module Constr :
+  sig
+    val constr : constr_expr Gram.entry
+    val constr_eoi : constr_expr Gram.entry
+    val lconstr : constr_expr Gram.entry
+    val binder_constr : constr_expr Gram.entry
+    val operconstr : constr_expr Gram.entry
+    val ident : Id.t Gram.entry
+    val global : reference Gram.entry
+    val universe_level : glob_level Gram.entry
+    val sort : glob_sort Gram.entry
+    val pattern : cases_pattern_expr Gram.entry
+    val constr_pattern : constr_expr Gram.entry
+    val lconstr_pattern : constr_expr Gram.entry
+    val closed_binder : local_binder_expr list Gram.entry
+    val binder : local_binder_expr list Gram.entry (* closed_binder or variable *)
+    val binders : local_binder_expr list Gram.entry (* list of binder *)
+    val open_binders : local_binder_expr list Gram.entry
+    val binders_fixannot : (local_binder_expr list * (Id.t located option * recursion_order_expr)) Gram.entry
+    val typeclass_constraint : (Name.t located * bool * constr_expr) Gram.entry
+    val record_declaration : constr_expr Gram.entry
+    val appl_arg : (constr_expr * explicitation located option) Gram.entry
+  end
+
+  module Vernac_ :
+  sig
+    val gallina : vernac_expr Gram.entry
+    val gallina_ext : vernac_expr Gram.entry
+    val command : vernac_expr Gram.entry
+    val syntax : vernac_expr Gram.entry
+    val vernac : vernac_expr Gram.entry
+    val rec_definition : (fixpoint_expr * decl_notation list) Gram.entry
+    val vernac_eoi : vernac_expr Gram.entry
+    val noedit_mode : vernac_expr Gram.entry
+    val command_entry : vernac_expr Gram.entry
+    val red_expr : raw_red_expr Gram.entry
+    val hint_info : Vernacexpr.hint_info_expr Gram.entry
+  end
+
+  val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
+
+  val get_command_entry : unit -> vernac_expr Gram.entry
+  val set_command_entry : vernac_expr Gram.entry -> unit
+
+  type gram_reinit = gram_assoc * gram_position
+  val grammar_extend : 'a Gram.entry -> gram_reinit option ->
+    'a Extend.extend_statment -> unit
+
+  module GramState : Store.S
+
+  type 'a grammar_command
+
+  type extend_rule =
+    | ExtendRule : 'a Gram.entry * gram_reinit option * 'a extend_statment -> extend_rule
+
+  type 'a grammar_extension = 'a -> GramState.t -> extend_rule list * GramState.t
+
+  val create_grammar_command : string -> 'a grammar_extension -> 'a grammar_command
+
+  val extend_grammar_command : 'a grammar_command -> 'a -> unit
+  val recover_grammar_command : 'a grammar_command -> 'a list
+  val with_grammar_rule_protection : ('a -> 'b) -> 'a -> 'b
+
+  val to_coqloc : Ploc.t -> Loc.t
+  val (!@) : Ploc.t -> Loc.t
+
+end
+
+module Egramml :
+sig
+  open Vernacexpr
+
+  type 's grammar_prod_item =
+    | GramTerminal of string
+    | GramNonTerminal : ('a Genarg.raw_abstract_argument_type option *
+                         ('s, 'a) Extend.symbol) Loc.located -> 's grammar_prod_item
+
+  val extend_vernac_command_grammar :
+    extend_name -> vernac_expr Pcoq.Gram.entry option ->
+    vernac_expr grammar_prod_item list -> unit
+
+  val make_rule :
+    (Loc.t -> Genarg.raw_generic_argument list -> 'a) ->
+    'a grammar_prod_item list -> 'a Extend.production_rule
+
+end
 
 (************************************************************************)
 (* End of modules from parsing/                                         *)
@@ -4380,8 +5023,8 @@ end
 
 module Ind_tables :
 sig
-  type individual = Ind_tables.individual
-  type 'a scheme_kind = 'a Ind_tables.scheme_kind
+  type individual
+  type 'a scheme_kind
 
   val check_scheme : 'a scheme_kind -> Names.inductive -> bool
   val find_scheme : ?mode:Declare.internal_flag -> 'a scheme_kind -> Names.inductive -> Names.Constant.t * Safe_typing.private_constants
@@ -4403,7 +5046,8 @@ sig
 
   type change_arg = Pattern.patvar_map -> Evd.evar_map -> Evd.evar_map * EConstr.constr
   type tactic_reduction = Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr
-  type elim_scheme = Tactics.elim_scheme =
+
+  type elim_scheme =
     {
       elimc: EConstr.constr Misctypes.with_bindings option;
       elimt: EConstr.types;
@@ -4611,7 +5255,8 @@ sig
                                          orientation -> Locus.occurrences -> freeze_evars_flag -> dep_proof_flag ->
                                          ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr Misctypes.with_bindings -> Misctypes.evars_flag -> unit Proofview.tactic
   val subst : Names.Id.t list -> unit Proofview.tactic
-  type subst_tactic_flags = Equality.subst_tactic_flags = {
+
+  type subst_tactic_flags = {
     only_leibniz : bool;
     rewrite_dependent_proof : bool
   }
@@ -4671,21 +5316,36 @@ end
 
 module Hints :
 sig
-  type hint = Hints.hint
-  type debug = Hints.debug =
-             | Debug | Info | Off
-  type 'a hints_path_atom_gen = 'a Hints.hints_path_atom_gen =
+
+  type raw_hint = EConstr.t * EConstr.types * Univ.universe_context_set
+
+  type 'a hint_ast =
+    | Res_pf     of 'a (* Hint Apply *)
+    | ERes_pf    of 'a (* Hint EApply *)
+    | Give_exact of 'a
+    | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
+    | Unfold_nth of Names.evaluable_global_reference       (* Hint Unfold *)
+    | Extern     of Genarg.glob_generic_argument (* Hint Extern *)
+
+  type hint
+
+  type debug =
+    | Debug | Info | Off
+
+  type 'a hints_path_atom_gen =
     | PathHints of 'a list
     | PathAny
-  type hint_term = Hints.hint_term =
+
+  type hint_term =
     | IsGlobRef of Globnames.global_reference
     | IsConstr of EConstr.constr * Univ.ContextSet.t
+
   type hint_db_name = string
   type hint_info = (Names.Id.t list * Pattern.constr_pattern) Vernacexpr.hint_info_gen
   type hnf = bool
   type hints_path_atom = Globnames.global_reference hints_path_atom_gen
 
-  type 'a hints_path_gen = 'a Hints.hints_path_gen =
+  type 'a hints_path_gen =
     | PathAtom of 'a hints_path_atom_gen
     | PathStar of 'a hints_path_gen
     | PathSeq of 'a hints_path_gen * 'a hints_path_gen
@@ -4695,7 +5355,7 @@ sig
 
   type hints_path = Globnames.global_reference hints_path_gen
 
-  type hints_entry = Hints.hints_entry =
+  type hints_entry =
     | HintsResolveEntry of (hint_info * Decl_kinds.polymorphic * hnf * hints_path_atom * hint_term) list
     | HintsImmediateEntry of (hints_path_atom * Decl_kinds.polymorphic * hint_term) list
     | HintsCutEntry of hints_path
@@ -4704,15 +5364,7 @@ sig
     | HintsModeEntry of Globnames.global_reference * Vernacexpr.hint_mode list
     | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 
-  type 'a hint_ast = 'a Hints.hint_ast =
-    | Res_pf     of 'a
-    | ERes_pf    of 'a
-    | Give_exact of 'a
-    | Res_pf_THEN_trivial_fail of 'a
-    | Unfold_nth of Names.evaluable_global_reference
-    | Extern     of Genarg.glob_generic_argument
-  type raw_hint = EConstr.constr * EConstr.types * Univ.ContextSet.t
-  type 'a with_metadata = 'a Hints.with_metadata = private {
+  type 'a with_metadata = private {
       pri     : int;
       poly    : Decl_kinds.polymorphic;
       pat     : Pattern.constr_pattern option;
@@ -4725,7 +5377,7 @@ sig
 
   module Hint_db :
   sig
-    type t = Hints.Hint_db.t
+    type t
     val empty : ?name:hint_db_name -> Names.transparent_state -> bool -> t
     val transparent_state : t -> Names.transparent_state
     val iter : (Globnames.global_reference option ->
@@ -4784,9 +5436,11 @@ end
 
 module Class_tactics :
 sig
-  type search_strategy = Class_tactics.search_strategy =
+
+  type search_strategy =
     | Dfs
     | Bfs
+
   val set_typeclasses_debug : bool -> unit
   val set_typeclasses_strategy : search_strategy -> unit
   val set_typeclasses_depth : int option -> unit
@@ -4841,7 +5495,9 @@ end
 
 module Lemmas :
 sig
-  type 'a declaration_hook = 'a Lemmas.declaration_hook
+
+  type 'a declaration_hook
+
   val mk_hook :
     (Decl_kinds.locality -> Globnames.global_reference -> 'a) -> 'a declaration_hook
   val start_proof : Names.Id.t -> ?pl:Proof_global.universe_binders -> Decl_kinds.goal_kind -> Evd.evar_map ->
@@ -4876,9 +5532,19 @@ sig
   val make_module_locality : bool option -> bool
 end
 
+module Metasyntax :
+sig
+
+  val add_token_obj : string -> unit
+
+  type any_entry = AnyEntry : 'a Pcoq.Gram.entry -> any_entry
+  val register_grammar : string -> any_entry list -> unit
+
+end
+
 module Search :
 sig
-  type glob_search_about_item = Search.glob_search_about_item =
+  type glob_search_about_item =
                               | GlobSearchSubPattern of Pattern.constr_pattern
                               | GlobSearchString of string
   type filter_function = Globnames.global_reference -> Environ.env -> Constr.t -> bool
@@ -4904,10 +5570,32 @@ end
 
 module Command :
 sig
-  type structured_fixpoint_expr = Command.structured_fixpoint_expr
+  open Names
+  open Constrexpr
+  open Vernacexpr
+
+  type structured_fixpoint_expr = {
+    fix_name : Id.t;
+    fix_univs : lident list option;
+    fix_annot : Id.t Loc.located option;
+    fix_binders : local_binder_expr list;
+    fix_body : constr_expr option;
+    fix_type : constr_expr
+  }
+
+  type structured_one_inductive_expr = {
+    ind_name : Id.t;
+    ind_univs : lident list option;
+    ind_arity : constr_expr;
+    ind_lc : (Id.t * constr_expr) list
+  }
+
+  type structured_inductive_expr =
+    local_binder_expr list * structured_one_inductive_expr list
+
   type recursive_preentry = Names.Id.t list * Constr.t option list * Constr.types list
-  type structured_inductive_expr = Command.structured_inductive_expr
-  type one_inductive_impls = Command.one_inductive_impls
+
+  type one_inductive_impls
 
   val do_mutual_inductive :
     (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list -> Decl_kinds.cumulative_inductive_flag -> Decl_kinds.polymorphic ->
@@ -4963,6 +5651,17 @@ sig
     Names.Id.t
 end
 
+module Vernacinterp :
+sig
+  type deprecation = bool
+
+  type vernac_command = Genarg.raw_generic_argument list -> unit -> unit
+
+  val vinterp_add : deprecation -> Vernacexpr.extend_name ->
+    vernac_command -> unit
+
+end
+
 module Mltop :
 sig
   val declare_cache_obj : (unit -> unit) -> string -> unit
@@ -5004,6 +5703,38 @@ sig
   val classify_vernac : Vernacexpr.vernac_expr -> Vernacexpr.vernac_classification
 end
 
+module Stm :
+sig
+  type state
+  val state_of_id :
+    Stateid.t -> [ `Valid of state option | `Expired | `Error of exn ]
+end
+
 (************************************************************************)
 (* End of modules from stm/                                             *)
+(************************************************************************)
+
+(************************************************************************)
+(* Modules from highparsing/                                            *)
+(************************************************************************)
+
+module G_vernac :
+sig
+
+  val def_body : Vernacexpr.definition_expr Pcoq.Gram.entry
+  val section_subset_expr : Vernacexpr.section_subset_expr Pcoq.Gram.entry
+  val query_command : (Vernacexpr.goal_selector option -> Vernacexpr.vernac_expr) Pcoq.Gram.entry
+
+end
+
+module G_proofs :
+sig
+
+  val hint : Vernacexpr.hints_expr Pcoq.Gram.entry
+  val hint_proof_using : 'a Pcoq.Gram.entry -> 'a option -> 'a option
+
+end
+
+(************************************************************************)
+(* End of modules from highparsing/                                     *)
 (************************************************************************)

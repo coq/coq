@@ -8,7 +8,7 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open Grammar_API.Pcoq.Prim
+open Pcoq.Prim
 
 DECLARE PLUGIN "extraction_plugin"
 
