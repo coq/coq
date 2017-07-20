@@ -124,7 +124,7 @@ module Bool = struct
       else Var (Env.add env c)
     | Term.Case (info, r, arg, pats) ->
       let is_bool =
-        let i = info.Term.ci_ind in
+        let i = info.Constr.ci_ind in
         Names.eq_ind i (Lazy.force ind)
       in
       if is_bool then

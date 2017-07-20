@@ -9,6 +9,8 @@ Constr
 Context
 Vars
 Term
+Declarations
+Entries
 Mod_subst
 Cbytecodes
 Copcodes
@@ -41,5 +43,4 @@ Nativelibrary
 Safe_typing
 Vm
 Csymtable
-Declarations
 Vconv

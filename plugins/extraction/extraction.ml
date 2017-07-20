@@ -9,6 +9,7 @@
 (*i*)
 open Util
 open Names
+open Constr
 open Term
 open Vars
 open Declarations
