@@ -100,12 +100,12 @@ let make_fun_classifiers loc s c l =
   mlexpr_of_list (fun x -> x) cl
 
 let make_prod_item = function
-  | ExtTerminal s -> <:expr< Grammar_API.Egramml.GramTerminal $str:s$ >>
+  | ExtTerminal s -> <:expr< Egramml.GramTerminal $str:s$ >>
   | ExtNonTerminal (g, ido) ->
     let nt = type_of_user_symbol g in
-    let base s = <:expr< Grammar_API.Pcoq.genarg_grammar ($mk_extraarg loc s$) >> in
+    let base s = <:expr< Pcoq.genarg_grammar ($mk_extraarg loc s$) >> in
     let typ = match ido with None -> None | Some _ -> Some nt in
-      <:expr< Grammar_API.Egramml.GramNonTerminal ( Loc.tag ( $mlexpr_of_option (make_rawwit loc) typ$ ,
+      <:expr< Egramml.GramNonTerminal ( Loc.tag ( $mlexpr_of_option (make_rawwit loc) typ$ ,
       $mlexpr_of_prod_entry_key base g$ ) ) >>
 
 let mlexpr_of_clause cl =
@@ -122,9 +122,9 @@ let declare_command loc s c nt cl =
   let classl = make_fun_classifiers loc s c cl in
   declare_str_items loc
     [ <:str_item< do {
-        CList.iteri (fun i (depr, f) -> Grammar_API.Vernacinterp.vinterp_add depr ($se$, i) f) $funcl$;
-        CList.iteri (fun i f -> API.Vernac_classifier.declare_vernac_classifier ($se$, i) f) $classl$;
-	CList.iteri (fun i r -> Grammar_API.Egramml.extend_vernac_command_grammar ($se$, i) $nt$ r) $gl$;
+        CList.iteri (fun i (depr, f) -> Vernacinterp.vinterp_add depr ($se$, i) f) $funcl$;
+        CList.iteri (fun i f -> Vernac_classifier.declare_vernac_classifier ($se$, i) f) $classl$;
+	CList.iteri (fun i r -> Egramml.extend_vernac_command_grammar ($se$, i) $nt$ r) $gl$;
       } >> ]
 
 open Pcaml
@@ -143,16 +143,16 @@ EXTEND
       | "DECLARE"; "PLUGIN"; name = STRING ->
         declare_str_items loc [
           <:str_item< value __coq_plugin_name = $str:name$ >>;
-          <:str_item< value _ = Grammar_API.Mltop.add_known_module __coq_plugin_name >>;
+          <:str_item< value _ = Mltop.add_known_module __coq_plugin_name >>;
         ]
       ] ]
   ;
   classification:
     [ [ "CLASSIFIED"; "BY"; c = LIDENT -> <:expr< $lid:c$ >>
       | "CLASSIFIED"; "AS"; "SIDEFF" ->
-          <:expr< fun _ -> API.Vernac_classifier.classify_as_sideeff >>
+          <:expr< fun _ -> Vernac_classifier.classify_as_sideeff >>
       | "CLASSIFIED"; "AS"; "QUERY" ->
-          <:expr< fun _ -> API.Vernac_classifier.classify_as_query >>
+          <:expr< fun _ -> Vernac_classifier.classify_as_query >>
     ] ]
   ;
   deprecation:
