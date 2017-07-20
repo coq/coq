@@ -145,7 +145,10 @@ val prlist_strict :  ('a -> std_ppcmds) -> 'a list -> std_ppcmds
 val prlist_with_sep :
    (unit -> std_ppcmds) -> ('a -> std_ppcmds) -> 'a list -> std_ppcmds
 (** [prlist_with_sep sep pr [a ; ... ; c]] outputs
-    [pr a ++ sep() ++ ... ++ sep() ++ pr c]. *)
+    [pr a ++ sep () ++ ... ++ sep () ++ pr c]. 
+    where the thunk sep is memoized, rather than being called each place 
+     its result is used.
+*)
 
 val prvect : ('a -> std_ppcmds) -> 'a array -> std_ppcmds
 (** As [prlist], but on arrays. *)
