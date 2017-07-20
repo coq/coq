@@ -525,10 +525,10 @@ let check_positivity env_ar mind params nrecp inds =
   Array.iter2 (fun ind wfpi -> check_subtree ind.mind_recargs wfpi) inds wfp
 
 (* Check arities and constructors *)
-let check_subtyping_arity_constructor env (subst : constr -> constr) (arcn : constr) numparams is_arity =
+let check_subtyping_arity_constructor env (subst : Univ.Instance.t) (arcn : constr) numparams is_arity =
   let numchecked = ref 0 in
   let basic_check ev tp =
-    if !numchecked < numparams then () else conv_leq ev tp (subst tp);
+    if !numchecked < numparams then () else conv_leq ev tp (Term.subst_instance_constr subst tp);
     numchecked := !numchecked + 1
   in
   let check_typ typ typ_env =
@@ -548,26 +548,27 @@ let check_subtyping_arity_constructor env (subst : constr -> constr) (arcn : con
 
 (* Check that the subtyping information inferred for inductive types in the block is correct. *)
 (* This check produces a value of the unit type if successful or raises an anomaly if check fails. *)
-let check_subtyping cumi paramsctxt env_ar inds =
+let check_subtyping cumi paramsctxt env inds =
+  let open Univ in
   let numparams = rel_context_nhyps paramsctxt in
-  let sbsubst = Univ.CumulativityInfo.subtyping_susbst cumi in
-  let other_instnace = Univ.CumulativityInfo.subtyping_other_instance cumi in
-  let dosubst = subst_univs_level_constr sbsubst in
-  let uctx = Univ.CumulativityInfo.univ_context cumi in
-  let uctx_other = Univ.UContext.make (other_instnace, Univ.UContext.constraints uctx) in
-  let env = Environ.push_context uctx env_ar 
-  in
-  let env = Environ.push_context uctx_other env 
-  in
-  let env =  Environ.push_context 
-      (Univ.CumulativityInfo.subtyp_context cumi) env
-  in
+  (** In [env] we already have [ Var(0) ... Var(n-1) |- cst ] available.
+      We must produce the substitution σ : [ Var(i) -> Var (i + n) | 0 <= i < n]
+      and push the constraints [ Var(n) ... Var(2n - 1) |- cst{σ} ], together
+      with the cumulativity constraints [ cumul_cst ]. *)
+  let len = AUContext.size (ACumulativityInfo.univ_context cumi) in
+  let inst = Instance.of_array (Array.init len (fun i -> Level.var (i + len))) in
+  let other_context = ACumulativityInfo.univ_context cumi in
+  let uctx_other = UContext.make (inst, AUContext.instantiate inst other_context) in
+  let cumul_context = AUContext.repr (ACumulativityInfo.subtyp_context cumi) in
+  let cumul_cst = UContext.constraints cumul_context in
+  let env = Environ.push_context uctx_other env in
+  let env = Environ.add_constraints cumul_cst env in
   (* process individual inductive types: *)
   Array.iter (fun { mind_user_lc = lc; mind_arity = arity } ->
       match arity with
       | RegularArity { mind_user_arity = full_arity} ->
-        check_subtyping_arity_constructor env dosubst full_arity numparams true;
-        Array.iter (fun cnt -> check_subtyping_arity_constructor env dosubst cnt numparams false) lc
+        check_subtyping_arity_constructor env inst full_arity numparams true;
+        Array.iter (fun cnt -> check_subtyping_arity_constructor env inst cnt numparams false) lc
       | TemplateArity _ -> ()
     ) inds
     
@@ -579,10 +580,10 @@ let check_inductive env kn mib =
   (* check mind_constraints: should be consistent with env *)
   let ind_ctx =
     match mib.mind_universes with
-    | Monomorphic_ind ctx -> ctx
-    | Polymorphic_ind auctx -> Univ.instantiate_univ_context auctx
+    | Monomorphic_ind _ -> Univ.UContext.empty (** Already in the global environment *)
+    | Polymorphic_ind auctx -> Univ.AUContext.repr auctx
     | Cumulative_ind cumi -> 
-      Univ.instantiate_univ_context (Univ.ACumulativityInfo.univ_context cumi)
+      Univ.AUContext.repr (Univ.ACumulativityInfo.univ_context cumi)
   in
   let env = Environ.push_context ind_ctx env in
   (* check mind_record : TODO ? check #constructor = 1 ? *)
@@ -606,8 +607,7 @@ let check_inductive env kn mib =
     match mib.mind_universes with
     | Monomorphic_ind _ | Polymorphic_ind _ -> ()
     | Cumulative_ind acumi ->
-      check_subtyping 
-        (Univ.instantiate_cumulativity_info acumi) params env_ar mib.mind_packets
+      check_subtyping acumi params env_ar mib.mind_packets
   in
   (* check mind_nparams_rec: positivity condition *)
   check_positivity env_ar kn params mib.mind_nparams_rec mib.mind_packets;
