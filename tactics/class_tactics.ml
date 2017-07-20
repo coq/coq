@@ -494,16 +494,15 @@ let catchable = function
   | Refiner.FailError _ -> true
   | e -> Logic.catchable_exception e
 
-(* alternate separators in debug search path output *)
-let debug_seps = [| "." ; "-" |]
-let next_sep seps = 
-  let num_seps = Array.length seps in
-  let sep_index = ref 0 in
-  fun () ->
-    let sep = seps.(!sep_index) in
-    sep_index := (!sep_index + 1) mod num_seps;
-    str sep
-let pr_depth l = prlist_with_sep (next_sep debug_seps) int (List.rev l)
+let pr_depth l = 
+  let rec fmt elts =
+    match elts with
+    | [] -> []
+    | [n] -> [string_of_int n]
+    | n1::n2::rest ->
+       (string_of_int n1 ^ "." ^ string_of_int n2) :: fmt rest
+  in
+  prlist_with_sep (fun () -> str "-") str (fmt (List.rev l))
 
 let is_Prop env sigma concl =
   let ty = Retyping.get_type_of env sigma concl in
