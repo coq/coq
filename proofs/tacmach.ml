@@ -238,4 +238,8 @@ module New = struct
 
   let pf_nf_evar gl t = nf_evar (project gl) t
 
+  let pf_undefined_evars gl =
+    let hyps = Proofview.Goal.hyps gl in
+    let concl = Proofview.Goal.concl gl in
+    Evar.Set.union (evars_of_named_context hyps) (evars_of_term concl)
 end
