@@ -85,6 +85,9 @@ let init_alloc = ref 0.0
 let reset_profile () = List.iter reset_record !prof_table
 
 let init_profile () =
+  (* We test Flags.profile as a way to support declaring profiled
+     functions in plugins *)
+  if !prof_table <> [] || Flags.profile then begin
   let outside = create_record () in
   stack := [outside];
   last_alloc := get_alloc ();
@@ -92,6 +95,7 @@ let init_profile () =
   init_time := get_time ();
   outside.tottime <- - !init_time;
   outside.owntime <- - !init_time
+  end
 
 let ajoute n o =
   o.owntime <- o.owntime + n.owntime;
@@ -357,9 +361,6 @@ let declare_profile name =
   let e = create_record () in
   prof_table := (name,e)::!prof_table;
   e
-
-(* Default initialization, may be overridden *)
-let _ = init_profile ()
 
 (******************************)
 (* Entry points for profiling *)
