@@ -20,18 +20,22 @@
    See below in the file for their concrete position.
 *)
 
-include module type of struct include Kernel_API      end
-include module type of struct include Intf_API        end
-include module type of struct include Library_API     end
-include module type of struct include Engine_API      end
-include module type of struct include Pretyping_API   end
-include module type of struct include Interp_API      end
-include module type of struct include Proofs_API      end
-include module type of struct include Parsing_API     end
-include module type of struct include Printing_API    end
-include module type of struct include Tactics_API     end
-include module type of struct include Vernac_API      end
-include module type of struct include Stm_API         end
-include module type of struct include Toplevel_API    end
-include module type of struct include Highparsing_API end
+open Pretyping_API
 
+(************************************************************************)
+(* Modules from stm/                                                    *)
+(************************************************************************)
+
+module Vernac_classifier :
+sig
+  val declare_vernac_classifier :
+    Vernacexpr.extend_name -> (Genarg.raw_generic_argument list -> unit -> Vernacexpr.vernac_classification) -> unit
+  val classify_as_proofstep : Vernacexpr.vernac_classification
+  val classify_as_query : Vernacexpr.vernac_classification
+  val classify_as_sideeff : Vernacexpr.vernac_classification
+  val classify_vernac : Vernacexpr.vernac_expr -> Vernacexpr.vernac_classification
+end
+
+(************************************************************************)
+(* End of modules from stm/                                             *)
+(************************************************************************)
