@@ -56,6 +56,9 @@ open Mod_subst
      rebuild the non volatile content of a section from the data
      collected by the discharge function
 
+  Any type defined as a persistent object must be pure (e.g. no references) and
+  marshallable by the OCaml Marshal module (e.g. no closures).
+
 *)
 
 type 'a substitutivity =
