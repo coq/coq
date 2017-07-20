@@ -285,8 +285,10 @@ universes and explicitly instantiate polymorphic definitions.
   \label{UniverseCmd}}
 
 In the monorphic case, this command declares a new global universe named
-{\ident}. It supports the polymorphic flag only in sections, meaning the
-universe quantification will be discharged on each section definition
+{\ident}, which can be referred to using its qualified name as
+well. Global universe names live in a separate namespace. The command
+supports the polymorphic flag only in sections, meaning the universe
+quantification will be discharged on each section definition
 independently. One cannot mix polymorphic and monomorphic declarations
 in the same section.
 
