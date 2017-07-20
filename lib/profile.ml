@@ -317,15 +317,15 @@ let adjust_time ov_bc ov_ad e =
      owntime = e.owntime - int_of_float (ad_imm +. bc_imm) }
 
 let close_profile print =
-  let dw = spent_alloc () in
-  let t = get_time () in
-  match !stack with
-    | [outside] ->
-	outside.tottime <- outside.tottime + t;
-	outside.owntime <- outside.owntime + t;
-	ajoute_ownalloc outside dw;
-	ajoute_totalloc outside dw;
-	if !prof_table <> [] then begin
+  if !prof_table <> [] then begin
+      let dw = spent_alloc () in
+      let t = get_time () in
+      match !stack with
+      | [outside] ->
+	  outside.tottime <- outside.tottime + t;
+	  outside.owntime <- outside.owntime + t;
+	  ajoute_ownalloc outside dw;
+	  ajoute_totalloc outside dw;
 	  let ov_bc = time_overhead_B_C () (* B+C overhead *) in
 	  let ov_ad = time_overhead_A_D () (* A+D overhead *) in
 	  let adjust (n,e) = (n, adjust_time ov_bc ov_ad e) in
@@ -346,8 +346,8 @@ let close_profile print =
 	  in
 	  if print then format_profile updated_data;
 	  init_profile ()
-	end
-    | _ -> failwith "Inconsistency"
+      | _ -> failwith "Inconsistency"
+    end
 
 let print_profile () = close_profile true
 
