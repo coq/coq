@@ -433,7 +433,7 @@ let univ_flexible_alg = UnivFlexible true
 let merge ?loc sideff rigid uctx ctx' =
   let open Univ in
   let levels = ContextSet.levels ctx' in
-  let uctx = if sideff then uctx else
+  let uctx =
     match rigid with
     | UnivRigid -> uctx
     | UnivFlexible b ->
@@ -447,10 +447,7 @@ let merge ?loc sideff rigid uctx ctx' =
           uctx_univ_algebraic = LSet.union uctx.uctx_univ_algebraic levels }
         else { uctx with uctx_univ_variables = uvars' }
   in
-  let uctx_local =
-    if sideff then uctx.uctx_local
-    else ContextSet.append ctx' uctx.uctx_local
-  in
+  let uctx_local = ContextSet.append ctx' uctx.uctx_local in
   let declare g =
     LSet.fold (fun u g ->
                try UGraph.add_universe u false g

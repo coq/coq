@@ -55,6 +55,12 @@ val add_universe : Level.t -> bool -> t -> t
 (** Add a universe without (Prop,Set) <= u *)
 val add_universe_unconstrained : Level.t -> t -> t
 
+(** Check that the universe levels are declared. Otherwise
+    @raise UndeclaredLevel l for the first undeclared level found. *)
+exception UndeclaredLevel of Univ.Level.t
+
+val check_declared_universes : t -> Univ.LSet.t -> unit
+
 (** {6 Pretty-printing of universes. } *)
 
 val pr_universes : (Level.t -> Pp.t) -> t -> Pp.t

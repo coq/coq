@@ -63,6 +63,7 @@ type ('constr, 'types) ptype_error =
   | IllTypedRecBody of
       int * Name.t array * ('constr, 'types) punsafe_judgment array * 'types array
   | UnsatisfiedConstraints of Univ.Constraint.t
+  | UndeclaredUniverse of Univ.Level.t
 
 type type_error = (constr, types) ptype_error
 
@@ -108,3 +109,5 @@ val error_ill_typed_rec_body  :
 val error_elim_explain : Sorts.family -> Sorts.family -> arity_error
 
 val error_unsatisfied_constraints : env -> Univ.Constraint.t -> 'a
+
+val error_undeclared_universe : env -> Univ.Level.t -> 'a
