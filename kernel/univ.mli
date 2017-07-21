@@ -328,6 +328,8 @@ sig
   (** Keeps the order of the instances *)
   val union : t -> t -> t
 
+  val repr : t -> UContext.t
+
 end
 
 type abstract_universe_context = AUContext.t
