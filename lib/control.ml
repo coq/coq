@@ -48,7 +48,7 @@ let windows_timeout n f e =
   let exited = ref false in
   let thread init =
     while not !killed do
-      let cur = Unix.time () in
+      let cur = Unix.gettimeofday () in
       if float_of_int n <= cur -. init then begin
         interrupt := true;
         exited := true;
@@ -57,12 +57,12 @@ let windows_timeout n f e =
       Thread.delay 0.5
     done
   in
-  let init = Unix.time () in
+  let init = Unix.gettimeofday () in
   let _id = Thread.create thread init in
   try
     let res = f () in
     let () = killed := true in
-    let cur = Unix.time () in
+    let cur = Unix.gettimeofday () in
     (** The thread did not interrupt, but the computation took longer than
         expected. *)
     let () = if float_of_int n <= cur -. init then begin

@@ -27,6 +27,7 @@ let _ = Pre_env.empty_env
 EOT
 
 ${COQBIN}coq_makefile -f _CoqProject -o Makefile
+cat Makefile.conf
 
 if make VERBOSE=1; then
   # make command should have failed (but didn't)

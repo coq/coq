@@ -1,0 +1,26 @@
+version: '{branch}~{build}'
+clone_depth: 10
+
+platform:
+- x64
+
+image:
+- Visual Studio 2017
+
+environment:
+  CYGROOT: C:\cygwin64
+  CYGMIRROR: http://ftp.inf.tu-dresden.de/software/windows/cygwin32
+  CYGCACHE: C:\cygwin64\var\cache\setup
+  opam_url: https://github.com/fdopen/opam-repository-mingw/releases/download/0.0.0.1/opam64.tar.xz
+
+install:
+- cmd: '%CYGROOT%\setup-x86_64.exe -qnNdO -R %CYGROOT% -l %CYGCACHE% -s
+  %CYGMIRROR% -P rsync -P patch -P diffutils -P curl -P make -P unzip -P git -p m4
+  -P perl -P findutils -P time'
+- cmd: '%CYGROOT%/bin/bash -l %APPVEYOR_BUILD_FOLDER%/dev/build/windows/appveyor.sh'
+
+build_script:
+- cmd: '%CYGROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && ./configure -local && make"'
+
+test_script:
+- cmd: '%CYGROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && make -C test-suite && make validate"'
