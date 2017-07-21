@@ -118,7 +118,7 @@ let makefile_template =
   let template = "/tools/CoqMakefile.in" in
   Coq_config.coqlib ^ template
 
-let quote s = if String.contains s ' ' then "\"" ^ s ^ "\"" else s
+let quote s = if String.contains s ' ' then "'" ^ s ^ "'" else s
 
 let generate_makefile oc conf_file local_file args project =
   let s = read_whole_file makefile_template in
@@ -193,13 +193,19 @@ let generate_conf_includes oc { ml_includes; r_includes; q_includes } =
     (S.concat " " (map (fun ({ path },l) -> dash2 "R" path l) r_includes))
 ;;
 
+let windrive s =
+  if Coq_config.arch_is_win32 && Str.(string_match (regexp "^[a-zA-Z]:") s 0)
+  then Str.matched_string s
+  else s
+;;
+
 let generate_conf_coq_config oc args bypass_API =
   section oc "Coq configuration.";
   let src_dirs = if bypass_API
                  then Coq_config.all_src_dirs
                  else Coq_config.api_dirs @ Coq_config.plugins_dirs @ ["-open API"] in
   Envars.print_config ~prefix_var_name:"COQMF_" oc src_dirs;
-  fprintf oc "COQMF_MAKEFILE=%s\n" (quote (List.hd args)); 
+  fprintf oc "COQMF_WINDRIVE=%s\n" (windrive Coq_config.coqlib)
 ;;
 
 let generate_conf_files oc

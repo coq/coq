@@ -27,8 +27,8 @@
 
 # Default value when called from a freshly compiled Coq, but can be
 # easily overridden
-LIB := $(shell cd ..; pwd)
-BIN := $(LIB)/bin/
+LIB := ..
+BIN := $(shell cd ..; pwd)/bin/
 
 coqtop := $(BIN)coqtop -coqlib $(LIB) -boot -q -batch -test-mode -R prerequisite TestSuite
 coqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite
@@ -170,6 +170,7 @@ summary.log:
 report: summary.log
 	$(HIDE)./save-logs.sh
 	$(HIDE)if [ -n "${TRAVIS}" ]; then find logs/ -name '*.log' -not -name 'summary.log' -exec 'bash' '-c' 'echo "travis_fold:start:coq.logs.$$(echo '{}' | sed s,/,.,g)"' ';' -exec cat '{}' ';' -exec 'bash' '-c' 'echo "travis_fold:end:coq.logs.$$(echo '{}' | sed s,/,.,g)"' ';'; fi
+	$(HIDE)if [ -n "${APPVEYOR}" ]; then find logs/ -name '*.log' -not -name 'summary.log' -exec 'bash' '-c' 'echo {}' ';' -exec cat '{}' ';' -exec 'bash' '-c' 'echo' ';'; fi
 	$(HIDE)if grep -q -F 'Error!' summary.log ; then echo FAILURES; grep -F 'Error!' summary.log; false; else echo NO FAILURES; fi
 
 #######################################################################
@@ -293,7 +294,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	    | grep -v "^<W>" \
 	    | sed 's/File "[^"]*"/File "stdin"/' \
 	    > $$tmpoutput; \
-	  diff -u $*.out $$tmpoutput 2>&1; R=$$?; times; \
+	  diff -u --strip-trailing-cr $*.out $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -328,7 +329,7 @@ $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 		-e 's/\s*[-+]inf\s*//g' \
 		-e 's/^[^a-zA-Z]*//' \
 	       $*.out | sort > $$tmpexpected; \
-	  diff -b -u $$tmpexpected $$tmpoutput 2>&1; R=$$?; times; \
+	  diff  --strip-trailing-cr -b -u $$tmpexpected $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -445,7 +446,7 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(BIN)fake_ide $< "$(BIN)coqtop -coqlib $(LIB) -boot -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off" 2>&1; \
+	  $(BIN)fake_ide $< "-coqlib $(LIB) -boot -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off" 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \

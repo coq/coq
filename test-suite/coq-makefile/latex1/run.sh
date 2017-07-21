@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 
-#set -x
-set -e
-
 if which pdflatex; then
 
 . ../template/init.sh
 	
 coq_makefile -f _CoqProject -o Makefile
+cat Makefile.conf
 make
 exec make all.pdf
 
