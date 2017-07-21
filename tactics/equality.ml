@@ -533,7 +533,7 @@ let general_rewrite_clause l2r with_evars ?tac c cl =
 	let rec do_hyps_atleastonce = function
 	  | [] -> tclZEROMSG (Pp.str"Nothing to rewrite.")
 	  | id :: l ->
-	    tclIFTHENTRYELSEMUST
+            tclIFTHENFIRSTTRYELSEMUST
 	     (general_rewrite_ebindings_in l2r AllOccurrences false true ?tac id c with_evars)
 	     (do_hyps_atleastonce l)
 	in
@@ -549,7 +549,7 @@ let general_rewrite_clause l2r with_evars ?tac c cl =
           end
 	in
 	if cl.concl_occs == NoOccurrences then do_hyps else
-	  tclIFTHENTRYELSEMUST
+          tclIFTHENFIRSTTRYELSEMUST
 	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) false true ?tac c with_evars)
 	   do_hyps
 

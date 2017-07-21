@@ -151,10 +151,25 @@ Abort.
 
 (* Check that rewriting within evars still work (was broken in 8.5beta1) *)
 
-
 Goal forall (a: unit) (H: a = tt), exists x y:nat, x = y.
 intros; eexists; eexists.
 rewrite H.
 Undo.
 subst.
 Abort.
+
+(* Check that iterated rewriting does not rewrite in the side conditions *)
+(* Example from Sigurd Schneider, extracted from contrib containers *)
+
+Lemma EQ
+  : forall (e e' : nat), True -> e = e'.
+Admitted.
+
+Lemma test (v1 v2 v3: nat) (v' : v1 = v2) : v2 = v1.
+Proof.
+  rewrite <- (EQ v1 v2) in *.
+  exact v'.
+  (* There should be only two side conditions *)
+  exact I.
+  exact I.
+Qed.
