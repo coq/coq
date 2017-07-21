@@ -100,17 +100,18 @@ let pr_ljudge_env e s c = let v,t = pr_ljudge_env e s c in (quote v,quote t)
 
 (** A canonisation procedure for constr such that comparing there
     externalisation catches more equalities *)
-let canonize_constr c =
+let canonize_constr sigma c =
   (* replaces all the names in binders by [dn] ("default name"),
      ensures that [alpha]-equivalent terms will have the same
      externalisation. *)
+  let open EConstr in
   let dn = Name.Anonymous in
   let rec canonize_binders c =
-    match Term.kind_of_term c with
+    match EConstr.kind sigma c with
     | Prod (_,t,b) -> mkProd(dn,t,b)
     | Lambda (_,t,b) -> mkLambda(dn,t,b)
     | LetIn (_,u,t,b) -> mkLetIn(dn,u,t,b)
-    | _ -> Term.map_constr canonize_binders c
+    | _ -> EConstr.map sigma canonize_binders c
   in
   canonize_binders c
 
@@ -118,8 +119,8 @@ let canonize_constr c =
 let display_eq ~flags env sigma t1 t2 =
   (* terms are canonized, then their externalisation is compared syntactically *)
   let open Constrextern in
-  let t1 = canonize_constr t1 in
-  let t2 = canonize_constr t2 in
+  let t1 = canonize_constr sigma t1 in
+  let t2 = canonize_constr sigma t2 in
   let ct1 = Flags.with_options flags (fun () -> extern_constr false env sigma t1) () in
   let ct2 = Flags.with_options flags (fun () -> extern_constr false env sigma t2) () in
   Constrexpr_ops.constr_expr_eq ct1 ct2
@@ -129,7 +130,7 @@ let display_eq ~flags env sigma t1 t2 =
 let rec pr_explicit_aux env sigma t1 t2 = function
 | [] ->
   (** no specified flags: default. *)
-  (quote (Printer.pr_lconstr_env env sigma t1), quote (Printer.pr_lconstr_env env sigma t2))
+  (quote (Printer.pr_leconstr_env env sigma t1), quote (Printer.pr_leconstr_env env sigma t2))
 | flags :: rem ->
   let equal = display_eq ~flags env sigma t1 t2 in
   if equal then
@@ -153,7 +154,7 @@ let explicit_flags =
     [print_universes; print_implicits; print_coercions; print_no_symbol] (** and more! *) ]
 
 let pr_explicit env sigma t1 t2 =
-  pr_explicit_aux env sigma (EConstr.to_constr sigma t1) (EConstr.to_constr sigma t2) explicit_flags
+  pr_explicit_aux env sigma t1 t2 explicit_flags
 
 let pr_db env i =
   try

@@ -812,13 +812,13 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
         let typ = glob_constr_to_constr_expr tp in
         CLocalAssum ([(Loc.tag nme)], Constrexpr_ops.default_binder_kind, typ) :: acc)
       [] params in
-  let concl = Constrextern.extern_constr false (Global.env()) Evd.empty concl in
+  let concl = Constrextern.extern_constr false (Global.env()) Evd.empty (EConstr.of_constr concl) in
   let arity,_ =
     List.fold_left
       (fun (acc,env) decl ->
         let nm = Context.Rel.Declaration.get_name decl in
         let c = RelDecl.get_type decl in
-        let typ = Constrextern.extern_constr false env Evd.empty c in
+        let typ = Constrextern.extern_constr false env Evd.empty (EConstr.of_constr c) in
         let newenv = Environ.push_rel (LocalAssum (nm,c)) env in
         CAst.make @@ CProdN ([[(Loc.tag nm)],Constrexpr_ops.default_binder_kind,typ] , acc) , newenv)
       (concl,Global.env())
