@@ -18,6 +18,8 @@ sig
   (** Create a new universe level from a unique identifier and an associated
       module path. *)
 
+  val var : int -> t
+
   val pr : t -> Pp.std_ppcmds
   (** Pretty-printing *)
   
@@ -179,6 +181,8 @@ sig
   val length : t -> int
   (** Compute the length of the instance  *)
 
+  val of_array : Level.t array -> t
+
   val append : t -> t -> t
   (** Append two universe instances *)
 end
@@ -208,7 +212,6 @@ module AUContext :
 sig
   type t
 
-  val instance : t -> Instance.t
   val size : t -> int
 
   val instantiate : Instance.t -> t -> Constraint.t
@@ -217,27 +220,6 @@ sig
 end
 
 type abstract_universe_context = AUContext.t
-
-module CumulativityInfo :
-sig
-  type t
-
-  val make : universe_context * universe_context -> t
-
-  val empty : t
-
-  val univ_context : t -> universe_context
-  val subtyp_context : t -> universe_context
-
-  val from_universe_context : universe_context -> universe_instance -> t
-
-  val subtyping_other_instance : t -> universe_instance
-  
-  val subtyping_susbst : t -> universe_level_subst
-
-end
-
-type cumulativity_info = CumulativityInfo.t
 
 module ACumulativityInfo :
 sig
@@ -283,10 +265,6 @@ val subst_instance_universe : universe_instance -> universe -> universe
 
 (* val make_instance_subst : universe_instance -> universe_level_subst *)
 (* val make_inverse_instance_subst : universe_instance -> universe_level_subst *)
-
-(** Get the instantiated graph. *)
-val instantiate_univ_context : abstract_universe_context -> universe_context
-val instantiate_cumulativity_info : abstract_cumulativity_info -> cumulativity_info
 
 (** Build the relative instance corresponding to the context *)
 val make_abstract_instance : abstract_universe_context -> universe_instance

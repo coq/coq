@@ -26,22 +26,21 @@ let refresh_arity ar =
 
 let check_constant_declaration env kn cb =
   Feedback.msg_notice (str "  checking cst:" ++ prcon kn);
-  let env', u =
+  (** [env'] contains De Bruijn universe variables *)
+  let env' =
     match cb.const_universes with
-    | Monomorphic_const ctx -> push_context ~strict:true ctx env, Univ.Instance.empty
+    | Monomorphic_const ctx -> push_context ~strict:true ctx env
     | Polymorphic_const auctx ->
-      let ctx = Univ.instantiate_univ_context auctx in
-      push_context ~strict:false ctx env, Univ.UContext.instance ctx
+      let ctx = Univ.AUContext.repr auctx in
+      push_context ~strict:false ctx env
   in
   let envty, ty = 
     match cb.const_type with
       RegularArity ty ->
-        let ty = subst_instance_constr u ty in
         let ty', cu = refresh_arity ty in
         let envty = push_context_set cu env' in
         let _ = infer_type envty ty' in envty, ty
     | TemplateArity(ctxt,par) ->
-        assert(Univ.Instance.is_empty u);
         let _ = check_ctxt env' ctxt in
         check_polymorphic_arity env' ctxt par;
 	env', it_mkProd_or_LetIn (Sort(Type par.template_level)) ctxt 
@@ -49,7 +48,6 @@ let check_constant_declaration env kn cb =
   let () = 
     match body_of_constant cb with
     | Some bd ->
-      let bd = subst_instance_constr u bd in
       (match cb.const_proj with 
       | None -> let j = infer envty bd in
 		  conv_leq envty j ty

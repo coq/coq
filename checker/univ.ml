@@ -1075,6 +1075,7 @@ module Instance : sig
     val check_eq : t check_function
     val length : t -> int
     val append : t -> t -> t
+    val of_array : Level.t array -> t
 end = 
 struct
   type t = Level.t array
@@ -1157,7 +1158,9 @@ struct
   let length = Array.length
 
   let append = Array.append
-  
+
+  let of_array i = i
+
 end
 
 (** Substitute instance inst for ctx in csts *)
@@ -1231,42 +1234,10 @@ module CumulativityInfo =
 struct
   type t = universe_context * universe_context
 
-  let make x =
-    if (Array.length (UContext.instance (snd x))) =
-       (Array.length (UContext.instance (fst x))) * 2 then x
-    else anomaly (Pp.str "Invalid subtyping information encountered!")
-
-  let empty = (UContext.empty, UContext.empty)
-
-  let halve_context ctx =
-    let len = Array.length ctx in
-    let halflen = len / 2 in
-    ((Array.sub ctx 0 halflen), (Array.sub ctx halflen halflen))
-
   let univ_context (univcst, subtypcst) = univcst
   let subtyp_context (univcst, subtypcst) = subtypcst
 
-  let create_trivial_subtyping ctx ctx' =
-    CArray.fold_left_i
-      (fun i cst l -> Constraint.add (l, Eq, Array.get ctx' i) cst)
-      Constraint.empty ctx
-
-  let from_universe_context univcst freshunivs =
-    let inst = (UContext.instance univcst) in
-    assert (Array.length freshunivs = Array.length inst);
-    (univcst, UContext.make (Array.append inst freshunivs,
-                             create_trivial_subtyping inst freshunivs))
-
-  let subtyping_other_instance (univcst, subtypcst) =
-    let (_, ctx') = (halve_context (UContext.instance subtypcst)) in ctx'
-  
-  let subtyping_susbst (univcst, subtypcst) =
-    let (ctx, ctx') = (halve_context (UContext.instance subtypcst)) in
-    Array.fold_left2 (fun subst l1 l2 -> LMap.add l1 l2 subst) LMap.empty ctx ctx'
-
 end
-
-type cumulativity_info = CumulativityInfo.t
 
 module ACumulativityInfo = CumulativityInfo
 type abstract_cumulativity_info = ACumulativityInfo.t
@@ -1314,13 +1285,6 @@ let subst_univs_level_universe subst u =
 
 let make_abstract_instance (ctx, _) = 
   Array.mapi (fun i l -> Level.var i) ctx
-
-(** Substitute instance inst for ctx in csts *)
-let instantiate_univ_context (ctx, csts) = 
-  (ctx, subst_instance_constraints ctx csts)
-
-let instantiate_cumulativity_info (ctx, ctx') = 
-  (instantiate_univ_context ctx, instantiate_univ_context ctx')
 
 (** With level to universe substitutions. *)
 type universe_subst_fn = universe_level -> universe
