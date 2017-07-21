@@ -1058,13 +1058,18 @@ function copq_coq_gtk {
     install_rec  "$PREFIX/share/themes/" '*'                          "$PREFIXCOQ/share/themes"
     
     # This below item look like a bug in make install
+    if [ -d "$PREFIXCOQ/share/coq/" ] ; then
+      COQSHARE="$PREFIXCOQ/share/coq/"
+    else
+      COQSHARE="$PREFIXCOQ/share/"
+    fi
     if [[ ! $COQ_VERSION == 8.4* ]] ; then
-      mv "$PREFIXCOQ/share/coq/"*.lang "$PREFIXCOQ/share/gtksourceview-2.0/language-specs"
-      mv "$PREFIXCOQ/share/coq/"*.xml  "$PREFIXCOQ/share/gtksourceview-2.0/styles"
+      mv "$COQSHARE"*.lang "$PREFIXCOQ/share/gtksourceview-2.0/language-specs"
+      mv "$COQSHARE"*.xml  "$PREFIXCOQ/share/gtksourceview-2.0/styles"
     fi
     mkdir -p "$PREFIXCOQ/ide"
-    mv "$PREFIXCOQ/share/coq/"*.png  "$PREFIXCOQ/ide"
-    rmdir "$PREFIXCOQ/share/coq"
+    mv "$COQSHARE"*.png  "$PREFIXCOQ/ide"
+    rmdir "$PREFIXCOQ/share/coq" || true
   fi
 }
 
