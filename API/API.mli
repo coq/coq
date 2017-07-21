@@ -169,6 +169,8 @@ sig
     val map : (Constant.t -> Constant.t) -> t -> t
     val constant : t -> Constant.t
     val equal : t -> t -> bool
+    val unfolded : t -> bool
+    val unfold : t -> t
   end
 
   type evaluable_global_reference =
