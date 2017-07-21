@@ -994,12 +994,14 @@ let rec strip_outer_cast sigma c = match EConstr.kind sigma c with
 (* flattens application lists throwing casts in-between *)
 let collapse_appl sigma c = match EConstr.kind sigma c with
   | App (f,cl) ->
+    if EConstr.isCast sigma f then
       let rec collapse_rec f cl2 =
         match EConstr.kind sigma (strip_outer_cast sigma f) with
         | App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
         | _ -> EConstr.mkApp (f,cl2)
       in
       collapse_rec f cl
+    else c
   | _ -> c
 
 (* First utilities for avoiding telescope computation for subst_term *)
