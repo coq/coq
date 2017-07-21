@@ -4283,10 +4283,10 @@ module Constrextern :
 sig
   val extern_glob_constr : Names.Id.Set.t -> Glob_term.glob_constr -> Constrexpr.constr_expr
   val extern_glob_type : Names.Id.Set.t -> Glob_term.glob_constr -> Constrexpr.constr_expr
-  val extern_constr : ?lax:bool -> bool -> Environ.env -> Evd.evar_map -> Constr.t -> Constrexpr.constr_expr
+  val extern_constr : ?lax:bool -> bool -> Environ.env -> Evd.evar_map -> EConstr.t -> Constrexpr.constr_expr
   val without_symbols : ('a -> 'b) -> 'a -> 'b
   val print_universes : bool ref
-  val extern_type : bool -> Environ.env -> Evd.evar_map -> Term.types -> Constrexpr.constr_expr
+  val extern_type : bool -> Environ.env -> Evd.evar_map -> EConstr.t -> Constrexpr.constr_expr
   val with_universes : ('a -> 'b) -> 'a -> 'b
   val set_extern_reference :
     (?loc:Loc.t -> Names.Id.Set.t -> Globnames.global_reference -> Libnames.reference) -> unit
