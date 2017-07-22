@@ -154,7 +154,6 @@ module Tacmach = Tacmach
 module Proofview = Proofview
 module Evarutil = Evarutil
 module EConstr = EConstr
-module Store = Store
 
 (* NOTE: It does not make sense to replace the following "module expression"
    simply with "module Proof_type = Proof_type" because
@@ -187,7 +186,6 @@ module Entries =
 
 module G_proofs = G_proofs
 module Metasyntax = Metasyntax
-module Egramcoq = Egramcoq
 module G_vernac = G_vernac
 module Pcoq = Pcoq
 module Tok = Tok
