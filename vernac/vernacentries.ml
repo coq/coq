@@ -65,7 +65,7 @@ let show_top_evars () =
   let pfts = Proof_global.give_me_the_proof () in
   let gls = Proof.V82.subgoals pfts in
   let sigma = gls.Evd.sigma in
-  Feedback.msg_notice (pr_evars_int sigma 1 (Evarutil.non_instantiated sigma))
+  Feedback.msg_notice (pr_evars_int sigma 1 (Evd.undefined_map sigma))
 
 let show_universes () =
   let pfts = Proof_global.give_me_the_proof () in
