@@ -177,11 +177,9 @@ let process_goal sigma g =
   let min_env = Environ.reset_context env in
   let id = Goal.uid g in
   let ccl =
-    let norm_constr = Reductionops.nf_evar sigma (Goal.V82.concl sigma g) in
-    pr_goal_concl_style_env env sigma norm_constr
+    pr_goal_concl_style_env env sigma (Goal.V82.concl sigma g)
   in
   let process_hyp d (env,l) =
-    let d = CompactedDecl.map_constr (fun c -> EConstr.Unsafe.to_constr (Reductionops.nf_evar sigma (EConstr.of_constr c))) d in
     let d' = CompactedDecl.to_named_context d in
       (List.fold_right Environ.push_named d' env,
        (pr_compacted_decl env sigma d) :: l) in
@@ -210,7 +208,7 @@ let evars () =
     Stm.finish ();
     let pfts = Proof_global.give_me_the_proof () in
     let { Evd.it = all_goals ; sigma = sigma } = Proof.V82.subgoals pfts in
-    let exl = Evar.Map.bindings (Evarutil.non_instantiated sigma) in
+    let exl = Evar.Map.bindings (Evd.undefined_map sigma) in
     let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar sigma ev); } in
     let el = List.map map_evar exl in
     Some el
