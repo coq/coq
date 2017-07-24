@@ -1,4 +1,9 @@
 (**********************************************************************)
+(* Check precedence, spacing, etc. in printing with curly brackets    *)
+
+Check {x|x=0}+{True/\False}+{forall x, x=0}.
+
+(**********************************************************************)
 (* Check printing of notations with several instances of a recursive pattern *)
 (* Was wrong but I could not trigger a problem due to the collision between *)
 (* different instances of ".." *)
@@ -161,10 +166,17 @@ End Bug4765.
 Notation "x === x" := (eq_refl x) (only printing, at level 10).
 Check (fun x => eq_refl x).
 
-(**********************************************************************)
 (* Test recursive notations with the recursive pattern repeated on the right *)
 
-Notation "{ x , .. , y , z }" := (pair x .. (pair y z) ..).
-Check {0,1}.
-Check {0,1,2}.
-Check {0,1,2,3}.
+Notation "{{ x , .. , y , z }}" := (pair x .. (pair y z) ..).
+Check {{0,1}}.
+Check {{0,1,2}}.
+Check {{0,1,2,3}}.
+
+(* Test printing of #5608                                             *)
+
+Reserved Notation "'letpair' x [1] = { A } ; 'return' ( b0 , b1 , .. , b2 )"
+  (at level 200, format "'letpair'  x  [1]  =  { A } ; '//' 'return'  ( b0 ,  b1 ,  .. ,  b2 )").
+Notation "'letpair' x [1] = { a } ; 'return' ( b0 , b1 , .. , b2 )" :=
+  (let x:=a in ( .. (b0,b1) .., b2)).
+Check letpair x [1] = {0}; return (1,2,3,4).

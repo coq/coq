@@ -705,16 +705,22 @@ let recompute_assoc typs =
 (**************************************************************************)
 (* Registration of syntax extensions (parsing/printing, no interpretation)*)
 
-let pr_arg_level from = function
+let pr_arg_level from (lev,typ) =
+  let pplev = match lev with
   | (n,L) when Int.equal n from -> str "at next level"
   | (n,E) -> str "at level " ++ int n
   | (n,L) -> str "at level below " ++ int n
   | (n,Prec m) when Int.equal m n -> str "at level " ++ int n
-  | (n,_) -> str "Unknown level"
+  | (n,_) -> str "Unknown level" in
+  let pptyp = match typ with
+  | NtnInternTypeConstr -> mt ()
+  | NtnInternTypeBinder -> str " " ++ surround (str "binder")
+  | NtnInternTypeIdent -> str " " ++ surround (str "ident") in
+  pplev ++ pptyp
 
-let pr_level ntn (from,args) =
+let pr_level ntn (from,args,typs) =
   str "at level " ++ int from ++ spc () ++ str "with arguments" ++ spc() ++
-  prlist_with_sep pr_comma (pr_arg_level from) args
+  prlist_with_sep pr_comma (pr_arg_level from) (List.combine args typs)
 
 let error_incompatible_level ntn oldprec prec =
   user_err 
@@ -736,12 +742,12 @@ let is_active_compat = function
 | None -> true
 | Some v -> 0 <= Flags.version_compare v !Flags.compat_version
 
-type syntax_extension_obj = locality_flag * syntax_extension list
+type syntax_extension_obj = locality_flag * syntax_extension
 
 let cache_one_syntax_extension se =
   let ntn = se.synext_notation in
   let prec = se.synext_level in
-  let onlyprint = se.synext_notgram.notgram_onlyprinting in
+  let onlyprint = fst se.synext_notgram in
   try
     let oldprec = Notation.level_of_notation ntn in
     if not (Notation.level_eq prec oldprec) then error_incompatible_level ntn oldprec prec
@@ -750,25 +756,24 @@ let cache_one_syntax_extension se =
       (* Reserve the notation level *)
       Notation.declare_notation_level ntn prec;
       (* Declare the parsing rule *)
-      if not onlyprint then Egramcoq.extend_constr_grammar prec se.synext_notgram;
+      if not onlyprint then List.iter Egramcoq.extend_constr_grammar (snd se.synext_notgram);
       (* Declare the notation rule *)
       Notation.declare_notation_rule ntn
-        ~extra:se.synext_extra (se.synext_unparsing, fst prec) se.synext_notgram
+        ~extra:se.synext_extra (se.synext_unparsing, pi1 prec) se.synext_notgram
     end
 
 let cache_syntax_extension (_, (_, sy)) =
-  List.iter cache_one_syntax_extension sy
+  cache_one_syntax_extension sy
 
 let subst_parsing_rule subst x = x
 
 let subst_printing_rule subst x = x
 
 let subst_syntax_extension (subst, (local, sy)) =
-  let map sy = { sy with
-    synext_notgram = subst_parsing_rule subst sy.synext_notgram;
+  (local, { sy with
+    synext_notgram = (fst sy.synext_notgram, List.map (subst_parsing_rule subst) (snd sy.synext_notgram));
     synext_unparsing = subst_printing_rule subst sy.synext_unparsing;
-  } in
-  (local, List.map map sy)
+  })
 
 let classify_syntax_definition (local, _ as o) =
   if local then Dispose else Substitute o
@@ -1091,14 +1096,28 @@ module SynData = struct
     (* Notation data for parsing *)
 
     level         : int;
-    syntax_data   : (Id.t * (production_level, production_position) constr_entry_key_gen) list * (* typs    *)
-                    symbol list;                                                                 (* symbols *)
+    pa_syntax_data : (Id.t * (production_level, production_position) constr_entry_key_gen) list * (* typs    *)
+                     symbol list;                                                                 (* symbols *)
+    pp_syntax_data : (Id.t * (production_level, production_position) constr_entry_key_gen) list * (* typs    *)
+                      symbol list;                                                                (* symbols *)
     not_data      : notation *                   (* notation *)
                     (int * parenRelation) list * (* precedence *)
                     bool;                        (* needs_squash *)
   }
 
 end
+
+let find_subentry_types n assoc etyps symbols =
+  let innerlevel = NumLevel 200 in
+  let typs =
+    find_symbols
+      (NumLevel n,BorderProd(Left,assoc))
+      (innerlevel,InternalProd)
+      (NumLevel n,BorderProd(Right,assoc))
+      symbols in
+  let sy_typs = List.map (set_entry_type etyps) typs in
+  let prec = List.map (assoc_of_type n) sy_typs in
+  sy_typs, prec
 
 let compute_syntax_data df modifiers =
   let open SynData in
@@ -1115,26 +1134,23 @@ let compute_syntax_data df modifiers =
 
   (* Notations for interp and grammar  *)
   let ntn_for_interp = make_notation_key symbols in
-  let symbols' = remove_curly_brackets symbols in
-  let ntn_for_grammar = make_notation_key symbols' in
-  if not onlyprint then check_rule_productivity symbols';
-
-  (* Misc *)
-  let need_squash = not (List.equal Notation.symbol_eq symbols symbols') in
-  let msgs,n = find_precedence mods.level mods.etyps symbols' in
-  let innerlevel = NumLevel 200 in
-  let typs =
-    find_symbols
-      (NumLevel n,BorderProd(Left,assoc))
-      (innerlevel,InternalProd)
-      (NumLevel n,BorderProd(Right,assoc))
-      symbols' in
+  let symbols_for_grammar = remove_curly_brackets symbols in
+  let need_squash = not (List.equal Notation.symbol_eq symbols symbols_for_grammar) in
+  let ntn_for_grammar = if need_squash then make_notation_key symbols_for_grammar else ntn_for_interp in
+  if not onlyprint then check_rule_productivity symbols_for_grammar;
+  let msgs,n = find_precedence mods.level mods.etyps symbols in
   (* To globalize... *)
   let etyps = join_auxiliary_recursive_types recvars mods.etyps in
-  let sy_typs = List.map (set_entry_type etyps) typs in
-  let prec = List.map (assoc_of_type n) sy_typs in
+  let sy_typs, prec =
+    find_subentry_types n assoc etyps symbols in
+  let sy_typs_for_grammar, prec_for_grammar =
+    if need_squash then
+      find_subentry_types n assoc etyps symbols_for_grammar
+    else
+      sy_typs, prec in
   let i_typs = set_internalization_type sy_typs in
-  let sy_data = (sy_typs,symbols') in
+  let pa_sy_data = (sy_typs_for_grammar,symbols_for_grammar) in
+  let pp_sy_data = (sy_typs,symbols) in
   let sy_fulldata = (ntn_for_grammar,prec,need_squash) in
   let df' = ((Lib.library_dp(),Lib.current_dirpath true),df) in
   let i_data = ntn_for_interp, df' in
@@ -1155,7 +1171,8 @@ let compute_syntax_data df modifiers =
     intern_typs = i_typs;
 
     level  = n;
-    syntax_data = sy_data;
+    pa_syntax_data = pa_sy_data;
+    pp_syntax_data = pp_sy_data;
     not_data    = sy_fulldata;
   }
 
@@ -1236,22 +1253,6 @@ let with_syntax_protection f x =
 (**********************************************************************)
 (* Recovering existing syntax                                         *)
 
-let contract_notation ntn =
-  if String.equal ntn "{ _ }" then ntn else
-  let rec aux ntn i =
-    if i <= String.length ntn - 5 then
-      let ntn' =
-        if String.is_sub "{ _ }" ntn i &&
-           (i = 0 || ntn.[i-1] = ' ') &&
-           (i = String.length ntn - 5 || ntn.[i+5] = ' ')
-        then
-          String.sub ntn 0 i ^ "_" ^
-          String.sub ntn (i+5) (String.length ntn -i-5)
-        else ntn in
-      aux ntn' (i+1)
-    else ntn in
-  aux ntn 0
-
 exception NoSyntaxRule
 
 let recover_syntax ntn =
@@ -1272,28 +1273,30 @@ let recover_syntax ntn =
 
 let recover_squash_syntax sy =
   let sq = recover_syntax "{ _ }" in
-  [sy; sq]
+  sy :: snd (sq.synext_notgram)
 
-let recover_notation_syntax rawntn =
-  let ntn = contract_notation rawntn in
+let recover_notation_syntax ntn =
   let sy = recover_syntax ntn in
-  let need_squash = not (String.equal ntn rawntn) in
-  let rules = if need_squash then recover_squash_syntax sy else [sy] in
-  sy.synext_notgram.notgram_typs, rules, sy.synext_notgram.notgram_onlyprinting
+  let onlyprint,_ = sy.synext_notgram in
+  pi3 sy.synext_level, sy, onlyprint
 
 (**********************************************************************)
 (* Main entry point for building parsing and printing rules           *)
 
-let make_pa_rule i_typs level (typs,symbols) ntn onlyprint =
+let make_pa_rule i_typs level (typs,symbols) ntn need_squash =
   let assoc = recompute_assoc typs in
   let prod = make_production typs symbols in
-  { notgram_level = level;
+  let sy = {
+    notgram_level = level;
     notgram_assoc = assoc;
     notgram_notation = ntn;
     notgram_prods = prod;
     notgram_typs = i_typs;
-    notgram_onlyprinting = onlyprint;
-  }
+  } in
+  (* By construction, the rule for "{ _ }" is declared, but we need to
+     redeclare it because the file where it is declared needs not be open
+     when the current file opens (especially in presence of -nois) *)
+  if need_squash then recover_squash_syntax sy else [sy]
 
 let make_pp_rule level (typs,symbols) fmt =
   match fmt with
@@ -1302,21 +1305,16 @@ let make_pp_rule level (typs,symbols) fmt =
 
 (* let make_syntax_rules i_typs (ntn,prec,need_squash) sy_data fmt extra onlyprint compat = *)
 let make_syntax_rules (sd : SynData.syn_data) = let open SynData in
-  let ntn, prec, need_squash = sd.not_data in
-  let pa_rule = make_pa_rule sd.intern_typs sd.level sd.syntax_data ntn sd.only_printing in
-  let pp_rule = make_pp_rule sd.level sd.syntax_data sd.format in
-  let sy = {
-    synext_level    = (sd.level, prec);
-    synext_notation = ntn;
-    synext_notgram  = pa_rule;
+  let ntn_for_grammar, prec, need_squash = sd.not_data in
+  let pa_rule = make_pa_rule sd.intern_typs sd.level sd.pa_syntax_data ntn_for_grammar need_squash in
+  let pp_rule = make_pp_rule sd.level sd.pp_syntax_data sd.format in {
+    synext_level    = (sd.level, prec, sd.intern_typs);
+    synext_notation = fst sd.info;
+    synext_notgram  = (sd.only_printing,pa_rule);
     synext_unparsing = pp_rule;
     synext_extra  = sd.extra;
     synext_compat = sd.compat;
-  } in
-  (* By construction, the rule for "{ _ }" is declared, but we need to
-     redeclare it because the file where it is declared needs not be open
-     when the current file opens (especially in presence of -nois) *)
-  if need_squash then recover_squash_syntax sy else [sy]
+  }
 
 (**********************************************************************)
 (* Main functions about notations                                     *)

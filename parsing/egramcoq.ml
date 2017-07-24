@@ -464,7 +464,7 @@ let extend_constr state forpat ng =
 
 let constr_levels = GramState.field ()
 
-let extend_constr_notation (_, ng) state =
+let extend_constr_notation ng state =
   let levels = match GramState.get state constr_levels with
   | None -> default_constr_levels
   | Some lev -> lev
@@ -476,7 +476,7 @@ let extend_constr_notation (_, ng) state =
   let state = GramState.set state constr_levels levels in
   (r @ r', state)
 
-let constr_grammar : (Notation.level * notation_grammar) grammar_command =
+let constr_grammar : one_notation_grammar grammar_command =
   create_grammar_command "Notation" extend_constr_notation
 
-let extend_constr_grammar pr ntn = extend_grammar_command constr_grammar (pr, ntn)
+let extend_constr_grammar ntn = extend_grammar_command constr_grammar ntn

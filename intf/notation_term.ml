@@ -88,11 +88,12 @@ type grammar_constr_prod_item =
        concat with last parsed list when true; additionally release
        the p last items as if they were parsed autonomously *)
 
-type notation_grammar = {
+type one_notation_grammar = {
   notgram_level : int;
   notgram_assoc : Extend.gram_assoc option;
   notgram_notation : Constrexpr.notation;
   notgram_prods : grammar_constr_prod_item list list;
   notgram_typs : notation_var_internalization_type list;
-  notgram_onlyprinting : bool;
 }
+
+type notation_grammar = (* onlyprinting *) bool * one_notation_grammar list

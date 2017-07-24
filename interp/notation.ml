@@ -41,7 +41,7 @@ open Context.Named.Declaration
 (**********************************************************************)
 (* Scope of symbols *)
 
-type level = precedence * tolerability list
+type level = precedence * tolerability list * notation_var_internalization_type list
 type delimiters = string
 type notation_location = (DirPath.t * DirPath.t) * string
 
@@ -83,11 +83,18 @@ let parenRelation_eq t1 t2 = match t1, t2 with
 | Prec l1, Prec l2 -> Int.equal l1 l2
 | _ -> false
 
-let level_eq (l1, t1) (l2, t2) =
+let notation_var_internalization_type_eq v1 v2 = match v1, v2 with
+| NtnInternTypeConstr, NtnInternTypeConstr -> true
+| NtnInternTypeBinder, NtnInternTypeBinder -> true
+| NtnInternTypeIdent, NtnInternTypeIdent -> true
+| (NtnInternTypeConstr | NtnInternTypeBinder | NtnInternTypeIdent), _ -> false
+
+let level_eq (l1, t1, u1) (l2, t2, u2) =
   let tolerability_eq (i1, r1) (i2, r2) =
     Int.equal i1 i2 && parenRelation_eq r1 r2
   in
   Int.equal l1 l2 && List.equal tolerability_eq t1 t2
+  && List.equal notation_var_internalization_type_eq u1 u2
 
 let declare_scope scope =
   try let _ = String.Map.find scope !scope_map in ()
