@@ -179,22 +179,24 @@ let get_alias (loc, id) env =
       let n = fresh_id env in
       let () = env.env_als := Id.Map.add id n env.env_als.contents in
       n
-    else user_err ~loc (str "Unbound type parameter " ++ Id.print id)
+    else user_err ?loc (str "Unbound type parameter " ++ Id.print id)
 
 let push_name id t env = match id with
 | Anonymous -> env
 | Name id -> { env with env_var = Id.Map.add id t env.env_var }
 
+let dummy_loc = Loc.make_loc (-1, -1)
+
 let loc_of_tacexpr = function
-| CTacAtm (loc, _) -> loc
-| CTacRef (RelId (loc, _)) -> loc
-| CTacRef (AbsKn _) -> Loc.ghost
+| CTacAtm (loc, _) -> Option.default dummy_loc loc
+| CTacRef (RelId (loc, _)) -> Option.default dummy_loc loc
+| CTacRef (AbsKn _) -> dummy_loc
 | CTacFun (loc, _, _) -> loc
 | CTacApp (loc, _, _) -> loc
 | CTacLet (loc, _, _, _) -> loc
-| CTacTup (loc, _) -> loc
-| CTacArr (loc, _) -> loc
-| CTacLst (loc, _) -> loc
+| CTacTup (loc, _) -> Option.default dummy_loc loc
+| CTacArr (loc, _) -> Option.default dummy_loc loc
+| CTacLst (loc, _) -> Option.default dummy_loc loc
 | CTacCnv (loc, _, _) -> loc
 | CTacSeq (loc, _, _) -> loc
 | CTacCse (loc, _, _) -> loc
@@ -206,7 +208,7 @@ let loc_of_tacexpr = function
 let loc_of_patexpr = function
 | CPatAny loc -> loc
 | CPatRef (loc, _, _) -> loc
-| CPatTup (loc, _) -> loc
+| CPatTup (loc, _) -> Option.default dummy_loc loc
 
 let error_nargs_mismatch loc nargs nfound =
   user_err ~loc (str "Constructor expects " ++ int nargs ++
@@ -226,7 +228,7 @@ let rec subst_type subst (t : 'a glb_typexpr) = match t with
   GTypRef (qid, List.map (fun t -> subst_type subst t) args)
 
 let rec intern_type env (t : raw_typexpr) : UF.elt glb_typexpr = match t with
-| CTypVar (loc, Name id) -> GTypVar (get_alias (loc, id) env)
+| CTypVar (loc, Name id) -> GTypVar (get_alias (Loc.tag ?loc id) env)
 | CTypVar (_, Anonymous) -> GTypVar (fresh_id env)
 | CTypRef (loc, rel, args) ->
   let (kn, nparams) = match rel with
@@ -238,7 +240,7 @@ let rec intern_type env (t : raw_typexpr) : UF.elt glb_typexpr = match t with
       let kn =
         try Tac2env.locate_type qid
         with Not_found ->
-          user_err ~loc (str "Unbound type constructor " ++ pr_qualid qid)
+          user_err ?loc (str "Unbound type constructor " ++ pr_qualid qid)
       in
       let (nparams, _) = Tac2env.interp_type kn in
       (kn, nparams)
@@ -251,9 +253,9 @@ let rec intern_type env (t : raw_typexpr) : UF.elt glb_typexpr = match t with
     if not (Int.equal nparams nargs) then
       let loc, qid = match rel with
       | RelId lid -> lid
-      | AbsKn kn -> loc, shortest_qualid_of_type kn
+      | AbsKn kn -> Some loc, shortest_qualid_of_type kn
       in
-      user_err ~loc (strbrk "The type constructor " ++ pr_qualid qid ++
+      user_err ?loc (strbrk "The type constructor " ++ pr_qualid qid ++
         strbrk " expects " ++ int nparams ++ strbrk " argument(s), but is here \
         applied to " ++ int nargs ++ strbrk "argument(s)")
   in
@@ -349,11 +351,11 @@ let rec unify env t1 t2 = match kind env t1, kind env t2 with
   else raise (CannotUnify (t1, t2))
 | _ -> raise (CannotUnify (t1, t2))
 
-let unify loc env t1 t2 =
+let unify ?loc env t1 t2 =
   try unify env t1 t2
   with CannotUnify (u1, u2) ->
     let name = env_name env in
-    user_err ~loc (str "This expression has type " ++ pr_glbtype name t1 ++
+    user_err ?loc (str "This expression has type " ++ pr_glbtype name t1 ++
       str " but an expression what expected of type " ++ pr_glbtype name t2)
 
 (** Term typing *)
@@ -481,7 +483,7 @@ let get_variable0 mem var = match var with
     let kn =
       try Tac2env.locate_ltac qid
       with Not_found ->
-        CErrors.user_err ~loc (str "Unbound value " ++ pr_qualid qid)
+        CErrors.user_err ?loc (str "Unbound value " ++ pr_qualid qid)
     in
     ArgArg kn
 | AbsKn kn -> ArgArg kn
@@ -498,12 +500,12 @@ let get_constructor env var = match var with
     let kn = Tac2env.interp_constructor knc in
     ArgArg (kn, knc)
   | Some (TacConstant _) ->
-    CErrors.user_err ~loc (str "The term " ++ pr_qualid qid ++
+    CErrors.user_err ?loc (str "The term " ++ pr_qualid qid ++
       str " is not the constructor of an inductive type.")
   | None ->
     let (dp, id) = repr_qualid qid in
     if DirPath.is_empty dp then ArgVar (loc, id)
-    else CErrors.user_err ~loc (str "Unbound constructor " ++ pr_qualid qid)
+    else CErrors.user_err ?loc (str "Unbound constructor " ++ pr_qualid qid)
   end
 | AbsKn knc ->
   let kn = Tac2env.interp_constructor knc in
@@ -512,7 +514,7 @@ let get_constructor env var = match var with
 let get_projection var = match var with
 | RelId (loc, qid) ->
   let kn = try Tac2env.locate_projection qid with Not_found ->
-    user_err ~loc (pr_qualid qid ++ str " is not a projection")
+    user_err ?loc (pr_qualid qid ++ str " is not a projection")
   in
   Tac2env.interp_projection kn
 | AbsKn kn ->
@@ -522,12 +524,12 @@ let intern_atm env = function
 | AtmInt n -> (GTacAtm (AtmInt n), GTypRef (t_int, []))
 | AtmStr s -> (GTacAtm (AtmStr s), GTypRef (t_string, []))
 
-let invalid_pattern ~loc kn t =
+let invalid_pattern ?loc kn t =
   let pt = match t with
   | GCaseAlg kn' -> pr_typref kn
   | GCaseTuple n -> str "tuple"
   in
-  user_err ~loc (str "Invalid pattern, expected a pattern for type " ++
+  user_err ?loc (str "Invalid pattern, expected a pattern for type " ++
     pr_typref kn ++ str ", found a pattern of type " ++ pt) (** FIXME *)
 
 (** Pattern view *)
@@ -547,7 +549,7 @@ let rec intern_patexpr env = function
 | CPatRef (_, qid, pl) ->
   begin match get_constructor env qid with
   | ArgVar (loc, id) ->
-    user_err ~loc (str "Unbound constructor " ++ Nameops.pr_id id)
+    user_err ?loc (str "Unbound constructor " ++ Nameops.pr_id id)
   | ArgArg (_, kn) -> GPatRef (kn, List.map (fun p -> intern_patexpr env p) pl)
   end
 | CPatTup (_, pl) ->
@@ -626,14 +628,14 @@ let rec intern_rec env = function
   in
   let ret = GTypVar (fresh_id env) in
   let (args, t) = List.fold_right fold args ([], ret) in
-  let () = unify loc env ft t in
+  let () = unify ~loc env ft t in
   (GTacApp (f, args), ret)
 | CTacLet (loc, false, el, e) ->
   let fold accu ((loc, na), _, _) = match na with
   | Anonymous -> accu
   | Name id ->
     if Id.Set.mem id accu then
-      user_err ~loc (str "Variable " ++ Id.print id ++ str " is bound several \
+      user_err ?loc (str "Variable " ++ Id.print id ++ str " is bound several \
         times in this matching")
     else Id.Set.add id accu
   in
@@ -644,7 +646,7 @@ let rec intern_rec env = function
     | None -> ()
     | Some tc ->
       let tc = intern_type env tc in
-      unify loc env t tc
+      unify ?loc env t tc
     in
     let t = if is_value e then abstract_var env t else monomorphic t in
     ((na, e) :: el), ((na, t) :: p)
@@ -683,7 +685,7 @@ let rec intern_rec env = function
 | CTacCnv (loc, e, tc) ->
   let (e, t) = intern_rec env e in
   let tc = intern_type env tc in
-  let () = unify loc env t tc in
+  let () = unify ~loc env t tc in
   (e, tc)
 | CTacSeq (loc, e1, e2) ->
   let (e1, t1) = intern_rec env e1 in
@@ -701,7 +703,7 @@ let rec intern_rec env = function
   let subst = Array.init pinfo.pdata_prms (fun _ -> fresh_id env) in
   let params = Array.map_to_list (fun i -> GTypVar i) subst in
   let exp = GTypRef (pinfo.pdata_type, params) in
-  let () = unify loc env t exp in
+  let () = unify ~loc env t exp in
   let substf i = GTypVar subst.(i) in
   let ret = subst_type substf pinfo.pdata_ptyp in
   (GTacPrj (pinfo.pdata_type, e, pinfo.pdata_indx), ret)
@@ -711,9 +713,9 @@ let rec intern_rec env = function
     if not pinfo.pdata_mutb then
       let loc = match proj with
       | RelId (loc, _) -> loc
-      | AbsKn _ -> Loc.ghost
+      | AbsKn _ -> None
       in
-      user_err ~loc (str "Field is not mutable")
+      user_err ?loc (str "Field is not mutable")
   in
   let subst = Array.init pinfo.pdata_prms (fun _ -> fresh_id env) in
   let params = Array.map_to_list (fun i -> GTypVar i) subst in
@@ -738,7 +740,7 @@ let rec intern_rec env = function
 and intern_rec_with_constraint env e exp =
   let loc = loc_of_tacexpr e in
   let (e, t) = intern_rec env e in
-  let () = unify loc env t exp in
+  let () = unify ~loc env t exp in
   e
 
 and intern_let_rec env loc el e =
@@ -746,7 +748,7 @@ and intern_let_rec env loc el e =
   | Anonymous -> accu
   | Name id ->
     if Id.Set.mem id accu then
-      user_err ~loc (str "Variable " ++ Id.print id ++ str " is bound several \
+      user_err ?loc (str "Variable " ++ Id.print id ++ str " is bound several \
         times in this matching")
     else Id.Set.add id accu
   in
@@ -765,12 +767,12 @@ and intern_let_rec env loc el e =
         user_err ~loc:loc_e (str "This kind of expression is not allowed as \
           right-hand side of a recursive binding")
     in
-    let () = unify loc env t (GTypVar id) in
+    let () = unify ?loc env t (GTypVar id) in
     let () = match tc with
     | None -> ()
     | Some tc ->
       let tc = intern_type env tc in
-      unify loc env t tc
+      unify ?loc env t tc
     in
     ((na, e) :: el, t :: tl)
   in
@@ -802,7 +804,7 @@ and intern_case env loc e pl =
     begin match pl with
     | [] -> assert false
     | [CPatTup (_, []), b] ->
-      let () = unify (loc_of_tacexpr e) env t (GTypRef (t_unit, [])) in
+      let () = unify ~loc:(loc_of_tacexpr e) env t (GTypRef (t_unit, [])) in
       let (b, tb) = intern_rec env b in
       (GTacCse (e', GCaseAlg t_unit, [|b|], [||]), tb)
     | [CPatTup (_, pl), b] ->
@@ -817,14 +819,14 @@ and intern_case env loc e pl =
       in
       let ids = Array.map_of_list map pl in
       let tc = GTypTuple (List.map (fun _ -> GTypVar (fresh_id env)) pl) in
-      let () = unify (loc_of_tacexpr e) env t tc in
+      let () = unify ~loc:(loc_of_tacexpr e) env t tc in
       let (b, tb) = intern_rec env b in
       (GTacCse (e', GCaseTuple len, [||], [|ids, b|]), tb)
     | (p, _) :: _ -> todo ~loc:(loc_of_patexpr p) ()
     end
   | PKind_variant kn ->
     let subst, tc = fresh_reftype env kn in
-    let () = unify (loc_of_tacexpr e) env t tc in
+    let () = unify ~loc:(loc_of_tacexpr e) env t tc in
     let (params, def) = Tac2env.interp_type kn in
     let cstrs = match def with
     | GTydAlg c -> c
@@ -911,9 +913,9 @@ and intern_case env loc e pl =
         in
         brT
       | CPatTup (loc, tup) ->
-        invalid_pattern ~loc kn (GCaseTuple (List.length tup))
+        invalid_pattern ?loc kn (GCaseTuple (List.length tup))
       in
-      let () = unify (loc_of_tacexpr br) env ret tbr in
+      let () = unify ~loc:(loc_of_tacexpr br) env ret tbr in
       intern_branch rem
     in
     let () = intern_branch pl in
@@ -927,7 +929,7 @@ and intern_case env loc e pl =
     (ce, ret)
   | PKind_open kn ->
     let subst, tc = fresh_reftype env kn in
-    let () = unify (loc_of_tacexpr e) env t tc in
+    let () = unify ~loc:(loc_of_tacexpr e) env t tc in
     let ret = GTypVar (fresh_id env) in
     let rec intern_branch map = function
     | [] ->
@@ -1002,7 +1004,7 @@ and intern_record env loc fs =
   let map (proj, e) =
     let loc = match proj with
     | RelId (loc, _) -> loc
-    | AbsKn _ -> Loc.ghost
+    | AbsKn _ -> None
     in
     let proj = get_projection proj in
     (loc, proj, e)
@@ -1029,10 +1031,10 @@ and intern_record env loc fs =
         args.(index) <- Some e
       | Some _ ->
         let (name, _, _) = List.nth typdef pinfo.pdata_indx in
-        user_err ~loc (str "Field " ++ Id.print name ++ str " is defined \
+        user_err ?loc (str "Field " ++ Id.print name ++ str " is defined \
           several times")
     else
-      user_err ~loc (str "Field " ++ (*KerName.print knp ++*) str " does not \
+      user_err ?loc (str "Field " ++ (*KerName.print knp ++*) str " does not \
         pertain to record definition " ++ pr_typref pinfo.pdata_type)
   in
   let () = List.iter iter fs in
@@ -1116,7 +1118,7 @@ let add_name accu = function
 let get_projection0 var = match var with
 | RelId (loc, qid) ->
   let kn = try Tac2env.locate_projection qid with Not_found ->
-    user_err ~loc (pr_qualid qid ++ str " is not a projection")
+    user_err ?loc (pr_qualid qid ++ str " is not a projection")
   in
   kn
 | AbsKn kn -> kn

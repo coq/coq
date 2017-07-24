@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Coq.ltac2.Init.
+Require Import Ltac2.Init.
 
 (** Panic *)
 

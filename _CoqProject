@@ -1,0 +1,28 @@
+-R theories/ Ltac2
+-I src/
+-bypass-API
+
+src/tac2expr.mli
+src/tac2env.ml
+src/tac2env.mli
+src/tac2print.ml
+src/tac2print.mli
+src/tac2intern.ml
+src/tac2intern.mli
+src/tac2interp.ml
+src/tac2interp.mli
+src/tac2entries.ml
+src/tac2entries.mli
+src/tac2core.ml
+src/tac2core.mli
+src/g_ltac2.ml4
+src/ltac2_plugin.mlpack
+
+theories/Init.v
+theories/Int.v
+theories/String.v
+theories/Array.v
+theories/Control.v
+theories/Message.v
+theories/Constr.v
+theories/Ltac2.v

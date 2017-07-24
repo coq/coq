@@ -1,0 +1,14 @@
+Makefile.coq
+Makefile.coq.conf
+*.glob
+*.d
+*.d.raw
+*.vio
+*.vo
+*.cm*
+*.annot
+*.spit
+*.spot
+*.o
+*.a
+*.aux

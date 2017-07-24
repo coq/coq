@@ -382,10 +382,10 @@ let prm_new_goal : ml_tactic = function
 (** unit -> constr *)
 let prm_goal : ml_tactic = function
 | [_] ->
-  Proofview.Goal.enter_one { enter = fun gl ->
+  Proofview.Goal.enter_one begin fun gl ->
     let concl = Tacmach.New.pf_nf_concl gl in
     return (Value.of_constr concl)
-  }
+  end
 | _ -> assert false
 
 (** ident -> constr *)
@@ -404,9 +404,9 @@ let prm_hyp : ml_tactic = function
 let prm_refine : ml_tactic = function
 | [c] ->
   let c = thaw c >>= fun c -> Proofview.tclUNIT ((), Value.to_constr c) in
-  Proofview.Goal.nf_enter { enter = fun gl ->
-    Refine.generic_refine ~unsafe:false c gl
-  } >>= fun () -> return v_unit
+  Proofview.Goal.nf_enter begin fun gl ->
+    Refine.generic_refine ~typecheck:true c gl
+  end >>= fun () -> return v_unit
 | _ -> assert false
 
 
@@ -479,10 +479,10 @@ let open_constr_no_classes_flags () =
 
 (** Embed all Ltac2 data into Values *)
 let to_lvar ist =
-  let open Pretyping in
+  let open Glob_ops in
   let map e = Val.Dyn (val_valexpr, e) in
   let lfun = Id.Map.map map ist in
-  { empty_lvar with ltac_genargs = lfun }
+  { empty_lvar with Glob_term.ltac_genargs = lfun }
 
 let interp_constr flags ist (c, _) =
   let open Pretyping in
@@ -541,16 +541,18 @@ let add_scope s f =
 
 let scope_fail () = CErrors.user_err (str "Invalid parsing token")
 
+let dummy_loc = Loc.make_loc (-1, -1)
+
 let rthunk e =
   let loc = Tac2intern.loc_of_tacexpr e in
-  let var = [(loc, Anonymous), Some (CTypRef (loc, AbsKn Core.t_unit, []))] in
+  let var = [Loc.tag ~loc Anonymous, Some (CTypRef (loc, AbsKn Core.t_unit, []))] in
   CTacFun (loc, var, e)
 
 let add_generic_scope s entry arg =
   let parse = function
   | [] ->
     let scope = Extend.Aentry entry in
-    let act x = rthunk (CTacExt (Loc.ghost, in_gen (rawwit arg) x)) in
+    let act x = rthunk (CTacExt (dummy_loc, in_gen (rawwit arg) x)) in
     Tac2entries.ScopeRule (scope, act)
   | _ -> scope_fail ()
   in
@@ -562,7 +564,7 @@ let () = add_scope "list0" begin function
   let scope = Extend.Alist0 scope in
   let act l =
     let l = List.map act l in
-    CTacLst (Loc.ghost, l)
+    CTacLst (None, l)
   in
   Tac2entries.ScopeRule (scope, act)
 | [tok; SexprStr (_, str)] ->
@@ -571,7 +573,7 @@ let () = add_scope "list0" begin function
   let scope = Extend.Alist0sep (scope, sep) in
   let act l =
     let l = List.map act l in
-    CTacLst (Loc.ghost, l)
+    CTacLst (None, l)
   in
   Tac2entries.ScopeRule (scope, act)
 | _ -> scope_fail ()
@@ -583,7 +585,7 @@ let () = add_scope "list1" begin function
   let scope = Extend.Alist1 scope in
   let act l =
     let l = List.map act l in
-    CTacLst (Loc.ghost, l)
+    CTacLst (None, l)
   in
   Tac2entries.ScopeRule (scope, act)
 | [tok; SexprStr (_, str)] ->
@@ -592,7 +594,7 @@ let () = add_scope "list1" begin function
   let scope = Extend.Alist1sep (scope, sep) in
   let act l =
     let l = List.map act l in
-    CTacLst (Loc.ghost, l)
+    CTacLst (None, l)
   in
   Tac2entries.ScopeRule (scope, act)
 | _ -> scope_fail ()
@@ -606,7 +608,7 @@ let () = add_scope "opt" begin function
   | None ->
     CTacRef (AbsKn (TacConstructor Core.c_none))
   | Some x ->
-    CTacApp (Loc.ghost, CTacRef (AbsKn (TacConstructor Core.c_some)), [act x])
+    CTacApp (dummy_loc, CTacRef (AbsKn (TacConstructor Core.c_some)), [act x])
   in
   Tac2entries.ScopeRule (scope, act)
 | _ -> scope_fail ()

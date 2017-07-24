@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Coq.ltac2.Init.
+Require Import Ltac2.Init.
 
 Ltac2 @ external type : constr -> constr := "ltac2" "constr_type".
 (** Return the type of a term *)

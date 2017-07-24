@@ -6,9 +6,15 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Coq.ltac2.Init.
+Require Import Ltac2.Init.
 
-Ltac2 @external make : int -> 'a -> 'a array := "ltac2" "array_make".
-Ltac2 @external length : 'a array -> int := "ltac2" "array_length".
-Ltac2 @external get : 'a array -> int -> 'a := "ltac2" "array_get".
-Ltac2 @external set : 'a array -> int -> 'a -> unit := "ltac2" "array_set".
+Ltac2 @ external print : message -> unit := "ltac2" "print".
+
+Ltac2 @ external of_string : string -> message := "ltac2" "message_of_string".
+
+Ltac2 @ external of_int : int -> message := "ltac2" "message_of_int".
+
+Ltac2 @ external of_constr : constr -> message := "ltac2" "message_of_constr".
+(** Panics if there is more than one goal under focus. *)
+
+Ltac2 @ external concat : message -> message -> message := "ltac2" "message_concat".

@@ -6,15 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Coq.ltac2.Init.
+Require Import Ltac2.Init.
 
-Ltac2 @ external print : message -> unit := "ltac2" "print".
+Ltac2 Type exn ::= [ Division_by_zero ].
 
-Ltac2 @ external of_string : string -> message := "ltac2" "message_of_string".
-
-Ltac2 @ external of_int : int -> message := "ltac2" "message_of_int".
-
-Ltac2 @ external of_constr : constr -> message := "ltac2" "message_of_constr".
-(** Panics if there is more than one goal under focus. *)
-
-Ltac2 @ external concat : message -> message -> message := "ltac2" "message_concat".
+Ltac2 @ external equal : int -> int -> bool := "ltac2" "int_equal".
+Ltac2 @ external compare : int -> int -> int := "ltac2" "int_compare".
+Ltac2 @ external add : int -> int -> int := "ltac2" "int_add".
+Ltac2 @ external sub : int -> int -> int := "ltac2" "int_sub".
+Ltac2 @ external mul : int -> int -> int := "ltac2" "int_mul".
+Ltac2 @ external neg : int -> int := "ltac2" "int_neg".

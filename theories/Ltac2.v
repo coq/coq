@@ -6,11 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Export Coq.ltac2.Init.
+Require Export Ltac2.Init.
 
-Require Coq.ltac2.Int.
-Require Coq.ltac2.String.
-Require Coq.ltac2.Array.
-Require Coq.ltac2.Message.
-Require Coq.ltac2.Constr.
-Require Coq.ltac2.Control.
+Require Ltac2.Int.
+Require Ltac2.String.
+Require Ltac2.Array.
+Require Ltac2.Message.
+Require Ltac2.Constr.
+Require Ltac2.Control.

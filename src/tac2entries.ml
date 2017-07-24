@@ -239,6 +239,8 @@ let inTypExt : typext -> obj =
 
 (** Toplevel entries *)
 
+let dummy_loc = Loc.make_loc (-1, -1)
+
 let register_ltac ?(local = false) isrec tactics =
   if isrec then
     let map (na, e) = (na, None, e) in
@@ -247,7 +249,7 @@ let register_ltac ?(local = false) isrec tactics =
     | Anonymous -> None
     | Name id ->
       let qid = Libnames.qualid_of_ident id in
-      let e = CTacLet (Loc.ghost, true, bindings, CTacRef (RelId (loc, qid))) in
+      let e = CTacLet (dummy_loc, true, bindings, CTacRef (RelId (loc, qid))) in
       let (e, t) = intern e in
       let e = match e with
       | GTacLet (true, _, e) -> assert false
@@ -262,11 +264,11 @@ let register_ltac ?(local = false) isrec tactics =
       let (e, t) = intern e in
       let () =
         if not (is_value e) then
-          user_err ~loc (str "Tactic definition must be a syntactical value")
+          user_err ?loc (str "Tactic definition must be a syntactical value")
       in
       let id = match na with
       | Anonymous ->
-        user_err ~loc (str "Tactic definition must have a name")
+        user_err ?loc (str "Tactic definition must have a name")
       | Name id -> id
       in
       let kn = Lib.make_kn id in
@@ -275,7 +277,7 @@ let register_ltac ?(local = false) isrec tactics =
       in
       let () =
         if exists then
-          user_err ~loc (str "Tactic " ++ Nameops.pr_id id ++ str " already exists")
+          user_err ?loc (str "Tactic " ++ Nameops.pr_id id ++ str " already exists")
       in
       (id, e, t)
     in
@@ -293,27 +295,27 @@ let register_ltac ?(local = false) isrec tactics =
 let qualid_to_ident (loc, qid) =
   let (dp, id) = Libnames.repr_qualid qid in
   if DirPath.is_empty dp then (loc, id)
-  else user_err ~loc (str "Identifier expected")
+  else user_err ?loc (str "Identifier expected")
 
 let register_typedef ?(local = false) isrec types =
   let same_name ((_, id1), _) ((_, id2), _) = Id.equal id1 id2 in
   let () = match List.duplicates same_name types with
   | [] -> ()
   | ((loc, id), _) :: _ ->
-    user_err ~loc (str "Multiple definition of the type name " ++ Id.print id)
+    user_err ?loc (str "Multiple definition of the type name " ++ Id.print id)
   in
   let check ((loc, id), (params, def)) =
     let same_name (_, id1) (_, id2) = Id.equal id1 id2 in
     let () = match List.duplicates same_name params with
     | [] -> ()
     | (loc, id) :: _ ->
-      user_err ~loc (str "The type parameter " ++ Id.print id ++
+      user_err ?loc (str "The type parameter " ++ Id.print id ++
         str " occurs several times")
     in
     match def with
     | CTydDef _ ->
       if isrec then
-        user_err ~loc (str "The type abbreviation " ++ Id.print id ++
+        user_err ?loc (str "The type abbreviation " ++ Id.print id ++
           str " cannot be recursive")
     | CTydAlg cs ->
       let same_name (id1, _) (id2, _) = Id.equal id1 id2 in
@@ -333,7 +335,7 @@ let register_typedef ?(local = false) isrec types =
       ()
     | CTydOpn ->
       if isrec then
-        user_err ~loc (str "The open type declaration " ++ Id.print id ++
+        user_err ?loc (str "The open type declaration " ++ Id.print id ++
           str " cannot be recursive")
   in
   let () = List.iter check types in
@@ -364,10 +366,10 @@ let register_primitive ?(local = false) (loc, id) t ml =
   in
   let arrows = count_arrow (snd t) in
   let () = if Int.equal arrows 0 then
-    user_err ~loc (str "External tactic must have at least one argument") in
+    user_err ?loc (str "External tactic must have at least one argument") in
   let () =
     try let _ = Tac2env.interp_primitive ml in () with Not_found ->
-      user_err ~loc (str "Unregistered primitive " ++
+      user_err ?loc (str "Unregistered primitive " ++
         quote (str ml.mltac_plugin) ++ spc () ++ quote (str ml.mltac_tactic))
   in
   let init i = Id.of_string (Printf.sprintf "x%i" i) in
@@ -386,15 +388,16 @@ let register_open ?(local = false) (loc, qid) (params, def) =
   let kn =
     try Tac2env.locate_type qid
     with Not_found ->
-      user_err ~loc (str "Unbound type " ++ pr_qualid qid)
+      user_err ?loc (str "Unbound type " ++ pr_qualid qid)
   in
   let (tparams, t) = Tac2env.interp_type kn in
   let () = match t with
   | GTydOpn -> ()
   | GTydAlg _ | GTydRec _ | GTydDef _ ->
-    user_err ~loc (str "Type " ++ pr_qualid qid ++ str " is not an open type")
+    user_err ?loc (str "Type " ++ pr_qualid qid ++ str " is not an open type")
   in
   let () =
+    let loc = Option.default dummy_loc loc in
     if not (Int.equal (List.length params) tparams) then
       Tac2intern.error_nparams_mismatch loc (List.length params) tparams
   in
@@ -421,18 +424,18 @@ let register_open ?(local = false) (loc, qid) (params, def) =
     } in
     Lib.add_anonymous_leaf (inTypExt def)
   | CTydRec _ | CTydDef _ ->
-    user_err ~loc (str "Extensions only accept inductive constructors")
+    user_err ?loc (str "Extensions only accept inductive constructors")
 
 let register_type ?local isrec types = match types with
 | [qid, true, def] ->
   let (loc, _) = qid in
-  let () = if isrec then user_err ~loc (str "Extensions cannot be recursive") in
+  let () = if isrec then user_err ?loc (str "Extensions cannot be recursive") in
   register_open ?local qid def
 | _ ->
   let map (qid, redef, def) =
     let (loc, _) = qid in
     let () = if redef then
-      user_err ~loc (str "Types can only be extended one by one")
+      user_err ?loc (str "Types can only be extended one by one")
     in
     (qualid_to_ident qid, def)
   in
@@ -459,8 +462,8 @@ module ParseToken =
 struct
 
 let loc_of_token = function
-| SexprStr (loc, _) -> loc
-| SexprInt (loc, _) -> loc
+| SexprStr (loc, _) -> Option.default dummy_loc loc
+| SexprInt (loc, _) -> Option.default dummy_loc loc
 | SexprRec (loc, _, _) -> loc
 
 let parse_scope = function
@@ -468,7 +471,7 @@ let parse_scope = function
   if Id.Map.mem id !scope_table then
     Id.Map.find id !scope_table toks
   else
-    CErrors.user_err ~loc (str "Unknown scope" ++ spc () ++ Nameops.pr_id id)
+    CErrors.user_err ?loc (str "Unknown scope" ++ spc () ++ Nameops.pr_id id)
 | tok ->
   let loc = loc_of_token tok in
   CErrors.user_err ~loc (str "Invalid parsing token")
@@ -518,7 +521,7 @@ let perform_notation syn st =
   let mk loc args =
     let map (na, e) =
       let loc = loc_of_tacexpr e in
-      ((loc, na), None, e)
+      (Loc.tag ~loc na, None, e)
     in
     let bnd = List.map map args in
     CTacLet (loc, false, bnd, syn.synext_exp)
@@ -587,7 +590,7 @@ let print_ltac ref =
   let (loc, qid) = qualid_of_reference ref in
   let kn =
     try Tac2env.locate_ltac qid
-    with Not_found -> user_err ~loc (str "Unknown tactic " ++ pr_qualid qid)
+    with Not_found -> user_err ?loc (str "Unknown tactic " ++ pr_qualid qid)
   in
   match kn with
   | TacConstant kn ->

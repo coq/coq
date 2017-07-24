@@ -36,9 +36,9 @@ GEXTEND Gram
       | id = Prim.qualid -> CPatRef (!@loc, RelId id, []) ]
     | "0"
       [ "_" -> CPatAny (!@loc)
-      | "()" -> CPatTup (!@loc, [])
+      | "()" -> CPatTup (Loc.tag ~loc:!@loc [])
       | id = Prim.qualid -> CPatRef (!@loc, RelId id, [])
-      | "("; pl = LIST0 tac2pat LEVEL "1" SEP ","; ")" -> CPatTup (!@loc, pl) ]
+      | "("; pl = LIST0 tac2pat LEVEL "1" SEP ","; ")" -> CPatTup (Loc.tag ~loc:!@loc pl) ]
     ]
   ;
   tac2expr:
@@ -56,13 +56,13 @@ GEXTEND Gram
       [ e = tac2expr; el = LIST1 tac2expr LEVEL "0" -> CTacApp (!@loc, e, el)
       | e = SELF; ".("; qid = Prim.qualid; ")" -> CTacPrj (!@loc, e, RelId qid)
       | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = tac2expr LEVEL "1" -> CTacSet (!@loc, e, RelId qid, r)
-      | e0 = tac2expr; ","; el = LIST1 tac2expr LEVEL "1" SEP "," -> CTacTup (!@loc, e0 :: el) ]
+      | e0 = tac2expr; ","; el = LIST1 tac2expr LEVEL "1" SEP "," -> CTacTup (Loc.tag ~loc:!@loc (e0 :: el)) ]
     | "0"
       [ "("; a = tac2expr LEVEL "5"; ")" -> a
       | "("; a = tac2expr; ":"; t = tac2type; ")" -> CTacCnv (!@loc, a, t)
-      | "()" -> CTacTup (!@loc, [])
-      | "("; ")" -> CTacTup (!@loc, [])
-      | "["; a = LIST0 tac2expr LEVEL "1" SEP ";"; "]" -> CTacLst (!@loc, a)
+      | "()" -> CTacTup (Loc.tag ~loc:!@loc [])
+      | "("; ")" -> CTacTup (Loc.tag ~loc:!@loc [])
+      | "["; a = LIST0 tac2expr LEVEL "1" SEP ";"; "]" -> CTacLst (Loc.tag ~loc:!@loc a)
       | "{"; a = tac2rec_fieldexprs; "}" -> CTacRec (!@loc, a)
       | a = tactic_atom -> a ]
     ]
@@ -84,8 +84,8 @@ GEXTEND Gram
     [ [ "'"; id = Prim.ident -> id ] ]
   ;
   tactic_atom:
-    [ [ n = Prim.integer -> CTacAtm (!@loc, AtmInt n)
-      | s = Prim.string -> CTacAtm (!@loc, AtmStr s)
+    [ [ n = Prim.integer -> CTacAtm (Loc.tag ~loc:!@loc (AtmInt n))
+      | s = Prim.string -> CTacAtm (Loc.tag ~loc:!@loc (AtmStr s))
       | id = Prim.qualid -> CTacRef (RelId id)
       | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> inj_constr !@loc c
       | IDENT "open_constr"; ":"; "("; c = Constr.lconstr; ")" -> inj_open_constr !@loc c
@@ -107,18 +107,18 @@ GEXTEND Gram
       [ t = SELF; qid = Prim.qualid -> CTypRef (!@loc, RelId qid, [t]) ]
     | "0"
       [ "("; t = tac2type LEVEL "5"; ")"  -> t
-      | id = typ_param -> CTypVar (!@loc, Name id)
-      | "_" -> CTypVar (!@loc, Anonymous)
+      | id = typ_param -> CTypVar (Loc.tag ~loc:!@loc (Name id))
+      | "_" -> CTypVar (Loc.tag ~loc:!@loc Anonymous)
       | qid = Prim.qualid -> CTypRef (!@loc, RelId qid, [])
       | "("; p = LIST1 tac2type LEVEL "5" SEP ","; ")"; qid = Prim.qualid ->
         CTypRef (!@loc, RelId qid, p) ]
     ];
   locident:
-    [ [ id = Prim.ident -> (!@loc, id) ] ]
+    [ [ id = Prim.ident -> Loc.tag ~loc:!@loc id ] ]
   ;
   binder:
-    [ [ "_" -> (!@loc, Anonymous)
-      | l = Prim.ident -> (!@loc, Name l) ] ]
+    [ [ "_" -> Loc.tag ~loc:!@loc Anonymous
+      | l = Prim.ident -> Loc.tag ~loc:!@loc (Name l) ] ]
   ;
   input_fun:
     [ [ b = binder -> (b, None)
@@ -169,8 +169,8 @@ GEXTEND Gram
   ;
   tac2typ_prm:
     [ [ -> []
-      | id = typ_param -> [!@loc, id]
-      | "("; ids = LIST1 [ id = typ_param -> (!@loc, id) ] SEP "," ;")" -> ids
+      | id = typ_param -> [Loc.tag ~loc:!@loc id]
+      | "("; ids = LIST1 [ id = typ_param -> Loc.tag ~loc:!@loc id ] SEP "," ;")" -> ids
     ] ]
   ;
   tac2typ_def:
@@ -195,13 +195,13 @@ GEXTEND Gram
     ] ]
   ;
   syn_node:
-    [ [ "_" -> (!@loc, None)
-      | id = Prim.ident -> (!@loc, Some id)
+    [ [ "_" -> Loc.tag ~loc:!@loc None
+      | id = Prim.ident -> Loc.tag ~loc:!@loc (Some id)
     ] ]
   ;
   sexpr:
-    [ [ s = Prim.string -> SexprStr (!@loc, s)
-      | n = Prim.integer -> SexprInt (!@loc, n)
+    [ [ s = Prim.string -> SexprStr (Loc.tag ~loc:!@loc s)
+      | n = Prim.integer -> SexprInt (Loc.tag ~loc:!@loc n)
       | id = syn_node -> SexprRec (!@loc, id, [])
       | id = syn_node; "("; tok = LIST1 sexpr SEP "," ; ")" ->
         SexprRec (!@loc, id, tok)
@@ -224,7 +224,7 @@ GEXTEND Gram
   Pcoq.Constr.operconstr: LEVEL "0"
     [ [ IDENT "ltac2"; ":"; "("; tac = tac2expr; ")" ->
           let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
-          CHole (!@loc, None, IntroAnonymous, Some arg) ] ]
+          CAst.make ~loc:!@loc (CHole (None, IntroAnonymous, Some arg)) ] ]
   ;
 END
 

@@ -6,13 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Coq.ltac2.Init.
+Require Import Ltac2.Init.
 
-Ltac2 Type exn ::= [ Division_by_zero ].
-
-Ltac2 @ external equal : int -> int -> bool := "ltac2" "int_equal".
-Ltac2 @ external compare : int -> int -> int := "ltac2" "int_compare".
-Ltac2 @ external add : int -> int -> int := "ltac2" "int_add".
-Ltac2 @ external sub : int -> int -> int := "ltac2" "int_sub".
-Ltac2 @ external mul : int -> int -> int := "ltac2" "int_mul".
-Ltac2 @ external neg : int -> int := "ltac2" "int_neg".
+Ltac2 @external make : int -> char -> string := "ltac2" "string_make".
+Ltac2 @external length : string -> int := "ltac2" "string_length".
+Ltac2 @external get : string -> int -> char := "ltac2" "string_get".
+Ltac2 @external set : string -> int -> char -> unit := "ltac2" "string_set".
