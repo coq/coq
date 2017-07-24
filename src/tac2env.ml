@@ -235,7 +235,7 @@ let interp_ml_object t = MLType.obj t
 (** Absolute paths *)
 
 let coq_prefix =
-  MPfile (DirPath.make (List.map Id.of_string ["Init"; "ltac2"; "Coq"]))
+  MPfile (DirPath.make (List.map Id.of_string ["Init"; "Ltac2"]))
 
 (** Generic arguments *)
 
