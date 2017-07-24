@@ -288,12 +288,13 @@ let explain_unification_error env sigma p1 p2 = function
 	strbrk " with term " ++ pr_leconstr_env env sigma rhs ++
         strbrk " that would depend on itself"]
      | NotClean ((evk,args),env,c) ->
-        [str "cannot instantiate " ++ quote (pr_existential_key sigma evk)
-        ++ strbrk " because " ++ pr_leconstr_env env sigma c ++
-	strbrk " is not in its scope" ++
-        (if Array.is_empty args then mt() else
-         strbrk ": available arguments are " ++
-         pr_sequence (pr_leconstr_env env sigma) (List.rev (Array.to_list args)))]
+        let ev = quote (pr_existential_key sigma evk) in
+        [strbrk "unable to get " ++ pr_leconstr_env env sigma c ++
+         strbrk " out of the possible instances available" ++
+         strbrk " at the point of declaration of " ++ ev ++
+         (if Array.is_empty args then mt() else
+          strbrk ", namely: " ++
+          pr_sequence (pr_leconstr_env env sigma) (List.rev (Array.to_list args)))]
      | NotSameArgSize | NotSameHead | NoCanonicalStructure ->
         (* Error speaks from itself *) []
      | ConversionFailed (env,t1,t2) ->
