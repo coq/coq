@@ -700,14 +700,14 @@ let pr_level ntn (from,args,typs) =
 
 let error_incompatible_level ntn oldprec prec =
   user_err 
-    (str "Notation " ++ str ntn ++ str " is already defined" ++ spc() ++
+    (str "Notation " ++ qstring ntn ++ str " is already defined" ++ spc() ++
     pr_level ntn oldprec ++
     spc() ++ str "while it is now required to be" ++ spc() ++
     pr_level ntn prec ++ str ".")
 
 let error_parsing_incompatible_level ntn ntn' oldprec prec =
   user_err
-    (str "Notation " ++ str ntn ++ str " relies on a parsing rule for " ++ str ntn' ++ spc() ++
+    (str "Notation " ++ qstring ntn ++ str " relies on a parsing rule for " ++ qstring ntn' ++ spc() ++
     str " which is already defined" ++ spc() ++
     pr_level ntn oldprec ++
     spc() ++ str "while it is now required to be" ++ spc() ++
