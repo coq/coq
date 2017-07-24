@@ -817,11 +817,13 @@ and intern_case env loc e pl =
         end
       | p -> todo ~loc:(loc_of_patexpr p) ()
       in
-      let ids = Array.map_of_list map pl in
-      let tc = GTypTuple (List.map (fun _ -> GTypVar (fresh_id env)) pl) in
+      let ids = List.map map pl in
+      let targs = List.map (fun _ -> GTypVar (fresh_id env)) pl in
+      let tc = GTypTuple targs in
       let () = unify ~loc:(loc_of_tacexpr e) env t tc in
+      let env = List.fold_left2 (fun env na t -> push_name na (monomorphic t) env) env ids targs in
       let (b, tb) = intern_rec env b in
-      (GTacCse (e', GCaseTuple len, [||], [|ids, b|]), tb)
+      (GTacCse (e', GCaseTuple len, [||], [|Array.of_list ids, b|]), tb)
     | (p, _) :: _ -> todo ~loc:(loc_of_patexpr p) ()
     end
   | PKind_variant kn ->
