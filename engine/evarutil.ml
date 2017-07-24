@@ -514,6 +514,21 @@ let e_new_evar env evdref ?(src=default_source) ?filter ?candidates ?store ?nami
   evdref := evd';
   ev
 
+(* Safe interface to unification problems *)
+type unification_pb = conv_pb * env * EConstr.constr * EConstr.constr
+
+let eq_unification_pb evd (pbty,env,t1,t2) (pbty',env',t1',t2') =
+  pbty == pbty' && env == env' &&
+    EConstr.eq_constr evd t1 t1' &&
+    EConstr.eq_constr evd t2 t2'
+
+let add_unification_pb ?(tail=false) pb evd =
+  let conv_pbs = Evd.conv_pbs evd in
+  if not (List.exists (eq_unification_pb evd pb) conv_pbs) then
+    let (pbty,env,t1,t2) = pb in
+    Evd.add_conv_pb ~tail (pbty,env,t1,t2) evd
+  else evd
+
 (* This assumes an evar with identity instance and generalizes it over only
    the de Bruijn part of the context *)
 let generalize_evar_over_rels sigma (ev,args) =
