@@ -33,7 +33,11 @@ GEXTEND Gram
   tac2pat:
     [ "1" LEFTA
       [ id = Prim.qualid; pl = LIST1 tac2pat LEVEL "0" -> CPatRef (!@loc, RelId id, pl)
-      | id = Prim.qualid -> CPatRef (!@loc, RelId id, []) ]
+      | id = Prim.qualid -> CPatRef (!@loc, RelId id, [])
+      | "["; "]" -> CPatRef (!@loc, AbsKn Tac2core.Core.c_nil, [])
+      | p1 = tac2pat; "::"; p2 = tac2pat ->
+        CPatRef (!@loc, AbsKn Tac2core.Core.c_cons, [p1; p2])
+      ]
     | "0"
       [ "_" -> CPatAny (!@loc)
       | "()" -> CPatTup (Loc.tag ~loc:!@loc [])
