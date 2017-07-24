@@ -3,7 +3,7 @@ Overview
 
 This is a standalone version of the Ltac2 plugin. Ltac2 is an attempt at
 providing the Coq users with a tactic language that is more robust and more
-expressive than the venerable Ltac langue.
+expressive than the venerable Ltac language.
 
 Status
 ========
