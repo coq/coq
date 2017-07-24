@@ -622,11 +622,11 @@ let merge_universe_context evd uctx' =
 let set_universe_context evd uctx' =
   { evd with universes = uctx' }
 
-(* TODO: make unique *)
 let add_conv_pb ?(tail=false) pb d =
-  (** MS: we have duplicates here, why? *)
   if tail then {d with conv_pbs = d.conv_pbs @ [pb]}
   else {d with conv_pbs = pb::d.conv_pbs}
+
+let conv_pbs d = d.conv_pbs
 
 let evar_source evk d = (find d evk).evar_source
 

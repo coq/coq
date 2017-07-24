@@ -112,9 +112,6 @@ let flex_kind_of_term ts env evd c sk =
     | Fix _ -> Rigid (* happens when the fixpoint is partially applied *)
     | Cast _ | App _ | Case _ -> assert false
 
-let add_conv_pb (pb, env, x, y) sigma =
-  Evd.add_conv_pb (pb, env, EConstr.Unsafe.to_constr x, EConstr.Unsafe.to_constr y) sigma
-
 let apprec_nohdbeta ts env evd c =
   let (t,sk as appr) = Reductionops.whd_nored_state evd (c, []) in
   if Stack.not_purely_applicative sk
@@ -564,7 +561,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
         let tM = Stack.zip evd apprM in
 	  miller_pfenning on_left
 	    (fun () -> if not_only_app then (* Postpone the use of an heuristic *)
-	      switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) i)) (Stack.zip evd apprF) tM
+	      switch (fun x y -> Success (Evarutil.add_unification_pb (pbty,env,x,y) i)) (Stack.zip evd apprF) tM
 	    else quick_fail i)
 	  ev lF tM i
     and consume (termF,skF as apprF) (termM,skM as apprM) i = 
@@ -632,7 +629,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
                          i,mkEvar ev
                        else
                          i,Stack.zip evd apprF in
-		     switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) i))
+		     switch (fun x y -> Success (Evarutil.add_unification_pb (pbty,env,x,y) i))
 	               tF tR
 		   else
                      UnifFailure (evd,OccurCheck (fst ev,tR)))])

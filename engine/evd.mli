@@ -410,7 +410,11 @@ type clbinding =
 (** Unification constraints *)
 type conv_pb = Reduction.conv_pb
 type evar_constraint = conv_pb * env * constr * constr
+
+(** The following two functions are for internal use only,
+    see [Evarutil.add_unification_pb] for a safe interface. *)
 val add_conv_pb : ?tail:bool -> evar_constraint -> evar_map -> evar_map
+val conv_pbs : evar_map -> evar_constraint list
 
 val extract_changed_conv_pbs : evar_map ->
       (Evar.Set.t -> evar_constraint -> bool) ->

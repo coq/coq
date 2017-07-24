@@ -186,6 +186,14 @@ val kind_of_term_upto : evar_map -> Constr.constr ->
     assumed to be an extention of those in [sigma1]. *)
 val eq_constr_univs_test : evar_map -> evar_map -> Constr.constr -> Constr.constr -> bool
 
+(** {6 Unification problems} *)
+type unification_pb = conv_pb * env * constr * constr
+
+(** [add_unification_pb ?tail pb sigma]
+    Add a unification problem [pb] to [sigma], if not already present.
+    Put it at the end of the list if [tail] is true, by default it is false. *)
+val add_unification_pb : ?tail:bool -> unification_pb -> evar_map -> evar_map
+
 (** {6 Removing hyps in evars'context}
 raise OccurHypInSimpleClause if the removal breaks dependencies *)
 
