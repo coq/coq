@@ -26,5 +26,5 @@ Proof.
   Set Typeclasses Modulo Eta.
   Set Typeclasses Dependency Order.
   Set Typeclasses Debug.
-  Fail exact (isequiv_homotopic (compose (compose g f) f^-1)
+  exact (isequiv_homotopic (compose (compose g f) f^-1)
                            (fun b => ap g (eisretr f b))).
