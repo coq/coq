@@ -1281,7 +1281,7 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) flag
                     targetid id env sigma origsigma clenv tac =
   let sigma =
     if with_classes then
-      Typeclasses.resolve_typeclasses ~fail:(not with_evars) env sigma
+      Typeclasses.resolve_typeclasses ~fail:false env sigma
     else sigma
   in
   (* For compatibility: reduce the conclusion *)
