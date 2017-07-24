@@ -21,6 +21,7 @@ Ltac2 @ external once : (unit -> 'a) -> 'a := "ltac2" "once".
 Ltac2 @ external dispatch : (unit -> unit) list -> unit := "ltac2" "dispatch".
 Ltac2 @ external extend : (unit -> unit) list -> (unit -> unit) -> (unit -> unit) list -> unit := "ltac2" "extend".
 Ltac2 @ external enter : (unit -> unit) -> unit := "ltac2" "enter".
+Ltac2 @ external case : (unit -> 'a) -> ('a * (exn -> 'a)) result := "ltac2" "case".
 
 (** Proof state manipulation *)
 
@@ -43,6 +44,12 @@ Ltac2 @ external hyp : ident -> constr := "ltac2" "hyp".
 (** Panics if there is more than one goal under focus. If there is no
     goal under focus, looks for the section variable with the given name.
     If there is one, looks for the hypothesis with the given name. *)
+
+Ltac2 @ external hyps : unit -> (ident * constr option * constr) list := "ltac2" "hyps".
+(** Panics if there is more than one goal under focus. If there is no
+    goal under focus, returns the list of section variables.
+    If there is one, returns the list of hypotheses. In both cases, the
+    list is ordered with rightmost values being last introduced. *)
 
 (** Refinement *)
 

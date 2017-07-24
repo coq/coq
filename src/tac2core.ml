@@ -27,6 +27,15 @@ let val_tag t = match val_tag t with
 let val_constr = val_tag (topwit Stdarg.wit_constr)
 let val_ident = val_tag (topwit Stdarg.wit_ident)
 let val_pp = Val.create "ltac2:pp"
+let val_sort = Val.create "ltac2:sort"
+let val_cast = Val.create "ltac2:cast"
+let val_inductive = Val.create "ltac2:inductive"
+let val_constant = Val.create "ltac2:constant"
+let val_constructor = Val.create "ltac2:constructor"
+let val_projection = Val.create "ltac2:projection"
+let val_univ = Val.create "ltac2:universe"
+let val_kont : (Exninfo.iexn -> valexpr Proofview.tactic) Val.typ =
+  Val.create "ltac2:kont"
 
 let extract_val (type a) (tag : a Val.typ) (Val.Dyn (tag', v)) : a =
 match Val.eq tag tag' with
@@ -121,8 +130,38 @@ let to_exn c = match c with
 | ValOpn (kn, c) -> (LtacError (kn, c), Exninfo.null)
 | _ -> to_ext val_exn c
 
+let of_option = function
+| None -> ValInt 0
+| Some c -> ValBlk (0, [|c|])
+
+let to_option = function
+| ValInt 0 -> None
+| ValBlk (0, [|c|]) -> Some c
+| _ -> assert false
+
 let of_pp c = of_ext val_pp c
 let to_pp c = to_ext val_pp c
+
+let of_tuple cl = ValBlk (0, cl)
+let to_tuple = function
+| ValBlk (0, cl) -> cl
+| _ -> assert false
+
+let of_array = of_tuple
+let to_array = to_tuple
+
+let of_name c = match c with
+| Anonymous -> of_option None
+| Name id -> of_option (Some (of_ident id))
+
+let of_instance sigma u =
+  let u = Univ.Instance.to_array (EConstr.EInstance.kind sigma u) in
+  of_array (Array.map (fun v -> of_ext val_univ v) u)
+
+let of_rec_declaration (nas, ts, cs) =
+  (of_array (Array.map of_name nas),
+  of_array (Array.map of_constr ts),
+  of_array (Array.map of_constr cs))
 
 end
 
@@ -174,11 +213,11 @@ let prm_print : ml_tactic = function
 | _ -> assert false
 
 let prm_message_of_int : ml_tactic = function
-| [ValInt s] -> return (ValExt (Val.Dyn (val_pp, int s)))
+| [ValInt s] -> return (Value.of_pp (int s))
 | _ -> assert false
 
 let prm_message_of_string : ml_tactic = function
-| [ValStr s] -> return (ValExt (Val.Dyn (val_pp, str (Bytes.to_string s))))
+| [ValStr s] -> return (Value.of_pp (str (Bytes.to_string s)))
 | _ -> assert false
 
 let prm_message_of_constr : ml_tactic = function
@@ -186,8 +225,15 @@ let prm_message_of_constr : ml_tactic = function
   pf_apply begin fun env sigma ->
     let c = Value.to_constr c in
     let pp = Printer.pr_econstr_env env sigma c in
-    return (ValExt (Val.Dyn (val_pp, pp)))
+    return (Value.of_pp pp)
   end
+| _ -> assert false
+
+let prm_message_of_ident : ml_tactic = function
+| [c] ->
+  let c = Value.to_ident c in
+  let pp = Id.print c in
+  return (Value.of_pp pp)
 | _ -> assert false
 
 let prm_message_concat : ml_tactic = function
@@ -298,6 +344,101 @@ let prm_constr_equal : ml_tactic = function
   Proofview.tclUNIT (Value.of_bool b)
 | _ -> assert false
 
+let prm_constr_kind : ml_tactic = function
+| [c] ->
+  let open Constr in
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let c = Value.to_constr c in
+  return begin match EConstr.kind sigma c with
+  | Rel n ->
+    ValBlk (0, [|Value.of_int n|])
+  | Var id ->
+    ValBlk (1, [|Value.of_ident id|])
+  | Meta n ->
+    ValBlk (2, [|Value.of_int n|])
+  | Evar (evk, args) ->
+    ValBlk (3, [|
+      Value.of_int (Evar.repr evk);
+      Value.of_array (Array.map Value.of_constr args)
+    |])
+  | Sort s ->
+    ValBlk (4, [|Value.of_ext val_sort s|])
+  | Cast (c, k, t) ->
+    ValBlk (5, [|
+      Value.of_constr c;
+      Value.of_ext val_cast k;
+      Value.of_constr t;
+    |])
+  | Prod (na, t, u) ->
+    ValBlk (6, [|
+      Value.of_name na;
+      Value.of_constr t;
+      Value.of_constr u;
+    |])
+  | Lambda (na, t, c) ->
+    ValBlk (7, [|
+      Value.of_name na;
+      Value.of_constr t;
+      Value.of_constr c;
+    |])
+  | LetIn (na, b, t, c) ->
+    ValBlk (8, [|
+      Value.of_name na;
+      Value.of_constr b;
+      Value.of_constr t;
+      Value.of_constr c;
+    |])
+  | App (c, cl) ->
+    ValBlk (9, [|
+      Value.of_constr c;
+      Value.of_array (Array.map Value.of_constr cl)
+    |])
+  | Const (cst, u) ->
+    ValBlk (10, [|
+      Value.of_ext val_constant cst;
+      Value.of_instance sigma u;
+    |])
+  | Ind (ind, u) ->
+    ValBlk (11, [|
+      Value.of_ext val_inductive ind;
+      Value.of_instance sigma u;
+    |])
+  | Construct (cstr, u) ->
+    ValBlk (12, [|
+      Value.of_ext val_constructor cstr;
+      Value.of_instance sigma u;
+    |])
+  | Case (_, c, t, bl) ->
+    ValBlk (13, [|
+      Value.of_constr c;
+      Value.of_constr t;
+      Value.of_array (Array.map (fun c -> Value.of_constr c) bl);
+    |])
+  | Fix ((recs, i), def) ->
+    let (nas, ts, cs) = Value.of_rec_declaration def in
+    ValBlk (14, [|
+      Value.of_array (Array.map Value.of_int recs);
+      Value.of_int i;
+      nas;
+      ts;
+      cs;
+    |])
+  | CoFix (i, def) ->
+    let (nas, ts, cs) = Value.of_rec_declaration def in
+    ValBlk (15, [|
+      Value.of_int i;
+      nas;
+      ts;
+      cs;
+    |])
+  | Proj (p, c) ->
+    ValBlk (16, [|
+      Value.of_ext val_projection p;
+      Value.of_constr c;
+    |])
+  end
+| _ -> assert false
+
 (** Error *)
 
 let prm_throw : ml_tactic = function
@@ -315,7 +456,7 @@ let prm_zero : ml_tactic = function
   Proofview.tclZERO ~info e
 | _ -> assert false
 
-(** exn -> 'a *)
+(** (unit -> 'a) -> (exn -> 'a) -> 'a *)
 let prm_plus : ml_tactic = function
 | [x; k] ->
   Proofview.tclOR (thaw x) (fun e -> interp_app k [Value.of_exn e])
@@ -350,6 +491,30 @@ let prm_enter : ml_tactic = function
 | [f] ->
   let f = Proofview.tclIGNORE (thaw f) in
   Proofview.tclINDEPENDENT f >>= fun () -> return v_unit
+| _ -> assert false
+
+let k_var = Id.of_string "k"
+let e_var = Id.of_string "e"
+let prm_apply_kont_h = pname "apply_kont"
+
+(** (unit -> 'a) -> ('a * ('exn -> 'a)) result *)
+let prm_case : ml_tactic = function
+| [f] ->
+  Proofview.tclCASE (thaw f) >>= begin function
+  | Proofview.Next (x, k) ->
+    let k = {
+      clos_env = Id.Map.singleton k_var (Value.of_ext val_kont k);
+      clos_var = [Name e_var];
+      clos_exp = GTacPrm (prm_apply_kont_h, [GTacVar k_var; GTacVar e_var]);
+    } in
+    return (ValBlk (0, [| Value.of_tuple [| x; ValCls k |] |]))
+  | Proofview.Fail e -> return (ValBlk (1, [| Value.of_exn e |]))
+  end
+| _ -> assert false
+
+(** 'a kont -> exn -> 'a *)
+let prm_apply_kont : ml_tactic = function
+| [k; e] -> (Value.to_ext val_kont k) (Value.to_exn e)
 | _ -> assert false
 
 (** int -> int -> (unit -> 'a) -> 'a *)
@@ -400,6 +565,25 @@ let prm_hyp : ml_tactic = function
   end
 | _ -> assert false
 
+let prm_hyps : ml_tactic = function
+| [_] ->
+  pf_apply begin fun env _ ->
+    let open Context.Named.Declaration in
+    let hyps = Environ.named_context env in
+    let map = function
+    | LocalAssum (id, t) ->
+      let t = EConstr.of_constr t in
+      Value.of_tuple [|Value.of_ident id; Value.of_option None; Value.of_constr t|]
+    | LocalDef (id, c, t) ->
+      let c = EConstr.of_constr c in
+      let t = EConstr.of_constr t in
+      Value.of_tuple [|Value.of_ident id; Value.of_option (Some (Value.of_constr c)); Value.of_constr t|]
+    in
+    let hyps = List.rev_map map hyps in
+    return (Value.of_list hyps)
+  end
+| _ -> assert false
+
 (** (unit -> constr) -> unit *)
 let prm_refine : ml_tactic = function
 | [c] ->
@@ -416,6 +600,7 @@ let () = Tac2env.define_primitive (pname "print") prm_print
 let () = Tac2env.define_primitive (pname "message_of_string") prm_message_of_string
 let () = Tac2env.define_primitive (pname "message_of_int") prm_message_of_int
 let () = Tac2env.define_primitive (pname "message_of_constr") prm_message_of_constr
+let () = Tac2env.define_primitive (pname "message_of_ident") prm_message_of_ident
 let () = Tac2env.define_primitive (pname "message_concat") prm_message_concat
 
 let () = Tac2env.define_primitive (pname "array_make") prm_array_make
@@ -430,6 +615,7 @@ let () = Tac2env.define_primitive (pname "string_set") prm_string_set
 
 let () = Tac2env.define_primitive (pname "constr_type") prm_constr_type
 let () = Tac2env.define_primitive (pname "constr_equal") prm_constr_equal
+let () = Tac2env.define_primitive (pname "constr_kind") prm_constr_kind
 
 let () = Tac2env.define_primitive (pname "int_equal") prm_int_equal
 let () = Tac2env.define_primitive (pname "int_compare") prm_int_compare
@@ -446,6 +632,8 @@ let () = Tac2env.define_primitive (pname "once") prm_once
 let () = Tac2env.define_primitive (pname "dispatch") prm_dispatch
 let () = Tac2env.define_primitive (pname "extend") prm_extend
 let () = Tac2env.define_primitive (pname "enter") prm_enter
+let () = Tac2env.define_primitive (pname "case") prm_case
+let () = Tac2env.define_primitive (pname "apply_kont") prm_apply_kont
 
 let () = Tac2env.define_primitive (pname "focus") prm_focus
 let () = Tac2env.define_primitive (pname "shelve") prm_shelve
@@ -453,6 +641,7 @@ let () = Tac2env.define_primitive (pname "shelve_unifiable") prm_shelve_unifiabl
 let () = Tac2env.define_primitive (pname "new_goal") prm_new_goal
 let () = Tac2env.define_primitive (pname "goal") prm_goal
 let () = Tac2env.define_primitive (pname "hyp") prm_hyp
+let () = Tac2env.define_primitive (pname "hyps") prm_hyps
 let () = Tac2env.define_primitive (pname "refine") prm_refine
 
 (** ML types *)

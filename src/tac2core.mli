@@ -59,4 +59,13 @@ val to_exn : valexpr -> Exninfo.iexn
 val of_ident : Id.t -> valexpr
 val to_ident : valexpr -> Id.t
 
+val of_array : valexpr array -> valexpr
+val to_array : valexpr -> valexpr array
+
+val of_tuple : valexpr array -> valexpr
+val to_tuple : valexpr -> valexpr array
+
+val of_option : valexpr option -> valexpr
+val to_option : valexpr -> valexpr option
+
 end

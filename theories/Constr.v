@@ -16,28 +16,28 @@ Ltac2 @ external equal : constr -> constr -> bool := "ltac2" "constr_equal".
 
 Module Unsafe.
 
-(** Low-level access to kernel term. Use with care! *)
+(** Low-level access to kernel terms. Use with care! *)
 
 Ltac2 Type kind := [
 | Rel (int)
 | Var (ident)
 | Meta (meta)
-| Evar (evar, constr list)
+| Evar (evar, constr array)
 | Sort (sort)
 | Cast (constr, cast, constr)
 | Prod (ident option, constr, constr)
 | Lambda (ident option, constr, constr)
 | LetIn (ident option, constr, constr, constr)
-| App (constr, constr list)
+| App (constr, constr array)
 | Constant (constant, instance)
 | Ind (inductive, instance)
 | Constructor (inductive, instance)
-(*
-  | Case      of case_info * 'constr * 'constr * 'constr array
-  | Fix       of ('constr, 'types) pfixpoint
-  | CoFix     of ('constr, 'types) pcofixpoint
-*)
+| Case (constr, constr, constr array)
+| Fix (int array, int, ident option array, constr array, constr array)
+| CoFix (int, ident option array, constr array, constr array)
 | Proj (projection, constr)
 ].
+
+Ltac2 @ external kind : constr -> kind := "ltac2" "constr_kind".
 
 End Unsafe.

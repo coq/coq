@@ -117,3 +117,15 @@ Goal True.
 Proof.
 refine! I.
 Abort.
+
+Goal True.
+Proof.
+let x _ := plus (fun _ => 0) (fun _ => 1) in
+match case x with
+| Val x =>
+  match x with
+  | (x, k) => Message.print (Message.of_int (k Not_found))
+  end
+| Err x => Message.print (Message.of_string "Err")
+end.
+Abort.

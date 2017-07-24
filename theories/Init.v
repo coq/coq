@@ -41,6 +41,8 @@ Ltac2 Type 'a ref := { mutable contents : 'a }.
 
 Ltac2 Type bool := [ true | false ].
 
+Ltac2 Type 'a result := [ Val ('a) | Err (exn) ].
+
 (** Pervasive exceptions *)
 
 Ltac2 Type exn ::= [ Out_of_bounds ].
