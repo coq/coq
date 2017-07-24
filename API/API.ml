@@ -169,7 +169,6 @@ module Stdarg = Stdarg
 module Genintern = Genintern
 module Constrexpr_ops = Constrexpr_ops
 module Notation_ops = Notation_ops
-module Ppextend = Ppextend
 module Notation = Notation
 module Dumpglob = Dumpglob
 (* module Syntax_def *)

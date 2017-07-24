@@ -15,6 +15,7 @@ open Libnames
 open Constrexpr
 open Names
 open Misctypes
+open Notation_term
 
 val extract_lam_binders :
   constr_expr -> local_binder_expr list * constr_expr
@@ -24,7 +25,7 @@ val split_fix :
   int -> constr_expr -> constr_expr ->
   local_binder_expr list *  constr_expr * constr_expr
 
-val prec_less : int -> int * Ppextend.parenRelation -> bool
+val prec_less : precedence -> tolerability -> bool
 
 val pr_tight_coma : unit -> Pp.t
 

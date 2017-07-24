@@ -249,7 +249,7 @@ END
 let pr_by_arg_tac _prc _prlc prtac opt_c =
   match opt_c with
     | None -> mt ()
-    | Some t -> hov 2 (str "by" ++ spc () ++ prtac (3,Ppextend.E) t)
+    | Some t -> hov 2 (str "by" ++ spc () ++ prtac (3,Notation_term.E) t)
 
 ARGUMENT EXTEND by_arg_tac
   TYPED AS tactic_opt

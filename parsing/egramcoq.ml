@@ -443,7 +443,7 @@ let make_act : type r. r target -> _ -> r gen_eval = function
   CAst.make ~loc @@ CPatNotation (notation, env, [])
 
 let extend_constr state forpat ng =
-  let n = ng.notgram_level in
+  let n,_,_ = ng.notgram_level in
   let assoc = ng.notgram_assoc in
   let (entry, level) = interp_constr_entry_key forpat n in
   let fold (accu, state) pt =

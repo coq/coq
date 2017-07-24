@@ -3184,6 +3184,10 @@ sig
                        | NCast of notation_constr * notation_constr Misctypes.cast_type
   type interpretation = (Names.Id.t * (subscopes * notation_var_instance_type)) list *
     notation_constr
+  type precedence = int
+  type parenRelation =
+    | L | E | Any | Prec of precedence
+  type tolerability = precedence * parenRelation
 end
 
 module Tactypes :
@@ -4179,16 +4183,6 @@ sig
                                                     'a -> Notation_term.notation_constr -> Glob_term.glob_constr
 end
 
-module Ppextend :
-sig
-
-  type precedence = int
-  type parenRelation =
-    | L | E | Any | Prec of precedence
-  type tolerability = precedence * parenRelation
-
-end
-
 module Notation :
 sig
   type cases_pattern_status = bool
@@ -4880,7 +4874,7 @@ sig
   val pr_with_comments : ?loc:Loc.t -> Pp.t -> Pp.t
   val pr_lident : Names.Id.t Loc.located -> Pp.t
   val pr_lname : Names.Name.t Loc.located -> Pp.t
-  val prec_less : int -> int * Ppextend.parenRelation -> bool
+  val prec_less : int -> int * Notation_term.parenRelation -> bool
   val pr_constr_expr : Constrexpr.constr_expr -> Pp.t
   val pr_lconstr_expr : Constrexpr.constr_expr -> Pp.t
   val pr_constr_pattern_expr : Constrexpr.constr_pattern_expr -> Pp.t

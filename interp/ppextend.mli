@@ -6,15 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Notation_term
+
 (** {6 Pretty-print. } *)
-
-(** Dealing with precedences *)
-
-type precedence = int
-
-type parenRelation = L | E | Any | Prec of precedence
-
-type tolerability = precedence * parenRelation
 
 type ppbox =
   | PpHB of int

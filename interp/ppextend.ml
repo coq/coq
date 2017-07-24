@@ -7,16 +7,9 @@
 (************************************************************************)
 
 open Pp
+open Notation_term
 
 (*s Pretty-print. *)
-
-(* Dealing with precedences *)
-
-type precedence = int
-
-type parenRelation = L | E | Any | Prec of precedence
-
-type tolerability = precedence * parenRelation
 
 type ppbox =
   | PpHB of int

@@ -15,6 +15,7 @@ open Nameops
 open Libnames
 open Pputils
 open Ppextend
+open Notation_term
 open Constrexpr
 open Constrexpr_ops
 open Decl_kinds
@@ -737,7 +738,7 @@ let tag_var = tag Tag.variable
     pr_lconstr_pattern_expr : constr_pattern_expr -> Pp.t
   }
 
-  type precedence =  Ppextend.precedence * Ppextend.parenRelation
+  type precedence =  Notation_term.precedence * Notation_term.parenRelation
   let modular_constr_pr = pr
   let rec fix rf x = rf (fix rf) x
   let pr = fix modular_constr_pr mt

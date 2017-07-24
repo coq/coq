@@ -41,7 +41,6 @@ open Context.Named.Declaration
 (**********************************************************************)
 (* Scope of symbols *)
 
-type level = precedence * tolerability list * notation_var_internalization_type list
 type delimiters = string
 type notation_location = (DirPath.t * DirPath.t) * string
 

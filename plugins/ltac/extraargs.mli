@@ -64,7 +64,7 @@ val wit_by_arg_tac :
   Geninterp.Val.t option) Genarg.genarg_type
 
 val pr_by_arg_tac : 
-  (int * Ppextend.parenRelation -> raw_tactic_expr -> Pp.t) ->
+  (int * Notation_term.parenRelation -> raw_tactic_expr -> Pp.t) ->
   raw_tactic_expr option -> Pp.t
 
 val test_lpar_id_colon : unit Pcoq.Gram.entry

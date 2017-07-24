@@ -16,7 +16,7 @@ open Misctypes
 open Environ
 open Constrexpr
 open Tacexpr
-open Ppextend
+open Notation_term
 
 type 'a grammar_tactic_prod_item_expr =
 | TacTerm of string

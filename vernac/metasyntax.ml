@@ -705,8 +705,16 @@ let error_incompatible_level ntn oldprec prec =
     spc() ++ str "while it is now required to be" ++ spc() ++
     pr_level ntn prec ++ str ".")
 
+let error_parsing_incompatible_level ntn ntn' oldprec prec =
+  user_err
+    (str "Notation " ++ str ntn ++ str " relies on a parsing rule for " ++ str ntn' ++ spc() ++
+    str " which is already defined" ++ spc() ++
+    pr_level ntn oldprec ++
+    spc() ++ str "while it is now required to be" ++ spc() ++
+    pr_level ntn prec ++ str ".")
+
 type syntax_extension = {
-  synext_level : Notation.level;
+  synext_level : Notation_term.level;
   synext_notation : notation;
   synext_notgram : notation_grammar;
   synext_unparsing : unparsing list;
@@ -720,19 +728,29 @@ let is_active_compat = function
 
 type syntax_extension_obj = locality_flag * syntax_extension
 
+let check_and_extend_constr_grammar ntn rule =
+  try
+    let ntn_for_grammar = rule.notgram_notation in
+    if String.equal ntn ntn_for_grammar then raise Not_found;
+    let prec = rule.notgram_level in
+    let oldprec = Notation.level_of_notation ntn_for_grammar in
+    if not (Notation.level_eq prec oldprec) then error_parsing_incompatible_level ntn ntn_for_grammar oldprec prec;
+  with Not_found ->
+    Egramcoq.extend_constr_grammar rule
+
 let cache_one_syntax_extension se =
   let ntn = se.synext_notation in
   let prec = se.synext_level in
-  let onlyprint = fst se.synext_notgram in
+  let onlyprint = se.synext_notgram.notgram_onlyprinting in
   try
     let oldprec = Notation.level_of_notation ntn in
-    if not (Notation.level_eq prec oldprec) then error_incompatible_level ntn oldprec prec
+    if not (Notation.level_eq prec oldprec) then error_incompatible_level ntn oldprec prec;
   with Not_found ->
     if is_active_compat se.synext_compat then begin
       (* Reserve the notation level *)
       Notation.declare_notation_level ntn prec;
       (* Declare the parsing rule *)
-      if not onlyprint then List.iter Egramcoq.extend_constr_grammar (snd se.synext_notgram);
+      if not onlyprint then List.iter (check_and_extend_constr_grammar ntn) se.synext_notgram.notgram_rules;
       (* Declare the notation rule *)
       Notation.declare_notation_rule ntn
         ~extra:se.synext_extra (se.synext_unparsing, pi1 prec) se.synext_notgram
@@ -747,7 +765,7 @@ let subst_printing_rule subst x = x
 
 let subst_syntax_extension (subst, (local, sy)) =
   (local, { sy with
-    synext_notgram = (fst sy.synext_notgram, List.map (subst_parsing_rule subst) (snd sy.synext_notgram));
+    synext_notgram = { sy.synext_notgram with notgram_rules = List.map (subst_parsing_rule subst) sy.synext_notgram.notgram_rules };
     synext_unparsing = subst_printing_rule subst sy.synext_unparsing;
   })
 
@@ -1045,6 +1063,8 @@ let remove_curly_brackets l =
 
 module SynData = struct
 
+  type subentry_types = (Id.t * (production_level, production_position) constr_entry_key_gen) list
+
   (* XXX: Document *)
   type syn_data = {
 
@@ -1067,14 +1087,11 @@ module SynData = struct
     intern_typs   : notation_var_internalization_type list;
 
     (* Notation data for parsing *)
-
-    level         : int;
-    pa_syntax_data : (Id.t * (production_level, production_position) constr_entry_key_gen) list * (* typs    *)
-                     symbol list;                                                                 (* symbols *)
-    pp_syntax_data : (Id.t * (production_level, production_position) constr_entry_key_gen) list * (* typs    *)
-                      symbol list;                                                                (* symbols *)
+    level         : level;
+    pa_syntax_data : subentry_types * symbol list;
+    pp_syntax_data : subentry_types * symbol list;
     not_data      : notation *                   (* notation *)
-                    (int * parenRelation) list * (* precedence *)
+                    level *                      (* level, precedence, types *)
                     bool;                        (* needs_squash *)
   }
 
@@ -1124,7 +1141,7 @@ let compute_syntax_data df modifiers =
   let i_typs = set_internalization_type sy_typs in
   let pa_sy_data = (sy_typs_for_grammar,symbols_for_grammar) in
   let pp_sy_data = (sy_typs,symbols) in
-  let sy_fulldata = (ntn_for_grammar,prec,need_squash) in
+  let sy_fulldata = (ntn_for_grammar,(n,prec_for_grammar,i_typs),need_squash) in
   let df' = ((Lib.library_dp(),Lib.current_dirpath true),df) in
   let i_data = ntn_for_interp, df' in
 
@@ -1143,7 +1160,7 @@ let compute_syntax_data df modifiers =
     mainvars;
     intern_typs = i_typs;
 
-    level  = n;
+    level  = (n,prec,i_typs);
     pa_syntax_data = pa_sy_data;
     pp_syntax_data = pp_sy_data;
     not_data    = sy_fulldata;
@@ -1228,7 +1245,7 @@ let with_syntax_protection f x =
 
 exception NoSyntaxRule
 
-let recover_syntax ntn =
+let recover_notation_syntax ntn =
   try
     let prec = Notation.level_of_notation ntn in
     let pp_rule,_ = Notation.find_notation_printing_rule ntn in
@@ -1245,18 +1262,13 @@ let recover_syntax ntn =
     raise NoSyntaxRule
 
 let recover_squash_syntax sy =
-  let sq = recover_syntax "{ _ }" in
-  sy :: snd (sq.synext_notgram)
-
-let recover_notation_syntax ntn =
-  let sy = recover_syntax ntn in
-  let onlyprint,_ = sy.synext_notgram in
-  pi3 sy.synext_level, sy, onlyprint
+  let sq = recover_notation_syntax "{ _ }" in
+  sy :: sq.synext_notgram.notgram_rules
 
 (**********************************************************************)
 (* Main entry point for building parsing and printing rules           *)
 
-let make_pa_rule i_typs level (typs,symbols) ntn need_squash =
+let make_pa_rule level (typs,symbols) ntn need_squash =
   let assoc = recompute_assoc typs in
   let prod = make_production typs symbols in
   let sy = {
@@ -1264,7 +1276,6 @@ let make_pa_rule i_typs level (typs,symbols) ntn need_squash =
     notgram_assoc = assoc;
     notgram_notation = ntn;
     notgram_prods = prod;
-    notgram_typs = i_typs;
   } in
   (* By construction, the rule for "{ _ }" is declared, but we need to
      redeclare it because the file where it is declared needs not be open
@@ -1278,12 +1289,12 @@ let make_pp_rule level (typs,symbols) fmt =
 
 (* let make_syntax_rules i_typs (ntn,prec,need_squash) sy_data fmt extra onlyprint compat = *)
 let make_syntax_rules (sd : SynData.syn_data) = let open SynData in
-  let ntn_for_grammar, prec, need_squash = sd.not_data in
-  let pa_rule = make_pa_rule sd.intern_typs sd.level sd.pa_syntax_data ntn_for_grammar need_squash in
-  let pp_rule = make_pp_rule sd.level sd.pp_syntax_data sd.format in {
-    synext_level    = (sd.level, prec, sd.intern_typs);
+  let ntn_for_grammar, prec_for_grammar, need_squash = sd.not_data in
+  let pa_rule = make_pa_rule prec_for_grammar sd.pa_syntax_data ntn_for_grammar need_squash in
+  let pp_rule = make_pp_rule (pi1 sd.level) sd.pp_syntax_data sd.format in {
+    synext_level    = sd.level;
     synext_notation = fst sd.info;
-    synext_notgram  = (sd.only_printing,pa_rule);
+    synext_notgram  = { notgram_onlyprinting = sd.only_printing; notgram_rules = pa_rule };
     synext_unparsing = pp_rule;
     synext_extra  = sd.extra;
     synext_compat = sd.compat;
@@ -1332,11 +1343,11 @@ let add_notation_interpretation_core local df ?(impls=empty_internalization_env)
   let (recvars,mainvars,symbs) = analyze_notation_tokens ~onlyprint dfs in
   (* Recover types of variables and pa/pp rules; redeclare them if needed *)
   let i_typs, onlyprint = if not (is_numeral symbs) then begin
-    let i_typs,sy_rules,onlyprint' = recover_notation_syntax (make_notation_key symbs) in
-    let () = Lib.add_anonymous_leaf (inSyntaxExtension (local,sy_rules)) in
+    let sy = recover_notation_syntax (make_notation_key symbs) in
+    let () = Lib.add_anonymous_leaf (inSyntaxExtension (local,sy)) in
     (** If the only printing flag has been explicitly requested, put it back *)
-    let onlyprint = onlyprint || onlyprint' in
-    i_typs, onlyprint
+    let onlyprint = onlyprint || sy.synext_notgram.notgram_onlyprinting in
+    pi3 sy.synext_level, onlyprint
   end else [], false in
   (* Declare interpretation *)
   let path = (Lib.library_dp(), Lib.current_dirpath true) in
