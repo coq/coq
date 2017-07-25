@@ -83,7 +83,7 @@ type raw_patexpr =
 type raw_tacexpr =
 | CTacAtm of atom located
 | CTacRef of tacref or_relid
-| CTacFun of Loc.t * (Name.t located * raw_typexpr option) list * raw_tacexpr
+| CTacFun of Loc.t * (raw_patexpr * raw_typexpr option) list * raw_tacexpr
 | CTacApp of Loc.t * raw_tacexpr * raw_tacexpr list
 | CTacLet of Loc.t * rec_flag * (Name.t located * raw_typexpr option * raw_tacexpr) list * raw_tacexpr
 | CTacTup of raw_tacexpr list located

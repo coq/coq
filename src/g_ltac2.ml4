@@ -125,8 +125,8 @@ GEXTEND Gram
       | l = Prim.ident -> Loc.tag ~loc:!@loc (Name l) ] ]
   ;
   input_fun:
-    [ [ b = binder -> (b, None)
-      | "("; b = binder; ":"; t = tac2type; ")" -> (b, Some t) ] ]
+    [ [ b = tac2pat LEVEL "0" -> (b, None)
+      | "("; b = tac2pat; t = OPT [ ":"; t = tac2type -> t ]; ")" -> (b, t) ] ]
   ;
   tac2def_body:
     [ [ name = binder; it = LIST0 input_fun; ":="; e = tac2expr ->

@@ -585,6 +585,14 @@ let is_constructor env qid = match get_variable env qid with
 | ArgArg (TacConstructor _) -> true
 | _ -> false
 
+(** Used to generate a fresh tactic variable for pattern-expansion *)
+let fresh_var env =
+  let bad id =
+    Id.Map.mem id env.env_var ||
+    (try ignore (locate_ltac (qualid_of_ident id)); true with Not_found -> false)
+  in
+  Namegen.next_ident_away_from (Id.of_string "p") bad
+
 let rec intern_rec env = function
 | CTacAtm (_, atm) -> intern_atm env atm
 | CTacRef qid as e ->
@@ -600,16 +608,24 @@ let rec intern_rec env = function
     intern_constructor env loc kn []
   end
 | CTacFun (loc, bnd, e) ->
-  let fold (env, bnd, tl) ((_, na), t) =
+  let fold (env, bnd, tl) (pat, t) =
     let t = match t with
     | None -> GTypVar (fresh_id env)
     | Some t -> intern_type env t
     in
-    let env = push_name na (monomorphic t) env in
-    (env, na :: bnd, t :: tl)
+    let id = fresh_var env in
+    let env = push_name (Name id) (monomorphic t) env in
+    (env, (id, pat) :: bnd, t :: tl)
   in
   let (env, bnd, tl) = List.fold_left fold (env, [], []) bnd in
-  let bnd = List.rev bnd in
+  (** Expand pattern: [fun p => t] becomes [fun x => match x with p => t end] *)
+  let fold e (id, pat) =
+    let loc = loc_of_patexpr pat in
+    let qid = RelId (Loc.tag ~loc (qualid_of_ident id)) in
+    CTacCse (loc, CTacRef qid, [pat, e])
+  in
+  let e = List.fold_left fold e bnd in
+  let bnd = List.rev_map (fun (id, _) -> Name id) bnd in
   let (e, t) = intern_rec env e in
   let t = List.fold_left (fun accu t -> GTypArrow (t, accu)) t tl in
   (GTacFun (bnd, e), t)
@@ -1125,6 +1141,17 @@ let get_projection0 var = match var with
   kn
 | AbsKn kn -> kn
 
+let rec ids_of_pattern accu = function
+| CPatAny _ -> accu
+| CPatRef (_, RelId (_, qid), pl) ->
+  let (dp, id) = repr_qualid qid in
+  let accu = if DirPath.is_empty dp then Id.Set.add id accu else accu in
+  List.fold_left ids_of_pattern accu pl
+| CPatRef (_, AbsKn _, pl) ->
+  List.fold_left ids_of_pattern accu pl
+| CPatTup (_, pl) ->
+  List.fold_left ids_of_pattern accu pl
+
 let rec globalize ids e = match e with
 | CTacAtm _ -> e
 | CTacRef ref ->
@@ -1134,8 +1161,13 @@ let rec globalize ids e = match e with
   | ArgArg kn -> CTacRef (AbsKn kn)
   end
 | CTacFun (loc, bnd, e) ->
-  let fold accu ((_, na), _) = add_name accu na in
-  let ids = List.fold_left fold ids bnd in
+  let fold (pats, accu) (pat, t) =
+    let accu = ids_of_pattern accu pat in
+    let pat = globalize_pattern ids pat in
+    ((pat, t) :: pats, accu)
+  in
+  let bnd, ids = List.fold_left fold ([], ids) bnd in
+  let bnd = List.rev bnd in
   let e = globalize ids e in
   CTacFun (loc, bnd, e)
 | CTacApp (loc, e, el) ->

@@ -734,7 +734,7 @@ let dummy_loc = Loc.make_loc (-1, -1)
 
 let rthunk e =
   let loc = Tac2intern.loc_of_tacexpr e in
-  let var = [Loc.tag ~loc Anonymous, Some (CTypRef (loc, AbsKn Core.t_unit, []))] in
+  let var = [CPatAny loc, Some (CTypRef (loc, AbsKn Core.t_unit, []))] in
   CTacFun (loc, var, e)
 
 let add_generic_scope s entry arg =
