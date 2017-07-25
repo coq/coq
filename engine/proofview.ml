@@ -1000,7 +1000,7 @@ module Unsafe = struct
   let (>>=) = tclBIND
 
   let tclEVARS evd =
-    Pv.modify (fun ps -> { ps with solution = evd })
+    Pv.modify (fun ps -> { ps with solution = Evd.clear_metas evd })
 
   let tclNEWGOALS gls =
     Pv.modify begin fun step ->
