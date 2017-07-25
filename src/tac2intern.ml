@@ -874,7 +874,7 @@ and intern_case env loc e pl =
             (succ ncst, narg)
           else
             let () =
-              if Option.is_empty const.(narg) then
+              if Option.is_empty nonconst.(narg) then
                 let ids = Array.map_of_list (fun _ -> Anonymous) args in
                 nonconst.(narg) <- Some (ids, br')
             in
