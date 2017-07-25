@@ -502,6 +502,7 @@ let leibniz_rewrite_ebindings_clause cls lft2rgt tac pat occs
   c t l with_evars frzevars dep_proof_ok hdcncl =
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
+  let sigma = Evd.clear_metas sigma in
   let ts = Hints.Hint_db.transparent_state (Hints.searchtable_map Hints.rewrite_db) in
   let frozen_evars = if frzevars then Tacmach.New.pf_undefined_evars gl else Evar.Set.empty in
   let isatomic = isProd sigma (whd_zeta sigma hdcncl) in
