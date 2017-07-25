@@ -61,11 +61,15 @@ GTKLIBS=$(shell pkg-config --variable=libdir gtk+-2.0)
 # CoqIde special targets
 ###########################################################################
 
-.PHONY: coqide coqide-opt coqide-byte coqide-files
+.PHONY: coqide coqide-opt coqide-byte coqide-files coqide-binaries
 .PHONY: ide-toploop ide-byteloop ide-optloop
 
-# target to build CoqIde
+# target to build CoqIde (native version) and the stuff needed to lauch it
 coqide: coqide-files coqide-opt theories/Init/Prelude.vo
+
+# target to build CoqIde (in native and byte versions), and no more
+# NB: this target is used in the opam package coq-coqide
+coqide-binaries: coqide-opt coqide-byte
 
 ifeq ($(HASCOQIDE),opt)
 coqide-opt: $(COQIDE) ide-toploop
