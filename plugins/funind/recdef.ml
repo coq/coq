@@ -9,6 +9,7 @@
 
 module CVars = Vars
 
+open Constr
 open Term
 open EConstr
 open Vars

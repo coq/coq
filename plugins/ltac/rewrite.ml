@@ -12,6 +12,7 @@ open CErrors
 open Util
 open Nameops
 open Namegen
+open Constr
 open Term
 open EConstr
 open Vars

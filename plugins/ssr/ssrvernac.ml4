@@ -8,7 +8,6 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
-open Grammar_API
 open Names
 open Term
 open Termops

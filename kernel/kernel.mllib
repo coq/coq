@@ -13,9 +13,11 @@ Mod_subst
 Cbytecodes
 Copcodes
 Cemitcodes
+Opaqueproof
+Declarations
+Entries
 Nativevalues
 Primitives
-Opaqueproof
 Declareops
 Retroknowledge
 Conv_oracle
@@ -41,5 +43,4 @@ Nativelibrary
 Safe_typing
 Vm
 Csymtable
-Declarations
 Vconv
