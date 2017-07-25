@@ -6,199 +6,265 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-module Ppvernac = Ppvernac
-module Command = Command
+(* Warning, this file respects the dependency order established in Coq.
+
+   To see such order issue the comand:
+
+```
+bash -c 'for i in kernel intf library engine pretyping interp proofs parsing printing tactics vernac stm toplevel; do echo -e "\n## $i files" && cat ${i}/${i}.mllib; done && echo -e "\n## highparsing files" && cat parsing/highparsing.mllib' > API/link
+```
+ *)
+
+(******************************************************************************)
+(* config                                                                     *)
+(******************************************************************************)
+module Coq_config = Coq_config
+
+(******************************************************************************)
+(* Kernel *)
+(******************************************************************************)
+(* "mli" files *)
+module Declarations = Declarations
+module Entries = Entries
+
+module Names = Names
+(* module Uint31 *)
+module Univ = Univ
+module UGraph = UGraph
+module Esubst = Esubst
+module Sorts = Sorts
+module Evar = Evar
+module Constr = Constr
+module Context = Context
+module Vars = Vars
+module Term = Term
+module Mod_subst = Mod_subst
+(* module Cbytecodes *)
+(* module Copcodes *)
+(* module Cemitcodes *)
+(* module Nativevalues *)
+(* module Primitives *)
+module Opaqueproof = Opaqueproof
+module Declareops = Declareops
+module Retroknowledge = Retroknowledge
+(* module Conv_oracle *)
+(* module Pre_env *)
+(* module Cbytegen *)
+(* module Nativelambda *)
+(* module Nativecode *)
+(* module Nativelib *)
+module Environ = Environ
+module CClosure = CClosure
+module Reduction = Reduction
+(* module Nativeconv *)
+module Type_errors = Type_errors
+module Modops = Modops
+module Inductive = Inductive
+module Typeops = Typeops
+(* module Indtypes *)
+(* module Cooking *)
+(* module Term_typing *)
+(* module Subtyping *)
+module Mod_typing = Mod_typing
+(* module Nativelibrary *)
+module Safe_typing = Safe_typing
+(* module Vm *)
+(* module Csymtable *)
+(* module Vconv *)
+
+(******************************************************************************)
+(* Intf                                                                       *)
+(******************************************************************************)
+module Constrexpr = Constrexpr
+module Locus = Locus
+module Glob_term = Glob_term
+module Extend = Extend
+module Misctypes = Misctypes
+module Decl_kinds = Decl_kinds
+module Vernacexpr = Vernacexpr
+module Notation_term = Notation_term
+module Evar_kinds = Evar_kinds
+module Genredexpr = Genredexpr
+
+(******************************************************************************)
+(* Library *)
+(******************************************************************************)
+module Univops = Univops
+module Nameops = Nameops
+module Libnames = Libnames
+module Globnames = Globnames
+module Libobject = Libobject
+module Summary = Summary
+module Nametab = Nametab
+module Global = Global
+module Lib = Lib
+module Declaremods = Declaremods
+(* module Loadpath *)
+module Library = Library
 module States = States
 module Kindops = Kindops
-module Coq_config = Coq_config
-module Esubst = Esubst
-module Evar = Evar
-module Constrexpr = Constrexpr
-module Libobject = Libobject
-module Evd = Evd
-module Libnames = Libnames
-module Nameops = Nameops
-module Topfmt = Topfmt
-module Locus = Locus
-module Locusops = Locusops
-module Lemmas = Lemmas
-module Clenv = Clenv
-module Elimschemes = Elimschemes
-module Classes = Classes
-module Class_tactics = Class_tactics
-module Eauto = Eauto
-module Keys = Keys
-module Vernac_classifier = Vernac_classifier
-module Autorewrite = Autorewrite
-module Redops = Redops
-module Elim = Elim
-module Geninterp = Geninterp
-module Obligations = Obligations
-module Retroknowledge = Retroknowledge
-module Evar_refiner = Evar_refiner
-module Hipattern = Hipattern
-module Auto = Auto
-module Hints = Hints
-module Contradiction = Contradiction
-module Tacticals = Tacticals
-module Tactics = Tactics
-module Inv = Inv
-module Leminv = Leminv
-module Equality = Equality
-module Redexpr = Redexpr
-module Pfedit = Pfedit
-module Stm = Stm
-module Stateid = Stateid
-module Declaremods = Declaremods
-module Miscops = Miscops
-module Miscprint = Miscprint
-module Genprint = Genprint
-module Ppconstr = Ppconstr
-module Pputils = Pputils
-module Extend = Extend
-module Logic = Logic
-module Himsg = Himsg
-module Tacred = Tacred
-module Names = Names
-module Indrec = Indrec
-module Glob_ops = Glob_ops
-module Constrexpr_ops = Constrexpr_ops
-module Eqdecide = Eqdecide
-module Genredexpr = Genredexpr
-module Detyping = Detyping
-module Tactypes = Tactypes
-module ExplainErr = ExplainErr
-module Printer = Printer
-module Constrextern = Constrextern
-module Locality = Locality
-module Impargs = Impargs
-module Termops = Termops
-module Refiner = Refiner
-module Ppextend = Ppextend
-module Nametab = Nametab
-module Vernacentries = Vernacentries
-module Mltop = Mltop
-module Goal = Goal
-module Proof_bullet = Proof_bullet
-module Proof_global = Proof_global
-module Proof = Proof
-module Smartlocate = Smartlocate
-module Dumpglob = Dumpglob
-module Constrintern = Constrintern
-module Topconstr = Topconstr
-module Notation_ops = Notation_ops
-module Patternops = Patternops
-module Mod_typing = Mod_typing
-module Modops = Modops
-module Opaqueproof = Opaqueproof
-module Ind_tables = Ind_tables
-module Typeops = Typeops
-module Inductive = Inductive
-module Vars = Vars
-module Reduction = Reduction
-module Mod_subst = Mod_subst
-module Sorts = Sorts
-module Univ = Univ
-module Constr = Constr
-module CClosure = CClosure
-module Type_errors = Type_errors
-module Safe_typing = Safe_typing
-module UGraph = UGraph
-module Namegen = Namegen
-module Ftactic = Ftactic
-module UState = UState
-module Proofview_monad = Proofview_monad
-module Classops = Classops
-module Global = Global
+(* module Dischargedhypsmap *)
 module Goptions = Goptions
-module Lib = Lib
-module Library = Library
-module Summary = Summary
+(* module Decls *)
+(* module Heads *)
+module Keys = Keys
+module Coqlib = Coqlib
+
+(******************************************************************************)
+(* Engine                                                                     *)
+(******************************************************************************)
+(* module Logic_monad *)
 module Universes = Universes
-module Declare = Declare
-module Refine = Refine
-module Find_subterm = Find_subterm
-module Evar_kinds = Evar_kinds
-module Decl_kinds = Decl_kinds
-module Misctypes = Misctypes
+module UState = UState
+module Evd = Evd
+module EConstr = EConstr
+module Tactypes = Tactypes
 module Pattern = Pattern
-module Vernacexpr = Vernacexpr
-module Search = Search
-module Notation_term = Notation_term
+module Namegen = Namegen
+module Termops = Termops
+module Proofview_monad = Proofview_monad
+module Evarutil = Evarutil
+module Proofview = Proofview
+module Ftactic = Ftactic
+module Geninterp = Geninterp
+
+(******************************************************************************)
+(* Pretyping                                                                  *)
+(******************************************************************************)
+module Locusops = Locusops
+module Pretype_errors = Pretype_errors
 module Reductionops = Reductionops
 module Inductiveops = Inductiveops
-module Recordops = Recordops
+(* module Vnorm *)
+(* module Arguments_renaming *)
+module Impargs = Impargs
+(* module Nativenorm *)
 module Retyping = Retyping
-module Typing = Typing
+(* module Cbv *)
+module Find_subterm = Find_subterm
+(* module Evardefine *)
 module Evarsolve = Evarsolve
-module Constr_matching = Constr_matching
-module Pretyping = Pretyping
+module Recordops = Recordops
 module Evarconv = Evarconv
-module Unification = Unification
+module Typing = Typing
+module Miscops = Miscops
+module Glob_ops = Glob_ops
+module Redops = Redops
+module Patternops = Patternops
+module Constr_matching = Constr_matching
+module Tacred = Tacred
 module Typeclasses = Typeclasses
-module Pretype_errors = Pretype_errors
-module Notation = Notation
-module Declarations = Declarations
-module Univops = Univops
-module Declareops = Declareops
-module Globnames = Globnames
-module Environ = Environ
-module Term = Term
-module Coqlib = Coqlib
-module Glob_term = Glob_term
-module Context = Context
+module Classops = Classops
+(* module Program *)
+(* module Coercion *)
+module Detyping = Detyping
+module Indrec = Indrec
+(* module Cases *)
+module Pretyping = Pretyping
+module Unification = Unification
+(******************************************************************************)
+(* interp                                                                     *)
+(******************************************************************************)
 module Stdarg = Stdarg
+(* module Genintern *)
+module Constrexpr_ops = Constrexpr_ops
+module Notation_ops = Notation_ops
+module Ppextend = Ppextend
+module Notation = Notation
+module Dumpglob = Dumpglob
+(* module Syntax_def *)
+module Smartlocate = Smartlocate
+module Topconstr = Topconstr
+(* module Reserve *)
+(* module Implicit_quantifiers *)
+module Constrintern = Constrintern
+(* module Modintern *)
+module Constrextern = Constrextern
+(* module Discharge *)
+module Declare = Declare
+
+(******************************************************************************)
+(* Proofs                                                                     *)
+(******************************************************************************)
+module Miscprint = Miscprint
+module Goal = Goal
+module Evar_refiner = Evar_refiner
+(* module Proof_using *)
+module Proof_type = Proof_type
+module Logic = Logic
+module Refine = Refine
+module Proof = Proof
+module Proof_bullet = Proof_bullet
+module Proof_global = Proof_global
+module Redexpr = Redexpr
+module Refiner = Refiner
 module Tacmach = Tacmach
-module Proofview = Proofview
-module Evarutil = Evarutil
-module EConstr = EConstr
+module Pfedit = Pfedit
+module Clenv = Clenv
+(* module Clenvtac *)
+(* "mli" file *)
 
-module Prelude =
-  struct
-    type global_reference = Globnames.global_reference
-    type metavariable = int
-    type meta_value_map = (metavariable * Constr.constr) list
-    type named_context_val = Environ.named_context_val
-    type conv_pb = Reduction.conv_pb =
-      | CONV
-      | CUMUL
-    type constr = Constr.constr
-    type types = Constr.types
-    type evar = Constr.existential_key
-    type 'constr pexistential = 'constr Constr.pexistential
-    type env = Environ.env
-    type evar_map = Evd.evar_map
-    type rigid = Evd.rigid =
-               | UnivRigid
-               | UnivFlexible of bool
-    type reference = Libnames.reference =
-      | Qualid of Libnames.qualid Loc.located
-      | Ident of Names.Id.t Loc.located
-  end
+(******************************************************************************)
+(* Printing                                                                   *)
+(******************************************************************************)
+module Genprint = Genprint
+module Pputils = Pputils
+module Ppconstr = Ppconstr
+module Printer = Printer
+(* module Printmod *)
+(* module Prettyp *)
+module Ppvernac = Ppvernac
 
-(* NOTE: It does not make sense to replace the following "module expression"
-   simply with "module Proof_type = Proof_type" because
-   there is only "kernel/entries.mli";
-   there is no "kernel/entries.ml" file *)
-module Entries =
-  struct
-    type mutual_inductive_entry = Entries.mutual_inductive_entry
-    type inline = int option
-    type 'a proof_output = Constr.constr Univ.in_universe_context_set * 'a
-    type 'a const_entry_body = 'a proof_output Future.computation
-    type 'a definition_entry = 'a Entries.definition_entry =
-                                 { const_entry_body   : 'a const_entry_body;
-                                   const_entry_secctx : Context.Named.t option;
-                                   const_entry_feedback : Stateid.t option;
-                                   const_entry_type        : Term.types option;
-                                   const_entry_polymorphic : bool;
-                                   const_entry_universes   : Univ.universe_context;
-                                   const_entry_opaque      : bool;
-                                   const_entry_inline_code : bool }
-    type parameter_entry = Entries.parameter_entry
-    type projection_entry = Entries.projection_entry
-    type 'a constant_entry = 'a Entries.constant_entry =
-                           | DefinitionEntry of 'a definition_entry
-                           | ParameterEntry of parameter_entry
-                           | ProjectionEntry of projection_entry
-  end
+(******************************************************************************)
+(* Tactics                                                                    *)
+(******************************************************************************)
+(* module Dnet *)
+(* module Dn *)
+(* module Btermdn *)
+module Tacticals = Tacticals
+module Hipattern = Hipattern
+module Ind_tables = Ind_tables
+(* module Eqschemes *)
+module Elimschemes = Elimschemes
+module Tactics = Tactics
+module Elim = Elim
+module Equality = Equality
+module Contradiction = Contradiction
+module Inv = Inv
+module Leminv = Leminv
+module Hints = Hints
+module Auto = Auto
+module Eauto = Eauto
+module Class_tactics = Class_tactics
+(* module Term_dnet *)
+module Eqdecide = Eqdecide
+module Autorewrite = Autorewrite
+
+(******************************************************************************)
+(* Vernac                                                                     *)
+(******************************************************************************)
+(* module Vernacprop *)
+module Lemmas = Lemmas
+module Himsg = Himsg
+module ExplainErr = ExplainErr
+(* module Class *)
+module Locality = Locality
+(* module Metasyntax *)
+(* module Auto_ind_decl *)
+module Search = Search
+(* module Indschemes *)
+module Obligations = Obligations
+module Command = Command
+module Classes = Classes
+(* module Record *)
+(* module Assumptions *)
+(* module Vernacinterp *)
+module Mltop = Mltop
+module Topfmt = Topfmt
+module Vernacentries = Vernacentries
+
+(******************************************************************************)
+(* Stm                                                                        *)
+(******************************************************************************)
+module Vernac_classifier = Vernac_classifier
+module Stm = Stm
