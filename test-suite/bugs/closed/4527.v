@@ -261,8 +261,7 @@ S)    : In@{Ou Oa i} O (x=y).
           intro v; exact v.
 }
         exact (p u).
-      -
- hnf.
+      - simpl.
         rewrite O_indpaths_beta; reflexivity.
     Qed.
     Check inO_paths@{Type}.
