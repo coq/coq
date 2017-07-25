@@ -1651,11 +1651,12 @@ destruct Hf,Hg; subst; red; simpl_compare; now rewrite Hr.
 constructor. now rewrite Hfg, square_xO. apply lt_succ_r, GT.
 Qed.
 
+Hint Transparent sqrtrem. (* Needed for auto below *)
 Lemma sqrtrem_spec p : SqrtSpec (sqrtrem p) p.
 Proof.
 revert p. fix 1.
- destruct p; try destruct p; try (constructor; easy);
-  apply sqrtrem_step_spec; auto.
+destruct p; try destruct p; try (constructor; easy);
+ apply sqrtrem_step_spec; auto.
 Qed.
 
 Lemma sqrt_spec p :
