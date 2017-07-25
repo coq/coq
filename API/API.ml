@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+module Conv_oracle = Conv_oracle
+module Cbytecodes = Cbytecodes
+module Cemitcodes = Cemitcodes
 module Ppvernac = Ppvernac
 module Command = Command
 module States = States
@@ -77,7 +80,6 @@ module Refiner = Refiner
 module Ppextend = Ppextend
 module Nametab = Nametab
 module Vernacentries = Vernacentries
-module Mltop = Mltop
 module Goal = Goal
 module Proof_bullet = Proof_bullet
 module Proof_global = Proof_global
@@ -153,29 +155,6 @@ module Proofview = Proofview
 module Evarutil = Evarutil
 module EConstr = EConstr
 
-module Prelude =
-  struct
-    type global_reference = Globnames.global_reference
-    type metavariable = int
-    type meta_value_map = (metavariable * Constr.constr) list
-    type named_context_val = Environ.named_context_val
-    type conv_pb = Reduction.conv_pb =
-      | CONV
-      | CUMUL
-    type constr = Constr.constr
-    type types = Constr.types
-    type evar = Constr.existential_key
-    type 'constr pexistential = 'constr Constr.pexistential
-    type env = Environ.env
-    type evar_map = Evd.evar_map
-    type rigid = Evd.rigid =
-               | UnivRigid
-               | UnivFlexible of bool
-    type reference = Libnames.reference =
-      | Qualid of Libnames.qualid Loc.located
-      | Ident of Names.Id.t Loc.located
-  end
-
 (* NOTE: It does not make sense to replace the following "module expression"
    simply with "module Proof_type = Proof_type" because
    there is only "kernel/entries.mli";
@@ -202,3 +181,16 @@ module Entries =
                            | ParameterEntry of parameter_entry
                            | ProjectionEntry of projection_entry
   end
+
+(* -------------------------------------------------------------------------------- *)
+
+module G_proofs = G_proofs
+module Metasyntax = Metasyntax
+module G_vernac = G_vernac
+module Pcoq = Pcoq
+module Tok = Tok
+module CLexer = CLexer
+module Egramml = Egramml
+module Mltop = Mltop
+module Vernacinterp = Vernacinterp
+module Genintern = Genintern
