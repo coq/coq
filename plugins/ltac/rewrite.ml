@@ -2055,11 +2055,12 @@ let unification_rewrite l2r c1 c2 sigma prf car rel but env =
   let abs = prf, prfty in
   let prf = mkRel 1 in
   let res = (car, rel, prf, c1, c2) in
-  abs, sigma, res, Sorts.is_prop sort
+  abs, Evd.clear_metas sigma, res, Sorts.is_prop sort
 
 let get_hyp gl (c,l) clause l2r =
   let evars = Tacmach.New.project gl in
   let env = Tacmach.New.pf_env gl in
+  let evars = Evd.clear_metas evars in
   let sigma, hi = decompose_applied_relation env evars (c,l) in
   let but = match clause with
     | Some id -> Tacmach.New.pf_get_hyp_typ id gl

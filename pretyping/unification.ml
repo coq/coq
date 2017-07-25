@@ -1614,7 +1614,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
   | Some (sigma,_,l) ->
      let c = applist (nf_evar sigma (local_strong whd_meta sigma c), l) in
      let univs, subst = nf_univ_variables sigma in
-     Some (sigma,EConstr.of_constr (CVars.subst_univs_constr subst (EConstr.Unsafe.to_constr c))))
+     Some (Evd.clear_metas sigma,EConstr.of_constr (CVars.subst_univs_constr subst (EConstr.Unsafe.to_constr c))))
 
 let make_eq_test env evd c =
   let out cstr =
