@@ -15,6 +15,8 @@ src/tac2entries.ml
 src/tac2entries.mli
 src/tac2core.ml
 src/tac2core.mli
+src/tac2stdlib.ml
+src/tac2stdlib.mli
 src/g_ltac2.ml4
 src/ltac2_plugin.mlpack
 
@@ -25,4 +27,5 @@ theories/Array.v
 theories/Control.v
 theories/Message.v
 theories/Constr.v
+theories/Std.v
 theories/Ltac2.v

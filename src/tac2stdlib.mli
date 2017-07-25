@@ -6,12 +6,4 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Export Ltac2.Init.
-
-Require Ltac2.Int.
-Require Ltac2.String.
-Require Ltac2.Array.
-Require Ltac2.Message.
-Require Ltac2.Constr.
-Require Ltac2.Control.
-Require Ltac2.Std.
+(** Standard tactics sharing their implementation with Ltac1 *)
