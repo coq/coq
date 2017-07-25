@@ -1562,6 +1562,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
 		   else Proofview.tclUNIT ()
     | Some (Some res) ->
         let (undef, prf, newt) = res in
+        let undef = Evd.clear_metas undef in
         let fold ev _ accu = if Evd.mem sigma ev then accu else ev :: accu in
         let gls = List.rev (Evd.fold_undefined fold undef []) in
 	match clause, prf with
