@@ -127,10 +127,10 @@ let init_ocaml_path () =
     List.iter add_subdir Coq_config.all_src_dirs
 
 let get_compat_version ?(allow_old = true) = function
-  | "8.7" -> Flags.Current
+  | "8.8" -> Flags.Current
+  | "8.7" -> Flags.V8_7
   | "8.6" -> Flags.V8_6
-  | "8.5" -> Flags.V8_5
-  | ("8.4" | "8.3" | "8.2" | "8.1" | "8.0") as s ->
+  | ("8.5" | "8.4" | "8.3" | "8.2" | "8.1" | "8.0") as s ->
     if allow_old then Flags.VOld else
     CErrors.user_err ~hdr:"get_compat_version"
       (str "Compatibility with version " ++ str s ++ str " not supported.")
