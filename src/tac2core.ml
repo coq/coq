@@ -267,6 +267,31 @@ let prm_array_get : ml_tactic = function
   else wrap (fun () -> v.(n))
 | _ -> assert false
 
+(** Ident *)
+
+let prm_ident_equal : ml_tactic = function
+| [id1; id2] ->
+  let id1 = Value.to_ident id1 in
+  let id2 = Value.to_ident id2 in
+  return (Value.of_bool (Id.equal id1 id2))
+| _ -> assert false
+
+let prm_ident_to_string : ml_tactic = function
+| [id] ->
+  let id = Value.to_ident id in
+  return (Value.of_string (Id.to_string id))
+| _ -> assert false
+
+let prm_ident_of_string : ml_tactic = function
+| [s] ->
+  let s = Value.to_string s in
+  let id =
+    try Value.of_option (Some (Value.of_ident (Id.of_string s)))
+    with _ -> Value.of_option None
+  in
+  return id
+| _ -> assert false
+
 (** Int *)
 
 let prm_int_equal : ml_tactic = function
@@ -623,6 +648,10 @@ let () = Tac2env.define_primitive (pname "int_neg") prm_int_neg
 let () = Tac2env.define_primitive (pname "int_add") prm_int_add
 let () = Tac2env.define_primitive (pname "int_sub") prm_int_sub
 let () = Tac2env.define_primitive (pname "int_mul") prm_int_mul
+
+let () = Tac2env.define_primitive (pname "ident_equal") prm_ident_equal
+let () = Tac2env.define_primitive (pname "ident_to_string") prm_ident_to_string
+let () = Tac2env.define_primitive (pname "ident_of_string") prm_ident_of_string
 
 let () = Tac2env.define_primitive (pname "throw") prm_throw
 

@@ -6,13 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Export Ltac2.Init.
+Require Import Ltac2.Init.
 
-Require Ltac2.Int.
-Require Ltac2.String.
-Require Ltac2.Ident.
-Require Ltac2.Array.
-Require Ltac2.Message.
-Require Ltac2.Constr.
-Require Ltac2.Control.
-Require Ltac2.Std.
+Ltac2 Type t := ident.
+
+Ltac2 @ external equal : t -> t -> bool := "ltac2" "ident_equal".
+
+Ltac2 @ external of_string : string -> t option := "ltac2" "ident_of_string".
+
+Ltac2 @ external to_string : t -> string := "ltac2" "ident_to_string".

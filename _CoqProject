@@ -23,6 +23,7 @@ src/ltac2_plugin.mlpack
 theories/Init.v
 theories/Int.v
 theories/String.v
+theories/Ident.v
 theories/Array.v
 theories/Control.v
 theories/Message.v
