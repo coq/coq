@@ -91,6 +91,8 @@ GEXTEND Gram
     [ [ n = Prim.integer -> CTacAtm (Loc.tag ~loc:!@loc (AtmInt n))
       | s = Prim.string -> CTacAtm (Loc.tag ~loc:!@loc (AtmStr s))
       | id = Prim.qualid -> CTacRef (RelId id)
+      | "@"; id = Prim.ident -> inj_ident !@loc id
+      | "'"; c = Constr.constr -> inj_open_constr !@loc c
       | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> inj_constr !@loc c
       | IDENT "open_constr"; ":"; "("; c = Constr.lconstr; ")" -> inj_open_constr !@loc c
       | IDENT "ident"; ":"; "("; c = Prim.ident; ")" -> inj_ident !@loc c
