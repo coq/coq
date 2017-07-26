@@ -430,3 +430,9 @@ eexists ?[x].
 destruct (S _).
 change (0 = ?x).
 Abort.
+
+Goal (forall P, P 0 -> True/\True) -> True.
+intro H.
+destruct (H (fun x => True)).
+match goal with |- True => idtac end.
+Abort.
