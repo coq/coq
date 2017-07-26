@@ -10,7 +10,6 @@
 
 (* Syntax for rewriting with strategies *)
 
-open Grammar_API
 open Names
 open Misctypes
 open Locus
