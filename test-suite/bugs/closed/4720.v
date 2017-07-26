@@ -44,3 +44,7 @@ Recursive Extraction WithMod.
 Recursive Extraction WithDef.
 
 Recursive Extraction WithModPriv.
+
+(* Let's even check that all this extracted code is actually compilable: *)
+
+Extraction TestCompile WithMod WithDef WithModPriv.
