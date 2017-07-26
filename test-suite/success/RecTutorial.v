@@ -838,7 +838,7 @@ Qed.
 Definition eq_nat_dec : forall n p:nat , {n=p}+{n <> p}.
 Proof.
  intros n p.
- apply nat_double_rec with (P:= fun (n q:nat) => {q=p}+{q <> p}).
+ apply nat_double_rec with (P:= fun (n p:nat) => {n=p}+{n <> p}).
 Undo.
  pattern p,n.
  elim n using nat_double_rec.
