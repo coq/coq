@@ -356,14 +356,14 @@ let unify ?loc env t1 t2 =
   with CannotUnify (u1, u2) ->
     let name = env_name env in
     user_err ?loc (str "This expression has type " ++ pr_glbtype name t1 ++
-      str " but an expression what expected of type " ++ pr_glbtype name t2)
+      str " but an expression was expected of type " ++ pr_glbtype name t2)
 
 let unify_arrow ?loc env ft args =
   let ft0 = ft in
   let rec iter ft args is_fun = match kind env ft, args with
   | t, [] -> t
   | GTypArrow (t1, ft), (loc, t2) :: args ->
-    let () = unify ~loc env t1 t2 in
+    let () = unify ~loc env t2 t1 in
     iter ft args true
   | GTypVar id, (_, t) :: args ->
     let ft = GTypVar (fresh_id env) in
