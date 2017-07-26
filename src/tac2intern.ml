@@ -616,27 +616,36 @@ let rec intern_rec env = function
   let (_, kn) = get_constructor env qid in
   intern_constructor env loc kn []
 | CTacFun (loc, bnd, e) ->
+  (** Expand pattern: [fun p => t] becomes [fun x => match x with p => t end] *)
   let fold (env, bnd, tl) (pat, t) =
     let t = match t with
     | None -> GTypVar (fresh_id env)
     | Some t -> intern_type env t
     in
-    let id = fresh_var env in
-    let env = push_name (Name id) (monomorphic t) env in
-    (env, (id, pat) :: bnd, t :: tl)
+    let na, expand = match pat with
+    | CPatVar (_, na) ->
+      (** Don't expand variable patterns *)
+      na, None
+    | _ ->
+      let loc = loc_of_patexpr pat in
+      let id = fresh_var env in
+      let qid = RelId (Loc.tag ~loc (qualid_of_ident id)) in
+      Name id, Some qid
+    in
+    let env = push_name na (monomorphic t) env in
+    (env, (na, pat, expand) :: bnd, t :: tl)
   in
   let (env, bnd, tl) = List.fold_left fold (env, [], []) bnd in
-  (** Expand pattern: [fun p => t] becomes [fun x => match x with p => t end] *)
-  let fold e (id, pat) =
-    let loc = loc_of_patexpr pat in
-    let qid = RelId (Loc.tag ~loc (qualid_of_ident id)) in
+  let fold e (na, pat, expand) = match expand with
+  | None -> e
+  | Some qid ->
     CTacCse (loc, CTacRef qid, [pat, e])
   in
   let e = List.fold_left fold e bnd in
-  let bnd = List.rev_map (fun (id, _) -> Name id) bnd in
+  let nas = List.rev_map (fun (na, _, _) -> na) bnd in
   let (e, t) = intern_rec env e in
   let t = List.fold_left (fun accu t -> GTypArrow (t, accu)) t tl in
-  (GTacFun (bnd, e), t)
+  (GTacFun (nas, e), t)
 | CTacApp (loc, CTacCst qid, args) as e ->
   let (_, kn) = get_constructor env qid in
   let loc = loc_of_tacexpr e in
