@@ -18,7 +18,7 @@ Ltac2 foo' _ := ident:(bla).
 
 Print Ltac2 foo'.
 
-Ltac2 bar x H := match x with
+Ltac2 bar x h := match x with
 | None => constr:(fun H => ltac2:(exact (hyp ident:(H))) -> nat)
 | Some x => x
 end.

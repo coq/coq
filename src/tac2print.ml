@@ -83,7 +83,7 @@ let int_name () =
 (** Term printing *)
 
 let pr_constructor kn =
-  Libnames.pr_qualid (Tac2env.shortest_qualid_of_ltac (TacConstructor kn))
+  Libnames.pr_qualid (Tac2env.shortest_qualid_of_constructor kn)
 
 let pr_projection kn =
   Libnames.pr_qualid (Tac2env.shortest_qualid_of_projection kn)
@@ -138,7 +138,7 @@ let pr_glbexpr_gen lvl c =
   | GTacAtm atm -> pr_atom atm
   | GTacVar id -> Id.print id
   | GTacRef gr ->
-    let qid = shortest_qualid_of_ltac (TacConstant gr) in
+    let qid = shortest_qualid_of_ltac gr in
     Libnames.pr_qualid qid
   | GTacFun (nas, c) ->
     let nas = pr_sequence pr_name nas in

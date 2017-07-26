@@ -63,10 +63,15 @@ val interp_projection : ltac_projection -> projection_data
 
 (** {5 Name management} *)
 
-val push_ltac : visibility -> full_path -> tacref -> unit
-val locate_ltac : qualid -> tacref
-val locate_extended_all_ltac : qualid -> tacref list
-val shortest_qualid_of_ltac : tacref -> qualid
+val push_ltac : visibility -> full_path -> ltac_constant -> unit
+val locate_ltac : qualid -> ltac_constant
+val locate_extended_all_ltac : qualid -> ltac_constant list
+val shortest_qualid_of_ltac : ltac_constant -> qualid
+
+val push_constructor : visibility -> full_path -> ltac_constructor -> unit
+val locate_constructor : qualid -> ltac_constructor
+val locate_extended_all_constructor : qualid -> ltac_constructor list
+val shortest_qualid_of_constructor : ltac_constructor -> qualid
 
 val push_type : visibility -> full_path -> type_constant -> unit
 val locate_type : qualid -> type_constant
@@ -104,3 +109,7 @@ val coq_prefix : ModPath.t
 (** {5 Generic arguments} *)
 
 val wit_ltac2 : (raw_tacexpr, glb_tacexpr, Util.Empty.t) genarg_type
+
+(** {5 Helper functions} *)
+
+val is_constructor : qualid -> bool

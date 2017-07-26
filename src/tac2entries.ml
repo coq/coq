@@ -34,14 +34,14 @@ type tacdef = {
 }
 
 let perform_tacdef visibility ((sp, kn), def) =
-  let () = if not def.tacdef_local then Tac2env.push_ltac visibility sp (TacConstant kn) in
+  let () = if not def.tacdef_local then Tac2env.push_ltac visibility sp kn in
   Tac2env.define_global kn (def.tacdef_expr, def.tacdef_type)
 
 let load_tacdef i obj = perform_tacdef (Until i) obj
 let open_tacdef i obj = perform_tacdef (Exactly i) obj
 
 let cache_tacdef ((sp, kn), def) =
-  let () = Tac2env.push_ltac (Until 1) sp (TacConstant kn) in
+  let () = Tac2env.push_ltac (Until 1) sp kn in
   Tac2env.define_global kn (def.tacdef_expr, def.tacdef_type)
 
 let subst_tacdef (subst, def) =
@@ -83,7 +83,7 @@ let push_typedef visibility sp kn (_, def) = match def with
   let iter (c, _) =
     let spc = change_sp_label sp c in
     let knc = change_kn_label kn c in
-    Tac2env.push_ltac visibility spc (TacConstructor knc)
+    Tac2env.push_constructor visibility spc knc
   in
   Tac2env.push_type visibility sp kn;
   List.iter iter cstrs
@@ -185,7 +185,7 @@ let push_typext vis sp kn def =
   let iter data =
     let spc = change_sp_label sp data.edata_name in
     let knc = change_kn_label kn data.edata_name in
-    Tac2env.push_ltac vis spc (TacConstructor knc)
+    Tac2env.push_constructor vis spc knc
   in
   List.iter iter def.typext_expr
 
@@ -620,12 +620,18 @@ let register_struct ?local str = match str with
 
 let print_ltac ref =
   let (loc, qid) = qualid_of_reference ref in
-  let kn =
-    try Tac2env.locate_ltac qid
-    with Not_found -> user_err ?loc (str "Unknown tactic " ++ pr_qualid qid)
-  in
-  match kn with
-  | TacConstant kn ->
+  if Tac2env.is_constructor qid then
+    let kn =
+      try Tac2env.locate_constructor qid
+      with Not_found -> user_err ?loc (str "Unknown constructor " ++ pr_qualid qid)
+    in
+    let _ = Tac2env.interp_constructor kn in
+    Feedback.msg_notice (hov 2 (str "Constructor" ++ spc () ++ str ":" ++ spc () ++ pr_qualid qid))
+  else
+    let kn =
+      try Tac2env.locate_ltac qid
+      with Not_found -> user_err ?loc (str "Unknown tactic " ++ pr_qualid qid)
+    in
     let (e, _, (_, t)) = Tac2env.interp_global kn in
     let name = int_name () in
     Feedback.msg_notice (
@@ -634,9 +640,6 @@ let print_ltac ref =
         hov 2 (pr_qualid qid ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr e)
       )
     )
-  | TacConstructor kn ->
-    let _ = Tac2env.interp_constructor kn in
-    Feedback.msg_notice (hov 2 (str "Constructor" ++ spc () ++ str ":" ++ spc () ++ pr_qualid qid))
 
 (** Calling tactics *)
 

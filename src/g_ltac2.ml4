@@ -28,20 +28,32 @@ let inj_constr loc c = inj_wit Stdarg.wit_constr loc c
 let inj_open_constr loc c = inj_wit Stdarg.wit_open_constr loc c
 let inj_ident loc c = inj_wit Stdarg.wit_ident loc c
 
+let pattern_of_qualid loc id =
+  if Tac2env.is_constructor (snd id) then CPatRef (loc, RelId id, [])
+  else
+    let (dp, id) = Libnames.repr_qualid (snd id) in
+    if DirPath.is_empty dp then CPatVar (Some loc, Name id)
+    else
+      CErrors.user_err ~loc (Pp.str "Syntax error")
+
 GEXTEND Gram
   GLOBAL: tac2expr tac2type tac2def_val tac2def_typ tac2def_ext tac2def_syn;
   tac2pat:
     [ "1" LEFTA
-      [ id = Prim.qualid; pl = LIST1 tac2pat LEVEL "0" -> CPatRef (!@loc, RelId id, pl)
-      | id = Prim.qualid -> CPatRef (!@loc, RelId id, [])
+      [ id = Prim.qualid; pl = LIST1 tac2pat LEVEL "0" ->
+        if Tac2env.is_constructor (snd id) then
+          CPatRef (!@loc, RelId id, pl)
+        else
+          CErrors.user_err ~loc:!@loc (Pp.str "Syntax error")
+      | id = Prim.qualid -> pattern_of_qualid !@loc id
       | "["; "]" -> CPatRef (!@loc, AbsKn Tac2core.Core.c_nil, [])
       | p1 = tac2pat; "::"; p2 = tac2pat ->
         CPatRef (!@loc, AbsKn Tac2core.Core.c_cons, [p1; p2])
       ]
     | "0"
-      [ "_" -> CPatAny (!@loc)
+      [ "_" -> CPatVar (Some !@loc, Anonymous)
       | "()" -> CPatTup (Loc.tag ~loc:!@loc [])
-      | id = Prim.qualid -> CPatRef (!@loc, RelId id, [])
+      | id = Prim.qualid -> pattern_of_qualid !@loc id
       | "("; pl = LIST0 tac2pat LEVEL "1" SEP ","; ")" -> CPatTup (Loc.tag ~loc:!@loc pl) ]
     ]
   ;
@@ -90,7 +102,8 @@ GEXTEND Gram
   tactic_atom:
     [ [ n = Prim.integer -> CTacAtm (Loc.tag ~loc:!@loc (AtmInt n))
       | s = Prim.string -> CTacAtm (Loc.tag ~loc:!@loc (AtmStr s))
-      | id = Prim.qualid -> CTacRef (RelId id)
+      | id = Prim.qualid ->
+        if Tac2env.is_constructor (snd id) then CTacCst (RelId id) else CTacRef (RelId id)
       | "@"; id = Prim.ident -> inj_ident !@loc id
       | "'"; c = Constr.constr -> inj_open_constr !@loc c
       | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> inj_constr !@loc c

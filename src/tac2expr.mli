@@ -70,19 +70,16 @@ type atom =
 | AtmInt of int
 | AtmStr of string
 
-type tacref =
-| TacConstant of ltac_constant
-| TacConstructor of ltac_constructor
-
 (** Tactic expressions *)
 type raw_patexpr =
-| CPatAny of Loc.t
+| CPatVar of Name.t located
 | CPatRef of Loc.t * ltac_constructor or_relid * raw_patexpr list
 | CPatTup of raw_patexpr list located
 
 type raw_tacexpr =
 | CTacAtm of atom located
-| CTacRef of tacref or_relid
+| CTacRef of ltac_constant or_relid
+| CTacCst of ltac_constructor or_relid
 | CTacFun of Loc.t * (raw_patexpr * raw_typexpr option) list * raw_tacexpr
 | CTacApp of Loc.t * raw_tacexpr * raw_tacexpr list
 | CTacLet of Loc.t * rec_flag * (Name.t located * raw_typexpr option * raw_tacexpr) list * raw_tacexpr
