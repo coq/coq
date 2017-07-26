@@ -158,8 +158,6 @@ Section test11.
     pose H as H'.
     pose (eq_refl : H = H') as e.
     extensionality in H.
-    Fail extensionality in H'.
-    clear e.
     extensionality in H'.
     let T := type of H in let T' := type of H' in constr_eq T T'.
     lazymatch type of H with f = f => idtac end.
