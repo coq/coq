@@ -1,10 +1,10 @@
-3 subgoals (ID 31)
+3 subgoals (ID 45)
   
   H : 0 = 0
   ============================
   1 = 1
 
-subgoal 2 (ID 35) is:
+subgoal 2 (ID 49) is:
  1 = S (S m')
-subgoal 3 (ID 22) is:
+subgoal 3 (ID 29) is:
  S (S n') = S m
