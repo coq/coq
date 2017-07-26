@@ -122,3 +122,13 @@ Abort.
 
 Goal (forall A : Prop, A -> ~~A).
 Proof. refine(fun A a f => _).
+
+(* Checking beta-iota normalization of hypotheses in created evars *)
+
+Goal {x|x=0} -> True.
+refine (fun y => let (x,a) := y in _).
+match goal with a:_=0 |- _ => idtac end.
+
+Goal (forall P, {P 0}+{P 1}) -> True.
+refine (fun H => if H (fun x => x=x) then _ else _).
+match goal with _:0=0 |- _ => idtac end.
