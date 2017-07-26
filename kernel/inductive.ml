@@ -860,6 +860,8 @@ let filter_stack_domain env ci p stack =
     match stack, kind_of_term t with
     | elt :: stack', Prod (n,a,c0) ->
       let d = LocalAssum (n,a) in
+      let ctx, a = dest_prod_assum env a in
+      let env = push_rel_context ctx env in
       let ty, args = decompose_app (whd_all env a) in
       let elt = match kind_of_term ty with
       | Ind ind -> 
