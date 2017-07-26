@@ -694,6 +694,8 @@ and detype_binder (lax,isgoal as flags) bk avoid env sigma na body ty c =
       let t = if s != InProp  && not !Flags.raw_print then None else Some (detype (lax,false) avoid env sigma ty) in
       GLetIn (na', c, t, r)
 
+(** We use a dedicated function here to prevent overallocation from
+    Array.map_to_list. *)
 and detype_array flags avoid env sigma args =
   let ans = ref [] in
   for i = Array.length args - 1 downto 0 do
