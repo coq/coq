@@ -121,7 +121,7 @@ GEXTEND Gram
     [ "5" RIGHTA
       [ t1 = tac2type; "->"; t2 = tac2type -> CTypArrow (!@loc, t1, t2) ]
     | "2"
-      [ t = tac2type; "*"; tl = LIST1 tac2type SEP "*" -> CTypTuple (!@loc, t :: tl) ]
+      [ t = tac2type; "*"; tl = LIST1 tac2type LEVEL "1" SEP "*" -> CTypTuple (!@loc, t :: tl) ]
     | "1" LEFTA
       [ t = SELF; qid = Prim.qualid -> CTypRef (!@loc, RelId qid, [t]) ]
     | "0"
