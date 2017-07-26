@@ -358,6 +358,28 @@ let unify ?loc env t1 t2 =
     user_err ?loc (str "This expression has type " ++ pr_glbtype name t1 ++
       str " but an expression what expected of type " ++ pr_glbtype name t2)
 
+let unify_arrow ?loc env ft args =
+  let ft0 = ft in
+  let rec iter ft args is_fun = match kind env ft, args with
+  | t, [] -> t
+  | GTypArrow (t1, ft), (loc, t2) :: args ->
+    let () = unify ~loc env t1 t2 in
+    iter ft args true
+  | GTypVar id, (_, t) :: args ->
+    let ft = GTypVar (fresh_id env) in
+    let () = unify_var env id (GTypArrow (t, ft)) in
+    iter ft args true
+  | (GTypRef _ | GTypTuple _), _ :: _ ->
+    let name = env_name env in
+    if is_fun then
+      user_err ?loc (str "This function has type " ++ pr_glbtype name ft0 ++
+        str " and is applied to too many arguments")
+    else
+      user_err ?loc (str "This expression has type " ++ pr_glbtype name ft0 ++
+        str " and is not a function")
+  in
+  iter ft args false
+
 (** Term typing *)
 
 let is_pure_constructor kn =
@@ -637,14 +659,15 @@ let rec intern_rec env = function
   let loc = loc_of_tacexpr e in
   intern_constructor env loc kn args
 | CTacApp (loc, f, args) ->
+  let loc = loc_of_tacexpr f in
   let (f, ft) = intern_rec env f in
   let fold arg (args, t) =
+    let loc = loc_of_tacexpr arg in
     let (arg, argt) = intern_rec env arg in
-    (arg :: args, GTypArrow (argt, t))
+    (arg :: args, (loc, argt) :: t)
   in
-  let ret = GTypVar (fresh_id env) in
-  let (args, t) = List.fold_right fold args ([], ret) in
-  let () = unify ~loc env ft t in
+  let (args, t) = List.fold_right fold args ([], []) in
+  let ret = unify_arrow ~loc env ft t in
   (GTacApp (f, args), ret)
 | CTacLet (loc, false, el, e) ->
   let fold accu ((loc, na), _, _) = match na with
