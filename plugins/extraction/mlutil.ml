@@ -120,7 +120,6 @@ let rec mgu = function
       mgu (a, a'); mgu (b, b')
   | Tglob (r,l), Tglob (r',l') when Globnames.eq_gr r r' ->
        List.iter mgu (List.combine l l')
-  | (Tdummy _, _ | _, Tdummy _) when lang() == Haskell -> ()
   | Tdummy _, Tdummy _ -> ()
   | Tvar i, Tvar j when Int.equal i j -> ()
   | Tvar' i, Tvar' j when  Int.equal i j -> ()
@@ -1052,6 +1051,7 @@ let rec simpl o = function
   | MLmagic(MLcase(typ,e,br)) ->
      let br' = Array.map (fun (ids,p,c) -> (ids,p,MLmagic c)) br in
      simpl o (MLcase(typ,e,br'))
+  | MLmagic(MLdummy _ as e) when lang () == Haskell -> e
   | MLmagic(MLexn _ as e) -> e
   | a -> ast_map (simpl o) a
 
