@@ -508,6 +508,13 @@ Qed.
 (** Unfortunately, the previous result isn't always true on negative numbers.
     For instance: 3/(-2)/(-2) = 1 <> 0 = 3 / (-2*-2) *)
 
+Lemma Zmod_div : forall a b, a mod b / b = 0.
+Proof.
+ intros a b.
+ zero_or_not b.
+ auto using Z.mod_div.
+Qed.
+
 (** A last inequality: *)
 
 Theorem Zdiv_mult_le:
