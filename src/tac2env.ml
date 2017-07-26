@@ -242,6 +242,7 @@ let coq_prefix =
 (** Generic arguments *)
 
 let wit_ltac2 = Genarg.make0 "ltac2"
+let wit_pattern = Genarg.make0 "ltac2:pattern"
 
 let is_constructor qid =
   let (_, id) = repr_qualid qid in

@@ -27,6 +27,7 @@ Ltac2 Type constant.
 Ltac2 Type inductive.
 Ltac2 Type constructor.
 Ltac2 Type projection.
+Ltac2 Type pattern.
 Ltac2 Type constr.
 
 Ltac2 Type message.
@@ -56,3 +57,6 @@ Ltac2 Type exn ::= [ Not_focussed ].
 
 Ltac2 Type exn ::= [ Not_found ].
 (** Used when something is missing. *)
+
+Ltac2 Type exn ::= [ Match_failure ].
+(** Used to signal a pattern didn't match a term. *)

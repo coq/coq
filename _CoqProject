@@ -28,5 +28,6 @@ theories/Array.v
 theories/Control.v
 theories/Message.v
 theories/Constr.v
+theories/Pattern.v
 theories/Std.v
 theories/Ltac2.v

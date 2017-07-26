@@ -110,6 +110,8 @@ val coq_prefix : ModPath.t
 
 val wit_ltac2 : (raw_tacexpr, glb_tacexpr, Util.Empty.t) genarg_type
 
+val wit_pattern : (Constrexpr.constr_expr, Pattern.constr_pattern, Pattern.constr_pattern) genarg_type
+
 (** {5 Helper functions} *)
 
 val is_constructor : qualid -> bool

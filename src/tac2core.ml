@@ -26,6 +26,7 @@ let val_tag t = match val_tag t with
 
 let val_constr = val_tag (topwit Stdarg.wit_constr)
 let val_ident = val_tag (topwit Stdarg.wit_ident)
+let val_pattern = Val.create "ltac2:pattern"
 let val_pp = Val.create "ltac2:pp"
 let val_sort = Val.create "ltac2:sort"
 let val_cast = Val.create "ltac2:cast"
@@ -51,6 +52,7 @@ let t_array = coq_core "array"
 let t_unit = coq_core "unit"
 let t_list = coq_core "list"
 let t_constr = coq_core "constr"
+let t_pattern = coq_core "pattern"
 let t_ident = coq_core "ident"
 let t_option = coq_core "option"
 
@@ -121,6 +123,9 @@ let to_constr c = to_ext val_constr c
 let of_ident c = of_ext val_ident c
 let to_ident c = to_ext val_ident c
 
+let of_pattern c = of_ext val_pattern c
+let to_pattern c = to_ext val_pattern c
+
 (** FIXME: handle backtrace in Ltac2 exceptions *)
 let of_exn c = match fst c with
 | LtacError (kn, c) -> ValOpn (kn, c)
@@ -177,6 +182,9 @@ let err_outofbounds =
 
 let err_notfound =
   LtacError (coq_core "Not_found", [||])
+
+let err_matchfailure =
+  LtacError (coq_core "Match_failure", [||])
 
 (** Helper functions *)
 
@@ -464,6 +472,54 @@ let prm_constr_kind : ml_tactic = function
   end
 | _ -> assert false
 
+(** Patterns *)
+
+let prm_pattern_matches : ml_tactic = function
+| [pat; c] ->
+  let pat = Value.to_pattern pat in
+  let c = Value.to_constr c in
+  pf_apply begin fun env sigma ->
+    let ans =
+      try Some (Constr_matching.matches env sigma pat c)
+      with Constr_matching.PatternMatchingFailure -> None
+    in
+    begin match ans with
+    | None -> Proofview.tclZERO err_matchfailure
+    | Some ans ->
+      let ans = Id.Map.bindings ans in
+      let of_pair (id, c) = Value.of_tuple [| Value.of_ident id; Value.of_constr c |] in
+      return (Value.of_list (List.map of_pair ans))
+    end
+  end
+| _ -> assert false
+
+let prm_pattern_matches_subterm : ml_tactic = function
+| [pat; c] ->
+  let pat = Value.to_pattern pat in
+  let c = Value.to_constr c in
+  let open Constr_matching in
+  let rec of_ans s = match IStream.peek s with
+  | IStream.Nil -> Proofview.tclZERO err_matchfailure
+  | IStream.Cons ({ m_sub = (_, sub); m_ctx }, s) ->
+    let ans = Id.Map.bindings sub in
+    let of_pair (id, c) = Value.of_tuple [| Value.of_ident id; Value.of_constr c |] in
+    let ans = Value.of_tuple [| Value.of_constr m_ctx; Value.of_list (List.map of_pair ans) |] in
+    Proofview.tclOR (return ans) (fun _ -> of_ans s)
+  in
+  pf_apply begin fun env sigma ->
+    let ans = Constr_matching.match_appsubterm env sigma pat c in
+    of_ans ans
+  end
+| _ -> assert false
+
+let prm_pattern_instantiate : ml_tactic = function
+| [ctx; c] ->
+  let ctx = EConstr.Unsafe.to_constr (Value.to_constr ctx) in
+  let c = EConstr.Unsafe.to_constr (Value.to_constr c) in
+  let ans = Termops.subst_meta [Constr_matching.special_meta, c] ctx in
+  return (Value.of_constr (EConstr.of_constr ans))
+| _ -> assert false
+
 (** Error *)
 
 let prm_throw : ml_tactic = function
@@ -642,6 +698,10 @@ let () = Tac2env.define_primitive (pname "constr_type") prm_constr_type
 let () = Tac2env.define_primitive (pname "constr_equal") prm_constr_equal
 let () = Tac2env.define_primitive (pname "constr_kind") prm_constr_kind
 
+let () = Tac2env.define_primitive (pname "pattern_matches") prm_pattern_matches
+let () = Tac2env.define_primitive (pname "pattern_matches_subterm") prm_pattern_matches_subterm
+let () = Tac2env.define_primitive (pname "pattern_instantiate") prm_pattern_instantiate
+
 let () = Tac2env.define_primitive (pname "int_equal") prm_int_equal
 let () = Tac2env.define_primitive (pname "int_compare") prm_int_compare
 let () = Tac2env.define_primitive (pname "int_neg") prm_int_neg
@@ -739,6 +799,14 @@ let () =
   define_ml_object Stdarg.wit_ident obj
 
 let () =
+  let interp _ c = return (Val.Dyn (val_pattern, c)) in
+  let obj = {
+    ml_type = t_pattern;
+    ml_interp = interp;
+  } in
+  define_ml_object Tac2env.wit_pattern obj
+
+let () =
   let interp ist env sigma concl tac =
     let fold id (Val.Dyn (tag, v)) (accu : environment) : environment =
       match Val.eq tag val_valexpr with
@@ -751,6 +819,19 @@ let () =
     (EConstr.of_constr c, sigma)
   in
   Pretyping.register_constr_interp0 wit_ltac2 interp
+
+(** Patterns *)
+
+let () =
+  let intern ist c =
+    let _, pat = Constrintern.intern_constr_pattern ist.Genintern.genv ~as_type:false c in
+    ist, pat
+  in
+  Genintern.register_intern0 wit_pattern intern
+
+let () =
+  let subst s c = Patternops.subst_pattern s c in
+  Genintern.register_subst0 wit_pattern subst
 
 (** Built-in notation scopes *)
 
