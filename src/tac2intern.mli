@@ -12,6 +12,7 @@ open Mod_subst
 open Tac2expr
 
 val loc_of_tacexpr : raw_tacexpr -> Loc.t
+val loc_of_patexpr : raw_patexpr -> Loc.t
 
 val intern : raw_tacexpr -> glb_tacexpr * type_scheme
 val intern_typedef : (KerName.t * int) Id.Map.t -> raw_quant_typedef -> glb_quant_typedef

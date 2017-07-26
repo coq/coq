@@ -241,56 +241,88 @@ let inTypExt : typext -> obj =
 
 let dummy_loc = Loc.make_loc (-1, -1)
 
+let fresh_var avoid x =
+  let bad id =
+    Id.Set.mem id avoid ||
+    (try ignore (Tac2env.locate_ltac (qualid_of_ident id)); true with Not_found -> false)
+  in
+  Namegen.next_ident_away_from (Id.of_string x) bad
+
+(** Mangle recursive tactics *)
+let inline_rec_tactic tactics =
+  let avoid = List.fold_left (fun accu ((_, id), _) -> Id.Set.add id accu) Id.Set.empty tactics in
+  let map (id, e) = match e with
+  | CTacFun (loc, pat, _) -> (id, pat, e)
+  | _ ->
+    let loc, _ = id in
+    user_err ?loc (str "Recursive tactic definitions must be functions")
+  in
+  let tactics = List.map map tactics in
+  let map (id, pat, e) =
+    let fold_var (avoid, ans) (pat, _) =
+      let id = fresh_var avoid "x" in
+      let loc = loc_of_patexpr pat in
+      (Id.Set.add id avoid, Loc.tag ~loc id :: ans)
+    in
+    (** Fresh variables to abstract over the function patterns *)
+    let _, vars = List.fold_left fold_var (avoid, []) pat in
+    let map_body ((loc, id), _, e) = (loc, Name id), None, e in
+    let bnd = List.map map_body tactics in
+    let pat_of_id (loc, id) =
+      let qid = (loc, qualid_of_ident id) in
+      (CPatRef (Option.default dummy_loc loc, RelId qid, []), None)
+    in
+    let var_of_id (loc, id) =
+      let qid = (loc, qualid_of_ident id) in
+      CTacRef (RelId qid)
+    in
+    let loc0 = loc_of_tacexpr e in
+    let vpat = List.map pat_of_id vars in
+    let varg = List.map var_of_id vars in
+    let e = CTacLet (loc0, true, bnd, CTacApp (loc0, var_of_id id, varg)) in
+    (id, CTacFun (loc0, vpat, e))
+  in
+  List.map map tactics
+
 let register_ltac ?(local = false) isrec tactics =
-  if isrec then
-    let map (na, e) = (na, None, e) in
-    let bindings = List.map map tactics in
-    let map ((loc, na), e) = match na with
-    | Anonymous -> None
-    | Name id ->
-      let qid = Libnames.qualid_of_ident id in
-      let e = CTacLet (dummy_loc, true, bindings, CTacRef (RelId (loc, qid))) in
-      let (e, t) = intern e in
-      let e = match e with
-      | GTacLet (true, _, e) -> assert false
-      | _ -> assert false
-      in
-      Some (e, t)
+  let map ((loc, na), e) =
+    let id = match na with
+    | Anonymous ->
+      user_err ?loc (str "Tactic definition must have a name")
+    | Name id -> id
     in
-    let tactics = List.map map tactics in
-    assert false (** FIXME *)
-  else
-    let map ((loc, na), e) =
-      let (e, t) = intern e in
-      let () =
-        if not (is_value e) then
-          user_err ?loc (str "Tactic definition must be a syntactical value")
-      in
-      let id = match na with
-      | Anonymous ->
-        user_err ?loc (str "Tactic definition must have a name")
-      | Name id -> id
-      in
-      let kn = Lib.make_kn id in
-      let exists =
-        try let _ = Tac2env.interp_global kn in true with Not_found -> false
-      in
-      let () =
-        if exists then
-          user_err ?loc (str "Tactic " ++ Nameops.pr_id id ++ str " already exists")
-      in
-      (id, e, t)
+    ((loc, id), e)
+  in
+  let tactics = List.map map tactics in
+  let tactics =
+    if isrec then inline_rec_tactic tactics else tactics
+  in
+  let map ((loc, id), e) =
+    let (e, t) = intern e in
+    let () =
+      if not (is_value e) then
+        user_err ?loc (str "Tactic definition must be a syntactical value")
     in
-    let defs = List.map map tactics in
-    let iter (id, e, t) =
-      let def = {
-        tacdef_local = local;
-        tacdef_expr = e;
-        tacdef_type = t;
-      } in
-      ignore (Lib.add_leaf id (inTacDef def))
+    let kn = Lib.make_kn id in
+    let exists =
+      try let _ = Tac2env.interp_global kn in true with Not_found -> false
     in
-    List.iter iter defs
+    let () =
+      if exists then
+        user_err ?loc (str "Tactic " ++ Nameops.pr_id id ++ str " already exists")
+    in
+    (id, e, t)
+  in
+  let defs = List.map map tactics in
+  let iter (id, e, t) =
+    let def = {
+      tacdef_local = local;
+      tacdef_expr = e;
+      tacdef_type = t;
+    } in
+    ignore (Lib.add_leaf id (inTacDef def))
+  in
+  List.iter iter defs
 
 let qualid_to_ident (loc, qid) =
   let (dp, id) = Libnames.repr_qualid qid in
