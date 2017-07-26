@@ -37,11 +37,11 @@ Proof.
 "too early".
   Undo.
   (** Implicitely at the dot. The first fails because unshelve adds a goal, and solve hence fails. The second has an ambiant unification problem that is solved after solve *)
-  Fail solve [ unshelve (eapply interpf_SmartVarVar; subst; eassumption) ].
-  solve [eapply interpf_SmartVarVar; subst; eassumption].
+  solve [ unshelve (eapply interpf_SmartVarVar; subst; eassumption) ].
   Undo.
+  solve [eapply interpf_SmartVarVar; subst; eassumption].
   Unset Solve Unification Constraints.
   (* User control of when constraints are solved *)
-  solve [ unshelve (eapply interpf_SmartVarVar; subst; eassumption); solve_constraints ].
+  Undo.
+  eapply interpf_SmartVarVar. subst; eassumption.
 Qed.
-
