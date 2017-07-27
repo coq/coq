@@ -4545,7 +4545,7 @@ let check_expected_type env sigma (elimc,bl) elimt =
   let n = List.length sign in
   if n == 0 then error SchemeDontApply;
   let sigma,cl = make_evar_clause env sigma ~len:(n - 1) elimt in
-  let sigma = solve_evar_clause env sigma true cl bl in
+  let sigma = solve_evar_clause env sigma hyps_only:true cl bl in
   let (_,u,_) = destProd sigma (whd_all env sigma cl.cl_concl) in
   fun t -> match Evarconv.unify_leq_delay env sigma t u with
     | _sigma -> true
