@@ -275,6 +275,11 @@ let decompose_app sigma c =
     | App (f,cl) -> (f, Array.to_list cl)
     | _ -> (c,[])
 
+let decompose_appvect sigma c =
+  match kind sigma c with
+    | App (f,cl) -> (f, cl)
+    | _ -> (c,[||])
+
 let decompose_lam sigma c =
   let rec lamdec_rec l c = match kind sigma c with
     | Lambda (x,t,c) -> lamdec_rec ((x,t)::l) c

@@ -35,7 +35,8 @@ let e_give_exact ?(flags=eauto_unif_flags) c =
   let t2 = Tacmach.New.pf_concl (Proofview.Goal.assume gl) in
   let sigma = Tacmach.New.project gl in
   if occur_existential sigma t1 || occur_existential sigma t2 then
-     Tacticals.New.tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c)
+    Tacticals.New.tclTHEN (Clenvtac.unify ~flags ~with_ho:false t1)
+                          (exact_no_check c)
   else exact_check c
   end
 
