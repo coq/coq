@@ -269,8 +269,7 @@ let inline_rec_tactic tactics =
     let map_body ((loc, id), _, e) = (loc, Name id), None, e in
     let bnd = List.map map_body tactics in
     let pat_of_id (loc, id) =
-      let qid = (loc, qualid_of_ident id) in
-      (CPatRef (Option.default dummy_loc loc, RelId qid, []), None)
+      (CPatVar (loc, Name id), None)
     in
     let var_of_id (loc, id) =
       let qid = (loc, qualid_of_ident id) in
