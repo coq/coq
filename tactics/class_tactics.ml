@@ -88,6 +88,11 @@ let get_typeclasses_verbose () =
 let set_typeclasses_depth d = (:=) typeclasses_depth d
 let get_typeclasses_depth () = !typeclasses_depth
 
+(** Can we optimize and not backtrack on solutions to typeclass instances in Prop *)
+let typeclasses_backtrack_on_prop = ref false
+let get_typeclasses_backtrack_on_prop () = !typeclasses_backtrack_on_prop
+let set_typeclasses_backtrack_on_prop = (:=) typeclasses_backtrack_on_prop
+
 open Goptions
 
 let _ =
@@ -138,6 +143,14 @@ let _ =
       optkey   = ["Typeclasses";"Filtered";"Unification"];
       optread  = get_typeclasses_filtered_unification;
       optwrite = set_typeclasses_filtered_unification; }
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "backtracking on Prop instances";
+      optkey   = ["Typeclasses";"Backtrack";"On";"Prop"];
+      optread  = get_typeclasses_backtrack_on_prop;
+      optwrite = set_typeclasses_backtrack_on_prop; }
 
 let set_typeclasses_debug =
   declare_bool_option
@@ -977,7 +990,7 @@ module Search = struct
       and there are no evars in the goal then we do
       NOT backtrack. *)
   let needs_backtrack env evd unique concl =
-    if unique || is_Prop env evd concl then
+    if unique || (not (get_typeclasses_backtrack_on_prop ()) && is_Prop env evd concl) then
       occur_existential evd concl
     else true
 
@@ -1182,7 +1195,12 @@ module Search = struct
     let info' =
       { info with search_hints = ldb; last_tac = lazy (str"intro");
         search_depth = 1 :: 1 :: info.search_depth }
-    in kont info'
+    in
+    if !typeclasses_debug > 0 then
+      Feedback.msg_debug
+        (pr_depth info.search_depth ++ str": " ++ Lazy.force info'.last_tac
+         ++ str" on" ++ spc () ++ pr_ev sigma (Proofview.Goal.goal (Proofview.Goal.assume gl)));
+    kont info'
 
   let intro info kont =
     Proofview.tclBIND Tactics.intro
