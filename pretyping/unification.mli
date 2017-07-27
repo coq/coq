@@ -34,6 +34,8 @@ type unify_flags = {
   resolve_evars : bool
 }
 
+val flags_of : unify_flags -> Evarconv.unify_flags
+
 val default_core_unify_flags : unit -> core_unify_flags
 val default_no_delta_core_unify_flags : unit -> core_unify_flags
 
@@ -41,6 +43,7 @@ val default_unify_flags : unit -> unify_flags
 val default_no_delta_unify_flags : unit -> unify_flags
 
 val elim_flags : unit -> unify_flags
+val elim_flags_evars : Evd.evar_map -> unify_flags
 val elim_no_delta_flags : unit -> unify_flags
 
 val is_keyed_unification : unit -> bool
