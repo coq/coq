@@ -5204,17 +5204,15 @@ let unify ?(state=full_transparent_state) x y =
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   try
-    let core_flags =
-      { (default_unify_flags ()).core_unify_flags with
-	modulo_delta = state;
-	modulo_conv_on_closed_terms = Some state} in
-    (* What to do on merge and subterm flags?? *)
-    let flags = { (default_unify_flags ()) with
-      core_unify_flags = core_flags;
-      merge_unify_flags = core_flags;
-      subterm_unify_flags = { core_flags with modulo_delta = empty_transparent_state } }
+    let open Evarsolve in
+    let flags =
+      { open_ts = state; closed_ts = state;
+        subterm_ts = empty_transparent_state;
+        with_cs = true; modulo_betaiota = true;
+        frozen_evars = Evar.Set.empty;
+        allow_K_at_toplevel = true}
     in
-    let sigma = w_unify (Tacmach.New.pf_env gl) sigma Reduction.CONV ~flags x y in
+    let sigma = Evarconv.unify flags (Tacmach.New.pf_env gl) sigma x y in
     Proofview.Unsafe.tclEVARS sigma
   with e when CErrors.noncritical e ->
     Tacticals.New.tclFAIL 0 (str"Not unifiable")
