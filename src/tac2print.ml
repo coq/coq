@@ -175,7 +175,7 @@ let pr_glbexpr_gen lvl c =
     mt () (** FIXME when implemented *)
   | GTacCst (GCaseAlg tpe, n, cl) ->
     begin match Tac2env.interp_type tpe with
-    | _, GTydAlg def ->
+    | _, GTydAlg { galg_constructors = def } ->
       let paren = match lvl with
       | E0 -> paren
       | E1 | E2 | E3 | E4 | E5 -> fun x -> x
@@ -202,7 +202,7 @@ let pr_glbexpr_gen lvl c =
     let br = match info with
     | GCaseAlg kn ->
       let def = match Tac2env.interp_type kn with
-      | _, GTydAlg def -> def
+      | _, GTydAlg { galg_constructors = def } -> def
       | _, GTydDef _ | _, GTydRec _ | _, GTydOpn -> assert false
       in
       let br = order_branches cst_br ncst_br def in

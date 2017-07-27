@@ -482,7 +482,7 @@ let check_elt_empty loc env t = match kind env t with
 | GTypRef (kn, _) ->
   let def = Tac2env.interp_type kn in
   match def with
-  | _, GTydAlg [] -> kn
+  | _, GTydAlg { galg_constructors = [] } -> kn
   | _ ->
     let name = env_name env in
     user_err ~loc (str "Type " ++ pr_glbtype name t ++ str " is not an empty type")
@@ -856,17 +856,13 @@ and intern_case env loc e pl =
     let subst, tc = fresh_reftype env kn in
     let () = unify ~loc:(loc_of_tacexpr e) env t tc in
     let (params, def) = Tac2env.interp_type kn in
-    let cstrs = match def with
+    let galg = match def with
     | GTydAlg c -> c
     | _ -> assert false
     in
-    let count (const, nonconst) (c, args) = match args with
-    | [] -> (succ const, nonconst)
-    | _ :: _ -> (const, succ nonconst)
-    in
-    let nconst, nnonconst = List.fold_left count (0, 0) cstrs in
-    let const = Array.make nconst None in
-    let nonconst = Array.make nnonconst None in
+    let cstrs = galg.galg_constructors in
+    let const = Array.make galg.galg_nconst None in
+    let nonconst = Array.make galg.galg_nnonconst None in
     let ret = GTypVar (fresh_id env) in
     let rec intern_branch = function
     | [] -> ()
@@ -1114,7 +1110,17 @@ let intern_typedef self (ids, t) : glb_quant_typedef =
   | CTydAlg constrs ->
     let map (c, t) = (c, List.map intern t) in
     let constrs = List.map map constrs in
-    (count, GTydAlg constrs)
+    let getn (const, nonconst) (c, args) = match args with
+    | [] -> (succ const, nonconst)
+    | _ :: _ -> (const, succ nonconst)
+    in
+    let nconst, nnonconst = List.fold_left getn (0, 0) constrs in
+    let galg = {
+      galg_constructors = constrs;
+      galg_nconst = nconst;
+      galg_nnonconst = nnonconst;
+    } in
+    (count, GTydAlg galg)
   | CTydRec fields ->
     let map (c, mut, t) = (c, mut, intern t) in
     let fields = List.map map fields in
@@ -1324,13 +1330,14 @@ let subst_typedef subst e = match e with
 | GTydDef t ->
   let t' = Option.smartmap (fun t -> subst_type subst t) t in
   if t' == t then e else GTydDef t'
-| GTydAlg constrs ->
+| GTydAlg galg ->
   let map (c, tl as p) =
     let tl' = List.smartmap (fun t -> subst_type subst t) tl in
     if tl' == tl then p else (c, tl')
   in
-  let constrs' = List.smartmap map constrs in
-  if constrs' == constrs then e else GTydAlg constrs'
+  let constrs' = List.smartmap map galg.galg_constructors in
+  if constrs' == galg.galg_constructors then e
+  else GTydAlg { galg with galg_constructors = constrs' }
 | GTydRec fields ->
   let map (c, mut, t as p) =
     let t' = subst_type subst t in

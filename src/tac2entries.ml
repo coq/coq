@@ -78,7 +78,7 @@ let change_sp_label sp id =
 let push_typedef visibility sp kn (_, def) = match def with
 | GTydDef _ ->
   Tac2env.push_type visibility sp kn
-| GTydAlg cstrs ->
+| GTydAlg { galg_constructors = cstrs } ->
   (** Register constructors *)
   let iter (c, _) =
     let spc = change_sp_label sp c in
@@ -107,7 +107,7 @@ let next i =
 let define_typedef kn (params, def as qdef) = match def with
 | GTydDef _ ->
   Tac2env.define_type kn qdef
-| GTydAlg cstrs ->
+| GTydAlg { galg_constructors = cstrs } ->
   (** Define constructors *)
   let constant = ref 0 in
   let nonconstant = ref 0 in
@@ -665,7 +665,17 @@ let call ~default e =
 let register_prim_alg name params def =
   let id = Id.of_string name in
   let def = List.map (fun (cstr, tpe) -> (Id.of_string_soft cstr, tpe)) def in
-  let def = (params, GTydAlg def) in
+  let getn (const, nonconst) (c, args) = match args with
+  | [] -> (succ const, nonconst)
+  | _ :: _ -> (const, succ nonconst)
+  in
+  let nconst, nnonconst = List.fold_left getn (0, 0) def in
+  let alg = {
+    galg_constructors = def;
+    galg_nconst = nconst;
+    galg_nnonconst = nnonconst;
+  } in
+  let def = (params, GTydAlg alg) in
   let def = { typdef_local = false; typdef_expr = def } in
   ignore (Lib.add_leaf id (inTypDef def))
 

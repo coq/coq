@@ -53,9 +53,18 @@ type 'a glb_typexpr =
 | GTypTuple of 'a glb_typexpr list
 | GTypRef of type_constant * 'a glb_typexpr list
 
+type glb_alg_type = {
+  galg_constructors : (uid * int glb_typexpr list) list;
+  (** Constructors of the algebraic type *)
+  galg_nconst : int;
+  (** Number of constant constructors *)
+  galg_nnonconst : int;
+  (** Number of non-constant constructors *)
+}
+
 type glb_typedef =
 | GTydDef of int glb_typexpr option
-| GTydAlg of (uid * int glb_typexpr list) list
+| GTydAlg of glb_alg_type
 | GTydRec of (lid * mutable_flag * int glb_typexpr) list
 | GTydOpn
 
