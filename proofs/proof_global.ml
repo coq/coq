@@ -69,7 +69,6 @@ let _ =
 (* Extra info on proofs. *)
 type lemma_possible_guards = int list list
 type proof_universes = Evd.evar_universe_context * Universes.universe_binders option
-type universe_binders = Id.t Loc.located list
 
 type proof_object = {
   id : Names.Id.t;
@@ -94,7 +93,7 @@ type pstate = {
   proof : Proof.proof;
   strength : Decl_kinds.goal_kind;
   mode : proof_mode CEphemeron.key;
-  universe_binders: universe_binders option;
+  universe_decl: Univdecls.universe_decl;
 }
 
 let make_terminator f = f
@@ -230,15 +229,22 @@ let activate_proof_mode mode =
 let disactivate_current_proof_mode () =
   CEphemeron.iter_opt !current_proof_mode (fun x -> x.reset ())
 
-(** [start_proof sigma id str goals terminator] starts a proof of name
+let default_universe_decl =
+  let open Misctypes in
+  { univdecl_instance = [];
+    univdecl_extensible_instance = true;
+    univdecl_constraints = Univ.Constraint.empty;
+    univdecl_extensible_constraints = true }
+
+(** [start_proof sigma id pl str goals terminator] starts a proof of name
     [id] with goals [goals] (a list of pairs of environment and
     conclusion); [str] describes what kind of theorem/definition this
     is (spiwack: for potential printing, I believe is used only by
     closing commands and the xml plugin); [terminator] is used at the
     end of the proof to close the proof. The proof is started in the
     evar map [sigma] (which can typically contain universe
-    constraints). *)
-let start_proof sigma id ?pl str goals terminator =
+    constraints), and with universe bindings pl. *)
+let start_proof sigma id ?(pl=default_universe_decl) str goals terminator =
   let initial_state = {
     pid = id;
     terminator = CEphemeron.create terminator;
@@ -247,10 +253,10 @@ let start_proof sigma id ?pl str goals terminator =
     section_vars = None;
     strength = str;
     mode = find_proof_mode "No";
-    universe_binders = pl } in
+    universe_decl = pl } in
   push initial_state pstates
 
-let start_dependent_proof id ?pl str goals terminator =
+let start_dependent_proof id ?(pl=default_universe_decl) str goals terminator =
   let initial_state = {
     pid = id;
     terminator = CEphemeron.create terminator;
@@ -259,11 +265,11 @@ let start_dependent_proof id ?pl str goals terminator =
     section_vars = None;
     strength = str;
     mode = find_proof_mode "No";
-    universe_binders = pl } in
+    universe_decl = pl } in
   push initial_state pstates
 
 let get_used_variables () = (cur_pstate ()).section_vars
-let get_universe_binders () = (cur_pstate ()).universe_binders
+let get_universe_decl () = (cur_pstate ()).universe_decl
 
 let proof_using_auto_clear = ref false
 let _ = Goptions.declare_bool_option
@@ -319,7 +325,7 @@ type closed_proof_output = (Term.constr * Safe_typing.private_constants) list * 
 
 let close_proof ~keep_body_ucst_separate ?feedback_id ~now
                 (fpl : closed_proof_output Future.computation) =
-  let { pid; section_vars; strength; proof; terminator; universe_binders } =
+  let { pid; section_vars; strength; proof; terminator; universe_decl } =
     cur_pstate () in
   let poly = pi2 strength (* Polymorphic *) in
   let initial_goals = Proof.initial_goals proof in
@@ -393,8 +399,10 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
         })
 		fpl initial_goals in
   let binders =
-    Option.map (fun names -> fst (Evd.universe_context ~names (Evd.from_ctx universes)))
-	       universe_binders
+    if not poly || (List.is_empty universe_decl.Misctypes.univdecl_instance &&
+                    universe_decl.Misctypes.univdecl_extensible_instance) then None
+    else
+      Some (fst (Evd.check_univ_decl (Evd.from_ctx universes) universe_decl))
   in
   { id = pid; entries = entries; persistence = strength;
     universes = (universes, binders) },

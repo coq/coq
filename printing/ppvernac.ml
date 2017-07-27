@@ -37,11 +37,29 @@ open Decl_kinds
     | Some loc -> let (b,_) = Loc.unloc loc in
                   pr_located pr_id @@ Loc.tag ~loc:(Loc.make_loc (b,b + String.length (Id.to_string id))) id
 
-  let pr_plident (lid, l) =
-    pr_lident lid ++
-    (match l with
-     | Some l -> prlist_with_sep spc pr_lident l
-     | None -> mt())
+  let pr_uconstraint (l, d, r) =
+    pr_glob_level l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
+      pr_glob_level r
+
+  let pr_univdecl_instance l extensible =
+    prlist_with_sep spc pr_lident l ++
+    (if extensible then str"+" else mt ())
+
+  let pr_univdecl_constraints l extensible =
+    if List.is_empty l && extensible then mt ()
+    else str"|" ++ spc () ++ prlist_with_sep (fun () -> str",") pr_uconstraint l ++
+           (if extensible then str"+" else mt())
+
+  let pr_universe_decl l =
+    let open Misctypes in
+    match l with
+    | None -> mt ()
+    | Some l ->
+      str"@{" ++ pr_univdecl_instance l.univdecl_instance l.univdecl_extensible_instance ++
+        pr_univdecl_constraints l.univdecl_constraints l.univdecl_extensible_constraints ++ str "}"
+
+  let pr_ident_decl (lid, l) =
+    pr_lident lid ++ pr_universe_decl l
     
   let string_of_fqid fqid =
     String.concat "." (List.map Id.to_string fqid)
@@ -371,24 +389,19 @@ open Decl_kinds
     | l -> spc() ++
       hov 1 (str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
 
-  let pr_univs pl =
-    match pl with
-    | None -> mt ()
-    | Some pl -> str"@{" ++ prlist_with_sep spc pr_lident pl ++ str"}"
-
-  let pr_rec_definition ((((loc,id),pl),ro,bl,type_,def),ntn) =
+  let pr_rec_definition ((iddecl,ro,bl,type_,def),ntn) =
     let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
     let annot = pr_guard_annot pr_lconstr_expr bl ro in
-    pr_id id ++ pr_univs pl ++ pr_binders_arg bl ++ annot
+    pr_ident_decl iddecl ++ pr_binders_arg bl ++ annot
     ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_
     ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_pure_lconstr def) def
     ++ prlist (pr_decl_notation pr_constr) ntn
 
   let pr_statement head (idpl,(bl,c)) =
     assert (not (Option.is_empty idpl));
-    let id, pl = Option.get idpl in
+    let idpl = Option.get idpl in
     hov 2
-      (head ++ spc() ++ pr_lident id ++ pr_univs pl ++ spc() ++
+      (head ++ spc() ++ pr_ident_decl idpl ++ spc() ++
          (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
          str":" ++ pr_spc_lconstr c)
 
@@ -692,7 +705,7 @@ open Decl_kinds
         return (
           hov 2 (
             pr_def_token d ++ spc()
-            ++ pr_plident id ++ binds ++ typ
+            ++ pr_ident_decl id ++ binds ++ typ
             ++ (match c with
               | None -> mt()
               | Some cc -> str" :=" ++ spc() ++ cc))
@@ -722,7 +735,7 @@ open Decl_kinds
       | VernacAssumption (stre,t,l) ->
         let n = List.length (List.flatten (List.map fst (List.map snd l))) in
         let pr_params (c, (xl, t)) =
-          hov 2 (prlist_with_sep sep pr_plident xl ++ spc() ++
+          hov 2 (prlist_with_sep sep pr_ident_decl xl ++ spc() ++
             (if c then str":>" else str":" ++ spc() ++ pr_lconstr_expr t)) in
         let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
         return (hov 2 (pr_assumption_token (n > 1) stre ++
@@ -743,10 +756,10 @@ open Decl_kinds
           | RecordDecl (c,fs) ->
             pr_record_decl b c fs
         in
-        let pr_oneind key (((coe,(id,pl)),indpar,s,k,lc),ntn) =
+        let pr_oneind key (((coe,iddecl),indpar,s,k,lc),ntn) =
           hov 0 (
             str key ++ spc() ++
-              (if coe then str"> " else str"") ++ pr_lident id ++ pr_univs pl ++
+              (if coe then str"> " else str"") ++ pr_ident_decl iddecl ++
               pr_and_type_binders_arg indpar ++
               pr_opt (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) s ++
               str" :=") ++ pr_constructor_list k lc ++
@@ -791,8 +804,8 @@ open Decl_kinds
           | Some Local -> keyword "Local" ++ spc ()
           | None | Some Global -> str ""
         in
-        let pr_onecorec ((((loc,id),pl),bl,c,def),ntn) =
-          pr_id id ++ pr_univs pl ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
+        let pr_onecorec ((iddecl,bl,c,def),ntn) =
+          pr_ident_decl iddecl ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
             spc() ++ pr_lconstr_expr c ++
             pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_lconstr def) def ++
             prlist (pr_decl_notation pr_constr) ntn
@@ -818,10 +831,6 @@ open Decl_kinds
                    prlist_with_sep (fun _ -> str",") pr_lident v)
         )
       | VernacConstraint v ->
-        let pr_uconstraint (l, d, r) =
-          pr_glob_level l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
-            pr_glob_level r
-        in
         return (
           hov 2 (keyword "Constraint" ++ spc () ++
                    prlist_with_sep (fun _ -> str",") pr_uconstraint v)
@@ -875,7 +884,7 @@ open Decl_kinds
             (if abst then keyword "Declare" ++ spc () else mt ()) ++
               keyword "Instance" ++
               (match instid with
-      	 | (loc, Name id), l -> spc () ++ pr_plident ((loc, id),l) ++ spc () 
+      	 | (loc, Name id), l -> spc () ++ pr_ident_decl ((loc, id),l) ++ spc ()
                | (_, Anonymous), _ -> mt ()) ++
               pr_and_type_binders_arg sup ++
               str":" ++ spc () ++

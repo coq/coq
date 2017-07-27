@@ -23,7 +23,7 @@ open Decl_kinds
     proof of mutually dependent theorems) *)
 
 val start_proof :
-  Id.t -> ?pl:Proof_global.universe_binders -> goal_kind -> Evd.evar_map -> named_context_val -> EConstr.constr ->
+  Id.t -> ?pl:Univdecls.universe_decl -> goal_kind -> Evd.evar_map -> named_context_val -> EConstr.constr ->
   ?init_tac:unit Proofview.tactic ->
   Proof_global.proof_terminator -> unit
 
@@ -67,6 +67,7 @@ val current_proof_statement :
   unit -> Id.t * goal_kind * EConstr.types
 
 (** {6 ... } *)
+
 (** [solve (SelectNth n) tac] applies tactic [tac] to the [n]th
     subgoal of the current focused proof or raises a [UserError] if no
     proof is focused or if there is no [n]th subgoal. [solve SelectAll
@@ -185,8 +186,8 @@ val get_used_variables : unit -> Context.Named.t option
 [@@ocaml.deprecated "use Proof_global.get_used_variables"]
 
 (** {6 Universe binders } *)
-val get_universe_binders : unit -> Proof_global.universe_binders option
-[@@ocaml.deprecated "use Proof_global.get_universe_binders"]
+val get_universe_decl : unit -> Univdecls.universe_decl
+[@@ocaml.deprecated "use Proof_global.get_universe_decl"]
 
 (** {6 ... } *)
 (** [get_current_proof_name ()] return the name of the current focused
@@ -202,7 +203,3 @@ val get_all_proof_names : unit -> Id.t list
 
 type lemma_possible_guards = Proof_global.lemma_possible_guards
 [@@ocaml.deprecated "use Proof_global.lemma_possible_guards"]
-
-type universe_binders = Proof_global.universe_binders
-[@@ocaml.deprecated "use Proof_global.universe_binders"]
-

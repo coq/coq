@@ -1648,6 +1648,14 @@ sig
   type sort_info = Names.Name.t Loc.located list
   type glob_sort = sort_info glob_sort_gen
 
+  type ('a, 'b) gen_universe_decl = {
+    univdecl_instance : 'a; (* Declared universes *)
+    univdecl_extensible_instance : bool; (* Can new universes be added *)
+    univdecl_constraints : 'b; (* Declared constraints *)
+    univdecl_extensible_constraints : bool (* Can new constraints be added *) }
+
+  type glob_constraint = glob_level * Univ.constraint_type * glob_level
+
   type case_style = Term.case_style =
     | LetStyle
     | IfStyle
@@ -2461,7 +2469,6 @@ sig
        constr_expr list list *
          local_binder_expr list list
 
-  type typeclass_constraint = (Names.Name.t Loc.located * Names.Id.t Loc.located list option) * Decl_kinds.binding_kind * constr_expr
   type constr_pattern_expr = constr_expr
 end
 
@@ -3708,6 +3715,10 @@ sig
 
   type obsolete_locality = bool
 
+  type universe_decl_expr = (lident list, Misctypes.glob_constraint list) gen_universe_decl
+
+  type ident_decl = lident * universe_decl_expr option
+
   type lstring
   type 'a with_coercion = coercion_flag * 'a
   type scope_name = string
@@ -3725,9 +3736,7 @@ sig
     | Constructors of constructor_expr list
     | RecordDecl of lident option * local_decl_expr with_instance with_priority with_notation list
 
-  type plident = lident * lident list option
-
-  type inductive_expr = plident with_coercion * Constrexpr.local_binder_expr list * Constrexpr.constr_expr option * inductive_kind * constructor_list_or_record_decl_expr
+  type inductive_expr = ident_decl with_coercion * Constrexpr.local_binder_expr list * Constrexpr.constr_expr option * inductive_kind * constructor_list_or_record_decl_expr
 
   type syntax_modifier =
     | SetItemLevel of string list * Extend.production_level
@@ -3741,18 +3750,20 @@ sig
 
   type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
 
+  type typeclass_constraint = (Names.Name.t Loc.located * universe_decl_expr option) * Decl_kinds.binding_kind * constr_expr
+
   type definition_expr =
     | ProveBody of local_binder_expr list * constr_expr
     | DefineBody of local_binder_expr list * Genredexpr.raw_red_expr option * constr_expr
                     * constr_expr option
   type proof_expr =
-    plident option * (local_binder_expr list * constr_expr)
+    ident_decl option * (local_binder_expr list * constr_expr)
 
   type proof_end =
     | Admitted
     | Proved of opacity_flag * lident option
 
-  type fixpoint_expr = plident * (Names.Id.t Loc.located option * Constrexpr.recursion_order_expr) * Constrexpr.local_binder_expr list * Constrexpr.constr_expr * Constrexpr.constr_expr option
+  type fixpoint_expr = ident_decl * (Names.Id.t Loc.located option * Constrexpr.recursion_order_expr) * Constrexpr.local_binder_expr list * Constrexpr.constr_expr * Constrexpr.constr_expr option
 
   type cofixpoint_expr
 
@@ -3831,12 +3842,12 @@ sig
       scope_name option
   | VernacNotationAddFormat of string * string * string
   | VernacDefinition of
-      (Decl_kinds.locality option * Decl_kinds.definition_object_kind) * plident * definition_expr
+      (Decl_kinds.locality option * Decl_kinds.definition_object_kind) * ident_decl * definition_expr
   | VernacStartTheoremProof of Decl_kinds.theorem_kind * proof_expr list
   | VernacEndProof of proof_end
   | VernacExactProof of Constrexpr.constr_expr
   | VernacAssumption of (Decl_kinds.locality option * Decl_kinds.assumption_object_kind) *
-      inline * (plident list * Constrexpr.constr_expr) with_coercion list
+      inline * (ident_decl list * Constrexpr.constr_expr) with_coercion list
   | VernacInductive of cumulative_inductive_parsing_flag * Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of
       Decl_kinds.locality option * (fixpoint_expr * decl_notation list) list
@@ -3860,7 +3871,7 @@ sig
   | VernacInstance of
       bool *
       Constrexpr.local_binder_expr list *
-        Constrexpr.typeclass_constraint *
+        typeclass_constraint *
           (bool * Constrexpr.constr_expr) option *
       hint_info_expr
   | VernacContext of Constrexpr.local_binder_expr list
@@ -3952,7 +3963,7 @@ sig
     | SelectAll
   and vernac_classification = vernac_type * vernac_when
   and one_inductive_expr =
-    plident * Constrexpr.local_binder_expr list * Constrexpr.constr_expr option * constructor_expr list
+    ident_decl * Constrexpr.local_binder_expr list * Constrexpr.constr_expr option * constructor_expr list
 end
 
 (* XXX: end manual intf move *)
@@ -4087,6 +4098,18 @@ sig
   val elim_flags : unit -> unify_flags
   val w_unify_to_subterm :
     Environ.env -> Evd.evar_map -> ?flags:unify_flags -> EConstr.constr * EConstr.constr -> Evd.evar_map * EConstr.constr
+end
+
+module Univdecls :
+sig
+  type universe_decl =
+    (Names.Id.t Loc.located list, Univ.Constraint.t) Misctypes.gen_universe_decl
+
+  val interp_univ_decl : Environ.env -> Vernacexpr.universe_decl_expr ->
+                         Evd.evar_map * universe_decl
+  val interp_univ_decl_opt : Environ.env -> Vernacexpr.universe_decl_expr option ->
+                             Evd.evar_map * universe_decl
+  val default_univ_decl : universe_decl
 end
 
 (************************************************************************)
@@ -4487,12 +4510,11 @@ sig
 
   type proof_terminator
   type lemma_possible_guards
-  type universe_binders
   type closed_proof = proof_object * proof_terminator
 
   val make_terminator : (proof_ending -> unit) -> proof_terminator
   val start_dependent_proof :
-    Names.Id.t -> ?pl:universe_binders -> Decl_kinds.goal_kind ->
+    Names.Id.t -> ?pl:Univdecls.universe_decl -> Decl_kinds.goal_kind ->
     Proofview.telescope -> proof_terminator -> unit
   val with_current_proof :
     (unit Proofview.tactic -> Proof.proof -> Proof.proof * 'a) -> 'a
@@ -5546,7 +5568,7 @@ sig
 
   val mk_hook :
     (Decl_kinds.locality -> Globnames.global_reference -> 'a) -> 'a declaration_hook
-  val start_proof : Names.Id.t -> ?pl:Proof_global.universe_binders -> Decl_kinds.goal_kind -> Evd.evar_map ->
+  val start_proof : Names.Id.t -> ?pl:Univdecls.universe_decl -> Decl_kinds.goal_kind -> Evd.evar_map ->
     ?terminator:(Proof_global.lemma_possible_guards -> unit declaration_hook -> Proof_global.proof_terminator) ->
     ?sign:Environ.named_context_val -> EConstr.types ->
     ?init_tac:unit Proofview.tactic -> ?compute_guard:Proof_global.lemma_possible_guards ->
@@ -5622,7 +5644,7 @@ sig
 
   type structured_fixpoint_expr = {
     fix_name : Id.t;
-    fix_univs : lident list option;
+    fix_univs : universe_decl_expr option;
     fix_annot : Id.t Loc.located option;
     fix_binders : local_binder_expr list;
     fix_body : constr_expr option;
@@ -5631,7 +5653,7 @@ sig
 
   type structured_one_inductive_expr = {
     ind_name : Id.t;
-    ind_univs : lident list option;
+    ind_univs : universe_decl_expr option;
     ind_arity : constr_expr;
     ind_lc : (Id.t * constr_expr) list
   }
@@ -5647,7 +5669,7 @@ sig
     (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list -> Decl_kinds.cumulative_inductive_flag -> Decl_kinds.polymorphic ->
     Decl_kinds.private_flag -> Decl_kinds.recursivity_kind -> unit
 
-  val do_definition : Names.Id.t -> Decl_kinds.definition_kind -> Vernacexpr.lident list option ->
+  val do_definition : Names.Id.t -> Decl_kinds.definition_kind -> Vernacexpr.universe_decl_expr option ->
     Constrexpr.local_binder_expr list -> Redexpr.red_expr option -> Constrexpr.constr_expr ->
     Constrexpr.constr_expr option -> unit Lemmas.declaration_hook -> unit
 
@@ -5660,7 +5682,7 @@ sig
 
   val interp_fixpoint :
     structured_fixpoint_expr list -> Vernacexpr.decl_notation list ->
-    recursive_preentry * Vernacexpr.lident list option * UState.t *
+    recursive_preentry * Univdecls.universe_decl * UState.t *
       (EConstr.rel_context * Impargs.manual_implicits * int option) list
 
   val extract_mutual_inductive_declaration_components :
@@ -5688,7 +5710,7 @@ sig
     ?refine:bool ->
     Decl_kinds.polymorphic ->
     Constrexpr.local_binder_expr list ->
-    Constrexpr.typeclass_constraint ->
+    Vernacexpr.typeclass_constraint ->
     (bool * Constrexpr.constr_expr) option ->
     ?generalize:bool ->
     ?tac:unit Proofview.tactic  ->

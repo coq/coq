@@ -142,13 +142,13 @@ let _ = Hook.set Constrexpr_ops.fresh_var_hook fresh_var
 (* Gallina declarations *)
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion
-    record_field decl_notation rec_definition pidentref;
+    record_field decl_notation rec_definition pidentref ident_decl;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = pidentref; bl = binders; ":"; c = lconstr;
+    [ [ thm = thm_token; id = ident_decl; bl = binders; ":"; c = lconstr;
         l = LIST0
-          [ "with"; id = pidentref; bl = binders; ":"; c = lconstr ->
+          [ "with"; id = ident_decl; bl = binders; ":"; c = lconstr ->
           (Some id,(bl,c)) ] ->
           VernacStartTheoremProof (thm, (Some id,(bl,c))::l)
       | stre = assumption_token; nl = inline; bl = assum_list ->
@@ -156,7 +156,7 @@ GEXTEND Gram
       | (kwd,stre) = assumptions_token; nl = inline; bl = assum_list ->
 	  test_plural_form loc kwd bl;
 	  VernacAssumption (stre, nl, bl)
-      | d = def_token; id = pidentref; b = def_body ->
+      | d = def_token; id = ident_decl; b = def_body ->
           VernacDefinition (d, id, b)
       | IDENT "Let"; id = identref; b = def_body ->
           VernacDefinition ((Some Discharge, Definition), (id, None), b)
@@ -228,12 +228,28 @@ GEXTEND Gram
       | IDENT "Inline" -> DefaultInline
       | -> NoInline] ]
   ;
-  pidentref:
-    [ [ i = identref; l = OPT [ "@{" ; l = LIST0 identref; "}" -> l ] -> (i,l) ] ]
-  ;
   univ_constraint:
     [ [ l = universe_level; ord = [ "<" -> Univ.Lt | "=" -> Univ.Eq | "<=" -> Univ.Le ];
 	r = universe_level -> (l, ord, r) ] ]
+  ;
+  pidentref:
+    [ [ i = identref; l = OPT [ "@{" ; l = LIST0 identref; "}" -> l ] -> (i,l) ] ]
+  ;
+  univ_decl :
+    [ [  "@{" ; l = LIST0 identref; ext = [ "+" -> true | -> false ];
+         cs = [ "|"; l' = LIST0 univ_constraint SEP ",";
+                ext = [ "+" -> true | -> false ] -> (l',ext)
+              | -> ([], true) ];
+         "}" ->
+         { univdecl_instance = l;
+           univdecl_extensible_instance = ext;
+           univdecl_constraints = fst cs;
+           univdecl_extensible_constraints = snd cs }
+    ] ]
+  ;
+  ident_decl:
+    [ [ i = identref; l = OPT univ_decl -> (i, l)
+  ] ]
   ;
   finite_token:
     [ [ IDENT "Inductive" -> (Inductive_kw,Finite)
@@ -292,7 +308,7 @@ GEXTEND Gram
       | -> RecordDecl (None, []) ] ]
   ;
   inductive_definition:
-    [ [ oc = opt_coercion; id = pidentref; indpar = binders;
+    [ [ oc = opt_coercion; id = ident_decl; indpar = binders;
         c = OPT [ ":"; c = lconstr -> c ];
         lc=opt_constructors_or_fields; ntn = decl_notation ->
 	   (((oc,id),indpar,c,lc),ntn) ] ]
@@ -318,14 +334,14 @@ GEXTEND Gram
   ;
   (* (co)-fixpoints *)
   rec_definition:
-    [ [ id = pidentref;
+    [ [ id = ident_decl;
 	bl = binders_fixannot;
         ty = type_cstr;
 	def = OPT [":="; def = lconstr -> def]; ntn = decl_notation ->
 	  let bl, annot = bl in ((id,annot,bl,ty,def),ntn) ] ]
   ;
   corec_definition:
-    [ [ id = pidentref; bl = binders; ty = type_cstr;
+    [ [ id = ident_decl; bl = binders; ty = type_cstr;
         def = OPT [":="; def = lconstr -> def]; ntn = decl_notation ->
           ((id,bl,ty,def),ntn) ] ]
   ;
@@ -397,7 +413,7 @@ GEXTEND Gram
     [ [ "("; a = simple_assum_coe; ")" -> a ] ]
   ;
   simple_assum_coe:
-    [ [ idl = LIST1 pidentref; oc = of_type_with_opt_coercion; c = lconstr ->
+    [ [ idl = LIST1 ident_decl; oc = of_type_with_opt_coercion; c = lconstr ->
         (not (Option.is_empty oc),(idl,c)) ] ]
   ;
 
@@ -800,7 +816,7 @@ GEXTEND Gram
       | IDENT "transparent" -> Conv_oracle.transparent ] ]
   ;
   instance_name:
-    [ [ name = pidentref; sup = OPT binders ->
+    [ [ name = ident_decl; sup = OPT binders ->
 	  (let ((loc,id),l) = name in ((loc, Name id),l)),
           (Option.default [] sup)
       | -> ((Loc.tag ~loc:!@loc Anonymous), None), []  ] ]
