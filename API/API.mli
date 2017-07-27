@@ -2207,6 +2207,9 @@ sig
     val repr : t -> bool list option
   end
 
+  module Abstraction :
+  sig type t end
+
   (** This value defines the refinement of a given {i evar} *)
   type evar_body =
               | Evar_empty (** given {i evar} was not yet refined *)
@@ -2219,6 +2222,7 @@ sig
       evar_hyps : Environ.named_context_val;
       evar_body : evar_body;
       evar_filter : Filter.t;
+      evar_abstraction : Abstraction.t;
       evar_source : Evar_kinds.t Loc.located;
       evar_candidates : Constr.t list option; (* if not None, list of allowed instances *)
       evar_extra : Store.t
@@ -2855,13 +2859,14 @@ sig
 
   val new_evar :
     Environ.env -> Evd.evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
-    ?candidates:EConstr.constr list -> ?store:Evd.Store.t ->
+    ?abstraction:Evd.Abstraction.t -> ?candidates:EConstr.constr list -> ?store:Evd.Store.t ->
     ?naming:Misctypes.intro_pattern_naming_expr ->
     ?future_goal:bool -> ?principal:bool -> EConstr.types -> Evd.evar_map * EConstr.constr
 
   val new_evar_instance :
     Environ.named_context_val -> Evd.evar_map -> EConstr.types ->
-    ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t -> ?candidates:EConstr.constr list ->
+    ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
+    ?abstraction:Evd.Abstraction.t -> ?candidates:EConstr.constr list ->
     ?store:Evd.Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
     ?future_goal:bool -> ?principal:bool ->
     EConstr.constr list -> Evd.evar_map * EConstr.constr

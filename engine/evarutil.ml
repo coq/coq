@@ -371,7 +371,8 @@ let new_pure_evar_full evd evi =
   let evd = Evd.declare_future_goal evk evd in
   (evd, evk)
 
-let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?candidates ?(store = Store.empty) ?naming ?(future_goal=true) ?(principal=false) typ =
+let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity)
+  ?(abstraction = Abstraction.identity) ?candidates ?(store = Store.empty) ?naming ?(future_goal=true) ?(principal=false) typ =
   let typ = EConstr.Unsafe.to_constr typ in
   let candidates = Option.map (fun l -> List.map EConstr.Unsafe.to_constr l) candidates in
   let default_naming = Misctypes.IntroAnonymous in
@@ -389,6 +390,7 @@ let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?ca
     evar_concl = typ;
     evar_body = Evar_empty;
     evar_filter = filter;
+    evar_abstraction = abstraction;
     evar_source = src;
     evar_candidates = candidates;
     evar_extra = store; }
@@ -402,18 +404,18 @@ let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?ca
   in
   (evd, newevk)
 
-let new_evar_instance sign evd typ ?src ?filter ?candidates ?store ?naming
+let new_evar_instance sign evd typ ?src ?filter ?abstraction ?candidates ?store ?naming
                       ?future_goal ?principal instance =
   let open EConstr in
   assert (not !Flags.debug ||
             List.distinct (ids_of_named_context (named_context_of_val sign)));
-  let (evd, newevk) = new_pure_evar sign evd ?src ?filter ?candidates ?store ?naming
+  let (evd, newevk) = new_pure_evar sign evd ?src ?filter ?abstraction ?candidates ?store ?naming
                                     ?future_goal ?principal typ in
   evd, mkEvar (newevk,Array.of_list instance)
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
-let new_evar env evd ?src ?filter ?candidates ?store ?naming ?future_goal ?principal typ =
+let new_evar env evd ?src ?filter ?abstraction ?candidates ?store ?naming ?future_goal ?principal typ =
   let sign,typ',instance,subst,vsubst = push_rel_context_to_named_context env evd typ in
   let map c = subst2 subst vsubst c in
   let candidates = Option.map (fun l -> List.map map l) candidates in
@@ -421,7 +423,7 @@ let new_evar env evd ?src ?filter ?candidates ?store ?naming ?future_goal ?princ
     match filter with
     | None -> instance
     | Some filter -> Filter.filter_list filter instance in
-  new_evar_instance sign evd typ' ?src ?filter ?candidates ?store
+  new_evar_instance sign evd typ' ?src ?filter ?abstraction ?candidates ?store
                     ?naming ?future_goal ?principal instance
 
 let new_type_evar env evd ?src ?filter ?naming ?future_goal ?principal rigid =

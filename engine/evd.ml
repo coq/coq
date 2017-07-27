@@ -120,6 +120,15 @@ struct
 
 end
 
+module Abstraction = struct
+
+  type t = bool list
+
+  let identity = []
+
+  let abstract_last l = true :: l
+end
+
 (* The kinds of existential variables are now defined in [Evar_kinds] *)
 
 (* The type of mappings for existential variables *)
@@ -140,6 +149,7 @@ type evar_info = {
   evar_hyps : named_context_val;
   evar_body : evar_body;
   evar_filter : Filter.t;
+  evar_abstraction : Abstraction.t;
   evar_source : Evar_kinds.t Loc.located;
   evar_candidates : constr list option; (* if not None, list of allowed instances *)
   evar_extra : Store.t }
@@ -149,6 +159,7 @@ let make_evar hyps ccl = {
   evar_hyps = hyps;
   evar_body = Evar_empty;
   evar_filter = Filter.identity;
+  evar_abstraction = Abstraction.identity;
   evar_source = Loc.tag @@ Evar_kinds.InternalHole;
   evar_candidates = None;
   evar_extra = Store.empty
