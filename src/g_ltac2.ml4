@@ -47,15 +47,16 @@ GEXTEND Gram
         else
           CErrors.user_err ~loc:!@loc (Pp.str "Syntax error")
       | id = Prim.qualid -> pattern_of_qualid !@loc id
-      | "["; "]" -> CPatRef (!@loc, AbsKn Tac2core.Core.c_nil, [])
+      | "["; "]" -> CPatRef (!@loc, AbsKn (Other Tac2core.Core.c_nil), [])
       | p1 = tac2pat; "::"; p2 = tac2pat ->
-        CPatRef (!@loc, AbsKn Tac2core.Core.c_cons, [p1; p2])
+        CPatRef (!@loc, AbsKn (Other Tac2core.Core.c_cons), [p1; p2])
       ]
     | "0"
       [ "_" -> CPatVar (Some !@loc, Anonymous)
-      | "()" -> CPatTup (Loc.tag ~loc:!@loc [])
+      | "()" -> CPatRef (!@loc, AbsKn (Tuple 0), [])
       | id = Prim.qualid -> pattern_of_qualid !@loc id
-      | "("; pl = LIST0 tac2pat LEVEL "1" SEP ","; ")" -> CPatTup (Loc.tag ~loc:!@loc pl) ]
+      | "("; pl = LIST0 tac2pat LEVEL "1" SEP ","; ")" ->
+        CPatRef (!@loc, AbsKn (Tuple (List.length pl)), pl) ]
     ]
   ;
   tac2expr:
@@ -73,12 +74,14 @@ GEXTEND Gram
       [ e = tac2expr; el = LIST1 tac2expr LEVEL "0" -> CTacApp (!@loc, e, el)
       | e = SELF; ".("; qid = Prim.qualid; ")" -> CTacPrj (!@loc, e, RelId qid)
       | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = tac2expr LEVEL "1" -> CTacSet (!@loc, e, RelId qid, r)
-      | e0 = tac2expr; ","; el = LIST1 tac2expr LEVEL "1" SEP "," -> CTacTup (Loc.tag ~loc:!@loc (e0 :: el)) ]
+      | e0 = tac2expr; ","; el = LIST1 tac2expr LEVEL "1" SEP "," ->
+        let el = e0 :: el in
+        CTacApp (!@loc, CTacCst (!@loc, AbsKn (Tuple (List.length el))), el) ]
     | "0"
       [ "("; a = tac2expr LEVEL "5"; ")" -> a
       | "("; a = tac2expr; ":"; t = tac2type; ")" -> CTacCnv (!@loc, a, t)
-      | "()" -> CTacTup (Loc.tag ~loc:!@loc [])
-      | "("; ")" -> CTacTup (Loc.tag ~loc:!@loc [])
+      | "()" -> CTacCst (!@loc, AbsKn (Tuple 0))
+      | "("; ")" -> CTacCst (!@loc, AbsKn (Tuple 0))
       | "["; a = LIST0 tac2expr LEVEL "1" SEP ";"; "]" -> CTacLst (Loc.tag ~loc:!@loc a)
       | "{"; a = tac2rec_fieldexprs; "}" -> CTacRec (!@loc, a)
       | a = tactic_atom -> a ]
@@ -104,7 +107,7 @@ GEXTEND Gram
     [ [ n = Prim.integer -> CTacAtm (Loc.tag ~loc:!@loc (AtmInt n))
       | s = Prim.string -> CTacAtm (Loc.tag ~loc:!@loc (AtmStr s))
       | id = Prim.qualid ->
-        if Tac2env.is_constructor (snd id) then CTacCst (RelId id) else CTacRef (RelId id)
+        if Tac2env.is_constructor (snd id) then CTacCst (!@loc, RelId id) else CTacRef (RelId id)
       | "@"; id = Prim.ident -> inj_ident !@loc id
       | "'"; c = Constr.constr -> inj_open_constr !@loc c
       | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> inj_constr !@loc c
@@ -123,7 +126,9 @@ GEXTEND Gram
     [ "5" RIGHTA
       [ t1 = tac2type; "->"; t2 = tac2type -> CTypArrow (!@loc, t1, t2) ]
     | "2"
-      [ t = tac2type; "*"; tl = LIST1 tac2type LEVEL "1" SEP "*" -> CTypTuple (!@loc, t :: tl) ]
+      [ t = tac2type; "*"; tl = LIST1 tac2type LEVEL "1" SEP "*" ->
+        let tl = t :: tl in
+        CTypRef (!@loc, AbsKn (Tuple (List.length tl)), tl) ]
     | "1" LEFTA
       [ t = SELF; qid = Prim.qualid -> CTypRef (!@loc, RelId qid, [t]) ]
     | "0"

@@ -655,7 +655,7 @@ let solve default tac =
 
 let call ~default e =
   let loc = loc_of_tacexpr e in
-  let (e, (_, t)) = intern e in
+  let (e, t) = intern e in
   let () = check_unit ~loc t in
   let tac = Tac2interp.interp Id.Map.empty e in
   solve default (Proofview.tclIGNORE tac)
@@ -681,12 +681,17 @@ let register_prim_alg name params def =
 
 let coq_def n = KerName.make2 Tac2env.coq_prefix (Label.make n)
 
+let def_unit = {
+  typdef_local = false;
+  typdef_expr = 0, GTydDef (Some (GTypRef (Tuple 0, [])));
+}
+
 let t_list = coq_def "list"
 
 let _ = Mltop.declare_cache_obj begin fun () ->
-  register_prim_alg "unit" 0 ["()", []];
+  ignore (Lib.add_leaf (Id.of_string "unit") (inTypDef def_unit));
   register_prim_alg "list" 1 [
     ("[]", []);
-    ("::", [GTypVar 0; GTypRef (t_list, [GTypVar 0])]);
+    ("::", [GTypVar 0; GTypRef (Other t_list, [GTypVar 0])]);
   ];
 end "ltac2_plugin"

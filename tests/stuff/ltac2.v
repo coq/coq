@@ -120,6 +120,7 @@ Abort.
 
 Goal True.
 Proof.
+
 let x () := plus (fun () => 0) (fun _ => 1) in
 match case x with
 | Val x =>

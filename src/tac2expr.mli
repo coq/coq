@@ -33,13 +33,16 @@ type ml_tactic_name = {
   mltac_tactic : string;
 }
 
+type 'a or_tuple =
+| Tuple of int
+| Other of 'a
+
 (** {5 Type syntax} *)
 
 type raw_typexpr =
 | CTypVar of Name.t located
 | CTypArrow of Loc.t * raw_typexpr * raw_typexpr
-| CTypTuple of Loc.t * raw_typexpr list
-| CTypRef of Loc.t * type_constant or_relid * raw_typexpr list
+| CTypRef of Loc.t * type_constant or_tuple or_relid * raw_typexpr list
 
 type raw_typedef =
 | CTydDef of raw_typexpr option
@@ -50,8 +53,7 @@ type raw_typedef =
 type 'a glb_typexpr =
 | GTypVar of 'a
 | GTypArrow of 'a glb_typexpr * 'a glb_typexpr
-| GTypTuple of 'a glb_typexpr list
-| GTypRef of type_constant * 'a glb_typexpr list
+| GTypRef of type_constant or_tuple * 'a glb_typexpr list
 
 type glb_alg_type = {
   galg_constructors : (uid * int glb_typexpr list) list;
@@ -82,17 +84,15 @@ type atom =
 (** Tactic expressions *)
 type raw_patexpr =
 | CPatVar of Name.t located
-| CPatRef of Loc.t * ltac_constructor or_relid * raw_patexpr list
-| CPatTup of raw_patexpr list located
+| CPatRef of Loc.t * ltac_constructor or_tuple or_relid * raw_patexpr list
 
 type raw_tacexpr =
 | CTacAtm of atom located
 | CTacRef of ltac_constant or_relid
-| CTacCst of ltac_constructor or_relid
+| CTacCst of Loc.t * ltac_constructor or_tuple or_relid
 | CTacFun of Loc.t * (raw_patexpr * raw_typexpr option) list * raw_tacexpr
 | CTacApp of Loc.t * raw_tacexpr * raw_tacexpr list
 | CTacLet of Loc.t * rec_flag * (Name.t located * raw_typexpr option * raw_tacexpr) list * raw_tacexpr
-| CTacTup of raw_tacexpr list located
 | CTacArr of raw_tacexpr list located
 | CTacLst of raw_tacexpr list located
 | CTacCnv of Loc.t * raw_tacexpr * raw_typexpr
@@ -107,9 +107,7 @@ and raw_taccase = raw_patexpr * raw_tacexpr
 
 and raw_recexpr = (ltac_projection or_relid * raw_tacexpr) list
 
-type case_info =
-| GCaseTuple of int
-| GCaseAlg of type_constant
+type case_info = type_constant or_tuple
 
 type 'a open_match = {
   opn_match : 'a;

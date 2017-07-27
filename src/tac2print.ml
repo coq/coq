@@ -30,20 +30,23 @@ type typ_level =
 | T1
 | T0
 
+let t_unit =
+  KerName.make2 Tac2env.coq_prefix (Label.of_id (Id.of_string "unit"))
+
 let pr_typref kn =
   Libnames.pr_qualid (Tac2env.shortest_qualid_of_type kn)
 
 let pr_glbtype_gen pr lvl c =
   let rec pr_glbtype lvl = function
   | GTypVar n -> str "'" ++ str (pr n)
-  | GTypRef (kn, []) -> pr_typref kn
-  | GTypRef (kn, [t]) ->
+  | GTypRef (Other kn, []) -> pr_typref kn
+  | GTypRef (Other kn, [t]) ->
     let paren = match lvl with
     | T5_r | T5_l | T2 | T1 -> fun x -> x
     | T0 -> paren
     in
     paren (pr_glbtype lvl t ++ spc () ++ pr_typref kn)
-  | GTypRef (kn, tl) ->
+  | GTypRef (Other kn, tl) ->
     let paren = match lvl with
     | T5_r | T5_l | T2 | T1 -> fun x -> x
     | T0 -> paren
@@ -55,7 +58,9 @@ let pr_glbtype_gen pr lvl c =
     | T5_l | T2 | T1 | T0 -> paren
     in
     paren (pr_glbtype T5_l t1 ++ spc () ++ str "->" ++ spc () ++ pr_glbtype T5_r t2)
-  | GTypTuple tl ->
+  | GTypRef (Tuple 0, []) ->
+    Libnames.pr_qualid (Tac2env.shortest_qualid_of_type t_unit)
+  | GTypRef (Tuple _, tl) ->
     let paren = match lvl with
     | T5_r | T5_l -> fun x -> x
     | T2 | T1 | T0 -> paren
@@ -165,7 +170,8 @@ let pr_glbexpr_gen lvl c =
     in
     let bnd = prlist_with_sep (fun () -> str "with" ++ spc ()) pr_bnd bnd in
     paren (str "let" ++ spc () ++ mut ++ bnd ++ str "in" ++ spc () ++ pr_glbexpr E5 e)
-  | GTacCst (GCaseTuple _, _, cl) ->
+  | GTacCst (Tuple 0, _, _) -> str "()"
+  | GTacCst (Tuple _, _, cl) ->
     let paren = match lvl with
     | E0 | E1 -> paren
     | E2 | E3 | E4 | E5 -> fun x -> x
@@ -173,7 +179,7 @@ let pr_glbexpr_gen lvl c =
     paren (prlist_with_sep (fun () -> str "," ++ spc ()) (pr_glbexpr E1) cl)
   | GTacArr cl ->
     mt () (** FIXME when implemented *)
-  | GTacCst (GCaseAlg tpe, n, cl) ->
+  | GTacCst (Other tpe, n, cl) ->
     begin match Tac2env.interp_type tpe with
     | _, GTydAlg { galg_constructors = def } ->
       let paren = match lvl with
@@ -200,7 +206,7 @@ let pr_glbexpr_gen lvl c =
   | GTacCse (e, info, cst_br, ncst_br) ->
     let e = pr_glbexpr E5 e in
     let br = match info with
-    | GCaseAlg kn ->
+    | Other kn ->
       let def = match Tac2env.interp_type kn with
       | _, GTydAlg { galg_constructors = def } -> def
       | _, GTydDef _ | _, GTydRec _ | _, GTydOpn -> assert false
@@ -217,8 +223,8 @@ let pr_glbexpr_gen lvl c =
           hov 2 (pr_glbexpr E5 p)) ++ spc ()
       in
       prlist pr_branch br
-    | GCaseTuple n ->
-      let (vars, p) = ncst_br.(0) in
+    | Tuple n ->
+      let (vars, p) = if Int.equal n 0 then ([||], cst_br.(0)) else ncst_br.(0) in
       let p = pr_glbexpr E5 p in
       let vars = prvect_with_sep (fun () -> str "," ++ spc ()) pr_name vars in
       str "|" ++ spc () ++ paren vars ++ spc () ++ str "=>" ++ spc () ++ p

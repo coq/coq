@@ -844,7 +844,7 @@ let dummy_loc = Loc.make_loc (-1, -1)
 
 let rthunk e =
   let loc = Tac2intern.loc_of_tacexpr e in
-  let var = [CPatVar (Some loc, Anonymous), Some (CTypRef (loc, AbsKn Core.t_unit, []))] in
+  let var = [CPatVar (Some loc, Anonymous), Some (CTypRef (loc, AbsKn (Other Core.t_unit), []))] in
   CTacFun (loc, var, e)
 
 let add_generic_scope s entry arg =
@@ -905,9 +905,9 @@ let () = add_scope "opt" begin function
   let scope = Extend.Aopt scope in
   let act opt = match opt with
   | None ->
-    CTacCst (AbsKn Core.c_none)
+    CTacCst (dummy_loc, AbsKn (Other Core.c_none))
   | Some x ->
-    CTacApp (dummy_loc, CTacCst (AbsKn Core.c_some), [act x])
+    CTacApp (dummy_loc, CTacCst (dummy_loc, AbsKn (Other Core.c_some)), [act x])
   in
   Tac2entries.ScopeRule (scope, act)
 | _ -> scope_fail ()
