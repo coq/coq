@@ -4101,6 +4101,7 @@ sig
       allow_K_in_toplevel_higher_order_unification : bool;
       resolve_evars : bool
     }
+  val flags_of : unify_flags -> Evarconv.unify_flags
   val default_no_delta_unify_flags : unit -> unify_flags
   val w_unify : Environ.env -> Evd.evar_map -> Reduction.conv_pb -> ?flags:unify_flags -> EConstr.constr -> EConstr.constr -> Evd.evar_map
   val elim_flags : unit -> unify_flags

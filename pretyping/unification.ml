@@ -1964,6 +1964,17 @@ let w_unify2 env evd flags dep cv_pb ty1 ty2 =
    Before, second-order was used if the type of Meta(1) and [x:A]t was
    convertible and first-order otherwise. But if failed if e.g. the type of
    Meta(1) had meta-variables in it. *)
+
+let flags_of flags =
+  let modulo_betaiota = flags.core_unify_flags.modulo_betaiota in
+  let open_ts = flags.core_unify_flags.modulo_delta in
+  let closed_ts = Option.default open_ts (flags.core_unify_flags.modulo_conv_on_closed_terms) in
+  let subterm_ts = flags.subterm_unify_flags.modulo_delta in
+  let frozen_evars = flags.core_unify_flags.frozen_evars in
+  let allow_K_at_toplevel = flags.allow_K_in_toplevel_higher_order_unification in
+  Evarsolve.{ modulo_betaiota; open_ts; closed_ts; subterm_ts; frozen_evars;
+              allow_K_at_toplevel; with_cs = true }
+
 let w_unify env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =
   let hd1,l1 = decompose_app_vect evd (whd_nored evd ty1) in
   let hd2,l2 = decompose_app_vect evd (whd_nored evd ty2) in
