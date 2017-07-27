@@ -40,14 +40,14 @@ type naming_mode =
 
 val new_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
+  ?abstract_arguments:Abstraction.t -> ?candidates:constr list -> ?store:Store.t ->
   ?naming:intro_pattern_naming_expr ->
   ?principal:bool -> ?hypnaming:naming_mode ->
   env -> evar_map -> types -> evar_map * EConstr.t
 
 val new_pure_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
+  ?abstract_arguments:Abstraction.t -> ?candidates:constr list -> ?store:Store.t ->
   ?naming:intro_pattern_naming_expr ->
   ?principal:bool ->
   named_context_val -> evar_map -> types -> evar_map * Evar.t
@@ -76,7 +76,8 @@ val new_global : evar_map -> GlobRef.t -> evar_map * constr
    of [inst] are typed in the occurrence context and their type (seen
    as a telescope) is [sign] *)
 val new_evar_instance :
-  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t -> ?candidates:constr list ->
+  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
+  ?abstract_arguments:Abstraction.t -> ?candidates:constr list ->
   ?store:Store.t -> ?naming:intro_pattern_naming_expr ->
   ?principal:bool ->
  named_context_val -> evar_map -> types ->

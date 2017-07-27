@@ -65,6 +65,7 @@ module V82 = struct
     let evi = { Evd.evar_hyps = hyps;
 		Evd.evar_concl = concl;
 		Evd.evar_filter = Evd.Filter.identity;
+                Evd.evar_abstract_arguments = Evd.Abstraction.identity;
 		Evd.evar_body = Evd.Evar_empty;
 		Evd.evar_source = (Loc.tag Evar_kinds.GoalEvar);
 		Evd.evar_candidates = None;
