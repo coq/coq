@@ -177,11 +177,10 @@ let unify_resolve_refine flags h diff =
   Refine.refine ~typecheck:false begin fun sigma ->
     let sigma, term = Hints.fresh_hint env sigma h in
     let ty = Retyping.get_type_of env sigma term in
-    let sigma, cl = Clenv.make_evar_clause env sigma ?len ty in
-    let term = applist (term, List.map (fun x -> x.hole_evar) cl.cl_holes) in
+    let sigma, cl = Clenv.make_evar_clause env sigma ?len term ty in
     let flags = Evarconv.default_flags_of flags.core_unify_flags.modulo_delta in
     let sigma = Evarconv.unify_leq_delay ~flags env sigma cl.cl_concl concl in
-    (sigma, term)
+    (sigma, cl.cl_val)
     end
   end
 

@@ -207,6 +207,7 @@ val destCoFix : Evd.evar_map -> t -> (t, t) pcofixpoint
 val destRef : Evd.evar_map -> t -> GlobRef.t * EInstance.t
 
 val decompose_app : Evd.evar_map -> t -> t * t list
+val decompose_appvect : Evd.evar_map -> t -> t * t array
 
 (** Pops lambda abstractions until there are no more, skipping casts. *)
 val decompose_lam : Evd.evar_map -> t -> (Name.t Context.binder_annot * t) list * t

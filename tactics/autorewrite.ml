@@ -218,11 +218,11 @@ type hypinfo = {
 }
 
 let decompose_applied_relation env sigma c ctype left2right =
-  let find_rel ty =
+  let find_rel t ty =
     (* FIXME: this is nonsense, we generate evars and then we drop the
        corresponding evarmap. This sometimes works because [Term_dnet] performs
        evar surgery via [Termops.filtering]. *)
-    let sigma, ty = Clenv.make_evar_clause env sigma ty in
+    let sigma, ty = Clenv.make_evar_clause env sigma t ty in
     let (_, args) = Termops.decompose_app_vect sigma ty.Clenv.cl_concl in
     let len = Array.length args in
     if 2 <= len then
@@ -231,17 +231,18 @@ let decompose_applied_relation env sigma c ctype left2right =
       Some (if left2right then c1 else c2)
     else None
   in
-    match find_rel ctype with
+    match find_rel c ctype with
     | Some c -> Some { hyp_pat = c; hyp_ty = ctype }
     | None ->
         let ctx,t' = Reductionops.splay_prod_assum env sigma ctype in (* Search for underlying eq *)
         let ctype = it_mkProd_or_LetIn t' ctx in
-        match find_rel ctype with
+        match find_rel c ctype with
         | Some c -> Some { hyp_pat = c; hyp_ty = ctype }
         | None -> None
 
 let find_applied_relation ?loc env sigma c left2right =
-  let ctype = Retyping.get_type_of env sigma (EConstr.of_constr c) in
+  let c = EConstr.of_constr c in
+  let ctype = Retyping.get_type_of env sigma c in
     match decompose_applied_relation env sigma c ctype left2right with
     | Some c -> c
     | None ->

@@ -36,7 +36,7 @@ let e_give_exact ?(flags=eauto_unif_flags) c =
   if occur_existential sigma t1 || occur_existential sigma t2 then
     Tacticals.New.tclTHENLIST
       [Proofview.Unsafe.tclEVARS sigma;
-       Clenv.unify ~flags t1;
+       Clenv.unify ~flags ~with_ho:false t1;
        exact_no_check c]
   else exact_check c
   end
