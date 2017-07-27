@@ -82,10 +82,21 @@ let utf8_length s =
   done ;
   !cnt
 
-let app s1 s2 = match s1, s2 with
-  | Ppcmd_empty, s
-  | s, Ppcmd_empty -> s
-  | s1, s2         -> Ppcmd_glue [s1; s2]
+let rec app d1 d2 = match d1, d2 with
+  | Ppcmd_empty,        d
+  | d,                  Ppcmd_empty      -> d
+
+  (* Optimizations *)
+  | Ppcmd_glue [l1;l2], Ppcmd_glue l3    -> Ppcmd_glue (l1 :: l2 :: l3)
+  | Ppcmd_glue [l1;l2], d2               -> Ppcmd_glue [l1 ; l2 ; d2]
+  | d1,                 Ppcmd_glue l2    -> Ppcmd_glue (d1 :: l2)
+
+  | Ppcmd_tag(t1,d1),   Ppcmd_tag(t2,d2)
+    when t1 = t2                         -> Ppcmd_tag(t1,app d1 d2)
+  | d1, d2                               -> Ppcmd_glue [d1; d2]
+  (* Optimizations deemed too costly *)
+  (* | Ppcmd_glue l1,    Ppcmd_glue l2    -> Ppcmd_glue   (l1 @ l2) *)
+  (* | Ppcmd_string s1,  Ppcmd_string s2  -> Ppcmd_string (s1 ^ s2) *)
 
 let seq s = Ppcmd_glue s
 
