@@ -87,7 +87,7 @@ let clenv_refine ?(with_evars=false) ?(with_classes=true) clenv =
       let evd' =
         if has_typeclass then
           Typeclasses.resolve_typeclasses ~fast_path:false ~filter:Typeclasses.all_evars
-          ~fail:(not with_evars) clenv.env clenv.evd
+          ~fail:(not with_evars) ~split:false clenv.env clenv.evd
         else clenv.evd
       in
       if has_resolvable then
