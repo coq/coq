@@ -142,7 +142,14 @@ let abstract_list_all env evd typ c l =
 
 let set_occurrences_of_last_arg args =
   Evarconv.AtOccurrences AllOccurrences ::
-    List.tl (Array.map_to_list (fun _ -> Evarconv.default_occurrence_selection) args)
+    List.tl (Array.map_to_list (fun _ -> Evarconv.Unspecified true) args)
+
+let occurrence_test _ _ _ env sigma _ c1 c2 =
+  match EConstr.eq_constr_universes env sigma c1 c2 with
+  | None -> false, sigma
+  | Some cstr ->
+     try true, Evd.add_universe_constraints sigma cstr
+     with UniversesDiffer -> false, sigma
 
 let abstract_list_all_with_dependencies env evd typ c l =
   let (evd, ev) = new_evar env evd typ in
@@ -150,8 +157,9 @@ let abstract_list_all_with_dependencies env evd typ c l =
   let n = List.length l in
   let argoccs = set_occurrences_of_last_arg (Array.sub (snd ev') 0 n) in
   let evd,b =
-    Evarconv.second_order_matching (Evarconv.default_flags_of empty_transparent_state)
-    env evd ev' (Evarconv.default_occurrence_test ~frozen_evars:Evar.Set.empty empty_transparent_state, argoccs) c in
+    Evarconv.second_order_matching
+      (Evarconv.default_flags_of empty_transparent_state)
+      env evd ev' (occurrence_test, argoccs) c in
   if b then
     let p = nf_evar evd ev in
       evd, p
