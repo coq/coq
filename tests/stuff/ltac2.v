@@ -9,12 +9,12 @@ Print Ltac2 foo.
 
 Import Control.
 
-Ltac2 exact x := refine (fun _ => x).
+Ltac2 exact x := refine (fun () => x).
 
 Print Ltac2 refine.
 Print Ltac2 exact.
 
-Ltac2 foo' _ := ident:(bla).
+Ltac2 foo' () := ident:(bla).
 
 Print Ltac2 foo'.
 
@@ -36,7 +36,7 @@ Fail Ltac2 qux0 := Foo None.
 Ltac2 Type 'a ref := { mutable contents : 'a }.
 
 Fail Ltac2 qux0 := { contents := None }.
-Ltac2 foo0 _ := { contents := None }.
+Ltac2 foo0 () := { contents := None }.
 
 Print Ltac2 foo0.
 
@@ -51,7 +51,7 @@ Print Ltac2 qux2.
 
 Import Control.
 
-Ltac2 qux3 x := constr:(nat -> ltac2:(refine (fun _ => hyp x))).
+Ltac2 qux3 x := constr:(nat -> ltac2:(refine (fun () => hyp x))).
 
 Print Ltac2 qux3.
 
@@ -70,9 +70,9 @@ end in aux n.
 
 Print Ltac2 message_of_nat.
 
-Ltac2 numgoals (_ : unit) :=
+Ltac2 numgoals () :=
   let r := { contents := O } in
-  enter (fun _ => r.(contents) := S (r.(contents)));
+  enter (fun () => r.(contents) := S (r.(contents)));
   r.(contents).
 
 Print Ltac2 numgoals.
@@ -80,19 +80,19 @@ Print Ltac2 numgoals.
 Goal True /\ False.
 Proof.
 let n := numgoals () in Message.print (message_of_nat n).
-refine (fun _ => open_constr:((fun x => conj _ _) 0)); ().
+refine (fun () => open_constr:((fun x => conj _ _) 0)); ().
 let n := numgoals () in Message.print (message_of_nat n).
 
 Fail (hyp ident:(x)).
-Fail (enter (fun _ => hyp ident:(There_is_no_spoon); ())).
+Fail (enter (fun () => hyp ident:(There_is_no_spoon); ())).
 
-enter (fun _ => Message.print (Message.of_string "foo")).
+enter (fun () => Message.print (Message.of_string "foo")).
 
-enter (fun _ => Message.print (Message.of_constr (goal ()))).
-Fail enter (fun _ => Message.print (Message.of_constr (qux3 ident:(x)))).
-enter (fun _ => plus (fun _ => constr:(_); ()) (fun _ => ())).
+enter (fun () => Message.print (Message.of_constr (goal ()))).
+Fail enter (fun () => Message.print (Message.of_constr (qux3 ident:(x)))).
+enter (fun () => plus (fun () => constr:(_); ()) (fun _ => ())).
 plus
-  (fun _ => enter (fun _ => let x := ident:(foo) in let _ := hyp x in ())) (fun _ => Message.print (Message.of_string "failed")).
+  (fun () => enter (fun () => let x := ident:(foo) in let _ := hyp x in ())) (fun _ => Message.print (Message.of_string "failed")).
 let x := { contents := 0 } in
 let x := x.(contents) := x.(contents) in x.
 Abort.
@@ -101,7 +101,7 @@ Ltac2 Type exn ::= [ Foo ].
 
 Goal True.
 Proof.
-plus (fun _ => zero Foo) (fun _ => ()).
+plus (fun () => zero Foo) (fun _ => ()).
 Abort.
 
 Ltac2 Type exn ::= [ Bar (string) ].
@@ -120,7 +120,7 @@ Abort.
 
 Goal True.
 Proof.
-let x _ := plus (fun _ => 0) (fun _ => 1) in
+let x () := plus (fun () => 0) (fun _ => 1) in
 match case x with
 | Val x =>
   match x with
@@ -129,3 +129,10 @@ match case x with
 | Err x => Message.print (Message.of_string "Err")
 end.
 Abort.
+
+Ltac2 rec do n tac := match Int.equal n 0 with
+| true => ()
+| false => tac (); do (Int.sub n 1) tac
+end.
+
+Print Ltac2 do.
