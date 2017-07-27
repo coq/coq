@@ -184,6 +184,7 @@ Definition term' (x : wrap nat) := let f := (@unwrap2 nat) in f x.
 
 Require Coq.extraction.Extraction.
 Recursive Extraction term term'.
+Extraction TestCompile term term'.
 (*Unset Printing Primitive Projection Parameters.*)
 
 (* Primitive projections in the presence of let-ins (was not failing in beta3)*)
