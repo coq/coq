@@ -4366,8 +4366,8 @@ let check_expected_type env sigma (elimc,bl) elimt =
   let sign,_ = splay_prod env sigma elimt in
   let n = List.length sign in
   if n == 0 then error "Scheme cannot be applied.";
-  let sigma,cl = make_evar_clause env sigma ~len:(n - 1) elimt in
-  let sigma = solve_evar_clause env sigma true cl bl in
+  let sigma,cl = make_evar_clause env sigma ~len:(n - 1) elimc elimt in
+  let sigma,cl = solve_evar_clause env sigma ~hyps_only:true cl bl in
   let (_,u,_) = destProd sigma cl.cl_concl in
   fun t -> Evarconv.e_cumul env (ref sigma) t u
 

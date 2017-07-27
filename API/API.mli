@@ -4688,14 +4688,16 @@ sig
   }
 
   type clause = {
-    cl_holes : hole list;
-    cl_concl : EConstr.types;
-  }
-
-  val make_evar_clause : Environ.env -> Evd.evar_map -> ?len:int -> EConstr.types ->
+      cl_holes : hole list;
+      cl_concl : EConstr.types;
+      cl_concl_occs : Evarconv.occurrences_selection option;
+      cl_val   : EConstr.constr;
+    }
+  val make_evar_clause : Environ.env -> Evd.evar_map -> ?len:int -> ?occs:Evarconv.occurrences_selection -> EConstr.constr -> EConstr.types ->
                          (Evd.evar_map * clause)
-  val solve_evar_clause : Environ.env -> Evd.evar_map -> bool -> clause -> EConstr.constr Misctypes.bindings ->
-                          Evd.evar_map
+  val solve_evar_clause : Environ.env -> Evd.evar_map -> hyps_only:bool -> clause ->
+                          EConstr.constr Misctypes.bindings ->
+                          Evd.evar_map * clause
   type clausenv
   val pr_clenv : clausenv -> Pp.t
 end
