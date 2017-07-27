@@ -424,7 +424,9 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
           | None -> UnifFailure (evd, ConversionFailed (env,term1,term2))
           | exception Univ.UniverseInconsistency e -> UnifFailure (evd, UnifUnivInconsistency e)
       in
-	match e with
+        match e with
+        (** TODO: approximation, if term1 and term2 do not refer transitively to evars then the
+         conversion test is enough *)
 	| UnifFailure (evd, e) when not (is_ground_env evd env) -> None
 	| _ -> Some e)
     else None
