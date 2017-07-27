@@ -21,9 +21,14 @@ be used (abusively) to refer to any of the three.
 
 Before using any of the commands or options described in this chapter,
 the extraction framework should first be loaded explicitly
-via {\tt Require Extraction}. Note that in earlier versions of Coq, these
-commands and options were directly available without any preliminary
-{\tt Require}.
+via {\tt Require Extraction}, or via the more robust
+{\tt Require Coq.extraction.Extraction}.
+Note that in earlier versions of Coq, these commands and options were
+directly available without any preliminary {\tt Require}.
+
+\begin{coq_example}
+Require Extraction.
+\end{coq_example}
 
 \asection{Generating ML code}
 \comindex{Extraction}
@@ -82,9 +87,20 @@ one monolithic file or one file per \Coq\ library.
   using prefixes \verb!coq_!  or \verb!Coq_!.
 \end{description}
 
-\noindent The list of globals \qualid$_i$ does not need to be
-exhaustive: it is automatically completed into a complete and minimal
-environment. 
+\noindent The following command is meant to help automatic testing of
+  the extraction, see for instance the {\tt test-suite} directory
+  in the \Coq\ sources.
+
+\begin{description}
+\item {\tt Extraction TestCompile} \qualid$_1$ \dots\ \qualid$_n$. ~\par
+  All the globals (or modules) \qualid$_1$ \dots\ \qualid$_n$ and all
+  their dependencies are extracted to a temporary Ocaml file, just as in
+  {\tt Extraction "{\em file}"}. Then this temporary file and its
+  signature are compiled with the same Ocaml compiler used to built
+  \Coq. This command succeeds only if the extraction and the Ocaml
+  compilation succeed (and it fails if the current target language
+  of the extraction is not Ocaml).
+\end{description}
 
 \asection{Extraction options}
 
