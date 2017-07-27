@@ -27,8 +27,8 @@ type notation_constr =
   | NHole of Evar_kinds.t * Misctypes.intro_pattern_naming_expr * Genarg.glob_generic_argument option
   | NList of Id.t * Id.t * notation_constr * notation_constr * bool
   (** Part only in [glob_constr] *)
-  | NLambda of Name.t * notation_constr * notation_constr
-  | NProd of Name.t * notation_constr * notation_constr
+  | NLambda of Name.t * Decl_kinds.binding_kind * notation_constr * notation_constr
+  | NProd of Name.t * Decl_kinds.binding_kind * notation_constr * notation_constr
   | NBinderList of Id.t * Id.t * notation_constr * notation_constr
   | NLetIn of Name.t * notation_constr * notation_constr
   | NCases of case_style * notation_constr option *

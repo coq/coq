@@ -63,10 +63,10 @@ let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
 | NList (i1, j1, t1, u1, b1), NList (i2, j2, t2, u2, b2) ->
   Id.equal i1 i2 && Id.equal j1 j2 && (eq_notation_constr vars) t1 t2 &&
   (eq_notation_constr vars) u1 u2 && b1 == b2
-| NLambda (na1, t1, u1), NLambda (na2, t2, u2) ->
-  Name.equal na1 na2 && (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
-| NProd (na1, t1, u1), NProd (na2, t2, u2) ->
-  Name.equal na1 na2 && (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
+| NLambda (na1, bk1, t1, u1), NLambda (na2, bk2, t2, u2) ->
+  Name.equal na1 na2 && bk1 = bk2 && (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
+| NProd (na1, bk1, t1, u1), NProd (na2, bk2, t2, u2) ->
+  Name.equal na1 na2 && bk1 = bk2 && (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
 | NBinderList (i1, j1, t1, u1), NBinderList (i2, j2, t2, u2) ->
   Id.equal i1 i2 && Id.equal j1 j2 && (eq_notation_constr vars) t1 t2 &&
   (eq_notation_constr vars) u1 u2
@@ -171,10 +171,10 @@ let glob_constr_of_notation_constr_with_binders loc g f e = function
       let inner = GApp (loc,GVar (loc,ldots_var),[subst_glob_vars innerl it]) in
       let outerl = [(ldots_var,inner)] in
       subst_glob_vars outerl it
-  | NLambda (na,ty,c) ->
-      let e',na = g e na in GLambda (loc,na,Explicit,f e ty,f e' c)
-  | NProd (na,ty,c) ->
-      let e',na = g e na in GProd (loc,na,Explicit,f e ty,f e' c)
+  | NLambda (na,bk,ty,c) ->
+      let e',na = g e na in GLambda (loc,na,bk,f e ty,f e' c)
+  | NProd (na,bk,ty,c) ->
+      let e',na = g e na in GProd (loc,na,bk,f e ty,f e' c)
   | NLetIn (na,b,c) ->
       let e',na = g e na in GLetIn (loc,na,f e b,f e' c)
   | NCases (sty,rtntypopt,tml,eqnl) ->
@@ -284,15 +284,18 @@ let compare_recursive_parts found f f' (iterator,subc) =
         true
       | Some _ -> false
       end
-  | GLambda (_,Name x,_,t_x,c), GLambda (_,Name y,_,t_y,term)
-  | GProd (_,Name x,_,t_x,c), GProd (_,Name y,_,t_y,term) ->
-      (* We found a binding position where it differs *)
-      begin match !diff with
-      | None ->
-        let () = diff := Some (x, y, RecursiveBinders (t_x,t_y)) in
-        aux c term
-      | Some _ -> false
-      end
+  | GLambda (_,Name x,bk1,t_x,c), GLambda (_,Name y,bk2,t_y,term)
+  | GProd (_,Name x,bk1,t_x,c), GProd (_,Name y,bk2,t_y,term) ->
+     if (bk1 = Implicit || bk2 = Implicit) then 
+       error "Implicit arguments found in recursive parts of a binder"
+     else 
+       (* We found a binding position where it differs *)
+       begin match !diff with
+       | None ->
+          let () = diff := Some (x, y, RecursiveBinders (t_x,t_y)) in
+          aux c term
+       | Some _ -> false
+       end
   | _ ->
       compare_glob_constr aux (add_name found) c1 c2 in
   if aux iterator subc then
@@ -352,8 +355,8 @@ let notation_constr_and_vars_of_glob_constr a =
   and aux' = function
   | GVar (_,id) -> add_id found id; NVar id
   | GApp (_,g,args) -> NApp (aux g, List.map aux args)
-  | GLambda (_,na,bk,ty,c) -> add_name found na; NLambda (na,aux ty,aux c)
-  | GProd (_,na,bk,ty,c) -> add_name found na; NProd (na,aux ty,aux c)
+  | GLambda (_,na,bk,ty,c) -> add_name found na; NLambda (na,bk,aux ty,aux c)
+  | GProd (_,na,bk,ty,c) -> add_name found na; NProd (na,bk,aux ty,aux c)
   | GLetIn (_,na,b,c) -> add_name found na; NLetIn (na,aux b,aux c)
   | GCases (_,sty,rtntypopt,tml,eqnl) ->
       let f (_,idl,pat,rhs) = List.iter (add_id found) idl; (pat,aux rhs) in
@@ -485,17 +488,17 @@ let rec subst_notation_constr subst bound raw =
 	if r1' == r1 && r2' == r2 then raw else
 	  NList (id1,id2,r1',r2',b)
 
-  | NLambda (n,r1,r2) ->
+  | NLambda (n,bk,r1,r2) ->
       let r1' = subst_notation_constr subst bound r1
       and r2' = subst_notation_constr subst bound r2 in
 	if r1' == r1 && r2' == r2 then raw else
-	  NLambda (n,r1',r2')
+	  NLambda (n,bk,r1',r2')
 
-  | NProd (n,r1,r2) ->
+  | NProd (n,bk,r1,r2) ->
       let r1' = subst_notation_constr subst bound r1
       and r2' = subst_notation_constr subst bound r2 in
 	if r1' == r1 && r2' == r2 then raw else
-	  NProd (n,r1',r2')
+	  NProd (n,bk,r1',r2')
 
   | NBinderList (id1,id2,r1,r2) ->
       let r1' = subst_notation_constr subst bound r1
@@ -597,7 +600,7 @@ let abstract_return_type_context_glob_constr =
 
 let abstract_return_type_context_notation_constr =
   abstract_return_type_context snd
-    (fun na c -> NLambda(na,NHole (Evar_kinds.InternalHole, Misctypes.IntroAnonymous, None),c))
+    (fun na c -> NLambda(na,Explicit,NHole (Evar_kinds.InternalHole, Misctypes.IntroAnonymous, None),c))
 
 let is_term_meta id metas =
   try match Id.List.assoc id metas with _,(NtnTypeConstr | NtnTypeConstrList) -> true | _ -> false
@@ -979,49 +982,53 @@ let rec match_ inner u alp metas sigma a1 a2 =
 
   (* "λ p, let 'cp = p in t" -> "λ 'cp, t" *)
   | GLambda (_,Name p,bk,t1,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],b1)])),
-    NBinderList (x,_,NLambda (Name _id2,_,b2),termin) when Id.equal p e ->
+    NBinderList (x,_,NLambda (Name _id2,_,_,b2),termin) when Id.equal p e ->
       let (decls,b) = match_iterated_binders true [(Inr cp,bk,None,t1)] b1 in
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
       match_in u alp metas sigma b termin
 
   (* Matching recursive notations for binders: ad hoc cases supporting let-in *)
-  | GLambda (_,na1,bk,t1,b1), NBinderList (x,_,NLambda (Name _id2,_,b2),termin)->
-      let (decls,b) = match_iterated_binders true [(Inl na1,bk,None,t1)] b1 in
+  | GLambda (_,na1,bk1,t1,b1), NBinderList (x,_,NLambda (Name _id2,bk2,_,b2),termin)->
+     (assert (bk2 = Explicit);
+      let (decls,b) = match_iterated_binders true [(Inl na1,bk1,None,t1)] b1 in
       (* TODO: address the possibility that termin is a Lambda itself *)
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
-      match_in u alp metas sigma b termin
+      match_in u alp metas sigma b termin)
 
   (* "∀ p, let 'cp = p in t" -> "∀ 'cp, t" *)
   | GProd (_,Name p,bk,t1,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],b1)])),
-    NBinderList (x,_,NProd (Name _id2,_,b2),(NVar v as termin)) when Id.equal p e ->
+    NBinderList (x,_,NProd (Name _id2,_,_,b2),(NVar v as termin)) when Id.equal p e ->
       let (decls,b) = match_iterated_binders true [(Inr cp,bk,None,t1)] b1 in
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
       match_in u alp metas sigma b termin
 
-  | GProd (_,na1,bk,t1,b1), NBinderList (x,_,NProd (Name _id2,_,b2),termin)
+  | GProd (_,na1,bk1,t1,b1), NBinderList (x,_,NProd (Name _id2,bk2,_,b2),termin)
       when na1 != Anonymous ->
-      let (decls,b) = match_iterated_binders false [(Inl na1,bk,None,t1)] b1 in
+     (assert (bk2 = Explicit);
+      let (decls,b) = match_iterated_binders false [(Inl na1,bk1,None,t1)] b1 in
       (* TODO: address the possibility that termin is a Prod itself *)
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
-      match_in u alp metas sigma b termin
+      match_in u alp metas sigma b termin)
   (* Matching recursive notations for binders: general case *)
   | r, NBinderList (x,y,iter,termin) ->
       match_binderlist_with_app (match_hd u) alp metas sigma r x y iter termin
 
   (* Matching individual binders as part of a recursive pattern *)
   | GLambda (_,Name p,bk,t,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],b1)])),
-    NLambda (Name id,_,b2)
+    NLambda (Name id,_,_,b2)
       when is_bindinglist_meta id metas ->
       let alp,sigma = bind_bindinglist_env alp sigma id [(Inr cp,bk,None,t)] in
       match_in u alp metas sigma b1 b2
-  | GLambda (_,na,bk,t,b1), NLambda (Name id,_,b2)
+  | GLambda (_,na,bk1,t,b1), NLambda (Name id,bk2,_,b2)
       when is_bindinglist_meta id metas ->
-      let alp,sigma = bind_bindinglist_env alp sigma id [(Inl na,bk,None,t)] in
-      match_in u alp metas sigma b1 b2
-  | GProd (_,na,bk,t,b1), NProd (Name id,_,b2)
+     (assert (bk2 = Explicit);
+      let alp,sigma = bind_bindinglist_env alp sigma id [(Inl na,bk1,None,t)] in
+      match_in u alp metas sigma b1 b2)
+  | GProd (_,na,bk1,t,b1), NProd (Name id,bk2,_,b2)
       when is_bindinglist_meta id metas && na != Anonymous ->
-      let alp,sigma = bind_bindinglist_env alp sigma id [(Inl na,bk,None,t)] in
-      match_in u alp metas sigma b1 b2
+     (assert (bk2 = Explicit);
+      let alp,sigma = bind_bindinglist_env alp sigma id [(Inl na,bk1,None,t)] in
+      match_in u alp metas sigma b1 b2)
 
   (* Matching compositionally *)
   | GVar (_,id1), NVar id2 when alpha_var id1 id2 (fst alp) -> sigma
@@ -1037,10 +1044,10 @@ let rec match_ inner u alp metas sigma a1 a2 =
       let may_use_eta = does_not_come_from_already_eta_expanded_var f1 in
       List.fold_left2 (match_ may_use_eta u alp metas)
         (match_in u alp metas sigma f1 f2) l1 l2
-  | GLambda (_,na1,_,t1,b1), NLambda (na2,t2,b2) ->
-     match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
-  | GProd (_,na1,_,t1,b1), NProd (na2,t2,b2) ->
-     match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
+  | GLambda (_,na1,bk1,t1,b1), NLambda (na2,bk2,t2,b2) when Constrexpr_ops.binding_kind_eq bk1 bk2 ->
+      match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
+  | GProd (_,na1,bk1,t1,b1), NProd (na2,bk2,t2,b2) when Constrexpr_ops.binding_kind_eq bk1 bk2 ->
+      match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
   | GLetIn (_,na1,t1,b1), NLetIn (na2,t2,b2) ->
      match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
   | GCases (_,sty1,rtno1,tml1,eqnl1), NCases (sty2,rtno2,tml2,eqnl2)
@@ -1097,7 +1104,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
      otherwise how to ensure it corresponds to a well-typed eta-expansion;
      we make an exception for types which are metavariables: this is useful e.g.
      to print "{x:_ & P x}" knowing that notation "{x & P x}" is not defined. *)
-  | b1, NLambda (Name id as na,(NHole _ | NVar _ as t2),b2) when inner ->
+  | b1, NLambda (Name id as na,Explicit,(NHole _ | NVar _ as t2),b2) when inner ->
       let avoid =
         free_glob_vars b1 @ (* as in Namegen: *) glob_visible_short_qualid b1 in
       let id' = Namegen.next_ident_away id avoid in
