@@ -16,7 +16,7 @@
 
 Require Import List.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Section first_definitions.
 
@@ -495,4 +495,4 @@ Section other_definitions.
 
 End other_definitions.
 
-Unset Implicit Arguments.
+Local Unset Implicit Arguments.

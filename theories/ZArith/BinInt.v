@@ -38,7 +38,7 @@ Include BinIntDef.Z.
 
 (** When including property functors, only inline t eq zero one two *)
 
-Set Inline Level 30.
+Local Set Inline Level 30.
 
 (** * Logic Predicates *)
 

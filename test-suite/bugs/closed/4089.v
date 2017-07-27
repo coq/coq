@@ -1,4 +1,4 @@
-Unset Strict Universe Declaration.
+Local Unset Strict Universe Declaration.
 Require Import TestSuite.admit.
 (* -*- mode: coq; coq-prog-args: ("-indices-matter") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 6522 lines to 318 lines, then from 1139 lines to 361 lines *)
@@ -9,7 +9,7 @@ Open Scope type_scope.
 Global Set Universe Polymorphism.
 Module Export Datatypes.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Record prod (A B : Type) := pair { fst : A ; snd : B }.
 
@@ -19,7 +19,7 @@ Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) : core_scope.
 End Datatypes.
 Module Export Specif.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Record sig {A} (P : A -> Type) := exist { proj1_sig : A ; proj2_sig : P proj1_sig }.
 

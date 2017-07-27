@@ -16,7 +16,7 @@
 Require Import ZArith.
 Require Import Coq.Arith.Max.
 Require Import List.
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 (* 
  * This adds a Leaf constructor to the varmap data structure (plugins/quote/Quote.v)

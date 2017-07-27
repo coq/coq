@@ -14,8 +14,8 @@
 
 Require Import FMapInterface.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 Module Raw (X:OrderedType).
 

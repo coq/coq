@@ -27,8 +27,8 @@
 *)
 
 Require Export Bool OrderedType DecidableType.
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 (** * Non-dependent signatures
 

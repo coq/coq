@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 (** Streams *)
 
@@ -243,4 +243,4 @@ Qed.
 
 End Zip.
 
-Unset Implicit Arguments.
+Local Unset Implicit Arguments.

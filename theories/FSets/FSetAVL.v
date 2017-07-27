@@ -33,8 +33,8 @@
 
 Require Import FSetInterface ZArith Int.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 (** This is just a compatibility layer, the real implementation
     is now in [MSetAVL] *)

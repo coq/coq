@@ -24,7 +24,7 @@
 }
 >> *)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Section Berardis_paradox.
 

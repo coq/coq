@@ -9,8 +9,8 @@
 Require Import Bool Basics OrdersTac.
 Require Export Orders.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 (** * Properties of [compare] *)
 
@@ -260,7 +260,7 @@ Qed.
 
 End OrderedTypeRev.
 
-Unset Implicit Arguments.
+Local Unset Implicit Arguments.
 
 (** * Order relations derived from a [compare] function.
 

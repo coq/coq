@@ -11,8 +11,8 @@
 (** This file proposes interfaces for finite maps *)
 
 Require Export Bool DecidableType OrderedType.
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 (** When compared with Ocaml Map, this signature has been split in
     several parts :

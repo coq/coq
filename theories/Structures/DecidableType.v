@@ -9,8 +9,8 @@
 Require Export SetoidList.
 Require Equalities.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 (** NB: This file is here only for compatibility with earlier version of
     [FSets] and [FMap]. Please use [Structures/Equalities.v] directly now. *)

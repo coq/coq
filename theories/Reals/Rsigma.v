@@ -13,7 +13,7 @@ Require Import PartSum.
 Require Import Omega.
 Local Open Scope R_scope.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Section Sigma.
 

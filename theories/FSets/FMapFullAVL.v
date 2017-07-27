@@ -27,8 +27,8 @@
 
 Require Import Recdef FMapInterface FMapList ZArith Int FMapAVL ROmega.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 Module AvlProofs (Import I:Int)(X: OrderedType).
 Module Import Raw := Raw I X.

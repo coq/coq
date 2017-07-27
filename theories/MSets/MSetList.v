@@ -12,8 +12,8 @@
     interface [MSetInterface.S] using strictly ordered list. *)
 
 Require Export MSetInterface OrdersFacts OrdersLists.
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 (** * Functions over lists
 

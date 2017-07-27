@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Definition ifdec (A B:Prop) (C:Type) (H:{A} + {B}) (x y:C) : C :=
   if H then x else y.
@@ -28,4 +28,4 @@ Proof.
   intro; absurd A; trivial.
 Qed.
 
-Unset Implicit Arguments.
+Local Unset Implicit Arguments.

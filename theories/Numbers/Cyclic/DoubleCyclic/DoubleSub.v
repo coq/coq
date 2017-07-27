@@ -9,7 +9,7 @@
 (*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
 (************************************************************************)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import BigNumPrelude.

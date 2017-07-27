@@ -10,7 +10,7 @@
 
 Require Export Coq.Program.Tactics.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 (** A simpler notation for subsets defined on a cartesian product. *)
 

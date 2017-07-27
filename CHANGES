@@ -73,6 +73,14 @@ Specification language
   "fun '(a,b) => ...", "λ '(a,(b,c)), ...", "Definition foo '(x,y) := ...".
   It expands into a "let 'pattern := ..."
 
+Vernacular commands
+
+- Setting and unsetting of options without any Local / Global qualifier now
+  survive module closing, and are activated when the corresponding module is
+  imported. An easy transition path is to systematically replace every call to
+  Set / Unset by a corresponding Local Set / Local Unset command, e.g. using
+  a textual replacement tool.
+
 Tactics
 
 - Flag "Bracketing Last Introduction Pattern" is now on by default.

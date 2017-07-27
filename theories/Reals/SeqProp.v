@@ -150,7 +150,7 @@ Definition sequence_lb (Un:nat -> R) (pr:has_lb Un)
 (* Compatibility *)
 Notation sequence_majorant := sequence_ub (only parsing).
 Notation sequence_minorant := sequence_lb (only parsing).
-Unset Standard Proposition Elimination Names.
+Local Unset Standard Proposition Elimination Names.
 Lemma Wn_decreasing :
   forall (Un:nat -> R) (pr:has_ub Un), Un_decreasing (sequence_ub Un pr).
 Proof.

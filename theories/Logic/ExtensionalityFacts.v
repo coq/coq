@@ -27,7 +27,7 @@ Table of contents
 
 *)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 (**********************************************************************)
 (** * Definitions *)

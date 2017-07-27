@@ -25,7 +25,7 @@ Declare ML Module "quote_plugin".
 
 ***********************************************************************)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Section variables_map.
 
@@ -81,4 +81,4 @@ Qed.
 
 End variables_map.
 
-Unset Implicit Arguments.
+Local Unset Implicit Arguments.

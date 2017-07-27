@@ -20,7 +20,7 @@ Require Export Coq.Classes.CRelationClasses.
 Generalizable Variables A eqA B C D R RA RB RC m f x y.
 Local Obligation Tactic := simpl_crelation.
 
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
 (** * Morphisms.
 
@@ -266,7 +266,7 @@ Section GenericInstances.
     transitivity (y x0)...
   Qed.
 
-  Unset Strict Universe Declaration.
+  Local Unset Strict Universe Declaration.
   
   (** The complement of a crelation conserves its proper elements. *)
  

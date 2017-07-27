@@ -7,8 +7,8 @@
 (***********************************************************************)
 
 Require Export Relations Morphisms Setoid Equalities.
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 (** * Ordered types *)
 

@@ -11,7 +11,7 @@
     - well-founded induction
     from a well-founded ordering on a given set *)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Require Import Notations.
 Require Import Logic.

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Require Import Setoid Morphisms. 
 Require Import BinList BinPos BinNat BinInt.
 Require Export Ring_theory.

@@ -38,7 +38,7 @@ Include BinPosDef.Pos.
 
 (** In functor applications that follow, we only inline t and eq *)
 
-Set Inline Level 30.
+Local Set Inline Level 30.
 
 (** * Logical Predicates *)
 

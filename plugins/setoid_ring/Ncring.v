@@ -15,7 +15,7 @@ Require Export Morphisms Setoid Bool.
 Require Export ZArith_base.
 Require Export Algebra_syntax.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Class Ring_ops(T:Type)
    {ring0:T}

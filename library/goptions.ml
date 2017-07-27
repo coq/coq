@@ -261,16 +261,23 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
         match m with
         | OptSet -> write v
         | OptAppend -> write (append (read ()) v) in
-      let load_options i o = cache_options o in
+      let load_options i (_, (l, _, _) as o) = match l with
+      | OptGlobal -> cache_options o
+      | _ -> ()
+      in
+      let open_options i o = if Int.equal i 1 then cache_options o in
       let subst_options (subst,obj) = obj in
       let discharge_options (_,(l,_,_ as o)) =
         match l with OptLocal -> None | _ -> Some o in
-      let classify_options (l,_,_ as o) =
-        match l with OptGlobal -> Substitute o | _ -> Dispose in
+      let classify_options (l,_,_ as o) = match l with
+      | OptGlobal | OptDefault -> Substitute o
+      | OptLocal -> Dispose
+      in
       let options : option_locality * option_mod * _ -> obj =
         declare_object
           { (default_object (nickname key)) with
             load_function = load_options;
+            open_function = open_options;
             cache_function = cache_options;
             subst_function = subst_options;
             discharge_function = discharge_options;

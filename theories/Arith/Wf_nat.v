@@ -205,7 +205,7 @@ Qed.
 (** A constructive proof that any non empty decidable subset of
     natural numbers has a least element *)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Require Import Le.
 Require Import Compare_dec.
@@ -235,6 +235,6 @@ Proof.
    intros n' (HPn',Hn'); apply Nat.le_antisymm; auto.
 Qed.
 
-Unset Implicit Arguments.
+Local Unset Implicit Arguments.
 
 Notation iter_nat n A f x := (nat_rect (fun _ => A) x (fun _ => f) n) (only parsing).

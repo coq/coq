@@ -10,7 +10,7 @@
 
 Require Import Bool OrderedType ZArith OrderedType OrderedTypeEx FMapInterface.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Local Open Scope positive_scope.
 Local Unset Elimination Schemes.
 

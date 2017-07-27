@@ -16,8 +16,8 @@
 
 Require Export MSetInterface.
 Require Import DecidableTypeEx OrdersLists MSetFacts MSetDecide.
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 Hint Unfold transpose.
 

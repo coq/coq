@@ -20,7 +20,7 @@ Require Import Bool.
 Require Import OrderedRing.
 Require Import Refl.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Import OrderedRingSyntax.
 

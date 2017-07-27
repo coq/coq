@@ -15,14 +15,14 @@
 
 *)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
-Unset Elimination Schemes.
+Local Unset Elimination Schemes.
 
 Inductive JMeq (A:Type) (x:A) : forall B:Type, B -> Prop :=
     JMeq_refl : JMeq x x.
 
-Set Elimination Schemes.
+Local Set Elimination Schemes.
 
 Arguments JMeq_refl {A x} , [A] x.
 

@@ -16,7 +16,7 @@ Require Import List.
 Require Import Refl.
 Require Import Bool.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 
   Inductive BFormula (A:Type) : Type :=

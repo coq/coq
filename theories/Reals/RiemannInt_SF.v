@@ -12,7 +12,7 @@ Require Import Ranalysis_reg.
 Require Import Classical_Prop.
 Local Open Scope R_scope.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 (*****************************************************)
 (** * Each bounded subset of N has a maximal element *)

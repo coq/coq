@@ -16,8 +16,8 @@
 
 Require Import DecidableTypeEx.
 Require Export FSetInterface.
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 (** First, a functor for Weak Sets in functorial version. *)
 

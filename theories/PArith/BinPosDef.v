@@ -375,7 +375,7 @@ Fixpoint gcdn (n : nat) (a b : positive) : positive :=
 Definition gcd (a b : positive) := gcdn (size_nat a + size_nat b)%nat a b.
 
 (** Generalized Gcd, also computing the division of a and b by the gcd *)
-Set Printing Universes.
+Local Set Printing Universes.
 Fixpoint ggcdn (n : nat) (a b : positive) : (positive*(positive*positive)) :=
   match n with
     | O => (1,(a,b))

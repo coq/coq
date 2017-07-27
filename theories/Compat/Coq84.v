@@ -76,4 +76,4 @@ Coercion sig2_of_sigT2 : sigT2 >-> sig2.
 
 (** In 8.4, the statement of admitted lemmas did not depend on the section
     variables. *)
-Unset Keep Admitted Variables.
+Local Unset Keep Admitted Variables.

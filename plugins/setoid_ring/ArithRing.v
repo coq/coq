@@ -10,7 +10,7 @@ Require Import Mult.
 Require Import BinNat.
 Require Import Nnat.
 Require Export Ring.
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Lemma natSRth : semi_ring_theory O (S O) plus mult (@eq nat).
  Proof.

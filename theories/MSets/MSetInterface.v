@@ -29,8 +29,8 @@
 
 Require Export Bool SetoidList RelationClasses Morphisms
  RelationPairs Equalities Orders OrdersFacts.
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 Module Type TypElt.
  Parameters t elt : Type.

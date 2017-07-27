@@ -14,7 +14,7 @@ Global Set Universe Polymorphism.
 Global Set Primitive Projections.
 Notation "A -> B" := (forall (_ : A), B) : type_scope.
 Module Export Datatypes.
-  Set Implicit Arguments.
+  Local Set Implicit Arguments.
   Notation nat := Coq.Init.Datatypes.nat.
   Notation S := Coq.Init.Datatypes.S.
   Record prod (A B : Type) := pair { fst : A ; snd : B }.
@@ -23,7 +23,7 @@ Module Export Datatypes.
   Open Scope nat_scope.
 End Datatypes.
 Module Export Specif.
-  Set Implicit Arguments.
+  Local Set Implicit Arguments.
   Record sig {A} (P : A -> Type) := exist { proj1_sig : A ; proj2_sig : P 
 proj1_sig }.
   Notation sigT := sig (only parsing).

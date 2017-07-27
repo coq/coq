@@ -8,7 +8,7 @@
 
 (** * Binary Numerical Datatypes *)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Declare ML Module "z_syntax_plugin".
 

@@ -18,7 +18,7 @@
 
 Require Import Bool BinPos OrderedType OrderedTypeEx FSetInterface.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Local Open Scope lazy_bool_scope.
 Local Open Scope positive_scope.
 Local Unset Elimination Schemes.

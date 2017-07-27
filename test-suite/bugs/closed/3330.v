@@ -1,7 +1,7 @@
-Unset Strict Universe Declaration.
+Local Unset Strict Universe Declaration.
 Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from original input, then from 12106 lines to 1070 lines *)
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 Definition setleq (A : Type@{i}) (B : Type@{j}) := A : Type@{j}.
 
 Inductive foo : Type@{l} := bar : foo . 
@@ -149,9 +149,9 @@ Module Export HoTT.
 Module Export categories.
 Module Export Category.
 Module Export Core.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Delimit Scope morphism_scope with morphism.
 
 Delimit Scope category_scope with category.
@@ -292,9 +292,9 @@ Module Export HoTT.
 Module Export categories.
 Module Export Functor.
 Module Export Core.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Delimit Scope functor_scope with functor.
 
 Local Open Scope morphism_scope.
@@ -341,7 +341,7 @@ Module Export HoTT.
 Module Export categories.
 Module Export Category.
 Module Export Morphisms.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
 Local Open Scope morphism_scope.
 
@@ -379,7 +379,7 @@ Module Export HoTT.
 Module Export categories.
 Module Export Category.
 Module Export Dual.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
 Local Open Scope morphism_scope.
 
@@ -420,9 +420,9 @@ Module Export categories.
 Module Export Functor.
 Module Export Composition.
 Module Export Core.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Local Open Scope morphism_scope.
 
 Section composition.
@@ -486,9 +486,9 @@ Module Export HoTT.
 Module Export categories.
 Module Export Functor.
 Module Export Dual.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Section opposite.
 
@@ -522,7 +522,7 @@ Module Export HoTT.
 Module Export categories.
 Module Export Functor.
 Module Export Identity.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
 Section identity.
 
@@ -553,9 +553,9 @@ Module Export HoTT.
 Module Export categories.
 Module Export NaturalTransformation.
 Module Export Core.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Local Open Scope morphism_scope.
 
 Section NaturalTransformation.
@@ -591,7 +591,7 @@ Module Export HoTT.
 Module Export categories.
 Module Export NaturalTransformation.
 Module Export Dual.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
 Section opposite.
 
@@ -627,7 +627,7 @@ Module Export Category.
 Module Export Strict.
 
 Export Category.Core.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
 End Strict.
 
@@ -643,7 +643,7 @@ Module Export HoTT.
 Module Export categories.
 Module Export Category.
 Module Export Prod.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
 Local Open Scope morphism_scope.
 
@@ -679,9 +679,9 @@ End HoTT.
 
 Module Functor.
 Module Export Prod.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Local Open Scope morphism_scope.
 
 Section proj.
@@ -750,9 +750,9 @@ Module categories.
 Module Export NaturalTransformation.
 Module Export Composition.
 Module Export Core.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Local Open Scope path_scope.
 
 Local Open Scope morphism_scope.
@@ -805,7 +805,7 @@ End NaturalTransformation.
 
 End categories.
 
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
 Section path_natural_transformation.
 
@@ -849,9 +849,9 @@ Ltac path_natural_transformation :=
          end.
 
 Module Export Identity.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Local Open Scope morphism_scope.
 
 Local Open Scope path_scope.
@@ -909,7 +909,7 @@ End Identity.
 
 Module Export Laws.
 Import HoTT_DOT_categories_DOT_NaturalTransformation_DOT_Composition_DOT_Core.HoTT.categories.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
 Local Open Scope natural_transformation_scope.
 Section natural_transformation_identity.
@@ -958,7 +958,7 @@ End Laws.
 Module Export FunctorCategory.
 Module Export Core.
 Import HoTT_DOT_categories_DOT_NaturalTransformation_DOT_Composition_DOT_Core.HoTT.categories.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
 Section functor_category.
 
@@ -987,9 +987,9 @@ End Core.
 End FunctorCategory.
 
 Module Export Morphisms.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Definition NaturalIsomorphism `{Funext} (C D : PreCategory) F G :=
   @Isomorphic (C -> D) F G.
@@ -1007,7 +1007,7 @@ Global Existing Instance iss.
 End HSet.
 
 Module Export Core.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
 Notation cat_of obj :=
   (@Build_PreCategory obj
@@ -1020,7 +1020,7 @@ Notation cat_of obj :=
                       _).
 
 Definition set_cat `{Funext} : PreCategory := cat_of hSet.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
 Local Open Scope morphism_scope.
 
@@ -1051,13 +1051,13 @@ Section hom_functor.
     simpl; admit.
   Defined.
 End hom_functor.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
 Import Category.Dual Functor.Dual.
 Import Category.Prod Functor.Prod.
 Import Functor.Composition.Core.
 Import Functor.Identity.
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
 Local Open Scope functor_scope.
 Local Open Scope natural_transformation_scope.
