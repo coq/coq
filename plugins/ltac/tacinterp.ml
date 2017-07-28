@@ -1746,7 +1746,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           | _ -> false
         in
         let is_onconcl = match cl.concl_occs with
-          | AllOccurrences | NoOccurrences -> true
+          | AtLeastOneOccurrence | AllOccurrences | NoOccurrences -> true
           | _ -> false
         in
         let c_interp patvars env sigma =
