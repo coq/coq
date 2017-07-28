@@ -4612,6 +4612,7 @@ end
 
 module Pfedit :
 sig
+  val use_unification_heuristics : unit -> bool
   val solve_by_implicit_tactic : unit -> Pretyping.inference_hook option
   val refine_by_tactic : Environ.env -> Evd.evar_map -> EConstr.types -> unit Proofview.tactic ->
                          Constr.t * Evd.evar_map
