@@ -1425,6 +1425,9 @@ If there is an hypothesis $h:a=b$ in the local context, it can be used for
 rewriting not only in logical propositions but also in any type.
 % In that case, the term \verb!eq_rec! which was defined as an axiom, is
 % now a term of the calculus.
+\begin{coq_eval}
+Require Extraction.
+\end{coq_eval}
 \begin{coq_example}
 Print eq_rec.
 Extraction eq_rec.

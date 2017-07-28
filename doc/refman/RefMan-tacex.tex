@@ -849,7 +849,7 @@ Ltac DSimplif trm :=
 Ltac Length trm :=
   match trm with
   | (_ * ?B) => let succ := Length B in constr:(S succ)
-  | _ => constr:1
+  | _ => constr:(1)
   end.
 Ltac assoc := repeat rewrite <- Ass.
 \end{coq_example}
