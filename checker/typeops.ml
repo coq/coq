@@ -69,34 +69,15 @@ let judge_of_relative env n =
 
 (* Type of constants *)
 
-
-let type_of_constant_type_knowing_parameters env t paramtyps =
-  match t with
-  | RegularArity t -> t
-  | TemplateArity (sign,ar) ->
-      let ctx = List.rev sign in
-      let ctx,s = instantiate_universes env ctx ar paramtyps in
-      mkArity (List.rev ctx,s)
-
-let type_of_constant_knowing_parameters env cst paramtyps =
-  let ty, cu = constant_type env cst in
-    type_of_constant_type_knowing_parameters env ty paramtyps, cu
-
-let type_of_constant_type env t =
-  type_of_constant_type_knowing_parameters env t [||]
-
-let judge_of_constant_knowing_parameters env (kn,u as cst) paramstyp =
+let judge_of_constant env (kn,u as cst) =
   let _cb =
     try lookup_constant kn env
     with Not_found ->
       failwith ("Cannot find constant: "^Constant.to_string kn)
   in
-  let ty, cu = type_of_constant_knowing_parameters env cst paramstyp in
+  let ty, cu = constant_type env cst in
   let () = check_constraints cu env in
     ty
-
-let judge_of_constant env cst =
-  judge_of_constant_knowing_parameters env cst [||]
 
 (* Type of an application. *)
 
@@ -276,8 +257,6 @@ let rec execute env cstr =
 	  match f with
 	    | Ind ind ->
 		judge_of_inductive_knowing_parameters env ind jl
-	    | Const cst ->
-		judge_of_constant_knowing_parameters env cst jl
 	    | _ ->
 		(* No template polymorphism *)
 		execute env f

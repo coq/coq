@@ -182,8 +182,6 @@ type ('a, 'b) declaration_arity =
   | RegularArity of 'a
   | TemplateArity of 'b
 
-type constant_type = (constr, rel_context * template_arity) declaration_arity
-
 (** Inlining level of parameters at functor applications.
     This is ignored by the checker. *)
 
@@ -226,7 +224,7 @@ type typing_flags = {
 type constant_body = {
     const_hyps : section_context; (** New: younger hyp at top *)
     const_body : constant_def;
-    const_type : constant_type;
+    const_type : constr;
     const_body_code : to_patch_substituted;
     const_universes : constant_universes;
     const_proj : projection_body option;

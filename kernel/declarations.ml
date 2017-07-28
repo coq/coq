@@ -36,8 +36,6 @@ type ('a, 'b) declaration_arity =
   | RegularArity of 'a
   | TemplateArity of 'b
 
-type constant_type = (types, Context.Rel.t * template_arity) declaration_arity
-
 (** Inlining level of parameters at functor applications.
     None means no inlining *)
 
@@ -83,7 +81,7 @@ type typing_flags = {
 type constant_body = {
     const_hyps : Context.Named.t; (** New: younger hyp at top *)
     const_body : constant_def;
-    const_type : constant_type;
+    const_type : types;
     const_body_code : Cemitcodes.to_patch_substituted option;
     const_universes : constant_universes;
     const_proj : projection_body option;

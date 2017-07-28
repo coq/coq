@@ -501,9 +501,6 @@ let print_body env evd = function
 let print_typed_body env evd (val_0,typ) =
   (print_body env evd val_0 ++ fnl () ++ str "     : " ++ pr_ltype_env env evd typ)
 
-let ungeneralized_type_of_constant_type t = 
-  Typeops.type_of_constant_type (Global.env ()) t
-
 let print_instance sigma cb =
   if Declareops.constant_is_polymorphic cb then
     let univs = Declareops.constant_polymorphic_context cb in
@@ -515,17 +512,13 @@ let print_instance sigma cb =
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   let val_0 = Global.body_of_constant_body cb in
-  let typ = match cb.const_type with
-  | RegularArity t as x ->
-    begin match cb.const_universes with
-    | Monomorphic_const _ -> x
+  let typ =
+    match cb.const_universes with
+    | Monomorphic_const _ -> cb.const_type
     | Polymorphic_const univs ->
       let inst = Univ.AUContext.instance univs in
-      RegularArity (Vars.subst_instance_constr inst t)
-    end
-  | TemplateArity _ as x -> x
+      Vars.subst_instance_constr inst cb.const_type
   in
-  let typ = ungeneralized_type_of_constant_type typ in
   let univs =
     let otab = Global.opaque_tables () in
     match cb.const_body with
@@ -698,7 +691,7 @@ let print_full_pure_context () =
       | "CONSTANT" ->
 	  let con = Global.constant_of_delta_kn kn in
 	  let cb = Global.lookup_constant con in
-	  let typ = ungeneralized_type_of_constant_type cb.const_type in
+	  let typ = cb.const_type in
 	  hov 0 (
 	    match cb.const_body with
 	      | Undef _ ->

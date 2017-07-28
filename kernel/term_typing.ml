@@ -21,7 +21,6 @@ open Environ
 open Entries
 open Typeops
 
-module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 (* Insertion of constants and parameters in environment. *)
@@ -128,7 +127,7 @@ let inline_side_effects env body ctx side_eff =
       match cb.const_universes with
       | Monomorphic_const cnstctx ->
         (** Abstract over the term at the top of the proof *)
-        let ty = Typeops.type_of_constant_type env cb.const_type in
+        let ty = cb.const_type in
         let subst = Cmap_env.add c (Inr var) subst in
         let univs = Univ.ContextSet.of_context cnstctx in
         let ctx = Univ.ContextSet.union ctx univs in
@@ -249,7 +248,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
       let t = hcons_constr (Vars.subst_univs_level_constr usubst c) in
       {
         Cooking.cook_body = Undef nl;
-        cook_type = RegularArity t;
+        cook_type = t;
         cook_proj = None;
         cook_universes = univs;
         cook_inline = false;
@@ -290,7 +289,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
       let def = OpaqueDef (Opaqueproof.create proofterm) in
       {
         Cooking.cook_body = def;
-        cook_type = RegularArity typ;
+        cook_type = typ;
         cook_proj = None;
         cook_universes = Monomorphic_const univs;
         cook_inline = c.const_entry_inline_code;
@@ -320,13 +319,11 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
       let j = infer env body in
       let typ = match typ with
         | None ->
-           if not poly then (* Old-style polymorphism *)
-             make_polymorphic_if_constant_for_ind env j
-           else RegularArity (Vars.subst_univs_level_constr usubst j.uj_type)
+          Vars.subst_univs_level_constr usubst j.uj_type
         | Some t ->
            let tj = infer_type env t in
            let _ = judge_of_cast env j DEFAULTcast tj in
-           RegularArity (Vars.subst_univs_level_constr usubst t)
+           Vars.subst_univs_level_constr usubst t
       in
       let def = hcons_constr (Vars.subst_univs_level_constr usubst j.uj_val) in
       let def = 
@@ -363,20 +360,12 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
     let term, typ = pb.proj_eta in
     {
       Cooking.cook_body = Def (Mod_subst.from_val (hcons_constr term));
-      cook_type = RegularArity typ;
+      cook_type = typ;
       cook_proj = Some pb;
       cook_universes = univs;
       cook_inline = false;
       cook_context = None;
     }
-
-let global_vars_set_constant_type env = function
-  | RegularArity t -> global_vars_set env t
-  | TemplateArity (ctx,_) ->
-      Context.Rel.fold_outside
-        (RelDecl.fold_constr
-	  (fun t c -> Id.Set.union (global_vars_set env t) c))
-      ctx ~init:Id.Set.empty
 
 let record_aux env s_ty s_bo suggested_expr =
   let in_ty = keep_hyps env s_ty in
@@ -426,7 +415,7 @@ let build_constant_declaration kn env result =
     | None when not (List.is_empty context_ids) -> 
         (* No declared section vars, and non-empty section context:
            we must look at the body NOW, if any *)
-        let ids_typ = global_vars_set_constant_type env typ in
+        let ids_typ = global_vars_set env typ in
         let ids_def = match def with
         | Undef _ -> Idset.empty
         | Def cs -> global_vars_set env (Mod_subst.force_constr cs)
@@ -454,14 +443,14 @@ let build_constant_declaration kn env result =
         match def with
         | Undef _ as x -> x (* nothing to check *)
         | Def cs as x ->
-            let ids_typ = global_vars_set_constant_type env typ in
+            let ids_typ = global_vars_set env typ in
             let ids_def = global_vars_set env (Mod_subst.force_constr cs) in
             let inferred = keep_hyps env (Idset.union ids_typ ids_def) in
             check declared inferred;
             x
         | OpaqueDef lc -> (* In this case we can postpone the check *)
             OpaqueDef (Opaqueproof.iter_direct_opaque (fun c ->
-              let ids_typ = global_vars_set_constant_type env typ in
+              let ids_typ = global_vars_set env typ in
               let ids_def = global_vars_set env c in
               let inferred = keep_hyps env (Idset.union ids_typ ids_def) in
               check declared inferred) lc) in
@@ -524,8 +513,7 @@ let constant_entry_of_side_effect cb u =
     const_entry_body = Future.from_val (pt, ());
     const_entry_secctx = None;
     const_entry_feedback = None;
-    const_entry_type =
-      (match cb.const_type with RegularArity t -> Some t | _ -> None);
+    const_entry_type = Some cb.const_type;
     const_entry_universes = univs;
     const_entry_opaque = Declareops.is_opaque cb;
     const_entry_inline_code = cb.const_inline_code }
@@ -625,7 +613,7 @@ let translate_recipe env kn r =
 let translate_local_def mb env id centry =
   let open Cooking in
   let decl = infer_declaration ~trust:mb env None (DefinitionEntry centry) in
-  let typ = type_of_constant_type env decl.cook_type in
+  let typ = decl.cook_type in
   if Option.is_empty decl.cook_context && !Flags.compilation_mode = Flags.BuildVo then begin
     match decl.cook_body with
     | Undef _ -> ()

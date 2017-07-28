@@ -18,7 +18,6 @@ open Util
 open Names
 open Term
 open Declarations
-open Environ
 open Univ
 
 module NamedDecl = Context.Named.Declaration
@@ -153,7 +152,7 @@ type inline = bool
 
 type result = {
   cook_body : constant_def;
-  cook_type : constant_type;
+  cook_type : types;
   cook_proj : projection_body option;
   cook_universes : constant_universes;
   cook_inline : inline;
@@ -166,11 +165,6 @@ let on_body ml hy f = function
   | OpaqueDef o ->
     OpaqueDef (Opaqueproof.discharge_direct_opaque ~cook_constr:f
                  { Opaqueproof.modlist = ml; abstract = hy } o)
-
-let constr_of_def otab = function
-  | Undef _ -> assert false
-  | Def cs -> Mod_subst.force_constr cs
-  | OpaqueDef lc -> Opaqueproof.force_proof otab lc
 
 let expmod_constr_subst cache modlist subst c =
   let c = expmod_constr cache modlist c in
@@ -220,17 +214,7 @@ let cook_constant ~hcons env { from = cb; info } =
       List.filter (fun decl' -> not (Id.equal (NamedDecl.get_id decl) (NamedDecl.get_id decl')))
 		  hyps)
       hyps ~init:cb.const_hyps in
-  let typ = match cb.const_type with
-    | RegularArity t ->
-  	let typ =
-          abstract_constant_type (expmod t) hyps in
-  	RegularArity typ
-    | TemplateArity (ctx,s) ->
-  	let t = mkArity (ctx,Type s.template_level) in
-  	let typ = abstract_constant_type (expmod t) hyps in
-  	let j = make_judge (constr_of_def (opaque_tables env) body) typ in
-  	Typeops.make_polymorphic_if_constant_for_ind env j
-  in
+  let typ = abstract_constant_type (expmod cb.const_type) hyps in
   let projection pb =
     let c' = abstract_constant_body (expmod pb.proj_body) hyps in
     let etab = abstract_constant_body (expmod (fst pb.proj_eta)) hyps in
@@ -244,9 +228,6 @@ let cook_constant ~hcons env { from = cb; info } =
 	  | _ -> assert false 
       with Not_found -> (((pb.proj_ind,0),Univ.Instance.empty), 0)
     in 
-    let typ = (* By invariant, a regular arity *)
-      match typ with RegularArity t -> t | TemplateArity _ -> assert false 
-    in
     let ctx, ty' = decompose_prod_n (n' + pb.proj_npars + 1) typ in
       { proj_ind = mind; proj_npars = pb.proj_npars + n'; proj_arg = pb.proj_arg;
 	proj_eta = etab, etat;

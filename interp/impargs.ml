@@ -414,7 +414,7 @@ let compute_semi_auto_implicits env f manual t =
 let compute_constant_implicits flags manual cst =
   let env = Global.env () in
   let cb = Environ.lookup_constant cst env in
-  let ty = Typeops.type_of_constant_type env cb.const_type in
+  let ty = cb.const_type in
   let impls = compute_semi_auto_implicits env flags manual ty in
     impls
 

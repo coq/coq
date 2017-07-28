@@ -1145,9 +1145,6 @@ let is_template_polymorphic env sigma f =
   | Ind (ind, u) ->
     if not (EConstr.EInstance.is_empty u) then false
     else Environ.template_polymorphic_ind ind env
-  | Const (cst, u) ->
-    if not (EConstr.EInstance.is_empty u) then false
-    else Environ.template_polymorphic_constant cst env
   | _ -> false
 
 let base_sort_cmp pb s0 s1 =

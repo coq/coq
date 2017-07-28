@@ -419,7 +419,7 @@ let type_of_reference env r =
   | VarRef id -> Environ.named_type id env, ContextSet.empty
   | ConstRef c ->
      let cb = Environ.lookup_constant c env in
-     let ty = Typeops.type_of_constant_type env cb.const_type in
+     let ty = cb.const_type in
      begin
        match cb.const_universes with
        | Monomorphic_const _ -> ty, ContextSet.empty

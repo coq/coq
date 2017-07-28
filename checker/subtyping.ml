@@ -294,8 +294,8 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
 	let cb1 = subst_const_body subst1 cb1 in
 	let cb2 = subst_const_body subst2 cb2 in
 	(*Start by checking types*)
-	let typ1 = Typeops.type_of_constant_type env cb1.const_type in
-	let typ2 = Typeops.type_of_constant_type env cb2.const_type in
+	let typ1 = cb1.const_type in
+	let typ2 = cb2.const_type in
 	check_type env typ1 typ2;
 	(* Now we check the bodies:
 	 - A transparent constant can only be implemented by a compatible

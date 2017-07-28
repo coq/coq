@@ -1185,8 +1185,6 @@ sig
     | RegularArity of 'a
     | TemplateArity of 'b
 
-  type constant_type = (Constr.types, Context.Rel.t * template_arity) declaration_arity
-
   type constant_universes =
     | Monomorphic_const of Univ.universe_context
     | Polymorphic_const of Univ.abstract_universe_context
@@ -1208,7 +1206,7 @@ sig
   type constant_body = {
         const_hyps : Context.Named.t;
         const_body : constant_def;
-        const_type : constant_type;
+        const_type : Term.types;
         const_body_code : Cemitcodes.to_patch_substituted option;
         const_universes : constant_universes;
         const_proj : projection_body option;
@@ -1586,7 +1584,6 @@ end
 module Typeops :
 sig
   val infer_type : Environ.env -> Term.types -> Environ.unsafe_type_judgment
-  val type_of_constant_type : Environ.env -> Declarations.constant_type -> Term.types
   val type_of_constant_in : Environ.env -> Term.pconstant -> Term.types
 end
 

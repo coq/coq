@@ -34,12 +34,6 @@ let get_polymorphic_positions sigma f =
       (match oib.mind_arity with
       | RegularArity _ -> assert false
       | TemplateArity templ -> templ.template_param_levels)
-  | Const (cst, u) ->
-    let cb = Global.lookup_constant cst in
-      (match cb.const_type with
-      | RegularArity _ -> assert false
-      | TemplateArity (_, templ) -> 
-        templ.template_param_levels)
   | _ -> assert false
 
 let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)

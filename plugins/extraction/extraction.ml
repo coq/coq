@@ -518,7 +518,7 @@ and mlt_env env r = match r with
         match lookup_typedef kn cb with
         | Some _ as o -> o
         | None ->
-           let typ = Typeops.type_of_constant_type env cb.const_type
+           let typ = cb.const_type
            (* FIXME not sure if we should instantiate univs here *) in
 	   match flag_of_type env typ with
 	   | Info,TypeScheme ->
@@ -543,7 +543,7 @@ let record_constant_type env kn opt_typ =
   | Some schema -> schema
   | None ->
      let typ = match opt_typ with
-       | None -> Typeops.type_of_constant_type env cb.const_type
+       | None -> cb.const_type
        | Some typ -> typ
      in
      let mlt = extract_type env [] 1 typ [] in
@@ -969,7 +969,7 @@ let extract_fixpoint env vkn (fi,ti,ci) =
 
 let extract_constant env kn cb =
   let r = ConstRef kn in
-  let typ = Typeops.type_of_constant_type env cb.const_type in
+  let typ = cb.const_type in
   let warn_info () = if not (is_custom r) then add_info_axiom r in
   let warn_log () = if not (constant_has_body cb) then add_log_axiom r
   in
@@ -1025,7 +1025,7 @@ let extract_constant env kn cb =
 
 let extract_constant_spec env kn cb =
   let r = ConstRef kn in
-  let typ = Typeops.type_of_constant_type env cb.const_type in
+  let typ = cb.const_type in
   try
     match flag_of_type env typ with
     | (Logic, TypeScheme) -> Stype (r, [], Some (Tdummy Ktype))

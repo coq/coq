@@ -69,10 +69,6 @@ let subst_rel_declaration sub =
 
 let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 
-let subst_template_cst_arity sub (ctx,s as arity) =
-  let ctx' = subst_rel_context sub ctx in
-    if ctx==ctx' then arity else (ctx',s)
-      
 let subst_const_type sub arity =
   if is_empty_subst sub then arity
   else subst_mps sub arity
@@ -94,7 +90,7 @@ let subst_const_body sub cb =
   if is_empty_subst sub then cb
   else
     let body' = subst_const_def sub cb.const_body in
-    let type' = subst_decl_arity subst_const_type subst_template_cst_arity sub cb.const_type in
+    let type' = subst_const_type sub cb.const_type in
     let proj' = Option.smartmap (subst_const_proj sub) cb.const_proj in
     if body' == cb.const_body && type' == cb.const_type
       && proj' == cb.const_proj then cb
@@ -120,14 +116,6 @@ let hcons_rel_decl =
 
 let hcons_rel_context l = List.smartmap hcons_rel_decl l
 
-let hcons_regular_const_arity t = Term.hcons_constr t
-
-let hcons_template_const_arity (ctx, ar) = 
-  (hcons_rel_context ctx, hcons_template_arity ar)
-
-let hcons_const_type = 
-  map_decl_arity hcons_regular_const_arity hcons_template_const_arity
-
 let hcons_const_def = function
   | Undef inl -> Undef inl
   | Def l_constr ->
@@ -145,7 +133,7 @@ let hcons_const_universes cbu =
 let hcons_const_body cb =
   { cb with
     const_body = hcons_const_def cb.const_body;
-    const_type = hcons_const_type cb.const_type;
+    const_type = Term.hcons_constr cb.const_type;
     const_universes = hcons_const_universes cb.const_universes }
 
 (** {6 Inductive types } *)

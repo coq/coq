@@ -132,7 +132,7 @@ let rec add_labels mp = function
 exception Impossible
 
 let check_arity env cb =
-  let t = Typeops.type_of_constant_type env cb.const_type in
+  let t = cb.const_type in
   if Reduction.is_arity env t then raise Impossible
 
 let check_fix env cb i =

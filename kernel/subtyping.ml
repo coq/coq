@@ -313,8 +313,8 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
           error (PolymorphicStatusExpected false)
       in
       (* Now check types *)
-      let typ1 = Typeops.type_of_constant_type env cb1.const_type in
-      let typ2 = Typeops.type_of_constant_type env cb2.const_type in
+      let typ1 = cb1.const_type in
+      let typ2 = cb2.const_type in
       let cst = check_type poly cst env typ1 typ2 in
       (* Now we check the bodies:
 	 - A transparent constant can only be implemented by a compatible

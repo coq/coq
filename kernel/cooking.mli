@@ -18,7 +18,7 @@ type inline = bool
 
 type result = {
   cook_body : constant_def;
-  cook_type : constant_type;
+  cook_type : types;
   cook_proj : projection_body option;
   cook_universes : constant_universes;
   cook_inline : inline;
