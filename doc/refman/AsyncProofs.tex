@@ -46,6 +46,12 @@ proof does not begin with \texttt{Proof using}, the system records in an
 auxiliary file, produced along with the \texttt{.vo} file, the list of
 section variables used.
 
+\subsubsection{Automatic suggestion of proof annotations}
+
+The command \texttt{Set Suggest Proof Using} makes Coq suggest, when a
+\texttt{Qed} command is processed, a correct proof annotation. It is up
+to the user to modify the proof script accordingly.
+
 \section{Proof blocks and error resilience}
 
 Coq 8.6 introduces a mechanism for error resiliency: in interactive mode Coq
@@ -81,13 +87,7 @@ CoqIDE one of the following options:
 \texttt{-async-proofs-tactic-error-resilience off},
 \texttt{-async-proofs-tactic-error-resilience all},
 \texttt{-async-proofs-tactic-error-resilience $blocktype_1$,..., $blocktype_n$}.
-Valid proof block types are: ``curly'', ``par'', ``indent'', ``bullet''. 
-
-\subsubsection{Automatic suggestion of proof annotations}
-
-The command \texttt{Set Suggest Proof Using} makes Coq suggest, when a
-\texttt{Qed} command is processed, a correct proof annotation. It is up
-to the user to modify the proof script accordingly.
+Valid proof block types are: ``curly'', ``par'', ``indent'', ``bullet''.
 
 \section{Interactive mode}
 
