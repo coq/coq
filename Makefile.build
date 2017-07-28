@@ -151,7 +151,7 @@ endif
 # coqdep_boot (for the .v.d files) or grammar.cma (for .ml4 -> .ml -> .ml.d).
 
 DEPENDENCIES := \
- $(addsuffix .d, $(MLFILES) $(MLIFILES) $(MLLIBFILES) $(CFILES) $(VFILES))
+ $(addsuffix .d, $(MLFILES) $(MLIFILES) $(MLLIBFILES) $(MLPACKFILES) $(CFILES) $(VFILES))
 
 -include $(DEPENDENCIES)
 
