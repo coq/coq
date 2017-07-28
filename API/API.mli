@@ -3780,6 +3780,12 @@ sig
     | DefaultInline
     | InlineAt of int
 
+  type cumulative_inductive_parsing_flag =
+    | GlobalCumulativity
+    | GlobalNonCumulativity
+    | LocalCumulativity
+    | LocalNonCumulativity
+
   type vernac_expr =
   | VernacLoad of verbose_flag * string
   | VernacTime of vernac_expr Loc.located
@@ -3804,7 +3810,7 @@ sig
   | VernacExactProof of Constrexpr.constr_expr
   | VernacAssumption of (Decl_kinds.locality option * Decl_kinds.assumption_object_kind) *
       inline * (plident list * Constrexpr.constr_expr) with_coercion list
-  | VernacInductive of Decl_kinds.cumulative_inductive_flag * Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
+  | VernacInductive of cumulative_inductive_parsing_flag * Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of
       Decl_kinds.locality option * (fixpoint_expr * decl_notation list) list
   | VernacCoFixpoint of
