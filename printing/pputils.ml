@@ -45,8 +45,8 @@ let pr_or_var pr = function
 
 let pr_with_occurrences pr keyword (occs,c) =
   match occs with
-    | AllOccurrences ->
-      pr c
+    | AtLeastOneOccurrence -> hov 1 (pr c ++ spc () ++ keyword "at" ++ str" +")
+    | AllOccurrences -> pr c
     | NoOccurrences ->
       failwith "pr_with_occurrences: no occurrences"
     | OnlyOccurrences nl ->

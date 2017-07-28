@@ -536,7 +536,7 @@ let rec intern_atomic lf ist x =
       | _ -> false
       in
       let is_onconcl = match cl.concl_occs with
-      | AllOccurrences | NoOccurrences -> true
+      | AtLeastOneOccurrence | AllOccurrences | NoOccurrences -> true
       | _ -> false
       in
       TacChange (None,

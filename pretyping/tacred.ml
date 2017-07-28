@@ -1110,6 +1110,7 @@ let unfoldoccs env sigma (occs,name) c =
     | AllOccurrences -> unfold env sigma name c
     | OnlyOccurrences l -> unfo true l
     | AllOccurrencesBut l -> unfo false l
+    | AtLeastOneOccurrence -> unfo false []
 
 (* Unfold reduction tactic: *)
 let unfoldn loccname env sigma c =

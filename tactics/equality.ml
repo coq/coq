@@ -432,7 +432,7 @@ let rewrite_side_tac tac sidetac = side_tac tac (Option.map fst sidetac)
 
 let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
     ((c,l) : constr with_bindings) with_evars =
-  if occs != AllOccurrences then (
+  if not (Locusops.is_all_occurrences occs) then (
     rewrite_side_tac (Hook.get forward_general_setoid_rewrite_clause cls lft2rgt occs (c,l) ~new_goals:[]) tac)
   else
     Proofview.Goal.enter begin fun gl ->
@@ -590,15 +590,16 @@ let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
   else Coqlib.check_required_library ["Coq";"Setoids";"Setoid"]
 
-let check_setoid cl = 
+let check_setoid cl =
+  let concloccs = Locusops.occurrences_map (fun x -> x) cl.concl_occs in
   Option.fold_left
-    ( List.fold_left 
+    (List.fold_left
 	(fun b ((occ,_),_) -> 
-	  b||(Locusops.occurrences_map (fun x -> x) occ <> AllOccurrences)
+          b||(not (Locusops.is_all_occurrences (Locusops.occurrences_map (fun x -> x) occ)))
 	)
     )
-    ((Locusops.occurrences_map (fun x -> x) cl.concl_occs <> AllOccurrences) &&
-	(Locusops.occurrences_map (fun x -> x) cl.concl_occs <> NoOccurrences))
+    (not (Locusops.is_all_occurrences concloccs) &&
+     (concloccs <> NoOccurrences))
     cl.onhyps
 
 let replace_core clause l2r eq =
@@ -1720,7 +1721,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
   tclTHENLIST
     ((if need_rewrite then
       [revert (List.map snd dephyps);
-       general_rewrite dir AllOccurrences true dep_proof_ok (mkVar hyp);
+       general_rewrite dir AtLeastOneOccurrence true dep_proof_ok (mkVar hyp);
        (tclMAP (fun (dest,id) -> intro_move (Some id) dest) dephyps)]
       else
        [Proofview.tclUNIT ()]) @

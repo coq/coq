@@ -1653,7 +1653,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     match occurrences_of_hyp hyp occs with
     | NoOccurrences, InHyp ->
         (push_named_context_val d sign,depdecls)
-    | AllOccurrences, InHyp as occ ->
+    | (AllOccurrences | AtLeastOneOccurrence), InHyp as occ ->
         let occ = if likefirst then LikeFirst else AtOccs occ in
         let newdecl = replace_term_occ_decl_modulo sigma occ test mkvarid d in
         if Context.Named.Declaration.equal (EConstr.eq_constr sigma) d newdecl

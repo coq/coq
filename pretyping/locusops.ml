@@ -19,15 +19,17 @@ let occurrences_map f = function
   | AllOccurrencesBut l ->
     let l' = f l in
     if l' = [] then AllOccurrences else AllOccurrencesBut l'
-  | (NoOccurrences|AllOccurrences) as o -> o
+  | (NoOccurrences|AllOccurrences|AtLeastOneOccurrence) as o -> o
 
 let convert_occs = function
+  | AtLeastOneOccurrence -> (false,[])
   | AllOccurrences -> (false,[])
   | AllOccurrencesBut l -> (false,l)
   | NoOccurrences -> (true,[])
   | OnlyOccurrences l -> (true,l)
 
 let is_selected occ = function
+  | AtLeastOneOccurrence -> true
   | AllOccurrences -> true
   | AllOccurrencesBut l -> not (Int.List.mem occ l)
   | OnlyOccurrences l -> Int.List.mem occ l
@@ -46,6 +48,11 @@ let is_nowhere = function
 | { onhyps=Some[]; concl_occs=NoOccurrences } -> true
 | _ -> false
 
+let is_all_occurrences = function
+  | AtLeastOneOccurrence
+  | AllOccurrences -> true
+  | _ -> false
+
 (** Clause conversion functions, parametrized by a hyp enumeration function *)
 
 (** From [clause] to [simple_clause] *)
@@ -61,12 +68,12 @@ let simple_clause_of enum_hyps cl =
 	List.map Option.make (enum_hyps ())
     | Some l ->
 	List.map (fun ((occs,id),w) ->
-	  if occs <> AllOccurrences then error_occurrences ();
+          if not (is_all_occurrences occs) then error_occurrences ();
 	  if w = InHypValueOnly then error_body_selection ();
 	  Some id) l in
   if cl.concl_occs = NoOccurrences then hyps
   else
-    if cl.concl_occs <> AllOccurrences then error_occurrences ()
+    if not (is_all_occurrences cl.concl_occs) then error_occurrences ()
     else None :: hyps
 
 (** From [clause] to [concrete_clause] *)
@@ -111,7 +118,7 @@ let clause_with_generic_occurrences cls =
      List.for_all
        (function ((AllOccurrences,_),_) -> true | _ -> false) hyps in
   let concl = match cls.concl_occs with
-  | AllOccurrences | NoOccurrences -> true
+  | AtLeastOneOccurrence | AllOccurrences | NoOccurrences -> true
   | _ -> false in
   hyps && concl
 
@@ -122,6 +129,6 @@ let clause_with_generic_context_selection cls =
      List.for_all
        (function ((AllOccurrences,_),InHyp) -> true | _ -> false) hyps in
   let concl = match cls.concl_occs with
-  | AllOccurrences | NoOccurrences -> true
+  | AtLeastOneOccurrence | AllOccurrences | NoOccurrences -> true
   | _ -> false in
   hyps && concl
