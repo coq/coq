@@ -13,6 +13,8 @@ src/tac2interp.ml
 src/tac2interp.mli
 src/tac2entries.ml
 src/tac2entries.mli
+src/tac2ffi.ml
+src/tac2ffi.mli
 src/tac2core.ml
 src/tac2core.mli
 src/tac2stdlib.ml

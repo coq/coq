@@ -12,12 +12,14 @@ open Tac2expr
 open Tac2core
 open Proofview.Notations
 
+module Value = Tac2ffi
+
 (** Standard tactics sharing their implementation with Ltac1 *)
 
 let pname s = { mltac_plugin = "ltac2"; mltac_tactic = s }
 
 let return x = Proofview.tclUNIT x
-let v_unit = Tac2core.Value.of_unit ()
+let v_unit = Value.of_unit ()
 
 let lift tac = tac <*> return v_unit
 

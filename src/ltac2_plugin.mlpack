@@ -3,6 +3,7 @@ Tac2print
 Tac2intern
 Tac2interp
 Tac2entries
+Tac2ffi
 Tac2core
 Tac2stdlib
 G_ltac2

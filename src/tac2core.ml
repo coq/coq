@@ -18,30 +18,9 @@ open Proofview.Notations
 
 (** Standard values *)
 
+module Value = Tac2ffi
+
 let coq_core n = KerName.make2 Tac2env.coq_prefix (Label.of_id (Id.of_string_soft n))
-
-let val_tag t = match val_tag t with
-| Val.Base t -> t
-| _ -> assert false
-
-let val_constr = val_tag (topwit Stdarg.wit_constr)
-let val_ident = val_tag (topwit Stdarg.wit_ident)
-let val_pattern = Val.create "ltac2:pattern"
-let val_pp = Val.create "ltac2:pp"
-let val_sort = Val.create "ltac2:sort"
-let val_cast = Val.create "ltac2:cast"
-let val_inductive = Val.create "ltac2:inductive"
-let val_constant = Val.create "ltac2:constant"
-let val_constructor = Val.create "ltac2:constructor"
-let val_projection = Val.create "ltac2:projection"
-let val_univ = Val.create "ltac2:universe"
-let val_kont : (Exninfo.iexn -> valexpr Proofview.tactic) Val.typ =
-  Val.create "ltac2:kont"
-
-let extract_val (type a) (tag : a Val.typ) (Val.Dyn (tag', v)) : a =
-match Val.eq tag tag' with
-| None -> assert false
-| Some Refl -> v
 
 module Core =
 struct
@@ -67,108 +46,19 @@ end
 open Core
 
 let v_unit = ValInt 0
-let v_nil = ValInt 0
-let v_cons v vl = ValBlk (0, [|v; vl|])
-
-module Value =
-struct
-
-let of_unit () = v_unit
-
-let to_unit = function
-| ValInt 0 -> ()
-| _ -> assert false
-
-let of_int n = ValInt n
-let to_int = function
-| ValInt n -> n
-| _ -> assert false
-
-let of_bool b = if b then ValInt 0 else ValInt 1
-
-let to_bool = function
-| ValInt 0 -> true
-| ValInt 1 -> false
-| _ -> assert false
-
-let of_char n = ValInt (Char.code n)
-let to_char = function
-| ValInt n -> Char.chr n
-| _ -> assert false
-
-let of_string s = ValStr s
-let to_string = function
-| ValStr s -> s
-| _ -> assert false
-
-let rec of_list = function
-| [] -> v_nil
-| x :: l -> v_cons x (of_list l)
-
-let rec to_list = function
-| ValInt 0 -> []
-| ValBlk (0, [|v; vl|]) -> v :: to_list vl
-| _ -> assert false
-
-let of_ext tag c =
-  ValExt (Val.Dyn (tag, c))
-
-let to_ext tag = function
-| ValExt e -> extract_val tag e
-| _ -> assert false
-
-let of_constr c = of_ext val_constr c
-let to_constr c = to_ext val_constr c
-
-let of_ident c = of_ext val_ident c
-let to_ident c = to_ext val_ident c
-
-let of_pattern c = of_ext val_pattern c
-let to_pattern c = to_ext val_pattern c
-
-(** FIXME: handle backtrace in Ltac2 exceptions *)
-let of_exn c = match fst c with
-| LtacError (kn, c) -> ValOpn (kn, c)
-| _ -> of_ext val_exn c
-
-let to_exn c = match c with
-| ValOpn (kn, c) -> (LtacError (kn, c), Exninfo.null)
-| _ -> to_ext val_exn c
-
-let of_option = function
-| None -> ValInt 0
-| Some c -> ValBlk (0, [|c|])
-
-let to_option = function
-| ValInt 0 -> None
-| ValBlk (0, [|c|]) -> Some c
-| _ -> assert false
-
-let of_pp c = of_ext val_pp c
-let to_pp c = to_ext val_pp c
-
-let of_tuple cl = ValBlk (0, cl)
-let to_tuple = function
-| ValBlk (0, cl) -> cl
-| _ -> assert false
-
-let of_array = of_tuple
-let to_array = to_tuple
 
 let of_name c = match c with
-| Anonymous -> of_option None
-| Name id -> of_option (Some (of_ident id))
+| Anonymous -> Value.of_option None
+| Name id -> Value.of_option (Some (Value.of_ident id))
 
 let of_instance sigma u =
   let u = Univ.Instance.to_array (EConstr.EInstance.kind sigma u) in
-  of_array (Array.map (fun v -> of_ext val_univ v) u)
+  Value.of_array (Array.map (fun v -> Value.of_ext Value.val_univ v) u)
 
 let of_rec_declaration (nas, ts, cs) =
-  (of_array (Array.map of_name nas),
-  of_array (Array.map of_constr ts),
-  of_array (Array.map of_constr cs))
-
-end
+  (Value.of_array (Array.map of_name nas),
+  Value.of_array (Array.map Value.of_constr ts),
+  Value.of_array (Array.map Value.of_constr cs))
 
 let val_valexpr = Val.create "ltac2:valexpr"
 
@@ -395,28 +285,28 @@ let prm_constr_kind : ml_tactic = function
       Value.of_array (Array.map Value.of_constr args)
     |])
   | Sort s ->
-    ValBlk (4, [|Value.of_ext val_sort s|])
+    ValBlk (4, [|Value.of_ext Value.val_sort s|])
   | Cast (c, k, t) ->
     ValBlk (5, [|
       Value.of_constr c;
-      Value.of_ext val_cast k;
+      Value.of_ext Value.val_cast k;
       Value.of_constr t;
     |])
   | Prod (na, t, u) ->
     ValBlk (6, [|
-      Value.of_name na;
+      of_name na;
       Value.of_constr t;
       Value.of_constr u;
     |])
   | Lambda (na, t, c) ->
     ValBlk (7, [|
-      Value.of_name na;
+      of_name na;
       Value.of_constr t;
       Value.of_constr c;
     |])
   | LetIn (na, b, t, c) ->
     ValBlk (8, [|
-      Value.of_name na;
+      of_name na;
       Value.of_constr b;
       Value.of_constr t;
       Value.of_constr c;
@@ -428,18 +318,18 @@ let prm_constr_kind : ml_tactic = function
     |])
   | Const (cst, u) ->
     ValBlk (10, [|
-      Value.of_ext val_constant cst;
-      Value.of_instance sigma u;
+      Value.of_ext Value.val_constant cst;
+      of_instance sigma u;
     |])
   | Ind (ind, u) ->
     ValBlk (11, [|
-      Value.of_ext val_inductive ind;
-      Value.of_instance sigma u;
+      Value.of_ext Value.val_inductive ind;
+      of_instance sigma u;
     |])
   | Construct (cstr, u) ->
     ValBlk (12, [|
-      Value.of_ext val_constructor cstr;
-      Value.of_instance sigma u;
+      Value.of_ext Value.val_constructor cstr;
+      of_instance sigma u;
     |])
   | Case (_, c, t, bl) ->
     ValBlk (13, [|
@@ -448,7 +338,7 @@ let prm_constr_kind : ml_tactic = function
       Value.of_array (Array.map (fun c -> Value.of_constr c) bl);
     |])
   | Fix ((recs, i), def) ->
-    let (nas, ts, cs) = Value.of_rec_declaration def in
+    let (nas, ts, cs) = of_rec_declaration def in
     ValBlk (14, [|
       Value.of_array (Array.map Value.of_int recs);
       Value.of_int i;
@@ -457,7 +347,7 @@ let prm_constr_kind : ml_tactic = function
       cs;
     |])
   | CoFix (i, def) ->
-    let (nas, ts, cs) = Value.of_rec_declaration def in
+    let (nas, ts, cs) = of_rec_declaration def in
     ValBlk (15, [|
       Value.of_int i;
       nas;
@@ -466,7 +356,7 @@ let prm_constr_kind : ml_tactic = function
     |])
   | Proj (p, c) ->
     ValBlk (16, [|
-      Value.of_ext val_projection p;
+      Value.of_ext Value.val_projection p;
       Value.of_constr c;
     |])
   end
@@ -584,7 +474,7 @@ let prm_case : ml_tactic = function
   Proofview.tclCASE (thaw f) >>= begin function
   | Proofview.Next (x, k) ->
     let k = {
-      clos_env = Id.Map.singleton k_var (Value.of_ext val_kont k);
+      clos_env = Id.Map.singleton k_var (Value.of_ext Value.val_kont k);
       clos_var = [Name e_var];
       clos_exp = GTacPrm (prm_apply_kont_h, [GTacVar k_var; GTacVar e_var]);
     } in
@@ -595,7 +485,7 @@ let prm_case : ml_tactic = function
 
 (** 'a kont -> exn -> 'a *)
 let prm_apply_kont : ml_tactic = function
-| [k; e] -> (Value.to_ext val_kont k) (Value.to_exn e)
+| [k; e] -> (Value.to_ext Value.val_kont k) (Value.to_exn e)
 | _ -> assert false
 
 (** int -> int -> (unit -> 'a) -> 'a *)
@@ -768,7 +658,7 @@ let interp_constr flags ist (c, _) =
   Proofview.V82.wrap_exceptions begin fun () ->
     let ist = to_lvar ist in
     let (sigma, c) = understand_ltac flags env sigma ist WithoutTypeConstraint c in
-    let c = Val.Dyn (val_constr, c) in
+    let c = Val.Dyn (Value.val_constr, c) in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
     Proofview.tclUNIT c
   end
@@ -791,7 +681,7 @@ let () =
   define_ml_object Stdarg.wit_open_constr obj
 
 let () =
-  let interp _ id = return (Val.Dyn (val_ident, id)) in
+  let interp _ id = return (Val.Dyn (Value.val_ident, id)) in
   let obj = {
     ml_type = t_ident;
     ml_interp = interp;
@@ -799,7 +689,7 @@ let () =
   define_ml_object Stdarg.wit_ident obj
 
 let () =
-  let interp _ c = return (Val.Dyn (val_pattern, c)) in
+  let interp _ c = return (Val.Dyn (Value.val_pattern, c)) in
   let obj = {
     ml_type = t_pattern;
     ml_interp = interp;
