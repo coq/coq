@@ -264,7 +264,9 @@ let rec translate_mse env mpo inl = function
   |MEident mp1 as me ->
     let mb = match mpo with
       |Some mp -> strengthen_and_subst_mb (lookup_module mp1 env) mp false
-      |None -> lookup_modtype mp1 env
+      |None ->
+        let mt = lookup_modtype mp1 env in
+        module_body_of_type mt.mod_mp mt
     in
     mb.mod_type, me, mb.mod_delta, Univ.ContextSet.empty
   |MEapply (fe,mp1) ->
@@ -283,7 +285,7 @@ let mk_mod mp e ty cst reso =
     mod_delta = reso;
     mod_retroknowledge = [] }
 
-let mk_modtype mp ty cst reso = mk_mod mp Abstract ty cst reso
+let mk_modtype mp ty cst reso = mk_mod mp () ty cst reso
 
 let rec translate_mse_funct env mpo inl mse = function
   |[] ->

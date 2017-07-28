@@ -93,17 +93,19 @@ let strengthen_const mp_from l cb resolver =
 
 let rec strengthen_mod mp_from mp_to mb =
   if Declarations.mp_in_delta mb.mod_mp mb.mod_delta then mb
-  else strengthen_body true mp_from mp_to mb
+  else
+    let mk_expr mp_to = Algebraic (NoFunctor (MEident mp_to)) in
+    strengthen_body mk_expr mp_from mp_to mb
 
-and strengthen_body is_mod mp_from mp_to mb =
+and strengthen_body : 'a. (_ -> 'a) -> _ -> _ -> 'a generic_module_body -> 'a generic_module_body =
+  fun mk_expr mp_from mp_to mb ->
   match mb.mod_type with
   | MoreFunctor _ -> mb
   | NoFunctor sign ->
     let resolve_out,sign_out = strengthen_sig mp_from sign mp_to mb.mod_delta
     in
     { mb with
-      mod_expr =
-        (if is_mod then Algebraic (NoFunctor (MEident mp_to)) else Abstract);
+      mod_expr = mk_expr mp_to;
       mod_type = NoFunctor sign_out;
       mod_delta = resolve_out }
 
@@ -130,7 +132,7 @@ and strengthen_sig mp_from sign mp_to resolver =
 	resolve_out,item::rest'
 
 let strengthen mtb mp =
-  strengthen_body false mtb.mod_mp mp mtb
+  strengthen_body ignore mtb.mod_mp mp mtb
 
 let subst_and_strengthen mb mp =
   strengthen_mod mb.mod_mp mp (subst_module (map_mp mb.mod_mp mp) mb)
@@ -138,7 +140,7 @@ let subst_and_strengthen mb mp =
 let module_type_of_module mp mb =
   let mtb =
     { mb with
-      mod_expr = Abstract;
+      mod_expr = ();
       mod_type_alg = None;
       mod_retroknowledge = [] }
   in

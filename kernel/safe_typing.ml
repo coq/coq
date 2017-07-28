@@ -574,7 +574,7 @@ let add_mind dir l mie senv =
 let add_modtype l params_mte inl senv =
   let mp = MPdot(senv.modpath, l) in
   let mtb = Mod_typing.translate_modtype senv.env mp inl params_mte  in
-  let mtb = Declareops.hcons_module_body mtb in
+  let mtb = Declareops.hcons_module_type mtb in
   let senv' = add_field (l,SFBmodtype mtb) MT senv in
   mp, senv'
 
@@ -732,7 +732,7 @@ let end_module l restype senv =
 
 let build_mtb mp sign cst delta =
   { mod_mp = mp;
-    mod_expr = Abstract;
+    mod_expr = ();
     mod_type = sign;
     mod_type_alg = None;
     mod_constraints = cst;

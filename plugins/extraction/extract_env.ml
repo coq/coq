@@ -281,7 +281,8 @@ and extract_msignature_spec env mp1 reso = function
       MTfunsig (mbid, extract_mbody_spec env mp mtb,
 		extract_msignature_spec env' mp1 reso me)
 
-and extract_mbody_spec env mp mb = match mb.mod_type_alg with
+and extract_mbody_spec : 'a. _ -> _ -> 'a generic_module_body -> _ =
+  fun env mp mb -> match mb.mod_type_alg with
   | Some ty -> extract_mexpression_spec env mp (mb.mod_type,ty)
   | None -> extract_msignature_spec env mp mb.mod_delta mb.mod_type
 

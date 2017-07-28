@@ -318,7 +318,7 @@ let rec hcons_structure_field_body sb = match sb with
   let mb' = hcons_module_body mb in
   if mb == mb' then sb else SFBmodule mb'
 | SFBmodtype mb ->
-  let mb' = hcons_module_body mb in
+  let mb' = hcons_module_type mb in
   if mb == mb' then sb else SFBmodtype mb'
 
 and hcons_structure_body sb =
@@ -331,10 +331,10 @@ and hcons_structure_body sb =
   List.smartmap map sb
 
 and hcons_module_signature ms =
-  hcons_functorize hcons_module_body hcons_structure_body hcons_module_signature ms
+  hcons_functorize hcons_module_type hcons_structure_body hcons_module_signature ms
 
 and hcons_module_expression me =
-  hcons_functorize hcons_module_body hcons_module_alg_expr hcons_module_expression me
+  hcons_functorize hcons_module_type hcons_module_alg_expr hcons_module_expression me
 
 and hcons_module_implementation mip = match mip with
 | Abstract -> Abstract
@@ -346,9 +346,11 @@ and hcons_module_implementation mip = match mip with
   if ms == ms' then mip else Struct ms
 | FullStruct -> FullStruct
 
-and hcons_module_body mb =
+and hcons_generic_module_body :
+  'a. ('a -> 'a) -> 'a generic_module_body -> 'a generic_module_body =
+  fun hcons_impl mb ->
   let mp' = mb.mod_mp in
-  let expr' = hcons_module_implementation mb.mod_expr in
+  let expr' = hcons_impl mb.mod_expr in
   let type' = hcons_module_signature mb.mod_type in
   let type_alg' = mb.mod_type_alg in
   let constraints' = Univ.hcons_universe_context_set mb.mod_constraints in
@@ -373,3 +375,9 @@ and hcons_module_body mb =
     mod_delta = delta';
     mod_retroknowledge = retroknowledge';
   }
+
+and hcons_module_body mb =
+  hcons_generic_module_body hcons_module_implementation mb
+
+and hcons_module_type mb =
+  hcons_generic_module_body (fun () -> ()) mb

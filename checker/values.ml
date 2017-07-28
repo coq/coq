@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 c802f941f368bedd96e931cda0559d67  checker/cic.mli
+MD5 6bfeaec4872c9636faed4967db1502a0 checker/cic.mli
 
 *)
 
@@ -54,6 +54,7 @@ let v_enum name n = Sum(name,n,[||])
 
 let v_pair v1 v2 = v_tuple "*" [|v1; v2|]
 let v_bool = v_enum "bool" 2
+let v_unit = v_enum "unit" 1
 let v_ref v = v_tuple "ref" [|v|]
 
 let v_set v =
@@ -311,7 +312,7 @@ and v_impl =
   Sum ("module_impl",2, (* Abstract, FullStruct *)
   [|[|v_mexpr|];  (* Algebraic *)
     [|v_sign|]|])  (* Struct *)
-and v_noimpl = v_enum "no_impl" 1 (* Abstract is mandatory for mtb *)
+and v_noimpl = v_unit
 and v_module =
   Tuple ("module_body",
          [|v_mp;v_impl;v_sign;Opt v_mexpr;v_context_set;v_resolver;Any|])
