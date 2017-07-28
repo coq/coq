@@ -67,13 +67,13 @@ let to_string = function
 | ValStr s -> s
 | _ -> assert false
 
-let rec of_list = function
+let rec of_list f = function
 | [] -> ValInt 0
-| x :: l -> ValBlk (0, [| x; of_list l |])
+| x :: l -> ValBlk (0, [| f x; of_list f l |])
 
-let rec to_list = function
+let rec to_list f = function
 | ValInt 0 -> []
-| ValBlk (0, [|v; vl|]) -> v :: to_list vl
+| ValBlk (0, [|v; vl|]) -> f v :: to_list f vl
 | _ -> assert false
 
 let of_ext tag c =
@@ -101,13 +101,13 @@ let to_exn c = match c with
 | ValOpn (kn, c) -> (LtacError (kn, c), Exninfo.null)
 | _ -> to_ext val_exn c
 
-let of_option = function
+let of_option f = function
 | None -> ValInt 0
-| Some c -> ValBlk (0, [|c|])
+| Some c -> ValBlk (0, [|f c|])
 
-let to_option = function
+let to_option f = function
 | ValInt 0 -> None
-| ValBlk (0, [|c|]) -> Some c
+| ValBlk (0, [|c|]) -> Some (f c)
 | _ -> assert false
 
 let of_pp c = of_ext val_pp c
@@ -118,5 +118,7 @@ let to_tuple = function
 | ValBlk (0, cl) -> cl
 | _ -> assert false
 
-let of_array = of_tuple
-let to_array = to_tuple
+let of_array f vl = ValBlk (0, Array.map f vl)
+let to_array f = function
+| ValBlk (0, vl) -> Array.map f vl
+| _ -> assert false

@@ -112,45 +112,44 @@ let () = define_prim0 "tac_split" (Tactics.split_with_bindings false [NoBindings
 let () = define_prim0 "tac_esplit" (Tactics.split_with_bindings true [NoBindings])
 
 let () = define_prim1 "tac_rename" begin fun ids ->
-  let ids = Value.to_list ids in
   let map c = match Value.to_tuple c with
   | [|x; y|] -> (Value.to_ident x, Value.to_ident y)
   | _ -> assert false
   in
-  let ids = List.map map ids in
+  let ids = Value.to_list map ids in
   Tactics.rename_hyp ids
 end
 
 let () = define_prim1 "tac_revert" begin fun ids ->
-  let ids = List.map Value.to_ident (Value.to_list ids) in
+  let ids = Value.to_list Value.to_ident ids in
   Tactics.revert ids
 end
 
 let () = define_prim0 "tac_admit" Proofview.give_up
 
 let () = define_prim2 "tac_fix" begin fun idopt n ->
-  let idopt = Option.map Value.to_ident (Value.to_option idopt) in
+  let idopt = Value.to_option Value.to_ident idopt in
   let n = Value.to_int n in
   Tactics.fix idopt n
 end
 
 let () = define_prim1 "tac_cofix" begin fun idopt ->
-  let idopt = Option.map Value.to_ident (Value.to_option idopt) in
+  let idopt = Value.to_option Value.to_ident idopt in
   Tactics.cofix idopt
 end
 
 let () = define_prim1 "tac_clear" begin fun ids ->
-  let ids = List.map Value.to_ident (Value.to_list ids) in
+  let ids = Value.to_list Value.to_ident ids in
   Tactics.clear ids
 end
 
 let () = define_prim1 "tac_keep" begin fun ids ->
-  let ids = List.map Value.to_ident (Value.to_list ids) in
+  let ids = Value.to_list Value.to_ident ids in
   Tactics.keep ids
 end
 
 let () = define_prim1 "tac_clearbody" begin fun ids ->
-  let ids = List.map Value.to_ident (Value.to_list ids) in
+  let ids = Value.to_list Value.to_ident ids in
   Tactics.clear_body ids
 end
 
@@ -161,7 +160,7 @@ let () = define_prim1 "tac_absurd" begin fun c ->
 end
 
 let () = define_prim1 "tac_subst" begin fun ids ->
-  let ids = List.map Value.to_ident (Value.to_list ids) in
+  let ids = Value.to_list Value.to_ident ids in
   Equality.subst ids
 end
 

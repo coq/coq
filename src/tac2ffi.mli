@@ -32,8 +32,8 @@ val to_char : valexpr -> char
 val of_string : string -> valexpr
 val to_string : valexpr -> string
 
-val of_list : valexpr list -> valexpr
-val to_list : valexpr -> valexpr list
+val of_list : ('a -> valexpr) -> 'a list -> valexpr
+val to_list : (valexpr -> 'a) -> valexpr -> 'a list
 
 val of_constr : EConstr.t -> valexpr
 val to_constr : valexpr -> EConstr.t
@@ -44,14 +44,14 @@ val to_exn : valexpr -> Exninfo.iexn
 val of_ident : Id.t -> valexpr
 val to_ident : valexpr -> Id.t
 
-val of_array : valexpr array -> valexpr
-val to_array : valexpr -> valexpr array
+val of_array : ('a -> valexpr) -> 'a array -> valexpr
+val to_array : (valexpr -> 'a) -> valexpr -> 'a array
 
 val of_tuple : valexpr array -> valexpr
 val to_tuple : valexpr -> valexpr array
 
-val of_option : valexpr option -> valexpr
-val to_option : valexpr -> valexpr option
+val of_option : ('a -> valexpr) -> 'a option -> valexpr
+val to_option : (valexpr -> 'a) -> valexpr -> 'a option
 
 val of_pattern : Pattern.constr_pattern -> valexpr
 val to_pattern : valexpr -> Pattern.constr_pattern

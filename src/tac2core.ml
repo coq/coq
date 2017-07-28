@@ -48,17 +48,17 @@ open Core
 let v_unit = ValInt 0
 
 let of_name c = match c with
-| Anonymous -> Value.of_option None
-| Name id -> Value.of_option (Some (Value.of_ident id))
+| Anonymous -> Value.of_option Value.of_ident None
+| Name id -> Value.of_option Value.of_ident (Some id)
 
 let of_instance sigma u =
   let u = Univ.Instance.to_array (EConstr.EInstance.kind sigma u) in
-  Value.of_array (Array.map (fun v -> Value.of_ext Value.val_univ v) u)
+  Value.of_array (fun v -> Value.of_ext Value.val_univ v) u
 
 let of_rec_declaration (nas, ts, cs) =
-  (Value.of_array (Array.map of_name nas),
-  Value.of_array (Array.map Value.of_constr ts),
-  Value.of_array (Array.map Value.of_constr cs))
+  (Value.of_array of_name nas,
+  Value.of_array Value.of_constr ts,
+  Value.of_array Value.of_constr cs)
 
 let val_valexpr = Val.create "ltac2:valexpr"
 
@@ -183,11 +183,8 @@ let prm_ident_to_string : ml_tactic = function
 let prm_ident_of_string : ml_tactic = function
 | [s] ->
   let s = Value.to_string s in
-  let id =
-    try Value.of_option (Some (Value.of_ident (Id.of_string s)))
-    with _ -> Value.of_option None
-  in
-  return id
+  let id = try Some (Id.of_string s) with _ -> None in
+  return (Value.of_option Value.of_ident id)
 | _ -> assert false
 
 (** Int *)
@@ -282,7 +279,7 @@ let prm_constr_kind : ml_tactic = function
   | Evar (evk, args) ->
     ValBlk (3, [|
       Value.of_int (Evar.repr evk);
-      Value.of_array (Array.map Value.of_constr args)
+      Value.of_array Value.of_constr args;
     |])
   | Sort s ->
     ValBlk (4, [|Value.of_ext Value.val_sort s|])
@@ -314,7 +311,7 @@ let prm_constr_kind : ml_tactic = function
   | App (c, cl) ->
     ValBlk (9, [|
       Value.of_constr c;
-      Value.of_array (Array.map Value.of_constr cl)
+      Value.of_array Value.of_constr cl;
     |])
   | Const (cst, u) ->
     ValBlk (10, [|
@@ -335,12 +332,12 @@ let prm_constr_kind : ml_tactic = function
     ValBlk (13, [|
       Value.of_constr c;
       Value.of_constr t;
-      Value.of_array (Array.map (fun c -> Value.of_constr c) bl);
+      Value.of_array Value.of_constr bl;
     |])
   | Fix ((recs, i), def) ->
     let (nas, ts, cs) = of_rec_declaration def in
     ValBlk (14, [|
-      Value.of_array (Array.map Value.of_int recs);
+      Value.of_array Value.of_int recs;
       Value.of_int i;
       nas;
       ts;
@@ -378,7 +375,7 @@ let prm_pattern_matches : ml_tactic = function
     | Some ans ->
       let ans = Id.Map.bindings ans in
       let of_pair (id, c) = Value.of_tuple [| Value.of_ident id; Value.of_constr c |] in
-      return (Value.of_list (List.map of_pair ans))
+      return (Value.of_list of_pair ans)
     end
   end
 | _ -> assert false
@@ -393,7 +390,7 @@ let prm_pattern_matches_subterm : ml_tactic = function
   | IStream.Cons ({ m_sub = (_, sub); m_ctx }, s) ->
     let ans = Id.Map.bindings sub in
     let of_pair (id, c) = Value.of_tuple [| Value.of_ident id; Value.of_constr c |] in
-    let ans = Value.of_tuple [| Value.of_constr m_ctx; Value.of_list (List.map of_pair ans) |] in
+    let ans = Value.of_tuple [| Value.of_constr m_ctx; Value.of_list of_pair ans |] in
     Proofview.tclOR (return ans) (fun _ -> of_ans s)
   in
   pf_apply begin fun env sigma ->
@@ -441,19 +438,16 @@ let prm_once : ml_tactic = function
 (** (unit -> unit) list -> unit *)
 let prm_dispatch : ml_tactic = function
 | [l] ->
-  let l = Value.to_list l in
-  let l = List.map (fun f -> Proofview.tclIGNORE (thaw f)) l in
+  let l = Value.to_list (fun f -> Proofview.tclIGNORE (thaw f)) l in
   Proofview.tclDISPATCH l >>= fun () -> return v_unit
 | _ -> assert false
 
 (** (unit -> unit) list -> (unit -> unit) -> (unit -> unit) list -> unit *)
 let prm_extend : ml_tactic = function
 | [lft; tac; rgt] ->
-  let lft = Value.to_list lft in
-  let lft = List.map (fun f -> Proofview.tclIGNORE (thaw f)) lft in
+  let lft = Value.to_list (fun f -> Proofview.tclIGNORE (thaw f)) lft in
   let tac = Proofview.tclIGNORE (thaw tac) in
-  let rgt = Value.to_list rgt in
-  let rgt = List.map (fun f -> Proofview.tclIGNORE (thaw f)) rgt in
+  let rgt = Value.to_list (fun f -> Proofview.tclIGNORE (thaw f)) rgt in
   Proofview.tclEXTEND lft tac rgt >>= fun () -> return v_unit
 | _ -> assert false
 
@@ -540,18 +534,17 @@ let prm_hyps : ml_tactic = function
 | [_] ->
   pf_apply begin fun env _ ->
     let open Context.Named.Declaration in
-    let hyps = Environ.named_context env in
+    let hyps = List.rev (Environ.named_context env) in
     let map = function
     | LocalAssum (id, t) ->
       let t = EConstr.of_constr t in
-      Value.of_tuple [|Value.of_ident id; Value.of_option None; Value.of_constr t|]
+      Value.of_tuple [|Value.of_ident id; Value.of_option Value.of_constr None; Value.of_constr t|]
     | LocalDef (id, c, t) ->
       let c = EConstr.of_constr c in
       let t = EConstr.of_constr t in
-      Value.of_tuple [|Value.of_ident id; Value.of_option (Some (Value.of_constr c)); Value.of_constr t|]
+      Value.of_tuple [|Value.of_ident id; Value.of_option Value.of_constr (Some c); Value.of_constr t|]
     in
-    let hyps = List.rev_map map hyps in
-    return (Value.of_list hyps)
+    return (Value.of_list map hyps)
   end
 | _ -> assert false
 
