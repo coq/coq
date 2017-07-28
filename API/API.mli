@@ -1716,6 +1716,7 @@ module Locus :
 sig
   type 'a occurrences_gen =
   | AllOccurrences
+  | AtLeastOneOccurrence
   | AllOccurrencesBut of 'a list (** non-empty *)
   | NoOccurrences
   | OnlyOccurrences of 'a list (** non-empty *)
@@ -3216,6 +3217,7 @@ sig
   val nowhere : 'a Locus.clause_expr
   val allHypsAndConcl : 'a Locus.clause_expr
   val is_nowhere : 'a Locus.clause_expr -> bool
+  val is_all_occurrences : 'a Locus.occurrences_gen -> bool
   val occurrences_map :
     ('a list -> 'b list) -> 'a Locus.occurrences_gen -> 'b Locus.occurrences_gen
   val convert_occs : Locus.occurrences -> bool * int list
