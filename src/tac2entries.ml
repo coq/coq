@@ -266,7 +266,7 @@ let inline_rec_tactic tactics =
     in
     (** Fresh variables to abstract over the function patterns *)
     let _, vars = List.fold_left fold_var (avoid, []) pat in
-    let map_body ((loc, id), _, e) = (loc, Name id), None, e in
+    let map_body ((loc, id), _, e) = CPatVar (loc, Name id), None, e in
     let bnd = List.map map_body tactics in
     let pat_of_id (loc, id) =
       (CPatVar (loc, Name id), None)
@@ -552,7 +552,7 @@ let perform_notation syn st =
   let mk loc args =
     let map (na, e) =
       let loc = loc_of_tacexpr e in
-      (Loc.tag ~loc na, None, e)
+      (CPatVar (Loc.tag ~loc na), None, e)
     in
     let bnd = List.map map args in
     CTacLet (loc, false, bnd, syn.synext_exp)

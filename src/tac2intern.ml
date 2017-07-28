@@ -590,12 +590,52 @@ let get_pattern_kind env pl = match pl with
 (** Internalization *)
 
 (** Used to generate a fresh tactic variable for pattern-expansion *)
-let fresh_var env =
+let fresh_var avoid =
   let bad id =
-    Id.Map.mem id env.env_var ||
+    Id.Set.mem id avoid ||
     (try ignore (locate_ltac (qualid_of_ident id)); true with Not_found -> false)
   in
   Namegen.next_ident_away_from (Id.of_string "p") bad
+
+let add_name accu = function
+| Name id -> Id.Set.add id accu
+| Anonymous -> accu
+
+let rec ids_of_pattern accu = function
+| CPatVar (_, Anonymous) -> accu
+| CPatVar (_, Name id) -> Id.Set.add id accu
+| CPatRef (_, _, pl) ->
+  List.fold_left ids_of_pattern accu pl
+
+let loc_of_relid = function
+| RelId (loc, _) -> Option.default dummy_loc loc
+| AbsKn _ -> dummy_loc
+
+(** Expand pattern: [p => t] becomes [x => match x with p => t end] *)
+let expand_pattern avoid bnd =
+  let fold (avoid, bnd) (pat, t) =
+    let na, expand = match pat with
+    | CPatVar (_, na) ->
+      (** Don't expand variable patterns *)
+      na, None
+    | _ ->
+      let loc = loc_of_patexpr pat in
+      let id = fresh_var avoid in
+      let qid = RelId (Loc.tag ~loc (qualid_of_ident id)) in
+      Name id, Some qid
+    in
+    let avoid = ids_of_pattern avoid pat in
+    let avoid = add_name avoid na in
+    (avoid, (na, pat, expand) :: bnd)
+  in
+  let (_, bnd) = List.fold_left fold (avoid, []) bnd in
+  let fold e (na, pat, expand) = match expand with
+  | None -> e
+  | Some qid -> CTacCse (loc_of_relid qid, CTacRef qid, [pat, e])
+  in
+  let expand e = List.fold_left fold e bnd in
+  let nas = List.rev_map (fun (na, _, _) -> na) bnd in
+  (nas, expand)
 
 let rec intern_rec env = function
 | CTacAtm (_, atm) -> intern_atm env atm
@@ -612,35 +652,15 @@ let rec intern_rec env = function
   let kn = get_constructor env qid in
   intern_constructor env loc kn []
 | CTacFun (loc, bnd, e) ->
-  (** Expand pattern: [fun p => t] becomes [fun x => match x with p => t end] *)
-  let fold (env, bnd, tl) (pat, t) =
-    let t = match t with
-    | None -> GTypVar (fresh_id env)
-    | Some t -> intern_type env t
-    in
-    let na, expand = match pat with
-    | CPatVar (_, na) ->
-      (** Don't expand variable patterns *)
-      na, None
-    | _ ->
-      let loc = loc_of_patexpr pat in
-      let id = fresh_var env in
-      let qid = RelId (Loc.tag ~loc (qualid_of_ident id)) in
-      Name id, Some qid
-    in
-    let env = push_name na (monomorphic t) env in
-    (env, (na, pat, expand) :: bnd, t :: tl)
+  let map (_, t) = match t with
+  | None -> GTypVar (fresh_id env)
+  | Some t -> intern_type env t
   in
-  let (env, bnd, tl) = List.fold_left fold (env, [], []) bnd in
-  let fold e (na, pat, expand) = match expand with
-  | None -> e
-  | Some qid ->
-    CTacCse (loc, CTacRef qid, [pat, e])
-  in
-  let e = List.fold_left fold e bnd in
-  let nas = List.rev_map (fun (na, _, _) -> na) bnd in
-  let (e, t) = intern_rec env e in
-  let t = List.fold_left (fun accu t -> GTypArrow (t, accu)) t tl in
+  let tl = List.map map bnd in
+  let (nas, exp) = expand_pattern (Id.Map.domain env.env_var) bnd in
+  let env = List.fold_left2 (fun env na t -> push_name na (monomorphic t) env) env nas tl in
+  let (e, t) = intern_rec env (exp e) in
+  let t = List.fold_right (fun t accu -> GTypArrow (t, accu)) tl t in
   (GTacFun (nas, e), t)
 | CTacApp (loc, CTacCst (_, qid), args) ->
   let kn = get_constructor env qid in
@@ -656,33 +676,20 @@ let rec intern_rec env = function
   let (args, t) = List.fold_right fold args ([], []) in
   let ret = unify_arrow ~loc env ft t in
   (GTacApp (f, args), ret)
-| CTacLet (loc, false, el, e) ->
-  let fold accu ((loc, na), _, _) = match na with
-  | Anonymous -> accu
-  | Name id ->
-    if Id.Set.mem id accu then
-      user_err ?loc (str "Variable " ++ Id.print id ++ str " is bound several \
+| CTacLet (loc, is_rec, el, e) ->
+  let fold accu (pat, _, e) =
+    let ids = ids_of_pattern Id.Set.empty pat in
+    let common = Id.Set.inter ids accu in
+    if Id.Set.is_empty common then Id.Set.union ids accu
+    else
+      let id = Id.Set.choose common in
+      let loc = loc_of_patexpr pat in
+      user_err ~loc (str "Variable " ++ Id.print id ++ str " is bound several \
         times in this matching")
-    else Id.Set.add id accu
   in
-  let _ = List.fold_left fold Id.Set.empty el in
-  let fold ((loc, na), tc, e) (el, p) =
-    let (e, t) = intern_rec env e in
-    let () = match tc with
-    | None -> ()
-    | Some tc ->
-      let tc = intern_type env tc in
-      unify ?loc env t tc
-    in
-    let t = if is_value e then abstract_var env t else monomorphic t in
-    ((na, e) :: el), ((na, t) :: p)
-  in
-  let (el, p) = List.fold_right fold el ([], []) in
-  let nenv = List.fold_left (fun accu (na, t) -> push_name na t env) env p in
-  let (e, t) = intern_rec nenv e in
-  (GTacLet (false, el, e), t)
-| CTacLet (loc, true, el, e) ->
-  intern_let_rec env loc el e
+  let ids = List.fold_left fold Id.Set.empty el in
+  if is_rec then intern_let_rec env loc ids el e
+  else intern_let env loc ids el e
 | CTacArr (loc, []) ->
   let id = fresh_id env in
   (GTacArr [], GTypRef (Other t_int, [GTypVar id]))
@@ -760,17 +767,38 @@ and intern_rec_with_constraint env e exp =
   let () = unify ~loc env t exp in
   e
 
-and intern_let_rec env loc el e =
-  let fold accu ((loc, na), _, _) = match na with
-  | Anonymous -> accu
-  | Name id ->
-    if Id.Set.mem id accu then
-      user_err ?loc (str "Variable " ++ Id.print id ++ str " is bound several \
-        times in this matching")
-    else Id.Set.add id accu
+and intern_let env loc ids el e =
+  let avoid = Id.Set.union ids (Id.Map.domain env.env_var) in
+  let fold (pat, t, e) (avoid, accu) =
+    let nas, exp = expand_pattern avoid [pat, t] in
+    let na = match nas with [x] -> x | _ -> assert false in
+    let avoid = List.fold_left add_name avoid nas in
+    (avoid, (na, exp, t, e) :: accu)
   in
-  let _ = List.fold_left fold Id.Set.empty el in
-  let map env ((loc, na), t, e) =
+  let (_, el) = List.fold_right fold el (avoid, []) in
+  let fold (na, exp, tc, e) (body, el, p) =
+    let (e, t) = match tc with
+    | None -> intern_rec env e
+    | Some tc ->
+      let tc = intern_type env tc in
+      (intern_rec_with_constraint env e tc, tc)
+    in
+    let t = if is_value e then abstract_var env t else monomorphic t in
+    (exp body, (na, e) :: el, (na, t) :: p)
+  in
+  let (e, el, p) = List.fold_right fold el (e, [], []) in
+  let env = List.fold_left (fun accu (na, t) -> push_name na t accu) env p in
+  let (e, t) = intern_rec env e in
+  (GTacLet (false, el, e), t)
+
+and intern_let_rec env loc ids el e =
+  let map env (pat, t, e) =
+    let loc, na = match pat with
+    | CPatVar na -> na
+    | CPatRef _ ->
+      let loc = loc_of_patexpr pat in
+      user_err ~loc (str "This kind of pattern is forbidden in let-rec bindings")
+    in
     let id = fresh_id env in
     let env = push_name na (monomorphic (GTypVar id)) env in
     (env, (loc, na, t, e, id))
@@ -1116,10 +1144,6 @@ let intern_open_type t =
 
 (** Globalization *)
 
-let add_name accu = function
-| Name id -> Id.Set.add id accu
-| Anonymous -> accu
-
 let get_projection0 var = match var with
 | RelId (loc, qid) ->
   let kn = try Tac2env.locate_projection qid with Not_found ->
@@ -1127,12 +1151,6 @@ let get_projection0 var = match var with
   in
   kn
 | AbsKn kn -> kn
-
-let rec ids_of_pattern accu = function
-| CPatVar (_, Anonymous) -> accu
-| CPatVar (_, Name id) -> Id.Set.add id accu
-| CPatRef (_, _, pl) ->
-  List.fold_left ids_of_pattern accu pl
 
 let rec globalize ids e = match e with
 | CTacAtm _ -> e
@@ -1160,7 +1178,7 @@ let rec globalize ids e = match e with
   let el = List.map (fun e -> globalize ids e) el in
   CTacApp (loc, e, el)
 | CTacLet (loc, isrec, bnd, e) ->
-  let fold accu ((_, na), _, _) = add_name accu na in
+  let fold accu (pat, _, _) = ids_of_pattern accu pat in
   let ext = List.fold_left fold Id.Set.empty bnd in
   let eids = Id.Set.union ext ids in
   let e = globalize eids e in

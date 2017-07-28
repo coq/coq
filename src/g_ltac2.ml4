@@ -117,10 +117,20 @@ GEXTEND Gram
     ] ]
   ;
   let_clause:
-    [ [ id = binder; ":="; te = tac2expr ->
-         (id, None, te)
-      | id = binder; args = LIST1 input_fun; ":="; te = tac2expr ->
-         (id, None, CTacFun (!@loc, args, te)) ] ]
+    [ [ binder = let_binder; ":="; te = tac2expr ->
+        let (pat, fn) = binder in
+        let te = match fn with None -> te | Some args -> CTacFun (!@loc, args, te) in
+        (pat, None, te)
+    ] ]
+  ;
+  let_binder:
+    [ [ pats = LIST1 input_fun ->
+        match pats with
+        | [CPatVar _ as pat, None] -> (pat, None)
+        | (CPatVar (_, Name id) as pat, None) :: args -> (pat, Some args)
+        | [pat, None] -> (pat, None)
+        | _ -> CErrors.user_err ~loc:!@loc (str "Invalid pattern")
+    ] ]
   ;
   tac2type:
     [ "5" RIGHTA
