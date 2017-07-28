@@ -5,7 +5,7 @@ Polymorphic Cumulative Record R1 := { r1 : T1 }.
 Fail Monomorphic Cumulative Inductive R2 := {r2 : T1}.
 
 Set Universe Polymorphism.
-Set Inductive Cumulativity.
+Set Polymorphic Inductive Cumulativity.
 Set Printing Universes.
 
 Inductive List (A: Type) := nil | cons : A -> List A -> List A.

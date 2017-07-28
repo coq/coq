@@ -1369,10 +1369,10 @@ let _ =
 let _ =
   declare_bool_option
     { optdepr  = false;
-      optname  = "inductive cumulativity";
-      optkey   = ["Inductive"; "Cumulativity"];
-      optread  = Flags.is_inductive_cumulativity;
-      optwrite = Flags.make_inductive_cumulativity }
+      optname  = "Polymorphic inductive cumulativity";
+      optkey   = ["Polymorphic"; "Inductive"; "Cumulativity"];
+      optread  = Flags.is_polymorphic_inductive_cumulativity;
+      optwrite = Flags.make_polymorphic_inductive_cumulativity }
 
 let _ =
   declare_int_option

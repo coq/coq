@@ -169,7 +169,7 @@ GEXTEND Gram
 	  let cum =
 	    match cum with
 	      Some b -> b
-	    | None -> Flags.is_inductive_cumulativity ()
+	    | None -> Flags.is_polymorphic_inductive_cumulativity ()
 	  in
           VernacInductive (cum, priv,f,indl)
       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
