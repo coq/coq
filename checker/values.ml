@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 6bfeaec4872c9636faed4967db1502a0 checker/cic.mli
+MD5 62a4037e9e584d508909d631c5e8a759 checker/cic.mli
 
 *)
 
@@ -318,7 +318,7 @@ and v_module =
          [|v_mp;v_impl;v_sign;Opt v_mexpr;v_context_set;v_resolver;Any|])
 and v_modtype =
   Tuple ("module_type_body",
-         [|v_mp;v_noimpl;v_sign;Opt v_mexpr;v_context_set;v_resolver;Any|])
+         [|v_mp;v_noimpl;v_sign;Opt v_mexpr;v_context_set;v_resolver;v_unit|])
 
 (** kernel/safe_typing *)
 

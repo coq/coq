@@ -393,7 +393,7 @@ and check_modtypes env mtb1 mtb2 subst1 subst2 equiv =
 			  mod_type = body_t1;
 			  mod_type_alg = None;
 			  mod_constraints = mtb1.mod_constraints;
-			  mod_retroknowledge = [];
+			  mod_retroknowledge = ModBodyRK [];
 			  mod_delta = mtb1.mod_delta} env
 	  in
 	  check_structure env body_t1 body_t2 equiv

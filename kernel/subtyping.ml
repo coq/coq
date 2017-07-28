@@ -416,7 +416,7 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
 	     mod_type = subst_signature subst1 body_t1;
 	     mod_type_alg = None;
 	     mod_constraints = mtb1.mod_constraints;
-	     mod_retroknowledge = [];
+	     mod_retroknowledge = ModBodyRK [];
 	     mod_delta = mtb1.mod_delta} env
 	in
 	check_structure cst env body_t1 body_t2 equiv subst1 subst2

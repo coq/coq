@@ -1287,7 +1287,7 @@ sig
                          mod_type_alg : module_expression option;
                          mod_constraints : Univ.ContextSet.t;
                          mod_delta : Mod_subst.delta_resolver;
-                         mod_retroknowledge : Retroknowledge.action list
+                         mod_retroknowledge : 'a module_retroknowledge;
                        }
    and module_signature = (module_type_body,structure_body) functorize
    and module_body = module_implementation generic_module_body
@@ -1298,6 +1298,10 @@ sig
                             | SFBmind of mutual_inductive_body
                             | SFBmodule of module_body
                             | SFBmodtype of module_type_body
+  and _ module_retroknowledge =
+  | ModBodyRK :
+    Retroknowledge.action list -> module_implementation module_retroknowledge
+  | ModTypeRK : unit module_retroknowledge
 end
 
 module Declareops :

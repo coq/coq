@@ -49,7 +49,7 @@ let destr_functor = function
   | NoFunctor _ -> error_not_a_functor ()
 
 let module_body_of_type mp mtb =
-  { mtb with mod_mp = mp; mod_expr = Abstract }
+  { mtb with mod_mp = mp; mod_expr = Abstract; mod_retroknowledge = ModBodyRK [] }
 
 let rec add_structure mp sign resolver env =
   let add_one env (l,elem) =
@@ -142,7 +142,7 @@ let module_type_of_module mp mb =
     { mb with
       mod_expr = ();
       mod_type_alg = None;
-      mod_retroknowledge = [] }
+      mod_retroknowledge = ModTypeRK }
   in
   match mp with
   | Some mp -> strengthen {mtb with mod_mp = mp} mp

@@ -75,7 +75,7 @@ let mk_mtb mp sign delta =
     mod_type_alg = None;
     mod_constraints = Univ.ContextSet.empty;
     mod_delta = delta;
-    mod_retroknowledge = []; }
+    mod_retroknowledge = ModTypeRK; }
 
 let rec check_module env mp mb =
   let (_:module_signature) =

@@ -283,9 +283,11 @@ let mk_mod mp e ty cst reso =
     mod_type_alg = None;
     mod_constraints = cst;
     mod_delta = reso;
-    mod_retroknowledge = [] }
+    mod_retroknowledge = ModBodyRK []; }
 
-let mk_modtype mp ty cst reso = mk_mod mp () ty cst reso
+let mk_modtype mp ty cst reso =
+  let mb = mk_mod mp Abstract ty cst reso in
+  { mb with mod_expr = (); mod_retroknowledge = ModTypeRK }
 
 let rec translate_mse_funct env mpo inl mse = function
   |[] ->
@@ -321,6 +323,7 @@ let finalize_module env mp (sign,alg,reso,cst) restype = match restype with
     { res_mtb with
       mod_mp = mp;
       mod_expr = impl;
+      mod_retroknowledge = ModBodyRK [];
       (** cst from module body typing,
           cst' from subtyping,
           constraints from module type. *)

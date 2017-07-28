@@ -259,7 +259,7 @@ and 'a generic_module_body =
       set of all universes constraints in the module  *)
     mod_delta : Mod_subst.delta_resolver; (**
       quotiented set of equivalent constants and inductive names *)
-    mod_retroknowledge : Retroknowledge.action list }
+    mod_retroknowledge : 'a module_retroknowledge }
 
 (** For a module, there are five possible situations:
     - [Declare Module M : T] then [mod_expr = Abstract; mod_type_alg = Some T]
@@ -277,6 +277,11 @@ and module_body = module_implementation generic_module_body
     if it has been built interactively. *)
 
 and module_type_body = unit generic_module_body
+
+and _ module_retroknowledge =
+| ModBodyRK :
+  Retroknowledge.action list -> module_implementation module_retroknowledge
+| ModTypeRK : unit module_retroknowledge
 
 (** Extra invariants :
 

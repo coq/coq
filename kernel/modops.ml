@@ -143,10 +143,12 @@ let rec functor_iter fty f0 = function
 (** {6 Misc operations } *)
 
 let module_type_of_module mb =
-  { mb with mod_expr = (); mod_type_alg = None }
+  { mb with mod_expr = (); mod_type_alg = None;
+    mod_retroknowledge = ModTypeRK; }
 
 let module_body_of_type mp mtb =
-  { mtb with mod_expr = Abstract; mod_mp = mp }
+  { mtb with mod_expr = Abstract; mod_mp = mp;
+      mod_retroknowledge = ModBodyRK []; }
 
 let check_modpath_equiv env mp1 mp2 =
   if ModPath.equal mp1 mp2 then ()
@@ -270,7 +272,7 @@ let add_retroknowledge mp =
       CErrors.anomaly ~label:"Modops.add_retroknowledge"
         (Pp.str "had to import an unsupported kind of term.")
   in
-  fun lclrk env ->
+  fun (ModBodyRK lclrk) env ->
   (* The order of the declaration matters, for instance (and it's at the
      time this comment is being written, the only relevent instance) the
      int31 type registration absolutely needs int31 bits to be registered.

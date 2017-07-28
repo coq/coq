@@ -395,7 +395,7 @@ and 'a generic_module_body =
     mod_constraints : Univ.ContextSet.t;
     (** quotiented set of equivalent constants and inductive names *)
     mod_delta : delta_resolver;
-    mod_retroknowledge : action list }
+    mod_retroknowledge : 'a module_retroknowledge; }
 
 and module_body = module_implementation generic_module_body
 
@@ -403,6 +403,11 @@ and module_body = module_implementation generic_module_body
     implementation and also an empty [mod_retroknowledge] *)
 
 and module_type_body = unit generic_module_body
+
+and _ module_retroknowledge =
+| ModBodyRK :
+  action list -> module_implementation module_retroknowledge
+| ModTypeRK : unit module_retroknowledge
 
 (*************************************************************************)
 (** {4 From safe_typing.ml} *)
