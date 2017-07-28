@@ -85,6 +85,9 @@ val solve : ?with_end_tac:unit Proofview.tactic ->
 
 val by : unit Proofview.tactic -> bool
 
+(** Option telling if unification heuristics should be used. *)
+val use_unification_heuristics : unit -> bool
+
 (** [instantiate_nth_evar_com n c] instantiate the [n]th undefined
    existential variable of the current focused proof by [c] or raises a
    UserError if no proof is focused or if there is no such [n]th
