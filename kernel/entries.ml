@@ -64,6 +64,10 @@ type mutual_inductive_entry = {
 type 'a proof_output = constr Univ.in_universe_context_set * 'a
 type 'a const_entry_body = 'a proof_output Future.computation
 
+type constant_universes_entry =
+  | Monomorphic_const_entry of Univ.universe_context
+  | Polymorphic_const_entry of Univ.universe_context
+
 type 'a definition_entry = {
   const_entry_body   : 'a const_entry_body;
   (* List of section variables *)
@@ -71,8 +75,7 @@ type 'a definition_entry = {
   (* State id on which the completion of type checking is reported *)
   const_entry_feedback : Stateid.t option;
   const_entry_type        : types option;
-  const_entry_polymorphic : bool;
-  const_entry_universes   : Univ.universe_context;
+  const_entry_universes   : constant_universes_entry;
   const_entry_opaque      : bool;
   const_entry_inline_code : bool }
 

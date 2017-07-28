@@ -109,13 +109,17 @@ let _ =
 
 let define id internal ctx c t =
   let f = declare_constant ~internal in
+  let _, univs = Evd.universe_context ctx in
+  let univs =
+    if Flags.is_universe_polymorphism () then Polymorphic_const_entry univs
+    else Monomorphic_const_entry univs
+  in
   let kn = f id
     (DefinitionEntry
       { const_entry_body = c;
         const_entry_secctx = None;
         const_entry_type = t;
-	const_entry_polymorphic = Flags.is_universe_polymorphism ();
-	const_entry_universes = snd (Evd.universe_context ctx);
+	const_entry_universes = univs;
         const_entry_opaque = false;
         const_entry_inline_code = false;
         const_entry_feedback = None;

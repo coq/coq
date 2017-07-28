@@ -5004,8 +5004,9 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
   in
   let cst = Impargs.with_implicit_protection cst () in
   let lem =
-    if const.Entries.const_entry_polymorphic then
-      let uctx = Univ.ContextSet.of_context const.Entries.const_entry_universes in
+    match const.Entries.const_entry_universes with
+    | Entries.Polymorphic_const_entry uctx ->
+      let uctx = Univ.ContextSet.of_context uctx in
       (** Hack: the kernel may generate definitions whose universe variables are
           not the same as requested in the entry because of constraints delayed
           in the body, even in polymorphic mode. We mimick what it does for now
@@ -5014,7 +5015,8 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
       let uctx = Univ.ContextSet.to_context (Univ.ContextSet.union uctx body_uctx) in
       let u = Univ.UContext.instance uctx in
       mkConstU (cst, EInstance.make u)
-    else mkConst cst
+    | Entries.Monomorphic_const_entry _ ->
+      mkConst cst
   in
   let evd = Evd.set_universe_context evd ectx in
   let open Safe_typing in

@@ -378,6 +378,10 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
       let t = EConstr.Unsafe.to_constr t in
       let univstyp, body = make_body t p in
       let univs, typ = Future.force univstyp in
+      let univs =
+        if poly then Entries.Polymorphic_const_entry univs
+        else Entries.Monomorphic_const_entry univs
+      in
 	{ Entries.
 	  const_entry_body = body;
 	  const_entry_secctx = section_vars;
@@ -386,7 +390,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
 	  const_entry_inline_code = false;
 	  const_entry_opaque = true;
 	  const_entry_universes = univs;
-	  const_entry_polymorphic = poly})
+        })
 		fpl initial_goals in
   let binders =
     Option.map (fun names -> fst (Evd.universe_context ~names (Evd.from_ctx universes)))

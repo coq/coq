@@ -123,14 +123,18 @@ let define internal id c p univs =
   let ctx = Evd.normalize_evar_universe_context univs in
   let c = Vars.subst_univs_fn_constr 
     (Universes.make_opt_subst (Evd.evar_universe_context_subst ctx)) c in
+  let univs = Evd.evar_context_universe_context ctx in
+  let univs =
+    if p then Polymorphic_const_entry univs
+    else Monomorphic_const_entry univs
+  in
   let entry = {
     const_entry_body =
       Future.from_val ((c,Univ.ContextSet.empty),
                        Safe_typing.empty_private_constants);
     const_entry_secctx = None;
     const_entry_type = None;
-    const_entry_polymorphic = p;
-    const_entry_universes = Evd.evar_context_universe_context ctx;
+    const_entry_universes = univs;
     const_entry_opaque = false;
     const_entry_inline_code = false;
     const_entry_feedback = None;

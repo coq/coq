@@ -63,8 +63,12 @@ let cache_variable ((sp,_),o) =
 	impl, true, poly, ctx
     | SectionLocalDef (de) ->
       let univs = Global.push_named_def (id,de) in
+      let poly = match de.const_entry_universes with
+      | Monomorphic_const_entry _ -> false
+      | Polymorphic_const_entry _ -> true
+      in
       Explicit, de.const_entry_opaque,
-      de.const_entry_polymorphic, univs in
+      poly, univs in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
   add_section_variable id impl poly ctx;
   Dischargedhypsmap.set_discharged_hyps sp [];
@@ -98,14 +102,12 @@ let declare_variable id obj =
 (** Declaration of constants and parameters *)
 
 type constant_obj = {
-  cst_decl : global_declaration;
+  cst_decl : global_declaration option;
+  (** [None] when the declaration is a side-effect and has already been defined
+      in the global environment. *)
   cst_hyps : Dischargedhypsmap.discharged_hyps;
   cst_kind : logical_kind;
   cst_locl : bool;
-  mutable cst_exported : Safe_typing.exported_private_constant list;
-  (* mutable: to avoid change the libobject API, since cache_function
-   * does not return an updated object *)
-  mutable cst_was_seff : bool
 }
 
 type constant_declaration = Safe_typing.private_constants constant_entry * logical_kind
@@ -145,16 +147,15 @@ let cache_constant ((sp,kn), obj) =
   let id = basename sp in
   let _,dir,_ = repr_kn kn in
   let kn' =
-    if obj.cst_was_seff then begin
-      obj.cst_was_seff <- false;  
+    match obj.cst_decl with
+    | None ->
       if Global.exists_objlabel (Label.of_id (basename sp))
       then constant_of_kn kn
       else CErrors.anomaly Pp.(str"Ex seff not found: " ++ Id.print(basename sp) ++ str".")
-    end else
+    | Some decl ->
       let () = check_exists sp in
-      let kn', exported = Global.add_constant dir id obj.cst_decl in
-      obj.cst_exported <- exported;
-      kn' in
+      Global.add_constant dir id decl
+  in
   assert (eq_constant kn' (constant_of_kn kn));
   Nametab.push (Nametab.Until 1) sp (ConstRef (constant_of_kn kn));
   let cst = Global.lookup_constant kn' in
@@ -175,26 +176,20 @@ let discharge_constant ((sp, kn), obj) =
   let new_hyps = (discharged_hyps kn hyps) @ obj.cst_hyps in
   let abstract = (named_of_variable_context hyps, subst, uctx) in
   let new_decl = GlobalRecipe{ from; info = { Opaqueproof.modlist; abstract}} in
-  Some { obj with cst_hyps = new_hyps; cst_decl = new_decl; }
+  Some { obj with cst_hyps = new_hyps; cst_decl = Some new_decl; }
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
-let dummy_constant_entry = 
-  ConstantEntry
-    (false, ParameterEntry (None,false,(mkProp,Univ.UContext.empty),None))
-
 let dummy_constant cst = {
-  cst_decl = dummy_constant_entry;
+  cst_decl = None;
   cst_hyps = [];
   cst_kind = cst.cst_kind;
   cst_locl = cst.cst_locl;
-  cst_exported = [];
-  cst_was_seff = cst.cst_was_seff;
 }
 
 let classify_constant cst = Substitute (dummy_constant cst)
 
-let (inConstant, outConstant : (constant_obj -> obj) * (obj -> constant_obj)) =
-  declare_object_full { (default_object "CONSTANT") with
+let (inConstant : constant_obj -> obj) =
+  declare_object { (default_object "CONSTANT") with
     cache_function = cache_constant;
     load_function = load_constant;
     open_function = open_constant;
@@ -205,31 +200,14 @@ let (inConstant, outConstant : (constant_obj -> obj) * (obj -> constant_obj)) =
 let declare_scheme = ref (fun _ _ -> assert false)
 let set_declare_scheme f = declare_scheme := f
 
+let update_tables c =
+  declare_constant_implicits c;
+  Heads.declare_head (EvalConstRef c);
+  Notation.declare_ref_arguments_scope (ConstRef c)
+
 let declare_constant_common id cst =
-  let update_tables c =
-(*  Printf.eprintf "tables: %s\n%!" (Names.Constant.to_string c); *)
-    declare_constant_implicits c;
-    Heads.declare_head (EvalConstRef c);
-    Notation.declare_ref_arguments_scope (ConstRef c) in
   let o = inConstant cst in
   let _, kn as oname = add_leaf id o in
-  List.iter (fun (c,ce,role) ->
-      (* handling of private_constants just exported *)
-      let o = inConstant {
-        cst_decl = ConstantEntry (false, ce);
-        cst_hyps = [] ;
-        cst_kind = IsProof Theorem;
-        cst_locl = false;
-        cst_exported = [];
-        cst_was_seff = true; } in
-      let id = Label.to_id (pi3 (Constant.repr3 c)) in
-      ignore(add_leaf id o);
-      update_tables c;
-      let () = if_xml (Hook.get f_xml_declare_constant) (InternalTacticRequest, c) in
-      match role with
-      | Safe_typing.Subproof -> ()
-      | Safe_typing.Schema (ind, kind) -> !declare_scheme kind [|ind,c|])
-    (outConstant o).cst_exported;
   pull_to_head oname;
   let c = Global.constant_of_delta_kn kn in
   update_tables c;
@@ -237,34 +215,58 @@ let declare_constant_common id cst =
 
 let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     ?(poly=false) ?(univs=Univ.UContext.empty) ?(eff=Safe_typing.empty_private_constants) body =
+  let univs =
+    if poly then Polymorphic_const_entry univs
+    else Monomorphic_const_entry univs
+  in
   { const_entry_body = Future.from_val ?fix_exn ((body,Univ.ContextSet.empty), eff);
     const_entry_secctx = None;
     const_entry_type = types;
-    const_entry_polymorphic = poly;
     const_entry_universes = univs;
     const_entry_opaque = opaque;
     const_entry_feedback = None;
     const_entry_inline_code = inline}
 
 let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(export_seff=false) (cd, kind) =
-  let export = (* We deal with side effects *)
+  let is_poly de = match de.const_entry_universes with
+  | Monomorphic_const_entry _ -> false
+  | Polymorphic_const_entry _ -> true
+  in
+  let in_section = Lib.sections_are_opened () in
+  let export, decl = (* We deal with side effects *)
     match cd with
     | DefinitionEntry de when
         export_seff ||
         not de.const_entry_opaque ||
-        de.const_entry_polymorphic ->
-          let bo = de.const_entry_body in
-          let _, seff = Future.force bo in
-          Safe_typing.empty_private_constants <> seff
-    | _ -> false
+        is_poly de ->
+      (** This globally defines the side-effects in the environment. We mark
+          exported constants as being side-effect not to redeclare them at
+          caching time. *)
+      let cd, export = Global.export_private_constants ~in_section cd in
+      export, ConstantEntry (PureEntry, cd)
+    | _ -> [], ConstantEntry (EffectEntry, cd)
   in
+  let iter_eff (c, role) =
+    let o = inConstant {
+      cst_decl = None;
+      cst_hyps = [] ;
+      cst_kind = IsProof Theorem;
+      cst_locl = false;
+    } in
+    let id = Label.to_id (pi3 (Constant.repr3 c)) in
+    ignore(add_leaf id o);
+    update_tables c;
+    let () = if_xml (Hook.get f_xml_declare_constant) (InternalTacticRequest, c) in
+    match role with
+    | Safe_typing.Subproof -> ()
+    | Safe_typing.Schema (ind, kind) -> !declare_scheme kind [|ind,c|]
+  in
+  let () = List.iter iter_eff export in
   let cst = {
-    cst_decl = ConstantEntry (export,cd);
+    cst_decl = Some decl;
     cst_hyps = [] ;
     cst_kind = kind;
     cst_locl = local;
-    cst_exported = [];
-    cst_was_seff = false;
   } in
   let kn = declare_constant_common id cst in
   let () = if_xml (Hook.get f_xml_declare_constant) (internal, kn) in
