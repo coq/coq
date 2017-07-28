@@ -365,6 +365,9 @@ some specific {\tt Extract Constant} when primitive counterparts exist.
 
 \Example
 Typical examples are the following:
+\begin{coq_eval}
+Require Extraction.
+\end{coq_eval}
 \begin{coq_example}
 Extract Inductive unit => "unit" [ "()" ].
 Extract Inductive bool => "bool" [ "true" "false" ].
