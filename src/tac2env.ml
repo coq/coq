@@ -239,6 +239,9 @@ let interp_ml_object t = MLType.obj t
 let coq_prefix =
   MPfile (DirPath.make (List.map Id.of_string ["Init"; "Ltac2"]))
 
+let std_prefix =
+  MPfile (DirPath.make (List.map Id.of_string ["Std"; "Ltac2"]))
+
 (** Generic arguments *)
 
 let wit_ltac2 = Genarg.make0 "ltac2"

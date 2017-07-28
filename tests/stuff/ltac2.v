@@ -120,7 +120,6 @@ Abort.
 
 Goal True.
 Proof.
-
 let x () := plus (fun () => 0) (fun _ => 1) in
 match case x with
 | Val x =>
@@ -130,6 +129,13 @@ match case x with
 | Err x => Message.print (Message.of_string "Err")
 end.
 Abort.
+
+Goal (forall n : nat, n = 0 -> False) -> True.
+Proof.
+refine (fun () => '(fun H => _)).
+Std.ecase (hyp @H, Std.ExplicitBindings [Std.NamedHyp @n, '0]).
+refine (fun () => 'eq_refl).
+Qed.
 
 Ltac2 rec do n tac := match Int.equal n 0 with
 | true => ()

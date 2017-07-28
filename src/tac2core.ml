@@ -557,6 +557,14 @@ let prm_refine : ml_tactic = function
   end >>= fun () -> return v_unit
 | _ -> assert false
 
+let prm_with_holes : ml_tactic = function
+| [x; f] ->
+  Proofview.tclEVARMAP >>= fun sigma0 ->
+  thaw x >>= fun ans ->
+  Proofview.tclEVARMAP >>= fun sigma ->
+  Proofview.Unsafe.tclEVARS sigma0 >>= fun () ->
+  Tacticals.New.tclWITHHOLES false (interp_app f [ans]) sigma
+| _ -> assert false
 
 (** Registering *)
 
@@ -615,6 +623,7 @@ let () = Tac2env.define_primitive (pname "goal") prm_goal
 let () = Tac2env.define_primitive (pname "hyp") prm_hyp
 let () = Tac2env.define_primitive (pname "hyps") prm_hyps
 let () = Tac2env.define_primitive (pname "refine") prm_refine
+let () = Tac2env.define_primitive (pname "with_holes") prm_with_holes
 
 (** ML types *)
 
