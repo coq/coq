@@ -760,7 +760,11 @@ open Decl_kinds
                        | Class _ -> "Class" | Variant -> "Variant"
           in
           if p then
-            let cm = if cum then "Cumulative" else "NonCumulative" in
+            let cm =
+              match cum with
+              | GlobalCumulativity | LocalCumulativity -> "Cumulative"
+              | GlobalNonCumulativity | LocalNonCumulativity -> "NonCumulative"
+            in
             cm ^ " " ^ kind
           else kind
         in

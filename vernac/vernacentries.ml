@@ -522,12 +522,21 @@ let vernac_assumption locality poly (local, kind) l nl =
   let status = do_assumptions kind nl l in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
-let check_cumulativity_polymorphism_flag cum poly =
-  if cum && not poly then 
-    user_err Pp.(str "Monomorphic cumulative inductive types/records are not supported. ")
+let should_treat_as_cumulative cum poly =
+  if poly then
+    match cum with
+    | GlobalCumulativity | LocalCumulativity -> true
+    | GlobalNonCumulativity | LocalNonCumulativity -> false
+  else
+    match cum with
+    | GlobalCumulativity | GlobalNonCumulativity -> false
+    | LocalCumulativity -> 
+      user_err Pp.(str "The Cumulative prefix can only be used in a polymorphic context.")
+    | LocalNonCumulativity ->
+      user_err Pp.(str "The NonCumulative prefix can only be used in a polymorphic context.")
 
 let vernac_record cum k poly finite struc binders sort nameopt cfs =
-  check_cumulativity_polymorphism_flag cum poly;
+  let is_cumulative = should_treat_as_cumulative cum poly in
   let const = match nameopt with
     | None -> add_prefix "Build_" (snd (fst (snd struc)))
     | Some (_,id as lid) ->
@@ -538,14 +547,14 @@ let vernac_record cum k poly finite struc binders sort nameopt cfs =
 	match x with
 	| Vernacexpr.AssumExpr ((loc, Name id), _) -> Dumpglob.dump_definition (loc,id) false "proj"
 	| _ -> ()) cfs);
-    ignore(Record.definition_structure (k,cum,poly,finite,struc,binders,cfs,const,sort))
+    ignore(Record.definition_structure (k,is_cumulative,poly,finite,struc,binders,cfs,const,sort))
 
 (** When [poly] is true the type is declared polymorphic. When [lo] is true,
     then the type is declared private (as per the [Private] keyword). [finite]
     indicates whether the type is inductive, co-inductive or
     neither. *)
 let vernac_inductive cum poly lo finite indl =
-  check_cumulativity_polymorphism_flag cum poly;
+  let is_cumulative = should_treat_as_cumulative cum poly in
   if Dumpglob.dump () then
     List.iter (fun (((coe,(lid,_)), _, _, _, cstrs), _) ->
       match cstrs with
@@ -582,7 +591,7 @@ let vernac_inductive cum poly lo finite indl =
       | _ -> user_err Pp.(str "Cannot handle mutually (co)inductive records.")
     in
     let indl = List.map unpack indl in
-    do_mutual_inductive indl cum poly lo finite
+    do_mutual_inductive indl is_cumulative poly lo finite
 
 let vernac_fixpoint locality poly local l =
   let local = enforce_locality_exp locality local in
