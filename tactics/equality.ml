@@ -399,20 +399,6 @@ let rec head_of_constr sigma c =
   | Cast (c, _, _) -> head_of_constr sigma c
   | _ -> c
 
-let keyed_occurrence_test env sigma c =
-  if is_keyed_unification () then
-    let ch = head_of_constr sigma c in
-    let k = Keys.constr_key (EConstr.kind sigma) ch in
-    begin fun env sigma _ t u ->
-      let uh, ul = decompose_app sigma u in
-      if keyed_unify env sigma k uh then
-        test_unification (Evarconv.default_flags_of full_transparent_state) env sigma t u
-      else false, sigma
-    end
-  else
-    fun env sigma _ t u ->
-      test_unification (Evarconv.default_flags_of empty_transparent_state) env sigma t u
-
 let default_pat = Pattern.PMeta None
 
 (** The default pattern just filters by the application structure at the top
@@ -430,6 +416,7 @@ let simplify_pat env ts pat =
     | PApp (PRef (ConstructRef _), args) when not top -> PMeta None
     | PRef (ConstructRef _) when not top -> PMeta None
     | PRef g | PApp (PRef g, _) when not (top || indexed g) -> PMeta None
+    | PApp (PCase _, _) when not top -> PMeta None
     | PApp (g, args) ->
        let args' =
          match g with
@@ -444,8 +431,11 @@ let simplify_pat env ts pat =
               | _, _ -> ls
             in Array.map_of_list (aux false) (args' l (Array.to_list args))
          | _ -> Array.map (aux false) args
-       in PApp (g, args')
+       in PApp (aux top g, args')
     | PLambda _ -> PMeta None
+    | PProj (p, a) when not (top || indexed (ConstRef (Projection.constant p))) -> PMeta None
+    | PProj (p, a) -> PProj (p, aux false a)
+    | PCase _ when not top -> PMeta None
     | _ -> pat
   in aux true pat
 
@@ -481,7 +471,7 @@ let pattern_occurrence_test flags pat env sigma c =
          let unif env sigma t u =
            let uh, ul = decompose_app sigma u in
            if keyed_unify env sigma k uh then
-             test_unification (Evarconv.default_flags_of full_transparent_state) env sigma t u
+             test_unification flags env sigma t u
            else false, sigma
          in Pattern.PMeta None, unif
        else
@@ -498,12 +488,17 @@ let pattern_occurrence_test flags pat env sigma c =
     if Constr_matching.is_matching env sigma pat u then unif env sigma t u
     else false, sigma
 
+let inter_transparent_state (vars1, csts1) (vars2, csts2) =
+  (Idpred.inter vars1 vars2, Cpred.inter csts1 csts2)
+
 let leibniz_rewrite_ebindings_clause cls lft2rgt tac pat occs
   c t l with_evars frzevars dep_proof_ok hdcncl =
   Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let sigma = Evd.clear_metas sigma in
   let ts = Hints.Hint_db.transparent_state (Hints.searchtable_map Hints.rewrite_db) in
+  let ts = inter_transparent_state (Conv_oracle.get_transp_state (Environ.oracle env)) ts in
   let frozen_evars = if frzevars then Tacmach.New.pf_undefined_evars gl else Evar.Set.empty in
   let isatomic = isProd sigma (whd_zeta sigma hdcncl) in
   let dep_fun = if isatomic then dependent else dependent_no_evar in
