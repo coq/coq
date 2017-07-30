@@ -678,7 +678,7 @@ let rewrite_db = "rewrite"
 
 let auto_init_db =
   Hintdbmap.add typeclasses_db (Hint_db.empty full_transparent_state true)
-    (Hintdbmap.add rewrite_db (Hint_db.empty full_transparent_state true)
+    (Hintdbmap.add rewrite_db (Hint_db.empty cst_full_transparent_state true)
        Hintdbmap.empty)
 
 let searchtable : hint_db_table = ref auto_init_db
