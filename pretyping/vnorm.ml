@@ -200,7 +200,26 @@ and nf_univ_args ~nb_univs mk env sigma stk =
   let (t,ty) = mk u in
   nf_stk ~from:nb_univs env sigma t ty stk
 
-and constr_type_of_idkey env sigma (idkey : Vars.id_key) stk =
+and nf_evar env sigma evk stk =
+  let evi = try Evd.find sigma evk with Not_found -> assert false in
+  let hyps = Environ.named_context_of_val (Evd.evar_filtered_hyps evi) in
+  let concl = Evd.evar_concl evi in
+  if List.is_empty hyps then
+    nf_stk env sigma (mkEvar (evk, [||])) concl stk
+  else match stk with
+  | Zapp args :: stk ->
+    (** We assume that there is no consecutive Zapp nodes in a VM stack. Is that
+        really an invariant? *)
+    let fold accu d = Term.mkNamedProd_or_LetIn d accu in
+    let t = List.fold_left fold concl hyps in
+    let t, args = nf_args env sigma args t in
+    let inst, args = Array.chop (List.length hyps) args in
+    let c = mkApp (mkEvar (evk, inst), args) in
+    nf_stk env sigma c t stk
+  | _ ->
+    CErrors.anomaly (Pp.str "Argument size mismatch when decompiling an evar")
+
+and constr_type_of_idkey env sigma (idkey : Vmvalues.id_key) stk =
   match idkey with
   | ConstKey cst ->
      let cbody = Environ.lookup_constant cst env in
@@ -218,6 +237,8 @@ and constr_type_of_idkey env sigma (idkey : Vars.id_key) stk =
       let n = (nb_rel env - i) in
       let ty = RelDecl.get_type (lookup_rel n env) in
       nf_stk env sigma (mkRel n) (lift n ty) stk
+  | EvarKey evk ->
+      nf_evar env sigma evk stk
 
 and nf_stk ?from:(from=0) env sigma c t stk  =
   match stk with
@@ -355,8 +376,8 @@ and nf_cofix env sigma cf =
   mkCoFix (init,(name,cft,cfb))
 
 let cbv_vm env sigma c t  =
-  if Termops.occur_meta_or_existential sigma c then
-    CErrors.user_err Pp.(str "vm_compute does not support existential variables.");
+  if Termops.occur_meta sigma c then
+    CErrors.user_err Pp.(str "vm_compute does not support metas.");
   (** This evar-normalizes terms beforehand *)
   let c = EConstr.to_constr sigma c in
   let t = EConstr.to_constr sigma t in

@@ -257,6 +257,15 @@ let pos_universe_var i r sz =
       r.in_env := push_fv db env;
       Kenvacc(r.offset + pos)
 
+let pos_evar evk r =
+  let env = !(r.in_env) in
+  let cid = FVevar evk in
+  try Kenvacc(r.offset + find_at cid env)
+  with Not_found ->
+    let pos = env.size in
+    r.in_env := push_fv cid env;
+    Kenvacc (r.offset + pos)
+
 (*i  Examination of the continuation *)
 
 (* Discard all instructions up to the next label.                        *)
@@ -427,6 +436,7 @@ let compile_fv_elem reloc fv sz cont =
   | FVrel i -> pos_rel i reloc sz :: cont
   | FVnamed id -> pos_named id reloc :: cont
   | FVuniv_var i -> pos_universe_var i reloc sz :: cont
+  | FVevar evk -> pos_evar evk reloc :: cont
 
 let rec compile_fv reloc l sz cont =
   match l with
@@ -470,6 +480,12 @@ let rec compile_lam env reloc lam sz cont =
      compile_lam env reloc arg sz (Kproj (n,kn) :: cont)
 
   | Lvar id -> pos_named id reloc :: cont
+
+  | Levar (evk, args) ->
+      if Array.is_empty args then
+        compile_fv_elem reloc (FVevar evk) sz cont
+      else
+        comp_app compile_fv_elem (compile_lam env) reloc (FVevar evk) args sz cont
 
   | Lconst (kn,u) -> compile_constant env reloc kn u [||] sz cont
 

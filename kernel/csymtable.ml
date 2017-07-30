@@ -150,6 +150,7 @@ and slot_for_fv env fv =
         env |> Pre_env.lookup_rel i |> RelDecl.get_value |> fill_fv_cache rv i val_of_rel env_of_rel
       | Some (v, _) -> v
       end
+  | FVevar evk -> val_of_evar evk
   | FVuniv_var idu ->
     assert false
 

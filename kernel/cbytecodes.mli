@@ -138,6 +138,7 @@ type fv_elem =
   FVnamed of Id.t
 | FVrel of int
 | FVuniv_var of int
+| FVevar of Evar.t
 
 type fv = fv_elem array
 

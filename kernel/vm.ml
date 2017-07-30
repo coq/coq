@@ -28,7 +28,6 @@ let popstop_code i =
 
 let stop = popstop_code 0
 
-
 (************************************************)
 (* Abstract machine *****************************)
 (************************************************)
@@ -70,7 +69,6 @@ let apply_varray vf varray =
       interprete (fun_code vf) (fun_val vf) (fun_env vf) (n - 1)
     end
 
-(* Functions over vfun *)
 let mkrel_vstack k arity =
   let max = k + arity - 1 in
   Array.init arity (fun i -> val_of_rel (max - i))

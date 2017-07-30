@@ -29,6 +29,9 @@ let rec pp_lam lam =
   match lam with
   | Lrel (id,n) -> pp_rel id n
   | Lvar id -> Id.print id
+  | Levar (evk, args) ->
+    hov 1 (str "evar(" ++ Evar.print evk ++ str "," ++ spc () ++
+      prlist_with_sep spc pp_lam (Array.to_list args) ++ str ")")
   | Lprod(dom,codom) -> hov 1
                           (str "forall(" ++
                            pp_lam dom ++
@@ -148,6 +151,9 @@ let shift subst = subs_shft (1, subst)
 let rec map_lam_with_binders g f n lam =
   match lam with
   | Lrel _ | Lvar _  | Lconst _ | Lval _ | Lsort _ | Lind _ -> lam
+  | Levar (evk, args) ->
+    let args' = Array.smartmap (f n) args in
+    if args == args' then lam else Levar (evk, args')
   | Lprod(dom,codom) ->
     let dom' = f n dom in
     let codom' = f n codom in
@@ -344,6 +350,8 @@ let rec occurrence k kind lam =
       if kind then false else raise Not_found
     else kind
   | Lvar _  | Lconst _  | Lval _ | Lsort _ | Lind _ -> kind
+  | Levar (_, args) ->
+    occurrence_args k kind args
   | Lprod(dom, codom) ->
     occurrence k (occurrence k kind dom) codom
   | Llam(ids,body) ->
@@ -600,7 +608,9 @@ open Renv
 let rec lambda_of_constr env c =
   match Constr.kind c with
   | Meta _ -> raise (Invalid_argument "Cbytegen.lambda_of_constr: Meta")
-  | Evar _ -> raise (Invalid_argument "Cbytegen.lambda_of_constr : Evar")
+  | Evar (evk, args) ->
+    let args = lambda_of_args env 0 args in
+    Levar (evk, args)
 
   | Cast (c, _, _) -> lambda_of_constr env c
 

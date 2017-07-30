@@ -36,6 +36,10 @@ let print_idkey idk =
       print_string ")"
   | VarKey id -> print_string (Id.to_string id)
   | RelKey i -> print_string "~";print_int i
+  | EvarKey evk ->
+    print_string "Evar(";
+    print_int (Evar.repr evk);
+    print_string ")"
 
 let rec ppzipper z =
   match z with

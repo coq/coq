@@ -184,6 +184,7 @@ type fv_elem =
   | FVnamed of Id.t
   | FVrel of int
   | FVuniv_var of int
+  | FVevar of Evar.t
 
 type fv = fv_elem array
 
@@ -198,12 +199,15 @@ type t = fv_elem
 
 let compare e1 e2 = match e1, e2 with
 | FVnamed id1, FVnamed id2 -> Id.compare id1 id2
-| FVnamed _, _ -> -1
+| FVnamed _, (FVrel _ | FVuniv_var _ | FVevar _) -> -1
 | FVrel _, FVnamed _ -> 1
 | FVrel r1, FVrel r2 -> Int.compare r1 r2
-| FVrel _, FVuniv_var _ -> -1
+| FVrel _, (FVuniv_var _ | FVevar _) -> -1
 | FVuniv_var i1, FVuniv_var i2 -> Int.compare i1 i2
-| FVuniv_var i1, _ -> 1
+| FVuniv_var i1, (FVnamed _ | FVrel _) -> 1
+| FVuniv_var i1, FVevar _ -> -1
+| FVevar _, (FVnamed _ | FVrel _ | FVuniv_var _) -> 1
+| FVevar e1, FVevar e2 -> Evar.compare e1 e2
 
 end
 
@@ -257,6 +261,7 @@ let pp_fv_elem = function
   | FVnamed id -> str "FVnamed(" ++ Id.print id ++ str ")"
   | FVrel i -> str "Rel(" ++ int i ++ str ")"
   | FVuniv_var v -> str "FVuniv(" ++ int v ++ str ")"
+  | FVevar e -> str "FVevar(" ++ int (Evar.repr e) ++ str ")"
 
 let rec pp_instr i =
   match i with

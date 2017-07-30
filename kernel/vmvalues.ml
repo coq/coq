@@ -118,8 +118,21 @@ type vswitch = {
 
 (* Do not edit this type without editing C code, especially "coq_values.h" *)
 
+type id_key =
+| ConstKey of Constant.t
+| VarKey of Id.t
+| RelKey of Int.t
+| EvarKey of Evar.t
+
+let eq_id_key k1 k2 = match k1, k2 with
+| ConstKey c1, ConstKey c2 -> Constant.equal c1 c2
+| VarKey id1, VarKey id2 -> Id.equal id1 id2
+| RelKey n1, RelKey n2 -> Int.equal n1 n2
+| EvarKey evk1, EvarKey evk2 -> Evar.equal evk1 evk2
+| _ -> false
+
 type atom =
-  | Aid of Vars.id_key
+  | Aid of id_key
   | Aind of inductive
   | Atype of Univ.Universe.t
 
@@ -304,13 +317,14 @@ let val_of_proj kn v =
 
 module IdKeyHash =
 struct
-  type t = Constant.t tableKey
-  let equal = Names.eq_table_key Constant.equal
+  type t = id_key
+  let equal = eq_id_key
   open Hashset.Combine
   let hash = function
   | ConstKey c -> combinesmall 1 (Constant.hash c)
   | VarKey id -> combinesmall 2 (Id.hash id)
   | RelKey i -> combinesmall 3 (Int.hash i)
+  | EvarKey evk -> combinesmall 4 (Evar.hash evk)
 end
 
 module KeyTable = Hashtbl.Make(IdKeyHash)
@@ -329,6 +343,8 @@ let val_of_rel k = val_of_idkey (RelKey k)
 let val_of_named id = val_of_idkey (VarKey id)
 
 let val_of_constant c = val_of_idkey (ConstKey c)
+
+let val_of_evar evk = val_of_idkey (EvarKey evk)
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
 
