@@ -165,10 +165,10 @@ Module binders.
     exact A.
   Defined.
 
-  Definition nomoreu@{i j | i < j} (A : Type@{i}) : Type@{j}.
+  Definition nomoreu@{i j | i < j +} (A : Type@{i}) : Type@{j}.
     pose(foo:=Type).
     exact A.
-  Fail Defined.
+    Fail Defined.
   Abort.
 
   Polymorphic Definition moreu@{i j +} (A : Type@{i}) : Type@{j}.
@@ -178,16 +178,28 @@ Module binders.
 
   Check moreu@{_ _ _ _}.
   
-  Fail Definition morec@{i j| } (A : Type@{i}) : Type@{j} := A.
+  Fail Definition morec@{i j|} (A : Type@{i}) : Type@{j} := A.
 
   (* By default constraints are extensible *)
-  Definition morec@{i j} (A : Type@{i}) : Type@{j} := A.
+  Polymorphic Definition morec@{i j} (A : Type@{i}) : Type@{j} := A.
+  Check morec@{_ _}.
 
-  (* FIXME: not handled in proofs correctly yet *)
+  (* Handled in proofs as well *)
   Lemma bar@{i j | } : Type@{i}.
     exact Type@{j}.
-  Defined.
-  
+    Fail Defined.
+  Abort.
+
+  Lemma bar@{i j| i < j} : Type@{j}.
+  Proof.
+    exact Type@{i}.
+  Qed.
+
+  Lemma barext@{i j|+} : Type@{j}.
+  Proof.
+    exact Type@{i}.
+  Qed.
+
 End binders.
     
 Section cats.
