@@ -24,5 +24,3 @@ val init_load_path : unit -> unit
 val init_library_roots : unit -> unit
 
 val init_ocaml_path : unit -> unit
-
-val get_compat_version : ?allow_old:bool -> string -> Flags.compat_version

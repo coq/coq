@@ -518,7 +518,7 @@ let parse_args arglist =
         Flags.async_proofs_delegation_threshold:= get_float opt (next ())
     |"-worker-id" -> set_worker_id opt (next ())
     |"-compat" ->
-        let v = get_compat_version ~allow_old:false (next ()) in
+        let v = G_vernac.parse_compat_version ~allow_old:false (next ()) in
         Flags.compat_version := v; add_compat_require v
     |"-compile" -> add_compile false (next ())
     |"-compile-verbose" -> add_compile true (next ())
