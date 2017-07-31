@@ -173,13 +173,13 @@ let pr_meta_map evd =
   in
   prlist pr_meta_binding (meta_list evd)
 
-let pr_decl (decl,ok) =
+let pr_decl decl =
   let open NamedDecl in
   let print_constr = print_kconstr in
   match decl with
-  | LocalAssum (id,_) -> if ok then pr_id id else (str "{" ++ pr_id id ++ str "}")
-  | LocalDef (id,c,_) -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++
-                           print_constr c ++ str (if ok then ")" else "}")
+  | LocalAssum (id,_) -> pr_id id
+  | LocalDef (id,c,_) -> str "(" ++ pr_id id ++ str ":=" ++
+                           print_constr c ++ str ")"
 
 let pr_evar_source = function
   | Evar_kinds.NamedHole id -> pr_id id
@@ -211,13 +211,8 @@ let pr_evar_info evi =
   let open Evd in
   let print_constr = print_kconstr in
   let phyps =
-    try
-      let decls = match Filter.repr (evar_filter evi) with
-      | None -> List.map (fun c -> (c, true)) (evar_context evi)
-      | Some filter -> List.combine (evar_context evi) filter
-      in
-      prlist_with_sep spc pr_decl (List.rev decls)
-    with Invalid_argument _ -> str "Ill-formed filtered context" in
+    prlist_with_sep spc pr_decl (List.rev (evar_context evi))
+  in
   let pty = print_constr evi.evar_concl in
   let pb =
     match evi.evar_body with

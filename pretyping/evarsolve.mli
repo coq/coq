@@ -25,6 +25,17 @@ val is_success : unification_result -> bool
    their representative that is most ancient in the context *)
 val expand_vars_in_term : env -> evar_map -> constr -> constr
 
+
+type 'a update =
+| UpdateWith of 'a
+| NoUpdate
+
+val restrict_applied_evar : 
+  Evd.evar_map ->
+  Evd.evar * 'a array ->
+  Evd.Filter.t option ->
+  EConstr.constr list update -> Evd.evar_map * (Evd.evar * 'a array)
+
 (** [evar_define choose env ev c] try to instantiate [ev] with [c] (typed in [env]),
    possibly solving related unification problems, possibly leaving open
    some problems that cannot be solved in a unique way (except if choose is
@@ -85,3 +96,10 @@ val remove_instance_local_defs :
 
 val get_type_of_refresh : 
   ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> evar_map * types
+
+val recheck_applications :            (Environ.env ->
+            Evd.evar_map ->
+            Reduction.conv_pb ->
+            EConstr.types -> EConstr.constr -> unification_result) ->
+           Environ.env -> Evd.evar_map ref -> EConstr.constr -> unit
+

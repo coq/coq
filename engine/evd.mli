@@ -96,10 +96,6 @@ type evar_info = {
   (** Context of the evar. *)
   evar_body : evar_body;
   (** Optional content of the evar. *)
-  evar_filter : Filter.t;
-  (** Boolean mask over {!evar_hyps}. Should have the same length.
-      When filtered out, the corresponding variable is not allowed to occur
-      in the solution *)
   evar_source : Evar_kinds.t located;
   (** Information about the evar. *)
   evar_candidates : constr list option;
@@ -111,16 +107,14 @@ type evar_info = {
 val make_evar : named_context_val -> types -> evar_info
 val evar_concl : evar_info -> constr
 val evar_context : evar_info -> Context.Named.t
-val evar_filtered_context : evar_info -> Context.Named.t
 val evar_hyps : evar_info -> named_context_val
-val evar_filtered_hyps : evar_info -> named_context_val
 val evar_body : evar_info -> evar_body
-val evar_filter : evar_info -> Filter.t
 val evar_env :  evar_info -> env
-val evar_filtered_env :  evar_info -> env
 
 val map_evar_body : (constr -> constr) -> evar_body -> evar_body
 val map_evar_info : (constr -> constr) -> evar_info -> evar_info
+
+val filter_evar_hyps : Filter.t -> named_context_val -> named_context_val
 
 (** {6 Unification state} **)
 
@@ -425,7 +419,7 @@ val evars_of_term : constr -> Evar.Set.t
 
 val evars_of_named_context : Context.Named.t -> Evar.Set.t
 
-val evars_of_filtered_evar_info : evar_info -> Evar.Set.t
+val evars_of_evar_info : evar_info -> Evar.Set.t
 
 (** Metas *)
 val meta_list : evar_map -> (metavariable * clbinding) list

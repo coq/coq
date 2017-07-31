@@ -435,7 +435,7 @@ let evars_for_FO ~hack env sigma0 (ise0:evar_map) c0 =
     with NotInstantiatedEvar ->
     if Evd.mem sigma0 k then map_constr put c else
     let evi = Evd.find !sigma k in
-    let dc = List.firstn (max 0 (Array.length a - nenv)) (evar_filtered_context evi) in
+    let dc = List.firstn (max 0 (Array.length a - nenv)) (evar_context evi) in
     let abs_dc (d, c) = function
     | Context.Named.Declaration.LocalDef (x, b, t) ->
         d, mkNamedLetIn x (put b) (put t) c

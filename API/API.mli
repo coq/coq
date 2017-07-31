@@ -2215,7 +2215,6 @@ sig
       evar_concl : Constr.t;
       evar_hyps : Environ.named_context_val;
       evar_body : evar_body;
-      evar_filter : Filter.t;
       evar_source : Evar_kinds.t Loc.located;
       evar_candidates : Constr.t list option; (* if not None, list of allowed instances *)
       evar_extra : Store.t
@@ -2225,7 +2224,7 @@ sig
   val evar_body : evar_info -> evar_body
   val evar_context : evar_info -> Context.Named.t
   val instantiate_evar_array : evar_info -> Constr.t -> Constr.t array -> Constr.t
-  val evar_filtered_env : evar_info -> Environ.env
+  val evar_env : evar_info -> Environ.env
   val evar_hyps : evar_info -> Environ.named_context_val
 
   (* ------------------------------------ *)
@@ -2285,7 +2284,6 @@ sig
     val remove : evar_map -> Evar.t -> evar_map
     val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> Environ.env ->
                        evar_map -> Globnames.global_reference -> evar_map * Constr.t
-    val evar_filtered_context : evar_info -> Context.Named.t
     val fresh_inductive_instance : ?loc:Loc.t -> Environ.env -> evar_map -> Names.inductive -> evar_map * Term.pinductive
     val fold_undefined : (Evar.t -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 
@@ -2851,14 +2849,14 @@ sig
   val new_global : Evd.evar_map -> Globnames.global_reference -> Evd.evar_map * EConstr.constr
 
   val new_evar :
-    Environ.env -> Evd.evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
+    Environ.env -> Evd.evar_map -> ?src:Evar_kinds.t Loc.located ->
     ?candidates:EConstr.constr list -> ?store:Evd.Store.t ->
     ?naming:Misctypes.intro_pattern_naming_expr ->
     ?principal:bool -> EConstr.types -> Evd.evar_map * EConstr.constr
 
   val new_evar_instance :
     Environ.named_context_val -> Evd.evar_map -> EConstr.types ->
-    ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t -> ?candidates:EConstr.constr list ->
+    ?src:Evar_kinds.t Loc.located -> ?candidates:EConstr.constr list ->
     ?store:Evd.Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
     ?principal:bool ->
     EConstr.constr list -> Evd.evar_map * EConstr.constr
@@ -2873,12 +2871,12 @@ sig
   exception ClearDependencyError of Names.Id.t * clear_dependency_error
   val undefined_evars_of_term : Evd.evar_map -> EConstr.constr -> Evar.Set.t
   val e_new_evar :
-      Environ.env -> Evd.evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
+      Environ.env -> Evd.evar_map ref -> ?src:Evar_kinds.t Loc.located ->
       ?candidates:EConstr.constr list -> ?store:Evd.Store.t ->
       ?naming:Misctypes.intro_pattern_naming_expr ->
       ?principal:bool -> EConstr.types -> EConstr.constr
   val new_type_evar :
-    Environ.env -> Evd.evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
+    Environ.env -> Evd.evar_map -> ?src:Evar_kinds.t Loc.located ->
     ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> Evd.rigid ->
     Evd.evar_map * (EConstr.constr * Sorts.t)
   val nf_evars_universes : Evd.evar_map -> Constr.t -> Constr.t

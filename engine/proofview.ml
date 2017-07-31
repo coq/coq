@@ -635,7 +635,7 @@ let shelve_goals l =
     [evi]. Note: since we want to use it on goals, the body is actually
     supposed to be empty. *)
 let contained_in_info sigma e evi =
-  Evar.Set.mem e (Evd.evars_of_filtered_evar_info (Evarutil.nf_evar_info sigma evi))
+  Evar.Set.mem e (Evd.evars_of_evar_info (Evarutil.nf_evar_info sigma evi))
 
 (** [depends_on sigma src tgt] checks whether the goal [src] appears
     as an existential variable in the definition of the goal [tgt] in
@@ -989,7 +989,7 @@ let (>>=) = tclBIND
 
 let goal_env evars gl =
   let evi = Evd.find evars gl in
-  Evd.evar_filtered_env evi
+  Evd.evar_env evi
 
 let goal_nf_evar sigma gl =
   let evi = Evd.find sigma gl in
@@ -1025,7 +1025,7 @@ module Goal = struct
   let extra {sigma; self} = goal_extra sigma self
 
   let gmake_with info env sigma goal = 
-    { env = Environ.reset_with_named_context (Evd.evar_filtered_hyps info) env ;
+    { env = Environ.reset_with_named_context (Evd.evar_hyps info) env ;
       sigma = sigma ;
       concl = EConstr.of_constr (Evd.evar_concl info);
       self = goal }

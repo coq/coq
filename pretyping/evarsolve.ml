@@ -185,13 +185,12 @@ let restrict_evar_key evd evk filter candidates =
   | None, NoUpdate -> evd, evk
   | _ ->
     let evi = Evd.find_undefined evd evk in
-    let oldfilter = evar_filter evi in
     begin match filter, candidates with
-    | Some filter, NoUpdate when Filter.equal oldfilter filter ->
+    | Some filter, NoUpdate when Filter.equal Filter.identity filter ->
       evd, evk
     | _ ->
       let filter = match filter with
-      | None -> evar_filter evi
+      | None -> Filter.identity
       | Some filter -> filter in
       let candidates = match candidates with
       | NoUpdate -> Option.map (fun l -> List.map EConstr.of_constr l) evi.evar_candidates
@@ -205,10 +204,7 @@ let restrict_applied_evar evd (evk,argsv) filter candidates =
   let evd,newevk = restrict_evar_key evd evk filter candidates in
   let newargsv = match filter with
   | None -> (* optim *) argsv
-  | Some filter ->
-      let evi = Evd.find evd evk in
-      let subfilter = Filter.compose (evar_filter evi) filter in
-      Filter.filter_array subfilter argsv in
+  | Some filter -> Filter.filter_array filter argsv in
   evd,(newevk,newargsv)
 
 (* Restrict an evar in the current evar_map *)
@@ -218,8 +214,7 @@ let restrict_evar evd evk filter candidates =
 (* Restrict an evar in the current evar_map *)
 let restrict_instance evd evk filter argsv =
   match filter with None -> argsv | Some filter ->
-  let evi = Evd.find evd evk in
-  Filter.filter_array (Filter.compose (evar_filter evi) filter) argsv
+  Filter.filter_array filter argsv
 
 open Context.Rel.Declaration
 let noccur_evar env evd evk c =
@@ -504,7 +499,7 @@ let remove_instance_local_defs evd evk args =
   | LocalDef _ :: sign ->
     aux sign (succ i)
   in
-  aux (evar_filtered_context evi) 0
+  aux (evar_context evi) 0
 
 (* Check if an applied evar "?X[args] l" is a Miller's pattern *)
 
@@ -596,7 +591,7 @@ let solve_pattern_eqn env sigma l c =
 *)
 
 let make_projectable_subst aliases sigma evi args =
-  let sign = evar_filtered_context evi in
+  let sign = evar_context evi in
   let sign = List.map (fun d -> map_named_decl EConstr.of_constr d) sign in
   let evar_aliases = compute_var_aliases sign sigma in
   let (_,full_subst,cstr_subst) =
@@ -640,10 +635,11 @@ let make_projectable_subst aliases sigma evi args =
  *)
 
 let define_evar_from_virtual_equation define_fun env evd src t_in_env ty_t_in_sign sign filter inst_in_env =
-  let (evd, evar_in_env) = new_evar_instance sign evd ty_t_in_sign ~filter ~src inst_in_env in
+  let (evd, evar_in_env) = new_evar_instance sign evd ty_t_in_sign ~src inst_in_env in
+  let (evd, evar_in_env) = restrict_applied_evar evd (destEvar evd evar_in_env) (Some filter) NoUpdate in
   let t_in_env = whd_evar evd t_in_env in
-  let (evk, _) = destEvar evd evar_in_env in
-  let evd = define_fun env evd None (destEvar evd evar_in_env) t_in_env in
+  let (evk, _) = evar_in_env in
+  let evd = define_fun env evd None evar_in_env t_in_env in
   let ctxt = named_context_of_val sign in
   let inst_in_sign = inst_of_vars (Filter.filter_list filter ctxt) in
   let evar_in_sign = mkEvar (evk, inst_in_sign) in
@@ -676,13 +672,12 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   let evi1 = Evd.find_undefined evd evk1 in
   let env1,rel_sign = env_rel_context_chop k env in
   let sign1 = evar_hyps evi1 in
-  let filter1 = evar_filter evi1 in
   let src = subterm_source evk1 evi1.evar_source in
   let ids1 = List.map get_id (named_context_of_val sign1) in
-  let inst_in_sign = List.map mkVar (Filter.filter_list filter1 ids1) in
+  let inst_in_sign = List.map mkVar ids1 in
   let open Context.Rel.Declaration in
-  let (sign2,filter2,inst2_in_env,inst2_in_sign,_,evd,_) =
-    List.fold_right (fun d (sign,filter,inst_in_env,inst_in_sign,env,evd,avoid) ->
+  let (sign2,inst2_in_env,inst2_in_sign,_,evd,_) =
+    List.fold_right (fun d (sign,inst_in_env,inst_in_sign,env,evd,avoid) ->
       let LocalAssum (na,t_in_env) | LocalDef (na,_,t_in_env) = d in
       let id = next_name_away na avoid in
       let evd,t_in_sign =
@@ -690,35 +685,34 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
         let evd,ty_t_in_sign = refresh_universes
 	 ~status:univ_flexible (Some false) env evd (mkSort s) in
         define_evar_from_virtual_equation define_fun env evd src t_in_env
-          ty_t_in_sign sign filter inst_in_env in
+          ty_t_in_sign sign Filter.identity inst_in_env in
       let evd,d' = match d with
       | LocalAssum _ -> evd, Context.Named.Declaration.LocalAssum (id,t_in_sign)
       | LocalDef (_,b,_) ->
           let evd,b = define_evar_from_virtual_equation define_fun env evd src b
-            t_in_sign sign filter inst_in_env in
+            t_in_sign sign Filter.identity inst_in_env in
           evd, Context.Named.Declaration.LocalDef (id,b,t_in_sign) in
-      (push_named_context_val d' sign, Filter.extend 1 filter,
+      (push_named_context_val d' sign,
        (mkRel 1)::(List.map (lift 1) inst_in_env),
        (mkRel 1)::(List.map (lift 1) inst_in_sign),
        push_rel d env,evd,id::avoid))
       rel_sign
-      (sign1,filter1,Array.to_list args1,inst_in_sign,env1,evd,ids1)
+      (sign1,Array.to_list args1,inst_in_sign,env1,evd,ids1)
   in
   let evd,ev2ty_in_sign =
     let s = Retyping.get_sort_of env evd ty_in_env in
     let evd,ty_t_in_sign = refresh_universes
      ~status:univ_flexible (Some false) env evd (mkSort s) in
     define_evar_from_virtual_equation define_fun env evd src ty_in_env
-      ty_t_in_sign sign2 filter2 inst2_in_env in
+      ty_t_in_sign sign2 Filter.identity inst2_in_env in
   let (evd, ev2_in_sign) =
-    new_evar_instance sign2 evd ev2ty_in_sign ~filter:filter2 ~src inst2_in_sign in
+    new_evar_instance sign2 evd ev2ty_in_sign ~src inst2_in_sign in
   let ev2_in_env = (fst (destEvar evd ev2_in_sign), Array.of_list inst2_in_env) in
   (evd, ev2_in_sign, ev2_in_env)
 
 let restrict_upon_filter evd evk p args =
-  let oldfullfilter = evar_filter (Evd.find_undefined evd evk) in
   let len = Array.length args in
-  Filter.restrict_upon oldfullfilter len (fun i -> p (Array.unsafe_get args i))
+  Filter.restrict_upon Filter.identity len (fun i -> p (Array.unsafe_get args i))
 
 (***************)
 (* Unification *)
@@ -1011,8 +1005,8 @@ let closure_of_filter evd evk = function
   in
   let newfilter = Filter.map_along test filter (evar_context evi) in
   (* Now ensure that restriction is at least what is was originally *)
-  let newfilter = Option.cata (Filter.map_along (&&) newfilter) newfilter (Filter.repr (evar_filter evi)) in
-  if Filter.equal newfilter (evar_filter evi) then None else Some newfilter
+  let newfilter = Option.cata (Filter.map_along (&&) newfilter) newfilter None in
+  if Filter.equal newfilter Filter.identity then None else Some newfilter
 
 (* The filter is assumed to be at least stronger than the original one *)
 let restrict_hyps evd evk filter candidates =
@@ -1442,7 +1436,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
             raise (NotEnoughInformationToProgress sols);
           (* No unique projection but still restrict to where it is possible *)
           (* materializing is necessary, but is restricting useful? *)
-          let ty = find_solution_type (evar_filtered_env evi) sols in
+          let ty = find_solution_type (evar_env evi) sols in
           let ty' = instantiate_evar_array evi ty argsv in
           let (evd,evar,(evk',argsv' as ev')) =
             materialize_evar (evar_define conv_algo ~choose) env !evdref 0 ev ty' in
@@ -1456,7 +1450,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
             let evd, ev'' = restrict_applied_evar evd ev' filter NoUpdate in
             add_conv_oriented_pb ~tail:false (None,env,mkEvar ev'',of_alias t) evd
           | UpdateWith _ ->
-            restrict_evar evd evk' filter candidates
+             restrict_evar evd evk' filter candidates
           in
           evdref := evd;
           evar in
@@ -1549,7 +1543,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
   in
   let rhs = whd_beta evd rhs (* heuristic *) in
   let fast rhs = 
-    let filter_ctxt = evar_filtered_context evi in
+    let filter_ctxt = evar_context evi in
     let names = ref Idset.empty in
     let rec is_id_subst ctxt s =
       match ctxt, s with
@@ -1620,7 +1614,7 @@ and evar_define conv_algo ?(choose=false) env evd pbty (evk,argsv as ev) rhs =
     Evd.define evk (EConstr.Unsafe.to_constr body) evd'
   with
     | NotEnoughInformationToProgress sols ->
-        postpone_non_unique_projection env evd pbty ev sols rhs
+       postpone_non_unique_projection env evd pbty ev sols rhs
     | NotEnoughInformationEvarEvar t ->
         add_conv_oriented_pb (pbty,env,mkEvar ev,t) evd
     | MorePreciseOccurCheckNeeeded ->

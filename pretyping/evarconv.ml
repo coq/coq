@@ -1110,7 +1110,7 @@ let apply_on_subterm env evdref f c t =
     else
       match EConstr.kind !evdref t with
       | Evar (evk,args) ->
-          let ctx = evar_filtered_context (Evd.find_undefined !evdref evk) in
+          let ctx = evar_context (Evd.find_undefined !evdref evk) in
           let g decl a = if is_local_assum decl then applyrec acc a else a in
           mkEvar (evk, Array.of_list (List.map2 g ctx (Array.to_list args)))
       | _ ->
@@ -1168,9 +1168,9 @@ exception TypingFailed of evar_map
 let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
   try
   let evi = Evd.find_undefined evd evk in
-  let env_evar = evar_filtered_env evi in
+  let env_evar = evar_env evi in
   let sign = named_context_val env_evar in
-  let ctxt = evar_filtered_context evi in
+  let ctxt = evar_context evi in
   let instance = List.map mkVar (List.map NamedDecl.get_id ctxt) in
 
   let rec make_subst = function
@@ -1199,9 +1199,10 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
         | Some _ -> user_err Pp.(str "Selection of specific occurrences not supported")
         | None ->
         let evty = set_holes evdref cty subst in
+        let sign = Evd.filter_evar_hyps filter sign in
         let instance = Filter.filter_list filter instance in
         let evd = !evdref in
-        let (evd, ev) = new_evar_instance sign evd evty ~filter instance in
+        let (evd, ev) = new_evar_instance sign evd evty instance in
         evdref := evd;
         evsref := (fst (destEvar !evdref ev),evty)::!evsref;
         ev in

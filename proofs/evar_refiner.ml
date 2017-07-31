@@ -44,7 +44,7 @@ let define_and_solve_constraints evk c env evd =
 let w_refine (evk,evi) (ltac_var,rawc) sigma =
   if Evd.is_defined sigma evk then
     user_err Pp.(str "Instantiate called on already-defined evar");
-  let env = Evd.evar_filtered_env evi in
+  let env = Evd.evar_env evi in
   let sigma',typed_c =
     let flags = {
       Pretyping.use_typeclasses = true;

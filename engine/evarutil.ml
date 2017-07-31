@@ -220,7 +220,7 @@ let make_pure_subst evi args =
       match args with
         | a::rest -> (rest, (NamedDecl.get_id decl, a)::l)
         | _ -> anomaly (Pp.str "Instance does not match its signature."))
-    (evar_filtered_context evi) (Array.rev_to_list args,[]))
+    (evar_context evi) (Array.rev_to_list args,[]))
 
 (*------------------------------------*
  * functional operations on evar sets *
@@ -376,7 +376,7 @@ let new_pure_evar_full evd evi =
   let evd = Evd.declare_future_goal evk evd in
   (evd, evk)
 
-let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?candidates ?(store = Store.empty) ?naming ?(principal=false) typ =
+let new_pure_evar sign evd ?(src=default_source) ?candidates ?(store = Store.empty) ?naming ?(principal=false) typ =
   let typ = EConstr.Unsafe.to_constr typ in
   let candidates = Option.map (fun l -> List.map EConstr.Unsafe.to_constr l) candidates in
   let default_naming = Misctypes.IntroAnonymous in
@@ -393,7 +393,6 @@ let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?ca
     evar_hyps = sign;
     evar_concl = typ;
     evar_body = Evar_empty;
-    evar_filter = filter;
     evar_source = src;
     evar_candidates = candidates;
     evar_extra = store; }
@@ -405,32 +404,28 @@ let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?ca
   in
   (evd, newevk)
 
-let new_evar_instance sign evd typ ?src ?filter ?candidates ?store ?naming ?principal instance =
+let new_evar_instance sign evd typ ?src ?candidates ?store ?naming ?principal instance =
   let open EConstr in
   assert (not !Flags.debug ||
             List.distinct (ids_of_named_context (named_context_of_val sign)));
-  let (evd, newevk) = new_pure_evar sign evd ?src ?filter ?candidates ?store ?naming ?principal typ in
+  let (evd, newevk) = new_pure_evar sign evd ?src ?candidates ?store ?naming ?principal typ in
   evd, mkEvar (newevk,Array.of_list instance)
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
-let new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
+let new_evar env evd ?src ?candidates ?store ?naming ?principal typ =
   let sign,typ',instance,subst,vsubst = push_rel_context_to_named_context env evd typ in
   let map c = subst2 subst vsubst c in
   let candidates = Option.map (fun l -> List.map map l) candidates in
-  let instance =
-    match filter with
-    | None -> instance
-    | Some filter -> Filter.filter_list filter instance in
-  new_evar_instance sign evd typ' ?src ?filter ?candidates ?store ?naming ?principal instance
+  new_evar_instance sign evd typ' ?src ?candidates ?store ?naming ?principal instance
 
-let new_type_evar env evd ?src ?filter ?naming ?principal rigid =
+let new_type_evar env evd ?src ?naming ?principal rigid =
   let (evd', s) = new_sort_variable rigid evd in
-  let (evd', e) = new_evar env evd' ?src ?filter ?naming ?principal (EConstr.mkSort s) in
+  let (evd', e) = new_evar env evd' ?src ?naming ?principal (EConstr.mkSort s) in
   evd', (e, s)
 
-let e_new_type_evar env evdref ?src ?filter ?naming ?principal rigid =
-  let (evd, c) = new_type_evar env !evdref ?src ?filter ?naming ?principal rigid in
+let e_new_type_evar env evdref ?src ?naming ?principal rigid =
+  let (evd, c) = new_type_evar env !evdref ?src ?naming ?principal rigid in
     evdref := evd;
     c
 
@@ -444,8 +439,8 @@ let e_new_Type ?(rigid=Evd.univ_flexible) env evdref =
     evdref := evd'; EConstr.mkSort s
 
   (* The same using side-effect *)
-let e_new_evar env evdref ?(src=default_source) ?filter ?candidates ?store ?naming ?principal ty =
-  let (evd',ev) = new_evar env !evdref ~src:src ?filter ?candidates ?store ?naming ?principal ty in
+let e_new_evar env evdref ?(src=default_source) ?candidates ?store ?naming ?principal ty =
+  let (evd',ev) = new_evar env !evdref ~src:src ?candidates ?store ?naming ?principal ty in
   evdref := evd';
   ev
 
@@ -505,7 +500,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
 	       corresponding to e where hypotheses of ids have been
 	       removed *)
 	    let evi = Evd.find_undefined !evdref evk in
-	    let ctxt = Evd.evar_filtered_context evi in
+	    let ctxt = Evd.evar_context evi in
 	    let ctxt = List.map (fun d -> map_named_decl EConstr.of_constr d) ctxt in
 	    let (rids,filter) =
               List.fold_right2
@@ -539,7 +534,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
 
             if Id.Map.is_empty rids then c
             else
-              let origfilter = Evd.evar_filter evi in
+              let origfilter = Evd.Filter.identity in
               let filter = Evd.Filter.apply_subfilter origfilter filter in
               let evd = !evdref in
               let (evd,_) = restrict_evar evd evk filter None in

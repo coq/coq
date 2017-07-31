@@ -483,7 +483,7 @@ let pf_abs_evars2 gl rigid (sigma, c0) =
   let nenv = env_size (pf_env gl) in
   let abs_evar n k =
     let evi = Evd.find sigma k in
-    let dc = CList.firstn n (evar_filtered_context evi) in
+    let dc = CList.firstn n (evar_context evi) in
     let abs_dc c = function
     | NamedDecl.LocalDef (x,b,t) -> mkNamedLetIn x b t (mkArrow t c)
     | NamedDecl.LocalAssum (x,t) -> mkNamedProd x t c in
@@ -543,7 +543,7 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
   let nenv = env_size (pf_env gl) in
   let abs_evar n k =
     let evi = Evd.find sigma k in
-    let dc = CList.firstn n (evar_filtered_context evi) in
+    let dc = CList.firstn n (evar_context evi) in
     let abs_dc c = function
     | NamedDecl.LocalDef (x,b,t) -> mkNamedLetIn x b t (mkArrow t c)
     | NamedDecl.LocalAssum (x,t) -> mkNamedProd x t c in

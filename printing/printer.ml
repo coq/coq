@@ -515,15 +515,6 @@ let pr_concl n sigma g =
 let pr_evgl_sign sigma evi =
   let env = evar_env evi in
   let ps = pr_named_context_of env sigma in
-  let _, l = match Filter.repr (evar_filter evi) with
-  | None -> [], []
-  | Some f -> List.filter2 (fun b c -> not b) f (evar_context evi)
-  in
-  let ids = List.rev_map NamedDecl.get_id l in
-  let warn =
-    if List.is_empty ids then mt () else
-      (str "(" ++ prlist_with_sep pr_comma pr_id ids ++ str " cannot be used)")
-  in
   let pc = pr_lconstr_env env sigma evi.evar_concl in
   let candidates =
     match evi.evar_body, evi.evar_candidates with
@@ -534,7 +525,7 @@ let pr_evgl_sign sigma evi =
        mt ()
   in
   hov 0 (str"[" ++ ps ++ spc () ++ str"|- "  ++ pc ++ str"]" ++
-           candidates ++ spc () ++ warn)
+           candidates ++ spc ())
 
 (* Print an existential variable *)
 

@@ -139,7 +139,6 @@ type evar_info = {
   evar_concl : constr;
   evar_hyps : named_context_val;
   evar_body : evar_body;
-  evar_filter : Filter.t;
   evar_source : Evar_kinds.t Loc.located;
   evar_candidates : constr list option; (* if not None, list of allowed instances *)
   evar_extra : Store.t }
@@ -148,7 +147,6 @@ let make_evar hyps ccl = {
   evar_concl = ccl;
   evar_hyps = hyps;
   evar_body = Evar_empty;
-  evar_filter = Filter.identity;
   evar_source = Loc.tag @@ Evar_kinds.InternalHole;
   evar_candidates = None;
   evar_extra = Store.empty
@@ -159,44 +157,13 @@ let instance_mismatch () =
 
 let evar_concl evi = evi.evar_concl
 
-let evar_filter evi = evi.evar_filter
-
 let evar_body evi = evi.evar_body
 
 let evar_context evi = named_context_of_val evi.evar_hyps
 
-let evar_filtered_context evi =
-  Filter.filter_list (evar_filter evi) (evar_context evi)
-
 let evar_hyps evi = evi.evar_hyps
 
-let evar_filtered_hyps evi = match Filter.repr (evar_filter evi) with
-| None -> evar_hyps evi
-| Some filter ->
-  let rec make_hyps filter ctxt = match filter, ctxt with
-  | [], [] -> empty_named_context_val
-  | false :: filter, _ :: ctxt -> make_hyps filter ctxt
-  | true :: filter, decl :: ctxt ->
-    let hyps = make_hyps filter ctxt in
-    push_named_context_val decl hyps
-  | _ -> instance_mismatch ()
-  in
-  make_hyps filter (evar_context evi)
-
 let evar_env evi = Global.env_of_context evi.evar_hyps
-
-let evar_filtered_env evi = match Filter.repr (evar_filter evi) with
-| None -> evar_env evi
-| Some filter ->
-  let rec make_env filter ctxt = match filter, ctxt with
-  | [], [] -> reset_context (Global.env ())
-  | false :: filter, _ :: ctxt -> make_env filter ctxt
-  | true :: filter, decl :: ctxt ->
-    let env = make_env filter ctxt in
-    push_named decl env
-  | _ -> instance_mismatch ()
-  in
-  make_env filter (evar_context evi)
 
 let map_evar_body f = function
   | Evar_empty -> Evar_empty
@@ -209,6 +176,19 @@ let map_evar_info f evi =
     evar_concl = f evi.evar_concl;
     evar_candidates = Option.map (List.map f) evi.evar_candidates }
 
+let filter_evar_hyps filter sign = match Filter.repr filter with
+| None -> sign
+| Some filter ->
+  let rec make_hyps filter ctxt = match filter, ctxt with
+  | [], [] -> empty_named_context_val
+  | false :: filter, _ :: ctxt -> make_hyps filter ctxt
+  | true :: filter, decl :: ctxt ->
+    let hyps = make_hyps filter ctxt in
+    push_named_context_val decl hyps
+  | _ -> instance_mismatch ()
+  in
+  make_hyps filter (named_context_of_val sign)
+
 (* This exception is raised by *.existential_value *)
 exception NotInstantiatedEvar
 
@@ -216,31 +196,13 @@ exception NotInstantiatedEvar
 
 let evar_instance_array test_id info args =
   let len = Array.length args in
-  let rec instrec filter ctxt i = match filter, ctxt with
-  | [], [] ->
-    if Int.equal i len then []
-    else instance_mismatch ()
-  | false :: filter, _ :: ctxt ->
-    instrec filter ctxt i
-  | true :: filter, d :: ctxt ->
-    if i < len then
+  let map i d =
+    if (i < len) then
       let c = Array.unsafe_get args i in
-      if test_id d c then instrec filter ctxt (succ i)
-      else (NamedDecl.get_id d, c) :: instrec filter ctxt (succ i)
+      if test_id d c then None else Some (NamedDecl.get_id d, c)
     else instance_mismatch ()
-  | _ -> instance_mismatch ()
   in
-  match Filter.repr (evar_filter info) with
-  | None ->
-     let map i d =
-      if (i < len) then
-        let c = Array.unsafe_get args i in
-        if test_id d c then None else Some (NamedDecl.get_id d, c)
-      else instance_mismatch ()
-    in
-    List.map_filter_i map (evar_context info)
-  | Some filter ->
-    instrec filter (evar_context info) 0
+  List.map_filter_i map (evar_context info)
 
 let make_evar_instance_array info args =
   evar_instance_array (NamedDecl.get_id %> isVarId) info args
@@ -656,16 +618,17 @@ let define evk body evd =
 let restrict evk filter ?candidates ?src evd =
   let evk' = new_untyped_evar () in
   let evar_info = EvMap.find evk evd.undf_evars in
+  let ctxt = filter_evar_hyps filter evar_info.evar_hyps in
   let evar_info' =
-    { evar_info with evar_filter = filter;
+    { evar_info with
+      evar_hyps = ctxt;
       evar_candidates = candidates;
       evar_source = (match src with None -> evar_info.evar_source | Some src -> src) } in
   let last_mods = match evd.conv_pbs with
   | [] ->  evd.last_mods
   | _ -> Evar.Set.add evk evd.last_mods in
   let evar_names = EvNames.reassign_name_defined evk evk' evd.evar_names in
-  let ctxt = Filter.filter_list filter (evar_context evar_info) in
-  let id_inst = Array.map_of_list (NamedDecl.get_id %> mkVar) ctxt in
+  let id_inst = Array.map_of_list (NamedDecl.get_id %> mkVar) (named_context_of_val ctxt) in
   let body = mkEvar(evk',id_inst) in
   let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
   { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
@@ -725,13 +688,13 @@ let evars_of_named_context nc =
     nc
     ~init:Evar.Set.empty
 
-let evars_of_filtered_evar_info evi =
+let evars_of_evar_info evi =
   Evar.Set.union (evars_of_term evi.evar_concl)
     (Evar.Set.union
 	(match evi.evar_body with
 	| Evar_empty -> Evar.Set.empty
 	| Evar_defined b -> evars_of_term b)
-	(evars_of_named_context (evar_filtered_context evi)))
+	(evars_of_named_context (evar_context evi)))
 
 (**********************************************************)
 (* Sort variables *)

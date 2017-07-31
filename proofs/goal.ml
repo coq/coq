@@ -31,12 +31,12 @@ module V82 = struct
   (* Old style env primitive *)
   let env evars gl =
     let evi = Evd.find evars gl in
-    Evd.evar_filtered_env evi
+    Evd.evar_env evi
 
   (* Old style hyps primitive *)
   let hyps evars gl =
     let evi = Evd.find evars gl in
-    Evd.evar_filtered_hyps evi
+    Evd.evar_hyps evi
 
   (* same as [hyps], but ensures that existential variables are
      normalised. *)
@@ -65,7 +65,6 @@ module V82 = struct
     let prev_principal_goal = Evd.principal_future_goal evars in
     let evi = { Evd.evar_hyps = hyps;
 		Evd.evar_concl = concl;
-		Evd.evar_filter = Evd.Filter.identity;
 		Evd.evar_body = Evd.Evar_empty;
 		Evd.evar_source = (Loc.tag Evar_kinds.GoalEvar);
 		Evd.evar_candidates = None;
@@ -123,10 +122,8 @@ module V82 = struct
     let hyps = evi.Evd.evar_hyps in
     let new_hyps =
       List.fold_right Environ.push_named_context_val extra_hyps hyps in
-    let filter = evi.Evd.evar_filter in
-    let new_filter = Evd.Filter.extend (List.length extra_hyps) filter in
     let new_evi =
-      { evi with Evd.evar_hyps = new_hyps; Evd.evar_filter = new_filter } in
+      { evi with Evd.evar_hyps = new_hyps } in
     let new_evi = Typeclasses.mark_unresolvable new_evi in
     let (sigma, evk) = Evarutil.new_pure_evar_full Evd.empty new_evi in
     { Evd.it = evk ; sigma = sigma; }
