@@ -20,7 +20,7 @@ val uid : goal -> string
 val get_by_uid : string -> goal
 
 (* Debugging help *)
-val pr_goal : goal -> Pp.std_ppcmds
+val pr_goal : goal -> Pp.t
 
 (* Layer to implement v8.2 tactic engine ontop of the new architecture. 
    Types are different from what they used to be due to a change of the

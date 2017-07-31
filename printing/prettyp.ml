@@ -33,17 +33,17 @@ open Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 type object_pr = {
-  print_inductive           : mutual_inductive -> std_ppcmds;
-  print_constant_with_infos : constant -> std_ppcmds;
-  print_section_variable    : variable -> std_ppcmds;
-  print_syntactic_def       : kernel_name -> std_ppcmds;
-  print_module              : bool -> Names.module_path -> std_ppcmds;
-  print_modtype             : module_path -> std_ppcmds;
-  print_named_decl          : Context.Named.Declaration.t -> std_ppcmds;
-  print_library_entry       : bool -> (object_name * Lib.node) -> std_ppcmds option;
-  print_context             : bool -> int option -> Lib.library_segment -> std_ppcmds;
-  print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.std_ppcmds;
-  print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> std_ppcmds;
+  print_inductive           : mutual_inductive -> Pp.t;
+  print_constant_with_infos : constant -> Pp.t;
+  print_section_variable    : variable -> Pp.t;
+  print_syntactic_def       : kernel_name -> Pp.t;
+  print_module              : bool -> Names.module_path -> Pp.t;
+  print_modtype             : module_path -> Pp.t;
+  print_named_decl          : Context.Named.Declaration.t -> Pp.t;
+  print_library_entry       : bool -> (object_name * Lib.node) -> Pp.t option;
+  print_context             : bool -> int option -> Lib.library_segment -> Pp.t;
+  print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.t;
+  print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t;
 }
 
 let gallina_print_module  = print_module

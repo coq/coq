@@ -332,7 +332,7 @@ exception NoSuchGoals of int
 (* This hook returns a string to be appended to the usual message.
    Primarily used to add a suggestion about the right bullet to use to
    focus the next goal, if applicable. *)
-let nosuchgoals_hook:(int -> std_ppcmds) ref = ref (fun n -> mt ())
+let nosuchgoals_hook:(int -> Pp.t) ref = ref (fun n -> mt ())
 let set_nosuchgoals_hook f = nosuchgoals_hook := f
 
 

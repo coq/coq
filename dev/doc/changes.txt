@@ -18,6 +18,10 @@ We changed the type of the following functions:
   The returned term contains De Bruijn universe variables.
 - Global.body_of_constant: same as above.
 
+We renamed the following datatypes:
+
+  Pp.std_ppcmds -> Pp.t
+
 =========================================
 = CHANGES BETWEEN COQ V8.6 AND COQ V8.7 =
 =========================================

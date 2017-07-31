@@ -19,5 +19,5 @@ val equiv_keys : key -> key -> bool
 val constr_key : ('a -> ('a, 't, 'u, 'i) Constr.kind_of_term) -> 'a -> key option
 (** Compute the head key of a term. *)
 
-val pr_keys : (global_reference -> Pp.std_ppcmds) -> Pp.std_ppcmds
+val pr_keys : (global_reference -> Pp.t) -> Pp.t
 (** Pretty-print the mapping *)

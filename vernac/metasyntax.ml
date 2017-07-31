@@ -1056,7 +1056,7 @@ module SynData = struct
     extra         : (string * string) list;
 
     (* XXX: Callback to printing, must remove *)
-    msgs          : ((std_ppcmds -> unit) * std_ppcmds) list;
+    msgs          : ((Pp.t -> unit) * Pp.t) list;
 
     (* Fields for internalization *)
     recvars       : (Id.t * Id.t) list;

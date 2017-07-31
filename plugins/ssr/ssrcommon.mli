@@ -41,7 +41,7 @@ val nohint : 'a ssrhint
 
 (******************************** misc ************************************)
 
-val errorstrm : Pp.std_ppcmds -> 'a
+val errorstrm : Pp.t -> 'a
 val anomaly : string -> 'a
 
 val array_app_tl : 'a array -> 'a list -> 'a list

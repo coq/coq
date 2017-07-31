@@ -58,7 +58,7 @@ module SentenceId : sig
   val connect : sentence -> signals
 
   val dbg_to_string :
-    GText.buffer -> bool -> Stateid.t option -> sentence -> Pp.std_ppcmds
+    GText.buffer -> bool -> Stateid.t option -> sentence -> Pp.t
 
 end = struct
 
@@ -163,7 +163,7 @@ let flags_to_color f =
   else `NAME Preferences.processed_color#get
 
 (* Move to utils? *)
-let rec validate (s : Pp.std_ppcmds) = match Pp.repr s with
+let rec validate (s : Pp.t) = match Pp.repr s with
   | Pp.Ppcmd_empty
   | Pp.Ppcmd_print_break _
   | Pp.Ppcmd_force_newline  -> true

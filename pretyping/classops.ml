@@ -89,7 +89,7 @@ sig
     type t
     val compare : t -> t -> int
     val equal : t -> t -> bool
-    val print : t -> std_ppcmds
+    val print : t -> Pp.t
   end
   type 'a t
   val empty : 'a t
@@ -324,7 +324,7 @@ let coercion_value { coe_value = c; coe_type = t; coe_context = ctx;
 (* rajouter une coercion dans le graphe *)
 
 let path_printer = ref (fun _ -> str "<a class path>"
-                        : (Bijint.Index.t * Bijint.Index.t) * inheritance_path -> std_ppcmds)
+                        : (Bijint.Index.t * Bijint.Index.t) * inheritance_path -> Pp.t)
 
 let install_path_printer f = path_printer := f
 

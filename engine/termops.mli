@@ -9,16 +9,15 @@
 (** This file defines various utilities for term manipulation that are not
     needed in the kernel. *)
 
-open Pp
 open Names
 open Term
 open Environ
 open EConstr
 
 (** printers *)
-val print_sort : sorts -> std_ppcmds
-val pr_sort_family : sorts_family -> std_ppcmds
-val pr_fix : ('a -> std_ppcmds) -> ('a, 'a) pfixpoint -> std_ppcmds
+val print_sort : sorts -> Pp.t
+val pr_sort_family : sorts_family -> Pp.t
+val pr_fix : ('a -> Pp.t) -> ('a, 'a) pfixpoint -> Pp.t
 
 (** about contexts *)
 val push_rel_assum : Name.t * types -> env -> env
@@ -279,25 +278,25 @@ val on_judgment_type  : ('t -> 't) -> ('c, 't) punsafe_judgment -> ('c, 't) puns
 
 open Evd
 
-val pr_existential_key : evar_map -> evar -> Pp.std_ppcmds
+val pr_existential_key : evar_map -> evar -> Pp.t
 
 val pr_evar_suggested_name : existential_key -> evar_map -> Id.t
 
-val pr_evar_info : evar_info -> Pp.std_ppcmds
-val pr_evar_constraints : evar_map -> evar_constraint list -> Pp.std_ppcmds
-val pr_evar_map : ?with_univs:bool -> int option -> evar_map -> Pp.std_ppcmds
+val pr_evar_info : evar_info -> Pp.t
+val pr_evar_constraints : evar_map -> evar_constraint list -> Pp.t
+val pr_evar_map : ?with_univs:bool -> int option -> evar_map -> Pp.t
 val pr_evar_map_filter : ?with_univs:bool -> (Evar.t -> evar_info -> bool) ->
-  evar_map -> Pp.std_ppcmds
-val pr_metaset : Metaset.t -> Pp.std_ppcmds
-val pr_evar_universe_context : evar_universe_context -> Pp.std_ppcmds
-val pr_evd_level : evar_map -> Univ.Level.t -> Pp.std_ppcmds
+  evar_map -> Pp.t
+val pr_metaset : Metaset.t -> Pp.t
+val pr_evar_universe_context : evar_universe_context -> Pp.t
+val pr_evd_level : evar_map -> Univ.Level.t -> Pp.t
 
 (** debug printer: do not use to display terms to the casual user... *)
 
-val set_print_constr : (env -> Evd.evar_map -> constr -> std_ppcmds) -> unit
-val print_constr     : constr -> std_ppcmds
-val print_constr_env : env -> Evd.evar_map -> constr -> std_ppcmds
-val print_named_context : env -> std_ppcmds
-val pr_rel_decl : env -> Context.Rel.Declaration.t -> std_ppcmds
-val print_rel_context : env -> std_ppcmds
-val print_env : env -> std_ppcmds
+val set_print_constr : (env -> Evd.evar_map -> constr -> Pp.t) -> unit
+val print_constr     : constr -> Pp.t
+val print_constr_env : env -> Evd.evar_map -> constr -> Pp.t
+val print_named_context : env -> Pp.t
+val pr_rel_decl : env -> Context.Rel.Declaration.t -> Pp.t
+val print_rel_context : env -> Pp.t
+val print_env : env -> Pp.t

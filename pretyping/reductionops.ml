@@ -272,7 +272,7 @@ module Stack :
 sig
   open EConstr
   type 'a app_node
-  val pr_app_node : ('a -> Pp.std_ppcmds) -> 'a app_node -> Pp.std_ppcmds
+  val pr_app_node : ('a -> Pp.t) -> 'a app_node -> Pp.t
 
   type cst_member =
     | Cst_const of pconstant
@@ -290,7 +290,7 @@ sig
 
   exception IncompatibleFold2
 
-  val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
+  val pr : ('a -> Pp.t) -> 'a t -> Pp.t
   val empty : 'a t
   val is_empty : 'a t -> bool
   val append_app : 'a array -> 'a t -> 'a t

@@ -11,7 +11,7 @@ type status = Disabled | Enabled | AsError
 val set_current_loc : Loc.t option -> unit
 
 val create : name:string -> category:string -> ?default:status ->
-             ('a -> Pp.std_ppcmds) -> ?loc:Loc.t -> 'a -> unit
+             ('a -> Pp.t) -> ?loc:Loc.t -> 'a -> unit
 
 val get_flags : unit -> string
 val set_flags : string -> unit

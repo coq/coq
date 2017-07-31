@@ -26,7 +26,7 @@ module ReductionBehaviour : sig
     bool -> Globnames.global_reference -> (int list * int * flag list) -> unit
   val get :
     Globnames.global_reference -> (int list * int * flag list) option
-  val print : Globnames.global_reference -> Pp.std_ppcmds
+  val print : Globnames.global_reference -> Pp.t
 end
 
 (** Option telling if reduction should use the refolding machinery of cbn
@@ -63,13 +63,13 @@ module Cst_stack : sig
   val best_cst : t -> (constr * constr list) option
   val best_replace : Evd.evar_map -> constr -> t -> constr -> constr
   val reference : Evd.evar_map -> t -> Constant.t option
-  val pr : t -> Pp.std_ppcmds
+  val pr : t -> Pp.t
 end
 
 module Stack : sig
   type 'a app_node
 
-  val pr_app_node : ('a -> Pp.std_ppcmds) -> 'a app_node -> Pp.std_ppcmds
+  val pr_app_node : ('a -> Pp.t) -> 'a app_node -> Pp.t
 
   type cst_member =
     | Cst_const of pconstant
@@ -86,7 +86,7 @@ module Stack : sig
   | Update of 'a
   and 'a t = 'a member list
 
-  val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
+  val pr : ('a -> Pp.t) -> 'a t -> Pp.t
 
   val empty : 'a t
   val is_empty : 'a t -> bool
@@ -145,7 +145,7 @@ type contextual_state_reduction_function =
 type state_reduction_function = contextual_state_reduction_function
 type local_state_reduction_function = evar_map -> state -> state
 
-val pr_state : state -> Pp.std_ppcmds
+val pr_state : state -> Pp.t
 
 (** {6 Reduction Function Operators } *)
 

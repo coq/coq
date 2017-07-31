@@ -621,7 +621,7 @@ module V85 = struct
 
   type autoinfo = { hints : hint_db; is_evar: existential_key option;
                     only_classes: bool; unique : bool;
-                    auto_depth: int list; auto_last_tac: std_ppcmds Lazy.t;
+                    auto_depth: int list; auto_last_tac: Pp.t Lazy.t;
                     auto_path : global_reference option list;
                     auto_cut : hints_path }
   type autogoal = goal * autoinfo
@@ -972,7 +972,7 @@ end
 module Search = struct
   type autoinfo =
     { search_depth : int list;
-      last_tac : Pp.std_ppcmds Lazy.t;
+      last_tac : Pp.t Lazy.t;
       search_dep : bool;
       search_only_classes : bool;
       search_cut : hints_path;

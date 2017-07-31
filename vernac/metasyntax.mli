@@ -52,7 +52,7 @@ val add_syntactic_definition : Id.t -> Id.t list * constr_expr ->
 
 (** Print the Camlp4 state of a grammar *)
 
-val pr_grammar : string -> Pp.std_ppcmds
+val pr_grammar : string -> Pp.t
 
 type any_entry = AnyEntry : 'a Pcoq.Gram.entry -> any_entry
 

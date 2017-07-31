@@ -48,6 +48,6 @@ val suggest : proof -> Pp.t
 (*                                                        *)
 (**********************************************************)
 
-val pr_goal_selector : Vernacexpr.goal_selector -> Pp.std_ppcmds
+val pr_goal_selector : Vernacexpr.goal_selector -> Pp.t
 val get_default_goal_selector : unit -> Vernacexpr.goal_selector
 

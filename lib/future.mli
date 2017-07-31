@@ -154,7 +154,7 @@ val purify : ('a -> 'b) -> 'a -> 'b
 val transactify : ('a -> 'b) -> 'a -> 'b
 
 (** Debug: print a computation given an inner printing function. *)
-val print : ('a -> Pp.std_ppcmds) -> 'a computation -> Pp.std_ppcmds
+val print : ('a -> Pp.t) -> 'a computation -> Pp.t
 
 type freeze
 (* These functions are needed to get rid of side effects.
@@ -162,5 +162,5 @@ type freeze
    deal with the whole system state. *)
 val set_freeze : (unit -> freeze) -> (freeze -> unit) -> unit
 
-val customize_not_ready_msg : (string -> Pp.std_ppcmds) -> unit
-val customize_not_here_msg : (string -> Pp.std_ppcmds) -> unit
+val customize_not_ready_msg : (string -> Pp.t) -> unit
+val customize_not_here_msg : (string -> Pp.t) -> unit

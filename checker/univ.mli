@@ -20,7 +20,7 @@ sig
 
   val var : int -> t
 
-  val pr : t -> Pp.std_ppcmds
+  val pr : t -> Pp.t
   (** Pretty-printing *)
   
   val equal : t -> t -> bool
@@ -53,7 +53,7 @@ type universe = Universe.t
 
 (** Alias name. *)
 
-val pr_uni : universe -> Pp.std_ppcmds
+val pr_uni : universe -> Pp.t
 
 (** The universes hierarchy: Type 0- = Prop <= Type 0 = Set <= Type 1 <= ...
    Typing of universes: Type 0-, Type 0 : Type 1; Type i : Type (i+1) if i>0 *)
@@ -172,7 +172,7 @@ sig
   val subst : universe_level_subst -> t -> t
   (** Substitution by a level-to-level function. *)
 
-  val pr : t -> Pp.std_ppcmds
+  val pr : t -> Pp.t
   (** Pretty-printing, no comments *)
 
   val check_eq : t check_function
@@ -274,8 +274,8 @@ val check_subtype : universes -> AUContext.t -> AUContext.t -> bool
 
 (** {6 Pretty-printing of universes. } *)
 
-val pr_constraint_type : constraint_type -> Pp.std_ppcmds
-val pr_constraints : (Level.t -> Pp.std_ppcmds) -> constraints -> Pp.std_ppcmds
-val pr_universe_context : (Level.t -> Pp.std_ppcmds) -> universe_context -> Pp.std_ppcmds
+val pr_constraint_type : constraint_type -> Pp.t
+val pr_constraints : (Level.t -> Pp.t) -> constraints -> Pp.t
+val pr_universe_context : (Level.t -> Pp.t) -> universe_context -> Pp.t
 
-val pr_universes : universes -> Pp.std_ppcmds
+val pr_universes : universes -> Pp.t

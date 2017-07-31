@@ -106,13 +106,13 @@ val name_max : Name.t -> Name.t -> Name.t
 val name_cons : Name.t -> Id.t list -> Id.t list
 (** @deprecated Same as [Name.cons] *)
 
-val pr_name : Name.t -> Pp.std_ppcmds
+val pr_name : Name.t -> Pp.t
 (** @deprecated Same as [Name.print] *)
 
-val pr_id : Id.t -> Pp.std_ppcmds
+val pr_id : Id.t -> Pp.t
 (** @deprecated Same as [Names.Id.print] *)
 
-val pr_lab : Label.t -> Pp.std_ppcmds
+val pr_lab : Label.t -> Pp.t
 
 (** some preset paths *)
 
@@ -127,5 +127,5 @@ val coq_string : string (** "Coq" *)
 val default_root_prefix : DirPath.t
 
 (** Metavariables *)
-val pr_meta : Term.metavariable -> Pp.std_ppcmds
+val pr_meta : Term.metavariable -> Pp.t
 val string_of_meta : Term.metavariable -> string

@@ -67,7 +67,7 @@ val requote : string -> string
 val textview_width : #GText.view_skel -> int
 (** Returns an approximate value of the character width of a textview *)
 
-type logger = Feedback.level -> Pp.std_ppcmds -> unit
+type logger = Feedback.level -> Pp.t -> unit
 
 val default_logger : logger
 (** Default logger. It logs messages that the casual user should not see. *)

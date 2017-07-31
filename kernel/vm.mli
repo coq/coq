@@ -50,9 +50,9 @@ type whd =
 
 (** For debugging purposes only *)
 
-val pr_atom : atom -> Pp.std_ppcmds
-val pr_whd : whd -> Pp.std_ppcmds
-val pr_stack : stack -> Pp.std_ppcmds
+val pr_atom : atom -> Pp.t
+val pr_whd : whd -> Pp.t
+val pr_stack : stack -> Pp.t
 
 (** Constructors *)
 

@@ -62,7 +62,7 @@ end
 
 (** We typically label nodes of [Trace.tree] with messages to
     print. But we don't want to compute the result. *)
-type lazy_msg = unit -> Pp.std_ppcmds
+type lazy_msg = unit -> Pp.t
 let pr_lazy_msg msg = msg ()
 
 (** Info trace. *)

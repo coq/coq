@@ -16,5 +16,5 @@ val ssrtclarg : Tacexpr.raw_tactic_expr Pcoq.Gram.entry
 val wit_ssrtclarg : (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr, Geninterp.Val.t) Genarg.genarg_type
 val pr_ssrtclarg : 'a -> 'b -> (int * Ppextend.parenRelation -> 'c -> 'd) -> 'c -> 'd
 
-val add_genarg : string -> ('a -> Pp.std_ppcmds) -> 'a Genarg.uniform_genarg_type
+val add_genarg : string -> ('a -> Pp.t) -> 'a Genarg.uniform_genarg_type
 

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
-
 (** {6 Pretty-print. } *)
 
 (** Dealing with precedences *)
@@ -28,9 +26,9 @@ type ppcut =
   | PpBrk of int * int
   | PpFnl
 
-val ppcmd_of_box : ppbox -> std_ppcmds -> std_ppcmds
+val ppcmd_of_box : ppbox -> Pp.t -> Pp.t
 
-val ppcmd_of_cut : ppcut -> std_ppcmds
+val ppcmd_of_cut : ppcut -> Pp.t
 
 type unparsing =
   | UnpMetaVar of int * parenRelation

@@ -17,7 +17,7 @@ val is_set_minimization : unit -> bool
 
 (** Universes *)
 
-val pr_with_global_universes : Level.t -> Pp.std_ppcmds
+val pr_with_global_universes : Level.t -> Pp.t
 
 (** Local universe name <-> level mapping *)
 
@@ -52,7 +52,7 @@ type universe_constraint = universe * universe_constraint_type * universe
 module Constraints : sig
   include Set.S with type elt = universe_constraint
 		       
-  val pr : t -> Pp.std_ppcmds
+  val pr : t -> Pp.t
 end
 
 type universe_constraints = Constraints.t
@@ -203,7 +203,7 @@ val refresh_constraints : UGraph.t -> universe_context_set -> universe_context_s
 
 (** Pretty-printing *)
 
-val pr_universe_opt_subst : universe_opt_subst -> Pp.std_ppcmds
+val pr_universe_opt_subst : universe_opt_subst -> Pp.t
 
 (** {6 Support for template polymorphism } *)
 

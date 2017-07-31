@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Names
 open Term
 open EConstr
@@ -19,7 +18,7 @@ open Tactypes
 (** Tacticals i.e. functions from tactics to tactics. *)
 
 val tclIDTAC         : tactic
-val tclIDTAC_MESSAGE : std_ppcmds -> tactic
+val tclIDTAC_MESSAGE : Pp.t -> tactic
 val tclORELSE0       : tactic -> tactic -> tactic
 val tclORELSE        : tactic -> tactic -> tactic
 val tclTHEN          : tactic -> tactic -> tactic
@@ -41,8 +40,8 @@ val tclSOLVE         : tactic list -> tactic
 val tclTRY           : tactic -> tactic
 val tclCOMPLETE      : tactic -> tactic
 val tclAT_LEAST_ONCE : tactic -> tactic
-val tclFAIL          : int -> std_ppcmds -> tactic
-val tclFAIL_lazy     : int -> std_ppcmds Lazy.t -> tactic
+val tclFAIL          : int -> Pp.t -> tactic
+val tclFAIL_lazy     : int -> Pp.t Lazy.t -> tactic
 val tclDO            : int -> tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclSHOWHYPS      : tactic -> tactic
@@ -160,9 +159,9 @@ module New : sig
   (* [tclFAIL n msg] fails with [msg] as an error message at level [n]
      (meaning that it will jump over [n] error catching tacticals FROM
      THIS MODULE. *)
-  val tclFAIL : int -> Pp.std_ppcmds -> 'a tactic
+  val tclFAIL : int -> Pp.t -> 'a tactic
 
-  val tclZEROMSG : ?loc:Loc.t -> Pp.std_ppcmds -> 'a tactic
+  val tclZEROMSG : ?loc:Loc.t -> Pp.t -> 'a tactic
   (** Fail with a [User_Error] containing the given message. *)
 
   val tclOR : unit tactic -> unit tactic -> unit tactic
