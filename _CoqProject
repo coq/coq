@@ -17,6 +17,8 @@ src/tac2ffi.ml
 src/tac2ffi.mli
 src/tac2core.ml
 src/tac2core.mli
+src/tac2quote.ml
+src/tac2quote.mli
 src/tac2stdlib.ml
 src/tac2stdlib.mli
 src/g_ltac2.ml4

@@ -54,4 +54,9 @@ val call : default:bool -> raw_tacexpr -> unit
 module Pltac :
 sig
 val tac2expr : raw_tacexpr Pcoq.Gram.entry
+
+(** Quoted entries. They directly return an Ltac2 expression *)
+
+val q_ident : raw_tacexpr Pcoq.Gram.entry
+val q_bindings : raw_tacexpr Pcoq.Gram.entry
 end

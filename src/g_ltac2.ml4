@@ -9,11 +9,28 @@
 open Pp
 open Util
 open Names
+open Tok
 open Pcoq
 open Constrexpr
 open Misctypes
 open Tac2expr
 open Ltac_plugin
+
+let err () = raise Stream.Failure
+
+(* idem for (x:=t) and (1:=t) *)
+let test_lpar_idnum_coloneq =
+  Gram.Entry.of_parser "test_lpar_idnum_coloneq"
+    (fun strm ->
+      match stream_nth 0 strm with
+        | KEYWORD "(" ->
+            (match stream_nth 1 strm with
+              | IDENT _ | INT _ ->
+                  (match stream_nth 2 strm with
+                    | KEYWORD ":=" -> ()
+                    | _ -> err ())
+              | _ -> err ())
+        | _ -> err ())
 
 let tac2expr = Tac2entries.Pltac.tac2expr
 let tac2type = Gram.entry_create "tactic:tac2type"
@@ -24,10 +41,11 @@ let tac2def_syn = Gram.entry_create "tactic:tac2def_syn"
 let tac2mode = Gram.entry_create "vernac:ltac2_command"
 
 let inj_wit wit loc x = CTacExt (loc, Genarg.in_gen (Genarg.rawwit wit) x)
-let inj_constr loc c = inj_wit Stdarg.wit_constr loc c
 let inj_open_constr loc c = inj_wit Stdarg.wit_open_constr loc c
-let inj_ident loc c = inj_wit Stdarg.wit_ident loc c
 let inj_pattern loc c = inj_wit Tac2env.wit_pattern loc c
+
+let mk_constr ~loc kn args =
+  CTacApp (loc, CTacCst (loc, AbsKn (Other kn)), args)
 
 let pattern_of_qualid loc id =
   if Tac2env.is_constructor (snd id) then CPatRef (loc, RelId id, [])
@@ -108,11 +126,11 @@ GEXTEND Gram
       | s = Prim.string -> CTacAtm (Loc.tag ~loc:!@loc (AtmStr s))
       | id = Prim.qualid ->
         if Tac2env.is_constructor (snd id) then CTacCst (!@loc, RelId id) else CTacRef (RelId id)
-      | "@"; id = Prim.ident -> inj_ident !@loc id
+      | "@"; id = Prim.ident -> Tac2quote.of_ident ~loc:!@loc id
       | "'"; c = Constr.constr -> inj_open_constr !@loc c
-      | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> inj_constr !@loc c
+      | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> Tac2quote.of_constr ~loc:!@loc c
       | IDENT "open_constr"; ":"; "("; c = Constr.lconstr; ")" -> inj_open_constr !@loc c
-      | IDENT "ident"; ":"; "("; c = Prim.ident; ")" -> inj_ident !@loc c
+      | IDENT "ident"; ":"; "("; c = Prim.ident; ")" -> Tac2quote.of_ident ~loc:!@loc c
       | IDENT "pattern"; ":"; "("; c = Constr.lconstr_pattern; ")" -> inj_pattern !@loc c
     ] ]
   ;
@@ -255,6 +273,41 @@ GEXTEND Gram
     ] ]
   ;
 END
+
+(** Quotation scopes used by notations *)
+
+open Tac2entries.Pltac
+
+GEXTEND Gram
+  GLOBAL: q_ident q_bindings;
+  q_ident:
+    [ [ id = Prim.ident -> Tac2quote.of_ident ~loc:!@loc id
+      | "$"; id = Prim.ident -> Tac2quote.of_variable ~loc:!@loc id
+    ] ]
+  ;
+ simple_binding:
+    [ [ "("; id = Prim.ident; ":="; c = Constr.lconstr; ")" ->
+        Loc.tag ~loc:!@loc (NamedHyp id, Tac2quote.of_constr ~loc:!@loc c)
+      | "("; n = Prim.natural; ":="; c = Constr.lconstr; ")" ->
+        Loc.tag ~loc:!@loc (AnonHyp n, Tac2quote.of_constr ~loc:!@loc c)
+    ] ]
+  ;
+  bindings:
+    [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->
+        Tac2quote.of_bindings ~loc:!@loc (ExplicitBindings bl)
+      | bl = LIST1 Constr.constr ->
+        let bl = List.map (fun c -> Tac2quote.of_constr ~loc:!@loc c) bl in
+        Tac2quote.of_bindings ~loc:!@loc (Misctypes.ImplicitBindings bl)
+    ] ]
+  ;
+  q_bindings:
+    [ [ "with"; bl = bindings -> bl
+      | -> mk_constr ~loc:!@loc Tac2core.Core.c_no_bindings []
+    ] ]
+  ;
+END
+
+(** Extension of constr syntax *)
 
 GEXTEND Gram
   Pcoq.Constr.operconstr: LEVEL "0"

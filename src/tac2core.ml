@@ -21,6 +21,7 @@ open Proofview.Notations
 module Value = Tac2ffi
 
 let coq_core n = KerName.make2 Tac2env.coq_prefix (Label.of_id (Id.of_string_soft n))
+let std_core n = KerName.make2 Tac2env.std_prefix (Label.of_id (Id.of_string_soft n))
 
 module Core =
 struct
@@ -40,6 +41,15 @@ let c_cons = coq_core "::"
 
 let c_none = coq_core "None"
 let c_some = coq_core "Some"
+
+let t_bindings = std_core "bindings"
+let c_no_bindings = std_core "NoBindings"
+let c_implicit_bindings = std_core "ImplicitBindings"
+let c_explicit_bindings = std_core "ExplicitBindings"
+
+let t_qhyp = std_core "hypothesis"
+let c_named_hyp = std_core "NamedHyp"
+let c_anon_hyp = std_core "AnonHyp"
 
 end
 
@@ -835,5 +845,20 @@ let () = add_scope "tactic" begin function
 | _ -> scope_fail ()
 end
 
-let () = add_generic_scope "ident" Pcoq.Prim.ident Stdarg.wit_ident
+let () = add_scope "ident" begin function
+| [] ->
+  let scope = Extend.Aentry Tac2entries.Pltac.q_ident in
+  let act tac = rthunk tac in
+  Tac2entries.ScopeRule (scope, act)
+| _ -> scope_fail ()
+end
+
+let () = add_scope "bindings" begin function
+| [] ->
+  let scope = Extend.Aentry Tac2entries.Pltac.q_bindings in
+  let act tac = rthunk tac in
+  Tac2entries.ScopeRule (scope, act)
+| _ -> scope_fail ()
+end
+
 let () = add_generic_scope "constr" Pcoq.Constr.constr Stdarg.wit_constr

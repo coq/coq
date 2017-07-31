@@ -23,6 +23,9 @@ open Vernacexpr
 module Pltac =
 struct
 let tac2expr = Pcoq.Gram.entry_create "tactic:tac2expr"
+
+let q_ident = Pcoq.Gram.entry_create "tactic:q_ident"
+let q_bindings = Pcoq.Gram.entry_create "tactic:q_bindings"
 end
 
 (** Tactic definition *)

@@ -5,5 +5,6 @@ Tac2interp
 Tac2entries
 Tac2ffi
 Tac2core
+Tac2quote
 Tac2stdlib
 G_ltac2
