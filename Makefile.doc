@@ -470,7 +470,7 @@ OCAMLDOC_MLLIBD = $(OCAMLFIND) ocamldoc -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -
 ml-doc:
 	$(OCAMLFIND) ocamldoc -charset utf-8 -html -rectypes -I +threads $(MLINCLUDES) $(COQIDEFLAGS) -d $(OCAMLDOCDIR) $(MLSTATICFILES)
 
-parsing/parsing.dot : | parsing/parsing.mllib.d parsing/highparsing.mllib.d
+parsing/parsing.dot : | parsing/parsing.mllib.d
 	$(OCAMLDOC_MLLIBD)
 
 grammar/grammar.dot : | grammar/grammar.mllib.d
