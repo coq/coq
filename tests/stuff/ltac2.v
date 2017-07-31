@@ -111,7 +111,7 @@ Proof.
 Fail zero (Bar "lol").
 Abort.
 
-Ltac2 Notation "refine!" c(constr) := refine c.
+Ltac2 Notation "refine!" c(thunk(constr)) := refine c.
 
 Goal True.
 Proof.

@@ -753,7 +753,7 @@ let add_generic_scope s entry arg =
   let parse = function
   | [] ->
     let scope = Extend.Aentry entry in
-    let act x = rthunk (CTacExt (dummy_loc, in_gen (rawwit arg) x)) in
+    let act x = CTacExt (dummy_loc, in_gen (rawwit arg) x) in
     Tac2entries.ScopeRule (scope, act)
   | _ -> scope_fail ()
   in
@@ -818,7 +818,7 @@ end
 let () = add_scope "self" begin function
 | [] ->
   let scope = Extend.Aself in
-  let act tac = rthunk tac in
+  let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
 | _ -> scope_fail ()
 end
@@ -826,7 +826,7 @@ end
 let () = add_scope "next" begin function
 | [] ->
   let scope = Extend.Anext in
-  let act tac = rthunk tac in
+  let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
 | _ -> scope_fail ()
 end
@@ -835,12 +835,12 @@ let () = add_scope "tactic" begin function
 | [] ->
   (** Default to level 5 parsing *)
   let scope = Extend.Aentryl (Tac2entries.Pltac.tac2expr, 5) in
-  let act tac = rthunk tac in
+  let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
 | [SexprInt (loc, n)] ->
   let () = if n < 0 || n > 5 then scope_fail () in
   let scope = Extend.Aentryl (Tac2entries.Pltac.tac2expr, n) in
-  let act tac = rthunk tac in
+  let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
 | _ -> scope_fail ()
 end
@@ -848,7 +848,7 @@ end
 let () = add_scope "ident" begin function
 | [] ->
   let scope = Extend.Aentry Tac2entries.Pltac.q_ident in
-  let act tac = rthunk tac in
+  let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
 | _ -> scope_fail ()
 end
@@ -856,7 +856,15 @@ end
 let () = add_scope "bindings" begin function
 | [] ->
   let scope = Extend.Aentry Tac2entries.Pltac.q_bindings in
-  let act tac = rthunk tac in
+  let act tac = tac in
+  Tac2entries.ScopeRule (scope, act)
+| _ -> scope_fail ()
+end
+
+let () = add_scope "thunk" begin function
+| [tok] ->
+  let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
+  let act e = rthunk (act e) in
   Tac2entries.ScopeRule (scope, act)
 | _ -> scope_fail ()
 end
