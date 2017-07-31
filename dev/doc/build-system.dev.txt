@@ -74,25 +74,25 @@ The Makefile is separated in several files :
 - Makefile.doc : specific rules for compiling the documentation.
 
 
-FIND_VCS_CLAUSE
+FIND_SKIP_DIRS
 ---------------
 
-The recommended style of using FIND_VCS_CLAUSE is for example
+The recommended style of using FIND_SKIP_DIRS is for example
 
- find . $(FIND_VCS_CLAUSE) '(' -name '*.example' ')' -print
- find . $(FIND_VCS_CLAUSE) '(' -name '*.example' -or -name '*.foo' ')' -print
+ find . $(FIND_SKIP_DIRS) '(' -name '*.example' ')' -print
+ find . $(FIND_SKIP_DIRS) '(' -name '*.example' -or -name '*.foo' ')' -print
 
 1)
 The parentheses even in the one-criteria case is so that if one adds
 other conditions, e.g. change the first example to the second
 
- find . $(FIND_VCS_CLAUSE) '(' -name '*.example' -and -not -name '*.bak.example' ')' -print
+ find . $(FIND_SKIP_DIRS) '(' -name '*.example' -and -not -name '*.bak.example' ')' -print
 
 one is not tempted to write
 
- find . $(FIND_VCS_CLAUSE) -name '*.example' -and -not -name '*.bak.example' -print
+ find . $(FIND_SKIP_DIRS) -name '*.example' -and -not -name '*.bak.example' -print
 
-because this will not necessarily work as expected; $(FIND_VCS_CLAUSE)
+because this will not necessarily work as expected; $(FIND_SKIP_DIRS)
 ends with an -or, and how it combines with what comes later depends on
 operator precedence and all that. Much safer to override it with
 parentheses.
@@ -105,13 +105,13 @@ As to the -print at the end, yes it is necessary. Here's why.
 You are used to write:
  find . -name '*.example'
 and it works fine. But the following will not:
- find . $(FIND_VCS_CLAUSE) -name '*.example'
-it will also list things directly matched by FIND_VCS_CLAUSE
+ find . $(FIND_SKIP_DIRS) -name '*.example'
+it will also list things directly matched by FIND_SKIP_DIRS
 (directories we want to prune, in which we don't want to find
 anything). C'est subtil... Il y a effectivement un -print implicite à
 la fin, qui fait que la commande habituelle sans print fonctionne
 bien, mais dès que l'on introduit d'autres commandes dans le lot (le
--prune de FIND_VCS_CLAUSE), ça se corse à cause d'histoires de
+-prune de FIND_SKIP_DIRS), ça se corse à cause d'histoires de
 parenthèses du -print implicite par rapport au parenthésage dans la
 forme recommandée d'utilisation:
 
