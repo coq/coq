@@ -656,7 +656,7 @@ open Decl_kinds
                      | None -> mt()
                      | Some sc -> str" :" ++ spc() ++ str sc))
         )
-      | VernacSyntaxExtension (_,(s,l)) ->
+      | VernacSyntaxExtension (_, _,(s,l)) ->
         return (
           keyword "Reserved Notation" ++ spc() ++ pr_located qs s ++
             pr_syntax_modifiers l

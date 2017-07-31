@@ -1134,14 +1134,13 @@ GEXTEND Gram
 
      | IDENT "Reserved"; IDENT "Infix"; s = ne_lstring;
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ] ->
-	   Metasyntax.check_infix_modifiers l;
 	   let (loc,s) = s in
-	   VernacSyntaxExtension (false,((loc,"x '"^s^"' y"),l))
+	   VernacSyntaxExtension (true, false,((loc,"x '"^s^"' y"),l))
 
      | IDENT "Reserved"; IDENT "Notation"; local = obsolete_locality;
 	 s = ne_lstring;
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
-	 -> VernacSyntaxExtension (local,(s,l))
+	 -> VernacSyntaxExtension (false, local,(s,l))
 
      (* "Print" "Grammar" should be here but is in "command" entry in order
         to factorize with other "Print"-based vernac entries *)

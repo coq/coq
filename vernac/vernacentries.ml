@@ -409,9 +409,10 @@ let dump_global r =
 (**********)
 (* Syntax *)
 
-let vernac_syntax_extension locality local =
+let vernac_syntax_extension locality local infix l =
   let local = enforce_module_locality locality local in
-  Metasyntax.add_syntax_extension local
+  if infix then Metasyntax.check_infix_modifiers (snd l);
+  Metasyntax.add_syntax_extension local l
 
 let vernac_delimiters sc = function
   | Some lr -> Metasyntax.add_delimiters sc lr
@@ -1950,8 +1951,8 @@ let interp ?proof ?loc locality poly c =
   | VernacLocal _ -> assert false
 
   (* Syntax *)
-  | VernacSyntaxExtension (local,sl) ->
-      vernac_syntax_extension locality local sl
+  | VernacSyntaxExtension (infix, local,sl) ->
+      vernac_syntax_extension locality local infix sl
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
   | VernacBindScope (sc,rl) -> vernac_bind_scope sc rl
   | VernacOpenCloseScope (local, s) -> vernac_open_close_scope locality local s
