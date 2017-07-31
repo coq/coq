@@ -1,14 +1,14 @@
 **WARNING:** This document is a work in progress and intended as a RFC.
-If you are not a Coq Developer, don't follow this instructions yet.
+If you are not a Coq Developer, don't follow these instructions yet.
 
 Introduction
 ============
 
-The Coq Travis CI infrastructure is meant to provide lightweight
-automatics testing of pull requests.
-If you are on GitLab, their integrated CI is also set up.
+As of 2017, lightweight tests are automatically run against all pull requests
+or merge requests submitted to Coq's official GitHub or GitLab repositories,
+respectively. The tests run on Travis CI and GitLab CI, correspondingly.
 
-More comprehensive testing is the responsability of Coq's [Jenkins CI
+More comprehensive testing is the responsibility of Coq's [Jenkins CI
 server](https://ci.inria.fr/coq/) see, [XXX: add document] for
 instructions on how to add your development to Jenkins.
 
@@ -24,7 +24,7 @@ the latest Coq changes validated against your development?
 If so, keep reading! Getting Coq changes tested against your library
 is easy, all that you need to do is:
 
-1. Put you development in a public repository tracking coq trunk.
+1. Put your development in a public repository tracking Coq trunk.
 2. Make sure that your development builds in less than 35 minutes.
 3. Submit a PR adding your development.
 4. ?
