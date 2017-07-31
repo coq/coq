@@ -399,8 +399,8 @@ let inline_delta_resolver env inl mp mbid mtb delta =
 	      let constr = Mod_subst.force_constr body in
 	      add_inline_delta_resolver kn (lev, Some constr) l
 	with Not_found ->
-	  error_no_such_label_sub (con_label con)
-	    (string_of_mp (con_modpath con))
+	  error_no_such_label_sub (Constant.label con)
+	    (ModPath.to_string (Constant.modpath con))
   in
   make_inline delta constants
 

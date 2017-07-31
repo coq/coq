@@ -21,6 +21,9 @@ open Locus
 open Proofview.Notations
 open Hints
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 (**************************************************************************)
 (*                           Automatic tactics                            *)
 (**************************************************************************)

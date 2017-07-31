@@ -15,6 +15,9 @@ open Logic
 
 module NamedDecl = Context.Named.Declaration
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 let sig_it x = x.it
 let project x = x.sigma
 

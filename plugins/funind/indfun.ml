@@ -14,6 +14,9 @@ open Decl_kinds
 
 module RelDecl = Context.Rel.Declaration
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 let is_rec_info sigma scheme_info =
   let test_branche min acc decl =
     acc || (

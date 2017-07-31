@@ -548,6 +548,7 @@ val tclLIFT : 'a NonLogical.t -> 'a tactic
 module V82 : sig
   type tac = Evar.t Evd.sigma -> Evar.t list Evd.sigma
   val tactic : tac -> unit tactic
+  [@@ocaml.deprecated]
 
   (* normalises the evars in the goals, and stores the result in
      solution. *)
@@ -573,6 +574,7 @@ module V82 : sig
      should be avoided as much as possible.  It should work as
      expected for a tactic obtained from {!V82.tactic} though. *)
   val of_tactic : 'a tactic -> tac
+  [@@ocaml.deprecated]
 
   (* marks as unsafe if the argument is [false] *)
   val put_status : bool -> unit tactic

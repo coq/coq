@@ -26,6 +26,9 @@ open Evarutil
 open Unification
 open Misctypes
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 (******************************************************************)
 (* Clausal environments *)
 

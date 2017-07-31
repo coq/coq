@@ -18,6 +18,9 @@ open Reduction
 open Tacmach
 open Clenv
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 (* This function put casts around metavariables whose type could not be
  * infered by the refiner, that is head of applications, predicates and
  * subject of Cases.

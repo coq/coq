@@ -27,6 +27,9 @@ open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 (** {1 Utilities}  *)
 
 (** {2 Useful operations on constr and glob_constr} *)

@@ -81,7 +81,7 @@ type evaluable_reference =
   | EvalEvar of EConstr.existential
 
 let evaluable_reference_eq sigma r1 r2 = match r1, r2 with
-| EvalConst c1, EvalConst c2 -> eq_constant c1 c2
+| EvalConst c1, EvalConst c2 -> Constant.equal c1 c2
 | EvalVar id1, EvalVar id2 -> Id.equal id1 id2
 | EvalRel i1, EvalRel i2 -> Int.equal i1 i2
 | EvalEvar (e1, ctx1), EvalEvar (e2, ctx2) ->
@@ -240,7 +240,7 @@ let invert_name labs l na0 env sigma ref = function
 	  | EvalRel _ | EvalEvar _ -> None
 	  | EvalVar id' -> Some (EvalVar id)
 	  | EvalConst kn ->
-	      Some (EvalConst (con_with_label kn (Label.of_id id))) in
+	      Some (EvalConst (Constant.change_label kn (Label.of_id id))) in
 	match refi with
 	  | None -> None
 	  | Some ref ->
@@ -521,7 +521,7 @@ let reduce_mind_case_use_function func env sigma mia =
 		       the block was indeed initially built as a global
 		       definition *)
                     let (kn, u) = destConst sigma func in
-                    let kn = con_with_label kn (Label.of_id id) in
+                    let kn = Constant.change_label kn (Label.of_id id) in
                     let cst = (kn, EInstance.kind sigma u) in
 		    try match constant_opt_value_in env cst with
 		      | None -> None
@@ -938,7 +938,7 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
       | CoFix _ | Fix _ -> s'
       | Proj (p,t) when
 	  (match EConstr.kind sigma constr with
-	  | Const (c', _) -> eq_constant (Projection.constant p) c'
+	  | Const (c', _) -> Constant.equal (Projection.constant p) c'
 	  | _ -> false) ->
 	let pb = Environ.lookup_projection p env in
 	  if List.length stack <= pb.Declarations.proj_npars then
@@ -1044,8 +1044,8 @@ let contextually byhead occs f env sigma t =
 
 let match_constr_evaluable_ref sigma c evref = 
   match EConstr.kind sigma c, evref with
-  | Const (c,u), EvalConstRef c' when eq_constant c c' -> Some u
-  | Var id, EvalVarRef id' when id_eq id id' -> Some EInstance.empty
+  | Const (c,u), EvalConstRef c' when Constant.equal c c' -> Some u
+  | Var id, EvalVarRef id' when Id.equal id id' -> Some EInstance.empty
   | _, _ -> None
 
 let substlin env sigma evalref n (nowhere_except_in,locs) c =

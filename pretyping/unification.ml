@@ -42,6 +42,9 @@ type subst0 =
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 let keyed_unification = ref (false)
 let _ = Goptions.declare_bool_option {
   Goptions.optdepr = false;
@@ -550,10 +553,10 @@ let oracle_order env cf1 cf2 =
       | Some k2 ->
 	match k1, k2 with
 	| IsProj (p, _), IsKey (ConstKey (p',_)) 
-	  when eq_constant (Projection.constant p) p' -> 
+	  when Constant.equal (Projection.constant p) p' -> 
 	  Some (not (Projection.unfolded p))
 	| IsKey (ConstKey (p,_)), IsProj (p', _) 
-	  when eq_constant p (Projection.constant p') -> 
+	  when Constant.equal p (Projection.constant p') -> 
 	  Some (Projection.unfolded p')
 	| _ ->
           Some (Conv_oracle.oracle_order (fun x -> x)
@@ -780,7 +783,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	| _, LetIn (_,a,_,c) -> unirec_rec curenvnb pb opt substn cM (subst1 a c)
 
 	(** Fast path for projections. *)
-	| Proj (p1,c1), Proj (p2,c2) when eq_constant
+	| Proj (p1,c1), Proj (p2,c2) when Constant.equal
 	    (Projection.constant p1) (Projection.constant p2) ->
 	  (try unify_same_proj curenvnb cv_pb {opt with at_top = true}
 	       substn c1 c2

@@ -81,4 +81,5 @@ val smartmap : ('a -> 'a) -> 'a t -> 'a t
 val pp_tree : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
 
 val eq_rtree : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+[@@ocaml.deprecated]
 (** @deprecated Same as [Rtree.equal] *)

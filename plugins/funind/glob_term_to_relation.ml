@@ -15,6 +15,9 @@ open Misctypes
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 let observe strm =
   if do_observe ()
   then Feedback.msg_debug strm

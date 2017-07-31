@@ -15,6 +15,9 @@ open Misctypes
 
 module RelDecl = Context.Rel.Declaration
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 exception Toberemoved_with_rel of int*constr
 exception Toberemoved
 
@@ -337,7 +340,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
     fun  new_principle_type _ _  -> 
     if Option.is_empty sorts
     then
-      (*     let id_of_f = Label.to_id (con_label f) in *)
+      (*     let id_of_f = Label.to_id (Constant.label f) in *)
       let register_with_sort fam_sort =
 	let evd' = Evd.from_env (Global.env ()) in
 	let evd',s = Evd.fresh_sort_in_family env evd' fam_sort in

@@ -51,7 +51,7 @@ val convert_leq     : constr -> constr -> unit Proofview.tactic
 
 val fresh_id_in_env : Id.t list -> Id.t -> env -> Id.t
 val fresh_id : Id.t list -> Id.t -> goal sigma -> Id.t
-val find_intro_names : rel_context -> goal sigma -> Id.t list
+val find_intro_names : env -> evar_map -> rel_context -> Id.t list
 
 val intro                : unit Proofview.tactic
 val introf               : unit Proofview.tactic

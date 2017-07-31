@@ -146,6 +146,8 @@ sig
     val canonical : t -> KerName.t
     val user : t -> KerName.t
     val label : t -> Label.t
+    val print : t -> Pp.std_ppcmds
+    val to_string : t -> string
   end
 
   module MutInd :

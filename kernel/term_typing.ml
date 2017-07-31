@@ -388,10 +388,10 @@ let build_constant_declaration kn env result =
     let mk_set l = List.fold_right Id.Set.add (List.map NamedDecl.get_id l) Id.Set.empty in
     let inferred_set, declared_set = mk_set inferred, mk_set declared in
     if not (Id.Set.subset inferred_set declared_set) then
-      let l = Id.Set.elements (Idset.diff inferred_set declared_set) in
+      let l = Id.Set.elements (Id.Set.diff inferred_set declared_set) in
       let n = List.length l in
-      let declared_vars = Pp.pr_sequence Id.print (Idset.elements declared_set) in
-      let inferred_vars = Pp.pr_sequence Id.print (Idset.elements inferred_set) in
+      let declared_vars = Pp.pr_sequence Id.print (Id.Set.elements declared_set) in
+      let inferred_vars = Pp.pr_sequence Id.print (Id.Set.elements inferred_set) in
       let missing_vars  = Pp.pr_sequence Id.print (List.rev l) in
       user_err Pp.(prlist str
          ["The following section "; (String.plural n "variable"); " ";
@@ -417,7 +417,7 @@ let build_constant_declaration kn env result =
            we must look at the body NOW, if any *)
         let ids_typ = global_vars_set env typ in
         let ids_def = match def with
-        | Undef _ -> Idset.empty
+        | Undef _ -> Id.Set.empty
         | Def cs -> global_vars_set env (Mod_subst.force_constr cs)
         | OpaqueDef lc ->
             let vars =
@@ -432,7 +432,7 @@ let build_constant_declaration kn env result =
               record_aux env ids_typ vars expr;
             vars
         in
-        keep_hyps env (Idset.union ids_typ ids_def), def
+        keep_hyps env (Id.Set.union ids_typ ids_def), def
     | None ->
         if !Flags.compilation_mode = Flags.BuildVo then
           record_aux env Id.Set.empty Id.Set.empty "";
@@ -445,14 +445,14 @@ let build_constant_declaration kn env result =
         | Def cs as x ->
             let ids_typ = global_vars_set env typ in
             let ids_def = global_vars_set env (Mod_subst.force_constr cs) in
-            let inferred = keep_hyps env (Idset.union ids_typ ids_def) in
+            let inferred = keep_hyps env (Id.Set.union ids_typ ids_def) in
             check declared inferred;
             x
         | OpaqueDef lc -> (* In this case we can postpone the check *)
             OpaqueDef (Opaqueproof.iter_direct_opaque (fun c ->
               let ids_typ = global_vars_set env typ in
               let ids_def = global_vars_set env c in
-              let inferred = keep_hyps env (Idset.union ids_typ ids_def) in
+              let inferred = keep_hyps env (Id.Set.union ids_typ ids_def) in
               check declared inferred) lc) in
   let univs = result.cook_universes in
   let tps = 

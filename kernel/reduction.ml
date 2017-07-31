@@ -239,7 +239,7 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
             | (Zlapp a1,Zlapp a2) -> 
 	       Array.fold_right2 f a1 a2 cu1
 	    | (Zlproj (c1,l1),Zlproj (c2,l2)) -> 
-	      if not (eq_constant c1 c2) then 
+	      if not (Constant.equal c1 c2) then 
 		raise NotConvertible
 	      else cu1
             | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->

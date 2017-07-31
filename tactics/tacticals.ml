@@ -20,6 +20,10 @@ open Tactypes
 
 module NamedDecl = Context.Named.Declaration
 
+(** Deactivate deprecated warning. TODO: move deprecated code to a proper
+    module, and move this attribute inside. *)
+[@@@ocaml.warning "-3"]
+
 (************************************************************************)
 (* Tacticals re-exported from the Refiner module                        *)
 (************************************************************************)
@@ -622,8 +626,8 @@ module New = struct
       | _ ->
 	  let name_elim =
 	    match EConstr.kind sigma elim with
-	    | Const (kn, _) -> string_of_con kn
-	    | Var id -> string_of_id id
+	    | Const (kn, _) -> Constant.to_string kn
+	    | Var id -> Id.to_string id
 	    | _ -> "\b"
 	  in
 	  user_err ~hdr:"Tacticals.general_elim_then_using"

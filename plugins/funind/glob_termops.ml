@@ -6,6 +6,9 @@ open Names
 open Decl_kinds
 open Misctypes
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 (*
    Some basic functions to rebuild glob_constr
    In each of them the location is Loc.ghost

@@ -61,7 +61,7 @@ let keyword s = tag_keyword (str s)
 let get_new_id locals id =
   let rec get_id l id =
     let dir = DirPath.make [id] in
-      if not (Nametab.exists_module dir) then
+      if not (Nametab.exists_dir dir) then
 	id
       else
 	get_id (id::l) (Namegen.next_ident_away id l)
@@ -300,7 +300,7 @@ let nametab_register_modparam mbid mtb =
       id
 
 let print_body is_impl env mp (l,body) =
-  let name = pr_label l in
+  let name = Label.print l in
   hov 2 (match body with
     | SFBmodule _ -> keyword "Module" ++ spc () ++ name
     | SFBmodtype _ -> keyword "Module Type" ++ spc () ++ name

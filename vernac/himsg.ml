@@ -913,11 +913,11 @@ let explain_not_match_error = function
       quote (Univ.pr_constraints (Termops.pr_evd_level Evd.empty) cst)
 
 let explain_signature_mismatch l spec why =
-  str "Signature components for label " ++ pr_label l ++
+  str "Signature components for label " ++ Label.print l ++
   str " do not match:" ++ spc () ++ explain_not_match_error why ++ str "."
 
 let explain_label_already_declared l =
-  str "The label " ++ pr_label l ++ str " is already declared."
+  str "The label " ++ Label.print l ++ str " is already declared."
 
 let explain_application_to_not_path _ =
   strbrk "A module cannot be applied to another module application or " ++
@@ -947,11 +947,11 @@ let explain_not_equal_module_paths mp1 mp2 =
   str "Non equal modules."
 
 let explain_no_such_label l =
-  str "No such label " ++ pr_label l ++ str "."
+  str "No such label " ++ Label.print l ++ str "."
 
 let explain_incompatible_labels l l' =
   str "Opening and closing labels are not the same: " ++
-  pr_label l ++ str " <> " ++ pr_label l' ++ str "!"
+  Label.print l ++ str " <> " ++ Label.print l' ++ str "!"
 
 let explain_not_a_module s =
   quote (str s) ++ str " is not a module."
@@ -960,19 +960,19 @@ let explain_not_a_module_type s =
   quote (str s) ++ str " is not a module type."
 
 let explain_not_a_constant l =
-  quote (pr_label l) ++ str " is not a constant."
+  quote (Label.print l) ++ str " is not a constant."
 
 let explain_incorrect_label_constraint l =
   str "Incorrect constraint for label " ++
-  quote (pr_label l) ++ str "."
+  quote (Label.print l) ++ str "."
 
 let explain_generative_module_expected l =
-  str "The module " ++ pr_label l ++ str " is not generative." ++
+  str "The module " ++ Label.print l ++ str " is not generative." ++
   strbrk " Only components of generative modules can be changed" ++
   strbrk " using the \"with\" construct."
 
 let explain_label_missing l s =
-  str "The field " ++ pr_label l ++ str " is missing in "
+  str "The field " ++ Label.print l ++ str " is missing in "
   ++ str s ++ str "."
 
 let explain_include_restricted_functor mp =

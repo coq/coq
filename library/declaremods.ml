@@ -147,7 +147,7 @@ module ModObjs :
 *)
 
 let mp_of_kn kn =
-  let mp,sec,l = repr_kn kn in
+  let mp,sec,l = KerName.repr kn in
   assert (DirPath.is_empty sec);
   MPdot (mp,l)
 
@@ -978,7 +978,7 @@ let debug_print_modtab _ =
     | l -> str "[." ++ int (List.length l) ++ str ".]"
   in
   let pr_modinfo mp (prefix,substobjs,keepobjs) s =
-    s ++ str (string_of_mp mp) ++ (spc ())
+    s ++ str (ModPath.to_string mp) ++ (spc ())
     ++ (pr_seg (Lib.segment_of_objects prefix (substobjs@keepobjs)))
   in
   let modules = MPmap.fold pr_modinfo (ModObjs.all ()) (mt ()) in

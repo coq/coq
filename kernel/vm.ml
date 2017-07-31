@@ -654,10 +654,10 @@ let apply_whd k whd =
 let rec pr_atom a =
   Pp.(match a with
   | Aid c -> str "Aid(" ++ (match c with
-                            | ConstKey c -> Names.pr_con c
+                            | ConstKey c -> Names.Constant.print c
 			    | RelKey i -> str "#" ++ int i
 			    | _ -> str "...") ++ str ")"
-  | Aind (mi,i) -> str "Aind(" ++ Names.pr_mind mi ++ str "#" ++ int i ++ str ")"
+  | Aind (mi,i) -> str "Aind(" ++ Names.MutInd.print mi ++ str "#" ++ int i ++ str ")"
   | Atype _ -> str "Atype(")
 and pr_whd w =
   Pp.(match w with
@@ -679,4 +679,4 @@ and pr_zipper z =
   | Zapp args -> str "Zapp(len = " ++ int (nargs args) ++ str ")"
   | Zfix (f,args) -> str "Zfix(..., len=" ++ int (nargs args) ++ str ")"
   | Zswitch s -> str "Zswitch(...)"
-  | Zproj c -> str "Zproj(" ++ Names.pr_con c ++ str ")")
+  | Zproj c -> str "Zproj(" ++ Names.Constant.print c ++ str ")")

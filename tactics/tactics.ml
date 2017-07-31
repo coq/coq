@@ -516,7 +516,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
   | (f, n, ar) :: oth ->
     let open Context.Named.Declaration in
     let (sp', u')  = check_mutind env sigma n ar in
-    if not (eq_mind sp sp') then
+    if not (MutInd.equal sp sp') then
       error "Fixpoints should be on the same mutual inductive declaration.";
     if mem_named_context_val f sign then
       user_err ~hdr:"Logic.prim_refiner"
@@ -912,14 +912,14 @@ let unfold_constr = function
    iteration of [find_name] above. As [default_id] checks the sort of
    the type to build hyp names, we maintain an environment to be able
    to type dependent hyps. *)
-let find_intro_names ctxt gl =
+let find_intro_names env sigma ctxt =
   let _, res = List.fold_right
     (fun decl acc ->
       let env,idl = acc in
-      let name = fresh_id idl (default_id env gl.sigma decl) gl in
+      let name = fresh_id_in_env idl (default_id env sigma decl) env in
       let newenv = push_rel decl env in
       (newenv,(name::idl)))
-    ctxt (pf_env gl , []) in
+    ctxt (env, []) in
   List.rev res
 
 let build_intro_tac id dest tac = match dest with
@@ -1329,7 +1329,7 @@ let enforce_prop_bound_names rename tac =
                 (* "very_standard" says that we should have "H" names only, but
                    this would break compatibility even more... *)
                 let s = match Namegen.head_name sigma t with
-                  | Some id when not very_standard -> string_of_id id
+                  | Some id when not very_standard -> Id.to_string id
                   | _ -> "" in
                 Name (add_suffix Namegen.default_prop_ident s)
               else

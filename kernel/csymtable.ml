@@ -68,7 +68,7 @@ let rec eq_structured_constant c1 c2 = match c1, c2 with
 | Const_bn (t1, a1), Const_bn (t2, a2) ->
   Int.equal t1 t2 && Array.equal eq_structured_constant a1 a2
 | Const_bn _, _ -> false
-| Const_univ_level l1 , Const_univ_level l2 -> Univ.eq_levels l1 l2
+| Const_univ_level l1 , Const_univ_level l2 -> Univ.Level.equal l1 l2
 | Const_univ_level _ , _ -> false
 | Const_type u1 , Const_type u2 -> Univ.Universe.equal u1 u2
 | Const_type _ , _ -> false

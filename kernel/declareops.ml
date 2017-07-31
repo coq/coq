@@ -287,9 +287,9 @@ let hcons_mind mib =
 (** {6 Stm machinery } *)
 
 let string_of_side_effect { Entries.eff } = match eff with
-  | Entries.SEsubproof (c,_,_) -> "P(" ^ Names.string_of_con c ^ ")"
+  | Entries.SEsubproof (c,_,_) -> "P(" ^ Names.Constant.to_string c ^ ")"
   | Entries.SEscheme (cl,_) ->
-      "S(" ^ String.concat ", " (List.map (fun (_,c,_,_) -> Names.string_of_con c) cl) ^ ")"
+      "S(" ^ String.concat ", " (List.map (fun (_,c,_,_) -> Names.Constant.to_string c) cl) ^ ")"
 
 (** Hashconsing of modules *)
 

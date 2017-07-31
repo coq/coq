@@ -29,12 +29,12 @@ let pop_dirpath p = match DirPath.repr p with
   | _::l -> DirPath.make l
 
 let pop_mind kn =
-  let (mp,dir,l) = Names.repr_mind kn in
-  Names.make_mind mp (pop_dirpath dir) l
+  let (mp,dir,l) = Names.MutInd.repr3 kn in
+  Names.MutInd.make3 mp (pop_dirpath dir) l
 
 let pop_con con =
-  let (mp,dir,l) = Names.repr_con con in
-  Names.make_con mp (pop_dirpath dir) l
+  let (mp,dir,l) = Names.Constant.repr3 con in
+  Names.Constant.make3 mp (pop_dirpath dir) l
 
 type my_global_reference =
   | ConstRef of constant

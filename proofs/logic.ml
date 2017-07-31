@@ -26,6 +26,9 @@ open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 type refiner_error =
 
   (* Errors raised by the refiner *)

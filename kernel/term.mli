@@ -157,6 +157,7 @@ val destApp : constr -> constr * constr array
 
 (** Obsolete synonym of destApp *)
 val destApplication : constr -> constr * constr array
+[@@ocaml.deprecated]
 
 (** Decompose any term as an applicative term; the list of args can be empty *)
 val decompose_app : constr -> constr * constr list

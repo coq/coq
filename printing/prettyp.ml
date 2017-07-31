@@ -586,14 +586,14 @@ let gallina_print_leaf_entry with_values ((sp,kn as oname),lobj) =
              constraints *)
 	  (try Some(print_named_decl (basename sp)) with Not_found -> None)
       | (_,"CONSTANT") ->
-	  Some (print_constant with_values sep (constant_of_kn kn))
+	  Some (print_constant with_values sep (Constant.make1 kn))
       | (_,"INDUCTIVE") ->
-	  Some (gallina_print_inductive (mind_of_kn kn))
+	  Some (gallina_print_inductive (MutInd.make1 kn))
       | (_,"MODULE") ->
-	  let (mp,_,l) = repr_kn kn in
+	  let (mp,_,l) = KerName.repr kn in
 	    Some (print_module with_values (MPdot (mp,l)))
       | (_,"MODULE TYPE") ->
-	  let (mp,_,l) = repr_kn kn in
+	  let (mp,_,l) = KerName.repr kn in
 	  Some (print_modtype (MPdot (mp,l)))
       | (_,("AUTOHINT"|"GRAMMAR"|"SYNTAXCONSTANT"|"PPSYNTAX"|"TOKEN"|"CLASS"|
 	    "COERCION"|"REQUIRE"|"END-SECTION"|"STRUCTURE")) -> None
@@ -713,12 +713,12 @@ let print_full_pure_context () =
 	    str "." ++ fnl () ++ fnl ()
       | "MODULE" ->
 	  (* TODO: make it reparsable *)
-	  let (mp,_,l) = repr_kn kn in
+	  let (mp,_,l) = KerName.repr kn in
 	  print_module true (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
       | "MODULE TYPE" ->
 	  (* TODO: make it reparsable *)
 	  (* TODO: make it reparsable *)
-	  let (mp,_,l) = repr_kn kn in
+	  let (mp,_,l) = KerName.repr kn in
 	  print_modtype (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
       | _ -> mt () in
       prec rest ++ pp

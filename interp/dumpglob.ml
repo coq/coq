@@ -231,7 +231,7 @@ let add_glob ?loc ref =
     add_glob_gen ?loc sp lib_dp ty
 
 let mp_of_kn kn =
-  let mp,sec,l = Names.repr_kn kn in
+  let mp,sec,l = Names.KerName.repr kn in
     Names.MPdot (mp,l)
 
 let add_glob_kn ?loc kn =

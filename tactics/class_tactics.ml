@@ -619,6 +619,9 @@ let make_hints g st only_classes sign =
 (** <= 8.5 resolution *)
 module V85 = struct
 
+  (** Deactivate deprecated warning *)
+  [@@@ocaml.warning "-3"]
+
   type autoinfo = { hints : hint_db; is_evar: existential_key option;
                     only_classes: bool; unique : bool;
                     auto_depth: int list; auto_last_tac: std_ppcmds Lazy.t;

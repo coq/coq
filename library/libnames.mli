@@ -131,4 +131,6 @@ val join_reference : reference -> reference -> reference
 (** Deprecated synonyms *)
 
 val make_short_qualid : Id.t -> qualid (** = qualid_of_ident *)
+[@@ocaml.deprecated]
 val qualid_of_sp : full_path -> qualid (** = qualid_of_path *)
+[@@ocaml.deprecated]
