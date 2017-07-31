@@ -241,7 +241,7 @@ Variables A B C : Prop.
 \end{coq_example}
 
 We shall consider simple implications, such as $A\ra B$, read as 
-``$A$ implies $B$''. Remark that we overload the arrow symbol, which
+``$A$ implies $B$''. Note that we overload the arrow symbol, which
 has been used above as the functionality type constructor, and which
 may be used as well as propositional connective:
 \begin{coq_example}
@@ -289,7 +289,7 @@ apply H.
 We are now in the situation where we have two judgments as conjectures
 that remain to be proved. Only the first is listed in full, for the
 others the system displays only the corresponding subgoal, without its
-local hypotheses list. Remark that \verb:apply: has kept the local
+local hypotheses list. \verb:apply: has kept the local
 hypotheses of its father judgment, which are still available for
 the judgments it generated.
 
@@ -654,7 +654,7 @@ Hypothesis R_transitive :
     forall x y z : D, R x y -> R y z -> R x z.
 \end{coq_example}
 
-Remark the syntax \verb+forall x : D,+ which stands for universal quantification
+Note the syntax \verb+forall x : D,+ which stands for universal quantification
 $\forall x : D$.
 
 \subsection{Existential quantification}
@@ -664,10 +664,10 @@ We now state our lemma, and enter proof mode.
 Lemma refl_if : forall x : D, (exists y, R x y) -> R x x.
 \end{coq_example}
 
-Remark that the hypotheses which are local to the currently opened sections
+The hypotheses that are local to the currently opened sections
 are listed as local hypotheses to the current goals.
-The rationale is that these hypotheses are going to be discharged, as we
-shall see, when we shall close the corresponding sections.
+The rationale for this is that these hypotheses are going to be discharged, as
+we shall see, when we shall close the corresponding sections.
 
 Note the functional syntax for existential quantification. The existential
 quantifier is built from the operator \verb:ex:, which expects a 
@@ -687,7 +687,7 @@ verifies \verb:P:. Let us see how this works on this simple example.
 intros x x_Rlinked.
 \end{coq_example}
 
-Remark that \verb:intros: treats universal quantification in the same way
+Note that \verb:intros: treats universal quantification in the same way
 as the premises of implications. Renaming of bound variables occurs
 when it is needed; for instance, had we started with \verb:intro y:,
 we would have obtained the goal:
@@ -859,7 +859,7 @@ Check weird.
 Check drinker.
 \end{coq_example}
 
-Remark how the three theorems are completely generic in the most general 
+Note how the three theorems are completely generic in the most general 
 fashion;
 the domain \verb:D: is discharged in all of them, \verb:R: is discharged in
 \verb:refl_if: only, \verb:P: is discharged only in \verb:weird: and
@@ -867,7 +867,7 @@ the domain \verb:D: is discharged in all of them, \verb:R: is discharged in
 Finally, the excluded middle hypothesis is discharged only in 
 \verb:drinker:.
 
-Note that the name \verb:d: has vanished as well from
+Note, too, that the name \verb:d: has vanished from
 the statements of \verb:weird: and \verb:drinker:, 
 since \Coq's pretty-printer replaces
 systematically a quantification such as \texttt{forall d : D, E},
