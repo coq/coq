@@ -24,4 +24,9 @@ CI_TARGETS=ci-all \
 
 # Generic rule, we use make to easy travis integraton with mixed rules
 $(CI_TARGETS): ci-%:
-	+./dev/ci/ci-$*.sh
+	rm -f ci-$*.ok
+	+(./dev/ci/ci-$*.sh 2>&1 && touch ci-$*.ok) | tee time-of-build.log
+	echo 'Aggregating timing log...' && echo -en 'travis_fold:start:coq.test.timing\\r'
+	python ./tools/make-one-time-file.py time-of-build.log
+	echo -en 'travis_fold:end:coq.test.timing\\r'
+	rm ci-$*.ok # must not be -f; we're checking to see that it exists
