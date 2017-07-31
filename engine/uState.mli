@@ -108,7 +108,7 @@ val is_sort_variable : t -> Sorts.t -> Univ.Level.t option
 
 val normalize_variables : t -> Univ.universe_subst * t
 
-val constrain_variables : Univ.LSet.t -> t -> Univ.constraints
+val constrain_variables : Univ.LSet.t -> t -> t
 
 val abstract_undefined_variables : t -> t
 

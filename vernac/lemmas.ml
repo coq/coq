@@ -510,8 +510,10 @@ let save_proof ?proof = function
 	    let decl = Proof_global.get_universe_decl () in
             let evd = Evd.from_ctx universes in
             let binders, ctx = Evd.check_univ_decl evd decl in
-            Admitted(id,k,(sec_vars, pi2 k, (typ, ctx), None),
-		     (universes, Some binders))
+            let poly = pi2 k in
+            let binders = if poly then Some binders else None in
+            Admitted(id,k,(sec_vars, poly, (typ, ctx), None),
+		     (universes, binders))
       in
       Proof_global.apply_terminator (Proof_global.get_terminator ()) pe
   | Vernacexpr.Proved (is_opaque,idopt) ->

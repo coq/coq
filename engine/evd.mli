@@ -493,7 +493,7 @@ val empty_evar_universe_context : evar_universe_context
 val union_evar_universe_context : evar_universe_context -> evar_universe_context ->
   evar_universe_context
 val evar_universe_context_subst : evar_universe_context -> Universes.universe_opt_subst
-val constrain_variables : Univ.LSet.t -> evar_universe_context -> Univ.constraints
+val constrain_variables : Univ.LSet.t -> evar_universe_context -> evar_universe_context
 
 
 val evar_universe_context_of_binders :

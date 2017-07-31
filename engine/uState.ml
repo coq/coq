@@ -101,16 +101,6 @@ let initial_graph ctx = ctx.uctx_initial_universes
 
 let algebraics ctx = ctx.uctx_univ_algebraic
 
-let constrain_variables diff ctx =
-  Univ.LSet.fold
-    (fun l cstrs ->
-      try
-        match Univ.LMap.find l ctx.uctx_univ_variables with
-        | Some u -> Univ.Constraint.add (l, Univ.Eq, Option.get (Univ.Universe.level u)) cstrs
-        | None -> cstrs
-      with Not_found | Option.IsNone -> cstrs)
-    diff Univ.Constraint.empty
-
 let add_uctx_names ?loc s l (names, names_rev) =
   (UNameMap.add s l names, Univ.LMap.add l { uname = Some s; uloc = loc } names_rev)
 
@@ -241,6 +231,24 @@ let add_universe_constraints ctx cstrs =
     { ctx with uctx_local = (univs, Univ.Constraint.union local local');
       uctx_univ_variables = vars;
       uctx_universes = UGraph.merge_constraints local' ctx.uctx_universes }
+
+let constrain_variables diff ctx =
+  let univs, local = ctx.uctx_local in
+  let univs, vars, local =
+    Univ.LSet.fold
+      (fun l (univs, vars, cstrs) ->
+        try
+          match Univ.LMap.find l vars with
+          | Some u ->
+             (Univ.LSet.add l univs,
+              Univ.LMap.remove l vars,
+              Univ.Constraint.add (l, Univ.Eq, Option.get (Univ.Universe.level u)) cstrs)
+          | None -> (univs, vars, cstrs)
+        with Not_found | Option.IsNone -> (univs, vars, cstrs))
+      diff (univs, ctx.uctx_univ_variables, local)
+  in
+  { ctx with uctx_local = (univs, local); uctx_univ_variables = vars }
+  
 
 let pr_uctx_level uctx = 
   let map, map_rev = uctx.uctx_names in 
