@@ -24,7 +24,7 @@ module NamedDecl = Context.Named.Declaration
 
 let instantiate_evar evk (ist,rawc) sigma =
   let evi = Evd.find sigma evk in
-  let filtered = Evd.evar_filtered_env evi in
+  let filtered = Evd.evar_env evi in
   let constrvars = Tacinterp.extract_ltac_constr_values ist filtered in
   let lvar = {
     Glob_term.ltac_constrs = constrvars;

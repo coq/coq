@@ -378,7 +378,7 @@ let adjust_evar_source evdref na c =
      begin match evi.evar_source with
      | loc, Evar_kinds.QuestionMark (b,Anonymous) ->
         let src = (loc,Evar_kinds.QuestionMark (b,na)) in
-        let (evd, evk') = restrict_evar !evdref evk (evar_filter evi) ~src None in
+        let (evd, evk') = restrict_evar !evdref evk Filter.identity ~src None in
         evdref := evd;
         mkEvar (evk',args)
      | _ -> c
@@ -595,7 +595,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
         try Evd.evar_key id !evdref
         with Not_found ->
           user_err ?loc  (str "Unknown existential variable.") in
-      let hyps = evar_filtered_context (Evd.find !evdref evk) in
+      let hyps = evar_context (Evd.find !evdref evk) in
       let args = pretype_instance k0 resolve_tc env evdref lvar loc hyps evk inst in
       let c = mkEvar (evk, args) in
       let j = (Retyping.get_judgment_of env.ExtraEnv.env !evdref c) in

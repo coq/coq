@@ -108,4 +108,4 @@ foo5 x nat x
 fun x : ?A => x === x
      : forall x : ?A, x = x
 where
-?A : [x : ?A |- Type] (x cannot be used)
+?A : [ |- Type] 

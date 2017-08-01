@@ -445,7 +445,7 @@ let start_proof_and_print k l hook =
       let hook env sigma ev =
         let tac = !Obligations.default_tactic in
         let evi = Evd.find sigma ev in
-        let env = Evd.evar_filtered_env evi in
+        let env = Evd.evar_env evi in
         try
           let concl = Evarutil.nf_evars_universes sigma evi.Evd.evar_concl in
           let concl = EConstr.of_constr concl in

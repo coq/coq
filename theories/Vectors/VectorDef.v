@@ -36,7 +36,6 @@ Local Notation "h :: t" := (cons _ h _ t) (at level 60, right associativity).
 Section SCHEMES.
 
 (** An induction scheme for non-empty vectors *)
-
 Definition rectS {A} (P:forall {n}, t A (S n) -> Type)
  (bas: forall a: A, P (a :: []))
  (rect: forall a {n} (v: t A (S n)), P v -> P (a :: v)) :=
