@@ -263,6 +263,8 @@ is an evaluation context.
 
 ```
 E[throw e] ≡ throw e
+
+(e value)
 ```
 
 There is currently no way to catch such an exception and it is a design choice.
@@ -286,7 +288,7 @@ If one sees thunks as lazy lists, then `zero` is the empty list and `plus` is
 list concatenation, while `case` is pattern-matching.
 
 The backtracking is first-class, i.e. one can write
-`plus "x" (fun () -> "y") : string` producing a backtracking string.
+`plus "x" (fun () => "y") : string` producing a backtracking string.
 
 These operations are expected to satisfy a few equations, most notably that they
 form a monoid compatible with sequentialization.
@@ -299,7 +301,7 @@ plus (plus t f) g ≡ plus t (fun e -> plus (f e) g)
 case (fun () -> zero e) ≡ Err e
 case (fun () -> plus (fun () -> t) f) ≡ Val t f
 
-let x := zero e in u ≡ fail e
+let x := zero e in u ≡ zero e
 let x := plus t f in u ≡ plus (fun () -> let x := t in u) (fun e -> let x := f e in u)
 
 (t, u, f, g, e values)
