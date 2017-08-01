@@ -278,6 +278,10 @@ exact O.
 trivial.
 Qed.
 
+Goal exists n : nat, True.
+now exists 0.
+Qed.
+
 (* Check pattern-unification on evars in apply unification *)
 
 Lemma evar : exists f : nat -> nat, forall x, f x = 0 -> x = 0.
@@ -521,7 +525,8 @@ intros x H H0 H1.
 eapply eq_trans in H. 2:apply H0.
 rewrite H1 in H.
 change (x+0=0) in H. (* Check the result in H1 *)
-Abort.
+exact I.
+Qed.
 
 Goal forall x, 2=x+1 -> (forall x, S x = 0) -> 2 = 0.
 intros x H H0.
@@ -558,4 +563,13 @@ split.
 - (* use b:True *) match goal with H:_ |- _ => exact H end.
 - (* clear b:True *) match goal with H:_ |- _ => clear H end.
   (* use a:0=0 *) match goal with H:_ |- _ => exact H end.
+Qed.
+
+(* Test pattern unification in evar-evar problems *)
+Variable pair : nat -> nat -> Prop.
+Goal forall x, exists p (q : nat -> nat -> Prop), p x = q (fst x) (snd x).
+Proof.
+  unshelve eexists. clear x. shelve. unshelve eexists. clear x. shelve.
+  apply eq_refl.
+  Unshelve. exact pair.
 Qed.
