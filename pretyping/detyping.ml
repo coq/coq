@@ -475,8 +475,8 @@ let rec detype flags avoid env sigma t = CAst.make @@
  	  GApp (f',args''@args')
  	| _ -> GApp (f',args')
       in
-	mkapp (detype flags avoid env sigma f)
-	  (Array.map_to_list (detype flags avoid env sigma) args)
+      mkapp (detype flags avoid env sigma f)
+        (detype_array flags avoid env sigma args)
     | Const (sp,u) -> GRef (ConstRef sp, detype_instance sigma u)
     | Proj (p,c) ->
       let noparams () = 
@@ -693,6 +693,15 @@ and detype_binder (lax,isgoal as flags) bk avoid env sigma na body ty c =
       let s = try Retyping.get_sort_family_of (snd env) sigma ty with _ when !Flags.in_debugger || !Flags.in_toplevel -> InType (* Can fail because of sigma missing in debugger *) in
       let t = if s != InProp  && not !Flags.raw_print then None else Some (detype (lax,false) avoid env sigma ty) in
       GLetIn (na', c, t, r)
+
+(** We use a dedicated function here to prevent overallocation from
+    Array.map_to_list. *)
+and detype_array flags avoid env sigma args =
+  let ans = ref [] in
+  for i = Array.length args - 1 downto 0 do
+    ans := detype flags avoid env sigma args.(i) :: !ans;
+  done;
+  !ans
 
 let detype_rel_context ?(lax=false) where avoid env sigma sign =
   let where = Option.map (fun c -> EConstr.it_mkLambda_or_LetIn c sign) where in
