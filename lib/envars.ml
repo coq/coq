@@ -202,7 +202,14 @@ let xdg_dirs ~warn =
 
 (* Print the configuration information *)
 
-let print_config ?(prefix_var_name="") f coq_src_subdirs =
+let coq_src_subdirs = [ 
+   "config" ; "dev" ; "lib" ; "kernel" ; "library" ;
+   "engine" ; "pretyping" ; "interp" ; "parsing" ; "proofs" ;
+   "tactics" ; "toplevel" ; "printing" ; "intf" ;
+   "grammar" ; "ide" ; "stm"; "vernac" ] @
+   Coq_config.plugins_dirs
+
+let print_config ?(prefix_var_name="") f =
   let open Printf in 
   fprintf f "%sLOCAL=%s\n" prefix_var_name (if Coq_config.local then "1" else "0");
   fprintf f "%sCOQLIB=%s/\n" prefix_var_name (coqlib ());

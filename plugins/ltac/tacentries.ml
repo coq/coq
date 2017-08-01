@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
-open Grammar_API
 open Pp
 open CErrors
 open Util

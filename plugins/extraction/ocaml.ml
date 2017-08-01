@@ -8,7 +8,6 @@
 
 (*s Production of Ocaml syntax. *)
 
-open API
 open Pp
 open CErrors
 open Util

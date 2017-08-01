@@ -8,8 +8,6 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open API
-open Grammar_API.Pcoq.Prim
 
 DECLARE PLUGIN "extraction_plugin"
 
@@ -18,6 +16,7 @@ DECLARE PLUGIN "extraction_plugin"
 open Ltac_plugin
 open Genarg
 open Stdarg
+open Pcoq.Prim
 open Pp
 open Names
 open Table
