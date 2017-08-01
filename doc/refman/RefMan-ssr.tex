@@ -28,26 +28,57 @@
   {\end{minipage}\end{Sbox}\noindent\doublebox{\TheSbox}}
 \section{Introduction}\label{sec:intro}
 
-This chapter describes an extension to the \Coq{} tactic language,
-originally designed to provide support at the tactic level for the
-so-called \emph{small scale reflection} proof methodology.
-% \marginpar{Provide a citation here?} TODO: cite mcb
-However, its tactics and tacticals
-provide features of general interest for a wide audience of users.
+This chapter describes a set of tactics orginally designed to provide
+support at the tactic level for the so-called \emph{small scale
+reflection} proof methodology but which at the end provides with a
+couple of tactics and tacticals of no less general interest than other
+Coq tactics, even, if due to a development of these tactics in
+parallel from the development of the Coq tactics, there are
+redundancies. Eventually, it is the hope of the Coq development team
+that the specific features of these tactics will be united into a
+consistent set of tactics, and the superficial syntactic differences
+be cleaned.
 
-In particular:
-\begin{itemize}
-\item support for forward steps (see the \ssrC{have}, \ssrC{generally have}, \ssrC{without loss} and \ssrC{suffices} tactics~\ref{sssec:have,ssec:wlog})
-\item support for bookkeeping (see the \ssrC{:}, \ssrC{=>} and \ssrC{in} tacticals~\ref{ssec:profstack,ssec:gloc})
-\item common support for subterm selection in all tactics that deal with subterms
-	(see the term selection language~\ref{ssec:rewp})
-\item unified interface for rewriting, definition expansion, and
-	partial evaluation (see the \ssrC{rewrite} tactic~\ref{sec:rw})
-\item support for so-called reflection steps (via \emph{views}~\ref{sec:views})
-\end{itemize}
+The main conceptual difference between the tactics described in this
+chapter and the tactics described in Chapter~\ref{Tactics} is the way
+hypotheses are managed. In Chapter~\ref{Tactics} the most common
+approach is to avoid moving explicitly hypotheses back and forth
+between the context and the conclusion of the goal. On the contrary,
+for the tactics described in this Chapter, the default model is that
+all bookkeeping is performed on the conclusion of the goal, using for
+that purpose a couple of pseudo-tacticals or tacticals: a
+pseudo-tactical {\tt :} to move hypotheses from the context to the
+conclusion, an (almost) tactical {\tt =>} to move hypotheses from the
+conclusion to the context, and a pseudo-tactical {\tt in} to move back
+and forth an hypothesis from the context to the conclusion for the
+time of applying an action to it.
 
-In fact, only the last functionality is specific to small-scale
-reflection. All the others are of general use.
+While naming hypotheses is commonly done by means of an {\tt as}
+clause in the basic model of Chapter~\ref{Tactics}, it is here to {\tt
+=>} that this task is devoted. While generalizing the goal is normally
+not explicitly needed in Chapter~\ref{Tactics}, it is an explicit
+operation performed by {\tt :}.
+
+Beside the difference of bookkeeping model, this chapter includes
+specific tactics which have no explicit counterpart in
+Chapter~\ref{Tactics} such as tactics for sharing subproofs using the
+{\tt general have} where ({\tt have} is the name given in this Chapter
+to the concept carried by the {\tt assert} tactic) and {\tt wlog}
+(shortening for {\em without loss of generality}).
+
+It also includes a mini-language for selection of subterms in tactics
+or pseudo-tacticals where it matters.
+
+It also adopts the point of view that rewriting, definition
+expansion and partial evaluation participate all to a same concept of
+rewriting a goal in a larse sense. As such, they are all laid on the
+same keyword {\tt rewrite} using instead a symbolic syntax to
+distinguish between the different option, leading at the end to a
+compact syntax for combinations of such steps.
+
+Finally, it supports the so-called reflection steps, typically
+allowing to switch back and forth between the computational view and
+logical view at decicable connectives. % Too restrictive ?
 
 \iffalse
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
