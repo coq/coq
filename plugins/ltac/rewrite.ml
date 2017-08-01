@@ -2155,7 +2155,7 @@ let setoid_reflexivity =
      tac_open (poly_proof PropGlobal.get_reflexive_proof
 			  TypeGlobal.get_reflexive_proof
 			  env evm car rel)
-	      (fun c -> tclCOMPLETE (apply c)))
+	      (fun c -> tclCOMPLETE (apply ~with_delta:true c)))
     (reflexivity_red true)
 
 let setoid_symmetry =
@@ -2164,7 +2164,7 @@ let setoid_symmetry =
       tac_open
 	(poly_proof PropGlobal.get_symmetric_proof TypeGlobal.get_symmetric_proof
 	   env evm car rel)
-	(fun c -> apply c))
+	(fun c -> apply ~with_delta:true c))
     (symmetry_red true)
     
 let setoid_transitivity c =
@@ -2174,7 +2174,7 @@ let setoid_transitivity c =
 	   env evm car rel)
 	(fun proof -> match c with
 	| None -> eapply proof
-	| Some c -> apply_with_bindings (proof,ImplicitBindings [ c ])))
+	| Some c -> apply_with_bindings ~with_delta:true (proof,ImplicitBindings [ c ])))
     (transitivity_red true c)
     
 let setoid_symmetry_in id =
@@ -2193,9 +2193,11 @@ let setoid_symmetry_in id =
   let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in
   let new_hyp' =  mkApp (he, [| c2 ; c1 |]) in
   let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in
-    (tclTHENLAST
-      (Tactics.assert_after_replacing id new_hyp)
-      (tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); Tactics.assumption ]))
+  tclTHENLAST
+    (Tactics.assert_after_replacing id new_hyp)
+    (Tacticals.New.tclTHENLIST
+       [ intros; setoid_symmetry;
+         apply ~with_delta:true (mkVar id); Tactics.assumption ])
   end
 
 let _ = Hook.set Tactics.setoid_reflexivity setoid_reflexivity

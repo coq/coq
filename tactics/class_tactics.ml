@@ -247,10 +247,9 @@ let unify_resolve poly flags = begin fun gls (c,_,clenv) ->
 
 (** Application of a lemma using [refine] instead of the old [w_unify] *)
 let unify_resolve_refine poly flags gls ((c, t, ctx),n,clenv) =
-  let open Clenv in
   let env = Proofview.Goal.env gls in
-  let concl = Proofview.Goal.concl gls in
-  Refine.refine ~typecheck:false begin fun sigma ->
+  Proofview.Goal.enter begin fun gls ->
+      let sigma = Proofview.Goal.sigma gls in
       let sigma, term, ty =
         if poly then
           let (subst, ctx) = Universes.fresh_universe_context_set_instance ctx in
@@ -262,10 +261,10 @@ let unify_resolve_refine poly flags gls ((c, t, ctx),n,clenv) =
           sigma, c, t
       in
       let sigma', cl = Clenv.make_evar_clause env sigma ?len:n term ty in
-      let sigma' =
-        Evarconv.the_conv_x_leq env ~ts:flags.core_unify_flags.modulo_delta
-                                cl.cl_concl concl sigma'
-      in (sigma', cl.cl_val) end
+      Tacticals.New.tclTHEN
+        (Proofview.Unsafe.tclEVARS sigma')
+        (Clenvtac.clenv_refine2 ~with_evars:true ~with_classes:false
+                                ~flags:flags cl) end
 
 let unify_resolve_refine poly flags gl clenv =
   Proofview.tclORELSE
