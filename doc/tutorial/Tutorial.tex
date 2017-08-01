@@ -289,7 +289,7 @@ apply H.
 We are now in the situation where we have two judgments as conjectures
 that remain to be proved. Only the first is listed in full, for the
 others the system displays only the corresponding subgoal, without its
-local hypotheses list. \verb:apply: has kept the local
+local hypotheses list. Note that \verb:apply: has kept the local
 hypotheses of its father judgment, which are still available for
 the judgments it generated.
 
@@ -666,7 +666,7 @@ Lemma refl_if : forall x : D, (exists y, R x y) -> R x x.
 
 The hypotheses that are local to the currently opened sections
 are listed as local hypotheses to the current goals.
-The rationale for this is that these hypotheses are going to be discharged, as
+That is because these hypotheses are going to be discharged, as
 we shall see, when we shall close the corresponding sections.
 
 Note the functional syntax for existential quantification. The existential
