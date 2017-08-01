@@ -2979,7 +2979,7 @@ let specialize (c,lbind) ipat =
           sigma,hd'
         | _ ,_ -> assert false in
       let sigma,hd = rebuild_lambdas sigma (List.rev lprod) [] c_hd tstack in
-      sigma, hd
+      Evd.clear_metas sigma, hd
   in
   let typ = Retyping.get_type_of env sigma term in
   let tac =
