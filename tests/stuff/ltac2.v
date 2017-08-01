@@ -143,3 +143,11 @@ Ltac2 rec do n tac := match Int.equal n 0 with
 end.
 
 Print Ltac2 do.
+
+Goal forall x, 1 + x = x + 1.
+Proof.
+refine (fun () => '(fun x => _)).
+Std.cbv {
+  Std.rBeta := true; Std.rMatch := true; Std.rFix := true; Std.rCofix := true;
+  Std.rZeta := true; Std.rDelta := false; rConst := [];
+} { Std.on_hyps := None; Std.on_concl := Std.AllOccurrences }.

@@ -59,6 +59,9 @@ val to_pattern : valexpr -> Pattern.constr_pattern
 val of_pp : Pp.t -> valexpr
 val to_pp : valexpr -> Pp.t
 
+val of_constant : Constant.t -> valexpr
+val to_constant : valexpr -> Constant.t
+
 val of_ext : 'a Val.typ -> 'a -> valexpr
 val to_ext : 'a Val.typ -> valexpr -> 'a
 

@@ -122,3 +122,6 @@ let of_array f vl = ValBlk (0, Array.map f vl)
 let to_array f = function
 | ValBlk (0, vl) -> Array.map f vl
 | _ -> assert false
+
+let of_constant c = of_ext val_constant c
+let to_constant c = to_ext val_constant c

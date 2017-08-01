@@ -34,12 +34,37 @@ Ltac2 Type clause := {
   on_concl : occurrences;
 }.
 
+Ltac2 Type evaluable_reference := [
+| EvalVarRef (ident)
+| EvalConstRef (constant)
+].
+
+Ltac2 Type red_flags := {
+  rBeta : bool;
+  rMatch : bool;
+  rFix : bool;
+  rCofix : bool;
+  rZeta : bool;
+  rDelta : bool; (** true = delta all but rConst; false = delta only on rConst*)
+  rConst : evaluable_reference list
+}.
+
 (** Standard, built-in tactics. See Ltac1 for documentation. *)
 
 Ltac2 @ external eelim : constr_with_bindings -> constr_with_bindings option -> unit := "ltac2" "tac_eelim".
 Ltac2 @ external ecase : constr_with_bindings -> unit := "ltac2" "tac_ecase".
 
 Ltac2 @ external egeneralize : (constr * occurrences * ident option) list -> unit := "ltac2" "tac_egeneralize".
+
+Ltac2 @ external pose : ident option -> constr -> unit := "ltac2" "tac_pose".
+Ltac2 @ external set : ident option -> (unit -> constr) -> clause -> unit := "ltac2" "tac_set".
+Ltac2 @ external eset : ident option -> (unit -> constr) -> clause -> unit := "ltac2" "tac_eset".
+
+Ltac2 @ external red : clause -> unit := "ltac2" "tac_red".
+Ltac2 @ external hnf : clause -> unit := "ltac2" "tac_hnf".
+Ltac2 @ external cbv : red_flags -> clause -> unit := "ltac2" "tac_cbv".
+Ltac2 @ external cbn : red_flags -> clause -> unit := "ltac2" "tac_cbn".
+Ltac2 @ external lazy : red_flags -> clause -> unit := "ltac2" "tac_lazy".
 
 Ltac2 @ external reflexivity : unit -> unit := "ltac2" "tac_reflexivity".
 

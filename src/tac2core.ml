@@ -325,7 +325,7 @@ let prm_constr_kind : ml_tactic = function
     |])
   | Const (cst, u) ->
     ValBlk (10, [|
-      Value.of_ext Value.val_constant cst;
+      Value.of_constant cst;
       of_instance sigma u;
     |])
   | Ind (ind, u) ->

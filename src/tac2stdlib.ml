@@ -9,6 +9,7 @@
 open Names
 open Locus
 open Misctypes
+open Genredexpr
 open Tac2expr
 open Tac2core
 open Proofview.Notations
@@ -66,6 +67,24 @@ let to_clause = function
   { onhyps = hyps; concl_occs = to_occurrences to_int_or_var concl; }
 | _ -> assert false
 
+let to_evaluable_ref = function
+| ValBlk (0, [| id |]) -> EvalVarRef (Value.to_ident id)
+| ValBlk (1, [| cst |]) -> EvalConstRef (Value.to_constant cst)
+| _ -> assert false
+
+let to_red_flag = function
+| ValBlk (0, [| beta; iota; fix; cofix; zeta; delta; const |]) ->
+  {
+    rBeta = Value.to_bool beta;
+    rMatch = Value.to_bool iota;
+    rFix = Value.to_bool fix;
+    rCofix = Value.to_bool cofix;
+    rZeta = Value.to_bool zeta;
+    rDelta = Value.to_bool delta;
+    rConst = Value.to_list to_evaluable_ref const;
+  }
+| _ -> assert false
+
 (** Standard tactics sharing their implementation with Ltac1 *)
 
 let pname s = { mltac_plugin = "ltac2"; mltac_tactic = s }
@@ -80,6 +99,8 @@ let wrap f =
 
 let wrap_unit f =
   return () >>= fun () -> f (); return v_unit
+
+let thaw f = Tac2interp.interp_app f [v_unit]
 
 let define_prim0 name tac =
   let tac = function
@@ -98,6 +119,13 @@ let define_prim1 name tac =
 let define_prim2 name tac =
   let tac = function
   | [x; y] -> lift (tac x y)
+  | _ -> assert false
+  in
+  Tac2env.define_primitive (pname name) tac
+
+let define_prim3 name tac =
+  let tac = function
+  | [x; y; z] -> lift (tac x y z)
   | _ -> assert false
   in
   Tac2env.define_primitive (pname name) tac
@@ -123,6 +151,58 @@ let () = define_prim1 "tac_egeneralize" begin fun cl ->
   in
   let cl = Value.to_list cast cl in
   Tactics.new_generalize_gen cl
+end
+
+let () = define_prim2 "tac_pose" begin fun idopt c ->
+  let na = to_name idopt in
+  let c = Value.to_constr c in
+  Tactics.letin_tac None na c None Locusops.nowhere
+end
+
+let () = define_prim3 "tac_set" begin fun idopt c cl ->
+  let na = to_name idopt in
+  let cl = to_clause cl in
+  Proofview.tclEVARMAP >>= fun sigma ->
+  thaw c >>= fun c ->
+  let c = Value.to_constr c in
+  Tactics.letin_pat_tac false None na (sigma, c) cl
+end
+
+let () = define_prim3 "tac_eset" begin fun idopt c cl ->
+  let na = to_name idopt in
+  let cl = to_clause cl in
+  Proofview.tclEVARMAP >>= fun sigma ->
+  thaw c >>= fun c ->
+  let c = Value.to_constr c in
+  Tactics.letin_pat_tac true None na (sigma, c) cl
+end
+
+let () = define_prim1 "tac_red" begin fun cl ->
+  let cl = to_clause cl in
+  Tactics.reduce (Red false) cl
+end
+
+let () = define_prim1 "tac_hnf" begin fun cl ->
+  let cl = to_clause cl in
+  Tactics.reduce Hnf cl
+end
+
+let () = define_prim2 "tac_cbv" begin fun flags cl ->
+  let flags = to_red_flag flags in
+  let cl = to_clause cl in
+  Tactics.reduce (Cbv flags) cl
+end
+
+let () = define_prim2 "tac_cbn" begin fun flags cl ->
+  let flags = to_red_flag flags in
+  let cl = to_clause cl in
+  Tactics.reduce (Cbn flags) cl
+end
+
+let () = define_prim2 "tac_lazy" begin fun flags cl ->
+  let flags = to_red_flag flags in
+  let cl = to_clause cl in
+  Tactics.reduce (Lazy flags) cl
 end
 
 (** Tactics from coretactics *)
