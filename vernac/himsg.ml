@@ -783,7 +783,7 @@ let pr_constraints printenv env sigma evars cstrs =
 
 let explain_unsatisfiable_constraints env sigma constr comp =
   let (_, constraints) = Evd.extract_all_conv_pbs sigma in
-  let undef = Evd.undefined_map (Evarutil.nf_evar_map_undefined sigma) in
+  let undef = Evd.undefined_map sigma in
   (** Only keep evars that are subject to resolution and members of the given
      component. *)
   let is_kept evk evi = match comp with

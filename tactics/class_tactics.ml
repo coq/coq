@@ -1460,7 +1460,6 @@ let is_mandatory p comp evd =
 (** In case of unsatisfiable constraints, build a nice error message *)
 
 let error_unresolvable env comp evd =
-  let evd = Evarutil.nf_evar_map_undefined evd in
   let is_part ev = match comp with
   | None -> true
   | Some s -> Evar.Set.mem ev s
@@ -1474,8 +1473,7 @@ let error_unresolvable env comp evd =
     else (found, accu)
    in
   let (_, ev) = Evd.fold_undefined fold evd (true, None) in
-    Pretype_errors.unsatisfiable_constraints
-      (Evarutil.nf_env_evar evd env) evd ev comp
+  Pretype_errors.unsatisfiable_constraints env evd ev comp
 
 (** Check if an evar is concerned by the current resolution attempt,
     (and in particular is in the current component), and also update
