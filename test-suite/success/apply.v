@@ -409,9 +409,9 @@ Qed.
    assumption. *)
 
 Goal exists f:nat->nat, forall x y, x = y -> f x = f y.
-intros; eexists; intros.
-eauto.
-Existential 1 := fun x => x.
+  intros; eexists; intros.
+eauto. (* MS: Eauto succeeds without leaving an unresolved evar now *)
+Fail Existential 1 := fun x => x.
 Qed.
 
 (* The following was accepted before r12612 but is still not accepted in r12658
