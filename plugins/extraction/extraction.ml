@@ -295,7 +295,11 @@ let rec extract_type env db j c args =
     | Ind ((kn,i),u) ->
 	let s = (extract_ind env kn).ind_packets.(i).ip_sign in
 	extract_type_app env db (IndRef (kn,i),s) args
-    | Case _ | Fix _ | CoFix _ | Proj _ -> Tunknown
+    | Proj (p,t) ->
+       (* Let's try to reduce, if it hasn't already been done. *)
+       if Projection.unfolded p then Tunknown
+       else extract_type env db j (Term.mkProj (Projection.unfold p, t)) args
+    | Case _ | Fix _ | CoFix _ -> Tunknown
     | _ -> assert false
 
 (*s Auxiliary function dealing with type application.
