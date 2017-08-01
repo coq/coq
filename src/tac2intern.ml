@@ -316,6 +316,27 @@ let rec kind env t = match t with
   if is_unfoldable kn then kind env (unfold env kn tl) else t
 | GTypArrow _ | GTypRef (Tuple _, _) -> t
 
+(** Normalize unification variables without unfolding type aliases *)
+let rec nf env t = match t with
+| GTypVar id ->
+  let (id, v) = UF.find id env.env_cst in
+  begin match v with
+  | None -> GTypVar id
+  | Some t -> nf env t
+  end
+| GTypRef (kn, tl) ->
+  let tl = List.map (fun t -> nf env t) tl in
+  GTypRef (kn, tl)
+| GTypArrow (t, u) ->
+  let t = nf env t in
+  let u = nf env u in
+  GTypArrow (t, u)
+
+let pr_glbtype env t =
+  let t = nf env t in
+  let name = env_name env in
+  pr_glbtype name t
+
 exception Occur
 
 let rec occur_check env id t = match kind env t with
@@ -357,9 +378,8 @@ let rec unify env t1 t2 = match kind env t1, kind env t2 with
 let unify ?loc env t1 t2 =
   try unify env t1 t2
   with CannotUnify (u1, u2) ->
-    let name = env_name env in
-    user_err ?loc (str "This expression has type " ++ pr_glbtype name t1 ++
-      str " but an expression was expected of type " ++ pr_glbtype name t2)
+    user_err ?loc (str "This expression has type " ++ pr_glbtype env t1 ++
+      str " but an expression was expected of type " ++ pr_glbtype env t2)
 
 let unify_arrow ?loc env ft args =
   let ft0 = ft in
@@ -373,12 +393,11 @@ let unify_arrow ?loc env ft args =
     let () = unify_var env id (GTypArrow (t, ft)) in
     iter ft args true
   | GTypRef _, _ :: _ ->
-    let name = env_name env in
     if is_fun then
-      user_err ?loc (str "This function has type " ++ pr_glbtype name ft0 ++
+      user_err ?loc (str "This function has type " ++ pr_glbtype env ft0 ++
         str " and is applied to too many arguments")
     else
-      user_err ?loc (str "This expression has type " ++ pr_glbtype name ft0 ++
+      user_err ?loc (str "This expression has type " ++ pr_glbtype env ft0 ++
         str " and is not a function")
   in
   iter ft args false
@@ -478,15 +497,13 @@ let check_elt_empty loc env t = match kind env t with
 | GTypVar _ ->
   user_err ~loc (str "Cannot infer an empty type for this expression")
 | GTypArrow _ | GTypRef (Tuple _, _) ->
-  let name = env_name env in
-  user_err ~loc (str "Type " ++ pr_glbtype name t ++ str " is not an empty type")
+  user_err ~loc (str "Type " ++ pr_glbtype env t ++ str " is not an empty type")
 | GTypRef (Other kn, _) ->
   let def = Tac2env.interp_type kn in
   match def with
   | _, GTydAlg { galg_constructors = [] } -> kn
   | _ ->
-    let name = env_name env in
-    user_err ~loc (str "Type " ++ pr_glbtype name t ++ str " is not an empty type")
+    user_err ~loc (str "Type " ++ pr_glbtype env t ++ str " is not an empty type")
 
 let check_unit ?loc t =
   let env = empty_env () in
