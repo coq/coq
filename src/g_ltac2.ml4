@@ -301,18 +301,18 @@ GEXTEND Gram
   ;
   simple_binding:
     [ [ "("; LEFTQMARK; id = Prim.ident; ":="; c = Constr.lconstr; ")" ->
-        Loc.tag ~loc:!@loc (QAnti (Loc.tag ~loc:!@loc id), Tac2quote.of_constr ~loc:!@loc c)
+        Loc.tag ~loc:!@loc (QAnti (Loc.tag ~loc:!@loc id), Tac2quote.of_open_constr ~loc:!@loc c)
       | "("; n = Prim.natural; ":="; c = Constr.lconstr; ")" ->
-        Loc.tag ~loc:!@loc (QExpr (AnonHyp n), Tac2quote.of_constr ~loc:!@loc c)
+        Loc.tag ~loc:!@loc (QExpr (AnonHyp n), Tac2quote.of_open_constr ~loc:!@loc c)
       | "("; id = Prim.ident; ":="; c = Constr.lconstr; ")" ->
-        Loc.tag ~loc:!@loc (QExpr (NamedHyp id), Tac2quote.of_constr ~loc:!@loc c)
+        Loc.tag ~loc:!@loc (QExpr (NamedHyp id), Tac2quote.of_open_constr ~loc:!@loc c)
     ] ]
   ;
   bindings:
     [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->
         QExplicitBindings bl
       | bl = LIST1 Constr.constr ->
-        let bl = List.map (fun c -> Tac2quote.of_constr ~loc:!@loc c) bl in
+        let bl = List.map (fun c -> Tac2quote.of_open_constr ~loc:!@loc c) bl in
         QImplicitBindings bl
     ] ]
   ;
