@@ -467,11 +467,11 @@ Rather, the tactic writer has to resort to the **dynamic** goal environment,
 and must write instead explicitly that she is accessing a hypothesis, typically
 as follows.
 ```
-constr:(fun x : nat => ltac2:(hyp @x))
+constr:(fun x : nat => ltac2:(exact (hyp @x)))
 ```
 
-The `ltac2:(hyp @x)` pattern is so common that we provide a dedicated Coq
-term notation for it.
+The `ltac2:(exact (hyp @x))` pattern is so common that we provide dedicated
+Ltac2 and Coq term notations for it.
 
 #### Dynamic semantics
 
