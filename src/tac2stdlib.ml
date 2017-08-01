@@ -189,7 +189,7 @@ end
 let () = define_prim1 "tac_egeneralize" begin fun cl ->
   let cast = function
   | ValBlk (0, [| c; occs; na |]) ->
-    ((to_occurrences Value.to_int c, Value.to_constr c), to_name na)
+    ((to_occurrences Value.to_int occs, Value.to_constr c), to_name na)
   | _ -> assert false
   in
   let cl = Value.to_list cast cl in
