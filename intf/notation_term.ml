@@ -83,9 +83,10 @@ type notation_interp_env = {
 type grammar_constr_prod_item =
   | GramConstrTerminal of Tok.t
   | GramConstrNonTerminal of Extend.constr_prod_entry_key * Id.t option
-  | GramConstrListMark of int * bool
+  | GramConstrListMark of int * bool * int
     (* tells action rule to make a list of the n previous parsed items;
-       concat with last parsed list if true *)
+       concat with last parsed list when true; additionally release
+       the p last items as if they were parsed autonomously *)
 
 type notation_grammar = {
   notgram_level : int;

@@ -160,3 +160,11 @@ End Bug4765.
 
 Notation "x === x" := (eq_refl x) (only printing, at level 10).
 Check (fun x => eq_refl x).
+
+(**********************************************************************)
+(* Test recursive notations with the recursive pattern repeated on the right *)
+
+Notation "{ x , .. , y , z }" := (pair x .. (pair y z) ..).
+Check {0,1}.
+Check {0,1,2}.
+Check {0,1,2,3}.

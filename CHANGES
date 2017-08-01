@@ -1,3 +1,10 @@
+To be inserted at the proper place:
+
+Notations
+
+- Recursive notations with the recursive pattern repeating on the
+  right (e.g. "( x ; .. ; y ; z )") now supported.
+
 Changes beyond V8.6
 ===================
 
