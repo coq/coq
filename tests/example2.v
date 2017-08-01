@@ -1,6 +1,6 @@
 Require Import Ltac2.Ltac2.
 
-Ltac2 Notation "split" bnd(bindings) := Std.split bnd.
+Import Ltac2.Notations.
 
 Goal exists n, n = 0.
 Proof.

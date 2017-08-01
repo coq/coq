@@ -17,3 +17,4 @@ Require Ltac2.Constr.
 Require Ltac2.Control.
 Require Ltac2.Pattern.
 Require Ltac2.Std.
+Require Ltac2.Notations.
