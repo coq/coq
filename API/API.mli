@@ -5128,7 +5128,7 @@ sig
   val intro_then : (Names.Id.t -> unit Proofview.tactic) -> unit Proofview.tactic
   val reflexivity : unit tactic
   val change_concl : EConstr.constr -> unit tactic
-  val apply : EConstr.constr -> unit tactic
+  val apply : ?with_delta:bool -> EConstr.constr -> unit tactic
   val normalise_vm_in_concl : unit tactic
   val assert_before : Names.Name.t -> EConstr.types -> unit tactic
   val exact_check : EConstr.constr -> unit tactic
@@ -5204,7 +5204,7 @@ sig
   val force_destruction_arg : Misctypes.evars_flag -> Environ.env -> Evd.evar_map ->
     Tactypes.delayed_open_constr_with_bindings Misctypes.destruction_arg ->
     Evd.evar_map * EConstr.constr Misctypes.with_bindings Misctypes.destruction_arg
-  val apply_with_bindings   : EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
+  val apply_with_bindings   : ?with_delta:bool -> EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
   val abstract_generalize : ?generalize_vars:bool -> ?force_dep:bool -> Names.Id.t -> unit Proofview.tactic
   val specialize_eqs : Names.Id.t -> unit Proofview.tactic
   val generalize : EConstr.constr list -> unit Proofview.tactic
@@ -5216,7 +5216,7 @@ sig
   val convert_hyp_no_check : EConstr.named_declaration -> unit Proofview.tactic
   val reflexivity_red : bool -> unit Proofview.tactic
   val symmetry_red : bool -> unit Proofview.tactic
-  val eapply : EConstr.constr -> unit Proofview.tactic
+  val eapply : ?with_delta:bool -> EConstr.constr -> unit Proofview.tactic
   val transitivity_red : bool -> EConstr.constr option -> unit Proofview.tactic
   val assert_after_replacing : Names.Id.t -> EConstr.types -> unit Proofview.tactic
   val intros : unit Proofview.tactic
@@ -5235,7 +5235,7 @@ sig
   val split : EConstr.constr Misctypes.bindings -> unit Proofview.tactic
   val red_in_concl : unit Proofview.tactic
   val change_in_concl   : (Locus.occurrences * Pattern.constr_pattern) option -> change_arg -> unit Proofview.tactic
-  val eapply_with_bindings  : EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
+  val eapply_with_bindings  : ?with_delta:bool -> EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
   val assert_by  : Names.Name.t -> EConstr.types -> unit Proofview.tactic ->
                    unit Proofview.tactic
   val intro_avoiding : Names.Id.t list -> unit Proofview.tactic

@@ -1683,12 +1683,21 @@ let tclORELSEOPT t k =
       Proofview.tclZERO ~info e
     | Some tac -> tac)
 
-let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind : EConstr.constr with_bindings)) =
+let general_apply ~with_delta ~with_destruct ~with_evars ~delay_bindings ~clear_flag
+                  (loc,(c,lbind)) =
   Proofview.Goal.enter begin fun gl ->
   let concl = Proofview.Goal.concl gl in
   let sigma = Tacmach.New.project gl in
   let flags =
-    if with_delta then default_unify_flags () else default_no_delta_unify_flags () in
+    if with_delta then
+      let flags = default_unify_flags () in
+      (** When applying higher-order lemmas, we don't necessarily want to
+          find an abstraction for all the arguments of the metavariable. *)
+      { flags with allow_K_in_toplevel_higher_order_unification = true }
+    else
+      (** In the "simple apply" case we want to avoid applications of higher-order
+          lemmas finding trivial predicates. *)
+      default_no_delta_unify_flags () in
   (* The actual type of the theorem. It will be matched against the
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
@@ -1703,8 +1712,13 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind :
       try
         let n = nb_prod_modulo_zeta sigma thm_ty - nprod in
         if n<0 then error "Applied theorem has not enough premisses.";
-        let clause = make_clenv_binding_apply env sigma (Some n) (c,thm_ty) lbind in
-        Clenvtac.res_pf clause ~with_evars ~flags
+        let sigma', clause =
+          make_clenv_from_env env sigma ~len:n (c, thm_ty)
+        in
+        Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma')
+                          (Clenvtac.clenv_refine_bindings
+                           ~with_evars ~flags ~hyps_only:true
+                           ~delay_bindings ~origsigma:sigma lbind clause)
       with exn when catchable_exception exn ->
         Proofview.tclZERO exn
     in
@@ -1759,10 +1773,12 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind :
 
 let rec apply_with_bindings_gen b e = function
   | [] -> Proofview.tclUNIT ()
-  | [k,cb] -> general_apply b b e k cb
+  | [k,cb] -> general_apply ~with_delta:b ~with_destruct:b ~with_evars:e
+                           ~delay_bindings:false ~clear_flag:k cb
   | (k,cb)::cbl ->
       Tacticals.New.tclTHENLAST
-        (general_apply b b e k cb)
+        (general_apply ~with_delta:b ~with_destruct:b ~with_evars:e
+                       ~delay_bindings:false ~clear_flag:k cb)
         (apply_with_bindings_gen b e cbl)
 
 let apply_with_delayed_bindings_gen b e l = 
@@ -1772,7 +1788,8 @@ let apply_with_delayed_bindings_gen b e l =
       let env = Proofview.Goal.env gl in
       let (sigma, cb) = f env sigma in
 	Tacticals.New.tclWITHHOLES e
-          (general_apply b b e k (loc,cb)) sigma
+           (general_apply ~with_delta:b ~with_destruct:b ~with_evars:e
+                          ~delay_bindings:false ~clear_flag:k (loc,cb)) sigma
     end
   in
   let rec aux = function
@@ -1783,13 +1800,17 @@ let apply_with_delayed_bindings_gen b e l =
         (one k f) (aux cbl)
   in aux l
 
-let apply_with_bindings cb = apply_with_bindings_gen false false [None,(Loc.tag cb)]
+let apply_with_bindings ?(with_delta=false) cb =
+  apply_with_bindings_gen with_delta false [None,(Loc.tag cb)]
 
-let eapply_with_bindings cb = apply_with_bindings_gen false true [None,(Loc.tag cb)]
+let eapply_with_bindings ?(with_delta=false) cb =
+  apply_with_bindings_gen with_delta true [None,(Loc.tag cb)]
 
-let apply c = apply_with_bindings_gen false false [None,(Loc.tag (c,NoBindings))]
+let apply ?(with_delta=false) c =
+  apply_with_bindings_gen with_delta false [None,(Loc.tag (c,NoBindings))]
 
-let eapply c = apply_with_bindings_gen false true [None,(Loc.tag (c,NoBindings))]
+let eapply ?(with_delta=false) c =
+  apply_with_bindings_gen with_delta true [None,(Loc.tag (c,NoBindings))]
 
 let apply_list = function
   | c::l -> apply_with_bindings (c,ImplicitBindings l)
@@ -1805,21 +1826,24 @@ let apply_list = function
    unifiable with [t'] with unifier [rho]
 *)
 
-let find_matching_clause unifier clause =
-  let rec find clause =
-    try unifier clause
+let find_matching_clause unifier env sigma clause =
+  let rec find (sigma, clause) =
+    try unifier (sigma, clause)
     with e when catchable_exception e ->
-    try find (clenv_push_prod clause)
+    try find (clenv_dest_prod env sigma clause)
     with NotExtensibleClause -> failwith "Cannot apply"
-  in find clause
+  in find (sigma, clause)
 
 exception UnableToApply
 
-let progress_with_clause flags innerclause clause =
-  let ordered_metas = List.rev (clenv_independent clause) in
+let progress_with_clause env sigma flags innerclause clause =
+  let ordered_metas = List.rev (clenv_indep_holes clause) in
   if List.is_empty ordered_metas then raise UnableToApply;
   let f mv =
-    try Some (find_matching_clause (clenv_fchain ~with_univs:false mv ~flags clause) innerclause)
+    try Some (find_matching_clause
+                (fun (sigma, clause') ->
+                  clenv_chain ~holes_order:false env sigma mv ~flags clause clause')
+                env sigma innerclause)
     with Failure _ -> None
   in
   try List.find_map f ordered_metas
@@ -1830,47 +1854,87 @@ let explain_unable_to_apply_lemma ?loc env sigma thm innerclause =
     (Pp.str "Unable to apply lemma of type" ++ brk(1,1) ++
      Pp.quote (Printer.pr_leconstr_env env sigma thm) ++ spc() ++
      str "on hypothesis of type" ++ brk(1,1) ++
-     Pp.quote (Printer.pr_leconstr_env innerclause.env innerclause.evd (clenv_type innerclause)) ++
+     Pp.quote (Printer.pr_leconstr_env env sigma innerclause.cl_concl) ++
      str "."))
 
-let apply_in_once_main flags innerclause env sigma (loc,d,lbind) =
+let clenvtac_advance clenv =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  Proofview.tclUNIT (clenv_advance sigma clenv)
+
+(* For a clenv expressing some lemma [C[?1:T1,...,?n:Tn] : P] and some
+   goal [G], [clenv_refine_in] returns [n+1] subgoals, the [n] last
+   ones (resp [n] first ones if [sidecond_first] is [true]) being the
+   [Ti] and the first one (resp last one) being [G] whose hypothesis
+   [id] is replaced by P using the proof given by [tac] *)
+
+let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) flags
+                    targetid id env sigma origsigma clenv tac =
+  let sigma =
+    if with_classes then
+      Typeclasses.resolve_typeclasses ~fail:(not with_evars) env sigma
+    else sigma
+  in
+  (* For compatibility: reduce the conclusion *)
+  let clenv = clenv_map_concl (Reductionops.nf_betaiota sigma) clenv in
+  let exact_tac =
+    clenvtac_advance clenv >>= fun clenv ->
+    Clenvtac.clenv_refine_no_check ~with_evars ~with_classes ~flags
+                                   ~shelve_subgoals:true ~origsigma clenv in
+  let new_hyp_typ = clenv_concl clenv in
+  let naming = NamingMustBe (Loc.tag targetid) in
+  let with_clear = do_replace (Some id) naming in
+  Tacticals.New.tclTHEN
+    (Proofview.Unsafe.tclEVARS sigma)
+    ((if sidecond_first then
+        Tacticals.New.tclTHENFIRST
+        (assert_before_then_gen with_clear naming new_hyp_typ tac)
+      else
+        Tacticals.New.tclTHENLAST
+        (assert_after_then_gen with_clear naming new_hyp_typ tac))
+     exact_tac)
+
+let apply_in_once_main flags env sigma innerclause (loc,d,lbind) =
   let thm = nf_betaiota sigma (Retyping.get_type_of env sigma d) in
-  let rec aux clause =
-    try progress_with_clause flags innerclause clause
+  let rec aux (sigma, clause) =
+    try progress_with_clause env sigma flags innerclause clause
     with e when CErrors.noncritical e ->
     let e' = CErrors.push e in
-    try aux (clenv_push_prod clause)
+    try aux (clenv_dest_prod env sigma clause)
     with NotExtensibleClause ->
       match e with
       | UnableToApply -> explain_unable_to_apply_lemma ?loc env sigma thm innerclause
       | _ -> iraise e'
   in
-  aux (make_clenv_binding env sigma (d,thm) lbind)
+  aux (make_clenv_bindings env sigma ~hyps_only:false (* TODO ?occs *) (d,thm) lbind)
 
 let apply_in_once sidecond_first with_delta with_destruct with_evars naming
     id (clear_flag,(loc,(d,lbind))) tac =
   let open Context.Rel.Declaration in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
+  let sigma0 = Tacmach.New.project gl in
   let flags =
     if with_delta then default_unify_flags () else default_no_delta_unify_flags () in
   let t' = Tacmach.New.pf_get_hyp_typ id gl in
-  let innerclause = mk_clenv_from_env env sigma (Some 0) (mkVar id,t') in
+  let sigma, innerclause = make_clenv_from_env env sigma0 ~len:0 (mkVar id,t') in
   let targetid = find_name true (LocalAssum (Anonymous,t')) naming gl in
   let rec aux idstoclear with_destruct c =
     Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let sigma = Tacmach.New.project gl in
+    let origsigma = Tacmach.New.project gl in
     try
-      let clause = apply_in_once_main flags innerclause env sigma (loc,c,lbind) in
-      clenv_refine_in ~sidecond_first with_evars targetid id sigma clause
+      let sigma, clause = apply_in_once_main flags env origsigma innerclause (loc,c,lbind) in
+      Proofview.Unsafe.tclEVARS sigma <*>
+        (Clenvtac.clenv_solve_clause_constraints ~flags ~with_ho:true clause >>=
+           fun clause ->
+           Proofview.tclEVARMAP >>= fun sigma ->
+      clenv_refine_in ~sidecond_first with_evars flags targetid id env sigma origsigma clause
         (fun id ->
           Tacticals.New.tclTHENLIST [
             apply_clear_request clear_flag false c;
             clear idstoclear;
             tac id
-          ])
+          ]))
     with e when with_destruct && CErrors.noncritical e ->
       let (e, info) = CErrors.push e in
         (descend_in_conjunctions [targetid]
@@ -2195,8 +2259,9 @@ let constructor_tac with_evars expctdnumopt i lbind =
       let (sigma, (cons, u)) = Evd.fresh_constructor_instance
 	(Proofview.Goal.env gl) sigma (fst mind, i) in
       let cons = mkConstructU (cons, EInstance.make u) in
-	
-      let apply_tac = general_apply true false with_evars None (Loc.tag (cons,lbind)) in
+      let apply_tac = general_apply ~with_delta:true ~with_destruct:false
+                                    ~with_evars ~delay_bindings:true
+                                    ~clear_flag:None (Loc.tag (cons,lbind)) in
       Tacticals.New.tclTHENLIST
          [ Proofview.Unsafe.tclEVARS sigma;
            convert_concl_no_check redcl DEFAULTcast;

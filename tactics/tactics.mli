@@ -187,8 +187,8 @@ val revert        : Id.t list -> unit Proofview.tactic
 val apply_type : constr -> constr list -> unit Proofview.tactic
 val bring_hyps : named_context -> unit Proofview.tactic
 
-val apply                 : constr -> unit Proofview.tactic
-val eapply                : constr -> unit Proofview.tactic
+val apply                 : ?with_delta:bool -> constr -> unit Proofview.tactic
+val eapply                : ?with_delta:bool -> constr -> unit Proofview.tactic
 
 val apply_with_bindings_gen :
   advanced_flag -> evars_flag -> (clear_flag * constr with_bindings located) list -> unit Proofview.tactic
@@ -196,8 +196,8 @@ val apply_with_bindings_gen :
 val apply_with_delayed_bindings_gen :
   advanced_flag -> evars_flag -> (clear_flag * delayed_open_constr_with_bindings located) list -> unit Proofview.tactic
 
-val apply_with_bindings   : constr with_bindings -> unit Proofview.tactic
-val eapply_with_bindings  : constr with_bindings -> unit Proofview.tactic
+val apply_with_bindings   : ?with_delta:bool -> constr with_bindings -> unit Proofview.tactic
+val eapply_with_bindings  : ?with_delta:bool -> constr with_bindings -> unit Proofview.tactic
 
 val cut_and_apply         : constr -> unit Proofview.tactic
 
