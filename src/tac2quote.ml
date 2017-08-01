@@ -55,6 +55,8 @@ let of_ident ?loc id = inj_wit ?loc Stdarg.wit_ident id
 
 let of_constr ?loc c = inj_wit ?loc Stdarg.wit_constr c
 
+let of_open_constr ?loc c = inj_wit ?loc Stdarg.wit_open_constr c
+
 let of_bool ?loc b =
   let c = if b then Core.c_true else Core.c_false in
   constructor ?loc c []

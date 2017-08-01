@@ -876,3 +876,4 @@ let () = add_scope "intropatterns" begin function
 end
 
 let () = add_generic_scope "constr" Pcoq.Constr.constr Stdarg.wit_constr
+let () = add_generic_scope "open_constr" Pcoq.Constr.constr Stdarg.wit_open_constr
