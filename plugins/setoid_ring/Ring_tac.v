@@ -429,6 +429,13 @@ Tactic Notation "ring_simplify" constr_list(rl) "in" hyp(H):=
   set (g:= G);
   generalize H;
   ring_lookup (PackRing Ring_simplify) [] rl t;
+  (* 
+     Correction of bug 1859:
+     we want to leave H at its initial position
+     this is obtained by adding a copy of H (H'), 
+     move it just after H, remove H and finally 
+     rename H into H'
+   *)
   let H' := fresh "H" in
   intro H';
   move H' after H;
@@ -442,6 +449,13 @@ Tactic Notation "ring_simplify" "["constr_list(lH)"]" constr_list(rl) "in" hyp(H
   set (g:= G);
   generalize H;
   ring_lookup (PackRing Ring_simplify) [lH] rl t;
+  (* 
+     Correction of bug 1859:
+     we want to leave H at its initial position
+     this is obtained by adding a copy of H (H'), 
+     move it just after H, remove H and finally 
+     rename H into H'
+   *)
   let H' := fresh "H" in
   intro H';
   move H' after H;
