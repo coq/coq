@@ -171,17 +171,14 @@ let unify_resolve ~with_evars flags h diff = match diff with
 let unify_resolve_refine flags h diff =
   let len = match diff with None -> None | Some (diff, _) -> Some diff in
   Proofview.Goal.enter begin fun gls ->
-  let open Clenv in
   let env = Proofview.Goal.env gls in
-  let concl = Proofview.Goal.concl gls in
-  Refine.refine ~typecheck:false begin fun sigma ->
+  let sigma = Proofview.Goal.sigma gls in
     let sigma, term = Hints.fresh_hint env sigma h in
     let ty = Retyping.get_type_of env sigma term in
     let sigma, cl = Clenv.make_evar_clause env sigma ?len term ty in
-    let flags = Evarconv.default_flags_of flags.core_unify_flags.modulo_delta in
-    let sigma = Evarconv.unify_leq_delay ~flags env sigma cl.cl_concl concl in
-    (sigma, cl.cl_val)
-    end
+    Tacticals.New.tclTHEN
+      (Proofview.Unsafe.tclEVARS sigma)
+      (Clenv.clenv_refine2 ~with_evars:true ~with_classes:false ~flags cl)
   end
 
 let unify_resolve_refine flags h diff =
