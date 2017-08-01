@@ -9,6 +9,7 @@
 open Util
 open Loc
 open Names
+open Tac2expr
 
 (** Quoted variants of Ltac syntactic categories. Contrarily to the former, they
     sometimes allow anti-quotations. Used for notation scopes. *)
@@ -16,6 +17,11 @@ open Names
 type 'a or_anti =
 | QExpr of 'a
 | QAnti of Id.t located
+
+type bindings =
+| QImplicitBindings of raw_tacexpr list
+| QExplicitBindings of (Misctypes.quantified_hypothesis or_anti * raw_tacexpr) Loc.located list
+| QNoBindings
 
 type intro_pattern =
 | QIntroForthcoming of bool

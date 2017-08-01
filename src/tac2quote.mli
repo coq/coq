@@ -32,7 +32,7 @@ val of_constr : ?loc:Loc.t -> Constrexpr.constr_expr -> raw_tacexpr
 
 val of_list : ?loc:Loc.t -> raw_tacexpr list -> raw_tacexpr
 
-val of_bindings : ?loc:Loc.t -> raw_tacexpr bindings -> raw_tacexpr
+val of_bindings : ?loc:Loc.t -> bindings -> raw_tacexpr
 
 val of_intro_pattern : ?loc:Loc.t -> intro_pattern -> raw_tacexpr
 

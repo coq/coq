@@ -69,12 +69,12 @@ let of_qhyp ?loc = function
 | NamedHyp id -> constructor Core.c_named_hyp [of_ident ?loc id]
 
 let of_bindings ?loc = function
-| NoBindings ->
+| QNoBindings ->
   std_constructor ?loc "NoBindings" []
-| ImplicitBindings tl ->
+| QImplicitBindings tl ->
   std_constructor ?loc "ImplicitBindings" [of_list ?loc tl]
-| ExplicitBindings tl ->
-  let tl = List.map (fun (loc, (qhyp, e)) -> of_pair ?loc (of_qhyp ?loc qhyp, e)) tl in
+| QExplicitBindings tl ->
+  let tl = List.map (fun (loc, (qhyp, e)) -> of_pair ?loc (of_anti ?loc of_qhyp qhyp, e)) tl in
   std_constructor ?loc "ExplicitBindings" [of_list ?loc tl]
 
 let rec of_intro_pattern ?loc = function

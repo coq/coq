@@ -19,7 +19,7 @@ open Ltac_plugin
 
 let err () = raise Stream.Failure
 
-(* idem for (x:=t) and (1:=t) *)
+(* lookahead for (x:=t), (?x:=t) and (1:=t) *)
 let test_lpar_idnum_coloneq =
   Gram.Entry.of_parser "test_lpar_idnum_coloneq"
     (fun strm ->
@@ -30,6 +30,13 @@ let test_lpar_idnum_coloneq =
                   (match stream_nth 2 strm with
                     | KEYWORD ":=" -> ()
                     | _ -> err ())
+              | LEFTQMARK ->
+                (match stream_nth 2 strm with
+                  | IDENT _ ->
+                      (match stream_nth 3 strm with
+                        | KEYWORD ":=" -> ()
+                        | _ -> err ())
+                  | _ -> err ())
               | _ -> err ())
         | _ -> err ())
 
@@ -282,30 +289,32 @@ GEXTEND Gram
   GLOBAL: q_ident q_bindings q_intropatterns;
   ident_or_anti:
     [ [ id = Prim.ident -> QExpr id
-      | "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id)
+      | LEFTQMARK; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id)
     ] ]
   ;
   q_ident:
     [ [ id = ident_or_anti -> Tac2quote.of_anti ~loc:!@loc Tac2quote.of_ident id ] ]
   ;
   simple_binding:
-    [ [ "("; id = Prim.ident; ":="; c = Constr.lconstr; ")" ->
-        Loc.tag ~loc:!@loc (NamedHyp id, Tac2quote.of_constr ~loc:!@loc c)
+    [ [ "("; LEFTQMARK; id = Prim.ident; ":="; c = Constr.lconstr; ")" ->
+        Loc.tag ~loc:!@loc (QAnti (Loc.tag ~loc:!@loc id), Tac2quote.of_constr ~loc:!@loc c)
       | "("; n = Prim.natural; ":="; c = Constr.lconstr; ")" ->
-        Loc.tag ~loc:!@loc (AnonHyp n, Tac2quote.of_constr ~loc:!@loc c)
+        Loc.tag ~loc:!@loc (QExpr (AnonHyp n), Tac2quote.of_constr ~loc:!@loc c)
+      | "("; id = Prim.ident; ":="; c = Constr.lconstr; ")" ->
+        Loc.tag ~loc:!@loc (QExpr (NamedHyp id), Tac2quote.of_constr ~loc:!@loc c)
     ] ]
   ;
   bindings:
     [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->
-        Tac2quote.of_bindings ~loc:!@loc (ExplicitBindings bl)
+        QExplicitBindings bl
       | bl = LIST1 Constr.constr ->
         let bl = List.map (fun c -> Tac2quote.of_constr ~loc:!@loc c) bl in
-        Tac2quote.of_bindings ~loc:!@loc (Misctypes.ImplicitBindings bl)
+        QImplicitBindings bl
     ] ]
   ;
   q_bindings:
-    [ [ "with"; bl = bindings -> bl
-      | -> Tac2quote.of_bindings ~loc:!@loc Misctypes.NoBindings
+    [ [ "with"; bl = bindings -> Tac2quote.of_bindings ~loc:!@loc bl
+      | -> Tac2quote.of_bindings ~loc:!@loc QNoBindings
     ] ]
   ;
   intropatterns:
