@@ -522,6 +522,19 @@ td.menu-disabled,td.menu-disabled a
 	border:1px solid #ccc;
 }
 
+.lstlisting {
+    display: block;
+    font-family: monospace;
+    white-space: pre;
+    margin: 1em 0;
+}
+.center {
+    text-align: center;
+}
+.centered {
+    display: block-inline;
+}
+
 /*----------download table------------*/
 
 table.downloadtable
