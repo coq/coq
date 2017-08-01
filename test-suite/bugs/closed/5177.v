@@ -19,3 +19,4 @@ End MakeA.
 
 Require Extraction.
 Recursive Extraction MakeA.
+Extraction TestCompile MakeA.

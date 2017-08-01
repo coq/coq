@@ -4,7 +4,7 @@
 Require Coq.extraction.Extraction.
 
 (** NB: we should someday check the produced code instead of
-    simply running the commands. *)
+    extracting and just compiling. *)
 
 (** 1) Without signature ... *)
 
@@ -20,6 +20,7 @@ End A.
 Definition testA := A.u + A.B.x.
 
 Recursive Extraction testA. (* without: v w *)
+Extraction TestCompile testA.
 
 (** 1b) Same with an Include *)
 
@@ -31,6 +32,7 @@ End Abis.
 Definition testAbis := Abis.u + Abis.y.
 
 Recursive Extraction testAbis. (* without: A B v w x *)
+Extraction TestCompile testAbis.
 
 (** 2) With signature, we only keep elements mentionned in signature. *)
 
@@ -46,3 +48,4 @@ End Ater.
 Definition testAter := Ater.u.
 
 Recursive Extraction testAter. (* with only: u v *)
+Extraction TestCompile testAter.
