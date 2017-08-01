@@ -335,8 +335,9 @@ GEXTEND Gram
       | "[="; tc = intropatterns; "]" -> QIntroInjection tc ] ]
   ;
   naming_intropattern:
-    [ [ LEFTQMARK; prefix = ident_or_anti -> QIntroFresh prefix
-      | LEFTQMARK -> QIntroAnonymous
+    [ [ LEFTQMARK; id = Prim.ident -> QIntroFresh (QExpr id)
+      | "?$"; id = Prim.ident -> QIntroFresh (QAnti (Loc.tag ~loc:!@loc id))
+      | "?" -> QIntroAnonymous
       | id = ident_or_anti -> QIntroIdentifier id ] ]
   ;
   nonsimple_intropattern:
