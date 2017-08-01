@@ -1925,7 +1925,7 @@ Section Int31_Specs.
  intros Hj; generalize Hj k; pattern j; apply natlike_ind;
    auto; clear k j Hj.
  intros _ k Hk; repeat rewrite Z.add_0_l.
- apply  Z.mul_nonneg_nonneg; generalize (Z_div_pos k 2); auto with zarith.
+ apply  Z.mul_nonneg_nonneg; cbn; generalize (Z_div_pos k 2); auto with zarith.
  intros j Hj Hrec _ k Hk; pattern k; apply natlike_ind; auto; clear k Hk.
  rewrite Z.mul_0_r, Z.add_0_r, Z.add_0_l.
  generalize (sqr_pos (Z.succ j / 2)) (quotient_by_2 (Z.succ j));

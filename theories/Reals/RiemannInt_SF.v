@@ -1740,7 +1740,7 @@ Lemma StepFun_P37 :
     RiemannInt_SF f <= RiemannInt_SF g.
 Proof.
   intros; eapply StepFun_P36; try assumption.
-  eapply StepFun_P25; apply StepFun_P29.
+  eapply StepFun_P25; eapply StepFun_P29.
   eapply StepFun_P23; apply StepFun_P29.
 Qed.
 
