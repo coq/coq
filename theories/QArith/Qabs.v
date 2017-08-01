@@ -75,7 +75,7 @@ setoid_replace x with 0;[reflexivity|];
 apply Qle_antisym);try assumption;
 rewrite Qle_minus_iff in *;
 ring_simplify;
-ring_simplify in H1;
+ring_simplify in H0;
 assumption.
 Qed.
 
