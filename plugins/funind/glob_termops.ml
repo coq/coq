@@ -709,9 +709,6 @@ let expand_as =
   in
   expand_as Id.Map.empty
 
-
-
-           
 (* [resolve_and_replace_implicits ?expected_type env sigma rt] solves implicits of [rt] w.r.t. [env] and [sigma] and then replace them by their solution 
  *)
 
@@ -749,6 +746,30 @@ If someone knows how to prevent solved existantial removal in  understand, pleas
            (* we just have to lift the solution in glob_term *)
               Detyping.detype false [] env ctx (EConstr.of_constr (f c))
            | Evar_empty -> rt (* the hole was not solved : we do nothing *)
+       )
+    | (GHole(BinderType na,_,_)) -> (* we only want to deal with implicit arguments *)
+       (
+         let res = 
+           try (* we scan the new evar map to find the evar corresponding to this hole (by looking the source *)
+             Evd.fold (* to simulate an iter *)
+               (fun _ evi _ ->
+                 match evi.evar_source with
+                 | (loc_evi,BinderType na') ->
+                    if Name.equal na na' && rt.CAst.loc = loc_evi  then raise (Found evi)
+                 | _ -> ()
+               )
+               ctx
+               ();
+             (* the hole was not solved : we do nothing *)
+             rt
+           with Found evi -> (* we found the evar corresponding to this hole *)
+                match evi.evar_body with
+                | Evar_defined c ->
+                   (* we just have to lift the solution in glob_term *)
+                   Detyping.detype false [] env ctx (EConstr.of_constr (f c))
+                | Evar_empty -> rt (* the hole was not solved : we d when falseo nothing *)
+         in 
+         res
        )
     | _ -> Glob_ops.map_glob_constr change rt 
   in

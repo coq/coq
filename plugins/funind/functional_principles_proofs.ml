@@ -822,8 +822,9 @@ let build_proof
 	  | Fix _ | CoFix _ ->
 	      user_err Pp.(str ( "Anonymous local (co)fixpoints are not handled yet"))
 
+
 	  | Proj _ -> user_err Pp.(str "Prod")
-	  | Prod _ -> user_err Pp.(str "Prod")
+	  | Prod _ -> do_finalize dyn_infos g
 	  | LetIn _ ->
 	      let new_infos =
 		{ dyn_infos with
