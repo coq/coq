@@ -83,29 +83,33 @@ GEXTEND Gram
     ]
   ;
   tac2expr:
-    [ "5"
-      [ "fun"; it = LIST1 input_fun ; "=>"; body = tac2expr LEVEL "5" -> CTacFun (!@loc, it, body)
+    [ "top" RIGHTA
+        [ e1 = SELF; ";"; e2 = SELF -> CTacSeq (!@loc, e1, e2) ]
+    | "5"
+      [ "fun"; it = LIST1 input_fun ; "=>"; body = tac2expr LEVEL "top" -> CTacFun (!@loc, it, body)
       | "let"; isrec = rec_flag;
           lc = LIST1 let_clause SEP "with"; "in";
-          e = tac2expr LEVEL "5" -> CTacLet (!@loc, isrec, lc, e)
+          e = tac2expr LEVEL "top" -> CTacLet (!@loc, isrec, lc, e)
       | "match"; e = tac2expr LEVEL "5"; "with"; bl = branches ;"end" ->
          CTacCse (!@loc, e, bl)
       ]
-    | "2" LEFTA
-      [ e1 = tac2expr; ";"; e2 = tac2expr -> CTacSeq (!@loc, e1, e2) ]
+    | "::" RIGHTA
+      [ e1 = tac2expr; "::"; e2 = tac2expr ->
+        CTacApp (!@loc, CTacCst (!@loc, AbsKn (Other Tac2core.Core.c_cons)), [e1; e2])
+      ]
+    | [ e0 = SELF; ","; el = LIST1 NEXT SEP "," ->
+        let el = e0 :: el in
+        CTacApp (!@loc, CTacCst (!@loc, AbsKn (Tuple (List.length el))), el) ]
     | "1" LEFTA
       [ e = tac2expr; el = LIST1 tac2expr LEVEL "0" -> CTacApp (!@loc, e, el)
       | e = SELF; ".("; qid = Prim.qualid; ")" -> CTacPrj (!@loc, e, RelId qid)
-      | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = tac2expr LEVEL "1" -> CTacSet (!@loc, e, RelId qid, r)
-      | e0 = tac2expr; ","; el = LIST1 tac2expr LEVEL "1" SEP "," ->
-        let el = e0 :: el in
-        CTacApp (!@loc, CTacCst (!@loc, AbsKn (Tuple (List.length el))), el) ]
+      | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = tac2expr LEVEL "5" -> CTacSet (!@loc, e, RelId qid, r) ]
     | "0"
       [ "("; a = tac2expr LEVEL "5"; ")" -> a
       | "("; a = tac2expr; ":"; t = tac2type; ")" -> CTacCnv (!@loc, a, t)
       | "()" -> CTacCst (!@loc, AbsKn (Tuple 0))
       | "("; ")" -> CTacCst (!@loc, AbsKn (Tuple 0))
-      | "["; a = LIST0 tac2expr LEVEL "1" SEP ";"; "]" -> CTacLst (Loc.tag ~loc:!@loc a)
+      | "["; a = LIST0 tac2expr LEVEL "5" SEP ";"; "]" -> CTacLst (Loc.tag ~loc:!@loc a)
       | "{"; a = tac2rec_fieldexprs; "}" -> CTacRec (!@loc, a)
       | a = tactic_atom -> a ]
     ]
