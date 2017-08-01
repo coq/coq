@@ -196,6 +196,22 @@ let () = define_prim1 "tac_egeneralize" begin fun cl ->
   Tactics.new_generalize_gen cl
 end
 
+let () = define_prim3 "tac_assert" begin fun c tac ipat ->
+  let c = Value.to_constr c in
+  let of_tac t = Proofview.tclIGNORE (thaw t) in
+  let tac = Value.to_option (fun t -> Value.to_option of_tac t) tac in
+  let ipat = Value.to_option (fun ipat -> Loc.tag (to_intro_pattern ipat)) ipat in
+  Tactics.forward true tac ipat c
+end
+
+let () = define_prim3 "tac_enough" begin fun c tac ipat ->
+  let c = Value.to_constr c in
+  let of_tac t = Proofview.tclIGNORE (thaw t) in
+  let tac = Value.to_option (fun t -> Value.to_option of_tac t) tac in
+  let ipat = Value.to_option (fun ipat -> Loc.tag (to_intro_pattern ipat)) ipat in
+  Tactics.forward false tac ipat c
+end
+
 let () = define_prim2 "tac_pose" begin fun idopt c ->
   let na = to_name idopt in
   let c = Value.to_constr c in

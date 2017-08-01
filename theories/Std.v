@@ -83,6 +83,9 @@ Ltac2 @ external ecase : constr_with_bindings -> unit := "ltac2" "tac_ecase".
 
 Ltac2 @ external egeneralize : (constr * occurrences * ident option) list -> unit := "ltac2" "tac_egeneralize".
 
+Ltac2 @ external assert : constr -> (unit -> unit) option option -> intro_pattern option -> unit := "ltac2" "tac_assert".
+Ltac2 @ external enough : constr -> (unit -> unit) option option -> intro_pattern option -> unit := "ltac2" "tac_enough".
+
 Ltac2 @ external pose : ident option -> constr -> unit := "ltac2" "tac_pose".
 Ltac2 @ external set : ident option -> (unit -> constr) -> clause -> unit := "ltac2" "tac_set".
 Ltac2 @ external eset : ident option -> (unit -> constr) -> clause -> unit := "ltac2" "tac_eset".
