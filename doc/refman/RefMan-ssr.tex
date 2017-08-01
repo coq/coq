@@ -125,9 +125,12 @@ and Laurence Rideau for their comments and suggestions.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Getting started}\label{sec:files}
-The present manual describes the behavior of
-the \ssr{} extension after having loaded a minimal set of libraries:
-{\tt ssreflect.v}, {\tt ssrfun.v} and {\tt ssrbool.v} and a few options set.
+To be available, the tactics presented in this manual need the
+following minimal set of libraries to loaded: {\tt ssreflect.v}, {\tt
+ssrfun.v} and {\tt ssrbool.v}. Moreover, these tactics come with a
+methodology specific to the authors of Ssreflect and which requires a
+few options to be set in a different way than in their default
+way. All in all, this corresponds to working in the following context:
 
 \begin{lstlisting}
   From Coq Require Import ssreflect ssrfun ssrbool.
@@ -138,9 +141,8 @@ the \ssr{} extension after having loaded a minimal set of libraries:
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Compatibility issues}\label{sec:compat}
-Every effort has been made to make the small-scale reflection
-extensions upward compatible with the rest of \Coq{}, but a few
-discrepancies were unavoidable:
+Requiring the above modules creates an environment which
+is mostly compatible with the rest of \Coq{}, up to a few discrepancies:
 \begin{itemize}
 \item New keywords (\ssrC{is}) might clash with variable, constant,
 tactic or tactical names, or with quasi-keywords in tactic or
@@ -169,7 +171,7 @@ theory. This can be avoided by not importing all of \ssr{}:
   From Coq Require ssreflect.
   Import ssreflect.SsrSyntax.
 \end{lstlisting}
-Note that \ssr{}'s extended rewrite syntax and reserved identifiers are
+Note that the full syntax of \ssr{}'s {\tt rewrite} and reserved identifiers are
 enabled only if the \ssrC{ssreflect} module has been required and if
 \ssrC{SsrSyntax} has been imported. Thus a file that requires (without importing)
  \ssrC{ssreflect} and imports \ssrC{SsrSyntax}, can be
@@ -204,7 +206,7 @@ Small-scale reflection makes an extensive use of the programming
 subset of Gallina, \Coq{}'s logical specification language. This subset
 is quite suited to the description of functions on representations,
 because it closely follows the well-established design of the ML
-programming language.The \ssr{} extension provides three additions
+programming language. The \ssr{} extension provides three additions
 to Gallina, for pattern assignment, pattern testing, and polymorphism;
 these mitigate minor but annoying discrepancies between Gallina and ML.
 
