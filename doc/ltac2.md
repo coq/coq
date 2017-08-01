@@ -126,8 +126,10 @@ statically defined, but can instead by extended dynamically. A typical example
 is the standard `exn` type. Pattern-matching must always include a catch-all
 clause. They can be extended by the following command.
 
+```
 VERNAC ::=
 | "Ltac2" "Type" TYPEPARAMS QUALID ":=" "[" CONSTRUCTORDEF "]"
+```
 
 ## Term Syntax
 
