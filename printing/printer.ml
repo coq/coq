@@ -727,7 +727,7 @@ let default_pr_subgoals ?(pr_first=true)
   match goals with
   | [] ->
       begin
-	let exl = Evarutil.non_instantiated sigma in
+	let exl = Evd.undefined_map sigma in
 	if Evar.Map.is_empty exl then
 	  (str"No more subgoals." ++ print_dependent_evars None sigma seeds)
 	else
