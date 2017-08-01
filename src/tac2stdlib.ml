@@ -85,6 +85,39 @@ let to_red_flag = function
   }
 | _ -> assert false
 
+let rec to_intro_pattern = function
+| ValBlk (0, [| b |]) -> IntroForthcoming (Value.to_bool b)
+| ValBlk (1, [| pat |]) -> IntroNaming (to_intro_pattern_naming pat)
+| ValBlk (2, [| act |]) -> IntroAction (to_intro_pattern_action act)
+| _ -> assert false
+
+and to_intro_pattern_naming = function
+| ValBlk (0, [| id |]) -> IntroIdentifier (Value.to_ident id)
+| ValBlk (1, [| id |]) -> IntroFresh (Value.to_ident id)
+| ValInt 0 -> IntroAnonymous
+| _ -> assert false
+
+and to_intro_pattern_action = function
+| ValInt 0 -> IntroWildcard
+| ValBlk (0, [| op |]) -> IntroOrAndPattern (to_or_and_intro_pattern op)
+| ValBlk (1, [| inj |]) ->
+  let map ipat = Loc.tag (to_intro_pattern ipat) in
+  IntroInjection (Value.to_list map inj)
+| ValBlk (2, [| _ |]) -> IntroApplyOn (assert false, assert false) (** TODO *)
+| ValBlk (3, [| b |]) -> IntroRewrite (Value.to_bool b)
+| _ -> assert false
+
+and to_or_and_intro_pattern = function
+| ValBlk (0, [| ill |]) ->
+  IntroOrPattern (Value.to_list to_intro_patterns ill)
+| ValBlk (1, [| il |]) ->
+  IntroAndPattern (to_intro_patterns il)
+| _ -> assert false
+
+and to_intro_patterns il =
+  let map ipat = Loc.tag (to_intro_pattern ipat) in
+  Value.to_list map il
+
 (** Standard tactics sharing their implementation with Ltac1 *)
 
 let pname s = { mltac_plugin = "ltac2"; mltac_tactic = s }
@@ -131,6 +164,16 @@ let define_prim3 name tac =
   Tac2env.define_primitive (pname name) tac
 
 (** Tactics from Tacexpr *)
+
+let () = define_prim1 "tac_intros" begin fun ipat ->
+  let ipat = to_intro_patterns ipat in
+  Tactics.intros_patterns false ipat
+end
+
+let () = define_prim1 "tac_eintros" begin fun ipat ->
+  let ipat = to_intro_patterns ipat in
+  Tactics.intros_patterns true ipat
+end
 
 let () = define_prim2 "tac_eelim" begin fun c copt ->
   let c = to_constr_with_bindings c in

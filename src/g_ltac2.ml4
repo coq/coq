@@ -14,6 +14,7 @@ open Pcoq
 open Constrexpr
 open Misctypes
 open Tac2expr
+open Tac2qexpr
 open Ltac_plugin
 
 let err () = raise Stream.Failure
@@ -43,9 +44,6 @@ let tac2mode = Gram.entry_create "vernac:ltac2_command"
 let inj_wit wit loc x = CTacExt (loc, Genarg.in_gen (Genarg.rawwit wit) x)
 let inj_open_constr loc c = inj_wit Stdarg.wit_open_constr loc c
 let inj_pattern loc c = inj_wit Tac2env.wit_pattern loc c
-
-let mk_constr ~loc kn args =
-  CTacApp (loc, CTacCst (loc, AbsKn (Other kn)), args)
 
 let pattern_of_qualid loc id =
   if Tac2env.is_constructor (snd id) then CPatRef (loc, RelId id, [])
@@ -278,14 +276,19 @@ END
 
 open Tac2entries.Pltac
 
+let loc_of_ne_list l = Loc.merge_opt (fst (List.hd l)) (fst (List.last l))
+
 GEXTEND Gram
-  GLOBAL: q_ident q_bindings;
-  q_ident:
-    [ [ id = Prim.ident -> Tac2quote.of_ident ~loc:!@loc id
-      | "$"; id = Prim.ident -> Tac2quote.of_variable ~loc:!@loc id
+  GLOBAL: q_ident q_bindings q_intropatterns;
+  ident_or_anti:
+    [ [ id = Prim.ident -> QExpr id
+      | "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id)
     ] ]
   ;
- simple_binding:
+  q_ident:
+    [ [ id = ident_or_anti -> Tac2quote.of_anti ~loc:!@loc Tac2quote.of_ident id ] ]
+  ;
+  simple_binding:
     [ [ "("; id = Prim.ident; ":="; c = Constr.lconstr; ")" ->
         Loc.tag ~loc:!@loc (NamedHyp id, Tac2quote.of_constr ~loc:!@loc c)
       | "("; n = Prim.natural; ":="; c = Constr.lconstr; ")" ->
@@ -302,8 +305,60 @@ GEXTEND Gram
   ;
   q_bindings:
     [ [ "with"; bl = bindings -> bl
-      | -> mk_constr ~loc:!@loc Tac2core.Core.c_no_bindings []
+      | -> Tac2quote.of_bindings ~loc:!@loc Misctypes.NoBindings
     ] ]
+  ;
+  intropatterns:
+    [ [ l = LIST0 nonsimple_intropattern -> l ]]
+  ;
+(*   ne_intropatterns: *)
+(*     [ [ l = LIST1 nonsimple_intropattern -> l ]] *)
+(*   ; *)
+  or_and_intropattern:
+    [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> QIntroOrPattern tc
+      | "()" -> QIntroAndPattern []
+      | "("; si = simple_intropattern; ")" -> QIntroAndPattern [si]
+      | "("; si = simple_intropattern; ",";
+             tc = LIST1 simple_intropattern SEP "," ; ")" ->
+             QIntroAndPattern (si::tc)
+      | "("; si = simple_intropattern; "&";
+	     tc = LIST1 simple_intropattern SEP "&" ; ")" ->
+	  (* (A & B & C) is translated into (A,(B,C)) *)
+	  let rec pairify = function
+	    | ([]|[_]|[_;_]) as l -> l
+	    | t::q -> [t; (QIntroAction (QIntroOrAndPattern (QIntroAndPattern (pairify q))))]
+	  in QIntroAndPattern (pairify (si::tc)) ] ]
+  ;
+  equality_intropattern:
+    [ [ "->" -> QIntroRewrite true
+      | "<-" -> QIntroRewrite false
+      | "[="; tc = intropatterns; "]" -> QIntroInjection tc ] ]
+  ;
+  naming_intropattern:
+    [ [ LEFTQMARK; prefix = ident_or_anti -> QIntroFresh prefix
+      | LEFTQMARK -> QIntroAnonymous
+      | id = ident_or_anti -> QIntroIdentifier id ] ]
+  ;
+  nonsimple_intropattern:
+    [ [ l = simple_intropattern -> l
+      | "*"  -> QIntroForthcoming true
+      | "**" -> QIntroForthcoming false ]]
+  ;
+  simple_intropattern:
+    [ [ pat = simple_intropattern_closed ->
+(*         l = LIST0 ["%"; c = operconstr LEVEL "0" -> c] -> *)
+        (** TODO: handle %pat *)
+        pat
+    ] ]
+  ;
+  simple_intropattern_closed:
+    [ [ pat = or_and_intropattern   -> QIntroAction (QIntroOrAndPattern pat)
+      | pat = equality_intropattern -> QIntroAction pat
+      | "_" -> QIntroAction QIntroWildcard 
+      | pat = naming_intropattern -> QIntroNaming pat ] ]
+  ;
+  q_intropatterns:
+    [ [ ipat = intropatterns -> Tac2quote.of_intro_patterns ~loc:!@loc ipat ] ]
   ;
 END
 

@@ -42,10 +42,8 @@ let c_cons = coq_core "::"
 let c_none = coq_core "None"
 let c_some = coq_core "Some"
 
-let t_bindings = std_core "bindings"
-let c_no_bindings = std_core "NoBindings"
-let c_implicit_bindings = std_core "ImplicitBindings"
-let c_explicit_bindings = std_core "ExplicitBindings"
+let c_true = coq_core "true"
+let c_false = coq_core "false"
 
 let t_qhyp = std_core "hypothesis"
 let c_named_hyp = std_core "NamedHyp"
@@ -853,6 +851,14 @@ let () = add_scope "ident" begin function
 | _ -> scope_fail ()
 end
 
+let () = add_scope "thunk" begin function
+| [tok] ->
+  let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
+  let act e = rthunk (act e) in
+  Tac2entries.ScopeRule (scope, act)
+| _ -> scope_fail ()
+end
+
 let () = add_scope "bindings" begin function
 | [] ->
   let scope = Extend.Aentry Tac2entries.Pltac.q_bindings in
@@ -861,10 +867,10 @@ let () = add_scope "bindings" begin function
 | _ -> scope_fail ()
 end
 
-let () = add_scope "thunk" begin function
-| [tok] ->
-  let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
-  let act e = rthunk (act e) in
+let () = add_scope "intropatterns" begin function
+| [] ->
+  let scope = Extend.Aentry Tac2entries.Pltac.q_intropatterns in
+  let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
 | _ -> scope_fail ()
 end

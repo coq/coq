@@ -8,6 +8,7 @@
 
 open Names
 open Misctypes
+open Tac2qexpr
 open Tac2expr
 
 (** Syntactic quoting of expressions. *)
@@ -16,6 +17,8 @@ open Tac2expr
     manipulates pure syntax of Ltac2. Its main purpose is to write notations. *)
 
 val constructor : ?loc:Loc.t -> ltac_constructor -> raw_tacexpr list -> raw_tacexpr
+
+val of_anti : ?loc:Loc.t -> (?loc:Loc.t -> 'a -> raw_tacexpr) -> 'a or_anti -> raw_tacexpr
 
 val of_int : ?loc:Loc.t -> int -> raw_tacexpr
 
@@ -30,3 +33,7 @@ val of_constr : ?loc:Loc.t -> Constrexpr.constr_expr -> raw_tacexpr
 val of_list : ?loc:Loc.t -> raw_tacexpr list -> raw_tacexpr
 
 val of_bindings : ?loc:Loc.t -> raw_tacexpr bindings -> raw_tacexpr
+
+val of_intro_pattern : ?loc:Loc.t -> intro_pattern -> raw_tacexpr
+
+val of_intro_patterns : ?loc:Loc.t -> intro_pattern list -> raw_tacexpr

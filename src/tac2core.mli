@@ -24,10 +24,8 @@ val t_option : type_constant
 val t_string : type_constant
 val t_array : type_constant
 
-val t_bindings : type_constant
-val c_no_bindings : ltac_constructor
-val c_implicit_bindings : ltac_constant
-val c_explicit_bindings : ltac_constant
+val c_true : ltac_constructor
+val c_false : ltac_constructor
 
 val t_qhyp : type_constant
 val c_anon_hyp : ltac_constructor

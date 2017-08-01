@@ -59,4 +59,5 @@ val tac2expr : raw_tacexpr Pcoq.Gram.entry
 
 val q_ident : raw_tacexpr Pcoq.Gram.entry
 val q_bindings : raw_tacexpr Pcoq.Gram.entry
+val q_intropatterns : raw_tacexpr Pcoq.Gram.entry
 end

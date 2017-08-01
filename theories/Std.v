@@ -49,7 +49,34 @@ Ltac2 Type red_flags := {
   rConst : evaluable_reference list
 }.
 
+Ltac2 Type 'a not_implemented.
+
+Ltac2 Type rec intro_pattern := [
+| IntroForthcoming (bool)
+| IntroNaming (intro_pattern_naming)
+| IntroAction (intro_pattern_action)
+]
+with intro_pattern_naming := [
+| IntroIdentifier (ident)
+| IntroFresh (ident)
+| IntroAnonymous
+]
+with intro_pattern_action := [
+| IntroWildcard
+| IntroOrAndPattern (or_and_intro_pattern)
+| IntroInjection (intro_pattern list)
+| IntroApplyOn ((constr * intro_pattern) not_implemented) (* Not Implemented yet *)
+| IntroRewrite (bool)
+]
+with or_and_intro_pattern := [
+| IntroOrPattern (intro_pattern list list)
+| IntroAndPattern (intro_pattern list)
+].
+
 (** Standard, built-in tactics. See Ltac1 for documentation. *)
+
+Ltac2 @ external intros : intro_pattern list -> unit := "ltac2" "tac_intros".
+Ltac2 @ external eintros : intro_pattern list -> unit := "ltac2" "tac_eintros".
 
 Ltac2 @ external eelim : constr_with_bindings -> constr_with_bindings option -> unit := "ltac2" "tac_eelim".
 Ltac2 @ external ecase : constr_with_bindings -> unit := "ltac2" "tac_ecase".
