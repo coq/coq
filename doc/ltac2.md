@@ -185,6 +185,20 @@ There is a dedicated syntax for list and array litterals.
 
 Limitations: for now, deep pattern matching is not implemented yet.
 
+## Ltac Definitions
+
+One can define a new global Ltac2 value using the following syntax.
+```
+VERNAC ::=
+| "Ltac2" RECFLAG LIDENT ":=" TERM
+```
+
+For semantic reasons, the body of the Ltac2 definition must be a syntactical
+value, i.e. a function, a constant or a pure constructor recursively applied to
+values.
+
+If the `RECFLAG` is set, the tactic is expanded into a recursive binding.
+
 ## Reduction
 
 We use the usual ML call-by-value reduction, with an otherwise unspecified
@@ -235,8 +249,8 @@ Intuitively a thunk of type `unit -> 'a` can do the following:
 - It can fail in a non-recoverable way
 - It can use first-class backtrack. The proper way to figure that is that we
   morally have the following isomorphism:
-  `(unit -> 'a) ~ unit -> ('a + (exn -> 'a))` i.e. thunks can produce a list
-  of results waiting for failure exceptions.
+  `(unit -> 'a) ~ (unit -> exn + ('a * (exn -> 'a)))` i.e. thunks can produce a
+  lazy list of results where each tail is waiting for a continuation exception.
 - It can access a backtracking proof state, made out amongst other things of
   the current evar assignation and the list of goals under focus.
 
@@ -245,7 +259,12 @@ Intuitively a thunk of type `unit -> 'a` can do the following:
 The Ltac2 language features non-backtracking IO, notably mutable data and
 printing operations.
 
-Mutable fields of records can be modified using the set syntax
+Mutable fields of records can be modified using the set syntax. Likewise,
+built-in types like `string` and `array` feature imperative assignment. See
+modules `String` and `Array` respectively.
+
+A few printing primitives are provided in the `Message` module, allowing to
+display information to the user.
 
 ### Fatal errors
 
@@ -328,14 +347,7 @@ It is guaranteed that when evaluating `enter f`, `f` is called with exactly one
 goal under focus. Note that `f` may be called several times, or never, depending
 on the number of goals under focus before the call to `enter`.
 
-A more expressive primitive allows to retrieve the data returned by each tactic
-and store it in a list.
-
-```
-val enter_val : (unit -> 'a) -> 'a list
-```
-
-Accessing the goal data is then implicit in the Ltac2 primitives, and may fail
+Accessing the goal data is then implicit in the Ltac2 primitives, and may panic
 if the invariants are not respected. The two essential functions for observing
 goals are given below.
 
@@ -344,7 +356,7 @@ val hyp : ident -> constr
 val goal : unit -> constr
 ```
 
-The two above functions fail if there is not exactly one goal under focus.
+The two above functions panic if there is not exactly one goal under focus.
 In addition, `hyp` may also fail if there is no hypothesis with the
 corresponding name.
 
@@ -366,93 +378,105 @@ We should stop doing that! We need to mark when quoting and unquoting, although
 we need to do that in a short and elegant way so as not to be too cumbersome
 to the user.
 
-## Syntax example
+## Generic Syntax for Quotations
 
-Here is a suggestive example of a reasonable syntax.
-
+In general, quotations can be introduced in term by the following syntax, where
+`QUOTENTRY` is some parsing entry.
 ```
-let var := "H" in (* a string *)
-let c := << fun $var$ => 0 >> (* the Coq term "fun H => 0" *)
-let c' := << let x := $c$ in nat >> (* the Coq term "let x := fun H => 0 in nat" *)
-...
+TERM ::=
+| QUOTNAME ":" "(" QUOTENTRY ")"
+
+QUOTNAME := IDENT
 ```
 
-## Term quotation
+The current implementation recognizes the following built-in quotations:
+- "ident", which parses identifiers (type `Init.ident`).
+- "constr", which parses Coq terms and produces an-evar free term at runtime
+  (type `Init.constr`).
+- "open_constr", which parses Coq terms and produces a term potentially with
+  holes at runtime (type `Init.constr` as well).
+- "pattern", which parses Coq patterns and produces a pattern used for term
+  matching (type `Init.pattern`).
+
+The following syntactic sugar is provided for two common cases.
+- `@id` is the same as ident:(id)
+- `'t` is the same as open_constr:(t)
+
+## Term Antiquotations
 
 ### Syntax
 
-It is better to define primitively the quoting syntax to build terms, as this
-is more robust to changes.
+One can also insert Ltac2 code into Coq term, similarly to what was possible in
+Ltac1.
 
 ```
-t, u ::= ... | << constr >>
+COQCONSTR ::=
+| "ltac2" ":" "(" TERM ")"
 ```
 
-The `constr` datatype have the same syntax as the usual Coq
-terms, except that it also allows antiquotations of the form `$t$` whose type
-is statically inferred from the position, e.g.
-
-```
-<< let $t$ := $u$ >> (** [t] is an ident, [u] is a constr *)
-```
-
-As the term syntax implicitly allows to inject other classes without marking,
-antiquotations can refer explicitly to which class they belong to overcome this
-limitation.
-
-```
-<< $ident:t$ >> (** [t] is an ident, and the corresponding constr is [GVar t] *)
-<< $ref:t$ >> (** [t] is a reference, and the corresponding constr is [GRef t] *)
-```
+Antiquoted terms are expected to have type `unit`, as they are only evaluated
+for their side-effects.
 
 ### Semantics
 
-Interpretation of a quoted constr is done in two phases, internalization and
+Interpretation of a quoted Coq term is done in two phases, internalization and
 evaluation.
-- During internalization, variables are resolved and antiquotations are
-  type-checked as Ltac2 terms, effectively producing a `glob_constr` in Coq
-  implementation terminology, potentially ill-typed as a Coq term.
-- During evaluation, a quoted term is fully evaluated to a kernel term, and is
-  in particular type-checked in the current environment.
 
-Internalization is part of the static semantics, i.e. it is done at typing
-time, while evaluation is part of the dynamic semantics, i.e. it is done when
-a term gets effectively computed.
+- Internalization is part of the static semantics, i.e. it is done at Ltac2
+  typing time.
+- Evaluation is part of the dynamic semantics, i.e. it is done when
+  a term gets effectively computed by Ltac2.
 
 #### Static semantics
 
-The typing rule of a quoted constr is given below, where the `eᵢ` refer to
-antiquoted terms.
+During internalization, Coq variables are resolved and antiquotations are
+type-checked as Ltac2 terms, effectively producing a `glob_constr` in Coq
+implementation terminology. Note that although it went through the
+type-checking of *Ltac2*, the resulting term has not been fully computed and
+is potentially ill-typed as a Coq term.
 
 ```
-  Γ ⊢ e₁ : unit     Γ ⊢ eₙ : unit
-====================================
-  Γ ⊢ << c{$e₁$, ..., $eₙ$} >> : constr
+Ltac2 Definition myconstr () := constr:(nat -> 0).
+// Valid with type `unit -> constr`, but will fail at runtime.
 ```
 
-Note that the **static** environment of typing of antiquotations is **not**
-expanded by the binders from the term. Namely, it means that the following
+Term antiquotations are type-checked in the enclosing Ltac2 typing context
+of the corresponding term expression. For instance, the following with
+type-check.
+
+```
+let x := '0 in constr:(1 + ltac2:(exact x))
+// type constr
+```
+
+Beware that the typing environment of typing of antiquotations is **not**
+expanded by the Coq binders from the term. Namely, it means that the following
 expression will **not** type-check.
 ```
-<< fun x : nat => $exact x$ >>
+constr:(fun x : nat => ltac2:(exact x))
+// Error: Unbound variable 'x'
 ```
 
 There is a simple reason for that, which is that the following expression would
 not make sense in general.
 ```
-<< fun x : nat => $clear x; exact x$ >>
+constr:(fun x : nat => ltac2:(clear @x; exact x))
 ```
 
-Rather, the tactic writer has to resort to the **dynamic** environment, and must
-write instead something that amounts to the following.
+Rather, the tactic writer has to resort to the **dynamic** goal environment,
+and must write instead explicitly that she is accessing a hypothesis, typically
+as follows.
 ```
-<< fun x : nat => $exact (hyp "x")$ >>
+constr:(fun x : nat => ltac2:(hyp @x))
 ```
 
-Obviously, we need to provide syntactic sugar to make this tractable. See the
-corresponding section for more details.
+The `ltac2:(hyp @x)` pattern is so common that we provide a dedicated Coq
+term notation for it.
 
 #### Dynamic semantics
+
+During evaluation, a quoted term is fully evaluated to a kernel term, and is
+in particular type-checked in the current environment.
 
 Evaluation of a quoted term is described below.
 - The quoted term is evaluated by the pretyper.
@@ -464,183 +488,108 @@ quoted term.
 Relative orders of evaluation of antiquotations and quoted term is not
 specified.
 
+For instance, in the following example, `tac` will be evaluated in a context
+with exactly one goal under focus, whose last hypothesis is `H : nat`. The
+whole expression will thus evaluate to the term `fun H : nat => nat`.
+```
+let tac () := hyp @H in constr:(fun H : nat => ltac2:(tac ()))
+```
+
+Many standard tactics perform type-checking of their argument before going
+further. It is your duty to ensure that terms are well-typed when calling
+such tactics. Failure to do so will result in non-recoverable exceptions.
+
 ## Patterns
 
 Terms can be used in pattern position just as any Ltac constructor. The accepted
-syntax is a subset of the constr syntax in Ltac term position, where
-antiquotations are variables binding in the right-hand side.
+syntax is a subset of the constr syntax in Ltac term position. It does not
+allow antiquotations.
 
-Constructors and destructors can be derived from this. E.g. the previous
-var-manipulating functions can be defined as follows.
-
-```
-let mkVar : ident -> constr = fun id -> << $ident:id$ >>
-
-let destVar : constr -> ident = function
-| << $ident:x$ >> -> x
-| _ -> fail ()
-```
-
-One should be careful in patterns not to mix the syntax for evars with the one
-for bound variables.
-
-The usual match construction from Ltac1 can be derived from those primitive
-operations. We should provide syntactic sugar to do so.
-
-We need to decide how to handle bound variables in antiquotations, both in term
-and pattern position. Should they bind? Should they not? What is the semantics
-of the following snippet?
-
-```
-let foo = function << let x := t in $p$ >> -> p
-let bar p = << let x := t in $p$ >>
-```
-
-What about the various kind of constrs? Untyped vs. typed, plus caring about
-the context?
-
-### Lists and Gallina `match`
-
-It should be possible to manipulate Gallina `match` statements in a relatively
-pain-free way.  For this reason, there should be a way to match on lists:
-
-```
-let replace_args = function << $f$ $a1 .. an$ >>
-                            << $g$ $b1 .. bn$ >>
-                -> << $f$ $b1 .. bn$ >>
-let head = function << $f$ $a1 .. an$ >> -> << $f$ >>
-let args : constr -> constr list = function << $f$ $a1 .. an$ >> -> [a1 ; .. ; an]
-let apply (f : constr) : constr list -> constr = function
-| $a1 .. an$ -> << $f$ $a1 .. an$ >>
-let complicated_identity v = (let f = head v in let xs = args v in apply f xs)
-
-let open_term_under_binders = function << fun $a1 .. an$ => $body$ >> -> << $body$ >>
-let binders : constr -> ident list = function << fun $a1 .. an$ => $body$ >> -> [a1 ; .. ; an]
-let close_term (body : constr) : ident list -> constr = function $a1 .. an$ -> << fun $a1 .. an$ => $body$ >>
-let complicated_function_identity v =
-  let b  = open_term_under_binders v in
-  let xs = binders v                 in
-  close_term body xs
-```
-
-We could implement the `@?P` pattern as something like the desugaring rule:
-```
-rule
-  (match term with
-   | (@?P a1 .. an))
-  ~>
-  let P = type_check (<< fun $a1 .. an$ => $term$ >>) in ...
-```
-The call to `type_check` ensures that there are no remaining holes in the term.
-It is, perhaps, overkill.
-
-Then we could destructure a `match` via syntax like:
-```
-let match_to_eta = function
-| << match $t$ as $t'$ in $Ty$ return $P$ with
-     | $c1$ => $v1$
-     ..
-     | $cm$ => $vm$
-     end >>
-  -> << match $t$ in $Ty$ return $Ty$ with
-        | $c1$ => $c1$
-        ..
-        | $cm$ => $cm$
-        end >>
-```
-which would take something like `match b with true => 0 | false => 1 end` and
-return `match b with true => true | false => false end`.
-
-We should be able to construct the eliminators for inductive types
-in Ltac 2.0, using this syntax to generate the bodies, together with some
-primitives for acquiring the relevant types.
-
-
-**Questions**:
-- What exactly are the semantics of `..`?
-- Should it be `$a1 .. an$` or `$a1$ .. $an$`?
-- This syntax suggests that when open terms are used in binding positions,
-  unbound variables should become binding patterns.  That is, if you have
-  `v` which has been constructed as `<< @cons _ $x$ $xs$ >>`, then
-  `<< fun ls : list nat => match ls with $v$ => $v$ | _ => nil end >>` should
-  be the eta-expansion of `ls`.  Is this desired semantics?  Are there issues
-  with it?
+Patterns quotations are typically used with the matching functions provided
+in the `Pattern` module.
 
 # Notations
 
-Notations are the crux of the usability of Ltac. We should be able to recover
+Notations are the crux of the usability of Ltac1. We should be able to recover
 a feeling similar to the old implementation by using and abusing notations.
-This would be done at at level totally different from the semantics, which
-is not what is happening as of today.
 
 ## Scopes
 
-We would like to attach some scopes to identifiers, so that it could be possible
-to write e.g.
+A scope is a name given to a grammar entry used to produce some Ltac2 expression
+at parsing time. Scopes are described using a form of S-expression.
 
 ```
-Ltac intro : string -> unit := ...
-
-Goal True -> True.
-Proof.
-intro "H". (** We require the quote here, as this is not a notation *)
-Undo.
-Top.intro "H". (** An alternative way, by fully qualifying the tactic *)
-Abort.
-
-Tactic Notation "intro" ident(i) := intro i.
-
-Goal True -> True.
-Proof.
-intro H.
-(** This sequence of tokens is elaborated at parsing time into [Top.intro "H"]
-    thanks to the above notation. *)
-Undo.
-Top.intro "H".
-(** Here, the core tactic is still reachable using the fully qualified name *)
-Abort.
+SCOPE :=
+| STRING
+| INT
+| LIDENT ( "(" SCOPE₀ "," ... "," SCOPEₙ ")" )
 ```
 
-A typical notation that would be useful is the Coq term one, so that the
-following is possible.
+A few scopes contain antiquotation features. For sake of uniformity, all
+antiquotations are introduced by the syntax `"$" VAR`.
 
+The following scopes are built-in.
+- constr:
+  + parses `c = COQCONSTR` and produces `constr:(c)`
+- ident:
+  + parses `id = IDENT` and produces `ident:(id)`
+  + parses `"$" (x = IDENT)` and produces the variable `x`
+- list0(*scope*):
+  + if *scope* parses `ENTRY`, parses ̀`(x₀, ..., xₙ = ENTRY*)` and produces
+    `[x₀; ...; xₙ]`.
+- list0(*scope*, sep = STRING):
+  + if *scope* parses `ENTRY`, parses `(x₀ = ENTRY, "sep", ..., "sep", xₙ = ENTRY)`
+    and produces `[x₀; ...; xₙ]`.
+- list1: same as list0 (with or without separator) but parses `ENTRY+` instead
+  of `ENTRY*`.
+- opt(*scope*)
+  + if *scope* parses `ENTRY`, parses `ENTRY?` and produces either `None` or
+    `Some x` where `x` is the parsed expression.
+- self:
+  + parses a Ltac2 expression at the current level and return it as is.
+- next:
+  + parses a Ltac2 expression at the next level and return it as is.
+- tactic(n = INT):
+  + parses a Ltac2 expression at the provided level *n* and return it as is.
+- thunk(*scope*):
+  parses the same as *scope*, and if *e* is the parsed expression, returns
+  `fun () => e`.
+
+For now there is no way to declare new scopes from Ltac2 side, but this is
+planned.
+
+## Notations
+
+The Ltac2 parser can be extended by syntactic notations.
 ```
-Ltac destruct : constr -> unit := ...
+VERNAC ::=
+| "Ltac2" "Notation" TOKEN+ LEVEL? ":=" TERM
 
-Tactic Notation "destruct" constr(x) := destruct x.
+LEVEL := ":" INT
 
-Goal False -> True.
-Proof.
-intro H. (** assuming we have the previous notation in scope *)
-destruct H. (** H is interpreted in the current goal? *)
-Undo.
-Top.destruct << H >> (** alternative without notation *)
+TOKEN :=
+| VAR "(" SCOPE ")"
+| STRING
 ```
 
-Another one, probably useful for transition, would be a scope `legacy_constr`
-that parses an identifier s.t. `legacy_constr(H)` elaborates to
-`hyp H + mkVar H`.
+A Ltac2 notation adds a parsing rule to the Ltac2 grammar, which is expanded
+to the provided body where every token from the notation is let-bound to the
+corresponding generated expression.
 
-One should be able to define new scopes, by giving them a qualified name,
-a old scope used for the parsing rule, and an expansion macro. We can maybe
-unify such a scope creation process with the tactic notation one?
+For instance, assume we perform:
+```
+Ltac2 Notation "foo" c(thunk(constr)) ids(list0(ident)) := Bar.f c ids.
+```
+Then the following expression
+```
+let y := @X in foo (nat -> nat) x ?y
+```
+will expand at parsing time to
+```
+let y := @X in
+let c := fun () => constr:(nat -> nat) with ids := [@x; y] in Bar.f c ids
+```
 
-## Syntactic sugar
-
-A few dedicated syntaxes should be built-in into Ltac2 for easy manipulation
-of Coq-specific data.
-
-### Identifiers
-
-We need to write identifiers as easily as strings. What about `#foo` standing
-for the identifier `foo`?
-
-### Hypotheses
-
-We need to be able to access easily a hypothesis from its name. What about
-`` `foo `` being a shorthand for `hyp "foo"`? This needs to be accessible inside
-terms as well.
-
-# Transition path
-
-TODO
+Beware that the order of evaluation of multiple let-bindings is not specified,
+so that you may have to resort to thunking to ensure that side-effects are
+performed at the right time.
