@@ -57,7 +57,7 @@ let print_usage_channel co command =
 \n  -where                 print Coq's standard library location and exit\
 \n  -config, --config      print Coq's configuration information and exit\
 \n  -v, --version          print Coq version and exit\
-\n  --print-version        print Coq version in easy to parse format and exit\
+\n  -print-version         print Coq version in easy to parse format and exit\
 \n  -list-tags             print highlight color tags known by Coq and exit\
 \n\
 \n  -quiet                 unset display of extra information (implies -w \"-all\")\
