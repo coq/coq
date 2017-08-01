@@ -138,8 +138,6 @@ let set_toplevel_name dir =
   if Names.DirPath.is_empty dir then user_err Pp.(str "Need a non empty toplevel module name");
   toplevel_name := dir
 
-let remove_top_ml () = Mltop.remove ()
-
 let warn_deprecated_inputstate =
   CWarnings.create ~name:"deprecated-inputstate" ~category:"deprecated"
          (fun () -> strbrk "The inputstate option is deprecated and discouraged.")
@@ -588,21 +586,6 @@ let parse_args arglist =
     |"--print-version" -> Usage.machine_readable_version (exitcode ())
     |"-where" -> print_where := true
     |"-xml" -> Flags.xml_export := true
-
-    (* Deprecated options *)
-    |"-byte" -> warning "option -byte deprecated, call with .byte suffix"
-    |"-opt" -> warning "option -opt deprecated, call with .opt suffix"
-    |"-full" -> warning "option -full deprecated"
-    |"-notactics" -> warning "Obsolete option \"-notactics\"."; remove_top_ml ()
-    |"-emacs-U" ->
-      warning "Obsolete option \"-emacs-U\", use -emacs instead."; set_emacs ()
-    |"-v7" -> user_err Pp.(str "This version of Coq does not support v7 syntax")
-    |"-v8" -> warning "Obsolete option \"-v8\"."
-    |"-lazy-load-proofs" -> warning "Obsolete option \"-lazy-load-proofs\"."
-    |"-dont-load-proofs" -> warning "Obsolete option \"-dont-load-proofs\"."
-    |"-force-load-proofs" -> warning "Obsolete option \"-force-load-proofs\"."
-    |"-unsafe" -> warning "Obsolete option \"-unsafe\"."; ignore (next ())
-    |"-quality" -> warning "Obsolete option \"-quality\"."
 
     (* Unknown option *)
     | s -> extras := s :: !extras

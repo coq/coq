@@ -656,7 +656,7 @@ dynamically.
 searched into the current {\ocaml} loadpath (see the command {\tt
 Add ML Path} in the Section~\ref{loadpath}).  Loading of {\ocaml}
 files is only possible under the bytecode version of {\tt coqtop}
-(i.e. {\tt coqtop} called with options {\tt -byte}, see chapter 
+(i.e. {\tt coqtop.byte}, see chapter 
 \ref{Addoc-coqc}), or when {\Coq} has been compiled with a version of
 {\ocaml} that supports native {\tt Dynlink} ($\ge$ 3.11).
 
@@ -739,7 +739,7 @@ the command {\tt Declare ML Module} in the Section~\ref{compiled}).
 \subsection[\tt Print ML Path {\str}.]{\tt Print ML Path {\str}.\comindex{Print ML Path}}
 This command displays the current {\ocaml} loadpath.
 This command makes sense only under the bytecode version of {\tt
-coqtop}, i.e. using option {\tt -byte} (see the
+coqtop}, i.e. {\tt coqtop.byte} (see the
 command {\tt Declare ML Module} in the section
 \ref{compiled}).
 
