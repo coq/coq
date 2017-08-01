@@ -1136,8 +1136,13 @@ and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
 		   evd_comb1 (define_evar_as_sort env.ExtraEnv.env) evdref ev
                | _ -> anomaly (Pp.str "Found a type constraint which is not a type.")
            in
-	     { utj_val = v;
-	       utj_type = s }
+           (* Correction of bug #5315 : we need to define an evar for *all* holes *)
+           let evkt = e_new_evar env evdref ~src:(loc, knd) ~naming (mkSort s) in
+           let ev,_ = destEvar !evdref evkt in
+           evdref := Evd.define ev (to_constr !evdref v) !evdref;
+           (* End of correction of bug #5315 *)
+           { utj_val = v;
+	     utj_type = s }
        | None ->
            let env = ltac_interp_name_env k0 lvar env !evdref in
 	   let s = evd_comb0 (new_sort_variable univ_flexible_alg) evdref in

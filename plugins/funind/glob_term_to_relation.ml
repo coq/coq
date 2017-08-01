@@ -32,6 +32,14 @@ type binder_type =
 
 type glob_context = (binder_type*glob_constr) list
 
+
+let rec solve_trivial_holes pat_as_term e =
+  match pat_as_term.CAst.v,e.CAst.v with
+  | GHole _,_ -> e
+  | GApp(fp,argsp),GApp(fe,argse) when glob_constr_eq fp fe ->
+       CAst.make (GApp((solve_trivial_holes fp fe),List.map2 solve_trivial_holes argsp argse))
+  | _,_ -> pat_as_term
+                                              
 (*
    compose_glob_context [(bt_1,n_1,t_1);......] rt returns
    b_1(n_1,t_1,.....,bn(n_k,t_k,rt)) where the b_i's are the
@@ -226,7 +234,12 @@ let combine_lam n t b =
 		      compose_glob_context b.context b.value )
   }
 
-
+let combine_prod2 n t b =
+  {
+    context = [];
+    value = mkGProd(n, compose_glob_context t.context t.value,
+		      compose_glob_context b.context b.value )
+  }
 
 let combine_prod n t b =
   { context = t.context@((Prod n,t.value)::b.context); value = b.value}
@@ -604,7 +617,9 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	let t_res = build_entry_lc env funnames avoid t in
 	let new_env = raw_push_named (n,None,t) env in
 	let b_res = build_entry_lc new_env funnames avoid b in
-	combine_results (combine_prod n) t_res b_res
+        if List.length t_res.result = 1 && List.length b_res.result = 1
+        then combine_results (combine_prod2 n) t_res b_res
+        else combine_results (combine_prod n) t_res b_res
     | GLetIn(n,v,typ,b) ->
 	(* we first compute the list of constructor
 	   corresponding to the body of the function,
@@ -806,6 +821,12 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 		 let typ_as_constr = EConstr.of_constr typ_as_constr in
 		 let typ = Detyping.detype false [] new_env (Evd.from_env env) typ_as_constr in
 		 let pat_as_term = pattern_to_term pat in
+                 (* removing trivial holes *) 
+                 let pat_as_term = solve_trivial_holes pat_as_term e in 
+                  (* observe (str "those_pattern_preconds" ++ spc () ++ *)
+                  (*            str "pat" ++ spc () ++ pr_glob_constr pat_as_term ++ spc ()++ *)
+                  (*            str "e" ++ spc () ++ pr_glob_constr e ++spc ()++ *)
+                  (*            str "typ_as_constr" ++ spc () ++ pr_lconstr typ_as_constr); *)
 		 List.fold_right
 		   (fun id  acc ->
 		      if Id.Set.mem id this_pat_ids
