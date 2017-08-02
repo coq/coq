@@ -173,17 +173,17 @@ convertible if and only if \texttt{i $=$ j}.
 Cumulative inductive types, coninductive types, variants and records
 only make sense when they are universe polymorphic. Therefore, an
 error is issued whenever the user uses the \texttt{Cumulative} or
-\texttt{NonCumulative} prefix in a monomorphic contexts.
+\texttt{NonCumulative} prefix in a monomorphic context.
 Notice that this is not the case for the option \texttt{Set Polymorphic Inductive Cumulativity}.
-That is, this optiotion, when set, makes all subsequent \emph{polymorphic}
-inductive declarations cumulative (unless, of course if the \texttt{NonCumulative} prefix is used)
+That is, this option, when set, makes all subsequent \emph{polymorphic}
+inductive declarations cumulative (unless, of course the \texttt{NonCumulative} prefix is used)
 but has no effect on \emph{monomorphic} inductive declarations.
 Consider the following examples.
 \begin{coq_example}
-Fail Monomorphic Cumulative Inductive Unit := unit.
+Monomorphic Cumulative Inductive Unit := unit.
 \end{coq_example}
 \begin{coq_example}
-Fail Monomorphic NonCumulative Inductive Unit := unit.
+Monomorphic NonCumulative Inductive Unit := unit.
 \end{coq_example}
 \begin{coq_example*}
 Set Polymorphic Inductive Cumulativity.
