@@ -2,7 +2,7 @@
 (** Examples of extraction with manually-declared implicit arguments *)
 
 (** NB: we should someday check the produced code instead of
-    simply running the commands. *)
+    extracting and just compiling. *)
 
 Require Coq.extraction.Extraction.
 
@@ -22,9 +22,11 @@ Proof.
 Defined.
 
 Recursive Extraction dnat_nat.
+Extraction TestCompile dnat_nat.
 
 Extraction Implicit dnat_nat [n].
 Recursive Extraction dnat_nat.
+Extraction TestCompile dnat_nat.
 
 (** Same, with a Fixpoint *)
 
@@ -35,9 +37,11 @@ Fixpoint dnat_nat' n (d:dnat n) :=
  end.
 
 Recursive Extraction dnat_nat'.
+Extraction TestCompile dnat_nat'.
 
 Extraction Implicit dnat_nat' [n].
 Recursive Extraction dnat_nat'.
+Extraction TestCompile dnat_nat'.
 
 (** Bug #4243, part 2 *)
 
@@ -56,6 +60,7 @@ Defined.
 Extraction Implicit es [n].
 Extraction Implicit enat_nat [n].
 Recursive Extraction enat_nat.
+Extraction TestCompile enat_nat.
 
 (** Same, with a Fixpoint *)
 
@@ -67,6 +72,7 @@ Fixpoint enat_nat' n (e:enat n) : nat :=
 
 Extraction Implicit enat_nat' [n].
 Recursive Extraction enat_nat'.
+Extraction TestCompile enat_nat'.
 
 (** Bug #4228 *)
 
@@ -82,3 +88,4 @@ Extraction Implicit two_course [n].
 End Food.
 
 Recursive Extraction Food.Meal.
+Extraction TestCompile Food.Meal.
