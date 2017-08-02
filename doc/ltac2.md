@@ -44,7 +44,34 @@ We describe more in details each point in the remainder of this document.
 
 # ML component
 
-The call-by-value functional language fragment is easy to implement.
+## Overview
+
+Ltac2 is a member of the ML family of languages, in the sense that it is an
+effectful call-by-value functional language, with static typing à la
+Hindley-Milner. It is commonly accepted that ML constitutes a sweet spot in PL
+design, as it is relatively expressive while not being either too lax
+(contrarily to dynamic typing) nor too strict (contrarily to say, dependent
+types).
+
+The main goal of Ltac2 is to serve as a meta-language for Coq. As such, it
+naturally fits in the ML lineage, just as the historical ML was designed as
+the tactic language for the LCF prover. It can also be seen as a general-purpose
+language, by simply forgetting about the Coq-specific features.
+
+Sticking to a standard ML type system can be considered somewhat weak for a
+meta-language designed to manipulate Coq terms. In particular, there is no
+way to statically guarantee that a Coq term resulting from an Ltac2
+computation will be well-typed. This is actually a design choice, motivated
+by retro-compatibility with Ltac1. Instead, well-typedness is deferred to
+dynamic checks, allowing many primitive functions to fail whenever they are
+provided with an ill-typed term.
+
+The language is naturally effectful as it manipulates the global state of the
+proof engine. This allows to think of proof-modifying primitives as effects
+in a straightforward way. Semantically, proof manipulation lives in a monad,
+which allows to ensure that Ltac2 satisfies the same equations as a generic ML
+with unspecified effects would do, e.g. function reduction is substitution
+by a value.
 
 ## Type Syntax
 
@@ -134,7 +161,8 @@ VERNAC ::=
 ## Term Syntax
 
 The syntax of the functional fragment is very close to the one of Ltac1, except
-that it adds a true pattern-matching feature.
+that it adds a true pattern-matching feature, as well as a few standard
+constructions from ML.
 
 ```
 VAR := LIDENT
@@ -202,11 +230,21 @@ If the `RECFLAG` is set, the tactic is expanded into a recursive binding.
 ## Reduction
 
 We use the usual ML call-by-value reduction, with an otherwise unspecified
-evaluation order.
+evaluation order. This is a design choice making it compatible with OCaml,
+if ever we implement native compilation. The expected equations are as follows.
+```
+(fun x => t) V ≡ t{x := V} (βv)
 
-Note that this is already a departure from Ltac1 which uses heuristic to
-decide when evaluating an expression, e.g. the following do not evaluate the
-same way.
+let x := V in t ≡ t{x := V} (let)
+
+match C V₀ ... Vₙ with ... | C x₀ ... xₙ  => t | ... end ≡ t {xᵢ := Vᵢ} (ι)
+
+(t any term, V values, C constructor)
+```
+
+Note that call-by-value reduction is already a departure from Ltac1 which uses
+heuristics to decide when evaluating an expression. For instance, the following
+expressions do not evaluate the same way in Ltac1.
 
 ```
 foo (idtac; let x := 0 in bar)
@@ -229,7 +267,7 @@ current hackish subtyping semantics, and one will have to resort to conversion
 functions. See notations though to make things more palatable. 
 
 In this setting, all usual argument-free tactics have type `unit -> unit`, but
-one can return as well a value of type `τ` thanks to terms of type `unit -> τ`,
+one can return as well a value of type `t` thanks to terms of type `unit -> t`,
 or take additional arguments.
 
 ## Effects
@@ -253,6 +291,8 @@ Intuitively a thunk of type `unit -> 'a` can do the following:
   lazy list of results where each tail is waiting for a continuation exception.
 - It can access a backtracking proof state, made out amongst other things of
   the current evar assignation and the list of goals under focus.
+
+We describe more thoroughly the various effects existing in Ltac2 hereafter.
 
 ### Standard IO
 
@@ -427,13 +467,16 @@ evaluation.
 - Evaluation is part of the dynamic semantics, i.e. it is done when
   a term gets effectively computed by Ltac2.
 
+Remark that typing of Coq terms is a *dynamic* process occuring at Ltac2
+evaluation time, and not at Ltac2 typing time.
+
 #### Static semantics
 
 During internalization, Coq variables are resolved and antiquotations are
 type-checked as Ltac2 terms, effectively producing a `glob_constr` in Coq
 implementation terminology. Note that although it went through the
-type-checking of *Ltac2*, the resulting term has not been fully computed and
-is potentially ill-typed as a Coq term.
+type-checking of **Ltac2**, the resulting term has not been fully computed and
+is potentially ill-typed as a runtime **Coq** term.
 
 ```
 Ltac2 Definition myconstr () := constr:(nat -> 0).
@@ -451,7 +494,7 @@ let x := '0 in constr:(1 + ltac2:(exact x))
 
 Beware that the typing environment of typing of antiquotations is **not**
 expanded by the Coq binders from the term. Namely, it means that the following
-expression will **not** type-check.
+Ltac2 expression will **not** type-check.
 ```
 constr:(fun x : nat => ltac2:(exact x))
 // Error: Unbound variable 'x'
@@ -462,6 +505,8 @@ not make sense in general.
 ```
 constr:(fun x : nat => ltac2:(clear @x; exact x))
 ```
+Indeed, a hypothesis can suddenly disappear from the runtime context if some
+other tactic pulls the rug from under you.
 
 Rather, the tactic writer has to resort to the **dynamic** goal environment,
 and must write instead explicitly that she is accessing a hypothesis, typically
@@ -482,9 +527,9 @@ for it.
 During evaluation, a quoted term is fully evaluated to a kernel term, and is
 in particular type-checked in the current environment.
 
-Evaluation of a quoted term is described below.
-- The quoted term is evaluated by the pretyper.
-- Antiquotations are evaluated in a context where there is exactly one goal
+Evaluation of a quoted term goes as follows.
+- The quoted term is first evaluated by the pretyper.
+- Antiquotations are then evaluated in a context where there is exactly one goal
 under focus, with the hypotheses coming from the current environment extended
 with the bound variables of the term, and the resulting term is fed into the
 quoted term.
@@ -608,3 +653,10 @@ let c := fun () => constr:(nat -> nat) with ids := [@x; y] in Bar.f c ids
 Beware that the order of evaluation of multiple let-bindings is not specified,
 so that you may have to resort to thunking to ensure that side-effects are
 performed at the right time.
+
+# TODO
+
+- Implement deep pattern-matching.
+- Implement compatibility layer with Ltac1
+- Craft an expressive set of primitive functions
+- Implement native compilation to OCaml
