@@ -18,6 +18,10 @@ val full_extraction : string option -> reference list -> unit
 val separate_extraction : reference list -> unit
 val extraction_library : bool -> Id.t -> unit
 
+(* For the test-suite : extraction to a temporary file + ocamlc on it *)
+
+val extract_and_compile : reference list -> unit
+
 (* For debug / external output via coqtop.byte + Drop : *)
 
 val mono_environment :

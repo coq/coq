@@ -66,6 +66,10 @@ VERNAC COMMAND EXTEND Extraction CLASSIFIED AS QUERY
 (* Monolithic extraction to a file *)
 | [ "Extraction" string(f) ne_global_list(l) ]
   -> [ full_extraction (Some f) l ]
+
+(* Extraction to a temporary file and OCaml compilation *)
+| [ "Extraction" "TestCompile" ne_global_list(l) ]
+  -> [ extract_and_compile l ]
 END
 
 VERNAC COMMAND EXTEND SeparateExtraction CLASSIFIED AS QUERY
