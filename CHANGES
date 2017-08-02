@@ -75,6 +75,8 @@ Standard Library
 Plugins
 
 - The mathematical proof language (also known as declarative mode) was removed.
+- A new command Extraction TestCompile has been introduced, not meant
+  for the general user but instead for Coq's test-suite.
 
 Dependencies
 
