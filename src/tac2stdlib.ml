@@ -175,10 +175,21 @@ let () = define_prim1 "tac_eintros" begin fun ipat ->
   Tactics.intros_patterns true ipat
 end
 
+let () = define_prim2 "tac_elim" begin fun c copt ->
+  let c = to_constr_with_bindings c in
+  let copt = Value.to_option to_constr_with_bindings copt in
+  Tactics.elim false None c copt
+end
+
 let () = define_prim2 "tac_eelim" begin fun c copt ->
   let c = to_constr_with_bindings c in
   let copt = Value.to_option to_constr_with_bindings copt in
   Tactics.elim true None c copt
+end
+
+let () = define_prim1 "tac_case" begin fun c ->
+  let c = to_constr_with_bindings c in
+  Tactics.general_case_analysis false None c
 end
 
 let () = define_prim1 "tac_ecase" begin fun c ->

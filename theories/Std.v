@@ -78,7 +78,9 @@ with or_and_intro_pattern := [
 Ltac2 @ external intros : intro_pattern list -> unit := "ltac2" "tac_intros".
 Ltac2 @ external eintros : intro_pattern list -> unit := "ltac2" "tac_eintros".
 
+Ltac2 @ external elim : constr_with_bindings -> constr_with_bindings option -> unit := "ltac2" "tac_elim".
 Ltac2 @ external eelim : constr_with_bindings -> constr_with_bindings option -> unit := "ltac2" "tac_eelim".
+Ltac2 @ external case : constr_with_bindings -> unit := "ltac2" "tac_case".
 Ltac2 @ external ecase : constr_with_bindings -> unit := "ltac2" "tac_ecase".
 
 Ltac2 @ external egeneralize : (constr * occurrences * ident option) list -> unit := "ltac2" "tac_egeneralize".
