@@ -9,49 +9,67 @@
 Require Import Ltac2.Init.
 Require Ltac2.Control Ltac2.Std.
 
-Ltac2 Notation "intros" p(intropatterns) := Std.intros false p.
+(** Enter and check evar resolution *)
+Ltac2 enter_h ev f arg :=
+match ev with
+| true => Control.enter (fun () => f ev (arg ()))
+| false =>
+  Control.enter (fun () =>
+    Control.with_holes arg (fun x => f ev x))
+end.
 
-Ltac2 Notation "eintros" p(intropatterns) := Std.intros true p.
+Ltac2 intros0 ev p :=
+  Control.enter (fun () => Std.intros false p).
 
-Ltac2 Notation "split" bnd(thunk(bindings)) :=
-  Control.with_holes bnd (fun bnd => Std.split false bnd).
+Ltac2 Notation "intros" p(intropatterns) := intros0 false p.
 
-Ltac2 Notation "esplit" bnd(bindings) := Std.split true bnd.
+Ltac2 Notation "eintros" p(intropatterns) := intros0 true p.
 
-Ltac2 Notation "left" bnd(thunk(bindings)) :=
-  Control.with_holes bnd (fun bnd => Std.left false bnd).
+Ltac2 split0 ev bnd :=
+  enter_h ev Std.split bnd.
 
-Ltac2 Notation "eleft" bnd(bindings) := Std.left true bnd.
+Ltac2 Notation "split" bnd(thunk(bindings)) := split0 false bnd.
 
-Ltac2 Notation "right" bnd(thunk(bindings)) :=
-  Control.with_holes bnd (fun bnd => Std.right false bnd).
+Ltac2 Notation "esplit" bnd(thunk(bindings)) := split0 true bnd.
 
-Ltac2 Notation "eright" bnd(bindings) := Std.right true bnd.
+Ltac2 left0 ev bnd := enter_h ev Std.left bnd.
 
-Ltac2 Notation "constructor" := Std.constructor false.
-Ltac2 Notation "constructor" n(tactic) bnd(thunk(bindings)) :=
-  Control.with_holes bnd (fun bnd => Std.constructor_n false n bnd).
+Ltac2 Notation "left" bnd(thunk(bindings)) := left0 false bnd.
 
-Ltac2 Notation "econstructor" := Std.constructor true.
-Ltac2 Notation "econstructor" n(tactic) bnd(bindings) :=
-  Std.constructor_n true n bnd.
+Ltac2 Notation "eleft" bnd(thunk(bindings)) := left0 true bnd.
+
+Ltac2 right0 ev bnd := enter_h ev Std.right bnd.
+
+Ltac2 Notation "right" bnd(thunk(bindings)) := right0 false bnd.
+
+Ltac2 Notation "eright" bnd(thunk(bindings)) := right0 true bnd.
+
+Ltac2 constructor0 ev n bnd :=
+  enter_h ev (fun ev bnd => Std.constructor_n ev n bnd) bnd.
+
+Ltac2 Notation "constructor" := Control.enter (fun () => Std.constructor false).
+Ltac2 Notation "constructor" n(tactic) bnd(thunk(bindings)) := constructor0 false n bnd.
+
+Ltac2 Notation "econstructor" := Control.enter (fun () => Std.constructor true).
+Ltac2 Notation "econstructor" n(tactic) bnd(thunk(bindings)) := constructor0 true n bnd.
 
 Ltac2 elim0 ev c bnd use :=
-  let use := match use with
-  | None => None
-  | Some u =>
-    let ((_, c, wth)) := u in Some (c, wth)
-  end in
-  Std.elim ev (c, bnd) use.
+  let f ev ((c, bnd, use)) :=
+    let use := match use with
+    | None => None
+    | Some u =>
+      let ((_, c, wth)) := u in Some (c, wth)
+    end in
+    Std.elim ev (c, bnd) use
+  in
+  enter_h ev f (fun () => c (), bnd (), use ()).
 
 Ltac2 Notation "elim" c(thunk(constr)) bnd(thunk(bindings))
   use(thunk(opt(seq("using", constr, bindings)))) :=
-  Control.with_holes
-    (fun () => c (), bnd (), use ())
-    (fun ((c, bnd, use)) => elim0 false c bnd use).
+  elim0 false c bnd use.
 
-Ltac2 Notation "eelim" c(constr) bnd(bindings)
-  use(opt(seq("using", constr, bindings))) :=
+Ltac2 Notation "eelim" c(thunk(constr)) bnd(thunk(bindings))
+  use(thunk(opt(seq("using", constr, bindings)))) :=
   elim0 true c bnd use.
 
 Ltac2 apply0 adv ev cb cl :=
