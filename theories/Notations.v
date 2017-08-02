@@ -9,32 +9,32 @@
 Require Import Ltac2.Init.
 Require Ltac2.Control Ltac2.Std.
 
-Ltac2 Notation "intros" p(intropatterns) := Std.intros p.
+Ltac2 Notation "intros" p(intropatterns) := Std.intros false p.
 
-Ltac2 Notation "eintros" p(intropatterns) := Std.eintros p.
+Ltac2 Notation "eintros" p(intropatterns) := Std.intros true p.
 
 Ltac2 Notation "split" bnd(thunk(bindings)) :=
-  Control.with_holes bnd (fun bnd => Std.split bnd).
+  Control.with_holes bnd (fun bnd => Std.split false bnd).
 
-Ltac2 Notation "esplit" bnd(bindings) := Std.esplit bnd.
+Ltac2 Notation "esplit" bnd(bindings) := Std.split true bnd.
 
 Ltac2 Notation "left" bnd(thunk(bindings)) :=
-  Control.with_holes bnd (fun bnd => Std.left bnd).
+  Control.with_holes bnd (fun bnd => Std.left false bnd).
 
-Ltac2 Notation "eleft" bnd(bindings) := Std.eleft bnd.
+Ltac2 Notation "eleft" bnd(bindings) := Std.left true bnd.
 
 Ltac2 Notation "right" bnd(thunk(bindings)) :=
-  Control.with_holes bnd (fun bnd => Std.right bnd).
+  Control.with_holes bnd (fun bnd => Std.right false bnd).
 
-Ltac2 Notation "eright" bnd(bindings) := Std.eright bnd.
+Ltac2 Notation "eright" bnd(bindings) := Std.right true bnd.
 
-Ltac2 Notation "constructor" := Std.constructor ().
+Ltac2 Notation "constructor" := Std.constructor false.
 Ltac2 Notation "constructor" n(tactic) bnd(thunk(bindings)) :=
-  Control.with_holes bnd (fun bnd => Std.constructor_n n bnd).
+  Control.with_holes bnd (fun bnd => Std.constructor_n false n bnd).
 
-Ltac2 Notation "econstructor" := Std.econstructor ().
+Ltac2 Notation "econstructor" := Std.constructor true.
 Ltac2 Notation "econstructor" n(tactic) bnd(bindings) :=
-  Std.econstructor_n n bnd.
+  Std.constructor_n true n bnd.
 
 Ltac2 eelim c bnd use :=
     let use := match use with
@@ -42,7 +42,7 @@ Ltac2 eelim c bnd use :=
     | Some u =>
       let ((_, c, wth)) := u in Some (c, wth)
     end in
-  Std.eelim (c, bnd) use.
+  Std.elim true (c, bnd) use.
 
 Ltac2 elim c bnd use :=
   Control.with_holes
@@ -53,7 +53,7 @@ Ltac2 elim c bnd use :=
       | Some u =>
         let ((_, c, wth)) := u in Some (c, wth)
       end in
-    Std.elim (c, bnd) use).
+    Std.elim false (c, bnd) use).
 
 Ltac2 Notation "elim" c(thunk(constr)) bnd(thunk(bindings))
   use(thunk(opt(seq("using", constr, bindings)))) := elim c bnd use.

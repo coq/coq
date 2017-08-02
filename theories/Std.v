@@ -73,24 +73,22 @@ with or_and_intro_pattern := [
 | IntroAndPattern (intro_pattern list)
 ].
 
+Ltac2 Type evar_flag := bool.
+
 (** Standard, built-in tactics. See Ltac1 for documentation. *)
 
-Ltac2 @ external intros : intro_pattern list -> unit := "ltac2" "tac_intros".
-Ltac2 @ external eintros : intro_pattern list -> unit := "ltac2" "tac_eintros".
+Ltac2 @ external intros : evar_flag -> intro_pattern list -> unit := "ltac2" "tac_intros".
 
-Ltac2 @ external elim : constr_with_bindings -> constr_with_bindings option -> unit := "ltac2" "tac_elim".
-Ltac2 @ external eelim : constr_with_bindings -> constr_with_bindings option -> unit := "ltac2" "tac_eelim".
-Ltac2 @ external case : constr_with_bindings -> unit := "ltac2" "tac_case".
-Ltac2 @ external ecase : constr_with_bindings -> unit := "ltac2" "tac_ecase".
+Ltac2 @ external elim : evar_flag -> constr_with_bindings -> constr_with_bindings option -> unit := "ltac2" "tac_elim".
+Ltac2 @ external case : evar_flag -> constr_with_bindings -> unit := "ltac2" "tac_case".
 
-Ltac2 @ external egeneralize : (constr * occurrences * ident option) list -> unit := "ltac2" "tac_egeneralize".
+Ltac2 @ external generalize : (constr * occurrences * ident option) list -> unit := "ltac2" "tac_generalize".
 
 Ltac2 @ external assert : constr -> (unit -> unit) option option -> intro_pattern option -> unit := "ltac2" "tac_assert".
 Ltac2 @ external enough : constr -> (unit -> unit) option option -> intro_pattern option -> unit := "ltac2" "tac_enough".
 
 Ltac2 @ external pose : ident option -> constr -> unit := "ltac2" "tac_pose".
-Ltac2 @ external set : ident option -> (unit -> constr) -> clause -> unit := "ltac2" "tac_set".
-Ltac2 @ external eset : ident option -> (unit -> constr) -> clause -> unit := "ltac2" "tac_eset".
+Ltac2 @ external set : evar_flag -> ident option -> (unit -> constr) -> clause -> unit := "ltac2" "tac_set".
 
 Ltac2 @ external red : clause -> unit := "ltac2" "tac_red".
 Ltac2 @ external hnf : clause -> unit := "ltac2" "tac_hnf".
@@ -108,18 +106,13 @@ Ltac2 @ external etransitivity : unit -> unit := "ltac2" "tac_etransitivity".
 
 Ltac2 @ external cut : constr -> unit := "ltac2" "tac_cut".
 
-Ltac2 @ external left : bindings -> unit := "ltac2" "tac_left".
-Ltac2 @ external eleft : bindings -> unit := "ltac2" "tac_eleft".
-Ltac2 @ external right : bindings -> unit := "ltac2" "tac_right".
-Ltac2 @ external eright : bindings -> unit := "ltac2" "tac_eright".
+Ltac2 @ external left : evar_flag -> bindings -> unit := "ltac2" "tac_left".
+Ltac2 @ external right : evar_flag -> bindings -> unit := "ltac2" "tac_right".
 
-Ltac2 @ external constructor : unit -> unit := "ltac2" "tac_constructor".
-Ltac2 @ external econstructor : unit -> unit := "ltac2" "tac_econstructor".
-Ltac2 @ external split : bindings -> unit := "ltac2" "tac_split".
-Ltac2 @ external esplit : bindings -> unit := "ltac2" "tac_esplit".
+Ltac2 @ external constructor : evar_flag -> unit := "ltac2" "tac_constructor".
+Ltac2 @ external split : evar_flag -> bindings -> unit := "ltac2" "tac_split".
 
-Ltac2 @ external constructor_n : int -> bindings -> unit := "ltac2" "tac_constructorn".
-Ltac2 @ external econstructor_n : int -> bindings -> unit := "ltac2" "tac_econstructorn".
+Ltac2 @ external constructor_n : evar_flag -> int -> bindings -> unit := "ltac2" "tac_constructorn".
 
 Ltac2 @ external intros_until : hypothesis -> unit := "ltac2" "tac_introsuntil".
 
