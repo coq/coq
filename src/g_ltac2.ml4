@@ -397,8 +397,12 @@ PRINTED BY pr_ltac2entry
 | [ tac2def_syn(e) ] -> [ e ]
 END
 
-VERNAC COMMAND EXTEND VernacDeclareTactic2Definition CLASSIFIED AS SIDEFF
-| [ "Ltac2" ltac2_entry(e) ] -> [
+let classify_ltac2 = function
+| StrSyn _ -> Vernacexpr.VtUnknown, Vernacexpr.VtNow
+| StrVal _ | StrPrm _  | StrTyp _ -> Vernac_classifier.classify_as_sideeff
+
+VERNAC COMMAND EXTEND VernacDeclareTactic2Definition
+| [ "Ltac2" ltac2_entry(e) ] => [ classify_ltac2 e ] -> [
     let local = Locality.LocalityFixme.consume () in
     Tac2entries.register_struct ?local e
   ]
@@ -433,4 +437,3 @@ open Stdarg
 VERNAC COMMAND EXTEND Ltac2Print CLASSIFIED AS SIDEFF
 | [ "Print" "Ltac2" reference(tac) ] -> [ Tac2entries.print_ltac tac ]
 END
-
