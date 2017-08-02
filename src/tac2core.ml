@@ -883,6 +883,14 @@ let () = add_scope "bindings" begin function
 | _ -> scope_fail ()
 end
 
+let () = add_scope "intropattern" begin function
+| [] ->
+  let scope = Extend.Aentry Tac2entries.Pltac.q_intropattern in
+  let act tac = tac in
+  Tac2entries.ScopeRule (scope, act)
+| _ -> scope_fail ()
+end
+
 let () = add_scope "intropatterns" begin function
 | [] ->
   let scope = Extend.Aentry Tac2entries.Pltac.q_intropatterns in

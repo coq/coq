@@ -20,6 +20,8 @@ src/tac2core.mli
 src/tac2qexpr.mli
 src/tac2quote.ml
 src/tac2quote.mli
+src/tac2tactics.ml
+src/tac2tactics.mli
 src/tac2stdlib.ml
 src/tac2stdlib.mli
 src/g_ltac2.ml4

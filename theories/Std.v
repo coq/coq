@@ -74,10 +74,14 @@ with or_and_intro_pattern := [
 ].
 
 Ltac2 Type evar_flag := bool.
+Ltac2 Type advanced_flag := bool.
 
 (** Standard, built-in tactics. See Ltac1 for documentation. *)
 
 Ltac2 @ external intros : evar_flag -> intro_pattern list -> unit := "ltac2" "tac_intros".
+
+Ltac2 @ external apply : advanced_flag -> evar_flag ->
+  (unit -> constr_with_bindings) list -> (ident * (intro_pattern option)) option -> unit := "ltac2" "tac_apply".
 
 Ltac2 @ external elim : evar_flag -> constr_with_bindings -> constr_with_bindings option -> unit := "ltac2" "tac_elim".
 Ltac2 @ external case : evar_flag -> constr_with_bindings -> unit := "ltac2" "tac_case".

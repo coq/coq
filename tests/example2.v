@@ -26,3 +26,18 @@ intros H.
 elim &H with 0.
 split.
 Qed.
+
+Goal forall (P : nat -> Prop), (forall n m, n = m -> P n) -> P 0.
+Proof.
+intros P H.
+Fail apply &H.
+apply &H with (m := 0).
+split.
+Qed.
+
+Goal forall (P : nat -> Prop), (forall n m, n = m -> P n) -> P 0.
+Proof.
+intros P H.
+eapply &H.
+split.
+Qed.

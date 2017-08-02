@@ -37,11 +37,11 @@ Ltac2 Notation "econstructor" n(tactic) bnd(bindings) :=
   Std.constructor_n true n bnd.
 
 Ltac2 elim0 ev c bnd use :=
-    let use := match use with
-    | None => None
-    | Some u =>
-      let ((_, c, wth)) := u in Some (c, wth)
-    end in
+  let use := match use with
+  | None => None
+  | Some u =>
+    let ((_, c, wth)) := u in Some (c, wth)
+  end in
   Std.elim ev (c, bnd) use.
 
 Ltac2 Notation "elim" c(thunk(constr)) bnd(thunk(bindings))
@@ -53,3 +53,28 @@ Ltac2 Notation "elim" c(thunk(constr)) bnd(thunk(bindings))
 Ltac2 Notation "eelim" c(constr) bnd(bindings)
   use(opt(seq("using", constr, bindings))) :=
   elim0 true c bnd use.
+
+Ltac2 apply0 adv ev cb cl :=
+  let cl := match cl with
+  | None => None
+  | Some p =>
+    let ((_, id, ipat)) := p in
+    let p := match ipat with
+    | None => None
+    | Some p =>
+      let ((_, ipat)) := p in
+      Some ipat
+    end in
+    Some (id, p)
+  end in
+  Std.apply adv ev cb cl.
+
+Ltac2 Notation "eapply"
+  cb(list1(thunk(seq(constr, bindings)), ","))
+  cl(opt(seq(keyword("in"), ident, opt(seq(keyword("as"), intropattern))))) :=
+  apply0 true true cb cl.
+
+Ltac2 Notation "apply"
+  cb(list1(thunk(seq(constr, bindings)), ","))
+  cl(opt(seq(keyword("in"), ident, opt(seq(keyword("as"), intropattern))))) :=
+  apply0 true false cb cl.

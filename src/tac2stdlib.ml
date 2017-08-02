@@ -12,6 +12,7 @@ open Misctypes
 open Genredexpr
 open Tac2expr
 open Tac2core
+open Tac2tactics
 open Proofview.Notations
 
 module Value = Tac2ffi
@@ -176,6 +177,17 @@ let () = define_prim2 "tac_intros" begin fun ev ipat ->
   let ev = Value.to_bool ev in
   let ipat = to_intro_patterns ipat in
   Tactics.intros_patterns ev ipat
+end
+
+let () = define_prim4 "tac_apply" begin fun adv ev cb ipat ->
+  let adv = Value.to_bool adv in
+  let ev = Value.to_bool ev in
+  let map_cb c = thaw c >>= fun c -> return (to_constr_with_bindings c) in
+  let cb = Value.to_list map_cb cb in
+  let map p = Value.to_option (fun p -> Loc.tag (to_intro_pattern p)) p in
+  let map_ipat p = to_pair Value.to_ident map p in
+  let ipat = Value.to_option map_ipat ipat in
+  Tac2tactics.apply adv ev cb ipat
 end
 
 let () = define_prim3 "tac_elim" begin fun ev c copt ->
