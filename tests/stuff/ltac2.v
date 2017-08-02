@@ -55,10 +55,6 @@ Ltac2 qux3 x := constr:(nat -> ltac2:(refine (fun () => hyp x))).
 
 Print Ltac2 qux3.
 
-Ltac2 qux4 f x := x, (f x, x).
-
-Print Ltac2 qux4.
-
 Ltac2 Type rec nat := [ O | S (nat) ].
 
 Ltac2 message_of_nat n :=
@@ -137,17 +133,10 @@ Std.ecase (hyp @H, Std.ExplicitBindings [Std.NamedHyp @n, '0]).
 refine (fun () => 'eq_refl).
 Qed.
 
-Ltac2 rec do n tac := match Int.equal n 0 with
-| true => ()
-| false => tac (); do (Int.sub n 1) tac
-end.
-
-Print Ltac2 do.
-
 Goal forall x, 1 + x = x + 1.
 Proof.
 refine (fun () => '(fun x => _)).
 Std.cbv {
   Std.rBeta := true; Std.rMatch := true; Std.rFix := true; Std.rCofix := true;
-  Std.rZeta := true; Std.rDelta := false; rConst := [];
+  Std.rZeta := true; Std.rDelta := false; Std.rConst := [];
 } { Std.on_hyps := None; Std.on_concl := Std.AllOccurrences }.
