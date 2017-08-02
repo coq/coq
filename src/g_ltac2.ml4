@@ -90,7 +90,7 @@ GEXTEND Gram
       | "let"; isrec = rec_flag;
           lc = LIST1 let_clause SEP "with"; "in";
           e = tac2expr LEVEL "top" -> CTacLet (!@loc, isrec, lc, e)
-      | "match"; e = tac2expr LEVEL "5"; "with"; bl = branches ;"end" ->
+      | "match"; e = tac2expr LEVEL "5"; "with"; bl = branches; "end" ->
          CTacCse (!@loc, e, bl)
       ]
     | "::" RIGHTA
@@ -121,7 +121,7 @@ GEXTEND Gram
   ]
   ;
   branch:
-  [ [ pat = tac2pat LEVEL "1"; "=>"; e = tac2expr LEVEL "5" -> (pat, e) ] ]
+  [ [ pat = tac2pat LEVEL "1"; "=>"; e = tac2expr LEVEL "top" -> (pat, e) ] ]
   ;
   rec_flag:
     [ [ IDENT "rec" -> true
