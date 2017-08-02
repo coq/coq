@@ -525,7 +525,8 @@ let top_sort evm undefs =
   let l' = ref [] in
   let tosee = ref undefs in
   let rec visit ev evi =
-    let evs = Evarutil.undefined_evars_of_evar_info evm evi in
+    (* NB: caching of undefined evars is discarded here *)
+    let (evs,_) = Evarutil.undefined_evars_of_evar_info ev evm evi in
       tosee := Evar.Map.remove ev !tosee;
       Evar.Set.iter (fun ev ->
         if Evar.Map.mem ev !tosee then
@@ -1424,22 +1425,28 @@ let deps_of_constraints cstrs evm p =
     Intpart.union_set (Evar.Set.union evx evy) p)
     cstrs
 
+(** get dependencies of undefined evars in evar map
+    compute new dependency caches along the way *)
 let evar_dependencies pred evm p =
   Evd.fold_undefined
-    (fun ev evi _ ->
+    (* evm_caches is evar map with updated caches threaded through the fold *)
+    (fun ev evi evm_with_caches ->
       if Typeclasses.is_resolvable evi && pred evm ev evi then
-        let evars = Evar.Set.add ev (Evarutil.undefined_evars_of_evar_info evm evi)
-        in Intpart.union_set evars p
-      else ())
-    evm ()
-
+	let (cache,evm_with_caches') = Evarutil.undefined_evars_of_evar_info ev evm_with_caches evi in
+        let evars = Evar.Set.add ev cache in
+	let _ = Intpart.union_set evars p in
+	evm_with_caches'
+      else evm_with_caches)
+    evm (* the evar map we're folding over *)
+    evm (* evar map to receive cache updates *)
+  
 (** [split_evars] returns groups of undefined evars according to dependencies *)
 
 let split_evars pred evm =
   let p = Intpart.create () in
-  evar_dependencies pred evm p;
-  deps_of_constraints (snd (extract_all_conv_pbs evm)) evm p;
-  Intpart.partition p
+  let evm' = evar_dependencies pred evm p in (* evm' has cached dependencies *)
+  deps_of_constraints (snd (extract_all_conv_pbs evm')) evm' p;
+  (Intpart.partition p,evm')
 
 let is_inference_forced p evd ev =
   try
@@ -1522,13 +1529,13 @@ exception Unresolved
 (** If [do_split] is [true], we try to separate the problem in
     several components and then solve them separately *)
 let resolve_all_evars debug depth unique env p oevd do_split fail =
-  let split = if do_split then split_evars p oevd else [Evar.Set.empty] in
+  let (split,oevd') = if do_split then split_evars p oevd else ([Evar.Set.empty],oevd) in
   let in_comp comp ev = if do_split then Evar.Set.mem ev comp else true
   in
   let rec docomp evd = function
-    | [] -> revert_resolvability oevd evd
+    | [] -> revert_resolvability oevd' evd
     | comp :: comps ->
-      let p = select_and_update_evars p oevd (in_comp comp) in
+      let p = select_and_update_evars p oevd' (in_comp comp) in
       try
         let evd' =
           if get_typeclasses_legacy_resolution () then
@@ -1536,7 +1543,7 @@ let resolve_all_evars debug depth unique env p oevd do_split fail =
           else
             Search.typeclasses_resolve debug depth unique p evd
         in
-         if has_undefined p oevd evd' then raise Unresolved;
+         if has_undefined p oevd' evd' then raise Unresolved;
          docomp evd' comps
       with Unresolved | Not_found ->
         if fail && (not do_split || is_mandatory (p evd) comp evd)
@@ -1545,7 +1552,7 @@ let resolve_all_evars debug depth unique env p oevd do_split fail =
           error_unresolvable env comp evd
         else (* Best effort: do nothing on this component *)
           docomp evd comps
-  in docomp oevd split
+  in docomp oevd' split
 
 let initial_select_evars filter =
   fun evd ev evi ->

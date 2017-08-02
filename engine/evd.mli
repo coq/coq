@@ -104,6 +104,8 @@ type evar_info = {
   (** Information about the evar. *)
   evar_candidates : constr list option;
   (** List of possible solutions when known that it is a finite list *)
+  evar_dependency_cache : Evar.Set.t option;
+  (** Set of undefined evars that this evar depends on *)
   evar_extra : Store.t
   (** Extra store, used for clever hacks. *)
 }
@@ -212,8 +214,11 @@ val add_constraints : evar_map -> Univ.constraints -> evar_map
 val undefined_map : evar_map -> evar_info Evar.Map.t
 (** Access the undefined evar mapping directly. *)
 
+val update_undefined : evar_map -> evar -> evar_info -> evar_map
+(** replace (or add) the evar info for an undefined evar *)
+  
 val drop_all_defined : evar_map -> evar_map
-
+  
 (** {6 Instantiating partial terms} *)
 
 exception NotInstantiatedEvar

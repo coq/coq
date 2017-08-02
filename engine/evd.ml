@@ -142,6 +142,7 @@ type evar_info = {
   evar_filter : Filter.t;
   evar_source : Evar_kinds.t Loc.located;
   evar_candidates : constr list option; (* if not None, list of allowed instances *)
+  evar_dependency_cache : Evar.Set.t option;
   evar_extra : Store.t }
 
 let make_evar hyps ccl = {
@@ -151,6 +152,7 @@ let make_evar hyps ccl = {
   evar_filter = Filter.identity;
   evar_source = Loc.tag @@ Evar_kinds.InternalHole;
   evar_candidates = None;
+  evar_dependency_cache = None;
   evar_extra = Store.empty
 }
 
@@ -494,6 +496,8 @@ let find_undefined d e = EvMap.find e d.undf_evars
 let mem d e = EvMap.mem e d.undf_evars || EvMap.mem e d.defn_evars
 
 let undefined_map d = d.undf_evars
+
+let update_undefined d e evi = { d with undf_evars = EvMap.add e evi d.undf_evars }
 
 let drop_all_defined d = { d with defn_evars = EvMap.empty }
 
