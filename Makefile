@@ -137,6 +137,7 @@ endif
 # This should help preventing weird compilation failures caused by leftover
 # compiled files after deleting or moving some source files.
 
+ifeq (,$(findstring clean,$(MAKECMDGOALS))) # Skip this for 'make clean' and alii
 ifndef ACCEPT_ALIEN_VO
 EXISTINGVO:=$(call find, '*.vo')
 KNOWNVO:=$(patsubst %.v,%.vo,$(call find, '*.v'))
@@ -160,6 +161,7 @@ ifdef ALIENOBJS
 $(error Leftover compiled OCaml files without known sources: $(ALIENOBJS); \
 remove them first, for instance via 'make clean' \
 (or skip this check via 'make ACCEPT_ALIEN_OBJ=1'))
+endif
 endif
 endif
 
