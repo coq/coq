@@ -642,7 +642,7 @@ Ltac2 Notation "foo" c(thunk(constr)) ids(list0(ident)) := Bar.f c ids.
 ```
 Then the following expression
 ```
-let y := @X in foo (nat -> nat) x ?y
+let y := @X in foo (nat -> nat) x $y
 ```
 will expand at parsing time to
 ```
