@@ -552,8 +552,19 @@ The following scopes are built-in.
 - tactic(n = INT):
   + parses a Ltac2 expression at the provided level *n* and return it as is.
 - thunk(*scope*):
-  parses the same as *scope*, and if *e* is the parsed expression, returns
+  + parses the same as *scope*, and if *e* is the parsed expression, returns
   `fun () => e`.
+- STRING:
+  + parses the corresponding string as a CAMLP5 IDENT and returns `()`.
+- keyword(s = STRING):
+  + parses the string *s* as a keyword and returns `()`.
+- terminal(s = STRING):
+  + parses the string *s* as a keyword, if it is already a
+    keyword, otherwise as an IDENT. Returns `()`.
+- seq(*scope₁*, ..., *scopeₙ*):
+  + parses *scope₁*, ..., *scopeₙ* in this order, and produces a n-tuple made
+    out of the parsed values in the same order. It is forbidden for the various
+    subscopes to refer to the global entry using self of next.
 
 For now there is no way to declare new scopes from Ltac2 side, but this is
 planned.

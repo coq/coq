@@ -507,6 +507,9 @@ let parse_scope = function
     Id.Map.find id !scope_table toks
   else
     CErrors.user_err ?loc (str "Unknown scope" ++ spc () ++ Nameops.pr_id id)
+| SexprStr (_, str) ->
+  let v_unit = CTacCst (dummy_loc, AbsKn (Tuple 0)) in
+  ScopeRule (Extend.Atoken (Tok.IDENT str), (fun _ -> v_unit))
 | tok ->
   let loc = loc_of_token tok in
   CErrors.user_err ~loc (str "Invalid parsing token")

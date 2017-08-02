@@ -742,6 +742,8 @@ let scope_fail () = CErrors.user_err (str "Invalid parsing token")
 
 let dummy_loc = Loc.make_loc (-1, -1)
 
+let q_unit = CTacCst (dummy_loc, AbsKn (Tuple 0))
+
 let rthunk e =
   let loc = Tac2intern.loc_of_tacexpr e in
   let var = [CPatVar (Some loc, Anonymous), Some (CTypRef (loc, AbsKn (Other Core.t_unit), []))] in
@@ -756,6 +758,20 @@ let add_generic_scope s entry arg =
   | _ -> scope_fail ()
   in
   add_scope s parse
+
+let () = add_scope "keyword" begin function
+| [SexprStr (loc, s)] ->
+  let scope = Extend.Atoken (Tok.KEYWORD s) in
+  Tac2entries.ScopeRule (scope, (fun _ -> q_unit))
+| _ -> scope_fail ()
+end
+
+let () = add_scope "terminal" begin function
+| [SexprStr (loc, s)] ->
+  let scope = Extend.Atoken (CLexer.terminal s) in
+  Tac2entries.ScopeRule (scope, (fun _ -> q_unit))
+| _ -> scope_fail ()
+end
 
 let () = add_scope "list0" begin function
 | [tok] ->
@@ -877,3 +893,72 @@ end
 
 let () = add_generic_scope "constr" Pcoq.Constr.constr Stdarg.wit_constr
 let () = add_generic_scope "open_constr" Pcoq.Constr.constr Stdarg.wit_open_constr
+
+(** seq scope, a bit hairy *)
+
+open Extend
+exception SelfSymbol
+
+type 'a any_symbol = { any_symbol : 'r. ('r, 'a) symbol }
+
+let rec generalize_symbol :
+  type a s. (s, a) Extend.symbol -> a any_symbol = function
+| Atoken tok ->
+  { any_symbol = Atoken tok }
+| Alist1 e ->
+  let e = generalize_symbol e in
+  { any_symbol = Alist1 e.any_symbol }
+| Alist1sep (e, sep) ->
+  let e = generalize_symbol e in
+  let sep = generalize_symbol sep in
+  { any_symbol = Alist1sep (e.any_symbol, sep.any_symbol) }
+| Alist0 e ->
+  let e = generalize_symbol e in
+  { any_symbol = Alist0 e.any_symbol }
+| Alist0sep (e, sep) ->
+  let e = generalize_symbol e in
+  let sep = generalize_symbol sep in
+  { any_symbol = Alist0sep (e.any_symbol, sep.any_symbol) }
+| Aopt e ->
+  let e = generalize_symbol e in
+  { any_symbol = Aopt e.any_symbol }
+| Aself -> raise SelfSymbol
+| Anext -> raise SelfSymbol
+| Aentry e -> { any_symbol = Aentry e }
+| Aentryl (e, l) -> { any_symbol = Aentryl (e, l) }
+| Arules r -> { any_symbol = Arules r }
+
+type _ converter =
+| CvNil : (Loc.t -> raw_tacexpr) converter
+| CvCns : 'act converter * ('a -> raw_tacexpr) -> ('a -> 'act) converter
+
+let rec apply : type a. a converter -> raw_tacexpr list -> a = function
+| CvNil -> fun accu loc ->
+  let cst = CTacCst (loc, AbsKn (Tuple (List.length accu))) in
+  CTacApp (loc, cst, accu)
+| CvCns (c, f) -> fun accu x -> apply c (f x :: accu)
+
+type seqrule =
+| Seqrule : ('act, Loc.t -> raw_tacexpr) norec_rule * 'act converter -> seqrule
+
+let rec make_seq_rule = function
+| [] ->
+  let r = { norec_rule = Stop } in
+  Seqrule (r, CvNil)
+| tok :: rem ->
+  let Tac2entries.ScopeRule (scope, f) = Tac2entries.parse_scope tok in
+  let scope = generalize_symbol scope in
+  let Seqrule (r, c) = make_seq_rule rem in
+  let r = { norec_rule = Next (r.norec_rule, scope.any_symbol) } in
+  Seqrule (r, CvCns (c, f))
+
+let () = add_scope "seq" begin fun toks ->
+  let scope =
+    try
+      let Seqrule (r, c) = make_seq_rule (List.rev toks) in
+      Arules [Rules (r, apply c [])]
+    with SelfSymbol ->
+      CErrors.user_err (str "Recursive symbols (self / next) are not allowed in local rules")
+  in
+  Tac2entries.ScopeRule (scope, (fun e -> e))
+end
