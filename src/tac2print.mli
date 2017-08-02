@@ -19,16 +19,16 @@ type typ_level =
 | T1
 | T0
 
-val pr_typref : type_constant -> std_ppcmds
-val pr_glbtype_gen : ('a -> string) -> typ_level -> 'a glb_typexpr -> std_ppcmds
-val pr_glbtype : ('a -> string) -> 'a glb_typexpr -> std_ppcmds
+val pr_typref : type_constant -> Pp.t
+val pr_glbtype_gen : ('a -> string) -> typ_level -> 'a glb_typexpr -> Pp.t
+val pr_glbtype : ('a -> string) -> 'a glb_typexpr -> Pp.t
 
 (** {5 Printing expressions} *)
 
-val pr_constructor : ltac_constructor -> std_ppcmds
-val pr_projection : ltac_projection -> std_ppcmds
-val pr_glbexpr_gen : exp_level -> glb_tacexpr -> std_ppcmds
-val pr_glbexpr : glb_tacexpr -> std_ppcmds
+val pr_constructor : ltac_constructor -> Pp.t
+val pr_projection : ltac_projection -> Pp.t
+val pr_glbexpr_gen : exp_level -> glb_tacexpr -> Pp.t
+val pr_glbexpr : glb_tacexpr -> Pp.t
 
 (** {5 Utilities} *)
 
