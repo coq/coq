@@ -36,28 +36,20 @@ Ltac2 Notation "econstructor" := Std.constructor true.
 Ltac2 Notation "econstructor" n(tactic) bnd(bindings) :=
   Std.constructor_n true n bnd.
 
-Ltac2 eelim c bnd use :=
+Ltac2 elim0 ev c bnd use :=
     let use := match use with
     | None => None
     | Some u =>
       let ((_, c, wth)) := u in Some (c, wth)
     end in
-  Std.elim true (c, bnd) use.
-
-Ltac2 elim c bnd use :=
-  Control.with_holes
-    (fun () => c (), bnd (), use ())
-    (fun ((c, bnd, use)) =>
-      let use := match use with
-      | None => None
-      | Some u =>
-        let ((_, c, wth)) := u in Some (c, wth)
-      end in
-    Std.elim false (c, bnd) use).
+  Std.elim ev (c, bnd) use.
 
 Ltac2 Notation "elim" c(thunk(constr)) bnd(thunk(bindings))
-  use(thunk(opt(seq("using", constr, bindings)))) := elim c bnd use.
+  use(thunk(opt(seq("using", constr, bindings)))) :=
+  Control.with_holes
+    (fun () => c (), bnd (), use ())
+    (fun ((c, bnd, use)) => elim0 false c bnd use).
 
 Ltac2 Notation "eelim" c(constr) bnd(bindings)
   use(opt(seq("using", constr, bindings))) :=
-  eelim c bnd use.
+  elim0 true c bnd use.
