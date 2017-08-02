@@ -129,7 +129,7 @@ Abort.
 Goal (forall n : nat, n = 0 -> False) -> True.
 Proof.
 refine (fun () => '(fun H => _)).
-Std.ecase (hyp @H, Std.ExplicitBindings [Std.NamedHyp @n, '0]).
+Std.case true (hyp @H, Std.ExplicitBindings [Std.NamedHyp @n, '0]).
 refine (fun () => 'eq_refl).
 Qed.
 
@@ -138,5 +138,6 @@ Proof.
 refine (fun () => '(fun x => _)).
 Std.cbv {
   Std.rBeta := true; Std.rMatch := true; Std.rFix := true; Std.rCofix := true;
-  Std.rZeta := true; Std.rDelta := false; Std.rConst := [];
+  Std.rZeta := true; Std.rDelta := true; Std.rConst := [];
 } { Std.on_hyps := None; Std.on_concl := Std.AllOccurrences }.
+Abort.
