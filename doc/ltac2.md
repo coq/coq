@@ -470,8 +470,12 @@ as follows.
 constr:(fun x : nat => ltac2:(exact (hyp @x)))
 ```
 
-The `ltac2:(exact (hyp @x))` pattern is so common that we provide dedicated
-Ltac2 and Coq term notations for it.
+This pattern is so common that we provide dedicated Ltac2 and Coq term notations
+for it.
+
+- `&x` as an Ltac2 expression expands to `hyp @x`.
+- `&x` as an Coq constr expression expands to
+  `ltac2:(refine (fun () => hyp @x))`.
 
 #### Dynamic semantics
 

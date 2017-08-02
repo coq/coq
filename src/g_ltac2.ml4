@@ -136,6 +136,7 @@ GEXTEND Gram
       | id = Prim.qualid ->
         if Tac2env.is_constructor (snd id) then CTacCst (!@loc, RelId id) else CTacRef (RelId id)
       | "@"; id = Prim.ident -> Tac2quote.of_ident ~loc:!@loc id
+      | "&"; id = Prim.ident -> Tac2quote.of_hyp ~loc:!@loc id
       | "'"; c = Constr.constr -> inj_open_constr !@loc c
       | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> Tac2quote.of_constr ~loc:!@loc c
       | IDENT "open_constr"; ":"; "("; c = Constr.lconstr; ")" -> inj_open_constr !@loc c
@@ -381,8 +382,13 @@ END
 GEXTEND Gram
   Pcoq.Constr.operconstr: LEVEL "0"
     [ [ IDENT "ltac2"; ":"; "("; tac = tac2expr; ")" ->
-          let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
-          CAst.make ~loc:!@loc (CHole (None, IntroAnonymous, Some arg)) ] ]
+        let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
+        CAst.make ~loc:!@loc (CHole (None, IntroAnonymous, Some arg))
+      | "&"; id = Prim.ident ->
+        let tac = Tac2quote.of_exact_hyp ~loc:!@loc id in
+        let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
+        CAst.make ~loc:!@loc (CHole (None, IntroAnonymous, Some arg))
+    ] ]
   ;
 END
 

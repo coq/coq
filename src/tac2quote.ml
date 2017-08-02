@@ -17,7 +17,13 @@ open Tac2core
 
 (** Syntactic quoting of expressions. *)
 
-let std_core n = KerName.make2 Tac2env.std_prefix (Label.of_id (Id.of_string n))
+let control_prefix =
+  MPfile (DirPath.make (List.map Id.of_string ["Control"; "Ltac2"]))
+
+let kername prefix n = KerName.make2 prefix (Label.of_id (Id.of_string n))
+let std_core n = kername Tac2env.std_prefix n
+let coq_core n = kername Tac2env.coq_prefix n
+let control_core n = kername control_prefix n
 
 let dummy_loc = Loc.make_loc (-1, -1)
 
@@ -114,3 +120,19 @@ and of_or_and_intro_pattern ?loc = function
 
 and of_intro_patterns ?loc l =
   of_list ?loc (List.map (of_intro_pattern ?loc) l)
+
+let of_hyp ?loc id =
+  let loc = Option.default dummy_loc loc in
+  let hyp = CTacRef (AbsKn (control_core "hyp")) in
+  CTacApp (loc, hyp, [of_ident ~loc id])
+
+let thunk e =
+  let t_unit = coq_core "unit" in
+  let loc = Tac2intern.loc_of_tacexpr e in
+  let var = [CPatVar (Some loc, Anonymous), Some (CTypRef (loc, AbsKn (Other t_unit), []))] in
+  CTacFun (loc, var, e)
+
+let of_exact_hyp ?loc id =
+  let loc = Option.default dummy_loc loc in
+  let refine = CTacRef (AbsKn (control_core "refine")) in
+  CTacApp (loc, refine, [thunk (of_hyp ~loc id)])

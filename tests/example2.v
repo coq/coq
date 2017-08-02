@@ -19,3 +19,10 @@ Proof.
 let myvar := Std.NamedHyp @x in split with (?myvar := 0).
 split.
 Qed.
+
+Goal (forall n : nat, n = 0 -> False) -> True.
+Proof.
+intros H.
+elim &H with 0.
+split.
+Qed.

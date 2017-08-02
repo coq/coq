@@ -39,3 +39,9 @@ val of_bindings : ?loc:Loc.t -> bindings -> raw_tacexpr
 val of_intro_pattern : ?loc:Loc.t -> intro_pattern -> raw_tacexpr
 
 val of_intro_patterns : ?loc:Loc.t -> intro_pattern list -> raw_tacexpr
+
+val of_hyp : ?loc:Loc.t -> Id.t -> raw_tacexpr
+(** id ↦ 'Control.hyp @id' *)
+
+val of_exact_hyp : ?loc:Loc.t -> Id.t -> raw_tacexpr
+(** id ↦ 'Control.refine (fun () => Control.hyp @id') *)
