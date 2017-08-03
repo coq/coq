@@ -692,7 +692,9 @@ let cache_undefined_evars_of_evar_info ev evd evi =
     (Evar.Set.union
        (match evi.evar_body with
 	 | Evar_empty -> Evar.Set.empty
-	 | Evar_defined b -> undefined_evars_of_term evd (EConstr.of_constr b))
+	 | Evar_defined b ->
+	    (* we assume ev is undefined, so body should not be defined *)
+	    assert false)
        (undefined_evars_of_named_context evd
           (named_context_of_val evi.evar_hyps)))
   in
