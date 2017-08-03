@@ -644,7 +644,8 @@ let define_aux def undef evk body =
         anomaly ~label:"Evd.define" (Pp.str "cannot define undeclared evar.")
   in
   let () = assert (oldinfo.evar_body == Evar_empty) in
-  let newinfo = { oldinfo with evar_body = Evar_defined body } in
+  (* flush the dependency cache to free memory *)
+  let newinfo = { oldinfo with evar_body = Evar_defined body; evar_dependency_cache = None } in
   EvMap.add evk newinfo def, EvMap.remove evk undef
 
 (* define the existential of section path sp as the constr body *)

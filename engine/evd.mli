@@ -194,7 +194,9 @@ val define : evar -> constr -> evar_map -> evar_map
       {- The evar is already present in the evarmap.}
       {- The evar is not defined in the evarmap yet.}
       {- All the evars present in the constr should be present in the evar map.}
-    } *)
+    } 
+    The dependency cache for the evar is flushed.
+*)
 
 val cmap : (constr -> constr) -> evar_map -> evar_map
 (** Map the function on all terms in the evar map. *)

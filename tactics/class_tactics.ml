@@ -524,20 +524,32 @@ let is_unique env sigma concl =
 let top_sort evm undefs =
   let l' = ref [] in
   let tosee = ref undefs in
-  let rec visit ev evi =
-    (* NB: caching of undefined evars is discarded here *)
-    let (evs,_) = Evarutil.undefined_evars_of_evar_info ev evm evi in
-      tosee := Evar.Map.remove ev !tosee;
-      Evar.Set.iter (fun ev ->
-        if Evar.Map.mem ev !tosee then
-          visit ev (Evar.Map.find ev !tosee)) evs;
-      l' := ev :: !l';
+  let rec visit ev evm evi =
+    let (evs,evm') = Evarutil.undefined_evars_of_evar_info ev evm evi in
+    (* evm' contains a dependency cache for ev *)
+    tosee := Evar.Map.remove ev !tosee;
+    (* thread evar map through fold to propagate caches *)
+    let evm'' =
+      Evar.Set.fold
+	(fun eve evm ->
+	  if Evar.Map.mem ev !tosee then
+	    visit ev evm (Evar.Map.find ev !tosee)
+	  else
+	    evm)
+	evs evm'
+    in
+    l' := ev :: !l';
+    evm''
   in
-    while not (Evar.Map.is_empty !tosee) do
+  let rec visit_loop evm =
+    if not (Evar.Map.is_empty !tosee) then
       let ev, evi = Evar.Map.min_binding !tosee in
-        visit ev evi
-    done;
-    List.rev !l'
+      let evm' = visit ev evm evi in
+      (* thread evar map through loop to propagate caches *)
+      visit_loop evm'
+  in
+  visit_loop evm;
+  List.rev !l'
 
 (** We transform the evars that are concerned by this resolution
     (according to predicate p) into goals.
@@ -1429,14 +1441,14 @@ let deps_of_constraints cstrs evm p =
     compute new dependency caches along the way *)
 let evar_dependencies pred evm p =
   Evd.fold_undefined
-    (* evm_caches is evar map with updated caches threaded through the fold *)
-    (fun ev evi evm_with_caches ->
+    (fun ev evi evm ->
+      (* evm is evar map with updated caches threaded through the fold *)
       if Typeclasses.is_resolvable evi && pred evm ev evi then
-	let (cache,evm_with_caches') = Evarutil.undefined_evars_of_evar_info ev evm_with_caches evi in
+	let (cache,evm') = Evarutil.undefined_evars_of_evar_info ev evm evi in
         let evars = Evar.Set.add ev cache in
 	let _ = Intpart.union_set evars p in
-	evm_with_caches'
-      else evm_with_caches)
+	evm'
+      else evm)
     evm (* the evar map we're folding over *)
     evm (* evar map to receive cache updates *)
   
