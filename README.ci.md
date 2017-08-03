@@ -4,27 +4,39 @@ If you are not a Coq Developer, don't follow these instructions yet.
 Introduction
 ============
 
-As of 2017, lightweight tests are automatically run against all pull requests
-or merge requests submitted to Coq's official GitHub or GitLab repositories,
-respectively. The tests run on Travis CI and GitLab CI, correspondingly.
+As of 2017, Coq's Git repository includes a `.travis.yml` file, a
+`.gitlab-ci.yml` file, and supporting scripts, that enable lightweight
+Continuous Integration (CI) tests to be run on clones of that repository stored
+at Github or on a GitLab instance, respectively. This affords two benefits.
 
-More comprehensive testing is the responsibility of Coq's [Jenkins CI
-server](https://ci.inria.fr/coq/) see, [XXX: add document] for
-instructions on how to add your development to Jenkins.
+First, it allows developers working on Coq itself to perform CI on their own
+Git remotes, thereby enabling them to catch and fix problems with their
+proposed changes before submitting pull requests to Coq itself. This in turn
+reduces the risk of a faulty PR being opened against the official Coq
+repository.
 
-How to submit your development for Coq CI
-=========================================
+Secondly, it allows developers working on a library dependent on Coq to have
+that library included in the Travis CI tests invoked by the official Coq
+repository on GitHub.
+
+(More comprehensive testing than is provided by the Travis CI and GitLab CI
+integration is the responsibility of Coq's [Jenkins CI
+server](https://ci.inria.fr/coq/) see, [XXX: add document] for instructions on
+how to add your development to Jenkins.)
+
+How to submit your library for inclusion in Coq's Travis CI builds
+==================================================================
 
 CI provides a convenient way to perform testing of Coq changes
 versus a set of curated libraries.
 
 Are you an author of a Coq library who would be interested in having
-the latest Coq changes validated against your development?
+the latest Coq changes validated against it?
 
-If so, keep reading! Getting Coq changes tested against your library
-is easy, all that you need to do is:
+If so, all you need to do is:
 
-1. Put your development in a public repository tracking Coq trunk.
+1. Put your library in a public repository tracking the `master`
+   branch of Coq's Git repository.
 2. Make sure that your development builds in less than 35 minutes.
 3. Submit a PR adding your development.
 4. ?
