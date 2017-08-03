@@ -36,12 +36,30 @@ let constructor ?loc kn args =
 let std_constructor ?loc name args =
   constructor ?loc (std_core name) args
 
+let std_proj ?loc name =
+  AbsKn (std_core name)
+
+let thunk e =
+  let t_unit = coq_core "unit" in
+  let loc = Tac2intern.loc_of_tacexpr e in
+  let var = [CPatVar (Some loc, Anonymous), Some (CTypRef (loc, AbsKn (Other t_unit), []))] in
+  CTacFun (loc, var, e)
+
 let of_pair ?loc (e1, e2) =
   let loc = Option.default dummy_loc loc in
   CTacApp (loc, CTacCst (loc, AbsKn (Tuple 2)), [e1; e2])
 
+let of_tuple ?loc el =
+  let loc = Option.default dummy_loc loc in
+  let len = List.length el in
+  CTacApp (loc, CTacCst (loc, AbsKn (Tuple len)), el)
+
 let of_int ?loc n =
   CTacAtm (Loc.tag ?loc (AtmInt n))
+
+let of_option ?loc opt = match opt with
+| None -> constructor ?loc (coq_core "None") []
+| Some e -> constructor ?loc (coq_core "Some") [e]
 
 let inj_wit ?loc wit x =
   let loc = Option.default dummy_loc loc in
@@ -121,16 +139,65 @@ and of_or_and_intro_pattern ?loc = function
 and of_intro_patterns ?loc l =
   of_list ?loc (List.map (of_intro_pattern ?loc) l)
 
+let of_hyp_location_flag ?loc = function
+| Locus.InHyp -> std_constructor ?loc "InHyp" []
+| Locus.InHypTypeOnly -> std_constructor ?loc "InHypTypeOnly" []
+| Locus.InHypValueOnly -> std_constructor ?loc "InHypValueOnly" []
+
+let of_occurrences ?loc occ = match occ with
+| QAllOccurrences -> std_constructor ?loc "AllOccurrences" []
+| QAllOccurrencesBut occs ->
+  let map occ = of_anti ?loc of_int occ in
+  let occs = of_list ?loc (List.map map occs) in
+  std_constructor ?loc "AllOccurrencesBut" [occs]
+| QNoOccurrences -> std_constructor ?loc "NoOccurrences" []
+| QOnlyOccurrences occs ->
+  let map occ = of_anti ?loc of_int occ in
+  let occs = of_list ?loc (List.map map occs) in
+  std_constructor ?loc "OnlyOccurrences" [occs]
+
+let of_hyp_location ?loc ((occs, id), flag) =
+  of_tuple ?loc [
+    of_anti ?loc of_ident id;
+    of_occurrences ?loc occs;
+    of_hyp_location_flag ?loc flag;
+  ]
+
+let of_clause ?loc cl =
+  let loc = Option.default dummy_loc loc in
+  let hyps = of_option ~loc (Option.map (fun l -> of_list ~loc (List.map of_hyp_location l)) cl.q_onhyps) in
+  let concl = of_occurrences ~loc cl.q_concl_occs in
+  CTacRec (loc, [
+    std_proj "on_hyps", hyps;
+    std_proj "on_concl", concl;
+  ])
+
+let of_destruction_arg ?loc = function
+| QElimOnConstr (c, bnd) ->
+  let c = of_constr ?loc c in
+  let bnd = of_bindings ?loc bnd in
+  let arg = thunk (of_pair ?loc (c, bnd)) in
+  std_constructor ?loc "ElimOnConstr" [arg]
+| QElimOnIdent id -> std_constructor ?loc "ElimOnIdent" [of_ident ?loc id]
+| QElimOnAnonHyp n -> std_constructor ?loc "ElimOnAnonHyp" [of_int ?loc n]
+
+let of_induction_clause ?loc cl =
+  let arg = of_destruction_arg ?loc cl.indcl_arg in
+  let eqn = of_option ?loc (Option.map of_intro_pattern_naming cl.indcl_eqn) in
+  let as_ = of_option ?loc (Option.map of_or_and_intro_pattern cl.indcl_as) in
+  let in_ = of_option ?loc (Option.map of_clause cl.indcl_in) in
+  let loc = Option.default dummy_loc loc in
+  CTacRec (loc, [
+    std_proj "indcl_arg", arg;
+    std_proj "indcl_eqn", eqn;
+    std_proj "indcl_as", as_;
+    std_proj "indcl_in", in_;
+  ])
+
 let of_hyp ?loc id =
   let loc = Option.default dummy_loc loc in
   let hyp = CTacRef (AbsKn (control_core "hyp")) in
   CTacApp (loc, hyp, [of_ident ~loc id])
-
-let thunk e =
-  let t_unit = coq_core "unit" in
-  let loc = Tac2intern.loc_of_tacexpr e in
-  let var = [CPatVar (Some loc, Anonymous), Some (CTypRef (loc, AbsKn (Other t_unit), []))] in
-  CTacFun (loc, var, e)
 
 let of_exact_hyp ?loc id =
   let loc = Option.default dummy_loc loc in

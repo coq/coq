@@ -40,6 +40,8 @@ val of_intro_pattern : ?loc:Loc.t -> intro_pattern -> raw_tacexpr
 
 val of_intro_patterns : ?loc:Loc.t -> intro_pattern list -> raw_tacexpr
 
+val of_induction_clause : ?loc:Loc.t -> induction_clause -> raw_tacexpr
+
 val of_hyp : ?loc:Loc.t -> Id.t -> raw_tacexpr
 (** id ↦ 'Control.hyp @id' *)
 

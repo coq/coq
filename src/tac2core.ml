@@ -899,6 +899,14 @@ let () = add_scope "intropatterns" begin function
 | _ -> scope_fail ()
 end
 
+let () = add_scope "induction_clause" begin function
+| [] ->
+  let scope = Extend.Aentry Tac2entries.Pltac.q_induction_clause in
+  let act tac = tac in
+  Tac2entries.ScopeRule (scope, act)
+| _ -> scope_fail ()
+end
+
 let () = add_generic_scope "constr" Pcoq.Constr.constr Stdarg.wit_constr
 let () = add_generic_scope "open_constr" Pcoq.Constr.constr Stdarg.wit_open_constr
 

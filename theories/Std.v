@@ -73,6 +73,19 @@ with or_and_intro_pattern := [
 | IntroAndPattern (intro_pattern list)
 ].
 
+Ltac2 Type destruction_arg := [
+| ElimOnConstr (unit -> constr_with_bindings)
+| ElimOnIdent (ident)
+| ElimOnAnonHyp (int)
+].
+
+Ltac2 Type induction_clause := {
+  indcl_arg : destruction_arg;
+  indcl_eqn : intro_pattern_naming option;
+  indcl_as : or_and_intro_pattern option;
+  indcl_in : clause option;
+}.
+
 Ltac2 Type evar_flag := bool.
 Ltac2 Type advanced_flag := bool.
 

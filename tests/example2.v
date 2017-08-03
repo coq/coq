@@ -16,7 +16,7 @@ Qed.
 
 Goal exists n, n = 0.
 Proof.
-let myvar := Std.NamedHyp @x in split with (?myvar := 0).
+let myvar := Std.NamedHyp @x in split with ($myvar := 0).
 split.
 Qed.
 

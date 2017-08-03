@@ -30,7 +30,7 @@ let test_lpar_idnum_coloneq =
                   (match stream_nth 2 strm with
                     | KEYWORD ":=" -> ()
                     | _ -> err ())
-              | LEFTQMARK ->
+              | KEYWORD "$" ->
                 (match stream_nth 2 strm with
                   | IDENT _ ->
                       (match stream_nth 3 strm with
@@ -39,6 +39,20 @@ let test_lpar_idnum_coloneq =
                   | _ -> err ())
               | _ -> err ())
         | _ -> err ())
+
+(* Hack to recognize "(x)" *)
+let test_lpar_id_rpar =
+  Gram.Entry.of_parser "lpar_id_coloneq"
+    (fun strm ->
+      match stream_nth 0 strm with
+        | KEYWORD "(" ->
+            (match stream_nth 1 strm with
+              | IDENT _ ->
+                  (match stream_nth 2 strm with
+	            | KEYWORD ")" -> ()
+	            | _ -> err ())
+	      | _ -> err ())
+	| _ -> err ())
 
 let tac2expr = Tac2entries.Pltac.tac2expr
 let tac2type = Gram.entry_create "tactic:tac2type"
@@ -291,17 +305,17 @@ open Tac2entries.Pltac
 let loc_of_ne_list l = Loc.merge_opt (fst (List.hd l)) (fst (List.last l))
 
 GEXTEND Gram
-  GLOBAL: q_ident q_bindings q_intropattern q_intropatterns;
+  GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause;
   ident_or_anti:
     [ [ id = Prim.ident -> QExpr id
-      | LEFTQMARK; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id)
+      | "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id)
     ] ]
   ;
   q_ident:
     [ [ id = ident_or_anti -> Tac2quote.of_anti ~loc:!@loc Tac2quote.of_ident id ] ]
   ;
   simple_binding:
-    [ [ "("; LEFTQMARK; id = Prim.ident; ":="; c = Constr.lconstr; ")" ->
+    [ [ "("; "$"; id = Prim.ident; ":="; c = Constr.lconstr; ")" ->
         Loc.tag ~loc:!@loc (QAnti (Loc.tag ~loc:!@loc id), Tac2quote.of_open_constr ~loc:!@loc c)
       | "("; n = Prim.natural; ":="; c = Constr.lconstr; ")" ->
         Loc.tag ~loc:!@loc (QExpr (AnonHyp n), Tac2quote.of_open_constr ~loc:!@loc c)
@@ -377,6 +391,89 @@ GEXTEND Gram
   ;
   q_intropattern:
     [ [ ipat = simple_intropattern -> Tac2quote.of_intro_pattern ~loc:!@loc ipat ] ]
+  ;
+  nat_or_anti:
+    [ [ n = Prim.natural -> QExpr n
+      | "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id)
+    ] ]
+  ;
+  eqn_ipat:
+    [ [ IDENT "eqn"; ":"; pat = naming_intropattern -> Some pat
+      | -> None
+    ] ]
+  ;
+  with_bindings:
+    [ [ "with"; bl = bindings -> bl | -> QNoBindings ] ]
+  ;
+  constr_with_bindings:
+    [ [ c = Constr.constr; l = with_bindings -> (c, l) ] ]
+  ;
+  destruction_arg:
+    [ [ n = Prim.natural -> QElimOnAnonHyp n
+      | (c, bnd) = constr_with_bindings -> QElimOnConstr (c, bnd)
+    ] ]
+  ;
+  as_or_and_ipat:
+    [ [ "as"; ipat = or_and_intropattern -> Some ipat
+      | -> None
+    ] ]
+  ;
+  occs_nums:
+    [ [ nl = LIST1 nat_or_anti -> QOnlyOccurrences nl
+      | "-"; n = nat_or_anti; nl = LIST0 nat_or_anti ->
+        QAllOccurrencesBut (n::nl)
+    ] ]
+  ;
+  occs:
+    [ [ "at"; occs = occs_nums -> occs | -> QAllOccurrences ] ]
+  ;
+  hypident:
+    [ [ id = ident_or_anti ->
+          id,Locus.InHyp
+      | "("; IDENT "type"; IDENT "of"; id = ident_or_anti; ")" ->
+	  id,Locus.InHypTypeOnly
+      | "("; IDENT "value"; IDENT "of"; id = ident_or_anti; ")" ->
+	  id,Locus.InHypValueOnly
+    ] ]
+  ;
+  hypident_occ:
+    [ [ (id,l)=hypident; occs=occs -> ((occs,id),l) ] ]
+  ;
+  in_clause:
+    [ [ "*"; occs=occs ->
+        { q_onhyps = None; q_concl_occs = occs }
+      | "*"; "|-"; occs = concl_occ ->
+        { q_onhyps = None; q_concl_occs = occs }
+      | hl = LIST0 hypident_occ SEP ","; "|-"; occs = concl_occ ->
+        { q_onhyps = Some hl; q_concl_occs = occs }
+      | hl = LIST0 hypident_occ SEP "," ->
+        { q_onhyps = Some hl; q_concl_occs = QNoOccurrences }
+    ] ]
+  ;
+  opt_clause:
+    [ [ "in"; cl = in_clause -> Some cl
+      | "at"; occs = occs_nums -> Some { q_onhyps = Some []; q_concl_occs = occs }
+      | -> None
+    ] ]
+  ;
+  concl_occ:
+    [ [ "*"; occs = occs -> occs
+      | -> QNoOccurrences
+    ] ]
+  ;
+  induction_clause:
+    [ [ c = destruction_arg; pat = as_or_and_ipat; eq = eqn_ipat;
+        cl = opt_clause ->
+        {
+          indcl_arg = c;
+          indcl_eqn = eq;
+          indcl_as = pat;
+          indcl_in = cl;
+        }
+    ] ]
+  ;
+  q_induction_clause:
+    [ [ cl = induction_clause -> Tac2quote.of_induction_clause ~loc:!@loc cl ] ]
   ;
 END
 

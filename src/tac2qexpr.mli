@@ -40,3 +40,26 @@ and intro_pattern_action =
 and or_and_intro_pattern =
 | QIntroOrPattern of intro_pattern list list
 | QIntroAndPattern of intro_pattern list
+
+type occurrences =
+| QAllOccurrences
+| QAllOccurrencesBut of int or_anti list
+| QNoOccurrences
+| QOnlyOccurrences of int or_anti list
+
+type hyp_location = (occurrences * Id.t or_anti) * Locus.hyp_location_flag
+
+type clause =
+  { q_onhyps : hyp_location list option; q_concl_occs : occurrences; }
+
+type destruction_arg =
+| QElimOnConstr of Constrexpr.constr_expr * bindings
+| QElimOnIdent of Id.t
+| QElimOnAnonHyp of int
+
+type induction_clause = {
+  indcl_arg : destruction_arg;
+  indcl_eqn : intro_pattern_naming option;
+  indcl_as : or_and_intro_pattern option;
+  indcl_in : clause option;
+}

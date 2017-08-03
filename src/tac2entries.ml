@@ -28,6 +28,7 @@ let q_ident = Pcoq.Gram.entry_create "tactic:q_ident"
 let q_bindings = Pcoq.Gram.entry_create "tactic:q_bindings"
 let q_intropattern = Pcoq.Gram.entry_create "tactic:q_intropattern"
 let q_intropatterns = Pcoq.Gram.entry_create "tactic:q_intropatterns"
+let q_induction_clause = Pcoq.Gram.entry_create "tactic:q_induction_clause"
 end
 
 (** Tactic definition *)
