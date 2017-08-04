@@ -44,3 +44,16 @@ let map_induction_clause ((clear, arg), eqn, as_, occ) =
 let induction_destruct isrec ev ic using =
   let ic = List.map map_induction_clause ic in
   Tactics.induction_destruct isrec ev (ic, using)
+
+type rewriting =
+  bool option *
+  multi *
+  EConstr.constr with_bindings tactic
+
+let rewrite ev rw cl by =
+  let map_rw (orient, repeat, c) =
+    (Option.default true orient, repeat, None, delayed_of_tactic c)
+  in
+  let rw = List.map map_rw rw in
+  let by = Option.map (fun tac -> Tacticals.New.tclCOMPLETE tac, Equality.Naive) by in
+  Equality.general_multi_rewrite ev rw cl by

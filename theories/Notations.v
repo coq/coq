@@ -138,3 +138,28 @@ Ltac2 Notation "edestruct"
   ic(list1(induction_clause, ","))
   use(thunk(opt(seq("using", constr, bindings)))) :=
   destruct0 true ic use.
+
+Ltac2 rewrite0 ev rw cl tac :=
+  let tac := match tac with
+  | None => None
+  | Some p =>
+    let ((_, tac)) := p in
+    Some tac
+  end in
+  let cl := match cl with
+  | None => { Std.on_hyps := Some []; Std.on_concl := Std.AllOccurrences }
+  | Some cl => cl
+  end in
+  Std.rewrite ev rw cl tac.
+
+Ltac2 Notation "rewrite"
+  rw(list1(rewriting, ","))
+  cl(opt(clause))
+  tac(opt(seq("by", thunk(tactic)))) :=
+  rewrite0 false rw cl tac.
+
+Ltac2 Notation "erewrite"
+  rw(list1(rewriting, ","))
+  cl(opt(clause))
+  tac(opt(seq("by", thunk(tactic)))) :=
+  rewrite0 true rw cl tac.

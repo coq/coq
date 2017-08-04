@@ -134,6 +134,8 @@ Ltac2 @ external cbv : red_flags -> clause -> unit := "ltac2" "tac_cbv".
 Ltac2 @ external cbn : red_flags -> clause -> unit := "ltac2" "tac_cbn".
 Ltac2 @ external lazy : red_flags -> clause -> unit := "ltac2" "tac_lazy".
 
+Ltac2 @ external rewrite : evar_flag -> rewriting list -> clause -> (unit -> unit) option -> unit := "ltac2" "tac_rewrite".
+
 Ltac2 @ external reflexivity : unit -> unit := "ltac2" "tac_reflexivity".
 
 Ltac2 @ external assumption : unit -> unit := "ltac2" "tac_assumption".

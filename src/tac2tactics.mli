@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Names
+open Locus
 open Misctypes
 open Tactypes
 open Proofview
@@ -21,7 +22,15 @@ type induction_clause =
   EConstr.constr with_bindings tactic destruction_arg *
   intro_pattern_naming option *
   or_and_intro_pattern option *
-  Locus.clause option
+  clause option
 
 val induction_destruct : rec_flag -> evars_flag ->
-  induction_clause list -> EConstr.constr with_bindings option -> unit Proofview.tactic
+  induction_clause list -> EConstr.constr with_bindings option -> unit tactic
+
+type rewriting =
+  bool option *
+  multi *
+  EConstr.constr with_bindings tactic
+
+val rewrite :
+  evars_flag -> rewriting list -> clause -> unit tactic option -> unit tactic

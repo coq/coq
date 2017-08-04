@@ -95,3 +95,24 @@ Proof.
 intros b1 b2.
 destruct &b1 as [|], &b2 as [|]; split.
 Qed.
+
+Goal forall n m, n = 0 -> n + m = m.
+Proof.
+intros n m Hn.
+rewrite &Hn; split.
+Qed.
+
+Goal forall n m p, n = m -> p = m -> 0 = n -> p = 0.
+Proof.
+intros n m p He He' Hn.
+rewrite &He, <- &He' in Hn.
+rewrite &Hn.
+split.
+Qed.
+
+Goal forall n m, (m = n -> n = m) -> m = n -> n = 0 -> m = 0.
+Proof.
+intros n m He He' He''.
+rewrite <- &He by Std.assumption ().
+Control.refine (fun () => &He'').
+Qed.

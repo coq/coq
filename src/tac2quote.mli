@@ -41,6 +41,8 @@ val of_intro_pattern : intro_pattern -> raw_tacexpr
 
 val of_intro_patterns : intro_pattern list located -> raw_tacexpr
 
+val of_clause : ?loc:Loc.t -> clause -> raw_tacexpr
+
 val of_induction_clause : induction_clause -> raw_tacexpr
 
 val of_rewriting : rewriting -> raw_tacexpr

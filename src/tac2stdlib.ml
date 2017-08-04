@@ -141,6 +141,21 @@ let to_induction_clause = function
 | _ ->
   assert false
 
+let to_multi = function
+| ValBlk (0, [| n |]) -> Precisely (Value.to_int n)
+| ValBlk (1, [| n |]) -> UpTo (Value.to_int n)
+| ValInt 0 -> RepeatStar
+| ValInt 1 -> RepeatPlus
+| _ -> assert false
+
+let to_rewriting = function
+| ValBlk (0, [| orient; repeat; c |]) ->
+  let orient = Value.to_option Value.to_bool orient in
+  let repeat = to_multi repeat in
+  let c = thaw c >>= fun c -> return (to_constr_with_bindings c) in
+  (orient, repeat, c)
+| _ -> assert false
+
 (** Standard tactics sharing their implementation with Ltac1 *)
 
 let pname s = { mltac_plugin = "ltac2"; mltac_tactic = s }
@@ -302,6 +317,15 @@ let () = define_prim2 "tac_lazy" begin fun flags cl ->
   let flags = to_red_flag flags in
   let cl = to_clause cl in
   Tactics.reduce (Lazy flags) cl
+end
+
+let () = define_prim4 "tac_rewrite" begin fun ev rw cl by ->
+  let ev = Value.to_bool ev in
+  let rw = Value.to_list to_rewriting rw in
+  let cl = to_clause cl in
+  let to_tac t = Proofview.tclIGNORE (thaw t) in
+  let by = Value.to_option to_tac by in
+  Tac2tactics.rewrite ev rw cl by
 end
 
 (** Tactics from coretactics *)

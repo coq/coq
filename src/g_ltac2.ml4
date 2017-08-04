@@ -309,7 +309,7 @@ let loc_of_ne_list l = Loc.merge_opt (fst (List.hd l)) (fst (List.last l))
 
 GEXTEND Gram
   GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause
-          q_rewriting;
+          q_rewriting q_clause;
   anti:
     [ [ "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id) ] ]
   ;
@@ -479,11 +479,13 @@ GEXTEND Gram
         { q_onhyps = Some hl; q_concl_occs = QNoOccurrences }
     ] ]
   ;
-  opt_clause:
-    [ [ "in"; cl = in_clause -> Some cl
-      | "at"; occs = occs_nums -> Some { q_onhyps = Some []; q_concl_occs = occs }
-      | -> None
+  clause:
+    [ [ "in"; cl = in_clause -> cl
+      | "at"; occs = occs_nums -> { q_onhyps = Some []; q_concl_occs = occs }
     ] ]
+  ;
+  q_clause:
+    [ [ cl = clause -> Tac2quote.of_clause cl ] ]
   ;
   concl_occ:
     [ [ "*"; occs = occs -> occs
@@ -492,7 +494,7 @@ GEXTEND Gram
   ;
   induction_clause:
     [ [ c = destruction_arg; pat = as_or_and_ipat; eq = eqn_ipat;
-        cl = opt_clause ->
+        cl = OPT clause ->
         Loc.tag ~loc:!@loc @@ {
           indcl_arg = c;
           indcl_eqn = eq;
