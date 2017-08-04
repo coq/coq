@@ -503,7 +503,7 @@ let _ =
       (function
          [c] when genarg_tag c = unquote (topwit wit_constr) && true ->
            let c = out_gen (rawwit wit_constr) c in
-           (fun () -> in_current_context constr_display c)
+           (fun _ -> in_current_context constr_display c)
        | _ -> failwith "Vernac extension: cannot occur")
   with
     e -> pp (CErrors.print e)
@@ -519,7 +519,7 @@ let _ =
       (function
          [c] when genarg_tag c = unquote (topwit wit_constr) && true ->
            let c = out_gen (rawwit wit_constr) c in
-           (fun () -> in_current_context print_pure_constr c)
+           (fun _ -> in_current_context print_pure_constr c)
        | _ -> failwith "Vernac extension: cannot occur")
   with
     e -> pp (CErrors.print e)
