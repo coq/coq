@@ -6,7 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Misctypes
+open Tactypes
 open Tactics
+open Proofview
 open Tacmach.New
 open Tacticals.New
 open Proofview.Notations
@@ -23,3 +26,21 @@ let apply adv ev cb cl =
   match cl with
   | None -> Tactics.apply_with_delayed_bindings_gen adv ev cb
   | Some (id, cl) -> Tactics.apply_delayed_in adv ev id cb cl
+
+type induction_clause =
+  EConstr.constr with_bindings tactic destruction_arg *
+  intro_pattern_naming option *
+  or_and_intro_pattern option *
+  Locus.clause option
+
+let map_destruction_arg = function
+| ElimOnConstr c -> ElimOnConstr (delayed_of_tactic c)
+| ElimOnIdent id -> ElimOnIdent id
+| ElimOnAnonHyp n -> ElimOnAnonHyp n
+
+let map_induction_clause ((clear, arg), eqn, as_, occ) =
+  ((clear, map_destruction_arg arg), (eqn, as_), occ)
+
+let induction_destruct isrec ev ic using =
+  let ic = List.map map_induction_clause ic in
+  Tactics.induction_destruct isrec ev (ic, using)

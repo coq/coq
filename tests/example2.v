@@ -61,3 +61,37 @@ Proof.
 econstructor 1.
 split.
 Qed.
+
+Goal forall n, 0 + n = n.
+Proof.
+intros n.
+induction &n as [|n] using nat_rect; split.
+Qed.
+
+Goal forall n, 0 + n = n.
+Proof.
+intros n.
+let n := @X in
+let q := Std.NamedHyp @P in
+induction &n as [|$n] using nat_rect with ($q := fun m => 0 + m = m); split.
+Qed.
+
+Goal forall n, 0 + n = n.
+Proof.
+intros n.
+destruct &n as [|n] using nat_rect; split.
+Qed.
+
+Goal forall n, 0 + n = n.
+Proof.
+intros n.
+let n := @X in
+let q := Std.NamedHyp @P in
+destruct &n as [|$n] using nat_rect with ($q := fun m => 0 + m = m); split.
+Qed.
+
+Goal forall b1 b2, andb b1 b2 = andb b2 b1.
+Proof.
+intros b1 b2.
+destruct &b1 as [|], &b2 as [|]; split.
+Qed.

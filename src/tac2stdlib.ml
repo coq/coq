@@ -17,6 +17,10 @@ open Proofview.Notations
 
 module Value = Tac2ffi
 
+let return x = Proofview.tclUNIT x
+let v_unit = Value.of_unit ()
+let thaw f = Tac2interp.interp_app f [v_unit]
+
 let to_pair f g = function
 | ValBlk (0, [| x; y |]) -> (f x, g y)
 | _ -> assert false
@@ -119,12 +123,27 @@ and to_intro_patterns il =
   let map ipat = Loc.tag (to_intro_pattern ipat) in
   Value.to_list map il
 
+let to_destruction_arg = function
+| ValBlk (0, [| c |]) ->
+  let c = thaw c >>= fun c -> return (to_constr_with_bindings c) in
+  ElimOnConstr c
+| ValBlk (1, [| id |]) -> ElimOnIdent (Loc.tag (Value.to_ident id))
+| ValBlk (2, [| n |]) -> ElimOnAnonHyp (Value.to_int n)
+| _ -> assert false
+
+let to_induction_clause = function
+| ValBlk (0, [| arg; eqn; as_; in_ |]) ->
+  let arg = to_destruction_arg arg in
+  let eqn = Value.to_option (fun p -> Loc.tag (to_intro_pattern_naming p)) eqn in
+  let as_ = Value.to_option (fun p -> Loc.tag (to_or_and_intro_pattern p)) as_ in
+  let in_ = Value.to_option to_clause in_ in
+  ((None, arg), eqn, as_, in_)
+| _ ->
+  assert false
+
 (** Standard tactics sharing their implementation with Ltac1 *)
 
 let pname s = { mltac_plugin = "ltac2"; mltac_tactic = s }
-
-let return x = Proofview.tclUNIT x
-let v_unit = Value.of_unit ()
 
 let lift tac = tac <*> return v_unit
 
@@ -133,8 +152,6 @@ let wrap f =
 
 let wrap_unit f =
   return () >>= fun () -> f (); return v_unit
-
-let thaw f = Tac2interp.interp_app f [v_unit]
 
 let define_prim0 name tac =
   let tac = function
@@ -243,6 +260,20 @@ let () = define_prim4 "tac_set" begin fun ev idopt c cl ->
   thaw c >>= fun c ->
   let c = Value.to_constr c in
   Tactics.letin_pat_tac ev None na (sigma, c) cl
+end
+
+let () = define_prim3 "tac_destruct" begin fun ev ic using ->
+  let ev = Value.to_bool ev in
+  let ic = Value.to_list to_induction_clause ic in
+  let using = Value.to_option to_constr_with_bindings using in
+  Tac2tactics.induction_destruct false ev ic using
+end
+
+let () = define_prim3 "tac_induction" begin fun ev ic using ->
+  let ev = Value.to_bool ev in
+  let ic = Value.to_list to_induction_clause ic in
+  let using = Value.to_option to_constr_with_bindings using in
+  Tac2tactics.induction_destruct true ev ic using
 end
 
 let () = define_prim1 "tac_red" begin fun cl ->

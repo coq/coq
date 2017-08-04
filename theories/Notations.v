@@ -96,3 +96,45 @@ Ltac2 Notation "apply"
   cb(list1(thunk(seq(constr, bindings)), ","))
   cl(opt(seq(keyword("in"), ident, opt(seq(keyword("as"), intropattern))))) :=
   apply0 true false cb cl.
+
+Ltac2 induction0 ev ic use :=
+  let f ev use :=
+    let use := match use with
+    | None => None
+    | Some u =>
+      let ((_, c, wth)) := u in Some (c, wth)
+    end in
+    Std.induction ev ic use
+  in
+  enter_h ev f use.
+
+Ltac2 Notation "induction"
+  ic(list1(induction_clause, ","))
+  use(thunk(opt(seq("using", constr, bindings)))) :=
+  induction0 false ic use.
+
+Ltac2 Notation "einduction"
+  ic(list1(induction_clause, ","))
+  use(thunk(opt(seq("using", constr, bindings)))) :=
+  induction0 true ic use.
+
+Ltac2 destruct0 ev ic use :=
+  let f ev use :=
+    let use := match use with
+    | None => None
+    | Some u =>
+      let ((_, c, wth)) := u in Some (c, wth)
+    end in
+    Std.destruct ev ic use
+  in
+  enter_h ev f use.
+
+Ltac2 Notation "destruct"
+  ic(list1(induction_clause, ","))
+  use(thunk(opt(seq("using", constr, bindings)))) :=
+  destruct0 false ic use.
+
+Ltac2 Notation "edestruct"
+  ic(list1(induction_clause, ","))
+  use(thunk(opt(seq("using", constr, bindings)))) :=
+  destruct0 true ic use.

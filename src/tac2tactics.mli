@@ -16,3 +16,12 @@ open Proofview
 val apply : advanced_flag -> evars_flag ->
   EConstr.constr with_bindings tactic list ->
   (Id.t * intro_pattern option) option -> unit tactic
+
+type induction_clause =
+  EConstr.constr with_bindings tactic destruction_arg *
+  intro_pattern_naming option *
+  or_and_intro_pattern option *
+  Locus.clause option
+
+val induction_destruct : rec_flag -> evars_flag ->
+  induction_clause list -> EConstr.constr with_bindings option -> unit Proofview.tactic
