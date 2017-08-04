@@ -467,7 +467,8 @@ type vernac_expr =
   (* Toplevel control *)
   | VernacToplevelControl of exn
 
-  (* For extension *)
+  (* Each usage of a Vernacular command that was defined via VERNAC COMMAND EXTEND macro
+     is represented by a single [VernacExtend] value. *)
   | VernacExtend of extend_name * Genarg.raw_generic_argument list
 
   (* Flags *)
