@@ -17,4 +17,7 @@ val overwriting_vinterp_add :
   Vernacexpr.extend_name -> vernac_command -> unit
 
 val vinterp_init : unit -> unit
+
 val call : ?locality:bool -> Vernacexpr.extend_name * Genarg.raw_generic_argument list -> unit
+(** This function is responsible for interpreting [Vernacexpr.VernacExtend] commands.
+    It is called by {!Vernacentries.interp} function. *)
