@@ -47,7 +47,8 @@ let warn_deprecated_command =
   create ~name:"deprecated-command" ~category:"deprecated"
          (fun pr -> str "Deprecated vernacular command: " ++ pr)
 
-(* Interpretation of a vernac command *)
+(* This function is responsible for interpreting Vernacentries.VernacExtend commands.
+   It is called by Vernacentries.interp function. *)
 
 let call ?locality (opn,converted_args) =
   let loc = ref "Looking up command" in
