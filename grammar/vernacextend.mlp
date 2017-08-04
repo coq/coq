@@ -12,6 +12,8 @@ open Q_util
 open Argextend
 open Tacextend
 
+(** Representation of the [rule] non-terminal which is defined below
+    via EXTEND macro. *)
 type rule = {
   r_head : string option;
   (** The first terminal grammar token *)
