@@ -2044,7 +2044,7 @@ let interp ?proof ?loc locality poly c =
   | VernacProofMode mn -> Proof_global.set_proof_mode mn [@ocaml.warning "-3"]
 
   (* Extensions *)
-  | VernacExtend (opn,args) -> Vernacinterp.call ?locality (opn,args)
+  | VernacExtend (opn,args) -> Vernacinterp.call ?locality ?loc (opn,args)
 
 (* Vernaculars that take a locality flag *)
 let check_vernac_supports_locality c l =

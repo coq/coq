@@ -59,7 +59,7 @@ let make_clause_classifier cg s { r_patt = pt; r_class = c; } =
   | None, Some cg ->
      (make_patt pt,
       ploc_vala None,
-      <:expr< fun () -> $cg$ $str:s$ >>)
+      <:expr< fun loc -> $cg$ $str:s$ >>)
   | None, None -> prerr_endline
       (("Vernac entry \""^s^"\" misses a classifier. "^
          "A classifier is a function that returns an expression "^
@@ -82,7 +82,7 @@ let make_clause_classifier cg s { r_patt = pt; r_class = c; } =
          "classifiers. Only one classifier is called.") ^ "\n");
     (make_patt pt,
       ploc_vala None,
-      <:expr< fun () -> (Vernacexpr.VtUnknown, Vernacexpr.VtNow) >>)
+      <:expr< fun loc -> (Vernacexpr.VtUnknown, Vernacexpr.VtNow) >>)
 
 let make_fun_clauses loc s l =
   let map c =
@@ -165,16 +165,16 @@ EXTEND
     [ [ "["; s = STRING; l = LIST0 args; "]";
         d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
       let () = if s = "" then failwith "Command name is empty." in
-      let b = <:expr< fun () -> $e$ >> in
+      let b = <:expr< fun loc -> $e$ >> in
       { r_head = Some s; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
       | "[" ; "-" ; l = LIST1 args ; "]" ;
         d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
-      let b = <:expr< fun () -> $e$ >> in
+      let b = <:expr< fun loc -> $e$ >> in
       { r_head = None; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
     ] ]
   ;
   classifier:
-    [ [ "=>"; "["; c = Pcaml.expr; "]" -> <:expr< fun () -> $c$>> ] ]
+    [ [ "=>"; "["; c = Pcaml.expr; "]" -> <:expr< fun loc -> $c$>> ] ]
   ;
   args:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
