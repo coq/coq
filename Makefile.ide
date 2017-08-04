@@ -123,12 +123,17 @@ ide/%.cmx: ide/%.ml
 ## Install targets
 ####################
 
-.PHONY: install-coqide install-ide-bin install-ide-toploop install-ide-files install-ide-info install-ide-devfiles install-ide-byte
+.PHONY: install-coqide install-ide-bin install-ide-toploop install-ide-files install-ide-info install-ide-devfiles install-ide-byte install-ide-toploop-byte install-coqide-byte
 
 ifeq ($(HASCOQIDE),no)
 install-coqide: install-ide-toploop
 else
 install-coqide: install-ide-bin install-ide-toploop install-ide-files install-ide-info install-ide-devfiles
+endif
+ifeq ($(HASCOQIDE),no)
+install-coqide-byte: install-ide-toploop-byte
+else
+install-coqide-byte: install-ide-toploop-byte install-ide-byte
 endif
 
 # Apparently, coqide.byte is not meant to be installed
@@ -136,8 +141,6 @@ endif
 install-ide-byte:
 	$(MKDIR) $(FULLCOQLIB)
 	$(INSTALLSH) $(FULLCOQLIB) $(IDECMA)
-	$(MKDIR) $(FULLCOQLIB)/toploop
-	$(INSTALLBIN) $(IDETOPLOOPCMA) $(FULLCOQLIB)/toploop/
 
 install-ide-bin:
 	$(MKDIR) $(FULLBINDIR)
@@ -146,6 +149,10 @@ install-ide-bin:
 install-ide-toploop:
 ifeq ($(BEST),opt)
 	$(INSTALLBIN) $(IDETOPLOOPCMA:.cma=.cmxs) $(FULLCOQLIB)/toploop/
+endif
+install-ide-toploop-byte:
+ifneq ($(BEST),opt)
+	$(INSTALLBIN) $(IDETOPLOOPCMA) $(FULLCOQLIB)/toploop/
 endif
 
 install-ide-devfiles:
