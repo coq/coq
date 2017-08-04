@@ -308,7 +308,8 @@ open Tac2entries.Pltac
 let loc_of_ne_list l = Loc.merge_opt (fst (List.hd l)) (fst (List.last l))
 
 GEXTEND Gram
-  GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause;
+  GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause
+          q_rewriting;
   anti:
     [ [ "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id) ] ]
   ;
@@ -502,6 +503,39 @@ GEXTEND Gram
   ;
   q_induction_clause:
     [ [ cl = induction_clause -> Tac2quote.of_induction_clause cl ] ]
+  ;
+  orient:
+    [ [ "->" -> Loc.tag ~loc:!@loc (Some true)
+      | "<-" -> Loc.tag ~loc:!@loc (Some false)
+      | -> Loc.tag ~loc:!@loc None
+    ]]
+  ;
+  rewriter:
+    [ [ "!"; c = constr_with_bindings ->
+        (Loc.tag ~loc:!@loc @@ QRepeatPlus,c)
+      | ["?"| LEFTQMARK]; c = constr_with_bindings ->
+        (Loc.tag ~loc:!@loc @@ QRepeatStar,c)
+      | n = lnatural; "!"; c = constr_with_bindings ->
+        (Loc.tag ~loc:!@loc @@ QPrecisely n,c)
+      |	n = lnatural; ["?" | LEFTQMARK]; c = constr_with_bindings ->
+        (Loc.tag ~loc:!@loc @@ QUpTo n,c)
+      | n = lnatural; c = constr_with_bindings ->
+        (Loc.tag ~loc:!@loc @@ QPrecisely n,c)
+      | c = constr_with_bindings ->
+        (Loc.tag ~loc:!@loc @@ QPrecisely (Loc.tag 1), c)
+      ] ]
+  ;
+  oriented_rewriter:
+    [ [ b = orient; (m, c) = rewriter ->
+      Loc.tag ~loc:!@loc @@ {
+        rew_orient = b;
+        rew_repeat = m;
+        rew_equatn = c;
+      }
+    ] ]
+  ;
+  q_rewriting:
+    [ [ r = oriented_rewriter -> Tac2quote.of_rewriting r ] ]
   ;
 END
 

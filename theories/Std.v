@@ -86,6 +86,21 @@ Ltac2 Type induction_clause := {
   indcl_in : clause option;
 }.
 
+Ltac2 Type repeat := [
+| Precisely (int)
+| UpTo (int)
+| RepeatStar
+| RepeatPlus
+].
+
+Ltac2 Type orientation := [ LTR | RTL ].
+
+Ltac2 Type rewriting := {
+  rew_orient : orientation option;
+  rew_repeat : repeat;
+  rew_equatn : (unit -> constr_with_bindings);
+}.
+
 Ltac2 Type evar_flag := bool.
 Ltac2 Type advanced_flag := bool.
 

@@ -63,8 +63,10 @@ type hyp_location = (occurrences * Id.t located or_anti) * Locus.hyp_location_fl
 type clause =
   { q_onhyps : hyp_location list option; q_concl_occs : occurrences; }
 
+type constr_with_bindings = (Constrexpr.constr_expr * bindings) located
+
 type destruction_arg =
-| QElimOnConstr of (Constrexpr.constr_expr * bindings) located
+| QElimOnConstr of constr_with_bindings
 | QElimOnIdent of Id.t located
 | QElimOnAnonHyp of int located
 
@@ -76,3 +78,19 @@ type induction_clause_r = {
 }
 
 type induction_clause = induction_clause_r located
+
+type multi_r =
+| QPrecisely of int located
+| QUpTo of int located
+| QRepeatStar
+| QRepeatPlus
+
+type multi = multi_r located
+
+type rewriting_r = {
+  rew_orient : bool option located;
+  rew_repeat : multi;
+  rew_equatn : constr_with_bindings;
+}
+
+type rewriting = rewriting_r located

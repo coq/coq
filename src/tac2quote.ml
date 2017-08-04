@@ -109,6 +109,11 @@ let of_bindings (loc, b) = match b with
   let tl = List.map map tl in
   std_constructor ?loc "ExplicitBindings" [of_list ?loc tl]
 
+let of_constr_with_bindings (loc, (c, bnd)) =
+  let c = of_open_constr c in
+  let bnd = of_bindings bnd in
+  of_pair ?loc (c, bnd)
+
 let rec of_intro_pattern (loc, pat) = match pat with
 | QIntroForthcoming b ->
   std_constructor ?loc "IntroForthcoming" [of_bool b]
@@ -179,10 +184,8 @@ let of_clause ?loc cl =
   ])
 
 let of_destruction_arg ?loc = function
-| QElimOnConstr (loc, (c, bnd)) ->
-  let c = of_open_constr c in
-  let bnd = of_bindings bnd in
-  let arg = thunk (of_pair ?loc (c, bnd)) in
+| QElimOnConstr c ->
+  let arg = thunk (of_constr_with_bindings c) in
   std_constructor ?loc "ElimOnConstr" [arg]
 | QElimOnIdent id -> std_constructor ?loc "ElimOnIdent" [of_ident id]
 | QElimOnAnonHyp n -> std_constructor ?loc "ElimOnAnonHyp" [of_int n]
@@ -198,6 +201,30 @@ let of_induction_clause (loc, cl) =
     std_proj "indcl_eqn", eqn;
     std_proj "indcl_as", as_;
     std_proj "indcl_in", in_;
+  ])
+
+let of_repeat (loc, r) = match r with
+| QPrecisely n -> std_constructor ?loc "Precisely" [of_int n]
+| QUpTo n -> std_constructor ?loc "UpTo" [of_int n]
+| QRepeatStar -> std_constructor ?loc "RepeatStar" []
+| QRepeatPlus -> std_constructor ?loc "RepeatPlus" []
+
+let of_orient loc b =
+  if b then std_constructor ?loc "LTR" []
+  else std_constructor ?loc "RTL" []
+
+let of_rewriting (loc, rew) =
+  let orient =
+    let (loc, orient) = rew.rew_orient in
+    of_option ?loc (Option.map (fun b -> of_orient loc b) orient)
+  in
+  let repeat = of_repeat rew.rew_repeat in
+  let equatn = thunk (of_constr_with_bindings rew.rew_equatn) in
+  let loc = Option.default dummy_loc loc in
+  CTacRec (loc, [
+    std_proj "rew_orient", orient;
+    std_proj "rew_repeat", repeat;
+    std_proj "rew_equatn", equatn;
   ])
 
 let of_hyp ?loc id =

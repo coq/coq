@@ -883,29 +883,16 @@ let () = add_scope "bindings" begin function
 | _ -> scope_fail ()
 end
 
-let () = add_scope "intropattern" begin function
-| [] ->
-  let scope = Extend.Aentry Tac2entries.Pltac.q_intropattern in
-  let act tac = tac in
-  Tac2entries.ScopeRule (scope, act)
-| _ -> scope_fail ()
-end
+let add_expr_scope name entry =
+  add_scope name begin function
+  | [] -> Tac2entries.ScopeRule (Extend.Aentry entry, (fun e -> e))
+  | _ -> scope_fail ()
+  end
 
-let () = add_scope "intropatterns" begin function
-| [] ->
-  let scope = Extend.Aentry Tac2entries.Pltac.q_intropatterns in
-  let act tac = tac in
-  Tac2entries.ScopeRule (scope, act)
-| _ -> scope_fail ()
-end
-
-let () = add_scope "induction_clause" begin function
-| [] ->
-  let scope = Extend.Aentry Tac2entries.Pltac.q_induction_clause in
-  let act tac = tac in
-  Tac2entries.ScopeRule (scope, act)
-| _ -> scope_fail ()
-end
+let () = add_expr_scope "intropattern" Tac2entries.Pltac.q_intropattern
+let () = add_expr_scope "intropatterns" Tac2entries.Pltac.q_intropatterns
+let () = add_expr_scope "induction_clause" Tac2entries.Pltac.q_induction_clause
+let () = add_expr_scope "rewriting" Tac2entries.Pltac.q_rewriting
 
 let () = add_generic_scope "constr" Pcoq.Constr.constr Stdarg.wit_constr
 let () = add_generic_scope "open_constr" Pcoq.Constr.constr Stdarg.wit_open_constr
