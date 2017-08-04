@@ -98,9 +98,11 @@ let of_bindings ?loc = function
 | QNoBindings ->
   std_constructor ?loc "NoBindings" []
 | QImplicitBindings tl ->
+  let tl = List.map (fun c -> of_open_constr ?loc c) tl in
   std_constructor ?loc "ImplicitBindings" [of_list ?loc tl]
 | QExplicitBindings tl ->
-  let tl = List.map (fun (loc, (qhyp, e)) -> of_pair ?loc (of_anti ?loc of_qhyp qhyp, e)) tl in
+  let map (loc, (qhyp, e)) = of_pair ?loc (of_anti ?loc of_qhyp qhyp, of_open_constr ?loc e) in
+  let tl = List.map map tl in
   std_constructor ?loc "ExplicitBindings" [of_list ?loc tl]
 
 let rec of_intro_pattern ?loc = function
@@ -174,7 +176,7 @@ let of_clause ?loc cl =
 
 let of_destruction_arg ?loc = function
 | QElimOnConstr (c, bnd) ->
-  let c = of_constr ?loc c in
+  let c = of_open_constr ?loc c in
   let bnd = of_bindings ?loc bnd in
   let arg = thunk (of_pair ?loc (c, bnd)) in
   std_constructor ?loc "ElimOnConstr" [arg]

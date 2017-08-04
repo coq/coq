@@ -19,8 +19,8 @@ type 'a or_anti =
 | QAnti of Id.t located
 
 type bindings =
-| QImplicitBindings of raw_tacexpr list
-| QExplicitBindings of (Misctypes.quantified_hypothesis or_anti * raw_tacexpr) Loc.located list
+| QImplicitBindings of Constrexpr.constr_expr list
+| QExplicitBindings of (Misctypes.quantified_hypothesis or_anti * Constrexpr.constr_expr) Loc.located list
 | QNoBindings
 
 type intro_pattern =
