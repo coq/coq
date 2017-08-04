@@ -18,48 +18,61 @@ type 'a or_anti =
 | QExpr of 'a
 | QAnti of Id.t located
 
-type bindings =
+type quantified_hypothesis =
+| QAnonHyp of int located
+| QNamedHyp of Id.t located
+
+type bindings_r =
 | QImplicitBindings of Constrexpr.constr_expr list
-| QExplicitBindings of (Misctypes.quantified_hypothesis or_anti * Constrexpr.constr_expr) Loc.located list
+| QExplicitBindings of (quantified_hypothesis located or_anti * Constrexpr.constr_expr) located list
 | QNoBindings
 
-type intro_pattern =
+type bindings = bindings_r located
+
+type intro_pattern_r =
 | QIntroForthcoming of bool
 | QIntroNaming of intro_pattern_naming
 | QIntroAction of intro_pattern_action
-and intro_pattern_naming =
-| QIntroIdentifier of Id.t or_anti
-| QIntroFresh of Id.t or_anti
+and intro_pattern_naming_r =
+| QIntroIdentifier of Id.t located or_anti
+| QIntroFresh of Id.t located or_anti
 | QIntroAnonymous
-and intro_pattern_action =
+and intro_pattern_action_r =
 | QIntroWildcard
 | QIntroOrAndPattern of or_and_intro_pattern
-| QIntroInjection of intro_pattern list
+| QIntroInjection of intro_pattern list located
 (* | QIntroApplyOn of Empty.t (** Not implemented yet *) *)
 | QIntroRewrite of bool
-and or_and_intro_pattern =
-| QIntroOrPattern of intro_pattern list list
-| QIntroAndPattern of intro_pattern list
+and or_and_intro_pattern_r =
+| QIntroOrPattern of intro_pattern list located list
+| QIntroAndPattern of intro_pattern list located
+
+and intro_pattern = intro_pattern_r located
+and intro_pattern_naming = intro_pattern_naming_r located
+and intro_pattern_action = intro_pattern_action_r located
+and or_and_intro_pattern = or_and_intro_pattern_r located
 
 type occurrences =
 | QAllOccurrences
-| QAllOccurrencesBut of int or_anti list
+| QAllOccurrencesBut of int located or_anti list
 | QNoOccurrences
-| QOnlyOccurrences of int or_anti list
+| QOnlyOccurrences of int located or_anti list
 
-type hyp_location = (occurrences * Id.t or_anti) * Locus.hyp_location_flag
+type hyp_location = (occurrences * Id.t located or_anti) * Locus.hyp_location_flag
 
 type clause =
   { q_onhyps : hyp_location list option; q_concl_occs : occurrences; }
 
 type destruction_arg =
-| QElimOnConstr of Constrexpr.constr_expr * bindings
-| QElimOnIdent of Id.t
-| QElimOnAnonHyp of int
+| QElimOnConstr of (Constrexpr.constr_expr * bindings) located
+| QElimOnIdent of Id.t located
+| QElimOnAnonHyp of int located
 
-type induction_clause = {
+type induction_clause_r = {
   indcl_arg : destruction_arg;
   indcl_eqn : intro_pattern_naming option;
   indcl_as : or_and_intro_pattern option;
   indcl_in : clause option;
 }
+
+type induction_clause = induction_clause_r located

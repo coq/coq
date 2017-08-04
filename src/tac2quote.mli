@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Loc
 open Names
 open Misctypes
 open Tac2qexpr
@@ -18,32 +19,32 @@ open Tac2expr
 
 val constructor : ?loc:Loc.t -> ltac_constructor -> raw_tacexpr list -> raw_tacexpr
 
-val of_anti : ?loc:Loc.t -> (?loc:Loc.t -> 'a -> raw_tacexpr) -> 'a or_anti -> raw_tacexpr
+val of_anti : ?loc:Loc.t -> ('a -> raw_tacexpr) -> 'a or_anti -> raw_tacexpr
 
-val of_int : ?loc:Loc.t -> int -> raw_tacexpr
+val of_int : int located -> raw_tacexpr
 
 val of_pair : ?loc:Loc.t -> raw_tacexpr * raw_tacexpr -> raw_tacexpr
 
-val of_variable : ?loc:Loc.t -> Id.t -> raw_tacexpr
+val of_variable : Id.t located -> raw_tacexpr
 
-val of_ident : ?loc:Loc.t -> Id.t -> raw_tacexpr
+val of_ident : Id.t located -> raw_tacexpr
 
-val of_constr : ?loc:Loc.t -> Constrexpr.constr_expr -> raw_tacexpr
+val of_constr : Constrexpr.constr_expr -> raw_tacexpr
 
-val of_open_constr : ?loc:Loc.t -> Constrexpr.constr_expr -> raw_tacexpr
+val of_open_constr : Constrexpr.constr_expr -> raw_tacexpr
 
 val of_list : ?loc:Loc.t -> raw_tacexpr list -> raw_tacexpr
 
-val of_bindings : ?loc:Loc.t -> bindings -> raw_tacexpr
+val of_bindings : bindings -> raw_tacexpr
 
-val of_intro_pattern : ?loc:Loc.t -> intro_pattern -> raw_tacexpr
+val of_intro_pattern : intro_pattern -> raw_tacexpr
 
-val of_intro_patterns : ?loc:Loc.t -> intro_pattern list -> raw_tacexpr
+val of_intro_patterns : intro_pattern list located -> raw_tacexpr
 
-val of_induction_clause : ?loc:Loc.t -> induction_clause -> raw_tacexpr
+val of_induction_clause : induction_clause -> raw_tacexpr
 
-val of_hyp : ?loc:Loc.t -> Id.t -> raw_tacexpr
+val of_hyp : ?loc:Loc.t -> Id.t located -> raw_tacexpr
 (** id ↦ 'Control.hyp @id' *)
 
-val of_exact_hyp : ?loc:Loc.t -> Id.t -> raw_tacexpr
+val of_exact_hyp : ?loc:Loc.t -> Id.t located -> raw_tacexpr
 (** id ↦ 'Control.refine (fun () => Control.hyp @id') *)

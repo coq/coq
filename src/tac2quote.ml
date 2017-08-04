@@ -54,7 +54,7 @@ let of_tuple ?loc el =
   let len = List.length el in
   CTacApp (loc, CTacCst (loc, AbsKn (Tuple len)), el)
 
-let of_int ?loc n =
+let of_int (loc, n) =
   CTacAtm (Loc.tag ?loc (AtmInt n))
 
 let of_option ?loc opt = match opt with
@@ -65,21 +65,25 @@ let inj_wit ?loc wit x =
   let loc = Option.default dummy_loc loc in
   CTacExt (loc, Genarg.in_gen (Genarg.rawwit wit) x)
 
-let of_variable ?loc id =
+let of_variable (loc, id) =
   let qid = Libnames.qualid_of_ident id in
   if Tac2env.is_constructor qid then
     CErrors.user_err ?loc (str "Invalid identifier")
   else CTacRef (RelId (Loc.tag ?loc qid))
 
 let of_anti ?loc f = function
-| QExpr x -> f ?loc x
-| QAnti (loc, id) -> of_variable ?loc id
+| QExpr x -> f x
+| QAnti id -> of_variable id
 
-let of_ident ?loc id = inj_wit ?loc Stdarg.wit_ident id
+let of_ident (loc, id) = inj_wit ?loc Stdarg.wit_ident id
 
-let of_constr ?loc c = inj_wit ?loc Stdarg.wit_constr c
+let of_constr c =
+  let loc = Constrexpr_ops.constr_loc c in
+  inj_wit ?loc Stdarg.wit_constr c
 
-let of_open_constr ?loc c = inj_wit ?loc Stdarg.wit_open_constr c
+let of_open_constr c =
+  let loc = Constrexpr_ops.constr_loc c in
+  inj_wit ?loc Stdarg.wit_open_constr c
 
 let of_bool ?loc b =
   let c = if b then Core.c_true else Core.c_false in
@@ -90,22 +94,22 @@ let rec of_list ?loc = function
 | e :: l ->
   constructor ?loc Core.c_cons [e; of_list ?loc l]
 
-let of_qhyp ?loc = function
-| AnonHyp n -> constructor Core.c_anon_hyp [of_int ?loc n]
-| NamedHyp id -> constructor Core.c_named_hyp [of_ident ?loc id]
+let of_qhyp (loc, h) = match h with
+| QAnonHyp n -> constructor ?loc Core.c_anon_hyp [of_int n]
+| QNamedHyp id -> constructor ?loc Core.c_named_hyp [of_ident id]
 
-let of_bindings ?loc = function
+let of_bindings (loc, b) = match b with
 | QNoBindings ->
   std_constructor ?loc "NoBindings" []
 | QImplicitBindings tl ->
-  let tl = List.map (fun c -> of_open_constr ?loc c) tl in
+  let tl = List.map of_open_constr tl in
   std_constructor ?loc "ImplicitBindings" [of_list ?loc tl]
 | QExplicitBindings tl ->
-  let map (loc, (qhyp, e)) = of_pair ?loc (of_anti ?loc of_qhyp qhyp, of_open_constr ?loc e) in
+  let map (loc, (qhyp, e)) = of_pair ?loc (of_anti ?loc of_qhyp qhyp, of_open_constr e) in
   let tl = List.map map tl in
   std_constructor ?loc "ExplicitBindings" [of_list ?loc tl]
 
-let rec of_intro_pattern ?loc = function
+let rec of_intro_pattern (loc, pat) = match pat with
 | QIntroForthcoming b ->
   std_constructor ?loc "IntroForthcoming" [of_bool b]
 | QIntroNaming iname ->
@@ -113,33 +117,33 @@ let rec of_intro_pattern ?loc = function
 | QIntroAction iact ->
   std_constructor ?loc "IntroAction" [of_intro_pattern_action iact]
 
-and of_intro_pattern_naming ?loc = function
+and of_intro_pattern_naming (loc, pat) = match pat with
 | QIntroIdentifier id ->
-  std_constructor ?loc "IntroIdentifier" [of_anti ?loc of_ident id]
+  std_constructor ?loc "IntroIdentifier" [of_anti of_ident id]
 | QIntroFresh id ->
   std_constructor ?loc "IntroFresh" [of_anti ?loc of_ident id]
 | QIntroAnonymous ->
   std_constructor ?loc "IntroAnonymous" []
 
-and of_intro_pattern_action ?loc = function
+and of_intro_pattern_action (loc, pat) = match pat with
 | QIntroWildcard ->
   std_constructor ?loc "IntroWildcard" []
 | QIntroOrAndPattern pat ->
-  std_constructor ?loc "IntroOrAndPattern" [of_or_and_intro_pattern ?loc pat]
+  std_constructor ?loc "IntroOrAndPattern" [of_or_and_intro_pattern pat]
 | QIntroInjection il ->
-  std_constructor ?loc "IntroInjection" [of_intro_patterns ?loc il]
+  std_constructor ?loc "IntroInjection" [of_intro_patterns il]
 | QIntroRewrite b ->
   std_constructor ?loc "IntroRewrite" [of_bool ?loc b]
 
-and of_or_and_intro_pattern ?loc = function
+and of_or_and_intro_pattern (loc, pat) = match pat with
 | QIntroOrPattern ill ->
-  let ill = List.map (of_intro_patterns ?loc) ill in
+  let ill = List.map of_intro_patterns ill in
   std_constructor ?loc "IntroOrPattern" [of_list ?loc ill]
 | QIntroAndPattern il ->
-  std_constructor ?loc "IntroAndPattern" [of_intro_patterns ?loc il]
+  std_constructor ?loc "IntroAndPattern" [of_intro_patterns il]
 
-and of_intro_patterns ?loc l =
-  of_list ?loc (List.map (of_intro_pattern ?loc) l)
+and of_intro_patterns (loc, l) =
+  of_list ?loc (List.map of_intro_pattern l)
 
 let of_hyp_location_flag ?loc = function
 | Locus.InHyp -> std_constructor ?loc "InHyp" []
@@ -175,15 +179,15 @@ let of_clause ?loc cl =
   ])
 
 let of_destruction_arg ?loc = function
-| QElimOnConstr (c, bnd) ->
-  let c = of_open_constr ?loc c in
-  let bnd = of_bindings ?loc bnd in
+| QElimOnConstr (loc, (c, bnd)) ->
+  let c = of_open_constr c in
+  let bnd = of_bindings bnd in
   let arg = thunk (of_pair ?loc (c, bnd)) in
   std_constructor ?loc "ElimOnConstr" [arg]
-| QElimOnIdent id -> std_constructor ?loc "ElimOnIdent" [of_ident ?loc id]
-| QElimOnAnonHyp n -> std_constructor ?loc "ElimOnAnonHyp" [of_int ?loc n]
+| QElimOnIdent id -> std_constructor ?loc "ElimOnIdent" [of_ident id]
+| QElimOnAnonHyp n -> std_constructor ?loc "ElimOnAnonHyp" [of_int n]
 
-let of_induction_clause ?loc cl =
+let of_induction_clause (loc, cl) =
   let arg = of_destruction_arg ?loc cl.indcl_arg in
   let eqn = of_option ?loc (Option.map of_intro_pattern_naming cl.indcl_eqn) in
   let as_ = of_option ?loc (Option.map of_or_and_intro_pattern cl.indcl_as) in
@@ -199,7 +203,7 @@ let of_induction_clause ?loc cl =
 let of_hyp ?loc id =
   let loc = Option.default dummy_loc loc in
   let hyp = CTacRef (AbsKn (control_core "hyp")) in
-  CTacApp (loc, hyp, [of_ident ~loc id])
+  CTacApp (loc, hyp, [of_ident id])
 
 let of_exact_hyp ?loc id =
   let loc = Option.default dummy_loc loc in

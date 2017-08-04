@@ -149,12 +149,12 @@ GEXTEND Gram
       | s = Prim.string -> CTacAtm (Loc.tag ~loc:!@loc (AtmStr s))
       | id = Prim.qualid ->
         if Tac2env.is_constructor (snd id) then CTacCst (!@loc, RelId id) else CTacRef (RelId id)
-      | "@"; id = Prim.ident -> Tac2quote.of_ident ~loc:!@loc id
-      | "&"; id = Prim.ident -> Tac2quote.of_hyp ~loc:!@loc id
+      | "@"; id = Prim.ident -> Tac2quote.of_ident (Loc.tag ~loc:!@loc id)
+      | "&"; id = lident -> Tac2quote.of_hyp ~loc:!@loc id
       | "'"; c = Constr.constr -> inj_open_constr !@loc c
-      | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> Tac2quote.of_constr ~loc:!@loc c
-      | IDENT "open_constr"; ":"; "("; c = Constr.lconstr; ")" -> inj_open_constr !@loc c
-      | IDENT "ident"; ":"; "("; c = Prim.ident; ")" -> Tac2quote.of_ident ~loc:!@loc c
+      | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> Tac2quote.of_constr c
+      | IDENT "open_constr"; ":"; "("; c = Constr.lconstr; ")" -> Tac2quote.of_open_constr c
+      | IDENT "ident"; ":"; "("; c = lident; ")" -> Tac2quote.of_ident c
       | IDENT "pattern"; ":"; "("; c = Constr.lconstr_pattern; ")" -> inj_pattern !@loc c
     ] ]
   ;
@@ -296,6 +296,9 @@ GEXTEND Gram
         StrSyn (toks, n, e)
     ] ]
   ;
+  lident:
+    [ [ id = Prim.ident -> Loc.tag ~loc:!@loc id ] ]
+  ;
 END
 
 (** Quotation scopes used by notations *)
@@ -306,71 +309,92 @@ let loc_of_ne_list l = Loc.merge_opt (fst (List.hd l)) (fst (List.last l))
 
 GEXTEND Gram
   GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause;
+  anti:
+    [ [ "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id) ] ]
+  ;
   ident_or_anti:
-    [ [ id = Prim.ident -> QExpr id
+    [ [ id = lident -> QExpr id
       | "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id)
     ] ]
+  ;
+  lident:
+    [ [ id = Prim.ident -> Loc.tag ~loc:!@loc id ] ]
+  ;
+  lnatural:
+    [ [ n = Prim.natural -> Loc.tag ~loc:!@loc n ] ]
   ;
   q_ident:
     [ [ id = ident_or_anti -> Tac2quote.of_anti ~loc:!@loc Tac2quote.of_ident id ] ]
   ;
+  qhyp:
+    [ [ x = anti -> x
+      | n = lnatural -> QExpr (Loc.tag ~loc:!@loc @@ QAnonHyp n)
+      | id = lident -> QExpr (Loc.tag ~loc:!@loc @@ QNamedHyp id)
+    ] ]
+  ;
   simple_binding:
-    [ [ "("; "$"; id = Prim.ident; ":="; c = Constr.lconstr; ")" ->
-        Loc.tag ~loc:!@loc (QAnti (Loc.tag ~loc:!@loc id), c)
-      | "("; n = Prim.natural; ":="; c = Constr.lconstr; ")" ->
-        Loc.tag ~loc:!@loc (QExpr (AnonHyp n), c)
-      | "("; id = Prim.ident; ":="; c = Constr.lconstr; ")" ->
-        Loc.tag ~loc:!@loc (QExpr (NamedHyp id), c)
+    [ [ "("; h = qhyp; ":="; c = Constr.lconstr; ")" ->
+        Loc.tag ~loc:!@loc (h, c)
     ] ]
   ;
   bindings:
     [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->
-        QExplicitBindings bl
+        Loc.tag ~loc:!@loc @@ QExplicitBindings bl
       | bl = LIST1 Constr.constr ->
-        QImplicitBindings bl
+        Loc.tag ~loc:!@loc @@ QImplicitBindings bl
     ] ]
   ;
   q_bindings:
-    [ [ "with"; bl = bindings -> Tac2quote.of_bindings ~loc:!@loc bl
-      | -> Tac2quote.of_bindings ~loc:!@loc QNoBindings
-    ] ]
+    [ [ bl = with_bindings -> Tac2quote.of_bindings bl ] ]
   ;
   intropatterns:
-    [ [ l = LIST0 nonsimple_intropattern -> l ]]
+    [ [ l = LIST0 nonsimple_intropattern -> Loc.tag ~loc:!@loc l ]]
   ;
 (*   ne_intropatterns: *)
 (*     [ [ l = LIST1 nonsimple_intropattern -> l ]] *)
 (*   ; *)
   or_and_intropattern:
-    [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> QIntroOrPattern tc
-      | "()" -> QIntroAndPattern []
-      | "("; si = simple_intropattern; ")" -> QIntroAndPattern [si]
+    [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> Loc.tag ~loc:!@loc @@ QIntroOrPattern tc
+      | "()" -> Loc.tag ~loc:!@loc @@ QIntroAndPattern (Loc.tag ~loc:!@loc [])
+      | "("; si = simple_intropattern; ")" -> Loc.tag ~loc:!@loc @@ QIntroAndPattern (Loc.tag ~loc:!@loc [si])
       | "("; si = simple_intropattern; ",";
              tc = LIST1 simple_intropattern SEP "," ; ")" ->
-             QIntroAndPattern (si::tc)
+             Loc.tag ~loc:!@loc @@ QIntroAndPattern (Loc.tag ~loc:!@loc (si::tc))
       | "("; si = simple_intropattern; "&";
 	     tc = LIST1 simple_intropattern SEP "&" ; ")" ->
 	  (* (A & B & C) is translated into (A,(B,C)) *)
 	  let rec pairify = function
-	    | ([]|[_]|[_;_]) as l -> l
-	    | t::q -> [t; (QIntroAction (QIntroOrAndPattern (QIntroAndPattern (pairify q))))]
-	  in QIntroAndPattern (pairify (si::tc)) ] ]
+	    | ([]|[_]|[_;_]) as l -> Loc.tag ~loc:!@loc l
+	    | t::q ->
+              let q =
+                Loc.tag ~loc:!@loc @@
+                  QIntroAction (Loc.tag ~loc:!@loc @@
+                    QIntroOrAndPattern (Loc.tag ~loc:!@loc @@
+                      QIntroAndPattern (pairify q)))
+              in
+              Loc.tag ~loc:!@loc [t; q]
+	  in Loc.tag ~loc:!@loc @@ QIntroAndPattern (pairify (si::tc)) ] ]
   ;
   equality_intropattern:
-    [ [ "->" -> QIntroRewrite true
-      | "<-" -> QIntroRewrite false
-      | "[="; tc = intropatterns; "]" -> QIntroInjection tc ] ]
+    [ [ "->" -> Loc.tag ~loc:!@loc @@ QIntroRewrite true
+      | "<-" -> Loc.tag ~loc:!@loc @@ QIntroRewrite false
+      | "[="; tc = intropatterns; "]" -> Loc.tag ~loc:!@loc @@ QIntroInjection tc ] ]
   ;
   naming_intropattern:
-    [ [ LEFTQMARK; id = Prim.ident -> QIntroFresh (QExpr id)
-      | "?$"; id = Prim.ident -> QIntroFresh (QAnti (Loc.tag ~loc:!@loc id))
-      | "?" -> QIntroAnonymous
-      | id = ident_or_anti -> QIntroIdentifier id ] ]
+    [ [ LEFTQMARK; id = lident ->
+        Loc.tag ~loc:!@loc @@ QIntroFresh (QExpr id)
+      | "?$"; id = lident ->
+        Loc.tag ~loc:!@loc @@ QIntroFresh (QAnti id)
+      | "?" ->
+        Loc.tag ~loc:!@loc @@ QIntroAnonymous
+      | id = ident_or_anti ->
+        Loc.tag ~loc:!@loc @@ QIntroIdentifier id
+    ] ]
   ;
   nonsimple_intropattern:
     [ [ l = simple_intropattern -> l
-      | "*"  -> QIntroForthcoming true
-      | "**" -> QIntroForthcoming false ]]
+      | "*"  -> Loc.tag ~loc:!@loc @@ QIntroForthcoming true
+      | "**" -> Loc.tag ~loc:!@loc @@ QIntroForthcoming false ]]
   ;
   simple_intropattern:
     [ [ pat = simple_intropattern_closed ->
@@ -380,19 +404,24 @@ GEXTEND Gram
     ] ]
   ;
   simple_intropattern_closed:
-    [ [ pat = or_and_intropattern   -> QIntroAction (QIntroOrAndPattern pat)
-      | pat = equality_intropattern -> QIntroAction pat
-      | "_" -> QIntroAction QIntroWildcard 
-      | pat = naming_intropattern -> QIntroNaming pat ] ]
+    [ [ pat = or_and_intropattern ->
+        Loc.tag ~loc:!@loc @@ QIntroAction (Loc.tag ~loc:!@loc @@ QIntroOrAndPattern pat)
+      | pat = equality_intropattern ->
+        Loc.tag ~loc:!@loc @@ QIntroAction pat
+      | "_" ->
+        Loc.tag ~loc:!@loc @@ QIntroAction (Loc.tag ~loc:!@loc @@ QIntroWildcard)
+      | pat = naming_intropattern ->
+        Loc.tag ~loc:!@loc @@ QIntroNaming pat
+    ] ]
   ;
   q_intropatterns:
-    [ [ ipat = intropatterns -> Tac2quote.of_intro_patterns ~loc:!@loc ipat ] ]
+    [ [ ipat = intropatterns -> Tac2quote.of_intro_patterns ipat ] ]
   ;
   q_intropattern:
-    [ [ ipat = simple_intropattern -> Tac2quote.of_intro_pattern ~loc:!@loc ipat ] ]
+    [ [ ipat = simple_intropattern -> Tac2quote.of_intro_pattern ipat ] ]
   ;
   nat_or_anti:
-    [ [ n = Prim.natural -> QExpr n
+    [ [ n = lnatural -> QExpr n
       | "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id)
     ] ]
   ;
@@ -402,14 +431,14 @@ GEXTEND Gram
     ] ]
   ;
   with_bindings:
-    [ [ "with"; bl = bindings -> bl | -> QNoBindings ] ]
+    [ [ "with"; bl = bindings -> bl | -> Loc.tag ~loc:!@loc @@ QNoBindings ] ]
   ;
   constr_with_bindings:
-    [ [ c = Constr.constr; l = with_bindings -> (c, l) ] ]
+    [ [ c = Constr.constr; l = with_bindings -> Loc.tag ~loc:!@loc @@ (c, l) ] ]
   ;
   destruction_arg:
-    [ [ n = Prim.natural -> QElimOnAnonHyp n
-      | (c, bnd) = constr_with_bindings -> QElimOnConstr (c, bnd)
+    [ [ n = lnatural -> QElimOnAnonHyp n
+      | c = constr_with_bindings -> QElimOnConstr c
     ] ]
   ;
   as_or_and_ipat:
@@ -463,7 +492,7 @@ GEXTEND Gram
   induction_clause:
     [ [ c = destruction_arg; pat = as_or_and_ipat; eq = eqn_ipat;
         cl = opt_clause ->
-        {
+        Loc.tag ~loc:!@loc @@ {
           indcl_arg = c;
           indcl_eqn = eq;
           indcl_as = pat;
@@ -472,7 +501,7 @@ GEXTEND Gram
     ] ]
   ;
   q_induction_clause:
-    [ [ cl = induction_clause -> Tac2quote.of_induction_clause ~loc:!@loc cl ] ]
+    [ [ cl = induction_clause -> Tac2quote.of_induction_clause cl ] ]
   ;
 END
 
@@ -483,7 +512,7 @@ GEXTEND Gram
     [ [ IDENT "ltac2"; ":"; "("; tac = tac2expr; ")" ->
         let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
         CAst.make ~loc:!@loc (CHole (None, IntroAnonymous, Some arg))
-      | "&"; id = Prim.ident ->
+      | "&"; id = [ id = Prim.ident -> Loc.tag ~loc:!@loc id ] ->
         let tac = Tac2quote.of_exact_hyp ~loc:!@loc id in
         let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
         CAst.make ~loc:!@loc (CHole (None, IntroAnonymous, Some arg))
