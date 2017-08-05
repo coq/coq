@@ -173,3 +173,9 @@ Reserved Notation "'letpair' x [1] = { A } ; 'return' ( b0 , b1 , .. , b2 )"
 Notation "'letpair' x [1] = { a } ; 'return' ( b0 , b1 , .. , b2 )" :=
   (let x:=a in ( .. (b0,b1) .., b2)).
 Check letpair x [1] = {0}; return (1,2,3,4).
+
+(* Test spacing in #5569 *)
+
+Notation "{ { xL | xR // xcut } }" := (xL+xR+xcut)
+  (at level 0, xR at level 39, format "{ {  xL  |  xR  //  xcut  } }").
+Check 1+1+1.
