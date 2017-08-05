@@ -120,3 +120,5 @@ where
 letpair x [1] = {0};
 return (1, 2, 3, 4)
      : nat * nat * nat * nat
+{{ 1 | 1 // 1 }}
+     : nat
