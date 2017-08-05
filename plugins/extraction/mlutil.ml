@@ -773,6 +773,20 @@ let eta_red e =
 	else e
     | _ -> e
 
+(* Performs an eta-reduction when the core is atomic,
+   or otherwise returns None *)
+
+let atomic_eta_red e =
+  let ids,t = collect_lams e in
+  let n = List.length ids in
+  match t with
+  | MLapp (f,a) when test_eta_args_lift 0 n a ->
+     (match f with
+      | MLrel k when k>n -> Some (MLrel (k-n))
+      | MLglob _ | MLexn _ | MLdummy _ -> Some f
+      | _ -> None)
+  | _ -> None
+
 (*s Computes all head linear beta-reductions possible in [(t a)].
   Non-linear head beta-redex become let-in. *)
 
@@ -1057,6 +1071,10 @@ let rec simpl o = function
      simpl o (MLcase(typ,e,br'))
   | MLmagic(MLdummy _ as e) when lang () == Haskell -> e
   | MLmagic(MLexn _ as e) -> e
+  | MLlam _ as e ->
+     (match atomic_eta_red e with
+      | Some e' -> e'
+      | None -> ast_map (simpl o) e)
   | a -> ast_map (simpl o) a
 
 (* invariant : list [a] of arguments is non-empty *)
