@@ -116,3 +116,10 @@ intros n m He He' He''.
 rewrite <- &He by Std.assumption ().
 Control.refine (fun () => &He'').
 Qed.
+
+Goal forall n (r := if true then n else 0), r = n.
+Proof.
+intros n r.
+hnf in r.
+split.
+Qed.

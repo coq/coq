@@ -139,6 +139,18 @@ Ltac2 Notation "edestruct"
   use(thunk(opt(seq("using", constr, bindings)))) :=
   destruct0 true ic use.
 
+Ltac2 default_on_concl cl :=
+match cl with
+| None => { Std.on_hyps := Some []; Std.on_concl := Std.AllOccurrences }
+| Some cl => cl
+end.
+
+Ltac2 Notation "red" cl(opt(clause)) :=
+  Std.red (default_on_concl cl).
+
+Ltac2 Notation "hnf" cl(opt(clause)) :=
+  Std.hnf (default_on_concl cl).
+
 Ltac2 rewrite0 ev rw cl tac :=
   let tac := match tac with
   | None => None
@@ -146,10 +158,7 @@ Ltac2 rewrite0 ev rw cl tac :=
     let ((_, tac)) := p in
     Some tac
   end in
-  let cl := match cl with
-  | None => { Std.on_hyps := Some []; Std.on_concl := Std.AllOccurrences }
-  | Some cl => cl
-  end in
+  let cl := default_on_concl cl in
   Std.rewrite ev rw cl tac.
 
 Ltac2 Notation "rewrite"
