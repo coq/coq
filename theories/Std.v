@@ -130,9 +130,15 @@ Ltac2 @ external induction : evar_flag -> induction_clause list ->
 
 Ltac2 @ external red : clause -> unit := "ltac2" "tac_red".
 Ltac2 @ external hnf : clause -> unit := "ltac2" "tac_hnf".
+Ltac2 @ external simpl : red_flags -> (pattern * occurrences) option -> clause -> unit := "ltac2" "tac_simpl".
 Ltac2 @ external cbv : red_flags -> clause -> unit := "ltac2" "tac_cbv".
 Ltac2 @ external cbn : red_flags -> clause -> unit := "ltac2" "tac_cbn".
 Ltac2 @ external lazy : red_flags -> clause -> unit := "ltac2" "tac_lazy".
+Ltac2 @ external unfold : (evaluable_reference * occurrences) list -> clause -> unit := "ltac2" "tac_unfold".
+Ltac2 @ external fold : constr list -> clause -> unit := "ltac2" "tac_fold".
+Ltac2 @ external pattern : (constr * occurrences) list -> clause -> unit := "ltac2" "tac_pattern".
+Ltac2 @ external vm : (pattern * occurrences) option -> clause -> unit := "ltac2" "tac_vm".
+Ltac2 @ external native : (pattern * occurrences) option -> clause -> unit := "ltac2" "tac_native".
 
 Ltac2 @ external rewrite : evar_flag -> rewriting list -> clause -> (unit -> unit) option -> unit := "ltac2" "tac_rewrite".
 

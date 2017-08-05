@@ -90,6 +90,13 @@ let to_red_flag = function
   }
 | _ -> assert false
 
+let to_pattern_with_occs pat =
+  to_pair Value.to_pattern (fun occ -> to_occurrences to_int_or_var occ) pat
+
+let to_constr_with_occs c =
+  let (c, occ) = to_pair Value.to_constr (fun occ -> to_occurrences to_int_or_var occ) c in
+  (occ, c)
+
 let rec to_intro_pattern = function
 | ValBlk (0, [| b |]) -> IntroForthcoming (Value.to_bool b)
 | ValBlk (1, [| pat |]) -> IntroNaming (to_intro_pattern_naming pat)
@@ -301,6 +308,13 @@ let () = define_prim1 "tac_hnf" begin fun cl ->
   Tactics.reduce Hnf cl
 end
 
+let () = define_prim3 "tac_simpl" begin fun flags where cl ->
+  let flags = to_red_flag flags in
+  let where = Value.to_option to_pattern_with_occs where in
+  let cl = to_clause cl in
+  Tac2tactics.simpl flags where cl
+end
+
 let () = define_prim2 "tac_cbv" begin fun flags cl ->
   let flags = to_red_flag flags in
   let cl = to_clause cl in
@@ -317,6 +331,40 @@ let () = define_prim2 "tac_lazy" begin fun flags cl ->
   let flags = to_red_flag flags in
   let cl = to_clause cl in
   Tactics.reduce (Lazy flags) cl
+end
+
+let () = define_prim2 "tac_unfold" begin fun refs cl ->
+  let map v =
+    let (ref, occ) = to_pair to_evaluable_ref (fun occ -> to_occurrences to_int_or_var occ) v in
+    (occ, ref)
+  in
+  let refs = Value.to_list map refs in
+  let cl = to_clause cl in
+  Tactics.reduce (Unfold refs) cl
+end
+
+let () = define_prim2 "tac_fold" begin fun args cl ->
+  let args = Value.to_list Value.to_constr args in
+  let cl = to_clause cl in
+  Tactics.reduce (Fold args) cl
+end
+
+let () = define_prim2 "tac_pattern" begin fun where cl ->
+  let where = Value.to_list to_constr_with_occs where in
+  let cl = to_clause cl in
+  Tactics.reduce (Pattern where) cl
+end
+
+let () = define_prim2 "tac_vm" begin fun where cl ->
+  let where = Value.to_option to_pattern_with_occs where in
+  let cl = to_clause cl in
+  Tac2tactics.vm where cl
+end
+
+let () = define_prim2 "tac_native" begin fun where cl ->
+  let where = Value.to_option to_pattern_with_occs where in
+  let cl = to_clause cl in
+  Tac2tactics.native where cl
 end
 
 let () = define_prim4 "tac_rewrite" begin fun ev rw cl by ->

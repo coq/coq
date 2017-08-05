@@ -6,8 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
+open Names
+open Globnames
 open Misctypes
 open Tactypes
+open Genredexpr
 open Tactics
 open Proofview
 open Tacmach.New
@@ -57,3 +61,24 @@ let rewrite ev rw cl by =
   let rw = List.map map_rw rw in
   let by = Option.map (fun tac -> Tacticals.New.tclCOMPLETE tac, Equality.Naive) by in
   Equality.general_multi_rewrite ev rw cl by
+
+(** Ltac interface treats differently global references than other term
+    arguments in reduction expressions. In Ltac1, this is done at parsing time.
+    Instead, we parse indifferently any pattern and dispatch when the tactic is
+    called. *)
+let map_pattern_with_occs (pat, occ) = match pat with
+| Pattern.PRef (ConstRef cst) -> (occ, Inl (EvalConstRef cst))
+| Pattern.PRef (VarRef id) -> (occ, Inl (EvalVarRef id))
+| _ -> (occ, Inr pat)
+
+let simpl flags where cl =
+  let where = Option.map map_pattern_with_occs where in
+  Tactics.reduce (Simpl (flags, where)) cl
+
+let vm where cl =
+  let where = Option.map map_pattern_with_occs where in
+  Tactics.reduce (CbvVm where) cl
+
+let native where cl =
+  let where = Option.map map_pattern_with_occs where in
+  Tactics.reduce (CbvNative where) cl

@@ -8,6 +8,7 @@
 
 open Names
 open Locus
+open Genredexpr
 open Misctypes
 open Tactypes
 open Proofview
@@ -34,3 +35,10 @@ type rewriting =
 
 val rewrite :
   evars_flag -> rewriting list -> clause -> unit tactic option -> unit tactic
+
+val simpl : evaluable_global_reference glob_red_flag ->
+  (Pattern.constr_pattern * occurrences_expr) option -> clause -> unit tactic
+
+val vm : (Pattern.constr_pattern * occurrences_expr) option -> clause -> unit tactic
+
+val native : (Pattern.constr_pattern * occurrences_expr) option -> clause -> unit tactic
