@@ -143,7 +143,7 @@ let pr_glbexpr_gen lvl c =
   | GTacAtm atm -> pr_atom atm
   | GTacVar id -> Id.print id
   | GTacRef gr ->
-    let qid = shortest_qualid_of_ltac gr in
+    let qid = shortest_qualid_of_ltac (TacConstant gr) in
     Libnames.pr_qualid qid
   | GTacFun (nas, c) ->
     let nas = pr_sequence pr_name nas in

@@ -654,6 +654,38 @@ Beware that the order of evaluation of multiple let-bindings is not specified,
 so that you may have to resort to thunking to ensure that side-effects are
 performed at the right time.
 
+## Abbreviations
+
+There exists a special kind of notations, called abbreviations, that is designed
+so that it does not add any parsing rules. It is similar in spirit to Coq
+abbreviations, insofar as its main purpose is to give an absolute name to a
+piece of pure syntax, which can be transparently referred by this name as if it
+were a proper definition. Abbreviations are introduced by the following
+syntax.
+
+```
+VERNAC ::=
+| "Ltac2" "Notation" IDENT ":=" TERM
+```
+
+The abbreviation can then be manipulated just as a normal Ltac2 definition,
+except that it is expanded at internalization time into the given expression.
+Furthermore, in order to make this kind of construction useful in practice in
+an effectful language such as Ltac2, any syntactic argument to an abbreviation
+is thunked on-the-fly during its expansion.
+
+For instance, suppose that we define the following.
+```
+Ltac2 Notation foo := fun x => x ().
+```
+Then we have the following expansion at internalization time.
+```
+foo 0 ↦ (fun x => x ()) (fun _ => 0)
+```
+
+Note that abbreviations are not typechecked at all, and may result in typing
+errors after expansion.
+
 # TODO
 
 - Implement deep pattern-matching.

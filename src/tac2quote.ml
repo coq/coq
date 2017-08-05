@@ -229,10 +229,10 @@ let of_rewriting (loc, rew) =
 
 let of_hyp ?loc id =
   let loc = Option.default dummy_loc loc in
-  let hyp = CTacRef (AbsKn (control_core "hyp")) in
+  let hyp = CTacRef (AbsKn (TacConstant (control_core "hyp"))) in
   CTacApp (loc, hyp, [of_ident id])
 
 let of_exact_hyp ?loc id =
   let loc = Option.default dummy_loc loc in
-  let refine = CTacRef (AbsKn (control_core "refine")) in
+  let refine = CTacRef (AbsKn (TacConstant (control_core "refine"))) in
   CTacApp (loc, refine, [thunk (of_hyp ~loc id)])

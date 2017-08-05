@@ -32,6 +32,7 @@ type ltac_state = {
   ltac_constructors : constructor_data KNmap.t;
   ltac_projections : projection_data KNmap.t;
   ltac_types : glb_quant_typedef KNmap.t;
+  ltac_aliases : raw_tacexpr KNmap.t;
 }
 
 let empty_state = {
@@ -39,6 +40,7 @@ let empty_state = {
   ltac_constructors = KNmap.empty;
   ltac_projections = KNmap.empty;
   ltac_types = KNmap.empty;
+  ltac_aliases = KNmap.empty;
 }
 
 let ltac_state = Summary.ref empty_state ~name:"ltac2-state"
@@ -87,6 +89,12 @@ let define_type kn e =
 
 let interp_type kn = KNmap.find kn ltac_state.contents.ltac_types
 
+let define_alias kn tac =
+  let state = !ltac_state in
+  ltac_state := { state with ltac_aliases = KNmap.add kn tac state.ltac_aliases }
+
+let interp_alias kn = KNmap.find kn ltac_state.contents.ltac_aliases
+
 module ML =
 struct
   type t = ml_tactic_name
@@ -115,11 +123,30 @@ struct
     id, (DirPath.repr dir)
 end
 
+type tacref = Tac2expr.tacref =
+| TacConstant of ltac_constant
+| TacAlias of ltac_alias
+
+module TacRef =
+struct
+type t = tacref
+let compare r1 r2 = match r1, r2 with
+| TacConstant c1, TacConstant c2 -> KerName.compare c1 c2
+| TacAlias c1, TacAlias c2 -> KerName.compare c1 c2
+| TacConstant _, TacAlias _ -> -1
+| TacAlias _, TacConstant _ -> 1
+
+let equal r1 r2 = compare r1 r2 == 0
+
+end
+
 module KnTab = Nametab.Make(FullPath)(KerName)
+module RfTab = Nametab.Make(FullPath)(TacRef)
+module RfMap = Map.Make(TacRef)
 
 type nametab = {
-  tab_ltac : KnTab.t;
-  tab_ltac_rev : full_path KNmap.t;
+  tab_ltac : RfTab.t;
+  tab_ltac_rev : full_path RfMap.t;
   tab_cstr : KnTab.t;
   tab_cstr_rev : full_path KNmap.t;
   tab_type : KnTab.t;
@@ -129,8 +156,8 @@ type nametab = {
 }
 
 let empty_nametab = {
-  tab_ltac = KnTab.empty;
-  tab_ltac_rev = KNmap.empty;
+  tab_ltac = RfTab.empty;
+  tab_ltac_rev = RfMap.empty;
   tab_cstr = KnTab.empty;
   tab_cstr_rev = KNmap.empty;
   tab_type = KnTab.empty;
@@ -143,22 +170,22 @@ let nametab = Summary.ref empty_nametab ~name:"ltac2-nametab"
 
 let push_ltac vis sp kn =
   let tab = !nametab in
-  let tab_ltac = KnTab.push vis sp kn tab.tab_ltac in
-  let tab_ltac_rev = KNmap.add kn sp tab.tab_ltac_rev in
+  let tab_ltac = RfTab.push vis sp kn tab.tab_ltac in
+  let tab_ltac_rev = RfMap.add kn sp tab.tab_ltac_rev in
   nametab := { tab with tab_ltac; tab_ltac_rev }
 
 let locate_ltac qid =
   let tab = !nametab in
-  KnTab.locate qid tab.tab_ltac
+  RfTab.locate qid tab.tab_ltac
 
 let locate_extended_all_ltac qid =
   let tab = !nametab in
-  KnTab.find_prefixes qid tab.tab_ltac
+  RfTab.find_prefixes qid tab.tab_ltac
 
 let shortest_qualid_of_ltac kn =
   let tab = !nametab in
-  let sp = KNmap.find kn tab.tab_ltac_rev in
-  KnTab.shortest_qualid Id.Set.empty sp tab.tab_ltac
+  let sp = RfMap.find kn tab.tab_ltac_rev in
+  RfTab.shortest_qualid Id.Set.empty sp tab.tab_ltac
 
 let push_constructor vis sp kn =
   let tab = !nametab in

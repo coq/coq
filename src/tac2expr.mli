@@ -18,9 +18,14 @@ type lid = Id.t
 type uid = Id.t
 
 type ltac_constant = KerName.t
+type ltac_alias = KerName.t
 type ltac_constructor = KerName.t
 type ltac_projection = KerName.t
 type type_constant = KerName.t
+
+type tacref =
+| TacConstant of ltac_constant
+| TacAlias of ltac_alias
 
 type 'a or_relid =
 | RelId of qualid located
@@ -88,7 +93,7 @@ type raw_patexpr =
 
 type raw_tacexpr =
 | CTacAtm of atom located
-| CTacRef of ltac_constant or_relid
+| CTacRef of tacref or_relid
 | CTacCst of Loc.t * ltac_constructor or_tuple or_relid
 | CTacFun of Loc.t * (raw_patexpr * raw_typexpr option) list * raw_tacexpr
 | CTacApp of Loc.t * raw_tacexpr * raw_tacexpr list

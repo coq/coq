@@ -42,14 +42,14 @@ type tacdef = {
 }
 
 let perform_tacdef visibility ((sp, kn), def) =
-  let () = if not def.tacdef_local then Tac2env.push_ltac visibility sp kn in
+  let () = if not def.tacdef_local then Tac2env.push_ltac visibility sp (TacConstant kn) in
   Tac2env.define_global kn (def.tacdef_expr, def.tacdef_type)
 
 let load_tacdef i obj = perform_tacdef (Until i) obj
 let open_tacdef i obj = perform_tacdef (Exactly i) obj
 
 let cache_tacdef ((sp, kn), def) =
-  let () = Tac2env.push_ltac (Until 1) sp kn in
+  let () = Tac2env.push_ltac (Until 1) sp (TacConstant kn) in
   Tac2env.define_global kn (def.tacdef_expr, def.tacdef_type)
 
 let subst_tacdef (subst, def) =
@@ -599,7 +599,43 @@ let inTac2Notation : synext -> obj =
      subst_function = subst_synext;
      classify_function = classify_synext}
 
-let register_notation ?(local = false) tkn lev body =
+type abbreviation = {
+  abbr_body : raw_tacexpr;
+}
+
+let perform_abbreviation visibility ((sp, kn), abbr) =
+  let () = Tac2env.push_ltac visibility sp (TacAlias kn) in
+  Tac2env.define_alias kn abbr.abbr_body
+
+let load_abbreviation i obj = perform_abbreviation (Until i) obj
+let open_abbreviation i obj = perform_abbreviation (Exactly i) obj
+
+let cache_abbreviation ((sp, kn), abbr) =
+  let () = Tac2env.push_ltac (Until 1) sp (TacAlias kn) in
+  Tac2env.define_alias kn abbr.abbr_body
+
+let subst_abbreviation (subst, abbr) =
+  let body' = subst_rawexpr subst abbr.abbr_body in
+  if body' == abbr.abbr_body then abbr
+  else { abbr_body = body' }
+
+let classify_abbreviation o = Substitute o
+
+let inTac2Abbreviation : abbreviation -> obj =
+  declare_object {(default_object "TAC2-ABBREVIATION") with
+     cache_function  = cache_abbreviation;
+     load_function   = load_abbreviation;
+     open_function   = open_abbreviation;
+     subst_function = subst_abbreviation;
+     classify_function = classify_abbreviation}
+
+let register_notation ?(local = false) tkn lev body = match tkn, lev with
+| [SexprRec (_, (_, Some id), [])], None ->
+  (** Tactic abbreviation *)
+  let body = Tac2intern.globalize Id.Set.empty body in
+  let abbr = { abbr_body = body } in
+  ignore (Lib.add_leaf id (inTac2Abbreviation abbr))
+| _ ->
   (** Check that the tokens make sense *)
   let entries = List.map ParseToken.parse_token tkn in
   let fold accu tok = match tok with
@@ -642,14 +678,18 @@ let print_ltac ref =
       try Tac2env.locate_ltac qid
       with Not_found -> user_err ?loc (str "Unknown tactic " ++ pr_qualid qid)
     in
-    let (e, _, (_, t)) = Tac2env.interp_global kn in
-    let name = int_name () in
-    Feedback.msg_notice (
-      hov 0 (
-        hov 2 (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ pr_glbtype name t) ++ fnl () ++
-        hov 2 (pr_qualid qid ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr e)
+    match kn with
+    | TacConstant kn ->
+      let (e, _, (_, t)) = Tac2env.interp_global kn in
+      let name = int_name () in
+      Feedback.msg_notice (
+        hov 0 (
+          hov 2 (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ pr_glbtype name t) ++ fnl () ++
+          hov 2 (pr_qualid qid ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr e)
+        )
       )
-    )
+    | TacAlias kn ->
+      Feedback.msg_notice (str "Alias to ...")
 
 (** Calling tactics *)
 

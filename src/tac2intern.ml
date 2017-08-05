@@ -654,6 +654,10 @@ let expand_pattern avoid bnd =
   let nas = List.rev_map (fun (na, _, _) -> na) bnd in
   (nas, expand)
 
+let is_alias env qid = match get_variable env qid with
+| ArgArg (TacAlias _) -> true
+| ArgVar _ | (ArgArg (TacConstant _)) -> false
+
 let rec intern_rec env = function
 | CTacAtm (_, atm) -> intern_atm env atm
 | CTacRef qid ->
@@ -661,9 +665,12 @@ let rec intern_rec env = function
   | ArgVar (_, id) ->
     let sch = Id.Map.find id env.env_var in
     (GTacVar id, fresh_mix_type_scheme env sch)
-  | ArgArg kn ->
+  | ArgArg (TacConstant kn) ->
     let (_, _, sch) = Tac2env.interp_global kn in
     (GTacRef kn, fresh_type_scheme env sch)
+  | ArgArg (TacAlias kn) ->
+    let e = Tac2env.interp_alias kn in
+    intern_rec env e
   end
 | CTacCst (loc, qid) ->
   let kn = get_constructor env qid in
@@ -682,6 +689,20 @@ let rec intern_rec env = function
 | CTacApp (loc, CTacCst (_, qid), args) ->
   let kn = get_constructor env qid in
   intern_constructor env loc kn args
+| CTacApp (loc, CTacRef qid, args) when is_alias env qid ->
+  let kn = match get_variable env qid with
+  | ArgArg (TacAlias kn) -> kn
+  | ArgVar _ | (ArgArg (TacConstant _)) -> assert false
+  in
+  let e = Tac2env.interp_alias kn in
+  let map arg =
+    (** Thunk alias arguments *)
+    let loc = loc_of_tacexpr arg in
+    let var = [CPatVar (Some loc, Anonymous), Some (CTypRef (loc, AbsKn (Tuple 0), []))] in
+    CTacFun (loc, var, arg)
+  in
+  let args = List.map map args in
+  intern_rec env (CTacApp (loc, e, args))
 | CTacApp (loc, f, args) ->
   let loc = loc_of_tacexpr f in
   let (f, ft) = intern_rec env f in
@@ -1372,9 +1393,12 @@ let rec subst_rawtype subst t = match t with
 
 let subst_tacref subst ref = match ref with
 | RelId _ -> ref
-| AbsKn kn ->
+| AbsKn (TacConstant kn) ->
   let kn' = subst_kn subst kn in
-  if kn' == kn then ref else AbsKn kn'
+  if kn' == kn then ref else AbsKn (TacConstant kn')
+| AbsKn (TacAlias kn) ->
+  let kn' = subst_kn subst kn in
+  if kn' == kn then ref else AbsKn (TacAlias kn')
 
 let subst_projection subst prj = match prj with
 | RelId _ -> prj
