@@ -162,6 +162,13 @@ let find_entry_p p =
   in
   find !lib_state.lib_stk
 
+let find_entries_p p =
+  let rec find = function
+    | [] -> []
+    | ent::l -> if p ent then ent::find l else find l
+  in
+  find !lib_state.lib_stk
+
 let split_lib_gen test =
   let rec collect after equal = function
     | hd::before when test hd -> collect after (hd::equal) before
@@ -328,16 +335,18 @@ let start_compilation s mp =
   lib_state := { !lib_state with comp_name = Some s;
                                  path_prefix = prefix }
 
+let open_blocks_message es =
+  let open_block_name = function
+      | oname, OpenedSection _ -> str "section " ++ pr_id (basename (fst oname))
+      | oname, OpenedModule (ty,_,_,_) -> str (module_kind ty) ++ spc () ++ pr_id (basename (fst oname))
+      | _ -> assert false in
+  str "The " ++ pr_enum open_block_name es ++ spc () ++
+  str "need" ++ str (if List.length es == 1 then "s" else "") ++ str " to be closed."
+
 let end_compilation_checks dir =
-  let _ =
-    try match snd (find_entry_p is_opening_node) with
-      | OpenedSection _ -> user_err Pp.(str  "There are some open sections.")
-      | OpenedModule (ty,_,_,_) ->
-	user_err ~hdr:"Lib.end_compilation_checks"
-          (str "There are some open " ++ str (module_kind ty) ++ str "s.")
-      | _ -> assert false
-    with Not_found -> ()
-  in
+  let _ = match find_entries_p is_opening_node with
+    | [] -> ()
+    | es -> user_err ~hdr:"Lib.end_compilation_checks" (open_blocks_message es) in
   let is_opening_lib = function _,CompilingLibrary _ -> true | _ -> false
   in
   let oname =
