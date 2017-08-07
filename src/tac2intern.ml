@@ -750,9 +750,10 @@ let rec intern_rec env = function
   let () = unify ~loc env t tc in
   (e, tc)
 | CTacSeq (loc, e1, e2) ->
+  let loc1 = loc_of_tacexpr e1 in
   let (e1, t1) = intern_rec env e1 in
   let (e2, t2) = intern_rec env e2 in
-  let () = check_elt_unit loc env t1 in
+  let () = check_elt_unit loc1 env t1 in
   (GTacLet (false, [Anonymous, e1], e2), t2)
 | CTacCse (loc, e, pl) ->
   intern_case env loc e pl
