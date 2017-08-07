@@ -119,8 +119,8 @@ GEXTEND Gram
       | e = SELF; ".("; qid = Prim.qualid; ")" -> CTacPrj (!@loc, e, RelId qid)
       | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = tac2expr LEVEL "5" -> CTacSet (!@loc, e, RelId qid, r) ]
     | "0"
-      [ "("; a = tac2expr LEVEL "5"; ")" -> a
-      | "("; a = tac2expr; ":"; t = tac2type; ")" -> CTacCnv (!@loc, a, t)
+      [ "("; a = SELF; ")" -> a
+      | "("; a = SELF; ":"; t = tac2type; ")" -> CTacCnv (!@loc, a, t)
       | "()" -> CTacCst (!@loc, AbsKn (Tuple 0))
       | "("; ")" -> CTacCst (!@loc, AbsKn (Tuple 0))
       | "["; a = LIST0 tac2expr LEVEL "5" SEP ";"; "]" -> CTacLst (Loc.tag ~loc:!@loc a)
