@@ -7,7 +7,61 @@
 (************************************************************************)
 
 Require Import Ltac2.Init.
-Require Ltac2.Control Ltac2.Std.
+Require Ltac2.Control Ltac2.Int Ltac2.Std.
+
+(** Tacticals *)
+
+Ltac2 orelse t f :=
+match Control.case t with
+| Err e => f e
+| Val ans =>
+  let ((x, k)) := ans in
+  Control.plus (fun _ => x) k
+end.
+
+Ltac2 ifcatch t s f :=
+match Control.case t with
+| Err e => f e
+| Val ans =>
+  let ((x, k)) := ans in
+  Control.plus (fun _ => s x) (fun e => s (k e))
+end.
+
+Ltac2 try0 t := Control.enter (fun _ => orelse t (fun _ => ())).
+
+Ltac2 Notation try := try0.
+
+Ltac2 rec repeat0 (t : unit -> unit) :=
+  Control.enter (fun () =>
+    ifcatch (fun _ => Control.progress t)
+      (fun _ => Control.check_interrupt (); repeat0 t) (fun _ => ())).
+
+Ltac2 Notation repeat := repeat0.
+
+Ltac2 do0 n t :=
+  let rec aux n t := match Int.equal n 0 with
+  | true => ()
+  | false => t (); aux (Int.sub n 1) t
+  end in
+  aux (n ()) t.
+
+Ltac2 Notation do := do0.
+
+Ltac2 Notation once := Control.once.
+
+Ltac2 progress0 tac := Control.enter (fun _ => Control.progress tac).
+
+Ltac2 Notation progress := progress0.
+
+Ltac2 time0 tac := Control.time None tac.
+
+Ltac2 Notation time := time0.
+
+Ltac2 abstract0 tac := Control.abstract None tac.
+
+Ltac2 Notation abstract := abstract0.
+
+(** Base tactics *)
 
 (** Enter and check evar resolution *)
 Ltac2 enter_h ev f arg :=

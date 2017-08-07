@@ -574,6 +574,27 @@ let prm_with_holes : ml_tactic = function
   Tacticals.New.tclWITHHOLES false (interp_app f [ans]) sigma
 | _ -> assert false
 
+let prm_progress : ml_tactic = function
+| [f] -> Proofview.tclPROGRESS (thaw f)
+| _ -> assert false
+
+let prm_abstract : ml_tactic = function
+| [id; f] ->
+  let id = Value.to_option Value.to_ident id in
+  Tactics.tclABSTRACT id (Proofview.tclIGNORE (thaw f)) >>= fun () ->
+  return v_unit
+| _ -> assert false
+
+let prm_time : ml_tactic = function
+| [s; f] ->
+  let s = Value.to_option Value.to_string s in
+  Proofview.tclTIME s (thaw f)
+| _ -> assert false
+
+let prm_check_interrupt : ml_tactic = function
+| [_] -> Proofview.tclCHECKINTERRUPT >>= fun () -> return v_unit
+| _ -> assert false
+
 (** Registering *)
 
 let () = Tac2env.define_primitive (pname "print") prm_print
@@ -632,6 +653,10 @@ let () = Tac2env.define_primitive (pname "hyp") prm_hyp
 let () = Tac2env.define_primitive (pname "hyps") prm_hyps
 let () = Tac2env.define_primitive (pname "refine") prm_refine
 let () = Tac2env.define_primitive (pname "with_holes") prm_with_holes
+let () = Tac2env.define_primitive (pname "progress") prm_progress
+let () = Tac2env.define_primitive (pname "abstract") prm_abstract
+let () = Tac2env.define_primitive (pname "time") prm_time
+let () = Tac2env.define_primitive (pname "check_interrupt") prm_check_interrupt
 
 (** ML types *)
 
