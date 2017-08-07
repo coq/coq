@@ -242,3 +242,15 @@ Ltac2 Notation "erewrite"
   cl(opt(clause))
   tac(opt(seq("by", thunk(tactic)))) :=
   rewrite0 true rw cl tac.
+
+(** Other base tactics *)
+
+Ltac2 Notation reflexivity := Std.reflexivity ().
+
+Ltac2 Notation assumption := Std.assumption ().
+
+Ltac2 Notation etransitivity := Std.etransitivity ().
+
+Ltac2 Notation admit := Std.admit ().
+
+Ltac2 Notation clear := Std.keep [].

@@ -5,7 +5,7 @@ Import Ltac2.Notations.
 Goal exists n, n = 0.
 Proof.
 split with (x := 0).
-Std.reflexivity ().
+reflexivity.
 Qed.
 
 Goal exists n, n = 0.
@@ -113,7 +113,7 @@ Qed.
 Goal forall n m, (m = n -> n = m) -> m = n -> n = 0 -> m = 0.
 Proof.
 intros n m He He' He''.
-rewrite <- &He by Std.assumption ().
+rewrite <- &He by assumption.
 Control.refine (fun () => &He'').
 Qed.
 
