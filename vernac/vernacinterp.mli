@@ -17,7 +17,7 @@ type vernac_command = Genarg.raw_generic_argument list -> unit -> unit
     defines how a given Vernacular command, introduced by the "rule",
     should be interpreted.
 
-    The actual "arguments" of the Vernacular command
+    The actual arguments of the Vernacular command
     (see the [args] non-terminal defined in [grammar/vernacextend.mlp] file)
     are passed via the first parameter of this function. *)
 
