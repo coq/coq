@@ -63,6 +63,10 @@ Ltac2 Notation abstract := abstract0.
 
 (** Base tactics *)
 
+(** Note that we redeclare notations that can be parsed as mere identifiers
+    as abbreviations, so that it allows to parse them as function arguments
+    without having to write them within parentheses. *)
+
 (** Enter and check evar resolution *)
 Ltac2 enter_h ev f arg :=
 match ev with
@@ -76,35 +80,45 @@ Ltac2 intros0 ev p :=
   Control.enter (fun () => Std.intros false p).
 
 Ltac2 Notation "intros" p(intropatterns) := intros0 false p.
+Ltac2 Notation intros := intros.
 
 Ltac2 Notation "eintros" p(intropatterns) := intros0 true p.
+Ltac2 Notation eintros := eintros.
 
 Ltac2 split0 ev bnd :=
   enter_h ev Std.split bnd.
 
 Ltac2 Notation "split" bnd(thunk(bindings)) := split0 false bnd.
+Ltac2 Notation split := split.
 
 Ltac2 Notation "esplit" bnd(thunk(bindings)) := split0 true bnd.
+Ltac2 Notation esplit := esplit.
 
 Ltac2 left0 ev bnd := enter_h ev Std.left bnd.
 
 Ltac2 Notation "left" bnd(thunk(bindings)) := left0 false bnd.
+Ltac2 Notation left := left.
 
 Ltac2 Notation "eleft" bnd(thunk(bindings)) := left0 true bnd.
+Ltac2 Notation eleft := eleft.
 
 Ltac2 right0 ev bnd := enter_h ev Std.right bnd.
 
 Ltac2 Notation "right" bnd(thunk(bindings)) := right0 false bnd.
+Ltac2 Notation right := right.
 
 Ltac2 Notation "eright" bnd(thunk(bindings)) := right0 true bnd.
+Ltac2 Notation eright := eright.
 
 Ltac2 constructor0 ev n bnd :=
   enter_h ev (fun ev bnd => Std.constructor_n ev n bnd) bnd.
 
 Ltac2 Notation "constructor" := Control.enter (fun () => Std.constructor false).
+Ltac2 Notation constructor := constructor.
 Ltac2 Notation "constructor" n(tactic) bnd(thunk(bindings)) := constructor0 false n bnd.
 
 Ltac2 Notation "econstructor" := Control.enter (fun () => Std.constructor true).
+Ltac2 Notation econstructor := econstructor.
 Ltac2 Notation "econstructor" n(tactic) bnd(thunk(bindings)) := constructor0 true n bnd.
 
 Ltac2 elim0 ev c bnd use :=
@@ -201,9 +215,11 @@ end.
 
 Ltac2 Notation "red" cl(opt(clause)) :=
   Std.red (default_on_concl cl).
+Ltac2 Notation red := red.
 
 Ltac2 Notation "hnf" cl(opt(clause)) :=
   Std.hnf (default_on_concl cl).
+Ltac2 Notation hnf := hnf.
 
 Ltac2 rewrite0 ev rw cl tac :=
   let tac := match tac with
