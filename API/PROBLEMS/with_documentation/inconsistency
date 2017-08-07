@@ -1,0 +1,24 @@
+There are cases when the documentation and the source code
+- use different names for the same concept
+- use the same name for different concepts
+
+================================================================================
+
+INSTANCES
+
+- What we call "constant" in the source code is called "global declaration" in the reference manual.
+  (although they are talking about the same concept at different abstraction level,
+   there is no need to use two different names for the same concept.
+   This might mislead the reader to thinking that there are talking about two unrelated concepts
+   rather then essential one and the same thing.)
+
+- What we call "environment" in the source code does not correspond to what we
+  call "(global) enviornment" in the Reference manual. This is a mistake because
+  even though we are talking about two related concepts, they are not the same concept.
+  It is thus a mistake to use the same name for two different concepts.
+
+- Both, Reference Manual as well as the camlp5 parser defines non-terminals.
+  It is therefore reasonable to expect that the same non-terminal will have the same/analogous name
+  in both places.
+
+- ...

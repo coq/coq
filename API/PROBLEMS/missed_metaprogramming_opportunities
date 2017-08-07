@@ -1,0 +1,16 @@
+Existing metaprogramming mechanisms provided by Ocaml
+may enable us to shrink the size of the API.
+There are many API elements that can be generated
+(instead of manually defined).
+
+================================================================================
+
+INSTANCES
+
+Consider the possibility to *generate* functions like:
+- Term.isRel
+- Term.isMeta
+- Term.isCoFix
+- ...
+instead of implementing them explicitely.
+(what would we then do with "DestKO" exception?)

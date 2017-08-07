@@ -1,0 +1,21 @@
+Some API properties can be reliably maintained only if we write
+helper scripts.
+
+================================================================================
+
+INSTACES
+- We need a script that will be able to go though the current version of the API
+  and report:
+  - all elements present in the API but not used by the plugins
+    (we are concerned with)
+  - all type definitions that are transparent but could be made opaque
+    ("non-polymorphic" (i.e. typed-by-name) variants, GADT, records)
+    - examples (of API elements that can be made abstract)
+      - API.Names.tableKey
+      - API.Cbytecodes.reloc_table
+- We need a script that will be able to detect and report all such API elements,
+  that are mere aliases of existing API elements.
+- If API contains an element that is an alias of some other element
+  in the Coq codebase, but it is not original (only an alias)
+  we need a script that will detect and report these cases.
+  Ultimately, API should alias only originals, not aliases.

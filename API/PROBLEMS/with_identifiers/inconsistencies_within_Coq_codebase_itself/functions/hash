@@ -1,0 +1,26 @@
+If "M.t" some type
+then "M.hash" usually has type
+
+  M.t -> int
+
+or perhaps
+
+  'a M.t -> int
+
+As the name of the function suggests, a given function
+converts any value of a given type to a "hash value"
+(where equal values will have always equal hashes
+ and non-equal values will most of the time have non-equal hashes
+ (depending on the quality of the hash-function))
+
+EXAMPLES:
+- Sorts.hash
+- Names.ModPath.hash
+
+================================================================================
+
+INSTANCES (where we deviate from the "print" convention)
+
+- Names.constructor_hash
+- Term.hash_constr
+- ...

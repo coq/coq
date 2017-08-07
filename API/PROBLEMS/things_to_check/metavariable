@@ -1,0 +1,16 @@
+We should clarify:
+- Why do we need metavariables?
+- What is their relation (if any) to existential variables?
+- What is their relation (if any) to Constrexpr.CHole?
+- Why should Kernel care about them?
+  (Constr,Term)
+- Why should EConstr care about them?
+
+================================================================================
+
+INSTANCES:
+- EConstr.mk_new_meta
+- EConstr.pop
+- Metavariable.*
+- Term.mkMeta
+- Term.subst_meta

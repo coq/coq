@@ -1,0 +1,69 @@
+Types with questionable meaning:
+
+================================================================================
+
+INSTANCE: Why do we have two "unsafe judgments"?
+
+- Environ.unsafe_judgement
+- EConstr.unsafe_judgement
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Declarations.mutual_inductive_body
+
+Is it clear what is the relationship of this data-type (i.e. Declarations.mutual_inductive_body)
+and Names.MutInd.t ?
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Term.t
+
+If kernel is not supposed to be able to deal with evars,
+why does Term.t contain Evar variant?
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Term.sort_family
+
+This is a strange version of Sort.t
+
+So, we have "sorts" and "families of sorts".
+
+The concept of a "family" seems to be a hack around the technical depts related to the fact that we have:
+- two ways how to represent Prop sort
+- and two ways how to represent Set sort
+
+Remove that dichotomy.
+
+Then there will be no need to have "Term.sort_family" type.
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Vernacexpr.register_kind
+
+Does it make sense to define a variant type with a single variant?
+
+--------------------------------------------------------------------------------
+
+INSTANCE: CAst.t vs. Loc.located
+
+Why do we need two types like this?
+Why not just one?
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Reductionops.local_reduction_function
+
+How is it possible that functions of this type can work correctly
+without having access to the local context?
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Reductionops.local_stack_reduction_function
+
+How is it possible that functions of this type can work correctly
+without having access to the local context?
+
+--------------------------------------------------------------------------------
+
+...

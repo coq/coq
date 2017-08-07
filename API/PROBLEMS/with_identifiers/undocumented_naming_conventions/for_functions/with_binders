@@ -1,0 +1,9 @@
+What does the "*with_binders*" suffix mean?
+(document this convention)
+
+================================================================================
+
+INSTANCES:
+- Termops.map_constr_with_binders_left_to_right
+- map_constr_with_binders
+- ...

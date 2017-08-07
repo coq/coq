@@ -1,0 +1,19 @@
+The *constr* suffix modifies the meaning of "fold", "iter", "map", ... iterators.
+Instead of folding/iterating/mapping the elements of the collection itself,
+we are folding/iterating/mapping only values of type Constr.t
+
+(Beware that the choice of the actual postfix should probably be consistent
+ with our choice of "Constr" vs. "Term" module names.)
+
+================================================================================
+
+INSTANCES
+
+- fold_constr
+  - Term.fold_constr
+  - Context.Rel.Declaration.fold_constr
+- iter_constr
+  - Term.iter_constr
+- map_constr
+  - Term.map_constr
+  - Term.map_constr_with_binders

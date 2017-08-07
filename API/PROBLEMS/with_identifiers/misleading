@@ -1,0 +1,52 @@
+Some identifiers are outright misleading.
+
+================================================================================
+
+INSTANCES
+
+- The "Prop" variant (of the Sort.t type) can be used for representing both
+  - what we call "Prop"
+  - what we call "Set"
+  so choosing "Prop" identifier for this constructor is misleading.
+
+  However, as pointed out by Matthieu Sozeau, even if this (simple) problem is fixed
+  there will still remain another problem:
+
+    Currently, there are two ways how we can represent "Prop":
+    - either as "Sorts.Prop Sorts.Null"
+    - or as "Sorts.Type Universe.type0m"
+    as well as there are two ways how we can represent "Set":
+    - either as "Sorts.Prop Sorts.Pos"
+    - or as "Sorts.Type Universe.type0"
+    We should probably address this problem first.
+
+- Functions Context.{Rel,Named}.map
+  should be renamed to Context.{Rel,Named}.map_constr in order to indicate that
+  they do not represent "map" function in the usual sense.
+  - it would be worthwhile to check where else do we break this convention (abusing the "map" identifier)
+    and fix that.
+  - it would be worthwhile to check where else do we break the "{map,fold,iter}_constr" convenition
+    and fix that.
+  - once that is done, we should document this convention
+    (while also showing other examples that are consistent with it)
+
+- sigma
+  - Are we trying to appeal to the concept of sigma-types?
+    Then why do we call "sigma" only that sigma type which is related to evar maps?
+    (and not also other sigma types)?
+    Aren't all the other (in_*, with_*) type constructor also sigma-types?
+    - 'a Evd.in_evar_universe_context
+    - 'a Evd.in_evar_universe_context_set
+    - 'a Evd.sigma
+    - 'a Locus.with_occurrences
+    - 'a Misctypes.with_bindings
+    - 'a Mod_subst.substituted
+    - 'a Vernacexpr.with_coertion
+    - 'a Vernacexpr.with_instance
+    - 'a Vernacexpr.with_notation
+    - 'a Vernacexpr.with_priority
+    - 'a Univ.constrained
+    - 'a Univ.in_universe_context
+    - 'a Univ.puniverses
+
+- ...

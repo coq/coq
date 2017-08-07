@@ -1,0 +1,35 @@
+If "M.t" is a type
+then "M.equal" usually represents a function that:
+- returns "true" if a two given values (of type "M.t") can be regarded as equal
+  (i.e. observationally equivalent modulo physical identity)
+
+The type of the "M.equal" function usually is:
+
+  M.t -> M.t -> bool
+
+or perhaps
+
+  'a M.t -> 'a M.t -> bool
+
+Supporting examples (from the Ocaml standard library):
+- Bytes.equal
+- Char.equal
+- Digest.equal
+- Int32.equal
+- Int64.equal
+- Map.S.equal
+- Set.S.equal
+- String.equal
+- UChar.equal
+
+Conflicting examples (from the Ocaml standard library): NONE
+
+================================================================================
+
+INSTANCES (where we deviate from the "equal" convention)
+
+- Geninterp.Val.eq
+- Globnames.eq_gr
+- Term.eq_constr
+- EConstr.eq_constr
+- ...

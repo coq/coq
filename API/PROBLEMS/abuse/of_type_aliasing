@@ -1,0 +1,59 @@
+Frequently (in the Coq codebase) type aliases are used as a way to avoid doing something
+that requires more effort (when writing the code) but unfortunatelly also means that
+it makes the code more opaque (to the reader).
+
+EXAMPLE:
+
+  Instead of doing
+  
+     type foo = bool
+  or
+     type foo = int
+  or
+     ...
+  
+  we should consider using labeled function arguments
+  (where values of these types are applied)
+
+EXAMPLE:
+
+  or defining a new type isomorphic to bool whose constructors would
+  reinforce the meaning of the individual cases.
+
+EXAMPLE:
+
+  or using records instead of tuples and take advantage of the ability
+  to come up with descriptive field-names
+  (then it would not make sense to define Glob_term.existential_name alias)
+
+================================================================================
+
+INSTANCES
+- Decl_kinds.polymorphic
+- Decl_kinds.private_flag
+- Equality.orientation
+- Equality.freeze_evars_flag
+- Equality.dep_proof_flag
+- Goal.goal
+- Hints.hint_db
+- Hints.hint_db_name
+- Hints.hnf
+- Indrec.dep_flag
+- Misctypes.advanced_flag
+- Misctypes.clear_flag
+- Misctypes.direction_flag
+- Misctypes.evars_flag
+- Misctypes.letin_flag
+- Misctypes.rec_flag
+- Nametab.ltac_constant
+- Notation.delimiters
+- Ppextend.precedence
+- Vernacexpr.coertion_flag
+- Vernacexpr.export_flag
+- Vernacexpr.locality_flag
+- Vernacexpr.instance_flag
+- Vernacexpr.obsolete_locality
+- Vernacexpr.rec_flag
+- Vernacexpr.scope_name
+- Vernacexpr.verbose_flag
+- ...

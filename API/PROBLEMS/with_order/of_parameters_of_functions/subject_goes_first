@@ -1,0 +1,21 @@
+If the order of parameters of a function is not random, but follows some conventions,
+then it is easier to remember it. That's helpful when we want to call that function.
+
+If there is a possibility to find some practical conventions,
+then we should:
+- define them
+- follow them in the actual code.
+
+One of the good candidates for such conventions could be: "subject goes first".
+
+E.g. if we have a module "M" that defines an (abstract) data-type "M.t"
+and provides various operations "M.o1", "M.o2", ... , "M.on" with values of type "M.t",
+then instead of letting individual operations take parameters in random order,
+we might want to follow a convention that the first parameter of individual operations
+always has type "M.t".
+
+================================================================================
+
+INSTANCES
+
+- ...

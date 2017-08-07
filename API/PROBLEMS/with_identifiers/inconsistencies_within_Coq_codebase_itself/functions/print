@@ -1,0 +1,19 @@
+If "M.t" some type
+then "M.print" usually has type
+
+  M.t -> Pp.std_ppcmds
+
+and represents a function which pretty-prints values of type "M.t".
+
+EXAMPLES:
+- Names.KerName.print
+- Names.MutInd.print
+
+================================================================================
+
+INSTANCES (where we deviate from the "print" convention)
+
+- Geninterp.Val.pr
+- Hints.pp_*
+- Nameops.pr_name
+- ...

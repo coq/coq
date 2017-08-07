@@ -1,0 +1,99 @@
+At the moment, various API elements are located in places, where plugin writer might not find them
+(if he/she was looking for them).
+
+If the plugin writer does not find what he/she is looking for (even though that
+thing is actually provided by API somewhere) he/she might be tempted to
+reimplement the functionality. That would be (typically) a wasted time.
+
+EXAMPLE
+
+Universes.contr_of_global : Prelude.global_reference -> Term.constr
+
+================================================================================
+
+INSTANCES
+
+- some modules that can be "dissolved", i.e.
+  1. the whole contents of the original modules can be moved to some other existing module
+  2. the original modules can be removed from the API
+
+  - API.Constrexpr_ops.* ---> API.Constrexr
+  - API.Declareops.* ---> API.Declarations
+  - API.Evarutils.* ---> API.Evd
+  - API.Glob_ops.* ---> Glob_term
+  - API.Inductiveops.* ---> API.Inductive
+  - API.Libnames.* ---> API.Names.Name
+  - API.Locusops.* ---> API.Locus
+  - API.Nameops.* ---> API.Names.Name
+  - API.Notation_ops.* ---> API.Notation
+  - API.Patternops.* ---> API.Pattern
+  - API.Pputils.* ---> API.Pp
+  - API.Redops.* ---> API.Reductionops
+  - API.Termops.* ---> API.Term
+  - API.Univops.* ---> ?
+  - ...
+- moving whole modules
+  - API.Evd.Metamap ---> API.Meta.Map
+  - API.Evd.Metaset ---> API.Meta.Set
+  - API.Namegen ---> API.Name.Gen
+    (Then figure out what to do with "hdchar" and "rename_bound_vars_as_displayed".
+     Where would these functions fit?)
+  - API.Notation_term ---> API.Vernac.Notation
+  - API.Pattern ---> API.Vernac.Pattern
+  - API.Pretype_errors ---> API.Pretyping.Error
+    (where "API.Pretyping" is a namespace containing things that are related to pretyping phase.)
+  - API.Reduction ---> API.Term.Reduction
+  - API.Term ---> API.Kernel.Term
+    (where "API.Kernel" is a namespace containing things that are related to the services provided by the Coq kernel itself.)
+  - API.Term_typing ---> API.Term.Typing
+  - API.Type_errors ---> API.Kernel.Term.Typing.Error
+    (where "API.Kernel.Term.Typing" is a namespace containting things that are related to typing (done by the Coq kernel itself.))
+  - API.Univ.LSet ---> API.Univ.Level.Set
+  - API.Vars ---> API.Term.Vars
+    (to make it consistent with the location of EConstr.Vars)
+  - API.Vernacexpr ---> API.Vernac.Command
+    (The change from "expr" to "command" is justified because this module does not define expressions.
+     It defines Vernacular commands.)
+  - ...
+- moving individual types
+  - API.Term.metavariable ---> API.Meta.t
+- moving individual functions
+  - related to UState.t into UState module
+    - Evd.union_evar_universe_context ---> UState
+    - Evd.merge_universe_context -?-> UState
+      (should this function be moved over to the "UState" module)
+  - EConstr.*
+    - EConstr.fresh_global vs. Evd.fresh_global
+      (non-analogic location of these two (otherwise) analogous functions)
+    - EConstr.named_context ---> Environ.named_context
+    - EConstr.val_of_named_context ---> ?
+      (it is not clear where this function would fits but its current position is not logical)
+    - ...
+  - Global.env_of_context ---> Env.of_named_context
+  - Globname.subst_global -?-> Globname? 
+                          -?-> Mod_subst?
+  - Libnames.dirpath_of_string ---> Names.DirPath.of_string
+  - Libnames.pr_dirpath ---> Names.DirPath.print
+  - Libnames.split_dirpath ---> Names.DirPath.split
+  - Namegen.next_ident_away
+    (This looks like a special kind of a constructor for "Names.Id.t" values.
+     Potentially, we can find a better name for this function
+     and move it to "Names.Id" module.)
+  - Pretyping.check_evars -?-> EConstr.check_evars
+    (This looks like an operation with EConstr.t values
+     so it might make sense to move this function to EConstr module.)
+  - Printer
+    - pr_constr
+      (Term.print)
+    - pr_global
+      (Globnames.print)
+    - ...
+  - Smartlocate.global_of_extended_global -?-> Globname.of_extend_global
+                                          -?-> Globname.of_extended_globname
+  - Tacmach.pr_gls -?-> ?
+    (Is "Tacmach" the most proper place for the "pr_gls" function?)
+  - Univ.pr_constraints ---> Univ.Constraint.print
+  - Universes.contr_of_global -?-> Term.of_global
+                              -?-> Term.of_globname
+  - ...
+- ...

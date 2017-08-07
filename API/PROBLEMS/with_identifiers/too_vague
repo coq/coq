@@ -1,0 +1,26 @@
+Some of the identifiers are not completely wrong,
+but they are neither fully satisfactory.
+That is, the actual identifier is too vague/imprecise concerning the actual meaning
+of a given API element.
+
+================================================================================
+
+INSTANCES:
+
+- names of modules
+  - Libnames
+    (The name is not entirely helpful although the right solution
+     (instead of trying to find a better name)
+     might be to dissolute this module completely.)
+  - Libobject
+    (The "Lib" and "object" parts of the identifier are too vague.)
+  - Summary
+    (The "Summary" part of the identifier is too vague.)
+  - Summary.Local
+    (The "Local" part of the identifier is too vague.)
+- names of types
+  - Libnames.object_name
+    (The "object" part of the identifier is too vague.)
+- names of functions
+  - Termops.is_global
+    (The "global" part of the identifier is too vague.)

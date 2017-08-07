@@ -1,0 +1,20 @@
+What does the "nf_*" prefix mean?
+(document this convention)
+
+================================================================================
+
+INSTANCES:
+
+- Evarutil.nf_evar
+- Evarutil.nf_evar_info
+- Evarutil.nf_evars_universes
+- Evarutil.nf_evars_and_universes
+- Evd.nf_constraints
+- Ftactic.nf_enter
+- Goal.V82.nf_hyps
+- Proofview.Goal.nf_enter
+- Proofview.V82.nf_evar_goals
+- Reductionops.nf_beta
+- Reductionops.nf_betaiota
+- Reductionops.nf_evar
+- Reductionops.nf_meta

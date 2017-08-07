@@ -1,0 +1,19 @@
+API contains a lot of elements that are marked (in some way) as "unsafe".
+
+It would make sense to check
+- why our plugins need these functions
+  (and perhaps drop this dependency, in case there are "safe" ways how to achieve the same goals)
+- drop them from the API
+  (thereby not providing mechanisms to plugin writers that
+   - are not strictly necessary
+   - would enable them to make more mistakes)
+- it is necessary to understand what exactly is "unsafe" about these functions
+  (What property can they break? ...)
+
+================================================================================
+
+INSTANCES:
+- EConstr.Unsafe.*
+- Proofview.Unsafe.*
+- Term.Unsafe.*
+- ...

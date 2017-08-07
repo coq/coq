@@ -1,0 +1,15 @@
+Notes concecerning incompleteness of the API
+(which don't belong to any more specific category created so far)
+
+================================================================================
+
+INSTANCE
+
+It probably does not make much sense to omit:
+- equal-like functions
+- compare-like functions
+- hash-like functions
+- Set-like submodules
+- Map-like submodules
+
+--------------------------------------------------------------------------------
