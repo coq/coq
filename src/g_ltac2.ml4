@@ -325,7 +325,7 @@ GEXTEND Gram
     [ [ n = Prim.natural -> Loc.tag ~loc:!@loc n ] ]
   ;
   q_ident:
-    [ [ id = ident_or_anti -> Tac2quote.of_anti ~loc:!@loc Tac2quote.of_ident id ] ]
+    [ [ id = ident_or_anti -> Tac2quote.of_anti Tac2quote.of_ident id ] ]
   ;
   qhyp:
     [ [ x = anti -> x
@@ -480,8 +480,9 @@ GEXTEND Gram
     ] ]
   ;
   clause:
-    [ [ "in"; cl = in_clause -> cl
-      | "at"; occs = occs_nums -> { q_onhyps = Some []; q_concl_occs = occs }
+    [ [ "in"; cl = in_clause -> Loc.tag ~loc:!@loc @@ cl
+      | "at"; occs = occs_nums ->
+        Loc.tag ~loc:!@loc @@ { q_onhyps = Some []; q_concl_occs = occs }
     ] ]
   ;
   q_clause:

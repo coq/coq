@@ -19,11 +19,11 @@ open Tac2expr
 
 val constructor : ?loc:Loc.t -> ltac_constructor -> raw_tacexpr list -> raw_tacexpr
 
-val of_anti : ?loc:Loc.t -> ('a -> raw_tacexpr) -> 'a or_anti -> raw_tacexpr
+val of_anti : ('a -> raw_tacexpr) -> 'a or_anti -> raw_tacexpr
 
 val of_int : int located -> raw_tacexpr
 
-val of_pair : ?loc:Loc.t -> raw_tacexpr * raw_tacexpr -> raw_tacexpr
+val of_pair : ('a -> raw_tacexpr) -> ('b -> raw_tacexpr) -> ('a * 'b) located -> raw_tacexpr
 
 val of_variable : Id.t located -> raw_tacexpr
 
@@ -33,7 +33,7 @@ val of_constr : Constrexpr.constr_expr -> raw_tacexpr
 
 val of_open_constr : Constrexpr.constr_expr -> raw_tacexpr
 
-val of_list : ?loc:Loc.t -> raw_tacexpr list -> raw_tacexpr
+val of_list : ?loc:Loc.t -> ('a -> raw_tacexpr) -> 'a list -> raw_tacexpr
 
 val of_bindings : bindings -> raw_tacexpr
 
@@ -41,7 +41,7 @@ val of_intro_pattern : intro_pattern -> raw_tacexpr
 
 val of_intro_patterns : intro_pattern list located -> raw_tacexpr
 
-val of_clause : ?loc:Loc.t -> clause -> raw_tacexpr
+val of_clause : clause -> raw_tacexpr
 
 val of_induction_clause : induction_clause -> raw_tacexpr
 

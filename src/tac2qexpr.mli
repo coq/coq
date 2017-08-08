@@ -60,8 +60,10 @@ type occurrences =
 
 type hyp_location = (occurrences * Id.t located or_anti) * Locus.hyp_location_flag
 
-type clause =
+type clause_r =
   { q_onhyps : hyp_location list option; q_concl_occs : occurrences; }
+
+type clause = clause_r located
 
 type constr_with_bindings = (Constrexpr.constr_expr * bindings) located
 
