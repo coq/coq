@@ -27,6 +27,10 @@ match Control.case t with
   Control.plus (fun _ => s x) (fun e => s (k e))
 end.
 
+Ltac2 fail0 (_ : unit) := Control.zero Tactic_failure.
+
+Ltac2 Notation fail := fail0 ().
+
 Ltac2 try0 t := Control.enter (fun _ => orelse t (fun _ => ())).
 
 Ltac2 Notation try := try0.
@@ -52,6 +56,28 @@ Ltac2 Notation once := Control.once.
 Ltac2 progress0 tac := Control.enter (fun _ => Control.progress tac).
 
 Ltac2 Notation progress := progress0.
+
+Ltac2 rec first0 tacs :=
+match tacs with
+| [] => Control.zero Tactic_failure
+| tac :: tacs => Control.enter (fun _ => orelse tac (fun _ => first0 tacs))
+end.
+
+Ltac2 Notation "first" "[" tacs(list0(thunk(tactic(6)), "|")) "]" := first0 tacs.
+
+Ltac2 complete tac :=
+  let ans := tac () in
+  Control.enter (fun () => Control.zero Tactic_failure);
+  ans.
+
+Ltac2 rec solve0 tacs :=
+match tacs with
+| [] => Control.zero Tactic_failure
+| tac :: tacs =>
+  Control.enter (fun _ => orelse (fun _ => complete tac) (fun _ => first0 tacs))
+end.
+
+Ltac2 Notation "solve" "[" tacs(list0(thunk(tactic(6)), "|")) "]" := solve0 tacs.
 
 Ltac2 time0 tac := Control.time None tac.
 
@@ -254,3 +280,5 @@ Ltac2 Notation etransitivity := Std.etransitivity ().
 Ltac2 Notation admit := Std.admit ().
 
 Ltac2 Notation clear := Std.keep [].
+
+Ltac2 Notation refine := Control.refine.

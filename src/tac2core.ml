@@ -877,7 +877,7 @@ let () = add_scope "tactic" begin function
   let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
 | [SexprInt (loc, n)] ->
-  let () = if n < 0 || n > 5 then scope_fail () in
+  let () = if n < 0 || n > 6 then scope_fail () in
   let scope = Extend.Aentryl (Tac2entries.Pltac.tac2expr, n) in
   let act tac = tac in
   Tac2entries.ScopeRule (scope, act)

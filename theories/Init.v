@@ -60,3 +60,6 @@ Ltac2 Type exn ::= [ Not_found ].
 
 Ltac2 Type exn ::= [ Match_failure ].
 (** Used to signal a pattern didn't match a term. *)
+
+Ltac2 Type exn ::= [ Tactic_failure ].
+(** Generic error for tactic failure. *)
