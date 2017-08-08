@@ -42,6 +42,16 @@ Ltac2 rec repeat0 (t : unit -> unit) :=
 
 Ltac2 Notation repeat := repeat0.
 
+Ltac2 dispatch0 t ((head, tail)) :=
+  match tail with
+  | None => Control.enter (fun _ => t (); Control.dispatch head)
+  | Some tacs =>
+    let ((def, rem)) := tacs in
+    Control.enter (fun _ => t (); Control.extend head def rem)
+  end.
+
+Ltac2 Notation t(thunk(self)) ">" "[" l(dispatch) "]" : 4 := dispatch0 t l.
+
 Ltac2 do0 n t :=
   let rec aux n t := match Int.equal n 0 with
   | true => ()

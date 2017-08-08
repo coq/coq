@@ -96,3 +96,7 @@ type rewriting_r = {
 }
 
 type rewriting = rewriting_r located
+
+type dispatch_r = raw_tacexpr option list * (raw_tacexpr option * raw_tacexpr option list) option
+
+type dispatch = dispatch_r located

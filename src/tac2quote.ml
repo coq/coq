@@ -230,3 +230,12 @@ let of_exact_hyp ?loc id =
   let loc = Option.default dummy_loc loc in
   let refine = CTacRef (AbsKn (TacConstant (control_core "refine"))) in
   CTacApp (loc, refine, [thunk (of_hyp ~loc id)])
+
+let of_dispatch tacs =
+  let loc = Option.default dummy_loc (fst tacs) in
+  let default = function
+  | Some e -> thunk e
+  | None -> thunk (CTacCst (loc, AbsKn (Tuple 0)))
+  in
+  let map e = of_pair default (fun l -> of_list ~loc default l) (Loc.tag ~loc e) in
+  of_pair (fun l -> of_list ~loc default l) (fun r -> of_option ~loc map r) tacs

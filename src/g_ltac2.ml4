@@ -107,6 +107,7 @@ GEXTEND Gram
       | "match"; e = tac2expr LEVEL "5"; "with"; bl = branches; "end" ->
          CTacCse (!@loc, e, bl)
       ]
+    | "4" LEFTA [ ]
     | "::" RIGHTA
       [ e1 = tac2expr; "::"; e2 = tac2expr ->
         CTacApp (!@loc, CTacCst (!@loc, AbsKn (Other Tac2core.Core.c_cons)), [e1; e2])
@@ -309,7 +310,7 @@ let loc_of_ne_list l = Loc.merge_opt (fst (List.hd l)) (fst (List.last l))
 
 GEXTEND Gram
   GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause
-          q_rewriting q_clause;
+          q_rewriting q_clause q_dispatch;
   anti:
     [ [ "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id) ] ]
   ;
@@ -539,6 +540,23 @@ GEXTEND Gram
   ;
   q_rewriting:
     [ [ r = oriented_rewriter -> Tac2quote.of_rewriting r ] ]
+  ;
+  tactic_then_last:
+    [ [ "|"; lta = LIST0 OPT tac2expr LEVEL "6" SEP "|" -> lta
+      | -> []
+    ] ]
+  ;
+  tactic_then_gen:
+    [ [ ta = tac2expr; "|"; (first,last) = tactic_then_gen -> (Some ta :: first, last)
+      | ta = tac2expr; ".."; l = tactic_then_last -> ([], Some (Some ta, l))
+      | ".."; l = tactic_then_last -> ([], Some (None, l))
+      | ta = tac2expr -> ([Some ta], None)
+      | "|"; (first,last) = tactic_then_gen -> (None :: first, last)
+      | -> ([None], None)
+    ] ]
+  ;
+  q_dispatch:
+    [ [ d = tactic_then_gen -> Tac2quote.of_dispatch (Loc.tag ~loc:!@loc d) ] ]
   ;
 END
 

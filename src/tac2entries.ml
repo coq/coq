@@ -31,6 +31,7 @@ let q_intropatterns = Pcoq.Gram.entry_create "tactic:q_intropatterns"
 let q_induction_clause = Pcoq.Gram.entry_create "tactic:q_induction_clause"
 let q_rewriting = Pcoq.Gram.entry_create "tactic:q_rewriting"
 let q_clause = Pcoq.Gram.entry_create "tactic:q_clause"
+let q_dispatch = Pcoq.Gram.entry_create "tactic:q_dispatch"
 end
 
 (** Tactic definition *)

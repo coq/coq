@@ -52,3 +52,5 @@ val of_hyp : ?loc:Loc.t -> Id.t located -> raw_tacexpr
 
 val of_exact_hyp : ?loc:Loc.t -> Id.t located -> raw_tacexpr
 (** id ↦ 'Control.refine (fun () => Control.hyp @id') *)
+
+val of_dispatch : dispatch -> raw_tacexpr
