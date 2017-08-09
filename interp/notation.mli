@@ -176,10 +176,10 @@ val scope_class_of_class : Classops.cl_typ -> scope_class
 (** Building notation key *)
 
 type symbol =
-  | Terminal of string
-  | NonTerminal of Id.t
-  | SProdList of Id.t * symbol list
-  | Break of int
+  | Terminal of string              (* an expression including symbols or a simply-quoted ident, e.g. "'U'" or "!" *)
+  | NonTerminal of Id.t             (* an identifier "x" *)
+  | SProdList of Id.t * symbol list (* an expression "x sep .. sep y", remembering x (or y) and sep *)
+  | Break of int                    (* a sequence of blanks > 1, e.g. "   " *)
 
 val symbol_eq : symbol -> symbol -> bool
 

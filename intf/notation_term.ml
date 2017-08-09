@@ -63,7 +63,7 @@ type subscopes = tmp_scope_name option * scope_name list
 type notation_var_instance_type =
   | NtnTypeConstr | NtnTypeOnlyBinder | NtnTypeConstrList | NtnTypeBinderList
 
-(** Type of variables when interpreting a constr_expr as an notation_constr:
+(** Type of variables when interpreting a constr_expr as a notation_constr:
     in a recursive pattern x..y, both x and y carry the individual type
     of each element of the list x..y *)
 type notation_var_internalization_type =

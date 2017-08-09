@@ -338,6 +338,7 @@ let compare_recursive_parts found f f' (iterator,subc) =
 let notation_constr_and_vars_of_glob_constr a =
   let found = ref { vars = []; recursive_term_vars = []; recursive_binders_vars = [] } in
   let has_ltac = ref false in
+  (* Turn a glob_constr into a notation_constr by first trying to find a recursive pattern *)
   let rec aux c =
     let keepfound = !found in
     (* n^2 complexity but small and done only once per notation *)
