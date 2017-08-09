@@ -151,7 +151,7 @@ OPT?=
 # The DYNOBJ and DYNLIB variables are used by "coqdep -dyndep var" in .v.d
 ifeq '$(OPT)' '-byte'
 USEBYTE:=true
-DYNOBJ:=.cmo
+DYNOBJ:=.cma
 DYNLIB:=.cma
 else
 USEBYTE:=
