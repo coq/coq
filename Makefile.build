@@ -540,7 +540,7 @@ MAKE_TSOPTS=-C test-suite -s VERBOSE=$(VERBOSE)
 
 check: validate test-suite
 
-test-suite: world $(ALLSTDLIB).v
+test-suite: world byte $(ALLSTDLIB).v
 	$(MAKE) $(MAKE_TSOPTS) clean
 	$(MAKE) $(MAKE_TSOPTS) all
 
