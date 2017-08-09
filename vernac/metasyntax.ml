@@ -656,8 +656,10 @@ let make_production etyps symbols =
             let p,l' = include_possible_similar_trailing_pattern typ etyps sl l in
             expand_list_rule typ tkl x 1 p (aux l')
         | ETBinder o ->
+            check_open_binder o sl x;
+            let typ = if o then (assert (tkl = []); ETBinderOpen) else ETBinderClosed tkl in
 	    distribute
-              [GramConstrNonTerminal (ETBinderList (o,tkl), Some x)] (aux l)
+              [GramConstrNonTerminal (ETBinderList typ, Some x)] (aux l)
         | _ ->
            user_err Pp.(str "Components of recursive patterns in notation must be terms or binders.") in
   let prods = aux symbols in

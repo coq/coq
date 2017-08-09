@@ -232,8 +232,8 @@ type (_, _) entry =
 | TTBinder : ('self, local_binder_expr list) entry
 | TTConstr : prod_info * 'r target -> ('r, 'r) entry
 | TTConstrList : prod_info * Tok.t list * 'r target -> ('r, 'r list) entry
-| TTBinderListT : ('self, local_binder_expr list) entry
-| TTBinderListF : Tok.t list -> ('self, local_binder_expr list list) entry
+| TTOpenBinderList : ('self, local_binder_expr list) entry
+| TTClosedBinderList : Tok.t list -> ('self, local_binder_expr list list) entry
 
 type _ any_entry = TTAny : ('s, 'r) entry -> 's any_entry
 
@@ -289,11 +289,11 @@ let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) symbol = fun as
   Alist1 (symbol_of_target typ' assoc from forpat)
 | TTConstrList (typ', tkl, forpat) ->
   Alist1sep (symbol_of_target typ' assoc from forpat, make_sep_rules tkl)
-| TTBinderListF [] -> Alist1 (Aentry Constr.binder)
-| TTBinderListF tkl -> Alist1sep (Aentry Constr.binder, make_sep_rules tkl)
+| TTClosedBinderList [] -> Alist1 (Aentry Constr.binder)
+| TTClosedBinderList tkl -> Alist1sep (Aentry Constr.binder, make_sep_rules tkl)
 | TTName -> Aentry Prim.name
 | TTBinder -> Aentry Constr.binder
-| TTBinderListT -> Aentry Constr.open_binders
+| TTOpenBinderList -> Aentry Constr.open_binders
 | TTBigint -> Aentry Prim.bigint
 | TTReference -> Aentry Constr.global
 
@@ -307,9 +307,8 @@ let interp_entry forpat e = match e with
 | ETPattern -> assert false (** not used *)
 | ETOther _ -> assert false (** not used *)
 | ETConstrList (p, tkl) -> TTAny (TTConstrList (p, tkl, forpat))
-| ETBinderList (true, []) -> TTAny TTBinderListT
-| ETBinderList (true, _) -> assert false
-| ETBinderList (false, tkl) -> TTAny (TTBinderListF tkl)
+| ETBinderList ETBinderOpen -> TTAny TTOpenBinderList
+| ETBinderList (ETBinderClosed tkl) -> TTAny (TTClosedBinderList tkl)
 
 let constr_expr_of_name (loc,na) = CAst.make ?loc @@ match na with
   | Anonymous -> CHole (None,Misctypes.IntroAnonymous,None)
@@ -336,8 +335,8 @@ match e with
   | ForPattern -> push_constr subst (cases_pattern_expr_of_name v)
   end
 | TTBinder -> { subst with binders = (v, true) :: subst.binders }
-| TTBinderListT -> { subst with binders = (v, true) :: subst.binders }
-| TTBinderListF _ -> { subst with binders = (List.flatten v, false) :: subst.binders }
+| TTOpenBinderList -> { subst with binders = (v, true) :: subst.binders }
+| TTClosedBinderList _ -> { subst with binders = (List.flatten v, false) :: subst.binders }
 | TTBigint ->
   begin match forpat with
   | ForConstr ->  push_constr subst (CAst.make @@ CPrim (Numeral (v,true)))

@@ -29,6 +29,8 @@ type production_level =
   | NextLevel
   | NumLevel of int
 
+type binder_entry_kind = ETBinderOpen | ETBinderClosed of Tok.t list
+
 type ('lev,'pos) constr_entry_key_gen =
   | ETName | ETReference | ETBigint
   | ETBinder of bool
@@ -36,7 +38,7 @@ type ('lev,'pos) constr_entry_key_gen =
   | ETPattern
   | ETOther of string * string
   | ETConstrList of ('lev * 'pos) * Tok.t list
-  | ETBinderList of bool * Tok.t list
+  | ETBinderList of binder_entry_kind
 
 (** Entries level (left-hand-side of grammar rules) *)
 
