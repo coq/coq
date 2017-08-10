@@ -1295,8 +1295,8 @@ let rec rebuild_return_type rt =
         CAst.make ?loc @@ Constrexpr.CProdN(n,rebuild_return_type t')
     | Constrexpr.CLetIn(na,v,t,t') ->
 	CAst.make ?loc @@ Constrexpr.CLetIn(na,v,t,rebuild_return_type t')
-    | _ -> CAst.make ?loc @@ Constrexpr.CProdN([[Loc.tag Anonymous],
-				       Constrexpr.Default Decl_kinds.Explicit, rt],
+    | _ -> CAst.make ?loc @@ Constrexpr.CProdN([Constrexpr.CLocalAssum ([Loc.tag Anonymous],
+                                       Constrexpr.Default Decl_kinds.Explicit, rt)],
 			    CAst.make @@ Constrexpr.CSort(GType []))
 
 let do_build_inductive
@@ -1356,7 +1356,7 @@ let do_build_inductive
 			      acc)
 	  | None ->
 	     CAst.make @@ Constrexpr.CProdN
-	       ([[(Loc.tag n)],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t],
+               ([Constrexpr.CLocalAssum([(Loc.tag n)],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t)],
 		acc
 	       )
 	)
@@ -1423,7 +1423,7 @@ let do_build_inductive
 			    acc)
 	 | None ->
            CAst.make @@ Constrexpr.CProdN
-	   ([[(Loc.tag n)],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t],
+           ([Constrexpr.CLocalAssum([(Loc.tag n)],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t)],
 	    acc
 	   )
       )

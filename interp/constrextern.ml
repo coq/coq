@@ -533,6 +533,10 @@ let occur_name na aty =
     | Name id -> occur_var_constr_expr id aty
     | Anonymous -> false
 
+let is_gvar id c = match DAst.get c with
+| GVar id' -> Id.equal id id'
+| _ -> false
+
 let is_projection nargs = function
   | Some r when not !Flags.in_debugger && not !Flags.raw_print && !print_projections ->
     (try
@@ -817,13 +821,11 @@ let rec extern inctx scopes vars r =
 
   | GProd (na,bk,t,c) ->
       let t = extern_typ scopes vars t in
-      let (idl,c) = factorize_prod scopes (add_vname vars na) na bk t c in
-      CProdN ([(Loc.tag na)::idl,Default bk,t],c)
+      factorize_prod scopes (add_vname vars na) na bk t c
 
   | GLambda (na,bk,t,c) ->
       let t = extern_typ scopes vars t in
-      let (idl,c) = factorize_lambda inctx scopes (add_vname vars na) na bk t c in
-      CLambdaN ([(Loc.tag na)::idl,Default bk,t],c)
+      factorize_lambda inctx scopes (add_vname vars na) na bk t c
 
   | GCases (sty,rtntypopt,tml,eqns) ->
     let vars' =
@@ -919,24 +921,48 @@ and extern_typ (_,scopes) =
 and sub_extern inctx (_,scopes) = extern inctx (None,scopes)
 
 and factorize_prod scopes vars na bk aty c =
-  let c = extern_typ scopes vars c in
-  match na, c with
-  | Name id, { CAst.loc ; v = CProdN ([nal,Default bk',ty],c) }
-      when binding_kind_eq bk bk' && constr_expr_eq aty ty
-      && not (occur_var_constr_expr id ty) (* avoid na in ty escapes scope *) ->
-      nal,c
-  | _ ->
-      [],c
+  match na, DAst.get c with
+  | Name id, GCases (LetPatternStyle, None, [(e,(Anonymous,None))],[(_,(_,[p],b))])
+         when is_gvar id e && not (occur_glob_constr id b) ->
+      let b = extern_typ scopes vars b in
+      let p = extern_cases_pattern_in_scope scopes vars p in
+      let binder = CLocalPattern (c.loc,(p,None)) in
+      (match b.v with
+      | CProdN (bl,b) -> CProdN (binder::bl,b)
+      | _ -> CProdN ([binder],b))
+  | _, _ ->
+      let c = extern_typ scopes vars c in
+      match na, c.v with
+      | Name id, CProdN (CLocalAssum(nal,Default bk',ty)::bl,b)
+           when binding_kind_eq bk bk' && constr_expr_eq aty ty
+                && not (occur_var_constr_expr id ty) (* avoid na in ty escapes scope *) ->
+         CProdN (CLocalAssum(Loc.tag na::nal,Default bk,aty)::bl,b)
+      | _, CProdN (bl,b) ->
+         CProdN (CLocalAssum([Loc.tag na],Default bk,aty)::bl,b)
+      | _, _ ->
+         CProdN ([CLocalAssum([Loc.tag na],Default bk,aty)],c)
 
 and factorize_lambda inctx scopes vars na bk aty c =
-  let c = sub_extern inctx scopes vars c in
-  match c with
-  | { CAst.loc; v = CLambdaN ([nal,Default bk',ty],c) }
-      when binding_kind_eq bk bk' && constr_expr_eq aty ty
-      && not (occur_name na ty) (* avoid na in ty escapes scope *) ->
-      nal,c
-  | _ ->
-      [],c
+  match na, DAst.get c with
+  | Name id, GCases (LetPatternStyle, None, [(e,(Anonymous,None))],[(_,(_,[p],b))])
+         when is_gvar id e && not (occur_glob_constr id b) ->
+      let b = sub_extern inctx scopes vars b in
+      let p = extern_cases_pattern_in_scope scopes vars p in
+      let binder = CLocalPattern (c.loc,(p,None)) in
+      (match b.v with
+      | CLambdaN (bl,b) -> CLambdaN (binder::bl,b)
+      | _ -> CLambdaN ([binder],b))
+  | _, _ ->
+      let c = sub_extern inctx scopes vars c in
+      match c.v with
+      | CLambdaN (CLocalAssum(nal,Default bk',ty)::bl,b)
+           when binding_kind_eq bk bk' && constr_expr_eq aty ty
+                && not (occur_name na ty) (* avoid na in ty escapes scope *) ->
+         CLambdaN (CLocalAssum(Loc.tag na::nal,Default bk,aty)::bl,b)
+      | CLambdaN (bl,b) ->
+         CLambdaN (CLocalAssum([Loc.tag na],Default bk,aty)::bl,b)
+      | _ ->
+         CLambdaN ([CLocalAssum([Loc.tag na],Default bk,aty)],c)
 
 and extern_local_binder scopes vars = function
     [] -> ([],[],[])

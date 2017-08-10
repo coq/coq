@@ -70,8 +70,8 @@ and constr_expr_r =
   | CRef     of reference * instance_expr option
   | CFix     of Id.t Loc.located * fix_expr list
   | CCoFix   of Id.t Loc.located * cofix_expr list
-  | CProdN   of binder_expr list * constr_expr
-  | CLambdaN of binder_expr list * constr_expr
+  | CProdN   of local_binder_expr list * constr_expr
+  | CLambdaN of local_binder_expr list * constr_expr
   | CLetIn   of Name.t Loc.located * constr_expr * constr_expr option * constr_expr
   | CAppExpl of (proj_flag * reference * instance_expr option) * constr_expr list
   | CApp     of (proj_flag * constr_expr) *
@@ -106,9 +106,6 @@ and case_expr = constr_expr                 (* expression that is being matched 
 
 and branch_expr =
   (cases_pattern_expr list list * constr_expr) Loc.located
-
-and binder_expr =
-  Name.t Loc.located list * binder_kind * constr_expr
 
 and fix_expr =
     Id.t Loc.located * (Id.t Loc.located option * recursion_order_expr) *

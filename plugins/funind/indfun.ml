@@ -591,11 +591,11 @@ and rebuild_nal aux bk bl' nal typ =
 	match nal,typ with 
 	  | _,{ CAst.v = CProdN([],typ) } -> rebuild_nal aux bk bl' nal typ
 	  | [], _ -> rebuild_bl aux bl' typ
-	  | na::nal,{ CAst.v = CProdN((na'::nal',bk',nal't)::rest,typ') } ->
+          | na::nal,{ CAst.v = CProdN(CLocalAssum(na'::nal',bk',nal't)::rest,typ') } ->
 	     if Name.equal (snd na) (snd na') || Name.is_anonymous (snd na')
 	     then
 	       let assum = CLocalAssum([na],bk,nal't) in
-	       let new_rest = if nal' = [] then rest else ((nal',bk',nal't)::rest) in 
+               let new_rest = if nal' = [] then rest else (CLocalAssum(nal',bk',nal't)::rest) in
 	       rebuild_nal
 		 (assum::aux)
 		 bk
@@ -604,7 +604,7 @@ and rebuild_nal aux bk bl' nal typ =
 		 (CAst.make @@ CProdN(new_rest,typ'))
 	     else
 	       let assum = CLocalAssum([na'],bk,nal't) in
-	       let new_rest = if nal' = [] then rest else ((nal',bk',nal't)::rest) in 
+               let new_rest = if nal' = [] then rest else (CLocalAssum(nal',bk',nal't)::rest) in
 	       rebuild_nal
 		 (assum::aux)
 		 bk
@@ -731,10 +731,14 @@ let rec add_args id new_args = CAst.map (function
       end
   | CFix  _  | CCoFix _ -> anomaly ~label:"add_args " (Pp.str "todo.")
   | CProdN(nal,b1) ->
-        CProdN(List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args b2)) nal,
+        CProdN(List.map (function  CLocalAssum (nal,k,b2) -> CLocalAssum (nal,k,add_args id new_args b2)
+                                 | CLocalDef (na,b1,t) -> CLocalDef (na,add_args id new_args b1,Option.map (add_args id new_args) t)
+                                 | CLocalPattern _ -> user_err (Pp.str "pattern with quote not allowed here.")) nal,
 	     add_args id new_args  b1)
   | CLambdaN(nal,b1) ->
-      CLambdaN(List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args  b2)) nal,
+      CLambdaN(List.map (function  CLocalAssum (nal,k,b2) -> CLocalAssum (nal,k,add_args id new_args b2)
+                                 | CLocalDef (na,b1,t) -> CLocalDef (na,add_args id new_args b1,Option.map (add_args id new_args) t)
+                                 | CLocalPattern _ -> user_err (Pp.str "pattern with quote not allowed here.")) nal,
 	       add_args id new_args  b1)
   | CLetIn(na,b1,t,b2) ->
       CLetIn(na,add_args id new_args b1,Option.map (add_args id new_args) t,add_args id new_args b2)
@@ -793,7 +797,7 @@ let rec chop_n_arrow n t =
   then t (* If we have already removed all the arrows then return the type *)
   else (* If not we check the form of [t] *)
     match t.CAst.v with
-      | Constrexpr.CProdN(nal_ta',t') -> (* If we have a forall, to result are possible :
+      | Constrexpr.CProdN(nal_ta',t') -> (* If we have a forall, two results are possible :
 					     either we need to discard more than the number of arrows contained
 					     in this product declaration then we just recall [chop_n_arrow] on
 					     the remaining number of arrow to chop and [t'] we discard it and
@@ -805,7 +809,7 @@ let rec chop_n_arrow n t =
 	      let new_n =
 		let rec aux (n:int) = function
 		    [] -> n
-		| (nal,k,t'')::nal_ta' ->
+                | CLocalAssum(nal,k,t'')::nal_ta' ->
 		    let nal_l = List.length nal in
 		    if n >= nal_l
 		    then
@@ -813,9 +817,10 @@ let rec chop_n_arrow n t =
 		    else
 		      let new_t' = CAst.make @@
 			Constrexpr.CProdN(
-					((snd (List.chop n nal)),k,t'')::nal_ta',t')
+                                        CLocalAssum((snd (List.chop n nal)),k,t'')::nal_ta',t')
 		      in
 		      raise (Stop new_t')
+                | _ -> anomaly (Pp.str "Not enough products.")
 		in
 		aux n nal_ta'
 	    in
@@ -828,16 +833,13 @@ let rec chop_n_arrow n t =
 let rec get_args b t : Constrexpr.local_binder_expr list *
     Constrexpr.constr_expr * Constrexpr.constr_expr =
   match b.CAst.v with
-    | Constrexpr.CLambdaN ((nal_ta), b') ->
+    | Constrexpr.CLambdaN (CLocalAssum(nal,k,ta) as d::rest, b') ->
 	begin
-	  let n =
-	    (List.fold_left (fun n (nal,_,_) ->
-			       n+List.length nal) 0 nal_ta )
-	  in
-	  let nal_tas,b'',t'' = get_args b' (chop_n_arrow n t) in
-	  (List.map (fun (nal,k,ta) ->
-		       (Constrexpr.CLocalAssum (nal,k,ta))) nal_ta)@nal_tas, b'',t''
+          let n = List.length nal in
+          let nal_tas,b'',t'' = get_args (CAst.make ?loc:b.CAst.loc @@ Constrexpr.CLambdaN (rest,b')) (chop_n_arrow n t) in
+          d :: nal_tas, b'',t''
 	end
+    | Constrexpr.CLambdaN ([], b) -> [],b,t
     | _ -> [],b,t
 
 

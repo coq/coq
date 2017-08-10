@@ -1023,10 +1023,10 @@ let rec format_local_binders h0 bl0 = match h0, bl0 with
   | _ -> []
   
 let rec format_constr_expr h0 c0 = let open CAst in match h0, c0 with
-  | BFvar :: h, { v = CLambdaN ([[_, x], _, _], c) } ->
+  | BFvar :: h, { v = CLambdaN ([CLocalAssum([_, x], _, _)], c) } ->
     let bs, c' = format_constr_expr h c in
     Bvar x :: bs, c'
-  | BFdecl _:: h, { v = CLambdaN ([lxs, _, t], c) } ->
+  | BFdecl _:: h, { v = CLambdaN ([CLocalAssum(lxs, _, t)], c) } ->
     let bs, c' = format_constr_expr h c in
     Bdecl (List.map snd lxs, t) :: bs, c'
   | BFdef :: h, { v = CLetIn((_, x), v, oty, c) } ->
@@ -1165,20 +1165,20 @@ ARGUMENT EXTEND ssrbinder TYPED AS ssrfwdfmt * constr PRINTED BY pr_ssrbinder
  | [ ssrbvar(bv) ] ->
    [ let xloc, _ as x = bvar_lname bv in
      (FwdPose, [BFvar]),
-     CAst.make ~loc @@ CLambdaN ([[x],Default Explicit,mkCHole xloc],mkCHole (Some loc)) ]
+     CAst.make ~loc @@ CLambdaN ([CLocalAssum([x],Default Explicit,mkCHole xloc)],mkCHole (Some loc)) ]
  | [ "(" ssrbvar(bv) ")" ] ->
    [ let xloc, _ as x = bvar_lname bv in
      (FwdPose, [BFvar]),
-     CAst.make ~loc @@ CLambdaN ([[x],Default Explicit,mkCHole xloc],mkCHole (Some loc)) ]
+     CAst.make ~loc @@ CLambdaN ([CLocalAssum([x],Default Explicit,mkCHole xloc)],mkCHole (Some loc)) ]
  | [ "(" ssrbvar(bv) ":" lconstr(t) ")" ] ->
    [ let x = bvar_lname bv in
      (FwdPose, [BFdecl 1]),
-     CAst.make ~loc @@ CLambdaN ([[x], Default Explicit, t], mkCHole (Some loc)) ]
+     CAst.make ~loc @@ CLambdaN ([CLocalAssum([x], Default Explicit, t)], mkCHole (Some loc)) ]
  | [ "(" ssrbvar(bv) ne_ssrbvar_list(bvs) ":" lconstr(t) ")" ] ->
    [ let xs = List.map bvar_lname (bv :: bvs) in
      let n = List.length xs in
      (FwdPose, [BFdecl n]),
-     CAst.make ~loc @@ CLambdaN ([xs, Default Explicit, t], mkCHole (Some loc)) ]
+     CAst.make ~loc @@ CLambdaN ([CLocalAssum (xs, Default Explicit, t)], mkCHole (Some loc)) ]
  | [ "(" ssrbvar(id) ":" lconstr(t) ":=" lconstr(v) ")" ] ->
    [ (FwdPose,[BFdef]), CAst.make ~loc @@ CLetIn (bvar_lname id, v, Some t, mkCHole (Some loc)) ]
  | [ "(" ssrbvar(id) ":=" lconstr(v) ")" ] ->
@@ -1191,7 +1191,7 @@ GEXTEND Gram
   [  ["of" | "&"]; c = operconstr LEVEL "99" ->
      let loc = !@loc in
      (FwdPose, [BFvar]),
-     CAst.make ~loc @@ CLambdaN ([[Loc.tag ~loc Anonymous],Default Explicit,c],mkCHole (Some loc)) ]
+     CAst.make ~loc @@ CLambdaN ([CLocalAssum ([Loc.tag ~loc Anonymous],Default Explicit,c)],mkCHole (Some loc)) ]
   ];
 END
 
@@ -1217,7 +1217,7 @@ let push_binders c2 bs =
   | ct -> loop false ct bs
 
 let rec fix_binders = let open CAst in function
-  | (_, { v = CLambdaN ([xs, _, t], _) } ) :: bs ->
+  | (_, { v = CLambdaN ([CLocalAssum(xs, _, t)], _) } ) :: bs ->
       CLocalAssum (xs, Default Explicit, t) :: fix_binders bs
   | (_, { v = CLetIn (x, v, oty, _) } ) :: bs ->
     CLocalDef (x, v, oty) :: fix_binders bs
@@ -1325,13 +1325,13 @@ let intro_id_to_binder = List.map (function
   | IPatId id ->
       let xloc, _ as x = bvar_lname (mkCVar id) in
       (FwdPose, [BFvar]),
-        CAst.make @@ CLambdaN ([[x], Default Explicit, mkCHole xloc],
+        CAst.make @@ CLambdaN ([CLocalAssum([x], Default Explicit, mkCHole xloc)],
           mkCHole None)
   | _ -> anomaly "non-id accepted as binder")
 
 let binder_to_intro_id = CAst.(List.map (function
-  | (FwdPose, [BFvar]), { v = CLambdaN ([ids,_,_],_) }
-  | (FwdPose, [BFdecl _]), { v = CLambdaN ([ids,_,_],_) } ->
+  | (FwdPose, [BFvar]), { v = CLambdaN ([CLocalAssum(ids,_,_)],_) }
+  | (FwdPose, [BFdecl _]), { v = CLambdaN ([CLocalAssum(ids,_,_)],_) } ->
       List.map (function (_, Name id) -> IPatId id | _ -> IPatAnon One) ids
   | (FwdPose, [BFdef]), { v = CLetIn ((_,Name id),_,_,_) } -> [IPatId id]
   | (FwdPose, [BFdef]), { v = CLetIn ((_,Anonymous),_,_,_) } -> [IPatAnon One]

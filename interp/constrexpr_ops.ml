@@ -112,10 +112,10 @@ let rec constr_expr_eq e1 e2 =
       eq_located Id.equal id1 id2 &&
       List.equal cofix_expr_eq fl1 fl2
     | CProdN(bl1,a1), CProdN(bl2,a2) ->
-      List.equal binder_expr_eq bl1 bl2 &&
+      List.equal local_binder_eq bl1 bl2 &&
       constr_expr_eq a1 a2
     | CLambdaN(bl1,a1), CLambdaN(bl2,a2) ->
-      List.equal binder_expr_eq bl1 bl2 &&
+      List.equal local_binder_eq bl1 bl2 &&
       constr_expr_eq a1 a2
     | CLetIn((_,na1),a1,t1,b1), CLetIn((_,na2),a2,t2,b2) ->
       Name.equal na1 na2 &&
@@ -192,10 +192,6 @@ and case_expr_eq (e1, n1, p1) (e2, n2, p2) =
 and branch_expr_eq (_, (p1, e1)) (_, (p2, e2)) =
   List.equal (List.equal cases_pattern_expr_eq) p1 p2 &&
   constr_expr_eq e1 e2
-
-and binder_expr_eq ((n1, _, e1) : binder_expr) (n2, _, e2) =
-  (** Don't care about the [binder_kind] *)
-  List.equal (eq_located Name.equal) n1 n2 && constr_expr_eq e1 e2
 
 and fix_expr_eq (id1,(j1, r1),bl1,a1,b1) (id2,(j2, r2),bl2,a2,b2) =
   (eq_located Id.equal id1 id2) &&
@@ -307,14 +303,6 @@ let ids_of_cases_tomatch tms =
          (Option.fold_right (down_located (Name.fold_right Id.Set.add)) ona l))
     tms Id.Set.empty
 
-let rec fold_constr_expr_binders g f n acc b = function
-  | (nal,bk,t)::l ->
-    let nal = snd (List.split nal) in
-    let n' = List.fold_right (Name.fold_right g) nal n in
-    f n (fold_constr_expr_binders g f n' acc b l) t
-  | [] ->
-    f n acc b
-
 let rec fold_local_binders g f n acc b = function
   | CLocalAssum (nal,bk,t)::l ->
     let nal = snd (List.split nal) in
@@ -331,7 +319,7 @@ let rec fold_local_binders g f n acc b = function
 let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
     | CAppExpl ((_,_,_),l) -> List.fold_left (f n) acc l
     | CApp ((_,t),l) -> List.fold_left (f n) (f n acc t) (List.map fst l)
-    | CProdN (l,b) | CLambdaN (l,b) -> fold_constr_expr_binders g f n acc b l
+    | CProdN (l,b) | CLambdaN (l,b) -> fold_local_binders g f n acc b l
     | CLetIn (na,a,t,b) ->
       f (Name.fold_right g (snd na) n) (Option.fold_left (f n) (f n acc a) t) b
     | CCast (a,(CastConv b|CastVM b|CastNative b)) -> f n (f n acc a) b
@@ -382,12 +370,6 @@ let occur_var_constr_expr id c = Id.Set.mem id (free_vars_of_constr_expr c)
 (* Used in correctness and interface *)
 let map_binder g e nal = List.fold_right (down_located (Name.fold_right g)) nal e
 
-let map_binders f g e bl =
-  (* TODO: avoid variable capture in [t] by some [na] in [List.tl nal] *)
-  let h (e,bl) (nal,bk,t) = (map_binder g e nal,(nal,bk,f e t)::bl) in
-  let (e,rbl) = List.fold_left h (e,[]) bl in
-  (e, List.rev rbl)
-
 let map_local_binders f g e bl =
   (* TODO: avoid variable capture in [t] by some [na] in [List.tl nal] *)
   let h (e,bl) = function
@@ -406,9 +388,9 @@ let map_constr_expr_with_binders g f e = CAst.map (function
     | CApp ((p,a),l) ->
       CApp ((p,f e a),List.map (fun (a,i) -> (f e a,i)) l)
     | CProdN (bl,b) ->
-      let (e,bl) = map_binders f g e bl in CProdN (bl,f e b)
+      let (e,bl) = map_local_binders f g e bl in CProdN (bl,f e b)
     | CLambdaN (bl,b) ->
-      let (e,bl) = map_binders f g e bl in CLambdaN (bl,f e b)
+      let (e,bl) = map_local_binders f g e bl in CLambdaN (bl,f e b)
     | CLetIn (na,a,t,b) ->
       CLetIn (na,f e a,Option.map (f e) t,f (Name.fold_right g (snd na) e) b)
     | CCast (a,c) -> CCast (f e a, Miscops.map_cast_type (f e) c)
@@ -529,9 +511,9 @@ let split_at_annot bl na =
 let mkIdentC id   = CAst.make @@ CRef (Ident (Loc.tag id),None)
 let mkRefC r      = CAst.make @@ CRef (r,None)
 let mkCastC (a,k) = CAst.make @@ CCast (a,k)
-let mkLambdaC (idl,bk,a,b) = CAst.make @@ CLambdaN ([idl,bk,a],b)
+let mkLambdaC (idl,bk,a,b) = CAst.make @@ CLambdaN ([CLocalAssum (idl,bk,a)],b)
 let mkLetInC  (id,a,t,b)   = CAst.make @@ CLetIn (id,a,t,b)
-let mkProdC   (idl,bk,a,b) = CAst.make @@ CProdN ([idl,bk,a],b)
+let mkProdC   (idl,bk,a,b) = CAst.make @@ CProdN ([CLocalAssum (idl,bk,a)],b)
 
 let mkAppC (f,l) =
   let l = List.map (fun x -> (x,None)) l in
@@ -539,56 +521,11 @@ let mkAppC (f,l) =
   | CApp (g,l') -> CAst.make @@ CApp (g, l' @ l)
   | _           -> CAst.make @@ CApp ((None, f), l)
 
-let add_name_in_env env n =
-  match snd n with
-  | Anonymous -> env
-  | Name id -> id :: env
-
-let fresh_var env c =
-  Namegen.next_ident_away (Id.of_string "pat")
-    (List.fold_left (fun accu id -> Id.Set.add id accu) (free_vars_of_constr_expr c) env)
-
-let expand_binders ?loc mkC bl c =
-  let rec loop ?loc bl c =
-    match bl with
-    | [] -> ([], c)
-    | b :: bl ->
-      match b with
-      | CLocalDef ((loc1,_) as n, oty, b) ->
-        let env, c = loop ?loc:(Loc.merge_opt loc1 loc) bl c in
-        let env = add_name_in_env env n in
-        (env, CAst.make ?loc @@ CLetIn (n,oty,b,c))
-      | CLocalAssum ((loc1,_)::_ as nl, bk, t) ->
-        let env, c = loop ?loc:(Loc.merge_opt loc1 loc) bl c in
-        let env = List.fold_left add_name_in_env env nl in
-        (env, mkC ?loc (nl,bk,t) c)
-      | CLocalAssum ([],_,_) -> loop ?loc bl c
-      | CLocalPattern (loc1, (p, ty)) ->
-        let env, c = loop ?loc:(Loc.merge_opt loc1 loc) bl c in
-        let ni = fresh_var env c in
-        let id = (loc1, Name ni) in
-        let ty = match ty with
-          | Some ty -> ty
-          | None -> CAst.make ?loc:loc1 @@ CHole (None, IntroAnonymous, None)
-        in
-        let e = CAst.make @@ CRef (Libnames.Ident (loc1, ni), None) in
-        let c = CAst.make ?loc @@
-          CCases
-            (LetPatternStyle, None, [(e,None,None)],
-             [(Loc.tag ?loc:loc1 ([[p]], c))])
-        in
-        (ni :: env, mkC ?loc ([id],Default Explicit,ty) c)
-  in
-  let (_, c) = loop ?loc bl c in
-  c
-
 let mkCProdN ?loc bll c =
-  let mk ?loc b c = CAst.make ?loc @@ CProdN ([b],c) in
-  expand_binders ?loc mk bll c
+  CAst.make ?loc @@ CProdN (bll,c)
 
 let mkCLambdaN ?loc bll c =
-  let mk ?loc b c = CAst.make ?loc @@ CLambdaN ([b],c) in
-  expand_binders ?loc mk bll c
+  CAst.make ?loc @@ CLambdaN (bll,c)
 
 let coerce_reference_to_id = function
   | Ident (_,id) -> id

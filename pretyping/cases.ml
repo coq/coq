@@ -450,11 +450,6 @@ let current_pattern eqn =
     | pat::_ -> pat
     | [] -> anomaly (Pp.str "Empty list of patterns.")
 
-let alias_of_pat = DAst.with_val (function
-  | PatVar name -> name
-  | PatCstr(_,_,name) -> name
-  )
-
 let remove_current_pattern eqn =
   match eqn.patterns with
     | pat::pats ->

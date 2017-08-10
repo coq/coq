@@ -302,15 +302,8 @@ let set_type_scope env = {env with tmp_scope = Notation.current_type_scope_name 
 
 let reset_tmp_scope env = {env with tmp_scope = None}
 
-let rec it_mkGProd ?loc env body =
-  match env with
-      (loc2, (na, bk, t)) :: tl -> it_mkGProd ?loc:loc2 tl (DAst.make ?loc:(Loc.merge_opt loc loc2) @@ GProd (na, bk, t, body))
-    | [] -> body
-
-let rec it_mkGLambda ?loc env body =
-  match env with
-      (loc2, (na, bk, t)) :: tl -> it_mkGLambda ?loc:loc2 tl (DAst.make ?loc:(Loc.merge_opt loc loc2) @@ GLambda (na, bk, t, body))
-    | [] -> body
+let mkGProd ?loc (na,bk,t) body = DAst.make ?loc @@ GProd (na, bk, t, body)
+let mkGLambda ?loc (na,bk,t) body = DAst.make ?loc @@ GLambda (na, bk, t, body)
 
 (**********************************************************************)
 (* Utilities for binders                                              *)
@@ -507,6 +500,20 @@ let intern_generalization intern env lvar loc bk ak c =
 	let env' = push_name_env lvar (Variable,[],[],[]) env (loc, Name id) in
 	  (env', abs lid acc)) fvs (env,c)
   in c'
+
+let rec expand_binders ?loc mk bl c =
+  match bl with
+  | [] -> c
+  | b :: bl ->
+     match DAst.get b with
+     | GLocalDef (n, bk, b, oty) ->
+        expand_binders ?loc mk bl (DAst.make ?loc @@ GLetIn (n, b, oty, c))
+     | GLocalAssum (n, bk, t) ->
+        expand_binders ?loc mk bl (mk ?loc (n,bk,t) c)
+     | GLocalPattern ((pat,ids), id, bk, ty) ->
+        let tm = DAst.make ?loc (GVar id) in
+        let c = DAst.make ?loc @@ GCases (Misctypes.LetPatternStyle, None, [tm,(Anonymous,None)], [loc,(ids,[pat], c)]) in
+        expand_binders ?loc mk bl (mk ?loc (Name id,Explicit,ty) c)
 
 (**********************************************************************)
 (* Syntax extensions                                                  *)
@@ -1697,14 +1704,15 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
               Array.map (fun (bl,_,_) -> bl) idl,
               Array.map (fun (_,ty,_) -> ty) idl,
               Array.map (fun (_,_,bd) -> bd) idl)
-    | CProdN ([],c2) ->
-        intern_type env c2
-    | CProdN ((nal,bk,ty)::bll,c2) ->
-        iterate_prod ?loc env bk ty (CAst.make ?loc @@ CProdN (bll, c2)) nal
+    | CProdN (bl,c2) ->
+        let (env',bl) = List.fold_left intern_local_binder (env,[]) bl in
+        expand_binders ?loc mkGProd bl (intern_type env' c2)
     | CLambdaN ([],c2) ->
+        (* Such a term is built sometimes: it should not change scope *)
         intern env c2
-    | CLambdaN ((nal,bk,ty)::bll,c2) ->
-	iterate_lam loc (reset_tmp_scope env) bk ty (CAst.make ?loc @@ CLambdaN (bll, c2)) nal
+    | CLambdaN (bl,c2) ->
+        let (env',bl) = List.fold_left intern_local_binder (reset_tmp_scope env,[]) bl in
+        expand_binders ?loc mkGLambda bl (intern env' c2)
     | CLetIn (na,c1,t,c2) ->
 	let inc1 = intern (reset_tmp_scope env) c1 in
 	let int = Option.map (intern_type env) t in
@@ -1978,14 +1986,6 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | None ->
       [], None in
     (tm',(snd na,typ)), extra_id, match_td
-
-  and iterate_prod ?loc env bk ty body nal =
-    let env, bl = intern_assumption intern ntnvars env nal bk ty in
-    it_mkGProd ?loc bl (intern_type env body)
-
-  and iterate_lam loc env bk ty body nal =
-    let env, bl = intern_assumption intern ntnvars env nal bk ty in
-    it_mkGLambda ?loc bl (intern env body)
 
   and intern_impargs c env l subscopes args =
     let eargs, rargs = extract_explicit_arg l args in

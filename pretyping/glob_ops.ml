@@ -19,6 +19,11 @@ open Ltac_pretype
 
 let cases_pattern_loc c = c.CAst.loc
 
+let alias_of_pat pat = DAst.with_val (function
+  | PatVar name -> name
+  | PatCstr(_,_,name) -> name
+  ) pat
+
 let cases_predicate_names tml =
   List.flatten (List.map (function
     | (tm,(na,None)) -> [na]
