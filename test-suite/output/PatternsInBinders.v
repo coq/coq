@@ -67,3 +67,8 @@ End Suboptimal.
 
 (** Test risk of collision for internal name *)
 Check fun pat => fun '(x,y) => x+y = pat.
+
+(** Test name in degenerate case *)
+Definition f 'x := x+x.
+Print f.
+Check fun 'x => x+x.

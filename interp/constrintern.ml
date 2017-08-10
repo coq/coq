@@ -461,7 +461,9 @@ let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = functio
         | _ -> assert false
       in
       let env = {env with ids = List.fold_right Id.Set.add il env.ids} in
-      let id = Namegen.next_ident_away (Id.of_string "pat") env.ids in
+      let na = alias_of_pat cp in
+      let ienv = Name.fold_right Id.Set.remove na env.ids in
+      let id = Namegen.next_name_away_with_default "pat" (alias_of_pat cp) ienv in
       let na = (loc, Name id) in
       let bk = Default Explicit in
       let _, bl' = intern_assumption intern lvar env [na] bk tyc in
