@@ -18,7 +18,7 @@ When it applies, it's extremely helpful for bug reports to include sample code, 
 
 ## Pull requests
 
-Sometimes you are able to contribute a bug fix or improvement yourself, and pull requests are the mechanism to get these changes into Coq. Documentation for getting started with the Coq sources is located at `dev/doc`.
+Sometimes you are able to contribute a bug fix or improvement yourself, and pull requests are the mechanism to get these changes into Coq. Documentation for getting started with the Coq sources is located at [`dev/doc`](/dev/doc).
 
 Please make pull requests against the `master` branch.
 
@@ -38,10 +38,12 @@ Currently the process for contributing to the documentation is the same as for c
 
 Bugzilla includes a component to mark bugs related to documentation. You can view a list of documentation-related bugs using a [Bugzilla search](https://coq.inria.fr/bugs/buglist.cgi?component=Doc&list_id=455006&product=Coq&resolution=---). Many of these bugs can be fixed by contributing writing, without knowledge of Coq's OCaml source code.
 
-The sources for the [Coq reference manual](https://coq.inria.fr/distrib/current/refman/) are at [`doc/refman`](https://github.com/coq/coq/tree/master/doc/refman). These are written in LaTeX and compiled to HTML with [HeVeA](http://hevea.inria.fr/).
+The sources for the [Coq reference manual](https://coq.inria.fr/distrib/current/refman/) are at [`doc/refman`](/doc/refman). These are written in LaTeX and compiled to HTML with [HeVeA](http://hevea.inria.fr/).
 
 ## Contributing outside this repository
 
 There are many useful ways to contribute to the Coq ecosystem that don't involve the Coq repository.
 
 Tutorials to teach Coq, and especially to teach particular advanced features, would be much appreciated. We don't yet have a good process or home for these tutorials, but are open to suggestions.
+
+Subscribe to the [coq-club](https://coq.inria.fr/community) mailing list and answer questions there. Asking your own questions on the mailing list will also help others learn from the answers, which often come from experts in the community.
