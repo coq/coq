@@ -12,7 +12,7 @@ Bug reports are enormously useful to identify issues with Coq; we can't fix what
 - An error message that wasn't as helpful as you'd like. Bonus points for suggesting what information would have helped you.
 - Bugs in CoqIDE should also be filed on the Bugzilla. Bugs in the Emacs plugin should be filed against [ProofGeneral](https://github.com/ProofGeneral/PG/issues), or against [company-coq](https://github.com/cpitclaudel/company-coq/issues) if they are specific to company-coq features.
 
-It would help if you searched the existing issues to see if someone has already reported your error. This can be difficult and the search feature isn't as powerful as we'd like, so consider this extra credit. We don't mind duplicate bug reports.
+It would help if you search the existing issues before reporting a bug. This can be difficult, so consider it extra credit. We don't mind duplicate bug reports.
 
 When it applies, it's extremely helpful for bug reports to include sample code, and much better if the code is self-contained and complete. It's not necessary to minimize your bug or identify precisely where the issue is, since someone else can often do this if you include a complete example. We tend to include the code in the bug description itself, but if you have a very large input file then you can add it as an attachment.
 
