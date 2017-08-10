@@ -18,7 +18,7 @@ When it applies, it's extremely helpful for bug reports to include sample code, 
 
 ## Pull requests
 
-Sometimes you are able to contribute a bug fix or improvement yourself, and pull requests are the mechanism to get these changes into Coq. Documentation for getting started with the Coq sources is located at [`dev/doc`](/dev/doc).
+If you want to contribute a bug fix or feature yourself, pull requests on the [GitHub repository](https://github.com/coq/coq) are the way to contribute directly to the Coq implementation. Documentation for getting started with the Coq sources is located in various files in [`dev/doc`](/dev/doc) (for example, [debugging.txt](/dev/doc/debugging.txt)).
 
 Please make pull requests against the `master` branch.
 
