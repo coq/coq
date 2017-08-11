@@ -376,7 +376,7 @@ let push_name_env ?(global_level=false) ntnvars implargs env =
       else Dumpglob.dump_binding ?loc id;
       {env with ids = Id.Set.add id env.ids; impls = Id.Map.add id implargs env.impls}
 
-let intern_generalized_binder ?(global_level=false) intern_type lvar
+let intern_generalized_binder ?(global_level=false) intern_type ntnvars
     env (loc, na) b b' t ty =
   let ids = (match na with Anonymous -> fun x -> x | Name na -> Id.Set.add na) env.ids in
   let ty, ids' =
@@ -387,7 +387,7 @@ let intern_generalized_binder ?(global_level=false) intern_type lvar
   let ty' = intern_type {env with ids = ids; unb = true} ty in
   let fvs = Implicit_quantifiers.generalizable_vars_of_glob_constr ~bound:ids ~allowed:ids' ty' in
   let env' = List.fold_left
-    (fun env (l, x) -> push_name_env ~global_level lvar (Variable,[],[],[])(*?*) env (l, Name x))
+    (fun env (l, x) -> push_name_env ~global_level ntnvars (Variable,[],[],[])(*?*) env (l, Name x))
     env fvs in
   let bl = List.map
     (fun (loc, id) ->
@@ -406,9 +406,9 @@ let intern_generalized_binder ?(global_level=false) intern_type lvar
 	    in Implicit_quantifiers.make_fresh ids' (Global.env ()) id
 	  in Name name
     | _ -> na
-  in (push_name_env ~global_level lvar (impls_type_list ty')(*?*) env' (loc,na)), (loc,(na,b',ty')) :: List.rev bl
+  in (push_name_env ~global_level ntnvars (impls_type_list ty')(*?*) env' (loc,na)), (loc,(na,b',ty')) :: List.rev bl
 
-let intern_assumption intern lvar env nal bk ty =
+let intern_assumption intern ntnvars env nal bk ty =
   let intern_type env = intern (set_type_scope env) in
   match bk with
   | Default k ->
@@ -417,11 +417,11 @@ let intern_assumption intern lvar env nal bk ty =
       let impls = impls_type_list ty in
       List.fold_left
 	(fun (env, bl) (loc, na as locna) ->
-          (push_name_env lvar impls env locna,
+          (push_name_env ntnvars impls env locna,
            (Loc.tag ?loc (na,k,locate_if_hole ?loc na ty))::bl))
 	(env, []) nal
   | Generalized (b,b',t) ->
-     let env, b = intern_generalized_binder intern_type lvar env (List.hd nal) b b' t ty in
+     let env, b = intern_generalized_binder intern_type ntnvars env (List.hd nal) b b' t ty in
      env, b
 
 let glob_local_binder_of_extended = DAst.with_loc_val (fun ?loc -> function
@@ -436,15 +436,15 @@ let glob_local_binder_of_extended = DAst.with_loc_val (fun ?loc -> function
 
 let intern_cases_pattern_fwd = ref (fun _ -> failwith "intern_cases_pattern_fwd")
 
-let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = function
+let intern_local_binder_aux ?(global_level=false) intern ntnvars (env,bl) = function
   | CLocalAssum(nal,bk,ty) ->
-      let env, bl' = intern_assumption intern lvar env nal bk ty in
+      let env, bl' = intern_assumption intern ntnvars env nal bk ty in
       let bl' = List.map (fun (loc,(na,c,t)) -> DAst.make ?loc @@ GLocalAssum (na,c,t)) bl' in
       env, bl' @ bl
   | CLocalDef((loc,na as locna),def,ty) ->
      let term = intern env def in
      let ty = Option.map (intern env) ty in
-      (push_name_env lvar (impls_term_list term) env locna,
+      (push_name_env ntnvars (impls_term_list term) env locna,
        (DAst.make ?loc @@ GLocalDef (na,Explicit,term,ty)) :: bl)
   | CLocalPattern (loc,(p,ty)) ->
       let tyc =
@@ -466,11 +466,11 @@ let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = functio
       let id = Namegen.next_name_away_with_default "pat" (alias_of_pat cp) ienv in
       let na = (loc, Name id) in
       let bk = Default Explicit in
-      let _, bl' = intern_assumption intern lvar env [na] bk tyc in
+      let _, bl' = intern_assumption intern ntnvars env [na] bk tyc in
       let _,(_,bk,t) = List.hd bl' in
       (env, (DAst.make ?loc @@ GLocalPattern((cp,il),id,bk,t)) :: bl)
 
-let intern_generalization intern env lvar loc bk ak c =
+let intern_generalization intern env ntnvars loc bk ak c =
   let c = intern {env with unb = true} c in
   let fvs = Implicit_quantifiers.generalizable_vars_of_glob_constr ~bound:env.ids c in
   let env', c' =
@@ -499,7 +499,7 @@ let intern_generalization intern env lvar loc bk ak c =
 	    GLambda (Name id, bk, DAst.make ?loc:loc' @@ GHole (Evar_kinds.BinderType (Name id), Misctypes.IntroAnonymous, None), acc))
     in
       List.fold_right (fun (loc, id as lid) (env, acc) ->
-	let env' = push_name_env lvar (Variable,[],[],[]) env (loc, Name id) in
+        let env' = push_name_env ntnvars (Variable,[],[],[]) env (loc, Name id) in
 	  (env', abs lid acc)) fvs (env,c)
   in c'
 
@@ -729,7 +729,7 @@ let make_subst ids l =
   let fold accu (id, scl) a = Id.Map.add id (a, scl) accu in
   List.fold_left2 fold Id.Map.empty ids l
 
-let intern_notation intern env lvar loc ntn fullargs =
+let intern_notation intern env ntnvars loc ntn fullargs =
   let ntn,(args,argslist,bll as fullargs) = contract_notation ntn fullargs in
   let ((ids,c),df) = interp_notation ?loc ntn (env.tmp_scope,env.scopes) in
   Dumpglob.dump_notation_location (ntn_loc ?loc fullargs ntn) ntn df;
@@ -737,7 +737,7 @@ let intern_notation intern env lvar loc ntn fullargs =
   let terms = make_subst ids args in
   let termlists = make_subst idsl argslist in
   let binders = make_subst idsbl bll in
-  instantiate_notation_constr loc intern lvar
+  instantiate_notation_constr loc intern ntnvars
     (terms, termlists, binders) (Id.Map.empty, env) c
 
 (**********************************************************************)
@@ -755,17 +755,17 @@ let gvar (loc, id) us = match us with
   user_err ?loc  (str "Variable " ++ Id.print id ++
     str " cannot have a universe instance")
 
-let intern_var genv (ltacvars,ntnvars) namedctx loc id us =
+let intern_var env (ltacvars,ntnvars) namedctx loc id us =
   (* Is [id] a notation variable *)
   if Id.Map.mem id ntnvars then
     begin
-      if not (Id.Map.mem id genv.impls) then set_var_scope ?loc id true genv ntnvars;
+      if not (Id.Map.mem id env.impls) then set_var_scope ?loc id true env ntnvars;
       gvar (loc,id) us, [], [], []
     end
   else
   (* Is [id] registered with implicit arguments *)
   try
-    let ty,expl_impls,impls,argsc = Id.Map.find id genv.impls in
+    let ty,expl_impls,impls,argsc = Id.Map.find id env.impls in
     let expl_impls = List.map
       (fun id -> CAst.make ?loc @@ CRef (Ident (loc,id),None), Some (loc,ExplByName id)) expl_impls in
     let tys = string_of_ty ty in
@@ -773,7 +773,7 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id us =
     gvar (loc,id) us, make_implicits_list impls, argsc, expl_impls
   with Not_found ->
   (* Is [id] bound in current term or is an ltac var bound to constr *)
-  if Id.Set.mem id genv.ids || Id.Set.mem id ltacvars.ltac_vars
+  if Id.Set.mem id env.ids || Id.Set.mem id ltacvars.ltac_vars
   then
     gvar (loc,id) us, [], [], []
   else if Id.equal id ldots_var
@@ -858,7 +858,7 @@ let glob_sort_of_level (level: Misctypes.glob_level) : Misctypes.glob_sort =
   | Misctypes.GType info -> Misctypes.GType [sort_info_of_level_info info]
 
 (* Is it a global reference or a syntactic definition? *)
-let intern_qualid loc qid intern env lvar us args =
+let intern_qualid loc qid intern env ntnvars us args =
   match intern_extended_global_of_qualid (loc,qid) with
   | TrueGlobal ref -> (DAst.make ?loc @@ GRef (ref, us)), true, args
   | SynDef sp ->
@@ -871,7 +871,7 @@ let intern_qualid loc qid intern env lvar us args =
       let subst = (terms, Id.Map.empty, Id.Map.empty) in
       let infos = (Id.Map.empty, env) in
       let projapp = match c with NRef _ -> true | _ -> false in
-      let c = instantiate_notation_constr loc intern lvar subst infos c in
+      let c = instantiate_notation_constr loc intern ntnvars subst infos c in
       let loc = c.CAst.loc in
       let err () =
         user_err ?loc  (str "Notation " ++ pr_qualid qid
@@ -897,8 +897,8 @@ let intern_qualid loc qid intern env lvar us args =
       c, projapp, args2
 
 (* Rule out section vars since these should have been found by intern_var *)
-let intern_non_secvar_qualid loc qid intern env lvar us args =
-  let c, _, _ as r = intern_qualid loc qid intern env lvar us args in
+let intern_non_secvar_qualid loc qid intern env ntnvars us args =
+  let c, _, _ as r = intern_qualid loc qid intern env ntnvars us args in
   match DAst.get c with
     | GRef (VarRef _, _) -> raise Not_found
     | _ -> r
