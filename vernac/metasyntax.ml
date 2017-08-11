@@ -574,8 +574,8 @@ let hunks_of_format (from,(vars,typs)) symfmt =
 let assoc_of_type n (_,typ) = precedence_of_entry_type n typ
 
 let is_not_small_constr = function
-    ETConstr _ -> true
-  | ETOther("constr","binder_constr") -> true
+    ETProdConstr _ -> true
+  | ETProdOther("constr","binder_constr") -> true
   | _ -> false
 
 let rec define_keywords_aux = function
@@ -607,14 +607,14 @@ let distribute a ll = List.map (fun l -> a @ l) ll
 
 let expand_list_rule typ tkl x n p ll =
   let camlp5_message_name = Some (add_suffix x ("_"^string_of_int n)) in
-  let main = GramConstrNonTerminal (ETConstr typ, camlp5_message_name) in
+  let main = GramConstrNonTerminal (ETProdConstr typ, camlp5_message_name) in
   let tks = List.map (fun x -> GramConstrTerminal x) tkl in
   let rec aux i hds ll =
   if i < p then aux (i+1) (main :: tks @ hds) ll
   else if Int.equal i (p+n) then
     let hds =
       GramConstrListMark (p+n,true,p) :: hds
-      @	[GramConstrNonTerminal (ETConstrList (typ,tkl), Some x)] in
+      @	[GramConstrNonTerminal (ETProdConstrList (typ,tkl), Some x)] in
     distribute hds ll
   else
     distribute (GramConstrListMark (i+1,false,p) :: hds @ [main]) ll @
@@ -636,12 +636,21 @@ let include_possible_similar_trailing_pattern typ etyps sl l =
     with Exit -> n,l in
   try_aux 0 l
 
+let prod_entry_type = function
+  | ETName -> ETProdName
+  | ETReference -> ETProdReference
+  | ETBigint -> ETProdBigint
+  | ETBinder _ -> assert false (* See check_binder_type *)
+  | ETConstr p -> ETProdConstr p
+  | ETPattern -> ETProdPattern
+  | ETOther (s,t) -> ETProdOther (s,t)
+
 let make_production etyps symbols =
   let rec aux = function
     | [] -> [[]]
     | NonTerminal m :: l ->
         let typ = List.assoc m etyps in
-        distribute [GramConstrNonTerminal (typ, Some m)] (aux l)
+        distribute [GramConstrNonTerminal (prod_entry_type typ, Some m)] (aux l)
     | Terminal s :: l ->
         distribute [GramConstrTerminal (CLexer.terminal s)] (aux l)
     | Break _ :: l ->
@@ -658,8 +667,8 @@ let make_production etyps symbols =
         | ETBinder o ->
             check_open_binder o sl x;
             let typ = if o then (assert (tkl = []); ETBinderOpen) else ETBinderClosed tkl in
-	    distribute
-              [GramConstrNonTerminal (ETBinderList typ, Some x)] (aux l)
+            distribute
+              [GramConstrNonTerminal (ETProdBinderList typ, Some x)] (aux l)
         | _ ->
            user_err Pp.(str "Components of recursive patterns in notation must be terms or binders.") in
   let prods = aux symbols in
@@ -909,7 +918,6 @@ let set_entry_type etyps (x,typ) =
       | ETConstr (n,()), (_,InternalProd) -> ETConstr (n,InternalProd)
       | (ETPattern | ETName | ETBigint | ETOther _ |
 	 ETReference | ETBinder _ as t), _ -> t
-      | (ETBinderList _ |ETConstrList _), _ -> assert false
     with Not_found -> ETConstr typ
   in (x,typ)
 
@@ -934,7 +942,6 @@ let internalization_type_of_entry_type = function
   | ETBinder _ -> NtnInternTypeBinder
   | ETName -> NtnInternTypeIdent
   | ETPattern | ETOther _ -> user_err Pp.(str "Not supported.")
-  | ETBinderList _ | ETConstrList _ -> assert false
 
 let set_internalization_type typs =
   List.map (fun (_, e) -> internalization_type_of_entry_type e) typs
@@ -1039,8 +1046,6 @@ let find_precedence lev etyps symbols onlyprint =
 	    if Option.is_empty lev then
 	      user_err Pp.(str "Need an explicit level.")
 	    else [],Option.get lev
-        | ETConstrList _ | ETBinderList _ ->
-	    assert false (* internally used in grammar only *)
       with Not_found ->
 	if Option.is_empty lev then
 	  user_err Pp.(str "A left-recursive notation must have an explicit level.")

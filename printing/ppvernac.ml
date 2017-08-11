@@ -102,7 +102,6 @@ open Decl_kinds
     | ETBigint -> str "bigint"
     | ETBinder true -> str "binder"
     | ETBinder false -> str "closed binder"
-    | ETBinderList _ | ETConstrList _ -> failwith "Internal entry type"
 
   let pr_comment pr_c = function
     | CommentConstr c -> pr_c c

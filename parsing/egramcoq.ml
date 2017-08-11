@@ -229,7 +229,6 @@ type (_, _) entry =
 | TTName : ('self, Name.t Loc.located) entry
 | TTReference : ('self, reference) entry
 | TTBigint : ('self, Constrexpr.raw_natural_number) entry
-| TTBinder : ('self, local_binder_expr list) entry
 | TTConstr : prod_info * 'r target -> ('r, 'r) entry
 | TTConstrList : prod_info * Tok.t list * 'r target -> ('r, 'r list) entry
 | TTOpenBinderList : ('self, local_binder_expr list) entry
@@ -292,23 +291,20 @@ let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) symbol = fun as
 | TTClosedBinderList [] -> Alist1 (Aentry Constr.binder)
 | TTClosedBinderList tkl -> Alist1sep (Aentry Constr.binder, make_sep_rules tkl)
 | TTName -> Aentry Prim.name
-| TTBinder -> Aentry Constr.binder
 | TTOpenBinderList -> Aentry Constr.open_binders
 | TTBigint -> Aentry Prim.bigint
 | TTReference -> Aentry Constr.global
 
 let interp_entry forpat e = match e with
-| ETName -> TTAny TTName
-| ETReference -> TTAny TTReference
-| ETBigint -> TTAny TTBigint
-| ETBinder true -> anomaly (Pp.str "Should occur only as part of BinderList.")
-| ETBinder false  -> TTAny TTBinder
-| ETConstr p -> TTAny (TTConstr (p, forpat))
-| ETPattern -> assert false (** not used *)
-| ETOther _ -> assert false (** not used *)
-| ETConstrList (p, tkl) -> TTAny (TTConstrList (p, tkl, forpat))
-| ETBinderList ETBinderOpen -> TTAny TTOpenBinderList
-| ETBinderList (ETBinderClosed tkl) -> TTAny (TTClosedBinderList tkl)
+| ETProdName -> TTAny TTName
+| ETProdReference -> TTAny TTReference
+| ETProdBigint -> TTAny TTBigint
+| ETProdConstr p -> TTAny (TTConstr (p, forpat))
+| ETProdPattern -> assert false (** not used *)
+| ETProdOther _ -> assert false (** not used *)
+| ETProdConstrList (p, tkl) -> TTAny (TTConstrList (p, tkl, forpat))
+| ETProdBinderList ETBinderOpen -> TTAny TTOpenBinderList
+| ETProdBinderList (ETBinderClosed tkl) -> TTAny (TTClosedBinderList tkl)
 
 let constr_expr_of_name (loc,na) = CAst.make ?loc @@ match na with
   | Anonymous -> CHole (None,Misctypes.IntroAnonymous,None)
@@ -334,7 +330,6 @@ match e with
   | ForConstr -> push_constr subst (constr_expr_of_name v)
   | ForPattern -> push_constr subst (cases_pattern_expr_of_name v)
   end
-| TTBinder -> { subst with binders = (v, true) :: subst.binders }
 | TTOpenBinderList -> { subst with binders = (v, true) :: subst.binders }
 | TTClosedBinderList _ -> { subst with binders = (List.flatten v, false) :: subst.binders }
 | TTBigint ->
