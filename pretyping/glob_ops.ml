@@ -457,6 +457,10 @@ let rec rename_glob_vars l c = force @@ DAst.map_with_loc (fun ?loc -> function
 (**********************************************************************)
 (* Conversion from glob_constr to cases pattern, if possible            *)
 
+let is_gvar id c = match DAst.get c with
+| GVar id' -> Id.equal id id'
+| _ -> false
+
 let rec cases_pattern_of_glob_constr na = DAst.map (function
   | GVar id ->
     begin match na with
@@ -473,6 +477,9 @@ let rec cases_pattern_of_glob_constr na = DAst.map (function
       PatCstr (cstr,List.map (cases_pattern_of_glob_constr Anonymous) l,na)
     | _ -> raise Not_found
     end
+  | GLetIn (Name id as na',b,None,e) when is_gvar id e && na = Anonymous ->
+     (* A canonical encoding of aliases *)
+     DAst.get (cases_pattern_of_glob_constr na' b)
   | _ -> raise Not_found
   )
 
