@@ -317,7 +317,7 @@ let cases_pattern_expr_of_name (loc,na) = CAst.make ?loc @@ match na with
 type 'r env = {
   constrs : 'r list;
   constrlists : 'r list list;
-  binders : (local_binder_expr list * bool) list;
+  binderlists : (local_binder_expr list * bool) list;
 }
 
 let push_constr subst v = { subst with constrs = v :: subst.constrs }
@@ -330,8 +330,8 @@ match e with
   | ForConstr -> push_constr subst (constr_expr_of_name v)
   | ForPattern -> push_constr subst (cases_pattern_expr_of_name v)
   end
-| TTOpenBinderList -> { subst with binders = (v, true) :: subst.binders }
-| TTClosedBinderList _ -> { subst with binders = (List.flatten v, false) :: subst.binders }
+| TTOpenBinderList -> { subst with binderlists = (v, true) :: subst.binderlists }
+| TTClosedBinderList _ -> { subst with binderlists = (List.flatten v, false) :: subst.binderlists }
 | TTBigint ->
   begin match forpat with
   | ForConstr ->  push_constr subst (CAst.make @@ CPrim (Numeral (v,true)))
@@ -431,10 +431,10 @@ let rec pure_sublevels : type a b c. int option -> (a, b, c) rule -> int list = 
 
 let make_act : type r. r target -> _ -> r gen_eval = function
 | ForConstr -> fun notation loc env ->
-  let env = (env.constrs, env.constrlists, List.map fst env.binders) in
+  let env = (env.constrs, env.constrlists, List.map fst env.binderlists) in
   CAst.make ~loc @@ CNotation (notation , env)
 | ForPattern -> fun notation loc env ->
-  let invalid = List.exists (fun (_, b) -> not b) env.binders in
+  let invalid = List.exists (fun (_, b) -> not b) env.binderlists in
   let () = if invalid then Constrexpr_ops.error_invalid_pattern_notation ~loc () in
   let env = (env.constrs, env.constrlists) in
   CAst.make ~loc @@ CPatNotation (notation, env, [])
@@ -451,7 +451,7 @@ let extend_constr state forpat ng =
     let needed_levels, state = register_empty_levels state isforpat pure_sublevels in
     let (pos,p4assoc,name,reinit), state = find_position state isforpat assoc level in
     let empty_rules = List.map (prepare_empty_levels isforpat) needed_levels in
-    let empty = { constrs = []; constrlists = []; binders = [] } in
+    let empty = { constrs = []; constrlists = []; binderlists = [] } in
     let act = ty_eval r (make_act forpat ng.notgram_notation) empty in
     let rule = (name, p4assoc, [Rule (symbs, act)]) in
     let r = ExtendRule (entry, reinit, (pos, [rule])) in
