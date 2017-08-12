@@ -142,6 +142,7 @@ type evar_info = {
   evar_filter : Filter.t;
   evar_source : Evar_kinds.t Loc.located;
   evar_candidates : constr list option; (* if not None, list of allowed instances *)
+  evar_dependency_cache : Evar.Set.t option;
   evar_extra : Store.t }
 
 let make_evar hyps ccl = {
@@ -151,6 +152,7 @@ let make_evar hyps ccl = {
   evar_filter = Filter.identity;
   evar_source = Loc.tag @@ Evar_kinds.InternalHole;
   evar_candidates = None;
+  evar_dependency_cache = None;
   evar_extra = Store.empty
 }
 
@@ -495,6 +497,8 @@ let mem d e = EvMap.mem e d.undf_evars || EvMap.mem e d.defn_evars
 
 let undefined_map d = d.undf_evars
 
+let update_undefined d e evi = { d with undf_evars = EvMap.add e evi d.undf_evars }
+
 let drop_all_defined d = { d with defn_evars = EvMap.empty }
 
 (* spiwack: not clear what folding over an evar_map, for now we shall
@@ -640,7 +644,8 @@ let define_aux def undef evk body =
         anomaly ~label:"Evd.define" (Pp.str "cannot define undeclared evar.")
   in
   let () = assert (oldinfo.evar_body == Evar_empty) in
-  let newinfo = { oldinfo with evar_body = Evar_defined body } in
+  (* flush the dependency cache to free memory *)
+  let newinfo = { oldinfo with evar_body = Evar_defined body; evar_dependency_cache = None } in
   EvMap.add evk newinfo def, EvMap.remove evk undef
 
 (* define the existential of section path sp as the constr body *)
