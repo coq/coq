@@ -30,7 +30,7 @@ and lambda =
   | Lapp          of lambda * lambda array
   | Lconst        of prefix * pconstant
   | Lproj         of prefix * constant (* prefix, projection name *)
-  | Lprim         of prefix * constant * Primitives.t * lambda array
+  | Lprim         of prefix * constant * CPrimitives.t * lambda array
   | Lcase         of annot_sw * lambda * lambda * lam_branches 
                   (* annotations, term being matched, accu, branches *)
   | Lif           of lambda * lambda * lambda

@@ -296,7 +296,7 @@ type primitive =
   | MLmagic
   | MLarrayget
   | Mk_empty_instance
-  | Coq_primitive of Primitives.t * (prefix * constant) option
+  | Coq_primitive of CPrimitives.t * (prefix * constant) option
 
 let eq_primitive p1 p2 =
   match p1, p2 with
@@ -361,9 +361,9 @@ let primitive_hash = function
   | MLsub -> 33
   | MLmul -> 34
   | MLmagic -> 35
-  | Coq_primitive (prim, None) -> combinesmall 36 (Primitives.hash prim)
+  | Coq_primitive (prim, None) -> combinesmall 36 (CPrimitives.hash prim)
   | Coq_primitive (prim, Some (prefix,kn)) ->
-     combinesmall 37 (combine3 (String.hash prefix) (Constant.hash kn) (Primitives.hash prim))
+     combinesmall 37 (combine3 (String.hash prefix) (Constant.hash kn) (CPrimitives.hash prim))
   | Mk_proj -> 38
   | MLarrayget -> 39
   | Mk_empty_instance -> 40
@@ -921,7 +921,7 @@ let merge_branches t =
 
 
 type prim_aux = 
-  | PAprim of string * constant * Primitives.t * prim_aux array
+  | PAprim of string * constant * CPrimitives.t * prim_aux array
   | PAml of mllambda
 
 let add_check cond args =
@@ -988,11 +988,11 @@ let compile_prim decl cond paux =
         | Int31lt -> 
            if Sys.word_size = 64 then
              app_prim Mk_bool [|(app_prim MLlt (args_to_int args))|]
-           else app_prim (Coq_primitive (Primitives.Int31lt,None)) args
+           else app_prim (Coq_primitive (CPrimitives.Int31lt,None)) args
         | Int31le ->
            if Sys.word_size = 64 then
              app_prim Mk_bool [|(app_prim MLle (args_to_int args))|]
-           else app_prim (Coq_primitive (Primitives.Int31le, None)) args
+           else app_prim (Coq_primitive (CPrimitives.Int31le, None)) args
 	| Int31lsl  -> of_int (mk_lsl (args_to_int args))
 	| Int31lsr  -> of_int (mk_lsr (args_to_int args))
 	| Int31land -> of_int (mk_land (args_to_int args))
@@ -1752,9 +1752,9 @@ let pp_mllam fmt l =
     | MLarrayget -> Format.fprintf fmt "Array.get"
     | Mk_empty_instance -> Format.fprintf fmt "Univ.Instance.empty"
     | Coq_primitive (op,None) ->
-       Format.fprintf fmt "no_check_%s" (Primitives.to_string op)
+       Format.fprintf fmt "no_check_%s" (CPrimitives.to_string op)
     | Coq_primitive (op, Some (prefix,kn)) ->
-        Format.fprintf fmt "%s %a" (Primitives.to_string op)
+        Format.fprintf fmt "%s %a" (CPrimitives.to_string op)
 		       pp_mllam (MLglobal (Gconstant (prefix, kn)))
   in
   Format.fprintf fmt "@[%a@]" pp_mllam l

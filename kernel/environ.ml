@@ -624,39 +624,39 @@ fun rk value field ->
           native_constant_dynamic = Some Nativelambda.compile_dynamic_int31;
         }
     | KInt31 (_, Int31Plus) -> int31_binop_from_const Cbytecodes.Kaddint31
-							  Primitives.Int31add
+							  CPrimitives.Int31add
     | KInt31 (_, Int31PlusC) -> int31_binop_from_const Cbytecodes.Kaddcint31
-							   Primitives.Int31addc
+							   CPrimitives.Int31addc
     | KInt31 (_, Int31PlusCarryC) -> int31_binop_from_const Cbytecodes.Kaddcarrycint31
-								Primitives.Int31addcarryc
+								CPrimitives.Int31addcarryc
     | KInt31 (_, Int31Minus) -> int31_binop_from_const Cbytecodes.Ksubint31
-							   Primitives.Int31sub
+							   CPrimitives.Int31sub
     | KInt31 (_, Int31MinusC) -> int31_binop_from_const Cbytecodes.Ksubcint31
-							    Primitives.Int31subc
+							    CPrimitives.Int31subc
     | KInt31 (_, Int31MinusCarryC) -> int31_binop_from_const
-	                                Cbytecodes.Ksubcarrycint31 Primitives.Int31subcarryc
+	                                Cbytecodes.Ksubcarrycint31 CPrimitives.Int31subcarryc
     | KInt31 (_, Int31Times) -> int31_binop_from_const Cbytecodes.Kmulint31
-							   Primitives.Int31mul
+							   CPrimitives.Int31mul
     | KInt31 (_, Int31TimesC) -> int31_binop_from_const Cbytecodes.Kmulcint31
-							   Primitives.Int31mulc
+							   CPrimitives.Int31mulc
     | KInt31 (_, Int31Div21) -> int31_op_from_const 3 Cbytecodes.Kdiv21int31
-                                                           Primitives.Int31div21
+                                                           CPrimitives.Int31div21
     | KInt31 (_, Int31Diveucl) -> int31_binop_from_const Cbytecodes.Kdivint31
-							 Primitives.Int31diveucl
+							 CPrimitives.Int31diveucl
     | KInt31 (_, Int31AddMulDiv) -> int31_op_from_const 3 Cbytecodes.Kaddmuldivint31
-                                                         Primitives.Int31addmuldiv
+                                                         CPrimitives.Int31addmuldiv
     | KInt31 (_, Int31Compare) -> int31_binop_from_const Cbytecodes.Kcompareint31
-							     Primitives.Int31compare
+							     CPrimitives.Int31compare
     | KInt31 (_, Int31Head0) -> int31_unop_from_const Cbytecodes.Khead0int31
-							  Primitives.Int31head0
+							  CPrimitives.Int31head0
     | KInt31 (_, Int31Tail0) -> int31_unop_from_const Cbytecodes.Ktail0int31
-							  Primitives.Int31tail0
+							  CPrimitives.Int31tail0
     | KInt31 (_, Int31Lor) -> int31_binop_from_const Cbytecodes.Klorint31
-							 Primitives.Int31lor
+							 CPrimitives.Int31lor
     | KInt31 (_, Int31Land) -> int31_binop_from_const Cbytecodes.Klandint31
-							  Primitives.Int31land
+							  CPrimitives.Int31land
     | KInt31 (_, Int31Lxor) -> int31_binop_from_const Cbytecodes.Klxorint31
-							  Primitives.Int31lxor
+							  CPrimitives.Int31lxor
     | _ -> empty_reactive_info
 
 let _ = Hook.set Retroknowledge.dispatch_hook dispatch

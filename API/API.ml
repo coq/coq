@@ -43,7 +43,7 @@ module Cbytecodes = Cbytecodes
 (* module Copcodes *)
 module Cemitcodes = Cemitcodes
 (* module Nativevalues *)
-(* module Primitives *)
+(* module CPrimitives *)
 module Opaqueproof = Opaqueproof
 module Declareops = Declareops
 module Retroknowledge = Retroknowledge
