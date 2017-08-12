@@ -29,7 +29,7 @@ val ldots_var : Id.t
     bound by the notation; also interpret recursive patterns           *)
 
 val notation_constr_of_glob_constr : notation_interp_env ->
-  glob_constr -> notation_constr * reversibility_flag
+  glob_constr -> notation_constr * reversibility_status
 
 (** Re-interpret a notation as a [glob_constr], taking care of binders *)
 

@@ -396,7 +396,7 @@ let notation_constr_and_vars_of_glob_constr a =
   t, !found, !has_ltac
 
 let check_variables_and_reversibility nenv (found,foundrec,foundrecbinding) =
-  let injective = ref true in
+  let injective = ref [] in
   let recvars = nenv.ninterp_rec_vars in
   let fold _ y accu = Id.Set.add y accu in
   let useless_vars = Id.Map.fold fold recvars Id.Set.empty in
@@ -419,7 +419,7 @@ let check_variables_and_reversibility nenv (found,foundrec,foundrecbinding) =
 	user_err Pp.(str
           (Id.to_string x ^
           " should not be bound in a recursive pattern of the right-hand side."))
-      else injective := false
+      else injective := x :: !injective
   in
   let check_pair s x y where =
     if not (List.mem_f (pair_equal Id.equal Id.equal) (x,y) where) then
@@ -440,12 +440,15 @@ let check_variables_and_reversibility nenv (found,foundrec,foundrecbinding) =
 	end
     | NtnInternTypeIdent -> check_bound x in
   Id.Map.iter check_type vars;
-  !injective
+  List.rev !injective
 
 let notation_constr_of_glob_constr nenv a =
   let a, found, has_ltac = notation_constr_and_vars_of_glob_constr a in
   let injective = check_variables_and_reversibility nenv found in
-  a, not has_ltac && injective
+  let status = if has_ltac then HasLtac else match injective with
+  | [] -> APrioriReversible
+  | l -> NonInjective l in
+  a, status
 
 (**********************************************************************)
 (* Substitution of kernel names, avoiding a list of bound identifiers *)

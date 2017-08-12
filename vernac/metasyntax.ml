@@ -979,16 +979,24 @@ let warn_notation_bound_to_variable =
 
 let warn_non_reversible_notation =
   CWarnings.create ~name:"non-reversible-notation" ~category:"parsing"
-         (fun () ->
-          strbrk "This notation will not be used for printing as it is not reversible.")
+         (function
+          | APrioriReversible -> assert false
+          | HasLtac ->
+             strbrk "This notation contains Ltac expressions: it will not be used for printing."
+          | NonInjective ids ->
+             let n = List.length ids in
+             strbrk (String.plural n "Variable") ++ spc () ++ pr_enum Id.print ids ++ spc () ++
+             strbrk (if n > 1 then "do" else "does") ++
+             str " not occur in the right-hand side." ++ spc() ++
+             strbrk "The notation will not be used for printing as it is not reversible.")
 
-let is_not_printable onlyparse nonreversible = function
+let is_not_printable onlyparse reversibility = function
 | NVar _ ->
   if not onlyparse then warn_notation_bound_to_variable ();
   true
 | _ ->
-   if not onlyparse && nonreversible then
-     (warn_non_reversible_notation (); true)
+   if not onlyparse && reversibility <> APrioriReversible then
+     (warn_non_reversible_notation reversibility; true)
   else onlyparse
 
 let find_precedence lev etyps symbols onlyprint =
@@ -1329,10 +1337,10 @@ let add_notation_in_scope local df env c mods scope =
     ninterp_var_type = to_map i_vars;
     ninterp_rec_vars = to_map sd.recvars;
   } in
-  let (acvars, ac, reversible) = interp_notation_constr env nenv c in
+  let (acvars, ac, reversibility) = interp_notation_constr env nenv c in
   let interp = make_interpretation_vars sd.recvars acvars in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
-  let onlyparse = is_not_printable sd.only_parsing (not reversible) ac in
+  let onlyparse = is_not_printable sd.only_parsing reversibility ac in
   let notation = {
     notobj_local = local;
     notobj_scope = scope;
@@ -1368,10 +1376,10 @@ let add_notation_interpretation_core local df env ?(impls=empty_internalization_
     ninterp_var_type = to_map i_vars;
     ninterp_rec_vars = to_map recvars;
   } in
-  let (acvars, ac, reversible) = interp_notation_constr env ~impls nenv c in
+  let (acvars, ac, reversibility) = interp_notation_constr env ~impls nenv c in
   let interp = make_interpretation_vars recvars acvars in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
-  let onlyparse = is_not_printable onlyparse (not reversible) ac in
+  let onlyparse = is_not_printable onlyparse reversibility ac in
   let notation = {
     notobj_local = local;
     notobj_scope = scope;
@@ -1499,9 +1507,8 @@ let try_interp_name_alias = function
   | _ -> raise Not_found
 
 let add_syntactic_definition env ident (vars,c) local onlyparse =
-  let nonprintable = ref false in
-  let vars,pat =
-    try [], NRef (try_interp_name_alias (vars,c))
+  let vars,reversibility,pat =
+    try [], APrioriReversible, NRef (try_interp_name_alias (vars,c))
     with Not_found ->
       let fold accu id = Id.Map.add id NtnInternTypeConstr accu in
       let i_vars = List.fold_left fold Id.Map.empty vars in
@@ -1509,13 +1516,12 @@ let add_syntactic_definition env ident (vars,c) local onlyparse =
         ninterp_var_type = i_vars;
         ninterp_rec_vars = Id.Map.empty;
       } in
-      let nvars, pat, reversible = interp_notation_constr env nenv c in
-      let () = nonprintable := not reversible in
+      let nvars, pat, reversibility = interp_notation_constr env nenv c in
       let map id = let (_,sc,_) = Id.Map.find id nvars in (id, sc) in
-      List.map map vars, pat
+      List.map map vars, reversibility, pat
   in
   let onlyparse = match onlyparse with
-    | None when (is_not_printable false !nonprintable pat) -> Some Flags.Current
+    | None when (is_not_printable false reversibility pat) -> Some Flags.Current
     | p -> p
   in
   Syntax_def.declare_syntactic_definition local ident onlyparse (vars,pat)

@@ -185,7 +185,7 @@ val global_reference_in_absolute_module : DirPath.t -> Id.t -> Globnames.global_
 val interp_notation_constr : env -> ?impls:internalization_env ->
   notation_interp_env -> constr_expr ->
   (bool * subscopes * notation_var_internalization_type) Id.Map.t *
-  notation_constr * reversibility_flag
+  notation_constr * reversibility_status
 
 (** Globalization options *)
 val parsing_explicit : bool ref

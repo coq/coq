@@ -74,7 +74,7 @@ type interpretation =
     (Id.t * (subscopes * notation_var_instance_type)) list *
     notation_constr
 
-type reversibility_flag = bool
+type reversibility_status = APrioriReversible | HasLtac | NonInjective of Id.t list
 
 type notation_interp_env = {
   ninterp_var_type : notation_var_internalization_type Id.Map.t;
