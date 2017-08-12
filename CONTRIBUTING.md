@@ -52,4 +52,6 @@ Tutorials to teach Coq, and especially to teach particular advanced features, wo
 
 Subscribe to the [coq-club](https://coq.inria.fr/community) mailing list and answer questions there. Asking your own questions on the mailing list will also help others learn from the answers, which often come from experts in the community.
 
+Ask and answer questions on [Stack Exchange](https://stackexchange.com/filters/299857/questions-tagged-coq-on-stackexchange-sites) which has a helpful albeit small community of users.
+
 Hang out on the Coq IRC channel, `irc://irc.freenode.net/#coq`, and help answer questions.
