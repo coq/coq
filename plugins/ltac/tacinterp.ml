@@ -2000,7 +2000,7 @@ let lift f = (); fun ist x -> Ftactic.enter begin fun gl ->
   Ftactic.return (f ist env sigma x)
 end
 
-let lifts f = (); fun ist x -> Ftactic.nf_enter begin fun gl ->
+let lifts f = (); fun ist x -> Ftactic.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let (sigma, v) = f ist env sigma x in
