@@ -417,7 +417,7 @@ let warn_notation_overridden =
   CWarnings.create ~name:"notation-overridden" ~category:"parsing"
                    (fun (ntn,which_scope) ->
                     str "Notation" ++ spc () ++ str ntn ++ spc ()
-                    ++ strbrk "was already used" ++ which_scope)
+                    ++ strbrk "was already used" ++ which_scope ++ str ".")
 
 let declare_notation_interpretation ntn scopt pat df ~onlyprint =
   let scope = match scopt with Some s -> s | None -> default_scope in
