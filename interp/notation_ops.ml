@@ -288,28 +288,29 @@ let compare_recursive_parts found f f' (iterator,subc) =
 	user_err ?loc:(subtract_loc loc1 loc2)
           (str "Both ends of the recursive pattern are the same.")
     | Some (x,y,RecursiveTerms lassoc) ->
-        let newfound,x,y,lassoc =
+        let toadd,x,y,lassoc =
           if List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi2 !found) ||
              List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi3 !found)
           then
-            !found,x,y,lassoc
+            None,x,y,lassoc
           else if List.mem_f (pair_equal Id.equal Id.equal) (y,x) (pi2 !found) ||
                   List.mem_f (pair_equal Id.equal Id.equal) (y,x) (pi3 !found)
           then
-            !found,y,x,not lassoc
+            None,y,x,not lassoc
           else
-            (pi1 !found, (x,y) :: pi2 !found, pi3 !found),x,y,lassoc in
+            Some (x,y),x,y,lassoc in
 	let iterator =
 	  f' (if lassoc then iterator
 	      else subst_glob_vars [x, CAst.make @@ GVar y] iterator) in
-	(* found have been collected by compare_constr *)
-	found := newfound;
+	(* found variables have been collected by compare_constr *)
+	found := (List.remove Id.equal y (pi1 !found),
+                  Option.fold_right (fun a l -> a::l) toadd (pi2 !found),
+                  pi3 !found);
 	NList (x,y,iterator,f (Option.get !terminator),lassoc)
     | Some (x,y,RecursiveBinders (t_x,t_y)) ->
-	let newfound = (pi1 !found, pi2 !found, (x,y) :: pi3 !found) in
 	let iterator = f' (subst_glob_vars [x, CAst.make @@ GVar y] iterator) in
 	(* found have been collected by compare_constr *)
-	found := newfound;
+	found := (List.remove Id.equal y (pi1 !found), pi2 !found, (x,y) :: pi3 !found);
 	check_is_hole x t_x;
 	check_is_hole y t_y;
 	NBinderList (x,y,iterator,f (Option.get !terminator))
@@ -334,7 +335,7 @@ let notation_constr_and_vars_of_glob_constr a =
     | _c ->
 	aux' c
   and aux' x = CAst.with_val (function
-  | GVar id -> add_id found id; NVar id
+  | GVar id -> if not (Id.equal id ldots_var) then add_id found id; NVar id
   | GApp (g,args) -> NApp (aux g, List.map aux args)
   | GLambda (na,bk,ty,c) -> add_name found na; NLambda (na,aux ty,aux c)
   | GProd (na,bk,ty,c) -> add_name found na; NProd (na,aux ty,aux c)
