@@ -201,7 +201,13 @@ let glob_constr_of_notation_constr ?loc x =
 (******************************************************************************)
 (* Translating a glob_constr into a notation, interpreting recursive patterns *)
 
-let add_id r id = r := (id :: pi1 !r, pi2 !r, pi3 !r)
+type found_variables = {
+    vars : Id.t list;
+    recursive_term_vars : (Id.t * Id.t) list;
+    recursive_binders_vars : (Id.t * Id.t) list;
+  }
+
+let add_id r id = r := { !r with vars = id :: (!r).vars }
 let add_name r = function Anonymous -> () | Name id -> add_id r id
 
 let is_gvar id c = match DAst.get c with
@@ -301,12 +307,12 @@ let compare_recursive_parts found f f' (iterator,subc) =
           (str "Both ends of the recursive pattern are the same.")
     | Some (x,y,RecursiveTerms lassoc) ->
         let toadd,x,y,lassoc =
-          if List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi2 !found) ||
-             List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi3 !found)
+          if List.mem_f (pair_equal Id.equal Id.equal) (x,y) (!found).recursive_term_vars ||
+             List.mem_f (pair_equal Id.equal Id.equal) (x,y) (!found).recursive_binders_vars
           then
             None,x,y,lassoc
-          else if List.mem_f (pair_equal Id.equal Id.equal) (y,x) (pi2 !found) ||
-                  List.mem_f (pair_equal Id.equal Id.equal) (y,x) (pi3 !found)
+          else if List.mem_f (pair_equal Id.equal Id.equal) (y,x) (!found).recursive_term_vars ||
+                  List.mem_f (pair_equal Id.equal Id.equal) (y,x) (!found).recursive_binders_vars
           then
             None,y,x,not lassoc
           else
@@ -315,14 +321,14 @@ let compare_recursive_parts found f f' (iterator,subc) =
 	  f' (if lassoc then iterator
 	      else subst_glob_vars [x, DAst.make @@ GVar y] iterator) in
 	(* found variables have been collected by compare_constr *)
-	found := (List.remove Id.equal y (pi1 !found),
-                  Option.fold_right (fun a l -> a::l) toadd (pi2 !found),
-                  pi3 !found);
+        found := { !found with vars = List.remove Id.equal y (!found).vars;
+                               recursive_term_vars = Option.fold_right (fun a l -> a::l) toadd (!found).recursive_term_vars };
 	NList (x,y,iterator,f (Option.get !terminator),lassoc)
     | Some (x,y,RecursiveBinders (t_x,t_y)) ->
 	let iterator = f' (subst_glob_vars [x, DAst.make @@ GVar y] iterator) in
 	(* found have been collected by compare_constr *)
-	found := (List.remove Id.equal y (pi1 !found), pi2 !found, (x,y) :: pi3 !found);
+        found := { !found with vars = List.remove Id.equal y (!found).vars;
+                               recursive_binders_vars = (x,y) :: (!found).recursive_binders_vars };
 	check_is_hole x t_x;
 	check_is_hole y t_y;
 	NBinderList (x,y,iterator,f (Option.get !terminator))
@@ -330,7 +336,7 @@ let compare_recursive_parts found f f' (iterator,subc) =
     raise Not_found
 
 let notation_constr_and_vars_of_glob_constr a =
-  let found = ref ([],[],[]) in
+  let found = ref { vars = []; recursive_term_vars = []; recursive_binders_vars = [] } in
   let has_ltac = ref false in
   let rec aux c =
     let keepfound = !found in
@@ -395,7 +401,8 @@ let notation_constr_and_vars_of_glob_constr a =
   (* Side effect *)
   t, !found, !has_ltac
 
-let check_variables_and_reversibility nenv (found,foundrec,foundrecbinding) =
+let check_variables_and_reversibility nenv
+  { vars = found; recursive_term_vars = foundrec; recursive_binders_vars = foundrecbinding } =
   let injective = ref [] in
   let recvars = nenv.ninterp_rec_vars in
   let fold _ y accu = Id.Set.add y accu in
