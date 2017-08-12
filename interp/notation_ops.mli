@@ -52,6 +52,7 @@ exception No_match
 
 val match_notation_constr : bool -> 'a glob_constr_g -> interpretation ->
       ('a glob_constr_g * subscopes) list * ('a glob_constr_g list * subscopes) list *
+      ('a cases_pattern_g * subscopes) list *
       ('a extended_glob_local_binder_g list * subscopes) list
 
 val match_notation_constr_cases_pattern :

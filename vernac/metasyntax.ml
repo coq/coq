@@ -377,8 +377,8 @@ let is_non_terminal = function
   | NonTerminal _ | SProdList _ -> true
   | _ -> false
 
-let is_next_non_terminal = function
-| [] -> false
+let is_next_non_terminal b = function
+| [] -> b
 | pr :: _ -> is_non_terminal pr
 
 let is_next_terminal = function Terminal _ :: _ -> true | _ -> false
@@ -387,8 +387,9 @@ let is_next_break = function Break _ :: _ -> true | _ -> false
 
 let add_break n l = (None,UnpCut (PpBrk(n,0))) :: l
 
-let add_break_if_none n = function
-  | (((_,UnpCut (PpBrk _)) :: _) | []) as l -> l
+let add_break_if_none n b = function
+  | (_,UnpCut (PpBrk _)) :: _ as l -> l
+  | [] when not b -> []
   | l -> (None,UnpCut (PpBrk(n,0))) :: l
 
 let check_open_binder isopen sl m =
@@ -403,45 +404,58 @@ let check_open_binder isopen sl m =
       prlist_with_sep spc pr_token sl
       ++ strbrk "\" is allowed to occur.")
 
+let unparsing_metavar i from typs =
+  match List.nth typs (i-1) with
+  | ETConstr _ | ETReference | ETBigint ->
+     let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
+     UnpMetaVar (i,prec)
+  | ETPattern n ->
+     UnpBinderMetaVar (i,Prec n)
+  | ETName ->
+     UnpBinderMetaVar (i,Prec 0)
+  | ETBinder isopen ->
+     assert false
+  | ETOther _ -> failwith "TODO"
+
 (* Heuristics for building default printing rules *)
 
 let index_id id l = List.index Id.equal id l
 
 let make_hunks etyps symbols from =
   let vars,typs = List.split etyps in
-  let rec make = function
+  let rec make b = function
     | NonTerminal m :: prods ->
 	let i = index_id m vars in
-	let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
-	let u = UnpMetaVar (i,prec) in
-	if is_next_non_terminal prods then
-	  (None,u) :: add_break_if_none 1 (make prods)
+        let u = unparsing_metavar i from typs in
+        if is_next_non_terminal b prods then
+          (None, u) :: add_break_if_none 1 b (make b prods)
 	else
-	  (None,u) :: make_with_space prods
-    | Terminal s :: prods when List.exists is_non_terminal prods ->
+          (None, u) :: make_with_space b prods
+    | Terminal s :: prods
+         when (* true to simulate presence of non-terminal *) b || List.exists is_non_terminal prods ->
         if (is_comma s || is_operator s) then
           (* Always a breakable space after comma or separator *)
-	  (None,UnpTerminal s) :: add_break_if_none 1 (make prods)
+          (None, UnpTerminal s) :: add_break_if_none 1 b (make b prods)
 	else if is_right_bracket s && is_next_terminal prods then
           (* Always no space after right bracked, but possibly a break *)
-	  (None,UnpTerminal s) :: add_break_if_none 0 (make prods)
-        else if is_left_bracket s  && is_next_non_terminal prods then
-	  (None,UnpTerminal s) :: make prods
+          (None, UnpTerminal s) :: add_break_if_none 0 b (make b prods)
+        else if is_left_bracket s  && is_next_non_terminal b prods then
+          (None, UnpTerminal s) :: make b prods
 	else if not (is_next_break prods) then
           (* Add rigid space, no break, unless user asked for something *)
-          (None,UnpTerminal (s^" ")) :: make prods
+          (None, UnpTerminal (s^" ")) :: make b prods
         else
           (* Rely on user spaces *)
-          (None,UnpTerminal s) :: make prods
+          (None, UnpTerminal s) :: make b prods
 
     | Terminal s :: prods ->
         (* Separate but do not cut a trailing sequence of terminal *)
         (match prods with
-        | Terminal _ :: _ -> (None,UnpTerminal (s^" ")) :: make prods
-        | _ -> (None,UnpTerminal s) :: make prods)
+        | Terminal _ :: _ -> (None,UnpTerminal (s^" ")) :: make b prods
+        | _ -> (None,UnpTerminal s) :: make b prods)
 
     | Break n :: prods ->
-	add_break n (make prods)
+        add_break n (make b prods)
 
     | SProdList (m,sl) :: prods ->
 	let i = index_id m vars in
@@ -451,40 +465,40 @@ let make_hunks etyps symbols from =
           (* If no separator: add a break *)
 	  if List.is_empty sl then add_break 1 []
           (* We add NonTerminal for simulation but remove it afterwards *)
-	  else snd (List.sep_last (make (sl@[NonTerminal m]))) in
+          else make true sl in
 	let hunk = match typ with
 	  | ETConstr _ -> UnpListMetaVar (i,prec,List.map snd sl')
 	  | ETBinder isopen ->
 	      check_open_binder isopen sl m;
 	      UnpBinderListMetaVar (i,isopen,List.map snd sl')
 	  | _ -> assert false in
-	(None,hunk) :: make_with_space prods
+        (None, hunk) :: make_with_space b prods
 
     | [] -> []
 
-  and make_with_space prods =
+  and make_with_space b prods =
     match prods with
     | Terminal s' :: prods'->
         if is_operator s' then
           (* A rigid space before operator and a breakable after *)
-          (None,UnpTerminal (" "^s')) :: add_break_if_none 1 (make prods')
+          (None,UnpTerminal (" "^s')) :: add_break_if_none 1 b (make b prods')
         else if is_comma s' then
           (* No space whatsoever before comma *)
-          make prods
+          make b prods
         else if is_right_bracket s' then
-          make prods
+          make b prods
         else
           (* A breakable space between any other two terminals *)
-          add_break_if_none 1 (make prods)
+          add_break_if_none 1 b (make b prods)
     | (NonTerminal _ | SProdList _) :: _ ->
         (* A breakable space before a non-terminal *)
-        add_break_if_none 1 (make prods)
+        add_break_if_none 1 b (make b prods)
     | Break _ :: _ ->
         (* Rely on user wish *)
-        make prods
+        make b prods
     | [] -> []
 
-  in make symbols
+  in make false symbols
 
 (* Build default printing rules from explicit format *)
 
@@ -538,8 +552,7 @@ let hunks_of_format (from,(vars,typs)) symfmt =
       let symbs, l = aux (symbs,fmt) in symbs, UnpTerminal s :: l
   | NonTerminal s :: symbs, (_,UnpTerminal s') :: fmt when Id.equal s (Id.of_string s') ->
       let i = index_id s vars in
-      let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
-      let symbs, l = aux (symbs,fmt) in symbs, UnpMetaVar (i,prec) :: l
+      let symbs, l = aux (symbs,fmt) in symbs, unparsing_metavar i from typs :: l
   | symbs, (_,UnpBox (a,b)) :: fmt ->
       let symbs', b' = aux (symbs,b) in
       let symbs', l = aux (symbs',fmt) in
@@ -642,7 +655,7 @@ let prod_entry_type = function
   | ETBigint -> ETProdBigint
   | ETBinder _ -> assert false (* See check_binder_type *)
   | ETConstr p -> ETProdConstr p
-  | ETPattern -> ETProdPattern
+  | ETPattern n -> ETProdPattern n
   | ETOther (s,t) -> ETProdOther (s,t)
 
 let make_production etyps symbols =
@@ -699,17 +712,14 @@ let recompute_assoc typs =
 (* Registration of syntax extensions (parsing/printing, no interpretation)*)
 
 let pr_arg_level from (lev,typ) =
-  let pplev = match lev with
+  let pplev = function
   | (n,L) when Int.equal n from -> str "at next level"
   | (n,E) -> str "at level " ++ int n
   | (n,L) -> str "at level below " ++ int n
   | (n,Prec m) when Int.equal m n -> str "at level " ++ int n
   | (n,_) -> str "Unknown level" in
-  let pptyp = match typ with
-  | NtnInternTypeConstr -> mt ()
-  | NtnInternTypeBinder -> str " " ++ surround (str "binder")
-  | NtnInternTypeIdent -> str " " ++ surround (str "ident") in
-  pplev ++ pptyp
+  Ppvernac.pr_set_entry_type typ ++
+  (match typ with ETConstr _ | ETPattern _ -> spc () ++ pplev lev | _ -> mt ())
 
 let pr_level ntn (from,args,typs) =
   str "at level " ++ int from ++ spc () ++ str "with arguments" ++ spc() ++
@@ -916,7 +926,7 @@ let set_entry_type etyps (x,typ) =
       | ETConstr (n,()), (_,BorderProd (left,_)) ->
           ETConstr (n,BorderProd (left,None))
       | ETConstr (n,()), (_,InternalProd) -> ETConstr (n,InternalProd)
-      | (ETPattern | ETName | ETBigint | ETOther _ |
+      | (ETPattern _ | ETName | ETBigint | ETOther _ |
 	 ETReference | ETBinder _ as t), _ -> t
     with Not_found -> ETConstr typ
   in (x,typ)
@@ -937,11 +947,9 @@ let join_auxiliary_recursive_types recvars etyps =
     recvars etyps
 
 let internalization_type_of_entry_type = function
-  | ETConstr _ -> NtnInternTypeConstr
-  | ETBigint | ETReference -> NtnInternTypeConstr
-  | ETBinder _ -> NtnInternTypeBinder
-  | ETName -> NtnInternTypeIdent
-  | ETPattern | ETOther _ -> user_err Pp.(str "Not supported.")
+  | ETBinder _ -> NtnInternTypeOnlyBinder
+  | ETConstr _ | ETBigint | ETReference
+  | ETName | ETPattern _ | ETOther _ -> NtnInternTypeAny
 
 let set_internalization_type typs =
   List.map (fun (_, e) -> internalization_type_of_entry_type e) typs
@@ -952,28 +960,32 @@ let make_internalization_vars recvars mainvars typs =
   maintyps @ extratyps
 
 let make_interpretation_type isrec isonlybinding = function
-  | NtnInternTypeConstr when isrec -> NtnTypeConstrList
-  | NtnInternTypeConstr | NtnInternTypeIdent ->
-     if isonlybinding then NtnTypeOnlyBinder else NtnTypeConstr
-  | NtnInternTypeBinder when isrec -> NtnTypeBinderList
-  | NtnInternTypeBinder -> user_err Pp.(str "Type binder is only for use in recursive notations for binders.")
+  | ETConstr _ ->
+     if isrec then NtnTypeConstrList else
+     if isonlybinding then NtnTypeBinder true (* Parsed as constr, but interpreted as binder *)
+     else NtnTypeConstr
+  | ETName | ETPattern _ -> NtnTypeBinder false (* Parsed as ident/pattern, primarily interpreted as binder *)
+  | ETBigint | ETReference | ETOther _ -> NtnTypeConstr
+  | ETBinder _ ->
+     if isrec then NtnTypeBinderList
+     else anomaly Pp.(str "Type binder is only for use in recursive notations for binders.")
 
-let make_interpretation_vars recvars allvars =
+let make_interpretation_vars recvars allvars typs =
   let eq_subscope (sc1, l1) (sc2, l2) =
     Option.equal String.equal sc1 sc2 &&
     List.equal String.equal l1 l2
   in
   let check (x, y) =
-    let (_,scope1, _) = Id.Map.find x allvars in
-    let (_,scope2, _) = Id.Map.find y allvars in
+    let (_,scope1) = Id.Map.find x allvars in
+    let (_,scope2) = Id.Map.find y allvars in
     if not (eq_subscope scope1 scope2) then error_not_same_scope x y
   in
   let () = List.iter check recvars in
   let useless_recvars = List.map snd recvars in
   let mainvars =
     Id.Map.filter (fun x _ -> not (Id.List.mem x useless_recvars)) allvars in
-  Id.Map.mapi (fun x (isonlybinding, sc, typ) ->
-    (sc, make_interpretation_type (Id.List.mem_assoc x recvars) isonlybinding typ)) mainvars
+  Id.Map.mapi (fun x (isonlybinding, sc) ->
+    (sc, make_interpretation_type (Id.List.mem_assoc x recvars) isonlybinding (Id.List.assoc x typs))) mainvars
 
 let check_rule_productivity l =
   if List.for_all (function NonTerminal _ | Break _ -> true | _ -> false) l then
@@ -1042,7 +1054,7 @@ let find_precedence lev etyps symbols onlyprint =
             | _ ->
 	      user_err Pp.(str "A notation starting with an atomic expression must be at level 0.")
             end
-	| ETPattern | ETBinder _ | ETOther _ -> (* Give a default ? *)
+        | ETPattern _ | ETBinder _ | ETOther _ -> (* Give a default ? *)
 	    if Option.is_empty lev then
 	      user_err Pp.(str "Need an explicit level.")
 	    else [],Option.get lev
@@ -1167,7 +1179,7 @@ let compute_syntax_data df modifiers =
   let i_typs = set_internalization_type sy_typs in
   let pa_sy_data = (sy_typs_for_grammar,symbols_for_grammar) in
   let pp_sy_data = (sy_typs,symbols) in
-  let sy_fulldata = (ntn_for_grammar,(n,prec_for_grammar,i_typs),need_squash) in
+  let sy_fulldata = (ntn_for_grammar,(n,prec_for_grammar,List.map snd sy_typs_for_grammar),need_squash) in
   let df' = ((Lib.library_dp(),Lib.current_dirpath true),df) in
   let i_data = ntn_for_interp, df' in
 
@@ -1186,7 +1198,7 @@ let compute_syntax_data df modifiers =
     mainvars;
     intern_typs = i_typs;
 
-    level  = (n,prec,i_typs);
+    level  = (n,prec,List.map snd sy_typs);
     pa_syntax_data = pa_sy_data;
     pp_syntax_data = pp_sy_data;
     not_data    = sy_fulldata;
@@ -1345,7 +1357,7 @@ let add_notation_in_scope local df env c mods scope =
     ninterp_rec_vars = to_map sd.recvars;
   } in
   let (acvars, ac, reversibility) = interp_notation_constr env nenv c in
-  let interp = make_interpretation_vars sd.recvars acvars in
+  let interp = make_interpretation_vars sd.recvars acvars (fst sd.pa_syntax_data) in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let onlyparse = is_not_printable sd.only_parsing reversibility ac in
   let notation = {
@@ -1378,13 +1390,13 @@ let add_notation_interpretation_core local df env ?(impls=empty_internalization_
   (* Declare interpretation *)
   let path = (Lib.library_dp(), Lib.current_dirpath true) in
   let df'  = (make_notation_key symbs, (path,df)) in
-  let i_vars = make_internalization_vars recvars mainvars i_typs in
+  let i_vars = make_internalization_vars recvars mainvars (List.map internalization_type_of_entry_type i_typs) in
   let nenv = {
     ninterp_var_type = to_map i_vars;
     ninterp_rec_vars = to_map recvars;
   } in
   let (acvars, ac, reversibility) = interp_notation_constr env ~impls nenv c in
-  let interp = make_interpretation_vars recvars acvars in
+  let interp = make_interpretation_vars recvars acvars (List.combine mainvars i_typs) in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let onlyparse = is_not_printable onlyparse reversibility ac in
   let notation = {
@@ -1517,14 +1529,14 @@ let add_syntactic_definition env ident (vars,c) local onlyparse =
   let vars,reversibility,pat =
     try [], APrioriReversible, NRef (try_interp_name_alias (vars,c))
     with Not_found ->
-      let fold accu id = Id.Map.add id NtnInternTypeConstr accu in
+      let fold accu id = Id.Map.add id NtnInternTypeAny accu in
       let i_vars = List.fold_left fold Id.Map.empty vars in
       let nenv = {
         ninterp_var_type = i_vars;
         ninterp_rec_vars = Id.Map.empty;
       } in
       let nvars, pat, reversibility = interp_notation_constr env nenv c in
-      let map id = let (_,sc,_) = Id.Map.find id nvars in (id, sc) in
+      let map id = let (_,sc) = Id.Map.find id nvars in (id, sc) in
       List.map map vars, reversibility, pat
   in
   let onlyparse = match onlyparse with

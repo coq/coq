@@ -96,7 +96,7 @@ open Decl_kinds
   let pr_set_entry_type = function
     | ETName -> str"ident"
     | ETReference -> str"global"
-    | ETPattern -> str"pattern"
+    | ETPattern _ -> str"pattern"
     | ETConstr _ -> str"constr"
     | ETOther (_,e) -> str e
     | ETBigint -> str "bigint"

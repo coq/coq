@@ -2,9 +2,9 @@ Constrexpr
 Evar_kinds
 Genredexpr
 Locus
+Extend
 Notation_term
 Decl_kinds
-Extend
 Glob_term
 Misctypes
 Pattern

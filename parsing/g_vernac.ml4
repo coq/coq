@@ -1181,6 +1181,8 @@ GEXTEND Gram
     [ [ IDENT "ident" -> ETName | IDENT "global" -> ETReference
       | IDENT "bigint" -> ETBigint
       | IDENT "binder" -> ETBinder true
+      | IDENT "pattern" -> ETPattern 0
+      | IDENT "pattern"; "at"; IDENT "level"; n = natural -> ETPattern n
       | IDENT "closed"; IDENT "binder" -> ETBinder false
     ] ]
   ;

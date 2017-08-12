@@ -257,7 +257,7 @@ let insert_pat_delimiters ?loc p = function
 
 let insert_pat_alias ?loc p = function
   | Anonymous -> p
-  | Name id -> CAst.make ?loc @@ CPatAlias (p,id)
+  | Name _ as na -> CAst.make ?loc @@ CPatAlias (p,(loc,na))
 
 (**********************************************************************)
 (* conversion of references                                           *)
@@ -323,34 +323,35 @@ let is_zero s =
     Int.equal (String.length s) i || (s.[i] == '0' && aux (i+1))
   in aux 0
 
-let make_notation_gen loc ntn mknot mkprim destprim l =
+let make_notation_gen loc ntn mknot mkprim destprim l bl =
   match ntn,List.map destprim l with
     (* Special case to avoid writing "- 3" for e.g. (Z.opp 3) *)
     | "- _", [Some (Numeral (p,true))] when not (is_zero p) ->
-        mknot (loc,ntn,([mknot (loc,"( _ )",l)]))
+        assert (bl=[]);
+        mknot (loc,ntn,([mknot (loc,"( _ )",l,[])]),[])
     | _ ->
 	match decompose_notation_key ntn, l with
 	| [Terminal "-"; Terminal x], [] when is_number x ->
 	   mkprim (loc, Numeral (x,false))
 	| [Terminal x], [] when is_number x ->
 	   mkprim (loc, Numeral (x,true))
-	| _ -> mknot (loc,ntn,l)
+        | _ -> mknot (loc,ntn,l,bl)
 
-let make_notation loc ntn (terms,termlists,binders as subst) =
-  if not (List.is_empty termlists) || not (List.is_empty binders) then
+let make_notation loc ntn (terms,termlists,binders,binderlists as subst) =
+  if not (List.is_empty termlists) || not (List.is_empty binderlists) then
     CAst.make ?loc @@ CNotation (ntn,subst)
   else
     make_notation_gen loc ntn
-      (fun (loc,ntn,l) -> CAst.make ?loc @@ CNotation (ntn,(l,[],[])))
+      (fun (loc,ntn,l,bl) -> CAst.make ?loc @@ CNotation (ntn,(l,[],bl,[])))
       (fun (loc,p) -> CAst.make ?loc @@ CPrim p)
-      destPrim terms
+      destPrim terms binders
 
 let make_pat_notation ?loc ntn (terms,termlists as subst) args =
   if not (List.is_empty termlists) then (CAst.make ?loc @@ CPatNotation (ntn,subst,args)) else
   make_notation_gen loc ntn
-    (fun (loc,ntn,l) -> CAst.make ?loc @@ CPatNotation (ntn,(l,[]),args))
+    (fun (loc,ntn,l,_) -> CAst.make ?loc @@ CPatNotation (ntn,(l,[]),args))
     (fun (loc,p)     -> CAst.make ?loc @@ CPatPrim p)
-    destPatPrim terms
+    destPatPrim terms []
 
 let mkPat ?loc qid l = CAst.make ?loc @@
   (* Normally irrelevant test with v8 syntax, but let's do it anyway *)
@@ -1040,7 +1041,7 @@ and extern_notation (tmp_scope,scopes as allscopes) vars t = function
           | _, None -> t, [], [], []
           | _ -> raise No_match in
 	(* Try matching ... *)
-	let terms,termlists,binders =
+        let terms,termlists,binders,binderlists =
           match_notation_constr !print_universes t pat in
 	(* Try availability of interpretation ... *)
         let e =
@@ -1061,11 +1062,15 @@ and extern_notation (tmp_scope,scopes as allscopes) vars t = function
 		    List.map (fun (c,(scopt,scl)) ->
 		      List.map (extern true (scopt,scl@scopes') vars) c)
                       termlists in
+                  let bl =
+                    List.map (fun (bl,(scopt,scl)) ->
+                      extern_cases_pattern_in_scope (scopt,scl@scopes') vars bl)
+                      binders in
 		  let bll =
 		    List.map (fun (bl,(scopt,scl)) ->
 		      pi3 (extern_local_binder (scopt,scl@scopes') vars bl))
-                      binders in
-	          insert_delimiters (make_notation loc ntn (l,ll,bll)) key)
+                      binderlists in
+                  insert_delimiters (make_notation loc ntn (l,ll,bl,bll)) key)
           | SynDefRule kn ->
 	      let l =
 		List.map (fun (c,(scopt,scl)) ->

@@ -337,3 +337,10 @@ Check fun x => if x is n.+1 then n else 1.
 (* Examples with binding patterns *)
 
 Check {(x,y)|x+y=0}.
+
+Notation "'exists2'' x , p & q" := (ex2 (fun x => p) (fun x => q))
+  (at level 200, x pattern, p at level 200, right associativity,
+    format "'[' 'exists2''  '/  ' x ,  '/  ' '[' p  &  '/' q ']' ']'")
+  : type_scope.
+
+Check exists2' (x,y), x=0 & y=0.

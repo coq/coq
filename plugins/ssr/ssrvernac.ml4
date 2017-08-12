@@ -74,7 +74,7 @@ let frozen_lexer = CLexer.get_keyword_state () ;;
 
 let no_ct = None, None and no_rt = None in 
 let aliasvar = function
-  | [[{ CAst.v = CPatAlias (_, id); loc }]] -> Some (loc,Name id)
+  | [[{ CAst.v = CPatAlias (_, na); loc }]] -> Some na
   | _ -> None in
 let mk_cnotype mp = aliasvar mp, None in
 let mk_ctype mp t = aliasvar mp, Some t in

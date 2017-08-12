@@ -86,8 +86,8 @@ let tag_var = tag Tag.variable
 
   open Notation
 
-  let print_hunks n pr pr_binders (terms, termlists, binders) unps =
-    let env = ref terms and envlist = ref termlists and bll = ref binders in
+  let print_hunks n pr pr_patt pr_binders (terms, termlists, binders, binderlists) unps =
+    let env = ref terms and envlist = ref termlists and bl = ref binders and bll = ref binderlists in
     let pop r = let a = List.hd !r in r := List.tl !r; a in
     let return unp pp1 pp2 = (tag_unparsing unp pp1) ++ pp2 in
     (* Warning:
@@ -101,6 +101,11 @@ let tag_var = tag Tag.variable
         let c = pop env in
         let pp2 = aux l in
         let pp1 = pr (n, prec) c in
+        return unp pp1 pp2
+      | UnpBinderMetaVar (_, prec) as unp :: l ->
+        let c = pop bl in
+        let pp2 = aux l in
+        let pp1 = pr_patt (n, prec) c in
         return unp pp1 pp2
       | UnpListMetaVar (_, prec, sl) as unp :: l ->
         let cl = pop envlist in
@@ -127,9 +132,9 @@ let tag_var = tag Tag.variable
     in
     aux unps
 
-  let pr_notation pr pr_binders s env =
+  let pr_notation pr pr_patt pr_binders s env =
     let unpl, level = find_notation_printing_rule s in
-    print_hunks level pr pr_binders env unpl, level
+    print_hunks level pr pr_patt pr_binders env unpl, level
 
   let pr_delimiters key strm =
     strm ++ str ("%"^key)
@@ -263,8 +268,8 @@ let tag_var = tag Tag.variable
         in
         str "{| " ++ prlist_with_sep pr_semicolon pp l ++ str " |}", lpatrec
 
-      | CPatAlias (p, id) ->
-        pr_patt mt (las,E) p ++ str " as " ++ pr_id id, las
+      | CPatAlias (p, na) ->
+        pr_patt mt (las,E) p ++ str " as " ++ pr_lname na, las
 
       | CPatCstr (c, None, []) ->
         pr_reference c, latom
@@ -292,7 +297,7 @@ let tag_var = tag Tag.variable
         pr_patt (fun()->str"(") (max_int,E) p ++ str")", latom
 
       | CPatNotation (s,(l,ll),args) ->
-        let strm_not, l_not = pr_notation (pr_patt mt) (fun _ _ _ -> mt()) s (l,ll,[]) in
+        let strm_not, l_not = pr_notation (pr_patt mt) (fun _ _ -> mt ()) (fun _ _ _ -> mt()) s (l,ll,[],[]) in
         (if List.is_empty args||prec_less l_not (lapp,L) then strm_not else surround strm_not)
         ++ prlist (pr_patt spc (lapp,L)) args, if not (List.is_empty args) then lapp else l_not
 
@@ -658,10 +663,10 @@ let tag_var = tag Tag.variable
                     | CastCoerce -> str ":>"),
           lcast
         )
-      | CNotation ("( _ )",([t],[],[])) ->
+      | CNotation ("( _ )",([t],[],[],[])) ->
         return (pr (fun()->str"(") (max_int,L) t ++ str")", latom)
       | CNotation (s,env) ->
-        pr_notation (pr mt) (pr_binders_gen (pr mt ltop)) s env
+        pr_notation (pr mt) pr_patt (pr_binders_gen (pr mt ltop)) s env
       | CGeneralization (bk,ak,c) ->
         return (pr_generalization bk ak (pr mt ltop c), latom)
       | CPrim p ->

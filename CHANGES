@@ -11,6 +11,8 @@ Notations
   priority is given to latest notations defined in the scopes being
   opened rather than to the latest notations defined independently of
   whether they are in an opened scope or not.
+- Notations can now refer to the syntactic category of patterns (as in
+  "fun 'pat =>" or "match p with pat => ... end").
 
 Specification language
 

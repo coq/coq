@@ -67,7 +67,7 @@ let rec cases_pattern_expr_eq p1 p2 =
   if CAst.(p1.v == p2.v) then true
   else match CAst.(p1.v, p2.v) with
   | CPatAlias(a1,i1), CPatAlias(a2,i2) ->
-      Id.equal i1 i2 && cases_pattern_expr_eq a1 a2
+      Name.equal (snd i1) (snd i2) && cases_pattern_expr_eq a1 a2
   | CPatCstr(c1,a1,b1), CPatCstr(c2,a2,b2) ->
       eq_reference c1 c2 &&
       Option.equal (List.equal cases_pattern_expr_eq) a1 a2 &&
@@ -222,9 +222,10 @@ and local_binder_eq l1 l2 = match l1, l2 with
     List.equal (eq_located Name.equal) n1 n2 && constr_expr_eq e1 e2
   | _ -> false
 
-and constr_notation_substitution_eq (e1, el1, bl1) (e2, el2, bl2) =
+and constr_notation_substitution_eq (e1, el1, b1, bl1) (e2, el2, b2, bl2) =
   List.equal constr_expr_eq e1 e2 &&
   List.equal (List.equal constr_expr_eq) el1 el2 &&
+  List.equal cases_pattern_expr_eq b1 b2 &&
   List.equal (List.equal local_binder_eq) bl1 bl2
 
 and instance_eq (x1,c1) (x2,c2) =
@@ -268,7 +269,7 @@ let is_constructor id =
 let rec cases_pattern_fold_names f a pt = match CAst.(pt.v) with
   | CPatRecord l ->
     List.fold_left (fun acc (r, cp) -> cases_pattern_fold_names f acc cp) a l
-  | CPatAlias (pat,id) -> f id a
+  | CPatAlias (pat,(loc,na)) -> Name.fold_right f na (cases_pattern_fold_names f a pat)
   | CPatOr (patl) ->
     List.fold_left (cases_pattern_fold_names f) a patl
   | CPatCstr (_,patl1,patl2) ->
@@ -324,7 +325,7 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
       f (Name.fold_right g (snd na) n) (Option.fold_left (f n) (f n acc a) t) b
     | CCast (a,(CastConv b|CastVM b|CastNative b)) -> f n (f n acc a) b
     | CCast (a,CastCoerce) -> f n acc a
-    | CNotation (_,(l,ll,bll)) ->
+    | CNotation (_,(l,ll,bl,bll)) ->
       (* The following is an approximation: we don't know exactly if
          an ident is binding nor to which subterms bindings apply *)
       let acc = List.fold_left (f n) acc (l@List.flatten ll) in
@@ -394,9 +395,9 @@ let map_constr_expr_with_binders g f e = CAst.map (function
     | CLetIn (na,a,t,b) ->
       CLetIn (na,f e a,Option.map (f e) t,f (Name.fold_right g (snd na) e) b)
     | CCast (a,c) -> CCast (f e a, Miscops.map_cast_type (f e) c)
-    | CNotation (n,(l,ll,bll)) ->
+    | CNotation (n,(l,ll,bl,bll)) ->
       (* This is an approximation because we don't know what binds what *)
-      CNotation (n,(List.map (f e) l,List.map (List.map (f e)) ll,
+      CNotation (n,(List.map (f e) l,List.map (List.map (f e)) ll, bl,
                     List.map (fun bl -> snd (map_local_binders f g e bl)) bll))
     | CGeneralization (b,a,c) -> CGeneralization (b,a,f e c)
     | CDelimiters (s,a) -> CDelimiters (s,f e a)
@@ -455,9 +456,10 @@ let locs_of_notation ?loc locs ntn =
     | (ba,ea)::l -> if Int.equal pos ba then aux ea l else (pos,ba)::aux ea l
   in aux bl (List.sort (fun l1 l2 -> fst l1 - fst l2) locs)
 
-let ntn_loc ?loc (args,argslist,binderslist) =
+let ntn_loc ?loc (args,argslist,binders,binderslist) =
   locs_of_notation ?loc
     (List.map constr_loc (args@List.flatten argslist)@
+     List.map cases_pattern_expr_loc binders@
      List.map local_binders_loc binderslist)
 
 let patntn_loc ?loc (args,argslist) =
@@ -564,12 +566,12 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
   | CHole (None,Misctypes.IntroAnonymous,None) ->
      CPatAtom None
   | CLetIn ((loc,Name id),b,None,{ CAst.v = CRef (Ident (_,id'),None) }) when Id.equal id id' ->
-      CPatAlias (coerce_to_cases_pattern_expr b, id)
+      CPatAlias (coerce_to_cases_pattern_expr b, (loc,Name id))
   | CApp ((None,p),args) when List.for_all (fun (_,e) -> e=None) args ->
      (mkAppPattern (coerce_to_cases_pattern_expr p) (List.map (fun (a,_) -> coerce_to_cases_pattern_expr a) args)).CAst.v
   | CAppExpl ((None,r,i),args) ->
      CPatCstr (r,Some (List.map coerce_to_cases_pattern_expr args),[])
-  | CNotation (ntn,(c,cl,[])) ->
+  | CNotation (ntn,(c,cl,[],[])) ->
      CPatNotation (ntn,(List.map coerce_to_cases_pattern_expr c,
                         List.map (List.map coerce_to_cases_pattern_expr) cl),[])
   | CPrim p ->

@@ -916,7 +916,7 @@ let glob_cpattern gs p =
   | k, (v, Some t) as orig ->
      if k = 'x' then glob_ssrterm gs ('(', (v, Some t)) else
      match t.CAst.v with
-     | CNotation("( _ in _ )", ([t1; t2], [], [])) ->
+     | CNotation("( _ in _ )", ([t1; t2], [], [], [])) ->
          (try match glob t1, glob t2 with
          | (r1, None), (r2, None) -> encode k "In" [r1;r2]
          | (r1, Some _), (r2, Some _) when isCVar t1 ->
@@ -924,11 +924,11 @@ let glob_cpattern gs p =
          | (r1, Some _), (r2, Some _) -> encode k "In" [r1; r2]
          | _ -> CErrors.anomaly (str"where are we?.")
          with _ when isCVar t1 -> encode k "In" [bind_in t1 t2])
-     | CNotation("( _ in _ in _ )", ([t1; t2; t3], [], [])) ->
+     | CNotation("( _ in _ in _ )", ([t1; t2; t3], [], [], [])) ->
          check_var t2; encode k "In" [fst (glob t1); bind_in t2 t3]
-     | CNotation("( _ as _ )", ([t1; t2], [], [])) ->
+     | CNotation("( _ as _ )", ([t1; t2], [], [], [])) ->
          encode k "As" [fst (glob t1); fst (glob t2)]
-     | CNotation("( _ as _ in _ )", ([t1; t2; t3], [], [])) ->
+     | CNotation("( _ as _ in _ )", ([t1; t2; t3], [], [], [])) ->
          check_var t2; encode k "As" [fst (glob t1); bind_in t2 t3]
      | _ -> glob_ssrterm gs orig
 ;;

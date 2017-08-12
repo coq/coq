@@ -46,7 +46,7 @@ type prim_token =
 type instance_expr = Misctypes.glob_level list
 
 type cases_pattern_expr_r =
-  | CPatAlias of cases_pattern_expr * Id.t
+  | CPatAlias of cases_pattern_expr * Name.t Loc.located
   | CPatCstr  of reference
     * cases_pattern_expr list option * cases_pattern_expr list
   (** [CPatCstr (_, c, Some l1, l2)] represents (@c l1) l2 *)
@@ -128,7 +128,8 @@ and local_binder_expr =
 and constr_notation_substitution =
     constr_expr list *      (** for constr subterms *)
     constr_expr list list * (** for recursive notations *)
-    local_binder_expr list list (** for binders subexpressions *)
+    cases_pattern_expr list *   (** for binders *)
+    local_binder_expr list list (** for binder lists (recursive notations) *)
 
 type constr_pattern_expr = constr_expr
 

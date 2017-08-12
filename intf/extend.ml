@@ -37,13 +37,13 @@ type ('lev,'pos) constr_entry_key_gen =
   | ETBigint
   | ETBinder of bool  (* open list of binders if true, closed list of binders otherwise *)
   | ETConstr of ('lev * 'pos)
-  | ETPattern
+  | ETPattern of int
   | ETOther of string * string
 
-(** Entries level (left-hand-side of grammar rules) *)
+(** Entries level (left-hand side of grammar rules) *)
 
 type constr_entry_key =
-    (int,unit) constr_entry_key_gen
+    (production_level,production_position) constr_entry_key_gen
 
 (** Entries used in productions, vernac side (e.g. "x bigint" or "x ident") *)
 
@@ -54,12 +54,14 @@ type simple_constr_prod_entry_key =
 
 type binder_entry_kind = ETBinderOpen | ETBinderClosed of Tok.t list
 
+type binder_target = ForBinder | ForTerm
+
 type constr_prod_entry_key =
   | ETProdName            (* Parsed as a name (ident or _) *)
   | ETProdReference       (* Parsed as a global reference *)
   | ETProdBigint          (* Parsed as an (unbounded) integer *)
   | ETProdConstr of (production_level * production_position) (* Parsed as constr or pattern *)
-  | ETProdPattern                  (* Parsed as pattern (as subpart of a constr) *)
+  | ETProdPattern of int  (* Parsed as pattern as a binder (as subpart of a constr) *)
   | ETProdOther of string * string (* Intended for embedding custom entries in constr or pattern *)
   | ETProdConstrList of (production_level * production_position) * Tok.t list (* Parsed as non-empty list of constr *)
   | ETProdBinderList of binder_entry_kind  (* Parsed as non-empty list of local binders *)

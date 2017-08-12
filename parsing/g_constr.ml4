@@ -120,7 +120,7 @@ let name_colon =
               | _ -> err ())
         | _ -> err ())
 
-let aliasvar = function { CAst.loc = loc; CAst.v = CPatAlias (_, id) } -> Some (loc,Name id) | _ -> None
+let aliasvar = function { CAst.v = CPatAlias (_, na) } -> Some na | _ -> None
 
 GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr universe_level sort sort_family
@@ -216,7 +216,7 @@ GEXTEND Gram
       | "("; c = operconstr LEVEL "200"; ")" ->
           (match c.CAst.v with
             | CPrim (Numeral (n,true)) ->
-                CAst.make ~loc:(!@loc) @@ CNotation("( _ )",([c],[],[]))
+                CAst.make ~loc:(!@loc) @@ CNotation("( _ )",([c],[],[],[]))
             | _ -> c)
       | "{|"; c = record_declaration; "|}" -> c
       | "`{"; c = operconstr LEVEL "200"; "}" ->
@@ -385,8 +385,8 @@ GEXTEND Gram
     | "99" RIGHTA [ ]
     | "90" RIGHTA [ ]
     | "10" LEFTA
-      [ p = pattern; "as"; id = ident ->
-        CAst.make ~loc:!@loc @@ CPatAlias (p, id)
+      [ p = pattern; "as"; na = name ->
+        CAst.make ~loc:!@loc @@ CPatAlias (p, na)
       | p = pattern; lp = LIST1 NEXT -> mkAppPattern ~loc:!@loc p lp
       | "@"; r = Prim.reference; lp = LIST0 NEXT ->
         CAst.make ~loc:!@loc @@ CPatCstr (r, Some lp, []) ]

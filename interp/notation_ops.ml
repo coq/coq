@@ -472,17 +472,16 @@ let check_variables_and_reversibility nenv
 	str " position as part of a recursive pattern.") in
   let check_type x typ =
     match typ with
-    | NtnInternTypeConstr ->
+    | NtnInternTypeAny ->
 	begin
 	  try check_pair "term" x (Id.Map.find x recvars) foundrec
 	  with Not_found -> check_bound x
 	end
-    | NtnInternTypeBinder ->
+    | NtnInternTypeOnlyBinder ->
 	begin
 	  try check_pair "binding" x (Id.Map.find x recvars) foundrecbinding
 	  with Not_found -> check_bound x
-	end
-    | NtnInternTypeIdent -> check_bound x in
+        end in
   Id.Map.iter check_type vars;
   List.rev !injective
 
@@ -665,7 +664,7 @@ let is_term_meta id metas =
   with Not_found -> false
 
 let is_onlybinding_meta id metas =
-  try match Id.List.assoc id metas with _,NtnTypeOnlyBinder -> true | _ -> false
+  try match Id.List.assoc id metas with _,NtnTypeBinder _ -> true | _ -> false
   with Not_found -> false
 
 let is_bindinglist_meta id metas =
@@ -885,8 +884,11 @@ let bind_term_as_binding_env alp (terms,termlists,binders,binderlists as sigma) 
     (* TODO: look at the consequences for alp *)
     alp, add_env alp sigma var (DAst.make @@ GVar id)
 
+let force_cases_pattern c =
+  DAst.make ?loc:c.CAst.loc (DAst.get c)
+
 let bind_binding_as_term_env alp (terms,termlists,binders,binderlists as sigma) var c =
-  let pat = try cases_pattern_of_glob_constr Anonymous c with Not_found -> raise No_match in
+  let pat = try force_cases_pattern (cases_pattern_of_glob_constr Anonymous c) with Not_found -> raise No_match in
   try
     (* If already bound to a binder, unify the term and the binder *)
     let pat' = Id.List.assoc var binders in
@@ -961,8 +963,10 @@ let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
   | (Anonymous,Anonymous) -> alp,sigma
   | _ -> raise No_match
 
-let rec match_cases_pattern_binders metas acc pat1 pat2 =
+let rec match_cases_pattern_binders metas (alp,sigma as acc) pat1 pat2 =
   match DAst.get pat1, DAst.get pat2 with
+  | _, PatVar (Name id2) when is_onlybinding_meta id2 metas ->
+      bind_binding_env alp sigma id2 pat1
   | PatVar na1, PatVar na2 -> match_names metas acc na1 na2
   | PatCstr (c1,patl1,na1), PatCstr (c2,patl2,na2)
       when eq_constructor c1 c2 && Int.equal (List.length patl1) (List.length patl2) ->
@@ -1265,26 +1269,24 @@ and match_equations u alp metas sigma (_,(_,patl1,rhs1)) (patl2,rhs2) =
 let match_notation_constr u c (metas,pat) =
   let terms,termlists,binders,binderlists =
     match_ false u ([],[]) metas ([],[],[],[]) c pat in
-  (* Reorder canonically the substitution *)
-  let find_binder x =
-    try glob_constr_of_cases_pattern (Id.List.assoc x binders)
-    with Not_found ->
-      (* Happens for binders bound to Anonymous *)
-      (* Find a better way to propagate Anonymous... *)
-      DAst.make @@GVar x in
-  List.fold_right (fun (x,(scl,typ)) (terms',termlists',binders') ->
+  (* Turning substitution based on binding/constr distinction into a
+     substitution based on entry productions *)
+  List.fold_right (fun (x,(scl,typ)) (terms',termlists',binders',binderlists') ->
     match typ with
     | NtnTypeConstr ->
       let term = try Id.List.assoc x terms with Not_found -> raise No_match in
-       ((term, scl)::terms',termlists',binders')
-    | NtnTypeOnlyBinder ->
-       ((find_binder x, scl)::terms',termlists',binders')
+       ((term, scl)::terms',termlists',binders',binderlists')
+    | NtnTypeBinder true ->
+       let v = glob_constr_of_cases_pattern (Id.List.assoc x binders) in
+       ((v,scl)::terms',termlists',binders',binderlists')
+    | NtnTypeBinder false ->
+       (terms',termlists',(Id.List.assoc x binders,scl)::binders',binderlists')
     | NtnTypeConstrList ->
-       (terms',(Id.List.assoc x termlists,scl)::termlists',binders')
+       (terms',(Id.List.assoc x termlists,scl)::termlists',binders',binderlists')
     | NtnTypeBinderList ->
       let bl = try Id.List.assoc x binderlists with Not_found -> raise No_match in
-       (terms',termlists',(bl, scl)::binders'))
-    metas ([],[],[])
+       (terms',termlists',binders',(bl, scl)::binderlists'))
+    metas ([],[],[],[])
 
 (* Matching cases pattern *)
 
@@ -1356,7 +1358,7 @@ let reorder_canonically_substitution terms termlists metas =
   List.fold_right (fun (x,(scl,typ)) (terms',termlists') ->
     match typ with
       | NtnTypeConstr -> ((Id.List.assoc x terms, scl)::terms',termlists')
-      | NtnTypeOnlyBinder -> assert false
+      | NtnTypeBinder _ -> assert false
       | NtnTypeConstrList -> (terms',(Id.List.assoc x termlists,scl)::termlists')
       | NtnTypeBinderList -> assert false)
     metas ([],[])
