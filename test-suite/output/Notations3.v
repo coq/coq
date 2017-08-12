@@ -253,3 +253,8 @@ Definition alist := [0;1;2].
 Print alist.
 
 End B.
+
+(* Test contraction of "forall x, let 'pat := x in ..." into "forall 'pat, ..." *)
+(* for isolated "forall" (was not working already in 8.6) *)
+Notation "! x .. y , A" := (id (forall x, .. (id (forall y, A)) .. )) (at level 200, x binder).
+Check ! '(x,y), x+y=0.

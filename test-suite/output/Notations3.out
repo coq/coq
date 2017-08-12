@@ -138,3 +138,5 @@ amatch = mmatch 0 (with 0 => 1| 1 => 2 end)
      : unit
 alist = [0; 1; 2]
      : list nat
+! '{{x, y}}, x + y = 0
+     : Prop

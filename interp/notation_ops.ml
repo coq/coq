@@ -1084,11 +1084,18 @@ let rec match_ inner u alp metas sigma a1 a2 =
     | _ ->
       match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
     end
-
-  | GProd (na,bk,t,b1), NProd (Name id,_,b2)
-      when is_bindinglist_meta id metas && na != Anonymous ->
-      let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalAssum (na,bk,t)] in
+  | GProd (na1, bk, t1, b1), NProd (na2, t2, b2) ->
+    begin match na1, DAst.get b1, na2 with
+    | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(ids,[cp],b1))]), Name id
+      when is_gvar p e && is_bindinglist_meta id metas && not (occur_glob_constr p b1) ->
+      let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalPattern ((cp,ids),p,bk,t1)] in
       match_in u alp metas sigma b1 b2
+    | _, _, Name id when is_bindinglist_meta id metas && na1 != Anonymous ->
+      let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalAssum (na1,bk,t1)] in
+      match_in u alp metas sigma b1 b2
+    | _ ->
+      match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
+    end
 
   (* Matching compositionally *)
   | GVar id1, NVar id2 when alpha_var id1 id2 (fst alp) -> sigma
@@ -1104,8 +1111,6 @@ let rec match_ inner u alp metas sigma a1 a2 =
       let may_use_eta = does_not_come_from_already_eta_expanded_var f1 in
       List.fold_left2 (match_ may_use_eta u alp metas)
         (match_in u alp metas sigma f1 f2) l1 l2
-  | GProd (na1,_,t1,b1), NProd (na2,t2,b2) ->
-     match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
   | GLetIn (na1,b1,_,c1), NLetIn (na2,b2,None,c2)
   | GLetIn (na1,b1,None,c1), NLetIn (na2,b2,_,c2) ->
      match_binders u alp metas na1 na2 (match_in u alp metas sigma b1 b2) c1 c2
