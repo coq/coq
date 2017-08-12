@@ -64,7 +64,6 @@ matrix:
   allow_failures:
   - env: TEST_TARGET="ci-coq-dpdgraph" EXTRA_OPAM="ocamlgraph"
   - env: TEST_TARGET="ci-geocoq TIMED=1"
-  - env: TEST_TARGET="ci-fiat-parsers TIMED=1"
 
   include:
     # Full Coq test-suite with two compilers
