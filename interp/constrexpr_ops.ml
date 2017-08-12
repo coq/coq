@@ -320,13 +320,13 @@ let coerce_reference_to_id = function
         (str "This expression should be a simple identifier.")
 
 let coerce_to_id = function
-  | { CAst.v = CRef (Ident (loc,id),_); _ } -> (loc,id)
+  | { CAst.v = CRef (Ident (loc,id),None) } -> (loc,id)
   | { CAst.loc; _ } -> CErrors.user_err ?loc
        ~hdr:"coerce_to_id"
          (str "This expression should be a simple identifier.")
 
 let coerce_to_name = function
-  | { CAst.v = CRef (Ident (loc,id),_) } -> (loc,Name id)
-  | { CAst.loc; CAst.v = CHole (_,_,_) } -> (loc,Anonymous)
+  | { CAst.v = CRef (Ident (loc,id),None) } -> (loc,Name id)
+  | { CAst.loc; CAst.v = CHole (None,Misctypes.IntroAnonymous,None) } -> (loc,Anonymous)
   | { CAst.loc; _ } -> CErrors.user_err ?loc ~hdr:"coerce_to_name"
                          (str "This expression should be a name.")
