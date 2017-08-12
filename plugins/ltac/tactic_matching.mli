@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 
 (** This file extends Matching with the main logic for Ltac's
     (lazy)match and (lazy)match goal. *)

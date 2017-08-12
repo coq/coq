@@ -14,7 +14,6 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open API
 open Eqdecide
 
 DECLARE PLUGIN "ltac_plugin"

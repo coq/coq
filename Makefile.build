@@ -192,7 +192,7 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 COQOPTS=$(COQ_XML) $(NATIVECOMPUTE)
 BOOTCOQC=$(TIMER) $(COQTOPBEST) -boot $(COQOPTS) -compile
 
-LOCALINCLUDES=$(if $(filter plugins/%,$<),-I lib -I API $(addprefix -I plugins/,$(PLUGINDIRS)),$(addprefix -I ,$(SRCDIRS)))
+LOCALINCLUDES=$(addprefix -I ,$(SRCDIRS))
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
 OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
@@ -200,7 +200,7 @@ OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 
 BYTEFLAGS=-thread $(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=-thread $(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
-DEPFLAGS=$(LOCALINCLUDES)$(if $(filter plugins/%,$<),, -I ide -I ide/utils)
+DEPFLAGS=$(LOCALINCLUDES) -I ide -I ide/utils
 
 # On MacOS, the binaries are signed, except our private ones
 ifeq ($(shell which codesign > /dev/null 2>&1 && echo $(ARCH)),Darwin)

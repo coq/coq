@@ -1,4 +1,3 @@
-open API
 
 let contrib_name = "btauto"
 

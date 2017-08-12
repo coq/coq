@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-open API
 
 (* Poor's man DECLARE PLUGIN *)
 let __coq_plugin_name = "ascii_syntax_plugin"

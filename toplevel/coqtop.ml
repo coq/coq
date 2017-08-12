@@ -607,7 +607,7 @@ let init_toplevel arglist =
       Spawned.init_channels ();
       Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err Pp.(str msg));
       if !print_where then (print_endline(Envars.coqlib ()); exit(exitcode ()));
-      if !print_config then (Envars.print_config stdout Coq_config.all_src_dirs; exit (exitcode ()));
+      if !print_config then (Envars.print_config stdout; exit (exitcode ()));
       if !print_tags then (print_style_tags (); exit (exitcode ()));
       if !filter_opts then (print_string (String.concat "\n" extras); exit 0);
       init_load_path ();
