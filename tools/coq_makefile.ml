@@ -203,8 +203,12 @@ let generate_conf_coq_config oc args bypass_API =
   section oc "Coq configuration.";
   let src_dirs = if bypass_API
                  then Coq_config.all_src_dirs
-                 else Coq_config.api_dirs @ Coq_config.plugins_dirs @ ["-open API"] in
+                 else Coq_config.api_dirs @ Coq_config.plugins_dirs in
   Envars.print_config ~prefix_var_name:"COQMF_" oc src_dirs;
+  if bypass_API then
+    Printf.fprintf oc "OCAML_API_FLAGS=\n"
+  else
+    Printf.fprintf oc "OCAML_API_FLAGS=-open API\n";
   fprintf oc "COQMF_WINDRIVE=%s\n" (windrive Coq_config.coqlib)
 ;;
 
