@@ -18,7 +18,9 @@ When it applies, it's extremely helpful for bug reports to include sample code, 
 
 ## Pull requests
 
-If you want to contribute a bug fix or feature yourself, pull requests on the [GitHub repository](https://github.com/coq/coq) are the way to contribute directly to the Coq implementation. Documentation for getting started with the Coq sources is located in various files in [`dev/doc`](/dev/doc) (for example, [debugging.txt](/dev/doc/debugging.txt)).
+If you want to contribute a bug fix or feature yourself, pull requests on the [GitHub repository](https://github.com/coq/coq) are the way to contribute directly to the Coq implementation. We recommend you create a fork of the repository on GitHub and push your changes to a new "topic branch" in that fork. From there you can follow the [GitHub pull request documentation](https://help.github.com/articles/about-pull-requests/) to get your changes reviewed and pulled into the Coq source repository.
+
+Documentation for getting started with the Coq sources is located in various files in [`dev/doc`](/dev/doc) (for example, [debugging.txt](/dev/doc/debugging.txt)).
 
 Please make pull requests against the `master` branch.
 
@@ -44,6 +46,6 @@ The sources for the [Coq reference manual](https://coq.inria.fr/distrib/current/
 
 There are many useful ways to contribute to the Coq ecosystem that don't involve the Coq repository.
 
-Tutorials to teach Coq, and especially to teach particular advanced features, would be much appreciated. Some tutorials listed on the [Coq website](https://coq.inria.fr/documentation). If you would like to add a link to this list, please create a pull request against the Coq website repository at https://github.com/coq/www.
+Tutorials to teach Coq, and especially to teach particular advanced features, would be much appreciated. Some tutorials are listed on the [Coq website](https://coq.inria.fr/documentation). If you would like to add a link to this list, please make a pull request against the Coq website repository at https://github.com/coq/www.
 
 Subscribe to the [coq-club](https://coq.inria.fr/community) mailing list and answer questions there. Asking your own questions on the mailing list will also help others learn from the answers, which often come from experts in the community.
