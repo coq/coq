@@ -44,6 +44,6 @@ The sources for the [Coq reference manual](https://coq.inria.fr/distrib/current/
 
 There are many useful ways to contribute to the Coq ecosystem that don't involve the Coq repository.
 
-Tutorials to teach Coq, and especially to teach particular advanced features, would be much appreciated. We don't yet have a good process or home for these tutorials, but are open to suggestions.
+Tutorials to teach Coq, and especially to teach particular advanced features, would be much appreciated. Some tutorials listed on the [Coq website](https://coq.inria.fr/documentation). If you would like to add a link to this list, please create a pull request against the Coq website repository at https://github.com/coq/www.
 
 Subscribe to the [coq-club](https://coq.inria.fr/community) mailing list and answer questions there. Asking your own questions on the mailing list will also help others learn from the answers, which often come from experts in the community.
