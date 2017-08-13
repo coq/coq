@@ -824,7 +824,7 @@ let bind_bindinglist_env alp (terms,onlybinders,termlists,binderlists as sigma) 
        alp, b :: bl
     | _ -> raise No_match in
     let alp, bl = unify alp bl bl' in
-    let sigma = (terms,Id.List.remove_assoc var onlybinders,termlists,binderlists) in
+    let sigma = (terms,onlybinders,termlists,Id.List.remove_assoc var binderlists) in
     alp, add_bindinglist_env sigma var bl
   with Not_found ->
     alp, add_bindinglist_env sigma var bl
