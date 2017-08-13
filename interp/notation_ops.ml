@@ -284,7 +284,9 @@ let compare_recursive_parts found f f' (iterator,subc) =
       | None ->
         let () = diff := Some (x, y, RecursiveTerms lassoc) in
         true
-      | Some _ -> false
+      | Some (x', y', RecursiveTerms lassoc')
+      | Some (x', y', RecursiveBinders (lassoc',_,_)) ->
+        Id.equal x x' && Id.equal y y' && lassoc = lassoc'
       end
   | GLambda (Name x,_,t_x,c), GLambda (Name y,_,t_y,term)
   | GProd (Name x,_,t_x,c), GProd (Name y,_,t_y,term) when not (Id.equal x y) ->
@@ -295,7 +297,11 @@ let compare_recursive_parts found f f' (iterator,subc) =
       | None ->
         let () = diff := Some (x, y, RecursiveBinders (lassoc,t_x,t_y)) in
         aux c term
-      | Some _ -> false
+      | Some (x', y', RecursiveBinders (lassoc',_,_)) ->
+        Id.equal x x' && Id.equal y y' && lassoc = lassoc'
+      | Some (x', y', RecursiveTerms lassoc') ->
+        let () = diff := Some (x, y, RecursiveBinders (lassoc,t_x,t_y)) in
+        Id.equal x x' && Id.equal y y' && lassoc = lassoc'
       end
   | _ ->
       mk_glob_constr_eq aux c1 c2 in
@@ -327,10 +333,21 @@ let compare_recursive_parts found f f' (iterator,subc) =
                                recursive_term_vars = Option.fold_right (fun a l -> a::l) toadd (!found).recursive_term_vars };
         NList (x,y,iterator,f (Option.get !terminator),lassoc)
     | Some (x,y,RecursiveBinders (lassoc,t_x,t_y)) ->
+        let toadd,x,y,lassoc =
+          if List.mem_f (pair_equal Id.equal Id.equal) (x,y) (!found).recursive_term_vars ||
+             List.mem_f (pair_equal Id.equal Id.equal) (x,y) (!found).recursive_binders_vars
+          then
+            None,x,y,lassoc
+          else if List.mem_f (pair_equal Id.equal Id.equal) (y,x) (!found).recursive_term_vars ||
+                  List.mem_f (pair_equal Id.equal Id.equal) (y,x) (!found).recursive_binders_vars
+          then
+            None,y,x,not lassoc
+          else
+            Some (x,y),x,y,lassoc in
         let iterator = f' (if lassoc then iterator else subst_glob_vars [x, DAst.make @@ GVar y] iterator) in
         (* found have been collected by compare_constr *)
         found := { !found with vars = List.remove Id.equal y (!found).vars;
-                               recursive_binders_vars = (x,y) :: (!found).recursive_binders_vars };
+                               recursive_binders_vars = Option.fold_right (fun a l -> a::l) toadd (!found).recursive_binders_vars };
         check_is_hole x t_x;
         check_is_hole y t_y;
         NBinderList (x,y,iterator,f (Option.get !terminator),lassoc)
@@ -976,6 +993,8 @@ let match_binderlist_with_app match_fun alp metas sigma rest x y iter termin las
         match Id.List.assoc y binderlists with [b] -> b | _ ->assert false
       in
       let sigma = remove_bindinglist_sigma y (remove_sigma ldots_var sigma) in
+      (* In case y is bound not only to a binder but also to a term *)
+      let sigma = remove_sigma y sigma in
       aux sigma (b::bl) rest
     with No_match when not (List.is_empty bl) ->
       bl, rest, sigma in

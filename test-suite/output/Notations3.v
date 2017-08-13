@@ -282,3 +282,28 @@ End G.
 (* Allows recursive patterns for binders to be associative on the left *)
 Notation "!! x .. y # A #" := (.. (A,(forall x, True)) ..,(forall y, True)) (at level 200, x binder).
 Check !! a b : nat # True #.
+
+(* Examples where the recursive pattern refer several times to the recursive variable *)
+
+Notation "{{D  x , .. , y }}" := ((x,x), .. ((y,y),(0,0)) ..).
+Check {{D 1, 2 }}.
+
+Notation "! x .. y # A #" :=
+  ((forall x, x=x), .. ((forall y, y=y), A) ..)
+  (at level 200, x binder).
+Check ! a b : nat # True #.
+
+Notation "!!!! x .. y # A #" :=
+  (((forall x, x=x),(forall x, x=0)), .. (((forall y, y=y),(forall y, y=0)), A) ..)
+  (at level 200, x binder).
+Check !!!! a b : nat # True #.
+
+Notation "@@ x .. y # A # B #" :=
+  ((forall x, .. (forall y, A) ..), (forall x, .. (forall y, B) ..))
+  (at level 200, x binder).
+Check @@ a b : nat # a=b # b=a #.
+
+Notation "'exists_non_null' x .. y  , P" :=
+  (ex (fun x => x <> 0 /\ .. (ex (fun y => y <> 0 /\ P)) ..))
+  (at level 200, x binder).
+Check exists_non_null x y z t , x=y/\z=t.

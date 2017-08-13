@@ -697,13 +697,21 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
     | t ->
       glob_constr_of_notation_constr_with_binders ?loc
         (traverse_binder subst avoid) (aux subst') subinfos t
-  and subst_var (terms, _binderopt, _terminopt) (renaming, env) id =
+  and subst_var (terms, binderopt, _terminopt) (renaming, env) id =
     (* subst remembers the delimiters stack in the interpretation *)
     (* of the notations *)
     try
       let (a,(scopt,subscopes)) = Id.Map.find id terms in
       intern {env with tmp_scope = scopt;
                 scopes = subscopes @ env.scopes} a
+    with Not_found ->
+    try
+      match binderopt with
+      | Some (x,binder) when Id.equal x id ->
+         let terms = terms_of_binders [binder] in
+         assert (List.length terms = 1);
+         intern env (List.hd terms)
+      | _ -> raise Not_found
     with Not_found ->
     DAst.make ?loc (
     try

@@ -163,3 +163,13 @@ exists_true (x : nat) (A : Type) (R : A -> A -> Prop)
      : Prop
 {{{{True, nat -> True}}, nat -> True}}
      : Prop * Prop * Prop
+{{D 1, 2}}
+     : nat * nat * (nat * nat * (nat * nat))
+! a b : nat # True #
+     : Prop * (Prop * Prop)
+!!!! a b : nat # True #
+     : Prop * Prop * (Prop * Prop * Prop)
+@@ a b : nat # a = b # b = a #
+     : Prop * Prop
+exists_non_null x y z t : nat , x = y /\ z = t
+     : Prop
