@@ -278,3 +278,7 @@ Class Reflexive {A:Type} (R : A->A->Prop) := reflexivity : forall x : A, R x x.
 Check exists_true `{Reflexive A R}, forall x, R x x.
 Check exists_true x `{Reflexive A R} y, x+y=0 -> forall z, R z z.
 End G.
+
+(* Allows recursive patterns for binders to be associative on the left *)
+Notation "!! x .. y # A #" := (.. (A,(forall x, True)) ..,(forall y, True)) (at level 200, x binder).
+Check !! a b : nat # True #.

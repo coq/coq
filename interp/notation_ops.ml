@@ -42,9 +42,9 @@ let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
   Name.equal na1 na2 && (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
 | NProd (na1, t1, u1), NProd (na2, t2, u2) ->
   Name.equal na1 na2 && (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
-| NBinderList (i1, j1, t1, u1), NBinderList (i2, j2, t2, u2) ->
+| NBinderList (i1, j1, t1, u1, b1), NBinderList (i2, j2, t2, u2, b2) ->
   Id.equal i1 i2 && Id.equal j1 j2 && (eq_notation_constr vars) t1 t2 &&
-  (eq_notation_constr vars) u1 u2
+  (eq_notation_constr vars) u1 u2 && b1 == b2
 | NLetIn (na1, b1, t1, u1), NLetIn (na2, b2, t2, u2) ->
   Name.equal na1 na2 && eq_notation_constr vars b1 b2 &&
   Option.equal (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
@@ -146,11 +146,11 @@ let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
       let inner  = lt @@ GApp (lt @@ GVar (ldots_var),[subst_glob_vars innerl it]) in
       let outerl = (ldots_var,inner)::(if swap then [x, lt @@ GVar y] else []) in
       DAst.get (subst_glob_vars outerl it)
-  | NBinderList (x,y,iter,tail) ->
+  | NBinderList (x,y,iter,tail,swap) ->
       let t = f e tail in let it = f e iter in
-      let innerl = [(ldots_var,t);(x, lt @@ GVar y)] in
+      let innerl = (ldots_var,t)::(if swap then [] else [x, lt @@ GVar y]) in
       let inner  = lt @@ GApp (lt @@ GVar ldots_var,[subst_glob_vars innerl it]) in
-      let outerl = [(ldots_var,inner)] in
+      let outerl = (ldots_var,inner)::(if swap then [x, lt @@ GVar y] else []) in
       DAst.get (subst_glob_vars outerl it)
   | NLambda (na,ty,c) ->
       let e',na = g e na in GLambda (na,Explicit,f e ty,f e' c)
@@ -255,7 +255,7 @@ let pair_equal eq1 eq2 (a,b) (a',b') = eq1 a a' && eq2 b b'
 
 type recursive_pattern_kind =
 | RecursiveTerms of bool (* associativity *)
-| RecursiveBinders of glob_constr * glob_constr
+| RecursiveBinders of bool (* associativity *) * glob_constr * glob_constr
 
 let compare_recursive_parts found f f' (iterator,subc) =
   let diff = ref None in
@@ -289,9 +289,11 @@ let compare_recursive_parts found f f' (iterator,subc) =
   | GLambda (Name x,_,t_x,c), GLambda (Name y,_,t_y,term)
   | GProd (Name x,_,t_x,c), GProd (Name y,_,t_y,term) when not (Id.equal x y) ->
       (* We found a binding position where it differs *)
+      let lassoc = match !terminator with None -> false | Some _ -> true in
+      let x,t_x,y,t_y = if lassoc then y,t_y,x,t_x else x,t_x,y,t_y in
       begin match !diff with
       | None ->
-        let () = diff := Some (x, y, RecursiveBinders (t_x,t_y)) in
+        let () = diff := Some (x, y, RecursiveBinders (lassoc,t_x,t_y)) in
         aux c term
       | Some _ -> false
       end
@@ -323,15 +325,15 @@ let compare_recursive_parts found f f' (iterator,subc) =
 	(* found variables have been collected by compare_constr *)
         found := { !found with vars = List.remove Id.equal y (!found).vars;
                                recursive_term_vars = Option.fold_right (fun a l -> a::l) toadd (!found).recursive_term_vars };
-	NList (x,y,iterator,f (Option.get !terminator),lassoc)
-    | Some (x,y,RecursiveBinders (t_x,t_y)) ->
-	let iterator = f' (subst_glob_vars [x, DAst.make @@ GVar y] iterator) in
-	(* found have been collected by compare_constr *)
+        NList (x,y,iterator,f (Option.get !terminator),lassoc)
+    | Some (x,y,RecursiveBinders (lassoc,t_x,t_y)) ->
+        let iterator = f' (if lassoc then iterator else subst_glob_vars [x, DAst.make @@ GVar y] iterator) in
+        (* found have been collected by compare_constr *)
         found := { !found with vars = List.remove Id.equal y (!found).vars;
                                recursive_binders_vars = (x,y) :: (!found).recursive_binders_vars };
-	check_is_hole x t_x;
-	check_is_hole y t_y;
-	NBinderList (x,y,iterator,f (Option.get !terminator))
+        check_is_hole x t_x;
+        check_is_hole y t_y;
+        NBinderList (x,y,iterator,f (Option.get !terminator),lassoc)
   else
     raise Not_found
 
@@ -512,11 +514,11 @@ let rec subst_notation_constr subst bound raw =
 	if r1' == r1 && r2' == r2 then raw else
 	  NProd (n,r1',r2')
 
-  | NBinderList (id1,id2,r1,r2) ->
+  | NBinderList (id1,id2,r1,r2,b) ->
       let r1' = subst_notation_constr subst bound r1
       and r2' = subst_notation_constr subst bound r2 in
 	if r1' == r1 && r2' == r2 then raw else
-	  NBinderList (id1,id2,r1',r2')
+          NBinderList (id1,id2,r1',r2',b)
 
   | NLetIn (n,r1,t,r2) ->
       let r1' = subst_notation_constr subst bound r1 in
@@ -929,28 +931,28 @@ let rec match_cases_pattern_binders metas acc pat1 pat2 =
 
 let glue_letin_with_decls = true
 
-let rec match_iterated_binders islambda decls bi = DAst.(with_loc_val (fun ?loc -> function
+let rec match_iterated_binders islambda decls bi lassoc = DAst.(with_loc_val (fun ?loc -> function
   | GLambda (na,bk,t,b) as b0 ->
     begin match na, DAst.get b with
     | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(ids,[cp],b))])
       when islambda && is_gvar p e && not (occur_glob_constr p b) ->
-      match_iterated_binders islambda ((DAst.make ?loc @@ GLocalPattern((cp,ids),p,bk,t))::decls) b
+      match_iterated_binders islambda ((DAst.make ?loc @@ GLocalPattern((cp,ids),p,bk,t))::decls) b lassoc
     | _, _ when islambda ->
-      match_iterated_binders islambda ((DAst.make ?loc @@ GLocalAssum(na,bk,t))::decls) b
+      match_iterated_binders islambda ((DAst.make ?loc @@ GLocalAssum(na,bk,t))::decls) b lassoc
     | _ -> (decls, DAst.make ?loc b0)
     end
   | GProd (na,bk,t,b) as b0 ->
     begin match na, DAst.get b with
     | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(ids,[cp],b))])
       when not islambda && is_gvar p e && not (occur_glob_constr p b) ->
-      match_iterated_binders islambda ((DAst.make ?loc @@ GLocalPattern((cp,ids),p,bk,t))::decls) b
+      match_iterated_binders islambda ((DAst.make ?loc @@ GLocalPattern((cp,ids),p,bk,t))::decls) b lassoc
     | Name _, _ when not islambda ->
-      match_iterated_binders islambda ((DAst.make ?loc @@ GLocalAssum(na,bk,t))::decls) b
+      match_iterated_binders islambda ((DAst.make ?loc @@ GLocalAssum(na,bk,t))::decls) b lassoc
     | _ -> (decls, DAst.make ?loc b0)
     end
   | GLetIn (na,c,t,b) when glue_letin_with_decls ->
       match_iterated_binders islambda
-	((DAst.make ?loc @@ GLocalDef (na,Explicit (*?*), c,t))::decls) b
+        ((DAst.make ?loc @@ GLocalDef (na,Explicit (*?*), c,t))::decls) b lassoc
   | b -> (decls, DAst.make ?loc b)
   )) bi
 
@@ -964,7 +966,7 @@ let add_ldots_var metas = (ldots_var,((None,[]),NtnTypeConstr))::metas
 
 let add_meta_bindinglist x metas = (x,((None,[]),NtnTypeBinderList))::metas
 
-let match_binderlist_with_app match_fun alp metas sigma rest x y iter termin =
+let match_binderlist_with_app match_fun alp metas sigma rest x y iter termin lassoc =
   let rec aux sigma bl rest =
     try
       let metas = add_ldots_var (add_meta_bindinglist y metas) in
@@ -978,6 +980,7 @@ let match_binderlist_with_app match_fun alp metas sigma rest x y iter termin =
     with No_match when not (List.is_empty bl) ->
       bl, rest, sigma in
   let bl,rest,sigma = aux sigma [] rest in
+  let bl = if lassoc then List.rev bl else bl in
   let alp,sigma = bind_bindinglist_env alp sigma x bl in
   match_fun alp metas sigma rest termin
 
@@ -1041,46 +1044,46 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | r1, NList (x,y,iter,termin,lassoc) ->
       match_termlist (match_hd u alp) alp metas sigma a1 x y iter termin lassoc
 
-  | GLambda (na1, bk, t1, b1), NBinderList (x,y,iter,termin) ->
+  | GLambda (na1, bk, t1, b1), NBinderList (x,y,iter,termin,lassoc) ->
     begin match na1, DAst.get b1, iter with
     (* "λ p, let 'cp = p in t" -> "λ 'cp, t" *)
     | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(ids,[cp],b1))]), NLambda (Name _, _, _)
       when is_gvar p e && not (occur_glob_constr p b1) ->
-      let (decls,b) = match_iterated_binders true [DAst.make ?loc @@ GLocalPattern((cp,ids),p,bk,t1)] b1 in
+      let (decls,b) = match_iterated_binders true [DAst.make ?loc @@ GLocalPattern((cp,ids),p,bk,t1)] b1 lassoc in
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
       match_in u alp metas sigma b termin
     (* Matching recursive notations for binders: ad hoc cases supporting let-in *)
     | _, _, NLambda (Name _,_,_) ->
-      let (decls,b) = match_iterated_binders true [DAst.make ?loc @@ GLocalAssum (na1,bk,t1)] b1 in
+      let (decls,b) = match_iterated_binders true [DAst.make ?loc @@ GLocalAssum (na1,bk,t1)] b1 lassoc in
       (* TODO: address the possibility that termin is a Lambda itself *)
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
       match_in u alp metas sigma b termin
     (* Matching recursive notations for binders: general case *)
     | _, _, _ ->
-      match_binderlist_with_app (match_hd u) alp metas sigma a1 x y iter termin
+      match_binderlist_with_app (match_hd u) alp metas sigma a1 x y iter termin lassoc
     end
 
-  | GProd (na1, bk, t1, b1), NBinderList (x,y,iter,termin) ->
+  | GProd (na1, bk, t1, b1), NBinderList (x,y,iter,termin,lassoc) ->
     (* "∀ p, let 'cp = p in t" -> "∀ 'cp, t" *)
     begin match na1, DAst.get b1, iter, termin with
     | Name p, GCases (LetPatternStyle,None,[(e, _)],[(_,(ids,[cp],b1))]), NProd (Name _,_,_), NVar _
       when is_gvar p e && not (occur_glob_constr p b1) ->
-      let (decls,b) = match_iterated_binders true [DAst.make ?loc @@ GLocalPattern ((cp,ids),p,bk,t1)] b1 in
+      let (decls,b) = match_iterated_binders true [DAst.make ?loc @@ GLocalPattern ((cp,ids),p,bk,t1)] b1 lassoc in
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
       match_in u alp metas sigma b termin
     | _, _,  NProd (Name _,_,_), _ when na1 != Anonymous ->
-      let (decls,b) = match_iterated_binders false [DAst.make ?loc @@ GLocalAssum (na1,bk,t1)] b1 in
+      let (decls,b) = match_iterated_binders false [DAst.make ?loc @@ GLocalAssum (na1,bk,t1)] b1 lassoc in
       (* TODO: address the possibility that termin is a Prod itself *)
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
       match_in u alp metas sigma b termin
     (* Matching recursive notations for binders: general case *)
     | _, _, _, _ ->
-      match_binderlist_with_app (match_hd u) alp metas sigma a1 x y iter termin
+      match_binderlist_with_app (match_hd u) alp metas sigma a1 x y iter termin lassoc
     end
 
   (* Matching recursive notations for binders: general case *)
-  | _r, NBinderList (x,y,iter,termin) ->
-       match_binderlist_with_app (match_hd u) alp metas sigma a1 x y iter termin
+  | _r, NBinderList (x,y,iter,termin,lassoc) ->
+       match_binderlist_with_app (match_hd u) alp metas sigma a1 x y iter termin lassoc
 
   (* Matching individual binders as part of a recursive pattern *)
   | GLambda (na1, bk, t1, b1), NLambda (na2, t2, b2) ->

@@ -663,12 +663,13 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
         Some (Genintern.generic_substitute_notation bindings arg)
       in
       DAst.make ?loc @@ GHole (knd, naming, arg)
-    | NBinderList (x,y,iter,terminator) ->
+    | NBinderList (x,y,iter,terminator,lassoc) ->
       (try
         (* All elements of the list are in scopes (scopt,subscopes) *)
 	let (bl,(scopt,subscopes)) = Id.Map.find x binders in
         (* We flatten binders so that we can interpret them at substitution time *)
         let bl = flatten_binders bl in
+        let bl = if lassoc then List.rev bl else bl in
         (* We isolate let-ins which do not contribute to the repeated pattern *)
         let l = List.map (function | CLocalDef (na,c,t) -> AddLetIn (na,c,t)
                                    | binder -> AddPreBinderIter (y,binder)) bl in
