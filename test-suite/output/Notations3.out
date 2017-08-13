@@ -140,3 +140,24 @@ alist = [0; 1; 2]
      : list nat
 ! '{{x, y}}, x + y = 0
      : Prop
+exists x : nat,
+  nat ->
+  exists y : nat,
+    nat ->
+    exists '{{u, t}}, forall z1 : nat, z1 = 0 /\ x + y = 0 /\ u + t = 0
+     : Prop
+exists x : nat,
+  nat ->
+  exists y : nat,
+    nat ->
+    exists '{{z, t}}, forall z2 : nat, z2 = 0 /\ x + y = 0 /\ z + t = 0
+     : Prop
+exists_true '{{x, y}},
+(let u := 0 in exists_true '{{z, t}}, x + y = 0 /\ z + t = 0)
+     : Prop
+exists_true (A : Type) (R : A -> A -> Prop) (_ : Reflexive R),
+(forall x : A, R x x)
+     : Prop
+exists_true (x : nat) (A : Type) (R : A -> A -> Prop) 
+(_ : Reflexive R) (y : nat), x + y = 0 -> forall z : A, R z z
+     : Prop

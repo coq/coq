@@ -436,16 +436,20 @@ let glob_local_binder_of_extended = DAst.with_loc_val (fun ?loc -> function
 
 let intern_cases_pattern_fwd = ref (fun _ -> failwith "intern_cases_pattern_fwd")
 
+let intern_letin_binder intern ntnvars env ((loc,na as locna),def,ty) =
+  let term = intern env def in
+  let ty = Option.map (intern env) ty in
+  (push_name_env ntnvars (impls_term_list term) env locna,
+   (na,Explicit,term,ty))
+
 let intern_local_binder_aux ?(global_level=false) intern ntnvars (env,bl) = function
   | CLocalAssum(nal,bk,ty) ->
       let env, bl' = intern_assumption intern ntnvars env nal bk ty in
       let bl' = List.map (fun (loc,(na,c,t)) -> DAst.make ?loc @@ GLocalAssum (na,c,t)) bl' in
       env, bl' @ bl
   | CLocalDef((loc,na as locna),def,ty) ->
-     let term = intern env def in
-     let ty = Option.map (intern env) ty in
-      (push_name_env ntnvars (impls_term_list term) env locna,
-       (DAst.make ?loc @@ GLocalDef (na,Explicit,term,ty)) :: bl)
+     let env,(na,bk,def,ty) = intern_letin_binder intern ntnvars env (locna,def,ty) in
+     env, (DAst.make ?loc @@ GLocalDef (na,bk,def,ty)) :: bl
   | CLocalPattern (loc,(p,ty)) ->
       let tyc =
         match ty with
@@ -554,39 +558,11 @@ let traverse_binder (terms,_,_ as subst) avoid (renaming,env) = function
     in
     (renaming',env), Name id'
 
-type letin_param_r =
-  | LPLetIn of Name.t * glob_constr * glob_constr option
-  | LPCases of (cases_pattern * Id.t list) * Id.t
-(* Unused thus fatal warning *)
-(* and letin_param = letin_param_r Loc.located *)
-
-let make_letins =
-  List.fold_right
-    (fun a c ->
-     match a with
-     | loc, LPLetIn (na,b,t) ->
-       DAst.make ?loc @@ GLetIn(na,b,t,c)
-     | loc, LPCases ((cp,il),id) ->
-         let tt = (DAst.make ?loc @@ GVar id, (Name id,None)) in
-         DAst.make ?loc @@ GCases(Misctypes.LetPatternStyle,None,[tt],[(loc,(il,[cp],c))]))
-
-let rec subordinate_letins letins l = match l with
-  | bnd :: l ->
-    let loc = bnd.CAst.loc in
-    begin match DAst.get bnd with
-  (* binders come in reverse order; the non-let are returned in reverse order together *)
-  (* with the subordinated let-in in writing order *)
-    | GLocalDef (na,_,b,t) ->
-      subordinate_letins ((Loc.tag ?loc @@ LPLetIn (na,b,t))::letins) l
-    | GLocalAssum (na,bk,t) ->
-      let letins',rest = subordinate_letins [] l in
-      letins',((loc,(na,bk,t)),letins)::rest
-    | GLocalPattern (u,id,bk,t) ->
-      subordinate_letins ((Loc.tag ?loc @@ LPCases (u,id))::letins)
-                          ([DAst.make ?loc @@ GLocalAssum (Name id,bk,t)] @ l)
-    end
-  | [] ->
-      letins,[]
+type binder_action =
+| AddLetIn of Name.t Loc.located * constr_expr * constr_expr option
+| AddTermIter of (constr_expr * subscopes) Names.Id.Map.t
+| AddPreBinderIter of Id.t * local_binder_expr (* A binder to be internalized *)
+| AddBinderIter of Id.t * extended_glob_local_binder (* A binder already internalized - used for generalized binders *)
 
 let dmap_with_loc f n =
   CAst.map_with_loc (fun ?loc c -> f ?loc (DAst.get_thunk c)) n
@@ -613,15 +589,40 @@ let terms_of_binders bl =
     | [] -> [] in
   extract_variables bl
 
+let flatten_generalized_binders_if_any y l =
+  match List.rev l with
+  | [] -> assert false
+  | a::l -> a, List.map (fun a -> AddBinderIter (y,a)) l (* if l not empty, this means we had a generalized binder *)
+
+let flatten_binders bl =
+  let dispatch = function
+    | CLocalAssum (nal,bk,t) -> List.map (fun na -> CLocalAssum ([na],bk,t)) nal
+    | a -> [a] in
+  List.flatten (List.map dispatch bl)
+
 let instantiate_notation_constr loc intern ntnvars subst infos c =
   let (terms,termlists,binders) = subst in
   (* when called while defining a notation, avoid capturing the private binders
      of the expression by variables bound by the notation (see #3892) *)
   let avoid = Id.Map.domain ntnvars in
-  let rec aux (terms,binderopt,terminopt as subst') (renaming,env) c =
+  let rec aux (terms,binderopt,iteropt as subst') (renaming,env) c =
     let subinfos = renaming,{env with tmp_scope = None} in
     match c with
-    | NVar id when Id.equal id ldots_var -> Option.get terminopt
+    | NVar id when Id.equal id ldots_var ->
+        let rec aux_letin env = function
+        | [],terminator,_ -> aux (terms,None,None) (renaming,env) terminator
+        | AddPreBinderIter (y,binder)::rest,terminator,iter ->
+           let env,binders = intern_local_binder_aux intern ntnvars (env,[]) binder in
+           let binder,extra = flatten_generalized_binders_if_any y binders in
+           aux (terms,Some (y,binder),Some (extra@rest,terminator,iter)) (renaming,env) iter
+        | AddBinderIter (y,binder)::rest,terminator,iter ->
+           aux (terms,Some (y,binder),Some (rest,terminator,iter)) (renaming,env) iter
+        | AddTermIter nterms::rest,terminator,iter ->
+           aux (nterms,None,Some (rest,terminator,iter)) (renaming,env) iter
+        | AddLetIn (na,c,t)::rest,terminator,iter ->
+           let env,(na,_,c,t) = intern_letin_binder intern ntnvars env (na,c,t) in
+           DAst.make ?loc (GLetIn (na,c,t,aux_letin env (rest,terminator,iter))) in
+        aux_letin env (Option.get iteropt)
     | NVar id -> subst_var subst' (renaming, env) id
     | NList (x,y,iter,terminator,lassoc) ->
       let l,(scopt,subscopes) =
@@ -636,12 +637,8 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
           terms_of_binders (if lassoc then bl' else List.rev bl'),(None,[])
         with Not_found ->
           anomaly (Pp.str "Inconsistent substitution of recursive notation.") in
-      let termin = aux (terms,None,None) subinfos terminator in
-      let fold a t =
-        let nterms = Id.Map.add y (a, (scopt, subscopes)) terms in
-        aux (nterms,None,Some t) subinfos iter
-      in
-      List.fold_right fold l termin
+      let l = List.map (fun a -> AddTermIter ((Id.Map.add y (a,(scopt,subscopes)) terms))) l in
+      aux (terms,None,Some (l,terminator,iter)) subinfos (NVar ldots_var)
     | NHole (knd, naming, arg) ->
       let knd = match knd with
       | Evar_kinds.BinderType (Name id as na) ->
@@ -670,24 +667,21 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
       (try
         (* All elements of the list are in scopes (scopt,subscopes) *)
 	let (bl,(scopt,subscopes)) = Id.Map.find x binders in
-	let env,bl = List.fold_left (intern_local_binder_aux intern ntnvars) (env,[]) bl in
-	let letins,bl = subordinate_letins [] bl in
-        let termin = aux (terms,None,None) (renaming,env) terminator in
-	let res = List.fold_left (fun t binder ->
-	    aux (terms,Some(y,binder),Some t) subinfos iter)
-	  termin bl in
-	make_letins letins res
+        (* We flatten binders so that we can interpret them at substitution time *)
+        let bl = flatten_binders bl in
+        (* We isolate let-ins which do not contribute to the repeated pattern *)
+        let l = List.map (function | CLocalDef (na,c,t) -> AddLetIn (na,c,t)
+                                   | binder -> AddPreBinderIter (y,binder)) bl in
+        (* We stack the binders to iterate or let-ins to insert *)
+        aux (terms,None,Some (l,terminator,iter)) subinfos (NVar ldots_var)
       with Not_found ->
           anomaly (Pp.str "Inconsistent substitution of recursive notation."))
     | NProd (Name id, NHole _, c') when option_mem_assoc id binderopt ->
-        let a,letins = snd (Option.get binderopt) in
-        let e = make_letins letins (aux subst' infos c') in
-        let (_loc,(na,bk,t)) = a in
-        DAst.make ?loc @@ GProd (na,bk,t,e)
+        let binder = snd (Option.get binderopt) in
+        expand_binders ?loc mkGProd [binder] (aux subst' (renaming,env) c')
     | NLambda (Name id,NHole _,c') when option_mem_assoc id binderopt ->
-        let a,letins = snd (Option.get binderopt) in
-        let (_loc,(na,bk,t)) = a in
-        DAst.make ?loc @@ GLambda (na,bk,t,make_letins letins (aux subst' infos c'))
+        let binder = snd (Option.get binderopt) in
+        expand_binders ?loc mkGLambda [binder] (aux subst' (renaming,env) c')
     (* Two special cases to keep binder name synchronous with BinderType *)
     | NProd (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
         when Name.equal na na' ->

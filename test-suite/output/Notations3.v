@@ -258,3 +258,23 @@ End B.
 (* for isolated "forall" (was not working already in 8.6) *)
 Notation "! x .. y , A" := (id (forall x, .. (id (forall y, A)) .. )) (at level 200, x binder).
 Check ! '(x,y), x+y=0.
+
+(* Check that the terminator of a recursive pattern is interpreted in
+   the correct environment of bindings *)
+Notation "'exists_mixed' x .. y , P" := (ex (fun x => forall z:nat, .. (ex (fun y => forall z:nat, z=0 /\ P)) ..)) (at level 200, x binder).
+Check exists_mixed x y '(u,t), x+y=0/\u+t=0.
+Check exists_mixed x y '(z,t), x+y=0/\z+t=0.
+
+(* Check that intermediary let-in are inserted inbetween instances of
+   the repeated pattern *)
+Notation "'exists_true' x .. y , P" := (exists x, True /\ .. (exists y, True /\ P) ..) (at level 200, x binder).
+Check exists_true '(x,y) (u:=0) '(z,t), x+y=0/\z+t=0.
+
+(* Check that generalized binders are correctly interpreted *)
+
+Module G.
+Generalizable Variables A R.
+Class Reflexive {A:Type} (R : A->A->Prop) := reflexivity : forall x : A, R x x.
+Check exists_true `{Reflexive A R}, forall x, R x x.
+Check exists_true x `{Reflexive A R} y, x+y=0 -> forall z, R z z.
+End G.
