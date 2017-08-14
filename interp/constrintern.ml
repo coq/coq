@@ -624,17 +624,17 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
            DAst.make ?loc (GLetIn (na,c,t,aux_letin env (rest,terminator,iter))) in
         aux_letin env (Option.get iteropt)
     | NVar id -> subst_var subst' (renaming, env) id
-    | NList (x,y,iter,terminator,lassoc) ->
+    | NList (x,y,iter,terminator,revert) ->
       let l,(scopt,subscopes) =
         (* All elements of the list are in scopes (scopt,subscopes) *)
         try
           let l,scopes = Id.Map.find x termlists in
-          (if lassoc then List.rev l else l),scopes
+          (if revert then List.rev l else l),scopes
         with Not_found ->
         try
 	  let (bl,(scopt,subscopes)) = Id.Map.find x binders in
 	  let env,bl' = List.fold_left (intern_local_binder_aux intern ntnvars) (env,[]) bl in
-          terms_of_binders (if lassoc then bl' else List.rev bl'),(None,[])
+          terms_of_binders (if revert then bl' else List.rev bl'),(None,[])
         with Not_found ->
           anomaly (Pp.str "Inconsistent substitution of recursive notation.") in
       let l = List.map (fun a -> AddTermIter ((Id.Map.add y (a,(scopt,subscopes)) terms))) l in
@@ -663,13 +663,13 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
         Some (Genintern.generic_substitute_notation bindings arg)
       in
       DAst.make ?loc @@ GHole (knd, naming, arg)
-    | NBinderList (x,y,iter,terminator,lassoc) ->
+    | NBinderList (x,y,iter,terminator,revert) ->
       (try
         (* All elements of the list are in scopes (scopt,subscopes) *)
 	let (bl,(scopt,subscopes)) = Id.Map.find x binders in
         (* We flatten binders so that we can interpret them at substitution time *)
         let bl = flatten_binders bl in
-        let bl = if lassoc then List.rev bl else bl in
+        let bl = if revert then List.rev bl else bl in
         (* We isolate let-ins which do not contribute to the repeated pattern *)
         let l = List.map (function | CLocalDef (na,c,t) -> AddLetIn (na,c,t)
                                    | binder -> AddPreBinderIter (y,binder)) bl in
@@ -1471,7 +1471,7 @@ let drop_notations_pattern looked_for genv =
       let pl = List.map2 (fun x -> in_not false loc (x,snd scopes) fullsubst []) argscs1 pl in
       let pl = add_local_defs_and_check_length loc genv g pl args in
       DAst.make ?loc @@ RCPatCstr (g, pl @ List.map (in_pat false scopes) args, [])
-    | NList (x,y,iter,terminator,lassoc) ->
+    | NList (x,y,iter,terminator,revert) ->
       if not (List.is_empty args) then user_err ?loc 
         (strbrk "Application of arguments to a recursive notation not supported in patterns.");
       (try
@@ -1482,7 +1482,7 @@ let drop_notations_pattern looked_for genv =
            let nsubst = Id.Map.add y (a, (scopt, subscopes)) subst in
            let u = in_not false loc scopes (nsubst, substlist) [] iter in
            subst_pat_iterator ldots_var t u)
-           (if lassoc then List.rev l else l) termin
+           (if revert then List.rev l else l) termin
        with Not_found ->
          anomaly (Pp.str "Inconsistent substitution of recursive notation."))
     | NHole _ ->

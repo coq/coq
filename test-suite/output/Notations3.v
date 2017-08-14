@@ -307,3 +307,22 @@ Notation "'exists_non_null' x .. y  , P" :=
   (ex (fun x => x <> 0 /\ .. (ex (fun y => y <> 0 /\ P)) ..))
   (at level 200, x binder).
 Check exists_non_null x y z t , x=y/\z=t.
+
+(* Examples where the recursive pattern is in reverse order *)
+
+Notation "{{RL  c , .. , d }}" := (pair d .. (pair c 0) ..).
+Check {{RL 1 , 2}}.
+
+Notation "{{RR  c , .. , d }}" := (pair .. (pair 0 d) .. c).
+Check {{RR 1 , 2}}.
+
+Set Printing All.
+Check {{RL 1 , 2}}.
+Check {{RR 1 , 2}}.
+Unset Printing All.
+
+Notation "{{RLRR  c , .. , d }}" := (pair d .. (pair c 0) .., pair .. (pair 0 d) .. c, pair c .. (pair d 0) .., pair .. (pair 0 c) .. d).
+Check {{RLRR 1 , 2}}.
+Unset Printing Notations.
+Check {{RLRR 1 , 2}}.
+Set Printing Notations.

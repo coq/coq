@@ -173,3 +173,21 @@ exists_true (x : nat) (A : Type) (R : A -> A -> Prop)
      : Prop * Prop
 exists_non_null x y z t : nat , x = y /\ z = t
      : Prop
+{{RL 1, 2}}
+     : nat * (nat * nat)
+{{RR 1, 2}}
+     : nat * nat * nat
+@pair nat (prod nat nat) (S (S O)) (@pair nat nat (S O) O)
+     : prod nat (prod nat nat)
+@pair (prod nat nat) nat (@pair nat nat O (S (S O))) (S O)
+     : prod (prod nat nat) nat
+{{RLRR 1, 2}}
+     : nat * (nat * nat) * (nat * nat * nat) * (nat * (nat * nat)) *
+       (nat * nat * nat)
+pair
+  (pair
+     (pair (pair (S (S O)) (pair (S O) O)) (pair (pair O (S (S O))) (S O)))
+     (pair (S O) (pair (S (S O)) O))) (pair (pair O (S O)) (S (S O)))
+     : prod
+         (prod (prod (prod nat (prod nat nat)) (prod (prod nat nat) nat))
+            (prod nat (prod nat nat))) (prod (prod nat nat) nat)

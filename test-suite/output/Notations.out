@@ -41,7 +41,7 @@ fun x : nat => ifn x is succ n then n else 0
 -4
      : Z
 The command has indeed failed with message:
-x should not be bound in a recursive pattern of the right-hand side.
+Cannot find where the recursive pattern starts.
 The command has indeed failed with message:
 in the right-hand side, y and z should appear in
 term position as part of a recursive pattern.
