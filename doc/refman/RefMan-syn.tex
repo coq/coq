@@ -3,25 +3,32 @@
 
 In this chapter, we introduce advanced commands to modify the way
 {\Coq} parses and prints objects, i.e. the translations between the
-concrete and internal representations of terms and commands. The main
-commands are {\tt Notation} and {\tt Infix} which are described in
-section \ref{Notation}.  It also happens that the same symbolic
-notation is expected in different contexts. To achieve this form of
-overloading, {\Coq} offers a notion of interpretation scope. This is
-described in Section~\ref{scopes}.
+concrete and internal representations of terms and commands.
 
-\Rem The commands {\tt Grammar}, {\tt Syntax} and {\tt Distfix} which
-were present for a while in {\Coq} are no longer available from {\Coq}
-version 8.0. The underlying AST structure is also no longer available.
-The functionalities of the command {\tt Syntactic Definition} are
-still available; see Section~\ref{Abbreviations}.
+The main commands to provide custom symbolic notations for terms are
+{\tt Notation} and {\tt Infix}. They are described in Section
+\ref{Notation}. There is also a variant of {\tt Notation} which does
+not modify the parser. This provides with a form of abbreviation and
+it is described in Section~\ref{Abbreviations}. It is sometimes
+expected that the same symbolic notation has different meanings in
+different contexts. To achieve this form of overloading, {\Coq} offers
+a notion of interpretation scope. This is described in
+Section~\ref{scopes}.
+
+The main command to provide custom notations for tactics is {\tt
+  Tactic Notation}. It is described in Section~\ref{Tactic-Notation}.
+
+% No need any more to remind this
+%% \Rem The commands {\tt Grammar}, {\tt Syntax} and {\tt Distfix} which
+%% were present for a while in {\Coq} are no longer available from {\Coq}
+%% version 8.0. The underlying AST structure is also no longer available.
 
 \section[Notations]{Notations\label{Notation}
 \comindex{Notation}}
 
 \subsection{Basic notations}
 
-A {\em notation} is a symbolic abbreviation denoting some term
+A {\em notation} is a symbolic expression denoting some term
 or term pattern.
 
 A typical notation is the use of the infix symbol \verb=/\= to denote
@@ -37,7 +44,7 @@ string \verb="A /\ B"= (called a {\em notation}) tells how it is
 symbolically written.
 
 A notation is always surrounded by double quotes (except when the
-abbreviation is a single identifier; see \ref{Abbreviations}). The
+abbreviation has the form of an ordinary applicative expression; see \ref{Abbreviations}). The
 notation is composed of {\em tokens} separated by spaces.  Identifiers
 in the string (such as \texttt{A} and \texttt{B}) are the {\em
 parameters} of the notation. They must occur at least once each in the
@@ -61,7 +68,7 @@ syntactic expression (see \ref{ReservedNotation}), explicit precedences and
 associativity rules have to be given.
 
 \Rem The right-hand side of a notation is interpreted at the time the
-notation is given. In particular, implicit arguments (see
+notation is given. In particular, disambiguation of constants, implicit arguments (see
 Section~\ref{Implicit Arguments}), coercions (see
 Section~\ref{Coercions}), etc. are resolved at the time of the
 declaration of the notation.
@@ -105,8 +112,8 @@ parentheses are mandatory (this is a ``no associativity'')\footnote{
 which {\Coq} is built, namely {\camlpppp}, currently does not implement the
 no-associativity and replaces it by a left associativity; hence it is
 the same for {\Coq}: no-associativity is in fact left associativity}.
-We don't know of a special convention of the associativity of
-disjunction and conjunction, so let's apply for instance a right
+We do not know of a special convention of the associativity of
+disjunction and conjunction, so let us apply for instance a right
 associativity (which is the choice of {\Coq}).
 
 Precedence levels and associativity rules of notations have to be
@@ -142,7 +149,8 @@ Notation "x = y" := (@eq _ x y) (at level 70, no associativity).
 \end{coq_example*}
 
 One can define {\em closed} notations whose both sides are symbols. In
-this case, the default precedence level for inner subexpression is 200.
+this case, the default precedence level for inner subexpression is
+200, and the default level for the notation itself is 0.
 
 \begin{coq_eval}
 Set Printing Depth 50.
@@ -150,7 +158,7 @@ Set Printing Depth 50.
 (**** an incompatibility with the reserved notation ********)
 \end{coq_eval}
 \begin{coq_example*}
-Notation "( x , y )" := (@pair _ _ x y) (at level 0).
+Notation "( x , y )" := (@pair _ _ x y).
 \end{coq_example*}
 
 One can also define notations for binders.
@@ -161,17 +169,17 @@ Set Printing Depth 50.
 (**** an incompatibility with the reserved notation ********)
 \end{coq_eval}
 \begin{coq_example*}
-Notation "{ x : A  |  P }" := (sig A (fun x => P)) (at level 0).
+Notation "{ x : A  |  P }" := (sig A (fun x => P)).
 \end{coq_example*}
 
 In the last case though, there is a conflict with the notation for
-type casts. This last notation, as shown by the command {\tt Print Grammar
+type casts. The notation for type casts, as shown by the command {\tt Print Grammar
 constr} is at level 100. To avoid \verb=x : A= being parsed as a type cast,
 it is necessary to put {\tt x} at a level below 100, typically 99. Hence, a
-correct definition is 
+correct definition is the following.
 
 \begin{coq_example*}
-Notation "{ x : A  |  P }" := (sig A (fun x => P)) (at level 0, x at level 99).
+Notation "{ x : A  |  P }" := (sig A (fun x => P)) (x at level 99).
 \end{coq_example*}
 
 %This change has retrospectively an effect on the notation for notation
@@ -182,14 +190,17 @@ Notation "{ x : A  |  P }" := (sig A (fun x => P)) (at level 0, x at level 99).
 %Notation "{ A } + { B }" := (sumbool A B) (at level 0, A at level 99).
 %\end{coq_example*}
 
-See the next section for more about factorization.
+More generally, it is required that notations are explicitly
+factorized on the left. See the next section for more about
+factorization.
 
 \subsection{Simple factorization rules}
 
-{\Coq} extensible parsing is performed by Camlp5 which is essentially a
-LL1 parser. Hence, some care has to be taken not to hide already
-existing rules by new rules. Some simple left factorization work has
-to be done. Here is an example.
+{\Coq} extensible parsing is performed by {\camlpppp} which is
+essentially a LL1 parser: it decides which notation to parse by
+looking tokens from left to right. Hence, some care has to be taken
+not to hide already existing rules by new rules. Some simple left
+factorization work has to be done. Here is an example.
 
 \begin{coq_eval}
 (********** The next rule for notation _ < _ < _  produces **********)
@@ -242,17 +253,19 @@ on the {\Coq} printer. For example:
 Check (and True True).
 \end{coq_example}
 
-However, printing, especially pretty-printing, requires
-more care than parsing. We may want specific indentations,
-line breaks, alignment if on several lines, etc. 
+However, printing, especially pretty-printing, also requires some
+care. We may want specific indentations, line breaks, alignment if on
+several lines, etc. For pretty-printing, {\Coq} relies on {\ocaml}
+formatting library, which provides indentation and automatic line
+breaks depending on page width by means of {\em formatting boxes}.
 
-The default printing of notations is very rudimentary. For printing a
-notation, a {\em formatting box} is opened in such a way that if the
+The default printing of notations is rudimentary. For printing a
+notation, a formatting box is opened in such a way that if the
 notation and its arguments cannot fit on a single line, a line break
 is inserted before the symbols of the notation and the arguments on
 the next lines are aligned with the argument on the first line.
 
-A first, simple control that a user can have on the printing of a
+A first simple control that a user can have on the printing of a
 notation is the insertion of spaces at some places of the
 notation. This is performed by adding extra spaces between the symbols
 and parameters: each extra space (other than the single space needed
@@ -276,6 +289,13 @@ Notation "'If' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
 "'[v   ' 'If'  c1 '/' '[' 'then'  c2  ']' '/' '[' 'else'  c3 ']' ']'").
 \end{coq_example}
 \end{small}
+
+\begin{coq_example}
+Check
+ (IF_then_else (IF_then_else True False True)
+   (IF_then_else True False True)
+   (IF_then_else True False True)).
+\end{coq_example}
 
 A {\em format} is an extension of the string denoting the notation with
 the possible following elements delimited by single quotes:
@@ -313,22 +333,15 @@ Notations do not survive the end of sections. No typing of the denoted
 expression is performed at definition time. Type-checking is done only
 at the time of use of the notation.
 
-\begin{coq_example}
-Check 
- (IF_then_else (IF_then_else True False True) 
-   (IF_then_else True False True)
-   (IF_then_else True False True)).   
-\end{coq_example}
-
 \Rem
 Sometimes, a notation is expected only for the parser.
 %(e.g. because
 %the underlying parser of {\Coq}, namely {\camlpppp}, is LL1 and some extra
 %rules are needed to circumvent the absence of factorization).
-To do so, the option {\em only parsing} is allowed in the list of modifiers of
+To do so, the option {\tt only parsing} is allowed in the list of modifiers of
 \texttt{Notation}.
 
-Conversely, the {\em only printing} can be used to declare
+Conversely, the {\tt only printing} can be used to declare
 that a notation should only be used for printing and should not declare a
 parsing rule. In particular, such notations do not modify the parser.
 
@@ -339,16 +352,16 @@ The \texttt{Infix} command is a shortening for declaring notations of
 infix symbols. Its syntax is 
 
 \begin{quote}
-\noindent\texttt{Infix "{\symbolentry}" :=} {\qualid} {\tt (} \nelist{\em modifier}{,} {\tt )}.
+\noindent\texttt{Infix "{\symbolentry}" :=} {\term} {\tt (} \nelist{\em modifier}{,} {\tt )}.
 \end{quote}
 
 and it is equivalent to
 
 \begin{quote}
-\noindent\texttt{Notation "x {\symbolentry} y" := ({\qualid} x y)  (} \nelist{\em modifier}{,} {\tt )}.
+\noindent\texttt{Notation "x {\symbolentry} y" := ({\term} x y)  (} \nelist{\em modifier}{,} {\tt )}.
 \end{quote}
 
-where {\tt x} and {\tt y} are fresh names distinct from {\qualid}. Here is an example.
+where {\tt x} and {\tt y} are fresh names. Here is an example.
 
 \begin{coq_example*}
 Infix "/\" := and (at level 80, right associativity).
@@ -380,12 +393,14 @@ reserved. Hence their precedence and associativity cannot be changed.
 \comindex{CoFixpoint {\ldots} where {\ldots}}
 \comindex{Inductive {\ldots} where {\ldots}}}
 
-Thanks to reserved notations, the inductive, co-inductive, recursive
-and corecursive definitions can benefit of customized notations. To do
-this, insert a {\tt where} notation clause after the definition of the
-(co)inductive type or (co)recursive term (or after the definition of
-each of them in case of mutual definitions). The exact syntax is given
-on Figure~\ref{notation-syntax}. Here are examples:
+Thanks to reserved notations, the inductive, co-inductive, record,
+recursive and corecursive definitions can benefit of customized
+notations. To do this, insert a {\tt where} notation clause after the
+definition of the (co)inductive type or (co)recursive term (or after
+the definition of each of them in case of mutual definitions). The
+exact syntax is given on Figure~\ref{notation-syntax} for inductive,
+co-inductive, recursive and corecursive definitions and on
+Figure~\ref{record-syntax} for records. Here are examples:
 
 \begin{coq_eval}
 Set Printing Depth 50.
@@ -513,7 +528,7 @@ Set Printing Depth 50.
 Notation "{ x : A  |  P  }" := (sig (fun x : A => P)) (at level 0).
 \end{coq_example*}
 
-The binding variables in the left-hand-side that occur as a parameter
+The binding variables in the left-hand side that occur as a parameter
 of the notation naturally bind all their occurrences appearing in
 their respective scope after instantiation of the parameters of the
 notation.
@@ -565,24 +580,22 @@ notation parses any number of time (but at least one time) a sequence
 of expressions separated by the sequence of tokens $s$ (in the
 example, $s$ is just ``{\tt ;}'').
 
-In the right-hand side, the term enclosed within {\tt ..} must be a
-pattern with two holes of the form $\phi([~]_E,[~]_I)$ where the first
-hole is occupied either by $x$ or by $y$ and the second hole is
-occupied by an arbitrary term $t$ called the {\it terminating}
-expression of the recursive notation. The subterm {\tt ..} $\phi(x,t)$
-{\tt ..} (or {\tt ..} $\phi(y,t)$ {\tt ..})  must itself occur at
-second position of the same pattern where the first hole is occupied
-by the other variable, $y$ or $x$. Otherwise said, the right-hand side
-must contain a subterm of the form either $\phi(x,${\tt ..}
-$\phi(y,t)$ {\tt ..}$)$ or $\phi(y,${\tt ..}  $\phi(x,t)$ {\tt ..}$)$.
-The pattern $\phi$ is the {\em iterator} of the recursive notation
-and, of course, the name $x$ and $y$ can be chosen arbitrarily.
+The right-hand side must contain a subterm of the form either
+$\phi(x,${\tt ..}  $\phi(y,t)$ {\tt ..}$)$ or $\phi(y,${\tt ..}
+$\phi(x,t)$ {\tt ..}$)$ where $\phi([~]_E,[~]_I)$, called the {\em
+  iterator} of the recursive notation is an arbitrary expression with
+distinguished placeholders and
+where $t$ is called the {\tt terminating expression} of the recursive
+notation. In the example, we choose the name s$x$ and $y$ but in
+practice they can of course be chosen arbitrarily. Note that the
+placeholder $[~]_I$ has to occur only once but the $[~]_E$ can occur
+several times.
 
-The parsing phase produces a list of expressions which are used to
-fill in order the first hole of the iterating pattern which is
+Parsing the notation produces a list of expressions which are used to
+fill the first placeholder of the iterating pattern which itself is
 repeatedly nested as many times as the length of the list, the second
-hole being the nesting point. In the innermost occurrence of the
-nested iterating pattern, the second hole is finally filled with the
+placeholder being the nesting point. In the innermost occurrence of the
+nested iterating pattern, the second placeholder is finally filled with the
 terminating expression.
 
 In the example above, the iterator $\phi([~]_E,[~]_I)$ is {\tt cons
@@ -613,20 +626,21 @@ section \ref{scopes}).
 Recursive notations can also be used with binders. The basic example is:
 
 \begin{coq_example*}
-Notation "'exists' x .. y , p" := (ex (fun x => .. (ex (fun y => p)) ..))
+Notation "'exists' x .. y , p" :=
+  (ex (fun x => .. (ex (fun y => p)) ..))
   (at level 200, x binder, y binder, right associativity).
 \end{coq_example*}
 
 The principle is the same as in Section~\ref{RecursiveNotations}
-except that in the iterator $\phi([~]_E,[~]_I)$, the first hole is a
-placeholder occurring at the position of the binding variable of a {\tt
+except that in the iterator $\phi([~]_E,[~]_I)$, the placeholder $[~]_E$ can
+also occur in position of the binding variable of a {\tt
   fun} or a {\tt forall}.
 
 To specify that the part ``$x$ {\tt ..} $y$'' of the notation
 parses a sequence of binders, $x$ and $y$ must be marked as {\tt
-  binder} in the list of modifiers of the notation.  Then, the list of
-binders produced at the parsing phase are used to fill in the first
-hole of the iterating pattern which is repeatedly nested as many times
+  binder} in the list of modifiers of the notation. The
+binders of the parsed sequence are used to fill the occurrences of the first
+placeholder of the iterating pattern which is repeatedly nested as many times
 as the number of binders generated. If ever the generalization
 operator {\tt `} (see Section~\ref{implicit-generalization}) is used
 in the binding list, the added binders are taken into account too.
@@ -635,14 +649,14 @@ Binders parsing exist in two flavors. If $x$ and $y$ are marked as
 {\tt binder}, then a sequence such as {\tt a b c : T} will be accepted
 and interpreted as the sequence of binders {\tt (a:T) (b:T)
   (c:T)}. For instance, in the notation above, the syntax {\tt exists
-  a b : nat, a = b} is provided.
+  a b : nat, a = b} is valid.
 
 The variables $x$ and $y$ can also be marked as {\tt closed binder} in
 which case only well-bracketed binders of the form {\tt (a b c:T)} or
 {\tt \{a b c:T\}} etc. are accepted.
 
 With closed binders, the recursive sequence in the left-hand side can
-be of the general form $x$ $s$ {\tt ..} $s$ $y$ where $s$ is an
+be of the more general form $x$ $s$ {\tt ..} $s$ $y$ where $s$ is an
 arbitrary sequence of tokens. With open binders though, $s$ has to be
 empty. Here is an example of recursive notation with closed binders:
 
@@ -659,6 +673,16 @@ pattern for terms. Here is an example:
 Notation "'FUNAPP' x .. y , f" :=
   (fun x => .. (fun y => (.. (f x) ..) y ) ..)
   (at level 200, x binder, y binder, right associativity).
+\end{coq_example*}
+
+If an occurrence of the $[~]_E$ is not in position of a binding
+variable but of a term, it is the name used in the binding which is
+used. Here is an example:
+
+\begin{coq_example*}
+Notation "'exists_non_null' x .. y  , P" :=
+  (ex (fun x => x <> 0 /\ .. (ex (fun y => y <> 0 /\ P)) ..))
+  (at level 200, x binder).
 \end{coq_example*}
 
 \subsection{Summary}
@@ -754,7 +778,7 @@ stack by using the command
 {\tt Close Scope} {\scope}.
 \end{quote}
 Notice that this command does not only cancel the last {\tt Open Scope
-{\scope}} but all the invocation of it.
+{\scope}} but all the invocations of it.
 
 \Rem {\tt Open Scope} and {\tt Close Scope} do not survive the end of
 sections where they occur. When defined outside of a section, they are
@@ -1108,7 +1132,7 @@ Check reflexive iff.
 \end{coq_example}
 
 An abbreviation expects no precedence nor associativity, since it
-follows the usual syntax of application. Abbreviations are used as
+is parsed as usual application. Abbreviations are used as
 much as possible by the {\Coq} printers unless the modifier
 \verb=(only parsing)= is given.
 
@@ -1121,7 +1145,7 @@ abbreviation but at the time it is used. Especially, abbreviations can
 be bound to terms with holes (i.e. with ``\_''). The general syntax
 for abbreviations is
 \begin{quote}
-\zeroone{{\tt Local}} \texttt{Notation} {\ident} \sequence{\ident} {\ident} \texttt{:=} {\term} 
+\zeroone{{\tt Local}} \texttt{Notation} {\ident} \sequence{\ident}{} \texttt{:=} {\term}
  \zeroone{{\tt (only parsing)}}~\verb=.=
 \end{quote}
 
@@ -1147,13 +1171,15 @@ at the time of use of the abbreviation.
 %\verb=(only parsing)= is given) while syntactic definitions were not.
 
 \section{Tactic Notations
+\label{Tactic-Notation}
 \comindex{Tactic Notation}}
 
 Tactic notations allow to customize the syntax of the tactics of the
-tactic language\footnote{Tactic notations are just a simplification of
-the {\tt Grammar tactic simple\_tactic} command that existed in
-versions prior to version 8.0.}. Tactic notations obey the following
-syntax
+tactic language.
+%% \footnote{Tactic notations are just a simplification of
+%% the {\tt Grammar tactic simple\_tactic} command that existed in
+%% versions prior to version 8.0.}
+Tactic notations obey the following syntax:
 \medskip
 
 \noindent
@@ -1196,7 +1222,9 @@ level indicates the parsing precedence of the tactic notation. This
 information is particularly relevant for notations of tacticals.
 Levels 0 to 5 are available (default is 0). 
 To know the parsing precedences of the
-existing tacticals, use the command {\tt Print Grammar tactic.}
+existing tacticals, use the command
+\comindex{Print Grammar tactic}
+ {\tt Print Grammar tactic.}
 
 Each type of tactic argument has a specific semantic regarding how it
 is parsed and how it is interpreted. The semantic is described in the
