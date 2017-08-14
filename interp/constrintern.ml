@@ -442,6 +442,22 @@ let intern_letin_binder intern ntnvars env ((loc,na as locna),def,ty) =
   (push_name_env ntnvars (impls_term_list term) env locna,
    (na,Explicit,term,ty))
 
+let intern_cases_pattern_as_binder ?loc ntnvars env p =
+  let il,cp =
+    match !intern_cases_pattern_fwd ntnvars (None,env.scopes) p with
+    | (il, [(subst,cp)]) ->
+       if not (Id.Map.equal Id.equal subst Id.Map.empty) then
+         user_err ?loc (str "Unsupported nested \"as\" clause.");
+       il,cp
+    | _ -> assert false
+  in
+  let env = {env with ids = List.fold_right Id.Set.add il env.ids} in
+  let na = alias_of_pat cp in
+  let ienv = Name.fold_right Id.Set.remove na env.ids in
+  let id = Namegen.next_name_away_with_default "pat" (alias_of_pat cp) ienv in
+  let na = (loc, Name id) in
+  env,((cp,il),id),na
+
 let intern_local_binder_aux ?(global_level=false) intern ntnvars (env,bl) = function
   | CLocalAssum(nal,bk,ty) ->
       let env, bl' = intern_assumption intern ntnvars env nal bk ty in
@@ -456,19 +472,7 @@ let intern_local_binder_aux ?(global_level=false) intern ntnvars (env,bl) = func
         | Some ty -> ty
         | None -> CAst.make ?loc @@ CHole(None,Misctypes.IntroAnonymous,None)
       in
-      let il,cp =
-        match !intern_cases_pattern_fwd ntnvars (None,env.scopes) p with
-        | (il, [(subst,cp)]) ->
-           if not (Id.Map.equal Id.equal subst Id.Map.empty) then
-             user_err ?loc (str "Unsupported nested \"as\" clause.");
-           il,cp
-        | _ -> assert false
-      in
-      let env = {env with ids = List.fold_right Id.Set.add il env.ids} in
-      let na = alias_of_pat cp in
-      let ienv = Name.fold_right Id.Set.remove na env.ids in
-      let id = Namegen.next_name_away_with_default "pat" (alias_of_pat cp) ienv in
-      let na = (loc, Name id) in
+      let env, ((cp,il),id),na = intern_cases_pattern_as_binder ?loc ntnvars env p in
       let bk = Default Explicit in
       let _, bl' = intern_assumption intern ntnvars env [na] bk tyc in
       let _,(_,bk,t) = List.hd bl' in
