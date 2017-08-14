@@ -910,7 +910,7 @@ let rec match_iterated_binders islambda decls bi = DAst.(with_loc_val (fun ?loc 
   | GLambda (na,bk,t,b) as b0 ->
     begin match na, DAst.get b with
     | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(ids,[cp],b))])
-      when islambda && is_gvar p e ->
+      when islambda && is_gvar p e && not (occur_glob_constr p b) ->
       match_iterated_binders islambda ((DAst.make ?loc @@ GLocalPattern((cp,ids),p,bk,t))::decls) b
     | _, _ when islambda ->
       match_iterated_binders islambda ((DAst.make ?loc @@ GLocalAssum(na,bk,t))::decls) b
@@ -919,7 +919,7 @@ let rec match_iterated_binders islambda decls bi = DAst.(with_loc_val (fun ?loc 
   | GProd (na,bk,t,b) as b0 ->
     begin match na, DAst.get b with
     | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(ids,[cp],b))])
-      when not islambda && is_gvar p e ->
+      when not islambda && is_gvar p e && not (occur_glob_constr p b) ->
       match_iterated_binders islambda ((DAst.make ?loc @@ GLocalPattern((cp,ids),p,bk,t))::decls) b
     | Name _, _ when not islambda ->
       match_iterated_binders islambda ((DAst.make ?loc @@ GLocalAssum(na,bk,t))::decls) b
@@ -992,8 +992,6 @@ let does_not_come_from_already_eta_expanded_var glob =
   (* checked). *)
   match DAst.get glob with GVar _ -> false | _ -> true
 
-let is_var c = match DAst.get c with GVar _ -> true | _ -> false
-
 let rec match_ inner u alp metas sigma a1 a2 =
   let open CAst in
   let loc = a1.loc in
@@ -1010,7 +1008,8 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | GLambda (na1, bk, t1, b1), NBinderList (x,y,iter,termin) ->
     begin match na1, DAst.get b1, iter with
     (* "λ p, let 'cp = p in t" -> "λ 'cp, t" *)
-    | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(ids,[cp],b1))]), NLambda (Name _, _, _) when is_gvar p e ->
+    | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(ids,[cp],b1))]), NLambda (Name _, _, _)
+      when is_gvar p e && not (occur_glob_constr p b1) ->
       let (decls,b) = match_iterated_binders true [DAst.make ?loc @@ GLocalPattern((cp,ids),p,bk,t1)] b1 in
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
       match_in u alp metas sigma b termin
@@ -1028,7 +1027,8 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | GProd (na1, bk, t1, b1), NBinderList (x,y,iter,termin) ->
     (* "∀ p, let 'cp = p in t" -> "∀ 'cp, t" *)
     begin match na1, DAst.get b1, iter, termin with
-    | Name p, GCases (LetPatternStyle,None,[(e, _)],[(_,(ids,[cp],b1))]), NProd (Name _,_,_), NVar _ when is_gvar p e ->
+    | Name p, GCases (LetPatternStyle,None,[(e, _)],[(_,(ids,[cp],b1))]), NProd (Name _,_,_), NVar _
+      when is_gvar p e && not (occur_glob_constr p b1) ->
       let (decls,b) = match_iterated_binders true [DAst.make ?loc @@ GLocalPattern ((cp,ids),p,bk,t1)] b1 in
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
       match_in u alp metas sigma b termin
@@ -1050,7 +1050,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | GLambda (na1, bk, t1, b1), NLambda (na2, t2, b2) ->
     begin match na1, DAst.get b1, na2 with
     | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(ids,[cp],b1))]), Name id
-      when is_var e && is_bindinglist_meta id metas ->
+      when is_gvar p e && is_bindinglist_meta id metas && not (occur_glob_constr p b1) ->
       let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalPattern ((cp,ids),p,bk,t1)] in
       match_in u alp metas sigma b1 b2
     | _, _, Name id when is_bindinglist_meta id metas ->
