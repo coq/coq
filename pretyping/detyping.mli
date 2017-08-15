@@ -26,9 +26,19 @@ val print_universes : bool ref
 (** If true, prints full local context of evars *)
 val print_evar_arguments : bool ref
 
+(** If true, contract branches with same r.h.s. and same matching
+    variables in a disjunctive pattern *)
+val print_factorize_match_patterns : bool ref
+
+(** If true and the last non unique clause of a "match" is a
+    variable-free disjunctive pattern, turn it into a catch-call case *)
+val print_allow_match_default_clause : bool ref
+
 val subst_cases_pattern : substitution -> cases_pattern -> cases_pattern
 
 val subst_glob_constr : substitution -> glob_constr -> glob_constr
+
+val factorize_eqns : 'a cases_clauses_g -> 'a disjunctive_cases_clauses_g
 
 (** [detype isgoal avoid ctx c] turns a closed [c], into a glob_constr 
    de Bruijn indexes are turned to bound names, avoiding names in [avoid] 

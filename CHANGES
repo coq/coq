@@ -12,6 +12,16 @@ Notations
   opened rather than to the latest notations defined independently of
   whether they are in an opened scope or not.
 
+Specification language
+
+- When printing clauses of a "match", clauses with same right-hand
+  side are factorized and the last most factorized clause with no
+  variables, if it exists, is turned into a default clause.
+  Use "Unset Printing Allow Default Clause" do deactivate printing
+  of a default clause.
+  Use "Unset Printing Factorizable Match Patterns" to deactivate
+  factorization of clauses with same right-hand side.
+
 Tactics
 
 - On Linux, "native_compute" calls can be profiled using the "perf"

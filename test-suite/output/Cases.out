@@ -95,8 +95,7 @@ fun dd : nat * nat => let (bb, cc) as aa return (aa = aa) := dd in eq_refl
   
   x : nat
   n, n0 := match x + 0 with
-           | 0 => 0
-           | S _ => 0
+           | 0 | S _ => 0
            end : nat
   e,
   e0 := match x + 0 as y return (y = y) with
@@ -104,8 +103,7 @@ fun dd : nat * nat => let (bb, cc) as aa return (aa = aa) := dd in eq_refl
         | S n => eq_refl
         end : x + 0 = x + 0
   n1, n2 := match x with
-            | 0 => 0
-            | S _ => 0
+            | 0 | S _ => 0
             end : nat
   e1, e2 := match x return (x = x) with
             | 0 => eq_refl
@@ -126,3 +124,48 @@ fun dd : nat * nat => let (bb, cc) as aa return (aa = aa) := dd in eq_refl
         end : p = p /\ p = p
   ============================
   eq_refl = eq_refl
+fun x : comparison => match x with
+                      | Eq => 1
+                      | _ => 0
+                      end
+     : comparison -> nat
+fun x : comparison => match x with
+                      | Eq => 1
+                      | Lt => 0
+                      | Gt => 0
+                      end
+     : comparison -> nat
+fun x : comparison => match x with
+                      | Eq => 1
+                      | Lt | Gt => 0
+                      end
+     : comparison -> nat
+fun x : comparison =>
+match x return nat with
+| Eq => S O
+| Lt => O
+| Gt => O
+end
+     : forall _ : comparison, nat
+fun x : K => match x with
+             | a3 | a4 => 3
+             | _ => 2
+             end
+     : K -> nat
+fun x : K => match x with
+             | a1 | a2 => 4
+             | a3 => 3
+             | _ => 2
+             end
+     : K -> nat
+fun x : K => match x with
+             | a1 | a2 => 4
+             | a4 => 3
+             | _ => 2
+             end
+     : K -> nat
+fun x : K => match x with
+             | a1 | a3 | a4 => 3
+             | _ => 2
+             end
+     : K -> nat

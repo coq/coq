@@ -79,6 +79,13 @@ Notation plus2 n := (S (S n)).
 (* plus2 was not correctly printed in the two following tests in 8.3pl1 *)
 Print plus2.
 Check fun n => match n with list1 => 0 | _ => 2 end.
+Unset Printing Allow Match Default Clause.
+Check fun n => match n with list1 => 0 | _ => 2 end.
+Unset Printing Factorizable Match Patterns.
+Check fun n => match n with list1 => 0 | _ => 2 end.
+Set Printing Allow Match Default Clause.
+Set Printing Factorizable Match Patterns.
+
 End A.
 
 (* This one is not fully satisfactory because binders in the same type

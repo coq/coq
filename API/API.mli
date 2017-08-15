@@ -4339,6 +4339,7 @@ sig
   | Later : [ `thunk ] delay
   val print_universes : bool ref
   val print_evar_arguments : bool ref
+  val print_allow_match_default_clause : bool ref
   val detype : 'a delay -> ?lax:bool -> bool -> Names.Id.Set.t -> Environ.env -> Evd.evar_map -> EConstr.constr -> 'a Glob_term.glob_constr_g
   val subst_glob_constr : Mod_subst.substitution -> Glob_term.glob_constr -> Glob_term.glob_constr
   val set_detype_anonymous : (?loc:Loc.t -> int -> Names.Id.t) -> unit
