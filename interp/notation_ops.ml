@@ -708,6 +708,36 @@ let add_binding_env alp (terms,onlybinders,termlists,binderlists) var v =
 let add_bindinglist_env (terms,onlybinders,termlists,binderlists) x bl =
   (terms,onlybinders,termlists,(x,bl)::binderlists)
 
+let rec map_cases_pattern_name_left f = DAst.map (function
+  | PatVar na -> PatVar (f na)
+  | PatCstr (c,l,na) -> PatCstr (c,List.map_left (map_cases_pattern_name_left f) l,f na)
+  )
+
+let rec fold_cases_pattern_eq f x p p' =
+  let loc = p.CAst.loc in
+  match DAst.get p, DAst.get p' with
+  | PatVar na, PatVar na' -> let x,na = f x na na' in x, DAst.make ?loc @@ PatVar na
+  | PatCstr (c,l,na), PatCstr (c',l',na') when eq_constructor c c' ->
+     let x,l = fold_cases_pattern_list_eq f x l l' in
+     let x,na = f x na na' in
+     x, DAst.make ?loc @@ PatCstr (c,l,na)
+  | _ -> failwith "Not equal"
+
+and fold_cases_pattern_list_eq f x pl pl' = match pl, pl' with
+  | [], [] -> x, []
+  | p::pl, p'::pl' ->
+     let x, p = fold_cases_pattern_eq f x p p' in
+     let x, pl = fold_cases_pattern_list_eq f x pl pl' in
+     x, p :: pl
+  | _ -> assert false
+
+let rec cases_pattern_eq p1 p2 = match DAst.get p1, DAst.get p2 with
+| PatVar na1, PatVar na2 -> Name.equal na1 na2
+| PatCstr (c1, pl1, na1), PatCstr (c2, pl2, na2) ->
+  eq_constructor c1 c2 && List.equal cases_pattern_eq pl1 pl2 &&
+  Name.equal na1 na2
+| _ -> false
+
 let rec pat_binder_of_term t = DAst.map (function
   | GVar id -> PatVar (Name id)
   | GApp (t, l) ->
@@ -789,36 +819,6 @@ let bind_binding_env alp (terms,onlybinders,termlists,binderlists as sigma) var 
         if Id.equal id1 id2 then alp,sigma
         else (fst alp,(id1,id2)::snd alp),sigma
   with Not_found -> alp, add_binding_env alp sigma var v
-
-let rec map_cases_pattern_name_left f = DAst.map (function
-  | PatVar na -> PatVar (f na)
-  | PatCstr (c,l,na) -> PatCstr (c,List.map_left (map_cases_pattern_name_left f) l,f na)
-  )
-
-let rec fold_cases_pattern_eq f x p p' =
-  let loc = p.CAst.loc in
-  match DAst.get p, DAst.get p' with
-  | PatVar na, PatVar na' -> let x,na = f x na na' in x, DAst.make ?loc @@ PatVar na
-  | PatCstr (c,l,na), PatCstr (c',l',na') when eq_constructor c c' ->
-     let x,l = fold_cases_pattern_list_eq f x l l' in
-     let x,na = f x na na' in
-     x, DAst.make ?loc @@ PatCstr (c,l,na)
-  | _ -> failwith "Not equal"
-
-and fold_cases_pattern_list_eq f x pl pl' = match pl, pl' with
-  | [], [] -> x, []
-  | p::pl, p'::pl' ->
-     let x, p = fold_cases_pattern_eq f x p p' in
-     let x, pl = fold_cases_pattern_list_eq f x pl pl' in
-     x, p :: pl
-  | _ -> assert false
-
-let rec cases_pattern_eq p1 p2 = match DAst.get p1, DAst.get p2 with
-| PatVar na1, PatVar na2 -> Name.equal na1 na2
-| PatCstr (c1, pl1, na1), PatCstr (c2, pl2, na2) ->
-  eq_constructor c1 c2 && List.equal cases_pattern_eq pl1 pl2 &&
-  Name.equal na1 na2
-| _ -> false
 
 let bind_bindinglist_env alp (terms,onlybinders,termlists,binderlists as sigma) var bl =
   let bl = List.rev bl in
