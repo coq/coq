@@ -65,14 +65,14 @@ Global gprof-based profiling
 Per function profiling
 ======================
 
-   1. To profile function foo in file bar.ml, add the following lines, just
-      after the definition of the function:
+   To profile function foo in file bar.ml, add the following lines, just
+   after the definition of the function:
 
      let fookey = Profile.declare_profile "foo";;
      let foo a b c = Profile.profile3 fookey foo a b c;;
 
-     where foo is assumed to have three arguments (adapt using
-     Profile.profile1, Profile. profile2, etc).
+   where foo is assumed to have three arguments (adapt using
+   Profile.profile1, Profile. profile2, etc).
 
-     This has the effect to cumulate the time passed in foo under a
-     line of name "foo" which is displayed at the time coqtop exits.
+   This has the effect to cumulate the time passed in foo under a
+   line of name "foo" which is displayed at the time coqtop exits.
