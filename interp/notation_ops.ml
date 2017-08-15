@@ -1111,32 +1111,6 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | _r, NBinderList (x,y,iter,termin,revert) ->
        match_binderlist_with_app (match_hd u) alp metas sigma a1 x y iter termin revert
 
-  (* Matching individual binders as part of a recursive pattern *)
-  | GLambda (na1, bk, t1, b1), NLambda (na2, t2, b2) ->
-    begin match na1, DAst.get b1, na2 with
-    | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(ids,[cp],b1))]), Name id
-      when is_gvar p e && is_bindinglist_meta id metas && not (occur_glob_constr p b1) ->
-      let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalPattern ((cp,ids),p,bk,t1)] in
-      match_in u alp metas sigma b1 b2
-    | _, _, Name id when is_bindinglist_meta id metas ->
-      let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalAssum (na1,bk,t1)] in
-      match_in u alp metas sigma b1 b2
-    | _ ->
-      match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
-    end
-  | GProd (na1, bk, t1, b1), NProd (na2, t2, b2) ->
-    begin match na1, DAst.get b1, na2 with
-    | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(ids,[cp],b1))]), Name id
-      when is_gvar p e && is_bindinglist_meta id metas && not (occur_glob_constr p b1) ->
-      let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalPattern ((cp,ids),p,bk,t1)] in
-      match_in u alp metas sigma b1 b2
-    | _, _, Name id when is_bindinglist_meta id metas && na1 != Anonymous ->
-      let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalAssum (na1,bk,t1)] in
-      match_in u alp metas sigma b1 b2
-    | _ ->
-      match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
-    end
-
   (* Matching compositionally *)
   | GVar id1, NVar id2 when alpha_var id1 id2 (fst alp) -> sigma
   | GRef (r1,_), NRef r2 when (eq_gr r1 r2) -> sigma
@@ -1151,6 +1125,10 @@ let rec match_ inner u alp metas sigma a1 a2 =
       let may_use_eta = does_not_come_from_already_eta_expanded_var f1 in
       List.fold_left2 (match_ may_use_eta u alp metas)
         (match_in u alp metas sigma f1 f2) l1 l2
+  | GLambda (na1,bk1,t1,b1), NLambda (na2,t2,b2) ->
+     match_extended_binders false u alp metas na1 na2 bk1 t1 (match_in u alp metas sigma t1 t2) b1 b2
+  | GProd (na1,bk1,t1,b1), NProd (na2,t2,b2) ->
+     match_extended_binders true u alp metas na1 na2 bk1 t1 (match_in u alp metas sigma t1 t2) b1 b2
   | GLetIn (na1,b1,_,c1), NLetIn (na2,b2,None,c2)
   | GLetIn (na1,b1,None,c1), NLetIn (na2,b2,_,c2) ->
      match_binders u alp metas na1 na2 (match_in u alp metas sigma b1 b2) c1 c2
@@ -1236,8 +1214,24 @@ and match_in u = match_ true u
 and match_hd u = match_ false u
 
 and match_binders u alp metas na1 na2 sigma b1 b2 =
+  (* Match binders which cannot be substituted by a pattern *)
   let (alp,sigma) = match_names metas (alp,sigma) na1 na2 in
   match_in u alp metas sigma b1 b2
+
+and match_extended_binders ?loc isprod u alp metas na1 na2 bk t sigma b1 b2 =
+  (* Match binders which can be substituted by a pattern *)
+  match na1, DAst.get b1, na2 with
+  (* Matching individual binders as part of a recursive pattern *)
+  | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(ids,[cp],b1))]), Name id
+       when is_gvar p e && is_bindinglist_meta id metas && not (occur_glob_constr p b1) ->
+     let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalPattern ((cp,ids),p,bk,t)] in
+     match_in u alp metas sigma b1 b2
+  | _, _, Name id when is_bindinglist_meta id metas && (not isprod || na1 != Anonymous)->
+      let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalAssum (na1,bk,t)] in
+      match_in u alp metas sigma b1 b2
+  | _, _, _ ->
+     let (alp,sigma) = match_names metas (alp,sigma) na1 na2 in
+     match_in u alp metas sigma b1 b2
 
 and match_equations u alp metas sigma (_,(_,patl1,rhs1)) (patl2,rhs2) =
   (* patl1 and patl2 have the same length because they respectively
