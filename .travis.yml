@@ -62,7 +62,6 @@ env:
 matrix:
 
   allow_failures:
-  - env: TEST_TARGET="ci-coq-dpdgraph" EXTRA_OPAM="ocamlgraph"
   - env: TEST_TARGET="ci-geocoq TIMED=1"
 
   include:
