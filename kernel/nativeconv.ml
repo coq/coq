@@ -132,7 +132,7 @@ let native_conv_gen pb sigma env univs t1 t2 =
   let penv = Environ.pre_env env in 
   let ml_filename, prefix = get_ml_filename () in
   let code, upds = mk_conv_code penv sigma prefix t1 t2 in
-  match compile ml_filename code with
+  match compile ml_filename code ~profile:false with
   | (true, fn) ->
       begin
         if !Flags.debug then Feedback.msg_debug (Pp.str "Running test...");

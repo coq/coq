@@ -1457,6 +1457,22 @@ let _ =
       optread  = CWarnings.get_flags;
       optwrite = CWarnings.set_flags }
 
+let _ =
+  declare_string_option 
+    { optdepr  = false;
+      optname  = "native_compute profiler output";
+      optkey   = ["NativeCompute"; "Profile"; "Filename"];
+      optread  = Nativenorm.get_profile_filename;
+      optwrite = Nativenorm.set_profile_filename }
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "enable native compute profiling";
+      optkey   = ["NativeCompute"; "Profiling"];
+      optread  = Nativenorm.get_profiling_enabled;
+      optwrite = Nativenorm.set_profiling_enabled }
+
 let vernac_set_strategy locality l =
   let local = make_locality locality in
   let glob_ref r =

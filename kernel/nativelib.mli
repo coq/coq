@@ -19,7 +19,7 @@ val load_obj : (string -> unit) ref
 
 val get_ml_filename : unit -> string * string
 
-val compile : string -> global list -> bool * string
+val compile : string -> global list -> profile:bool -> bool * string
 
 val compile_library : Names.dir_path -> global list -> string -> bool
 
