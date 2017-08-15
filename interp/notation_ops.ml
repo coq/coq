@@ -751,39 +751,111 @@ let rec pat_binder_of_term t = DAst.map (function
   | _ -> raise No_match
   ) t
 
+let unify_name_upto alp na na' =
+  match na, na' with
+  | Anonymous, na' -> alp, na'
+  | na, Anonymous -> alp, na
+  | Name id, Name id' ->
+     if Id.equal id id' then alp, na'
+     else (fst alp,(id,id')::snd alp), na'
+
+let unify_pat_upto alp p p' =
+  try fold_cases_pattern_eq unify_name_upto alp p p' with Failure _ -> raise No_match
+
+let unify_term alp v v' =
+  match DAst.get v, DAst.get v' with
+  | GHole _, _ -> v'
+  | _, GHole _ -> v
+  | _, _ -> if glob_constr_eq (alpha_rename (snd alp) v) v' then v else raise No_match
+
+let unify_opt_term alp v v' =
+  match v, v' with
+  | Some t, Some t' -> Some (unify_term alp t t')
+  | (Some _ as x), None | None, (Some _ as x) -> x
+  | None, None -> None
+
+let unify_binding_kind bk bk' = if bk == bk' then bk' else raise No_match
+
+let unify_binder_upto alp b b' =
+  let loc, loc' = CAst.(b.loc, b'.loc) in
+  match DAst.get b, DAst.get b' with
+  | GLocalAssum (na,bk,t), GLocalAssum (na',bk',t') ->
+     let alp, na = unify_name_upto alp na na' in
+     alp, DAst.make ?loc @@ GLocalAssum (na, unify_binding_kind bk bk', unify_term alp t t')
+  | GLocalDef (na,bk,c,t), GLocalDef (na',bk',c',t') ->
+     let alp, na = unify_name_upto alp na na' in
+     alp, DAst.make ?loc @@ GLocalDef (na, unify_binding_kind bk bk', unify_term alp c c', unify_opt_term alp t t')
+  | GLocalPattern ((p,ids),id,bk,t), GLocalPattern ((p',_),_,bk',t') ->
+     let alp, p = unify_pat_upto alp p p' in
+     alp, DAst.make ?loc @@ GLocalPattern ((p,ids), id, unify_binding_kind bk bk', unify_term alp t t')
+  | _ -> raise No_match
+
+let rec unify_terms alp vl vl' =
+  match vl, vl' with
+  | [], [] -> []
+  | v :: vl, v' :: vl' -> unify_term alp v v' :: unify_terms alp vl vl'
+  | _ -> raise No_match
+
+let rec unify_binders_upto alp bl bl' =
+  match bl, bl' with
+  | [], [] -> alp, []
+  | b :: bl, b' :: bl' ->
+     let alp,b = unify_binder_upto alp b b' in
+     let alp,bl = unify_binders_upto alp bl bl' in
+     alp, b :: bl
+  | _ -> raise No_match
+
+let unify_id alp id na' =
+  match na' with
+  | Anonymous -> Name (rename_var (snd alp) id)
+  | Name id' ->
+     if Id.equal (rename_var (snd alp) id) id' then na' else raise No_match
+
+let unify_pat alp p p' =
+  if cases_pattern_eq (map_cases_pattern_name_left (Name.map (rename_var (snd alp))) p) p' then p'
+  else raise No_match
+
+let unify_term_binder alp c = DAst.(map (fun b' ->
+  match DAst.get c, b' with
+  | GVar id, GLocalAssum (na', bk', t') ->
+     GLocalAssum (unify_id alp id na', bk', t')
+  | _, GLocalPattern ((p',ids), id, bk', t') ->
+     let p = pat_binder_of_term c in
+     GLocalPattern ((unify_pat alp p p',ids), id, bk', t')
+  | _ -> raise No_match))
+
+let rec unify_terms_binders alp cl bl' =
+  match cl, bl' with
+  | [], [] -> []
+  | c :: cl, b' :: bl' ->
+     begin match DAst.get b' with
+     | GLocalDef ( _, _, _, t) -> unify_terms_binders alp cl bl'
+     | _ -> unify_term_binder alp c b' :: unify_terms_binders alp cl bl'
+     end
+  | _ -> raise No_match
+
 let bind_term_env alp (terms,onlybinders,termlists,binderlists as sigma) var v =
   try
+    (* If already bound to a term, unify with the new term *)
     let v' = Id.List.assoc var terms in
-    match DAst.get v, DAst.get v' with
-    | GHole _, _ -> sigma
-    | _, GHole _ ->
-        let sigma = Id.List.remove_assoc var terms,onlybinders,termlists,binderlists in
-        add_env alp sigma var v
-    | _, _ ->
-        if glob_constr_eq (alpha_rename (snd alp) v) v' then sigma
-        else raise No_match
+    let v'' = unify_term alp v v' in
+    if v'' == v' then sigma else
+      let sigma = Id.List.remove_assoc var terms,onlybinders,termlists,binderlists in
+      add_env alp sigma var v
   with Not_found -> add_env alp sigma var v
 
 let bind_termlist_env alp (terms,onlybinders,termlists,binderlists as sigma) var vl =
   try
+    (* If already bound to a list of term, unify with the new terms *)
     let vl' = Id.List.assoc var termlists in
-    let unify_term v v' =
-      match DAst.get v, DAst.get v' with
-      | GHole _, _ -> v'
-      | _, GHole _ -> v
-      | _, _ -> if glob_constr_eq (alpha_rename (snd alp) v) v' then v' else raise No_match in
-    let rec unify vl vl' =
-      match vl, vl' with
-      | [], [] -> []
-      | v :: vl, v' :: vl' -> unify_term v v' :: unify vl vl'
-      | _ -> raise No_match in
-    let vl = unify vl vl' in
+    let vl = unify_terms alp vl vl' in
     let sigma = (terms,onlybinders,Id.List.remove_assoc var termlists,binderlists) in
     add_termlist_env alp sigma var vl
   with Not_found -> add_termlist_env alp sigma var vl
 
 let bind_term_as_binding_env alp (terms,onlybinders,termlists,binderlists as sigma) var id =
   try
+    (* If already bound to a term, unify the binder and the term *)
     match DAst.get (Id.List.assoc var terms) with
     | GVar id' ->
        (if not (Id.equal id id') then (fst alp,(id,id')::snd alp) else alp),
@@ -797,109 +869,44 @@ let bind_term_as_binding_env alp (terms,onlybinders,termlists,binderlists as sig
 
 let bind_binding_as_term_env alp (terms,onlybinders,termlists,binderlists as sigma) var id =
   try
+    (* If already bound to a binder, unify the term and the binder *)
     let v' = Id.List.assoc var onlybinders in
-    match v' with
-    | Anonymous ->
-        (* Should not occur, since the term has to be bound upwards *)
-        let sigma = (terms,Id.List.remove_assoc var onlybinders,termlists,binderlists) in
-        add_binding_env alp sigma var (Name id)
-    | Name id' ->
-        if Id.equal (rename_var (snd alp) id) id' then sigma else raise No_match
+    let v'' = unify_id alp id v' in
+    if v' == v'' then sigma
+    else
+      let sigma = (terms,Id.List.remove_assoc var onlybinders,termlists,binderlists) in
+      add_binding_env alp sigma var v''
   with Not_found -> add_binding_env alp sigma var (Name id)
 
 let bind_binding_env alp (terms,onlybinders,termlists,binderlists as sigma) var v =
   try
+    (* If already bound to a binder possibly *)
+    (* generating an alpha-renaming from unifying the new binder *)
     let v' = Id.List.assoc var onlybinders in
-    match v, v' with
-    | Anonymous, _ -> alp, sigma
-    | _, Anonymous ->
-        let sigma = (terms,Id.List.remove_assoc var onlybinders,termlists,binderlists) in
-        alp, add_binding_env alp sigma var v
-    | Name id1, Name id2 ->
-        if Id.equal id1 id2 then alp,sigma
-        else (fst alp,(id1,id2)::snd alp),sigma
+    let alp, v'' = unify_name_upto alp v v' in
+    if v' == v'' then alp, sigma
+    else
+      let sigma = (terms,Id.List.remove_assoc var onlybinders,termlists,binderlists) in
+      alp, add_binding_env alp sigma var v
   with Not_found -> alp, add_binding_env alp sigma var v
 
 let bind_bindinglist_env alp (terms,onlybinders,termlists,binderlists as sigma) var bl =
   let bl = List.rev bl in
   try
+    (* If already bound to a list of binders possibly *)
+    (* generating an alpha-renaming from unifying the new binders *)
     let bl' = Id.List.assoc var binderlists in
-    let unify_name alp na na' =
-      match na, na' with
-      | Anonymous, na' -> alp, na'
-      | na, Anonymous -> alp, na
-      | Name id, Name id' ->
-         if Id.equal id id' then alp, na'
-         else (fst alp,(id,id')::snd alp), na' in
-    let unify_pat alp p p' =
-      try fold_cases_pattern_eq unify_name alp p p' with Failure _ -> raise No_match in
-    let unify_term alp v v' =
-      match DAst.get v, DAst.get v' with
-      | GHole _, _ -> v'
-      | _, GHole _ -> v
-      | _, _ -> if glob_constr_eq (alpha_rename (snd alp) v) v' then v else raise No_match in
-    let unify_opt_term alp v v' =
-      match v, v' with
-      | Some t, Some t' -> Some (unify_term alp t t')
-      | (Some _ as x), None | None, (Some _ as x) -> x
-      | None, None -> None in
-    let unify_binding_kind bk bk' = if bk == bk' then bk' else raise No_match in
-    let unify_binder alp b b' =
-      let loc, loc' = CAst.(b.loc, b'.loc) in
-      match DAst.get b, DAst.get b' with
-      | GLocalAssum (na,bk,t), GLocalAssum (na',bk',t') ->
-         let alp, na = unify_name alp na na' in
-         alp, DAst.make ?loc @@ GLocalAssum (na, unify_binding_kind bk bk', unify_term alp t t')
-      | GLocalDef (na,bk,c,t), GLocalDef (na',bk',c',t') ->
-         let alp, na = unify_name alp na na' in
-         alp, DAst.make ?loc @@ GLocalDef (na, unify_binding_kind bk bk', unify_term alp c c', unify_opt_term alp t t')
-      | GLocalPattern ((p,ids),id,bk,t), GLocalPattern ((p',_),_,bk',t') ->
-         let alp, p = unify_pat alp p p' in
-         alp, DAst.make ?loc @@ GLocalPattern ((p,ids), id, unify_binding_kind bk bk', unify_term alp t t')
-      | _ -> raise No_match in
-    let rec unify alp bl bl' =
-    match bl, bl' with
-    | [], [] -> alp, []
-    | b :: bl, b' :: bl' ->
-       let alp,b = unify_binder alp b b' in
-       let alp,bl = unify alp bl bl' in
-       alp, b :: bl
-    | _ -> raise No_match in
-    let alp, bl = unify alp bl bl' in
+    let alp, bl = unify_binders_upto alp bl bl' in
     let sigma = (terms,onlybinders,termlists,Id.List.remove_assoc var binderlists) in
     alp, add_bindinglist_env sigma var bl
   with Not_found ->
     alp, add_bindinglist_env sigma var bl
 
-let bind_bindinglist_as_term_env alp (terms,onlybinders,termlists,binderlists) var cl =
+let bind_bindinglist_as_termlist_env alp (terms,onlybinders,termlists,binderlists) var cl =
   try
+    (* If already bound to a list of binders, unify the terms and binders *)
     let bl' = Id.List.assoc var binderlists in
-    let unify_id id na' =
-      match na' with
-      | Anonymous -> Name (rename_var (snd alp) id)
-      | Name id' ->
-         if Id.equal (rename_var (snd alp) id) id' then na' else raise No_match in
-    let unify_pat p p' =
-      if cases_pattern_eq (map_cases_pattern_name_left (Name.map (rename_var (snd alp))) p) p' then p'
-      else raise No_match in
-    let unify_term_binder c = DAst.(map (fun b' ->
-      match DAst.get c, b' with
-      | GVar id, GLocalAssum (na', bk', t') ->
-         GLocalAssum (unify_id id na', bk', t')
-      | _, GLocalPattern ((p',ids), id, bk', t') ->
-         let p = pat_binder_of_term c in
-         GLocalPattern ((unify_pat p p',ids), id, bk', t')
-      | _ -> raise No_match )) in
-    let rec unify cl bl' =
-    match cl, bl' with
-    | [], [] -> []
-    | c :: cl, b' :: bl' ->
-      begin match DAst.get b' with
-      | GLocalDef ( _, _, _, t) -> unify cl bl'
-      | _ -> unify_term_binder c b' :: unify cl bl'
-      end
-    | _ -> raise No_match in
-    let bl = unify cl bl' in
+    let bl = unify_terms_binders alp cl bl' in
     let sigma = (terms,onlybinders,termlists,Id.List.remove_assoc var binderlists) in
     add_bindinglist_env sigma var bl
   with Not_found ->
@@ -1021,7 +1028,7 @@ let match_termlist match_fun alp metas sigma rest x y iter termin revert =
   if is_bindinglist_meta x metas then
     (* This is a recursive pattern for both bindings and terms; it is *)
     (* registered for binders *)
-    bind_bindinglist_as_term_env alp sigma x l
+    bind_bindinglist_as_termlist_env alp sigma x l
   else
     bind_termlist_env alp sigma x l
 
