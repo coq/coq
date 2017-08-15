@@ -25,8 +25,9 @@ Debugging from Coq toplevel using Caml trace mechanism
 Debugging from Caml debugger
 ============================
 
-   Needs tuareg mode in Emacs
-   Coq must be configured with -debug and -local (./configure -debug -local)
+   Requires [Tuareg mode](https://github.com/ocaml/tuareg) in Emacs.\
+   Coq must be configured with `-local` (`./configure -local`) and the
+   byte-code version of `coqtop` must have been generated with `make byte`.
 
    1. M-x camldebug
    2. give the binary name bin/coqtop.byte
