@@ -191,3 +191,5 @@ pair
      : prod
          (prod (prod (prod nat (prod nat nat)) (prod (prod nat nat) nat))
             (prod nat (prod nat nat))) (prod (prod nat nat) nat)
+fun x : nat => if x is n .+ 1 then n else 1
+     : nat -> nat

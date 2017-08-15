@@ -1163,7 +1163,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
       let sigma = List.fold_left2
       (fun s (tm1,_) (tm2,_) ->
         match_in u alp metas s tm1 tm2) sigma tml1 tml2 in
-      List.fold_left2 (match_equations u alp metas) sigma eqnl1 eqnl2
+      List.fold_left2_set No_match (match_equations u alp metas) sigma eqnl1 eqnl2
   | GLetTuple (nal1,(na1,to1),b1,c1), NLetTuple (nal2,(na2,to2),b2,c2)
       when Int.equal (List.length nal1) (List.length nal2) ->
       let sigma = match_opt (match_binders u alp metas na1 na2) sigma to1 to2 in

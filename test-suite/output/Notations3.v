@@ -326,3 +326,10 @@ Check {{RLRR 1 , 2}}.
 Unset Printing Notations.
 Check {{RLRR 1 , 2}}.
 Set Printing Notations.
+
+(* Check insensitivity of "match" clauses to order *)
+
+Notation "'if' t 'is' n .+ 1 'then' p 'else' q" :=
+  (match t with S n => p | 0 => q end)
+  (at level 200).
+Check fun x => if x is n.+1 then n else 1.

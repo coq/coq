@@ -62,6 +62,7 @@ sig
   val fold_right_and_left :
       ('a -> 'b -> 'b list -> 'a) -> 'b list -> 'a -> 'a
   val fold_left3 : ('a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b list -> 'c list -> 'd list -> 'a
+  val fold_left2_set : exn -> ('a -> 'b -> 'c -> 'a) -> 'a -> 'b list -> 'c list -> 'a
   val for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
   val except : 'a eq -> 'a -> 'a list -> 'a list
   val remove : 'a eq -> 'a -> 'a list -> 'a list
@@ -471,6 +472,21 @@ let fold_right_and_left f l hd =
     | [] -> hd
     | a::l -> let hd = aux (a::tl) l in f hd a tl
    in aux [] l
+
+(* Match sets as lists according to a matching function, also folding a side effect *)
+let rec fold_left2_set e f x l1 l2 =
+  match l1 with
+  | a1::l1 ->
+     let rec find = function
+       | [] -> raise e
+       | a2::l2 ->
+          try f x a1 a2, l2
+          with e' when e' = e ->
+            let x, l2' = find l2 in x, a2::l2' in
+     let x, l2' = find l2 in
+     fold_left2_set e f x l1 l2'
+  | [] ->
+     if l2 = [] then x else raise e
 
 let iteri f l = fold_left_i (fun i _ x -> f i x) 0 () l
 
