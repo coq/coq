@@ -54,6 +54,9 @@ val mkCLambdaN : ?loc:Loc.t -> local_binder_expr list -> constr_expr -> constr_e
 val mkCProdN : ?loc:Loc.t -> local_binder_expr list -> constr_expr -> constr_expr
 (** Same as [prod_constr_expr], with location *)
 
+val mkAppPattern : ?loc:Loc.t -> cases_pattern_expr -> cases_pattern_expr list -> cases_pattern_expr
+(** Apply a list of pattern arguments to a pattern *)
+
 (** @deprecated variant of mkCLambdaN *)
 val abstract_constr_expr : constr_expr -> local_binder_expr list -> constr_expr
 [@@ocaml.deprecated "deprecated variant of mkCLambdaN"]
@@ -72,6 +75,8 @@ val coerce_to_id : constr_expr -> Id.t located
 
 val coerce_to_name : constr_expr -> Name.t located
 (** Destruct terms of the form [CRef (Ident _)] or [CHole _]. *)
+
+val coerce_to_cases_pattern_expr : constr_expr -> cases_pattern_expr
 
 (** {6 Binder manipulation} *)
 

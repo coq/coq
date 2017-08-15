@@ -80,9 +80,13 @@ val map_pattern : (glob_constr -> glob_constr) ->
 
     Take the current alias as parameter,
     @raise Not_found if translation is impossible *)
-val cases_pattern_of_glob_constr : Name.t -> glob_constr -> cases_pattern
+val cases_pattern_of_glob_constr : Name.t -> 'a glob_constr_g -> 'a cases_pattern_g
 
 val glob_constr_of_closed_cases_pattern : 'a cases_pattern_g -> Name.t * 'a glob_constr_g
+
+(** A canonical encoding of cases pattern into constr such that
+    composed with [cases_pattern_of_glob_constr Anonymous] gives identity *)
+val glob_constr_of_cases_pattern : 'a cases_pattern_g -> 'a glob_constr_g
 
 val add_patterns_for_params_remove_local_defs : constructor -> 'a cases_pattern_g list -> 'a cases_pattern_g list
 

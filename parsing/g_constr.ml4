@@ -387,17 +387,7 @@ GEXTEND Gram
     | "10" LEFTA
       [ p = pattern; "as"; id = ident ->
         CAst.make ~loc:!@loc @@ CPatAlias (p, id)
-      | p = pattern; lp = LIST1 NEXT ->
-        (let open CAst in match p with
-	  | { v = CPatAtom (Some r) } -> CAst.make ~loc:!@loc @@ CPatCstr (r, None, lp)
-	  | { v = CPatCstr (r, None, l2); loc } ->
-                 CErrors.user_err ?loc ~hdr:"compound_pattern"
-                 (Pp.str "Nested applications not supported.")
-	  | { v = CPatCstr (r, l1, l2) }  -> CAst.make ~loc:!@loc @@ CPatCstr (r, l1 , l2@lp)
-	  | { v = CPatNotation (n, s, l) } -> CAst.make ~loc:!@loc @@ CPatNotation (n , s, l@lp)
-          | _ -> CErrors.user_err
-                 ?loc:(cases_pattern_expr_loc p) ~hdr:"compound_pattern"
-                 (Pp.str "Such pattern cannot have arguments."))
+      | p = pattern; lp = LIST1 NEXT -> mkAppPattern ~loc:!@loc p lp
       | "@"; r = Prim.reference; lp = LIST0 NEXT ->
         CAst.make ~loc:!@loc @@ CPatCstr (r, Some lp, []) ]
     | "1" LEFTA

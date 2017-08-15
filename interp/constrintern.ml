@@ -451,7 +451,7 @@ let intern_cases_pattern_as_binder ?loc ntnvars env p =
        il,cp
     | _ -> assert false
   in
-  let env = {env with ids = List.fold_right Id.Set.add il env.ids} in
+  let env = List.fold_right (fun id env -> push_name_env Id.Map.empty (Variable,[],[],[]) env (None,Name id)) il env in
   let na = alias_of_pat cp in
   let ienv = Name.fold_right Id.Set.remove na env.ids in
   let id = Namegen.next_name_away_with_default "pat" (alias_of_pat cp) ienv in
@@ -546,13 +546,21 @@ let find_fresh_name renaming (terms,termlists,binders) avoid id =
   next_ident_away_from id (fun id -> Id.Set.mem id fvs3)
 
 let traverse_binder (terms,_,_ as subst) avoid (renaming,env) = function
- | Anonymous -> (renaming,env),Anonymous
+ | Anonymous -> (renaming,env), None, Anonymous
  | Name id ->
   try
-    (* Binders bound in the notation are considered first-order objects *)
-    let _,na as locna = coerce_to_name (fst (Id.Map.find id terms)) in
-    let env = push_name_env Id.Map.empty (Variable,[],[],[]) env locna in
-    (renaming,env), na
+    (* We instantiate binder name with patterns which may be parsed as terms *)
+    let pat = coerce_to_cases_pattern_expr (fst (Id.Map.find id terms)) in
+    let env,((pat,ids),id),na = intern_cases_pattern_as_binder ?loc:pat.CAst.loc Id.Map.empty env pat in
+    let pat, na = match DAst.get pat with
+    | PatVar na -> None, na
+    | _ ->
+       Some ((ids,pat),id), snd na in
+    (renaming,env), pat, na
+  with Not_found ->
+  try
+    (* Trying to associate a pattern *)
+    raise Not_found
   with Not_found ->
     (* Binders not bound in the notation do not capture variables *)
     (* outside the notation (i.e. in the substitution) *)
@@ -560,7 +568,7 @@ let traverse_binder (terms,_,_ as subst) avoid (renaming,env) = function
     let renaming' =
       if Id.equal id id' then renaming else Id.Map.add id id' renaming
     in
-    (renaming',env), Name id'
+    (renaming',env), None, Name id'
 
 type binder_action =
 | AddLetIn of Name.t Loc.located * constr_expr * constr_expr option
@@ -690,14 +698,14 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
     (* Two special cases to keep binder name synchronous with BinderType *)
     | NProd (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
         when Name.equal na na' ->
-        let subinfos,na = traverse_binder subst avoid subinfos na in
+        let subinfos,pat,na = traverse_binder subst avoid subinfos na in
         let ty = DAst.make ?loc @@ GHole (Evar_kinds.BinderType na,naming,arg) in
-	DAst.make ?loc @@ GProd (na,Explicit,ty,aux subst' subinfos c')
+        DAst.make ?loc @@ GProd (na,Explicit,ty,Option.fold_right apply_cases_pattern pat (aux subst' subinfos c'))
     | NLambda (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
         when Name.equal na na' ->
-        let subinfos,na = traverse_binder subst avoid subinfos na in
+        let subinfos,pat,na = traverse_binder subst avoid subinfos na in
         let ty = DAst.make ?loc @@ GHole (Evar_kinds.BinderType na,naming,arg) in
-	DAst.make ?loc @@ GLambda (na,Explicit,ty,aux subst' subinfos c')
+        DAst.make ?loc @@ GLambda (na,Explicit,ty,Option.fold_right apply_cases_pattern pat (aux subst' subinfos c'))
     | t ->
       glob_constr_of_notation_constr_with_binders ?loc
         (traverse_binder subst avoid) (aux subst') subinfos t

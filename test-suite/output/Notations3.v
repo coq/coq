@@ -333,3 +333,7 @@ Notation "'if' t 'is' n .+ 1 'then' p 'else' q" :=
   (match t with S n => p | 0 => q end)
   (at level 200).
 Check fun x => if x is n.+1 then n else 1.
+
+(* Examples with binding patterns *)
+
+Check {(x,y)|x+y=0}.

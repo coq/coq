@@ -545,6 +545,45 @@ let coerce_to_name = function
   | { CAst.loc; _ } -> CErrors.user_err ?loc ~hdr:"coerce_to_name"
                          (str "This expression should be a name.")
 
+let mkAppPattern ?loc p lp =
+  let open CAst in
+  make ?loc @@ (match p.v with
+  | CPatAtom (Some r) -> CPatCstr (r, None, lp)
+  | CPatCstr (r, None, l2) ->
+     CErrors.user_err ?loc:p.loc ~hdr:"compound_pattern"
+                      (Pp.str "Nested applications not supported.")
+  | CPatCstr (r, l1, l2) -> CPatCstr (r, l1 , l2@lp)
+  | CPatNotation (n, s, l) -> CPatNotation (n , s, l@lp)
+  | _ -> CErrors.user_err
+           ?loc:p.loc ~hdr:"compound_pattern"
+           (Pp.str "Such pattern cannot have arguments."))
+
+let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
+  | CRef (r,None) ->
+     CPatAtom (Some r)
+  | CHole (None,Misctypes.IntroAnonymous,None) ->
+     CPatAtom None
+  | CLetIn ((loc,Name id),b,None,{ CAst.v = CRef (Ident (_,id'),None) }) when Id.equal id id' ->
+      CPatAlias (coerce_to_cases_pattern_expr b, id)
+  | CApp ((None,p),args) when List.for_all (fun (_,e) -> e=None) args ->
+     (mkAppPattern (coerce_to_cases_pattern_expr p) (List.map (fun (a,_) -> coerce_to_cases_pattern_expr a) args)).CAst.v
+  | CAppExpl ((None,r,i),args) ->
+     CPatCstr (r,Some (List.map coerce_to_cases_pattern_expr args),[])
+  | CNotation (ntn,(c,cl,[])) ->
+     CPatNotation (ntn,(List.map coerce_to_cases_pattern_expr c,
+                        List.map (List.map coerce_to_cases_pattern_expr) cl),[])
+  | CPrim p ->
+     CPatPrim p
+  | CRecord l ->
+     CPatRecord (List.map (fun (r,p) -> (r,coerce_to_cases_pattern_expr p)) l)
+  | CDelimiters (s,p) ->
+     CPatDelimiters (s,coerce_to_cases_pattern_expr p)
+  | CCast (p,CastConv t) ->
+     CPatCast (coerce_to_cases_pattern_expr p,t)
+  | _ ->
+     CErrors.user_err ?loc ~hdr:"coerce_to_cases_pattern_expr"
+                      (str "This expression should be coercible to a pattern.")) c
+
 let asymmetric_patterns = ref (false)
 let _ = Goptions.declare_bool_option {
   Goptions.optdepr = false;

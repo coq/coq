@@ -33,8 +33,11 @@ val notation_constr_of_glob_constr : notation_interp_env ->
 
 (** Re-interpret a notation as a [glob_constr], taking care of binders *)
 
+val apply_cases_pattern : ?loc:Loc.t ->
+  (Id.t list * cases_pattern) * Id.t -> glob_constr -> glob_constr
+
 val glob_constr_of_notation_constr_with_binders : ?loc:Loc.t ->
-  ('a -> Name.t -> 'a * Name.t) ->
+  ('a -> Name.t -> 'a * ((Id.t list * cases_pattern) * Id.t) option * Name.t) ->
   ('a -> notation_constr -> glob_constr) ->
   'a -> notation_constr -> glob_constr
 

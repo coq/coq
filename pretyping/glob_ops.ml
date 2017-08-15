@@ -515,22 +515,33 @@ let add_patterns_for_params_remove_local_defs (ind,j) l =
       drop_local_defs typi l in
   Util.List.addn nparams (DAst.make @@ PatVar Anonymous) l
 
+let add_alias ?loc na c =
+  match na with
+  | Anonymous -> c
+  | Name id -> GLetIn (na,DAst.make ?loc c,None,DAst.make ?loc (GVar id))
+
 (* Turn a closed cases pattern into a glob_constr *)
-let rec glob_constr_of_closed_cases_pattern_aux x = DAst.map_with_loc (fun ?loc -> function
-  | PatCstr (cstr,[],Anonymous) -> GRef (ConstructRef cstr,None)
-  | PatCstr (cstr,l,Anonymous)  ->
+let rec glob_constr_of_cases_pattern_aux isclosed x = DAst.map_with_loc (fun ?loc -> function
+  | PatCstr (cstr,[],na) -> add_alias ?loc na (GRef (ConstructRef cstr,None))
+  | PatCstr (cstr,l,na)  ->
       let ref = DAst.make ?loc @@ GRef (ConstructRef cstr,None) in
       let l = add_patterns_for_params_remove_local_defs cstr l in
-      GApp (ref, List.map glob_constr_of_closed_cases_pattern_aux l)
+      add_alias ?loc na (GApp (ref, List.map (glob_constr_of_cases_pattern_aux isclosed) l))
+  | PatVar (Name id) when not isclosed ->
+      GVar id
+  | PatVar Anonymous when not isclosed ->
+      GHole (Evar_kinds.QuestionMark (Define false,Anonymous),Misctypes.IntroAnonymous,None)
   | _ -> raise Not_found
   ) x
 
 let glob_constr_of_closed_cases_pattern p = match DAst.get p with
   | PatCstr (cstr,l,na) ->
       let loc = p.CAst.loc in
-      na,glob_constr_of_closed_cases_pattern_aux (DAst.make ?loc @@ PatCstr (cstr,l,Anonymous))
+      na,glob_constr_of_cases_pattern_aux true (DAst.make ?loc @@ PatCstr (cstr,l,Anonymous))
   | _ ->
       raise Not_found
+
+let glob_constr_of_cases_pattern p = glob_constr_of_cases_pattern_aux false p
 
 (**********************************************************************)
 (* Interpreting ltac variables *)

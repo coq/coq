@@ -103,9 +103,13 @@ let to_id g e id = let e,na = g e (Name id) in e,name_to_ident na
 
 let rec cases_pattern_fold_map ?loc g e = DAst.with_val (function
   | PatVar na ->
-      let e',na' = g e na in e', DAst.make ?loc @@ PatVar na'
+      let e',pat,na' = g e na in
+      e', (match pat with
+      | None -> DAst.make ?loc @@ PatVar na'
+      | Some ((_,pat),_) -> pat)
   | PatCstr (cstr,patl,na) ->
-      let e',na' = g e na in
+      let e',pat,na' = g e na in
+      if pat <> None then user_err (Pp.str "Unable to instantiate an \"as\" clause with a pattern.");
       let e',patl' = List.fold_left_map (cases_pattern_fold_map ?loc g) e patl in
       e', DAst.make ?loc @@ PatCstr (cstr,patl',na')
   )
@@ -136,6 +140,16 @@ let rec subst_glob_vars l gc = DAst.map (function
 
 let ldots_var = Id.of_string ".."
 
+let protect g e na =
+  let e',pat,na = g e na in
+  if pat <> None then user_err (Pp.str "Unsupported substitution of an arbitrary pattern.");
+  e',na
+
+let apply_cases_pattern ?loc ((ids,pat),id) c =
+  let tm = DAst.make ?loc (GVar id) in
+  DAst.make ?loc @@
+    GCases (LetPatternStyle, None, [tm,(Anonymous,None)], [loc,(ids,[pat], c)])
+
 let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
   let lt x = DAst.make ?loc x in lt @@ match nc with
   | NVar id -> GVar id
@@ -153,39 +167,43 @@ let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
       let outerl = (ldots_var,inner)::(if swap then [x, lt @@ GVar y] else []) in
       DAst.get (subst_glob_vars outerl it)
   | NLambda (na,ty,c) ->
-      let e',na = g e na in GLambda (na,Explicit,f e ty,f e' c)
+      let e',pat,na = g e na in GLambda (na,Explicit,f e ty,Option.fold_right (apply_cases_pattern ?loc) pat (f e' c))
   | NProd (na,ty,c) ->
-      let e',na = g e na in GProd (na,Explicit,f e ty,f e' c)
+      let e',pat,na = g e na in GProd (na,Explicit,f e ty,Option.fold_right (apply_cases_pattern ?loc) pat (f e' c))
   | NLetIn (na,b,t,c) ->
-      let e',na = g e na in GLetIn (na,f e b,Option.map (f e) t,f e' c)
+      let e',pat,na = g e na in
+      (match pat with
+       | None -> GLetIn (na,f e b,Option.map (f e) t,f e' c)
+       | Some pat -> DAst.get (apply_cases_pattern ?loc pat (f e' c)))
   | NCases (sty,rtntypopt,tml,eqnl) ->
       let e',tml' = List.fold_right (fun (tm,(na,t)) (e',tml') ->
 	let e',t' = match t with
 	| None -> e',None
 	| Some (ind,nal) ->
 	  let e',nal' = List.fold_right (fun na (e',nal) ->
-	      let e',na' = g e' na in e',na'::nal) nal (e',[]) in
+              let e',na' = protect g e' na in
+              e',na'::nal) nal (e',[]) in
 	  e',Some (Loc.tag ?loc (ind,nal')) in
-	let e',na' = g e' na in
+        let e',na' = protect g e' na in
 	(e',(f e tm,(na',t'))::tml')) tml (e,[]) in
-      let fold (idl,e) na = let (e,na) = g e na in ((Name.cons na idl,e),na) in
+      let fold (idl,e) na = let (e,pat,na) = g e na in ((Name.cons na idl,e),pat,na) in
       let eqnl' = List.map (fun (patl,rhs) ->
 	let ((idl,e),patl) =
 	  List.fold_left_map (cases_pattern_fold_map ?loc fold) ([],e) patl in
 	Loc.tag (idl,patl,f e rhs)) eqnl in
       GCases (sty,Option.map (f e') rtntypopt,tml',eqnl')
   | NLetTuple (nal,(na,po),b,c) ->
-      let e',nal = List.fold_left_map g e nal in
-      let e'',na = g e na in
+      let e',nal = List.fold_left_map (protect g) e nal in
+      let e'',na = protect g e na in
       GLetTuple (nal,(na,Option.map (f e'') po),f e b,f e' c)
   | NIf (c,(na,po),b1,b2) ->
-      let e',na = g e na in
+      let e',na = protect g e na in
       GIf (f e c,(na,Option.map (f e') po),f e b1,f e b2)
   | NRec (fk,idl,dll,tl,bl) ->
-      let e,dll = Array.fold_left_map (List.fold_left_map (fun e (na,oc,b) ->
-	  let e,na = g e na in
+      let e,dll = Array.fold_left_map (List.fold_map (fun e (na,oc,b) ->
+          let e,na = protect g e na in
 	  (e,(na,Explicit,Option.map (f e) oc,f e b)))) e dll in
-      let e',idl = Array.fold_left_map (to_id g) e idl in
+      let e',idl = Array.fold_left_map (to_id (protect g)) e idl in
       GRec (fk,idl,dll,Array.map (f e) tl,Array.map (f e') bl)
   | NCast (c,k) -> GCast (f e c,Miscops.map_cast_type (f e) k)
   | NSort x -> GSort x
@@ -195,7 +213,7 @@ let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
 
 let glob_constr_of_notation_constr ?loc x =
   let rec aux () x =
-    glob_constr_of_notation_constr_with_binders ?loc (fun () id -> ((),id)) aux () x
+    glob_constr_of_notation_constr_with_binders ?loc (fun () id -> ((),None,id)) aux () x
   in aux () x
 
 (******************************************************************************)
@@ -867,28 +885,27 @@ let bind_term_as_binding_env alp (terms,termlists,binders,binderlists as sigma) 
     (* TODO: look at the consequences for alp *)
     alp, add_env alp sigma var (DAst.make @@ GVar id)
 
-let bind_binding_as_term_env alp (terms,termlists,binders,binderlists as sigma) var id =
+let bind_binding_as_term_env alp (terms,termlists,binders,binderlists as sigma) var c =
+  let pat = try cases_pattern_of_glob_constr Anonymous c with Not_found -> raise No_match in
   try
     (* If already bound to a binder, unify the term and the binder *)
-    let v' = Id.List.assoc var binders in
-    let v'' = unify_id alp id v' in
-    if v' == v'' then sigma
+    let pat' = Id.List.assoc var binders in
+    let pat'' = unify_pat alp pat pat' in
+    if pat' == pat'' then sigma
     else
       let sigma = (terms,termlists,Id.List.remove_assoc var binders,binderlists) in
-      add_binding_env alp sigma var v''
-  with Not_found -> add_binding_env alp sigma var (Name id)
+      add_binding_env alp sigma var pat''
+  with Not_found -> add_binding_env alp sigma var pat
 
-let bind_binding_env alp (terms,termlists,binders,binderlists as sigma) var v =
+let bind_binding_env alp (terms,termlists,binders,binderlists as sigma) var pat =
   try
     (* If already bound to a binder possibly *)
     (* generating an alpha-renaming from unifying the new binder *)
-    let v' = Id.List.assoc var binders in
-    let alp, v'' = unify_name_upto alp v v' in
-    if v' == v'' then alp, sigma
-    else
-      let sigma = (terms,termlists,Id.List.remove_assoc var binders,binderlists) in
-      alp, add_binding_env alp sigma var v
-  with Not_found -> alp, add_binding_env alp sigma var v
+    let pat' = Id.List.assoc var binders in
+    let alp, pat = unify_pat_upto alp pat pat' in
+    let sigma = (terms,termlists,Id.List.remove_assoc var binders,binderlists) in
+    alp, add_binding_env alp sigma var pat
+  with Not_found -> alp, add_binding_env alp sigma var pat
 
 let bind_bindinglist_env alp (terms,termlists,binders,binderlists as sigma) var bl =
   let bl = List.rev bl in
@@ -932,7 +949,7 @@ let match_opt f sigma t1 t2 = match (t1,t2) with
 
 let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
   | (na1,Name id2) when is_onlybinding_meta id2 metas ->
-      bind_binding_env alp sigma id2 na1
+      bind_binding_env alp sigma id2 (DAst.make (PatVar na1))
   | (Name id1,Name id2) when is_term_meta id2 metas ->
       (* We let the non-binding occurrence define the rhs and hence reason up to *)
       (* alpha-conversion for the given occurrence of the name (see #4592)) *)
@@ -1063,7 +1080,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
   match DAst.get a1, a2 with
   (* Matching notation variable *)
   | r1, NVar id2 when is_term_meta id2 metas -> bind_term_env alp sigma id2 a1
-  | GVar id1, NVar id2 when is_onlybinding_meta id2 metas -> bind_binding_as_term_env alp sigma id2 id1
+  | r1, NVar id2 when is_onlybinding_meta id2 metas -> bind_binding_as_term_env alp sigma id2 a1
   | r1, NVar id2 when is_bindinglist_meta id2 metas -> bind_term_env alp sigma id2 a1
 
   (* Matching recursive notations for terms *)
@@ -1226,6 +1243,10 @@ and match_extended_binders ?loc isprod u alp metas na1 na2 bk t sigma b1 b2 =
        when is_gvar p e && is_bindinglist_meta id metas && not (occur_glob_constr p b1) ->
      let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalPattern ((cp,ids),p,bk,t)] in
      match_in u alp metas sigma b1 b2
+  | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(_,[cp],b1))]), Name id
+       when is_gvar p e && is_onlybinding_meta id metas && not (occur_glob_constr p b1) ->
+     let alp,sigma = bind_binding_env alp sigma id cp in
+     match_in u alp metas sigma b1 b2
   | _, _, Name id when is_bindinglist_meta id metas && (not isprod || na1 != Anonymous)->
       let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalAssum (na1,bk,t)] in
       match_in u alp metas sigma b1 b2
@@ -1241,16 +1262,12 @@ and match_equations u alp metas sigma (_,(_,patl1,rhs1)) (patl2,rhs2) =
       (alp,sigma) patl1 patl2 in
   match_in u alp metas sigma rhs1 rhs2
 
-let term_of_binder bi = DAst.make @@ match bi with
-  | Name id -> GVar id
-  | Anonymous -> GHole (Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None)
-
 let match_notation_constr u c (metas,pat) =
   let terms,termlists,binders,binderlists =
     match_ false u ([],[]) metas ([],[],[],[]) c pat in
   (* Reorder canonically the substitution *)
   let find_binder x =
-    try term_of_binder (Id.List.assoc x binders)
+    try glob_constr_of_cases_pattern (Id.List.assoc x binders)
     with Not_found ->
       (* Happens for binders bound to Anonymous *)
       (* Find a better way to propagate Anonymous... *)
