@@ -54,6 +54,7 @@ FIND_VCS_CLAUSE:='(' \
   -name "$${GIT_DIR}" -o \
   -name '_build' -o \
   -name '_build_ci' -o \
+  -name '_install_ci' -o \
   -name 'coq-makefile' -o \
   -name '.opamcache' \
 ')' -prune -o
