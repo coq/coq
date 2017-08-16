@@ -4,7 +4,7 @@ set -xe
 
 if [ -n "${GITLAB_CI}" ];
 then
-    export COQBIN=`pwd`/install/bin
+    export COQBIN=`pwd`/_install_ci/bin
 else
     export COQBIN=`pwd`/bin
 fi
