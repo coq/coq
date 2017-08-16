@@ -131,6 +131,55 @@ XML Protocol
   "route_id" integer parameter, that associated the result of such
   query with its generated feedback.
 
+Changes from 8.6 to 8.6.1
+=========================
+
+- Fix #5380: Default colors for CoqIDE are actually applied.
+- Fix plugin warnings
+- Document named evars (including Show ident)
+- Fix Bug #5574, document function scope
+- Adding a test case as requested in bug 5205.
+- Fix Bug #5568, no dup notation warnings on repeated module imports
+- Fix documentation of Typeclasses eauto :=
+- Refactor documentation of records.
+- Protecting from warnings while compiling 8.6
+- Fixing an inconsistency between configure and configure.ml
+- Add test-suite checks for coqchk with constraints
+- Fix bug #5019 (looping zify on dependent types)
+- Fix bug 5550: "typeclasses eauto with" does not work with section variables.
+- Bug 5546, qualify datatype constructors when needed in Show Match
+- Bug #5535, test for Show with -emacs
+- Fix bug #5486, don't reverse ids in tuples 
+- Fixing #5522 (anomaly with free vars of pat)
+- Fix bug #5526, don't check for nonlinearity in notation if printing only
+- Fix bug #5255
+- Fix bug #3659: -time should understand multibyte encodings.
+- FIx bug #5300: Anomaly: Uncaught exception Not_found" in "Print Assumptions".
+- Fix outdated description in RefMan.
+- Repairing `Set Rewriting Schemes`
+- Fixing #5487 (v8.5 regression on ltac-matching expressions with evars).
+- Fix description of command-line arguments for Add (Rec) LoadPath
+- Fix bug #5377: @? patterns broken.
+- add XML protocol doc
+- Fix anomaly when doing [all:Check _.] during a proof.
+- Correction of bug #4306
+- Fix #5435: [Eval native_compute in] raises anomaly.
+- Instances should obey universe binders even when defined by tactics.
+- Intern names bound in match patterns
+- funind: Ignore missing info for current function
+- Do not typecheck twice the type of opaque constants.
+- show unused intro pattern warning
+- [future] Be eager when "chaining" already resolved future values.
+- Opaque side effects
+- Fix #5132: coq_makefile generates incorrect install goal 
+- Run non-tactic comands without resilient_command
+- Univs: fix bug #5365, generation of u+k <= v constraints
+- make `emit' tail recursive
+- Don't require printing-only notation to be productive
+- Fix the way setoid_rewrite handles bindings.
+- Fix for bug 5244 - set printing width ignored when given enough space
+- Fix bug 4969, autoapply was not tagging shelved subgoals correctly
+
 Changes from V8.6beta1 to V8.6
 ==============================
 
