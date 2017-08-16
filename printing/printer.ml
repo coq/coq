@@ -79,23 +79,23 @@ let _ =
    and only names of goal/section variables and rel names that do
    _not_ occur in the scope of the binder to be printed are avoided. *)
 
-let pr_constr_core goal_concl_style env sigma t =
+let pr_econstr_core goal_concl_style env sigma t =
   pr_constr_expr (extern_constr goal_concl_style env sigma t)
-let pr_lconstr_core goal_concl_style env sigma t =
+let pr_leconstr_core goal_concl_style env sigma t =
   pr_lconstr_expr (extern_constr goal_concl_style env sigma t)
 
-let pr_lconstr_env env = pr_lconstr_core false env
-let pr_constr_env env = pr_constr_core false env
+let pr_lconstr_env env sigma c = pr_leconstr_core false env sigma (EConstr.of_constr c)
+let pr_constr_env env sigma c = pr_econstr_core false env sigma (EConstr.of_constr c)
 let _ = Hook.set Refine.pr_constr pr_constr_env
 
-let pr_lconstr_goal_style_env env = pr_lconstr_core true env
-let pr_constr_goal_style_env env = pr_constr_core true env
+let pr_lconstr_goal_style_env env sigma c = pr_leconstr_core true env sigma (EConstr.of_constr c)
+let pr_constr_goal_style_env env sigma c = pr_econstr_core true env sigma (EConstr.of_constr c)
 
 let pr_open_lconstr_env env sigma (_,c) = pr_lconstr_env env sigma c
 let pr_open_constr_env env sigma (_,c) = pr_constr_env env sigma c
 
-let pr_leconstr_env env sigma c = pr_lconstr_env env sigma (EConstr.to_constr sigma c)
-let pr_econstr_env env sigma c = pr_constr_env env sigma (EConstr.to_constr sigma c)
+let pr_leconstr_env env sigma c = pr_leconstr_core false env sigma c
+let pr_econstr_env env sigma c = pr_econstr_core false env sigma c
 
 (* NB do not remove the eta-redexes! Global.env() has side-effects... *)
 let pr_lconstr t =
@@ -128,13 +128,13 @@ let pr_lconstr_under_binders c =
   let (sigma, env) = get_current_context () in
   pr_lconstr_under_binders_env env sigma c
 
-let pr_type_core goal_concl_style env sigma t =
+let pr_etype_core goal_concl_style env sigma t =
   pr_constr_expr (extern_type goal_concl_style env sigma t)
-let pr_ltype_core goal_concl_style env sigma t =
+let pr_letype_core goal_concl_style env sigma t =
   pr_lconstr_expr (extern_type goal_concl_style env sigma t)
 
-let pr_ltype_env env = pr_ltype_core false env
-let pr_type_env env = pr_type_core false env
+let pr_ltype_env env sigma c = pr_letype_core false env sigma (EConstr.of_constr c)
+let pr_type_env env sigma c = pr_etype_core false env sigma (EConstr.of_constr c)
 
 let pr_ltype t =
     let (sigma, env) = get_current_context () in
@@ -143,10 +143,9 @@ let pr_type t =
     let (sigma, env) = get_current_context () in
     pr_type_env env sigma t
 
-let pr_etype_env env sigma c = pr_type_env env sigma (EConstr.to_constr sigma c)
-let pr_letype_env env sigma c = pr_ltype_env env sigma (EConstr.to_constr sigma c)
-let pr_goal_concl_style_env env sigma c =
-  pr_ltype_core true env sigma (EConstr.to_constr sigma c)
+let pr_etype_env env sigma c = pr_etype_core false env sigma c
+let pr_letype_env env sigma c = pr_letype_core false env sigma c
+let pr_goal_concl_style_env env sigma c = pr_letype_core true env sigma c
 
 let pr_ljudge_env env sigma j =
   (pr_leconstr_env env sigma j.uj_val, pr_leconstr_env env sigma j.uj_type)
@@ -191,7 +190,7 @@ let pr_constr_pattern t =
 let pr_sort sigma s = pr_glob_sort (extern_sort sigma s)
 
 let _ = Termops.set_print_constr 
-  (fun env sigma t -> pr_lconstr_expr (extern_constr ~lax:true false env sigma (EConstr.Unsafe.to_constr t)))
+  (fun env sigma t -> pr_lconstr_expr (extern_constr ~lax:true false env sigma t))
 
 let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
 
@@ -364,6 +363,7 @@ let pr_named_context env sigma ne_context =
           ne_context ~init:(mt ()))
 
 let pr_rel_context env sigma rel_context =
+  let rel_context = List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) rel_context in
   pr_binders (extern_rel_context None env sigma rel_context)
 
 let pr_rel_context_of env sigma =
@@ -479,7 +479,8 @@ let pr_transparent_state (ids, csts) =
 
 (* display complete goal *)
 let default_pr_goal gs =
-  let (g,sigma) = Goal.V82.nf_evar (project gs) (sig_it gs) in
+  let g = sig_it gs in
+  let sigma = project gs in
   let env = Goal.V82.env sigma g in
   let concl = Goal.V82.concl sigma g in
   let goal =
