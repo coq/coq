@@ -84,7 +84,7 @@ Standard Library
 - New lemmas about iff and about orders on positive and Z.
 - New lemmas on powerRZ.
 - Strengthened statement of JMeq_eq_dep (closes BZ#4912).
-- The BigN, BigZ, BigZ libraries are not part anymore of Coq standard
+- The BigN, BigZ, BigZ libraries are no longer part of the Coq standard
   library, they are now provided by a separate repository
     https://github.com/coq/bignums
   The split has been done just after the Int31 library.
