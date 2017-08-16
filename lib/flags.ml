@@ -167,9 +167,9 @@ let use_polymorphic_flag () =
 let make_polymorphic_flag b =
   local_polymorphic_flag := Some b
 
-let inductive_cumulativity = ref false
-let make_inductive_cumulativity b = inductive_cumulativity := b
-let is_inductive_cumulativity () = !inductive_cumulativity
+let polymorphic_inductive_cumulativity = ref false
+let make_polymorphic_inductive_cumulativity b = polymorphic_inductive_cumulativity := b
+let is_polymorphic_inductive_cumulativity () = !polymorphic_inductive_cumulativity
 
 (** [program_mode] tells that Program mode has been activated, either
     globally via [Set Program] or locally via the Program command prefix. *)

@@ -168,8 +168,13 @@ GEXTEND Gram
           let indl=List.map (fun ((a,b,c,d),e) -> ((a,b,c,k,d),e)) indl in
 	  let cum =
 	    match cum with
-	      Some b -> b
-	    | None -> Flags.is_inductive_cumulativity ()
+	      Some true -> LocalCumulativity
+            | Some false -> LocalNonCumulativity
+	    | None ->
+                if Flags.is_polymorphic_inductive_cumulativity () then
+                  GlobalCumulativity
+                else
+                  GlobalNonCumulativity
 	  in
           VernacInductive (cum, priv,f,indl)
       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->

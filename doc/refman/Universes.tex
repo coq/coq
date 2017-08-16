@@ -134,12 +134,14 @@ producing global universe constraints, one can use the
 \asection{{\tt Cumulative, NonCumulative}}
 \comindex{Cumulative}
 \comindex{NonCumulative}
-\optindex{Inductive Cumulativity}
+\optindex{Polymorphic Inductive Cumulativity}
 
-Inductive types, coinductive types, variants and records can be
+Polymorphic inductive types, coinductive types, variants and records can be
 declared cumulative using the \texttt{Cumulative}. Alternatively,
-there is an option \texttt{Set Inductive Cumulativity} which when set,
-makes all subsequent inductive definitions cumulative. Consider the examples below.
+there is an option \texttt{Set Polymorphic Inductive Cumulativity} which when set,
+makes all subsequent \emph{polymorphic} inductive definitions cumulative.  When set,
+inductive types and the like can be enforced to be
+\emph{non-cumulative} using the \texttt{NonCumulative} prefix. Consider the examples below.
 \begin{coq_example*}
 Polymorphic Cumulative Inductive list {A : Type} :=
 | nil : list
@@ -158,15 +160,6 @@ This also means that any two instances of \texttt{list} are convertible:
 $\WTEGCONV{\mathtt{list@\{i\}} A}{\mathtt{list@\{j\}} B}$ whenever $\WTEGCONV{A}{B}$ and
 furthermore their corresponding (when fully applied to convertible arguments) constructors.
 See Chapter~\ref{Cic} for more details on convertibility and subtyping.
-Also notice the subtyping constraints for the \emph{non-cumulative} version of list:
-\begin{coq_example*}
-Polymorphic NonCumulative Inductive list' {A : Type} :=
-| nil' : list'
-| cons' : A -> list' -> list'.
-\end{coq_example*}
-\begin{coq_example}
-Print list'.
-\end{coq_example}
 The following is an example of a record with non-trivial subtyping relation:
 \begin{coq_example*}
 Polymorphic Cumulative Record packType := {pk : Type}.
@@ -174,8 +167,54 @@ Polymorphic Cumulative Record packType := {pk : Type}.
 \begin{coq_example}
 Print packType.
 \end{coq_example}
-Notice that as expected, \texttt{packType@\{i\}} and \texttt{packType@\{j\}} are convertible if and only if \texttt{i $=$ j}.
+Notice that as expected, \texttt{packType@\{i\}} and \texttt{packType@\{j\}} are
+convertible if and only if \texttt{i $=$ j}.
 
+Cumulative inductive types, coninductive types, variants and records
+only make sense when they are universe polymorphic. Therefore, an
+error is issued whenever the user uses the \texttt{Cumulative} or
+\texttt{NonCumulative} prefix in a monomorphic context.
+Notice that this is not the case for the option \texttt{Set Polymorphic Inductive Cumulativity}.
+That is, this option, when set, makes all subsequent \emph{polymorphic}
+inductive declarations cumulative (unless, of course the \texttt{NonCumulative} prefix is used)
+but has no effect on \emph{monomorphic} inductive declarations.
+Consider the following examples.
+\begin{coq_example}
+Monomorphic Cumulative Inductive Unit := unit.
+\end{coq_example}
+\begin{coq_example}
+Monomorphic NonCumulative Inductive Unit := unit.
+\end{coq_example}
+\begin{coq_example*}
+Set Polymorphic Inductive Cumulativity.
+Inductive Unit := unit.
+\end{coq_example*}
+\begin{coq_example}
+Print Unit.
+\end{coq_example}
+
+\subsection*{An example of a proof using cumulativity}
+
+\begin{coq_example}
+Set Universe Polymorphism.
+Set Polymorphic Inductive Cumulativity.
+
+Inductive eq@{i} {A : Type@{i}} (x : A) : A -> Type@{i} := eq_refl : eq x x.
+
+Definition funext_type@{a b e} (A : Type@{a}) (B : A -> Type@{b})
+  := forall f g : (forall a, B a),
+    (forall x, eq@{e} (f x) (g x))
+    -> eq@{e} f g.
+
+Section down.
+  Universes a b e e'.
+  Constraint e' < e.
+  Lemma funext_down {A B}
+    (H : @funext_type@{a b e} A B) : @funext_type@{a b e'} A B.
+  Proof.
+    exact H.
+  Defined.
+\end{coq_example}
 
 \asection{Global and local universes}
 
