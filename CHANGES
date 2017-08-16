@@ -1,12 +1,13 @@
-To be inserted at the proper place:
+Changes beyond 8.7
+==================
 
 Notations
 
 - Recursive notations with the recursive pattern repeating on the
   right (e.g. "( x ; .. ; y ; z )") now supported.
 
-Changes beyond V8.6
-===================
+Changes from 8.6.1 to 8.7+beta
+==============================
 
 Tactics
 
@@ -46,19 +47,31 @@ Tactics
 - In "Tactic Notation" or "TACTIC EXTEND", entry "constr_with_bindings"
   now uses type classes and rejects terms with unresolved holes, like
   entry "constr" does. To get the former behavior use
-  "open_constr_with_bindings" (possible source of incompatibility.
+  "open_constr_with_bindings" (possible source of incompatibility).
 - New e-variants eassert, eenough, epose proof, eset, eremember, epose
   which behave like the corresponding variants with no "e" but turn
   unresolved implicit arguments into existential variables, on the
   shelf, rather than failing.
+- Tactic injection has become more powerful (closes BZ#4890) and its
+  documentation has been updated.
+- It is now possible to take hintdb parameters in a Ltac definition or a
+  Tactic Notation.
+
+Gallina
+
+- Now supporting all kinds of binders, including 'pat, in syntax of record fields.
 
 Vernacular Commands
 
-- Goals context can be printed in a more compact way when "Set
-  Printing Compact Contexts" is activated.
-
+- Goals context can be printed in a more compact way when `Set
+  Printing Compact Contexts` is activated.
+- Unfocused goals can be printed with the `Set Printing Unfocused`
+  option.
+- `Print` now shows the types of let-bindings.
+- `About` now tells if a reference is a coercion.
 - The deprecated `Save` vernacular and its form `Save Theorem id` to
   close proofs have been removed from the syntax. Please use `Qed`.
+- `Search` now sorts results by relevance.
 
 Standard Library
 
@@ -68,6 +81,9 @@ Standard Library
   and, consequently, choice of representatives in equivalence classes.
   Various proof-theoretic characterizations of choice over setoids in
   file ChoiceFacts.v.
+- New lemmas about iff and about orders on positive and Z.
+- New lemmas on powerRZ.
+- Strengthened statement of JMeq_eq_dep (closes BZ#4912).
 - The BigN, BigZ, BigZ libraries are not part anymore of Coq standard
   library, they are now provided by a separate repository
     https://github.com/coq/bignums
@@ -81,6 +97,9 @@ Standard Library
 
 Plugins
 
+- The Ssreflect plugin is now distributed with Coq. Its documentation has
+  been integrated as a chapter of the reference manual. This chapter is
+  work in progress so feedback is welcome.
 - The mathematical proof language (also known as declarative mode) was removed.
 - A new command Extraction TestCompile has been introduced, not meant
   for the general user but instead for Coq's test-suite.
@@ -124,12 +143,25 @@ Universes
 - Cumulative inductive types. see prefixes "Cumulative", "NonCumulative"
   for inductive definitions and the option "Set Inductive Cumulativity"
   in the reference manual.
+- New syntax `Type@{_}` for anonymous universes.
 
-XML Protocol
+XML Protocol and internal changes
 
-- The `query` call has been modified, now it carries a mandatory
-  "route_id" integer parameter, that associated the result of such
-  query with its generated feedback.
+See dev/doc/changes.txt
+
+Many bugfixes including BZ#1859, BZ#2884, BZ#3613, BZ#3943, BZ#3994,
+BZ#4250, BZ#4709, BZ#4720, BZ#4824, BZ#4844, BZ#4911, BZ#5026, BZ#5233,
+BZ#5275, BZ#5315, BZ#5336, BZ#5360, BZ#5390, BZ#5414, BZ#5417, BZ#5420,
+BZ#5439, BZ#5449, BZ#5475, BZ#5476, BZ#5482, BZ#5501, BZ#5507, BZ#5520,
+BZ#5523, BZ#5524, BZ#5553, BZ#5577, BZ#5578, BZ#5589, BZ#5597, BZ#5598,
+BZ#5607, BZ#5618, BZ#5619, BZ#5620, BZ#5641, BZ#5648, BZ#5651, BZ#5671.
+
+Many bugfixes on OS X and Windows (now the test-suite passes on these
+platforms too).
+
+Many optimizations.
+
+Many documentation improvements.
 
 Changes from 8.6 to 8.6.1
 =========================
