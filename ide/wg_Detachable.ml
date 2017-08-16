@@ -19,7 +19,7 @@ class detachable (obj : ([> Gtk.box] as 'a) Gobject.obj) =
     inherit GPack.box_skel (obj :> Gtk.box Gobject.obj) as super
 
     val but = GButton.button ()
-    val win = GWindow.window ()
+    val win = GWindow.window ~type_hint:`DIALOG ()
     val frame = GBin.frame ~shadow_type:`NONE ()
     val mutable detached = false
     val mutable detached_cb = (fun _ -> ())
