@@ -188,6 +188,9 @@ In Coqlib / reference location:
 - The tclWEAK_PROGRESS and tclNOTSAMEGOAL tacticals were removed. Their usecase
   was very specific. Use tclPROGRESS instead.
 
+- New (internal) tactical `tclINDEPENDENTL` that combined with enter_one allows
+  to iterate a non-unit tactic on all goals and access their returned values.
+
 - The unsafe flag of the Refine.refine function and its variants has been
   renamed and dualized into typecheck and has been made mandatory.
 
