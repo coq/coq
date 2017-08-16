@@ -22,6 +22,17 @@
 \usepackage{xspace}
 \usepackage{pmboxdraw}
 \usepackage{float}
+\usepackage{color}
+  \definecolor{dkblue}{rgb}{0,0.1,0.5}
+  \definecolor{lightblue}{rgb}{0,0.5,0.5}
+  \definecolor{dkgreen}{rgb}{0,0.4,0}
+  \definecolor{dk2green}{rgb}{0.4,0,0}
+  \definecolor{dkviolet}{rgb}{0.6,0,0.8}
+  \definecolor{dkpink}{rgb}{0.2,0,0.6}
+\usepackage{listings}
+  \def\lstlanguagefiles{coq-listing.tex}
+\usepackage{tabularx}
+\usepackage{array,longtable}
 
 \floatstyle{boxed} 
 \restylefloat{figure}
@@ -98,6 +109,11 @@ Options A and B of the licence are {\em not} elected.}
 \include{RefMan-tac.v}% Tactics and tacticals
 \include{RefMan-ltac.v}% Writing tactics
 \include{RefMan-tacex.v}% Detailed Examples of tactics
+
+\lstset{language=SSR}
+\lstset{moredelim=[is][]{|*}{*|}}
+\lstset{moredelim=*[is][\itshape\rmfamily]{/*}{*/}}
+\include{RefMan-ssr}
 
 \part{User extensions}
 \include{RefMan-syn.v}% The Syntax and the Grammar commands
