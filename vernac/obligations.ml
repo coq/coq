@@ -650,7 +650,7 @@ let declare_obligation prg obl body ty uctx =
       let constant = Declare.declare_constant obl.obl_name ~local:true
 	(DefinitionEntry ce,IsProof Property)
       in
-	if not opaque then add_hint false prg constant;
+	if not opaque then add_hint (Locality.make_section_locality None) prg constant;
 	definition_message obl.obl_name;
 	true, { obl with obl_body =
 	    if poly then
