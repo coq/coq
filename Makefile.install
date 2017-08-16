@@ -74,7 +74,7 @@ ifeq ($(BEST),opt)
 	$(INSTALLBIN) $(TOPLOOPCMA:.cma=.cmxs) $(FULLCOQLIB)/toploop/
 endif
 
-install-byte: install-ide-byte
+install-byte: install-coqide-byte
 	$(MKDIR) $(FULLBINDIR)
 	$(INSTALLBIN) $(COQTOPBYTE) $(FULLBINDIR)
 	$(INSTALLBIN) $(TOPLOOPCMA) $(FULLCOQLIB)/toploop/
