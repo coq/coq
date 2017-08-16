@@ -46,8 +46,13 @@ Tactics
   shelf, rather than failing.
 - Tactic injection has become more powerful (closes BZ#4890) and its
   documentation has been updated.
-- It is now possible to take hintdb parameters in a Ltac definition or a
-  Tactic Notation.
+- Added support for side effects hooks in `cbv`, `cbn` and `simpl`.
+  The side effects are provided via a plugin:
+  https://github.com/herbelin/reduction-effects/
+- It is now possible to take hint database names as parameters in a
+  Ltac definition or a Tactic Notation.
+- New option `Set Ltac Batch Debug` on top of `Set Ltac Debug` for
+  non-interactive Ltac debug output.
 
 Gallina
 
@@ -60,10 +65,18 @@ Vernacular Commands
 - Unfocused goals can be printed with the `Set Printing Unfocused`
   option.
 - `Print` now shows the types of let-bindings.
+- The compatibility options for printing primitive projections
+  (`Set Printing Primitive Projection Parameters` and
+  `Set Printing Primitive Projection Compatibility`) are now off by default.
+- Possibility to unset the printing of notations in a more fine grained
+  fashion than `Unset Printing Notations` is provided without any
+  user-syntax. The goal is that someone creates a plugin to experiment
+  such a user-syntax, to be later integrated in Coq when stabilized.
 - `About` now tells if a reference is a coercion.
 - The deprecated `Save` vernacular and its form `Save Theorem id` to
   close proofs have been removed from the syntax. Please use `Qed`.
-- `Search` now sorts results by relevance.
+- `Search` now sorts results by relevance (the relevance metric is a
+  weighted sum of number of distinct symbols and size of the term).
 
 Standard Library
 
