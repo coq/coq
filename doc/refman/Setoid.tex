@@ -156,9 +156,9 @@ compatibility constraints.
 \begin{cscexample}[Rewriting]
 Continuing the previous examples, suppose that the user must prove
 \texttt{set\_eq int (union int (union int S1 S2) S2) (f S1 S2)} under the
-hypothesis \texttt{H: set\_eq int S2 (nil int)}. It is possible to
+hypothesis \texttt{H: set\_eq int S2 (@nil int)}. It is possible to
 use the \texttt{rewrite} tactic to replace the first two occurrences of
-\texttt{S2} with \texttt{nil int} in the goal since the context
+\texttt{S2} with \texttt{@nil int} in the goal since the context
 \texttt{set\_eq int (union int (union int S1 nil) nil) (f S1 S2)}, being
 a composition of morphisms instances, is a morphism. However the tactic
 will fail replacing the third occurrence of \texttt{S2} unless \texttt{f}
