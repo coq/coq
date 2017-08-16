@@ -18,7 +18,9 @@ Known Issues in Coq
 - Interrupting Coq when using the XML protocol may produce ill-formed
   XML. [BZ#5192](https://coq.inria.fr/bugs/show_bug.cgi?id=5192)
 - There are some known issues with the XML protocol, we recommend you
-  get in touch with the developers if you plan to use it.
+  get in touch with the developers if you plan to use it (either via
+  the [coqdev mailing list](https://sympa.inria.fr/sympa/info/coqdev)
+  or the [Gitter chat platform](https://gitter.im/coq/coq)).
 
 ### Known Issues in Coq 8.7 beta1, [to be solved before 8.7 final]:
 
