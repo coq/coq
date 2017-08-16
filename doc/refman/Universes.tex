@@ -332,8 +332,18 @@ Universes k l.
 Check (le@{k l}).
 \end{coq_example}
 
-User-named universes are considered rigid for unification and are never
-minimized.
+User-named universes and the anonymous universe implicitly attached to
+an explicit $Type$ are considered rigid for unification and are never
+minimized. Flexible anonymous universes can be produced with an
+underscore or by omitting the annotation to a polymorphic definition.
+
+\begin{coq_example}
+  Check (fun x => x) : Type -> Type.
+  Check (fun x => x) : Type -> Type@{_}.
+
+  Check le@{k _}.
+  Check le.
+\end{coq_example}
 
 \subsection{\tt Unset Strict Universe Declaration.
   \optindex{Strict Universe Declaration}
