@@ -31,7 +31,7 @@ TIMED ?=
 
 # When $(TIMED) is set, the time command used by default is $(STDTIME)
 # (see below), unless the following variable is non-empty. For instance,
-# it could be set to "'/usr/bin/time -p'".
+# it could be set to "'/usr/bin/env time -p'".
 TIMECMD ?=
 
 # When non-empty, -time is passed to coqc and the output is recorded
@@ -167,11 +167,11 @@ DEPENDENCIES := \
 ###########################################################################
 
 # Default timing command
-# Use /usr/bin/time on linux, gtime on Mac OS
+# Use /usr/bin/env time on linux, gtime on Mac OS
 TIMEFMT?="$* (real: %e, user: %U, sys: %S, mem: %M ko)"
 ifneq (,$(TIMED))
-ifeq (0,$(shell /usr/bin/time -f $(TIMEFMT) true >/dev/null 2>/dev/null; echo $$?))
-STDTIME?=/usr/bin/time -f $(TIMEFMT)
+ifeq (0,$(shell /usr/bin/env time -f $(TIMEFMT) true >/dev/null 2>/dev/null; echo $$?))
+STDTIME?=/usr/bin/env time -f $(TIMEFMT)
 else
 ifeq (0,$(shell gtime -f $(TIMEFMT) true >/dev/null 2>/dev/null; echo $$?))
 STDTIME?=gtime -f $(TIMEFMT)
@@ -180,7 +180,7 @@ STDTIME?=time
 endif
 endif
 else
-STDTIME?=/usr/bin/time -f $(TIMEFMT)
+STDTIME?=/usr/bin/env time -f $(TIMEFMT)
 endif
 
 TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
