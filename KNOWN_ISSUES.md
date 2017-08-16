@@ -1,7 +1,9 @@
 Known Issues in Coq
 ===================
 
-> Perfection is achieved, not when there is nothing more to add, but when there is nothing left to take away.
+> Il semble que la perfection soit atteinte non quand il n'y a plus rien à ajouter, mais quand il n'y a plus rien à retrancher.
+
+(Antoine de Saint-Exupéry, Terre des Hommes, 1939).
 
 ## Known Issues in Coq 8.7
 
