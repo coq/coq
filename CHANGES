@@ -158,7 +158,8 @@ Universes
 - Cumulative inductive types. see prefixes "Cumulative", "NonCumulative"
   for inductive definitions and the option "Set Inductive Cumulativity"
   in the reference manual.
-- New syntax `Type@{_}` for anonymous universes.
+- New syntax `foo@{_}` to instantiate a polymorphic definition with
+  anonymous universes (can also be used with `Type`).
 
 XML Protocol and internal changes
 
