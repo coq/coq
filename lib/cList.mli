@@ -195,11 +195,25 @@ sig
 
   val share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list
 
-  val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
-  (** [fold_map f e_0 [l_1...l_n] = e_n,[k_1...k_n]]
+  val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
+  (** [fold_left_map f e_0 [l_1...l_n] = e_n,[k_1...k_n]]
     where [(e_i,k_i)=f e_{i-1} l_i] *)
 
+  val fold_right_map : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
+  (** Same, folding on the right *)
+
+  val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b list -> 'c list -> 'a * 'd list
+  (** Same with two lists, folding on the left *)
+
+  val fold_right2_map : ('b -> 'c -> 'a -> 'd * 'a) -> 'b list -> 'c list -> 'a -> 'd list * 'a
+  (** Same with two lists, folding on the right *)
+
+  val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
+  (** @deprecated Same as [fold_left_map] *)
+
   val fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
+  (** @deprecated Same as [fold_right_map] *)
+
   val map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
   val assoc_f : 'a eq -> 'a -> ('a * 'b) list -> 'b
   val remove_assoc_f : 'a eq -> 'a -> ('a * 'b) list -> ('a * 'b) list
