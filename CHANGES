@@ -46,6 +46,8 @@ Tactics
   shelf, rather than failing.
 - Tactic injection has become more powerful (closes BZ#4890) and its
   documentation has been updated.
+- New variants of the `first` and `solve` tacticals that do not rely
+  on parsing rules, meant to define tactic notations.
 - Added support for side effects hooks in `cbv`, `cbn` and `simpl`.
   The side effects are provided via a plugin:
   https://github.com/herbelin/reduction-effects/
