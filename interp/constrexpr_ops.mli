@@ -54,6 +54,8 @@ val mkCLambdaN : ?loc:Loc.t -> local_binder_expr list -> constr_expr -> constr_e
 val mkCProdN : ?loc:Loc.t -> local_binder_expr list -> constr_expr -> constr_expr
 (** Same as [prod_constr_expr], with location *)
 
+val mkCPatOr : ?loc:Loc.t -> cases_pattern_expr list -> cases_pattern_expr
+
 val mkAppPattern : ?loc:Loc.t -> cases_pattern_expr -> cases_pattern_expr list -> cases_pattern_expr
 (** Apply a list of pattern arguments to a pattern *)
 

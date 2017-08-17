@@ -209,3 +209,11 @@ exists '({{x, y}} as z), x + y = 0 /\ z = z
      : Prop
 ∀ '({{x, y}} as z), x + y = 0 /\ z = z
      : Prop
+fun '({{{{x, y}}, true}} | {{{{x, y}}, false}}) => x + y
+     : nat * nat * bool -> nat
+myexists ({{{{x, y}}, true}} | {{{{x, y}}, false}}), x > y
+     : Prop
+exists '({{{{x, y}}, true}} | {{{{x, y}}, false}}), x > y
+     : Prop
+∀ '({{{{x, y}}, true}} | {{{{x, y}}, false}}), x > y
+     : Prop

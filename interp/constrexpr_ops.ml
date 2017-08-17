@@ -547,6 +547,10 @@ let coerce_to_name = function
   | { CAst.loc; _ } -> CErrors.user_err ?loc ~hdr:"coerce_to_name"
                          (str "This expression should be a name.")
 
+let mkCPatOr ?loc = function
+  | [pat] -> pat
+  | disjpat -> CAst.make ?loc @@ (CPatOr disjpat)
+
 let mkAppPattern ?loc p lp =
   let open CAst in
   make ?loc @@ (match p.v with

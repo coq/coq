@@ -376,3 +376,10 @@ Check fun '((x,y) as z) => x+y=0/\z=z.    (* Primitive fun/forall *)
 Check myexists ((x,y) as z), x+y=0/\z=z.  (* Isolated binding pattern *)
 Check exists '((x,y) as z), x+y=0/\z=z.   (* Applicative recursive binder *)
 Check ∀ '((x,y) as z), x+y=0/\z=z.        (* Other example of recursive binder, now treated as the exists case *)
+
+(* Check parsability and printability of irrefutable disjunctive patterns *)
+
+Check fun '(((x,y),true)|((x,y),false)) => x+y.
+Check myexists (((x,y),true)|((x,y),false)), x>y.
+Check exists '(((x,y),true)|((x,y),false)), x>y.
+Check ∀ '(((x,y),true)|((x,y),false)), x>y.

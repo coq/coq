@@ -922,16 +922,21 @@ and extern_typ (_,scopes) =
 and sub_extern inctx (_,scopes) = extern inctx (None,scopes)
 
 and factorize_prod scopes vars na bk aty c =
+  let store, get = set_temporary_memory () in
   match na, DAst.get c with
-  | Name id, GCases (LetPatternStyle, None, [(e,(Anonymous,None))],[(_,(_,[p],b))])
-         when is_gvar id e ->
-      let p = if occur_glob_constr id b then set_pat_alias id p else p in
+  | Name id, GCases (LetPatternStyle, None, [(e,(Anonymous,None))],(_::_ as eqns))
+         when is_gvar id e && List.length (store (factorize_eqns eqns)) = 1 ->
+    (match get () with
+     | [(_,(ids,disj_of_patl,b))] ->
+      let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
+      let disjpat = if occur_glob_constr id b then List.map (set_pat_alias id) disjpat else disjpat in
       let b = extern_typ scopes vars b in
-      let p = extern_cases_pattern_in_scope scopes vars p in
+      let p = mkCPatOr (List.map (extern_cases_pattern_in_scope scopes vars) disjpat) in
       let binder = CLocalPattern (c.loc,(p,None)) in
       (match b.v with
       | CProdN (bl,b) -> CProdN (binder::bl,b)
       | _ -> CProdN ([binder],b))
+     | _ -> assert false)
   | _, _ ->
       let c = extern_typ scopes vars c in
       match na, c.v with
@@ -945,16 +950,21 @@ and factorize_prod scopes vars na bk aty c =
          CProdN ([CLocalAssum([Loc.tag na],Default bk,aty)],c)
 
 and factorize_lambda inctx scopes vars na bk aty c =
+  let store, get = set_temporary_memory () in
   match na, DAst.get c with
-  | Name id, GCases (LetPatternStyle, None, [(e,(Anonymous,None))],[(_,(_,[p],b))])
-         when is_gvar id e ->
-      let p = if occur_glob_constr id b then set_pat_alias id p else p in
+  | Name id, GCases (LetPatternStyle, None, [(e,(Anonymous,None))],(_::_ as eqns))
+         when is_gvar id e && List.length (store (factorize_eqns eqns)) = 1 ->
+    (match get () with
+     | [(_,(ids,disj_of_patl,b))] ->
+      let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
+      let disjpat = if occur_glob_constr id b then List.map (set_pat_alias id) disjpat else disjpat in
       let b = sub_extern inctx scopes vars b in
-      let p = extern_cases_pattern_in_scope scopes vars p in
+      let p = mkCPatOr (List.map (extern_cases_pattern_in_scope scopes vars) disjpat) in
       let binder = CLocalPattern (c.loc,(p,None)) in
       (match b.v with
       | CLambdaN (bl,b) -> CLambdaN (binder::bl,b)
       | _ -> CLambdaN ([binder],b))
+     | _ -> assert false)
   | _, _ ->
       let c = sub_extern inctx scopes vars c in
       match c.v with
@@ -994,7 +1004,7 @@ and extern_local_binder scopes vars = function
     | GLocalPattern ((p,_),_,bk,ty) ->
       let ty =
         if !Flags.raw_print then Some (extern_typ scopes vars ty) else None in
-      let p = extern_cases_pattern vars p in
+      let p = mkCPatOr (List.map (extern_cases_pattern vars) p) in
       let (assums,ids,l) = extern_local_binder scopes vars l in
       (assums,ids, CLocalPattern(Loc.tag @@ (p,ty)) :: l)
 
@@ -1066,10 +1076,10 @@ and extern_notation (tmp_scope,scopes as allscopes) vars t = function
                       termlists in
                   let bl =
                     List.map (fun (bl,(scopt,scl)) ->
-                      extern_cases_pattern_in_scope (scopt,scl@scopes') vars bl)
+                      mkCPatOr (List.map (extern_cases_pattern_in_scope (scopt,scl@scopes') vars) bl))
                       binders in
-		  let bll =
-		    List.map (fun (bl,(scopt,scl)) ->
+                  let bll =
+                    List.map (fun (bl,(scopt,scl)) ->
 		      pi3 (extern_local_binder (scopt,scl@scopes') vars bl))
                       binderlists in
                   insert_delimiters (make_notation loc ntn (l,ll,bl,bll)) key)

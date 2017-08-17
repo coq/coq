@@ -441,20 +441,19 @@ let intern_letin_binder intern ntnvars env ((loc,na as locna),def,ty) =
    (na,Explicit,term,ty))
 
 let intern_cases_pattern_as_binder ?loc ntnvars env p =
-  let il,cp =
-    match !intern_cases_pattern_fwd ntnvars (None,env.scopes) p with
-    | (il, [(subst,cp)]) ->
-       if not (Id.Map.equal Id.equal subst Id.Map.empty) then
-         user_err ?loc (str "Unsupported nested \"as\" clause.");
-       il,cp
-    | _ -> assert false
+  let il,disjpat =
+    let (il, subst_disjpat) = !intern_cases_pattern_fwd ntnvars (None,env.scopes) p in
+    let substl,disjpat = List.split subst_disjpat in
+    if not (List.for_all (fun subst -> Id.Map.equal Id.equal subst Id.Map.empty) substl) then
+      user_err ?loc (str "Unsupported nested \"as\" clause.");
+    il,disjpat
   in
   let env = List.fold_right (fun (loc,id) env -> push_name_env ntnvars (Variable,[],[],[]) env (loc,Name id)) il env in
-  let na = alias_of_pat cp in
+  let na = alias_of_pat (List.hd disjpat) in
   let ienv = Name.fold_right Id.Set.remove na env.ids in
-  let id = Namegen.next_name_away_with_default "pat" (alias_of_pat cp) ienv in
+  let id = Namegen.next_name_away_with_default "pat" na ienv in
   let na = (loc, Name id) in
-  env,((cp,il),id),na
+  env,((disjpat,il),id),na
 
 let intern_local_binder_aux ?(global_level=false) intern ntnvars (env,bl) = function
   | CLocalAssum(nal,bk,ty) ->
@@ -470,11 +469,11 @@ let intern_local_binder_aux ?(global_level=false) intern ntnvars (env,bl) = func
         | Some ty -> ty
         | None -> CAst.make ?loc @@ CHole(None,Misctypes.IntroAnonymous,None)
       in
-      let env, ((cp,il),id),na = intern_cases_pattern_as_binder ?loc ntnvars env p in
+      let env, ((disjpat,il),id),na = intern_cases_pattern_as_binder ?loc ntnvars env p in
       let bk = Default Explicit in
       let _, bl' = intern_assumption intern ntnvars env [na] bk tyc in
       let _,(_,bk,t) = List.hd bl' in
-      (env, (DAst.make ?loc @@ GLocalPattern((cp,List.map snd il),id,bk,t)) :: bl)
+      (env, (DAst.make ?loc @@ GLocalPattern((disjpat,List.map snd il),id,bk,t)) :: bl)
 
 let intern_generalization intern env ntnvars loc bk ak c =
   let c = intern {env with unb = true} c in
@@ -518,9 +517,11 @@ let rec expand_binders ?loc mk bl c =
         expand_binders ?loc mk bl (DAst.make ?loc @@ GLetIn (n, b, oty, c))
      | GLocalAssum (n, bk, t) ->
         expand_binders ?loc mk bl (mk ?loc (n,bk,t) c)
-     | GLocalPattern ((pat,ids), id, bk, ty) ->
+     | GLocalPattern ((disjpat,ids), id, bk, ty) ->
         let tm = DAst.make ?loc (GVar id) in
-        let c = DAst.make ?loc @@ GCases (Misctypes.LetPatternStyle, None, [tm,(Anonymous,None)], [loc,(ids,[pat], c)]) in
+        (* Distribute the disjunctive patterns over the shared right-hand side *)
+        let eqnl = List.map (fun pat -> (loc,(ids,[pat],c))) disjpat in
+        let c = DAst.make ?loc @@ GCases (Misctypes.LetPatternStyle, None, [tm,(Anonymous,None)], eqnl) in
         expand_binders ?loc mk bl (mk ?loc (Name id,Explicit,ty) c)
 
 (**********************************************************************)
@@ -543,26 +544,32 @@ let find_fresh_name renaming (terms,termlists,binders,binderlists) avoid id =
   (* TODO binders *)
   next_ident_away_from id (fun id -> Id.Set.mem id fvs3)
 
+let is_var store pat =
+  match DAst.get pat with
+  | PatVar na -> store na; true
+  | _ -> false
+
 let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renaming,env) = function
  | Anonymous -> (renaming,env), None, Anonymous
  | Name id ->
+  let store,get = set_temporary_memory () in
   try
     (* We instantiate binder name with patterns which may be parsed as terms *)
     let pat = coerce_to_cases_pattern_expr (fst (Id.Map.find id terms)) in
-    let env,((pat,ids),id),na = intern_pat ntnvars env pat in
-    let pat, na = match DAst.get pat with
-    | PatVar na -> None, na
-    | _ -> Some ((List.map snd ids,pat),id), snd na in
+    let env,((disjpat,ids),id),na = intern_pat ntnvars env pat in
+    let pat, na = match disjpat with
+    | [pat] when is_var store pat -> let na = get () in None, na
+    | _ -> Some ((List.map snd ids,disjpat),id), snd na in
     (renaming,env), pat, na
   with Not_found ->
   try
     (* Trying to associate a pattern *)
     let pat,scopes = Id.Map.find id binders in
     let env = set_env_scopes env scopes in
-    let env,((pat,ids),id),na = intern_pat ntnvars env pat in
-    let pat, na = match DAst.get pat with
-    | PatVar na -> None, na
-    | _ -> Some ((List.map snd ids,pat),id), snd na in
+    let env,((disjpat,ids),id),na = intern_pat ntnvars env pat in
+    let pat, na = match disjpat with
+    | [pat] when is_var store pat -> let na = get () in None, na
+    | _ -> Some ((List.map snd ids,disjpat),id), snd na in
     (renaming,env), pat, na
   with Not_found ->
     (* Binders not bound in the notation do not capture variables *)
@@ -582,10 +589,16 @@ type binder_action =
 let dmap_with_loc f n =
   CAst.map_with_loc (fun ?loc c -> f ?loc (DAst.get_thunk c)) n
 
+let error_cannot_coerce_wildcard_term ?loc () =
+  user_err ?loc Pp.(str "Cannot turn \"_\" into a term.")
+
+let error_cannot_coerce_disjunctive_pattern_term ?loc () =
+  user_err ?loc Pp.(str "Cannot turn a disjunctive pattern into a term.")
+
 let terms_of_binders bl =
   let rec term_of_pat pt = dmap_with_loc (fun ?loc -> function
     | PatVar (Name id)   -> CRef (Ident (loc,id), None)
-    | PatVar (Anonymous) -> user_err Pp.(str "Cannot turn \"_\" into a term.")
+    | PatVar (Anonymous) -> error_cannot_coerce_wildcard_term ?loc ()
     | PatCstr (c,l,_) ->
        let r = Qualid (loc,qualid_of_path (path_of_global (ConstructRef c))) in
        let hole = CAst.make ?loc @@ CHole (None,Misctypes.IntroAnonymous,None) in
@@ -599,7 +612,8 @@ let terms_of_binders bl =
       | GLocalDef (Name id,_,_,_) -> extract_variables l
       | GLocalDef (Anonymous,_,_,_)
       | GLocalAssum (Anonymous,_,_) -> user_err Pp.(str "Cannot turn \"_\" into a term.")
-      | GLocalPattern ((u,_),_,_,_) -> term_of_pat u :: extract_variables l
+      | GLocalPattern (([u],_),_,_,_) -> term_of_pat u :: extract_variables l
+      | GLocalPattern ((_,_),_,_,_) -> error_cannot_coerce_disjunctive_pattern_term ?loc ()
       end
     | [] -> [] in
   extract_variables bl
@@ -676,8 +690,10 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
         in
         let mk_env' (c, (tmp_scope, subscopes)) =
           let nenv = {env with tmp_scope; scopes = subscopes @ env.scopes} in
-          let _,((pat,_),_),_ = intern_pat ntnvars nenv c in
-          (glob_constr_of_cases_pattern pat, None)
+          let _,((disjpat,_),_),_ = intern_pat ntnvars nenv c in
+          match disjpat with
+          | [pat] -> (glob_constr_of_cases_pattern pat, None)
+          | _ -> error_cannot_coerce_disjunctive_pattern_term ?loc:c.CAst.loc ()
         in
         let terms = Id.Map.map mk_env terms in
         let binders = Id.Map.map mk_env' binders in
@@ -708,14 +724,14 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
     (* Two special cases to keep binder name synchronous with BinderType *)
     | NProd (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
         when Name.equal na na' ->
-        let subinfos,pat,na = traverse_binder intern_pat ntnvars subst avoid subinfos na in
+        let subinfos,disjpat,na = traverse_binder intern_pat ntnvars subst avoid subinfos na in
         let ty = DAst.make ?loc @@ GHole (Evar_kinds.BinderType na,naming,arg) in
-        DAst.make ?loc @@ GProd (na,Explicit,ty,Option.fold_right apply_cases_pattern pat (aux subst' subinfos c'))
+        DAst.make ?loc @@ GProd (na,Explicit,ty,Option.fold_right apply_cases_pattern disjpat (aux subst' subinfos c'))
     | NLambda (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
         when Name.equal na na' ->
-        let subinfos,pat,na = traverse_binder intern_pat ntnvars subst  avoid subinfos na in
+        let subinfos,disjpat,na = traverse_binder intern_pat ntnvars subst  avoid subinfos na in
         let ty = DAst.make ?loc @@ GHole (Evar_kinds.BinderType na,naming,arg) in
-        DAst.make ?loc @@ GLambda (na,Explicit,ty,Option.fold_right apply_cases_pattern pat (aux subst' subinfos c'))
+        DAst.make ?loc @@ GLambda (na,Explicit,ty,Option.fold_right apply_cases_pattern disjpat (aux subst' subinfos c'))
     | t ->
       glob_constr_of_notation_constr_with_binders ?loc
         (traverse_binder intern_pat ntnvars subst  avoid) (aux subst') subinfos t
@@ -730,11 +746,13 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
     try
       let pat,scopes = Id.Map.find id binders in
       let env = set_env_scopes env scopes in
-      (* We deactivate the check on hidden parameters *)
-      (* since we are only interested in the pattern as a term *)
+      (* We deactivate impls to avoid the check on hidden parameters *)
+      (* and since we are only interested in the pattern as a term *)
       let env = reset_hidden_inductive_implicit_test env in
-      let env,((pat,ids),id),na = intern_pat ntnvars env pat in
-      glob_constr_of_cases_pattern pat
+      let env,((disjpat,ids),id),na = intern_pat ntnvars env pat in
+      match disjpat with
+      | [pat] -> glob_constr_of_cases_pattern pat
+      | _ -> user_err Pp.(str "Cannot turn a disjunctive pattern into a term.")
     with Not_found ->
     try
       match binderopt with
