@@ -1657,7 +1657,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = project gl in 
         let sigma, cb = interp_open_constr_with_bindings ist env sigma cb in
-        let sigma, cbo = Option.fold_map (interp_open_constr_with_bindings ist env) sigma cbo in
+        let sigma, cbo = Option.fold_left_map (interp_open_constr_with_bindings ist env) sigma cbo in
         let named_tac =
           let tac = Tactics.elim ev keep cb cbo in
           name_atomic ~env (TacElim (ev,(keep,cb),cbo)) tac
@@ -1789,7 +1789,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         let l,lp = List.split l in
         let sigma,el =
-          Option.fold_map (interp_open_constr_with_bindings ist env) sigma el in
+          Option.fold_left_map (interp_open_constr_with_bindings ist env) sigma el in
         Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (name_atomic ~env
           (TacInductionDestruct(isrec,ev,(lp,el)))
