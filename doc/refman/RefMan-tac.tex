@@ -3326,9 +3326,9 @@ evaluating purely computational expressions (i.e. with little dead code).
   \begin{quote}
     {\tt Set NativeCompute Profile Filename \str}
   \end{quote}
-  to specify the profile output; the default is {\tt native\_compute\_profile.data}. If there's an existing file with
-  the specified name, \Coq{} will append a number to it to avoid name collisions. That means you can
-  individually profile multiple uses of {\tt native\_compute} in a script. From the Linux command line, run {\tt perf report} on
+  to specify the profile output; the default is {\tt native\_compute\_profile.data}. The actual filename used 
+  will contain extra characters to avoid overwriting an existing file; that filename is reported to the user. That means
+  you can individually profile multiple uses of {\tt native\_compute} in a script. From the Linux command line, run {\tt perf report} on
   the profile file to see the results. Consult the {\tt perf} documentation for more details.
 
 \end{Variants}

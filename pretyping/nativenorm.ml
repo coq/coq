@@ -49,33 +49,21 @@ let get_profile_filename () = !profile_filename
 let set_profile_filename fn =
   profile_filename := fn
 
-(* counter so we don't overwrite existing profiles *)
-let profile_filename_counter = ref 0
-(* flag to guard against (unlikely) counter wraparound *)
-let profile_saw_zero_counter = ref false
-  
 (* find unused profile filename *)
 let get_available_profile_filename () =
-  let basename = get_profile_filename () in
-  let rec find_name () =
-    let ct = !profile_filename_counter in
-    let _ = assert (not (ct = 0 && !profile_saw_zero_counter)) in
-    let possible_name =
-      if ct = 0 then (
-	profile_saw_zero_counter := true;
-	basename )
-      else basename ^ "." ^ (string_of_int ct) in
-    if Sys.file_exists possible_name
-    then (
-      incr profile_filename_counter;
-      find_name ()
-    )
-    else possible_name
-  in
-  let name = find_name () in
-  incr profile_filename_counter;
-  name
-	
+  let profile_filename = get_profile_filename () in
+  let dir = Filename.dirname profile_filename in 
+  let base = Filename.basename profile_filename in 
+  let ext = Filename.extension base in 
+  let name = Filename.remove_extension base in 
+  try 
+    (* unlikely race: fn deleted, another process uses fn *)
+    Filename.temp_file ~temp_dir:dir (name ^ "_") ext
+  with Sys_error s ->
+    let msg = "When trying to find native_compute profile output file: " ^ s in
+    let _ = Feedback.msg_info (Pp.str msg) in
+    assert false
+
 let get_profiling_enabled () =
   !profiling_enabled
     
@@ -445,7 +433,7 @@ let start_profiler_linux profile_fn =
   let profiler_pid = 
     Unix.create_process
       perf
-      [|perf; "record"; "-g"; "-p"; string_of_int coq_pid; "-o"; profile_fn|]
+      [|perf; "record"; "-g"; "-o"; profile_fn; "-p"; string_of_int coq_pid |]
       Unix.stdin dev_null dev_null
   in
   (* doesn't seem to be a way to test whether process creation succeeded *)
