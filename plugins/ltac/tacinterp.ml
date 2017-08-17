@@ -689,7 +689,7 @@ let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
       (* dest_fun, List.assoc may raise Not_found *)
       let sigma, c = interp_fun ist env sigma x in
       sigma, [c] in
-  let sigma, l = List.fold_map try_expand_ltac_var sigma l in
+  let sigma, l = List.fold_left_map try_expand_ltac_var sigma l in
   sigma, List.flatten l
 
 let interp_constr_list ist env sigma c =
@@ -908,18 +908,18 @@ and interp_intro_pattern_action ist env sigma = function
 
 and interp_or_and_intro_pattern ist env sigma = function
   | IntroAndPattern l ->
-      let sigma, l = List.fold_map (interp_intro_pattern ist env) sigma l in
+      let sigma, l = List.fold_left_map (interp_intro_pattern ist env) sigma l in
       sigma, IntroAndPattern l
   | IntroOrPattern ll ->
-      let sigma, ll = List.fold_map (interp_intro_pattern_list_as_list ist env) sigma ll in
+      let sigma, ll = List.fold_left_map (interp_intro_pattern_list_as_list ist env) sigma ll in
       sigma, IntroOrPattern ll
 
 and interp_intro_pattern_list_as_list ist env sigma = function
   | [loc,IntroNaming (IntroIdentifier id)] as l ->
       (try sigma, coerce_to_intro_pattern_list ?loc env sigma (Id.Map.find id ist.lfun)
        with Not_found | CannotCoerceTo _ ->
-         List.fold_map (interp_intro_pattern ist env) sigma l)
-  | l -> List.fold_map (interp_intro_pattern ist env) sigma l
+         List.fold_left_map (interp_intro_pattern ist env) sigma l)
+  | l -> List.fold_left_map (interp_intro_pattern ist env) sigma l
 
 let interp_intro_pattern_naming_option ist env sigma = function
   | None -> None
@@ -973,7 +973,7 @@ let interp_bindings ist env sigma = function
     let sigma, l = interp_open_constr_list ist env sigma l in   
     sigma, ImplicitBindings l
 | ExplicitBindings l ->
-    let sigma, l = List.fold_map (interp_binding ist env) sigma l in
+    let sigma, l = List.fold_left_map (interp_binding ist env) sigma l in
     sigma, ExplicitBindings l
 
 let interp_constr_with_bindings ist env sigma (c,bl) =
@@ -1775,7 +1775,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
         let sigma,l =
-          List.fold_map begin fun sigma (c,(ipato,ipats),cls) ->
+          List.fold_left_map begin fun sigma (c,(ipato,ipats),cls) ->
             (* TODO: move sigma as a side-effect *)
              (* spiwack: the [*p] variants are for printing *)
             let cp = c in

@@ -156,7 +156,7 @@ let map_named_val f ctxt =
     in
     (accu, d')
   in
-  let map, ctx = List.fold_map fold ctxt.env_named_map ctxt.env_named_ctx in
+  let map, ctx = List.fold_left_map fold ctxt.env_named_map ctxt.env_named_ctx in
   if map == ctxt.env_named_map then ctxt
   else { env_named_ctx = ctx; env_named_map = map }
 

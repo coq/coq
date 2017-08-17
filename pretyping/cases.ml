@@ -1753,14 +1753,14 @@ let build_inversion_problem loc env sigma tms t =
 	let cstr,u = destConstruct sigma f in
 	let n = constructor_nrealargs_env env cstr in
 	let l = List.lastn n (Array.to_list v) in
-	let l,acc = List.fold_map' reveal_pattern l acc in
+	let l,acc = List.fold_right_map reveal_pattern l acc in
 	CAst.make (PatCstr (cstr,l,Anonymous)), acc
     | _ -> make_patvar t acc in
   let rec aux n env acc_sign tms acc =
     match tms with
     | [] -> [], acc_sign, acc
     | (t, IsInd (_,IndType(indf,realargs),_)) :: tms ->
-	let patl,acc = List.fold_map' reveal_pattern realargs acc in
+	let patl,acc = List.fold_right_map reveal_pattern realargs acc in
 	let pat,acc = make_patvar t acc in
 	let indf' = lift_inductive_family n indf in
 	let sign = make_arity_signature env sigma true indf' in
