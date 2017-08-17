@@ -436,11 +436,10 @@ let evars_of_evar_map sigma =
     Nativelambda.evars_metas = Evd.meta_type sigma }
 
 (* fork perf process, return profiler's process id *)
-let start_profiler_linux () =
+let start_profiler_linux profile_fn =
   let coq_pid = Unix.getpid () in (* pass pid of running coqtop *)
   (* we don't want to see perf's console output *)
   let dev_null = Unix.descr_of_out_channel (open_out_bin "/dev/null") in
-  let profile_fn = get_available_profile_filename () in
   let _ = Feedback.msg_info (Pp.str ("Profiling to file " ^ profile_fn)) in
   let perf = "perf" in
   let profiler_pid = 
@@ -468,8 +467,9 @@ let stop_profiler_linux m_pid =
   | None -> ()
 
 let start_profiler () =
+  let profile_fn = get_available_profile_filename () in
   match profiler_platform () with
-    "Unix (Linux)" -> start_profiler_linux ()
+    "Unix (Linux)" -> start_profiler_linux profile_fn
   | _ ->
      let _ = Feedback.msg_info
        (Pp.str (Format.sprintf "Native_compute profiling not supported on the platform: %s"
