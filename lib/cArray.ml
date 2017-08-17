@@ -53,8 +53,12 @@ sig
     ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
   val map_left : ('a -> 'b) -> 'a array -> 'b array
   val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
-  val fold_map' : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
+  val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
+  val fold_right_map : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
+  val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
+  val fold_right2_map : ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
   val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
+  val fold_map' : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
   val fold_map2' :
     ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
   val distinct : 'a array -> bool
@@ -434,7 +438,7 @@ let iter2 f v1 v2 =
 
 let pure_functional = false
 
-let fold_map' f v e =
+let fold_right_map f v e =
 if pure_functional then
   let (l,e) =
     Array.fold_right
@@ -446,18 +450,28 @@ else
   let v' = Array.map (fun x -> let (y,e) = f x !e' in e' := e; y) v in
   (v',!e')
 
-let fold_map f e v =
+let fold_map' = fold_right_map
+
+let fold_left_map f e v =
   let e' = ref e in
   let v' = Array.map (fun x -> let (e,y) = f !e' x in e' := e; y) v in
   (!e',v')
 
-let fold_map2' f v1 v2 e =
+let fold_map = fold_left_map
+
+let fold_right2_map f v1 v2 e =
   let e' = ref e in
   let v' =
     map2 (fun x1 x2 -> let (y,e) = f x1 x2 !e' in e' := e; y) v1 v2
   in
   (v',!e')
 
+let fold_map2' = fold_right2_map
+
+let fold_left2_map f e v1 v2 =
+  let e' = ref e in
+  let v' = map2 (fun x1 x2 -> let (e,y) = f !e' x1 x2 in e' := e; y) v1 v2 in
+  (!e',v')
 
 let distinct v =
   let visited = Hashtbl.create 23 in

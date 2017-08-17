@@ -96,10 +96,28 @@ sig
   val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
   (** Iter on two arrays. Raise [Invalid_argument "Array.iter2"] if sizes differ. *)
 
-  val fold_map' : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
+  val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
+  (** [fold_left_map f e_0 [|l_1...l_n|] = e_n,[|k_1...k_n|]]
+    where [(e_i,k_i)=f e_{i-1} l_i] *)
+
+  val fold_right_map : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
+  (** Same, folding on the right *)
+
+  val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
+  (** Same with two arrays, folding on the left *)
+
+  val fold_right2_map : ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
+  (** Same with two arrays, folding on the left *)
+
   val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
+  (** @deprecated Same as [fold_left_map] *)
+
+  val fold_map' : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
+  (** @deprecated Same as [fold_right_map] *)
+
   val fold_map2' :
     ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
+  (** @deprecated Same as [fold_right2_map] *)
 
   val distinct : 'a array -> bool
   (** Return [true] if every element of the array is unique (for default 
