@@ -36,7 +36,7 @@ HEVEA:=hevea
 HACHA:=hacha
 HEVEAOPTS:=-fix -exec xxdate.exe
 HEVEALIB:=/usr/local/lib/hevea:/usr/lib/hevea
-HTMLSTYLE:=coqremote
+HTMLSTYLE:=simple
 export TEXINPUTS:=$(HEVEALIB):
 ifdef COQDOC_NOBOOT
 COQTEXOPTS:=-n 72 -sl -small
@@ -216,15 +216,7 @@ doc/refman/html/index.html: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
 	(cd doc/refman/html; $(HACHA) -nolinks -tocbis -o toc.html ../styles.hva ../Reference-Manual.html)
 	$(INSTALLLIB) doc/refman/cover.html doc/refman/html/index.html
 	@touch $(INDEXES)
-	(cd doc/common/styles/html/$(HTMLSTYLE);\
-		for f in `find . -name \*.css`; do \
-			install -m 644 -D $$f ../../../../refman/html/$$f;\
-		done)
-	(cd doc/common/styles/html/$(HTMLSTYLE);\
-		for f in `find . -name coqdoc.css -o -name style.css`; do \
-			install -m 644 -D $$f ../../../../refman/html/;\
-		done)
-	install -m 644 doc/common/styles/html/$(HTMLSTYLE)/*.css doc/refman/html
+	-$(INSTALLLIB) doc/common/styles/html/$(HTMLSTYLE)/*.css doc/refman/html
 
 refman-quick:
 	(cd doc/refman;\
@@ -487,12 +479,6 @@ $(OCAMLDOCDIR)/%.pdf: $(OCAMLDOCDIR)/%.tex
 	$(HIDE)(cd $(OCAMLDOCDIR) ; pdflatex -interaction=batchmode $*.tex && pdflatex -interaction=batchmode $*.tex)
 	$(HIDE)(cd doc/tools/; show_latex_messages -no-overfull ../../$(OCAMLDOCDIR)/$*.log)
 
-###########################################################################
-# local web server
-###########################################################################
-
-serve-refman-8080: refman
-	cd doc/refman/html; python3 -m http.server 8080
 
 # For emacs:
 # Local Variables:
