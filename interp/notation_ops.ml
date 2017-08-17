@@ -180,10 +180,10 @@ let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
       let e',na = g e na in
       GIf (f e c,(na,Option.map (f e') po),f e b1,f e b2)
   | NRec (fk,idl,dll,tl,bl) ->
-      let e,dll = Array.fold_map (List.fold_left_map (fun e (na,oc,b) ->
+      let e,dll = Array.fold_left_map (List.fold_left_map (fun e (na,oc,b) ->
 	  let e,na = g e na in
 	  (e,(na,Explicit,Option.map (f e) oc,f e b)))) e dll in
-      let e',idl = Array.fold_map (to_id g) e idl in
+      let e',idl = Array.fold_left_map (to_id g) e idl in
       GRec (fk,idl,dll,Array.map (f e) tl,Array.map (f e') bl)
   | NCast (c,k) -> GCast (f e c,Miscops.map_cast_type (f e) k)
   | NSort x -> GSort x
