@@ -622,9 +622,15 @@ let availability_of_prim_token n printer_scope local_scopes =
 
 let pair_eq f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
 
+let notation_binder_source_eq s1 s2 = match s1, s2 with
+   | NtnParsedAsConstr, NtnParsedAsConstr -> true
+   | NtnParsedAsIdent,  NtnParsedAsIdent -> true
+   | NtnParsedAsPattern, NtnParsedAsPattern -> true
+   | (NtnParsedAsConstr | NtnParsedAsIdent | NtnParsedAsPattern), _ -> false
+
 let ntpe_eq t1 t2 = match t1, t2 with
 | NtnTypeConstr, NtnTypeConstr -> true
-| NtnTypeBinder b1, NtnTypeBinder b2 -> b1 = (b2:bool)
+| NtnTypeBinder s1, NtnTypeBinder s2 -> notation_binder_source_eq s1 s2
 | NtnTypeConstrList, NtnTypeConstrList -> true
 | NtnTypeBinderList, NtnTypeBinderList -> true
 | (NtnTypeConstr | NtnTypeBinder _ | NtnTypeConstrList | NtnTypeBinderList), _ -> false

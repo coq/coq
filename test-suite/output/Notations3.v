@@ -338,9 +338,16 @@ Check fun x => if x is n.+1 then n else 1.
 
 Check {(x,y)|x+y=0}.
 
+Module D.
 Notation "'exists2'' x , p & q" := (ex2 (fun x => p) (fun x => q))
   (at level 200, x pattern, p at level 200, right associativity,
     format "'[' 'exists2''  '/  ' x ,  '/  ' '[' p  &  '/' q ']' ']'")
   : type_scope.
 
 Check exists2' (x,y), x=0 & y=0.
+End D.
+
+(* Ensuring for reparsability that printer of notations does not use a
+   pattern where only an ident could be reparsed *)
+
+Check ex2 (fun x => let '(y,z) := x in y>z) (fun x => let '(y,z) := x in z>y).

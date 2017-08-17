@@ -60,8 +60,11 @@ type subscopes = tmp_scope_name option * scope_name list
 
 (** Type of the meta-variables of an notation_constr: in a recursive pattern x..y,
     x carries the sequence of objects bound to the list x..y  *)
+
+type notation_binder_source = NtnParsedAsConstr | NtnParsedAsIdent | NtnParsedAsPattern
+
 type notation_var_instance_type =
-  | NtnTypeConstr | NtnTypeBinder of bool | NtnTypeConstrList | NtnTypeBinderList
+  | NtnTypeConstr | NtnTypeBinder of notation_binder_source | NtnTypeConstrList | NtnTypeBinderList
 
 (** Type of variables when interpreting a constr_expr as a notation_constr:
     in a recursive pattern x..y, both x and y carry the individual type

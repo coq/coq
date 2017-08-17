@@ -197,3 +197,6 @@ fun x : nat => if x is n .+ 1 then n else 1
      : Set
 exists2' {{x, y}}, x = 0 & y = 0
      : Prop
+exists2 x : nat * nat,
+  let '{{y, z}} := x in y > z & let '{{y, z}} := x in z > y
+     : Prop

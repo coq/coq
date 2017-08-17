@@ -962,9 +962,10 @@ let make_internalization_vars recvars mainvars typs =
 let make_interpretation_type isrec isonlybinding = function
   | ETConstr _ ->
      if isrec then NtnTypeConstrList else
-     if isonlybinding then NtnTypeBinder true (* Parsed as constr, but interpreted as binder *)
+     if isonlybinding then NtnTypeBinder NtnParsedAsConstr (* Parsed as constr, but interpreted as binder *)
      else NtnTypeConstr
-  | ETName | ETPattern _ -> NtnTypeBinder false (* Parsed as ident/pattern, primarily interpreted as binder *)
+  | ETName -> NtnTypeBinder NtnParsedAsIdent
+  | ETPattern _ -> NtnTypeBinder NtnParsedAsPattern (* Parsed as ident/pattern, primarily interpreted as binder *)
   | ETBigint | ETReference | ETOther _ -> NtnTypeConstr
   | ETBinder _ ->
      if isrec then NtnTypeBinderList

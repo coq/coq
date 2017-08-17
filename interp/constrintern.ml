@@ -767,11 +767,11 @@ let split_by_type ids subst =
     | NtnTypeConstr ->
        let terms,terms' = bind id scl terms terms' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
-    | NtnTypeBinder true ->
+    | NtnTypeBinder NtnParsedAsConstr ->
        let a,terms = match terms with a::terms -> a,terms | _ -> assert false in
        let binders' = Id.Map.add id (coerce_to_cases_pattern_expr a,scl) binders' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
-    | NtnTypeBinder false ->
+    | NtnTypeBinder (NtnParsedAsIdent | NtnParsedAsPattern) ->
        let binders,binders' = bind id scl binders binders' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
     | NtnTypeConstrList ->

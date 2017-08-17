@@ -667,6 +667,10 @@ let is_onlybinding_meta id metas =
   try match Id.List.assoc id metas with _,NtnTypeBinder _ -> true | _ -> false
   with Not_found -> false
 
+let is_onlybinding_pattern_like_meta id metas =
+  try match Id.List.assoc id metas with _,NtnTypeBinder (NtnParsedAsConstr | NtnParsedAsPattern) -> true | _ -> false
+  with Not_found -> false
+
 let is_bindinglist_meta id metas =
   try match Id.List.assoc id metas with _,NtnTypeBinderList -> true | _ -> false
   with Not_found -> false
@@ -965,7 +969,7 @@ let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
 
 let rec match_cases_pattern_binders metas (alp,sigma as acc) pat1 pat2 =
   match DAst.get pat1, DAst.get pat2 with
-  | _, PatVar (Name id2) when is_onlybinding_meta id2 metas ->
+  | _, PatVar (Name id2) when is_onlybinding_pattern_like_meta id2 metas ->
       bind_binding_env alp sigma id2 pat1
   | PatVar na1, PatVar na2 -> match_names metas acc na1 na2
   | PatCstr (c1,patl1,na1), PatCstr (c2,patl2,na2)
@@ -1084,7 +1088,8 @@ let rec match_ inner u alp metas sigma a1 a2 =
   match DAst.get a1, a2 with
   (* Matching notation variable *)
   | r1, NVar id2 when is_term_meta id2 metas -> bind_term_env alp sigma id2 a1
-  | r1, NVar id2 when is_onlybinding_meta id2 metas -> bind_binding_as_term_env alp sigma id2 a1
+  | r1, NVar id2 when is_onlybinding_pattern_like_meta id2 metas -> bind_binding_as_term_env alp sigma id2 a1
+  | GVar _, NVar id2 when is_onlybinding_meta id2 metas -> bind_binding_as_term_env alp sigma id2 a1
   | r1, NVar id2 when is_bindinglist_meta id2 metas -> bind_term_env alp sigma id2 a1
 
   (* Matching recursive notations for terms *)
@@ -1248,7 +1253,7 @@ and match_extended_binders ?loc isprod u alp metas na1 na2 bk t sigma b1 b2 =
      let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalPattern ((cp,ids),p,bk,t)] in
      match_in u alp metas sigma b1 b2
   | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(_,[cp],b1))]), Name id
-       when is_gvar p e && is_onlybinding_meta id metas && not (occur_glob_constr p b1) ->
+       when is_gvar p e && is_onlybinding_pattern_like_meta id metas && not (occur_glob_constr p b1) ->
      let alp,sigma = bind_binding_env alp sigma id cp in
      match_in u alp metas sigma b1 b2
   | _, _, Name id when is_bindinglist_meta id metas && (not isprod || na1 != Anonymous)->
@@ -1276,10 +1281,10 @@ let match_notation_constr u c (metas,pat) =
     | NtnTypeConstr ->
       let term = try Id.List.assoc x terms with Not_found -> raise No_match in
        ((term, scl)::terms',termlists',binders',binderlists')
-    | NtnTypeBinder true ->
+    | NtnTypeBinder NtnParsedAsConstr ->
        let v = glob_constr_of_cases_pattern (Id.List.assoc x binders) in
        ((v,scl)::terms',termlists',binders',binderlists')
-    | NtnTypeBinder false ->
+    | NtnTypeBinder (NtnParsedAsIdent | NtnParsedAsPattern) ->
        (terms',termlists',(Id.List.assoc x binders,scl)::binders',binderlists')
     | NtnTypeConstrList ->
        (terms',(Id.List.assoc x termlists,scl)::termlists',binders',binderlists')
