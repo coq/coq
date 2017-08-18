@@ -666,7 +666,7 @@ let alpha_rename alpmetas v =
   if alpmetas == [] then v
   else try rename_glob_vars alpmetas v with UnsoundRenaming -> raise No_match
 
-let add_env (alp,alpmetas) (terms,onlybinders,termlists,binderlists) var v =
+let add_env (alp,alpmetas) (terms,termlists,binders,binderlists) var v =
   (* Check that no capture of binding variables occur *)
   (* [alp] is used when matching a pattern "fun x => ... x ... ?var ... x ..."
      with an actual term "fun z => ... z ..." when "x" is not bound in the
@@ -694,19 +694,19 @@ let add_env (alp,alpmetas) (terms,onlybinders,termlists,binderlists) var v =
      refinement *)
   let v = alpha_rename alpmetas v in
   (* TODO: handle the case of multiple occs in different scopes *)
-  ((var,v)::terms,onlybinders,termlists,binderlists)
+  ((var,v)::terms,termlists,binders,binderlists)
 
-let add_termlist_env (alp,alpmetas) (terms,onlybinders,termlists,binderlists) var vl =
+let add_termlist_env (alp,alpmetas) (terms,termlists,binders,binderlists) var vl =
   if List.exists (fun (id,_) -> List.exists (occur_glob_constr id) vl) alp then raise No_match;
   let vl = List.map (alpha_rename alpmetas) vl in
-  (terms,onlybinders,(var,vl)::termlists,binderlists)
+  (terms,(var,vl)::termlists,binders,binderlists)
 
-let add_binding_env alp (terms,onlybinders,termlists,binderlists) var v =
+let add_binding_env alp (terms,termlists,binders,binderlists) var v =
   (* TODO: handle the case of multiple occs in different scopes *)
-  (terms,(var,v)::onlybinders,termlists,binderlists)
+  (terms,termlists,(var,v)::binders,binderlists)
 
-let add_bindinglist_env (terms,onlybinders,termlists,binderlists) x bl =
-  (terms,onlybinders,termlists,(x,bl)::binderlists)
+let add_bindinglist_env (terms,termlists,binders,binderlists) x bl =
+  (terms,termlists,binders,(x,bl)::binderlists)
 
 let rec map_cases_pattern_name_left f = DAst.map (function
   | PatVar na -> PatVar (f na)
@@ -834,26 +834,26 @@ let rec unify_terms_binders alp cl bl' =
      end
   | _ -> raise No_match
 
-let bind_term_env alp (terms,onlybinders,termlists,binderlists as sigma) var v =
+let bind_term_env alp (terms,termlists,binders,binderlists as sigma) var v =
   try
     (* If already bound to a term, unify with the new term *)
     let v' = Id.List.assoc var terms in
     let v'' = unify_term alp v v' in
     if v'' == v' then sigma else
-      let sigma = Id.List.remove_assoc var terms,onlybinders,termlists,binderlists in
+      let sigma = (Id.List.remove_assoc var terms,termlists,binders,binderlists) in
       add_env alp sigma var v
   with Not_found -> add_env alp sigma var v
 
-let bind_termlist_env alp (terms,onlybinders,termlists,binderlists as sigma) var vl =
+let bind_termlist_env alp (terms,termlists,binders,binderlists as sigma) var vl =
   try
     (* If already bound to a list of term, unify with the new terms *)
     let vl' = Id.List.assoc var termlists in
     let vl = unify_terms alp vl vl' in
-    let sigma = (terms,onlybinders,Id.List.remove_assoc var termlists,binderlists) in
+    let sigma = (terms,Id.List.remove_assoc var termlists,binders,binderlists) in
     add_termlist_env alp sigma var vl
   with Not_found -> add_termlist_env alp sigma var vl
 
-let bind_term_as_binding_env alp (terms,onlybinders,termlists,binderlists as sigma) var id =
+let bind_term_as_binding_env alp (terms,termlists,binders,binderlists as sigma) var id =
   try
     (* If already bound to a term, unify the binder and the term *)
     match DAst.get (Id.List.assoc var terms) with
@@ -867,47 +867,47 @@ let bind_term_as_binding_env alp (terms,onlybinders,termlists,binderlists as sig
     (* TODO: look at the consequences for alp *)
     alp, add_env alp sigma var (DAst.make @@ GVar id)
 
-let bind_binding_as_term_env alp (terms,onlybinders,termlists,binderlists as sigma) var id =
+let bind_binding_as_term_env alp (terms,termlists,binders,binderlists as sigma) var id =
   try
     (* If already bound to a binder, unify the term and the binder *)
-    let v' = Id.List.assoc var onlybinders in
+    let v' = Id.List.assoc var binders in
     let v'' = unify_id alp id v' in
     if v' == v'' then sigma
     else
-      let sigma = (terms,Id.List.remove_assoc var onlybinders,termlists,binderlists) in
+      let sigma = (terms,termlists,Id.List.remove_assoc var binders,binderlists) in
       add_binding_env alp sigma var v''
   with Not_found -> add_binding_env alp sigma var (Name id)
 
-let bind_binding_env alp (terms,onlybinders,termlists,binderlists as sigma) var v =
+let bind_binding_env alp (terms,termlists,binders,binderlists as sigma) var v =
   try
     (* If already bound to a binder possibly *)
     (* generating an alpha-renaming from unifying the new binder *)
-    let v' = Id.List.assoc var onlybinders in
+    let v' = Id.List.assoc var binders in
     let alp, v'' = unify_name_upto alp v v' in
     if v' == v'' then alp, sigma
     else
-      let sigma = (terms,Id.List.remove_assoc var onlybinders,termlists,binderlists) in
+      let sigma = (terms,termlists,Id.List.remove_assoc var binders,binderlists) in
       alp, add_binding_env alp sigma var v
   with Not_found -> alp, add_binding_env alp sigma var v
 
-let bind_bindinglist_env alp (terms,onlybinders,termlists,binderlists as sigma) var bl =
+let bind_bindinglist_env alp (terms,termlists,binders,binderlists as sigma) var bl =
   let bl = List.rev bl in
   try
     (* If already bound to a list of binders possibly *)
     (* generating an alpha-renaming from unifying the new binders *)
     let bl' = Id.List.assoc var binderlists in
     let alp, bl = unify_binders_upto alp bl bl' in
-    let sigma = (terms,onlybinders,termlists,Id.List.remove_assoc var binderlists) in
+    let sigma = (terms,termlists,binders,Id.List.remove_assoc var binderlists) in
     alp, add_bindinglist_env sigma var bl
   with Not_found ->
     alp, add_bindinglist_env sigma var bl
 
-let bind_bindinglist_as_termlist_env alp (terms,onlybinders,termlists,binderlists) var cl =
+let bind_bindinglist_as_termlist_env alp (terms,termlists,binders,binderlists) var cl =
   try
     (* If already bound to a list of binders, unify the terms and binders *)
     let bl' = Id.List.assoc var binderlists in
     let bl = unify_terms_binders alp cl bl' in
-    let sigma = (terms,onlybinders,termlists,Id.List.remove_assoc var binderlists) in
+    let sigma = (terms,termlists,binders,Id.List.remove_assoc var binderlists) in
     add_bindinglist_env sigma var bl
   with Not_found ->
     anomaly (str "There should be a binder list bindings this list of terms.")
@@ -980,11 +980,11 @@ let rec match_iterated_binders islambda decls bi revert = DAst.(with_loc_val (fu
   | b -> (decls, DAst.make ?loc b)
   )) bi
 
-let remove_sigma x (terms,onlybinders,termlists,binderlists) =
-  (Id.List.remove_assoc x terms,onlybinders,termlists,binderlists)
+let remove_sigma x (terms,termlists,binders,binderlists) =
+  (Id.List.remove_assoc x terms,termlists,binders,binderlists)
 
-let remove_bindinglist_sigma x (terms,onlybinders,termlists,binderlists) =
-  (terms,onlybinders,termlists,Id.List.remove_assoc x binderlists)
+let remove_bindinglist_sigma x (terms,termlists,binders,binderlists) =
+  (terms,termlists,binders,Id.List.remove_assoc x binderlists)
 
 let add_ldots_var metas = (ldots_var,((None,[]),NtnTypeConstr))::metas
 
@@ -1023,7 +1023,7 @@ let match_termlist match_fun alp metas sigma rest x y iter termin revert =
       aux sigma (t::acc) rest
     with No_match when not (List.is_empty acc) ->
       acc, match_fun metas sigma rest termin in
-  let l,(terms,onlybinders,termlists,binderlists as sigma) = aux sigma [] rest in
+  let l,(terms,termlists,binders,binderlists as sigma) = aux sigma [] rest in
   let l = if revert then l else List.rev l in
   if is_bindinglist_meta x metas then
     (* This is a recursive pattern for both bindings and terms; it is *)
@@ -1246,7 +1246,7 @@ let term_of_binder bi = DAst.make @@ match bi with
   | Anonymous -> GHole (Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None)
 
 let match_notation_constr u c (metas,pat) =
-  let terms,binders,termlists,binderlists =
+  let terms,termlists,binders,binderlists =
     match_ false u ([],[]) metas ([],[],[],[]) c pat in
   (* Reorder canonically the substitution *)
   let find_binder x =
@@ -1290,10 +1290,10 @@ let match_cases_pattern_list match_fun metas sigma rest x y iter termin revert =
       aux sigma (t::acc) rest
     with No_match when not (List.is_empty acc) ->
       acc, match_fun metas sigma rest termin in
-  let l,(terms,onlybinders,termlists,binderlists as sigma) = aux sigma [] rest in
-  (terms,onlybinders,(x,if revert then l else List.rev l)::termlists, binderlists)
+  let l,(terms,termlists,binders,binderlists as sigma) = aux sigma [] rest in
+  (terms,(x,if revert then l else List.rev l)::termlists,binders,binderlists)
 
-let rec match_cases_pattern metas (terms,(),termlists,() as sigma) a1 a2 =
+let rec match_cases_pattern metas (terms,termlists,(),() as sigma) a1 a2 =
  match DAst.get a1, a2 with
   | r1, NVar id2 when Id.List.mem_assoc id2 metas -> (bind_env_cases_pattern sigma id2 a1),(0,[])
   | PatVar Anonymous, NHole _ -> sigma,(0,[])
@@ -1309,10 +1309,10 @@ let rec match_cases_pattern metas (terms,(),termlists,() as sigma) a1 a2 =
 	raise No_match
       else
 	let l1',more_args = Util.List.chop le2 l1 in
-	(List.fold_left2 (match_cases_pattern_no_more_args metas) sigma l1' l2),(le2,more_args)
+        (List.fold_left2 (match_cases_pattern_no_more_args metas) sigma l1' l2),(le2,more_args)
   | r1, NList (x,y,iter,termin,revert) ->
       (match_cases_pattern_list (match_cases_pattern_no_more_args)
-        metas (terms,(),termlists,()) a1 x y iter termin revert),(0,[])
+        metas (terms,termlists,(),()) a1 x y iter termin revert),(0,[])
   | _ -> raise No_match
 
 and match_cases_pattern_no_more_args metas sigma a1 a2 =
@@ -1345,9 +1345,9 @@ let reorder_canonically_substitution terms termlists metas =
     metas ([],[])
 
 let match_notation_constr_cases_pattern c (metas,pat) =
-  let (terms,(),termlists,()),more_args = match_cases_pattern metas ([],(),[],()) c pat in
+  let (terms,termlists,(),()),more_args = match_cases_pattern metas ([],[],(),()) c pat in
   reorder_canonically_substitution terms termlists metas, more_args
 
 let match_notation_constr_ind_pattern ind args (metas,pat) =
-  let (terms,(),termlists,()),more_args = match_ind_pattern metas ([],(),[],()) ind args pat in
+  let (terms,termlists,(),()),more_args = match_ind_pattern metas ([],[],(),()) ind args pat in
   reorder_canonically_substitution terms termlists metas, more_args
