@@ -55,15 +55,17 @@ module Pltac :
 sig
 val tac2expr : raw_tacexpr Pcoq.Gram.entry
 
-(** Quoted entries. They directly return an Ltac2 expression *)
+(** Quoted entries. To be used for complex notations. *)
 
-val q_ident : raw_tacexpr Pcoq.Gram.entry
-val q_bindings : raw_tacexpr Pcoq.Gram.entry
-val q_intropattern : raw_tacexpr Pcoq.Gram.entry
-val q_intropatterns : raw_tacexpr Pcoq.Gram.entry
-val q_induction_clause : raw_tacexpr Pcoq.Gram.entry
-val q_rewriting : raw_tacexpr Pcoq.Gram.entry
-val q_clause : raw_tacexpr Pcoq.Gram.entry
-val q_dispatch : raw_tacexpr Pcoq.Gram.entry
-val q_occurrences : raw_tacexpr Pcoq.Gram.entry
+open Tac2qexpr
+
+val q_ident : Id.t located or_anti Pcoq.Gram.entry
+val q_bindings : bindings Pcoq.Gram.entry
+val q_intropattern : intro_pattern Pcoq.Gram.entry
+val q_intropatterns : intro_pattern list located Pcoq.Gram.entry
+val q_induction_clause : induction_clause Pcoq.Gram.entry
+val q_rewriting : rewriting Pcoq.Gram.entry
+val q_clause : clause Pcoq.Gram.entry
+val q_dispatch : dispatch Pcoq.Gram.entry
+val q_occurrences : occurrences Pcoq.Gram.entry
 end

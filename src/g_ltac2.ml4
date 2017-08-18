@@ -326,7 +326,7 @@ GEXTEND Gram
     [ [ n = Prim.natural -> Loc.tag ~loc:!@loc n ] ]
   ;
   q_ident:
-    [ [ id = ident_or_anti -> Tac2quote.of_anti Tac2quote.of_ident id ] ]
+    [ [ id = ident_or_anti -> id ] ]
   ;
   qhyp:
     [ [ x = anti -> x
@@ -347,7 +347,7 @@ GEXTEND Gram
     ] ]
   ;
   q_bindings:
-    [ [ bl = with_bindings -> Tac2quote.of_bindings bl ] ]
+    [ [ bl = with_bindings -> bl ] ]
   ;
   intropatterns:
     [ [ l = LIST0 nonsimple_intropattern -> Loc.tag ~loc:!@loc l ]]
@@ -417,10 +417,10 @@ GEXTEND Gram
     ] ]
   ;
   q_intropatterns:
-    [ [ ipat = intropatterns -> Tac2quote.of_intro_patterns ipat ] ]
+    [ [ ipat = intropatterns -> ipat ] ]
   ;
   q_intropattern:
-    [ [ ipat = simple_intropattern -> Tac2quote.of_intro_pattern ipat ] ]
+    [ [ ipat = simple_intropattern -> ipat ] ]
   ;
   nat_or_anti:
     [ [ n = lnatural -> QExpr n
@@ -487,7 +487,7 @@ GEXTEND Gram
     ] ]
   ;
   q_clause:
-    [ [ cl = clause -> Tac2quote.of_clause cl ] ]
+    [ [ cl = clause -> cl ] ]
   ;
   concl_occ:
     [ [ "*"; occs = occs -> occs
@@ -506,7 +506,7 @@ GEXTEND Gram
     ] ]
   ;
   q_induction_clause:
-    [ [ cl = induction_clause -> Tac2quote.of_induction_clause cl ] ]
+    [ [ cl = induction_clause -> cl ] ]
   ;
   orient:
     [ [ "->" -> Loc.tag ~loc:!@loc (Some true)
@@ -539,7 +539,7 @@ GEXTEND Gram
     ] ]
   ;
   q_rewriting:
-    [ [ r = oriented_rewriter -> Tac2quote.of_rewriting r ] ]
+    [ [ r = oriented_rewriter -> r ] ]
   ;
   tactic_then_last:
     [ [ "|"; lta = LIST0 OPT tac2expr LEVEL "6" SEP "|" -> lta
@@ -556,10 +556,10 @@ GEXTEND Gram
     ] ]
   ;
   q_dispatch:
-    [ [ d = tactic_then_gen -> Tac2quote.of_dispatch (Loc.tag ~loc:!@loc d) ] ]
+    [ [ d = tactic_then_gen -> Loc.tag ~loc:!@loc d ] ]
   ;
   q_occurrences:
-    [ [ occs = occs -> Tac2quote.of_occurrences occs ] ]
+    [ [ occs = occs -> occs ] ]
   ;
 END
 

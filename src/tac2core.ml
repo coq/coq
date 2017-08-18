@@ -14,6 +14,7 @@ open Geninterp
 open Tac2env
 open Tac2expr
 open Tac2interp
+open Tac2entries.Pltac
 open Proofview.Notations
 
 (** Standard values *)
@@ -868,20 +869,12 @@ end
 let () = add_scope "tactic" begin function
 | [] ->
   (** Default to level 5 parsing *)
-  let scope = Extend.Aentryl (Tac2entries.Pltac.tac2expr, 5) in
+  let scope = Extend.Aentryl (tac2expr, 5) in
   let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
 | [SexprInt (loc, n)] ->
   let () = if n < 0 || n > 6 then scope_fail () in
-  let scope = Extend.Aentryl (Tac2entries.Pltac.tac2expr, n) in
-  let act tac = tac in
-  Tac2entries.ScopeRule (scope, act)
-| _ -> scope_fail ()
-end
-
-let () = add_scope "ident" begin function
-| [] ->
-  let scope = Extend.Aentry Tac2entries.Pltac.q_ident in
+  let scope = Extend.Aentryl (tac2expr, n) in
   let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
 | _ -> scope_fail ()
@@ -895,27 +888,21 @@ let () = add_scope "thunk" begin function
 | _ -> scope_fail ()
 end
 
-let () = add_scope "bindings" begin function
-| [] ->
-  let scope = Extend.Aentry Tac2entries.Pltac.q_bindings in
-  let act tac = tac in
-  Tac2entries.ScopeRule (scope, act)
-| _ -> scope_fail ()
-end
-
-let add_expr_scope name entry =
+let add_expr_scope name entry f =
   add_scope name begin function
-  | [] -> Tac2entries.ScopeRule (Extend.Aentry entry, (fun e -> e))
+  | [] -> Tac2entries.ScopeRule (Extend.Aentry entry, f)
   | _ -> scope_fail ()
   end
 
-let () = add_expr_scope "intropattern" Tac2entries.Pltac.q_intropattern
-let () = add_expr_scope "intropatterns" Tac2entries.Pltac.q_intropatterns
-let () = add_expr_scope "induction_clause" Tac2entries.Pltac.q_induction_clause
-let () = add_expr_scope "rewriting" Tac2entries.Pltac.q_rewriting
-let () = add_expr_scope "clause" Tac2entries.Pltac.q_clause
-let () = add_expr_scope "occurrences" Tac2entries.Pltac.q_occurrences
-let () = add_expr_scope "dispatch" Tac2entries.Pltac.q_dispatch
+let () = add_expr_scope "ident" q_ident (fun id -> Tac2quote.of_anti Tac2quote.of_ident id)
+let () = add_expr_scope "bindings" q_bindings Tac2quote.of_bindings
+let () = add_expr_scope "intropattern" q_intropattern Tac2quote.of_intro_pattern
+let () = add_expr_scope "intropatterns" q_intropatterns Tac2quote.of_intro_patterns
+let () = add_expr_scope "induction_clause" q_induction_clause Tac2quote.of_induction_clause
+let () = add_expr_scope "rewriting" q_rewriting Tac2quote.of_rewriting
+let () = add_expr_scope "clause" q_clause Tac2quote.of_clause
+let () = add_expr_scope "occurrences" q_occurrences Tac2quote.of_occurrences
+let () = add_expr_scope "dispatch" q_dispatch Tac2quote.of_dispatch
 
 let () = add_generic_scope "constr" Pcoq.Constr.constr Stdarg.wit_constr
 let () = add_generic_scope "open_constr" Pcoq.Constr.constr Stdarg.wit_open_constr
