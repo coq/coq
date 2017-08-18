@@ -974,7 +974,20 @@ line provided it does not exceed the printing width (See {\tt Set
   Printing Width} above).
 
 \subsection[\tt Test Printing Compact Contexts.]{\tt Test Printing Compact Contexts.\optindex{Printing Compact Contexts}}
-This command displays the current state of compaction of goal d'isolat.
+This command displays the current state of compaction of goal.
+
+
+\subsection[\tt Unset Printing Unfocused.]{\tt Unset Printing Unfocused.\optindex{Printing Unfocused}}
+This command resets the displaying of goals to focused goals only
+(default). Unfocused goals are created by focusing other goals with
+bullets(see~\ref{bullets}) or curly braces (see~\ref{curlybacket}).
+
+\subsection[\tt Set Printing Unfocused.]{\tt Set Printing Unfocused.\optindex{Printing Unfocused}}
+This command enables the displaying of unfocused goals. The goals are
+displayed after the focused ones and are distinguished by a separator.
+
+\subsection[\tt Test Printing Unfocused.]{\tt Test Printing Unfocused.\optindex{Printing Unfocused}}
+This command displays the current state of unfocused goals display.
 
 \subsection[\tt Set Printing Dependent Evars Line.]{\tt Set Printing Dependent Evars Line.\optindex{Printing Dependent Evars Line}}
 This command enables the printing of the ``{\tt (dependent evars: \ldots)}''
