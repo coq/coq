@@ -52,11 +52,13 @@ and intro_pattern_naming = intro_pattern_naming_r located
 and intro_pattern_action = intro_pattern_action_r located
 and or_and_intro_pattern = or_and_intro_pattern_r located
 
-type occurrences =
+type occurrences_r =
 | QAllOccurrences
 | QAllOccurrencesBut of int located or_anti list
 | QNoOccurrences
 | QOnlyOccurrences of int located or_anti list
+
+type occurrences = occurrences_r located
 
 type hyp_location = (occurrences * Id.t located or_anti) * Locus.hyp_location_flag
 

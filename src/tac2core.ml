@@ -919,10 +919,12 @@ let () = add_expr_scope "intropatterns" Tac2entries.Pltac.q_intropatterns
 let () = add_expr_scope "induction_clause" Tac2entries.Pltac.q_induction_clause
 let () = add_expr_scope "rewriting" Tac2entries.Pltac.q_rewriting
 let () = add_expr_scope "clause" Tac2entries.Pltac.q_clause
+let () = add_expr_scope "occurrences" Tac2entries.Pltac.q_occurrences
 let () = add_expr_scope "dispatch" Tac2entries.Pltac.q_dispatch
 
 let () = add_generic_scope "constr" Pcoq.Constr.constr Stdarg.wit_constr
 let () = add_generic_scope "open_constr" Pcoq.Constr.constr Stdarg.wit_open_constr
+let () = add_generic_scope "pattern" Pcoq.Constr.constr wit_pattern
 
 (** seq scope, a bit hairy *)
 

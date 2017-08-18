@@ -47,6 +47,8 @@ val of_induction_clause : induction_clause -> raw_tacexpr
 
 val of_rewriting : rewriting -> raw_tacexpr
 
+val of_occurrences : occurrences -> raw_tacexpr
+
 val of_hyp : ?loc:Loc.t -> Id.t located -> raw_tacexpr
 (** id ↦ 'Control.hyp @id' *)
 

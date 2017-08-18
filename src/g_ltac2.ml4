@@ -310,7 +310,7 @@ let loc_of_ne_list l = Loc.merge_opt (fst (List.hd l)) (fst (List.last l))
 
 GEXTEND Gram
   GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause
-          q_rewriting q_clause q_dispatch;
+          q_rewriting q_clause q_dispatch q_occurrences;
   anti:
     [ [ "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id) ] ]
   ;
@@ -449,13 +449,13 @@ GEXTEND Gram
     ] ]
   ;
   occs_nums:
-    [ [ nl = LIST1 nat_or_anti -> QOnlyOccurrences nl
+    [ [ nl = LIST1 nat_or_anti -> Loc.tag ~loc:!@loc @@ QOnlyOccurrences nl
       | "-"; n = nat_or_anti; nl = LIST0 nat_or_anti ->
-        QAllOccurrencesBut (n::nl)
+        Loc.tag ~loc:!@loc @@ QAllOccurrencesBut (n::nl)
     ] ]
   ;
   occs:
-    [ [ "at"; occs = occs_nums -> occs | -> QAllOccurrences ] ]
+    [ [ "at"; occs = occs_nums -> occs | -> Loc.tag ~loc:!@loc QAllOccurrences ] ]
   ;
   hypident:
     [ [ id = ident_or_anti ->
@@ -477,7 +477,7 @@ GEXTEND Gram
       | hl = LIST0 hypident_occ SEP ","; "|-"; occs = concl_occ ->
         { q_onhyps = Some hl; q_concl_occs = occs }
       | hl = LIST0 hypident_occ SEP "," ->
-        { q_onhyps = Some hl; q_concl_occs = QNoOccurrences }
+        { q_onhyps = Some hl; q_concl_occs = Loc.tag ~loc:!@loc QNoOccurrences }
     ] ]
   ;
   clause:
@@ -491,7 +491,7 @@ GEXTEND Gram
   ;
   concl_occ:
     [ [ "*"; occs = occs -> occs
-      | -> QNoOccurrences
+      | -> Loc.tag ~loc:!@loc QNoOccurrences
     ] ]
   ;
   induction_clause:
@@ -557,6 +557,9 @@ GEXTEND Gram
   ;
   q_dispatch:
     [ [ d = tactic_then_gen -> Tac2quote.of_dispatch (Loc.tag ~loc:!@loc d) ] ]
+  ;
+  q_occurrences:
+    [ [ occs = occs -> Tac2quote.of_occurrences occs ] ]
   ;
 END
 

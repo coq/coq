@@ -149,7 +149,7 @@ let of_hyp_location_flag ?loc = function
 | Locus.InHypTypeOnly -> std_constructor ?loc "InHypTypeOnly" []
 | Locus.InHypValueOnly -> std_constructor ?loc "InHypValueOnly" []
 
-let of_occurrences ?loc occ = match occ with
+let of_occurrences (loc, occ) = match occ with
 | QAllOccurrences -> std_constructor ?loc "AllOccurrences" []
 | QAllOccurrencesBut occs ->
   let map occ = of_anti of_int occ in
@@ -164,14 +164,14 @@ let of_occurrences ?loc occ = match occ with
 let of_hyp_location ?loc ((occs, id), flag) =
   of_tuple ?loc [
     of_anti of_ident id;
-    of_occurrences ?loc occs;
+    of_occurrences occs;
     of_hyp_location_flag ?loc flag;
   ]
 
 let of_clause (loc, cl) =
   let loc = Option.default dummy_loc loc in
   let hyps = of_option ~loc (fun l -> of_list ~loc of_hyp_location l) cl.q_onhyps in
-  let concl = of_occurrences ~loc cl.q_concl_occs in
+  let concl = of_occurrences cl.q_concl_occs in
   CTacRec (loc, [
     std_proj "on_hyps", hyps;
     std_proj "on_concl", concl;
