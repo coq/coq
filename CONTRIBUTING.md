@@ -50,6 +50,6 @@ There are many useful ways to contribute to the Coq ecosystem that don't involve
 
 Tutorials to teach Coq, and especially to teach particular advanced features, would be much appreciated. Some tutorials are listed on the [Coq website](https://coq.inria.fr/documentation). If you would like to add a link to this list, please make a pull request against the Coq website repository at https://github.com/coq/www.
 
-Ask and answer questions on [Stack Exchange](https://stackexchange.com/filters/299857/questions-tagged-coq-on-stackexchange-sites) which has a helpful albeit small community of users.
+Ask and answer questions on [Stack Exchange](https://stackexchange.com/filters/299857/questions-tagged-coq-on-stackexchange-sites) which has a helpful community of Coq users.
 
 Hang out on the Coq IRC channel, `irc://irc.freenode.net/#coq`, and help answer questions.
