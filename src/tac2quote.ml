@@ -9,18 +9,15 @@
 open Pp
 open Names
 open Util
-open Misctypes
-open Tac2intern
 open Tac2expr
 open Tac2qexpr
-open Tac2core
 
 (** Syntactic quoting of expressions. *)
 
 let control_prefix =
   MPfile (DirPath.make (List.map Id.of_string ["Control"; "Ltac2"]))
 
-let kername prefix n = KerName.make2 prefix (Label.of_id (Id.of_string n))
+let kername prefix n = KerName.make2 prefix (Label.of_id (Id.of_string_soft n))
 let std_core n = kername Tac2env.std_prefix n
 let coq_core n = kername Tac2env.coq_prefix n
 let control_core n = kername control_prefix n
@@ -86,17 +83,17 @@ let of_open_constr c =
   inj_wit ?loc Stdarg.wit_open_constr c
 
 let of_bool ?loc b =
-  let c = if b then Core.c_true else Core.c_false in
+  let c = if b then coq_core "true" else coq_core "false" in
   constructor ?loc c []
 
 let rec of_list ?loc f = function
-| [] -> constructor Core.c_nil []
+| [] -> constructor (coq_core "[]") []
 | e :: l ->
-  constructor ?loc Core.c_cons [f e; of_list ?loc f l]
+  constructor ?loc (coq_core "::") [f e; of_list ?loc f l]
 
 let of_qhyp (loc, h) = match h with
-| QAnonHyp n -> constructor ?loc Core.c_anon_hyp [of_int n]
-| QNamedHyp id -> constructor ?loc Core.c_named_hyp [of_ident id]
+| QAnonHyp n -> std_constructor ?loc "AnonHyp" [of_int n]
+| QNamedHyp id -> std_constructor ?loc "NamedHyp" [of_ident id]
 
 let of_bindings (loc, b) = match b with
 | QNoBindings ->

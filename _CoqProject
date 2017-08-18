@@ -15,11 +15,11 @@ src/tac2entries.ml
 src/tac2entries.mli
 src/tac2ffi.ml
 src/tac2ffi.mli
-src/tac2core.ml
-src/tac2core.mli
 src/tac2qexpr.mli
 src/tac2quote.ml
 src/tac2quote.mli
+src/tac2core.ml
+src/tac2core.mli
 src/tac2tactics.ml
 src/tac2tactics.mli
 src/tac2stdlib.ml

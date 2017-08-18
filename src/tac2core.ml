@@ -45,10 +45,6 @@ let c_some = coq_core "Some"
 let c_true = coq_core "true"
 let c_false = coq_core "false"
 
-let t_qhyp = std_core "hypothesis"
-let c_named_hyp = std_core "NamedHyp"
-let c_anon_hyp = std_core "AnonHyp"
-
 end
 
 open Core

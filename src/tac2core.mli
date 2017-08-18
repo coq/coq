@@ -27,8 +27,4 @@ val t_array : type_constant
 val c_true : ltac_constructor
 val c_false : ltac_constructor
 
-val t_qhyp : type_constant
-val c_anon_hyp : ltac_constructor
-val c_named_hyp : ltac_constructor
-
 end
