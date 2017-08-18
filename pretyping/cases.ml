@@ -1566,11 +1566,9 @@ substituer après par les initiaux *)
 
 (* builds the matrix of equations testing that each eqn has n patterns
  * and linearizing the _ patterns.
- * Syntactic correctness has already been done in astterm *)
+ * Syntactic correctness has already been done in constrintern *)
 let matx_of_eqns env eqns =
-  let build_eqn (loc,(ids,lpat,rhs)) =
-    let initial_lpat,initial_rhs = lpat,rhs in
-    let initial_rhs = rhs in
+  let build_eqn (loc,(ids,initial_lpat,initial_rhs)) =
     let avoid = ids_of_named_context_val (named_context_val env) in
     let avoid = List.fold_left (fun accu id -> Id.Set.add id accu) avoid ids in
     let rhs =

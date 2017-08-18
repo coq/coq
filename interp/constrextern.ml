@@ -967,7 +967,7 @@ and extern_local_binder scopes vars = function
       (assums,ids, CLocalPattern(Loc.tag @@ (p,ty)) :: l)
 
 and extern_eqn inctx scopes vars (loc,(ids,pl,c)) =
-  Loc.tag ?loc ([loc,List.map (extern_cases_pattern_in_scope scopes vars) pl],
+  Loc.tag ?loc ([List.map (extern_cases_pattern_in_scope scopes vars) pl],
    extern inctx scopes vars c)
 
 and extern_notation (tmp_scope,scopes as allscopes) vars t = function

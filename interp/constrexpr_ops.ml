@@ -188,7 +188,7 @@ and case_expr_eq (e1, n1, p1) (e2, n2, p2) =
   Option.equal cases_pattern_expr_eq p1 p2
 
 and branch_expr_eq (_, (p1, e1)) (_, (p2, e2)) =
-  List.equal (eq_located (List.equal cases_pattern_expr_eq)) p1 p2 &&
+  List.equal (List.equal cases_pattern_expr_eq) p1 p2 &&
   constr_expr_eq e1 e2
 
 and binder_expr_eq ((n1, _, e1) : binder_expr) (n2, _, e2) =
@@ -260,7 +260,6 @@ let local_binders_loc bll = match bll with
 
 (* Legacy functions *)
 let down_located f (_l, x) = f x
-let located_fold_left f x (_l, y) = f x y
 
 let is_constructor id =
   try Globnames.isConstructRef
@@ -292,8 +291,7 @@ let ids_of_pattern =
 
 let ids_of_pattern_list =
   List.fold_left
-    (located_fold_left
-       (List.fold_left (cases_pattern_fold_names Id.Set.add)))
+    (List.fold_left (cases_pattern_fold_names Id.Set.add))
     Id.Set.empty
 
 let ids_of_cases_indtype p =
@@ -571,7 +569,7 @@ let expand_binders ?loc mkC bl c =
         let c = CAst.make ?loc @@
           CCases
             (LetPatternStyle, None, [(e,None,None)],
-             [(Loc.tag ?loc:loc1 ([(loc1,[p])], c))])
+             [(Loc.tag ?loc:loc1 ([[p]], c))])
         in
         (ni :: env, mkC ?loc ([id],Default Explicit,ty) c)
   in

@@ -267,17 +267,17 @@ GEXTEND Gram
       | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
           "in"; c2 = operconstr LEVEL "200" ->
 	    CAst.make ~loc:!@loc @@
-            CCases (LetPatternStyle, None,    [c1, None, None],       [Loc.tag ~loc:!@loc ([(Loc.tag ~loc:!@loc [p])], c2)])
+            CCases (LetPatternStyle, None,    [c1, None, None],       [Loc.tag ~loc:!@loc ([[p]], c2)])
       | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
 	  rt = case_type; "in"; c2 = operconstr LEVEL "200" ->
 	    CAst.make ~loc:!@loc @@
-            CCases (LetPatternStyle, Some rt, [c1, aliasvar p, None], [Loc.tag ~loc:!@loc ([(Loc.tag ~loc:!@loc [p])], c2)])
+            CCases (LetPatternStyle, Some rt, [c1, aliasvar p, None], [Loc.tag ~loc:!@loc ([[p]], c2)])
 
       | "let"; "'"; p=pattern; "in"; t = pattern LEVEL "200";
 	  ":="; c1 = operconstr LEVEL "200"; rt = case_type;
           "in"; c2 = operconstr LEVEL "200" ->
 	    CAst.make ~loc:!@loc @@
-            CCases (LetPatternStyle, Some rt, [c1, aliasvar p, Some t], [Loc.tag ~loc:!@loc ([(Loc.tag ~loc:!@loc [p])], c2)])
+            CCases (LetPatternStyle, Some rt, [c1, aliasvar p, Some t], [Loc.tag ~loc:!@loc ([[p]], c2)])
       | "if"; c=operconstr LEVEL "200"; po = return_type;
 	"then"; b1=operconstr LEVEL "200";
         "else"; b2=operconstr LEVEL "200" ->
@@ -362,7 +362,7 @@ GEXTEND Gram
     [ [ OPT"|"; br=LIST0 eqn SEP "|" -> br ] ]
   ;
   mult_pattern:
-    [ [ pl = LIST1 pattern LEVEL "99" SEP "," -> (Loc.tag ~loc:!@loc pl) ] ]
+    [ [ pl = LIST1 pattern LEVEL "99" SEP "," -> pl ] ]
   ;
   eqn:
     [ [ pll = LIST1 mult_pattern SEP "|";

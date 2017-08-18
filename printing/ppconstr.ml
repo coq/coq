@@ -311,7 +311,6 @@ let tag_var = tag Tag.variable
   let pr_patt = pr_patt mt
 
   let pr_eqn pr (loc,(pl,rhs)) =
-    let pl = List.map snd pl in
     spc() ++ hov 4
       (pr_with_comments ?loc
          (str "| " ++
@@ -402,7 +401,7 @@ let tag_var = tag Tag.variable
     | { v = CProdN ([],c) } ->
       extract_prod_binders c
     | { loc; v = CProdN ([[_,Name id],bk,t],
-              { v = CCases (LetPatternStyle,None, [{ v = CRef (Ident (_,id'),None)},None,None],[(_,([_,[p]],b))])} ) }
+              { v = CCases (LetPatternStyle,None, [{ v = CRef (Ident (_,id'),None)},None,None],[(_,([[p]],b))])} ) }
          when Id.equal id id' && not (Id.Set.mem id (free_vars_of_constr_expr b)) ->
       let bl,c = extract_prod_binders b in
       CLocalPattern (loc, (p,None)) :: bl, c
@@ -418,7 +417,7 @@ let tag_var = tag Tag.variable
     | CLambdaN ([],c) ->
       extract_lam_binders c
     | CLambdaN ([[_,Name id],bk,t],
-                { v = CCases (LetPatternStyle,None, [{ v = CRef (Ident (_,id'),None)},None,None],[(_,([_,[p]],b))])} )
+                { v = CCases (LetPatternStyle,None, [{ v = CRef (Ident (_,id'),None)},None,None],[(_,([[p]],b))])} )
          when Id.equal id id' && not (Id.Set.mem id (free_vars_of_constr_expr b)) ->
       let bl,c = extract_lam_binders b in
       CLocalPattern (ce.loc,(p,None)) :: bl, c
@@ -650,7 +649,7 @@ let tag_var = tag Tag.variable
           hv 0 (str"{|" ++ pr_record_body_gen (pr spc) l ++ str" |}"),
           latom
         )
-      | CCases (LetPatternStyle,rtntypopt,[c,as_clause,in_clause],[(_,([(loc,[p])],b))]) ->
+      | CCases (LetPatternStyle,rtntypopt,[c,as_clause,in_clause],[(_,([[p]],b))]) ->
         return (
           hv 0 (
             keyword "let" ++ spc () ++ str"'" ++
