@@ -34,9 +34,11 @@ Ltac2 Type clause := {
   on_concl : occurrences;
 }.
 
-Ltac2 Type evaluable_reference := [
-| EvalVarRef (ident)
-| EvalConstRef (constant)
+Ltac2 Type reference := [
+| VarRef (ident)
+| ConstRef (constant)
+| IndRef (inductive)
+| ConstructRef (constructor)
 ].
 
 Ltac2 Type red_flags := {
@@ -46,7 +48,7 @@ Ltac2 Type red_flags := {
   rCofix : bool;
   rZeta : bool;
   rDelta : bool; (** true = delta all but rConst; false = delta only on rConst*)
-  rConst : evaluable_reference list
+  rConst : reference list
 }.
 
 Ltac2 Type 'a not_implemented.
@@ -134,7 +136,7 @@ Ltac2 @ external simpl : red_flags -> (pattern * occurrences) option -> clause -
 Ltac2 @ external cbv : red_flags -> clause -> unit := "ltac2" "tac_cbv".
 Ltac2 @ external cbn : red_flags -> clause -> unit := "ltac2" "tac_cbn".
 Ltac2 @ external lazy : red_flags -> clause -> unit := "ltac2" "tac_lazy".
-Ltac2 @ external unfold : (evaluable_reference * occurrences) list -> clause -> unit := "ltac2" "tac_unfold".
+Ltac2 @ external unfold : (reference * occurrences) list -> clause -> unit := "ltac2" "tac_unfold".
 Ltac2 @ external fold : constr list -> clause -> unit := "ltac2" "tac_fold".
 Ltac2 @ external pattern : (constr * occurrences) list -> clause -> unit := "ltac2" "tac_pattern".
 Ltac2 @ external vm : (pattern * occurrences) option -> clause -> unit := "ltac2" "tac_vm".

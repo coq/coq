@@ -8,6 +8,7 @@
 
 open Names
 open Locus
+open Globnames
 open Misctypes
 open Genredexpr
 open Tac2expr
@@ -70,9 +71,11 @@ let to_clause = function
   { onhyps = hyps; concl_occs = to_occurrences to_int_or_var concl; }
 | _ -> assert false
 
-let to_evaluable_ref = function
-| ValBlk (0, [| id |]) -> EvalVarRef (Value.to_ident id)
-| ValBlk (1, [| cst |]) -> EvalConstRef (Value.to_constant cst)
+let to_reference = function
+| ValBlk (0, [| id |]) -> VarRef (Value.to_ident id)
+| ValBlk (1, [| cst |]) -> ConstRef (Value.to_constant cst)
+| ValBlk (2, [| ind |]) -> IndRef (Value.to_ext Value.val_inductive ind)
+| ValBlk (3, [| cstr |]) -> ConstructRef (Value.to_ext Value.val_constructor cstr)
 | _ -> assert false
 
 let to_red_flag = function
@@ -84,7 +87,7 @@ let to_red_flag = function
     rCofix = Value.to_bool cofix;
     rZeta = Value.to_bool zeta;
     rDelta = Value.to_bool delta;
-    rConst = Value.to_list to_evaluable_ref const;
+    rConst = Value.to_list to_reference const;
   }
 | _ -> assert false
 
@@ -310,29 +313,26 @@ end
 let () = define_prim2 "tac_cbv" begin fun flags cl ->
   let flags = to_red_flag flags in
   let cl = to_clause cl in
-  Tactics.reduce (Cbv flags) cl
+  Tac2tactics.cbv flags cl
 end
 
 let () = define_prim2 "tac_cbn" begin fun flags cl ->
   let flags = to_red_flag flags in
   let cl = to_clause cl in
-  Tactics.reduce (Cbn flags) cl
+  Tac2tactics.cbn flags cl
 end
 
 let () = define_prim2 "tac_lazy" begin fun flags cl ->
   let flags = to_red_flag flags in
   let cl = to_clause cl in
-  Tactics.reduce (Lazy flags) cl
+  Tac2tactics.lazy_ flags cl
 end
 
 let () = define_prim2 "tac_unfold" begin fun refs cl ->
-  let map v =
-    let (ref, occ) = to_pair to_evaluable_ref (fun occ -> to_occurrences to_int_or_var occ) v in
-    (occ, ref)
-  in
+  let map v = to_pair to_reference (fun occ -> to_occurrences to_int_or_var occ) v in
   let refs = Value.to_list map refs in
   let cl = to_clause cl in
-  Tactics.reduce (Unfold refs) cl
+  Tac2tactics.unfold refs cl
 end
 
 let () = define_prim2 "tac_fold" begin fun args cl ->

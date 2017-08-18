@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Pp
 open Util
 open Names
 open Globnames
@@ -13,6 +14,7 @@ open Misctypes
 open Tactypes
 open Genredexpr
 open Proofview
+open Proofview.Notations
 
 (** FIXME: export a better interface in Tactics *)
 let delayed_of_tactic tac env sigma =
@@ -67,9 +69,41 @@ let map_pattern_with_occs (pat, occ) = match pat with
 | Pattern.PRef (VarRef id) -> (occ, Inl (EvalVarRef id))
 | _ -> (occ, Inr pat)
 
+let get_evaluable_reference = function
+| VarRef id -> Proofview.tclUNIT (EvalVarRef id)
+| ConstRef cst -> Proofview.tclUNIT (EvalConstRef cst)
+| r ->
+  Tacticals.New.tclZEROMSG (str "Cannot coerce" ++ spc () ++
+    Nametab.pr_global_env Id.Set.empty r ++ spc () ++
+    str "to an evaluable reference.")
+
 let simpl flags where cl =
   let where = Option.map map_pattern_with_occs where in
+  Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
+  let flags = { flags with rConst } in
   Tactics.reduce (Simpl (flags, where)) cl
+
+let cbv flags cl =
+  Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
+  let flags = { flags with rConst } in
+  Tactics.reduce (Cbv flags) cl
+
+let cbn flags cl =
+  Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
+  let flags = { flags with rConst } in
+  Tactics.reduce (Cbn flags) cl
+
+let lazy_ flags cl =
+  Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
+  let flags = { flags with rConst } in
+  Tactics.reduce (Lazy flags) cl
+
+let unfold occs cl =
+  let map (gr, occ) =
+    get_evaluable_reference gr >>= fun gr -> Proofview.tclUNIT (occ, gr)
+  in
+  Proofview.Monad.List.map map occs >>= fun occs ->
+  Tactics.reduce (Unfold occs) cl
 
 let vm where cl =
   let where = Option.map map_pattern_with_occs where in
