@@ -148,7 +148,7 @@ Build Infrastructure
 Universes
 
 - Cumulative inductive types. see prefixes "Cumulative", "NonCumulative"
-  for inductive definitions and the option "Set Inductive Cumulativity"
+  for inductive definitions and the option "Set Polymorphic Inductive Cumulativity"
   in the reference manual.
 - New syntax `foo@{_}` to instantiate a polymorphic definition with
   anonymous universes (can also be used with `Type`).
