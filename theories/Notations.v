@@ -257,6 +257,24 @@ Ltac2 Notation "hnf" cl(opt(clause)) :=
   Std.hnf (default_on_concl cl).
 Ltac2 Notation hnf := hnf.
 
+Ltac2 Notation "vm_compute" pl(opt(seq(pattern, occurrences))) cl(opt(clause)) :=
+  Std.vm pl (default_on_concl cl).
+Ltac2 Notation vm_compute := vm_compute.
+
+Ltac2 Notation "native_compute" pl(opt(seq(pattern, occurrences))) cl(opt(clause)) :=
+  Std.native pl (default_on_concl cl).
+Ltac2 Notation native_compute := native_compute.
+
+Ltac2 fold0 pl cl :=
+  let cl := default_on_concl cl in
+  Control.enter (fun () => Control.with_holes pl (fun pl => Std.fold pl cl)).
+
+Ltac2 Notation "fold" pl(thunk(list1(open_constr))) cl(opt(clause)) :=
+  fold0 pl cl.
+
+Ltac2 Notation "pattern" pl(list1(seq(constr, occurrences), ",")) cl(opt(clause)) :=
+  Std.pattern pl (default_on_concl cl).
+
 Ltac2 rewrite0 ev rw cl tac :=
   let tac := match tac with
   | None => None

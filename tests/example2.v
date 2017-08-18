@@ -123,3 +123,37 @@ intros n r.
 hnf in r.
 split.
 Qed.
+
+Goal 1 = 0 -> 0 = 0.
+Proof.
+intros H.
+pattern 0 at 1.
+let occ := 2 in pattern 1 at 1, 0 at $occ in H.
+reflexivity.
+Qed.
+
+Goal 1 + 1 = 2.
+Proof.
+vm_compute.
+reflexivity.
+Qed.
+
+Goal 1 + 1 = 2.
+Proof.
+native_compute.
+reflexivity.
+Qed.
+
+Goal 1 + 1 = 2 - 0 -> True.
+Proof.
+intros H.
+vm_compute plus in H.
+reflexivity.
+Qed.
+
+Goal 1 = 0 -> True /\ True.
+Proof.
+intros H.
+split; fold (1 + 0) (1 + 0) in H.
+reflexivity.
+Qed.
