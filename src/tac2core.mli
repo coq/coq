@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
-open Tac2env
 open Tac2expr
 
 (** {5 Hardwired data} *)

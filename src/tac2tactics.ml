@@ -12,11 +12,7 @@ open Globnames
 open Misctypes
 open Tactypes
 open Genredexpr
-open Tactics
 open Proofview
-open Tacmach.New
-open Tacticals.New
-open Proofview.Notations
 
 (** FIXME: export a better interface in Tactics *)
 let delayed_of_tactic tac env sigma =

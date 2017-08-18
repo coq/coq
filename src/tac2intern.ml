@@ -24,7 +24,6 @@ let coq_type n = KerName.make2 Tac2env.coq_prefix (Label.make n)
 let t_int = coq_type "int"
 let t_string = coq_type "string"
 let t_array = coq_type "array"
-let t_unit = coq_type "unit"
 let t_list = coq_type "list"
 
 let c_nil = GTacCst (Other t_list, 0, [])

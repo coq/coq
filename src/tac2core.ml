@@ -21,7 +21,6 @@ open Proofview.Notations
 module Value = Tac2ffi
 
 let coq_core n = KerName.make2 Tac2env.coq_prefix (Label.of_id (Id.of_string_soft n))
-let std_core n = KerName.make2 Tac2env.std_prefix (Label.of_id (Id.of_string_soft n))
 
 module Core =
 struct

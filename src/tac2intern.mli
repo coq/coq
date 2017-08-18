@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Genarg
 open Names
 open Mod_subst
 open Tac2expr

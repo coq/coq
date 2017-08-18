@@ -8,7 +8,6 @@
 
 open Loc
 open Names
-open Misctypes
 open Tac2qexpr
 open Tac2expr
 

@@ -11,8 +11,6 @@ open Locus
 open Misctypes
 open Genredexpr
 open Tac2expr
-open Tac2core
-open Tac2tactics
 open Proofview.Notations
 
 module Value = Tac2ffi
@@ -168,12 +166,6 @@ let to_rewriting = function
 let pname s = { mltac_plugin = "ltac2"; mltac_tactic = s }
 
 let lift tac = tac <*> return v_unit
-
-let wrap f =
-  return () >>= fun () -> return (f ())
-
-let wrap_unit f =
-  return () >>= fun () -> f (); return v_unit
 
 let define_prim0 name tac =
   let tac = function
