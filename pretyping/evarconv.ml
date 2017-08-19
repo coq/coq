@@ -176,6 +176,10 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
         let s = ESorts.kind sigma s in
 	lookup_canonical_conversion
 	  (proji, Sort_cs (family_of_sort s)),[]
+      | Proj (p, c) ->
+        let c2 = Globnames.ConstRef (Projection.constant p) in
+        let sk2 = Stack.append_app [|c|] sk2 in
+        lookup_canonical_conversion (proji, Const_cs c2), sk2
       | _ ->
 	let (c2, _) = Termops.global_of_constr sigma t2 in
 	  lookup_canonical_conversion (proji, Const_cs c2),sk2

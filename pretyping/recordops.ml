@@ -180,6 +180,8 @@ let cs_pattern_of_constr t =
 	end
     | Rel n -> Default_cs, Some n, []
     | Prod (_,a,b) when Vars.noccurn 1 b -> Prod_cs, None, [a; Vars.lift (-1) b]
+    | Proj (p, c) ->
+      Const_cs (ConstRef (Projection.constant p)), None, [c]
     | Sort s -> Sort_cs (family_of_sort s), None, []
     | _ ->
 	begin
