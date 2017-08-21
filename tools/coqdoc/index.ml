@@ -117,7 +117,7 @@ let find_module m =
   if Hashtbl.mem local_modules m then
     Local
   else
-    try External (Filename.concat (find_external_library m) m)
+    try External (find_external_library m ^ "/" ^ m)
     with Not_found -> Unknown
 
 
