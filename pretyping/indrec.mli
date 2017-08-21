@@ -30,10 +30,11 @@ val build_case_analysis_scheme : env -> Evd.evar_map -> pinductive ->
       dep_flag -> sorts_family -> evar_map * Constr.t
 
 (** Build a dependent case elimination predicate unless type is in Prop
-   or is a recursive record with primitive projections. *)
+   or is a recursive record with primitive projections. Returns a flag
+   indicating if a dependent elimination principle was generated or not. *)
 
 val build_case_analysis_scheme_default : env -> evar_map -> pinductive ->
-      sorts_family -> evar_map * Constr.t
+      sorts_family -> dep_flag * (evar_map * Constr.t)
 
 (** Builds a recursive induction scheme (Peano-induction style) in the same
    sort family as the inductive family; it is dependent if not in Prop

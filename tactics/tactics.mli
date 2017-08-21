@@ -13,7 +13,6 @@ open EConstr
 open Environ
 open Proof_type
 open Evd
-open Clenv
 open Redexpr
 open Globnames
 open Pattern
@@ -264,14 +263,15 @@ val compute_elim_sig : evar_map -> ?elimc:constr with_bindings -> types -> elim_
 type eliminator = {
   elimindex : int option;  (** None = find it automatically *)
   elimrename : (bool * int array) option; (** None = don't rename Prop hyps with H-names *)
-  elimbody : constr with_bindings
+  elimbody : constr with_bindings;
+  elimoccs : Evarconv.occurrences_selection option;
 }
 
-val general_elim  : evars_flag -> clear_flag ->
+val general_elim  : evars_flag -> holes_order:bool -> clear_flag ->
   constr with_bindings -> eliminator -> unit Proofview.tactic
 
-val general_elim_clause : evars_flag -> unify_flags -> identifier option ->
-  clausenv -> eliminator -> unit Proofview.tactic
+val general_elim_clause : evars_flag -> holes_order:bool -> unify_flags -> identifier option ->
+  Clenv.clause -> eliminator -> unit Proofview.tactic
 
 val default_elim  : evars_flag -> clear_flag -> constr with_bindings ->
   unit Proofview.tactic
