@@ -331,7 +331,7 @@ let smartmap f (ar : 'a array) =
     Array.unsafe_set ans !i v;
     incr i;
     while !i < len do
-      let v = Array.unsafe_get ar !i in
+      let v = Array.unsafe_get ans !i in
       let v' = f v in
       if v != v' then Array.unsafe_set ans !i v';
       incr i
