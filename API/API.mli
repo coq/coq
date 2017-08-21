@@ -4032,7 +4032,7 @@ sig
   val build_mutual_induction_scheme :
     Environ.env -> Evd.evar_map -> (Term.pinductive * dep_flag * Sorts.family) list -> Evd.evar_map * Constr.t list
   val build_case_analysis_scheme_default : Environ.env -> Evd.evar_map -> Term.pinductive ->
-      Sorts.family -> Evd.evar_map * Constr.t
+      Sorts.family -> dep_flag * (Evd.evar_map * Constr.t)
 end
 
 module Pretyping :
