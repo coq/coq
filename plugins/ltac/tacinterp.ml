@@ -1871,8 +1871,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         name_atomic ~env
           (TacRewrite (ev,l,cl,Option.map ignore by))
           (Equality.general_multi_rewrite ev l' cl
-             (Option.map (fun by -> Tacticals.New.tclCOMPLETE (interp_tactic ist by),
-               Equality.Naive)
+             (Option.map (fun by -> Tacticals.New.tclCOMPLETE (interp_tactic ist by))
                 by))
       end
   | TacInversion (DepInversion (k,c,ids),hyp) ->

@@ -218,34 +218,6 @@ TACTIC EXTEND autorewrite
     ]
 END
 
-TACTIC EXTEND autorewrite_star
-| [ "autorewrite" "*" "with" ne_preident_list(l) clause(cl) ] ->
-    [ auto_multi_rewrite ~conds:AllMatches l cl ]
-| [ "autorewrite" "*" "with" ne_preident_list(l) clause(cl) "using" tactic(t) ] ->
-  [ auto_multi_rewrite_with ~conds:AllMatches (Tacinterp.tactic_of_value ist t) l cl ]
-END
-
-(**********************************************************************)
-(* Rewrite star                                                       *)
-
-let rewrite_star ist clause orient occs c (tac : Geninterp.Val.t option) =
-  let tac' = Option.map (fun t -> Tacinterp.tactic_of_value ist t, FirstSolved) tac in
-  with_delayed_uconstr ist c
-    (fun c -> general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings) true)
-
-TACTIC EXTEND rewrite_star
-| [ "rewrite" "*" orient(o) uconstr(c) "in" hyp(id) "at" occurrences(occ) by_arg_tac(tac) ] ->
-    [ rewrite_star ist (Some id) o (occurrences_of occ) c tac ]
-| [ "rewrite" "*" orient(o) uconstr(c) "at" occurrences(occ) "in" hyp(id) by_arg_tac(tac) ] ->
-    [ rewrite_star ist (Some id) o (occurrences_of occ) c tac ]
-| [ "rewrite" "*" orient(o) uconstr(c) "in" hyp(id) by_arg_tac(tac) ] ->
-    [ rewrite_star ist (Some id) o Locus.AllOccurrences c tac ]
-| [ "rewrite" "*" orient(o) uconstr(c) "at" occurrences(occ) by_arg_tac(tac) ] ->
-    [ rewrite_star ist None o (occurrences_of occ) c tac ]
-| [ "rewrite" "*" orient(o) uconstr(c) by_arg_tac(tac) ] ->
-    [ rewrite_star ist None o Locus.AllOccurrences c tac ]
-    END
-
 (**********************************************************************)
 (* Hint Rewrite                                                       *)
 
