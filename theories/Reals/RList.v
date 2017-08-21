@@ -763,17 +763,17 @@ Proof.
   clear l2 r0 H i H0 H1 H2; induction  l1 as [| r0 l1 Hrecl1].
   reflexivity.
   simpl; assumption.
-  rewrite RList_P23; rewrite plus_comm; simpl; apply lt_n_Sn.
+  rewrite RList_P23; rewrite Nat.add_comm; simpl; apply lt_n_Sn.
   replace (S m - Rlength l1)%nat with (S (S m - S (Rlength l1))).
   rewrite H3; simpl;
     replace (S (Rlength l1)) with (Rlength (cons_Rlist l1 (cons r nil))).
   apply (H (cons_Rlist l1 (cons r nil)) i).
-  rewrite RList_P23; rewrite plus_comm; simpl; rewrite <- H3;
+  rewrite RList_P23; rewrite Nat.add_comm; simpl; rewrite <- H3;
     apply le_n_S; assumption.
   repeat rewrite RList_P23; simpl; rewrite RList_P23 in H1;
-    rewrite plus_comm in H1; simpl in H1; rewrite (plus_comm (Rlength l1));
-      simpl; rewrite plus_comm; apply H1.
-  rewrite RList_P23; rewrite plus_comm; reflexivity.
+    rewrite Nat.add_comm in H1; simpl in H1; rewrite (Nat.add_comm (Rlength l1));
+      simpl; rewrite Nat.add_comm; apply H1.
+  rewrite RList_P23; rewrite Nat.add_comm; reflexivity.
   change (S (m - Rlength l1) = (S m - Rlength l1)%nat);
     apply minus_Sn_m; assumption.
   replace (cons r r0) with (cons_Rlist (cons r nil) r0);

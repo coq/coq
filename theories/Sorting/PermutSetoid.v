@@ -198,7 +198,7 @@ Proof.
   do 2 rewrite list_contents_app.
   simpl.
   intros; apply plus_reg_l with (multiplicity (list_contents l) a).
-  rewrite plus_comm; rewrite H; rewrite plus_comm.
+  rewrite Nat.add_comm; rewrite H; rewrite Nat.add_comm.
   trivial.
 Qed.
 
@@ -231,8 +231,8 @@ Proof.
   rewrite list_contents_app in *; simpl in *.
   apply plus_reg_l with (if eqA_dec a a0 then 1 else 0).
   rewrite H; clear H.
-  symmetry; rewrite plus_comm, <- ! plus_assoc; f_equal.
-  rewrite plus_comm.
+  symmetry; rewrite Nat.add_comm, <- ! plus_assoc; f_equal.
+  rewrite Nat.add_comm.
   destruct (eqA_dec a a0) as [Ha|Ha]; rewrite Heq in Ha;
     decide (eqA_dec b a0) with Ha; reflexivity.
 Qed.

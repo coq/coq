@@ -196,7 +196,7 @@ induction o ; simpl.
 
 - rewrite R_sanity. rewrite IHo.
   rewrite Plus.plus_assoc. destruct (to_nat o); simpl; rewrite Mult.mult_succ_r.
-    now rewrite (Plus.plus_comm n).
+    now rewrite (PeanoNat.Nat.add_comm n).
 Qed.
 
 Fixpoint eqb {m n} (p : t m) (q : t n) :=

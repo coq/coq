@@ -177,7 +177,7 @@ Proof (succ_plus_discr n 3).
 
 (** * Compatibility Hints *)
 
-Hint Immediate plus_comm : arith.
+Hint Immediate Nat.add_comm : arith.
 Hint Resolve plus_assoc plus_assoc_reverse : arith.
 Hint Resolve plus_le_compat_l plus_le_compat_r : arith.
 Hint Resolve le_plus_l le_plus_r le_plus_trans : arith.

@@ -844,7 +844,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Proof.
   intros.
   rewrite <- union_inter_cardinal.
-  rewrite Plus.plus_comm.
+  rewrite PeanoNat.Nat.add_comm.
   auto with arith.
   Qed.
 

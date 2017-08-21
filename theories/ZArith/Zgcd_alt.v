@@ -217,7 +217,7 @@ Open Scope Z_scope.
    intros _.
    induction p; [ | | compute; auto ];
     simpl Zgcd_bound in *;
-    rewrite plus_comm; simpl plus;
+    rewrite Nat.add_comm; simpl plus;
     set (n:= (Pos.size_nat p+Pos.size_nat p)%nat) in *; simpl;
     assert (n <> O) by (unfold n; destruct p; simpl; auto).
 
@@ -250,7 +250,7 @@ Open Scope Z_scope.
   simpl Zgcd_bound in *.
   remember (Pos.size_nat a+Pos.size_nat a)%nat as m.
   assert (1 < m)%nat.
-  { rewrite Heqm; destruct a; simpl; rewrite 1?plus_comm;
+  { rewrite Heqm; destruct a; simpl; rewrite 1?Nat.add_comm;
     auto with arith. }
   destruct m as [ |m]; [inversion H0; auto| ].
   destruct n as [ |n]; [inversion H; auto| ].
