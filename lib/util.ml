@@ -171,3 +171,12 @@ let open_utf8_file_in fname =
   let s = Bytes.make 3 ' ' in
   if input in_chan s 0 3 < 3 || not (is_bom s) then seek_in in_chan 0;
   in_chan
+
+(** A trick which can typically be used to store on the fly the
+   computation of values in the "when" clause of a "match" then
+   retrieve the evaluated result in the r.h.s of the clause *)
+
+let set_temporary_memory () =
+  let a = ref None in
+  (fun x -> assert (!a = None); a := Some x; x),
+  (fun () -> match !a with Some x -> x | None -> assert false)
