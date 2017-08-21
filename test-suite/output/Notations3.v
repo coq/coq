@@ -356,3 +356,23 @@ End D.
    pattern where only an ident could be reparsed *)
 
 Check ex2 (fun x => let '(y,z) := x in y>z) (fun x => let '(y,z) := x in z>y).
+
+(* A canonical example of a notation with a non-recursive binder *)
+
+Parameter myex : forall {A}, (A -> Prop) -> Prop.
+Notation "'myexists' x , p" := (myex (fun x => p))
+  (at level 200, x pattern, p at level 200, right associativity).
+
+(* A canonical example of a notation with recursive binders *)
+
+Notation "∀  x .. y , P" := (forall x, .. (forall y, P) ..)
+  (at level 200, x binder, y binder, right associativity) : type_scope.
+
+(* Check that printing 'pat uses an "as" when the variable bound to
+   the pattern is dependent. We check it for the three kinds of
+   notations involving bindings of patterns *)
+
+Check fun '((x,y) as z) => x+y=0/\z=z.    (* Primitive fun/forall *)
+Check myexists ((x,y) as z), x+y=0/\z=z.  (* Isolated binding pattern *)
+Check exists '((x,y) as z), x+y=0/\z=z.   (* Applicative recursive binder *)
+Check ∀ '((x,y) as z), x+y=0/\z=z.        (* Other example of recursive binder, now treated as the exists case *)

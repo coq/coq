@@ -201,3 +201,11 @@ exists2' {{x, y}}, x = 0 & y = 0
 exists2 x : nat * nat,
   let '{{y, z}} := x in y > z & let '{{y, z}} := x in z > y
      : Prop
+fun '({{x, y}} as z) => x + y = 0 /\ z = z
+     : nat * nat -> Prop
+myexists ({{x, y}} as z), x + y = 0 /\ z = z
+     : Prop
+exists '({{x, y}} as z), x + y = 0 /\ z = z
+     : Prop
+∀ '({{x, y}} as z), x + y = 0 /\ z = z
+     : Prop

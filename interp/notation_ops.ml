@@ -1208,11 +1208,13 @@ and match_extended_binders ?loc isprod u alp metas na1 na2 bk t sigma b1 b2 =
   match na1, DAst.get b1, na2 with
   (* Matching individual binders as part of a recursive pattern *)
   | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(ids,[cp],b1))]), Name id
-       when is_gvar p e && is_bindinglist_meta id metas && not (occur_glob_constr p b1) ->
+       when is_gvar p e && is_bindinglist_meta id metas ->
+     let cp = if occur_glob_constr p b1 then set_pat_alias p cp else cp in
      let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalPattern ((cp,ids),p,bk,t)] in
      match_in u alp metas sigma b1 b2
   | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(_,[cp],b1))]), Name id
-       when is_gvar p e && is_onlybinding_pattern_like_meta id metas && not (occur_glob_constr p b1) ->
+       when is_gvar p e && is_onlybinding_pattern_like_meta id metas ->
+     let cp = if occur_glob_constr p b1 then set_pat_alias p cp else cp in
      let alp,sigma = bind_binding_env alp sigma id cp in
      match_in u alp metas sigma b1 b2
   | _, _, Name id when is_bindinglist_meta id metas && (not isprod || na1 != Anonymous)->

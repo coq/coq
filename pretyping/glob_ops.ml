@@ -24,6 +24,11 @@ let alias_of_pat pat = DAst.with_val (function
   | PatCstr(_,_,name) -> name
   ) pat
 
+let set_pat_alias id = DAst.map (function
+  | PatVar Anonymous -> PatVar (Name id)
+  | PatCstr (cstr,patl,Anonymous) -> PatCstr (cstr,patl,Name id)
+  | pat -> assert false)
+
 let cases_predicate_names tml =
   List.flatten (List.map (function
     | (tm,(na,None)) -> [na]

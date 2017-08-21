@@ -15,6 +15,8 @@ val cases_pattern_eq : 'a cases_pattern_g -> 'a cases_pattern_g -> bool
 
 val alias_of_pat : 'a cases_pattern_g -> Name.t
 
+val set_pat_alias : Id.t -> 'a cases_pattern_g -> 'a cases_pattern_g
+
 val cast_type_eq : ('a -> 'a -> bool) ->
   'a Misctypes.cast_type -> 'a Misctypes.cast_type -> bool
 

@@ -924,7 +924,8 @@ and sub_extern inctx (_,scopes) = extern inctx (None,scopes)
 and factorize_prod scopes vars na bk aty c =
   match na, DAst.get c with
   | Name id, GCases (LetPatternStyle, None, [(e,(Anonymous,None))],[(_,(_,[p],b))])
-         when is_gvar id e && not (occur_glob_constr id b) ->
+         when is_gvar id e ->
+      let p = if occur_glob_constr id b then set_pat_alias id p else p in
       let b = extern_typ scopes vars b in
       let p = extern_cases_pattern_in_scope scopes vars p in
       let binder = CLocalPattern (c.loc,(p,None)) in
@@ -946,7 +947,8 @@ and factorize_prod scopes vars na bk aty c =
 and factorize_lambda inctx scopes vars na bk aty c =
   match na, DAst.get c with
   | Name id, GCases (LetPatternStyle, None, [(e,(Anonymous,None))],[(_,(_,[p],b))])
-         when is_gvar id e && not (occur_glob_constr id b) ->
+         when is_gvar id e ->
+      let p = if occur_glob_constr id b then set_pat_alias id p else p in
       let b = sub_extern inctx scopes vars b in
       let p = extern_cases_pattern_in_scope scopes vars p in
       let binder = CLocalPattern (c.loc,(p,None)) in
