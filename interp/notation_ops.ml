@@ -975,35 +975,8 @@ let rec match_cases_pattern_binders metas (alp,sigma as acc) pat1 pat2 =
   | PatCstr (c1,patl1,na1), PatCstr (c2,patl2,na2)
       when eq_constructor c1 c2 && Int.equal (List.length patl1) (List.length patl2) ->
       List.fold_left2 (match_cases_pattern_binders metas)
-	(match_names metas acc na1 na2) patl1 patl2
+        (match_names metas acc na1 na2) patl1 patl2
   | _ -> raise No_match
-
-let glue_letin_with_decls = true
-
-let rec match_iterated_binders islambda decls bi revert = DAst.(with_loc_val (fun ?loc -> function
-  | GLambda (na,bk,t,b) as b0 ->
-    begin match na, DAst.get b with
-    | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(ids,[cp],b))])
-      when islambda && is_gvar p e && not (occur_glob_constr p b) ->
-      match_iterated_binders islambda ((DAst.make ?loc @@ GLocalPattern((cp,ids),p,bk,t))::decls) b revert
-    | _, _ when islambda ->
-      match_iterated_binders islambda ((DAst.make ?loc @@ GLocalAssum(na,bk,t))::decls) b revert
-    | _ -> (decls, DAst.make ?loc b0)
-    end
-  | GProd (na,bk,t,b) as b0 ->
-    begin match na, DAst.get b with
-    | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(ids,[cp],b))])
-      when not islambda && is_gvar p e && not (occur_glob_constr p b) ->
-      match_iterated_binders islambda ((DAst.make ?loc @@ GLocalPattern((cp,ids),p,bk,t))::decls) b revert
-    | Name _, _ when not islambda ->
-      match_iterated_binders islambda ((DAst.make ?loc @@ GLocalAssum(na,bk,t))::decls) b revert
-    | _ -> (decls, DAst.make ?loc b0)
-    end
-  | GLetIn (na,c,t,b) when glue_letin_with_decls ->
-      match_iterated_binders islambda
-        ((DAst.make ?loc @@ GLocalDef (na,Explicit (*?*), c,t))::decls) b revert
-  | b -> (decls, DAst.make ?loc b)
-  )) bi
 
 let remove_sigma x (terms,termlists,binders,binderlists) =
   (Id.List.remove_assoc x terms,termlists,binders,binderlists)
@@ -1015,7 +988,9 @@ let add_ldots_var metas = (ldots_var,((None,[]),NtnTypeConstr))::metas
 
 let add_meta_bindinglist x metas = (x,((None,[]),NtnTypeBinderList))::metas
 
-let match_binderlist_with_app match_fun alp metas sigma rest x y iter termin revert =
+let glue_letin_with_decls = true
+
+let match_binderlist match_fun alp metas sigma rest x y iter termin revert =
   let rec aux sigma bl rest =
     try
       let metas = add_ldots_var (add_meta_bindinglist y metas) in
@@ -1028,8 +1003,12 @@ let match_binderlist_with_app match_fun alp metas sigma rest x y iter termin rev
       (* In case y is bound not only to a binder but also to a term *)
       let sigma = remove_sigma y sigma in
       aux sigma (b::bl) rest
-    with No_match when not (List.is_empty bl) ->
-      bl, rest, sigma in
+    with No_match ->
+    match DAst.get rest with
+    | GLetIn (na,c,t,rest) when glue_letin_with_decls ->
+       let b = DAst.make ?loc:rest.CAst.loc @@ GLocalDef (na,Explicit (*?*), c,t) in
+       aux sigma (b::bl) rest
+    | _ -> if not (List.is_empty bl) then bl, rest, sigma else raise No_match in
   let bl,rest,sigma = aux sigma [] rest in
   let bl = if revert then List.rev bl else bl in
   let alp,sigma = bind_bindinglist_env alp sigma x bl in
@@ -1096,46 +1075,9 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | r1, NList (x,y,iter,termin,revert) ->
       match_termlist (match_hd u alp) alp metas sigma a1 x y iter termin revert
 
-  | GLambda (na1, bk, t1, b1), NBinderList (x,y,iter,termin,revert) ->
-    begin match na1, DAst.get b1, iter with
-    (* "λ p, let 'cp = p in t" -> "λ 'cp, t" *)
-    | Name p, GCases (LetPatternStyle,None,[(e,_)],[(_,(ids,[cp],b1))]), NLambda (Name _, _, _)
-      when is_gvar p e && not (occur_glob_constr p b1) ->
-      let (decls,b) = match_iterated_binders true [DAst.make ?loc @@ GLocalPattern((cp,ids),p,bk,t1)] b1 revert in
-      let alp,sigma = bind_bindinglist_env alp sigma x decls in
-      match_in u alp metas sigma b termin
-    (* Matching recursive notations for binders: ad hoc cases supporting let-in *)
-    | _, _, NLambda (Name _,_,_) ->
-      let (decls,b) = match_iterated_binders true [DAst.make ?loc @@ GLocalAssum (na1,bk,t1)] b1 revert in
-      (* TODO: address the possibility that termin is a Lambda itself *)
-      let alp,sigma = bind_bindinglist_env alp sigma x decls in
-      match_in u alp metas sigma b termin
-    (* Matching recursive notations for binders: general case *)
-    | _, _, _ ->
-      match_binderlist_with_app (match_hd u) alp metas sigma a1 x y iter termin revert
-    end
-
-  | GProd (na1, bk, t1, b1), NBinderList (x,y,iter,termin,revert) ->
-    (* "∀ p, let 'cp = p in t" -> "∀ 'cp, t" *)
-    begin match na1, DAst.get b1, iter, termin with
-    | Name p, GCases (LetPatternStyle,None,[(e, _)],[(_,(ids,[cp],b1))]), NProd (Name _,_,_), NVar _
-      when is_gvar p e && not (occur_glob_constr p b1) ->
-      let (decls,b) = match_iterated_binders true [DAst.make ?loc @@ GLocalPattern ((cp,ids),p,bk,t1)] b1 revert in
-      let alp,sigma = bind_bindinglist_env alp sigma x decls in
-      match_in u alp metas sigma b termin
-    | _, _,  NProd (Name _,_,_), _ when na1 != Anonymous ->
-      let (decls,b) = match_iterated_binders false [DAst.make ?loc @@ GLocalAssum (na1,bk,t1)] b1 revert in
-      (* TODO: address the possibility that termin is a Prod itself *)
-      let alp,sigma = bind_bindinglist_env alp sigma x decls in
-      match_in u alp metas sigma b termin
-    (* Matching recursive notations for binders: general case *)
-    | _, _, _, _ ->
-      match_binderlist_with_app (match_hd u) alp metas sigma a1 x y iter termin revert
-    end
-
   (* Matching recursive notations for binders: general case *)
   | _r, NBinderList (x,y,iter,termin,revert) ->
-       match_binderlist_with_app (match_hd u) alp metas sigma a1 x y iter termin revert
+      match_binderlist (match_hd u) alp metas sigma a1 x y iter termin revert
 
   (* Matching compositionally *)
   | GVar id1, NVar id2 when alpha_var id1 id2 (fst alp) -> sigma

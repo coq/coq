@@ -36,8 +36,9 @@ Check fun P:nat->nat->Prop => fun x:nat => ex (P x).
 
 (* Test notations with binders *)
 
-Notation "∃  x .. y , P":= (ex (fun x => .. (ex (fun y => P)) ..))
-  (x binder, y binder, at level 200, right associativity).
+Notation "∃ x .. y , P":= (ex (fun x => .. (ex (fun y => P)) ..))
+  (x binder, y binder, at level 200, right associativity,
+  format "'[  ' ∃  x  ..  y ']' ,  P").
 
 Check (∃ n p, n+p=0).
 

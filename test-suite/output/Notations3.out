@@ -152,8 +152,7 @@ exists x : nat,
     nat ->
     exists '{{z, t}}, forall z2 : nat, z2 = 0 /\ x + y = 0 /\ z + t = 0
      : Prop
-exists_true '{{x, y}},
-(let u := 0 in exists_true '{{z, t}}, x + y = 0 /\ z + t = 0)
+exists_true '{{x, y}} (u := 0) '{{z, t}}, x + y = 0 /\ z + t = 0
      : Prop
 exists_true (A : Type) (R : A -> A -> Prop) (_ : Reflexive R),
 (forall x : A, R x x)
@@ -172,6 +171,8 @@ exists_true (x : nat) (A : Type) (R : A -> A -> Prop)
 @@ a b : nat # a = b # b = a #
      : Prop * Prop
 exists_non_null x y z t : nat , x = y /\ z = t
+     : Prop
+forall_non_null x y z t : nat , x = y /\ z = t
      : Prop
 {{RL 1, 2}}
      : nat * (nat * nat)

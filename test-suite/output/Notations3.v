@@ -308,6 +308,11 @@ Notation "'exists_non_null' x .. y  , P" :=
   (at level 200, x binder).
 Check exists_non_null x y z t , x=y/\z=t.
 
+Notation "'forall_non_null' x .. y  , P" :=
+  (forall x, x <> 0 -> .. (forall y, y <> 0 -> P) ..)
+  (at level 200, x binder).
+Check forall_non_null x y z t , x=y/\z=t.
+
 (* Examples where the recursive pattern is in reverse order *)
 
 Notation "{{RL  c , .. , d }}" := (pair d .. (pair c 0) ..).
