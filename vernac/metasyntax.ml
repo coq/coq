@@ -504,6 +504,12 @@ let make_hunks etyps symbols from =
 
 let error_format ?loc () = user_err ?loc Pp.(str "The format does not match the notation.")
 
+let warn_format_break =
+  CWarnings.create ~name:"notation-both-format-and-spaces" ~category:"parsing"
+         (fun () ->
+          strbrk "Discarding format implicitly indicated by multiple spaces in notation because an explicit format modifier is given.")
+
+
 let rec split_format_at_ldots hd = function
   | (loc,UnpTerminal s) :: fmt when String.equal s (Id.to_string ldots_var) -> loc, List.rev hd, fmt
   | u :: fmt ->
@@ -575,6 +581,7 @@ let hunks_of_format (from,(vars,typs)) symfmt =
 	| _ -> assert false in
       symbs, hunk :: l
   | symbs, [] -> symbs, []
+  | Break _ :: symbs, fmt -> warn_format_break (); aux (symbs,fmt)
   | _, fmt -> error_format ?loc:(fst (List.hd fmt)) ()
   in
   match aux symfmt with
