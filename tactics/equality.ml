@@ -94,11 +94,6 @@ type freeze_evars_flag = bool (* true = don't instantiate existing evars *)
 
 type orientation = bool
 
-type conditions =
-  | Naive (* Only try the first occurrence of the lemma (default) *)
-  | FirstSolved (* Use the first match whose side-conditions are solved *)
-  | AllMatches (* Rewrite all matches whose side-conditions are solved *)
-
 (* Warning : rewriting from left to right only works
    if there exists in the context a theorem named <eqname>_<suffsort>_r
    with type (A:<sort>)(x:A)(P:A->Prop)(P x)->(y:A)(eqname A y x)->(P y).
@@ -152,20 +147,6 @@ let side_tac tac sidetac =
   match sidetac with
   | None -> tac
   | Some sidetac -> tclTHENSFIRSTn tac [|Proofview.tclUNIT ()|] sidetac
-
-let instantiate_lemma_all frzevars gl c ty l l2r concl =
-  let env = Proofview.Goal.env gl in
-  let sigma, eqclause = pf_apply (Clenv.make_clenv_bindings ~len:0 ~hyps_only:false ?occs:None) gl (c,ty) l in
-  let (equiv, args) = decompose_app_vect sigma (Clenv.clenv_concl eqclause) in
-  let arglen = Array.length args in
-  let () = if arglen < 2 then user_err Pp.(str "The term provided is not an applied relation.") in
-  let c1 = args.(arglen - 2) in
-  let c2 = args.(arglen - 1) in
-  let flags = make_flags frzevars (Tacmach.New.project gl) rewrite_unif_flags
-                         eqclause in
-  let occs = w_unify_to_subterm_all ~flags env sigma
-                                    ((if l2r then c1 else c2),concl) in
-  List.map (fun (sigma, c) -> sigma, eqclause) occs
 
 let instantiate_lemma gl c ty l l2r concl =
   let eqclause = Clenv.make_clenv_bindings (pf_env gl) (project gl) ~hyps_only:false (c,ty) l in
@@ -288,13 +269,6 @@ let general_elim_clause with_evars frzevars cls rew elim =
     end
 
 let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
-  let all, firstonly, tac =
-    match tac with
-    | None -> false, false, None
-    | Some (tac, Naive) -> false, false, Some tac
-    | Some (tac, FirstSolved) -> true, true, Some (tclCOMPLETE tac)
-    | Some (tac, AllMatches) -> true, false, Some (tclCOMPLETE tac)
-  in
   let try_clause (sigma, c) =
     side_tac
       (tclTHEN
@@ -304,16 +278,14 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
   in
   Proofview.Goal.enter begin fun gl ->
     let instantiate_lemma concl =
-      if not all then instantiate_lemma gl c t l l2r concl
-      else instantiate_lemma_all frzevars gl c t l l2r concl
+      instantiate_lemma gl c t l l2r concl
     in
     let typ = match cls with
     | None -> pf_concl gl
     | Some id -> pf_get_hyp_typ id (Proofview.Goal.assume gl)
     in
     let cs = instantiate_lemma typ in
-    if firstonly then tclFIRST (List.map try_clause cs)
-    else tclMAP try_clause cs
+    tclMAP try_clause cs
   end
 
 (* The next function decides in particular whether to try a regular
@@ -577,7 +549,7 @@ let adjust_rewriting_direction args lft2rgt =
     (* other equality *)
     Some lft2rgt
 
-let rewrite_side_tac tac sidetac = side_tac tac (Option.map fst sidetac)
+let rewrite_side_tac tac sidetac = side_tac tac sidetac
 
 (* Main function for dispatching which kind of rewriting it is about *)
 

@@ -21,8 +21,8 @@ val add_rew_rules : string -> raw_rew_rule list -> unit
    The optional conditions tell rewrite how to handle matching and side-condition solving.
    Default is Naive: first match in the clause, don't look at the side-conditions to
    tell if the rewrite succeeded. *)
-val autorewrite : ?conds:conditions -> unit Proofview.tactic -> string list -> unit Proofview.tactic
-val autorewrite_in : ?conds:conditions -> Names.Id.t -> unit Proofview.tactic -> string list -> unit Proofview.tactic
+val autorewrite : unit Proofview.tactic -> string list -> unit Proofview.tactic
+val autorewrite_in : Names.Id.t -> unit Proofview.tactic -> string list -> unit Proofview.tactic
 
 (** Rewriting rules *)
 type rew_rule = { rew_lemma: constr;
@@ -37,9 +37,9 @@ val find_rewrites : string -> rew_rule list
 
 val find_matches : string -> constr -> rew_rule list
 
-val auto_multi_rewrite : ?conds:conditions -> string list -> Locus.clause -> unit Proofview.tactic
+val auto_multi_rewrite : string list -> Locus.clause -> unit Proofview.tactic
 
-val auto_multi_rewrite_with : ?conds:conditions -> unit Proofview.tactic -> string list -> Locus.clause -> unit Proofview.tactic
+val auto_multi_rewrite_with : unit Proofview.tactic -> string list -> Locus.clause -> unit Proofview.tactic
 
 val print_rewrite_hintdb : string -> Pp.t
 

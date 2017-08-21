@@ -114,23 +114,22 @@ let one_base general_rewrite_maybe_in tac_main bas =
       (Proofview.tclUNIT()) lrul))
 
 (* The AutoRewrite tactic *)
-let autorewrite ?(conds=Naive) tac_main lbas =
+let autorewrite tac_main lbas =
   Tacticals.New.tclREPEAT_MAIN (Proofview.tclPROGRESS
     (List.fold_left (fun tac bas ->
        Tacticals.New.tclTHEN tac
         (one_base (fun dir pat c tac ->
-	  let tac = (tac, conds) in
 	    general_rewrite dir ?pat AllOccurrences true false ~tac (EConstr.of_constr c))
 	  tac_main bas))
       (Proofview.tclUNIT()) lbas))
 
-let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
+let autorewrite_multi_in idl tac_main lbas =
   Proofview.Goal.enter begin fun gl ->
  (* let's check at once if id exists (to raise the appropriate error) *)
   let _ = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) idl in
   let general_rewrite_in id dir pat cstr tac =
     let cstr = EConstr.of_constr cstr in
-    general_rewrite_in dir ?pat AllOccurrences true ~tac:(tac, conds) false id cstr false
+    general_rewrite_in dir ?pat AllOccurrences true ~tac false id cstr false
   in
  Tacticals.New.tclMAP (fun id ->
   Tacticals.New.tclREPEAT_MAIN (Proofview.tclPROGRESS
@@ -139,11 +138,11 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
    idl
  end
 
-let autorewrite_in ?(conds=Naive) id = autorewrite_multi_in ~conds [id]
+let autorewrite_in id = autorewrite_multi_in [id]
 
-let gen_auto_multi_rewrite conds tac_main lbas cl =
+let gen_auto_multi_rewrite tac_main lbas cl =
   let try_do_hyps treat_id l =
-    autorewrite_multi_in ~conds (List.map treat_id l) tac_main lbas
+    autorewrite_multi_in (List.map treat_id l) tac_main lbas
   in
   if not (Locusops.is_all_occurrences cl.concl_occs) &&
      cl.concl_occs != NoOccurrences
@@ -156,7 +155,7 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
 	| _ ->      Tacticals.New.tclTHENFIRST t1 t2
     in
     compose_tac
-	(if cl.concl_occs != NoOccurrences then autorewrite ~conds tac_main lbas else Proofview.tclUNIT ())
+	(if cl.concl_occs != NoOccurrences then autorewrite tac_main lbas else Proofview.tclUNIT ())
 	(match cl.onhyps with
 	   | Some l -> try_do_hyps (fun ((_,id),_) -> id) l
 	   | None ->
@@ -167,17 +166,17 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
 		 try_do_hyps (fun id -> id)  ids
                end)
 
-let auto_multi_rewrite ?(conds=Naive) lems cl =
-  Proofview.V82.wrap_exceptions (fun () -> gen_auto_multi_rewrite conds (Proofview.tclUNIT()) lems cl)
+let auto_multi_rewrite lems cl =
+  Proofview.V82.wrap_exceptions (fun () -> gen_auto_multi_rewrite (Proofview.tclUNIT()) lems cl)
 
-let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl =
+let auto_multi_rewrite_with tac_main lbas cl =
   let onconcl = match cl.Locus.concl_occs with NoOccurrences -> false | _ -> true in
   match onconcl,cl.Locus.onhyps with
     | false,Some [_] | true,Some [] | false,Some [] ->
 	(* autorewrite with .... in clause using tac n'est sur que
 	   si clause represente soit le but soit UNE hypothese
 	*)
-	Proofview.V82.wrap_exceptions (fun () -> gen_auto_multi_rewrite conds tac_main lbas cl)
+	Proofview.V82.wrap_exceptions (fun () -> gen_auto_multi_rewrite tac_main lbas cl)
     | _ ->
         Tacticals.New.tclZEROMSG (strbrk "autorewrite .. in .. using can only be used either with a unique hypothesis or on the conclusion.")
 
