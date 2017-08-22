@@ -28,6 +28,8 @@ Local Open Scope int31_scope.
 
 Local Hint Resolve Z.lt_gt Z.div_pos : zarith.
 
+Hint Transparent twice twice_plus_one.
+
 Section Basics.
 
  (** * Basic results about [iszero], [shiftl], [shiftr] *)
@@ -2263,7 +2265,6 @@ Section Int31_Specs.
  assert (Hi2: phi2 ih il < (phi Tn + 1) ^ 2).
  { change ((phi Tn + 1) ^ 2) with (2^62).
    apply Z.le_lt_trans with ((2^31 -1) * base + (2^31 - 1)); auto with zarith.
-   2: simpl; unfold Z.pow_pos; simpl; auto with zarith.
    case (phi_bounded ih); case (phi_bounded il); intros H1 H2 H3 H4.
    unfold base, Z.pow, Z.pow_pos in H2,H4; simpl in H2,H4.
    unfold phi2. cbn [Z.pow Z.pow_pos Pos.iter]. auto with zarith. }

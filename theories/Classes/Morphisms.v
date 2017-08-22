@@ -413,7 +413,7 @@ Section GenericInstances.
 
   (** [R] is Reflexive, hence we can build the needed proof. *)
 
-  Lemma Reflexive_partial_app_morphism `(Proper (A -> B) (R ==> R') m, ProperProxy A R x) :
+  Lemma Reflexive_partial_app_morphism m x `(Proper (A -> B) (R ==> R') m, ProperProxy A R x) :
     Proper R' (m x).
   Proof. simpl_relation. Qed.
   
@@ -464,7 +464,7 @@ Class Params {A : Type} (of : A) (arity : nat).
 Ltac partial_application_tactic :=
   let rec do_partial_apps H m cont := 
     match m with
-      | ?m' ?x => class_apply @Reflexive_partial_app_morphism ; 
+      | ?m' ?x => class_apply (@Reflexive_partial_app_morphism _ _ m' x) ;
         [(do_partial_apps H m' ltac:(idtac))|clear H]
       | _ => cont
     end
@@ -498,9 +498,9 @@ Ltac partial_application_tactic :=
     | [ |- @Proper ?T _ (?m ?x) ] =>
       match goal with
         | [ H : PartialApplication |- _ ] =>
-          class_apply @Reflexive_partial_app_morphism; [|clear H]
+          class_apply (@Reflexive_partial_app_morphism _ _ m x); [|clear H]
         | _ => on_morphism (m x)
-          ltac:(class_apply @Reflexive_partial_app_morphism)
+          ltac:(class_apply (@Reflexive_partial_app_morphism _ _ m x))
       end
   end.
 

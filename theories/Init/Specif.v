@@ -83,6 +83,7 @@ Section Subset_projections.
 
 End Subset_projections.
 
+Hint Transparent proj1_sig proj2_sig : core.
 
 (** [sig2] of a predicate can be projected to a [sig].
 
@@ -141,6 +142,8 @@ Section Projections.
     end.
 
 End Projections.
+
+Hint Transparent projT1 projT2 : core.
 
 (** [sigT2] of a predicate can be projected to a [sigT].
 

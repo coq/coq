@@ -23,3 +23,7 @@ Notation "[ x ]" := (bracket(x)).
 Class Power {A B: Type} := power : A -> B -> A.
 Notation "x ^ y" := (power x y).
 
+Require Import Morphisms.
+Instance: Params (@bracket) 3 := {}.
+Instance: Params (@equality) 2 := {}.
+Instance: Params (@power) 3 := {}.
