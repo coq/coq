@@ -54,8 +54,17 @@ let get_available_profile_filename () =
   let profile_filename = get_profile_filename () in
   let dir = Filename.dirname profile_filename in 
   let base = Filename.basename profile_filename in 
-  let ext = Filename.extension base in 
-  let name = Filename.remove_extension base in 
+  (* starting with OCaml 4.04, could use Filename.remove_extension and Filename.extension, which
+     gets rid of need for exception-handling here
+  *)
+  let (name,ext) =
+    try
+      let nm = Filename.chop_extension base in
+      let nm_len = String.length nm in
+      let ex = String.sub base nm_len (String.length base - nm_len) in
+      (nm,ex)
+    with Invalid_argument _ -> (base,"")
+  in
   try 
     (* unlikely race: fn deleted, another process uses fn *)
     Filename.temp_file ~temp_dir:dir (name ^ "_") ext
