@@ -512,17 +512,10 @@ let decompose_applied_relation env sigma (c,l) =
 	| Some c -> c
 	| None -> user_err Pp.(str "Cannot find an homogeneous relation to rewrite.")
 
-let rewrite_db = "rewrite"
-
 let conv_transparent_state = (Id.Pred.empty, Cpred.full)
 
-let _ = 
-  Hints.add_hints_init
-    (fun () ->
-       Hints.create_hint_db false rewrite_db conv_transparent_state true)
-
 let rewrite_transparent_state () =
-  Hints.Hint_db.transparent_state (Hints.searchtable_map rewrite_db)
+  Hints.Hint_db.transparent_state (Hints.searchtable_map Hints.rewrite_db)
 
 let rewrite_core_unif_flags = {
   Unification.modulo_conv_on_closed_terms = None;
@@ -693,7 +686,8 @@ let symmetry env sort rew =
 let unify_eqn (car, rel, prf, c1, c2, holes, sort) l2r flags env (sigma, cstrs) by t =
   try
     let left = if l2r then c1 else c2 in
-    let sigma = Unification.w_unify ~flags env sigma CONV left t in
+    let sigma = Evarconv.unify_with_heuristics (Unification.flags_of flags)
+                                               ~with_ho:false env sigma CONV left t in
     let sigma = Typeclasses.resolve_typeclasses ~filter:(no_constraints cstrs)
       ~fail:true env sigma in
     let evd = solve_remaining_by env sigma holes by in
@@ -720,7 +714,8 @@ let unify_abs (car, rel, prf, c1, c2) l2r sort env (sigma, cstrs) t =
        basically an eq_constr, except when preexisting evars occur in
        either the lemma or the goal, in which case the eq_constr also
        solved this evars *)
-    let sigma = Unification.w_unify ~flags:rewrite_unif_flags env sigma CONV left t in
+    let sigma = Evarconv.unify_with_heuristics (Unification.flags_of rewrite_unif_flags)
+                                               ~with_ho:false env sigma CONV left t in
     let rew_evars = sigma, cstrs in
     let rew_prf = RewPrf (rel, prf) in
     let rew = { rew_car = car; rew_from = c1; rew_to = c2; rew_prf; rew_evars; } in
@@ -1411,7 +1406,9 @@ module Strategies =
             user_err Pp.(str "fold: the term is not unfoldable!")
 	in
 	  try
-	    let sigma = Unification.w_unify env sigma CONV ~flags:(Unification.elim_flags ()) unfolded t in
+	    let sigma =
+              Evarconv.unify_with_heuristics (Unification.flags_of (Unification.elim_flags ()))
+                                             ~with_ho:false env sigma CONV unfolded t in
 	    let c' = Reductionops.nf_evar sigma c in
 	      state, Success { rew_car = ty; rew_from = t; rew_to = c';
 				  rew_prf = RewCast DEFAULTcast;

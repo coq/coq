@@ -8,11 +8,11 @@ Eqschemes
 Elimschemes
 Tactics
 Elim
+Hints
 Equality
 Contradiction
 Inv
 Leminv
-Hints
 Auto
 Eauto
 Class_tactics

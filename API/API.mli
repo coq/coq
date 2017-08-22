@@ -5287,12 +5287,14 @@ sig
     EConstr.constr -> EConstr.constr -> Evd.evar_map * EConstr.constr
   val replace : EConstr.constr -> EConstr.constr -> unit Proofview.tactic
   val general_rewrite :
-    orientation -> Locus.occurrences -> freeze_evars_flag -> dep_proof_flag ->
+    orientation -> Locus.occurrences -> ?pat:Pattern.constr_pattern ->
+    freeze_evars_flag -> dep_proof_flag ->
     ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr -> unit Proofview.tactic
   val inj : Tactypes.intro_patterns option -> Misctypes.evars_flag ->
             Misctypes.clear_flag -> EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
   val general_multi_rewrite :
-    Misctypes.evars_flag -> (bool * Misctypes.multi * Misctypes.clear_flag * Tactypes.delayed_open_constr_with_bindings) list ->
+    Misctypes.evars_flag -> (bool * Misctypes.multi * Misctypes.clear_flag *
+                               Pattern.constr_pattern option * Tactypes.delayed_open_constr_with_bindings) list ->
     Locus.clause -> (unit Proofview.tactic * conditions) option -> unit Proofview.tactic
   val replace_in_clause_maybe_by : EConstr.constr -> EConstr.constr -> Locus.clause -> unit Proofview.tactic option -> unit Proofview.tactic
   val replace_term : bool option -> EConstr.constr -> Locus.clause -> unit Proofview.tactic
@@ -5310,7 +5312,7 @@ sig
   val cutRewriteInConcl : bool -> EConstr.constr -> unit Proofview.tactic
   val cutRewriteInHyp : bool -> EConstr.types -> Names.Id.t -> unit Proofview.tactic
   val general_rewrite_ebindings_clause : Names.Id.t option ->
-                                         orientation -> Locus.occurrences -> freeze_evars_flag -> dep_proof_flag ->
+                                         orientation -> Locus.occurrences -> ?pat:Pattern.constr_pattern  -> freeze_evars_flag -> dep_proof_flag ->
                                          ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr Misctypes.with_bindings -> Misctypes.evars_flag -> unit Proofview.tactic
   val subst : Names.Id.t list -> unit Proofview.tactic
 
@@ -5321,7 +5323,7 @@ sig
   val subst_all : ?flags:subst_tactic_flags -> unit -> unit Proofview.tactic
 
   val general_rewrite_in :
-    orientation -> Locus.occurrences -> freeze_evars_flag -> dep_proof_flag ->
+    orientation -> Locus.occurrences -> ?pat:Pattern.constr_pattern -> freeze_evars_flag -> dep_proof_flag ->
     ?tac:(unit Proofview.tactic * conditions) -> Names.Id.t -> EConstr.constr -> Misctypes.evars_flag -> unit Proofview.tactic
 
   val general_setoid_rewrite_clause :
@@ -5332,7 +5334,8 @@ sig
   val rewriteLR : ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr -> unit Proofview.tactic
   val rewriteRL : ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr  -> unit Proofview.tactic
   val general_rewrite_bindings :
-    orientation -> Locus.occurrences -> freeze_evars_flag -> dep_proof_flag ->
+    orientation -> Locus.occurrences -> ?pat:Pattern.constr_pattern ->
+    freeze_evars_flag -> dep_proof_flag ->
     ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr Misctypes.with_bindings -> Misctypes.evars_flag -> unit Proofview.tactic
   val discriminable : Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool
   val discrHyp : Names.Id.t -> unit Proofview.tactic
