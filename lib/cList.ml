@@ -49,6 +49,7 @@ sig
     (int -> 'a -> bool) -> 'a list -> 'a list
   val partitioni :
     (int -> 'a -> bool) -> 'a list -> 'a list * 'a list
+  val map_of_array : ('a -> 'b) -> 'a array -> 'b list
   val smartfilter : ('a -> bool) -> 'a list -> 'a list
   val extend : bool list -> 'a -> 'a list -> 'a list
   val count : ('a -> bool) -> 'a list -> int
@@ -158,6 +159,21 @@ let map2 f l1 l2 = match l1, l2 with
   map2_loop f c l1 l2;
   cast c
 | _ -> invalid_arg "List.map2"
+
+let rec map_of_array_loop f p a i l =
+  if Int.equal i l then ()
+  else
+    let c = { head = f (Array.unsafe_get a i); tail = [] } in
+    p.tail <- cast c;
+    map_of_array_loop f c a (i + 1) l
+
+let map_of_array f a =
+  let l = Array.length a in
+  if Int.equal l 0 then []
+  else
+    let c = { head = f (Array.unsafe_get a 0); tail = [] } in
+    map_of_array_loop f c a 1 l;
+    cast c
 
 let rec append_loop p tl = function
 | [] -> p.tail <- tl
