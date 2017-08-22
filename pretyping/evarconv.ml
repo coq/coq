@@ -178,7 +178,9 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
 	  (proji, Sort_cs (family_of_sort s)),[]
       | Proj (p, c) ->
         let c2 = Globnames.ConstRef (Projection.constant p) in
-        let sk2 = Stack.append_app [|c|] sk2 in
+        let c = Retyping.expand_projection env sigma p c [] in
+        let _, args = destApp sigma c in
+        let sk2 = Stack.append_app args sk2 in
         lookup_canonical_conversion (proji, Const_cs c2), sk2
       | _ ->
 	let (c2, _) = Termops.global_of_constr sigma t2 in
