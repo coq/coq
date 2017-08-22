@@ -483,17 +483,22 @@ GEXTEND Gram
     [ [ "by"; tac = tactic_expr LEVEL "3" -> Some tac
     | -> None ] ]
   ;
+  rewrite_lemma:
+    [ [ pat = OPT [ "["; c = lconstr; "]" -> c];
+        c = constr_with_bindings_arg -> (pat,c)
+    ] ]
+  ;
   rewriter :
-    [ [ "!"; c = constr_with_bindings_arg -> (RepeatPlus,c)
-      | ["?"| LEFTQMARK]; c = constr_with_bindings_arg -> (RepeatStar,c)
-      | n = natural; "!"; c = constr_with_bindings_arg -> (Precisely n,c)
-      |	n = natural; ["?" | LEFTQMARK]; c = constr_with_bindings_arg -> (UpTo n,c)
-      | n = natural; c = constr_with_bindings_arg -> (Precisely n,c)
-      | c = constr_with_bindings_arg -> (Precisely 1, c)
+    [ [ "!"; c = rewrite_lemma -> (RepeatPlus,c)
+      | ["?"| LEFTQMARK]; c = rewrite_lemma -> (RepeatStar,c)
+      | n = natural; "!"; c = rewrite_lemma -> (Precisely n,c)
+      |	n = natural; ["?" | LEFTQMARK]; c = rewrite_lemma -> (UpTo n,c)
+      | n = natural; c = rewrite_lemma -> (Precisely n,c)
+      | c = rewrite_lemma -> (Precisely 1, c)
       ] ]
   ;
   oriented_rewriter :
-    [ [ b = orient; p = rewriter -> let (m,c) = p in (b,m,c) ] ]
+    [ [ b = orient; p = rewriter -> let (m,(p,c)) = p in (b,m,p,c) ] ]
   ;
   induction_clause:
     [ [ c = destruction_arg; pat = as_or_and_ipat; eq = eqn_ipat;

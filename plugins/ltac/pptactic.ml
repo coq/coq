@@ -633,7 +633,11 @@ type 'a extra_genarg_printer =
       let _pr_constrarg c = spc () ++ pr.pr_constr c in
       let pr_lconstrarg c = spc () ++ pr.pr_lconstr c in
       let pr_intarg n = spc () ++ int n in
-
+      let pr_opt_pat p =
+        match p with
+        | None -> mt ()
+        | Some p -> str"[" ++ pr.pr_pattern p ++ str"]"
+      in
       (* Some printing combinators *)
       let pr_eliminator cb = keyword "using" ++ pr_arg pr_with_bindings cb in
 
@@ -797,8 +801,8 @@ type 'a extra_genarg_printer =
             primitive (with_evars ev "rewrite") ++ spc ()
             ++ prlist_with_sep
               (fun () -> str ","++spc())
-              (fun (b,m,c) ->
-                pr_orient b ++ pr_multi m ++
+              (fun (b,m,p,c) ->
+                pr_orient b ++ pr_multi m ++ pr_opt_pat p ++
                   pr_with_bindings_arg_full pr.pr_dconstr pr.pr_dconstr c)
               l
             ++ pr_non_empty_arg (pr_clauses (Some true) pr.pr_name) cl

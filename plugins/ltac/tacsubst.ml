@@ -169,8 +169,9 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->
       TacRewrite (ev,
-		  List.map (fun (b,m,c) ->
-			      b,m,subst_glob_with_bindings_arg subst c) l,
+		  List.map (fun (b,m,p,c) ->
+		      b,m,Option.map (subst_glob_constr_or_pattern subst) p,
+                      subst_glob_with_bindings_arg subst c) l,
 		 cl,Option.map (subst_tactic subst) by)
   | TacInversion (DepInversion (k,c,l),hyp) ->
      TacInversion (DepInversion (k,Option.map (subst_glob_constr subst) c,l),hyp)
