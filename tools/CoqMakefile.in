@@ -199,8 +199,8 @@ else
 TIMING_ARG=
 endif
 
-# Retro compatibility (DESTDIR is standard on Unix, DESTROOT is not)
-ifneq "$(DSTROOT)" ""
+# Retro compatibility (DESTDIR is standard on Unix, DSTROOT is not)
+ifdef DSTROOT
 DESTDIR := $(DSTROOT)
 endif
 
