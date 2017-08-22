@@ -411,7 +411,7 @@ Qed.
 
 Definition f_equal_R := (f_equal (A:=R)).
 
-Hint Resolve f_equal_R : real.
+Hint Extern 1 (?f _ = ?g _) => apply f_equal_R : real.
 
 Lemma Rplus_eq_compat_l : forall r r1 r2, r1 = r2 -> r + r1 = r + r2.
 Proof.

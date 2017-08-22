@@ -1474,6 +1474,8 @@ Proof.
  rewrite <-andb_lazy_alt; f_equal; auto.
 Qed.
 
+Hint Transparent equal_cont.
+
 Lemma equal_cont_IfEq : forall m1 cont e2 l,
   (forall e, IfEq (cont e) l (flatten_e e)) ->
   IfEq (equal_cont cmp m1 cont e2) (elements m1 ++ l) (flatten_e e2).
@@ -2037,6 +2039,8 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
     | R.Node l1 x1 d1 r1 _ =>
        compare_cont l1 (compare_more x1 d1 (compare_cont r1 cont)) e2
    end.
+
+  Hint Transparent compare_cont.
 
   (** Initial continuation *)
 

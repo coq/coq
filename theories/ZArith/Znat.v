@@ -545,7 +545,7 @@ Proof.
  assert (forall p q, Z.abs_N (Zpos p ÷ Zpos q) = (Npos p / Npos q)%N).
   intros. rewrite abs_N_nonneg. now apply Z2N.inj_quot. now apply Z.quot_pos.
  destruct n, m; trivial; simpl.
- - trivial.
+ (* MS: trivial not needing the previous simpl anymore. *)
  - now rewrite <- Pos2Z.opp_pos, Z.quot_opp_r, inj_opp.
  - now rewrite <- Pos2Z.opp_pos, Z.quot_opp_l, inj_opp.
  - now rewrite <- 2 Pos2Z.opp_pos, Z.quot_opp_opp.
@@ -557,7 +557,7 @@ Proof.
   (forall p q, Z.abs_N (Z.rem (Zpos p) (Zpos q)) = ((Npos p) mod (Npos q))%N).
   intros. rewrite abs_N_nonneg. now apply Z2N.inj_rem. now apply Z.rem_nonneg.
  destruct n, m; trivial; simpl.
- - trivial.
+ (* MS: same - trivial. *)
  - now rewrite <- Pos2Z.opp_pos, Z.rem_opp_r.
  - now rewrite <- Pos2Z.opp_pos, Z.rem_opp_l, inj_opp.
  - now rewrite <- 2 Pos2Z.opp_pos, Z.rem_opp_opp, inj_opp.
