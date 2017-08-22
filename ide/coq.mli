@@ -170,3 +170,4 @@ val check_connection : string list -> unit
     may terminate coqide in case of trouble *)
 
 val interrupter : (int -> unit) ref
+val save_all : (unit -> unit) ref
