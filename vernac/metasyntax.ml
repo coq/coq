@@ -43,13 +43,6 @@ let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 
 let entry_buf = Buffer.create 64
 
-type any_entry = AnyEntry : 'a Pcoq.Gram.entry -> any_entry
-
-let grammars : any_entry list String.Map.t ref = ref String.Map.empty
-
-let register_grammar name grams =
-  grammars := String.Map.add name grams !grammars
-
 let pr_entry e =
   let () = Buffer.clear entry_buf in
   let ft = Format.formatter_of_buffer entry_buf in
@@ -57,11 +50,11 @@ let pr_entry e =
   str (Buffer.contents entry_buf)
 
 let pr_registered_grammar name =
-  let gram = try Some (String.Map.find name !grammars) with Not_found -> None in
+  let gram = try Some (Pcoq.find_grammars_by_name name) with Not_found -> None in
   match gram with
   | None -> user_err Pp.(str "Unknown or unprintable grammar entry.")
   | Some entries ->
-    let pr_one (AnyEntry e) =
+    let pr_one (Pcoq.AnyEntry e) =
       str "Entry " ++ str (Pcoq.Gram.Entry.name e) ++ str " is" ++ fnl () ++
       pr_entry e
     in

@@ -545,11 +545,10 @@ let print_located_tactic qid =
 (** Grammar *)
 
 let () =
-  let open Metasyntax in
   let entries = [
     AnyEntry Pltac.tactic_expr;
     AnyEntry Pltac.binder_tactic;
     AnyEntry Pltac.simple_tactic;
     AnyEntry Pltac.tactic_arg;
   ] in
-  register_grammar "tactic" entries
+  register_grammars_by_name "tactic" entries
