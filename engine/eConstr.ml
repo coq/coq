@@ -573,14 +573,20 @@ let test_constr_universes sigma leq m n =
   else 
     let cstrs = ref Constraints.empty in
     let eq_universes strict l l' = 
+      let l = EInstance.kind sigma (EInstance.make l) in
+      let l' = EInstance.kind sigma (EInstance.make l') in
       cstrs := enforce_eq_instances_univs strict l l' !cstrs; true in
     let eq_sorts s1 s2 = 
+      let s1 = ESorts.kind sigma (ESorts.make s1) in
+      let s2 = ESorts.kind sigma (ESorts.make s2) in
       if Sorts.equal s1 s2 then true
       else (cstrs := Constraints.add 
 	      (Sorts.univ_of_sort s1,UEq,Sorts.univ_of_sort s2) !cstrs; 
 	    true)
     in
     let leq_sorts s1 s2 = 
+      let s1 = ESorts.kind sigma (ESorts.make s1) in
+      let s2 = ESorts.kind sigma (ESorts.make s2) in
       if Sorts.equal s1 s2 then true
       else 
 	(cstrs := Constraints.add 
