@@ -9,6 +9,7 @@
 ## If you're mentionned here and want to update your information,
 ## either amend this file and commit it, or contact the coqdev list
 
+Abhishek Anand <abhishek.anand.iitg@gmail.com>     Abhishek Anand (@brixpro-home) <abhishek.anand.iitg@gmail.com>
 Jim Apple <github.public@jbapple.com>              jbapple <github.public@jbapple.com>
 Bruno Barras <bruno.barras@inria.fr>               barras <barras@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Bruno Barras <bruno.barras@inria.fr>               barras-local <barras-local@85f007b7-540e-0410-9357-904b9bb8a0f7>
@@ -27,7 +28,7 @@ Judicaël Courant <courant@gforge>                  courant <courant@85f007b7-54
 Pierre Courtieu <Pierre.Courtieu@cnam.fr>          courtieu <courtieu@85f007b7-540e-0410-9357-904b9bb8a0f7>
 David Delahaye <delahaye@gforge>                   delahaye <delahaye@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Maxime Dénès <mail@maximedenes.fr>                 mdenes <mdenes@85f007b7-540e-0410-9357-904b9bb8a0f7>
-Daniel de Rauglaudre <daniel.de_rauglaudre@inria.fr> ddr <ddr@85f007b7-540e-0410-9357-904b9bb8a0f7>
+Maxime Dénès <mail@maximedenes.fr>                 Maxime Denes <maximedenes@gillespie.inria.fr>
 Olivier Desmettre <desmettr@gforge>                desmettr <desmettr@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Damien Doligez <doligez@gforge>                    doligez <doligez@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Jean-Christophe Filliâtre <Jean-Christophe.Filliatre@lri.fr> filliatr <filliatr@85f007b7-540e-0410-9357-904b9bb8a0f7>
@@ -36,7 +37,9 @@ Julien Forest <julien.forest@ensiie.fr>            jforest <jforest@85f007b7-540
 Julien Forest <julien.forest@ensiie.fr>            forest <jforest@mourvedre.ensiie.fr>
 Julien Forest <julien.forest@ensiie.fr>            jforest <jforest@thune>
 Julien Forest <julien.forest@ensiie.fr>            jforest <jforest@daneel.lan.home>
+Julien Forest <julien.forest@ensiie.fr>            Julien Forest <forest@ensiie.fr>
 Emilio Jesus Gallego Arias <e+git@x80.org>         Emilio Jesús Gallego Arias <e+git@x80.org>
+Gaëtan Gilbert <gaetan.gilbert@ens-lyon.fr>        Gaetan Gilbert <gaetan.gilbert@ens-lyon.fr>
 Stéphane Glondu <steph@glondu.net>                 glondu <glondu@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Stéphane Glondu <steph@glondu.net>                 Stephane Glondu <steph@glondu.net>
 Benjamin Grégoire <benjamin.gregoire@inria.fr>     Benjamin Gregoire <Benjamin.Gregoire@inria.fr>
@@ -51,9 +54,12 @@ Tom Hutchinson <thutchin@gforge>                   thutchin <thutchin@85f007b7-5
 Cezary Kaliszyk <cek@gforge>                       cek <cek@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Florent Kirchner <fkirchne@gforge>                 fkirchne <fkirchne@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Florent Kirchner <fkirchne@gforge>                 kirchner <kirchner@85f007b7-540e-0410-9357-904b9bb8a0f7>
-Matej Kosik <matej.kosik@inria.fr>                 Matej Kosik <m4tej.kosik@gmail.com>
+Matej Košík <matej.kosik@inria.fr>                 Matej Kosik <m4tej.kosik@gmail.com>
+Matej Košík <matej.kosik@inria.fr>                 Matej Kosik <matej.kosik@inria.fr>
 Marc Lasson <marc.lasson@gmail.com>                mlasson <marc.lasson@gmail.com>
+William Lawvere <mundungus.corleone@gmail.com>     william-lawvere <mundungus.corleone@gmail.com>
 Pierre Letouzey <pierre.letouzey@inria.fr>         letouzey <letouzey@85f007b7-540e-0410-9357-904b9bb8a0f7>
+Pierre Letouzey <pierre.letouzey@inria.fr>         letouzey <pierre.letouzey@inria.fr>
 Assia Mahboubi <assia.mahboubi@inria.fr>           amahboub <amahboub@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Evgeny Makarov <emakarov@gforge>                   emakarov <emakarov@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Gregory Malecha <gmalecha@eecs.harvard.edu>        Gregory Malecha <gmalecha@cs.harvard.edu>
@@ -68,15 +74,19 @@ Julien Narboux <jnarboux@gforge>                   jnarboux <jnarboux@85f007b7-5
 Julien Narboux <jnarboux@gforge>                   narboux <narboux@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Jean-Marc Notin <notin@gforge>                     notin,no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty <notin,no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Jean-Marc Notin <notin@gforge>                     notin <notin@85f007b7-540e-0410-9357-904b9bb8a0f7>
-Russel O'Connor <roconnor@gforge>                  roconnor <roconnor@85f007b7-540e-0410-9357-904b9bb8a0f7>
+Russell O'Connor <roconnor@blockstream.io>         roconnor <roconnor@85f007b7-540e-0410-9357-904b9bb8a0f7>
+Russell O'Connor <roconnor@blockstream.io>         roconnor-blockstream <roconnor@blockstream.com>
 Christine Paulin <cpaulin@gforge>                  cpaulin <cpaulin@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Christine Paulin <cpaulin@gforge>                  mohring <mohring@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Pierre-Marie Pédrot <pierre-marie.pedrot@inria.fr> ppedrot <ppedrot@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Loïc Pottier <pottier@gforge>                      pottier <pottier@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Matthias Puech <puech@gforge>                      puech <puech@85f007b7-540e-0410-9357-904b9bb8a0f7>
-Yann Régis-Gianas <yrg@pps.univ-paris-diderot.fr>  regisgia <regisgia@85f007b7-540e-0410-9357-904b9bb8a0f7>
+Lars Rasmusson <lars.rasmusson@sics.se>            larsr <Lars.Rasmusson@sics.se>
+Daniel de Rauglaudre <daniel.de_rauglaudre@inria.fr> ddr <ddr@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Daniel de Rauglaudre <daniel.de_rauglaudre@inria.fr> Daniel de Rauglaudre <daniel.de_rauglaudre@inria.fr>
 Daniel de Rauglaudre <daniel.de_rauglaudre@inria.fr> Daniel De Rauglaudre <ddr@gforge>
+Yann Régis-Gianas <yrg@pps.univ-paris-diderot.fr>  regisgia <regisgia@85f007b7-540e-0410-9357-904b9bb8a0f7>
+Yann Régis-Gianas <yrg@pps.univ-paris-diderot.fr>  Regis-Gianas <yrg@pps.univ-paris-diderot.fr>
 Clément Renard <clrenard@gforge>                   clrenard <clrenard@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Claudio Sacerdoti Coen <sacerdot@gforge>           sacerdot <sacerdot@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Vincent Siles <vsiles@gforge>                      vsiles <vsiles@85f007b7-540e-0410-9357-904b9bb8a0f7>
