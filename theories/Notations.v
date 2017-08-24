@@ -27,7 +27,7 @@ match Control.case t with
   Control.plus (fun _ => s x) (fun e => s (k e))
 end.
 
-Ltac2 fail0 (_ : unit) := Control.zero Tactic_failure.
+Ltac2 fail0 (_ : unit) := Control.enter (fun _ => Control.zero Tactic_failure).
 
 Ltac2 Notation fail := fail0 ().
 
