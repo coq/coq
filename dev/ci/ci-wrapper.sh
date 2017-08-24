@@ -19,6 +19,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "${DIR}/../.."
 
 "${DIR}/${CI_SCRIPT}" 2>&1 | tee time-of-build.log
-echo 'Aggregating timing log...' && travis_fold 'start' 'coq.test.timing'
+travis_fold 'start' 'coq.test.timing' && echo 'Aggregating timing log...'
 python ./tools/make-one-time-file.py time-of-build.log
 travis_fold 'end' 'coq.test.timing'
