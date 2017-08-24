@@ -317,7 +317,7 @@ let loc_of_ne_list l = Loc.merge_opt (fst (List.hd l)) (fst (List.last l))
 
 GEXTEND Gram
   GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause
-          q_rewriting q_clause q_dispatch q_occurrences;
+          q_rewriting q_clause q_dispatch q_occurrences q_strategy_flag;
   anti:
     [ [ "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id) ] ]
   ;
@@ -567,6 +567,41 @@ GEXTEND Gram
   ;
   q_occurrences:
     [ [ occs = occs -> occs ] ]
+  ;
+  red_flag:
+    [ [ IDENT "beta" -> Loc.tag ~loc:!@loc @@ QBeta
+      | IDENT "iota" -> Loc.tag ~loc:!@loc @@ QIota
+      | IDENT "match" -> Loc.tag ~loc:!@loc @@ QMatch
+      | IDENT "fix" -> Loc.tag ~loc:!@loc @@ QFix
+      | IDENT "cofix" -> Loc.tag ~loc:!@loc @@ QCofix
+      | IDENT "zeta" -> Loc.tag ~loc:!@loc @@ QZeta
+      | IDENT "delta"; d = delta_flag -> d
+    ] ]
+  ;
+  refglobal:
+    [ [ "&"; id = Prim.ident -> QExpr (Libnames.Ident (Loc.tag ~loc:!@loc id))
+      | qid = Prim.qualid -> QExpr (Libnames.Qualid qid)
+      | "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id)
+    ] ]
+  ;
+  refglobals:
+    [ [ gl = LIST1 refglobal -> Loc.tag ~loc:!@loc gl ] ]
+  ;
+  delta_flag:
+    [ [ "-"; "["; idl = refglobals; "]" -> Loc.tag ~loc:!@loc @@ QDeltaBut idl
+      | "["; idl = refglobals; "]" -> Loc.tag ~loc:!@loc @@ QConst idl
+      | -> Loc.tag ~loc:!@loc @@ QDeltaBut (Loc.tag ~loc:!@loc [])
+    ] ]
+  ;
+  strategy_flag:
+    [ [ s = LIST1 red_flag -> Loc.tag ~loc:!@loc s
+      | d = delta_flag ->
+        Loc.tag ~loc:!@loc
+          [Loc.tag ~loc:!@loc QBeta; Loc.tag ~loc:!@loc QIota; Loc.tag ~loc:!@loc QZeta; d]
+    ] ]
+  ;
+  q_strategy_flag:
+    [ [ flag = strategy_flag -> flag ] ]
   ;
 END
 

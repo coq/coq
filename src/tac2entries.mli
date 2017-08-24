@@ -68,4 +68,5 @@ val q_rewriting : rewriting Pcoq.Gram.entry
 val q_clause : clause Pcoq.Gram.entry
 val q_dispatch : dispatch Pcoq.Gram.entry
 val q_occurrences : occurrences Pcoq.Gram.entry
+val q_strategy_flag : strategy_flag Pcoq.Gram.entry
 end

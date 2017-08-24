@@ -236,3 +236,53 @@ let of_dispatch tacs =
   in
   let map e = of_pair default (fun l -> of_list ~loc default l) (Loc.tag ~loc e) in
   of_pair (fun l -> of_list ~loc default l) (fun r -> of_option ~loc map r) tacs
+
+let make_red_flag l =
+  let open Genredexpr in
+  let rec add_flag red = function
+  | [] -> red
+  | (_, flag) :: lf ->
+    let red = match flag with
+    | QBeta -> { red with rBeta = true }
+    | QMatch -> { red with rMatch = true }
+    | QFix -> { red with rFix = true }
+    | QCofix -> { red with rCofix = true }
+    | QZeta -> { red with rZeta = true }
+    | QConst (loc, l) ->
+        if red.rDelta then
+          CErrors.user_err ?loc Pp.(str
+            "Cannot set both constants to unfold and constants not to unfold");
+        { red with rConst = red.rConst @ l }
+    | QDeltaBut (loc, l) ->
+        if red.rConst <> [] && not red.rDelta then
+          CErrors.user_err ?loc Pp.(str
+            "Cannot set both constants to unfold and constants not to unfold");
+        { red with rConst = red.rConst @ l; rDelta = true }
+    | QIota ->
+      { red with rMatch = true; rFix = true; rCofix = true }
+    in
+    add_flag red lf
+  in
+  add_flag
+    {rBeta = false; rMatch = false; rFix = false; rCofix = false;
+     rZeta = false; rDelta = false; rConst = []}
+    l
+
+let of_strategy_flag (loc, flag) =
+  let open Genredexpr in
+  let loc = Option.default dummy_loc loc in
+  let flag = make_red_flag flag in
+  let of_reference ref =
+    let loc = Libnames.loc_of_reference ref in
+    inj_wit ?loc Tac2env.wit_reference ref
+  in
+  let of_ref r = of_anti of_reference r in
+  CTacRec (loc, [
+    std_proj "rBeta", of_bool ~loc flag.rBeta;
+    std_proj "rMatch", of_bool ~loc flag.rMatch;
+    std_proj "rFix", of_bool ~loc flag.rFix;
+    std_proj "rCofix", of_bool ~loc flag.rCofix;
+    std_proj "rZeta", of_bool ~loc flag.rZeta;
+    std_proj "rDelta", of_bool ~loc flag.rDelta;
+    std_proj "rConst", of_list ~loc of_ref flag.rConst;
+  ])

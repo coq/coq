@@ -101,3 +101,17 @@ type rewriting = rewriting_r located
 type dispatch_r = raw_tacexpr option list * (raw_tacexpr option * raw_tacexpr option list) option
 
 type dispatch = dispatch_r located
+
+type red_flag_r =
+| QBeta
+| QIota
+| QMatch
+| QFix
+| QCofix
+| QZeta
+| QConst of Libnames.reference or_anti list located
+| QDeltaBut of Libnames.reference or_anti list located
+
+type red_flag = red_flag_r located
+
+type strategy_flag = red_flag list located

@@ -930,6 +930,7 @@ let () = add_expr_scope "rewriting" q_rewriting Tac2quote.of_rewriting
 let () = add_expr_scope "clause" q_clause Tac2quote.of_clause
 let () = add_expr_scope "occurrences" q_occurrences Tac2quote.of_occurrences
 let () = add_expr_scope "dispatch" q_dispatch Tac2quote.of_dispatch
+let () = add_expr_scope "strategy" q_strategy_flag Tac2quote.of_strategy_flag
 
 let () = add_generic_scope "constr" Pcoq.Constr.constr Stdarg.wit_constr
 let () = add_generic_scope "open_constr" Pcoq.Constr.constr Stdarg.wit_open_constr
