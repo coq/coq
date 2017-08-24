@@ -268,15 +268,17 @@ let make_red_flag l =
      rZeta = false; rDelta = false; rConst = []}
     l
 
+let of_reference r =
+  let of_ref ref =
+    let loc = Libnames.loc_of_reference ref in
+    inj_wit ?loc Tac2env.wit_reference ref
+  in
+  of_anti of_ref r
+
 let of_strategy_flag (loc, flag) =
   let open Genredexpr in
   let loc = Option.default dummy_loc loc in
   let flag = make_red_flag flag in
-  let of_reference ref =
-    let loc = Libnames.loc_of_reference ref in
-    inj_wit ?loc Tac2env.wit_reference ref
-  in
-  let of_ref r = of_anti of_reference r in
   CTacRec (loc, [
     std_proj "rBeta", of_bool ~loc flag.rBeta;
     std_proj "rMatch", of_bool ~loc flag.rMatch;
@@ -284,5 +286,5 @@ let of_strategy_flag (loc, flag) =
     std_proj "rCofix", of_bool ~loc flag.rCofix;
     std_proj "rZeta", of_bool ~loc flag.rZeta;
     std_proj "rDelta", of_bool ~loc flag.rDelta;
-    std_proj "rConst", of_list ~loc of_ref flag.rConst;
+    std_proj "rConst", of_list ~loc of_reference flag.rConst;
   ])

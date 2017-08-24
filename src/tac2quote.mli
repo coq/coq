@@ -48,6 +48,8 @@ val of_rewriting : rewriting -> raw_tacexpr
 
 val of_occurrences : occurrences -> raw_tacexpr
 
+val of_reference : Libnames.reference or_anti -> raw_tacexpr
+
 val of_hyp : ?loc:Loc.t -> Id.t located -> raw_tacexpr
 (** id ↦ 'Control.hyp @id' *)
 

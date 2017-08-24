@@ -317,7 +317,8 @@ let loc_of_ne_list l = Loc.merge_opt (fst (List.hd l)) (fst (List.last l))
 
 GEXTEND Gram
   GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause
-          q_rewriting q_clause q_dispatch q_occurrences q_strategy_flag;
+          q_rewriting q_clause q_dispatch q_occurrences q_strategy_flag
+          q_reference;
   anti:
     [ [ "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id) ] ]
   ;
@@ -583,6 +584,9 @@ GEXTEND Gram
       | qid = Prim.qualid -> QExpr (Libnames.Qualid qid)
       | "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id)
     ] ]
+  ;
+  q_reference:
+    [ [ r = refglobal -> r ] ]
   ;
   refglobals:
     [ [ gl = LIST1 refglobal -> Loc.tag ~loc:!@loc gl ] ]
