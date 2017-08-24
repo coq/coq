@@ -6,12 +6,19 @@
 
 set -eo pipefail
 
+function travis_fold {
+    if [ -n "${TRAVIS}" ];
+    then
+	echo -n "travis_fold:$1:$2\\r"
+    fi
+}
+
 CI_SCRIPT="$1"
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # assume this script is in dev/ci/, cd to the root Coq directory
 cd "${DIR}/../.."
 
 "${DIR}/${CI_SCRIPT}" 2>&1 | tee time-of-build.log
-echo 'Aggregating timing log...' && echo -en 'travis_fold:start:coq.test.timing\\r'
+echo 'Aggregating timing log...' && travis_fold 'start' 'coq.test.timing'
 python ./tools/make-one-time-file.py time-of-build.log
-echo -en 'travis_fold:end:coq.test.timing\\r'
+travis_fold 'end' 'coq.test.timing'
