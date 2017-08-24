@@ -9,7 +9,7 @@ set -eo pipefail
 function travis_fold {
     if [ -n "${TRAVIS}" ];
     then
-	echo -n "travis_fold:$1:$2\\r"
+	echo "travis_fold:$1:$2"
     fi
 }
 
