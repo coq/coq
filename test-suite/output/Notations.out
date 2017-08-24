@@ -133,3 +133,5 @@ fun (x : nat) (p : x = x) => match p with
                              | 1 => 1
                              end = p
      : forall x : nat, x = x -> Prop
+bar  0
+     : nat

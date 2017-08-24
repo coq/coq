@@ -98,8 +98,7 @@ let pr_grammar = function
    quote (except a single quote alone) must be quoted) *)
 
 let parse_format ((loc, str) : lstring) =
-  let str = " "^str in
-  let l = String.length str in
+  let len = String.length str in
   let push_token a = function
     | cur::l -> (a::cur)::l
     | [] -> [[a]] in
@@ -109,16 +108,16 @@ let parse_format ((loc, str) : lstring) =
     | a::(_::_ as l) -> push_token (UnpBox (b,a)) l
     | _ -> user_err Pp.(str "Non terminated box in format.") in
   let close_quotation i =
-    if i < String.length str && str.[i] == '\'' && (Int.equal (i+1) l || str.[i+1] == ' ')
+    if i < len && str.[i] == '\'' && (Int.equal (i+1) len || str.[i+1] == ' ')
     then i+1
     else user_err Pp.(str "Incorrectly terminated quoted expression.") in
   let rec spaces n i =
-    if i < String.length str && str.[i] == ' ' then spaces (n+1) (i+1)
+    if i < len && str.[i] == ' ' then spaces (n+1) (i+1)
     else n in
   let rec nonspaces quoted n i =
-    if i < String.length str && str.[i] != ' ' then
+    if i < len && str.[i] != ' ' then
       if str.[i] == '\'' && quoted &&
-        (i+1 >= String.length str || str.[i+1] == ' ')
+        (i+1 >= len || str.[i+1] == ' ')
       then if Int.equal n 0 then user_err Pp.(str "Empty quoted token.") else n
       else nonspaces quoted (n+1) (i+1)
     else
@@ -126,26 +125,26 @@ let parse_format ((loc, str) : lstring) =
       else n in
   let rec parse_non_format i =
     let n = nonspaces false 0 i in
-    push_token (UnpTerminal (String.sub str i n)) (parse_token (i+n))
+    push_token (UnpTerminal (String.sub str i n)) (parse_token 1 (i+n))
   and parse_quoted n i =
-    if i < String.length str then match str.[i] with
+    if i < len then match str.[i] with
       (* Parse " // " *)
-      | '/' when i <= String.length str && str.[i+1] == '/' ->
+      | '/' when i <= len && str.[i+1] == '/' ->
           (* We forget the useless n spaces... *)
 	  push_token (UnpCut PpFnl)
-            (parse_token (close_quotation (i+2)))
+            (parse_token 1 (close_quotation (i+2)))
       (* Parse " .. / .. " *)
-      | '/' when i <= String.length str ->
+      | '/' when i <= len ->
 	  let p = spaces 0 (i+1) in
 	  push_token (UnpCut (PpBrk (n,p)))
-            (parse_token (close_quotation (i+p+1)))
+            (parse_token 1 (close_quotation (i+p+1)))
       | c ->
       (* The spaces are real spaces *)
       push_white n (match c with
       | '[' ->
-	  if i <= String.length str then match str.[i+1] with
+	  if i <= len then match str.[i+1] with
 	    (* Parse " [h .. ",  *)
-	    | 'h' when i+1 <= String.length str && str.[i+2] == 'v' ->
+	    | 'h' when i+1 <= len && str.[i+2] == 'v' ->
 		  (parse_box (fun n -> PpHVB n) (i+3))
 		(* Parse " [v .. ",  *)
 	    | 'v' ->
@@ -157,39 +156,39 @@ let parse_format ((loc, str) : lstring) =
 	  else user_err Pp.(str "\"v\", \"hv\" or \" \" expected after \"[\" in format.")
       (* Parse "]"  *)
       | ']' ->
-	  ([] :: parse_token (close_quotation (i+1)))
+	  ([] :: parse_token 1 (close_quotation (i+1)))
       (* Parse a non formatting token *)
       | c ->
 	  let n = nonspaces true 0 i in
 	  push_token (UnpTerminal (String.sub str (i-1) (n+2)))
-	    (parse_token (close_quotation (i+n))))
+	    (parse_token 1 (close_quotation (i+n))))
     else
       if Int.equal n 0 then []
       else user_err Pp.(str "Ending spaces non part of a format annotation.")
   and parse_box box i =
     let n = spaces 0 i in
-    close_box i (box n) (parse_token (close_quotation (i+n)))
-  and parse_token i =
+    close_box i (box n) (parse_token 1 (close_quotation (i+n)))
+  and parse_token k i =
     let n = spaces 0 i in
     let i = i+n in
-    if i < l then match str.[i] with
+    if i < len then match str.[i] with
       (* Parse a ' *)
-      |	'\'' when i+1 >= String.length str || str.[i+1] == ' ' ->
-	  push_white (n-1) (push_token (UnpTerminal "'") (parse_token (i+1)))
+      |	'\'' when i+1 >= len || str.[i+1] == ' ' ->
+	  push_white (n-k) (push_token (UnpTerminal "'") (parse_token 1 (i+1)))
       (* Parse the beginning of a quoted expression *)
       |	'\'' ->
-          parse_quoted (n-1) (i+1)
+          parse_quoted (n-k) (i+1)
       (* Otherwise *)
       | _ ->
-          push_white (n-1) (parse_non_format i)
+          push_white (n-k) (parse_non_format i)
     else push_white n [[]]
   in
   try
-    if not (String.is_empty str) then match parse_token 0 with
+    if not (String.is_empty str) then match parse_token 0 0 with
       | [l] -> l
       | _ -> user_err Pp.(str "Box closed without being opened in format.")
     else
-      user_err Pp.(str "Empty format.")
+      []
   with reraise ->
     let (e, info) = CErrors.push reraise in
     let info = Option.cata (Loc.add_loc info) info loc in

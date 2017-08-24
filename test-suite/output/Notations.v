@@ -291,3 +291,11 @@ Check fun (x:nat) (p : x=x) => match p with ONE => ONE end = p.
 Notation "1" := eq_refl.
 Check fun (x:nat) (p : x=x) => match p with 1 => 1 end = p.
 
+(* Check bug 5693 *)
+
+Module M.
+Definition A := 0.
+Definition bar (a b : nat) := plus a b.
+Notation "" := A (format "", only printing).
+Check (bar A 0).
+End M.
