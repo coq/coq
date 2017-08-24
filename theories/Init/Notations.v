@@ -78,6 +78,18 @@ Reserved Notation "{ x : A  |  P  & Q }" (at level 0, x at level 99).
 Reserved Notation "{ x : A  & P }" (at level 0, x at level 99).
 Reserved Notation "{ x : A  & P  & Q }" (at level 0, x at level 99).
 
+(** Support for Gonthier-Ssreflect's "if c is pat then u else v" *)
+
+Module IfNotations.
+
+Notation "'if' c 'is' p 'then' u 'else' v" :=
+  (match c with p => u | _ => v end)
+  (at level 200, p pattern at level 100).
+
+End IfNotations.
+
+(** Scopes *)
+
 Delimit Scope type_scope with type.
 Delimit Scope function_scope with function.
 Delimit Scope core_scope with core.
