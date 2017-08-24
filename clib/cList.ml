@@ -62,7 +62,7 @@ sig
   val fold_right_and_left :
       ('a -> 'b -> 'b list -> 'a) -> 'b list -> 'a -> 'a
   val fold_left3 : ('a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b list -> 'c list -> 'd list -> 'a
-  val fold_left2_set : exn -> ('a -> 'b -> 'c -> 'a) -> 'a -> 'b list -> 'c list -> 'a
+  val fold_left2_set : exn -> ('a -> 'b -> 'c -> 'b list -> 'c list -> 'a) -> 'a -> 'b list -> 'c list -> 'a
   val for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
   val except : 'a eq -> 'a -> 'a list -> 'a list
   val remove : 'a eq -> 'a -> 'a list -> 'a list
@@ -477,14 +477,12 @@ let fold_right_and_left f l hd =
 let rec fold_left2_set e f x l1 l2 =
   match l1 with
   | a1::l1 ->
-     let rec find = function
+     let rec find seen = function
        | [] -> raise e
        | a2::l2 ->
-          try f x a1 a2, l2
-          with e' when e' = e ->
-            let x, l2' = find l2 in x, a2::l2' in
-     let x, l2' = find l2 in
-     fold_left2_set e f x l1 l2'
+          try fold_left2_set e f (f x a1 a2 l1 l2) l1 (List.rev_append seen l2)
+          with e' when e' = e -> find (a2::seen) l2 in
+     find [] l2
   | [] ->
      if l2 = [] then x else raise e
 

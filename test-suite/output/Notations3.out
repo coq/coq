@@ -217,3 +217,7 @@ exists '({{{{x, y}}, true}} | {{{{x, y}}, false}}), x > y
      : Prop
 ∀ '({{{{x, y}}, true}} | {{{{x, y}}, false}}), x > y
      : Prop
+fun p : nat => if p is S n then n else 0
+     : nat -> nat
+fun p : comparison => if p is Lt then 1 else 0
+     : comparison -> nat

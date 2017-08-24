@@ -127,7 +127,7 @@ sig
       exception otherwise; sets should have the same size; raise the
       given exception if no pairing of the two sets is found;;
       complexity in O(n^2) *)
-  val fold_left2_set : exn -> ('a -> 'b -> 'c -> 'a) -> 'a -> 'b list -> 'c list -> 'a
+  val fold_left2_set : exn -> ('a -> 'b -> 'c -> 'b list -> 'c list -> 'a) -> 'a -> 'b list -> 'c list -> 'a
 
   val for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
   val except : 'a eq -> 'a -> 'a list -> 'a list

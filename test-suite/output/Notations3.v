@@ -383,3 +383,11 @@ Check fun '(((x,y),true)|((x,y),false)) => x+y.
 Check myexists (((x,y),true)|((x,y),false)), x>y.
 Check exists '(((x,y),true)|((x,y),false)), x>y.
 Check ∀ '(((x,y),true)|((x,y),false)), x>y.
+
+(* Check Georges' printability of a "if is then else" notation *)
+
+Notation "'if' c 'is' p 'then' u 'else' v" :=
+  (match c with p => u | _ => v end)
+  (at level 200, p pattern at level 100).
+Check fun p => if p is S n then n else 0.
+Check fun p => if p is Lt then 1 else 0.

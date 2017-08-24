@@ -975,14 +975,15 @@ let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
   | (Anonymous,Anonymous) -> alp,sigma
   | _ -> raise No_match
 
-let rec match_cases_pattern_binders metas (alp,sigma as acc) pat1 pat2 =
+let rec match_cases_pattern_binders allow_catchall metas (alp,sigma as acc) pat1 pat2 =
   match DAst.get pat1, DAst.get pat2 with
   | _, PatVar (Name id2) when is_onlybinding_pattern_like_meta id2 metas ->
       bind_binding_env alp sigma id2 [pat1]
   | PatVar na1, PatVar na2 -> match_names metas acc na1 na2
+  | _, PatVar Anonymous when allow_catchall -> acc
   | PatCstr (c1,patl1,na1), PatCstr (c2,patl2,na2)
       when eq_constructor c1 c2 && Int.equal (List.length patl1) (List.length patl2) ->
-      List.fold_left2 (match_cases_pattern_binders metas)
+      List.fold_left2 (match_cases_pattern_binders false metas)
         (match_names metas acc na1 na2) patl1 patl2
   | _ -> raise No_match
 
@@ -1129,9 +1130,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
      match_binders u alp metas na1 na2
        (match_in u alp metas (match_in u alp metas sigma b1 b2) t1 t2) c1 c2
   | GCases (sty1,rtno1,tml1,eqnl1), NCases (sty2,rtno2,tml2,eqnl2)
-      when sty1 == sty2
-	 && Int.equal (List.length tml1) (List.length tml2)
-	 && Int.equal (List.length eqnl1) (List.length eqnl2) ->
+      when sty1 == sty2 && Int.equal (List.length tml1) (List.length tml2) ->
       let rtno1' = abstract_return_type_context_glob_constr tml1 rtno1 in
       let rtno2' = abstract_return_type_context_notation_constr tml2 rtno2 in
       let sigma =
@@ -1141,7 +1140,14 @@ let rec match_ inner u alp metas sigma a1 a2 =
       let sigma = List.fold_left2
       (fun s (tm1,_) (tm2,_) ->
         match_in u alp metas s tm1 tm2) sigma tml1 tml2 in
-      List.fold_left2_set No_match (match_equations u alp metas) sigma eqnl1 eqnl2
+      (* Try two different strategies for matching clauses *)
+      (try
+        List.fold_left2_set No_match (match_equations u alp metas) sigma eqnl1 eqnl2
+      with
+        No_match ->
+        List.fold_left2_set No_match (match_disjunctive_equations u alp metas) sigma
+           (Detyping.factorize_eqns eqnl1)
+           (List.map (fun (patl,rhs) -> ([patl],rhs)) eqnl2))
   | GLetTuple (nal1,(na1,to1),b1,c1), NLetTuple (nal2,(na2,to2),b2,c2)
       when Int.equal (List.length nal1) (List.length nal2) ->
       let sigma = match_opt (match_binders u alp metas na1 na2) sigma to1 to2 in
@@ -1241,12 +1247,23 @@ and match_extended_binders ?loc isprod u alp metas na1 na2 bk t sigma b1 b2 =
      let (alp,sigma) = match_names metas (alp,sigma) na1 na2 in
      match_in u alp metas sigma b1 b2
 
-and match_equations u alp metas sigma (_,(_,patl1,rhs1)) (patl2,rhs2) =
+and match_equations u alp metas sigma (_,(ids,patl1,rhs1)) (patl2,rhs2) rest1 rest2 =
+  (* patl1 and patl2 have the same length because they respectively
+     correspond to some tml1 and tml2 that have the same length *)
+  let allow_catchall = (rest2 = [] && ids = []) in
+  let (alp,sigma) =
+    List.fold_left2 (match_cases_pattern_binders allow_catchall metas)
+      (alp,sigma) patl1 patl2 in
+  match_in u alp metas sigma rhs1 rhs2
+
+and match_disjunctive_equations u alp metas sigma (_,(ids,disjpatl1,rhs1)) (disjpatl2,rhs2) _ _ =
   (* patl1 and patl2 have the same length because they respectively
      correspond to some tml1 and tml2 that have the same length *)
   let (alp,sigma) =
-    List.fold_left2 (match_cases_pattern_binders metas)
-      (alp,sigma) patl1 patl2 in
+    List.fold_left2_set No_match
+      (fun alp_sigma patl1 patl2 _ _ ->
+        List.fold_left2 (match_cases_pattern_binders false metas) alp_sigma patl1 patl2)
+      (alp,sigma) disjpatl1 disjpatl2 in
   match_in u alp metas sigma rhs1 rhs2
 
 let match_notation_constr u c (metas,pat) =
