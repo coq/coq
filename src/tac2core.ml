@@ -21,6 +21,7 @@ open Proofview.Notations
 
 module Value = Tac2ffi
 
+let std_core n = KerName.make2 Tac2env.std_prefix (Label.of_id (Id.of_string_soft n))
 let coq_core n = KerName.make2 Tac2env.coq_prefix (Label.of_id (Id.of_string_soft n))
 
 module Core =
@@ -35,6 +36,7 @@ let t_constr = coq_core "constr"
 let t_pattern = coq_core "pattern"
 let t_ident = coq_core "ident"
 let t_option = coq_core "option"
+let t_reference = std_core "reference"
 
 let c_nil = coq_core "[]"
 let c_cons = coq_core "::"
@@ -730,7 +732,7 @@ let () =
 let () =
   let interp _ gr = return (Value.of_reference gr) in
   let obj = {
-    ml_type = t_pattern;
+    ml_type = t_reference;
     ml_interp = interp;
   } in
   define_ml_object Tac2env.wit_reference obj
