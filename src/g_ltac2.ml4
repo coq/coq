@@ -125,7 +125,8 @@ GEXTEND Gram
       | "("; a = SELF; ":"; t = tac2type; ")" -> CTacCnv (!@loc, a, t)
       | "()" -> CTacCst (!@loc, AbsKn (Tuple 0))
       | "("; ")" -> CTacCst (!@loc, AbsKn (Tuple 0))
-      | "["; a = LIST0 tac2expr LEVEL "5" SEP ";"; "]" -> CTacLst (Loc.tag ~loc:!@loc a)
+      | "["; a = LIST0 tac2expr LEVEL "5" SEP ";"; "]" ->
+        Tac2quote.of_list ~loc:!@loc (fun x -> x) a
       | "{"; a = tac2rec_fieldexprs; "}" -> CTacRec (!@loc, a)
       | a = tactic_atom -> a ]
     ]

@@ -827,19 +827,13 @@ let () = add_scope "list0" begin function
 | [tok] ->
   let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
   let scope = Extend.Alist0 scope in
-  let act l =
-    let l = List.map act l in
-    CTacLst (None, l)
-  in
+  let act l = Tac2quote.of_list act l in
   Tac2entries.ScopeRule (scope, act)
 | [tok; SexprStr (_, str)] ->
   let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
   let sep = Extend.Atoken (CLexer.terminal str) in
   let scope = Extend.Alist0sep (scope, sep) in
-  let act l =
-    let l = List.map act l in
-    CTacLst (None, l)
-  in
+  let act l = Tac2quote.of_list act l in
   Tac2entries.ScopeRule (scope, act)
 | _ -> scope_fail ()
 end
@@ -848,19 +842,13 @@ let () = add_scope "list1" begin function
 | [tok] ->
   let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
   let scope = Extend.Alist1 scope in
-  let act l =
-    let l = List.map act l in
-    CTacLst (None, l)
-  in
+  let act l = Tac2quote.of_list act l in
   Tac2entries.ScopeRule (scope, act)
 | [tok; SexprStr (_, str)] ->
   let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
   let sep = Extend.Atoken (CLexer.terminal str) in
   let scope = Extend.Alist1sep (scope, sep) in
-  let act l =
-    let l = List.map act l in
-    CTacLst (None, l)
-  in
+  let act l = Tac2quote.of_list act l in
   Tac2entries.ScopeRule (scope, act)
 | _ -> scope_fail ()
 end
