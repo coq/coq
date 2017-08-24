@@ -157,3 +157,28 @@ intros H.
 split; fold (1 + 0) (1 + 0) in H.
 reflexivity.
 Qed.
+
+Goal 1 + 1 = 2.
+Proof.
+cbv [ Nat.add ].
+reflexivity.
+Qed.
+
+Goal 1 + 1 = 2.
+Proof.
+let x := reference:(Nat.add) in
+cbn beta iota delta [ $x ].
+reflexivity.
+Qed.
+
+Goal 1 + 1 = 2.
+Proof.
+simpl beta.
+reflexivity.
+Qed.
+
+Goal 1 + 1 = 2.
+Proof.
+lazy.
+reflexivity.
+Qed.

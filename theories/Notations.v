@@ -257,13 +257,21 @@ Ltac2 Notation "hnf" cl(opt(clause)) :=
   Std.hnf (default_on_concl cl).
 Ltac2 Notation hnf := hnf.
 
-Ltac2 Notation "vm_compute" pl(opt(seq(pattern, occurrences))) cl(opt(clause)) :=
-  Std.vm pl (default_on_concl cl).
-Ltac2 Notation vm_compute := vm_compute.
+Ltac2 Notation "simpl" s(strategy) pl(opt(seq(pattern, occurrences))) cl(opt(clause)) :=
+  Std.simpl s pl (default_on_concl cl).
+Ltac2 Notation simpl := simpl.
 
-Ltac2 Notation "native_compute" pl(opt(seq(pattern, occurrences))) cl(opt(clause)) :=
-  Std.native pl (default_on_concl cl).
-Ltac2 Notation native_compute := native_compute.
+Ltac2 Notation "cbv" s(strategy) cl(opt(clause)) :=
+  Std.cbv s (default_on_concl cl).
+Ltac2 Notation cbv := cbv.
+
+Ltac2 Notation "cbn" s(strategy) cl(opt(clause)) :=
+  Std.cbn s (default_on_concl cl).
+Ltac2 Notation cbn := cbn.
+
+Ltac2 Notation "lazy" s(strategy) cl(opt(clause)) :=
+  Std.lazy s (default_on_concl cl).
+Ltac2 Notation lazy := lazy.
 
 Ltac2 fold0 pl cl :=
   let cl := default_on_concl cl in
@@ -274,6 +282,14 @@ Ltac2 Notation "fold" pl(thunk(list1(open_constr))) cl(opt(clause)) :=
 
 Ltac2 Notation "pattern" pl(list1(seq(constr, occurrences), ",")) cl(opt(clause)) :=
   Std.pattern pl (default_on_concl cl).
+
+Ltac2 Notation "vm_compute" pl(opt(seq(pattern, occurrences))) cl(opt(clause)) :=
+  Std.vm pl (default_on_concl cl).
+Ltac2 Notation vm_compute := vm_compute.
+
+Ltac2 Notation "native_compute" pl(opt(seq(pattern, occurrences))) cl(opt(clause)) :=
+  Std.native pl (default_on_concl cl).
+Ltac2 Notation native_compute := native_compute.
 
 Ltac2 rewrite0 ev rw cl tac :=
   let tac := match tac with
