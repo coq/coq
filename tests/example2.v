@@ -182,3 +182,11 @@ Proof.
 lazy.
 reflexivity.
 Qed.
+
+Goal let x := 1 + 1 - 1 in x = x.
+Proof.
+intros x.
+unfold &x at 1.
+let x := reference:(Nat.sub) in unfold Nat.add, $x in x.
+reflexivity.
+Qed.

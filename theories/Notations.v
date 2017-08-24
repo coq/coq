@@ -273,6 +273,9 @@ Ltac2 Notation "lazy" s(strategy) cl(opt(clause)) :=
   Std.lazy s (default_on_concl cl).
 Ltac2 Notation lazy := lazy.
 
+Ltac2 Notation "unfold" pl(list1(seq(reference, occurrences), ",")) cl(opt(clause)) :=
+  Std.unfold pl (default_on_concl cl).
+
 Ltac2 fold0 pl cl :=
   let cl := default_on_concl cl in
   Control.enter (fun () => Control.with_holes pl (fun pl => Std.fold pl cl)).
