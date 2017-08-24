@@ -690,6 +690,112 @@ foo 0 ↦ (fun x => x ()) (fun _ => 0)
 Note that abbreviations are not typechecked at all, and may result in typing
 errors after expansion.
 
+# Transition from Ltac1
+
+Owing to the use of a bunch of notations, the transition shouldn't be
+atrociously horrible and shockingly painful up to the point you want to retire
+in the Ariège mountains, living off the land and insulting careless bypassers in
+proto-georgian.
+
+That said, we do *not* guarantee you it is going to be a blissful walk either.
+Hopefully, owing to the fact Ltac2 is typed, the interactive dialogue with Coq
+will help you.
+
+We list the major changes and the transition strategies hereafter.
+
+## Syntax changes
+
+Due to conflicts, a few syntactic rules have changed.
+
+- The dispatch tactical `tac; [foo|bar]` is now written `tac > [foo|bar]`.
+- Levels of a few operators have been revised. Some tacticals now parse as if
+  they were a normal function, i.e. one has to put parentheses around the
+  argument when it is complex, e.g an abstraction. List of affected tacticals:
+  `try`, `repeat`, `do`, `once`, `progress`, `time`, `abstract`.
+- `idtac` is no more. Either use `()` if you expect nothing to happen,
+  `(fun () => ())` if you want a thunk (see next section), or use printing
+  primitives from the `Message` module if you wand to display something.
+
+## Tactic delay
+
+Tactics are not magically delayed anymore, neither as functions nor as
+arguments. It is your responsibility to thunk them beforehand and apply them
+at the call site.
+
+A typical example of a delayed function:
+```
+Ltac foo := blah.
+```
+becomes
+```
+Ltac2 foo () := blah.
+```
+
+All subsequent calls to `foo` must be applied to perform the same effect as
+before.
+
+Likewise, for arguments:
+```
+Ltac bar tac := tac; tac; tac.
+```
+becomes
+```
+Ltac2 bar tac := tac (); tac (); tac ().
+```
+
+We recommend the use of syntactic notations to ease the transition. For
+instance, the first example can alternatively written as:
+```
+Ltac2 foo0 () := blah.
+Ltac2 Notation foo := foo0 ().
+```
+
+This allows to keep the subsequent calls to the tactic as-is, as the
+expression `foo` will be implicitly expanded everywhere into `foo0 ()`. Such
+a trick also works for arguments, as arguments of syntactic notations are
+implicitly thunked. The second example could thus be written as follows.
+
+```
+Ltac2 bar0 tac := tac (); tac (); tac ().
+Ltac2 Notation bar := bar0.
+```
+
+## Variable binding
+
+Ltac1 relies on a crazy amount of dynamic trickery to be able to tell apart
+bound variables from terms, hypotheses and whatnot. There is no such thing in
+Ltac2, as variables are recognized statically and other constructions do not
+live in the same syntactic world. Due to the abuse of quotations, it can
+sometimes be complicated to know what a mere identifier represent in a tactic
+expression. We recommend tracking the context and letting the compiler spit
+typing errors to understand what is going on.
+
+We list below the typical changes one has to perform depending on the static
+errors produced by the typechecker.
+
+### In Ltac expressions
+
+- `Unbound value X`, `Unbound constructor X`:
+  * if `X` is meant to be a term from the current stactic environment, replace
+    the problematic use by `'X`.
+  * if `X` is meant to be a hypothesis from the goal context, replace the
+    problematic use by `&X`.
+
+### In quotations
+
+- `The reference X was not found in the current environment`:
+  * if `X` is meant to be a tactic expression bound by a Ltac2 let or function,
+    replace the problematic use by `$X`.
+  * if `X` is meant to be a hypothesis from the goal context, replace the
+    problematic use by `&X`.
+
+## Exception catching
+
+Ltac2 features a proper exception-catching mechanism. For this reason, the
+Ltac1 mechanism relying on `fail` taking integers and tacticals decreasing it
+has been removed. Now exceptions are preserved by all tacticals, and it is
+your duty to catch it and reraise it depending on your use.
+
 # TODO
 
 - Implement deep pattern-matching.
