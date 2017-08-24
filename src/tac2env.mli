@@ -100,7 +100,7 @@ val interp_primitive : ml_tactic_name -> ml_tactic
 
 type 'a ml_object = {
   ml_type : type_constant;
-  ml_interp : environment -> 'a -> Geninterp.Val.t Proofview.tactic;
+  ml_interp : environment -> 'a -> valexpr Proofview.tactic;
 }
 
 val define_ml_object : ('a, 'b, 'c) genarg_type -> 'b ml_object -> unit
@@ -118,7 +118,12 @@ val std_prefix : ModPath.t
 
 val wit_ltac2 : (raw_tacexpr, glb_tacexpr, Util.Empty.t) genarg_type
 
-val wit_pattern : (Constrexpr.constr_expr, Pattern.constr_pattern, Pattern.constr_pattern) genarg_type
+val wit_pattern : (Constrexpr.constr_expr, Pattern.constr_pattern, Util.Empty.t) genarg_type
+
+val wit_reference : (reference, Globnames.global_reference, Util.Empty.t) genarg_type
+(** Beware, at the raw level, [Qualid [id]] has not the same meaning as
+    [Ident id]. The first is an unqualified global reference, the second is
+    the dynamic reference to id. *)
 
 (** {5 Helper functions} *)
 

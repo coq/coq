@@ -437,6 +437,10 @@ The current implementation recognizes the following built-in quotations:
   holes at runtime (type `Init.constr` as well).
 - "pattern", which parses Coq patterns and produces a pattern used for term
   matching (type `Init.pattern`).
+- "reference", which parses either a `QUALID` or `"&" IDENT`. Qualified names
+  are globalized at internalization into the corresponding global reference,
+  while `&id` is turned into `Std.VarRef id`. This produces at runtime a
+  `Std.reference`.
 
 The following syntactic sugar is provided for two common cases.
 - `@id` is the same as ident:(id)

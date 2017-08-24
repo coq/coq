@@ -62,6 +62,9 @@ val to_pp : valexpr -> Pp.t
 val of_constant : Constant.t -> valexpr
 val to_constant : valexpr -> Constant.t
 
+val of_reference : Globnames.global_reference -> valexpr
+val to_reference : valexpr -> Globnames.global_reference
+
 val of_ext : 'a Val.typ -> 'a -> valexpr
 val to_ext : 'a Val.typ -> valexpr -> 'a
 

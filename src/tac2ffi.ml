@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Util
+open Globnames
 open Genarg
 open Geninterp
 open Tac2expr
@@ -125,3 +126,16 @@ let to_array f = function
 
 let of_constant c = of_ext val_constant c
 let to_constant c = to_ext val_constant c
+
+let of_reference = function
+| VarRef id -> ValBlk (0, [| of_ident id |])
+| ConstRef cst -> ValBlk (1, [| of_constant cst |])
+| IndRef ind -> ValBlk (2, [| of_ext val_inductive ind |])
+| ConstructRef cstr -> ValBlk (3, [| of_ext val_constructor cstr |])
+
+let to_reference = function
+| ValBlk (0, [| id |]) -> VarRef (to_ident id)
+| ValBlk (1, [| cst |]) -> ConstRef (to_constant cst)
+| ValBlk (2, [| ind |]) -> IndRef (to_ext val_inductive ind)
+| ValBlk (3, [| cstr |]) -> ConstructRef (to_ext val_constructor cstr)
+| _ -> assert false

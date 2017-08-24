@@ -105,7 +105,7 @@ let rec interp ist = function
 | GTacExt e ->
   let GenArg (Glbwit tag, e) = e in
   let tpe = Tac2env.interp_ml_object tag in
-  tpe.Tac2env.ml_interp ist e >>= fun e -> return (ValExt e)
+  tpe.Tac2env.ml_interp ist e
 
 and interp_app f args = match f with
 | ValCls { clos_env = ist; clos_var = ids; clos_exp = e } ->

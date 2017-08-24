@@ -246,7 +246,7 @@ let shortest_qualid_of_projection kn =
 
 type 'a ml_object = {
   ml_type : type_constant;
-  ml_interp : environment -> 'a -> Geninterp.Val.t Proofview.tactic;
+  ml_interp : environment -> 'a -> valexpr Proofview.tactic;
 }
 
 module MLTypeObj =
@@ -271,8 +271,9 @@ let std_prefix =
 
 (** Generic arguments *)
 
-let wit_ltac2 = Genarg.make0 "ltac2"
+let wit_ltac2 = Genarg.make0 "ltac2:value"
 let wit_pattern = Genarg.make0 "ltac2:pattern"
+let wit_reference = Genarg.make0 "ltac2:reference"
 
 let is_constructor qid =
   let (_, id) = repr_qualid qid in

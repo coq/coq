@@ -71,13 +71,6 @@ let to_clause = function
   { onhyps = hyps; concl_occs = to_occurrences to_int_or_var concl; }
 | _ -> assert false
 
-let to_reference = function
-| ValBlk (0, [| id |]) -> VarRef (Value.to_ident id)
-| ValBlk (1, [| cst |]) -> ConstRef (Value.to_constant cst)
-| ValBlk (2, [| ind |]) -> IndRef (Value.to_ext Value.val_inductive ind)
-| ValBlk (3, [| cstr |]) -> ConstructRef (Value.to_ext Value.val_constructor cstr)
-| _ -> assert false
-
 let to_red_flag = function
 | ValBlk (0, [| beta; iota; fix; cofix; zeta; delta; const |]) ->
   {
@@ -87,7 +80,7 @@ let to_red_flag = function
     rCofix = Value.to_bool cofix;
     rZeta = Value.to_bool zeta;
     rDelta = Value.to_bool delta;
-    rConst = Value.to_list to_reference const;
+    rConst = Value.to_list Value.to_reference const;
   }
 | _ -> assert false
 
@@ -329,7 +322,7 @@ let () = define_prim2 "tac_lazy" begin fun flags cl ->
 end
 
 let () = define_prim2 "tac_unfold" begin fun refs cl ->
-  let map v = to_pair to_reference (fun occ -> to_occurrences to_int_or_var occ) v in
+  let map v = to_pair Value.to_reference (fun occ -> to_occurrences to_int_or_var occ) v in
   let refs = Value.to_list map refs in
   let cl = to_clause cl in
   Tac2tactics.unfold refs cl

@@ -689,7 +689,7 @@ let interp_constr flags ist (c, _) =
   Proofview.V82.wrap_exceptions begin fun () ->
     let ist = to_lvar ist in
     let (sigma, c) = understand_ltac flags env sigma ist WithoutTypeConstraint c in
-    let c = Val.Dyn (Value.val_constr, c) in
+    let c = ValExt (Val.Dyn (Value.val_constr, c)) in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
     Proofview.tclUNIT c
   end
@@ -712,7 +712,7 @@ let () =
   define_ml_object Stdarg.wit_open_constr obj
 
 let () =
-  let interp _ id = return (Val.Dyn (Value.val_ident, id)) in
+  let interp _ id = return (ValExt (Val.Dyn (Value.val_ident, id))) in
   let obj = {
     ml_type = t_ident;
     ml_interp = interp;
@@ -720,12 +720,20 @@ let () =
   define_ml_object Stdarg.wit_ident obj
 
 let () =
-  let interp _ c = return (Val.Dyn (Value.val_pattern, c)) in
+  let interp _ c = return (ValExt (Val.Dyn (Value.val_pattern, c))) in
   let obj = {
     ml_type = t_pattern;
     ml_interp = interp;
   } in
   define_ml_object Tac2env.wit_pattern obj
+
+let () =
+  let interp _ gr = return (Value.of_reference gr) in
+  let obj = {
+    ml_type = t_pattern;
+    ml_interp = interp;
+  } in
+  define_ml_object Tac2env.wit_reference obj
 
 let () =
   let interp ist env sigma concl tac =
@@ -753,6 +761,25 @@ let () =
 let () =
   let subst s c = Patternops.subst_pattern s c in
   Genintern.register_subst0 wit_pattern subst
+
+(** References *)
+
+let () =
+  let intern ist qid = match qid with
+  | Libnames.Ident (_, id) -> ist, Globnames.VarRef id
+  | Libnames.Qualid (loc, qid) ->
+    let gr =
+      try Nametab.locate qid
+      with Not_found ->
+        Nametab.error_global_not_found ?loc qid
+    in
+    ist, gr
+  in
+  Genintern.register_intern0 wit_reference intern
+
+let () =
+  let subst s c = Globnames.subst_global_reference s c in
+  Genintern.register_subst0 wit_reference subst
 
 (** Built-in notation scopes *)
 

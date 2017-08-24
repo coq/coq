@@ -65,6 +65,7 @@ let tac2mode = Gram.entry_create "vernac:ltac2_command"
 let inj_wit wit loc x = CTacExt (loc, Genarg.in_gen (Genarg.rawwit wit) x)
 let inj_open_constr loc c = inj_wit Stdarg.wit_open_constr loc c
 let inj_pattern loc c = inj_wit Tac2env.wit_pattern loc c
+let inj_reference loc c = inj_wit Tac2env.wit_reference loc c
 
 let pattern_of_qualid loc id =
   if Tac2env.is_constructor (snd id) then CPatRef (loc, RelId id, [])
@@ -157,6 +158,7 @@ GEXTEND Gram
       | IDENT "open_constr"; ":"; "("; c = Constr.lconstr; ")" -> Tac2quote.of_open_constr c
       | IDENT "ident"; ":"; "("; c = lident; ")" -> Tac2quote.of_ident c
       | IDENT "pattern"; ":"; "("; c = Constr.lconstr_pattern; ")" -> inj_pattern !@loc c
+      | IDENT "reference"; ":"; "("; c = globref; ")" -> inj_reference !@loc c
     ] ]
   ;
   let_clause:
@@ -299,6 +301,11 @@ GEXTEND Gram
   ;
   lident:
     [ [ id = Prim.ident -> Loc.tag ~loc:!@loc id ] ]
+  ;
+  globref:
+    [ [ "&"; id = Prim.ident -> Libnames.Ident (Loc.tag ~loc:!@loc id)
+      | qid = Prim.qualid -> Libnames.Qualid qid
+    ] ]
   ;
 END
 
