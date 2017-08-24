@@ -329,15 +329,25 @@ let declare_canonical_structure ref =
 let lookup_canonical_conversion (proj,pat) =
   assoc_pat pat (Refmap.find proj !object_table)
 
+let decompose_projection sigma c args =
+  match EConstr.kind sigma c with
+  | Const (c, u) ->
+     let n = find_projection_nparams (ConstRef c) in
+     (** Check if there is some canonical projection attached to this structure *)
+     let _ = Refmap.find (ConstRef c) !object_table in
+     let arg = Stack.nth args n in
+     arg
+  | Proj (p, c) ->
+     let _ = Refmap.find (ConstRef (Projection.constant p)) !object_table in
+     c
+  | _ -> raise Not_found
+
 let is_open_canonical_projection env sigma (c,args) =
   let open EConstr in
   try
-    let (ref, _) = Termops.global_of_constr sigma c in
-    let n = find_projection_nparams ref in
-    (** Check if there is some canonical projection attached to this structure *)
-    let _ = Refmap.find ref !object_table in
+    let arg = decompose_projection sigma c args in
     try
-      let arg = whd_all env sigma (Stack.nth args n) in
+      let arg = whd_all env sigma arg in
       let hd = match EConstr.kind sigma arg with App (hd, _) -> hd | _ -> arg in
       not (isConstruct sigma hd)
     with Failure _ -> false
