@@ -98,7 +98,6 @@ type raw_tacexpr =
 | CTacFun of Loc.t * (raw_patexpr * raw_typexpr option) list * raw_tacexpr
 | CTacApp of Loc.t * raw_tacexpr * raw_tacexpr list
 | CTacLet of Loc.t * rec_flag * (raw_patexpr * raw_typexpr option * raw_tacexpr) list * raw_tacexpr
-| CTacArr of raw_tacexpr list located
 | CTacCnv of Loc.t * raw_tacexpr * raw_typexpr
 | CTacSeq of Loc.t * raw_tacexpr * raw_tacexpr
 | CTacCse of Loc.t * raw_tacexpr * raw_taccase list

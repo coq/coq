@@ -194,7 +194,6 @@ let loc_of_tacexpr = function
 | CTacFun (loc, _, _) -> loc
 | CTacApp (loc, _, _) -> loc
 | CTacLet (loc, _, _, _) -> loc
-| CTacArr (loc, _) -> Option.default dummy_loc loc
 | CTacCnv (loc, _, _) -> loc
 | CTacSeq (loc, _, _) -> loc
 | CTacCse (loc, _, _) -> loc
@@ -726,14 +725,6 @@ let rec intern_rec env = function
   let ids = List.fold_left fold Id.Set.empty el in
   if is_rec then intern_let_rec env loc ids el e
   else intern_let env loc ids el e
-| CTacArr (loc, []) ->
-  let id = fresh_id env in
-  (GTacArr [], GTypRef (Other t_int, [GTypVar id]))
-| CTacArr (loc, e0 :: el) ->
-  let (e0, t0) = intern_rec env e0 in
-  let fold e el = intern_rec_with_constraint env e t0 :: el in
-  let el = e0 :: List.fold_right fold el [] in
-  (GTacArr el, GTypRef (Other t_array, [t0]))
 | CTacCnv (loc, e, tc) ->
   let (e, t) = intern_rec env e in
   let tc = intern_type env tc in
@@ -1217,9 +1208,6 @@ let rec globalize ids e = match e with
   in
   let bnd = List.map map bnd in
   CTacLet (loc, isrec, bnd, e)
-| CTacArr (loc, el) ->
-  let el = List.map (fun e -> globalize ids e) el in
-  CTacArr (loc, el)
 | CTacCnv (loc, e, t) ->
   let e = globalize ids e in
   CTacCnv (loc, e, t)
@@ -1431,9 +1419,6 @@ let rec subst_rawexpr subst t = match t with
   let bnd' = List.smartmap map bnd in
   let e' = subst_rawexpr subst e in
   if bnd' == bnd && e' == e then t else CTacLet (loc, isrec, bnd', e')
-| CTacArr (loc, el) ->
-  let el' = List.smartmap (fun e -> subst_rawexpr subst e) el in
-  if el' == el then t else CTacArr (loc, el')
 | CTacCnv (loc, e, c) ->
   let e' = subst_rawexpr subst e in
   let c' = subst_rawtype subst c in
