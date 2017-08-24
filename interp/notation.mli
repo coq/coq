@@ -183,8 +183,12 @@ type symbol =
 
 val symbol_eq : symbol -> symbol -> bool
 
+(** Make/decompose a notation of the form "_ U _" *)
 val make_notation_key : symbol list -> notation
 val decompose_notation_key : notation -> symbol list
+
+(** Decompose a notation of the form "a 'U' b" *)
+val decompose_raw_notation : string -> symbol list
 
 (** Prints scopes (expects a pure aconstr printer) *)
 val pr_scope_class : scope_class -> Pp.t

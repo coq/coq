@@ -945,8 +945,63 @@ let factorize_entries = function
 	  (ntn,[c],[]) l in
       (ntn,l_of_ntn)::rest
 
+type symbol_token = WhiteSpace of int | String of string
+
+let split_notation_string str =
+  let push_token beg i l =
+    if Int.equal beg i then l else
+      let s = String.sub str beg (i - beg) in
+      String s :: l
+  in
+  let push_whitespace beg i l =
+    if Int.equal beg i then l else WhiteSpace (i-beg) :: l
+  in
+  let rec loop beg i =
+    if i < String.length str then
+      if str.[i] == ' ' then
+        push_token beg i (loop_on_whitespace (i+1) (i+1))
+      else
+        loop beg (i+1)
+    else
+      push_token beg i []
+  and loop_on_whitespace beg i =
+    if i < String.length str then
+      if str.[i] != ' ' then
+        push_whitespace beg i (loop i (i+1))
+      else
+        loop_on_whitespace beg (i+1)
+    else
+      push_whitespace beg i []
+  in
+  loop 0 0
+
+let rec raw_analyze_notation_tokens = function
+  | []    -> []
+  | String ".." :: sl -> NonTerminal Notation_ops.ldots_var :: raw_analyze_notation_tokens sl
+  | String "_" :: _ -> user_err Pp.(str "_ must be quoted.")
+  | String x :: sl when Id.is_valid x ->
+      NonTerminal (Names.Id.of_string x) :: raw_analyze_notation_tokens sl
+  | String s :: sl ->
+      Terminal (String.drop_simple_quotes s) :: raw_analyze_notation_tokens sl
+  | WhiteSpace n :: sl ->
+      Break n :: raw_analyze_notation_tokens sl
+
+let decompose_raw_notation ntn = raw_analyze_notation_tokens (split_notation_string ntn)
+
+let possible_notations ntn =
+  (* We collect the possible interpretations of a notation string depending on whether it is
+    in "x 'U' y" or "_ U _" format *)
+  let toks = split_notation_string ntn in
+  if List.exists (function String "_" -> true | _ -> false) toks then
+    (* Only "_ U _" format *)
+    [ntn]
+  else
+    let ntn' = make_notation_key (raw_analyze_notation_tokens toks) in
+    if String.equal ntn ntn' then (* Only symbols *) [ntn] else [ntn;ntn']
+
 let browse_notation strict ntn map =
-  let find ntn' =
+  let ntns = possible_notations ntn in
+  let find ntn' ntn =
     if String.contains ntn ' ' then String.equal ntn ntn'
     else
       let toks = decompose_notation_key ntn' in
@@ -959,7 +1014,7 @@ let browse_notation strict ntn map =
     String.Map.fold
       (fun scope_name sc ->
 	String.Map.fold (fun ntn { not_interp  = (_, r); not_location = df } l ->
-	  if find ntn then (ntn,(scope_name,r,df))::l else l) sc.notations)
+          if List.exists (find ntn) ntns then (ntn,(scope_name,r,df))::l else l) sc.notations)
       map [] in
   List.sort (fun x y -> String.compare (fst x) (fst y)) l
 

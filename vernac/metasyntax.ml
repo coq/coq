@@ -199,36 +199,6 @@ let parse_format ((loc, str) : lstring) =
 (***********************)
 (* Analyzing notations *)
 
-type symbol_token = WhiteSpace of int | String of string
-
-let split_notation_string str =
-  let push_token beg i l =
-    if Int.equal beg i then l else
-      let s = String.sub str beg (i - beg) in
-      String s :: l
-  in
-  let push_whitespace beg i l =
-    if Int.equal beg i then l else WhiteSpace (i-beg) :: l
-  in
-  let rec loop beg i =
-    if i < String.length str then
-      if str.[i] == ' ' then
-	push_token beg i (loop_on_whitespace (i+1) (i+1))
-      else
-	loop beg (i+1)
-    else
-      push_token beg i []
-  and loop_on_whitespace beg i =
-    if i < String.length str then
-      if str.[i] != ' ' then
-	push_whitespace beg i (loop i (i+1))
-      else
-	loop_on_whitespace beg (i+1)
-    else
-      push_whitespace beg i []
-  in
-  loop 0 0
-
 (* Interpret notations with a recursive component *)
 
 let out_nt = function NonTerminal x -> x | _ -> assert false
@@ -284,17 +254,6 @@ let quote_notation_token x =
   if (n > 0 && norm) || (n > 2 && x.[0] == '\'') then "'"^x^"'"
   else x
 
-let rec raw_analyze_notation_tokens = function
-  | []    -> []
-  | String ".." :: sl -> NonTerminal ldots_var :: raw_analyze_notation_tokens sl
-  | String "_" :: _ -> user_err Pp.(str "_ must be quoted.")
-  | String x :: sl when CLexer.is_ident x ->
-      NonTerminal (Names.Id.of_string x) :: raw_analyze_notation_tokens sl
-  | String s :: sl ->
-      Terminal (String.drop_simple_quotes s) :: raw_analyze_notation_tokens sl
-  | WhiteSpace n :: sl ->
-      Break n :: raw_analyze_notation_tokens sl
-
 let is_numeral symbs =
   match List.filter (function Break _ -> false | _ -> true) symbs with
   | ([Terminal "-"; Terminal x] | [Terminal x]) ->
@@ -315,8 +274,8 @@ let rec get_notation_vars onlyprint = function
   | (Terminal _ | Break _) :: sl -> get_notation_vars onlyprint sl
   | SProdList _ :: _ -> assert false
 
-let analyze_notation_tokens ~onlyprint l =
-  let l = raw_analyze_notation_tokens l in
+let analyze_notation_tokens ~onlyprint ntn =
+  let l = decompose_raw_notation ntn in
   let vars = get_notation_vars onlyprint l in
   let recvars,l = interp_list_parser [] l in
   recvars, List.subtract Id.equal vars (List.map snd recvars), l
@@ -509,9 +468,8 @@ let warn_format_break =
          (fun () ->
           strbrk "Discarding format implicitly indicated by multiple spaces in notation because an explicit format modifier is given.")
 
-
 let rec split_format_at_ldots hd = function
-  | (loc,UnpTerminal s) :: fmt when String.equal s (Id.to_string ldots_var) -> loc, List.rev hd, fmt
+  | (loc,UnpTerminal s) :: fmt when String.equal s (Id.to_string Notation_ops.ldots_var) -> loc, List.rev hd, fmt
   | u :: fmt ->
       check_no_ldots_in_box u;
       split_format_at_ldots (u::hd) fmt
@@ -1163,8 +1121,7 @@ let compute_syntax_data df modifiers =
   let onlyparse = mods.only_parsing in
   if onlyprint && onlyparse then user_err (str "A notation cannot be both 'only printing' and 'only parsing'.");
   let assoc = Option.append mods.assoc (Some NonA) in
-  let toks = split_notation_string df in
-  let (recvars,mainvars,symbols) = analyze_notation_tokens ~onlyprint toks in
+  let (recvars,mainvars,symbols) = analyze_notation_tokens ~onlyprint df in
   let _ = check_useless_entry_types recvars mainvars mods.etyps in
   let _ = check_binder_type recvars mods.etyps in
 
@@ -1385,8 +1342,7 @@ let add_notation_in_scope local df env c mods scope =
   sd.info
 
 let add_notation_interpretation_core local df env ?(impls=empty_internalization_env) c scope onlyparse onlyprint compat =
-  let dfs = split_notation_string df in
-  let (recvars,mainvars,symbs) = analyze_notation_tokens ~onlyprint dfs in
+  let (recvars,mainvars,symbs) = analyze_notation_tokens ~onlyprint df in
   (* Recover types of variables and pa/pp rules; redeclare them if needed *)
   let i_typs, onlyprint = if not (is_numeral symbs) then begin
     let sy = recover_notation_syntax (make_notation_key symbs) in
@@ -1462,8 +1418,7 @@ let add_notation local env c ((loc,df),modifiers) sc =
 
 let add_notation_extra_printing_rule df k v =
   let notk = 
-    let dfs = split_notation_string df in
-    let _,_, symbs = analyze_notation_tokens ~onlyprint:true dfs in
+    let _,_, symbs = analyze_notation_tokens ~onlyprint:true df in
     make_notation_key symbs in
   Notation.add_notation_extra_printing_rule notk k v
 

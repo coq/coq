@@ -16,6 +16,8 @@ Notations
 - Recursive notations now support ".." patterns with several
   occurrences of the recursive term or binder, possibly mixing terms
   and binders, possibly in reverse left-to-right order.
+- "Locate" now working also on notations of the form "x + y" (rather
+  than "_ + _").
 
 Specification language
 
