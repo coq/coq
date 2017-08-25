@@ -459,6 +459,7 @@ GEXTEND Gram
   ;
   destruction_arg:
     [ [ n = lnatural -> QElimOnAnonHyp n
+      | id = lident -> QElimOnIdent id
       | c = constr_with_bindings -> QElimOnConstr c
     ] ]
   ;
