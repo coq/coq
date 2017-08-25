@@ -912,6 +912,7 @@ let add_expr_scope name entry f =
   end
 
 let () = add_expr_scope "ident" q_ident (fun id -> Tac2quote.of_anti Tac2quote.of_ident id)
+let () = add_expr_scope "bindings" q_bindings Tac2quote.of_bindings
 let () = add_expr_scope "with_bindings" q_with_bindings Tac2quote.of_bindings
 let () = add_expr_scope "intropattern" q_intropattern Tac2quote.of_intro_pattern
 let () = add_expr_scope "intropatterns" q_intropatterns Tac2quote.of_intro_patterns

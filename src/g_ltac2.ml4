@@ -327,9 +327,9 @@ open Tac2entries.Pltac
 let loc_of_ne_list l = Loc.merge_opt (fst (List.hd l)) (fst (List.last l))
 
 GEXTEND Gram
-  GLOBAL: q_ident q_with_bindings q_intropattern q_intropatterns q_induction_clause
+  GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause
           q_rewriting q_clause q_dispatch q_occurrences q_strategy_flag
-          q_reference;
+          q_reference q_with_bindings;
   anti:
     [ [ "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id) ] ]
   ;
@@ -364,6 +364,9 @@ GEXTEND Gram
       | bl = LIST1 Constr.constr ->
         Loc.tag ~loc:!@loc @@ QImplicitBindings bl
     ] ]
+  ;
+  q_bindings:
+    [ [ bl = bindings -> bl ] ]
   ;
   q_with_bindings:
     [ [ bl = with_bindings -> bl ] ]
