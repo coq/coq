@@ -124,10 +124,10 @@ Ltac2 Notation eintros := eintros.
 Ltac2 split0 ev bnd :=
   enter_h ev Std.split bnd.
 
-Ltac2 Notation "split" bnd(thunk(bindings)) := split0 false bnd.
+Ltac2 Notation "split" bnd(thunk(with_bindings)) := split0 false bnd.
 Ltac2 Notation split := split.
 
-Ltac2 Notation "esplit" bnd(thunk(bindings)) := split0 true bnd.
+Ltac2 Notation "esplit" bnd(thunk(with_bindings)) := split0 true bnd.
 Ltac2 Notation esplit := esplit.
 
 Ltac2 exists0 ev bnds := match bnds with
@@ -141,26 +141,26 @@ Ltac2 exists0 ev bnds := match bnds with
 end.
 
 (*
-Ltac2 Notation "exists" bnd(list0(thunk(bindings), ",")) := exists0 false bnd.
+Ltac2 Notation "exists" bnd(list0(thunk(with_bindings), ",")) := exists0 false bnd.
 
-Ltac2 Notation "eexists" bnd(list0(thunk(bindings), ",")) := exists0 true bnd.
+Ltac2 Notation "eexists" bnd(list0(thunk(with_bindings), ",")) := exists0 true bnd.
 Ltac2 Notation eexists := eexists.
 *)
 
 Ltac2 left0 ev bnd := enter_h ev Std.left bnd.
 
-Ltac2 Notation "left" bnd(thunk(bindings)) := left0 false bnd.
+Ltac2 Notation "left" bnd(thunk(with_bindings)) := left0 false bnd.
 Ltac2 Notation left := left.
 
-Ltac2 Notation "eleft" bnd(thunk(bindings)) := left0 true bnd.
+Ltac2 Notation "eleft" bnd(thunk(with_bindings)) := left0 true bnd.
 Ltac2 Notation eleft := eleft.
 
 Ltac2 right0 ev bnd := enter_h ev Std.right bnd.
 
-Ltac2 Notation "right" bnd(thunk(bindings)) := right0 false bnd.
+Ltac2 Notation "right" bnd(thunk(with_bindings)) := right0 false bnd.
 Ltac2 Notation right := right.
 
-Ltac2 Notation "eright" bnd(thunk(bindings)) := right0 true bnd.
+Ltac2 Notation "eright" bnd(thunk(with_bindings)) := right0 true bnd.
 Ltac2 Notation eright := eright.
 
 Ltac2 constructor0 ev n bnd :=
@@ -168,22 +168,22 @@ Ltac2 constructor0 ev n bnd :=
 
 Ltac2 Notation "constructor" := Control.enter (fun () => Std.constructor false).
 Ltac2 Notation constructor := constructor.
-Ltac2 Notation "constructor" n(tactic) bnd(thunk(bindings)) := constructor0 false n bnd.
+Ltac2 Notation "constructor" n(tactic) bnd(thunk(with_bindings)) := constructor0 false n bnd.
 
 Ltac2 Notation "econstructor" := Control.enter (fun () => Std.constructor true).
 Ltac2 Notation econstructor := econstructor.
-Ltac2 Notation "econstructor" n(tactic) bnd(thunk(bindings)) := constructor0 true n bnd.
+Ltac2 Notation "econstructor" n(tactic) bnd(thunk(with_bindings)) := constructor0 true n bnd.
 
 Ltac2 elim0 ev c bnd use :=
   let f ev ((c, bnd, use)) := Std.elim ev (c, bnd) use in
   enter_h ev f (fun () => c (), bnd (), use ()).
 
-Ltac2 Notation "elim" c(thunk(constr)) bnd(thunk(bindings))
-  use(thunk(opt(seq("using", constr, bindings)))) :=
+Ltac2 Notation "elim" c(thunk(constr)) bnd(thunk(with_bindings))
+  use(thunk(opt(seq("using", constr, with_bindings)))) :=
   elim0 false c bnd use.
 
-Ltac2 Notation "eelim" c(thunk(constr)) bnd(thunk(bindings))
-  use(thunk(opt(seq("using", constr, bindings)))) :=
+Ltac2 Notation "eelim" c(thunk(constr)) bnd(thunk(with_bindings))
+  use(thunk(opt(seq("using", constr, with_bindings)))) :=
   elim0 true c bnd use.
 
 Ltac2 apply0 adv ev cb cl :=
@@ -202,12 +202,12 @@ Ltac2 apply0 adv ev cb cl :=
   Std.apply adv ev cb cl.
 
 Ltac2 Notation "eapply"
-  cb(list1(thunk(seq(constr, bindings)), ","))
+  cb(list1(thunk(seq(constr, with_bindings)), ","))
   cl(opt(seq(keyword("in"), ident, opt(seq(keyword("as"), intropattern))))) :=
   apply0 true true cb cl.
 
 Ltac2 Notation "apply"
-  cb(list1(thunk(seq(constr, bindings)), ","))
+  cb(list1(thunk(seq(constr, with_bindings)), ","))
   cl(opt(seq(keyword("in"), ident, opt(seq(keyword("as"), intropattern))))) :=
   apply0 true false cb cl.
 
@@ -217,12 +217,12 @@ Ltac2 induction0 ev ic use :=
 
 Ltac2 Notation "induction"
   ic(list1(induction_clause, ","))
-  use(thunk(opt(seq("using", constr, bindings)))) :=
+  use(thunk(opt(seq("using", constr, with_bindings)))) :=
   induction0 false ic use.
 
 Ltac2 Notation "einduction"
   ic(list1(induction_clause, ","))
-  use(thunk(opt(seq("using", constr, bindings)))) :=
+  use(thunk(opt(seq("using", constr, with_bindings)))) :=
   induction0 true ic use.
 
 Ltac2 destruct0 ev ic use :=
@@ -231,12 +231,12 @@ Ltac2 destruct0 ev ic use :=
 
 Ltac2 Notation "destruct"
   ic(list1(induction_clause, ","))
-  use(thunk(opt(seq("using", constr, bindings)))) :=
+  use(thunk(opt(seq("using", constr, with_bindings)))) :=
   destruct0 false ic use.
 
 Ltac2 Notation "edestruct"
   ic(list1(induction_clause, ","))
-  use(thunk(opt(seq("using", constr, bindings)))) :=
+  use(thunk(opt(seq("using", constr, with_bindings)))) :=
   destruct0 true ic use.
 
 Ltac2 default_on_concl cl :=

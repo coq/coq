@@ -60,7 +60,7 @@ val tac2expr : raw_tacexpr Pcoq.Gram.entry
 open Tac2qexpr
 
 val q_ident : Id.t located or_anti Pcoq.Gram.entry
-val q_bindings : bindings Pcoq.Gram.entry
+val q_with_bindings : bindings Pcoq.Gram.entry
 val q_intropattern : intro_pattern Pcoq.Gram.entry
 val q_intropatterns : intro_pattern list located Pcoq.Gram.entry
 val q_induction_clause : induction_clause Pcoq.Gram.entry
