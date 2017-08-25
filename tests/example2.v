@@ -2,6 +2,8 @@ Require Import Ltac2.Ltac2.
 
 Import Ltac2.Notations.
 
+Set Default Goal Selector "all".
+
 Goal exists n, n = 0.
 Proof.
 split with (x := 0).
