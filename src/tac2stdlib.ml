@@ -481,8 +481,34 @@ end
 
 (** Tactics from extratactics *)
 
+let () = define_prim2 "tac_discriminate" begin fun ev arg ->
+  let ev = Value.to_bool ev in
+  let arg = Value.to_option (fun arg -> None, to_destruction_arg arg) arg in
+  Tac2tactics.discriminate ev arg
+end
+
+let () = define_prim3 "tac_injection" begin fun ev ipat arg ->
+  let ev = Value.to_bool ev in
+  let ipat = Value.to_option to_intro_patterns ipat in
+  let arg = Value.to_option (fun arg -> None, to_destruction_arg arg) arg in
+  Tac2tactics.injection ev ipat arg
+end
+
 let () = define_prim1 "tac_absurd" begin fun c ->
   Contradiction.absurd (Value.to_constr c)
+end
+
+let () = define_prim1 "tac_contradiction" begin fun c ->
+  let c = Value.to_option to_constr_with_bindings c in
+  Contradiction.contradiction c
+end
+
+let () = define_prim4 "tac_autorewrite" begin fun all by ids cl ->
+  let all = Value.to_bool all in
+  let by = Value.to_option (fun tac -> Proofview.tclIGNORE (thaw tac)) by in
+  let ids = Value.to_list Value.to_ident ids in
+  let cl = to_clause cl in
+  Tac2tactics.autorewrite ~all by ids cl
 end
 
 let () = define_prim1 "tac_subst" begin fun ids ->

@@ -184,7 +184,17 @@ Ltac2 @ external exact_no_check : constr -> unit := "ltac2" "tac_exactnocheck".
 Ltac2 @ external vm_cast_no_check : constr -> unit := "ltac2" "tac_vmcastnocheck".
 Ltac2 @ external native_cast_no_check : constr -> unit := "ltac2" "tac_nativecastnocheck".
 
+(** coretactics *)
+
+(** extratactics *)
+
+Ltac2 @ external discriminate : evar_flag -> destruction_arg option -> unit := "ltac2" "tac_discriminate".
+Ltac2 @ external injection : evar_flag -> intro_pattern list option -> destruction_arg option -> unit := "ltac2" "tac_injection".
+
 Ltac2 @ external absurd : constr -> unit := "ltac2" "tac_absurd".
+Ltac2 @ external contradiction : constr_with_bindings option -> unit := "ltac2" "tac_contradiction".
+
+Ltac2 @ external autorewrite : bool -> (unit -> unit) option -> ident list -> clause -> unit := "ltac2" "tac_autorewrite".
 
 Ltac2 @ external subst : ident list -> unit := "ltac2" "tac_subst".
 Ltac2 @ external subst_all : unit -> unit := "ltac2" "tac_substall".

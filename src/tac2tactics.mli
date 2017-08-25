@@ -14,6 +14,8 @@ open Misctypes
 open Tactypes
 open Proofview
 
+type destruction_arg = EConstr.constr with_bindings tactic Misctypes.destruction_arg
+
 (** Local reimplementations of tactics variants from Coq *)
 
 val apply : advanced_flag -> evars_flag ->
@@ -21,7 +23,7 @@ val apply : advanced_flag -> evars_flag ->
   (Id.t * intro_pattern option) option -> unit tactic
 
 type induction_clause =
-  EConstr.constr with_bindings tactic destruction_arg *
+  destruction_arg *
   intro_pattern_naming option *
   or_and_intro_pattern option *
   clause option
@@ -51,3 +53,9 @@ val unfold : (global_reference * occurrences_expr) list -> clause -> unit tactic
 val vm : (Pattern.constr_pattern * occurrences_expr) option -> clause -> unit tactic
 
 val native : (Pattern.constr_pattern * occurrences_expr) option -> clause -> unit tactic
+
+val discriminate : evars_flag -> destruction_arg option -> unit tactic
+
+val injection : evars_flag -> intro_pattern list option -> destruction_arg option -> unit tactic
+
+val autorewrite : all:bool -> unit tactic option -> Id.t list -> clause -> unit tactic

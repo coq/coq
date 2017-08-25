@@ -130,6 +130,23 @@ Ltac2 Notation split := split.
 Ltac2 Notation "esplit" bnd(thunk(bindings)) := split0 true bnd.
 Ltac2 Notation esplit := esplit.
 
+Ltac2 exists0 ev bnds := match bnds with
+| [] => split0 ev (fun () => Std.NoBindings)
+| _ =>
+  let rec aux bnds := match bnds with
+  | [] => ()
+  | bnd :: bnds => split0 ev bnd; aux bnds
+  end in
+  aux bnds
+end.
+
+(*
+Ltac2 Notation "exists" bnd(list0(thunk(bindings), ",")) := exists0 false bnd.
+
+Ltac2 Notation "eexists" bnd(list0(thunk(bindings), ",")) := exists0 true bnd.
+Ltac2 Notation eexists := eexists.
+*)
+
 Ltac2 left0 ev bnd := enter_h ev Std.left bnd.
 
 Ltac2 Notation "left" bnd(thunk(bindings)) := left0 false bnd.
@@ -316,7 +333,7 @@ Ltac2 Notation "erewrite"
   tac(opt(seq("by", thunk(tactic)))) :=
   rewrite0 true rw cl tac.
 
-(** Other base tactics *)
+(** coretactics *)
 
 Ltac2 Notation reflexivity := Std.reflexivity ().
 
@@ -329,3 +346,17 @@ Ltac2 Notation admit := Std.admit ().
 Ltac2 Notation clear := Std.keep [].
 
 Ltac2 Notation refine := Control.refine.
+
+(** extratactics *)
+
+Ltac2 absurd0 c := Control.enter (fun _ => Std.absurd (c ())).
+
+Ltac2 Notation absurd := absurd0.
+
+Ltac2 subst0 ids := match ids with
+| [] => Std.subst_all ()
+| _ => Std.subst ids
+end.
+
+Ltac2 Notation "subst" ids(list0(ident)) := subst0 ids.
+Ltac2 Notation subst := subst.
