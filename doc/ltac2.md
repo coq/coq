@@ -615,8 +615,10 @@ The following scopes are built-in.
   + parses the string *s* as a keyword, if it is already a
     keyword, otherwise as an IDENT. Returns `()`.
 - seq(*scope₁*, ..., *scopeₙ*):
-  + parses *scope₁*, ..., *scopeₙ* in this order, and produces a n-tuple made
-    out of the parsed values in the same order. It is forbidden for the various
+  + parses *scope₁*, ..., *scopeₙ* in this order, and produces a tuple made
+    out of the parsed values in the same order. As an optimization, all
+    subscopes of the form STRING are left out of the returned tuple, instead
+    of returning a useless unit value. It is forbidden for the various
     subscopes to refer to the global entry using self of next.
 
 For now there is no way to declare new scopes from Ltac2 side, but this is

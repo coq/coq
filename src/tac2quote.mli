@@ -24,6 +24,8 @@ val of_int : int located -> raw_tacexpr
 
 val of_pair : ('a -> raw_tacexpr) -> ('b -> raw_tacexpr) -> ('a * 'b) located -> raw_tacexpr
 
+val of_tuple : ?loc:Loc.t -> raw_tacexpr list -> raw_tacexpr
+
 val of_variable : Id.t located -> raw_tacexpr
 
 val of_ident : Id.t located -> raw_tacexpr

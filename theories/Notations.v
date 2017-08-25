@@ -175,14 +175,7 @@ Ltac2 Notation econstructor := econstructor.
 Ltac2 Notation "econstructor" n(tactic) bnd(thunk(bindings)) := constructor0 true n bnd.
 
 Ltac2 elim0 ev c bnd use :=
-  let f ev ((c, bnd, use)) :=
-    let use := match use with
-    | None => None
-    | Some u =>
-      let ((_, c, wth)) := u in Some (c, wth)
-    end in
-    Std.elim ev (c, bnd) use
-  in
+  let f ev ((c, bnd, use)) := Std.elim ev (c, bnd) use in
   enter_h ev f (fun () => c (), bnd (), use ()).
 
 Ltac2 Notation "elim" c(thunk(constr)) bnd(thunk(bindings))
@@ -219,14 +212,7 @@ Ltac2 Notation "apply"
   apply0 true false cb cl.
 
 Ltac2 induction0 ev ic use :=
-  let f ev use :=
-    let use := match use with
-    | None => None
-    | Some u =>
-      let ((_, c, wth)) := u in Some (c, wth)
-    end in
-    Std.induction ev ic use
-  in
+  let f ev use := Std.induction ev ic use in
   enter_h ev f use.
 
 Ltac2 Notation "induction"
@@ -240,14 +226,7 @@ Ltac2 Notation "einduction"
   induction0 true ic use.
 
 Ltac2 destruct0 ev ic use :=
-  let f ev use :=
-    let use := match use with
-    | None => None
-    | Some u =>
-      let ((_, c, wth)) := u in Some (c, wth)
-    end in
-    Std.destruct ev ic use
-  in
+  let f ev use := Std.destruct ev ic use in
   enter_h ev f use.
 
 Ltac2 Notation "destruct"
@@ -312,12 +291,6 @@ Ltac2 Notation "native_compute" pl(opt(seq(pattern, occurrences))) cl(opt(clause
 Ltac2 Notation native_compute := native_compute.
 
 Ltac2 rewrite0 ev rw cl tac :=
-  let tac := match tac with
-  | None => None
-  | Some p =>
-    let ((_, tac)) := p in
-    Some tac
-  end in
   let cl := default_on_concl cl in
   Std.rewrite ev rw cl tac.
 

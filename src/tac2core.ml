@@ -963,13 +963,12 @@ let rec generalize_symbol :
 
 type _ converter =
 | CvNil : (Loc.t -> raw_tacexpr) converter
-| CvCns : 'act converter * ('a -> raw_tacexpr) -> ('a -> 'act) converter
+| CvCns : 'act converter * ('a -> raw_tacexpr) option -> ('a -> 'act) converter
 
 let rec apply : type a. a converter -> raw_tacexpr list -> a = function
-| CvNil -> fun accu loc ->
-  let cst = CTacCst (loc, AbsKn (Tuple (List.length accu))) in
-  CTacApp (loc, cst, accu)
-| CvCns (c, f) -> fun accu x -> apply c (f x :: accu)
+| CvNil -> fun accu loc -> Tac2quote.of_tuple ~loc accu
+| CvCns (c, None) -> fun accu x -> apply c accu
+| CvCns (c, Some f) -> fun accu x -> apply c (f x :: accu)
 
 type seqrule =
 | Seqrule : ('act, Loc.t -> raw_tacexpr) norec_rule * 'act converter -> seqrule
@@ -983,6 +982,10 @@ let rec make_seq_rule = function
   let scope = generalize_symbol scope in
   let Seqrule (r, c) = make_seq_rule rem in
   let r = { norec_rule = Next (r.norec_rule, scope.any_symbol) } in
+  let f = match tok with
+  | SexprStr _ -> None (** Leave out mere strings *)
+  | _ -> Some f
+  in
   Seqrule (r, CvCns (c, f))
 
 let () = add_scope "seq" begin fun toks ->

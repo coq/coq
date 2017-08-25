@@ -46,7 +46,12 @@ let of_pair f g (loc, (e1, e2)) =
   let loc = Option.default dummy_loc loc in
   CTacApp (loc, CTacCst (loc, AbsKn (Tuple 2)), [f e1; g e2])
 
-let of_tuple ?loc el =
+let of_tuple ?loc el = match el with
+| [] ->
+  let loc = Option.default dummy_loc loc in
+  CTacCst (loc, AbsKn (Tuple 0))
+| [e] -> e
+| el ->
   let loc = Option.default dummy_loc loc in
   let len = List.length el in
   CTacApp (loc, CTacCst (loc, AbsKn (Tuple len)), el)
