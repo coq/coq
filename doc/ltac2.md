@@ -692,6 +692,17 @@ foo 0 ↦ (fun x => x ()) (fun _ => 0)
 Note that abbreviations are not typechecked at all, and may result in typing
 errors after expansion.
 
+# Compatibility layer with Ltac1
+
+## Ltac1 from Ltac2
+
+One can call Ltac1 code from Ltac2 by using the `ltac1` quotation. It parses
+a Ltac1 expression, and semantics of this quotation is the evaluation of the
+corresponding code for its side effects.
+
+Beware, Ltac1 **cannot** access variables from the Ltac2 scope. One is limited
+to the use of standalone function calls.
+
 # Transition from Ltac1
 
 Owing to the use of a bunch of notations, the transition shouldn't be

@@ -738,6 +738,20 @@ let () =
   define_ml_object Tac2env.wit_reference obj
 
 let () =
+  let interp _ tac =
+    (** FUCK YOU API *)
+    (Obj.magic Ltac_plugin.Tacinterp.eval_tactic tac : unit Proofview.tactic) >>= fun () ->
+    return v_unit
+  in
+  let obj = {
+    ml_type = t_unit;
+    ml_interp = interp;
+  } in
+  define_ml_object Ltac_plugin.Tacarg.wit_tactic obj
+
+(** Ltac2 in terms *)
+
+let () =
   let interp ist env sigma concl tac =
     let fold id (Val.Dyn (tag, v)) (accu : environment) : environment =
       match Val.eq tag val_valexpr with
