@@ -140,12 +140,11 @@ Ltac2 exists0 ev bnds := match bnds with
   aux bnds
 end.
 
-(*
-Ltac2 Notation "exists" bnd(list0(thunk(with_bindings), ",")) := exists0 false bnd.
+Ltac2 Notation "exists" bnd(list0(thunk(bindings), ",")) := exists0 false bnd.
+(* Ltac2 Notation exists := exists. *)
 
-Ltac2 Notation "eexists" bnd(list0(thunk(with_bindings), ",")) := exists0 true bnd.
+Ltac2 Notation "eexists" bnd(list0(thunk(bindings), ",")) := exists0 true bnd.
 Ltac2 Notation eexists := eexists.
-*)
 
 Ltac2 left0 ev bnd := enter_h ev Std.left bnd.
 
@@ -307,6 +306,20 @@ Ltac2 Notation "erewrite"
   rewrite0 true rw cl tac.
 
 (** coretactics *)
+
+Ltac2 exact0 ev c :=
+  Control.enter (fun _ =>
+    match ev with
+    | true =>
+      let c := c () in
+      Control.refine (fun _ => c)
+    | false =>
+      Control.with_holes c (fun c => Control.refine (fun _ => c))
+    end
+  ).
+
+Ltac2 Notation "exact" c(thunk(open_constr)) := exact0 false c.
+Ltac2 Notation "eexact" c(thunk(open_constr)) := exact0 true c.
 
 Ltac2 Notation reflexivity := Std.reflexivity ().
 

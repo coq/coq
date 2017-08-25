@@ -192,3 +192,19 @@ unfold &x at 1.
 let x := reference:(Nat.sub) in unfold Nat.add, $x in x.
 reflexivity.
 Qed.
+
+Goal exists x y : nat, x = y.
+Proof.
+exists 0, 0; reflexivity.
+Qed.
+
+Goal exists x y : nat, x = y.
+Proof.
+eexists _, 0; reflexivity.
+Qed.
+
+Goal exists x y : nat, x = y.
+Proof.
+refine '(let x := 0 in _).
+eexists; exists &x; reflexivity.
+Qed.
