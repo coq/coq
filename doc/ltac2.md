@@ -698,10 +698,29 @@ errors after expansion.
 
 One can call Ltac1 code from Ltac2 by using the `ltac1` quotation. It parses
 a Ltac1 expression, and semantics of this quotation is the evaluation of the
-corresponding code for its side effects.
+corresponding code for its side effects. In particular, in cannot return values,
+and the quotation has type `unit`.
 
 Beware, Ltac1 **cannot** access variables from the Ltac2 scope. One is limited
 to the use of standalone function calls.
+
+## Ltac2 from Ltac1
+
+Same as above by switching Ltac1 by Ltac2 and using the `ltac2` quotation
+instead.
+
+Note that the tactic expression is evaluated eagerly, if one wants to use it as
+an argument to a Ltac1 function, she has to resort to the good old
+`idtac; ltac2:(foo)` trick. For instance, the code below will fail immediately
+and won't print anything.
+
+```
+Ltac mytac tac := idtac "wow"; tac.
+
+Goal True.
+Proof.
+mytac ltac2:(fail).
+```
 
 # Transition from Ltac1
 
@@ -812,6 +831,5 @@ your duty to catch it and reraise it depending on your use.
 # TODO
 
 - Implement deep pattern-matching.
-- Implement compatibility layer with Ltac1
 - Craft an expressive set of primitive functions
 - Implement native compilation to OCaml

@@ -765,6 +765,26 @@ let () =
   in
   Pretyping.register_constr_interp0 wit_ltac2 interp
 
+(** Ltac2 in Ltac1 *)
+
+let () =
+  (** FUCK YOU API *)
+  let e = (Obj.magic Tac2entries.Pltac.tac2expr : _ API.Pcoq.Gram.entry) in
+  let inject (loc, v) = Tacexpr.TacGeneric (in_gen (rawwit wit_ltac2) v) in
+  Ltac_plugin.Tacentries.create_ltac_quotation "ltac2" inject (e, None)
+
+let () =
+  let open Ltac_plugin in
+  let open Tacinterp in
+  let idtac = Value.of_closure (default_ist ()) (Tacexpr.TacId []) in
+  (** FUCK YOU API *)
+  let idtac = (Obj.magic idtac : Geninterp.Val.t) in
+  let interp ist tac =
+    Tac2interp.interp Tac2interp.empty_environment tac >>= fun _ ->
+    Ftactic.return idtac
+  in
+  Geninterp.register_interp0 wit_ltac2 interp
+
 (** Patterns *)
 
 let () =
