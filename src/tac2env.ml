@@ -12,6 +12,12 @@ open Names
 open Libnames
 open Tac2expr
 
+type global_data = {
+  gdata_expr : glb_tacexpr;
+  gdata_type : type_scheme;
+  gdata_mutable : bool;
+}
+
 type constructor_data = {
   cdata_prms : int;
   cdata_type : type_constant;
@@ -28,7 +34,7 @@ type projection_data = {
 }
 
 type ltac_state = {
-  ltac_tactics : (glb_tacexpr * type_scheme) KNmap.t;
+  ltac_tactics : global_data KNmap.t;
   ltac_constructors : constructor_data KNmap.t;
   ltac_projections : projection_data KNmap.t;
   ltac_types : glb_quant_typedef KNmap.t;
@@ -49,7 +55,7 @@ let ltac_state = Summary.ref empty_state ~name:"ltac2-state"
 let rec eval_pure = function
 | GTacAtm (AtmInt n) -> ValInt n
 | GTacRef kn ->
-  let (e, _) =
+  let { gdata_expr = e } =
     try KNmap.find kn ltac_state.contents.ltac_tactics
     with Not_found -> assert false
   in
@@ -68,8 +74,8 @@ let define_global kn e =
   ltac_state := { state with ltac_tactics = KNmap.add kn e state.ltac_tactics }
 
 let interp_global kn =
-  let (e, t) = KNmap.find kn ltac_state.contents.ltac_tactics in
-  (e, eval_pure e, t)
+  let data = KNmap.find kn ltac_state.contents.ltac_tactics in
+  (data, eval_pure data.gdata_expr)
 
 let define_constructor kn t =
   let state = !ltac_state in

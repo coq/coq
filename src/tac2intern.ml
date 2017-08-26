@@ -360,20 +360,20 @@ let eq_or_tuple eq t1 t2 = match t1, t2 with
 | Other o1, Other o2 -> eq o1 o2
 | _ -> false
 
-let rec unify env t1 t2 = match kind env t1, kind env t2 with
+let rec unify0 env t1 t2 = match kind env t1, kind env t2 with
 | GTypVar id, t | t, GTypVar id ->
   unify_var env id t
 | GTypArrow (t1, u1), GTypArrow (t2, u2) ->
-  let () = unify env t1 t2 in
-  unify env u1 u2
+  let () = unify0 env t1 t2 in
+  unify0 env u1 u2
 | GTypRef (kn1, tl1), GTypRef (kn2, tl2) ->
   if eq_or_tuple KerName.equal kn1 kn2 then
-    List.iter2 (fun t1 t2 -> unify env t1 t2) tl1 tl2
+    List.iter2 (fun t1 t2 -> unify0 env t1 t2) tl1 tl2
   else raise (CannotUnify (t1, t2))
 | _ -> raise (CannotUnify (t1, t2))
 
 let unify ?loc env t1 t2 =
-  try unify env t1 t2
+  try unify0 env t1 t2
   with CannotUnify (u1, u2) ->
     user_err ?loc (str "This expression has type " ++ pr_glbtype env t1 ++
       str " but an expression was expected of type " ++ pr_glbtype env t2)
@@ -663,7 +663,7 @@ let rec intern_rec env = function
     let sch = Id.Map.find id env.env_var in
     (GTacVar id, fresh_mix_type_scheme env sch)
   | ArgArg (TacConstant kn) ->
-    let (_, _, sch) = Tac2env.interp_global kn in
+    let { Tac2env.gdata_type = sch }, _ = Tac2env.interp_global kn in
     (GTacRef kn, fresh_type_scheme env sch)
   | ArgArg (TacAlias kn) ->
     let e = Tac2env.interp_alias kn in
@@ -1161,6 +1161,23 @@ let intern_open_type t =
   let vars = ref UF.Map.empty in
   let t = normalize env (count, vars) t in
   (!count, t)
+
+(** Subtyping *)
+
+let check_subtype t1 t2 =
+  let env = empty_env () in
+  let t1 = fresh_type_scheme env t1 in
+  (** We build a substitution mimicking rigid variable by using dummy refs *)
+  let mb = MBId.make DirPath.empty (Id.of_string "_t") in
+  let rigid i =
+    let kn = KerName.make (MPbound mb) DirPath.empty (Label.make "_t") in
+    GTypRef (Other kn, [])
+  in
+  let (n, t2) = t2 in
+  let subst = Array.init n rigid in
+  let substf i = subst.(i) in
+  let t2 = subst_type substf t2 in
+  try unify0 env t1 t2; true with CannotUnify _ -> false
 
 (** Globalization *)
 

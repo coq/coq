@@ -16,8 +16,14 @@ open Tac2expr
 
 (** {5 Toplevel definition of values} *)
 
-val define_global : ltac_constant -> (glb_tacexpr * type_scheme) -> unit
-val interp_global : ltac_constant -> (glb_tacexpr * valexpr * type_scheme)
+type global_data = {
+  gdata_expr : glb_tacexpr;
+  gdata_type : type_scheme;
+  gdata_mutable : bool;
+}
+
+val define_global : ltac_constant -> global_data -> unit
+val interp_global : ltac_constant -> global_data * valexpr
 
 (** {5 Toplevel definition of types} *)
 

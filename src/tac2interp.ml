@@ -38,7 +38,7 @@ let get_var ist id =
     anomaly (str "Unbound variable " ++ Id.print id)
 
 let get_ref ist kn =
-  try pi2 (Tac2env.interp_global kn) with Not_found ->
+  try snd (Tac2env.interp_global kn) with Not_found ->
     anomaly (str "Unbound reference" ++ KerName.print kn)
 
 let return = Proofview.tclUNIT

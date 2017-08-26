@@ -154,7 +154,7 @@ type sexpr =
 (** {5 Toplevel statements} *)
 
 type strexpr =
-| StrVal of rec_flag * (Name.t located * raw_tacexpr) list
+| StrVal of mutable_flag * rec_flag * (Name.t located * raw_tacexpr) list
   (** Term definition *)
 | StrTyp of rec_flag * (qualid located * redef_flag * raw_quant_typedef) list
   (** Type definition *)
@@ -162,7 +162,8 @@ type strexpr =
   (** External definition *)
 | StrSyn of sexpr list * int option * raw_tacexpr
   (** Syntactic extensions *)
-
+| StrMut of qualid located * raw_tacexpr
+  (** Redefinition of mutable globals *)
 
 (** {5 Dynamic semantics} *)
 

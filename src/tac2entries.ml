@@ -42,20 +42,31 @@ end
 
 type tacdef = {
   tacdef_local : bool;
+  tacdef_mutable : bool;
   tacdef_expr : glb_tacexpr;
   tacdef_type : type_scheme;
 }
 
 let perform_tacdef visibility ((sp, kn), def) =
   let () = if not def.tacdef_local then Tac2env.push_ltac visibility sp (TacConstant kn) in
-  Tac2env.define_global kn (def.tacdef_expr, def.tacdef_type)
+  let data = {
+    Tac2env.gdata_expr = def.tacdef_expr;
+    gdata_type = def.tacdef_type;
+    gdata_mutable = def.tacdef_mutable;
+  } in
+  Tac2env.define_global kn data
 
 let load_tacdef i obj = perform_tacdef (Until i) obj
 let open_tacdef i obj = perform_tacdef (Exactly i) obj
 
 let cache_tacdef ((sp, kn), def) =
   let () = Tac2env.push_ltac (Until 1) sp (TacConstant kn) in
-  Tac2env.define_global kn (def.tacdef_expr, def.tacdef_type)
+  let data = {
+    Tac2env.gdata_expr = def.tacdef_expr;
+    gdata_type = def.tacdef_type;
+    gdata_mutable = def.tacdef_mutable;
+  } in
+  Tac2env.define_global kn data
 
 let subst_tacdef (subst, def) =
   let expr' = subst_expr subst def.tacdef_expr in
@@ -296,7 +307,7 @@ let inline_rec_tactic tactics =
   in
   List.map map tactics
 
-let register_ltac ?(local = false) isrec tactics =
+let register_ltac ?(local = false) ?(mut = false) isrec tactics =
   let map ((loc, na), e) =
     let id = match na with
     | Anonymous ->
@@ -329,6 +340,7 @@ let register_ltac ?(local = false) isrec tactics =
   let iter (id, e, t) =
     let def = {
       tacdef_local = local;
+      tacdef_mutable = mut;
       tacdef_expr = e;
       tacdef_type = t;
     } in
@@ -423,6 +435,7 @@ let register_primitive ?(local = false) (loc, id) t ml =
   let e = GTacFun (bnd, GTacPrm (ml, arg)) in
   let def = {
     tacdef_local = local;
+    tacdef_mutable = false;
     tacdef_expr = e;
     tacdef_type = t;
   } in
@@ -659,13 +672,72 @@ let register_notation ?(local = false) tkn lev body = match tkn, lev with
   } in
   Lib.add_anonymous_leaf (inTac2Notation ext)
 
+type redefinition = {
+  redef_kn : ltac_constant;
+  redef_body : glb_tacexpr;
+}
+
+let perform_redefinition (_, redef) =
+  let kn = redef.redef_kn in
+  let data, _ = Tac2env.interp_global kn in
+  let data = { data with Tac2env.gdata_expr = redef.redef_body } in
+  Tac2env.define_global kn data
+
+let subst_redefinition (subst, redef) =
+  let kn = Mod_subst.subst_kn subst redef.redef_kn in
+  let body = Tac2intern.subst_expr subst redef.redef_body in
+  if kn == redef.redef_kn && body == redef.redef_body then redef
+  else { redef_kn = kn; redef_body = body }
+
+let classify_redefinition o = Substitute o
+
+let inTac2Redefinition : redefinition -> obj =
+  declare_object {(default_object "TAC2-REDEFINITION") with
+     cache_function  = perform_redefinition;
+     open_function   = (fun _ -> perform_redefinition);
+     subst_function = subst_redefinition;
+     classify_function = classify_redefinition }
+
+let register_redefinition ?(local = false) (loc, qid) e =
+  let kn =
+    try Tac2env.locate_ltac qid
+    with Not_found -> user_err ?loc (str "Unknown tactic " ++ pr_qualid qid)
+  in
+  let kn = match kn with
+  | TacConstant kn -> kn
+  | TacAlias _ ->
+    user_err ?loc (str "Cannot redefine syntactic abbreviations")
+  in
+  let (data, _) = Tac2env.interp_global kn in
+  let () =
+    if not (data.Tac2env.gdata_mutable) then
+      user_err ?loc (str "The tactic " ++ pr_qualid qid ++ str " is not declared as mutable")
+  in
+  let (e, t) = intern e in
+  let () =
+    if not (is_value e) then
+      user_err ?loc (str "Tactic definition must be a syntactical value")
+  in
+  let () =
+    if not (Tac2intern.check_subtype t data.Tac2env.gdata_type) then
+      let name = int_name () in
+      user_err ?loc (str "Type " ++ pr_glbtype name (snd t) ++
+        str " is not a subtype of " ++ pr_glbtype name (snd data.Tac2env.gdata_type))
+  in
+  let def = {
+    redef_kn = kn;
+    redef_body = e;
+  } in
+  Lib.add_anonymous_leaf (inTac2Redefinition def)
+
 (** Toplevel entries *)
 
 let register_struct ?local str = match str with
-| StrVal (isrec, e) -> register_ltac ?local isrec e
+| StrVal (mut, isrec, e) -> register_ltac ?local ~mut isrec e
 | StrTyp (isrec, t) -> register_type ?local isrec t
 | StrPrm (id, t, ml) -> register_primitive ?local id t ml
 | StrSyn (tok, lev, e) -> register_notation ?local tok lev e
+| StrMut (qid, e) -> register_redefinition ?local qid e
 
 (** Printing *)
 
@@ -685,7 +757,9 @@ let print_ltac ref =
     in
     match kn with
     | TacConstant kn ->
-      let (e, _, (_, t)) = Tac2env.interp_global kn in
+      let data, _ = Tac2env.interp_global kn in
+      let e = data.Tac2env.gdata_expr in
+      let (_, t) = data.Tac2env.gdata_type in
       let name = int_name () in
       Feedback.msg_notice (
         hov 0 (

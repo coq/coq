@@ -13,7 +13,7 @@ open Tac2expr
 
 (** {5 Toplevel definitions} *)
 
-val register_ltac : ?local:bool -> rec_flag ->
+val register_ltac : ?local:bool -> ?mut:bool -> rec_flag ->
   (Name.t located * raw_tacexpr) list -> unit
 
 val register_type : ?local:bool -> rec_flag ->

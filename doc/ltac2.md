@@ -218,7 +218,7 @@ Limitations: for now, deep pattern matching is not implemented yet.
 One can define a new global Ltac2 value using the following syntax.
 ```
 VERNAC ::=
-| "Ltac2" RECFLAG LIDENT ":=" TERM
+| "Ltac2" MUTFLAG RECFLAG LIDENT ":=" TERM
 ```
 
 For semantic reasons, the body of the Ltac2 definition must be a syntactical
@@ -226,6 +226,17 @@ value, i.e. a function, a constant or a pure constructor recursively applied to
 values.
 
 If the `RECFLAG` is set, the tactic is expanded into a recursive binding.
+
+If the `MUTFLAG` is set, the definition can be redefined at a later stage. This
+can be performed through the following command.
+
+```
+VERNAC ::=
+| "Ltac2" "Set" QUALID ":=" TERM
+```
+
+Mutable definitions act like dynamic binding, i.e. at runtime, the last defined
+value for this entry is chosen. This is useful for global flags and the like.
 
 ## Reduction
 
