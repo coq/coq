@@ -488,7 +488,7 @@ Ltac2 Definition myconstr () := constr:(nat -> 0).
 ```
 
 Term antiquotations are type-checked in the enclosing Ltac2 typing context
-of the corresponding term expression. For instance, the following with
+of the corresponding term expression. For instance, the following will
 type-check.
 
 ```
@@ -523,7 +523,7 @@ This pattern is so common that we provide dedicated Ltac2 and Coq term notations
 for it.
 
 - `&x` as an Ltac2 expression expands to `hyp @x`.
-- `&x` as an Coq constr expression expands to
+- `&x` as a Coq constr expression expands to
   `ltac2:(refine (fun () => hyp @x))`.
 
 #### Dynamic semantics
@@ -538,7 +538,7 @@ under focus, with the hypotheses coming from the current environment extended
 with the bound variables of the term, and the resulting term is fed into the
 quoted term.
 
-Relative orders of evaluation of antiquotations and quoted term is not
+Relative orders of evaluation of antiquotations and quoted term are not
 specified.
 
 For instance, in the following example, `tac` will be evaluated in a context
