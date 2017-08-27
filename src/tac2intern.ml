@@ -1168,7 +1168,7 @@ let check_subtype t1 t2 =
   let env = empty_env () in
   let t1 = fresh_type_scheme env t1 in
   (** We build a substitution mimicking rigid variable by using dummy tuples *)
-  let rigid i = GTypRef (Tuple i, []) in
+  let rigid i = GTypRef (Tuple (i + 1), []) in
   let (n, t2) = t2 in
   let subst = Array.init n rigid in
   let substf i = subst.(i) in
