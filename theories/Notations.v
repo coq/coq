@@ -329,7 +329,13 @@ Ltac2 Notation etransitivity := Std.etransitivity ().
 
 Ltac2 Notation admit := Std.admit ().
 
-Ltac2 Notation clear := Std.keep [].
+Ltac2 clear0 ids := match ids with
+| [] => Std.keep []
+| _ => Std.clear ids
+end.
+
+Ltac2 Notation "clear" ids(list0(ident)) := clear0 ids.
+Ltac2 Notation clear := clear.
 
 Ltac2 Notation refine := Control.refine.
 
