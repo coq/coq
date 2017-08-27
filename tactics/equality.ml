@@ -925,7 +925,8 @@ let build_selector env sigma dirn c ind special default =
   let brl =
     List.map build_branch(List.interval 1 (Array.length mip.mind_consnames)) in
   let ci = make_case_info env ind RegularStyle in
-  sigma, mkCase (ci, p, c, Array.of_list brl)
+  let ans = Inductiveops.make_case_or_project env sigma indf ci p c (Array.of_list brl) in
+  sigma, ans
 
 let build_coq_False sigma = Evarutil.new_global sigma (build_coq_False ())
 let build_coq_True sigma = Evarutil.new_global sigma (build_coq_True ())
