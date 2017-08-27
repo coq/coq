@@ -84,7 +84,7 @@ Ltac2 rec solve0 tacs :=
 match tacs with
 | [] => Control.zero Tactic_failure
 | tac :: tacs =>
-  Control.enter (fun _ => orelse (fun _ => complete tac) (fun _ => first0 tacs))
+  Control.enter (fun _ => orelse (fun _ => complete tac) (fun _ => solve0 tacs))
 end.
 
 Ltac2 Notation "solve" "[" tacs(list0(thunk(tactic(6)), "|")) "]" := solve0 tacs.
