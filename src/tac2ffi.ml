@@ -33,7 +33,7 @@ let val_univ = Val.create "ltac2:universe"
 let val_kont : (Exninfo.iexn -> valexpr Proofview.tactic) Val.typ =
   Val.create "ltac2:kont"
 
-let extract_val (type a) (tag : a Val.typ) (Val.Dyn (tag', v)) : a =
+let extract_val (type a) (type b) (tag : a Val.typ) (tag' : b Val.typ) (v : b) : a =
 match Val.eq tag tag' with
 | None -> assert false
 | Some Refl -> v
@@ -78,10 +78,10 @@ let rec to_list f = function
 | _ -> assert false
 
 let of_ext tag c =
-  ValExt (Val.Dyn (tag, c))
+  ValExt (tag, c)
 
 let to_ext tag = function
-| ValExt e -> extract_val tag e
+| ValExt (tag', e) -> extract_val tag tag' e
 | _ -> assert false
 
 let of_constr c = of_ext val_constr c

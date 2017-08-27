@@ -186,7 +186,7 @@ type valexpr =
   (** Closures *)
 | ValOpn of KerName.t * valexpr array
   (** Open constructors *)
-| ValExt of Geninterp.Val.t
+| ValExt : 'a Geninterp.Val.typ * 'a -> valexpr
   (** Arbitrary data *)
 
 and closure = {
