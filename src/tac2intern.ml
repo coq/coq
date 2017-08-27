@@ -1167,12 +1167,8 @@ let intern_open_type t =
 let check_subtype t1 t2 =
   let env = empty_env () in
   let t1 = fresh_type_scheme env t1 in
-  (** We build a substitution mimicking rigid variable by using dummy refs *)
-  let mb = MBId.make DirPath.empty (Id.of_string "_t") in
-  let rigid i =
-    let kn = KerName.make (MPbound mb) DirPath.empty (Label.make "_t") in
-    GTypRef (Other kn, [])
-  in
+  (** We build a substitution mimicking rigid variable by using dummy tuples *)
+  let rigid i = GTypRef (Tuple i, []) in
   let (n, t2) = t2 in
   let subst = Array.init n rigid in
   let substf i = subst.(i) in
