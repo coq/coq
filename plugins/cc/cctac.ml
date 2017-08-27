@@ -84,7 +84,8 @@ let rec decompose_term env sigma t=
     | Proj (p, c) -> 
 	let canon_const kn = Constant.make1 (Constant.canonical kn) in 
 	let p' = Projection.map canon_const p in
-	(Appli (Symb (Term.mkConst (Projection.constant p')), decompose_term env sigma c))
+	let c = Retyping.expand_projection env sigma p' c [] in
+	decompose_term env sigma c
     | _ ->
        let t = Termops.strip_outer_cast sigma t in
        if closed0 sigma t then Symb (EConstr.to_constr sigma t) else raise Not_found
