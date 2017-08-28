@@ -149,7 +149,7 @@ Records are product types with named fields and eliminated by projection.
 Likewise they can be recursive if the `RECFLAG` is set.
 
 Open variants are a special kind of variant types whose constructors are not
-statically defined, but can instead by extended dynamically. A typical example
+statically defined, but can instead be extended dynamically. A typical example
 is the standard `exn` type. Pattern-matching must always include a catch-all
 clause. They can be extended by the following command.
 
@@ -358,21 +358,21 @@ If one sees thunks as lazy lists, then `zero` is the empty list and `plus` is
 list concatenation, while `case` is pattern-matching.
 
 The backtracking is first-class, i.e. one can write
-`plus "x" (fun () => "y") : string` producing a backtracking string.
+`plus (fun () => "x") (fun _ => "y") : string` producing a backtracking string.
 
 These operations are expected to satisfy a few equations, most notably that they
 form a monoid compatible with sequentialization.
 
 ```
 plus t zero ≡ t ()
-plus (fun () -> zero e) f ≡ f e
-plus (plus t f) g ≡ plus t (fun e -> plus (f e) g)
+plus (fun () => zero e) f ≡ f e
+plus (plus t f) g ≡ plus t (fun e => plus (f e) g)
 
-case (fun () -> zero e) ≡ Err e
-case (fun () -> plus (fun () -> t) f) ≡ Val t f
+case (fun () => zero e) ≡ Err e
+case (fun () => plus (fun () => t) f) ≡ Val t f
 
 let x := zero e in u ≡ zero e
-let x := plus t f in u ≡ plus (fun () -> let x := t in u) (fun e -> let x := f e in u)
+let x := plus t f in u ≡ plus (fun () => let x := t in u) (fun e => let x := f e in u)
 
 (t, u, f, g, e values)
 ```
@@ -809,7 +809,7 @@ Ltac1 relies on a crazy amount of dynamic trickery to be able to tell apart
 bound variables from terms, hypotheses and whatnot. There is no such thing in
 Ltac2, as variables are recognized statically and other constructions do not
 live in the same syntactic world. Due to the abuse of quotations, it can
-sometimes be complicated to know what a mere identifier represent in a tactic
+sometimes be complicated to know what a mere identifier represents in a tactic
 expression. We recommend tracking the context and letting the compiler spit
 typing errors to understand what is going on.
 
