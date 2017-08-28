@@ -682,7 +682,7 @@ and doc_bol = parse
   | space* nl+
       { Output.paragraph (); doc_bol lexbuf }
   | "<<" space*
-      { Output.start_verbatim false; verbatim false lexbuf; doc_bol lexbuf }
+      { Output.start_verbatim false; verbatim 0 false lexbuf; doc_bol lexbuf }
   | eof
       { true }
   | '_'
@@ -707,7 +707,7 @@ and doc_list_bol indents = parse
       }
   | "<<" space*
       { Output.start_verbatim false;
-        verbatim false lexbuf;
+        verbatim 0 false lexbuf;
         doc_list_bol indents lexbuf }
   | "[[" nl
       { formatted := true;
@@ -852,7 +852,7 @@ and doc indents = parse
         Output.char (lexeme_char lexbuf 1);
         doc indents lexbuf }
   | "<<" space*
-      { Output.start_verbatim true; verbatim true lexbuf; doc_bol lexbuf }
+      { Output.start_verbatim true; verbatim 0 true lexbuf; doc_bol lexbuf }
   | '"'
       { if !Cdglobals.plain_comments 
 	then Output.char '"' 
@@ -892,13 +892,20 @@ and escaped_html = parse
         { backtrack lexbuf }
   | _   { Output.html_char (lexeme_char lexbuf 0); escaped_html lexbuf }
 
-and verbatim inline = parse
+and verbatim depth inline = parse
   | nl ">>" space* nl { Output.verbatim_char inline '\n'; Output.stop_verbatim inline }
   | nl ">>" { Output.verbatim_char inline '\n'; Output.stop_verbatim inline }
   | ">>" { Output.stop_verbatim inline }
-  | "*)" { Output.stop_verbatim inline; backtrack lexbuf }
+  | "(*" { Output.verbatim_char inline '(';
+           Output.verbatim_char inline '*';
+           verbatim (depth+1) inline lexbuf }
+  | "*)" { if (depth == 0)
+           then (Output.stop_verbatim inline; backtrack lexbuf)
+           else (Output.verbatim_char inline '*';
+                 Output.verbatim_char inline ')';
+                 verbatim (depth-1) inline lexbuf) }
   | eof { Output.stop_verbatim inline }
-  | _ { Output.verbatim_char inline (lexeme_char lexbuf 0); verbatim inline lexbuf }
+  | _ { Output.verbatim_char inline (lexeme_char lexbuf 0); verbatim depth inline lexbuf }
 
 and url = parse
   | "}}" { Output.url (Buffer.contents url_buffer) None; Buffer.clear url_buffer }
