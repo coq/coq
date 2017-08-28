@@ -36,6 +36,7 @@ theories/Control.v
 theories/Message.v
 theories/Constr.v
 theories/Pattern.v
+theories/Fresh.v
 theories/Std.v
 theories/Notations.v
 theories/Ltac2.v

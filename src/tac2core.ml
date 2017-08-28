@@ -66,7 +66,8 @@ let of_rec_declaration (nas, ts, cs) =
   Value.of_array Value.of_constr ts,
   Value.of_array Value.of_constr cs)
 
-let val_valexpr = Val.create "ltac2:valexpr"
+let val_valexpr : valexpr Val.typ = Val.create "ltac2:valexpr"
+let val_free : Id.Set.t Val.typ = Val.create "ltac2:free"
 
 (** Stdlib exceptions *)
 
@@ -593,6 +594,43 @@ let prm_check_interrupt : ml_tactic = function
 | [_] -> Proofview.tclCHECKINTERRUPT >>= fun () -> return v_unit
 | _ -> assert false
 
+(** Fresh *)
+
+let prm_free_union : ml_tactic = function
+| [set1; set2] ->
+  let set1 = Value.to_ext val_free set1 in
+  let set2 = Value.to_ext val_free set2 in
+  let ans = Id.Set.union set1 set2 in
+  return (Value.of_ext val_free ans)
+| _ -> assert false
+
+let prm_free_of_ids : ml_tactic = function
+| [ids] ->
+  let ids = Value.to_list Value.to_ident ids in
+  let free = List.fold_right Id.Set.add ids Id.Set.empty in
+  return (Value.of_ext val_free free)
+| _ -> assert false
+
+let prm_free_of_constr : ml_tactic = function
+| [c] ->
+  let c = Value.to_constr c in
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let rec fold accu c = match EConstr.kind sigma c with
+  | Constr.Var id -> Id.Set.add id accu
+  | _ -> EConstr.fold sigma fold accu c
+  in
+  let ans = fold Id.Set.empty c in
+  return (Value.of_ext val_free ans)
+| _ -> assert false
+
+let prm_fresh : ml_tactic = function
+| [avoid; id] ->
+  let avoid = Value.to_ext val_free avoid in
+  let id = Value.to_ident id in
+  let nid = Namegen.next_ident_away_from id (fun id -> Id.Set.mem id avoid) in
+  return (Value.of_ident nid)
+| _ -> assert false
+
 (** Registering *)
 
 let () = Tac2env.define_primitive (pname "print") prm_print
@@ -655,6 +693,11 @@ let () = Tac2env.define_primitive (pname "progress") prm_progress
 let () = Tac2env.define_primitive (pname "abstract") prm_abstract
 let () = Tac2env.define_primitive (pname "time") prm_time
 let () = Tac2env.define_primitive (pname "check_interrupt") prm_check_interrupt
+
+let () = Tac2env.define_primitive (pname "fresh_fresh") prm_fresh
+let () = Tac2env.define_primitive (pname "fresh_free_union") prm_free_union
+let () = Tac2env.define_primitive (pname "fresh_free_of_ids") prm_free_of_ids
+let () = Tac2env.define_primitive (pname "fresh_free_of_constr") prm_free_of_constr
 
 (** ML types *)
 
