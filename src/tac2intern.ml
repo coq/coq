@@ -947,7 +947,7 @@ and intern_case env loc e pl =
         in
         brT
       in
-      let () = unify ~loc:(loc_of_tacexpr br) env ret tbr in
+      let () = unify ~loc:(loc_of_tacexpr br) env tbr ret in
       intern_branch rem
     in
     let () = intern_branch pl in
