@@ -40,4 +40,8 @@ Ltac2 Type kind := [
 
 Ltac2 @ external kind : constr -> kind := "ltac2" "constr_kind".
 
+Ltac2 @ external substnl : constr list -> int -> constr -> constr := "ltac2" "constr_substnl".
+(** [substnl [r₁;...;rₙ] k c] substitutes in parallel [Rel(k+1); ...; Rel(k+n)] with
+    [r₁;...;rₙ] in [c]. *)
+
 End Unsafe.

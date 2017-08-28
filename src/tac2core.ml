@@ -366,6 +366,15 @@ let prm_constr_kind : ml_tactic = function
   end
 | _ -> assert false
 
+let prm_constr_substnl : ml_tactic = function
+| [subst; k; c] ->
+  let subst = Value.to_list Value.to_constr subst in
+  let k = Value.to_int k in
+  let c = Value.to_constr c in
+  let ans = EConstr.Vars.substnl subst k c in
+  return (Value.of_constr ans)
+| _ -> assert false
+
 (** Patterns *)
 
 let prm_pattern_matches : ml_tactic = function
@@ -653,6 +662,7 @@ let () = Tac2env.define_primitive (pname "string_set") prm_string_set
 let () = Tac2env.define_primitive (pname "constr_type") prm_constr_type
 let () = Tac2env.define_primitive (pname "constr_equal") prm_constr_equal
 let () = Tac2env.define_primitive (pname "constr_kind") prm_constr_kind
+let () = Tac2env.define_primitive (pname "constr_substnl") prm_constr_substnl
 
 let () = Tac2env.define_primitive (pname "pattern_matches") prm_pattern_matches
 let () = Tac2env.define_primitive (pname "pattern_matches_subterm") prm_pattern_matches_subterm
