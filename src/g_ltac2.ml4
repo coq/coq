@@ -64,6 +64,16 @@ let test_ampersand_ident =
               | _ -> err ())
         | _ -> err ())
 
+let test_dollar_ident =
+  Gram.Entry.of_parser "test_dollar_ident"
+    (fun strm ->
+      match stream_nth 0 strm with
+        | IDENT "$" | KEYWORD "$" ->
+            (match stream_nth 1 strm with
+              | IDENT _ -> ()
+              | _ -> err ())
+        | _ -> err ())
+
 let tac2expr = Tac2entries.Pltac.tac2expr
 let tac2type = Gram.entry_create "tactic:tac2type"
 let tac2def_val = Gram.entry_create "tactic:tac2def_val"
@@ -647,6 +657,10 @@ GEXTEND Gram
         CAst.make ~loc:!@loc (CHole (None, IntroAnonymous, Some arg))
       | test_ampersand_ident; "&"; id = Prim.ident ->
         let tac = Tac2quote.of_exact_hyp ~loc:!@loc (Loc.tag ~loc:!@loc id) in
+        let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
+        CAst.make ~loc:!@loc (CHole (None, IntroAnonymous, Some arg))
+      | test_dollar_ident; "$"; id = Prim.ident ->
+        let tac = Tac2quote.of_exact_var ~loc:!@loc (Loc.tag ~loc:!@loc id) in
         let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
         CAst.make ~loc:!@loc (CHole (None, IntroAnonymous, Some arg))
     ] ]
