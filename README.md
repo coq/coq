@@ -14,7 +14,7 @@ bug-ridden. Don't mistake this for a final product!
 Installation
 ============
 
-This should compile with Coq 8.7, assuming the `COQLIB` variable is set
+This should compile with Coq master, assuming the `COQBIN` variable is set
 correctly. Standard procedures for `coq_makefile`-generated plugins apply.
 
 Demo
