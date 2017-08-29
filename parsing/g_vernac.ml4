@@ -51,6 +51,19 @@ let make_bullet s =
   | '*' -> Star n
   | _ -> assert false
 
+let parse_compat_version ?(allow_old = true) = let open Flags in function
+  | "8.8" -> Current
+  | "8.7" -> V8_7
+  | "8.6" -> V8_6
+  | "8.5" -> V8_5
+  | ("8.4" | "8.3" | "8.2" | "8.1" | "8.0") as s ->
+    if allow_old then VOld else
+    CErrors.user_err ~hdr:"get_compat_version"
+      Pp.(str "Compatibility with version " ++ str s ++ str " not supported.")
+  | s ->
+    CErrors.user_err ~hdr:"get_compat_version"
+      Pp.(str "Unknown compatibility version \"" ++ str s ++ str "\".")
+
 let extraction_err ~loc =
   if not (Mltop.module_is_known "extraction_plugin") then
     CErrors.user_err ~loc (str "Please do first a Require Extraction.")
@@ -1168,7 +1181,7 @@ GEXTEND Gram
     [ [ "("; IDENT "only"; IDENT "parsing"; ")" ->
          Some Flags.Current
       | "("; IDENT "compat"; s = STRING; ")" ->
-         Some (Coqinit.get_compat_version s)
+         Some (parse_compat_version s)
       | -> None ] ]
   ;
   obsolete_locality:
@@ -1186,7 +1199,7 @@ GEXTEND Gram
       | IDENT "only"; IDENT "printing" -> SetOnlyPrinting
       | IDENT "only"; IDENT "parsing" -> SetOnlyParsing
       | IDENT "compat"; s = STRING ->
-        SetCompatVersion (Coqinit.get_compat_version s)
+        SetCompatVersion (parse_compat_version s)
       | IDENT "format"; s1 = [s = STRING -> Loc.tag ~loc:!@loc s];
                         s2 = OPT [s = STRING -> Loc.tag ~loc:!@loc s] ->
           begin match s1, s2 with
