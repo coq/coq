@@ -51,6 +51,8 @@ arguments. In other cases, the debugger is simply called without additional
 arguments. Such a wrapper can be found in the \texttt{dev/}
 subdirectory of the sources.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section[Building a \Coq\ project with {\tt coq\_makefile}]
 {Building a \Coq\ project with {\tt coq\_makefile}
 \label{Makefile}
@@ -95,7 +97,7 @@ Such command generates the following files:
 	\item[{\tt CoqMakefile.conf}] contains make variables assignments that reflect the contents of the {\tt \_CoqProject} file as well as the path relevant to \Coq{}.
 \end{description}
 
-An optional file {\bf {\tt CoqMakefile.local}} can be provided by the user in order to extend {\tt CoqMakefile}.  In particular one can declare custom actions to be performed before or after the build process. Similarly one can customize the install target or even provide new targets.  Extension points are documented in the {\tt CoqMakefile} file.
+An optional file {\bf {\tt CoqMakefile.local}} can be provided by the user in order to extend {\tt CoqMakefile}.  In particular one can declare custom actions to be performed before or after the build process. Similarly one can customize the install target or even provide new targets.  Extension points are documented in paragraph \ref{coqmakefile:local}.
 
 The extensions of the files listed in {\tt \_CoqProject} is
 used in order to decide how to build them.  In particular:
@@ -114,7 +116,52 @@ the plugin's ``name space'' ({\tt Qux\_plugin}).
 This reduces the chances of begin unable to load two distinct plugins
 because of a clash in their auxiliary module names.
 
-\paragraph{Timing targets and performance testing}
+\paragraph{CoqMakefile.local} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\label{coqmakefile:local}
+
+The optional file {\tt CoqMakefile.local} is included by the generated file
+{\tt CoqMakefile}.  Such can contain two kinds of directives.
+
+\begin{description}
+  \item[Variable assignment] to the variables listed in the {\tt Parameters}
+	  section of the generated makefile.  Here we describe only few of them.
+  \begin{description}
+  \item[CAMLPKGS] can be used to specify third party findlib packages, and is
+	  passed to the OCaml compiler on building or linking of modules.
+          Eg: {\tt -package yojson}.
+  \item[CAMLFLAGS] can be used to specify additional flags to the OCaml
+	  compiler, like {\tt -bin-annot} or {\tt -w...}.
+  \item[COQC, COQDEP, COQDOC] can be set in order to use alternative 
+	  binaries (e.g. wrappers)
+  \end{description}
+\item[Rule extension]
+  The following makefile rules can be extended. For example
+\begin{verbatim}
+pre-all::
+        echo "This line is print before making the all target"
+install-extra::
+        cp ThisExtraFile /there/it/goes
+\end{verbatim}
+  \begin{description}
+  \item[pre-all::] run before the {\tt all} target.  One can use this
+	  to configure the project, or initialize sub modules or check
+	  dependencies are met.
+  \item[post-all::] run after the {\tt all} target.  One can use this
+	  to run a test suite, or compile extracted code.
+  \item[install-extra::] run after {\tt install}.  One can use this
+	  to install extra files.
+  \item[install-doc::]  One can use this to install extra doc.
+  \item[uninstall::] 
+  \item[uninstall-doc::]
+  \item[clean::]
+  \item[cleanall::]
+  \item[archclean::]
+  \item[merlin-hook::] One can append lines to the generated {\tt .merlin}
+	  file extending this target.
+  \end{description}
+\end{description}
+
+\paragraph{Timing targets and performance testing} %%%%%%%%%%%%%%%%%%%%%%%%%%%
 The generated \texttt{Makefile} supports the generation of two kinds
 of timing data: per-file build-times, and per-line times for an
 individual file.
@@ -273,9 +320,10 @@ After     | Code                                                | Before    || C
   \texttt{Note}: This target requires \texttt{python} to build the table.
 \end{itemize}
 
-\paragraph{Notes about including the generated Makefile}
+\paragraph{Reusing/extending the generated Makefile} %%%%%%%%%%%%%%%%%%%%%%%%%
 
-This practice is discouraged. The contents of this file, including variable names
+Including the generated makefile with an {\tt include} directive is discouraged.
+The contents of this file, including variable names
 and status of rules shall change in the future.  Users are advised to
 include {\tt Makefile.conf} or call a target of the generated Makefile
 as in {\tt make -f Makefile target} from another Makefile.
@@ -303,13 +351,7 @@ invoke-coqmakefile: CoqMakefile
 .PHONY: invoke-coqmakefile $(KNOWNFILES)
 
 ####################################################################
-####################################################################
-####################################################################
-####################################################################
 ##                      Your targets here                         ##
-####################################################################
-####################################################################
-####################################################################
 ####################################################################
 
 # This should be the last rule, to handle any targets not declared above
@@ -317,7 +359,15 @@ invoke-coqmakefile: CoqMakefile
 	@true
 \end{verbatim}
 
-\paragraph{Notes for users of {\tt coq\_makefile} with version $<$ 8.7}
+\paragraph{Building a subset of the targets with -j} %%%%%%%%%%%%%%%%%%%%%%%%%
+
+To build, say, two targets \texttt{foo.vo} and \texttt{bar.vo}
+in parallel one can use \texttt{make only TGTS="foo.vo bar.vo" -j}.
+
+Note that \texttt{make foo.vo bar.vo -j} has a different meaning for
+the make utility, in particular it may build a shared prerequisite twice.
+
+\paragraph{Notes for users of {\tt coq\_makefile} with version $<$ 8.7} %%%%%%
 
 \begin{itemize}
 \item Support for ``sub-directory'' is deprecated.  To perform actions before
@@ -328,13 +378,7 @@ invoke-coqmakefile: CoqMakefile
 	{\tt CoqMakefile.local}
 \end{itemize}
 
-\paragraph{Note: building a subset of the targets with -j}
-
-To build, say, two targets \texttt{foo.vo} and \texttt{bar.vo}
-in parallel one can use \texttt{make only TGTS="foo.vo bar.vo" -j}.
-
-Note that \texttt{make foo.vo bar.vo -j} has a different meaning for
-the make utility, in particular it may build a shared prerequisite twice.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section[Modules dependencies]{Modules dependencies\label{Dependencies}\index{Dependencies}
   \ttindex{coqdep}}
