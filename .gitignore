@@ -84,6 +84,7 @@ test-suite/coq-makefile/*/subdir/done
 test-suite/coq-makefile/merlin1/.merlin
 test-suite/coqdoc/Coqdoc.*
 test-suite/coqdoc/index.html
+test-suite/coqdoc/coqdoc.css
 
 # documentation
 
