@@ -749,7 +749,7 @@ printenv::
 # file you can extend the merlin-hook target in @LOCAL_FILE@
 .merlin:
 	$(SHOW)'FILL .merlin'
-	$(HIDE)echo 'FLG -rectypes' > .merlin
+	$(HIDE)echo 'FLG -rectypes -thread' > .merlin
 	$(HIDE)echo 'B $(COQLIB)' >> .merlin
 	$(HIDE)echo 'S $(COQLIB)' >> .merlin
 	$(HIDE)$(foreach d,$(COQ_SRC_SUBDIRS), \
