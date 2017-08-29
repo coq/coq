@@ -2553,10 +2553,15 @@ let intern_gen kind env sigma
     pattern_mode (ltacvars, Id.Map.empty) c
 
 let intern_constr env sigma c = intern_gen WithoutTypeConstraint env sigma c
+
 let intern_type env sigma c = intern_gen IsType env sigma c
-let intern_pattern globalenv patt =
+
+let intern_cases_pattern globalenv patt =
   let env = {pat_ids = None; pat_scopes = (None, [])} in
-  intern_cases_pattern test_kind_tolerant globalenv Id.Map.empty env empty_alias patt
+  let ids,patl = intern_cases_pattern test_kind_tolerant globalenv Id.Map.empty env empty_alias patt in
+  if not (List.for_all (fun (subst,_) -> Id.Map.equal Id.equal Id.Map.empty subst) patl) then
+    user_err ?loc:patt.CAst.loc (str "Unsupported nested \"as\" clause.");
+  ids,List.map snd patl
 
 (*********************************************************************)
 (* Functions to parse and interpret constructions *)
