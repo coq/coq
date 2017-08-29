@@ -28,7 +28,7 @@ val cases_pattern_eq : 'a cases_pattern_g -> 'a cases_pattern_g -> bool
 exception ComplexSort
 val glob_sort_family : glob_sort -> Sorts.family
 
-val alias_of_pat : 'a cases_pattern_g -> Name.t
+val alias_of_pat : cases_pattern -> Name.t
 
 val set_pat_alias : Id.t -> 'a cases_pattern_g -> 'a cases_pattern_g
 
