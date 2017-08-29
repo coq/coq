@@ -320,38 +320,6 @@ let drop_implicits_in_patt cst nb_expl args =
        let imps = List.skipn_at_least nb_expl (select_stronger_impargs impl_st) in
        impls_fit [] (imps,args)
 
-let has_curly_brackets ntn =
-  String.length ntn >= 6 && (String.is_sub "{ _ } " ntn 0 ||
-    String.is_sub " { _ }" ntn (String.length ntn - 6) ||
-    String.string_contains ~where:ntn ~what:" { _ } ")
-
-let rec wildcards ntn n =
-  if Int.equal n (String.length ntn) then []
-  else let l = spaces ntn (n+1) in if ntn.[n] == '_' then n::l else l
-and spaces ntn n =
-  if Int.equal n (String.length ntn) then []
-  else if ntn.[n] == ' ' then wildcards ntn (n+1) else spaces ntn (n+1)
-
-let expand_curly_brackets loc mknot ntn l =
-  let ntn' = ref ntn in
-  let rec expand_ntn i =
-    function
-    | [] -> []
-    | a::l ->
-        let a' =
-          let p = List.nth (wildcards !ntn' 0) i - 2 in
-          if p>=0 && p+5 <= String.length !ntn' && String.is_sub "{ _ }" !ntn' p
-          then begin
-            ntn' :=
-              String.sub !ntn' 0 p ^ "_" ^
-              String.sub !ntn' (p+5) (String.length !ntn' -p-5);
-            mknot (loc,"{ _ }",[a]) end
-          else a in
-        a' :: expand_ntn (i+1) l in
-  let l = expand_ntn 0 l in
-  (* side effect *)
-  mknot (loc,!ntn',l)
-
 let destPrim = function { CAst.v = CPrim t } -> Some t | _ -> None
 let destPatPrim = function { CAst.v = CPatPrim t } -> Some t | _ -> None
 
@@ -367,9 +335,7 @@ let is_zero s =
   in aux 0
 
 let make_notation_gen loc ntn mknot mkprim destprim l =
-  if has_curly_brackets ntn
-  then expand_curly_brackets loc mknot ntn l
-  else match ntn,List.map destprim l with
+  match ntn,List.map destprim l with
     (* Special case to avoid writing "- 3" for e.g. (Z.opp 3) *)
     | "- _", [Some (Numeral (p,true))] when not (is_zero p) ->
         mknot (loc,ntn,([mknot (loc,"( _ )",l)]))

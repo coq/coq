@@ -62,7 +62,7 @@ DECLARE PLUGIN "ssreflect_plugin"
  * we thus save the lexer to restore it at the end of the file *)
 let frozen_lexer = CLexer.get_keyword_state () ;;
 
-let tacltop = (5,Ppextend.E)
+let tacltop = (5,Notation_term.E)
 
 let pr_ssrtacarg _ _ prt = prt tacltop
 ARGUMENT EXTEND ssrtacarg TYPED AS tactic PRINTED BY pr_ssrtacarg

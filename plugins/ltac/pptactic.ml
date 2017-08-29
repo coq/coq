@@ -18,7 +18,7 @@ open Geninterp
 open Stdarg
 open Tacarg
 open Libnames
-open Ppextend
+open Notation_term
 open Misctypes
 open Locus
 open Decl_kinds

@@ -1,3 +1,5 @@
+{x : nat | x = 0} + {True /\ False} + {forall x : nat, x = 0}
+     : Set
 [<0, 2 >]
      : nat * nat * (nat * nat)
 [<0, 2 >]
@@ -109,9 +111,14 @@ fun x : ?A => x === x
      : forall x : ?A, x = x
 where
 ?A : [x : ?A |- Type] (x cannot be used)
-{0, 1}
+{{0, 1}}
      : nat * nat
-{0, 1, 2}
+{{0, 1, 2}}
      : nat * (nat * nat)
-{0, 1, 2, 3}
+{{0, 1, 2, 3}}
      : nat * (nat * (nat * nat))
+letpair x [1] = {0};
+return (1, 2, 3, 4)
+     : nat * nat * nat * nat
+{{ 1 | 1 // 1 }}
+     : nat
