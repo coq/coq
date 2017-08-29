@@ -22,7 +22,6 @@ open Proof_type
 open Type_errors
 open Retyping
 open Misctypes
-open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
 
@@ -92,15 +91,6 @@ let check_typability env sigma c =
 (************************************************************************)
 (* Implementation of the structural rules (moving and deleting
    hypotheses around) *)
-
-(* The Clear tactic: it scans the context for hypotheses to be removed
-   (instead of iterating on the list of identifier to be removed, which
-   forces the user to give them in order). *)
-
-let clear_hyps2 env sigma ids sign t cl =
-  let evdref = ref (Evd.clear_metas sigma) in
-  let (hyps,t,cl) = Evarutil.clear_hyps2_in_evi env evdref sign t cl ids in
-  (hyps, t, cl, !evdref)
 
 (* The ClearBody tactic *)
 
@@ -200,14 +190,6 @@ let move_location_eq m1 m2 = match m1, m2 with
 | MoveFirst, MoveFirst -> true
 | _ -> false
 
-let rec get_hyp_after h = function
-  | [] -> error_no_such_hypothesis h
-  | d :: right ->
-      if Id.equal (NamedDecl.get_id d) h then
-	match right with d' ::_ -> MoveBefore (NamedDecl.get_id d') | [] -> MoveFirst
-      else
-       get_hyp_after h right
-
 let split_sign hfrom hto l =
   let rec splitrec left toleft = function
     | [] -> error_no_such_hypothesis hfrom
@@ -281,6 +263,10 @@ let move_hyp_in_named_context sigma hfrom hto sign =
   let (left,right,declfrom,toleft) =
     split_sign hfrom hto (named_context_of_val sign) in
   move_hyp sigma toleft (left,declfrom,right) hto
+
+let insert_decl_in_named_context sigma decl hto sign =
+  let open EConstr in
+  move_hyp sigma false ([],decl,named_context_of_val sign) hto
 
 (**********************************************************************)
 
@@ -535,37 +521,9 @@ let convert_hyp check sign sigma d =
 (* Primitive tactics are handled here *)
 
 let prim_refiner r sigma goal =
-  let env = Goal.V82.env sigma goal in
-  let sign = Goal.V82.hyps sigma goal in
   let cl = Goal.V82.concl sigma goal in
-  let mk_goal hyps concl = 
-    Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) 
-  in
-  let open EConstr in
   match r with
     (* Logical rules *)
-    | Cut (b,replace,id,t) ->
-(*        if !check && not (Retyping.get_sort_of env sigma t) then*)
-        let t = EConstr.of_constr t in
-        let (sg1,ev1,sigma) = mk_goal sign (nf_betaiota sigma t) in
-	let sign,t,cl,sigma =
-	  if replace then
-	    let nexthyp = get_hyp_after id (named_context_of_val sign) in
-	    let sign,t,cl,sigma = clear_hyps2 env sigma (Id.Set.singleton id) sign t cl in
-	    move_hyp sigma false ([], LocalAssum (id,t),named_context_of_val sign)
-	      nexthyp,
-	      t,cl,sigma
-	  else
-            (if !check && mem_named_context_val id sign then
-	      user_err ~hdr:"Logic.prim_refiner"
-                (str "Variable " ++ pr_id id ++ str " is already declared.");
-	     push_named_context_val (LocalAssum (id,t)) sign,t,cl,sigma) in
-        let (sg2,ev2,sigma) = 
-	  Goal.V82.mk_goal sigma sign cl (Goal.V82.extra sigma goal) in
-	let oterm = mkLetIn (Name id, ev1, t, EConstr.Vars.subst_var id ev2) in
-	let sigma = Goal.V82.partial_solution_to sigma goal sg2 oterm in
-        if b then ([sg1;sg2],sigma) else ([sg2;sg1],sigma)
-
     | Refine c ->
         let cl = EConstr.Unsafe.to_constr cl in
 	check_meta_variables c;

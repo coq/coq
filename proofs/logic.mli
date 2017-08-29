@@ -52,10 +52,16 @@ type refiner_error =
 
 exception RefinerError of refiner_error
 
+val error_no_such_hypothesis : Id.t -> 'a
+
 val catchable_exception : exn -> bool
 
 val convert_hyp : bool -> Environ.named_context_val -> evar_map ->
   EConstr.named_declaration -> Environ.named_context_val
 
 val move_hyp_in_named_context : Evd.evar_map -> Id.t -> Id.t Misctypes.move_location ->
+  Environ.named_context_val -> Environ.named_context_val
+
+val insert_decl_in_named_context : Evd.evar_map ->
+  EConstr.named_declaration -> Id.t Misctypes.move_location ->
   Environ.named_context_val -> Environ.named_context_val
