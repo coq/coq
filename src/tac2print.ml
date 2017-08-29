@@ -280,8 +280,8 @@ let pr_glbexpr_gen lvl c =
     let c = pr_constructor kn in
     paren (hov 0 (c ++ spc () ++ (pr_sequence (pr_glbexpr E0) cl)))
   | GTacExt (tag, arg) ->
-    let name = Tac2dyn.Arg.repr tag in
-    hov 0 (str name ++ str ":" ++ paren (str "_")) (** FIXME *)
+    let tpe = interp_ml_object tag in
+    hov 0 (tpe.ml_print (Global.env ()) arg) (** FIXME *)
   | GTacPrm (prm, args) ->
     let args = match args with
     | [] -> mt ()

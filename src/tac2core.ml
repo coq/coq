@@ -675,32 +675,38 @@ let interp_constr flags ist c =
 let () =
   let intern = intern_constr in
   let interp ist c = interp_constr (constr_flags ()) ist c in
+  let print env c = str "constr:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
   let obj = {
     ml_type = t_constr;
     ml_intern = intern;
     ml_subst = Detyping.subst_glob_constr;
     ml_interp = interp;
+    ml_print = print;
   } in
   define_ml_object Tac2env.wit_constr obj
 
 let () =
   let intern = intern_constr in
   let interp ist c = interp_constr (open_constr_no_classes_flags ()) ist c in
+  let print env c = str "open_constr:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
   let obj = {
     ml_type = t_constr;
     ml_intern = intern;
     ml_subst = Detyping.subst_glob_constr;
     ml_interp = interp;
+    ml_print = print;
   } in
   define_ml_object Tac2env.wit_open_constr obj
 
 let () =
   let interp _ id = return (ValExt (Value.val_ident, id)) in
+  let print _ id = str "ident:(" ++ Id.print id ++ str ")" in
   let obj = {
     ml_type = t_ident;
     ml_intern = (fun _ id -> id);
     ml_interp = interp;
     ml_subst = (fun _ id -> id);
+    ml_print = print;
   } in
   define_ml_object Tac2env.wit_ident obj
 
@@ -709,12 +715,14 @@ let () =
     let _, pat = Constrintern.intern_constr_pattern ist.Genintern.genv ~as_type:false c in
     pat
   in
+  let print env pat = str "pattern:(" ++ Printer.pr_lconstr_pattern_env env Evd.empty pat ++ str ")" in
   let interp _ c = return (ValExt (Value.val_pattern, c)) in
   let obj = {
     ml_type = t_pattern;
     ml_intern = intern;
     ml_interp = interp;
     ml_subst = Patternops.subst_pattern;
+    ml_print = print;
   } in
   define_ml_object Tac2env.wit_pattern obj
 
@@ -731,11 +739,16 @@ let () =
   in
   let subst s c = Globnames.subst_global_reference s c in
   let interp _ gr = return (Value.of_reference gr) in
+  let print _ = function
+  | Globnames.VarRef id -> str "reference:(" ++ str "&" ++ Id.print id ++ str ")"
+  | r -> str "reference:(" ++ Printer.pr_global r ++ str ")"
+  in
   let obj = {
     ml_type = t_reference;
     ml_intern = intern;
     ml_subst = subst;
     ml_interp = interp;
+    ml_print = print;
   } in
   define_ml_object Tac2env.wit_reference obj
 
@@ -750,11 +763,15 @@ let () =
     return v_unit
   in
   let subst s tac = Genintern.substitute Ltac_plugin.Tacarg.wit_tactic s tac in
+  let print env tac =
+    str "ltac1:(" ++ Ltac_plugin.Pptactic.pr_glob_tactic (Obj.magic env) tac ++ str ")"
+  in
   let obj = {
     ml_type = t_unit;
     ml_intern = intern;
     ml_subst = subst;
     ml_interp = interp;
+    ml_print = print;
   } in
   define_ml_object Tac2env.wit_ltac1 obj
 

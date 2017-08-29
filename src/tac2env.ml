@@ -256,6 +256,7 @@ type ('a, 'b) ml_object = {
   ml_intern : Genintern.glob_sign -> 'a -> 'b;
   ml_subst : Mod_subst.substitution -> 'b -> 'b;
   ml_interp : environment -> 'b -> valexpr Proofview.tactic;
+  ml_print : Environ.env -> 'b -> Pp.t;
 }
 
 module MLTypeObj =
