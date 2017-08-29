@@ -47,3 +47,7 @@ Send your bug reports by filling a form at [coq.inria.fr/bugs](http://coq.inria.
 To be effective, bug reports should mention the OCaml version used
 to compile and run Coq, the Coq version (`coqtop -v`), the configuration
 used, and include a complete source example leading to the bug.
+
+## Contributing
+
+Guidelines for contributing to Coq in various ways are listed in the [contributor's guide](CONTRIBUTING.md).
