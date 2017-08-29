@@ -503,6 +503,7 @@ let rec intropattern_ids accu {loc;v=pat} = match pat with
       List.fold_left intropattern_ids accu (List.flatten ll)
   | IntroAction (IntroInjection l) ->
       List.fold_left intropattern_ids accu l
+  | IntroAction (IntroIrrefutablePattern (ids,pat)) -> List.fold_right (fun CAst.{v} ids -> Id.Set.add v ids) ids Id.Set.empty
   | IntroAction (IntroApplyOn ({v=c},pat)) -> intropattern_ids accu pat
   | IntroNaming (IntroAnonymous | IntroFresh _)
   | IntroAction (IntroWildcard | IntroRewrite _)
@@ -870,6 +871,8 @@ and interp_intro_pattern_action ist env sigma = function
   | IntroInjection l ->
       let l = interp_intro_pattern_list_as_list ist env sigma l in
       IntroInjection l
+  | IntroIrrefutablePattern pat ->
+      IntroIrrefutablePattern pat
   | IntroApplyOn ({loc;v=c},ipat) ->
       let c env sigma = interp_open_constr ist env sigma c in
       let ipat = interp_intro_pattern ist env sigma ipat in

@@ -59,6 +59,7 @@ and subst_intro_pattern_action subst = let open CAst in function
   | IntroOrAndPattern l ->
       IntroOrAndPattern (subst_intro_or_and_pattern subst l)
   | IntroInjection l -> IntroInjection (List.map (subst_intro_pattern subst) l)
+  | IntroIrrefutablePattern pat -> IntroIrrefutablePattern pat
   | IntroWildcard | IntroRewrite _ as x -> x
 
 and subst_intro_or_and_pattern subst = function

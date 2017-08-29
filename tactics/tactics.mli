@@ -124,7 +124,7 @@ val intro_patterns_to : evars_flag -> Id.t Logic.move_location -> intro_patterns
   unit Proofview.tactic
 val intro_patterns_bound_to : evars_flag -> int -> Id.t Logic.move_location -> intro_patterns ->
   unit Proofview.tactic
-val intro_pattern_to : evars_flag -> Id.t Logic.move_location -> delayed_open_constr intro_pattern_expr ->
+val intro_pattern_to : evars_flag -> Id.t Logic.move_location -> (delayed_open_constr,Tactypes.glob_cases_pattern) intro_pattern_expr ->
   unit Proofview.tactic
 
 (** Implements user-level "intros", with [] standing for "**" *)

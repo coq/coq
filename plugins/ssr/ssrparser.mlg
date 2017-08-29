@@ -637,6 +637,7 @@ let ipat_of_intro_pattern p = Tactypes.(
     | IntroAction (IntroApplyOn _) -> (* to do *) CErrors.user_err (Pp.str "TO DO")
     | IntroAction (IntroInjection ips) ->
         IPatInj [List.map ipat_of_intro_pattern (List.map remove_loc ips)]
+    | IntroAction (IntroIrrefutablePattern _) -> failwith "TODO"
     | IntroForthcoming _ ->
         (* Unable to determine which kind of ipat interp_introid could
          * return [HH] *)
@@ -701,6 +702,7 @@ let rec add_intro_pattern_hyps ipat hyps =
   | IntroNaming (IntroFresh _) -> []
   | IntroAction (IntroRewrite _) -> hyps
   | IntroAction (IntroInjection ips) -> List.fold_right add_intro_pattern_hyps ips hyps
+  | IntroAction (IntroIrrefutablePattern _) -> failwith "TODO"
   | IntroAction (IntroApplyOn (c,pat)) -> add_intro_pattern_hyps pat hyps
   | IntroForthcoming _ ->
     (* As in ipat_of_intro_pattern, was unable to determine which kind

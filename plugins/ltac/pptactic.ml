@@ -385,29 +385,29 @@ let string_of_genarg_arg (ArgumentType arg) =
     | Tacred.EvalConstRef sp ->
       Nametab.pr_global_env (Termops.vars_of_env env) (GlobRef.ConstRef sp)
 
-  let pr_as_disjunctive_ipat prc ipatl =
+  let pr_as_disjunctive_ipat prc prpat ipatl =
     keyword "as" ++ spc () ++
-      pr_or_var (fun {CAst.loc;v=p} -> Miscprint.pr_or_and_intro_pattern prc p) ipatl
+      pr_or_var (fun {CAst.loc;v=p} -> Miscprint.pr_or_and_intro_pattern prc prpat p) ipatl
 
   let pr_eqn_ipat {CAst.v=ipat} = keyword "eqn:" ++ Miscprint.pr_intro_pattern_naming ipat
 
-  let pr_with_induction_names prc = function
+  let pr_with_induction_names prc prpat = function
     | None, None -> mt ()
     | Some eqpat, None -> hov 1 (pr_eqn_ipat eqpat)
-    | None, Some ipat -> hov 1 (pr_as_disjunctive_ipat prc ipat)
+    | None, Some ipat -> hov 1 (pr_as_disjunctive_ipat prc prpat ipat)
     | Some eqpat, Some ipat ->
-        hov 1 (pr_as_disjunctive_ipat prc ipat ++ spc () ++ pr_eqn_ipat eqpat)
+        hov 1 (pr_as_disjunctive_ipat prc prpat ipat ++ spc () ++ pr_eqn_ipat eqpat)
 
-  let pr_as_intro_pattern prc ipat =
-    spc () ++ hov 1 (keyword "as" ++ spc () ++ Miscprint.pr_intro_pattern prc ipat)
+  let pr_as_intro_pattern prc prpat ipat =
+    spc () ++ hov 1 (keyword "as" ++ spc () ++ Miscprint.pr_intro_pattern prc prpat ipat)
 
-  let pr_with_inversion_names prc = function
+  let pr_with_inversion_names prc prpat = function
     | None -> mt ()
-    | Some ipat -> pr_as_disjunctive_ipat prc ipat
+    | Some ipat -> pr_as_disjunctive_ipat prc prpat ipat
 
-  let pr_as_ipat prc = function
+  let pr_as_ipat prc prpat = function
     | None -> mt ()
-    | Some ipat -> pr_as_intro_pattern prc ipat
+    | Some ipat -> pr_as_intro_pattern prc prpat ipat
 
   let pr_as_name = function
     | Anonymous -> mt ()
@@ -420,21 +420,21 @@ let string_of_genarg_arg (ArgumentType arg) =
     | Anonymous -> spc() ++ prc c
     | Name id -> spc() ++ surround (pr_id id ++ str " :=" ++ spc() ++ prlc c)
 
-  let pr_assertion prc prdc _prlc ipat c = match ipat with
+  let pr_assertion prc prdc _prlc prpat ipat c = match ipat with
     (* Use this "optimisation" or use only the general case ?
        | IntroIdentifier id ->
        spc() ++ surround (pr_intro_pattern ipat ++ str " :" ++ spc() ++ prlc c)
     *)
     | ipat ->
-      spc() ++ prc c ++ pr_as_ipat prdc ipat
+      spc() ++ prc c ++ pr_as_ipat prdc prpat ipat
 
-  let pr_assumption prc prdc prlc ipat c = match ipat with
+  let pr_assumption prc prdc prlc prpat ipat c = match ipat with
     (* Use this "optimisation" or use only the general case ?*)
     (* it seems that this "optimisation" is somehow more natural *)
     | Some {CAst.v=IntroNaming (IntroIdentifier id)} ->
       spc() ++ surround (pr_id id ++ str " :" ++ spc() ++ prlc c)
     | ipat ->
-      spc() ++ prc c ++ pr_as_ipat prdc ipat
+      spc() ++ prc c ++ pr_as_ipat prdc prpat ipat
 
   let pr_by_tactic prt = function
     | Some tac -> keyword "by" ++ spc () ++ prt tac
@@ -457,9 +457,9 @@ let string_of_genarg_arg (ArgumentType arg) =
     | [] -> mt ()
     | l -> pr_in (spc () ++ prlist_with_sep spc pr_id l)
 
-  let pr_in_hyp_as prc pr_id = function
+  let pr_in_hyp_as prc prpat pr_id = function
     | [] -> mt ()
-    | l -> pr_in (spc () ++ prlist_with_sep pr_comma (fun (id,ipat) -> pr_id id ++ pr_as_ipat prc ipat) l)
+    | l -> pr_in (spc () ++ prlist_with_sep pr_comma (fun (id,ipat) -> pr_id id ++ pr_as_ipat prc prpat ipat) l)
 
   let pr_in_clause pr_id = function
     | { onhyps=None; concl_occs=NoOccurrences } ->
@@ -653,6 +653,7 @@ let pr_goal_selector ~toplevel s =
     pr_constr    : Environ.env -> Evd.evar_map -> 'trm -> Pp.t;
     pr_lconstr   : Environ.env -> Evd.evar_map -> 'trm -> Pp.t;
     pr_dconstr   : Environ.env -> Evd.evar_map -> 'dtrm -> Pp.t;
+    pr_dpattern   : Environ.env -> Evd.evar_map -> 'dpat -> Pp.t;
     pr_pattern   : Environ.env -> Evd.evar_map -> 'pat -> Pp.t;
     pr_lpattern  : Environ.env -> Evd.evar_map -> 'pat -> Pp.t;
     pr_constant  : 'cst -> Pp.t;
@@ -666,6 +667,7 @@ let pr_goal_selector ~toplevel s =
   constraint 'a = <
       term      :'trm;
       dterm     :'dtrm;
+      dpattern  :'dpat;
       pattern   :'pat;
       constant  :'cst;
       reference :'ref;
@@ -750,13 +752,13 @@ let pr_goal_selector ~toplevel s =
            hov 1 (primitive (if ev then "eintros" else "intros") ++
                     (match p with
                     | [{CAst.v=IntroForthcoming false}] -> mt ()
-                    | _ -> spc () ++ prlist_with_sep spc (Miscprint.pr_intro_pattern @@ pr.pr_dconstr env sigma) p))
+                    | _ -> spc () ++ prlist_with_sep spc (Miscprint.pr_intro_pattern (pr.pr_dconstr env sigma) (pr.pr_dpattern env sigma)) p))
         | TacApply (a,ev,cb,inhyp) ->
           hov 1 (
             (if a then mt() else primitive "simple ") ++
               primitive (with_evars ev "apply") ++ spc () ++
               prlist_with_sep pr_comma pr_with_bindings_arg cb ++
-              pr_non_empty_arg (pr_in_hyp_as (pr.pr_dconstr env sigma) pr.pr_name) inhyp
+              pr_non_empty_arg (pr_in_hyp_as (pr.pr_dconstr env sigma) (pr.pr_dpattern env sigma) pr.pr_name) inhyp
           )
         | TacElim (ev,cb,cbo) ->
           hov 1 (
@@ -777,13 +779,13 @@ let pr_goal_selector ~toplevel s =
         | TacAssert (ev,b,Some tac,ipat,c) ->
           hov 1 (
             primitive (if b then if ev then "eassert" else "assert" else if ev then "eenough" else "enough") ++
-              pr_assumption (pr.pr_constr env sigma) (pr.pr_dconstr env sigma) (pr.pr_lconstr env sigma) ipat c ++
+              pr_assumption (pr.pr_constr env sigma) (pr.pr_dconstr env sigma) (pr.pr_lconstr env sigma) (pr.pr_dpattern env sigma) ipat c ++
               pr_non_empty_arg (pr_by_tactic (pr.pr_tactic (LevelLe ltactical))) tac
           )
         | TacAssert (ev,_,None,ipat,c) ->
           hov 1 (
             primitive (if ev then "epose proof" else "pose proof")
-            ++ pr_assertion (pr.pr_constr env sigma) (pr.pr_dconstr env sigma) (pr.pr_lconstr env sigma) ipat c
+            ++ pr_assertion (pr.pr_constr env sigma) (pr.pr_dconstr env sigma) (pr.pr_lconstr env sigma) (pr.pr_dpattern env sigma) ipat c
           )
         | TacGeneralize l ->
           hov 1 (
@@ -819,7 +821,7 @@ let pr_goal_selector ~toplevel s =
             ++ spc ()
             ++ prlist_with_sep pr_comma (fun (h,ids,cl) ->
               pr_destruction_arg (pr.pr_dconstr env sigma) (pr.pr_dconstr env sigma) h ++
-                pr_non_empty_arg (pr_with_induction_names (pr.pr_dconstr env sigma)) ids ++
+                pr_non_empty_arg (pr_with_induction_names (pr.pr_dconstr env sigma) (pr.pr_dpattern env sigma)) ids ++
                 pr_opt (pr_clauses None pr.pr_name) cl) l ++
               pr_opt pr_eliminator el
           )
@@ -861,14 +863,14 @@ let pr_goal_selector ~toplevel s =
           hov 1 (
             primitive "dependent " ++ pr_inversion_kind k ++ spc ()
             ++ pr_quantified_hypothesis hyp
-            ++ pr_with_inversion_names (pr.pr_dconstr env sigma) ids
+            ++ pr_with_inversion_names (pr.pr_dconstr env sigma) (pr.pr_dpattern env sigma) ids
             ++ pr_with_constr (pr.pr_constr env sigma) c
           )
         | TacInversion (NonDepInversion (k,cl,ids),hyp) ->
           hov 1 (
             pr_inversion_kind k ++ spc ()
             ++ pr_quantified_hypothesis hyp
-            ++ pr_non_empty_arg (pr_with_inversion_names @@ pr.pr_dconstr env sigma) ids
+            ++ pr_non_empty_arg (pr_with_inversion_names (pr.pr_dconstr env sigma) (pr.pr_dpattern env sigma)) ids
             ++ pr_non_empty_arg (pr_simple_hyp_clause pr.pr_name) cl
           )
         | TacInversion (InversionUsing (c,cl),hyp) ->
@@ -1098,6 +1100,7 @@ let pr_goal_selector ~toplevel s =
       pr_tactic = pr_raw_tactic_level env sigma;
       pr_constr = pr_constr_expr;
       pr_dconstr = pr_constr_expr;
+      pr_dpattern = (fun env sigma -> pr_cases_pattern_expr);
       pr_lconstr = pr_lconstr_expr;
       pr_pattern = pr_constr_pattern_expr;
       pr_lpattern = pr_lconstr_pattern_expr;
@@ -1128,6 +1131,7 @@ let pr_goal_selector ~toplevel s =
         pr_tactic = prtac;
         pr_constr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
         pr_dconstr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
+        pr_dpattern = (fun env sigma (ids,patl) -> prlist_with_sep pr_spcbar pr_cases_pattern patl);
         pr_lconstr = (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env sigma));
         pr_pattern = (fun env sigma -> pr_pat_and_constr_expr (pr_glob_constr_env env sigma));
         pr_constant = pr_or_var (pr_and_short_name (pr_evaluable_reference_env env));
@@ -1163,6 +1167,7 @@ let pr_goal_selector ~toplevel s =
         pr_tactic = (fun _ _ -> str "<tactic>");
         pr_constr = pr_econstr_env;
         pr_dconstr = (fun env sigma -> pr_and_constr_expr (pr_glob_constr_env env sigma));
+        pr_dpattern = (fun env sigma (ids,patl) -> prlist_with_sep pr_spcbar pr_cases_pattern patl);
         pr_lconstr = pr_leconstr_env;
         pr_pattern = pr_constr_pattern_env;
         pr_lpattern = pr_lconstr_pattern_env;
@@ -1259,7 +1264,8 @@ let declare_extra_vernac_genarg_pprule wit f =
 
 let pr_intro_pattern_env p = Genprint.TopPrinterNeedsContext (fun env sigma ->
   let print_constr c = let (sigma, c) = c env sigma in pr_econstr_env env sigma c in
-  Miscprint.pr_intro_pattern print_constr p)
+  Miscprint.pr_intro_pattern print_constr
+    (fun (_,c) -> prlist_with_sep pr_spcbar pr_cases_pattern c) p)
 
 let pr_red_expr_env r = Genprint.TopPrinterNeedsContext (fun env sigma ->
   pr_red_expr env sigma ((fun e -> pr_econstr_env e), (fun e -> pr_leconstr_env e),
@@ -1303,10 +1309,11 @@ let pr_lglob_constr_pptac env sigma c =
   pr_lglob_constr_env env sigma c
 
 let pr_raw_intro_pattern =
-  lift_env (fun env sigma -> Miscprint.pr_intro_pattern @@ pr_constr_expr env sigma)
+  lift_env (fun env sigma -> Miscprint.pr_intro_pattern (pr_constr_expr env sigma) pr_cases_pattern_expr)
 
 let pr_glob_intro_pattern =
-  lift_env (fun env sigma -> Miscprint.pr_intro_pattern (fun (c,_) -> pr_glob_constr_pptac env sigma c))
+  lift_env (fun env sigma -> Miscprint.pr_intro_pattern (fun (c,_) -> pr_glob_constr_pptac env sigma c)
+    (fun (_,c) -> prlist_with_sep pr_spcbar pr_cases_pattern c))
 
 let () =
   let pr_bool b = if b then str "true" else str "false" in

@@ -14,33 +14,34 @@ open Tactypes
 
 (** Printing of [intro_pattern] *)
 
-let rec pr_intro_pattern prc {CAst.v=pat} = match pat with
+let rec pr_intro_pattern prc prpat {CAst.v=pat} = match pat with
   | IntroForthcoming true -> str "*"
   | IntroForthcoming false -> str "**"
   | IntroNaming p -> pr_intro_pattern_naming p
-  | IntroAction p -> pr_intro_pattern_action prc p
+  | IntroAction p -> pr_intro_pattern_action prc prpat p
 
 and pr_intro_pattern_naming = let open Namegen in function
   | IntroIdentifier id -> Id.print id
   | IntroFresh id -> str "?" ++ Id.print id
   | IntroAnonymous -> str "?"
 
-and pr_intro_pattern_action prc = function
+and pr_intro_pattern_action prc prpat = function
   | IntroWildcard -> str "_"
-  | IntroOrAndPattern pll -> pr_or_and_intro_pattern prc pll
+  | IntroOrAndPattern pll -> pr_or_and_intro_pattern prc prpat pll
   | IntroInjection pl ->
-      str "[=" ++ hv 0 (prlist_with_sep spc (pr_intro_pattern prc) pl) ++
+      str "[=" ++ hv 0 (prlist_with_sep spc (pr_intro_pattern prc prpat) pl) ++
       str "]"
-  | IntroApplyOn ({CAst.v=c},pat) -> pr_intro_pattern prc pat ++ str "%" ++ prc c
+  | IntroIrrefutablePattern cases_patttern -> prpat cases_patttern
+  | IntroApplyOn ({CAst.v=c},pat) -> pr_intro_pattern prc prpat pat ++ str "%" ++ prc c
   | IntroRewrite true -> str "->"
   | IntroRewrite false -> str "<-"
 
-and pr_or_and_intro_pattern prc = function
+and pr_or_and_intro_pattern prc prpat = function
   | IntroAndPattern pl ->
-      str "(" ++ hv 0 (prlist_with_sep pr_comma (pr_intro_pattern prc) pl) ++ str ")"
+      str "(" ++ hv 0 (prlist_with_sep pr_comma (pr_intro_pattern prc prpat) pl) ++ str ")"
   | IntroOrPattern pll ->
       str "[" ++
-      hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc (pr_intro_pattern prc)) pll)
+      hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc (pr_intro_pattern prc prpat)) pll)
       ++ str "]"
 
 (** Printing of bindings *)

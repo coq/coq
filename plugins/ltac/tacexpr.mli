@@ -36,11 +36,11 @@ type letin_flag = bool     (* true = use local def    false = use Leibniz *)
 type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use default *)
 type check_flag = bool     (* true = check    false = do not check *)
 
-type ('c,'d,'id) inversion_strength =
+type ('c,'d,'e,'id) inversion_strength =
   | NonDepInversion of
-      Inv.inversion_kind * 'id list * 'd or_and_intro_pattern_expr CAst.t or_var option
+      Inv.inversion_kind * 'id list * ('d,'e) or_and_intro_pattern_expr CAst.t or_var option
   | DepInversion of
-      Inv.inversion_kind * 'c option * 'd or_and_intro_pattern_expr CAst.t or_var option
+      Inv.inversion_kind * 'c option * ('d,'e) or_and_intro_pattern_expr CAst.t or_var option
   | InversionUsing of 'c * 'id list
 
 type ('a,'b) location = HypLocation of 'a | ConclLocation of 'b
@@ -50,14 +50,14 @@ type 'id message_token =
   | MsgInt of int
   | MsgIdent of 'id
 
-type ('dconstr,'id) induction_clause =
+type ('dconstr,'dpattern,'id) induction_clause =
     'dconstr with_bindings Tactics.destruction_arg *
     (Namegen.intro_pattern_naming_expr CAst.t option (* eqn:... *)
-    * 'dconstr or_and_intro_pattern_expr CAst.t or_var option) (* as ... *)
+    * ('dconstr,'dpattern) or_and_intro_pattern_expr CAst.t or_var option) (* as ... *)
     * 'id clause_expr option (* in ... *)
 
-type ('constr,'dconstr,'id) induction_clause_list =
-    ('dconstr,'id) induction_clause list
+type ('constr,'dconstr,'dpattern,'id) induction_clause_list =
+    ('dconstr,'dpattern,'id) induction_clause list
     * 'constr with_bindings option (* using ... *)
 
 type 'a with_bindings_arg = clear_flag * 'a with_bindings
@@ -96,32 +96,32 @@ type ml_tactic_entry = {
 type open_constr_expr = unit * constr_expr
 type open_glob_constr = unit * Genintern.glob_constr_and_expr
 
-type intro_pattern = delayed_open_constr intro_pattern_expr CAst.t
-type intro_patterns = delayed_open_constr intro_pattern_expr CAst.t list
-type or_and_intro_pattern = delayed_open_constr or_and_intro_pattern_expr CAst.t
+type intro_pattern = (delayed_open_constr,Tactypes.glob_cases_pattern) intro_pattern_expr CAst.t
+type intro_patterns = (delayed_open_constr,Tactypes.glob_cases_pattern) intro_pattern_expr CAst.t list
+type or_and_intro_pattern = (delayed_open_constr,Tactypes.glob_cases_pattern) or_and_intro_pattern_expr CAst.t
 type intro_pattern_naming = Namegen.intro_pattern_naming_expr CAst.t
 
 (** Generic expressions for atomic tactics *)
 
 type 'a gen_atomic_tactic_expr =
   (* Basic tactics *)
-  | TacIntroPattern of evars_flag * 'dtrm intro_pattern_expr CAst.t list
+  | TacIntroPattern of evars_flag * ('dtrm,'dpat) intro_pattern_expr CAst.t list
   | TacApply of advanced_flag * evars_flag * 'trm with_bindings_arg list *
-      ('nam * 'dtrm intro_pattern_expr CAst.t option) list
+      ('nam * ('dtrm,'dpat) intro_pattern_expr CAst.t option) list
   | TacElim of evars_flag * 'trm with_bindings_arg * 'trm with_bindings option
   | TacCase of evars_flag * 'trm with_bindings_arg
   | TacMutualFix of Id.t * int * (Id.t * int * 'trm) list
   | TacMutualCofix of Id.t * (Id.t * 'trm) list
   | TacAssert of
       evars_flag * bool * 'tacexpr option option *
-      'dtrm intro_pattern_expr CAst.t option * 'trm
+      ('dtrm,'dpat) intro_pattern_expr CAst.t option * 'trm
   | TacGeneralize of ('trm with_occurrences * Name.t) list
   | TacLetTac of evars_flag * Name.t * 'trm * 'nam clause_expr * letin_flag *
       Namegen.intro_pattern_naming_expr CAst.t option
 
   (* Derived basic tactics *)
   | TacInductionDestruct of
-      rec_flag * evars_flag * ('trm,'dtrm,'nam) induction_clause_list
+      rec_flag * evars_flag * ('trm,'dtrm,'dpat,'nam) induction_clause_list
 
   (* Conversion *)
   | TacReduce of ('trm,'cst,'pat) red_expr_gen * 'nam clause_expr
@@ -137,11 +137,12 @@ type 'a gen_atomic_tactic_expr =
          uninterpreted, it works fine here too, and avoid more
          disruption of this file. *)
       'tacexpr option
-  | TacInversion of ('trm,'dtrm,'nam) inversion_strength * quantified_hypothesis
+  | TacInversion of ('trm,'dtrm,'dpat,'nam) inversion_strength * quantified_hypothesis
 
 constraint 'a = <
     term:'trm;
     dterm: 'dtrm;
+    dpattern: 'dpat;
     pattern:'pat;
     constant:'cst;
     reference:'ref;
@@ -165,6 +166,7 @@ type 'a gen_tactic_arg =
 constraint 'a = <
     term:'trm;
     dterm: 'dtrm;
+    dpattern: 'dpat;
     pattern:'pat;
     constant:'cst;
     reference:'ref;
@@ -242,6 +244,7 @@ and 'a gen_tactic_expr_r =
 constraint 'a = <
     term:'t;
     dterm: 'dtrm;
+    dpattern: 'dpat;
     pattern:'p;
     constant:'c;
     reference:'r;
@@ -256,6 +259,7 @@ and 'a gen_tactic_expr =
 constraint 'a = <
     term:'t;
     dterm: 'dtrm;
+    dpattern: 'dpat;
     pattern:'p;
     constant:'c;
     reference:'r;
@@ -270,6 +274,7 @@ and 'a gen_tactic_fun_ast =
 constraint 'a = <
     term:'t;
     dterm: 'dtrm;
+    dpattern: 'dpat;
     pattern:'p;
     constant:'c;
     reference:'r;
@@ -282,6 +287,7 @@ constraint 'a = <
 
 type g_trm = Genintern.glob_constr_and_expr
 type g_pat = Genintern.glob_constr_pattern_and_expr
+type g_dpat = Tactypes.glob_cases_pattern
 type g_cst = Tacred.evaluable_global_reference Genredexpr.and_short_name or_var
 type g_ref = ltac_constant located or_var
 type g_nam = lident
@@ -289,6 +295,7 @@ type g_nam = lident
 type g_dispatch =  <
     term:g_trm;
     dterm:g_trm;
+    dpattern:g_dpat;
     pattern:g_pat;
     constant:g_cst;
     reference:g_ref;
@@ -308,6 +315,7 @@ type glob_tactic_arg =
 
 (** Raw tactics *)
 
+type r_dpat = cases_pattern_expr
 type r_ref = qualid
 type r_nam = lident
 type r_lev = rlevel
@@ -315,6 +323,7 @@ type r_lev = rlevel
 type r_dispatch =  <
     term:r_trm;
     dterm:r_trm;
+    dpattern:r_dpat;
     pattern:r_pat;
     constant:r_cst;
     reference:r_ref;
@@ -344,6 +353,7 @@ type t_dispatch =  <
     term:t_trm;
     dterm:g_trm;
     pattern:t_pat;
+    dpattern:g_dpat;
     constant:t_cst;
     reference:t_ref;
     name:t_nam;

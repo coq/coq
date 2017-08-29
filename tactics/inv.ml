@@ -303,7 +303,7 @@ let error_too_many_names pats =
     str "Unexpected " ++
     str (String.plural (List.length pats) "introduction pattern") ++
     str ": " ++ pr_enum (Miscprint.pr_intro_pattern
-                           (fun c -> Printer.pr_econstr_env env sigma (snd (c env (Evd.from_env env))))) pats ++
+                           (fun c -> Printer.pr_econstr_env env sigma (snd (c env (Evd.from_env env)))) (fun (_,c) -> prlist_with_sep pr_spcbar Printer.pr_cases_pattern c)) pats ++
     str ".")
 
 let get_names (allow_conj,issimple) ({CAst.loc;v=pat} as x) = match pat with
@@ -326,6 +326,8 @@ let get_names (allow_conj,issimple) ({CAst.loc;v=pat} as x) = match pat with
         user_err Pp.(str"Nested conjunctive patterns not allowed for inversion equations.")
   | IntroAction (IntroInjection l) ->
       user_err Pp.(str "Injection patterns not allowed for inversion equations.")
+  | IntroAction (IntroIrrefutablePattern _) ->
+      user_err Pp.(str "Kind of patterns not allowed for inversion equations.")
   | IntroAction (IntroOrAndPattern (IntroOrPattern _)) ->
       user_err Pp.(str "Disjunctive patterns not allowed for inversion equations.")
   | IntroAction (IntroApplyOn (c,pat)) ->

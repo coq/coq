@@ -110,7 +110,7 @@ exception NotRightNumberConstructors of int
 exception NotEnoughConstructors
 exception ConstructorNumberedFromOne
 exception NoConstructors
-exception UnexpectedExtraPattern of int option * delayed_open_constr intro_pattern_expr
+exception UnexpectedExtraPattern of int option * (delayed_open_constr,Tactypes.glob_cases_pattern) intro_pattern_expr
 exception NotAnInductionScheme of string
 exception NotAnInductionSchemeLetIn
 exception CannotFindInductiveArgument
@@ -2379,6 +2379,32 @@ let intro_or_and_pattern ?loc with_evars ll thin tac id =
           nv_with_let ll))
   end
 
+let rec translate_pattern pat = match DAst.get pat with
+  | Glob_term.PatCstr ((ind,j),args,na) ->
+     (* TODO: Check typing...
+     let t = Retyping.get_type_of env sigma c in
+     let ((ind',_),_) = reduce_to_atomic_ind env sigma t in
+     if not (eq_ind ind ind') then user_err (str "Constructor of unexpected type.");
+     *)
+     (* TODO: Insert coercions if needed... *)
+     (* let sigma, j = Coercion.inh_coerce_to_base c env sigma j in *)
+     if na <> Anonymous then user_err (str "\"as\" clause not implemented.");
+     let n = nconstructors (Global.env ()) ind in
+     let f i = if Int.equal i (j-1) then List.map translate_pattern args else [] in
+     CAst.make @@ IntroAction (IntroOrAndPattern (IntroOrPattern (List.init n f)))
+  | Glob_term.PatVar Anonymous -> CAst.make @@ IntroNaming IntroAnonymous
+  | Glob_term.PatVar (Name id) -> CAst.make @@ IntroNaming (IntroIdentifier id)
+
+let intro_irrefutable_pattern ?loc with_evars (ids,patl) thin tac id =
+  match patl with
+  | [pat] ->
+    (match (translate_pattern pat).CAst.v with
+    | IntroAction (IntroOrAndPattern ll) ->
+      intro_or_and_pattern ?loc with_evars ll thin tac id
+    | IntroNaming _ -> Proofview.tclUNIT ()
+    | _ -> assert false)
+  | _ -> user_err (str "Or pattern not supported.")
+
 let rewrite_hyp_then with_evars thin l2r id tac =
   let rew_on l2r =
     Hook.get forward_general_rewrite_clause l2r with_evars (mkVar id,NoBindings) in
@@ -2432,6 +2458,9 @@ let rec collect_intro_names = let open CAst in function
     List.fold_left fold (Id.Set.empty,Id.Set.empty) ll
 | {v=IntroAction (IntroInjection l)} :: l' ->
     collect_intro_names (l@l')
+| {v=IntroAction (IntroIrrefutablePattern (ids,patl))} :: l' ->
+    let ids1, ids2 = collect_intro_names l' in
+    ids1, List.fold_right (fun id ids -> Id.Set.add id.CAst.v ids) ids ids2
 | {v=IntroAction (IntroApplyOn (c,pat))} :: l' ->
     collect_intro_names (pat::l')
 | {v=IntroNaming (IntroFresh id)} :: l ->
@@ -2462,6 +2491,8 @@ let rec check_name_unicity env ok seen = let open CAst in function
     List.iter (fun l -> check_name_unicity env ok seen (l@l')) ll
 | {v=IntroAction (IntroInjection l)} :: l' ->
     check_name_unicity env ok seen (l@l')
+| {v=IntroAction (IntroIrrefutablePattern (ids,patl))} :: l' ->
+    check_name_unicity env ok (List.map (fun CAst.{v} -> v) ids @ seen) l'
 | {v=IntroAction (IntroApplyOn (c,pat))} :: l' ->
     check_name_unicity env ok seen (pat::l')
 | {v=(IntroNaming (IntroAnonymous | IntroFresh _)
@@ -2489,6 +2520,7 @@ let rec make_naming_action avoid l = function
   | IntroApplyOn (_,{CAst.v=pat;loc}) -> make_naming_pattern avoid ?loc l pat
   | (IntroOrAndPattern _ | IntroInjection _ | IntroRewrite _) as pat ->
     NamingAvoid(Id.Set.union avoid (explicit_intro_names ((CAst.make @@ IntroAction pat)::l)))
+  | IntroIrrefutablePattern _ -> failwith "TODO"
 
 and make_naming_pattern ?loc avoid l = function
   | IntroNaming pat -> make_naming ?loc avoid l pat
@@ -2556,6 +2588,8 @@ and intro_pattern_action ?loc with_evars pat thin destopt tac id =
       tac (CAst.(make ?loc id)::thin) None []
   | IntroOrAndPattern ll ->
       intro_or_and_pattern ?loc with_evars ll thin tac id
+  | IntroIrrefutablePattern idspatl ->
+      intro_irrefutable_pattern ?loc with_evars idspatl thin tac id
   | IntroInjection l' ->
       intro_decomp_eq ?loc l' thin tac id
   | IntroRewrite l2r ->
@@ -3257,7 +3291,8 @@ let warn_unused_intro_pattern env sigma =
        strbrk"Unused introduction " ++ str (String.plural (List.length names) "pattern") ++
        str": " ++ prlist_with_sep spc
          (Miscprint.pr_intro_pattern
-            (fun c -> Printer.pr_econstr_env env sigma (snd (c env sigma)))) names)
+            (fun c -> Printer.pr_econstr_env env sigma (snd (c env sigma)))
+            (fun (ids,p) -> Pp.prlist_with_sep Pp.pr_spcbar Printer.pr_cases_pattern p)) names)
 
 let check_unused_names env sigma names =
   if not (List.is_empty names) then

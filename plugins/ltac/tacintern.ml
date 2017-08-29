@@ -267,6 +267,8 @@ and intern_intro_pattern_action lf ist = function
     IntroOrAndPattern (intern_or_and_intro_pattern lf ist l)
   | IntroInjection l ->
     IntroInjection (List.map (intern_intro_pattern lf ist) l)
+  | IntroIrrefutablePattern pat ->
+     IntroIrrefutablePattern (Constrintern.intern_cases_pattern ist.genv pat)
   | IntroWildcard | IntroRewrite _ as x -> x
   | IntroApplyOn ({loc;v=c},pat) ->
     IntroApplyOn (make ?loc @@ intern_constr ist c, intern_intro_pattern lf ist pat)

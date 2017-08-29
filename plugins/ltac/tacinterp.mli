@@ -148,7 +148,7 @@ val interp_int_or_var : interp_sign -> int Locus.or_var -> int
 val interp_ident : interp_sign -> Environ.env -> Evd.evar_map -> Id.t -> Id.t
 
 val interp_intro_pattern : interp_sign -> Environ.env -> Evd.evar_map ->
-  glob_constr_and_expr intro_pattern_expr CAst.t -> intro_pattern
+  (glob_constr_and_expr,Tactypes.glob_cases_pattern) intro_pattern_expr CAst.t -> intro_pattern
 
 val default_ist : unit -> Geninterp.interp_sign
 (** Empty ist with debug set on the current value. *)
