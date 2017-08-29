@@ -53,6 +53,10 @@ open Core
 
 let v_unit = ValInt 0
 
+let to_block = function
+| ValBlk (_, v) -> v
+| _ -> assert false
+
 let of_name c = match c with
 | Anonymous -> Value.of_option Value.of_ident None
 | Name id -> Value.of_option Value.of_ident (Some id)
@@ -111,146 +115,159 @@ let pf_apply f =
 
 (** Primitives *)
 
+let define0 name f = Tac2env.define_primitive (pname name) begin function
+| [_] -> f
+| _ -> assert false
+end
+
+let define1 name f = Tac2env.define_primitive (pname name) begin function
+| [x] -> f x
+| _ -> assert false
+end
+
+let define2 name f = Tac2env.define_primitive (pname name) begin function
+| [x; y] -> f x y
+| _ -> assert false
+end
+
+let define3 name f = Tac2env.define_primitive (pname name) begin function
+| [x; y; z] -> f x y z
+| _ -> assert false
+end
+
 (** Printing *)
 
-let prm_print : ml_tactic = function
-| [pp] -> wrap_unit (fun () -> Feedback.msg_notice (Value.to_pp pp))
-| _ -> assert false
+let () = define1 "print" begin fun pp ->
+  wrap_unit (fun () -> Feedback.msg_notice (Value.to_pp pp))
+end
 
-let prm_message_of_int : ml_tactic = function
-| [ValInt s] -> return (Value.of_pp (int s))
-| _ -> assert false
+let () = define1 "message_of_int" begin fun n ->
+  let n = Value.to_int n in
+  return (Value.of_pp (int n))
+end
 
-let prm_message_of_string : ml_tactic = function
-| [ValStr s] -> return (Value.of_pp (str (Bytes.to_string s)))
-| _ -> assert false
+let () = define1 "message_of_string" begin fun s ->
+  let s = Value.to_string s in
+  return (Value.of_pp (str (Bytes.to_string s)))
+end
 
-let prm_message_of_constr : ml_tactic = function
-| [c] ->
+let () = define1 "message_of_constr" begin fun c ->
   pf_apply begin fun env sigma ->
     let c = Value.to_constr c in
     let pp = Printer.pr_econstr_env env sigma c in
     return (Value.of_pp pp)
   end
-| _ -> assert false
+end
 
-let prm_message_of_ident : ml_tactic = function
-| [c] ->
+let () = define1 "message_of_ident" begin fun c ->
   let c = Value.to_ident c in
   let pp = Id.print c in
   return (Value.of_pp pp)
-| _ -> assert false
+end
 
-let prm_message_concat : ml_tactic = function
-| [m1; m2] ->
+let () = define2 "message_concat" begin fun m1 m2 ->
   let m1 = Value.to_pp m1 in
   let m2 = Value.to_pp m2 in
   return (Value.of_pp (Pp.app m1 m2))
-| _ -> assert false
+end
 
 (** Array *)
 
-let prm_array_make : ml_tactic = function
-| [ValInt n; x] ->
+let () = define2 "array_make" begin fun n x ->
+  let n = Value.to_int n in
   if n < 0 || n > Sys.max_array_length then throw err_outofbounds
   else wrap (fun () -> ValBlk (0, Array.make n x))
-| _ -> assert false
+end
 
-let prm_array_length : ml_tactic = function
-| [ValBlk (_, v)] -> return (ValInt (Array.length v))
-| _ -> assert false
+let () = define1 "array_length" begin fun v ->
+  let v = to_block v in
+  return (ValInt (Array.length v))
+end
 
-let prm_array_set : ml_tactic = function
-| [ValBlk (_, v); ValInt n; x] ->
+let () = define3 "array_set" begin fun v n x ->
+  let v = to_block v in
+  let n = Value.to_int n in
   if n < 0 || n >= Array.length v then throw err_outofbounds
   else wrap_unit (fun () -> v.(n) <- x)
-| _ -> assert false
+end
 
-let prm_array_get : ml_tactic = function
-| [ValBlk (_, v); ValInt n] ->
+let () = define2 "array_get" begin fun v n ->
+  let v = to_block v in
+  let n = Value.to_int n in
   if n < 0 || n >= Array.length v then throw err_outofbounds
   else wrap (fun () -> v.(n))
-| _ -> assert false
+end
 
 (** Ident *)
 
-let prm_ident_equal : ml_tactic = function
-| [id1; id2] ->
+let () = define2 "ident_equal" begin fun id1 id2 ->
   let id1 = Value.to_ident id1 in
   let id2 = Value.to_ident id2 in
   return (Value.of_bool (Id.equal id1 id2))
-| _ -> assert false
+end
 
-let prm_ident_to_string : ml_tactic = function
-| [id] ->
+let () = define1 "ident_to_string" begin fun id ->
   let id = Value.to_ident id in
   return (Value.of_string (Id.to_string id))
-| _ -> assert false
+end
 
-let prm_ident_of_string : ml_tactic = function
-| [s] ->
+let () = define1 "ident_of_string" begin fun s ->
   let s = Value.to_string s in
   let id = try Some (Id.of_string s) with _ -> None in
   return (Value.of_option Value.of_ident id)
-| _ -> assert false
+end
 
 (** Int *)
 
-let prm_int_equal : ml_tactic = function
-| [m; n] ->
+let () = define2 "int_equal" begin fun m n ->
   return (Value.of_bool (Value.to_int m == Value.to_int n))
-| _ -> assert false
+end
 
-let binop f : ml_tactic = function
-| [m; n] -> return (Value.of_int (f (Value.to_int m) (Value.to_int n)))
-| _ -> assert false
+let binop n f = define2 n begin fun m n ->
+  return (Value.of_int (f (Value.to_int m) (Value.to_int n)))
+end
 
-let prm_int_compare args = binop Int.compare args
-let prm_int_add args = binop (+) args
-let prm_int_sub args = binop (-) args
-let prm_int_mul args = binop ( * ) args
+let () = binop "int_compare" Int.compare
+let () = binop "int_add" (+)
+let () = binop "int_sub" (-)
+let () = binop "int_mul" ( * )
 
-let prm_int_neg : ml_tactic = function
-| [m] -> return (Value.of_int (~- (Value.to_int m)))
-| _ -> assert false
+let () = define1 "int_neg" begin fun m ->
+  return (Value.of_int (~- (Value.to_int m)))
+end
 
 (** String *)
 
-let prm_string_make : ml_tactic = function
-| [n; c] ->
+let () = define2 "string_make" begin fun n c ->
   let n = Value.to_int n in
   let c = Value.to_char c in
   if n < 0 || n > Sys.max_string_length then throw err_outofbounds
   else wrap (fun () -> Value.of_string (Bytes.make n c))
-| _ -> assert false
+end
 
-let prm_string_length : ml_tactic = function
-| [s] ->
+let () = define1 "string_length" begin fun s ->
   return (Value.of_int (Bytes.length (Value.to_string s)))
-| _ -> assert false
+end
 
-let prm_string_set : ml_tactic = function
-| [s; n; c] ->
+let () = define3 "string_set" begin fun s n c ->
   let s = Value.to_string s in
   let n = Value.to_int n in
   let c = Value.to_char c in
   if n < 0 || n >= Bytes.length s then throw err_outofbounds
   else wrap_unit (fun () -> Bytes.set s n c)
-| _ -> assert false
+end
 
-let prm_string_get : ml_tactic = function
-| [s; n] ->
+let () = define2 "string_get" begin fun s n ->
   let s = Value.to_string s in
   let n = Value.to_int n in
   if n < 0 || n >= Bytes.length s then throw err_outofbounds
   else wrap (fun () -> Value.of_char (Bytes.get s n))
-| _ -> assert false
+end
 
 (** Terms *)
 
 (** constr -> constr *)
-let prm_constr_type : ml_tactic = function
-| [c] ->
+let () = define1 "constr_type" begin fun c ->
   let c = Value.to_constr c in
   let get_type env sigma =
   Proofview.V82.wrap_exceptions begin fun () ->
@@ -259,20 +276,18 @@ let prm_constr_type : ml_tactic = function
     Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT t
   end in
   pf_apply get_type
-| _ -> assert false
+end
 
 (** constr -> constr *)
-let prm_constr_equal : ml_tactic = function
-| [c1; c2] ->
+let () = define2 "constr_equal" begin fun c1 c2 ->
   let c1 = Value.to_constr c1 in
   let c2 = Value.to_constr c2 in
   Proofview.tclEVARMAP >>= fun sigma ->
   let b = EConstr.eq_constr sigma c1 c2 in
   Proofview.tclUNIT (Value.of_bool b)
-| _ -> assert false
+end
 
-let prm_constr_kind : ml_tactic = function
-| [c] ->
+let () = define1 "constr_kind" begin fun c ->
   let open Constr in
   Proofview.tclEVARMAP >>= fun sigma ->
   let c = Value.to_constr c in
@@ -364,21 +379,19 @@ let prm_constr_kind : ml_tactic = function
       Value.of_constr c;
     |])
   end
-| _ -> assert false
+end
 
-let prm_constr_substnl : ml_tactic = function
-| [subst; k; c] ->
+let () = define3 "constr_substnl" begin fun subst k c ->
   let subst = Value.to_list Value.to_constr subst in
   let k = Value.to_int k in
   let c = Value.to_constr c in
   let ans = EConstr.Vars.substnl subst k c in
   return (Value.of_constr ans)
-| _ -> assert false
+end
 
 (** Patterns *)
 
-let prm_pattern_matches : ml_tactic = function
-| [pat; c] ->
+let () = define2 "pattern_matches" begin fun pat c ->
   let pat = Value.to_pattern pat in
   let c = Value.to_constr c in
   pf_apply begin fun env sigma ->
@@ -394,10 +407,9 @@ let prm_pattern_matches : ml_tactic = function
       return (Value.of_list of_pair ans)
     end
   end
-| _ -> assert false
+end
 
-let prm_pattern_matches_subterm : ml_tactic = function
-| [pat; c] ->
+let () = define2 "pattern_matches_subterm" begin fun pat c ->
   let pat = Value.to_pattern pat in
   let c = Value.to_constr c in
   let open Constr_matching in
@@ -413,74 +425,66 @@ let prm_pattern_matches_subterm : ml_tactic = function
     let ans = Constr_matching.match_appsubterm env sigma pat c in
     of_ans ans
   end
-| _ -> assert false
+end
 
-let prm_pattern_instantiate : ml_tactic = function
-| [ctx; c] ->
+let () = define2 "pattern_instantiate" begin fun ctx c ->
   let ctx = EConstr.Unsafe.to_constr (Value.to_constr ctx) in
   let c = EConstr.Unsafe.to_constr (Value.to_constr c) in
   let ans = Termops.subst_meta [Constr_matching.special_meta, c] ctx in
   return (Value.of_constr (EConstr.of_constr ans))
-| _ -> assert false
+end
 
 (** Error *)
 
-let prm_throw : ml_tactic = function
-| [e] ->
+let () = define1 "throw" begin fun e ->
   let (e, info) = Value.to_exn e in
   Proofview.tclLIFT (Proofview.NonLogical.raise ~info e)
-| _ -> assert false
+end
 
 (** Control *)
 
 (** exn -> 'a *)
-let prm_zero : ml_tactic = function
-| [e] ->
+let () = define1 "zero" begin fun e ->
   let (e, info) = Value.to_exn e in
   Proofview.tclZERO ~info e
-| _ -> assert false
+end
 
 (** (unit -> 'a) -> (exn -> 'a) -> 'a *)
-let prm_plus : ml_tactic = function
-| [x; k] ->
+let () = define2 "plus" begin fun x k ->
   Proofview.tclOR (thaw x) (fun e -> interp_app k [Value.of_exn e])
-| _ -> assert false
+end
 
 (** (unit -> 'a) -> 'a *)
-let prm_once : ml_tactic = function
-| [f] -> Proofview.tclONCE (thaw f)
-| _ -> assert false
+let () = define1 "once" begin fun f ->
+  Proofview.tclONCE (thaw f)
+end
 
 (** (unit -> unit) list -> unit *)
-let prm_dispatch : ml_tactic = function
-| [l] ->
+let () = define1 "dispatch" begin fun l ->
   let l = Value.to_list (fun f -> Proofview.tclIGNORE (thaw f)) l in
   Proofview.tclDISPATCH l >>= fun () -> return v_unit
-| _ -> assert false
+end
 
 (** (unit -> unit) list -> (unit -> unit) -> (unit -> unit) list -> unit *)
-let prm_extend : ml_tactic = function
-| [lft; tac; rgt] ->
+let () = define3 "extend" begin fun lft tac rgt ->
   let lft = Value.to_list (fun f -> Proofview.tclIGNORE (thaw f)) lft in
   let tac = Proofview.tclIGNORE (thaw tac) in
   let rgt = Value.to_list (fun f -> Proofview.tclIGNORE (thaw f)) rgt in
   Proofview.tclEXTEND lft tac rgt >>= fun () -> return v_unit
-| _ -> assert false
+end
 
 (** (unit -> unit) -> unit *)
-let prm_enter : ml_tactic = function
-| [f] ->
+let () = define1 "enter" begin fun f ->
   let f = Proofview.tclIGNORE (thaw f) in
   Proofview.tclINDEPENDENT f >>= fun () -> return v_unit
-| _ -> assert false
+end
 
 let k_var = Id.of_string "k"
 let e_var = Id.of_string "e"
 let prm_apply_kont_h = pname "apply_kont"
 
 (** (unit -> 'a) -> ('a * ('exn -> 'a)) result *)
-let prm_case : ml_tactic = function
-| [f] ->
+let () = define1 "case" begin fun f ->
   Proofview.tclCASE (thaw f) >>= begin function
   | Proofview.Next (x, k) ->
     let k = {
@@ -491,52 +495,48 @@ let prm_case : ml_tactic = function
     return (ValBlk (0, [| Value.of_tuple [| x; ValCls k |] |]))
   | Proofview.Fail e -> return (ValBlk (1, [| Value.of_exn e |]))
   end
-| _ -> assert false
+end
 
 (** 'a kont -> exn -> 'a *)
-let prm_apply_kont : ml_tactic = function
-| [k; e] -> (Value.to_ext Value.val_kont k) (Value.to_exn e)
-| _ -> assert false
+let () = define2 "apply_kont" begin fun k e ->
+  (Value.to_ext Value.val_kont k) (Value.to_exn e)
+end
 
 (** int -> int -> (unit -> 'a) -> 'a *)
-let prm_focus : ml_tactic = function
-| [i; j; tac] ->
+let () = define3 "focus" begin fun i j tac ->
   let i = Value.to_int i in
   let j = Value.to_int j in
   Proofview.tclFOCUS i j (thaw tac)
-| _ -> assert false
+end
 
 (** unit -> unit *)
-let prm_shelve : ml_tactic = function
-| [_] -> Proofview.shelve >>= fun () -> return v_unit
-| _ -> assert false
+let () = define0 "shelve" begin
+  Proofview.shelve >>= fun () -> return v_unit
+end
 
 (** unit -> unit *)
-let prm_shelve_unifiable : ml_tactic = function
-| [_] -> Proofview.shelve_unifiable >>= fun () -> return v_unit
-| _ -> assert false
+let () = define0 "shelve_unifiable" begin
+  Proofview.shelve_unifiable >>= fun () -> return v_unit
+end
 
-let prm_new_goal : ml_tactic = function
-| [ev] ->
+let () = define1 "new_goal" begin fun ev ->
   let ev = Evar.unsafe_of_int (Value.to_int ev) in
   Proofview.tclEVARMAP >>= fun sigma ->
   if Evd.mem sigma ev then
     Proofview.Unsafe.tclNEWGOALS [ev] <*> Proofview.tclUNIT v_unit
   else throw err_notfound
-| _ -> assert false
+end
 
 (** unit -> constr *)
-let prm_goal : ml_tactic = function
-| [_] ->
+let () = define0 "goal" begin
   Proofview.Goal.enter_one begin fun gl ->
     let concl = Tacmach.New.pf_nf_concl gl in
     return (Value.of_constr concl)
   end
-| _ -> assert false
+end
 
 (** ident -> constr *)
-let prm_hyp : ml_tactic = function
-| [id] ->
+let () = define1 "hyp" begin fun id ->
   let id = Value.to_ident id in
   pf_apply begin fun env _ ->
     let mem = try ignore (Environ.lookup_named id env); true with Not_found -> false in
@@ -544,10 +544,9 @@ let prm_hyp : ml_tactic = function
     else Tacticals.New.tclZEROMSG
       (str "Hypothesis " ++ quote (Id.print id) ++ str " not found") (** FIXME: Do something more sensible *)
   end
-| _ -> assert false
+end
 
-let prm_hyps : ml_tactic = function
-| [_] ->
+let () = define0 "hyps" begin
   pf_apply begin fun env _ ->
     let open Context.Named.Declaration in
     let hyps = List.rev (Environ.named_context env) in
@@ -562,66 +561,59 @@ let prm_hyps : ml_tactic = function
     in
     return (Value.of_list map hyps)
   end
-| _ -> assert false
+end
 
 (** (unit -> constr) -> unit *)
-let prm_refine : ml_tactic = function
-| [c] ->
+let () = define1 "refine" begin fun c ->
   let c = thaw c >>= fun c -> Proofview.tclUNIT ((), Value.to_constr c) in
   Proofview.Goal.nf_enter begin fun gl ->
     Refine.generic_refine ~typecheck:true c gl
   end >>= fun () -> return v_unit
-| _ -> assert false
+end
 
-let prm_with_holes : ml_tactic = function
-| [x; f] ->
+let () = define2 "with_holes" begin fun x f ->
   Proofview.tclEVARMAP >>= fun sigma0 ->
   thaw x >>= fun ans ->
   Proofview.tclEVARMAP >>= fun sigma ->
   Proofview.Unsafe.tclEVARS sigma0 >>= fun () ->
   Tacticals.New.tclWITHHOLES false (interp_app f [ans]) sigma
-| _ -> assert false
+end
 
-let prm_progress : ml_tactic = function
-| [f] -> Proofview.tclPROGRESS (thaw f)
-| _ -> assert false
+let () = define1 "progress" begin fun f ->
+  Proofview.tclPROGRESS (thaw f)
+end
 
-let prm_abstract : ml_tactic = function
-| [id; f] ->
+let () = define2 "abstract" begin fun id f ->
   let id = Value.to_option Value.to_ident id in
   Tactics.tclABSTRACT id (Proofview.tclIGNORE (thaw f)) >>= fun () ->
   return v_unit
-| _ -> assert false
+end
 
-let prm_time : ml_tactic = function
-| [s; f] ->
+let () = define2 "time" begin fun s f ->
   let s = Value.to_option Value.to_string s in
   Proofview.tclTIME s (thaw f)
-| _ -> assert false
+end
 
-let prm_check_interrupt : ml_tactic = function
-| [_] -> Proofview.tclCHECKINTERRUPT >>= fun () -> return v_unit
-| _ -> assert false
+let () = define0 "check_interrupt" begin
+  Proofview.tclCHECKINTERRUPT >>= fun () -> return v_unit
+end
 
 (** Fresh *)
 
-let prm_free_union : ml_tactic = function
-| [set1; set2] ->
+let () = define2 "fresh_free_union" begin fun set1 set2 ->
   let set1 = Value.to_ext val_free set1 in
   let set2 = Value.to_ext val_free set2 in
   let ans = Id.Set.union set1 set2 in
   return (Value.of_ext val_free ans)
-| _ -> assert false
+end
 
-let prm_free_of_ids : ml_tactic = function
-| [ids] ->
+let () = define1 "fresh_free_of_ids" begin fun ids ->
   let ids = Value.to_list Value.to_ident ids in
   let free = List.fold_right Id.Set.add ids Id.Set.empty in
   return (Value.of_ext val_free free)
-| _ -> assert false
+end
 
-let prm_free_of_constr : ml_tactic = function
-| [c] ->
+let () = define1 "fresh_free_of_constr" begin fun c ->
   let c = Value.to_constr c in
   Proofview.tclEVARMAP >>= fun sigma ->
   let rec fold accu c = match EConstr.kind sigma c with
@@ -630,84 +622,14 @@ let prm_free_of_constr : ml_tactic = function
   in
   let ans = fold Id.Set.empty c in
   return (Value.of_ext val_free ans)
-| _ -> assert false
+end
 
-let prm_fresh : ml_tactic = function
-| [avoid; id] ->
+let () = define2 "fresh_fresh" begin fun avoid id ->
   let avoid = Value.to_ext val_free avoid in
   let id = Value.to_ident id in
   let nid = Namegen.next_ident_away_from id (fun id -> Id.Set.mem id avoid) in
   return (Value.of_ident nid)
-| _ -> assert false
-
-(** Registering *)
-
-let () = Tac2env.define_primitive (pname "print") prm_print
-let () = Tac2env.define_primitive (pname "message_of_string") prm_message_of_string
-let () = Tac2env.define_primitive (pname "message_of_int") prm_message_of_int
-let () = Tac2env.define_primitive (pname "message_of_constr") prm_message_of_constr
-let () = Tac2env.define_primitive (pname "message_of_ident") prm_message_of_ident
-let () = Tac2env.define_primitive (pname "message_concat") prm_message_concat
-
-let () = Tac2env.define_primitive (pname "array_make") prm_array_make
-let () = Tac2env.define_primitive (pname "array_length") prm_array_length
-let () = Tac2env.define_primitive (pname "array_get") prm_array_get
-let () = Tac2env.define_primitive (pname "array_set") prm_array_set
-
-let () = Tac2env.define_primitive (pname "string_make") prm_string_make
-let () = Tac2env.define_primitive (pname "string_length") prm_string_length
-let () = Tac2env.define_primitive (pname "string_get") prm_string_get
-let () = Tac2env.define_primitive (pname "string_set") prm_string_set
-
-let () = Tac2env.define_primitive (pname "constr_type") prm_constr_type
-let () = Tac2env.define_primitive (pname "constr_equal") prm_constr_equal
-let () = Tac2env.define_primitive (pname "constr_kind") prm_constr_kind
-let () = Tac2env.define_primitive (pname "constr_substnl") prm_constr_substnl
-
-let () = Tac2env.define_primitive (pname "pattern_matches") prm_pattern_matches
-let () = Tac2env.define_primitive (pname "pattern_matches_subterm") prm_pattern_matches_subterm
-let () = Tac2env.define_primitive (pname "pattern_instantiate") prm_pattern_instantiate
-
-let () = Tac2env.define_primitive (pname "int_equal") prm_int_equal
-let () = Tac2env.define_primitive (pname "int_compare") prm_int_compare
-let () = Tac2env.define_primitive (pname "int_neg") prm_int_neg
-let () = Tac2env.define_primitive (pname "int_add") prm_int_add
-let () = Tac2env.define_primitive (pname "int_sub") prm_int_sub
-let () = Tac2env.define_primitive (pname "int_mul") prm_int_mul
-
-let () = Tac2env.define_primitive (pname "ident_equal") prm_ident_equal
-let () = Tac2env.define_primitive (pname "ident_to_string") prm_ident_to_string
-let () = Tac2env.define_primitive (pname "ident_of_string") prm_ident_of_string
-
-let () = Tac2env.define_primitive (pname "throw") prm_throw
-
-let () = Tac2env.define_primitive (pname "zero") prm_zero
-let () = Tac2env.define_primitive (pname "plus") prm_plus
-let () = Tac2env.define_primitive (pname "once") prm_once
-let () = Tac2env.define_primitive (pname "dispatch") prm_dispatch
-let () = Tac2env.define_primitive (pname "extend") prm_extend
-let () = Tac2env.define_primitive (pname "enter") prm_enter
-let () = Tac2env.define_primitive (pname "case") prm_case
-let () = Tac2env.define_primitive (pname "apply_kont") prm_apply_kont
-
-let () = Tac2env.define_primitive (pname "focus") prm_focus
-let () = Tac2env.define_primitive (pname "shelve") prm_shelve
-let () = Tac2env.define_primitive (pname "shelve_unifiable") prm_shelve_unifiable
-let () = Tac2env.define_primitive (pname "new_goal") prm_new_goal
-let () = Tac2env.define_primitive (pname "goal") prm_goal
-let () = Tac2env.define_primitive (pname "hyp") prm_hyp
-let () = Tac2env.define_primitive (pname "hyps") prm_hyps
-let () = Tac2env.define_primitive (pname "refine") prm_refine
-let () = Tac2env.define_primitive (pname "with_holes") prm_with_holes
-let () = Tac2env.define_primitive (pname "progress") prm_progress
-let () = Tac2env.define_primitive (pname "abstract") prm_abstract
-let () = Tac2env.define_primitive (pname "time") prm_time
-let () = Tac2env.define_primitive (pname "check_interrupt") prm_check_interrupt
-
-let () = Tac2env.define_primitive (pname "fresh_fresh") prm_fresh
-let () = Tac2env.define_primitive (pname "fresh_free_union") prm_free_union
-let () = Tac2env.define_primitive (pname "fresh_free_of_ids") prm_free_of_ids
-let () = Tac2env.define_primitive (pname "fresh_free_of_constr") prm_free_of_constr
+end
 
 (** ML types *)
 
