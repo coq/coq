@@ -162,7 +162,7 @@ matrix:
       before_deploy:
         - dev/build/osx/make-macos-dmg.sh
       deploy:
-        provider: bintray
+      - provider: bintray
         user: maximedenes
         file: .bintray.json
         key:
@@ -170,8 +170,7 @@ matrix:
         skip_cleanup: true
         on:
           all_branches: true
-      deploy:
-        provider: releases
+      - provider: releases
         api_key:
           secure: "Z/ewvydCLXEhlBBtQGYm2nZ8o+2RP+MwA5uEDuu6mEpZttUZAYaoHivChxADLXz8LNKvUloIeBeIL/PrLk6QnhSur/s2iEYHssrnl99SkAPtoWggyfsdacuKLMkpLoZGOBIEYKPuXuEZyqvugSUO42rSya1zdjcnXc4l+E/bXMc="
         file: _build/*.dmg
