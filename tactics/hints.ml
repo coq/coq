@@ -135,7 +135,7 @@ type 'a with_uid = {
 
 type raw_hint = constr * types * Univ.universe_context_set
 
-type hint = (raw_hint * clausenv) hint_ast with_uid
+type hint = raw_hint hint_ast with_uid
 
 type 'a with_metadata = {
   pri     : int;            (* A number lower is higher priority *)
@@ -266,42 +266,6 @@ let is_transparent_gr (ids, csts) = function
   | VarRef id -> Id.Pred.mem id ids
   | ConstRef cst -> Cpred.mem cst csts
   | IndRef _ | ConstructRef _ -> false
-
-let strip_params env sigma c = 
-  match EConstr.kind sigma c with
-  | App (f, args) -> 
-    (match EConstr.kind sigma f with
-    | Const (p,_) ->
-      let cb = lookup_constant p env in
-	(match cb.Declarations.const_proj with
-	| Some pb -> 
-	  let n = pb.Declarations.proj_npars in
-	    if Array.length args > n then
-	      mkApp (mkProj (Projection.make p false, args.(n)), 
-		     Array.sub args (n+1) (Array.length args - (n + 1)))
-	    else c
-	| None -> c)
-    | _ -> c)
-  | _ -> c
-
-let instantiate_hint env sigma p =
-  let mk_clenv (c, cty, ctx) =
-    let sigma = Evd.merge_context_set univ_flexible sigma ctx in
-    let cl = mk_clenv_from_env env sigma None (c,cty) in 
-      {cl with templval = 
-	  { cl.templval with rebus = strip_params env sigma cl.templval.rebus };
-	env = empty_env}
-  in
-  let code = match p.code.obj with
-    | Res_pf c -> Res_pf (c, mk_clenv c)
-    | ERes_pf c -> ERes_pf (c, mk_clenv c)
-    | Res_pf_THEN_trivial_fail c ->
-      Res_pf_THEN_trivial_fail (c, mk_clenv c)
-    | Give_exact c -> Give_exact (c, mk_clenv c)
-    | Unfold_nth e -> Unfold_nth e
-    | Extern t -> Extern t
-  in
-  { p with code = { p.code with obj = code } }
 
 let hints_path_atom_eq h1 h2 = match h1, h2 with
 | PathHints l1, PathHints l2 -> List.equal eq_gr l1 l2
@@ -631,7 +595,6 @@ struct
       List.fold_left (fun db (gr,(id,v)) -> addkv gr id v db) db' db.hintdb_nopat
 
   let add_one env sigma (k, v) db =
-    let v = instantiate_hint env sigma v in
     let st',db,rebuild =
       match v.code.obj with
       | Unfold_nth egr ->
@@ -989,15 +952,19 @@ let add_hint dbname hintlist =
   let db' = Hint_db.add_list env sigma hintlist db in
     searchtable_add (dbname,db')
 
-let add_transparency dbname grs b =
+let add_transparency dbname target b =
   let db = get_db dbname in
-  let st = Hint_db.transparent_state db in
+  let (ids, csts as st) = Hint_db.transparent_state db in
   let st' =
-    List.fold_left (fun (ids, csts) gr ->
-      match gr with
-      | EvalConstRef c -> (ids, (if b then Cpred.add else Cpred.remove) c csts)
-      | EvalVarRef v -> (if b then Id.Pred.add else Id.Pred.remove) v ids, csts)
-      st grs
+    match target with
+    | HintsVariables -> (if b then Id.Pred.full else Id.Pred.empty), csts
+    | HintsConstants -> ids, if b then Cpred.full else Cpred.empty
+    | HintsReferences grs ->
+       List.fold_left (fun (ids, csts) gr ->
+       match gr with
+       | EvalConstRef c -> (ids, (if b then Cpred.add else Cpred.remove) c csts)
+       | EvalVarRef v -> (if b then Id.Pred.add else Id.Pred.remove) v ids, csts)
+                      st grs
   in searchtable_add (dbname, Hint_db.set_transparent_state db st')
 
 let remove_hint dbname grs =
@@ -1007,7 +974,7 @@ let remove_hint dbname grs =
 
 type hint_action =
   | CreateDB of bool * transparent_state
-  | AddTransparency of evaluable_global_reference list * bool
+  | AddTransparency of evaluable_global_reference hints_transparency_target * bool
   | AddHints of hint_entry list
   | RemoveHints of global_reference list
   | AddCut of hints_path
@@ -1097,9 +1064,17 @@ let subst_autohint (subst, obj) =
   in
   let action = match obj.hint_action with
     | CreateDB _ -> obj.hint_action
-    | AddTransparency (grs, b) ->
-      let grs' = List.smartmap (subst_evaluable_reference subst) grs in
-      if grs == grs' then obj.hint_action else AddTransparency (grs', b)
+    | AddTransparency (target, b) ->
+      let target' =
+        match target with
+        | HintsVariables -> target
+        | HintsConstants -> target
+        | HintsReferences grs ->
+          let grs' = List.smartmap (subst_evaluable_reference subst) grs in
+          if grs == grs' then target
+          else HintsReferences grs'
+      in
+      if target' == target then obj.hint_action else AddTransparency (target', b)
     | AddHints hintlist ->
       let hintlist' = List.smartmap subst_hint hintlist in
       if hintlist' == hintlist then obj.hint_action else AddHints hintlist'
@@ -1219,7 +1194,7 @@ type hints_entry =
   | HintsImmediateEntry of (hints_path_atom * polymorphic * hint_term) list
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
-  | HintsTransparencyEntry of evaluable_global_reference list * bool
+  | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
   | HintsModeEntry of global_reference * hint_mode list
   | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 
@@ -1291,12 +1266,17 @@ let interp_hints poly =
     let info = { info with hint_pattern = Option.map fp info.hint_pattern } in
       (info, poly, b, path, gr)
   in
+  let ft = function
+    | HintsVariables -> HintsVariables
+    | HintsConstants -> HintsConstants
+    | HintsReferences lhints -> HintsReferences (List.map fr lhints)
+  in
+  let fp = Constrintern.intern_constr_pattern (Global.env()) in
   match h with
   | HintsResolve lhints -> HintsResolveEntry (List.map fres lhints)
   | HintsImmediate lhints -> HintsImmediateEntry (List.map fi lhints)
   | HintsUnfold lhints -> HintsUnfoldEntry (List.map fr lhints)
-  | HintsTransparency (lhints, b) ->
-      HintsTransparencyEntry (List.map fr lhints, b)
+  | HintsTransparency (t, b) -> HintsTransparencyEntry (ft t, b)
   | HintsMode (r, l) -> HintsModeEntry (fref r, l)
   | HintsConstructors lqid ->
       let constr_hints_of_ind qid =
@@ -1391,10 +1371,10 @@ let make_db_list dbnames =
 let pr_hint_elt (c, _, _) = pr_econstr c
 
 let pr_hint h = match h.obj with
-  | Res_pf (c, _) -> (str"simple apply " ++ pr_hint_elt c)
-  | ERes_pf (c, _) -> (str"simple eapply " ++ pr_hint_elt c)
-  | Give_exact (c, _) -> (str"exact " ++ pr_hint_elt c)
-  | Res_pf_THEN_trivial_fail (c, _) ->
+  | Res_pf c -> (str"simple apply " ++ pr_hint_elt c)
+  | ERes_pf c -> (str"simple eapply " ++ pr_hint_elt c)
+  | Give_exact c -> (str"exact " ++ pr_hint_elt c)
+  | Res_pf_THEN_trivial_fail c ->
       (str"simple apply " ++ pr_hint_elt c ++ str" ; trivial")
   | Unfold_nth c -> (str"unfold " ++  pr_evaluable_reference c)
   | Extern tac ->

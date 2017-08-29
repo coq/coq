@@ -362,7 +362,7 @@ Section Grothendieck2.
 
         {
           change d with {| c := d.(c) ; x := d.(x) |}; simpl.
-          apply ap.
+          apply (ap (@Build_Pair _ _ _)).
           subst H'.
           simpl.
           refine (transport_idmap_ap _ (fun x => F x : Type) _ _ _ _ @ _ @ (m : morphism _ _ _).2).

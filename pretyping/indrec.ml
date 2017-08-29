@@ -498,7 +498,7 @@ let is_in_prop mip =
 let build_case_analysis_scheme_default env sigma pity kind =
   let (mib,mip) = lookup_mind_specif env (fst pity) in
   let dep = not (is_in_prop mip || not (Inductiveops.has_dependent_elim mib)) in
-  mis_make_case_com dep env sigma pity (mib,mip) kind
+  dep, mis_make_case_com dep env sigma pity (mib,mip) kind
 
 (**********************************************************************)
 (* [modify_sort_scheme s rec] replaces the sort of the scheme

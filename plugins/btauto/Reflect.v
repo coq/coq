@@ -77,7 +77,7 @@ intros var f; induction f; simpl poly_of_formula; simpl formula_eval; auto.
   end.
 Qed.
 
-Hint Extern 5 => change 0 with (min 0 0).
+Hint Extern 5 => progress change 0 with (min 0 0).
 Local Hint Resolve poly_add_valid_compat poly_mul_valid_compat.
 Local Hint Constructors valid.
 Hint Extern 5 => zify; omega.
@@ -269,7 +269,8 @@ destruct (poly_of_formula_valid_compat fl) as [nl Hl].
 destruct (poly_of_formula_valid_compat fr) as [nr Hr].
 rewrite <- (reduce_eval_compat nl (poly_of_formula fl)); auto.
 rewrite <- (reduce_eval_compat nr (poly_of_formula fr)); auto.
-rewrite <- xorb_false_l; change false with (eval var (Cst false)).
+rewrite <- (xorb_false_l (eval _ (reduce (poly_of_formula fr)))).
+change false with (eval var (Cst false)).
 rewrite <- poly_add_compat, <- Heq.
 repeat rewrite poly_add_compat.
 rewrite (reduce_eval_compat nl); [|assumption].

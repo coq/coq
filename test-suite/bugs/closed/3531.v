@@ -42,9 +42,9 @@ Goal forall b, (exists e1 e2 e3,
  Set Printing Universes.
  Show Universes.
  do 3 eapply ex_intro.  
- eapply piff_trans; [ apply flatten_exists | apply piff_refl ]; intros.
- eapply piff_trans; [ apply flatten_exists | apply piff_refl ]; intros.
- eapply piff_trans; [ apply flatten_exists | apply piff_refl ]; intros.
+ eapply piff_trans; [ eapply flatten_exists | apply piff_refl ]; intros.
+ eapply piff_trans; [ eapply flatten_exists | apply piff_refl ]; intros.
+ eapply piff_trans; [ eapply flatten_exists | apply piff_refl ]; intros.
  assert (H : False) by (clear; admit); destruct H.
  Grab Existential Variables.
  admit.

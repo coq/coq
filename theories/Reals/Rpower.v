@@ -82,7 +82,7 @@ Proof.
   apply (H1 _ H2).
   apply sum_eq; intros; apply Rmult_comm.
   apply Rmult_eq_reg_l with (exp 1).
-  rewrite <- exp_plus; rewrite Rplus_opp_r; rewrite exp_0;
+  rewrite <- exp_plus. unfold IZR. rewrite Rplus_opp_r; rewrite exp_0;
     rewrite <- Rinv_r_sym.
   reflexivity.
   assumption.

@@ -1035,6 +1035,9 @@ Definition Cmp c x y := CompSpec L.eq L.lt x y c.
 
 Local Hint Unfold Cmp flip.
 
+(** Need their computational behavior in automation below *)
+Local Hint Transparent compare_cont elements.
+
 Lemma compare_end_Cmp :
  forall e2, Cmp (compare_end e2) nil (flatten_e e2).
 Proof.

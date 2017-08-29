@@ -124,11 +124,16 @@ type 'a hint_info_gen =
 
 type hint_info_expr = constr_pattern_expr hint_info_gen
 
+type 'a hints_transparency_target =
+  | HintsVariables
+  | HintsConstants
+  | HintsReferences of 'a list
+
 type hints_expr =
   | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
   | HintsImmediate of reference_or_constr list
   | HintsUnfold of reference list
-  | HintsTransparency of reference list * bool
+  | HintsTransparency of reference hints_transparency_target * bool
   | HintsMode of reference * hint_mode list
   | HintsConstructors of reference list
   | HintsExtern of int * constr_expr option * Genarg.raw_generic_argument

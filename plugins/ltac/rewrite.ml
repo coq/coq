@@ -490,8 +490,8 @@ let decompose_applied_relation env sigma (c,l) =
   let open Context.Rel.Declaration in
   let ctype = Retyping.get_type_of env sigma c in
   let find_rel ty =
-    let sigma, cl = Clenv.make_evar_clause env sigma ty in
-    let sigma = Clenv.solve_evar_clause env sigma true cl l in
+    let sigma, cl = Clenv.make_evar_clause env sigma c ty in
+    let sigma, cl = Clenv.solve_evar_clause env sigma ~hyps_only:true cl l in
     let { Clenv.cl_holes = holes; Clenv.cl_concl = t } = cl in
     let (equiv, c1, c2) = decompose_app_rel env sigma t in
     let ty1 = Retyping.get_type_of env sigma c1 in
@@ -500,9 +500,7 @@ let decompose_applied_relation env sigma (c,l) =
     | None -> None
     | Some sigma ->
       let sort = sort_of_rel env sigma equiv in
-      let args = Array.map_of_list (fun h -> h.Clenv.hole_evar) holes in
-      let value = mkApp (c, args) in
-        Some (sigma, { prf=value;
+        Some (sigma, { prf=cl.Clenv.cl_val;
                 car=ty1; rel = equiv; sort = Sorts.is_prop sort;
                 c1=c1; c2=c2; holes })
   in
@@ -514,17 +512,10 @@ let decompose_applied_relation env sigma (c,l) =
 	| Some c -> c
 	| None -> user_err Pp.(str "Cannot find an homogeneous relation to rewrite.")
 
-let rewrite_db = "rewrite"
-
 let conv_transparent_state = (Id.Pred.empty, Cpred.full)
 
-let _ = 
-  Hints.add_hints_init
-    (fun () ->
-       Hints.create_hint_db false rewrite_db conv_transparent_state true)
-
 let rewrite_transparent_state () =
-  Hints.Hint_db.transparent_state (Hints.searchtable_map rewrite_db)
+  Hints.Hint_db.transparent_state (Hints.searchtable_map Hints.rewrite_db)
 
 let rewrite_core_unif_flags = {
   Unification.modulo_conv_on_closed_terms = None;
@@ -695,7 +686,8 @@ let symmetry env sort rew =
 let unify_eqn (car, rel, prf, c1, c2, holes, sort) l2r flags env (sigma, cstrs) by t =
   try
     let left = if l2r then c1 else c2 in
-    let sigma = Unification.w_unify ~flags env sigma CONV left t in
+    let sigma = Evarconv.unify_with_heuristics (Unification.flags_of flags)
+                                               ~with_ho:false env sigma CONV left t in
     let sigma = Typeclasses.resolve_typeclasses ~filter:(no_constraints cstrs)
       ~fail:true env sigma in
     let evd = solve_remaining_by env sigma holes by in
@@ -722,7 +714,8 @@ let unify_abs (car, rel, prf, c1, c2) l2r sort env (sigma, cstrs) t =
        basically an eq_constr, except when preexisting evars occur in
        either the lemma or the goal, in which case the eq_constr also
        solved this evars *)
-    let sigma = Unification.w_unify ~flags:rewrite_unif_flags env sigma CONV left t in
+    let sigma = Evarconv.unify_with_heuristics (Unification.flags_of rewrite_unif_flags)
+                                               ~with_ho:false env sigma CONV left t in
     let rew_evars = sigma, cstrs in
     let rew_prf = RewPrf (rel, prf) in
     let rew = { rew_car = car; rew_from = c1; rew_to = c2; rew_prf; rew_evars; } in
@@ -1413,7 +1406,9 @@ module Strategies =
             user_err Pp.(str "fold: the term is not unfoldable!")
 	in
 	  try
-	    let sigma = Unification.w_unify env sigma CONV ~flags:(Unification.elim_flags ()) unfolded t in
+	    let sigma =
+              Evarconv.unify_with_heuristics (Unification.flags_of (Unification.elim_flags ()))
+                                             ~with_ho:false env sigma CONV unfolded t in
 	    let c' = Reductionops.nf_evar sigma c in
 	      state, Success { rew_car = ty; rew_from = t; rew_to = c';
 				  rew_prf = RewCast DEFAULTcast;
@@ -1567,6 +1562,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
 		   else Proofview.tclUNIT ()
     | Some (Some res) ->
         let (undef, prf, newt) = res in
+        let undef = Evd.clear_metas undef in
         let fold ev _ accu = if Evd.mem sigma ev then accu else ev :: accu in
         let gls = List.rev (Evd.fold_undefined fold undef []) in
 	match clause, prf with
@@ -2059,11 +2055,12 @@ let unification_rewrite l2r c1 c2 sigma prf car rel but env =
   let abs = prf, prfty in
   let prf = mkRel 1 in
   let res = (car, rel, prf, c1, c2) in
-  abs, sigma, res, Sorts.is_prop sort
+  abs, Evd.clear_metas sigma, res, Sorts.is_prop sort
 
 let get_hyp gl (c,l) clause l2r =
   let evars = Tacmach.New.project gl in
   let env = Tacmach.New.pf_env gl in
+  let evars = Evd.clear_metas evars in
   let sigma, hi = decompose_applied_relation env evars (c,l) in
   let but = match clause with
     | Some id -> Tacmach.New.pf_get_hyp_typ id gl
@@ -2157,7 +2154,7 @@ let setoid_reflexivity =
      tac_open (poly_proof PropGlobal.get_reflexive_proof
 			  TypeGlobal.get_reflexive_proof
 			  env evm car rel)
-	      (fun c -> tclCOMPLETE (apply c)))
+	      (fun c -> tclCOMPLETE (apply ~with_delta:true c)))
     (reflexivity_red true)
 
 let setoid_symmetry =
@@ -2166,7 +2163,7 @@ let setoid_symmetry =
       tac_open
 	(poly_proof PropGlobal.get_symmetric_proof TypeGlobal.get_symmetric_proof
 	   env evm car rel)
-	(fun c -> apply c))
+	(fun c -> apply ~with_delta:true c))
     (symmetry_red true)
     
 let setoid_transitivity c =
@@ -2176,7 +2173,7 @@ let setoid_transitivity c =
 	   env evm car rel)
 	(fun proof -> match c with
 	| None -> eapply proof
-	| Some c -> apply_with_bindings (proof,ImplicitBindings [ c ])))
+	| Some c -> apply_with_bindings ~with_delta:true (proof,ImplicitBindings [ c ])))
     (transitivity_red true c)
     
 let setoid_symmetry_in id =
@@ -2195,9 +2192,11 @@ let setoid_symmetry_in id =
   let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in
   let new_hyp' =  mkApp (he, [| c2 ; c1 |]) in
   let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in
-    (tclTHENLAST
-      (Tactics.assert_after_replacing id new_hyp)
-      (tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); Tactics.assumption ]))
+  tclTHENLAST
+    (Tactics.assert_after_replacing id new_hyp)
+    (Tacticals.New.tclTHENLIST
+       [ intros; setoid_symmetry;
+         apply ~with_delta:true (mkVar id); Tactics.assumption ])
   end
 
 let _ = Hook.set Tactics.setoid_reflexivity setoid_reflexivity

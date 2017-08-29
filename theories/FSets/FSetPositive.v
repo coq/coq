@@ -340,10 +340,13 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Lemma mem_Leaf: forall x, mem x Leaf = false.
   Proof. destruct x; trivial. Qed.
 
+  Lemma mem_empty: forall x, mem x empty = false.
+  Proof. destruct x; trivial. Qed.
+
   (** Specification of [empty] *)
 
   Lemma empty_1 : Empty empty.
-  Proof. unfold Empty, In. intro. rewrite mem_Leaf. discriminate. Qed.
+  Proof. unfold Empty, In. intro. rewrite mem_empty. discriminate. Qed.
 
   (** Specification of node  *)
 
@@ -648,7 +651,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Lemma add_spec: forall x y s, In y (add x s) <-> x=y \/ In y s.
   Proof.
     unfold In. induction x; intros [y|y|] [|l o r]; simpl mem;
-    try (rewrite IHx; clear IHx); rewrite ?mem_Leaf; intuition congruence.
+    try (rewrite IHx; clear IHx); rewrite ?mem_empty; intuition congruence.
   Qed.
 
   Lemma add_1: forall s x y, x = y -> In y (add x s).
@@ -668,7 +671,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
     unfold In.
     induction x; intros [y|y|] [|l o r]; simpl remove; rewrite ?mem_node;
-     simpl mem; try (rewrite IHx; clear IHx); rewrite ?mem_Leaf;
+     simpl mem; try (rewrite IHx; clear IHx); rewrite ?mem_empty;
      intuition congruence.
   Qed.
 
@@ -686,7 +689,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Lemma singleton_1: forall x y, In y (singleton x) -> x=y.
   Proof.
     unfold singleton. intros x y. rewrite add_spec.
-    unfold In. rewrite mem_Leaf. intuition discriminate.
+    unfold In. rewrite mem_empty. intuition discriminate.
   Qed.
 
   Lemma singleton_2: forall x y, x = y -> In y (singleton x).

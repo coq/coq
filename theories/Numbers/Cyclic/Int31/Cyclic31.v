@@ -28,6 +28,8 @@ Local Open Scope int31_scope.
 
 Local Hint Resolve Z.lt_gt Z.div_pos : zarith.
 
+Hint Transparent twice twice_plus_one.
+
 Section Basics.
 
  (** * Basic results about [iszero], [shiftl], [shiftr] *)
@@ -1925,7 +1927,7 @@ Section Int31_Specs.
  intros Hj; generalize Hj k; pattern j; apply natlike_ind;
    auto; clear k j Hj.
  intros _ k Hk; repeat rewrite Z.add_0_l.
- apply  Z.mul_nonneg_nonneg; generalize (Z_div_pos k 2); auto with zarith.
+ apply  Z.mul_nonneg_nonneg; cbn; generalize (Z_div_pos k 2); auto with zarith.
  intros j Hj Hrec _ k Hk; pattern k; apply natlike_ind; auto; clear k Hk.
  rewrite Z.mul_0_r, Z.add_0_r, Z.add_0_l.
  generalize (sqr_pos (Z.succ j / 2)) (quotient_by_2 (Z.succ j));
@@ -2026,7 +2028,8 @@ Section Int31_Specs.
    (1 * 2 + (([|j|] - 2) + [|i|] / [|j|])) by ring.
    rewrite Z_div_plus_full_l; auto with zarith.
    assert (0 <= [|i|]/ [|j|]) by auto with zarith.
-   assert (0 <= ([|j|] - 2 + [|i|] / [|j|]) / [|2|]); auto with zarith.
+   assert (0 <= ([|j|] - 2 + [|i|] / [|j|]) / [|2|]). auto with zarith.
+   change 2 with ([|2|]) at 2. auto with zarith.
  - rewrite <- Hj, Zdiv_1_r.
    replace (1 + [|i|]) with (1 * 2 + ([|i|] - 1)) by ring.
    rewrite Z_div_plus_full_l; auto with zarith.
@@ -2263,7 +2266,6 @@ Section Int31_Specs.
  assert (Hi2: phi2 ih il < (phi Tn + 1) ^ 2).
  { change ((phi Tn + 1) ^ 2) with (2^62).
    apply Z.le_lt_trans with ((2^31 -1) * base + (2^31 - 1)); auto with zarith.
-   2: simpl; unfold Z.pow_pos; simpl; auto with zarith.
    case (phi_bounded ih); case (phi_bounded il); intros H1 H2 H3 H4.
    unfold base, Z.pow, Z.pow_pos in H2,H4; simpl in H2,H4.
    unfold phi2. cbn [Z.pow Z.pow_pos Pos.iter]. auto with zarith. }

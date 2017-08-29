@@ -79,6 +79,14 @@ sig
 
 end
 
+module Abstraction : sig
+  type t = bool list
+
+  val identity : t
+
+  val abstract_last : t -> t
+end
+
 (** {6 Evar infos} *)
 
 type evar_body =
@@ -100,6 +108,10 @@ type evar_info = {
   (** Boolean mask over {!evar_hyps}. Should have the same length.
       When filtered out, the corresponding variable is not allowed to occur
       in the solution *)
+  evar_abstraction : Abstraction.t;
+  (** Boolean information over {!evar_hyps}, telling if an hypothesis instance
+      can be immitated or should stay abstract in HO unification problems
+      and inversion. *)
   evar_source : Evar_kinds.t located;
   (** Information about the evar. *)
   evar_candidates : constr list option;
@@ -115,6 +127,7 @@ val evar_filtered_context : evar_info -> Context.Named.t
 val evar_hyps : evar_info -> named_context_val
 val evar_filtered_hyps : evar_info -> named_context_val
 val evar_body : evar_info -> evar_body
+val evar_candidates : evar_info -> constr list option
 val evar_filter : evar_info -> Filter.t
 val evar_env :  evar_info -> env
 val evar_filtered_env :  evar_info -> env
@@ -242,7 +255,8 @@ val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool ->
 val restrict : evar -> Filter.t -> ?candidates:constr list ->
   ?src:Evar_kinds.t located -> evar_map -> evar_map * evar
 (** Restrict an undefined evar into a new evar by filtering context and
-    possibly limiting the instances to a set of candidates *)
+    possibly limiting the instances to a set of candidates (candidates
+    are filtered according to the filter) *)
 
 val downcast : evar -> types -> evar_map -> evar_map
 (** Change the type of an undefined evar to a new type assumed to be a
@@ -408,7 +422,11 @@ type clbinding =
 (** Unification constraints *)
 type conv_pb = Reduction.conv_pb
 type evar_constraint = conv_pb * env * constr * constr
+
+(** The following two functions are for internal use only,
+    see [Evarutil.add_unification_pb] for a safe interface. *)
 val add_conv_pb : ?tail:bool -> evar_constraint -> evar_map -> evar_map
+val conv_pbs : evar_map -> evar_constraint list
 
 val extract_changed_conv_pbs : evar_map ->
       (Evar.Set.t -> evar_constraint -> bool) ->

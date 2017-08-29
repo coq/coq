@@ -154,7 +154,7 @@ type hints_entry =
   | HintsImmediateEntry of (hints_path_atom * polymorphic * hint_term) list
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
-  | HintsTransparencyEntry of evaluable_global_reference list * bool
+  | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
   | HintsModeEntry of global_reference * hint_mode list
   | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 
@@ -238,12 +238,12 @@ val make_extern :
   int -> constr_pattern option -> Genarg.glob_generic_argument
       -> hint_entry
 
-val run_hint : hint ->
-  ((raw_hint * clausenv) hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
+val run_hint : hint -> (raw_hint hint_ast -> 'r Proofview.tactic) ->
+               'r Proofview.tactic
 
 (** This function is for backward compatibility only, not to use in newly
     written code. *)
-val repr_hint : hint -> (raw_hint * clausenv) hint_ast
+val repr_hint : hint -> raw_hint hint_ast
 
 (** Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints;

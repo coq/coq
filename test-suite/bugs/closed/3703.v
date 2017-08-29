@@ -13,7 +13,7 @@ Module UnKeyed.
     change (identity _ _) with (fun y : T => y) in H';
       rewrite <- H' || fail "too early".
     Undo.
-    rewrite <- H'.
+    rewrite <- [_]H'.
     admit.
   Defined.
 End UnKeyed.
@@ -26,7 +26,7 @@ Module Keyed.
     change (identity _ _) with (fun y : T => y) in H';
       rewrite <- H' || fail "too early".
     Undo.
-    rewrite <- H'.
+    rewrite <- [_]H'.
     admit.
   Defined.
 End Keyed.

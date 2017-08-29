@@ -49,16 +49,15 @@ Infix "=~=" := pequiv (at level 70, no associativity) : equiv_scope.
 
 (** Shortcuts to make proof search easier. *)
 
-Program Instance equiv_reflexive `(sa : Equivalence A) : Reflexive equiv | 1.
-
-Program Instance equiv_symmetric `(sa : Equivalence A) : Symmetric equiv | 1.
-
-Program Instance equiv_transitive `(sa : Equivalence A) : Transitive equiv | 1.
-
-  Next Obligation.
-  Proof. intros A R sa x y z Hxy Hyz.
-         now transitivity y.
-  Qed.
+Definition equiv_reflexive `(sa : Equivalence A) : Reflexive equiv := _.
+Definition equiv_symmetric `(sa : Equivalence A) : Symmetric equiv := _.
+Definition equiv_transitive `(sa : Equivalence A) : Transitive equiv := _.
+Arguments equiv_reflexive {A R} _ _.
+Arguments equiv_symmetric {A R} _ _ _ _.
+Arguments equiv_transitive {A R} _ _ _ _ _ _.
+Hint Extern 1 (Reflexive equiv) => apply equiv_reflexive : typeclass_instances.
+Hint Extern 1 (Symmetric equiv) => apply equiv_symmetric : typeclass_instances.
+Hint Extern 1 (Transitive equiv) => apply equiv_transitive : typeclass_instances.
 
 (** Use the [substitute] command which substitutes an equivalence in every hypothesis. *)
 

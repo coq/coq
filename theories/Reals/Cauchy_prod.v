@@ -312,7 +312,7 @@ Proof.
   replace (S N - S i0)%nat with (N - i0)%nat; [ idtac | reflexivity ].
   replace (S i0 + i)%nat with (S (i0 + i)).
   reflexivity.
-  apply INR_eq; rewrite S_INR; do 2 rewrite plus_INR; rewrite S_INR; simpl; ring.
+  apply INR_eq; rewrite S_INR at 1; do 2 rewrite plus_INR; rewrite S_INR; simpl; ring.
   cut ((N - i)%nat = pred (S N - i)).
   intro; rewrite H5; reflexivity.
   rewrite pred_of_minus.

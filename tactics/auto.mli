@@ -22,11 +22,14 @@ val default_search_depth : int ref
 
 val auto_flags_of_state : transparent_state -> Unification.unify_flags
 
-val connect_hint_clenv : polymorphic -> raw_hint -> clausenv ->
-  'a Proofview.Goal.t -> clausenv * constr
+(** @raise Not_found if the clause is incompatible with the goal (e.g. refers to cleared variables) *)
+val make_hint_clenv : polymorphic -> ?len:int -> raw_hint ->
+  'a Proofview.Goal.t -> Evd.evar_map * clause
+
+val make_clenv : polymorphic -> raw_hint -> (clause -> unit Proofview.tactic)  -> unit Proofview.tactic
 
 (** Try unification with the precompiled clause, then use registered Apply *)
-val unify_resolve : polymorphic -> Unification.unify_flags -> (raw_hint * clausenv) -> unit Proofview.tactic
+val unify_resolve : polymorphic -> Unification.unify_flags -> raw_hint -> unit Proofview.tactic
 
 (** [ConclPattern concl pat tacast]:
    if the term concl matches the pattern pat, (in sense of

@@ -446,7 +446,7 @@ assert (vlt1 : / (Rabs y + 1) < 1).
  rewrite Rinv_l; [rewrite Rmult_1_l | apply Rgt_not_eq]; fourier.
 assert (vlt2 : u < 1).
  apply Rlt_trans with (/ (Rabs y + 1)).
-  rewrite double_var.
+  rewrite (double_var (/ _)).
   assert (t : forall x, 0 < x -> x < x + x) by (clear; intros; fourier).
   unfold u; rewrite Rmult_comm; apply t.
   unfold Rdiv; rewrite Rmult_comm; assumption.
@@ -1247,7 +1247,7 @@ intros N x x_lb x_ub.
    apply Rlt_trans with (r2:=Rabs
            (((x + h) ^ (2 * S N + 1) - x ^ (2 * S N + 1)) / h -
             INR (2 * S N + 1) * x ^ pred (2 * S N + 1))).
-   rewrite <- Rmult_1_l ; apply Rmult_lt_compat_r.
+   rewrite <- (Rmult_1_l (Rabs (_ - _))) at 2. apply Rmult_lt_compat_r.
    apply Rabs_pos_lt ; assumption.
    rewrite Rabs_right.
    replace 1 with (/1) by field.

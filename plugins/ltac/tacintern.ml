@@ -520,7 +520,7 @@ let rec intern_atomic lf ist x =
       | _ -> false
       in
       let is_onconcl = match cl.concl_occs with
-      | AllOccurrences | NoOccurrences -> true
+      | AtLeastOneOccurrence | AllOccurrences | NoOccurrences -> true
       | _ -> false
       in
       TacChange (None,
@@ -535,7 +535,9 @@ let rec intern_atomic lf ist x =
   | TacRewrite (ev,l,cl,by) ->
       TacRewrite
 	(ev,
-	List.map (fun (b,m,c) -> (b,m,intern_constr_with_bindings_arg ist c)) l,
+	 List.map (fun (b,m,p,c) ->
+             (b,m,Option.map (intern_typed_pattern ist) p,
+              intern_constr_with_bindings_arg ist c)) l,
 	clause_app (intern_hyp_location ist) cl,
 	Option.map (intern_pure_tactic ist) by)
   | TacInversion (inv,hyp) ->

@@ -22,21 +22,20 @@ type freeze_evars_flag = bool (* true = don't instantiate existing evars *)
 
 type orientation = bool
 
-type conditions =
-  | Naive (* Only try the first occurrence of the lemma (default) *)
-  | FirstSolved (* Use the first match whose side-conditions are solved *)
-  | AllMatches (* Rewrite all matches whose side-conditions are solved *)
-
 val general_rewrite_bindings :
-  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
-  ?tac:(unit Proofview.tactic * conditions) -> constr with_bindings -> evars_flag -> unit Proofview.tactic
+  orientation -> occurrences -> ?pat:Pattern.constr_pattern ->
+  freeze_evars_flag -> dep_proof_flag ->
+  ?tac:(unit Proofview.tactic) -> constr with_bindings ->
+  evars_flag -> unit Proofview.tactic
+
 val general_rewrite :
-  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
-  ?tac:(unit Proofview.tactic * conditions) -> constr -> unit Proofview.tactic
+  orientation -> occurrences -> ?pat:Pattern.constr_pattern ->
+  freeze_evars_flag -> dep_proof_flag ->
+  ?tac:(unit Proofview.tactic) -> constr -> unit Proofview.tactic
 
 (* Equivalent to [general_rewrite l2r] *)
-val rewriteLR : ?tac:(unit Proofview.tactic * conditions) -> constr -> unit Proofview.tactic
-val rewriteRL : ?tac:(unit Proofview.tactic * conditions) -> constr  -> unit Proofview.tactic
+val rewriteLR : ?tac:(unit Proofview.tactic) -> constr -> unit Proofview.tactic
+val rewriteRL : ?tac:(unit Proofview.tactic) -> constr  -> unit Proofview.tactic
 
 (* Warning: old [general_rewrite_in] is now [general_rewrite_bindings_in] *)
 
@@ -44,26 +43,38 @@ val general_setoid_rewrite_clause :
   (Id.t option -> orientation -> occurrences -> constr with_bindings ->
    new_goals:constr list -> unit Proofview.tactic) Hook.t
 
-val general_rewrite_ebindings_clause : Id.t option ->
-  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
-  ?tac:(unit Proofview.tactic * conditions) -> constr with_bindings -> evars_flag -> unit Proofview.tactic
+val general_rewrite_ebindings_clause :
+  Id.t option ->
+  orientation -> occurrences -> ?pat:Pattern.constr_pattern ->
+  freeze_evars_flag -> dep_proof_flag ->
+  ?tac:(unit Proofview.tactic) -> constr with_bindings ->
+  evars_flag -> unit Proofview.tactic
 
 val general_rewrite_bindings_in :
-  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
-  ?tac:(unit Proofview.tactic * conditions) ->
+  orientation -> occurrences -> ?pat:Pattern.constr_pattern ->
+  freeze_evars_flag -> dep_proof_flag ->
+  ?tac:(unit Proofview.tactic) ->
   Id.t -> constr with_bindings -> evars_flag -> unit Proofview.tactic
+
 val general_rewrite_in          :
-  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag -> 
-  ?tac:(unit Proofview.tactic * conditions) -> Id.t -> constr -> evars_flag -> unit Proofview.tactic
+  orientation -> occurrences -> ?pat:Pattern.constr_pattern ->
+  freeze_evars_flag -> dep_proof_flag ->
+  ?tac:(unit Proofview.tactic) -> Id.t -> constr -> evars_flag ->
+  unit Proofview.tactic
 
 val general_rewrite_clause :
-  orientation -> evars_flag -> ?tac:(unit Proofview.tactic * conditions) -> constr with_bindings -> clause -> unit Proofview.tactic
+  orientation -> ?pat:Pattern.constr_pattern ->evars_flag ->
+  ?tac:(unit Proofview.tactic) ->
+  constr with_bindings -> clause -> unit Proofview.tactic
 
 val general_multi_rewrite :
-  evars_flag -> (bool * multi * clear_flag * delayed_open_constr_with_bindings) list ->
-    clause -> (unit Proofview.tactic * conditions) option -> unit Proofview.tactic
+  evars_flag -> (bool * multi * clear_flag * Pattern.constr_pattern option *
+                  delayed_open_constr_with_bindings) list ->
+    clause -> (unit Proofview.tactic) option -> unit Proofview.tactic
 
-val replace_in_clause_maybe_by : constr -> constr -> clause -> unit Proofview.tactic option -> unit Proofview.tactic
+val replace_in_clause_maybe_by :
+  constr -> constr -> clause ->
+  unit Proofview.tactic option -> unit Proofview.tactic
 val replace    : constr -> constr -> unit Proofview.tactic
 val replace_by : constr -> constr -> unit Proofview.tactic -> unit Proofview.tactic
 

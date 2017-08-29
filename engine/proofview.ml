@@ -614,6 +614,10 @@ let tclINDEPENDENTL tac =
 
 (** {7 Goal manipulation} *)
 
+let shelf =
+  let open Proof in
+  Shelf.get >>= fun shelf -> tclUNIT shelf
+
 (** Shelves all the goals under focus. *)
 let shelve =
   let open Proof in
@@ -686,7 +690,7 @@ let guard_no_unifiable =
 let unshelve l p =
   (* advance the goals in case of clear *)
   let l = undefined p.solution l in
-  { p with comb = p.comb@l }
+  { p with comb = p.comb@l; shelf = List.filter (fun g -> not (List.mem g l)) p.shelf }
 
 let mark_in_evm ~goal evd content =
   let info = Evd.find evd content in
@@ -708,6 +712,17 @@ let mark_in_evm ~goal evd content =
   | Some () -> info
   in
   Evd.add evd content info
+
+let unshelve_goals l =
+  let open Proof in
+  Solution.get >>= fun sigma ->
+  let f (sigma, goals) gl =
+    let sigma = mark_in_evm ~goal:true sigma gl in
+    (sigma, gl :: goals)
+  in
+  let sigma, goals = CList.fold_left f (sigma, []) l in
+  Solution.set sigma >>
+  Pv.get >>= fun pv -> Pv.set (unshelve (CList.rev goals) pv)
 
 let with_shelf tac =
   let open Proof in
@@ -946,7 +961,7 @@ let tclTIME s t =
 module Unsafe = struct
 
   let tclEVARS evd =
-    Pv.modify (fun ps -> { ps with solution = evd })
+    Pv.modify (fun ps -> { ps with solution = Evd.clear_metas evd })
 
   let tclNEWGOALS gls =
     Pv.modify begin fun step ->

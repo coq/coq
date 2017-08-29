@@ -13,7 +13,6 @@ open EConstr
 open Environ
 open Proof_type
 open Evd
-open Clenv
 open Redexpr
 open Globnames
 open Pattern
@@ -187,8 +186,8 @@ val revert        : Id.t list -> unit Proofview.tactic
 val apply_type : constr -> constr list -> unit Proofview.tactic
 val bring_hyps : named_context -> unit Proofview.tactic
 
-val apply                 : constr -> unit Proofview.tactic
-val eapply                : constr -> unit Proofview.tactic
+val apply                 : ?with_delta:bool -> constr -> unit Proofview.tactic
+val eapply                : ?with_delta:bool -> constr -> unit Proofview.tactic
 
 val apply_with_bindings_gen :
   advanced_flag -> evars_flag -> (clear_flag * constr with_bindings located) list -> unit Proofview.tactic
@@ -196,8 +195,8 @@ val apply_with_bindings_gen :
 val apply_with_delayed_bindings_gen :
   advanced_flag -> evars_flag -> (clear_flag * delayed_open_constr_with_bindings located) list -> unit Proofview.tactic
 
-val apply_with_bindings   : constr with_bindings -> unit Proofview.tactic
-val eapply_with_bindings  : constr with_bindings -> unit Proofview.tactic
+val apply_with_bindings   : ?with_delta:bool -> constr with_bindings -> unit Proofview.tactic
+val eapply_with_bindings  : ?with_delta:bool -> constr with_bindings -> unit Proofview.tactic
 
 val cut_and_apply         : constr -> unit Proofview.tactic
 
@@ -264,14 +263,15 @@ val compute_elim_sig : evar_map -> ?elimc:constr with_bindings -> types -> elim_
 type eliminator = {
   elimindex : int option;  (** None = find it automatically *)
   elimrename : (bool * int array) option; (** None = don't rename Prop hyps with H-names *)
-  elimbody : constr with_bindings
+  elimbody : constr with_bindings;
+  elimoccs : Evarconv.occurrences_selection option;
 }
 
-val general_elim  : evars_flag -> clear_flag ->
+val general_elim  : evars_flag -> holes_order:bool -> clear_flag ->
   constr with_bindings -> eliminator -> unit Proofview.tactic
 
-val general_elim_clause : evars_flag -> unify_flags -> identifier option ->
-  clausenv -> eliminator -> unit Proofview.tactic
+val general_elim_clause : evars_flag -> holes_order:bool -> unify_flags -> identifier option ->
+  Clenv.clause -> eliminator -> unit Proofview.tactic
 
 val default_elim  : evars_flag -> clear_flag -> constr with_bindings ->
   unit Proofview.tactic

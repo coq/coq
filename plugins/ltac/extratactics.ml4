@@ -218,34 +218,6 @@ TACTIC EXTEND autorewrite
     ]
 END
 
-TACTIC EXTEND autorewrite_star
-| [ "autorewrite" "*" "with" ne_preident_list(l) clause(cl) ] ->
-    [ auto_multi_rewrite ~conds:AllMatches l cl ]
-| [ "autorewrite" "*" "with" ne_preident_list(l) clause(cl) "using" tactic(t) ] ->
-  [ auto_multi_rewrite_with ~conds:AllMatches (Tacinterp.tactic_of_value ist t) l cl ]
-END
-
-(**********************************************************************)
-(* Rewrite star                                                       *)
-
-let rewrite_star ist clause orient occs c (tac : Geninterp.Val.t option) =
-  let tac' = Option.map (fun t -> Tacinterp.tactic_of_value ist t, FirstSolved) tac in
-  with_delayed_uconstr ist c
-    (fun c -> general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings) true)
-
-TACTIC EXTEND rewrite_star
-| [ "rewrite" "*" orient(o) uconstr(c) "in" hyp(id) "at" occurrences(occ) by_arg_tac(tac) ] ->
-    [ rewrite_star ist (Some id) o (occurrences_of occ) c tac ]
-| [ "rewrite" "*" orient(o) uconstr(c) "at" occurrences(occ) "in" hyp(id) by_arg_tac(tac) ] ->
-    [ rewrite_star ist (Some id) o (occurrences_of occ) c tac ]
-| [ "rewrite" "*" orient(o) uconstr(c) "in" hyp(id) by_arg_tac(tac) ] ->
-    [ rewrite_star ist (Some id) o Locus.AllOccurrences c tac ]
-| [ "rewrite" "*" orient(o) uconstr(c) "at" occurrences(occ) by_arg_tac(tac) ] ->
-    [ rewrite_star ist None o (occurrences_of occ) c tac ]
-| [ "rewrite" "*" orient(o) uconstr(c) by_arg_tac(tac) ] ->
-    [ rewrite_star ist None o Locus.AllOccurrences c tac ]
-    END
-
 (**********************************************************************)
 (* Hint Rewrite                                                       *)
 
@@ -253,7 +225,7 @@ let add_rewrite_hint bases ort t lcsr =
   let env = Global.env() in
   let sigma = Evd.from_env env in
   let poly = Flags.use_polymorphic_flag () in
-  let f ce = 
+  let f (p, ce) =
     let c, ctx = Constrintern.interp_constr env sigma ce in
     let ctx =
       let ctx = UState.context_set ctx in
@@ -263,22 +235,38 @@ let add_rewrite_hint bases ort t lcsr =
 	  (Declare.declare_universe_context false ctx;
            Univ.ContextSet.empty)
     in
-      Loc.tag ?loc:(Constrexpr_ops.constr_loc ce) ((c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t) in
+    let p =
+      let pat p =
+        snd (Patternops.pattern_of_glob_constr (Constrintern.intern_constr env p))
+      in Option.map pat p
+    in
+    Loc.tag ?loc:(Constrexpr_ops.constr_loc ce) (p, (c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t)
+  in
   let eqs = List.map f lcsr in
   let add_hints base = add_rew_rules base eqs in
   List.iter add_hints bases
 
 let classify_hint _ = Vernacexpr.VtSideff [], Vernacexpr.VtLater
 
+let pr_rewrite_hint prc _prlc _prt (p,c) =
+  match p with
+  | None -> prc c
+  | Some p -> str"[" ++ prc p ++ str"]" ++ prc c
+
+ARGUMENT EXTEND rewrite_hint TYPED AS (constr option * constr) PRINTED BY pr_rewrite_hint
+  | [ "[" uconstr(p) "]" uconstr(c) ] -> [ ((Some p), c) ]
+  | [ uconstr(c) ] -> [ (None, c) ]
+END
+
 VERNAC COMMAND EXTEND HintRewrite CLASSIFIED BY classify_hint
-  [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
+  [ "Hint" "Rewrite" orient(o) ne_rewrite_hint_list(l) ":" preident_list(bl) ] ->
   [ add_rewrite_hint bl o None l ]
-| [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
+| [ "Hint" "Rewrite" orient(o) ne_rewrite_hint_list(l) "using" tactic(t)
     ":" preident_list(bl) ] ->
   [ add_rewrite_hint bl o (Some t) l ]
-| [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
+| [ "Hint" "Rewrite" orient(o) ne_rewrite_hint_list(l) ] ->
   [ add_rewrite_hint ["core"] o None l ]
-| [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
+| [ "Hint" "Rewrite" orient(o) ne_rewrite_hint_list(l) "using" tactic(t) ] ->
   [ add_rewrite_hint ["core"] o (Some t) l ]
 END
 
@@ -347,7 +335,7 @@ open Vars
 
 let constr_flags () = {
   Pretyping.use_typeclasses = true;
-  Pretyping.solve_unification_constraints = true;
+  Pretyping.solve_unification_constraints = Pfedit.use_unification_heuristics ();
   Pretyping.use_hook = Pfedit.solve_by_implicit_tactic ();
   Pretyping.fail_evar = false;
   Pretyping.expand_evars = true }
@@ -970,6 +958,24 @@ TACTIC EXTEND unshelve
       Proofview.with_shelf (Tacinterp.tactic_of_value ist t) >>= fun (gls, ()) ->
       Proofview.Unsafe.tclGETGOALS >>= fun ogls ->
       Proofview.Unsafe.tclSETGOALS (gls @ ogls)
+    ]
+END
+
+(* Unshelves the specified goals. *)
+TACTIC EXTEND unshelve_goals
+| [ "unshelve_goals" ne_ident_list(l) ] ->
+   [
+     Proofview.tclEVARMAP >>= fun sigma ->
+     Proofview.unshelve_goals (List.map (fun id -> Evd.evar_key id sigma) l)
+    ]
+END
+
+TACTIC EXTEND unshelve_evar
+| [ "unshelve_evar" constr(c) ] ->
+   [
+     Proofview.tclEVARMAP >>= fun sigma ->
+     Proofview.unshelve_goals [if isEvar sigma c then fst (destEvar sigma c)
+                               else user_err (str"Not an evar")]
     ]
 END
 

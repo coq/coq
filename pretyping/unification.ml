@@ -141,7 +141,15 @@ let abstract_list_all env evd typ c l =
   evd,(p,typp)
 
 let set_occurrences_of_last_arg args =
-  Some AllOccurrences :: List.tl (Array.map_to_list (fun _ -> None) args)
+  Evarconv.AtOccurrences AllOccurrences ::
+    List.tl (Array.map_to_list (fun _ -> Evarconv.Unspecified true) args)
+
+let occurrence_test _ _ _ env sigma _ c1 c2 =
+  match EConstr.eq_constr_universes sigma c1 c2 with
+  | None -> false, sigma
+  | Some cstr ->
+     try true, Evd.add_universe_constraints sigma cstr
+     with UniversesDiffer -> false, sigma
 
 let abstract_list_all_with_dependencies env evd typ c l =
   let (evd, ev) = new_evar env evd typ in
@@ -149,8 +157,9 @@ let abstract_list_all_with_dependencies env evd typ c l =
   let n = List.length l in
   let argoccs = set_occurrences_of_last_arg (Array.sub (snd ev') 0 n) in
   let evd,b =
-    Evarconv.second_order_matching empty_transparent_state
-      env evd ev' argoccs c in
+    Evarconv.second_order_matching
+      (Evarconv.default_flags_of empty_transparent_state)
+      env evd ev' (occurrence_test, argoccs) c in
   if b then
     let p = nf_evar evd ev in
       evd, p
@@ -1289,8 +1298,8 @@ let order_metas metas =
 
 (* Solve an equation ?n[x1=u1..xn=un] = t where ?n is an evar *)
 
-let solve_simple_evar_eqn ts env evd ev rhs =
-  match solve_simple_eqn (Evarconv.evar_conv_x ts) env evd (None,ev,rhs) with
+let solve_simple_evar_eqn flags env evd ev rhs =
+  match solve_simple_eqn flags (Evarconv.conv_fun Evarconv.evar_conv_x flags) env evd (None,ev,rhs) with
   | UnifFailure (evd,reason) ->
       error_cannot_unify env evd ~reason (mkEvar ev,rhs);
   | Success evd ->
@@ -1305,6 +1314,7 @@ let solve_simple_evar_eqn ts env evd ev rhs =
    is true, unification of types of metas is required *)
 
 let w_merge env with_types flags (evd,metas,evars : subst0) =
+  let eflags = Evarconv.default_flags_of flags.modulo_delta_types in
   let rec w_merge_rec evd metas evars eqns =
 
     (* Process evars *)
@@ -1329,14 +1339,14 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
 	      else
 		let evd' = 
 		  let evd', rhs'' = pose_all_metas_as_evars curenv evd rhs' in
-		    try solve_simple_evar_eqn flags.modulo_delta_types curenv evd' ev rhs''
+		  try solve_simple_evar_eqn eflags curenv evd' ev rhs''
 		    with Retyping.RetypeError _ ->
 		      error_cannot_unify curenv evd' (mkEvar ev,rhs'')
 		in w_merge_rec evd' metas evars' eqns
           | _ ->
 	      let evd', rhs'' = pose_all_metas_as_evars curenv evd rhs' in
 	      let evd' = 
-		try solve_simple_evar_eqn flags.modulo_delta_types curenv evd' ev rhs''
+		try solve_simple_evar_eqn eflags curenv evd' ev rhs''
 		with Retyping.RetypeError _ -> error_cannot_unify curenv evd' (mkEvar ev, rhs'')
 	      in
 		w_merge_rec evd' metas evars' eqns
@@ -1604,7 +1614,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
   | Some (sigma,_,l) ->
      let c = applist (nf_evar sigma (local_strong whd_meta sigma c), l) in
      let univs, subst = nf_univ_variables sigma in
-     Some (sigma,EConstr.of_constr (CVars.subst_univs_constr subst (EConstr.Unsafe.to_constr c))))
+     Some (Evd.clear_metas sigma,EConstr.of_constr (CVars.subst_univs_constr subst (EConstr.Unsafe.to_constr c))))
 
 let make_eq_test env evd c =
   let out cstr =
@@ -1632,7 +1642,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     match occurrences_of_hyp hyp occs with
     | NoOccurrences, InHyp ->
         (push_named_context_val d sign,depdecls)
-    | AllOccurrences, InHyp as occ ->
+    | (AllOccurrences | AtLeastOneOccurrence), InHyp as occ ->
         let occ = if likefirst then LikeFirst else AtOccs occ in
         let newdecl = replace_term_occ_decl_modulo sigma occ test mkvarid d in
         if Context.Named.Declaration.equal (EConstr.eq_constr sigma) d newdecl
@@ -1954,6 +1964,17 @@ let w_unify2 env evd flags dep cv_pb ty1 ty2 =
    Before, second-order was used if the type of Meta(1) and [x:A]t was
    convertible and first-order otherwise. But if failed if e.g. the type of
    Meta(1) had meta-variables in it. *)
+
+let flags_of flags =
+  let modulo_betaiota = flags.core_unify_flags.modulo_betaiota in
+  let open_ts = flags.core_unify_flags.modulo_delta in
+  let closed_ts = Option.default open_ts (flags.core_unify_flags.modulo_conv_on_closed_terms) in
+  let subterm_ts = flags.subterm_unify_flags.modulo_delta in
+  let frozen_evars = flags.core_unify_flags.frozen_evars in
+  let allow_K_at_toplevel = flags.allow_K_in_toplevel_higher_order_unification in
+  Evarsolve.{ modulo_betaiota; open_ts; closed_ts; subterm_ts; frozen_evars;
+              allow_K_at_toplevel; with_cs = true }
+
 let w_unify env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =
   let hd1,l1 = decompose_app_vect evd (whd_nored evd ty1) in
   let hd2,l2 = decompose_app_vect evd (whd_nored evd ty2) in

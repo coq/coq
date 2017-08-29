@@ -23,15 +23,15 @@ val mk_new_meta : unit -> constr
 (** {6 Creating a fresh evar given their type and context} *)
 val new_evar :
   env -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
+  ?abstraction:Abstraction.t -> ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> types -> evar_map * EConstr.t
+  ?future_goal:bool -> ?principal:bool -> types -> evar_map * EConstr.t
 
 val new_pure_evar :
   named_context_val -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
+  ?abstraction:Abstraction.t -> ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> types -> evar_map * evar
+  ?future_goal:bool -> ?principal:bool -> types -> evar_map * evar
 
 val new_pure_evar_full : evar_map -> evar_info -> evar_map * evar
 
@@ -40,24 +40,21 @@ val e_new_evar :
   env -> evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> types -> constr
+  ?future_goal:bool -> ?principal:bool -> types -> constr
 
 (** Create a new Type existential variable, as we keep track of 
     them during type-checking and unification. *)
 val new_type_evar :
   env -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid ->
+  ?naming:Misctypes.intro_pattern_naming_expr -> ?future_goal:bool -> ?principal:bool -> rigid ->
   evar_map * (constr * sorts)
 
 val e_new_type_evar : env -> evar_map ref ->
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid -> constr * sorts
+  ?naming:Misctypes.intro_pattern_naming_expr -> ?future_goal:bool -> ?principal:bool -> rigid -> constr * sorts
 
 val new_Type : ?rigid:rigid -> env -> evar_map -> evar_map * constr
 val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
-
-val restrict_evar : evar_map -> existential_key -> Filter.t ->
-  ?src:Evar_kinds.t Loc.located -> constr list option -> evar_map * existential_key
 
 (** Polymorphic constants *)
 
@@ -72,9 +69,10 @@ val e_new_global : evar_map ref -> Globnames.global_reference -> constr
    as a telescope) is [sign] *)
 val new_evar_instance :
  named_context_val -> evar_map -> types -> 
-  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t -> ?candidates:constr list ->
-  ?store:Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool ->
+ ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t -> ?abstraction:Abstraction.t ->
+ ?candidates:constr list ->
+ ?store:Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
+ ?future_goal:bool -> ?principal:bool ->
   constr list -> evar_map * constr
 
 val make_pure_subst : evar_info -> 'a array -> (Id.t * 'a) list
@@ -117,6 +115,10 @@ val gather_dependent_evars : evar_map -> evar list -> (Evar.Set.t option) Evar.M
     solved. *)
 val advance : evar_map -> evar -> evar option
 
+(** [reachable_from_evars sigma seeds ev] computes if [ev] is a descendent
+    of an evar of [seeds] by restriction or evar-evar unifications in [sigma]. *)
+val reachable_from_evars : evar_map -> Evar.Set.t -> existential_key -> bool
+
 (** The following functions return the set of undefined evars
     contained in the object, the defined evars being traversed.
     This is roughly a combination of the previous functions and
@@ -124,6 +126,7 @@ val advance : evar_map -> evar -> evar option
 
 val undefined_evars_of_term : evar_map -> constr -> Evar.Set.t
 val undefined_evars_of_named_context : evar_map -> Context.Named.t -> Evar.Set.t
+val undefined_evars_of_econstr_named_context : evar_map -> EConstr.named_context -> Evar.Set.t
 val undefined_evars_of_evar_info : evar_map -> evar_info -> Evar.Set.t
 
 (** [occur_evar_upto sigma k c] returns [true] if [k] appears in
@@ -188,18 +191,38 @@ val kind_of_term_upto : evar_map -> Constr.constr ->
     assumed to be an extention of those in [sigma1]. *)
 val eq_constr_univs_test : evar_map -> evar_map -> Constr.constr -> Constr.constr -> bool
 
+(** {6 Unification problems} *)
+type unification_pb = conv_pb * env * constr * constr
+
+(** [add_unification_pb ?tail pb sigma]
+    Add a unification problem [pb] to [sigma], if not already present.
+    Put it at the end of the list if [tail] is true, by default it is false. *)
+val add_unification_pb : ?tail:bool -> unification_pb -> evar_map -> evar_map
+
 (** {6 Removing hyps in evars'context}
 raise OccurHypInSimpleClause if the removal breaks dependencies *)
 
 type clear_dependency_error =
 | OccurHypInSimpleClause of Id.t option
 | EvarTypingBreak of Constr.existential
+| NoCandidatesLeft of existential_key
 
 exception ClearDependencyError of Id.t * clear_dependency_error
+
+(** Restrict an undefined evar according to a (sub)filter and candidates.
+    The evar will be defined if there is only one candidate left,
+@raise ClearDependencyError NoCandidatesLeft is the filter turns the candidates
+  into an empty list. *)
+
+val restrict_evar : evar_map -> existential_key -> Filter.t ->
+  ?src:Evar_kinds.t Loc.located -> constr list option -> evar_map * existential_key
 
 (* spiwack: marks an evar that has been "defined" by clear.
     used by [Goal] and (indirectly) [Proofview] to handle the clear tactic gracefully*)
 val cleared : bool Store.field
+(** Marks an evar that has been defined by another evar by projection.
+    Used to handle checking of created goals correctly. *)
+val evar_evar_solution : bool Store.field
 
 val clear_hyps_in_evi : env -> evar_map ref -> named_context_val -> types ->
   Id.Set.t -> named_context_val * types

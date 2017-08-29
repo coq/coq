@@ -163,12 +163,12 @@ rewrite H7.
 unfold M'.
 assert (H5 : (INR (S n) <= M)%R) by (apply H3; exists (S n); reflexivity).
 rewrite S_INR in H5.
-assert (H6 : (INR n + 1 + -1 <= M + -1)%R).
+assert (H6 : (INR n + 1 + Ropp 1 <= M + -1)%R).
   apply Rplus_le_compat_r.
   assumption.
 rewrite Rplus_assoc in H6.
 rewrite Rplus_opp_r in H6.
-rewrite (Rplus_comm (INR n) 0) in H6.
+rewrite (Rplus_comm (INR _)) in H6.
 rewrite Rplus_0_l in H6.
 assumption.
 Qed.

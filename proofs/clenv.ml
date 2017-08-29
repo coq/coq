@@ -594,12 +594,52 @@ type hole = {
 
 type clause = {
   cl_holes : hole list;
-  cl_concl : EConstr.types;
+  (** The holes of the clause. *)
+  cl_concl : types;
+  (** The conclusion: an evar applied to some terms *)
+  cl_concl_occs : Evarconv.occurrences_selection option;
+  (** The occurrences of the terms to be abstracted when unifying *)
+  cl_val   : constr;
+  (** The value the clause was built from, applied to holes *)
 }
 
-let make_evar_clause env sigma ?len t =
+let make_prod_evar env sigma na t1 t2 =
+  let store = Typeclasses.set_resolvable Evd.Store.empty false in
+  let naming =
+    match na with Name id -> IntroFresh id | Anonymous -> IntroAnonymous
+  in
+  let sigma, ev = new_evar ~future_goal:false ~store env sigma ~naming t1 in
+  let dep = dependent sigma (mkRel 1) t2 in
+  let hole = {
+      hole_evar = ev;
+      hole_deps = dep;
+      hole_type = t1;
+      (* We fix it later *)
+      hole_name = na;
+    } in
+  let t2 = if dep then subst1 ev t2 else t2 in
+  sigma, hole, t2
+
+(** Stripping params on applications of primitive projections *)
+let strip_params env sigma c =
   let open EConstr in
-  let open Vars in
+  match kind sigma c with
+  | App (f, args) ->
+    (match kind sigma f with
+    | Const (p,_) ->
+      let cb = lookup_constant p env in
+	(match cb.Declarations.const_proj with
+	| Some pb ->
+	  let n = pb.Declarations.proj_npars in
+	    if Array.length args > n then
+	      mkApp (mkProj (Projection.make p false, args.(n)),
+		     Array.sub args (n+1) (Array.length args - (n + 1)))
+	    else c
+	| None -> c)
+    | _ -> c)
+  | _ -> c
+
+let make_evar_clause env sigma ?len ?occs c t =
   let bound = match len with
   | None -> -1
   | Some n -> assert (0 <= n); n
@@ -611,24 +651,17 @@ let make_evar_clause env sigma ?len t =
     else match EConstr.kind sigma t with
     | Cast (t, _, _) -> clrec (sigma, holes) n t
     | Prod (na, t1, t2) ->
-      let store = Typeclasses.set_resolvable Evd.Store.empty false in
-      let (sigma, ev) = new_evar ~store env sigma t1 in
-      let dep = not (noccurn sigma 1 t2) in
-      let hole = {
-        hole_evar = ev;
-        hole_type = t1;
-        hole_deps = dep;
-        (* We fix it later *)
-        hole_name = na;
-      } in
-      let t2 = if dep then subst1 ev t2 else t2 in
-      clrec (sigma, hole :: holes) (pred n) t2
+       let sigma, hole, t2 = make_prod_evar env sigma na t1 t2 in
+       clrec (sigma, hole :: holes) (pred n) t2
     | LetIn (na, b, _, t) -> clrec (sigma, holes) n (subst1 b t)
     | _ -> (sigma, holes, t)
   in
   let (sigma, holes, t) = clrec (sigma, []) bound t in
   let holes = List.rev holes in
-  let clause = { cl_concl = t; cl_holes = holes } in
+  let v = applist (c, List.map (fun h -> h.hole_evar) holes) in
+  let c = strip_params env sigma v in
+  let clause = { cl_holes = holes; cl_val = c;
+                 cl_concl = t; cl_concl_occs = occs } in
   (sigma, clause)
 
 let explain_no_such_bound_variable holes id =
@@ -642,7 +675,7 @@ let explain_no_such_bound_variable holes id =
   | [id] -> str "(possible name is: " ++ pr_id id ++ str ")."
   | _ -> str "(possible names are: " ++ pr_enum pr_id mvl ++ str ")."
   in
-  user_err  (str "No such bound variable " ++ pr_id id ++ expl)
+  user_err  (str "No such bound variable " ++ pr_id id ++ spc () ++ expl)
 
 let evar_with_name holes id =
   let map h = match h.hole_name with
@@ -658,59 +691,285 @@ let evar_with_name holes id =
       (str "Binder name \"" ++ pr_id id ++
         str "\" occurs more than once in clause.")
 
+let nth_anonymous holes n =
+  let rec hole holes n =
+    match holes, n with
+    | h :: holes, n when h.hole_name <> Anonymous -> hole holes n
+    | h :: holes, 0 -> h.hole_evar
+    | h :: holes, n -> hole holes (pred n)
+    | [], _ -> user_err (str "No such binder.")
+  in hole holes (pred n)
+
 let evar_of_binder holes = function
 | NamedHyp s -> evar_with_name holes s
-| AnonHyp n ->
-  try
-    let nondeps = List.filter (fun hole -> not hole.hole_deps) holes in
-    let h = List.nth nondeps (pred n) in
-    h.hole_evar
-  with e when CErrors.noncritical e ->
-    user_err  (str "No such binder.")
+| AnonHyp n -> nth_anonymous holes n
 
-let define_with_type sigma env ev c =
-  let open EConstr in
+let define_with_type env sigma ?flags ev c ty =
   let t = Retyping.get_type_of env sigma ev in
-  let ty = Retyping.get_type_of env sigma c in
+  let ty =
+    match ty with
+    | Some t -> t
+    | None -> Retyping.get_type_of env sigma c in
   let j = Environ.make_judge c ty in
-  let (sigma, j) = Coercion.inh_conv_coerce_to true env sigma j t in
+  let (sigma, j) = Coercion.inh_conv_coerce_to true env sigma ?flags j t in
   let (ev, _) = destEvar sigma ev in
   let sigma = Evd.define ev (EConstr.Unsafe.to_constr j.Environ.uj_val) sigma in
   sigma
 
-let solve_evar_clause env sigma hyp_only clause = function
-| NoBindings -> sigma
-| ImplicitBindings largs ->
-  let open EConstr in
-  let fold holes h =
+(** This requires to look at the evar even if it is defined *)
+let hole_goal h = fst (Term.destEvar (EConstr.Unsafe.to_constr h.hole_evar))
+
+let clenv_advance sigma clenv =
+  let { cl_concl; cl_holes; cl_val; cl_concl_occs } = clenv in
+  let advance h =
+    let h' = whd_evar sigma h.hole_evar in
+    if Term.eq_constr (EConstr.Unsafe.to_constr h') (EConstr.Unsafe.to_constr h.hole_evar)
+    then Some h
+    else
+      let ev = hole_goal h in
+      match Proofview.Unsafe.advance sigma ev with
+      | Some ev' ->
+         let na =
+           match evar_ident ev' sigma with
+           | Some id -> Name id
+           | None -> h.hole_name
+         in
+         Some { h with hole_evar = h'; hole_name = na }
+      | None -> None
+  in
+  let holes = List.map_filter advance cl_holes in
+    if holes == cl_holes then clenv
+    else
+      { cl_holes = holes;
+        cl_concl = nf_evar sigma cl_concl;
+        cl_val = nf_evar sigma cl_val;
+        cl_concl_occs }
+
+let hole_evar sigma hole = fst (destEvar sigma hole.hole_evar)
+
+let hole_type sigma hole =
+  let concl = Evd.evar_concl (Evd.find_undefined sigma (hole_evar sigma hole)) in
+  Reductionops.nf_betaiota sigma (Evarutil.nf_evar sigma (EConstr.of_constr concl))
+
+let clenv_recompute_deps sigma ~hyps_only clenv =
+  let concl = clenv.cl_concl in
+  let fold h rest =
     if h.hole_deps then
       (** Some subsequent term uses the hole *)
-      let (ev, _) = destEvar sigma h.hole_evar in
-      let is_dep hole = occur_evar sigma ev hole.hole_type in
-      let in_hyp = List.exists is_dep holes in
-      let in_ccl = occur_evar sigma ev clause.cl_concl in
-      let dep = if hyp_only then in_hyp && not in_ccl else in_hyp || in_ccl in
-      let h = { h with hole_deps = dep } in
-      h :: holes
+      let ev, _ = destEvar sigma h.hole_evar in
+      let is_dep hole = occur_evar sigma ev (hole_type sigma hole) in
+      let in_hyp = List.exists is_dep rest in
+      let in_concl = occur_evar sigma ev concl in
+      let dep = if hyps_only then in_hyp && not in_concl else in_hyp || in_concl in
+      let h' = { h with hole_deps = dep } in
+      h' :: rest
     else
       (** The hole does not occur anywhere *)
-      h :: holes
+      h :: rest
   in
-  let holes = List.fold_left fold [] (List.rev clause.cl_holes) in
-  let map h = if h.hole_deps then Some h.hole_evar else None in
-  let evs = List.map_filter map holes in
+  let holes = List.fold_right fold clenv.cl_holes [] in
+  { clenv with cl_holes = holes }
+
+let solve_evar_clause env sigma ~hyps_only clause b =
+  match b with
+| NoBindings -> sigma, clause
+| ImplicitBindings largs ->
+  let clause = if hyps_only then clenv_recompute_deps sigma ~hyps_only clause else clause in
+  let evs, holes' = List.partition (fun h -> h.hole_deps) clause.cl_holes in
   let len = List.length evs in
   if Int.equal len (List.length largs) then
-    let fold sigma ev arg = define_with_type sigma env ev arg in
+    let fold sigma ev arg = define_with_type env sigma ev.hole_evar arg None in
     let sigma = List.fold_left2 fold sigma evs largs in
-    sigma
+    let clause = { clause with cl_holes = holes' } in
+    sigma, clenv_advance sigma clause
   else
     error_not_right_number_missing_arguments len
 | ExplicitBindings lbind ->
   let () = check_bindings lbind in
-  let fold sigma (_, (binder, c)) =
+  let fold (sigma, holes) (_, (binder, c)) =
     let ev = evar_of_binder clause.cl_holes binder in
-    define_with_type sigma env ev c
+    let rem ev' = EConstr.eq_constr sigma ev ev'.hole_evar in
+    let holes = List.remove_first rem holes in
+    define_with_type env sigma ev c None, holes
   in
-  let sigma = List.fold_left fold sigma lbind in
-  sigma
+  let sigma, holes = List.fold_left fold (sigma,clause.cl_holes) lbind in
+  let clause = { clause with cl_holes = holes } in
+  sigma, clenv_advance sigma clause
+
+let make_clenv_from_env env sigma ?len ?occs (c, t) =
+  make_evar_clause env sigma ?len ?occs (strip_outer_cast sigma c) t
+
+let make_clenv_bindings env sigma ?len ?occs p ~hyps_only b =
+  let sigma, cle = make_clenv_from_env env sigma ?len ?occs p in
+  solve_evar_clause env sigma ~hyps_only cle b
+
+let clenv_indep_holes c =
+  let holes = c.cl_holes in
+  let filter h = not h.hole_deps in
+  List.filter filter holes
+
+let clenv_concl cl = cl.cl_concl
+let clenv_val   cl = cl.cl_val
+let clenv_holes cl = cl.cl_holes
+
+let clenv_dep_holes clenv =
+  let holes = clenv_holes clenv in
+  List.filter (fun h -> h.hole_deps) holes
+
+let clenv_dest_prod env sigma
+  { cl_concl = concl; cl_holes = holes; cl_val = v; cl_concl_occs = occs } =
+  let typ = whd_all env sigma concl in
+  let rec clrec typ = match EConstr.kind sigma typ with
+    | Cast (t,_,_) -> clrec t
+    | Prod (na,t,u) ->
+       make_prod_evar env sigma na t u
+    | _ -> raise NotExtensibleClause
+  in
+  let sigma, hole, typ' = clrec typ in
+  let v = strip_params env sigma (applist (v, [hole.hole_evar])) in
+  let occs' =
+    match occs with
+    | None -> None
+    | Some (f, occs) -> Some (f, occs @ [Evarconv.default_occurrence_selection])
+  in
+  let clause =
+    { cl_holes = holes @ [hole]; cl_val = v;
+      cl_concl = typ'; cl_concl_occs = occs' }
+  in sigma, clause
+
+let clenv_map_concl f clenv =
+  let concl = clenv.cl_concl in
+  { clenv with cl_concl = f concl }
+
+let clenv_unify_type env sigma flags hole occs ty =
+  (** Give priority to second-order matching which avoids falling back
+      to it with unfolded terms through evar_conv. *)
+  let ev, l = decompose_appvect sigma hole in
+  let hd, l' = decompose_appvect sigma ty in
+  let is_explicit_pattern =
+    if Array.length l == Array.length l' then
+      try ignore(decompose_lam_n_assum sigma (Array.length l) hd); true
+      with e -> not (isEvar sigma ev)
+    else not (isEvar sigma ev)
+  in
+  (** In case the clause is not higher-order (has no occurrences selected)
+      or the type we're unifying with is an explicit predicate
+      applied to the right number of arguments, we favor direct
+      unification. *)
+  match occs with
+  | Some (f, occs) when not is_explicit_pattern ->
+     let (evk, subst as ev) = destEvar sigma ev in
+     let sigma, ev' =
+       Evardefine.evar_absorb_arguments env sigma ev (Array.to_list l) in
+     let argoccs = Array.map_to_list (fun _ -> Evarconv.default_occurrence_selection) (snd ev) in
+     let f, occs =
+       (** We are lenient here, allowing more occurrences to be specified than
+            the actual arguments of the evar. Helps dealing with eliminators we
+            don't know the arity of (e.g. dependent or not). *)
+       let () =
+         if not (Array.length l <= List.length occs) then
+           user_err (Pp.str"Clause unification: occurrence list does not match argument list")
+       in (f, List.firstn (Array.length l) occs)
+     in
+     let occs = List.rev (argoccs @ occs) in
+     let sigma, b =
+       Evarconv.second_order_matching flags env sigma ev' (f, occs) ty
+     in
+     if not b then
+       let reason = ConversionFailed (env,hole,ty) in
+       Pretype_errors.error_cannot_unify env sigma ~reason (hole, ty)
+     else
+       (** Ensure we did actually find a solution *)
+       Evarconv.consider_remaining_unif_problems
+         ~flags ~with_ho:true env sigma
+  | _ ->
+     let ho () =
+       let sigma = Evarutil.add_unification_pb (CUMUL,env,hole,ty) sigma in
+        Evarconv.consider_remaining_unif_problems
+          ~flags ~with_ho:true env sigma
+     in
+     (** Try normal unification first, if that fails use heuristics + higher-order unif *)
+     let open Evarsolve in
+     match Evarconv.evar_conv_x flags env sigma CUMUL hole ty with
+     | Success sigma ->
+        (try Evarconv.consider_remaining_unif_problems
+               ~flags ~with_ho:false env sigma
+         with e -> ho ())
+     | UnifFailure _ -> ho ()
+
+
+let clenv_unify_concl env sigma flags ty clenv =
+  let concl, occs = clenv.cl_concl, clenv.cl_concl_occs in
+  let sigma = clenv_unify_type env sigma flags concl occs ty in
+  sigma, clenv_advance sigma clenv
+
+(* [clenv_fchain mv clenv clenv']
+ *
+ * Resolves the value of "mv" (which must be undefined) in clenv to be
+ * the template of clenv' be the value "c", applied to "n" fresh
+ * metavars, whose types are chosen by destructing "clf", which should
+ * be a clausale forme generated from the type of "c".  The process of
+ * resolution can cause unification of already-existing metavars, and
+ * of the fresh ones which get created.  This operation is a composite
+ * of operations which pose new metavars, perform unification on
+ * terms, and make bindings.
+
+   Otherwise said, from
+
+     [clenv] = [env;sigma;metas |- c:T]
+     [clenv'] = [env';sigma';metas' |- d:U]
+     [mv] = [mi] of type [Ti] in [metas]
+
+   then, if the unification of [Ti] and [U] produces map [rho], the
+   chaining is [env';sigma';rho'(metas),rho(metas') |- c:rho'(T)] for
+   [rho'] being [rho;mi:=d].
+
+   In particular, it assumes that [env'] and [sigma'] extend [env] and [sigma].
+*)
+
+let hole_def sigma h =
+  match h.hole_name with
+  | Name id ->
+     let res = nf_evar sigma h.hole_evar in
+     if isEvar sigma res then
+       Some (fst (destEvar sigma res), id)
+     else None
+  | Anonymous -> None
+
+let clenv_chain ?(holes_order=true) ?(flags=fchain_flags ()) ?occs
+                env sigma h cl nextcl =
+  let sigma, cl =
+    match occs with
+    | None -> define_with_type env sigma ~flags:(flags_of flags)
+                 h.hole_evar nextcl.cl_val (Some nextcl.cl_concl), cl
+    | Some _ ->
+       let ty = hole_type sigma h in
+       let ty' = nextcl.cl_concl in
+       let sigma = clenv_unify_type env sigma (flags_of flags) ty occs ty' in
+       let (ev, _) = destEvar sigma h.hole_evar in
+       let sigma = Evd.define ev (EConstr.Unsafe.to_constr nextcl.cl_val) sigma in
+       sigma, cl
+  in
+  let sigma, clholes =
+    let nextclholes =
+      List.map_filter (fun h -> hole_def sigma h) nextcl.cl_holes
+    in
+    List.fold_map (fun sigma h ->
+        try
+          let id = List.assoc_f Evar.equal (hole_goal h) nextclholes in
+          Evd.rename (hole_goal h) id sigma, { h with hole_name = Name id }
+        with Not_found -> sigma, h) sigma cl.cl_holes
+  in
+  let holes' =
+    if holes_order then
+      clholes @ nextcl.cl_holes
+    else
+      nextcl.cl_holes @ clholes
+  in
+  let cl = { cl with cl_holes = holes' } in
+  sigma, clenv_advance sigma cl
+
+let clenv_chain_last ?(flags=fchain_flags ()) env sigma c cl =
+  let h = try List.last cl.cl_holes with Failure _ -> raise NoSuchBinding in
+  let sigma = define_with_type env sigma ~flags:(flags_of flags) h.hole_evar c None in
+  sigma, clenv_advance sigma cl

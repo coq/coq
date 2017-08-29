@@ -167,6 +167,7 @@ val destFix : Evd.evar_map -> t -> (t, t) pfixpoint
 val destCoFix : Evd.evar_map -> t -> (t, t) pcofixpoint
 
 val decompose_app : Evd.evar_map -> t -> t * t list
+val decompose_appvect : Evd.evar_map -> t -> t * t array
 
 val decompose_lam : Evd.evar_map -> t -> (Name.t * t) list * t
 val decompose_lam_assum : Evd.evar_map -> t -> rel_context * t
@@ -233,7 +234,6 @@ val closed0 : Evd.evar_map -> t -> bool
 
 val subst_univs_level_constr : Univ.universe_level_subst -> t -> t
 val subst_of_rel_context_instance : rel_context -> t list -> t list
-
 
 end
 

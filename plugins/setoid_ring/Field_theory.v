@@ -1275,8 +1275,7 @@ Qed.
 (* simplify a field equation : generate the crossproduct and simplify
    polynomials *)
 
-(** This allows rewriting modulo the simplification of PEeval on PMul *)
-Declare Equivalent Keys PEeval rmul.
+Unset Keyed Unification.
 
 Theorem Field_simplify_eq_correct :
  forall n l lpe fe1 fe2,

@@ -120,6 +120,15 @@ struct
 
 end
 
+module Abstraction = struct
+
+  type t = bool list
+
+  let identity = []
+
+  let abstract_last l = true :: l
+end
+
 (* The kinds of existential variables are now defined in [Evar_kinds] *)
 
 (* The type of mappings for existential variables *)
@@ -140,6 +149,7 @@ type evar_info = {
   evar_hyps : named_context_val;
   evar_body : evar_body;
   evar_filter : Filter.t;
+  evar_abstraction : Abstraction.t;
   evar_source : Evar_kinds.t Loc.located;
   evar_candidates : constr list option; (* if not None, list of allowed instances *)
   evar_extra : Store.t }
@@ -149,6 +159,7 @@ let make_evar hyps ccl = {
   evar_hyps = hyps;
   evar_body = Evar_empty;
   evar_filter = Filter.identity;
+  evar_abstraction = Abstraction.identity;
   evar_source = Loc.tag @@ Evar_kinds.InternalHole;
   evar_candidates = None;
   evar_extra = Store.empty
@@ -167,6 +178,8 @@ let evar_context evi = named_context_of_val evi.evar_hyps
 
 let evar_filtered_context evi =
   Filter.filter_list (evar_filter evi) (evar_context evi)
+
+let evar_candidates evi = evi.evar_candidates
 
 let evar_hyps evi = evi.evar_hyps
 
@@ -621,9 +634,10 @@ let set_universe_context evd uctx' =
   { evd with universes = uctx' }
 
 let add_conv_pb ?(tail=false) pb d =
-  (** MS: we have duplicates here, why? *)
   if tail then {d with conv_pbs = d.conv_pbs @ [pb]}
   else {d with conv_pbs = pb::d.conv_pbs}
+
+let conv_pbs d = d.conv_pbs
 
 let evar_source evk d = (find d evk).evar_source
 

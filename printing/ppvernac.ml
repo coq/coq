@@ -177,7 +177,10 @@ open Decl_kinds
         | HintsTransparency (l, b) ->
           keyword (if b then "Transparent" else "Opaque")
           ++ spc ()
-          ++ prlist_with_sep sep pr_reference l
+          ++ (match l with
+              | HintsVariables -> keyword "Variables"
+              | HintsConstants -> keyword "Constants"
+              | HintsReferences l -> prlist_with_sep sep pr_reference l)
         | HintsMode (m, l) ->
           keyword "Mode"
           ++ spc ()

@@ -1716,6 +1716,7 @@ module Locus :
 sig
   type 'a occurrences_gen =
   | AllOccurrences
+  | AtLeastOneOccurrence
   | AllOccurrencesBut of 'a list (** non-empty *)
   | NoOccurrences
   | OnlyOccurrences of 'a list (** non-empty *)
@@ -2206,6 +2207,9 @@ sig
     val repr : t -> bool list option
   end
 
+  module Abstraction :
+  sig type t end
+
   (** This value defines the refinement of a given {i evar} *)
   type evar_body =
               | Evar_empty (** given {i evar} was not yet refined *)
@@ -2218,6 +2222,7 @@ sig
       evar_hyps : Environ.named_context_val;
       evar_body : evar_body;
       evar_filter : Filter.t;
+      evar_abstraction : Abstraction.t;
       evar_source : Evar_kinds.t Loc.located;
       evar_candidates : Constr.t list option; (* if not None, list of allowed instances *)
       evar_extra : Store.t
@@ -2854,15 +2859,16 @@ sig
 
   val new_evar :
     Environ.env -> Evd.evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
-    ?candidates:EConstr.constr list -> ?store:Evd.Store.t ->
+    ?abstraction:Evd.Abstraction.t -> ?candidates:EConstr.constr list -> ?store:Evd.Store.t ->
     ?naming:Misctypes.intro_pattern_naming_expr ->
-    ?principal:bool -> EConstr.types -> Evd.evar_map * EConstr.constr
+    ?future_goal:bool -> ?principal:bool -> EConstr.types -> Evd.evar_map * EConstr.constr
 
   val new_evar_instance :
     Environ.named_context_val -> Evd.evar_map -> EConstr.types ->
-    ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t -> ?candidates:EConstr.constr list ->
+    ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
+    ?abstraction:Evd.Abstraction.t -> ?candidates:EConstr.constr list ->
     ?store:Evd.Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
-    ?principal:bool ->
+    ?future_goal:bool -> ?principal:bool ->
     EConstr.constr list -> Evd.evar_map * EConstr.constr
 
   val clear_hyps_in_evi : Environ.env -> Evd.evar_map ref -> Environ.named_context_val ->
@@ -2871,6 +2877,7 @@ sig
   type clear_dependency_error =
     | OccurHypInSimpleClause of Names.Id.t option
     | EvarTypingBreak of Constr.existential
+    | NoCandidatesLeft of Evar.t
 
   exception ClearDependencyError of Names.Id.t * clear_dependency_error
   val undefined_evars_of_term : Evd.evar_map -> EConstr.constr -> Evar.Set.t
@@ -2878,10 +2885,10 @@ sig
       Environ.env -> Evd.evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
       ?candidates:EConstr.constr list -> ?store:Evd.Store.t ->
       ?naming:Misctypes.intro_pattern_naming_expr ->
-      ?principal:bool -> EConstr.types -> EConstr.constr
+      ?future_goal:bool -> ?principal:bool -> EConstr.types -> EConstr.constr
   val new_type_evar :
     Environ.env -> Evd.evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
-    ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> Evd.rigid ->
+    ?naming:Misctypes.intro_pattern_naming_expr -> ?future_goal:bool -> ?principal:bool -> Evd.rigid ->
     Evd.evar_map * (EConstr.constr * Sorts.t)
   val nf_evars_universes : Evd.evar_map -> Constr.t -> Constr.t
   val safe_evar_value : Evd.evar_map -> Term.existential -> Constr.t option
@@ -2943,6 +2950,7 @@ sig
   val tclONCE : 'a tactic -> 'a tactic
   val tclPROGRESS : 'a tactic -> 'a tactic
   val shelve_unifiable : unit tactic
+  val unshelve_goals : Evar.t list -> unit tactic
   val apply : Environ.env -> 'a tactic -> proofview -> 'a
                                                      * proofview
                                                      * (bool * Evd.evar list * Evd.evar list)
@@ -3215,6 +3223,7 @@ sig
   val nowhere : 'a Locus.clause_expr
   val allHypsAndConcl : 'a Locus.clause_expr
   val is_nowhere : 'a Locus.clause_expr -> bool
+  val is_all_occurrences : 'a Locus.occurrences_gen -> bool
   val occurrences_map :
     ('a list -> 'b list) -> 'a Locus.occurrences_gen -> 'b Locus.occurrences_gen
   val convert_occs : Locus.occurrences -> bool * int list
@@ -3374,6 +3383,15 @@ end
 
 module Evarsolve :
 sig
+  type unify_flags = {
+  modulo_betaiota : bool;
+  open_ts : Names.transparent_state;
+  closed_ts : Names.transparent_state;
+  subterm_ts : Names.transparent_state;
+  frozen_evars : Evar.Set.t;
+  allow_K_at_toplevel : bool;
+  with_cs : bool}
+
   val refresh_universes :
     ?status:Evd.rigid -> ?onlyalg:bool -> ?refreshset:bool -> bool option ->
     Environ.env -> Evd.evar_map -> EConstr.types -> Evd.evar_map * EConstr.types
@@ -3404,10 +3422,26 @@ end
 
 module Evarconv :
 sig
+  type unify_flags = Evarsolve.unify_flags
+  type occurrence_match_test =
+    Environ.env -> Evd.evar_map -> EConstr.constr -> (* Used to precompute the local tests *)
+    Environ.env -> Evd.evar_map -> int -> EConstr.constr -> EConstr.constr -> bool * Evd.evar_map
+  type prefer_abstraction = bool
+  type occurrence_selection =
+    | AtOccurrences of Locus.occurrences
+    | Unspecified of prefer_abstraction
+  val default_occurrence_selection : occurrence_selection
+  type occurrences_selection =
+    occurrence_match_test * occurrence_selection list
+
   val e_conv : Environ.env -> ?ts:Names.transparent_state -> Evd.evar_map ref -> EConstr.constr -> EConstr.constr -> bool
   val the_conv_x : Environ.env -> ?ts:Names.transparent_state -> EConstr.constr -> EConstr.constr -> Evd.evar_map -> Evd.evar_map
   val the_conv_x_leq : Environ.env -> ?ts:Names.transparent_state -> EConstr.constr -> EConstr.constr -> Evd.evar_map -> Evd.evar_map
-  val solve_unif_constraints_with_heuristics : Environ.env -> ?ts:Names.transparent_state -> Evd.evar_map -> Evd.evar_map
+  val solve_unif_constraints_with_heuristics : Environ.env -> ?flags:unify_flags -> ?with_ho:bool ->
+                                               Evd.evar_map -> Evd.evar_map
+  (** @raises a PretypeError if it cannot unify *)
+  val unify_with_heuristics : unify_flags -> with_ho:bool ->
+     Environ.env -> Evd.evar_map -> Reduction.conv_pb -> EConstr.constr -> EConstr.constr -> Evd.evar_map
 end
 
 module Typing :
@@ -3764,11 +3798,16 @@ sig
 
   type hint_info_expr = Constrexpr.constr_pattern_expr hint_info_gen
 
+  type 'a hints_transparency_target =
+    | HintsVariables
+    | HintsConstants
+    | HintsReferences of 'a list
+
   type hints_expr =
     | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
     | HintsImmediate of reference_or_constr list
     | HintsUnfold of Libnames.reference list
-    | HintsTransparency of Libnames.reference list * bool
+    | HintsTransparency of Libnames.reference hints_transparency_target * bool
     | HintsMode of Libnames.reference * hint_mode list
     | HintsConstructors of Libnames.reference list
     | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
@@ -3993,7 +4032,7 @@ sig
   val build_mutual_induction_scheme :
     Environ.env -> Evd.evar_map -> (Term.pinductive * dep_flag * Sorts.family) list -> Evd.evar_map * Constr.t list
   val build_case_analysis_scheme_default : Environ.env -> Evd.evar_map -> Term.pinductive ->
-      Sorts.family -> Evd.evar_map * Constr.t
+      Sorts.family -> dep_flag * (Evd.evar_map * Constr.t)
 end
 
 module Pretyping :
@@ -4062,6 +4101,7 @@ sig
       allow_K_in_toplevel_higher_order_unification : bool;
       resolve_evars : bool
     }
+  val flags_of : unify_flags -> Evarconv.unify_flags
   val default_no_delta_unify_flags : unit -> unify_flags
   val w_unify : Environ.env -> Evd.evar_map -> Reduction.conv_pb -> ?flags:unify_flags -> EConstr.constr -> EConstr.constr -> Evd.evar_map
   val elim_flags : unit -> unify_flags
@@ -4612,6 +4652,7 @@ end
 
 module Pfedit :
 sig
+  val use_unification_heuristics : unit -> bool
   val solve_by_implicit_tactic : unit -> Pretyping.inference_hook option
   val refine_by_tactic : Environ.env -> Evd.evar_map -> EConstr.types -> unit Proofview.tactic ->
                          Constr.t * Evd.evar_map
@@ -4647,14 +4688,16 @@ sig
   }
 
   type clause = {
-    cl_holes : hole list;
-    cl_concl : EConstr.types;
-  }
-
-  val make_evar_clause : Environ.env -> Evd.evar_map -> ?len:int -> EConstr.types ->
+      cl_holes : hole list;
+      cl_concl : EConstr.types;
+      cl_concl_occs : Evarconv.occurrences_selection option;
+      cl_val   : EConstr.constr;
+    }
+  val make_evar_clause : Environ.env -> Evd.evar_map -> ?len:int -> ?occs:Evarconv.occurrences_selection -> EConstr.constr -> EConstr.types ->
                          (Evd.evar_map * clause)
-  val solve_evar_clause : Environ.env -> Evd.evar_map -> bool -> clause -> EConstr.constr Misctypes.bindings ->
-                          Evd.evar_map
+  val solve_evar_clause : Environ.env -> Evd.evar_map -> hyps_only:bool -> clause ->
+                          EConstr.constr Misctypes.bindings ->
+                          Evd.evar_map * clause
   type clausenv
   val pr_clenv : clausenv -> Pp.t
 end
@@ -5085,7 +5128,7 @@ sig
   val intro_then : (Names.Id.t -> unit Proofview.tactic) -> unit Proofview.tactic
   val reflexivity : unit tactic
   val change_concl : EConstr.constr -> unit tactic
-  val apply : EConstr.constr -> unit tactic
+  val apply : ?with_delta:bool -> EConstr.constr -> unit tactic
   val normalise_vm_in_concl : unit tactic
   val assert_before : Names.Name.t -> EConstr.types -> unit tactic
   val exact_check : EConstr.constr -> unit tactic
@@ -5161,7 +5204,7 @@ sig
   val force_destruction_arg : Misctypes.evars_flag -> Environ.env -> Evd.evar_map ->
     Tactypes.delayed_open_constr_with_bindings Misctypes.destruction_arg ->
     Evd.evar_map * EConstr.constr Misctypes.with_bindings Misctypes.destruction_arg
-  val apply_with_bindings   : EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
+  val apply_with_bindings   : ?with_delta:bool -> EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
   val abstract_generalize : ?generalize_vars:bool -> ?force_dep:bool -> Names.Id.t -> unit Proofview.tactic
   val specialize_eqs : Names.Id.t -> unit Proofview.tactic
   val generalize : EConstr.constr list -> unit Proofview.tactic
@@ -5173,7 +5216,7 @@ sig
   val convert_hyp_no_check : EConstr.named_declaration -> unit Proofview.tactic
   val reflexivity_red : bool -> unit Proofview.tactic
   val symmetry_red : bool -> unit Proofview.tactic
-  val eapply : EConstr.constr -> unit Proofview.tactic
+  val eapply : ?with_delta:bool -> EConstr.constr -> unit Proofview.tactic
   val transitivity_red : bool -> EConstr.constr option -> unit Proofview.tactic
   val assert_after_replacing : Names.Id.t -> EConstr.types -> unit Proofview.tactic
   val intros : unit Proofview.tactic
@@ -5192,7 +5235,7 @@ sig
   val split : EConstr.constr Misctypes.bindings -> unit Proofview.tactic
   val red_in_concl : unit Proofview.tactic
   val change_in_concl   : (Locus.occurrences * Pattern.constr_pattern) option -> change_arg -> unit Proofview.tactic
-  val eapply_with_bindings  : EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
+  val eapply_with_bindings  : ?with_delta:bool -> EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
   val assert_by  : Names.Name.t -> EConstr.types -> unit Proofview.tactic ->
                    unit Proofview.tactic
   val intro_avoiding : Names.Id.t list -> unit Proofview.tactic
@@ -5234,23 +5277,21 @@ sig
   type orientation = bool
   type freeze_evars_flag = bool
   type dep_proof_flag = bool
-  type conditions =
-    | Naive
-    | FirstSolved
-    | AllMatches
 
   val build_selector :
     Environ.env -> Evd.evar_map -> int -> EConstr.constr -> EConstr.types ->
     EConstr.constr -> EConstr.constr -> Evd.evar_map * EConstr.constr
   val replace : EConstr.constr -> EConstr.constr -> unit Proofview.tactic
   val general_rewrite :
-    orientation -> Locus.occurrences -> freeze_evars_flag -> dep_proof_flag ->
-    ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr -> unit Proofview.tactic
+    orientation -> Locus.occurrences -> ?pat:Pattern.constr_pattern ->
+    freeze_evars_flag -> dep_proof_flag ->
+    ?tac:(unit Proofview.tactic) -> EConstr.constr -> unit Proofview.tactic
   val inj : Tactypes.intro_patterns option -> Misctypes.evars_flag ->
             Misctypes.clear_flag -> EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
   val general_multi_rewrite :
-    Misctypes.evars_flag -> (bool * Misctypes.multi * Misctypes.clear_flag * Tactypes.delayed_open_constr_with_bindings) list ->
-    Locus.clause -> (unit Proofview.tactic * conditions) option -> unit Proofview.tactic
+    Misctypes.evars_flag -> (bool * Misctypes.multi * Misctypes.clear_flag *
+                               Pattern.constr_pattern option * Tactypes.delayed_open_constr_with_bindings) list ->
+    Locus.clause -> (unit Proofview.tactic) option -> unit Proofview.tactic
   val replace_in_clause_maybe_by : EConstr.constr -> EConstr.constr -> Locus.clause -> unit Proofview.tactic option -> unit Proofview.tactic
   val replace_term : bool option -> EConstr.constr -> Locus.clause -> unit Proofview.tactic
   val dEq : Misctypes.evars_flag -> EConstr.constr Misctypes.with_bindings Misctypes.destruction_arg option -> unit Proofview.tactic
@@ -5267,8 +5308,8 @@ sig
   val cutRewriteInConcl : bool -> EConstr.constr -> unit Proofview.tactic
   val cutRewriteInHyp : bool -> EConstr.types -> Names.Id.t -> unit Proofview.tactic
   val general_rewrite_ebindings_clause : Names.Id.t option ->
-                                         orientation -> Locus.occurrences -> freeze_evars_flag -> dep_proof_flag ->
-                                         ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr Misctypes.with_bindings -> Misctypes.evars_flag -> unit Proofview.tactic
+                                         orientation -> Locus.occurrences -> ?pat:Pattern.constr_pattern  -> freeze_evars_flag -> dep_proof_flag ->
+                                         ?tac:(unit Proofview.tactic) -> EConstr.constr Misctypes.with_bindings -> Misctypes.evars_flag -> unit Proofview.tactic
   val subst : Names.Id.t list -> unit Proofview.tactic
 
   type subst_tactic_flags = {
@@ -5278,19 +5319,20 @@ sig
   val subst_all : ?flags:subst_tactic_flags -> unit -> unit Proofview.tactic
 
   val general_rewrite_in :
-    orientation -> Locus.occurrences -> freeze_evars_flag -> dep_proof_flag ->
-    ?tac:(unit Proofview.tactic * conditions) -> Names.Id.t -> EConstr.constr -> Misctypes.evars_flag -> unit Proofview.tactic
+    orientation -> Locus.occurrences -> ?pat:Pattern.constr_pattern -> freeze_evars_flag -> dep_proof_flag ->
+    ?tac:(unit Proofview.tactic) -> Names.Id.t -> EConstr.constr -> Misctypes.evars_flag -> unit Proofview.tactic
 
   val general_setoid_rewrite_clause :
   (Names.Id.t option -> orientation -> Locus.occurrences -> EConstr.constr Misctypes.with_bindings ->
    new_goals:EConstr.constr list -> unit Proofview.tactic) Hook.t
 
   val discrConcl   : unit Proofview.tactic
-  val rewriteLR : ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr -> unit Proofview.tactic
-  val rewriteRL : ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr  -> unit Proofview.tactic
+  val rewriteLR : ?tac:(unit Proofview.tactic) -> EConstr.constr -> unit Proofview.tactic
+  val rewriteRL : ?tac:(unit Proofview.tactic) -> EConstr.constr  -> unit Proofview.tactic
   val general_rewrite_bindings :
-    orientation -> Locus.occurrences -> freeze_evars_flag -> dep_proof_flag ->
-    ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr Misctypes.with_bindings -> Misctypes.evars_flag -> unit Proofview.tactic
+    orientation -> Locus.occurrences -> ?pat:Pattern.constr_pattern ->
+    freeze_evars_flag -> dep_proof_flag ->
+    ?tac:(unit Proofview.tactic) -> EConstr.constr Misctypes.with_bindings -> Misctypes.evars_flag -> unit Proofview.tactic
   val discriminable : Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool
   val discrHyp : Names.Id.t -> unit Proofview.tactic
   val injectable : Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool
@@ -5375,7 +5417,7 @@ sig
     | HintsImmediateEntry of (hints_path_atom * Decl_kinds.polymorphic * hint_term) list
     | HintsCutEntry of hints_path
     | HintsUnfoldEntry of Names.evaluable_global_reference list
-    | HintsTransparencyEntry of Names.evaluable_global_reference list * bool
+    | HintsTransparencyEntry of Names.evaluable_global_reference Vernacexpr.hints_transparency_target * bool
     | HintsModeEntry of Globnames.global_reference * Vernacexpr.hint_mode list
     | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 
@@ -5410,12 +5452,13 @@ sig
   val glob_hints_path :
     Libnames.reference hints_path_gen -> Globnames.global_reference hints_path_gen
   val run_hint : hint ->
-    ((raw_hint * Clenv.clausenv) hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
+    (raw_hint hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
   val typeclasses_db : hint_db_name
+  val rewrite_db : hint_db_name
   val add_hints_init : (unit -> unit) -> unit
   val create_hint_db : bool -> hint_db_name -> Names.transparent_state -> bool -> unit
   val empty_hint_info : 'a Vernacexpr.hint_info_gen
-  val repr_hint : hint -> (raw_hint * Clenv.clausenv) hint_ast
+  val repr_hint : hint -> raw_hint hint_ast
   val pr_hint_db : Hint_db.t -> Pp.t
 end
 
@@ -5481,15 +5524,16 @@ module Autorewrite :
 sig
   type rew_rule = { rew_lemma: Constr.t;
                     rew_type: Term.types;
-                    rew_pat: Constr.t;
+                    rew_constr: Constr.t;
+                    rew_pat : Pattern.constr_pattern option;
                     rew_ctx: Univ.ContextSet.t;
                     rew_l2r: bool;
                     rew_tac: Genarg.glob_generic_argument option }
-  type raw_rew_rule = (Constr.t Univ.in_universe_context_set * bool *
+  type raw_rew_rule = (Pattern.constr_pattern option * Constr.t Univ.in_universe_context_set * bool *
                          Genarg.raw_generic_argument option)
                         Loc.located
-  val auto_multi_rewrite : ?conds:Equality.conditions -> string list -> Locus.clause -> unit Proofview.tactic
-  val auto_multi_rewrite_with : ?conds:Equality.conditions -> unit Proofview.tactic -> string list -> Locus.clause -> unit Proofview.tactic
+  val auto_multi_rewrite : string list -> Locus.clause -> unit Proofview.tactic
+  val auto_multi_rewrite_with : unit Proofview.tactic -> string list -> Locus.clause -> unit Proofview.tactic
   val add_rew_rules : string -> raw_rew_rule list -> unit
   val find_rewrites : string -> rew_rule list
   val find_matches : string -> Constr.t -> rew_rule list

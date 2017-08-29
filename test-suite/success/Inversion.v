@@ -107,7 +107,7 @@ Goal forall o, foo2 o -> 0 = 1.
 intros.
 eapply trans_eq.
 inversion H.
-
+Abort.
 (* Check that the part of "injection" that is called by "inversion"
    does the same number of intros as the number of equations
    introduced, even in presence of dependent equalities that

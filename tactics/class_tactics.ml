@@ -88,6 +88,11 @@ let get_typeclasses_verbose () =
 let set_typeclasses_depth d = (:=) typeclasses_depth d
 let get_typeclasses_depth () = !typeclasses_depth
 
+(** Can we optimize and not backtrack on solutions to typeclass instances in Prop *)
+let typeclasses_backtrack_on_prop = ref false
+let get_typeclasses_backtrack_on_prop () = !typeclasses_backtrack_on_prop
+let set_typeclasses_backtrack_on_prop = (:=) typeclasses_backtrack_on_prop
+
 open Goptions
 
 let _ =
@@ -138,6 +143,14 @@ let _ =
       optkey   = ["Typeclasses";"Filtered";"Unification"];
       optread  = get_typeclasses_filtered_unification;
       optwrite = set_typeclasses_filtered_unification; }
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "backtracking on Prop instances";
+      optkey   = ["Typeclasses";"Backtrack";"On";"Prop"];
+      optread  = get_typeclasses_backtrack_on_prop;
+      optwrite = set_typeclasses_backtrack_on_prop; }
 
 let set_typeclasses_debug =
   declare_bool_option
@@ -209,103 +222,53 @@ let auto_unif_flags freeze st =
     resolve_evars = false
 }
 
-let e_give_exact flags poly (c,clenv) =
-  let open Tacmach.New in
-  Proofview.Goal.enter begin fun gl ->
-  let sigma = project gl in
-  let (c, _, _) = c in
-  let c, sigma =
+let e_give_exact flags poly c gl =
+  let (c, _, ctx) = c in
+  let c, gl =
     if poly then
-      let clenv', subst = Clenv.refresh_undefined_univs clenv in
-      let evd = evars_reset_evd ~with_conv_pbs:true sigma clenv'.evd in
+      let subst, ctx' = Universes.fresh_universe_context_set_instance ctx in
+      let evd = Evd.merge_context_set Evd.univ_flexible gl.sigma ctx' in
       let c = Vars.subst_univs_level_constr subst c in
-        c, evd
-    else c, sigma
+        c, { gl with sigma = evd }
+    else c, gl
   in
-  let (sigma, t1) = Typing.type_of (pf_env gl) sigma c in
-  Proofview.Unsafe.tclEVARS sigma <*>
-  Clenvtac.unify ~flags t1 <*> exact_no_check c
+  let t1 = pf_unsafe_type_of gl c in
+  Proofview.V82.of_tactic (Clenvtac.unify ~flags t1 <*> exact_no_check c) gl
+
+let unify_e_resolve poly flags = begin fun gls (evd, clenv) ->
+  Tacticals.New.tclTHEN
+    (Proofview.Unsafe.tclEVARS evd)
+    (Clenvtac.clenv_refine2 ~with_evars:true ~with_classes:false ~flags clenv)
   end
 
-let clenv_unique_resolver_tac with_evars ~flags clenv' =
-  Proofview.Goal.enter begin fun gls ->
-    let resolve =
-      try Proofview.tclUNIT (clenv_unique_resolver ~flags clenv' gls)
-      with e -> Proofview.tclZERO e
-    in resolve >>= fun clenv' ->
-       Clenvtac.clenv_refine with_evars ~with_classes:false clenv'
+let unify_resolve poly flags = begin fun gls (evd,clenv) ->
+  Tacticals.New.tclTHEN
+    (Proofview.Unsafe.tclEVARS evd)
+    (Clenvtac.clenv_refine2 ~with_evars:true ~with_classes:false ~flags clenv)
   end
-
-let unify_e_resolve poly flags = begin fun gls (c,_,clenv) ->
-  let clenv', c = connect_hint_clenv poly c clenv gls in
-  clenv_unique_resolver_tac true ~flags clenv' end
-
-let unify_resolve poly flags = begin fun gls (c,_,clenv) ->
-  let clenv', _ = connect_hint_clenv poly c clenv gls in
-  clenv_unique_resolver_tac false ~flags clenv'
-  end
-
-(** Application of a lemma using [refine] instead of the old [w_unify] *)
-let unify_resolve_refine poly flags gls ((c, t, ctx),n,clenv) =
-  let open Clenv in
-  let env = Proofview.Goal.env gls in
-  let concl = Proofview.Goal.concl gls in
-  Refine.refine ~typecheck:false begin fun sigma ->
-      let sigma, term, ty =
-        if poly then
-          let (subst, ctx) = Universes.fresh_universe_context_set_instance ctx in
-          let map c = Vars.subst_univs_level_constr subst c in
-          let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
-          sigma, map c, map t
-        else
-          let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
-          sigma, c, t
-      in
-      let sigma', cl = Clenv.make_evar_clause env sigma ?len:n ty in
-      let term = applist (term, List.map (fun x -> x.hole_evar) cl.cl_holes) in
-      let sigma' =
-        Evarconv.the_conv_x_leq env ~ts:flags.core_unify_flags.modulo_delta
-                                cl.cl_concl concl sigma'
-      in (sigma', term) end
-
-let unify_resolve_refine poly flags gl clenv =
-  Proofview.tclORELSE
-    (unify_resolve_refine poly flags gl clenv)
-    (fun ie ->
-      match fst ie with
-      | Evarconv.UnableToUnify _ ->
-         Tacticals.New.tclZEROMSG (str "Unable to unify")
-      | e when CErrors.noncritical e ->
-         Tacticals.New.tclZEROMSG (str "Unexpected error")
-      | _ -> iraise ie)
 
 (** Dealing with goals of the form A -> B and hints of the form
   C -> A -> B.
 *)
-let clenv_of_prods poly nprods (c, clenv) gl =
-  let (c, _, _) = c in
-  if poly || Int.equal nprods 0 then Some (None, clenv)
+let clenv_of_prods poly nprods hint gl =
+  let (_, cty, _) = hint in
+  if poly || Int.equal nprods 0 then Some (make_hint_clenv poly hint gl)
   else
-    let sigma = Tacmach.New.project gl in
-    let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma c in
-    let diff = nb_prod sigma ty - nprods in
+    let diff = nb_prod (Proofview.Goal.sigma gl) cty - nprods in
     if Pervasives.(>=) diff 0 then
-      (* Was Some clenv... *)
-      Some (Some diff,
-            mk_clenv_from_n gl (Some diff) (c,ty))
+      try Some (make_hint_clenv poly hint ~len:diff gl)
+      with Not_found -> None
     else None
 
-let with_prods nprods poly (c, clenv) f =
+let with_prods nprods poly c f =
   if get_typeclasses_limit_intros () then
-    Proofview.Goal.enter begin fun gl ->
-      try match clenv_of_prods poly nprods (c, clenv) gl with
-          | None -> Tacticals.New.tclZEROMSG (str"Not enough premisses")
-          | Some (diff, clenv') -> f gl (c, diff, clenv')
-      with e when CErrors.noncritical e ->
-        Tacticals.New.tclZEROMSG (CErrors.print e) end
-  else Proofview.Goal.enter
+    Proofview.Goal.nf_enter begin fun gl ->
+     match clenv_of_prods poly nprods c gl with
+     | None -> Tacticals.New.tclZEROMSG (str"Not enough premisses")
+     | Some clenv' -> f gl clenv' end
+  else Proofview.Goal.nf_enter
          begin fun gl ->
-         if Int.equal nprods 0 then f gl (c, None, clenv)
+         if Int.equal nprods 0 then f gl (make_hint_clenv poly c gl)
          else Tacticals.New.tclZEROMSG (str"Not enough premisses") end
 
 let matches_pattern concl pat =
@@ -413,48 +376,48 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes sigma co
   let tac_of_hint =
     fun (flags, {pri = b; pat = p; poly = poly; code = t; secvars; name = name}) ->
       let tac = function
-        | Res_pf (term,cl) ->
+        | Res_pf term ->
            if get_typeclasses_filtered_unification () then
              let tac =
-               with_prods nprods poly (term,cl)
+               with_prods nprods poly term
                           (fun gl clenv ->
-                             matches_pattern concl p <*>
-                               unify_resolve_refine poly flags gl clenv)
+                             (matches_pattern concl p) <*>
+                               (unify_resolve poly flags gl clenv))
              in Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
            else
              let tac =
-               with_prods nprods poly (term,cl) (unify_resolve poly flags) in
+               with_prods nprods poly term (unify_resolve poly flags) in
              if get_typeclasses_legacy_resolution () then
                Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
              else
                Proofview.tclBIND (Proofview.with_shelf tac)
                   (fun (gls, ()) -> shelve_dependencies gls)
-        | ERes_pf (term,cl) ->
+        | ERes_pf term ->
            if get_typeclasses_filtered_unification () then
-             let tac = (with_prods nprods poly (term,cl)
+             let tac = (with_prods nprods poly term
                   (fun gl clenv ->
-                             matches_pattern concl p <*>
-                             unify_resolve_refine poly flags gl clenv)) in
+                    (matches_pattern concl p) <*>
+                      (unify_resolve poly flags gl clenv))) in
              Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
            else
              let tac =
-               with_prods nprods poly (term,cl) (unify_e_resolve poly flags) in
+               with_prods nprods poly term (unify_e_resolve poly flags) in
              if get_typeclasses_legacy_resolution () then
                Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
              else
                Proofview.tclBIND (Proofview.with_shelf tac)
                   (fun (gls, ()) -> shelve_dependencies gls)
-        | Give_exact (c,clenv) ->
+        | Give_exact c ->
            if get_typeclasses_filtered_unification () then
              let tac =
                matches_pattern concl p <*>
                  Proofview.Goal.nf_enter
-                   (fun gl -> unify_resolve_refine poly flags gl (c,None,clenv)) in
+                   (fun gl -> unify_resolve poly flags gl (Auto.make_hint_clenv poly c gl)) in
              Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
            else
-             e_give_exact flags poly (c,clenv)
-      | Res_pf_THEN_trivial_fail (term,cl) ->
-         let fst = with_prods nprods poly (term,cl) (unify_e_resolve poly flags) in
+             Proofview.V82.tactic (e_give_exact flags poly c)
+      | Res_pf_THEN_trivial_fail term ->
+         let fst = with_prods nprods poly term (unify_e_resolve poly flags) in
          let snd = if complete then Tacticals.New.tclIDTAC
                    else e_trivial_fail_db only_classes db_list local_db secvars in
          Tacticals.New.tclTHEN fst snd
@@ -1027,7 +990,7 @@ module Search = struct
       and there are no evars in the goal then we do
       NOT backtrack. *)
   let needs_backtrack env evd unique concl =
-    if unique || is_Prop env evd concl then
+    if unique || (not (get_typeclasses_backtrack_on_prop ()) && is_Prop env evd concl) then
       occur_existential evd concl
     else true
 
@@ -1232,7 +1195,12 @@ module Search = struct
     let info' =
       { info with search_hints = ldb; last_tac = lazy (str"intro");
         search_depth = 1 :: 1 :: info.search_depth }
-    in kont info'
+    in
+    if !typeclasses_debug > 0 then
+      Feedback.msg_debug
+        (pr_depth info.search_depth ++ str": " ++ Lazy.force info'.last_tac
+         ++ str" on" ++ spc () ++ pr_ev sigma (Proofview.Goal.goal (Proofview.Goal.assume gl)));
+    kont info'
 
   let intro info kont =
     Proofview.tclBIND Tactics.intro
@@ -1365,8 +1333,10 @@ module Search = struct
                       let okev = Evd.mem evm ev || List.mem ev shelved in
                       if not okev then
                         Feedback.msg_debug
-                          (str "leaking evar " ++ int (Evar.repr ev) ++
-                             spc () ++ pr_ev evm' ev);
+                          (str "Leaking evar " ++ int (Evar.repr ev) ++
+                             spc () ++ pr_ev evm' ev ++
+                             str " this is certainly a sign that the shelf is not \
+                                  handled correctly by tactics used in type-class resolution");
                       acc && okev) evm' true);
            let evm' = Evd.restore_future_goals evm' (shelved @ fgoals) pgoal in
            let evm' = evars_reset_evd ~with_conv_pbs:true ~with_univs:false evm' evm in
@@ -1553,7 +1523,7 @@ let initial_select_evars filter =
 let resolve_typeclass_evars debug depth unique env evd filter split fail =
   let evd =
     try Evarconv.solve_unif_constraints_with_heuristics
-      ~ts:(Typeclasses.classes_transparent_state ()) env evd
+      ~flags:(Evarconv.default_flags_of (Typeclasses.classes_transparent_state ())) env evd
     with e when CErrors.noncritical e -> evd
   in
     resolve_all_evars debug depth unique env
@@ -1625,13 +1595,13 @@ let is_ground c =
 
 let autoapply c i =
   let open Proofview.Notations in
+  let open Tacmach.New in
   Proofview.Goal.enter begin fun gl ->
   let flags = auto_unif_flags Evar.Set.empty
     (Hints.Hint_db.transparent_state (Hints.searchtable_map i)) in
   let cty = Tacmach.New.pf_unsafe_type_of gl c in
-  let ce = mk_clenv_from gl (c,cty) in
-    unify_e_resolve false flags gl
-                                 ((c,cty,Univ.ContextSet.empty),0,ce) <*>
+  let ce = pf_apply (make_clenv_from_env ?len:None ?occs:None) gl (c,cty) in
+    unify_e_resolve false flags gl ce <*>
       Proofview.tclEVARMAP >>= (fun sigma ->
       let sigma = Typeclasses.mark_unresolvables ~filter:Typeclasses.all_goals sigma in
-      Proofview.Unsafe.tclEVARS sigma) end
+      Proofview.Unsafe.tclEVARS sigma) <*> Proofview.shelve_unifiable end

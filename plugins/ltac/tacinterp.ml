@@ -1812,7 +1812,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           | _ -> false
         in
         let is_onconcl = match cl.concl_occs with
-          | AllOccurrences | NoOccurrences -> true
+          | AtLeastOneOccurrence | AllOccurrences | NoOccurrences -> true
           | _ -> false
         in
         let c_interp patvars sigma =
@@ -1855,19 +1855,23 @@ and interp_atomic ist tac : unit Proofview.tactic =
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->
       Proofview.Goal.enter begin fun gl ->
-        let l' = List.map (fun (b,m,(keep,c)) ->
-          let f env sigma =
-            interp_open_constr_with_bindings ist env sigma c
-          in
-	  (b,m,keep,f)) l in
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
+        let l =
+          List.map (fun (b,m,p,c) ->
+              let p = Option.map (interp_typed_pattern ist env sigma) p in
+              (b,m,p,c)) l
+        in
+        let l' = List.map (fun (b,m,p,(keep,c)) ->
+          let f env' sigma' =
+            interp_open_constr_with_bindings ist env' sigma' c
+          in
+	  (b,m,keep,p,f)) l in
         let cl = interp_clause ist env sigma cl in
         name_atomic ~env
           (TacRewrite (ev,l,cl,Option.map ignore by))
           (Equality.general_multi_rewrite ev l' cl
-             (Option.map (fun by -> Tacticals.New.tclCOMPLETE (interp_tactic ist by),
-               Equality.Naive)
+             (Option.map (fun by -> Tacticals.New.tclCOMPLETE (interp_tactic ist by))
                 by))
       end
   | TacInversion (DepInversion (k,c,ids),hyp) ->

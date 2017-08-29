@@ -206,7 +206,7 @@ Proof.
   rewrite (Rabs_left (x0 - x) Hlt) in H8.
   rewrite Rplus_comm.
   apply Rplus_le_reg_l with (- ((x0 - x) / x)).
-  rewrite Rplus_0_r; rewrite <- Rplus_assoc; rewrite Rplus_opp_l;
+  rewrite Rplus_0_r. rewrite <- Rplus_assoc. unfold Rminus. rewrite Rplus_opp_l.
     rewrite Rplus_0_l; unfold Rdiv; rewrite <- Ropp_mult_distr_l_reverse.
   apply Rmult_le_reg_l with x.
   apply H.
