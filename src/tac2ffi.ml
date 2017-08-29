@@ -9,18 +9,14 @@
 open Util
 open Globnames
 open Genarg
-open Geninterp
+open Tac2dyn
 open Tac2expr
 open Tac2interp
 
 (** Dynamic tags *)
 
-let val_tag t = match val_tag t with
-| Val.Base t -> t
-| _ -> assert false
-
-let val_constr = val_tag (topwit Stdarg.wit_constr)
-let val_ident = val_tag (topwit Stdarg.wit_ident)
+let val_constr = Val.create "ltac2:constr"
+let val_ident = Val.create "ltac2:ident"
 let val_pattern = Val.create "ltac2:pattern"
 let val_pp = Val.create "ltac2:pp"
 let val_sort = Val.create "ltac2:sort"
@@ -30,10 +26,10 @@ let val_constant = Val.create "ltac2:constant"
 let val_constructor = Val.create "ltac2:constructor"
 let val_projection = Val.create "ltac2:projection"
 let val_univ = Val.create "ltac2:universe"
-let val_kont : (Exninfo.iexn -> valexpr Proofview.tactic) Val.typ =
+let val_kont : (Exninfo.iexn -> valexpr Proofview.tactic) Val.tag =
   Val.create "ltac2:kont"
 
-let extract_val (type a) (type b) (tag : a Val.typ) (tag' : b Val.typ) (v : b) : a =
+let extract_val (type a) (type b) (tag : a Val.tag) (tag' : b Val.tag) (v : b) : a =
 match Val.eq tag tag' with
 | None -> assert false
 | Some Refl -> v

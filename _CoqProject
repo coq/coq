@@ -2,6 +2,8 @@
 -I src/
 -bypass-API
 
+src/tac2dyn.ml
+src/tac2dyn.mli
 src/tac2expr.mli
 src/tac2env.ml
 src/tac2env.mli

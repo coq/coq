@@ -185,7 +185,7 @@ type valexpr =
   (** Closures *)
 | ValOpn of KerName.t * valexpr array
   (** Open constructors *)
-| ValExt : 'a Geninterp.Val.typ * 'a -> valexpr
+| ValExt : 'a Tac2dyn.Val.tag * 'a -> valexpr
   (** Arbitrary data *)
 
 and closure = {

@@ -6,9 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Geninterp
 open Names
 open EConstr
+open Tac2dyn
 open Tac2expr
 
 (** {5 Ltac2 FFI} *)
@@ -65,20 +65,20 @@ val to_constant : valexpr -> Constant.t
 val of_reference : Globnames.global_reference -> valexpr
 val to_reference : valexpr -> Globnames.global_reference
 
-val of_ext : 'a Val.typ -> 'a -> valexpr
-val to_ext : 'a Val.typ -> valexpr -> 'a
+val of_ext : 'a Val.tag -> 'a -> valexpr
+val to_ext : 'a Val.tag -> valexpr -> 'a
 
 (** {5 Dynamic tags} *)
 
-val val_constr : EConstr.t Val.typ
-val val_ident : Id.t Val.typ
-val val_pattern : Pattern.constr_pattern Val.typ
-val val_pp : Pp.t Val.typ
-val val_sort : ESorts.t Val.typ
-val val_cast : Constr.cast_kind Val.typ
-val val_inductive : inductive Val.typ
-val val_constant : Constant.t Val.typ
-val val_constructor : constructor Val.typ
-val val_projection : Projection.t Val.typ
-val val_univ : Univ.universe_level Val.typ
-val val_kont : (Exninfo.iexn -> valexpr Proofview.tactic) Val.typ
+val val_constr : EConstr.t Val.tag
+val val_ident : Id.t Val.tag
+val val_pattern : Pattern.constr_pattern Val.tag
+val val_pp : Pp.t Val.tag
+val val_sort : ESorts.t Val.tag
+val val_cast : Constr.cast_kind Val.tag
+val val_inductive : inductive Val.tag
+val val_constant : Constant.t Val.tag
+val val_constructor : constructor Val.tag
+val val_projection : Projection.t Val.tag
+val val_univ : Univ.universe_level Val.tag
+val val_kont : (Exninfo.iexn -> valexpr Proofview.tactic) Val.tag

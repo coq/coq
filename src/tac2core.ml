@@ -10,8 +10,8 @@ open CSig
 open Pp
 open Names
 open Genarg
-open Geninterp
 open Tac2env
+open Tac2dyn
 open Tac2expr
 open Tac2interp
 open Tac2entries.Pltac
@@ -70,8 +70,8 @@ let of_rec_declaration (nas, ts, cs) =
   Value.of_array Value.of_constr ts,
   Value.of_array Value.of_constr cs)
 
-let val_valexpr : valexpr Val.typ = Val.create "ltac2:valexpr"
-let val_free : Id.Set.t Val.typ = Val.create "ltac2:free"
+let val_valexpr : valexpr Val.tag = Val.create "ltac2:valexpr"
+let val_free : Id.Set.t Val.tag = Val.create "ltac2:free"
 
 (** Stdlib exceptions *)
 
