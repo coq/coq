@@ -806,6 +806,12 @@ let () =
   in
   Geninterp.register_interp0 wit_ltac2 interp
 
+let () =
+  let pr_raw _ = mt () in
+  let pr_glb e = Tac2print.pr_glbexpr e in
+  let pr_top _ = mt () in
+  Genprint.register_print0 wit_ltac2 pr_raw pr_glb pr_top
+
 (** Built-in notation scopes *)
 
 let add_scope s f =
