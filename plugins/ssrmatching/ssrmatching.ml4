@@ -499,16 +499,16 @@ let ungen_upat lhs (sigma, uc, t) u =
 let nb_cs_proj_args pc f u =
   let na k =
     List.length (snd (lookup_canonical_conversion (ConstRef pc, k))).o_TCOMPS in
-  try match kind_of_term f with
-  | Prod _ -> na Prod_cs
-  | Sort s -> na (Sort_cs (family_of_sort s))
-  | Const (c',_) when Constant.equal c' pc ->
-      begin match kind_of_term u.up_f with
+  let nargs_of_proj t = match kind_of_term t with
       | App(_,args) -> Array.length args
       | Proj _ -> 0 (* if splay_app calls expand_projection, this has to be
                        the number of arguments including the projected *)
-      | _ -> assert false
-      end
+      | _ -> assert false in
+  try match kind_of_term f with
+  | Prod _ -> na Prod_cs
+  | Sort s -> na (Sort_cs (family_of_sort s))
+  | Const (c',_) when Constant.equal c' pc -> nargs_of_proj u.up_f 
+  | Proj (c',_) when Constant.equal (Projection.constant c') pc -> nargs_of_proj u.up_f
   | Var _ | Ind _ | Construct _ | Const _ -> na (Const_cs (global_of_constr f))
   | _ -> -1
   with Not_found -> -1
