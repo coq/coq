@@ -23,8 +23,6 @@ let () = register_handler begin function
 | _ -> raise Unhandled
 end
 
-let val_exn = Tac2dyn.Val.create "ltac2:exn"
-
 type environment = valexpr Id.Map.t
 
 let empty_environment = Id.Map.empty

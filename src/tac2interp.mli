@@ -26,7 +26,3 @@ val set_env : environment -> Glob_term.unbound_ltac_var_map -> Glob_term.unbound
 
 exception LtacError of KerName.t * valexpr array
 (** Ltac2-defined exceptions seen from OCaml side *)
-
-val val_exn : Exninfo.iexn Tac2dyn.Val.tag
-(** Toplevel representation of OCaml exceptions. Invariant: no [LtacError]
-    should be put into a value with tag [val_exn]. *)

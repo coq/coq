@@ -15,20 +15,21 @@ open Tac2interp
 
 (** Dynamic tags *)
 
-let val_constr = Val.create "ltac2:constr"
-let val_ident = Val.create "ltac2:ident"
-let val_pattern = Val.create "ltac2:pattern"
-let val_pp = Val.create "ltac2:pp"
-let val_sort = Val.create "ltac2:sort"
-let val_cast = Val.create "ltac2:cast"
-let val_inductive = Val.create "ltac2:inductive"
-let val_constant = Val.create "ltac2:constant"
-let val_constructor = Val.create "ltac2:constructor"
-let val_projection = Val.create "ltac2:projection"
-let val_univ = Val.create "ltac2:universe"
+let val_exn = Val.create "exn"
+let val_constr = Val.create "constr"
+let val_ident = Val.create "ident"
+let val_pattern = Val.create "pattern"
+let val_pp = Val.create "pp"
+let val_sort = Val.create "sort"
+let val_cast = Val.create "cast"
+let val_inductive = Val.create "inductive"
+let val_constant = Val.create "constant"
+let val_constructor = Val.create "constructor"
+let val_projection = Val.create "projection"
+let val_univ = Val.create "universe"
 let val_kont : (Exninfo.iexn -> valexpr Proofview.tactic) Val.tag =
-  Val.create "ltac2:kont"
-let val_free : Names.Id.Set.t Val.tag = Val.create "ltac2:free"
+  Val.create "kont"
+let val_free : Names.Id.Set.t Val.tag = Val.create "free"
 
 let extract_val (type a) (type b) (tag : a Val.tag) (tag' : b Val.tag) (v : b) : a =
 match Val.eq tag tag' with

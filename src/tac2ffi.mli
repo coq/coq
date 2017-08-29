@@ -83,3 +83,7 @@ val val_projection : Projection.t Val.tag
 val val_univ : Univ.universe_level Val.tag
 val val_kont : (Exninfo.iexn -> valexpr Proofview.tactic) Val.tag
 val val_free : Id.Set.t Val.tag
+
+val val_exn : Exninfo.iexn Tac2dyn.Val.tag
+(** Toplevel representation of OCaml exceptions. Invariant: no [LtacError]
+    should be put into a value with tag [val_exn]. *)
