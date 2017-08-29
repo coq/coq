@@ -4389,9 +4389,7 @@ end
 
 module Proof_type :
 sig
-  type prim_rule =
-    | Cut of bool * bool * Names.Id.t * Term.types
-    | Refine of Constr.t
+  type prim_rule = Refine of Constr.t
 
   type tactic = Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 end
