@@ -2,7 +2,7 @@
 
 echo -------------- Producing translated files ---------------------
 rm */*/*.v8 >& /dev/null
-make COQ_XML=-translate theories || { echo ---- Failed to translate; exit 1; }
+make COQOPTS=-translate theories || { echo ---- Failed to translate; exit 1; }
 if [ -e translated ]; then rm -r translated; fi
 if [ -e successful-translation ]; then rm -r successful-translation; fi
 if [ -e failed-translation ]; then rm -r failed-translation; fi

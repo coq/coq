@@ -21,7 +21,3 @@ val load_vernac : bool -> Stateid.t -> string -> Stateid.t
 
 (** Compile a vernac file, (f is assumed without .v suffix) *)
 val compile : bool -> string -> unit
-
-(** Set XML hooks *)
-val xml_start_library : (unit -> unit) Hook.t
-val xml_end_library   : (unit -> unit) Hook.t

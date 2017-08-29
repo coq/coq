@@ -521,11 +521,6 @@ let is_in_section ref =
 
 (*************)
 (* Sections. *)
-
-(* XML output hooks *)
-let (f_xml_open_section, xml_open_section) = Hook.make ~default:ignore ()
-let (f_xml_close_section, xml_close_section) = Hook.make ~default:ignore ()
-
 let open_section id =
   let olddir,(mp,oldsec) = !lib_state.path_prefix in
   let dir = add_dirpath_suffix olddir id in
@@ -537,7 +532,6 @@ let open_section id =
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
   Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
   lib_state := { !lib_state with path_prefix = prefix };
-  if !Flags.xml_export then Hook.get f_xml_open_section id;
   add_section ()
 
 
@@ -565,7 +559,6 @@ let close_section () =
   let full_olddir = fst !lib_state.path_prefix in
   pop_path_prefix ();
   add_entry oname (ClosedSection (List.rev (mark::secdecls)));
-  if !Flags.xml_export then Hook.get f_xml_close_section (basename (fst oname));
   let newdecls = List.map discharge_item secdecls in
   Summary.unfreeze_summaries fs;
   List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls;

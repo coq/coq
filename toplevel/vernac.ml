@@ -243,10 +243,6 @@ let process_expr sid loc_ast =
   checknav_deep loc_ast;
   interp_vernac sid loc_ast
 
-(* XML output hooks *)
-let (f_xml_start_library, xml_start_library) = Hook.make ~default:ignore ()
-let (f_xml_end_library, xml_end_library) = Hook.make ~default:ignore ()
-
 let warn_file_no_extension =
   CWarnings.create ~name:"file-no-extension" ~category:"filesystem"
          (fun (f,ext) ->
@@ -308,7 +304,6 @@ let compile verbosely f =
         ~v_file:long_f_dot_v);
       Dumpglob.start_dump_glob ~vfile:long_f_dot_v ~vofile:long_f_dot_vo;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
-      if !Flags.xml_export then Hook.get f_xml_start_library ();
       let wall_clock1 = Unix.gettimeofday () in
       let _ = load_vernac verbosely (Stm.get_current_state ()) long_f_dot_v in
       Stm.join ();
@@ -318,7 +313,6 @@ let compile verbosely f =
       Aux_file.record_in_aux_at "vo_compile_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       Aux_file.stop_aux_file ();
-      if !Flags.xml_export then Hook.get f_xml_end_library ();
       Dumpglob.end_dump_glob ()
   | BuildVio ->
       let long_f_dot_v = ensure_v f in

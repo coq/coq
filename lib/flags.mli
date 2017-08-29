@@ -56,11 +56,6 @@ val stm_debug : bool ref
 
 val profile : bool
 
-(* Legacy flags *)
-
-(* -xml option: xml hooks will be called *)
-val xml_export : bool ref
-
 (* -ide_slave: printing will be more verbose, will affect stm caching *)
 val ide_slave : bool ref
 val ideslave_coqtop_flags : string option ref

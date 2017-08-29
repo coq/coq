@@ -368,9 +368,6 @@ let rec string loc ~comm_level bp len = parser
      let loc = set_loc_pos loc bp ep in
      err loc Unterminated_string
 
-(* Hook for exporting comment into xml theory files *)
-let (f_xml_output_comment, xml_output_comment) = Hook.make ~default:ignore ()
-
 (* To associate locations to a file name *)
 let current_file = ref None
 
@@ -432,9 +429,6 @@ let null_comment s =
 
 let comment_stop ep =
   let current_s = Buffer.contents current_comment in
-  if !Flags.xml_export && Buffer.length current_comment > 0 &&
-    (!between_commands || not(null_comment current_s)) then
-      Hook.get f_xml_output_comment current_s;
   (if !Flags.beautify && Buffer.length current_comment > 0 &&
     (!between_commands || not(null_comment current_s)) then
     let bp = match !comment_begin with

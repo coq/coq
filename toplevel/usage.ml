@@ -78,9 +78,6 @@ let print_usage_channel co command =
 \n  -impredicative-set     set sort Set impredicative\
 \n  -indices-matter        levels of indices (and nonuniform parameters) contribute to the level of inductives\
 \n  -type-in-type          disable universe consistency checking\
-\n  -xml                   export XML files either to the hierarchy rooted in\
-\n                         the directory $COQ_XML_LIBRARY_ROOT (if set) or to\
-\n                         stdout (if unset)\
 \n  -time                  display the time taken by each command\
 \n  -profile-ltac          display the time taken by each (sub)tactic\
 \n  -m, --memory           display total heap size at program exit\

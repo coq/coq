@@ -585,7 +585,6 @@ let parse_args arglist =
     |"-v"|"--version" -> Usage.version (exitcode ())
     |"-print-version"|"--print-version" -> Usage.machine_readable_version (exitcode ())
     |"-where" -> print_where := true
-    |"-xml" -> Flags.xml_export := true
 
     (* Unknown option *)
     | s -> extras := s :: !extras

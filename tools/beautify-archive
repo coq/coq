@@ -23,7 +23,7 @@ cp -pr /tmp/$OLDARCHIVE.$$ $NEWARCHIVE
 cd $NEWARCHIVE
 rm description || true
 make clean
-make COQFLAGS='-beautify -q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)' || \
+make COQFLAGS='-beautify -q $(OPT) $(COQLIBS) $(OTHERFLAGS)' || \
  { echo ---- Failed to beautify; exit 1; }
 echo -------- Upgrading files in the beautification directory --------------
 beaufiles=`find . -name \*.v$BEAUTIFYSUFFIX`

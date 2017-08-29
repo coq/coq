@@ -69,11 +69,6 @@ val set_declare_scheme :
    the whole block and a boolean indicating if it is a primitive record. *)
 val declare_mind : mutual_inductive_entry -> object_name * bool
 
-(** Hooks for XML output *)
-val xml_declare_variable : (object_name -> unit) Hook.t
-val xml_declare_constant : (internal_flag * constant -> unit) Hook.t
-val xml_declare_inductive : (bool * object_name -> unit) Hook.t
-
 (** Declaration messages *)
 
 val definition_message : Id.t -> unit
