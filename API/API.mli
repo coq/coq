@@ -4017,18 +4017,11 @@ sig
       expand_evars : bool
     }
 
-  type pure_open_constr = Evd.evar_map * EConstr.constr
-  type glob_constr_ltac_closure = Glob_term.ltac_var_map * Glob_term.glob_constr
-
   val understand_ltac : inference_flags ->
                         Environ.env -> Evd.evar_map -> Glob_term.ltac_var_map ->
-                        typing_constraint -> Glob_term.glob_constr -> pure_open_constr
+                        typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.t
   val understand_tcc : ?flags:inference_flags -> Environ.env -> Evd.evar_map ->
                        ?expected_type:typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.constr
-  val type_uconstr :
-    ?flags:inference_flags ->
-    ?expected_type:typing_constraint ->
-    Geninterp.interp_sign -> Glob_term.closed_glob_constr -> EConstr.constr Tactypes.delayed_open
   val understand : ?flags:inference_flags -> ?expected_type:typing_constraint ->
                    Environ.env -> Evd.evar_map -> Glob_term.glob_constr -> Constr.t Evd.in_evar_universe_context
   val check_evars : Environ.env -> Evd.evar_map -> Evd.evar_map -> EConstr.constr -> unit
@@ -4387,8 +4380,10 @@ end
 
 module Evar_refiner :
 sig
+  type glob_constr_ltac_closure = Glob_term.ltac_var_map * Glob_term.glob_constr
+
   val w_refine : Evar.t * Evd.evar_info ->
-                 Pretyping.glob_constr_ltac_closure -> Evd.evar_map -> Evd.evar_map
+                 glob_constr_ltac_closure -> Evd.evar_map -> Evd.evar_map
 end
 
 

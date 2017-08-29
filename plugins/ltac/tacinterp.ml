@@ -1108,6 +1108,20 @@ let rec read_match_rule lfun ist env sigma = function
       :: read_match_rule lfun ist env sigma tl
   | [] -> []
 
+(* Fully evaluate an untyped constr *)
+let type_uconstr ?(flags = {(constr_flags ()) with use_hook = None })
+  ?(expected_type = WithoutTypeConstraint) ist c =
+  begin fun env sigma ->
+  let { closure; term } = c in
+  let vars = {
+    ltac_constrs = closure.typed;
+    ltac_uconstrs = closure.untyped;
+    ltac_idents = closure.idents;
+    ltac_genargs = Id.Map.empty;
+  } in
+  understand_ltac flags env sigma vars expected_type term
+  end
+
 let warn_deprecated_info =
   CWarnings.create ~name:"deprecated-info-tactical" ~category:"deprecated"
          (fun () ->

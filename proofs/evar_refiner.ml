@@ -13,10 +13,13 @@ open Evd
 open Evarutil
 open Evarsolve
 open Pp
+open Glob_term
 
 (******************************************)
 (* Instantiation of existential variables *)
 (******************************************)
+
+type glob_constr_ltac_closure = ltac_var_map * glob_constr
 
 let depends_on_evar sigma evk _ (pbty,_,t1,t2) =
   let t1 = EConstr.of_constr t1 in

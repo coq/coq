@@ -2038,7 +2038,9 @@ let interp_constr_evars_gen_impls env evdref
     ?(impls=empty_internalization_env) expected_type c =
   let c = intern_gen expected_type ~impls env c in
   let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products:(expected_type == IsType) c in
-    understand_tcc_evars env evdref ~expected_type c, imps
+  let evd, c = understand_tcc env !evdref ~expected_type c in
+  evdref := evd;
+  c, imps
 
 let interp_constr_evars_impls env evdref ?(impls=empty_internalization_env) c =
   interp_constr_evars_gen_impls env evdref ~impls WithoutTypeConstraint c
@@ -2053,7 +2055,9 @@ let interp_type_evars_impls env evdref ?(impls=empty_internalization_env) c =
 
 let interp_constr_evars_gen env evdref ?(impls=empty_internalization_env) expected_type c =
   let c = intern_gen expected_type ~impls env c in
-  understand_tcc_evars env evdref ~expected_type c
+  let evd, c = understand_tcc env !evdref ~expected_type c in
+  evdref := evd;
+  c
 
 let interp_constr_evars env evdref ?(impls=empty_internalization_env) c =
   interp_constr_evars_gen env evdref WithoutTypeConstraint ~impls c
@@ -2098,7 +2102,9 @@ let interp_binder env sigma na t =
 let interp_binder_evars env evdref na t =
   let t = intern_gen IsType env t in
   let t' = locate_if_hole ?loc:(loc_of_glob_constr t) na t in
-  understand_tcc_evars env evdref ~expected_type:IsType t'
+  let evd, c = understand_tcc env !evdref ~expected_type:IsType t' in
+  evdref := evd;
+  c
 
 let my_intern_constr env lvar acc c =
   internalize env acc false lvar c
@@ -2125,7 +2131,8 @@ let interp_glob_context_evars env evdref k bl =
 	 if Option.is_empty b then locate_if_hole ?loc:(loc_of_glob_constr t) na t
 	 else t
        in
-       let t = understand_tcc_evars env evdref ~expected_type:IsType t' in
+       let (evd,t) = understand_tcc env !evdref ~expected_type:IsType t' in
+       evdref := evd;
 	match b with
 	    None ->
 	      let d = LocalAssum (na,t) in
@@ -2137,7 +2144,8 @@ let interp_glob_context_evars env evdref k bl =
 	      in
 		(push_rel d env, d::params, succ n, impls)
 	  | Some b ->
-	      let c = understand_tcc_evars env evdref ~expected_type:(OfType t) b in
+	      let (evd,c) = understand_tcc env !evdref ~expected_type:(OfType t) b in
+              evdref := evd;
 	      let d = LocalDef (na, c, t) in
 		(push_rel d env, d::params, n, impls))
       (env,[],k+1,[]) (List.rev bl)

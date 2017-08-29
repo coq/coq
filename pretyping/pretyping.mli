@@ -27,9 +27,6 @@ val search_guard :
 
 type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 
-type glob_constr_ltac_closure = ltac_var_map * glob_constr
-type pure_open_constr = evar_map * constr
-
 type inference_hook = env -> evar_map -> evar -> evar_map * constr
 
 type inference_flags = {
@@ -48,9 +45,6 @@ val all_no_fail_flags : inference_flags
 
 val all_and_fail_flags : inference_flags
 
-(** Allow references to syntactically nonexistent variables (i.e., if applied on an inductive) *)
-val allow_anonymous_refs : bool ref
-  
 (** Generic calls to the interpreter from glob_constr to open_constr;
     by default, inference_flags tell to use type classes and
     heuristics (but no external tactic solver hooks), as well as to
@@ -60,9 +54,6 @@ val allow_anonymous_refs : bool ref
 
 val understand_tcc : ?flags:inference_flags -> env -> evar_map ->
   ?expected_type:typing_constraint -> glob_constr -> evar_map * constr
-
-val understand_tcc_evars : ?flags:inference_flags -> env -> evar_map ref ->
-  ?expected_type:typing_constraint -> glob_constr -> constr
 
 (** More general entry point with evars from ltac *)
 
@@ -78,7 +69,7 @@ val understand_tcc_evars : ?flags:inference_flags -> env -> evar_map ref ->
 
 val understand_ltac : inference_flags ->
   env -> evar_map -> ltac_var_map ->
-  typing_constraint -> glob_constr -> pure_open_constr
+  typing_constraint -> glob_constr -> evar_map * EConstr.t
 
 (** Standard call to get a constr from a glob_constr, resolving
     implicit arguments and coercions, and compiling pattern-matching;
@@ -89,20 +80,6 @@ val understand_ltac : inference_flags ->
 
 val understand : ?flags:inference_flags -> ?expected_type:typing_constraint ->
   env -> evar_map -> glob_constr -> Constr.constr Evd.in_evar_universe_context
-
-(** Idem but returns the judgment of the understood term *)
-
-val understand_judgment : env -> evar_map -> 
-  glob_constr -> unsafe_judgment Evd.in_evar_universe_context
-
-(** Idem but do not fail on unresolved evars (type cl*)
-val understand_judgment_tcc : env -> evar_map ref ->
-  glob_constr -> unsafe_judgment
-
-val type_uconstr :
-  ?flags:inference_flags ->
-  ?expected_type:typing_constraint ->
-  Geninterp.interp_sign -> Glob_term.closed_glob_constr -> constr Tactypes.delayed_open
 
 (** Trying to solve remaining evars and remaining conversion problems
     possibly using type classes, heuristics, external tactic solver

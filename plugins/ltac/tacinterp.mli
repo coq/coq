@@ -54,6 +54,11 @@ val set_debug : debug_info -> unit
 (** Gives the state of debug *)
 val get_debug : unit -> debug_info
 
+val type_uconstr :
+  ?flags:Pretyping.inference_flags ->
+  ?expected_type:Pretyping.typing_constraint ->
+  Geninterp.interp_sign -> Glob_term.closed_glob_constr -> constr Tactypes.delayed_open
+
 (** Adds an interpretation function for extra generic arguments *)
 
 val interp_genarg : interp_sign -> glob_generic_argument -> Value.t Ftactic.t
