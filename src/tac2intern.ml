@@ -200,7 +200,7 @@ let loc_of_tacexpr = function
 | CTacRec (loc, _) -> loc
 | CTacPrj (loc, _, _) -> loc
 | CTacSet (loc, _, _, _) -> loc
-| CTacExt (loc, _) -> loc
+| CTacExt (loc, _, _) -> loc
 
 let loc_of_patexpr = function
 | CPatVar (loc, _) -> Option.default dummy_loc loc
@@ -769,17 +769,16 @@ let rec intern_rec env = function
   let ret = subst_type substf pinfo.pdata_ptyp in
   let r = intern_rec_with_constraint env r ret in
   (GTacSet (pinfo.pdata_type, e, pinfo.pdata_indx, r), GTypRef (Tuple 0, []))
-| CTacExt (loc, ext) ->
+| CTacExt (loc, tag, arg) ->
   let open Genintern in
-  let GenArg (Rawwit tag, _) = ext in
   let tpe = interp_ml_object tag in
   (** External objects do not have access to the named context because this is
       not stable by dynamic semantics. *)
   let genv = Global.env_of_context Environ.empty_named_context_val in
   let ist = empty_glob_sign genv in
   let ist = { ist with extra = Store.set ist.extra ltac2_env env } in
-  let (_, ext) = Flags.with_option Ltac_plugin.Tacintern.strict_check (fun () -> generic_intern ist ext) () in
-  (GTacExt ext, GTypRef (Other tpe.ml_type, []))
+  let arg = Flags.with_option Ltac_plugin.Tacintern.strict_check (fun () -> tpe.ml_intern ist arg) () in
+  (GTacExt (tag, arg), GTypRef (Other tpe.ml_type, []))
 
 and intern_rec_with_constraint env e exp =
   let loc = loc_of_tacexpr e in
@@ -1248,8 +1247,8 @@ let rec globalize ids e = match e with
   let p = get_projection0 p in
   let e' = globalize ids e' in
   CTacSet (loc, e, AbsKn p, e')
-| CTacExt (loc, arg) ->
-  let arg = pr_argument_type (genarg_tag arg) in
+| CTacExt (loc, tag, arg) ->
+  let arg = str (Tac2dyn.Arg.repr tag) in
   CErrors.user_err ~loc (str "Cannot globalize generic arguments of type" ++ spc () ++ arg)
 
 and globalize_case ids (p, e) =
@@ -1324,9 +1323,10 @@ let rec subst_expr subst e = match e with
   let e' = subst_expr subst e in
   let r' = subst_expr subst r in
   if kn' == kn && e' == e && r' == r then e0 else GTacSet (kn', e', p, r')
-| GTacExt ext ->
-  let ext' = Genintern.generic_substitute subst ext in
-  if ext' == ext then e else GTacExt ext'
+| GTacExt (tag, arg) ->
+  let tpe = interp_ml_object tag in
+  let arg' = tpe.ml_subst subst arg in
+  if arg' == arg then e else GTacExt (tag, arg')
 | GTacOpn (kn, el) as e0 ->
   let kn' = subst_kn subst kn in
   let el' = List.smartmap (fun e -> subst_expr subst e) el in

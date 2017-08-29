@@ -28,6 +28,7 @@ let val_projection = Val.create "ltac2:projection"
 let val_univ = Val.create "ltac2:universe"
 let val_kont : (Exninfo.iexn -> valexpr Proofview.tactic) Val.tag =
   Val.create "ltac2:kont"
+let val_free : Names.Id.Set.t Val.tag = Val.create "ltac2:free"
 
 let extract_val (type a) (type b) (tag : a Val.tag) (tag' : b Val.tag) (v : b) : a =
 match Val.eq tag tag' with

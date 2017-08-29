@@ -10,6 +10,7 @@ open CErrors
 open Util
 open Names
 open Libnames
+open Tac2dyn
 open Tac2expr
 
 type global_data = {
@@ -250,22 +251,31 @@ let shortest_qualid_of_projection kn =
   let sp = KNmap.find kn tab.tab_proj_rev in
   KnTab.shortest_qualid Id.Set.empty sp tab.tab_proj
 
-type 'a ml_object = {
+type ('a, 'b) ml_object = {
   ml_type : type_constant;
-  ml_interp : environment -> 'a -> valexpr Proofview.tactic;
+  ml_intern : Genintern.glob_sign -> 'a -> 'b;
+  ml_subst : Mod_subst.substitution -> 'b -> 'b;
+  ml_interp : environment -> 'b -> valexpr Proofview.tactic;
 }
 
 module MLTypeObj =
 struct
-  type ('a, 'b, 'c) obj = 'b ml_object
-  let name = "ltac2_ml_type"
-  let default _ = None
+  type ('a, 'b) t = ('a, 'b) ml_object
 end
 
-module MLType = Genarg.Register(MLTypeObj)
+module MLType = Tac2dyn.ArgMap(MLTypeObj)
 
-let define_ml_object t tpe = MLType.register0 t tpe
-let interp_ml_object t = MLType.obj t
+let ml_object_table = ref MLType.empty
+
+let define_ml_object t tpe =
+  ml_object_table := MLType.add t (MLType.Pack tpe) !ml_object_table
+
+let interp_ml_object t =
+  try
+    let MLType.Pack ans = MLType.find t !ml_object_table in
+    ans
+  with Not_found ->
+    CErrors.anomaly Pp.(str "Unknown object type " ++ str (Tac2dyn.Arg.repr t))
 
 (** Absolute paths *)
 
@@ -278,8 +288,13 @@ let std_prefix =
 (** Generic arguments *)
 
 let wit_ltac2 = Genarg.make0 "ltac2:value"
-let wit_pattern = Genarg.make0 "ltac2:pattern"
-let wit_reference = Genarg.make0 "ltac2:reference"
+
+let wit_pattern = Arg.create "pattern"
+let wit_reference = Arg.create "reference"
+let wit_ident = Arg.create "ident"
+let wit_constr = Arg.create "constr"
+let wit_open_constr = Arg.create "open_constr"
+let wit_ltac1 = Arg.create "ltac1"
 
 let is_constructor qid =
   let (_, id) = repr_qualid qid in

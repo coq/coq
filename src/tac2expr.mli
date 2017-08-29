@@ -104,7 +104,7 @@ type raw_tacexpr =
 | CTacRec of Loc.t * raw_recexpr
 | CTacPrj of Loc.t * raw_tacexpr * ltac_projection or_relid
 | CTacSet of Loc.t * raw_tacexpr * ltac_projection or_relid * raw_tacexpr
-| CTacExt of Loc.t * raw_generic_argument
+| CTacExt : Loc.t * ('a, _) Tac2dyn.Arg.tag * 'a -> raw_tacexpr
 
 and raw_taccase = raw_patexpr * raw_tacexpr
 
@@ -132,7 +132,7 @@ type glb_tacexpr =
 | GTacSet of type_constant * glb_tacexpr * int * glb_tacexpr
 | GTacOpn of ltac_constructor * glb_tacexpr list
 | GTacWth of glb_tacexpr open_match
-| GTacExt of glob_generic_argument
+| GTacExt : (_, 'a) Tac2dyn.Arg.tag * 'a -> glb_tacexpr
 | GTacPrm of ml_tactic_name * glb_tacexpr list
 
 (** {5 Parsing & Printing} *)

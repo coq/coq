@@ -10,6 +10,7 @@ open Genarg
 open Names
 open Libnames
 open Nametab
+open Tac2dyn
 open Tac2expr
 
 (** Ltac2 global environment *)
@@ -104,13 +105,15 @@ val interp_primitive : ml_tactic_name -> ml_tactic
 
 (** {5 ML primitive types} *)
 
-type 'a ml_object = {
+type ('a, 'b) ml_object = {
   ml_type : type_constant;
-  ml_interp : environment -> 'a -> valexpr Proofview.tactic;
+  ml_intern : Genintern.glob_sign -> 'a -> 'b;
+  ml_subst : Mod_subst.substitution -> 'b -> 'b;
+  ml_interp : environment -> 'b -> valexpr Proofview.tactic;
 }
 
-val define_ml_object : ('a, 'b, 'c) genarg_type -> 'b ml_object -> unit
-val interp_ml_object : ('a, 'b, 'c) genarg_type -> 'b ml_object
+val define_ml_object : ('a, 'b) Tac2dyn.Arg.tag -> ('a, 'b) ml_object -> unit
+val interp_ml_object : ('a, 'b) Tac2dyn.Arg.tag -> ('a, 'b) ml_object
 
 (** {5 Absolute paths} *)
 
@@ -124,12 +127,20 @@ val std_prefix : ModPath.t
 
 val wit_ltac2 : (raw_tacexpr, glb_tacexpr, Util.Empty.t) genarg_type
 
-val wit_pattern : (Constrexpr.constr_expr, Pattern.constr_pattern, Util.Empty.t) genarg_type
+val wit_pattern : (Constrexpr.constr_expr, Pattern.constr_pattern) Arg.tag
 
-val wit_reference : (reference, Globnames.global_reference, Util.Empty.t) genarg_type
+val wit_ident : (Id.t, Id.t) Arg.tag
+
+val wit_reference : (reference, Globnames.global_reference) Arg.tag
 (** Beware, at the raw level, [Qualid [id]] has not the same meaning as
     [Ident id]. The first is an unqualified global reference, the second is
     the dynamic reference to id. *)
+
+val wit_constr : (Constrexpr.constr_expr, Glob_term.glob_constr) Arg.tag
+
+val wit_open_constr : (Constrexpr.constr_expr, Glob_term.glob_constr) Arg.tag
+
+val wit_ltac1 : (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr) Arg.tag
 
 (** {5 Helper functions} *)
 

@@ -86,11 +86,11 @@ let tac2mode = Gram.entry_create "vernac:ltac2_command"
 (** FUCK YOU API *)
 let ltac1_expr = (Obj.magic Pltac.tactic_expr : Tacexpr.raw_tactic_expr Gram.entry)
 
-let inj_wit wit loc x = CTacExt (loc, Genarg.in_gen (Genarg.rawwit wit) x)
-let inj_open_constr loc c = inj_wit Stdarg.wit_open_constr loc c
+let inj_wit wit loc x = CTacExt (loc, wit, x)
+let inj_open_constr loc c = inj_wit Tac2env.wit_open_constr loc c
 let inj_pattern loc c = inj_wit Tac2env.wit_pattern loc c
 let inj_reference loc c = inj_wit Tac2env.wit_reference loc c
-let inj_ltac1 loc e = inj_wit Tacarg.wit_tactic loc e
+let inj_ltac1 loc e = inj_wit Tac2env.wit_ltac1 loc e
 
 let pattern_of_qualid loc id =
   if Tac2env.is_constructor (snd id) then CPatRef (loc, RelId id, [])

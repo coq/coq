@@ -99,8 +99,7 @@ let rec interp ist = function
 | GTacPrm (ml, el) ->
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
   Tac2env.interp_primitive ml el
-| GTacExt e ->
-  let GenArg (Glbwit tag, e) = e in
+| GTacExt (tag, e) ->
   let tpe = Tac2env.interp_ml_object tag in
   tpe.Tac2env.ml_interp ist e
 

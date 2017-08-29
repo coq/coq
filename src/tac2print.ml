@@ -279,13 +279,9 @@ let pr_glbexpr_gen lvl c =
     in
     let c = pr_constructor kn in
     paren (hov 0 (c ++ spc () ++ (pr_sequence (pr_glbexpr E0) cl)))
-  | GTacExt arg ->
-    let GenArg (Glbwit tag, arg) = arg in
-    let name = match tag with
-    | ExtraArg tag -> ArgT.repr tag
-    | _ -> assert false
-    in
-    hov 0 (str name ++ str ":" ++ paren (Genprint.glb_print tag arg))
+  | GTacExt (tag, arg) ->
+    let name = Tac2dyn.Arg.repr tag in
+    hov 0 (str name ++ str ":" ++ paren (str "_")) (** FIXME *)
   | GTacPrm (prm, args) ->
     let args = match args with
     | [] -> mt ()

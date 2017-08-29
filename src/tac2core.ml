@@ -70,9 +70,6 @@ let of_rec_declaration (nas, ts, cs) =
   Value.of_array Value.of_constr ts,
   Value.of_array Value.of_constr cs)
 
-let val_valexpr : valexpr Val.tag = Val.create "ltac2:valexpr"
-let val_free : Id.Set.t Val.tag = Val.create "ltac2:free"
-
 (** Stdlib exceptions *)
 
 let err_notfocussed =
@@ -601,16 +598,16 @@ end
 (** Fresh *)
 
 let () = define2 "fresh_free_union" begin fun set1 set2 ->
-  let set1 = Value.to_ext val_free set1 in
-  let set2 = Value.to_ext val_free set2 in
+  let set1 = Value.to_ext Value.val_free set1 in
+  let set2 = Value.to_ext Value.val_free set2 in
   let ans = Id.Set.union set1 set2 in
-  return (Value.of_ext val_free ans)
+  return (Value.of_ext Value.val_free ans)
 end
 
 let () = define1 "fresh_free_of_ids" begin fun ids ->
   let ids = Value.to_list Value.to_ident ids in
   let free = List.fold_right Id.Set.add ids Id.Set.empty in
-  return (Value.of_ext val_free free)
+  return (Value.of_ext Value.val_free free)
 end
 
 let () = define1 "fresh_free_of_constr" begin fun c ->
@@ -621,11 +618,11 @@ let () = define1 "fresh_free_of_constr" begin fun c ->
   | _ -> EConstr.fold sigma fold accu c
   in
   let ans = fold Id.Set.empty c in
-  return (Value.of_ext val_free ans)
+  return (Value.of_ext Value.val_free ans)
 end
 
 let () = define2 "fresh_fresh" begin fun avoid id ->
-  let avoid = Value.to_ext val_free avoid in
+  let avoid = Value.to_ext Value.val_free avoid in
   let id = Value.to_ident id in
   let nid = Namegen.next_ident_away_from id (fun id -> Id.Set.mem id avoid) in
   return (Value.of_ident nid)
@@ -659,7 +656,11 @@ let to_lvar ist =
   let lfun = Tac2interp.set_env ist Id.Map.empty in
   { empty_lvar with Glob_term.ltac_genargs = lfun }
 
-let interp_constr flags ist (c, _) =
+let intern_constr ist c =
+  let (_, (c, _)) = Genintern.intern Stdarg.wit_constr ist c in
+  c
+
+let interp_constr flags ist c =
   let open Pretyping in
   pf_apply begin fun env sigma ->
   Proofview.V82.wrap_exceptions begin fun () ->
@@ -672,56 +673,90 @@ let interp_constr flags ist (c, _) =
   end
 
 let () =
+  let intern = intern_constr in
   let interp ist c = interp_constr (constr_flags ()) ist c in
   let obj = {
     ml_type = t_constr;
+    ml_intern = intern;
+    ml_subst = Detyping.subst_glob_constr;
     ml_interp = interp;
   } in
-  define_ml_object Stdarg.wit_constr obj
+  define_ml_object Tac2env.wit_constr obj
 
 let () =
+  let intern = intern_constr in
   let interp ist c = interp_constr (open_constr_no_classes_flags ()) ist c in
   let obj = {
     ml_type = t_constr;
+    ml_intern = intern;
+    ml_subst = Detyping.subst_glob_constr;
     ml_interp = interp;
   } in
-  define_ml_object Stdarg.wit_open_constr obj
+  define_ml_object Tac2env.wit_open_constr obj
 
 let () =
   let interp _ id = return (ValExt (Value.val_ident, id)) in
   let obj = {
     ml_type = t_ident;
+    ml_intern = (fun _ id -> id);
     ml_interp = interp;
+    ml_subst = (fun _ id -> id);
   } in
-  define_ml_object Stdarg.wit_ident obj
+  define_ml_object Tac2env.wit_ident obj
 
 let () =
+  let intern ist c =
+    let _, pat = Constrintern.intern_constr_pattern ist.Genintern.genv ~as_type:false c in
+    pat
+  in
   let interp _ c = return (ValExt (Value.val_pattern, c)) in
   let obj = {
     ml_type = t_pattern;
+    ml_intern = intern;
     ml_interp = interp;
+    ml_subst = Patternops.subst_pattern;
   } in
   define_ml_object Tac2env.wit_pattern obj
 
 let () =
+  let intern ist qid = match qid with
+  | Libnames.Ident (_, id) -> Globnames.VarRef id
+  | Libnames.Qualid (loc, qid) ->
+    let gr =
+      try Nametab.locate qid
+      with Not_found ->
+        Nametab.error_global_not_found ?loc qid
+    in
+    gr
+  in
+  let subst s c = Globnames.subst_global_reference s c in
   let interp _ gr = return (Value.of_reference gr) in
   let obj = {
     ml_type = t_reference;
+    ml_intern = intern;
+    ml_subst = subst;
     ml_interp = interp;
   } in
   define_ml_object Tac2env.wit_reference obj
 
 let () =
+  let intern ist tac =
+    let _, tac = Genintern.intern Ltac_plugin.Tacarg.wit_tactic ist tac in
+    tac
+  in
   let interp _ tac =
     (** FUCK YOU API *)
     (Obj.magic Ltac_plugin.Tacinterp.eval_tactic tac : unit Proofview.tactic) >>= fun () ->
     return v_unit
   in
+  let subst s tac = Genintern.substitute Ltac_plugin.Tacarg.wit_tactic s tac in
   let obj = {
     ml_type = t_unit;
+    ml_intern = intern;
+    ml_subst = subst;
     ml_interp = interp;
   } in
-  define_ml_object Ltac_plugin.Tacarg.wit_tactic obj
+  define_ml_object Tac2env.wit_ltac1 obj
 
 (** Ltac2 in terms *)
 
@@ -754,38 +789,6 @@ let () =
   in
   Geninterp.register_interp0 wit_ltac2 interp
 
-(** Patterns *)
-
-let () =
-  let intern ist c =
-    let _, pat = Constrintern.intern_constr_pattern ist.Genintern.genv ~as_type:false c in
-    ist, pat
-  in
-  Genintern.register_intern0 wit_pattern intern
-
-let () =
-  let subst s c = Patternops.subst_pattern s c in
-  Genintern.register_subst0 wit_pattern subst
-
-(** References *)
-
-let () =
-  let intern ist qid = match qid with
-  | Libnames.Ident (_, id) -> ist, Globnames.VarRef id
-  | Libnames.Qualid (loc, qid) ->
-    let gr =
-      try Nametab.locate qid
-      with Not_found ->
-        Nametab.error_global_not_found ?loc qid
-    in
-    ist, gr
-  in
-  Genintern.register_intern0 wit_reference intern
-
-let () =
-  let subst s c = Globnames.subst_global_reference s c in
-  Genintern.register_subst0 wit_reference subst
-
 (** Built-in notation scopes *)
 
 let add_scope s f =
@@ -806,7 +809,7 @@ let add_generic_scope s entry arg =
   let parse = function
   | [] ->
     let scope = Extend.Aentry entry in
-    let act x = CTacExt (dummy_loc, in_gen (rawwit arg) x) in
+    let act x = CTacExt (dummy_loc, arg, x) in
     Tac2entries.ScopeRule (scope, act)
   | _ -> scope_fail ()
   in
@@ -927,8 +930,8 @@ let () = add_expr_scope "dispatch" q_dispatch Tac2quote.of_dispatch
 let () = add_expr_scope "strategy" q_strategy_flag Tac2quote.of_strategy_flag
 let () = add_expr_scope "reference" q_reference Tac2quote.of_reference
 
-let () = add_generic_scope "constr" Pcoq.Constr.constr Stdarg.wit_constr
-let () = add_generic_scope "open_constr" Pcoq.Constr.constr Stdarg.wit_open_constr
+let () = add_generic_scope "constr" Pcoq.Constr.constr wit_constr
+let () = add_generic_scope "open_constr" Pcoq.Constr.constr wit_open_constr
 let () = add_generic_scope "pattern" Pcoq.Constr.constr wit_pattern
 
 (** seq scope, a bit hairy *)
