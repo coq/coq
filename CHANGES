@@ -63,6 +63,10 @@ Tactics
   Ltac definition or a Tactic Notation.
 - New option `Set Ltac Batch Debug` on top of `Set Ltac Debug` for
   non-interactive Ltac debug output.
+- On Linux, "native_compute" calls can be profiled using the "perf"
+  utility. The command "Set NativeCompute Profiling" enables
+  profiling, and "Set NativeCompute Profile Filename" customizes
+  the profile filename.
 
 Gallina
 

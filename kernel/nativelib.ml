@@ -64,7 +64,7 @@ let warn_native_compiler_failed =
   in
   CWarnings.create ~name:"native-compiler-failed" ~category:"native-compiler" print
 
-let call_compiler ml_filename =
+let call_compiler ?profile:(profile=false) ml_filename =
   let load_path = !get_load_paths () in
   let load_path = List.map (fun dn -> dn / output_dir) load_path in
   let include_dirs = List.flatten (List.map (fun x -> ["-I"; x]) (include_dirs () @ load_path)) in
@@ -74,14 +74,26 @@ let call_compiler ml_filename =
   let remove f = if Sys.file_exists f then Sys.remove f in
   remove link_filename;
   remove (f ^ ".cmi");
+  let initial_args = 
+    if Dynlink.is_native then
+      ["opt"; "-shared"]
+     else
+      ["ocamlc"; "-c"]
+  in
+  let profile_args =
+    if profile then
+      ["-g"]
+    else
+      []
+  in
   let args =
-    (if Dynlink.is_native then "opt" else "ocamlc")
-    ::(if Dynlink.is_native then "-shared" else "-c")
-    ::"-o"::link_filename
-    ::"-rectypes"
-    ::"-w"::"a"
-    ::include_dirs
-    @ ["-impl"; ml_filename] in
+    initial_args @
+      profile_args @ 
+      ("-o"::link_filename
+       ::"-rectypes"
+       ::"-w"::"a"
+       ::include_dirs) @
+      ["-impl"; ml_filename] in
   if !Flags.debug then Feedback.msg_debug (Pp.str (ocamlfind () ^ " " ^ (String.concat " " args)));
   try
     let res = CUnix.sys_command (ocamlfind ()) args in
@@ -95,9 +107,9 @@ let call_compiler ml_filename =
     warn_native_compiler_failed (Inr e);
     false, link_filename
 
-let compile fn code =
+let compile fn code ~profile:profile =
   write_ml_code fn code;
-  let r = call_compiler fn in
+  let r = call_compiler ~profile fn in
   if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn;
   r
 

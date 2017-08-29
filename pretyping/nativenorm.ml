@@ -26,6 +26,59 @@ module RelDecl = Context.Rel.Declaration
 
 exception Find_at of int
 
+(* profiling *)
+
+let profiling_enabled = ref false
+    
+(* for supported platforms, filename for profiler results *)
+
+let profile_filename = ref "native_compute_profile.data"
+
+let profiler_platform () =
+  match [@warning "-8"] Sys.os_type with
+  | "Unix" ->
+     let in_ch = Unix.open_process_in "uname" in
+     let uname = input_line in_ch in
+     let _ = close_in in_ch in
+     Format.sprintf "Unix (%s)" uname
+  | "Win32" -> "Windows (Win32)"
+  | "Cygwin" -> "Windows (Cygwin)"
+
+let get_profile_filename () = !profile_filename
+
+let set_profile_filename fn =
+  profile_filename := fn
+
+(* find unused profile filename *)
+let get_available_profile_filename () =
+  let profile_filename = get_profile_filename () in
+  let dir = Filename.dirname profile_filename in 
+  let base = Filename.basename profile_filename in 
+  (* starting with OCaml 4.04, could use Filename.remove_extension and Filename.extension, which
+     gets rid of need for exception-handling here
+  *)
+  let (name,ext) =
+    try
+      let nm = Filename.chop_extension base in
+      let nm_len = String.length nm in
+      let ex = String.sub base nm_len (String.length base - nm_len) in
+      (nm,ex)
+    with Invalid_argument _ -> (base,"")
+  in
+  try 
+    (* unlikely race: fn deleted, another process uses fn *)
+    Filename.temp_file ~temp_dir:dir (name ^ "_") ext
+  with Sys_error s ->
+    let msg = "When trying to find native_compute profile output file: " ^ s in
+    let _ = Feedback.msg_info (Pp.str msg) in
+    assert false
+
+let get_profiling_enabled () =
+  !profiling_enabled
+    
+let set_profiling_enabled b =
+  profiling_enabled := b
+    
 let invert_tag cst tag reloc_tbl =
   try
     for j = 0 to Array.length reloc_tbl - 1 do
@@ -379,6 +432,52 @@ let evars_of_evar_map sigma =
     Nativelambda.evars_typ = Evd.existential_type sigma;
     Nativelambda.evars_metas = Evd.meta_type sigma }
 
+(* fork perf process, return profiler's process id *)
+let start_profiler_linux profile_fn =
+  let coq_pid = Unix.getpid () in (* pass pid of running coqtop *)
+  (* we don't want to see perf's console output *)
+  let dev_null = Unix.descr_of_out_channel (open_out_bin "/dev/null") in
+  let _ = Feedback.msg_info (Pp.str ("Profiling to file " ^ profile_fn)) in
+  let perf = "perf" in
+  let profiler_pid = 
+    Unix.create_process
+      perf
+      [|perf; "record"; "-g"; "-o"; profile_fn; "-p"; string_of_int coq_pid |]
+      Unix.stdin dev_null dev_null
+  in
+  (* doesn't seem to be a way to test whether process creation succeeded *)
+  if !Flags.debug then 
+    Feedback.msg_debug (Pp.str (Format.sprintf "Native compute profiler started, pid = %d, output to: %s" profiler_pid profile_fn));
+  Some profiler_pid
+
+(* kill profiler via SIGINT *)
+let stop_profiler_linux m_pid = 
+  match m_pid with 
+  | Some pid -> (
+    let _ = if !Flags.debug then Feedback.msg_debug (Pp.str "Stopping native code profiler") in
+    try 
+      Unix.kill pid Sys.sigint;
+      let _ = Unix.waitpid [] pid in ()
+    with Unix.Unix_error (Unix.ESRCH,"kill","") ->
+      Feedback.msg_info (Pp.str "Could not stop native code profiler, no such process")
+  )
+  | None -> ()
+
+let start_profiler () =
+  let profile_fn = get_available_profile_filename () in
+  match profiler_platform () with
+    "Unix (Linux)" -> start_profiler_linux profile_fn
+  | _ ->
+     let _ = Feedback.msg_info
+       (Pp.str (Format.sprintf "Native_compute profiling not supported on the platform: %s"
+		  (profiler_platform ()))) in
+     None
+
+let stop_profiler m_pid =
+  match profiler_platform() with
+    "Unix (Linux)" -> stop_profiler_linux m_pid
+  | _ -> ()
+     
 let native_norm env sigma c ty =
   let c = EConstr.Unsafe.to_constr c in
   let ty = EConstr.Unsafe.to_constr ty in
@@ -392,12 +491,15 @@ let native_norm env sigma c ty =
   *)
   let ml_filename, prefix = Nativelib.get_ml_filename () in
   let code, upd = mk_norm_code penv (evars_of_evar_map sigma) prefix c in
-  match Nativelib.compile ml_filename code with
+  let profile = get_profiling_enabled () in
+  match Nativelib.compile ml_filename code ~profile:profile with
     | true, fn ->
         if !Flags.debug then Feedback.msg_debug (Pp.str "Running norm ...");
+	let profiler_pid = if profile then start_profiler () else None in
         let t0 = Sys.time () in
         Nativelib.call_linker ~fatal:true prefix fn (Some upd);
         let t1 = Sys.time () in
+	if profile then stop_profiler profiler_pid;
         let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
         if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
         let res = nf_val env sigma !Nativelib.rt1 ty in

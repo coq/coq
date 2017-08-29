@@ -3269,7 +3269,7 @@ The call-by-value strategy is the one used in ML languages: the
 arguments of a function call are systematically weakly evaluated
 first. Despite the lazy strategy always performs fewer reductions than
 the call-by-value strategy, the latter is generally more efficient for
-evaluating purely computational expressions (i.e. with few dead code).
+evaluating purely computational expressions (i.e. with little dead code).
 
 \begin{Variants}
 \item {\tt compute} \tacindex{compute}\\
@@ -3316,6 +3316,20 @@ evaluating purely computational expressions (i.e. with few dead code).
   two to five times faster than {\tt vm\_compute}. Note however that the
   compilation cost is higher, so it is worth using only for intensive
   computations.
+
+  On Linux, if you have the {\tt perf} profiler installed, you can profile {\tt native\_compute} evaluations. 
+  The command
+  \begin{quote}
+    {\tt Set Native Compute Profiling}
+  \end{quote}
+  enables profiling. Use the command
+  \begin{quote}
+    {\tt Set NativeCompute Profile Filename \str}
+  \end{quote}
+  to specify the profile output; the default is {\tt native\_compute\_profile.data}. The actual filename used 
+  will contain extra characters to avoid overwriting an existing file; that filename is reported to the user. That means
+  you can individually profile multiple uses of {\tt native\_compute} in a script. From the Linux command line, run {\tt perf report} on
+  the profile file to see the results. Consult the {\tt perf} documentation for more details.
 
 \end{Variants}
 
