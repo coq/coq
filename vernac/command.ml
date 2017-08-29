@@ -367,7 +367,7 @@ let prepare_param = function
     
 let rec check_anonymous_type ind =
   let open Glob_term in
-    match ind.CAst.v with
+    match DAst.get ind with
     | GSort (GType []) -> true
     | GProd ( _, _, _, e) 
     | GLetIn (_, _, _, e)

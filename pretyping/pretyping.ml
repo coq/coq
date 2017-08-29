@@ -572,7 +572,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
   let pretype = pretype k0 resolve_tc in
   let open Context.Rel.Declaration in
   let loc = t.CAst.loc in
-  match t.CAst.v with
+  match DAst.get t with
   | GRef (ref,u) ->
       inh_conv_coerce_to_tycon ?loc env evdref
 	(pretype_ref ?loc evdref env ref u)
@@ -1100,8 +1100,9 @@ and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
   Array.map_of_list snd subst
 
 (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)
-and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
-  | { loc; CAst.v = GHole (knd, naming, None) } ->
+and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar c = match DAst.get c with
+  | GHole (knd, naming, None) ->
+      let loc = loc_of_glob_constr c in
       let rec is_Type c = match EConstr.kind !evdref c with
       | Sort s ->
         begin match ESorts.kind !evdref s with
@@ -1134,7 +1135,7 @@ and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
 	   let s = evd_comb0 (new_sort_variable univ_flexible_alg) evdref in
 	     { utj_val = e_new_evar env evdref ~src:(loc, knd) ~naming (mkSort s);
 	       utj_type = s})
-  | c ->
+  | _ ->
       let j = pretype k0 resolve_tc empty_tycon env evdref lvar c in
       let loc = loc_of_glob_constr c in
       let tj = evd_comb1 (Coercion.inh_coerce_to_sort ?loc env.ExtraEnv.env) evdref j in

@@ -119,13 +119,14 @@ let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder_expr li
   in aux bound l binders
 
 let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.empty) =
-  let rec vars bound vs t = match t with
-    | { loc; CAst.v = GVar id } ->
+  let rec vars bound vs c = match DAst.get c with
+    | GVar id ->
+        let loc = c.CAst.loc in
 	if is_freevar bound (Global.env ()) id then
 	  if Id.List.mem_assoc_sym id vs then vs
 	  else (Loc.tag ?loc id) :: vs
 	else vs
-    | c -> Glob_ops.fold_glob_constr_with_binders Id.Set.add vars bound vs c
+    | _ -> Glob_ops.fold_glob_constr_with_binders Id.Set.add vars bound vs c
   in fun rt -> 
     let vars = List.rev (vars bound [] rt) in
       List.iter (fun (loc, id) ->
@@ -253,11 +254,11 @@ let implicits_of_glob_constr ?(with_products=true) l =
     (ExplByPos (i, name), (true, true, true)) :: l
   | _ -> l
   in
-  let rec aux i { loc; CAst.v = c } =
+  let rec aux i c =
     let abs na bk b =
       add_impl i na bk (aux (succ i) b)
     in
-      match c with
+      match DAst.get c with
       | GProd (na, bk, t, b) ->
 	  if with_products then abs na bk b
 	  else

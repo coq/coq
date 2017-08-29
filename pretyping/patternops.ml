@@ -326,7 +326,7 @@ let warn_cast_in_pattern =
   CWarnings.create ~name:"cast-in-pattern" ~category:"automation"
     (fun () -> Pp.strbrk "Casts are ignored in patterns")
 
-let rec pat_of_raw metas vars = CAst.with_loc_val (fun ?loc -> function
+let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
   | GVar id ->
       (try PRel (List.index Name.equal (Name id) vars)
        with Not_found -> PVar id)
@@ -335,11 +335,14 @@ let rec pat_of_raw metas vars = CAst.with_loc_val (fun ?loc -> function
   | GRef (gr,_) ->
       PRef (canonical_gr gr)
   (* Hack to avoid rewriting a complete interpretation of patterns *)
-  | GApp ({ CAst.v = GPatVar (Evar_kinds.SecondOrderPatVar n) }, cl) ->
+  | GApp (c, cl) ->
+    begin match DAst.get c with
+    | GPatVar (Evar_kinds.SecondOrderPatVar n) ->
       metas := n::!metas; PSoApp (n, List.map (pat_of_raw metas vars) cl)
-  | GApp (c,cl) ->
+    | _ ->
       PApp (pat_of_raw metas vars c,
 	    Array.of_list (List.map (pat_of_raw metas vars) cl))
+    end
   | GLambda (na,bk,c1,c2) ->
       Name.iter (fun n -> metas := n::!metas) na;
       PLambda (na, pat_of_raw metas vars c1,
@@ -364,8 +367,8 @@ let rec pat_of_raw metas vars = CAst.with_loc_val (fun ?loc -> function
       PIf (pat_of_raw metas vars c,
            pat_of_raw metas vars b1,pat_of_raw metas vars b2)
   | GLetTuple (nal,(_,None),b,c) ->
-      let mkGLambda na c = CAst.make ?loc @@
-	GLambda (na,Explicit, CAst.make @@ GHole (Evar_kinds.InternalHole, IntroAnonymous, None),c) in
+      let mkGLambda na c = DAst.make ?loc @@
+	GLambda (na,Explicit, DAst.make @@ GHole (Evar_kinds.InternalHole, IntroAnonymous, None),c) in
       let c = List.fold_right mkGLambda nal c in
       let cip =
 	{ cip_style = LetStyle;
@@ -377,8 +380,12 @@ let rec pat_of_raw metas vars = CAst.with_loc_val (fun ?loc -> function
       PCase (cip, PMeta None, pat_of_raw metas vars b,
              [0,tags,pat_of_raw metas vars c])
   | GCases (sty,p,[c,(na,indnames)],brs) ->
+      let get_ind p = match DAst.get p with 
+      | PatCstr((ind,_),_,_) -> Some ind
+      | _ -> None
+      in
       let get_ind = function
-	| (_,(_,[{ CAst.v = PatCstr((ind,_),_,_) }],_))::_ -> Some ind
+	| (_,(_,[p],_))::_ -> get_ind p
 	| _ -> None
       in
       let ind_tags,ind = match indnames with
@@ -391,8 +398,11 @@ let rec pat_of_raw metas vars = CAst.with_loc_val (fun ?loc -> function
 	| Some p, Some (_,(_,nal)) ->
           let nvars = na :: List.rev nal @ vars in
           rev_it_mkPLambda nal (mkPLambda na (pat_of_raw metas nvars p))
-        | (None | Some { CAst.v = GHole _}), _ -> PMeta None
+        | None, _ -> PMeta None
 	| Some p, None ->
+          match DAst.get p with
+          | GHole _ -> PMeta None
+          | _ ->
             user_err ?loc  (strbrk "Clause \"in\" expected in patterns over \"match\" expressions with an explicit \"return\" clause.")
       in
       let info =
@@ -410,30 +420,36 @@ let rec pat_of_raw metas vars = CAst.with_loc_val (fun ?loc -> function
   )
 
 and pats_of_glob_branches loc metas vars ind brs =
-  let get_arg = function
-    | { CAst.v = PatVar na } ->
+  let get_arg p = match DAst.get p with
+    | PatVar na ->
       Name.iter (fun n -> metas := n::!metas) na;
       na
-    | { CAst.v = PatCstr(_,_,_) ; loc } -> err ?loc (Pp.str "Non supported pattern.")
+    | PatCstr(_,_,_) -> err ?loc:p.CAst.loc (Pp.str "Non supported pattern.")
   in
   let rec get_pat indexes = function
     | [] -> false, []
-    | [(_,(_,[{ CAst.v = PatVar Anonymous }], { CAst.v = GHole _}))] -> true, [] (* ends with _ => _ *)
-    | (_,(_,[{ CAst.v = PatCstr((indsp,j),lv,_) }],br)) :: brs ->
-      let () = match ind with
-      | Some sp when eq_ind sp indsp -> ()
+    | (loc',(_,[p], br)) :: brs ->
+      begin match DAst.get p, DAst.get br, brs with
+      | PatVar Anonymous, GHole _, [] ->
+        true, [] (* ends with _ => _ *)
+      | PatCstr((indsp,j),lv,_), _, _ ->
+        let () = match ind with
+        | Some sp when eq_ind sp indsp -> ()
+        | _ ->
+          err ?loc (Pp.str "All constructors must be in the same inductive type.")
+        in
+        if Int.Set.mem (j-1) indexes then
+          err ?loc
+            (str "No unique branch for " ++ int j ++ str"-th constructor.");
+        let lna = List.map get_arg lv in
+        let vars' = List.rev lna @ vars in
+        let pat = rev_it_mkPLambda lna (pat_of_raw metas vars' br) in
+        let ext,pats = get_pat (Int.Set.add (j-1) indexes) brs in
+        let tags = List.map (fun _ -> false) lv (* approximation, w/o let-in *) in
+        ext, ((j-1, tags, pat) :: pats)
       | _ ->
-        err ?loc (Pp.str "All constructors must be in the same inductive type.")
-      in
-      if Int.Set.mem (j-1) indexes then
-	err ?loc
-          (str "No unique branch for " ++ int j ++ str"-th constructor.");
-      let lna = List.map get_arg lv in
-      let vars' = List.rev lna @ vars in
-      let pat = rev_it_mkPLambda lna (pat_of_raw metas vars' br) in
-      let ext,pats = get_pat (Int.Set.add (j-1) indexes) brs in
-      let tags = List.map (fun _ -> false) lv (* approximation, w/o let-in *) in
-      ext, ((j-1, tags, pat) :: pats)
+        err ?loc:loc' (Pp.str "Non supported pattern.")
+      end
     | (loc,(_,_,_)) :: _ -> err ?loc (Pp.str "Non supported pattern.")
   in
   get_pat Int.Set.empty brs

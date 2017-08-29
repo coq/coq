@@ -31,25 +31,29 @@ let make_reference id = find_reference "String interpretation" string_module id
 let glob_String = lazy (make_reference "String")
 let glob_EmptyString = lazy (make_reference "EmptyString")
 
+let is_gr c gr = match DAst.get c with
+| GRef (r, _) -> Globnames.eq_gr r gr
+| _ -> false
+
 open Lazy
 
 let interp_string ?loc s =
   let le = String.length s in
   let rec aux n =
-     if n = le then CAst.make ?loc @@ GRef (force glob_EmptyString, None) else
-     CAst.make ?loc @@ GApp (CAst.make ?loc @@ GRef (force glob_String, None),
+     if n = le then DAst.make ?loc @@ GRef (force glob_EmptyString, None) else
+     DAst.make ?loc @@ GApp (DAst.make ?loc @@ GRef (force glob_String, None),
        [interp_ascii ?loc (int_of_char s.[n]); aux (n+1)])
   in aux 0
 
-let uninterp_string r =
+let uninterp_string (AnyGlobConstr r) =
   try
     let b = Buffer.create 16 in
-    let rec aux = function
-    | { CAst.v = GApp ({ CAst.v = GRef (k,_) },[a;s]) } when eq_gr k (force glob_String) ->
+    let rec aux c = match DAst.get c with
+    | GApp (k,[a;s]) when is_gr k (force glob_String) ->
 	(match uninterp_ascii a with
 	  | Some c -> Buffer.add_char b (Char.chr c); aux s
 	  | _ -> raise Non_closed_string)
-    | { CAst.v = GRef (z,_) } when eq_gr z (force glob_EmptyString) ->
+    | GRef (z,_) when eq_gr z (force glob_EmptyString) ->
 	Some (Buffer.contents b)
     | _ ->
 	raise Non_closed_string
@@ -61,6 +65,6 @@ let _ =
   Notation.declare_string_interpreter "string_scope"
     (string_path,["Coq";"Strings";"String"])
     interp_string
-    ([CAst.make @@ GRef (static_glob_String,None);
-      CAst.make @@ GRef (static_glob_EmptyString,None)],
+    ([DAst.make @@ GRef (static_glob_String,None);
+      DAst.make @@ GRef (static_glob_EmptyString,None)],
      uninterp_string, true)

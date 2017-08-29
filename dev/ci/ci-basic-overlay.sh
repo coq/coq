@@ -125,5 +125,5 @@
 ########################################################################
 # Bignums
 ########################################################################
-: ${bignums_CI_BRANCH:=master}
-: ${bignums_CI_GITURL:=https://github.com/coq/bignums.git}
+: ${bignums_CI_BRANCH:=fix-thunk-printer}
+: ${bignums_CI_GITURL:=https://github.com/ppedrot/bignums.git}

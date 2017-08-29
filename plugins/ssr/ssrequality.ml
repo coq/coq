@@ -129,7 +129,7 @@ let newssrcongrtac arg ist gl =
     let eq, gl = pf_fresh_global (Coqlib.build_coq_eq ()) gl in
     pf_saturate gl (EConstr.of_constr eq) 3 in
   tclMATCH_GOAL (equality, gl') (fun gl' -> fs gl' (List.assoc 0 eq_args))
-  (fun ty -> congrtac (arg, Detyping.detype false [] (pf_env gl) (project gl) ty) ist)
+  (fun ty -> congrtac (arg, Detyping.detype Detyping.Now false [] (pf_env gl) (project gl) ty) ist)
   (fun () ->
     let lhs, gl' = mk_evar gl EConstr.mkProp in let rhs, gl' = mk_evar gl' EConstr.mkProp in
     let arrow = EConstr.mkArrow lhs (EConstr.Vars.lift 1 rhs) in

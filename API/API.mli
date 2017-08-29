@@ -3072,55 +3072,67 @@ end
 (* XXX: Located manually from intf *)
 module Glob_term :
 sig
-  type cases_pattern_r =
+  type 'a cases_pattern_r =
     | PatVar  of Names.Name.t
-    | PatCstr of Names.constructor * cases_pattern list * Names.Name.t
-  and cases_pattern = cases_pattern_r CAst.t
+    | PatCstr of Names.constructor * 'a cases_pattern_g list * Names.Name.t
+  and 'a cases_pattern_g = ('a cases_pattern_r, 'a) DAst.t
+  type cases_pattern = [ `any ] cases_pattern_g
   type existential_name = Names.Id.t
-  type glob_constr_r =
+  type 'a glob_constr_r =
     | GRef of Globnames.global_reference * Misctypes.glob_level list option
         (** An identifier that represents a reference to an object defined
             either in the (global) environment or in the (local) context. *)
     | GVar of Names.Id.t
         (** An identifier that cannot be regarded as "GRef".
             Bound variables are typically represented this way. *)
-    | GEvar   of existential_name * (Names.Id.t * glob_constr) list
+    | GEvar   of existential_name * (Names.Id.t * 'a glob_constr_g) list
     | GPatVar of Evar_kinds.matching_var_kind
-    | GApp    of glob_constr * glob_constr list
-    | GLambda of Names.Name.t * Decl_kinds.binding_kind *  glob_constr * glob_constr
-    | GProd   of Names.Name.t * Decl_kinds.binding_kind * glob_constr * glob_constr
-    | GLetIn  of Names.Name.t * glob_constr * glob_constr option * glob_constr
-    | GCases  of Term.case_style * glob_constr option * tomatch_tuples * cases_clauses
-    | GLetTuple of Names.Name.t list * (Names.Name.t * glob_constr option) * glob_constr * glob_constr
-    | GIf   of glob_constr * (Names.Name.t * glob_constr option) * glob_constr * glob_constr
-    | GRec  of fix_kind * Names.Id.t array * glob_decl list array *
-               glob_constr array * glob_constr array
+    | GApp    of 'a glob_constr_g * 'a glob_constr_g list
+    | GLambda of Names.Name.t * Decl_kinds.binding_kind *  'a glob_constr_g * 'a glob_constr_g
+    | GProd   of Names.Name.t * Decl_kinds.binding_kind * 'a glob_constr_g * 'a glob_constr_g
+    | GLetIn  of Names.Name.t * 'a glob_constr_g * 'a glob_constr_g option * 'a glob_constr_g
+    | GCases  of Term.case_style * 'a glob_constr_g option * 'a tomatch_tuples_g * 'a cases_clauses_g
+    | GLetTuple of Names.Name.t list * (Names.Name.t * 'a glob_constr_g option) * 'a glob_constr_g * 'a glob_constr_g
+    | GIf   of 'a glob_constr_g * (Names.Name.t * 'a glob_constr_g option) * 'a glob_constr_g * 'a glob_constr_g
+    | GRec  of 'a fix_kind_g * Names.Id.t array * 'a glob_decl_g list array *
+               'a glob_constr_g array * 'a glob_constr_g array
     | GSort of Misctypes.glob_sort
     | GHole of Evar_kinds.t * Misctypes.intro_pattern_naming_expr * Genarg.glob_generic_argument option
-    | GCast of glob_constr * glob_constr Misctypes.cast_type
+    | GCast of 'a glob_constr_g * 'a glob_constr_g Misctypes.cast_type
 
-   and glob_constr = glob_constr_r CAst.t
+   and 'a glob_constr_g = ('a glob_constr_r, 'a) DAst.t
 
-   and glob_decl = Names.Name.t * Decl_kinds.binding_kind * glob_constr option * glob_constr
+   and 'a glob_decl_g = Names.Name.t * Decl_kinds.binding_kind * 'a glob_constr_g option * 'a glob_constr_g
 
-   and fix_recursion_order =
+   and 'a fix_recursion_order_g =
      | GStructRec
-     | GWfRec of glob_constr
-     | GMeasureRec of glob_constr * glob_constr option
+     | GWfRec of 'a glob_constr_g
+     | GMeasureRec of 'a glob_constr_g * 'a glob_constr_g option
 
-   and fix_kind =
-     | GFix of ((int option * fix_recursion_order) array * int)
+   and 'a fix_kind_g =
+     | GFix of ((int option * 'a fix_recursion_order_g) array * int)
      | GCoFix of int
 
-   and predicate_pattern =
+   and 'a predicate_pattern_g =
      Names.Name.t * (Names.inductive * Names.Name.t list) Loc.located option
 
-   and tomatch_tuple = (glob_constr * predicate_pattern)
+   and 'a tomatch_tuple_g = ('a glob_constr_g * 'a predicate_pattern_g)
 
-   and tomatch_tuples = tomatch_tuple list
+   and 'a tomatch_tuples_g = 'a tomatch_tuple_g list
 
-   and cases_clause = (Names.Id.t list * cases_pattern list * glob_constr) Loc.located
-   and cases_clauses = cases_clause list
+   and 'a cases_clause_g = (Names.Id.t list * 'a cases_pattern_g list * 'a glob_constr_g) Loc.located
+   and 'a cases_clauses_g = 'a cases_clause_g list
+
+   type glob_constr = [ `any ] glob_constr_g
+   type tomatch_tuple = [ `any ] tomatch_tuple_g
+   type tomatch_tuples = [ `any ] tomatch_tuples_g
+   type cases_clause = [ `any ] cases_clause_g
+   type cases_clauses = [ `any ] cases_clauses_g
+   type glob_decl = [ `any ] glob_decl_g
+   type fix_kind = [ `any ] fix_kind_g
+   type predicate_pattern = [ `any ] predicate_pattern_g
+   type any_glob_constr =
+   | AnyGlobConstr : 'r glob_constr_g -> any_glob_constr
 
    (** A globalised term together with a closure representing the value
        of its free variables. Intended for use when these variables are taken
@@ -3980,11 +3992,14 @@ end
 
 module Detyping :
 sig
+  type 'a delay =
+  | Now : 'a delay
+  | Later : [ `thunk ] delay
   val print_universes : bool ref
   val print_evar_arguments : bool ref
-  val detype : ?lax:bool -> bool -> Names.Id.t list -> Environ.env -> Evd.evar_map -> EConstr.constr -> Glob_term.glob_constr
+  val detype : 'a delay -> ?lax:bool -> bool -> Names.Id.t list -> Environ.env -> Evd.evar_map -> EConstr.constr -> 'a Glob_term.glob_constr_g
   val subst_glob_constr : Mod_subst.substitution -> Glob_term.glob_constr -> Glob_term.glob_constr
-  val set_detype_anonymous : (?loc:Loc.t -> int -> Glob_term.glob_constr) -> unit
+  val set_detype_anonymous : (?loc:Loc.t -> int -> Names.Id.t) -> unit
 end
 
 module Indrec :
@@ -4181,7 +4196,7 @@ sig
   type cases_pattern_status = bool
   type required_module = Libnames.full_path * string list
   type 'a prim_token_interpreter = ?loc:Loc.t -> 'a -> Glob_term.glob_constr
-  type 'a prim_token_uninterpreter = Glob_term.glob_constr list * (Glob_term.glob_constr -> 'a option) * cases_pattern_status
+  type 'a prim_token_uninterpreter = Glob_term.glob_constr list * (Glob_term.any_glob_constr -> 'a option) * cases_pattern_status
   type delimiters = string
   type local_scopes = Notation_term.tmp_scope_name option * Notation_term.scope_name list
   type notation_location = (Names.DirPath.t * Names.DirPath.t) * string

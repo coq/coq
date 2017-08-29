@@ -47,19 +47,19 @@ val glob_constr_of_notation_constr : ?loc:Loc.t -> notation_constr -> glob_const
 
 exception No_match
 
-val match_notation_constr : bool -> glob_constr -> interpretation ->
-      (glob_constr * subscopes) list * (glob_constr list * subscopes) list *
-      (extended_glob_local_binder list * subscopes) list
+val match_notation_constr : bool -> 'a glob_constr_g -> interpretation ->
+      ('a glob_constr_g * subscopes) list * ('a glob_constr_g list * subscopes) list *
+      ('a extended_glob_local_binder_g list * subscopes) list
 
 val match_notation_constr_cases_pattern :
-  cases_pattern -> interpretation ->
-  ((cases_pattern * subscopes) list * (cases_pattern list * subscopes) list) *
-    (int * cases_pattern list)
+  'a cases_pattern_g -> interpretation ->
+  (('a cases_pattern_g * subscopes) list * ('a cases_pattern_g list * subscopes) list) *
+    (int * 'a cases_pattern_g list)
 
 val match_notation_constr_ind_pattern :
-  inductive -> cases_pattern  list -> interpretation ->
-  ((cases_pattern * subscopes) list * (cases_pattern list * subscopes) list) *
-    (int * cases_pattern list)
+  inductive -> 'a cases_pattern_g list -> interpretation ->
+  (('a cases_pattern_g * subscopes) list * ('a cases_pattern_g list * subscopes) list) *
+    (int * 'a cases_pattern_g list)
 
 (** {5 Matching a notation pattern against a [glob_constr]} *)
 

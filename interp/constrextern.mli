@@ -23,9 +23,9 @@ open Misctypes
 (** Translation of pattern, cases pattern, glob_constr and term into syntax
    trees for printing *)
 
-val extern_cases_pattern : Id.Set.t -> cases_pattern -> cases_pattern_expr
-val extern_glob_constr : Id.Set.t -> glob_constr -> constr_expr
-val extern_glob_type : Id.Set.t -> glob_constr -> constr_expr
+val extern_cases_pattern : Id.Set.t -> 'a cases_pattern_g -> cases_pattern_expr
+val extern_glob_constr : Id.Set.t -> 'a glob_constr_g -> constr_expr
+val extern_glob_type : Id.Set.t -> 'a glob_constr_g -> constr_expr
 val extern_constr_pattern : names_context -> Evd.evar_map ->
   constr_pattern -> constr_expr
 val extern_closed_glob : ?lax:bool -> bool -> env -> Evd.evar_map -> closed_glob_constr -> constr_expr

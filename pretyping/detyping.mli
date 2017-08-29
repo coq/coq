@@ -16,6 +16,10 @@ open Mod_subst
 open Misctypes
 open Evd
 
+type _ delay =
+| Now : 'a delay
+| Later : [ `thunk ] delay
+
 (** Should we keep details of universes during detyping ? *)
 val print_universes : bool ref
 
@@ -33,12 +37,12 @@ val subst_glob_constr : substitution -> glob_constr -> glob_constr
 
 val detype_names : bool -> Id.t list -> names_context -> env -> evar_map -> constr -> glob_constr
 
-val detype : ?lax:bool -> bool -> Id.t list -> env -> evar_map -> constr -> glob_constr
+val detype : 'a delay -> ?lax:bool -> bool -> Id.t list -> env -> evar_map -> constr -> 'a glob_constr_g
 
 val detype_sort : evar_map -> sorts -> glob_sort
 
-val detype_rel_context : ?lax:bool -> constr option -> Id.t list -> (names_context * env) -> 
-  evar_map -> rel_context -> glob_decl list
+val detype_rel_context : 'a delay -> ?lax:bool -> constr option -> Id.t list -> (names_context * env) -> 
+  evar_map -> rel_context -> 'a glob_decl_g list
 
 val detype_closed_glob : ?lax:bool -> bool -> Id.t list -> env -> evar_map -> closed_glob_constr -> glob_constr
 
@@ -47,7 +51,7 @@ val lookup_name_as_displayed  : env -> evar_map -> constr -> Id.t -> int option
 val lookup_index_as_renamed : env -> evar_map -> constr -> int -> int option
 
 (* XXX: This is a hack and should go away *)
-val set_detype_anonymous : (?loc:Loc.t -> int -> glob_constr) -> unit
+val set_detype_anonymous : (?loc:Loc.t -> int -> Id.t) -> unit
 
 val force_wildcard : unit -> bool
 val synthetize_type : unit -> bool

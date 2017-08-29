@@ -70,7 +70,7 @@ type 'a prim_token_interpreter =
     ?loc:Loc.t -> 'a -> glob_constr
 
 type 'a prim_token_uninterpreter =
-    glob_constr list * (glob_constr -> 'a option) * cases_pattern_status
+    glob_constr list * (any_glob_constr -> 'a option) * cases_pattern_status
 
 type rawnum = Constrexpr.raw_natural_number * Constrexpr.sign
 
@@ -96,9 +96,9 @@ val interp_prim_token_cases_pattern_expr : ?loc:Loc.t -> (global_reference -> un
    raise [No_match] if no such token *)
 
 val uninterp_prim_token :
-  glob_constr -> scope_name * prim_token
+  'a glob_constr_g -> scope_name * prim_token
 val uninterp_prim_token_cases_pattern :
-  cases_pattern -> Name.t * scope_name * prim_token
+  'a cases_pattern_g -> Name.t * scope_name * prim_token
 val uninterp_prim_token_ind_pattern :
  inductive -> cases_pattern list -> scope_name * prim_token
 
@@ -124,8 +124,8 @@ val interp_notation : ?loc:Loc.t -> notation -> local_scopes ->
 type notation_rule = interp_rule * interpretation * int option
 
 (** Return the possible notations for a given term *)
-val uninterp_notations : glob_constr -> notation_rule list
-val uninterp_cases_pattern_notations : cases_pattern -> notation_rule list
+val uninterp_notations : 'a glob_constr_g -> notation_rule list
+val uninterp_cases_pattern_notations : 'a cases_pattern_g -> notation_rule list
 val uninterp_ind_pattern_notations : inductive -> notation_rule list
 
 (** Test if a notation is available in the scopes 

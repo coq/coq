@@ -626,19 +626,19 @@ END
 let subst_var_with_hole occ tid t = 
   let occref = if occ > 0 then ref occ else Find_subterm.error_invalid_occurrence [occ] in
   let locref = ref 0 in
-  let rec substrec = function
-    | { CAst.v = GVar id } as x -> 
+  let rec substrec x = match DAst.get x with
+    | GVar id ->
         if Id.equal id tid 
         then
 	  (decr occref;
 	   if Int.equal !occref 0 then x
            else
 	     (incr locref;
-              CAst.make ~loc:(Loc.make_loc (!locref,0)) @@
+              DAst.make ~loc:(Loc.make_loc (!locref,0)) @@
 	      GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true,Anonymous),
                      Misctypes.IntroAnonymous, None)))
         else x
-    | c -> map_glob_constr_left_to_right substrec c in
+    | _ -> map_glob_constr_left_to_right substrec x in
   let t' = substrec t
   in
   if !occref > 0 then Find_subterm.error_invalid_occurrence [occ] else t'
@@ -646,15 +646,15 @@ let subst_var_with_hole occ tid t =
 let subst_hole_with_term occ tc t =
   let locref = ref 0 in
   let occref = ref occ in
-  let rec substrec = function
-    | { CAst.v = GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true,Anonymous),Misctypes.IntroAnonymous,s) } ->
+  let rec substrec c = match DAst.get c with
+    | GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true,Anonymous),Misctypes.IntroAnonymous,s) ->
         decr occref;
         if Int.equal !occref 0 then tc
         else
 	  (incr locref;
-           CAst.make ~loc:(Loc.make_loc (!locref,0)) @@
+           DAst.make ~loc:(Loc.make_loc (!locref,0)) @@
 	   GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true,Anonymous),Misctypes.IntroAnonymous,s))
-    | c -> map_glob_constr_left_to_right substrec c
+    | _ -> map_glob_constr_left_to_right substrec c
   in
   substrec t
 
@@ -666,8 +666,8 @@ let hResolve id c occ t =
   let env = Termops.clear_named_body id (Proofview.Goal.env gl) in
   let concl = Proofview.Goal.concl gl in
   let env_ids = Termops.ids_of_context env in
-  let c_raw = Detyping.detype true env_ids env sigma c in
-  let t_raw = Detyping.detype true env_ids env sigma t in
+  let c_raw = Detyping.detype Detyping.Now true env_ids env sigma c in
+  let t_raw = Detyping.detype Detyping.Now true env_ids env sigma t in
   let rec resolve_hole t_hole =
     try 
       Pretyping.understand env sigma t_hole

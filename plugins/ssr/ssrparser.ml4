@@ -342,7 +342,7 @@ let interp_index ist gl idx =
         | None ->
         begin match Tacinterp.Value.to_constr v with
         | Some c ->
-          let rc = Detyping.detype false [] (pf_env gl) (project gl) c in
+          let rc = Detyping.detype Detyping.Now false [] (pf_env gl) (project gl) c in
           begin match Notation.uninterp_prim_token rc with
           | _, Constrexpr.Numeral (s,b) ->
              let n = int_of_string s in if b then n else -n
@@ -1062,32 +1062,32 @@ let rec format_glob_decl h0 d0 = match h0, d0 with
      Bdef (x, None, v) :: format_glob_decl [] d
   | _, [] -> []
 
-let rec format_glob_constr h0 c0 = let open CAst in match h0, c0 with
-  | BFvar :: h, { v = GLambda (x, _, _, c) } ->
+let rec format_glob_constr h0 c0 = match h0, DAst.get c0 with
+  | BFvar :: h, GLambda (x, _, _, c) ->
     let bs, c' = format_glob_constr h c in
     Bvar x :: bs, c'
-  | BFdecl 1 :: h, { v = GLambda (x, _, t, c) } ->
+  | BFdecl 1 :: h, GLambda (x, _, t, c) ->
     let bs, c' = format_glob_constr h c in
     Bdecl ([x], t) :: bs, c'
-  | BFdecl n :: h, { v = GLambda (x, _, t, c) } when n > 1 ->
+  | BFdecl n :: h, GLambda (x, _, t, c) when n > 1 ->
     begin match format_glob_constr (BFdecl (n - 1) :: h) c with
     | Bdecl (xs, _) :: bs, c' -> Bdecl (x :: xs, t) :: bs, c'
     | _ -> [Bdecl ([x], t)], c
     end
-  | BFdef :: h, { v = GLetIn(x, v, oty, c) } ->
+  | BFdef :: h, GLetIn(x, v, oty, c) ->
     let bs, c' = format_glob_constr h c in
     Bdef (x, oty, v) :: bs, c'
-  | [BFcast], { v = GCast (c, CastConv t) } ->
+  | [BFcast], GCast (c, CastConv t) ->
     [Bcast t], c
-  | BFrec (has_str, has_cast) :: h, { v = GRec (f, _, bl, t, c) }
+  | BFrec (has_str, has_cast) :: h, GRec (f, _, bl, t, c)
       when Array.length c = 1 ->
     let bs = format_glob_decl h bl.(0) in
     let bstr = match has_str, f with
     | true, GFix ([|Some i, GStructRec|], _) -> mkBstruct i bs
     | _ -> [] in
     bs @ bstr @ (if has_cast then [Bcast t.(0)] else []), c.(0)
-  | _, c ->
-    [], c
+  | _, _ ->
+    [], c0
 
 (** Forward chaining argument *)
 
