@@ -416,13 +416,13 @@ let rec is_value = function
 | GTacCst (_, _, []) -> true
 | GTacOpn (_, el) -> List.for_all is_value el
 | GTacCst (Other kn, _, el) -> is_pure_constructor kn && List.for_all is_value el
-| GTacArr _ | GTacCse _ | GTacPrj _ | GTacSet _ | GTacExt _ | GTacPrm _
+| GTacCse _ | GTacPrj _ | GTacSet _ | GTacExt _ | GTacPrm _
 | GTacWth _ -> false
 
 let is_rec_rhs = function
 | GTacFun _ -> true
 | GTacAtm _ | GTacVar _ | GTacRef _ | GTacApp _ | GTacLet _ | GTacPrj _
-| GTacSet _ | GTacArr _ | GTacExt _ | GTacPrm _ | GTacCst _
+| GTacSet _ | GTacExt _ | GTacPrm _ | GTacCst _
 | GTacCse _ | GTacOpn _ | GTacWth _ -> false
 
 let rec fv_type f t accu = match t with
@@ -1294,8 +1294,6 @@ let rec subst_expr subst e = match e with
 | GTacLet (r, bs, e) ->
   let bs = List.map (fun (na, e) -> (na, subst_expr subst e)) bs in
   GTacLet (r, bs, subst_expr subst e)
-| GTacArr el ->
-  GTacArr (List.map (fun e -> subst_expr subst e) el)
 | GTacCst (t, n, el) as e0 ->
   let t' = subst_or_tuple subst_kn subst t in
   let el' = List.smartmap (fun e -> subst_expr subst e) el in

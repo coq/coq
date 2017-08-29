@@ -65,7 +65,7 @@ let rec eval_pure = function
 | GTacCst (_, n, []) -> ValInt n
 | GTacCst (_, n, el) -> ValBlk (n, Array.map_of_list eval_pure el)
 | GTacOpn (kn, el) -> ValOpn (kn, Array.map_of_list eval_pure el)
-| GTacAtm (AtmStr _) | GTacArr _ | GTacLet _ | GTacVar _ | GTacSet _
+| GTacAtm (AtmStr _) | GTacLet _ | GTacVar _ | GTacSet _
 | GTacApp _ | GTacCse _ | GTacPrj _ | GTacPrm _ | GTacExt _ | GTacWth _ ->
   anomaly (Pp.str "Term is not a syntactical value")
 

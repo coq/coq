@@ -177,8 +177,6 @@ let pr_glbexpr_gen lvl c =
     | E2 | E3 | E4 | E5 -> fun x -> x
     in
     paren (prlist_with_sep (fun () -> str "," ++ spc ()) (pr_glbexpr E1) cl)
-  | GTacArr cl ->
-    mt () (** FIXME when implemented *)
   | GTacCst (Other tpe, n, cl) ->
     begin match Tac2env.interp_type tpe with
     | _, GTydAlg { galg_constructors = def } ->
