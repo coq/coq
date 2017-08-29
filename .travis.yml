@@ -166,10 +166,19 @@ matrix:
         user: maximedenes
         file: .bintray.json
         key:
-          secure: "GDRjXPNvYHJBPMJqbXsSUAAPAZeGvr+mns80eYUD47Uxvueivql5VJ9d8MwLRJOV6lzwnQ1+F65WOKsR/JARMMRuVUKg3dAa3w1j8s2Yr/gwqsLt0G4Roqp93eTFDvs2X0xzzncN31G/NcV/5suc3oXuqjIF7EUSyrtiJUpMcIfFoMHWmdcGM9az4djIKYTzczAs+8MPSfrYD1AAqx2Ezeu+xDEmtvQ0w7OyO48ArUO4K5AWCRWdzSMN0A2s1w72fiCEfMgqzphzzJfRMPzp0rTF6/4CKRbtJpnSGtvovn2TeCRVDI8Y9k61nY5w5rR5Mcdf1K9BA1wzP2L4nTBoHbur70eMdEmeM3R2e9LzFETmuUAFh7L1k6LDhx7kFqjnSLwPSVa8ALK1bJDjgv1i300NCo5divaY/mjIr9e2/AZWL3MQjdwceoVZPrpCgKfpp44XdMYB/fi/wDLORQkLIm5fQMznDeYZKGceILRTwWyjL8Yyy+bBfA++frNLF8Agknfm0gGEI9VBaF7TVYbDJrZ2lmdT68D1hagJ8g1vief7HArTgapHfLxLL2BYWmapEm284GowHDrg4hGHd1aZu+wIh10SzPp4tTGRp0scu/x4ZEr7cglKgegwy9L7ubFA7zm9E368Y6RMxYXETBGgeEVDAqVnfBHIOZVvBIEgsCw="
-          skip_cleanup: true
+          secure: "gUvXWwWR0gicDqsKOnBfe45taToSFied6gN8tCa5IOtl6E6gFoHoPZ83ZWXQsZP50oMDFS5eji0VQAFGEbOsGrTZaD9Y9Jnu34NND78SWL1tsJ6nHO3aCAoMpB0N3+oRuF6S+9HStU6KXWqgj+GeU4vZ4TOlG01RGctJa6U3vII="
+        skip_cleanup: true
         on:
           all_branches: true
+      deploy:
+        provider: releases
+        api_key:
+          secure: "Z/ewvydCLXEhlBBtQGYm2nZ8o+2RP+MwA5uEDuu6mEpZttUZAYaoHivChxADLXz8LNKvUloIeBeIL/PrLk6QnhSur/s2iEYHssrnl99SkAPtoWggyfsdacuKLMkpLoZGOBIEYKPuXuEZyqvugSUO42rSya1zdjcnXc4l+E/bXMc="
+        file: _build/*.dmg
+        skip_cleanup: true
+        on:
+          tags: true
+          repo: coq/coq
 
 before_install:
 - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then echo "Tested commit (followed by parent commits):"; git log -1; for commit in `git log -1 --format="%P"`; do echo; git log -1 $commit; done; fi
