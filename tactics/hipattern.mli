@@ -81,8 +81,8 @@ val is_inductive_equality  : inductive -> bool
 val match_with_equality_type : (constr * constr list) matching_function
 val is_equality_type       : testing_function
 
-val match_with_nottype     : (constr * constr) matching_function
-val is_nottype             : testing_function
+val match_with_nottype     : Environ.env -> (constr * constr) matching_function
+val is_nottype             : Environ.env -> testing_function
 
 val match_with_forall_term    : (Name.t * constr * constr) matching_function
 val is_forall_term            : testing_function
@@ -114,7 +114,7 @@ type equation_kind =
 exception NoEquationFound
 
 val match_with_equation:
-  evar_map -> constr -> coq_eq_data option * constr * equation_kind
+  Environ.env -> evar_map -> constr -> coq_eq_data option * constr * equation_kind
 
 (***** Destructing patterns bound to some theory *)
 
@@ -132,21 +132,21 @@ val find_eq_data : evar_map -> constr -> coq_eq_data * EInstance.t * equation_ki
 
 (** Match a term of the form [(existT A P t p)] 
    Returns associated lemmas and [A,P,t,p] *)
-val find_sigma_data_decompose : evar_map -> constr ->
+val find_sigma_data_decompose : Environ.env -> evar_map -> constr ->
   coq_sigma_data * (EInstance.t * constr * constr * constr * constr)
 
 (** Match a term of the form [{x:A|P}], returns [A] and [P] *)
-val match_sigma : evar_map -> constr -> constr * constr
+val match_sigma : Environ.env -> evar_map -> constr -> constr * constr
 
-val is_matching_sigma : evar_map -> constr -> bool
+val is_matching_sigma : Environ.env -> evar_map -> constr -> bool
 
 (** Match a decidable equality judgement (e.g [{t=u:>T}+{~t=u}]), returns
    [t,u,T] and a boolean telling if equality is on the left side *)
-val match_eqdec : evar_map -> constr -> bool * Globnames.global_reference * constr * constr * constr
+val match_eqdec : Environ.env -> evar_map -> constr -> bool * Globnames.global_reference * constr * constr * constr
 
 (** Match an equality up to conversion; returns [(eq,t1,t2)] in normal form *)
 val dest_nf_eq : 'a Proofview.Goal.t -> constr -> (constr * constr * constr)
 
 (** Match a negation *)
-val is_matching_not : evar_map -> constr -> bool
-val is_matching_imp_False : evar_map -> constr -> bool
+val is_matching_not : Environ.env -> evar_map -> constr -> bool
+val is_matching_imp_False : Environ.env -> evar_map -> constr -> bool

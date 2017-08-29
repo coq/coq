@@ -231,7 +231,8 @@ let make_prb gls depth additionnal_terms =
 let build_projection intype (cstr:pconstructor) special default gls=
   let open Tacmach.New in
   let ci= (snd(fst cstr)) in
-  let sigma, body=Equality.build_selector (pf_env gls) (project gls) ci (mkRel 1) intype special default in
+  let sigma = project gls in
+  let body=Equality.build_selector (pf_env gls) sigma ci (mkRel 1) intype special default in
   let id=pf_get_new_id (Id.of_string "t") gls in
   sigma, mkLambda(Name id,intype,body)
 

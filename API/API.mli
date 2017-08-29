@@ -5241,7 +5241,7 @@ sig
 
   val build_selector :
     Environ.env -> Evd.evar_map -> int -> EConstr.constr -> EConstr.types ->
-    EConstr.constr -> EConstr.constr -> Evd.evar_map * EConstr.constr
+    EConstr.constr -> EConstr.constr -> EConstr.constr
   val replace : EConstr.constr -> EConstr.constr -> unit Proofview.tactic
   val general_rewrite :
     orientation -> Locus.occurrences -> freeze_evars_flag -> dep_proof_flag ->
