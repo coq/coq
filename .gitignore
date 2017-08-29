@@ -86,6 +86,7 @@ test-suite/coq-makefile/plugin-reach-outside-API-and-fail/_CoqProject
 test-suite/coq-makefile/plugin-reach-outside-API-and-succeed-by-bypassing-the-API/_CoqProject
 test-suite/coqdoc/Coqdoc.*
 test-suite/coqdoc/index.html
+test-suite/coqdoc/coqdoc.css
 
 # documentation
 
