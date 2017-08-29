@@ -352,6 +352,95 @@ let () = define_prim2 "tac_native" begin fun where cl ->
   Tac2tactics.native where cl
 end
 
+(** Reduction functions *)
+
+let define_red1 name tac =
+  let tac = function
+  | [x] -> tac x >>= fun c -> Proofview.tclUNIT (Value.of_constr c)
+  | _ -> assert false
+  in
+  Tac2env.define_primitive (pname name) tac
+
+let define_red2 name tac =
+  let tac = function
+  | [x; y] -> tac x y >>= fun c -> Proofview.tclUNIT (Value.of_constr c)
+  | _ -> assert false
+  in
+  Tac2env.define_primitive (pname name) tac
+
+let define_red3 name tac =
+  let tac = function
+  | [x; y; z] -> tac x y z >>= fun c -> Proofview.tclUNIT (Value.of_constr c)
+  | _ -> assert false
+  in
+  Tac2env.define_primitive (pname name) tac
+
+let () = define_red1 "eval_red" begin fun c ->
+  let c = Value.to_constr c in
+  Tac2tactics.eval_red c
+end
+
+let () = define_red1 "eval_hnf" begin fun c ->
+  let c = Value.to_constr c in
+  Tac2tactics.eval_hnf c
+end
+
+let () = define_red3 "eval_simpl" begin fun flags where c ->
+  let flags = to_red_flag flags in
+  let where = Value.to_option to_pattern_with_occs where in
+  let c = Value.to_constr c in
+  Tac2tactics.eval_simpl flags where c
+end
+
+let () = define_red2 "eval_cbv" begin fun flags c ->
+  let flags = to_red_flag flags in
+  let c = Value.to_constr c in
+  Tac2tactics.eval_cbv flags c
+end
+
+let () = define_red2 "eval_cbn" begin fun flags c ->
+  let flags = to_red_flag flags in
+  let c = Value.to_constr c in
+  Tac2tactics.eval_cbn flags c
+end
+
+let () = define_red2 "eval_lazy" begin fun flags c ->
+  let flags = to_red_flag flags in
+  let c = Value.to_constr c in
+  Tac2tactics.eval_lazy flags c
+end
+
+let () = define_red2 "eval_unfold" begin fun refs c ->
+  let map v = to_pair Value.to_reference (fun occ -> to_occurrences to_int_or_var occ) v in
+  let refs = Value.to_list map refs in
+  let c = Value.to_constr c in
+  Tac2tactics.eval_unfold refs c
+end
+
+let () = define_red2 "eval_fold" begin fun args c ->
+  let args = Value.to_list Value.to_constr args in
+  let c = Value.to_constr c in
+  Tac2tactics.eval_fold args c
+end
+
+let () = define_red2 "eval_pattern" begin fun where c ->
+  let where = Value.to_list (fun p -> to_pair Value.to_constr (fun occ -> to_occurrences to_int_or_var occ) p) where in
+  let c = Value.to_constr c in
+  Tac2tactics.eval_pattern where c
+end
+
+let () = define_red2 "eval_vm" begin fun where c ->
+  let where = Value.to_option to_pattern_with_occs where in
+  let c = Value.to_constr c in
+  Tac2tactics.eval_vm where c
+end
+
+let () = define_red2 "eval_native" begin fun where c ->
+  let where = Value.to_option to_pattern_with_occs where in
+  let c = Value.to_constr c in
+  Tac2tactics.eval_native where c
+end
+
 let () = define_prim4 "tac_rewrite" begin fun ev rw cl by ->
   let ev = Value.to_bool ev in
   let rw = Value.to_list to_rewriting rw in

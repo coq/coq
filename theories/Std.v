@@ -142,6 +142,19 @@ Ltac2 @ external pattern : (constr * occurrences) list -> clause -> unit := "lta
 Ltac2 @ external vm : (pattern * occurrences) option -> clause -> unit := "ltac2" "tac_vm".
 Ltac2 @ external native : (pattern * occurrences) option -> clause -> unit := "ltac2" "tac_native".
 
+Ltac2 @ external eval_red : constr -> constr := "ltac2" "eval_red".
+Ltac2 @ external eval_hnf : constr -> constr := "ltac2" "eval_hnf".
+Ltac2 @ external eval_red : constr -> constr := "ltac2" "eval_red".
+Ltac2 @ external eval_simpl : red_flags -> (pattern * occurrences) option -> constr -> constr := "ltac2" "eval_simpl".
+Ltac2 @ external eval_cbv : red_flags -> constr -> constr := "ltac2" "eval_cbv".
+Ltac2 @ external eval_cbn : red_flags -> constr -> constr := "ltac2" "eval_cbn".
+Ltac2 @ external eval_lazy : red_flags -> constr -> constr := "ltac2" "eval_lazy".
+Ltac2 @ external eval_unfold : (reference * occurrences) list -> constr -> constr := "ltac2" "eval_unfold".
+Ltac2 @ external eval_fold : constr list -> constr -> constr := "ltac2" "eval_fold".
+Ltac2 @ external eval_pattern : (constr * occurrences) list -> constr -> constr := "ltac2" "eval_pattern".
+Ltac2 @ external eval_vm : (pattern * occurrences) option -> constr -> constr := "ltac2" "eval_vm".
+Ltac2 @ external eval_native : (pattern * occurrences) option -> constr -> constr := "ltac2" "eval_native".
+
 Ltac2 @ external rewrite : evar_flag -> rewriting list -> clause -> (unit -> unit) option -> unit := "ltac2" "tac_rewrite".
 
 Ltac2 @ external reflexivity : unit -> unit := "ltac2" "tac_reflexivity".
