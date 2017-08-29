@@ -14,3 +14,13 @@ let x := constr:(I) in
 let y := constr:((fun z => z) $x) in
 Control.refine (fun _ => y).
 Qed.
+
+Goal True.
+Proof.
+(** Here, Ltac2 should not put its variables in the same environment as
+    Ltac1 otherwise the second binding fails as x is bound but not an
+    ident. *)
+let x := constr:(I) in
+let y := constr:((fun x => x) $x) in
+Control.refine (fun _ => y).
+Qed.

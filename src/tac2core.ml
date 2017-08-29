@@ -656,8 +656,7 @@ let open_constr_no_classes_flags () =
 (** Embed all Ltac2 data into Values *)
 let to_lvar ist =
   let open Glob_ops in
-  let map e = Val.Dyn (val_valexpr, e) in
-  let lfun = Id.Map.map map ist in
+  let lfun = Tac2interp.set_env ist Id.Map.empty in
   { empty_lvar with Glob_term.ltac_genargs = lfun }
 
 let interp_constr flags ist (c, _) =
@@ -728,12 +727,7 @@ let () =
 
 let () =
   let interp ist env sigma concl tac =
-    let fold id (Val.Dyn (tag, v)) (accu : environment) : environment =
-      match Val.eq tag val_valexpr with
-      | None -> accu
-      | Some Refl -> Id.Map.add id v accu
-    in
-    let ist = Id.Map.fold fold ist Id.Map.empty in
+    let ist = Tac2interp.get_env ist in
     let tac = Proofview.tclIGNORE (interp ist tac) in
     let c, sigma = Pfedit.refine_by_tactic env sigma concl tac in
     (EConstr.of_constr c, sigma)

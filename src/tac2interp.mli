@@ -17,6 +17,11 @@ val interp : environment -> glb_tacexpr -> valexpr Proofview.tactic
 
 val interp_app : valexpr -> valexpr list -> valexpr Proofview.tactic
 
+(** {5 Cross-boundary encodings} *)
+
+val get_env : Glob_term.unbound_ltac_var_map -> environment
+val set_env : environment -> Glob_term.unbound_ltac_var_map -> Glob_term.unbound_ltac_var_map
+
 (** {5 Exceptions} *)
 
 exception LtacError of KerName.t * valexpr array

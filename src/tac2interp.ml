@@ -155,3 +155,22 @@ and interp_set ist e p r = match e with
   return (ValInt 0)
 | ValInt _ | ValExt _ | ValStr _ | ValCls _ | ValOpn _ ->
   anomaly (str "Unexpected value shape")
+
+(** Cross-boundary hacks. *)
+
+open Geninterp
+
+let val_env : environment Val.typ = Val.create "ltac2:env"
+let env_ref = Id.of_string_soft "@@ltac2_env@@"
+
+let extract_env (Val.Dyn (tag, v)) : environment =
+match Val.eq tag val_env with
+| None -> assert false
+| Some Refl -> v
+
+let get_env ist =
+  try extract_env (Id.Map.find env_ref ist)
+  with Not_found -> empty_environment
+
+let set_env env ist =
+  Id.Map.add env_ref (Val.Dyn (val_env, env)) ist
