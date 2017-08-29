@@ -40,10 +40,6 @@ Documentation of ML interfaces using ocamldoc (directory ocamldoc/html)
 Other development tools (directory tools)
 -----------------------
 
-Makefile.dir: makefile dedicated to intensive work in a given directory
-Makefile.subdir: makefile dedicated to intensive work in a given subdirectory
-Makefile.devel: utilities to automatically launch coq in various states
-Makefile.common: used by other Makefiles
 objects.el: various development utilities at emacs level
 anomaly-traces-parser.el: a .emacs-ready elisp snippet to parse
   location of Anomaly backtraces and jump to them conveniently from
