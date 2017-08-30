@@ -1175,7 +1175,7 @@ let error_not_allowed_case_analysis isrec kind i =
   pr_inductive (Global.env()) (fst i) ++ str "."
 
 let error_not_allowed_dependent_analysis isrec i =
-  str "Dependent " ++ str (if isrec then "Induction" else "Case analysis") ++
+  str "Dependent " ++ str (if isrec then "induction" else "case analysis") ++
   strbrk " is not allowed for inductive definition " ++
   pr_inductive (Global.env()) i ++ str "."
 
