@@ -279,15 +279,78 @@ of the chapter devoted to coercions.
 \label{prim-proj}
 
 The option {\tt Set Primitive Projections} turns on the use of primitive
-projections when defining subsequent records. Primitive projections
+projections when defining subsequent records (even through the {\tt
+  Inductive} and {\tt CoInductive} commands). Primitive projections
 extended the Calculus of Inductive Constructions with a new binary term
 constructor {\tt r.(p)} representing a primitive projection p applied to
 a record object {\tt r} (i.e., primitive projections are always
 applied). Even if the record type has parameters, these do not appear at
 applications of the projection, considerably reducing the sizes of terms
 when manipulating parameterized records and typechecking time. On the
-user level, primitive projections are a transparent replacement
-for the usual defined ones.
+user level, primitive projections can be used as a replacement for the
+usual defined ones, although there are a few notable differences.
+
+The internally omitted parameters can be reconstructed at printing time
+even though they are absent in the actual AST manipulated by the kernel. This
+can be obtained by setting the {\tt Printing Primitive Projection Parameters}
+flag. Another compatibility printing can be activated thanks to the
+{\tt Printing Primitive Projection Compatibility} option which governs the
+printing of pattern-matching over primitive records.
+
+\subsubsection{Primitive Record Types}
+When the {\tt Set Primitive Projections} option is on, definitions of
+record types change meaning. When a type is declared with primitive
+projections, its {\tt match} construct is disabled (see
+\ref{primproj:compat} though). To eliminate the (co-)inductive type, one
+must use its defined primitive projections.
+
+There are currently two ways to introduce primitive records types:
+\begin{itemize}
+\item Through the {\tt Record} command, in which case the type has to be
+  non-recursive. The defined type enjoys eta-conversion definitionally,
+  that is the generalized form of surjective pairing for records:
+  {\tt $r$ = Build\_R ($r$.($p_1$) .. $r$.($p_n$))}. Eta-conversion allows to define
+  dependent elimination for these types as well.
+\item Through the {\tt Inductive} and {\tt CoInductive} commands, when
+  the body of the definition is a record declaration of the form {\tt
+    Build\_R \{ $p_1$ : $t_1$; .. ; $p_n$ : $t_n$ \}}. In this case the types can be
+  recursive and eta-conversion is disallowed. These kind of record types
+  differ from their traditional versions in the sense that dependent
+  elimination is not available for them and only non-dependent case analysis
+  can be defined.
+\end{itemize}
+
+\subsubsection{Reduction}
+
+The basic reduction rule of a primitive projection is {\tt $p_i$
+  (Build\_R $t_1$ .. $t_n$) $\rightarrow_{\iota}$ $t_i$}. However, to take the $\delta$ flag into
+account, projections can be in two states: folded or unfolded. An
+unfolded primitive projection application obeys the rule above, while
+the folded version delta-reduces to the unfolded version. This allows to
+precisely mimic the usual unfolding rules of constants. Projections
+obey the usual {\tt simpl} flags of the {\tt Arguments} command in particular.
+
+There is currently no way to input unfolded primitive projections at the
+user-level, and one must use the {\tt Printing Primitive Projection
+  Compatibility} to display unfolded primitive projections as matches
+and distinguish them from folded ones.
+
+\subsubsection{Compatibility Projections and {\tt match}}
+\label{primproj:compat}
+To ease compatibility with ordinary record types, each primitive
+projection is also defined as a ordinary constant taking parameters and
+an object of the record type as arguments, and whose body is an
+application of the unfolded primitive projection of the same name. These
+constants are used when elaborating partial applications of the
+projection. One can distinguish them from applications of the primitive
+projection if the {\tt Printing Primitive Projection Parameters} option
+is off: for a primitive projection application, parameters are printed
+as underscores while for the compatibility projections they are printed
+as usual.
+
+Additionally, user-written {\tt match} constructs on primitive records
+are desugared into substitution of the projections, they cannot be
+printed back as {\tt match} constructs.
 
   % - r.(p) and (p r) elaborate to native projection application, and
   %   the parameters cannot be mentioned. The following arguments are
@@ -304,13 +367,6 @@ for the usual defined ones.
   %   projection application.
   % - [pattern x at n], [rewrite x at n] and in general abstraction and selection
   %   of occurrences may fail due to the disappearance of parameters.
-
-The internally omitted parameters can be reconstructed at printing time
-even though they are absent in the actual AST manipulated by the kernel. This
-can be obtained by setting the {\tt Printing Primitive Projection Parameters}
-flag. Another compatibility printing can be activated thanks to the
-{\tt Printing Primitive Projection Compatibility} option which governs the
-printing of pattern-matching over primitive records.
 
 \section{Variants and extensions of {\mbox{\tt match}}
 \label{Extensions-of-match}
