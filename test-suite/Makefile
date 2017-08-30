@@ -85,8 +85,10 @@ COMPLEXITY := $(if $(bogomips),complexity)
 
 BUGS := bugs/opened bugs/closed
 
+INTERACTIVE := interactive
+
 VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
-  output-modulo-time interactive micromega $(COMPLEXITY) modules stm \
+  output-modulo-time $(INTERACTIVE) micromega $(COMPLEXITY) modules stm \
   coqdoc
 
 # All subsystems
