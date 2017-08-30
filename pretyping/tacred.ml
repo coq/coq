@@ -567,11 +567,20 @@ let match_eval_ref_value env sigma constr stack =
      env |> lookup_rel n |> RelDecl.get_value |> Option.map (lift n)
   | _ -> None
 
+let recargs = function
+  | EvalVar _ | EvalRel _ | EvalEvar _ -> None
+  | EvalConst c -> ReductionBehaviour.get (ConstRef c)
+
 let special_red_case env sigma whfun (ci, p, c, lf) =
   let rec redrec s =
     let (constr, cargs) = whfun s in
     match match_eval_ref env sigma constr cargs with
     | Some (ref, u) ->
+      let () =
+        match recargs ref with
+        | Some (_, _, f) when List.mem `ReductionNeverUnfold f -> raise Redelimination
+        | _ -> ()
+      in
       (match reference_opt_value env sigma ref u with
       | None -> raise Redelimination
       | Some gvalue ->
@@ -590,10 +599,6 @@ let special_red_case env sigma whfun (ci, p, c, lf) =
 	raise Redelimination
   in
   redrec c
-
-let recargs = function
-  | EvalVar _ | EvalRel _ | EvalEvar _ -> None
-  | EvalConst c -> ReductionBehaviour.get (ConstRef c)
 
 let reduce_projection env sigma p ~npars (recarg'hd,stack') stack =
   (match EConstr.kind sigma recarg'hd with
