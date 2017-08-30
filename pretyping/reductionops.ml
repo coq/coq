@@ -933,13 +933,13 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
          if not tactic_mode then
            let stack' = (c, Stack.Proj (p, Cst_stack.empty (*cst_l*)) :: stack) in
 	     whrec Cst_stack.empty stack'
-         else match ReductionBehaviour.get (Globnames.ConstRef (Projection.constant p)) with
-	 | None ->
+         else match Projection.unfolded p, ReductionBehaviour.get (Globnames.ConstRef (Projection.constant p)) with
+         | true, _ | _, None ->
            let stack' = (c, Stack.Proj (p, cst_l) :: stack) in
-	   let stack'', csts = whrec Cst_stack.empty stack' in
+           let stack'', csts = whrec Cst_stack.empty stack' in
 	     if equal_stacks sigma stack' stack'' then fold ()
 	     else stack'', csts
-	 | Some (recargs, nargs, flags) ->
+	 | false, Some (recargs, nargs, flags) ->
 	   if (List.mem `ReductionNeverUnfold flags
 	       || (nargs > 0 && Stack.args_size stack < (nargs - (npars + 1))))
 	   then fold ()
