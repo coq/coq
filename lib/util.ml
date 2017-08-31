@@ -38,8 +38,8 @@ let is_blank = function
 
 module Empty =
 struct
-  type t
-  let abort (x : t) = assert false
+  type t = { abort : 'a. 'a }
+  let abort (x : t) = x.abort
 end
 
 (* Strings *)
