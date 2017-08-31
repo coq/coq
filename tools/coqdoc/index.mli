@@ -41,7 +41,7 @@ type index_entry =
 val find : coq_module -> loc -> index_entry
 
 (* Find what data is referred to by some string in some coq module *)
-val find_string : coq_module -> string -> index_entry
+val find_string : string -> index_entry
 
 val add_module : coq_module -> unit
 

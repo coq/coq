@@ -77,7 +77,7 @@ let add_ref m loc m' sp id ty =
 
 let find m l = Hashtbl.find reftable (m, l)
 
-let find_string m s = let (m,s,t) = Hashtbl.find byidtable s in Ref (m,s,t)
+let find_string s = let (m,s,t) = Hashtbl.find byidtable s in Ref (m,s,t)
 
 (* Coq modules *)
 

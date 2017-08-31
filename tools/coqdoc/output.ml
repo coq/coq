@@ -431,7 +431,7 @@ module Latex = struct
       else if !Cdglobals.interpolate && !in_doc (* always a var otherwise *)
       then
 	try
-	  let tag = Index.find_string (get_module false) s in
+          let tag = Index.find_string s in
 	  reference (translate s) tag
 	with _ -> Tokens.output_tagged_ident_string s
       else Tokens.output_tagged_ident_string s
@@ -706,7 +706,7 @@ module Html = struct
       else if is_keyword s then
         printf "<span class=\"id\" title=\"keyword\">%s</span>" (translate s)
       else if !Cdglobals.interpolate && !in_doc (* always a var otherwise *) then
-	try reference (translate s) (Index.find_string (get_module false) s)
+        try reference (translate s) (Index.find_string s)
 	with Not_found -> Tokens.output_tagged_ident_string s
       else
 	Tokens.output_tagged_ident_string s
