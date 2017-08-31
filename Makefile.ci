@@ -22,7 +22,7 @@ CI_TARGETS=ci-all \
 
 .PHONY: $(CI_TARGETS)
 
-# Generic rule, we use make to easy travis integraton with mixed rules
+# Generic rule, we use make to ease travis integration with mixed rules
 $(CI_TARGETS): ci-%:
 	rm -f ci-$*.ok
 	+(./dev/ci/ci-$*.sh 2>&1 && touch ci-$*.ok) | tee time-of-build.log
