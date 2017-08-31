@@ -41,5 +41,5 @@ val globalize : Id.Set.t -> raw_tacexpr -> raw_tacexpr
 
 (** Errors *)
 
-val error_nargs_mismatch : Loc.t -> int -> int -> 'a
+val error_nargs_mismatch : Loc.t -> ltac_constructor -> int -> int -> 'a
 val error_nparams_mismatch : Loc.t -> int -> int -> 'a

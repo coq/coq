@@ -206,9 +206,10 @@ let loc_of_patexpr = function
 | CPatVar (loc, _) -> Option.default dummy_loc loc
 | CPatRef (loc, _, _) -> loc
 
-let error_nargs_mismatch loc nargs nfound =
-  user_err ~loc (str "Constructor expects " ++ int nargs ++
-    str " arguments, but is applied to " ++ int nfound ++
+let error_nargs_mismatch loc kn nargs nfound =
+  let cstr = Tac2env.shortest_qualid_of_constructor kn in
+  user_err ~loc (str "Constructor " ++ pr_qualid cstr ++ str " expects " ++
+    int nargs ++ str " arguments, but is applied to " ++ int nfound ++
     str " arguments")
 
 let error_nparams_mismatch loc nargs nfound =
@@ -924,8 +925,10 @@ and intern_case env loc e pl =
         let ids = List.map get_id args in
         let nids = List.length ids in
         let nargs = List.length arity in
-        let () =
-          if not (Int.equal nids nargs) then error_nargs_mismatch loc nargs nids
+        let () = match knc with
+        | Tuple n -> assert (n == nids)
+        | Other knc ->
+          if not (Int.equal nids nargs) then error_nargs_mismatch loc knc nargs nids
         in
         let fold env id tpe =
           (** Instantiate all arguments *)
@@ -993,7 +996,7 @@ and intern_case env loc e pl =
         let nids = List.length ids in
         let nargs = List.length data.cdata_args in
         let () =
-          if not (Int.equal nids nargs) then error_nargs_mismatch loc nargs nids
+          if not (Int.equal nids nargs) then error_nargs_mismatch loc knc nargs nids
         in
         let fold env id tpe =
           (** Instantiate all arguments *)
@@ -1033,7 +1036,7 @@ and intern_constructor env loc kn args = match kn with
     | None ->
       (GTacOpn (kn, args), ans)
   else
-    error_nargs_mismatch loc nargs (List.length args)
+    error_nargs_mismatch loc kn nargs (List.length args)
 | Tuple n ->
   assert (Int.equal n (List.length args));
   let types = List.init n (fun i -> GTypVar (fresh_id env)) in
