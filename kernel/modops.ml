@@ -265,7 +265,7 @@ let subst_structure subst = subst_structure subst do_delta_codom
 (* spiwack: here comes the function which takes care of importing
    the retroknowledge declared in the library *)
 (* lclrk : retroknowledge_action list, rkaction : retroknowledge action *)
-let add_retroknowledge mp =
+let add_retroknowledge =
   let perform rkaction env = match rkaction with
     | Retroknowledge.RKRegister (f, e) when (isConst e || isInd e) ->
       Environ.register env f e
@@ -309,7 +309,7 @@ and add_module mb linkinfo env =
   let env = Environ.shallow_add_module mb env in
   match mb.mod_type with
   |NoFunctor struc ->
-    add_retroknowledge mp mb.mod_retroknowledge
+    add_retroknowledge mb.mod_retroknowledge
       (add_structure mp struc mb.mod_delta linkinfo env)
   |MoreFunctor _ -> env
 
