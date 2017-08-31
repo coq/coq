@@ -378,7 +378,7 @@ let build_constant_declaration kn env result =
          str "Proof using " ++ declared_vars ++ fnl () ++
          str "to" ++ fnl () ++
          str "Proof using " ++ inferred_vars) in
-  let sort evn l =
+  let sort l =
     List.filter (fun decl ->
       let id = NamedDecl.get_id decl in
       List.exists (NamedDecl.get_id %> Names.Id.equal id) l)
@@ -411,7 +411,7 @@ let build_constant_declaration kn env result =
         [], def (* Empty section context: no need to check *)
     | Some declared ->
         (* We use the declared set and chain a check of correctness *)
-        sort env declared,
+        sort declared,
         match def with
         | Undef _ as x -> x (* nothing to check *)
         | Def cs as x ->
