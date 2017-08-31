@@ -92,14 +92,22 @@ let to_ident c = to_ext val_ident c
 let of_pattern c = of_ext val_pattern c
 let to_pattern c = to_ext val_pattern c
 
+let internal_err =
+  let open Names in
+  KerName.make2 Tac2env.coq_prefix (Label.of_id (Id.of_string "Internal"))
+
 (** FIXME: handle backtrace in Ltac2 exceptions *)
 let of_exn c = match fst c with
 | LtacError (kn, c) -> ValOpn (kn, c)
-| _ -> of_ext val_exn c
+| _ -> ValOpn (internal_err, [|of_ext val_exn c|])
 
 let to_exn c = match c with
-| ValOpn (kn, c) -> (LtacError (kn, c), Exninfo.null)
-| _ -> to_ext val_exn c
+| ValOpn (kn, c) ->
+  if Names.KerName.equal kn internal_err then
+    to_ext val_exn c.(0)
+  else
+    (LtacError (kn, c), Exninfo.null)
+| _ -> assert false
 
 let of_option f = function
 | None -> ValInt 0

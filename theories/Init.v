@@ -46,6 +46,12 @@ Ltac2 Type 'a result := [ Val ('a) | Err (exn) ].
 
 (** Pervasive exceptions *)
 
+Ltac2 Type err.
+(** Coq internal errors. Cannot be constructed, merely passed around. *)
+
+Ltac2 Type exn ::= [ Internal (err) ].
+(** Wrapper around the errors raised by Coq implementation. *)
+
 Ltac2 Type exn ::= [ Out_of_bounds ].
 (** Used for bound checking, e.g. with String and Array. *)
 
