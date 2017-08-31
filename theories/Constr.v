@@ -31,7 +31,7 @@ Ltac2 Type kind := [
 | App (constr, constr array)
 | Constant (constant, instance)
 | Ind (inductive, instance)
-| Constructor (inductive, instance)
+| Constructor (constructor, instance)
 | Case (constr, constr, constr array)
 | Fix (int array, int, ident option array, constr array, constr array)
 | CoFix (int, ident option array, constr array, constr array)
