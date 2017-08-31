@@ -115,7 +115,7 @@ let string_of_genarg_arg (ArgumentType arg) =
   let keyword x = tag_keyword (str x)
   let primitive x = tag_primitive (str x)
 
-  let has_type (Val.Dyn (tag, x)) t = match Val.eq tag t with
+  let has_type (Val.Dyn (tag, _)) t = match Val.eq tag t with
   | None -> false
   | Some _ -> true
 
@@ -188,7 +188,7 @@ let string_of_genarg_arg (ArgumentType arg) =
     | AN v -> f v
     | ByNotation (s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc)
 
-  let pr_located pr (loc,x) = pr x
+  let pr_located pr (_,x) = pr x
 
   let pr_evaluable_reference = function
     | EvalVarRef id -> pr_id id
@@ -240,7 +240,7 @@ let string_of_genarg_arg (ArgumentType arg) =
     in
     pr_sequence (fun x -> x) l
 
-  let pr_extend_gen pr_gen lev { mltac_name = s; mltac_index = i } l =
+  let pr_extend_gen pr_gen _ { mltac_name = s; mltac_index = i } l =
       let name =
         str s.mltac_plugin ++ str "::" ++ str s.mltac_tactic ++
         str "@" ++ int i
@@ -260,7 +260,7 @@ let string_of_genarg_arg (ArgumentType arg) =
   | Extend.Uentry tag ->
     let ArgT.Any tag = tag in
     ArgT.repr tag
-  | Extend.Uentryl (tkn, lvl) -> "tactic" ^ string_of_int lvl
+  | Extend.Uentryl (_, lvl) -> "tactic" ^ string_of_int lvl
 
   let pr_alias_key key =
     try
@@ -288,7 +288,7 @@ let string_of_genarg_arg (ArgumentType arg) =
       let p = pr_tacarg_using_rule pr_gen prods in
       if pp.pptac_level > lev then surround p else p
     with Not_found ->
-      let pr arg = str "_" in
+      let pr _ = str "_" in
       KerName.print key ++ spc() ++ pr_sequence pr l ++ str" (* Generic printer *)"
 
   let pr_farg prtac arg = prtac (1, Any) (TacArg (Loc.tag arg))
@@ -341,14 +341,14 @@ let string_of_genarg_arg (ArgumentType arg) =
       pr_any_arg pr symb arg
     | _ -> str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
 
-  let pr_raw_extend_rec prc prlc prtac prpat =
+  let pr_raw_extend_rec prtac =
     pr_extend_gen (pr_farg prtac)
-  let pr_glob_extend_rec prc prlc prtac prpat =
+  let pr_glob_extend_rec prtac =
     pr_extend_gen (pr_farg prtac)
 
-  let pr_raw_alias prc prlc prtac prpat lev key args =
+  let pr_raw_alias prtac lev key args =
     pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.tag a)))) lev key args
-  let pr_glob_alias prc prlc prtac prpat lev key args =
+  let pr_glob_alias prtac lev key args =
     pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.tag a)))) lev key args
 
   (**********************************************************************)
@@ -743,7 +743,7 @@ let pr_goal_selector ~toplevel s =
       (* Main tactic printer *)
       and pr_atom1 a = tag_atom a (match a with
         (* Basic tactics *)
-        | TacIntroPattern (ev,[]) as t ->
+        | TacIntroPattern (_,[]) as t ->
           pr_atom0 t
         | TacIntroPattern (ev,(_::_ as p)) ->
            hov 1 (primitive (if ev then "eintros" else "intros") ++
@@ -1054,7 +1054,7 @@ let pr_goal_selector ~toplevel s =
               primitive "fresh" ++ pr_fresh_ids l, latom
             | TacArg(_,TacGeneric arg) ->
               pr.pr_generic arg, latom
-            | TacArg(_,TacCall(loc,(f,[]))) ->
+            | TacArg(_,TacCall(_,(f,[]))) ->
               pr.pr_reference f, latom
             | TacArg(_,TacCall(loc,(f,l))) ->
               pr_with_comments ?loc (hov 1 (
@@ -1112,8 +1112,8 @@ let pr_goal_selector ~toplevel s =
       pr_reference = pr_qualid;
       pr_name = pr_lident;
       pr_generic = (fun arg -> Pputils.pr_raw_generic (Global.env ()) arg);
-      pr_extend = pr_raw_extend_rec pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr;
-      pr_alias = pr_raw_alias pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr;
+      pr_extend = pr_raw_extend_rec pr_raw_tactic_level;
+      pr_alias = pr_raw_alias pr_raw_tactic_level;
     } in
     make_pr_tac
       pr raw_printers
@@ -1142,12 +1142,8 @@ let pr_goal_selector ~toplevel s =
         pr_reference = pr_ltac_or_var (pr_located pr_ltac_constant);
         pr_name = pr_lident;
         pr_generic = (fun arg -> Pputils.pr_glb_generic (Global.env ()) arg);
-        pr_extend = pr_glob_extend_rec
-          (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
-          prtac (pr_pat_and_constr_expr (pr_glob_constr_env env));
-        pr_alias = pr_glob_alias
-          (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
-          prtac (pr_pat_and_constr_expr (pr_glob_constr_env env));
+        pr_extend = pr_glob_extend_rec prtac;
+        pr_alias = pr_glob_alias prtac;
       } in
       make_pr_tac
         pr glob_printers
@@ -1168,8 +1164,8 @@ let pr_goal_selector ~toplevel s =
         | _ -> user_err Pp.(str "Cannot translate fix tactic: not enough products") in
     strip_ty [] n ty
 
-  let pr_atomic_tactic_level env sigma n t =
-    let prtac n (t:atomic_tactic_expr) =
+  let pr_atomic_tactic_level env sigma t =
+    let prtac (t:atomic_tactic_expr) =
       let pr = {
         pr_tactic = (fun _ _ -> str "<tactic>");
         pr_constr = (fun c -> pr_econstr_env env sigma c);
@@ -1188,18 +1184,15 @@ let pr_goal_selector ~toplevel s =
       in
       pr_atom pr strip_prod_binders_constr tag_atomic_tactic_expr t
     in
-    prtac n t
+    prtac t
 
   let pr_raw_generic = Pputils.pr_raw_generic
 
   let pr_glb_generic = Pputils.pr_glb_generic
 
-  let pr_raw_extend env = pr_raw_extend_rec
-    pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr
+  let pr_raw_extend _ = pr_raw_extend_rec pr_raw_tactic_level
 
-  let pr_glob_extend env = pr_glob_extend_rec
-    (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
-    (pr_glob_tactic_level env) (pr_pat_and_constr_expr (pr_glob_constr_env env))
+  let pr_glob_extend env = pr_glob_extend_rec (pr_glob_tactic_level env)
 
   let pr_alias pr lev key args =
     pr_alias_gen (fun _ arg -> pr arg) lev key args
@@ -1207,14 +1200,14 @@ let pr_goal_selector ~toplevel s =
   let pr_extend pr lev ml args =
     pr_extend_gen pr lev ml args
 
-  let pr_atomic_tactic env sigma c = pr_atomic_tactic_level env sigma ltop c
+  let pr_atomic_tactic env sigma c = pr_atomic_tactic_level env sigma c
 
 let declare_extra_genarg_pprule wit
   (f : 'a raw_extra_genarg_printer)
   (g : 'b glob_extra_genarg_printer)
   (h : 'c extra_genarg_printer) =
   begin match wit with
-    | ExtraArg s -> ()
+    | ExtraArg _ -> ()
     | _          -> user_err Pp.(str "Can declare a pretty-printing rule only for extra argument types.")
   end;
   let f x =
