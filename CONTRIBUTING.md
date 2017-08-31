@@ -22,7 +22,7 @@ If you want to minimize your bug (or help minimize someone else's) for more extr
 
 If you want to contribute a bug fix or feature yourself, pull requests on the [GitHub repository](https://github.com/coq/coq) are the way to contribute directly to the Coq implementation. We recommend you create a fork of the repository on GitHub and push your changes to a new "topic branch" in that fork. From there you can follow the [GitHub pull request documentation](https://help.github.com/articles/about-pull-requests/) to get your changes reviewed and pulled into the Coq source repository.
 
-Documentation for getting started with the Coq sources is located in various files in [`dev/doc`](/dev/doc) (for example, [debugging.txt](/dev/doc/debugging.txt)). For further help with the Coq sources, feel free to join the [Coq Gitter chat](https://gitter.im/coq/coq) and ask questions.
+Documentation for getting started with the Coq sources is located in various files in [`dev/doc`](/dev/doc) (for example, [debugging.md](/dev/doc/debugging.md)). For further help with the Coq sources, feel free to join the [Coq Gitter chat](https://gitter.im/coq/coq) and ask questions.
 
 Please make pull requests against the `master` branch.
 
