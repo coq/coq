@@ -410,8 +410,19 @@ let clear_handle h =
 let mkready coqtop =
   fun () -> coqtop.status <- Ready; Void
 
+let save_all = ref (fun () -> assert false)
+
 let rec respawn_coqtop ?(why=Unexpected) coqtop =
-  if why = Unexpected then warning "Coqtop died badly. Resetting.";
+  let () = match why with
+  | Unexpected ->
+    let title = "Warning" in
+    let icon = (warn_image ())#coerce in
+    let buttons = ["Reset"; "Save all and quit"; "Quit without saving"] in
+    let ans = GToolbox.question_box ~title ~buttons ~icon "Coqtop died badly." in
+    if ans = 2 then (!save_all (); GtkMain.Main.quit ())
+    else if ans = 3 then GtkMain.Main.quit ()
+  | Planned -> ()
+  in
   clear_handle coqtop.handle;
   ignore_error (fun () ->
      coqtop.handle <-

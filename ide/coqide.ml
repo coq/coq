@@ -284,6 +284,8 @@ let saveall _ =
       | Some f -> ignore (sn.fileops#save f))
     notebook#pages
 
+let () = Coq.save_all := saveall
+
 let revert_all _ =
   List.iter
     (fun sn -> if sn.fileops#changed_on_disk then sn.fileops#revert)
