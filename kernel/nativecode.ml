@@ -1941,7 +1941,7 @@ let is_code_loaded ~interactive name =
 let param_name = Name (Id.of_string "params")
 let arg_name = Name (Id.of_string "arg")
 
-let compile_mind prefix ~interactive mb mind stack =
+let compile_mind mb mind stack =
   let u = Declareops.inductive_polymorphic_context mb in
   (** Generate data for every block *)
   let f i stack ob =
@@ -2020,7 +2020,7 @@ let compile_mind_deps env prefix ~interactive
   then init
   else
     let comp_stack =
-      compile_mind prefix ~interactive mib mind comp_stack
+      compile_mind mib mind comp_stack
     in
     let name =
       if interactive then LinkedInteractive prefix
@@ -2092,9 +2092,9 @@ let compile_constant_field env prefix con acc cb =
     in
     gl@acc
 
-let compile_mind_field prefix mp l acc mb =
+let compile_mind_field mp l acc mb =
   let mind = MutInd.make2 mp l in
-  compile_mind prefix ~interactive:false mb mind acc
+  compile_mind mb mind acc
 
 let mk_open s = Gopen s
 
