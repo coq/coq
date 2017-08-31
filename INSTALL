@@ -29,11 +29,8 @@ WHAT DO YOU NEED ?
 
    To compile Coq V8.6 yourself, you need:
 
-   - OCaml version 4.02.1 or later
+   - OCaml version 4.02.3 or later
      (available at http://caml.inria.fr/)
-
-     OCaml version 4.02.0 is not supported because of a severe performance
-     issue increasing compilation time.
 
    - Findlib (included in OCaml binary distribution under windows,
      probably available in your distribution and for sure at
@@ -63,7 +60,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    computer and that "ocamlc" (or, better, its native code version
    "ocamlc.opt") lies in a directory which is present in your $PATH
    environment variable. At the time of writing this sentence, all
-   versions of Objective Caml later or equal to 4.02.1 are
+   versions of Objective Caml later or equal to 4.02.3 are
    supported.
 
    To get Coq in native-code, (it runs 4 to 10 times faster than
