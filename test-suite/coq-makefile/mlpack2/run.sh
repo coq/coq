@@ -15,6 +15,7 @@ sort > desired <<EOT
 ./test/test.glob
 ./test/test_plugin.cmi
 ./test/test_plugin.cmx
+./test/test_plugin.cmxa
 ./test/test_plugin.cmxs
 ./test/test.v
 ./test/test.vo
