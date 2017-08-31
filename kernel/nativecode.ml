@@ -1649,15 +1649,15 @@ let pp_mllam fmt l =
 
   and pp_letrec fmt defs =
     let len = Array.length defs in
-    let pp_one_rec i (fn, argsn, body) =
+    let pp_one_rec (fn, argsn, body) =
       Format.fprintf fmt "%a%a =@\n  %a"
 	pp_lname fn 
 	pp_ldecls argsn pp_mllam body in
     Format.fprintf fmt "@[let rec ";
-    pp_one_rec 0 defs.(0);
+    pp_one_rec defs.(0);
     for i = 1 to len - 1 do
       Format.fprintf fmt "@\nand ";
-      pp_one_rec i defs.(i)
+      pp_one_rec defs.(i)
     done;
 
   and pp_blam fmt l =
