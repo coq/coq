@@ -98,7 +98,7 @@ let declare_object_full odecl = declare_object_full odecl
 (* this function describes how the cache, load, open, and export functions
    are triggered. *)
 
-let apply_dyn_fun deflt f lobj =
+let apply_dyn_fun f lobj =
   let tag = object_tag lobj in
   let dodecl =
     try Hashtbl.find cache_tab tag
@@ -107,24 +107,24 @@ let apply_dyn_fun deflt f lobj =
   f dodecl
 
 let cache_object ((_,lobj) as node) =
-  apply_dyn_fun () (fun d -> d.dyn_cache_function node) lobj
+  apply_dyn_fun (fun d -> d.dyn_cache_function node) lobj
 
 let load_object i ((_,lobj) as node) =
-  apply_dyn_fun () (fun d -> d.dyn_load_function i node) lobj
+  apply_dyn_fun (fun d -> d.dyn_load_function i node) lobj
 
 let open_object i ((_,lobj) as node) =
-  apply_dyn_fun () (fun d -> d.dyn_open_function i node) lobj
+  apply_dyn_fun (fun d -> d.dyn_open_function i node) lobj
 
 let subst_object ((_,lobj) as node) = 
-  apply_dyn_fun lobj (fun d -> d.dyn_subst_function node) lobj
+  apply_dyn_fun (fun d -> d.dyn_subst_function node) lobj
 
 let classify_object lobj =
-  apply_dyn_fun Dispose (fun d -> d.dyn_classify_function lobj) lobj
+  apply_dyn_fun (fun d -> d.dyn_classify_function lobj) lobj
 
 let discharge_object ((_,lobj) as node) =
-  apply_dyn_fun None (fun d -> d.dyn_discharge_function node) lobj
+  apply_dyn_fun (fun d -> d.dyn_discharge_function node) lobj
 
 let rebuild_object lobj =
-  apply_dyn_fun lobj (fun d -> d.dyn_rebuild_function lobj) lobj
+  apply_dyn_fun (fun d -> d.dyn_rebuild_function lobj) lobj
 
 let dump = Dyn.dump
