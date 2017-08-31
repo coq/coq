@@ -15,6 +15,7 @@ Require Ltac2.Array.
 Require Ltac2.Message.
 Require Ltac2.Constr.
 Require Ltac2.Control.
+Require Ltac2.Fresh.
 Require Ltac2.Pattern.
 Require Ltac2.Std.
 Require Ltac2.Notations.
