@@ -2501,14 +2501,14 @@ let compile_program_cases ?loc style (typing_function, evdref) tycon env lvar
 
   in
   let tycon, arity =
+    let nar = List.fold_left (fun n sign -> List.length sign + n) 0 sign in
     match tycon' with
-    | None -> let ev = mkExistential env evdref in ev, ev
+    | None -> let ev = mkExistential env evdref in ev, lift nar ev
     | Some t ->
 	let pred =
 	  match prepare_predicate_from_arsign_tycon env !evdref loc tomatchs sign t with
 	  | Some (evd, pred) -> evdref := evd; pred
 	  | None ->
-	     let nar = List.fold_left (fun n sign -> List.length sign + n) 0 sign in
 	       lift nar t
 	in Option.get tycon, pred
   in
