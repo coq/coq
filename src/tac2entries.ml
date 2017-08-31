@@ -307,6 +307,10 @@ let inline_rec_tactic tactics =
   in
   List.map map tactics
 
+let check_lowercase (loc, id) =
+  if Tac2env.is_constructor (Libnames.qualid_of_ident id) then
+    user_err ?loc (str "The identifier " ++ Id.print id ++ str " must be lowercase")
+
 let register_ltac ?(local = false) ?(mut = false) isrec tactics =
   let map ((loc, na), e) =
     let id = match na with
@@ -314,6 +318,7 @@ let register_ltac ?(local = false) ?(mut = false) isrec tactics =
       user_err ?loc (str "Tactic definition must have a name")
     | Name id -> id
     in
+    let () = check_lowercase (loc, id) in
     ((loc, id), e)
   in
   let tactics = List.map map tactics in
@@ -648,8 +653,9 @@ let inTac2Abbreviation : abbreviation -> obj =
      classify_function = classify_abbreviation}
 
 let register_notation ?(local = false) tkn lev body = match tkn, lev with
-| [SexprRec (_, (_, Some id), [])], None ->
+| [SexprRec (_, (loc, Some id), [])], None ->
   (** Tactic abbreviation *)
+  let () = check_lowercase (loc, id) in
   let body = Tac2intern.globalize Id.Set.empty body in
   let abbr = { abbr_body = body } in
   ignore (Lib.add_leaf id (inTac2Abbreviation abbr))
