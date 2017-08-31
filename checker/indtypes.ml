@@ -221,7 +221,7 @@ let allowed_sorts issmall isunit s =
 
 
 
-let compute_elim_sorts env_ar params mib arity lc =
+let compute_elim_sorts env_ar params arity lc =
   let inst = extended_rel_list 0 params in
   let env_params = push_rel_context params env_ar in
   let lc = Array.map
@@ -239,7 +239,7 @@ let compute_elim_sorts env_ar params mib arity lc =
   allowed_sorts small unit s
 
 
-let typecheck_one_inductive env params mib mip =
+let typecheck_one_inductive env params mip =
   (* mind_typename and mind_consnames not checked *)
   (* mind_reloc_tbl, mind_nb_constant, mind_nb_args not checked (VM) *)
   (* mind_arity_ctxt, mind_arity, mind_nrealargs DONE (typecheck_arity) *)
@@ -256,7 +256,7 @@ let typecheck_one_inductive env params mib mip =
   Array.iter2 check_cons_args mip.mind_nf_lc mip.mind_consnrealdecls;
   (* mind_kelim: checked by positivity criterion ? *)
   let sorts =
-    compute_elim_sorts env params mib mip.mind_arity mip.mind_nf_lc in
+    compute_elim_sorts env params mip.mind_arity mip.mind_nf_lc in
   let reject_sort s = not (List.mem_f family_equal s sorts) in
   if List.exists reject_sort mip.mind_kelim then
     failwith "elimination not allowed";
@@ -355,7 +355,7 @@ let lambda_implicit_lift n a =
 
 (* This removes global parameters of the inductive types in lc (for
    nested inductive types only ) *)
-let abstract_mind_lc env ntyps npars lc =
+let abstract_mind_lc ntyps npars lc =
   if npars = 0 then
     lc
   else
@@ -448,7 +448,7 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp (_,i as ind) indlc
       let auxntyp = mib.mind_ntypes in
 	if auxntyp <> 1 then raise (IllFormedInd (LocalNonPos n));
 	(* The nested inductive type with parameters removed *)
-	let auxlcvect = abstract_mind_lc env auxntyp auxnpar mip.mind_nf_lc in
+        let auxlcvect = abstract_mind_lc auxntyp auxnpar mip.mind_nf_lc in
 	  (* Extends the environment with a variable corresponding to
 	     the inductive def *)
 	let (env',_,_,_ as ienv') = ienv_push_inductive ienv ((mi,u),lpar) in
@@ -625,7 +625,7 @@ let check_inductive env kn mib =
   (*  - check arities *)
   let env_ar = typecheck_arity env0 params mib.mind_packets in
   (*  - check constructor types *)
-  Array.iter (typecheck_one_inductive env_ar params mib) mib.mind_packets;
+  Array.iter (typecheck_one_inductive env_ar params) mib.mind_packets;
   (* check the inferred subtyping relation *)
   let () = 
     match mib.mind_universes with
