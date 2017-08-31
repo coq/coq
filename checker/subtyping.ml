@@ -217,7 +217,7 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
   let _ = Array.map2_i check_cons_types mib1.mind_packets mib2.mind_packets
   in ()
 
-let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
+let check_constant env l info1 cb2 spec2 subst1 subst2 =
   let error () = error_not_match l spec2 in
   let check_conv f = check_conv_error error f in
   let check_type env t1 t2 = check_conv conv_leq env t1 t2 in
@@ -281,7 +281,7 @@ and check_signatures env mp1 sig1 sig2 subst1 subst2 =
   let check_one_body  (l,spec2) =
       match spec2 with
 	| SFBconst cb2 ->
-	    check_constant  env mp1 l (get_obj mp1 map1 l)
+            check_constant env l (get_obj mp1 map1 l)
 	      cb2 spec2 subst1 subst2
 	| SFBmind mib2 ->
 	    check_inductive env mp1 l (get_obj mp1 map1 l)
