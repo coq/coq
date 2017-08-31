@@ -283,8 +283,7 @@ let rev_of_list = function
   let () = set (len - 1) l in
   ans
 
-let map_to_list f v =
-  List.map f (Array.to_list v)
+let map_to_list = CList.map_of_array
 
 let map_of_list f l =
   let len = List.length l in

@@ -53,7 +53,7 @@ sig
       [Invalid_argument "List.make"] if [n] is negative. *)
 
   val assign : 'a list -> int -> 'a -> 'a list
-  (** [assign l i x] set the [i]-th element of [l] to [x], starting from [0]. *)
+  (** [assign l i x] sets the [i]-th element of [l] to [x], starting from [0]. *)
 
   val distinct : 'a list -> bool
   (** Return [true] if all elements of the list are distinct. *)
@@ -90,6 +90,9 @@ sig
     'd list -> 'e list
   val filteri : (int -> 'a -> bool) -> 'a list -> 'a list
   val partitioni : (int -> 'a -> bool) -> 'a list -> 'a list * 'a list
+
+  val map_of_array : ('a -> 'b) -> 'a array -> 'b list
+  (** [map_of_array f a] behaves as [List.map f (Array.to_list a)] *)
 
   val smartfilter : ('a -> bool) -> 'a list -> 'a list
   (** [smartfilter f [a1...an] = List.filter f [a1...an]] but if for all i
