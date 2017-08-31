@@ -557,6 +557,12 @@ let match_eval_ref_value env sigma constr stack =
       Some (EConstr.of_constr (constant_value_in env (sp, u)))
     else
       None
+  | Proj (p, c) when not (Projection.unfolded p) ->
+     reduction_effect_hook env sigma (EConstr.to_constr sigma constr)
+        (lazy (EConstr.to_constr sigma (applist (constr,stack))));
+     if is_evaluable env (EvalConstRef (Projection.constant p)) then
+       Some (mkProj (Projection.unfold p, c))
+     else None
   | Var id when is_evaluable env (EvalVarRef id) -> 
      env |> lookup_named id |> NamedDecl.get_value
   | Rel n ->
