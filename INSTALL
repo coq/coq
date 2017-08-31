@@ -27,7 +27,7 @@ WHAT DO YOU NEED ?
 
      port install coq
 
-   To compile Coq V8.6 yourself, you need:
+   To compile Coq yourself, you need:
 
    - OCaml version 4.02.3 or later
      (available at http://caml.inria.fr/)
