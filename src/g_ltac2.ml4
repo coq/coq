@@ -650,6 +650,7 @@ END
 
 (** Extension of constr syntax *)
 
+let () = Hook.set Tac2entries.register_constr_quotations begin fun () ->
 GEXTEND Gram
   Pcoq.Constr.operconstr: LEVEL "0"
     [ [ IDENT "ltac2"; ":"; "("; tac = tac2expr; ")" ->
@@ -666,6 +667,7 @@ GEXTEND Gram
     ] ]
   ;
 END
+end
 
 let pr_ltac2entry _ = mt () (** FIXME *)
 let pr_ltac2expr _ = mt () (** FIXME *)

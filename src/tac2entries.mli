@@ -72,3 +72,7 @@ val q_occurrences : occurrences Pcoq.Gram.entry
 val q_reference : Libnames.reference or_anti Pcoq.Gram.entry
 val q_strategy_flag : strategy_flag Pcoq.Gram.entry
 end
+
+(** {5 Hooks} *)
+
+val register_constr_quotations : (unit -> unit) Hook.t

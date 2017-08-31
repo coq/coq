@@ -819,10 +819,22 @@ let def_unit = {
 
 let t_list = coq_def "list"
 
+let (f_register_constr_quotations, register_constr_quotations) = Hook.make ()
+
+let perform_constr_quotations (_, ()) = Hook.get f_register_constr_quotations ()
+
+(** Dummy object that register global rules when Require is called *)
+let inTac2ConstrQuotations : unit -> obj =
+  declare_object {(default_object "TAC2-CONSTR-QUOT") with
+    cache_function = perform_constr_quotations;
+    load_function = fun _ -> perform_constr_quotations;
+  }
+
 let _ = Mltop.declare_cache_obj begin fun () ->
   ignore (Lib.add_leaf (Id.of_string "unit") (inTypDef def_unit));
   register_prim_alg "list" 1 [
     ("[]", []);
     ("::", [GTypVar 0; GTypRef (Other t_list, [GTypVar 0])]);
   ];
+  Lib.add_anonymous_leaf (inTac2ConstrQuotations ());
 end "ltac2_plugin"
