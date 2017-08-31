@@ -797,7 +797,7 @@ let rec subterm_specif renv stack t =
 
       | Lambda (x,a,b) ->
           assert (l=[]);
-	  let spec,stack' = extract_stack renv a stack in
+          let spec,stack' = extract_stack stack in
 	    subterm_specif (push_var renv (x,a,spec)) stack' b
 
       (* Metas and evars are considered OK *)
@@ -813,7 +813,7 @@ and stack_element_specif = function
   |SClosure (h_renv,h) -> lazy_subterm_specif h_renv [] h
   |SArg x -> x
 
-and extract_stack renv a = function
+and extract_stack = function
   | [] -> Lazy.from_val Not_subterm , []
   | h::t -> stack_element_specif h, t
 
@@ -845,7 +845,7 @@ let error_illegal_rec_call renv fx (arg_renv,arg) =
 let error_partial_apply renv fx =
   raise (FixGuardError (renv.env,NotEnoughArgumentsForFixCall fx))
 
-let filter_stack_domain env ci p stack =
+let filter_stack_domain env p stack =
   let absctx, ar = dest_lam_assum env p in
   (* Optimization: if the predicate is not dependent, no restriction is needed
      and we avoid building the recargs tree. *)
@@ -925,7 +925,7 @@ let check_one_fix renv recpos trees def =
             let case_spec = branches_specif renv 
 	      (lazy_subterm_specif renv [] c_0) ci in
 	    let stack' = push_stack_closures renv l stack in
-        let stack' = filter_stack_domain renv.env ci p stack' in
+        let stack' = filter_stack_domain renv.env p stack' in
               Array.iteri (fun k br' -> 
 			     let stack_br = push_stack_args case_spec.(k) stack' in
 			     check_rec_call renv stack_br br') lrest
@@ -968,7 +968,7 @@ let check_one_fix renv recpos trees def =
         | Lambda (x,a,b) ->
 	    assert (l = []);
 	    check_rec_call renv [] a ;
-	    let spec, stack' = extract_stack renv a stack in
+            let spec, stack' = extract_stack stack in
 	    check_rec_call (push_var renv (x,a,spec)) stack' b
 
         | Prod (x,a,b) ->
