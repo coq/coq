@@ -149,6 +149,15 @@ let coqpath =
   in
   make_search_path coqpath
 
+let coq_version () =
+  try
+    let ch = open_in (coqlib () / "revision") in
+    let version = input_line ch in
+    let branch = input_line ch in
+    let () = close_in ch in
+    (version,branch)
+  with _ -> (Coq_config.version, Coq_config.date)
+
 (** {2 Caml paths} *)
 
 let exe s = s ^ Coq_config.exec_extension

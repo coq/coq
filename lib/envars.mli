@@ -53,6 +53,10 @@ val coqroot : string
     the order it gets added to the search path. *)
 val coqpath : string list
 
+(** [coq_version] returns the version and branch strings, determined using the
+    revision file if found. *)
+val coq_version : unit -> string * string
+
 (** [camlfind ()] is the path to the ocamlfind binary. *)
 val ocamlfind : unit -> string
 

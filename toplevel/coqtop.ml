@@ -12,7 +12,7 @@ open Coqargs
 let () = at_exit flush_all
 
 let print_header () =
-  let (ver,branch) = Coqinit.get_version () in
+  let (ver,branch) = Envars.coq_version () in
   Feedback.msg_notice (str "Welcome to Coq " ++ str ver ++ str " (" ++ str branch ++ str ")");
   flush_all ()
 

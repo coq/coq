@@ -19,6 +19,3 @@ val toplevel_init_load_path : unit ->  Mltop.coq_path list
 
 (* LoadPath for Coq user libraries *)
 val libs_init_load_path : load_init:bool -> Mltop.coq_path list
-
-(** [get_version] returns the version and branch strings *)
-val get_version : unit -> string * string
