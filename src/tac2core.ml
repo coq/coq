@@ -647,6 +647,7 @@ let () = define1 "case" begin fun f ->
   Proofview.tclCASE (thaw f) >>= begin function
   | Proofview.Next (x, k) ->
     let k = {
+      clos_ref = None;
       clos_env = Id.Map.singleton k_var (Value.of_ext Value.val_kont k);
       clos_var = [Name e_var];
       clos_exp = GTacPrm (prm_apply_kont_h, [GTacVar k_var; GTacVar e_var]);

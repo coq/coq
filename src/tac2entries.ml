@@ -792,7 +792,7 @@ let call ~default e =
   let loc = loc_of_tacexpr e in
   let (e, t) = intern e in
   let () = check_unit ?loc t in
-  let tac = Tac2interp.interp Id.Map.empty e in
+  let tac = Tac2interp.interp Tac2interp.empty_environment e in
   solve default (Proofview.tclIGNORE tac)
 
 (** Primitive algebraic types than can't be defined Coq-side *)

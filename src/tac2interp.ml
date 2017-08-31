@@ -47,7 +47,7 @@ let rec interp ist = function
 | GTacVar id -> return (get_var ist id)
 | GTacRef qid -> return (get_ref ist qid)
 | GTacFun (ids, e) ->
-  let cls = { clos_env = ist; clos_var = ids; clos_exp = e } in
+  let cls = { clos_ref = None; clos_env = ist; clos_var = ids; clos_exp = e } in
   return (ValCls cls)
 | GTacApp (f, args) ->
   interp ist f >>= fun f ->
@@ -63,7 +63,7 @@ let rec interp ist = function
 | GTacLet (true, el, e) ->
   let map (na, e) = match e with
   | GTacFun (ids, e) ->
-    let cls = { clos_env = ist; clos_var = ids; clos_exp = e } in
+    let cls = { clos_ref = None; clos_env = ist; clos_var = ids; clos_exp = e } in
     na, cls
   | _ -> anomaly (str "Ill-formed recursive function")
   in
@@ -102,12 +102,12 @@ let rec interp ist = function
   tpe.Tac2env.ml_interp ist e
 
 and interp_app f args = match f with
-| ValCls { clos_env = ist; clos_var = ids; clos_exp = e } ->
+| ValCls { clos_env = ist; clos_var = ids; clos_exp = e; clos_ref = kn } ->
   let rec push ist ids args = match ids, args with
   | [], [] -> interp ist e
   | [], _ :: _ -> interp ist e >>= fun f -> interp_app f args
   | _ :: _, [] ->
-    let cls = { clos_env = ist; clos_var = ids; clos_exp = e } in
+    let cls = { clos_ref = kn; clos_env = ist; clos_var = ids; clos_exp = e } in
     return (ValCls cls)
   | id :: ids, arg :: args -> push (push_name ist id arg) ids args
   in

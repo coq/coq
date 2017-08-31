@@ -201,6 +201,8 @@ and closure = {
   (** Bound variables *)
   clos_exp : glb_tacexpr;
   (** Body *)
+  clos_ref : ltac_constant option;
+  (** Global constant from which the closure originates *)
 }
 
 type ml_tactic = valexpr list -> valexpr Proofview.tactic
