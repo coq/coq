@@ -27,7 +27,7 @@ match Control.case t with
   Control.plus (fun _ => s x) (fun e => s (k e))
 end.
 
-Ltac2 fail0 (_ : unit) := Control.enter (fun _ => Control.zero Tactic_failure).
+Ltac2 fail0 (_ : unit) := Control.enter (fun _ => Control.zero (Tactic_failure None)).
 
 Ltac2 Notation fail := fail0 ().
 
@@ -69,7 +69,7 @@ Ltac2 Notation progress := progress0.
 
 Ltac2 rec first0 tacs :=
 match tacs with
-| [] => Control.zero Tactic_failure
+| [] => Control.zero (Tactic_failure None)
 | tac :: tacs => Control.enter (fun _ => orelse tac (fun _ => first0 tacs))
 end.
 
@@ -77,12 +77,12 @@ Ltac2 Notation "first" "[" tacs(list0(thunk(tactic(6)), "|")) "]" := first0 tacs
 
 Ltac2 complete tac :=
   let ans := tac () in
-  Control.enter (fun () => Control.zero Tactic_failure);
+  Control.enter (fun () => Control.zero (Tactic_failure None));
   ans.
 
 Ltac2 rec solve0 tacs :=
 match tacs with
-| [] => Control.zero Tactic_failure
+| [] => Control.zero (Tactic_failure None)
 | tac :: tacs =>
   Control.enter (fun _ => orelse (fun _ => complete tac) (fun _ => solve0 tacs))
 end.

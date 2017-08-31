@@ -7,6 +7,6 @@ let x := Control.plus
   (fun e => match e with Not_found => 1 | _ => 2 end) in
 match Int.equal x 2 with
 | true => ()
-| false => Control.throw Tactic_failure
+| false => Control.throw (Tactic_failure None)
 end.
 Abort.
