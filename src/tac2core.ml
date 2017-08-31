@@ -61,14 +61,31 @@ let of_name c = match c with
 | Anonymous -> Value.of_option Value.of_ident None
 | Name id -> Value.of_option Value.of_ident (Some id)
 
-let of_instance sigma u =
-  let u = Univ.Instance.to_array (EConstr.EInstance.kind sigma u) in
+let to_name c = match Value.to_option Value.to_ident c with
+| None -> Anonymous
+| Some id -> Name id
+
+let of_instance u =
+  let u = Univ.Instance.to_array (EConstr.Unsafe.to_instance u) in
   Value.of_array (fun v -> Value.of_ext Value.val_univ v) u
+
+let to_instance u =
+  let u = Value.to_array (fun v -> Value.to_ext Value.val_univ v) u in
+  EConstr.EInstance.make (Univ.Instance.of_array u)
 
 let of_rec_declaration (nas, ts, cs) =
   (Value.of_array of_name nas,
   Value.of_array Value.of_constr ts,
   Value.of_array Value.of_constr cs)
+
+let to_rec_declaration (nas, ts, cs) =
+  (Value.to_array to_name nas,
+  Value.to_array Value.to_constr ts,
+  Value.to_array Value.to_constr cs)
+
+let of_result f = function
+| Inl c -> ValBlk (0, [|f c|])
+| Inr e -> ValBlk (1, [|Value.of_exn e|])
 
 (** Stdlib exceptions *)
 
@@ -335,20 +352,21 @@ let () = define1 "constr_kind" begin fun c ->
   | Const (cst, u) ->
     ValBlk (10, [|
       Value.of_constant cst;
-      of_instance sigma u;
+      of_instance u;
     |])
   | Ind (ind, u) ->
     ValBlk (11, [|
       Value.of_ext Value.val_inductive ind;
-      of_instance sigma u;
+      of_instance u;
     |])
   | Construct (cstr, u) ->
     ValBlk (12, [|
       Value.of_ext Value.val_constructor cstr;
-      of_instance sigma u;
+      of_instance u;
     |])
-  | Case (_, c, t, bl) ->
+  | Case (ci, c, t, bl) ->
     ValBlk (13, [|
+      Value.of_ext Value.val_case ci;
       Value.of_constr c;
       Value.of_constr t;
       Value.of_array Value.of_constr bl;
@@ -378,11 +396,112 @@ let () = define1 "constr_kind" begin fun c ->
   end
 end
 
+let () = define1 "constr_make" begin fun knd ->
+  let open Constr in
+  let c = match knd with
+  | ValBlk (0, [|n|]) ->
+    let n = Value.to_int n in
+    EConstr.mkRel n
+  | ValBlk (1, [|id|]) ->
+    let id = Value.to_ident id in
+    EConstr.mkVar id
+  | ValBlk (2, [|n|]) ->
+    let n = Value.to_int n in
+    EConstr.mkMeta n
+  | ValBlk (3, [|evk; args|]) ->
+    let evk = Evar.unsafe_of_int (Value.to_int evk) in
+    let args = Value.to_array Value.to_constr args in
+    EConstr.mkEvar (evk, args)
+  | ValBlk (4, [|s|]) ->
+    let s = Value.to_ext Value.val_sort s in
+    EConstr.mkSort (EConstr.Unsafe.to_sorts s)
+  | ValBlk (5, [|c; k; t|]) ->
+    let c = Value.to_constr c in
+    let k = Value.to_ext Value.val_cast k in
+    let t = Value.to_constr t in
+    EConstr.mkCast (c, k, t)
+  | ValBlk (6, [|na; t; u|]) ->
+    let na = to_name na in
+    let t = Value.to_constr t in
+    let u = Value.to_constr u in
+    EConstr.mkProd (na, t, u)
+  | ValBlk (7, [|na; t; c|]) ->
+    let na = to_name na in
+    let t = Value.to_constr t in
+    let u = Value.to_constr c in
+    EConstr.mkLambda (na, t, u)
+  | ValBlk (8, [|na; b; t; c|]) ->
+    let na = to_name na in
+    let b = Value.to_constr b in
+    let t = Value.to_constr t in
+    let c = Value.to_constr c in
+    EConstr.mkLetIn (na, b, t, c)
+  | ValBlk (9, [|c; cl|]) ->
+    let c = Value.to_constr c in
+    let cl = Value.to_array Value.to_constr cl in
+    EConstr.mkApp (c, cl)
+  | ValBlk (10, [|cst; u|]) ->
+    let cst = Value.to_constant cst in
+    let u = to_instance u in
+    EConstr.mkConstU (cst, u)
+  | ValBlk (11, [|ind; u|]) ->
+    let ind = Value.to_ext Value.val_inductive ind in
+    let u = to_instance u in
+    EConstr.mkIndU (ind, u)
+  | ValBlk (12, [|cstr; u|]) ->
+    let cstr = Value.to_ext Value.val_constructor cstr in
+    let u = to_instance u in
+    EConstr.mkConstructU (cstr, u)
+  | ValBlk (13, [|ci; c; t; bl|]) ->
+    let ci = Value.to_ext Value.val_case ci in
+    let c = Value.to_constr c in
+    let t = Value.to_constr t in
+    let bl = Value.to_array Value.to_constr bl in
+    EConstr.mkCase (ci, c, t, bl)
+  | ValBlk (14, [|recs; i; nas; ts; cs|]) ->
+    let recs = Value.to_array Value.to_int recs in
+    let i = Value.to_int i in
+    let def = to_rec_declaration (nas, ts, cs) in
+    EConstr.mkFix ((recs, i), def)
+  | ValBlk (15, [|i; nas; ts; cs|]) ->
+    let i = Value.to_int i in
+    let def = to_rec_declaration (nas, ts, cs) in
+    EConstr.mkCoFix (i, def)
+  | ValBlk (16, [|p; c|]) ->
+    let p = Value.to_ext Value.val_projection p in
+    let c = Value.to_constr c in
+    EConstr.mkProj (p, c)
+  | _ -> assert false
+  in
+  return (Value.of_constr c)
+end
+
+let () = define1 "constr_check" begin fun c ->
+  let c = Value.to_constr c in
+  pf_apply begin fun env sigma ->
+    try
+      let (sigma, _) = Typing.type_of env sigma c in
+      Proofview.Unsafe.tclEVARS sigma >>= fun () ->
+      return (of_result Value.of_constr (Inl c))
+    with e when CErrors.noncritical e ->
+      let e = CErrors.push e in
+      return (of_result Value.of_constr (Inr e))
+  end
+end
+
 let () = define3 "constr_substnl" begin fun subst k c ->
   let subst = Value.to_list Value.to_constr subst in
   let k = Value.to_int k in
   let c = Value.to_constr c in
   let ans = EConstr.Vars.substnl subst k c in
+  return (Value.of_constr ans)
+end
+
+let () = define3 "constr_closenl" begin fun ids k c ->
+  let ids = Value.to_list Value.to_ident ids in
+  let k = Value.to_int k in
+  let c = Value.to_constr c in
+  let ans = EConstr.Vars.substn_vars k ids c in
   return (Value.of_constr ans)
 end
 

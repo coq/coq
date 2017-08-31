@@ -80,6 +80,7 @@ val val_inductive : inductive Val.tag
 val val_constant : Constant.t Val.tag
 val val_constructor : constructor Val.tag
 val val_projection : Projection.t Val.tag
+val val_case : Constr.case_info Val.tag
 val val_univ : Univ.universe_level Val.tag
 val val_kont : (Exninfo.iexn -> valexpr Proofview.tactic) Val.tag
 val val_free : Id.Set.t Val.tag
