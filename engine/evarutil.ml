@@ -713,7 +713,8 @@ let undefined_evars_of_evar_info ev evd evi =
      let cache_invalid = Evar.Set.exists (fun evar -> Evd.is_defined evd evar) cache in
      if cache_invalid then
        cache_undefined_evars_of_evar_info ev evd evi
-     else (evi,evd)
+     else (* cache hit *)
+       (evi,evd)
   in
   (* invariant: always have a cache here *)
   (Option.get evi_with_cache.evar_dependency_cache,evd_with_cache)
