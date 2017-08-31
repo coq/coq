@@ -241,7 +241,7 @@ let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
     else l
   in
   (* We intepret all declarations in the same evar_map, i.e. as a telescope. *)
-  let _,l = List.fold_map (fun (env,ienv) (is_coe,(idl,c)) ->
+  let _,l = List.fold_left_map (fun (env,ienv) (is_coe,(idl,c)) ->
     let t,imps = interp_assumption evdref env ienv [] c in
     let env =
       push_named_context (List.map (fun (_,id) -> LocalAssum (id,t)) idl) env in

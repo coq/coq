@@ -121,11 +121,18 @@ let fold_right f x a =
   | Some y -> f y a
   | _ -> a
 
-(** [fold_map f a x] is [a, f y] if [x] is [Some y], and [a] otherwise. *)
-let fold_map f a x =
+(** [fold_left_map f a x] is [a, f y] if [x] is [Some y], and [a] otherwise. *)
+let fold_left_map f a x =
   match x with
   | Some y -> let a, z = f a y in a, Some z
   | _ -> a, None
+
+let fold_right_map f x a =
+  match x with
+  | Some y -> let z, a = f y a in Some z, a
+  | _ -> None, a
+
+let fold_map = fold_left_map
 
 (** [cata f a x] is [a] if [x] is [None] and [f y] if [x] is [Some y]. *)
 let cata f a = function

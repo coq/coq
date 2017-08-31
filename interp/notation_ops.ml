@@ -104,7 +104,7 @@ let rec cases_pattern_fold_map ?loc g e = CAst.with_val (function
       let e',na' = g e na in e', CAst.make ?loc @@ PatVar na'
   | PatCstr (cstr,patl,na) ->
       let e',na' = g e na in
-      let e',patl' = List.fold_map (cases_pattern_fold_map ?loc g) e patl in
+      let e',patl' = List.fold_left_map (cases_pattern_fold_map ?loc g) e patl in
       e', CAst.make ?loc @@ PatCstr (cstr,patl',na')
   )
 
@@ -169,21 +169,21 @@ let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
       let fold (idl,e) na = let (e,na) = g e na in ((Name.cons na idl,e),na) in
       let eqnl' = List.map (fun (patl,rhs) ->
 	let ((idl,e),patl) =
-	  List.fold_map (cases_pattern_fold_map ?loc fold) ([],e) patl in
+	  List.fold_left_map (cases_pattern_fold_map ?loc fold) ([],e) patl in
 	Loc.tag (idl,patl,f e rhs)) eqnl in
       GCases (sty,Option.map (f e') rtntypopt,tml',eqnl')
   | NLetTuple (nal,(na,po),b,c) ->
-      let e',nal = List.fold_map g e nal in
+      let e',nal = List.fold_left_map g e nal in
       let e'',na = g e na in
       GLetTuple (nal,(na,Option.map (f e'') po),f e b,f e' c)
   | NIf (c,(na,po),b1,b2) ->
       let e',na = g e na in
       GIf (f e c,(na,Option.map (f e') po),f e b1,f e b2)
   | NRec (fk,idl,dll,tl,bl) ->
-      let e,dll = Array.fold_map (List.fold_map (fun e (na,oc,b) ->
+      let e,dll = Array.fold_left_map (List.fold_left_map (fun e (na,oc,b) ->
 	  let e,na = g e na in
 	  (e,(na,Explicit,Option.map (f e) oc,f e b)))) e dll in
-      let e',idl = Array.fold_map (to_id g) e idl in
+      let e',idl = Array.fold_left_map (to_id g) e idl in
       GRec (fk,idl,dll,Array.map (f e) tl,Array.map (f e') bl)
   | NCast (c,k) -> GCast (f e c,Miscops.map_cast_type (f e) k)
   | NSort x -> GSort x

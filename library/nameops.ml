@@ -130,7 +130,8 @@ sig
   val fold_right : (Id.t -> 'a -> 'a) -> t -> 'a -> 'a
   val iter : (Id.t -> unit) -> t -> unit
   val map : (Id.t -> Id.t) -> t -> t
-  val fold_map : ('a -> Id.t -> 'a * Id.t) -> 'a -> t -> 'a * t
+  val fold_left_map : ('a -> Id.t -> 'a * Id.t) -> 'a -> t -> 'a * t
+  val fold_right_map : (Id.t -> 'a -> Id.t * 'a) -> Name.t -> 'a -> Name.t * 'a
   val get_id : t -> Id.t
   val pick : t -> t -> t
   val cons : t -> Id.t list -> Id.t list
@@ -160,9 +161,13 @@ struct
     | Name id -> Name (f id)
     | Anonymous -> Anonymous
 
-  let fold_map f a = function
+  let fold_left_map f a = function
     | Name id -> let (a, id) = f a id in (a, Name id)
     | Anonymous -> a, Anonymous
+
+  let fold_right_map f na a = match na with
+    | Name id -> let (id, a) = f id a in (Name id, a)
+    | Anonymous -> Anonymous, a
 
   let get_id = function
     | Name id -> id
@@ -191,7 +196,7 @@ let out_name = get_id
 let name_fold = fold_right
 let name_iter = iter
 let name_app = map
-let name_fold_map = fold_map
+let name_fold_map = fold_left_map
 let name_cons = cons
 let name_max = pick
 let pr_name = print

@@ -66,9 +66,13 @@ module Name : sig
   val map : (Id.t -> Id.t) -> Name.t -> t
   (** [map f na] is [Anonymous] if [na] is [Anonymous] and [Name (f id)] if [na] is [Name id]. *)
 
-  val fold_map : ('a -> Id.t -> 'a * Id.t) -> 'a -> Name.t -> 'a * Name.t
-  (** [fold_map f na a] is [a',Name id'] when [na] is [Name id] and [f a id] is [(a',id')].
+  val fold_left_map : ('a -> Id.t -> 'a * Id.t) -> 'a -> Name.t -> 'a * Name.t
+  (** [fold_left_map f a na] is [a',Name id'] when [na] is [Name id] and [f a id] is [(a',id')].
       It is [a,Anonymous] otherwise. *)
+
+  val fold_right_map : (Id.t -> 'a -> Id.t * 'a) -> Name.t -> 'a -> Name.t * 'a
+  (** [fold_right_map f na a] is [Name id',a'] when [na] is [Name id] and [f id a] is [(id',a')].
+      It is [Anonymous,a] otherwise. *)
 
   val get_id : Name.t -> Id.t
   (** [get_id] associates [id] to [Name id]. @raise IsAnonymous otherwise. *)
@@ -98,7 +102,7 @@ val name_app : (Id.t -> Id.t) -> Name.t -> Name.t
 (** @deprecated Same as [Name.map] *)
 
 val name_fold_map : ('a -> Id.t -> 'a * Id.t) -> 'a -> Name.t -> 'a * Name.t
-(** @deprecated Same as [Name.fold_map] *)
+(** @deprecated Same as [Name.fold_left_map] *)
 
 val name_max : Name.t -> Name.t -> Name.t
 (** @deprecated Same as [Name.pick] *)

@@ -85,7 +85,13 @@ val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b option -> 'c option -> 'a
 (** [fold_right f x a] is [f y a] if [x] is [Some y], and [a] otherwise. *)
 val fold_right : ('a -> 'b -> 'b) -> 'a option -> 'b -> 'b
 
-(** [fold_map f a x] is [a, f y] if [x] is [Some y], and [a] otherwise. *)
+(** [fold_left_map f a x] is [a, f y] if [x] is [Some y], and [a] otherwise. *)
+val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b option -> 'a * 'c option
+
+(** Same as [fold_left_map] on the right *)
+val fold_right_map : ('b -> 'a -> 'c * 'a) -> 'b option -> 'a -> 'c option * 'a
+
+(** @deprecated Same as [fold_left_map] *)
 val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b option -> 'a * 'c option
 
 (** [cata f e x] is [e] if [x] is [None] and [f a] if [x] is [Some a] *)
