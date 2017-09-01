@@ -38,13 +38,9 @@ open OmegaSolver
 
 (* Added by JCF, 09/03/98 *)
 
-let elim_id id =
-  Proofview.Goal.enter begin fun gl ->
-    simplest_elim (mkVar id)
-  end
-let resolve_id id = Proofview.Goal.enter begin fun gl ->
-  apply (mkVar id)
-end
+let elim_id id = simplest_elim (mkVar id)
+
+let resolve_id id = apply (mkVar id)
 
 let display_time_flag = ref false
 let display_system_flag = ref false
