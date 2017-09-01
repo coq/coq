@@ -165,8 +165,7 @@ let coerce_var_to_ident fresh env sigma v =
 (* Interprets, if possible, a constr to an identifier which may not
    be fresh but suitable to be given to the fresh tactic. Works for
    vars, constants, inductive, constructors and sorts. *)
-let coerce_to_ident_not_fresh env sigma v =
-let g = sigma in
+let coerce_to_ident_not_fresh sigma v =
 let id_of_name = function
   | Name.Anonymous -> Id.of_string "x"
   | Name.Name x -> x in
@@ -183,9 +182,9 @@ let id_of_name = function
     | Some c ->
        match EConstr.kind sigma c with
        | Var id -> id 
-       | Meta m -> id_of_name (Evd.meta_name g m)
+       | Meta m -> id_of_name (Evd.meta_name sigma m)
        | Evar (kn,_) ->
-        begin match Evd.evar_ident kn g with
+        begin match Evd.evar_ident kn sigma with
         | None -> fail ()
         | Some id -> id
         end
@@ -208,7 +207,7 @@ let id_of_name = function
        | _ -> fail()
 
 
-let coerce_to_intro_pattern env sigma v =
+let coerce_to_intro_pattern sigma v =
   if has_type v (topwit wit_intro_pattern) then
     (out_gen (topwit wit_intro_pattern) v).CAst.v
   else if has_type v (topwit wit_var) then
@@ -221,8 +220,8 @@ let coerce_to_intro_pattern env sigma v =
       IntroNaming (IntroIdentifier (destVar sigma c))
   | _ -> raise (CannotCoerceTo "an introduction pattern")
 
-let coerce_to_intro_pattern_naming env sigma v =
-  match coerce_to_intro_pattern env sigma v with
+let coerce_to_intro_pattern_naming sigma v =
+  match coerce_to_intro_pattern sigma v with
   | IntroNaming pat -> pat
   | _ -> raise (CannotCoerceTo "a naming introduction pattern")
 
@@ -255,7 +254,7 @@ let coerce_to_constr env v =
     (try [], constr_of_id env id with Not_found -> fail ())
   else fail ()
 
-let coerce_to_uconstr env v =
+let coerce_to_uconstr v =
   if has_type v (topwit wit_uconstr) then
     out_gen (topwit wit_uconstr) v
   else
@@ -299,11 +298,11 @@ let coerce_to_constr_list env v =
     List.map map l
   | None -> raise (CannotCoerceTo "a term list")
 
-let coerce_to_intro_pattern_list ?loc env sigma v =
+let coerce_to_intro_pattern_list ?loc sigma v =
   match Value.to_list v with
   | None -> raise (CannotCoerceTo "an intro pattern list")
   | Some l ->
-    let map v = CAst.make ?loc @@ coerce_to_intro_pattern env sigma v in
+    let map v = CAst.make ?loc @@ coerce_to_intro_pattern sigma v in
     List.map map l
 
 let coerce_to_hyp env sigma v =
@@ -328,7 +327,7 @@ let coerce_to_hyp_list env sigma v =
   | None -> raise (CannotCoerceTo "a variable list")
 
 (* Interprets a qualified name *)
-let coerce_to_reference env sigma v =
+let coerce_to_reference sigma v =
   match Value.to_constr v with
   | Some c ->
     begin
@@ -356,7 +355,7 @@ let coerce_to_quantified_hypothesis sigma v =
 
 (* Quantified named or numbered hypothesis or hypothesis in context *)
 (* (as in Inversion) *)
-let coerce_to_decl_or_quant_hyp env sigma v =
+let coerce_to_decl_or_quant_hyp sigma v =
   if has_type v (topwit wit_int) then
     AnonHyp (out_gen (topwit wit_int) v)
   else
