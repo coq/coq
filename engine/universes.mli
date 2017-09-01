@@ -154,7 +154,7 @@ val subst_opt_univs_constr : universe_opt_subst -> constr -> constr
 [@@ocaml.deprecated "Use [UnivSubst.subst_opt_univs_constr]"]
 
 val normalize_univ_variables : universe_opt_subst ->
-  universe_opt_subst * LSet.t * LSet.t * universe_subst
+  universe_opt_subst * LSet.t * universe_subst
 [@@ocaml.deprecated "Use [UnivSubst.normalize_univ_variables]"]
 
 val normalize_univ_variable :
