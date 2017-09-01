@@ -805,7 +805,7 @@ and doc indents = parse
           if !Cdglobals.parse_comments then comment lexbuf
           else skipped_comment lexbuf in
         if eol then bol_parse lexbuf else doc indents lexbuf }
-  | '*'* "*)" space_nl* "(**"
+  | '*'* "*)" space_nl* "(**" space_nl
       {(match indents with
         | Some _ -> Output.stop_item ()
         | None -> ());
