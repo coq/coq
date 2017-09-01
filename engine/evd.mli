@@ -340,8 +340,6 @@ val shelve_on_future_goals : Evar.t list -> future_goals -> future_goals
     Evar maps also keep track of the universe constraints defined at a given
     point. This section defines the relevant manipulation functions. *)
 
-val whd_sort_variable : evar_map -> econstr -> econstr
-
 exception UniversesDiffer
 
 val add_universe_constraints : evar_map -> UnivProblem.Set.t -> evar_map
