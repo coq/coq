@@ -805,8 +805,8 @@ let make_flexible_variable evd ~algebraic u =
 (* Operations on constants              *)
 (****************************************)
 
-let fresh_sort_in_family ?loc ?(rigid=univ_flexible) env evd s = 
-  with_context_set ?loc rigid evd (UnivGen.fresh_sort_in_family env s)
+let fresh_sort_in_family ?loc ?(rigid=univ_flexible) evd s =
+  with_context_set ?loc rigid evd (UnivGen.fresh_sort_in_family s)
 
 let fresh_constant_instance ?loc env evd c =
   with_context_set ?loc univ_flexible evd (UnivGen.fresh_constant_instance env c)

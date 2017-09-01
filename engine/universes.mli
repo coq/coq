@@ -86,7 +86,7 @@ val fresh_instance_from : AUContext.t -> Instance.t option ->
   Instance.t in_universe_context_set
 [@@ocaml.deprecated "Use [UnivGen.fresh_instance_from]"]
 
-val fresh_sort_in_family : env -> Sorts.family ->
+val fresh_sort_in_family : Sorts.family ->
   Sorts.t in_universe_context_set
 [@@ocaml.deprecated "Use [UnivGen.fresh_sort_in_family]"]
 

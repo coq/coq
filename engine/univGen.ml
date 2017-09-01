@@ -215,7 +215,7 @@ let type_of_reference env r =
 
 let type_of_global t = type_of_reference (Global.env ()) t
 
-let fresh_sort_in_family env = function
+let fresh_sort_in_family = function
   | InProp -> Sorts.prop, ContextSet.empty
   | InSet -> Sorts.set, ContextSet.empty
   | InType ->
@@ -223,7 +223,7 @@ let fresh_sort_in_family env = function
       Type (Univ.Universe.make u), ContextSet.singleton u
 
 let new_sort_in_family sf =
-  fst (fresh_sort_in_family (Global.env ()) sf)
+  fst (fresh_sort_in_family sf)
 
 let extend_context (a, ctx) (ctx') =
   (a, ContextSet.union ctx ctx')

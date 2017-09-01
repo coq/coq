@@ -397,7 +397,7 @@ let build_l2r_rew_scheme dep env ind kind =
                      rel_vect (nrealargs+4) nrealargs;
                      rel_vect 1 nrealargs;
 		     [|mkRel 1|]]) in
-  let s, ctx' = UnivGen.fresh_sort_in_family (Global.env ()) kind in
+  let s, ctx' = UnivGen.fresh_sort_in_family kind in
   let ctx = Univ.ContextSet.union ctx ctx' in
   let s = mkSort s in
   let ci = make_case_info (Global.env()) ind RegularStyle in
@@ -500,7 +500,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
     name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
   let realsign_ind_P n aP =
     name_context env ((LocalAssum (Name varH,aP))::realsign_P n) in
-  let s, ctx' = UnivGen.fresh_sort_in_family (Global.env ()) kind in
+  let s, ctx' = UnivGen.fresh_sort_in_family kind in
   let ctx = Univ.ContextSet.union ctx ctx' in
   let s = mkSort s in
   let ci = make_case_info (Global.env()) ind RegularStyle in
@@ -578,7 +578,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
   let applied_ind = build_dependent_inductive indu specif in
   let realsign_ind =
     name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
-  let s, ctx' = UnivGen.fresh_sort_in_family (Global.env ()) kind in
+  let s, ctx' = UnivGen.fresh_sort_in_family kind in
   let ctx = Univ.ContextSet.union ctx ctx' in
   let s = mkSort s in
   let ci = make_case_info (Global.env()) ind RegularStyle in
