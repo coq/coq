@@ -1,7 +1,7 @@
 -include ../../Makefile.conf
 
-CO=$(COQMF_OCAMLFIND) opt
-CB=$(COQMF_OCAMLFIND) ocamlc
+CO="$(COQMF_OCAMLFIND)" opt
+CB="$(COQMF_OCAMLFIND)" ocamlc
 
 all:
 	$(CO) -c foolib.ml
