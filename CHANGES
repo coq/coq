@@ -6,6 +6,13 @@ Notations
 - Recursive notations with the recursive pattern repeating on the
   right (e.g. "( x ; .. ; y ; z )") now supported.
 
+Tactics
+
+- On Linux, "native_compute" calls can be profiled using the "perf"
+  utility. The command "Set NativeCompute Profiling" enables
+  profiling, and "Set NativeCompute Profile Filename" customizes
+  the profile filename.
+
 Changes from 8.6.1 to 8.7+beta
 ==============================
 
@@ -63,10 +70,6 @@ Tactics
   Ltac definition or a Tactic Notation.
 - New option `Set Ltac Batch Debug` on top of `Set Ltac Debug` for
   non-interactive Ltac debug output.
-- On Linux, "native_compute" calls can be profiled using the "perf"
-  utility. The command "Set NativeCompute Profiling" enables
-  profiling, and "Set NativeCompute Profile Filename" customizes
-  the profile filename.
 
 Gallina
 
