@@ -46,8 +46,6 @@ let resolve_id id = Proofview.Goal.enter begin fun gl ->
   apply (mkVar id)
 end
 
-let timing timer_name f arg = f arg
-
 let display_time_flag = ref false
 let display_system_flag = ref false
 let display_action_flag = ref false
