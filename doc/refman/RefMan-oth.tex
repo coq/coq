@@ -1000,6 +1000,19 @@ line when {\tt -emacs} is passed.
 %\subsection{\tt Abstraction ...}
 %Not yet documented.
 
+\section{Controlling Coq's internal representation of terms}
+\label{Controlling_internal_representations}
+\optindex{HashConsing}
+
+Internally, by default, {\Coq} uses a technique called
+``hash-consing'' to use a single representative for terms considered
+identical, reducing memory consumption. Finding the representative can take
+a lot of time, though, particularly for the commands {\tt Qed},
+{\tt Defined}, and for {\tt End} that closes a section.  The command
+{\tt Unset HashConsing} can be used to disable this technique, at the
+expense of greater memory usage. The command {\tt Set HashConsing} re-enables
+hash-consing.
+
 \section{Controlling the reduction strategies and the conversion algorithm}
 \label{Controlling_reduction_strategy}
 

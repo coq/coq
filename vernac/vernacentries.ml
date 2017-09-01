@@ -1473,6 +1473,14 @@ let _ =
       optread  = Nativenorm.get_profiling_enabled;
       optwrite = Nativenorm.set_profiling_enabled }
 
+let _ = 
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "use hash-consing of terms";
+      optkey   = ["HashConsing"];
+      optread  = Hashcons.get_hashconsing_enabled;
+      optwrite = Hashcons.set_hashconsing_enabled }
+    
 let vernac_set_strategy locality l =
   let local = make_locality locality in
   let glob_ref r =

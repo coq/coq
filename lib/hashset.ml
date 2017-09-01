@@ -175,6 +175,8 @@ module Make (E : EqType) =
     loop 0
 
   let find_or h t d ifnotfound =
+(*    let cs = Printexc.get_callstack () in
+      let cs_str = Printexc.raw_backtrace_to_string cs in *)
     let index = get_index t h in
     let bucket = t.table.(index) in
     let hashes = t.hashes.(index) in

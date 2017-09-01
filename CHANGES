@@ -13,6 +13,12 @@ Tactics
   profiling, and "Set NativeCompute Profile Filename" customizes
   the profile filename.
 
+Vernacular Commands
+
+- The option HashConsing can be Unset to disable hash-consing in the
+  Coq implementation. In many cases, that can speed up Qed, Defined,
+  and End section commands, at the cost of greater memory usage.
+
 Changes from 8.6.1 to 8.7+beta
 ==============================
 
