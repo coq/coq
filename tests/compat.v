@@ -25,6 +25,9 @@ Abort.
 (** Variables do not cross the compatibility layer boundary. *)
 Fail Ltac2 bar nay := ltac1:(discriminate nay).
 
+Fail Ltac2 pose1 (v : constr) :=
+  ltac1:(pose $v).
+
 (** Test calls to Ltac2 from Ltac1 *)
 
 Set Default Proof Mode "Classic".
@@ -54,3 +57,4 @@ Fail mytac ltac2:(fail).
 let t := idtac; ltac2:(fail) in mytac t.
 constructor.
 Qed.
+

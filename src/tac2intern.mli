@@ -43,3 +43,7 @@ val globalize : Id.Set.t -> raw_tacexpr -> raw_tacexpr
 
 val error_nargs_mismatch : Loc.t -> ltac_constructor -> int -> int -> 'a
 val error_nparams_mismatch : Loc.t -> int -> int -> 'a
+
+(** Misc *)
+
+val drop_ltac2_env : Genintern.Store.t -> Genintern.Store.t

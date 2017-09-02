@@ -873,6 +873,9 @@ let () =
 
 let () =
   let intern ist tac =
+    (** Prevent inner calls to Ltac2 values *)
+    let extra = Tac2intern.drop_ltac2_env ist.Genintern.extra in
+    let ist = { ist with Genintern.extra } in
     let _, tac = Genintern.intern Ltac_plugin.Tacarg.wit_tactic ist tac in
     tac
   in

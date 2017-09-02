@@ -169,6 +169,9 @@ let env_name env =
 let ltac2_env : environment Genintern.Store.field =
   Genintern.Store.field ()
 
+let drop_ltac2_env store =
+  Genintern.Store.remove store ltac2_env
+
 let fresh_id env = UF.fresh env.env_cst
 
 let get_alias (loc, id) env =
