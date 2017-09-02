@@ -827,13 +827,21 @@ let t_list = coq_def "list"
 
 let (f_register_constr_quotations, register_constr_quotations) = Hook.make ()
 
-let perform_constr_quotations (_, ()) = Hook.get f_register_constr_quotations ()
+let cache_ltac2_init (_, ()) =
+  Hook.get f_register_constr_quotations ()
+
+let load_ltac2_init _ (_, ()) =
+  Hook.get f_register_constr_quotations ()
+
+let open_ltac2_init _ (_, ()) =
+  Goptions.set_string_option_value_gen None ["Default"; "Proof"; "Mode"] "Ltac2"
 
 (** Dummy object that register global rules when Require is called *)
-let inTac2ConstrQuotations : unit -> obj =
-  declare_object {(default_object "TAC2-CONSTR-QUOT") with
-    cache_function = perform_constr_quotations;
-    load_function = fun _ -> perform_constr_quotations;
+let inTac2Init : unit -> obj =
+  declare_object {(default_object "TAC2-INIT") with
+    cache_function = cache_ltac2_init;
+    load_function = load_ltac2_init;
+    open_function = open_ltac2_init;
   }
 
 let _ = Mltop.declare_cache_obj begin fun () ->
@@ -842,5 +850,5 @@ let _ = Mltop.declare_cache_obj begin fun () ->
     ("[]", []);
     ("::", [GTypVar 0; GTypRef (Other t_list, [GTypVar 0])]);
   ];
-  Lib.add_anonymous_leaf (inTac2ConstrQuotations ());
+  Lib.add_anonymous_leaf (inTac2Init ());
 end "ltac2_plugin"
