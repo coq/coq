@@ -24,6 +24,7 @@ val pr_glbtype : ('a -> string) -> 'a glb_typexpr -> Pp.t
 (** {5 Printing expressions} *)
 
 val pr_constructor : ltac_constructor -> Pp.t
+val pr_internal_constructor : type_constant -> int -> bool -> Pp.t
 val pr_projection : ltac_projection -> Pp.t
 val pr_glbexpr_gen : exp_level -> glb_tacexpr -> Pp.t
 val pr_glbexpr : glb_tacexpr -> Pp.t

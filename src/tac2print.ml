@@ -125,6 +125,15 @@ let find_constructor n empty def =
   in
   find n def
 
+let pr_internal_constructor tpe n is_const =
+  let data = match Tac2env.interp_type tpe with
+  | (_, GTydAlg data) -> data
+  | _ -> assert false
+  in
+  let id = find_constructor n is_const data.galg_constructors in
+  let kn = change_kn_label tpe id in
+  pr_constructor kn
+
 let order_branches cbr nbr def =
   let rec order cidx nidx def = match def with
   | [] -> []
@@ -179,18 +188,17 @@ let pr_glbexpr_gen lvl c =
     paren (prlist_with_sep (fun () -> str "," ++ spc ()) (pr_glbexpr E1) cl)
   | GTacCst (Other tpe, n, cl) ->
     begin match Tac2env.interp_type tpe with
-    | _, GTydAlg { galg_constructors = def } ->
+    | _, GTydAlg def ->
       let paren = match lvl with
       | E0 -> paren
       | E1 | E2 | E3 | E4 | E5 -> fun x -> x
       in
-      let id = find_constructor n (List.is_empty cl) def in
-      let kn = change_kn_label tpe id in
+      let cstr = pr_internal_constructor tpe n (List.is_empty cl) in
       let cl = match cl with
       | [] -> mt ()
       | _ -> spc () ++ pr_sequence (pr_glbexpr E0) cl
       in
-      paren (hov 2 (pr_constructor kn ++ cl))
+      paren (hov 2 (cstr ++ cl))
     | _, GTydRec def ->
       let args = List.combine def cl in
       let pr_arg ((id, _, _), arg) =

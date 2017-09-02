@@ -953,12 +953,15 @@ and intern_case env loc e pl =
       intern_branch rem
     in
     let () = intern_branch pl in
-    let map = function
-    | None -> user_err ~loc (str "TODO: Unhandled match case") (** FIXME *)
+    let map n is_const = function
+    | None ->
+      let kn = match kn with Other kn -> kn | _ -> assert false in
+      let cstr = pr_internal_constructor kn n is_const in
+      user_err ~loc (str "Unhandled match case for constructor " ++ cstr)
     | Some x -> x
     in
-    let const = Array.map map const in
-    let nonconst = Array.map map nonconst in
+    let const = Array.mapi (fun i o -> map i true o) const in
+    let nonconst = Array.mapi (fun i o -> map i false o) nonconst in
     let ce = GTacCse (e', kn, const, nonconst) in
     (ce, ret)
   | PKind_open kn ->
