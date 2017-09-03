@@ -25,10 +25,9 @@ let control_core n = kername control_prefix n
 let dummy_loc = Loc.make_loc (-1, -1)
 
 let constructor ?loc kn args =
-  let loc = Option.default dummy_loc loc in
-  let cst = CTacCst (loc, AbsKn (Other kn)) in
+  let cst = Loc.tag ?loc @@ CTacCst (AbsKn (Other kn)) in
   if List.is_empty args then cst
-  else CTacApp (loc, cst, args)
+  else Loc.tag ?loc @@ CTacApp (cst, args)
 
 let std_constructor ?loc name args =
   constructor ?loc (std_core name) args
@@ -39,39 +38,35 @@ let std_proj ?loc name =
 let thunk e =
   let t_unit = coq_core "unit" in
   let loc = Tac2intern.loc_of_tacexpr e in
-  let var = [CPatVar (Some loc, Anonymous), Some (CTypRef (loc, AbsKn (Other t_unit), []))] in
-  CTacFun (loc, var, e)
+  let var = [Loc.tag ?loc @@ CPatVar (Anonymous), Some (Loc.tag ?loc @@ CTypRef (AbsKn (Other t_unit), []))] in
+  Loc.tag ?loc @@ CTacFun (var, e)
 
 let of_pair f g (loc, (e1, e2)) =
-  let loc = Option.default dummy_loc loc in
-  CTacApp (loc, CTacCst (loc, AbsKn (Tuple 2)), [f e1; g e2])
+  Loc.tag ?loc @@ CTacApp (Loc.tag ?loc @@ CTacCst (AbsKn (Tuple 2)), [f e1; g e2])
 
 let of_tuple ?loc el = match el with
 | [] ->
-  let loc = Option.default dummy_loc loc in
-  CTacCst (loc, AbsKn (Tuple 0))
+  Loc.tag ?loc @@ CTacCst (AbsKn (Tuple 0))
 | [e] -> e
 | el ->
-  let loc = Option.default dummy_loc loc in
   let len = List.length el in
-  CTacApp (loc, CTacCst (loc, AbsKn (Tuple len)), el)
+  Loc.tag ?loc @@ CTacApp (Loc.tag ?loc @@ CTacCst (AbsKn (Tuple len)), el)
 
 let of_int (loc, n) =
-  CTacAtm (Loc.tag ?loc (AtmInt n))
+  Loc.tag ?loc @@ CTacAtm (AtmInt n)
 
 let of_option ?loc f opt = match opt with
 | None -> constructor ?loc (coq_core "None") []
 | Some e -> constructor ?loc (coq_core "Some") [f e]
 
 let inj_wit ?loc wit x =
-  let loc = Option.default dummy_loc loc in
-  CTacExt (loc, wit, x)
+  Loc.tag ?loc @@ CTacExt (wit, x)
 
 let of_variable (loc, id) =
   let qid = Libnames.qualid_of_ident id in
   if Tac2env.is_constructor qid then
     CErrors.user_err ?loc (str "Invalid identifier")
-  else CTacRef (RelId (Loc.tag ?loc qid))
+  else Loc.tag ?loc @@ CTacRef (RelId (Loc.tag ?loc qid))
 
 let of_anti f = function
 | QExpr x -> f x
@@ -171,10 +166,9 @@ let of_hyp_location ?loc ((occs, id), flag) =
   ]
 
 let of_clause (loc, cl) =
-  let loc = Option.default dummy_loc loc in
-  let hyps = of_option ~loc (fun l -> of_list ~loc of_hyp_location l) cl.q_onhyps in
+  let hyps = of_option ?loc (fun l -> of_list ?loc of_hyp_location l) cl.q_onhyps in
   let concl = of_occurrences cl.q_concl_occs in
-  CTacRec (loc, [
+  Loc.tag ?loc @@ CTacRec ([
     std_proj "on_hyps", hyps;
     std_proj "on_concl", concl;
   ])
@@ -191,8 +185,7 @@ let of_induction_clause (loc, cl) =
   let eqn = of_option ?loc of_intro_pattern_naming cl.indcl_eqn in
   let as_ = of_option ?loc of_or_and_intro_pattern cl.indcl_as in
   let in_ = of_option ?loc of_clause cl.indcl_in in
-  let loc = Option.default dummy_loc loc in
-  CTacRec (loc, [
+  Loc.tag ?loc @@ CTacRec ([
     std_proj "indcl_arg", arg;
     std_proj "indcl_eqn", eqn;
     std_proj "indcl_as", as_;
@@ -216,36 +209,32 @@ let of_rewriting (loc, rew) =
   in
   let repeat = of_repeat rew.rew_repeat in
   let equatn = thunk (of_constr_with_bindings rew.rew_equatn) in
-  let loc = Option.default dummy_loc loc in
-  CTacRec (loc, [
+  Loc.tag ?loc @@ CTacRec ([
     std_proj "rew_orient", orient;
     std_proj "rew_repeat", repeat;
     std_proj "rew_equatn", equatn;
   ])
 
 let of_hyp ?loc id =
-  let loc = Option.default dummy_loc loc in
-  let hyp = CTacRef (AbsKn (TacConstant (control_core "hyp"))) in
-  CTacApp (loc, hyp, [of_ident id])
+  let hyp = Loc.tag ?loc @@ CTacRef (AbsKn (TacConstant (control_core "hyp"))) in
+  Loc.tag ?loc @@ CTacApp (hyp, [of_ident id])
 
 let of_exact_hyp ?loc id =
-  let loc = Option.default dummy_loc loc in
-  let refine = CTacRef (AbsKn (TacConstant (control_core "refine"))) in
-  CTacApp (loc, refine, [thunk (of_hyp ~loc id)])
+  let refine = Loc.tag ?loc @@ CTacRef (AbsKn (TacConstant (control_core "refine"))) in
+  Loc.tag ?loc @@ CTacApp (refine, [thunk (of_hyp ?loc id)])
 
 let of_exact_var ?loc id =
-  let loc = Option.default dummy_loc loc in
-  let refine = CTacRef (AbsKn (TacConstant (control_core "refine"))) in
-  CTacApp (loc, refine, [thunk (of_variable id)])
+  let refine = Loc.tag ?loc @@ CTacRef (AbsKn (TacConstant (control_core "refine"))) in
+  Loc.tag ?loc @@ CTacApp (refine, [thunk (of_variable id)])
 
 let of_dispatch tacs =
-  let loc = Option.default dummy_loc (fst tacs) in
+  let (loc, _) = tacs in
   let default = function
   | Some e -> thunk e
-  | None -> thunk (CTacCst (loc, AbsKn (Tuple 0)))
+  | None -> thunk (Loc.tag ?loc @@ CTacCst (AbsKn (Tuple 0)))
   in
-  let map e = of_pair default (fun l -> of_list ~loc default l) (Loc.tag ~loc e) in
-  of_pair (fun l -> of_list ~loc default l) (fun r -> of_option ~loc map r) tacs
+  let map e = of_pair default (fun l -> of_list ?loc default l) (Loc.tag ?loc e) in
+  of_pair (fun l -> of_list ?loc default l) (fun r -> of_option ?loc map r) tacs
 
 let make_red_flag l =
   let open Genredexpr in
@@ -287,14 +276,13 @@ let of_reference r =
 
 let of_strategy_flag (loc, flag) =
   let open Genredexpr in
-  let loc = Option.default dummy_loc loc in
   let flag = make_red_flag flag in
-  CTacRec (loc, [
-    std_proj "rBeta", of_bool ~loc flag.rBeta;
-    std_proj "rMatch", of_bool ~loc flag.rMatch;
-    std_proj "rFix", of_bool ~loc flag.rFix;
-    std_proj "rCofix", of_bool ~loc flag.rCofix;
-    std_proj "rZeta", of_bool ~loc flag.rZeta;
-    std_proj "rDelta", of_bool ~loc flag.rDelta;
-    std_proj "rConst", of_list ~loc of_reference flag.rConst;
+  Loc.tag ?loc @@ CTacRec ([
+    std_proj "rBeta", of_bool ?loc flag.rBeta;
+    std_proj "rMatch", of_bool ?loc flag.rMatch;
+    std_proj "rFix", of_bool ?loc flag.rFix;
+    std_proj "rCofix", of_bool ?loc flag.rCofix;
+    std_proj "rZeta", of_bool ?loc flag.rZeta;
+    std_proj "rDelta", of_bool ?loc flag.rDelta;
+    std_proj "rConst", of_list ?loc of_reference flag.rConst;
   ])

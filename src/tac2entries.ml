@@ -263,8 +263,6 @@ let inTypExt : typext -> obj =
 
 (** Toplevel entries *)
 
-let dummy_loc = Loc.make_loc (-1, -1)
-
 let fresh_var avoid x =
   let bad id =
     Id.Set.mem id avoid ||
@@ -275,8 +273,8 @@ let fresh_var avoid x =
 (** Mangle recursive tactics *)
 let inline_rec_tactic tactics =
   let avoid = List.fold_left (fun accu ((_, id), _) -> Id.Set.add id accu) Id.Set.empty tactics in
-  let map (id, e) = match e with
-  | CTacFun (loc, pat, _) -> (id, pat, e)
+  let map (id, e) = match snd e with
+  | CTacFun (pat, _) -> (id, pat, e)
   | _ ->
     let loc, _ = id in
     user_err ?loc (str "Recursive tactic definitions must be functions")
@@ -286,24 +284,24 @@ let inline_rec_tactic tactics =
     let fold_var (avoid, ans) (pat, _) =
       let id = fresh_var avoid "x" in
       let loc = loc_of_patexpr pat in
-      (Id.Set.add id avoid, Loc.tag ~loc id :: ans)
+      (Id.Set.add id avoid, Loc.tag ?loc id :: ans)
     in
     (** Fresh variables to abstract over the function patterns *)
     let _, vars = List.fold_left fold_var (avoid, []) pat in
-    let map_body ((loc, id), _, e) = CPatVar (loc, Name id), None, e in
+    let map_body ((loc, id), _, e) = (Loc.tag ?loc @@ CPatVar (Name id)), None, e in
     let bnd = List.map map_body tactics in
     let pat_of_id (loc, id) =
-      (CPatVar (loc, Name id), None)
+      ((Loc.tag ?loc @@ CPatVar (Name id)), None)
     in
     let var_of_id (loc, id) =
       let qid = (loc, qualid_of_ident id) in
-      CTacRef (RelId qid)
+      Loc.tag ?loc @@ CTacRef (RelId qid)
     in
     let loc0 = loc_of_tacexpr e in
     let vpat = List.map pat_of_id vars in
     let varg = List.map var_of_id vars in
-    let e = CTacLet (loc0, true, bnd, CTacApp (loc0, var_of_id id, varg)) in
-    (id, CTacFun (loc0, vpat, e))
+    let e = Loc.tag ?loc:loc0 @@ CTacLet (true, bnd, Loc.tag ?loc:loc0 @@ CTacApp (var_of_id id, varg)) in
+    (id, Loc.tag ?loc:loc0 @@ CTacFun (vpat, e))
   in
   List.map map tactics
 
@@ -459,9 +457,8 @@ let register_open ?(local = false) (loc, qid) (params, def) =
     user_err ?loc (str "Type " ++ pr_qualid qid ++ str " is not an open type")
   in
   let () =
-    let loc = Option.default dummy_loc loc in
     if not (Int.equal (List.length params) tparams) then
-      Tac2intern.error_nparams_mismatch loc (List.length params) tparams
+      Tac2intern.error_nparams_mismatch ?loc (List.length params) tparams
   in
   match def with
   | CTydOpn -> ()
@@ -524,9 +521,9 @@ module ParseToken =
 struct
 
 let loc_of_token = function
-| SexprStr (loc, _) -> Option.default dummy_loc loc
-| SexprInt (loc, _) -> Option.default dummy_loc loc
-| SexprRec (loc, _, _) -> loc
+| SexprStr (loc, _) -> loc
+| SexprInt (loc, _) -> loc
+| SexprRec (loc, _, _) -> Some loc
 
 let parse_scope = function
 | SexprRec (_, (loc, Some id), toks) ->
@@ -535,11 +532,11 @@ let parse_scope = function
   else
     CErrors.user_err ?loc (str "Unknown scope" ++ spc () ++ Nameops.pr_id id)
 | SexprStr (_, str) ->
-  let v_unit = CTacCst (dummy_loc, AbsKn (Tuple 0)) in
+  let v_unit = Loc.tag @@ CTacCst (AbsKn (Tuple 0)) in
   ScopeRule (Extend.Atoken (Tok.IDENT str), (fun _ -> v_unit))
 | tok ->
   let loc = loc_of_token tok in
-  CErrors.user_err ~loc (str "Invalid parsing token")
+  CErrors.user_err ?loc (str "Invalid parsing token")
 
 let parse_token = function
 | SexprStr (_, s) -> TacTerm s
@@ -549,7 +546,7 @@ let parse_token = function
   TacNonTerm (na, scope)
 | tok ->
   let loc = loc_of_token tok in
-  CErrors.user_err ~loc (str "Invalid parsing token")
+  CErrors.user_err ?loc (str "Invalid parsing token")
 
 end
 
@@ -586,10 +583,10 @@ let perform_notation syn st =
   let mk loc args =
     let map (na, e) =
       let loc = loc_of_tacexpr e in
-      (CPatVar (Loc.tag ~loc na), None, e)
+      ((Loc.tag ?loc @@ CPatVar na), None, e)
     in
     let bnd = List.map map args in
-    CTacLet (loc, false, bnd, syn.synext_exp)
+    Loc.tag ~loc @@ CTacLet (false, bnd, syn.synext_exp)
   in
   let rule = Extend.Rule (rule, act mk) in
   let lev = match syn.synext_lev with
@@ -793,7 +790,7 @@ let solve default tac =
 let call ~default e =
   let loc = loc_of_tacexpr e in
   let (e, t) = intern e in
-  let () = check_unit ~loc t in
+  let () = check_unit ?loc t in
   let tac = Tac2interp.interp Id.Map.empty e in
   solve default (Proofview.tclIGNORE tac)
 

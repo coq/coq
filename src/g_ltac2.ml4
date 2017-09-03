@@ -86,19 +86,19 @@ let tac2mode = Gram.entry_create "vernac:ltac2_command"
 (** FUCK YOU API *)
 let ltac1_expr = (Obj.magic Pltac.tactic_expr : Tacexpr.raw_tactic_expr Gram.entry)
 
-let inj_wit wit loc x = CTacExt (loc, wit, x)
+let inj_wit wit loc x = Loc.tag ~loc @@ CTacExt (wit, x)
 let inj_open_constr loc c = inj_wit Tac2env.wit_open_constr loc c
 let inj_pattern loc c = inj_wit Tac2env.wit_pattern loc c
 let inj_reference loc c = inj_wit Tac2env.wit_reference loc c
 let inj_ltac1 loc e = inj_wit Tac2env.wit_ltac1 loc e
 
-let pattern_of_qualid loc id =
-  if Tac2env.is_constructor (snd id) then CPatRef (loc, RelId id, [])
+let pattern_of_qualid ?loc id =
+  if Tac2env.is_constructor (snd id) then Loc.tag ?loc @@ CPatRef (RelId id, [])
   else
     let (dp, id) = Libnames.repr_qualid (snd id) in
-    if DirPath.is_empty dp then CPatVar (Some loc, Name id)
+    if DirPath.is_empty dp then Loc.tag ?loc @@ CPatVar (Name id)
     else
-      CErrors.user_err ~loc (Pp.str "Syntax error")
+      CErrors.user_err ?loc (Pp.str "Syntax error")
 
 GEXTEND Gram
   GLOBAL: tac2expr tac2type tac2def_val tac2def_typ tac2def_ext tac2def_syn
@@ -107,53 +107,62 @@ GEXTEND Gram
     [ "1" LEFTA
       [ id = Prim.qualid; pl = LIST1 tac2pat LEVEL "0" ->
         if Tac2env.is_constructor (snd id) then
-          CPatRef (!@loc, RelId id, pl)
+          Loc.tag ~loc:!@loc @@ CPatRef (RelId id, pl)
         else
           CErrors.user_err ~loc:!@loc (Pp.str "Syntax error")
-      | id = Prim.qualid -> pattern_of_qualid !@loc id
-      | "["; "]" -> CPatRef (!@loc, AbsKn (Other Tac2core.Core.c_nil), [])
+      | id = Prim.qualid -> pattern_of_qualid ~loc:!@loc id
+      | "["; "]" -> Loc.tag ~loc:!@loc @@ CPatRef (AbsKn (Other Tac2core.Core.c_nil), [])
       | p1 = tac2pat; "::"; p2 = tac2pat ->
-        CPatRef (!@loc, AbsKn (Other Tac2core.Core.c_cons), [p1; p2])
+        Loc.tag ~loc:!@loc @@ CPatRef (AbsKn (Other Tac2core.Core.c_cons), [p1; p2])
       ]
     | "0"
-      [ "_" -> CPatVar (Some !@loc, Anonymous)
-      | "()" -> CPatRef (!@loc, AbsKn (Tuple 0), [])
-      | id = Prim.qualid -> pattern_of_qualid !@loc id
+      [ "_" -> Loc.tag ~loc:!@loc @@ CPatVar Anonymous
+      | "()" -> Loc.tag ~loc:!@loc @@ CPatRef (AbsKn (Tuple 0), [])
+      | id = Prim.qualid -> pattern_of_qualid ~loc:!@loc id
       | "("; pl = LIST0 tac2pat LEVEL "1" SEP ","; ")" ->
-        CPatRef (!@loc, AbsKn (Tuple (List.length pl)), pl) ]
+        Loc.tag ~loc:!@loc @@ CPatRef (AbsKn (Tuple (List.length pl)), pl) ]
     ]
   ;
   tac2expr:
     [ "6" RIGHTA
-        [ e1 = SELF; ";"; e2 = SELF -> CTacSeq (!@loc, e1, e2) ]
+        [ e1 = SELF; ";"; e2 = SELF -> Loc.tag ~loc:!@loc @@ CTacSeq (e1, e2) ]
     | "5"
-      [ "fun"; it = LIST1 input_fun ; "=>"; body = tac2expr LEVEL "6" -> CTacFun (!@loc, it, body)
+      [ "fun"; it = LIST1 input_fun ; "=>"; body = tac2expr LEVEL "6" ->
+        Loc.tag ~loc:!@loc @@ CTacFun (it, body)
       | "let"; isrec = rec_flag;
           lc = LIST1 let_clause SEP "with"; "in";
-          e = tac2expr LEVEL "6" -> CTacLet (!@loc, isrec, lc, e)
+          e = tac2expr LEVEL "6" ->
+        Loc.tag ~loc:!@loc @@ CTacLet (isrec, lc, e)
       | "match"; e = tac2expr LEVEL "5"; "with"; bl = branches; "end" ->
-         CTacCse (!@loc, e, bl)
+        Loc.tag ~loc:!@loc @@ CTacCse (e, bl)
       ]
     | "4" LEFTA [ ]
     | "::" RIGHTA
       [ e1 = tac2expr; "::"; e2 = tac2expr ->
-        CTacApp (!@loc, CTacCst (!@loc, AbsKn (Other Tac2core.Core.c_cons)), [e1; e2])
+        Loc.tag ~loc:!@loc @@ CTacApp (Loc.tag ~loc:!@loc @@ CTacCst (AbsKn (Other Tac2core.Core.c_cons)), [e1; e2])
       ]
     | [ e0 = SELF; ","; el = LIST1 NEXT SEP "," ->
         let el = e0 :: el in
-        CTacApp (!@loc, CTacCst (!@loc, AbsKn (Tuple (List.length el))), el) ]
+        Loc.tag ~loc:!@loc @@ CTacApp (Loc.tag ~loc:!@loc @@ CTacCst (AbsKn (Tuple (List.length el))), el) ]
     | "1" LEFTA
-      [ e = tac2expr; el = LIST1 tac2expr LEVEL "0" -> CTacApp (!@loc, e, el)
-      | e = SELF; ".("; qid = Prim.qualid; ")" -> CTacPrj (!@loc, e, RelId qid)
-      | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = tac2expr LEVEL "5" -> CTacSet (!@loc, e, RelId qid, r) ]
+      [ e = tac2expr; el = LIST1 tac2expr LEVEL "0" ->
+        Loc.tag ~loc:!@loc @@ CTacApp (e, el)
+      | e = SELF; ".("; qid = Prim.qualid; ")" ->
+        Loc.tag ~loc:!@loc @@ CTacPrj (e, RelId qid)
+      | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = tac2expr LEVEL "5" ->
+        Loc.tag ~loc:!@loc @@ CTacSet (e, RelId qid, r) ]
     | "0"
       [ "("; a = SELF; ")" -> a
-      | "("; a = SELF; ":"; t = tac2type; ")" -> CTacCnv (!@loc, a, t)
-      | "()" -> CTacCst (!@loc, AbsKn (Tuple 0))
-      | "("; ")" -> CTacCst (!@loc, AbsKn (Tuple 0))
+      | "("; a = SELF; ":"; t = tac2type; ")" ->
+        Loc.tag ~loc:!@loc @@ CTacCnv (a, t)
+      | "()" ->
+        Loc.tag ~loc:!@loc @@ CTacCst (AbsKn (Tuple 0))
+      | "("; ")" ->
+        Loc.tag ~loc:!@loc @@ CTacCst (AbsKn (Tuple 0))
       | "["; a = LIST0 tac2expr LEVEL "5" SEP ";"; "]" ->
         Tac2quote.of_list ~loc:!@loc (fun x -> x) a
-      | "{"; a = tac2rec_fieldexprs; "}" -> CTacRec (!@loc, a)
+      | "{"; a = tac2rec_fieldexprs; "}" ->
+        Loc.tag ~loc:!@loc @@ CTacRec a
       | a = tactic_atom -> a ]
     ]
   ;
@@ -178,10 +187,13 @@ GEXTEND Gram
     [ [ "'"; id = Prim.ident -> id ] ]
   ;
   tactic_atom:
-    [ [ n = Prim.integer -> CTacAtm (Loc.tag ~loc:!@loc (AtmInt n))
-      | s = Prim.string -> CTacAtm (Loc.tag ~loc:!@loc (AtmStr s))
+    [ [ n = Prim.integer -> Loc.tag ~loc:!@loc @@ CTacAtm (AtmInt n)
+      | s = Prim.string -> Loc.tag ~loc:!@loc @@ CTacAtm (AtmStr s)
       | id = Prim.qualid ->
-        if Tac2env.is_constructor (snd id) then CTacCst (!@loc, RelId id) else CTacRef (RelId id)
+        if Tac2env.is_constructor (snd id) then
+          Loc.tag ~loc:!@loc @@ CTacCst (RelId id)
+        else
+          Loc.tag ~loc:!@loc @@ CTacRef (RelId id)
       | "@"; id = Prim.ident -> Tac2quote.of_ident (Loc.tag ~loc:!@loc id)
       | "&"; id = lident -> Tac2quote.of_hyp ~loc:!@loc id
       | "'"; c = Constr.constr -> inj_open_constr !@loc c
@@ -196,35 +208,38 @@ GEXTEND Gram
   let_clause:
     [ [ binder = let_binder; ":="; te = tac2expr ->
         let (pat, fn) = binder in
-        let te = match fn with None -> te | Some args -> CTacFun (!@loc, args, te) in
+        let te = match fn with
+        | None -> te
+        | Some args -> Loc.tag ~loc:!@loc @@ CTacFun (args, te)
+        in
         (pat, None, te)
     ] ]
   ;
   let_binder:
     [ [ pats = LIST1 input_fun ->
         match pats with
-        | [CPatVar _ as pat, None] -> (pat, None)
-        | (CPatVar (_, Name id) as pat, None) :: args -> (pat, Some args)
+        | [(_, CPatVar _) as pat, None] -> (pat, None)
+        | ((_, CPatVar (Name id)) as pat, None) :: args -> (pat, Some args)
         | [pat, None] -> (pat, None)
         | _ -> CErrors.user_err ~loc:!@loc (str "Invalid pattern")
     ] ]
   ;
   tac2type:
     [ "5" RIGHTA
-      [ t1 = tac2type; "->"; t2 = tac2type -> CTypArrow (!@loc, t1, t2) ]
+      [ t1 = tac2type; "->"; t2 = tac2type -> Loc.tag ~loc:!@loc @@ CTypArrow (t1, t2) ]
     | "2"
       [ t = tac2type; "*"; tl = LIST1 tac2type LEVEL "1" SEP "*" ->
         let tl = t :: tl in
-        CTypRef (!@loc, AbsKn (Tuple (List.length tl)), tl) ]
+        Loc.tag ~loc:!@loc @@ CTypRef (AbsKn (Tuple (List.length tl)), tl) ]
     | "1" LEFTA
-      [ t = SELF; qid = Prim.qualid -> CTypRef (!@loc, RelId qid, [t]) ]
+      [ t = SELF; qid = Prim.qualid -> Loc.tag ~loc:!@loc @@ CTypRef (RelId qid, [t]) ]
     | "0"
       [ "("; t = tac2type LEVEL "5"; ")"  -> t
-      | id = typ_param -> CTypVar (Loc.tag ~loc:!@loc (Name id))
-      | "_" -> CTypVar (Loc.tag ~loc:!@loc Anonymous)
-      | qid = Prim.qualid -> CTypRef (!@loc, RelId qid, [])
+      | id = typ_param -> Loc.tag ~loc:!@loc @@ CTypVar (Name id)
+      | "_" -> Loc.tag ~loc:!@loc @@ CTypVar Anonymous
+      | qid = Prim.qualid -> Loc.tag ~loc:!@loc @@ CTypRef (RelId qid, [])
       | "("; p = LIST1 tac2type LEVEL "5" SEP ","; ")"; qid = Prim.qualid ->
-        CTypRef (!@loc, RelId qid, p) ]
+        Loc.tag ~loc:!@loc @@ CTypRef (RelId qid, p) ]
     ];
   locident:
     [ [ id = Prim.ident -> Loc.tag ~loc:!@loc id ] ]
@@ -239,7 +254,7 @@ GEXTEND Gram
   ;
   tac2def_body:
     [ [ name = binder; it = LIST0 input_fun; ":="; e = tac2expr ->
-        let e = if List.is_empty it then e else CTacFun (!@loc, it, e) in
+        let e = if List.is_empty it then e else Loc.tag ~loc:!@loc @@ CTacFun (it, e) in
         (name, e)
     ] ]
   ;

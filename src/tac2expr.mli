@@ -44,10 +44,12 @@ type 'a or_tuple =
 
 (** {5 Type syntax} *)
 
-type raw_typexpr =
-| CTypVar of Name.t located
-| CTypArrow of Loc.t * raw_typexpr * raw_typexpr
-| CTypRef of Loc.t * type_constant or_tuple or_relid * raw_typexpr list
+type raw_typexpr_r =
+| CTypVar of Name.t
+| CTypArrow of raw_typexpr * raw_typexpr
+| CTypRef of type_constant or_tuple or_relid * raw_typexpr list
+
+and raw_typexpr = raw_typexpr_r located
 
 type raw_typedef =
 | CTydDef of raw_typexpr option
@@ -87,24 +89,28 @@ type atom =
 | AtmStr of string
 
 (** Tactic expressions *)
-type raw_patexpr =
-| CPatVar of Name.t located
-| CPatRef of Loc.t * ltac_constructor or_tuple or_relid * raw_patexpr list
+type raw_patexpr_r =
+| CPatVar of Name.t
+| CPatRef of ltac_constructor or_tuple or_relid * raw_patexpr list
 
-type raw_tacexpr =
-| CTacAtm of atom located
+and raw_patexpr = raw_patexpr_r located
+
+type raw_tacexpr_r =
+| CTacAtm of atom
 | CTacRef of tacref or_relid
-| CTacCst of Loc.t * ltac_constructor or_tuple or_relid
-| CTacFun of Loc.t * (raw_patexpr * raw_typexpr option) list * raw_tacexpr
-| CTacApp of Loc.t * raw_tacexpr * raw_tacexpr list
-| CTacLet of Loc.t * rec_flag * (raw_patexpr * raw_typexpr option * raw_tacexpr) list * raw_tacexpr
-| CTacCnv of Loc.t * raw_tacexpr * raw_typexpr
-| CTacSeq of Loc.t * raw_tacexpr * raw_tacexpr
-| CTacCse of Loc.t * raw_tacexpr * raw_taccase list
-| CTacRec of Loc.t * raw_recexpr
-| CTacPrj of Loc.t * raw_tacexpr * ltac_projection or_relid
-| CTacSet of Loc.t * raw_tacexpr * ltac_projection or_relid * raw_tacexpr
-| CTacExt : Loc.t * ('a, _) Tac2dyn.Arg.tag * 'a -> raw_tacexpr
+| CTacCst of ltac_constructor or_tuple or_relid
+| CTacFun of (raw_patexpr * raw_typexpr option) list * raw_tacexpr
+| CTacApp of raw_tacexpr * raw_tacexpr list
+| CTacLet of rec_flag * (raw_patexpr * raw_typexpr option * raw_tacexpr) list * raw_tacexpr
+| CTacCnv of raw_tacexpr * raw_typexpr
+| CTacSeq of raw_tacexpr * raw_tacexpr
+| CTacCse of raw_tacexpr * raw_taccase list
+| CTacRec of raw_recexpr
+| CTacPrj of raw_tacexpr * ltac_projection or_relid
+| CTacSet of raw_tacexpr * ltac_projection or_relid * raw_tacexpr
+| CTacExt : ('a, _) Tac2dyn.Arg.tag * 'a -> raw_tacexpr_r
+
+and raw_tacexpr = raw_tacexpr_r located
 
 and raw_taccase = raw_patexpr * raw_tacexpr
 

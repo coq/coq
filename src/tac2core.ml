@@ -938,20 +938,18 @@ let add_scope s f =
 
 let scope_fail () = CErrors.user_err (str "Invalid parsing token")
 
-let dummy_loc = Loc.make_loc (-1, -1)
-
-let q_unit = CTacCst (dummy_loc, AbsKn (Tuple 0))
+let q_unit = Loc.tag @@ CTacCst (AbsKn (Tuple 0))
 
 let rthunk e =
   let loc = Tac2intern.loc_of_tacexpr e in
-  let var = [CPatVar (Some loc, Anonymous), Some (CTypRef (loc, AbsKn (Other Core.t_unit), []))] in
-  CTacFun (loc, var, e)
+  let var = [Loc.tag ?loc @@ CPatVar Anonymous, Some (Loc.tag ?loc @@ CTypRef (AbsKn (Other Core.t_unit), []))] in
+  Loc.tag ?loc @@ CTacFun (var, e)
 
 let add_generic_scope s entry arg =
   let parse = function
   | [] ->
     let scope = Extend.Aentry entry in
-    let act x = CTacExt (dummy_loc, arg, x) in
+    let act x = Loc.tag @@ CTacExt (arg, x) in
     Tac2entries.ScopeRule (scope, act)
   | _ -> scope_fail ()
   in
@@ -1007,9 +1005,9 @@ let () = add_scope "opt" begin function
   let scope = Extend.Aopt scope in
   let act opt = match opt with
   | None ->
-    CTacCst (dummy_loc, AbsKn (Other Core.c_none))
+    Loc.tag @@ CTacCst (AbsKn (Other Core.c_none))
   | Some x ->
-    CTacApp (dummy_loc, CTacCst (dummy_loc, AbsKn (Other Core.c_some)), [act x])
+    Loc.tag @@ CTacApp (Loc.tag @@ CTacCst (AbsKn (Other Core.c_some)), [act x])
   in
   Tac2entries.ScopeRule (scope, act)
 | _ -> scope_fail ()
