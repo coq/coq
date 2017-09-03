@@ -133,21 +133,6 @@ val std_prefix : ModPath.t
 
 val wit_ltac2 : (raw_tacexpr, glb_tacexpr, Util.Empty.t) genarg_type
 
-val wit_pattern : (Constrexpr.constr_expr, Pattern.constr_pattern) Arg.tag
-
-val wit_ident : (Id.t, Id.t) Arg.tag
-
-val wit_reference : (reference, Globnames.global_reference) Arg.tag
-(** Beware, at the raw level, [Qualid [id]] has not the same meaning as
-    [Ident id]. The first is an unqualified global reference, the second is
-    the dynamic reference to id. *)
-
-val wit_constr : (Constrexpr.constr_expr, Glob_term.glob_constr) Arg.tag
-
-val wit_open_constr : (Constrexpr.constr_expr, Glob_term.glob_constr) Arg.tag
-
-val wit_ltac1 : (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr) Arg.tag
-
 (** {5 Helper functions} *)
 
 val is_constructor : qualid -> bool

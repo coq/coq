@@ -9,8 +9,18 @@
 open Pp
 open Names
 open Util
+open Tac2dyn
 open Tac2expr
 open Tac2qexpr
+
+(** Generic arguments *)
+
+let wit_pattern = Arg.create "pattern"
+let wit_reference = Arg.create "reference"
+let wit_ident = Arg.create "ident"
+let wit_constr = Arg.create "constr"
+let wit_open_constr = Arg.create "open_constr"
+let wit_ltac1 = Arg.create "ltac1"
 
 (** Syntactic quoting of expressions. *)
 
@@ -72,15 +82,15 @@ let of_anti f = function
 | QExpr x -> f x
 | QAnti id -> of_variable id
 
-let of_ident (loc, id) = inj_wit ?loc Tac2env.wit_ident id
+let of_ident (loc, id) = inj_wit ?loc wit_ident id
 
 let of_constr c =
   let loc = Constrexpr_ops.constr_loc c in
-  inj_wit ?loc Tac2env.wit_constr c
+  inj_wit ?loc wit_constr c
 
 let of_open_constr c =
   let loc = Constrexpr_ops.constr_loc c in
-  inj_wit ?loc Tac2env.wit_open_constr c
+  inj_wit ?loc wit_open_constr c
 
 let of_bool ?loc b =
   let c = if b then coq_core "true" else coq_core "false" in
@@ -270,7 +280,7 @@ let make_red_flag l =
 let of_reference r =
   let of_ref ref =
     let loc = Libnames.loc_of_reference ref in
-    inj_wit ?loc Tac2env.wit_reference ref
+    inj_wit ?loc wit_reference ref
   in
   of_anti of_ref r
 

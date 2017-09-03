@@ -295,13 +295,6 @@ let std_prefix =
 
 let wit_ltac2 = Genarg.make0 "ltac2:value"
 
-let wit_pattern = Arg.create "pattern"
-let wit_reference = Arg.create "reference"
-let wit_ident = Arg.create "ident"
-let wit_constr = Arg.create "constr"
-let wit_open_constr = Arg.create "open_constr"
-let wit_ltac1 = Arg.create "ltac1"
-
 let is_constructor qid =
   let (_, id) = repr_qualid qid in
   let id = Id.to_string id in

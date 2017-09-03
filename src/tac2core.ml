@@ -803,7 +803,7 @@ let () =
     ml_interp = interp;
     ml_print = print;
   } in
-  define_ml_object Tac2env.wit_constr obj
+  define_ml_object Tac2quote.wit_constr obj
 
 let () =
   let intern = intern_constr in
@@ -815,7 +815,7 @@ let () =
     ml_interp = interp;
     ml_print = print;
   } in
-  define_ml_object Tac2env.wit_open_constr obj
+  define_ml_object Tac2quote.wit_open_constr obj
 
 let () =
   let interp _ id = return (ValExt (Value.val_ident, id)) in
@@ -826,7 +826,7 @@ let () =
     ml_subst = (fun _ id -> id);
     ml_print = print;
   } in
-  define_ml_object Tac2env.wit_ident obj
+  define_ml_object Tac2quote.wit_ident obj
 
 let () =
   let intern self ist c =
@@ -841,7 +841,7 @@ let () =
     ml_subst = Patternops.subst_pattern;
     ml_print = print;
   } in
-  define_ml_object Tac2env.wit_pattern obj
+  define_ml_object Tac2quote.wit_pattern obj
 
 let () =
   let intern self ist qid = match qid with
@@ -867,7 +867,7 @@ let () =
     ml_interp = interp;
     ml_print = print;
   } in
-  define_ml_object Tac2env.wit_reference obj
+  define_ml_object Tac2quote.wit_reference obj
 
 let () =
   let intern self ist tac =
@@ -892,7 +892,7 @@ let () =
     ml_interp = interp;
     ml_print = print;
   } in
-  define_ml_object Tac2env.wit_ltac1 obj
+  define_ml_object Tac2quote.wit_ltac1 obj
 
 (** Ltac2 in terms *)
 
@@ -1070,9 +1070,9 @@ let () = add_expr_scope "dispatch" q_dispatch Tac2quote.of_dispatch
 let () = add_expr_scope "strategy" q_strategy_flag Tac2quote.of_strategy_flag
 let () = add_expr_scope "reference" q_reference Tac2quote.of_reference
 
-let () = add_generic_scope "constr" Pcoq.Constr.constr wit_constr
-let () = add_generic_scope "open_constr" Pcoq.Constr.constr wit_open_constr
-let () = add_generic_scope "pattern" Pcoq.Constr.constr wit_pattern
+let () = add_generic_scope "constr" Pcoq.Constr.constr Tac2quote.wit_constr
+let () = add_generic_scope "open_constr" Pcoq.Constr.constr Tac2quote.wit_open_constr
+let () = add_generic_scope "pattern" Pcoq.Constr.constr Tac2quote.wit_pattern
 
 (** seq scope, a bit hairy *)
 

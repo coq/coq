@@ -8,6 +8,7 @@
 
 open Loc
 open Names
+open Tac2dyn
 open Tac2qexpr
 open Tac2expr
 
@@ -64,3 +65,20 @@ val of_exact_var : ?loc:Loc.t -> Id.t located -> raw_tacexpr
 val of_dispatch : dispatch -> raw_tacexpr
 
 val of_strategy_flag : strategy_flag -> raw_tacexpr
+
+(** {5 Generic arguments} *)
+
+val wit_pattern : (Constrexpr.constr_expr, Pattern.constr_pattern) Arg.tag
+
+val wit_ident : (Id.t, Id.t) Arg.tag
+
+val wit_reference : (Libnames.reference, Globnames.global_reference) Arg.tag
+(** Beware, at the raw level, [Qualid [id]] has not the same meaning as
+    [Ident id]. The first is an unqualified global reference, the second is
+    the dynamic reference to id. *)
+
+val wit_constr : (Constrexpr.constr_expr, Glob_term.glob_constr) Arg.tag
+
+val wit_open_constr : (Constrexpr.constr_expr, Glob_term.glob_constr) Arg.tag
+
+val wit_ltac1 : (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr) Arg.tag
