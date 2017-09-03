@@ -651,10 +651,18 @@ let rec intern_rec env (loc, e) = match e with
     let sch = Id.Map.find id env.env_var in
     (GTacVar id, fresh_mix_type_scheme env sch)
   | ArgArg (TacConstant kn) ->
-    let { Tac2env.gdata_type = sch }, _ = Tac2env.interp_global kn in
+    let { Tac2env.gdata_type = sch }, _ =
+      try Tac2env.interp_global kn
+      with Not_found ->
+        CErrors.anomaly (str "Missing hardwired primitive " ++ KerName.print kn)
+    in
     (GTacRef kn, fresh_type_scheme env sch)
   | ArgArg (TacAlias kn) ->
-    let e = Tac2env.interp_alias kn in
+    let e =
+      try Tac2env.interp_alias kn
+      with Not_found ->
+        CErrors.anomaly (str "Missing hardwired alias " ++ KerName.print kn)
+    in
     intern_rec env e
   end
 | CTacCst qid ->
