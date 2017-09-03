@@ -775,14 +775,21 @@ let rec intern_rec env = function
   (GTacSet (pinfo.pdata_type, e, pinfo.pdata_indx, r), GTypRef (Tuple 0, []))
 | CTacExt (loc, tag, arg) ->
   let open Genintern in
-  let tpe = interp_ml_object tag in
+  let self ist e =
+    let env = match Store.get ist.extra ltac2_env with
+    | None -> empty_env ()
+    | Some env -> env
+    in
+    intern_rec env e
+  in
+  let obj = interp_ml_object tag in
   (** External objects do not have access to the named context because this is
       not stable by dynamic semantics. *)
   let genv = Global.env_of_context Environ.empty_named_context_val in
   let ist = empty_glob_sign genv in
   let ist = { ist with extra = Store.set ist.extra ltac2_env env } in
-  let arg = Flags.with_option Ltac_plugin.Tacintern.strict_check (fun () -> tpe.ml_intern ist arg) () in
-  (GTacExt (tag, arg), GTypRef (Other tpe.ml_type, []))
+  let arg, tpe = Flags.with_option Ltac_plugin.Tacintern.strict_check (fun () -> obj.ml_intern self ist arg) () in
+  (GTacExt (tag, arg), tpe)
 
 and intern_rec_with_constraint env e exp =
   let loc = loc_of_tacexpr e in

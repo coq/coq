@@ -775,9 +775,11 @@ let to_lvar ist =
   let lfun = Tac2interp.set_env ist Id.Map.empty in
   { empty_lvar with Glob_term.ltac_genargs = lfun }
 
-let intern_constr ist c =
+let gtypref kn = GTypRef (Other kn, [])
+
+let intern_constr self ist c =
   let (_, (c, _)) = Genintern.intern Stdarg.wit_constr ist c in
-  c
+  (c, gtypref t_constr)
 
 let interp_constr flags ist c =
   let open Pretyping in
@@ -796,7 +798,6 @@ let () =
   let interp ist c = interp_constr (constr_flags ()) ist c in
   let print env c = str "constr:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
   let obj = {
-    ml_type = t_constr;
     ml_intern = intern;
     ml_subst = Detyping.subst_glob_constr;
     ml_interp = interp;
@@ -809,7 +810,6 @@ let () =
   let interp ist c = interp_constr (open_constr_no_classes_flags ()) ist c in
   let print env c = str "open_constr:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
   let obj = {
-    ml_type = t_constr;
     ml_intern = intern;
     ml_subst = Detyping.subst_glob_constr;
     ml_interp = interp;
@@ -821,8 +821,7 @@ let () =
   let interp _ id = return (ValExt (Value.val_ident, id)) in
   let print _ id = str "ident:(" ++ Id.print id ++ str ")" in
   let obj = {
-    ml_type = t_ident;
-    ml_intern = (fun _ id -> id);
+    ml_intern = (fun _ _ id -> id, gtypref t_ident);
     ml_interp = interp;
     ml_subst = (fun _ id -> id);
     ml_print = print;
@@ -830,14 +829,13 @@ let () =
   define_ml_object Tac2env.wit_ident obj
 
 let () =
-  let intern ist c =
+  let intern self ist c =
     let _, pat = Constrintern.intern_constr_pattern ist.Genintern.genv ~as_type:false c in
-    pat
+    pat, gtypref t_pattern
   in
   let print env pat = str "pattern:(" ++ Printer.pr_lconstr_pattern_env env Evd.empty pat ++ str ")" in
   let interp _ c = return (ValExt (Value.val_pattern, c)) in
   let obj = {
-    ml_type = t_pattern;
     ml_intern = intern;
     ml_interp = interp;
     ml_subst = Patternops.subst_pattern;
@@ -846,15 +844,16 @@ let () =
   define_ml_object Tac2env.wit_pattern obj
 
 let () =
-  let intern ist qid = match qid with
-  | Libnames.Ident (_, id) -> Globnames.VarRef id
+  let intern self ist qid = match qid with
+  | Libnames.Ident (_, id) ->
+    Globnames.VarRef id, gtypref t_reference
   | Libnames.Qualid (loc, qid) ->
     let gr =
       try Nametab.locate qid
       with Not_found ->
         Nametab.error_global_not_found ?loc qid
     in
-    gr
+    gr, gtypref t_reference
   in
   let subst s c = Globnames.subst_global_reference s c in
   let interp _ gr = return (Value.of_reference gr) in
@@ -863,7 +862,6 @@ let () =
   | r -> str "reference:(" ++ Printer.pr_global r ++ str ")"
   in
   let obj = {
-    ml_type = t_reference;
     ml_intern = intern;
     ml_subst = subst;
     ml_interp = interp;
@@ -872,12 +870,12 @@ let () =
   define_ml_object Tac2env.wit_reference obj
 
 let () =
-  let intern ist tac =
+  let intern self ist tac =
     (** Prevent inner calls to Ltac2 values *)
     let extra = Tac2intern.drop_ltac2_env ist.Genintern.extra in
     let ist = { ist with Genintern.extra } in
     let _, tac = Genintern.intern Ltac_plugin.Tacarg.wit_tactic ist tac in
-    tac
+    tac, gtypref t_unit
   in
   let interp _ tac =
     (** FUCK YOU API *)
@@ -889,7 +887,6 @@ let () =
     str "ltac1:(" ++ Ltac_plugin.Pptactic.pr_glob_tactic (Obj.magic env) tac ++ str ")"
   in
   let obj = {
-    ml_type = t_unit;
     ml_intern = intern;
     ml_subst = subst;
     ml_interp = interp;

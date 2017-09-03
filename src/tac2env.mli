@@ -105,9 +105,10 @@ val interp_primitive : ml_tactic_name -> ml_tactic
 
 (** {5 ML primitive types} *)
 
+type ('a, 'b, 'r) intern_fun = Genintern.glob_sign -> 'a -> 'b * 'r glb_typexpr
+
 type ('a, 'b) ml_object = {
-  ml_type : type_constant;
-  ml_intern : Genintern.glob_sign -> 'a -> 'b;
+  ml_intern : 'r. (raw_tacexpr, glb_tacexpr, 'r) intern_fun -> ('a, 'b, 'r) intern_fun;
   ml_subst : Mod_subst.substitution -> 'b -> 'b;
   ml_interp : environment -> 'b -> valexpr Proofview.tactic;
   ml_print : Environ.env -> 'b -> Pp.t;
