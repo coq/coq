@@ -14,7 +14,7 @@ Ltac2 Type context.
 
 Ltac2 Type 'a constr_match := [
 | ConstrMatchPattern (pattern, constr array -> 'a)
-| ConstrMatchContext (pattern, constr -> constr array -> 'a)
+| ConstrMatchContext (pattern, context -> constr array -> 'a)
 ].
 
 Ltac2 @ external matches : t -> constr -> (ident * constr) list :=
@@ -29,6 +29,14 @@ Ltac2 @ external matches_subterm : t -> constr -> context * ((ident * constr) li
     backtracking value whose last exception is [Match_failure]. The additional
     value compared to [matches] is the context of the match, to be filled with
     the instantiate function. *)
+
+Ltac2 @ external matches_vect : t -> constr -> constr array :=
+  "ltac2" "pattern_matches_vect".
+(** Internal version of [matches] that does not return the identifiers. *)
+
+Ltac2 @ external matches_subterm_vect : t -> constr -> context * constr array :=
+  "ltac2" "pattern_matches_subterm_vect".
+(** Internal version of [matches_subterms] that does not return the identifiers. *)
 
 Ltac2 @ external instantiate : context -> constr -> constr :=
   "ltac2" "pattern_instantiate".

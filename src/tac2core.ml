@@ -544,6 +544,42 @@ let () = define2 "pattern_matches_subterm" begin fun pat c ->
   end
 end
 
+let () = define2 "pattern_matches_vect" begin fun pat c ->
+  let pat = Value.to_pattern pat in
+  let c = Value.to_constr c in
+  pf_apply begin fun env sigma ->
+    let ans =
+      try Some (Constr_matching.matches env sigma pat c)
+      with Constr_matching.PatternMatchingFailure -> None
+    in
+    begin match ans with
+    | None -> Proofview.tclZERO err_matchfailure
+    | Some ans ->
+      let ans = Id.Map.bindings ans in
+      let ans = Array.map_of_list snd ans in
+      return (Value.of_array Value.of_constr ans)
+    end
+  end
+end
+
+let () = define2 "pattern_matches_subterm_vect" begin fun pat c ->
+  let pat = Value.to_pattern pat in
+  let c = Value.to_constr c in
+  let open Constr_matching in
+  let rec of_ans s = match IStream.peek s with
+  | IStream.Nil -> Proofview.tclZERO err_matchfailure
+  | IStream.Cons ({ m_sub = (_, sub); m_ctx }, s) ->
+    let ans = Id.Map.bindings sub in
+    let ans = Array.map_of_list snd ans in
+    let ans = Value.of_tuple [| Value.of_constr m_ctx; Value.of_array Value.of_constr ans |] in
+    Proofview.tclOR (return ans) (fun _ -> of_ans s)
+  in
+  pf_apply begin fun env sigma ->
+    let ans = Constr_matching.match_appsubterm env sigma pat c in
+    of_ans ans
+  end
+end
+
 let () = define2 "pattern_instantiate" begin fun ctx c ->
   let ctx = EConstr.Unsafe.to_constr (Value.to_constr ctx) in
   let c = EConstr.Unsafe.to_constr (Value.to_constr c) in
