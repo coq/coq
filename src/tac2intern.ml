@@ -789,7 +789,11 @@ let rec intern_rec env = function
   let ist = empty_glob_sign genv in
   let ist = { ist with extra = Store.set ist.extra ltac2_env env } in
   let arg, tpe = Flags.with_option Ltac_plugin.Tacintern.strict_check (fun () -> obj.ml_intern self ist arg) () in
-  (GTacExt (tag, arg), tpe)
+  let e = match arg with
+  | GlbVal arg -> GTacExt (tag, arg)
+  | GlbTacexpr e -> e
+  in
+  (e, tpe)
 
 and intern_rec_with_constraint env e exp =
   let loc = loc_of_tacexpr e in

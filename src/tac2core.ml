@@ -779,7 +779,7 @@ let gtypref kn = GTypRef (Other kn, [])
 
 let intern_constr self ist c =
   let (_, (c, _)) = Genintern.intern Stdarg.wit_constr ist c in
-  (c, gtypref t_constr)
+  (GlbVal c, gtypref t_constr)
 
 let interp_constr flags ist c =
   let open Pretyping in
@@ -821,7 +821,7 @@ let () =
   let interp _ id = return (ValExt (Value.val_ident, id)) in
   let print _ id = str "ident:(" ++ Id.print id ++ str ")" in
   let obj = {
-    ml_intern = (fun _ _ id -> id, gtypref t_ident);
+    ml_intern = (fun _ _ id -> GlbVal id, gtypref t_ident);
     ml_interp = interp;
     ml_subst = (fun _ id -> id);
     ml_print = print;
@@ -831,7 +831,7 @@ let () =
 let () =
   let intern self ist c =
     let _, pat = Constrintern.intern_constr_pattern ist.Genintern.genv ~as_type:false c in
-    pat, gtypref t_pattern
+    GlbVal pat, gtypref t_pattern
   in
   let print env pat = str "pattern:(" ++ Printer.pr_lconstr_pattern_env env Evd.empty pat ++ str ")" in
   let interp _ c = return (ValExt (Value.val_pattern, c)) in
@@ -846,14 +846,14 @@ let () =
 let () =
   let intern self ist qid = match qid with
   | Libnames.Ident (_, id) ->
-    Globnames.VarRef id, gtypref t_reference
+    GlbVal (Globnames.VarRef id), gtypref t_reference
   | Libnames.Qualid (loc, qid) ->
     let gr =
       try Nametab.locate qid
       with Not_found ->
         Nametab.error_global_not_found ?loc qid
     in
-    gr, gtypref t_reference
+    GlbVal gr, gtypref t_reference
   in
   let subst s c = Globnames.subst_global_reference s c in
   let interp _ gr = return (Value.of_reference gr) in
@@ -875,7 +875,7 @@ let () =
     let extra = Tac2intern.drop_ltac2_env ist.Genintern.extra in
     let ist = { ist with Genintern.extra } in
     let _, tac = Genintern.intern Ltac_plugin.Tacarg.wit_tactic ist tac in
-    tac, gtypref t_unit
+    GlbVal tac, gtypref t_unit
   in
   let interp _ tac =
     (** FUCK YOU API *)
