@@ -12,6 +12,11 @@ Ltac2 Type t := pattern.
 
 Ltac2 Type context.
 
+Ltac2 Type 'a constr_match := [
+| ConstrMatchPattern (pattern, constr array -> 'a)
+| ConstrMatchContext (pattern, constr -> constr array -> 'a)
+].
+
 Ltac2 @ external matches : t -> constr -> (ident * constr) list :=
   "ltac2" "pattern_matches".
 (** If the term matches the pattern, returns the bound variables. If it doesn't,

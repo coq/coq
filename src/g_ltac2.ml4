@@ -368,7 +368,7 @@ let loc_of_ne_list l = Loc.merge_opt (fst (List.hd l)) (fst (List.last l))
 GEXTEND Gram
   GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause
           q_rewriting q_clause q_dispatch q_occurrences q_strategy_flag
-          q_reference q_with_bindings;
+          q_reference q_with_bindings q_constr_matching;
   anti:
     [ [ "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id) ] ]
   ;
@@ -660,6 +660,25 @@ GEXTEND Gram
   ;
   q_strategy_flag:
     [ [ flag = strategy_flag -> flag ] ]
+  ;
+  match_pattern:
+    [ [ IDENT "context";  id = OPT Prim.ident;
+          "["; pat = Constr.lconstr_pattern; "]" -> (Some id, pat)
+      | pat = Constr.lconstr_pattern -> (None, pat) ] ]
+  ;
+  match_rule:
+    [ [ mp = match_pattern; "=>"; tac = tac2expr ->
+        match mp with
+        | None, pat -> Loc.tag ~loc:!@loc @@ QConstrMatchPattern (pat, tac)
+        | Some oid, pat -> Loc.tag ~loc:!@loc @@ QConstrMatchContext (oid, pat, tac)
+    ] ]
+  ;
+  match_list:
+    [ [ mrl = LIST1 match_rule SEP "|" -> Loc.tag ~loc:!@loc @@ mrl
+      | "|"; mrl = LIST1 match_rule SEP "|" -> Loc.tag ~loc:!@loc @@ mrl ] ]
+  ;
+  q_constr_matching:
+    [ [ m = match_list -> m ] ]
   ;
 END
 

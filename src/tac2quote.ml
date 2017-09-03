@@ -24,13 +24,21 @@ let wit_ltac1 = Arg.create "ltac1"
 
 (** Syntactic quoting of expressions. *)
 
-let control_prefix =
-  MPfile (DirPath.make (List.map Id.of_string ["Control"; "Ltac2"]))
+let prefix_gen n =
+  MPfile (DirPath.make (List.map Id.of_string [n; "Ltac2"]))
+
+let control_prefix = prefix_gen "Control"
+let pattern_prefix = prefix_gen "Pattern"
+let array_prefix = prefix_gen "Array"
 
 let kername prefix n = KerName.make2 prefix (Label.of_id (Id.of_string_soft n))
 let std_core n = kername Tac2env.std_prefix n
 let coq_core n = kername Tac2env.coq_prefix n
 let control_core n = kername control_prefix n
+let pattern_core n = kername pattern_prefix n
+
+let global_ref ?loc kn =
+  Loc.tag ?loc @@ CTacRef (AbsKn (TacConstant kn))
 
 let dummy_loc = Loc.make_loc (-1, -1)
 
@@ -226,15 +234,15 @@ let of_rewriting (loc, rew) =
   ])
 
 let of_hyp ?loc id =
-  let hyp = Loc.tag ?loc @@ CTacRef (AbsKn (TacConstant (control_core "hyp"))) in
+  let hyp = global_ref ?loc (control_core "hyp") in
   Loc.tag ?loc @@ CTacApp (hyp, [of_ident id])
 
 let of_exact_hyp ?loc id =
-  let refine = Loc.tag ?loc @@ CTacRef (AbsKn (TacConstant (control_core "refine"))) in
+  let refine = global_ref ?loc (control_core "refine") in
   Loc.tag ?loc @@ CTacApp (refine, [thunk (of_hyp ?loc id)])
 
 let of_exact_var ?loc id =
-  let refine = Loc.tag ?loc @@ CTacRef (AbsKn (TacConstant (control_core "refine"))) in
+  let refine = global_ref ?loc (control_core "refine") in
   Loc.tag ?loc @@ CTacApp (refine, [thunk (of_variable id)])
 
 let of_dispatch tacs =
@@ -296,3 +304,59 @@ let of_strategy_flag (loc, flag) =
     std_proj "rDelta", of_bool ?loc flag.rDelta;
     std_proj "rConst", of_list ?loc of_reference flag.rConst;
   ])
+
+let pattern_vars pat =
+  let rec aux () accu pat = match pat.CAst.v with
+  | Constrexpr.CPatVar id -> Id.Set.add id accu
+  | Constrexpr.CEvar (id, []) -> Id.Set.add id accu
+  | _ ->
+    Topconstr.fold_constr_expr_with_binders (fun _ () -> ()) aux () accu pat
+  in
+  aux () Id.Set.empty pat
+
+let of_constr_matching (loc, m) =
+  let check_id loc id =
+    if Tac2env.is_constructor (Libnames.qualid_of_ident id) then
+      CErrors.user_err ?loc (str "Invalid pattern binding name " ++ Id.print id)
+  in
+  let abstract_vars loc pat tac =
+    let vars = pattern_vars pat in
+    let na, tac =
+      if Id.Set.is_empty vars then (Anonymous, tac)
+      else
+        (** Trick: in order not to shadow a variable nor to choose an arbitrary
+            name, we reuse one which is going to be shadowed by the matched
+            variables anyways. *)
+        let id0 = Id.Set.choose vars in
+        let build_bindings id (n, accu) =
+          let () = check_id loc id in
+          let get = global_ref ?loc (kername array_prefix "get")  in
+          let args = [of_variable (loc, id0); of_int (loc, n)] in
+          let e = Loc.tag ?loc @@ CTacApp (get, args) in
+          let accu = (Loc.tag ?loc @@ CPatVar (Name id), None, e) :: accu in
+          (n + 1, accu)
+        in
+        let (_, bnd) = Id.Set.fold build_bindings vars (0, []) in
+        let tac = Loc.tag ?loc @@ CTacLet (false, bnd, tac) in
+        (Name id0, tac)
+    in
+    Loc.tag ?loc @@ CTacFun ([Loc.tag ?loc @@ CPatVar na, None], tac)
+  in
+  let map (loc, p) = match p with
+  | QConstrMatchPattern (pat, tac) ->
+    let e = abstract_vars loc pat tac in
+    let pat = inj_wit ?loc wit_pattern pat in
+    constructor ?loc (pattern_core "ConstrMatchPattern") [pat; e]
+  | QConstrMatchContext (id, pat, tac) ->
+    let e = abstract_vars loc pat tac in
+    let na = match id with
+    | None -> Anonymous
+    | Some id ->
+      let () = check_id loc id in
+      Name id
+    in
+    let e = Loc.tag ?loc @@ CTacFun ([Loc.tag ?loc @@ CPatVar na, None], e) in
+    let pat = inj_wit ?loc wit_pattern pat in
+    constructor ?loc (pattern_core "ConstrMatchContext") [pat; e]
+  in
+  of_list ?loc map m

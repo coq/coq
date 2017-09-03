@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Loc
 open Names
 open Tac2dyn
@@ -65,6 +66,8 @@ val of_exact_var : ?loc:Loc.t -> Id.t located -> raw_tacexpr
 val of_dispatch : dispatch -> raw_tacexpr
 
 val of_strategy_flag : strategy_flag -> raw_tacexpr
+
+val of_constr_matching : constr_matching -> raw_tacexpr
 
 (** {5 Generic arguments} *)
 

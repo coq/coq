@@ -115,3 +115,11 @@ type red_flag_r =
 type red_flag = red_flag_r located
 
 type strategy_flag = red_flag list located
+
+type constr_match_branch_r =
+| QConstrMatchPattern of Constrexpr.constr_expr * raw_tacexpr
+| QConstrMatchContext of Id.t option * Constrexpr.constr_expr * raw_tacexpr
+
+type constr_match_branch = constr_match_branch_r located
+
+type constr_matching = constr_match_branch list located
