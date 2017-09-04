@@ -1124,11 +1124,11 @@ function make_coq {
   then
     if [ "$INSTALLMODE" == "relocatable" ]; then
       # HACK: for relocatable builds, first configure with ./, then build but before install reconfigure with the real target path
-      ./configure -debug -with-doc no -prefix ./ -libdir ./lib -mandir ./man
+      ./configure -with-doc no -prefix ./ -libdir ./lib -mandir ./man
     elif [ "$INSTALLMODE" == "absolute" ]; then
-      ./configure -debug -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib" -mandir "$PREFIXCOQ/man"
+      ./configure -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib" -mandir "$PREFIXCOQ/man"
     else
-      ./configure -debug -with-doc no -prefix "$PREFIXCOQ"
+      ./configure -with-doc no -prefix "$PREFIXCOQ"
     fi
 
     # The windows resource compiler binary name is hard coded
@@ -1143,7 +1143,7 @@ function make_coq {
     fi
     
     if [ "$INSTALLMODE" == "relocatable" ]; then
-      ./configure -debug -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib" -mandir "$PREFIXCOQ/man"
+      ./configure -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib" -mandir "$PREFIXCOQ/man"
     fi
 
     make install
