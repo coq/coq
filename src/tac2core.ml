@@ -116,6 +116,12 @@ let wrap f =
 let wrap_unit f =
   return () >>= fun () -> f (); return v_unit
 
+let assert_focussed =
+  Proofview.Goal.goals >>= fun gls ->
+  match gls with
+  | [_] -> Proofview.tclUNIT ()
+  | [] | _ :: _ :: _ -> throw err_notfocussed
+
 let pf_apply f =
   Proofview.Goal.goals >>= function
   | [] ->
@@ -682,6 +688,7 @@ end
 
 (** unit -> constr *)
 let () = define0 "goal" begin
+  assert_focussed >>= fun () ->
   Proofview.Goal.enter_one begin fun gl ->
     let concl = Tacmach.New.pf_nf_concl gl in
     return (Value.of_constr concl)
