@@ -665,10 +665,9 @@ let () = define_prim4 "tac_newauto" begin fun bt dbg n lems dbs ->
   Tac2tactics.new_auto dbg n lems dbs
 end
 
-let () = define_prim4 "tac_typeclasses_eauto" begin fun bt b str n dbs ->
-  let b = Value.to_bool b in
+let () = define_prim3 "tac_typeclasses_eauto" begin fun bt str n dbs ->
   let str = to_strategy str in
   let n = Value.to_option Value.to_int n in
-  let dbs = Value.to_list Value.to_ident dbs in
-  Tac2tactics.typeclasses_eauto b str n dbs
+  let dbs = Value.to_option (fun l -> Value.to_list Value.to_ident l) dbs in
+  Tac2tactics.typeclasses_eauto str n dbs
 end

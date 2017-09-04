@@ -226,4 +226,4 @@ Ltac2 @ external new_auto : debug -> int option -> (unit -> constr) list -> iden
 
 Ltac2 @ external eauto : debug -> int option -> int option -> (unit -> constr) list -> ident list option -> unit := "ltac2" "tac_eauto".
 
-Ltac2 @ external typeclasses_eauto : bool -> strategy -> int option -> ident list -> unit := "ltac2" "tac_typeclasses_eauto".
+Ltac2 @ external typeclasses_eauto : strategy -> int option -> ident list option -> unit := "ltac2" "tac_typeclasses_eauto".

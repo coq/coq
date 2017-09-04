@@ -243,6 +243,12 @@ let eauto debug n p lems dbs =
   let dbs = Option.map (fun l -> List.map Id.to_string l) dbs in
   Eauto.gen_eauto (Eauto.make_dimension n p) lems dbs
 
-let typeclasses_eauto only_classes strategy depth dbs =
-  let dbs = List.map Id.to_string dbs in
+let typeclasses_eauto strategy depth dbs =
+  let only_classes, dbs = match dbs with
+  | None ->
+    true, [Hints.typeclasses_db]
+  | Some dbs ->
+    let dbs = List.map Id.to_string dbs in
+    false, dbs
+  in
   Class_tactics.typeclasses_eauto ~only_classes ~strategy ~depth dbs

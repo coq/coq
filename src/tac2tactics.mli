@@ -97,5 +97,5 @@ val new_auto : Hints.debug -> int option -> constr tactic list ->
 val eauto : Hints.debug -> int option -> int option -> constr tactic list ->
   Id.t list option -> unit Proofview.tactic
 
-val typeclasses_eauto : bool -> Class_tactics.search_strategy -> int option ->
-  Id.t list -> unit Proofview.tactic
+val typeclasses_eauto : Class_tactics.search_strategy -> int option ->
+  Id.t list option -> unit Proofview.tactic
