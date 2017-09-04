@@ -995,7 +995,19 @@ let () =
 let add_scope s f =
   Tac2entries.register_scope (Id.of_string s) f
 
-let scope_fail () = CErrors.user_err (str "Invalid parsing token")
+let rec pr_scope = function
+| SexprStr (_, s) -> qstring s
+| SexprInt (_, n) -> int n
+| SexprRec (_, (_, na), args) ->
+  let na = match na with
+  | None -> str "_"
+  | Some id -> Id.print id
+  in
+  na ++ str "(" ++ prlist_with_sep (fun () -> str ", ") pr_scope args ++ str ")"
+
+let scope_fail s args =
+  let args = str "(" ++ prlist_with_sep (fun () -> str ", ") pr_scope args ++ str ")" in
+  CErrors.user_err (str "Invalid arguments " ++ args ++ str " in scope " ++ str s)
 
 let q_unit = Loc.tag @@ CTacCst (AbsKn (Tuple 0))
 
@@ -1010,7 +1022,7 @@ let add_generic_scope s entry arg =
     let scope = Extend.Aentry entry in
     let act x = Loc.tag @@ CTacExt (arg, x) in
     Tac2entries.ScopeRule (scope, act)
-  | _ -> scope_fail ()
+  | arg -> scope_fail s arg
   in
   add_scope s parse
 
@@ -1018,14 +1030,14 @@ let () = add_scope "keyword" begin function
 | [SexprStr (loc, s)] ->
   let scope = Extend.Atoken (Tok.KEYWORD s) in
   Tac2entries.ScopeRule (scope, (fun _ -> q_unit))
-| _ -> scope_fail ()
+| arg -> scope_fail "keyword" arg
 end
 
 let () = add_scope "terminal" begin function
 | [SexprStr (loc, s)] ->
   let scope = Extend.Atoken (CLexer.terminal s) in
   Tac2entries.ScopeRule (scope, (fun _ -> q_unit))
-| _ -> scope_fail ()
+| arg -> scope_fail "terminal" arg
 end
 
 let () = add_scope "list0" begin function
@@ -1040,7 +1052,7 @@ let () = add_scope "list0" begin function
   let scope = Extend.Alist0sep (scope, sep) in
   let act l = Tac2quote.of_list act l in
   Tac2entries.ScopeRule (scope, act)
-| _ -> scope_fail ()
+| arg -> scope_fail "list0" arg
 end
 
 let () = add_scope "list1" begin function
@@ -1055,7 +1067,7 @@ let () = add_scope "list1" begin function
   let scope = Extend.Alist1sep (scope, sep) in
   let act l = Tac2quote.of_list act l in
   Tac2entries.ScopeRule (scope, act)
-| _ -> scope_fail ()
+| arg -> scope_fail "list1" arg
 end
 
 let () = add_scope "opt" begin function
@@ -1069,7 +1081,7 @@ let () = add_scope "opt" begin function
     Loc.tag @@ CTacApp (Loc.tag @@ CTacCst (AbsKn (Other Core.c_some)), [act x])
   in
   Tac2entries.ScopeRule (scope, act)
-| _ -> scope_fail ()
+| arg -> scope_fail "opt" arg
 end
 
 let () = add_scope "self" begin function
@@ -1077,7 +1089,7 @@ let () = add_scope "self" begin function
   let scope = Extend.Aself in
   let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
-| _ -> scope_fail ()
+| arg -> scope_fail "self" arg
 end
 
 let () = add_scope "next" begin function
@@ -1085,7 +1097,7 @@ let () = add_scope "next" begin function
   let scope = Extend.Anext in
   let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
-| _ -> scope_fail ()
+| arg -> scope_fail "next" arg
 end
 
 let () = add_scope "tactic" begin function
@@ -1094,12 +1106,12 @@ let () = add_scope "tactic" begin function
   let scope = Extend.Aentryl (tac2expr, 5) in
   let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
-| [SexprInt (loc, n)] ->
-  let () = if n < 0 || n > 6 then scope_fail () in
+| [SexprInt (loc, n)] as arg ->
+  let () = if n < 0 || n > 6 then scope_fail "tactic" arg in
   let scope = Extend.Aentryl (tac2expr, n) in
   let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
-| _ -> scope_fail ()
+| arg -> scope_fail "tactic" arg
 end
 
 let () = add_scope "thunk" begin function
@@ -1107,13 +1119,13 @@ let () = add_scope "thunk" begin function
   let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
   let act e = rthunk (act e) in
   Tac2entries.ScopeRule (scope, act)
-| _ -> scope_fail ()
+| arg -> scope_fail "thunk" arg
 end
 
 let add_expr_scope name entry f =
   add_scope name begin function
   | [] -> Tac2entries.ScopeRule (Extend.Aentry entry, f)
-  | _ -> scope_fail ()
+  | arg -> scope_fail name arg
   end
 
 let () = add_expr_scope "ident" q_ident (fun id -> Tac2quote.of_anti Tac2quote.of_ident id)
