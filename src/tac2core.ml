@@ -930,9 +930,13 @@ let () =
     let _, tac = Genintern.intern Ltac_plugin.Tacarg.wit_tactic ist tac in
     GlbVal tac, gtypref t_unit
   in
-  let interp _ tac =
+  let interp ist tac =
+    let ist = { ist with env_ist = Id.Map.empty } in
+    let lfun = Tac2interp.set_env ist Id.Map.empty in
+    let ist = Ltac_plugin.Tacinterp.default_ist () in
     (** FUCK YOU API *)
-    (Obj.magic Ltac_plugin.Tacinterp.eval_tactic tac : unit Proofview.tactic) >>= fun () ->
+    let ist = { ist with API.Geninterp.lfun = (Obj.magic lfun) } in
+    (Obj.magic Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic) >>= fun () ->
     return v_unit
   in
   let subst s tac = Genintern.substitute Ltac_plugin.Tacarg.wit_tactic s tac in

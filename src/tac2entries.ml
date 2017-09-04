@@ -756,14 +756,15 @@ let _ = Goptions.declare_bool_option {
 }
 
 let pr_frame = function
-| FrLtac None -> str "<anonymous>"
+| FrLtac None -> str "Call <anonymous>"
 | FrLtac (Some kn) ->
-  Libnames.pr_qualid (Tac2env.shortest_qualid_of_ltac (TacConstant kn))
+  str "Call " ++ Libnames.pr_qualid (Tac2env.shortest_qualid_of_ltac (TacConstant kn))
 | FrPrim ml ->
-  str "<" ++ str ml.mltac_plugin ++ str ":" ++ str ml.mltac_tactic ++ str ">"
+  str "Prim <" ++ str ml.mltac_plugin ++ str ":" ++ str ml.mltac_tactic ++ str ">"
 | FrExtn (tag, arg) ->
   let obj = Tac2env.interp_ml_object tag in
-  obj.Tac2env.ml_print (Global.env ()) arg
+  str "Extn " ++ str (Tac2dyn.Arg.repr tag) ++ str ":" ++ spc () ++
+    obj.Tac2env.ml_print (Global.env ()) arg
 
 let () = register_handler begin function
 | Tac2interp.LtacError (kn, _, bt) ->
