@@ -1137,6 +1137,7 @@ let () = add_expr_scope "destruction_arg" q_destruction_arg Tac2quote.of_destruc
 let () = add_expr_scope "induction_clause" q_induction_clause Tac2quote.of_induction_clause
 let () = add_expr_scope "rewriting" q_rewriting Tac2quote.of_rewriting
 let () = add_expr_scope "clause" q_clause Tac2quote.of_clause
+let () = add_expr_scope "hintdb" q_hintdb Tac2quote.of_hintdb
 let () = add_expr_scope "occurrences" q_occurrences Tac2quote.of_occurrences
 let () = add_expr_scope "dispatch" q_dispatch Tac2quote.of_dispatch
 let () = add_expr_scope "strategy" q_strategy_flag Tac2quote.of_strategy_flag

@@ -305,6 +305,10 @@ let of_strategy_flag (loc, flag) =
     std_proj "rConst", of_list ?loc of_reference flag.rConst;
   ])
 
+let of_hintdb (loc, hdb) = match hdb with
+| QHintAll -> of_option ?loc (fun l -> of_list (fun id -> of_anti of_ident id) l) None
+| QHintDbs ids -> of_option ?loc (fun l -> of_list (fun id -> of_anti of_ident id) l) (Some ids)
+
 let pattern_vars pat =
   let rec aux () accu pat = match pat.CAst.v with
   | Constrexpr.CPatVar id -> Id.Set.add id accu

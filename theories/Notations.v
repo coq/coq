@@ -432,6 +432,72 @@ Ltac2 Notation "injection" arg(opt(destruction_arg)) ipat(opt(seq("as", intropat
 Ltac2 Notation "einjection" arg(opt(destruction_arg)) ipat(opt(seq("as", intropatterns))):=
   Std.injection true ipat arg.
 
+(** Auto *)
+
+Ltac2 default_db dbs := match dbs with
+| None => Some []
+| Some dbs =>
+  match dbs with
+  | None => None
+  | Some l => Some l
+  end
+end.
+
+Ltac2 default_using use := match use with
+| None => []
+| Some use => use
+end.
+
+Ltac2 trivial0 use dbs :=
+  let dbs := default_db dbs in
+  let use := default_using use in
+  Std.trivial Std.Off use dbs.
+
+Ltac2 Notation "trivial"
+  use(opt(seq("using", list1(thunk(constr), ","))))
+  dbs(opt(seq("with", hintdb))) := trivial0 use dbs.
+
+Ltac2 Notation trivial := trivial.
+
+Ltac2 auto0 n use dbs :=
+  let dbs := default_db dbs in
+  let use := default_using use in
+  Std.auto Std.Off n use dbs.
+
+Ltac2 Notation "auto" n(opt(tactic(0)))
+  use(opt(seq("using", list1(thunk(constr), ","))))
+  dbs(opt(seq("with", hintdb))) := auto0 n use dbs.
+
+Ltac2 Notation auto := auto.
+
+Ltac2 new_eauto0 n use dbs :=
+  let dbs := default_db dbs in
+  let use := default_using use in
+  Std.new_auto Std.Off n use dbs.
+
+Ltac2 Notation "new" "auto" n(opt(tactic(0)))
+  use(opt(seq("using", list1(thunk(constr), ","))))
+  dbs(opt(seq("with", hintdb))) := new_eauto0 n use dbs.
+
+Ltac2 eauto0 n p use dbs :=
+  let dbs := default_db dbs in
+  let use := default_using use in
+  Std.eauto Std.Off n p use dbs.
+
+Ltac2 Notation "eauto" n(opt(tactic(0))) p(opt(tactic(0)))
+  use(opt(seq("using", list1(thunk(constr), ","))))
+  dbs(opt(seq("with", hintdb))) := eauto0 n p use dbs.
+
+Ltac2 Notation eauto := eauto.
+
+Ltac2 Notation "typeclasses_eauto" n(opt(tactic(0))) p(opt(tactic(0)))
+  dbs(opt(seq("with", list1(ident)))) := Std.typeclasses_eauto Std.DFS n dbs.
+
+Ltac2 Notation "typeclasses_eauto" "bfs" n(opt(tactic(0))) p(opt(tactic(0)))
+  dbs(opt(seq("with", list1(ident)))) := Std.typeclasses_eauto Std.BFS n dbs.
+
+Ltac2 Notation typeclasses_eauto := typeclasses_eauto.
+
 (** Congruence *)
 
 Ltac2 f_equal0 () := ltac1:(f_equal).

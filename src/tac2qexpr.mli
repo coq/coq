@@ -125,3 +125,9 @@ type constr_match_branch_r =
 type constr_match_branch = constr_match_branch_r located
 
 type constr_matching = constr_match_branch list located
+
+type hintdb_r =
+| QHintAll
+| QHintDbs of Id.t located or_anti list
+
+type hintdb = hintdb_r located

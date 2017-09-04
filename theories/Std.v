@@ -216,7 +216,7 @@ Ltac2 @ external subst_all : unit -> unit := "ltac2" "tac_substall".
 
 Ltac2 Type debug := [ Off | Info | Debug ].
 
-Ltac2 Type strategy := [ BFS | DFS ].
+Ltac2 Type strategy := [ BFS | DFS ].
 
 Ltac2 @ external trivial : debug -> (unit -> constr) list -> ident list option -> unit := "ltac2" "tac_trivial".
 
