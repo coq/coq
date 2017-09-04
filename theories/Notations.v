@@ -401,6 +401,7 @@ Ltac2 clear0 ids := match ids with
 end.
 
 Ltac2 Notation "clear" ids(list0(ident)) := clear0 ids.
+Ltac2 Notation "clear" "-" ids(list1(ident)) := Std.keep ids.
 Ltac2 Notation clear := clear.
 
 Ltac2 Notation refine := Control.refine.
