@@ -211,3 +211,19 @@ Ltac2 @ external autorewrite : bool -> (unit -> unit) option -> ident list -> cl
 
 Ltac2 @ external subst : ident list -> unit := "ltac2" "tac_subst".
 Ltac2 @ external subst_all : unit -> unit := "ltac2" "tac_substall".
+
+(** auto *)
+
+Ltac2 Type debug := [ Off | Info | Debug ].
+
+Ltac2 Type strategy := [ BFS | DFS ].
+
+Ltac2 @ external trivial : debug -> (unit -> constr) list -> ident list option -> unit := "ltac2" "tac_trivial".
+
+Ltac2 @ external auto : debug -> int option -> (unit -> constr) list -> ident list option -> unit := "ltac2" "tac_auto".
+
+Ltac2 @ external new_auto : debug -> int option -> (unit -> constr) list -> ident list option -> unit := "ltac2" "tac_newauto".
+
+Ltac2 @ external eauto : debug -> int option -> int option -> (unit -> constr) list -> ident list option -> unit := "ltac2" "tac_eauto".
+
+Ltac2 @ external typeclasses_eauto : bool -> strategy -> int option -> ident list -> unit := "ltac2" "tac_typeclasses_eauto".

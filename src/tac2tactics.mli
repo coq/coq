@@ -84,3 +84,18 @@ val discriminate : evars_flag -> destruction_arg option -> unit tactic
 val injection : evars_flag -> intro_pattern list option -> destruction_arg option -> unit tactic
 
 val autorewrite : all:bool -> unit tactic option -> Id.t list -> clause -> unit tactic
+
+val trivial : Hints.debug -> constr tactic list -> Id.t list option ->
+  unit Proofview.tactic
+
+val auto : Hints.debug -> int option -> constr tactic list ->
+  Id.t list option -> unit Proofview.tactic
+
+val new_auto : Hints.debug -> int option -> constr tactic list ->
+  Id.t list option -> unit Proofview.tactic
+
+val eauto : Hints.debug -> int option -> int option -> constr tactic list ->
+  Id.t list option -> unit Proofview.tactic
+
+val typeclasses_eauto : bool -> Class_tactics.search_strategy -> int option ->
+  Id.t list -> unit Proofview.tactic

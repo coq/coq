@@ -159,6 +159,17 @@ let to_rewriting = function
   (orient, repeat, c)
 | _ -> assert false
 
+let to_debug = function
+| ValInt 0 -> Hints.Off
+| ValInt 1 -> Hints.Info
+| ValInt 2 -> Hints.Debug
+| _ -> assert false
+
+let to_strategy = function
+| ValInt 0 -> Class_tactics.Bfs
+| ValInt 1 -> Class_tactics.Dfs
+| _ -> assert false
+
 (** Standard tactics sharing their implementation with Ltac1 *)
 
 let pname s = { mltac_plugin = "ltac2"; mltac_tactic = s }
@@ -196,6 +207,13 @@ let define_prim3 name tac =
 let define_prim4 name tac =
   let tac bt arg = match arg with
   | [x; y; z; u] -> lift (tac bt x y z u)
+  | _ -> assert false
+  in
+  Tac2env.define_primitive (pname name) tac
+
+let define_prim5 name tac =
+  let tac bt arg = match arg with
+  | [x; y; z; u; v] -> lift (tac bt x y z u v)
   | _ -> assert false
   in
   Tac2env.define_primitive (pname name) tac
@@ -608,3 +626,49 @@ let () = define_prim1 "tac_subst" begin fun _ ids ->
 end
 
 let () = define_prim0 "tac_substall" (return () >>= fun () -> Equality.subst_all ())
+
+(** Auto *)
+
+let () = define_prim3 "tac_trivial" begin fun bt dbg lems dbs ->
+  let dbg = to_debug dbg in
+  let map c = thaw bt c >>= fun c -> return (Value.to_constr c) in
+  let lems = Value.to_list map lems in
+  let dbs = Value.to_option (fun l -> Value.to_list Value.to_ident l) dbs in
+  Tac2tactics.trivial dbg lems dbs
+end
+
+let () = define_prim5 "tac_eauto" begin fun bt dbg n p lems dbs ->
+  let dbg = to_debug dbg in
+  let n = Value.to_option Value.to_int n in
+  let p = Value.to_option Value.to_int p in
+  let map c = thaw bt c >>= fun c -> return (Value.to_constr c) in
+  let lems = Value.to_list map lems in
+  let dbs = Value.to_option (fun l -> Value.to_list Value.to_ident l) dbs in
+  Tac2tactics.eauto dbg n p lems dbs
+end
+
+let () = define_prim4 "tac_auto" begin fun bt dbg n lems dbs ->
+  let dbg = to_debug dbg in
+  let n = Value.to_option Value.to_int n in
+  let map c = thaw bt c >>= fun c -> return (Value.to_constr c) in
+  let lems = Value.to_list map lems in
+  let dbs = Value.to_option (fun l -> Value.to_list Value.to_ident l) dbs in
+  Tac2tactics.auto dbg n lems dbs
+end
+
+let () = define_prim4 "tac_newauto" begin fun bt dbg n lems dbs ->
+  let dbg = to_debug dbg in
+  let n = Value.to_option Value.to_int n in
+  let map c = thaw bt c >>= fun c -> return (Value.to_constr c) in
+  let lems = Value.to_list map lems in
+  let dbs = Value.to_option (fun l -> Value.to_list Value.to_ident l) dbs in
+  Tac2tactics.new_auto dbg n lems dbs
+end
+
+let () = define_prim4 "tac_typeclasses_eauto" begin fun bt b str n dbs ->
+  let b = Value.to_bool b in
+  let str = to_strategy str in
+  let n = Value.to_option Value.to_int n in
+  let dbs = Value.to_list Value.to_ident dbs in
+  Tac2tactics.typeclasses_eauto b str n dbs
+end
