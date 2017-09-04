@@ -703,6 +703,11 @@ foo 0 ↦ (fun x => x ()) (fun _ => 0)
 Note that abbreviations are not typechecked at all, and may result in typing
 errors after expansion.
 
+# Debug
+
+When the option `Ltac2 Backtrace` is set, toplevel failures will be printed with
+a backtrace.
+
 # Compatibility layer with Ltac1
 
 ## Ltac1 from Ltac2

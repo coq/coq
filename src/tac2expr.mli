@@ -205,6 +205,16 @@ and closure = {
   (** Global constant from which the closure originates *)
 }
 
-type ml_tactic = valexpr list -> valexpr Proofview.tactic
+type frame =
+| FrLtac of ltac_constant option
+| FrPrim of ml_tactic_name
+| FrExtn : ('a, 'b) Tac2dyn.Arg.tag * 'b -> frame
 
-type environment = valexpr Id.Map.t
+type backtrace = frame list
+
+type ml_tactic = backtrace -> valexpr list -> valexpr Proofview.tactic
+
+type environment = {
+  env_ist : valexpr Id.Map.t;
+  env_bkt : backtrace;
+}

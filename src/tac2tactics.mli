@@ -9,6 +9,7 @@
 open Names
 open Locus
 open Globnames
+open Tac2expr
 open EConstr
 open Genredexpr
 open Misctypes
@@ -55,28 +56,28 @@ val vm : (Pattern.constr_pattern * occurrences_expr) option -> clause -> unit ta
 
 val native : (Pattern.constr_pattern * occurrences_expr) option -> clause -> unit tactic
 
-val eval_red : constr -> constr tactic
+val eval_red : backtrace -> constr -> constr tactic
 
-val eval_hnf : constr -> constr tactic
+val eval_hnf : backtrace -> constr -> constr tactic
 
-val eval_simpl : global_reference glob_red_flag ->
+val eval_simpl : backtrace -> global_reference glob_red_flag ->
   (Pattern.constr_pattern * occurrences_expr) option -> constr -> constr tactic
 
-val eval_cbv : global_reference glob_red_flag -> constr -> constr tactic
+val eval_cbv : backtrace -> global_reference glob_red_flag -> constr -> constr tactic
 
-val eval_cbn : global_reference glob_red_flag -> constr -> constr tactic
+val eval_cbn : backtrace -> global_reference glob_red_flag -> constr -> constr tactic
 
-val eval_lazy : global_reference glob_red_flag -> constr -> constr tactic
+val eval_lazy : backtrace -> global_reference glob_red_flag -> constr -> constr tactic
 
-val eval_unfold : (global_reference * occurrences_expr) list -> constr -> constr tactic
+val eval_unfold : backtrace -> (global_reference * occurrences_expr) list -> constr -> constr tactic
 
-val eval_fold : constr list -> constr -> constr tactic
+val eval_fold : backtrace -> constr list -> constr -> constr tactic
 
-val eval_pattern : (EConstr.t * occurrences_expr) list -> constr -> constr tactic
+val eval_pattern : backtrace -> (EConstr.t * occurrences_expr) list -> constr -> constr tactic
 
-val eval_vm : (Pattern.constr_pattern * occurrences_expr) option -> constr -> constr tactic
+val eval_vm : backtrace -> (Pattern.constr_pattern * occurrences_expr) option -> constr -> constr tactic
 
-val eval_native : (Pattern.constr_pattern * occurrences_expr) option -> constr -> constr tactic
+val eval_native : backtrace -> (Pattern.constr_pattern * occurrences_expr) option -> constr -> constr tactic
 
 val discriminate : evars_flag -> destruction_arg option -> unit tactic
 

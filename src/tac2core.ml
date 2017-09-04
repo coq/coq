@@ -14,7 +14,6 @@ open Genarg
 open Tac2env
 open Tac2dyn
 open Tac2expr
-open Tac2interp
 open Tac2entries.Pltac
 open Proofview.Notations
 
@@ -90,22 +89,26 @@ let of_result f = function
 
 (** Stdlib exceptions *)
 
-let err_notfocussed =
-  LtacError (coq_core "Not_focussed", [||])
+let err_notfocussed bt =
+  Tac2interp.LtacError (coq_core "Not_focussed", [||], bt)
 
-let err_outofbounds =
-  LtacError (coq_core "Out_of_bounds", [||])
+let err_outofbounds bt =
+  Tac2interp.LtacError (coq_core "Out_of_bounds", [||], bt)
 
-let err_notfound =
-  LtacError (coq_core "Not_found", [||])
+let err_notfound bt =
+  Tac2interp.LtacError (coq_core "Not_found", [||], bt)
 
-let err_matchfailure =
-  LtacError (coq_core "Match_failure", [||])
+let err_matchfailure bt =
+  Tac2interp.LtacError (coq_core "Match_failure", [||], bt)
 
 (** Helper functions *)
 
-let thaw f = interp_app f [v_unit]
-let throw e = Proofview.tclLIFT (Proofview.NonLogical.raise e)
+let thaw bt f = Tac2interp.interp_app bt f [v_unit]
+let throw bt e = Proofview.tclLIFT (Proofview.NonLogical.raise (e bt))
+
+let set_bt bt e = match e with
+| Tac2interp.LtacError (kn, args, _) -> Tac2interp.LtacError (kn, args, bt)
+| e -> e
 
 let return x = Proofview.tclUNIT x
 let pname s = { mltac_plugin = "ltac2"; mltac_tactic = s }
@@ -116,13 +119,13 @@ let wrap f =
 let wrap_unit f =
   return () >>= fun () -> f (); return v_unit
 
-let assert_focussed =
+let assert_focussed bt =
   Proofview.Goal.goals >>= fun gls ->
   match gls with
   | [_] -> Proofview.tclUNIT ()
-  | [] | _ :: _ :: _ -> throw err_notfocussed
+  | [] | _ :: _ :: _ -> throw bt err_notfocussed
 
-let pf_apply f =
+let pf_apply bt f =
   Proofview.Goal.goals >>= function
   | [] ->
     Proofview.tclENV >>= fun env ->
@@ -132,61 +135,61 @@ let pf_apply f =
     gl >>= fun gl ->
     f (Proofview.Goal.env gl) (Tacmach.New.project gl)
   | _ :: _ :: _ ->
-    throw err_notfocussed
+    throw bt err_notfocussed
 
 (** Primitives *)
 
-let define0 name f = Tac2env.define_primitive (pname name) begin function
-| [_] -> f
+let define0 name f = Tac2env.define_primitive (pname name) begin fun bt arg -> match arg with
+| [_] -> f bt
 | _ -> assert false
 end
 
-let define1 name f = Tac2env.define_primitive (pname name) begin function
-| [x] -> f x
+let define1 name f = Tac2env.define_primitive (pname name) begin fun bt arg -> match arg with
+| [x] -> f bt x
 | _ -> assert false
 end
 
-let define2 name f = Tac2env.define_primitive (pname name) begin function
-| [x; y] -> f x y
+let define2 name f = Tac2env.define_primitive (pname name) begin fun bt arg -> match arg with
+| [x; y] -> f bt x y
 | _ -> assert false
 end
 
-let define3 name f = Tac2env.define_primitive (pname name) begin function
-| [x; y; z] -> f x y z
+let define3 name f = Tac2env.define_primitive (pname name) begin fun bt arg -> match arg with
+| [x; y; z] -> f bt x y z
 | _ -> assert false
 end
 
 (** Printing *)
 
-let () = define1 "print" begin fun pp ->
+let () = define1 "print" begin fun _ pp ->
   wrap_unit (fun () -> Feedback.msg_notice (Value.to_pp pp))
 end
 
-let () = define1 "message_of_int" begin fun n ->
+let () = define1 "message_of_int" begin fun _ n ->
   let n = Value.to_int n in
   return (Value.of_pp (int n))
 end
 
-let () = define1 "message_of_string" begin fun s ->
+let () = define1 "message_of_string" begin fun _ s ->
   let s = Value.to_string s in
   return (Value.of_pp (str (Bytes.to_string s)))
 end
 
-let () = define1 "message_of_constr" begin fun c ->
-  pf_apply begin fun env sigma ->
+let () = define1 "message_of_constr" begin fun bt c ->
+  pf_apply bt begin fun env sigma ->
     let c = Value.to_constr c in
     let pp = Printer.pr_econstr_env env sigma c in
     return (Value.of_pp pp)
   end
 end
 
-let () = define1 "message_of_ident" begin fun c ->
+let () = define1 "message_of_ident" begin fun _ c ->
   let c = Value.to_ident c in
   let pp = Id.print c in
   return (Value.of_pp pp)
 end
 
-let () = define2 "message_concat" begin fun m1 m2 ->
+let () = define2 "message_concat" begin fun _ m1 m2 ->
   let m1 = Value.to_pp m1 in
   let m2 = Value.to_pp m2 in
   return (Value.of_pp (Pp.app m1 m2))
@@ -194,45 +197,45 @@ end
 
 (** Array *)
 
-let () = define2 "array_make" begin fun n x ->
+let () = define2 "array_make" begin fun bt n x ->
   let n = Value.to_int n in
-  if n < 0 || n > Sys.max_array_length then throw err_outofbounds
+  if n < 0 || n > Sys.max_array_length then throw bt err_outofbounds
   else wrap (fun () -> ValBlk (0, Array.make n x))
 end
 
-let () = define1 "array_length" begin fun v ->
+let () = define1 "array_length" begin fun _ v ->
   let v = to_block v in
   return (ValInt (Array.length v))
 end
 
-let () = define3 "array_set" begin fun v n x ->
+let () = define3 "array_set" begin fun bt v n x ->
   let v = to_block v in
   let n = Value.to_int n in
-  if n < 0 || n >= Array.length v then throw err_outofbounds
+  if n < 0 || n >= Array.length v then throw bt err_outofbounds
   else wrap_unit (fun () -> v.(n) <- x)
 end
 
-let () = define2 "array_get" begin fun v n ->
+let () = define2 "array_get" begin fun bt v n ->
   let v = to_block v in
   let n = Value.to_int n in
-  if n < 0 || n >= Array.length v then throw err_outofbounds
+  if n < 0 || n >= Array.length v then throw bt err_outofbounds
   else wrap (fun () -> v.(n))
 end
 
 (** Ident *)
 
-let () = define2 "ident_equal" begin fun id1 id2 ->
+let () = define2 "ident_equal" begin fun _ id1 id2 ->
   let id1 = Value.to_ident id1 in
   let id2 = Value.to_ident id2 in
   return (Value.of_bool (Id.equal id1 id2))
 end
 
-let () = define1 "ident_to_string" begin fun id ->
+let () = define1 "ident_to_string" begin fun _ id ->
   let id = Value.to_ident id in
   return (Value.of_string (Id.to_string id))
 end
 
-let () = define1 "ident_of_string" begin fun s ->
+let () = define1 "ident_of_string" begin fun _ s ->
   let s = Value.to_string s in
   let id = try Some (Id.of_string s) with _ -> None in
   return (Value.of_option Value.of_ident id)
@@ -240,11 +243,11 @@ end
 
 (** Int *)
 
-let () = define2 "int_equal" begin fun m n ->
+let () = define2 "int_equal" begin fun _ m n ->
   return (Value.of_bool (Value.to_int m == Value.to_int n))
 end
 
-let binop n f = define2 n begin fun m n ->
+let binop n f = define2 n begin fun _ m n ->
   return (Value.of_int (f (Value.to_int m) (Value.to_int n)))
 end
 
@@ -253,42 +256,42 @@ let () = binop "int_add" (+)
 let () = binop "int_sub" (-)
 let () = binop "int_mul" ( * )
 
-let () = define1 "int_neg" begin fun m ->
+let () = define1 "int_neg" begin fun _ m ->
   return (Value.of_int (~- (Value.to_int m)))
 end
 
 (** String *)
 
-let () = define2 "string_make" begin fun n c ->
+let () = define2 "string_make" begin fun bt n c ->
   let n = Value.to_int n in
   let c = Value.to_char c in
-  if n < 0 || n > Sys.max_string_length then throw err_outofbounds
+  if n < 0 || n > Sys.max_string_length then throw bt err_outofbounds
   else wrap (fun () -> Value.of_string (Bytes.make n c))
 end
 
-let () = define1 "string_length" begin fun s ->
+let () = define1 "string_length" begin fun _ s ->
   return (Value.of_int (Bytes.length (Value.to_string s)))
 end
 
-let () = define3 "string_set" begin fun s n c ->
+let () = define3 "string_set" begin fun bt s n c ->
   let s = Value.to_string s in
   let n = Value.to_int n in
   let c = Value.to_char c in
-  if n < 0 || n >= Bytes.length s then throw err_outofbounds
+  if n < 0 || n >= Bytes.length s then throw bt err_outofbounds
   else wrap_unit (fun () -> Bytes.set s n c)
 end
 
-let () = define2 "string_get" begin fun s n ->
+let () = define2 "string_get" begin fun bt s n ->
   let s = Value.to_string s in
   let n = Value.to_int n in
-  if n < 0 || n >= Bytes.length s then throw err_outofbounds
+  if n < 0 || n >= Bytes.length s then throw bt err_outofbounds
   else wrap (fun () -> Value.of_char (Bytes.get s n))
 end
 
 (** Terms *)
 
 (** constr -> constr *)
-let () = define1 "constr_type" begin fun c ->
+let () = define1 "constr_type" begin fun bt c ->
   let c = Value.to_constr c in
   let get_type env sigma =
   Proofview.V82.wrap_exceptions begin fun () ->
@@ -296,11 +299,11 @@ let () = define1 "constr_type" begin fun c ->
     let t = Value.of_constr t in
     Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT t
   end in
-  pf_apply get_type
+  pf_apply bt get_type
 end
 
 (** constr -> constr *)
-let () = define2 "constr_equal" begin fun c1 c2 ->
+let () = define2 "constr_equal" begin fun _ c1 c2 ->
   let c1 = Value.to_constr c1 in
   let c2 = Value.to_constr c2 in
   Proofview.tclEVARMAP >>= fun sigma ->
@@ -308,7 +311,7 @@ let () = define2 "constr_equal" begin fun c1 c2 ->
   Proofview.tclUNIT (Value.of_bool b)
 end
 
-let () = define1 "constr_kind" begin fun c ->
+let () = define1 "constr_kind" begin fun _ c ->
   let open Constr in
   Proofview.tclEVARMAP >>= fun sigma ->
   let c = Value.to_constr c in
@@ -403,7 +406,7 @@ let () = define1 "constr_kind" begin fun c ->
   end
 end
 
-let () = define1 "constr_make" begin fun knd ->
+let () = define1 "constr_make" begin fun _ knd ->
   let open Constr in
   let c = match knd with
   | ValBlk (0, [|n|]) ->
@@ -483,9 +486,9 @@ let () = define1 "constr_make" begin fun knd ->
   return (Value.of_constr c)
 end
 
-let () = define1 "constr_check" begin fun c ->
+let () = define1 "constr_check" begin fun bt c ->
   let c = Value.to_constr c in
-  pf_apply begin fun env sigma ->
+  pf_apply bt begin fun env sigma ->
     try
       let (sigma, _) = Typing.type_of env sigma c in
       Proofview.Unsafe.tclEVARS sigma >>= fun () ->
@@ -496,7 +499,7 @@ let () = define1 "constr_check" begin fun c ->
   end
 end
 
-let () = define3 "constr_substnl" begin fun subst k c ->
+let () = define3 "constr_substnl" begin fun _ subst k c ->
   let subst = Value.to_list Value.to_constr subst in
   let k = Value.to_int k in
   let c = Value.to_constr c in
@@ -504,7 +507,7 @@ let () = define3 "constr_substnl" begin fun subst k c ->
   return (Value.of_constr ans)
 end
 
-let () = define3 "constr_closenl" begin fun ids k c ->
+let () = define3 "constr_closenl" begin fun _ ids k c ->
   let ids = Value.to_list Value.to_ident ids in
   let k = Value.to_int k in
   let c = Value.to_constr c in
@@ -514,16 +517,16 @@ end
 
 (** Patterns *)
 
-let () = define2 "pattern_matches" begin fun pat c ->
+let () = define2 "pattern_matches" begin fun bt pat c ->
   let pat = Value.to_pattern pat in
   let c = Value.to_constr c in
-  pf_apply begin fun env sigma ->
+  pf_apply bt begin fun env sigma ->
     let ans =
       try Some (Constr_matching.matches env sigma pat c)
       with Constr_matching.PatternMatchingFailure -> None
     in
     begin match ans with
-    | None -> Proofview.tclZERO err_matchfailure
+    | None -> Proofview.tclZERO (err_matchfailure bt)
     | Some ans ->
       let ans = Id.Map.bindings ans in
       let of_pair (id, c) = Value.of_tuple [| Value.of_ident id; Value.of_constr c |] in
@@ -532,34 +535,34 @@ let () = define2 "pattern_matches" begin fun pat c ->
   end
 end
 
-let () = define2 "pattern_matches_subterm" begin fun pat c ->
+let () = define2 "pattern_matches_subterm" begin fun bt pat c ->
   let pat = Value.to_pattern pat in
   let c = Value.to_constr c in
   let open Constr_matching in
   let rec of_ans s = match IStream.peek s with
-  | IStream.Nil -> Proofview.tclZERO err_matchfailure
+  | IStream.Nil -> Proofview.tclZERO (err_matchfailure bt)
   | IStream.Cons ({ m_sub = (_, sub); m_ctx }, s) ->
     let ans = Id.Map.bindings sub in
     let of_pair (id, c) = Value.of_tuple [| Value.of_ident id; Value.of_constr c |] in
     let ans = Value.of_tuple [| Value.of_constr m_ctx; Value.of_list of_pair ans |] in
     Proofview.tclOR (return ans) (fun _ -> of_ans s)
   in
-  pf_apply begin fun env sigma ->
+  pf_apply bt begin fun env sigma ->
     let ans = Constr_matching.match_appsubterm env sigma pat c in
     of_ans ans
   end
 end
 
-let () = define2 "pattern_matches_vect" begin fun pat c ->
+let () = define2 "pattern_matches_vect" begin fun bt pat c ->
   let pat = Value.to_pattern pat in
   let c = Value.to_constr c in
-  pf_apply begin fun env sigma ->
+  pf_apply bt begin fun env sigma ->
     let ans =
       try Some (Constr_matching.matches env sigma pat c)
       with Constr_matching.PatternMatchingFailure -> None
     in
     begin match ans with
-    | None -> Proofview.tclZERO err_matchfailure
+    | None -> Proofview.tclZERO (err_matchfailure bt)
     | Some ans ->
       let ans = Id.Map.bindings ans in
       let ans = Array.map_of_list snd ans in
@@ -568,25 +571,25 @@ let () = define2 "pattern_matches_vect" begin fun pat c ->
   end
 end
 
-let () = define2 "pattern_matches_subterm_vect" begin fun pat c ->
+let () = define2 "pattern_matches_subterm_vect" begin fun bt pat c ->
   let pat = Value.to_pattern pat in
   let c = Value.to_constr c in
   let open Constr_matching in
   let rec of_ans s = match IStream.peek s with
-  | IStream.Nil -> Proofview.tclZERO err_matchfailure
+  | IStream.Nil -> Proofview.tclZERO (err_matchfailure bt)
   | IStream.Cons ({ m_sub = (_, sub); m_ctx }, s) ->
     let ans = Id.Map.bindings sub in
     let ans = Array.map_of_list snd ans in
     let ans = Value.of_tuple [| Value.of_constr m_ctx; Value.of_array Value.of_constr ans |] in
     Proofview.tclOR (return ans) (fun _ -> of_ans s)
   in
-  pf_apply begin fun env sigma ->
+  pf_apply bt begin fun env sigma ->
     let ans = Constr_matching.match_appsubterm env sigma pat c in
     of_ans ans
   end
 end
 
-let () = define2 "pattern_instantiate" begin fun ctx c ->
+let () = define2 "pattern_instantiate" begin fun _ ctx c ->
   let ctx = EConstr.Unsafe.to_constr (Value.to_constr ctx) in
   let c = EConstr.Unsafe.to_constr (Value.to_constr c) in
   let ans = Termops.subst_meta [Constr_matching.special_meta, c] ctx in
@@ -595,46 +598,48 @@ end
 
 (** Error *)
 
-let () = define1 "throw" begin fun e ->
+let () = define1 "throw" begin fun bt e ->
   let (e, info) = Value.to_exn e in
+  let e = set_bt bt e in
   Proofview.tclLIFT (Proofview.NonLogical.raise ~info e)
 end
 
 (** Control *)
 
 (** exn -> 'a *)
-let () = define1 "zero" begin fun e ->
+let () = define1 "zero" begin fun bt e ->
   let (e, info) = Value.to_exn e in
+  let e = set_bt bt e in
   Proofview.tclZERO ~info e
 end
 
 (** (unit -> 'a) -> (exn -> 'a) -> 'a *)
-let () = define2 "plus" begin fun x k ->
-  Proofview.tclOR (thaw x) (fun e -> interp_app k [Value.of_exn e])
+let () = define2 "plus" begin fun bt x k ->
+  Proofview.tclOR (thaw bt x) (fun e -> Tac2interp.interp_app bt k [Value.of_exn e])
 end
 
 (** (unit -> 'a) -> 'a *)
-let () = define1 "once" begin fun f ->
-  Proofview.tclONCE (thaw f)
+let () = define1 "once" begin fun bt f ->
+  Proofview.tclONCE (thaw bt f)
 end
 
 (** (unit -> unit) list -> unit *)
-let () = define1 "dispatch" begin fun l ->
-  let l = Value.to_list (fun f -> Proofview.tclIGNORE (thaw f)) l in
+let () = define1 "dispatch" begin fun bt l ->
+  let l = Value.to_list (fun f -> Proofview.tclIGNORE (thaw bt f)) l in
   Proofview.tclDISPATCH l >>= fun () -> return v_unit
 end
 
 (** (unit -> unit) list -> (unit -> unit) -> (unit -> unit) list -> unit *)
-let () = define3 "extend" begin fun lft tac rgt ->
-  let lft = Value.to_list (fun f -> Proofview.tclIGNORE (thaw f)) lft in
-  let tac = Proofview.tclIGNORE (thaw tac) in
-  let rgt = Value.to_list (fun f -> Proofview.tclIGNORE (thaw f)) rgt in
+let () = define3 "extend" begin fun bt lft tac rgt ->
+  let lft = Value.to_list (fun f -> Proofview.tclIGNORE (thaw bt f)) lft in
+  let tac = Proofview.tclIGNORE (thaw bt tac) in
+  let rgt = Value.to_list (fun f -> Proofview.tclIGNORE (thaw bt f)) rgt in
   Proofview.tclEXTEND lft tac rgt >>= fun () -> return v_unit
 end
 
 (** (unit -> unit) -> unit *)
-let () = define1 "enter" begin fun f ->
-  let f = Proofview.tclIGNORE (thaw f) in
+let () = define1 "enter" begin fun bt f ->
+  let f = Proofview.tclIGNORE (thaw bt f) in
   Proofview.tclINDEPENDENT f >>= fun () -> return v_unit
 end
 
@@ -643,8 +648,8 @@ let e_var = Id.of_string "e"
 let prm_apply_kont_h = pname "apply_kont"
 
 (** (unit -> 'a) -> ('a * ('exn -> 'a)) result *)
-let () = define1 "case" begin fun f ->
-  Proofview.tclCASE (thaw f) >>= begin function
+let () = define1 "case" begin fun bt f ->
+  Proofview.tclCASE (thaw bt f) >>= begin function
   | Proofview.Next (x, k) ->
     let k = {
       clos_ref = None;
@@ -658,38 +663,40 @@ let () = define1 "case" begin fun f ->
 end
 
 (** 'a kont -> exn -> 'a *)
-let () = define2 "apply_kont" begin fun k e ->
-  (Value.to_ext Value.val_kont k) (Value.to_exn e)
+let () = define2 "apply_kont" begin fun bt k e ->
+  let (e, info) = Value.to_exn e in
+  let e = set_bt bt e in
+  (Value.to_ext Value.val_kont k) (e, info)
 end
 
 (** int -> int -> (unit -> 'a) -> 'a *)
-let () = define3 "focus" begin fun i j tac ->
+let () = define3 "focus" begin fun bt i j tac ->
   let i = Value.to_int i in
   let j = Value.to_int j in
-  Proofview.tclFOCUS i j (thaw tac)
+  Proofview.tclFOCUS i j (thaw bt tac)
 end
 
 (** unit -> unit *)
-let () = define0 "shelve" begin
+let () = define0 "shelve" begin fun _ ->
   Proofview.shelve >>= fun () -> return v_unit
 end
 
 (** unit -> unit *)
-let () = define0 "shelve_unifiable" begin
+let () = define0 "shelve_unifiable" begin fun _ ->
   Proofview.shelve_unifiable >>= fun () -> return v_unit
 end
 
-let () = define1 "new_goal" begin fun ev ->
+let () = define1 "new_goal" begin fun bt ev ->
   let ev = Evar.unsafe_of_int (Value.to_int ev) in
   Proofview.tclEVARMAP >>= fun sigma ->
   if Evd.mem sigma ev then
     Proofview.Unsafe.tclNEWGOALS [ev] <*> Proofview.tclUNIT v_unit
-  else throw err_notfound
+  else throw bt err_notfound
 end
 
 (** unit -> constr *)
-let () = define0 "goal" begin
-  assert_focussed >>= fun () ->
+let () = define0 "goal" begin fun bt ->
+  assert_focussed bt >>= fun () ->
   Proofview.Goal.enter_one begin fun gl ->
     let concl = Tacmach.New.pf_nf_concl gl in
     return (Value.of_constr concl)
@@ -697,9 +704,9 @@ let () = define0 "goal" begin
 end
 
 (** ident -> constr *)
-let () = define1 "hyp" begin fun id ->
+let () = define1 "hyp" begin fun bt id ->
   let id = Value.to_ident id in
-  pf_apply begin fun env _ ->
+  pf_apply bt begin fun env _ ->
     let mem = try ignore (Environ.lookup_named id env); true with Not_found -> false in
     if mem then return (Value.of_constr (EConstr.mkVar id))
     else Tacticals.New.tclZEROMSG
@@ -707,8 +714,8 @@ let () = define1 "hyp" begin fun id ->
   end
 end
 
-let () = define0 "hyps" begin
-  pf_apply begin fun env _ ->
+let () = define0 "hyps" begin fun bt ->
+  pf_apply bt begin fun env _ ->
     let open Context.Named.Declaration in
     let hyps = List.rev (Environ.named_context env) in
     let map = function
@@ -725,56 +732,56 @@ let () = define0 "hyps" begin
 end
 
 (** (unit -> constr) -> unit *)
-let () = define1 "refine" begin fun c ->
-  let c = thaw c >>= fun c -> Proofview.tclUNIT ((), Value.to_constr c) in
+let () = define1 "refine" begin fun bt c ->
+  let c = thaw bt c >>= fun c -> Proofview.tclUNIT ((), Value.to_constr c) in
   Proofview.Goal.nf_enter begin fun gl ->
     Refine.generic_refine ~typecheck:true c gl
   end >>= fun () -> return v_unit
 end
 
-let () = define2 "with_holes" begin fun x f ->
+let () = define2 "with_holes" begin fun bt x f ->
   Proofview.tclEVARMAP >>= fun sigma0 ->
-  thaw x >>= fun ans ->
+  thaw bt x >>= fun ans ->
   Proofview.tclEVARMAP >>= fun sigma ->
   Proofview.Unsafe.tclEVARS sigma0 >>= fun () ->
-  Tacticals.New.tclWITHHOLES false (interp_app f [ans]) sigma
+  Tacticals.New.tclWITHHOLES false (Tac2interp.interp_app bt f [ans]) sigma
 end
 
-let () = define1 "progress" begin fun f ->
-  Proofview.tclPROGRESS (thaw f)
+let () = define1 "progress" begin fun bt f ->
+  Proofview.tclPROGRESS (thaw bt f)
 end
 
-let () = define2 "abstract" begin fun id f ->
+let () = define2 "abstract" begin fun bt id f ->
   let id = Value.to_option Value.to_ident id in
-  Tactics.tclABSTRACT id (Proofview.tclIGNORE (thaw f)) >>= fun () ->
+  Tactics.tclABSTRACT id (Proofview.tclIGNORE (thaw bt f)) >>= fun () ->
   return v_unit
 end
 
-let () = define2 "time" begin fun s f ->
+let () = define2 "time" begin fun bt s f ->
   let s = Value.to_option Value.to_string s in
-  Proofview.tclTIME s (thaw f)
+  Proofview.tclTIME s (thaw bt f)
 end
 
-let () = define0 "check_interrupt" begin
+let () = define0 "check_interrupt" begin fun bt ->
   Proofview.tclCHECKINTERRUPT >>= fun () -> return v_unit
 end
 
 (** Fresh *)
 
-let () = define2 "fresh_free_union" begin fun set1 set2 ->
+let () = define2 "fresh_free_union" begin fun _ set1 set2 ->
   let set1 = Value.to_ext Value.val_free set1 in
   let set2 = Value.to_ext Value.val_free set2 in
   let ans = Id.Set.union set1 set2 in
   return (Value.of_ext Value.val_free ans)
 end
 
-let () = define1 "fresh_free_of_ids" begin fun ids ->
+let () = define1 "fresh_free_of_ids" begin fun _ ids ->
   let ids = Value.to_list Value.to_ident ids in
   let free = List.fold_right Id.Set.add ids Id.Set.empty in
   return (Value.of_ext Value.val_free free)
 end
 
-let () = define1 "fresh_free_of_constr" begin fun c ->
+let () = define1 "fresh_free_of_constr" begin fun _ c ->
   let c = Value.to_constr c in
   Proofview.tclEVARMAP >>= fun sigma ->
   let rec fold accu c = match EConstr.kind sigma c with
@@ -785,7 +792,7 @@ let () = define1 "fresh_free_of_constr" begin fun c ->
   return (Value.of_ext Value.val_free ans)
 end
 
-let () = define2 "fresh_fresh" begin fun avoid id ->
+let () = define2 "fresh_fresh" begin fun _ avoid id ->
   let avoid = Value.to_ext Value.val_free avoid in
   let id = Value.to_ident id in
   let nid = Namegen.next_ident_away_from id (fun id -> Id.Set.mem id avoid) in
@@ -828,9 +835,10 @@ let intern_constr self ist c =
 
 let interp_constr flags ist c =
   let open Pretyping in
-  pf_apply begin fun env sigma ->
+  let bt = ist.env_bkt in
+  let ist = to_lvar ist in
+  pf_apply bt begin fun env sigma ->
   Proofview.V82.wrap_exceptions begin fun () ->
-    let ist = to_lvar ist in
     let (sigma, c) = understand_ltac flags env sigma ist WithoutTypeConstraint c in
     let c = ValExt (Value.val_constr, c) in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
@@ -944,7 +952,7 @@ let () =
 let () =
   let interp ist env sigma concl tac =
     let ist = Tac2interp.get_env ist in
-    let tac = Proofview.tclIGNORE (interp ist tac) in
+    let tac = Proofview.tclIGNORE (Tac2interp.interp ist tac) in
     let c, sigma = Pfedit.refine_by_tactic env sigma concl tac in
     (EConstr.of_constr c, sigma)
   in
@@ -965,7 +973,9 @@ let () =
   (** FUCK YOU API *)
   let idtac = (Obj.magic idtac : Geninterp.Val.t) in
   let interp ist tac =
-    Tac2interp.interp Tac2interp.empty_environment tac >>= fun _ ->
+    let ist = Tac2interp.get_env ist.Geninterp.lfun in
+    let ist = { ist with env_ist = Id.Map.empty } in
+    Tac2interp.interp ist tac >>= fun _ ->
     Ftactic.return idtac
   in
   Geninterp.register_interp0 wit_ltac2 interp

@@ -743,6 +743,41 @@ let register_struct ?local str = match str with
 | StrSyn (tok, lev, e) -> register_notation ?local tok lev e
 | StrMut (qid, e) -> register_redefinition ?local qid e
 
+(** Toplevel exception *)
+
+let print_ltac2_backtrace = ref false
+
+let _ = Goptions.declare_bool_option {
+  Goptions.optdepr = false;
+  Goptions.optname = "print Ltac2 backtrace";
+  Goptions.optkey = ["Ltac2"; "Backtrace"];
+  Goptions.optread = (fun () -> !print_ltac2_backtrace);
+  Goptions.optwrite = (fun b -> print_ltac2_backtrace := b);
+}
+
+let pr_frame = function
+| FrLtac None -> str "<anonymous>"
+| FrLtac (Some kn) ->
+  Libnames.pr_qualid (Tac2env.shortest_qualid_of_ltac (TacConstant kn))
+| FrPrim ml ->
+  str "<" ++ str ml.mltac_plugin ++ str ":" ++ str ml.mltac_tactic ++ str ">"
+| FrExtn (tag, arg) ->
+  let obj = Tac2env.interp_ml_object tag in
+  obj.Tac2env.ml_print (Global.env ()) arg
+
+let () = register_handler begin function
+| Tac2interp.LtacError (kn, _, bt) ->
+  let c = Tac2print.pr_constructor kn in (** FIXME *)
+  let bt =
+    if !print_ltac2_backtrace then
+      fnl () ++ str "Backtrace:" ++ fnl () ++ prlist_with_sep fnl pr_frame bt
+    else
+      mt ()
+  in
+  hov 0 (str "Uncaught Ltac2 exception:" ++ spc () ++ hov 0 c) ++ bt
+| _ -> raise Unhandled
+end
+
 (** Printing *)
 
 let print_ltac ref =

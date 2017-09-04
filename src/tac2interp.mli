@@ -9,13 +9,11 @@
 open Names
 open Tac2expr
 
-type environment = valexpr Id.Map.t
-
 val empty_environment : environment
 
 val interp : environment -> glb_tacexpr -> valexpr Proofview.tactic
 
-val interp_app : valexpr -> valexpr list -> valexpr Proofview.tactic
+val interp_app : backtrace -> valexpr -> valexpr list -> valexpr Proofview.tactic
 
 (** {5 Cross-boundary encodings} *)
 
@@ -24,5 +22,5 @@ val set_env : environment -> Glob_term.unbound_ltac_var_map -> Glob_term.unbound
 
 (** {5 Exceptions} *)
 
-exception LtacError of KerName.t * valexpr array
+exception LtacError of KerName.t * valexpr array * backtrace
 (** Ltac2-defined exceptions seen from OCaml side *)
