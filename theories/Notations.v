@@ -38,6 +38,37 @@ Ltac2 lazy_match0 t pats :=
 Ltac2 Notation "lazy_match!" t(tactic(6)) "with" m(constr_matching) "end" :=
   lazy_match0 t m.
 
+Ltac2 multi_match0 t pats :=
+  let rec interp m := match m with
+  | [] => Control.zero Match_failure
+  | p :: m =>
+    match p with
+    | Pattern.ConstrMatchPattern pat f =>
+      Control.plus
+        (fun _ =>
+          let bind := Pattern.matches_vect pat t in
+          f bind
+        )
+        (fun _ => interp m)
+    | Pattern.ConstrMatchContext pat f =>
+      Control.plus
+        (fun _ =>
+          let ((context, bind)) := Pattern.matches_subterm_vect pat t in
+          f context bind
+        )
+        (fun _ => interp m)
+    end
+  end in
+  interp pats.
+
+Ltac2 Notation "multi_match!" t(tactic(6)) "with" m(constr_matching) "end" :=
+  multi_match0 t m.
+
+Ltac2 one_match0 t m := Control.once (fun _ => multi_match0 t m).
+
+Ltac2 Notation "match!" t(tactic(6)) "with" m(constr_matching) "end" :=
+  one_match0 t m.
+
 (** Tacticals *)
 
 Ltac2 orelse t f :=

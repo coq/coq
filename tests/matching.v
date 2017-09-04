@@ -14,4 +14,14 @@ in
     it commits to a branch*)
 lazy_match! '(nat -> bool) with context [?a] => f a end.
 lazy_match! Control.goal () with ?a -> ?b => Message.print (Message.of_constr b) end.
+
+(** This one works by taking the second match context, i.e. ?a := nat *)
+let b := { contents := true } in
+let f c :=
+  match b.(contents) with
+  | true => b.(contents) := false; fail
+  | false => Message.print (Message.of_constr c)
+  end
+in
+match! '(nat -> bool) with context [?a] => f a end.
 Abort.
