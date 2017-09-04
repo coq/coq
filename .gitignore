@@ -12,3 +12,4 @@ Makefile.coq.conf
 *.o
 *.a
 *.aux
+tests/*.log
