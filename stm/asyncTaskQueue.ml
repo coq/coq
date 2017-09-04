@@ -237,7 +237,7 @@ module Make(T : Task) = struct
   type queue = {
     active : Pool.pool;
     queue : (T.task * expiration) TQueue.t;
-    cleaner : Thread.t;
+    cleaner : Thread.t option;
   }
 
   let create size =
@@ -250,7 +250,7 @@ module Make(T : Task) = struct
     {
       active = Pool.create queue ~size;
       queue;
-      cleaner = Thread.create cleaner queue;
+      cleaner = if size > 0 then Some (Thread.create cleaner queue) else None;
     }
   
   let destroy { active; queue } =
