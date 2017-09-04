@@ -491,10 +491,10 @@ Ltac2 Notation "eauto" n(opt(tactic(0))) p(opt(tactic(0)))
 Ltac2 Notation eauto := eauto.
 
 Ltac2 Notation "typeclasses_eauto" n(opt(tactic(0)))
-  dbs(opt(seq("with", list1(ident)))) := Std.typeclasses_eauto Std.DFS n dbs.
+  dbs(opt(seq("with", list1(ident)))) := Std.typeclasses_eauto None n dbs.
 
 Ltac2 Notation "typeclasses_eauto" "bfs" n(opt(tactic(0)))
-  dbs(opt(seq("with", list1(ident)))) := Std.typeclasses_eauto Std.BFS n dbs.
+  dbs(opt(seq("with", list1(ident)))) := Std.typeclasses_eauto (Some Std.BFS) n dbs.
 
 Ltac2 Notation typeclasses_eauto := typeclasses_eauto.
 

@@ -251,4 +251,4 @@ let typeclasses_eauto strategy depth dbs =
     let dbs = List.map Id.to_string dbs in
     false, dbs
   in
-  Class_tactics.typeclasses_eauto ~only_classes ~strategy ~depth dbs
+  Class_tactics.typeclasses_eauto ~only_classes ?strategy ~depth dbs
