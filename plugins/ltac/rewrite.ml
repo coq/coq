@@ -409,7 +409,7 @@ module TypeGlobal = struct
 
 
   let inverse env (evd,cstrs) car rel = 
-    let (evd, sort) = Evarutil.new_Type ~rigid:Evd.univ_flexible env evd in
+    let (evd, sort) = Evarutil.new_Type ~rigid:Evd.univ_flexible evd in
       app_poly_check env (evd,cstrs) coq_inverse [| car ; car; sort; rel |]
 
 end
