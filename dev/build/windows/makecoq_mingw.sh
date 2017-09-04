@@ -910,6 +910,10 @@ function make_camlp5 {
     log2 make install
     # For some reason gramlib.a is not copied, but it is required by Coq
     cp lib/gramlib.a "$PREFIXOCAML/libocaml/camlp5/"
+    # For some reason META is not copied, but it is required by coq_makefile
+    log2 make -C etc META
+    mkdir -p "$PREFIXOCAML/libocaml/site-lib/camlp5/"
+    cp etc/META "$PREFIXOCAML/libocaml/site-lib/camlp5/"
     log2 make clean
     build_post
   fi
