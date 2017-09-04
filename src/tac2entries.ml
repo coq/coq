@@ -325,7 +325,7 @@ let register_ltac ?(local = false) ?(mut = false) isrec tactics =
     if isrec then inline_rec_tactic tactics else tactics
   in
   let map ((loc, id), e) =
-    let (e, t) = intern e in
+    let (e, t) = intern ~strict:true e in
     let () =
       if not (is_value e) then
         user_err ?loc (str "Tactic definition must be a syntactical value")
@@ -717,7 +717,7 @@ let register_redefinition ?(local = false) (loc, qid) e =
     if not (data.Tac2env.gdata_mutable) then
       user_err ?loc (str "The tactic " ++ pr_qualid qid ++ str " is not declared as mutable")
   in
-  let (e, t) = intern e in
+  let (e, t) = intern ~strict:true e in
   let () =
     if not (is_value e) then
       user_err ?loc (str "Tactic definition must be a syntactical value")
@@ -826,7 +826,7 @@ let solve default tac =
 
 let call ~default e =
   let loc = loc_of_tacexpr e in
-  let (e, t) = intern e in
+  let (e, t) = intern ~strict:false e in
   let () = check_unit ?loc t in
   let tac = Tac2interp.interp Tac2interp.empty_environment e in
   solve default (Proofview.tclIGNORE tac)

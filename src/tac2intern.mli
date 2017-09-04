@@ -13,7 +13,7 @@ open Tac2expr
 val loc_of_tacexpr : raw_tacexpr -> Loc.t option
 val loc_of_patexpr : raw_patexpr -> Loc.t option
 
-val intern : raw_tacexpr -> glb_tacexpr * type_scheme
+val intern : strict:bool -> raw_tacexpr -> glb_tacexpr * type_scheme
 val intern_typedef : (KerName.t * int) Id.Map.t -> raw_quant_typedef -> glb_quant_typedef
 val intern_open_type : raw_typexpr -> type_scheme
 

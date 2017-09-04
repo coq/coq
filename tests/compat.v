@@ -18,8 +18,7 @@ Qed.
 
 Goal true = false -> false = true.
 Proof.
-(** FIXME when the non-strict mode is implemented. *)
-Fail intros H; ltac1:(rewrite H); reflexivity.
+intros H; ltac1:(rewrite H); reflexivity.
 Abort.
 
 (** Variables do not cross the compatibility layer boundary. *)
@@ -57,4 +56,3 @@ Fail mytac ltac2:(fail).
 let t := idtac; ltac2:(fail) in mytac t.
 constructor.
 Qed.
-

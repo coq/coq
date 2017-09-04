@@ -131,6 +131,8 @@ type environment = {
   (** Accept unbound type variables *)
   env_rec : (KerName.t * int) Id.Map.t;
   (** Recursive type definitions *)
+  env_str : bool;
+  (** True iff in strict mode *)
 }
 
 let empty_env () = {
@@ -139,6 +141,7 @@ let empty_env () = {
   env_als = ref Id.Map.empty;
   env_opn = true;
   env_rec = Id.Map.empty;
+  env_str = true;
 }
 
 let env_name env =
@@ -780,7 +783,13 @@ let rec intern_rec env (loc, e) = match e with
   let genv = Global.env_of_context Environ.empty_named_context_val in
   let ist = empty_glob_sign genv in
   let ist = { ist with extra = Store.set ist.extra ltac2_env env } in
-  let arg, tpe = Flags.with_option Ltac_plugin.Tacintern.strict_check (fun () -> obj.ml_intern self ist arg) () in
+  let arg, tpe =
+    if env.env_str then
+      let arg () = obj.ml_intern self ist arg in
+      Flags.with_option Ltac_plugin.Tacintern.strict_check arg ()
+    else
+      obj.ml_intern self ist arg
+  in
   let e = match arg with
   | GlbVal arg -> GTacExt (tag, arg)
   | GlbTacexpr e -> e
@@ -1121,8 +1130,9 @@ let normalize env (count, vars) (t : UF.elt glb_typexpr) =
   in
   subst_type subst t
 
-let intern e =
+let intern ~strict e =
   let env = empty_env () in
+  let env = if strict then env else { env with env_str = false } in
   let (e, t) = intern_rec env e in
   let count = ref 0 in
   let vars = ref UF.Map.empty in
@@ -1487,7 +1497,11 @@ let () =
   let open Genintern in
   let intern ist tac =
     let env = match Genintern.Store.get ist.extra ltac2_env with
-    | None -> empty_env ()
+    | None ->
+      (** Only happens when Ltac2 is called from a constr or ltac1 quotation *)
+      let env = empty_env () in
+      if !Ltac_plugin.Tacintern.strict_check then env
+      else { env with env_str = false }
     | Some env -> env
     in
     let loc = loc_of_tacexpr tac in

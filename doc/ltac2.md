@@ -440,6 +440,8 @@ TERM ::=
 QUOTNAME := IDENT
 ```
 
+### Built-in quotations
+
 The current implementation recognizes the following built-in quotations:
 - "ident", which parses identifiers (type `Init.ident`).
 - "constr", which parses Coq terms and produces an-evar free term at runtime
@@ -456,6 +458,28 @@ The current implementation recognizes the following built-in quotations:
 The following syntactic sugar is provided for two common cases.
 - `@id` is the same as ident:(id)
 - `'t` is the same as open_constr:(t)
+
+### Strict vs. non-strict mode
+
+Depending on the context, quotations producing terms (i.e. `constr` or
+`open_constr`) are not internalized in the same way. There are two possible
+modes, respectively called the *strict* and the *non-strict* mode.
+
+- In strict mode, all simple identifiers appearing in a term quotation are
+required to be resolvable statically. That is, they must be the short name of
+a declaration which is defined globally, excluding section variables and
+hypotheses. If this doesn't hold, internalization will fail. To work around
+this error, one has to specifically use the `&` notation.
+- In non-strict mode, any simple identifier appearing in a term quotation which
+is not bound in the global context is turned into a dynamic reference to a
+hypothesis. That is to say, internalization will succeed, but the evaluation
+of the term at runtime will fail if there is no such variable in the dynamic
+context.
+
+Strict mode is enforced by default, e.g. for all Ltac2 definitions. Non-strict
+mode is only set when evaluating Ltac2 snippets in interactive proof mode. The
+rationale is that it is cumbersome to explicitly add `&` interactively, while it
+is expected that global tactics enforce more invariants on their code.
 
 ## Term Antiquotations
 
