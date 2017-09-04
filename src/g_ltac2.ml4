@@ -368,7 +368,7 @@ let loc_of_ne_list l = Loc.merge_opt (fst (List.hd l)) (fst (List.last l))
 GEXTEND Gram
   GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause
           q_rewriting q_clause q_dispatch q_occurrences q_strategy_flag
-          q_reference q_with_bindings q_constr_matching;
+          q_destruction_arg q_reference q_with_bindings q_constr_matching;
   anti:
     [ [ "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id) ] ]
   ;
@@ -500,10 +500,13 @@ GEXTEND Gram
     [ [ c = Constr.constr; l = with_bindings -> Loc.tag ~loc:!@loc @@ (c, l) ] ]
   ;
   destruction_arg:
-    [ [ n = lnatural -> QElimOnAnonHyp n
-      | id = lident -> QElimOnIdent id
-      | c = constr_with_bindings -> QElimOnConstr c
+    [ [ n = lnatural -> Loc.tag ~loc:!@loc @@ QElimOnAnonHyp n
+      | id = lident -> Loc.tag ~loc:!@loc @@ QElimOnIdent id
+      | c = constr_with_bindings -> Loc.tag ~loc:!@loc @@ QElimOnConstr c
     ] ]
+  ;
+  q_destruction_arg:
+    [ [ arg = destruction_arg -> arg ] ]
   ;
   as_or_and_ipat:
     [ [ "as"; ipat = or_and_intropattern -> Some ipat

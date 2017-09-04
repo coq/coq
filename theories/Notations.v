@@ -383,6 +383,12 @@ Ltac2 Notation "eexact" c(thunk(open_constr)) := exact0 true c.
 
 Ltac2 Notation reflexivity := Std.reflexivity ().
 
+Ltac2 symmetry0 cl :=
+  Std.symmetry (default_on_concl cl).
+
+Ltac2 Notation "symmetry" cl(opt(clause)) := symmetry0 cl.
+Ltac2 Notation symmetry := symmetry.
+
 Ltac2 Notation assumption := Std.assumption ().
 
 Ltac2 Notation etransitivity := Std.etransitivity ().
@@ -412,3 +418,20 @@ end.
 
 Ltac2 Notation "subst" ids(list0(ident)) := subst0 ids.
 Ltac2 Notation subst := subst.
+
+Ltac2 Notation "discriminate" arg(opt(destruction_arg)) :=
+  Std.discriminate false arg.
+
+Ltac2 Notation "ediscriminate" arg(opt(destruction_arg)) :=
+  Std.discriminate true arg.
+
+Ltac2 Notation "injection" arg(opt(destruction_arg)) ipat(opt(seq("as", intropatterns))):=
+  Std.injection false ipat arg.
+
+Ltac2 Notation "einjection" arg(opt(destruction_arg)) ipat(opt(seq("as", intropatterns))):=
+  Std.injection true ipat arg.
+
+(** Congruence *)
+
+Ltac2 f_equal0 () := ltac1:(f_equal).
+Ltac2 Notation f_equal := f_equal0 ().

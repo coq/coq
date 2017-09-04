@@ -191,7 +191,7 @@ let of_clause (loc, cl) =
     std_proj "on_concl", concl;
   ])
 
-let of_destruction_arg ?loc = function
+let of_destruction_arg (loc, arg) = match arg with
 | QElimOnConstr c ->
   let arg = thunk (of_constr_with_bindings c) in
   std_constructor ?loc "ElimOnConstr" [arg]
@@ -199,7 +199,7 @@ let of_destruction_arg ?loc = function
 | QElimOnAnonHyp n -> std_constructor ?loc "ElimOnAnonHyp" [of_int n]
 
 let of_induction_clause (loc, cl) =
-  let arg = of_destruction_arg ?loc cl.indcl_arg in
+  let arg = of_destruction_arg cl.indcl_arg in
   let eqn = of_option ?loc of_intro_pattern_naming cl.indcl_eqn in
   let as_ = of_option ?loc of_or_and_intro_pattern cl.indcl_as in
   let in_ = of_option ?loc of_clause cl.indcl_in in

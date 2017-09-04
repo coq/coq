@@ -68,10 +68,12 @@ type clause = clause_r located
 
 type constr_with_bindings = (Constrexpr.constr_expr * bindings) located
 
-type destruction_arg =
+type destruction_arg_r =
 | QElimOnConstr of constr_with_bindings
 | QElimOnIdent of Id.t located
 | QElimOnAnonHyp of int located
+
+type destruction_arg = destruction_arg_r located
 
 type induction_clause_r = {
   indcl_arg : destruction_arg;

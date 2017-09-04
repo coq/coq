@@ -46,6 +46,8 @@ val of_intro_patterns : intro_pattern list located -> raw_tacexpr
 
 val of_clause : clause -> raw_tacexpr
 
+val of_destruction_arg : destruction_arg -> raw_tacexpr
+
 val of_induction_clause : induction_clause -> raw_tacexpr
 
 val of_rewriting : rewriting -> raw_tacexpr
