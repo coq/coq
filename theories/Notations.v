@@ -389,6 +389,8 @@ Ltac2 symmetry0 cl :=
 Ltac2 Notation "symmetry" cl(opt(clause)) := symmetry0 cl.
 Ltac2 Notation symmetry := symmetry.
 
+Ltac2 Notation "revert" ids(list1(ident)) := Std.revert ids.
+
 Ltac2 Notation assumption := Std.assumption ().
 
 Ltac2 Notation etransitivity := Std.etransitivity ().
@@ -422,9 +424,11 @@ Ltac2 Notation subst := subst.
 
 Ltac2 Notation "discriminate" arg(opt(destruction_arg)) :=
   Std.discriminate false arg.
+Ltac2 Notation discriminate := discriminate.
 
 Ltac2 Notation "ediscriminate" arg(opt(destruction_arg)) :=
   Std.discriminate true arg.
+Ltac2 Notation ediscriminate := ediscriminate.
 
 Ltac2 Notation "injection" arg(opt(destruction_arg)) ipat(opt(seq("as", intropatterns))):=
   Std.injection false ipat arg.
