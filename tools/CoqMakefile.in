@@ -170,7 +170,8 @@ COQMAKEFILE_VERSION:=@COQ_VERSION@
 
 COQSRCLIBS?= $(foreach d,$(COQ_SRC_SUBDIRS), -I "$(COQLIB)$(d)")
 
-CAMLFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)
+CAMLFLAGS+=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)
+CAMLPKGS?=
 
 CAMLLIB:=$(shell "$(OCAMLFIND)" printconf stdlib)
 
@@ -558,46 +559,46 @@ archclean::
 
 $(MLIFILES:.mli=.cmi): %.cmi: %.mli
 	$(SHOW)'CAMLC -c $<'
-	$(HIDE)$(CAMLC) $(CAMLDEBUG) $(CAMLFLAGS) $<
+	$(HIDE)$(CAMLC) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) $<
 
 $(ML4FILES:.ml4=.cmo): %.cmo: %.ml4
 	$(SHOW)'CAMLC -pp -c $<'
-	$(HIDE)$(CAMLC) $(CAMLDEBUG) $(CAMLFLAGS) $(PP) -impl $<
+	$(HIDE)$(CAMLC) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) $(PP) -impl $<
 
 $(ML4FILES:.ml4=.cmx): %.cmx: %.ml4
 	$(SHOW)'CAMLOPT -pp -c $(FOR_PACK) $<'
-	$(HIDE)$(CAMLOPTC) $(CAMLDEBUG) $(CAMLFLAGS) $(PP) $(FOR_PACK) -impl $<
+	$(HIDE)$(CAMLOPTC) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) $(PP) $(FOR_PACK) -impl $<
 
 $(MLFILES:.ml=.cmo): %.cmo: %.ml
 	$(SHOW)'CAMLC -c $<'
-	$(HIDE)$(CAMLC) $(CAMLDEBUG) $(CAMLFLAGS) $<
+	$(HIDE)$(CAMLC) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) $<
 
 $(MLFILES:.ml=.cmx): %.cmx: %.ml
 	$(SHOW)'CAMLOPT -c $(FOR_PACK) $<'
-	$(HIDE)$(CAMLOPTC) $(CAMLDEBUG) $(CAMLFLAGS) $(FOR_PACK) $<
+	$(HIDE)$(CAMLOPTC) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) $(FOR_PACK) $<
 
 
 $(MLLIBFILES:.mllib=.cmxs): %.cmxs: %.cmxa
 	$(SHOW)'CAMLOPT -shared -o $@'
-	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) \
+	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) \
 		-linkall -shared -o $@ $<
 
 $(MLLIBFILES:.mllib=.cma): %.cma: | %.mllib
 	$(SHOW)'CAMLC -a -o $@'
-	$(HIDE)$(CAMLLINK) $(CAMLDEBUG) $(CAMLFLAGS) -a -o $@ $^
+	$(HIDE)$(CAMLLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) -a -o $@ $^
 
 $(MLLIBFILES:.mllib=.cmxa): %.cmxa: | %.mllib
 	$(SHOW)'CAMLOPT -a -o $@'
-	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) -a -o $@ $^
+	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) -a -o $@ $^
 
 
 $(MLPACKFILES:.mlpack=.cmxs): %.cmxs: %.cmx
 	$(SHOW)'CAMLOPT -shared -o $@'
-	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) -shared -o $@ $<
+	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) -shared -o $@ $<
 
 $(MLPACKFILES:.mlpack=.cma): %.cma: %.cmo | %.mlpack
 	$(SHOW)'CAMLC -a -o $@'
-	$(HIDE)$(CAMLLINK) $(CAMLDEBUG) $(CAMLFLAGS) -a -o $@ $^
+	$(HIDE)$(CAMLLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) -a -o $@ $^
 
 $(MLPACKFILES:.mlpack=.cmo): %.cmo: | %.mlpack
 	$(SHOW)'CAMLC -pack -o $@'
@@ -610,7 +611,7 @@ $(MLPACKFILES:.mlpack=.cmx): %.cmx: | %.mlpack
 # This rule is for _CoqProject with no .mllib nor .mlpack
 $(filter-out $(MLLIBFILES:.mllib=.cmxs) $(MLPACKFILES:.mlpack=.cmxs) $(addsuffix .cmxs,$(PACKEDFILES)) $(addsuffix .cmxs,$(LIBEDFILES)),$(MLFILES:.ml=.cmxs) $(ML4FILES:.ml4=.cmxs)): %.cmxs: %.cmx
 	$(SHOW)'[deprecated,use-mllib-or-mlpack] CAMLOPT -shared -o $@'
-	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) -shared -o $@ $<
+	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) -shared -o $@ $<
 
 ifneq (,$(TIMING))
 TIMING_EXTRA = > $<.$(TIMING_EXT)
