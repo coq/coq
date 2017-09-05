@@ -113,13 +113,12 @@ let read_whole_file s =
     close_in ic;
     Buffer.contents b
 
-let makefile_template =
-  let template = "/tools/CoqMakefile.in" in
-  Coq_config.coqlib ^ template
-
 let quote s = if String.contains s ' ' then "'" ^ s ^ "'" else s
 
 let generate_makefile oc conf_file local_file args project =
+  let makefile_template =
+    let template = "/tools/CoqMakefile.in" in
+    Envars.coqlib () ^ template in
   let s = read_whole_file makefile_template in
   let s = List.fold_left
     (fun s (k,v) -> Str.global_replace (Str.regexp_string k) v s) s
@@ -416,7 +415,7 @@ let _ =
 
   check_overlapping_include project;
 
-  Envars.set_coqlib ~fail:(fun x -> x);
+  Envars.set_coqlib ~fail:(fun x -> Printf.eprintf "Error: %s\n" x; exit 1);
   
   let ocm = Option.cata open_out stdout project.makefile in
   generate_makefile ocm conf_file local_file (prog :: args) project;
