@@ -435,7 +435,7 @@ Ltac2 Notation refine := Control.refine.
 
 Ltac2 absurd0 c := Control.enter (fun _ => Std.absurd (c ())).
 
-Ltac2 Notation absurd := absurd0.
+Ltac2 Notation "absurd" c(thunk(open_constr)) := absurd0 c.
 
 Ltac2 subst0 ids := match ids with
 | [] => Std.subst_all ()
