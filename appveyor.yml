@@ -22,5 +22,4 @@ build_script:
 - cmd: '%CYGROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && ./configure -local && make"'
 
 test_script:
-- cmd: '%CYGROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && make -C test-suite all
-  INTERACTIVE= && make validate"'
+- cmd: '%CYGROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && make byte && make -C test-suite all INTERACTIVE= && make validate"'
