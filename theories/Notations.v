@@ -298,6 +298,24 @@ Ltac2 Notation "edestruct"
   use(thunk(opt(seq("using", constr, with_bindings)))) :=
   destruct0 true ic use.
 
+Ltac2 Notation "simple" "inversion"
+  arg(destruction_arg)
+  pat(opt(seq("as", intropattern)))
+  ids(opt(seq("in", list1(ident)))) :=
+  Std.inversion Std.SimpleInversion arg pat ids.
+
+Ltac2 Notation "inversion"
+  arg(destruction_arg)
+  pat(opt(seq("as", intropattern)))
+  ids(opt(seq("in", list1(ident)))) :=
+  Std.inversion Std.FullInversion arg pat ids.
+
+Ltac2 Notation "inversion_clear"
+  arg(destruction_arg)
+  pat(opt(seq("as", intropattern)))
+  ids(opt(seq("in", list1(ident)))) :=
+  Std.inversion Std.FullInversionClear arg pat ids.
+
 Ltac2 default_on_concl cl :=
 match cl with
 | None => { Std.on_hyps := Some []; Std.on_concl := Std.AllOccurrences }

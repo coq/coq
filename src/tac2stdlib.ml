@@ -128,9 +128,9 @@ let to_destruction_arg = function
 | ValBlk (0, [| c |]) ->
   (** FIXME: lost backtrace *)
   let c = thaw [] c >>= fun c -> return (to_constr_with_bindings c) in
-  ElimOnConstr c
-| ValBlk (1, [| id |]) -> ElimOnIdent (Loc.tag (Value.to_ident id))
-| ValBlk (2, [| n |]) -> ElimOnAnonHyp (Value.to_int n)
+  None, ElimOnConstr c
+| ValBlk (1, [| id |]) -> None, ElimOnIdent (Loc.tag (Value.to_ident id))
+| ValBlk (2, [| n |]) -> None, ElimOnAnonHyp (Value.to_int n)
 | _ -> assert false
 
 let to_induction_clause = function
@@ -139,7 +139,7 @@ let to_induction_clause = function
   let eqn = Value.to_option (fun p -> Loc.tag (to_intro_pattern_naming p)) eqn in
   let as_ = Value.to_option (fun p -> Loc.tag (to_or_and_intro_pattern p)) as_ in
   let in_ = Value.to_option to_clause in_ in
-  ((None, arg), eqn, as_, in_)
+  (arg, eqn, as_, in_)
 | _ ->
   assert false
 
@@ -168,6 +168,12 @@ let to_debug = function
 let to_strategy = function
 | ValInt 0 -> Class_tactics.Bfs
 | ValInt 1 -> Class_tactics.Dfs
+| _ -> assert false
+
+let to_inversion_kind = function
+| ValInt 0 -> Misctypes.SimpleInversion
+| ValInt 1 -> Misctypes.FullInversion
+| ValInt 2 -> Misctypes.FullInversionClear
 | _ -> assert false
 
 (** Standard tactics sharing their implementation with Ltac1 *)
@@ -470,6 +476,14 @@ let () = define_prim4 "tac_rewrite" begin fun bt ev rw cl by ->
   Tac2tactics.rewrite ev rw cl by
 end
 
+let () = define_prim4 "tac_inversion" begin fun bt knd arg pat ids ->
+  let knd = to_inversion_kind knd in
+  let arg = to_destruction_arg arg in
+  let pat = Value.to_option (fun ipat -> Loc.tag (to_intro_pattern ipat)) pat in
+  let ids = Value.to_option (fun l -> Value.to_list Value.to_ident l) ids in
+  Tac2tactics.inversion knd arg pat ids
+end
+
 (** Tactics from coretactics *)
 
 let () = define_prim0 "tac_reflexivity" Tactics.intros_reflexivity
@@ -592,14 +606,14 @@ end
 
 let () = define_prim2 "tac_discriminate" begin fun _ ev arg ->
   let ev = Value.to_bool ev in
-  let arg = Value.to_option (fun arg -> None, to_destruction_arg arg) arg in
+  let arg = Value.to_option to_destruction_arg arg in
   Tac2tactics.discriminate ev arg
 end
 
 let () = define_prim3 "tac_injection" begin fun _ ev ipat arg ->
   let ev = Value.to_bool ev in
   let ipat = Value.to_option to_intro_patterns ipat in
-  let arg = Value.to_option (fun arg -> None, to_destruction_arg arg) arg in
+  let arg = Value.to_option to_destruction_arg arg in
   Tac2tactics.injection ev ipat arg
 end
 

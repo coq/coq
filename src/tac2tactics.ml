@@ -252,3 +252,32 @@ let typeclasses_eauto strategy depth dbs =
     false, dbs
   in
   Class_tactics.typeclasses_eauto ~only_classes ?strategy ~depth dbs
+
+(** Inversion *)
+
+let inversion knd arg pat ids =
+  let ids = match ids with
+  | None -> []
+  | Some l -> l
+  in
+  begin match pat with
+  | None -> Proofview.tclUNIT None
+  | Some (_, IntroAction (IntroOrAndPattern p)) ->
+    Proofview.tclUNIT (Some (Loc.tag p))
+  | Some _ ->
+    Tacticals.New.tclZEROMSG (str "Inversion only accept disjunctive patterns")
+  end >>= fun pat ->
+  let inversion _ arg =
+    begin match arg with
+    | None -> assert false
+    | Some (_, ElimOnAnonHyp n) ->
+      Inv.inv_clause knd pat ids (AnonHyp n)
+    | Some (_, ElimOnIdent (_, id)) ->
+      Inv.inv_clause knd pat ids (NamedHyp id)
+    | Some (_, ElimOnConstr c) ->
+      let anon = Loc.tag @@ IntroNaming IntroAnonymous in
+      Tactics.specialize c (Some anon) >>= fun () ->
+      Tacticals.New.onLastHypId (fun id -> Inv.inv_clause knd pat ids (NamedHyp id))
+    end
+  in
+  on_destruction_arg inversion true (Some arg)

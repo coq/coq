@@ -106,6 +106,12 @@ Ltac2 Type rewriting := {
 Ltac2 Type evar_flag := bool.
 Ltac2 Type advanced_flag := bool.
 
+Ltac2 Type inversion_kind := [
+| SimpleInversion
+| FullInversion
+| FullInversionClear
+].
+
 (** Standard, built-in tactics. See Ltac1 for documentation. *)
 
 Ltac2 @ external intros : evar_flag -> intro_pattern list -> unit := "ltac2" "tac_intros".
@@ -196,6 +202,8 @@ Ltac2 @ external clearbody : ident list -> unit := "ltac2" "tac_clearbody".
 Ltac2 @ external exact_no_check : constr -> unit := "ltac2" "tac_exactnocheck".
 Ltac2 @ external vm_cast_no_check : constr -> unit := "ltac2" "tac_vmcastnocheck".
 Ltac2 @ external native_cast_no_check : constr -> unit := "ltac2" "tac_nativecastnocheck".
+
+Ltac2 @ external inversion : inversion_kind -> destruction_arg -> intro_pattern option -> ident list option -> unit := "ltac2" "tac_inversion".
 
 (** coretactics *)
 

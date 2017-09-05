@@ -99,3 +99,5 @@ val eauto : Hints.debug -> int option -> int option -> constr tactic list ->
 
 val typeclasses_eauto : Class_tactics.search_strategy option -> int option ->
   Id.t list option -> unit Proofview.tactic
+
+val inversion : inversion_kind -> destruction_arg -> intro_pattern option -> Id.t list option -> unit tactic
