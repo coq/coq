@@ -734,7 +734,8 @@ end
 (** (unit -> constr) -> unit *)
 let () = define1 "refine" begin fun bt c ->
   let c = thaw bt c >>= fun c -> Proofview.tclUNIT ((), Value.to_constr c) in
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
+    let gl = Proofview.Goal.assume gl in
     Refine.generic_refine ~typecheck:true c gl
   end >>= fun () -> return v_unit
 end
