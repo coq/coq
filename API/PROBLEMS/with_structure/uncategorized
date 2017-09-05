@@ -96,24 +96,6 @@ there.
 
 --------------------------------------------------------------------------------
 
-INSTANCE: Inductiveops.inductive_type
-
-(1)
-
-Why is there only a single constructor?
-Does it make sense to define this type as a variant in this case?
-Shouldn't we do something else, instead?
-(remove the constructor?
- turn this into a record?)
-
-(2)
-
-How is this type different from the other inductive-type-related-types we already have?
-
-...
-
---------------------------------------------------------------------------------
-
 INSTANCE: Names.Constructor
 
 We should create this module and move there relevant things:

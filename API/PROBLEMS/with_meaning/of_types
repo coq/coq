@@ -66,4 +66,10 @@ without having access to the local context?
 
 --------------------------------------------------------------------------------
 
+INSTANCE: Inductiveops.inductive_type
+
+How is this type different from the other inductive-type-related-types we already have?
+
+--------------------------------------------------------------------------------
+
 ...
