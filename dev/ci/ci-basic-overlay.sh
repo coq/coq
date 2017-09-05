@@ -117,7 +117,9 @@
 ########################################################################
 # SF
 ########################################################################
-: ${sf_CI_TARURL:=https://www.cis.upenn.edu/~bcpierce/sf/current/sf.tgz}
+: ${sf_lf_CI_TARURL:=https://www.cis.upenn.edu/~bcpierce/sf/lf-current/lf.tgz}
+: ${sf_plf_CI_TARURL:=https://www.cis.upenn.edu/~bcpierce/sf/plf-current/plf.tgz}
+: ${sf_vfa_CI_TARURL:=https://www.cis.upenn.edu/~bcpierce/sf/vfa-current/vfa.tgz}
 
 ########################################################################
 # TLC
