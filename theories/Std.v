@@ -214,6 +214,10 @@ Ltac2 @ external inversion : inversion_kind -> destruction_arg -> intro_pattern 
 
 (** coretactics *)
 
+Ltac2 @ external move : ident -> move_location -> unit := "ltac2" "tac_move".
+
+Ltac2 @ external intro : ident option -> move_location option -> unit := "ltac2" "tac_intro".
+
 (** extratactics *)
 
 Ltac2 @ external discriminate : evar_flag -> destruction_arg option -> unit := "ltac2" "tac_discriminate".

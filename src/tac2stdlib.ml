@@ -176,6 +176,13 @@ let to_inversion_kind = function
 | ValInt 2 -> Misctypes.FullInversionClear
 | _ -> assert false
 
+let to_move_location = function
+| ValInt 0 -> MoveFirst
+| ValInt 1 -> MoveLast
+| ValBlk (0, [|id|]) -> MoveAfter (Value.to_ident id)
+| ValBlk (1, [|id|]) -> MoveBefore (Value.to_ident id)
+| _ -> assert false
+
 (** Standard tactics sharing their implementation with Ltac1 *)
 
 let pname s = { mltac_plugin = "ltac2"; mltac_tactic = s }
@@ -487,6 +494,19 @@ end
 (** Tactics from coretactics *)
 
 let () = define_prim0 "tac_reflexivity" Tactics.intros_reflexivity
+
+let () = define_prim2 "tac_move" begin fun _ id mv ->
+  let id = Value.to_ident id in
+  let mv = to_move_location mv in
+  Tactics.move_hyp id mv
+end
+
+let () = define_prim2 "tac_intro" begin fun _ id mv ->
+  let id = Value.to_option Value.to_ident id in
+  let mv = Value.to_option to_move_location mv in
+  let mv = Option.default MoveLast mv in
+  Tactics.intro_move id mv
+end
 
 (*
 

@@ -399,6 +399,11 @@ Ltac2 exact0 ev c :=
 Ltac2 Notation "exact" c(thunk(open_constr)) := exact0 false c.
 Ltac2 Notation "eexact" c(thunk(open_constr)) := exact0 true c.
 
+Ltac2 Notation "intro" id(opt(ident)) mv(opt(move_location)) := Std.intro id mv.
+Ltac2 Notation intro := intro.
+
+Ltac2 Notation "move" id(ident) mv(move_location) := Std.move id mv.
+
 Ltac2 Notation reflexivity := Std.reflexivity ().
 
 Ltac2 symmetry0 cl :=
