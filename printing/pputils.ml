@@ -68,7 +68,7 @@ let pr_short_red_flag pr r =
 
 let pr_red_flag pr r =
   try pr_short_red_flag pr r
-  with complexRedFlags ->
+  with ComplexRedFlag ->
     (if r.rBeta then pr_arg str "beta" else mt ()) ++
       (if r.rMatch && r.rFix && r.rCofix then pr_arg str "iota" else
           (if r.rMatch then pr_arg str "match" else mt ()) ++
