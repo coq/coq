@@ -136,6 +136,7 @@ matrix:
           packages: *coqide-packages
 
     - os: osx
+      osx_image: xcode8.3
       env:
       - TEST_TARGET="test-suite"
       - COMPILER="4.02.3"
@@ -147,6 +148,7 @@ matrix:
       - brew install opam gnu-time
 
     - os: osx
+      osx_image: xcode8.3
       env:
       - TEST_TARGET=""
       - COMPILER="4.02.3"
