@@ -167,7 +167,7 @@ let opened_libraries () = !libraries_imports_list
 
 let register_loaded_library m =
   let libname = m.libsum_name in
-  let link m =
+  let link () =
     let dirname = Filename.dirname (library_full_filename libname) in
     let prefix = Nativecode.mod_uid_of_dirpath libname ^ "." in
     let f = prefix ^ "cmo" in
@@ -176,7 +176,7 @@ let register_loaded_library m =
       Nativelib.link_library ~prefix ~dirname ~basename:f
   in
   let rec aux = function
-    | [] -> link m; [libname]
+    | [] -> link (); [libname]
     | m'::_ as l when DirPath.equal m' libname -> l
     | m'::l' -> m' :: aux l' in
   libraries_loaded_list := aux !libraries_loaded_list;
