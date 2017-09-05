@@ -1714,6 +1714,10 @@ let solve_unconstrained_impossible_cases env evd =
       instantiate_evar evar_unify flags env evd' evk ty
     | _ -> evd') evd evd
 
+let eq_pb sigma (env,k,t,t') (env',k',u,u') =
+  (* MD: is this sound? what if the envs are identical but not pointer equal? *)
+  env == env' && k == k' && EConstr.eq_constr sigma t u && EConstr.eq_constr sigma t' u'
+
 let solve_unif_constraints_with_heuristics env
     ?(flags=default_flags env) ?(with_ho=false) evd =
   let evd = solve_unconstrained_evars_with_candidates flags env evd in
@@ -1728,8 +1732,10 @@ let solve_unif_constraints_with_heuristics env
             | [] -> aux evd' pbs true stuck
             | l ->
                (* Unification got actually stuck, postpone *)
-               let reason = CannotSolveConstraint (pb,ProblemBeyondCapabilities) in
-               aux evd pbs progress ((pb, reason):: stuck)
+               if List.mem_f (eq_pb evd') pb l then
+                 let reason = CannotSolveConstraint (pb,ProblemBeyondCapabilities) in
+	         aux evd pbs progress ((pb, reason):: stuck)
+               else aux evd' (pbs@l) true stuck
             end
         | UnifFailure (evd,reason) ->
            if is_beyond_capabilities reason then
