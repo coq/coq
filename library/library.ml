@@ -288,16 +288,15 @@ let locate_absolute_library dir =
     try
       let name = Id.to_string base ^ ext in
       let _, file = System.where_in_path ~warn:false loadpath name in
-      [file]
-    with Not_found -> [] in
-  match find ".vo" @ find ".vio" with
-  | [] -> raise LibNotFound
-  | [file] -> file
-  | [vo;vi] when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
+      Some file
+    with Not_found -> None in
+  match find ".vo", find ".vio" with
+  | None, None -> raise LibNotFound
+  | Some file, None | None, Some file -> file
+  | Some vo, Some vi when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
     warn_several_object_files (vi, vo);
     vi
-  | [vo;vi] -> vo
-  | _ -> assert false
+  | Some vo, Some _ -> vo
 
 let locate_qualified_library ?root ?(warn = true) qid =
   (* Search library in loadpath *)
@@ -309,18 +308,17 @@ let locate_qualified_library ?root ?(warn = true) qid =
       let name = Id.to_string base ^ ext in
       let lpath, file =
         System.where_in_path ~warn (List.map fst loadpath) name in
-      [lpath, file]
-    with Not_found -> [] in
+      Some (lpath, file)
+    with Not_found -> None in
   let lpath, file =
-    match find ".vo" @ find ".vio" with
-    | [] -> raise LibNotFound
-    | [lpath, file] -> lpath, file
-    | [lpath_vo, vo; lpath_vi, vi]
+    match find ".vo", find ".vio" with
+    | None, None -> raise LibNotFound
+    | Some res, None | None, Some res -> res
+    | Some (_, vo), Some (_, vi as resvi)
       when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
       warn_several_object_files (vi, vo);
-       lpath_vi, vi
-    | [lpath_vo, vo; _ ] -> lpath_vo, vo
-    | _ -> assert false
+       resvi
+    | Some resvo, Some _ -> resvo
   in
   let dir = add_dirpath_suffix (String.List.assoc lpath loadpath) base in
   (* Look if loaded *)
