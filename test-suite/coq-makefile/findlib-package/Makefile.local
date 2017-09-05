@@ -1,0 +1,3 @@
+OCAMLLIBS   += -package foo
+CAMLLINK    := "$(OCAMLFIND)" ocamlc   -rectypes -thread -linkpkg -dontlink str
+CAMLOPTLINK := "$(OCAMLFIND)" ocamlopt -rectypes -thread -linkpkg -dontlink str
