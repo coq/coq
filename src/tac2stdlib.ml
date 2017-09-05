@@ -705,3 +705,12 @@ let () = define_prim3 "tac_typeclasses_eauto" begin fun bt str n dbs ->
   let dbs = Value.to_option (fun l -> Value.to_list Value.to_ident l) dbs in
   Tac2tactics.typeclasses_eauto str n dbs
 end
+
+(** Firstorder *)
+
+let () = define_prim3 "tac_firstorder" begin fun bt tac refs ids ->
+  let tac = Value.to_option (fun t -> Proofview.tclIGNORE (thaw bt t)) tac in
+  let refs = Value.to_list Value.to_reference refs in
+  let ids = Value.to_list Value.to_ident ids in
+  Tac2tactics.firstorder tac refs ids
+end

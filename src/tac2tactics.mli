@@ -101,3 +101,5 @@ val typeclasses_eauto : Class_tactics.search_strategy option -> int option ->
   Id.t list option -> unit Proofview.tactic
 
 val inversion : inversion_kind -> destruction_arg -> intro_pattern option -> Id.t list option -> unit tactic
+
+val firstorder : unit Proofview.tactic option -> global_reference list -> Id.t list -> unit tactic

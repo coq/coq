@@ -470,14 +470,14 @@ Ltac2 default_db dbs := match dbs with
   end
 end.
 
-Ltac2 default_using use := match use with
+Ltac2 default_list use := match use with
 | None => []
 | Some use => use
 end.
 
 Ltac2 trivial0 use dbs :=
   let dbs := default_db dbs in
-  let use := default_using use in
+  let use := default_list use in
   Std.trivial Std.Off use dbs.
 
 Ltac2 Notation "trivial"
@@ -488,7 +488,7 @@ Ltac2 Notation trivial := trivial.
 
 Ltac2 auto0 n use dbs :=
   let dbs := default_db dbs in
-  let use := default_using use in
+  let use := default_list use in
   Std.auto Std.Off n use dbs.
 
 Ltac2 Notation "auto" n(opt(tactic(0)))
@@ -499,7 +499,7 @@ Ltac2 Notation auto := auto.
 
 Ltac2 new_eauto0 n use dbs :=
   let dbs := default_db dbs in
-  let use := default_using use in
+  let use := default_list use in
   Std.new_auto Std.Off n use dbs.
 
 Ltac2 Notation "new" "auto" n(opt(tactic(0)))
@@ -508,7 +508,7 @@ Ltac2 Notation "new" "auto" n(opt(tactic(0)))
 
 Ltac2 eauto0 n p use dbs :=
   let dbs := default_db dbs in
-  let use := default_using use in
+  let use := default_list use in
   Std.eauto Std.Off n p use dbs.
 
 Ltac2 Notation "eauto" n(opt(tactic(0))) p(opt(tactic(0)))
@@ -529,3 +529,15 @@ Ltac2 Notation typeclasses_eauto := typeclasses_eauto.
 
 Ltac2 f_equal0 () := ltac1:(f_equal).
 Ltac2 Notation f_equal := f_equal0 ().
+
+(** Firstorder *)
+
+Ltac2 firstorder0 tac refs ids :=
+  let refs := default_list refs in
+  let ids := default_list ids in
+  Std.firstorder tac refs ids.
+
+Ltac2 Notation "firstorder"
+  tac(opt(thunk(tactic)))
+  refs(opt(seq("using", list1(reference, ","))))
+  ids(opt(seq("with", list1(ident)))) := firstorder0 tac refs ids.
