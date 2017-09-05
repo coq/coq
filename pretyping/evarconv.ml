@@ -1704,6 +1704,9 @@ let solve_unconstrained_impossible_cases env evd =
 	Evd.define evk (EConstr.Unsafe.to_constr ty) evd' 
     | _ -> evd') evd evd
 
+let eq_pb (env,k,t,t') (env',k',u,u') =
+  env == env' && k == k' && Constr.equal t u && Constr.equal t' u'
+
 let solve_unif_constraints_with_heuristics env
     ?(flags=default_flags env) ?(with_ho=false) evd =
   let evd = solve_unconstrained_evars_with_candidates flags evd in
@@ -1720,8 +1723,10 @@ let solve_unif_constraints_with_heuristics env
             | [] -> aux evd' pbs true stuck
             | l ->
                (* Unification got actually stuck, postpone *)
-               let reason = CannotSolveConstraint (pb,ProblemBeyondCapabilities) in
-	       aux evd pbs progress ((pb, reason):: stuck)
+               if List.mem_f eq_pb pb l then
+                 let reason = CannotSolveConstraint (pb,ProblemBeyondCapabilities) in
+	         aux evd pbs progress ((pb, reason):: stuck)
+               else aux evd' (pbs@l) true stuck
             end
         | UnifFailure (evd,reason) ->
            if is_beyond_capabilities reason then
