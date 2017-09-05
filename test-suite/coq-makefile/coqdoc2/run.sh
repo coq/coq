@@ -15,6 +15,7 @@ sort -u > desired <<EOT
 ./test
 ./test/test_plugin.cmi
 ./test/test_plugin.cmx
+./test/test_plugin.cmxa
 ./test/test_plugin.cmxs
 ./test/test.glob
 ./test/test.v
