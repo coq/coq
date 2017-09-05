@@ -452,7 +452,7 @@ let rec rename_glob_vars l c = force @@ DAst.map_with_loc (fun ?loc -> function
       else r
   | GProd (na,bk,t,c) ->
       let na',l' = update_subst na l in
-      GProd (na,bk,rename_glob_vars l t,rename_glob_vars l' c)
+      GProd (na',bk,rename_glob_vars l t,rename_glob_vars l' c)
   | GLambda (na,bk,t,c) ->
       let na',l' = update_subst na l in
       GLambda (na',bk,rename_glob_vars l t,rename_glob_vars l' c)
