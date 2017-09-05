@@ -106,6 +106,13 @@ Ltac2 Type rewriting := {
 Ltac2 Type evar_flag := bool.
 Ltac2 Type advanced_flag := bool.
 
+Ltac2 Type move_location := [
+| MoveAfter (ident)
+| MoveBefore (ident)
+| MoveFirst
+| MoveLast
+].
+
 Ltac2 Type inversion_kind := [
 | SimpleInversion
 | FullInversion

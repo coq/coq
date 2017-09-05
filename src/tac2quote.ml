@@ -364,3 +364,9 @@ let of_constr_matching (loc, m) =
     constructor ?loc (pattern_core "ConstrMatchContext") [pat; e]
   in
   of_list ?loc map m
+
+let of_move_location (loc, mv) = match mv with
+| QMoveAfter id -> std_constructor ?loc "MoveAfter" [of_anti of_ident id]
+| QMoveBefore id -> std_constructor ?loc "MoveBefore" [of_anti of_ident id]
+| QMoveFirst -> std_constructor ?loc "MoveFirst" []
+| QMoveLast -> std_constructor ?loc "MoveLast" []

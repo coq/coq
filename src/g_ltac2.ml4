@@ -369,7 +369,7 @@ GEXTEND Gram
   GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause
           q_rewriting q_clause q_dispatch q_occurrences q_strategy_flag
           q_destruction_arg q_reference q_with_bindings q_constr_matching
-          q_hintdb;
+          q_hintdb q_move_location;
   anti:
     [ [ "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id) ] ]
   ;
@@ -691,6 +691,16 @@ GEXTEND Gram
   ;
   q_constr_matching:
     [ [ m = match_list -> m ] ]
+  ;
+  move_location:
+    [ [ "at"; IDENT "top" -> Loc.tag ~loc:!@loc @@ QMoveFirst
+      | "at"; IDENT "bottom" -> Loc.tag ~loc:!@loc @@ QMoveLast
+      | IDENT "after"; id = ident_or_anti -> Loc.tag ~loc:!@loc @@ QMoveAfter id
+      | IDENT "before"; id = ident_or_anti -> Loc.tag ~loc:!@loc @@ QMoveBefore id
+    ] ]
+  ;
+  q_move_location:
+    [ [ mv = move_location -> mv ] ]
   ;
 END
 

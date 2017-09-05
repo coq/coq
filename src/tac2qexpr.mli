@@ -131,3 +131,11 @@ type hintdb_r =
 | QHintDbs of Id.t located or_anti list
 
 type hintdb = hintdb_r located
+
+type move_location_r =
+| QMoveAfter of Id.t located or_anti
+| QMoveBefore of Id.t located or_anti
+| QMoveFirst
+| QMoveLast
+
+type move_location = move_location_r located

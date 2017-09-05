@@ -56,6 +56,8 @@ val of_occurrences : occurrences -> raw_tacexpr
 
 val of_hintdb : hintdb -> raw_tacexpr
 
+val of_move_location : move_location -> raw_tacexpr
+
 val of_reference : Libnames.reference or_anti -> raw_tacexpr
 
 val of_hyp : ?loc:Loc.t -> Id.t located -> raw_tacexpr

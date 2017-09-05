@@ -39,6 +39,7 @@ let q_reference = Pcoq.Gram.entry_create "tactic:q_reference"
 let q_strategy_flag = Pcoq.Gram.entry_create "tactic:q_strategy_flag"
 let q_constr_matching = Pcoq.Gram.entry_create "tactic:q_constr_matching"
 let q_hintdb = Pcoq.Gram.entry_create "tactic:q_hintdb"
+let q_move_location = Pcoq.Gram.entry_create "tactic:q_move_location"
 end
 
 (** Tactic definition *)
