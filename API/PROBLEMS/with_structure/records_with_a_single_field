@@ -1,0 +1,11 @@
+Records (which are not GADT) that have a single field
+make no sense.
+
+These may be present as vestiges of former definitions
+of records with more fields that were later deleted
+(except for the last one).
+
+================================================================================
+
+INSTANCES:
+- ...
