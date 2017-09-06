@@ -12,6 +12,12 @@ open Genarg
 open Tac2dyn
 open Tac2expr
 
+type 'a repr = {
+  r_of : 'a -> valexpr;
+  r_to : valexpr -> 'a;
+  r_id : bool;
+}
+
 (** Dynamic tags *)
 
 let val_exn = Val.create "exn"
@@ -44,10 +50,22 @@ let to_unit = function
 | ValInt 0 -> ()
 | _ -> assert false
 
+let unit = {
+  r_of = of_unit;
+  r_to = to_unit;
+  r_id = false;
+}
+
 let of_int n = ValInt n
 let to_int = function
 | ValInt n -> n
 | _ -> assert false
+
+let int = {
+  r_of = of_int;
+  r_to = to_int;
+  r_id = false;
+}
 
 let of_bool b = if b then ValInt 0 else ValInt 1
 
@@ -56,15 +74,33 @@ let to_bool = function
 | ValInt 1 -> false
 | _ -> assert false
 
+let bool = {
+  r_of = of_bool;
+  r_to = to_bool;
+  r_id = false;
+}
+
 let of_char n = ValInt (Char.code n)
 let to_char = function
 | ValInt n -> Char.chr n
 | _ -> assert false
 
+let char = {
+  r_of = of_char;
+  r_to = to_char;
+  r_id = false;
+}
+
 let of_string s = ValStr s
 let to_string = function
 | ValStr s -> s
 | _ -> assert false
+
+let string = {
+  r_of = of_string;
+  r_to = to_string;
+  r_id = false;
+}
 
 let rec of_list f = function
 | [] -> ValInt 0
@@ -75,6 +111,12 @@ let rec to_list f = function
 | ValBlk (0, [|v; vl|]) -> f v :: to_list f vl
 | _ -> assert false
 
+let list r = {
+  r_of = (fun l -> of_list r.r_of l);
+  r_to = (fun l -> to_list r.r_to l);
+  r_id = false;
+}
+
 let of_ext tag c =
   ValExt (tag, c)
 
@@ -82,14 +124,23 @@ let to_ext tag = function
 | ValExt (tag', e) -> extract_val tag tag' e
 | _ -> assert false
 
+let repr_ext tag = {
+  r_of = (fun e -> of_ext tag e);
+  r_to = (fun e -> to_ext tag e);
+  r_id = false;
+}
+
 let of_constr c = of_ext val_constr c
 let to_constr c = to_ext val_constr c
+let constr = repr_ext val_constr
 
 let of_ident c = of_ext val_ident c
 let to_ident c = to_ext val_ident c
+let ident = repr_ext val_ident
 
 let of_pattern c = of_ext val_pattern c
 let to_pattern c = to_ext val_pattern c
+let pattern = repr_ext val_pattern
 
 let internal_err =
   let open Names in
@@ -108,6 +159,12 @@ let to_exn c = match c with
     (Tac2interp.LtacError (kn, c, []), Exninfo.null)
 | _ -> assert false
 
+let exn = {
+  r_of = of_exn;
+  r_to = to_exn;
+  r_id = false;
+}
+
 let of_option f = function
 | None -> ValInt 0
 | Some c -> ValBlk (0, [|f c|])
@@ -117,8 +174,15 @@ let to_option f = function
 | ValBlk (0, [|c|]) -> Some (f c)
 | _ -> assert false
 
+let option r = {
+  r_of = (fun l -> of_option r.r_of l);
+  r_to = (fun l -> to_option r.r_to l);
+  r_id = false;
+}
+
 let of_pp c = of_ext val_pp c
 let to_pp c = to_ext val_pp c
+let pp = repr_ext val_pp
 
 let of_tuple cl = ValBlk (0, cl)
 let to_tuple = function
@@ -129,9 +193,15 @@ let of_array f vl = ValBlk (0, Array.map f vl)
 let to_array f = function
 | ValBlk (0, vl) -> Array.map f vl
 | _ -> assert false
+let array r = {
+  r_of = (fun l -> of_array r.r_of l);
+  r_to = (fun l -> to_array r.r_to l);
+  r_id = false;
+}
 
 let of_constant c = of_ext val_constant c
 let to_constant c = to_ext val_constant c
+let constant = repr_ext val_constant
 
 let of_reference = function
 | VarRef id -> ValBlk (0, [| of_ident id |])
@@ -145,3 +215,9 @@ let to_reference = function
 | ValBlk (2, [| ind |]) -> IndRef (to_ext val_inductive ind)
 | ValBlk (3, [| cstr |]) -> ConstructRef (to_ext val_constructor cstr)
 | _ -> assert false
+
+let reference = {
+  r_of = of_reference;
+  r_to = to_reference;
+  r_id = false;
+}
