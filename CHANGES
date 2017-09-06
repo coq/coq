@@ -125,6 +125,13 @@ Plugins
 - The mathematical proof language (also known as declarative mode) was removed.
 - A new command Extraction TestCompile has been introduced, not meant
   for the general user but instead for Coq's test-suite.
+- The extraction plugin is no longer loaded by default. It must be
+  explicitly loaded with [Require Extraction], which is backwards
+  compatible.
+- The functional induction plugin (which provides the [Function]
+  vernacular) is no longer loaded by default. It must be explicitly
+  loaded with [Require FunInd], which is backwards compatible.
+
 
 Dependencies
 
