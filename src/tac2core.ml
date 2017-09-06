@@ -103,7 +103,7 @@ let err_matchfailure bt =
 
 (** Helper functions *)
 
-let thaw bt f = Tac2interp.interp_app bt f [v_unit]
+let thaw bt f = Tac2interp.interp_app bt (Value.to_closure f) [v_unit]
 let throw bt e = Proofview.tclLIFT (Proofview.NonLogical.raise (e bt))
 
 let set_bt bt e = match e with
@@ -615,7 +615,7 @@ end
 
 (** (unit -> 'a) -> (exn -> 'a) -> 'a *)
 let () = define2 "plus" begin fun bt x k ->
-  Proofview.tclOR (thaw bt x) (fun e -> Tac2interp.interp_app bt k [Value.of_exn e])
+  Proofview.tclOR (thaw bt x) (fun e -> Tac2interp.interp_app bt (Value.to_closure k) [Value.of_exn e])
 end
 
 (** (unit -> 'a) -> 'a *)
@@ -741,6 +741,7 @@ let () = define1 "refine" begin fun bt c ->
 end
 
 let () = define2 "with_holes" begin fun bt x f ->
+  let f = Value.to_closure f in
   Proofview.tclEVARMAP >>= fun sigma0 ->
   thaw bt x >>= fun ans ->
   Proofview.tclEVARMAP >>= fun sigma ->

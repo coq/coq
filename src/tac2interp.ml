@@ -46,7 +46,7 @@ let rec interp (ist : environment) = function
 | GTacApp (f, args) ->
   interp ist f >>= fun f ->
   Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
-  interp_app ist.env_bkt f args
+  interp_app ist.env_bkt (Tac2ffi.to_closure f) args
 | GTacLet (false, el, e) ->
   let fold accu (na, e) =
     interp ist e >>= fun e ->
@@ -97,18 +97,17 @@ let rec interp (ist : environment) = function
   tpe.Tac2env.ml_interp ist e
 
 and interp_app bt f args = match f with
-| ValCls { clos_env = ist; clos_var = ids; clos_exp = e; clos_ref = kn } ->
+| { clos_env = ist; clos_var = ids; clos_exp = e; clos_ref = kn } ->
   let rec push ist ids args = match ids, args with
   | [], [] -> interp ist e
-  | [], _ :: _ -> interp ist e >>= fun f -> interp_app bt f args
+  | [], _ :: _ ->
+    interp ist e >>= fun f -> interp_app bt (Tac2ffi.to_closure f) args
   | _ :: _, [] ->
     let cls = { clos_ref = kn; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
     return (ValCls cls)
   | id :: ids, arg :: args -> push (push_name ist id arg) ids args
   in
   push { env_ist = ist; env_bkt = FrLtac kn :: bt } ids args
-| ValExt _ | ValInt _ | ValBlk _ | ValStr _ | ValOpn _ ->
-  anomaly (str "Unexpected value shape")
 
 and interp_case ist e cse0 cse1 = match e with
 | ValInt n -> interp ist cse0.(n)

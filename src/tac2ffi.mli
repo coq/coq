@@ -60,6 +60,10 @@ val of_ident : Id.t -> valexpr
 val to_ident : valexpr -> Id.t
 val ident : Id.t repr
 
+val of_closure : closure -> valexpr
+val to_closure : valexpr -> closure
+val closure : closure repr
+
 val of_array : ('a -> valexpr) -> 'a array -> valexpr
 val to_array : (valexpr -> 'a) -> valexpr -> 'a array
 val array : 'a repr -> 'a array repr

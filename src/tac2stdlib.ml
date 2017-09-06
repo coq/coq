@@ -18,7 +18,7 @@ module Value = Tac2ffi
 
 let return x = Proofview.tclUNIT x
 let v_unit = Value.of_unit ()
-let thaw bt f = Tac2interp.interp_app bt f [v_unit]
+let thaw bt f = Tac2interp.interp_app bt (Value.to_closure f) [v_unit]
 
 let to_pair f g = function
 | ValBlk (0, [| x; y |]) -> (f x, g y)

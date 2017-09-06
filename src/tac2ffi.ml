@@ -122,6 +122,18 @@ let list r = {
   r_id = false;
 }
 
+let of_closure cls = ValCls cls
+
+let to_closure = function
+| ValCls cls -> cls
+| ValExt _ | ValInt _ | ValBlk _ | ValStr _ | ValOpn _ -> assert false
+
+let closure = {
+  r_of = of_closure;
+  r_to = to_closure;
+  r_id = false;
+}
+
 let of_ext tag c =
   ValExt (tag, c)
 
