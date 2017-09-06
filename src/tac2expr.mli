@@ -201,9 +201,8 @@ type valexpr =
 | ValExt : 'a Tac2dyn.Val.tag * 'a -> valexpr
   (** Arbitrary data *)
 
-and ml_tactic = backtrace -> valexpr list -> valexpr Proofview.tactic
+and ml_tactic = valexpr list -> valexpr Proofview.tactic
 
 type environment = {
   env_ist : valexpr Id.Map.t;
-  env_bkt : backtrace;
 }

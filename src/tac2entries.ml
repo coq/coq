@@ -748,14 +748,12 @@ let register_struct ?local str = match str with
 
 (** Toplevel exception *)
 
-let print_ltac2_backtrace = ref false
-
 let _ = Goptions.declare_bool_option {
   Goptions.optdepr = false;
   Goptions.optname = "print Ltac2 backtrace";
   Goptions.optkey = ["Ltac2"; "Backtrace"];
-  Goptions.optread = (fun () -> !print_ltac2_backtrace);
-  Goptions.optwrite = (fun b -> print_ltac2_backtrace := b);
+  Goptions.optread = (fun () -> !Tac2interp.print_ltac2_backtrace);
+  Goptions.optwrite = (fun b -> Tac2interp.print_ltac2_backtrace := b);
 }
 
 let pr_frame = function
@@ -773,7 +771,7 @@ let () = register_handler begin function
 | Tac2interp.LtacError (kn, _, bt) ->
   let c = Tac2print.pr_constructor kn in (** FIXME *)
   let bt =
-    if !print_ltac2_backtrace then
+    if !Tac2interp.print_ltac2_backtrace then
       fnl () ++ str "Backtrace:" ++ fnl () ++ prlist_with_sep fnl pr_frame bt
     else
       mt ()

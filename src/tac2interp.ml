@@ -16,9 +16,34 @@ open Tac2expr
 
 exception LtacError = Tac2ffi.LtacError
 
+let backtrace : backtrace Evd.Store.field = Evd.Store.field ()
+
+let print_ltac2_backtrace = ref false
+
+let get_backtrace =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match Evd.Store.get (Evd.get_extra_data sigma) backtrace with
+  | None -> Proofview.tclUNIT []
+  | Some bt -> Proofview.tclUNIT bt
+
+let set_backtrace bt =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let store = Evd.get_extra_data sigma in
+  let store = Evd.Store.set store backtrace bt in
+  let sigma = Evd.set_extra_data store sigma in
+  Proofview.Unsafe.tclEVARS sigma
+
+let with_frame frame tac =
+  if !print_ltac2_backtrace then
+    get_backtrace >>= fun bt ->
+    set_backtrace (frame :: bt) >>= fun () ->
+    tac >>= fun ans ->
+    set_backtrace bt >>= fun () ->
+    Proofview.tclUNIT ans
+  else tac
+
 let empty_environment = {
   env_ist = Id.Map.empty;
-  env_bkt = [];
 }
 
 type closure = {
@@ -34,7 +59,7 @@ type closure = {
 
 let push_name ist id v = match id with
 | Anonymous -> ist
-| Name id -> { ist with env_ist = Id.Map.add id v ist.env_ist }
+| Name id -> { env_ist = Id.Map.add id v ist.env_ist }
 
 let get_var ist id =
   try Id.Map.find id ist.env_ist with Not_found ->
@@ -63,7 +88,7 @@ let rec interp (ist : environment) = function
 | GTacApp (f, args) ->
   interp ist f >>= fun f ->
   Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
-  Tac2ffi.to_closure f ist.env_bkt args
+  Tac2ffi.to_closure f args
 | GTacLet (false, el, e) ->
   let fold accu (na, e) =
     interp ist e >>= fun e ->
@@ -82,7 +107,7 @@ let rec interp (ist : environment) = function
   let fixs = List.map map el in
   let fold accu (na, _, cls) = match na with
   | Anonymous -> accu
-  | Name id -> { ist with env_ist = Id.Map.add id cls accu.env_ist }
+  | Name id -> { env_ist = Id.Map.add id cls accu.env_ist }
   in
   let ist = List.fold_left fold ist fixs in
   (** Hack to make a cycle imperatively in the environment *)
@@ -108,25 +133,24 @@ let rec interp (ist : environment) = function
   return (ValOpn (kn, Array.of_list el))
 | GTacPrm (ml, el) ->
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
-  Tac2env.interp_primitive ml (FrPrim ml :: ist.env_bkt) el
+  with_frame (FrPrim ml) (Tac2env.interp_primitive ml el)
 | GTacExt (tag, e) ->
   let tpe = Tac2env.interp_ml_object tag in
-  let ist = { ist with env_bkt = FrExtn (tag, e) :: ist.env_bkt } in
-  tpe.Tac2env.ml_interp ist e
+  with_frame (FrExtn (tag, e)) (tpe.Tac2env.ml_interp ist e)
 
-and interp_app f = (); fun bt args -> match f with
+and interp_app f = (); fun args -> match f with
 | { clos_env = ist; clos_var = ids; clos_exp = e; clos_ref = kn } ->
   let rec push ist ids args = match ids, args with
-  | [], [] -> interp ist e
+  | [], [] -> with_frame (FrLtac kn) (interp ist e)
   | [], _ :: _ ->
-    interp ist e >>= fun f -> Tac2ffi.to_closure f bt args
+    with_frame (FrLtac kn) (interp ist e) >>= fun f -> Tac2ffi.to_closure f args
   | _ :: _, [] ->
     let cls = { clos_ref = kn; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
     let f = interp_app cls in
     return (ValCls f)
   | id :: ids, arg :: args -> push (push_name ist id arg) ids args
   in
-  push { env_ist = ist; env_bkt = FrLtac kn :: bt } ids args
+  push { env_ist = ist } ids args
 
 and interp_case ist e cse0 cse1 = match e with
 | ValInt n -> interp ist cse0.(n)

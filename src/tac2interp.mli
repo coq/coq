@@ -24,3 +24,11 @@ val set_env : environment -> Glob_term.unbound_ltac_var_map -> Glob_term.unbound
 
 exception LtacError of KerName.t * valexpr array * backtrace
 (** Ltac2-defined exceptions seen from OCaml side *)
+
+(** {5 Backtrace} *)
+
+val get_backtrace : backtrace Proofview.tactic
+
+val with_frame : frame -> 'a Proofview.tactic -> 'a Proofview.tactic
+
+val print_ltac2_backtrace : bool ref
