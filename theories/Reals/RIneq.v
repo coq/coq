@@ -1611,6 +1611,9 @@ Proof.
 Qed.
 Hint Resolve mult_INR: real.
 
+Lemma pow_INR (m n: nat) :  INR (m ^ n) = pow (INR m) n.
+Proof. now induction n as [|n IHn];[ | simpl; rewrite mult_INR, IHn]. Qed.
+
 (*********)
 Lemma lt_0_INR : forall n:nat, (0 < n)%nat -> 0 < INR n.
 Proof.
