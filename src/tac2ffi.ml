@@ -34,8 +34,6 @@ let val_constructor = Val.create "constructor"
 let val_projection = Val.create "projection"
 let val_case = Val.create "case"
 let val_univ = Val.create "universe"
-let val_kont : (Exninfo.iexn -> valexpr Proofview.tactic) Val.tag =
-  Val.create "kont"
 let val_free : Names.Id.Set.t Val.tag = Val.create "free"
 
 let extract_val (type a) (type b) (tag : a Val.tag) (tag' : b Val.tag) (v : b) : a =

@@ -24,7 +24,7 @@ type global_data = {
 }
 
 val define_global : ltac_constant -> global_data -> unit
-val interp_global : ltac_constant -> global_data * valexpr
+val interp_global : ltac_constant -> global_data
 
 (** {5 Toplevel definition of types} *)
 

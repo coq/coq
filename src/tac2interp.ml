@@ -21,6 +21,17 @@ let empty_environment = {
   env_bkt = [];
 }
 
+type closure = {
+  mutable clos_env : valexpr Id.Map.t;
+  (** Mutable so that we can implement recursive functions imperatively *)
+  clos_var : Name.t list;
+  (** Bound variables *)
+  clos_exp : glb_tacexpr;
+  (** Body *)
+  clos_ref : ltac_constant option;
+  (** Global constant from which the closure originates *)
+}
+
 let push_name ist id v = match id with
 | Anonymous -> ist
 | Name id -> { ist with env_ist = Id.Map.add id v ist.env_ist }
@@ -30,7 +41,10 @@ let get_var ist id =
     anomaly (str "Unbound variable " ++ Id.print id)
 
 let get_ref ist kn =
-  try snd (Tac2env.interp_global kn) with Not_found ->
+  try
+    let data = Tac2env.interp_global kn in
+    data.Tac2env.gdata_expr
+  with Not_found ->
     anomaly (str "Unbound reference" ++ KerName.print kn)
 
 let return = Proofview.tclUNIT
@@ -39,14 +53,17 @@ let rec interp (ist : environment) = function
 | GTacAtm (AtmInt n) -> return (ValInt n)
 | GTacAtm (AtmStr s) -> return (ValStr (Bytes.of_string s))
 | GTacVar id -> return (get_var ist id)
-| GTacRef qid -> return (get_ref ist qid)
+| GTacRef kn ->
+  let data = get_ref ist kn in
+  return (eval_pure (Some kn) data)
 | GTacFun (ids, e) ->
   let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
-  return (ValCls cls)
+  let f = interp_app cls in
+  return (ValCls f)
 | GTacApp (f, args) ->
   interp ist f >>= fun f ->
   Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
-  interp_app ist.env_bkt (Tac2ffi.to_closure f) args
+  Tac2ffi.to_closure f ist.env_bkt args
 | GTacLet (false, el, e) ->
   let fold accu (na, e) =
     interp ist e >>= fun e ->
@@ -58,17 +75,18 @@ let rec interp (ist : environment) = function
   let map (na, e) = match e with
   | GTacFun (ids, e) ->
     let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
-    na, cls
+    let f = ValCls (interp_app cls) in
+    na, cls, f
   | _ -> anomaly (str "Ill-formed recursive function")
   in
   let fixs = List.map map el in
-  let fold accu (na, cls) = match na with
+  let fold accu (na, _, cls) = match na with
   | Anonymous -> accu
-  | Name id -> { ist with env_ist = Id.Map.add id (ValCls cls) accu.env_ist }
+  | Name id -> { ist with env_ist = Id.Map.add id cls accu.env_ist }
   in
   let ist = List.fold_left fold ist fixs in
   (** Hack to make a cycle imperatively in the environment *)
-  let iter (_, e) = e.clos_env <- ist.env_ist in
+  let iter (_, e, _) = e.clos_env <- ist.env_ist in
   let () = List.iter iter fixs in
   interp ist e
 | GTacCst (_, n, []) -> return (ValInt n)
@@ -96,15 +114,16 @@ let rec interp (ist : environment) = function
   let ist = { ist with env_bkt = FrExtn (tag, e) :: ist.env_bkt } in
   tpe.Tac2env.ml_interp ist e
 
-and interp_app bt f args = match f with
+and interp_app f = (); fun bt args -> match f with
 | { clos_env = ist; clos_var = ids; clos_exp = e; clos_ref = kn } ->
   let rec push ist ids args = match ids, args with
   | [], [] -> interp ist e
   | [], _ :: _ ->
-    interp ist e >>= fun f -> interp_app bt (Tac2ffi.to_closure f) args
+    interp ist e >>= fun f -> Tac2ffi.to_closure f bt args
   | _ :: _, [] ->
     let cls = { clos_ref = kn; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
-    return (ValCls cls)
+    let f = interp_app cls in
+    return (ValCls f)
   | id :: ids, arg :: args -> push (push_name ist id arg) ids args
   in
   push { env_ist = ist; env_bkt = FrLtac kn :: bt } ids args
@@ -146,6 +165,28 @@ and interp_set ist e p r = match e with
   return (ValInt 0)
 | ValInt _ | ValExt _ | ValStr _ | ValCls _ | ValOpn _ ->
   anomaly (str "Unexpected value shape")
+
+and eval_pure kn = function
+| GTacAtm (AtmInt n) -> ValInt n
+| GTacRef kn ->
+  let { Tac2env.gdata_expr = e } =
+    try Tac2env.interp_global kn
+    with Not_found -> assert false
+  in
+  eval_pure (Some kn) e
+| GTacFun (na, e) ->
+  let cls = { clos_ref = kn; clos_env = Id.Map.empty; clos_var = na; clos_exp = e } in
+  let f = interp_app cls in
+  ValCls f
+| GTacCst (_, n, []) -> ValInt n
+| GTacCst (_, n, el) -> ValBlk (n, Array.map_of_list eval_unnamed el)
+| GTacOpn (kn, el) -> ValOpn (kn, Array.map_of_list eval_unnamed el)
+| GTacAtm (AtmStr _) | GTacLet _ | GTacVar _ | GTacSet _
+| GTacApp _ | GTacCse _ | GTacPrj _ | GTacPrm _ | GTacExt _ | GTacWth _ ->
+  anomaly (Pp.str "Term is not a syntactical value")
+
+and eval_unnamed e = eval_pure None e
+
 
 (** Cross-boundary hacks. *)
 

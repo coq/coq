@@ -180,31 +180,6 @@ type strexpr =
 
 type tag = int
 
-type valexpr =
-| ValInt of int
-  (** Immediate integers *)
-| ValBlk of tag * valexpr array
-  (** Structured blocks *)
-| ValStr of Bytes.t
-  (** Strings *)
-| ValCls of closure
-  (** Closures *)
-| ValOpn of KerName.t * valexpr array
-  (** Open constructors *)
-| ValExt : 'a Tac2dyn.Val.tag * 'a -> valexpr
-  (** Arbitrary data *)
-
-and closure = {
-  mutable clos_env : valexpr Id.Map.t;
-  (** Mutable so that we can implement recursive functions imperatively *)
-  clos_var : Name.t list;
-  (** Bound variables *)
-  clos_exp : glb_tacexpr;
-  (** Body *)
-  clos_ref : ltac_constant option;
-  (** Global constant from which the closure originates *)
-}
-
 type frame =
 | FrLtac of ltac_constant option
 | FrPrim of ml_tactic_name
@@ -212,7 +187,21 @@ type frame =
 
 type backtrace = frame list
 
-type ml_tactic = backtrace -> valexpr list -> valexpr Proofview.tactic
+type valexpr =
+| ValInt of int
+  (** Immediate integers *)
+| ValBlk of tag * valexpr array
+  (** Structured blocks *)
+| ValStr of Bytes.t
+  (** Strings *)
+| ValCls of ml_tactic
+  (** Closures *)
+| ValOpn of KerName.t * valexpr array
+  (** Open constructors *)
+| ValExt : 'a Tac2dyn.Val.tag * 'a -> valexpr
+  (** Arbitrary data *)
+
+and ml_tactic = backtrace -> valexpr list -> valexpr Proofview.tactic
 
 type environment = {
   env_ist : valexpr Id.Map.t;

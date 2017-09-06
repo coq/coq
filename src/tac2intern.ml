@@ -654,7 +654,7 @@ let rec intern_rec env (loc, e) = match e with
     let sch = Id.Map.find id env.env_var in
     (GTacVar id, fresh_mix_type_scheme env sch)
   | ArgArg (TacConstant kn) ->
-    let { Tac2env.gdata_type = sch }, _ =
+    let { Tac2env.gdata_type = sch } =
       try Tac2env.interp_global kn
       with Not_found ->
         CErrors.anomaly (str "Missing hardwired primitive " ++ KerName.print kn)

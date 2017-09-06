@@ -686,7 +686,7 @@ type redefinition = {
 
 let perform_redefinition (_, redef) =
   let kn = redef.redef_kn in
-  let data, _ = Tac2env.interp_global kn in
+  let data = Tac2env.interp_global kn in
   let data = { data with Tac2env.gdata_expr = redef.redef_body } in
   Tac2env.define_global kn data
 
@@ -715,7 +715,7 @@ let register_redefinition ?(local = false) (loc, qid) e =
   | TacAlias _ ->
     user_err ?loc (str "Cannot redefine syntactic abbreviations")
   in
-  let (data, _) = Tac2env.interp_global kn in
+  let data = Tac2env.interp_global kn in
   let () =
     if not (data.Tac2env.gdata_mutable) then
       user_err ?loc (str "The tactic " ++ pr_qualid qid ++ str " is not declared as mutable")
@@ -800,7 +800,7 @@ let print_ltac ref =
     in
     match kn with
     | TacConstant kn ->
-      let data, _ = Tac2env.interp_global kn in
+      let data = Tac2env.interp_global kn in
       let e = data.Tac2env.gdata_expr in
       let (_, t) = data.Tac2env.gdata_type in
       let name = int_name () in

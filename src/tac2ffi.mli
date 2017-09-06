@@ -60,9 +60,9 @@ val of_ident : Id.t -> valexpr
 val to_ident : valexpr -> Id.t
 val ident : Id.t repr
 
-val of_closure : closure -> valexpr
-val to_closure : valexpr -> closure
-val closure : closure repr
+val of_closure : ml_tactic -> valexpr
+val to_closure : valexpr -> ml_tactic
+val closure : ml_tactic repr
 
 val block : valexpr array repr
 
@@ -113,7 +113,6 @@ val val_constructor : constructor Val.tag
 val val_projection : Projection.t Val.tag
 val val_case : Constr.case_info Val.tag
 val val_univ : Univ.universe_level Val.tag
-val val_kont : (Exninfo.iexn -> valexpr Proofview.tactic) Val.tag
 val val_free : Id.Set.t Val.tag
 
 val val_exn : Exninfo.iexn Tac2dyn.Val.tag

@@ -13,7 +13,7 @@ val empty_environment : environment
 
 val interp : environment -> glb_tacexpr -> valexpr Proofview.tactic
 
-val interp_app : backtrace -> closure -> valexpr list -> valexpr Proofview.tactic
+(* val interp_app : closure -> ml_tactic *)
 
 (** {5 Cross-boundary encodings} *)
 

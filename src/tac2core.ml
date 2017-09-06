@@ -100,7 +100,7 @@ let err_matchfailure bt =
 
 (** Helper functions *)
 
-let thaw bt f = Tac2interp.interp_app bt f [v_unit]
+let thaw bt f = f bt [v_unit]
 
 let throw bt e = Proofview.tclLIFT (Proofview.NonLogical.raise (e bt))
 
@@ -569,7 +569,7 @@ end
 
 (** (unit -> 'a) -> (exn -> 'a) -> 'a *)
 let () = define2 "plus" closure closure begin fun bt x k ->
-  Proofview.tclOR (thaw bt x) (fun e -> Tac2interp.interp_app bt k [Value.of_exn e])
+  Proofview.tclOR (thaw bt x) (fun e -> k bt [Value.of_exn e])
 end
 
 (** (unit -> 'a) -> 'a *)
@@ -597,29 +597,20 @@ let () = define1 "enter" closure begin fun bt f ->
   Proofview.tclINDEPENDENT f >>= fun () -> return v_unit
 end
 
-let k_var = Id.of_string "k"
-let e_var = Id.of_string "e"
-let prm_apply_kont_h = pname "apply_kont"
-
 (** (unit -> 'a) -> ('a * ('exn -> 'a)) result *)
 let () = define1 "case" closure begin fun bt f ->
   Proofview.tclCASE (thaw bt f) >>= begin function
   | Proofview.Next (x, k) ->
-    let k = {
-      clos_ref = None;
-      clos_env = Id.Map.singleton k_var (Value.of_ext Value.val_kont k);
-      clos_var = [Name e_var];
-      clos_exp = GTacPrm (prm_apply_kont_h, [GTacVar k_var; GTacVar e_var]);
-    } in
-    return (ValBlk (0, [| Value.of_tuple [| x; ValCls k |] |]))
+    let k bt = function
+    | [e] ->
+      let (e, info) = Value.to_exn e in
+      let e = set_bt bt e in
+      k (e, info)
+    | _ -> assert false
+    in
+    return (ValBlk (0, [| Value.of_tuple [| x; Value.of_closure k |] |]))
   | Proofview.Fail e -> return (ValBlk (1, [| Value.of_exn e |]))
   end
-end
-
-(** 'a kont -> exn -> 'a *)
-let () = define2 "apply_kont" (repr_ext val_kont) exn begin fun bt k (e, info) ->
-  let e = set_bt bt e in
-  k (e, info)
 end
 
 (** int -> int -> (unit -> 'a) -> 'a *)
@@ -695,7 +686,7 @@ let () = define2 "with_holes" closure closure begin fun bt x f ->
   thaw bt x >>= fun ans ->
   Proofview.tclEVARMAP >>= fun sigma ->
   Proofview.Unsafe.tclEVARS sigma0 >>= fun () ->
-  Tacticals.New.tclWITHHOLES false (Tac2interp.interp_app bt f [ans]) sigma
+  Tacticals.New.tclWITHHOLES false (f bt [ans]) sigma
 end
 
 let () = define1 "progress" closure begin fun bt f ->

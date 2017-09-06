@@ -52,33 +52,13 @@ let empty_state = {
 
 let ltac_state = Summary.ref empty_state ~name:"ltac2-state"
 
-(** Get a dynamic value from syntactical value *)
-let rec eval_pure kn = function
-| GTacAtm (AtmInt n) -> ValInt n
-| GTacRef kn ->
-  let { gdata_expr = e } =
-    try KNmap.find kn ltac_state.contents.ltac_tactics
-    with Not_found -> assert false
-  in
-  eval_pure (Some kn) e
-| GTacFun (na, e) ->
-  ValCls { clos_ref = kn; clos_env = Id.Map.empty; clos_var = na; clos_exp = e }
-| GTacCst (_, n, []) -> ValInt n
-| GTacCst (_, n, el) -> ValBlk (n, Array.map_of_list eval_unnamed el)
-| GTacOpn (kn, el) -> ValOpn (kn, Array.map_of_list eval_unnamed el)
-| GTacAtm (AtmStr _) | GTacLet _ | GTacVar _ | GTacSet _
-| GTacApp _ | GTacCse _ | GTacPrj _ | GTacPrm _ | GTacExt _ | GTacWth _ ->
-  anomaly (Pp.str "Term is not a syntactical value")
-
-and eval_unnamed e = eval_pure None e
-
 let define_global kn e =
   let state = !ltac_state in
   ltac_state := { state with ltac_tactics = KNmap.add kn e state.ltac_tactics }
 
 let interp_global kn =
   let data = KNmap.find kn ltac_state.contents.ltac_tactics in
-  (data, eval_pure (Some kn) data.gdata_expr)
+  data
 
 let define_constructor kn t =
   let state = !ltac_state in
