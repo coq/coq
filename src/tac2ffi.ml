@@ -49,6 +49,12 @@ exception LtacError of KerName.t * valexpr array * backtrace
 
 (** Conversion functions *)
 
+let valexpr = {
+  r_of = (fun obj -> obj);
+  r_to = (fun obj -> obj);
+  r_id = true;
+}
+
 let of_unit () = ValInt 0
 
 let to_unit = function
@@ -213,6 +219,12 @@ let to_array f = function
 let array r = {
   r_of = (fun l -> of_array r.r_of l);
   r_to = (fun l -> to_array r.r_to l);
+  r_id = false;
+}
+
+let block = {
+  r_of = of_tuple;
+  r_to = to_tuple;
   r_id = false;
 }
 

@@ -64,6 +64,8 @@ val of_closure : closure -> valexpr
 val to_closure : valexpr -> closure
 val closure : closure repr
 
+val block : valexpr array repr
+
 val of_array : ('a -> valexpr) -> 'a array -> valexpr
 val to_array : (valexpr -> 'a) -> valexpr -> 'a array
 val array : 'a repr -> 'a array repr
@@ -94,6 +96,8 @@ val reference : Globnames.global_reference repr
 val of_ext : 'a Val.tag -> 'a -> valexpr
 val to_ext : 'a Val.tag -> valexpr -> 'a
 val repr_ext : 'a Val.tag -> 'a repr
+
+val valexpr : valexpr repr
 
 (** {5 Dynamic tags} *)
 
