@@ -2,9 +2,9 @@ Tac2dyn
 Tac2env
 Tac2print
 Tac2intern
+Tac2ffi
 Tac2interp
 Tac2entries
-Tac2ffi
 Tac2quote
 Tac2core
 Tac2tactics

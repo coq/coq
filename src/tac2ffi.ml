@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Util
+open Names
 open Globnames
 open Genarg
 open Tac2dyn
@@ -41,6 +42,10 @@ let extract_val (type a) (type b) (tag : a Val.tag) (tag' : b Val.tag) (v : b) :
 match Val.eq tag tag' with
 | None -> assert false
 | Some Refl -> v
+
+(** Exception *)
+
+exception LtacError of KerName.t * valexpr array * backtrace
 
 (** Conversion functions *)
 
@@ -148,7 +153,7 @@ let internal_err =
 
 (** FIXME: handle backtrace in Ltac2 exceptions *)
 let of_exn c = match fst c with
-| Tac2interp.LtacError (kn, c, _) -> ValOpn (kn, c)
+| LtacError (kn, c, _) -> ValOpn (kn, c)
 | _ -> ValOpn (internal_err, [|of_ext val_exn c|])
 
 let to_exn c = match c with
@@ -156,7 +161,7 @@ let to_exn c = match c with
   if Names.KerName.equal kn internal_err then
     to_ext val_exn c.(0)
   else
-    (Tac2interp.LtacError (kn, c, []), Exninfo.null)
+    (LtacError (kn, c, []), Exninfo.null)
 | _ -> assert false
 
 let exn = {

@@ -111,3 +111,8 @@ val val_free : Id.Set.t Val.tag
 val val_exn : Exninfo.iexn Tac2dyn.Val.tag
 (** Toplevel representation of OCaml exceptions. Invariant: no [LtacError]
     should be put into a value with tag [val_exn]. *)
+
+(** Exception *)
+
+exception LtacError of KerName.t * valexpr array * backtrace
+(** Ltac2-defined exceptions seen from OCaml side *)

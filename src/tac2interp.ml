@@ -14,7 +14,7 @@ open Names
 open Proofview.Notations
 open Tac2expr
 
-exception LtacError of KerName.t * valexpr array * backtrace
+exception LtacError = Tac2ffi.LtacError
 
 let empty_environment = {
   env_ist = Id.Map.empty;
