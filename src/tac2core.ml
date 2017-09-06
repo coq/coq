@@ -230,7 +230,7 @@ let () = define2 "int_equal" int int begin fun _ m n ->
 end
 
 let binop n f = define2 n int int begin fun _ m n ->
-  return (Value.of_int (f m m))
+  return (Value.of_int (f m n))
 end
 
 let () = binop "int_compare" Int.compare
