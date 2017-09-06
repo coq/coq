@@ -20,6 +20,8 @@ open Tac2expr
 
 val constructor : ?loc:Loc.t -> ltac_constructor -> raw_tacexpr list -> raw_tacexpr
 
+val thunk : raw_tacexpr -> raw_tacexpr
+
 val of_anti : ('a -> raw_tacexpr) -> 'a or_anti -> raw_tacexpr
 
 val of_int : int located -> raw_tacexpr

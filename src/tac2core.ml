@@ -1012,11 +1012,6 @@ let scope_fail s args =
 
 let q_unit = Loc.tag @@ CTacCst (AbsKn (Tuple 0))
 
-let rthunk e =
-  let loc = Tac2intern.loc_of_tacexpr e in
-  let var = [Loc.tag ?loc @@ CPatVar Anonymous, Some (Loc.tag ?loc @@ CTypRef (AbsKn (Other Core.t_unit), []))] in
-  Loc.tag ?loc @@ CTacFun (var, e)
-
 let add_generic_scope s entry arg =
   let parse = function
   | [] ->
@@ -1118,7 +1113,7 @@ end
 let () = add_scope "thunk" begin function
 | [tok] ->
   let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
-  let act e = rthunk (act e) in
+  let act e = Tac2quote.thunk (act e) in
   Tac2entries.ScopeRule (scope, act)
 | arg -> scope_fail "thunk" arg
 end
