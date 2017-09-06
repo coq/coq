@@ -488,11 +488,13 @@ Proof.
 Qed.
 
 Theorem Rle_Rpower :
-  forall e n m:R, 1 < e -> n <= m -> e ^R n <= e ^R m.
+  forall e n m:R, 1 <= e -> n <= m -> e ^R n <= e ^R m.
 Proof.
-  intros e n m H H1; case H1.
-  intros H2; left; apply Rpower_lt; assumption.
-  intros H2; rewrite H2; right; reflexivity.
+  intros e n m [H | H]; intros H1.
+  case H1.
+    intros H2; left; apply Rpower_lt; assumption.
+    intros H2; rewrite H2; right; reflexivity.
+  now rewrite <- H; unfold Rpower; rewrite ln_1, !Rmult_0_r; apply Rle_refl.
 Qed.
 
 Theorem ln_lt_2 : / 2 < ln 2.
