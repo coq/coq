@@ -574,7 +574,7 @@ let add_mind dir l mie senv =
 let add_modtype l params_mte inl senv =
   let mp = MPdot(senv.modpath, l) in
   let mtb = Mod_typing.translate_modtype senv.env mp inl params_mte  in
-  let mtb = Declareops.hcons_module_body mtb in
+  let mtb = Declareops.hcons_module_type mtb in
   let senv' = add_field (l,SFBmodtype mtb) MT senv in
   mp, senv'
 
@@ -677,7 +677,7 @@ let build_module_body params restype senv =
       (struc,None,senv.modresolver,senv.univ) restype'
   in
   let mb' = functorize_module params mb in
-  { mb' with mod_retroknowledge = senv.local_retroknowledge }
+  { mb' with mod_retroknowledge = ModBodyRK senv.local_retroknowledge }
 
 (** Returning back to the old pre-interactive-module environment,
     with one extra component and some updated fields
@@ -732,12 +732,12 @@ let end_module l restype senv =
 
 let build_mtb mp sign cst delta =
   { mod_mp = mp;
-    mod_expr = Abstract;
+    mod_expr = ();
     mod_type = sign;
     mod_type_alg = None;
     mod_constraints = cst;
     mod_delta = delta;
-    mod_retroknowledge = [] }
+    mod_retroknowledge = ModTypeRK }
 
 let end_modtype l senv =
   let mp = senv.modpath in
@@ -853,7 +853,7 @@ let export ?except senv dir =
       mod_type_alg = None;
       mod_constraints = senv.univ;
       mod_delta = senv.modresolver;
-      mod_retroknowledge = senv.local_retroknowledge
+      mod_retroknowledge = ModBodyRK senv.local_retroknowledge
     }
   in
   let ast, symbols =

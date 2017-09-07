@@ -143,11 +143,12 @@ let rec functor_iter fty f0 = function
 (** {6 Misc operations } *)
 
 let module_type_of_module mb =
-  { mb with mod_expr = Abstract; mod_type_alg = None }
+  { mb with mod_expr = (); mod_type_alg = None;
+    mod_retroknowledge = ModTypeRK; }
 
 let module_body_of_type mp mtb =
-  assert (mtb.mod_expr == Abstract);
-  { mtb with mod_mp = mp }
+  { mtb with mod_expr = Abstract; mod_mp = mp;
+      mod_retroknowledge = ModBodyRK []; }
 
 let check_modpath_equiv env mp1 mp2 =
   if ModPath.equal mp1 mp2 then ()
@@ -196,7 +197,8 @@ let rec subst_structure sub do_delta sign =
   in
   List.smartmap subst_body sign
 
-and subst_body is_mod sub do_delta mb =
+and subst_body : 'a. _ -> _ -> (_ -> 'a -> 'a) -> _ -> 'a generic_module_body -> 'a generic_module_body =
+  fun is_mod sub subst_impl do_delta mb ->
   let { mod_mp=mp; mod_expr=me; mod_type=ty; mod_type_alg=aty } = mb in
   let mp' = subst_mp sub mp in
   let sub =
@@ -205,10 +207,7 @@ and subst_body is_mod sub do_delta mb =
     else add_mp mp mp' empty_delta_resolver sub
   in
   let ty' = subst_signature sub do_delta ty in
-  let me' =
-    implem_smartmap
-      (subst_signature sub id_delta) (subst_expression sub id_delta) me
-  in
+  let me' = subst_impl sub me in
   let aty' = Option.smartmap (subst_expression sub id_delta) aty in
   let delta' = do_delta mb.mod_delta sub in
   if mp==mp' && me==me' && ty==ty' && aty==aty' && delta'==mb.mod_delta
@@ -221,9 +220,14 @@ and subst_body is_mod sub do_delta mb =
       mod_type_alg = aty';
       mod_delta = delta' }
 
-and subst_module sub do_delta mb = subst_body true sub do_delta mb
+and subst_module sub do_delta mb =
+  subst_body true sub subst_impl do_delta mb
 
-and subst_modtype sub do_delta mtb = subst_body false sub do_delta mtb
+and subst_impl sub me =
+  implem_smartmap
+    (subst_signature sub id_delta) (subst_expression sub id_delta) me
+
+and subst_modtype sub do_delta mtb = subst_body false sub (fun _ () -> ()) do_delta mtb
 
 and subst_expr sub do_delta seb = match seb with
   |MEident mp ->
@@ -268,7 +272,7 @@ let add_retroknowledge mp =
       CErrors.anomaly ~label:"Modops.add_retroknowledge"
         (Pp.str "had to import an unsupported kind of term.")
   in
-  fun lclrk env ->
+  fun (ModBodyRK lclrk) env ->
   (* The order of the declaration matters, for instance (and it's at the
      time this comment is being written, the only relevent instance) the
      int31 type registration absolutely needs int31 bits to be registered.
@@ -567,7 +571,7 @@ let rec is_bounded_expr l = function
       is_bounded_expr l (MEident mp) || is_bounded_expr l fexpr
   | _ -> false
 
-let rec clean_module l mb =
+let rec clean_module_body l mb =
   let impl, typ = mb.mod_expr, mb.mod_type in
   let typ' = clean_signature l typ in
   let impl' = match impl with
@@ -577,19 +581,25 @@ let rec clean_module l mb =
   if typ==typ' && impl==impl' then mb
   else { mb with mod_type=typ'; mod_expr=impl' }
 
+and clean_module_type l mb =
+  let (), typ = mb.mod_expr, mb.mod_type in
+  let typ' = clean_signature l typ in
+  if typ==typ' then mb
+  else { mb with mod_type=typ' }
+
 and clean_field l field = match field with
   |(lab,SFBmodule mb) ->
-    let mb' = clean_module l mb in
+    let mb' = clean_module_body l mb in
     if mb==mb' then field else (lab,SFBmodule mb')
   |_ -> field
 
 and clean_structure l = List.smartmap (clean_field l)
 
 and clean_signature l =
-  functor_smartmap (clean_module l) (clean_structure l)
+  functor_smartmap (clean_module_type l) (clean_structure l)
 
 and clean_expression l =
-  functor_smartmap (clean_module l) (fun me -> me)
+  functor_smartmap (clean_module_type l) (fun me -> me)
 
 let rec collect_mbid l sign =  match sign with
   |MoreFunctor (mbid,ty,m) ->
@@ -613,14 +623,16 @@ let join_constant_body except otab cb =
   | _ -> ()
 
 let join_structure except otab s =
-  let rec join_module mb =
-    implem_iter join_signature join_expression mb.mod_expr;
+  let rec join_module : 'a. 'a generic_module_body -> unit = fun mb ->
     Option.iter join_expression mb.mod_type_alg;
     join_signature mb.mod_type
   and join_field (l,body) = match body with
     |SFBconst sb -> join_constant_body except otab sb
     |SFBmind _ -> ()
-    |SFBmodule m |SFBmodtype m -> join_module m
+    |SFBmodule m ->
+      implem_iter join_signature join_expression m.mod_expr;
+      join_module m
+    |SFBmodtype m -> join_module m
   and join_structure struc = List.iter join_field struc
   and join_signature sign =
     functor_iter join_module join_structure sign

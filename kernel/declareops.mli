@@ -78,3 +78,4 @@ val safe_flags : typing_flags
 val hcons_const_body : constant_body -> constant_body
 val hcons_mind : mutual_inductive_body -> mutual_inductive_body
 val hcons_module_body : module_body -> module_body
+val hcons_module_type : module_type_body -> module_type_body

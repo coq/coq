@@ -1280,23 +1280,28 @@ sig
                                | Algebraic of module_expression
                              | Struct of module_signature
                              | FullStruct
-   and module_body =
+   and 'a generic_module_body =
                        { mod_mp : Names.ModPath.t;
-                         mod_expr : module_implementation;
+                         mod_expr : 'a;
                          mod_type : module_signature;
                          mod_type_alg : module_expression option;
                          mod_constraints : Univ.ContextSet.t;
                          mod_delta : Mod_subst.delta_resolver;
-                         mod_retroknowledge : Retroknowledge.action list
+                         mod_retroknowledge : 'a module_retroknowledge;
                        }
    and module_signature = (module_type_body,structure_body) functorize
-   and module_type_body = module_body
+   and module_body = module_implementation generic_module_body
+   and module_type_body = unit generic_module_body
    and structure_body = (Names.Label.t * structure_field_body) list
    and structure_field_body =
                             | SFBconst of constant_body
                             | SFBmind of mutual_inductive_body
                             | SFBmodule of module_body
                             | SFBmodtype of module_type_body
+  and _ module_retroknowledge =
+  | ModBodyRK :
+    Retroknowledge.action list -> module_implementation module_retroknowledge
+  | ModTypeRK : unit module_retroknowledge
 end
 
 module Declareops :

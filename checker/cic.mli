@@ -385,9 +385,9 @@ and module_implementation =
   | Struct of module_signature (** interactive body *)
   | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
 
-and module_body =
+and 'a generic_module_body =
   { mod_mp : module_path; (** absolute path of the module *)
-    mod_expr : module_implementation; (** implementation *)
+    mod_expr : 'a; (** implementation *)
     mod_type : module_signature; (** expanded type *)
     (** algebraic type, kept if it's relevant for extraction *)
     mod_type_alg : module_expression option;
@@ -395,13 +395,19 @@ and module_body =
     mod_constraints : Univ.ContextSet.t;
     (** quotiented set of equivalent constants and inductive names *)
     mod_delta : delta_resolver;
-    mod_retroknowledge : action list }
+    mod_retroknowledge : 'a module_retroknowledge; }
+
+and module_body = module_implementation generic_module_body
 
 (** A [module_type_body] is just a [module_body] with no
-    implementation ([mod_expr] always [Abstract]) and also
-    an empty [mod_retroknowledge] *)
+    implementation and also an empty [mod_retroknowledge] *)
 
-and module_type_body = module_body
+and module_type_body = unit generic_module_body
+
+and _ module_retroknowledge =
+| ModBodyRK :
+  action list -> module_implementation module_retroknowledge
+| ModTypeRK : unit module_retroknowledge
 
 (*************************************************************************)
 (** {4 From safe_typing.ml} *)
