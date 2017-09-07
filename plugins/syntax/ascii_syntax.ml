@@ -25,6 +25,10 @@ let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 let make_kn dir id = Globnames.encode_mind (make_dir dir) (Id.of_string id)
 let make_path dir id = Libnames.make_path (make_dir dir) (Id.of_string id)
 
+let is_gr c gr = match DAst.get c with
+| GRef (r, _) -> Globnames.eq_gr r gr
+| _ -> false
+
 let ascii_module = ["Coq";"Strings";"Ascii"]
 
 let ascii_path = make_path ascii_module "ascii"
@@ -42,9 +46,9 @@ let interp_ascii ?loc p =
   let rec aux n p =
      if Int.equal n 0 then [] else
      let mp = p mod 2 in
-     (CAst.make ?loc @@ GRef ((if Int.equal mp 0 then glob_false else glob_true),None))
+     (DAst.make ?loc @@ GRef ((if Int.equal mp 0 then glob_false else glob_true),None))
      :: (aux (n-1) (p/2)) in
-  CAst.make ?loc @@ GApp (CAst.make ?loc @@ GRef(force glob_Ascii,None), aux 8 p)
+  DAst.make ?loc @@ GApp (DAst.make ?loc @@ GRef(force glob_Ascii,None), aux 8 p)
 
 let interp_ascii_string ?loc s =
   let p =
@@ -60,12 +64,12 @@ let interp_ascii_string ?loc s =
 let uninterp_ascii r =
   let rec uninterp_bool_list n = function
     | [] when Int.equal n 0 -> 0
-    | { CAst.v = GRef (k,_)}::l when Globnames.eq_gr k glob_true  -> 1+2*(uninterp_bool_list (n-1)  l)
-    | { CAst.v = GRef (k,_)}::l when Globnames.eq_gr k glob_false -> 2*(uninterp_bool_list (n-1) l)
+    | r::l when is_gr r glob_true  -> 1+2*(uninterp_bool_list (n-1)  l)
+    | r::l when is_gr r glob_false -> 2*(uninterp_bool_list (n-1) l)
     | _ -> raise Non_closed_ascii in
   try
-    let aux = function
-    | { CAst.v = GApp ({ CAst.v = GRef (k,_)},l) } when Globnames.eq_gr k (force glob_Ascii) -> uninterp_bool_list 8 l
+    let aux c = match DAst.get c with
+    | GApp (r, l) when is_gr r (force glob_Ascii) -> uninterp_bool_list 8 l
     | _ -> raise Non_closed_ascii in
     Some (aux r)
   with
@@ -75,10 +79,10 @@ let make_ascii_string n =
   if n>=32 && n<=126 then String.make 1 (char_of_int n)
   else Printf.sprintf "%03d" n
 
-let uninterp_ascii_string r = Option.map make_ascii_string (uninterp_ascii r)
+let uninterp_ascii_string (AnyGlobConstr r) = Option.map make_ascii_string (uninterp_ascii r)
 
 let _ =
   Notation.declare_string_interpreter "char_scope"
     (ascii_path,ascii_module)
     interp_ascii_string
-    ([CAst.make @@ GRef (static_glob_Ascii,None)], uninterp_ascii_string, true)
+    ([DAst.make @@ GRef (static_glob_Ascii,None)], uninterp_ascii_string, true)

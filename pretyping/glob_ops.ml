@@ -23,8 +23,8 @@ let cases_predicate_names tml =
     | (tm,(na,None)) -> [na]
     | (tm,(na,Some (_,(_,nal)))) -> na::nal) tml)
 
-let mkGApp ?loc p t = CAst.make ?loc @@
-  match p.CAst.v with
+let mkGApp ?loc p t = DAst.make ?loc @@
+  match DAst.get p with
   | GApp (f,l) -> GApp (f,l@[t])
   | _          -> GApp (p,[t])
 
@@ -46,7 +46,7 @@ let case_style_eq s1 s2 = match s1, s2 with
   | RegularStyle, RegularStyle -> true
   | (LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle), _ -> false
 
-let rec cases_pattern_eq { CAst.v = p1} { CAst.v = p2 } = match p1, p2 with
+let rec cases_pattern_eq p1 p2 = match DAst.get p1, DAst.get p2 with
   | PatVar na1, PatVar na2 -> Name.equal na1 na2
   | PatCstr (c1, pl1, na1), PatCstr (c2, pl2, na2) ->
     eq_constructor c1 c2 && List.equal cases_pattern_eq pl1 pl2 &&
@@ -98,7 +98,7 @@ let fix_kind_eq f k1 k2 = match k1, k2 with
 let instance_eq f (x1,c1) (x2,c2) =
   Id.equal x1 x2 && f c1 c2
 
-let mk_glob_constr_eq f { CAst.v = c1 } { CAst.v = c2 } = match c1, c2 with
+let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
   | GRef (gr1, _), GRef (gr2, _) -> eq_gr gr1 gr2
   | GVar id1, GVar id2 -> Id.equal id1 id2
   | GEvar (id1, arg1), GEvar (id2, arg2) ->
@@ -137,7 +137,7 @@ let mk_glob_constr_eq f { CAst.v = c1 } { CAst.v = c2 } = match c1, c2 with
 
 let rec glob_constr_eq c = mk_glob_constr_eq glob_constr_eq c
 
-let map_glob_constr_left_to_right f = CAst.map (function
+let map_glob_constr_left_to_right f = DAst.map (function
   | GApp (g,args) ->
       let comp1 = f g in
       let comp2 = Util.List.map_left f args in
@@ -186,7 +186,7 @@ let map_glob_constr = map_glob_constr_left_to_right
 
 let fold_return_type f acc (na,tyopt) = Option.fold_left f acc tyopt
 
-let fold_glob_constr f acc = CAst.with_val (function
+let fold_glob_constr f acc = DAst.with_val (function
   | GVar _ -> acc
   | GApp (c,args) -> List.fold_left f (f acc c) args
   | GLambda (_,_,b,c) | GProd (_,_,b,c) ->
@@ -217,7 +217,7 @@ let fold_glob_constr f acc = CAst.with_val (function
 let fold_return_type_with_binders f g v acc (na,tyopt) =
   Option.fold_left (f (Name.fold_right g na v)) acc tyopt
 
-let fold_glob_constr_with_binders g f v acc = CAst.(with_val (function
+let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
   | GVar _ -> acc
   | GApp (c,args) -> List.fold_left (f v) (f v acc c) args
   | GLambda (na,_,b,c) | GProd (na,_,b,c) ->
@@ -256,10 +256,9 @@ let fold_glob_constr_with_binders g f v acc = CAst.(with_val (function
 let iter_glob_constr f = fold_glob_constr (fun () -> f) ()
 
 let occur_glob_constr id =
-  let open CAst in
-  let rec occur barred acc = function
-    | { loc ; v = GVar id' } -> Id.equal id id'
-    | c ->
+  let rec occur barred acc c = match DAst.get c with
+    | GVar id' -> Id.equal id id'
+    | _ ->
        (* [g] looks if [id] appears in a binding position, in which
           case, we don't have to look in the corresponding subterm *)
        let g id' barred = barred || Id.equal id id' in
@@ -268,21 +267,20 @@ let occur_glob_constr id =
   occur false false
 
 let free_glob_vars =
-  let open CAst in
-  let rec vars bound vs = function
-    | { loc ; v = GVar id' } -> if Id.Set.mem id' bound then vs else Id.Set.add id' vs
-    | c -> fold_glob_constr_with_binders Id.Set.add vars bound vs c in
+  let rec vars bound vs c = match DAst.get c with
+    | GVar id' -> if Id.Set.mem id' bound then vs else Id.Set.add id' vs
+    | _ -> fold_glob_constr_with_binders Id.Set.add vars bound vs c in
   fun rt ->
     let vs = vars Id.Set.empty Id.Set.empty rt in
     Id.Set.elements vs
 
 let glob_visible_short_qualid c =
-  let rec aux acc = function
-    | { CAst.v = GRef (c,_) } ->
+  let rec aux acc c = match DAst.get c with
+    | GRef (c,_) ->
         let qualid = Nametab.shortest_qualid_of_global Id.Set.empty c in
         let dir,id = Libnames.repr_qualid  qualid in
         if DirPath.is_empty dir then id :: acc else acc
-    | c ->
+    | _ ->
         fold_glob_constr aux acc c
   in aux [] c
 
@@ -326,7 +324,7 @@ let map_tomatch_binders f ((c,(na,inp)) as x) : tomatch_tuple =
   if r == inp then x
   else c,(f na, r)
 
-let rec map_case_pattern_binders f = CAst.map (function
+let rec map_case_pattern_binders f = DAst.map (function
   | PatVar na as x ->
       let r = f na in
       if r == na then x
@@ -396,7 +394,9 @@ let rename_var l id =
     if List.exists (fun (_,id') -> Id.equal id id') l then raise UnsoundRenaming
     else id
 
-let rec rename_glob_vars l c = CAst.map_with_loc (fun ?loc -> function
+let force c = DAst.make ?loc:c.CAst.loc (DAst.get c)
+
+let rec rename_glob_vars l c = force @@ DAst.map_with_loc (fun ?loc -> function
   | GVar id as r ->
       let id' = rename_var l id in
       if id == id' then r else GVar id'
@@ -436,13 +436,13 @@ let rec rename_glob_vars l c = CAst.map_with_loc (fun ?loc -> function
              test_na l na; (na,k,Option.map (rename_glob_vars l) bbd,rename_glob_vars l bty))) decls,
            Array.map (rename_glob_vars l) bs,
            Array.map (rename_glob_vars l) ts)
-  | _ -> (map_glob_constr (rename_glob_vars l) c).CAst.v
+  | _ -> DAst.get (map_glob_constr (rename_glob_vars l) c)
   ) c
 
 (**********************************************************************)
 (* Conversion from glob_constr to cases pattern, if possible            *)
 
-let rec cases_pattern_of_glob_constr na = CAst.map (function
+let rec cases_pattern_of_glob_constr na = DAst.map (function
   | GVar id ->
     begin match na with
     | Name _ ->
@@ -452,8 +452,12 @@ let rec cases_pattern_of_glob_constr na = CAst.map (function
     end
   | GHole (_,_,_) -> PatVar na
   | GRef (ConstructRef cstr,_) -> PatCstr (cstr,[],na)
-  | GApp ( { CAst.v = GRef (ConstructRef cstr,_) }, l) ->
+  | GApp (c, l) ->
+    begin match DAst.get c with
+    | GRef (ConstructRef cstr,_) ->
       PatCstr (cstr,List.map (cases_pattern_of_glob_constr Anonymous) l,na)
+    | _ -> raise Not_found
+    end
   | _ -> raise Not_found
   )
 
@@ -469,7 +473,7 @@ let drop_local_defs typi args =
       | [], [] -> []
       | Rel.Declaration.LocalDef _ :: decls, pat :: args ->
          begin
-           match pat.CAst.v with
+           match DAst.get pat with
            | PatVar Anonymous -> aux decls args
            | _ -> raise Not_found (* The pattern is used, one cannot drop it *)
          end
@@ -487,21 +491,22 @@ let add_patterns_for_params_remove_local_defs (ind,j) l =
       let typi = mip.mind_nf_lc.(j-1) in
       let (_,typi) = decompose_prod_n_assum (Rel.length mib.mind_params_ctxt) typi in
       drop_local_defs typi l in
-  Util.List.addn nparams (CAst.make @@ PatVar Anonymous) l
+  Util.List.addn nparams (DAst.make @@ PatVar Anonymous) l
 
 (* Turn a closed cases pattern into a glob_constr *)
-let rec glob_constr_of_closed_cases_pattern_aux x = CAst.map_with_loc (fun ?loc -> function
+let rec glob_constr_of_closed_cases_pattern_aux x = DAst.map_with_loc (fun ?loc -> function
   | PatCstr (cstr,[],Anonymous) -> GRef (ConstructRef cstr,None)
   | PatCstr (cstr,l,Anonymous)  ->
-      let ref = CAst.make ?loc @@ GRef (ConstructRef cstr,None) in
+      let ref = DAst.make ?loc @@ GRef (ConstructRef cstr,None) in
       let l = add_patterns_for_params_remove_local_defs cstr l in
       GApp (ref, List.map glob_constr_of_closed_cases_pattern_aux l)
   | _ -> raise Not_found
   ) x
 
-let glob_constr_of_closed_cases_pattern = function
-  | { CAst.loc ; v = PatCstr (cstr,l,na) } ->
-      na,glob_constr_of_closed_cases_pattern_aux (CAst.make ?loc @@ PatCstr (cstr,l,Anonymous))
+let glob_constr_of_closed_cases_pattern p = match DAst.get p with
+  | PatCstr (cstr,l,na) ->
+      let loc = p.CAst.loc in
+      na,glob_constr_of_closed_cases_pattern_aux (DAst.make ?loc @@ PatCstr (cstr,l,Anonymous))
   | _ ->
       raise Not_found
 

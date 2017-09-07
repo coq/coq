@@ -106,12 +106,12 @@ let intern_ltac_variable ist = function
 
 let intern_constr_reference strict ist = function
   | Ident (_,id) as r when not strict && find_hyp id ist ->
-      (CAst.make @@ GVar id), Some (CAst.make @@ CRef (r,None))
+      (DAst.make @@ GVar id), Some (CAst.make @@ CRef (r,None))
   | Ident (_,id) as r when find_var id ist ->
-      (CAst.make @@ GVar id), if strict then None else Some (CAst.make @@ CRef (r,None))
+      (DAst.make @@ GVar id), if strict then None else Some (CAst.make @@ CRef (r,None))
   | r ->
       let loc,_ as lqid = qualid_of_reference r in
-      CAst.make @@ GRef (locate_global_with_alias lqid,None), 
+      DAst.make @@ GRef (locate_global_with_alias lqid,None), 
 	if strict then None else Some (CAst.make @@ CRef (r,None))
 
 (* Internalize an isolated reference in position of tactic *)
@@ -264,9 +264,10 @@ let intern_destruction_arg ist = function
   | clear,ElimOnIdent (loc,id) ->
       if !strict_check then
 	(* If in a defined tactic, no intros-until *)
-	match intern_constr ist (CAst.make @@ CRef (Ident (Loc.tag id), None)) with
-	| {loc; CAst.v = GVar id}, _ -> clear,ElimOnIdent (loc,id)
-	| c -> clear,ElimOnConstr (c,NoBindings)
+	let c, p = intern_constr ist (CAst.make @@ CRef (Ident (Loc.tag id), None)) in
+	match DAst.get c with
+	| GVar id -> clear,ElimOnIdent (c.CAst.loc,id)
+	| _ -> clear,ElimOnConstr ((c, p), NoBindings)
       else
 	clear,ElimOnIdent (loc,id)
 
@@ -348,7 +349,7 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
         ltac_extra = ist.extra;
       } in
       let c = Constrintern.interp_reference sign r in
-      match c.CAst.v with
+      match DAst.get c with
       | GRef (r,None) ->
           Inl (ArgArg (evaluable_of_global_reference ist.genv r,None))
       | GVar id ->

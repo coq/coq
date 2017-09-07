@@ -42,10 +42,10 @@ let interp_agen ist gl ((goclr, _), (k, gc as c)) (clr, rcs) =
   | Some ghyps ->
     let clr' = snd (interp_hyps ist gl ghyps) @ clr in
     if k <> xNoFlag then clr', rcs' else
-    let open CAst in
-    match rc with
-    | { loc; v = GVar id } when not_section_id id -> SsrHyp (Loc.tag ?loc id) :: clr', rcs'
-    | { loc; v = GRef (VarRef id, _) } when not_section_id id ->
+    let loc = rc.CAst.loc in
+    match DAst.get rc with
+    | GVar id when not_section_id id -> SsrHyp (Loc.tag ?loc id) :: clr', rcs'
+    | GRef (VarRef id, _) when not_section_id id ->
         SsrHyp (Loc.tag ?loc id) :: clr', rcs'
     | _ -> clr', rcs'
 
@@ -68,9 +68,8 @@ let pf_match = pf_apply (fun e s c t -> understand_tcc e s ~expected_type:t c)
 
 let apply_rconstr ?ist t gl =
 (* ppdebug(lazy(str"sigma@apply_rconstr=" ++ pr_evar_map None (project gl))); *)
-  let open CAst in
-  let n = match ist, t with
-    | None, { v = GVar id | GRef (VarRef id,_) } -> pf_nbargs gl (EConstr.mkVar id)
+  let n = match ist, DAst.get t with
+    | None, (GVar id | GRef (VarRef id,_)) -> pf_nbargs gl (EConstr.mkVar id)
     | Some ist, _ -> interp_nbargs ist gl t
     | _ -> anomaly "apply_rconstr without ist and not RVar" in
   let mkRlemma i = mkRApp t (mkRHoles i) in

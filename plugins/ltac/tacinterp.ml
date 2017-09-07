@@ -679,8 +679,8 @@ let interp_typed_pattern ist env sigma (_,c,_) =
 (* Interprets a constr expression *)
 let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
   let try_expand_ltac_var sigma x =
-    try match dest_fun x with
-    | { CAst.v = GVar id }, _ ->
+    try match DAst.get (fst (dest_fun x)) with
+    | GVar id ->
       let v = Id.Map.find id ist.lfun in
       sigma, List.map inj_fun (coerce_to_constr_list env v)
     | _ ->
@@ -1043,7 +1043,7 @@ let interp_destruction_arg ist gl arg =
 	if Tactics.is_quantified_hypothesis id gl then
           keep,ElimOnIdent (loc,id)
 	else
-          let c = (CAst.make ?loc @@ GVar id,Some (CAst.make @@ CRef (Ident (loc,id),None))) in
+          let c = (DAst.make ?loc @@ GVar id,Some (CAst.make @@ CRef (Ident (loc,id),None))) in
           let f env sigma =
             let (sigma,c) = interp_open_constr ist env sigma c in
             (sigma, (c,NoBindings))

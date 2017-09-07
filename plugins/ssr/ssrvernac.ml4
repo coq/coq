@@ -292,7 +292,7 @@ let interp_search_notation ?loc tag okey =
     err (pr_ntn ntn ++ str " is an n-ary notation");
   let nvars = List.filter (fun (_,(_,typ)) -> typ = NtnTypeConstr) nvars in
   let rec sub () = function
-  | NVar x when List.mem_assoc x nvars -> CAst.make ?loc @@ GPatVar (FirstOrderPatVar x)
+  | NVar x when List.mem_assoc x nvars -> DAst.make ?loc @@ GPatVar (FirstOrderPatVar x)
   | c ->
     glob_constr_of_notation_constr_with_binders ?loc (fun _ x -> (), x) sub () c in
   let _, npat = Patternops.pattern_of_glob_constr (sub () body) in
@@ -467,10 +467,10 @@ let pr_raw_ssrhintref prc _ _ = let open CAst in function
     prc c ++ str "|" ++ int (List.length args)
   | c -> prc c
 
-let pr_rawhintref = let open CAst in function
-  | { v = GApp (f, args) } when isRHoles args ->
+let pr_rawhintref c = match DAst.get c with
+  | GApp (f, args) when isRHoles args ->
     pr_glob_constr f ++ str "|" ++ int (List.length args)
-  | c -> pr_glob_constr c
+  | _ -> pr_glob_constr c
 
 let pr_glob_ssrhintref _ _ _ (c, _) = pr_rawhintref c
 

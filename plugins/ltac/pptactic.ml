@@ -1040,7 +1040,7 @@ type 'a extra_genarg_printer =
   let strip_prod_binders_glob_constr n (ty,_) =
     let rec strip_ty acc n ty =
       if Int.equal n 0 then (List.rev acc, (ty,None)) else
-        match ty.CAst.v with
+        match DAst.get ty with
             Glob_term.GProd(na,Explicit,a,b) ->
               strip_ty (([Loc.tag na],(a,None))::acc) (n-1) b
           | _ -> user_err Pp.(str "Cannot translate fix tactic: not enough products") in
