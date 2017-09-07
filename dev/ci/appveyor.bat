@@ -23,13 +23,19 @@ if %USEOPAM% == false (
   call %APPVEYOR_BUILD_FOLDER%\dev\build\windows\MakeCoq_MinGW.bat -threads=1 ^
     -arch=%ARCH% -installer=Y -coqver=%APPVEYOR_BUILD_FOLDER_CFMT% ^
     -destcyg=%CYGROOT% -destcoq=%DESTCOQ% -cygcache=%CYGCACHE% ^
-    -setup %CYGROOT%\%SETUP%
-  copy "%CYGROOT%\build\coq-local\dev\nsis\*.exe" dev\nsis
-  7z a coq-opensource-archive-%ARCHLONG%.zip %CYGROOT%\build\tarballs\*
+    -setup %CYGROOT%\%SETUP% || GOTO ErrorExit
+  copy "%CYGROOT%\build\coq-local\dev\nsis\*.exe" dev\nsis || GOTO ErrorExit
+  7z a coq-opensource-archive-%ARCHLONG%.zip %CYGROOT%\build\tarballs\* || GOTO ErrorExit
 )
 
 if %USEOPAM% == true (
   %CYGROOT%\%SETUP% -qnNdO -R %CYGROOT% -l %CYGCACHE% -s %CYGMIRROR% ^
     -P rsync -P patch -P diffutils -P make -P unzip -P m4 -P findutils -P time
-  %CYGROOT%/bin/bash -l %APPVEYOR_BUILD_FOLDER%/dev/ci/appveyor.sh
+  %CYGROOT%/bin/bash -l %APPVEYOR_BUILD_FOLDER%/dev/ci/appveyor.sh || GOTO ErrorExit
 )
+
+GOTO :EOF
+
+:ErrorExit
+  ECHO ERROR MakeCoq_MinGW.bat failed
+  EXIT /b 1
