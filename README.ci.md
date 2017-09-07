@@ -1,104 +1,118 @@
-**WARNING:** This document is a work in progress and intended as a RFC.
-If you are not a Coq Developer, don't follow these instructions yet.
+Continuous Integration for the Coq Proof Assistant
+==================================================
 
-Introduction
-============
+Changes to Coq are systematically tested for regression and compatibility
+breakage on our Continuous Integration (CI) platforms *before* integration,
+so as to ensure better robustness and catch problems as early as possible.
+These tests include the compilation of several external libraries / plugins.
 
-As of 2017, Coq's Git repository includes a `.travis.yml` file, a
-`.gitlab-ci.yml` file, and supporting scripts, that enable lightweight
-Continuous Integration (CI) tests to be run on clones of that repository stored
-at Github or on a GitLab instance, respectively. This affords two benefits.
+This document contains information for both external library / plugin authors,
+who might be interested in having their development tested, and for Coq
+developers / contributors, who must ensure that they don't break these
+external developments accidentally.
 
-First, it allows developers working on Coq itself to perform CI on their own
-Git remotes, thereby enabling them to catch and fix problems with their
-proposed changes before submitting pull requests to Coq itself. This in turn
-reduces the risk of a faulty PR being opened against the official Coq
-repository.
+*Remark:* the CI policy outlined in this document is susceptible to evolve and
+specific accommodations are of course possible.
 
-Secondly, it allows developers working on a library dependent on Coq to have
-that library included in the Travis CI tests invoked by the official Coq
-repository on GitHub.
+Information for external library / plugin authors
+-------------------------------------------------
 
-(More comprehensive testing than is provided by the Travis CI and GitLab CI
-integration is the responsibility of Coq's [Jenkins CI
-server](https://ci.inria.fr/coq/) see, [XXX: add document] for instructions on
-how to add your development to Jenkins.)
+You are encouraged to consider submitting your development for addition to
+our CI. This means that:
 
-How to submit your library for inclusion in Coq's Travis CI builds
-==================================================================
+- Any time that a proposed change is breaking your development, Coq developers
+  will send you patches to adapt it or, at the very least, will work with you
+  to see how to adapt it.
 
-CI provides a convenient way to perform testing of Coq changes
-versus a set of curated libraries.
+On the condition that:
 
-Are you an author of a Coq library who would be interested in having
-the latest Coq changes validated against it?
+- At the time of the submission, your development works with Coq master branch.
 
-If so, all you need to do is:
+- Your development is publicly available in a git repository and we can easily
+  send patches to you (e.g. through pull / merge requests).
 
-1. Put your library in a public repository tracking the `master`
-   branch of Coq's Git repository.
-2. Make sure that your development builds in less than 35 minutes.
-3. Submit a PR adding your development.
-4. ?
-5. Profit! Your library is now part of Coq's continous integration!
+- You react in a timely manner to discuss / integrate those patches.
 
-Note that by partipating in this program, you assume a reasonable
-compromise to discuss and eventually integrate compatibility changes
-upstream.
+- You do not push, to the branches that we test, commits that haven't been
+  first tested to compile with the corresponding branch(es) of Coq.
 
-Get in touch with us to discuss any special need your development may
-have.
+- Your development compiles in less than 35 minutes with just two threads.
+  If this is not the case, consider adding a "lite" target that compiles just
+  part of it.
 
-Maintaining your contribution manually [current method]
-======================================
+In case you forget to comply with these last three conditions, we would reach
+out to you and give you a 30-day grace period during which your development
+would be moved into our "allow failure" category. At the end of the grace
+period, in the absence of progress, the development would be removed from our
+CI.
 
-To add your contribution to the Coq CI set, add a script for building
-your library to `dev/ci/`, update `.travis.yml`, `.gitlab-ci.yml` and
-`Makefile.ci`. Then, submit a PR.
+### Add your development by submitting a pull request
 
-Maintaining your contribution as an OPAM package [work in progress] [to be implemented]
-================================================
+Add a new `ci-mydev.sh` script to [`dev/ci`](/dev/ci) (have a look at
+[`ci-coq-dpdgraph.sh`](/dev/ci/ci-coq-dpdgraph.sh) or
+[`ci-fiat-parsers.sh`](/dev/ci/ci-fiat-parsers.sh) for simple examples);
+set the corresponding variables in
+[`ci-basic-overlay.sh`](/dev/ci/ci-basic-overlay.sh); add the corresponding
+target to [`Makefile.ci`](/Makefile.ci); add new jobs to
+[`.travis.yml`](/.travis.yml) and [`.gitlab-ci.yml`](/.gitlab-ci.yml) so that
+this new target is run. **Do not hesitate to submit an incomplete pull request
+if you need help to finish it.**
 
-You can also provide an opam package for your contribution XXX at
-https://github.com/coq/opam-coq-archive
+You may also be interested in having your development tested in our
+performance benchmark. Currently this is done by providing an OPAM package
+in https://github.com/coq/opam-coq-archive and opening an issue at
+https://github.com/coq/coq-bench/issues.
 
-Then, add a `ci-opam-XXX` target to the `.travis.yml` file, the
-package XXX.dev will be tested against each Coq commit and pull
-request.
 
-- TODO: The main question here is what to do with `.opam` caching. We
-  could disable it altogether, however this will have an impact. We
-  could install a dummy Coq package, but `coq-*` dependencies will be
-  botched too. Need to think more.
+Information for developers
+--------------------------
 
-PR Overlays [work in progress] [to be implemented]
-===========
+When you submit a pull request (PR) on Coq GitHub repository, this will
+automatically launch a battery of CI tests. The PR will not be integrated
+unless these tests pass.
 
-It is common for PR to break some of the external tests. To this
-purpose, we provide a method for particular PR to overlay the
-repositories of some of the tests so they can provide fixed
-developments.
+Currently, we have two CI platforms:
 
-The general idea is that the PR author will drop a file
-`dev/ci/overlays/$branch.overlay` where branch name is taken from
-`${TRAVIS_PULL_REQUEST_BRANCH:-$TRAVIS_BRANCH}`
-that is to say, the name of the original branch for the PR.
+- Travis is the main CI platform. It tests the compilation of Coq, of the
+  documentation, and of CoqIDE on Linux with several versions of OCaml /
+  camlp5, and with warnings as errors; it runs the test-suite and tests the
+  compilation of several external developments. It also tests the compilation
+  of Coq on OS X.
 
-The `.overlay` file will contain a set of variables that will be used
-to do the corresponding `opam pin` or to overload the corresponding
-git repositories, etc...
+- AppVeyor is used to test the compilation of Coq and run the test-suite on
+  Windows.
 
-Since pull requests only happen on GitHub there is no need to test the
-corresponding GitLab CI variables.
+You can anticipate the results of these tests prior to submitting your PR
+by having them run of your fork of Coq, on GitHub or GitLab. This can be
+especially helpful given that our Travis platform is often overloaded and
+therefore there can be a significant delay before these tests are actually
+run on your PR. To take advantage of this, simply create a Travis account
+and link it to your GitHub account, or activate the pipelines on your GitLab
+fork.
+
+You can also run one CI target locally (using `make ci-somedev`).
+
+Whenever your PR breaks tested developments, you should either adapt it
+so that it doesn't, or provide a branch fixing these developments (or at
+least work with the author of the development / other Coq developers to
+prepare these fixes). Then, add an overlay in
+[`dev/ci/user-overlays`](/dev/ci/user-overlays) (see the README there)
+in a separate commit in your PR.
+
+The process to merge your PR is then to submit PRs to the external
+development repositories, merge the latter first (if the fixes are
+backward-compatible), drop the overlay commit and merge the PR on Coq then.
+
 
 Travis specific information
-===========================
+---------------------------
 
 Travis rebuilds all of Coq's executables and stdlib for each job. Coq
 is built with `./configure -local`, then used for the job's test.
 
+
 GitLab specific information
-===========================
+---------------------------
 
 GitLab is set up to use the "build artifact" feature to avoid
 rebuilding Coq. In one job, Coq is built with `./configure -prefix
