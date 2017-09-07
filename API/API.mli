@@ -2107,6 +2107,7 @@ sig
   val coq_not_ref : Globnames.global_reference lazy_t
   val coq_or_ref : Globnames.global_reference lazy_t
   val build_coq_and : Globnames.global_reference Util.delayed
+  val build_coq_or : Globnames.global_reference Util.delayed
   val build_coq_I : Globnames.global_reference Util.delayed
   val coq_reference : string -> string list -> string -> Globnames.global_reference
 end
