@@ -140,10 +140,14 @@ let rec interp (ist : environment) = function
 
 and interp_app f = (); fun args -> match f with
 | { clos_env = ist; clos_var = ids; clos_exp = e; clos_ref = kn } ->
+  let frame = match kn with
+  | None -> FrAnon e
+  | Some kn -> FrLtac kn
+  in
   let rec push ist ids args = match ids, args with
-  | [], [] -> with_frame (FrLtac kn) (interp ist e)
+  | [], [] -> with_frame frame (interp ist e)
   | [], _ :: _ ->
-    with_frame (FrLtac kn) (interp ist e) >>= fun f -> Tac2ffi.to_closure f args
+    with_frame frame (interp ist e) >>= fun f -> Tac2ffi.to_closure f args
   | _ :: _, [] ->
     let cls = { clos_ref = kn; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
     let f = interp_app cls in

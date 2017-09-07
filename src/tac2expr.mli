@@ -181,7 +181,8 @@ type strexpr =
 type tag = int
 
 type frame =
-| FrLtac of ltac_constant option
+| FrLtac of ltac_constant
+| FrAnon of glb_tacexpr
 | FrPrim of ml_tactic_name
 | FrExtn : ('a, 'b) Tac2dyn.Arg.tag * 'b -> frame
 

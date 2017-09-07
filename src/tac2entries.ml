@@ -757,8 +757,8 @@ let _ = Goptions.declare_bool_option {
 }
 
 let pr_frame = function
-| FrLtac None -> str "Call <anonymous>"
-| FrLtac (Some kn) ->
+| FrAnon e -> str "Call <anonymous:" ++ pr_glbexpr e ++ str ">"
+| FrLtac kn ->
   str "Call " ++ Libnames.pr_qualid (Tac2env.shortest_qualid_of_ltac (TacConstant kn))
 | FrPrim ml ->
   str "Prim <" ++ str ml.mltac_plugin ++ str ":" ++ str ml.mltac_tactic ++ str ">"
