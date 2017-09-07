@@ -346,9 +346,14 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
 	  if not (keep_body_ucst_separate || not (Safe_typing.empty_private_constants = eff)) then
 	    nf t
 	  else t
-	in
+        in
         let used_univs_body = Univops.universes_of_constr body in
         let used_univs_typ = Univops.universes_of_constr typ in
+        (* Universes for private constants are relevant to the body *)
+        let used_univs_body =
+          List.fold_left (fun acc (us,_) -> Univ.LSet.union acc us)
+            used_univs_body (Safe_typing.universes_of_private eff)
+        in
         if keep_body_ucst_separate ||
            not (Safe_typing.empty_private_constants = eff) then
           let initunivs = UState.const_univ_entry ~poly initial_euctx in

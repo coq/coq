@@ -3,49 +3,44 @@ Set Printing Universes.
 Set Universe Polymorphism.
 Definition foo (a := Type) (b := Type) (c := Type) := Type.
 Print foo.
-(* foo =
-let a := Type@{Top.1} in
-let b := Type@{Top.2} in let c := Type@{Top.3} in Type@{Top.4}
-     : Type@{Top.4+1}
-(* Top.1
-   Top.2
-   Top.3
-   Top.4 |=  *) *)
-Check @foo. (* foo@{Top.5 Top.6 Top.7
-Top.8}
-     : Type@{Top.8+1}
-(* Top.5
-   Top.6
-   Top.7
-   Top.8 |=  *) *)
+(* foo@{Top.2 Top.3 Top.5 Top.6 Top.8 Top.9 Top.10} =
+let a := Type@{Top.2} in let b := Type@{Top.5} in let c := Type@{Top.8} in Type@{Top.10}
+     : Type@{Top.10+1}
+(* Top.2 Top.3 Top.5 Top.6 Top.8 Top.9 Top.10 |= Top.2 < Top.3
+                                                 Top.5 < Top.6
+                                                 Top.8 < Top.9
+                                                  *)
+ *)
+Check @foo. (* foo@{Top.11 Top.12 Top.13 Top.14 Top.15 Top.16
+Top.17}
+     : Type@{Top.17+1}
+(* Top.11 Top.12 Top.13 Top.14 Top.15 Top.16 Top.17 |= Top.11 < Top.12
+                                                       Top.13 < Top.14
+                                                       Top.15 < Top.16
+                                                        *)
+ *)
 Definition bar := ltac:(let t := eval compute in foo in exact t).
-Check @bar. (* bar@{Top.13 Top.14 Top.15
-Top.16}
-     : Type@{Top.16+1}
-(* Top.13
-   Top.14
-   Top.15
-   Top.16 |=  *) *)
-(* The following should fail, since [bar] should only need one universe. *)
-Check @bar@{i j}.
+Check @bar. (* bar@{Top.27}
+     : Type@{Top.27+1}
+(* Top.27 |=  *) *)
+
+Check @bar@{i}.
 Definition baz (a := Type) (b := Type : a) (c := Type : b) := a -> c.
 Definition qux := Eval compute in baz.
-Check @qux. (* qux@{Top.24 Top.25
-Top.26}
-     : Type@{max(Top.24+1, Top.26+1)}
-(* Top.24
-   Top.25
-   Top.26 |= Top.25 < Top.24
-              Top.26 < Top.25
-               *) *)
-Print qux. (* qux =
-Type@{Top.21} -> Type@{Top.23}
-     : Type@{max(Top.21+1, Top.23+1)}
-(* Top.21
-   Top.22
-   Top.23 |= Top.22 < Top.21
-              Top.23 < Top.22
-               *) *)
+Check @qux. (* qux@{Top.38 Top.39 Top.40
+Top.41}
+     : Type@{max(Top.38+1, Top.41+1)}
+(* Top.38 Top.39 Top.40 Top.41 |= Top.38 < Top.39
+                                  Top.40 < Top.38
+                                  Top.41 < Top.40
+                                   *) *)
+Print qux. (* qux@{Top.34 Top.35 Top.36 Top.37} =
+Type@{Top.34} -> Type@{Top.37}
+     : Type@{max(Top.34+1, Top.37+1)}
+(* Top.34 Top.35 Top.36 Top.37 |= Top.34 < Top.35
+                                  Top.36 < Top.34
+                                  Top.37 < Top.36
+                                   *) *)
 Fail Check @qux@{Set Set}.
 Check @qux@{Type Type Type Type}.
 (* [qux] should only need two universes *)
