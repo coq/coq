@@ -26,7 +26,7 @@ Documentation for getting started with the Coq sources is located in various fil
 
 Please make pull requests against the `master` branch.
 
-It's helpful to run the Coq test suite with `make test-suite` before submitting your change. Travis CI runs this test suite and a much larger one including external Coq developments on every pull request, but these results take significantly longer to come back (on the order of a few hours). Running the test suite locally will take somewhere around 10-15 minutes.
+It's helpful to run the Coq test suite with `make test-suite` before submitting your change. Travis CI runs this test suite and a much larger one including external Coq developments on every pull request, but these results take significantly longer to come back (on the order of a few hours). Running the test suite locally will take somewhere around 10-15 minutes. Refer to [`dev/ci/README.md`](/dev/ci/README.md#information-for-developers) for more information on Travis CI tests.
 
 Don't be alarmed if the pull request process takes some time. It can take a few days to get feedback, approval on the final changes, and then a merge. Coq doesn't release new versions very frequently so it can take a few months for your change to land in a released version. That said, you can start using the latest Coq `master` branch to take advantage of all the new features, improvements, and fixes.
 
@@ -49,6 +49,8 @@ The sources for the [Coq reference manual](https://coq.inria.fr/distrib/current/
 There are many useful ways to contribute to the Coq ecosystem that don't involve the Coq repository.
 
 Tutorials to teach Coq, and especially to teach particular advanced features, would be much appreciated. Some tutorials are listed on the [Coq website](https://coq.inria.fr/documentation). If you would like to add a link to this list, please make a pull request against the Coq website repository at https://github.com/coq/www.
+
+External plugins / libraries contribute to create a successful ecosystem around Coq. If your external development is mature enough, you may consider submitting it for addition to our CI tests. Refer to [`dev/ci/README.md`](/dev/ci/README.md) for more information.
 
 Ask and answer questions on [Stack Exchange](https://stackexchange.com/filters/299857/questions-tagged-coq-on-stackexchange-sites) which has a helpful community of Coq users.
 
