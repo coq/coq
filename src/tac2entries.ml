@@ -768,8 +768,11 @@ let pr_frame = function
     obj.Tac2env.ml_print (Global.env ()) arg
 
 let () = register_handler begin function
-| Tac2interp.LtacError (kn, _, bt) ->
-  let c = Tac2print.pr_constructor kn in (** FIXME *)
+| Tac2interp.LtacError (kn, args, bt) ->
+  let t_exn = KerName.make2 Tac2env.coq_prefix (Label.make "exn") in
+  let v = ValOpn (kn, args) in
+  let t = GTypRef (Other t_exn, []) in
+  let c = Tac2print.pr_valexpr (Global.env ()) Evd.empty v t in
   let bt =
     if !Tac2interp.print_ltac2_backtrace then
       fnl () ++ str "Backtrace:" ++ fnl () ++ prlist_with_sep fnl pr_frame bt

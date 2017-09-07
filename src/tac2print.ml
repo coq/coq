@@ -112,14 +112,14 @@ let pr_name = function
 let find_constructor n empty def =
   let rec find n = function
   | [] -> assert false
-  | (id, []) :: rem ->
+  | (id, []) as ans :: rem ->
     if empty then
-      if Int.equal n 0 then id
+      if Int.equal n 0 then ans
       else find (pred n) rem
     else find n rem
-  | (id, _ :: _) :: rem ->
+  | (id, _ :: _) as ans :: rem ->
     if not empty then
-      if Int.equal n 0 then id
+      if Int.equal n 0 then ans
       else find (pred n) rem
     else find n rem
   in
@@ -130,7 +130,7 @@ let pr_internal_constructor tpe n is_const =
   | (_, GTydAlg data) -> data
   | _ -> assert false
   in
-  let id = find_constructor n is_const data.galg_constructors in
+  let (id, _) = find_constructor n is_const data.galg_constructors in
   let kn = change_kn_label tpe id in
   pr_constructor kn
 
@@ -302,3 +302,116 @@ let pr_glbexpr_gen lvl c =
 
 let pr_glbexpr c =
   pr_glbexpr_gen E5 c
+
+(** Toplevel printers *)
+
+let rec subst_type subst (t : 'a glb_typexpr) = match t with
+| GTypVar id -> subst.(id)
+| GTypArrow (t1, t2) -> GTypArrow (subst_type subst t1, subst_type subst t2)
+| GTypRef (qid, args) ->
+  GTypRef (qid, List.map (fun t -> subst_type subst t) args)
+
+let unfold kn args =
+  let (nparams, def) = Tac2env.interp_type kn in
+  match def with
+  | GTydDef (Some def) ->
+    let args = Array.of_list args in
+    Some (subst_type args def)
+  | _ -> None
+
+let rec kind t = match t with
+| GTypVar id -> GTypVar id
+| GTypRef (Other kn, tl) ->
+  begin match unfold kn tl with
+  | None -> t
+  | Some t -> kind t
+  end
+| GTypArrow _ | GTypRef (Tuple _, _) -> t
+
+type val_printer =
+  { val_printer : 'a. Environ.env -> Evd.evar_map -> valexpr -> 'a glb_typexpr list -> Pp.t }
+
+let printers = ref KNmap.empty
+
+let register_val_printer kn pr =
+  printers := KNmap.add kn pr !printers
+
+open Tac2ffi
+
+let rec pr_valexpr env sigma v t = match kind t with
+| GTypVar _ -> str "<poly>"
+| GTypRef (Other kn, params) ->
+  let pr = try Some (KNmap.find kn !printers) with Not_found -> None in
+  begin match pr with
+  | Some pr -> pr.val_printer env sigma v params
+  | None ->
+    let n, repr = Tac2env.interp_type kn in
+    match repr with
+    | GTydDef None -> str "<abstr>"
+    | GTydDef (Some _) ->
+      (** Shouldn't happen thanks to kind *)
+      assert false
+    | GTydAlg alg ->
+      begin match v with
+      | ValInt n -> pr_internal_constructor kn n true
+      | ValBlk (n, args) ->
+        let (id, tpe) = find_constructor n false alg.galg_constructors in
+        let knc = change_kn_label kn id in
+        let args = pr_constrargs env sigma params args tpe in
+        hv 2 (pr_constructor knc ++ spc () ++ str "(" ++ args ++ str ")")
+      | _ -> str "<unknown>"
+      end
+    | GTydRec rcd -> str "{}"
+    | GTydOpn ->
+      begin match v with
+      | ValOpn (knc, [||]) -> pr_constructor knc
+      | ValOpn (knc, args) ->
+        let data = Tac2env.interp_constructor knc in
+        let args = pr_constrargs env sigma params args data.Tac2env.cdata_args in
+        hv 2 (pr_constructor knc ++ spc () ++ str "(" ++ args ++ str ")")
+      | _ -> str "<unknown>"
+      end
+  end
+| GTypArrow _ -> str "<fun>"
+| GTypRef (Tuple _, tl) ->
+  let blk = Array.to_list (block.r_to v) in
+  if List.length blk == List.length tl then
+    let prs = List.map2 (fun v t -> pr_valexpr env sigma v t) blk tl in
+    hv 2 (str "(" ++ prlist_with_sep pr_comma (fun p -> p) prs ++ str ")")
+  else
+    str "<unknown>"
+
+and pr_constrargs env sigma params args tpe =
+  let subst = Array.of_list params in
+  let tpe = List.map (fun t -> subst_type subst t) tpe in
+  let args = Array.to_list args in
+  let args = List.combine args tpe in
+  prlist_with_sep pr_comma (fun (v, t) -> pr_valexpr env sigma v t) args
+
+let register_init n f =
+  let kn = KerName.make2 Tac2env.coq_prefix (Label.make n) in
+  register_val_printer kn { val_printer = fun _ _ v _ -> f v }
+
+let () = register_init "int" begin fun n ->
+  let n = to_int n in
+  Pp.int n
+end
+
+let () = register_init "string" begin fun s ->
+  let s = to_string s in
+  Pp.quote (Pp.str s)
+end
+
+let () = register_init "ident" begin fun id ->
+  let id = to_ident id in
+  Pp.str "@" ++ Id.print id
+end
+
+let () = register_init "message" begin fun pp ->
+  str "message:(" ++ to_pp pp ++ str ")"
+end
+
+let () = register_init "err" begin fun e ->
+  let (e, _) = to_ext val_exn e in
+  str "err:(" ++ CErrors.print_no_report e ++ str ")"
+end

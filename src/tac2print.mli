@@ -29,6 +29,15 @@ val pr_projection : ltac_projection -> Pp.t
 val pr_glbexpr_gen : exp_level -> glb_tacexpr -> Pp.t
 val pr_glbexpr : glb_tacexpr -> Pp.t
 
+(** {5 Printing values}*)
+
+type val_printer =
+  { val_printer : 'a. Environ.env -> Evd.evar_map -> valexpr -> 'a glb_typexpr list -> Pp.t }
+
+val register_val_printer : type_constant -> val_printer -> unit
+
+val pr_valexpr : Environ.env -> Evd.evar_map -> valexpr -> 'a glb_typexpr -> Pp.t
+
 (** {5 Utilities} *)
 
 val int_name : unit -> (int -> string)
