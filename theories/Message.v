@@ -19,4 +19,7 @@ Ltac2 @ external of_ident : ident -> message := "ltac2" "message_of_ident".
 Ltac2 @ external of_constr : constr -> message := "ltac2" "message_of_constr".
 (** Panics if there is more than one goal under focus. *)
 
+Ltac2 @ external of_exn : exn -> message := "ltac2" "message_of_exn".
+(** Panics if there is more than one goal under focus. *)
+
 Ltac2 @ external concat : message -> message -> message := "ltac2" "message_concat".

@@ -37,6 +37,7 @@ let t_constr = coq_core "constr"
 let t_pattern = coq_core "pattern"
 let t_ident = coq_core "ident"
 let t_option = coq_core "option"
+let t_exn = coq_core "exn"
 let t_reference = std_core "reference"
 
 let c_nil = coq_core "[]"
@@ -187,6 +188,14 @@ let () = define1 "message_of_ident" ident begin fun c ->
   let pp = Id.print c in
   return (Value.of_pp pp)
 end
+
+let () = define1 "message_of_exn" valexpr begin fun v ->
+  Proofview.tclENV >>= fun env ->
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let pp = Tac2print.pr_valexpr env sigma v (GTypRef (Other Core.t_exn, [])) in
+  return (Value.of_pp pp)
+end
+
 
 let () = define2 "message_concat" pp pp begin fun m1 m2 ->
   return (Value.of_pp (Pp.app m1 m2))
