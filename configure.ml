@@ -263,10 +263,6 @@ module Prefs = struct
   let debug = ref true
   let profile = ref false
   let annotate = ref false
-  (* Note, disabling this should be OK, but be careful with the
-     sharing invariants.
-  *)
-  let safe_string = ref true
   let nativecompiler = ref (not (os_type_win32 || os_type_cygwin))
   let coqwebsite = ref "http://coq.inria.fr/"
   let force_caml_version = ref false
@@ -376,8 +372,9 @@ let coq_annotate_flag =
   then if program_in_path "ocamlmerlin" then "-bin-annot" else "-annot"
   else ""
 
-let coq_safe_string =
-  if !Prefs.safe_string then "-safe-string" else ""
+(* This variable can be overriden only for debug purposes, use with
+   care. *)
+let coq_safe_string = "-safe-string"
 
 let cflags = "-Wall -Wno-unused -g -O2"
 
