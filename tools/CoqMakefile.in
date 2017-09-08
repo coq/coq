@@ -39,6 +39,7 @@ CAMLP4O           := $(COQMF_CAMLP4O)
 CAMLP4BIN         := $(COQMF_CAMLP4BIN)
 CAMLP4LIB         := $(COQMF_CAMLP4LIB)
 CAMLP4OPTIONS     := $(COQMF_CAMLP4OPTIONS)
+CAMLFLAGS         := $(COQMF_CAMLFLAGS)
 HASNATDYNLINK     := $(COQMF_HASNATDYNLINK)
 
 @CONF_FILE@: @PROJECT_FILE@
@@ -100,11 +101,11 @@ AFTER ?=
 CAMLDONTLINK=camlp5.gramlib,unix,str
 
 # OCaml binaries
-CAMLC       ?= "$(OCAMLFIND)" ocamlc -c -rectypes -thread
-CAMLOPTC    ?= "$(OCAMLFIND)" opt    -c -rectypes -thread
-CAMLLINK    ?= "$(OCAMLFIND)" ocamlc    -rectypes -thread -linkpkg -dontlink $(CAMLDONTLINK)
-CAMLOPTLINK ?= "$(OCAMLFIND)" opt       -rectypes -thread -linkpkg -dontlink $(CAMLDONTLINK)
-CAMLDOC     ?= "$(OCAMLFIND)" ocamldoc  -rectypes
+CAMLC       ?= "$(OCAMLFIND)" ocamlc   -c
+CAMLOPTC    ?= "$(OCAMLFIND)" opt      -c
+CAMLLINK    ?= "$(OCAMLFIND)" ocamlc   -linkpkg -dontlink $(CAMLDONTLINK)
+CAMLOPTLINK ?= "$(OCAMLFIND)" opt      -linkpkg -dontlink $(CAMLDONTLINK)
+CAMLDOC     ?= "$(OCAMLFIND)" ocamldoc
 CAMLDEP     ?= "$(OCAMLFIND)" ocamldep -slash -ml-synonym .ml4 -ml-synonym .mlpack
 
 # DESTDIR is prepended to all installation paths
@@ -114,8 +115,6 @@ DESTDIR ?=
 CAMLDEBUG ?=
 COQDEBUG ?=
 
-# Extra flags to the OCaml compiler
-CAMLFLAGS ?=
 # Extra packages to be linked in (as in findlib -package)
 CAMLPKGS ?=
 
@@ -749,7 +748,7 @@ printenv::
 # file you can extend the merlin-hook target in @LOCAL_FILE@
 .merlin:
 	$(SHOW)'FILL .merlin'
-	$(HIDE)echo 'FLG -rectypes -thread' > .merlin
+	$(HIDE)echo 'FLG $(COQMF_CAMLFLAGS)' > .merlin
 	$(HIDE)echo 'B $(COQLIB)' >> .merlin
 	$(HIDE)echo 'S $(COQLIB)' >> .merlin
 	$(HIDE)$(foreach d,$(COQ_SRC_SUBDIRS), \

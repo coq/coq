@@ -36,6 +36,7 @@ val camlp4compat : string (* compatibility argument to camlp4/5 *)
 
 val coqideincl : string (* arguments for building coqide (e.g. lablgtk) *)
 val cflags : string     (* arguments passed to gcc *)
+val caml_flags : string     (* arguments passed to ocamlc (ie. CAMLFLAGS) *)
 
 val best : string       (* byte/opt *)
 val arch : string       (* architecture *)

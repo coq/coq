@@ -271,8 +271,10 @@ let main () =
   try
     (* - We add topstart.cmo explicitly because we shunted ocamlmktop wrapper.
        - With the coq .cma, we MUST use the -linkall option. *)
+    let coq_camlflags =
+      List.filter ((<>) "") (String.split_on_char ' ' Coq_config.caml_flags) in
     let args =
-      "-linkall" :: "-rectypes" :: "-w" :: "-31" :: flags @ copts @ options @
+      coq_camlflags @ "-linkall" :: "-w" :: "-31" :: flags @ copts @ options @
       (std_includes basedir) @ tolink @ [ main_file ] @ topstart
     in
     if !echo then begin
