@@ -225,6 +225,7 @@ module Constr :
     val global : reference Gram.entry
     val universe_level : glob_level Gram.entry
     val sort : glob_sort Gram.entry
+    val sort_family : Sorts.family Gram.entry
     val pattern : cases_pattern_expr Gram.entry
     val constr_pattern : constr_expr Gram.entry
     val lconstr_pattern : constr_expr Gram.entry

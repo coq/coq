@@ -471,6 +471,7 @@ module Constr =
     let global = make_gen_entry uconstr "global"
     let universe_level = make_gen_entry uconstr "universe_level"
     let sort = make_gen_entry uconstr "sort"
+    let sort_family = make_gen_entry uconstr "sort_family"
     let pattern = Gram.entry_create "constr:pattern"
     let constr_pattern = gec_constr "constr_pattern"
     let lconstr_pattern = gec_constr "lconstr_pattern"
@@ -631,6 +632,7 @@ let () =
   Grammar.register0 wit_ident (Prim.ident);
   Grammar.register0 wit_var (Prim.var);
   Grammar.register0 wit_ref (Prim.reference);
+  Grammar.register0 wit_sort_family (Constr.sort_family);
   Grammar.register0 wit_constr (Constr.constr);
   Grammar.register0 wit_red_expr (Vernac_.red_expr);
   ()

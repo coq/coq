@@ -11,7 +11,6 @@ open Names
 open Term
 open Environ
 open Vernacexpr
-open Misctypes
 
 (** See also Auto_ind_decl, Indrec, Eqscheme, Ind_tables, ... *)
 
@@ -32,7 +31,7 @@ val declare_rewriting_schemes : inductive -> unit
 (** Mutual Minimality/Induction scheme *)
 
 val do_mutual_induction_scheme :
-  (Id.t located * bool * inductive * glob_sort) list -> unit
+  (Id.t located * bool * inductive * Sorts.family) list -> unit
 
 (** Main calls to interpret the Scheme command *)
 

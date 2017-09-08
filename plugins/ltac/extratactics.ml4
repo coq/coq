@@ -403,38 +403,38 @@ open Leminv
 
 let seff id = Vernacexpr.VtSideff [id], Vernacexpr.VtLater
 
-VERNAC ARGUMENT EXTEND sort
-| [ "Set" ] -> [ GSet ]
-| [ "Prop" ] -> [ GProp ]
-| [ "Type" ] -> [ GType [] ]
-END
+(*VERNAC ARGUMENT EXTEND sort_family
+| [ "Set" ] -> [ InSet ]
+| [ "Prop" ] -> [ InProp ]
+| [ "Type" ] -> [ InType ]
+END*)
 
 VERNAC COMMAND EXTEND DeriveInversionClear
-| [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort(s) ]
+| [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
   -> [ add_inversion_lemma_exn na c s false inv_clear_tac ]
 
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ] => [ seff na ]
-  -> [ add_inversion_lemma_exn na c GProp false inv_clear_tac ]
+  -> [ add_inversion_lemma_exn na c InProp false inv_clear_tac ]
 END
 
 VERNAC COMMAND EXTEND DeriveInversion
-| [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort(s) ]
+| [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
   -> [ add_inversion_lemma_exn na c s false inv_tac ]
 
 | [ "Derive" "Inversion" ident(na) "with" constr(c) ] => [ seff na ]
-  -> [ add_inversion_lemma_exn na c GProp false inv_tac ]
+  -> [ add_inversion_lemma_exn na c InProp false inv_tac ]
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversion
-| [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort(s) ]
+| [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
   -> [ add_inversion_lemma_exn na c s true dinv_tac ]
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversionClear
-| [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort(s) ]
+| [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
   -> [ add_inversion_lemma_exn na c s true dinv_clear_tac ]
 END

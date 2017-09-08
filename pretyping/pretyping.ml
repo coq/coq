@@ -222,18 +222,6 @@ let interp_level_info ?loc evd : Misctypes.level_info -> _ = function
   | None -> new_univ_level_variable ?loc univ_rigid evd
   | Some (loc,s) -> interp_universe_level_name ~anon_rigidity:univ_flexible evd (Loc.tag ?loc s)
 
-let interp_sort ?loc evd = function
-  | GProp -> evd, Prop Null
-  | GSet -> evd, Prop Pos
-  | GType n -> 
-    let evd, u = interp_universe ?loc evd n in
-      evd, Type u
-
-let interp_elimination_sort = function
-  | GProp -> InProp
-  | GSet  -> InSet
-  | GType _ -> InType
-
 type inference_hook = env -> evar_map -> evar -> evar_map * constr
 
 type inference_flags = {

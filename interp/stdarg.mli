@@ -47,6 +47,8 @@ val wit_ref : (reference, global_reference located or_var, global_reference) gen
 
 val wit_quant_hyp : quantified_hypothesis uniform_genarg_type
 
+val wit_sort_family : (Sorts.family, unit, unit) genarg_type
+
 val wit_constr : (constr_expr, glob_constr_and_expr, constr) genarg_type
 
 val wit_uconstr : (constr_expr , glob_constr_and_expr, Glob_term.closed_glob_constr) genarg_type

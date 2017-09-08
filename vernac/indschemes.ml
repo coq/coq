@@ -30,7 +30,6 @@ open Globnames
 open Goptions
 open Nameops
 open Termops
-open Pretyping
 open Nametab
 open Smartlocate
 open Vernacexpr
@@ -345,24 +344,23 @@ requested
       let names inds recs isdep y z =
         let ind = smart_global_inductive y in
         let sort_of_ind = inductive_sort_family (snd (lookup_mind_specif env ind)) in
-        let z' = interp_elimination_sort z in
         let suffix = (
           match sort_of_ind with
           | InProp ->
-              if isdep then (match z' with
+              if isdep then (match z with
               | InProp -> inds ^ "_dep"
               | InSet  -> recs ^ "_dep"
               | InType -> recs ^ "t_dep")
-              else ( match z' with
+              else ( match z with
               | InProp -> inds
               | InSet -> recs
               | InType -> recs ^ "t" )
           | _ ->
-              if isdep then (match z' with
+              if isdep then (match z with
               | InProp -> inds
               | InSet -> recs
               | InType -> recs ^ "t" )
-              else (match z' with
+              else (match z with
               | InProp -> inds ^ "_nodep"
               | InSet -> recs ^ "_nodep"
               | InType -> recs ^ "t_nodep")
@@ -392,7 +390,7 @@ let do_mutual_induction_scheme lnamedepindsort =
 	      evd, (ind,u), Some u
 	 | Some ui -> evd, (ind, ui), inst
        in
-          (evd, (indu,dep,interp_elimination_sort sort) :: l, inst))
+          (evd, (indu,dep,sort) :: l, inst))
     lnamedepindsort (Evd.from_env env0,[],None)
   in
   let sigma, listdecl = Indrec.build_mutual_induction_scheme env0 sigma lrecspec in

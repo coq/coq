@@ -18,7 +18,6 @@ open Evd
 open EConstr
 open Glob_term
 open Evarutil
-open Misctypes
 
 (** An auxiliary function for searching for fixpoint guard indexes *)
 
@@ -118,9 +117,6 @@ val ise_pretype_gen :
 (**/**)
 
 (** To embed constr in glob_constr *)
-
-val interp_sort : ?loc:Loc.t -> evar_map -> glob_sort -> evar_map * sorts
-val interp_elimination_sort : glob_sort -> sorts_family
 
 val register_constr_interp0 :
   ('r, 'g, 't) Genarg.genarg_type ->

@@ -50,6 +50,8 @@ let wit_ref = make0 "ref"
 
 let wit_quant_hyp = make0 "quant_hyp"
 
+let wit_sort_family = make0 "sort_family"
+
 let wit_constr =
   make0 "constr"
 

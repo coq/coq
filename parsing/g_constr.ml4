@@ -123,8 +123,8 @@ let name_colon =
 let aliasvar = function { CAst.loc = loc; CAst.v = CPatAlias (_, id) } -> Some (loc,Name id) | _ -> None
 
 GEXTEND Gram
-  GLOBAL: binder_constr lconstr constr operconstr universe_level sort global
-  constr_pattern lconstr_pattern Constr.ident
+  GLOBAL: binder_constr lconstr constr operconstr universe_level sort sort_family
+  global constr_pattern lconstr_pattern Constr.ident
   closed_binder open_binders binder binders binders_fixannot
   record_declaration typeclass_constraint pattern appl_arg;
   Constr.ident:
@@ -147,6 +147,12 @@ GEXTEND Gram
       | "Prop" -> GProp
       | "Type" -> GType []
       | "Type"; "@{"; u = universe; "}" -> GType u
+      ] ]
+  ;
+  sort_family:
+    [ [ "Set"  -> Sorts.InSet
+      | "Prop" -> Sorts.InProp
+      | "Type" -> Sorts.InType
       ] ]
   ;
   universe:

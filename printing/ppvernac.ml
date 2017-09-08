@@ -275,7 +275,7 @@ open Decl_kinds
         ) ++
           hov 0 ((if dep then keyword "Induction for" else keyword "Minimality for")
                  ++ spc() ++ pr_smart_global ind) ++ spc() ++
-          hov 0 (keyword "Sort" ++ spc() ++ pr_glob_sort s)
+          hov 0 (keyword "Sort" ++ spc() ++ Termops.pr_sort_family s)
       | CaseScheme (dep,ind,s) ->
         (match idop with
           | Some id -> hov 0 (pr_lident id ++ str" :=") ++ spc()
@@ -283,7 +283,7 @@ open Decl_kinds
         ) ++
           hov 0 ((if dep then keyword "Elimination for" else keyword "Case for")
                  ++ spc() ++ pr_smart_global ind) ++ spc() ++
-          hov 0 (keyword "Sort" ++ spc() ++ pr_glob_sort s)
+          hov 0 (keyword "Sort" ++ spc() ++ Termops.pr_sort_family s)
       | EqualityScheme ind ->
         (match idop with
           | Some id -> hov 0 (pr_lident id ++ str" :=") ++ spc()
