@@ -717,8 +717,8 @@ GEXTEND Gram
         let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
         CAst.make ~loc:!@loc (CHole (None, IntroAnonymous, Some arg))
       | test_dollar_ident; "$"; id = Prim.ident ->
-        let tac = Tac2quote.of_exact_var ~loc:!@loc (Loc.tag ~loc:!@loc id) in
-        let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
+        let id = Loc.tag ~loc:!@loc id in
+        let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_quotation) id in
         CAst.make ~loc:!@loc (CHole (None, IntroAnonymous, Some arg))
     ] ]
   ;

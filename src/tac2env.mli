@@ -132,6 +132,7 @@ val std_prefix : ModPath.t
 (** {5 Generic arguments} *)
 
 val wit_ltac2 : (raw_tacexpr, glb_tacexpr, Util.Empty.t) genarg_type
+val wit_ltac2_quotation : (Id.t Loc.located, Id.t, Util.Empty.t) genarg_type
 
 (** {5 Helper functions} *)
 

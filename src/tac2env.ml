@@ -276,6 +276,7 @@ let std_prefix =
 (** Generic arguments *)
 
 let wit_ltac2 = Genarg.make0 "ltac2:value"
+let wit_ltac2_quotation = Genarg.make0 "ltac2:quotation"
 
 let is_constructor qid =
   let (_, id) = repr_qualid qid in

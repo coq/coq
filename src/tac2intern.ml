@@ -25,6 +25,7 @@ let t_int = coq_type "int"
 let t_string = coq_type "string"
 let t_array = coq_type "array"
 let t_list = coq_type "list"
+let t_constr = coq_type "constr"
 
 let c_nil = GTacCst (Other t_list, 0, [])
 let c_cons e el = GTacCst (Other t_list, 0, [e; el])
@@ -1511,3 +1512,27 @@ let () =
   in
   Genintern.register_intern0 wit_ltac2 intern
 let () = Genintern.register_subst0 wit_ltac2 subst_expr
+
+let () =
+  let open Genintern in
+  let intern ist (loc, id) =
+    let env = match Genintern.Store.get ist.extra ltac2_env with
+    | None ->
+      (** Only happens when Ltac2 is called from a constr or ltac1 quotation *)
+      let env = empty_env () in
+      if !Ltac_plugin.Tacintern.strict_check then env
+      else { env with env_str = false }
+    | Some env -> env
+    in
+    let t =
+      try Id.Map.find id env.env_var
+      with Not_found ->
+        CErrors.user_err ?loc (str "Unbound value " ++ Id.print id)
+    in
+    let t = fresh_mix_type_scheme env t in
+    let () = unify ?loc env t (GTypRef (Other t_constr, [])) in
+    (ist, id)
+  in
+  Genintern.register_intern0 wit_ltac2_quotation intern
+
+let () = Genintern.register_subst0 wit_ltac2_quotation (fun _ id -> id)

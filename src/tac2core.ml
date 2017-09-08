@@ -912,6 +912,23 @@ let () =
   in
   Pretyping.register_constr_interp0 wit_ltac2 interp
 
+let () =
+  let interp ist env sigma concl id =
+    let ist = Tac2interp.get_env ist in
+    let c = Id.Map.find id ist.env_ist in
+    let c = Value.to_constr c in
+    let evdref = ref sigma in
+    let () = Typing.e_check env evdref c concl in
+    (c, !evdref)
+  in
+  Pretyping.register_constr_interp0 wit_ltac2_quotation interp
+
+let () =
+  let pr_raw id = mt () in
+  let pr_glb id = str "$" ++ Id.print id in
+  let pr_top _ = mt () in
+  Genprint.register_print0 wit_ltac2_quotation pr_raw pr_glb pr_top
+
 (** Ltac2 in Ltac1 *)
 
 let () =
