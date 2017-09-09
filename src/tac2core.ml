@@ -103,9 +103,12 @@ let err_matchfailure bt =
 
 let thaw f = f [v_unit]
 
+let fatal_flag : unit Exninfo.t = Exninfo.make ()
+let fatal_info = Exninfo.add Exninfo.null fatal_flag ()
+
 let throw e =
   Tac2interp.get_backtrace >>= fun bt ->
-  Proofview.tclLIFT (Proofview.NonLogical.raise (e bt))
+  Proofview.tclLIFT (Proofview.NonLogical.raise ~info:fatal_info (e bt))
 
 let fail e =
   Tac2interp.get_backtrace >>= fun bt -> Proofview.tclZERO (e bt)
@@ -571,6 +574,7 @@ end
 let () = define1 "throw" exn begin fun (e, info) ->
   Tac2interp.get_backtrace >>= fun bt ->
   let e = set_bt bt e in
+  let info = Exninfo.add info fatal_flag () in
   Proofview.tclLIFT (Proofview.NonLogical.raise ~info e)
 end
 
@@ -784,16 +788,24 @@ let intern_constr self ist c =
   let (_, (c, _)) = Genintern.intern Stdarg.wit_constr ist c in
   (GlbVal c, gtypref t_constr)
 
+let catchable_exception = function
+  | Logic_monad.Exception _ -> false
+  | e -> CErrors.noncritical e
+
 let interp_constr flags ist c =
   let open Pretyping in
   let ist = to_lvar ist in
   pf_apply begin fun env sigma ->
-  Proofview.V82.wrap_exceptions begin fun () ->
+  try
     let (sigma, c) = understand_ltac flags env sigma ist WithoutTypeConstraint c in
     let c = ValExt (Value.val_constr, c) in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
     Proofview.tclUNIT c
-  end
+  with e when catchable_exception e ->
+    let (e, info) = CErrors.push e in
+    match Exninfo.get info fatal_flag with
+    | None -> Proofview.tclZERO ~info e
+    | Some () -> Proofview.tclLIFT (Proofview.NonLogical.raise ~info e)
   end
 
 let () =
