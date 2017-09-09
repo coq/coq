@@ -895,7 +895,9 @@ let () =
     let ist = Ltac_plugin.Tacinterp.default_ist () in
     (** FUCK YOU API *)
     let ist = { ist with API.Geninterp.lfun = (Obj.magic lfun) } in
-    (Obj.magic Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic) >>= fun () ->
+    let tac = (Obj.magic Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic) in
+    let wrap (e, info) = set_bt info >>= fun info -> Proofview.tclZERO ~info e in
+    Proofview.tclOR tac wrap >>= fun () ->
     return v_unit
   in
   let subst s tac = Genintern.substitute Ltac_plugin.Tacarg.wit_tactic s tac in
