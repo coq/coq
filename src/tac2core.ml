@@ -799,6 +799,7 @@ let interp_constr flags ist c =
     Proofview.tclUNIT c
   with e when catchable_exception e ->
     let (e, info) = CErrors.push e in
+    set_bt info >>= fun info ->
     match Exninfo.get info fatal_flag with
     | None -> Proofview.tclZERO ~info e
     | Some () -> throw ~info e
