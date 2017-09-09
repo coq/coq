@@ -121,5 +121,5 @@ val val_exn : Exninfo.iexn Tac2dyn.Val.tag
 
 (** Exception *)
 
-exception LtacError of KerName.t * valexpr array * backtrace
+exception LtacError of KerName.t * valexpr array
 (** Ltac2-defined exceptions seen from OCaml side *)

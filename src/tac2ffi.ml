@@ -43,7 +43,7 @@ match Val.eq tag tag' with
 
 (** Exception *)
 
-exception LtacError of KerName.t * valexpr array * backtrace
+exception LtacError of KerName.t * valexpr array
 
 (** Conversion functions *)
 
@@ -169,7 +169,7 @@ let internal_err =
 
 (** FIXME: handle backtrace in Ltac2 exceptions *)
 let of_exn c = match fst c with
-| LtacError (kn, c, _) -> ValOpn (kn, c)
+| LtacError (kn, c) -> ValOpn (kn, c)
 | _ -> ValOpn (internal_err, [|of_ext val_exn c|])
 
 let to_exn c = match c with
@@ -177,7 +177,7 @@ let to_exn c = match c with
   if Names.KerName.equal kn internal_err then
     to_ext val_exn c.(0)
   else
-    (LtacError (kn, c, []), Exninfo.null)
+    (LtacError (kn, c), Exninfo.null)
 | _ -> assert false
 
 let exn = {

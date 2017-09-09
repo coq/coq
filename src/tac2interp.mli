@@ -22,7 +22,7 @@ val set_env : environment -> Glob_term.unbound_ltac_var_map -> Glob_term.unbound
 
 (** {5 Exceptions} *)
 
-exception LtacError of KerName.t * valexpr array * backtrace
+exception LtacError of KerName.t * valexpr array
 (** Ltac2-defined exceptions seen from OCaml side *)
 
 (** {5 Backtrace} *)

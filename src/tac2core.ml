@@ -87,17 +87,17 @@ let of_result f = function
 
 (** Stdlib exceptions *)
 
-let err_notfocussed bt =
-  Tac2interp.LtacError (coq_core "Not_focussed", [||], bt)
+let err_notfocussed =
+  Tac2interp.LtacError (coq_core "Not_focussed", [||])
 
-let err_outofbounds bt =
-  Tac2interp.LtacError (coq_core "Out_of_bounds", [||], bt)
+let err_outofbounds =
+  Tac2interp.LtacError (coq_core "Out_of_bounds", [||])
 
-let err_notfound bt =
-  Tac2interp.LtacError (coq_core "Not_found", [||], bt)
+let err_notfound =
+  Tac2interp.LtacError (coq_core "Not_found", [||])
 
-let err_matchfailure bt =
-  Tac2interp.LtacError (coq_core "Match_failure", [||], bt)
+let err_matchfailure =
+  Tac2interp.LtacError (coq_core "Match_failure", [||])
 
 (** Helper functions *)
 
@@ -106,16 +106,18 @@ let thaw f = f [v_unit]
 let fatal_flag : unit Exninfo.t = Exninfo.make ()
 let fatal_info = Exninfo.add Exninfo.null fatal_flag ()
 
-let throw e =
+let set_bt info =
   Tac2interp.get_backtrace >>= fun bt ->
-  Proofview.tclLIFT (Proofview.NonLogical.raise ~info:fatal_info (e bt))
+  Proofview.tclUNIT (Exninfo.add info Tac2entries.backtrace bt)
 
-let fail e =
-  Tac2interp.get_backtrace >>= fun bt -> Proofview.tclZERO (e bt)
+let throw ?(info = Exninfo.null) e =
+  set_bt info >>= fun info ->
+  let info = Exninfo.add info fatal_flag () in
+  Proofview.tclLIFT (Proofview.NonLogical.raise ~info e)
 
-let set_bt bt e = match e with
-| Tac2interp.LtacError (kn, args, _) -> Tac2interp.LtacError (kn, args, bt)
-| e -> e
+let fail ?(info = Exninfo.null) e =
+  set_bt info >>= fun info ->
+  Proofview.tclZERO ~info e
 
 let return x = Proofview.tclUNIT x
 let pname s = { mltac_plugin = "ltac2"; mltac_tactic = s }
@@ -572,19 +574,14 @@ end
 (** Error *)
 
 let () = define1 "throw" exn begin fun (e, info) ->
-  Tac2interp.get_backtrace >>= fun bt ->
-  let e = set_bt bt e in
-  let info = Exninfo.add info fatal_flag () in
-  Proofview.tclLIFT (Proofview.NonLogical.raise ~info e)
+  throw ~info e
 end
 
 (** Control *)
 
 (** exn -> 'a *)
 let () = define1 "zero" exn begin fun (e, info) ->
-  Tac2interp.get_backtrace >>= fun bt ->
-  let e = set_bt bt e in
-  Proofview.tclZERO ~info e
+  fail ~info e
 end
 
 (** (unit -> 'a) -> (exn -> 'a) -> 'a *)
@@ -624,8 +621,7 @@ let () = define1 "case" closure begin fun f ->
     let k = function
     | [e] ->
       let (e, info) = Value.to_exn e in
-      Tac2interp.get_backtrace >>= fun bt ->
-      let e = set_bt bt e in
+      set_bt info >>= fun info ->
       k (e, info)
     | _ -> assert false
     in
@@ -805,7 +801,7 @@ let interp_constr flags ist c =
     let (e, info) = CErrors.push e in
     match Exninfo.get info fatal_flag with
     | None -> Proofview.tclZERO ~info e
-    | Some () -> Proofview.tclLIFT (Proofview.NonLogical.raise ~info e)
+    | Some () -> throw ~info e
   end
 
 let () =

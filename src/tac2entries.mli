@@ -49,6 +49,10 @@ val print_ltac : Libnames.reference -> unit
 (** Evaluate a tactic expression in the current environment *)
 val call : default:bool -> raw_tacexpr -> unit
 
+(** {5 Toplevel exceptions} *)
+
+val backtrace : backtrace Exninfo.t
+
 (** {5 Parsing entries} *)
 
 module Pltac :

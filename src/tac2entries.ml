@@ -756,6 +756,8 @@ let _ = Goptions.declare_bool_option {
   Goptions.optwrite = (fun b -> Tac2interp.print_ltac2_backtrace := b);
 }
 
+let backtrace : backtrace Exninfo.t = Exninfo.make ()
+
 let pr_frame = function
 | FrAnon e -> str "Call {" ++ pr_glbexpr e ++ str "}"
 | FrLtac kn ->
@@ -768,19 +770,24 @@ let pr_frame = function
     obj.Tac2env.ml_print (Global.env ()) arg
 
 let () = register_handler begin function
-| Tac2interp.LtacError (kn, args, bt) ->
+| Tac2interp.LtacError (kn, args) ->
   let t_exn = KerName.make2 Tac2env.coq_prefix (Label.make "exn") in
   let v = ValOpn (kn, args) in
   let t = GTypRef (Other t_exn, []) in
   let c = Tac2print.pr_valexpr (Global.env ()) Evd.empty v t in
-  let bt =
-    if !Tac2interp.print_ltac2_backtrace then
-      fnl () ++ str "Backtrace:" ++ fnl () ++ prlist_with_sep fnl pr_frame bt
-    else
-      mt ()
-  in
-  hov 0 (str "Uncaught Ltac2 exception:" ++ spc () ++ hov 0 c) ++ bt
+  hov 0 (str "Uncaught Ltac2 exception:" ++ spc () ++ hov 0 c)
 | _ -> raise Unhandled
+end
+
+let () = ExplainErr.register_additional_error_info begin fun (e, info) ->
+  if !Tac2interp.print_ltac2_backtrace then
+    let bt = Exninfo.get info backtrace in
+    let bt = Option.default [] bt in
+    let bt =
+      str "Backtrace:" ++ fnl () ++ prlist_with_sep fnl pr_frame bt ++ fnl ()
+    in
+    Some (Loc.tag @@ Some bt)
+  else raise Exit
 end
 
 (** Printing *)
