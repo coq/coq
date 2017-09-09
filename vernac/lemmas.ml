@@ -49,7 +49,7 @@ let retrieve_first_recthm uctx = function
       (NamedDecl.get_value (Global.lookup_named id),variable_opacity id)
   | ConstRef cst ->
       let cb = Global.lookup_constant cst in
-      let (_, uctx) = UState.universe_context uctx in
+      let (_, uctx) = UState.universe_context ~names:[] ~extensible:true uctx in
       let inst = Univ.UContext.instance uctx in
       let map (c, ctx) = Vars.subst_instance_constr inst c in
       (Option.map map (Global.body_of_constant_body cb), is_opaque cb)
@@ -450,7 +450,7 @@ let start_proof_com ?inference_hook kind thms hook =
   let thms = List.map (fun (n, (t, info)) -> (n, (nf t, info))) thms in
   let () =
     if not decl.Misctypes.univdecl_extensible_instance then
-       ignore (Evd.universe_context evd ~names:decl.Misctypes.univdecl_instance)
+       ignore (Evd.universe_context evd ~names:decl.Misctypes.univdecl_instance ~extensible:false)
     else ()
   in
   let evd =

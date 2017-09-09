@@ -220,7 +220,7 @@ let exec_tactic env evd n f args =
   let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter]))) gl in
   let evd, nf = Evarutil.nf_evars_and_universes (Refiner.project gls) in
   let nf c = nf (constr_of c) in
-  Array.map nf !tactic_res, snd (Evd.universe_context evd)
+  Array.map nf !tactic_res, snd (Evd.universe_context ~names:[] ~extensible:true evd)
 
 let stdlib_modules =
   [["Coq";"Setoids";"Setoid"];

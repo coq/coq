@@ -748,27 +748,10 @@ let evar_universe_context d = d.universes
 
 let universe_context_set d = UState.context_set d.universes
 
-let universe_context ?names evd = UState.universe_context ?names evd.universes
+let universe_context ~names ~extensible evd =
+  UState.universe_context ~names ~extensible evd.universes
 
-open Misctypes
-type universe_decl =
-  (Names.Id.t Loc.located list, Univ.Constraint.t) Misctypes.gen_universe_decl
-
-let check_implication evd cstrs ctx =
-  let uctx = evar_universe_context evd in
-  let gr = UState.initial_graph uctx in
-  let grext = UGraph.merge_constraints cstrs gr in
-  let cstrs' = Univ.UContext.constraints ctx in
-  if UGraph.check_constraints cstrs' grext then ()
-  else CErrors.user_err ~hdr:"check_univ_decl"
-                  (str "Universe constraints are not implied by the ones declared.")
-
-let check_univ_decl evd decl =
-  let pl = if decl.univdecl_extensible_instance then None else Some decl.univdecl_instance in
-  let pl, ctx = universe_context ?names:pl evd in
-  if not decl.univdecl_extensible_constraints then
-    check_implication evd decl.univdecl_constraints ctx;
-  pl, ctx
+let check_univ_decl evd decl = UState.check_univ_decl evd.universes decl
 
 let restrict_universe_context evd vars =
   { evd with universes = UState.restrict evd.universes vars }

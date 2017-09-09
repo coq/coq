@@ -888,7 +888,7 @@ in
       let ctx' = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx')) in
       Univ.Instance.empty, Evd.evar_universe_context ctx'
     else
-      let (_, uctx) = UState.universe_context ctx' in
+      let (_, uctx) = UState.universe_context ~names:[] ~extensible:true ctx' in
       Univ.UContext.instance uctx, ctx'
   in
   let obl = { obl with obl_body = Some (DefinedObl (cst, inst)) } in

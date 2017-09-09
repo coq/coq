@@ -411,6 +411,7 @@ sig
   val add_instance : Instance.t -> t -> t
 
   (** Arbitrary choice of linear order of the variables *)
+  val sort_levels : Level.t array -> Level.t array
   val to_context : t -> universe_context
   val of_context : universe_context -> t
 

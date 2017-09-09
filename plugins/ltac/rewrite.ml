@@ -1884,7 +1884,7 @@ let declare_projection n instance_id r =
     in it_mkProd_or_LetIn ccl ctx
   in
   let typ = it_mkProd_or_LetIn typ ctx in
-  let pl, ctx = Evd.universe_context sigma in
+  let pl, ctx = Evd.universe_context ~names:[] ~extensible:true sigma in
   let typ = EConstr.to_constr sigma typ in
   let term = EConstr.to_constr sigma term in
   let cst = 

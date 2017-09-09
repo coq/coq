@@ -1019,15 +1019,16 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let binders_rel = nf_evar_context !evdref binders_rel in
   let binders = nf_evar_context !evdref binders in
   let top_arity = Evarutil.nf_evar !evdref top_arity in
-  let pl = Option.map (fun d -> d.univdecl_instance) pl in
-  let hook, recname, typ = 
+  let pl, plext = Option.cata
+      (fun d -> d.univdecl_instance, d.univdecl_extensible_instance) ([],true) pl in
+  let hook, recname, typ =
     if List.length binders_rel > 1 then
       let name = add_suffix recname "_func" in
       let hook l gr _ = 
 	let body = it_mkLambda_or_LetIn (mkApp (Evarutil.e_new_global evdref gr, [|make|])) binders_rel in
 	let ty = it_mkProd_or_LetIn top_arity binders_rel in
 	let ty = EConstr.Unsafe.to_constr ty in
-	let pl, univs = Evd.universe_context ?names:pl !evdref in
+	let pl, univs = Evd.universe_context ~names:pl ~extensible:plext !evdref in
 	  (*FIXME poly? *)
 	let ce = definition_entry ~poly ~types:ty ~univs (EConstr.to_constr !evdref body) in
 	(** FIXME: include locality *)

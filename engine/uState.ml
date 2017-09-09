@@ -257,41 +257,63 @@ let pr_uctx_level uctx =
       with Not_found | Option.IsNone ->
         Universes.pr_with_global_universes l
 
-let universe_context ?names ctx =
-  match names with
-  | None -> [], Univ.ContextSet.to_context ctx.uctx_local
-  | Some pl ->
-     let levels = Univ.ContextSet.levels ctx.uctx_local in
-     let newinst, map, left =
-       List.fold_right
-         (fun (loc,id) (newinst, map, acc) ->
-          let l =
-            try UNameMap.find (Id.to_string id) (fst ctx.uctx_names)
-            with Not_found ->
-              user_err ?loc ~hdr:"universe_context"
-                            (str"Universe " ++ Nameops.pr_id id ++ str" is not bound anymore.")
-          in (l :: newinst, (id, l) :: map, Univ.LSet.remove l acc))
-         pl ([], [], levels)
-     in
-       if not (Univ.LSet.is_empty left) then
-         let n = Univ.LSet.cardinal left in
-         let loc =
-           try
-             let info =
-               Univ.LMap.find (Univ.LSet.choose left) (snd ctx.uctx_names) in
-             info.uloc
-           with Not_found -> None
-         in
-           user_err ?loc ~hdr:"universe_context"
-                        ((str(CString.plural n "Universe") ++ spc () ++
-			     Univ.LSet.pr (pr_uctx_level ctx) left ++
-			   spc () ++ str (CString.conjugate_verb_to_be n) ++
-                           str" unbound."))
-      else
-        let inst = Univ.Instance.of_array (Array.of_list newinst) in
-        let ctx = Univ.UContext.make (inst,
-          Univ.ContextSet.constraints ctx.uctx_local)
-        in map, ctx
+type universe_decl =
+  (Names.Id.t Loc.located list, Univ.Constraint.t) Misctypes.gen_universe_decl
+
+let universe_context ~names ~extensible ctx =
+  let levels = Univ.ContextSet.levels ctx.uctx_local in
+  let newinst, left =
+    List.fold_right
+      (fun (loc,id) (newinst, acc) ->
+         let l =
+           try UNameMap.find (Id.to_string id) (fst ctx.uctx_names)
+           with Not_found ->
+             user_err ?loc ~hdr:"universe_context"
+               (str"Universe " ++ Nameops.pr_id id ++ str" is not bound anymore.")
+         in (l :: newinst, Univ.LSet.remove l acc))
+      names ([], levels)
+  in
+  if not extensible && not (Univ.LSet.is_empty left) then
+    let n = Univ.LSet.cardinal left in
+    let loc =
+      try
+        let info =
+          Univ.LMap.find (Univ.LSet.choose left) (snd ctx.uctx_names) in
+        info.uloc
+      with Not_found -> None
+    in
+    user_err ?loc ~hdr:"universe_context"
+      ((str(CString.plural n "Universe") ++ spc () ++
+	Univ.LSet.pr (pr_uctx_level ctx) left ++
+	spc () ++ str (CString.conjugate_verb_to_be n) ++
+        str" unbound."))
+  else
+    let left = Univ.ContextSet.sort_levels (Array.of_list (Univ.LSet.elements left)) in
+    let inst = Array.append (Array.of_list newinst) left in
+    let inst = Univ.Instance.of_array inst in
+    let map = List.map (fun (s,l) -> Id.of_string s, l) (UNameMap.bindings (fst ctx.uctx_names)) in
+    let ctx = Univ.UContext.make (inst,
+                                  Univ.ContextSet.constraints ctx.uctx_local) in
+    map, ctx
+
+let check_implication uctx cstrs ctx =
+  let gr = initial_graph uctx in
+  let grext = UGraph.merge_constraints cstrs gr in
+  let cstrs' = Univ.UContext.constraints ctx in
+  if UGraph.check_constraints cstrs' grext then ()
+  else CErrors.user_err ~hdr:"check_univ_decl"
+      (str "Universe constraints are not implied by the ones declared.")
+
+let check_univ_decl uctx decl =
+  let open Misctypes in
+  let pl, ctx = universe_context
+      ~names:decl.univdecl_instance
+      ~extensible:decl.univdecl_extensible_instance
+      uctx
+  in
+  if not decl.univdecl_extensible_constraints then
+    check_implication uctx decl.univdecl_constraints ctx;
+  pl, ctx
 
 let restrict ctx vars =
   let uctx' = Univops.restrict_universe_context ctx.uctx_local vars in

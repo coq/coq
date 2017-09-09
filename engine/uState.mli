@@ -120,7 +120,13 @@ val normalize : t -> t
 
 (** {5 TODO: Document me} *)
 
-val universe_context : ?names:(Id.t Loc.located) list -> t -> (Id.t * Univ.Level.t) list * Univ.universe_context
+val universe_context : names:(Id.t Loc.located) list -> extensible:bool -> t ->
+  (Id.t * Univ.Level.t) list * Univ.universe_context
+
+type universe_decl =
+  (Names.Id.t Loc.located list, Univ.Constraint.t) Misctypes.gen_universe_decl
+
+val check_univ_decl : t -> universe_decl -> Universes.universe_binders * Univ.universe_context
 
 val update_sigma_env : t -> Environ.env -> t
 

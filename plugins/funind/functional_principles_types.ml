@@ -338,13 +338,14 @@ let generate_functional_principle (evd: Evd.evar_map ref)
     then
       (*     let id_of_f = Label.to_id (con_label f) in *)
       let register_with_sort fam_sort =
-	let evd' = Evd.from_env (Global.env ()) in
-	let evd',s = Evd.fresh_sort_in_family env evd' fam_sort in
-	let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
-	let evd',value = change_property_sort evd' s new_principle_type new_princ_name in
-	let evd' = fst (Typing.type_of ~refresh:true (Global.env ()) evd' (EConstr.of_constr value)) in
-	(* Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
-	let ce = Declare.definition_entry ~poly:(Flags.is_universe_polymorphism ()) ~univs:(snd (Evd.universe_context evd')) value in
+        let evd' = Evd.from_env (Global.env ()) in
+        let evd',s = Evd.fresh_sort_in_family env evd' fam_sort in
+        let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
+        let evd',value = change_property_sort evd' s new_principle_type new_princ_name in
+        let evd' = fst (Typing.type_of ~refresh:true (Global.env ()) evd' (EConstr.of_constr value)) in
+        (* Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
+        let univs = (snd (Evd.universe_context ~names:[] ~extensible:true evd')) in
+        let ce = Declare.definition_entry ~poly:(Flags.is_universe_polymorphism ()) ~univs value in
 	ignore(
 	  Declare.declare_constant
 	    name

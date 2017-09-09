@@ -2308,7 +2308,7 @@ sig
     val universe_context_set : evar_map -> Univ.ContextSet.t
     val evar_ident : evar -> evar_map -> Names.Id.t option
     val extract_all_conv_pbs : evar_map -> evar_map * evar_constraint list
-    val universe_context : ?names:(Names.Id.t Loc.located) list -> evar_map ->
+    val universe_context : names:(Names.Id.t Loc.located) list -> extensible:bool -> evar_map ->
                            (Names.Id.t * Univ.Level.t) list * Univ.UContext.t
     val nf_constraints : evar_map -> evar_map
     val from_ctx : UState.t -> evar_map
