@@ -107,8 +107,10 @@ let fatal_flag : unit Exninfo.t = Exninfo.make ()
 let fatal_info = Exninfo.add Exninfo.null fatal_flag ()
 
 let set_bt info =
-  Tac2interp.get_backtrace >>= fun bt ->
-  Proofview.tclUNIT (Exninfo.add info Tac2entries.backtrace bt)
+  if !Tac2interp.print_ltac2_backtrace then
+    Tac2interp.get_backtrace >>= fun bt ->
+    Proofview.tclUNIT (Exninfo.add info Tac2entries.backtrace bt)
+  else Proofview.tclUNIT info
 
 let throw ?(info = Exninfo.null) e =
   set_bt info >>= fun info ->
