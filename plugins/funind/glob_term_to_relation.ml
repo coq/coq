@@ -120,13 +120,13 @@ let combine_args arg args =
 
 
 let ids_of_binder =  function
-  | LetIn Anonymous | Prod Anonymous | Lambda Anonymous -> []
-  | LetIn (Name id)  | Prod (Name id) | Lambda (Name id) -> [id]
+  | LetIn Anonymous | Prod Anonymous | Lambda Anonymous -> Id.Set.empty
+  | LetIn (Name id)  | Prod (Name id) | Lambda (Name id) -> Id.Set.singleton id
 
 let rec change_vars_in_binder mapping = function
     [] -> []
   | (bt,t)::l ->
-      let new_mapping = List.fold_right Id.Map.remove (ids_of_binder bt) mapping in
+      let new_mapping = Id.Set.fold Id.Map.remove (ids_of_binder bt) mapping in
       (bt,change_vars mapping t)::
 	(if Id.Map.is_empty new_mapping
 	 then l
@@ -137,27 +137,27 @@ let rec replace_var_by_term_in_binder x_id term = function
   | [] -> []
   | (bt,t)::l ->
       (bt,replace_var_by_term x_id term t)::
-	if Id.List.mem x_id (ids_of_binder bt)
+	if Id.Set.mem x_id (ids_of_binder bt)
 	then l
 	else replace_var_by_term_in_binder x_id term l
 
-let add_bt_names bt = List.append (ids_of_binder bt)
+let add_bt_names bt = Id.Set.union (ids_of_binder bt)
 
 let apply_args ctxt body args =
   let need_convert_id avoid id =
-    List.exists (is_free_in id) args || Id.List.mem id avoid
+    List.exists (is_free_in id) args || Id.Set.mem id avoid
   in
   let need_convert avoid  bt =
-    List.exists (need_convert_id avoid) (ids_of_binder bt)
+    Id.Set.exists (need_convert_id avoid) (ids_of_binder bt)
   in
-  let next_name_away (na:Name.t) (mapping: Id.t Id.Map.t) (avoid: Id.t list) =
+  let next_name_away (na:Name.t) (mapping: Id.t Id.Map.t) (avoid: Id.Set.t) =
     match na with
-       | Name id when Id.List.mem id avoid ->
+       | Name id when Id.Set.mem id avoid ->
 	   let new_id = Namegen.next_ident_away id avoid in
-	   Name new_id,Id.Map.add id new_id mapping,new_id::avoid
+	   Name new_id,Id.Map.add id new_id mapping,Id.Set.add new_id avoid
        | _ -> na,mapping,avoid
   in
-  let next_bt_away bt (avoid:Id.t list) =
+  let next_bt_away bt (avoid:Id.Set.t) =
     match bt with
       | LetIn na ->
 	  let new_na,mapping,new_avoid = next_name_away na Id.Map.empty avoid  in
@@ -182,15 +182,15 @@ let apply_args ctxt body args =
 	  let new_avoid,new_ctxt',new_body,new_id =
 	    if need_convert_id avoid id
 	    then
-	      let new_avoid =  id::avoid in
+	      let new_avoid =  Id.Set.add id avoid in
 	      let new_id = Namegen.next_ident_away id new_avoid in
-	      let new_avoid' = new_id :: new_avoid in
+	      let new_avoid' = Id.Set.add new_id new_avoid in
 	      let mapping = Id.Map.add id new_id Id.Map.empty in
 	      let new_ctxt' = change_vars_in_binder mapping ctxt' in
 	      let new_body = change_vars mapping body in
 	      new_avoid',new_ctxt',new_body,new_id
 	    else
-	      id::avoid,ctxt',body,id
+	      Id.Set.add id avoid,ctxt',body,id
 	  in
 	  let new_body = replace_var_by_term new_id arg new_body in
 	  let new_ctxt' = replace_var_by_term_in_binder new_id arg new_ctxt' in
@@ -214,7 +214,7 @@ let apply_args ctxt body args =
 	  in
 	  (new_bt,t)::new_ctxt',new_body
   in
-  do_apply []  ctxt body args
+  do_apply Id.Set.empty ctxt body args
 
 
 let combine_app f args =
@@ -434,7 +434,7 @@ let rec pattern_to_term_and_type env typ  = DAst.with_val (function
 	Array.to_list
 	  (Array.init
 	     (cst_narg - List.length patternl)
-	     (fun i -> Detyping.detype Detyping.Now false [] env (Evd.from_env env) (EConstr.of_constr csta.(i)))
+	     (fun i -> Detyping.detype Detyping.Now false Id.Set.empty env (Evd.from_env env) (EConstr.of_constr csta.(i)))
 	  )
       in
       let patl_as_term =
@@ -519,7 +519,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 		*)
 		let rt_as_constr,ctx = Pretyping.understand env (Evd.from_env env) rt in
 		let rt_typ = Typing.unsafe_type_of env (Evd.from_env env) (EConstr.of_constr rt_as_constr) in
-		let res_raw_type = Detyping.detype Detyping.Now false [] env (Evd.from_env env) rt_typ in
+		let res_raw_type = Detyping.detype Detyping.Now false Id.Set.empty env (Evd.from_env env) rt_typ in
 		let res = fresh_id args_res.to_avoid "_res" in
 		let new_avoid = res::args_res.to_avoid in
 		let res_rt = mkGVar res in
@@ -559,7 +559,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 		  match n with
 		    | Name id when List.exists (is_free_in id) args ->
 			(* need to alpha-convert the name *)
-			let new_id = Namegen.next_ident_away id avoid in
+			let new_id = Namegen.next_ident_away id (Id.Set.of_list avoid) in
 			let new_avoid = id:: avoid in
 			let new_b =
 			  replace_var_by_term
@@ -773,7 +773,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 			  Typing.unsafe_type_of env_with_pat_ids (Evd.from_env env) (EConstr.mkVar id)
 			in
 			let raw_typ_of_id =
-			  Detyping.detype Detyping.Now false []
+			  Detyping.detype Detyping.Now false Id.Set.empty
 			    env_with_pat_ids (Evd.from_env env) typ_of_id
 			in
 			mkGProd (Name id,raw_typ_of_id,acc))
@@ -819,7 +819,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 	      (fun pat e typ_as_constr ->
 		 let this_pat_ids = ids_of_pat pat in
 		 let typ_as_constr = EConstr.of_constr typ_as_constr in
-		 let typ = Detyping.detype Detyping.Now false [] new_env (Evd.from_env env) typ_as_constr in
+		 let typ = Detyping.detype Detyping.Now false Id.Set.empty new_env (Evd.from_env env) typ_as_constr in
 		 let pat_as_term = pattern_to_term pat in
                  (* removing trivial holes *) 
                  let pat_as_term = solve_trivial_holes pat_as_term e in 
@@ -833,7 +833,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 		      then (Prod (Name id),
 		      let typ_of_id = Typing.unsafe_type_of new_env (Evd.from_env env) (EConstr.mkVar id) in
 		      let raw_typ_of_id =
-			Detyping.detype Detyping.Now false [] new_env (Evd.from_env env) typ_of_id
+			Detyping.detype Detyping.Now false Id.Set.empty new_env (Evd.from_env env) typ_of_id
 		      in
 		      raw_typ_of_id
 			   )::acc
@@ -1001,7 +1001,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    let rt_typ = DAst.make @@
 		       GApp(DAst.make @@ GRef (Globnames.IndRef (fst ind),None),
 			    (List.map
-			      (fun p -> Detyping.detype Detyping.Now false []
+			      (fun p -> Detyping.detype Detyping.Now false Id.Set.empty
 				 env (Evd.from_env env)
 				 (EConstr.of_constr p)) params)@(Array.to_list
 				      (Array.make
@@ -1028,12 +1028,12 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 				   match na with
 				     | Anonymous -> acc
 				     | Name id' ->
-					 (id',Detyping.detype Detyping.Now false []
+					 (id',Detyping.detype Detyping.Now false Id.Set.empty
 					    env
                                             (Evd.from_env env)
 					    arg)::acc
 				 else if isVar var_as_constr
-				 then (destVar var_as_constr,Detyping.detype Detyping.Now false []
+				 then (destVar var_as_constr,Detyping.detype Detyping.Now false Id.Set.empty
 					 env
                                          (Evd.from_env env)
 					 arg)::acc

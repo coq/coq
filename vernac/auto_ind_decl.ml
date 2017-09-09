@@ -533,7 +533,7 @@ open Namegen
 let compute_bl_goal ind lnamesparrec nparrec =
   let eqI, eff = eqI ind lnamesparrec in
   let list_id = list_id lnamesparrec in
-  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> id::l)) (List.map RelDecl.get_name lnamesparrec) [] in
+  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> Id.Set.add id l)) (List.map RelDecl.get_name lnamesparrec) Id.Set.empty in
   let create_input c =
     let x = next_ident_away (Id.of_string "x") avoid and
         y = next_ident_away (Id.of_string "y") avoid in
@@ -578,7 +578,7 @@ let compute_bl_tact mode bl_scheme_key ind lnamesparrec nparrec =
         ( List.map (fun (_,_,sbl,_ ) -> sbl) list_id )
       in
       let fresh_id s gl =
-          let fresh = fresh_id_in_env (!avoid) s (Proofview.Goal.env gl) in
+          let fresh = fresh_id_in_env (Id.Set.of_list !avoid) s (Proofview.Goal.env gl) in
           avoid := fresh::(!avoid); fresh
       in
       Proofview.Goal.enter begin fun gl ->
@@ -676,7 +676,7 @@ let _ = bl_scheme_kind_aux := fun () -> bl_scheme_kind
 let compute_lb_goal ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
   let eq = Lazy.force eq and tt = Lazy.force tt and bb = Lazy.force bb in
-  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> id::l)) (List.map RelDecl.get_name lnamesparrec) [] in
+  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> Id.Set.add id l)) (List.map RelDecl.get_name lnamesparrec) Id.Set.empty in
   let eqI, eff = eqI ind lnamesparrec in
     let create_input c =
       let x = next_ident_away (Id.of_string "x") avoid and
@@ -722,7 +722,7 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
         ( List.map (fun (_,_,_,slb) -> slb) list_id )
       in
       let fresh_id s gl =
-          let fresh = fresh_id_in_env (!avoid) s (Proofview.Goal.env gl) in
+          let fresh = fresh_id_in_env (Id.Set.of_list !avoid) s (Proofview.Goal.env gl) in
           avoid := fresh::(!avoid); fresh
       in
       Proofview.Goal.enter begin fun gl ->
@@ -806,7 +806,7 @@ let compute_dec_goal ind lnamesparrec nparrec =
   check_not_is_defined ();
   let eq = Lazy.force eq and tt = Lazy.force tt and bb = Lazy.force bb in
   let list_id = list_id lnamesparrec in
-  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> id::l)) (List.map RelDecl.get_name lnamesparrec) [] in
+  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> Id.Set.add id l)) (List.map RelDecl.get_name lnamesparrec) Id.Set.empty in
     let create_input c =
       let x = next_ident_away (Id.of_string "x") avoid and
           y = next_ident_away (Id.of_string "y") avoid in
@@ -870,7 +870,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
       ( List.map (fun (_,_,_,slb) -> slb) list_id )
   in
   let fresh_id s gl =
-      let fresh = fresh_id_in_env (!avoid) s (Proofview.Goal.env gl) in
+      let fresh = fresh_id_in_env (Id.Set.of_list !avoid) s (Proofview.Goal.env gl) in
       avoid := fresh::(!avoid); fresh
   in
   Proofview.Goal.enter begin fun gl ->

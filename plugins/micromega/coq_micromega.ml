@@ -1986,7 +1986,7 @@ let micromega_gen
        let intro_vars = Tacticals.New.tclTHENLIST (List.map intro vars) in
        let intro_props = Tacticals.New.tclTHENLIST (List.map intro props) in
        let ipat_of_name id = Some (Loc.tag @@ Misctypes.IntroNaming (Misctypes.IntroIdentifier id)) in
-       let goal_name = fresh_id [] (Names.Id.of_string "__arith") gl in
+       let goal_name = fresh_id Id.Set.empty (Names.Id.of_string "__arith") gl in
        let env' = List.map (fun (id,i) -> EConstr.mkVar id,i) vars in 
 
        let tac_arith = Tacticals.New.tclTHENLIST [ intro_props ; intro_vars ; 
@@ -2101,7 +2101,7 @@ let micromega_genr prover tac =
        let intro_vars = Tacticals.New.tclTHENLIST (List.map intro vars) in
        let intro_props = Tacticals.New.tclTHENLIST (List.map intro props) in
        let ipat_of_name id = Some (Loc.tag @@ Misctypes.IntroNaming (Misctypes.IntroIdentifier id)) in
-       let goal_name = fresh_id [] (Names.Id.of_string "__arith") gl in
+       let goal_name = fresh_id Id.Set.empty (Names.Id.of_string "__arith") gl in
        let env' = List.map (fun (id,i) -> EConstr.mkVar id,i) vars in 
        
        let tac_arith = Tacticals.New.tclTHENLIST [ intro_props ; intro_vars ; 

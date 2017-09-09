@@ -115,13 +115,17 @@ let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta
 (* Generic values *)
 let pf_get_new_ids idl g =
   let ids = pf_ids_of_hyps g in
+  let ids = Id.Set.of_list ids in
   List.fold_right
-    (fun id acc -> next_global_ident_away id (acc@ids)::acc)
+    (fun id acc -> next_global_ident_away id (Id.Set.union (Id.Set.of_list acc) ids)::acc)
     idl
     []
 
+let next_ident_away_in_goal ids avoid =
+  next_ident_away_in_goal ids (Id.Set.of_list avoid)
+
 let compute_renamed_type gls c =
-  rename_bound_vars_as_displayed (project gls) (*no avoid*) [] (*no rels*) []
+  rename_bound_vars_as_displayed (project gls) (*no avoid*) Id.Set.empty (*no rels*) []
     (pf_unsafe_type_of gls c)
 let h'_id = Id.of_string "h'"
 let teq_id = Id.of_string "teq"
@@ -1302,7 +1306,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
 	with e when CErrors.noncritical e ->
           anomaly (Pp.str "open_new_goal with an unamed theorem.")
   in
-  let na = next_global_ident_away name [] in
+  let na = next_global_ident_away name Id.Set.empty in
   if Termops.occur_existential sigma gls_type then
     CErrors.user_err Pp.(str "\"abstract\" cannot handle existentials");
   let hook _ _ =

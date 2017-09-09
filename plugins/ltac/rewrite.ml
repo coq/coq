@@ -664,7 +664,7 @@ type rewrite_result =
 
 type 'a strategy_input = { state : 'a ; (* a parameter: for instance, a state *)
 			   env : Environ.env ;
-			   unfresh : Id.t list ; (* Unfresh names *)
+			   unfresh : Id.Set.t; (* Unfresh names *)
 			   term1 : constr ;
 			   ty1 : types ; (* first term and its type (convertible to rew_from) *)
 			   cstr : (bool (* prop *) * constr option) ;
@@ -1614,7 +1614,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
     in
     try
       let res =
-        cl_rewrite_clause_aux ?abs strat env [] sigma ty clause
+        cl_rewrite_clause_aux ?abs strat env Id.Set.empty sigma ty clause
       in
       let sigma = match origsigma with None -> sigma | Some sigma -> sigma in
       treat sigma res <*>

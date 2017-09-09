@@ -35,16 +35,16 @@ val subst_glob_constr : substitution -> glob_constr -> glob_constr
    [isgoal] tells if naming must avoid global-level synonyms as intro does 
    [ctx] gives the names of the free variables *)
 
-val detype_names : bool -> Id.t list -> names_context -> env -> evar_map -> constr -> glob_constr
+val detype_names : bool -> Id.Set.t -> names_context -> env -> evar_map -> constr -> glob_constr
 
-val detype : 'a delay -> ?lax:bool -> bool -> Id.t list -> env -> evar_map -> constr -> 'a glob_constr_g
+val detype : 'a delay -> ?lax:bool -> bool -> Id.Set.t -> env -> evar_map -> constr -> 'a glob_constr_g
 
 val detype_sort : evar_map -> sorts -> glob_sort
 
-val detype_rel_context : 'a delay -> ?lax:bool -> constr option -> Id.t list -> (names_context * env) -> 
+val detype_rel_context : 'a delay -> ?lax:bool -> constr option -> Id.Set.t -> (names_context * env) -> 
   evar_map -> rel_context -> 'a glob_decl_g list
 
-val detype_closed_glob : ?lax:bool -> bool -> Id.t list -> env -> evar_map -> closed_glob_constr -> glob_constr
+val detype_closed_glob : ?lax:bool -> bool -> Id.Set.t -> env -> evar_map -> closed_glob_constr -> glob_constr
 
 (** look for the index of a named var or a nondep var as it is renamed *)
 val lookup_name_as_displayed  : env -> evar_map -> constr -> Id.t -> int option

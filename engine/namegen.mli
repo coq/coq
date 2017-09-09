@@ -72,23 +72,22 @@ val next_ident_away_from : Id.t -> (Id.t -> bool) -> Id.t
     the whole identifier except for the {i subscript}.
 
     E.g. if we take [foo42], then [42] is the {i subscript}, and [foo] is the root. *)
-val next_ident_away : Id.t -> Id.t list -> Id.t
+val next_ident_away : Id.t -> Id.Set.t -> Id.t
 
 (** Avoid clashing with a name already used in current module *)
-val next_ident_away_in_goal : Id.t -> Id.t list -> Id.t
+val next_ident_away_in_goal : Id.t -> Id.Set.t -> Id.t
 
 (** Avoid clashing with a name already used in current module 
    but tolerate overwriting section variables, as in goals *)
-val next_global_ident_away : Id.t -> Id.t list -> Id.t
+val next_global_ident_away : Id.t -> Id.Set.t -> Id.t
 
 (** Default is [default_non_dependent_ident] *)
-val next_name_away  : Name.t -> Id.t list -> Id.t
+val next_name_away  : Name.t -> Id.Set.t -> Id.t
 
-val next_name_away_with_default : string -> Name.t -> Id.t list ->
-  Id.t
+val next_name_away_with_default : string -> Name.t -> Id.Set.t -> Id.t
 
 val next_name_away_with_default_using_types : string -> Name.t ->
-  Id.t list -> types -> Id.t
+  Id.Set.t -> types -> Id.t
 
 val set_reserved_typed_name : (types -> Name.t) -> unit
 
@@ -103,13 +102,13 @@ type renaming_flags =
 val make_all_name_different : env -> evar_map -> env
 
 val compute_displayed_name_in :
-  evar_map -> renaming_flags -> Id.t list -> Name.t -> constr -> Name.t * Id.t list
+  evar_map -> renaming_flags -> Id.Set.t -> Name.t -> constr -> Name.t * Id.Set.t
 val compute_and_force_displayed_name_in :
-  evar_map -> renaming_flags -> Id.t list -> Name.t -> constr -> Name.t * Id.t list
+  evar_map -> renaming_flags -> Id.Set.t -> Name.t -> constr -> Name.t * Id.Set.t
 val compute_displayed_let_name_in :
-  evar_map -> renaming_flags -> Id.t list -> Name.t -> constr -> Name.t * Id.t list
+  evar_map -> renaming_flags -> Id.Set.t -> Name.t -> constr -> Name.t * Id.Set.t
 val rename_bound_vars_as_displayed :
-  evar_map -> Id.t list -> Name.t list -> types -> types
+  evar_map -> Id.Set.t -> Name.t list -> types -> types
 
 (**********************************************************************)
 (* Naming strategy for arguments in Prop when eliminating inductive types *)

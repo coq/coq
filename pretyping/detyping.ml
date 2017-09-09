@@ -221,12 +221,12 @@ let lookup_name_as_displayed env sigma t s =
 	   | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
     | Cast (c,_,_) -> lookup avoid n c
     | _ -> None
-  in lookup (ids_of_named_context (named_context env)) 1 t
+  in lookup (Context.Named.to_vars (named_context env)) 1 t
 
 let lookup_index_as_renamed env sigma t n =
   let rec lookup n d c = match EConstr.kind sigma c with
     | Prod (name,_,c') ->
-	  (match compute_displayed_name_in sigma RenamingForGoal [] name c' with
+	  (match compute_displayed_name_in sigma RenamingForGoal Id.Set.empty name c' with
                (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
 		 if Int.equal n 0 then
@@ -236,7 +236,7 @@ let lookup_index_as_renamed env sigma t n =
 		 else
 		   lookup (n-1) (d+1) c')
     | LetIn (name,_,_,c') ->
-	  (match compute_displayed_name_in sigma RenamingForGoal [] name c' with
+	  (match compute_displayed_name_in sigma RenamingForGoal Id.Set.empty name c' with
              | (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
 		 if Int.equal n 0 then
@@ -578,7 +578,7 @@ and detype_fix d flags avoid env sigma (vn,_ as nvn) (names,tys,bodies) =
     Array.fold_left2
       (fun (avoid, env, l) na ty ->
 	 let id = next_name_away na avoid in
-	 (id::avoid, add_name (Name id) None ty env, id::l))
+	 (Id.Set.add id avoid, add_name (Name id) None ty env, id::l))
       (avoid, env, []) names tys in
   let n = Array.length tys in
   let v = Array.map3
@@ -594,7 +594,7 @@ and detype_cofix d flags avoid env sigma n (names,tys,bodies) =
     Array.fold_left2
       (fun (avoid, env, l) na ty ->
 	 let id = next_name_away na avoid in
-	 (id::avoid, add_name (Name id) None ty env, id::l))
+	 (Id.Set.add id avoid, add_name (Name id) None ty env, id::l))
       (avoid, env, []) names tys in
   let ntys = Array.length tys in
   let v = Array.map2
@@ -615,14 +615,14 @@ and share_names d flags n l avoid env sigma c t =
           | _ -> na in
         let t' = detype d flags avoid env sigma t in
 	let id = next_name_away na avoid in
-        let avoid = id::avoid and env = add_name (Name id) None t env in
+        let avoid = Id.Set.add id avoid and env = add_name (Name id) None t env in
         share_names d flags (n-1) ((Name id,Explicit,None,t')::l) avoid env sigma c c'
     (* May occur for fix built interactively *)
     | LetIn (na,b,t',c), _ when n > 0 ->
         let t'' = detype d flags avoid env sigma t' in
         let b' = detype d flags avoid env sigma b in
 	let id = next_name_away na avoid in
-        let avoid = id::avoid and env = add_name (Name id) (Some b) t' env in
+        let avoid = Id.Set. add id avoid and env = add_name (Name id) (Some b) t' env in
         share_names d flags n ((Name id,Explicit,Some b',t'')::l) avoid env sigma c (lift 1 t)
     (* Only if built with the f/n notation or w/o let-expansion in types *)
     | _, LetIn (_,b,_,t) when n > 0 ->
@@ -631,7 +631,7 @@ and share_names d flags n l avoid env sigma c t =
     | _, Prod (na',t',c') when n > 0 ->
         let t'' = detype d flags avoid env sigma t' in
 	let id = next_name_away na' avoid in
-        let avoid = id::avoid and env = add_name (Name id) None t' env in
+        let avoid = Id.Set.add id avoid and env = add_name (Name id) None t' env in
         let appc = mkApp (lift 1 c,[|mkRel 1|]) in
         share_names d flags (n-1) ((Name id,Explicit,None,t'')::l) avoid env sigma appc c'
     (* If built with the f/n notation: we renounce to share names *)
@@ -822,7 +822,7 @@ let rec subst_glob_constr subst = DAst.map (function
   | GRef (ref,u) as raw ->
       let ref',t = subst_global subst ref in
 	if ref' == ref then raw else
-         DAst.get (detype Now false [] (Global.env()) Evd.empty (EConstr.of_constr t))
+         DAst.get (detype Now false Id.Set.empty (Global.env()) Evd.empty (EConstr.of_constr t))
 
   | GSort _
   | GVar _

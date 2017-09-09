@@ -48,7 +48,6 @@ val pf_get_hyp            : goal sigma -> Id.t -> named_declaration
 val pf_get_hyp_typ        : goal sigma -> Id.t -> types
 
 val pf_get_new_id  : Id.t      -> goal sigma -> Id.t
-val pf_get_new_ids : Id.t list -> goal sigma -> Id.t list
 
 val pf_reduction_of_red_expr : goal sigma -> red_expr -> constr -> evar_map * constr
 
@@ -120,6 +119,7 @@ module New : sig
 
   val pf_get_new_id  : identifier -> 'a Proofview.Goal.t -> identifier
   val pf_ids_of_hyps : 'a Proofview.Goal.t -> identifier list
+  val pf_ids_set_of_hyps : 'a Proofview.Goal.t -> Id.Set.t
   val pf_hyps_types : 'a Proofview.Goal.t -> (identifier * types) list
 
   val pf_get_hyp : identifier -> 'a Proofview.Goal.t -> named_declaration

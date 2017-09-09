@@ -205,7 +205,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 	| _ -> subco ())
       | Prod (name, a, b), Prod (name', a', b') ->
 	  let name' = 
-	    Name (Namegen.next_ident_away Namegen.default_dependent_ident (Termops.ids_of_context env))
+	    Name (Namegen.next_ident_away Namegen.default_dependent_ident (Termops.vars_of_env env))
 	  in
 	  let env' = push_rel (LocalAssum (name', a')) env in
 	  let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in

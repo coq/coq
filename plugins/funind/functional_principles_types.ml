@@ -39,7 +39,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
     | decl :: predicates ->
        (match Context.Rel.Declaration.get_name decl with
 	| Name x ->
-	   let id = Namegen.next_ident_away x avoid in
+	   let id = Namegen.next_ident_away x (Id.Set.of_list avoid) in
 	   Hashtbl.add tbl id x;
 	   RelDecl.set_name (Name id) decl :: change_predicates_names (id::avoid) predicates
 	| Anonymous -> anomaly (Pp.str "Anonymous property binder."))
@@ -285,7 +285,7 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   (*    let time2 = System.get_time ()  in *)
   (*    Pp.msgnl (str "computing principle type := " ++ System.fmt_time_difference time1 time2); *)
   let new_princ_name =
-    next_ident_away_in_goal (Id.of_string "___________princ_________") []
+    next_ident_away_in_goal (Id.of_string "___________princ_________") Id.Set.empty
   in
   let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd (EConstr.of_constr new_principle_type) in
   let hook = Lemmas.mk_hook (hook new_principle_type) in

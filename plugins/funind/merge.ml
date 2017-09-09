@@ -767,7 +767,7 @@ let merge_inductive_body (shift:merge_infos) avoid (oib1:one_inductive_body)
     (* first replace rel 1 by a varname *)
     let substindtyp = substitterm 0 (mkRel 1) (mkVar nme) typ in
     let substindtyp = EConstr.of_constr substindtyp in
-    Detyping.detype Detyping.Now false (Id.Set.elements avoid) (Global.env()) Evd.empty substindtyp in
+    Detyping.detype Detyping.Now false avoid (Global.env()) Evd.empty substindtyp in
   let lcstr1: glob_constr list =
     Array.to_list (Array.map (mkrawcor ind1name avoid) oib1.mind_user_lc) in
   (* add  to avoid all indentifiers of lcstr1 *)
@@ -851,7 +851,7 @@ let mkProd_reldecl (rdecl:Context.Rel.Declaration.t) (t2:glob_constr) =
   match rdecl with
     | LocalAssum (nme,t) ->
         let t = EConstr.of_constr t in
-        let traw = Detyping.detype Detyping.Now false [] (Global.env()) Evd.empty t in
+        let traw = Detyping.detype Detyping.Now false Id.Set.empty (Global.env()) Evd.empty t in
         DAst.make @@ GProd (nme,Explicit,traw,t2)
     | LocalDef _ -> assert false
 

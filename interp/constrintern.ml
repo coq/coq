@@ -469,8 +469,7 @@ let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = functio
         | _ -> assert false
       in
       let env = {env with ids = List.fold_right Id.Set.add il env.ids} in
-      let ienv = Id.Set.elements env.ids in
-      let id = Namegen.next_ident_away (Id.of_string "pat") ienv in
+      let id = Namegen.next_ident_away (Id.of_string "pat") env.ids in
       let na = (loc, Name id) in
       let bk = Default Explicit in
       let _, bl' = intern_assumption intern lvar env [na] bk tyc in
@@ -1939,13 +1938,13 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                 | _ ->
                   let fresh =
                     Namegen.next_name_away_with_default_using_types "iV" cano_name forbidden_names (EConstr.of_constr ty) in
-                  canonize_args t tt (fresh::forbidden_names)
+                  canonize_args t tt (Id.Set.add fresh forbidden_names)
                     ((fresh,c)::match_acc) ((cases_pattern_loc c,Name fresh)::var_acc)
                 end
 	      | _ -> assert false in
 	  let _,args_rel =
 	    List.chop nparams (List.rev mip.Declarations.mind_arity_ctxt) in
-	  canonize_args args_rel l (Id.Set.elements forbidden_names_for_gen) [] [] in
+	  canonize_args args_rel l forbidden_names_for_gen [] [] in
 	match_to_do, Some (cases_pattern_expr_loc t,(ind,List.rev_map snd nal))
     | None ->
       [], None in

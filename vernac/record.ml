@@ -457,7 +457,7 @@ let declare_class finite def cum poly ctx id idbuild paramimpls params arity
     let impls = implicits_of_context params in
       List.map (fun x -> impls @ Impargs.lift_implicits (succ len) x) fieldimpls
   in
-  let binder_name = Namegen.next_ident_away (snd id) (Termops.ids_of_context (Global.env())) in
+  let binder_name = Namegen.next_ident_away (snd id) (Termops.vars_of_env (Global.env())) in
   let impl, projs =
     match fields with
     | [LocalAssum (Name proj_name, field) | LocalDef (Name proj_name, _, field)] when def ->

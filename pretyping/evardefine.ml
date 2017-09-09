@@ -72,7 +72,7 @@ let define_pure_evar_as_product evd evk =
   let open Context.Named.Declaration in
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env evi in
-  let id = next_ident_away idx (ids_of_named_context (evar_context evi)) in
+  let id = next_ident_away idx (Context.Named.to_vars (evar_context evi)) in
   let concl = Reductionops.whd_all evenv evd (EConstr.of_constr evi.evar_concl) in
   let s = destSort evd concl in
   let evd1,(dom,u1) =
@@ -127,7 +127,7 @@ let define_pure_evar_as_lambda env evd evk =
   | Prod (na,dom,rng) -> (evd,(na,dom,rng))
   | Evar ev' -> let evd,typ = define_evar_as_product evd ev' in evd,destProd evd typ
   | _ -> error_not_product env evd typ in
-  let avoid = ids_of_named_context (evar_context evi) in
+  let avoid = Context.Named.to_vars (evar_context evi) in
   let id =
     next_name_away_with_default_using_types "x" na avoid (Reductionops.whd_evar evd dom) in
   let newenv = push_named (LocalAssum (id, dom)) evenv in

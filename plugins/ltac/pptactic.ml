@@ -662,14 +662,14 @@ type 'a extra_genarg_printer =
         let names =
           List.fold_left
             (fun ln (nal,_) -> List.fold_left
-              (fun ln na -> match na with (_,Name id) -> id::ln | _ -> ln)
+              (fun ln na -> match na with (_,Name id) -> Id.Set.add id ln | _ -> ln)
               ln nal)
-            [] bll in
+            Id.Set.empty bll in
         let idarg,bll = set_nth_name names n bll in
-        let annot = match names with
-          | [_] ->
+        let annot =
+          if Int.equal (Id.Set.cardinal names) 1 then
             mt ()
-          | _ ->
+          else
             spc() ++ str"{"
             ++ keyword "struct" ++ spc ()
             ++ pr_id idarg ++ str"}"

@@ -211,7 +211,8 @@ let compute_proof_name locality = function
         user_err ?loc  (pr_id id ++ str " already exists.");
       id
   | None ->
-      next_global_ident_away default_thm_id (Proof_global.get_all_proof_names ())
+    let avoid = Id.Set.of_list (Proof_global.get_all_proof_names ()) in
+      next_global_ident_away default_thm_id avoid
 
 let save_remaining_recthms (locality,p,kind) norm ctx binders body opaq i (id,(t_i,(_,imps))) =
   let t_i = norm t_i in

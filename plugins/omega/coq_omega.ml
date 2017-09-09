@@ -1760,7 +1760,7 @@ let onClearedName id tac =
   tclTHEN
     (tclTRY (clear [id]))
     (Proofview.Goal.nf_enter begin fun gl ->
-     let id = fresh_id [] id gl in
+     let id = fresh_id Id.Set.empty id gl in
      tclTHEN (introduction id) (tac id)
     end)
 
@@ -1768,8 +1768,8 @@ let onClearedName2 id tac =
   tclTHEN
     (tclTRY (clear [id]))
     (Proofview.Goal.nf_enter begin fun gl ->
-     let id1 = fresh_id [] (add_suffix id "_left") gl in
-     let id2 = fresh_id [] (add_suffix id "_right") gl in
+     let id1 = fresh_id Id.Set.empty (add_suffix id "_left") gl in
+     let id2 = fresh_id Id.Set.empty (add_suffix id "_right") gl in
       tclTHENLIST [ introduction id1; introduction id2; tac id1 id2 ]
     end)
 

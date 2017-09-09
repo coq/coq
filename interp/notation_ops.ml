@@ -577,7 +577,7 @@ let rec subst_notation_constr subst bound raw =
       if r1' == r1 && k' == k then raw else NCast(r1',k')
 
 let subst_interpretation subst (metas,pat) =
-  let bound = List.map fst metas in
+  let bound = List.fold_left (fun accu (id, _) -> Id.Set.add id accu) Id.Set.empty metas in
   (metas,subst_notation_constr subst bound pat)
 
 (**********************************************************************)
@@ -1143,7 +1143,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
      to print "{x:_ & P x}" knowing that notation "{x & P x}" is not defined. *)
   | _b1, NLambda (Name id as na,(NHole _ | NVar _ as t2),b2) when inner ->
       let avoid =
-        free_glob_vars a1 @ (* as in Namegen: *) glob_visible_short_qualid a1 in
+        Id.Set.union (free_glob_vars a1) (* as in Namegen: *) (glob_visible_short_qualid a1) in
       let id' = Namegen.next_ident_away id avoid in
       let t1 = DAst.make @@ GHole(Evar_kinds.BinderType (Name id'),Misctypes.IntroAnonymous,None) in
       let sigma = match t2 with
