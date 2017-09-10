@@ -101,6 +101,8 @@ let fold_rel_context f env ~init =
 
 let named_context_of_val c = c.env_named_ctx
 
+let ids_of_named_context_val c = Id.Map.domain c.env_named_map
+
 (* [map_named_val f ctxt] apply [f] to the body and the type of
    each declarations.
    *** /!\ ***   [f t] should be convertible with t *)

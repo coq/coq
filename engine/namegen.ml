@@ -302,7 +302,7 @@ let next_name_away = next_name_away_with_default default_non_dependent_string
 
 let make_all_name_different env sigma =
   (** FIXME: this is inefficient, but only used in printing *)
-  let avoid = ref (Context.Named.to_vars (named_context env)) in
+  let avoid = ref (ids_of_named_context_val (named_context_val env)) in
   let sign = named_context_val env in
   let rels = rel_context env in
   let env0 = reset_with_named_context sign env in

@@ -221,7 +221,7 @@ let lookup_name_as_displayed env sigma t s =
 	   | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
     | Cast (c,_,_) -> lookup avoid n c
     | _ -> None
-  in lookup (Context.Named.to_vars (named_context env)) 1 t
+  in lookup (Environ.ids_of_named_context_val (Environ.named_context_val env)) 1 t
 
 let lookup_index_as_renamed env sigma t n =
   let rec lookup n d c = match EConstr.kind sigma c with

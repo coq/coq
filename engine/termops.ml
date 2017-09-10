@@ -1071,9 +1071,9 @@ let replace_term_gen sigma eq_fun c by_c in_t =
 let replace_term sigma c byc t = replace_term_gen sigma EConstr.eq_constr c byc t
 
 let vars_of_env env =
-  let s =
-    Context.Named.fold_outside (fun decl s -> Id.Set.add (NamedDecl.get_id decl) s)
-      (named_context env) ~init:Id.Set.empty in
+  let s = Environ.ids_of_named_context_val (Environ.named_context_val env) in
+  if List.is_empty (Environ.rel_context env) then s
+  else
   Context.Rel.fold_outside
     (fun decl s -> match RelDecl.get_name decl with Name id -> Id.Set.add id s | _ -> s)
     (rel_context env) ~init:s

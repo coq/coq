@@ -64,7 +64,8 @@ let pf_get_hyp_typ gls id =
   id |> pf_get_hyp gls |> NamedDecl.get_type
 
 let pf_ids_of_hyps gls = ids_of_named_context (pf_hyps gls)
-let pf_ids_set_of_hyps gls = Context.Named.to_vars (pf_hyps gls)
+let pf_ids_set_of_hyps gls =
+  Environ.ids_of_named_context_val (Environ.named_context_val (pf_env gls))
 
 let pf_get_new_id id gls =
   next_ident_away id (pf_ids_set_of_hyps gls)
@@ -175,8 +176,8 @@ module New = struct
   let pf_ids_set_of_hyps gl =
     (** We only get the identifiers in [hyps] *)
     let gl = Proofview.Goal.assume gl in
-    let hyps = Proofview.Goal.hyps gl in
-    Context.Named.to_vars hyps
+    let env = Proofview.Goal.env gl in
+    Environ.ids_of_named_context_val (Environ.named_context_val env)
 
   let pf_get_new_id id gl =
     let ids = pf_ids_set_of_hyps gl in

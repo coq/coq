@@ -679,7 +679,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   let filter1 = evar_filter evi1 in
   let src = subterm_source evk1 evi1.evar_source in
   let ids1 = List.map get_id (named_context_of_val sign1) in
-  let avoid = Context.Named.to_vars (named_context_of_val sign1) in
+  let avoid = Environ.ids_of_named_context_val sign1 in
   let inst_in_sign = List.map mkVar (Filter.filter_list filter1 ids1) in
   let open Context.Rel.Declaration in
   let (sign2,filter2,inst2_in_env,inst2_in_sign,_,evd,_) =

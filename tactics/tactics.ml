@@ -384,7 +384,9 @@ let rename_hyp repl =
 (**************************************************************)
 
 let fresh_id_in_env avoid id env =
-  next_ident_away_in_goal id (Id.Set.union avoid (Context.Named.to_vars (named_context env)))
+  let avoid' = ids_of_named_context_val (named_context_val env) in
+  let avoid = if Id.Set.is_empty avoid then avoid' else Id.Set.union avoid' avoid in
+  next_ident_away_in_goal id avoid
 
 let fresh_id avoid id gl =
   fresh_id_in_env avoid id (pf_env gl)
