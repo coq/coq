@@ -97,12 +97,12 @@ Proof proof_irrelevance_cci classic.
 (* classical_left  transforms |- A \/ B into ~B |- A *)
 (* classical_right transforms |- A \/ B into ~A |- B *)
 
-Ltac classical_right :=  match goal with
- | _:_ |-?X1 \/ _ => (elim (classic X1);intro;[left;trivial|right])
+Ltac classical_right := match goal with
+|- ?X \/ _ => (elim (classic X);intro;[left;trivial|right])
 end.
 
 Ltac classical_left := match goal with
-| _:_ |- _ \/?X1 => (elim (classic X1);intro;[right;trivial|left])
+|- _ \/ ?X => (elim (classic X);intro;[right;trivial|left])
 end.
 
 Require Export EqdepFacts.
