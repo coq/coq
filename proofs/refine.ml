@@ -102,7 +102,12 @@ let generic_refine ~typecheck f gl =
   in
   (** Proceed to the refinement *)
   let c = EConstr.Unsafe.to_constr c in
-  let sigma = match evkmain with
+  let sigma = match Proofview.Unsafe.advance sigma self with
+  | None ->
+    (** Nothing to do, the goal has been solved by side-effect *)
+    sigma
+  | Some self ->
+    match evkmain with
     | None -> Evd.define self c sigma
     | Some evk ->
         let id = Evd.evar_ident self sigma in
