@@ -25,8 +25,6 @@
   exception Fin_fichier
   exception Syntax_error of int*int
 
-  let field_name s = String.sub s 1 (String.length s - 1)
-
   let unquote_string s =
     String.sub s 1 (String.length s - 2)
 
@@ -40,6 +38,18 @@
   let syntax_error lexbuf =
     raise (Syntax_error (Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf))
 
+  let check_valid lexbuf s =
+    match Unicode.ident_refutation s with
+    | None -> s
+    | Some _ -> syntax_error lexbuf
+
+  let get_ident lexbuf =
+    let s = Lexing.lexeme lexbuf in check_valid lexbuf s
+
+  let get_field_name lexbuf =
+    let s = Lexing.lexeme lexbuf in
+    check_valid lexbuf (String.sub s 1 (String.length s - 1))
+
   [@@@ocaml.warning "-3"]       (* String.uncapitalize_ascii since 4.03.0 GPR#124 *)
   let uncapitalize = String.uncapitalize
   [@@@ocaml.warning "+3"]
@@ -52,20 +62,8 @@ let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
 let caml_up_ident = uppercase identchar*
 let caml_low_ident = lowercase identchar*
 
-let coq_firstchar =
-  (* This is only an approximation, refer to lib/util.ml for correct def *)
-  ['A'-'Z' 'a'-'z' '_'] |
-  (* superscript 1 *)
-  '\194' '\185' |
-  (* utf-8 latin 1 supplement *)
-  '\195' ['\128'-'\150'] | '\195' ['\152'-'\182'] | '\195' ['\184'-'\191'] |
-  (* utf-8 letters *)
-  '\206' (['\145'-'\161'] | ['\163'-'\187'])
-  '\226' ('\130' [ '\128'-'\137' ] (* subscripts *)
-    | '\129' [ '\176'-'\187' ] (* superscripts *)
-    | '\132' ['\128'-'\191'] | '\133' ['\128'-'\143'])
-let coq_identchar = coq_firstchar | ['\'' '0'-'9']
-let coq_ident = coq_firstchar coq_identchar*
+(* This is an overapproximation, we check correctness afterwards *)
+let coq_ident = ['A'-'Z' 'a'-'z' '_' '\128'-'\255'] ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9' '\128'-'\255']*
 let coq_field = '.' coq_ident
 
 let dot = '.' ( space+ | eof)
@@ -102,7 +100,7 @@ and from_rule = parse
   | space+
       { from_rule lexbuf }
   | coq_ident
-      { let from = coq_qual_id_tail [Lexing.lexeme lexbuf] lexbuf in
+      { let from = coq_qual_id_tail [get_ident lexbuf] lexbuf in
         consume_require (Some from) lexbuf }
   | eof
       { syntax_error lexbuf }
@@ -241,7 +239,7 @@ and load_file = parse
 	parse_dot lexbuf;
 	Load (unquote_vfile_string s) }
   | coq_ident
-      { let s = lexeme lexbuf in skip_to_dot lexbuf; Load s }
+      { let s = get_ident lexbuf in skip_to_dot lexbuf; Load s }
   | eof
       { syntax_error lexbuf }
   | _
@@ -253,7 +251,7 @@ and require_file from = parse
   | space+
       { require_file from lexbuf }
   | coq_ident
-      { let name = coq_qual_id_tail [Lexing.lexeme lexbuf] lexbuf in
+      { let name = coq_qual_id_tail [get_ident lexbuf] lexbuf in
         let qid = coq_qual_id_list [name] lexbuf in
         parse_dot lexbuf;
         Require (from, qid) }
@@ -278,7 +276,7 @@ and coq_qual_id = parse
   | space+
       { coq_qual_id lexbuf }
   | coq_ident
-      { coq_qual_id_tail [Lexing.lexeme lexbuf] lexbuf }
+      { coq_qual_id_tail [get_ident lexbuf] lexbuf }
   | _
       { syntax_error lexbuf }
 
@@ -288,7 +286,7 @@ and coq_qual_id_tail module_name = parse
   | space+
       { coq_qual_id_tail module_name lexbuf }
   | coq_field
-      { coq_qual_id_tail (field_name (Lexing.lexeme lexbuf) :: module_name) lexbuf }
+      { coq_qual_id_tail (get_field_name lexbuf :: module_name) lexbuf }
   | eof
       { syntax_error lexbuf }
   | _
@@ -301,7 +299,7 @@ and coq_qual_id_list module_names = parse
   | space+
       { coq_qual_id_list module_names lexbuf }
   | coq_ident
-      { let name = coq_qual_id_tail [Lexing.lexeme lexbuf] lexbuf in
+      { let name = coq_qual_id_tail [get_ident lexbuf] lexbuf in
         coq_qual_id_list (name :: module_names) lexbuf
       }
   | eof
