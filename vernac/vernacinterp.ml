@@ -11,7 +11,7 @@ open Pp
 open CErrors
 
 type deprecation = bool
-type vernac_command = Genarg.raw_generic_argument list -> unit -> unit
+type vernac_command = Genarg.raw_generic_argument list -> Loc.t option -> unit
 
 (* Table of vernac entries *)
 let vernac_tab =
@@ -49,8 +49,8 @@ let warn_deprecated_command =
 
 (* Interpretation of a vernac command *)
 
-let call ?locality (opn,converted_args) =
-  let loc = ref "Looking up command" in
+let call ?locality ?loc (opn,converted_args) =
+  let phase = ref "Looking up command" in
   try
     let depr, callback = vinterp_map opn in
     let () = if depr then
@@ -62,16 +62,16 @@ let call ?locality (opn,converted_args) =
       let pr = pr_sequence pr_gram rules in
       warn_deprecated_command pr;
     in
-    loc:= "Checking arguments";
+    phase := "Checking arguments";
     let hunk = callback converted_args in
-    loc:= "Executing command";
+    phase := "Executing command";
     Locality.LocalityFixme.set locality;
-    hunk();
+    hunk loc;
     Locality.LocalityFixme.assert_consumed()
   with
     | Drop -> raise Drop
     | reraise ->
         let reraise = CErrors.push reraise in
         if !Flags.debug then
-	  Feedback.msg_debug (str"Vernac Interpreter " ++ str !loc);
+	  Feedback.msg_debug (str"Vernac Interpreter " ++ str !phase);
         iraise reraise
