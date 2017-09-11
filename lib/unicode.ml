@@ -163,6 +163,39 @@ let is_utf8 s =
   in
   try check 0 with End_of_input -> true | Invalid_argument _ -> false
 
+(* Escape string if it contains non-utf8 characters *)
+
+let escaped_non_utf8 s =
+  let mk_escape x = Printf.sprintf "%%%X" x in
+  let buff = Buffer.create (String.length s * 3) in
+  let rec process_trailing_aux i j =
+    if i = j then i else
+      match String.unsafe_get s i with
+      | '\128'..'\191' -> process_trailing_aux (i+1) j
+      | _ -> i in
+  let process_trailing i n =
+    let j = if i+n-1 >= String.length s then i+1 else process_trailing_aux (i+1) (i+n) in
+    (if j = i+n then
+      Buffer.add_string buff (String.sub s i n)
+    else
+      let v = Array.init (j-i) (fun k -> mk_escape (Char.code s.[i+k])) in
+      Buffer.add_string buff (String.concat "" (Array.to_list v)));
+    j in
+  let rec process i =
+    if i >= String.length s then Buffer.contents buff else
+      let c = String.unsafe_get s i in
+      match c with
+      | '\000'..'\127' -> Buffer.add_char buff c; process (i+1)
+      | '\128'..'\191' | '\248'..'\255' -> Buffer.add_string buff (mk_escape (Char.code c)); process (i+1)
+      | '\192'..'\223' -> process (process_trailing i 2)
+      | '\224'..'\239' -> process (process_trailing i 3)
+      | '\240'..'\247' -> process (process_trailing i 4)
+  in
+  process 0
+
+let escaped_if_non_utf8 s =
+  if is_utf8 s then s else escaped_non_utf8 s
+
 (* Check the well-formedness of an identifier *)
 
 let initial_refutation j n s =
@@ -198,7 +231,7 @@ let ident_refutation s =
         |x -> x
   with
   | End_of_input -> Some (true,"The empty string is not an identifier.")
-  | Invalid_argument _ -> Some (true,s^": invalid utf8 sequence.")
+  | Invalid_argument _ -> Some (true,escaped_non_utf8 s^": invalid utf8 sequence.")
 
 let lowercase_unicode =
   let tree = Segmenttree.make Unicodetable.to_lower in
