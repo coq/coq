@@ -87,7 +87,6 @@ install-tools:
 	$(MKDIR) $(FULLBINDIR)
 	# recopie des fichiers de style pour coqide
 	$(MKDIR) $(FULLCOQLIB)/tools/coqdoc
-	touch $(FULLCOQLIB)/tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc/coqdoc.css # to have the mode according to umask (bug #1715)
 	$(INSTALLLIB) tools/coqdoc/coqdoc.css tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc
 	$(INSTALLBIN) $(TOOLS) $(FULLBINDIR)
 
