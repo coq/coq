@@ -1165,6 +1165,24 @@ let rec is_Prop sigma c = match EConstr.kind sigma c with
   | Cast (c,_,_) -> is_Prop sigma c
   | _ -> false
 
+let rec is_Set sigma c = match EConstr.kind sigma c with
+  | Sort u ->
+    begin match EConstr.ESorts.kind sigma u with
+    | Prop Pos -> true
+    | _ -> false
+    end
+  | Cast (c,_,_) -> is_Set sigma c
+  | _ -> false
+
+let rec is_Type sigma c = match EConstr.kind sigma c with
+  | Sort u ->
+    begin match EConstr.ESorts.kind sigma u with
+    | Type _ -> true
+    | _ -> false
+    end
+  | Cast (c,_,_) -> is_Type sigma c
+  | _ -> false
+
 (* eq_constr extended with universe erasure *)
 let compare_constr_univ sigma f cv_pb t1 t2 =
   let open EConstr in

@@ -1773,11 +1773,6 @@ let onClearedName2 id tac =
       tclTHENLIST [ introduction id1; introduction id2; tac id1 id2 ]
     end)
 
-let rec is_Prop sigma c = match EConstr.kind sigma c with
-  | Sort s -> Sorts.is_prop (ESorts.kind sigma s)
-  | Cast (c,_,_) -> is_Prop sigma c
-  | _ -> false
-
 let destructure_hyps =
   Proofview.Goal.enter begin fun gl ->
   let type_of = Tacmach.New.pf_unsafe_type_of gl in
@@ -1809,7 +1804,7 @@ let destructure_hyps =
           | Kimp(t1,t2) ->
 	      (* t1 and t2 might be in Type rather than Prop.
 		 For t1, the decidability check will ensure being Prop. *)
-              if is_Prop sigma (type_of t2)
+              if Termops.is_Prop sigma (type_of t2)
               then
 		let d1 = decidability t1 in
 		tclTHENLIST [
