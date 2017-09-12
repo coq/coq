@@ -70,19 +70,16 @@ GEXTEND Gram
 	    VernacCreateHintDb (id, b)
       | IDENT "Remove"; IDENT "Hints"; ids = LIST1 global; dbnames = opt_hintbases ->
 	  VernacRemoveHints (dbnames, ids)
-      | IDENT "Hint"; local = obsolete_locality; h = hint;
+      | IDENT "Hint"; h = hint;
 	  dbnames = opt_hintbases ->
-	  VernacHints (local,dbnames, h)
+          VernacHints (dbnames, h)
       (* Declare "Resolve" explicitly so as to be able to later extend with
          "Resolve ->" and "Resolve <-" *)
       | IDENT "Hint"; IDENT "Resolve"; lc = LIST1 reference_or_constr; 
 	info = hint_info; dbnames = opt_hintbases ->
-	  VernacHints (false,dbnames,
+          VernacHints (dbnames,
 	    HintsResolve (List.map (fun x -> (info, true, x)) lc))
       ] ];
-  obsolete_locality:
-    [ [ IDENT "Local" -> true | -> false ] ]
-  ;
   reference_or_constr:
    [ [ r = global -> HintsReference r
      | c = constr -> HintsConstr c ] ]

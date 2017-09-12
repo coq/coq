@@ -151,10 +151,6 @@ type onlyparsing_flag = Flags.compat_version option
     If v<>Current, it contains the name of the coq version
     which this notation is trying to be compatible with *)
 type locality_flag  = bool (* true = Local *)
-type obsolete_locality = bool
-(* Some grammar entries use obsolete_locality.  This bool is to be backward
- * compatible.  If the grammar is fixed removing deprecated syntax, this
- * bool should go away too *)
 
 type option_value = Goptions.option_value =
   | BoolValue of bool
@@ -327,31 +323,27 @@ type vernac_expr =
   | VernacFail of vernac_expr
 
   (* Syntax *)
-  | VernacSyntaxExtension of
-      bool * obsolete_locality * (lstring * syntax_modifier list)
-  | VernacOpenCloseScope of obsolete_locality * (bool * scope_name)
+  | VernacSyntaxExtension of bool * (lstring * syntax_modifier list)
+  | VernacOpenCloseScope of bool * scope_name
   | VernacDelimiters of scope_name * string option
   | VernacBindScope of scope_name * class_rawexpr list
-  | VernacInfix of obsolete_locality * (lstring * syntax_modifier list) *
+  | VernacInfix of (lstring * syntax_modifier list) *
       constr_expr * scope_name option
   | VernacNotation of
-      obsolete_locality * constr_expr * (lstring * syntax_modifier list) *
+      constr_expr * (lstring * syntax_modifier list) *
       scope_name option
   | VernacNotationAddFormat of string * string * string
 
   (* Gallina *)
-  | VernacDefinition of
-      (locality option * definition_object_kind) * ident_decl * definition_expr
+  | VernacDefinition of (discharge * definition_object_kind) * ident_decl * definition_expr
   | VernacStartTheoremProof of theorem_kind * proof_expr list
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
-  | VernacAssumption of (locality option * assumption_object_kind) *
+  | VernacAssumption of (discharge * assumption_object_kind) *
       inline * (ident_decl list * constr_expr) with_coercion list
   | VernacInductive of cumulative_inductive_parsing_flag * private_flag * inductive_flag * (inductive_expr * decl_notation list) list
-  | VernacFixpoint of
-      locality option * (fixpoint_expr * decl_notation list) list
-  | VernacCoFixpoint of
-      locality option * (cofixpoint_expr * decl_notation list) list
+  | VernacFixpoint of discharge * (fixpoint_expr * decl_notation list) list
+  | VernacCoFixpoint of discharge * (cofixpoint_expr * decl_notation list) list
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
@@ -364,10 +356,9 @@ type vernac_expr =
       reference option * export_flag option * reference list
   | VernacImport of export_flag * reference list
   | VernacCanonical of reference or_by_notation
-  | VernacCoercion of obsolete_locality * reference or_by_notation *
+  | VernacCoercion of reference or_by_notation *
       class_rawexpr * class_rawexpr
-  | VernacIdentityCoercion of obsolete_locality * lident *
-      class_rawexpr * class_rawexpr
+  | VernacIdentityCoercion of lident * class_rawexpr * class_rawexpr
   | VernacNameSectionHypSet of lident * section_subset_expr 
 
   (* Type classes *)
@@ -418,9 +409,9 @@ type vernac_expr =
   (* Commands *)
   | VernacCreateHintDb of string * bool
   | VernacRemoveHints of string list * reference list
-  | VernacHints of obsolete_locality * string list * hints_expr
+  | VernacHints of string list * hints_expr
   | VernacSyntacticDefinition of Id.t located * (Id.t list * constr_expr) *
-      obsolete_locality * onlyparsing_flag
+      onlyparsing_flag
   | VernacDeclareImplicits of reference or_by_notation *
       (explicitation * bool * bool) list list
   | VernacArguments of reference or_by_notation *

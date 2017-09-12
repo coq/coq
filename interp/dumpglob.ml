@@ -72,7 +72,7 @@ open Decl_kinds
 let type_of_logical_kind = function
   | IsDefinition def ->
       (match def with
-      | Definition -> "def"
+      | Definition | Let -> "def"
       | Coercion -> "coe"
       | SubClass -> "subclass"
       | CanonicalStructure -> "canonstruc"

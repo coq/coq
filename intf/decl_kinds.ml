@@ -8,6 +8,8 @@
 
 (** Informal mathematical status of declarations *)
 
+type discharge = DoDischarge | NoDischarge
+
 type locality = Discharge | Local | Global
 
 type binding_kind = Explicit | Implicit
@@ -40,6 +42,7 @@ type definition_object_kind =
   | IdentityCoercion
   | Instance
   | Method
+  | Let
 
 type assumption_object_kind = Definitional | Logical | Conjectural
 

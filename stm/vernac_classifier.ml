@@ -103,8 +103,7 @@ let rec classify_vernac e =
     | VernacUnsetOption (["Default";"Proof";"Using"])
     | VernacSetOption (["Default";"Proof";"Using"],_) -> VtSideff [], VtNow
     (* StartProof *)
-    | VernacDefinition (
-       (Some Decl_kinds.Discharge,Decl_kinds.Definition),((_,i),_),ProveBody _) ->
+    | VernacDefinition ((Decl_kinds.DoDischarge,_),((_,i),_),ProveBody _) ->
         VtStartProof(default_proof_mode (),Doesn'tGuaranteeOpacity,[i]), VtLater
     | VernacDefinition (_,((_,i),_),ProveBody _) ->
         VtStartProof(default_proof_mode (),GuaranteesOpacity,[i]), VtLater
@@ -113,19 +112,29 @@ let rec classify_vernac e =
           CList.map_filter (function (Some ((_,i),pl), _) -> Some i | _ -> None) l in
         VtStartProof (default_proof_mode (),GuaranteesOpacity,ids), VtLater
     | VernacGoal _ -> VtStartProof (default_proof_mode (),GuaranteesOpacity,[]), VtLater
-    | VernacFixpoint (_,l) ->
+    | VernacFixpoint (discharge,l) ->
+       let guarantee =
+         match discharge with
+         | Decl_kinds.NoDischarge -> GuaranteesOpacity
+         | Decl_kinds.DoDischarge -> Doesn'tGuaranteeOpacity
+       in
         let ids, open_proof =
           List.fold_left (fun (l,b) ((((_,id),_),_,_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
-        then VtStartProof (default_proof_mode (),GuaranteesOpacity,ids), VtLater
+        then VtStartProof (default_proof_mode (),guarantee,ids), VtLater
         else VtSideff ids, VtLater
-    | VernacCoFixpoint (_,l) ->
+    | VernacCoFixpoint (discharge,l) ->
+       let guarantee =
+         match discharge with
+         | Decl_kinds.NoDischarge -> GuaranteesOpacity
+         | Decl_kinds.DoDischarge -> Doesn'tGuaranteeOpacity
+       in
         let ids, open_proof =
           List.fold_left (fun (l,b) ((((_,id),_),_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
-        then VtStartProof (default_proof_mode (),GuaranteesOpacity,ids), VtLater
+        then VtStartProof (default_proof_mode (),guarantee,ids), VtLater
         else VtSideff ids, VtLater
     (* Sideff: apply to all open branches. usually run on master only *)
     | VernacAssumption (_,_,l) ->

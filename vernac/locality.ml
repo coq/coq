@@ -6,36 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Decl_kinds
+
 (** * Managing locality *)
 
 let local_of_bool = function
-  | true -> Decl_kinds.Local
-  | false -> Decl_kinds.Global
+  | true -> Local
+  | false -> Global
 
-(** Extracting the locality flag *)
-
-(* Commands which supported an inlined Local flag *)
-
-let warn_deprecated_local_syntax =
-  CWarnings.create ~name:"deprecated-local-syntax" ~category:"deprecated"
-         (fun () ->
-          Pp.strbrk "Deprecated syntax: use \"Local\" as a prefix.")
-
-let enforce_locality_full locality_flag local =
-  let local =
-    match locality_flag with
-    | Some false when local ->
-	CErrors.user_err Pp.(str "Cannot be simultaneously Local and Global.")
-    | Some true when local ->
-	CErrors.user_err Pp.(str "Use only prefix \"Local\".")
-    | None ->
-	if local then begin
-	    warn_deprecated_local_syntax ();
-	    Some true
-	end else
-	None
-    | Some b -> Some b in
-  local
 
 (** Positioning locality for commands supporting discharging and export
      outside of modules *)
@@ -48,15 +26,16 @@ let make_non_locality = function Some false -> false | _ -> true
 
 let make_locality = function Some true -> true | _ -> false
 
-let enforce_locality locality_flag local =
-   make_locality (enforce_locality_full locality_flag local)
+let enforce_locality_exp locality_flag discharge =
+  match locality_flag, discharge with
+  | Some b, NoDischarge -> local_of_bool b
+  | None, NoDischarge -> Global
+  | None, DoDischarge -> Discharge
+  | Some true, DoDischarge -> CErrors.user_err Pp.(str "Local not allowed in this case")
+  | Some false, DoDischarge -> CErrors.user_err Pp.(str "Global not allowed in this case")
 
-let enforce_locality_exp locality_flag local =
-  match locality_flag, local with
-  | None, Some local -> local
-  | Some b, None -> local_of_bool b
-  | None, None -> Decl_kinds.Global
-  | Some _, Some _ -> CErrors.user_err Pp.(str "Local non allowed in this case")
+let enforce_locality locality_flag =
+   make_locality locality_flag
 
 (* For commands whose default is to not discharge but to export:
    Global in sections forces discharge, Global not in section is the default;
@@ -65,8 +44,8 @@ let enforce_locality_exp locality_flag local =
 let make_section_locality =
   function Some b -> b | None -> Lib.sections_are_opened ()
 
-let enforce_section_locality locality_flag local =
-  make_section_locality (enforce_locality_full locality_flag local)
+let enforce_section_locality locality_flag =
+  make_section_locality locality_flag
 
 (** Positioning locality for commands supporting export but not discharge *)
 
@@ -83,5 +62,5 @@ let make_module_locality = function
   | Some true -> true
   | None -> false
 
-let enforce_module_locality locality_flag local =
-  make_module_locality (enforce_locality_full locality_flag local)
+let enforce_module_locality locality_flag =
+  make_module_locality locality_flag
