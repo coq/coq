@@ -301,9 +301,7 @@ let utf8_length s =
       | '\192'..'\223' -> nc := 1 (* expect 1 continuation byte *)
       | '\224'..'\239' -> nc := 2 (* expect 2 continuation bytes *)
       | '\240'..'\247' -> nc := 3 (* expect 3 continuation bytes *)
-      | '\248'..'\251' -> nc := 4 (* expect 4 continuation bytes *)
-      | '\252'..'\253' -> nc := 5 (* expect 5 continuation bytes *)
-      | '\254'..'\255' -> nc := 0 (* invalid byte *)
+      | '\248'..'\255' -> nc := 0 (* invalid byte *)
     end ;
     incr p ;
     while !p < len && !nc > 0 do
@@ -332,9 +330,7 @@ let utf8_sub s start_u len_u =
       |	'\192'..'\223' -> nc := 1 (* expect 1 continuation byte *)
       |	'\224'..'\239' -> nc := 2 (* expect 2 continuation bytes *)
       |	'\240'..'\247' -> nc := 3 (* expect 3 continuation bytes *)
-      |	'\248'..'\251' -> nc := 4 (* expect 4 continuation bytes *)
-      |	'\252'..'\253' -> nc := 5 (* expect 5 continuation bytes *)
-      |	'\254'..'\255' -> nc := 0 (* invalid byte *)
+      |	'\248'..'\255' -> nc := 0 (* invalid byte *)
     end ;
     incr p ;
     while !p < len_b && !nc > 0 do
