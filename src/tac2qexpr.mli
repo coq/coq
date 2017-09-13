@@ -139,3 +139,5 @@ type move_location_r =
 | QMoveLast
 
 type move_location = move_location_r located
+
+type pose = (Id.t located or_anti option * Constrexpr.constr_expr) located

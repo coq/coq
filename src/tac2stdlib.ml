@@ -294,13 +294,12 @@ let () = define_prim2 "tac_pose" begin fun idopt c ->
   Tactics.letin_tac None na c None Locusops.nowhere
 end
 
-let () = define_prim4 "tac_set" begin fun ev idopt c cl ->
+let () = define_prim3 "tac_set" begin fun ev p cl ->
   let ev = Value.to_bool ev in
-  let na = to_name idopt in
   let cl = to_clause cl in
   Proofview.tclEVARMAP >>= fun sigma ->
-  thaw c >>= fun c ->
-  let c = Value.to_constr c in
+  thaw p >>= fun p ->
+  let (na, c) = to_pair to_name Value.to_constr p in
   Tactics.letin_pat_tac ev None na (sigma, c) cl
 end
 

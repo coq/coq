@@ -1118,6 +1118,7 @@ let () = add_expr_scope "dispatch" q_dispatch Tac2quote.of_dispatch
 let () = add_expr_scope "strategy" q_strategy_flag Tac2quote.of_strategy_flag
 let () = add_expr_scope "reference" q_reference Tac2quote.of_reference
 let () = add_expr_scope "move_location" q_move_location Tac2quote.of_move_location
+let () = add_expr_scope "pose" q_pose Tac2quote.of_pose
 let () = add_expr_scope "constr_matching" q_constr_matching Tac2quote.of_constr_matching
 
 let () = add_generic_scope "constr" Pcoq.Constr.constr Tac2quote.wit_constr

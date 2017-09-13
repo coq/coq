@@ -135,7 +135,7 @@ Ltac2 @ external assert : constr -> (unit -> unit) option option -> intro_patter
 Ltac2 @ external enough : constr -> (unit -> unit) option option -> intro_pattern option -> unit := "ltac2" "tac_enough".
 
 Ltac2 @ external pose : ident option -> constr -> unit := "ltac2" "tac_pose".
-Ltac2 @ external set : evar_flag -> ident option -> (unit -> constr) -> clause -> unit := "ltac2" "tac_set".
+Ltac2 @ external set : evar_flag -> (unit -> ident option * constr) -> clause -> unit := "ltac2" "tac_set".
 
 Ltac2 @ external destruct : evar_flag -> induction_clause list ->
   constr_with_bindings option -> unit := "ltac2" "tac_induction".

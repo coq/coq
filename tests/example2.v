@@ -208,3 +208,17 @@ Proof.
 refine '(let x := 0 in _).
 eexists; exists &x; reflexivity.
 Qed.
+
+Goal True.
+Proof.
+pose (X := True).
+constructor.
+Qed.
+
+Goal True.
+Proof.
+let x := @foo in
+set ($x := True) in * |-.
+constructor.
+Qed.
+

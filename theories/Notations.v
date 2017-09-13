@@ -270,6 +270,27 @@ Ltac2 Notation "apply"
   cl(opt(seq(keyword("in"), ident, opt(seq(keyword("as"), intropattern))))) :=
   apply0 true false cb cl.
 
+Ltac2 default_on_concl cl :=
+match cl with
+| None => { Std.on_hyps := Some []; Std.on_concl := Std.AllOccurrences }
+| Some cl => cl
+end.
+
+Ltac2 pose0 ev p :=
+  enter_h ev (fun ev ((na, p)) => Std.pose na p) p.
+
+Ltac2 Notation "pose" p(thunk(pose)) :=
+  pose0 false p.
+
+Ltac2 Notation "epose" p(thunk(pose)) :=
+  pose0 true p.
+
+Ltac2 Notation "set" p(thunk(pose)) cl(opt(clause)) :=
+  Std.set false p (default_on_concl cl).
+
+Ltac2 Notation "eset" p(thunk(pose)) cl(opt(clause)) :=
+  Std.set true p (default_on_concl cl).
+
 Ltac2 induction0 ev ic use :=
   let f ev use := Std.induction ev ic use in
   enter_h ev f use.
@@ -322,12 +343,6 @@ Ltac2 Notation "inversion_clear"
   pat(opt(seq("as", intropattern)))
   ids(opt(seq("in", list1(ident)))) :=
   Std.inversion Std.FullInversionClear arg pat ids.
-
-Ltac2 default_on_concl cl :=
-match cl with
-| None => { Std.on_hyps := Some []; Std.on_concl := Std.AllOccurrences }
-| Some cl => cl
-end.
 
 Ltac2 Notation "red" cl(opt(clause)) :=
   Std.red (default_on_concl cl).

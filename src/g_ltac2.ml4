@@ -40,6 +40,27 @@ let test_lpar_idnum_coloneq =
               | _ -> err ())
         | _ -> err ())
 
+(* Hack to recognize "(x := t)" and "($x := t)" *)
+let test_lpar_coloneq =
+  Gram.Entry.of_parser "test_coloneq"
+    (fun strm ->
+      match stream_nth 0 strm with
+        | KEYWORD "(" ->
+            (match stream_nth 1 strm with
+              | IDENT _ ->
+                  (match stream_nth 2 strm with
+                    | KEYWORD ":=" -> ()
+                    | _ -> err ())
+              | KEYWORD "$" ->
+                (match stream_nth 2 strm with
+                  | IDENT _ ->
+                      (match stream_nth 3 strm with
+                        | KEYWORD ":=" -> ()
+                        | _ -> err ())
+                  | _ -> err ())
+              | _ -> err ())
+        | _ -> err ())
+
 (* Hack to recognize "(x)" *)
 let test_lpar_id_rpar =
   Gram.Entry.of_parser "lpar_id_coloneq"
@@ -369,7 +390,7 @@ GEXTEND Gram
   GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause
           q_rewriting q_clause q_dispatch q_occurrences q_strategy_flag
           q_destruction_arg q_reference q_with_bindings q_constr_matching
-          q_hintdb q_move_location;
+          q_hintdb q_move_location q_pose;
   anti:
     [ [ "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id) ] ]
   ;
@@ -701,6 +722,20 @@ GEXTEND Gram
   ;
   q_move_location:
     [ [ mv = move_location -> mv ] ]
+  ;
+  as_name:
+    [ [ -> None
+      | "as"; id = ident_or_anti -> Some id
+    ] ]
+  ;
+  pose:
+    [ [ test_lpar_coloneq; "("; id = ident_or_anti; ":="; c = Constr.lconstr; ")" ->
+        Loc.tag ~loc:!@loc (Some id, c)
+      | c = Constr.constr; na = as_name -> Loc.tag ~loc:!@loc (na, c)
+    ] ]
+  ;
+  q_pose:
+    [ [ p = pose -> p ] ]
   ;
 END
 
