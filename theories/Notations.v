@@ -287,7 +287,8 @@ Ltac2 Notation "einduction"
 Ltac2 generalize0 gen :=
   enter_h false (fun _ gen => Std.generalize gen) gen.
 
-Ltac2 Notation "generalize" gen(thunk(generalizations)) :=
+Ltac2 Notation "generalize"
+  gen(thunk(list1(seq (open_constr, occurrences, opt(seq("as", ident))), ","))) :=
   generalize0 gen.
 
 Ltac2 destruct0 ev ic use :=
