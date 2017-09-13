@@ -33,7 +33,7 @@ let get_alloc_overhead =
   (* measurements; with two measures the risk decreases *)
   min (mark2 -. mark1) (mark3 -. mark2)
 
-let last_alloc = ref 0.0 (* set by init_profile () *)
+let last_alloc = ref (get_alloc ()) (* set again by init_profile () *)
 
 let spent_alloc () =
   let now = get_alloc () in
