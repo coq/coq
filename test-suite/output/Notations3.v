@@ -186,3 +186,7 @@ Check letpair x [1] = {0}; return (1,2,3,4).
 Notation "{ { xL | xR // xcut } }" := (xL+xR+xcut)
   (at level 0, xR at level 39, format "{ {  xL  |  xR  //  xcut  } }").
 Check 1+1+1.
+
+(* Test presence of notation variables in the recursive parts (introduced in dfdaf4de) *)
+Notation "!!! x .. y , b" := ((fun x => b), .. ((fun y => b), True) ..) (at level 200, x binder).
+Check !!! (x y:nat), True.

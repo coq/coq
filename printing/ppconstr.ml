@@ -380,9 +380,9 @@ let tag_var = tag Tag.variable
     match bl with
       | [CLocalAssum (nal,k,t)] ->
         kw n ++ pr_binder false pr_c (nal,k,t)
-      | (CLocalAssum _ | CLocalPattern _) :: _ as bdl ->
+      | (CLocalAssum _ | CLocalPattern _ | CLocalDef _) :: _ as bdl ->
         kw n ++ pr_undelimited_binders sep pr_c bdl
-      | _ -> assert false
+      | [] -> assert false
 
   let pr_binders_gen pr_c sep is_open =
     if is_open then pr_delimited_binders pr_com_at sep pr_c
