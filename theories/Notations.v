@@ -284,6 +284,12 @@ Ltac2 Notation "einduction"
   use(thunk(opt(seq("using", constr, with_bindings)))) :=
   induction0 true ic use.
 
+Ltac2 generalize0 gen :=
+  enter_h false (fun _ gen => Std.generalize gen) gen.
+
+Ltac2 Notation "generalize" gen(thunk(generalizations)) :=
+  generalize0 gen.
+
 Ltac2 destruct0 ev ic use :=
   let f ev use := Std.destruct ev ic use in
   enter_h ev f use.

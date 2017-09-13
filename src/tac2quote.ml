@@ -370,3 +370,13 @@ let of_move_location (loc, mv) = match mv with
 | QMoveBefore id -> std_constructor ?loc "MoveBefore" [of_anti of_ident id]
 | QMoveFirst -> std_constructor ?loc "MoveFirst" []
 | QMoveLast -> std_constructor ?loc "MoveLast" []
+
+let of_generalization (loc, (c, occ, na)) =
+  of_tuple ?loc [
+    of_open_constr c;
+    of_occurrences occ;
+    of_option (fun id -> of_anti of_ident id) na;
+  ]
+
+let of_generalizations (loc, l) =
+  of_list ?loc of_generalization l

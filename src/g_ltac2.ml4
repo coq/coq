@@ -369,7 +369,7 @@ GEXTEND Gram
   GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause
           q_rewriting q_clause q_dispatch q_occurrences q_strategy_flag
           q_destruction_arg q_reference q_with_bindings q_constr_matching
-          q_hintdb q_move_location;
+          q_hintdb q_move_location q_generalizations;
   anti:
     [ [ "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id) ] ]
   ;
@@ -701,6 +701,22 @@ GEXTEND Gram
   ;
   q_move_location:
     [ [ mv = move_location -> mv ] ]
+  ;
+  opt_generalization:
+    [ [ occs = occs; na = OPT ident_or_anti -> (occs, na)
+      | -> Loc.tag ~loc:!@loc QAllOccurrences, None
+    ] ]
+  ;
+  generalization:
+    [ [ c = Constr.constr; (occs, na) = opt_generalization ->
+        Loc.tag ~loc:!@loc (c, occs, na)
+    ] ]
+  ;
+  generalizations:
+    [ [ g = LIST1 generalization SEP "," -> Loc.tag ~loc:!@loc g ] ]
+  ;
+  q_generalizations:
+    [ [ g = generalizations -> g ] ]
   ;
 END
 

@@ -139,3 +139,8 @@ type move_location_r =
 | QMoveLast
 
 type move_location = move_location_r located
+
+type generalization =
+  (Constrexpr.constr_expr * occurrences * Id.t located or_anti option) located
+
+type generalizations = generalization list located
