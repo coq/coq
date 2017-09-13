@@ -21,6 +21,10 @@ let change_kn_label kn id =
 
 let paren p = hov 2 (str "(" ++ p ++ str ")")
 
+let t_list =
+  KerName.make2 Tac2env.coq_prefix (Label.of_id (Id.of_string "list"))
+
+
 (** Type printing *)
 
 type typ_level =
@@ -187,28 +191,7 @@ let pr_glbexpr_gen lvl c =
     in
     paren (prlist_with_sep (fun () -> str "," ++ spc ()) (pr_glbexpr E1) cl)
   | GTacCst (Other tpe, n, cl) ->
-    begin match Tac2env.interp_type tpe with
-    | _, GTydAlg def ->
-      let paren = match lvl with
-      | E0 -> paren
-      | E1 | E2 | E3 | E4 | E5 -> fun x -> x
-      in
-      let cstr = pr_internal_constructor tpe n (List.is_empty cl) in
-      let cl = match cl with
-      | [] -> mt ()
-      | _ -> spc () ++ pr_sequence (pr_glbexpr E0) cl
-      in
-      paren (hov 2 (cstr ++ cl))
-    | _, GTydRec def ->
-      let args = List.combine def cl in
-      let pr_arg ((id, _, _), arg) =
-        let kn = change_kn_label tpe id in
-        pr_projection kn ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr E1 arg
-      in
-      let args = prlist_with_sep (fun () -> str ";" ++ spc ()) pr_arg args in
-      hv 0 (str "{" ++ spc () ++ args ++ spc () ++ str "}")
-    | _, (GTydDef _ | GTydOpn) -> assert false
-    end
+    pr_applied_constructor lvl tpe n cl
   | GTacCse (e, info, cst_br, ncst_br) ->
     let e = pr_glbexpr E5 e in
     let br = match info with
@@ -297,8 +280,53 @@ let pr_glbexpr_gen lvl c =
     in
     hov 0 (str "@external" ++ spc () ++ qstring prm.mltac_plugin ++ spc () ++
       qstring prm.mltac_tactic ++ args)
+  and pr_applied_constructor lvl tpe n cl =
+    let _, data = Tac2env.interp_type tpe in
+    if KerName.equal tpe t_list then
+      let rec factorize accu = function
+      | GTacCst (_, 0, []) -> accu, None
+      | GTacCst (_, 0, [e; l]) -> factorize (e :: accu) l
+      | e -> accu, Some e
+      in
+      let l, e = factorize [] (GTacCst (Other tpe, n, cl)) in
+      match e with
+      | None ->
+        let pr e = pr_glbexpr E4 e in
+        hov 2 (str "[" ++ prlist_with_sep pr_semicolon pr (List.rev l) ++ str "]")
+      | Some e ->
+        let paren = match lvl with
+        | E0 | E1 | E2 -> paren
+        | E3 | E4 | E5 -> fun x -> x
+        in
+        let pr e = pr_glbexpr E1 e in
+        let pr_cons () = spc () ++ str "::" ++ spc () in
+        paren (hov 2 (prlist_with_sep pr_cons pr (List.rev (e :: l))))
+    else match data with
+    | GTydAlg def ->
+      let paren = match lvl with
+      | E0 ->
+        if List.is_empty cl then fun x -> x else paren
+      | E1 | E2 | E3 | E4 | E5 -> fun x -> x
+      in
+      let cstr = pr_internal_constructor tpe n (List.is_empty cl) in
+      let cl = match cl with
+      | [] -> mt ()
+      | _ -> spc () ++ pr_sequence (pr_glbexpr E0) cl
+      in
+      paren (hov 2 (cstr ++ cl))
+    | GTydRec def ->
+      let args = List.combine def cl in
+      let pr_arg ((id, _, _), arg) =
+        let kn = change_kn_label tpe id in
+        pr_projection kn ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr E1 arg
+      in
+      let args = prlist_with_sep (fun () -> str ";" ++ spc ()) pr_arg args in
+      hv 0 (str "{" ++ spc () ++ args ++ spc () ++ str "}")
+    | (GTydDef _ | GTydOpn) -> assert false
   in
   hov 0 (pr_glbexpr lvl c)
+
+
 
 let pr_glbexpr c =
   pr_glbexpr_gen E5 c
