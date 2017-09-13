@@ -2226,6 +2226,7 @@ sig
       evar_filter : Filter.t;
       evar_source : Evar_kinds.t Loc.located;
       evar_candidates : Constr.t list option; (* if not None, list of allowed instances *)
+      evar_dependency_cache : Evar.Set.t option;
       evar_extra : Store.t
     }
 

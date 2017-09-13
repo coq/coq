@@ -635,8 +635,9 @@ let shelve_goals l =
     [evi]. Note: since we want to use it on goals, the body is actually
     supposed to be empty. *)
 let contained_in_info sigma e evi =
-  Evar.Set.mem e (Evd.evars_of_filtered_evar_info (Evarutil.nf_evar_info sigma evi))
-
+  let (es,_) = Evarutil.undefined_evars_of_evar_info e sigma evi in
+  Evar.Set.mem e es
+    
 (** [depends_on sigma src tgt] checks whether the goal [src] appears
     as an existential variable in the definition of the goal [tgt] in
     [sigma]. *)

@@ -69,6 +69,7 @@ module V82 = struct
 		Evd.evar_body = Evd.Evar_empty;
 		Evd.evar_source = (Loc.tag Evar_kinds.GoalEvar);
 		Evd.evar_candidates = None;
+		Evd.evar_dependency_cache = None;
 		Evd.evar_extra = extra }
     in
     let evi = Typeclasses.mark_unresolvable evi in

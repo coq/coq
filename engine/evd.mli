@@ -104,6 +104,8 @@ type evar_info = {
   (** Information about the evar. *)
   evar_candidates : constr list option;
   (** List of possible solutions when known that it is a finite list *)
+  evar_dependency_cache : Evar.Set.t option;
+  (** Set of undefined evars that this evar depends on *)
   evar_extra : Store.t
   (** Extra store, used for clever hacks. *)
 }
@@ -192,7 +194,9 @@ val define : evar -> constr -> evar_map -> evar_map
       {- The evar is already present in the evarmap.}
       {- The evar is not defined in the evarmap yet.}
       {- All the evars present in the constr should be present in the evar map.}
-    } *)
+    } 
+    The dependency cache for the evar is flushed.
+*)
 
 val cmap : (constr -> constr) -> evar_map -> evar_map
 (** Map the function on all terms in the evar map. *)
@@ -212,8 +216,11 @@ val add_constraints : evar_map -> Univ.constraints -> evar_map
 val undefined_map : evar_map -> evar_info Evar.Map.t
 (** Access the undefined evar mapping directly. *)
 
+val update_undefined : evar_map -> evar -> evar_info -> evar_map
+(** replace (or add) the evar info for an undefined evar *)
+  
 val drop_all_defined : evar_map -> evar_map
-
+  
 (** {6 Instantiating partial terms} *)
 
 exception NotInstantiatedEvar

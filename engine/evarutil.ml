@@ -396,6 +396,7 @@ let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?ca
     evar_filter = filter;
     evar_source = src;
     evar_candidates = candidates;
+    evar_dependency_cache = None;
     evar_extra = store; }
   in
   let (evd, newevk) = Evd.new_evar evd ?name evi in
@@ -692,15 +693,38 @@ let undefined_evars_of_named_context evd nc =
     nc
     ~init:Evar.Set.empty
 
-let undefined_evars_of_evar_info evd evi =
+(* compute undefined evars, cache results *) 
+let cache_undefined_evars_of_evar_info ev evd evi =
+  let deps =
   Evar.Set.union (undefined_evars_of_term evd (EConstr.of_constr evi.evar_concl))
     (Evar.Set.union
        (match evi.evar_body with
 	 | Evar_empty -> Evar.Set.empty
 	 | Evar_defined b -> undefined_evars_of_term evd (EConstr.of_constr b))
        (undefined_evars_of_named_context evd
-	  (named_context_of_val evi.evar_hyps)))
+          (named_context_of_val evi.evar_hyps)))
+  in
+  let evi' = { evi with evar_dependency_cache = Some deps } in
+  let evd' = Evd.update_undefined evd ev evi' in
+  (evi',evd')
 
+(* get undefined evars, from cache if possible *)
+let undefined_evars_of_evar_info ev evd evi =
+  let (evi_with_cache,evd_with_cache) =
+    match evi.evar_dependency_cache with
+    | None -> (* initially populate dependency cache *)
+       cache_undefined_evars_of_evar_info ev evd evi
+  | Some cache -> (* update dependency cache *)
+     (* some evars may have become defined, so repopulate cache *)
+     let cache_invalid = Evar.Set.exists (fun evar -> Evd.is_defined evd evar) cache in
+     if cache_invalid then
+       cache_undefined_evars_of_evar_info ev evd evi
+     else (* cache hit *)
+       (evi,evd)
+  in
+  (* invariant: always have a cache here *)
+  (Option.get evi_with_cache.evar_dependency_cache,evd_with_cache)
+    
 (* spiwack: this is a more complete version of
    {!Termops.occur_evar}. The latter does not look recursively into an
    [evar_map]. If unification only need to check superficially, tactics
