@@ -291,6 +291,26 @@ Ltac2 Notation "set" p(thunk(pose)) cl(opt(clause)) :=
 Ltac2 Notation "eset" p(thunk(pose)) cl(opt(clause)) :=
   Std.set true p (default_on_concl cl).
 
+Ltac2 default_everywhere cl :=
+match cl with
+| None => { Std.on_hyps := None; Std.on_concl := Std.AllOccurrences }
+| Some cl => cl
+end.
+
+Ltac2 Notation "remember"
+  c(thunk(open_constr))
+  na(opt(seq("as", ident)))
+  pat(opt(seq("eqn", ":", intropattern)))
+  cl(opt(clause)) :=
+  Std.remember false na c pat (default_everywhere cl).
+
+Ltac2 Notation "eremember"
+  c(thunk(open_constr))
+  na(opt(seq("as", ident)))
+  pat(opt(seq("eqn", ":", intropattern)))
+  cl(opt(clause)) :=
+  Std.remember true na c pat (default_everywhere cl).
+
 Ltac2 induction0 ev ic use :=
   let f ev use := Std.induction ev ic use in
   enter_h ev f use.

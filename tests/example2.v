@@ -222,3 +222,9 @@ set ($x := True) in * |-.
 constructor.
 Qed.
 
+Goal 0 = 0.
+Proof.
+remember 0 as n eqn: foo at 1.
+rewrite foo.
+reflexivity.
+Qed.

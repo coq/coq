@@ -303,6 +303,22 @@ let () = define_prim3 "tac_set" begin fun ev p cl ->
   Tactics.letin_pat_tac ev None na (sigma, c) cl
 end
 
+let () = define_prim5 "tac_remember" begin fun ev na c eqpat cl ->
+  let ev = Value.to_bool ev in
+  let na = to_name na in
+  let cl = to_clause cl in
+  let eqpat = Value.to_option to_intro_pattern eqpat in
+  let eqpat = Option.default (IntroNaming IntroAnonymous) eqpat in
+  match eqpat with
+  | IntroNaming eqpat ->
+    Proofview.tclEVARMAP >>= fun sigma ->
+    thaw c >>= fun c ->
+    let c = Value.to_constr c in
+    Tactics.letin_pat_tac ev (Some (true, Loc.tag eqpat)) na (sigma, c) cl
+  | _ ->
+    Tacticals.New.tclZEROMSG (Pp.str "Invalid pattern for remember")
+end
+
 let () = define_prim3 "tac_destruct" begin fun ev ic using ->
   let ev = Value.to_bool ev in
   let ic = Value.to_list to_induction_clause ic in
