@@ -67,7 +67,7 @@ with intro_pattern_action := [
 | IntroWildcard
 | IntroOrAndPattern (or_and_intro_pattern)
 | IntroInjection (intro_pattern list)
-| IntroApplyOn ((constr * intro_pattern) not_implemented) (* Not Implemented yet *)
+| IntroApplyOn ((unit -> constr), intro_pattern)
 | IntroRewrite (bool)
 ]
 with or_and_intro_pattern := [
