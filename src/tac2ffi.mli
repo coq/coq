@@ -13,9 +13,7 @@ open Tac2expr
 
 (** {5 Toplevel values} *)
 
-type ('a, _) arity =
-| OneAty : ('a, 'a -> 'a Proofview.tactic) arity
-| AddAty : ('a, 'b) arity -> ('a, 'a -> 'b) arity
+type closure
 
 type valexpr =
 | ValInt of int
@@ -24,14 +22,19 @@ type valexpr =
   (** Structured blocks *)
 | ValStr of Bytes.t
   (** Strings *)
-| ValCls of ml_tactic
+| ValCls of closure
   (** Closures *)
 | ValOpn of KerName.t * valexpr array
   (** Open constructors *)
 | ValExt : 'a Tac2dyn.Val.tag * 'a -> valexpr
   (** Arbitrary data *)
 
-and ml_tactic = MLTactic : (valexpr, 'v) arity * 'v -> ml_tactic
+type 'a arity
+
+val arity_one : (valexpr -> valexpr Proofview.tactic) arity
+val arity_suc : 'a arity -> (valexpr -> 'a) arity
+
+val mk_closure : 'v arity -> 'v -> closure
 
 (** {5 Ltac2 FFI} *)
 
@@ -82,9 +85,9 @@ val of_ident : Id.t -> valexpr
 val to_ident : valexpr -> Id.t
 val ident : Id.t repr
 
-val of_closure : ml_tactic -> valexpr
-val to_closure : valexpr -> ml_tactic
-val closure : ml_tactic repr
+val of_closure : closure -> valexpr
+val to_closure : valexpr -> closure
+val closure : closure repr
 
 val block : valexpr array repr
 
@@ -143,11 +146,11 @@ val val_exn : Exninfo.iexn Tac2dyn.Val.tag
 
 (** Closures *)
 
-val apply : ml_tactic -> valexpr list -> valexpr Proofview.tactic
+val apply : closure -> valexpr list -> valexpr Proofview.tactic
 (** Given a closure, apply it to some arguments. Handling of argument mismatches
     is done automatically, i.e. in case of over or under-application. *)
 
-val abstract : int -> (valexpr list -> valexpr Proofview.tactic) -> ml_tactic
+val abstract : int -> (valexpr list -> valexpr Proofview.tactic) -> closure
 (** Turn a fixed-arity function into a closure. The inner function is guaranteed
     to be applied to a list whose size is the integer argument. *)
 

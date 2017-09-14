@@ -151,19 +151,19 @@ let pf_apply f =
 (** Primitives *)
 
 let define_primitive name arity f =
-  Tac2env.define_primitive (pname name) (MLTactic (arity, f))
+  Tac2env.define_primitive (pname name) (mk_closure arity f)
 
-let define0 name f = define_primitive name OneAty (fun _ -> f)
+let define0 name f = define_primitive name arity_one (fun _ -> f)
 
-let define1 name r0 f = define_primitive name OneAty begin fun x ->
+let define1 name r0 f = define_primitive name arity_one begin fun x ->
   f (r0.Value.r_to x)
 end
 
-let define2 name r0 r1 f = define_primitive name (AddAty OneAty) begin fun x y ->
+let define2 name r0 r1 f = define_primitive name (arity_suc arity_one) begin fun x y ->
   f (r0.Value.r_to x) (r1.Value.r_to y)
 end
 
-let define3 name r0 r1 r2 f = define_primitive name (AddAty (AddAty OneAty)) begin fun x y z ->
+let define3 name r0 r1 r2 f = define_primitive name (arity_suc (arity_suc arity_one)) begin fun x y z ->
   f (r0.Value.r_to x) (r1.Value.r_to y) (r2.Value.r_to z)
 end
 
@@ -617,12 +617,10 @@ end
 let () = define1 "case" closure begin fun f ->
   Proofview.tclCASE (thaw f) >>= begin function
   | Proofview.Next (x, k) ->
-    let k = Tac2ffi.abstract 1 begin function
-    | [e] ->
+    let k = Tac2ffi.mk_closure arity_one begin fun e ->
       let (e, info) = Value.to_exn e in
       set_bt info >>= fun info ->
       k (e, info)
-    | _ -> assert false
     end in
     return (ValBlk (0, [| Value.of_tuple [| x; Value.of_closure k |] |]))
   | Proofview.Fail e -> return (ValBlk (1, [| Value.of_exn e |]))

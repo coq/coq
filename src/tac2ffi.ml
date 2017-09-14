@@ -14,9 +14,9 @@ open Tac2dyn
 open Tac2expr
 open Proofview.Notations
 
-type ('a, _) arity =
-| OneAty : ('a, 'a -> 'a Proofview.tactic) arity
-| AddAty : ('a, 'b) arity -> ('a, 'a -> 'b) arity
+type ('a, _) arity0 =
+| OneAty : ('a, 'a -> 'a Proofview.tactic) arity0
+| AddAty : ('a, 'b) arity0 -> ('a, 'a -> 'b) arity0
 
 type valexpr =
 | ValInt of int
@@ -25,14 +25,21 @@ type valexpr =
   (** Structured blocks *)
 | ValStr of Bytes.t
   (** Strings *)
-| ValCls of ml_tactic
+| ValCls of closure
   (** Closures *)
 | ValOpn of KerName.t * valexpr array
   (** Open constructors *)
 | ValExt : 'a Tac2dyn.Val.tag * 'a -> valexpr
   (** Arbitrary data *)
 
-and ml_tactic = MLTactic : (valexpr, 'v) arity * 'v -> ml_tactic
+and closure = MLTactic : (valexpr, 'v) arity0 * 'v -> closure
+
+let arity_one = OneAty
+let arity_suc a = AddAty a
+
+type 'a arity = (valexpr, 'a) arity0
+
+let mk_closure arity f = MLTactic (arity, f)
 
 type 'a repr = {
   r_of : 'a -> valexpr;
@@ -273,7 +280,7 @@ let reference = {
   r_id = false;
 }
 
-let rec apply : type a. (valexpr, a) arity -> a -> valexpr list -> valexpr Proofview.tactic =
+let rec apply : type a. a arity -> a -> valexpr list -> valexpr Proofview.tactic =
   fun arity f args -> match args, arity with
   | [], arity -> Proofview.tclUNIT (ValCls (MLTactic (arity, f)))
   (** A few hardcoded cases for efficiency *)
@@ -292,7 +299,7 @@ let rec apply : type a. (valexpr, a) arity -> a -> valexpr list -> valexpr Proof
 let apply (MLTactic (arity, f)) args = apply arity f args
 
 type n_closure =
-| NClosure : (valexpr, 'a) arity * (valexpr list -> 'a) -> n_closure
+| NClosure : 'a arity * (valexpr list -> 'a) -> n_closure
 
 let rec abstract n f =
   if Int.equal n 1 then NClosure (OneAty, fun accu v -> f (List.rev (v :: accu)))

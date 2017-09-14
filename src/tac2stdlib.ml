@@ -191,27 +191,27 @@ let lift tac = tac <*> return v_unit
 
 let define_prim0 name tac =
   let tac _ = lift tac in
-  Tac2env.define_primitive (pname name) (MLTactic (OneAty, tac))
+  Tac2env.define_primitive (pname name) (mk_closure arity_one tac)
 
 let define_prim1 name tac =
   let tac x = lift (tac x) in
-  Tac2env.define_primitive (pname name) (MLTactic (OneAty, tac))
+  Tac2env.define_primitive (pname name) (mk_closure arity_one tac)
 
 let define_prim2 name tac =
   let tac x y = lift (tac x y) in
-  Tac2env.define_primitive (pname name) (MLTactic (AddAty OneAty, tac))
+  Tac2env.define_primitive (pname name) (mk_closure (arity_suc arity_one) tac)
 
 let define_prim3 name tac =
   let tac x y z = lift (tac x y z) in
-  Tac2env.define_primitive (pname name) (MLTactic (AddAty (AddAty OneAty), tac))
+  Tac2env.define_primitive (pname name) (mk_closure (arity_suc (arity_suc arity_one)) tac)
 
 let define_prim4 name tac =
   let tac x y z u = lift (tac x y z u) in
-  Tac2env.define_primitive (pname name) (MLTactic (AddAty (AddAty (AddAty OneAty)), tac))
+  Tac2env.define_primitive (pname name) (mk_closure (arity_suc (arity_suc (arity_suc arity_one))) tac)
 
 let define_prim5 name tac =
   let tac x y z u v = lift (tac x y z u v) in
-  Tac2env.define_primitive (pname name) (MLTactic (AddAty (AddAty (AddAty (AddAty OneAty))), tac))
+  Tac2env.define_primitive (pname name) (mk_closure (arity_suc (arity_suc (arity_suc (arity_suc arity_one)))) tac)
 
 (** Tactics from Tacexpr *)
 
@@ -388,15 +388,15 @@ let lift tac = tac >>= fun c -> Proofview.tclUNIT (Value.of_constr c)
 
 let define_red1 name tac =
   let tac x = lift (tac x) in
-  Tac2env.define_primitive (pname name) (MLTactic (OneAty, tac))
+  Tac2env.define_primitive (pname name) (mk_closure arity_one tac)
 
 let define_red2 name tac =
   let tac x y = lift (tac x y) in
-  Tac2env.define_primitive (pname name) (MLTactic (AddAty OneAty, tac))
+  Tac2env.define_primitive (pname name) (mk_closure (arity_suc arity_one) tac)
 
 let define_red3 name tac =
   let tac x y z = lift (tac x y z) in
-  Tac2env.define_primitive (pname name) (MLTactic (AddAty (AddAty OneAty), tac))
+  Tac2env.define_primitive (pname name) (mk_closure (arity_suc (arity_suc arity_one)) tac)
 
 let () = define_red1 "eval_red" begin fun c ->
   let c = Value.to_constr c in
