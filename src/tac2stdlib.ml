@@ -12,6 +12,7 @@ open Globnames
 open Misctypes
 open Genredexpr
 open Tac2expr
+open Tac2ffi
 open Proofview.Notations
 
 module Value = Tac2ffi

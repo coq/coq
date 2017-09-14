@@ -13,6 +13,7 @@ open Genarg
 open Names
 open Proofview.Notations
 open Tac2expr
+open Tac2ffi
 
 exception LtacError = Tac2ffi.LtacError
 
@@ -41,6 +42,10 @@ let with_frame frame tac =
     set_backtrace bt >>= fun () ->
     Proofview.tclUNIT ans
   else tac
+
+type environment = Tac2env.environment = {
+  env_ist : valexpr Id.Map.t;
+}
 
 let empty_environment = {
   env_ist = Id.Map.empty;

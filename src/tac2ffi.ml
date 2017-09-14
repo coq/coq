@@ -14,6 +14,26 @@ open Tac2dyn
 open Tac2expr
 open Proofview.Notations
 
+type ('a, _) arity =
+| OneAty : ('a, 'a -> 'a Proofview.tactic) arity
+| AddAty : ('a, 'b) arity -> ('a, 'a -> 'b) arity
+
+type valexpr =
+| ValInt of int
+  (** Immediate integers *)
+| ValBlk of tag * valexpr array
+  (** Structured blocks *)
+| ValStr of Bytes.t
+  (** Strings *)
+| ValCls of ml_tactic
+  (** Closures *)
+| ValOpn of KerName.t * valexpr array
+  (** Open constructors *)
+| ValExt : 'a Tac2dyn.Val.tag * 'a -> valexpr
+  (** Arbitrary data *)
+
+and ml_tactic = MLTactic : (valexpr, 'v) arity * 'v -> ml_tactic
+
 type 'a repr = {
   r_of : 'a -> valexpr;
   r_to : valexpr -> 'a;
@@ -166,7 +186,10 @@ let pattern = repr_ext val_pattern
 
 let internal_err =
   let open Names in
-  KerName.make2 Tac2env.coq_prefix (Label.of_id (Id.of_string "Internal"))
+  let coq_prefix =
+    MPfile (DirPath.make (List.map Id.of_string ["Init"; "Ltac2"]))
+  in
+  KerName.make2 coq_prefix (Label.of_id (Id.of_string "Internal"))
 
 (** FIXME: handle backtrace in Ltac2 exceptions *)
 let of_exn c = match fst c with

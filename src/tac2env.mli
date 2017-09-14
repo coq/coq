@@ -12,6 +12,7 @@ open Libnames
 open Nametab
 open Tac2dyn
 open Tac2expr
+open Tac2ffi
 
 (** Ltac2 global environment *)
 
@@ -110,6 +111,10 @@ type 'a or_glb_tacexpr =
 | GlbTacexpr of glb_tacexpr
 
 type ('a, 'b, 'r) intern_fun = Genintern.glob_sign -> 'a -> 'b * 'r glb_typexpr
+
+type environment = {
+  env_ist : valexpr Id.Map.t;
+}
 
 type ('a, 'b) ml_object = {
   ml_intern : 'r. (raw_tacexpr, glb_tacexpr, 'r) intern_fun -> ('a, 'b or_glb_tacexpr, 'r) intern_fun;

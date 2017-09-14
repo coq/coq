@@ -12,6 +12,7 @@ open Genarg
 open Names
 open Tac2expr
 open Tac2env
+open Tac2ffi
 
 (** Utils *)
 
@@ -106,7 +107,7 @@ type exp_level = Tac2expr.exp_level =
 | E0
 
 let pr_atom = function
-| AtmInt n -> int n
+| AtmInt n -> Pp.int n
 | AtmStr s -> qstring s
 
 let pr_name = function

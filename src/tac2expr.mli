@@ -187,27 +187,3 @@ type frame =
 | FrExtn : ('a, 'b) Tac2dyn.Arg.tag * 'b -> frame
 
 type backtrace = frame list
-
-type ('a, _) arity =
-| OneAty : ('a, 'a -> 'a Proofview.tactic) arity
-| AddAty : ('a, 'b) arity -> ('a, 'a -> 'b) arity
-
-type valexpr =
-| ValInt of int
-  (** Immediate integers *)
-| ValBlk of tag * valexpr array
-  (** Structured blocks *)
-| ValStr of Bytes.t
-  (** Strings *)
-| ValCls of ml_tactic
-  (** Closures *)
-| ValOpn of KerName.t * valexpr array
-  (** Open constructors *)
-| ValExt : 'a Tac2dyn.Val.tag * 'a -> valexpr
-  (** Arbitrary data *)
-
-and ml_tactic = MLTactic : (valexpr, 'v) arity * 'v -> ml_tactic
-
-type environment = {
-  env_ist : valexpr Id.Map.t;
-}

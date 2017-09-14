@@ -12,6 +12,7 @@ open Names
 open Libnames
 open Tac2dyn
 open Tac2expr
+open Tac2ffi
 
 type global_data = {
   gdata_expr : glb_tacexpr;
@@ -236,6 +237,10 @@ let shortest_qualid_of_projection kn =
 type 'a or_glb_tacexpr =
 | GlbVal of 'a
 | GlbTacexpr of glb_tacexpr
+
+type environment = {
+  env_ist : valexpr Id.Map.t;
+}
 
 type ('a, 'b, 'r) intern_fun = Genintern.glob_sign -> 'a -> 'b * 'r glb_typexpr
 

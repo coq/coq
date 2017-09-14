@@ -8,6 +8,9 @@
 
 open Names
 open Tac2expr
+open Tac2ffi
+
+type environment = Tac2env.environment
 
 val empty_environment : environment
 
