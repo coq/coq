@@ -122,6 +122,12 @@ val of_ext : 'a Val.tag -> 'a -> valexpr
 val to_ext : 'a Val.tag -> valexpr -> 'a
 val repr_ext : 'a Val.tag -> 'a repr
 
+type ('a, 'b) fun1
+
+val app_fun1 : ('a, 'b) fun1 -> 'a repr -> 'b repr -> 'a -> 'b Proofview.tactic
+
+val fun1 : 'a repr -> 'b repr -> ('a, 'b) fun1 repr
+
 val valexpr : valexpr repr
 
 (** {5 Dynamic tags} *)

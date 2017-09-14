@@ -280,6 +280,10 @@ let reference = {
   r_id = false;
 }
 
+type ('a, 'b) fun1 = closure
+
+let fun1 (r0 : 'a repr) (r1 : 'b repr) : ('a, 'b) fun1 repr = closure
+
 let rec apply : type a. a arity -> a -> valexpr list -> valexpr Proofview.tactic =
   fun arity f args -> match args, arity with
   | [], arity -> Proofview.tclUNIT (ValCls (MLTactic (arity, f)))
@@ -311,3 +315,6 @@ let abstract n f =
   let () = assert (n > 0) in
   let NClosure (arity, f) = abstract n f in
   MLTactic (arity, f [])
+
+let app_fun1 cls r0 r1 x =
+  apply cls [r0.r_of x] >>= fun v -> Proofview.tclUNIT (r1.r_to v)
