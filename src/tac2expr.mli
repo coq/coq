@@ -188,6 +188,10 @@ type frame =
 
 type backtrace = frame list
 
+type ('a, _) arity =
+| OneAty : ('a, 'a -> 'a Proofview.tactic) arity
+| AddAty : ('a, 'b) arity -> ('a, 'a -> 'b) arity
+
 type valexpr =
 | ValInt of int
   (** Immediate integers *)
@@ -202,7 +206,7 @@ type valexpr =
 | ValExt : 'a Tac2dyn.Val.tag * 'a -> valexpr
   (** Arbitrary data *)
 
-and ml_tactic = valexpr list -> valexpr Proofview.tactic
+and ml_tactic = MLTactic : (valexpr, 'v) arity * 'v -> ml_tactic
 
 type environment = {
   env_ist : valexpr Id.Map.t;

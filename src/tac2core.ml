@@ -101,7 +101,7 @@ let err_matchfailure =
 
 (** Helper functions *)
 
-let thaw f = f [v_unit]
+let thaw f = Tac2ffi.apply f [v_unit]
 
 let fatal_flag : unit Exninfo.t = Exninfo.make ()
 let fatal_info = Exninfo.add Exninfo.null fatal_flag ()
@@ -150,24 +150,21 @@ let pf_apply f =
 
 (** Primitives *)
 
-let define0 name f = Tac2env.define_primitive (pname name) begin fun arg -> match arg with
-| [_] -> f
-| _ -> assert false
+let define_primitive name arity f =
+  Tac2env.define_primitive (pname name) (MLTactic (arity, f))
+
+let define0 name f = define_primitive name OneAty (fun _ -> f)
+
+let define1 name r0 f = define_primitive name OneAty begin fun x ->
+  f (r0.Value.r_to x)
 end
 
-let define1 name r0 f = Tac2env.define_primitive (pname name) begin fun arg -> match arg with
-| [x] -> f (r0.Value.r_to x)
-| _ -> assert false
+let define2 name r0 r1 f = define_primitive name (AddAty OneAty) begin fun x y ->
+  f (r0.Value.r_to x) (r1.Value.r_to y)
 end
 
-let define2 name r0 r1 f = Tac2env.define_primitive (pname name) begin fun arg -> match arg with
-| [x; y] -> f (r0.Value.r_to x) (r1.Value.r_to y)
-| _ -> assert false
-end
-
-let define3 name r0 r1 r2 f = Tac2env.define_primitive (pname name) begin fun arg -> match arg with
-| [x; y; z] -> f (r0.Value.r_to x) (r1.Value.r_to y) (r2.Value.r_to z)
-| _ -> assert false
+let define3 name r0 r1 r2 f = define_primitive name (AddAty (AddAty OneAty)) begin fun x y z ->
+  f (r0.Value.r_to x) (r1.Value.r_to y) (r2.Value.r_to z)
 end
 
 (** Printing *)
@@ -588,7 +585,7 @@ end
 
 (** (unit -> 'a) -> (exn -> 'a) -> 'a *)
 let () = define2 "plus" closure closure begin fun x k ->
-  Proofview.tclOR (thaw x) (fun e -> k [Value.of_exn e])
+  Proofview.tclOR (thaw x) (fun e -> Tac2ffi.apply k [Value.of_exn e])
 end
 
 (** (unit -> 'a) -> 'a *)
@@ -620,13 +617,13 @@ end
 let () = define1 "case" closure begin fun f ->
   Proofview.tclCASE (thaw f) >>= begin function
   | Proofview.Next (x, k) ->
-    let k = function
+    let k = Tac2ffi.abstract 1 begin function
     | [e] ->
       let (e, info) = Value.to_exn e in
       set_bt info >>= fun info ->
       k (e, info)
     | _ -> assert false
-    in
+    end in
     return (ValBlk (0, [| Value.of_tuple [| x; Value.of_closure k |] |]))
   | Proofview.Fail e -> return (ValBlk (1, [| Value.of_exn e |]))
   end
@@ -705,7 +702,7 @@ let () = define2 "with_holes" closure closure begin fun x f ->
   thaw x >>= fun ans ->
   Proofview.tclEVARMAP >>= fun sigma ->
   Proofview.Unsafe.tclEVARS sigma0 >>= fun () ->
-  Tacticals.New.tclWITHHOLES false (f [ans]) sigma
+  Tacticals.New.tclWITHHOLES false (Tac2ffi.apply f [ans]) sigma
 end
 
 let () = define1 "progress" closure begin fun f ->

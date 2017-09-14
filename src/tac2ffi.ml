@@ -12,6 +12,7 @@ open Globnames
 open Genarg
 open Tac2dyn
 open Tac2expr
+open Proofview.Notations
 
 type 'a repr = {
   r_of : 'a -> valexpr;
@@ -248,3 +249,35 @@ let reference = {
   r_to = to_reference;
   r_id = false;
 }
+
+let rec apply : type a. (valexpr, a) arity -> a -> valexpr list -> valexpr Proofview.tactic =
+  fun arity f args -> match args, arity with
+  | [], arity -> Proofview.tclUNIT (ValCls (MLTactic (arity, f)))
+  (** A few hardcoded cases for efficiency *)
+  | [a0], OneAty -> f a0
+  | [a0; a1], AddAty OneAty -> f a0 a1
+  | [a0; a1; a2], AddAty (AddAty OneAty) -> f a0 a1 a2
+  | [a0; a1; a2; a3], AddAty (AddAty (AddAty OneAty)) -> f a0 a1 a2 a3
+  (** Generic cases *)
+  | a :: args, OneAty ->
+    f a >>= fun f ->
+    let MLTactic (arity, f) = to_closure f in
+    apply arity f args
+  | a :: args, AddAty arity ->
+    apply arity (f a) args
+
+let apply (MLTactic (arity, f)) args = apply arity f args
+
+type n_closure =
+| NClosure : (valexpr, 'a) arity * (valexpr list -> 'a) -> n_closure
+
+let rec abstract n f =
+  if Int.equal n 1 then NClosure (OneAty, fun accu v -> f (List.rev (v :: accu)))
+  else
+    let NClosure (arity, fe) = abstract (n - 1) f in
+    NClosure (AddAty arity, fun accu v -> fe (v :: accu))
+
+let abstract n f =
+  let () = assert (n > 0) in
+  let NClosure (arity, f) = abstract n f in
+  MLTactic (arity, f [])

@@ -119,6 +119,16 @@ val val_exn : Exninfo.iexn Tac2dyn.Val.tag
 (** Toplevel representation of OCaml exceptions. Invariant: no [LtacError]
     should be put into a value with tag [val_exn]. *)
 
+(** Closures *)
+
+val apply : ml_tactic -> valexpr list -> valexpr Proofview.tactic
+(** Given a closure, apply it to some arguments. Handling of argument mismatches
+    is done automatically, i.e. in case of over or under-application. *)
+
+val abstract : int -> (valexpr list -> valexpr Proofview.tactic) -> ml_tactic
+(** Turn a fixed-arity function into a closure. The inner function is guaranteed
+    to be applied to a list whose size is the integer argument. *)
+
 (** Exception *)
 
 exception LtacError of KerName.t * valexpr array

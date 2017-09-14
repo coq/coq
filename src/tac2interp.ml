@@ -88,7 +88,7 @@ let rec interp (ist : environment) = function
 | GTacApp (f, args) ->
   interp ist f >>= fun f ->
   Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
-  Tac2ffi.to_closure f args
+  Tac2ffi.apply (Tac2ffi.to_closure f) args
 | GTacLet (false, el, e) ->
   let fold accu (na, e) =
     interp ist e >>= fun e ->
@@ -133,28 +133,23 @@ let rec interp (ist : environment) = function
   return (ValOpn (kn, Array.of_list el))
 | GTacPrm (ml, el) ->
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
-  with_frame (FrPrim ml) (Tac2env.interp_primitive ml el)
+  with_frame (FrPrim ml) (Tac2ffi.apply (Tac2env.interp_primitive ml) el)
 | GTacExt (tag, e) ->
   let tpe = Tac2env.interp_ml_object tag in
   with_frame (FrExtn (tag, e)) (tpe.Tac2env.ml_interp ist e)
 
-and interp_app f = (); fun args -> match f with
-| { clos_env = ist; clos_var = ids; clos_exp = e; clos_ref = kn } ->
-  let frame = match kn with
-  | None -> FrAnon e
-  | Some kn -> FrLtac kn
+and interp_app f =
+  let ans = fun args ->
+    let { clos_env = ist; clos_var = ids; clos_exp = e; clos_ref = kn } = f in
+    let frame = match kn with
+    | None -> FrAnon e
+    | Some kn -> FrLtac kn
+    in
+    let ist = { env_ist = ist } in
+    let ist = List.fold_left2 push_name ist ids args in
+    with_frame frame (interp ist e)
   in
-  let rec push ist ids args = match ids, args with
-  | [], [] -> with_frame frame (interp ist e)
-  | [], _ :: _ ->
-    with_frame frame (interp ist e) >>= fun f -> Tac2ffi.to_closure f args
-  | _ :: _, [] ->
-    let cls = { clos_ref = kn; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
-    let f = interp_app cls in
-    return (ValCls f)
-  | id :: ids, arg :: args -> push (push_name ist id arg) ids args
-  in
-  push { env_ist = ist } ids args
+  Tac2ffi.abstract (List.length f.clos_var) ans
 
 and interp_case ist e cse0 cse1 = match e with
 | ValInt n -> interp ist cse0.(n)
