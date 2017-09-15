@@ -114,6 +114,8 @@ let of_binders b =
   in
   { ctx with uctx_names = b, rmap }
 
+let universe_binders ctx = fst ctx.uctx_names
+
 let instantiate_variable l b v =
   try v := Univ.LMap.update l (Some b) !v
   with Not_found -> assert false
@@ -291,7 +293,7 @@ let universe_context ~names ~extensible uctx =
     let inst = Univ.Instance.of_array inst in
     let ctx = Univ.UContext.make (inst,
                                   Univ.ContextSet.constraints uctx.uctx_local) in
-    fst uctx.uctx_names, ctx
+    ctx
 
 let check_implication uctx cstrs ctx =
   let gr = initial_graph uctx in
@@ -303,14 +305,14 @@ let check_implication uctx cstrs ctx =
 
 let check_univ_decl uctx decl =
   let open Misctypes in
-  let pl, ctx = universe_context
+  let ctx = universe_context
       ~names:decl.univdecl_instance
       ~extensible:decl.univdecl_extensible_instance
       uctx
   in
   if not decl.univdecl_extensible_constraints then
     check_implication uctx decl.univdecl_constraints ctx;
-  pl, ctx
+  ctx
 
 let restrict ctx vars =
   let uctx' = Univops.restrict_universe_context ctx.uctx_local vars in

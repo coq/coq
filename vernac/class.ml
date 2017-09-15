@@ -212,7 +212,7 @@ let build_id_coercion idf_opt source poly =
 	  Id.of_string ("Id_"^(ident_key_of_class source)^"_"^
                         (ident_key_of_class cl))
   in
-  let univs = (snd (Evd.universe_context ~names:[] ~extensible:true sigma)) in
+  let univs = Evd.universe_context ~names:[] ~extensible:true sigma in
   let constr_entry = (* Cast is necessary to express [val_f] is identity *)
     DefinitionEntry
       (definition_entry ~types:typ_f ~poly ~univs

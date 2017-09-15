@@ -475,20 +475,17 @@ let declare_definition prg =
     (Evd.evar_universe_context_subst prg.prg_ctx) in
   let opaque = prg.prg_opaque in
   let fix_exn = Hook.get get_fix_exn () in
-  let pl, ctx = Evd.check_univ_decl (Evd.from_ctx prg.prg_ctx) prg.prg_univdecl in
+  let () = ignore(UState.check_univ_decl prg.prg_ctx prg.prg_univdecl) in
   let ce =
     definition_entry ~fix_exn
      ~opaque ~types:(nf typ) ~poly:(pi2 prg.prg_kind)
      ~univs:(Evd.evar_context_universe_context prg.prg_ctx) (nf body)
   in
   let () = progmap_remove prg in
-  let cst =
-    DeclareDef.declare_definition prg.prg_name
-     prg.prg_kind ce Universes.empty_binders prg.prg_implicits
-     (Lemmas.mk_hook (fun l r -> Lemmas.call_hook fix_exn prg.prg_hook l r prg.prg_ctx; r))
-  in
-  Universes.register_universe_binders cst pl;
-  cst
+  let ubinders = UState.universe_binders prg.prg_ctx in
+  DeclareDef.declare_definition prg.prg_name
+    prg.prg_kind ce ubinders prg.prg_implicits
+    (Lemmas.mk_hook (fun l r -> Lemmas.call_hook fix_exn prg.prg_hook l r prg.prg_ctx; r))
 
 let rec lam_index n t acc =
   match Constr.kind t with
@@ -893,7 +890,7 @@ in
       let ctx' = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx')) in
       Univ.Instance.empty, Evd.evar_universe_context ctx'
     else
-      let (_, uctx) = UState.universe_context ~names:[] ~extensible:true ctx' in
+      let uctx = UState.universe_context ~names:[] ~extensible:true ctx' in
       Univ.UContext.instance uctx, ctx'
   in
   let obl = { obl with obl_body = Some (DefinedObl (cst, inst)) } in

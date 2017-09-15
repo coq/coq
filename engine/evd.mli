@@ -509,7 +509,8 @@ val restrict_universe_context : evar_map -> Univ.LSet.t -> evar_map
 val universe_of_name : evar_map -> Id.t -> Univ.Level.t
 val add_universe_name : evar_map -> Id.t -> Univ.Level.t -> evar_map
 
-val add_constraints_context : UState.t -> 
+val universe_binders : evar_map -> Universes.universe_binders
+val add_constraints_context : UState.t ->
   Univ.constraints -> UState.t
 
 
@@ -552,12 +553,12 @@ val check_leq : evar_map -> Univ.Universe.t -> Univ.Universe.t -> bool
 val evar_universe_context : evar_map -> UState.t
 val universe_context_set : evar_map -> Univ.ContextSet.t
 val universe_context : names:(Id.t located) list -> extensible:bool -> evar_map ->
-  Universes.universe_binders * Univ.UContext.t
+  Univ.UContext.t
 val universe_subst : evar_map -> Universes.universe_opt_subst
 val universes : evar_map -> UGraph.t
 
 val check_univ_decl : evar_map -> UState.universe_decl ->
-  Universes.universe_binders * Univ.UContext.t
+  Univ.UContext.t
 
 val merge_universe_context : evar_map -> UState.t -> evar_map
 val set_universe_context : evar_map -> UState.t -> evar_map

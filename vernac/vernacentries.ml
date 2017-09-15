@@ -1555,8 +1555,8 @@ let vernac_check_may_eval ?loc redexp glopt rc =
   let sigma' = Evarconv.solve_unif_constraints_with_heuristics env sigma' in
   Evarconv.check_problems_are_solved env sigma';
   let sigma',nf = Evarutil.nf_evars_and_universes sigma' in
-  let pl, uctx = Evd.universe_context ~names:[] ~extensible:true sigma' in
-  let env = Environ.push_context uctx (Evarutil.nf_env_evar sigma' env) in
+  let uctx = Evd.universe_context_set sigma' in
+  let env = Environ.push_context_set uctx (Evarutil.nf_env_evar sigma' env) in
   let c = nf c in
   let j =
     if Evarutil.has_undefined_evars sigma' (EConstr.of_constr c) then
@@ -1572,7 +1572,7 @@ let vernac_check_may_eval ?loc redexp glopt rc =
         let j = { j with Environ.uj_type = Reductionops.nf_betaiota sigma' j.Environ.uj_type } in
 	Feedback.msg_notice (print_judgment env sigma' j ++
                     pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma' l ++
-                    Printer.pr_universe_ctx sigma uctx)
+                    Printer.pr_universe_ctx_set sigma uctx)
     | Some r ->
         let (sigma',r_interp) = Hook.get f_interp_redexp env sigma' r in
 	let redfun env evm c =

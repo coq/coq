@@ -49,7 +49,7 @@ let retrieve_first_recthm uctx = function
       (NamedDecl.get_value (Global.lookup_named id),variable_opacity id)
   | ConstRef cst ->
       let cb = Global.lookup_constant cst in
-      let (_, uctx) = UState.universe_context ~names:[] ~extensible:true uctx in
+      let uctx = UState.universe_context ~names:[] ~extensible:true uctx in
       let inst = Univ.UContext.instance uctx in
       let map (c, ctx) = Vars.subst_instance_constr inst c in
       (Option.map map (Global.body_of_constant_body cb), is_opaque cb)
@@ -223,7 +223,7 @@ let compute_proof_name locality = function
     let avoid = Id.Set.of_list (Proof_global.get_all_proof_names ()) in
       next_global_ident_away default_thm_id avoid
 
-let save_remaining_recthms (locality,p,kind) norm ctx binders body opaq i (id,(t_i,(_,imps))) =
+let save_remaining_recthms (locality,p,kind) norm ctx body opaq i (id,(t_i,(_,imps))) =
   let t_i = norm t_i in
   match body with
   | None ->
@@ -420,9 +420,9 @@ let start_proof_with_initialization kind ctx decl recguard thms snl hook =
             let body,opaq = retrieve_first_recthm ctx ref in
             let subst = Evd.evar_universe_context_subst ctx in
             let norm c = Universes.subst_opt_univs_constr subst c in
-	    let binders, ctx = Evd.check_univ_decl (Evd.from_ctx ctx) decl in
+            let ctx = Evd.check_univ_decl (Evd.from_ctx ctx) decl in
 	    let body = Option.map norm body in
-            List.map_i (save_remaining_recthms kind norm ctx binders body opaq) 1 other_thms in
+            List.map_i (save_remaining_recthms kind norm ctx body opaq) 1 other_thms in
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
@@ -513,9 +513,9 @@ let save_proof ?proof = function
               | _ -> None in
 	    let decl = Proof_global.get_universe_decl () in
             let evd = Evd.from_ctx universes in
-            let binders, ctx = Evd.check_univ_decl evd decl in
+            let ctx = Evd.check_univ_decl evd decl in
             let poly = pi2 k in
-            let binders = if poly then Some binders else None in
+            let binders = if poly then Some (UState.universe_binders universes) else None in
             Admitted(id,k,(sec_vars, poly, (typ, ctx), None),
 		     (universes, binders))
       in

@@ -168,9 +168,10 @@ let typecheck_params_and_fields finite def id pl t ps nots fs =
   let typ = EConstr.to_constr evars typ in
   let ce t = Pretyping.check_evars env0 Evd.empty evars (EConstr.of_constr t) in
   let univs = Evd.check_univ_decl evars decl in
+  let ubinders = Evd.universe_binders evars in
     List.iter (iter_constr ce) (List.rev newps);
     List.iter (iter_constr ce) (List.rev newfs);
-    univs, typ, template, imps, newps, impls, newfs
+    ubinders, univs, typ, template, imps, newps, impls, newfs
 
 let degenerate_decl decl =
   let id = match RelDecl.get_name decl with
@@ -605,7 +606,7 @@ let definition_structure (kind,cum,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cf
   if isnot_class && List.exists (fun opt -> not (Option.is_empty opt)) priorities then
     user_err Pp.(str "Priorities only allowed for type class substructures");
   (* Now, younger decl in params and fields is on top *)
-  let (pl, ctx), arity, template, implpars, params, implfs, fields =
+  let pl, ctx, arity, template, implpars, params, implfs, fields =
     States.with_state_protection (fun () ->
       typecheck_params_and_fields finite (kind = Class true) idstruc pl s ps notations fs) () in
   let sign = structure_signature (fields@params) in

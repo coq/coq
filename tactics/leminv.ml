@@ -235,9 +235,9 @@ let inversion_scheme env sigma t sort dep_option inv_op =
     p, Evd.universe_context ~names:[] ~extensible:true sigma
 
 let add_inversion_lemma name env sigma t sort dep inv_op =
-  let invProof, ctx = inversion_scheme env sigma t sort dep inv_op in
+  let invProof, univs = inversion_scheme env sigma t sort dep inv_op in
   let entry = definition_entry ~poly:(Flags.use_polymorphic_flag ())
-			       ~univs:(snd ctx) invProof in
+                               ~univs invProof in
   let _ = declare_constant name (DefinitionEntry entry, IsProof Lemma) in
   ()
 

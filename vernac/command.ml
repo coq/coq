@@ -107,8 +107,9 @@ let interp_definition pl bl p red_option c ctypopt =
         let body = nf (it_mkLambda_or_LetIn c ctx) in
 	let vars = Univops.universes_of_constr body in
 	let evd = Evd.restrict_universe_context !evdref vars in
-	let pl, uctx = Evd.check_univ_decl evd decl in
- 	imps1@(Impargs.lift_implicits nb_args imps2), pl,
+        let uctx = Evd.check_univ_decl evd decl in
+        let binders = Evd.universe_binders evd in
+        imps1@(Impargs.lift_implicits nb_args imps2), binders,
 	  definition_entry ~univs:uctx ~poly:p body
     | Some ctyp ->
 	let ty, impsty = interp_type_evars_impls ~impls env_bl evdref ctyp in
@@ -133,8 +134,9 @@ let interp_definition pl bl p red_option c ctypopt =
         let vars = Univ.LSet.union (Univops.universes_of_constr body) 
           (Univops.universes_of_constr typ) in
         let ctx = Evd.restrict_universe_context !evdref vars in
-	let pl, uctx = Evd.check_univ_decl ctx decl in
-	imps1@(Impargs.lift_implicits nb_args impsty), pl,
+        let uctx = Evd.check_univ_decl ctx decl in
+        let binders = Evd.universe_binders evd in
+        imps1@(Impargs.lift_implicits nb_args impsty), binders,
 	  definition_entry ~types:typ ~poly:p 
 	    ~univs:uctx body
   in
@@ -277,9 +279,10 @@ let do_assumptions_bound_univs coe kind nl id pl c =
   let ty = nf ty in
   let vars = Univops.universes_of_constr ty in
   let evd = Evd.restrict_universe_context !evdref vars in
-  let pl, uctx = Evd.check_univ_decl evd decl in
+  let uctx = Evd.check_univ_decl evd decl in
+  let binders = Evd.universe_binders evd in
   let uctx = Univ.ContextSet.of_context uctx in
-  let (_, _, st) = declare_assumption coe kind (ty, uctx) pl impls false nl id in
+  let (_, _, st) = declare_assumption coe kind (ty, uctx) binders impls false nl id in
   st
 
 let do_assumptions kind nl l = match l with
@@ -576,7 +579,7 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf' cl,impsl)) constructors in
   let ctx_params = Context.Rel.map nf ctx_params in
   let evd = !evdref in
-  let pl, uctx = Evd.check_univ_decl evd decl in
+  let uctx = Evd.check_univ_decl evd decl in
   List.iter (fun c -> check_evars env_params Evd.empty evd (EConstr.of_constr c)) arities;
   Context.Rel.iter (fun c -> check_evars env0 Evd.empty evd (EConstr.of_constr c)) ctx_params;
   List.iter (fun (_,ctyps,_) ->
@@ -617,7 +620,7 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   in
   (if poly && cum then
       Inductiveops.infer_inductive_subtyping env_ar evd mind_ent
-   else mind_ent), pl, impls
+   else mind_ent), Evd.universe_binders evd, impls
 
 (* Very syntactical equality *)
 let eq_local_binders bl1 bl2 =
@@ -1025,17 +1028,18 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
     if List.length binders_rel > 1 then
       let name = add_suffix recname "_func" in
       let hook l gr _ = 
-	let body = it_mkLambda_or_LetIn (mkApp (Evarutil.e_new_global evdref gr, [|make|])) binders_rel in
-	let ty = it_mkProd_or_LetIn top_arity binders_rel in
-	let ty = EConstr.Unsafe.to_constr ty in
-	let pl, univs = Evd.universe_context ~names:pl ~extensible:plext !evdref in
-	  (*FIXME poly? *)
-	let ce = definition_entry ~poly ~types:ty ~univs (EConstr.to_constr !evdref body) in
-	(** FIXME: include locality *)
-	let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
-	let gr = ConstRef c in
-	  if Impargs.is_implicit_args () || not (List.is_empty impls) then
-	    Impargs.declare_manual_implicits false gr [impls]
+        let body = it_mkLambda_or_LetIn (mkApp (Evarutil.e_new_global evdref gr, [|make|])) binders_rel in
+        let ty = it_mkProd_or_LetIn top_arity binders_rel in
+        let ty = EConstr.Unsafe.to_constr ty in
+        let univs = Evd.universe_context ~names:pl ~extensible:plext !evdref in
+        (*FIXME poly? *)
+        let ce = definition_entry ~poly ~types:ty ~univs (EConstr.to_constr !evdref body) in
+        (** FIXME: include locality *)
+        let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
+        let gr = ConstRef c in
+        let () = Universes.register_universe_binders gr (Evd.universe_binders !evdref) in
+        if Impargs.is_implicit_args () || not (List.is_empty impls) then
+          Impargs.declare_manual_implicits false gr [impls]
       in
       let typ = it_mkProd_or_LetIn top_arity binders in
 	hook, name, typ
@@ -1168,7 +1172,8 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
       List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
     let evd = Evd.from_ctx ctx in
     let evd = Evd.restrict_universe_context evd vars in
-    let pl, ctx = Evd.check_univ_decl evd pl in
+    let ctx = Evd.check_univ_decl evd pl in
+    let pl = Evd.universe_binders evd in
     let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
     ignore (List.map4 (DeclareDef.declare_fix (local, poly, Fixpoint) pl ctx)
 	      fixnames fixdecls fixtypes fiximps);
@@ -1200,7 +1205,8 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
     let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
     let evd = Evd.from_ctx ctx in
     let evd = Evd.restrict_universe_context evd vars in
-    let pl, ctx = Evd.check_univ_decl evd pl in
+    let ctx = Evd.check_univ_decl evd pl in
+    let pl = Evd.universe_binders evd in
     ignore (List.map4 (DeclareDef.declare_fix (local, poly, CoFixpoint) pl ctx)
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
