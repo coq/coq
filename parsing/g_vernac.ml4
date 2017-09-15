@@ -64,20 +64,6 @@ let parse_compat_version ?(allow_old = true) = let open Flags in function
     CErrors.user_err ~hdr:"get_compat_version"
       Pp.(str "Unknown compatibility version \"" ++ str s ++ str "\".")
 
-let extraction_err ~loc =
-  if not (Mltop.module_is_known "extraction_plugin") then
-    CErrors.user_err ~loc (str "Please do first a Require Extraction.")
-  else
-    (* The right grammar entries should have been loaded.
-       We could only end here in case of syntax error. *)
-    raise (Stream.Error "unexpected end of command")
-
-let funind_err ~loc =
-  if not (Mltop.module_is_known "recdef_plugin") then
-    CErrors.user_err ~loc (str "Please do first a Require Import FunInd.")
-  else
-    raise (Stream.Error "unexpected end of command") (* Same as above... *)
-
 GEXTEND Gram
   GLOBAL: vernac gallina_ext noedit_mode subprf;
   vernac: FIRST
@@ -880,22 +866,6 @@ GEXTEND Gram
 	  VernacAddLoadPath (true, dir, alias)
       | IDENT "DelPath"; dir = ne_string ->
 	  VernacRemoveLoadPath dir
-
-      (* Some plugins are not loaded initially anymore : extraction,
-         and funind. To ease this transition toward a mandatory Require,
-         we hack here the vernac grammar in order to get customized
-         error messages telling what to Require instead of the dreadful
-         "Illegal begin of vernac". Normally, these fake grammar entries
-         are overloaded later by the grammar extensions in these plugins.
-         This code is meant to be removed in a few releases, when this
-         transition is considered finished. *)
-
-      | IDENT "Extraction" -> extraction_err ~loc:!@loc
-      | IDENT "Extract" -> extraction_err ~loc:!@loc
-      | IDENT "Recursive"; IDENT "Extraction" -> extraction_err ~loc:!@loc
-      | IDENT "Separate"; IDENT "Extraction" -> extraction_err ~loc:!@loc
-      | IDENT "Function" -> funind_err ~loc:!@loc
-      | IDENT "Functional" -> funind_err ~loc:!@loc
 
       (* Type-Checking (pas dans le refman) *)
       | "Type"; c = lconstr -> VernacGlobalCheck c
