@@ -7,35 +7,11 @@
 (************************************************************************)
 
 open Names
-open Constr
 open Vernacexpr
 open Constrexpr
-open Impargs
 open Globnames
 
 val primitive_flag : bool ref
-
-(** [declare_projections ref name coers params fields] declare projections of
-   record [ref] (if allowed) using the given [name] as argument, and put them
-   as coercions accordingly to [coers]; it returns the absolute names of projections *)
-
-val declare_projections :
-  inductive -> ?kind:Decl_kinds.definition_object_kind -> Id.t ->
-  coercion_flag list -> manual_explicitation list list -> Context.Rel.t ->
-  (Name.t * bool) list * Constant.t option list
-
-val declare_structure :
-  Decl_kinds.recursivity_kind ->
-  Entries.inductive_universes ->
-  Id.t -> Id.t ->
-  manual_explicitation list -> Context.Rel.t -> (** params *) constr -> (** arity *)
-  bool (** template arity ? *) ->
-  Impargs.manual_explicitation list list -> Context.Rel.t -> (** fields *)
-  ?kind:Decl_kinds.definition_object_kind -> ?name:Id.t ->
-  bool -> (** coercion? *)
-  bool list -> (** field coercions *)
-  Evd.evar_map ->
-  inductive
 
 val definition_structure :
   inductive_kind * Decl_kinds.cumulative_inductive_flag * Decl_kinds.polymorphic *
