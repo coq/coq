@@ -123,7 +123,7 @@ let define internal id c p univs =
   let ctx = Evd.normalize_evar_universe_context univs in
   let c = Vars.subst_univs_fn_constr 
     (Universes.make_opt_subst (Evd.evar_universe_context_subst ctx)) c in
-  let univs = Evd.evar_context_universe_context ctx in
+  let univs = UState.context ctx in
   let univs =
     if p then Polymorphic_const_entry univs
     else Monomorphic_const_entry univs

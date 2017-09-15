@@ -756,8 +756,7 @@ let evar_universe_context d = d.universes
 
 let universe_context_set d = UState.context_set d.universes
 
-let universe_context ~names ~extensible evd =
-  UState.universe_context ~names ~extensible evd.universes
+let to_universe_context evd = UState.context evd.universes
 
 let check_univ_decl evd decl = UState.check_univ_decl evd.universes decl
 

@@ -125,23 +125,18 @@ val refresh_undefined_univ_variables : t -> t * Univ.universe_level_subst
 
 val normalize : t -> t
 
-(** [universe_context names extensible ctx]
-
-    Return a universe context containing the local universes of [ctx]
-    and their constraints. The universes corresponding to [names] come
-    first in the order defined by that list.
-
-    If [extensible] is false, check that the universes of [names] are
-    the only local universes.
-
-    Also return the association list of universe names and universes
-    (including those not in [names]). *)
-val universe_context : names:(Id.t Loc.located) list -> extensible:bool -> t ->
-  Univ.UContext.t
-
 type universe_decl =
   (Names.Id.t Loc.located list, Univ.Constraint.t) Misctypes.gen_universe_decl
 
+(** [check_univ_decl ctx decl]
+
+   If non extensible in [decl], check that the local universes (resp.
+   universe constraints) in [ctx] are implied by [decl].
+
+   Return a universe context containing the local universes of [ctx]
+   and their constraints. The universes corresponding to
+   [decl.univdecl_instance] come first in the order defined by that
+   list. *)
 val check_univ_decl : t -> universe_decl -> Univ.UContext.t
 
 (** {5 TODO: Document me} *)

@@ -492,6 +492,8 @@ type 'a in_evar_universe_context = 'a * UState.t
 val evar_universe_context_set : UState.t -> Univ.ContextSet.t
 val evar_universe_context_constraints : UState.t -> Univ.constraints
 val evar_context_universe_context : UState.t -> Univ.UContext.t
+[@@ocaml.deprecated "alias of UState.context"]
+
 val evar_universe_context_of : Univ.ContextSet.t -> UState.t
 val empty_evar_universe_context : UState.t
 val union_evar_universe_context : UState.t -> UState.t ->
@@ -552,10 +554,13 @@ val check_leq : evar_map -> Univ.Universe.t -> Univ.Universe.t -> bool
 
 val evar_universe_context : evar_map -> UState.t
 val universe_context_set : evar_map -> Univ.ContextSet.t
-val universe_context : names:(Id.t located) list -> extensible:bool -> evar_map ->
-  Univ.UContext.t
 val universe_subst : evar_map -> Universes.universe_opt_subst
 val universes : evar_map -> UGraph.t
+
+(** [to_universe_context evm] extracts the local universes and
+    constraints of [evm] and orders the universes the same as
+    [Univ.ContextSet.to_context]. *)
+val to_universe_context : evar_map -> Univ.UContext.t
 
 val check_univ_decl : evar_map -> UState.universe_decl ->
   Univ.UContext.t

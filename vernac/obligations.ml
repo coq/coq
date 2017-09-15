@@ -479,7 +479,7 @@ let declare_definition prg =
   let ce =
     definition_entry ~fix_exn
      ~opaque ~types:(nf typ) ~poly:(pi2 prg.prg_kind)
-     ~univs:(Evd.evar_context_universe_context prg.prg_ctx) (nf body)
+     ~univs:(UState.context prg.prg_ctx) (nf body)
   in
   let () = progmap_remove prg in
   let ubinders = UState.universe_binders prg.prg_ctx in
@@ -549,7 +549,7 @@ let declare_mutual_definition l =
             mk_proof (mkCoFix (i,fixdecls))) 0 l
   in
   (* Declare the recursive definitions *)
-  let ctx = Evd.evar_context_universe_context first.prg_ctx in
+  let ctx = UState.context first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
   let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) Universes.empty_binders ctx)
     fixnames fixdecls fixtypes fiximps in
@@ -855,7 +855,7 @@ let obligation_terminator name num guard hook auto pf =
         | (_, status), Vernacexpr.Transparent -> status
       in
       let obl = { obl with obl_status = false, status } in
-      let uctx = Evd.evar_context_universe_context ctx in
+      let uctx = UState.context ctx in
       let (_, obl) = declare_obligation prg obl body ty uctx in
       let obls = Array.copy obls in
       let _ = obls.(num) <- obl in
@@ -890,7 +890,8 @@ in
       let ctx' = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx')) in
       Univ.Instance.empty, Evd.evar_universe_context ctx'
     else
-      let uctx = UState.universe_context ~names:[] ~extensible:true ctx' in
+      (* We get the right order somehow, but surely it could be enforced in a clearer way. *)
+      let uctx = UState.context ctx' in
       Univ.UContext.instance uctx, ctx'
   in
   let obl = { obl with obl_body = Some (DefinedObl (cst, inst)) } in
@@ -969,7 +970,7 @@ and solve_obligation_by_tac prg obls i tac =
 	      solve_by_tac obl.obl_name (evar_of_obligation obl) tac
 	        (pi2 prg.prg_kind) (Evd.evar_universe_context evd)
 	    in
-	    let uctx = Evd.evar_context_universe_context ctx in
+            let uctx = UState.context ctx in
 	    let prg = {prg with prg_ctx = ctx} in
 	    let def, obl' = declare_obligation prg obl t ty uctx in
 	      obls.(i) <- obl';
@@ -1120,7 +1121,7 @@ let admit_prog prg =
         match x.obl_body with
         | None ->
             let x = subst_deps_obl obls x in
-	    let ctx = Evd.evar_context_universe_context prg.prg_ctx in
+            let ctx = UState.context prg.prg_ctx in
             let kn = Declare.declare_constant x.obl_name ~local:true
               (ParameterEntry (None,false,(x.obl_type,ctx),None), IsAssumption Conjectural)
             in

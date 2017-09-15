@@ -1556,7 +1556,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let functional_id =  add_suffix function_name "_F" in
   let term_id = add_suffix function_name "_terminate" in
   let functional_ref =
-    let ctx = Evd.universe_context ~names:[] ~extensible:true evm in
+    let ctx = Evd.to_universe_context evm in
     declare_fun functional_id (IsDefinition Decl_kinds.Definition) ~ctx res
   in
   (* Refresh the global universes, now including those of _F *)

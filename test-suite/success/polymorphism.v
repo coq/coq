@@ -190,6 +190,8 @@ Module binders.
     Fail Defined.
   Abort.
 
+  Fail Lemma bar@{u v | } : let x := (fun x => x) : Type@{u} -> Type@{v} in nat.
+
   Lemma bar@{i j| i < j} : Type@{j}.
   Proof.
     exact Type@{i}.

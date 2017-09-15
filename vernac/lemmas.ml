@@ -49,7 +49,8 @@ let retrieve_first_recthm uctx = function
       (NamedDecl.get_value (Global.lookup_named id),variable_opacity id)
   | ConstRef cst ->
       let cb = Global.lookup_constant cst in
-      let uctx = UState.universe_context ~names:[] ~extensible:true uctx in
+      (* we get the right order somehow but surely it could be enforced in a better way *)
+      let uctx = UState.context uctx in
       let inst = Univ.UContext.instance uctx in
       let map (c, ctx) = Vars.subst_instance_constr inst c in
       (Option.map map (Global.body_of_constant_body cb), is_opaque cb)
@@ -420,8 +421,8 @@ let start_proof_with_initialization kind ctx decl recguard thms snl hook =
             let body,opaq = retrieve_first_recthm ctx ref in
             let subst = Evd.evar_universe_context_subst ctx in
             let norm c = Universes.subst_opt_univs_constr subst c in
-            let ctx = Evd.check_univ_decl (Evd.from_ctx ctx) decl in
-	    let body = Option.map norm body in
+            let ctx = UState.check_univ_decl ctx decl in
+            let body = Option.map norm body in
             List.map_i (save_remaining_recthms kind norm ctx body opaq) 1 other_thms in
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
@@ -453,9 +454,9 @@ let start_proof_com ?inference_hook kind thms hook =
   let evd, nf = Evarutil.nf_evars_and_universes !evdref in
   let thms = List.map (fun (n, (t, info)) -> (n, (nf t, info))) thms in
   let () =
-    if not decl.Misctypes.univdecl_extensible_instance then
-       ignore (Evd.universe_context evd ~names:decl.Misctypes.univdecl_instance ~extensible:false)
-    else ()
+    let open Misctypes in
+    if not (decl.univdecl_extensible_instance && decl.univdecl_extensible_constraints) then
+       ignore (Evd.check_univ_decl evd decl)
   in
   let evd =
     if pi2 kind then evd
@@ -490,7 +491,7 @@ let save_proof ?proof = function
             if const_entry_type = None then
               user_err Pp.(str "Admitted requires an explicit statement");
             let typ = Option.get const_entry_type in
-            let ctx = Evd.evar_context_universe_context (fst universes) in
+            let ctx = UState.context (fst universes) in
             let sec_vars = if !keep_admitted_vars then const_entry_secctx else None in
             Admitted(id, k, (sec_vars, pi2 k, (typ, ctx), None), universes)
         | None ->

@@ -2881,11 +2881,11 @@ sig
     val universe_context_set : evar_map -> Univ.ContextSet.t
     val evar_ident : evar -> evar_map -> Names.Id.t option
     val extract_all_conv_pbs : evar_map -> evar_map * evar_constraint list
-    val universe_context : names:(Names.Id.t Loc.located) list -> extensible:bool -> evar_map ->
-      Univ.UContext.t
     val universe_binders : evar_map -> Universes.universe_binders
     val nf_constraints : evar_map -> evar_map
     val from_ctx : UState.t -> evar_map
+
+    val to_universe_context : evar_map -> Univ.UContext.t
 
     val meta_list : evar_map -> (Constr.metavariable * clbinding) list
 

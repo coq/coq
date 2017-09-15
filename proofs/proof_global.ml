@@ -353,7 +353,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
         let used_univs_typ = Univops.universes_of_constr typ in
         if keep_body_ucst_separate ||
            not (Safe_typing.empty_private_constants = eff) then
-          let initunivs = Evd.evar_context_universe_context initial_euctx in
+          let initunivs = UState.context initial_euctx in
           let ctx = constrain_variables initunivs universes in
           (* For vi2vo compilation proofs are computed now but we need to
              complement the univ constraints of the typ with the ones of
