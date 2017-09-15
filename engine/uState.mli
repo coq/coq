@@ -135,7 +135,7 @@ val normalize : t -> t
     Also return the association list of universe names and universes
     (including those not in [names]). *)
 val universe_context : names:(Id.t Loc.located) list -> extensible:bool -> t ->
-  (Id.t * Univ.Level.t) list * Univ.UContext.t
+  Universes.universe_binders * Univ.UContext.t
 
 type universe_decl =
   (Names.Id.t Loc.located list, Univ.Constraint.t) Misctypes.gen_universe_decl

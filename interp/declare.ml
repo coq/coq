@@ -457,7 +457,7 @@ let declare_universe_context poly ctx =
   Lib.add_anonymous_leaf (input_universe_context (poly, ctx))
 
 (* Discharged or not *)
-type universe_decl = polymorphic * (Id.t * Univ.Level.t) list
+type universe_decl = polymorphic * Universes.universe_binders
 
 let cache_universes (p, l) =
   let glob = Global.global_universe_names () in

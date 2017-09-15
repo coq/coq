@@ -552,7 +552,7 @@ val check_leq : evar_map -> Univ.Universe.t -> Univ.Universe.t -> bool
 val evar_universe_context : evar_map -> UState.t
 val universe_context_set : evar_map -> Univ.ContextSet.t
 val universe_context : names:(Id.t located) list -> extensible:bool -> evar_map ->
-		       (Id.t * Univ.Level.t) list * Univ.UContext.t
+  Universes.universe_binders * Univ.UContext.t
 val universe_subst : evar_map -> Universes.universe_opt_subst
 val universes : evar_map -> UGraph.t
 

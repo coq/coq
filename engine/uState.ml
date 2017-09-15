@@ -11,20 +11,8 @@ open CErrors
 open Util
 open Names
 
-module StringOrd = struct type t = string let compare = String.compare end
-module UNameMap = struct
+module UNameMap = String.Map
     
-  include Map.Make(StringOrd)
-    
-  let union s t = 
-    if s == t then s
-    else
-      merge (fun k l r -> 
-        match l, r with
-        | Some _, _ -> l
-        | _, _ -> r) s t
-end
-
 type uinfo = {
   uname : string option;
   uloc : Loc.t option;
@@ -59,12 +47,20 @@ let is_empty ctx =
   Univ.ContextSet.is_empty ctx.uctx_local && 
     Univ.LMap.is_empty ctx.uctx_univ_variables
 
+let uname_union s t =
+  if s == t then s
+  else
+    UNameMap.merge (fun k l r ->
+        match l, r with
+        | Some _, _ -> l
+        | _, _ -> r) s t
+
 let union ctx ctx' =
   if ctx == ctx' then ctx
   else if is_empty ctx' then ctx
   else
     let local = Univ.ContextSet.union ctx.uctx_local ctx'.uctx_local in
-    let names = UNameMap.union (fst ctx.uctx_names) (fst ctx'.uctx_names) in
+    let names = uname_union (fst ctx.uctx_names) (fst ctx'.uctx_names) in
     let newus = Univ.LSet.diff (Univ.ContextSet.levels ctx'.uctx_local)
                                (Univ.ContextSet.levels ctx.uctx_local) in
     let newus = Univ.LSet.diff newus (Univ.LMap.domain ctx.uctx_univ_variables) in
