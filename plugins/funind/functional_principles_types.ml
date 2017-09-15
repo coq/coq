@@ -11,7 +11,6 @@ open Tactics
 open Context.Rel.Declaration
 open Indfun_common
 open Functional_principles_proofs
-open Misctypes
 
 module RelDecl = Context.Rel.Declaration
 
@@ -463,7 +462,7 @@ let get_funs_constant mp dp =
 exception No_graph_found
 exception Found_type of int
 
-let make_scheme evd (fas : (pconstant*glob_sort) list) : Safe_typing.private_constants definition_entry list =
+let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_constants definition_entry list =
   let env = Global.env () in
   let funs = List.map fst fas in
   let first_fun = List.hd funs in
@@ -500,7 +499,7 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Safe_typing.private_con
   let i = ref (-1) in
   let sorts =
     List.rev_map (fun (_,x) ->
-		  Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd (Pretyping.interp_elimination_sort x)
+		  Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd x
 	     )
       fas
   in
@@ -674,7 +673,7 @@ let build_case_scheme fa =
   let scheme_type = EConstr.Unsafe.to_constr ((Typing.unsafe_type_of env sigma) (EConstr.of_constr scheme)) in
   let sorts =
     (fun (_,_,x) ->
-       Universes.new_sort_in_family (Pretyping.interp_elimination_sort x)
+       Universes.new_sort_in_family x
     )
       fa
   in

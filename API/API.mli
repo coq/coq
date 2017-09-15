@@ -2763,6 +2763,7 @@ sig
   val pr_evar_info : Evd.evar_info -> Pp.t
 
   val print_constr : EConstr.constr -> Pp.t
+  val pr_sort_family : Sorts.family -> Pp.t
 
   (** [dependent m t] tests whether [m] is a subterm of [t] *)
   val dependent : Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool
@@ -4046,7 +4047,6 @@ sig
   val understand : ?flags:inference_flags -> ?expected_type:typing_constraint ->
                    Environ.env -> Evd.evar_map -> Glob_term.glob_constr -> Constr.t Evd.in_evar_universe_context
   val check_evars : Environ.env -> Evd.evar_map -> Evd.evar_map -> EConstr.constr -> unit
-  val interp_elimination_sort : Misctypes.glob_sort -> Sorts.family
   val register_constr_interp0 :
     ('r, 'g, 't) Genarg.genarg_type ->
     (Glob_term.unbound_ltac_var_map -> Environ.env -> Evd.evar_map -> EConstr.types -> 'g -> EConstr.constr * Evd.evar_map) -> unit
@@ -4142,6 +4142,7 @@ sig
   val wit_global : (Libnames.reference, Globnames.global_reference Loc.located Misctypes.or_var, Globnames.global_reference) Genarg.genarg_type
   val wit_ident : Names.Id.t Genarg.uniform_genarg_type
   val wit_integer : int Genarg.uniform_genarg_type
+  val wit_sort_family : (Sorts.family, unit, unit) Genarg.genarg_type
   val wit_constr : (Constrexpr.constr_expr, Tactypes.glob_constr_and_expr, EConstr.constr) Genarg.genarg_type
   val wit_open_constr : (Constrexpr.constr_expr, Tactypes.glob_constr_and_expr, EConstr.constr) Genarg.genarg_type
   val wit_intro_pattern : (Constrexpr.constr_expr Misctypes.intro_pattern_expr Loc.located, Tactypes.glob_constr_and_expr Misctypes.intro_pattern_expr Loc.located, Tactypes.intro_pattern) Genarg.genarg_type
@@ -4773,6 +4774,7 @@ sig
     val global : reference Gram.entry
     val universe_level : glob_level Gram.entry
     val sort : glob_sort Gram.entry
+    val sort_family : Sorts.family Gram.entry
     val pattern : cases_pattern_expr Gram.entry
     val constr_pattern : constr_expr Gram.entry
     val lconstr_pattern : constr_expr Gram.entry
@@ -5333,7 +5335,7 @@ sig
   val lemInv_clause :
     Misctypes.quantified_hypothesis -> EConstr.constr -> Names.Id.t list -> unit Proofview.tactic
   val add_inversion_lemma_exn :
-    Names.Id.t -> Constrexpr.constr_expr -> Misctypes.glob_sort -> bool -> (Names.Id.t -> unit Proofview.tactic) ->
+    Names.Id.t -> Constrexpr.constr_expr -> Sorts.family -> bool -> (Names.Id.t -> unit Proofview.tactic) ->
     unit
 end
 

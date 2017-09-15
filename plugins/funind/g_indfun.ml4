@@ -166,11 +166,11 @@ END
 let pr_fun_scheme_arg (princ_name,fun_name,s) =
   Names.Id.print princ_name ++ str " :=" ++ spc() ++ str "Induction for " ++
   Libnames.pr_reference fun_name ++ spc() ++ str "Sort " ++
-  Ppconstr.pr_glob_sort s
+  Termops.pr_sort_family s
 
 VERNAC ARGUMENT EXTEND fun_scheme_arg
 PRINTED BY pr_fun_scheme_arg
-| [ ident(princ_name) ":=" "Induction" "for" reference(fun_name) "Sort" sort(s) ] -> [ (princ_name,fun_name,s) ]
+| [ ident(princ_name) ":=" "Induction" "for" reference(fun_name) "Sort" sort_family(s) ] -> [ (princ_name,fun_name,s) ]
 END
 
 

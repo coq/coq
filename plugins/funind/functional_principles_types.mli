@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Misctypes
 
 val generate_functional_principle :
   Evd.evar_map ref -> 
@@ -37,8 +36,7 @@ val compute_new_princ_type_from_rel : constr array -> Sorts.t array ->
 exception No_graph_found
 
 val make_scheme :   Evd.evar_map ref ->
- (pconstant*glob_sort) list -> Safe_typing.private_constants Entries.definition_entry list
+ (pconstant*Sorts.family) list -> Safe_typing.private_constants Entries.definition_entry list
 
-val build_scheme : (Id.t*Libnames.reference*glob_sort) list ->  unit
-val build_case_scheme : (Id.t*Libnames.reference*glob_sort)  ->  unit
-
+val build_scheme : (Id.t*Libnames.reference*Sorts.family) list ->  unit
+val build_case_scheme : (Id.t*Libnames.reference*Sorts.family)  ->  unit

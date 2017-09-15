@@ -169,7 +169,7 @@ type option_ref_value =
 (** Identifier and optional list of bound universes. *)						 
 type plident = lident * lident list option
 
-type sort_expr = glob_sort
+type sort_expr = Sorts.family
 
 type definition_expr =
   | ProveBody of local_binder_expr list * constr_expr
