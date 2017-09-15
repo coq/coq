@@ -116,12 +116,11 @@ tactics: tactics/tactics.cma
 interp: interp/interp.cma
 parsing: parsing/parsing.cma
 pretyping: pretyping/pretyping.cma
-highparsing: parsing/highparsing.cma
 stm: stm/stm.cma
 toplevel: toplevel/toplevel.cma
 
 .PHONY: lib kernel byterun library proofs tactics interp parsing pretyping API
-.PHONY: engine highparsing stm toplevel
+.PHONY: engine stm toplevel
 
 ######################
 ### 3) theories files

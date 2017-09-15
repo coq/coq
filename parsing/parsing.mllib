@@ -3,3 +3,7 @@ CLexer
 Pcoq
 Egramml
 Egramcoq
+G_constr
+G_vernac
+G_prim
+G_proofs

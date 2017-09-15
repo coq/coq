@@ -14,11 +14,6 @@ parsing
 tactics
 toplevel
 
-highparsing :
-
- Files in parsing/ that cannot be linked too early.
- Contains the grammar rules g_*.ml4
-
 Special components
 ------------------
 

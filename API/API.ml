@@ -10,9 +10,9 @@
 
    To see such order issue the comand:
 
-```
-bash -c 'for i in kernel intf library engine pretyping interp proofs parsing printing tactics vernac stm toplevel; do echo -e "\n## $i files" && cat ${i}/${i}.mllib; done && echo -e "\n## highparsing files" && cat parsing/highparsing.mllib' > API/link
-```
+   ```
+   bash -c 'for i in kernel intf library engine pretyping interp proofs parsing printing tactics vernac stm toplevel; do echo -e "\n## $i files" && cat ${i}/${i}.mllib; done > API/link
+   ```
  *)
 
 (******************************************************************************)
@@ -223,6 +223,9 @@ module Pcoq = Pcoq
 module Egramml = Egramml
 (* Egramcoq *)
 
+module G_vernac = G_vernac
+module G_proofs = G_proofs
+
 (******************************************************************************)
 (* Tactics                                                                    *)
 (******************************************************************************)
@@ -276,9 +279,3 @@ module Vernacentries = Vernacentries
 (******************************************************************************)
 module Vernac_classifier = Vernac_classifier
 module Stm = Stm
-
-(******************************************************************************)
-(* Highparsing                                                               *)
-(******************************************************************************)
-module G_vernac = G_vernac
-module G_proofs = G_proofs

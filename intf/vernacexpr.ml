@@ -325,7 +325,7 @@ type vernac_expr =
 
   (* Syntax *)
   | VernacSyntaxExtension of
-      obsolete_locality * (lstring * syntax_modifier list)
+      bool * obsolete_locality * (lstring * syntax_modifier list)
   | VernacOpenCloseScope of obsolete_locality * (bool * scope_name)
   | VernacDelimiters of scope_name * string option
   | VernacBindScope of scope_name * class_rawexpr list
