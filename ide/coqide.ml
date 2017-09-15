@@ -439,7 +439,9 @@ let compile sn =
   match sn.fileops#filename with
     |None -> flash_info "Active buffer has no name"
     |Some f ->
-      let cmd = cmd_coqc#get ^ " -I " ^ (Filename.quote (Filename.dirname f))
+      let args = Coq.get_arguments sn.coqtop in
+      let cmd = cmd_coqc#get 
+	^ " " ^ String.concat " " args
 	^ " " ^ (Filename.quote f) ^ " 2>&1"
       in
       let buf = Buffer.create 1024 in
