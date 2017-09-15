@@ -10,8 +10,19 @@ open Pp
 open Util
 open Tok
 
+(** Location utilities  *)
+let ploc_file_of_coq_file = function
+| Loc.ToplevelInput -> ""
+| Loc.InFile f -> f
+
+let coq_file_of_ploc_file s =
+  if s = "" then Loc.ToplevelInput else Loc.InFile s
+
+let from_coqloc fname line_nb bol_pos bp ep =
+  Ploc.make_loc (ploc_file_of_coq_file fname) line_nb bol_pos (bp, ep) ""
+
 let to_coqloc loc =
-  { Loc.fname = Ploc.file_name loc;
+  { Loc.fname = coq_file_of_ploc_file (Ploc.file_name loc);
     Loc.line_nb = Ploc.line_nb loc;
     Loc.bol_pos = Ploc.bol_pos loc;
     Loc.bp = Ploc.first_pos loc;
@@ -117,14 +128,6 @@ open Error
 let err loc str = Loc.raise ~loc:(to_coqloc loc) (Error.E str)
 
 let bad_token str = raise (Error.E (Bad_token str))
-
-(** Location utilities  *)
-let file_loc_of_file = function
-| None -> ""
-| Some f -> f
-
-let make_loc fname line_nb bol_pos bp ep =
-  Ploc.make_loc (file_loc_of_file fname) line_nb bol_pos (bp, ep) ""
 
 (* Update a loc without allocating an intermediate pair *)
 let set_loc_pos loc bp ep =
@@ -369,7 +372,7 @@ let rec string loc ~comm_level bp len = parser
      err loc Unterminated_string
 
 (* To associate locations to a file name *)
-let current_file = ref None
+let current_file = ref Loc.ToplevelInput
 
 (* Utilities for comments in beautify *)
 let comment_begin = ref None
@@ -392,7 +395,7 @@ let rec split_comments comacc acc pos = function
 let extract_comments pos = split_comments [] [] pos !comments
 
 (* The state of the lexer visible from outside *)
-type lexer_state = int option * string * bool * ((int * int) * string) list * string option
+type lexer_state = int option * string * bool * ((int * int) * string) list * Loc.source
 
 let init_lexer_state f = (None,"",true,[],f)
 let set_lexer_state (o,s,b,c,f) =
@@ -404,7 +407,7 @@ let set_lexer_state (o,s,b,c,f) =
 let release_lexer_state () =
   (!comment_begin, Buffer.contents current_comment, !between_commands, !comments, !current_file)
 let drop_lexer_state () =
-    set_lexer_state (init_lexer_state None)
+    set_lexer_state (init_lexer_state Loc.ToplevelInput)
 
 let real_push_char c = Buffer.add_char current_comment c
 
@@ -672,7 +675,7 @@ let token_text = function
 
 let func cs =
   let loct = loct_create () in
-  let cur_loc = ref (make_loc !current_file 1 0 0 0) in
+  let cur_loc = ref (from_coqloc !current_file 1 0 0 0) in
   let ts =
     Stream.from
       (fun i ->

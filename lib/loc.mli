@@ -8,8 +8,12 @@
 
 (** {5 Basic types} *)
 
+type source =
+  | InFile of string
+  | ToplevelInput
+
 type t = {
-  fname : string; (** filename *)
+  fname : source; (** filename or toplevel input *)
   line_nb : int; (** start line number *)
   bol_pos : int; (** position of the beginning of start line *)
   line_nb_last : int; (** end line number *)
@@ -22,7 +26,7 @@ type t = {
 
 (** This is inherited from CAMPL4/5. *)
 
-val create : string -> int -> int -> int -> int -> t
+val create : source -> int -> int -> int -> int -> t
 (** Create a location from a filename, a line number, a position of the
     beginning of the line, a start and end position *)
 

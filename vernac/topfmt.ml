@@ -292,10 +292,11 @@ let emacs_logger = gen_logger Emacs.quote_info Emacs.quote_warning
 (* This is specific to the toplevel *)
 let pr_loc loc =
     let fname = loc.Loc.fname in
-    if CString.equal fname "" then
+    match fname with
+    | Loc.ToplevelInput ->
       Loc.(str"Toplevel input, characters " ++ int loc.bp ++
 	   str"-" ++ int loc.ep ++ str":")
-    else
+    | Loc.InFile fname ->
       Loc.(str"File " ++ str "\"" ++ str fname ++ str "\"" ++
 	   str", line " ++ int loc.line_nb ++ str", characters " ++
 	   int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos) ++

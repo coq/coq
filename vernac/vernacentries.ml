@@ -1902,7 +1902,7 @@ let vernac_load interp fname =
   let input =
     let longfname = Loadpath.locate_file fname in
     let in_chan = open_utf8_file_in longfname in
-    Pcoq.Gram.parsable ~file:longfname (Stream.of_channel in_chan) in
+    Pcoq.Gram.parsable ~file:(Loc.InFile longfname) (Stream.of_channel in_chan) in
   try while true do interp (snd (parse_sentence input)) done
   with End_of_input -> ()
 

@@ -4706,7 +4706,7 @@ sig
 
     type coq_parsable
 
-    val parsable : ?file:string -> char Stream.t -> coq_parsable
+    val parsable : ?file:Loc.source -> char Stream.t -> coq_parsable
     val action : 'a -> action
     val entry_create : string -> 'a entry
     val entry_parse : 'a entry -> coq_parsable -> 'a

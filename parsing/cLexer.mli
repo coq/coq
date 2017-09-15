@@ -49,7 +49,7 @@ end
 (* Mainly for comments state, etc... *)
 type lexer_state
 
-val init_lexer_state : string option -> lexer_state
+val init_lexer_state : Loc.source -> lexer_state
 val set_lexer_state : lexer_state -> unit
 val release_lexer_state : unit -> lexer_state
 val drop_lexer_state : unit -> unit
