@@ -22,6 +22,16 @@
  * Note that this module type coerces to the argument of Hashtbl.Make.
  *)
 
+(* hash-consing saves memory, but takes time; allow user to disable it via flag *)
+
+let hashconsing_enabled = ref true 
+
+let get_hashconsing_enabled () =
+  !hashconsing_enabled
+    
+let set_hashconsing_enabled b =
+  hashconsing_enabled := b
+  
 module type HashconsedType =
   sig
     type t
@@ -65,8 +75,13 @@ module Make (X : HashconsedType) : (S with type t = X.t and type u = X.u) =
       (tab, u)
 
     let hcons (tab, u) x =
-      let y = X.hashcons u x in
-      Htbl.repr (X.hash y) y tab
+      if !hashconsing_enabled then 
+	(* find or create representative in hash table *)
+        let y = X.hashcons u x in
+	Htbl.repr (X.hash y) y tab
+      else
+	(* no representative, just return input x *)
+	x
 
     let stats (tab, _) = Htbl.stats tab
 

@@ -8,6 +8,12 @@
 
 (** Generic hash-consing. *)
 
+(** flag to enable, disable hash-consing, with getter and setter *)
+
+val hashconsing_enabled : bool ref
+val get_hashconsing_enabled : unit -> bool
+val set_hashconsing_enabled : bool -> unit
+
 (** {6 Hashconsing functorial interface} *)
 
 module type HashconsedType =
