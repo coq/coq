@@ -218,13 +218,9 @@ doc/refman/html/index.html: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
 	@touch $(INDEXES)
 	(cd doc/common/styles/html/$(HTMLSTYLE);\
 		for f in `find . -name \*.css`; do \
-			install -m 644 -D $$f ../../../../refman/html/$$f;\
+			$(MKDIR) $$(dirname ../../../../refman/html/$$f);\
+			$(INSTALLLIB) $$f ../../../../refman/html/$$f;\
 		done)
-	(cd doc/common/styles/html/$(HTMLSTYLE);\
-		for f in `find . -name coqdoc.css -o -name style.css`; do \
-			install -m 644 -D $$f ../../../../refman/html/;\
-		done)
-	install -m 644 doc/common/styles/html/$(HTMLSTYLE)/*.css doc/refman/html
 
 refman-quick:
 	(cd doc/refman;\
@@ -391,8 +387,11 @@ install-doc-meta:
 
 install-doc-html: 
 	$(MKDIR) $(addprefix $(FULLDOCDIR)/html/, refman stdlib faq)
-	$(INSTALLLIB) doc/refman/html/* $(FULLDOCDIR)/html/refman 
-	$(INSTALLLIB) doc/stdlib/html/* $(FULLDOCDIR)/html/stdlib 
+	(for f in `cd doc/refman/html; find . -type f`; do \
+		$(MKDIR) $$(dirname $(FULLDOCDIR)/html/refman/$$f);\
+		$(INSTALLLIB) doc/refman/html/$$f $(FULLDOCDIR)/html/refman/$$f;\
+	done)
+	$(INSTALLLIB) doc/stdlib/html/* $(FULLDOCDIR)/html/stdlib
 	$(INSTALLLIB) doc/RecTutorial/RecTutorial.html $(FULLDOCDIR)/html/RecTutorial.html
 	$(INSTALLLIB) doc/faq/html/* $(FULLDOCDIR)/html/faq
 	$(INSTALLLIB) doc/tutorial/Tutorial.v.html $(FULLDOCDIR)/html/Tutorial.html
