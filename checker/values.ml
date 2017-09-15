@@ -99,7 +99,7 @@ let v_raw_level = v_sum "raw_level" 2 (* Prop, Set *)
   [|(*Level*)[|Int;v_dp|]; (*Var*)[|Int|]|]
 let v_level = v_tuple "level" [|Int;v_raw_level|] 
 let v_expr = v_tuple "levelexpr" [|v_level;Int|]
-let rec v_univ = Sum ("universe", 1, [| [|v_expr; Int; v_univ|] |])
+let v_univ = List v_expr
 
 let v_cstrs =
   Annot
