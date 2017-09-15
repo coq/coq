@@ -463,7 +463,7 @@ object(self)
           self#attach_tooltip ~loc sentence
             (Printf.sprintf "%s %s %s" filepath ident ty)
       | Message(Error, loc, msg), Some (id,sentence) ->
-          log_pp ?id Pp.(str "ErrorMsg" ++ msg);
+          log_pp ?id Pp.(str "ErrorMsg " ++ msg);
           remove_flag sentence `PROCESSING;
           let rmsg = Pp.string_of_ppcmds msg in
           add_flag sentence (`ERROR (loc, rmsg));
@@ -471,17 +471,17 @@ object(self)
           self#attach_tooltip ?loc sentence rmsg;
           self#position_tag_at_sentence ?loc Tags.Script.error sentence
       | Message(Warning, loc, msg), Some (id,sentence) ->
-          log_pp ?id Pp.(str "WarningMsg" ++ msg);
+          log_pp ?id Pp.(str "WarningMsg " ++ msg);
           let rmsg = Pp.string_of_ppcmds msg     in
           add_flag sentence (`WARNING (loc, rmsg));
           self#attach_tooltip ?loc sentence rmsg;
           self#position_tag_at_sentence ?loc Tags.Script.warning sentence;
           messages#push Warning msg
       | Message(lvl, loc, msg), Some (id,sentence) ->
-          log_pp ?id Pp.(str "Msg" ++ msg);
+          log_pp ?id Pp.(str "Msg " ++ msg);
           messages#push lvl msg
       | Message(lvl, loc, msg), None ->
-          log_pp Pp.(str "Msg" ++ msg);
+          log_pp Pp.(str "Msg " ++ msg);
           messages#push lvl msg
       | InProgress n, _ ->
           if n < 0 then processed <- processed + abs n
