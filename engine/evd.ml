@@ -802,7 +802,7 @@ let make_evar_universe_context e l =
   | Some us ->
       List.fold_left
         (fun uctx (loc,id) ->
-        fst (UState.new_univ_variable ?loc univ_rigid (Some (Id.to_string id)) uctx))
+        fst (UState.new_univ_variable ?loc univ_rigid (Some id) uctx))
         uctx us
 
 (****************************************)

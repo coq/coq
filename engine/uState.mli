@@ -71,10 +71,10 @@ val add_universe_constraints : t -> Universes.universe_constraints -> t
 
 (** {5 Names} *)
 
-val add_universe_name : t -> string -> Univ.Level.t -> t
+val add_universe_name : t -> Id.t -> Univ.Level.t -> t
 (** Associate a human-readable name to a local variable. *)
 
-val universe_of_name : t -> string -> Univ.Level.t
+val universe_of_name : t -> Id.t -> Univ.Level.t
 (** Retrieve the universe associated to the name. *)
 
 (** {5 Unification} *)
@@ -93,7 +93,7 @@ val merge : ?loc:Loc.t -> bool -> rigid -> t -> Univ.ContextSet.t -> t
 val merge_subst : t -> Universes.universe_opt_subst -> t
 val emit_side_effects : Safe_typing.private_constants -> t -> t
 
-val new_univ_variable : ?loc:Loc.t -> rigid -> string option -> t -> t * Univ.Level.t
+val new_univ_variable : ?loc:Loc.t -> rigid -> Id.t option -> t -> t * Univ.Level.t
 val add_global_univ : t -> Univ.Level.t -> t
 
 (** [make_flexible_variable g algebraic l]

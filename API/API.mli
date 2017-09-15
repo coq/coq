@@ -2869,7 +2869,7 @@ sig
     val clear_metas : evar_map -> evar_map
 
     (** Allocates a new evar that represents a {i sort}. *)
-    val new_sort_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * Sorts.t
+    val new_sort_variable : ?loc:Loc.t -> ?name:Names.Id.t -> rigid -> evar_map -> evar_map * Sorts.t
 
     val remove : evar_map -> Evar.t -> evar_map
     val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> Environ.env ->

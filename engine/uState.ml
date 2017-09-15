@@ -11,16 +11,16 @@ open CErrors
 open Util
 open Names
 
-module UNameMap = String.Map
+module UNameMap = Names.Id.Map
     
 type uinfo = {
-  uname : string option;
+  uname : Id.t option;
   uloc : Loc.t option;
 }
 
 (* 2nd part used to check consistency on the fly. *)
 type t =
- { uctx_names : Univ.Level.t UNameMap.t * uinfo Univ.LMap.t;
+ { uctx_names : Universes.universe_binders * uinfo Univ.LMap.t;
    uctx_local : Univ.ContextSet.t; (** The local context of variables *)
    uctx_univ_variables : Universes.universe_opt_subst;
    (** The local universes that are unification variables *)
@@ -107,10 +107,12 @@ let add_uctx_loc l loc (names, names_rev) =
 
 let of_binders b =
   let ctx = empty in
-  let names =
-    List.fold_left (fun acc (id, l) -> add_uctx_names (Id.to_string id) l acc)
-                   ctx.uctx_names b
-  in { ctx with uctx_names = names }
+  let rmap =
+    UNameMap.fold (fun id l rmap ->
+        Univ.LMap.add l { uname = Some id; uloc = None } rmap)
+      b Univ.LMap.empty
+  in
+  { ctx with uctx_names = b, rmap }
 
 let instantiate_variable l b v =
   try v := Univ.LMap.update l (Some b) !v
@@ -249,20 +251,20 @@ let constrain_variables diff ctx =
 let pr_uctx_level uctx = 
   let map, map_rev = uctx.uctx_names in 
     fun l ->
-      try str (Option.get (Univ.LMap.find l map_rev).uname)
+      try Id.print (Option.get (Univ.LMap.find l map_rev).uname)
       with Not_found | Option.IsNone ->
         Universes.pr_with_global_universes l
 
 type universe_decl =
   (Names.Id.t Loc.located list, Univ.Constraint.t) Misctypes.gen_universe_decl
 
-let universe_context ~names ~extensible ctx =
-  let levels = Univ.ContextSet.levels ctx.uctx_local in
+let universe_context ~names ~extensible uctx =
+  let levels = Univ.ContextSet.levels uctx.uctx_local in
   let newinst, left =
     List.fold_right
       (fun (loc,id) (newinst, acc) ->
          let l =
-           try UNameMap.find (Id.to_string id) (fst ctx.uctx_names)
+           try UNameMap.find id (fst uctx.uctx_names)
            with Not_found ->
              user_err ?loc ~hdr:"universe_context"
                (str"Universe " ++ Id.print id ++ str" is not bound anymore.")
@@ -274,23 +276,22 @@ let universe_context ~names ~extensible ctx =
     let loc =
       try
         let info =
-          Univ.LMap.find (Univ.LSet.choose left) (snd ctx.uctx_names) in
+          Univ.LMap.find (Univ.LSet.choose left) (snd uctx.uctx_names) in
         info.uloc
       with Not_found -> None
     in
     user_err ?loc ~hdr:"universe_context"
       ((str(CString.plural n "Universe") ++ spc () ++
-	Univ.LSet.pr (pr_uctx_level ctx) left ++
+        Univ.LSet.pr (pr_uctx_level uctx) left ++
 	spc () ++ str (CString.conjugate_verb_to_be n) ++
         str" unbound."))
   else
     let left = Univ.ContextSet.sort_levels (Array.of_list (Univ.LSet.elements left)) in
     let inst = Array.append (Array.of_list newinst) left in
     let inst = Univ.Instance.of_array inst in
-    let map = List.map (fun (s,l) -> Id.of_string s, l) (UNameMap.bindings (fst ctx.uctx_names)) in
     let ctx = Univ.UContext.make (inst,
-                                  Univ.ContextSet.constraints ctx.uctx_local) in
-    map, ctx
+                                  Univ.ContextSet.constraints uctx.uctx_local) in
+    fst uctx.uctx_names, ctx
 
 let check_implication uctx cstrs ctx =
   let gr = initial_graph uctx in

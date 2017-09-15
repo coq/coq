@@ -426,7 +426,7 @@ let declare_structure finite univs id idbuild paramimpls params arity template
     else
        mie
   in
-  let kn = Command.declare_mutual_inductive_with_eliminations mie [] [(paramimpls,[])] in
+  let kn = Command.declare_mutual_inductive_with_eliminations mie Universes.empty_binders [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
   let cstr = (rsp,1) in
   let fields =

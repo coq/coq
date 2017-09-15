@@ -21,7 +21,9 @@ val pr_with_global_universes : Level.t -> Pp.t
 
 (** Local universe name <-> level mapping *)
 
-type universe_binders = (Id.t * Univ.Level.t) list
+type universe_binders = Univ.Level.t Names.Id.Map.t
+
+val empty_binders : universe_binders
 
 val register_universe_binders : Globnames.global_reference -> universe_binders -> unit
 val universe_binders_of_global : Globnames.global_reference -> universe_binders

@@ -411,14 +411,14 @@ let context poly l =
       let decl = (Discharge, poly, Definitional) in
       let nstatus = match b with
       | None ->
-        pi3 (Command.declare_assumption false decl (t, !uctx) [] [] impl
+        pi3 (Command.declare_assumption false decl (t, !uctx) Universes.empty_binders [] impl
           Vernacexpr.NoInline (Loc.tag id))
       | Some b ->
         let ctx = Univ.ContextSet.to_context !uctx in
         let decl = (Discharge, poly, Definition) in
         let entry = Declare.definition_entry ~poly ~univs:ctx ~types:t b in
         let hook = Lemmas.mk_hook (fun _ gr -> gr) in
-        let _ = DeclareDef.declare_definition id decl entry [] [] hook in
+        let _ = DeclareDef.declare_definition id decl entry Universes.empty_binders [] hook in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in
 	status && nstatus

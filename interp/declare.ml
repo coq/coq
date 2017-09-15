@@ -462,11 +462,11 @@ type universe_decl = polymorphic * Universes.universe_binders
 let cache_universes (p, l) =
   let glob = Global.global_universe_names () in
   let glob', ctx =
-    List.fold_left (fun ((idl,lid),ctx) (id, lev) ->
+    Id.Map.fold (fun id lev ((idl,lid),ctx) ->
         ((Id.Map.add id (p, lev) idl,
           Univ.LMap.add lev id lid),
          Univ.ContextSet.add_universe lev ctx))
-      (glob, Univ.ContextSet.empty) l
+      l (glob, Univ.ContextSet.empty)
   in
   cache_universe_context (p, ctx);
   Global.set_global_universe_names glob'
@@ -487,9 +487,9 @@ let do_universe poly l =
                    (str"Cannot declare polymorphic universes outside sections")
   in
   let l =
-    List.map (fun (l, id) ->
+    List.fold_left (fun acc (l, id) ->
 	      let lev = Universes.new_univ_level (Global.current_dirpath ()) in
-	      (id, lev)) l
+              Id.Map.add id lev acc) Id.Map.empty l
   in
     Lib.add_anonymous_leaf (input_universes (poly, l))
 

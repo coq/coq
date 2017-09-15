@@ -484,7 +484,7 @@ let declare_definition prg =
   let () = progmap_remove prg in
   let cst =
     DeclareDef.declare_definition prg.prg_name
-     prg.prg_kind ce [] prg.prg_implicits
+     prg.prg_kind ce Universes.empty_binders prg.prg_implicits
      (Lemmas.mk_hook (fun l r -> Lemmas.call_hook fix_exn prg.prg_hook l r prg.prg_ctx; r))
   in
   Universes.register_universe_binders cst pl;
@@ -554,7 +554,7 @@ let declare_mutual_definition l =
   (* Declare the recursive definitions *)
   let ctx = Evd.evar_context_universe_context first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
-  let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) [] ctx)
+  let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) Universes.empty_binders ctx)
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
     List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;

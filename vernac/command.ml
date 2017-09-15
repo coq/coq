@@ -258,7 +258,7 @@ let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
   let l = List.map (on_pi2 nf_evar) l in
   pi2 (List.fold_left (fun (subst,status,ctx) ((is_coe,idl),t,imps) ->
     let t = replace_vars subst t in
-    let (refs,status') = declare_assumptions idl is_coe kind (t,ctx) [] imps false nl in
+    let (refs,status') = declare_assumptions idl is_coe kind (t,ctx) Universes.empty_binders imps false nl in
     let subst' = List.map2 
       (fun (_,id) (c,u) -> (id,Universes.constr_of_global_univ (c,u)))
       idl refs 
