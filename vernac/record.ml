@@ -266,11 +266,10 @@ let warn_non_primitive_record =
                     strbrk" could not be defined as a primitive record")))
 
 (* We build projections *)
-let declare_projections indsp ?(kind=StructureComponent) binder_name coers ubinders fieldimpls fields =
+let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers ubinders fieldimpls fields =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
   let poly = Declareops.inductive_is_polymorphic mib in
-  let ctx = Univ.AUContext.repr (Declareops.inductive_polymorphic_context mib) in
   let u = Univ.UContext.instance ctx in
   let paramdecls = Inductive.inductive_paramdecls (mib, u) in
   let indu = indsp, u in
@@ -394,7 +393,7 @@ let declare_structure finite ubinders univs id idbuild paramimpls params arity t
   let type_constructor = it_mkProd_or_LetIn ind fields in
   let poly, ctx =
     match univs with
-    | Monomorphic_ind_entry ctx -> false, ctx
+    | Monomorphic_ind_entry ctx -> false, Univ.UContext.empty
     | Polymorphic_ind_entry ctx -> true, ctx
     | Cumulative_ind_entry cumi -> true, (Univ.CumulativityInfo.univ_context cumi)
   in
@@ -430,20 +429,13 @@ let declare_structure finite ubinders univs id idbuild paramimpls params arity t
     else
        mie
   in
-  let kn = Command.declare_mutual_inductive_with_eliminations mie Universes.empty_binders [(paramimpls,[])] in
+  let kn = Command.declare_mutual_inductive_with_eliminations mie ubinders [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
   let cstr = (rsp,1) in
-  let fields =
-    if poly then
-      let subst, _ = Univ.abstract_universes ctx in
-      Context.Rel.map (fun c -> Vars.subst_univs_level_constr subst c) fields
-    else fields
-  in
-  let kinds,sp_projs = declare_projections rsp ~kind binder_name coers ubinders fieldimpls fields in
+  let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name coers ubinders fieldimpls fields in
   let build = ConstructRef cstr in
   let () = if is_coe then Class.try_add_new_coercion build ~local:false poly in
   Recordops.declare_structure(rsp,cstr,List.rev kinds,List.rev sp_projs);
-  Universes.register_universe_binders (IndRef rsp) ubinders;
   rsp
 
 let implicits_of_context ctx =
