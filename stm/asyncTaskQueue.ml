@@ -10,7 +10,7 @@ open CErrors
 open Pp
 open Util
 
-let stm_pr_err pp = Format.eprintf "%s] @[%a@]%!\n" (System.process_id ()) Pp.pp_with pp
+let stm_pr_err pp = Format.eprintf "%s] @[%a@]\n%!" (System.process_id ()) Pp.pp_with pp
 
 let stm_prerr_endline s = if !Flags.debug then begin stm_pr_err (str s) end else ()
 
