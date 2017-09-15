@@ -142,3 +142,8 @@ Fail Notation "'foobarkeyword'" := (@nil) (only parsing, only printing).
 Reserved Notation "x === y" (at level 50).
 Inductive EQ {A} (x:A) : A -> Prop := REFL : x === x
  where "x === y" := (EQ x y).
+
+(* Check that strictly ident or _ are coerced to a name *)
+
+Fail Check {x@{u},y|x=x}.
+Fail Check {?[n],y|0=0}.

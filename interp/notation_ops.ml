@@ -288,28 +288,29 @@ let compare_recursive_parts found f f' (iterator,subc) =
 	user_err ?loc:(subtract_loc loc1 loc2)
           (str "Both ends of the recursive pattern are the same.")
     | Some (x,y,RecursiveTerms lassoc) ->
-        let newfound,x,y,lassoc =
+        let toadd,x,y,lassoc =
           if List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi2 !found) ||
              List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi3 !found)
           then
-            !found,x,y,lassoc
+            None,x,y,lassoc
           else if List.mem_f (pair_equal Id.equal Id.equal) (y,x) (pi2 !found) ||
                   List.mem_f (pair_equal Id.equal Id.equal) (y,x) (pi3 !found)
           then
-            !found,y,x,not lassoc
+            None,y,x,not lassoc
           else
-            (pi1 !found, (x,y) :: pi2 !found, pi3 !found),x,y,lassoc in
+            Some (x,y),x,y,lassoc in
 	let iterator =
 	  f' (if lassoc then iterator
 	      else subst_glob_vars [x, CAst.make @@ GVar y] iterator) in
-	(* found have been collected by compare_constr *)
-	found := newfound;
+	(* found variables have been collected by compare_constr *)
+	found := (List.remove Id.equal y (pi1 !found),
+                  Option.fold_right (fun a l -> a::l) toadd (pi2 !found),
+                  pi3 !found);
 	NList (x,y,iterator,f (Option.get !terminator),lassoc)
     | Some (x,y,RecursiveBinders (t_x,t_y)) ->
-	let newfound = (pi1 !found, pi2 !found, (x,y) :: pi3 !found) in
 	let iterator = f' (subst_glob_vars [x, CAst.make @@ GVar y] iterator) in
 	(* found have been collected by compare_constr *)
-	found := newfound;
+	found := (List.remove Id.equal y (pi1 !found), pi2 !found, (x,y) :: pi3 !found);
 	check_is_hole x t_x;
 	check_is_hole y t_y;
 	NBinderList (x,y,iterator,f (Option.get !terminator))
@@ -334,7 +335,7 @@ let notation_constr_and_vars_of_glob_constr a =
     | _c ->
 	aux' c
   and aux' x = CAst.with_val (function
-  | GVar id -> add_id found id; NVar id
+  | GVar id -> if not (Id.equal id ldots_var) then add_id found id; NVar id
   | GApp (g,args) -> NApp (aux g, List.map aux args)
   | GLambda (na,bk,ty,c) -> add_name found na; NLambda (na,aux ty,aux c)
   | GProd (na,bk,ty,c) -> add_name found na; NProd (na,aux ty,aux c)
@@ -803,7 +804,7 @@ let bind_bindinglist_env alp (terms,onlybinders,termlists,binderlists as sigma) 
        alp, b :: bl
     | _ -> raise No_match in
     let alp, bl = unify alp bl bl' in
-    let sigma = (terms,Id.List.remove_assoc var onlybinders,termlists,binderlists) in
+    let sigma = (terms,onlybinders,termlists,Id.List.remove_assoc var binderlists) in
     alp, add_bindinglist_env sigma var bl
   with Not_found ->
     alp, add_bindinglist_env sigma var bl
@@ -884,12 +885,12 @@ let glue_letin_with_decls = true
 
 let rec match_iterated_binders islambda decls bi = CAst.(with_loc_val (fun ?loc -> function
   | GLambda (Name p,bk,t, { v = GCases (LetPatternStyle,None,[({ v = GVar e },_)],[(_,(ids,[cp],b))])})
-      when islambda && Id.equal p e ->
+      when islambda && Id.equal p e && not (occur_glob_constr p b) ->
       match_iterated_binders islambda ((CAst.make ?loc @@ GLocalPattern((cp,ids),p,bk,t))::decls) b
   | GLambda (na,bk,t,b) when islambda ->
       match_iterated_binders islambda ((CAst.make ?loc @@ GLocalAssum(na,bk,t))::decls) b
   | GProd (Name p,bk,t, { v = GCases (LetPatternStyle,None,[({ v = GVar e },_)],[(_,(ids,[cp],b))]) } )
-      when not islambda && Id.equal p e ->
+      when not islambda && Id.equal p e && not (occur_glob_constr p b) ->
       match_iterated_binders islambda ((CAst.make ?loc @@ GLocalPattern((cp,ids),p,bk,t))::decls) b
   | GProd ((Name _ as na),bk,t,b) when not islambda ->
       match_iterated_binders islambda ((CAst.make ?loc @@ GLocalAssum(na,bk,t))::decls) b
@@ -975,7 +976,8 @@ let rec match_ inner u alp metas sigma a1 a2 =
 
   (* "λ p, let 'cp = p in t" -> "λ 'cp, t" *)
   | GLambda (Name p,bk,t1, { v = GCases (LetPatternStyle,None,[({ v = GVar e},_)],[(_,(ids,[cp],b1))])}),
-    NBinderList (x,_,NLambda (Name _id2,_,b2),termin) when Id.equal p e ->
+    NBinderList (x,_,NLambda (Name _id2,_,b2),termin)
+      when Id.equal p e && not (occur_glob_constr p b1) ->
       let (decls,b) = match_iterated_binders true [CAst.make ?loc @@ GLocalPattern((cp,ids),p,bk,t1)] b1 in
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
       match_in u alp metas sigma b termin
@@ -989,7 +991,8 @@ let rec match_ inner u alp metas sigma a1 a2 =
 
   (* "∀ p, let 'cp = p in t" -> "∀ 'cp, t" *)
   | GProd (Name p,bk,t1, { v = GCases (LetPatternStyle,None,[({ v = GVar e },_)],[(_,(ids,[cp],b1))]) } ),
-    NBinderList (x,_,NProd (Name _id2,_,b2),(NVar v as termin)) when Id.equal p e ->
+    NBinderList (x,_,NProd (Name _id2,_,b2),(NVar v as termin))
+      when Id.equal p e && not (occur_glob_constr p b1) ->
       let (decls,b) = match_iterated_binders true [CAst.make ?loc @@ GLocalPattern ((cp,ids),p,bk,t1)] b1 in
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
       match_in u alp metas sigma b termin
@@ -1007,7 +1010,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
   (* Matching individual binders as part of a recursive pattern *)
   | GLambda (Name p,bk,t, { v = GCases (LetPatternStyle,None,[({ v = GVar e },_)],[(_,(ids,[cp],b1))])}),
     NLambda (Name id,_,b2)
-      when is_bindinglist_meta id metas ->
+      when Id.equal p e && is_bindinglist_meta id metas && not (occur_glob_constr p b1) ->
       let alp,sigma = bind_bindinglist_env alp sigma id [CAst.make ?loc @@ GLocalPattern ((cp,ids),p,bk,t)] in
       match_in u alp metas sigma b1 b2
   | GLambda (na,bk,t,b1), NLambda (Name id,_,b2)
