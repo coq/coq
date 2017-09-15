@@ -2811,6 +2811,8 @@ sig
   val print_constr_env : Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t
   val clear_named_body : Names.Id.t -> Environ.env -> Environ.env
   val is_Prop : Evd.evar_map -> EConstr.constr -> bool
+  val is_Set : Evd.evar_map -> EConstr.constr -> bool
+  val is_Type : Evd.evar_map -> EConstr.constr -> bool
   val is_global : Evd.evar_map -> Globnames.global_reference -> EConstr.constr -> bool
 
   val eq_constr : Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool
