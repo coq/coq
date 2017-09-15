@@ -4131,7 +4131,7 @@ let guess_elim isrec dep s hyp0 gl =
       let env = Tacmach.New.pf_env gl in
       let sigma = Tacmach.New.project gl in
       let u = EInstance.kind (Tacmach.New.project gl) u in
-      if use_dependent_propositions_elimination () && dep
+      if use_dependent_propositions_elimination () && dep = Some true
       then
         let (sigma, ind) = build_case_analysis_scheme env sigma (mind, u) true s in
         let ind = EConstr.of_constr ind in
@@ -4165,7 +4165,7 @@ let find_induction_type isrec elim hyp0 gl =
     | None ->
        let sort = Tacticals.New.elimination_sort_of_goal gl in
        let _, (elimc,elimt),_ = 
-	 guess_elim isrec (* dummy: *) true sort hyp0 gl in
+	 guess_elim isrec None sort hyp0 gl in
 	let scheme = compute_elim_sig sigma ~elimc elimt in
 	(* We drop the scheme waiting to know if it is dependent *)
 	scheme, ElimOver (isrec,hyp0)
@@ -4199,7 +4199,7 @@ let get_eliminator elim dep s gl =
   | ElimUsing (elim,indsign) ->
       Tacmach.New.project gl, (* bugged, should be computed *) true, elim, indsign
   | ElimOver (isrec,id) ->
-      let evd, (elimc,elimt),_ as elims = guess_elim isrec dep s id gl in
+      let evd, (elimc,elimt),_ as elims = guess_elim isrec (Some dep) s id gl in
       let _, (l, s) = compute_elim_signature elims id in
       let branchlengthes = List.map (fun d -> assert (RelDecl.is_local_assum d); pi1 (decompose_prod_letin (Tacmach.New.project gl) (RelDecl.get_type d)))
                                     (List.rev s.branches)
