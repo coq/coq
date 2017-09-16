@@ -315,6 +315,9 @@ let check_univ_decl uctx decl =
   ctx
 
 let restrict ctx vars =
+  let vars = Names.Id.Map.fold (fun na l vars -> Univ.LSet.add l vars)
+      (fst ctx.uctx_names) vars
+  in
   let uctx' = Univops.restrict_universe_context ctx.uctx_local vars in
   { ctx with uctx_local = uctx' }
 

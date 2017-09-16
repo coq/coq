@@ -401,6 +401,19 @@ Module Anonymous.
 
 End Anonymous.
 
+Module Restrict.
+  (* Universes which don't appear in the term should be pruned, unless they have names *)
+  Set Universe Polymorphism.
+
+  Definition dummy_pruned@{} : nat := ltac:(let x := constr:(Type) in exact 0).
+
+  Definition named_not_pruned@{u} : nat := 0.
+  Check named_not_pruned@{_}.
+
+  Definition named_not_pruned_nonstrict : nat := ltac:(let x := constr:(Type@{u}) in exact 0).
+  Check named_not_pruned_nonstrict@{_}.
+End Restrict.
+
 Module F.
   Context {A B : Type}.
   Definition foo : Type := B.
