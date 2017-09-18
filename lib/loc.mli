@@ -40,6 +40,11 @@ val merge : t -> t -> t
 val merge_opt : t option -> t option -> t option
 (** Merge locations, usually generating the largest possible span *)
 
+val shift_loc : int -> int -> t -> t
+(** [shift_loc loc n p] shifts the beginning of location by [n] and
+    the end by [p]; it is assumed that the shifts do not change the
+    lines at which the location starts and ends *)
+
 (** {5 Located exceptions} *)
 
 val add_loc : Exninfo.info -> t -> Exninfo.info
