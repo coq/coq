@@ -63,6 +63,8 @@ let enforce_locality locality_flag local =
 
 let enforce_locality_exp locality_flag local =
   match locality_flag, local with
+  | None, Some Decl_kinds.Local ->
+     warn_deprecated_local_syntax (); Decl_kinds.Local
   | None, Some local -> local
   | Some b, None -> local_of_bool b
   | None, None -> Decl_kinds.Global
