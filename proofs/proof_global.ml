@@ -330,7 +330,6 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
   in
   let fpl, univs = Future.split2 fpl in
   let universes = if poly || now then Future.force univs else initial_euctx in
-  let univctx = UState.check_univ_decl ~poly universes universe_decl in
   let binders = if poly then Some (UState.universe_binders universes) else None in
   (* Because of dependent subgoals at the beginning of proofs, we could
      have existential variables in the initial types of goals, we need to
@@ -375,6 +374,8 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
        fun t p -> Future.split2 (Future.chain p (make_body t))
     else
       fun t p ->
+        (* Already checked the univ_decl for the type universes when starting the proof. *)
+        let univctx = Entries.Monomorphic_const_entry (UState.context_set universes) in
         Future.from_val (univctx, nf t),
         Future.chain p (fun (pt,eff) ->
           (* Deferred proof, we already checked the universe declaration with

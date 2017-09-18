@@ -405,13 +405,25 @@ Module Restrict.
   (* Universes which don't appear in the term should be pruned, unless they have names *)
   Set Universe Polymorphism.
 
-  Definition dummy_pruned@{} : nat := ltac:(let x := constr:(Type) in exact 0).
+  Ltac exact0 := let x := constr:(Type) in exact 0.
+  Definition dummy_pruned@{} : nat := ltac:(exact0).
 
   Definition named_not_pruned@{u} : nat := 0.
   Check named_not_pruned@{_}.
 
   Definition named_not_pruned_nonstrict : nat := ltac:(let x := constr:(Type@{u}) in exact 0).
   Check named_not_pruned_nonstrict@{_}.
+
+  Lemma lemma_restrict_poly@{} : nat.
+  Proof. exact0. Defined.
+
+  Unset Universe Polymorphism.
+  Lemma lemma_restrict_mono_qed@{} : nat.
+  Proof. exact0. Qed.
+
+  Lemma lemma_restrict_abstract@{} : nat.
+  Proof. abstract exact0. Qed.
+
 End Restrict.
 
 Module F.
