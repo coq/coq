@@ -43,5 +43,5 @@ type unparsing =
   | UnpListMetaVar of int * parenRelation * unparsing list
   | UnpBinderListMetaVar of int * bool * unparsing list
   | UnpTerminal of string
-  | UnpBox of ppbox * unparsing list
+  | UnpBox of ppbox * unparsing Loc.located list
   | UnpCut of ppcut
