@@ -316,10 +316,6 @@ let get_open_goals () =
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) gll) +
     List.length shelf
 
-let constrain_variables init uctx =
-  let levels = Univ.Instance.levels (Univ.UContext.instance init) in
-  UState.constrain_variables levels uctx
-
 type closed_proof_output = (Constr.t * Safe_typing.private_constants) list * UState.t
 
 let close_proof ~keep_body_ucst_separate ?feedback_id ~now
@@ -329,9 +325,12 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
   let poly = pi2 strength (* Polymorphic *) in
   let initial_goals = Proof.initial_goals proof in
   let initial_euctx = Proof.initial_euctx proof in
+  let constrain_variables ctx =
+    UState.constrain_variables (fst (UState.context_set initial_euctx)) ctx
+  in
   let fpl, univs = Future.split2 fpl in
   let universes = if poly || now then Future.force univs else initial_euctx in
-  let univctx = UState.check_univ_decl universes universe_decl in
+  let univctx = UState.check_univ_decl ~poly universes universe_decl in
   let binders = if poly then Some (UState.universe_binders universes) else None in
   (* Because of dependent subgoals at the beginning of proofs, we could
      have existential variables in the initial types of goals, we need to
@@ -353,15 +352,15 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
         let used_univs_typ = Univops.universes_of_constr typ in
         if keep_body_ucst_separate ||
            not (Safe_typing.empty_private_constants = eff) then
-          let initunivs = UState.context initial_euctx in
-          let ctx = constrain_variables initunivs universes in
+          let initunivs = UState.const_univ_entry ~poly initial_euctx in
+          let ctx = constrain_variables universes in
           (* For vi2vo compilation proofs are computed now but we need to
              complement the univ constraints of the typ with the ones of
              the body.  So we keep the two sets distinct. *)
 	  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
           let ctx_body = UState.restrict ctx used_univs in
-          let univs = UState.check_univ_decl ctx_body universe_decl in
-          (initunivs, typ), ((body, Univ.ContextSet.of_context univs), eff)
+          let univs = UState.check_mono_univ_decl ctx_body universe_decl in
+          (initunivs, typ), ((body, univs), eff)
         else
           (* Since the proof is computed now, we can simply have 1 set of
              constraints in which we merge the ones for the body and the ones
@@ -370,7 +369,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
              TODO: check if restrict is really necessary now. *)
           let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
           let ctx = UState.restrict universes used_univs in
-          let univs = UState.check_univ_decl ctx universe_decl in
+          let univs = UState.check_univ_decl ~poly ctx universe_decl in
           (univs, typ), ((body, Univ.ContextSet.empty), eff)
       in 
        fun t p -> Future.split2 (Future.chain p (make_body t))
@@ -382,20 +381,14 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
              the initial universes, ensure that the final universes respect
              the declaration as well. If the declaration is non-extensible,
              this will prevent the body from adding universes and constraints. *)
-          let bodyunivs = constrain_variables univctx (Future.force univs) in
-          let univs = UState.check_univ_decl bodyunivs universe_decl in
-          (pt,Univ.ContextSet.of_context univs),eff)
+          let bodyunivs = constrain_variables (Future.force univs) in
+          let univs = UState.check_mono_univ_decl bodyunivs universe_decl in
+          (pt,univs),eff)
   in
   let entry_fn p (_, t) =
     let t = EConstr.Unsafe.to_constr t in
     let univstyp, body = make_body t p in
     let univs, typ = Future.force univstyp in
-    let univs =
-      if poly then Entries.Polymorphic_const_entry univs
-      else
-        (* FIXME be smarter about the unnecessary context linearisation in make_body *)
-        Entries.Monomorphic_const_entry (Univ.ContextSet.of_context univs)
-    in
     {Entries.
       const_entry_body = body;
       const_entry_secctx = section_vars;

@@ -2764,6 +2764,9 @@ sig
   val context_set : t -> Univ.ContextSet.t
   val of_context_set : Univ.ContextSet.t -> t
 
+  val const_univ_entry : poly:bool -> t -> Entries.constant_universes_entry
+  val ind_univ_entry : poly:bool -> t -> Entries.inductive_universes
+
   type rigid =
     | UnivRigid
     | UnivFlexible of bool
@@ -2887,6 +2890,8 @@ sig
     val from_ctx : UState.t -> evar_map
 
     val to_universe_context : evar_map -> Univ.UContext.t
+    val const_univ_entry : poly:bool -> evar_map -> Entries.constant_universes_entry
+    val ind_univ_entry : poly:bool -> evar_map -> Entries.inductive_universes
 
     val meta_list : evar_map -> (Constr.metavariable * clbinding) list
 
@@ -4669,11 +4674,11 @@ sig
 
   val declare_definition :
     ?internal:internal_flag -> ?opaque:bool -> ?kind:Decl_kinds.definition_object_kind ->
-    ?local:bool -> ?poly:Decl_kinds.polymorphic -> Names.Id.t -> ?types:Constr.t ->
-    Constr.t Univ.in_universe_context_set -> Names.Constant.t
+    ?local:bool -> Names.Id.t -> ?types:Constr.t ->
+    Constr.t Entries.in_constant_universes_entry -> Names.Constant.t
   val definition_entry : ?fix_exn:Future.fix_exn ->
     ?opaque:bool -> ?inline:bool -> ?types:Constr.types ->
-    ?poly:Decl_kinds.polymorphic -> ?univs:Univ.UContext.t ->
+    ?univs:Entries.constant_universes_entry ->
     ?eff:Safe_typing.private_constants -> Constr.t -> Safe_typing.private_constants Entries.definition_entry
   val definition_message : Names.Id.t -> unit
   val declare_variable : Names.Id.t -> variable_declaration -> Libnames.object_name

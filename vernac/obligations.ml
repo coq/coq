@@ -475,12 +475,8 @@ let declare_definition prg =
     (Evd.evar_universe_context_subst prg.prg_ctx) in
   let opaque = prg.prg_opaque in
   let fix_exn = Hook.get get_fix_exn () in
-  let () = ignore(UState.check_univ_decl prg.prg_ctx prg.prg_univdecl) in
-  let ce =
-    definition_entry ~fix_exn
-     ~opaque ~types:(nf typ) ~poly:(pi2 prg.prg_kind)
-     ~univs:(UState.context prg.prg_ctx) (nf body)
-  in
+  let univs = UState.check_univ_decl ~poly:(pi2 prg.prg_kind) prg.prg_ctx prg.prg_univdecl in
+  let ce = definition_entry ~fix_exn ~opaque ~types:(nf typ) ~univs (nf body) in
   let () = progmap_remove prg in
   let ubinders = UState.universe_binders prg.prg_ctx in
   DeclareDef.declare_definition prg.prg_name
@@ -549,9 +545,9 @@ let declare_mutual_definition l =
             mk_proof (mkCoFix (i,fixdecls))) 0 l
   in
   (* Declare the recursive definitions *)
-  let ctx = UState.context first.prg_ctx in
+  let univs = UState.const_univ_entry ~poly first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
-  let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) Universes.empty_binders ctx)
+  let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) Universes.empty_binders univs)
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
     List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;
@@ -856,10 +852,7 @@ let obligation_terminator name num guard hook auto pf =
         | (_, status), Vernacexpr.Transparent -> status
       in
       let obl = { obl with obl_status = false, status } in
-      let uctx = if pi2 prg.prg_kind
-        then Polymorphic_const_entry (UState.context ctx)
-        else Monomorphic_const_entry (UState.context_set ctx)
-      in
+      let uctx = UState.const_univ_entry ~poly:(pi2 prg.prg_kind) ctx in
       let (_, obl) = declare_obligation prg obl body ty uctx in
       let obls = Array.copy obls in
       let _ = obls.(num) <- obl in

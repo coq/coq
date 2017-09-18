@@ -66,8 +66,8 @@ let find_reference sl s =
   let dp = Names.DirPath.make (List.rev_map Id.of_string sl) in
   locate (make_qualid dp (Id.of_string s))
 
-let declare_fun f_id kind ?(ctx=Univ.UContext.empty) value =
-  let ce = definition_entry ~univs:ctx value (*FIXME *) in
+let declare_fun f_id kind ?univs value =
+  let ce = definition_entry ?univs value (*FIXME *) in
     ConstRef(declare_constant f_id (DefinitionEntry ce, kind));;
 
 let defined () = Lemmas.save_proof (Vernacexpr.(Proved (Transparent,None)))
@@ -1556,8 +1556,8 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let functional_id =  add_suffix function_name "_F" in
   let term_id = add_suffix function_name "_terminate" in
   let functional_ref =
-    let ctx = Evd.to_universe_context evm in
-    declare_fun functional_id (IsDefinition Decl_kinds.Definition) ~ctx res
+    let univs = Entries.Monomorphic_const_entry (Evd.universe_context_set evm) in
+    declare_fun functional_id (IsDefinition Decl_kinds.Definition) ~univs res
   in
   (* Refresh the global universes, now including those of _F *)
   let evm = Evd.from_env (Global.env ()) in

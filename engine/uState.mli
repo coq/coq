@@ -59,6 +59,13 @@ val constraints : t -> Univ.constraints
 val context : t -> Univ.UContext.t
 (** Shorthand for {!context_set} with {!Context_set.to_context}. *)
 
+val const_univ_entry : poly:bool -> t -> Entries.constant_universes_entry
+(** Pick from {!context} or {!context_set} based on [poly]. *)
+
+val ind_univ_entry : poly:bool -> t -> Entries.inductive_universes
+(** Pick from {!context} or {!context_set} based on [poly].
+    Cannot create cumulative entries. *)
+
 (** {5 Constraints handling} *)
 
 val add_constraints : t -> Univ.constraints -> t
@@ -133,11 +140,15 @@ type universe_decl =
    If non extensible in [decl], check that the local universes (resp.
    universe constraints) in [ctx] are implied by [decl].
 
-   Return a universe context containing the local universes of [ctx]
-   and their constraints. The universes corresponding to
+   Return a [Entries.constant_universes_entry] containing the local
+   universes of [ctx] and their constraints.
+
+   When polymorphic, the universes corresponding to
    [decl.univdecl_instance] come first in the order defined by that
    list. *)
-val check_univ_decl : t -> universe_decl -> Univ.UContext.t
+val check_univ_decl : poly:bool -> t -> universe_decl -> Entries.constant_universes_entry
+
+val check_mono_univ_decl : t -> universe_decl -> Univ.ContextSet.t
 
 (** {5 TODO: Document me} *)
 

@@ -119,9 +119,9 @@ let declare_instance_constant k info global imps ?hook id decl poly evm term ter
 				 (Univops.universes_of_constr term) in
     Evd.restrict_universe_context evm levels 
   in
-  let uctx = Evd.check_univ_decl evm decl in
+  let uctx = Evd.check_univ_decl ~poly evm decl in
   let entry = 
-    Declare.definition_entry ~types:termtype ~poly ~univs:uctx term
+    Declare.definition_entry ~types:termtype ~univs:uctx term
   in
   let cdecl = (DefinitionEntry entry, kind) in
   let kn = Declare.declare_constant id cdecl in
@@ -203,16 +203,10 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
             nf t
         in
         Pretyping.check_evars env Evd.empty !evars (EConstr.of_constr termtype);
-        let ctx = Evd.check_univ_decl !evars decl in
-        let ctx = if poly
-          then Polymorphic_const_entry ctx
-          else
-            (* FIXME be smarter about this *)
-            Monomorphic_const_entry (Univ.ContextSet.of_context ctx)
-        in
+        let univs = Evd.check_univ_decl ~poly !evars decl in
         let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
           (ParameterEntry
-            (None,(termtype,ctx),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
+            (None,(termtype,univs),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
         in
           Universes.register_universe_binders (ConstRef cst) (Evd.universe_binders !evars);
           instance_hook k pri global imps ?hook (ConstRef cst); id
@@ -391,19 +385,16 @@ let context poly l =
   let fn status (id, b, t) =
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
       (* Declare the universe context once *)
-      let univs = !uctx in
+      let univs = if poly
+        then Polymorphic_const_entry (Univ.ContextSet.to_context !uctx)
+        else Monomorphic_const_entry !uctx
+      in
       let () = uctx := Univ.ContextSet.empty in
       let decl = match b with
       | None ->
-        let univs = if poly
-          then Polymorphic_const_entry (Univ.ContextSet.to_context univs)
-          else Monomorphic_const_entry univs
-        in
         (ParameterEntry (None,(t,univs),None), IsAssumption Logical)
       | Some b ->
-        (* FIXME be smarter about this *)
-        let univs = Univ.ContextSet.to_context univs in
-        let entry = Declare.definition_entry ~poly ~univs ~types:t b in
+        let entry = Declare.definition_entry ~univs ~types:t b in
         (DefinitionEntry entry, IsAssumption Logical)
       in
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
@@ -426,9 +417,12 @@ let context poly l =
         pi3 (Command.declare_assumption false decl (t, !uctx) Universes.empty_binders [] impl
           Vernacexpr.NoInline (Loc.tag id))
       | Some b ->
-        let ctx = Univ.ContextSet.to_context !uctx in
+        let univs = if poly
+          then Polymorphic_const_entry (Univ.ContextSet.to_context !uctx)
+          else Monomorphic_const_entry !uctx
+        in
         let decl = (Discharge, poly, Definition) in
-        let entry = Declare.definition_entry ~poly ~univs:ctx ~types:t b in
+        let entry = Declare.definition_entry ~univs ~types:t b in
         let hook = Lemmas.mk_hook (fun _ gr -> gr) in
         let _ = DeclareDef.declare_definition id decl entry Universes.empty_binders [] hook in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()

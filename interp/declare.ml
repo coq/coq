@@ -203,14 +203,9 @@ let declare_constant_common id cst =
   update_tables c;
   c
 
+let default_univ_entry = Monomorphic_const_entry Univ.ContextSet.empty
 let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
-    ?(poly=false) ?(univs=Univ.UContext.empty) ?(eff=Safe_typing.empty_private_constants) body =
-  let univs =
-    if poly then Polymorphic_const_entry univs
-    else
-      (* FIXME be smarter about this *)
-      Monomorphic_const_entry (Univ.ContextSet.of_context univs)
-  in
+    ?(univs=default_univ_entry) ?(eff=Safe_typing.empty_private_constants) body =
   { const_entry_body = Future.from_val ?fix_exn ((body,Univ.ContextSet.empty), eff);
     const_entry_secctx = None;
     const_entry_type = types;
@@ -263,9 +258,9 @@ let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(e
 
 let declare_definition ?(internal=UserIndividualRequest)
   ?(opaque=false) ?(kind=Decl_kinds.Definition) ?(local = false)
-  ?(poly=false) id ?types (body,ctx) =
+  id ?types (body,univs) =
   let cb =
-    definition_entry ?types ~poly ~univs:(Univ.ContextSet.to_context ctx) ~opaque body
+    definition_entry ?types ~univs ~opaque body
   in
     declare_constant ~internal ~local id
       (Entries.DefinitionEntry cb, Decl_kinds.IsDefinition kind)

@@ -758,7 +758,10 @@ let universe_context_set d = UState.context_set d.universes
 
 let to_universe_context evd = UState.context evd.universes
 
-let check_univ_decl evd decl = UState.check_univ_decl evd.universes decl
+let const_univ_entry ~poly evd = UState.const_univ_entry ~poly evd.universes
+let ind_univ_entry ~poly evd = UState.ind_univ_entry ~poly evd.universes
+
+let check_univ_decl ~poly evd decl = UState.check_univ_decl ~poly evd.universes decl
 
 let restrict_universe_context evd vars =
   { evd with universes = UState.restrict evd.universes vars }

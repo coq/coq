@@ -1884,11 +1884,11 @@ let declare_projection n instance_id r =
     in it_mkProd_or_LetIn ccl ctx
   in
   let typ = it_mkProd_or_LetIn typ ctx in
-  let ctx = Evd.to_universe_context sigma in
+  let univs = Evd.const_univ_entry ~poly sigma in
   let typ = EConstr.to_constr sigma typ in
   let term = EConstr.to_constr sigma term in
   let cst = 
-    Declare.definition_entry ~types:typ ~poly ~univs:ctx term
+    Declare.definition_entry ~types:typ ~univs term
   in
     ignore(Declare.declare_constant n 
 	   (Entries.DefinitionEntry cst, Decl_kinds.IsDefinition Decl_kinds.Definition))
@@ -1972,10 +1972,7 @@ let add_morphism_infer glob m n =
   let evd = Evd.from_env env in
   let uctx, instance = build_morphism_signature env evd m in
     if Lib.is_modtype () then
-      let uctx = if poly
-        then Entries.Polymorphic_const_entry (UState.context uctx)
-        else Entries.Monomorphic_const_entry (UState.context_set uctx)
-      in
+      let uctx = UState.const_univ_entry ~poly uctx in
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest instance_id
 				(Entries.ParameterEntry 
                                  (None,(instance,uctx),None),

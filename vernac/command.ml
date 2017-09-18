@@ -88,7 +88,7 @@ let warn_implicits_in_term =
           strbrk "Implicit arguments declaration relies on type." ++ spc () ++
             strbrk "The term declares more implicits than the type here.")
         
-let interp_definition pl bl p red_option c ctypopt =
+let interp_definition pl bl poly red_option c ctypopt =
   let env = Global.env() in
   let evd, decl = Univdecls.interp_univ_decl_opt env pl in
   let evdref = ref evd in
@@ -105,15 +105,15 @@ let interp_definition pl bl p red_option c ctypopt =
 	let c = EConstr.Unsafe.to_constr c in
         let nf,subst = Evarutil.e_nf_evars_and_universes evdref in
         let body = nf (it_mkLambda_or_LetIn c ctx) in
-	let vars = Univops.universes_of_constr body in
-	let evd = Evd.restrict_universe_context !evdref vars in
-        let uctx = Evd.check_univ_decl evd decl in
+        let vars = Univops.universes_of_constr body in
+        let evd = Evd.restrict_universe_context !evdref vars in
+        let uctx = Evd.check_univ_decl ~poly evd decl in
         let binders = Evd.universe_binders evd in
         imps1@(Impargs.lift_implicits nb_args imps2), binders,
-	  definition_entry ~univs:uctx ~poly:p body
+          definition_entry ~univs:uctx body
     | Some ctyp ->
-	let ty, impsty = interp_type_evars_impls ~impls env_bl evdref ctyp in
-	let subst = evd_comb0 Evd.nf_univ_variables evdref in
+        let ty, impsty = interp_type_evars_impls ~impls env_bl evdref ctyp in
+        let subst = evd_comb0 Evd.nf_univ_variables evdref in
 	let ctx = Context.Rel.map (Vars.subst_univs_constr subst) ctx in
 	let env_bl = push_rel_context ctx env in
 	let c, imps2 = interp_casted_constr_evars_impls ~impls env_bl evdref c ty in
@@ -134,10 +134,10 @@ let interp_definition pl bl p red_option c ctypopt =
         let vars = Univ.LSet.union (Univops.universes_of_constr body) 
           (Univops.universes_of_constr typ) in
         let ctx = Evd.restrict_universe_context !evdref vars in
-        let uctx = Evd.check_univ_decl ctx decl in
+        let uctx = Evd.check_univ_decl ~poly ctx decl in
         let binders = Evd.universe_binders evd in
         imps1@(Impargs.lift_implicits nb_args impsty), binders,
-	  definition_entry ~types:typ ~poly:p 
+          definition_entry ~types:typ
 	    ~univs:uctx body
   in
   red_constant_entry (Context.Rel.length ctx) ce !evdref red_option, !evdref, decl, pl, imps
@@ -282,9 +282,14 @@ let do_assumptions_bound_univs coe kind nl id pl c =
   let ty = nf ty in
   let vars = Univops.universes_of_constr ty in
   let evd = Evd.restrict_universe_context !evdref vars in
-  let uctx = Evd.check_univ_decl evd decl in
+  let uctx = Evd.check_univ_decl ~poly:(pi2 kind) evd decl in
   let binders = Evd.universe_binders evd in
-  let uctx = Univ.ContextSet.of_context uctx in
+  let uctx = match uctx with
+    | Polymorphic_const_entry uctx ->
+      (* ?? *)
+      Univ.ContextSet.of_context uctx
+    | Monomorphic_const_entry uctx -> uctx
+  in
   let (_, _, st) = declare_assumption coe kind (ty, uctx) binders impls false nl id in
   st
 
@@ -582,7 +587,7 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf' cl,impsl)) constructors in
   let ctx_params = Context.Rel.map nf ctx_params in
   let evd = !evdref in
-  let uctx = Evd.check_univ_decl evd decl in
+  let uctx = Evd.check_univ_decl ~poly evd decl in
   List.iter (fun c -> check_evars env_params Evd.empty evd (EConstr.of_constr c)) arities;
   Context.Rel.iter (fun c -> check_evars env0 Evd.empty evd (EConstr.of_constr c)) ctx_params;
   List.iter (fun (_,ctyps,_) ->
@@ -604,12 +609,13 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
 	  userimpls @ (lift_implicits len impls)) cimpls) indimpls constructors
   in
   let univs =
-    if poly then
+    match uctx with
+    | Polymorphic_const_entry uctx ->
       if cum then
         Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context uctx)
       else Polymorphic_ind_entry uctx
-    else
-      Monomorphic_ind_entry (Univ.ContextSet.of_context uctx)
+    | Monomorphic_const_entry uctx ->
+      Monomorphic_ind_entry uctx
   in
   (* Build the mutual inductive entry *)
   let mind_ent =
@@ -1032,9 +1038,9 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
         let body = it_mkLambda_or_LetIn (mkApp (Evarutil.e_new_global evdref gr, [|make|])) binders_rel in
         let ty = it_mkProd_or_LetIn top_arity binders_rel in
         let ty = EConstr.Unsafe.to_constr ty in
-        let univs = Evd.check_univ_decl !evdref decl in
+        let univs = Evd.check_univ_decl ~poly !evdref decl in
         (*FIXME poly? *)
-        let ce = definition_entry ~poly ~types:ty ~univs (EConstr.to_constr !evdref body) in
+        let ce = definition_entry ~types:ty ~univs (EConstr.to_constr !evdref body) in
         (** FIXME: include locality *)
         let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
         let gr = ConstRef c in
@@ -1173,7 +1179,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
       List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
     let evd = Evd.from_ctx ctx in
     let evd = Evd.restrict_universe_context evd vars in
-    let ctx = Evd.check_univ_decl evd pl in
+    let ctx = Evd.check_univ_decl ~poly evd pl in
     let pl = Evd.universe_binders evd in
     let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
     ignore (List.map4 (DeclareDef.declare_fix (local, poly, Fixpoint) pl ctx)
@@ -1206,7 +1212,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
     let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
     let evd = Evd.from_ctx ctx in
     let evd = Evd.restrict_universe_context evd vars in
-    let ctx = Evd.check_univ_decl evd pl in
+    let ctx = Evd.check_univ_decl ~poly evd pl in
     let pl = Evd.universe_binders evd in
     ignore (List.map4 (DeclareDef.declare_fix (local, poly, CoFixpoint) pl ctx)
 	      fixnames fixdecls fixtypes fiximps);

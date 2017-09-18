@@ -224,7 +224,7 @@ let compute_proof_name locality = function
     let avoid = Id.Set.of_list (Proof_global.get_all_proof_names ()) in
       next_global_ident_away default_thm_id avoid
 
-let save_remaining_recthms (locality,p,kind) norm ctx body opaq i (id,(t_i,(_,imps))) =
+let save_remaining_recthms (locality,p,kind) norm univs body opaq i (id,(t_i,(_,imps))) =
   let t_i = norm t_i in
   match body with
   | None ->
@@ -232,7 +232,13 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i (id,(t_i,(_,im
       | Discharge ->
           let impl = false in (* copy values from Vernacentries *)
           let k = IsAssumption Conjectural in
-          let c = SectionLocalAssum ((t_i,Univ.ContextSet.of_context ctx),p,impl) in
+          let univs = match univs with
+            | Polymorphic_const_entry univs ->
+              (* What is going on here? *)
+              Univ.ContextSet.of_context univs
+            | Monomorphic_const_entry univs -> univs
+          in
+          let c = SectionLocalAssum ((t_i, univs),p,impl) in
 	  let _ = declare_variable id (Lib.cwd(),c,k) in
           (Discharge, VarRef id,imps)
       | Local | Global ->
@@ -242,11 +248,7 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i (id,(t_i,(_,im
           | Global -> false
           | Discharge -> assert false
           in
-          let ctx = if p
-            then Polymorphic_const_entry ctx
-            else Monomorphic_const_entry (Univ.ContextSet.of_context ctx)
-          in
-          let decl = (ParameterEntry (None,(t_i,ctx),None), k) in
+          let decl = (ParameterEntry (None,(t_i,univs),None), k) in
           let kn = declare_constant id ~local decl in
           (locality,ConstRef kn,imps))
   | Some body ->
@@ -264,8 +266,7 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i (id,(t_i,(_,im
       let body_i = body_i body in
       match locality with
       | Discharge ->
-          let const = definition_entry ~types:t_i ~opaque:opaq ~poly:p 
-	    ~univs:ctx body_i in
+          let const = definition_entry ~types:t_i ~opaque:opaq ~univs body_i in
 	  let c = SectionLocalDef const in
 	  let _ = declare_variable id (Lib.cwd(), c, k) in
           (Discharge,VarRef id,imps)
@@ -276,7 +277,7 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i (id,(t_i,(_,im
         | Discharge -> assert false
         in
         let const =
-	  Declare.definition_entry ~types:t_i ~poly:p ~univs:ctx ~opaque:opaq body_i
+          Declare.definition_entry ~types:t_i ~univs ~opaque:opaq body_i
 	in
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
         (locality,ConstRef kn,imps)
@@ -425,7 +426,7 @@ let start_proof_with_initialization kind ctx decl recguard thms snl hook =
             let body,opaq = retrieve_first_recthm ctx ref in
             let subst = Evd.evar_universe_context_subst ctx in
             let norm c = Universes.subst_opt_univs_constr subst c in
-            let ctx = UState.check_univ_decl ctx decl in
+            let ctx = UState.check_univ_decl ~poly:(pi2 kind) ctx decl in
             let body = Option.map norm body in
             List.map_i (save_remaining_recthms kind norm ctx body opaq) 1 other_thms in
         let thms_data = (strength,ref,imps)::other_thms_data in
@@ -460,7 +461,7 @@ let start_proof_com ?inference_hook kind thms hook =
   let () =
     let open Misctypes in
     if not (decl.univdecl_extensible_instance && decl.univdecl_extensible_constraints) then
-       ignore (Evd.check_univ_decl evd decl)
+       ignore (Evd.check_univ_decl ~poly:(pi2 kind) evd decl)
   in
   let evd =
     if pi2 kind then evd
@@ -495,10 +496,7 @@ let save_proof ?proof = function
             if const_entry_type = None then
               user_err Pp.(str "Admitted requires an explicit statement");
             let typ = Option.get const_entry_type in
-            let ctx = if pi2 k (* polymorphic *)
-              then Polymorphic_const_entry (UState.context (fst universes))
-              else Monomorphic_const_entry (UState.context_set (fst universes))
-            in
+            let ctx = UState.const_univ_entry ~poly:(pi2 k) (fst universes) in
             let sec_vars = if !keep_admitted_vars then const_entry_secctx else None in
             Admitted(id, k, (sec_vars, (typ, ctx), None), universes)
         | None ->
@@ -521,12 +519,8 @@ let save_proof ?proof = function
               | _ -> None in
 	    let decl = Proof_global.get_universe_decl () in
             let evd = Evd.from_ctx universes in
-            let ctx = Evd.check_univ_decl evd decl in
             let poly = pi2 k in
-            let ctx = if poly
-              then Polymorphic_const_entry ctx
-              else Monomorphic_const_entry (Univ.ContextSet.of_context ctx)
-            in
+            let ctx = Evd.check_univ_decl ~poly evd decl in
             let binders = if poly then Some (UState.universe_binders universes) else None in
             Admitted(id,k,(sec_vars, (typ, ctx), None),
 		     (universes, binders))

@@ -150,13 +150,13 @@ let ic_unsafe c = (*FIXME remove *)
   let sigma = Evd.from_env env in
     EConstr.of_constr (fst (Constrintern.interp_constr env sigma c))
 
-let decl_constant na ctx c =
+let decl_constant na univs c =
   let open Constr in
   let vars = Univops.universes_of_constr c in
-  let ctx = Univops.restrict_universe_context (Univ.ContextSet.of_context ctx) vars in
+  let univs = Univops.restrict_universe_context univs vars in
+  let univs = Monomorphic_const_entry univs in
   mkConst(declare_constant (Id.of_string na) 
-	    (DefinitionEntry (definition_entry ~opaque:true
-				~univs:(Univ.ContextSet.to_context ctx) c),
+            (DefinitionEntry (definition_entry ~opaque:true ~univs c),
 	     IsProof Lemma))
 
 (* Calling a global tactic *)
@@ -220,7 +220,7 @@ let exec_tactic env evd n f args =
   let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter]))) gl in
   let evd, nf = Evarutil.nf_evars_and_universes (Refiner.project gls) in
   let nf c = nf (constr_of c) in
-  Array.map nf !tactic_res, Evd.to_universe_context evd
+  Array.map nf !tactic_res, Evd.universe_context_set evd
 
 let stdlib_modules =
   [["Coq";"Setoids";"Setoid"];
