@@ -129,12 +129,12 @@ let parse_format ((loc, str) : lstring) =
   and parse_quoted n i =
     if i < len then match str.[i] with
       (* Parse " // " *)
-      | '/' when i <= len && str.[i+1] == '/' ->
-          (* We forget the useless n spaces... *)
+      | '/' when i+1 < len && str.[i+1] == '/' ->
+          (* We discard the useless n spaces... *)
 	  push_token (UnpCut PpFnl)
             (parse_token 1 (close_quotation (i+2)))
       (* Parse " .. / .. " *)
-      | '/' when i <= len ->
+      | '/' when i+1 < len ->
 	  let p = spaces 0 (i+1) in
 	  push_token (UnpCut (PpBrk (n,p)))
             (parse_token 1 (close_quotation (i+p+1)))
