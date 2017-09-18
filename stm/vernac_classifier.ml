@@ -31,8 +31,7 @@ let string_of_vernac_type = function
         Option.default "" proof_block_detection
   | VtProofMode s -> "ProofMode " ^ s
   | VtQuery (b, route) -> "Query " ^ string_of_in_script b ^ " route " ^ string_of_int route
-  | VtStm ((VtJoinDocument|VtWait), b) -> "Stm " ^ string_of_in_script b
-  | VtStm (VtBack _, b) -> "Stm Back " ^ string_of_in_script b
+  | VtBack (b, _) -> "Stm Back " ^ string_of_in_script b
 
 let string_of_vernac_when = function
   | VtLater -> "Later"
@@ -64,9 +63,6 @@ let rec classify_vernac e =
      * look at the entire dag to detect this option. *)
     | VernacSetOption (["Universe"; "Polymorphism"],_)
     | VernacUnsetOption (["Universe"; "Polymorphism"]) -> VtSideff [], VtNow
-    (* Stm *)
-    | VernacStm Wait         -> VtStm (VtWait, true), VtNow
-    | VernacStm JoinDocument -> VtStm (VtJoinDocument, true), VtNow
     (* Nested vernac exprs *)
     | VernacProgram e -> classify_vernac e
     | VernacLocal (_,e) -> classify_vernac e
@@ -79,7 +75,7 @@ let rec classify_vernac e =
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match classify_vernac e with
         | ( VtQuery _ | VtProofStep _ | VtSideff _
-          | VtStm _ | VtProofMode _ ), _ as x -> x
+          | VtBack _ | VtProofMode _ ), _ as x -> x
         | VtQed _, _ ->
             VtProofStep { parallel = `No; proof_block_detection = None },
             VtNow

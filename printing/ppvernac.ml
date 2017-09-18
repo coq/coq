@@ -524,12 +524,6 @@ open Decl_kinds
       | VernacLocal (local, v) ->
         return (pr_locality local ++ spc() ++ pr_vernac_body v)
 
-      (* Stm *)
-      | VernacStm JoinDocument ->
-        return (keyword "Stm JoinDocument")
-      | VernacStm Wait ->
-        return (keyword "Stm Wait")
-
       (* Proof management *)
       | VernacAbortAll ->
         return (keyword "Abort All")

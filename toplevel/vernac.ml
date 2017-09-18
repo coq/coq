@@ -134,7 +134,7 @@ let rec interp_vernac sid (loc,com) =
          document. Hopefully this is fixed when VtBack can be removed
          and Undo etc... are just interpreted regularly. *)
       let is_proof_step = match fst (Vernac_classifier.classify_vernac v) with
-        | VtProofStep _ | VtStm (VtBack _, _) | VtStartProof _ -> true
+        | VtProofStep _ | VtBack (_, _) | VtStartProof _ -> true
         | _ -> false
       in
 

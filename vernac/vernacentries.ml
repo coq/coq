@@ -1924,7 +1924,6 @@ let interp ?proof ?loc locality poly c =
   | VernacTime _ -> assert false
   | VernacRedirect _ -> assert false
   | VernacTimeout _ -> assert false
-  | VernacStm _ -> assert false
 
   (* The STM should handle that, but LOAD bypasses the STM... *)
   | VernacAbortAll    -> CErrors.user_err  (str "AbortAll cannot be used through the Load command")
@@ -2184,10 +2183,6 @@ let with_fail b f =
 let interp ?(verbosely=true) ?proof (loc,c) =
   let orig_program_mode = Flags.is_program_mode () in
   let rec aux ?locality ?polymorphism isprogcmd = function
-
-    (* This assert case will be removed when fake_ide can understand
-       completion feedback *)
-    | VernacStm _ -> assert false (* Done by Stm *)
 
     | VernacProgram c when not isprogcmd -> aux ?locality ?polymorphism true c
     | VernacProgram _ -> user_err Pp.(str "Program mode specified twice")
