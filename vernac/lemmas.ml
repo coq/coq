@@ -242,7 +242,11 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i (id,(t_i,(_,im
           | Global -> false
           | Discharge -> assert false
           in
-          let decl = (ParameterEntry (None,p,(t_i,ctx),None), k) in
+          let ctx = if p
+            then Polymorphic_const_entry ctx
+            else Monomorphic_const_entry (Univ.ContextSet.of_context ctx)
+          in
+          let decl = (ParameterEntry (None,(t_i,ctx),None), k) in
           let kn = declare_constant id ~local decl in
           (locality,ConstRef kn,imps))
   | Some body ->
@@ -491,9 +495,12 @@ let save_proof ?proof = function
             if const_entry_type = None then
               user_err Pp.(str "Admitted requires an explicit statement");
             let typ = Option.get const_entry_type in
-            let ctx = UState.context (fst universes) in
+            let ctx = if pi2 k (* polymorphic *)
+              then Polymorphic_const_entry (UState.context (fst universes))
+              else Monomorphic_const_entry (UState.context_set (fst universes))
+            in
             let sec_vars = if !keep_admitted_vars then const_entry_secctx else None in
-            Admitted(id, k, (sec_vars, pi2 k, (typ, ctx), None), universes)
+            Admitted(id, k, (sec_vars, (typ, ctx), None), universes)
         | None ->
             let pftree = Proof_global.give_me_the_proof () in
             let id, k, typ = Pfedit.current_proof_statement () in
@@ -516,8 +523,12 @@ let save_proof ?proof = function
             let evd = Evd.from_ctx universes in
             let ctx = Evd.check_univ_decl evd decl in
             let poly = pi2 k in
+            let ctx = if poly
+              then Polymorphic_const_entry ctx
+              else Monomorphic_const_entry (Univ.ContextSet.of_context ctx)
+            in
             let binders = if poly then Some (UState.universe_binders universes) else None in
-            Admitted(id,k,(sec_vars, poly, (typ, ctx), None),
+            Admitted(id,k,(sec_vars, (typ, ctx), None),
 		     (universes, binders))
       in
       Proof_global.apply_terminator (Proof_global.get_terminator ()) pe

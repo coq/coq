@@ -200,16 +200,22 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 	let nf, subst = Evarutil.e_nf_evars_and_universes evars in
 	let termtype =
 	  let t = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
-	    nf t
-	in
-	Pretyping.check_evars env Evd.empty !evars (EConstr.of_constr termtype);
+            nf t
+        in
+        Pretyping.check_evars env Evd.empty !evars (EConstr.of_constr termtype);
         let ctx = Evd.check_univ_decl !evars decl in
-	let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
-	  (ParameterEntry 
-            (None,poly,(termtype,ctx),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
-	in
+        let ctx = if poly
+          then Polymorphic_const_entry ctx
+          else
+            (* FIXME be smarter about this *)
+            Monomorphic_const_entry (Univ.ContextSet.of_context ctx)
+        in
+        let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
+          (ParameterEntry
+            (None,(termtype,ctx),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
+        in
           Universes.register_universe_binders (ConstRef cst) (Evd.universe_binders !evars);
-	  instance_hook k pri global imps ?hook (ConstRef cst); id
+          instance_hook k pri global imps ?hook (ConstRef cst); id
       end
     else (
       let props =
@@ -384,14 +390,20 @@ let context poly l =
   let uctx = ref (Evd.universe_context_set !evars) in
   let fn status (id, b, t) =
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
-      let ctx = Univ.ContextSet.to_context !uctx in
       (* Declare the universe context once *)
+      let univs = !uctx in
       let () = uctx := Univ.ContextSet.empty in
       let decl = match b with
       | None ->
-        (ParameterEntry (None,poly,(t,ctx),None), IsAssumption Logical)
+        let univs = if poly
+          then Polymorphic_const_entry (Univ.ContextSet.to_context univs)
+          else Monomorphic_const_entry univs
+        in
+        (ParameterEntry (None,(t,univs),None), IsAssumption Logical)
       | Some b ->
-        let entry = Declare.definition_entry ~poly ~univs:ctx ~types:t b in
+        (* FIXME be smarter about this *)
+        let univs = Univ.ContextSet.to_context univs in
+        let entry = Declare.definition_entry ~poly ~univs ~types:t b in
         (DefinitionEntry entry, IsAssumption Logical)
       in
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in

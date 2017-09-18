@@ -50,6 +50,6 @@ Type@{Top.17} -> Type@{v} -> Type@{u}
 foo is universe polymorphic
 Monomorphic mono = Type@{u}
      : Type@{u+1}
-(* u |=  *)
+(* {u} |=  *)
 
 mono is not universe polymorphic

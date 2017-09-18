@@ -109,10 +109,10 @@ let _ =
 
 let define id internal ctx c t =
   let f = declare_constant ~internal in
-  let univs = Evd.to_universe_context ctx in
   let univs =
-    if Flags.is_universe_polymorphism () then Polymorphic_const_entry univs
-    else Monomorphic_const_entry univs
+    if Flags.is_universe_polymorphism ()
+    then Polymorphic_const_entry (Evd.to_universe_context ctx)
+    else Monomorphic_const_entry (Evd.universe_context_set ctx)
   in
   let kn = f id
     (DefinitionEntry

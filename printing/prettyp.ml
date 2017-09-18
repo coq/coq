@@ -556,26 +556,26 @@ let print_constant with_values sep sp =
       Vars.subst_instance_constr inst cb.const_type
   in
   let univs =
+    let open Entries in
     let otab = Global.opaque_tables () in
     match cb.const_body with
     | Undef _ | Def _ ->
       begin
         match cb.const_universes with
-        | Monomorphic_const ctx -> ctx
+        | Monomorphic_const ctx -> Monomorphic_const_entry ctx
         | Polymorphic_const ctx ->
           let inst = Univ.AUContext.instance ctx in
-          Univ.UContext.make (inst, Univ.AUContext.instantiate inst ctx)
+          Polymorphic_const_entry (Univ.UContext.make (inst, Univ.AUContext.instantiate inst ctx))
       end
     | OpaqueDef o ->
       let body_uctxs = Opaqueproof.force_constraints otab o in
       match cb.const_universes with
       | Monomorphic_const ctx ->
-        let uctxs = Univ.ContextSet.of_context ctx in
-        Univ.ContextSet.to_context (Univ.ContextSet.union body_uctxs uctxs)
+        Monomorphic_const_entry (Univ.ContextSet.union body_uctxs ctx)
       | Polymorphic_const ctx ->
         assert(Univ.ContextSet.is_empty body_uctxs);
         let inst = Univ.AUContext.instance ctx in
-        Univ.UContext.make (inst, Univ.AUContext.instantiate inst ctx)
+        Polymorphic_const_entry (Univ.UContext.make (inst, Univ.AUContext.instantiate inst ctx))
   in
   let ctx =
     Evd.evar_universe_context_of_binders
@@ -589,12 +589,12 @@ let print_constant with_values sep sp =
 	str"*** [ " ++
 	print_basename sp ++ print_instance sigma cb ++ str " : " ++ cut () ++ pr_ltype typ ++
 	str" ]" ++
-	Printer.pr_universe_ctx sigma univs
+        Printer.pr_constant_universes sigma univs
     | Some (c, ctx) ->
         let c = Vars.subst_instance_constr (Univ.AUContext.instance ctx) c in
 	print_basename sp ++ print_instance sigma cb ++ str sep ++ cut () ++
 	(if with_values then print_typed_body env sigma (Some c,typ) else pr_ltype typ)++
-        Printer.pr_universe_ctx sigma univs)
+        Printer.pr_constant_universes sigma univs)
 
 let gallina_print_constant_with_infos sp =
   print_constant true " = " sp ++

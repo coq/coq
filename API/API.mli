@@ -1417,7 +1417,7 @@ sig
     | TemplateArity of 'b
 
   type constant_universes =
-    | Monomorphic_const of Univ.UContext.t
+    | Monomorphic_const of Univ.ContextSet.t
     | Polymorphic_const of Univ.AUContext.t
 
   type projection_body = {
@@ -1484,7 +1484,7 @@ sig
                        | MEwith of module_alg_expr * with_declaration
 
   type abstract_inductive_universes =
-  | Monomorphic_ind of Univ.UContext.t
+  | Monomorphic_ind of Univ.ContextSet.t
   | Polymorphic_ind of Univ.AUContext.t
   | Cumulative_ind of Univ.ACumulativityInfo.t
 
@@ -1551,7 +1551,7 @@ sig
     | LocalAssumEntry of constr
 
   type inductive_universes =
-    | Monomorphic_ind_entry of Univ.UContext.t
+    | Monomorphic_ind_entry of Univ.ContextSet.t
     | Polymorphic_ind_entry of Univ.UContext.t
     | Cumulative_ind_entry of Univ.CumulativityInfo.t
 
@@ -1580,8 +1580,9 @@ sig
   type 'a proof_output = Constr.t Univ.in_universe_context_set * 'a
   type 'a const_entry_body = 'a proof_output Future.computation
   type constant_universes_entry =
-    | Monomorphic_const_entry of Univ.UContext.t
+    | Monomorphic_const_entry of Univ.ContextSet.t
     | Polymorphic_const_entry of Univ.UContext.t
+  type 'a in_constant_universes_entry = 'a * constant_universes_entry
   type 'a definition_entry =
                                { const_entry_body   : 'a const_entry_body;
                                  (* List of section variables *)
@@ -1592,7 +1593,7 @@ sig
                                  const_entry_universes   : constant_universes_entry;
                                  const_entry_opaque      : bool;
                                  const_entry_inline_code : bool }
-  type parameter_entry = Context.Named.t option * bool * Constr.types Univ.in_universe_context * inline
+  type parameter_entry = Context.Named.t option * Constr.types in_constant_universes_entry * inline
 
   type projection_entry = {
     proj_entry_ind : MutInd.t;

@@ -208,7 +208,7 @@ type constant_def =
   | OpaqueDef of lazy_constr
 
 type constant_universes =
-  | Monomorphic_const of Univ.universe_context
+  | Monomorphic_const of Univ.ContextSet.t
   | Polymorphic_const of Univ.abstract_universe_context
 
 (** The [typing_flags] are instructions to the type-checker which
@@ -303,7 +303,7 @@ type one_inductive_body = {
   }
 
 type abstract_inductive_universes =
-  | Monomorphic_ind of Univ.universe_context
+  | Monomorphic_ind of Univ.ContextSet.t
   | Polymorphic_ind of Univ.abstract_universe_context
   | Cumulative_ind of Univ.abstract_cumulativity_info
 

@@ -270,7 +270,10 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
   let poly = Declareops.inductive_is_polymorphic mib in
-  let u = Univ.UContext.instance ctx in
+  let u = match ctx with
+    | Polymorphic_const_entry ctx -> Univ.UContext.instance ctx
+    | Monomorphic_const_entry ctx -> Univ.Instance.empty
+  in
   let paramdecls = Inductive.inductive_paramdecls (mib, u) in
   let indu = indsp, u in
   let r = mkIndU (indsp,u) in
@@ -327,16 +330,12 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
 		let projtyp =
                   it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
 	        try
-                  let univs =
-                    if poly then Polymorphic_const_entry ctx
-                    else Monomorphic_const_entry ctx
-                  in
 		  let entry = {
 		    const_entry_body =
 		      Future.from_val (Safe_typing.mk_pure_proof proj);
 		    const_entry_secctx = None;
 		    const_entry_type = Some projtyp;
-		    const_entry_universes = univs;
+                    const_entry_universes = ctx;
 		    const_entry_opaque = false;
 		    const_entry_inline_code = false;
 		    const_entry_feedback = None } in
@@ -391,11 +390,14 @@ let declare_structure finite ubinders univs id idbuild paramimpls params arity t
   let args = Context.Rel.to_extended_list mkRel nfields params in
   let ind = applist (mkRel (1+nparams+nfields), args) in
   let type_constructor = it_mkProd_or_LetIn ind fields in
-  let poly, ctx =
+  let template, ctx =
     match univs with
-    | Monomorphic_ind_entry ctx -> false, Univ.UContext.empty
-    | Polymorphic_ind_entry ctx -> true, ctx
-    | Cumulative_ind_entry cumi -> true, (Univ.CumulativityInfo.univ_context cumi)
+    | Monomorphic_ind_entry ctx ->
+      template, Monomorphic_const_entry Univ.ContextSet.empty
+    | Polymorphic_ind_entry ctx ->
+      false, Polymorphic_const_entry ctx
+    | Cumulative_ind_entry cumi ->
+      false, Polymorphic_const_entry (Univ.CumulativityInfo.univ_context cumi)
   in
   let binder_name = 
     match name with
@@ -405,7 +407,7 @@ let declare_structure finite ubinders univs id idbuild paramimpls params arity t
   let mie_ind =
     { mind_entry_typename = id;
       mind_entry_arity = arity;
-      mind_entry_template = not poly && template;
+      mind_entry_template = template;
       mind_entry_consnames = [idbuild];
       mind_entry_lc = [type_constructor] }
   in
@@ -419,14 +421,13 @@ let declare_structure finite ubinders univs id idbuild paramimpls params arity t
     }
   in
   let mie =
-    if poly then
-      begin
+    match ctx with
+    | Polymorphic_const_entry ctx ->
         let env = Global.env () in
         let env' = Environ.push_context ctx env in
         let evd = Evd.from_env env' in
         Inductiveops.infer_inductive_subtyping env' evd mie
-      end
-    else
+    | Monomorphic_const_entry _ ->
        mie
   in
   let kn = Command.declare_mutual_inductive_with_eliminations mie ubinders [(paramimpls,[])] in
@@ -434,6 +435,7 @@ let declare_structure finite ubinders univs id idbuild paramimpls params arity t
   let cstr = (rsp,1) in
   let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name coers ubinders fieldimpls fields in
   let build = ConstructRef cstr in
+  let poly = match ctx with | Polymorphic_const_entry _ -> true | Monomorphic_const_entry _ -> false in
   let () = if is_coe then Class.try_add_new_coercion build ~local:false poly in
   Recordops.declare_structure(rsp,cstr,List.rev kinds,List.rev sp_projs);
   rsp
@@ -499,7 +501,7 @@ let declare_class finite def cum poly ubinders ctx id idbuild paramimpls params 
            else
              Polymorphic_ind_entry ctx
          else
-           Monomorphic_ind_entry ctx
+           Monomorphic_ind_entry (Univ.ContextSet.of_context ctx)
        in
        let ind = declare_structure BiFinite ubinders univs (snd id) idbuild paramimpls
 	  params arity template fieldimpls fields
@@ -626,7 +628,7 @@ let definition_structure (kind,cum,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cf
           else
             Polymorphic_ind_entry ctx
         else
-          Monomorphic_ind_entry ctx
+          Monomorphic_ind_entry (Univ.ContextSet.of_context ctx)
       in
       let ind = declare_structure finite pl univs idstruc
 	  idbuild implpars params arity template implfs 

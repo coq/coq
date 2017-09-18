@@ -633,12 +633,11 @@ let declare_obligation prg obl body ty uctx =
 	  shrink_body body ty else [], body, ty, [||]
       in
       let body = ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
-      let univs = if poly then Polymorphic_const_entry uctx else Monomorphic_const_entry uctx in
       let ce =
         { const_entry_body = Future.from_val ~fix_exn:(fun x -> x) body;
           const_entry_secctx = None;
 	  const_entry_type = ty;
-	  const_entry_universes = univs;
+          const_entry_universes = uctx;
 	  const_entry_opaque = opaque;
           const_entry_inline_code = false;
           const_entry_feedback = None;
@@ -647,13 +646,15 @@ let declare_obligation prg obl body ty uctx =
       let constant = Declare.declare_constant obl.obl_name ~local:true
 	(DefinitionEntry ce,IsProof Property)
       in
-	if not opaque then add_hint (Locality.make_section_locality None) prg constant;
-	definition_message obl.obl_name;
-	true, { obl with obl_body =
-	    if poly then
-	      Some (DefinedObl (constant, Univ.UContext.instance uctx))
-	    else
-	      Some (TermObl (it_mkLambda_or_LetIn_or_clean (mkApp (mkConst constant, args)) ctx)) }
+      if not opaque then add_hint (Locality.make_section_locality None) prg constant;
+      definition_message obl.obl_name;
+      let body = match uctx with
+        | Polymorphic_const_entry uctx ->
+          Some (DefinedObl (constant, Univ.UContext.instance uctx))
+        | Monomorphic_const_entry _ ->
+          Some (TermObl (it_mkLambda_or_LetIn_or_clean (mkApp (mkConst constant, args)) ctx))
+      in
+      true, { obl with obl_body = body }
 
 let init_prog_info ?(opaque = false) sign n udecl b t ctx deps fixkind
 		   notations obls impls kind reduce hook =
@@ -855,7 +856,10 @@ let obligation_terminator name num guard hook auto pf =
         | (_, status), Vernacexpr.Transparent -> status
       in
       let obl = { obl with obl_status = false, status } in
-      let uctx = UState.context ctx in
+      let uctx = if pi2 prg.prg_kind
+        then Polymorphic_const_entry (UState.context ctx)
+        else Monomorphic_const_entry (UState.context_set ctx)
+      in
       let (_, obl) = declare_obligation prg obl body ty uctx in
       let obls = Array.copy obls in
       let _ = obls.(num) <- obl in
@@ -967,13 +971,16 @@ and solve_obligation_by_tac prg obls i tac =
 	    let evd = Evd.from_ctx prg.prg_ctx in
 	    let evd = Evd.update_sigma_env evd (Global.env ()) in
 	    let t, ty, ctx =
-	      solve_by_tac obl.obl_name (evar_of_obligation obl) tac
-	        (pi2 prg.prg_kind) (Evd.evar_universe_context evd)
-	    in
-            let uctx = UState.context ctx in
-	    let prg = {prg with prg_ctx = ctx} in
-	    let def, obl' = declare_obligation prg obl t ty uctx in
-	      obls.(i) <- obl';
+              solve_by_tac obl.obl_name (evar_of_obligation obl) tac
+                (pi2 prg.prg_kind) (Evd.evar_universe_context evd)
+            in
+            let uctx = if pi2 prg.prg_kind
+              then Polymorphic_const_entry (UState.context ctx)
+              else Monomorphic_const_entry (UState.context_set ctx)
+            in
+            let prg = {prg with prg_ctx = ctx} in
+            let def, obl' = declare_obligation prg obl t ty uctx in
+              obls.(i) <- obl';
 	      if def && not (pi2 prg.prg_kind) then (
 	        (* Declare the term constraints with the first obligation only *)
 	        let evd = Evd.from_env (Global.env ()) in
@@ -1121,9 +1128,9 @@ let admit_prog prg =
         match x.obl_body with
         | None ->
             let x = subst_deps_obl obls x in
-            let ctx = UState.context prg.prg_ctx in
+            let ctx = Monomorphic_const_entry (UState.context_set prg.prg_ctx) in
             let kn = Declare.declare_constant x.obl_name ~local:true
-              (ParameterEntry (None,false,(x.obl_type,ctx),None), IsAssumption Conjectural)
+              (ParameterEntry (None,(x.obl_type,ctx),None), IsAssumption Conjectural)
             in
               assumption_message x.obl_name;
               obls.(i) <- { x with obl_body = Some (DefinedObl (kn, Univ.Instance.empty)) }

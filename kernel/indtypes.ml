@@ -265,13 +265,12 @@ let typecheck_inductive env mie =
   (* Check unicity of names *)
   mind_check_names mie;
   (* Params are typed-checked here *)
-  let univctx =
+  let env' =
     match mie.mind_entry_universes with
-    | Monomorphic_ind_entry ctx -> ctx
-    | Polymorphic_ind_entry ctx -> ctx
-    | Cumulative_ind_entry cumi -> Univ.CumulativityInfo.univ_context cumi
+    | Monomorphic_ind_entry ctx -> push_context_set ctx env
+    | Polymorphic_ind_entry ctx -> push_context ctx env
+    | Cumulative_ind_entry cumi -> push_context (Univ.CumulativityInfo.univ_context cumi) env
   in
-  let env' = push_context univctx env in
   let (env_params,paramsctxt) = infer_local_decls env' mie.mind_entry_params in
   (* We first type arity of each inductive definition *)
   (* This allows building the environment of arities and to share *)

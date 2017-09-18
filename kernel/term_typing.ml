@@ -125,11 +125,10 @@ let inline_side_effects env body ctx side_eff =
       | _ -> assert false
       in
       match cb.const_universes with
-      | Monomorphic_const cnstctx ->
+      | Monomorphic_const univs ->
         (** Abstract over the term at the top of the proof *)
         let ty = cb.const_type in
         let subst = Cmap_env.add c (Inr var) subst in
-        let univs = Univ.ContextSet.of_context cnstctx in
         let ctx = Univ.ContextSet.union ctx univs in
         (subst, var + 1, ctx, (cname c, b, ty, opaque) :: args)
       | Polymorphic_const auctx ->
@@ -228,19 +227,25 @@ let feedback_completion_typecheck =
   Option.iter (fun state_id ->
       feedback ~id:state_id Feedback.Complete)
 
-let abstract_constant_universes abstract uctx =
-  if not abstract then
+let abstract_constant_universes abstract = function
+  | Monomorphic_const_entry uctx ->
     Univ.empty_level_subst, Monomorphic_const uctx
-  else
-    let sbst, auctx = Univ.abstract_universes uctx in
-    sbst, Polymorphic_const auctx
+  | Polymorphic_const_entry uctx ->
+    if not abstract then
+      Univ.empty_level_subst, Monomorphic_const (Univ.ContextSet.of_context uctx)
+    else
+      let sbst, auctx = Univ.abstract_universes uctx in
+      sbst, Polymorphic_const auctx
 
 let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry) =
   match dcl with
-  | ParameterEntry (ctx,poly,(t,uctx),nl) ->
-      let env = push_context ~strict:(not poly) uctx env in
+    | ParameterEntry (ctx,(t,uctx),nl) ->
+      let env = match uctx with
+        | Monomorphic_const_entry uctx -> push_context_set ~strict:true uctx env
+        | Polymorphic_const_entry uctx -> push_context ~strict:false uctx env
+      in
       let j = infer env t in
-      let abstract = poly && not (Option.is_empty kn) in
+      let abstract = not (Option.is_empty kn) in
       let usubst, univs = 
         abstract_constant_universes abstract uctx
       in
@@ -262,7 +267,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
   | DefinitionEntry ({ const_entry_type = Some typ;
                        const_entry_opaque = true;
 		       const_entry_universes = Monomorphic_const_entry univs } as c) ->
-      let env = push_context ~strict:true univs env in
+      let env = push_context_set ~strict:true univs env in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let tyj = infer_type env typ in
       let proofterm =
@@ -301,21 +306,22 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
       let { const_entry_type = typ; const_entry_opaque = opaque } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let (body, ctx), side_eff = Future.join body in
-      let poly, univs = match c.const_entry_universes with
+      let poly, univsctx = match c.const_entry_universes with
       | Monomorphic_const_entry univs -> false, univs
-      | Polymorphic_const_entry univs -> true, univs
+      | Polymorphic_const_entry univs -> true, Univ.ContextSet.of_context univs
       in
-      let univsctx = Univ.ContextSet.of_context univs in
       let ctx = Univ.ContextSet.union univsctx ctx in
       let body, ctx, _ = match trust with
       | Pure -> body, ctx, []
       | SideEffects _ -> inline_side_effects env body ctx side_eff
       in
       let env = push_context_set ~strict:(not poly) ctx env in
-      let abstract = poly && not (Option.is_empty kn) in
-      let usubst, univs =
-        abstract_constant_universes abstract (Univ.ContextSet.to_context ctx)
-      in      
+      let abstract = not (Option.is_empty kn) in
+      let ctx = if poly
+        then Polymorphic_const_entry (Univ.ContextSet.to_context ctx)
+        else Monomorphic_const_entry ctx
+      in
+      let usubst, univs = abstract_constant_universes abstract ctx in
       let j = infer env body in
       let typ = match typ with
         | None ->
@@ -556,7 +562,7 @@ let export_side_effects mb env ce =
             let env = Environ.add_constant kn cb env in
             match cb.const_universes with
             | Monomorphic_const ctx ->
-              Environ.push_context ~strict:true ctx env
+              Environ.push_context_set ~strict:true ctx env
             | Polymorphic_const _ -> env
           end
         | kn, cb, `Opaque(_, ctx), _ ->
@@ -564,7 +570,7 @@ let export_side_effects mb env ce =
             let env = Environ.add_constant kn cb env in
             match cb.const_universes with
             | Monomorphic_const cstctx ->
-              let env = Environ.push_context ~strict:true cstctx env in
+              let env = Environ.push_context_set ~strict:true cstctx env in
               Environ.push_context_set ~strict:true ctx env
             | Polymorphic_const _ -> env
           end

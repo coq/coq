@@ -63,7 +63,7 @@ type constant_def =
   | OpaqueDef of Opaqueproof.opaque       (** or an opaque global definition *)
 
 type constant_universes =
-  | Monomorphic_const of Univ.UContext.t
+  | Monomorphic_const of Univ.ContextSet.t
   | Polymorphic_const of Univ.AUContext.t
 
 (** The [typing_flags] are instructions to the type-checker which
@@ -168,9 +168,9 @@ type one_inductive_body = {
   }
 
 type abstract_inductive_universes =
-  | Monomorphic_ind of Univ.UContext.t
+  | Monomorphic_ind of Univ.ContextSet.t
   | Polymorphic_ind of Univ.AUContext.t
-  | Cumulative_ind  of Univ.ACumulativityInfo.t
+  | Cumulative_ind of Univ.ACumulativityInfo.t
 
 type mutual_inductive_body = {
 

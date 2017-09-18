@@ -1972,9 +1972,13 @@ let add_morphism_infer glob m n =
   let evd = Evd.from_env env in
   let uctx, instance = build_morphism_signature env evd m in
     if Lib.is_modtype () then
+      let uctx = if poly
+        then Entries.Polymorphic_const_entry (UState.context uctx)
+        else Entries.Monomorphic_const_entry (UState.context_set uctx)
+      in
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest instance_id
 				(Entries.ParameterEntry 
-				 (None,poly,(instance,UState.context uctx),None),
+                                 (None,(instance,uctx),None),
 				 Decl_kinds.IsAssumption Decl_kinds.Logical)
       in
 	add_instance (Typeclasses.new_instance 

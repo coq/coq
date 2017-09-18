@@ -310,7 +310,7 @@ sig
   (** Keeps the order of the instances *)
   val union : t -> t -> t
 
-  (* the number of universes in the context *)
+  (** the number of universes in the context *)
   val size : t -> int
 
 end
@@ -423,6 +423,9 @@ sig
 
   val constraints : t -> constraints
   val levels : t -> LSet.t
+
+  (** the number of universes in the context *)
+  val size : t -> int
 end
 
 (** A set of universes with universe constraints.

@@ -270,6 +270,10 @@ let pr_universe_ctx sigma c =
   else
     mt()
 
+let pr_constant_universes sigma = function
+  | Entries.Monomorphic_const_entry ctx -> pr_universe_ctx_set sigma ctx
+  | Entries.Polymorphic_const_entry ctx -> pr_universe_ctx sigma ctx
+
 let pr_cumulativity_info sigma cumi =
   if !Detyping.print_universes 
   && not (Univ.UContext.is_empty (Univ.CumulativityInfo.univ_context cumi)) then

@@ -197,8 +197,11 @@ match local with
     | DefaultInline -> Some (Flags.get_inline_level())
     | InlineAt i -> Some i
   in
-  let ctx = Univ.ContextSet.to_context ctx in
-  let decl = (ParameterEntry (None,p,(c,ctx),inl), IsAssumption kind) in
+  let ctx = if p
+    then Polymorphic_const_entry (Univ.ContextSet.to_context ctx)
+    else Monomorphic_const_entry ctx
+  in
+  let decl = (ParameterEntry (None,(c,ctx),inl), IsAssumption kind) in
   let kn = declare_constant ident ~local decl in
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
@@ -206,9 +209,9 @@ match local with
   let () = assumption_message ident in
   let () = Typeclasses.declare_instance None false gr in
   let () = if is_coe then Class.try_add_new_coercion gr ~local p in
-  let inst = 
-    if p (* polymorphic *) then Univ.UContext.instance ctx 
-    else Univ.Instance.empty
+  let inst = match ctx with
+    | Polymorphic_const_entry ctx -> Univ.UContext.instance ctx
+    | Monomorphic_const_entry _ -> Univ.Instance.empty
   in
     (gr,inst,Lib.is_modtype_strict ())
 
@@ -606,7 +609,7 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
         Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context uctx)
       else Polymorphic_ind_entry uctx
     else
-      Monomorphic_ind_entry uctx
+      Monomorphic_ind_entry (Univ.ContextSet.of_context uctx)
   in
   (* Build the mutual inductive entry *)
   let mind_ent =
