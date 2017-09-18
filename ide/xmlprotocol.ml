@@ -531,6 +531,7 @@ let set_options_sty_t : set_options_sty val_t =
   list_t (pair_t (list_t string_t) option_value_t)
 let mkcases_sty_t : mkcases_sty val_t = string_t
 let quit_sty_t : quit_sty val_t = unit_t
+let wait_sty_t : wait_sty val_t = unit_t
 let about_sty_t : about_sty val_t = unit_t
 let init_sty_t : init_sty val_t = option_t string_t
 let interp_sty_t : interp_sty val_t = pair_t (pair_t bool_t bool_t) string_t
@@ -555,6 +556,7 @@ let get_options_rty_t : get_options_rty val_t =
 let set_options_rty_t : set_options_rty val_t = unit_t
 let mkcases_rty_t : mkcases_rty val_t = list_t (list_t string_t)
 let quit_rty_t : quit_rty val_t = unit_t
+let wait_rty_t : wait_rty val_t = unit_t
 let about_rty_t : about_rty val_t = coq_info_t
 let init_rty_t : init_rty val_t = state_id_t
 let interp_rty_t : interp_rty val_t = pair_t state_id_t (union_t string_t string_t)
@@ -576,6 +578,7 @@ let calls = [|
   "SetOptions", ($)set_options_sty_t, ($)set_options_rty_t;
   "MkCases",    ($)mkcases_sty_t,     ($)mkcases_rty_t;
   "Quit",       ($)quit_sty_t,        ($)quit_rty_t;
+  "Wait",       ($)wait_sty_t,        ($)wait_rty_t;
   "About",      ($)about_sty_t,       ($)about_rty_t;
   "Init",       ($)init_sty_t,        ($)init_rty_t;
   "Interp",     ($)interp_sty_t,      ($)interp_rty_t;
@@ -600,6 +603,8 @@ type 'a call =
   | About      : about_sty -> about_rty call
   | Init       : init_sty -> init_rty call
   | StopWorker : stop_worker_sty -> stop_worker_rty call
+  (* internal use (fake_ide) only, do not use *)
+  | Wait       : wait_sty -> wait_rty call
   (* retrocompatibility *)
   | Interp     : interp_sty -> interp_rty call
   | PrintAst   : print_ast_sty -> print_ast_rty call
@@ -618,12 +623,13 @@ let id_of_call : type a. a call -> int = function
   | SetOptions _ -> 9
   | MkCases _    -> 10
   | Quit _       -> 11
-  | About _      -> 12
-  | Init _       -> 13
-  | Interp _     -> 14
-  | StopWorker _ -> 15
-  | PrintAst _   -> 16
-  | Annotate _   -> 17
+  | Wait _       -> 12
+  | About _      -> 13
+  | Init _       -> 14
+  | Interp _     -> 15
+  | StopWorker _ -> 16
+  | PrintAst _   -> 17
+  | Annotate _   -> 18
 
 let str_of_call c = pi1 calls.(id_of_call c)
 
@@ -643,6 +649,7 @@ let mkcases x     : mkcases_rty call     = MkCases x
 let search x      : search_rty call      = Search x
 let quit x        : quit_rty call        = Quit x
 let init x        : init_rty call        = Init x
+let wait x        : wait_rty call        = Wait x
 let interp x      : interp_rty call      = Interp x
 let stop_worker x : stop_worker_rty call = StopWorker x
 let print_ast   x : print_ast_rty call   = PrintAst x
@@ -664,6 +671,7 @@ let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
     | SetOptions x -> mkGood (handler.set_options x)
     | MkCases x    -> mkGood (handler.mkcases x)
     | Quit x       -> mkGood (handler.quit x)
+    | Wait x       -> mkGood (handler.wait x)
     | About x      -> mkGood (handler.about x)
     | Init x       -> mkGood (handler.init x)
     | Interp x     -> mkGood (handler.interp x)
@@ -688,6 +696,7 @@ let of_answer : type a. a call -> a value -> xml = function
   | SetOptions _ -> of_value (of_value_type set_options_rty_t)
   | MkCases _    -> of_value (of_value_type mkcases_rty_t    )
   | Quit _       -> of_value (of_value_type quit_rty_t       )
+  | Wait _       -> of_value (of_value_type wait_rty_t       )
   | About _      -> of_value (of_value_type about_rty_t      )
   | Init _       -> of_value (of_value_type init_rty_t       )
   | Interp _     -> of_value (of_value_type interp_rty_t     )
@@ -711,6 +720,7 @@ let to_answer : type a. a call -> xml -> a value = function
   | SetOptions _ -> to_value (to_value_type set_options_rty_t)
   | MkCases _    -> to_value (to_value_type mkcases_rty_t    )
   | Quit _       -> to_value (to_value_type quit_rty_t       )
+  | Wait _       -> to_value (to_value_type wait_rty_t       )
   | About _      -> to_value (to_value_type about_rty_t      )
   | Init _       -> to_value (to_value_type init_rty_t       )
   | Interp _     -> to_value (to_value_type interp_rty_t     )
@@ -733,6 +743,7 @@ let of_call : type a. a call -> xml = fun q ->
   | SetOptions x -> mkCall (of_value_type set_options_sty_t x)
   | MkCases x    -> mkCall (of_value_type mkcases_sty_t     x)
   | Quit x       -> mkCall (of_value_type quit_sty_t        x)
+  | Wait x       -> mkCall (of_value_type wait_sty_t        x)
   | About x      -> mkCall (of_value_type about_sty_t       x)
   | Init x       -> mkCall (of_value_type init_sty_t        x)
   | Interp x     -> mkCall (of_value_type interp_sty_t      x)
@@ -756,6 +767,7 @@ let to_call : xml -> unknown_call =
     | "SetOptions" -> Unknown (SetOptions (mkCallArg set_options_sty_t a))
     | "MkCases"    -> Unknown (MkCases    (mkCallArg mkcases_sty_t     a))
     | "Quit"       -> Unknown (Quit       (mkCallArg quit_sty_t        a))
+    | "Wait"       -> Unknown (Wait       (mkCallArg wait_sty_t        a))
     | "About"      -> Unknown (About      (mkCallArg about_sty_t       a))
     | "Init"       -> Unknown (Init       (mkCallArg init_sty_t        a))
     | "Interp"     -> Unknown (Interp     (mkCallArg interp_sty_t      a))
@@ -786,6 +798,7 @@ let pr_full_value : type a. a call -> a value -> string = fun call value -> matc
   | SetOptions _ -> pr_value_gen (print set_options_rty_t) value
   | MkCases _    -> pr_value_gen (print mkcases_rty_t    ) value
   | Quit _       -> pr_value_gen (print quit_rty_t       ) value
+  | Wait _       -> pr_value_gen (print wait_rty_t       ) value
   | About _      -> pr_value_gen (print about_rty_t      ) value
   | Init _       -> pr_value_gen (print init_rty_t       ) value
   | Interp _     -> pr_value_gen (print interp_rty_t     ) value
@@ -807,6 +820,7 @@ let pr_call : type a. a call -> string = fun call ->
     | SetOptions x -> return set_options_sty_t x
     | MkCases x    -> return mkcases_sty_t x
     | Quit x       -> return quit_sty_t x
+    | Wait x       -> return wait_sty_t x
     | About x      -> return about_sty_t x
     | Init x       -> return init_sty_t x
     | Interp x     -> return interp_sty_t x

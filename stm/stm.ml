@@ -2373,6 +2373,7 @@ let finish () =
   | _ -> ()
 
 let wait () =
+  finish ();
   Slaves.wait_all_done ();
   VCS.print ()
 
@@ -2386,7 +2387,6 @@ let rec join_admitted_proofs id =
   | _ -> join_admitted_proofs view.next
 
 let join () =
-  finish ();
   wait ();
   stm_prerr_endline (fun () -> "Joining the environment");
   Global.join_safe_environment ();
@@ -2486,7 +2486,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
       match c with
       (* Joining various parts of the document *)
       | VtStm (VtJoinDocument, b), VtNow -> join (); `Ok
-      | VtStm (VtWait, b),         VtNow -> finish (); wait (); `Ok
+      | VtStm (VtWait, b),         VtNow -> wait (); `Ok
       | VtStm ((VtJoinDocument|VtWait),_), VtLater ->
           anomaly(str"classifier: join actions cannot be classified as VtLater.")
 

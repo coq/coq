@@ -51,6 +51,9 @@ val edit_at : Stateid.t -> [ `NewTip | `Focus of focus ]
 (* Evaluates the tip of the current branch *)
 val finish : unit -> unit
 
+(* Internal use (fake_ide) only, do not use *)
+val wait : unit -> unit
+
 val observe : Stateid.t -> unit
 
 val stop_worker : string -> unit
