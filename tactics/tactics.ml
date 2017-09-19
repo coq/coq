@@ -2219,27 +2219,27 @@ let check_number_of_constructors expctdnumopt i nconstr =
   end;
   if i > nconstr then error "Not enough constructors."
 
-let constructor_tac with_evars expctdnumopt i lbind =
+let constructor_core with_evars cstr lbind =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
-    let cl = Tacmach.New.pf_concl gl in
-    let reduce_to_quantified_ind =
-      Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind gl
-    in
-    let (mind,redcl) = reduce_to_quantified_ind cl in
-    let nconstr =
-      Array.length (snd (Global.lookup_inductive (fst mind))).mind_consnames in
-      check_number_of_constructors expctdnumopt i nconstr;
+    let env = Proofview.Goal.env gl in
+    let (sigma, (cons, u)) = Evd.fresh_constructor_instance env sigma cstr in
+    let cons = mkConstructU (cons, EInstance.make u) in
+    let apply_tac = general_apply true false with_evars None (Loc.tag (cons,lbind)) in
+    Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma) apply_tac
+  end
 
-      let (sigma, (cons, u)) = Evd.fresh_constructor_instance
-	(Proofview.Goal.env gl) sigma (fst mind, i) in
-      let cons = mkConstructU (cons, EInstance.make u) in
-	
-      let apply_tac = general_apply true false with_evars None (Loc.tag (cons,lbind)) in
-      Tacticals.New.tclTHENLIST
-         [ Proofview.Unsafe.tclEVARS sigma;
-           convert_concl_no_check redcl DEFAULTcast;
-           intros; apply_tac]
+let constructor_tac with_evars expctdnumopt i lbind =
+  Proofview.Goal.enter begin fun gl ->
+    let cl = Tacmach.New.pf_concl gl in
+    let ((ind,_),redcl) = Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind gl cl in
+    let nconstr = Array.length (snd (Global.lookup_inductive ind)).mind_consnames in
+    check_number_of_constructors expctdnumopt i nconstr;
+    Tacticals.New.tclTHENLIST [
+      convert_concl_no_check redcl DEFAULTcast;
+      intros;
+      constructor_core with_evars (ind, i) lbind
+    ]
   end
 
 let one_constructor i lbind = constructor_tac false None i lbind
@@ -2251,23 +2251,24 @@ let one_constructor i lbind = constructor_tac false None i lbind
 
 let any_constructor with_evars tacopt =
   let one_constr =
-    let tac i = constructor_tac with_evars None i NoBindings in
+    let tac cstr = constructor_core with_evars cstr NoBindings in
     match tacopt with
     | None -> tac
-    | Some t -> fun i -> Tacticals.New.tclTHEN (tac i) t in
-  let rec any_constr n i () =
-    if Int.equal i n then one_constr i
-    else Tacticals.New.tclORD (one_constr i) (any_constr n (i + 1)) in
+    | Some t -> fun cstr -> Tacticals.New.tclTHEN (tac cstr) t in
+  let rec any_constr ind n i () =
+    if Int.equal i n then one_constr (ind,i)
+    else Tacticals.New.tclORD (one_constr (ind,i)) (any_constr ind n (i + 1)) in
   Proofview.Goal.enter begin fun gl ->
     let cl = Tacmach.New.pf_concl gl in
-    let reduce_to_quantified_ind =
-      Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind gl
-    in
-    let mind = fst (reduce_to_quantified_ind cl) in
+    let (ind,_),redcl = Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind gl cl in
     let nconstr =
-      Array.length (snd (Global.lookup_inductive (fst mind))).mind_consnames in
+      Array.length (snd (Global.lookup_inductive ind)).mind_consnames in
     if Int.equal nconstr 0 then error "The type has no constructors.";
-    any_constr nconstr 1 ()
+    Tacticals.New.tclTHENLIST [
+      convert_concl_no_check redcl DEFAULTcast;
+      intros;
+      any_constr ind nconstr 1 ()
+    ]
  end
 
 let left_with_bindings  with_evars = constructor_tac with_evars (Some 2) 1
