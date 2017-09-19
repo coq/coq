@@ -342,6 +342,12 @@ IF "%COQREGTESTING%" == "Y" (
   SET RUNSETUP=Y
 )
 
+SET "EXTRAPACKAGES= "
+
+IF NOT "%APPVEYOR%" == "True" (
+  SET EXTRAPACKAGES="-P wget,curl,git,gcc-core,gcc-g++,automake1.5"
+)
+
 IF "%RUNSETUP%"=="Y" (
   %SETUP% ^
     --proxy "%PROXY%" ^
@@ -350,10 +356,9 @@ IF "%RUNSETUP%"=="Y" (
     --local-package-dir "%CYGWIN_LOCAL_CACHE_WFMT%" ^
     --no-shortcuts ^
     %CYGWIN_OPT% ^
-    -P wget,curl,git,make,unzip ^
-    -P gcc-core,gcc-g++ ^
+    -P make,unzip ^
     -P gdb,liblzma5 ^
-    -P patch,automake1.14,automake1.15 ^
+    -P patch,automake1.14 ^
     -P mingw64-%ARCH%-binutils,mingw64-%ARCH%-gcc-core,mingw64-%ARCH%-gcc-g++,mingw64-%ARCH%-pkg-config,mingw64-%ARCH%-windows_default_manifest ^
     -P mingw64-%ARCH%-headers,mingw64-%ARCH%-runtime,mingw64-%ARCH%-pthreads,mingw64-%ARCH%-zlib ^
     -P libiconv-devel,libunistring-devel,libncurses-devel ^
@@ -363,6 +368,7 @@ IF "%RUNSETUP%"=="Y" (
     -P gtk-update-icon-cache ^
     -P libtool,automake ^
     -P intltool ^
+    %EXTRAPACKAGES% ^
     || GOTO ErrorExit
 
   MKDIR "%CYGWIN_INSTALLDIR_WFMT%\build"
