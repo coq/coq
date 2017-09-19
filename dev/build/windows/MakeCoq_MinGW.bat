@@ -328,12 +328,6 @@ ECHO ========== INSTALL CYGWIN ==========
 REM Cygwin setup sets proper ACLs (permissions) for folders it CREATES.
 REM Otherwise chmod won't work and e.g. the ocaml build will fail.
 REM Cygwin setup does not touch the ACLs of existing folders.
-REM => Create the setup log in a temporary location and move it later.
-
-REM Get Unique temporary file name
-:logfileloop
-SET LOGFILE=%TEMP%\CygwinSetUp%RANDOM%-%RANDOM%-%RANDOM%-%RANDOM%.log
-if exist "%LOGFILE%" GOTO logfileloop
 
 REM Run Cygwin Setup
 
@@ -369,12 +363,10 @@ IF "%RUNSETUP%"=="Y" (
     -P gtk-update-icon-cache ^
     -P libtool,automake ^
     -P intltool ^
-    > "%LOGFILE%" ^
     || GOTO ErrorExit
 
   MKDIR "%CYGWIN_INSTALLDIR_WFMT%\build"
   MKDIR "%CYGWIN_INSTALLDIR_WFMT%\build\buildlogs"
-  MOVE  "%LOGFILE%" "%CYGWIN_INSTALLDIR_WFMT%\build\buildlogs\cygwinsetup.log" || GOTO ErrorExit
 )
 
 
