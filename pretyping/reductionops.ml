@@ -1438,17 +1438,13 @@ let sigma_univ_state =
 let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     ?(ts=full_transparent_state) env sigma x y =
   (** FIXME *)
-  let open Universes in
-  let x = EConstr.Unsafe.to_constr x in
-  let y = EConstr.Unsafe.to_constr y in
   try
-    let fold cstr accu = Some (Constraints.fold Constraints.add cstr accu) in
     let b, sigma = 
       let ans =
 	if pb == Reduction.CUMUL then 
-	  Universes.leq_constr_univs_infer (Evd.universes sigma) fold x y Constraints.empty
+	  EConstr.leq_constr_universes sigma x y
 	else
-	  Universes.eq_constr_univs_infer (Evd.universes sigma) fold x y Constraints.empty
+	  EConstr.eq_constr_universes sigma x y
       in
       let ans = match ans with
       | None -> None
@@ -1462,6 +1458,8 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     in
       if b then sigma, true
       else
+        let x = EConstr.Unsafe.to_constr x in
+        let y = EConstr.Unsafe.to_constr y in
 	let sigma' = 
 	  conv_fun pb ~l2r:false sigma ts
 	    env (sigma, sigma_univ_state) x y in

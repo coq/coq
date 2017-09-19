@@ -131,47 +131,6 @@ let to_constraints g s =
 		   "to_constraints: non-trivial algebraic constraint between universes")
   in Constraints.fold tr s Constraint.empty
 
-let test_constr_univs_infer leq univs fold m n accu =
-  if m == n then Some accu
-  else 
-    let cstrs = ref accu in
-    let eq_universes strict l l' = UGraph.check_eq_instances univs l l' in
-    let eq_sorts s1 s2 = 
-      if Sorts.equal s1 s2 then true
-      else
-	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	match fold (Constraints.singleton (u1, UEq, u2)) !cstrs with
-	| None -> false
-	| Some accu -> cstrs := accu; true
-    in
-    let leq_sorts s1 s2 = 
-      if Sorts.equal s1 s2 then true
-      else 
-	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	match fold (Constraints.singleton (u1, ULe, u2)) !cstrs with
-	| None -> false
-	| Some accu -> cstrs := accu; true
-    in
-    let rec eq_constr' m n = 
-      m == n ||	Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
-    in
-    let res =
-      if leq then
-        let rec compare_leq m n =
-          Constr.compare_head_gen_leq eq_universes leq_sorts 
-            eq_constr' leq_constr' m n
-        and leq_constr' m n = m == n || compare_leq m n in
-        compare_leq m n
-      else Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
-    in
-    if res then Some !cstrs else None
-
-let eq_constr_univs_infer univs fold m n accu =
-  test_constr_univs_infer false univs fold m n accu
-
-let leq_constr_univs_infer univs fold m n accu =
-  test_constr_univs_infer true univs fold m n accu
-
 (** Variant of [eq_constr_univs_infer] taking kind-of-term functions,
     to expose subterms of [m] and [n], arguments. *)
 let eq_constr_univs_infer_with kind1 kind2 univs fold m n accu =
@@ -196,42 +155,6 @@ let eq_constr_univs_infer_with kind1 kind2 univs fold m n accu =
   in
   let res = Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' m n in
   if res then Some !cstrs else None
-
-let test_constr_universes leq m n =
-  if m == n then Some Constraints.empty
-  else 
-    let cstrs = ref Constraints.empty in
-    let eq_universes strict l l' = 
-      cstrs := enforce_eq_instances_univs strict l l' !cstrs; true in
-    let eq_sorts s1 s2 = 
-      if Sorts.equal s1 s2 then true
-      else (cstrs := Constraints.add 
-	      (Sorts.univ_of_sort s1,UEq,Sorts.univ_of_sort s2) !cstrs; 
-	    true)
-    in
-    let leq_sorts s1 s2 = 
-      if Sorts.equal s1 s2 then true
-      else 
-	(cstrs := Constraints.add 
-	   (Sorts.univ_of_sort s1,ULe,Sorts.univ_of_sort s2) !cstrs; 
-	 true)
-    in
-    let rec eq_constr' m n = 
-      m == n ||	Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
-    in
-    let res =
-      if leq then
-        let rec compare_leq m n =
-          Constr.compare_head_gen_leq eq_universes leq_sorts eq_constr' leq_constr' m n
-        and leq_constr' m n = m == n || compare_leq m n in
-        compare_leq m n
-      else
-        Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
-    in
-    if res then Some !cstrs else None
-
-let eq_constr_universes m n = test_constr_universes false m n
-let leq_constr_universes m n = test_constr_universes true m n
 
 let compare_head_gen_proj env equ eqs eqc' m n =
   match kind_of_term m, kind_of_term n with
