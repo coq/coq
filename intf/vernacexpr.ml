@@ -40,6 +40,8 @@ type goal_reference =
   | NthGoal of int
   | GoalId of Id.t
 
+type univ_name_list = Name.t Loc.located list
+
 type printable =
   | PrintTables
   | PrintFullContext
@@ -54,7 +56,7 @@ type printable =
   | PrintMLLoadPath
   | PrintMLModules
   | PrintDebugGC
-  | PrintName of reference or_by_notation
+  | PrintName of reference or_by_notation * univ_name_list option
   | PrintGraph
   | PrintClasses
   | PrintTypeClasses
@@ -70,7 +72,7 @@ type printable =
   | PrintScopes
   | PrintScope of string
   | PrintVisibility of string option
-  | PrintAbout of reference or_by_notation * goal_selector option
+  | PrintAbout of reference or_by_notation * univ_name_list option * goal_selector option
   | PrintImplicit of reference or_by_notation
   | PrintAssumptions of bool * bool * reference or_by_notation
   | PrintStrategy of reference or_by_notation option

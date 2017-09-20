@@ -35,6 +35,21 @@ let universe_binders_of_global ref : universe_binders =
 let register_universe_binders ref l =
   universe_binders_table := Refmap.add ref l !universe_binders_table
 
+type univ_name_list = Name.t Loc.located list
+
+let universe_binders_with_opt_names ref levels = function
+  | None -> universe_binders_of_global ref
+  | Some udecl ->
+    if Int.equal(List.length levels) (List.length udecl)
+    then
+      List.fold_left2 (fun acc (_,na) lvl -> match na with
+          | Anonymous -> acc
+          | Name na -> Names.Id.Map.add na lvl acc)
+        empty_binders udecl levels
+    else
+      CErrors.user_err ~hdr:"universe_binders_with_opt_names"
+        Pp.(str "Universe instance should have length " ++ int (List.length levels))
+
 (* To disallow minimization to Set *)
 
 let set_minimization = ref true

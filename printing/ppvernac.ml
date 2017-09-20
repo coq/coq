@@ -41,6 +41,11 @@ open Decl_kinds
     pr_glob_level l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
       pr_glob_level r
 
+  let pr_univ_name_list = function
+    | None -> mt ()
+    | Some l ->
+      str "@{" ++ prlist_with_sep spc pr_lname l ++ str"}"
+
   let pr_univdecl_instance l extensible =
     prlist_with_sep spc pr_lident l ++
     (if extensible then str"+" else mt ())
@@ -488,8 +493,8 @@ open Decl_kinds
         else "Print Universes"
       in
       keyword cmd ++ pr_opt str fopt
-    | PrintName qid ->
-      keyword "Print" ++ spc()  ++ pr_smart_global qid
+    | PrintName (qid,udecl) ->
+      keyword "Print" ++ spc()  ++ pr_smart_global qid ++ pr_univ_name_list udecl
     | PrintModuleType qid ->
       keyword "Print Module Type" ++ spc() ++ pr_reference qid
     | PrintModule qid ->
@@ -502,9 +507,9 @@ open Decl_kinds
       keyword "Print Scope" ++ spc() ++ str s
     | PrintVisibility s ->
       keyword "Print Visibility" ++ pr_opt str s
-    | PrintAbout (qid,gopt) ->
+    | PrintAbout (qid,l,gopt) ->
        pr_opt (fun g -> Proof_bullet.pr_goal_selector g ++ str ":"++ spc()) gopt
-       ++ keyword "About" ++ spc()  ++ pr_smart_global qid
+       ++ keyword "About" ++ spc()  ++ pr_smart_global qid ++ pr_univ_name_list l
     | PrintImplicit qid ->
       keyword "Print Implicit" ++ spc()  ++ pr_smart_global qid
     (* spiwack: command printing all the axioms and section variables used in a

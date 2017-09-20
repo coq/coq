@@ -53,3 +53,34 @@ Monomorphic mono = Type@{u}
 (* {u} |=  *)
 
 mono is not universe polymorphic
+foo@{E M N} = 
+Type@{M} -> Type@{N} -> Type@{E}
+     : Type@{max(E+1, M+1, N+1)}
+(* E M N |=  *)
+
+foo is universe polymorphic
+foo@{Top.16 Top.17 Top.18} = 
+Type@{Top.17} -> Type@{Top.18} -> Type@{Top.16}
+     : Type@{max(Top.16+1, Top.17+1, Top.18+1)}
+(* Top.16 Top.17 Top.18 |=  *)
+
+foo is universe polymorphic
+NonCumulative Inductive Empty@{E} : Type@{E} :=  
+NonCumulative Record PWrap (A : Type@{E}) : Type@{E} := pwrap { punwrap : A }
+
+PWrap has primitive projections with eta conversion.
+For PWrap: Argument scope is [type_scope]
+For pwrap: Argument scopes are [type_scope _]
+punwrap@{K} : forall A : Type@{K}, PWrap@{K} A -> A
+(* K |=  *)
+
+punwrap is universe polymorphic
+Argument scopes are [type_scope _]
+punwrap is transparent
+Expands to: Constant Top.punwrap
+The command has indeed failed with message:
+Universe instance should have length 3
+The command has indeed failed with message:
+Universe instance should have length 0
+The command has indeed failed with message:
+This object does not support universe names.

@@ -1609,9 +1609,10 @@ exception NoHyp
 (* Printing "About" information of a hypothesis of the current goal.
    We only print the type and a small statement to this comes from the
    goal. Precondition: there must be at least one current goal. *)
-let print_about_hyp_globs ?loc ref_or_by_not glopt =
+let print_about_hyp_globs ?loc ref_or_by_not udecl glopt =
   let open Context.Named.Declaration in
   try
+    (* FIXME error on non None udecl if we find the hyp. *)
     let glnumopt = query_command_selector ?loc glopt in
     let gl,id =
       match glnumopt,ref_or_by_not with
@@ -1634,7 +1635,7 @@ let print_about_hyp_globs ?loc ref_or_by_not glopt =
   with (* fallback to globals *)
     | NoHyp | Not_found ->
     let sigma, env = Pfedit.get_current_context () in
-    print_about env sigma ref_or_by_not
+    print_about env sigma ref_or_by_not udecl
 
 
 let vernac_print ?loc env sigma = let open Feedback in function
@@ -1651,7 +1652,7 @@ let vernac_print ?loc env sigma = let open Feedback in function
   | PrintMLLoadPath -> msg_notice (Mltop.print_ml_path ())
   | PrintMLModules -> msg_notice (Mltop.print_ml_modules ())
   | PrintDebugGC -> msg_notice (Mltop.print_gc ())
-  | PrintName qid -> dump_global qid; msg_notice (print_name env sigma qid)
+  | PrintName (qid,udecl) -> dump_global qid; msg_notice (print_name env sigma qid udecl)
   | PrintGraph -> msg_notice (Prettyp.print_graph())
   | PrintClasses -> msg_notice (Prettyp.print_classes())
   | PrintTypeClasses -> msg_notice (Prettyp.print_typeclasses())
@@ -1681,8 +1682,8 @@ let vernac_print ?loc env sigma = let open Feedback in function
       msg_notice (Notation.pr_scope (Constrextern.without_symbols (pr_lglob_constr_env env)) s)
   | PrintVisibility s ->
       msg_notice (Notation.pr_visibility (Constrextern.without_symbols (pr_lglob_constr_env env)) s)
-  | PrintAbout (ref_or_by_not,glnumopt) ->
-     msg_notice (print_about_hyp_globs ?loc ref_or_by_not glnumopt)
+  | PrintAbout (ref_or_by_not,udecl,glnumopt) ->
+     msg_notice (print_about_hyp_globs ?loc ref_or_by_not udecl glnumopt)
   | PrintImplicit qid ->
     dump_global qid; msg_notice (print_impargs qid)
   | PrintAssumptions (o,t,r) ->

@@ -121,7 +121,7 @@ let instantiate_cumulativity_info cumi =
   in
   CumulativityInfo.make (expose univs, expose subtyp)
 
-let print_mutual_inductive env mind mib =
+let print_mutual_inductive env mind mib udecl =
   let inds = List.init (Array.length mib.mind_packets) (fun x -> (mind, x))
   in
   let keyword =
@@ -131,7 +131,14 @@ let print_mutual_inductive env mind mib =
     | BiFinite -> "Variant"
     | CoFinite -> "CoInductive"
   in
-  let bl = Universes.universe_binders_of_global (IndRef (mind, 0)) in
+  let univs =
+    let open Univ in
+    if Declareops.inductive_is_polymorphic mib then
+      Array.to_list (Instance.to_array
+                       (AUContext.instance (Declareops.inductive_polymorphic_context mib)))
+    else []
+  in
+  let bl = Universes.universe_binders_with_opt_names (IndRef (mind, 0)) univs udecl in
   let sigma = Evd.from_ctx (Evd.evar_universe_context_of_binders bl) in
   hov 0 (Printer.pr_polymorphic (Declareops.inductive_is_polymorphic mib) ++
          Printer.pr_cumulative
@@ -159,7 +166,7 @@ let get_fields =
   in
   prodec_rec [] []
 
-let print_record env mind mib =
+let print_record env mind mib udecl =
   let u = 
     if Declareops.inductive_is_polymorphic mib then 
       Univ.AUContext.instance (Declareops.inductive_polymorphic_context mib)
@@ -173,7 +180,8 @@ let print_record env mind mib =
   let cstrtype = hnf_prod_applist env cstrtypes.(0) args in
   let fields = get_fields cstrtype in
   let envpar = push_rel_context params env in
-  let bl = Universes.universe_binders_of_global (IndRef (mind,0)) in
+  let bl = Universes.universe_binders_with_opt_names (IndRef (mind,0))
+      (Array.to_list (Univ.Instance.to_array u)) udecl in
   let sigma = Evd.from_ctx (Evd.evar_universe_context_of_binders bl) in
   let keyword =
     let open Decl_kinds in
@@ -205,11 +213,11 @@ let print_record env mind mib =
         sigma (instantiate_cumulativity_info cumi)
   )
 
-let pr_mutual_inductive_body env mind mib =
+let pr_mutual_inductive_body env mind mib udecl =
   if mib.mind_record <> None && not !Flags.raw_print then
-    print_record env mind mib
+    print_record env mind mib udecl
   else
-    print_mutual_inductive env mind mib
+    print_mutual_inductive env mind mib udecl
 
 (** Modpaths *)
 
@@ -335,7 +343,7 @@ let print_body is_impl env mp (l,body) =
     | SFBmind mib ->
       try
 	let env = Option.get env in
-	pr_mutual_inductive_body env (MutInd.make2 mp l) mib
+        pr_mutual_inductive_body env (MutInd.make2 mp l) mib None
       with e when CErrors.noncritical e ->
         let keyword =
           let open Decl_kinds in

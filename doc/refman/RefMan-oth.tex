@@ -10,6 +10,8 @@ defined object referred by {\qualid}.
 
 \begin{ErrMsgs}
 \item {\qualid} \errindex{not a defined object}
+\item \errindex{Universe instance should have length} $n$.
+\item \errindex{This object does not support universe names.}
 \end{ErrMsgs}
 
 \begin{Variants}
@@ -26,6 +28,11 @@ its kind (module, constant, assumption, inductive,
 constructor, abbreviation, \ldots), long name, type, implicit
 arguments and argument scopes. It does not print the body of
 definitions or proofs.
+
+\item {\tt Print {\qualid}@\{names\}.}\\
+This locally renames the polymorphic universes of {\qualid}.
+An underscore means the raw universe is printed.
+This form can be used with {\tt Print Term} and {\tt About}.
 
 %\item {\tt Print Proof {\qualid}.}\comindex{Print Proof}\\
 %In case \qualid\ denotes an opaque theorem defined in a section,

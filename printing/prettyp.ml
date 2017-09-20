@@ -32,8 +32,8 @@ open Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 type object_pr = {
-  print_inductive           : MutInd.t -> Pp.t;
-  print_constant_with_infos : Constant.t -> Pp.t;
+  print_inductive           : MutInd.t -> Universes.univ_name_list option -> Pp.t;
+  print_constant_with_infos : Constant.t -> Universes.univ_name_list option -> Pp.t;
   print_section_variable    : env -> Evd.evar_map -> variable -> Pp.t;
   print_syntactic_def       : env -> KerName.t -> Pp.t;
   print_module              : bool -> ModPath.t -> Pp.t;
@@ -68,7 +68,7 @@ let int_or_no n = if Int.equal n 0 then str "no" else int n
 
 let print_basename sp = pr_global (ConstRef sp)
 
-let print_ref reduce ref =
+let print_ref reduce ref udecl =
   let typ, ctx = Global.type_of_global_in_context (Global.env ()) ref in
   let typ = Vars.subst_instance_constr (Univ.AUContext.instance ctx) typ in
   let typ = EConstr.of_constr typ in
@@ -81,7 +81,8 @@ let print_ref reduce ref =
   let inst = Univ.AUContext.instance univs in
   let univs = Univ.UContext.make (inst, Univ.AUContext.instantiate inst univs) in
   let env = Global.env () in
-  let bl = Universes.universe_binders_of_global ref in
+  let bl = Universes.universe_binders_with_opt_names ref
+      (Array.to_list (Univ.Instance.to_array inst)) udecl in
   let sigma = Evd.from_ctx (Evd.evar_universe_context_of_binders bl) in
   let inst =
     if Global.is_polymorphic ref then Printer.pr_universe_instance sigma univs
@@ -150,7 +151,7 @@ let print_impargs ref =
   let has_impl = not (List.is_empty impl) in
   (* Need to reduce since implicits are computed with products flattened *)
   pr_infos_list
-    ([ print_ref (need_expansion (select_impargs_size 0 impl) ref) ref;
+    ([ print_ref (need_expansion (select_impargs_size 0 impl) ref) ref None;
        blankline ] @
     (if has_impl then print_impargs_list (mt()) impl
      else [str "No implicit arguments"]))
@@ -256,7 +257,7 @@ let print_name_infos ref =
     if need_expansion (select_impargs_size 0 impls) ref then
       (* Need to reduce since implicits are computed with products flattened *)
       [str "Expanded type for implicit arguments";
-       print_ref true ref; blankline]
+       print_ref true ref None; blankline]
     else
       [] in
   print_polymorphism ref @
@@ -512,11 +513,11 @@ let assumptions_for_print lna =
 (*********************)
 (* *)
 
-let gallina_print_inductive sp =
+let gallina_print_inductive sp udecl =
   let env = Global.env() in
   let mib = Environ.lookup_mind sp env in
   let mipv = mib.mind_packets in
-  pr_mutual_inductive_body env sp mib ++
+  pr_mutual_inductive_body env sp mib udecl ++
   with_line_skip
     (print_primitive_record mib.mind_finite mipv mib.mind_record @
      print_inductive_renames sp mipv @
@@ -545,7 +546,7 @@ let print_instance sigma cb =
     pr_universe_instance sigma univs
   else mt()
 				
-let print_constant with_values sep sp =
+let print_constant with_values sep sp udecl =
   let cb = Global.lookup_constant sp in
   let val_0 = Global.body_of_constant_body cb in
   let typ =
@@ -555,31 +556,34 @@ let print_constant with_values sep sp =
       let inst = Univ.AUContext.instance univs in
       Vars.subst_instance_constr inst cb.const_type
   in
-  let univs =
+  let univs, ulist =
     let open Entries in
+    let open Univ in
     let otab = Global.opaque_tables () in
     match cb.const_body with
     | Undef _ | Def _ ->
       begin
         match cb.const_universes with
-        | Monomorphic_const ctx -> Monomorphic_const_entry ctx
+        | Monomorphic_const ctx -> Monomorphic_const_entry ctx, []
         | Polymorphic_const ctx ->
-          let inst = Univ.AUContext.instance ctx in
-          Polymorphic_const_entry (Univ.UContext.make (inst, Univ.AUContext.instantiate inst ctx))
+          let inst = AUContext.instance ctx in
+          Polymorphic_const_entry (UContext.make (inst, AUContext.instantiate inst ctx)),
+          Array.to_list (Instance.to_array inst)
       end
     | OpaqueDef o ->
       let body_uctxs = Opaqueproof.force_constraints otab o in
       match cb.const_universes with
       | Monomorphic_const ctx ->
-        Monomorphic_const_entry (Univ.ContextSet.union body_uctxs ctx)
+        Monomorphic_const_entry (ContextSet.union body_uctxs ctx), []
       | Polymorphic_const ctx ->
-        assert(Univ.ContextSet.is_empty body_uctxs);
-        let inst = Univ.AUContext.instance ctx in
-        Polymorphic_const_entry (Univ.UContext.make (inst, Univ.AUContext.instantiate inst ctx))
+        assert(ContextSet.is_empty body_uctxs);
+        let inst = AUContext.instance ctx in
+        Polymorphic_const_entry (UContext.make (inst, AUContext.instantiate inst ctx)),
+        Array.to_list (Instance.to_array inst)
   in
   let ctx =
     Evd.evar_universe_context_of_binders
-      (Universes.universe_binders_of_global (ConstRef sp))
+      (Universes.universe_binders_with_opt_names (ConstRef sp) ulist udecl)
   in
   let env = Global.env () and sigma = Evd.from_ctx ctx in
   let pr_ltype = pr_ltype_env env sigma in
@@ -596,8 +600,8 @@ let print_constant with_values sep sp =
 	(if with_values then print_typed_body env sigma (Some c,typ) else pr_ltype typ)++
         Printer.pr_constant_universes sigma univs)
 
-let gallina_print_constant_with_infos sp =
-  print_constant true " = " sp ++
+let gallina_print_constant_with_infos sp udecl =
+  print_constant true " = " sp udecl ++
   with_line_skip (print_name_infos (ConstRef sp))
 
 let gallina_print_syntactic_def env kn =
@@ -622,9 +626,9 @@ let gallina_print_leaf_entry env sigma with_values ((sp,kn as oname),lobj) =
              constraints *)
           (try Some(print_named_decl env sigma (basename sp)) with Not_found -> None)
       | (_,"CONSTANT") ->
-	  Some (print_constant with_values sep (Constant.make1 kn))
+          Some (print_constant with_values sep (Constant.make1 kn) None)
       | (_,"INDUCTIVE") ->
-	  Some (gallina_print_inductive (MutInd.make1 kn))
+          Some (gallina_print_inductive (MutInd.make1 kn) None)
       | (_,"MODULE") ->
 	  let (mp,_,l) = KerName.repr kn in
 	    Some (print_module with_values (MPdot (mp,l)))
@@ -745,7 +749,7 @@ let print_full_pure_context env sigma =
       | "INDUCTIVE" ->
 	  let mind = Global.mind_of_delta_kn kn in
 	  let mib = Global.lookup_mind mind in
-	  pr_mutual_inductive_body (Global.env()) mind mib ++
+          pr_mutual_inductive_body (Global.env()) mind mib None ++
 	    str "." ++ fnl () ++ fnl ()
       | "MODULE" ->
 	  (* TODO: make it reparsable *)
@@ -792,10 +796,19 @@ let print_sec_context env sigma sec =
 let print_sec_context_typ env sigma sec =
   print_context env sigma false None (read_sec_context sec)
 
-let print_any_name env sigma = function
-  | Term (ConstRef sp) -> print_constant_with_infos sp
-  | Term (IndRef (sp,_)) -> print_inductive sp
-  | Term (ConstructRef ((sp,_),_)) -> print_inductive sp
+let maybe_error_reject_univ_decl na udecl =
+  match na, udecl with
+  | _, None | Term (ConstRef _ | IndRef _ | ConstructRef _), Some _ -> ()
+  | (Term (VarRef _) | Syntactic _ | Dir _ | ModuleType _ | Other _ | Undefined _), Some udecl ->
+    (* TODO Print na somehow *)
+    user_err ~hdr:"reject_univ_decl" (str "This object does not support universe names.")
+
+let print_any_name env sigma na udecl =
+  maybe_error_reject_univ_decl na udecl;
+  match na with
+  | Term (ConstRef sp) -> print_constant_with_infos sp udecl
+  | Term (IndRef (sp,_)) -> print_inductive sp udecl
+  | Term (ConstructRef ((sp,_),_)) -> print_inductive sp udecl
   | Term (VarRef sp) -> print_section_variable env sigma sp
   | Syntactic kn -> print_syntactic_def env kn
   | Dir (DirModule(dirpath,(mp,_))) -> print_module (printable_body dirpath) mp
@@ -812,24 +825,26 @@ let print_any_name env sigma = function
     user_err
       ~hdr:"print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
-let print_name env sigma = function
+let print_name env sigma na udecl =
+  match na with
   | ByNotation (loc,(ntn,sc)) ->
       print_any_name env sigma
         (Term (Notation.interp_notation_as_global_reference ?loc (fun _ -> true)
                ntn sc))
+        udecl
   | AN ref ->
-      print_any_name env sigma (locate_any_name ref)
+      print_any_name env sigma (locate_any_name ref) udecl
 
 let print_opaque_name env sigma qid =
   match Nametab.global qid with
     | ConstRef cst ->
 	let cb = Global.lookup_constant cst in
         if Declareops.constant_has_body cb then
-	  print_constant_with_infos cst
+          print_constant_with_infos cst None
         else
 	  user_err Pp.(str "Not a defined constant.")
     | IndRef (sp,_) ->
-        print_inductive sp
+        print_inductive sp None
     | ConstructRef cstr as gr ->
 	let ty, ctx = Global.type_of_global_in_context env gr in
 	let inst = Univ.AUContext.instance ctx in
@@ -840,13 +855,14 @@ let print_opaque_name env sigma qid =
     | VarRef id ->
         env |> lookup_named id |> print_named_decl env sigma
 
-let print_about_any ?loc env sigma k =
+let print_about_any ?loc env sigma k udecl =
+  maybe_error_reject_univ_decl k udecl;
   match k with
   | Term ref ->
     let rb = Reductionops.ReductionBehaviour.print ref in
     Dumpglob.add_glob ?loc ref;
       pr_infos_list
-       (print_ref false ref :: blankline ::
+       (print_ref false ref udecl :: blankline ::
 	print_name_infos ref @
 	(if Pp.ismt rb then [] else [rb]) @
 	print_opacity ref @
@@ -862,13 +878,14 @@ let print_about_any ?loc env sigma k =
       hov 0 (pr_located_qualid k)
   | Other (obj, info) -> hov 0 (info.about obj)
 
-let print_about env sigma = function
+let print_about env sigma na udecl =
+  match na with
   | ByNotation (loc,(ntn,sc)) ->
       print_about_any ?loc env sigma
         (Term (Notation.interp_notation_as_global_reference ?loc (fun _ -> true)
-               ntn sc))
+               ntn sc)) udecl
   | AN ref ->
-      print_about_any ?loc:(loc_of_reference ref) env sigma (locate_any_name ref)
+      print_about_any ?loc:(loc_of_reference ref) env sigma (locate_any_name ref) udecl
 
 (* for debug *)
 let inspect env sigma depth =
@@ -940,7 +957,7 @@ let print_canonical_projections env sigma =
 open Typeclasses
 
 let pr_typeclass env t =
-  print_ref false t.cl_impl
+  print_ref false t.cl_impl None
 
 let print_typeclasses () =
   let env = Global.env () in
@@ -949,7 +966,7 @@ let print_typeclasses () =
 let pr_instance env i =
   (*   gallina_print_constant_with_infos i.is_impl *)
   (* lighter *)
-  print_ref false (instance_impl i) ++
+  print_ref false (instance_impl i) None ++
   begin match hint_priority i with
   | None -> mt ()
   | Some i -> spc () ++ str "|" ++ spc () ++ int i

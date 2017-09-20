@@ -33,3 +33,22 @@ Print foo.
 (* Binders even work with monomorphic definitions! *)
 Monomorphic Definition mono@{u} := Type@{u}.
 Print mono.
+
+(* Using local binders for printing. *)
+Print foo@{E M N}.
+(* Underscores discard the name if there's one. *)
+Print foo@{_ _ _}.
+
+(* Also works for inductives and records. *)
+Print Empty@{E}.
+Print PWrap@{E}.
+
+(* Also works for About. *)
+About punwrap@{K}.
+
+(* Instance length check. *)
+Fail Print foo@{E}.
+Fail Print mono@{E}.
+
+(* Not everything can be printed with custom universe names. *)
+Fail Print Coq.Init.Logic@{E}.

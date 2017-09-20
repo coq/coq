@@ -875,7 +875,7 @@ GEXTEND Gram
 
       (* Printing (careful factorization of entries) *)
       | IDENT "Print"; p = printable -> VernacPrint p
-      | IDENT "Print"; qid = smart_global -> VernacPrint (PrintName qid)
+      | IDENT "Print"; qid = smart_global; l = OPT univ_name_list -> VernacPrint (PrintName (qid,l))
       | IDENT "Print"; IDENT "Module"; "Type"; qid = global ->
 	  VernacPrint (PrintModuleType qid)
       | IDENT "Print"; IDENT "Module"; qid = global ->
@@ -940,8 +940,8 @@ GEXTEND Gram
       | IDENT "Check"; c = lconstr; "." ->
 	 fun g -> VernacCheckMayEval (None, g, c)
       (* Searching the environment *)
-      | IDENT "About"; qid = smart_global; "." ->
-	 fun g -> VernacPrint (PrintAbout (qid,g))
+      | IDENT "About"; qid = smart_global; l = OPT univ_name_list; "." ->
+         fun g -> VernacPrint (PrintAbout (qid,l,g))
       | IDENT "SearchHead"; c = constr_pattern; l = in_or_out_modules; "." ->
 	  fun g -> VernacSearch (SearchHead c,g, l)
       | IDENT "SearchPattern"; c = constr_pattern; l = in_or_out_modules; "." ->
@@ -960,7 +960,7 @@ GEXTEND Gram
       ] ]
   ;
   printable:
-    [ [ IDENT "Term"; qid = smart_global -> PrintName qid
+    [ [ IDENT "Term"; qid = smart_global; l = OPT univ_name_list -> PrintName (qid,l)
       | IDENT "All" -> PrintFullContext
       | IDENT "Section"; s = global -> PrintSectionContext s
       | IDENT "Grammar"; ent = IDENT ->
@@ -1059,6 +1059,9 @@ GEXTEND Gram
         let (sl,m) = l in (s::sl,m)
       | -> ([],SearchOutside [])
       ] ]
+  ;
+  univ_name_list:
+    [ [  "@{" ; l = LIST0 name; "}" -> l ] ]
   ;
 END;
 
