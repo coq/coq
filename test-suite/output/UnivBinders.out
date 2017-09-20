@@ -84,3 +84,44 @@ The command has indeed failed with message:
 Universe instance should have length 0
 The command has indeed failed with message:
 This object does not support universe names.
+Monomorphic bind_univs.mono = Type@{u}
+     : Type@{u+1}
+(* {u} |=  *)
+
+bind_univs.mono is not universe polymorphic
+bind_univs.poly@{u} = Type@{u}
+     : Type@{u+1}
+(* u |=  *)
+
+bind_univs.poly is universe polymorphic
+insec@{v} = Type@{u} -> Type@{v}
+     : Type@{max(u+1, v+1)}
+(* v |=  *)
+
+insec is universe polymorphic
+insec@{u v} = Type@{u} -> Type@{v}
+     : Type@{max(u+1, v+1)}
+(* u v |=  *)
+
+insec is universe polymorphic
+inmod@{u} = Type@{u}
+     : Type@{u+1}
+(* u |=  *)
+
+inmod is universe polymorphic
+SomeMod.inmod@{u} = Type@{u}
+     : Type@{u+1}
+(* u |=  *)
+
+SomeMod.inmod is universe polymorphic
+inmod@{u} = Type@{u}
+     : Type@{u+1}
+(* u |=  *)
+
+inmod is universe polymorphic
+Applied.infunct@{u v} = 
+inmod@{u} -> Type@{v}
+     : Type@{max(u+1, v+1)}
+(* u v |=  *)
+
+Applied.infunct is universe polymorphic

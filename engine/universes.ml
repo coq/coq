@@ -32,8 +32,36 @@ let universe_binders_of_global ref : universe_binders =
     let l = Refmap.find ref !universe_binders_table in l
   with Not_found -> Names.Id.Map.empty
 
-let register_universe_binders ref l =
+let cache_ubinder (_,(ref,l)) =
   universe_binders_table := Refmap.add ref l !universe_binders_table
+
+let subst_ubinder (subst,(ref,l as orig)) =
+  let ref' = fst (Globnames.subst_global subst ref) in
+  if ref == ref' then orig else ref', l
+
+let discharge_ubinder (_,(ref,l)) =
+  Some (Lib.discharge_global ref, l)
+
+let ubinder_obj : Globnames.global_reference * universe_binders -> Libobject.obj =
+  let open Libobject in
+  declare_object { (default_object "universe binder") with
+    cache_function = cache_ubinder;
+    load_function = (fun _ x -> cache_ubinder x);
+    classify_function = (fun x -> Substitute x);
+    subst_function = subst_ubinder;
+    discharge_function = discharge_ubinder;
+    rebuild_function = (fun x -> x); }
+
+let register_universe_binders ref ubinders =
+  (* Add the polymorphic (section) universes *)
+  let open Names in
+  let ubinders = Idmap.fold (fun id (poly,lvl) ubinders ->
+      if poly then Id.Map.add id lvl ubinders
+      else ubinders)
+      (fst (Global.global_universe_names ())) ubinders
+  in
+  if not (Id.Map.is_empty ubinders)
+  then Lib.add_anonymous_leaf (ubinder_obj (ref,ubinders))
 
 type univ_name_list = Name.t Loc.located list
 

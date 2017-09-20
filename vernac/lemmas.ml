@@ -204,7 +204,7 @@ let save ?export_seff id const cstrs pl do_guard (locality,poly,kind) hook =
           (locality, ConstRef kn)
     in
     definition_message id;
-    Option.iter (Universes.register_universe_binders r) pl;
+    Universes.register_universe_binders r (Option.default Universes.empty_binders pl);
     call_hook (fun exn -> exn) hook l r
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in
@@ -312,7 +312,7 @@ let admit (id,k,e) pl hook () =
   | Local, _, _ | Discharge, _, _ -> warn_let_as_axiom id
   in
   let () = assumption_message id in
-  Option.iter (Universes.register_universe_binders (ConstRef kn)) pl;
+  Universes.register_universe_binders (ConstRef kn) (Option.default Universes.empty_binders pl);
   call_hook (fun exn -> exn) hook Global (ConstRef kn)
 
 (* Starting a goal *)

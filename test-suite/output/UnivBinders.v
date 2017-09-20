@@ -52,3 +52,30 @@ Fail Print mono@{E}.
 
 (* Not everything can be printed with custom universe names. *)
 Fail Print Coq.Init.Logic@{E}.
+
+(* Universe binders survive through compilation, sections and modules. *)
+Require bind_univs.
+Print bind_univs.mono.
+Print bind_univs.poly.
+
+Section SomeSec.
+  Universe u.
+  Definition insec@{v} := Type@{u} -> Type@{v}.
+  Print insec.
+End SomeSec.
+Print insec.
+
+Module SomeMod.
+  Definition inmod@{u} := Type@{u}.
+  Print inmod.
+End SomeMod.
+Print SomeMod.inmod.
+Import SomeMod.
+Print inmod.
+
+Module Type SomeTyp. Definition inmod := Type. End SomeTyp.
+Module SomeFunct (In : SomeTyp).
+  Definition infunct@{u v} := In.inmod@{u} -> Type@{v}.
+End SomeFunct.
+Module Applied := SomeFunct(SomeMod).
+Print Applied.infunct.

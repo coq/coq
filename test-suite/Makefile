@@ -95,7 +95,8 @@ VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
 SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coqwc coq-makefile
 
 PREREQUISITELOG = prerequisite/admit.v.log			\
-  prerequisite/make_local.v.log prerequisite/make_notation.v.log
+  prerequisite/make_local.v.log prerequisite/make_notation.v.log \
+  prerequisite/bind_univs.v.log
 
 #######################################################################
 # Phony targets
