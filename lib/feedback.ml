@@ -64,7 +64,9 @@ let feedback ?id ?route what =
      route = Option.default !feedback_route route;
      id    = Option.default !feedback_id id;
   } in
-  Hashtbl.iter (fun _ f -> f m) feeders
+  let at_least_one_sink =
+    Hashtbl.fold (fun _ f _ -> f m; true) feeders false in
+  assert at_least_one_sink
 
 (* Logging messages *)
 let feedback_logger ?loc lvl msg =
