@@ -500,7 +500,7 @@ uninstall::
 	 instf="$(COQLIBINSTALL)/$$df/`basename $$f`" &&\
 	 rm -f "$$instf" &&\
 	 echo RM "$$instf" &&\
-	 (rmdir "$(call concat_path,,$(COQLIBINSTALL)/$$df/)" || true); \
+	 (rmdir "$(call concat_path,,$(COQLIBINSTALL)/$$df/)" 2>/dev/null || true); \
 	done
 .PHONY: uninstall
 
