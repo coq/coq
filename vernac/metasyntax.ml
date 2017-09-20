@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Pp
-open Flags
 open CErrors
 open Util
 open Names
@@ -759,7 +758,7 @@ type notation_modifier = {
   (* common to syn_data below *)
   only_parsing  : bool;
   only_printing : bool;
-  compat        : compat_version option;
+  compat        : Flags.compat_version option;
   format        : string Loc.located option;
   extra         : (string * string) list;
 }
@@ -1036,7 +1035,7 @@ module SynData = struct
     (* Fields coming from the vernac-level modifiers *)
     only_parsing  : bool;
     only_printing : bool;
-    compat        : compat_version option;
+    compat        : Flags.compat_version option;
     format        : string Loc.located option;
     extra         : (string * string) list;
 
@@ -1361,7 +1360,7 @@ let add_notation_interpretation ((loc,df),c,sc) =
 
 let set_notation_for_interpretation impls ((_,df),c,sc) =
   (try ignore
-    (silently (fun () -> add_notation_interpretation_core false df ~impls c sc false false None) ());
+    (Flags.silently (fun () -> add_notation_interpretation_core false df ~impls c sc false false None) ());
   with NoSyntaxRule ->
     user_err Pp.(str "Parsing rule for this notation has to be previously declared."));
   Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
