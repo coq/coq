@@ -1394,7 +1394,13 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
         if List.is_empty lval then Ftactic.return v else interp_app loc ist v lval
       else
         Ftactic.return (of_tacvalue (VFun(push_appl appl largs,trace,newlfun,lvar,body)))
-    | _ -> fail
+    | (VFun(appl,trace,olfun,[],body)) ->
+      let extra_args = List.length largs in
+      Tacticals.New.tclZEROMSG (str "Illegal tactic application: got " ++
+                                str (string_of_int extra_args) ++
+                                str " extra " ++ str (String.plural extra_args "argument") ++
+                                str ".")
+    | VRec(_,_) -> fail
   else fail
 
 (* Gives the tactic corresponding to the tactic value *)
