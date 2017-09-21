@@ -562,7 +562,6 @@ let parse_args arglist =
     |"-ideslave" -> set_ideslave ()
     |"-impredicative-set" -> set_impredicative_set ()
     |"-indices-matter" -> Indtypes.enforce_indices_matter ()
-    |"-just-parsing" -> warning "-just-parsing option has been removed in 8.6"
     |"-m"|"--memory" -> memory_stat := true
     |"-noinit"|"-nois" -> load_init := false
     |"-no-glob"|"-noglob" -> Dumpglob.noglob (); glob_opt := true
