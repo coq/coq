@@ -80,9 +80,6 @@ val add_universe_constraints : t -> Universes.universe_constraints -> t
 
 (** {5 Names} *)
 
-val add_universe_name : t -> Id.t -> Univ.Level.t -> t
-(** Associate a human-readable name to a local variable. *)
-
 val universe_of_name : t -> Id.t -> Univ.Level.t
 (** Retrieve the universe associated to the name. *)
 

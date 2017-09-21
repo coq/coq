@@ -55,7 +55,7 @@ let ubinder_obj : Globnames.global_reference * universe_binders -> Libobject.obj
 let register_universe_binders ref ubinders =
   (* Add the polymorphic (section) universes *)
   let open Names in
-  let ubinders = Idmap.fold (fun id (poly,lvl) ubinders ->
+  let ubinders = Id.Map.fold (fun id (poly,lvl) ubinders ->
       if poly then Id.Map.add id lvl ubinders
       else ubinders)
       (fst (Global.global_universe_names ())) ubinders

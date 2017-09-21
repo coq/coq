@@ -53,6 +53,8 @@ Monomorphic mono = Type@{u}
 (* {u} |=  *)
 
 mono is not universe polymorphic
+The command has indeed failed with message:
+Universe u already bound.
 foo@{E M N} = 
 Type@{M} -> Type@{N} -> Type@{E}
      : Type@{max(E+1, M+1, N+1)}

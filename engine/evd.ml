@@ -935,9 +935,6 @@ let nf_constraints evd =
 
 let universe_of_name evd s = UState.universe_of_name evd.universes s
 
-let add_universe_name evd s l =
-  { evd with universes = UState.add_universe_name evd.universes s l }
-
 let universe_binders evd = UState.universe_binders evd.universes
 
 let universes evd = UState.ugraph evd.universes

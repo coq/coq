@@ -109,6 +109,9 @@ let initial_graph ctx = ctx.uctx_initial_universes
 let algebraics ctx = ctx.uctx_univ_algebraic
 
 let add_uctx_names ?loc s l (names, names_rev) =
+  if UNameMap.mem s names
+  then user_err ?loc ~hdr:"add_uctx_names"
+      Pp.(str "Universe " ++ Names.Id.print s ++ str" already bound.");
   (UNameMap.add s l names, Univ.LMap.add l { uname = Some s; uloc = loc } names_rev)
 
 let add_uctx_loc l loc (names, names_rev) =
@@ -572,10 +575,6 @@ let normalize uctx =
 
 let universe_of_name uctx s = 
   UNameMap.find s (fst uctx.uctx_names)
-
-let add_universe_name uctx s l =
-  let names' = add_uctx_names s l uctx.uctx_names in
-  { uctx with uctx_names = names' }
 
 let update_sigma_env uctx env =
   let univs = Environ.universes env in

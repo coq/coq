@@ -34,6 +34,9 @@ Print foo.
 Monomorphic Definition mono@{u} := Type@{u}.
 Print mono.
 
+(* fun x x => foo is nonsense with local binders *)
+Fail Definition fo@{u u} := Type@{u}.
+
 (* Using local binders for printing. *)
 Print foo@{E M N}.
 (* Underscores discard the name if there's one. *)
