@@ -234,7 +234,8 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
     let acc = Option.fold_left (f v') acc rtntypopt in
     List.fold_left fold_pattern acc pl
   | GLetTuple (nal,rtntyp,b,c) ->
-    f v (f v (fold_return_type_with_binders f g v acc rtntyp) b) c
+    f (List.fold_right (Name.fold_right g) nal v)
+      (f v (fold_return_type_with_binders f g v acc rtntyp) b) c
   | GIf (c,rtntyp,b1,b2) ->
     f v (f v (f v (fold_return_type_with_binders f g v acc rtntyp) c) b1) b2
   | GRec (_,idl,bll,tyl,bv) ->
