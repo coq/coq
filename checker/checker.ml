@@ -380,8 +380,10 @@ let init_feedback_listener () =
   let pp_loc fmt loc = let open Loc in match loc with
     | None     -> fprintf fmt ""
     | Some loc ->
-      fprintf fmt "File \"%s\", line %d, characters %d-%d:@\n"
-        loc.fname loc.line_nb (loc.bp-loc.bol_pos) (loc.ep-loc.bol_pos) in
+      let where =
+        match loc.fname with InFile f -> f | ToplevelInput -> "Toplevel input" in
+      fprintf fmt "\"%s\", line %d, characters %d-%d:@\n"
+        where loc.line_nb (loc.bp-loc.bol_pos) (loc.ep-loc.bol_pos) in
   let checker_feed (fb : Feedback.feedback) = let open Feedback in
   match fb.contents with
   | Processed   -> ()
