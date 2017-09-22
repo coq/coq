@@ -460,8 +460,11 @@ and detype_r d flags avoid env sigma t =
 	 in GVar (Id.of_string s))
     | Meta n ->
 	(* Meta in constr are not user-parsable and are mapped to Evar *)
-        (* using numbers to be unparsable *)
-	GEvar (Id.of_string ("M" ^ string_of_int n), [])
+        if n = Constr_matching.special_meta then
+          (* Using a dash to be unparsable *)
+	  GEvar (Id.of_string_soft "CONTEXT-HOLE", [])
+        else
+	  GEvar (Id.of_string_soft ("INTERNAL#" ^ string_of_int n), [])
     | Var id ->
 	(try let _ = Global.lookup_named id in GRef (VarRef id, None)
 	 with Not_found -> GVar id)
