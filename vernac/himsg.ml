@@ -300,6 +300,8 @@ let explain_unification_error env sigma p1 p2 = function
      | NotSameArgSize | NotSameHead | NoCanonicalStructure ->
         (* Error speaks from itself *) []
      | ConversionFailed (env,t1,t2) ->
+        let t1 = Reductionops.nf_betaiota sigma t1 in
+        let t2 = Reductionops.nf_betaiota sigma t2 in
         if EConstr.eq_constr sigma t1 p1 && EConstr.eq_constr sigma t2 p2 then [] else
         let env = make_all_name_different env sigma in
         let t1 = Evarutil.nf_evar sigma t1 in
