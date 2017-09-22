@@ -3676,7 +3676,7 @@ sig
                    | VtProofStep of proof_step
                    | VtProofMode of string
                    | VtQuery of vernac_part_of_script * Feedback.route_id
-                   | VtStm of vernac_control * vernac_part_of_script
+                   | VtBack of vernac_part_of_script * Stateid.t
                    | VtUnknown
    and vernac_qed_type =
      | VtKeep
@@ -3685,10 +3685,6 @@ sig
    and vernac_start = string * opacity_guarantee * Names.Id.t list
    and vernac_sideff_type = Names.Id.t list
    and vernac_part_of_script = bool
-   and vernac_control =
-     | VtWait
-     | VtJoinDocument
-     | VtBack of Stateid.t
    and opacity_guarantee =
      | GuaranteesOpacity
      | Doesn'tGuaranteeOpacity
@@ -3770,7 +3766,6 @@ sig
   type option_value
   type showable
   type bullet
-  type stm_vernac
   type comment
   type register_kind
   type locatable
@@ -3922,7 +3917,6 @@ sig
   | VernacLocate of locatable
   | VernacRegister of lident * register_kind
   | VernacComments of comment list
-  | VernacStm of stm_vernac
   | VernacGoal of Constrexpr.constr_expr
   | VernacAbort of lident option
   | VernacAbortAll

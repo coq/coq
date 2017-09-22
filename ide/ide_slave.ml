@@ -413,6 +413,7 @@ let eval_call c =
     Interface.quit = (fun () -> quit := true);
     Interface.init = interruptible init;
     Interface.about = interruptible about;
+    Interface.wait = interruptible Stm.wait;
     Interface.interp = interruptible interp;
     Interface.handle_exn = handle_exn;
     Interface.stop_worker = Stm.stop_worker;

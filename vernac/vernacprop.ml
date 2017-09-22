@@ -17,8 +17,7 @@ let rec is_navigation_vernac = function
   | VernacResetName _
   | VernacBacktrack _
   | VernacBackTo _
-  | VernacBack _
-  | VernacStm _ -> true
+  | VernacBack _ -> true
   | VernacRedirect (_, (_,c))
   | VernacTime (_,c) ->
       is_navigation_vernac c (* Time Back* is harmless *)

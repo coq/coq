@@ -291,7 +291,10 @@ Pseudocode for listing all of the goals in order: `rev (flat_map fst background)
 
 
 ### <a name="command-status">**Status(force: bool)**</a>
-CoqIDE typically sets `force` to `false`. 
+Returns information about the current proofs. CoqIDE typically sends this
+message with `force = false` after each sentence, and with `force = true` if
+the user wants to force the checking of all proofs (wheels button). In terms of
+the STM API, `force` triggers a `Join`.
 ```html
 <call val="Status"><bool val="${force}"/></call>
 ```

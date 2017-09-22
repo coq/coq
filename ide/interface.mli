@@ -229,6 +229,9 @@ type print_ast_rty = Xml_datatype.xml
 type annotate_sty = string
 type annotate_rty = Xml_datatype.xml
 
+type wait_sty = unit
+type wait_rty = unit
+
 type handler = {
   add         : add_sty         -> add_rty;
   edit_at     : edit_at_sty     -> edit_at_rty;
@@ -248,6 +251,8 @@ type handler = {
   handle_exn  : handle_exn_sty  -> handle_exn_rty;
   init        : init_sty        -> init_rty;
   quit        : quit_sty        -> quit_rty;
+  (* for internal use (fake_id) only, do not use *)
+  wait        : wait_sty        -> wait_rty;
   (* Retrocompatibility stuff *)
   interp      : interp_sty      -> interp_rty;
 }

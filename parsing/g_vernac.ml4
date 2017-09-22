@@ -75,10 +75,6 @@ GEXTEND Gram
       | IDENT "Local"; v = vernac_poly -> VernacLocal (true, v)
       | IDENT "Global"; v = vernac_poly -> VernacLocal (false, v)
 
-      (* Stm backdoor *)
-      | IDENT "Stm"; IDENT "JoinDocument"; "." -> VernacStm JoinDocument
-      | IDENT "Stm"; IDENT "Wait"; "." -> VernacStm Wait
-
       | v = vernac_poly -> v ]
     ]
   ;

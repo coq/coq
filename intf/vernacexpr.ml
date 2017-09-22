@@ -280,11 +280,6 @@ type bullet =
     | Star of int
     | Plus of int
 
-(** {6 Types concerning Stm} *)
-type stm_vernac =
-  | JoinDocument
-  | Wait
-
 (** {6 Types concerning the module layer} *)
 
 (** Rigid / flexible module signature *)
@@ -450,10 +445,6 @@ type vernac_expr =
   | VernacRegister of lident * register_kind
   | VernacComments of comment list
 
-  (* Stm backdoor: used in fake_id, will be removed when fake_ide
-     becomes aware of feedback about completed jobs. *)
-  | VernacStm of stm_vernac
-
   (* Proof management *)
   | VernacGoal of constr_expr
   | VernacAbort of lident option
@@ -504,16 +495,12 @@ type vernac_type =
   | VtProofStep of proof_step
   | VtProofMode of string
   | VtQuery of vernac_part_of_script * Feedback.route_id
-  | VtStm of vernac_control * vernac_part_of_script
+  | VtBack of vernac_part_of_script * Stateid.t
   | VtUnknown
 and vernac_qed_type = VtKeep | VtKeepAsAxiom | VtDrop (* Qed/Admitted, Abort *)
 and vernac_start = string * opacity_guarantee * Id.t list
 and vernac_sideff_type = Id.t list
 and vernac_part_of_script = bool
-and vernac_control =
-  | VtWait
-  | VtJoinDocument
-  | VtBack of Stateid.t
 and opacity_guarantee =
   | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
   | Doesn'tGuaranteeOpacity (** May generate transparent terms even with [Qed].*)
