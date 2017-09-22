@@ -9,7 +9,6 @@
 open Pp
 open CErrors
 open Util
-open Flags
 open Term
 open Vars
 open Termops
@@ -692,7 +691,7 @@ let declare_mutual_inductive_with_eliminations mie pl impls =
 		constrimpls)
       impls;
   let warn_prim = match mie.mind_entry_record with Some (Some _) -> not prim | _ -> false in
-  if_verbose Feedback.msg_info (minductive_message warn_prim names);
+  Flags.if_verbose Feedback.msg_info (minductive_message warn_prim names);
   if mie.mind_entry_private == None
   then declare_default_schemes mind;
   mind

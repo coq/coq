@@ -9,7 +9,6 @@
 open CErrors
 open Util
 open Pp
-open Flags
 open Names
 open Libnames
 open Globnames
@@ -387,7 +386,7 @@ let add_coercion_in_graph (ic,source,target) =
       old_inheritance_graph
   end;
   let is_ambig = match !ambig_paths with [] -> false | _ -> true in
-  if is_ambig && not !quiet then
+  if is_ambig && not !Flags.quiet then
     Feedback.msg_info (message_ambig !ambig_paths)
 
 type coercion = {

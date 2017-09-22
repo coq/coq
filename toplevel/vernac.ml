@@ -11,7 +11,6 @@
 open Pp
 open CErrors
 open Util
-open Flags
 open Vernacexpr
 open Vernacprop
 
@@ -53,7 +52,7 @@ let set_formatter_translator ch =
 
 let pr_new_syntax_in_context ?loc chan_beautify ocom =
   let loc = Option.cata Loc.unloc (0,0) loc in
-  if !beautify_file then set_formatter_translator chan_beautify;
+  if !Flags.beautify_file then set_formatter_translator chan_beautify;
   let fs = States.freeze ~marshallable:`No in
   (* The content of this is not supposed to fail, but if ever *)
   try
@@ -63,7 +62,7 @@ let pr_new_syntax_in_context ?loc chan_beautify ocom =
       | Some com -> Ppvernac.pr_vernac com
       | None -> mt() in
     let after = comment (CLexer.extract_comments (snd loc)) in
-    if !beautify_file then
+    if !Flags.beautify_file then
       (Pp.pp_with !Topfmt.std_ft (hov 0 (before ++ com ++ after));
        Format.pp_print_flush !Topfmt.std_ft ())
     else
@@ -209,7 +208,7 @@ and load_vernac verbosely sid file =
        *)
       in
       (* Printing of vernacs *)
-      if !beautify then pr_new_syntax ?loc in_pa chan_beautify (Some ast);
+      if !Flags.beautify then pr_new_syntax ?loc in_pa chan_beautify (Some ast);
       Option.iter (vernac_echo ?loc) in_echo;
 
       checknav_simple (loc, ast);
@@ -224,7 +223,7 @@ and load_vernac verbosely sid file =
     match e with
       | Stm.End_of_input ->
           (* Is this called so comments at EOF are printed? *)
-          if !beautify then
+          if !Flags.beautify then
             pr_new_syntax ~loc:(Loc.make_loc (max_int,max_int)) in_pa chan_beautify None;
           if !Flags.beautify_file then close_out chan_beautify;
           !rsid
@@ -290,7 +289,7 @@ let compile verbosely f =
                     ++ str ".")
   in
   match !Flags.compilation_mode with
-  | BuildVo ->
+  | Flags.BuildVo ->
       let long_f_dot_v = ensure_v f in
       ensure_exists long_f_dot_v;
       let long_f_dot_vo =
@@ -314,7 +313,7 @@ let compile verbosely f =
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       Aux_file.stop_aux_file ();
       Dumpglob.end_dump_glob ()
-  | BuildVio ->
+  | Flags.BuildVio ->
       let long_f_dot_v = ensure_v f in
       ensure_exists long_f_dot_v;
       let long_f_dot_vio =
@@ -329,7 +328,7 @@ let compile verbosely f =
       check_pending_proofs ();
       Stm.snapshot_vio ldir long_f_dot_vio;
       Stm.reset_task_queue ()
-  | Vio2Vo ->
+  | Flags.Vio2Vo ->
       let open Filename in
       let open Library in
       Dumpglob.noglob ();
