@@ -93,7 +93,7 @@ let parse_args () =
 
     | ("-bt"|"-debug"|"-nolib"|"-boot"|"-time"|"-profile-ltac"
       |"-batch"|"-noinit"|"-nois"|"-noglob"|"-no-glob"
-      |"-q"|"-profile"|"-just-parsing"|"-echo" |"-quiet"
+      |"-q"|"-profile"|"-echo" |"-quiet"
       |"-silent"|"-m"|"-xml"|"-beautify"|"-strict-implicit"
       |"-impredicative-set"|"-vm"|"-native-compiler"
       |"-indices-matter"|"-quick"|"-type-in-type"
