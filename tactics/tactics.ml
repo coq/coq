@@ -74,7 +74,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "trigger bugged context matching compatibility";
       optkey   = ["Tactic";"Compat";"Context"];
       optread  = (fun () -> !Flags.tactic_context_compat) ;
