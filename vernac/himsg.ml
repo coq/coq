@@ -84,7 +84,7 @@ let rec contract3' env sigma a b c = function
 (** Ad-hoc reductions *)
 
 let j_nf_betaiotaevar sigma j =
-  { uj_val = Evarutil.nf_evar sigma j.uj_val;
+  { uj_val = j.uj_val;
     uj_type = Reductionops.nf_betaiota sigma j.uj_type }
 
 let jv_nf_betaiotaevar sigma jl =
@@ -173,7 +173,6 @@ let explain_unbound_var env v =
   str "No such section variable or assumption: " ++ var ++ str "."
 
 let explain_not_type env sigma j =
-  let j = Evarutil.j_nf_evar sigma j in
   let pe = pr_ne_context_of (str "In environment") env sigma in
   let pc,pt = pr_ljudge_env env sigma j in
   pe ++ str "The term" ++ brk(1,1) ++ pc ++ spc () ++
@@ -241,7 +240,6 @@ let explain_elim_arity env sigma ind sorts c pj okinds =
   fnl () ++ msg
 
 let explain_case_not_inductive env sigma cj =
-  let cj = Evarutil.j_nf_evar sigma cj in
   let env = make_all_name_different env sigma in
   let pc = pr_leconstr_env env sigma cj.uj_val in
   let pct = pr_leconstr_env env sigma cj.uj_type in
@@ -254,7 +252,6 @@ let explain_case_not_inductive env sigma cj =
 	  str "which is not a (co-)inductive type."
 
 let explain_number_branches env sigma cj expn =
-  let cj = Evarutil.j_nf_evar sigma cj in
   let env = make_all_name_different env sigma in
   let pc = pr_leconstr_env env sigma cj.uj_val in
   let pct = pr_leconstr_env env sigma cj.uj_type in
@@ -263,7 +260,7 @@ let explain_number_branches env sigma cj expn =
   str "expects " ++  int expn ++ str " branches."
 
 let explain_ill_formed_branch env sigma c ci actty expty =
-  let simp t = Reductionops.nf_betaiota sigma (Evarutil.nf_evar sigma t) in
+  let simp t = Reductionops.nf_betaiota sigma t in
   let env = make_all_name_different env sigma in
   let pc = pr_leconstr_env env sigma c in
   let pa, pe = pr_explicit env sigma (simp actty) (simp expty) in
@@ -304,8 +301,6 @@ let explain_unification_error env sigma p1 p2 = function
         let t2 = Reductionops.nf_betaiota sigma t2 in
         if EConstr.eq_constr sigma t1 p1 && EConstr.eq_constr sigma t2 p2 then [] else
         let env = make_all_name_different env sigma in
-        let t1 = Evarutil.nf_evar sigma t1 in
-        let t2 = Evarutil.nf_evar sigma t2 in
         if not (EConstr.eq_constr sigma t1 p1) || not (EConstr.eq_constr sigma t2 p2) then
           let t1, t2 = pr_explicit env sigma t1 t2 in
           [str "cannot unify " ++ t1 ++ strbrk " and " ++ t2]
@@ -329,8 +324,6 @@ let explain_unification_error env sigma p1 p2 = function
      | CannotSolveConstraint ((pb,env,t,u),e) ->
         let t = EConstr.of_constr t in
         let u = EConstr.of_constr u in
-        let t = Evarutil.nf_evar sigma t in
-        let u = Evarutil.nf_evar sigma u in
         let env = make_all_name_different env sigma in
         (strbrk "cannot satisfy constraint " ++ pr_leconstr_env env sigma t ++
         str " == " ++ pr_leconstr_env env sigma u)
@@ -361,9 +354,7 @@ let explain_actual_type env sigma j t reason =
 
 let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
   let randl = jv_nf_betaiotaevar sigma randl in
-  let exptyp = Evarutil.nf_evar sigma exptyp in
   let actualtyp = Reductionops.nf_betaiota sigma actualtyp in
-  let rator = Evarutil.j_nf_evar sigma rator in
   let env = make_all_name_different env sigma in
   let actualtyp, exptyp = pr_explicit env sigma actualtyp exptyp in
   let nargs = Array.length randl in
@@ -388,8 +379,6 @@ let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
   exptyp ++ str "."
 
 let explain_cant_apply_not_functional env sigma rator randl =
-  let randl = Evarutil.jv_nf_evar sigma randl in
-  let rator = Evarutil.j_nf_evar sigma rator in
   let env = make_all_name_different env sigma in
   let nargs = Array.length randl in
 (*  let pe = pr_ne_context_of (str "in environment") env sigma in*)
@@ -409,8 +398,6 @@ let explain_cant_apply_not_functional env sigma rator randl =
   fnl () ++ str " " ++ v 0 appl
 
 let explain_unexpected_type env sigma actual_type expected_type =
-  let actual_type = Evarutil.nf_evar sigma actual_type in
-  let expected_type = Evarutil.nf_evar sigma expected_type in
   let pract, prexp = pr_explicit env sigma actual_type expected_type in
   str "Found type" ++ spc () ++ pract ++ spc () ++
   str "where" ++ spc () ++ prexp ++ str " was expected."
@@ -512,8 +499,6 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
     with e when CErrors.noncritical e -> mt ())
 
 let explain_ill_typed_rec_body env sigma i names vdefj vargs =
-  let vdefj = Evarutil.jv_nf_evar sigma vdefj in
-  let vargs = Array.map (Evarutil.nf_evar sigma) vargs in
   let env = make_all_name_different env sigma in
   let pvd = pr_leconstr_env env sigma vdefj.(i).uj_val in
   let pvdt, pv = pr_explicit env sigma vdefj.(i).uj_type vargs.(i) in
@@ -577,9 +562,9 @@ let rec explain_evar_kind env sigma evk ty = function
   | Evar_kinds.SubEvar evk' ->
       let evi = Evd.find sigma evk' in
       let pc = match evi.evar_body with
-      | Evar_defined c -> pr_leconstr_env env sigma (Evarutil.nf_evar sigma (EConstr.of_constr c))
+      | Evar_defined c -> pr_leconstr_env env sigma (EConstr.of_constr c)
       | Evar_empty -> assert false in
-      let ty' = Evarutil.nf_evar sigma (EConstr.of_constr evi.evar_concl) in
+      let ty' = EConstr.of_constr evi.evar_concl in
       pr_existential_key sigma evk ++ str " of type " ++ ty ++
       str " in the partial instance " ++ pc ++
       str " found for " ++ explain_evar_kind env sigma evk'
@@ -630,8 +615,6 @@ let explain_wrong_case_info env (ind,u) ci =
 
 let explain_cannot_unify env sigma m n e =
   let env = make_all_name_different env sigma in
-  let m = Evarutil.nf_evar sigma m in
-  let n = Evarutil.nf_evar sigma n in
   let pm, pn = pr_explicit env sigma m n in
   let ppreason = explain_unification_error env sigma m n e in
   let pe = pr_ne_context_of (str "In environment") env sigma in
