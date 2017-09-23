@@ -36,7 +36,7 @@ let detype_param =
      I1..Ip:(B1 y1..yq)..(Bp y1..yq) |- ci : (y1..yq:C1..Cq)Ti[Ij:=(Ij y1..yq)]
 *)
 
-let abstract_inductive hyps nparams inds =
+let abstract_inductive hyps nparamdecls inds =
   let ntyp = List.length inds in
   let nhyp = Context.Named.length hyps in
   let args = Context.Named.to_instance mkVar (List.rev hyps) in
@@ -50,18 +50,18 @@ let abstract_inductive hyps nparams inds =
 	let arity' = Termops.it_mkNamedProd_wo_LetIn arity hyps in
         (tname,arity',template,cnames,lc''))
       	inds in
-  let nparams' = nparams + Array.length args in
+  let nparamdecls' = nparamdecls + Array.length args in
 (* To be sure to be the same as before, should probably be moved to process_inductive *)
   let params' = let (_,arity,_,_,_) = List.hd inds' in
-		let (params,_) = decompose_prod_n_assum nparams' arity in
+		let (params,_) = decompose_prod_n_assum nparamdecls' arity in
                 List.map detype_param params
   in
   let ind'' =
   List.map
     (fun (a,arity,template,c,lc) ->
-      let _, short_arity = decompose_prod_n_assum nparams' arity in
+      let _, short_arity = decompose_prod_n_assum nparamdecls' arity in
       let shortlc =
-	List.map (fun c -> snd (decompose_prod_n_assum nparams' c)) lc in
+	List.map (fun c -> snd (decompose_prod_n_assum nparamdecls' c)) lc in
       { mind_entry_typename = a;
 	mind_entry_arity = short_arity;
 	mind_entry_template = template;
@@ -79,7 +79,7 @@ let refresh_polymorphic_type_of_inductive (_,mip) =
 
 let process_inductive (sechyps,_,_ as info) modlist mib =
   let sechyps = Lib.named_of_variable_context sechyps in
-  let nparams = mib.mind_nparams in
+  let nparamdecls = Context.Rel.length mib.mind_params_ctxt in
   let subst, ind_univs =
     match mib.mind_universes with
     | Monomorphic_ind ctx -> Univ.empty_level_subst, Monomorphic_ind_entry ctx
@@ -106,7 +106,7 @@ let process_inductive (sechyps,_,_ as info) modlist mib =
 	   Array.to_list lc))
       mib.mind_packets in
   let sechyps' = Context.Named.map discharge sechyps in
-  let (params',inds') = abstract_inductive sechyps' nparams inds in
+  let (params',inds') = abstract_inductive sechyps' nparamdecls inds in
   let record = match mib.mind_record with
     | Some (Some (id, _, _)) -> Some (Some id)
     | Some None -> Some None
