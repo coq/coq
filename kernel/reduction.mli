@@ -103,6 +103,12 @@ val beta_app : constr -> constr -> constr
 (** Pseudo-reduction rule  Prod(x,A,B) a --> B[x\a] *)
 val hnf_prod_applist : env -> types -> constr list -> types
 
+(** In [hnf_prod_applist_assum n c args], [c] is supposed to (whd-)reduce to
+    the form [∀Γ.t] with [Γ] of length [n] and possibly with let-ins; it
+    returns [t] with the assumptions of [Γ] instantiated by [args] and
+    the local definitions of [Γ] expanded. *)
+val hnf_prod_applist_assum : env -> int -> types -> constr list -> types
+
 (** Compatibility alias for Term.lambda_appvect_assum *)
 val betazeta_appvect : int -> constr -> constr array -> constr
 
