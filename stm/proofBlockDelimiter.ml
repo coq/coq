@@ -11,7 +11,7 @@ open Stm
 module Util : sig
 
 val simple_goal : Evd.evar_map -> Goal.goal -> Goal.goal list -> bool
-val is_focused_goal_simple : Stateid.t -> [ `Simple of Goal.goal list | `Not ]
+val is_focused_goal_simple : doc:Stm.doc -> Stateid.t -> [ `Simple of Goal.goal list | `Not ]
 
 type 'a until = [ `Stop | `Found of static_block_declaration | `Cont of 'a ]
 
@@ -43,8 +43,8 @@ let simple_goal sigma g gs =
   Set.is_empty (evars_of_filtered_evar_info (nf_evar_info sigma evi)) &&
   not (List.exists (Proofview.depends_on sigma g) gs)
 
-let is_focused_goal_simple id =
-  match state_of_id id with
+let is_focused_goal_simple ~doc id =
+  match state_of_id ~doc id with
   | `Expired | `Error _ | `Valid None -> `Not
   | `Valid (Some { proof }) ->
        let proof = Proof_global.proof_of_state proof in
@@ -88,8 +88,8 @@ let static_bullet ({ entry_point; prev_node } as view) =
         | _ -> `Stop) entry_point
   | _ -> assert false
 
-let dynamic_bullet { dynamic_switch = id; carry_on_data = b } =
-  match is_focused_goal_simple id with
+let dynamic_bullet doc { dynamic_switch = id; carry_on_data = b } =
+  match is_focused_goal_simple ~doc id with
   | `Simple focused ->
       `ValidBlock {
          base_state = id;
@@ -116,8 +116,8 @@ let static_curly_brace ({ entry_point; prev_node } as view) =
       `Cont (nesting + 1,node)
     | _ -> `Cont (nesting,node)) (-1, entry_point)
 
-let dynamic_curly_brace { dynamic_switch = id } =
-  match is_focused_goal_simple id with
+let dynamic_curly_brace doc { dynamic_switch = id } =
+  match is_focused_goal_simple ~doc id with
   | `Simple focused ->
       `ValidBlock {
          base_state = id;
@@ -138,8 +138,8 @@ let static_par { entry_point; prev_node } =
       Some { block_stop = entry_point.id; block_start = pid;
              dynamic_switch = pid; carry_on_data = unit_val }
 
-let dynamic_par { dynamic_switch = id } =
-  match is_focused_goal_simple id with
+let dynamic_par doc { dynamic_switch = id } =
+  match is_focused_goal_simple ~doc id with
   | `Simple focused ->
       `ValidBlock {
          base_state = id;
@@ -167,9 +167,9 @@ let static_indent ({ entry_point; prev_node } as view) =
                    carry_on_data = of_vernac_expr_val entry_point.ast }
         ) last_tac
 
-let dynamic_indent { dynamic_switch = id; carry_on_data = e } =
+let dynamic_indent doc { dynamic_switch = id; carry_on_data = e } =
   Printf.eprintf "%s\n" (Stateid.to_string id);
-  match is_focused_goal_simple id with
+  match is_focused_goal_simple ~doc id with
   | `Simple [] -> `Leaks
   | `Simple focused ->
       let but_last = List.tl (List.rev focused) in 

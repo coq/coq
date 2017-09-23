@@ -939,7 +939,7 @@ let of_edit_or_state_id id = ["object","state"], of_stateid id
 
 let of_feedback msg =
   let content = of_feedback_content msg.contents in
-  let obj, id = of_edit_or_state_id msg.id in
+  let obj, id = of_edit_or_state_id msg.span_id in
   let route = string_of_int msg.route in
   Element ("feedback", obj @ ["route",route], [id;content])
 
@@ -947,8 +947,9 @@ let of_feedback msg_fmt =
   msg_format := msg_fmt; of_feedback
 
 let to_feedback xml = match xml with
-  | Element ("feedback", ["object","state";"route",route], [id;content]) -> { 
-      id = to_stateid id;
+  | Element ("feedback", ["object","state";"route",route], [id;content]) -> {
+      doc_id = 0;
+      span_id = to_stateid id;
       route = int_of_string route;
       contents = to_feedback_content content }
   | x -> raise (Marshal_error("feedback",x))

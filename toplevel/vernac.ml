@@ -113,13 +113,13 @@ let vernac_error msg =
 (*     Stm.End_of_input -> true *)
 (*   | _ -> false *)
 
-let rec interp_vernac ~check ~interactive sid (loc,com) =
+let rec interp_vernac ~check ~interactive doc sid (loc,com) =
   let interp = function
     | VernacLoad (verbosely, fname) ->
 	let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
         let fname = CUnix.make_suffix fname ".v" in
         let f = Loadpath.locate_file fname in
-        load_vernac ~verbosely ~check ~interactive sid f
+        load_vernac ~verbosely ~check ~interactive doc sid f
     | v ->
 
       (* XXX: We need to run this before add as the classification is
@@ -137,7 +137,7 @@ let rec interp_vernac ~check ~interactive sid (loc,com) =
       in
       CWarnings.set_flags wflags;
 
-      let nsid, ntip = Stm.add ~ontop:sid (not !Flags.quiet) (loc,v) in
+      let doc, nsid, ntip = Stm.add ~doc ~ontop:sid (not !Flags.quiet) (loc,v) in
 
       (* Main STM interaction *)
       if ntip <> `NewTip then
@@ -146,7 +146,7 @@ let rec interp_vernac ~check ~interactive sid (loc,com) =
       (* Due to bug #5363 we cannot use observe here as we should,
          it otherwise reveals bugs *)
       (* Stm.observe nsid; *)
-      if check then Stm.finish ();
+      let ndoc = if check then Stm.finish ~doc else doc in
 
       (* We could use a more refined criteria that depends on the
          vernac. For now we imitate the old approach and rely on the
@@ -155,7 +155,7 @@ let rec interp_vernac ~check ~interactive sid (loc,com) =
                         is_proof_step && Proof_global.there_are_pending_proofs () in
 
       if print_goals then Feedback.msg_notice (pr_open_cur_subgoals ());
-      nsid
+      ndoc, nsid
   in
     try
       (* The -time option is only supported from console-based
@@ -166,7 +166,7 @@ let rec interp_vernac ~check ~interactive sid (loc,com) =
     with reraise ->
       (* XXX: In non-interactive mode edit_at seems to do very weird
          things, so we better avoid it while we investigate *)
-      if interactive then ignore(Stm.edit_at sid);
+      if interactive then ignore(Stm.edit_at ~doc sid);
       let (reraise, info) = CErrors.push reraise in
       let info = begin
         match Loc.get_loc info with
@@ -175,7 +175,7 @@ let rec interp_vernac ~check ~interactive sid (loc,com) =
       end in iraise (reraise, info)
 
 (* Load a vernac file. CErrors are annotated with file and location *)
-and load_vernac ~verbosely ~check ~interactive sid file =
+and load_vernac ~verbosely ~check ~interactive doc sid file =
   let ft_beautify, close_beautify =
     if !Flags.beautify_file then
       let chan_beautify = open_out (file^beautify_suffix) in
@@ -187,12 +187,13 @@ and load_vernac ~verbosely ~check ~interactive sid file =
   let in_echo = if verbosely then Some (open_utf8_file_in file) else None in
   let in_pa   = Pcoq.Gram.parsable ~file:(Loc.InFile file) (Stream.of_channel in_chan) in
   let rsid = ref sid in
+  let rdoc = ref doc in
   try
     (* we go out of the following infinite loop when a End_of_input is
      * raised, which means that we raised the end of the file being loaded *)
     while true do
       let loc, ast =
-          Stm.parse_sentence !rsid in_pa
+          Stm.parse_sentence ~doc:!rdoc !rsid in_pa
         (* If an error in parsing occurs, we propagate the exception
            so the caller of load_vernac will take care of it. However,
            in the future it could be possible that we want to handle
@@ -216,10 +217,11 @@ and load_vernac ~verbosely ~check ~interactive sid file =
       Option.iter (vernac_echo ?loc) in_echo;
 
       checknav_simple (loc, ast);
-      let nsid = Flags.silently (interp_vernac ~check ~interactive !rsid) (loc, ast) in
-      rsid := nsid
+      let ndoc, nsid = Flags.silently (interp_vernac ~check ~interactive !rdoc !rsid) (loc, ast) in
+      rsid := nsid;
+      rdoc := ndoc
     done;
-    !rsid
+    !rdoc, !rsid
   with any ->   (* whatever the exception *)
     let (e, info) = CErrors.push any in
     close_in in_chan;
@@ -230,7 +232,7 @@ and load_vernac ~verbosely ~check ~interactive sid file =
           if !Flags.beautify then
             pr_new_syntax ~loc:(Loc.make_loc (max_int,max_int)) in_pa ft_beautify None;
           if !Flags.beautify_file then close_beautify ();
-          !rsid
+          !rdoc, !rsid
       | reraise ->
          if !Flags.beautify_file then close_beautify ();
 	 iraise (disable_drop e, info)
@@ -242,9 +244,9 @@ and load_vernac ~verbosely ~check ~interactive sid file =
    of a new state label). An example of state-preserving command is one coming
    from the query panel of Coqide. *)
 
-let process_expr sid loc_ast =
+let process_expr doc sid loc_ast =
   checknav_deep loc_ast;
-  interp_vernac ~interactive:true ~check:true sid loc_ast
+  interp_vernac ~interactive:true ~check:true doc sid loc_ast
 
 let warn_file_no_extension =
   CWarnings.create ~name:"file-no-extension" ~category:"filesystem"
@@ -284,7 +286,7 @@ let ensure_exists f =
 type compilation_mode = BuildVo | BuildVio | Vio2Vo
 
 (* Compile a vernac file *)
-let compile ~verbosely ~mode ~f_in ~f_out=
+let compile ~verbosely ~mode ~doc ~f_in ~f_out=
   let check_pending_proofs () =
     let pfs = Proof_global.get_all_proof_names () in
     if not (List.is_empty pfs) then
@@ -310,8 +312,8 @@ let compile ~verbosely ~mode ~f_in ~f_out=
       Dumpglob.start_dump_glob ~vfile:long_f_dot_v ~vofile:long_f_dot_vo;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
       let wall_clock1 = Unix.gettimeofday () in
-      let _ = load_vernac ~verbosely ~check:true ~interactive:false (Stm.get_current_state ()) long_f_dot_v in
-      Stm.join ();
+      let _ = load_vernac ~verbosely ~check:true ~interactive:false doc (Stm.get_current_state ~doc) long_f_dot_v in
+      let _doc = Stm.join ~doc in
       let wall_clock2 = Unix.gettimeofday () in
       check_pending_proofs ();
       Library.save_library_to ldir long_f_dot_vo (Global.opaque_tables ());
@@ -329,10 +331,10 @@ let compile ~verbosely ~mode ~f_in ~f_out=
       let ldir = Flags.verbosely Library.start_library long_f_dot_vio in
       Dumpglob.noglob ();
       Stm.set_compilation_hints long_f_dot_vio;
-      let _ = load_vernac ~verbosely ~check:false ~interactive:false (Stm.get_current_state ()) long_f_dot_v in
-      Stm.finish ();
+      let _ = load_vernac ~verbosely ~check:false ~interactive:false doc (Stm.get_current_state ~doc) long_f_dot_v in
+      let doc = Stm.finish ~doc in
       check_pending_proofs ();
-      Stm.snapshot_vio ldir long_f_dot_vio;
+      let _doc = Stm.snapshot_vio ~doc ldir long_f_dot_vio in
       Stm.reset_task_queue ()
   | Vio2Vo ->
       let open Filename in
@@ -343,7 +345,7 @@ let compile ~verbosely ~mode ~f_in ~f_out=
       let univs, proofs = Stm.finish_tasks lfdv univs disch proofs tasks in
       Library.save_library_raw lfdv sum lib univs proofs
 
-let compile ~verbosely ~mode ~f_in ~f_out =
+let compile ~verbosely ~mode ~doc ~f_in ~f_out =
   ignore(CoqworkmgrApi.get 1);
-  compile ~verbosely ~mode ~f_in ~f_out;
+  compile ~verbosely ~mode ~doc ~f_in ~f_out;
   CoqworkmgrApi.giveback 1

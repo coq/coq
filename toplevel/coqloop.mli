@@ -15,7 +15,7 @@ val print_emacs : bool ref
  * entered to be able to report errors without pretty-printing. *)
 
 type input_buffer = {
-  mutable prompt : unit -> string;
+  mutable prompt : Stm.doc -> string;
   mutable str : Bytes.t; (** buffer of already read characters *)
   mutable len : int;    (** number of chars in the buffer *)
   mutable bols : int list; (** offsets in str of begining of lines *)
@@ -32,8 +32,8 @@ val coqloop_feed : Feedback.feedback -> unit
 
 (** Parse and execute one vernac command. *)
 
-val do_vernac : Stateid.t -> Stateid.t
+val do_vernac : Stm.doc -> Stateid.t -> Stm.doc * Stateid.t
 
 (** Main entry point of Coq: read and execute vernac commands. *)
 
-val loop : unit -> unit
+val loop : Stm.doc -> unit

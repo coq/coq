@@ -81,14 +81,14 @@ let toploop_init = ref begin fun x ->
 let coqtop_init_feed = Coqloop.coqloop_feed
 
 (* Default toplevel loop *)
-let console_toploop_run () =
+let console_toploop_run doc =
   (* We initialize the console only if we run the toploop_run *)
   let tl_feed = Feedback.add_feeder Coqloop.coqloop_feed in
   if Dumpglob.dump () then begin
     Flags.if_verbose warning "Dumpglob cannot be used in interactive mode.";
     Dumpglob.noglob ()
   end;
-  Coqloop.loop();
+  Coqloop.loop doc;
   (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();
   Mltop.ocaml_toploop();
@@ -119,11 +119,6 @@ let print_memory_stat () =
   end
 
 let _ = at_exit print_memory_stat
-
-(******************************************************************************)
-(* Deprecated                                                                 *)
-(******************************************************************************)
-let _remove_top_ml () = Mltop.remove ()
 
 (******************************************************************************)
 (* Engagement                                                                 *)
@@ -183,15 +178,15 @@ let load_vernacular_list = ref ([] : (string * bool) list)
 let add_load_vernacular verb s =
   load_vernacular_list := ((CUnix.make_suffix s ".v"),verb) :: !load_vernacular_list
 
-let load_vernacular sid =
+let load_vernacular doc sid =
   List.fold_left
-    (fun sid (f_in, verbosely) ->
+    (fun (doc,sid) (f_in, verbosely) ->
       let s = Loadpath.locate_file f_in in
       if !Flags.beautify then
-	Flags.with_option Flags.beautify_file (Vernac.load_vernac ~verbosely ~interactive:false ~check:true sid) f_in
+	Flags.with_option Flags.beautify_file (Vernac.load_vernac ~verbosely ~interactive:false ~check:true doc sid) f_in
       else
-	Vernac.load_vernac ~verbosely ~interactive:false ~check:true sid s)
-    sid (List.rev !load_vernacular_list)
+	Vernac.load_vernac ~verbosely ~interactive:false ~check:true doc sid s)
+    (doc, sid) (List.rev !load_vernacular_list)
 
 let load_vernacular_obj = ref ([] : string list)
 let add_vernac_obj s = load_vernacular_obj := s :: !load_vernacular_obj
@@ -258,20 +253,20 @@ let add_compile verbose s =
   in
   compile_list := (verbose,s) :: !compile_list
 
-let compile_file mode (verbosely,f_in) =
+let compile_file mode doc (verbosely,f_in) =
   if !Flags.beautify then
-    Flags.with_option Flags.beautify_file (fun f_in -> Vernac.compile ~verbosely ~mode ~f_in ~f_out:None) f_in
+    Flags.with_option Flags.beautify_file (fun f_in -> Vernac.compile ~verbosely ~mode ~doc ~f_in ~f_out:None) f_in
   else
-    Vernac.compile ~verbosely ~mode ~f_in ~f_out:None
+    Vernac.compile ~verbosely ~mode ~doc ~f_in ~f_out:None
 
-let compile_files () =
+let compile_files doc =
   if !compile_list == [] then ()
   else
     let init_state = States.freeze ~marshallable:`No in
     let mode = !compilation_mode in
     List.iter (fun vf ->
         States.unfreeze init_state;
-        compile_file mode vf)
+        compile_file mode doc vf)
       (List.rev !compile_list)
 
 (******************************************************************************)
@@ -283,7 +278,8 @@ let add_vio_task f =
   set_batch_mode ();
   Flags.quiet := true;
   vio_tasks := f :: !vio_tasks
-let check_vio_tasks () =
+
+let check_vio_tasks doc =
   let rc =
     List.fold_left (fun acc t -> Vio_checking.check_vio t && acc)
       true (List.rev !vio_tasks) in
@@ -307,7 +303,7 @@ let set_vio_checking_j opt j =
     prerr_endline "setting the J variable like in 'make vio2vo J=3'";
     exit 1
 
-let schedule_vio_checking () =
+let schedule_vio_checking doc =
   if !vio_files <> [] && !vio_checking then
     Vio_checking.schedule_vio_checking !vio_files_j !vio_files
 
@@ -649,7 +645,7 @@ let init_toplevel arglist =
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
   let init_feeder = Feedback.add_feeder coqtop_init_feed in
   Lib.init();
-  begin
+  let doc = begin
     try
       let extras = parse_args arglist in
       (* If we have been spawned by the Spawn module, this has to be done
@@ -677,27 +673,29 @@ let init_toplevel arglist =
       then Declaremods.start_library !toplevel_name;
       load_vernac_obj ();
       require ();
-      Stm.(init { doc_type = Interactive Names.DirPath.empty });
-      let sid  = Coqinit.load_rcfile (Stm.get_current_state ()) in
+      let doc = Stm.(init { doc_type = Interactive Names.DirPath.empty }) in
+      let doc, sid = Coqinit.load_rcfile doc (Stm.get_current_state ~doc) in
       (* XXX: We ignore this for now, but should be threaded to the toplevels *)
-      let _sid = load_vernacular sid in
-      compile_files ();
+      let doc, _sid = load_vernacular doc sid in
+      compile_files doc;
       (* All these tasks use coqtop as a driver to invoke more coqtop,
        * they should be really orthogonal to coqtop.
        *)
-      schedule_vio_checking ();
+      schedule_vio_checking doc;
       schedule_vio_compilation ();
-      check_vio_tasks ();
-      outputstate ()
+      check_vio_tasks doc;
+      outputstate ();
+      doc
     with any ->
       flush_all();
-      let extra =
-        if !batch_mode && not Stateid.(equal (Stm.get_current_state ()) dummy)
-        then None
-        else Some (str "Error during initialization: ")
+      let extra = None
+        (* XXX: Must refine once Stm.init takes care of the start_library & friends *)
+        (* if !batch_mode && not Stateid.(equal (Stm.get_current_state ~doc) dummy) *)
+        (* then None *)
+        (* else Some (str "Error during initialization: ") *)
       in
       fatal_error ?extra any
-  end;
+  end in
   if !batch_mode then begin
     flush_all();
     if !output_context then
@@ -705,13 +703,14 @@ let init_toplevel arglist =
     Profile.print_profile ();
     exit 0
   end;
-  Feedback.del_feeder init_feeder
+  Feedback.del_feeder init_feeder;
+  doc
 
 let start () =
-  let () = init_toplevel (List.tl (Array.to_list Sys.argv)) in
+  let doc = init_toplevel (List.tl (Array.to_list Sys.argv)) in
   (* In batch mode, Coqtop has already exited at this point. In interactive one,
      dump glob is nothing but garbage ...  *)
-  !toploop_run ();
+  !toploop_run doc;
   exit 1
 
 (* [Coqtop.start] will be called by the code produced by coqmktop *)

@@ -422,7 +422,7 @@ object(self)
     let rec eat_feedback n =
       if n = 0 then true else
       let msg = Queue.pop feedbacks in
-      let id = msg.id in
+      let id = msg.span_id in
       let sentence =
         let finder _ state_id s =
           match state_id, id with
