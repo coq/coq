@@ -239,8 +239,9 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       let (mib,mip) = Inductive.lookup_mind_specif env ind in
       let nparams = mib.mind_nparams in
       let params,realargs = Util.Array.chop nparams allargs in
+      let nparamdecls = Context.Rel.length (Inductive.inductive_paramdecls (mib,u)) in
       let pT =
-	hnf_prod_applist env (type_of_ind env (ind,u)) (Array.to_list params) in
+        hnf_prod_applist_assum env nparamdecls (type_of_ind env (ind,u)) (Array.to_list params) in
       let pT = whd_all env pT in
       let dep, p = nf_predicate env sigma (ind,u) mip params (type_of_switch sw) pT in
       (* Calcul du type des branches *)
