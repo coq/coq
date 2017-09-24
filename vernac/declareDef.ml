@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Decl_kinds
-open Declare
 open Entries
 open Globnames
 open Impargs
@@ -34,20 +33,20 @@ let get_locality id ~kind = function
 
 let declare_global_definition ident ce local k pl imps =
   let local = get_locality ident ~kind:"definition" local in
-  let kn = declare_constant ident ~local (DefinitionEntry ce, IsDefinition k) in
+  let kn = Ideclare.declare_constant ident ~local (DefinitionEntry ce, IsDefinition k) in
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
   let () = Universes.register_universe_binders gr pl in
-  let () = definition_message ident in
+  let () = Declare.definition_message ident in
   gr
 
 let declare_definition ident (local, p, k) ce pl imps hook =
   let fix_exn = Future.fix_exn_of ce.const_entry_body in
   let r = match local with
   | Discharge when Lib.sections_are_opened () ->
-    let c = SectionLocalDef ce in
-    let _ = declare_variable ident (Lib.cwd(), c, IsDefinition k) in
-    let () = definition_message ident in
+    let c = Declare.SectionLocalDef ce in
+    let _ = Ideclare.declare_variable ident (Lib.cwd(), c, IsDefinition k) in
+    let () = Declare.definition_message ident in
     let gr = VarRef ident in
     let () = maybe_declare_manual_implicits false gr imps in
     let () = if Proof_global.there_are_pending_proofs () then
@@ -59,6 +58,6 @@ let declare_definition ident (local, p, k) ce pl imps hook =
   Lemmas.call_hook fix_exn hook local r
 
 let declare_fix ?(opaque = false) (_,poly,_ as kind) pl ctx f ((def,_),eff) t imps =
-  let ce = definition_entry ~opaque ~types:t ~poly ~univs:ctx ~eff def in
+  let ce = Declare.definition_entry ~opaque ~types:t ~poly ~univs:ctx ~eff def in
   declare_definition f kind ce pl imps (Lemmas.mk_hook (fun _ r -> r))
 

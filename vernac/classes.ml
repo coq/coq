@@ -123,7 +123,7 @@ let declare_instance_constant k info global imps ?hook id pl poly evm term termt
     Declare.definition_entry ~types:termtype ~poly ~univs:uctx term
   in
   let cdecl = (DefinitionEntry entry, kind) in
-  let kn = Declare.declare_constant id cdecl in
+  let kn = Ideclare.declare_constant id cdecl in
     Declare.definition_message id;
     Universes.register_universe_binders (ConstRef kn) pl;
     instance_hook k info global imps ?hook (ConstRef kn);
@@ -203,7 +203,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	in
 	Pretyping.check_evars env Evd.empty !evars (EConstr.of_constr termtype);
 	let pl, ctx = Evd.universe_context ?names:pl !evars in
-	let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
+	let cst = Ideclare.declare_constant ~internal:Declare.InternalTacticRequest id
 	  (ParameterEntry 
             (None,poly,(termtype,ctx),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
 	in
@@ -393,7 +393,7 @@ let context poly l =
         let entry = Declare.definition_entry ~poly ~univs:ctx ~types:t b in
         (DefinitionEntry entry, IsAssumption Logical)
       in
-      let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
+      let cst = Ideclare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
 	match class_of_constr !evars (EConstr.of_constr t) with
 	| Some (rels, ((tc,_), args) as _cl) ->
 	    add_instance (Typeclasses.new_instance tc Hints.empty_hint_info false (*FIXME*)

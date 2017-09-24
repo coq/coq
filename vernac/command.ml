@@ -14,7 +14,6 @@ open Vars
 open Termops
 open Environ
 open Redexpr
-open Declare
 open Names
 open Libnames
 open Globnames
@@ -109,7 +108,7 @@ let interp_definition pl bl p red_option c ctypopt =
 	let evd = Evd.restrict_universe_context !evdref vars in
 	let pl, uctx = Evd.universe_context ?names:pl evd in
  	imps1@(Impargs.lift_implicits nb_args imps2), pl,
-	  definition_entry ~univs:uctx ~poly:p body
+	  Declare.definition_entry ~univs:uctx ~poly:p body
     | Some ctyp ->
 	let ty, impsty = interp_type_evars_impls ~impls env_bl evdref ctyp in
 	let subst = evd_comb0 Evd.nf_univ_variables evdref in
@@ -135,7 +134,7 @@ let interp_definition pl bl p red_option c ctypopt =
         let ctx = Evd.restrict_universe_context !evdref vars in
 	let pl, uctx = Evd.universe_context ?names:pl ctx in
 	imps1@(Impargs.lift_implicits nb_args impsty), pl,
-	  definition_entry ~types:typ ~poly:p 
+	  Declare.definition_entry ~types:typ ~poly:p 
 	    ~univs:uctx body
   in
   red_constant_entry (Context.Rel.length ctx) ce !evdref red_option, !evdref, pl, imps
@@ -175,9 +174,9 @@ let do_definition ident k pl bl red_option c ctypopt hook =
 let declare_assumption is_coe (local,p,kind) (c,ctx) pl imps impl nl (_,ident) =
 match local with
 | Discharge when Lib.sections_are_opened () ->
-  let decl = (Lib.cwd(), SectionLocalAssum ((c,ctx),p,impl), IsAssumption kind) in
-  let _ = declare_variable ident decl in
-  let () = assumption_message ident in
+  let decl = (Lib.cwd(), Declare.SectionLocalAssum ((c,ctx),p,impl), IsAssumption kind) in
+  let _  = Ideclare.declare_variable ident decl in
+  let () = Declare.assumption_message ident in
   let () =
     if not !Flags.quiet && Proof_global.there_are_pending_proofs () then
     Feedback.msg_info (str"Variable" ++ spc () ++ pr_id ident ++
@@ -197,11 +196,11 @@ match local with
   in
   let ctx = Univ.ContextSet.to_context ctx in
   let decl = (ParameterEntry (None,p,(c,ctx),inl), IsAssumption kind) in
-  let kn = declare_constant ident ~local decl in
+  let kn = Ideclare.declare_constant ident ~local decl in
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
   let () = Universes.register_universe_binders gr pl in
-  let () = assumption_message ident in
+  let () = Declare.assumption_message ident in
   let () = Typeclasses.declare_instance None false gr in
   let () = if is_coe then Class.try_add_new_coercion gr ~local p in
   let inst = 
@@ -677,7 +676,7 @@ let declare_mutual_inductive_with_eliminations mie pl impls =
   | _ -> ()
   end;
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
-  let (_, kn), prim = declare_mind mie in
+  let (_, kn), prim = Ideclare.declare_mind mie in
   let mind = Global.mind_of_delta_kn kn in
   List.iteri (fun i (indimpls, constrimpls) ->
 	      let ind = (mind,i) in
@@ -1027,9 +1026,9 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
 	let ty = EConstr.Unsafe.to_constr ty in
 	let pl, univs = Evd.universe_context ?names:pl !evdref in
 	  (*FIXME poly? *)
-	let ce = definition_entry ~poly ~types:ty ~univs (EConstr.to_constr !evdref body) in
+	let ce = Declare.definition_entry ~poly ~types:ty ~univs (EConstr.to_constr !evdref body) in
 	(** FIXME: include locality *)
-	let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
+	let c = Ideclare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
 	let gr = ConstRef c in
 	  if Impargs.is_implicit_args () || not (List.is_empty impls) then
 	    Impargs.declare_manual_implicits false gr [impls]
@@ -1169,7 +1168,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
     ignore (List.map4 (DeclareDef.declare_fix (local, poly, Fixpoint) pl ctx)
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
-    fixpoint_message (Some indexes) fixnames;
+    Declare.fixpoint_message (Some indexes) fixnames;
   end;
   (* Declare notations *)
   List.iter Metasyntax.add_notation_interpretation ntns
@@ -1200,7 +1199,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
     ignore (List.map4 (DeclareDef.declare_fix (local, poly, CoFixpoint) pl ctx) 
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
-    cofixpoint_message fixnames
+    Declare.cofixpoint_message fixnames
   end;
   (* Declare notations *)
   List.iter Metasyntax.add_notation_interpretation ntns

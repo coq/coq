@@ -8,7 +8,6 @@
 
 open Term
 open Names
-open Declare
 
 (** This module provides support for registering inductive scheme builders,
    declaring schemes and generating schemes on demand *)
@@ -20,9 +19,9 @@ type individual
 type 'a scheme_kind
 
 type mutual_scheme_object_function =
-  internal_flag -> mutual_inductive -> constr array Evd.in_evar_universe_context * Safe_typing.private_constants
+  Declare.internal_flag -> mutual_inductive -> constr array Evd.in_evar_universe_context * Safe_typing.private_constants
 type individual_scheme_object_function =
-  internal_flag -> inductive -> constr Evd.in_evar_universe_context * Safe_typing.private_constants
+  Declare.internal_flag -> inductive -> constr Evd.in_evar_universe_context * Safe_typing.private_constants
 
 (** Main functions to register a scheme builder *)
 
@@ -36,16 +35,15 @@ val declare_individual_scheme_object : string -> ?aux:string ->
 (** Force generation of a (mutually) scheme with possibly user-level names *)
 
 val define_individual_scheme : individual scheme_kind -> 
-  internal_flag (** internal *) ->
+  Declare.internal_flag (** internal *) ->
   Id.t option -> inductive -> constant * Safe_typing.private_constants
 
-val define_mutual_scheme : mutual scheme_kind -> internal_flag (** internal *) ->
+val define_mutual_scheme : mutual scheme_kind -> Declare.internal_flag (** internal *) ->
   (int * Id.t) list -> mutual_inductive -> constant array * Safe_typing.private_constants
 
 (** Main function to retrieve a scheme in the cache or to generate it *)
-val find_scheme : ?mode:internal_flag -> 'a scheme_kind -> inductive -> constant * Safe_typing.private_constants
+val find_scheme : ?mode:Declare.internal_flag -> 'a scheme_kind -> inductive -> constant * Safe_typing.private_constants
 
 val check_scheme : 'a scheme_kind -> inductive -> bool
-
 
 val pr_scheme_kind : 'a scheme_kind -> Pp.t

@@ -4335,6 +4335,23 @@ sig
   val declare_variable : Names.Id.t -> variable_declaration -> Libnames.object_name
 end
 
+
+module Ideclare :
+sig
+
+open Names
+open Libnames
+open Entries
+
+val declare_variable : variable -> Declare.variable_declaration -> object_name
+
+val declare_constant :
+ ?internal:Declare.internal_flag -> ?local:bool -> Id.t -> ?export_seff:bool -> Declare.constant_declaration -> Constant.t
+
+val declare_mind : mutual_inductive_entry -> object_name * bool
+
+end
+
 (************************************************************************)
 (* End of modules from interp/                                       *)
 (************************************************************************)

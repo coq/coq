@@ -20,7 +20,6 @@ open Declarations
 open Entries
 open Libobject
 open Lib
-open Impargs
 open Safe_typing
 open Cooking
 open Decls
@@ -84,8 +83,6 @@ let inVariable : variable_obj -> obj =
 (* for initial declaration *)
 let declare_variable id obj =
   let oname = add_leaf id (inVariable (Inr (id,obj))) in
-  declare_var_implicits id;
-  Notation.declare_ref_arguments_scope (VarRef id);
   Heads.declare_head (EvalVarRef id);
   oname
 
@@ -188,13 +185,12 @@ let (inConstant : constant_obj -> obj) =
     subst_function = ident_subst_function;
     discharge_function = discharge_constant }
 
+(* XXX: This should go away *)
 let declare_scheme = ref (fun _ _ -> assert false)
 let set_declare_scheme f = declare_scheme := f
 
 let update_tables c =
-  declare_constant_implicits c;
-  Heads.declare_head (EvalConstRef c);
-  Notation.declare_ref_arguments_scope (ConstRef c)
+  Heads.declare_head (EvalConstRef c)
 
 let declare_constant_common id cst =
   let o = inConstant cst in
@@ -270,13 +266,6 @@ let declare_definition ?(internal=UserIndividualRequest)
       (Entries.DefinitionEntry cb, Decl_kinds.IsDefinition kind)
 
 (** Declaration of inductive blocks *)
-
-let declare_inductive_argument_scopes kn mie =
-  List.iteri (fun i {mind_entry_consnames=lc} ->
-    Notation.declare_ref_arguments_scope (IndRef (kn,i));
-    for j=1 to List.length lc do
-      Notation.declare_ref_arguments_scope (ConstructRef ((kn,i),j));
-    done) mie.mind_entry_inds
 
 let inductive_names sp kn mie =
   let (dp,_) = repr_path sp in
@@ -396,8 +385,6 @@ let declare_mind mie =
   let (sp,kn as oname) = add_leaf id (inInductive ([],mie)) in
   let mind = Global.mind_of_delta_kn kn in
   let isrecord,isprim = declare_projections mind in
-  declare_mib_implicits mind;
-  declare_inductive_argument_scopes mind mie;
   oname, isprim
 
 (* Declaration messages *)

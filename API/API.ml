@@ -162,6 +162,8 @@ module Indrec = Indrec
 (* module Cases *)
 module Pretyping = Pretyping
 module Unification = Unification
+module Declare = Declare
+
 (******************************************************************************)
 (* interp                                                                     *)
 (******************************************************************************)
@@ -180,7 +182,7 @@ module Constrintern = Constrintern
 (* module Modintern *)
 module Constrextern = Constrextern
 (* module Discharge *)
-module Declare = Declare
+module Ideclare = Ideclare
 
 (******************************************************************************)
 (* Proofs                                                                     *)
