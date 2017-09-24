@@ -346,7 +346,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
 	(* Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
 	let ce = Declare.definition_entry ~poly:(Flags.is_universe_polymorphism ()) ~univs:(snd (Evd.universe_context evd')) value in
 	ignore(
-	  Declare.declare_constant
+	  Ideclare.declare_constant
 	    name
 	    (DefinitionEntry ce,
 	     Decl_kinds.IsDefinition (Decl_kinds.Scheme))
@@ -633,7 +633,7 @@ let build_scheme fas =
   List.iter2
     (fun (princ_id,_,_) def_entry ->
        ignore
-	 (Declare.declare_constant
+	 (Ideclare.declare_constant
 	    princ_id
 	    (DefinitionEntry def_entry,Decl_kinds.IsProof Decl_kinds.Theorem));
        Declare.definition_message princ_id

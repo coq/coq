@@ -1890,7 +1890,7 @@ let declare_projection n instance_id r =
   let cst = 
     Declare.definition_entry ~types:typ ~poly ~univs:ctx term
   in
-    ignore(Declare.declare_constant n 
+    ignore(Ideclare.declare_constant n 
 	   (Entries.DefinitionEntry cst, Decl_kinds.IsDefinition Decl_kinds.Definition))
 
 let build_morphism_signature env sigma m =
@@ -1962,7 +1962,7 @@ let add_morphism_infer glob m n =
   let evd = Evd.from_env env in
   let uctx, instance = build_morphism_signature env evd m in
     if Lib.is_modtype () then
-      let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest instance_id
+      let cst = Ideclare.declare_constant ~internal:Declare.InternalTacticRequest instance_id
 				(Entries.ParameterEntry 
 				 (None,poly,(instance,UState.context uctx),None),
 				 Decl_kinds.IsAssumption Decl_kinds.Logical)

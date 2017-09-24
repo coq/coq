@@ -66,7 +66,7 @@ let start_deriving f suchthat lemma =
           must. Then [f] is declared in the global environment. *)
       let f_def = { f_def with Entries.const_entry_opaque = false } in
       let f_def = Entries.DefinitionEntry f_def , Decl_kinds.(IsDefinition Definition) in
-      let f_kn = Declare.declare_constant f f_def in
+      let f_kn = Ideclare.declare_constant f f_def in
       let f_kn_term = Term.mkConst f_kn in
       (** In the type and body of the proof of [suchthat] there can be
           references to the variable [f]. It needs to be replaced by
@@ -94,7 +94,7 @@ let start_deriving f suchthat lemma =
         Entries.DefinitionEntry lemma_def ,
         Decl_kinds.(IsProof Proposition)
       in
-      ignore (Declare.declare_constant lemma lemma_def)
+      ignore (Ideclare.declare_constant lemma lemma_def)
       in
 
   let terminator = Proof_global.make_terminator terminator in

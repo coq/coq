@@ -3,7 +3,6 @@ open Globnames
 open Libobject
 open Entries
 open Decl_kinds
-open Declare
 
 (**
    - Get types of existentials ;
@@ -477,7 +476,7 @@ let declare_definition prg =
   let pl, ctx =
     Evd.universe_context ?names:prg.prg_pl (Evd.from_ctx prg.prg_ctx) in
   let ce =
-    definition_entry ~fix_exn
+    Declare.definition_entry ~fix_exn
      ~opaque ~types:(nf typ) ~poly:(pi2 prg.prg_kind)
      ~univs:(Evd.evar_context_universe_context prg.prg_ctx) (nf body)
   in
@@ -647,11 +646,11 @@ let declare_obligation prg obl body ty uctx =
           const_entry_feedback = None;
       } in
       (** ppedrot: seems legit to have obligations as local *)
-      let constant = Declare.declare_constant obl.obl_name ~local:true
+      let constant = Ideclare.declare_constant obl.obl_name ~local:true
 	(DefinitionEntry ce,IsProof Property)
       in
 	if not opaque then add_hint (Locality.make_section_locality None) prg constant;
-	definition_message obl.obl_name;
+	Declare.definition_message obl.obl_name;
 	true, { obl with obl_body =
 	    if poly then
 	      Some (DefinedObl (constant, Univ.UContext.instance uctx))
@@ -1118,7 +1117,7 @@ let admit_prog prg =
         | None ->
             let x = subst_deps_obl obls x in
 	    let ctx = Evd.evar_context_universe_context prg.prg_ctx in
-            let kn = Declare.declare_constant x.obl_name ~local:true
+            let kn = Ideclare.declare_constant x.obl_name ~local:true
               (ParameterEntry (None,false,(x.obl_type,ctx),None), IsAssumption Conjectural)
             in
               assumption_message x.obl_name;

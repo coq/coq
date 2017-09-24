@@ -22,7 +22,6 @@ open Nameops
 open Globnames
 open Decls
 open Decl_kinds
-open Declare
 open Pretyping
 open Termops
 open Namegen
@@ -182,8 +181,8 @@ let save ?export_seff id const cstrs pl do_guard (locality,poly,kind) hook =
     let k = Kindops.logical_kind_of_goal_kind kind in
     let l,r = match locality with
       | Discharge when Lib.sections_are_opened () ->
-          let c = SectionLocalDef const in
-          let _ = declare_variable id (Lib.cwd(), c, k) in
+          let c = Declare.SectionLocalDef const in
+          let _ = Ideclare.declare_variable id (Lib.cwd(), c, k) in
           (Local, VarRef id)
       | Local | Global | Discharge ->
           let local = match locality with
@@ -191,9 +190,9 @@ let save ?export_seff id const cstrs pl do_guard (locality,poly,kind) hook =
           | Global -> false
           in
           let kn =
-           declare_constant ?export_seff id ~local (DefinitionEntry const, k) in
+           Ideclare.declare_constant ?export_seff id ~local (DefinitionEntry const, k) in
           (locality, ConstRef kn) in
-    definition_message id;
+    Declare.definition_message id;
     Option.iter (Universes.register_universe_binders r) pl;
     call_hook (fun exn -> exn) hook l r
   with e when CErrors.noncritical e ->
@@ -221,8 +220,8 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,
       | Discharge ->
           let impl = false in (* copy values from Vernacentries *)
           let k = IsAssumption Conjectural in
-          let c = SectionLocalAssum ((t_i,ctx),p,impl) in
-	  let _ = declare_variable id (Lib.cwd(),c,k) in
+          let c = Declare.SectionLocalAssum ((t_i,ctx),p,impl) in
+	  let _ = Ideclare.declare_variable id (Lib.cwd(),c,k) in
           (Discharge, VarRef id,imps)
       | Local | Global ->
           let k = IsAssumption Conjectural in
@@ -233,7 +232,7 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,
           in
           let ctx = Univ.ContextSet.to_context ctx in
           let decl = (ParameterEntry (None,p,(t_i,ctx),None), k) in
-          let kn = declare_constant id ~local decl in
+          let kn = Ideclare.declare_constant id ~local decl in
           (locality,ConstRef kn,imps))
   | Some body ->
       let body = norm body in
@@ -248,10 +247,10 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,
       let body_i = body_i body in
       match locality with
       | Discharge ->
-          let const = definition_entry ~types:t_i ~opaque:opaq ~poly:p 
+          let const = Declare.definition_entry ~types:t_i ~opaque:opaq ~poly:p 
 	    ~univs:(Univ.ContextSet.to_context ctx) body_i in
-	  let c = SectionLocalDef const in
-	  let _ = declare_variable id (Lib.cwd(), c, k) in
+	  let c = Declare.SectionLocalDef const in
+	  let _ = Ideclare.declare_variable id (Lib.cwd(), c, k) in
           (Discharge,VarRef id,imps)
       | Local | Global ->
         let ctx = Univ.ContextSet.to_context ctx in
@@ -263,7 +262,7 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,
         let const =
 	  Declare.definition_entry ~types:t_i ~poly:p ~univs:ctx ~opaque:opaq body_i
 	in
-        let kn = declare_constant id ~local (DefinitionEntry const, k) in
+        let kn = Ideclare.declare_constant id ~local (DefinitionEntry const, k) in
         (locality,ConstRef kn,imps)
 
 let save_hook = ref ignore
@@ -290,12 +289,12 @@ let warn_let_as_axiom =
                                 spc () ++ strbrk "declared as an axiom.")
 
 let admit (id,k,e) pl hook () =
-  let kn = declare_constant id (ParameterEntry e, IsAssumption Conjectural) in
+  let kn = Ideclare.declare_constant id (ParameterEntry e, IsAssumption Conjectural) in
   let () = match k with
   | Global, _, _ -> ()
   | Local, _, _ | Discharge, _, _ -> warn_let_as_axiom id
   in
-  let () = assumption_message id in
+  let () = Declare.assumption_message id in
   Option.iter (Universes.register_universe_binders (ConstRef kn)) pl;
   call_hook (fun exn -> exn) hook Global (ConstRef kn)
 

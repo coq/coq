@@ -17,7 +17,6 @@ open Vars
 open Environ
 open Declarations
 open Entries
-open Declare
 open Constrintern
 open Decl_kinds
 open Type_errors
@@ -336,7 +335,7 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
 		    const_entry_inline_code = false;
 		    const_entry_feedback = None } in
 		  let k = (DefinitionEntry entry,IsDefinition kind) in
-		  let kn = declare_constant ~internal:InternalTacticRequest fid k in
+		  let kn = Ideclare.declare_constant ~internal:Declare.InternalTacticRequest fid k in
 		  let constr_fip =
 		    let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
 		      applist (mkConstU (kn,u),proj_args) 
@@ -464,7 +463,7 @@ let declare_class finite def cum poly ctx id idbuild paramimpls params arity
       let class_type = it_mkProd_or_LetIn arity params in
       let class_entry = 
 	Declare.definition_entry ~types:class_type ~poly ~univs:ctx class_body in
-      let cst = Declare.declare_constant (snd id)
+      let cst = Ideclare.declare_constant (snd id)
 	(DefinitionEntry class_entry, IsDefinition Definition)
       in
       let cstu = (cst, if poly then Univ.UContext.instance ctx else Univ.Instance.empty) in
@@ -478,7 +477,7 @@ let declare_class finite def cum poly ctx id idbuild paramimpls params arity
 	Declare.definition_entry ~types:proj_type ~poly
 	    ~univs:(if poly then ctx else Univ.UContext.empty) proj_body
       in
-      let proj_cst = Declare.declare_constant proj_name
+      let proj_cst = Ideclare.declare_constant proj_name
         (DefinitionEntry proj_entry, IsDefinition Definition)
       in
       let cref = ConstRef cst in
