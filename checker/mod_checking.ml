@@ -25,7 +25,7 @@ let refresh_arity ar =
     | _ -> ar, Univ.ContextSet.empty
 
 let check_constant_declaration env kn cb =
-  Feedback.msg_notice (str "  checking cst:" ++ prcon kn);
+  Flags.if_verbose Feedback.msg_notice (str "  checking cst:" ++ prcon kn);
   (** [env'] contains De Bruijn universe variables *)
   let env' =
     match cb.const_universes with
