@@ -117,7 +117,7 @@ let tag_var = tag Tag.variable
         let pp1 = str s in
         return unp pp1 pp2
       | UnpBox (b,sub) as unp :: l ->
-        let pp1 = ppcmd_of_box b (aux sub) in
+        let pp1 = ppcmd_of_box b (aux (List.map snd sub)) in
         let pp2 = aux l in
         return unp pp1 pp2
       | UnpCut cut as unp :: l ->

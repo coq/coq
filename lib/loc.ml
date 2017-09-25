@@ -62,6 +62,8 @@ let merge_opt l1 l2 = match l1, l2 with
 
 let unloc loc = (loc.bp, loc.ep)
 
+let shift_loc kb kp loc = { loc with bp = loc.bp + kb ; ep = loc.ep + kp }
+
 (** Located type *)
 type 'a located = t option * 'a
 
