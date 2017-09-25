@@ -183,3 +183,20 @@ Module PolyNoLowerProp.
   Fail Check Foo True : Prop.
 
 End PolyNoLowerProp.
+
+(* Test building of elimination scheme with noth let-ins and
+   non-recursively uniform parameters *)
+
+Module NonRecLetIn.
+
+  Unset Implicit Arguments.
+
+  Inductive Ind (b:=2) (a:nat) (c:=1) : Type :=
+  | Base : Ind a
+  | Rec : Ind (S a) -> Ind a.
+
+  Check Ind_rect (fun n (b:Ind n) => b = b)
+    (fun n => eq_refl)
+    (fun n b c => f_equal (Rec n) eq_refl) 0 (Rec 0 (Base 1)).
+
+End NonRecLetIn.
