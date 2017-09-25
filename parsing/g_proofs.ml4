@@ -25,6 +25,11 @@ let hint_proof_using e = function
 
 let hint = Gram.entry_create "hint"
 
+let warn_deprecated_qed_exporting =
+  CWarnings.create ~name:"deprecated-qed_exporting" ~category:"deprecated"
+    (fun () ->
+        Pp.strbrk "Qed Exporting is deprecated; if a proof must export identifiers, please make it transparent")
+
 (* Proof commands *)
 GEXTEND Gram
   GLOBAL: hint command;
@@ -47,6 +52,7 @@ GEXTEND Gram
       | IDENT "Admitted" -> VernacEndProof Admitted
       | IDENT "Qed" -> VernacEndProof (Proved (Opaque None,None))
       | IDENT "Qed"; IDENT "exporting"; l = LIST0 identref SEP "," ->
+          warn_deprecated_qed_exporting ();
           VernacEndProof (Proved (Opaque (Some l),None))
       | IDENT "Save"; id = identref ->
 	  VernacEndProof (Proved (Opaque None, Some id))
