@@ -984,7 +984,7 @@ let is_not_printable onlyparse nonreversible = function
      (warn_non_reversible_notation (); true)
   else onlyparse
 
-let find_precedence lev etyps symbols =
+let find_precedence lev etyps symbols onlyprint =
   let first_symbol =
     let rec aux = function
       | Break _ :: t -> aux t
@@ -1002,8 +1002,13 @@ let find_precedence lev etyps symbols =
   | None -> [],0
   | Some (NonTerminal x) ->
       (try match List.assoc x etyps with
-	| ETConstr _ ->
-	    user_err Pp.(str "The level of the leftmost non-terminal cannot be changed.")
+        | ETConstr _ ->
+	   if onlyprint then
+	     if Option.is_empty lev then
+	       user_err Pp.(str "Explicit level needed in only-printing mode when the level of the leftmost non-terminal is given.")
+	     else [],Option.get lev
+	   else
+	     user_err Pp.(str "The level of the leftmost non-terminal cannot be changed.")
 	| ETName | ETBigint | ETReference ->
             begin match lev with
             | None ->
@@ -1127,7 +1132,7 @@ let compute_syntax_data df modifiers =
   let need_squash = not (List.equal Notation.symbol_eq symbols symbols_for_grammar) in
   let ntn_for_grammar = if need_squash then make_notation_key symbols_for_grammar else ntn_for_interp in
   if not onlyprint then check_rule_productivity symbols_for_grammar;
-  let msgs,n = find_precedence mods.level mods.etyps symbols in
+  let msgs,n = find_precedence mods.level mods.etyps symbols onlyprint in
   (* To globalize... *)
   let etyps = join_auxiliary_recursive_types recvars mods.etyps in
   let sy_typs, prec =

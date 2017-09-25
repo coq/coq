@@ -124,3 +124,7 @@ return (1, 2, 3, 4)
      : nat
 !!! _ _ : nat, True
      : (nat -> Prop) * ((nat -> Prop) * Prop)
+((*1).2).3
+     : nat
+*(1.2)
+     : nat
