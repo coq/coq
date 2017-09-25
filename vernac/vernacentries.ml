@@ -2154,16 +2154,21 @@ type interp_state = { (* TODO: inline records in OCaml 4.03 *)
   shallow : bool                 (* is the state trimmed down (libstack) *)
 }
 
-(* Unfortunately we cannot cache here due to some bits in the STM not
-   being fully pure. *)
+let s_cache = ref (States.freeze ~marshallable:`No)
+let s_proof = ref (Proof_global.freeze ~marshallable:`No)
+
+let invalidate_cache () =
+  s_cache := Obj.magic 0;
+  s_proof := Obj.magic 0
+
 let freeze_interp_state marshallable =
-  { system = States.freeze ~marshallable;
-    proof = Proof_global.freeze ~marshallable;
+  { system = (s_cache := States.freeze ~marshallable; !s_cache);
+    proof  = (s_proof := Proof_global.freeze ~marshallable; !s_proof);
     shallow = marshallable = `Shallow }
 
 let unfreeze_interp_state { system; proof } =
-  States.unfreeze system;
-  Proof_global.unfreeze proof
+  if (!s_cache != system) then (s_cache := system; States.unfreeze system);
+  if (!s_proof != proof)  then (s_proof := proof;  Proof_global.unfreeze proof)
 
 (* XXX STATE: this type hints that restoring the state should be the
    caller's responsibility *)
@@ -2182,7 +2187,8 @@ let with_fail st b f =
         raise (HasFailed (CErrors.iprint
                             (ExplainErr.process_vernac_interp_error ~allow_uncaught:false e)))
     with e when CErrors.noncritical e ->
-      (* Restore the previous state *)
+      (* Restore the previous state XXX Careful here with the cache! *)
+      invalidate_cache ();
       unfreeze_interp_state st;
       let (e, _) = CErrors.push e in
       match e with
