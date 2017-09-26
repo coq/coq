@@ -202,7 +202,7 @@ let rec find_project_file ~from ~projfile_name =
   if Sys.file_exists fname then Some fname
   else
     let newdir = Filename.dirname from in
-    if newdir = "" || newdir = "/" then None
+    if newdir = from then None
     else find_project_file ~from:newdir ~projfile_name
 ;;
 
