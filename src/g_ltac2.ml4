@@ -19,81 +19,61 @@ open Ltac_plugin
 
 let err () = raise Stream.Failure
 
+type lookahead = int -> Tok.t Stream.t -> int option
+
+let entry_of_lookahead s (lk : lookahead) =
+  let run strm = match lk 0 strm with None -> err () | Some _ -> () in
+  Gram.Entry.of_parser s run
+
+let (>>) (lk1 : lookahead) lk2 n strm = match lk1 n strm with
+| None -> None
+| Some n -> lk2 n strm
+
+let (<+>) (lk1 : lookahead) lk2 n strm = match lk1 n strm with
+| None -> lk2 n strm
+| Some n -> Some n
+
+let lk_kw kw n strm = match stream_nth n strm with
+| KEYWORD kw' | IDENT kw' -> if String.equal kw kw' then Some (n + 1) else None
+| _ -> None
+
+let lk_ident n strm = match stream_nth n strm with
+| IDENT _ -> Some (n + 1)
+| _ -> None
+
+let lk_int n strm = match stream_nth n strm with
+| INT _ -> Some (n + 1)
+| _ -> None
+
+let lk_ident_or_anti = lk_ident <+> (lk_kw "$" >> lk_ident)
+
 (* lookahead for (x:=t), (?x:=t) and (1:=t) *)
 let test_lpar_idnum_coloneq =
-  Gram.Entry.of_parser "test_lpar_idnum_coloneq"
-    (fun strm ->
-      match stream_nth 0 strm with
-        | KEYWORD "(" ->
-            (match stream_nth 1 strm with
-              | IDENT _ | INT _ ->
-                  (match stream_nth 2 strm with
-                    | KEYWORD ":=" -> ()
-                    | _ -> err ())
-              | KEYWORD "$" ->
-                (match stream_nth 2 strm with
-                  | IDENT _ ->
-                      (match stream_nth 3 strm with
-                        | KEYWORD ":=" -> ()
-                        | _ -> err ())
-                  | _ -> err ())
-              | _ -> err ())
-        | _ -> err ())
+  entry_of_lookahead "test_lpar_idnum_coloneq" begin
+    lk_kw "(" >> (lk_ident_or_anti <+> lk_int) >> lk_kw ":="
+  end
 
 (* Hack to recognize "(x := t)" and "($x := t)" *)
 let test_lpar_coloneq =
-  Gram.Entry.of_parser "test_coloneq"
-    (fun strm ->
-      match stream_nth 0 strm with
-        | KEYWORD "(" ->
-            (match stream_nth 1 strm with
-              | IDENT _ ->
-                  (match stream_nth 2 strm with
-                    | KEYWORD ":=" -> ()
-                    | _ -> err ())
-              | KEYWORD "$" ->
-                (match stream_nth 2 strm with
-                  | IDENT _ ->
-                      (match stream_nth 3 strm with
-                        | KEYWORD ":=" -> ()
-                        | _ -> err ())
-                  | _ -> err ())
-              | _ -> err ())
-        | _ -> err ())
+  entry_of_lookahead "test_coloneq" begin
+    lk_kw "(" >> lk_ident_or_anti >> lk_kw ":="
+  end
 
 (* Hack to recognize "(x)" *)
 let test_lpar_id_rpar =
-  Gram.Entry.of_parser "lpar_id_coloneq"
-    (fun strm ->
-      match stream_nth 0 strm with
-        | KEYWORD "(" ->
-            (match stream_nth 1 strm with
-              | IDENT _ ->
-                  (match stream_nth 2 strm with
-	            | KEYWORD ")" -> ()
-	            | _ -> err ())
-	      | _ -> err ())
-	| _ -> err ())
+  entry_of_lookahead "test_lpar_id_coloneq" begin
+    lk_kw "(" >> lk_ident >> lk_kw ")"
+  end
 
 let test_ampersand_ident =
-  Gram.Entry.of_parser "test_ampersand_ident"
-    (fun strm ->
-      match stream_nth 0 strm with
-        | KEYWORD "&" ->
-            (match stream_nth 1 strm with
-              | IDENT _ -> ()
-              | _ -> err ())
-        | _ -> err ())
+  entry_of_lookahead "test_ampersand_ident" begin
+    lk_kw "&" >> lk_ident
+  end
 
 let test_dollar_ident =
-  Gram.Entry.of_parser "test_dollar_ident"
-    (fun strm ->
-      match stream_nth 0 strm with
-        | IDENT "$" | KEYWORD "$" ->
-            (match stream_nth 1 strm with
-              | IDENT _ -> ()
-              | _ -> err ())
-        | _ -> err ())
+  entry_of_lookahead "test_dollar_ident" begin
+    lk_kw "$" >> lk_ident
+  end
 
 let tac2expr = Tac2entries.Pltac.tac2expr
 let tac2type = Gram.entry_create "tactic:tac2type"
