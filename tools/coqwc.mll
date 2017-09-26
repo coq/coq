@@ -94,7 +94,7 @@ let rcs = "\036" rcs_keyword [^ '$']* "\036"
 let stars = "(*" '*'* "*)"
 let dot = '.' (' ' | '\t' | '\n' | '\r' | eof)
 let proof_start =
-  "Theorem" | "Lemma" | "Fact" | "Remark" | "Goal" | "Correctness" | "Obligation" | "Next"
+  "Theorem" | "Lemma" | "Fact" | "Remark" | "Goal" | "Correctness" | "Obligation" space+ (['0' - '9'])+ | "Next" space+ "Obligation"
 let def_start =
   "Definition" | "Fixpoint" | "Instance"
 let proof_end =
