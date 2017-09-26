@@ -153,8 +153,12 @@ let focus i j sp =
   ( { sp with comb = new_comb } , context )
 
 (** [undefined defs l] is the list of goals in [l] which are still
-    unsolved (after advancing cleared goals). *)
-let undefined defs l = CList.map_filter (Evarutil.advance defs) l
+    unsolved (after advancing cleared goals). Note that order matters. *)
+let undefined defs l =
+  List.fold_right (fun evk l ->
+      match Evarutil.advance defs evk with
+      | Some evk -> List.add_set Evar.equal evk l
+      | None -> l) l []
 
 (** Unfocuses a proofview with respect to a context. *)
 let unfocus c sp =
