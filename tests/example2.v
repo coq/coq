@@ -44,6 +44,13 @@ apply &H with (m := 0).
 split.
 Qed.
 
+Goal forall (P : nat -> Prop), (forall n m, n = m -> P n) -> (0 = 1) -> P 0.
+Proof.
+intros P H e.
+apply &H with (m := 1) in e.
+exact e.
+Qed.
+
 Goal forall (P : nat -> Prop), (forall n m, n = m -> P n) -> P 0.
 Proof.
 intros P H.

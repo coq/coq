@@ -246,28 +246,16 @@ Ltac2 Notation "eelim" c(thunk(constr)) bnd(thunk(with_bindings))
   elim0 true c bnd use.
 
 Ltac2 apply0 adv ev cb cl :=
-  let cl := match cl with
-  | None => None
-  | Some p =>
-    let ((_, id, ipat)) := p in
-    let p := match ipat with
-    | None => None
-    | Some p =>
-      let ((_, ipat)) := p in
-      Some ipat
-    end in
-    Some (id, p)
-  end in
   Std.apply adv ev cb cl.
 
 Ltac2 Notation "eapply"
   cb(list1(thunk(seq(constr, with_bindings)), ","))
-  cl(opt(seq(keyword("in"), ident, opt(seq(keyword("as"), intropattern))))) :=
+  cl(opt(seq("in", ident, opt(seq("as", intropattern))))) :=
   apply0 true true cb cl.
 
 Ltac2 Notation "apply"
   cb(list1(thunk(seq(constr, with_bindings)), ","))
-  cl(opt(seq(keyword("in"), ident, opt(seq(keyword("as"), intropattern))))) :=
+  cl(opt(seq("in", ident, opt(seq("as", intropattern))))) :=
   apply0 true false cb cl.
 
 Ltac2 default_on_concl cl :=
