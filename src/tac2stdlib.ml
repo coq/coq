@@ -144,6 +144,17 @@ let to_induction_clause = function
 | _ ->
   assert false
 
+let to_assertion = function
+| ValBlk (0, [| ipat; t; tac |]) ->
+  let to_tac t = Proofview.tclIGNORE (thaw t) in
+  let ipat = Value.to_option to_intro_pattern ipat in
+  let t = Value.to_constr t in
+  let tac = Value.to_option to_tac tac in
+  AssertType (ipat, t, tac)
+| ValBlk (1, [| id; c |]) ->
+  AssertValue (Value.to_ident id, Value.to_constr c)
+| _ -> assert false
+
 let to_multi = function
 | ValBlk (0, [| n |]) -> Precisely (Value.to_int n)
 | ValBlk (1, [| n |]) -> UpTo (Value.to_int n)
@@ -256,12 +267,9 @@ let () = define_prim1 "tac_generalize" begin fun cl ->
   Tactics.new_generalize_gen cl
 end
 
-let () = define_prim3 "tac_assert" begin fun c tac ipat ->
-  let c = Value.to_constr c in
-  let of_tac t = Proofview.tclIGNORE (thaw t) in
-  let tac = Value.to_option (fun t -> Value.to_option of_tac t) tac in
-  let ipat = Value.to_option to_intro_pattern ipat in
-  Tac2tactics.forward true tac ipat c
+let () = define_prim1 "tac_assert" begin fun ast ->
+  let ast = to_assertion ast in
+  Tac2tactics.assert_ ast
 end
 
 let () = define_prim3 "tac_enough" begin fun c tac ipat ->

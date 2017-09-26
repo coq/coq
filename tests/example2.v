@@ -224,6 +224,12 @@ Qed.
 
 Goal True.
 Proof.
+pose True as X.
+constructor.
+Qed.
+
+Goal True.
+Proof.
 let x := @foo in
 set ($x := True) in * |-.
 constructor.
@@ -234,4 +240,23 @@ Proof.
 remember 0 as n eqn: foo at 1.
 rewrite foo.
 reflexivity.
+Qed.
+
+Goal True.
+Proof.
+assert (H := 0 + 0).
+constructor.
+Qed.
+
+Goal True.
+Proof.
+assert (exists n, n = 0) as [n Hn].
++ exists 0; reflexivity.
++ exact I.
+Qed.
+
+Goal True -> True.
+Proof.
+assert (H : 0 + 0 = 0) by reflexivity.
+intros x; exact x.
 Qed.

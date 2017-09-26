@@ -141,3 +141,9 @@ type move_location_r =
 type move_location = move_location_r located
 
 type pose = (Id.t located or_anti option * Constrexpr.constr_expr) located
+
+type assertion_r =
+| QAssertType of intro_pattern option * Constrexpr.constr_expr * raw_tacexpr option
+| QAssertValue of Id.t located or_anti * Constrexpr.constr_expr
+
+type assertion = assertion_r located

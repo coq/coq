@@ -170,6 +170,10 @@ type rewriting =
   multi *
   constr_with_bindings tactic
 
+type assertion =
+| AssertType of intro_pattern option * EConstr.t * unit tactic option
+| AssertValue of Id.t * EConstr.t
+
 let rewrite ev rw cl by =
   let map_rw (orient, repeat, c) =
     let c = c >>= fun c -> return (mk_with_bindings c) in
@@ -179,9 +183,17 @@ let rewrite ev rw cl by =
   let by = Option.map (fun tac -> Tacticals.New.tclCOMPLETE tac, Equality.Naive) by in
   Equality.general_multi_rewrite ev rw cl by
 
-let forward ev tac ipat c =
+let forward fst tac ipat c =
   let ipat = Option.map mk_intro_pattern ipat in
-  Tactics.forward ev tac ipat c
+  Tactics.forward fst tac ipat c
+
+let assert_ = function
+| AssertValue (id, c) ->
+  let ipat = Loc.tag @@ Misctypes.IntroNaming (Misctypes.IntroIdentifier id) in
+  Tactics.forward true None (Some ipat) c
+| AssertType (ipat, c, tac) ->
+  let ipat = Option.map mk_intro_pattern ipat in
+  Tactics.forward true (Some tac) ipat c
 
 let letin_pat_tac ev ipat na c cl =
   let ipat = Option.map (fun (b, ipat) -> (b, Loc.tag @@ mk_intro_pattern_naming ipat)) ipat in

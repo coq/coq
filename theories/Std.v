@@ -88,6 +88,11 @@ Ltac2 Type induction_clause := {
   indcl_in : clause option;
 }.
 
+Ltac2 Type assertion := [
+| AssertType (intro_pattern option, constr, (unit -> unit) option)
+| AssertValue (ident, constr)
+].
+
 Ltac2 Type repeat := [
 | Precisely (int)
 | UpTo (int)
@@ -131,7 +136,7 @@ Ltac2 @ external case : evar_flag -> constr_with_bindings -> unit := "ltac2" "ta
 
 Ltac2 @ external generalize : (constr * occurrences * ident option) list -> unit := "ltac2" "tac_generalize".
 
-Ltac2 @ external assert : constr -> (unit -> unit) option option -> intro_pattern option -> unit := "ltac2" "tac_assert".
+Ltac2 @ external assert : assertion -> unit := "ltac2" "tac_assert".
 Ltac2 @ external enough : constr -> (unit -> unit) option option -> intro_pattern option -> unit := "ltac2" "tac_enough".
 
 Ltac2 @ external pose : ident option -> constr -> unit := "ltac2" "tac_pose".

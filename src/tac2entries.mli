@@ -80,6 +80,7 @@ val q_constr_matching : constr_matching Pcoq.Gram.entry
 val q_hintdb : hintdb Pcoq.Gram.entry
 val q_move_location : move_location Pcoq.Gram.entry
 val q_pose : pose Pcoq.Gram.entry
+val q_assert : assertion Pcoq.Gram.entry
 end
 
 (** {5 Hooks} *)

@@ -53,15 +53,21 @@ let test_lpar_idnum_coloneq =
     lk_kw "(" >> (lk_ident_or_anti <+> lk_int) >> lk_kw ":="
   end
 
+(* lookahead for (x:t), (?x:t) *)
+let test_lpar_id_colon =
+  entry_of_lookahead "test_lpar_id_colon" begin
+    lk_kw "(" >> lk_ident_or_anti >> lk_kw ":"
+  end
+
 (* Hack to recognize "(x := t)" and "($x := t)" *)
-let test_lpar_coloneq =
-  entry_of_lookahead "test_coloneq" begin
+let test_lpar_id_coloneq =
+  entry_of_lookahead "test_lpar_id_coloneq" begin
     lk_kw "(" >> lk_ident_or_anti >> lk_kw ":="
   end
 
 (* Hack to recognize "(x)" *)
 let test_lpar_id_rpar =
-  entry_of_lookahead "test_lpar_id_coloneq" begin
+  entry_of_lookahead "test_lpar_id_rpar" begin
     lk_kw "(" >> lk_ident >> lk_kw ")"
   end
 
@@ -370,7 +376,7 @@ GEXTEND Gram
   GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause
           q_rewriting q_clause q_dispatch q_occurrences q_strategy_flag
           q_destruction_arg q_reference q_with_bindings q_constr_matching
-          q_hintdb q_move_location q_pose;
+          q_hintdb q_move_location q_pose q_assert;
   anti:
     [ [ "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id) ] ]
   ;
@@ -709,13 +715,37 @@ GEXTEND Gram
     ] ]
   ;
   pose:
-    [ [ test_lpar_coloneq; "("; id = ident_or_anti; ":="; c = Constr.lconstr; ")" ->
+    [ [ test_lpar_id_coloneq; "("; id = ident_or_anti; ":="; c = Constr.lconstr; ")" ->
         Loc.tag ~loc:!@loc (Some id, c)
       | c = Constr.constr; na = as_name -> Loc.tag ~loc:!@loc (na, c)
     ] ]
   ;
   q_pose:
     [ [ p = pose -> p ] ]
+  ;
+  as_ipat:
+    [ [ "as"; ipat = simple_intropattern -> Some ipat
+      | -> None
+    ] ]
+  ;
+  by_tactic:
+    [ [ "by"; tac = tac2expr -> Some tac
+      | -> None
+    ] ]
+  ;
+  assertion:
+    [ [ test_lpar_id_coloneq; "("; id = ident_or_anti; ":="; c = Constr.lconstr; ")" ->
+        Loc.tag ~loc:!@loc (QAssertValue (id, c))
+      | test_lpar_id_colon; "("; id = ident_or_anti; ":"; c = Constr.lconstr; ")"; tac = by_tactic ->
+        let loc = !@loc in
+        let ipat = Loc.tag ~loc @@ QIntroNaming (Loc.tag ~loc @@ QIntroIdentifier id) in
+        Loc.tag ~loc (QAssertType (Some ipat, c, tac))
+      | c = Constr.constr; ipat = as_ipat; tac = by_tactic ->
+        Loc.tag ~loc:!@loc (QAssertType (ipat, c, tac))
+    ] ]
+  ;
+  q_assert:
+    [ [ a = assertion -> a ] ]
   ;
 END
 

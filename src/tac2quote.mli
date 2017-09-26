@@ -77,6 +77,8 @@ val of_strategy_flag : strategy_flag -> raw_tacexpr
 
 val of_pose : pose -> raw_tacexpr
 
+val of_assertion : assertion -> raw_tacexpr
+
 val of_constr_matching : constr_matching -> raw_tacexpr
 
 (** {5 Generic arguments} *)

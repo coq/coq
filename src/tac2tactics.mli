@@ -63,6 +63,10 @@ type rewriting =
   multi *
   constr_with_bindings tactic
 
+type assertion =
+| AssertType of intro_pattern option * constr * unit tactic option
+| AssertValue of Id.t * constr
+
 (** Local reimplementations of tactics variants from Coq *)
 
 val intros_patterns : evars_flag -> intro_pattern list -> unit tactic
@@ -90,6 +94,8 @@ val rewrite :
 
 val forward : bool -> unit tactic option option ->
   intro_pattern option -> constr -> unit tactic
+
+val assert_ : assertion -> unit tactic
 
 val letin_pat_tac : evars_flag -> (bool * intro_pattern_naming) option ->
   Name.t -> (Evd.evar_map * constr) -> clause -> unit tactic

@@ -373,3 +373,14 @@ let of_move_location (loc, mv) = match mv with
 
 let of_pose p =
   of_pair (fun id -> of_option (fun id -> of_anti of_ident id) id) of_open_constr p
+
+let of_assertion (loc, ast) = match ast with
+| QAssertType (ipat, c, tac) ->
+  let ipat = of_option of_intro_pattern ipat in
+  let c = of_constr c in
+  let tac = of_option thunk tac in
+  std_constructor ?loc "AssertType" [ipat; c; tac]
+| QAssertValue (id, c) ->
+  let id = of_anti of_ident id in
+  let c = of_constr c in
+  std_constructor ?loc "AssertValue" [id; c]

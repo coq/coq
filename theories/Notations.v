@@ -279,6 +279,13 @@ Ltac2 Notation "set" p(thunk(pose)) cl(opt(clause)) :=
 Ltac2 Notation "eset" p(thunk(pose)) cl(opt(clause)) :=
   Std.set true p (default_on_concl cl).
 
+Ltac2 assert0 ev ast :=
+  enter_h ev (fun _ ast => Std.assert ast) ast.
+
+Ltac2 Notation "assert" ast(thunk(assert)) := assert0 false ast.
+
+Ltac2 Notation "eassert" ast(thunk(assert)) := assert0 true ast.
+
 Ltac2 default_everywhere cl :=
 match cl with
 | None => { Std.on_hyps := None; Std.on_concl := Std.AllOccurrences }
