@@ -244,6 +244,9 @@ val restrict : evar -> Filter.t -> ?candidates:constr list ->
 (** Restrict an undefined evar into a new evar by filtering context and
     possibly limiting the instances to a set of candidates *)
 
+val is_restricted_evar : evar_info -> evar option
+(** Tell if an evar comes from restriction of another evar, and if yes, which *)
+
 val downcast : evar -> types -> evar_map -> evar_map
 (** Change the type of an undefined evar to a new type assumed to be a
     subtype of its current type; subtyping must be ensured by caller *)
