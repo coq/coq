@@ -4,3 +4,9 @@ bar@{u} = nat
          *)
 
 bar is universe polymorphic
+foo@{u Top.8 v} = 
+Type@{Top.8} -> Type@{v} -> Type@{u}
+     : Type@{max(u+1, Top.8+1, v+1)}
+(* u Top.8 v |=  *)
+
+foo is universe polymorphic

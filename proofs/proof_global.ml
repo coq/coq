@@ -69,7 +69,6 @@ let _ =
 (* Extra info on proofs. *)
 type lemma_possible_guards = int list list
 type proof_universes = Evd.evar_universe_context * Universes.universe_binders option
-type universe_binders = Id.t Loc.located list
 
 type proof_object = {
   id : Names.Id.t;
@@ -94,7 +93,7 @@ type pstate = {
   proof : Proof.proof;
   strength : Decl_kinds.goal_kind;
   mode : proof_mode CEphemeron.key;
-  universe_binders: universe_binders option;
+  universe_decl: Univdecls.universe_decl;
 }
 
 let make_terminator f = f
@@ -230,15 +229,22 @@ let activate_proof_mode mode =
 let disactivate_current_proof_mode () =
   CEphemeron.iter_opt !current_proof_mode (fun x -> x.reset ())
 
-(** [start_proof sigma id str goals terminator] starts a proof of name
+let default_universe_decl =
+  let open Misctypes in
+  { univdecl_instance = [];
+    univdecl_extensible_instance = true;
+    univdecl_constraints = Univ.Constraint.empty;
+    univdecl_extensible_constraints = true }
+
+(** [start_proof sigma id pl str goals terminator] starts a proof of name
     [id] with goals [goals] (a list of pairs of environment and
     conclusion); [str] describes what kind of theorem/definition this
     is (spiwack: for potential printing, I believe is used only by
     closing commands and the xml plugin); [terminator] is used at the
     end of the proof to close the proof. The proof is started in the
     evar map [sigma] (which can typically contain universe
-    constraints). *)
-let start_proof sigma id ?pl str goals terminator =
+    constraints), and with universe bindings pl. *)
+let start_proof sigma id ?(pl=default_universe_decl) str goals terminator =
   let initial_state = {
     pid = id;
     terminator = CEphemeron.create terminator;
@@ -247,10 +253,10 @@ let start_proof sigma id ?pl str goals terminator =
     section_vars = None;
     strength = str;
     mode = find_proof_mode "No";
-    universe_binders = pl } in
+    universe_decl = pl } in
   push initial_state pstates
 
-let start_dependent_proof id ?pl str goals terminator =
+let start_dependent_proof id ?(pl=default_universe_decl) str goals terminator =
   let initial_state = {
     pid = id;
     terminator = CEphemeron.create terminator;
@@ -259,11 +265,11 @@ let start_dependent_proof id ?pl str goals terminator =
     section_vars = None;
     strength = str;
     mode = find_proof_mode "No";
-    universe_binders = pl } in
+    universe_decl = pl } in
   push initial_state pstates
 
 let get_used_variables () = (cur_pstate ()).section_vars
-let get_universe_binders () = (cur_pstate ()).universe_binders
+let get_universe_decl () = (cur_pstate ()).universe_decl
 
 let proof_using_auto_clear = ref false
 let _ = Goptions.declare_bool_option
@@ -312,20 +318,21 @@ let get_open_goals () =
 
 let constrain_variables init uctx =
   let levels = Univ.Instance.levels (Univ.UContext.instance init) in
-  let cstrs = UState.constrain_variables levels uctx in
-  Univ.ContextSet.add_constraints cstrs (UState.context_set uctx)
+  UState.constrain_variables levels uctx
 
 type closed_proof_output = (Term.constr * Safe_typing.private_constants) list * Evd.evar_universe_context
 
 let close_proof ~keep_body_ucst_separate ?feedback_id ~now
                 (fpl : closed_proof_output Future.computation) =
-  let { pid; section_vars; strength; proof; terminator; universe_binders } =
+  let { pid; section_vars; strength; proof; terminator; universe_decl } =
     cur_pstate () in
   let poly = pi2 strength (* Polymorphic *) in
   let initial_goals = Proof.initial_goals proof in
   let initial_euctx = Proof.initial_euctx proof in
   let fpl, univs = Future.split2 fpl in
   let universes = if poly || now then Future.force univs else initial_euctx in
+  let binders, univctx = Evd.check_univ_decl (Evd.from_ctx universes) universe_decl in
+  let binders = if poly then Some binders else None in
   (* Because of dependent subgoals at the beginning of proofs, we could
      have existential variables in the initial types of goals, we need to
      normalise them for the kernel. *)
@@ -349,53 +356,54 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
           let initunivs = Evd.evar_context_universe_context initial_euctx in
           let ctx = constrain_variables initunivs universes in
           (* For vi2vo compilation proofs are computed now but we need to
-           * complement the univ constraints of the typ with the ones of
-           * the body.  So we keep the two sets distinct. *)
+             complement the univ constraints of the typ with the ones of
+             the body.  So we keep the two sets distinct. *)
 	  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
-          let ctx_body = Univops.restrict_universe_context ctx used_univs in
-          (initunivs, typ), ((body, ctx_body), eff)
+          let ctx_body = UState.restrict ctx used_univs in
+          let _, univs = Evd.check_univ_decl (Evd.from_ctx ctx_body) universe_decl in
+          (initunivs, typ), ((body, Univ.ContextSet.of_context univs), eff)
         else
-          let initunivs = Univ.UContext.empty in
-          let ctx = constrain_variables initunivs universes in
           (* Since the proof is computed now, we can simply have 1 set of
-           * constraints in which we merge the ones for the body and the ones
-           * for the typ *)
+             constraints in which we merge the ones for the body and the ones
+             for the typ. We recheck the declaration after restricting with
+             the actually used universes.
+             TODO: check if restrict is really necessary now. *)
           let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
-          let ctx = Univops.restrict_universe_context ctx used_univs in
-          let univs = Univ.ContextSet.to_context ctx in
+          let ctx = UState.restrict universes used_univs in
+          let _, univs = Evd.check_univ_decl (Evd.from_ctx ctx) universe_decl in
           (univs, typ), ((body, Univ.ContextSet.empty), eff)
       in 
        fun t p -> Future.split2 (Future.chain ~pure:true p (make_body t))
     else
       fun t p ->
-        let initunivs = Evd.evar_context_universe_context initial_euctx in
-        Future.from_val (initunivs, nf t),
+        Future.from_val (univctx, nf t),
         Future.chain ~pure:true p (fun (pt,eff) ->
-          (pt,constrain_variables initunivs (Future.force univs)),eff)
+          (* Deferred proof, we already checked the universe declaration with
+             the initial universes, ensure that the final universes respect
+             the declaration as well. If the declaration is non-extensible,
+             this will prevent the body from adding universes and constraints. *)
+          let bodyunivs = constrain_variables univctx (Future.force univs) in
+          let _, univs = Evd.check_univ_decl (Evd.from_ctx bodyunivs) universe_decl in
+          (pt,Univ.ContextSet.of_context univs),eff)
   in
-  let entries =
-    Future.map2 (fun p (_, t) ->
-      let t = EConstr.Unsafe.to_constr t in
-      let univstyp, body = make_body t p in
-      let univs, typ = Future.force univstyp in
-      let univs =
-        if poly then Entries.Polymorphic_const_entry univs
-        else Entries.Monomorphic_const_entry univs
-      in
-	{ Entries.
-	  const_entry_body = body;
-	  const_entry_secctx = section_vars;
-	  const_entry_feedback = feedback_id;
-	  const_entry_type  = Some typ;
-	  const_entry_inline_code = false;
-	  const_entry_opaque = true;
-	  const_entry_universes = univs;
-        })
-		fpl initial_goals in
-  let binders =
-    Option.map (fun names -> fst (Evd.universe_context ~names (Evd.from_ctx universes)))
-	       universe_binders
+  let entry_fn p (_, t) =
+    let t = EConstr.Unsafe.to_constr t in
+    let univstyp, body = make_body t p in
+    let univs, typ = Future.force univstyp in
+    let univs =
+      if poly then Entries.Polymorphic_const_entry univs
+      else Entries.Monomorphic_const_entry univs
+    in
+    {Entries.
+      const_entry_body = body;
+      const_entry_secctx = section_vars;
+      const_entry_feedback = feedback_id;
+      const_entry_type  = Some typ;
+      const_entry_inline_code = false;
+      const_entry_opaque = true;
+      const_entry_universes = univs; }
   in
+  let entries = Future.map2 entry_fn fpl initial_goals in
   { id = pid; entries = entries; persistence = strength;
     universes = (universes, binders) },
   fun pr_ending -> CEphemeron.get terminator pr_ending

@@ -301,7 +301,7 @@ GEXTEND Gram
       | -> [] ] ]
   ;
   instance:
-    [ [ "@{"; l = LIST1 universe_level; "}" -> Some l
+    [ [ "@{"; l = LIST0 universe_level; "}" -> Some l
       | -> None ] ]
   ;
   universe_level:

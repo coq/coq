@@ -162,6 +162,7 @@ module Indrec = Indrec
 (* module Cases *)
 module Pretyping = Pretyping
 module Unification = Unification
+module Univdecls = Univdecls
 (******************************************************************************)
 (* interp                                                                     *)
 (******************************************************************************)

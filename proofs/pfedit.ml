@@ -239,7 +239,6 @@ let get_current_proof_name = Proof_global.get_current_proof_name
 let get_all_proof_names = Proof_global.get_all_proof_names
 
 type lemma_possible_guards = Proof_global.lemma_possible_guards
-type universe_binders = Proof_global.universe_binders
 
 let delete_proof = Proof_global.discard
 let delete_current_proof = Proof_global.discard_current
@@ -257,6 +256,5 @@ let set_used_variables l =
 let get_used_variables () =
   Proof_global.get_used_variables ()
 
-let get_universe_binders () =
-  Proof_global.get_universe_binders ()
-
+let get_universe_decl () =
+  Proof_global.get_universe_decl ()

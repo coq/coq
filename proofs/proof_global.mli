@@ -34,7 +34,7 @@ val compact_the_proof : unit -> unit
     values. *)
 type lemma_possible_guards = int list list
 type proof_universes = Evd.evar_universe_context * Universes.universe_binders option
-type universe_binders = Names.Id.t Loc.located list
+
 type proof_object = {
   id : Names.Id.t;
   entries : Safe_typing.private_constants Entries.definition_entry list;
@@ -54,21 +54,23 @@ type closed_proof = proof_object * proof_terminator
 val make_terminator : (proof_ending -> unit) -> proof_terminator
 val apply_terminator : proof_terminator -> proof_ending -> unit
 
-(** [start_proof id str goals terminator] starts a proof of name [id]
+(** [start_proof id str pl goals terminator] starts a proof of name [id]
     with goals [goals] (a list of pairs of environment and
     conclusion); [str] describes what kind of theorem/definition this
     is (spiwack: for potential printing, I believe is used only by
     closing commands and the xml plugin); [terminator] is used at the
-    end of the proof to close the proof. *)
+    end of the proof to close the proof. The proof is started in the
+    evar map [sigma] (which can typically contain universe
+    constraints), and with universe bindings pl. *)
 val start_proof :
-  Evd.evar_map -> Names.Id.t -> ?pl:universe_binders ->
+  Evd.evar_map -> Names.Id.t -> ?pl:Univdecls.universe_decl ->
   Decl_kinds.goal_kind -> (Environ.env * EConstr.types) list  ->
     proof_terminator -> unit
 
 (** Like [start_proof] except that there may be dependencies between
     initial goals. *)
 val start_dependent_proof :
-  Names.Id.t -> ?pl:universe_binders -> Decl_kinds.goal_kind ->
+  Names.Id.t -> ?pl:Univdecls.universe_decl -> Decl_kinds.goal_kind ->
   Proofview.telescope -> proof_terminator -> unit
 
 (** Update the proofs global environment after a side-effecting command
@@ -119,7 +121,8 @@ val set_used_variables :
   Names.Id.t list -> Context.Named.t * Names.Id.t Loc.located list
 val get_used_variables : unit -> Context.Named.t option
 
-val get_universe_binders : unit -> universe_binders option
+(** Get the universe declaration associated to the current proof. *)
+val get_universe_decl : unit -> Univdecls.universe_decl
 
 module V82 : sig
   val get_current_initial_conclusions : unit -> Names.Id.t *(EConstr.types list *

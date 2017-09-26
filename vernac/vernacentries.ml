@@ -1555,7 +1555,7 @@ let vernac_check_may_eval ?loc redexp glopt rc =
   let sigma' = Evarconv.solve_unif_constraints_with_heuristics env sigma' in
   Evarconv.check_problems_are_solved env sigma';
   let sigma',nf = Evarutil.nf_evars_and_universes sigma' in
-  let pl, uctx = Evd.universe_context sigma' in
+  let pl, uctx = Evd.universe_context ~names:[] ~extensible:true sigma' in
   let env = Environ.push_context uctx (Evarutil.nf_env_evar sigma' env) in
   let c = nf c in
   let j =

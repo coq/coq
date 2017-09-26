@@ -14,7 +14,7 @@ open Environ
 open Univ
 open Globnames
 
-let pr_with_global_universes l = 
+let pr_with_global_universes l =
   try Nameops.pr_id (LMap.find l (snd (Global.global_universe_names ())))
   with Not_found -> Level.pr l
 
@@ -31,7 +31,7 @@ let universe_binders_of_global ref =
 
 let register_universe_binders ref l =
   universe_binders_table := Refmap.add ref l !universe_binders_table
-		     
+
 (* To disallow minimization to Set *)
 
 let set_minimization = ref true
