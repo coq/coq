@@ -53,7 +53,8 @@ end
 
 open Core
 
-let v_unit = ValInt 0
+let v_unit = Value.of_unit ()
+let v_blk = Valexpr.make_block
 
 let of_name c = match c with
 | Anonymous -> Value.of_option Value.of_ident None
@@ -82,8 +83,8 @@ let to_rec_declaration (nas, ts, cs) =
   Value.to_array Value.to_constr cs)
 
 let of_result f = function
-| Inl c -> ValBlk (0, [|f c|])
-| Inr e -> ValBlk (1, [|Value.of_exn e|])
+| Inl c -> v_blk 0 [|f c|]
+| Inr e -> v_blk 1 [|Value.of_exn e|]
 
 (** Stdlib exceptions *)
 
@@ -209,19 +210,19 @@ end
 
 let () = define2 "array_make" int valexpr begin fun n x ->
   if n < 0 || n > Sys.max_array_length then throw err_outofbounds
-  else wrap (fun () -> ValBlk (0, Array.make n x))
+  else wrap (fun () -> v_blk 0 (Array.make n x))
 end
 
-let () = define1 "array_length" block begin fun v ->
-  return (ValInt (Array.length v))
+let () = define1 "array_length" block begin fun (_, v) ->
+  return (Value.of_int (Array.length v))
 end
 
-let () = define3 "array_set" block int valexpr begin fun v n x ->
+let () = define3 "array_set" block int valexpr begin fun (_, v) n x ->
   if n < 0 || n >= Array.length v then throw err_outofbounds
   else wrap_unit (fun () -> v.(n) <- x)
 end
 
-let () = define2 "array_get" block int begin fun v n ->
+let () = define2 "array_get" block int begin fun (_, v) n ->
   if n < 0 || n >= Array.length v then throw err_outofbounds
   else wrap (fun () -> v.(n))
 end
@@ -306,167 +307,167 @@ let () = define1 "constr_kind" constr begin fun c ->
   Proofview.tclEVARMAP >>= fun sigma ->
   return begin match EConstr.kind sigma c with
   | Rel n ->
-    ValBlk (0, [|Value.of_int n|])
+    v_blk 0 [|Value.of_int n|]
   | Var id ->
-    ValBlk (1, [|Value.of_ident id|])
+    v_blk 1 [|Value.of_ident id|]
   | Meta n ->
-    ValBlk (2, [|Value.of_int n|])
+    v_blk 2 [|Value.of_int n|]
   | Evar (evk, args) ->
-    ValBlk (3, [|
+    v_blk 3 [|
       Value.of_int (Evar.repr evk);
       Value.of_array Value.of_constr args;
-    |])
+    |]
   | Sort s ->
-    ValBlk (4, [|Value.of_ext Value.val_sort s|])
+    v_blk 4 [|Value.of_ext Value.val_sort s|]
   | Cast (c, k, t) ->
-    ValBlk (5, [|
+    v_blk 5 [|
       Value.of_constr c;
       Value.of_ext Value.val_cast k;
       Value.of_constr t;
-    |])
+    |]
   | Prod (na, t, u) ->
-    ValBlk (6, [|
+    v_blk 6 [|
       of_name na;
       Value.of_constr t;
       Value.of_constr u;
-    |])
+    |]
   | Lambda (na, t, c) ->
-    ValBlk (7, [|
+    v_blk 7 [|
       of_name na;
       Value.of_constr t;
       Value.of_constr c;
-    |])
+    |]
   | LetIn (na, b, t, c) ->
-    ValBlk (8, [|
+    v_blk 8 [|
       of_name na;
       Value.of_constr b;
       Value.of_constr t;
       Value.of_constr c;
-    |])
+    |]
   | App (c, cl) ->
-    ValBlk (9, [|
+    v_blk 9 [|
       Value.of_constr c;
       Value.of_array Value.of_constr cl;
-    |])
+    |]
   | Const (cst, u) ->
-    ValBlk (10, [|
+    v_blk 10 [|
       Value.of_constant cst;
       of_instance u;
-    |])
+    |]
   | Ind (ind, u) ->
-    ValBlk (11, [|
+    v_blk 11 [|
       Value.of_ext Value.val_inductive ind;
       of_instance u;
-    |])
+    |]
   | Construct (cstr, u) ->
-    ValBlk (12, [|
+    v_blk 12 [|
       Value.of_ext Value.val_constructor cstr;
       of_instance u;
-    |])
+    |]
   | Case (ci, c, t, bl) ->
-    ValBlk (13, [|
+    v_blk 13 [|
       Value.of_ext Value.val_case ci;
       Value.of_constr c;
       Value.of_constr t;
       Value.of_array Value.of_constr bl;
-    |])
+    |]
   | Fix ((recs, i), def) ->
     let (nas, ts, cs) = of_rec_declaration def in
-    ValBlk (14, [|
+    v_blk 14 [|
       Value.of_array Value.of_int recs;
       Value.of_int i;
       nas;
       ts;
       cs;
-    |])
+    |]
   | CoFix (i, def) ->
     let (nas, ts, cs) = of_rec_declaration def in
-    ValBlk (15, [|
+    v_blk 15 [|
       Value.of_int i;
       nas;
       ts;
       cs;
-    |])
+    |]
   | Proj (p, c) ->
-    ValBlk (16, [|
+    v_blk 16 [|
       Value.of_ext Value.val_projection p;
       Value.of_constr c;
-    |])
+    |]
   end
 end
 
 let () = define1 "constr_make" valexpr begin fun knd ->
   let open Constr in
-  let c = match knd with
-  | ValBlk (0, [|n|]) ->
+  let c = match Tac2ffi.to_block knd with
+  | (0, [|n|]) ->
     let n = Value.to_int n in
     EConstr.mkRel n
-  | ValBlk (1, [|id|]) ->
+  | (1, [|id|]) ->
     let id = Value.to_ident id in
     EConstr.mkVar id
-  | ValBlk (2, [|n|]) ->
+  | (2, [|n|]) ->
     let n = Value.to_int n in
     EConstr.mkMeta n
-  | ValBlk (3, [|evk; args|]) ->
+  | (3, [|evk; args|]) ->
     let evk = Evar.unsafe_of_int (Value.to_int evk) in
     let args = Value.to_array Value.to_constr args in
     EConstr.mkEvar (evk, args)
-  | ValBlk (4, [|s|]) ->
+  | (4, [|s|]) ->
     let s = Value.to_ext Value.val_sort s in
     EConstr.mkSort (EConstr.Unsafe.to_sorts s)
-  | ValBlk (5, [|c; k; t|]) ->
+  | (5, [|c; k; t|]) ->
     let c = Value.to_constr c in
     let k = Value.to_ext Value.val_cast k in
     let t = Value.to_constr t in
     EConstr.mkCast (c, k, t)
-  | ValBlk (6, [|na; t; u|]) ->
+  | (6, [|na; t; u|]) ->
     let na = to_name na in
     let t = Value.to_constr t in
     let u = Value.to_constr u in
     EConstr.mkProd (na, t, u)
-  | ValBlk (7, [|na; t; c|]) ->
+  | (7, [|na; t; c|]) ->
     let na = to_name na in
     let t = Value.to_constr t in
     let u = Value.to_constr c in
     EConstr.mkLambda (na, t, u)
-  | ValBlk (8, [|na; b; t; c|]) ->
+  | (8, [|na; b; t; c|]) ->
     let na = to_name na in
     let b = Value.to_constr b in
     let t = Value.to_constr t in
     let c = Value.to_constr c in
     EConstr.mkLetIn (na, b, t, c)
-  | ValBlk (9, [|c; cl|]) ->
+  | (9, [|c; cl|]) ->
     let c = Value.to_constr c in
     let cl = Value.to_array Value.to_constr cl in
     EConstr.mkApp (c, cl)
-  | ValBlk (10, [|cst; u|]) ->
+  | (10, [|cst; u|]) ->
     let cst = Value.to_constant cst in
     let u = to_instance u in
     EConstr.mkConstU (cst, u)
-  | ValBlk (11, [|ind; u|]) ->
+  | (11, [|ind; u|]) ->
     let ind = Value.to_ext Value.val_inductive ind in
     let u = to_instance u in
     EConstr.mkIndU (ind, u)
-  | ValBlk (12, [|cstr; u|]) ->
+  | (12, [|cstr; u|]) ->
     let cstr = Value.to_ext Value.val_constructor cstr in
     let u = to_instance u in
     EConstr.mkConstructU (cstr, u)
-  | ValBlk (13, [|ci; c; t; bl|]) ->
+  | (13, [|ci; c; t; bl|]) ->
     let ci = Value.to_ext Value.val_case ci in
     let c = Value.to_constr c in
     let t = Value.to_constr t in
     let bl = Value.to_array Value.to_constr bl in
     EConstr.mkCase (ci, c, t, bl)
-  | ValBlk (14, [|recs; i; nas; ts; cs|]) ->
+  | (14, [|recs; i; nas; ts; cs|]) ->
     let recs = Value.to_array Value.to_int recs in
     let i = Value.to_int i in
     let def = to_rec_declaration (nas, ts, cs) in
     EConstr.mkFix ((recs, i), def)
-  | ValBlk (15, [|i; nas; ts; cs|]) ->
+  | (15, [|i; nas; ts; cs|]) ->
     let i = Value.to_int i in
     let def = to_rec_declaration (nas, ts, cs) in
     EConstr.mkCoFix (i, def)
-  | ValBlk (16, [|p; c|]) ->
+  | (16, [|p; c|]) ->
     let p = Value.to_ext Value.val_projection p in
     let c = Value.to_constr c in
     EConstr.mkProj (p, c)
@@ -622,8 +623,8 @@ let () = define1 "case" closure begin fun f ->
       set_bt info >>= fun info ->
       k (e, info)
     end in
-    return (ValBlk (0, [| Value.of_tuple [| x; Value.of_closure k |] |]))
-  | Proofview.Fail e -> return (ValBlk (1, [| Value.of_exn e |]))
+    return (v_blk 0 [| Value.of_tuple [| x; Value.of_closure k |] |])
+  | Proofview.Fail e -> return (v_blk 1 [| Value.of_exn e |])
   end
 end
 
@@ -791,7 +792,7 @@ let interp_constr flags ist c =
   pf_apply begin fun env sigma ->
   try
     let (sigma, c) = understand_ltac flags env sigma ist WithoutTypeConstraint c in
-    let c = ValExt (Value.val_constr, c) in
+    let c = Value.of_constr c in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
     Proofview.tclUNIT c
   with e when catchable_exception e ->
@@ -827,7 +828,7 @@ let () =
   define_ml_object Tac2quote.wit_open_constr obj
 
 let () =
-  let interp _ id = return (ValExt (Value.val_ident, id)) in
+  let interp _ id = return (Value.of_ident id) in
   let print _ id = str "ident:(" ++ Id.print id ++ str ")" in
   let obj = {
     ml_intern = (fun _ _ id -> GlbVal id, gtypref t_ident);
@@ -843,7 +844,7 @@ let () =
     GlbVal pat, gtypref t_pattern
   in
   let print env pat = str "pattern:(" ++ Printer.pr_lconstr_pattern_env env Evd.empty pat ++ str ")" in
-  let interp _ c = return (ValExt (Value.val_pattern, c)) in
+  let interp _ c = return (Value.of_pattern c) in
   let obj = {
     ml_intern = intern;
     ml_interp = interp;

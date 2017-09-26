@@ -22,17 +22,17 @@ let return x = Proofview.tclUNIT x
 let v_unit = Value.of_unit ()
 let thaw f = Tac2ffi.apply (Value.to_closure f) [v_unit]
 
-let to_pair f g = function
-| ValBlk (0, [| x; y |]) -> (f x, g y)
+let to_pair f g v = match Value.to_tuple v with
+| [| x; y |] -> (f x, g y)
 | _ -> assert false
 
 let to_name c = match Value.to_option Value.to_ident c with
 | None -> Anonymous
 | Some id -> Name id
 
-let to_qhyp = function
-| ValBlk (0, [| i |]) -> AnonHyp (Value.to_int i)
-| ValBlk (1, [| id |]) -> NamedHyp (Value.to_ident id)
+let to_qhyp v = match Value.to_block v with
+| (0, [| i |]) -> AnonHyp (Value.to_int i)
+| (1, [| id |]) -> NamedHyp (Value.to_ident id)
 | _ -> assert false
 
 let to_bindings = function
@@ -43,8 +43,8 @@ let to_bindings = function
   ExplicitBindings ((Value.to_list (fun p -> to_pair to_qhyp Value.to_constr p) vl))
 | _ -> assert false
 
-let to_constr_with_bindings = function
-| ValBlk (0, [| c; bnd |]) -> (Value.to_constr c, to_bindings bnd)
+let to_constr_with_bindings v = match Value.to_tuple v with
+| [| c; bnd |] -> (Value.to_constr c, to_bindings bnd)
 | _ -> assert false
 
 let to_int_or_var i = ArgArg (Value.to_int i)
@@ -56,16 +56,16 @@ let to_occurrences f = function
 | ValBlk (1, [| vl |]) -> OnlyOccurrences (Value.to_list f vl)
 | _ -> assert false
 
-let to_hyp_location_flag = function
-| ValInt 0 -> InHyp
-| ValInt 1 -> InHypTypeOnly
-| ValInt 2 -> InHypValueOnly
+let to_hyp_location_flag v = match Value.to_int v with
+| 0 -> InHyp
+| 1 -> InHypTypeOnly
+| 2 -> InHypValueOnly
 | _ -> assert false
 
-let to_clause = function
-| ValBlk (0, [| hyps; concl |]) ->
-  let cast = function
-  | ValBlk (0, [| hyp; occ; flag |]) ->
+let to_clause v = match Value.to_tuple v with
+| [| hyps; concl |] ->
+  let cast v = match Value.to_tuple v with
+  | [| hyp; occ; flag |] ->
     ((to_occurrences to_int_or_var occ, Value.to_ident hyp), to_hyp_location_flag flag)
   | _ -> assert false
   in
@@ -73,8 +73,8 @@ let to_clause = function
   { onhyps = hyps; concl_occs = to_occurrences to_int_or_var concl; }
 | _ -> assert false
 
-let to_red_flag = function
-| ValBlk (0, [| beta; iota; fix; cofix; zeta; delta; const |]) ->
+let to_red_flag v = match Value.to_tuple v with
+| [| beta; iota; fix; cofix; zeta; delta; const |] ->
   {
     rBeta = Value.to_bool beta;
     rMatch = Value.to_bool iota;
@@ -92,10 +92,10 @@ let to_pattern_with_occs pat =
 let to_constr_with_occs c =
   to_pair Value.to_constr (fun occ -> to_occurrences to_int_or_var occ) c
 
-let rec to_intro_pattern = function
-| ValBlk (0, [| b |]) -> IntroForthcoming (Value.to_bool b)
-| ValBlk (1, [| pat |]) -> IntroNaming (to_intro_pattern_naming pat)
-| ValBlk (2, [| act |]) -> IntroAction (to_intro_pattern_action act)
+let rec to_intro_pattern v = match Value.to_block v with
+| (0, [| b |]) -> IntroForthcoming (Value.to_bool b)
+| (1, [| pat |]) -> IntroNaming (to_intro_pattern_naming pat)
+| (2, [| act |]) -> IntroAction (to_intro_pattern_action act)
 | _ -> assert false
 
 and to_intro_pattern_naming = function
@@ -116,26 +116,26 @@ and to_intro_pattern_action = function
 | ValBlk (3, [| b |]) -> IntroRewrite (Value.to_bool b)
 | _ -> assert false
 
-and to_or_and_intro_pattern = function
-| ValBlk (0, [| ill |]) ->
+and to_or_and_intro_pattern v = match Value.to_block v with
+| (0, [| ill |]) ->
   IntroOrPattern (Value.to_list to_intro_patterns ill)
-| ValBlk (1, [| il |]) ->
+| (1, [| il |]) ->
   IntroAndPattern (to_intro_patterns il)
 | _ -> assert false
 
 and to_intro_patterns il =
   Value.to_list to_intro_pattern il
 
-let to_destruction_arg = function
-| ValBlk (0, [| c |]) ->
+let to_destruction_arg v = match Value.to_block v with
+| (0, [| c |]) ->
   let c = thaw c >>= fun c -> return (to_constr_with_bindings c) in
   ElimOnConstr c
-| ValBlk (1, [| id |]) -> ElimOnIdent (Value.to_ident id)
-| ValBlk (2, [| n |]) -> ElimOnAnonHyp (Value.to_int n)
+| (1, [| id |]) -> ElimOnIdent (Value.to_ident id)
+| (2, [| n |]) -> ElimOnAnonHyp (Value.to_int n)
 | _ -> assert false
 
-let to_induction_clause = function
-| ValBlk (0, [| arg; eqn; as_; in_ |]) ->
+let to_induction_clause v = match Value.to_tuple v with
+| [| arg; eqn; as_; in_ |] ->
   let arg = to_destruction_arg arg in
   let eqn = Value.to_option to_intro_pattern_naming eqn in
   let as_ = Value.to_option to_or_and_intro_pattern as_ in
@@ -144,14 +144,14 @@ let to_induction_clause = function
 | _ ->
   assert false
 
-let to_assertion = function
-| ValBlk (0, [| ipat; t; tac |]) ->
+let to_assertion v = match Value.to_block v with
+| (0, [| ipat; t; tac |]) ->
   let to_tac t = Proofview.tclIGNORE (thaw t) in
   let ipat = Value.to_option to_intro_pattern ipat in
   let t = Value.to_constr t in
   let tac = Value.to_option to_tac tac in
   AssertType (ipat, t, tac)
-| ValBlk (1, [| id; c |]) ->
+| (1, [| id; c |]) ->
   AssertValue (Value.to_ident id, Value.to_constr c)
 | _ -> assert false
 
@@ -162,30 +162,29 @@ let to_multi = function
 | ValInt 1 -> RepeatPlus
 | _ -> assert false
 
-let to_rewriting = function
-| ValBlk (0, [| orient; repeat; c |]) ->
+let to_rewriting v = match Value.to_tuple v with
+| [| orient; repeat; c |] ->
   let orient = Value.to_option Value.to_bool orient in
   let repeat = to_multi repeat in
-  (** FIXME: lost backtrace *)
   let c = thaw c >>= fun c -> return (to_constr_with_bindings c) in
   (orient, repeat, c)
 | _ -> assert false
 
-let to_debug = function
-| ValInt 0 -> Hints.Off
-| ValInt 1 -> Hints.Info
-| ValInt 2 -> Hints.Debug
+let to_debug v = match Value.to_int v with
+| 0 -> Hints.Off
+| 1 -> Hints.Info
+| 2 -> Hints.Debug
 | _ -> assert false
 
-let to_strategy = function
-| ValInt 0 -> Class_tactics.Bfs
-| ValInt 1 -> Class_tactics.Dfs
+let to_strategy v = match Value.to_int v with
+| 0 -> Class_tactics.Bfs
+| 1 -> Class_tactics.Dfs
 | _ -> assert false
 
-let to_inversion_kind = function
-| ValInt 0 -> Misctypes.SimpleInversion
-| ValInt 1 -> Misctypes.FullInversion
-| ValInt 2 -> Misctypes.FullInversionClear
+let to_inversion_kind v = match Value.to_int v with
+| 0 -> Misctypes.SimpleInversion
+| 1 -> Misctypes.FullInversion
+| 2 -> Misctypes.FullInversionClear
 | _ -> assert false
 
 let to_move_location = function
@@ -258,8 +257,8 @@ let () = define_prim2 "tac_case" begin fun ev c ->
 end
 
 let () = define_prim1 "tac_generalize" begin fun cl ->
-  let cast = function
-  | ValBlk (0, [| c; occs; na |]) ->
+  let cast v = match Value.to_tuple v with
+  | [| c; occs; na |] ->
     ((to_occurrences Value.to_int occs, Value.to_constr c), to_name na)
   | _ -> assert false
   in

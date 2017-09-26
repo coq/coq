@@ -41,6 +41,35 @@ type 'a arity = (valexpr, 'a) arity0
 
 let mk_closure arity f = MLTactic (arity, f)
 
+module Valexpr =
+struct
+
+type t = valexpr
+
+let is_int = function
+| ValInt _ -> true
+| ValBlk _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ -> false
+
+let tag v = match v with
+| ValBlk (n, _) -> n
+| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ ->
+  CErrors.anomaly (Pp.str "Unexpected value shape")
+
+let field v n = match v with
+| ValBlk (_, v) -> v.(n)
+| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ ->
+  CErrors.anomaly (Pp.str "Unexpected value shape")
+
+let set_field v n w = match v with
+| ValBlk (_, v) -> v.(n) <- w
+| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ ->
+  CErrors.anomaly (Pp.str "Unexpected value shape")
+
+let make_block tag v = ValBlk (tag, v)
+let make_int n = ValInt n
+
+end
+
 type 'a repr = {
   r_of : 'a -> valexpr;
   r_to : valexpr -> 'a;
@@ -251,9 +280,26 @@ let array r = {
   r_id = false;
 }
 
+let of_block (n, args) = ValBlk (n, args)
+let to_block = function
+| ValBlk (n, args) -> (n, args)
+| _ -> assert false
+
 let block = {
-  r_of = of_tuple;
-  r_to = to_tuple;
+  r_of = of_block;
+  r_to = to_block;
+  r_id = false;
+}
+
+let of_open (kn, args) = ValOpn (kn, args)
+
+let to_open = function
+| ValOpn (kn, args) -> (kn, args)
+| _ -> assert false
+
+let open_ = {
+  r_of = of_open;
+  r_to = to_open;
   r_id = false;
 }
 

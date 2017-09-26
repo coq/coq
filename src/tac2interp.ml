@@ -80,8 +80,8 @@ let get_ref ist kn =
 let return = Proofview.tclUNIT
 
 let rec interp (ist : environment) = function
-| GTacAtm (AtmInt n) -> return (ValInt n)
-| GTacAtm (AtmStr s) -> return (ValStr (Bytes.of_string s))
+| GTacAtm (AtmInt n) -> return (Tac2ffi.of_int n)
+| GTacAtm (AtmStr s) -> return (Tac2ffi.of_string (Bytes.of_string s))
 | GTacVar id -> return (get_var ist id)
 | GTacRef kn ->
   let data = get_ref ist kn in
@@ -89,7 +89,7 @@ let rec interp (ist : environment) = function
 | GTacFun (ids, e) ->
   let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
   let f = interp_app cls in
-  return (ValCls f)
+  return (Tac2ffi.of_closure f)
 | GTacApp (f, args) ->
   interp ist f >>= fun f ->
   Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
@@ -105,7 +105,7 @@ let rec interp (ist : environment) = function
   let map (na, e) = match e with
   | GTacFun (ids, e) ->
     let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
-    let f = ValCls (interp_app cls) in
+    let f = Tac2ffi.of_closure (interp_app cls) in
     na, cls, f
   | _ -> anomaly (str "Ill-formed recursive function")
   in
@@ -119,10 +119,10 @@ let rec interp (ist : environment) = function
   let iter (_, e, _) = e.clos_env <- ist.env_ist in
   let () = List.iter iter fixs in
   interp ist e
-| GTacCst (_, n, []) -> return (ValInt n)
+| GTacCst (_, n, []) -> return (Valexpr.make_int n)
 | GTacCst (_, n, el) ->
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
-  return (ValBlk (n, Array.of_list el))
+  return (Valexpr.make_block n (Array.of_list el))
 | GTacCse (e, _, cse0, cse1) ->
   interp ist e >>= fun e -> interp_case ist e cse0 cse1
 | GTacWth { opn_match = e; opn_branch = cse; opn_default = def } ->
@@ -135,7 +135,7 @@ let rec interp (ist : environment) = function
   interp_set ist e p r
 | GTacOpn (kn, el) ->
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
-  return (ValOpn (kn, Array.of_list el))
+  return (Tac2ffi.of_open (kn, Array.of_list el))
 | GTacPrm (ml, el) ->
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
   with_frame (FrPrim ml) (Tac2ffi.apply (Tac2env.interp_primitive ml) el)
@@ -156,17 +156,17 @@ and interp_app f =
   in
   Tac2ffi.abstract (List.length f.clos_var) ans
 
-and interp_case ist e cse0 cse1 = match e with
-| ValInt n -> interp ist cse0.(n)
-| ValBlk (n, args) ->
-  let (ids, e) = cse1.(n) in
-  let ist = CArray.fold_left2 push_name ist ids args in
-  interp ist e
-| ValExt _ | ValStr _ | ValCls _ | ValOpn _ ->
-  anomaly (str "Unexpected value shape")
+and interp_case ist e cse0 cse1 =
+  if Valexpr.is_int e then
+    interp ist cse0.(Tac2ffi.to_int e)
+  else
+    let (n, args) = Tac2ffi.to_block e in
+    let (ids, e) = cse1.(n) in
+    let ist = CArray.fold_left2 push_name ist ids args in
+    interp ist e
 
-and interp_with ist e cse def = match e with
-| ValOpn (kn, args) ->
+and interp_with ist e cse def = 
+  let (kn, args) = Tac2ffi.to_open e in
   let br = try Some (KNmap.find kn cse) with Not_found -> None in
   begin match br with
   | None ->
@@ -178,24 +178,16 @@ and interp_with ist e cse def = match e with
     let ist = CArray.fold_left2 push_name ist ids args in
     interp ist p
   end
-| ValInt _ | ValBlk _ | ValExt _ | ValStr _ | ValCls _ ->
-  anomaly (str "Unexpected value shape")
 
-and interp_proj ist e p = match e with
-| ValBlk (_, args) ->
-  return args.(p)
-| ValInt _ | ValExt _ | ValStr _ | ValCls _ | ValOpn _ ->
-  anomaly (str "Unexpected value shape")
+and interp_proj ist e p =
+  return (Valexpr.field e p)
 
-and interp_set ist e p r = match e with
-| ValBlk (_, args) ->
-  let () = args.(p) <- r in
-  return (ValInt 0)
-| ValInt _ | ValExt _ | ValStr _ | ValCls _ | ValOpn _ ->
-  anomaly (str "Unexpected value shape")
+and interp_set ist e p r =
+  let () = Valexpr.set_field e p r in
+  return (Valexpr.make_int 0)
 
 and eval_pure kn = function
-| GTacAtm (AtmInt n) -> ValInt n
+| GTacAtm (AtmInt n) -> Valexpr.make_int n
 | GTacRef kn ->
   let { Tac2env.gdata_expr = e } =
     try Tac2env.interp_global kn
@@ -205,10 +197,10 @@ and eval_pure kn = function
 | GTacFun (na, e) ->
   let cls = { clos_ref = kn; clos_env = Id.Map.empty; clos_var = na; clos_exp = e } in
   let f = interp_app cls in
-  ValCls f
-| GTacCst (_, n, []) -> ValInt n
-| GTacCst (_, n, el) -> ValBlk (n, Array.map_of_list eval_unnamed el)
-| GTacOpn (kn, el) -> ValOpn (kn, Array.map_of_list eval_unnamed el)
+  Tac2ffi.of_closure f
+| GTacCst (_, n, []) -> Valexpr.make_int n
+| GTacCst (_, n, el) -> Valexpr.make_block n (Array.map_of_list eval_unnamed el)
+| GTacOpn (kn, el) -> Tac2ffi.of_open (kn, Array.map_of_list eval_unnamed el)
 | GTacAtm (AtmStr _) | GTacLet _ | GTacVar _ | GTacSet _
 | GTacApp _ | GTacCse _ | GTacPrj _ | GTacPrm _ | GTacExt _ | GTacWth _ ->
   anomaly (Pp.str "Term is not a syntactical value")

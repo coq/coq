@@ -36,6 +36,17 @@ val arity_suc : 'a arity -> (valexpr -> 'a) arity
 
 val mk_closure : 'v arity -> 'v -> closure
 
+module Valexpr :
+sig
+  type t = valexpr
+  val is_int : t -> bool
+  val tag : t -> int
+  val field : t -> int -> t
+  val set_field : t -> int -> t -> unit
+  val make_block : int -> t array -> t
+  val make_int : int -> t
+end
+
 (** {5 Ltac2 FFI} *)
 
 type 'a repr = {
@@ -89,7 +100,9 @@ val of_closure : closure -> valexpr
 val to_closure : valexpr -> closure
 val closure : closure repr
 
-val block : valexpr array repr
+val of_block : (int * valexpr array) -> valexpr
+val to_block : valexpr -> (int * valexpr array)
+val block : (int * valexpr array) repr
 
 val of_array : ('a -> valexpr) -> 'a array -> valexpr
 val to_array : (valexpr -> 'a) -> valexpr -> 'a array
@@ -121,6 +134,10 @@ val reference : Globnames.global_reference repr
 val of_ext : 'a Val.tag -> 'a -> valexpr
 val to_ext : 'a Val.tag -> valexpr -> 'a
 val repr_ext : 'a Val.tag -> 'a repr
+
+val of_open : KerName.t * valexpr array -> valexpr
+val to_open : valexpr -> KerName.t * valexpr array
+val open_ : (KerName.t * valexpr array) repr
 
 type ('a, 'b) fun1
 

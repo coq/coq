@@ -381,29 +381,27 @@ let rec pr_valexpr env sigma v t = match kind t with
       (** Shouldn't happen thanks to kind *)
       assert false
     | GTydAlg alg ->
-      begin match v with
-      | ValInt n -> pr_internal_constructor kn n true
-      | ValBlk (n, args) ->
+      if Valexpr.is_int v then
+        pr_internal_constructor kn (Tac2ffi.to_int v) true
+      else
+        let (n, args) = Tac2ffi.to_block v in
         let (id, tpe) = find_constructor n false alg.galg_constructors in
         let knc = change_kn_label kn id in
         let args = pr_constrargs env sigma params args tpe in
         hv 2 (pr_constructor knc ++ spc () ++ str "(" ++ args ++ str ")")
-      | _ -> str "<unknown>"
-      end
     | GTydRec rcd -> str "{}"
     | GTydOpn ->
-      begin match v with
-      | ValOpn (knc, [||]) -> pr_constructor knc
-      | ValOpn (knc, args) ->
+      begin match Tac2ffi.to_open v with
+      | (knc, [||]) -> pr_constructor knc
+      | (knc, args) ->
         let data = Tac2env.interp_constructor knc in
         let args = pr_constrargs env sigma params args data.Tac2env.cdata_args in
         hv 2 (pr_constructor knc ++ spc () ++ str "(" ++ args ++ str ")")
-      | _ -> str "<unknown>"
       end
   end
 | GTypArrow _ -> str "<fun>"
 | GTypRef (Tuple _, tl) ->
-  let blk = Array.to_list (block.r_to v) in
+  let blk = Array.to_list (snd (block.r_to v)) in
   if List.length blk == List.length tl then
     let prs = List.map2 (fun v t -> pr_valexpr env sigma v t) blk tl in
     hv 2 (str "(" ++ prlist_with_sep pr_comma (fun p -> p) prs ++ str ")")
