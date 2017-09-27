@@ -2001,24 +2001,24 @@ let collect_proof keep cur hd brkind id =
    | { expr =  (VernacRequire _ | VernacImport _) } -> true
    | ast -> may_pierce_opaque ast in
  let parent = function Some (p, _) -> p | None -> assert false in
- let is_empty = function `Async(_,_,[],_,_) | `MaybeASync(_,_,[],_,_) -> true | _ -> false in
+ let is_empty = function `Async(_,[],_,_) | `MaybeASync(_,[],_,_) -> true | _ -> false in
  let rec collect last accn id =
     let view = VCS.visit id in
     match view.step with
     | (`Sideff (ReplayCommand x,_) | `Cmd { cast = x })
-      when too_complex_to_delegate x -> `Sync(no_name,None,`Print)
+      when too_complex_to_delegate x -> `Sync(no_name,`Print)
     | `Cmd { cast = x } -> collect (Some (id,x)) (id::accn) view.next
     | `Sideff (ReplayCommand x,_) -> collect (Some (id,x)) (id::accn) view.next
     (* An Alias could jump everywhere... we hope we can ignore it*)
-    | `Alias _ -> `Sync (no_name,None,`Alias)
+    | `Alias _ -> `Sync (no_name,`Alias)
     | `Fork((_,_,_,_::_::_), _) ->
-        `Sync (no_name,proof_using_ast last,`MutualProofs)
+        `Sync (no_name,`MutualProofs)
     | `Fork((_,_,Doesn'tGuaranteeOpacity,_), _) ->
-        `Sync (no_name,proof_using_ast last,`Doesn'tGuaranteeOpacity)
+        `Sync (no_name,`Doesn'tGuaranteeOpacity)
     | `Fork((_,hd',GuaranteesOpacity,ids), _) when has_proof_using last ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
-        `ASync (parent last,proof_using_ast last,accn,name,delegate name)
+        `ASync (parent last,accn,name,delegate name)
     | `Fork((_, hd', GuaranteesOpacity, ids), _) when
        has_proof_no_using last && not (State.is_cached_and_valid (parent last)) &&
        !Flags.compilation_mode = Flags.BuildVio ->
@@ -2027,31 +2027,32 @@ let collect_proof keep cur hd brkind id =
           let name, hint = name ids, get_hint_ctx loc  in
           let t, v = proof_no_using last in
           v.expr <- VernacProof(t, Some hint);
-          `ASync (parent last,proof_using_ast last,accn,name,delegate name)
+          `ASync (parent last,accn,name,delegate name)
         with Not_found ->
           let name = name ids in
-          `MaybeASync (parent last, None, accn, name, delegate name))
+          `MaybeASync (parent last, accn, name, delegate name))
     | `Fork((_, hd', GuaranteesOpacity, ids), _) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
-        `MaybeASync (parent last, None, accn, name, delegate name)
+        `MaybeASync (parent last, accn, name, delegate name)
     | `Sideff _ ->
        warn_deprecated_nested_proofs ();
-        `Sync (no_name,None,`NestedProof)
-    | _ -> `Sync (no_name,None,`Unknown) in
+        `Sync (no_name,`NestedProof)
+    | _ -> `Sync (no_name,`Unknown) in
  let make_sync why = function
-   | `Sync(name,pua,_) -> `Sync (name,pua,why)
-   | `MaybeASync(_,pua,_,name,_) -> `Sync (name,pua,why)
-   | `ASync(_,pua,_,name,_) -> `Sync (name,pua,why) in
+   | `Sync(name,_) -> `Sync (name,why)
+   | `MaybeASync(_,_,name,_) -> `Sync (name,why)
+   | `ASync(_,_,name,_) -> `Sync (name,why) in
+
  let check_policy rc = if async_policy () then rc else make_sync `Policy rc in
  match cur, (VCS.visit id).step, brkind with
  | (parent, { expr = VernacExactProof _ }), `Fork _, _
  | (parent, { expr = VernacTime (_, VernacExactProof _) }), `Fork _, _ ->
-     `Sync (no_name,None,`Immediate)
+     `Sync (no_name,`Immediate)
  | _, _, { VCS.kind = `Edit _ }  -> check_policy (collect (Some cur) [] id)
  | _ ->
-     if is_defined cur then `Sync (no_name,None,`Transparent)
-     else if keep == VtDrop then `Sync (no_name,None,`Aborted)
+     if is_defined cur then `Sync (no_name,`Transparent)
+     else if keep == VtDrop then `Sync (no_name,`Aborted)
      else
        let rc = collect (Some cur) [] id in
        if is_empty rc then make_sync `AlreadyEvaluated rc
@@ -2223,7 +2224,7 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), `Yes, true
       | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
           let rec aux = function
-          | `ASync (block_start, pua, nodes, name, delegate) -> (fun () ->
+          | `ASync (block_start, nodes, name, delegate) -> (fun () ->
                 assert(keep == VtKeep || keep == VtKeepAsAxiom);
                 let drop_pt = keep == VtKeepAsAxiom in
                 let block_stop, exn_info, loc = eop, (id, eop), x.loc in
@@ -2270,10 +2271,10 @@ let known_state ?(redefine_qed=false) ~cache id =
                 end;
                 Proof_global.discard_all ()
               ), (if redefine_qed then `No else `Yes), true
-          | `Sync (name, _, `Immediate) -> (fun () -> 
+          | `Sync (name, `Immediate) -> (fun () -> 
                 reach eop; stm_vernac_interp id x; Proof_global.discard_all ()
               ), `Yes, true
-          | `Sync (name, pua, reason) -> (fun () ->
+          | `Sync (name, reason) -> (fun () ->
                 log_processing_sync id name reason;
                 reach eop;
                 let wall_clock = Unix.gettimeofday () in
@@ -2298,12 +2299,12 @@ let known_state ?(redefine_qed=false) ~cache id =
                   (Printf.sprintf "%.3f" (wall_clock3 -. wall_clock2));
                 Proof_global.discard_all ()
               ), `Yes, true
-          | `MaybeASync (start, pua, nodes, name, delegate) -> (fun () ->
+          | `MaybeASync (start, nodes, name, delegate) -> (fun () ->
                 reach ~cache:`Shallow start;
                 (* no sections *)
                 if CList.is_empty (Environ.named_context (Global.env ()))
-                then Util.pi1 (aux (`ASync (start, pua, nodes, name, delegate))) ()
-                else Util.pi1 (aux (`Sync (name, pua, `NoPU_NoHint_NoES))) ()
+                then Util.pi1 (aux (`ASync (start, nodes, name, delegate))) ()
+                else Util.pi1 (aux (`Sync (name, `NoPU_NoHint_NoES))) ()
               ), (if redefine_qed then `No else `Yes), true
           in
           aux (collect_proof keep (view.next, x) brname brinfo eop)
