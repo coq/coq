@@ -105,7 +105,13 @@ let remove_ids_and_lets env s ids =
      (no_body id ||
        Id.Set.exists not_ids (Id.Set.filter no_body (deps id)))) s)
 
-let suggest_Proof_using name env vars ids_typ context_ids =
+let record_proof_using expr =
+  Aux_file.record_in_aux "suggest_proof_using" expr
+
+(* Variables in [skip] come from after the definition, so don't count
+   for "All". Used in the variable case since the env contains the
+   variable itself. *)
+let suggest_common env ppid used ids_typ skip =
   let module S = Id.Set in
   let open Pp in
   let print x = Feedback.msg_debug x in
@@ -114,10 +120,13 @@ let suggest_Proof_using name env vars ids_typ context_ids =
       if parens && S.cardinal s > 1 then str "(" ++ ppcmds ++ str ")"
       else ppcmds in
     wrap (prlist_with_sep (fun _ -> str" ") Id.print (S.elements s)) in
-  let used = S.union vars ids_typ in
+
   let needed = minimize_hyps env (remove_ids_and_lets env used ids_typ) in
   let all_needed = really_needed env needed in
-  let all = List.fold_right S.add context_ids S.empty in
+  let all = List.fold_left (fun all d -> S.add (NamedDecl.get_id d) all)
+      S.empty (named_context env)
+  in
+  let all = S.diff all skip in
   let fwd_typ = close_fwd env ids_typ in
   if !Flags.debug then begin
     print (str "All "        ++ pr_set false all);
@@ -133,26 +142,46 @@ let suggest_Proof_using name env vars ids_typ context_ids =
   if S.equal all all_needed then valid(str "All");
   valid (pr_set false needed);
   Feedback.msg_info (
-    str"The proof of "++ str name ++ spc() ++
+    str"The proof of "++ ppid ++ spc() ++
     str "should start with one of the following commands:"++spc()++
     v 0 (
     prlist_with_sep cut (fun x->str"Proof using " ++x++ str". ") !valid_exprs));
-  string_of_ppcmds (prlist_with_sep (fun _ -> str";")  (fun x->x) !valid_exprs)
-;;
+  if !Flags.record_aux_file
+  then
+    let s = string_of_ppcmds (prlist_with_sep (fun _ -> str";")  (fun x->x) !valid_exprs) in
+    record_proof_using s
 
-let value = ref false
+let suggest_proof_using = ref false
 
 let _ =
   Goptions.declare_bool_option
     { Goptions.optdepr  = false;
       Goptions.optname  = "suggest Proof using";
       Goptions.optkey   = ["Suggest";"Proof";"Using"];
-      Goptions.optread  = (fun () -> !value);
-      Goptions.optwrite = (fun b ->
-        value := b;
-        if b then Term_typing.set_suggest_proof_using suggest_Proof_using
-        else Term_typing.set_suggest_proof_using (fun _ _ _ _ _ -> "")
-      ) }
+      Goptions.optread  = (fun () -> !suggest_proof_using);
+      Goptions.optwrite = ((:=) suggest_proof_using) }
+
+let suggest_constant env kn =
+  if !suggest_proof_using
+  then begin
+    let open Declarations in
+    let body = lookup_constant kn env in
+    let used = Id.Set.of_list @@ List.map NamedDecl.get_id body.const_hyps in
+    let ids_typ = global_vars_set env body.const_type in
+    suggest_common env (Constant.print kn) used ids_typ Id.Set.empty
+  end
+
+let suggest_variable env id =
+  if !suggest_proof_using
+  then begin
+    match lookup_named id env with
+    | LocalDef (_,body,typ) ->
+      let ids_typ = global_vars_set env typ in
+      let ids_body = global_vars_set env body in
+      let used = Id.Set.union ids_body ids_typ in
+      suggest_common env (Id.print id) used ids_typ (Id.Set.singleton id)
+    | LocalAssum _ -> assert false
+  end
 
 let value = ref None
 

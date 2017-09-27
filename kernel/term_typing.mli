@@ -77,6 +77,3 @@ val infer_declaration : trust:'a trust -> env -> constant option ->
 
 val build_constant_declaration :
   constant -> env -> Cooking.result -> constant_body
-
-val set_suggest_proof_using :
-  (string -> env -> Id.Set.t -> Id.Set.t -> Id.t list -> string) -> unit
