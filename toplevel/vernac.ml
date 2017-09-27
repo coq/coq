@@ -54,22 +54,18 @@ let set_formatter_translator ch =
 let pr_new_syntax_in_context ?loc ft_beautify ocom =
   let loc = Option.cata Loc.unloc (0,0) loc in
   let fs = States.freeze ~marshallable:`No in
-  (* The content of this is not supposed to fail, but if ever *)
-  try
-    (* Side-effect: order matters *)
-    let before = comment (CLexer.extract_comments (fst loc)) in
-    let com = match ocom with
-      | Some com -> Ppvernac.pr_vernac com
-      | None -> mt() in
-    let after = comment (CLexer.extract_comments (snd loc)) in
-    if !Flags.beautify_file then
-      (Pp.pp_with ft_beautify (hov 0 (before ++ com ++ after));
-       Format.pp_print_flush ft_beautify ())
-    else
-      Feedback.msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
-    States.unfreeze fs
-  with any ->
-    States.unfreeze fs
+  (* Side-effect: order matters *)
+  let before = comment (CLexer.extract_comments (fst loc)) in
+  let com = match ocom with
+    | Some com -> Ppvernac.pr_vernac com
+    | None -> mt() in
+  let after = comment (CLexer.extract_comments (snd loc)) in
+  if !Flags.beautify_file then
+    (Pp.pp_with ft_beautify (hov 0 (before ++ com ++ after));
+     Format.pp_print_flush ft_beautify ())
+  else
+    Feedback.msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
+  States.unfreeze fs
 
 let pr_new_syntax ?loc po ft_beautify ocom =
   (* Reinstall the context of parsing which includes the bindings of comments to locations *)
