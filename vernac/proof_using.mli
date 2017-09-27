@@ -14,8 +14,6 @@ val process_expr :
 
 val name_set : Names.Id.t -> Vernacexpr.section_subset_expr -> unit
 
-val to_string : Vernacexpr.section_subset_expr -> string
-
 val suggest_constant : Environ.env -> Names.Constant.t -> unit
 
 val suggest_variable : Environ.env -> Names.Id.t -> unit

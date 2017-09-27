@@ -236,6 +236,7 @@ type scheme =
 
 type section_subset_expr =
   | SsEmpty
+  | SsType
   | SsSingl of lident
   | SsCompl of section_subset_expr
   | SsUnion of section_subset_expr * section_subset_expr

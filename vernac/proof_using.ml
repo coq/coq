@@ -14,16 +14,6 @@ open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
 
-let to_string e =
-  let rec aux = function
-    | SsEmpty -> "()"
-    | SsSingl (_,id) -> "("^Id.to_string id^")"
-    | SsCompl e -> "-" ^ aux e^""
-    | SsUnion(e1,e2) -> "("^aux e1 ^" + "^ aux e2^")"
-    | SsSubstr(e1,e2) -> "("^aux e1 ^" - "^ aux e2^")"
-    | SsFwdClose e -> "("^aux e^")*"
-  in aux e
-
 let known_names = Summary.ref [] ~name:"proofusing-nameset"
 
 let in_nameset =
@@ -48,12 +38,20 @@ let rec close_fwd e s =
     s (named_context e)
     in
   if Id.Set.equal s s' then s else close_fwd e s'
-;;
+
+let set_of_type env ty =
+  List.fold_left (fun acc ty ->
+      Id.Set.union (global_vars_set env ty) acc)
+    Id.Set.empty ty
+
+let full_set env =
+  List.fold_right Id.Set.add (List.map NamedDecl.get_id (named_context env)) Id.Set.empty
 
 let rec process_expr env e ty =
   let rec aux = function
     | SsEmpty -> Id.Set.empty
-    | SsSingl (_,id) -> set_of_id env ty id
+    | SsType -> set_of_type env ty
+    | SsSingl (_,id) -> set_of_id env id
     | SsUnion(e1,e2) -> Id.Set.union (aux e1) (aux e2)
     | SsSubstr(e1,e2) -> Id.Set.diff (aux e1) (aux e2)
     | SsCompl e -> Id.Set.diff (full_set env) (aux e)
@@ -61,23 +59,15 @@ let rec process_expr env e ty =
   in
     aux e
 
-and set_of_id env ty id =
-  if Id.to_string id = "Type" then
-    List.fold_left (fun acc ty ->
-        Id.Set.union (global_vars_set env ty) acc)
-      Id.Set.empty ty
-  else if Id.to_string id = "All" then
+and set_of_id env id =
+  if Id.to_string id = "All" then
     List.fold_right Id.Set.add (List.map NamedDecl.get_id (named_context env)) Id.Set.empty
   else if CList.mem_assoc_f Id.equal id !known_names then
     process_expr env (CList.assoc_f Id.equal id !known_names) []
   else Id.Set.singleton id
 
-and full_set env =
-  List.fold_right Id.Set.add (List.map NamedDecl.get_id (named_context env)) Id.Set.empty
-
 let process_expr env e ty =
-  let ty_expr = SsSingl(Loc.tag @@ Id.of_string "Type") in
-  let v_ty = process_expr env ty_expr ty in
+  let v_ty = set_of_type env ty in
   let s = Id.Set.union v_ty (process_expr env e ty) in
   Id.Set.elements s
 

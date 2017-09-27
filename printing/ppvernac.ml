@@ -527,6 +527,7 @@ open Decl_kinds
   let pr_using e =
     let rec aux = function
       | SsEmpty -> "()"
+      | SsType -> "(Type)"
       | SsSingl (_,id) -> "("^Id.to_string id^")"
       | SsCompl e -> "-" ^ aux e^""
       | SsUnion(e1,e2) -> "("^aux e1 ^" + "^ aux e2^")"
