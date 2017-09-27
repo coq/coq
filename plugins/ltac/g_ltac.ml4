@@ -340,7 +340,7 @@ GEXTEND Gram
   command:
     [ [ IDENT "Proof"; "with"; ta = Pltac.tactic; 
         l = OPT [ "using"; l = G_vernac.section_subset_expr -> l ] ->
-          Vernacexpr.VernacProof (Some (in_tac ta), G_proofs.hint_proof_using G_vernac.section_subset_expr l)
+          Vernacexpr.VernacProof (Some (in_tac ta), l)
       | IDENT "Proof"; "using"; l = G_vernac.section_subset_expr;
         ta = OPT [ "with"; ta = Pltac.tactic -> in_tac ta ] ->
           Vernacexpr.VernacProof (ta,Some l) ] ]

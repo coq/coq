@@ -524,7 +524,15 @@ open Decl_kinds
     | PrintStrategy (Some qid) ->
       keyword "Print Strategy" ++ pr_smart_global qid
 
-  let pr_using e = str (Proof_using.to_string e)
+  let pr_using e =
+    let rec aux = function
+      | SsEmpty -> "()"
+      | SsSingl (_,id) -> "("^Id.to_string id^")"
+      | SsCompl e -> "-" ^ aux e^""
+      | SsUnion(e1,e2) -> "("^aux e1 ^" + "^ aux e2^")"
+      | SsSubstr(e1,e2) -> "("^aux e1 ^" - "^ aux e2^")"
+      | SsFwdClose e -> "("^aux e^")*"
+    in Pp.str (aux e)
 
   let rec pr_vernac_body v =
     let return = tag_vernac v in

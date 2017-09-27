@@ -2060,17 +2060,24 @@ let interp ?proof ?loc locality poly c =
   | VernacEndSubproof -> vernac_end_subproof ()
   | VernacShow s -> vernac_show s
   | VernacCheckGuard -> vernac_check_guard ()
-  | VernacProof (None, None) ->
+  | VernacProof (None, using) ->
+    begin match Option.append using (Proof_using.get_default_proof_using ()) with
+    | None   ->
       Aux_file.record_in_aux_at ?loc "VernacProof" "tac:no using:no"
-  | VernacProof (Some tac, None) ->
-      Aux_file.record_in_aux_at ?loc "VernacProof" "tac:yes using:no";
-      vernac_set_end_tac tac
-  | VernacProof (None, Some l) ->
+    | Some l ->
       Aux_file.record_in_aux_at ?loc "VernacProof" "tac:no using:yes";
       vernac_set_used_variables l
-  | VernacProof (Some tac, Some l) -> 
-      Aux_file.record_in_aux_at ?loc "VernacProof" "tac:yes using:yes";
-      vernac_set_end_tac tac; vernac_set_used_variables l
+    end
+  | VernacProof (Some tac, using) ->
+    begin match Option.append using (Proof_using.get_default_proof_using ()) with
+      | None ->
+        Aux_file.record_in_aux_at ?loc "VernacProof" "tac:yes using:no";
+        vernac_set_end_tac tac
+      | Some l ->
+        Aux_file.record_in_aux_at ?loc "VernacProof" "tac:yes using:yes";
+        vernac_set_end_tac tac;
+        vernac_set_used_variables l
+    end
   | VernacProofMode mn -> Proof_global.set_proof_mode mn [@ocaml.warning "-3"]
 
   (* Extensions *)

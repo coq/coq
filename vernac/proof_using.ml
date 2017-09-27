@@ -185,13 +185,16 @@ let suggest_variable env id =
 
 let value = ref None
 
+let using_to_string us = Pp.string_of_ppcmds (Ppvernac.pr_using us)
+let using_from_string us = Pcoq.Gram.(entry_parse G_vernac.section_subset_expr (parsable (Stream.of_string us)))
+
 let _ =
   Goptions.declare_stringopt_option
     { Goptions.optdepr  = false;
       Goptions.optname  = "default value for Proof using";
       Goptions.optkey   = ["Default";"Proof";"Using"];
-      Goptions.optread  = (fun () -> !value);
-      Goptions.optwrite = (fun b -> value := b;) }
-
+      Goptions.optread  = (fun () -> Option.map using_to_string !value);
+      Goptions.optwrite = (fun b -> value := Option.map using_from_string b);
+    }
 
 let get_default_proof_using () = !value
