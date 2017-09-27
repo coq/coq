@@ -1,4 +1,4 @@
-The proof of Top#Sec#nat should start with one of the following commands:
+The proof of nat should start with one of the following commands:
 Proof using . 
 Proof using Type*. 
 Proof using Type. 

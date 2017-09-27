@@ -3,7 +3,7 @@ Set Suggest Proof Using.
 Section Sec.
   Variables A B : Type.
 
-  (* Some normal lemma. Sadly the internal name gets printed. *)
+  (* Some normal lemma. *)
   Lemma nat : Set.
   Proof.
     exact nat.

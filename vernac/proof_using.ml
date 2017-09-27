@@ -168,7 +168,7 @@ let suggest_constant env kn =
     let body = lookup_constant kn env in
     let used = Id.Set.of_list @@ List.map NamedDecl.get_id body.const_hyps in
     let ids_typ = global_vars_set env body.const_type in
-    suggest_common env (Constant.print kn) used ids_typ Id.Set.empty
+    suggest_common env (Printer.pr_constant env kn) used ids_typ Id.Set.empty
   end
 
 let suggest_variable env id =
