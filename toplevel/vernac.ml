@@ -47,12 +47,12 @@ let beautify_suffix = ".beautified"
 
 let set_formatter_translator ch =
   let out s b e = output_substring ch s b e in
-  Format.set_formatter_output_functions out (fun () -> flush ch);
-  Format.set_max_boxes max_int
+  let ft = Format.make_formatter out (fun () -> flush ch) in
+  Format.pp_set_max_boxes ft max_int;
+  ft
 
-let pr_new_syntax_in_context ?loc chan_beautify ocom =
+let pr_new_syntax_in_context ?loc ft_beautify ocom =
   let loc = Option.cata Loc.unloc (0,0) loc in
-  if !Flags.beautify_file then set_formatter_translator chan_beautify;
   let fs = States.freeze ~marshallable:`No in
   (* The content of this is not supposed to fail, but if ever *)
   try
@@ -63,19 +63,17 @@ let pr_new_syntax_in_context ?loc chan_beautify ocom =
       | None -> mt() in
     let after = comment (CLexer.extract_comments (snd loc)) in
     if !Flags.beautify_file then
-      (Pp.pp_with !Topfmt.std_ft (hov 0 (before ++ com ++ after));
-       Format.pp_print_flush !Topfmt.std_ft ())
+      (Pp.pp_with ft_beautify (hov 0 (before ++ com ++ after));
+       Format.pp_print_flush ft_beautify ())
     else
       Feedback.msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
-    States.unfreeze fs;
-    Format.set_formatter_out_channel stdout
+    States.unfreeze fs
   with any ->
-    States.unfreeze fs;
-    Format.set_formatter_out_channel stdout
+    States.unfreeze fs
 
-let pr_new_syntax ?loc po chan_beautify ocom =
+let pr_new_syntax ?loc po ft_beautify ocom =
   (* Reinstall the context of parsing which includes the bindings of comments to locations *)
-  Pcoq.Gram.with_parsable po (pr_new_syntax_in_context ?loc chan_beautify) ocom
+  Pcoq.Gram.with_parsable po (pr_new_syntax_in_context ?loc ft_beautify) ocom
 
 (* For coqtop -time, we display the position in the file,
    and a glimpse of the executed command *)
@@ -177,8 +175,13 @@ let rec interp_vernac sid (loc,com) =
 
 (* Load a vernac file. CErrors are annotated with file and location *)
 and load_vernac verbosely sid file =
-  let chan_beautify =
-    if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout in
+  let ft_beautify, close_beautify =
+    if !Flags.beautify_file then
+      let chan_beautify = open_out (file^beautify_suffix) in
+      set_formatter_translator chan_beautify, fun () -> close_out chan_beautify;
+    else
+      !Topfmt.std_ft, fun () -> ()
+  in
   let in_chan = open_utf8_file_in file in
   let in_echo = if verbosely then Some (open_utf8_file_in file) else None in
   let in_pa   = Pcoq.Gram.parsable ~file:(Loc.InFile file) (Stream.of_channel in_chan) in
@@ -208,7 +211,7 @@ and load_vernac verbosely sid file =
        *)
       in
       (* Printing of vernacs *)
-      if !Flags.beautify then pr_new_syntax ?loc in_pa chan_beautify (Some ast);
+      if !Flags.beautify then pr_new_syntax ?loc in_pa ft_beautify (Some ast);
       Option.iter (vernac_echo ?loc) in_echo;
 
       checknav_simple (loc, ast);
@@ -224,11 +227,11 @@ and load_vernac verbosely sid file =
       | Stm.End_of_input ->
           (* Is this called so comments at EOF are printed? *)
           if !Flags.beautify then
-            pr_new_syntax ~loc:(Loc.make_loc (max_int,max_int)) in_pa chan_beautify None;
-          if !Flags.beautify_file then close_out chan_beautify;
+            pr_new_syntax ~loc:(Loc.make_loc (max_int,max_int)) in_pa ft_beautify None;
+          if !Flags.beautify_file then close_beautify ();
           !rsid
       | reraise ->
-         if !Flags.beautify_file then close_out chan_beautify;
+         if !Flags.beautify_file then close_beautify ();
 	 iraise (disable_drop e, info)
 
 (** [eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> unit]
