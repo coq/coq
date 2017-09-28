@@ -56,6 +56,10 @@ Fail Print mono@{E}.
 (* Not everything can be printed with custom universe names. *)
 Fail Print Coq.Init.Logic@{E}.
 
+(* Nice error when constraints are impossible. *)
+Monomorphic Universes gU gV. Monomorphic Constraint gU < gV.
+Fail Lemma foo@{u v|u < gU, gV < v, v < u} : nat.
+
 (* Universe binders survive through compilation, sections and modules. *)
 Require bind_univs.
 Print bind_univs.mono.

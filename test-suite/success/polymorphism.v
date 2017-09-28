@@ -202,6 +202,10 @@ Module binders.
     exact Type@{i}.
   Qed.
 
+  Monomorphic Universe M.
+  Fail Definition with_mono@{u|} : Type@{M} := Type@{u}.
+  Definition with_mono@{u|u < M} : Type@{M} := Type@{u}.
+
 End binders.
     
 Section cats.
