@@ -153,7 +153,7 @@ let show_match id =
 
 let print_path_entry p =
   let dir = DirPath.print (Loadpath.logical p) in
-  let path = str (Loadpath.physical p) in
+  let path = str (CUnix.escaped_string_of_physical_path (Loadpath.physical p)) in
   Pp.hov 2 (dir ++ spc () ++ path)
 
 let print_loadpath dir =
