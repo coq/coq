@@ -31,7 +31,7 @@ open Environ
 (** {6 Evars} *)
 
 type evar = existential_key
-(** Existential variables. TODO: Should be made opaque one day. *)
+(** Existential variables. *)
 
 val string_of_existential : evar -> string
 
