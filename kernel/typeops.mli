@@ -37,15 +37,19 @@ val assumption_of_judgment :  env -> unsafe_judgment -> types
 val type_judgment          :  env -> unsafe_judgment -> unsafe_type_judgment
 
 (** {6 Type of sorts. } *)
+val type1 : types
+val type_of_sort : Sorts.t -> types
 val judge_of_prop : unsafe_judgment
 val judge_of_set  : unsafe_judgment
 val judge_of_prop_contents  : contents -> unsafe_judgment
 val judge_of_type           : universe -> unsafe_judgment
 
 (** {6 Type of a bound variable. } *)
+val type_of_relative : env -> int -> types
 val judge_of_relative : env -> int -> unsafe_judgment
 
 (** {6 Type of variables } *)
+val type_of_variable : env -> variable -> types
 val judge_of_variable : env -> variable -> unsafe_judgment
 
 (** {6 type of a constant } *)
@@ -66,9 +70,9 @@ val judge_of_abstraction :
   env -> Name.t -> unsafe_type_judgment -> unsafe_judgment
     -> unsafe_judgment
 
-val sort_of_product : env -> sorts -> sorts -> sorts
-
 (** {6 Type of a product. } *)
+val sort_of_product : env -> sorts -> sorts -> sorts
+val type_of_product : env -> Name.t -> sorts -> sorts -> types
 val judge_of_product :
   env -> Name.t -> unsafe_type_judgment -> unsafe_type_judgment
     -> unsafe_judgment
