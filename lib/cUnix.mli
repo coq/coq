@@ -19,7 +19,7 @@ val escaped_string_of_physical_path : physical_path -> string
 
 val canonical_path_name : string -> string
 
-(** remove all initial "./" in a path *)
+(** Remove all initial "./" in a path *)
 val remove_path_dot : string -> string
 
 (** If a path [p] starts with the current directory $PWD then
@@ -64,6 +64,6 @@ val sys_command : string -> string list -> Unix.process_status
 
 val waitpid_non_intr : int -> Unix.process_status
 
-(** checks if two file names refer to the same (existing) file *)
+(** Check if two file names refer to the same (existing) file *)
 val same_file : string -> string -> bool
 
