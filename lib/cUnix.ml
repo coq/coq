@@ -14,6 +14,11 @@ type load_path = physical_path list
 let physical_path_of_string s = s
 let string_of_physical_path p = p
 
+let escaped_string_of_physical_path p =
+  (* We assume a reasonable-enough path (typically utf8) and prevents
+     the presence of space; other escapings might be useful... *)
+  if String.contains p ' ' then "\"" ^ p ^ "\"" else p
+
 let path_to_list p =
   let sep = Str.regexp (if Sys.os_type = "Win32" then ";" else ":") in
     Str.split sep p

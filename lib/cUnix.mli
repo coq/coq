@@ -14,6 +14,9 @@ type load_path = physical_path list
 val physical_path_of_string : string -> physical_path
 val string_of_physical_path : physical_path -> string
 
+(** Escape what has to be escaped (e.g. surround with quotes if with spaces) *)
+val escaped_string_of_physical_path : physical_path -> string
+
 val canonical_path_name : string -> string
 
 (** remove all initial "./" in a path *)
