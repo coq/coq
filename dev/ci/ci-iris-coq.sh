@@ -21,7 +21,7 @@ stdpp_URL=$(opam show coq-stdpp.$stdpp_VERSION -f upstream-url)
 read -a stdpp_URL_PARTS <<< $(echo $stdpp_URL | tr '#' ' ')
 
 # Setup std++
-git_checkout ${stdpp_CI_BRANCH} ${stdpp_URL_PARTS[1]} ${stdpp_CI_DIR} ${stdpp_URL_PARTS[2]}
+git_checkout ${stdpp_CI_BRANCH} ${stdpp_URL_PARTS[0]} ${stdpp_CI_DIR} ${stdpp_URL_PARTS[1]}
 ( cd ${stdpp_CI_DIR} && make && make install )
 
 # Build iris now
