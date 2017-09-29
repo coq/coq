@@ -494,6 +494,38 @@ let () = define3 "constr_closenl" (list ident) int constr begin fun ids k c ->
   return (Value.of_constr ans)
 end
 
+let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
+  Proofview.Goal.goals >>= function
+  | [gl] ->
+    gl >>= fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let has_var =
+      try
+        let _ = Environ.lookup_named_val id (Environ.named_context_val env) in
+        true
+      with Not_found -> false
+    in
+    if has_var then
+      Tacticals.New.tclZEROMSG (str "Variable already exists")
+    else
+      let open Context.Named.Declaration in
+      let nenv = EConstr.push_named (LocalAssum (id, t)) env in
+      let (sigma, (evt, _)) = Evarutil.new_type_evar nenv sigma Evd.univ_flexible in
+      let (sigma, evk) = Evarutil.new_pure_evar (Environ.named_context_val nenv) sigma evt in
+      Proofview.Unsafe.tclEVARS sigma >>= fun () ->
+      Proofview.Unsafe.tclSETGOALS [evk] >>= fun () ->
+      thaw c >>= fun _ ->
+      Proofview.Unsafe.tclSETGOALS [Proofview.Goal.goal (Proofview.Goal.assume gl)] >>= fun () ->
+      let args = List.map (fun d -> EConstr.mkVar (get_id d)) (EConstr.named_context env) in
+      let args = Array.of_list (EConstr.mkRel 1 :: args) in
+      let ans = EConstr.mkEvar (evk, args) in
+      let ans = EConstr.mkLambda (Name id, t, ans) in
+      return (Value.of_constr ans)
+  | _ ->
+    throw err_notfocussed
+end
+
 (** Patterns *)
 
 let () = define2 "pattern_matches" pattern constr begin fun pat c ->

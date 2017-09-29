@@ -58,3 +58,8 @@ Ltac2 @ external closenl : ident list -> int -> constr -> constr := "ltac2" "con
     [Rel(k); ...; Rel(k+n-1)] in [c]. If two names are identical, the one of least index is kept. *)
 
 End Unsafe.
+
+Ltac2 @ external in_context : ident -> constr -> (unit -> unit) -> constr := "ltac2" "constr_in_context".
+(** On a focussed goal [Γ ⊢ A], [in_context id c tac] evaluates [tac] in a
+    focussed goal [Γ, id : c ⊢ ?X] and returns [fun (id : c) => t] where [t] is
+    the proof built by the tactic. *)
