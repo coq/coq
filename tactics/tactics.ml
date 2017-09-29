@@ -1577,11 +1577,11 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ())
   let elimclause = make_clenv_binding env sigma (elim, elimty) bindings in
   let indmv = destMeta sigma (nth_arg sigma i elimclause.templval.rebus) in
   let hypmv =
-    try match List.remove Int.equal indmv (clenv_independent elimclause) with
-      | [a] -> a
-      | _ -> failwith ""
-    with Failure _ -> user_err ~hdr:"elimination_clause"
-          (str "The type of elimination clause is not well-formed.") in
+    match List.remove Int.equal indmv (clenv_independent elimclause) with
+    | [a] -> a
+    | _ -> user_err ~hdr:"elimination_clause"
+             (str "The type of elimination clause is not well-formed.")
+  in
   let elimclause'  = clenv_fchain ~flags indmv elimclause indclause in
   let hyp = mkVar id in
   let hyp_typ = Retyping.get_type_of env sigma hyp in
