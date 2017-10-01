@@ -67,6 +67,23 @@ and mk_or_and_intro_pattern = function
 
 let mk_intro_patterns ipat = List.map mk_intro_pattern ipat
 
+let mk_occurrences f = function
+| AllOccurrences -> Locus.AllOccurrences
+| AllOccurrencesBut l -> Locus.AllOccurrencesBut (List.map f l)
+| NoOccurrences -> Locus.NoOccurrences
+| OnlyOccurrences l -> Locus.OnlyOccurrences (List.map f l)
+
+let mk_occurrences_expr occ =
+  mk_occurrences (fun i -> Misctypes.ArgArg i) occ
+
+let mk_hyp_location (id, occs, h) =
+  ((mk_occurrences_expr occs, id), h)
+
+let mk_clause cl = {
+  Locus.onhyps = Option.map (fun l -> List.map mk_hyp_location l) cl.onhyps;
+  Locus.concl_occs = mk_occurrences_expr cl.concl_occs;
+}
+
 let intros_patterns ev ipat =
   let ipat = mk_intro_patterns ipat in
   Tactics.intro_patterns ev ipat
@@ -93,6 +110,7 @@ let mk_destruction_arg = function
 let mk_induction_clause (arg, eqn, as_, occ) =
   let eqn = Option.map (fun ipat -> Loc.tag @@ mk_intro_pattern_naming ipat) eqn in
   let as_ = Option.map (fun ipat -> Loc.tag @@ mk_or_and_intro_pattern ipat) as_ in
+  let occ = Option.map mk_clause occ in
   ((None, mk_destruction_arg arg), (eqn, as_), occ)
 
 let induction_destruct isrec ev (ic : induction_clause list) using =
@@ -104,6 +122,11 @@ let elim ev c copt =
   let c = mk_with_bindings c in
   let copt = Option.map mk_with_bindings copt in
   Tactics.elim ev None c copt
+
+let generalize pl =
+  let mk_occ occs = mk_occurrences (fun i -> i) occs in
+  let pl = List.map (fun (c, occs, na) -> (mk_occ occs, c), na) pl in
+  Tactics.new_generalize_gen pl
 
 let general_case_analysis ev c =
   let c = mk_with_bindings c in
@@ -131,8 +154,13 @@ let rewrite ev rw cl by =
     (Option.default true orient, repeat, None, delayed_of_tactic c)
   in
   let rw = List.map map_rw rw in
+  let cl = mk_clause cl in
   let by = Option.map (fun tac -> Tacticals.New.tclCOMPLETE tac, Equality.Naive) by in
   Equality.general_multi_rewrite ev rw cl by
+
+let symmetry cl =
+  let cl = mk_clause cl in
+  Tactics.intros_symmetry cl
 
 let forward fst tac ipat c =
   let ipat = Option.map mk_intro_pattern ipat in
@@ -148,6 +176,7 @@ let assert_ = function
 
 let letin_pat_tac ev ipat na c cl =
   let ipat = Option.map (fun (b, ipat) -> (b, Loc.tag @@ mk_intro_pattern_naming ipat)) ipat in
+  let cl = mk_clause cl in
   Tactics.letin_pat_tac ev ipat na c cl
 
 (** Ltac interface treats differently global references than other term
@@ -155,9 +184,9 @@ let letin_pat_tac ev ipat na c cl =
     Instead, we parse indifferently any pattern and dispatch when the tactic is
     called. *)
 let map_pattern_with_occs (pat, occ) = match pat with
-| Pattern.PRef (ConstRef cst) -> (occ, Inl (EvalConstRef cst))
-| Pattern.PRef (VarRef id) -> (occ, Inl (EvalVarRef id))
-| _ -> (occ, Inr pat)
+| Pattern.PRef (ConstRef cst) -> (mk_occurrences_expr occ, Inl (EvalConstRef cst))
+| Pattern.PRef (VarRef id) -> (mk_occurrences_expr occ, Inl (EvalVarRef id))
+| _ -> (mk_occurrences_expr occ, Inr pat)
 
 let get_evaluable_reference = function
 | VarRef id -> Proofview.tclUNIT (EvalVarRef id)
@@ -167,44 +196,57 @@ let get_evaluable_reference = function
     Nametab.pr_global_env Id.Set.empty r ++ spc () ++
     str "to an evaluable reference.")
 
+let reduce r cl =
+  let cl = mk_clause cl in
+  Tactics.reduce r cl
+
 let simpl flags where cl =
   let where = Option.map map_pattern_with_occs where in
+  let cl = mk_clause cl in
   Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
   let flags = { flags with rConst } in
   Tactics.reduce (Simpl (flags, where)) cl
 
 let cbv flags cl =
+  let cl = mk_clause cl in
   Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
   let flags = { flags with rConst } in
   Tactics.reduce (Cbv flags) cl
 
 let cbn flags cl =
+  let cl = mk_clause cl in
   Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
   let flags = { flags with rConst } in
   Tactics.reduce (Cbn flags) cl
 
 let lazy_ flags cl =
+  let cl = mk_clause cl in
   Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
   let flags = { flags with rConst } in
   Tactics.reduce (Lazy flags) cl
 
 let unfold occs cl =
+  let cl = mk_clause cl in
   let map (gr, occ) =
+    let occ = mk_occurrences_expr occ in
     get_evaluable_reference gr >>= fun gr -> Proofview.tclUNIT (occ, gr)
   in
   Proofview.Monad.List.map map occs >>= fun occs ->
   Tactics.reduce (Unfold occs) cl
 
 let pattern where cl =
-  let where = List.map (fun (c, occ) -> (occ, c)) where in
+  let where = List.map (fun (c, occ) -> (mk_occurrences_expr occ, c)) where in
+  let cl = mk_clause cl in
   Tactics.reduce (Pattern where) cl
 
 let vm where cl =
   let where = Option.map map_pattern_with_occs where in
+  let cl = mk_clause cl in
   Tactics.reduce (CbvVm where) cl
 
 let native where cl =
   let where = Option.map map_pattern_with_occs where in
+  let cl = mk_clause cl in
   Tactics.reduce (CbvNative where) cl
 
 let eval_fun red c =
@@ -244,6 +286,7 @@ let eval_lazy flags c =
 
 let eval_unfold occs c =
   let map (gr, occ) =
+    let occ = mk_occurrences_expr occ in
     get_evaluable_reference gr >>= fun gr -> Proofview.tclUNIT (occ, gr)
   in
   Proofview.Monad.List.map map occs >>= fun occs ->
@@ -253,7 +296,7 @@ let eval_fold cl c =
   eval_fun (Fold cl) c
 
 let eval_pattern where c =
-  let where = List.map (fun (pat, occ) -> (occ, pat)) where in
+  let where = List.map (fun (pat, occ) -> (mk_occurrences_expr occ, pat)) where in
   eval_fun (Pattern where) c
 
 let eval_vm where c =
@@ -303,6 +346,7 @@ let injection ev ipat arg =
 let autorewrite ~all by ids cl =
   let conds = if all then Some Equality.AllMatches else None in
   let ids = List.map Id.to_string ids in
+  let cl = mk_clause cl in
   match by with
   | None -> Autorewrite.auto_multi_rewrite ?conds ids cl
   | Some by -> Autorewrite.auto_multi_rewrite_with ?conds by ids cl

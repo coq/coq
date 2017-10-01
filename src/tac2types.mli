@@ -53,11 +53,26 @@ and or_and_intro_pattern =
 | IntroOrPattern of intro_pattern list list
 | IntroAndPattern of intro_pattern list
 
+type occurrences =
+| AllOccurrences
+| AllOccurrencesBut of int list
+| NoOccurrences
+| OnlyOccurrences of int list
+
+type hyp_location_flag = Locus.hyp_location_flag =
+| InHyp | InHypTypeOnly | InHypValueOnly
+
+type hyp_location = Id.t * occurrences * hyp_location_flag
+
+type clause =
+  { onhyps : hyp_location list option;
+    concl_occs : occurrences }
+
 type induction_clause =
   destruction_arg *
   intro_pattern_naming option *
   or_and_intro_pattern option *
-  Locus.clause option
+  clause option
 
 type multi = Misctypes.multi =
 | Precisely of int

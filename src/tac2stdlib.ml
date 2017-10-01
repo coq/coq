@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Locus
 open Globnames
 open Genredexpr
 open Tac2expr
@@ -47,13 +46,11 @@ let to_constr_with_bindings v = match Value.to_tuple v with
 | [| c; bnd |] -> (Value.to_constr c, to_bindings bnd)
 | _ -> assert false
 
-let to_int_or_var i = Misctypes.ArgArg (Value.to_int i)
-
-let to_occurrences f = function
+let to_occurrences = function
 | ValInt 0 -> AllOccurrences
-| ValBlk (0, [| vl |]) -> AllOccurrencesBut (Value.to_list f vl)
+| ValBlk (0, [| vl |]) -> AllOccurrencesBut (Value.to_list Value.to_int vl)
 | ValInt 1 -> NoOccurrences
-| ValBlk (1, [| vl |]) -> OnlyOccurrences (Value.to_list f vl)
+| ValBlk (1, [| vl |]) -> OnlyOccurrences (Value.to_list Value.to_int vl)
 | _ -> assert false
 
 let to_hyp_location_flag v = match Value.to_int v with
@@ -66,11 +63,11 @@ let to_clause v = match Value.to_tuple v with
 | [| hyps; concl |] ->
   let cast v = match Value.to_tuple v with
   | [| hyp; occ; flag |] ->
-    ((to_occurrences to_int_or_var occ, Value.to_ident hyp), to_hyp_location_flag flag)
+    (Value.to_ident hyp, to_occurrences occ, to_hyp_location_flag flag)
   | _ -> assert false
   in
   let hyps = Value.to_option (fun h -> Value.to_list cast h) hyps in
-  { onhyps = hyps; concl_occs = to_occurrences to_int_or_var concl; }
+  { onhyps = hyps; concl_occs = to_occurrences concl; }
 | _ -> assert false
 
 let to_red_flag v = match Value.to_tuple v with
@@ -87,10 +84,10 @@ let to_red_flag v = match Value.to_tuple v with
 | _ -> assert false
 
 let to_pattern_with_occs pat =
-  to_pair Value.to_pattern (fun occ -> to_occurrences to_int_or_var occ) pat
+  to_pair Value.to_pattern to_occurrences pat
 
 let to_constr_with_occs c =
-  to_pair Value.to_constr (fun occ -> to_occurrences to_int_or_var occ) c
+  to_pair Value.to_constr to_occurrences c
 
 let rec to_intro_pattern v = match Value.to_block v with
 | (0, [| b |]) -> IntroForthcoming (Value.to_bool b)
@@ -259,11 +256,11 @@ end
 let () = define_prim1 "tac_generalize" begin fun cl ->
   let cast v = match Value.to_tuple v with
   | [| c; occs; na |] ->
-    ((to_occurrences Value.to_int occs, Value.to_constr c), to_name na)
+    (Value.to_constr c, to_occurrences occs, to_name na)
   | _ -> assert false
   in
   let cl = Value.to_list cast cl in
-  Tactics.new_generalize_gen cl
+  Tac2tactics.generalize cl
 end
 
 let () = define_prim1 "tac_assert" begin fun ast ->
@@ -291,7 +288,7 @@ let () = define_prim3 "tac_set" begin fun ev p cl ->
   Proofview.tclEVARMAP >>= fun sigma ->
   thaw p >>= fun p ->
   let (na, c) = to_pair to_name Value.to_constr p in
-  Tactics.letin_pat_tac ev None na (sigma, c) cl
+  Tac2tactics.letin_pat_tac ev None na (sigma, c) cl
 end
 
 let () = define_prim5 "tac_remember" begin fun ev na c eqpat cl ->
@@ -326,12 +323,12 @@ end
 
 let () = define_prim1 "tac_red" begin fun cl ->
   let cl = to_clause cl in
-  Tactics.reduce (Red false) cl
+  Tac2tactics.reduce (Red false) cl
 end
 
 let () = define_prim1 "tac_hnf" begin fun cl ->
   let cl = to_clause cl in
-  Tactics.reduce Hnf cl
+  Tac2tactics.reduce Hnf cl
 end
 
 let () = define_prim3 "tac_simpl" begin fun flags where cl ->
@@ -360,7 +357,7 @@ let () = define_prim2 "tac_lazy" begin fun flags cl ->
 end
 
 let () = define_prim2 "tac_unfold" begin fun refs cl ->
-  let map v = to_pair Value.to_reference (fun occ -> to_occurrences to_int_or_var occ) v in
+  let map v = to_pair Value.to_reference to_occurrences v in
   let refs = Value.to_list map refs in
   let cl = to_clause cl in
   Tac2tactics.unfold refs cl
@@ -369,7 +366,7 @@ end
 let () = define_prim2 "tac_fold" begin fun args cl ->
   let args = Value.to_list Value.to_constr args in
   let cl = to_clause cl in
-  Tactics.reduce (Fold args) cl
+  Tac2tactics.reduce (Fold args) cl
 end
 
 let () = define_prim2 "tac_pattern" begin fun where cl ->
@@ -442,7 +439,7 @@ let () = define_red2 "eval_lazy" begin fun flags c ->
 end
 
 let () = define_red2 "eval_unfold" begin fun refs c ->
-  let map v = to_pair Value.to_reference (fun occ -> to_occurrences to_int_or_var occ) v in
+  let map v = to_pair Value.to_reference to_occurrences v in
   let refs = Value.to_list map refs in
   let c = Value.to_constr c in
   Tac2tactics.eval_unfold refs c
@@ -455,7 +452,7 @@ let () = define_red2 "eval_fold" begin fun args c ->
 end
 
 let () = define_red2 "eval_pattern" begin fun where c ->
-  let where = Value.to_list (fun p -> to_pair Value.to_constr (fun occ -> to_occurrences to_int_or_var occ) p) where in
+  let where = Value.to_list (fun p -> to_pair Value.to_constr to_occurrences p) where in
   let c = Value.to_constr c in
   Tac2tactics.eval_pattern where c
 end
@@ -569,7 +566,7 @@ end
 
 let () = define_prim1 "tac_symmetry" begin fun cl ->
   let cl = to_clause cl in
-  Tactics.intros_symmetry cl
+  Tac2tactics.symmetry cl
 end
 
 let () = define_prim2 "tac_split" begin fun ev bnd ->
