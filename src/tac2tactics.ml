@@ -17,6 +17,7 @@ open Proofview
 open Proofview.Notations
 
 let return = Proofview.tclUNIT
+let thaw r f = Tac2ffi.app_fun1 f Tac2ffi.unit r ()
 
 let tactic_infer_flags with_evar = {
   Pretyping.use_typeclasses = true;
@@ -30,6 +31,9 @@ let delayed_of_tactic tac env sigma =
   let _, pv = Proofview.init sigma [] in
   let c, pv, _, _ = Proofview.apply env tac pv in
   (sigma, c)
+
+let delayed_of_thunk r tac env sigma =
+  delayed_of_tactic (thaw r tac) env sigma
 
 let mk_bindings = function
 | ImplicitBindings l -> Misctypes.ImplicitBindings l
@@ -55,7 +59,7 @@ and mk_intro_pattern_action = function
 | IntroOrAndPattern ipat -> Misctypes.IntroOrAndPattern (mk_or_and_intro_pattern ipat)
 | IntroInjection ipats -> Misctypes.IntroInjection (List.map mk_intro_pattern ipats)
 | IntroApplyOn (c, ipat) ->
-  let c = Loc.tag @@ delayed_of_tactic c in
+  let c = Loc.tag @@ delayed_of_thunk Tac2ffi.constr c in
   Misctypes.IntroApplyOn (c, mk_intro_pattern ipat)
 | IntroRewrite b -> Misctypes.IntroRewrite b
 
@@ -172,6 +176,7 @@ let assert_ = function
   Tactics.forward true None (Some ipat) c
 | AssertType (ipat, c, tac) ->
   let ipat = Option.map mk_intro_pattern ipat in
+  let tac = Option.map (fun tac -> thaw Tac2ffi.unit tac) tac in
   Tactics.forward true (Some tac) ipat c
 
 let letin_pat_tac ev ipat na c cl =

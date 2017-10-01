@@ -15,6 +15,8 @@ open Proofview
 type evars_flag = bool
 type advanced_flag = bool
 
+type 'a thunk = (unit, 'a) Tac2ffi.fun1
+
 type quantified_hypothesis = Misctypes.quantified_hypothesis =
 | AnonHyp of int
 | NamedHyp of Id.t
@@ -47,7 +49,7 @@ and intro_pattern_action =
 | IntroWildcard
 | IntroOrAndPattern of or_and_intro_pattern
 | IntroInjection of intro_pattern list
-| IntroApplyOn of EConstr.t tactic * intro_pattern
+| IntroApplyOn of EConstr.t thunk * intro_pattern
 | IntroRewrite of bool
 and or_and_intro_pattern =
 | IntroOrPattern of intro_pattern list list
@@ -86,5 +88,5 @@ type rewriting =
   constr_with_bindings tactic
 
 type assertion =
-| AssertType of intro_pattern option * constr * unit tactic option
+| AssertType of intro_pattern option * constr * unit thunk option
 | AssertValue of Id.t * constr

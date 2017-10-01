@@ -329,6 +329,7 @@ let reference = {
 type ('a, 'b) fun1 = closure
 
 let fun1 (r0 : 'a repr) (r1 : 'b repr) : ('a, 'b) fun1 repr = closure
+let to_fun1 r0 r1 f = to_closure f
 
 let rec apply : type a. a arity -> a -> valexpr list -> valexpr Proofview.tactic =
   fun arity f args -> match args, arity with

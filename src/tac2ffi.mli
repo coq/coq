@@ -143,6 +143,7 @@ type ('a, 'b) fun1
 
 val app_fun1 : ('a, 'b) fun1 -> 'a repr -> 'b repr -> 'a -> 'b Proofview.tactic
 
+val to_fun1 : 'a repr -> 'b repr -> valexpr -> ('a, 'b) fun1
 val fun1 : 'a repr -> 'b repr -> ('a, 'b) fun1 repr
 
 val valexpr : valexpr repr

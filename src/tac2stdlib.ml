@@ -108,7 +108,7 @@ and to_intro_pattern_action = function
   let map ipat = to_intro_pattern ipat in
   IntroInjection (Value.to_list map inj)
 | ValBlk (2, [| c; ipat |]) ->
-  let c = thaw c >>= fun c -> return (Value.to_constr c) in
+  let c = Value.to_fun1 Value.unit Value.constr c in
   IntroApplyOn (c, to_intro_pattern ipat)
 | ValBlk (3, [| b |]) -> IntroRewrite (Value.to_bool b)
 | _ -> assert false
@@ -143,7 +143,7 @@ let to_induction_clause v = match Value.to_tuple v with
 
 let to_assertion v = match Value.to_block v with
 | (0, [| ipat; t; tac |]) ->
-  let to_tac t = Proofview.tclIGNORE (thaw t) in
+  let to_tac t = Value.to_fun1 Value.unit Value.unit t in
   let ipat = Value.to_option to_intro_pattern ipat in
   let t = Value.to_constr t in
   let tac = Value.to_option to_tac tac in
