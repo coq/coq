@@ -49,12 +49,10 @@ end
 
 (** {5 Ltac2 FFI} *)
 
-type 'a repr = {
-  r_of : 'a -> valexpr;
-  r_to : valexpr -> 'a;
-  r_id : bool;
-  (** True if the functions above are physical identities. *)
-}
+type 'a repr
+
+val repr_of : 'a repr -> 'a -> valexpr
+val repr_to : 'a repr -> valexpr -> 'a
 
 (** These functions allow to convert back and forth between OCaml and Ltac2
     data representation. The [to_*] functions raise an anomaly whenever the data

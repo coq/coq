@@ -76,6 +76,9 @@ type 'a repr = {
   r_id : bool;
 }
 
+let repr_of r x = r.r_of x
+let repr_to r x = r.r_to x
+
 (** Dynamic tags *)
 
 let val_exn = Val.create "exn"

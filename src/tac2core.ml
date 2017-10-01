@@ -157,15 +157,15 @@ let define_primitive name arity f =
 let define0 name f = define_primitive name arity_one (fun _ -> f)
 
 let define1 name r0 f = define_primitive name arity_one begin fun x ->
-  f (r0.Value.r_to x)
+  f (Value.repr_to r0 x)
 end
 
 let define2 name r0 r1 f = define_primitive name (arity_suc arity_one) begin fun x y ->
-  f (r0.Value.r_to x) (r1.Value.r_to y)
+  f (Value.repr_to r0 x) (Value.repr_to r1 y)
 end
 
 let define3 name r0 r1 r2 f = define_primitive name (arity_suc (arity_suc arity_one)) begin fun x y z ->
-  f (r0.Value.r_to x) (r1.Value.r_to y) (r2.Value.r_to z)
+  f (Value.repr_to r0 x) (Value.repr_to r1 y) (Value.repr_to r2 z)
 end
 
 (** Printing *)

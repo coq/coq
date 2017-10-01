@@ -401,7 +401,7 @@ let rec pr_valexpr env sigma v t = match kind t with
   end
 | GTypArrow _ -> str "<fun>"
 | GTypRef (Tuple _, tl) ->
-  let blk = Array.to_list (snd (block.r_to v)) in
+  let blk = Array.to_list (snd (to_block v)) in
   if List.length blk == List.length tl then
     let prs = List.map2 (fun v t -> pr_valexpr env sigma v t) blk tl in
     hv 2 (str "(" ++ prlist_with_sep pr_comma (fun p -> p) prs ++ str ")")
