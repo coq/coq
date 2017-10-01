@@ -11,46 +11,12 @@ open Util
 open Names
 open Globnames
 open Misctypes
-open Tactypes
+open Tac2types
 open Genredexpr
 open Proofview
 open Proofview.Notations
 
 let return = Proofview.tclUNIT
-
-type explicit_bindings = (quantified_hypothesis * EConstr.t) list
-
-type bindings =
-| ImplicitBindings of EConstr.t list
-| ExplicitBindings of explicit_bindings
-| NoBindings
-
-type constr_with_bindings = EConstr.constr * bindings
-
-type intro_pattern =
-| IntroForthcoming of bool
-| IntroNaming of intro_pattern_naming
-| IntroAction of intro_pattern_action
-and intro_pattern_naming =
-| IntroIdentifier of Id.t
-| IntroFresh of Id.t
-| IntroAnonymous
-and intro_pattern_action =
-| IntroWildcard
-| IntroOrAndPattern of or_and_intro_pattern
-| IntroInjection of intro_pattern list
-| IntroApplyOn of EConstr.t tactic * intro_pattern
-| IntroRewrite of bool
-and or_and_intro_pattern =
-| IntroOrPattern of intro_pattern list list
-| IntroAndPattern of intro_pattern list
-
-type core_destruction_arg =
-| ElimOnConstr of constr_with_bindings tactic
-| ElimOnIdent of Id.t
-| ElimOnAnonHyp of int
-
-type destruction_arg = core_destruction_arg
 
 let tactic_infer_flags with_evar = {
   Pretyping.use_typeclasses = true;
@@ -117,12 +83,6 @@ let apply adv ev cb cl =
     let cl = Option.map mk_intro_pattern cl in
     Tactics.apply_delayed_in adv ev id cb cl
 
-type induction_clause =
-  destruction_arg *
-  intro_pattern_naming option *
-  or_and_intro_pattern option *
-  Locus.clause option
-
 let mk_destruction_arg = function
 | ElimOnConstr c ->
   let c = c >>= fun c -> return (mk_with_bindings c) in
@@ -164,15 +124,6 @@ let right_with_bindings ev bnd =
 let split_with_bindings ev bnd =
   let bnd = mk_bindings bnd in
   Tactics.split_with_bindings ev [bnd]
-
-type rewriting =
-  bool option *
-  multi *
-  constr_with_bindings tactic
-
-type assertion =
-| AssertType of intro_pattern option * EConstr.t * unit tactic option
-| AssertValue of Id.t * EConstr.t
 
 let rewrite ev rw cl by =
   let map_rw (orient, repeat, c) =

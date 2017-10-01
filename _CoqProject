@@ -5,6 +5,7 @@
 src/tac2dyn.ml
 src/tac2dyn.mli
 src/tac2expr.mli
+src/tac2types.mli
 src/tac2env.ml
 src/tac2env.mli
 src/tac2print.ml

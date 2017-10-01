@@ -12,60 +12,8 @@ open Globnames
 open Tac2expr
 open EConstr
 open Genredexpr
-open Misctypes
-open Tactypes
+open Tac2types
 open Proofview
-
-(** Redefinition of Ltac1 data structures because of impedance mismatch *)
-
-type explicit_bindings = (quantified_hypothesis * EConstr.t) list
-
-type bindings =
-| ImplicitBindings of EConstr.t list
-| ExplicitBindings of explicit_bindings
-| NoBindings
-
-type constr_with_bindings = EConstr.constr * bindings
-
-type core_destruction_arg =
-| ElimOnConstr of constr_with_bindings tactic
-| ElimOnIdent of Id.t
-| ElimOnAnonHyp of int
-
-type destruction_arg = core_destruction_arg
-
-type intro_pattern =
-| IntroForthcoming of bool
-| IntroNaming of intro_pattern_naming
-| IntroAction of intro_pattern_action
-and intro_pattern_naming =
-| IntroIdentifier of Id.t
-| IntroFresh of Id.t
-| IntroAnonymous
-and intro_pattern_action =
-| IntroWildcard
-| IntroOrAndPattern of or_and_intro_pattern
-| IntroInjection of intro_pattern list
-| IntroApplyOn of EConstr.t tactic * intro_pattern
-| IntroRewrite of bool
-and or_and_intro_pattern =
-| IntroOrPattern of intro_pattern list list
-| IntroAndPattern of intro_pattern list
-
-type induction_clause =
-  destruction_arg *
-  intro_pattern_naming option *
-  or_and_intro_pattern option *
-  clause option
-
-type rewriting =
-  bool option *
-  multi *
-  constr_with_bindings tactic
-
-type assertion =
-| AssertType of intro_pattern option * constr * unit tactic option
-| AssertValue of Id.t * constr
 
 (** Local reimplementations of tactics variants from Coq *)
 
@@ -161,7 +109,7 @@ val eauto : Hints.debug -> int option -> int option -> constr tactic list ->
 val typeclasses_eauto : Class_tactics.search_strategy option -> int option ->
   Id.t list option -> unit Proofview.tactic
 
-val inversion : inversion_kind -> destruction_arg -> intro_pattern option -> Id.t list option -> unit tactic
+val inversion : Misctypes.inversion_kind -> destruction_arg -> intro_pattern option -> Id.t list option -> unit tactic
 
 val contradiction : constr_with_bindings option -> unit tactic
 

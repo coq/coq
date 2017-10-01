@@ -9,10 +9,10 @@
 open Names
 open Locus
 open Globnames
-open Misctypes
 open Genredexpr
 open Tac2expr
 open Tac2ffi
+open Tac2types
 open Tac2tactics
 open Proofview.Notations
 
@@ -47,7 +47,7 @@ let to_constr_with_bindings v = match Value.to_tuple v with
 | [| c; bnd |] -> (Value.to_constr c, to_bindings bnd)
 | _ -> assert false
 
-let to_int_or_var i = ArgArg (Value.to_int i)
+let to_int_or_var i = Misctypes.ArgArg (Value.to_int i)
 
 let to_occurrences f = function
 | ValInt 0 -> AllOccurrences
@@ -188,10 +188,10 @@ let to_inversion_kind v = match Value.to_int v with
 | _ -> assert false
 
 let to_move_location = function
-| ValInt 0 -> MoveFirst
-| ValInt 1 -> MoveLast
-| ValBlk (0, [|id|]) -> MoveAfter (Value.to_ident id)
-| ValBlk (1, [|id|]) -> MoveBefore (Value.to_ident id)
+| ValInt 0 -> Misctypes.MoveFirst
+| ValInt 1 -> Misctypes.MoveLast
+| ValBlk (0, [|id|]) -> Misctypes.MoveAfter (Value.to_ident id)
+| ValBlk (1, [|id|]) -> Misctypes.MoveBefore (Value.to_ident id)
 | _ -> assert false
 
 (** Standard tactics sharing their implementation with Ltac1 *)
@@ -502,7 +502,7 @@ end
 let () = define_prim2 "tac_intro" begin fun id mv ->
   let id = Value.to_option Value.to_ident id in
   let mv = Value.to_option to_move_location mv in
-  let mv = Option.default MoveLast mv in
+  let mv = Option.default Misctypes.MoveLast mv in
   Tactics.intro_move id mv
 end
 
