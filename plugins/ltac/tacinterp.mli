@@ -147,3 +147,9 @@ val interp_int_or_var : interp_sign -> int Locus.or_var -> int
 
 val default_ist : unit -> Geninterp.interp_sign
 (** Empty ist with debug set on the current value. *)
+
+(** Assuming [id] is a free variable in the tactic,
+  bind it to a [val_callback] from typeclasses eauto on the
+  same ident: this allows passing an arbitrary ML tactic
+  to the user hint. *)
+val make_extern : Id.t -> raw_tactic_expr -> raw_tactic_expr

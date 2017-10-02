@@ -301,6 +301,14 @@ type reference_or_constr =
   | HintsReference of Libnames.qualid
   | HintsConstr of Constrexpr.constr_expr
 
+type hint_extern_expr =
+  { hint_extern_self : lident option;
+    hint_extern_priority : int;
+    hint_extern_pattern : Constrexpr.constr_expr option;
+    hint_extern_iftac : Genarg.raw_generic_argument option;
+    hint_extern_body : Genarg.raw_generic_argument
+  }
+
 type hints_expr =
   | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
   | HintsResolveIFF of bool * Libnames.qualid list * int option
@@ -309,7 +317,7 @@ type hints_expr =
   | HintsTransparency of Libnames.qualid Hints.hints_transparency_target * bool
   | HintsMode of Libnames.qualid * Hints.hint_mode list
   | HintsConstructors of Libnames.qualid list
-  | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
+  | HintsExtern of hint_extern_expr
 
 type nonrec vernac_expr =
 

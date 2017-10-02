@@ -284,7 +284,7 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
     begin fun gl ->
     let tacs = e_trivial_resolve db_list local_db secvars only_classes
                                  (pf_env gl) (project gl) (pf_concl gl) in
-      tclFIRST (List.map (fun (x,_,_,_,_) -> x) tacs)
+      tclFIRST (List.map_filter (function (HintTactic x,_,_,_,_) -> Some x | _ -> None) tacs)
     end
   in
   let tacl =
@@ -293,9 +293,11 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
   in
   tclSOLVE tacl
 
-and e_my_find_search db_list local_db secvars hdc complete only_classes env sigma concl =
+and e_my_find_search db_list local_db secvars hdc complete only_classes env sigma oconcl =
   let open Proofview.Notations in
-  let prods, concl = EConstr.decompose_prod_assum sigma concl in
+  (* We split the conclusion for the limit intros option.
+    Does not apply to extern hints. *)
+  let prods, concl = EConstr.decompose_prod_assum sigma oconcl in
   let nprods = List.length prods in
   let allowed_evars =
     try
@@ -310,66 +312,75 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
       | _ -> Evarsolve.AllowedEvars.all
     with e when CErrors.noncritical e -> Evarsolve.AllowedEvars.all
   in
-  let tac_of_hint =
-    fun (flags, h) ->
-      let b = FullHint.priority h in
-      let p = FullHint.pattern h in
-      let name = FullHint.name h in
-      let tac = function
-        | Res_pf h ->
-           if get_typeclasses_filtered_unification () then
-             let tac =
-               with_prods nprods h
-                          (fun diff ->
-                             matches_pattern concl p <*>
-                               unify_resolve_refine flags h diff)
-             in Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
-           else
-             let tac =
-               with_prods nprods h (unify_resolve ~with_evars:false flags h) in
-               Proofview.tclBIND (Proofview.with_shelf tac)
-                  (fun (gls, ()) -> shelve_dependencies gls)
-        | ERes_pf h ->
-           if get_typeclasses_filtered_unification () then
-             let tac = (with_prods nprods h
-                  (fun diff ->
-                             matches_pattern concl p <*>
-                             unify_resolve_refine flags h diff)) in
-             Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
-           else
-             let tac =
-               with_prods nprods h (unify_resolve ~with_evars:true flags h) in
-               Proofview.tclBIND (Proofview.with_shelf tac)
-                  (fun (gls, ()) -> shelve_dependencies gls)
-        | Give_exact h ->
-           if get_typeclasses_filtered_unification () then
-             let tac =
-               matches_pattern concl p <*>
-                 Proofview.Goal.enter
-                   (fun gl -> unify_resolve_refine flags h None) in
-             Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
-           else
-             e_give_exact flags h
-      | Res_pf_THEN_trivial_fail h ->
-         let fst = with_prods nprods h (unify_resolve ~with_evars:true flags h) in
-         let snd = if complete then Tacticals.New.tclIDTAC
-                   else e_trivial_fail_db only_classes db_list local_db secvars in
-         Tacticals.New.tclTHEN fst snd
-      | Unfold_nth c ->
-         Proofview.tclPROGRESS (unfold_in_concl [AllOccurrences,c])
-      | Extern (p, tacast) -> conclPattern concl p tacast
-      in
-      let tac = FullHint.run h tac in
-      let tac = if complete then Tacticals.New.tclCOMPLETE tac else tac in
-      let pp =
-        match p with
-        | Some pat when get_typeclasses_filtered_unification () ->
-           str " with pattern " ++ Printer.pr_constr_pattern_env env sigma pat
-        | _ -> mt ()
-      in
-        match FullHint.repr h with
-        | Extern _ -> (tac, b, true, name, lazy (FullHint.print env sigma h ++ pp))
-        | _ -> (tac, b, false, name, lazy (FullHint.print env sigma h ++ pp))
+  let tac_of_hint (flags, h) =
+    let b = FullHint.priority h in
+    let p = FullHint.pattern h in
+    let name = FullHint.name h in
+    let default tac = HintTactic (if complete then Tacticals.New.tclCOMPLETE tac else tac) in
+    let tac = function
+      | Res_pf h ->
+        let tac =
+        if get_typeclasses_filtered_unification () then
+            let tac =
+            with_prods nprods h
+                      (fun diff ->
+                          matches_pattern concl p <*>
+                            unify_resolve_refine flags h diff)
+          in Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
+        else
+            let tac =
+              with_prods nprods h (unify_resolve ~with_evars:false flags h) in
+            Proofview.tclBIND (Proofview.with_shelf tac)
+                (fun (gls, ()) -> shelve_dependencies gls)
+      in default tac
+    | ERes_pf h ->
+      let tac =
+        if get_typeclasses_filtered_unification () then
+          let tac = (with_prods nprods h
+            (fun diff -> matches_pattern concl p <*>
+                        unify_resolve_refine flags h diff))
+          in Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
+        else
+          let tac = with_prods nprods h (unify_resolve ~with_evars:true flags h) in
+            Proofview.tclBIND (Proofview.with_shelf tac)
+                (fun (gls, ()) -> shelve_dependencies gls)
+      in default tac
+    | Give_exact h ->
+      let tac =
+        if get_typeclasses_filtered_unification () then
+          let tac =
+            matches_pattern concl p <*>
+              Proofview.Goal.enter
+                (fun gl -> unify_resolve_refine flags h None) in
+          Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
+          else e_give_exact flags h
+      in default tac
+    | Res_pf_THEN_trivial_fail h ->
+      let tac =
+        let fst = with_prods nprods h (unify_resolve ~with_evars:true flags h) in
+        let snd = if complete then Tacticals.New.tclIDTAC
+                  else e_trivial_fail_db only_classes db_list local_db secvars in
+        Tacticals.New.tclTHEN fst snd
+      in default tac
+    | Unfold_nth c ->
+      (* A bit strange to ask an unfold hint to complete the proof? *)
+      default (Proofview.tclPROGRESS (unfold_in_concl [AllOccurrences,c]))
+    | Extern (pat, id, iftac, thentac) ->
+      conclPattern env sigma id oconcl pat iftac thentac
+    in
+    let pp =
+      match p with
+      | Some pat when get_typeclasses_filtered_unification () ->
+          str " with pattern " ++ Printer.pr_constr_pattern_env env sigma pat
+      | _ -> mt ()
+    in
+    let is_extern =
+      match FullHint.repr h with
+      | Extern _ -> true
+      | _ -> false
+    in
+    let tac = FullHint.run h tac in
+      (tac, b, is_extern, name, lazy (FullHint.print env sigma h ++ pp))
   in
   let hint_of_db = hintmap_of env sigma hdc secvars concl in
   let hintl = List.map_filter (fun db -> match hint_of_db db with
@@ -408,12 +419,16 @@ let e_possible_resolve db_list local_db secvars only_classes env sigma concl =
 let cut_of_hints h =
   List.fold_left (fun cut db -> PathOr (Hint_db.cut db, cut)) PathEmpty h
 
+type depth_item =
+  | Goal of int
+  | Branch of int * int
+
 let pr_depth l =
   let rec fmt elts =
     match elts with
     | [] -> []
-    | [n] -> [string_of_int n]
-    | n1::n2::rest ->
+    | Goal n :: rest -> string_of_int n :: fmt rest
+    | Branch (n1,n2)::rest ->
        (string_of_int n1 ^ "." ^ string_of_int n2) :: fmt rest
   in
   prlist_with_sep (fun () -> str "-") str (fmt (List.rev l))
@@ -502,7 +517,7 @@ let make_hints g (modes,st) only_classes sign =
 
 module Search = struct
   type autoinfo =
-    { search_depth : int list;
+    { search_depth : depth_item list;
       last_tac : Pp.t Lazy.t;
       search_dep : bool;
       search_only_classes : bool;
@@ -593,19 +608,17 @@ module Search = struct
        This is an overapproximation. Evars could appear in this goal only
        and not any other *)
     let ortac = if backtrack then Proofview.tclOR else Proofview.tclORELSE in
-    let idx = ref 1 in
-    let foundone = ref false in
-    let rec onetac e (tac, pat, b, name, pp) tl =
+    let successes = ref 0 in
+    let rec onetac e (tac, pat, extern, name, pp) tl =
       let derivs = path_derivate info.search_cut name in
       let pr_error ie =
         if !typeclasses_debug > 1 then
-          let idx = if fst ie == NoApplicableEx then pred !idx else !idx in
           let header =
-            pr_depth (idx :: info.search_depth) ++ str": " ++
-              Lazy.force pp ++
-              (if !foundone != true then
-                 str" on" ++ spc () ++ pr_ev sigma (Proofview.Goal.goal gl)
-               else mt ())
+            hov 0 (seq [pr_depth info.search_depth; str":"; spc ();
+                   Lazy.force pp;
+                    (if !successes = 0 then
+                      str" on " ++ pr_ev sigma (Proofview.Goal.goal gl)
+                    else mt ())])
           in
           let msg =
             match fst ie with
@@ -617,19 +630,19 @@ module Search = struct
             | NoApplicableEx -> str "Proof-search failed."
             | e -> CErrors.iprint ie
           in
-          Feedback.msg_debug (header ++ str " failed with: " ++ msg)
+          Feedback.msg_debug (hov 2 (seq [header; str " failed with:"; spc (); msg]))
         else ()
       in
-      let tac_of gls i j = Goal.enter begin fun gl' ->
+      let tac_of kont gls glid gl' =
         let sigma' = Goal.sigma gl' in
         let _concl = Goal.concl gl' in
         if !typeclasses_debug > 0 then
           Feedback.msg_debug
-            (pr_depth (succ j :: i :: info.search_depth) ++ str" : " ++
-               pr_ev sigma' (Proofview.Goal.goal gl'));
+            (hov 2 (pr_depth glid ++ str":" ++ spc () ++
+              pr_ev sigma' (Proofview.Goal.goal gl')));
         let eq c1 c2 = EConstr.eq_constr sigma' c1 c2 in
         let hints' =
-          if b && not (Context.Named.equal eq (Goal.hyps gl') (Goal.hyps gl))
+          if extern && not (Context.Named.equal eq (Goal.hyps gl') (Goal.hyps gl))
           then
             let st = Hint_db.transparent_state info.search_hints in
             let modes = Hint_db.modes info.search_hints in
@@ -638,22 +651,21 @@ module Search = struct
         in
         let dep' = info.search_dep || Proofview.unifiable sigma' (Goal.goal gl') gls in
         let info' =
-          { search_depth = succ j :: i :: info.search_depth;
+          { search_depth = glid;
             last_tac = pp;
             search_dep = dep';
             search_only_classes = info.search_only_classes;
             search_hints = hints';
             search_cut = derivs }
-        in kont info' end
+        in kont info'
       in
       let rec result (shelf, ()) i k =
-        foundone := true;
         Proofview.Unsafe.tclGETGOALS >>= fun gls ->
         let gls = CList.map Proofview.drop_state gls in
         let j = List.length gls in
         (if !typeclasses_debug > 0 then
            Feedback.msg_debug
-             (pr_depth (i :: info.search_depth) ++ str": " ++ Lazy.force pp
+             (pr_depth (Goal i :: info.search_depth) ++ str":" ++ spc () ++ Lazy.force pp
               ++ str" on" ++ spc () ++ pr_ev sigma (Proofview.Goal.goal gl)
               ++ str", " ++ int j ++ str" subgoal(s)" ++
                 (Option.cata (fun k -> str " in addition to the first " ++ int k)
@@ -661,7 +673,9 @@ module Search = struct
         let res =
           if j = 0 then tclUNIT ()
           else tclDISPATCH
-                 (List.init j (fun j' -> (tac_of gls i (Option.default 0 k + j'))))
+                 (List.init j (fun j' ->
+                  let glid = Branch (i, succ (Option.default 0 k + j')) :: info.search_depth in
+                  Goal.enter (tac_of kont gls glid)))
         in
         let finish nestedshelf sigma =
           let filter ev =
@@ -678,7 +692,7 @@ module Search = struct
                int (Evar.repr ev) ++ spc () ++ pr_ev sigma ev in
              let unsolved = prlist_with_sep spc prunsolved remaining in
              Feedback.msg_debug
-               (pr_depth (i :: info.search_depth) ++
+               (pr_depth (Goal i :: info.search_depth) ++
                   str": after " ++ Lazy.force pp ++ str" finished, " ++
                   int (List.length remaining) ++
                   str " goals are shelved and unsolved ( " ++
@@ -706,15 +720,49 @@ module Search = struct
       in
       if path_matches derivs [] then aux e tl
       else
-        ortac
-             (with_shelf tac >>= fun s ->
-              let i = !idx in incr idx; result s i None)
-             (fun e' ->
-                (pr_error e'; aux (merge_exceptions e e') tl))
+        let firsttac tac =
+          with_shelf tac >>=
+          fun s ->
+            let () = incr successes in
+            let i = !successes in
+            result s i None
+        in
+        let elsetac e' =
+          pr_error e';
+          aux (merge_exceptions e e') tl
+        in
+        match tac with
+        | HintTactic tac ->
+          ortac (firsttac tac) elsetac
+        | HintContinuation ktac ->
+          if !typeclasses_debug > 2 then
+            Feedback.msg_debug (hov 2 (pr_depth info.search_depth ++ str": trying" ++ spc () ++Lazy.force pp));
+          let wrap_kont =
+            let kont_calls = ref 0 in
+            Unsafe.tclGETGOALS >>= fun gls ->
+              let () = incr kont_calls in
+              let i = !kont_calls in
+              let j = List.length gls in
+              tclDISPATCH
+                (List.init j (fun j' ->
+                  let gls = CList.map Proofview.drop_state gls in
+                  let glid = Branch (i, succ j') :: info.search_depth in
+                  Proofview.Goal.enter (tac_of (fun info -> kont info) gls glid)))
+          in
+          let iftac, thentac = ktac wrap_kont in
+          match iftac with
+          | Some iftac ->
+            tclIFCATCH iftac (fun () ->
+              if !typeclasses_debug > 1 then
+                Feedback.msg_debug (hov 2 (pr_depth info.search_depth ++ spc () ++ Lazy.force pp ++
+                  spc () ++ str": condition succeeded, reaching a cut, dropping next candidates."));
+              let () = incr successes in
+              thentac) elsetac
+          | None -> ortac (firsttac thentac) elsetac
     and aux e = function
       | x :: xs -> onetac e x xs
       | [] ->
-         if !foundone == false && !typeclasses_debug > 0 then
+         if Int.equal !successes 0 && !typeclasses_debug > 0 then
            Feedback.msg_debug
              (pr_depth info.search_depth ++ str": no match for " ++
                 Printer.pr_econstr_env (Goal.env gl) sigma concl ++
@@ -742,7 +790,7 @@ module Search = struct
                        info.search_only_classes decl info.search_hints in
     let info' =
       { info with search_hints = ldb; last_tac = lazy (str"intro");
-        search_depth = 1 :: 1 :: info.search_depth }
+        search_depth = Branch (1, 1) :: info.search_depth }
     in kont info'
 
   let intro info kont =
@@ -780,7 +828,7 @@ module Search = struct
     let tac sigma gls i =
       Goal.enter
         begin fun gl ->
-          search_tac_gl mst only_classes dep hints depth (succ i) sigma gls gl end
+          search_tac_gl mst only_classes dep hints depth (Goal (succ i)) sigma gls gl end
     in
     let tac_or_stuck sigma gls i =
       Proofview.tclOR
@@ -796,7 +844,8 @@ module Search = struct
       let gls = CList.map Proofview.drop_state gls in
       Proofview.tclEVARMAP >>= fun sigma ->
       let j = List.length gls in
-      (tclDISPATCH (List.init j (fun i -> tac_or_stuck sigma gls i)))
+      tclDISPATCH
+        (List.init j (fun i -> tac_or_stuck sigma gls i))
 
   let fix_iterative t =
     let rec aux depth =

@@ -131,7 +131,57 @@ Axiom cast_coalesce :
 
 Hint Rewrite cast_coalesce : ltamer.
 
-Require Import Program.
+Unset Typeclasses Filtered Unification.
+Module cut.
+Class cut (class : Type) := Cut {cut_field : class}.
+Notation "'cut c" := (@cut c) (at level 200).
+Hint Extern 0 (@cut _) =>
+  eapply @Cut; repeat (eapply @pair || eapply @existT);
+  once typeclasses eauto : typeclass_instances.
+
+Class a (x : nat).
+Class b (x : nat).
+Class c (x : nat).
+Class d (x : nat).
+
+  (* Instance a_bc x `{'cut b x} `{c x} : a x | 1. *)
+Definition a_bc x (_ : b x) `{c x} : a x := Build_a _.
+
+Local Hint Extern self 0 (a _) when notypeclasses refine (@a_bc _ _ _); [once self| ] =>
+  self : typeclass_instances.
+
+  Instance a_d x `{d x} : a x | 2 := {}.
+Local Hint Extern 0 (b _) => fail : typeclass_instances.
+Instance b1 : b 1 | 1 := {}.
+Instance b3 : b 3 | 2 := {}.
+Instance c3 : c 3 := {}.
+Instance d4 : d 4 := {}.
+
+Goal exists x, a x.
+Proof.
+  eexists.
+Fail typeclasses eauto.
+Abort.
+End cut.
+
+Module ExternSelf.
+Class Foo (A : Type) := mkFoo {}.
+
+Definition foo_nat (f: Foo unit) : Foo nat := mkFoo _.
+Definition foo_bool : Foo bool := mkFoo _.
+
+Instance f : Foo unit := {}.
+
+Local Hint Extern self 0 (Foo _) =>
+  apply foo_nat + exact foo_bool : typeclass_instances.
+Set Typeclasses Debug Verbosity 2.
+Goal Foo nat.
+  typeclasses eauto.
+Qed.
+End ExternSelf.
+
+Require Import Program.Basics.
+Open Scope program_scope.
 Module HintCut.
 Class A (f : nat -> nat) := a : True.
 Class B (f : nat -> nat) := b : True.

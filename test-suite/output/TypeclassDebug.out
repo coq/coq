@@ -1,17 +1,17 @@
 Debug: 1: looking for foo without backtracking
-Debug: 1.1: simple apply H on foo, 1 subgoal(s)
-Debug: 1.1-1 : foo
-Debug: 1.1-1: looking for foo without backtracking
-Debug: 1.1-1.1: simple apply H on foo, 1 subgoal(s)
-Debug: 1.1-1.1-1 : foo
-Debug: 1.1-1.1-1: looking for foo without backtracking
-Debug: 1.1-1.1-1.1: simple apply H on foo, 1 subgoal(s)
-Debug: 1.1-1.1-1.1-1 : foo
-Debug: 1.1-1.1-1.1-1: looking for foo without backtracking
-Debug: 1.1-1.1-1.1-1.1: simple apply H on foo, 1 subgoal(s)
-Debug: 1.1-1.1-1.1-1.1-1 : foo
-Debug: 1.1-1.1-1.1-1.1-1: looking for foo without backtracking
-Debug: 1.1-1.1-1.1-1.1-1.1: simple apply H on foo, 1 subgoal(s)
-Debug: 1.1-1.1-1.1-1.1-1.1-1 : foo
+Debug: 1-1: simple apply H on foo, 1 subgoal(s)
+Debug: 1-1.1: foo
+Debug: 1-1.1: looking for foo without backtracking
+Debug: 1-1.1-1: simple apply H on foo, 1 subgoal(s)
+Debug: 1-1.1-1.1: foo
+Debug: 1-1.1-1.1: looking for foo without backtracking
+Debug: 1-1.1-1.1-1: simple apply H on foo, 1 subgoal(s)
+Debug: 1-1.1-1.1-1.1: foo
+Debug: 1-1.1-1.1-1.1: looking for foo without backtracking
+Debug: 1-1.1-1.1-1.1-1: simple apply H on foo, 1 subgoal(s)
+Debug: 1-1.1-1.1-1.1-1.1: foo
+Debug: 1-1.1-1.1-1.1-1.1: looking for foo without backtracking
+Debug: 1-1.1-1.1-1.1-1.1-1: simple apply H on foo, 1 subgoal(s)
+Debug: 1-1.1-1.1-1.1-1.1-1.1: foo
 The command has indeed failed with message:
 Tactic failure: Proof search reached its limit.

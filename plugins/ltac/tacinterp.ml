@@ -2213,3 +2213,32 @@ let () =
       optwrite = (fun b -> log_trace := b) }
 
 let () = Hook.set Vernacentries.interp_redexp_hook interp_redexp
+
+(** Hack to be able to implement [Hint Extern sefl => ...],
+  binding self dynamically to a tactic at runtime. *)
+let extern_callback_name = {
+  mltac_plugin = "ltac";
+  mltac_tactic = "auto_callback";
+}
+
+let extern_callback_fun args ist = match args with
+| [cb] ->
+  let cb = match prj Auto.val_callback cb with
+  | None -> assert false
+  | Some cb -> cb
+  in
+  cb
+| _ -> assert false
+
+let () =
+  Tacenv.register_ml_tactic extern_callback_name [|extern_callback_fun|]
+
+(** TODO: move me somewhere sensible *)
+let make_extern (self : Id.t) (tac : raw_tactic_expr) : raw_tactic_expr =
+  let extern_callback = {
+    mltac_name = extern_callback_name;
+    mltac_index = 0;
+  } in
+  let arg = Reference (Libnames.qualid_of_ident self) in
+  let cb = Tacexp (CAst.make @@ TacML (extern_callback, [arg])) in
+  CAst.make @@ TacLetIn (false, [CAst.make @@ Name self, cb], tac)

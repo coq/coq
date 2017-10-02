@@ -121,14 +121,15 @@ and e_my_find_search env sigma db_list local_db secvars concl =
       | _ -> FullHint.priority h
       in
       let tac = function
-      | Res_pf h -> unify_resolve st h
-      | ERes_pf h -> unify_e_resolve st h
-      | Give_exact h -> e_exact st h
+      | Res_pf h -> HintTactic (unify_resolve st h)
+      | ERes_pf h -> HintTactic (unify_e_resolve st h)
+      | Give_exact h -> HintTactic (e_exact st h)
       | Res_pf_THEN_trivial_fail h ->
-        Tacticals.New.tclTHEN (unify_e_resolve st h)
-          (e_trivial_fail_db db_list local_db)
-      | Unfold_nth c -> reduce (Unfold [AllOccurrences,c]) onConcl
-      | Extern (pat, tacast) -> conclPattern concl pat tacast
+        HintTactic (Tacticals.New.tclTHEN (unify_e_resolve st h)
+          (e_trivial_fail_db db_list local_db))
+      | Unfold_nth c -> HintTactic (reduce (Unfold [AllOccurrences,c]) onConcl)
+      | Extern (pat, lid, iftacast, thentacast) ->
+        conclPattern env sigma lid concl pat iftacast thentacast
       in
       let tac = FullHint.run h tac in
       (tac, b, lazy (FullHint.print env sigma h))
@@ -136,7 +137,7 @@ and e_my_find_search env sigma db_list local_db secvars concl =
   List.map tac_of_hint hintl
 
 and e_trivial_resolve env sigma db_list local_db secvars gl =
-  let filter (tac, pr, _) = if Int.equal pr 0 then Some tac else None in
+  let filter (tac, pr, _) = if Int.equal pr 0 then Some (tclCOMPLETE_hint tac) else None in
   try List.map_filter filter (e_my_find_search env sigma db_list local_db secvars gl)
   with Not_found -> []
 
@@ -260,8 +261,17 @@ module SearchProblem = struct
         in
         let l =
           let concl = Reductionops.nf_evar (project g) (pf_concl g) in
-          filter_tactics mkdb s.tacres
-                         (e_possible_resolve (pf_env g) (project g) s.dblist db secvars concl)
+          let poss = e_possible_resolve (pf_env g) (project g) s.dblist db secvars concl in
+          let hints =
+            List.map (fun (tac, pri, pp) ->
+              match tac with
+              | HintTactic t -> (t, pri, pp)
+              | HintContinuation k ->
+                user_err (Pp.str "eauto does not handle `Hint Extern self when foo`: use `typeclasses eauto` instead."))
+              poss
+          in
+          filter_tactics mkdb s.tacres hints
+
         in
         List.map
           (fun (ngls, lgls, cost, pp) ->

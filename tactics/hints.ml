@@ -106,7 +106,8 @@ type 'a hint_ast =
   | Give_exact of 'a
   | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
-  | Extern     of Pattern.constr_pattern option * Genarg.glob_generic_argument (* Hint Extern *)
+  | Extern     of Pattern.constr_pattern option * lident option * Genarg.glob_generic_argument option
+                  * Genarg.glob_generic_argument (* Hint Extern *)
 
 
 type 'a hints_path_atom_gen =
@@ -923,7 +924,7 @@ let make_unfold eref =
      secvars = secvars_of_global (Global.env ()) g;
      code = with_uid (Unfold_nth eref) })
 
-let make_extern pri pat tacast =
+let make_extern pri pat id ?iftacast thentacast =
   let hdconstr = match pat with
   | None -> None
   | Some c ->
@@ -938,7 +939,7 @@ let make_extern pri pat tacast =
      name = PathAny;
      db = None;
      secvars = Id.Pred.empty; (* Approximation *)
-     code = with_uid (Extern (pat, tacast)) })
+     code = with_uid (Extern (pat, id, iftacast, thentacast)) })
 
 let make_mode ref m =
   let open Term in
@@ -1167,10 +1168,12 @@ let subst_autohint (subst, obj) =
       | Unfold_nth ref ->
           let ref' = subst_evaluable_reference subst ref in
           if ref==ref' then data.code.obj else Unfold_nth ref'
-      | Extern (pat, tac) ->
-          let pat' = Option.Smart.map (subst_pattern env sigma subst) data.pat in
-          let tac' = Genintern.generic_substitute subst tac in
-          if pat==pat' && tac==tac' then data.code.obj else Extern (pat', tac')
+      | Extern (pat, lid, iftac, thentac) ->
+        let pat' = Option.Smart.map (subst_pattern env sigma subst) data.pat in
+        let iftac' = Option.Smart.map (Genintern.generic_substitute subst) iftac in
+        let thentac' = Genintern.generic_substitute subst thentac in
+        if pat==pat' && iftac==iftac' && thentac == thentac' then data.code.obj
+        else Extern (pat', lid, iftac', thentac')
     in
     let name' = subst_path_atom subst data.name in
     let uid' = subst_kn subst data.code.uid in
@@ -1365,17 +1368,17 @@ let add_transparency l b ~locality dbnames =
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_extern info tacast ~locality dbname =
+let add_extern info lid iftacast thentacast ~locality dbname =
   let pat = match info.hint_pattern with
   | None -> None
   | Some (_, pat) -> Some pat
   in
   let hint = make_hint ~locality dbname
-                       (AddHints [make_extern (Option.get info.hint_priority) pat tacast]) in
+    (AddHints [make_extern (Option.get info.hint_priority) pat lid ?iftacast thentacast]) in
   Lib.add_anonymous_leaf (inAutoHint hint)
 
-let add_externs info tacast ~locality dbnames =
-  List.iter (add_extern info tacast ~locality) dbnames
+let add_externs info lid iftacast thentacast ~locality dbnames =
+  List.iter (add_extern info lid iftacast thentacast ~locality) dbnames
 
 let add_trivials env sigma l ~locality dbnames =
   List.iter
@@ -1396,7 +1399,7 @@ type hints_entry =
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
   | HintsModeEntry of GlobRef.t * hint_mode list
-  | HintsExternEntry of hint_info * Genarg.glob_generic_argument
+  | HintsExternEntry of hint_info * lident option * Genarg.glob_generic_argument option * Genarg.glob_generic_argument
 
 let default_prepare_hint_ident = Id.of_string "H"
 
@@ -1474,8 +1477,8 @@ let add_hints ~locality dbnames h =
   | HintsUnfoldEntry lhints -> add_unfolds lhints ~locality dbnames
   | HintsTransparencyEntry (lhints, b) ->
       add_transparency lhints b ~locality dbnames
-  | HintsExternEntry (info, tacexp) ->
-      add_externs info tacexp ~locality dbnames
+  | HintsExternEntry (info, lid, iftacexp, thentacexp) ->
+      add_externs info lid iftacexp thentacexp ~locality dbnames
 
 let hint_globref gr = IsGlobRef gr
 
@@ -1547,8 +1550,19 @@ let pr_hint env sigma h = match h.obj with
       (str"simple apply " ++ pr_hint_elt env sigma c ++ str" ; trivial")
   | Unfold_nth c ->
     str"unfold " ++  pr_evaluable_reference c
-  | Extern (_, tac) ->
-    str "(*external*) " ++ Pputils.pr_glb_generic env sigma tac
+  | Extern (_, lid, iftac, thentac) ->
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    let thentacmsg = Pputils.pr_glb_generic env sigma thentac in
+    (str "(*external*) " ++
+     (match lid with
+     | None -> mt ()
+     | Some lid -> CAst.with_val Id.print lid ++ spc ()) ++
+     match iftac with
+     | None -> thentacmsg
+     | Some iftac ->
+       str"(* If *)" ++ Pputils.pr_glb_generic env sigma iftac ++
+       str"(* Then *)" ++ thentacmsg)
 
 let pr_id_hint env sigma (id, v) =
   let pr_pat p = str", pattern " ++ pr_lconstr_pattern_env env sigma p in
@@ -1735,16 +1749,45 @@ let wrap_hint_warning_fun env sigma t =
   in
   (ans, set_extra_data store sigma)
 
+type 'r hint_continuation =
+  'r Proofview.tactic ->
+  'r Proofview.tactic option * 'r Proofview.tactic
+
+type 'r hint_tactic =
+  | HintTactic of 'r Proofview.tactic
+  | HintContinuation of 'r hint_continuation
+let tclTHEN_hint tac k =
+  match k with
+  | HintTactic k -> HintTactic (Proofview.tclTHEN tac k)
+  | HintContinuation cont -> HintContinuation (fun k ->
+    let iftac, thentac = cont k in
+    match iftac with
+    | Some iftac -> (Some (Proofview.tclTHEN tac iftac), thentac)
+    | None -> (None, Proofview.tclTHEN tac thentac))
+
+let run_hint_continuation cont k =
+  let iftac, thentac = cont k in
+  match iftac with
+  | None -> thentac
+  | Some iftac ->
+    Proofview.tclIFCATCH iftac (fun () -> thentac) (fun e -> k)
+
+let tclCOMPLETE_hint tac =
+  match tac with
+  | HintTactic tac -> Tacticals.New.tclCOMPLETE tac
+  | HintContinuation cont ->
+    Tacticals.New.tclCOMPLETE (run_hint_continuation cont Tacticals.New.tclIDTAC)
+
 let run_hint tac k = match warn_hint () with
 | HintLax -> k tac.obj
 | HintWarn ->
   if is_imported tac then k tac.obj
-  else Proofview.tclTHEN (log_hint tac) (k tac.obj)
+  else tclTHEN_hint (log_hint tac) (k tac.obj)
 | HintStrict ->
   if is_imported tac then k tac.obj
   else
     let info = Exninfo.reify () in
-    Proofview.tclZERO ~info (UserError (None, (str "Tactic failure.")))
+    HintTactic (Proofview.tclZERO ~info (UserError (None, (str "Tactic failure."))))
 
 module FullHint =
 struct

@@ -16,6 +16,10 @@ open Pattern
 open Hints
 open Tactypes
 
+(* This generic value type is used internally to allow for the interpretation
+  of tactic arguments to `Hint Extern If self`. Do not use. *)
+val val_callback : unit Proofview.tactic Geninterp.Val.typ
+
 val compute_secvars : Proofview.Goal.t -> Id.Pred.t
 
 val default_search_depth : int ref
@@ -25,12 +29,26 @@ val auto_flags_of_state : TransparentState.t -> Unification.unify_flags
 (** Try unification with the precompiled clause, then use registered Apply *)
 val unify_resolve : Unification.unify_flags -> hint -> unit Proofview.tactic
 
-(** [ConclPattern concl pat tacast]:
-   if the term concl matches the pattern pat, (in sense of
-   [Pattern.somatches], then replace [?1] [?2] metavars in tacast by the
-   right values to build a tactic *)
+(** Generic [conclPattern]:
+  @aises Constr_matching.PatternMatchingFailure in case the conclusion does not match the pattern.
 
-val conclPattern : constr -> constr_pattern option -> Genarg.glob_generic_argument -> unit Proofview.tactic
+  Otherwise returns the bindings of pattern variables in the pattern extending the given ist, if any.
+  *)
+val conclPattern_gen : Environ.env -> Evd.evar_map -> ?ist:Geninterp.Val.t Id.Map.t ->
+  constr -> constr_pattern option -> Geninterp.Val.t Id.Map.t
+
+(** [ConclPattern self concl pat ist iftac thentac cont]:
+  if the term concl matches the pattern pat, (in sense of
+  [Pattern.somatches], then replace [?1] [?2] metavars in iftac and thentac by the
+  right values to build tactics.
+  If [self] is given, then it also binds it to [cont] when evaluating the tactics.
+  If [iftac] is given, then the resulting tactic is `tclIFCATCH iftac thentac cont`
+*)
+
+val conclPattern : Environ.env -> Evd.evar_map -> Names.Id.t CAst.t option ->
+  constr -> constr_pattern option ->
+  Genarg.glob_generic_argument option -> Genarg.glob_generic_argument ->
+  unit hint_tactic
 
 (** The Auto tactic *)
 

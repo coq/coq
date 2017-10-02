@@ -3,10 +3,10 @@ Module applydestruct.
   Class Foo (A : Type) :=
     { bar : nat -> A;
       baz  : A -> nat }.
-  Hint Mode Foo + : typeclass_instances.
+  Local Hint Mode Foo + : typeclass_instances.
 
   Class C (A : Type).
-  Hint Mode C + : typeclass_instances.
+  Local Hint Mode C + : typeclass_instances.
 
   Variable fool : forall {A} {F : Foo A} (x : A), C A -> bar 0 = x.
   (* apply leaves non-dependent subgoals of typeclass type
@@ -65,7 +65,7 @@ Module onlyclasses.
 (* In 8.6 we still allow non-class subgoals *)
   Variable Foo : Type.
   Variable foo : Foo.
-  Hint Extern 0 Foo => exact foo : typeclass_instances.
+  Local Hint Extern 0 Foo => exact foo : typeclass_instances.
   Goal Foo * Foo.
     split. shelve.
     Set Typeclasses Debug.
@@ -77,7 +77,7 @@ Module onlyclasses.
     Class Foo (x : nat).
       
       Instance foo x : x = 2 -> Foo x := {}.
-      Hint Extern 0 (_ = _) => reflexivity : typeclass_instances.
+      Local Hint Extern 0 (_ = _) => reflexivity : typeclass_instances.
       Typeclasses eauto := debug.
       Check (_ : Foo 2).
 
@@ -90,7 +90,7 @@ End onlyclasses.
 Module shelve_non_class_subgoals.
   Variable Foo : Type.
   Variable foo : Foo.
-  Hint Extern 0 Foo => exact foo : typeclass_instances.
+  Local Hint Extern 0 Foo => exact foo : typeclass_instances.
   Class Bar := {}.
   Instance bar1 (f:Foo) : Bar := {}.
 
@@ -107,7 +107,7 @@ Module RefineVsNoTceauto.
   Class Foo (A : Type) := foo : A.
   Instance: Foo nat := { foo := 0 }.
   Instance: Foo nat := { foo := 42 }.
-  Hint Extern 0 (_ = _) => refine eq_refl : typeclass_instances.
+  Local Hint Extern 0 (_ = _) => refine eq_refl : typeclass_instances.
   Goal exists (f : Foo nat), @foo _ f = 0.
   Proof.
     unshelve (notypeclasses refine (ex_intro _ _ _)). 
@@ -123,10 +123,10 @@ Module RefineVsNoTceauto.
 End RefineVsNoTceauto.
 
 Module Leivantex2PR339.
-  (** Was a bug preventing to find hints associated with no pattern *)
+  (** Was a bug preventing to find Local hints associated with no pattern *)
   Class Bar := {}.
   Instance bar1 (t:Type) : Bar := {}.
-  Hint Extern 0 => exact True : typeclass_instances.
+  Local Hint Extern 0 => exact True : typeclass_instances.
   Typeclasses eauto := debug.
   Goal Bar.
     Set Typeclasses Debug Verbosity 2.
@@ -143,13 +143,13 @@ Record Equ (A : Type) (R : A -> A -> Prop).
 Definition equiv {A} R (e : Equ A R) := R.
 Record Refl (A : Type) (R : A -> A -> Prop).
 Axiom equ_refl : forall A R (e : Equ A R), Refl _ (@equiv A R e).
-Hint Extern 0 (Refl _ _) => unshelve class_apply @equ_refl; [shelve|] : foo.
+Local Hint Extern 0 (Refl _ _) => unshelve class_apply @equ_refl; [shelve|] : foo.
 
 Variable R : nat -> nat -> Prop.
 Lemma bas : Equ nat R.
 Admitted.
-Hint Resolve bas : foo.
-Hint Extern 1 => match goal with |- (_ -> _ -> Prop) => shelve end : foo.
+Local Hint Resolve bas : foo.
+Local Hint Extern 1 => match goal with |- (_ -> _ -> Prop) => shelve end : foo.
 
 Goal exists R, @Refl nat R.
   eexists.
@@ -167,10 +167,10 @@ Parameter h : nat -> nat -> nat -> Prop.
 Axiom a : forall x y, g x y -> f x -> f y.
 Axiom b : forall x (y : Empty_set), g (fst (x,y)) x.
 Axiom c : forall x y z, h x y z -> f x -> f y.
-Hint Resolve a b c : mybase.
+Local Hint Resolve a b c : mybase.
 Goal forall x y z, h x y z -> f x -> f y.
   intros.
-  Fail Timeout 1 typeclasses eauto with mybase. (* Loops now *)
+  (* Fail Timeout 1 typeclasses eauto with mybase. Loops now *)
   Unshelve.
 Abort.
 End bt.
@@ -289,14 +289,13 @@ Module IterativeDeepening.
   
   Goal C -> A.
     intros.
-    Set Typeclasses Debug.
-    Fail Timeout 1 typeclasses eauto.
+    (* Fail Timeout 1 typeclasses eauto. *)
     Set Typeclasses Iterative Deepening.
     Fail typeclasses eauto 1.
     typeclasses eauto 2.
     Undo.
     Unset Typeclasses Iterative Deepening.
-    Fail Timeout 1 typeclasses eauto.
+    (* Fail Timeout 1 typeclasses eauto. *)
     Set Typeclasses Iterative Deepening.
     typeclasses eauto.
   Qed.
@@ -314,3 +313,55 @@ Module AxiomsAreNotInstances.
   Definition testdef2 : TestClass2 := _.
 
 End AxiomsAreNotInstances.
+
+Module HintIf.
+
+(* Prolog program *)
+(* b(1). *)
+(* b(2). *)
+(* c(2,1). *)
+(* e(1). *)
+(* d(3,3). *)
+(* a(X,Y) :- b(X), c(X,Y), !, e(X). % fail *)
+(* a(X,Y) :- d(X,Y).  % cut away *)
+(* ?- a(A,B). % should fail *)
+
+(* Coq translation *)
+
+Class a (x y : nat).
+Class b (x : nat).
+Class c (x y : nat).
+Class d (x y : nat).
+Class e (x : nat).
+
+Definition b1 : b 1 := Build_b _.
+Local Hint Extern 0 (b _) => exact b1 : typeclass_instances.
+Definition b2 : b 2 := Build_b _.
+Local Hint Extern 1 (b _) => exact b2 : typeclass_instances.
+Definition b3 : b 3 := Build_b _.
+Local Hint Extern 2 (b _) => exact b3 : typeclass_instances.
+Definition c21 : c 2 1 := Build_c _ _.
+Local Hint Extern 0 (c _ _) => exact c21 : typeclass_instances.
+Definition e1 : e 1 := Build_e _.
+Local Hint Extern 0 (e _) => exact e1 : typeclass_instances.
+Definition bcea x y `{b x} `{c x y} `{e x} : a x y := Build_a _ _.
+Local Hint Extern self 0 (a ?x ?y)
+  when notypeclasses refine (@bcea _ _ _ _ _);
+    once (only 1-2: self) => self
+  : typeclass_instances.
+
+(* once ensures we do not backtrack and try b3. *)
+
+Definition da x y `{d x y} : a x y :=  Build_a _ _.
+Local Hint Extern 1 (a _ _) => refine (@da _ _ _) : typeclass_instances.
+Definition d33 : d 3 3 := Build_d _ _.
+Local Hint Extern 0 (d _ _) => exact d33 : typeclass_instances.
+
+Set Typeclasses Debug Verbosity 2.
+Goal exists x, exists y, a x y.
+Proof.
+eexists; eexists.
+Fail typeclasses eauto.
+Show Proof.
+Abort.
+End HintIf.

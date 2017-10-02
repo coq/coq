@@ -90,39 +90,55 @@ Ce qui fait que si la conclusion ne matche pas le pattern, Auto échoue, même
 si après Intros la conclusion matche le pattern.
 *)
 
-(* conclPattern doit échouer avec error car il est rattraper par tclFIRST *)
+(* conclPattern doit échouer avec error car il est rattrapé par tclFIRST *)
+let val_callback : unit Proofview.tactic Geninterp.Val.typ =
+  Geninterp.Val.create "auto-callback"
 
-let conclPattern concl pat tac =
+let conclPattern_gen env sigma ?(ist=Id.Map.empty) concl pat =
   let constr_bindings env sigma =
     match pat with
-    | None -> Proofview.tclUNIT Id.Map.empty
-    | Some pat ->
-        try
-          Proofview.tclUNIT (Constr_matching.matches env sigma pat concl)
-        with Constr_matching.PatternMatchingFailure as exn ->
-          let _, info = Exninfo.capture exn in
-          Tacticals.New.tclZEROMSG ~info (str "pattern-matching failed")
+    | None -> Id.Map.empty
+    | Some pat -> Constr_matching.matches env sigma pat concl
   in
-  Proofview.Goal.enter begin fun gl ->
-     let env = Proofview.Goal.env gl in
-     let sigma = Tacmach.New.project gl in
-     constr_bindings env sigma >>= fun constr_bindings ->
-     Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
-     let open Genarg in
-     let open Geninterp in
-     let inj c = match val_tag (topwit Stdarg.wit_constr) with
-     | Val.Base tag -> Val.Dyn (tag, c)
-     | _ -> assert false
-     in
-     let fold id c accu = Id.Map.add id (inj c) accu in
-     let lfun = Id.Map.fold fold constr_bindings Id.Map.empty in
-     let ist = { lfun
-               ; poly
-               ; extra = TacStore.empty } in
-     match tac with
-     | GenArg (Glbwit wit, tac) ->
-      Ftactic.run (Geninterp.interp wit ist tac) (fun _ -> Proofview.tclUNIT ())
-  end
+  let constr_bindings = constr_bindings env sigma in
+  let open Genarg in
+  let open Geninterp in
+  let inj c = match val_tag (topwit Stdarg.wit_constr) with
+    | Val.Base tag -> Val.Dyn (tag, c)
+    | _ -> assert false
+  in
+  let fold id c accu = Id.Map.add id (inj c) accu in
+  Id.Map.fold fold constr_bindings ist
+
+let conclPattern env sigma id concl pat iftac thentac =
+  match conclPattern_gen env sigma concl pat with
+  | exception (Constr_matching.PatternMatchingFailure as exn) ->
+    let _, info = Exninfo.capture exn in
+    HintTactic (Tacticals.New.tclZEROMSG ~info (str "pattern-matching failed"))
+  | bindings ->
+    let open Genarg in
+    let open Geninterp in
+    let call_tac bindings tac =
+      Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
+      let ist = { lfun = bindings
+        ; poly
+        ; extra = TacStore.empty }
+      in
+      match tac with
+      | GenArg (Glbwit wit, tac) ->
+        Ftactic.run (Geninterp.interp wit ist tac) (fun _ -> Proofview.tclUNIT ())
+    in
+    match id with
+    | Some lid ->
+      HintContinuation (fun cont ->
+        let bindings = Id.Map.add (CAst.with_val (fun x -> x) lid)
+          (Geninterp.Val.inject (Geninterp.Val.Base val_callback) cont) bindings in
+        (Option.map (call_tac bindings) iftac, call_tac bindings thentac))
+    | None ->
+      match iftac with
+      | Some iftac ->
+        HintContinuation (fun cont -> (Some (call_tac bindings iftac), call_tac bindings thentac))
+      | None -> HintTactic (call_tac bindings thentac)
 
 (***********************************************************)
 (** A debugging / verbosity framework for trivial and auto *)
@@ -274,6 +290,14 @@ let exists_evaluable_reference env = function
 
 let dbg_intro dbg = tclLOG dbg (fun _ _ -> str "intro") intro
 let dbg_assumption dbg = tclLOG dbg (fun _ _ -> str "assumption") assumption
+let tclLOG_hint dbg print tac =
+  match tac with
+  | HintTactic tac -> HintTactic (tclLOG dbg print tac)
+  | HintContinuation cont -> HintContinuation (fun k ->
+      let iftac, thentac = cont k in
+      match iftac with
+      | Some iftac -> (Some (tclLOG dbg print iftac), thentac)
+      | None -> (None, tclLOG dbg print thentac))
 
 let rec trivial_fail_db dbg db_list local_db =
   let intro_tac =
@@ -294,36 +318,37 @@ let rec trivial_fail_db dbg db_list local_db =
     let secvars = compute_secvars gl in
     Tacticals.New.tclFIRST
       ((dbg_assumption dbg)::intro_tac::
-          (List.map Tacticals.New.tclCOMPLETE
+          (List.map tclCOMPLETE_hint
              (trivial_resolve env sigma dbg db_list local_db secvars concl)))
   end
 
 and my_find_search env sigma db_list local_db secvars hdc concl =
   List.map_append (hintmap_of env sigma secvars hdc concl) (local_db::db_list)
 
-and tac_of_hint dbg db_list local_db concl h =
+and tac_of_hint env sigma dbg db_list local_db concl h =
   let tactic = function
-    | Res_pf h -> unify_resolve_nodelta h
-    | ERes_pf _ -> Proofview.Goal.enter (fun gl ->
+    | Res_pf h -> HintTactic (unify_resolve_nodelta h)
+    | ERes_pf _ ->
+      HintTactic (Proofview.Goal.enter (fun gl ->
         let info = Exninfo.reify () in
-        Tacticals.New.tclZEROMSG ~info (str "eres_pf"))
-    | Give_exact h  -> exact h
+        Tacticals.New.tclZEROMSG ~info (str "eres_pf")))
+    | Give_exact h  -> HintTactic (exact h)
     | Res_pf_THEN_trivial_fail h ->
-      Tacticals.New.tclTHEN
+      HintTactic (Tacticals.New.tclTHEN
         (unify_resolve_nodelta h)
         (* With "(debug) trivial", we shouldn't end here, and
            with "debug auto" we don't display the details of inner trivial *)
-        (trivial_fail_db (no_dbg dbg) db_list local_db)
+        (trivial_fail_db (no_dbg dbg) db_list local_db))
     | Unfold_nth c ->
-      Proofview.Goal.enter begin fun gl ->
+      HintTactic (Proofview.Goal.enter begin fun gl ->
        if exists_evaluable_reference (Tacmach.New.pf_env gl) c then
          Tacticals.New.tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl)
        else
          let info = Exninfo.reify () in
          Tacticals.New.tclFAIL ~info 0 (str"Unbound reference")
-       end
-    | Extern (p, tacast) ->
-      conclPattern concl p tacast
+       end)
+    | Extern (p, id, iftac, thentac) ->
+      conclPattern env sigma id concl p iftac thentac
   in
   let pr_hint env sigma =
     let origin = match FullHint.database h with
@@ -332,7 +357,7 @@ and tac_of_hint dbg db_list local_db concl h =
     in
     FullHint.print env sigma h ++ origin
   in
-  tclLOG dbg pr_hint (FullHint.run h tactic)
+  tclLOG_hint dbg pr_hint (FullHint.run h tactic)
 
 and trivial_resolve env sigma dbg db_list local_db secvars cl =
   try
@@ -341,7 +366,7 @@ and trivial_resolve env sigma dbg db_list local_db secvars cl =
             Some hdconstr
       with Bound -> None
     in
-      List.map (tac_of_hint dbg db_list local_db cl)
+      List.map (tac_of_hint env sigma dbg db_list local_db cl)
         (priority
             (my_find_search env sigma db_list local_db secvars head cl))
   with Not_found -> []
@@ -390,7 +415,7 @@ let possible_resolve env sigma dbg db_list local_db secvars cl =
             Some hdconstr
       with Bound -> None
     in
-      List.map (tac_of_hint dbg db_list local_db cl)
+      List.map (tac_of_hint env sigma dbg db_list local_db cl)
         (my_find_search env sigma db_list local_db secvars head cl)
   with Not_found -> []
 
@@ -411,6 +436,11 @@ let intro_register dbg kont db =
 (* n is the max depth of search *)
 (* local_db contains the local Hypotheses *)
 
+let tclTHEN_hint tac1 tac2 =
+  match tac1 with
+  | HintTactic tac1 -> Tacticals.New.tclTHEN tac1 tac2
+  | HintContinuation cont -> run_hint_continuation cont tac2
+
 let search d n db_list local_db =
   let rec search d n local_db =
     (* spiwack: the test of [n] to 0 must be done independently in
@@ -430,7 +460,7 @@ let search d n db_list local_db =
                let d' = incr_dbg d in
                Tacticals.New.tclFIRST
                  (List.map
-                    (fun ntac -> Tacticals.New.tclTHEN ntac (search d' (n-1) local_db))
+                    (fun ntac -> tclTHEN_hint ntac (search d' (n-1) local_db))
                     (possible_resolve env sigma d db_list local_db secvars concl))
              end))
     end []
