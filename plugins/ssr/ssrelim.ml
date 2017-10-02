@@ -115,7 +115,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) deps what ?elim eqid elim_intro_tac
   let orig_gl, concl, env = gl, pf_concl gl, pf_env gl in
   ppdebug(lazy(Pp.str(if is_case then "==CASE==" else "==ELIM==")));
   let fire_subst gl t = Reductionops.nf_evar (project gl) t in
-  let eq, gl = pf_fresh_global (Coqlib.build_coq_eq ()) gl in
+  let eq, gl = pf_fresh_global Coqlib.(lib_ref "core.eq.type") gl in
   let eq = EConstr.of_constr eq in
   let is_undef_pat = function
   | sigma, T t -> EConstr.isEvar sigma (EConstr.of_constr t)
@@ -421,7 +421,7 @@ let injectl2rtac sigma c = match EConstr.kind sigma c with
 let is_injection_case c gl =
   let gl, cty = pfe_type_of gl c in
   let (mind,_), _ = pf_reduce_to_quantified_ind gl cty in
-  GlobRef.equal (IndRef mind) (Coqlib.build_coq_eq ())
+  GlobRef.equal (IndRef mind) Coqlib.(lib_ref "core.eq.type")
 
 let perform_injection c gl =
   let gl, cty = pfe_type_of gl c in

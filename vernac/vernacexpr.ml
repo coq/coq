@@ -57,6 +57,7 @@ type printable =
   | PrintImplicit of qualid or_by_notation
   | PrintAssumptions of bool * bool * qualid or_by_notation
   | PrintStrategy of qualid or_by_notation option
+  | PrintRegistered
 
 type search_about_item =
   | SearchSubPattern of constr_pattern_expr
@@ -230,7 +231,7 @@ type extend_name =
    It will be extended with primitive inductive types and operators *)
 type register_kind =
   | RegisterInline
-  | RegisterRetroknowledge of qualid
+  | RegisterCoqlib of qualid
 
 (** {6 Types concerning the module layer} *)
 

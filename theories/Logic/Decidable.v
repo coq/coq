@@ -87,6 +87,21 @@ Proof.
 unfold decidable; tauto.
 Qed.
 
+Register dec_True as core.dec.True.
+Register dec_False as core.dec.False.
+Register dec_or as core.dec.or.
+Register dec_and as core.dec.and.
+Register dec_not as core.dec.not.
+Register dec_imp as core.dec.imp.
+Register dec_iff as core.dec.iff.
+Register dec_not_not as core.dec.not_not.
+Register not_not as core.dec.dec_not_not.
+Register not_or as core.dec.not_or.
+Register not_and as core.dec.not_and.
+Register not_imp as core.dec.not_imp.
+Register imp_simp as core.dec.imp_simp.
+Register not_iff as core.dec.not_iff.
+
 (** Results formulated with iff, used in FSetDecide.
     Negation are expanded since it is unclear whether setoid rewrite
     will always perform conversion. *)

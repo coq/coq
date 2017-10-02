@@ -267,3 +267,49 @@ Proof.
   intros n; exists (Z.of_nat n); split; trivial.
   rewrite Z.mul_1_r, Z.add_0_r. apply Nat2Z.is_nonneg.
 Qed.
+
+Register fast_Zplus_assoc_reverse as plugins.omega.fast_Zplus_assoc_reverse.
+Register fast_Zplus_assoc as plugins.omega.fast_Zplus_assoc.
+Register fast_Zmult_assoc_reverse as plugins.omega.fast_Zmult_assoc_reverse.
+Register fast_Zplus_permute as plugins.omega.fast_Zplus_permute.
+Register fast_Zplus_comm as plugins.omega.fast_Zplus_comm.
+Register fast_Zmult_comm as plugins.omega.fast_Zmult_comm.
+
+Register OMEGA1 as plugins.omega.OMEGA1.
+Register OMEGA2 as plugins.omega.OMEGA2.
+Register OMEGA3 as plugins.omega.OMEGA3.
+Register OMEGA4 as plugins.omega.OMEGA4.
+Register OMEGA5 as plugins.omega.OMEGA5.
+Register OMEGA6 as plugins.omega.OMEGA6.
+Register OMEGA7 as plugins.omega.OMEGA7.
+Register OMEGA8 as plugins.omega.OMEGA8.
+Register OMEGA9 as plugins.omega.OMEGA9.
+Register fast_OMEGA10 as plugins.omega.fast_OMEGA10.
+Register fast_OMEGA11 as plugins.omega.fast_OMEGA11.
+Register fast_OMEGA12 as plugins.omega.fast_OMEGA12.
+Register fast_OMEGA13 as plugins.omega.fast_OMEGA13.
+Register fast_OMEGA14 as plugins.omega.fast_OMEGA14.
+Register fast_OMEGA15 as plugins.omega.fast_OMEGA15.
+Register fast_OMEGA16 as plugins.omega.fast_OMEGA16.
+Register OMEGA17 as plugins.omega.OMEGA17.
+Register OMEGA18 as plugins.omega.OMEGA18.
+Register OMEGA19 as plugins.omega.OMEGA19.
+Register OMEGA20 as plugins.omega.OMEGA20.
+
+Register fast_Zred_factor0 as plugins.omega.fast_Zred_factor0.
+Register fast_Zred_factor1 as plugins.omega.fast_Zred_factor1.
+Register fast_Zred_factor2 as plugins.omega.fast_Zred_factor2.
+Register fast_Zred_factor3 as plugins.omega.fast_Zred_factor3.
+Register fast_Zred_factor4 as plugins.omega.fast_Zred_factor4.
+Register fast_Zred_factor5 as plugins.omega.fast_Zred_factor5.
+Register fast_Zred_factor6 as plugins.omega.fast_Zred_factor6.
+
+Register fast_Zmult_plus_distr_l as plugins.omega.fast_Zmult_plus_distr_l.
+Register fast_Zmult_opp_comm as plugins.omega.fast_Zmult_opp_comm.
+Register fast_Zopp_plus_distr as plugins.omega.fast_Zopp_plus_distr.
+Register fast_Zopp_mult_distr_r as plugins.omega.fast_Zopp_mult_distr_r.
+Register fast_Zopp_eq_mult_neg_1 as plugins.omega.fast_Zopp_eq_mult_neg_1.
+Register fast_Zopp_involutive as plugins.omega.fast_Zopp_involutive.
+
+Register new_var as plugins.omega.new_var.
+Register intro_Z as plugins.omega.intro_Z.

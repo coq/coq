@@ -212,7 +212,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from";
 	      l = LIST1 identref SEP "," -> { VernacCombinedScheme (id, l) }
       | IDENT "Register"; g = global; "as"; quid = qualid ->
-          { VernacRegister(g, RegisterRetroknowledge quid) }
+          { VernacRegister(g, RegisterCoqlib quid) }
       | IDENT "Register"; IDENT "Inline"; g = global ->
           { VernacRegister(g, RegisterInline) }
       | IDENT "Universe"; l = LIST1 identref -> { VernacUniverse l }
@@ -994,7 +994,9 @@ GRAMMAR EXTEND Gram
       | IDENT "Transparent"; IDENT "Dependencies"; qid = smart_global -> { PrintAssumptions (false, true, qid) }
       | IDENT "All"; IDENT "Dependencies"; qid = smart_global -> { PrintAssumptions (true, true, qid) }
       | IDENT "Strategy"; qid = smart_global -> { PrintStrategy (Some qid) }
-      | IDENT "Strategies" -> { PrintStrategy None } ] ]
+      | IDENT "Strategies" -> { PrintStrategy None }
+      | IDENT "Registered" -> { PrintRegistered }
+    ] ]
   ;
   class_rawexpr:
     [ [ IDENT "Funclass" -> { FunClass }

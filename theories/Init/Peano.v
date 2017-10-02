@@ -182,6 +182,11 @@ Notation "x <= y < z" := (x <= y /\ y < z) : nat_scope.
 Notation "x < y < z" := (x < y /\ y < z) : nat_scope.
 Notation "x < y <= z" := (x < y /\ y <= z) : nat_scope.
 
+Register le as num.nat.le.
+Register lt as num.nat.lt.
+Register ge as num.nat.ge.
+Register gt as num.nat.gt.
+
 Theorem le_pred : forall n m, n <= m -> pred n <= pred m.
 Proof.
 induction 1; auto. destruct m; simpl; auto.

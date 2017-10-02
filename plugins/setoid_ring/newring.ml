@@ -205,25 +205,16 @@ let exec_tactic env evd n f args =
   let nf c = constr_of evd c in
   Array.map nf !tactic_res, Evd.universe_context_set evd
 
-let stdlib_modules =
-  [["Coq";"Setoids";"Setoid"];
-   ["Coq";"Lists";"List"];
-   ["Coq";"Init";"Datatypes"];
-   ["Coq";"Init";"Logic"];
-  ]
+let gen_constant n = lazy (EConstr.of_constr (UnivGen.constr_of_global (Coqlib.lib_ref n)))
+let gen_reference n = lazy (Coqlib.lib_ref n)
 
-let coq_constant c =
-  lazy (EConstr.of_constr (UnivGen.constr_of_global @@ Coqlib.gen_reference_in_modules "Ring" stdlib_modules c))
-let coq_reference c =
-  lazy (Coqlib.gen_reference_in_modules "Ring" stdlib_modules c)
+let coq_mk_Setoid = gen_constant "plugins.setoid_ring.Build_Setoid_Theory"
+let coq_None = gen_reference "core.option.None"
+let coq_Some = gen_reference "core.option.Some"
+let coq_eq = gen_constant "core.eq.type"
 
-let coq_mk_Setoid = coq_constant "Build_Setoid_Theory"
-let coq_None = coq_reference "None"
-let coq_Some = coq_reference "Some"
-let coq_eq = coq_constant "eq"
-
-let coq_cons = coq_reference "cons"
-let coq_nil = coq_reference "nil"
+let coq_cons = gen_reference "core.list.cons"
+let coq_nil = gen_reference "core.list.nil"
 
 let lapp f args = mkApp(Lazy.force f,args)
 
@@ -260,16 +251,18 @@ let plugin_modules =
 
 let my_constant c =
   lazy (EConstr.of_constr (UnivGen.constr_of_global @@ Coqlib.gen_reference_in_modules "Ring" plugin_modules c))
+    [@@ocaml.warning "-3"]
 let my_reference c =
   lazy (Coqlib.gen_reference_in_modules "Ring" plugin_modules c)
+    [@@ocaml.warning "-3"]
 
 let znew_ring_path =
   DirPath.make (List.map Id.of_string ["InitialRing";plugin_dir;"Coq"])
 let zltac s =
   lazy(KerName.make (ModPath.MPfile znew_ring_path) (Label.make s))
 
-let mk_cst l s = lazy (Coqlib.coq_reference "newring" l s);;
-let pol_cst s = mk_cst [plugin_dir;"Ring_polynom"] s ;;
+let mk_cst l s = lazy (Coqlib.coq_reference "newring" l s) [@@ocaml.warning "-3"]
+let pol_cst s = mk_cst [plugin_dir;"Ring_polynom"] s
 
 (* Ring theory *)
 
@@ -907,7 +900,7 @@ let ftheory_to_obj : field_info -> obj =
 let field_equality evd r inv req =
   match EConstr.kind !evd req with
     | App (f, [| _ |]) when eq_constr_nounivs !evd f (Lazy.force coq_eq) ->
-        let c = UnivGen.constr_of_global (Coqlib.build_coq_eq_data()).congr in
+        let c = UnivGen.constr_of_global Coqlib.(lib_ref "core.eq.congr") in
         let c = EConstr.of_constr c in
         mkApp(c,[|r;r;inv|])
     | _ ->

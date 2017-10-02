@@ -357,6 +357,8 @@ struct
       ["Coq";"Reals" ; "Rpow_def"];
       ["LRing_normalise"]]
 
+[@@@ocaml.warning "-3"]
+
   let coq_modules =
    Coqlib.(init_modules @
     [logic_dir] @ arith_modules @ zarith_base_modules @ mic_modules)
@@ -379,6 +381,8 @@ struct
 
   let gen_constant_in_modules s m n = EConstr.of_constr (UnivGen.constr_of_global @@ Coqlib.gen_reference_in_modules s m n)
   let init_constant = gen_constant_in_modules "ZMicromega" Coqlib.init_modules
+  [@@@ocaml.warning "+3"]
+
   let constant = gen_constant_in_modules "ZMicromega" coq_modules
   let bin_constant = gen_constant_in_modules "ZMicromega" bin_module
   let r_constant = gen_constant_in_modules "ZMicromega" r_modules

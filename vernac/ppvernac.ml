@@ -533,6 +533,8 @@ open Pputils
       keyword "Print Strategies"
     | PrintStrategy (Some qid) ->
       keyword "Print Strategy" ++ pr_smart_global qid
+    | PrintRegistered ->
+      keyword "Print Registered"
 
   let pr_using e =
     let rec aux = function
@@ -1159,14 +1161,16 @@ open Pputils
           | LocateOther (s, qid) -> keyword s ++ spc () ++ pr_ltac_ref qid
         in
         return (keyword "Locate" ++ spc() ++ pr_locate loc)
-      | VernacRegister (id, RegisterInline) ->
+      | VernacRegister (qid, RegisterCoqlib name) ->
         return (
           hov 2
-            (keyword "Register Inline" ++ spc() ++ pr_qualid id)
+            (keyword "Register" ++ spc() ++ pr_qualid qid ++ spc () ++ str "as"
+             ++ spc () ++ pr_qualid name)
         )
-      | VernacRegister (id, RegisterRetroknowledge n) ->
+      | VernacRegister (qid, RegisterInline) ->
         return (
-          hov 2 (keyword "Register" ++ spc () ++ pr_qualid id ++ spc () ++ keyword "as" ++ pr_qualid n)
+          hov 2
+            (keyword "Register Inline" ++ spc() ++ pr_qualid qid)
         )
       | VernacComments l ->
         return (

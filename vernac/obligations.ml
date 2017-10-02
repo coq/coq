@@ -256,11 +256,9 @@ let eterm_obligations env name evm fs ?status t ty =
   let evmap f c = pi1 (subst_evar_constr evts 0 f c) in
     Array.of_list (List.rev evars), (evnames, evmap), t', ty
 
-let tactics_module = ["Program";"Tactics"]
-let safe_init_constant md name () =
-  Coqlib.check_required_library ("Coq"::md);
-  UnivGen.constr_of_global (Coqlib.coq_reference "Obligations" md name)
-let hide_obligation = safe_init_constant tactics_module "obligation"
+let hide_obligation () =
+  Coqlib.check_required_library ["Coq";"Program";"Tactics"];
+  UnivGen.constr_of_global (Coqlib.lib_ref "program.tactics.obligation")
 
 let pperror cmd = CErrors.user_err ~hdr:"Program" cmd
 let error s = pperror (str s)

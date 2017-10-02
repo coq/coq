@@ -83,6 +83,8 @@ Proof.
   apply le_dec.
 Defined.
 
+Register le_gt_dec as num.nat.le_gt_dec.
+
 (** Proofs of decidability *)
 
 Theorem dec_le n m : decidable (n <= m).
@@ -129,6 +131,16 @@ Theorem not_lt n m : ~ n < m -> n >= m.
 Proof.
   apply Nat.nlt_ge.
 Qed.
+
+Register dec_le as num.nat.dec_le.
+Register dec_lt as num.nat.dec_lt.
+Register dec_ge as num.nat.dec_ge.
+Register dec_gt as num.nat.dec_gt.
+Register not_eq as num.nat.not_eq.
+Register not_le as num.nat.not_le.
+Register not_lt as num.nat.not_lt.
+Register not_ge as num.nat.not_ge.
+Register not_gt as num.nat.not_gt.
 
 
 (** A ternary comparison function in the spirit of [Z.compare].

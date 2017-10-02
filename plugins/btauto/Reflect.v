@@ -396,3 +396,16 @@ lazymatch goal with
   end
 | _ => fail "Cannot recognize a boolean equality"
 end. *)
+
+Register formula_var as plugins.btauto.f_var.
+Register formula_btm as plugins.btauto.f_btm.
+Register formula_top as plugins.btauto.f_top.
+Register formula_cnj as plugins.btauto.f_cnj.
+Register formula_dsj as plugins.btauto.f_dsj.
+Register formula_neg as plugins.btauto.f_neg.
+Register formula_xor as plugins.btauto.f_xor.
+Register formula_ifb as plugins.btauto.f_ifb.
+
+Register formula_eval as plugins.btauto.eval.
+Register boolean_witness as plugins.btauto.witness.
+Register reduce_poly_of_formula_sound_alt as plugins.btauto.soundness.

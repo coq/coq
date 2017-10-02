@@ -130,7 +130,7 @@ let newssrcongrtac arg ist gl =
   let ssr_congr lr = EConstr.mkApp (arr, lr) in
   (* here thw two cases: simple equality or arrow *)
   let equality, _, eq_args, gl' =
-    let eq, gl = pf_fresh_global (Coqlib.build_coq_eq ()) gl in
+    let eq, gl = pf_fresh_global Coqlib.(lib_ref "core.eq.type") gl in
     pf_saturate gl (EConstr.of_constr eq) 3 in
   tclMATCH_GOAL (equality, gl') (fun gl' -> fs gl' (List.assoc 0 eq_args))
   (fun ty -> congrtac (arg, Detyping.detype Detyping.Now false Id.Set.empty (pf_env gl) (project gl) ty) ist)
@@ -386,7 +386,7 @@ let rwcltac cl rdx dir sr gl =
         ppdebug(lazy Pp.(str"r@rwcltac=" ++ pr_econstr_env (pf_env gl) (project gl) (snd sr)));
   let cvtac, rwtac, gl =
     if EConstr.Vars.closed0 (project gl) r' then 
-      let env, sigma, c, c_eq = pf_env gl, fst sr, snd sr, Coqlib.build_coq_eq () in
+      let env, sigma, c, c_eq = pf_env gl, fst sr, snd sr, Coqlib.(lib_ref "core.eq.type") in
       let sigma, c_ty = Typing.type_of env sigma c in
         ppdebug(lazy Pp.(str"c_ty@rwcltac=" ++ pr_econstr_env env sigma c_ty));
       match EConstr.kind_of_type sigma (Reductionops.whd_all env sigma c_ty) with
@@ -427,6 +427,7 @@ let rwcltac cl rdx dir sr gl =
 ;;
 
 
+[@@@ocaml.warning "-3"]
 let lz_coq_prod =
   let prod = lazy (Coqlib.build_prod ()) in fun () -> Lazy.force prod
 
@@ -438,7 +439,7 @@ let lz_setoid_relation =
   | _ ->
     let srel =
        try Some (UnivGen.constr_of_global @@
-                   Coqlib.coq_reference "Class_setoid" sdir "RewriteRelation")
+                 Coqlib.find_reference "Class_setoid" ("Coq"::sdir) "RewriteRelation" [@ocaml.warning "-3"])
        with _ -> None in
     last_srel := (env, srel); srel
 
@@ -484,7 +485,7 @@ let rwprocess_rule dir rule gl =
           | _ ->
             let sigma, pi2 = Evd.fresh_global env sigma coq_prod.Coqlib.proj2 in
             EConstr.mkApp (pi2, ra), sigma in
-        if EConstr.eq_constr sigma a.(0) (EConstr.of_constr (UnivGen.constr_of_global @@ Coqlib.build_coq_True ())) then
+        if EConstr.eq_constr sigma a.(0) (EConstr.of_constr (UnivGen.constr_of_global @@ Coqlib.(lib_ref "core.True.type"))) then
          let s, sigma = sr sigma 2 in
          loop (converse_dir d) sigma s a.(1) rs 0
         else

@@ -289,24 +289,22 @@ let coq_refl_jm_pattern       =
   mkPattern (mkGProd "A" mkGHole (mkGProd "x" (mkGVar "A")
     (mkGApp mkGHole [mkGVar "A"; mkGVar "x"; mkGVar "A"; mkGVar "x";])))
 
-open Globnames
-
 let match_with_equation env sigma t =
   if not (isApp sigma t) then raise NoEquationFound;
   let (hdapp,args) = destApp sigma t in
   match EConstr.kind sigma hdapp with
   | Ind (ind,u) ->
-      if GlobRef.equal (IndRef ind) glob_eq then
-	Some (build_coq_eq_data()),hdapp,
-	PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-      else if GlobRef.equal (IndRef ind) glob_identity then
-	Some (build_coq_identity_data()),hdapp,
-	PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-      else if GlobRef.equal (IndRef ind) glob_jmeq then
-	Some (build_coq_jmeq_data()),hdapp,
-	HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
-      else
-        let (mib,mip) = Global.lookup_inductive ind in
+    if Coqlib.check_ind_ref "core.eq.type" ind then
+      Some (build_coq_eq_data()),hdapp,
+      PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
+    else if Coqlib.check_ind_ref "core.identity.type" ind then
+      Some (build_coq_identity_data()),hdapp,
+      PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
+    else if Coqlib.check_ind_ref "core.JMeq.type" ind then
+      Some (build_coq_jmeq_data()),hdapp,
+      HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
+    else
+      let (mib,mip) = Global.lookup_inductive ind in
         let constr_types = mip.mind_nf_lc in
         let nconstr = Array.length mip.mind_consnames in
 	if Int.equal nconstr 1 then
@@ -438,12 +436,12 @@ let match_eq sigma eqn (ref, hetero) =
   | _ -> raise PatternMatchingFailure
 
 let no_check () = true
-let check_jmeq_loaded () = Library.library_is_loaded @@ Coqlib.jmeq_library_path
+let check_jmeq_loaded () = has_ref "core.JMeq.type"
 
 let equalities =
-  [(coq_eq_ref, false), no_check, build_coq_eq_data;
-   (coq_jmeq_ref, true), check_jmeq_loaded, build_coq_jmeq_data;
-   (coq_identity_ref, false), no_check, build_coq_identity_data]
+  [(lazy(lib_ref "core.eq.type"), false), no_check, build_coq_eq_data;
+   (lazy(lib_ref "core.JMeq.type"), true), check_jmeq_loaded, build_coq_jmeq_data;
+   (lazy(lib_ref "core.identity.type"), false), no_check, build_coq_identity_data]
 
 let find_eq_data sigma eqn = (* fails with PatternMatchingFailure *)
   let d,k = first_match (match_eq sigma eqn) equalities in
@@ -478,9 +476,9 @@ let find_this_eq_data_decompose gl eqn =
 
 let match_sigma env sigma ex =
   match EConstr.kind sigma ex with
-  | App (f, [| a; p; car; cdr |]) when Termops.is_global sigma (Lazy.force coq_exist_ref) f -> 
+  | App (f, [| a; p; car; cdr |]) when Termops.is_global sigma (lib_ref "core.sig.intro") f ->
       build_sigma (), (snd (destConstruct sigma f), a, p, car, cdr)
-  | App (f, [| a; p; car; cdr |]) when Termops.is_global sigma (Lazy.force coq_existT_ref) f -> 
+  | App (f, [| a; p; car; cdr |]) when Termops.is_global sigma (lib_ref "core.sigT.intro") f ->
     build_sigma_type (), (snd (destConstruct sigma f), a, p, car, cdr)
   | _ -> raise PatternMatchingFailure
     
@@ -489,7 +487,7 @@ let find_sigma_data_decompose env ex = (* fails with PatternMatchingFailure *)
 
 (* Pattern "(sig ?1 ?2)" *)
 let coq_sig_pattern =
-  lazy (mkPattern (mkGAppRef coq_sig_ref [mkGPatVar "X1"; mkGPatVar "X2"]))
+  lazy (mkPattern (mkGAppRef (lazy (lib_ref "core.sig.type")) [mkGPatVar "X1"; mkGPatVar "X2"]))
 
 let match_sigma env sigma t =
   match Id.Map.bindings (matches env sigma (Lazy.force coq_sig_pattern) t) with
@@ -507,44 +505,44 @@ let is_matching_sigma env sigma t = is_matching env sigma (Lazy.force coq_sig_pa
 
 let coq_eqdec ~sum ~rev =
   lazy (
-    let eqn = mkGAppRef coq_eq_ref (List.map mkGPatVar ["X1"; "X2"; "X3"]) in
-    let args = [eqn; mkGAppRef coq_not_ref [eqn]] in
+    let eqn = mkGAppRef (lazy (lib_ref "core.eq.type")) (List.map mkGPatVar ["X1"; "X2"; "X3"]) in
+    let args = [eqn; mkGAppRef (lazy (lib_ref "core.not.type")) [eqn]] in
     let args = if rev then List.rev args else args in
     mkPattern (mkGAppRef sum args)
   )
 
+let sumbool_type = lazy (lib_ref "core.sumbool.type")
+let or_type = lazy (lib_ref "core.or.type")
+
 (** [{ ?X2 = ?X3 :> ?X1 } + { ~ ?X2 = ?X3 :> ?X1 }] *)
-let coq_eqdec_inf_pattern = coq_eqdec ~sum:coq_sumbool_ref ~rev:false
+let coq_eqdec_inf_pattern = coq_eqdec ~sum:sumbool_type ~rev:false
 
 (** [{ ~ ?X2 = ?X3 :> ?X1 } + { ?X2 = ?X3 :> ?X1 }] *)
-let coq_eqdec_inf_rev_pattern = coq_eqdec ~sum:coq_sumbool_ref ~rev:true
+let coq_eqdec_inf_rev_pattern = coq_eqdec ~sum:sumbool_type ~rev:true
 
 (** %coq_or_ref (?X2 = ?X3 :> ?X1) (~ ?X2 = ?X3 :> ?X1) *)
-let coq_eqdec_pattern = coq_eqdec ~sum:coq_or_ref ~rev:false
+let coq_eqdec_pattern = coq_eqdec ~sum:or_type ~rev:false
 
 (** %coq_or_ref (~ ?X2 = ?X3 :> ?X1) (?X2 = ?X3 :> ?X1) *)
-let coq_eqdec_rev_pattern = coq_eqdec ~sum:coq_or_ref ~rev:true
-
-let op_or = coq_or_ref
-let op_sum = coq_sumbool_ref
+let coq_eqdec_rev_pattern = coq_eqdec ~sum:or_type ~rev:true
 
 let match_eqdec env sigma t =
   let eqonleft,op,subst =
-    try true,op_sum,matches env sigma (Lazy.force coq_eqdec_inf_pattern) t
+    try true,sumbool_type,matches env sigma (Lazy.force coq_eqdec_inf_pattern) t
     with PatternMatchingFailure ->
-    try false,op_sum,matches env sigma (Lazy.force coq_eqdec_inf_rev_pattern) t
+    try false,sumbool_type,matches env sigma (Lazy.force coq_eqdec_inf_rev_pattern) t
     with PatternMatchingFailure ->
-    try true,op_or,matches env sigma (Lazy.force coq_eqdec_pattern) t
+    try true,or_type,matches env sigma (Lazy.force coq_eqdec_pattern) t
     with PatternMatchingFailure ->
-        false,op_or,matches env sigma (Lazy.force coq_eqdec_rev_pattern) t in
+        false,or_type,matches env sigma (Lazy.force coq_eqdec_rev_pattern) t in
   match Id.Map.bindings subst with
   | [(_,typ);(_,c1);(_,c2)] ->
       eqonleft, Lazy.force op, c1, c2, typ
   | _ -> anomaly (Pp.str "Unexpected pattern.")
 
 (* Patterns "~ ?" and "? -> False" *)
-let coq_not_pattern = lazy (mkPattern (mkGAppRef coq_not_ref [mkGHole]))
-let coq_imp_False_pattern = lazy (mkPattern (mkGArrow mkGHole (mkGRef coq_False_ref)))
+let coq_not_pattern = lazy (mkPattern (mkGAppRef (lazy (lib_ref "core.not.type")) [mkGHole]))
+let coq_imp_False_pattern = lazy (mkPattern (mkGArrow mkGHole (mkGRef (lazy (lib_ref "core.False.type")))))
 
 let is_matching_not env sigma t = is_matching env sigma (Lazy.force coq_not_pattern) t
 let is_matching_imp_False env sigma t = is_matching env sigma (Lazy.force coq_imp_False_pattern) t

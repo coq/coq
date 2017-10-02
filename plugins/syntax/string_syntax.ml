@@ -31,9 +31,8 @@ let string_kn = MutInd.make2 string_modpath @@ Label.make "string"
 let static_glob_EmptyString  = ConstructRef ((string_kn,0),1)
 let static_glob_String  = ConstructRef ((string_kn,0),2)
 
-let make_reference id = find_reference "String interpretation" string_module id
-let glob_String = lazy (make_reference "String")
-let glob_EmptyString = lazy (make_reference "EmptyString")
+let glob_String = lazy (lib_ref "plugins.syntax.String")
+let glob_EmptyString = lazy (lib_ref "plugins.syntax.EmptyString")
 
 let is_gr c gr = match DAst.get c with
 | GRef (r, _) -> GlobRef.equal r gr

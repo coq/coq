@@ -21,13 +21,20 @@ Notation "A -> B" := (forall (_ : A), B) : type_scope.
 Inductive True : Prop :=
   I : True.
 
+Register True as core.True.type.
+Register I as core.True.I.
+
 (** [False] is the always false proposition *)
 Inductive False : Prop :=.
+
+Register False as core.False.type.
 
 (** [not A], written [~A], is the negation of [A] *)
 Definition not (A:Prop) := A -> False.
 
 Notation "~ x" := (not x) : type_scope.
+
+Register not as core.not.type.
 
 (** Create the "core" hint database, and set its transparent state for
   variables and constants explicitely. *)
@@ -49,6 +56,9 @@ Inductive and (A B:Prop) : Prop :=
   conj : A -> B -> A /\ B
 
 where "A /\ B" := (and A B) : type_scope.
+
+Register and as core.and.type.
+Register conj as core.and.conj.
 
 Section Conjunction.
 
@@ -77,11 +87,17 @@ where "A \/ B" := (or A B) : type_scope.
 Arguments or_introl [A B] _, [A] B _.
 Arguments or_intror [A B] _, A [B] _.
 
+Register or as core.or.type.
+
 (** [iff A B], written [A <-> B], expresses the equivalence of [A] and [B] *)
 
 Definition iff (A B:Prop) := (A -> B) /\ (B -> A).
 
 Notation "A <-> B" := (iff A B) : type_scope.
+
+Register iff as core.iff.type.
+Register proj1 as core.iff.proj1.
+Register proj2 as core.iff.proj2.
 
 Section Equivalence.
 
@@ -257,6 +273,8 @@ Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
 Inductive ex (A:Type) (P:A -> Prop) : Prop :=
   ex_intro : forall x:A, P x -> ex (A:=A) P.
 
+Register ex as core.ex.type.
+
 Inductive ex2 (A:Type) (P Q:A -> Prop) : Prop :=
   ex_intro2 : forall x:A, P x -> Q x -> ex2 (A:=A) P Q.
 
@@ -333,6 +351,11 @@ Hint Resolve I conj or_introl or_intror : core.
 Hint Resolve eq_refl: core.
 Hint Resolve ex_intro ex_intro2: core.
 
+Register eq as core.eq.type.
+Register eq_refl as core.eq.refl.
+Register eq_ind as core.eq.ind.
+Register eq_rect as core.eq.rect.
+
 Section Logic_lemmas.
 
   Theorem absurd : forall A C:Prop, A -> ~ A -> C.
@@ -351,15 +374,21 @@ Section Logic_lemmas.
       destruct 1; trivial.
     Defined.
 
+    Register eq_sym as core.eq.sym.
+
     Theorem eq_trans : x = y -> y = z -> x = z.
     Proof.
       destruct 2; trivial.
     Defined.
 
+    Register eq_trans as core.eq.trans.
+
     Theorem f_equal : x = y -> f x = f y.
     Proof.
       destruct 1; trivial.
     Defined.
+
+    Register f_equal as core.eq.congr.
 
     Theorem not_eq_sym : x <> y -> y <> x.
     Proof.
@@ -372,6 +401,8 @@ Section Logic_lemmas.
     forall (A:Type) (x:A) (P:A -> Prop), P x -> forall y:A, y = x -> P y.
     intros A x P H y H0. elim eq_sym with (1 := H0); assumption.
   Defined.
+
+  Register eq_ind_r as core.eq.ind_r.
 
   Definition eq_rec_r :
     forall (A:Type) (x:A) (P:A -> Set), P x -> forall y:A, y = x -> P y.
@@ -457,6 +488,8 @@ Theorem f_equal2 :
 Proof.
   destruct 1; destruct 1; reflexivity.
 Qed.
+
+Register f_equal2 as core.eq.congr2.
 
 Theorem f_equal3 :
   forall (A1 A2 A3 B:Type) (f:A1 -> A2 -> A3 -> B) (x1 y1:A1)

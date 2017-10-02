@@ -64,6 +64,11 @@ Proof.
   apply Z.lt_gt_cases.
 Qed.
 
+Register dec_Zne as plugins.omega.dec_Zne.
+Register dec_Zgt as plugins.omega.dec_Zgt.
+Register dec_Zge as plugins.omega.dec_Zge.
+Register not_Zeq as plugins.omega.not_Zeq.
+
 (** * Relating strict and large orders *)
 
 Notation Zgt_lt := Z.gt_lt (compat "8.7").
@@ -118,6 +123,12 @@ Proof.
   intros H.
   destruct (Z.eq_decidable n m); [assumption|now elim H].
 Qed.
+
+Register Znot_le_gt as plugins.omega.Znot_le_gt.
+Register Znot_lt_ge as plugins.omega.Znot_lt_ge.
+Register Znot_ge_lt as plugins.omega.Znot_ge_lt.
+Register Znot_gt_le as plugins.omega.Znot_gt_le.
+Register not_Zne as plugins.omega.not_Zne.
 
 (** * Equivalence and order properties *)
 

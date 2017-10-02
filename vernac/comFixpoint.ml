@@ -160,14 +160,8 @@ type recursive_preentry =
 
 (* Wellfounded definition *)
 
-let contrib_name = "Program"
-let subtac_dir = [contrib_name]
-let tactics_module = subtac_dir @ ["Tactics"]
-
-let init_constant dir s sigma =
-  Evarutil.new_global sigma (Coqlib.coq_reference "Command" dir s)
-
-let fix_proto = init_constant tactics_module "fix_proto"
+let fix_proto sigma =
+  Evarutil.new_global sigma (Coqlib.lib_ref "program.tactic.fix_proto")
 
 let interp_recursive ~program_mode ~cofix fixl notations =
   let open Context.Named.Declaration in

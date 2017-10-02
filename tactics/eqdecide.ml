@@ -27,7 +27,6 @@ open Constr_matching
 open Hipattern
 open Proofview.Notations
 open Tacmach.New
-open Coqlib
 open Tactypes
 
 (* This file containts the implementation of the tactics ``Decide
@@ -269,9 +268,10 @@ let decideEquality rectype ops =
 (* The tactic Compare *)
 
 let compare c1 c2 =
-  pf_constr_of_global (build_coq_sumbool ()) >>= fun opc ->
-  pf_constr_of_global (Coqlib.build_coq_eq ()) >>= fun eqc ->
-  pf_constr_of_global (build_coq_not ()) >>= fun notc ->
+  let open Coqlib in
+  pf_constr_of_global (lib_ref "core.sumbool.type") >>= fun opc ->
+  pf_constr_of_global (lib_ref "core.eq.type") >>= fun eqc ->
+  pf_constr_of_global (lib_ref "core.not.type") >>= fun notc ->
   Proofview.Goal.enter begin fun gl ->
   let rectype = pf_unsafe_type_of gl c1 in
   let ops = (opc,eqc,notc) in

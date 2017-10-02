@@ -28,9 +28,14 @@ Set Elimination Schemes.
 
 Arguments JMeq_refl {A x} , [A] x.
 
+Register JMeq as core.JMeq.type.
+Register JMeq_refl as core.JMeq.refl.
+
 Hint Resolve JMeq_refl.
 
 Definition JMeq_hom {A : Type} (x y : A) := JMeq x y.
+
+Register JMeq_hom as core.JMeq.hom.
 
 Lemma JMeq_sym : forall (A B:Type) (x:A) (y:B), JMeq x y -> JMeq y x.
 Proof. 
@@ -39,11 +44,15 @@ Qed.
 
 Hint Immediate JMeq_sym.
 
+Register JMeq_sym as core.JMeq.sym.
+
 Lemma JMeq_trans :
  forall (A B C:Type) (x:A) (y:B) (z:C), JMeq x y -> JMeq y z -> JMeq x z.
 Proof.
 destruct 2; trivial.
 Qed.
+
+Register JMeq_trans as core.JMeq.trans.
 
 Axiom JMeq_eq : forall (A:Type) (x y:A), JMeq x y -> x = y.
 
@@ -52,6 +61,8 @@ Lemma JMeq_ind : forall (A:Type) (x:A) (P:A -> Prop),
 Proof.
 intros A x P H y H'; case JMeq_eq with (1 := H'); trivial.
 Qed.
+
+Register JMeq_ind as core.JMeq.ind.
 
 Lemma JMeq_rec : forall (A:Type) (x:A) (P:A -> Set),
   P x -> forall y, JMeq x y -> P y.
@@ -88,6 +99,8 @@ Lemma JMeq_congr :
 Proof.
 intros A x B f y H; case JMeq_eq with (1 := H); trivial.
 Qed.
+
+Register JMeq_congr as core.JMeq.congr.
 
 (** [JMeq] is equivalent to [eq_dep Type (fun X => X)] *)
 

@@ -919,6 +919,14 @@ Section MakeRingPol.
   | PEopp : PExpr -> PExpr
   | PEpow : PExpr -> N -> PExpr.
 
+ Register PExpr as plugins.setoid_ring.pexpr.
+ Register PEc as plugins.setoid_ring.const.
+ Register PEX as plugins.setoid_ring.var.
+ Register PEadd as plugins.setoid_ring.add.
+ Register PEsub as plugins.setoid_ring.sub.
+ Register PEmul as plugins.setoid_ring.mul.
+ Register PEopp as plugins.setoid_ring.opp.
+ Register PEpow as plugins.setoid_ring.pow.
 
  (** evaluation of polynomial expressions towards R *)
  Definition mk_X j := mkPinj_pred j mkX.

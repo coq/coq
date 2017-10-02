@@ -109,11 +109,11 @@ let gen_ground_tac flag taco ids bases =
 
 (* special for compatibility with Intuition
 
-let constant str = Coqlib.gen_constant "User" ["Init";"Logic"] str
+let constant str = Coqlib.get_constr str
 
 let defined_connectives=lazy
-  [[],EvalConstRef (destConst (constant "not"));
-   [],EvalConstRef (destConst (constant "iff"))]
+  [[],EvalConstRef (destConst (constant "core.not.type"));
+   [],EvalConstRef (destConst (constant "core.iff.type"))]
 
 let normalize_evaluables=
   onAllHypsAndConcl

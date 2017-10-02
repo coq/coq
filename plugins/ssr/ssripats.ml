@@ -149,6 +149,7 @@ let tac_case t =
 end
 
 (** [=> [: id]] ************************************************************)
+[@@@ocaml.warning "-3"]
 let mk_abstract_id =
   let open Coqlib in
   let ssr_abstract_id = Summary.ref ~name:"SSR:abstractid" 0 in
@@ -375,7 +376,7 @@ let elim_intro_tac ipats ?ist what eqid ssrelim is_rec clr =
        let rec gen_eq_tac () = Goal.enter begin fun g ->
          let sigma, env, concl = Goal.(sigma g, env g, concl g) in
          let sigma, eq =
-           EConstr.fresh_global env sigma (Coqlib.build_coq_eq ()) in
+           EConstr.fresh_global env sigma (Coqlib.lib_ref "core.eq.type") in
          let ctx, last = EConstr.decompose_prod_assum sigma concl in
          let args = match EConstr.kind_of_type sigma last with
            | Term.AtomicType (hd, args) ->

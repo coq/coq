@@ -30,6 +30,8 @@ Proof.
   elim (Nat.eq_dec n m); [left|right]; trivial.
 Defined.
 
+Register dec_eq_nat as num.nat.eq_dec.
+
 Definition UIP_nat:= Eqdep_dec.UIP_dec Nat.eq_dec.
 
 Import EqNotations.

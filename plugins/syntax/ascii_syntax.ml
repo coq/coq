@@ -40,8 +40,7 @@ let ascii_kn = MutInd.make2 ascii_modpath ascii_label
 let path_of_Ascii = ((ascii_kn,0),1)
 let static_glob_Ascii  = ConstructRef path_of_Ascii
 
-let make_reference id = find_reference "Ascii interpretation" ascii_module id
-let glob_Ascii = lazy (make_reference "Ascii")
+let glob_Ascii = lazy (lib_ref "plugins.syntax.Ascii")
 
 open Lazy
 
@@ -49,7 +48,7 @@ let interp_ascii ?loc p =
   let rec aux n p =
      if Int.equal n 0 then [] else
      let mp = p mod 2 in
-     (DAst.make ?loc @@ GRef ((if Int.equal mp 0 then glob_false else glob_true),None))
+     (DAst.make ?loc @@ GRef (lib_ref (if Int.equal mp 0 then "core.bool.false" else "core.bool.true"),None))
      :: (aux (n-1) (p/2)) in
   DAst.make ?loc @@ GApp (DAst.make ?loc @@ GRef(force glob_Ascii,None), aux 8 p)
 
@@ -67,8 +66,8 @@ let interp_ascii_string ?loc s =
 let uninterp_ascii r =
   let rec uninterp_bool_list n = function
     | [] when Int.equal n 0 -> 0
-    | r::l when is_gr r glob_true  -> 1+2*(uninterp_bool_list (n-1)  l)
-    | r::l when is_gr r glob_false -> 2*(uninterp_bool_list (n-1) l)
+    | r::l when is_gr r (lib_ref "core.bool.true")  -> 1+2*(uninterp_bool_list (n-1)  l)
+    | r::l when is_gr r (lib_ref "core.bool.false") -> 2*(uninterp_bool_list (n-1) l)
     | _ -> raise Non_closed_ascii in
   try
     let aux c = match DAst.get c with

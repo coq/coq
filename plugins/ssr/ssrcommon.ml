@@ -201,8 +201,8 @@ let mkRInd mind = DAst.make @@ GRef (IndRef mind,None)
 let mkRLambda n s t = DAst.make @@ GLambda (n, Explicit, s, t)
 
 let rec mkRnat n =
-  if n <= 0 then DAst.make @@ GRef (Coqlib.glob_O, None) else
-  mkRApp (DAst.make @@ GRef (Coqlib.glob_S, None)) [mkRnat (n - 1)]
+  if n <= 0 then DAst.make @@ GRef (Coqlib.lib_ref "num.nat.O", None) else
+  mkRApp (DAst.make @@ GRef (Coqlib.lib_ref "num.nat.S", None)) [mkRnat (n - 1)]
 
 let glob_constr ist genv = function
   | _, Some ce ->
@@ -763,7 +763,7 @@ let mkEtaApp c n imin =
 
 let mkRefl t c gl =
   let sigma = project gl in
-  let (sigma, refl) = EConstr.fresh_global (pf_env gl) sigma Coqlib.((build_coq_eq_data()).refl) in
+  let (sigma, refl) = EConstr.fresh_global (pf_env gl) sigma Coqlib.(lib_ref "core.eq.refl") in
   EConstr.mkApp (refl, [|t; c|]), { gl with sigma }
 
 let discharge_hyp (id', (id, mode)) gl =
@@ -1220,7 +1220,7 @@ let genclrtac cl cs clr =
       (fun type_err gl ->
          tclTHEN
            (tclTHEN (Proofview.V82.of_tactic (Tactics.elim_type (EConstr.of_constr
-             (UnivGen.constr_of_global @@ Coqlib.build_coq_False ())))) (old_cleartac clr))
+             (UnivGen.constr_of_global @@ Coqlib.(lib_ref "core.False.type"))))) (old_cleartac clr))
            (fun gl -> raise type_err)
            gl))
     (old_cleartac clr)
@@ -1504,7 +1504,7 @@ let tclOPTION o d =
 let tacIS_INJECTION_CASE ?ty t = begin
   tclOPTION ty (tacTYPEOF t) >>= fun ty ->
   tacREDUCE_TO_QUANTIFIED_IND ty >>= fun ((mind,_),_) ->
-  tclUNIT (GlobRef.equal (GlobRef.IndRef mind) (Coqlib.build_coq_eq ()))
+  tclUNIT (Coqlib.check_ind_ref "core.eq.type" mind)
 end
 
 let tclWITHTOP tac = Goal.enter begin fun gl ->

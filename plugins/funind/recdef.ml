@@ -49,11 +49,12 @@ open Context.Rel.Declaration
 
 (* Ugly things which should not be here *)
 
+[@@@ocaml.warning "-3"]
 let coq_constant m s = EConstr.of_constr @@ UnivGen.constr_of_global @@
-  Coqlib.coq_reference "RecursiveDefinition" m s
+  Coqlib.find_reference "RecursiveDefinition" m s
 
-let arith_Nat = ["Arith";"PeanoNat";"Nat"]
-let arith_Lt = ["Arith";"Lt"]
+let arith_Nat = ["Coq"; "Arith";"PeanoNat";"Nat"]
+let arith_Lt  = ["Coq"; "Arith";"Lt"]
 
 let pr_leconstr_rd =
   let sigma, env = Pfedit.get_current_context () in
@@ -63,6 +64,7 @@ let coq_init_constant s =
   EConstr.of_constr (
     UnivGen.constr_of_global @@
     Coqlib.gen_reference_in_modules "RecursiveDefinition" Coqlib.init_modules s)
+[@@@ocaml.warning "+3"]
 
 let find_reference sl s =
   let dp = Names.DirPath.make (List.rev_map Id.of_string sl) in
@@ -143,6 +145,7 @@ let def_id = Id.of_string "def"
 let p_id = Id.of_string "p"
 let rec_res_id = Id.of_string "rec_res";;
 let lt = function () -> (coq_init_constant "lt")
+[@@@ocaml.warning "-3"]
 let le = function () -> (Coqlib.gen_reference_in_modules "RecursiveDefinition" Coqlib.init_modules "le")
 let ex = function () -> (coq_init_constant "ex")
 let nat = function () -> (coq_init_constant "nat")
@@ -163,7 +166,6 @@ let coq_S = function () -> (coq_init_constant "S")
 let lt_n_O = function () -> (coq_constant arith_Nat "nlt_0_r")
 let max_ref = function () -> (find_reference ["Recdef"] "max")
 let max_constr = function () -> EConstr.of_constr (constr_of_global (delayed_force max_ref))
-let coq_conj = function () -> find_reference Coqlib.logic_module_name "conj"
 
 let f_S t = mkApp(delayed_force coq_S, [|t|]);;
 
@@ -1241,8 +1243,8 @@ let get_current_subgoals_types () =
 
 exception EmptySubgoals
 let build_and_l sigma l =
-  let and_constr =  UnivGen.constr_of_global @@ Coqlib.build_coq_and () in
-  let conj_constr = coq_conj () in
+  let and_constr =  UnivGen.constr_of_global @@ Coqlib.lib_ref "core.and.type" in
+  let conj_constr = Coqlib.build_coq_conj () in
   let mk_and p1 p2 =
     mkApp(EConstr.of_constr and_constr,[|p1;p2|]) in
   let rec is_well_founded t = 

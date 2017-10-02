@@ -347,6 +347,8 @@ Proof.
   apply eq_dec.
 Qed.
 
+Register inj_pair2_eq_dec as core.eqdep_dec.inj_pair2.
+
   (** Examples of short direct proofs of unicity of reflexivity proofs
       on specific domains *)
 

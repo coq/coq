@@ -319,6 +319,9 @@ Arguments F_empty [A].
 Arguments F_push [A] a S _.
 Arguments In [A] x S F.
 
+Register empty as plugins.rtauto.empty.
+Register push as plugins.rtauto.push.
+
 Section Map.
 
 Variables A B:Set.

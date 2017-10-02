@@ -609,6 +609,8 @@ Proof.
  destruct n. trivial. simpl. apply Pos2Z.inj_succ.
 Qed.
 
+Register inj_succ as num.Nat2Z.inj_succ.
+
 (** [Z.of_N] produce non-negative integers *)
 
 Lemma is_nonneg n : 0 <= Z.of_nat n.
@@ -676,10 +678,14 @@ Proof.
  now rewrite <- !nat_N_Z, Nat2N.inj_add, N2Z.inj_add.
 Qed.
 
+Register inj_add as num.Nat2Z.inj_add.
+
 Lemma inj_mul n m : Z.of_nat (n*m) = Z.of_nat n * Z.of_nat m.
 Proof.
  now rewrite <- !nat_N_Z, Nat2N.inj_mul, N2Z.inj_mul.
 Qed.
+
+Register inj_mul as num.Nat2Z.inj_mul.
 
 Lemma inj_sub_max n m : Z.of_nat (n-m) = Z.max 0 (Z.of_nat n - Z.of_nat m).
 Proof.
@@ -691,6 +697,8 @@ Proof.
  rewrite nat_compare_le, Nat2N.inj_compare. intros.
  now rewrite <- !nat_N_Z, Nat2N.inj_sub, N2Z.inj_sub.
 Qed.
+
+Register inj_sub as num.Nat2Z.inj_sub.
 
 Lemma inj_pred_max n : Z.of_nat (Nat.pred n) = Z.max 0 (Z.pred (Z.of_nat n)).
 Proof.
@@ -951,6 +959,14 @@ Definition inj_lt n m := proj1 (Nat2Z.inj_lt n m).
 Definition inj_ge n m := proj1 (Nat2Z.inj_ge n m).
 Definition inj_gt n m := proj1 (Nat2Z.inj_gt n m).
 
+Register neq as plugins.omega.neq.
+Register inj_eq as plugins.omega.inj_eq.
+Register inj_neq as plugins.omega.inj_neq.
+Register inj_le as plugins.omega.inj_le.
+Register inj_lt as plugins.omega.inj_lt.
+Register inj_ge as plugins.omega.inj_ge.
+Register inj_gt as plugins.omega.inj_gt.
+
 (** For the others, a Notation is fine *)
 
 Notation inj_0 := Nat2Z.inj_0 (only parsing).
@@ -1017,3 +1033,5 @@ Theorem inj_minus2 : forall n m:nat, (m > n)%nat -> Z.of_nat (n - m) = 0.
 Proof.
  intros. rewrite not_le_minus_0; auto with arith.
 Qed.
+
+Register inj_minus2 as plugins.omega.inj_minus2.

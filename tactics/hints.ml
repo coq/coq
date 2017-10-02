@@ -1292,13 +1292,13 @@ let project_hint ~poly pri l2r r =
   let sigma, c = Evd.fresh_global env sigma gr in
   let t = Retyping.get_type_of env sigma c in
   let t =
-    Tacred.reduce_to_quantified_ref env sigma (Lazy.force coq_iff_ref) t in
+    Tacred.reduce_to_quantified_ref env sigma (lib_ref "core.iff.type") t in
   let sign,ccl = decompose_prod_assum sigma t in
   let (a,b) = match snd (decompose_app sigma ccl) with
     | [a;b] -> (a,b)
     | _ -> assert false in
   let p =
-    if l2r then build_coq_iff_left_proj () else build_coq_iff_right_proj () in
+    if l2r then lib_ref "core.iff.proj1" else lib_ref "core.iff.proj2" in
   let sigma, p = Evd.fresh_global env sigma p in
   let c = Reductionops.whd_beta sigma (mkApp (c, Context.Rel.to_extended_vect mkRel 0 sign)) in
   let c = it_mkLambda_or_LetIn

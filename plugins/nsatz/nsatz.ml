@@ -12,7 +12,6 @@ open CErrors
 open Util
 open Constr
 open Tactics
-open Coqlib
 
 open Num
 open Utile
@@ -136,36 +135,32 @@ let mul = function
   | (Const n,q) when eq_num n num_1 -> q
   | (p,q) -> Mul(p,q)
 
-let gen_constant msg path s = UnivGen.constr_of_global @@
-  coq_reference msg path s
+let gen_constant n = lazy (UnivGen.constr_of_global (Coqlib.lib_ref n))
 
-let tpexpr  = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PExpr")
-let ttconst = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEc")
-let ttvar = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEX")
-let ttadd = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEadd")
-let ttsub = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEsub")
-let ttmul = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEmul")
-let ttopp = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEopp")
-let ttpow = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEpow")
+let tpexpr  = gen_constant "plugins.setoid_ring.pexpr"
+let ttconst = gen_constant "plugins.setoid_ring.const"
+let ttvar = gen_constant "plugins.setoid_ring.var"
+let ttadd = gen_constant "plugins.setoid_ring.add"
+let ttsub = gen_constant "plugins.setoid_ring.sub"
+let ttmul = gen_constant "plugins.setoid_ring.mul"
+let ttopp = gen_constant "plugins.setoid_ring.opp"
+let ttpow = gen_constant "plugins.setoid_ring.pow"
 
-let datatypes = ["Init";"Datatypes"]
-let binnums = ["Numbers";"BinNums"]
+let tlist = gen_constant "core.list.type"
+let lnil = gen_constant "core.list.nil"
+let lcons = gen_constant "core.list.cons"
 
-let tlist = lazy (gen_constant "CC" datatypes "list")
-let lnil = lazy (gen_constant "CC" datatypes "nil")
-let lcons = lazy (gen_constant "CC" datatypes "cons")
+let tz = gen_constant "num.Z.type"
+let z0 = gen_constant "num.Z.Z0"
+let zpos = gen_constant "num.Z.Zpos"
+let zneg = gen_constant "num.Z.Zneg"
 
-let tz = lazy (gen_constant "CC" binnums "Z")
-let z0 = lazy (gen_constant "CC" binnums "Z0")
-let zpos = lazy (gen_constant "CC" binnums "Zpos")
-let zneg = lazy(gen_constant "CC" binnums "Zneg")
+let pxI = gen_constant "num.pos.xI"
+let pxO = gen_constant "num.pos.xO"
+let pxH = gen_constant "num.pos.xH"
 
-let pxI = lazy(gen_constant "CC" binnums "xI")
-let pxO = lazy(gen_constant "CC" binnums "xO")
-let pxH = lazy(gen_constant "CC" binnums "xH")
-
-let nN0 = lazy (gen_constant "CC" binnums "N0")
-let nNpos = lazy(gen_constant "CC" binnums "Npos")
+let nN0 = gen_constant "num.N.N0"
+let nNpos = gen_constant "num.N.Npos"
 
 let mkt_app name l =  mkApp (Lazy.force name, Array.of_list l)
 
@@ -545,7 +540,7 @@ let nsatz lpol =
 
 let return_term t =
   let a =
-    mkApp(gen_constant "CC" ["Init";"Logic"] "eq_refl",[|tllp ();t|]) in
+    mkApp (UnivGen.constr_of_global @@ Coqlib.lib_ref "core.eq.refl",[|tllp ();t|]) in
   let a = EConstr.of_constr a in
   generalize [a]
 
