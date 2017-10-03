@@ -171,6 +171,19 @@ Proof.
  auto with qarith.
 Qed.
 
+Lemma Qeq_bool_sym x y: Qeq_bool x y = Qeq_bool y x.
+Proof.
+  case_eq (Qeq_bool x y); intros H_eq_xy.
+  - unfold Qeq_bool in *.
+    rewrite <- Zeq_is_eq_bool in H_eq_xy.
+    rewrite H_eq_xy; symmetry.
+    rewrite <- Zeq_is_eq_bool; auto.
+  - apply Zeq_bool_neq in H_eq_xy.
+    case_eq (Qeq_bool y x); intros H_eq_yx.
+    + apply Zeq_is_eq_bool in H_eq_yx; congruence.
+    + auto.
+Qed.
+
 Hint Resolve Qnot_eq_sym : qarith.
 
 (** * Addition, multiplication and opposite *)
