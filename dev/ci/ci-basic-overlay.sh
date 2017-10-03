@@ -127,5 +127,5 @@
 ########################################################################
 # Bignums
 ########################################################################
-: ${bignums_CI_BRANCH:=master}
+: ${bignums_CI_BRANCH:=v8.7}
 : ${bignums_CI_GITURL:=https://github.com/coq/bignums.git}
