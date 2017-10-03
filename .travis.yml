@@ -147,7 +147,8 @@ matrix:
       - brew update --debug --verbose
       - brew install opam gnu-time
 
-    - os: osx
+    - if: NOT type IS pull_request
+      os: osx
       osx_image: xcode8.3
       env:
       - TEST_TARGET=""
