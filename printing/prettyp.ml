@@ -309,7 +309,6 @@ type logical_name =
   | Dir of global_dir_reference
   | Syntactic of kernel_name
   | ModuleType of module_path
-  | Tactic of Nametab.ltac_constant
   | Undefined of qualid
 
 let locate_any_name ref =
@@ -344,8 +343,6 @@ let pr_located_qualid = function
       str s ++ spc () ++ pr_dirpath dir
   | ModuleType mp ->
       str "Module Type" ++ spc () ++ pr_path (Nametab.path_of_modtype mp)
-  | Tactic kn ->
-      str "Ltac" ++ spc () ++ pr_path (Nametab.path_of_tactic kn)
   | Undefined qid ->
       pr_qualid qid ++ spc () ++ str "not a defined object."
 
@@ -383,10 +380,6 @@ let locate_term qid =
   in
   List.map expand (Nametab.locate_extended_all qid)
 
-let locate_tactic qid =
-  let all = Nametab.locate_extended_all_tactic qid in
-  List.map (fun kn -> (Tactic kn, Nametab.shortest_qualid_of_tactic kn)) all
-
 let locate_module qid =
   let all = Nametab.locate_extended_all_dir qid in
   let map dir = match dir with
@@ -411,7 +404,6 @@ let locate_modtype qid =
 let print_located_qualid name flags ref =
   let (loc,qid) = qualid_of_reference ref in
   let located = [] in
-  let located = if List.mem `LTAC flags then locate_tactic qid @ located else located in
   let located = if List.mem `MODTYPE flags then locate_modtype qid @ located else located in
   let located = if List.mem `MODULE flags then locate_module qid @ located else located in
   let located = if List.mem `TERM flags then locate_term qid @ located else located in
@@ -765,7 +757,6 @@ let print_any_name = function
   | Dir (DirModule(dirpath,(mp,_))) -> print_module (printable_body dirpath) mp
   | Dir _ -> mt ()
   | ModuleType mp -> print_modtype mp
-  | Tactic kn -> mt () (** TODO *)
   | Undefined qid ->
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
     let dir,str = repr_qualid qid in
@@ -822,7 +813,7 @@ let print_about_any ?loc k =
       v 0 (
       print_syntactic_def kn ++ fnl () ++
       hov 0 (str "Expands to: " ++ pr_located_qualid k))
-  | Dir _ | ModuleType _ | Tactic _ | Undefined _ ->
+  | Dir _ | ModuleType _ | Undefined _ ->
       hov 0 (pr_located_qualid k)
 
 let print_about = function

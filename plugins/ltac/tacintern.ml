@@ -118,7 +118,7 @@ let intern_constr_reference strict ist = function
 
 let intern_isolated_global_tactic_reference r =
   let (loc,qid) = qualid_of_reference r in
-  TacCall (Loc.tag ?loc (ArgArg (loc,locate_tactic qid),[]))
+  TacCall (Loc.tag ?loc (ArgArg (loc,Tacenv.locate_tactic qid),[]))
 
 let intern_isolated_tactic_reference strict ist r =
   (* An ltac reference *)
@@ -137,7 +137,7 @@ let intern_isolated_tactic_reference strict ist r =
 
 let intern_applied_global_tactic_reference r =
   let (loc,qid) = qualid_of_reference r in
-  ArgArg (loc,locate_tactic qid)
+  ArgArg (loc,Tacenv.locate_tactic qid)
 
 let intern_applied_tactic_reference ist r =
   (* An ltac reference *)
@@ -722,7 +722,7 @@ let pr_ltac_fun_arg n = spc () ++ Name.print n
 
 let print_ltac id =
  try
-  let kn = Nametab.locate_tactic id in
+  let kn = Tacenv.locate_tactic id in
   let entries = Tacenv.ltac_entries () in
   let tac = KNmap.find kn entries in
   let filter mp =

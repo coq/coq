@@ -409,7 +409,7 @@ let create_ltac_quotation name cast (e, l) =
 
 type tacdef_kind =
   | NewTac of Id.t
-  | UpdateTac of Nametab.ltac_constant
+  | UpdateTac of Tacexpr.ltac_constant
 
 let is_defined_tac kn =
   try ignore (Tacenv.interp_ltac kn); true with Not_found -> false
@@ -441,7 +441,7 @@ let register_ltac local tacl =
     | Tacexpr.TacticRedefinition (ident, body) ->
         let loc = loc_of_reference ident in
         let kn =
-          try Nametab.locate_tactic (snd (qualid_of_reference ident))
+          try Tacenv.locate_tactic (snd (qualid_of_reference ident))
           with Not_found ->
             CErrors.user_err ?loc 
                        (str "There is no Ltac named " ++ pr_reference ident ++ str ".")
@@ -464,7 +464,7 @@ let register_ltac local tacl =
   let defs () =
     (** Register locally the tactic to handle recursivity. This function affects
         the whole environment, so that we transactify it afterwards. *)
-    let iter_rec (sp, kn) = Nametab.push_tactic (Nametab.Until 1) sp kn in
+    let iter_rec (sp, kn) = Tacenv.push_tactic (Nametab.Until 1) sp kn in
     let () = List.iter iter_rec recvars in
     List.map map rfun
   in
@@ -475,7 +475,7 @@ let register_ltac local tacl =
     Flags.if_verbose Feedback.msg_info (Id.print id ++ str " is defined")
   | UpdateTac kn ->
     Tacenv.redefine_ltac local kn tac;
-    let name = Nametab.shortest_qualid_of_tactic kn in
+    let name = Tacenv.shortest_qualid_of_tactic kn in
     Flags.if_verbose Feedback.msg_info (Libnames.pr_qualid name ++ str " is redefined")
   in
   List.iter iter defs
@@ -488,7 +488,7 @@ let print_ltacs () =
   let entries = List.sort sort entries in
   let map (kn, entry) =
     let qid =
-      try Some (Nametab.shortest_qualid_of_tactic kn)
+      try Some (Tacenv.shortest_qualid_of_tactic kn)
       with Not_found -> None
     in
     match qid with

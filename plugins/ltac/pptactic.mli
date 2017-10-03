@@ -93,7 +93,7 @@ val pr_alias_key : Names.KerName.t -> Pp.t
 val pr_alias : (Val.t -> Pp.t) ->
   int -> Names.KerName.t -> Val.t list -> Pp.t
 
-val pr_ltac_constant : Nametab.ltac_constant -> Pp.t
+val pr_ltac_constant : ltac_constant -> Pp.t
 
 val pr_raw_tactic : raw_tactic_expr -> Pp.t
 

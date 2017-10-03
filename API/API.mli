@@ -1795,6 +1795,7 @@ sig
   val pr_path : full_path -> Pp.t
   val make_path : Names.DirPath.t -> Names.Id.t -> full_path
   val eq_full_path : full_path -> full_path -> bool
+  val repr_path : full_path -> Names.DirPath.t * Names.Id.t
   val dirpath : full_path -> Names.DirPath.t
   val path_of_string : string -> full_path
 
@@ -1935,24 +1936,19 @@ module Nametab :
 sig
   exception GlobalizationError of Libnames.qualid
 
-  type ltac_constant = Names.KerName.t
-
   val global : Libnames.reference -> Globnames.global_reference
   val global_of_path : Libnames.full_path -> Globnames.global_reference
   val shortest_qualid_of_global : Names.Id.Set.t -> Globnames.global_reference -> Libnames.qualid
   val path_of_global : Globnames.global_reference -> Libnames.full_path
   val locate_extended : Libnames.qualid -> Globnames.extended_global_reference
   val full_name_module : Libnames.qualid -> Names.DirPath.t
-  val locate_tactic : Libnames.qualid -> Names.KerName.t
   val pr_global_env : Names.Id.Set.t -> Globnames.global_reference -> Pp.t
-  val shortest_qualid_of_tactic : Names.KerName.t -> Libnames.qualid
   val basename_of_global : Globnames.global_reference -> Names.Id.t
 
   type visibility =
     | Until of int
     | Exactly of int
 
-  val push_tactic : visibility -> Libnames.full_path -> Names.KerName.t -> unit
   val error_global_not_found : ?loc:Loc.t -> Libnames.qualid -> 'a
   val shortest_qualid_of_module : Names.ModPath.t -> Libnames.qualid
   val dirpath_of_module : Names.ModPath.t -> Names.DirPath.t
@@ -1960,6 +1956,40 @@ sig
   val dirpath_of_global : Globnames.global_reference -> Names.DirPath.t
   val locate : Libnames.qualid -> Globnames.global_reference
   val locate_constant : Libnames.qualid -> Names.Constant.t
+
+  (** NOT FOR PUBLIC USE YET. Plugin writers, please do not rely on this API. *)
+
+  module type UserName = sig
+    type t
+    val equal : t -> t -> bool
+    val to_string : t -> string
+    val repr : t ->  Names.Id.t * Names.Id.t list
+  end
+
+  module type EqualityType =
+  sig
+    type t
+    val equal : t -> t -> bool
+  end
+
+  module type NAMETREE = sig
+    type elt
+    type t
+    type user_name
+
+    val empty : t
+    val push : visibility -> user_name -> elt -> t -> t
+    val locate : Libnames.qualid -> t -> elt
+    val find : user_name -> t -> elt
+    val exists : user_name -> t -> bool
+    val user_name : Libnames.qualid -> t -> user_name
+    val shortest_qualid : Names.Id.Set.t -> user_name -> t -> Libnames.qualid
+    val find_prefixes : Libnames.qualid -> t -> elt list
+  end
+
+  module Make (U : UserName) (E : EqualityType) :
+    NAMETREE with type user_name = U.t and type elt = E.t
+
 end
 
 module Global :

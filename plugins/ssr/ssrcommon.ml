@@ -814,8 +814,8 @@ let ssr_n_tac seed n gl =
   let name = if n = -1 then seed else ("ssr" ^ seed ^ string_of_int n) in
   let fail msg = CErrors.user_err (Pp.str msg) in
   let tacname = 
-    try Nametab.locate_tactic (Libnames.qualid_of_ident (Id.of_string name))
-    with Not_found -> try Nametab.locate_tactic (ssrqid name)
+    try Tacenv.locate_tactic (Libnames.qualid_of_ident (Id.of_string name))
+    with Not_found -> try Tacenv.locate_tactic (ssrqid name)
     with Not_found ->
       if n = -1 then fail "The ssreflect library was not loaded"
       else fail ("The tactic "^name^" was not found") in
