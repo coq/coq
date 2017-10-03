@@ -274,7 +274,7 @@ let generate_conf oc project args  =
 ;;
 
 let ensure_root_dir
-  ({ ml_includes; r_includes;
+  ({ ml_includes; r_includes; q_includes;
      v_files; ml_files; mli_files; ml4_files;
      mllib_files; mlpack_files } as project)
 =
@@ -283,6 +283,7 @@ let ensure_root_dir
   let not_tops = List.for_all (fun s -> s <> Filename.basename s) in
   if exists (fun { canonical_path = x } -> x = here) ml_includes
   || exists (fun ({ canonical_path = x },_) -> is_prefix x here) r_includes
+  || exists (fun ({ canonical_path = x },_) -> is_prefix x here) q_includes
   || (not_tops v_files &&
       not_tops mli_files && not_tops ml4_files && not_tops ml_files &&
       not_tops mllib_files && not_tops mlpack_files)
