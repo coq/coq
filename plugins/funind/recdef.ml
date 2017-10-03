@@ -1288,8 +1288,8 @@ let build_new_goal_type () =
 let is_opaque_constant c =
   let cb = Global.lookup_constant c in
   match cb.Declarations.const_body with
-    | Declarations.OpaqueDef _ -> Vernacexpr.Opaque None
-    | Declarations.Undef _ -> Vernacexpr.Opaque None
+    | Declarations.OpaqueDef _ -> Vernacexpr.Opaque
+    | Declarations.Undef _ -> Vernacexpr.Opaque
     | Declarations.Def _ -> Vernacexpr.Transparent
 
 let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decompose_and_tac,nb_goal)   =

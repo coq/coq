@@ -1106,19 +1106,14 @@ Fail all:let n:= numgoals in guard n=2.
 Reset Initial.
 \end{coq_eval}
 
-\subsubsection[Proving a subgoal as a separate lemma]{Proving a subgoal as a separate lemma\tacindex{abstract}\tacindex{transparent\_abstract}\comindex{Qed exporting}
+\subsubsection[Proving a subgoal as a separate lemma]{Proving a subgoal as a separate lemma\tacindex{abstract}\tacindex{transparent\_abstract}
 \index{Tacticals!abstract@{\tt abstract}}\index{Tacticals!transparent\_abstract@{\tt transparent\_abstract}}}
 
 From the outside ``\texttt{abstract \tacexpr}'' is the same as
 {\tt solve \tacexpr}. Internally it saves an auxiliary lemma called
 {\ident}\texttt{\_subproof}\textit{n} where {\ident} is the name of the
 current goal and \textit{n} is chosen so that this is a fresh name.
-Such auxiliary lemma is inlined in the final proof term
-unless the proof is ended with ``\texttt{Qed exporting}''.  In such
-case the lemma is preserved.  The syntax
-``\texttt{Qed exporting }\ident$_1$\texttt{, ..., }\ident$_n$''
-is also supported.  In such case the system checks that the names given by the
-user actually exist when the proof is ended.
+Such an auxiliary lemma is inlined in the final proof term.
 
 This tactical is useful with tactics such as \texttt{omega} or
 \texttt{discriminate} that generate huge proof terms. With that tool

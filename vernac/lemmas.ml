@@ -309,12 +309,6 @@ let get_proof proof do_guard hook opacity =
   in
   id,{const with const_entry_opaque = opacity},univs,do_guard,persistence,hook
 
-let check_exist =
-  List.iter (fun (loc,id) ->
-    if not (Nametab.exists_cci (Lib.make_path id)) then
-        user_err ?loc  (pr_id id ++ str " does not exist.")
-  )
-
 let universe_proof_terminator compute_guard hook =
   let open Proof_global in
   make_terminator begin function
@@ -322,17 +316,16 @@ let universe_proof_terminator compute_guard hook =
       admit (id,k,pe) pl (hook (Some ctx)) ();
       Feedback.feedback Feedback.AddedAxiom
   | Proved (opaque,idopt,proof) ->
-      let is_opaque, export_seff, exports = match opaque with
-        | Vernacexpr.Transparent -> false, true, []
-        | Vernacexpr.Opaque None -> true, false, []
-        | Vernacexpr.Opaque (Some l) -> true, true, l in
+      let is_opaque, export_seff = match opaque with
+        | Vernacexpr.Transparent -> false, true
+        | Vernacexpr.Opaque      -> true, false
+      in
       let proof = get_proof proof compute_guard
 	(hook (Some (fst proof.Proof_global.universes))) is_opaque in
       begin match idopt with
       | None -> save_named ~export_seff proof
       | Some (_,id) -> save_anonymous ~export_seff proof id
-      end;
-      check_exist exports
+      end
   end
 
 let standard_proof_terminator compute_guard hook =
