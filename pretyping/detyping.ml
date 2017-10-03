@@ -452,7 +452,7 @@ let rec detype flags avoid env sigma t = CAst.make @@
           (* Using a dash to be unparsable *)
 	  GEvar (Id.of_string_soft "CONTEXT-HOLE", [])
         else
-	  GEvar (Id.of_string_soft ("INTERNAL#" ^ string_of_int n), [])
+	  GEvar (Id.of_string_soft ("M" ^ string_of_int n), [])
     | Var id ->
 	(try let _ = Global.lookup_named id in GRef (VarRef id, None)
 	 with Not_found -> GVar id)
