@@ -63,9 +63,6 @@ env:
 
 matrix:
 
-  allow_failures:
-  - env: TEST_TARGET="ci-geocoq TIMED=1"
-
   include:
     # Full Coq test-suite with two compilers
     - env:
