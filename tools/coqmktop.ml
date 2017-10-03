@@ -252,6 +252,17 @@ let create_tmp_main_file modules =
   with reraise ->
     clean main_name; raise reraise
 
+(* TODO: remove once OCaml 4.04 is adopted *)
+let split_on_char sep s =
+  let r = ref [] in
+  let j = ref (String.length s) in
+  for i = String.length s - 1 downto 0 do
+      if s.[i] = sep then begin
+      r := String.sub s (i + 1) (!j - i - 1) :: !r;
+      j := i
+    end
+  done;
+  String.sub s 0 !j :: !r
 
 (** {6 Main } *)
 
@@ -272,7 +283,7 @@ let main () =
     (* - We add topstart.cmo explicitly because we shunted ocamlmktop wrapper.
        - With the coq .cma, we MUST use the -linkall option. *)
     let coq_camlflags =
-      List.filter ((<>) "") (String.split_on_char ' ' Coq_config.caml_flags) in
+      List.filter ((<>) "") (split_on_char ' ' Coq_config.caml_flags) in
     let args =
       coq_camlflags @ "-linkall" :: "-w" :: "-31" :: flags @ copts @ options @
       (std_includes basedir) @ tolink @ [ main_file ] @ topstart
