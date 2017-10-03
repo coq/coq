@@ -54,6 +54,8 @@ type pp_tactic = {
   pptac_prods : grammar_terminals;
 }
 
+val pr_goal_selector : toplevel:bool -> goal_selector -> Pp.t
+
 val declare_notation_tactic_pprule : KerName.t -> pp_tactic -> unit
 
 val pr_with_occurrences :

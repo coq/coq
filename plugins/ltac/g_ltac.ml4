@@ -389,16 +389,7 @@ let vernac_solve n info tcom b =
     p,status) in
     if not status then Feedback.feedback Feedback.AddedAxiom
 
-let pr_range_selector (i, j) =
-  if Int.equal i j then int i
-  else int i ++ str "-" ++ int j
-
-let pr_ltac_selector = function
-| SelectNth i -> int i ++ str ":"
-| SelectList l -> str "[" ++ prlist_with_sep (fun () -> str ", ") pr_range_selector l ++
-    str "]" ++ str ":"
-| SelectId id -> str "[" ++ Id.print id ++ str "]" ++ str ":"
-| SelectAll -> str "all" ++ str ":"
+let pr_ltac_selector s = Pptactic.pr_goal_selector ~toplevel:true s
 
 VERNAC ARGUMENT EXTEND ltac_selector PRINTED BY pr_ltac_selector
 | [ toplevel_selector(s) ] -> [ s ]
