@@ -131,7 +131,7 @@ let test_plural_form_types loc kwd = function
 
 let fresh_var env c =
   Namegen.next_ident_away (Id.of_string "pat")
-    (env @ Id.Set.elements (Topconstr.free_vars_of_constr_expr c))
+    (List.fold_left (fun accu id -> Id.Set.add id accu) (Topconstr.free_vars_of_constr_expr c) env)
 
 let _ = Hook.set Constrexpr_ops.fresh_var_hook fresh_var
 

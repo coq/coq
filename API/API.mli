@@ -2751,15 +2751,15 @@ sig
       the whole identifier except for the {i subscript}.
 
       E.g. if we take [foo42], then [42] is the {i subscript}, and [foo] is the root. *)
-  val next_ident_away : Names.Id.t -> Names.Id.t list -> Names.Id.t
+  val next_ident_away : Names.Id.t -> Names.Id.Set.t -> Names.Id.t
 
   val hdchar : Environ.env -> Evd.evar_map -> EConstr.types -> string
   val id_of_name_using_hdchar : Environ.env -> Evd.evar_map -> EConstr.types -> Names.Name.t -> Names.Id.t
-  val next_ident_away_in_goal : Names.Id.t -> Names.Id.t list -> Names.Id.t
+  val next_ident_away_in_goal : Names.Id.t -> Names.Id.Set.t -> Names.Id.t
   val default_dependent_ident : Names.Id.t
-  val next_global_ident_away : Names.Id.t -> Names.Id.t list -> Names.Id.t
+  val next_global_ident_away : Names.Id.t -> Names.Id.Set.t -> Names.Id.t
   val rename_bound_vars_as_displayed :
-    Evd.evar_map -> Names.Id.t list -> Names.Name.t list -> EConstr.types -> EConstr.types
+    Evd.evar_map -> Names.Id.Set.t -> Names.Name.t list -> EConstr.types -> EConstr.types
 end
 
 module Termops :
@@ -4011,7 +4011,7 @@ sig
   | Later : [ `thunk ] delay
   val print_universes : bool ref
   val print_evar_arguments : bool ref
-  val detype : 'a delay -> ?lax:bool -> bool -> Names.Id.t list -> Environ.env -> Evd.evar_map -> EConstr.constr -> 'a Glob_term.glob_constr_g
+  val detype : 'a delay -> ?lax:bool -> bool -> Names.Id.Set.t -> Environ.env -> Evd.evar_map -> EConstr.constr -> 'a Glob_term.glob_constr_g
   val subst_glob_constr : Mod_subst.substitution -> Glob_term.glob_constr -> Glob_term.glob_constr
   val set_detype_anonymous : (?loc:Loc.t -> int -> Names.Id.t) -> unit
 end
@@ -4628,6 +4628,7 @@ sig
 
     val pf_env : 'a Proofview.Goal.t -> Environ.env
     val pf_ids_of_hyps : 'a Proofview.Goal.t -> Names.Id.t list
+    val pf_ids_set_of_hyps : 'a Proofview.Goal.t -> Names.Id.Set.t
     val pf_concl : 'a Proofview.Goal.t -> EConstr.types
     val pf_get_new_id  : Names.Id.t -> 'a Proofview.Goal.t -> Names.Id.t
     val pf_get_hyp_typ : Names.Id.t -> 'a Proofview.Goal.t -> EConstr.types
@@ -5140,7 +5141,7 @@ sig
   val convert_concl : ?check:bool -> EConstr.types -> Constr.cast_kind -> unit tactic
   val intro_using : Names.Id.t -> unit tactic
   val intro : unit tactic
-  val fresh_id_in_env : Names.Id.t list -> Names.Id.t -> Environ.env -> Names.Id.t
+  val fresh_id_in_env : Names.Id.Set.t -> Names.Id.t -> Environ.env -> Names.Id.t
   val is_quantified_hypothesis : Names.Id.t -> 'a Goal.t -> bool
   val tclABSTRACT : ?opaque:bool -> Names.Id.t option -> unit Proofview.tactic -> unit Proofview.tactic
   val intro_patterns : bool -> Tactypes.intro_patterns -> unit Proofview.tactic
@@ -5240,7 +5241,7 @@ sig
   val eapply_with_bindings  : EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
   val assert_by  : Names.Name.t -> EConstr.types -> unit Proofview.tactic ->
                    unit Proofview.tactic
-  val intro_avoiding : Names.Id.t list -> unit Proofview.tactic
+  val intro_avoiding : Names.Id.Set.t -> unit Proofview.tactic
   val pose_proof : Names.Name.t -> EConstr.constr -> unit Proofview.tactic
   val pattern_option :  (Locus.occurrences * EConstr.constr) list -> Locus.goal_location -> unit Proofview.tactic
   val compute_elim_sig : Evd.evar_map -> ?elimc:EConstr.constr Misctypes.with_bindings -> EConstr.types -> elim_scheme

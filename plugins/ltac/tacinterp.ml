@@ -139,7 +139,7 @@ let name_vfun appl vle =
 
 module TacStore = Geninterp.TacStore
 
-let f_avoid_ids : Id.t list TacStore.field = TacStore.field ()
+let f_avoid_ids : Id.Set.t TacStore.field = TacStore.field ()
 (* ids inherited from the call context (needed to get fresh ids) *)
 let f_debug : debug_info TacStore.field = TacStore.field ()
 let f_trace : ltac_trace TacStore.field = TacStore.field ()
@@ -501,29 +501,29 @@ let extract_ltac_constr_values ist env =
     could barely be defined as a feature... *)
 
 (* Extract the identifier list from lfun: join all branches (what to do else?)*)
-let rec intropattern_ids (loc,pat) = match pat with
-  | IntroNaming (IntroIdentifier id) -> [id]
+let rec intropattern_ids accu (loc,pat) = match pat with
+  | IntroNaming (IntroIdentifier id) -> Id.Set.add id accu
   | IntroAction (IntroOrAndPattern (IntroAndPattern l)) ->
-      List.flatten (List.map intropattern_ids l)
+      List.fold_left intropattern_ids accu l
   | IntroAction (IntroOrAndPattern (IntroOrPattern ll)) ->
-      List.flatten (List.map intropattern_ids (List.flatten ll))
+      List.fold_left intropattern_ids accu (List.flatten ll)
   | IntroAction (IntroInjection l) ->
-      List.flatten (List.map intropattern_ids l)
-  | IntroAction (IntroApplyOn ((_,c),pat)) -> intropattern_ids pat
+      List.fold_left intropattern_ids accu l
+  | IntroAction (IntroApplyOn ((_,c),pat)) -> intropattern_ids accu pat
   | IntroNaming (IntroAnonymous | IntroFresh _)
   | IntroAction (IntroWildcard | IntroRewrite _)
-  | IntroForthcoming _ -> []
+  | IntroForthcoming _ -> accu
 
-let extract_ids ids lfun =
+let extract_ids ids lfun accu =
   let fold id v accu =
     let v = Value.normalize v in
     if has_type v (topwit wit_intro_pattern) then
       let (_, ipat) = out_gen (topwit wit_intro_pattern) v in
       if Id.List.mem id ids then accu
-      else accu @ intropattern_ids (Loc.tag ipat)
+      else intropattern_ids accu (Loc.tag ipat)
     else accu
   in
-  Id.Map.fold fold lfun []
+  Id.Map.fold fold lfun accu
 
 let default_fresh_id = Id.of_string "H"
 
@@ -534,10 +534,10 @@ let interp_fresh_id ist env sigma l =
     with Not_found -> id in
   let ids = List.map_filter (function ArgVar (_, id) -> Some id | _ -> None) l in
   let avoid = match TacStore.get ist.extra f_avoid_ids with
-  | None -> []
+  | None -> Id.Set.empty
   | Some l -> l
   in
-  let avoid = (extract_ids ids ist.lfun) @ avoid in
+  let avoid = extract_ids ids ist.lfun avoid in
   let id =
     if List.is_empty l then default_fresh_id
     else
@@ -1303,7 +1303,7 @@ and interp_ltac_reference ?loc' mustbetac ist r : Val.t Ftactic.t =
       if mustbetac then Ftactic.return (coerce_to_tactic loc id v) else Ftactic.return v
       end
   | ArgArg (loc,r) ->
-      let ids = extract_ids [] ist.lfun in
+      let ids = extract_ids [] ist.lfun Id.Set.empty in
       let loc_info = (Option.default loc loc',LtacNameCall r) in
       let extra = TacStore.set ist.extra f_avoid_ids ids in
       push_trace loc_info ist >>= fun trace ->
@@ -1956,7 +1956,7 @@ let interp_tac_gen lfun avoid_ids debug t =
     (intern_pure_tactic { (Genintern.empty_glob_sign env) with ltacvars } t)
   end
 
-let interp t = interp_tac_gen Id.Map.empty [] (get_debug()) t
+let interp t = interp_tac_gen Id.Map.empty Id.Set.empty (get_debug()) t
 
 (* Used to hide interpretation for pretty-print, now just launch tactics *)
 (* [global] means that [t] should be internalized outside of goals. *)

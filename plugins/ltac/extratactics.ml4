@@ -665,7 +665,7 @@ let hResolve id c occ t =
   let sigma = Proofview.Goal.sigma gl in
   let env = Termops.clear_named_body id (Proofview.Goal.env gl) in
   let concl = Proofview.Goal.concl gl in
-  let env_ids = Termops.ids_of_context env in
+  let env_ids = Termops.vars_of_env env in
   let c_raw = Detyping.detype Detyping.Now true env_ids env sigma c in
   let t_raw = Detyping.detype Detyping.Now true env_ids env sigma t in
   let rec resolve_hole t_hole =
@@ -764,7 +764,7 @@ let case_eq_intros_rewrite x =
       mkCaseEq x;
     Proofview.Goal.enter begin fun gl ->
       let concl = Proofview.Goal.concl gl in
-      let hyps = Tacmach.New.pf_ids_of_hyps gl in
+      let hyps = Tacmach.New.pf_ids_set_of_hyps gl in
       let n' = nb_prod (Tacmach.New.project gl) concl in
       let h = fresh_id_in_env hyps (Id.of_string "heq") (Proofview.Goal.env gl)  in
       Tacticals.New.tclTHENLIST [

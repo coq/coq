@@ -255,7 +255,7 @@ let compute_implicits_gen strict strongly_strict revpat contextual all env t =
   in
   match kind_of_term (whd_all env t) with
     | Prod (na,a,b) ->
-	let na',avoid = find_displayed_name_in all [] na ([],b) in
+	let na',avoid = find_displayed_name_in all Id.Set.empty na ([],b) in
 	let v = aux (push_rel (LocalAssum (na',a)) env) avoid 1 [na'] b in
 	!rigid, Array.to_list v
     | _ -> true, []

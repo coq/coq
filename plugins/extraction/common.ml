@@ -405,7 +405,7 @@ let ref_renaming_fun (k,r) =
     let idg = safe_basename_of_global r in
     match l with
     | [""] -> (* this happens only at toplevel of the monolithic case *)
-      let globs = Id.Set.elements (get_global_ids ()) in
+      let globs = get_global_ids () in
       let id = next_ident_away (kindcase_id k idg) globs in
       Id.to_string id
     | _ -> modular_rename k idg

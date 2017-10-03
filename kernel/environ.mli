@@ -80,6 +80,7 @@ val fold_rel_context :
 val named_context_of_val : named_context_val -> Context.Named.t
 val val_of_named_context : Context.Named.t -> named_context_val
 val empty_named_context_val : named_context_val
+val ids_of_named_context_val : named_context_val -> Id.Set.t
 
 
 (** [map_named_val f ctxt] apply [f] to the body and the type of

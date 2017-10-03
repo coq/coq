@@ -40,7 +40,7 @@ type interp_sign = Geninterp.interp_sign = {
   lfun : value Id.Map.t;
   extra : TacStore.t }
 
-val f_avoid_ids : Id.t list TacStore.field
+val f_avoid_ids : Id.Set.t TacStore.field
 val f_debug : debug_info TacStore.field
 
 val extract_ltac_constr_values : interp_sign -> Environ.env ->
@@ -113,7 +113,7 @@ val tactic_of_value : interp_sign -> Value.t -> unit Proofview.tactic
 
 (** Globalization + interpretation *)
 
-val interp_tac_gen : value Id.Map.t -> Id.t list ->
+val interp_tac_gen : value Id.Map.t -> Id.Set.t ->
                  debug_info -> raw_tactic_expr -> unit Proofview.tactic
 
 val interp : raw_tactic_expr -> unit Proofview.tactic

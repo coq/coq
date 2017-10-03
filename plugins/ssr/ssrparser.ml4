@@ -342,7 +342,7 @@ let interp_index ist gl idx =
         | None ->
         begin match Tacinterp.Value.to_constr v with
         | Some c ->
-          let rc = Detyping.detype Detyping.Now false [] (pf_env gl) (project gl) c in
+          let rc = Detyping.detype Detyping.Now false Id.Set.empty (pf_env gl) (project gl) c in
           begin match Notation.uninterp_prim_token rc with
           | _, Constrexpr.Numeral (s,b) ->
              let n = int_of_string s in if b then n else -n

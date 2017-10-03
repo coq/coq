@@ -273,17 +273,17 @@ let free_glob_vars =
     | _ -> fold_glob_constr_with_binders Id.Set.add vars bound vs c in
   fun rt ->
     let vs = vars Id.Set.empty Id.Set.empty rt in
-    Id.Set.elements vs
+    vs
 
 let glob_visible_short_qualid c =
   let rec aux acc c = match DAst.get c with
     | GRef (c,_) ->
         let qualid = Nametab.shortest_qualid_of_global Id.Set.empty c in
         let dir,id = Libnames.repr_qualid  qualid in
-        if DirPath.is_empty dir then id :: acc else acc
+        if DirPath.is_empty dir then Id.Set.add id acc else acc
     | _ ->
         fold_glob_constr aux acc c
-  in aux [] c
+  in aux Id.Set.empty c
 
 let warn_variable_collision =
   let open Pp in

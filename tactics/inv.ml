@@ -387,7 +387,7 @@ let rewrite_equations as_mode othin neqns names ba =
   Proofview.Goal.enter begin fun gl ->
   let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums gl in
   let first_eq = ref MoveLast in
-  let avoid = if as_mode then List.map NamedDecl.get_id nodepids else [] in
+  let avoid = if as_mode then Id.Set.of_list (List.map NamedDecl.get_id nodepids) else Id.Set.empty in
   match othin with
     | Some thin ->
         tclTHENLIST

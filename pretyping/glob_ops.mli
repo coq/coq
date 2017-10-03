@@ -43,11 +43,11 @@ val fold_glob_constr : ('a -> glob_constr -> 'a) -> 'a -> glob_constr -> 'a
 val fold_glob_constr_with_binders : (Id.t -> 'a -> 'a) -> ('a -> 'b -> glob_constr -> 'b) -> 'a -> 'b -> glob_constr -> 'b
 val iter_glob_constr : (glob_constr -> unit) -> glob_constr -> unit
 val occur_glob_constr : Id.t -> 'a glob_constr_g -> bool
-val free_glob_vars : 'a glob_constr_g -> Id.t list
+val free_glob_vars : 'a glob_constr_g -> Id.Set.t
 val bound_glob_vars : glob_constr -> Id.Set.t
 (* Obsolete *)
 val loc_of_glob_constr : 'a glob_constr_g -> Loc.t option
-val glob_visible_short_qualid : 'a glob_constr_g -> Id.t list
+val glob_visible_short_qualid : 'a glob_constr_g -> Id.Set.t
 
 (* Renaming free variables using a renaming map; fails with
    [UnsoundRenaming] if applying the renaming would introduce

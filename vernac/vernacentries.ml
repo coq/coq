@@ -125,8 +125,8 @@ let make_cases_aux glob_ref =
 	       | [] -> []
 	       | (n,_)::l ->
 		   let n' = Namegen.next_name_away_with_default (Id.to_string Namegen.default_dependent_ident) n avoid in
-		   Id.to_string n' :: rename (n'::avoid) l in
-	     let al' = rename [] al in
+		   Id.to_string n' :: rename (Id.Set.add n' avoid) l in
+	     let al' = rename Id.Set.empty al in
 	     let consref = ConstructRef (ith_constructor_of_inductive ind (i + 1)) in
 	     (Libnames.string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty consref) :: al') :: l)
 	  tarr []
@@ -1230,7 +1230,7 @@ let vernac_reserve bl =
     let env = Global.env() in
     let sigma = Evd.from_env env in
     let t,ctx = Constrintern.interp_type env sigma c in
-    let t = Detyping.detype Detyping.Now false [] env (Evd.from_ctx ctx) (EConstr.of_constr t) in
+    let t = Detyping.detype Detyping.Now false Id.Set.empty env (Evd.from_ctx ctx) (EConstr.of_constr t) in
     let t,_ = Notation_ops.notation_constr_of_glob_constr (default_env ()) t in
     Reserve.declare_reserved_type idl t)
   in List.iter sb_decl bl

@@ -183,7 +183,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 	    id
       | Anonymous ->
 	  let i = Nameops.add_suffix (id_of_class k) "_instance_0" in
-	    Namegen.next_global_ident_away i (Termops.ids_of_context env)
+	    Namegen.next_global_ident_away i (Termops.vars_of_env env)
   in
   let env' = push_rel_context ctx env in
   evars := Evarutil.nf_evar_map !evars;

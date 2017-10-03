@@ -178,7 +178,7 @@ let push_binder na1 na2 t ctx =
   let id2 = match na2 with
   | Name id2 -> id2
   | Anonymous ->
-     let avoid = List.map pi2 ctx in
+     let avoid = Id.Set.of_list (List.map pi2 ctx) in
      Namegen.next_ident_away Namegen.default_non_dependent_ident avoid in
   (na1, id2, t) :: ctx
 

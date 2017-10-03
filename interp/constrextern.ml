@@ -1087,7 +1087,7 @@ let extern_constr_gen lax goal_concl_style scopt env sigma t =
   (* Not "goal_concl_style" means do alpha-conversion avoiding only *)
   (* those goal/section/rel variables that occurs in the subterm under *)
   (* consideration; see namegen.ml for further details *)
-  let avoid = if goal_concl_style then ids_of_context env else [] in
+  let avoid = if goal_concl_style then vars_of_env env else Id.Set.empty in
   let r = Detyping.detype Detyping.Later ~lax:lax goal_concl_style avoid env sigma t in
   let vars = vars_of_env env in
   extern false (scopt,[]) vars r
@@ -1099,14 +1099,14 @@ let extern_constr ?(lax=false) goal_concl_style env sigma t =
   extern_constr_gen lax goal_concl_style None env sigma t
 
 let extern_type goal_concl_style env sigma t =
-  let avoid = if goal_concl_style then ids_of_context env else [] in
+  let avoid = if goal_concl_style then vars_of_env env else Id.Set.empty in
   let r = Detyping.detype Detyping.Later goal_concl_style avoid env sigma t in
   extern_glob_type (vars_of_env env) r
 
 let extern_sort sigma s = extern_glob_sort (detype_sort sigma s)
 
 let extern_closed_glob ?lax goal_concl_style env sigma t =
-  let avoid = if goal_concl_style then ids_of_context env else [] in
+  let avoid = if goal_concl_style then vars_of_env env else Id.Set.empty in
   let r =
     Detyping.detype_closed_glob ?lax goal_concl_style avoid env sigma t
   in
@@ -1177,15 +1177,15 @@ let rec glob_of_pat env sigma pat = DAst.make @@ match pat with
 	| _ -> anomaly (Pp.str "PCase with non-trivial predicate but unknown inductive.")
       in
       GCases (RegularStyle,rtn,[glob_of_pat env sigma tm,indnames],mat)
-  | PFix f -> DAst.get (Detyping.detype_names false [] env (Global.env()) sigma (EConstr.of_constr (mkFix f))) (** FIXME bad env *)
-  | PCoFix c -> DAst.get (Detyping.detype_names false [] env (Global.env()) sigma (EConstr.of_constr (mkCoFix c)))
+  | PFix f -> DAst.get (Detyping.detype_names false Id.Set.empty env (Global.env()) sigma (EConstr.of_constr (mkFix f))) (** FIXME bad env *)
+  | PCoFix c -> DAst.get (Detyping.detype_names false Id.Set.empty env (Global.env()) sigma (EConstr.of_constr (mkCoFix c)))
   | PSort s -> GSort s
 
 let extern_constr_pattern env sigma pat =
   extern true (None,[]) Id.Set.empty (glob_of_pat env sigma pat)
 
 let extern_rel_context where env sigma sign =
-  let a = detype_rel_context Detyping.Later where [] (names_of_rel_context env,env) sigma sign in
+  let a = detype_rel_context Detyping.Later where Id.Set.empty (names_of_rel_context env,env) sigma sign in
   let vars = vars_of_env env in
   let a = List.map (extended_glob_local_binder_of_decl) a in
   pi3 (extern_local_binder (None,[]) vars a)

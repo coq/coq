@@ -110,7 +110,7 @@ val setoid_transitivity : constr option -> unit Proofview.tactic
 val apply_strategy :
   strategy ->
   Environ.env ->
-  Names.Id.t list ->
+  Names.Id.Set.t ->
   constr ->
   bool * constr ->
   evars -> rewrite_result
