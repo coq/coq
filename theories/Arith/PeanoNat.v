@@ -172,6 +172,17 @@ Proof.
  apply leb_le.
 Qed.
 
+
+Lemma leb_not_le n m : (n <=? m) = false -> n > m.
+Proof.
+  revert m; induction n; destruct m; simpl; intros H_nm.
+  - congruence.
+  - congruence.
+  - apply lt_succ_r, le_0_n.
+  - specialize (IHn _ H_nm).
+    now apply lt_succ_r in IHn.
+Qed.
+
 (** ** Decidability of equality over [nat]. *)
 
 Lemma eq_dec : forall n m : nat, {n = m} + {n <> m}.
