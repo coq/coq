@@ -100,6 +100,13 @@ rewrite Z.abs_mul.
 reflexivity.
 Qed.
 
+Lemma Qabs_Qinv : forall q, Qabs (/ q) == / (Qabs q).
+Proof.
+  intros [n d]; simpl.
+  unfold Qinv.
+  case_eq n; intros; simpl in *; apply Qeq_refl.
+Qed.
+  
 Lemma Qabs_Qminus x y: Qabs (x - y) = Qabs (y - x).
 Proof.
  unfold Qminus, Qopp. simpl.
