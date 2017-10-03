@@ -506,6 +506,31 @@ let print_ltacs () =
   in
   Feedback.msg_notice (prlist_with_sep fnl pr_entry entries)
 
+let locatable_ltac = "Ltac"
+
+let () =
+  let open Prettyp in
+  let locate qid = try Some (Tacenv.locate_tactic qid) with Not_found -> None in
+  let locate_all = Tacenv.locate_extended_all_tactic in
+  let shortest_qualid = Tacenv.shortest_qualid_of_tactic in
+  let name kn = str "Ltac" ++ spc () ++ pr_path (Tacenv.path_of_tactic kn) in
+  let print kn =
+    let qid = qualid_of_path (Tacenv.path_of_tactic kn) in
+    Tacintern.print_ltac qid
+  in
+  let about = name in
+  register_locatable locatable_ltac {
+    locate;
+    locate_all;
+    shortest_qualid;
+    name;
+    print;
+    about;
+  }
+
+let print_located_tactic qid =
+  Feedback.msg_notice (Prettyp.print_located_other locatable_ltac qid)
+
 (** Grammar *)
 
 let () =

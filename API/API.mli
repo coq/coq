@@ -5005,6 +5005,21 @@ sig
   val pr_transparent_state : Names.transparent_state -> Pp.t
 end
 
+module Prettyp :
+sig
+  type 'a locatable_info = {
+    locate : Libnames.qualid -> 'a option;
+    locate_all : Libnames.qualid -> 'a list;
+    shortest_qualid : 'a -> Libnames.qualid;
+    name : 'a -> Pp.t;
+    print : 'a -> Pp.t;
+    about : 'a -> Pp.t;
+  }
+
+  val register_locatable : string -> 'a locatable_info -> unit
+  val print_located_other : string -> Libnames.reference -> Pp.t
+end
+
 (************************************************************************)
 (* End of modules from printing/                                        *)
 (************************************************************************)

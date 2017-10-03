@@ -482,6 +482,11 @@ VERNAC COMMAND EXTEND VernacPrintLtac CLASSIFIED AS QUERY
   [ Feedback.msg_notice (Tacintern.print_ltac (snd (Libnames.qualid_of_reference r))) ]
 END
 
+VERNAC COMMAND EXTEND VernacLocateLtac CLASSIFIED AS QUERY
+| [ "Locate" "Ltac" reference(r) ] ->
+  [ Tacentries.print_located_tactic r ]
+END
+
 let pr_ltac_ref = Libnames.pr_reference
 
 let pr_tacdef_body tacdef_body =
