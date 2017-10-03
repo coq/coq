@@ -480,8 +480,11 @@ object(self)
       | Message(lvl, loc, msg), Some (id,sentence) ->
           log_pp ?id Pp.(str "Msg " ++ msg);
           messages#push lvl msg
+      (* We do nothing here as for BZ#5583 *)
+      | Message(Error, loc, msg), None ->
+          log_pp Pp.(str "Error Msg without a sentence" ++ msg)
       | Message(lvl, loc, msg), None ->
-          log_pp Pp.(str "Msg " ++ msg);
+          log_pp Pp.(str "Msg without a sentence " ++ msg);
           messages#push lvl msg
       | InProgress n, _ ->
           if n < 0 then processed <- processed + abs n
@@ -655,7 +658,7 @@ object(self)
         with Doc.Empty -> initial_state | Invalid_argument _ -> assert false in
       loop tip [] in
     Coq.bind fill_queue process_queue
-  
+
   method join_document =
    let next = function
      | Good _ ->
