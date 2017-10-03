@@ -370,6 +370,7 @@ GEXTEND Gram
     | "100" RIGHTA
       [ p = pattern; "|"; pl = LIST1 pattern SEP "|" -> CAst.make ~loc:!@loc @@ CPatOr (p::pl) ]
     | "99" RIGHTA [ ]
+    | "90" RIGHTA [ ]
     | "11" LEFTA
       [ p = pattern; "as"; id = ident ->
         CAst.make ~loc:!@loc @@ CPatAlias (p, id) ]
