@@ -1313,7 +1313,7 @@ let to_map l =
   let fold accu (x, v) = Id.Map.add x v accu in
   List.fold_left fold Id.Map.empty l
 
-let add_notation_in_scope local df c mods scope =
+let add_notation_in_scope local df env c mods scope =
   let open SynData in
   let sd = compute_syntax_data df mods in
   (* Prepare the interpretation *)
@@ -1324,7 +1324,7 @@ let add_notation_in_scope local df c mods scope =
     ninterp_var_type = to_map i_vars;
     ninterp_rec_vars = to_map sd.recvars;
   } in
-  let (acvars, ac, reversible) = interp_notation_constr nenv c in
+  let (acvars, ac, reversible) = interp_notation_constr env nenv c in
   let interp = make_interpretation_vars sd.recvars acvars in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let onlyparse = is_not_printable sd.only_parsing (not reversible) ac in
@@ -1344,7 +1344,7 @@ let add_notation_in_scope local df c mods scope =
   Lib.add_anonymous_leaf (inNotation notation);
   sd.info
 
-let add_notation_interpretation_core local df ?(impls=empty_internalization_env) c scope onlyparse onlyprint compat =
+let add_notation_interpretation_core local df env ?(impls=empty_internalization_env) c scope onlyparse onlyprint compat =
   let dfs = split_notation_string df in
   let (recvars,mainvars,symbs) = analyze_notation_tokens ~onlyprint dfs in
   (* Recover types of variables and pa/pp rules; redeclare them if needed *)
@@ -1363,7 +1363,7 @@ let add_notation_interpretation_core local df ?(impls=empty_internalization_env)
     ninterp_var_type = to_map i_vars;
     ninterp_rec_vars = to_map recvars;
   } in
-  let (acvars, ac, reversible) = interp_notation_constr ~impls nenv c in
+  let (acvars, ac, reversible) = interp_notation_constr env ~impls nenv c in
   let interp = make_interpretation_vars recvars acvars in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let onlyparse = is_not_printable onlyparse (not reversible) ac in
@@ -1390,33 +1390,33 @@ let add_syntax_extension local ((loc,df),mods) = let open SynData in
 
 (* Notations with only interpretation *)
 
-let add_notation_interpretation ((loc,df),c,sc) =
-  let df' = add_notation_interpretation_core false df c sc false false None in
+let add_notation_interpretation env ((loc,df),c,sc) =
+  let df' = add_notation_interpretation_core false df env c sc false false None in
   Dumpglob.dump_notation (loc,df') sc true
 
-let set_notation_for_interpretation impls ((_,df),c,sc) =
+let set_notation_for_interpretation env impls ((_,df),c,sc) =
   (try ignore
-    (Flags.silently (fun () -> add_notation_interpretation_core false df ~impls c sc false false None) ());
+    (Flags.silently (fun () -> add_notation_interpretation_core false df env ~impls c sc false false None) ());
   with NoSyntaxRule ->
     user_err Pp.(str "Parsing rule for this notation has to be previously declared."));
   Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
 
 (* Main entry point *)
 
-let add_notation local c ((loc,df),modifiers) sc =
+let add_notation local env c ((loc,df),modifiers) sc =
   let df' =
    if no_syntax_modifiers modifiers then
     (* No syntax data: try to rely on a previously declared rule *)
     let onlyparse = is_only_parsing modifiers in
     let onlyprint = is_only_printing modifiers in
     let compat = get_compat_version modifiers in
-    try add_notation_interpretation_core local df c sc onlyparse onlyprint compat
+    try add_notation_interpretation_core local df env c sc onlyparse onlyprint compat
     with NoSyntaxRule ->
       (* Try to determine a default syntax rule *)
-      add_notation_in_scope local df c modifiers sc
+      add_notation_in_scope local df env c modifiers sc
    else
     (* Declare both syntax and interpretation *)
-    add_notation_in_scope local df c modifiers sc
+    add_notation_in_scope local df env c modifiers sc
   in
   Dumpglob.dump_notation (loc,df') sc true
 
@@ -1431,13 +1431,13 @@ let add_notation_extra_printing_rule df k v =
 
 let inject_var x = CAst.make @@ CRef (Ident (Loc.tag @@ Id.of_string x),None)
 
-let add_infix local ((loc,inf),modifiers) pr sc =
+let add_infix local env ((loc,inf),modifiers) pr sc =
   check_infix_modifiers modifiers;
   (* check the precedence *)
   let metas = [inject_var "x"; inject_var "y"] in
   let c = mkAppC (pr,metas) in
   let df = "x "^(quote_notation_token inf)^" y" in
-  add_notation local c ((loc,df),modifiers) sc
+  add_notation local env c ((loc,df),modifiers) sc
 
 (**********************************************************************)
 (* Delimiters and classes bound to scopes                             *)
@@ -1493,7 +1493,7 @@ let try_interp_name_alias = function
   | [], { CAst.v = CRef (ref,_) } -> intern_reference ref
   | _ -> raise Not_found
 
-let add_syntactic_definition ident (vars,c) local onlyparse =
+let add_syntactic_definition env ident (vars,c) local onlyparse =
   let nonprintable = ref false in
   let vars,pat =
     try [], NRef (try_interp_name_alias (vars,c))
@@ -1504,7 +1504,7 @@ let add_syntactic_definition ident (vars,c) local onlyparse =
         ninterp_var_type = i_vars;
         ninterp_rec_vars = Id.Map.empty;
       } in
-      let nvars, pat, reversible = interp_notation_constr nenv c in
+      let nvars, pat, reversible = interp_notation_constr env nenv c in
       let () = nonprintable := not reversible in
       let map id = let (_,sc,_) = Id.Map.find id nvars in (id, sc) in
       List.map map vars, pat
