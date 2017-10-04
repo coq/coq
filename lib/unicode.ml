@@ -227,6 +227,14 @@ let is_unknown = function
   | Unknown -> true
   | Letter | IdentSep | IdentPart | Symbol -> false
 
+let is_ident_part = function
+  | IdentPart -> true
+  | Letter | IdentSep | Symbol | Unknown -> false
+
+let is_ident_sep = function
+  | IdentSep -> true
+  | Letter | IdentPart | Symbol | Unknown -> false
+
 let ident_refutation s =
   if s = ".." then None else try
     let j, n = next_utf8 s 0 in
@@ -259,6 +267,26 @@ let lowercase_first_char s =
   assert (s <> "");
   let j, n = next_utf8 s 0 in
   utf8_of_unicode (lowercase_unicode n)
+
+let split_at_first_letter s =
+  let n, v = next_utf8 s 0 in
+  if ((* optim *) n = 1 && s.[0] != '_') || not (is_ident_sep (classify v)) then None
+  else begin
+    let n = ref n in
+    let p = ref 0 in
+    while !n < String.length s &&
+          let n', v = next_utf8 s !n in
+          p := n';
+          (* Test if not letter *)
+          ((* optim *) n' = 1 && (s.[!n] = '_' || s.[!n] = '\''))
+          || let st = classify v in
+             is_ident_sep st || is_ident_part st
+    do n := !n + !p
+    done;
+    let s1 = String.sub s 0 !n in
+    let s2 = String.sub s !n (String.length s - !n) in
+    Some (s1,s2)
+  end
 
 (** For extraction, we need to encode unicode character into ascii ones *)
 
