@@ -67,13 +67,13 @@ let classify =
         Unicodetable.sm;           (* Symbol, maths.                    *)
         Unicodetable.sc;           (* Symbol, currency.                 *)
         Unicodetable.so;           (* Symbol, modifier.                 *)
-        Unicodetable.pd;           (* Punctation, dash.                 *)
-        Unicodetable.pc;           (* Punctation, connector.            *)
-        Unicodetable.pe;           (* Punctation, open.                 *)
-        Unicodetable.ps;           (* Punctation, close.                *)
-        Unicodetable.pi;           (* Punctation, initial quote.        *)
-        Unicodetable.pf;           (* Punctation, final quote.          *)
-        Unicodetable.po;           (* Punctation, other.                *)
+        Unicodetable.pd;           (* Punctuation, dash.                *)
+        Unicodetable.pc;           (* Punctuation, connector.           *)
+        Unicodetable.pe;           (* Punctuation, open.                *)
+        Unicodetable.ps;           (* Punctution, close.                *)
+        Unicodetable.pi;           (* Punctuation, initial quote.       *)
+        Unicodetable.pf;           (* Punctuation, final quote.         *)
+        Unicodetable.po;           (* Punctuation, other.               *)
       ];
     mk_lookup_table_from_unicode_tables_for Letter
       [
@@ -114,7 +114,7 @@ let classify =
       ];
     mk_lookup_table_from_unicode_tables_for IdentPart
       [
-        single 0x0027;             (* Special space.                    *)
+        single 0x0027;             (* Single quote.                     *)
       ];
     (* Lookup *)
     lookup
