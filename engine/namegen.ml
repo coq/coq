@@ -43,6 +43,8 @@ let default_non_dependent_ident = Id.of_string default_non_dependent_string
 
 let default_dependent_ident = Id.of_string "x"
 
+let default_generated_non_letter_string = "x"
+
 (**********************************************************************)
 (* Globality of identifiers *)
 
@@ -107,7 +109,17 @@ let head_name sigma c = (* Find the head constant of a constr if any *)
   hdrec c
 
 let lowercase_first_char id = (* First character of a constr *)
-  Unicode.lowercase_first_char (Id.to_string id)
+  let s = Id.to_string id in
+  match Unicode.split_at_first_letter s with
+  | None ->
+    (* General case: nat -> n *)
+    Unicode.lowercase_first_char s
+  | Some (s,s') ->
+      if String.length s' = 0 then
+      (* No letter, e.g. __, or __'_, etc. *)
+        default_generated_non_letter_string
+      else
+        s ^ Unicode.lowercase_first_char s'
 
 let sort_hdchar = function
   | Prop(_) -> "P"

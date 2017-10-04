@@ -30,6 +30,10 @@ val is_unknown : status -> bool
     @raise Assert_failure if the input string is empty. *)
 val lowercase_first_char : string -> string
 
+(** Split a string supposed to be an ident at the first letter;
+    as an optimization, return None if the first character is a letter *)
+val split_at_first_letter : string -> (string * string) option
+
 (** Return [true] if all UTF-8 characters in the input string are just plain
     ASCII characters. Returns [false] otherwise. *)
 val is_basic_ascii : string -> bool
