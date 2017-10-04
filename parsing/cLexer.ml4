@@ -242,8 +242,8 @@ let check_ident str =
         loop_id true s
     | [< s >] ->
         match unlocated lookup_utf8 Ploc.dummy s with
-        | Utf8Token (Unicode.Letter, n) -> njunk n s; loop_id true s
-        | Utf8Token (Unicode.IdentPart, n) when intail ->
+        | Utf8Token (st, n) when not intail && Unicode.is_valid_ident_initial st -> njunk n s; loop_id true s
+        | Utf8Token (st, n) when intail && Unicode.is_valid_ident_trailing st ->
           njunk n s;
           loop_id true s
         | EmptyStream -> ()
@@ -308,9 +308,9 @@ let rec ident_tail loc len = parser
       ident_tail loc (store len c) s
   | [< s >] ->
       match lookup_utf8 loc s with
-      | Utf8Token ((Unicode.IdentPart | Unicode.Letter), n) ->
+      | Utf8Token (st, n) when Unicode.is_valid_ident_trailing st ->
           ident_tail loc (nstore n len s) s
-      | Utf8Token (Unicode.Unknown, n) ->
+      | Utf8Token (st, n) when Unicode.is_unknown st ->
           let id = get_buff len in
           let u = String.concat "" (List.map (String.make 1) (Stream.npeek n s)) in
           warn_unrecognized_unicode ~loc:!@loc (u,id); len
@@ -542,7 +542,7 @@ let parse_after_dot loc c bp =
       (try find_keyword loc ("."^field) s with Not_found -> FIELD field)
   | [< s >] ->
       match lookup_utf8 loc s with
-      | Utf8Token (Unicode.Letter, n) ->
+      | Utf8Token (st, n) when Unicode.is_valid_ident_initial st ->
           let len = ident_tail loc (nstore n 0 s) s in
           let field = get_buff len in
           (try find_keyword loc ("."^field) s with Not_found -> FIELD field)
@@ -556,7 +556,7 @@ let parse_after_qmark loc bp s =
     | None -> KEYWORD "?"
     | _ ->
         match lookup_utf8 loc s with
-          | Utf8Token (Unicode.Letter, _) -> LEFTQMARK
+          | Utf8Token (st, _) when Unicode.is_valid_ident_initial st -> LEFTQMARK
           | AsciiChar | Utf8Token _ | EmptyStream ->
             fst (process_chars loc bp '?' s)
 
@@ -621,13 +621,13 @@ let rec next_token loc = parser bp
       comment_stop bp; between_commands := new_between_commands; t
   | [< s >] ->
       match lookup_utf8 loc s with
-        | Utf8Token (Unicode.Letter, n) ->
+        | Utf8Token (st, n) when Unicode.is_valid_ident_initial st ->
             let len = ident_tail loc (nstore n 0 s) s in
             let id = get_buff len in
             let ep = Stream.count s in
             comment_stop bp;
             (try find_keyword loc id s with Not_found -> IDENT id), set_loc_pos loc bp ep
-        | AsciiChar | Utf8Token ((Unicode.Symbol | Unicode.IdentPart | Unicode.Unknown), _) ->
+        | AsciiChar | Utf8Token _ ->
             let t = process_chars loc bp (Stream.next s) s in
             comment_stop bp; t
         | EmptyStream ->
