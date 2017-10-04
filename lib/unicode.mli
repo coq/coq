@@ -8,7 +8,7 @@
 
 (** Unicode utilities *)
 
-type status = Letter | IdentPart | Symbol | Unknown
+type status
 
 (** Classify a unicode char into 3 classes or unknown. *)
 val classify : int -> status
@@ -16,6 +16,15 @@ val classify : int -> status
 (** Return [None] if a given string can be used as a (Coq) identifier.
     Return [Some (b,s)] otherwise, where [s] is an explanation and [b] is severity. *)
 val ident_refutation : string -> (bool * string) option
+
+(** Tells if a valid initial character for an identifier *)
+val is_valid_ident_initial : status -> bool
+
+(** Tells if a valid non-initial character for an identifier *)
+val is_valid_ident_trailing : status -> bool
+
+(** Tells if a character is unclassified *)
+val is_unknown : status -> bool
 
 (** First char of a string, converted to lowercase
     @raise Assert_failure if the input string is empty. *)
