@@ -107,6 +107,15 @@ The following command-line options are recognized by the commands {\tt
   recursively available from {\Coq} using absolute names (extending
   the {\dirpath} prefix) (see Section~\ref{LongNames}).
 
+  Note that only those subdirectories and files which obey the lexical
+  conventions of what is an {\ident} (see Section~\ref{lexical})
+  are taken into account. Conversely, the underlying file systems or
+  operating systems may be more restrictive than {\Coq}. While Linux's
+  ext4 file system supports any {\Coq} recursive layout
+  (within the limit of 255 bytes per file name), the default on NTFS
+  (Windows) or HFS+ (MacOS X) file systems is on the contrary to
+  disallow two files differing only in the case in the same directory.
+
   \SeeAlso Section~\ref{Libraries}.
 
 \item[{\tt -R} {\em directory} {\dirpath}]\ %
