@@ -252,13 +252,6 @@ VERNAC COMMAND FUNCTIONAL EXTEND AddSetoid1 CLASSIFIED AS SIDEFF
          add_setoid (not (Locality.make_section_locality atts.locality)) binders a aeq t n;
          st
      ]
-  | [ "Add" "Morphism" constr(m) ":" ident(n) ]
-    (* This command may or may not open a goal *)
-    => [ Vernacexpr.VtUnknown, Vernacexpr.VtNow ]
-    -> [ fun ~atts ~st -> let open Vernacinterp in
-           add_morphism_infer (not (Locality.make_section_locality atts.locality)) m n;
-           st
-       ]
   | [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ]
     => [ Vernacexpr.(VtStartProof("Classic",GuaranteesOpacity,[n]), VtLater) ]
     -> [ fun ~atts ~st -> let open Vernacinterp in

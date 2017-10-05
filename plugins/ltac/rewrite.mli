@@ -83,8 +83,6 @@ val add_setoid :
   bool -> local_binder_expr list -> constr_expr -> constr_expr -> constr_expr ->
   Id.t -> unit
 
-val add_morphism_infer : bool -> constr_expr -> Id.t -> unit
-
 val add_morphism :
   bool -> local_binder_expr list -> constr_expr -> constr_expr -> Id.t -> unit
 

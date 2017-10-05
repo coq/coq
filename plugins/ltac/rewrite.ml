@@ -22,7 +22,6 @@ open Pretype_errors
 open Typeclasses
 open Classes
 open Constrexpr
-open Globnames
 open Evd
 open Misctypes
 open Locus
@@ -91,10 +90,6 @@ let new_cstr_evar (evd,cstrs) env t =
     (evd', Evar.Set.add ev cstrs), t
 
 (** Building or looking up instances. *)
-let e_new_cstr_evar env evars t =
-  let evd', t = new_cstr_evar !evars env t in evars := evd'; t
-
-(** Building or looking up instances. *)
 
 let extends_undefined evars evars' =
   let f ev evi found = found || not (Evd.mem evars ev)
@@ -152,8 +147,6 @@ end) = struct
 
   let respectful = find_global morphisms "respectful"
   let respectful_ref = lazy_find_reference morphisms "respectful"
-
-  let default_relation = find_global ["Classes"; "SetoidTactics"] "DefaultRelation"
 
   let coq_forall = find_global morphisms "forall_def"
 
@@ -1895,36 +1888,6 @@ let declare_projection n instance_id r =
     ignore(Declare.declare_constant n 
 	   (Entries.DefinitionEntry cst, Decl_kinds.IsDefinition Decl_kinds.Definition))
 
-let build_morphism_signature env sigma m =
-  let m,ctx = Constrintern.interp_constr env sigma m in
-  let sigma = Evd.from_ctx ctx in
-  let t = Typing.unsafe_type_of env sigma m in
-  let cstrs =
-    let rec aux t =
-      match EConstr.kind sigma t with
-	| Prod (na, a, b) ->
-	    None :: aux b
-	| _ -> []
-    in aux t
-  in
-  let evars, t', sig_, cstrs = 
-    PropGlobal.build_signature (sigma, Evar.Set.empty) env t cstrs None in
-  let evd = ref evars in
-  let _ = List.iter
-    (fun (ty, rel) ->
-      Option.iter (fun rel ->
-	let default = e_app_poly env evd PropGlobal.default_relation [| ty; rel |] in
-	  ignore(e_new_cstr_evar env evd default))
-	rel)
-    cstrs
-  in
-  let morph = e_app_poly env evd PropGlobal.proper_type [| t; sig_; m |] in
-  let evd = solve_constraints env !evd in
-  let evd = Evd.nf_constraints evd in
-  let m = Evarutil.nf_evars_universes evd (EConstr.Unsafe.to_constr morph) in
-  Pretyping.check_evars env Evd.empty evd (EConstr.of_constr m);
-  Evd.evar_universe_context evd, m
-
 let default_morphism sign m =
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -1959,47 +1922,6 @@ let make_tactic name =
   let tacpath = Libnames.qualid_of_string name in
   let tacname = Qualid (Loc.tag tacpath) in
   TacArg (Loc.tag @@ TacCall (Loc.tag (tacname, [])))
-
-let warn_add_morphism_deprecated =
-  CWarnings.create ~name:"add-morphism" ~category:"deprecated" (fun () ->
-      Pp.(str "Add Morphism f : id is deprecated, please use Add Morphism f with signature (...) as id"))
-
-let add_morphism_infer glob m n =
-  warn_add_morphism_deprecated ?loc:m.CAst.loc ();
-  init_setoid ();
-  let poly = Flags.is_universe_polymorphism () in
-  let instance_id = add_suffix n "_Proper" in
-  let env = Global.env () in
-  let evd = Evd.from_env env in
-  let uctx, instance = build_morphism_signature env evd m in
-    if Lib.is_modtype () then
-      let uctx = UState.const_univ_entry ~poly uctx in
-      let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest instance_id
-				(Entries.ParameterEntry 
-                                 (None,(instance,uctx),None),
-				 Decl_kinds.IsAssumption Decl_kinds.Logical)
-      in
-	add_instance (Typeclasses.new_instance 
-                        (Lazy.force PropGlobal.proper_class) Hints.empty_hint_info glob (ConstRef cst));
-	declare_projection n instance_id (ConstRef cst)
-    else
-      let kind = Decl_kinds.Global, poly, 
-	Decl_kinds.DefinitionBody Decl_kinds.Instance 
-      in
-      let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
-      let hook _ = function
-	| Globnames.ConstRef cst ->
-	  add_instance (Typeclasses.new_instance 
-			  (Lazy.force PropGlobal.proper_class) Hints.empty_hint_info
-                          glob (ConstRef cst));
-	  declare_projection n instance_id (ConstRef cst)
-	| _ -> assert false
-      in
-      let hook = Lemmas.mk_hook hook in
-	Flags.silently
-	  (fun () ->
-	    Lemmas.start_proof instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) hook;
-	    ignore (Pfedit.by (Tacinterp.interp tac))) ()
 
 let add_morphism glob binders m s n =
   init_setoid ();
