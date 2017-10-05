@@ -1,0 +1,14 @@
+Here we list modules whose meaning is "fuzzy"
+in a sense that there is no sufficiently clear rule
+that would define:
+- which elements must be part of this (and exactly this) module
+- which elements certainly do not belong to this module.
+
+================================================================================
+
+INSTANCES
+
+- Names
+  (It is not possible to say *exactly* what goes in this module and what should be kept outside of it;
+   The contents is ad-hoc.)
+- ...

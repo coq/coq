@@ -1,0 +1,22 @@
+Known problems with the documentation
+(listed here if they don't fit any more specific category defined so far)
+
+================================================================================
+
+INSTANCE
+
+- which tool is capable to (decently) format Ocaml code?
+  - Tuareg
+    - Install the most recent version.
+    - Check if it can format Ocaml code decently.
+      Last time I checked, it behaved strangly in case of:
+      - transparent aliases of sum-types
+        - https://github.com/ocaml/tuareg/issues/98
+      - transparent aliases of record-types
+      - [@@ocal.deprecated] tags
+    - (File a bugreport against Tuareg if it still can't cope reasonably with these language features.)
+    - Automatically reformat:
+      - API/API.mli
+      - API/API.ml
+
+--------------------------------------------------------------------------------

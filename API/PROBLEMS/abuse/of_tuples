@@ -1,0 +1,12 @@
+Where we use tuples, we should consider using records.
+
+Benefits:
+- by looking at the type definition, the reader gets more hints about the meanings of individual fields
+- by looking at record values, the reader gets
+  - more hints about the *type* of the value that is begin constructed/destructed
+  - as well as more hints about the *meanings* of individual fields
+
+================================================================================
+
+INSTANCES
+- ...

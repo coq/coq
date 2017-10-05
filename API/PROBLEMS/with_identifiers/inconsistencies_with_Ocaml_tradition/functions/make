@@ -1,0 +1,51 @@
+If "M" is some module
+and "M.t" is some type
+then "M.make" usually represents a "constructor" of values of type "M.t"
+out of an explicitely provided components.
+
+The type of the "M.make" function usually is:
+
+  t1 -> t2 -> .. -> tN -> M.t
+
+where
+
+  N > 0
+
+Supporting examples (from the Ocaml standard library):
+- Array.make
+- String.make
+
+Conflicting examples (from the Ocaml standard library):
+- Buffer.create
+- Bytes.create
+- Ephemeron.create
+- Hashtbl.create
+- Stack.create
+- Weak.create
+
+In this case, Ocaml standard library is mutually inconsistent
+so there is no clear cut answer.
+
+In the Coq codebase, we lean more toward the first convention:
+- Names.DirPath.make
+- Names.Label.make
+- Names.KerName.make
+- Names.Projection.make
+- EConstr.ESorts.make
+- EConstr.EInstance.make
+- Proofview.NonLogical.make
+rather than the second convention:
+- Geninterp.Val.create
+so it might perhaps make sense to go for "make".
+
+================================================================================
+
+INSTANCES (where we deviate from the "make" convention)
+
+- Geninterp.Val.create
+  - rename it to "Geninterp.Val.make"
+? Id.of_string
+  ? rename it to "Id.make"
+- Name.mk_name
+  - rename it to "Name.make"
+- ...

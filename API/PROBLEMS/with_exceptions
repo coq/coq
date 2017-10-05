@@ -1,0 +1,11 @@
+- all functions in the API that throw exceptions
+  - must be identified
+  - all the exceptions that a given function can throw must be documented (for each function)
+- consider using some other mechanism than exceptions
+  (pros/cons)
+
+================================================================================
+
+INSTANCES:
+
+- ...

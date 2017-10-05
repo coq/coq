@@ -1,0 +1,132 @@
+Various problems, related to the choice of identifiers,
+which don't fit to any particular category of problems
+defined so far.
+
+================================================================================
+
+INSTANCES:
+
+- Constrexpr vs Glob_term vs Term vs EConstr
+  
+  QUESTION
+
+  Wouldn't something like
+  - Parsed.Term
+  - Globalized.Term
+  - Kernel.Term
+  - Refiner.Term (?)
+
+  This would allow us to come up with easier to remember names (because they are more logical)
+  - If we have "Globalized.Term", it would be logical (?) also to rename "Globnames" into "Globalized.Name".
+
+- the names we use in the abstract syntax tree to represent individual kinds of non-terminals
+  should correspond (in some obvious way) to the non-terminals we use in camlp5 implementation
+  of the parser.
+
+- folding functions for contexts sometimes indicate the direction with:
+  - inside
+  - outside
+  (this happends in the Context)
+  and sometimes they indicated with
+  - <nothing>
+  - reverse
+  suffix
+  (this is the case of Environ.fold_named_context{,_reverse}
+
+  We should adopt one convention and follow it with all context-folding functions we define.
+
+- API contains the following functions:
+  - Proofview.tclEVARMAP
+  - Proofview.Unsafe.tclEVARS
+  These functions are related
+  ("Proofview.tclEVARMAP" can be regarded as a "getter"
+   and "Proofview.Unsafe.tclEVARS" can be regarded as a "setter".
+   The names of this function could reflect that in some way.
+   E.g. we might consider renaming "Proofview.Unsafe.tclEVARS" to in a way that
+   would indicate that evar-map is being set. We do this elsewhere. Why not also here?)
+
+- Some of our identifiers use the word "class"
+  while other's use the word "typeclass".
+  Both designate the same concept (?).
+  Can we pick one of these words and use it throughout our codebase?
+
+  NOTE: It depends on the source file. For example, pretyping/classops.ml is
+        certainly not about typeclasses.
+        https://github.com/coq/coq/pull/866#pullrequestreview-50512194
+
+- to_* vs. from_*
+
+  Decide whether we like "to_*" or "from_*" conversion functions.
+  Make sure that we follow this decision throughout API.
+  Document this decision (to avoid reintroduction of the other kind of conversion function).
+
+- Context.{Rel,Named}.add
+  (In many cases, functions with a similar role are called "push*".
+   We might want to choose one convention and stick to it.)
+
+- EConstr
+  (Why not ETerm,
+   or e.g. Engine.Term?)
+
+- EConstr.types
+  (* plural: misleading *)
+
+- Elimschemes.case*scheme*
+  (What do those functions mean?
+   Were the names of these functions chosen appropriatelly?)
+
+- Environ.named_context_of_val
+
+  All this function does it returns the "env.env_named_ctxt".
+  Doesn't that indicate that we might want to decide how do we want to call this field?
+  Let us make decision:
+  - keep the field name, rename the function
+  - rename the field name, keep the name of the function
+
+- Environ.opaque_tables
+
+  All this function does it returns the "env.indirect_pterms".
+  Doesn't that indicate that we might want to decide how do we want to call this field?
+  Let us make decision:
+  - keep the field name, rename the function
+  - rename the field name, keep the name of the function
+
+- Evd.from_ctx
+  (When talking about various kinds of contexts, sometimes we use "ctx", othertimes we use "context" identfier.
+   This looks odd.)
+
+- Evd.evar_universe_context, Evd.set_univers_context
+
+  Are we talking about "universe context" or "universe state" (i.e. UState)?
+  Let's choose one of these term and stick to it instead of using two words for the same concept.
+
+- Globnames
+
+  Why do we refer to sets and maps as Globname.Refset and Globname.Refmap
+  but the original module is called Globname (not Ref)?
+  Btw. maybe what we want is to:
+  - rename Globnames into Glob.Name
+  - rename Globnames.Refset into Glob.Name.Set
+  - rename Globnames.Refmap into Glob.Name.Map
+  - ...
+)
+
+- Pcoq.Constr.ident
+
+  If "Pcoq.Constr.sort" is related to "Sort.t"
+  and "Pcoq.Constr.constr" is related to "Constr.t"
+  then why we have "Pcoq.Constr.ident" instead of "Pcoq.Constr.id"
+  (if it is supposed to be related to "Id.t") ?
+
+- Proofview.numgoals
+  (Proofview.tclNUMGOALS)
+
+- Vernacexpr.proof_end vs. Proof_global.proof_ending
+  (These types are related (each of them in a different context --- indicated by their module name).
+   Is it necessary to have two different types:
+   - proof_end
+   - proof_ending
+   ?
+   Can't we have one name for this concept?
+
+- ...

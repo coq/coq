@@ -1,0 +1,35 @@
+================================================================================
+
+INSTANCES:
+
+- API.Evd.empty
+
+  Does it make sense to expose "Evd.empty" ?
+  Shouldn't plugin writers use "Evd.from_env" instead?
+
+- API.Evd.existential_value
+
+  Does it make sense to expose "Evd.existential_value" ?
+  Can't plugin writers use "Evd.find" and "Evd.existential_opt_value"
+  to achieve the same goal?
+
+- API.Ftactic.bind
+
+  Do we need both, "bind" as well as ">>=" ?
+
+- API.Names.inductive
+
+  Does it really make sense to define this type without universes?
+  (when in kernel/term.mli when we define the "Ind" variant of the term,
+   we use "puniverses" constructor).
+
+  Shouldn't we update the definition of Names.inductive so that it directly includes universes
+  (and so that we do not have to do that in Term module)?
+
+- API.Proofview.tclTHEN
+  API.Tacticals.tclTHEN
+  API.Refiner.tclTHEN
+
+  It makes sense to explain why do we need several variants of "tclTHEN" (as well as other) tacticals
+
+- ...

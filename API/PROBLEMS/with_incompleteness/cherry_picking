@@ -1,0 +1,42 @@
+EXAMPLE:
+
+At the moment, API contains the following function:
+
+  Reductionops.nf_betaiota
+
+because "plugins/omega/coq_omega.ml" needs it.
+
+We haven't added:
+
+  Reductionops.nf_betaiotazeta
+  Reductionops.nf_all
+
+because none of the plugins distributed directly with Coq needed them.
+
+In this case, it is reasonable to assume that either it makes sense
+to add all these functions (to the API):
+- Reductionops.nf_beta
+- Reductionops.nf_betaiota
+- Reductionops.nf_betaiotazeta
+- Reductionops.nf_all
+or none of them.
+
+Decide one way or the other.
+
+IN GENERAL
+
+If we include in the API some (but not all) elements of such "clusters",
+we should either:
+- include all elements of such "clusters"
+- include no elements of such "clusters".
+
+================================================================================
+
+INSTANCE
+
+- Environ.fold_named_context
+- Environ.fold_named_context_reverse
+
+------------------------------------------------------------------------------------------
+
+...

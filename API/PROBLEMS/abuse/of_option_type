@@ -1,0 +1,51 @@
+If it is not obvious what None and Some means in a given context where we use
+option-type, then it might be a better idea to define a new type,
+with appropriately chosen constructors (even if would be isomorphic to option-type).
+
+EXAMPLE
+
+Originally, rel-contexts were represented as
+
+  type rel_declaration = Name.t * Term.constr option * Term.constr
+
+The problem with this representation is that
+when we look at fragments such as this:
+
+  match d with
+  | _, None, _ ->   (* one branch *)
+  | _, Some _, _ -> (* the other branch *)
+
+it is not obvious:
+- what is the type of the value we are trying to destruct
+  (Merlin would give us "helpful" information that the type is ... 'a * 'b option * 'c  ... :-/ )
+- what do individual cases mean.
+
+That is why we have later decided to redefine the same type as:
+
+  type rel_declaration =
+    | LocalAssum of Name.t * Term.constr
+    | LocalDef of Name.t * Term.constr * Term.constr
+
+Consequently, the above pattern matching needs to be written as:
+
+  match d with
+  | LocalAssum _ -> (* one branch *)
+  | LocalDef _   -> (* the other branch *)
+
+This is strictly more readable because:
+
+  1. If we are not familiar with the "rel_declaration" type,
+     we can use Merlin to jump to its definition
+
+  2. (When we are familiar with the "rel_declaration" type,)
+     just by looking at the constructors used in the pattern
+     we can infer the type of the value that is being destructed.
+
+  3. The meaning of each pattern is clear. We know exactly:
+     - when the first branch will be taken
+     - when the second branch will be taken.
+
+================================================================================
+
+INSTANCES
+- ...

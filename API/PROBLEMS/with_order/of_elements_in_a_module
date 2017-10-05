@@ -1,0 +1,27 @@
+In order to enable "associative search" for elements within the module
+(i.e. guess its location/name if we know the properties of an element)
+it would make sense to define some convention(s) concerning the order
+in which we list individual elements (functions) in the module.
+
+HINT:
+
+  Context.Rel.Declaration
+
+    - the actual data-type
+    - getters
+    - setters
+    - predicates
+      (ordered from the most simple ones to the most complicated ones)
+      - is_*
+      - exists
+      - for_all
+      - equal
+    - mapping function(s)
+    - folding function(s)
+    - convertors
+      (from the current type to another types)
+
+================================================================================
+
+INSTANCES
+- ...

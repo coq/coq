@@ -1,0 +1,88 @@
+Notes about missing documentation.
+
+================================================================================
+
+INSTANCE: missing comments
+          https://github.com/coq/coq/pull/911#issuecomment-317982292
+
+While Coq codebase is not entirely without comments
+(and these could be reflected in the API)
+it is still heavily under-commented.
+
+This is painful for two reasons:
+- in many cases, identifiers themselfs do not give us sufficient clues about the meaning of a given API element
+- there is no official documentation how to write plugins (that would show us the meaning of the API)
+- the implementation of the currently available plugins is rarely useful for learning how to write plugins.
+
+It would be helpful if:
+- all modules
+- all module types
+- all types
+  as well as all their:
+  - (variant) constructors
+  - (record) fields
+  - elements of a tuple
+    (even tuples under constructors)
+were properly commented even if, in individual cases, we might just "repeat the obvious".
+(there is no harm in that --- the comments will just reinforce the intuitive guesses)
+
+This is a good practice because we will be able to catch situations:
+- when the identifier we have chosen for a given API element
+  - is insufficiently clear
+  - is misleading
+- when, whatever we do, the explanation of the meaning of a given API element
+  always leads to a convoluted comment. This may be an indication that there
+  is something wrong with the meaning of the API element
+  (even though everything is perfectly compilable and the Coq behavior is correct)
+
+--------------------------------------------------------------------------------
+
+INSTANCE: missing documentation of unification
+          https://github.com/coq/coq/pull/911#issuecomment-317981981
+
+--------------------------------------------------------------------------------
+
+INSTANCE: missing plugin writer's guide
+
+HINTS:
+
+- lib/genarg.mli
+  (see the beginning of the file)
+
+- https://github.com/gares/example_plugin
+  - this was criticized by Pierre-Marie during CIW 2017
+    (according to his opinion, the advice given there is wrong
+     and people should implement tactics as they are implemented in tactics/tactics.ml
+
+- https://github.com/gmalecha/template-coq
+
+- https://github.com/matejkosik/coq-steps
+  - Attempting to show how basic things are supposed to be implemented
+    may highlight areas
+    - in which API can be further simplified.
+    - in which API is incomplete
+      (c.f. https://github.com/matejkosik/coq.git branch "trunk+VERNAC_COMMAND_EXTEND__Loc.t")
+
+- https://github.com/matejkosik/coq
+  - trunk+VERNAC_COMMAND_EXTEND__Loc.t
+    (this branch gives hints about the meanings of some of the mechanisms related to grammar, macros, ...)
+
+- copy editor
+
+--------------------------------------------------------------------------------
+
+INSTANCES: invariants should be documented
+
+- Names.DirPath.t
+  (this list is never empty)
+
+--------------------------------------------------------------------------------
+
+INSTANCES: information concerning raising exceptions
+
+Whenever a function could raise an exception, this fact must be stated
+in the comment attached to a given function.
+
+--------------------------------------------------------------------------------
+
+...

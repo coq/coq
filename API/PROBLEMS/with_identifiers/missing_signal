@@ -1,0 +1,26 @@
+Idenfiers that are are not clear enough.
+
+================================================================================
+
+INSTANCES
+
+- module names
+  - Names.MBId
+    (What does "MB*" mean?)
+
+- names of types
+  - Evd.clbinding
+    (Properly expand the "cl" part of the identifier.)
+
+- names of constructors
+  - Class_tactics.Bfs
+    (What does "Bfs" mean?)
+  - Class_tactics.Dfs
+    (What does "Dfs" mean?)
+
+- names of functions
+  - Evarutil.nf_evar
+    (What does "nf*" mean?)
+  - Termops.dependent
+    (Consider finding a name that would better describe what this function does.
+     Ideas: "Termops.is_dependent" or "Termops.is_subterm")

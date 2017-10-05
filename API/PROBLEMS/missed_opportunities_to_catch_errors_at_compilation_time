@@ -1,0 +1,64 @@
+Known cases when we don't to enforce useful properties at compile time:
+(by taking advantage of mechanisms provided by Ocaml type system)
+
+================================================================================
+
+INSTANCE : local vs. global environment
+
+Values of type "Environ.env" fall into two classes:
+- those values whose "local context" is meaningful
+- those values whose "local context" is meaningless.
+
+We should either enforce or otherwise indicate which values are expected at which places.
+
+HINT
+
+  https://github.com/matejkosik/coq/blob/trunk__API_1/API/API.mli#L1019-L1020
+  (* This gives hints where we might want to require "local"
+     and where we might allow "global" environment.
+
+     However, there is no enforcement yet. *)
+
+--------------------------------------------------------------------------------
+
+INSTANCE : hash consing
+
+Check if the current API enables users to break the hash-consing assumption.
+If yes, fix the API in a way that will prevent plugin writers to do that.
+
+--------------------------------------------------------------------------------
+
+INSTANCE : private types
+
+Consider the possibility to use "private types" more.
+(Among other things, we might be able to drop "destructor" functions because
+ they would no longer be needed.)
+
+--------------------------------------------------------------------------------
+
+INSTANCE : Term.constr vs. Term.types
+
+At the moment, type-checker will not reject programs
+that are trying to use values of type Term.constr
+in places where values of type Term.types are expected.
+
+An ideal situation would be when:
+- Term.types would be a subtype of Term.constr
+- Term.constr would *not* be a subtype of Term.types.
+
+Then, in the type-checker would be able to detect and reject
+the attempts such as the one desribed above.
+
+A less ideal situation (but still better than the current state) would be:
+- Term.types is not a subtype of Term.constr
+- Term.constr is not a subtype of Term.types
+- there is a function that can convert values of type Term.type to Term.constr
+This is less desirable because:
+- user needs to do this conversion manually
+  (whereas above it happens automatically, when it is necessary)
+However, the type-checker would still be able to detect and reject
+situations as described above.
+
+--------------------------------------------------------------------------------
+
+...

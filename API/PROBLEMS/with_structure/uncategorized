@@ -1,0 +1,207 @@
+Structural problems of the current API.
+
+================================================================================
+
+INSTANCE: side-effects
+
+- Do not expose any functions with side-effects.
+
+--------------------------------------------------------------------------------
+
+INSTANCE: exceptions
+
+- Do not expose any functions that thow exceptions.
+- Remove all exceptions from the API
+  - e.g. DestKO is needed only because we use of dest_* functions
+    (which are themselves suspicious)
+    Can't we simply not use dest_* functions (in plugins)
+    so that we can drop this exception from the API?
+    What do plugin writers gain by relying on dest_* functions anyway?
+
+--------------------------------------------------------------------------------
+
+INSTANCE: CClosure.RedFlags
+
+Wouldn't it make more sense if this was implemented as a set
+(rather than a list)
+?
+
+--------------------------------------------------------------------------------
+
+INSTANCE: {Term,EConstr}.dest_* functions
+
+Shouldn't these functions be generated?
+http://gallium.inria.fr/%7Efpottier/publis/fpottier-visitors-unchained.pdf
+
+Btw. why do we need them at all?
+
+--------------------------------------------------------------------------------
+
+INSTANCE: {Term,EConstr}.is_* functions
+
+Shouldn't these functions be generated?
+http://gallium.inria.fr/%7Efpottier/publis/fpottier-visitors-unchained.pdf
+
+Btw. why do we need them at all?
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Context
+
+We should probably investigate refactoring of this module so that
+we can define the concept of a context once as a functor
+and instantiate all those special cases that we need
+- rel-context for Terms
+- named-context for Terms
+- rel-context for EConstr
+- named-context for EConstr
+- compacted-context for EConstr
+- (Pre_env.named_context_val)
+  (- Environ.fold_named_context)
+not to mention the context variants that are implemented in
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Context
+
+Use records instead of tuples.
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Evar, Evd
+
+The structure (location of various elements; the names of the elements)
+of Evar and Evd module could be made more logical
+
+HINT
+- https://github.com/matejkosik/coq/blob/trunk__API_1/API/API.mli
+
+--------------------------------------------------------------------------------
+
+INSTANCE: FullPath
+
+Define this module.
+Move there relevant things:
+- Libnames.full_path
+- ...
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Hints.hints_path
+
+We might want to create Hints.Path module and move:
+- Hints.hints_path type
+- and related operations
+there.
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Names.Constructor
+
+We should create this module and move there relevant things:
+- Names.constructor
+  (Names.Constructor.t)
+- Names.eq_constructor
+  (Names.Constructor.equal)
+- Names.constructor_hash
+  (Names.Constructor.hash)
+- ...
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Names.constructor_hash
+
+Maybe there are more functions like this and it might make sense to refactor
+this functionality to Tuple2 module.
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Names.eq_constructor
+
+Maybe there are more functions like this and it might make sense to refactor
+this functionality to Tuple2 module.
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Names.KerPair.make{1,2,3}
+
+We should probably keep just Names.KerPair.make
+with the right default values for optional parameters.
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Names.Inductive
+
+We should create this module and move there relevant things:
+- Names.inductive
+- Names.eq_ind
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Term, EConstr
+
+Can't these two modules be refactored?
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Qualid
+
+Define this module.
+Move there relevant things:
+- Libnames.qualid
+- ...
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Reference
+
+Define this module.
+Move there relevant things:
+- Libnames.reference
+- ...
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Sigma
+
+We might want to define a Sigma module to group together related operations such as:
+
+- 'a API.Evar.sigma
+- API.Evar.sig_sig
+- API.Evar.sig_it
+- API.Evar.re_sig
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Univ.Universe
+
+- rename Univ to Universe
+- move everything in Universe.Universe.t to Universe
+
+--------------------------------------------------------------------------------
+
+(((
+
+    INSTANCE: lib
+    
+    Instead of maintaining our own overlay of the standard library,
+    can't we use some off-the-shelf overlay?
+    (like Batteries Included or ext-lib or ...)
+
+)))
+
+--------------------------------------------------------------------------------
+
+INSTANCE: missed opportunity to take advantage of subtyping
+
+It makes sense to consider whether in case of these two types:
+- Globnames.global_reference
+- Globnames.extended_global_reference
+we should define them as polymorphic variants where one would a subtype of another one
+(if this is consistent with their actual meaning).
+
+The current situation then is unnatural.
+
+--------------------------------------------------------------------------------
+
+...

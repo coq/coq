@@ -1,0 +1,17 @@
+Sum-types (which are not GADT) that have a single constructor
+make no sense.
+
+These may be present as vestiges of former definitions
+of variants with more constructors that were later deleted
+(except for the last one).
+
+EXAMPLE:
+
+  https://github.com/coq/coq/commit/a980d38681f7ab9bfd8a180f2252ce573e3ff211
+
+================================================================================
+
+INSTANCES:
+- Inductiveops.inductive_type
+- Proof_type.prim_rule
+- ...

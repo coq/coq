@@ -1,8 +1,0 @@
-0 : All API elements, i.e.:
-    - modules
-    - module types
-    - functions & values
-    - types
-    are present if and only if are needed for implementing Coq plugins.
-
-1 : Individual API elements are not aliased.

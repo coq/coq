@@ -1,0 +1,83 @@
+API contains groups of elements which have similar purpose.
+The name we give them usually carries indicate in what they are related
+but instead of indicating in the identifier how they are different,
+we just add noise to the identifiers (because we need unique identifiers).
+
+This noise should be replaced by some more useful hints.
+
+================================================================================
+
+INSTANCES
+- concerning names of modules
+  - modules with *set vs. *set_env suffix
+    (The difference between these two flavors of modules should be clarified.
+     The "_env" suffix does not do a good job in this case.)
+  - modules with *map vs. *map_env suffix
+    (The difference between these two flavors of modules should be clarified.
+     The "_env" suffix does not do a good job in this case.)
+  - the identifiers sufficiently well indicate what do some module have in common,
+    but they fail to indicate what are the differences between these modules.
+    - Lib vs Library
+    - Loc vs Locus vs Locality (vs Locusops)
+    - Univ vs Universe vs Universes
+    - Refine vs Refiner
+    - Global vs Proof_global
+  - Libobject
+    ("lib" and "object" are too generic hints. Can't we come up with something more specific?)
+  - Nametab
+    (We should find a better name that would better indicate the services that this module provides.)
+  - API.Misc*
+    (Why do we have to add the "Misc*" prefix to module names?
+     What is it supposed to mean?
+     Can't we drop it?)
+     - API.Misctypes
+     - API.Miscprint
+     - API.Miscops
+     - ...
+  - Ppextend
+    (is the name of this module really appropriate?)
+  - ...
+- concerning names of types
+  - Libnames.object_name
+    ("name" in "object_name" repeats the information that is already contained in the module name and thus should be dropped)
+  - Reductionops.reduction_function vs Reductionops.conceptual_reduction_function
+    (These types have different identifiers.
+     They well enough indicate that these types have something in common.
+     Do they also give relevant hints concerning the different purposes of these two types?)
+
+- concerning names of functions
+  - find_inductive vs lookup_inductive
+    (Various modules have "find_inductive" function and some have "lookup_inductive".
+     Why, in some cases we use "find_*" prefix and in other cases we use "lookup_*" prefix ?
+     - for "*_inductive" 
+     - and maybe in other cases
+     Is this distinction intentional or unintentional?
+     If not, we should probably pick one convention (either "*find*" or "*lookup*" and stick to it.))
+  - Universes.universe_binders vs. Proof_global.universe_binders
+    (We have two different type with the same name in two different modules
+     - Universes.universe_binders
+     - Proof_global.universe_binders
+     They are defined in a different way but they have the same name.
+     What do they have in common?
+     In what ways they are different?)
+  - the identifier does a poor job of indicating the difference between the following couples of functions
+    - Environ.named_context_val vs. Environ.named_context_of_val
+      (These functions have simple and clearly different meaning.
+       The identifiers are misleadingly similar.)
+    - Printer.pr_constr vs. Printer.pr_lconstr
+    - Printer.pr_constr_env vs. Printer.pr_lconstr_env
+    - Printer.pr_glob_constr vs. Printer.pr_lglob_constr
+    - Printer.pr_glob_constr_env vs. Printer.pr_lglob_constr_env
+    - Term.compare vs Term.compare_constr
+    - Term.decompose* vs Term.dest*
+    - Typeclasses.new_instance vs. Typeclasses.add_instance
+    - ...
+  - the identifier does a poor job of indicating the purpose of a given function
+    - Locusops.convert_occs
+    - Namegen.next_ident_away
+    - Tacmach.pf_get_new_id
+      (The name that was chosen for this name is quite fancy, but is not too helpful.
+       Or is it?)
+      (The same applies to "Tacmach.New.pf_get_new_id")
+    - Termops.lift
+  - ...

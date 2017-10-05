@@ -1,0 +1,7 @@
+Various original functions, that are aliased in the API, were marked as deprecated.
+We have to check why we expose them in the API.
+
+================================================================================
+
+INSTANCES
+- ...

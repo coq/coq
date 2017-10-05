@@ -1,0 +1,159 @@
+Sometimes we make identifiers longer without actually making anything clearer.
+
+================================================================================
+
+INSTANCES
+
+- concerning module names
+  - plurals
+    (Convert plurals into singulars.)
+    - Declarations
+    - EConstr.Vars
+    - Entries
+    - Globnames
+    - Keys
+    - Hints
+    - Pretype_errors
+    - Sorts
+    - Typeclasses
+    - Type_errors
+    - Pretype_errors
+    - Vars
+    - ...
+  - Constant
+    (Inconsistent name with the Reference Manual.
+     There we refer to the same concept as "global declaration")
+  - FullPath
+    (Drop "Full*" prefix from "FullPath".
+     There aren't any partial parth, are they?)
+  - Hints.Hint_db
+    (Drop "Hint_*" prefix from "Hint_db".)
+  - KerName
+    (The "Ker*" prefix says that these are special kind of names that are used in the kernel.
+     However, isn't that the case also of "Names.Name"?
+     According to this logic, it would make sense to rename "Names.Name" to "Names.KerName", which is absurd.)
+  - Mod_subst
+    (Drop "Mod_*" prefix from "Mod_subst".)
+  - Universe.UContext
+    (Drop "U*" prefix from "UContext".)
+  - Universe.UState
+    (Drop "U*" prefix from "UState".)
+  - ...
+
+- concerning names of types
+  - identifiers of types repeat the information already encoded in the module name
+    - Vernacexpr.vernac_*
+      (drop "vernac_*" prefix)
+      - Vernacexpr.vernac_expr
+      - Vernacexpr.vernac_type
+      - ...
+    - Genarg.genarg_type
+      (drop "genarg_*" prefix)
+    - Entries.definition_entry
+      (drop "*_entry" suffix)
+    - Evd.evar_constraint
+      (drop "evar_*" prefix --- we have to find a way how to work around the problem
+       that "constraint" is a keyword. We have already stumbled upon similar problem
+       in case of "Term.types". Perhaps we can the same workaround as there.)
+    - Libobject.object_declaration
+      (drop "object_*" prefix from "object_declaration")
+    - Proof_global.proof_ending
+      (Do we need the "*ing" suffix here?
+       If yes, why don't we need it also in case of Vernacexpr.proof_end?
+       Decide one way or the other and then use the same identifier in both cases.)
+      (drop "proof_*" prefix from "proof_ending")
+    - Universe.universe_context
+      (drop "universe_*" prefix from "Universe.context")
+    - ...
+- concerning names of functions
+  - drop the "get_*" prefix in these cases:
+    - Context.Named.Declaration.get_name
+    - Context.Named.Declaration.get_type
+    - Context.Rel.Declaration.get_id
+    - Context.Rel.Declaration.get_type
+    - Evar.Info.get_body
+    - Evar.Info.get_conclusion
+    - Evar.Info.get_context
+    - Evar.Info.get_filtered_context
+    - Evar.Info.get_conclusion
+    - Evar.Info.get_body
+    - Evar.Info.get_hyps
+    - Name.get_id
+    - ...
+  - drop (?) the "*_left_to_right" suffix in these cases:
+    - Glob_ops.map_glob_constr_left_to_right
+      (Can't we shorten the name to "Glob_ops.map_glob_constr"?
+       Is the order, in which things are being transformed, relevant for the result?)
+    - Termops.map_constr_with_binders_left_to_right
+      (Can't we shorten the name to "Termops.map_constr_with_binders"?
+       Is the order, in which things are being transformed, relevant for the result?)
+  - drop (?) tcl* prefix in case of Proofview.tcl* functions
+    (or, if it is important to group them somehow, use the module mechanism instead of ad-hoc prefixes)
+  - drop (?) "pf_*" prefix in case of "Tacmach.pf_*" functions
+    (or, if it is important to group them somehow, use the module mechanism instead of ad-hoc prefixes)
+    ==> There are many similar cases in the API when we use function prefixes.
+        - Are they just noise? (then we could drop them)
+        - Do they have a meaning? (then we might want to package them in a separate module
+          and use module-name instead of the original prefix)
+          - e.g. "nf_*
+          - e.g. "whd_*"
+          - ...
+  - Constant.repr3
+    (drop "*3" suffix from "repr3")
+  - drop the "*C" suffix in these cases:
+    - Constrexpr_ops.mkAppC
+    - Constrexpr_ops.mkIdentC
+    - Constrexpr_ops.mkRefC
+    - Constrexpr_ops.mkLambdaC
+    - ...
+  - identifiers of functions repeat the information that is already encoded in the module name
+    - drop the "evar_*" prefix in these cases:
+      - Evar.evar_universe_context
+      - ...
+    - drop "global_*" prefix in these cases:
+      - Globnames.global_of_constr could be shortened to Globnames.of_constr
+      - ...
+    - Declareops.constant_has_body
+      (Assuming that "Declareops" module will be dissoluted
+       and "Declareops.constant_has_body" function will be moved to the "Declarations" module,
+       then it might make sense to consider dropping "constant_*" prefix from "constant_has_body"
+       because the information we drop is (?) implied by the name of the module in which
+       this function is / will be located.)
+    - EConstr.compare_constr
+      (drop "*_constr" suffix from "compare_constr")
+    - Elimschemes.case_scheme_kind_from_prop
+      (drop "*scheme*" from "case_scheme_kind_from_prop")
+    - Env.empty_env
+      (drop "_env" from "empty_env")
+    - Glob_term.loc_of_glob_constr
+      (drop "*_of_glob_constr" suffix from "loc_of_glob_constr")
+    - Inductive.find_inductive
+      (drop "*_inductive" suffix from "find_inductive")
+    - Reductionops.reduction_function
+      (drop "reduction_*" prefix from "reduction_function"
+       (resolve the problem that "function" is an identifier in the same way how we deal with
+        it in case of "Term.types" and "Evd.*constraint"))
+    - Term.evars_of_term
+      (drop "*_of_term" suffix from "evars_of_term")
+    - Var.subst_var
+      (drop "*_var" suffix from "subst_var")
+    - ...
+- concerning names of constructors
+  - identifiers of constructors repeat the information that is already encoded in the module name
+    - Globnames.global_reference.*Ref
+      (drop "*Ref" suffix)
+    - Evd.clbinding.Cl*
+      (drop "Cl*" prefix)
+    - Names.ModPath.t.MP*
+      (drop "MP*" prefix)
+    - Genarg.genarg_type.*Arg
+      (drop "*Arg" suffix)
+- concerning names of (record) field names
+  - Declarations.constant_body.const_*
+    (drop the "const_*" prefix of individual record fields)
+  - Declarations.one_inductive_body.mind_*)
+    (drop the "mind_*" prefix of individual record fields)
+  - Environ.env.env_*
+    (drop the "env_*" prefix of individual record fields)
+  - ...
+- ...

@@ -1,0 +1,184 @@
+This file contains problems that do not fit
+to any of the problem categories created so far.
+
+================================================================================
+
+INSTANCE
+
+Remove the elements that are marked as @@ocaml.deprecated from the API.
+
+--------------------------------------------------------------------------------
+
+INSTANCE
+
+Detect all API-leaks.
+(Situations when API refers to a type outside API elsewhere than
+ on the right side of the type "equation".)
+
+It may be possible to detect API leak by writing an Ocaml script
+that takes advantage of "compiler-libs". This script could go
+through the "API.mli" from the beginning to the end and:
+- remember which modules were already defined
+- and for each module check whether some of the elements refers
+  to a module that is not yet defined.
+
+--------------------------------------------------------------------------------
+
+INSTANCE
+
+Minimize "API.Prelude" (if possible).
+
+--------------------------------------------------------------------------------
+
+INSTANCE
+
+Which parts of API are present only because the macros we provide to plugin writers:
+- VERNAC COMMAND EXTEND
+- VERNAC ARGUMENT EXTEND
+- TACTIC EXTEND
+- ARGUMENT EXTEND
+expand to a code that needs it.
+
+If there are such entries in the API,
+then it would be wise to move them out to a separate module.
+
+MOTIVATION
+
+- it will be clearer what plugin writer may want to care about
+  (these elements will be in one module)
+  and what he/she does not need to care about
+  (these elements will be in another module)
+
+HINTS
+
+One can see this separation in trunk (e.g. it is still present in commit 35e0f32)
+
+--------------------------------------------------------------------------------
+
+INSTANCE
+
+Isn't it odd that the following two functions:
+
+  val it_mkLambda_or_LetIn : constr -> Context.Rel.t -> constr
+  val mkLambda_or_LetIn : rel_declaration -> constr -> constr
+
+are not "similarly general"?
+
+(one can take a context of any kind (Constr as well as EConstr)
+ the other can take only Constr)
+
+?
+
+--------------------------------------------------------------------------------
+
+INSTANCE
+
+API should be properly formatted.
+
+--------------------------------------------------------------------------------
+
+INSTANCE
+
+Look at these types
+- Vernacexpr.local_decl_expr
+- Context.{Named,Rel}.Declaration.t
+and check if it would make sense to refactor them
+(define it once as a functor and intantiate just its specializations)
+
+--------------------------------------------------------------------------------
+
+INSTANCE
+
+Many of the API elements are present just because the plugins we distributed with Coq use them
+even though it is a bad idea.
+
+- identify them
+  - Proofs.Goal.V82
+  - Proofs.Proof.V82
+  - Engine.Proof_view.V82
+  - ...
+- and then for each of them:
+  - list plugins that currently uses this API element
+  - and add some hints about our plan for fixing this
+
+--------------------------------------------------------------------------------
+
+INSTANCE
+
+The "ml-doc" Makefile target is currently broken.
+
+--------------------------------------------------------------------------------
+
+INSTANCE
+
+We are providing an inferior mechanisms for allocating evars.
+Hide all the functions that can retrieve the elements of the state
+- hide functions for retrieving the local environment
+- hide functions for retrieving the current evar-map / sigma
+Enrichment of the evar-map should be done via tactic that operates on the state
+(the representation of the state should not be exposed to the plugin-writer).
+This new tactic, instead of returning unit-value, will return a Evar variant of EConstr.
+The plugin-writer can then bind this Evar and use it.
+- The tactic for allocating the new evar will have to take an extra parameters:
+  - the type of the new evar
+  - the delta by which the named-context of the new evar differs from the
+    current named-context (stored in the local-environment stored in the state
+    of the monad)
+
+--------------------------------------------------------------------------------
+
+INSTANCE
+
+- Go through all the types that are exposed in the API and for each of them consider:
+  - whether it would make sense to make it opaque
+  - or at least private
+
+--------------------------------------------------------------------------------
+
+INSTANCE
+
+Detect all API-leaks.
+(Situations when API element refers to a type that is not aliased by the API.)
+
+--------------------------------------------------------------------------------
+
+INSTANCE
+
+EConstr.t vs EConstr.constr
+
+  Do we need both "constr" as well as "t" ?
+  Wouldn't "t" suffice?
+  
+  (NOTE: should we also rename Term.constr to Term.t ?)
+
+--------------------------------------------------------------------------------
+
+- Why does anyone need to use values of type "evar_map ref"?
+  - Evd.evd_comb*
+  - Evarconv.e_conv
+  - Evarutil.clear_hyps_in_evi
+  - Constrintern.interp_context_evars
+  - Constrintern.interp_constr_evars
+  - Constrintern.interp_type_evars
+  - Typing.e_type_of
+  - ...
+
+- Why don't these functions take evar-map if they work with EConstr?
+  - Termops.pop
+  - Termops.print_constr
+    (it doesn't take neither the local environment, nor the the evar-map
+     even if it works with EConstr)
+
+- EConstr
+  - check whether the location of:
+    - types
+    - modules
+    - functions
+    defined in this module makes sense.
+  - check the relationship of functions defined in this module with the corresponding functions in the Term module
+    - Are they just aliases?
+    - If they are not aliases, are the corresponding functions in the Term module still meaningful?
+    - ...
+  - ...
+
+...

@@ -1,0 +1,27 @@
+Modules with questionable meaning:
+
+================================================================================
+
+INSTANCES
+
+- Constr
+  (This is a workaround for a dependency problem. Is there a way to get rid of it?)
+
+- Hints
+  (Why is this provided by Coq? Why not by Ltac-plugin?)
+
+- Hooks
+  (Why do we need mechanisms provided by this module?)
+
+- Pfedit
+  (What kind of operations is this module (and this module only) supposed to group?)
+
+- Tactics
+  (Don't these things belong to the "ltac_plugin"?)
+
+- Tactics.New
+  (If we have Tactics.New module, does that mean that things we have directly in
+   the Tactics module can be considered as deprecated?)
+
+- Tacticals
+  (Don't these things belong to the "ltac_plugin"?)

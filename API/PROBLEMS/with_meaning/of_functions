@@ -1,0 +1,116 @@
+Functions with questionable meaning:
+
+================================================================================
+
+INSTANCE: repr* functions
+
+Don't these functions:
+
+- repr*
+  - Names.DirPath.repr
+  - Names.MBId.repr
+  - Names.KerName.repr
+  - Names.Constant.repr3
+  - ...
+- dest*
+  - Libnames.dest*
+  - ...
+- ...
+
+break abstraction?
+
+Isn't there another mechanisms that can be used (as conveniently)
+that wouldn't force us to define functions that completely
+expose internal representation of various concepts?
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Evd.push_named vs. EConstr.push_named
+
+What do these two functions have in common?
+In what ways are they different?
+Do we need both of them (in the API)?
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Evarutil.new_evar vs. new_evar_instance
+
+The meaning and the relationship of these two concepts:
+- evar
+- evar instance
+should be clarified.
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Ftactic.enter vs. Proofview.Goal.enter
+
+The difference between the meaning of these two functions should be clarified.
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Nameops.atompart_of_id
+
+What is this function supposed to do?
+
+If I do this:
+
+	Drop.
+	open Util;;
+	"foo099" |> Names.Id.of_string |> Nameops.atompart_of_id;;
+
+I get the following response:
+
+	"foo0"
+
+Is this expected? Why?
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Nameops.forget_subscript
+
+What is this function supposed to do?
+
+If I do this:
+
+	"foo099" |> Names.Id.of_string |> Nameops.forget_subscript
+
+I get the following response:
+
+	"foo09"
+
+Is this expected? Why?
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Term.applistc
+
+Can we drop the last "c" letter?
+
+(which was a way to disambiguate between
+
+	applist  (* not curried version *)
+
+and
+
+	applistc (* curried version *)
+
+However, we have dropped "applist" function in the API so it is no longer the
+case that we need some kind of disambiguation.
+
+--------------------------------------------------------------------------------
+
+INSTANCE: Term.compare vs. Term.compare_constr
+
+What is the purpose of the "Term.compare_constr" function?
+How is its purpose different from "Term.compare"?
+Why it make sense, for "Term.compare_constr", to return a value of type "bool"?
+
+--------------------------------------------------------------------------------
+
+INSTANCE: EConstr.compare_constr
+
+What does this function do?
+
+--------------------------------------------------------------------------------
+
+...

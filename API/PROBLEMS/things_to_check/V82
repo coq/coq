@@ -1,0 +1,14 @@
+API currently provides various "V82" modules.
+The mechanisms of provided by these modules are kept mainly for backward compatibility reasons
+and should not be used for writing new plugins.
+
+- make sure that plugins distributed with Coq don't depend on these mechanisms
+- remove these mechanisms from the API
+
+================================================================================
+
+INSTANCES
+
+- Goal.V82.*
+- Proof.V82.*
+- Proofview.V82.*

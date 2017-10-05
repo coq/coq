@@ -1,0 +1,25 @@
+Decide how we want to create module names composed from multiple words.
+- use "CamelCase" ?
+- use underscore ?
+It would probably make sense to follow the tradition of the Ocaml standard library (which is also followed by Batteries).
+
+================================================================================
+
+INSTANCES
+- Termops vs Constrexpr_ops
+  (why did we insert '_' in the second identifier?)
+- Map
+  - Names.Cmap
+    (consider moving it to "Names.Constant.Map")
+  - Names.MPmap
+    (consider moving it to "Names.ModPath.Map")
+- Set
+  - Names.Cset
+    (consider moving it to "Names.Constant.Set")
+  - Names.MPset
+    (consider moving it to "Names.ModPath.Set")
+  - Globnames.Refset
+    (consider moving it to "Globnames.Set")
+  - Globnames.Refmap
+    (consider moving it to "Globnames.Map")
+- ...

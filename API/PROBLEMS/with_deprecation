@@ -1,0 +1,29 @@
+Various problems related to @@ocaml.deprecated tag.
+
+================================================================================
+
+INSTANCE
+
+All functions that are marked in Coq code-base as deprecated
+must be marked as deprecated also in the API.
+This property is broken by:
+- Evd.create_evar_defs
+- ...
+
+--------------------------------------------------------------------------------
+
+INSTANCE
+
+For each @@ocaml.deprecated element, we should note when this deprecation happened.
+
+This information is necessary in order to be able to judge when
+(i.e. at which other Coq version)
+a given deprecated element can already be removed.
+
+--------------------------------------------------------------------------------
+
+INSTANCE
+
+Each @@ocaml.deprecated element should also be deprecated in the Coq codebase.
+
+--------------------------------------------------------------------------------

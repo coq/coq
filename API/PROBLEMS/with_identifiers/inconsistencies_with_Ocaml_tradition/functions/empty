@@ -1,0 +1,25 @@
+If "M.t" is a type that represents some kind of collection of things
+then "M.empty" usually represents an "empty collection" of that kind.
+
+The type of the "M.empty" function usually is:
+
+  M.t
+
+or perhaps
+
+  'a M.t
+
+Supporting examples (from the Ocaml standard library):
+- Map.empty
+- Queue.empty
+- Set.empty
+
+Conflicting examples (from the Ocaml standard library):
+- List.nil
+  (In this case, instead of Ocaml tradition, we follow LISP tradition ?!)
+
+================================================================================
+
+INSTANCES (where we deviate from the "empty" convention)
+
+- ...

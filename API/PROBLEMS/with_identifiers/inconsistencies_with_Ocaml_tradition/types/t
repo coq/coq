@@ -1,0 +1,84 @@
+If a module only exports
+- some type
+- and some operations with values of this type
+we gain nothing by repeating the module name in the type name.
+We can just use "t" as the name of the type because all the relevant hints are already
+encoded (or should be encoded) into the module name.
+
+Supporting examples (from the Ocaml standard library):
+- Buffer.t
+- Complex.t
+- Digest.t
+- Ephemeron.S.t
+- Hashtbl.t
+- Hashtbl.S.t
+- Lazy.t
+- Map.S.t
+- Queue.t
+- Set.S.t
+- Stack.t
+- Stream.t
+
+Conflicting examples (from the Ocaml standard library):
+- array
+  (There is no Array.t in the Ocaml standard library,
+   although there *is* Array.t in Batteries.)
+- bytes
+  (There is no Bytes.t in the Ocaml standard library;
+   not even in Batteries.)
+- char
+  (There is no Char.t in the Ocaml standard library,
+   not even in Batteries.)
+- int32
+  (There is no Int32.t in the Ocaml standard library;
+   although there *is* Int32.t in Batteries.)
+- int64
+  (There is no Int64.t in the Ocaml standard library;
+   although there *is* Int64.t in Batteries.)
+- list
+  (There is no List.t in the Ocaml standard library;
+   although there *is* List.t in Batteries.)
+- nativeint
+  (There is no Nativeint.t in the Ocaml standard library;
+   although there *is* Nativeint.t in Batteries.)
+- string
+  (There is no String.t in the Ocaml standard library;
+   not even in Batteries.)
+
+================================================================================
+
+INSTANCES
+
+- Constr.constr
+  (rename it to "Constr.t")
+- Constrexpr.constr_expr
+  (rename it to "Constrexpr.t")
+- EConstr.constr
+  (since we already have "EConstr.t", we can drop "EConstr.constr")
+- Glob_term.glob_constr
+  (rename it to "Glob_term.t")
+- Globnames.global_reference
+  (rename it to "Globnames.t")
+- Key.key
+  (rename it to "Key.t")
+- Pattern.constr_pattern
+  (rename it to "Pattern.t")
+- Pp.std_ppcmds
+  (rename it to "Pp.t" ... see https://github.com/coq/coq/pull/761)
+- Pretype_errors.pretype_error
+  (rename it to "Pretype_errors.t")
+- Proof.Redexpr.red_expr
+  (rename it to "Proof.Redexpr.t")
+- Proofview.proofview
+  (rename it to "Proofview.t")
+- Redexpr.redexpr
+  (rename it to "Redexpr.t")
+- Summary.Local.local_ref
+  (rename it to "Summary.Local.t")
+- Term.constr
+  (rename it to "Term.t")
+- Typeclass.typeclass
+  (rename it to "Typeclass.t")
+- Vernacexpr.vernac_expr
+  (rename it to "Vernacexpr.t")
+- ...
