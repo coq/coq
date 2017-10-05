@@ -51,9 +51,12 @@ Section ZMORPHISM.
      Add Setoid R req Rsth as R_setoid3.
      Ltac rrefl := gen_reflexivity Rsth.
  Variable Reqe : ring_eq_ext radd rmul ropp req.
-   Add Morphism radd : radd_ext3.  exact (Radd_ext Reqe). Qed.
-   Add Morphism rmul : rmul_ext3.  exact (Rmul_ext Reqe). Qed.
-   Add Morphism ropp : ropp_ext3.  exact (Ropp_ext Reqe). Qed.
+   Add Morphism radd with signature (req ==> req ==> req) as radd_ext3.
+   Proof. exact (Radd_ext Reqe). Qed.
+   Add Morphism rmul with signature (req ==> req ==> req) as rmul_ext3.
+   Proof. exact (Rmul_ext Reqe). Qed.
+   Add Morphism ropp with signature (req ==> req) as ropp_ext3.
+   Proof. exact (Ropp_ext Reqe). Qed.
 
  Fixpoint gen_phiPOS1 (p:positive) : R :=
   match p with
@@ -103,7 +106,8 @@ Section ZMORPHISM.
 
  Section ALMOST_RING.
  Variable ARth : almost_ring_theory 0 1 radd rmul rsub ropp req.
-   Add Morphism rsub : rsub_ext3. exact (ARsub_ext Rsth Reqe ARth). Qed.
+   Add Morphism rsub with signature (req ==> req ==> req) as rsub_ext3.
+   Proof. exact (ARsub_ext Rsth Reqe ARth). Qed.
    Ltac norm := gen_srewrite Rsth Reqe ARth.
    Ltac add_push := gen_add_push radd Rsth Reqe ARth.
 
@@ -151,7 +155,8 @@ Section ZMORPHISM.
 
  Variable Rth : ring_theory 0 1 radd rmul rsub ropp req.
  Let ARth := Rth_ARth Rsth Reqe Rth.
-   Add Morphism rsub : rsub_ext4. exact (ARsub_ext Rsth Reqe ARth). Qed.
+   Add Morphism rsub with signature (req ==> req ==> req) as rsub_ext4.
+   Proof. exact (ARsub_ext Rsth Reqe ARth). Qed.
    Ltac norm := gen_srewrite Rsth Reqe ARth.
    Ltac add_push := gen_add_push radd Rsth Reqe ARth.
 
@@ -265,8 +270,10 @@ Section NMORPHISM.
  Let rsub := (@SRsub R radd).
   Notation "x - y " := (rsub x y).  Notation "- x" := (ropp x).
   Notation "x == y" := (req x y).
-   Add Morphism radd : radd_ext4.  exact (Radd_ext Reqe). Qed.
-   Add Morphism rmul : rmul_ext4.  exact (Rmul_ext Reqe). Qed.
+   Add Morphism radd with signature (req ==> req ==> req) as radd_ext4.
+   Proof. exact (Radd_ext Reqe). Qed.
+   Add Morphism rmul with signature (req ==> req ==> req) as rmul_ext4.
+   Proof. exact (Rmul_ext Reqe). Qed.
    Ltac norm := gen_srewrite_sr Rsth Reqe ARth.
 
  Definition gen_phiN1 x :=
@@ -377,12 +384,16 @@ Section NWORDMORPHISM.
      Add Setoid R req Rsth as R_setoid5.
      Ltac rrefl := gen_reflexivity Rsth.
  Variable Reqe : ring_eq_ext radd rmul ropp req.
-   Add Morphism radd : radd_ext5.  exact (Radd_ext Reqe). Qed.
-   Add Morphism rmul : rmul_ext5.  exact (Rmul_ext Reqe). Qed.
-   Add Morphism ropp : ropp_ext5.  exact (Ropp_ext Reqe). Qed.
+   Add Morphism radd with signature (req ==> req ==> req) as radd_ext5.
+   Proof. exact (Radd_ext Reqe). Qed.
+   Add Morphism rmul with signature (req ==> req ==> req) as rmul_ext5.
+   Proof. exact (Rmul_ext Reqe). Qed.
+   Add Morphism ropp with signature (req ==> req) as ropp_ext5.
+   Proof. exact (Ropp_ext Reqe). Qed.
 
  Variable ARth : almost_ring_theory 0 1 radd rmul rsub ropp req.
-   Add Morphism rsub : rsub_ext7. exact (ARsub_ext Rsth Reqe ARth). Qed.
+   Add Morphism rsub with signature (req ==> req ==> req) as rsub_ext7.
+   Proof. exact (ARsub_ext Rsth Reqe ARth). Qed.
    Ltac norm := gen_srewrite Rsth Reqe ARth.
    Ltac add_push := gen_add_push radd Rsth Reqe ARth.
 
@@ -557,10 +568,14 @@ Section GEN_DIV.
   (* Useful tactics *)
   Add Setoid R req Rsth as R_set1.
  Ltac rrefl := gen_reflexivity Rsth.
-  Add Morphism radd : radd_ext.  exact (Radd_ext Reqe). Qed.
-  Add Morphism rmul : rmul_ext.  exact (Rmul_ext Reqe). Qed.
-  Add Morphism ropp : ropp_ext.  exact (Ropp_ext Reqe). Qed.
-  Add Morphism rsub : rsub_ext. exact (ARsub_ext Rsth Reqe ARth). Qed.
+  Add Morphism radd with signature (req ==> req ==> req) as radd_ext.
+  Proof. exact (Radd_ext Reqe). Qed.
+  Add Morphism rmul with signature (req ==> req ==> req) as rmul_ext.
+  Proof. exact (Rmul_ext Reqe). Qed.
+  Add Morphism ropp with signature (req ==> req) as ropp_ext.
+  Proof. exact (Ropp_ext Reqe). Qed.
+  Add Morphism rsub with signature (req ==> req ==> req) as rsub_ext.
+  Proof. exact (ARsub_ext Rsth Reqe ARth). Qed.
  Ltac rsimpl := gen_srewrite Rsth Reqe ARth.
 
  Definition triv_div x y :=
@@ -859,8 +874,3 @@ Ltac isZcst t :=
   (* *)
   | _ => constr:(false)
   end.
-
-
-
-
-

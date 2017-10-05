@@ -254,8 +254,12 @@ Section ALMOST_RING.
  Section SEMI_RING.
  Variable SReqe : sring_eq_ext radd rmul req.
 
-   Add Morphism radd : radd_ext1.  exact (SRadd_ext SReqe). Qed.
-   Add Morphism rmul : rmul_ext1.  exact (SRmul_ext SReqe). Qed.
+   Add Morphism radd with signature (req ==> req ==> req) as radd_ext1.
+   Proof. exact (SRadd_ext SReqe). Qed.
+
+   Add Morphism rmul with signature (req ==> req ==> req) as rmul_ext1.
+   Proof. exact (SRmul_ext SReqe). Qed.
+
  Variable SRth : semi_ring_theory 0 1 radd rmul req.
 
  (** Every semi ring can be seen as an almost ring, by taking :
@@ -323,9 +327,15 @@ Section ALMOST_RING.
  Notation "- x" := (ropp x).
 
  Variable Reqe : ring_eq_ext radd rmul ropp req.
-   Add Morphism radd : radd_ext2.  exact (Radd_ext Reqe). Qed.
-   Add Morphism rmul : rmul_ext2.  exact (Rmul_ext Reqe). Qed.
-   Add Morphism ropp : ropp_ext2.  exact (Ropp_ext Reqe). Qed.
+
+   Add Morphism radd with signature (req ==> req ==> req) as radd_ext2.
+   Proof. exact (Radd_ext Reqe). Qed.
+
+   Add Morphism rmul with signature (req ==> req ==> req) as rmul_ext2.
+   Proof. exact (Rmul_ext Reqe). Qed.
+
+   Add Morphism ropp with signature (req ==> req) as ropp_ext2.
+   Proof. exact (Ropp_ext Reqe). Qed.
 
  Section RING.
  Variable Rth : ring_theory 0 1 radd rmul rsub ropp req.
@@ -393,14 +403,25 @@ Section ALMOST_RING.
   Notation "?=!" := ceqb. Notation "[ x ]" := (phi x).
  Variable Csth : Equivalence ceq.
  Variable Ceqe : ring_eq_ext cadd cmul copp ceq.
+
    Add Setoid C ceq Csth as C_setoid.
-   Add Morphism cadd : cadd_ext.  exact (Radd_ext Ceqe). Qed.
-   Add Morphism cmul : cmul_ext.  exact (Rmul_ext Ceqe). Qed.
-   Add Morphism copp : copp_ext.  exact (Ropp_ext Ceqe). Qed.
+
+   Add Morphism cadd with signature (ceq ==> ceq ==> ceq) as cadd_ext.
+   Proof. exact (Radd_ext Ceqe). Qed.
+
+   Add Morphism cmul with signature (ceq ==> ceq ==> ceq) as cmul_ext.
+   Proof. exact (Rmul_ext Ceqe). Qed.
+
+   Add Morphism copp with signature (ceq ==> ceq) as copp_ext.
+   Proof. exact (Ropp_ext Ceqe). Qed.
+
  Variable Cth : ring_theory cO cI cadd cmul csub copp ceq.
  Variable Smorph : semi_morph 0 1 radd rmul req cO cI cadd cmul ceqb phi.
  Variable phi_ext : forall x y, ceq x y -> [x] == [y].
-   Add Morphism phi : phi_ext1.  exact phi_ext. Qed.
+
+   Add Morphism phi with signature (ceq ==> req) as phi_ext1.
+   Proof. exact phi_ext. Qed.
+
  Lemma Smorph_opp x : [-!x] == -[x].
  Proof.
   rewrite <-  (Rth.(Radd_0_l) [-!x]).
