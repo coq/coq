@@ -539,7 +539,12 @@ let parse_args arglist =
     |"-control-channel" -> Spawned.control_channel := get_host_port opt (next())
     |"-vio2vo" -> add_compile false (next ()); Flags.compilation_mode := Flags.Vio2Vo
     |"-toploop" -> set_toploop (next ())
-    |"-w" | "-W" -> CWarnings.set_flags (CWarnings.normalize_flags_string (next ()))
+    |"-w" | "-W" ->
+      let w = next () in
+      if w = "none" then CWarnings.set_flags w
+      else
+        let w = CWarnings.get_flags () ^ "," ^ w in
+        CWarnings.set_flags (CWarnings.normalize_flags_string w)
     |"-o" -> Flags.compilation_output_name := Some (next())
 
     (* Options with zero arg *)
