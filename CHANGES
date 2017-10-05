@@ -1,14 +1,21 @@
-Changes from 8.7+beta1 to 8.7.0
-===============================
+Changes from 8.7+beta1 to 8.7+beta2
+===================================
 
 Tools
 
 - In CoqIDE, the "Compile Buffer" command takes account of flags in
   _CoqProject or other project file.
 
+Improvements around some error messages.
+
+Many bug fixes including two important ones:
+
+- BZ#5730: CoqIDE becomes unresponsive on file open.
+- coq_makefile: make sure compile flags for Coq and coq_makefile are in sync
+  (in particular, make sure the `-safe-string` option is used to compile plugins).
+
 Changes from 8.6.1 to 8.7+beta1
 ===============================
->>>>>>> 03cccc325... read flags from project file for Compile Buffer
 
 Tactics
 
