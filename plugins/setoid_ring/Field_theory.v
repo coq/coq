@@ -56,11 +56,16 @@ Let rI_neq_rO := AFth.(AF_1_neq_0).
 Let rdiv_def := AFth.(AFdiv_def).
 Let rinv_l := AFth.(AFinv_l).
 
-Add Morphism radd : radd_ext. Proof. exact (Radd_ext Reqe). Qed.
-Add Morphism rmul : rmul_ext. Proof. exact (Rmul_ext Reqe). Qed.
-Add Morphism ropp : ropp_ext. Proof. exact (Ropp_ext Reqe). Qed.
-Add Morphism rsub : rsub_ext. Proof. exact (ARsub_ext Rsth Reqe ARth). Qed.
-Add Morphism rinv : rinv_ext. Proof. exact SRinv_ext. Qed.
+Add Morphism radd with signature (req ==> req ==> req) as radd_ext.
+Proof. exact (Radd_ext Reqe). Qed.
+Add Morphism rmul with signature (req ==> req ==> req) as rmul_ext.
+Proof. exact (Rmul_ext Reqe). Qed.
+Add Morphism ropp with signature (req ==> req) as ropp_ext.
+Proof. exact (Ropp_ext Reqe). Qed.
+Add Morphism rsub with signature (req ==> req ==> req) as rsub_ext.
+Proof. exact (ARsub_ext Rsth Reqe ARth). Qed.
+Add Morphism rinv with signature (req ==> req) as rinv_ext.
+Proof. exact SRinv_ext. Qed.
 
 Let eq_trans := Setoid.Seq_trans _ _ Rsth.
 Let eq_sym := Setoid.Seq_sym _ _ Rsth.
@@ -1609,9 +1614,12 @@ Section Complete.
  Variable Rsth : Setoid_Theory R req.
    Add Setoid R req Rsth as R_setoid3.
  Variable Reqe : ring_eq_ext radd rmul ropp req.
-   Add Morphism radd : radd_ext3.  exact (Radd_ext Reqe). Qed.
-   Add Morphism rmul : rmul_ext3.  exact (Rmul_ext Reqe). Qed.
-   Add Morphism ropp : ropp_ext3.  exact (Ropp_ext Reqe). Qed.
+   Add Morphism radd with signature (req ==> req ==> req) as radd_ext3.
+   Proof. exact (Radd_ext Reqe). Qed.
+   Add Morphism rmul with signature (req ==> req ==> req) as rmul_ext3.
+   Proof. exact (Rmul_ext Reqe). Qed.
+   Add Morphism ropp with signature (req ==> req) as ropp_ext3.
+   Proof. exact (Ropp_ext Reqe). Qed.
 
 Section AlmostField.
 
