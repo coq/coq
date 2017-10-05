@@ -630,7 +630,9 @@ let evar_source evk d = (find d evk).evar_source
 let evar_ident evk evd = EvNames.ident evk evd.evar_names
 let evar_key id evd = EvNames.key id evd.evar_names
 
-let define_aux def undef evk body =
+let restricted = Store.field ()
+
+let define_aux ?dorestrict def undef evk body =
   let oldinfo =
     try EvMap.find evk undef
     with Not_found ->
@@ -640,7 +642,10 @@ let define_aux def undef evk body =
         anomaly ~label:"Evd.define" (Pp.str "cannot define undeclared evar.")
   in
   let () = assert (oldinfo.evar_body == Evar_empty) in
-  let newinfo = { oldinfo with evar_body = Evar_defined body } in
+  let evar_extra = match dorestrict with
+    | Some evk' -> Store.set oldinfo.evar_extra restricted evk'
+    | None -> oldinfo.evar_extra in
+  let newinfo = { oldinfo with evar_body = Evar_defined body; evar_extra } in
   EvMap.add evk newinfo def, EvMap.remove evk undef
 
 (* define the existential of section path sp as the constr body *)
@@ -652,6 +657,9 @@ let define evk body evd =
   in
   let evar_names = EvNames.remove_name_defined evk evd.evar_names in
   { evd with defn_evars; undf_evars; last_mods; evar_names }
+
+let is_restricted_evar evi =
+  Store.get evi.evar_extra restricted
 
 let restrict evk filter ?candidates ?src evd =
   let evk' = new_untyped_evar () in
@@ -667,7 +675,7 @@ let restrict evk filter ?candidates ?src evd =
   let ctxt = Filter.filter_list filter (evar_context evar_info) in
   let id_inst = Array.map_of_list (NamedDecl.get_id %> mkVar) ctxt in
   let body = mkEvar(evk',id_inst) in
-  let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
+  let (defn_evars, undf_evars) = define_aux ~dorestrict:evk' evd.defn_evars evd.undf_evars evk body in
   { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
     defn_evars; last_mods; evar_names }, evk'
 
