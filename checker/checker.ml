@@ -10,7 +10,6 @@ open Pp
 open CErrors
 open Util
 open System
-open Flags
 open Names
 open Check
 
@@ -74,7 +73,7 @@ let add_path ~unix_path:dir ~coq_root:coq_dirpath =
 let convert_string d =
   try Id.of_string d
   with CErrors.UserError _ ->
-    if_verbose Feedback.msg_warning
+    Flags.if_verbose Feedback.msg_warning
       (str "Directory " ++ str d ++ str " cannot be used as a Coq identifier (skipped)");
     raise Exit
 
@@ -342,7 +341,7 @@ let parse_args argv =
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
 
     | ("-v"|"--version") :: _ -> version ()
-    | "-boot" :: rem -> boot := true; parse rem
+    | "-boot" :: rem -> Flags.boot := true; parse rem
     | ("-m" | "--memory") :: rem -> Check_stat.memory_stat := true; parse rem
     | ("-o" | "--output-context") :: rem ->
         Check_stat.output_context := true; parse rem
@@ -410,7 +409,7 @@ let init_with_argv argv =
       parse_args argv;
       if !Flags.debug then Printexc.record_backtrace true;
       Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
-      if_verbose print_header ();
+      Flags.if_verbose print_header ();
       init_load_path ();
       engage ();
     with e ->

@@ -8,7 +8,6 @@
 
 open Pp
 open CErrors
-open Flags
 open Libnames
 open Coqinit
 
@@ -31,7 +30,7 @@ let print_header () =
   Feedback.msg_notice (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
   flush_all ()
 
-let warning s = with_option Flags.warn Feedback.msg_warning (strbrk s)
+let warning s = Flags.(with_option warn Feedback.msg_warning (strbrk s))
 
 let toploop = ref None
 
@@ -85,7 +84,7 @@ let console_toploop_run () =
   (* We initialize the console only if we run the toploop_run *)
   let tl_feed = Feedback.add_feeder Coqloop.coqloop_feed in
   if Dumpglob.dump () then begin
-    if_verbose warning "Dumpglob cannot be used in interactive mode.";
+    Flags.if_verbose warning "Dumpglob cannot be used in interactive mode.";
     Dumpglob.noglob ()
   end;
   Coqloop.loop();
@@ -128,7 +127,7 @@ let set_type_in_type () =
 let engage () =
   Global.set_engagement !impredicative_set
 
-let set_batch_mode () = batch_mode := true
+let set_batch_mode () = Flags.batch_mode := true
 
 let toplevel_default_name = Names.(DirPath.make [Id.of_string "Top"])
 let toplevel_name = ref toplevel_default_name
@@ -175,7 +174,7 @@ let load_vernacular sid =
     (fun sid (s,v) ->
       let s = Loadpath.locate_file s in
       if !Flags.beautify then
-	with_option beautify_file (Vernac.load_vernac v sid) s
+	Flags.(with_option beautify_file (Vernac.load_vernac v sid) s)
       else
 	Vernac.load_vernac v sid s)
     sid (List.rev !load_vernacular_list)
@@ -197,7 +196,7 @@ let require_prelude () =
 let require_list = ref ([] : string list)
 let add_require s = require_list := s :: !require_list
 let require () =
-  let () = if !load_init then silently require_prelude () in
+  let () = if !Flags.load_init then Flags.silently require_prelude () in
   let map dir = Qualid (Loc.tag @@ qualid_of_string dir) in
   Vernacentries.vernac_require None (Some false) (List.rev_map map !require_list)
 
@@ -226,7 +225,7 @@ let add_compile verbose s =
 
 let compile_file (v,f) =
   if !Flags.beautify then
-    with_option beautify_file (Vernac.compile v) f
+    Flags.(with_option beautify_file (Vernac.compile v) f)
   else
     Vernac.compile v f
 
@@ -301,7 +300,7 @@ let usage () =
   init_load_path ();
   with NoCoqLib -> usage_no_coqlib ()
   end;
-  if !batch_mode then Usage.print_usage_coqc ()
+  if !Flags.batch_mode then Usage.print_usage_coqc ()
   else begin
     Mltop.load_ml_objects_raw_rex
       (Str.regexp (if Mltop.is_native then "^.*top.cmxs$" else "^.*top.cma$"));
@@ -535,7 +534,7 @@ let parse_args arglist =
     |"-with-geoproof" -> Coq_config.with_geoproof := get_bool opt (next ())
     |"-main-channel" -> Spawned.main_channel := get_host_port opt (next())
     |"-control-channel" -> Spawned.control_channel := get_host_port opt (next())
-    |"-vio2vo" -> add_compile false (next ()); Flags.compilation_mode := Vio2Vo
+    |"-vio2vo" -> add_compile false (next ()); Flags.compilation_mode := Flags.Vio2Vo
     |"-toploop" -> set_toploop (next ())
     |"-w" | "-W" ->
       let w = next () in
@@ -553,9 +552,9 @@ let parse_args arglist =
     |"-async-proofs-never-reopen-branch" ->
         Flags.async_proofs_never_reopen_branch := true;
     |"-batch" -> set_batch_mode ()
-    |"-test-mode" -> test_mode := true
-    |"-beautify" -> beautify := true
-    |"-boot" -> boot := true; no_load_rc ()
+    |"-test-mode" -> Flags.test_mode := true
+    |"-beautify" -> Flags.beautify := true
+    |"-boot" -> Flags.boot := true; no_load_rc ()
     |"-bt" -> Backtrace.record_backtrace true
     |"-color" -> set_color (next ())
     |"-config"|"--config" -> print_config := true
@@ -568,17 +567,17 @@ let parse_args arglist =
     |"-impredicative-set" -> set_impredicative_set ()
     |"-indices-matter" -> Indtypes.enforce_indices_matter ()
     |"-m"|"--memory" -> memory_stat := true
-    |"-noinit"|"-nois" -> load_init := false
+    |"-noinit"|"-nois" -> Flags.load_init := false
     |"-no-glob"|"-noglob" -> Dumpglob.noglob (); glob_opt := true
     |"-native-compiler" ->
       if Coq_config.no_native_compiler then
 	warning "Native compilation was disabled at configure time."
-      else native_compiler := true
+      else Flags.native_compiler := true
     |"-output-context" -> output_context := true
     |"-profile-ltac" -> Flags.profile_ltac := true
     |"-q" -> no_load_rc ()
     |"-quiet"|"-silent" -> Flags.quiet := true; Flags.make_warn false
-    |"-quick" -> Flags.compilation_mode := BuildVio
+    |"-quick" -> Flags.compilation_mode := Flags.BuildVio
     |"-list-tags" -> print_tags := true
     |"-time" -> Flags.time := true
     |"-type-in-type" -> set_type_in_type ()
@@ -622,11 +621,11 @@ let init_toplevel arglist =
         prerr_endline "See -help for the list of supported options";
         exit 1
       end;
-      if_verbose print_header ();
+      Flags.if_verbose print_header ();
       inputstate ();
       Mltop.init_known_plugins ();
       engage ();
-      if (not !batch_mode || CList.is_empty !compile_list)
+      if (not !Flags.batch_mode || CList.is_empty !compile_list)
          && Global.env_is_initial ()
       then Declaremods.start_library !toplevel_name;
       init_library_roots ();
@@ -647,16 +646,16 @@ let init_toplevel arglist =
     with any ->
       flush_all();
       let extra =
-        if !batch_mode && not Stateid.(equal (Stm.get_current_state ()) dummy)
+        if !Flags.batch_mode && not Stateid.(equal (Stm.get_current_state ()) dummy)
         then None
         else Some (str "Error during initialization: ")
       in
       fatal_error ?extra any
   end;
-  if !batch_mode then begin
+  if !Flags.batch_mode then begin
     flush_all();
     if !output_context then
-      Feedback.msg_notice (with_option raw_print Prettyp.print_full_pure_context () ++ fnl ());
+      Feedback.msg_notice Flags.(with_option raw_print Prettyp.print_full_pure_context () ++ fnl ());
     Profile.print_profile ();
     exit 0
   end;
