@@ -50,7 +50,7 @@ WHAT DO YOU NEED ?
 
    $ opam install ocamlfind camlp5 lablgtk-extras
 
-   should get you a reasonable Ocaml enviroment to compile Coq.
+   should get you a reasonable OCaml environment to compile Coq.
 
 QUICK INSTALLATION PROCEDURE.
 =============================
