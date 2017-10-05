@@ -435,6 +435,7 @@ tools: $(TOOLS) $(OCAMLLIBDEP) $(COQDEPBOOT)
 # is being built.
 
 COQDEPBOOTSRC := lib/minisys.cmo \
+ lib/segmenttree.cmo lib/unicodetable.cmo lib/unicode.cmo \
  tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep_boot.cmo
 
 tools/coqdep_lexer.cmo : tools/coqdep_lexer.cmi
@@ -455,6 +456,7 @@ $(OCAMLLIBDEP): $(call bestobj, tools/ocamllibdep.cmo)
 # The full coqdep (unused by this build, but distributed by make install)
 
 COQDEPCMO:=lib/clib.cma lib/cErrors.cmo lib/cWarnings.cmo lib/minisys.cmo \
+  lib/segmenttree.cmo lib/unicodetable.cmo lib/unicode.cmo \
   lib/system.cmo tools/coqdep_lexer.cmo tools/coqdep_common.cmo \
   tools/coqdep.cmo
 

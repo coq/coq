@@ -40,3 +40,6 @@ val utf8_length : string -> int
 
 (** Variant of {!String.sub} for UTF-8 strings. *)
 val utf8_sub : string -> int -> int -> string
+
+(** Return a "%XX"-escaped string if it contains non UTF-8 characters. *)
+val escaped_if_non_utf8 : string -> string

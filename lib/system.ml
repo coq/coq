@@ -52,7 +52,7 @@ let dirmap = ref StrMap.empty
 
 let make_dir_table dir =
   let filter_dotfiles s f = if f.[0] = '.' then s else StrSet.add f s in
-  Array.fold_left filter_dotfiles StrSet.empty (readdir dir)
+  Array.fold_left filter_dotfiles StrSet.empty (Sys.readdir dir)
 
 let exists_in_dir_respecting_case dir bf =
   let cache_dir dir =
