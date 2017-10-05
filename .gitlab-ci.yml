@@ -60,6 +60,7 @@ before_script:
     paths:
       - _install_ci
       - config/Makefile
+      - test-suite/misc/universes/all_stdlib.v
     expire_in: 1 week
   script:
     - set -e
@@ -70,6 +71,7 @@ before_script:
 
     - echo 'start:coq.build'
     - make -j ${NJOBS}
+    - make test-suite/misc/universes/all_stdlib.v
     - echo 'end:coq:build'
 
     - echo 'start:coq.install'
