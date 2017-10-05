@@ -133,10 +133,16 @@ let rec interp_vernac sid (loc,com) =
          highly dynamic and depends on the structure of the
          document. Hopefully this is fixed when VtBack can be removed
          and Undo etc... are just interpreted regularly. *)
+
+      (* XXX: The classifier can emit warnings so we need to guard
+         against that... *)
+      let wflags = CWarnings.get_flags () in
+      CWarnings.set_flags "none";
       let is_proof_step = match fst (Vernac_classifier.classify_vernac v) with
         | VtProofStep _ | VtStm (VtBack _, _) | VtStartProof _ -> true
         | _ -> false
       in
+      CWarnings.set_flags wflags;
 
       let nsid, ntip = Stm.add ~ontop:sid (not !Flags.quiet) (loc,v) in
 

@@ -1044,8 +1044,18 @@ end = struct (* {{{ *)
         match f acc (id, vcs, ids, tactic, undo) with
         | `Stop x -> x
         | `Cont acc -> next acc
- 
+
+  let undo_costly_in_batch_mode =
+    CWarnings.create ~name:"undo-batch-mode" ~category:"non-interactive" Pp.(fun v ->
+        str "Command " ++ Ppvernac.pr_vernac v ++
+        str (" is not recommended in batch mode. In particular, going back in the document" ^
+             " is not efficient in batch mode due to Coq not caching previous states for memory optimization reasons." ^
+             " If your use is intentional, you may want to disable this warning and pass" ^
+             " the \"-async-proofs-cache force\" option to Coq."))
+
   let undo_vernac_classifier v =
+    if !Flags.batch_mode && !Flags.async_proofs_cache <> Some Flags.Force
+    then undo_costly_in_batch_mode v;
     try
       match v with
       | VernacResetInitial ->
