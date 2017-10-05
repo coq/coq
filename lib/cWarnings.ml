@@ -93,8 +93,12 @@ let split_flags s =
     "all" flag, and reverses the list. *)
 let rec cut_before_all_rev acc = function
   | [] -> acc
-  | (_status,name as w) :: warnings ->
-     cut_before_all_rev (w :: if is_all_keyword name then [] else acc) warnings
+  | (status,name as w) :: warnings ->
+    let acc =
+      if is_all_keyword name then [w]
+      else if is_none_keyword name then [(Disabled,"all")]
+      else w :: acc in
+    cut_before_all_rev acc warnings
 
 let cut_before_all_rev warnings = cut_before_all_rev [] warnings
 
