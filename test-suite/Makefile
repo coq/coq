@@ -92,7 +92,7 @@ VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
   coqdoc
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coq-makefile
+SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coqwc coq-makefile
 
 PREREQUISITELOG = prerequisite/admit.v.log			\
   prerequisite/make_local.v.log prerequisite/make_notation.v.log
@@ -156,6 +156,7 @@ summary:
 	  $(call summary_dir, "IDE tests", ide); \
 	  $(call summary_dir, "VI tests", vio); \
 	  $(call summary_dir, "Coqchk tests", coqchk); \
+	  $(call summary_dir, "Coqwc tests", coqwc); \
 	  $(call summary_dir, "Coq makefile", coq-makefile); \
 	  $(call summary_dir, "Coqdoc tests", coqdoc); \
 	  nb_success=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_success) | wc -l`; \
@@ -496,6 +497,26 @@ coqchk: $(patsubst %.v,%.chk.log,$(wildcard coqchk/*.v))
 	    echo $(log_failure); \
 	    echo "    $<...Error!"; \
 	  fi; \
+	} > "$@"
+
+# coqwc : test output
+
+coqwc : $(patsubst %.v,%.v.log,$(wildcard coqwc/*.v))
+
+coqwc/%.v.log : coqwc/%.v
+	$(HIDE){ \
+	  echo $(call log_intro,$<); \
+	  tmpoutput=`mktemp /tmp/coqwc.XXXXXX`; \
+	  $(BIN)coqwc $< 2>&1 > $$tmpoutput; \
+	  diff -u --strip-trailing-cr coqwc/$*.out $$tmpoutput 2>&1; R=$$?; times; \
+	  if [ $$R = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    $<...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    $<...Error! (unexpected output)"; \
+	  fi; \
+	  rm $$tmpoutput; \
 	} > "$@"
 
 # coq_makefile
