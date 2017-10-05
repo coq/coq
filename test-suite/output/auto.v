@@ -9,3 +9,7 @@ info_eauto.
 Undo.
 debug eauto.
 Qed.
+
+Goal True.
+info_trivial.
+Qed.
