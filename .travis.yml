@@ -31,6 +31,7 @@ env:
   # system is == 4.02.3
   - COMPILER="system"
   - CAMLP5_VER="6.14"
+  - FINDLIB_VER="1.4.1"
   - NATIVE_COMP="yes"
   - COQ_DEST="-local"
   # Main test suites
@@ -92,6 +93,7 @@ matrix:
     - env:
       - TEST_TARGET="test-suite"
       - COMPILER="4.05.0"
+      - FINDLIB_VER="1.7.3"
       - CAMLP5_VER="7.01"
       - EXTRA_CONF="-coqide opt -with-doc yes"
       - EXTRA_OPAM="lablgtk-extras hevea"
@@ -122,6 +124,7 @@ matrix:
       - TEST_TARGET="coqocaml"
       - COMPILER="4.05.0"
       - CAMLP5_VER="7.01"
+      - FINDLIB_VER="1.7.3"
       - EXTRA_CONF="-coqide opt -warn-error"
       - EXTRA_OPAM="lablgtk-extras hevea"
       # dummy target
@@ -137,7 +140,7 @@ matrix:
       env:
       - TEST_TARGET="test-suite"
       - COMPILER="4.02.3"
-      - CAMLP5_VER="6.17"      
+      - CAMLP5_VER="6.17"
       - NATIVE_COMP="no"
       - COQ_DEST="-local"
       before_install:
@@ -186,7 +189,7 @@ install:
 - opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
 - eval $(opam config env)
 - opam config list
-- opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind ${EXTRA_OPAM}
+- opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind.${FINDLIB_VER} ${EXTRA_OPAM}
 - opam list
 
 script:
