@@ -214,7 +214,6 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
           type_of_inductive_knowing_conclusion env sigma (spec, EInstance.kind sigma u) conclty
     | Const (cst, u) ->
         let t = constant_type_in env (cst, EInstance.kind sigma u) in
-        (* TODO *)
           sigma, EConstr.of_constr t
     | Var id -> sigma, type_of_var env id
     | Construct (cstr, u) -> sigma, EConstr.of_constr (type_of_constructor env (cstr, EInstance.kind sigma u))
