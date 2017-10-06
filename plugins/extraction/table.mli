@@ -165,6 +165,9 @@ val modular : unit -> bool
 val set_library : bool -> unit
 val library : unit -> bool
 
+val set_extrcompute : bool -> unit
+val is_extrcompute : unit -> bool
+
 (*s Table for custom inlining *)
 
 val to_inline : global_reference -> bool
