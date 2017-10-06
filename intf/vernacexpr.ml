@@ -91,7 +91,7 @@ type locatable =
   | LocateTerm of reference or_by_notation
   | LocateLibrary of reference
   | LocateModule of reference
-  | LocateTactic of reference
+  | LocateOther of string * reference
   | LocateFile of string
 
 type showable =

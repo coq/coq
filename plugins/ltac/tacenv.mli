@@ -7,10 +7,20 @@
 (************************************************************************)
 
 open Names
+open Libnames
 open Tacexpr
 open Geninterp
 
 (** This module centralizes the various ways of registering tactics. *)
+
+(** {5 Tactic naming} *)
+
+val push_tactic : Nametab.visibility -> full_path -> ltac_constant -> unit
+val locate_tactic : qualid -> ltac_constant
+val locate_extended_all_tactic : qualid -> ltac_constant list
+val exists_tactic : full_path -> bool
+val path_of_tactic : ltac_constant -> full_path
+val shortest_qualid_of_tactic : ltac_constant -> qualid
 
 (** {5 Tactic notations} *)
 

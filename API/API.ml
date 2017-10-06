@@ -212,7 +212,7 @@ module Pputils = Pputils
 module Ppconstr = Ppconstr
 module Printer = Printer
 (* module Printmod *)
-(* module Prettyp *)
+module Prettyp = Prettyp
 module Ppvernac = Ppvernac
 
 (******************************************************************************)

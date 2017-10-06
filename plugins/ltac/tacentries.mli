@@ -62,3 +62,6 @@ val create_ltac_quotation : string ->
 
 val print_ltacs : unit -> unit
 (** Display the list of ltac definitions currently available. *)
+
+val print_located_tactic : Libnames.reference -> unit
+(** Display the absolute name of a tactic. *)

@@ -1785,7 +1785,7 @@ let vernac_locate = let open Feedback in function
           (Constrextern.without_symbols pr_lglob_constr) ntn sc)
   | LocateLibrary qid -> print_located_library qid
   | LocateModule qid -> msg_notice (print_located_module qid)
-  | LocateTactic qid -> msg_notice (print_located_tactic qid)
+  | LocateOther (s, qid) -> msg_notice (print_located_other s qid)
   | LocateFile f -> msg_notice (locate_file f)
 
 let vernac_register id r =

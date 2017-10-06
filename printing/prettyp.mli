@@ -50,12 +50,34 @@ val print_all_instances : unit -> Pp.t
 
 val inspect : int -> Pp.t
 
-(** Locate *)
+(** {5 Locate} *)
+
+type 'a locatable_info = {
+  locate : qualid -> 'a option;
+  (** Locate the most precise object with the provided name if any. *)
+  locate_all : qualid -> 'a list;
+  (** Locate all objects whose name is a suffix of the provided name *)
+  shortest_qualid : 'a -> qualid;
+  (** Return the shortest name in the current context *)
+  name : 'a -> Pp.t;
+  (** Data as printed by the Locate command *)
+  print : 'a -> Pp.t;
+  (** Data as printed by the Print command *)
+  about : 'a -> Pp.t;
+  (** Data as printed by the About command *)
+}
+(** Generic data structure representing locatable objects. *)
+
+val register_locatable : string -> 'a locatable_info -> unit
+(** Define a new type of locatable objects that can be reached via the
+    corresponding generic vernacular commands. The string should be a unique
+    name describing the kind of objects considered and that is added as a
+    grammar command prefix for vernacular commands Locate. *)
 
 val print_located_qualid : reference -> Pp.t
 val print_located_term : reference -> Pp.t
-val print_located_tactic : reference -> Pp.t
 val print_located_module : reference -> Pp.t
+val print_located_other : string -> reference -> Pp.t
 
 type object_pr = {
   print_inductive           : mutual_inductive -> Pp.t;
