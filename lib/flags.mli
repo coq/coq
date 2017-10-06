@@ -13,12 +13,9 @@
 val boot : bool ref
 val load_init : bool ref
 
-(* Will affect STM caching *)
-val batch_mode : bool ref
-
-type compilation_mode = BuildVo | BuildVio | Vio2Vo
-val compilation_mode : compilation_mode ref
-val compilation_output_name : string option ref
+(** Set by coqtop to tell the kernel to output to the aux file; will
+    be eventually removed by cleanups such as PR#1103 *)
+val record_aux_file : bool ref
 
 (* Flag set when the test-suite is called. Its only effect to display
    verbose information for `Fail` *)

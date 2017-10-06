@@ -683,7 +683,8 @@ let error_recursively_dependent_library dir =
 let save_library_to ?todo dir f otab =
   let except = match todo with
     | None ->
-        assert(!Flags.compilation_mode = Flags.BuildVo);
+        (* XXX *)
+        (* assert(!Flags.compilation_mode = Flags.BuildVo); *)
         assert(Filename.check_suffix f ".vo");
         Future.UUIDSet.empty
     | Some (l,_) ->

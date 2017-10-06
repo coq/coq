@@ -10,6 +10,26 @@ open Names
 
 (** state-transaction-machine interface *)
 
+(** The STM doc type determines some properties such as what
+    uncompleted proofs are allowed and recording of aux files. *)
+type stm_doc_type =
+  | VoDoc       of DirPath.t
+  | VioDoc      of DirPath.t
+  | Interactive of DirPath.t
+
+(* Main initalization routine *)
+type stm_init_options = {
+  doc_type     : stm_doc_type;
+(*
+  fb_handler   : Feedback.feedback -> unit;
+  iload_path   : (string list * string * bool) list;
+  require_libs : (Names.DirPath.t * string * bool option) list;
+  implicit_std : bool;
+*)
+}
+
+val init : stm_init_options -> unit
+
 (* [parse_sentence sid pa] Reads a sentence from [pa] with parsing
    state [sid] Returns [End_of_input] if the stream ends *)
 val parse_sentence : Stateid.t -> Pcoq.Gram.coq_parsable ->
@@ -82,9 +102,6 @@ val finish_tasks : string ->
 
 (* Id of the tip of the current branch *)
 val get_current_state : unit -> Stateid.t
-
-(* Misc *)
-val init : unit -> unit
 
 (* This returns the node at that position *)
 val get_ast : Stateid.t -> (Vernacexpr.vernac_expr Loc.located) option

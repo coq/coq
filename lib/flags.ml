@@ -43,11 +43,8 @@ let with_extra_values o l f x =
 
 let boot = ref false
 let load_init = ref true
-let batch_mode = ref false
 
-type compilation_mode = BuildVo | BuildVio | Vio2Vo
-let compilation_mode = ref BuildVo
-let compilation_output_name = ref None
+let record_aux_file = ref false
 
 let test_mode = ref false
 
