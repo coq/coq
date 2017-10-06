@@ -79,7 +79,7 @@ open Obligations
 let obligation obl tac = with_tac (fun t -> Obligations.obligation obl t) tac
 let next_obligation obl tac = with_tac (fun t -> Obligations.next_obligation obl t) tac
 
-let classify_obbl _ = Vernacexpr.(VtStartProof ("Classic",Doesn'tGuaranteeOpacity,[]), VtLater)
+let classify_obbl _ = Vernacexpr.(VtStartProof ("Classic",[]), VtLater)
 
 VERNAC COMMAND EXTEND Obligations CLASSIFIED BY classify_obbl
 | [ "Obligation" integer(num) "of" ident(name) ":" lglob(t) withtac(tac) ] ->
