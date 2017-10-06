@@ -1,4 +1,4 @@
-#Coq XML Protocol for Coq 8.6#
+# Coq XML Protocol
 
 This document is based on documentation originally written by CJ Bell
 for his [vscoq](https://github.com/siegebell/vscoq/) project.
@@ -12,11 +12,7 @@ A somewhat out-of-date description of the async state machine is
 [documented here](https://github.com/ejgallego/jscoq/blob/master/etc/notes/coq-notes.md).
 OCaml types for the protocol can be found in the [`ide/interface.mli` file](/ide/interface.mli).
 
-# CHANGES
-## Changes from 8.5:
- * In several places, flat text wrapped in <string> tags now appears as structured text inside <richpp> tags 
- * The "errormsg" feedback has been replaced by a "message" feedback which contains
-    <feedback\_content> tag, with a message_level attribute of "error"
+Changes to the XML protocol are documented as part of [`dev/doc/changes.txt`](/dev/doc/changes.txt).
 
 * [Commands](#commands)
   - [About](#command-about)
