@@ -641,6 +641,12 @@ The main search functions now take a function iterating over the
 results. This allows for clients to use streaming or more economic
 printing.
 
+### XML Protocol
+
+- In several places, flat text wrapped in `<string>` tags now appears as structured text inside `<richpp>` tags.
+
+- The "errormsg" feedback has been replaced by a "message" feedback which contains `<feedback\_content>` tag, with a message_level attribute of "error".
+
 ## Changes between Coq 8.4 and Coq 8.5
 
 ### Refactoring : more mli interfaces and simpler grammar.cma
