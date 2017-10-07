@@ -428,12 +428,18 @@ tools: $(TOOLS) $(OCAMLLIBDEP) $(COQDEPBOOT)
 # may still be missing or not taken in account yet by make when coqdep_boot
 # is being built.
 
+# Remember to update the dependencies below when you add files!
+
 COQDEPBOOTSRC := lib/minisys.cmo \
  lib/segmenttree.cmo lib/unicodetable.cmo lib/unicode.cmo \
  tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep_boot.cmo
 
-tools/coqdep_lexer.cmo : tools/coqdep_lexer.cmi
-tools/coqdep_lexer.cmx : tools/coqdep_lexer.cmi
+lib/segmenttree.cmo : lib/segmenttree.cmi
+lib/segmenttree.cmx : lib/segmenttree.cmi
+lib/unicode.cmo : lib/unicodetable.cmo lib/segmenttree.cmi lib/unicode.cmi
+lib/unicode.cmx : lib/unicodetable.cmx lib/segmenttree.cmx lib/unicode.cmi
+tools/coqdep_lexer.cmo : lib/unicode.cmi tools/coqdep_lexer.cmi
+tools/coqdep_lexer.cmx : lib/unicode.cmx tools/coqdep_lexer.cmi
 tools/coqdep_common.cmo : lib/minisys.cmo tools/coqdep_lexer.cmi tools/coqdep_common.cmi
 tools/coqdep_common.cmx : lib/minisys.cmx tools/coqdep_lexer.cmx tools/coqdep_common.cmi
 tools/coqdep_boot.cmo : tools/coqdep_common.cmi
