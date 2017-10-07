@@ -74,9 +74,9 @@ val of_char : char -> valexpr
 val to_char : valexpr -> char
 val char : char repr
 
-val of_string : string -> valexpr
-val to_string : valexpr -> string
-val string : string repr
+val of_string : Bytes.t -> valexpr
+val to_string : valexpr -> Bytes.t
+val string : Bytes.t repr
 
 val of_list : ('a -> valexpr) -> 'a list -> valexpr
 val to_list : (valexpr -> 'a) -> valexpr -> 'a list

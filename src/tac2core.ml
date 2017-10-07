@@ -234,11 +234,11 @@ let () = define2 "ident_equal" ident ident begin fun id1 id2 ->
 end
 
 let () = define1 "ident_to_string" ident begin fun id ->
-  return (Value.of_string (Id.to_string id))
+  return (Value.of_string (Bytes.of_string (Id.to_string id)))
 end
 
 let () = define1 "ident_of_string" string begin fun s ->
-  let id = try Some (Id.of_string s) with _ -> None in
+  let id = try Some (Id.of_string (Bytes.to_string s)) with _ -> None in
   return (Value.of_option Value.of_ident id)
 end
 
@@ -714,6 +714,7 @@ let () = define2 "abstract" (option ident) closure begin fun id f ->
 end
 
 let () = define2 "time" (option string) closure begin fun s f ->
+  let s = Option.map Bytes.to_string s in
   Proofview.tclTIME s (thaw f)
 end
 
