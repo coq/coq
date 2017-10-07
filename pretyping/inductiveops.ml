@@ -84,7 +84,7 @@ let mis_is_recursive_subset listind rarg =
     List.exists
       (fun ra ->
         match dest_recarg ra with
-	  | Mrec (_,i) -> Int.List.mem i listind
+          | Mrec (_,i) -> Int.List.mem i listind
           | _ -> false) rvec
   in
   Array.exists one_is_rec (dest_subterms rarg)
@@ -361,20 +361,20 @@ let make_case_or_project env sigma indf ci pred c branches =
        if (* dependent *) not (Vars.noccurn sigma 1 t) &&
           not (has_dependent_elim mib) then
        user_err ~hdr:"make_case_or_project"
-		    Pp.(str"Dependent case analysis not allowed" ++
-		     str" on inductive type " ++ Names.MutInd.print (fst ind))
+                    Pp.(str"Dependent case analysis not allowed" ++
+                     str" on inductive type " ++ Names.MutInd.print (fst ind))
      in
      let branch = branches.(0) in
      let ctx, br = decompose_lam_n_assum sigma (Array.length ps) branch in
      let n, subst =
        List.fold_right
          (fun decl (i, subst) ->
-	  match decl with
-	  | LocalAssum (na, t) ->
-	     let t = mkProj (Projection.make ps.(i) true, c) in
-	     (i + 1, t :: subst)
-	  | LocalDef (na, b, t) -> (i, Vars.substl subst b :: subst))
-	 ctx (0, [])
+          match decl with
+          | LocalAssum (na, t) ->
+             let t = mkProj (Projection.make ps.(i) true, c) in
+             (i + 1, t :: subst)
+          | LocalDef (na, b, t) -> (i, Vars.substl subst b :: subst))
+         ctx (0, [])
      in Vars.substl subst br
 
 (* substitution in a signature *)
@@ -511,25 +511,25 @@ let is_predicate_explicitly_dep env sigma pred arsign =
     let pv' = whd_all env sigma pval in
     match EConstr.kind sigma pv', arsign with
       | Lambda (na,t,b), (LocalAssum _)::arsign ->
-	  srec (push_rel_assum (na, t) env) b arsign
+          srec (push_rel_assum (na, t) env) b arsign
       | Lambda (na,_,t), _ ->
 
        (* The following code has an impact on the introduction names
-	  given by the tactics "case" and "inversion": when the
-	  elimination is not dependent, "case" uses Anonymous for
-	  inductive types in Prop and names created by mkProd_name for
-	  inductive types in Set/Type while "inversion" uses anonymous
-	  for inductive types both in Prop and Set/Type !!
+          given by the tactics "case" and "inversion": when the
+          elimination is not dependent, "case" uses Anonymous for
+          inductive types in Prop and names created by mkProd_name for
+          inductive types in Set/Type while "inversion" uses anonymous
+          for inductive types both in Prop and Set/Type !!
 
-	  Previously, whether names were created or not relied on
-	  whether the predicate created in Indrec.make_case_com had a
-	  dependent arity or not. To avoid different predicates
-	  printed the same in v8, all predicates built in indrec.ml
-	  got a dependent arity (Aug 2004). The new way to decide
-	  whether names have to be created or not is to use an
-	  Anonymous or Named variable to enforce the expected
-	  dependency status (of course, Anonymous implies non
-	  dependent, but not conversely).
+          Previously, whether names were created or not relied on
+          whether the predicate created in Indrec.make_case_com had a
+          dependent arity or not. To avoid different predicates
+          printed the same in v8, all predicates built in indrec.ml
+          got a dependent arity (Aug 2004). The new way to decide
+          whether names have to be created or not is to use an
+          Anonymous or Named variable to enforce the expected
+          dependency status (of course, Anonymous implies non
+          dependent, but not conversely).
 
           From Coq > 8.2, using or not the the effective dependency of
           the predicate is parametrable! *)
@@ -600,15 +600,15 @@ let rec instantiate_universes env evdref scl is = function
       let ctx,_ = Reduction.dest_arity env ty in
       let u = Univ.Universe.make l in
       let s =
-	(* Does the sort of parameter [u] appear in (or equal)
+        (* Does the sort of parameter [u] appear in (or equal)
            the sort of inductive [is] ? *)
         if univ_level_mem l is then
           scl (* constrained sort: replace by scl *)
         else
           (* unconstrained sort: replace by fresh universe *)
           let evm, s = Evd.new_sort_variable Evd.univ_flexible !evdref in
-	  let evm = Evd.set_leq_sort env evm s (Sorts.sort_of_univ u) in
-	    evdref := evm; s
+          let evm = Evd.set_leq_sort env evm s (Sorts.sort_of_univ u) in
+            evdref := evm; s
       in
       (LocalAssum (na,mkArity(ctx,s))) :: instantiate_universes env evdref scl is (sign, exp)
   | sign, [] -> sign (* Uniform parameters are exhausted *)
@@ -707,7 +707,7 @@ let infer_inductive_subtyping env evd mind_ent =
     | Entries.Cumulative_ind_entry cumi -> 
       begin
         let uctx = Univ.CumulativityInfo.univ_context cumi in
-        let sbsubst = Univ.CumulativityInfo.subtyping_susbst cumi in
+        let sbsubst = Univ.CumulativityInfo.subtyping_subst cumi in
         let dosubst = subst_univs_level_constr sbsubst in
         let instance_other = 
           Univ.subst_univs_level_instance sbsubst (Univ.UContext.instance uctx) 

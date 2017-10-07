@@ -234,7 +234,7 @@ let check_subtyping_arity_constructor env (subst : constr -> constr) (arcn : typ
 (* This check produces a value of the unit type if successful or raises an anomaly if check fails. *)
 let check_subtyping cumi paramsctxt env_ar inds = 
     let numparams = Context.Rel.nhyps paramsctxt in
-    let sbsubst = CumulativityInfo.subtyping_susbst cumi in
+    let sbsubst = CumulativityInfo.subtyping_subst cumi in
     let dosubst = subst_univs_level_constr sbsubst in
     let uctx = CumulativityInfo.univ_context cumi in
     let instance_other = Univ.subst_univs_level_instance sbsubst (Univ.UContext.instance uctx) in

@@ -968,7 +968,7 @@ struct
     (univcst, UContext.make (Instance.append inst freshunivs,
                              create_trivial_subtyping inst freshunivs))
 
-  let subtyping_susbst (univcst, subtypcst) = 
+  let subtyping_subst (univcst, subtypcst) =
       let (ctx, ctx') = (halve_context (UContext.instance subtypcst))in
       Array.fold_left2 (fun subst l1 l2 -> LMap.add l1 l2 subst) LMap.empty ctx ctx'
 

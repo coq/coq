@@ -375,7 +375,7 @@ sig
       trivial subtyping relation. *)
   val from_universe_context : UContext.t -> Instance.t -> t
 
-  val subtyping_susbst : t -> universe_level_subst
+  val subtyping_subst : t -> universe_level_subst
 
 end
 
