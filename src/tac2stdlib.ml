@@ -7,12 +7,10 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Genredexpr
 open Tac2expr
 open Tac2ffi
 open Tac2types
-open Tac2tactics
 open Proofview.Notations
 
 module Value = Tac2ffi

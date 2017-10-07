@@ -40,8 +40,6 @@ let pattern_core n = kername pattern_prefix n
 let global_ref ?loc kn =
   Loc.tag ?loc @@ CTacRef (AbsKn (TacConstant kn))
 
-let dummy_loc = Loc.make_loc (-1, -1)
-
 let constructor ?loc kn args =
   let cst = Loc.tag ?loc @@ CTacCst (AbsKn (Other kn)) in
   if List.is_empty args then cst

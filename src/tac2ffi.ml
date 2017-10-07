@@ -9,7 +9,6 @@
 open Util
 open Names
 open Globnames
-open Genarg
 open Tac2dyn
 open Tac2expr
 open Proofview.Notations

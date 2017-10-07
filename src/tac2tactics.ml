@@ -10,10 +10,8 @@ open Pp
 open Util
 open Names
 open Globnames
-open Misctypes
 open Tac2types
 open Genredexpr
-open Proofview
 open Proofview.Notations
 
 let return = Proofview.tclUNIT

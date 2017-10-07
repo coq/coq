@@ -6,13 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open CSig
 open Util
 open Pp
 open Names
 open Genarg
 open Tac2env
-open Tac2dyn
 open Tac2expr
 open Tac2entries.Pltac
 open Proofview.Notations
@@ -105,7 +103,6 @@ let err_matchfailure =
 let thaw f = Tac2ffi.apply f [v_unit]
 
 let fatal_flag : unit Exninfo.t = Exninfo.make ()
-let fatal_info = Exninfo.add Exninfo.null fatal_flag ()
 
 let set_bt info =
   if !Tac2interp.print_ltac2_backtrace then
@@ -397,7 +394,6 @@ let () = define1 "constr_kind" constr begin fun c ->
 end
 
 let () = define1 "constr_make" valexpr begin fun knd ->
-  let open Constr in
   let c = match Tac2ffi.to_block knd with
   | (0, [|n|]) ->
     let n = Value.to_int n in

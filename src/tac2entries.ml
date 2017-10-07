@@ -16,7 +16,6 @@ open Nametab
 open Tac2expr
 open Tac2print
 open Tac2intern
-open Vernacexpr
 
 (** Grammar entries *)
 

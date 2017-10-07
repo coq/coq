@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Loc
-open Genarg
 open Names
 open Libnames
 

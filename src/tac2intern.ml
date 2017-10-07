@@ -8,7 +8,6 @@
 
 open Pp
 open Util
-open Genarg
 open CErrors
 open Names
 open Libnames
@@ -23,12 +22,7 @@ let coq_type n = KerName.make2 Tac2env.coq_prefix (Label.make n)
 
 let t_int = coq_type "int"
 let t_string = coq_type "string"
-let t_array = coq_type "array"
-let t_list = coq_type "list"
 let t_constr = coq_type "constr"
-
-let c_nil = GTacCst (Other t_list, 0, [])
-let c_cons e el = GTacCst (Other t_list, 0, [e; el])
 
 (** Union find *)
 

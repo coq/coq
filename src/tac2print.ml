@@ -8,7 +8,6 @@
 
 open Util
 open Pp
-open Genarg
 open Names
 open Tac2expr
 open Tac2env

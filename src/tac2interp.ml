@@ -9,7 +9,6 @@
 open Util
 open Pp
 open CErrors
-open Genarg
 open Names
 open Proofview.Notations
 open Tac2expr

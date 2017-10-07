@@ -6,11 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open CErrors
 open Util
 open Names
 open Libnames
-open Tac2dyn
 open Tac2expr
 open Tac2ffi
 
