@@ -172,11 +172,6 @@ Proof.
  apply leb_le.
 Qed.
 
-Lemma leb_not_le n m : (n <=? m) = false <-> ~n <= m.
-Proof.
-  now rewrite <- leb_le, <- not_true_iff_false.
-Qed.
-
 (** ** Decidability of equality over [nat]. *)
 
 Lemma eq_dec : forall n m : nat, {n = m} + {n <> m}.
