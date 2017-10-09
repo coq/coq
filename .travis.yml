@@ -135,6 +135,21 @@ matrix:
           - avsm
           packages: *coqide-packages
 
+    - if: type = pull_request
+      env:
+      - TEST_TARGET="lint"
+      install: []
+      before_script: []
+      addons:
+      apt:
+        sources: []
+        packages: []
+      script:
+        - CUR_HEAD=${TRAVIS_COMMIT_RANGE%%...*}
+        - PR_HEAD=${TRAVIS_COMMIT_RANGE##*...}
+        - MERGE_BASE=$(git merge-base $CUR_HEAD $PR_HEAD)
+        - dev/lint-commits.sh $MERGE_BASE $PR_HEAD
+
     - os: osx
       osx_image: xcode8.3
       env:
