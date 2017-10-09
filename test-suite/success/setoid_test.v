@@ -33,7 +33,8 @@ Qed.
 
 Add Setoid set same setoid_set as setsetoid.
 
-Add Morphism In : In_ext.
+Add Morphism In with signature (eq ==> same ==> iff) as In_ext.
+Proof.
 unfold same; intros a s t H; elim (H a); auto.
 Qed.
 
@@ -50,10 +51,9 @@ simpl; right.
 apply (H2 H1).
 Qed.
 
-Add Morphism Add : Add_ext.
+Add Morphism Add with signature (eq ==> same ==> same) as Add_ext.
 split; apply add_aux.
 assumption.
-
 rewrite H.
 reflexivity.
 Qed.
@@ -90,7 +90,7 @@ Qed.
 Parameter P : set -> Prop.
 Parameter P_ext : forall s t : set, same s t -> P s -> P t.
 
-Add Morphism P : P_extt.
+Add Morphism P with signature (same ==> iff) as P_extt.
 intros; split; apply P_ext; (assumption || apply (Seq_sym _ _ setoid_set); assumption).
 Qed.
 
@@ -113,7 +113,7 @@ Definition f: forall A : Set, A -> A := fun A x => x.
 
 Add Relation (id A) (rel A) as eq_rel.
 
-Add Morphism (@f A) : f_morph.
+Add Morphism (@f A) with signature (eq ==> eq) as f_morph.
 Proof.
 unfold rel, f. trivial.
 Qed.

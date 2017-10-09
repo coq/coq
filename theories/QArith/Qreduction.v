@@ -101,7 +101,7 @@ Proof.
  - apply Qred_complete.
 Qed.
 
-Add Morphism Qred : Qred_comp.
+Add Morphism Qred with signature (Qeq ==> Qeq) as Qred_comp.
 Proof.
   intros. now rewrite !Qred_correct.
 Qed.
@@ -125,19 +125,19 @@ Proof.
   intros; unfold Qminus'; apply Qred_correct; auto.
 Qed.
 
-Add Morphism Qplus' : Qplus'_comp.
+Add Morphism Qplus' with signature (Qeq ==> Qeq ==> Qeq) as Qplus'_comp.
 Proof.
   intros; unfold Qplus'.
   rewrite H, H0; auto with qarith.
 Qed.
 
-Add Morphism Qmult' : Qmult'_comp.
+Add Morphism Qmult' with signature (Qeq ==> Qeq ==> Qeq) as Qmult'_comp.
 Proof.
   intros; unfold Qmult'.
   rewrite H, H0; auto with qarith.
 Qed.
 
-Add Morphism Qminus' : Qminus'_comp.
+Add Morphism Qminus' with signature (Qeq ==> Qeq ==> Qeq) as Qminus'_comp.
 Proof.
   intros; unfold Qminus'.
   rewrite H, H0; auto with qarith.
