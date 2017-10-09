@@ -428,13 +428,12 @@ let build_constant_declaration kn env result =
             let expr =
               !suggest_proof_using (Constant.to_string kn)
                 env vars ids_typ context_ids in
-            if !Flags.compilation_mode = Flags.BuildVo then
-              record_aux env ids_typ vars expr;
+            if !Flags.record_aux_file then record_aux env ids_typ vars expr;
             vars
         in
         keep_hyps env (Idset.union ids_typ ids_def), def
     | None ->
-        if !Flags.compilation_mode = Flags.BuildVo then
+        if !Flags.record_aux_file then
           record_aux env Id.Set.empty Id.Set.empty "";
         [], def (* Empty section context: no need to check *)
     | Some declared ->
@@ -614,7 +613,7 @@ let translate_local_def mb env id centry =
   let open Cooking in
   let decl = infer_declaration ~trust:mb env None (DefinitionEntry centry) in
   let typ = decl.cook_type in
-  if Option.is_empty decl.cook_context && !Flags.compilation_mode = Flags.BuildVo then begin
+  if Option.is_empty decl.cook_context && !Flags.record_aux_file then begin
     match decl.cook_body with
     | Undef _ -> ()
     | Def _ -> ()

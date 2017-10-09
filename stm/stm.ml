@@ -64,11 +64,6 @@ let call_process_error_once =
 
 end
 
-(* During interactive use we cache more states so that Undoing is fast *)
-let interactive () =
-  if !Flags.ide_slave || not !Flags.batch_mode then `Yes
-  else `No
-
 let async_proofs_workers_extra_env = ref [||]
 
 type aast = {
@@ -253,6 +248,12 @@ end (* }}} *)
 (*************************** THE DOCUMENT *************************************)
 (******************************************************************************)
 
+(* The main document type associated to a VCS *)
+type stm_doc_type =
+  | VoDoc       of Names.DirPath.t
+  | VioDoc      of Names.DirPath.t
+  | Interactive of Names.DirPath.t
+
 (* Imperative wrap around VCS to obtain _the_ VCS that is the
  * representation of the document Coq is currently processing *)
 module VCS : sig
@@ -269,7 +270,10 @@ module VCS : sig
 
   type vcs = (branch_type, transaction, vcs state_info, box) Vcs_.t
 
-  val init : id -> unit
+  val init : stm_doc_type -> id -> unit
+  (* val get_type : unit -> stm_doc_type *)
+  val is_interactive : unit -> [`Yes | `No | `Shallow]
+  val is_vio_doc : unit -> bool
 
   val current_branch : unit -> Branch.t
   val checkout : Branch.t -> unit
@@ -451,9 +455,24 @@ end = struct (* {{{ *)
   type vcs = (branch_type, transaction, vcs state_info, box) t
   let vcs : vcs ref = ref (empty Stateid.dummy)
 
-  let init id =
+  let doc_type = ref (Interactive (Names.DirPath.make []))
+
+  let init dt id =
+    doc_type := dt;
     vcs := empty id;
     vcs := set_info !vcs id (default_info ())
+
+  (* let get_type () = !doc_type *)
+
+  let is_interactive () =
+    match !doc_type with
+    | Interactive _ -> `Yes
+    | _ -> `No
+
+  let is_vio_doc () =
+    match !doc_type with
+    | VioDoc _ -> true
+    | _ -> false
 
   let current_branch () = current_branch !vcs
 
@@ -765,7 +784,7 @@ end = struct (* {{{ *)
     | { state = Error ie } -> cur_id := id; Exninfo.iraise ie 
     | _ ->
         (* coqc has a 1 slot cache and only for valid states *)
-        if interactive () = `No && Stateid.equal id !cur_id then ()
+        if VCS.is_interactive () = `No && Stateid.equal id !cur_id then ()
         else anomaly Pp.(str "installing a non cached state.")
 
   let get_cached id =
@@ -1054,7 +1073,7 @@ end = struct (* {{{ *)
              " the \"-async-proofs-cache force\" option to Coq."))
 
   let undo_vernac_classifier v =
-    if !Flags.batch_mode && !Flags.async_proofs_cache <> Some Flags.Force
+    if VCS.is_interactive () = `No && !Flags.async_proofs_cache <> Some Flags.Force
     then undo_costly_in_batch_mode v;
     try
       match v with
@@ -1106,7 +1125,7 @@ end = struct (* {{{ *)
           VtBack (true, oid), VtLater
       | VernacBacktrack (id,_,_)
       | VernacBackTo id ->
-          VtBack (not !Flags.batch_mode, Stateid.of_int id), VtNow
+          VtBack (VCS.is_interactive () = `Yes, Stateid.of_int id), VtNow
       | _ -> VtUnknown, VtNow
     with
     | Not_found ->
@@ -1364,7 +1383,7 @@ end = struct (* {{{ *)
   let build_proof_here ?loc ~drop_pt (id,valid) eop =
     Future.create (State.exn_on id ~valid) (fun () ->
       let wall_clock1 = Unix.gettimeofday () in
-      if !Flags.batch_mode then Reach.known_state ~cache:`No eop
+      if VCS.is_interactive () = `No then Reach.known_state ~cache:`No eop
       else Reach.known_state ~cache:`Shallow eop;
       let wall_clock2 = Unix.gettimeofday () in
       Aux_file.record_in_aux_at ?loc "proof_build_time"
@@ -1501,7 +1520,6 @@ end = struct (* {{{ *)
   module TaskQueue = AsyncTaskQueue.MakeQueue(ProofTask)
   
   let queue = ref None
-
   let init () =
     if Flags.async_proofs_is_master () then
       queue := Some (TaskQueue.create !Flags.async_proofs_n_workers)
@@ -1637,7 +1655,7 @@ end = struct (* {{{ *)
     let id, valid as t_exn_info = exn_info in
     let cancel_switch = ref false in
     if TaskQueue.n_workers (Option.get !queue) = 0 then
-      if !Flags.compilation_mode = Flags.BuildVio then begin
+      if VCS.is_vio_doc () then begin
         let f,assign =
          Future.create_delegate ~blocking:true ~name:pname (State.exn_on id ~valid) in
         let t_uuid = Future.uuid f in
@@ -1962,14 +1980,14 @@ let pstate = summary_pstate
 let async_policy () =
   let open Flags in
   if is_universe_polymorphism () then false
-  else if interactive () = `Yes then
+  else if VCS.is_interactive () = `Yes then
     (async_proofs_is_master () || !async_proofs_mode = APonLazy)
   else
-    (!compilation_mode = BuildVio || !async_proofs_mode <> APoff)
+    (VCS.is_vio_doc () || !async_proofs_mode <> APoff)
 
 let delegate name =
      get_hint_bp_time name >= !Flags.async_proofs_delegation_threshold
-  || !Flags.compilation_mode = Flags.BuildVio
+  || VCS.is_vio_doc ()
   || !Flags.async_proofs_full
  
 let warn_deprecated_nested_proofs =
@@ -2030,7 +2048,7 @@ let collect_proof keep cur hd brkind id =
         `ASync (parent last,accn,name,delegate name)
     | `Fork((_, hd', GuaranteesOpacity, ids), _) when
        has_proof_no_using last && not (State.is_cached_and_valid (parent last)) &&
-       !Flags.compilation_mode = Flags.BuildVio ->
+       VCS.is_vio_doc () ->
         assert (VCS.Branch.equal hd hd'||VCS.Branch.equal hd VCS.edit_branch);
         (try
           let name, hint = name ids, get_hint_ctx loc  in
@@ -2339,9 +2357,20 @@ end (* }}} *)
 (********************************* STM API ************************************)
 (******************************************************************************)
 
-let init () =
-  VCS.init Stateid.initial;
+type stm_init_options = {
+  doc_type     : stm_doc_type;
+(*
+  fb_handler   : Feedback.feedback -> unit;
+  iload_path   : (string list * string * bool) list;
+  require_libs : (Names.DirPath.t * string * bool option) list;
+  implicit_std : bool;
+*)
+}
+
+let init { doc_type } =
+  VCS.init doc_type Stateid.initial;
   set_undo_classifier Backtrack.undo_vernac_classifier;
+  (* we declare the library here XXX: *)
   State.define ~cache:`Yes (fun () -> ()) Stateid.initial;
   Backtrack.record ();
   Slaves.init ();
@@ -2362,7 +2391,7 @@ let init () =
 let observe id =
   let vcs = VCS.backup () in
   try
-    Reach.known_state ~cache:(interactive ()) id;
+    Reach.known_state ~cache:(VCS.is_interactive ()) id;
     VCS.print ()
   with e ->
     let e = CErrors.push e in
@@ -2518,7 +2547,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
           stm_prerr_endline (fun () -> "undo to state " ^ Stateid.to_string id);
           Backtrack.backto id;
           VCS.checkout_shallowest_proof_branch ();
-          Reach.known_state ~cache:(interactive ()) id; `Ok
+          Reach.known_state ~cache:(VCS.is_interactive ()) id; `Ok
       | VtBack (false, id), VtLater ->
           anomaly(str"classifier: VtBack + VtLater must imply part_of_script.")
 
@@ -2536,7 +2565,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
           let id = VCS.new_node ~id:newtip () in
           let queue =
             if !Flags.async_proofs_full then `QueryQueue (ref false)
-            else if Flags.(!compilation_mode = BuildVio) &&
+            else if VCS.is_vio_doc () &&
                     VCS.((get_branch head).kind = `Master) &&
                     may_pierce_opaque x
                  then `SkipQueue
@@ -2626,7 +2655,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
           let step () =
             VCS.checkout VCS.Branch.master;
             let mid = VCS.get_branch_pos VCS.Branch.master in
-            Reach.known_state ~cache:(interactive ()) mid;
+            Reach.known_state ~cache:(VCS.is_interactive ()) mid;
             stm_vernac_interp id x;
             (* Vernac x may or may not start a proof *)
             if not in_proof && Proof_global.there_are_pending_proofs () then
@@ -2834,7 +2863,7 @@ let edit_at id =
       VCS.edit_branch (`Edit (mode, qed_id, master_id, keep, old_branch));
     VCS.delete_boxes_of id;
     cancel_switch := true;
-    Reach.known_state ~cache:(interactive ()) id;
+    Reach.known_state ~cache:(VCS.is_interactive ()) id;
     VCS.checkout_shallowest_proof_branch ();
     `Focus { stop = qed_id; start = master_id; tip } in
   let no_edit = function
@@ -2857,7 +2886,7 @@ let edit_at id =
     VCS.gc ();
     VCS.print ();
     if not !Flags.async_proofs_full then
-      Reach.known_state ~cache:(interactive ()) id;
+      Reach.known_state ~cache:(VCS.is_interactive ()) id;
     VCS.checkout_shallowest_proof_branch ();
     `NewTip in
   try
@@ -2886,7 +2915,7 @@ let edit_at id =
       | true, None, _ ->
           if on_cur_branch id then begin
             VCS.reset_branch (VCS.current_branch ()) id;
-            Reach.known_state ~cache:(interactive ()) id;
+            Reach.known_state ~cache:(VCS.is_interactive ()) id;
             VCS.checkout_shallowest_proof_branch ();
             `NewTip
           end else if is_ancestor_of_cur_branch id then begin

@@ -113,13 +113,13 @@ let vernac_error msg =
 (*     Stm.End_of_input -> true *)
 (*   | _ -> false *)
 
-let rec interp_vernac sid (loc,com) =
+let rec interp_vernac ~check ~interactive sid (loc,com) =
   let interp = function
     | VernacLoad (verbosely, fname) ->
 	let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
         let fname = CUnix.make_suffix fname ".v" in
         let f = Loadpath.locate_file fname in
-        load_vernac verbosely sid f
+        load_vernac ~verbosely ~check ~interactive sid f
     | v ->
 
       (* XXX: We need to run this before add as the classification is
@@ -142,17 +142,16 @@ let rec interp_vernac sid (loc,com) =
       (* Main STM interaction *)
       if ntip <> `NewTip then
         anomaly (str "vernac.ml: We got an unfocus operation on the toplevel!");
+
       (* Due to bug #5363 we cannot use observe here as we should,
          it otherwise reveals bugs *)
       (* Stm.observe nsid; *)
-
-      let check_proof = Flags.(!compilation_mode = BuildVo || not !batch_mode) in
-      if check_proof then Stm.finish ();
+      if check then Stm.finish ();
 
       (* We could use a more refined criteria that depends on the
          vernac. For now we imitate the old approach and rely on the
          classification. *)
-      let print_goals = not !Flags.batch_mode && not !Flags.quiet &&
+      let print_goals = interactive && not !Flags.quiet &&
                         is_proof_step && Proof_global.there_are_pending_proofs () in
 
       if print_goals then Feedback.msg_notice (pr_open_cur_subgoals ());
@@ -167,7 +166,7 @@ let rec interp_vernac sid (loc,com) =
     with reraise ->
       (* XXX: In non-interactive mode edit_at seems to do very weird
          things, so we better avoid it while we investigate *)
-      if not !Flags.batch_mode then ignore(Stm.edit_at sid);
+      if interactive then ignore(Stm.edit_at sid);
       let (reraise, info) = CErrors.push reraise in
       let info = begin
         match Loc.get_loc info with
@@ -176,7 +175,7 @@ let rec interp_vernac sid (loc,com) =
       end in iraise (reraise, info)
 
 (* Load a vernac file. CErrors are annotated with file and location *)
-and load_vernac verbosely sid file =
+and load_vernac ~verbosely ~check ~interactive sid file =
   let ft_beautify, close_beautify =
     if !Flags.beautify_file then
       let chan_beautify = open_out (file^beautify_suffix) in
@@ -217,7 +216,7 @@ and load_vernac verbosely sid file =
       Option.iter (vernac_echo ?loc) in_echo;
 
       checknav_simple (loc, ast);
-      let nsid = Flags.silently (interp_vernac !rsid) (loc, ast) in
+      let nsid = Flags.silently (interp_vernac ~check ~interactive !rsid) (loc, ast) in
       rsid := nsid
     done;
     !rsid
@@ -245,7 +244,7 @@ and load_vernac verbosely sid file =
 
 let process_expr sid loc_ast =
   checknav_deep loc_ast;
-  interp_vernac sid loc_ast
+  interp_vernac ~interactive:true ~check:true sid loc_ast
 
 let warn_file_no_extension =
   CWarnings.create ~name:"file-no-extension" ~category:"filesystem"
@@ -282,8 +281,10 @@ let ensure_exists f =
   if not (Sys.file_exists f) then
     vernac_error (hov 0 (str "Can't find file" ++ spc () ++ str f))
 
+type compilation_mode = BuildVo | BuildVio | Vio2Vo
+
 (* Compile a vernac file *)
-let compile verbosely f =
+let compile ~verbosely ~mode ~f_in ~f_out=
   let check_pending_proofs () =
     let pfs = Proof_global.get_all_proof_names () in
     if not (List.is_empty pfs) then
@@ -293,12 +294,12 @@ let compile verbosely f =
                         |> prlist_with_sep pr_comma Names.Id.print)
                     ++ str ".")
   in
-  match !Flags.compilation_mode with
-  | Flags.BuildVo ->
-      let long_f_dot_v = ensure_v f in
+  match mode with
+  | BuildVo ->
+      let long_f_dot_v = ensure_v f_in in
       ensure_exists long_f_dot_v;
       let long_f_dot_vo =
-        match !Flags.compilation_output_name with
+        match f_out with
         | None -> long_f_dot_v ^ "o"
         | Some f -> ensure_vo long_f_dot_v f in
       let ldir = Flags.verbosely Library.start_library long_f_dot_vo in
@@ -309,7 +310,7 @@ let compile verbosely f =
       Dumpglob.start_dump_glob ~vfile:long_f_dot_v ~vofile:long_f_dot_vo;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
       let wall_clock1 = Unix.gettimeofday () in
-      let _ = load_vernac verbosely (Stm.get_current_state ()) long_f_dot_v in
+      let _ = load_vernac ~verbosely ~check:true ~interactive:false (Stm.get_current_state ()) long_f_dot_v in
       Stm.join ();
       let wall_clock2 = Unix.gettimeofday () in
       check_pending_proofs ();
@@ -318,32 +319,31 @@ let compile verbosely f =
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       Aux_file.stop_aux_file ();
       Dumpglob.end_dump_glob ()
-  | Flags.BuildVio ->
-      let long_f_dot_v = ensure_v f in
+  | BuildVio ->
+      let long_f_dot_v = ensure_v f_in in
       ensure_exists long_f_dot_v;
       let long_f_dot_vio =
-        match !Flags.compilation_output_name with
+        match f_out with
         | None -> long_f_dot_v ^ "io"
         | Some f -> ensure_vio long_f_dot_v f in
       let ldir = Flags.verbosely Library.start_library long_f_dot_vio in
       Dumpglob.noglob ();
       Stm.set_compilation_hints long_f_dot_vio;
-      let _ = load_vernac verbosely (Stm.get_current_state ()) long_f_dot_v in
+      let _ = load_vernac ~verbosely ~check:false ~interactive:false (Stm.get_current_state ()) long_f_dot_v in
       Stm.finish ();
       check_pending_proofs ();
       Stm.snapshot_vio ldir long_f_dot_vio;
       Stm.reset_task_queue ()
-  | Flags.Vio2Vo ->
+  | Vio2Vo ->
       let open Filename in
-      let open Library in
       Dumpglob.noglob ();
-      let f = if check_suffix f ".vio" then chop_extension f else f in
-      let lfdv, sum, lib, univs, disch, tasks, proofs = load_library_todo f in
+      let f = if check_suffix f_in ".vio" then chop_extension f_in else f_in in
+      let lfdv, sum, lib, univs, disch, tasks, proofs = Library.load_library_todo f in
       Stm.set_compilation_hints lfdv;
       let univs, proofs = Stm.finish_tasks lfdv univs disch proofs tasks in
       Library.save_library_raw lfdv sum lib univs proofs
 
-let compile v f =
+let compile ~verbosely ~mode ~f_in ~f_out =
   ignore(CoqworkmgrApi.get 1);
-  compile v f;
+  compile ~verbosely ~mode ~f_in ~f_out;
   CoqworkmgrApi.giveback 1

@@ -158,6 +158,10 @@ val add_module_parameter :
   MBId.t -> Entries.module_struct_entry -> Declarations.inline ->
     Mod_subst.delta_resolver safe_transformer
 
+(** Traditional mode: check at end of module that no future was
+    created. *)
+val allow_delayed_constants : bool ref
+
 (** The optional result type is given without its functorial part *)
 
 val end_module :
