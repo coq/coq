@@ -206,7 +206,7 @@ let get_date () =
   let year = 1900+now.Unix.tm_year in
   let month = months.(now.Unix.tm_mon) in
   sprintf "%s %d" month year,
-  sprintf "%s %d %d %d:%d:%d" (String.sub month 0 3) now.Unix.tm_mday year
+  sprintf "%s %d %d %d:%02d:%02d" (String.sub month 0 3) now.Unix.tm_mday year
     now.Unix.tm_hour now.Unix.tm_min now.Unix.tm_sec
 
 let short_date, full_date = get_date ()
