@@ -190,3 +190,10 @@ Check 1+1+1.
 (* Test presence of notation variables in the recursive parts (introduced in dfdaf4de) *)
 Notation "!!! x .. y , b" := ((fun x => b), .. ((fun y => b), True) ..) (at level 200, x binder).
 Check !!! (x y:nat), True.
+
+(* Allow level for leftmost nonterminal when printing-only, BZ#5739 *)
+
+Notation "* x" := (id x) (only printing, at level 15, format "* x").
+Notation "x . y" := (x + y) (only printing, at level 20, x at level 14, left associativity, format "x . y").
+Check (((id 1) + 2) + 3).
+Check (id (1 + 2)).
