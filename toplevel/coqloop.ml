@@ -17,7 +17,7 @@ let top_stderr x =
  * entered to be able to report errors without pretty-printing. *)
 
 type input_buffer = {
-  mutable prompt : unit -> string;
+  mutable prompt : Stm.doc -> string;
   mutable str : Bytes.t; (* buffer of already read characters *)
   mutable len : int;    (* number of chars in the buffer *)
   mutable bols : int list; (* offsets in str of beginning of lines *)
@@ -52,12 +52,12 @@ let emacs_prompt_endstring   () = if !print_emacs then "</prompt>" else ""
 
 (* Read a char in an input channel, displaying a prompt at every
    beginning of line. *)
-let prompt_char ic ibuf count =
+let prompt_char doc ic ibuf count =
   let bol = match ibuf.bols with
     | ll::_ -> Int.equal ibuf.len ll
     | [] -> Int.equal ibuf.len 0
   in
-  if bol && not !print_emacs then top_stderr (str (ibuf.prompt()));
+  if bol && not !print_emacs then top_stderr (str (ibuf.prompt doc));
   try
     let c = input_char ic in
     if c == '\n' then ibuf.bols <- (ibuf.len+1) :: ibuf.bols;
@@ -70,11 +70,11 @@ let prompt_char ic ibuf count =
 
 (* Reinitialize the char stream (after a Drop) *)
 
-let reset_input_buffer ic ibuf =
+let reset_input_buffer doc ic ibuf =
   ibuf.str <- Bytes.empty;
   ibuf.len <- 0;
   ibuf.bols <- [];
-  ibuf.tokens <- Pcoq.Gram.parsable (Stream.from (prompt_char ic ibuf));
+  ibuf.tokens <- Pcoq.Gram.parsable (Stream.from (prompt_char doc ic ibuf));
   ibuf.start <- 0
 
 (* Functions to print underlined locations from an input buffer. *)
@@ -201,10 +201,10 @@ let make_prompt () =
 
    "n |lem1|lem2|lem3| p < "
 *)
-let make_emacs_prompt() =
-  let statnum = Stateid.to_string (Stm.get_current_state ()) in
-  let dpth = Stm.current_proof_depth() in
-  let pending = Stm.get_all_proof_names() in
+let make_emacs_prompt doc =
+  let statnum = Stateid.to_string (Stm.get_current_state ~doc) in
+  let dpth = Stm.current_proof_depth ~doc in
+  let pending = Stm.get_all_proof_names ~doc in
   let pendingprompt =
     List.fold_left
       (fun acc x -> acc ^ (if CString.is_empty acc then "" else "|") ^ Names.Id.to_string x)
@@ -217,10 +217,10 @@ let make_emacs_prompt() =
  * initialized when a vernac command is immediately followed by "\n",
  * or after a Drop. *)
 let top_buffer =
-  let pr() =
+  let pr doc =
     emacs_prompt_startstring()
     ^ make_prompt()
-    ^ make_emacs_prompt()
+    ^ make_emacs_prompt doc
     ^ emacs_prompt_endstring()
   in
   { prompt = pr;
@@ -232,7 +232,7 @@ let top_buffer =
 
 let set_prompt prompt =
   top_buffer.prompt
-  <- (fun () ->
+  <- (fun doc ->
     emacs_prompt_startstring()
     ^ prompt ()
     ^ emacs_prompt_endstring())
@@ -258,8 +258,8 @@ let rec discard_to_dot () =
     | Stm.End_of_input -> raise Stm.End_of_input
     | e when CErrors.noncritical e -> ()
 
-let read_sentence sid input =
-  try Stm.parse_sentence sid input
+let read_sentence ~doc sid input =
+  try Stm.parse_sentence ~doc sid input
   with reraise ->
     let reraise = CErrors.push reraise in
     discard_to_dot ();
@@ -300,19 +300,19 @@ let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
     is caught and handled (i.e. not re-raised).
 *)
 
-let do_vernac sid =
+let do_vernac doc sid =
   top_stderr (fnl());
-  if !print_emacs then top_stderr (str (top_buffer.prompt()));
+  if !print_emacs then top_stderr (str (top_buffer.prompt doc));
   resynch_buffer top_buffer;
   try
     let input = (top_buffer.tokens, None) in
-    Vernac.process_expr sid (read_sentence sid (fst input))
+    Vernac.process_expr doc sid (read_sentence ~doc sid (fst input))
   with
     | Stm.End_of_input | CErrors.Quit ->
         top_stderr (fnl ()); raise CErrors.Quit
     | CErrors.Drop ->  (* Last chance *)
         if Mltop.is_ocaml_top() then raise CErrors.Drop
-        else (Feedback.msg_error (str "There is no ML toplevel."); sid)
+        else (Feedback.msg_error (str "There is no ML toplevel."); doc, sid)
     (* Exception printing should be done by the feedback listener,
        however this is not yet ready so we rely on the exception for
        now. *)
@@ -321,7 +321,7 @@ let do_vernac sid =
       let loc = Loc.get_loc info in
       let msg = CErrors.iprint (e, info) in
       TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer;
-      sid
+      doc, sid
 
 (** Main coq loop : read vernacular expressions until Drop is entered.
     Ctrl-C is handled internally as Sys.Break instead of aborting Coq.
@@ -337,18 +337,18 @@ let loop_flush_all () =
   Format.pp_print_flush !Topfmt.std_ft ();
   Format.pp_print_flush !Topfmt.err_ft ()
 
-let rec loop () =
+let rec loop doc =
   Sys.catch_break true;
   try
-    reset_input_buffer stdin top_buffer;
+    reset_input_buffer doc stdin top_buffer;
     (* Be careful to keep this loop tail-recursive *)
-    let rec vernac_loop sid =
-      let nsid = do_vernac sid in
+    let rec vernac_loop doc sid =
+      let ndoc, nsid = do_vernac doc sid in
       loop_flush_all ();
-      vernac_loop nsid
+      vernac_loop ndoc nsid
     (* We recover the current stateid, threading from the caller is
        not possible due exceptions. *)
-    in vernac_loop (Stm.get_current_state ())
+    in vernac_loop doc (Stm.get_current_state ~doc)
   with
     | CErrors.Drop -> ()
     | CErrors.Quit -> exit 0
@@ -358,4 +358,4 @@ let rec loop () =
                   fnl() ++
                   str"Please report" ++
                   strbrk" at " ++ str Coq_config.wwwbugtracker ++ str ".");
-      loop ()
+      loop doc

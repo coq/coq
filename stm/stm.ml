@@ -40,8 +40,8 @@ let state_ready, state_ready_hook = Hook.make
 let forward_feedback, forward_feedback_hook = 
   let m = Mutex.create () in
   Hook.make ~default:(function
-    | { id = id; route; contents } ->
-        try Mutex.lock m; feedback ~id:id ~route contents; Mutex.unlock m
+    | { doc_id = did; span_id = id; route; contents } ->
+        try Mutex.lock m; feedback ~did ~id ~route contents; Mutex.unlock m
         with e -> Mutex.unlock m; raise e) ()
 
 let unreachable_state, unreachable_state_hook = Hook.make
@@ -254,6 +254,10 @@ type stm_doc_type =
   | VioDoc      of Names.DirPath.t
   | Interactive of Names.DirPath.t
 
+(* Dummy until we land the functional interp patch + fixed start_library *)
+type doc = int
+let dummy_doc : doc = 0
+
 (* Imperative wrap around VCS to obtain _the_ VCS that is the
  * representation of the document Coq is currently processing *)
 module VCS : sig
@@ -270,7 +274,7 @@ module VCS : sig
 
   type vcs = (branch_type, transaction, vcs state_info, box) Vcs_.t
 
-  val init : stm_doc_type -> id -> unit
+  val init : stm_doc_type -> id -> doc
   (* val get_type : unit -> stm_doc_type *)
   val is_interactive : unit -> [`Yes | `No | `Shallow]
   val is_vio_doc : unit -> bool
@@ -460,7 +464,8 @@ end = struct (* {{{ *)
   let init dt id =
     doc_type := dt;
     vcs := empty id;
-    vcs := set_info !vcs id (default_info ())
+    vcs := set_info !vcs id (default_info ());
+    dummy_doc
 
   (* let get_type () = !doc_type *)
 
@@ -682,7 +687,7 @@ end = struct (* {{{ *)
 
 end (* }}} *)
 
-let state_of_id id =
+let state_of_id ~doc id =
   try match (VCS.get_info id).state with
     | Valid s -> `Valid (Some s)
     | Error (e,_) -> `Error e
@@ -971,7 +976,7 @@ let stm_vernac_interp ?proof id ?route { verbose; loc; expr } =
   (* The Stm will gain the capability to interpret commmads affecting
      the whole document state, such as backtrack, etc... so we start
      to design the stm command interpreter now *)
-  set_id_for_feedback ?route id;
+  set_id_for_feedback ?route dummy_doc id;
   Aux_file.record_in_aux_set_at ?loc ();
   (* We need to check if a command should be filtered from
    * vernac_entries, as it cannot handle it. This should go away in
@@ -1137,6 +1142,7 @@ end (* }}} *)
 let hints = ref Aux_file.empty_aux_file
 let set_compilation_hints file =
   hints := Aux_file.load_aux_file_for file
+
 let get_hint_ctx loc =
   let s = Aux_file.get ?loc !hints "context_used" in
   match Str.split (Str.regexp ";") s with
@@ -1191,7 +1197,7 @@ type recovery_action = {
 }
 
 type dynamic_block_error_recovery =
-  static_block_declaration -> [ `ValidBlock of recovery_action | `Leaks ]
+  doc -> static_block_declaration -> [ `ValidBlock of recovery_action | `Leaks ]
 
 let proof_block_delimiters = ref []
 
@@ -2132,7 +2138,7 @@ let known_state ?(redefine_qed=false) ~cache id =
       let decl, name = List.hd valid_boxes in
       try
         let _, dynamic_check = List.assoc name !proof_block_delimiters in
-        match dynamic_check decl with
+        match dynamic_check dummy_doc decl with
         | `Leaks -> Exninfo.iraise exn
         | `ValidBlock { base_state; goals_to_admit; recovery_command } -> begin
            let tac =
@@ -2368,7 +2374,7 @@ type stm_init_options = {
 }
 
 let init { doc_type } =
-  VCS.init doc_type Stateid.initial;
+  let doc = VCS.init doc_type Stateid.initial in
   set_undo_classifier Backtrack.undo_vernac_classifier;
   (* we declare the library here XXX: *)
   State.define ~cache:`Yes (fun () -> ()) Stateid.initial;
@@ -2386,35 +2392,39 @@ let init { doc_type } =
       async_proofs_workers_extra_env := Array.of_list
         (Str.split_delim (Str.regexp ";") (Str.replace_first env_opt "" env))
     with Not_found -> () end;
-  end
+  end;
+  doc
 
-let observe id =
+let observe ~doc id =
   let vcs = VCS.backup () in
   try
     Reach.known_state ~cache:(VCS.is_interactive ()) id;
-    VCS.print ()
+    VCS.print ();
+    doc
   with e ->
     let e = CErrors.push e in
     VCS.print ();
     VCS.restore vcs;
     Exninfo.iraise e
 
-let finish () =
+let finish ~doc =
   let head = VCS.current_branch () in
-  observe (VCS.get_branch_pos head);
+  let doc =observe ~doc (VCS.get_branch_pos head) in
   VCS.print ();
   (* EJGA: Setting here the proof state looks really wrong, and it
      hides true bugs cf bug #5363. Also, what happens with observe? *)
   (* Some commands may by side effect change the proof mode *)
-  match VCS.get_branch head with
+  (match VCS.get_branch head with
   | { VCS.kind = `Edit (mode,_,_,_,_) } -> Proof_global.activate_proof_mode mode [@ocaml.warning "-3"]
   | { VCS.kind = `Proof (mode, _) } -> Proof_global.activate_proof_mode mode [@ocaml.warning "-3"]
   | _ -> ()
+  ); doc
 
-let wait () =
-  finish ();
+let wait ~doc =
+  let doc = finish ~doc in
   Slaves.wait_all_done ();
-  VCS.print ()
+  VCS.print ();
+  doc
 
 let rec join_admitted_proofs id =
   if Stateid.equal id Stateid.initial then () else
@@ -2425,17 +2435,17 @@ let rec join_admitted_proofs id =
        join_admitted_proofs view.next
   | _ -> join_admitted_proofs view.next
 
-let join () =
-  wait ();
+let join ~doc =
+  let doc = wait ~doc in
   stm_prerr_endline (fun () -> "Joining the environment");
   Global.join_safe_environment ();
   stm_prerr_endline (fun () -> "Joining Admitted proofs");
   join_admitted_proofs (VCS.get_branch_pos (VCS.current_branch ()));
   VCS.print ();
-  VCS.print ()
+  doc
 
 let dump_snapshot () = Slaves.dump_snapshot (), RemoteCounter.snapshot ()
-type document = VCS.vcs
+
 type tasks = int Slaves.tasks * RemoteCounter.remote_counters_status
 let check_task name (tasks,rcbackup) i =
   RemoteCounter.restore rcbackup;
@@ -2502,12 +2512,13 @@ let handle_failure (e, info) vcs =
       VCS.print ();
       Exninfo.iraise (e, info)
 
-let snapshot_vio ldir long_f_dot_vo =
-  finish ();
+let snapshot_vio ~doc ldir long_f_dot_vo =
+  let doc = finish ~doc in
   if List.length (VCS.branches ()) > 1 then
     CErrors.user_err ~hdr:"stm" (str"Cannot dump a vio with open proofs");
   Library.save_library_to ~todo:(dump_snapshot ()) ldir long_f_dot_vo
-    (Global.opaque_tables ())
+    (Global.opaque_tables ());
+  doc
 
 let reset_task_queue = Slaves.reset_task_queue
 
@@ -2542,7 +2553,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
             (VCS.branches ());
           VCS.checkout_shallowest_proof_branch ();
           VCS.commit id (Alias (oid,x));
-          Backtrack.record (); if w == VtNow then finish (); `Ok
+          Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
       | VtBack (false, id), VtNow ->
           stm_prerr_endline (fun () -> "undo to state " ^ Stateid.to_string id);
           Backtrack.backto id;
@@ -2571,7 +2582,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
                  then `SkipQueue
             else `MainQueue in
           VCS.commit id (mkTransCmd x [] false queue);
-          Backtrack.record (); if w == VtNow then finish (); `Ok
+          Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
 
       | VtQuery (false,_), VtLater ->
           anomaly(str"classifier: VtQuery + VtLater must imply part_of_script.")
@@ -2589,7 +2600,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
             VCS.merge id ~ours:(Fork (x, bname, guarantee, names)) head
           end;
           Proof_global.activate_proof_mode mode [@ocaml.warning "-3"];
-          Backtrack.record (); if w == VtNow then finish (); `Ok
+          Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
       | VtProofMode _, VtLater ->
           anomaly(str"VtProofMode must be executed VtNow.")
       | VtProofMode mode, VtNow ->
@@ -2607,7 +2618,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
             (VCS.branches ());
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record ();
-          finish ();
+          ignore(finish ~doc:dummy_doc);
           `Ok
       | VtProofStep { parallel; proof_block_detection = cblock }, w ->
           let id = VCS.new_node ~id:newtip () in
@@ -2620,14 +2631,14 @@ let process_transaction ?(newtip=Stateid.fresh ())
              If/when and UI will make something useful with this piece of info,
              detection should occur here.
           detect_proof_block id cblock; *)
-          Backtrack.record (); if w == VtNow then finish (); `Ok
+          Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
       | VtQed keep, w ->
           let valid = VCS.get_branch_pos head in
           let rc = merge_proof_branch ~valid ~id:newtip x keep head in
           VCS.checkout_shallowest_proof_branch ();
-          Backtrack.record (); if w == VtNow then finish ();
+          Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc);
           rc
-          
+
       (* Side effect on all branches *)
       | VtUnknown, _ when expr = VernacToplevelControl Drop ->
           stm_vernac_interp (VCS.get_branch_pos head) x; `Ok
@@ -2644,7 +2655,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
 	    | _ -> ReplayCommand x in
 	  VCS.propagate_sideff ~action;
           VCS.checkout_shallowest_proof_branch ();
-          Backtrack.record (); if w == VtNow then finish (); `Ok
+          Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
 
       (* Unknown: we execute it, check for open goals and propagate sideeff *)
       | VtUnknown, VtNow ->
@@ -2693,7 +2704,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
     let e = CErrors.push e in
     handle_failure e vcs
 
-let get_ast id =
+let get_ast ~doc id =
   match VCS.visit id with
   | { step = `Cmd { cast = { loc; expr } } }
   | { step = `Fork (({ loc; expr }, _, _, _), _) } 
@@ -2714,7 +2725,7 @@ let stop_worker n = Slaves.cancel_worker n
 *)
 exception End_of_input
 
-let parse_sentence sid pa =
+let parse_sentence ~doc sid pa =
   (* XXX: Should this restore the previous state?
      Using reach here to try to really get to the
      proper state makes the error resilience code fail *)
@@ -2778,7 +2789,7 @@ let compute_indentation ?loc sid = Option.cata (fun loc ->
     eff_indent, len
   ) (0, 0) loc
 
-let add ~ontop ?newtip verb (loc, ast) =
+let add ~doc ~ontop ?newtip verb (loc, ast) =
   let cur_tip = VCS.cur_tip () in
   if not (Stateid.equal ontop cur_tip) then
     user_err ?loc ~hdr:"Stm.add"
@@ -2791,10 +2802,10 @@ let add ~ontop ?newtip verb (loc, ast) =
   let clas = classify_vernac ast in
   let aast = { verbose = verb; indentation; strlen; loc; expr = ast } in
   match process_transaction ?newtip aast clas with
-  | `Ok -> VCS.cur_tip (), `NewTip
-  | `Unfocus qed_id -> qed_id, `Unfocus (VCS.cur_tip ())
+  | `Ok -> doc, VCS.cur_tip (), `NewTip
+  | `Unfocus qed_id -> doc, qed_id, `Unfocus (VCS.cur_tip ())
 
-let set_perspective id_list = Slaves.set_perspective id_list
+let set_perspective ~doc id_list = Slaves.set_perspective id_list
 
 type focus = {
   start : Stateid.t;
@@ -2802,11 +2813,11 @@ type focus = {
   tip : Stateid.t
 }
 
-let query ~at ~route s =
+let query ~doc ~at ~route s =
   Future.purify (fun s ->
-    if Stateid.equal at Stateid.dummy then finish ()
+    if Stateid.equal at Stateid.dummy then ignore(finish ~doc:dummy_doc)
     else Reach.known_state ~cache:`Yes at;
-    let loc, ast = parse_sentence at s in
+    let loc, ast = parse_sentence ~doc at s in
     let indentation, strlen = compute_indentation ?loc at in
     CWarnings.set_current_loc loc;
     let clas = classify_vernac ast in
@@ -2818,7 +2829,7 @@ let query ~at ~route s =
        ignore(process_transaction aast (VtQuery (false, route), VtNow)))
   s
 
-let edit_at id =
+let edit_at ~doc id =
   if Stateid.equal id Stateid.dummy then anomaly(str"edit_at dummy.") else
   let vcs = VCS.backup () in
   let on_cur_branch id =
@@ -2927,7 +2938,7 @@ let edit_at id =
       | false, None, None -> backto id None
     in
     VCS.print ();
-    rc
+    doc, rc
   with e ->
     let (e, info) = CErrors.push e in
     match Stateid.get info with
@@ -2941,15 +2952,14 @@ let edit_at id =
         VCS.print ();
         Exninfo.iraise (e, info)
 
-let backup () = VCS.backup ()
-let restore d = VCS.restore d
+let get_current_state ~doc = VCS.cur_tip ()
 
-let get_current_state () = VCS.cur_tip ()
+let get_doc did = dummy_doc
 
 (*********************** TTY API (PG, coqtop, coqc) ***************************)
 (******************************************************************************)
 
-let current_proof_depth () =
+let current_proof_depth ~doc =
   let head = VCS.current_branch () in
   match VCS.get_branch head with
   | { VCS.kind = `Master } -> 0
@@ -2968,7 +2978,7 @@ let proofname b = match VCS.get_branch b with
   | { VCS.kind = (`Proof _| `Edit _) } -> Some b
   | _ -> None
 
-let get_all_proof_names () =
+let get_all_proof_names ~doc =
   List.map unmangle (CList.map_filter proofname (VCS.branches ()))
 
 (* Export hooks *)

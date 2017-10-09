@@ -5813,8 +5813,11 @@ end
 
 module Stm :
 sig
+  type doc
   type state
-  val state_of_id :
+
+  val get_doc : Feedback.doc_id -> doc
+  val state_of_id : doc:doc ->
     Stateid.t -> [ `Valid of state option | `Expired | `Error of exn ]
 end
 

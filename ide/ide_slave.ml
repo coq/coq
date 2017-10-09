@@ -76,10 +76,16 @@ let ide_cmd_checks ~id (loc,ast) =
 
 (** Interpretation (cf. [Ide_intf.interp]) *)
 
+let ide_doc = ref None
+let get_doc () = Option.get !ide_doc
+let set_doc doc = ide_doc := Some doc
+
 let add ((s,eid),(sid,verbose)) =
+  let doc = get_doc () in
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
-  let loc_ast = Stm.parse_sentence sid pa in
-  let newid, rc = Stm.add ~ontop:sid verbose loc_ast in
+  let loc_ast = Stm.parse_sentence ~doc sid pa in
+  let doc, newid, rc = Stm.add ~doc ~ontop:sid verbose loc_ast in
+  set_doc doc;
   let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
   ide_cmd_checks ~id:newid loc_ast;
   (* TODO: the "" parameter is a leftover of the times the protocol
@@ -94,9 +100,10 @@ let add ((s,eid),(sid,verbose)) =
   newid, (rc, "")
 
 let edit_at id =
-  match Stm.edit_at id with
-  | `NewTip -> CSig.Inl ()
-  | `Focus { Stm.start; stop; tip} -> CSig.Inr (start, (stop, tip))
+  let doc = get_doc () in
+  match Stm.edit_at ~doc id with
+  | doc, `NewTip -> set_doc doc; CSig.Inl ()
+  | doc, `Focus { Stm.start; stop; tip} -> set_doc doc; CSig.Inr (start, (stop, tip))
 
 (* TODO: the "" parameter is a leftover of the times the protocol
  * used to include stderr/stdout output.
@@ -109,12 +116,14 @@ let edit_at id =
  *)
 let query (route, (s,id)) =
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
-  Stm.query ~at:id ~route pa
+  let doc = get_doc () in
+  Stm.query ~at:id ~doc ~route pa
 
 let annotate phrase =
+  let doc = get_doc () in
   let (loc, ast) =
     let pa = Pcoq.Gram.parsable (Stream.of_string phrase) in
-    Stm.parse_sentence (Stm.get_current_state ()) pa
+    Stm.parse_sentence ~doc (Stm.get_current_state ~doc) pa
   in
   (* XXX: Width should be a parameter of annotate... *)
   Richpp.richpp_of_pp 78 (Ppvernac.pr_vernac ast)
@@ -196,7 +205,8 @@ let export_pre_goals pgs =
   }
 
 let goals () =
-  Stm.finish ();
+  let doc = get_doc () in
+  set_doc @@ Stm.finish ~doc;
   try
     let pfts = Proof_global.give_me_the_proof () in
     Some (export_pre_goals (Proof.map_structured_proof pfts process_goal))
@@ -204,7 +214,8 @@ let goals () =
 
 let evars () =
   try
-    Stm.finish ();
+    let doc = get_doc () in
+    set_doc @@ Stm.finish ~doc;
     let pfts = Proof_global.give_me_the_proof () in
     let { Evd.it = all_goals ; sigma = sigma } = Proof.V82.subgoals pfts in
     let exl = Evar.Map.bindings (Evd.undefined_map sigma) in
@@ -230,12 +241,17 @@ let hints () =
 
 (** Other API calls *)
 
+let wait () =
+  let doc = get_doc () in
+  set_doc (Stm.wait ~doc)
+
 let status force =
   (** We remove the initial part of the current [DirPath.t]
       (usually Top in an interactive session, cf "coqtop -top"),
       and display the other parts (opened sections and modules) *)
-  Stm.finish ();
-  if force then Stm.join ();
+  set_doc (Stm.finish ~doc:(get_doc ()));
+  if force then
+    set_doc (Stm.join ~doc:(get_doc ()));
   let path =
     let l = Names.DirPath.repr (Lib.cwd ()) in
     List.rev_map Names.Id.to_string l
@@ -252,7 +268,7 @@ let status force =
     Interface.status_path = path;
     Interface.status_proofname = proof;
     Interface.status_allproofs = allproofs;
-    Interface.status_proofnum = Stm.current_proof_depth ();
+    Interface.status_proofnum = Stm.current_proof_depth ~doc:(get_doc ());
   }
 
 let export_coq_object t = {
@@ -356,22 +372,23 @@ let init =
   fun file ->
    if !initialized then anomaly (str "Already initialized.")
    else begin
-     let init_sid = Stm.get_current_state () in
+     let init_sid = Stm.get_current_state ~doc:(get_doc ()) in
      initialized := true;
      match file with
      | None -> init_sid
      | Some file ->
          let dir = Filename.dirname file in
          let open Loadpath in let open CUnix in
-         let initial_id, _ =
+         let doc, initial_id, _ =
+           let doc = get_doc () in
            if not (is_in_load_paths (physical_path_of_string dir)) then begin
              let pa = Pcoq.Gram.parsable (Stream.of_string (Printf.sprintf "Add LoadPath \"%s\". " dir)) in
-             let loc_ast = Stm.parse_sentence init_sid pa in
-             Stm.add false ~ontop:init_sid loc_ast
-           end else init_sid, `NewTip in
+             let loc_ast = Stm.parse_sentence ~doc init_sid pa in
+             Stm.add false ~doc ~ontop:init_sid loc_ast
+           end else doc, init_sid, `NewTip in
          if Filename.check_suffix file ".v" then
            Stm.set_compilation_hints file;
-         Stm.finish ();
+         set_doc (Stm.finish ~doc);
          initial_id
    end
 
@@ -413,7 +430,7 @@ let eval_call c =
     Interface.quit = (fun () -> quit := true);
     Interface.init = interruptible init;
     Interface.about = interruptible about;
-    Interface.wait = interruptible Stm.wait;
+    Interface.wait = interruptible wait;
     Interface.interp = interruptible interp;
     Interface.handle_exn = handle_exn;
     Interface.stop_worker = Stm.stop_worker;
@@ -449,7 +466,8 @@ let msg_format = ref (fun () ->
     Xmlprotocol.Richpp margin
 )
 
-let loop () =
+let loop doc =
+  set_doc doc;
   init_signal_handler ();
   catch_break := false;
   let in_ch, out_ch = Spawned.get_channels ()                        in

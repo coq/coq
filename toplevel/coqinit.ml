@@ -27,12 +27,12 @@ let set_rcfile s = rcfile := s; rcfile_specified := true
 let load_rc = ref true
 let no_load_rc () = load_rc := false
 
-let load_rcfile sid =
+let load_rcfile doc sid =
   if !load_rc then
     try
       if !rcfile_specified then
         if CUnix.file_readable_p !rcfile then
-          Vernac.load_vernac ~verbosely:false ~interactive:false ~check:true sid !rcfile
+          Vernac.load_vernac ~verbosely:false ~interactive:false ~check:true doc sid !rcfile
         else raise (Sys_error ("Cannot read rcfile: "^ !rcfile))
       else
 	try
@@ -43,8 +43,8 @@ let load_rcfile sid =
 	    Envars.home ~warn / "."^rcdefaultname^"."^Coq_config.version;
 	    Envars.home ~warn / "."^rcdefaultname
 	  ] in
-          Vernac.load_vernac ~verbosely:false ~interactive:false ~check:true sid inferedrc
-	with Not_found -> sid
+          Vernac.load_vernac ~verbosely:false ~interactive:false ~check:true doc sid inferedrc
+	with Not_found -> doc, sid
 	(*
 	Flags.if_verbose
 	  mSGNL (str ("No coqrc or coqrc."^Coq_config.version^
@@ -56,7 +56,7 @@ let load_rcfile sid =
       iraise reraise
   else
     (Flags.if_verbose Feedback.msg_info (str"Skipping rcfile loading.");
-     sid)
+     doc, sid)
 
 (* Recursively puts dir in the LoadPath if -nois was not passed *)
 let add_stdlib_path ~unix_path ~coq_root ~with_ml =
