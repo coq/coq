@@ -110,10 +110,6 @@ module Strict = struct
   let push (b:t) pr =
     focus bullet_cond (b::get_bullets pr) 1 pr
 
-  (* Used only in the next function.
-     TODO: use a recursive function instead? *)
-  exception SuggestFound of t
-
   let suggest_bullet (prf : proof): suggestion =
     if is_done prf then ProofFinished
     else if not (no_focused_goal prf)
@@ -122,24 +118,24 @@ module Strict = struct
       | b::_ -> Unfinished b
       | _ -> NoBulletInUse
     else (* There is no goal under focus but some are unfocussed,
-            let us look at the bullet needed. If no  *)
-      let pcobaye = ref prf in
-      try
-        while true do
-          let pcobaye', b = pop !pcobaye in
-         (* pop went well, this means that there are no more goals
-          *under this* bullet b, see if a new b can be pushed. *)
-          (try let _ = push b pcobaye' in (* push didn't fail so a new b can be pushed. *)
-      	 raise (SuggestFound b)
-           with SuggestFound _ as e -> raise e
-           | _ -> ()); (* b could not be pushed, so we must look for a outer bullet *)
-          pcobaye := pcobaye'
-        done;
-        assert false
-      with SuggestFound b -> Suggest b
-      | _ -> NeedClosingBrace (* No push was possible, but there are still
-      			   subgoals somewhere: there must be a "}" to use. *)
-
+            let us look at the bullet needed. *)
+      let rec loop prf =
+        match pop prf with
+        | prf, b ->
+          (* pop went well, this means that there are no more goals
+           *under this* bullet b, see if a new b can be pushed. *)
+          begin
+            try ignore (push b prf); Suggest b
+            with _ ->
+              (* b could not be pushed, so we must look for a outer bullet *)
+              loop prf
+          end
+        | exception _ ->
+          (* No pop was possible, but there are still
+             subgoals somewhere: there must be a "}" to use. *)
+          NeedClosingBrace
+      in
+      loop prf
 
   let rec pop_until (prf : proof) bul : proof =
     let prf', b = pop prf in

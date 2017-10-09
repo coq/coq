@@ -166,16 +166,10 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
       let mb_mp1 = lookup_module mp1 env in
       let mtb_mp1 = module_type_of_module mb_mp1 in
       let cst = match old.mod_expr with
-	| Abstract ->
-	  begin
-            try
-              let mtb_old = module_type_of_module old in
-              let chk_cst = Subtyping.check_subtypes env' mtb_mp1 mtb_old in
-              Univ.ContextSet.add_constraints chk_cst old.mod_constraints
-	    with Failure _ ->
-              (* TODO: where can a Failure come from ??? *)
-              error_incorrect_with_constraint lab
-	  end
+        | Abstract ->
+          let mtb_old = module_type_of_module old in
+          let chk_cst = Subtyping.check_subtypes env' mtb_mp1 mtb_old in
+          Univ.ContextSet.add_constraints chk_cst old.mod_constraints
 	| Algebraic (NoFunctor (MEident(mp'))) ->
 	  check_modpath_equiv env' mp1 mp';
 	  old.mod_constraints

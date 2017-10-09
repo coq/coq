@@ -5,13 +5,11 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-open Pp
 open CErrors
 open Term
 open Vars
 open Environ
 open Reduction
-open Univ
 open Declarations
 open Names
 open Inductive
@@ -19,8 +17,6 @@ open Util
 open Nativecode
 open Nativevalues
 open Context.Rel.Declaration
-
-module RelDecl = Context.Rel.Declaration
 
 (** This module implements normalization by evaluation to OCaml code *)
 
@@ -177,44 +173,6 @@ let build_case_type dep p realargs c =
   if dep then mkApp(mkApp(p, realargs), [|c|])
   else mkApp(p, realargs)
 
-(* TODO move this function *)
-let type_of_rel env n =
-  env |> lookup_rel n |> RelDecl.get_type |> lift n
-
-let type_of_prop = mkSort type1_sort
-
-let type_of_sort s = 
-  match s with
-  | Prop _ -> type_of_prop
-  | Type u -> mkType (Univ.super u)
-
-let type_of_var env id =
-  let open Context.Named.Declaration in
-  try env |> lookup_named id |> get_type
-  with Not_found ->
-    anomaly ~label:"type_of_var" (str "variable " ++ Id.print id ++ str " unbound.")
-
-let sort_of_product env domsort rangsort =
-  match (domsort, rangsort) with
-    (* Product rule (s,Prop,Prop) *)
-    | (_,       Prop Null)  -> rangsort
-    (* Product rule (Prop/Set,Set,Set) *)
-    | (Prop _,  Prop Pos) -> rangsort
-    (* Product rule (Type,Set,?) *)
-    | (Type u1, Prop Pos) ->
-        if is_impredicative_set env then
-          (* Rule is (Type,Set,Set) in the Set-impredicative calculus *)
-          rangsort
-        else
-          (* Rule is (Type_i,Set,Type_i) in the Set-predicative calculus *)
-          Type (sup u1 type0_univ)
-    (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop Pos,  Type u2)  -> Type (sup type0_univ u2)
-    (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop Null, Type _)  -> rangsort
-    (* Product rule (Type_i,Type_i,Type_i) *)
-    | (Type u1, Type u2) -> Type (sup u1 u2)
-
 (* normalisation of values *)
 
 let branch_of_switch lvl ans bs = 
@@ -328,15 +286,15 @@ and nf_atom_type env sigma atom =
   match atom with
   | Arel i ->
       let n = (nb_rel env - i) in
-      mkRel n, type_of_rel env n
+      mkRel n, Typeops.type_of_relative env n
   | Aconstant cst ->
       mkConstU cst, Typeops.type_of_constant_in env cst
   | Aind ind ->
       mkIndU ind, Inductiveops.type_of_inductive env ind
   | Asort s ->
-      mkSort s, type_of_sort s
+      mkSort s, Typeops.type_of_sort s
   | Avar id ->
-      mkVar id, type_of_var env id
+      mkVar id, Typeops.type_of_variable env id
   | Acase(ans,accu,p,bs) ->
       let a,ta = nf_accu_type env sigma accu in
       let ((mind,_),u as ind),allargs = find_rectype_a env ta in
@@ -387,7 +345,7 @@ and nf_atom_type env sigma atom =
       let vn = mk_rel_accu (nb_rel env) in
       let env = push_rel (LocalAssum (n,dom)) env in
       let codom,s2 = nf_type_sort env sigma (codom vn) in
-      mkProd(n,dom,codom), mkSort (sort_of_product env s1 s2)
+      mkProd(n,dom,codom), Typeops.type_of_product env n s1 s2
   | Aevar(ev,ty) ->
      let ty = nf_type env sigma ty in
      mkEvar ev, ty

@@ -65,6 +65,10 @@ let type_of_type u =
   let uu = Universe.super u in
     mkType uu
 
+let type_of_sort = function
+  | Prop c -> type1
+  | Type u -> type_of_type u
+
 (*s Type of a de Bruijn index. *)
 
 let type_of_relative env n =
@@ -323,11 +327,7 @@ let rec execute env cstr =
   let open Context.Rel.Declaration in
   match kind_of_term cstr with
     (* Atomic terms *)
-    | Sort (Prop c) ->
-      type1
-	
-    | Sort (Type u) ->
-      type_of_type u
+    | Sort s -> type_of_sort s
 
     | Rel n ->
       type_of_relative env n
