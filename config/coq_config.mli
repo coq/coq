@@ -49,6 +49,7 @@ val vmbyteflags : string list (* -custom/-dllib -lcoqrun *)
 
 val version : string    (* version number of Coq *)
 val caml_version : string    (* OCaml version used to compile Coq *)
+val caml_version_nums : int list    (* OCaml version used to compile Coq by components *)
 val date : string       (* release date *)
 val compile_date : string (* compile date *)
 val vo_magic_number : int

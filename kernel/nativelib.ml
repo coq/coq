@@ -74,7 +74,7 @@ let call_compiler ?profile:(profile=false) ml_filename =
   let remove f = if Sys.file_exists f then Sys.remove f in
   remove link_filename;
   remove (f ^ ".cmi");
-  let initial_args = 
+  let initial_args =
     if Dynlink.is_native then
       ["opt"; "-shared"]
      else
@@ -86,9 +86,20 @@ let call_compiler ?profile:(profile=false) ml_filename =
     else
       []
   in
+  let flambda_args =
+    if Coq_config.caml_version_nums >= [4;3;0] then
+      (* We play safe for now, and use the native compiler
+         with -Oclassic, however it is likely that `native_compute`
+         users can benefit from tweaking here.
+      *)
+      ["-Oclassic"]
+    else
+      []
+  in
   let args =
     initial_args @
-      profile_args @ 
+      profile_args @
+        flambda_args @
       ("-o"::link_filename
        ::"-rectypes"
        ::"-w"::"a"
