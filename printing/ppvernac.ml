@@ -1156,7 +1156,7 @@ open Decl_kinds
           | LocateFile f -> keyword "File" ++ spc() ++ qs f
           | LocateLibrary qid -> keyword "Library" ++ spc () ++ pr_module qid
           | LocateModule qid -> keyword "Module" ++ spc () ++ pr_module qid
-          | LocateTactic qid -> keyword "Ltac" ++ spc () ++ pr_ltac_ref qid
+          | LocateOther (s, qid) -> keyword s ++ spc () ++ pr_ltac_ref qid
         in
         return (keyword "Locate" ++ spc() ++ pr_locate loc)
       | VernacRegister (id, RegisterInline) ->

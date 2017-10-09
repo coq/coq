@@ -336,7 +336,7 @@ type 'a extra_genarg_printer =
   let pr_ltac_constant kn =
     if !Flags.in_debugger then KerName.print kn
     else try
-           pr_qualid (Nametab.shortest_qualid_of_tactic kn)
+           pr_qualid (Tacenv.shortest_qualid_of_tactic kn)
       with Not_found -> (* local tactic not accessible anymore *)
         str "<" ++ KerName.print kn ++ str ">"
 

@@ -304,13 +304,32 @@ let print_inductive_argument_scopes =
 (*********************)
 (* "Locate" commands *)
 
+type 'a locatable_info = {
+  locate : qualid -> 'a option;
+  locate_all : qualid -> 'a list;
+  shortest_qualid : 'a -> qualid;
+  name : 'a -> Pp.t;
+  print : 'a -> Pp.t;
+  about : 'a -> Pp.t;
+}
+
+type locatable = Locatable : 'a locatable_info -> locatable
+
 type logical_name =
   | Term of global_reference
   | Dir of global_dir_reference
   | Syntactic of kernel_name
   | ModuleType of module_path
-  | Tactic of Nametab.ltac_constant
+  | Other : 'a * 'a locatable_info -> logical_name
   | Undefined of qualid
+
+(** Generic table for objects that are accessible through a name. *)
+let locatable_map : locatable String.Map.t ref = ref String.Map.empty
+
+let register_locatable name f =
+  locatable_map := String.Map.add name (Locatable f) !locatable_map
+
+exception ObjFound of logical_name
 
 let locate_any_name ref =
   let (loc,qid) = qualid_of_reference ref in
@@ -321,7 +340,13 @@ let locate_any_name ref =
   try Dir (Nametab.locate_dir qid)
   with Not_found ->
   try ModuleType (Nametab.locate_modtype qid)
-  with Not_found -> Undefined qid
+  with Not_found ->
+    let iter _ (Locatable info) = match info.locate qid with
+    | None -> ()
+    | Some ans -> raise (ObjFound (Other (ans, info)))
+    in
+    try String.Map.iter iter !locatable_map; Undefined qid
+    with ObjFound obj -> obj
 
 let pr_located_qualid = function
   | Term ref ->
@@ -344,8 +369,7 @@ let pr_located_qualid = function
       str s ++ spc () ++ pr_dirpath dir
   | ModuleType mp ->
       str "Module Type" ++ spc () ++ pr_path (Nametab.path_of_modtype mp)
-  | Tactic kn ->
-      str "Ltac" ++ spc () ++ pr_path (Nametab.path_of_tactic kn)
+  | Other (obj, info) -> info.name obj
   | Undefined qid ->
       pr_qualid qid ++ spc () ++ str "not a defined object."
 
@@ -383,10 +407,6 @@ let locate_term qid =
   in
   List.map expand (Nametab.locate_extended_all qid)
 
-let locate_tactic qid =
-  let all = Nametab.locate_extended_all_tactic qid in
-  List.map (fun kn -> (Tactic kn, Nametab.shortest_qualid_of_tactic kn)) all
-
 let locate_module qid =
   let all = Nametab.locate_extended_all_dir qid in
   let map dir = match dir with
@@ -408,13 +428,30 @@ let locate_modtype qid =
   in
   modtypes @ List.map_filter map all
 
+let locate_other s qid =
+  let Locatable info = String.Map.find s !locatable_map in
+  let ans = info.locate_all qid in
+  let map obj = (Other (obj, info), info.shortest_qualid obj) in
+  List.map map ans
+
+type locatable_kind =
+| LocTerm
+| LocModule
+| LocOther of string
+| LocAny
+
 let print_located_qualid name flags ref =
   let (loc,qid) = qualid_of_reference ref in
-  let located = [] in
-  let located = if List.mem `LTAC flags then locate_tactic qid @ located else located in
-  let located = if List.mem `MODTYPE flags then locate_modtype qid @ located else located in
-  let located = if List.mem `MODULE flags then locate_module qid @ located else located in
-  let located = if List.mem `TERM flags then locate_term qid @ located else located in
+  let located = match flags with
+  | LocTerm -> locate_term qid
+  | LocModule -> locate_modtype qid @ locate_module qid
+  | LocOther s -> locate_other s qid
+  | LocAny ->
+    locate_term qid @
+    locate_modtype qid @
+    locate_module qid @
+    String.Map.fold (fun s _ accu -> locate_other s qid @ accu) !locatable_map []
+  in
   match located with
     | [] ->
 	let (dir,id) = repr_qualid qid in
@@ -432,10 +469,10 @@ let print_located_qualid name flags ref =
 	   else mt ()) ++
           display_alias o)) l
 
-let print_located_term ref = print_located_qualid "term" [`TERM] ref
-let print_located_tactic ref = print_located_qualid "tactic" [`LTAC] ref
-let print_located_module ref = print_located_qualid "module" [`MODULE; `MODTYPE] ref
-let print_located_qualid ref = print_located_qualid "object" [`TERM; `LTAC; `MODULE; `MODTYPE] ref
+let print_located_term ref = print_located_qualid "term" LocTerm ref
+let print_located_other s ref = print_located_qualid s (LocOther s) ref
+let print_located_module ref = print_located_qualid "module" LocModule ref
+let print_located_qualid ref = print_located_qualid "object" LocAny ref
 
 (******************************************)
 (**** Printing declarations and judgments *)
@@ -765,7 +802,7 @@ let print_any_name = function
   | Dir (DirModule(dirpath,(mp,_))) -> print_module (printable_body dirpath) mp
   | Dir _ -> mt ()
   | ModuleType mp -> print_modtype mp
-  | Tactic kn -> mt () (** TODO *)
+  | Other (obj, info) -> info.print obj
   | Undefined qid ->
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
     let dir,str = repr_qualid qid in
@@ -822,8 +859,9 @@ let print_about_any ?loc k =
       v 0 (
       print_syntactic_def kn ++ fnl () ++
       hov 0 (str "Expands to: " ++ pr_located_qualid k))
-  | Dir _ | ModuleType _ | Tactic _ | Undefined _ ->
+  | Dir _ | ModuleType _ | Undefined _ ->
       hov 0 (pr_located_qualid k)
+  | Other (obj, info) -> hov 0 (info.about obj)
 
 let print_about = function
   | ByNotation (loc,(ntn,sc)) ->
