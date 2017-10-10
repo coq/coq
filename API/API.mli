@@ -4661,6 +4661,7 @@ sig
     val pf_ids_set_of_hyps : 'a Proofview.Goal.t -> Names.Id.Set.t
     val pf_concl : 'a Proofview.Goal.t -> EConstr.types
     val pf_get_new_id  : Names.Id.t -> 'a Proofview.Goal.t -> Names.Id.t
+    val pf_get_hyp : Names.Id.t -> 'a Proofview.Goal.t -> EConstr.named_declaration
     val pf_get_hyp_typ : Names.Id.t -> 'a Proofview.Goal.t -> EConstr.types
     val pf_get_type_of : 'a Proofview.Goal.t -> EConstr.constr -> EConstr.types
     val pf_global : Names.Id.t -> 'a Proofview.Goal.t -> Globnames.global_reference

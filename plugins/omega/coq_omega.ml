@@ -50,6 +50,7 @@ let display_time_flag = ref false
 let display_system_flag = ref false
 let display_action_flag = ref false
 let old_style_flag = ref false
+let letin_flag = ref true
 
 (* Should we reset all variable labels between two runs of omega ? *)
 
@@ -99,6 +100,14 @@ let _ =
       optkey   = ["Stable";"Omega"];
       optread  = read reset_flag;
       optwrite = write reset_flag }
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "Omega takes advantage of context variables with body";
+      optkey   = ["Omega";"UseLocalDefs"];
+      optread  = read letin_flag;
+      optwrite = write letin_flag }
 
 let intref, reset_all_references =
   let refs = ref [] in
@@ -376,16 +385,15 @@ let mk_var v = mkVar (Id.of_string v)
 let mk_plus t1 t2 = mkApp (Lazy.force coq_Zplus, [| t1; t2 |])
 let mk_times t1 t2 = mkApp (Lazy.force coq_Zmult, [| t1; t2 |])
 let mk_minus t1 t2 = mkApp (Lazy.force coq_Zminus, [| t1;t2 |])
-let mk_eq t1 t2 = mkApp (Lazy.force coq_eq,
-			 [| Lazy.force coq_Z; t1; t2 |])
+let mk_gen_eq ty t1 t2 = mkApp (Lazy.force coq_eq, [| ty; t1; t2 |])
+let mk_eq t1 t2 = mk_gen_eq (Lazy.force coq_Z) t1 t2
 let mk_le t1 t2 = mkApp (Lazy.force coq_Zle, [| t1; t2 |])
 let mk_gt t1 t2 = mkApp (Lazy.force coq_Zgt, [| t1; t2 |])
 let mk_inv t = mkApp (Lazy.force coq_Zopp, [| t |])
 let mk_and t1 t2 =  mkApp (Lazy.force coq_and, [| t1; t2 |])
 let mk_or t1 t2 =  mkApp (Lazy.force coq_or, [| t1; t2 |])
 let mk_not t = mkApp (Lazy.force coq_not, [| t |])
-let mk_eq_rel t1 t2 = mkApp (Lazy.force coq_eq,
-			     [| Lazy.force coq_comparison; t1; t2 |])
+let mk_eq_rel t1 t2 = mk_gen_eq (Lazy.force coq_comparison) t1 t2
 let mk_inj t = mkApp (Lazy.force coq_Z_of_nat, [| t |])
 
 let mk_integer n =
@@ -1778,11 +1786,25 @@ let destructure_hyps =
   let type_of = Tacmach.New.pf_unsafe_type_of gl in
   let decidability = decidability gl in
   let pf_nf = pf_nf gl in
-    let rec loop = function
-      | [] -> (tclTHEN nat_inject coq_omega)
-      | decl::lit ->
-          let i = NamedDecl.get_id decl in
-          Proofview.tclEVARMAP >>= fun sigma ->
+  let rec loop = function
+    | [] -> (tclTHEN nat_inject coq_omega)
+    | LocalDef (i,body,typ) :: lit when !letin_flag ->
+       Proofview.tclEVARMAP >>= fun sigma ->
+       begin
+         try
+           match destructurate_type sigma (pf_nf typ) with
+           | Kapp(Nat,_) | Kapp(Z,_) ->
+              let hid = fresh_id Id.Set.empty (add_suffix i "_eqn") gl in
+              let hty = mk_gen_eq typ (mkVar i) body in
+              tclTHEN
+                (assert_by (Name hid) hty reflexivity)
+                (loop (LocalAssum (hid, hty) :: lit))
+           | _ -> loop lit
+         with e when catchable_exception e -> loop lit
+       end
+    | decl :: lit -> (* variable without body (or !letin_flag isn't set) *)
+       let i = NamedDecl.get_id decl in
+       Proofview.tclEVARMAP >>= fun sigma ->
 	  begin try match destructurate_prop sigma (NamedDecl.get_type decl) with
 	  | Kapp(False,[]) -> elim_id i
           | Kapp((Zle|Zge|Zgt|Zlt|Zne),[t1;t2]) -> loop lit
