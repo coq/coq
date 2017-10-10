@@ -49,6 +49,7 @@ val vmbyteflags : string list (* -custom/-dllib -lcoqrun *)
 
 val version : string    (* version number of Coq *)
 val caml_version : string    (* OCaml version used to compile Coq *)
+val caml_version_nums : int list    (* OCaml version used to compile Coq by components *)
 val date : string       (* release date *)
 val compile_date : string (* compile date *)
 val vo_magic_number : int
@@ -71,6 +72,8 @@ val gtk_platform : [`QUARTZ | `WIN32 | `X11]
 
 val has_natdynlink : bool
 val natdynlinkflag : string (* special cases of natdynlink (e.g. MacOS 10.5) *)
+
+val flambda_flags : string list
 
 val wwwcoq : string
 val wwwrefman : string
