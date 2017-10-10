@@ -123,6 +123,9 @@ let message_view () : message_view =
   end
   in
   (* Is there a better way to connect the signal ? *)
-  let w_cb (_ : Gtk.rectangle) = mv#refresh false in
-  ignore (view#misc#connect#size_allocate ~callback:w_cb);
+  (* Disable dynamic resizing for 8.7 due to the above redraw race-condition. *)
+  if false then begin
+    let w_cb (_ : Gtk.rectangle) = mv#refresh false in
+    ignore (view#misc#connect#size_allocate ~callback:w_cb)
+  end;
   mv

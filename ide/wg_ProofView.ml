@@ -240,6 +240,9 @@ let proof_view () =
   in
   (* Is there a better way to connect the signal ? *)
   (* Can this be done in the object constructor? *)
-  let w_cb _ = pf#refresh ~force:false in
-  ignore (view#misc#connect#size_allocate ~callback:w_cb);
+  (* Disable dynamic resizing for 8.7 due to the above redraw race-condition. *)
+  if false then begin
+    let w_cb _ = pf#refresh ~force:false in
+    ignore (view#misc#connect#size_allocate ~callback:w_cb)
+  end;
   pf
