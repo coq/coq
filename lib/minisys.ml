@@ -36,10 +36,15 @@ let skipped_dirnames = ref ["CVS"; "_darcs"]
 
 let exclude_directory f = skipped_dirnames := f :: !skipped_dirnames
 
+(* Note: this test is possibly used for Coq module/file names but also for
+   OCaml filenames, whose syntax as of today is more restrictive for
+   module names (only initial letter then letter, digits, _ or quote),
+   but more permissive (though disadvised) for file names  *)
+
 let ok_dirname f =
   not (f = "") && f.[0] != '.' &&
-  not (List.mem f !skipped_dirnames) (*&&
-  (match Unicode.ident_refutation f with None -> true | _ -> false)*)
+  not (List.mem f !skipped_dirnames) &&
+  match Unicode.ident_refutation f with None -> true | _ -> false
 
 (* Check directory can be opened *)
 
@@ -55,10 +60,11 @@ let exists_dir dir =
 let apply_subdir f path name =
   (* we avoid all files and subdirs starting by '.' (e.g. .svn) *)
   (* as well as skipped files like CVS, ... *)
-  if ok_dirname name then
+  let base = try Filename.chop_extension name with Invalid_argument _ -> name in
+  if ok_dirname base then
     let path = if path = "." then name else path//name in
     match try (Unix.stat path).Unix.st_kind with Unix.Unix_error _ -> Unix.S_BLK with
-    | Unix.S_DIR -> f (FileDir (path,name))
+    | Unix.S_DIR when name = base -> f (FileDir (path,name))
     | Unix.S_REG -> f (FileRegular name)
     | _ -> ()
 

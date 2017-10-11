@@ -436,14 +436,18 @@ tools: $(TOOLS) $(OCAMLLIBDEP) $(COQDEPBOOT)
 
 # Remember to update the dependencies below when you add files!
 
-COQDEPBOOTSRC := lib/minisys.cmo \
- lib/segmenttree.cmo lib/unicodetable.cmo lib/unicode.cmo \
+COQDEPBOOTSRC := \
+ lib/segmenttree.cmo lib/unicodetable.cmo lib/unicode.cmo lib/minisys.cmo \
  tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep_boot.cmo
 
 lib/segmenttree.cmo : lib/segmenttree.cmi
 lib/segmenttree.cmx : lib/segmenttree.cmi
-lib/unicode.cmo : lib/unicodetable.cmo lib/segmenttree.cmi lib/unicode.cmi
-lib/unicode.cmx : lib/unicodetable.cmx lib/segmenttree.cmx lib/unicode.cmi
+lib/unicodetable.cmo : lib/segmenttree.cmo
+lib/unicodetable.cmx : lib/segmenttree.cmx
+lib/unicode.cmo : lib/unicodetable.cmo lib/unicode.cmi
+lib/unicode.cmx : lib/unicodetable.cmx lib/unicode.cmi
+lib/minisys.cmo : lib/unicode.cmo
+lib/minisys.cmx : lib/unicode.cmx
 tools/coqdep_lexer.cmo : lib/unicode.cmi tools/coqdep_lexer.cmi
 tools/coqdep_lexer.cmx : lib/unicode.cmx tools/coqdep_lexer.cmi
 tools/coqdep_common.cmo : lib/minisys.cmo tools/coqdep_lexer.cmi tools/coqdep_common.cmi
@@ -461,8 +465,8 @@ $(OCAMLLIBDEP): $(call bestobj, tools/ocamllibdep.cmo)
 
 # The full coqdep (unused by this build, but distributed by make install)
 
-COQDEPCMO:=lib/clib.cma lib/cErrors.cmo lib/cWarnings.cmo lib/minisys.cmo \
-  lib/segmenttree.cmo lib/unicodetable.cmo lib/unicode.cmo \
+COQDEPCMO:=lib/clib.cma lib/cErrors.cmo lib/cWarnings.cmo \
+  lib/segmenttree.cmo lib/unicodetable.cmo lib/unicode.cmo lib/minisys.cmo \
   lib/system.cmo tools/coqdep_lexer.cmo tools/coqdep_common.cmo \
   tools/coqdep.cmo
 
