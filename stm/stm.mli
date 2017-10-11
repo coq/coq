@@ -13,17 +13,17 @@ open Names
 (** The STM doc type determines some properties such as what
     uncompleted proofs are allowed and recording of aux files. *)
 type stm_doc_type =
-  | VoDoc       of DirPath.t
-  | VioDoc      of DirPath.t
+  | VoDoc       of string
+  | VioDoc      of string
   | Interactive of DirPath.t
 
 (* Main initalization routine *)
 type stm_init_options = {
   doc_type     : stm_doc_type;
+  require_libs : (string * string option * bool option) list;
 (*
   fb_handler   : Feedback.feedback -> unit;
   iload_path   : (string list * string * bool) list;
-  require_libs : (Names.DirPath.t * string * bool option) list;
   implicit_std : bool;
 *)
 }
@@ -31,7 +31,10 @@ type stm_init_options = {
 (** The type of a STM document *)
 type doc
 
-val init : stm_init_options -> doc
+val init_core : unit -> unit
+
+(* Starts a new document *)
+val new_doc  : stm_init_options -> doc * Stateid.t
 
 (* [parse_sentence sid pa] Reads a sentence from [pa] with parsing
    state [sid] Returns [End_of_input] if the stream ends *)
@@ -105,6 +108,7 @@ val finish_tasks : string ->
 
 (* Id of the tip of the current branch *)
 val get_current_state : doc:doc -> Stateid.t
+val get_ldir : doc:doc -> Names.DirPath.t
 
 (* This returns the node at that position *)
 val get_ast : doc:doc -> Stateid.t -> (Vernacexpr.vernac_expr Loc.located) option

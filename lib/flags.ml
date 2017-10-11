@@ -42,7 +42,6 @@ let with_extra_values o l f x =
     Exninfo.iraise reraise
 
 let boot = ref false
-let load_init = ref true
 
 let record_aux_file = ref false
 
