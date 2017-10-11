@@ -121,7 +121,8 @@ let generate_makefile oc conf_file local_file args project =
     Envars.coqlib () ^ template in
   let s = read_whole_file makefile_template in
   let s = List.fold_left
-    (fun s (k,v) -> Str.global_replace (Str.regexp_string k) v s) s
+    (* We use global_substitute to avoid running into backslash issues due to \1 etc. *)
+    (fun s (k,v) -> Str.global_substitute (Str.regexp_string k) (fun _ -> v) s) s
     [ "@CONF_FILE@", conf_file;
       "@LOCAL_FILE@", local_file;
       "@COQ_VERSION@", Coq_config.version;
