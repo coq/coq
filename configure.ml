@@ -258,7 +258,6 @@ module Prefs = struct
   let macintegration = ref true
   let browser = ref (None : string option)
   let withdoc = ref false
-  let geoproof = ref false
   let byteonly = ref false
   let flambda_flags = ref []
   let debug = ref true
@@ -321,8 +320,6 @@ let args_options = Arg.align [
     "<command> Use <command> to open URL %s";
   "-with-doc", arg_bool Prefs.withdoc,
     "(yes|no) Compile the documentation or not";
-  "-with-geoproof", arg_bool Prefs.geoproof,
-    "(yes|no) Use Geoproof binding or not";
   "-byte-only", Arg.Set Prefs.byteonly,
     " Compiles only bytecode version of Coq";
   "-nodebug", Arg.Clear Prefs.debug,
@@ -1073,7 +1070,6 @@ let write_configml f =
   pr_l "flambda_flags" !Prefs.flambda_flags;
   pr_i "vo_magic_number" vo_magic;
   pr_i "state_magic_number" state_magic;
-  pr "let with_geoproof = ref %B\n" !Prefs.geoproof;
   pr_s "browser" browser;
   pr_s "wwwcoq" !Prefs.coqwebsite;
   pr_s "wwwbugtracker" (!Prefs.coqwebsite ^ "bugs/");

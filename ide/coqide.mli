@@ -40,5 +40,3 @@ val set_signal_handlers : unit -> unit
 (** Emergency saving of opened files as "foo.v.crashcoqide",
     and exit (if the integer isn't 127). *)
 val crash_save : int -> unit
-
-val check_for_geoproof_input : unit -> unit
