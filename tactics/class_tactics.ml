@@ -477,7 +477,7 @@ let is_Prop env sigma concl =
   match EConstr.kind sigma ty with
   | Sort s ->
     begin match ESorts.kind sigma s with
-    | Prop Null -> true
+    | Prop -> true
     | _ -> false
     end
   | _ -> false

@@ -16,14 +16,11 @@ open Vars
 open Constr
 
 (* Deprecated *)
-type contents = Sorts.contents = Pos | Null
-[@@ocaml.deprecated "Alias for Sorts.contents"]
-
 type sorts_family = Sorts.family = InProp | InSet | InType
 [@@ocaml.deprecated "Alias for Sorts.family"]
 
 type sorts = Sorts.t =
-  | Prop of Sorts.contents   (** Prop and Set *)
+  | Prop | Set
   | Type of Univ.Universe.t  (** Type *)
 [@@ocaml.deprecated "Alias for Sorts.t"]
 

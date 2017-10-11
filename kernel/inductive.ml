@@ -130,11 +130,6 @@ where
 Remark: Set (predicative) is encoded as Type(0)
 *)
 
-let sort_as_univ = let open Sorts in function
-| Type u -> u
-| Prop Null -> Universe.type0m
-| Prop Pos -> Universe.type0
-
 (* Template polymorphism *)
 
 (* cons_subst add the mapping [u |-> su] in subst if [u] is not *)
@@ -168,7 +163,7 @@ let make_subst env =
         (* arity is a global level which, at typing time, will be enforce *)
         (* to be greater than the level of the argument; this is probably *)
         (* a useless extra constraint *)
-        let s = sort_as_univ (snd (dest_arity env (Lazy.force a))) in
+        let s = Sorts.univ_of_sort (snd (dest_arity env (Lazy.force a))) in
           make (cons_subst u s subst) (sign, exp, args)
     | LocalAssum (na,t) :: sign, Some u::exp, [] ->
         (* No more argument here: we add the remaining universes to the *)
@@ -236,8 +231,8 @@ let type_of_inductive_knowing_parameters env ?(polyprop=true) mip args =
 (* The max of an array of universes *)
 
 let cumulate_constructor_univ u = let open Sorts in function
-  | Prop Null -> u
-  | Prop Pos -> Universe.sup Universe.type0 u
+  | Prop -> u
+  | Set -> Universe.sup Universe.type0 u
   | Type u' -> Universe.sup u u'
 
 let max_inductive_sort =

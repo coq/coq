@@ -107,11 +107,11 @@ let rec sorts_of_constr_args env t =
 
 (* Prop and Set are small *)
 let is_small_sort = function
-  | Prop _ -> true
+  | Prop | Set -> true
   | _ -> false
 
 let is_logic_sort = function
-| Prop Null -> true
+| Prop -> true
 | _ -> false
 
 (* [infos] is a sequence of pair [islogic,issmall] for each type in
@@ -186,10 +186,10 @@ let check_predicativity env s small level =
         (*     (universes env) in *)
         if not (Univ.check_leq (universes env) level u) then
           failwith "impredicative Type inductive type"
-    | Prop Pos, ImpredicativeSet -> ()
-    | Prop Pos, _ ->
+    | Set, ImpredicativeSet -> ()
+    | Set, _ ->
         if not small then failwith "impredicative Set inductive type"
-    | Prop Null,_ -> ()
+    | Prop,_ -> ()
 
 
 let sort_of_ind = function

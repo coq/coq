@@ -69,7 +69,7 @@ let type_of_type u =
     mkType uu
 
 let type_of_sort = function
-  | Prop c -> type1
+  | Prop | Set -> type1
   | Type u -> type_of_type u
 
 (*s Type of a de Bruijn index. *)
@@ -178,11 +178,11 @@ let type_of_apply env func funt argsv argstv =
 let sort_of_product env domsort rangsort =
   match (domsort, rangsort) with
     (* Product rule (s,Prop,Prop) *)
-    | (_,       Prop Null)  -> rangsort
+    | (_,       Prop)  -> rangsort
     (* Product rule (Prop/Set,Set,Set) *)
-    | (Prop _,  Prop Pos) -> rangsort
+    | ((Prop | Set),  Set) -> rangsort
     (* Product rule (Type,Set,?) *)
-    | (Type u1, Prop Pos) ->
+    | (Type u1, Set) ->
         if is_impredicative_set env then
           (* Rule is (Type,Set,Set) in the Set-impredicative calculus *)
           rangsort
@@ -190,9 +190,9 @@ let sort_of_product env domsort rangsort =
           (* Rule is (Type_i,Set,Type_i) in the Set-predicative calculus *)
           Type (Universe.sup Universe.type0 u1)
     (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop Pos,  Type u2)  -> Type (Universe.sup Universe.type0 u2)
+    | (Set,  Type u2)  -> Type (Universe.sup Universe.type0 u2)
     (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop Null, Type _)  -> rangsort
+    | (Prop, Type _)  -> rangsort
     (* Product rule (Type_i,Type_i,Type_i) *)
     | (Type u1, Type u2) -> Type (Universe.sup u1 u2)
 
@@ -480,10 +480,6 @@ let infer_local_decls env decls =
 let judge_of_prop = make_judge mkProp type1
 let judge_of_set = make_judge mkSet type1
 let judge_of_type u = make_judge (mkType u) (type_of_type u)
-
-let judge_of_prop_contents = function
-  | Null -> judge_of_prop
-  | Pos -> judge_of_set
 
 let judge_of_relative env k = make_judge (mkRel k) (type_of_relative env k)
 

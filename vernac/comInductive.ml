@@ -126,7 +126,7 @@ let make_conclusion_flexible sigma ty poly =
   else sigma
 
 let is_impredicative env u =
-  u = Prop Null || (is_impredicative_set env && u = Prop Pos)
+  u = Prop || (is_impredicative_set env && u = Set)
 
 let interp_ind_arity env sigma ind =
   let c = intern_gen IsType env sigma ind.ind_arity in
@@ -245,7 +245,7 @@ let solve_constraints_system levels level_bounds =
 let inductive_levels env evd poly arities inds =
   let destarities = List.map (fun x -> x, Reduction.dest_arity env x) arities in
   let levels = List.map (fun (x,(ctx,a)) ->
-    if a = Prop Null then None
+    if a = Prop then None
     else Some (univ_of_sort a)) destarities
   in
   let cstrs_levels, min_levels, sizes =
@@ -298,14 +298,14 @@ let inductive_levels env evd poly arities inds =
            (** "Polymorphic" type constraint and more than one constructor,
                should not land in Prop. Add constraint only if it would
                land in Prop directly (no informative arguments as well). *)
-            Evd.set_leq_sort env evd (Prop Pos) du
+            Evd.set_leq_sort env evd Set du
           else evd
         in
         let duu = Sorts.univ_of_sort du in
         let evd =
           if not (Univ.is_small_univ duu) && Univ.Universe.equal cu duu then
             if is_flexible_sort evd duu && not (Evd.check_leq evd Univ.type0_univ duu) then
-              Evd.set_eq_sort env evd (Prop Null) du
+              Evd.set_eq_sort env evd Prop du
             else evd
           else Evd.set_eq_sort env evd (Type cu) du
         in

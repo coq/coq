@@ -498,7 +498,7 @@ let rec compile_lam env cenv lam sz cont =
     else comp_app compile_structured_constant compile_universe cenv
         (Const_ind ind) (Univ.Instance.to_array u) sz cont
 
-  | Lsort (Sorts.Prop _ as s) ->
+  | Lsort (Sorts.Prop | Sorts.Set as s) ->
     compile_structured_constant cenv (Const_sort s) sz cont
   | Lsort (Sorts.Type u) ->
     (* We represent universes as a global constant with local universes

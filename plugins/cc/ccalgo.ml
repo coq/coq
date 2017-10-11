@@ -130,8 +130,8 @@ type cinfo=
      ci_nhyps: int}     (* # projectable args *)
 
 let family_eq f1 f2 = match f1, f2 with
-  | Prop Pos, Prop Pos
-  | Prop Null, Prop Null
+  | Set, Set
+  | Prop, Prop
   | Type _, Type _ -> true
   | _ -> false
 

@@ -130,8 +130,8 @@ let mkProp   = Sort Sorts.prop
 let mkSet    = Sort Sorts.set
 let mkType u = Sort (Sorts.Type u)
 let mkSort   = function
-  | Sorts.Prop Sorts.Null -> mkProp (* Easy sharing *)
-  | Sorts.Prop Sorts.Pos -> mkSet
+  | Sorts.Prop -> mkProp (* Easy sharing *)
+  | Sorts.Set -> mkSet
   | s -> Sort s
 
 (* Constructs the term t1::t2, i.e. the term t1 casted with the type t2 *)
@@ -260,17 +260,17 @@ let isSort c = match kind c with
   | _ -> false
 
 let rec isprop c = match kind c with
-  | Sort (Sorts.Prop _) -> true
+  | Sort (Sorts.Prop | Sorts.Set) -> true
   | Cast (c,_,_) -> isprop c
   | _ -> false
 
 let rec is_Prop c = match kind c with
-  | Sort (Sorts.Prop Sorts.Null) -> true
+  | Sort Sorts.Prop -> true
   | Cast (c,_,_) -> is_Prop c
   | _ -> false
 
 let rec is_Set c = match kind c with
-  | Sort (Sorts.Prop Sorts.Pos) -> true
+  | Sort Sorts.Set -> true
   | Cast (c,_,_) -> is_Set c
   | _ -> false
 

@@ -209,8 +209,8 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
       match (EConstr.kind !evdref x, EConstr.kind !evdref y) with
       | Sort s, Sort s' ->
         (match ESorts.kind !evdref s, ESorts.kind !evdref s' with
-	| Prop x, Prop y when x == y -> None
-	| Prop _, Type _ -> None
+        | Prop, Prop | Set, Set -> None
+        | (Prop | Set), Type _ -> None
 	| Type x, Type y when Univ.Universe.equal x y -> None (* false *)
 	| _ -> subco ())
       | Prod (name, a, b), Prod (name', a', b') ->

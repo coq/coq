@@ -301,8 +301,8 @@ let constr_display csr =
     incr cnt; pp (str "with " ++ int !cnt ++ str" " ++ Level.pr u ++ fnl ())
 
   and sort_display = function
-    | Prop(Pos) -> "Prop(Pos)"
-    | Prop(Null) -> "Prop(Null)"
+    | Set -> "Set"
+    | Prop -> "Prop"
     | Type u -> univ_display u;
 	"Type("^(string_of_int !cnt)^")"
 
@@ -423,8 +423,8 @@ let print_pure_constr csr =
     Array.iter (fun u -> print_space (); pp (Level.pr u)) (Instance.to_array u)
 
   and sort_display = function
-    | Prop(Pos) -> print_string "Set"
-    | Prop(Null) -> print_string "Prop"
+    | Set -> print_string "Set"
+    | Prop -> print_string "Prop"
     | Type u -> open_hbox();
 	print_string "Type("; pp (pr_uni u); print_string ")"; close_box()
 

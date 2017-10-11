@@ -33,11 +33,10 @@ open Names
 
 (** {6 The sorts of CCI. } *)
 
-type contents = Pos | Null
-
 type sorts =
-  | Prop of contents       (** Prop and Set *)
-  | Type of Univ.universe  (** Type *)
+  | Prop
+  | Set
+  | Type of Univ.universe
 
 (** {6 The sorts family of CCI. } *)
 

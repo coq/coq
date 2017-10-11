@@ -26,8 +26,8 @@ let print_vfix_app () = print_string "vfix_app"
 let print_vswith () = print_string "switch"
 
 let ppsort = function
-  | Prop(Pos) -> print_string "Set"
-  | Prop(Null) -> print_string "Prop"
+  | Set -> print_string "Set"
+  | Prop -> print_string "Prop"
   | Type u -> print_string "Type"
 
 

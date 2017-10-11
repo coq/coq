@@ -43,7 +43,6 @@ val type1 : types
 val type_of_sort : Sorts.t -> types
 val judge_of_prop : unsafe_judgment
 val judge_of_set  : unsafe_judgment
-val judge_of_prop_contents  : Sorts.contents -> unsafe_judgment
 val judge_of_type           : Universe.t -> unsafe_judgment
 
 (** {6 Type of a bound variable. } *)
