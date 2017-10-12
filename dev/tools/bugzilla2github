@@ -31,7 +31,7 @@ import json, getopt, os, pprint, re, requests, sys, time, xml.etree.ElementTree
 
 # Existing issues means issue numbers already taken on GitHub (by PRs mostly).
 # The script can find these by itself but this will spare API requests.
-existingIssues = 1148
+existingIssues = 1149
 # Can be used to skip over already imported issues if the script was interrupted.
 # Re-plays everything but without issuing API calls.
 # Room for improvement.
@@ -188,6 +188,7 @@ email2login = {
     "matthieu.sozeau@inria.fr": "mattam82",
     "mail@maximedenes.fr": "maximedenes",
     "mdoerri@cs.jhu.edu": "doerrie",
+    "mdvrc27au2@snkmail.com": "bluelightning32",
     "mhelvens@gmail.com": "mhelvens",
     "michael.soegtrop@intel.com": "MSoegtropIMC",
     "nadeem@acm.org": "nadeemabdulhamid",
