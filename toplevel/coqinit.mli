@@ -20,6 +20,6 @@ val push_include : string -> Names.DirPath.t -> bool -> unit
 
 val push_ml_include : string -> unit
 
-val init_load_path : unit -> unit
+val init_load_path : load_init:bool -> unit
 
 val init_ocaml_path : unit -> unit

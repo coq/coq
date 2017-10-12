@@ -11,7 +11,6 @@
 (** Command-line flags  *)
 
 val boot : bool ref
-val load_init : bool ref
 
 (** Set by coqtop to tell the kernel to output to the aux file; will
     be eventually removed by cleanups such as PR#1103 *)

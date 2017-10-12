@@ -188,11 +188,9 @@ let load_vernacular doc sid =
 	Vernac.load_vernac ~verbosely ~interactive:false ~check:true doc sid s)
     (doc, sid) (List.rev !load_vernacular_list)
 
-let load_vernacular_obj = ref ([] : string list)
-let add_vernac_obj s = load_vernacular_obj := s :: !load_vernacular_obj
-let load_vernac_obj () =
-  let map dir = Qualid (Loc.tag @@ qualid_of_string dir) in
-  Vernacentries.vernac_require None None (List.rev_map map !load_vernacular_obj)
+let load_init_vernaculars doc sid =
+  let doc, sid = Coqinit.load_rcfile doc sid in
+  load_vernacular doc sid
 
 (******************************************************************************)
 (* Required Modules                                                           *)
@@ -201,26 +199,23 @@ let set_include d p implicit =
   let p = dirpath_of_string p in
   Coqinit.push_include d p implicit
 
-let require_prelude () =
-  let vo = Envars.coqlib () / "theories/Init/Prelude.vo" in
-  let vio = Envars.coqlib () / "theories/Init/Prelude.vio" in
-  let m =
-    if Sys.file_exists vo then vo else
-    if Sys.file_exists vio then vio else vo in
-  Library.require_library_from_dirpath [Coqlib.prelude_module,m] (Some true)
-
-let require_list = ref ([] : string list)
+(* None = No Import; Some false = Import; Some true = Export *)
+let require_list = ref ([] : (string * string option * bool option) list)
 let add_require s = require_list := s :: !require_list
-let require () =
-  let () = if !Flags.load_init then Flags.silently require_prelude () in
-  let map dir = Qualid (Loc.tag @@ qualid_of_string dir) in
-  Vernacentries.vernac_require None (Some false) (List.rev_map map !require_list)
+
+let load_init = ref true
+
+(* From Coq Require Import Prelude. *)
+let prelude_data = "Prelude", Some "Coq", Some true
+
+let require_libs () =
+  if !load_init then prelude_data :: !require_list else !require_list
 
 let add_compat_require v =
   match v with
-  | Flags.V8_5 -> add_require "Coq.Compat.Coq85"
-  | Flags.V8_6 -> add_require "Coq.Compat.Coq86"
-  | Flags.V8_7 -> add_require "Coq.Compat.Coq87"
+  | Flags.V8_5 -> add_require ("Coq.Compat.Coq85", None, Some false)
+  | Flags.V8_6 -> add_require ("Coq.Compat.Coq86", None, Some false)
+  | Flags.V8_7 -> add_require ("Coq.Compat.Coq87", None, Some false)
   | Flags.VOld | Flags.Current -> ()
 
 (******************************************************************************)
@@ -230,9 +225,9 @@ let add_compat_require v =
 let glob_opt = ref false
 
 let compile_list = ref ([] : (bool * string) list)
-let _compilation_list : Stm.stm_doc_type list ref = ref []
 
-let compilation_mode = ref Vernac.BuildVo
+type compilation_mode = BuildVo | BuildVio | Vio2Vo
+let compilation_mode = ref BuildVo
 let compilation_output_name = ref None
 
 let batch_mode = ref false
@@ -253,21 +248,140 @@ let add_compile verbose s =
   in
   compile_list := (verbose,s) :: !compile_list
 
-let compile_file mode doc (verbosely,f_in) =
+let warn_file_no_extension =
+  CWarnings.create ~name:"file-no-extension" ~category:"filesystem"
+         (fun (f,ext) ->
+          str "File \"" ++ str f ++
+            strbrk "\" has been implicitly expanded to \"" ++
+            str f ++ str ext ++ str "\"")
+
+let ensure_ext ext f =
+  if Filename.check_suffix f ext then f
+  else begin
+    warn_file_no_extension (f,ext);
+    f ^ ext
+  end
+
+let chop_extension f =
+  try Filename.chop_extension f with _ -> f
+
+let compile_error msg =
+  Topfmt.std_logger Feedback.Error msg;
+  flush_all ();
+  exit 1
+
+let ensure_bname src tgt =
+  let src, tgt = Filename.basename src, Filename.basename tgt in
+  let src, tgt = chop_extension src, chop_extension tgt in
+  if src <> tgt then
+    compile_error (str "Source and target file names must coincide, directories can differ" ++ fnl () ++
+                   str "Source: " ++ str src                                                ++ fnl () ++
+                   str "Target: " ++ str tgt)
+
+let ensure ext src tgt = ensure_bname src tgt; ensure_ext ext tgt
+
+let ensure_v v = ensure ".v" v v
+let ensure_vo v vo = ensure ".vo" v vo
+let ensure_vio v vio = ensure ".vio" v vio
+
+let ensure_exists f =
+  if not (Sys.file_exists f) then
+    compile_error (hov 0 (str "Can't find file" ++ spc () ++ str f))
+
+(* Compile a vernac file *)
+let compile ~verbosely ~f_in ~f_out =
+  let check_pending_proofs () =
+    let pfs = Proof_global.get_all_proof_names () in
+    if not (CList.is_empty pfs) then
+      compile_error (str "There are pending proofs: "
+                    ++ (pfs
+                        |> List.rev
+                        |> prlist_with_sep pr_comma Names.Id.print)
+                    ++ str ".")
+  in
+  match !compilation_mode with
+  | BuildVo ->
+      Flags.record_aux_file := true;
+      let long_f_dot_v = ensure_v f_in in
+      ensure_exists long_f_dot_v;
+      let long_f_dot_vo =
+        match f_out with
+        | None -> long_f_dot_v ^ "o"
+        | Some f -> ensure_vo long_f_dot_v f in
+
+      let doc, sid = Stm.(new_doc
+          { doc_type = VoDoc long_f_dot_vo;
+            require_libs = require_libs ()
+          }) in
+
+      let doc, sid = load_init_vernaculars doc sid in
+      let ldir = Stm.get_ldir ~doc in
+      Aux_file.(start_aux_file
+        ~aux_file:(aux_file_name_for long_f_dot_vo)
+        ~v_file:long_f_dot_v);
+      Dumpglob.start_dump_glob ~vfile:long_f_dot_v ~vofile:long_f_dot_vo;
+      Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
+      let wall_clock1 = Unix.gettimeofday () in
+      let doc, _ = Vernac.load_vernac ~verbosely ~check:true ~interactive:false doc (Stm.get_current_state ~doc) long_f_dot_v in
+      let _doc = Stm.join ~doc in
+      let wall_clock2 = Unix.gettimeofday () in
+      check_pending_proofs ();
+      Library.save_library_to ldir long_f_dot_vo (Global.opaque_tables ());
+      Aux_file.record_in_aux_at "vo_compile_time"
+        (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
+      Aux_file.stop_aux_file ();
+      Dumpglob.end_dump_glob ()
+  | BuildVio ->
+
+      Flags.record_aux_file := false;
+      Dumpglob.noglob ();
+
+      let long_f_dot_v = ensure_v f_in in
+      ensure_exists long_f_dot_v;
+
+      let long_f_dot_vio =
+        match f_out with
+        | None -> long_f_dot_v ^ "io"
+        | Some f -> ensure_vio long_f_dot_v f in
+
+      let doc, sid = Stm.(new_doc
+          { doc_type = VioDoc long_f_dot_vio;
+            require_libs = require_libs ()
+          }) in
+
+      let doc, sid = load_init_vernaculars doc sid in
+
+      let ldir = Stm.get_ldir ~doc in
+      let doc, _ = Vernac.load_vernac ~verbosely ~check:false ~interactive:false doc (Stm.get_current_state ~doc) long_f_dot_v in
+      let doc = Stm.finish ~doc in
+      check_pending_proofs ();
+      let _doc = Stm.snapshot_vio ~doc ldir long_f_dot_vio in
+      Stm.reset_task_queue ()
+
+  | Vio2Vo ->
+      let open Filename in
+      Flags.record_aux_file := false;
+      Dumpglob.noglob ();
+      let f = if check_suffix f_in ".vio" then chop_extension f_in else f_in in
+      let lfdv, sum, lib, univs, disch, tasks, proofs = Library.load_library_todo f in
+      let univs, proofs = Stm.finish_tasks lfdv univs disch proofs tasks in
+      Library.save_library_raw lfdv sum lib univs proofs
+
+let compile ~verbosely ~f_in ~f_out =
+  ignore(CoqworkmgrApi.get 1);
+  compile ~verbosely ~f_in ~f_out;
+  CoqworkmgrApi.giveback 1
+
+let compile_file (verbosely,f_in) =
   if !Flags.beautify then
-    Flags.with_option Flags.beautify_file (fun f_in -> Vernac.compile ~verbosely ~mode ~doc ~f_in ~f_out:None) f_in
+    Flags.with_option Flags.beautify_file
+      (fun f_in -> compile ~verbosely ~f_in ~f_out:None) f_in
   else
-    Vernac.compile ~verbosely ~mode ~doc ~f_in ~f_out:None
+    compile ~verbosely ~f_in ~f_out:None
 
 let compile_files doc =
   if !compile_list == [] then ()
-  else
-    let init_state = States.freeze ~marshallable:`No in
-    let mode = !compilation_mode in
-    List.iter (fun vf ->
-        States.unfreeze init_state;
-        compile_file mode doc vf)
-      (List.rev !compile_list)
+  else List.iter compile_file (List.rev !compile_list)
 
 (******************************************************************************)
 (* VIO Dispatching                                                            *)
@@ -279,7 +393,7 @@ let add_vio_task f =
   Flags.quiet := true;
   vio_tasks := f :: !vio_tasks
 
-let check_vio_tasks doc =
+let check_vio_tasks () =
   let rc =
     List.fold_left (fun acc t -> Vio_checking.check_vio t && acc)
       true (List.rev !vio_tasks) in
@@ -303,7 +417,7 @@ let set_vio_checking_j opt j =
     prerr_endline "setting the J variable like in 'make vio2vo J=3'";
     exit 1
 
-let schedule_vio_checking doc =
+let schedule_vio_checking () =
   if !vio_files <> [] && !vio_checking then
     Vio_checking.schedule_vio_checking !vio_files_j !vio_files
 
@@ -374,7 +488,7 @@ let usage batch =
   begin
   try
   Envars.set_coqlib ~fail:(fun x -> raise NoCoqLib);
-  Coqinit.init_load_path ();
+  Coqinit.init_load_path ~load_init:!load_init;
   with NoCoqLib -> usage_no_coqlib ()
   end;
   if batch then Usage.print_usage_coqc ()
@@ -563,20 +677,20 @@ let parse_args arglist =
     |"-inputstate"|"-is" -> set_inputstate (next ())
     |"-load-ml-object" -> Mltop.dir_ml_load (next ())
     |"-load-ml-source" -> Mltop.dir_ml_use (next ())
-    |"-load-vernac-object" -> add_vernac_obj (next ())
+    |"-load-vernac-object" -> add_require (next (), None, None)
     |"-load-vernac-source"|"-l" -> add_load_vernacular false (next ())
     |"-load-vernac-source-verbose"|"-lv" -> add_load_vernacular true (next ())
     |"-outputstate" -> set_outputstate (next ())
     |"-print-mod-uid" -> let s = String.concat " " (List.map get_native_name rem) in print_endline s; exit 0
     |"-profile-ltac-cutoff" -> Flags.profile_ltac := true; Flags.profile_ltac_cutoff := get_float opt (next ())
-    |"-require" -> add_require (next ())
+    |"-require" -> add_require (next (), None, Some false)
     |"-top" -> set_toplevel_name (dirpath_of_string (next ()))
     |"-with-geoproof" -> Coq_config.with_geoproof := get_bool opt (next ())
     |"-main-channel" -> Spawned.main_channel := get_host_port opt (next())
     |"-control-channel" -> Spawned.control_channel := get_host_port opt (next())
     |"-vio2vo" ->
       add_compile false (next ());
-      compilation_mode := Vernac.Vio2Vo
+      compilation_mode := Vio2Vo
     |"-toploop" -> set_toploop (next ())
     |"-w" | "-W" ->
       let w = next () in
@@ -609,7 +723,7 @@ let parse_args arglist =
     |"-impredicative-set" -> set_impredicative_set ()
     |"-indices-matter" -> Indtypes.enforce_indices_matter ()
     |"-m"|"--memory" -> memory_stat := true
-    |"-noinit"|"-nois" -> Flags.load_init := false
+    |"-noinit"|"-nois" -> load_init := false
     |"-no-glob"|"-noglob" -> Dumpglob.noglob (); glob_opt := true
     |"-native-compiler" ->
       if Coq_config.no_native_compiler then
@@ -621,11 +735,11 @@ let parse_args arglist =
     |"-quiet"|"-silent" -> Flags.quiet := true; Flags.make_warn false
     |"-quick" ->
       Safe_typing.allow_delayed_constants := true;
-      compilation_mode := Vernac.BuildVio
+      compilation_mode := BuildVio
     |"-list-tags" -> print_tags := true
     |"-time" -> Flags.time := true
     |"-type-in-type" -> set_type_in_type ()
-    |"-unicode" -> add_require "Utf8_core"
+    |"-unicode" -> add_require ("Utf8_core", None, Some false)
     |"-v"|"--version" -> Usage.version (exitcode ())
     |"-print-version"|"--print-version" -> Usage.machine_readable_version (exitcode ())
     |"-where" -> print_where := true
@@ -640,12 +754,18 @@ let parse_args arglist =
   with any -> fatal_error any
 
 let init_toplevel arglist =
+  (* Coq's init process, phase 1:
+     - OCaml parameters, and basic structures and IO
+   *)
   Profile.init_profile ();
   init_gc ();
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
   let init_feeder = Feedback.add_feeder coqtop_init_feed in
   Lib.init();
-  let doc = begin
+  (* Coq's init process, phase 2:
+     - Basic Coq environment, load-path, plugins.
+   *)
+  let res = begin
     try
       let extras = parse_args arglist in
       (* If we have been spawned by the Spawn module, this has to be done
@@ -656,7 +776,7 @@ let init_toplevel arglist =
       if !print_config then (Envars.print_config stdout Coq_config.all_src_dirs; exit (exitcode ()));
       if !print_tags then (print_style_tags (); exit (exitcode ()));
       if !filter_opts then (print_string (String.concat "\n" extras); exit 0);
-      Coqinit.init_load_path ();
+      Coqinit.init_load_path ~load_init:!load_init;
       Option.iter Mltop.load_ml_object_raw !toploop;
       let extras = !toploop_init extras in
       if not (CList.is_empty extras) then begin
@@ -665,52 +785,67 @@ let init_toplevel arglist =
         exit 1
       end;
       Flags.if_verbose print_header ();
-      inputstate ();
       Mltop.init_known_plugins ();
       engage ();
+
+      (* Allow the user to load an arbitrary state here *)
+      inputstate ();
+
+      (* This state will be shared by all the documents *)
+      Stm.init_core ();
+
+      (* Coq init process, phase 3: Stm initialization, backtracking state.
+
+         It is essential that the module system is in a consistent
+         state before we take the first snapshot. This was not
+         guaranteed in the past. In particular, we want to be sure we
+         have called start_library before loading the prelude and rest
+         of required files.
+
+         We split the codepath here depending whether coqtop is called
+         in interactive mode or not.  *)
+
       if (not !batch_mode || CList.is_empty !compile_list)
-         && Global.env_is_initial ()
-      then Declaremods.start_library !toplevel_name;
-      load_vernac_obj ();
-      require ();
-      let doc = Stm.(init { doc_type = Interactive Names.DirPath.empty }) in
-      let doc, sid = Coqinit.load_rcfile doc (Stm.get_current_state ~doc) in
-      (* XXX: We ignore this for now, but should be threaded to the toplevels *)
-      let doc, _sid = load_vernacular doc sid in
-      compile_files doc;
-      (* All these tasks use coqtop as a driver to invoke more coqtop,
-       * they should be really orthogonal to coqtop.
-       *)
-      schedule_vio_checking doc;
-      schedule_vio_compilation ();
-      check_vio_tasks doc;
-      outputstate ();
-      doc
+      (* Interactive *)
+      then begin
+        try
+          let doc, sid = Stm.(new_doc
+                                { doc_type = Interactive !toplevel_name;
+                                  require_libs = require_libs ()
+                                }) in
+          Some (load_init_vernaculars doc sid)
+        with any -> flush_all(); fatal_error any
+      (* Non interactive *)
+      end else begin
+        try
+          compile_files ();
+          schedule_vio_checking ();
+          schedule_vio_compilation ();
+          check_vio_tasks ();
+          (* Allow the user to output an arbitrary state *)
+          outputstate ();
+          None
+        with any -> flush_all(); fatal_error any
+      end;
     with any ->
       flush_all();
-      let extra = None
-        (* XXX: Must refine once Stm.init takes care of the start_library & friends *)
-        (* if !batch_mode && not Stateid.(equal (Stm.get_current_state ~doc) dummy) *)
-        (* then None *)
-        (* else Some (str "Error during initialization: ") *)
-      in
+      let extra = Some (str "Error during initialization: ") in
       fatal_error ?extra any
   end in
-  if !batch_mode then begin
+  Feedback.del_feeder init_feeder;
+  res
+
+let start () =
+  match init_toplevel (List.tl (Array.to_list Sys.argv)) with
+  (* Batch mode *)
+  | Some (doc, sid) when not !batch_mode ->
+    !toploop_run doc;
+    exit 1
+  | _ ->
     flush_all();
     if !output_context then
       Feedback.msg_notice Flags.(with_option raw_print Prettyp.print_full_pure_context () ++ fnl ());
     Profile.print_profile ();
     exit 0
-  end;
-  Feedback.del_feeder init_feeder;
-  doc
-
-let start () =
-  let doc = init_toplevel (List.tl (Array.to_list Sys.argv)) in
-  (* In batch mode, Coqtop has already exited at this point. In interactive one,
-     dump glob is nothing but garbage ...  *)
-  !toploop_run doc;
-  exit 1
 
 (* [Coqtop.start] will be called by the code produced by coqmktop *)

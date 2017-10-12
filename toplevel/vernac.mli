@@ -18,8 +18,3 @@ val process_expr : Stm.doc -> Stateid.t -> Vernacexpr.vernac_expr Loc.located ->
     echo the commands if [echo] is set. Callers are expected to handle
     and print errors in form of exceptions. *)
 val load_vernac : verbosely:bool -> check:bool -> interactive:bool -> Stm.doc -> Stateid.t -> string -> Stm.doc * Stateid.t
-
-type compilation_mode = BuildVo | BuildVio | Vio2Vo
-
-(** Compile a vernac file, (f is assumed without .v suffix) *)
-val compile : verbosely:bool -> mode:compilation_mode -> doc:Stm.doc -> f_in:string -> f_out:string option -> unit

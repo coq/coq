@@ -250,8 +250,8 @@ end (* }}} *)
 
 (* The main document type associated to a VCS *)
 type stm_doc_type =
-  | VoDoc       of Names.DirPath.t
-  | VioDoc      of Names.DirPath.t
+  | VoDoc       of string
+  | VioDoc      of string
   | Interactive of Names.DirPath.t
 
 (* Dummy until we land the functional interp patch + fixed start_library *)
@@ -276,6 +276,9 @@ module VCS : sig
 
   val init : stm_doc_type -> id -> doc
   (* val get_type : unit -> stm_doc_type *)
+  val set_ldir : Names.DirPath.t -> unit
+  val get_ldir : unit -> Names.DirPath.t
+
   val is_interactive : unit -> [`Yes | `No | `Shallow]
   val is_vio_doc : unit -> bool
 
@@ -460,6 +463,7 @@ end = struct (* {{{ *)
   let vcs : vcs ref = ref (empty Stateid.dummy)
 
   let doc_type = ref (Interactive (Names.DirPath.make []))
+  let ldir = ref Names.DirPath.empty
 
   let init dt id =
     doc_type := dt;
@@ -467,6 +471,10 @@ end = struct (* {{{ *)
     vcs := set_info !vcs id (default_info ());
     dummy_doc
 
+  let set_ldir ld =
+    ldir := ld
+
+  let get_ldir () = !ldir
   (* let get_type () = !doc_type *)
 
   let is_interactive () =
@@ -697,7 +705,7 @@ let state_of_id ~doc id =
 
 (****** A cache: fills in the nodes of the VCS document with their value ******)
 module State : sig
-  
+
   (** The function is from unit, so it uses the current state to define
       a new one.  I.e. one may been to install the right state before
       defining a new one.
@@ -713,7 +721,6 @@ module State : sig
   val is_cached : ?cache:Summary.marshallable -> Stateid.t -> bool
   val is_cached_and_valid : ?cache:Summary.marshallable -> Stateid.t -> bool
 
-
   val exn_on : Stateid.t -> valid:Stateid.t -> Exninfo.iexn -> Exninfo.iexn
   (* to send states across worker/master *)
   type frozen_state
@@ -727,9 +734,15 @@ module State : sig
   val proof_part_of_frozen : frozen_state -> proof_part
   val assign : Stateid.t -> partial_state -> unit
 
+  (* Handlers for initial state, prior to document creation. *)
+  val register_root_state : unit -> unit
+  val restore_root_state : unit -> unit
+
   (* Only for internal use to catch problems in parse_sentence, should
      be removed in the state handling refactoring.  *)
   val cur_id : Stateid.t ref
+
+
 end = struct (* {{{ *)
 
   (* cur_id holds Stateid.dummy in case the last attempt to define a state
@@ -878,6 +891,15 @@ end = struct (* {{{ *)
       if cache = `Yes || cache = `Shallow then freeze_invalid id ie;
       Hooks.(call unreachable_state id ie);
       Exninfo.iraise ie
+
+  let init_state = ref None
+
+  let register_root_state () =
+    init_state := Some (freeze_global_state `No)
+
+  let restore_root_state () =
+    cur_id := Stateid.dummy;
+    unfreeze_global_state Option.(get !init_state)
 
 end (* }}} *)
 
@@ -2365,19 +2387,55 @@ end (* }}} *)
 
 type stm_init_options = {
   doc_type     : stm_doc_type;
+  require_libs : (string * string option * bool option) list;
 (*
   fb_handler   : Feedback.feedback -> unit;
   iload_path   : (string list * string * bool) list;
-  require_libs : (Names.DirPath.t * string * bool option) list;
   implicit_std : bool;
 *)
 }
 
-let init { doc_type } =
+(*
+let doc_type_module_name (std : stm_doc_type) =
+  match std with
+  | VoDoc mn | VioDoc mn | Vio2Vo mn -> mn
+  | Interactive mn -> Names.DirPath.to_string mn
+*)
+
+let init_core () =
+  State.register_root_state ()
+
+let new_doc { doc_type ; require_libs } =
+  let load_objs libs =
+    let rq_file (dir, from, exp) =
+      let mp = Libnames.(Qualid (Loc.tag @@ qualid_of_string dir)) in
+      let mfrom = Option.map (fun fr -> Libnames.(Qualid (Loc.tag @@ qualid_of_string fr))) from in
+      Flags.silently (Vernacentries.vernac_require mfrom exp) [mp] in
+    List.(iter rq_file (rev libs))
+  in
+
+  (* We must reset the whole state before creating a document! *)
+  State.restore_root_state ();
+
   let doc = VCS.init doc_type Stateid.initial in
   set_undo_classifier Backtrack.undo_vernac_classifier;
-  (* we declare the library here XXX: *)
-  State.define ~cache:`Yes (fun () -> ()) Stateid.initial;
+
+  begin match doc_type with
+  | Interactive ln ->
+    Declaremods.start_library ln
+  | VoDoc ln ->
+    let ldir = Flags.verbosely Library.start_library ln in
+    VCS.set_ldir ldir;
+    set_compilation_hints ln
+  | VioDoc ln ->
+    let ldir = Flags.verbosely Library.start_library ln in
+    VCS.set_ldir ldir;
+    set_compilation_hints ln
+  end;
+  load_objs require_libs;
+
+  (* We record the state here! *)
+  State.define ~cache:`Yes ~redefine:true (fun () -> ()) Stateid.initial;
   Backtrack.record ();
   Slaves.init ();
   if Flags.async_proofs_is_master () then begin
@@ -2393,7 +2451,7 @@ let init { doc_type } =
         (Str.split_delim (Str.regexp ";") (Str.replace_first env_opt "" env))
     with Not_found -> () end;
   end;
-  doc
+  doc, VCS.cur_tip ()
 
 let observe ~doc id =
   let vcs = VCS.backup () in
@@ -2456,6 +2514,7 @@ let check_task name (tasks,rcbackup) i =
     rc
   with e when CErrors.noncritical e -> VCS.restore vcs; false
 let info_tasks (tasks,_) = Slaves.info_tasks tasks
+
 let finish_tasks name u d p (t,rcbackup as tasks) =
   RemoteCounter.restore rcbackup;
   let finish_task u (_,_,i) =
@@ -2953,6 +3012,7 @@ let edit_at ~doc id =
         Exninfo.iraise (e, info)
 
 let get_current_state ~doc = VCS.cur_tip ()
+let get_ldir ~doc = VCS.get_ldir ()
 
 let get_doc did = dummy_doc
 
