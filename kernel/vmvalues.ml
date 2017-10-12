@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 open Names
-open Sorts
 open Univ
 open Constr
 
@@ -335,10 +334,10 @@ let rec whd_accu a stk =
         let args = Array.init (nargs args) (arg args) in
         let s = Obj.obj (Obj.field at 0) in
         begin match s with
-        | Type u ->
+        | Sorts.Type u ->
           let inst = Instance.of_array (Array.map uni_lvl_val args) in
           let u = Univ.subst_instance_universe inst u in
-          Vatom_stk (Asort (Type u), [])
+          Vatom_stk (Asort (Sorts.sort_of_univ u), [])
         | _ -> assert false
         end
      | _ -> assert false

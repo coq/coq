@@ -275,13 +275,13 @@ let sort_of_product env domsort rangsort =
           rangsort
         else
           (* Rule is (Type_i,Set,Type_i) in the Set-predicative calculus *)
-          Type (Universe.sup Universe.type0 u1)
+          Sorts.sort_of_univ (Universe.sup Universe.type0 u1)
     (* Product rule (Prop,Type_i,Type_i) *)
-    | (Set,  Type u2)  -> Type (Universe.sup Universe.type0 u2)
+    | (Set,  Type u2)  -> Sorts.sort_of_univ (Universe.sup Universe.type0 u2)
     (* Product rule (Prop,Type_i,Type_i) *)
     | (Prop, Type _)  -> rangsort
     (* Product rule (Type_i,Type_i,Type_i) *)
-    | (Type u1, Type u2) -> Type (Universe.sup u1 u2)
+    | (Type u1, Type u2) -> Sorts.sort_of_univ (Universe.sup u1 u2)
 
 (* [judge_of_product env name (typ1,s1) (typ2,s2)] implements the rule
 

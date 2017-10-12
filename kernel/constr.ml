@@ -129,7 +129,7 @@ let mkRel n = if 0<n && n<=16 then rels.(n-1) else Rel n
 (* Construct a type *)
 let mkProp   = Sort Sorts.prop
 let mkSet    = Sort Sorts.set
-let mkType u = Sort (Sorts.Type u)
+let mkType u = Sort (Sorts.sort_of_univ u)
 let mkSort   = function
   | Sorts.Prop -> mkProp (* Easy sharing *)
   | Sorts.Set -> mkSet

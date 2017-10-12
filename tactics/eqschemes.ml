@@ -789,7 +789,7 @@ let build_congr env (eq,refl,ctx) ind =
   let ctx = (fst ctx, Univ.enforce_leq uni (univ_of_eq env eq) (snd ctx)) in
   let c = 
   my_it_mkLambda_or_LetIn paramsctxt
-     (mkNamedLambda varB (mkSort (Type uni))
+     (mkNamedLambda varB (mkType uni)
      (mkNamedLambda varf (mkArrow (lift 1 ty) (mkVar varB))
      (my_it_mkLambda_or_LetIn_name (lift_rel_context 2 realsign)
      (mkNamedLambda varH

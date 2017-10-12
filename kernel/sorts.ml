@@ -44,25 +44,25 @@ let compare s1 s2 =
 
 let equal s1 s2 = Int.equal (compare s1 s2) 0
 
+let super = function
+  | Prop | Set -> Type (Universe.type1)
+  | Type u -> Type (Universe.super u)
+
 let is_prop = function
   | Prop -> true
-  | Type u when Universe.equal Universe.type0m u -> true
-  | _ -> false
+  | Set | Type _ -> false
 
 let is_set = function
   | Set -> true
-  | Type u when Universe.equal Universe.type0 u -> true
-  | _ -> false
+  | Prop | Type _ -> false
 
 let is_small = function
   | Prop | Set -> true
-  | Type u -> is_small_univ u
+  | Type _ -> false
 
 let family = function
   | Prop -> InProp
   | Set -> InSet
-  | Type u when is_type0m_univ u -> InProp
-  | Type u when is_type0_univ u -> InSet
   | Type _ -> InType
 
 let family_equal = (==)

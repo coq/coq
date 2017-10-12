@@ -562,10 +562,10 @@ let rec compile_lam env cenv lam sz cont =
       compile_fv_elem cenv (FVuniv_var idx) sz cont
     in
     if List.is_empty s then
-      compile_structured_constant cenv (Const_sort (Sorts.Type u)) sz cont
+      compile_structured_constant cenv (Const_sort (Sorts.sort_of_univ u)) sz cont
     else
       comp_app compile_structured_constant compile_get_univ cenv
-        (Const_sort (Sorts.Type u)) (Array.of_list s) sz cont
+        (Const_sort (Sorts.sort_of_univ u)) (Array.of_list s) sz cont
 
   | Llet (_id,def,body) ->
       compile_lam env cenv def sz

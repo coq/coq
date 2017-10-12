@@ -19,7 +19,7 @@ open Constr
 type sorts_family = Sorts.family = InProp | InSet | InType
 [@@ocaml.deprecated "Alias for Sorts.family"]
 
-type sorts = Sorts.t =
+type sorts = Sorts.t = private
   | Prop | Set
   | Type of Univ.Universe.t  (** Type *)
 [@@ocaml.deprecated "Alias for Sorts.t"]

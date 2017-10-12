@@ -898,7 +898,7 @@ let new_univ_variable ?loc ?name rigid evd =
 
 let new_sort_variable ?loc ?name rigid d =
   let (d', u) = new_univ_variable ?loc rigid ?name d in
-    (d', Type u)
+    (d', Sorts.sort_of_univ u)
 
 let add_global_univ d u =
   { d with universes = UState.add_global_univ d.universes u }
@@ -965,7 +965,7 @@ let normalize_sort evars s =
   | Prop | Set -> s
   | Type u -> 
     let u' = normalize_universe evars u in
-    if u' == u then s else Type u'
+    if u' == u then s else Sorts.sort_of_univ u'
 
 (* FIXME inefficient *)
 let set_eq_sort env d s1 s2 =

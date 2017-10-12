@@ -50,7 +50,7 @@ let in_punivs a = (a, EInstance.empty)
 
 let mkProp = of_kind (Sort (ESorts.make Sorts.prop))
 let mkSet = of_kind (Sort (ESorts.make Sorts.set))
-let mkType u = of_kind (Sort (ESorts.make (Sorts.Type u)))
+let mkType u = of_kind (Sort (ESorts.make (Sorts.sort_of_univ u)))
 let mkRel n = of_kind (Rel n)
 let mkVar id = of_kind (Var id)
 let mkMeta n = of_kind (Meta n)

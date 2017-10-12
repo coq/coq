@@ -12,7 +12,7 @@
 
 type family = InProp | InSet | InType
 
-type t =
+type t = private
   | Prop
   | Set
   | Type of Univ.Universe.t
@@ -41,6 +41,8 @@ end
 
 val univ_of_sort : t -> Univ.Universe.t
 val sort_of_univ : Univ.Universe.t -> t
+
+val super : t -> t
 
 val debug_print : t -> Pp.t
 

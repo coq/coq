@@ -188,7 +188,7 @@ let instantiate_universes env ctx ar argsorts =
     (* Non singleton type not containing types are interpretable in Set *)
     else if is_type0_univ level then Sorts.set
     (* This is a Type with constraints *)
-    else Sorts.Type level
+    else Sorts.sort_of_univ level
   in
     (ctx, ty)
 
