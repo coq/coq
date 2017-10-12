@@ -82,7 +82,7 @@ let make_clause_classifier cg s { r_patt = pt; r_class = c; } =
          "classifiers. Only one classifier is called.") ^ "\n");
     (make_patt pt,
       ploc_vala None,
-      <:expr< fun loc -> (Vernacexpr.VtUnknown, Vernacexpr.VtNow) >>)
+      <:expr< fun () -> ( CErrors.anomaly (Pp.str "No classification given for command " ^ s ) ) >>)
 
 let make_fun_clauses loc s l =
   let map c =

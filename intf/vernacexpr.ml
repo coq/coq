@@ -482,18 +482,39 @@ and vernac_argument_status = {
   implicit_status : vernac_implicit_status;
 }
 
-(* A vernac classifier has to tell if a command:
-   vernac_when: has to be executed now (alters the parser) or later
-   vernac_type: if it is starts, ends, continues a proof or
+(* A vernac classifier provides information about the exectuion of a
+   command:
+
+   - vernac_when: encodes if the vernac may alter the parser [thus
+     forcing immediate execution], or if indeed it is pure and parsing
+     can continue without its execution.
+
+   - vernac_type: if it is starts, ends, continues a proof or
      alters the global state or is a control command like BackTo or is
-     a query like Check *)
+     a query like Check.
+
+   The classification works on the assumption that we have 3 states:
+   parsing, execution (global enviroment, etc...), and proof
+   state. For example, commands that only alter the proof state are
+   considered safe to delegate to a worker.
+
+*)
 type vernac_type =
+  (* Start of a proof *)
   | VtStartProof of vernac_start
+  (* Command altering the global state, bad for parallel
+     processing. *)
   | VtSideff of vernac_sideff_type
+  (* End of a proof *)
   | VtQed of vernac_qed_type
+  (* A proof step *)
   | VtProofStep of proof_step
+  (* To be removed *)
   | VtProofMode of string
+  (* Queries are commands assumed to be "pure", that is to say, they
+     don't modify the interpretation state. *)
   | VtQuery of vernac_part_of_script * Feedback.route_id
+  (* To be removed *)
   | VtMeta
   | VtUnknown
 and vernac_qed_type = VtKeep | VtKeepAsAxiom | VtDrop (* Qed/Admitted, Abort *)
