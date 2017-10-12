@@ -176,6 +176,21 @@ Proof.
  apply eq_true_iff_eq. rewrite !Qeq_bool_iff. now symmetry.
 Qed.
 
+Lemma Qeq_bool_refl x: is_true (Qeq_bool x x).
+Proof.
+  unfold is_true. rewrite Qeq_bool_iff. now reflexivity.
+Qed.
+
+Lemma Qeq_bool_sym x y: is_true (Qeq_bool x y) -> is_true (Qeq_bool y x).
+Proof.
+  unfold is_true. rewrite !Qeq_bool_iff. now symmetry.
+Qed.
+
+Lemma Qeq_bool_trans x y z: is_true (Qeq_bool x y) -> is_true (Qeq_bool y z) -> is_true (Qeq_bool x z).
+Proof.
+  unfold is_true. rewrite !Qeq_bool_iff. apply Qeq_trans.
+Qed.
+
 Hint Resolve Qnot_eq_sym : qarith.
 
 (** * Addition, multiplication and opposite *)
