@@ -35,7 +35,7 @@ existingIssues = 1080
 # Can be used to skip over already imported issues if the script was interrupted.
 # Re-plays everything but without issuing API calls.
 # Room for improvement.
-bugzillaIssues = 2879
+bugzillaIssues = 3274
 force_update = False
 xml_file = "bugzilla.xml"
 github_url = "https://api.github.com"
@@ -420,8 +420,10 @@ def str2str(map, str):
     return map[str]
 
 
-# Could be improved in the following way: if bug was already converted, find what id it has
-# otherwise, use BZ#NNNN syntax instead of #NNNN
+def id_convert(id):
+    global github_owner, github_repo
+    return "[BZ#" + id + "](https://github.com/" + github_owner + "/" + github_repo + "/issues?q=is%3Aissue%20%22Original%20bug%20ID%3A%20BZ%23" + id + "%22)"
+
 def ids_convert(ids):
     ret = []
 
@@ -429,11 +431,18 @@ def ids_convert(ids):
         return ""
     if isinstance(ids, list):
         for id in ids:
-            ret.append("#" + id)
+            ret.append(id_convert(id))
     else:
-        ret.append("#" + ids)
+        ret.append(id_convert(ids))
 
     return ", ".join(ret)
+
+def see_also_convert(see_also):
+    result = re.search('id=(\d+)$', see_also)
+    if not result:
+        return see_also
+    else:
+        return id_convert(result.group(1))
 
 
 def email_convert(email, name):
@@ -522,7 +531,7 @@ def comment_convert(comment, attachments):
     ret.append("")
 
     # Syntax: convert "bug id" to "bug #id"
-    # Same room for improvement here.
+    # We should adapt the same format here as in id_convert
     for i, val in enumerate(ret):
         ret[i] = re.sub(r"(?i)(bug)\s+([0-9]+)", r"\1 #\2", val)
 
@@ -612,10 +621,10 @@ def bug_convert(bug):
     if "see_also" in bug:
         see_also = bug.pop("see_also")
         if isinstance(see_also, basestring):
-            ret["body"].append("See also:     " + see_also)
+            ret["body"].append("See also: " + see_also_convert(see_also))
         else:
             for item in see_also:
-                ret["body"].append("See also:     " + item)
+                ret["body"].append("See also: " + see_also_convert(item))
     ret["body"].append("")
 
     # Put everything together
