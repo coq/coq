@@ -580,8 +580,8 @@ GEXTEND Gram
   starredidentref:
     [ [ i = identref -> SsSingl i
       | i = identref; "*" -> SsFwdClose(SsSingl i)
-      | "Type" -> SsSingl (Loc.tag ~loc:!@loc @@ Id.of_string "Type")
-      | "Type"; "*" -> SsFwdClose (SsSingl (Loc.tag ~loc:!@loc @@ Id.of_string "Type")) ]]
+      | "Type" -> SsType
+      | "Type"; "*" -> SsFwdClose SsType ]]
   ;
   ssexpr:
     [ "35" 

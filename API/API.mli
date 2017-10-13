@@ -4914,7 +4914,6 @@ module G_proofs :
 sig
 
   val hint : Vernacexpr.hints_expr Pcoq.Gram.entry
-  val hint_proof_using : 'a Pcoq.Gram.entry -> 'a option -> 'a option
 
 end
 

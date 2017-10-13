@@ -2060,17 +2060,13 @@ let interp ?proof ?loc locality poly c =
   | VernacEndSubproof -> vernac_end_subproof ()
   | VernacShow s -> vernac_show s
   | VernacCheckGuard -> vernac_check_guard ()
-  | VernacProof (None, None) ->
-      Aux_file.record_in_aux_at ?loc "VernacProof" "tac:no using:no"
-  | VernacProof (Some tac, None) ->
-      Aux_file.record_in_aux_at ?loc "VernacProof" "tac:yes using:no";
-      vernac_set_end_tac tac
-  | VernacProof (None, Some l) ->
-      Aux_file.record_in_aux_at ?loc "VernacProof" "tac:no using:yes";
-      vernac_set_used_variables l
-  | VernacProof (Some tac, Some l) -> 
-      Aux_file.record_in_aux_at ?loc "VernacProof" "tac:yes using:yes";
-      vernac_set_end_tac tac; vernac_set_used_variables l
+  | VernacProof (tac, using) ->
+    let using = Option.append using (Proof_using.get_default_proof_using ()) in
+    let tacs = if Option.is_empty tac then "tac:no" else "tac:yes" in
+    let usings = if Option.is_empty using then "using:no" else "using:yes" in
+    Aux_file.record_in_aux_at ?loc "VernacProof" (tacs^" "^usings);
+    Option.iter vernac_set_end_tac tac;
+    Option.iter vernac_set_used_variables using
   | VernacProofMode mn -> Proof_global.set_proof_mode mn [@ocaml.warning "-3"]
 
   (* Extensions *)

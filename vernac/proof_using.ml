@@ -14,16 +14,6 @@ open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
 
-let to_string e =
-  let rec aux = function
-    | SsEmpty -> "()"
-    | SsSingl (_,id) -> "("^Id.to_string id^")"
-    | SsCompl e -> "-" ^ aux e^""
-    | SsUnion(e1,e2) -> "("^aux e1 ^" + "^ aux e2^")"
-    | SsSubstr(e1,e2) -> "("^aux e1 ^" - "^ aux e2^")"
-    | SsFwdClose e -> "("^aux e^")*"
-  in aux e
-
 let known_names = Summary.ref [] ~name:"proofusing-nameset"
 
 let in_nameset =
@@ -48,12 +38,20 @@ let rec close_fwd e s =
     s (named_context e)
     in
   if Id.Set.equal s s' then s else close_fwd e s'
-;;
+
+let set_of_type env ty =
+  List.fold_left (fun acc ty ->
+      Id.Set.union (global_vars_set env ty) acc)
+    Id.Set.empty ty
+
+let full_set env =
+  List.fold_right Id.Set.add (List.map NamedDecl.get_id (named_context env)) Id.Set.empty
 
 let rec process_expr env e ty =
   let rec aux = function
     | SsEmpty -> Id.Set.empty
-    | SsSingl (_,id) -> set_of_id env ty id
+    | SsType -> set_of_type env ty
+    | SsSingl (_,id) -> set_of_id env id
     | SsUnion(e1,e2) -> Id.Set.union (aux e1) (aux e2)
     | SsSubstr(e1,e2) -> Id.Set.diff (aux e1) (aux e2)
     | SsCompl e -> Id.Set.diff (full_set env) (aux e)
@@ -61,23 +59,15 @@ let rec process_expr env e ty =
   in
     aux e
 
-and set_of_id env ty id =
-  if Id.to_string id = "Type" then
-    List.fold_left (fun acc ty ->
-        Id.Set.union (global_vars_set env ty) acc)
-      Id.Set.empty ty
-  else if Id.to_string id = "All" then
+and set_of_id env id =
+  if Id.to_string id = "All" then
     List.fold_right Id.Set.add (List.map NamedDecl.get_id (named_context env)) Id.Set.empty
   else if CList.mem_assoc_f Id.equal id !known_names then
     process_expr env (CList.assoc_f Id.equal id !known_names) []
   else Id.Set.singleton id
 
-and full_set env =
-  List.fold_right Id.Set.add (List.map NamedDecl.get_id (named_context env)) Id.Set.empty
-
 let process_expr env e ty =
-  let ty_expr = SsSingl(Loc.tag @@ Id.of_string "Type") in
-  let v_ty = process_expr env ty_expr ty in
+  let v_ty = set_of_type env ty in
   let s = Id.Set.union v_ty (process_expr env e ty) in
   Id.Set.elements s
 
@@ -105,7 +95,13 @@ let remove_ids_and_lets env s ids =
      (no_body id ||
        Id.Set.exists not_ids (Id.Set.filter no_body (deps id)))) s)
 
-let suggest_Proof_using name env vars ids_typ context_ids =
+let record_proof_using expr =
+  Aux_file.record_in_aux "suggest_proof_using" expr
+
+(* Variables in [skip] come from after the definition, so don't count
+   for "All". Used in the variable case since the env contains the
+   variable itself. *)
+let suggest_common env ppid used ids_typ skip =
   let module S = Id.Set in
   let open Pp in
   let print x = Feedback.msg_debug x in
@@ -114,10 +110,13 @@ let suggest_Proof_using name env vars ids_typ context_ids =
       if parens && S.cardinal s > 1 then str "(" ++ ppcmds ++ str ")"
       else ppcmds in
     wrap (prlist_with_sep (fun _ -> str" ") Id.print (S.elements s)) in
-  let used = S.union vars ids_typ in
+
   let needed = minimize_hyps env (remove_ids_and_lets env used ids_typ) in
   let all_needed = really_needed env needed in
-  let all = List.fold_right S.add context_ids S.empty in
+  let all = List.fold_left (fun all d -> S.add (NamedDecl.get_id d) all)
+      S.empty (named_context env)
+  in
+  let all = S.diff all skip in
   let fwd_typ = close_fwd env ids_typ in
   if !Flags.debug then begin
     print (str "All "        ++ pr_set false all);
@@ -133,36 +132,59 @@ let suggest_Proof_using name env vars ids_typ context_ids =
   if S.equal all all_needed then valid(str "All");
   valid (pr_set false needed);
   Feedback.msg_info (
-    str"The proof of "++ str name ++ spc() ++
+    str"The proof of "++ ppid ++ spc() ++
     str "should start with one of the following commands:"++spc()++
     v 0 (
     prlist_with_sep cut (fun x->str"Proof using " ++x++ str". ") !valid_exprs));
-  string_of_ppcmds (prlist_with_sep (fun _ -> str";")  (fun x->x) !valid_exprs)
-;;
+  if !Flags.record_aux_file
+  then
+    let s = string_of_ppcmds (prlist_with_sep (fun _ -> str";")  (fun x->x) !valid_exprs) in
+    record_proof_using s
 
-let value = ref false
+let suggest_proof_using = ref false
 
 let _ =
   Goptions.declare_bool_option
     { Goptions.optdepr  = false;
       Goptions.optname  = "suggest Proof using";
       Goptions.optkey   = ["Suggest";"Proof";"Using"];
-      Goptions.optread  = (fun () -> !value);
-      Goptions.optwrite = (fun b ->
-        value := b;
-        if b then Term_typing.set_suggest_proof_using suggest_Proof_using
-        else Term_typing.set_suggest_proof_using (fun _ _ _ _ _ -> "")
-      ) }
+      Goptions.optread  = (fun () -> !suggest_proof_using);
+      Goptions.optwrite = ((:=) suggest_proof_using) }
+
+let suggest_constant env kn =
+  if !suggest_proof_using
+  then begin
+    let open Declarations in
+    let body = lookup_constant kn env in
+    let used = Id.Set.of_list @@ List.map NamedDecl.get_id body.const_hyps in
+    let ids_typ = global_vars_set env body.const_type in
+    suggest_common env (Printer.pr_constant env kn) used ids_typ Id.Set.empty
+  end
+
+let suggest_variable env id =
+  if !suggest_proof_using
+  then begin
+    match lookup_named id env with
+    | LocalDef (_,body,typ) ->
+      let ids_typ = global_vars_set env typ in
+      let ids_body = global_vars_set env body in
+      let used = Id.Set.union ids_body ids_typ in
+      suggest_common env (Id.print id) used ids_typ (Id.Set.singleton id)
+    | LocalAssum _ -> assert false
+  end
 
 let value = ref None
+
+let using_to_string us = Pp.string_of_ppcmds (Ppvernac.pr_using us)
+let using_from_string us = Pcoq.Gram.(entry_parse G_vernac.section_subset_expr (parsable (Stream.of_string us)))
 
 let _ =
   Goptions.declare_stringopt_option
     { Goptions.optdepr  = false;
       Goptions.optname  = "default value for Proof using";
       Goptions.optkey   = ["Default";"Proof";"Using"];
-      Goptions.optread  = (fun () -> !value);
-      Goptions.optwrite = (fun b -> value := b;) }
-
+      Goptions.optread  = (fun () -> Option.map using_to_string !value);
+      Goptions.optwrite = (fun b -> value := Option.map using_from_string b);
+    }
 
 let get_default_proof_using () = !value

@@ -367,7 +367,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
       cook_context = None;
     }
 
-let record_aux env s_ty s_bo suggested_expr =
+let record_aux env s_ty s_bo =
   let in_ty = keep_hyps env s_ty in
   let v =
     String.concat " "
@@ -376,10 +376,7 @@ let record_aux env s_ty s_bo suggested_expr =
           if List.exists (NamedDecl.get_id %> Id.equal id) in_ty then None
           else Some (Id.to_string id))
         (keep_hyps env s_bo)) in
-  Aux_file.record_in_aux "context_used" (v ^ ";" ^ suggested_expr)
-
-let suggest_proof_using = ref (fun _ _ _ _ _ -> "")
-let set_suggest_proof_using f = suggest_proof_using := f
+  Aux_file.record_in_aux "context_used" v
 
 let build_constant_declaration kn env result =
   let open Cooking in
@@ -425,16 +422,13 @@ let build_constant_declaration kn env result =
                 (Opaqueproof.force_proof (opaque_tables env) lc) in
             (* we force so that cst are added to the env immediately after *)
             ignore(Opaqueproof.force_constraints (opaque_tables env) lc);
-            let expr =
-              !suggest_proof_using (Constant.to_string kn)
-                env vars ids_typ context_ids in
-            if !Flags.record_aux_file then record_aux env ids_typ vars expr;
+            if !Flags.record_aux_file then record_aux env ids_typ vars;
             vars
         in
         keep_hyps env (Idset.union ids_typ ids_def), def
     | None ->
         if !Flags.record_aux_file then
-          record_aux env Id.Set.empty Id.Set.empty "";
+          record_aux env Id.Set.empty Id.Set.empty;
         [], def (* Empty section context: no need to check *)
     | Some declared ->
         (* We use the declared set and chain a check of correctness *)
@@ -618,14 +612,10 @@ let translate_local_def mb env id centry =
     | Undef _ -> ()
     | Def _ -> ()
     | OpaqueDef lc ->
-       let context_ids = List.map NamedDecl.get_id (named_context env) in
        let ids_typ = global_vars_set env typ in
        let ids_def = global_vars_set env
          (Opaqueproof.force_proof (opaque_tables env) lc) in
-       let expr =
-         !suggest_proof_using (Id.to_string id)
-           env ids_def ids_typ context_ids in
-       record_aux env ids_typ ids_def expr
+       record_aux env ids_typ ids_def
   end;
   let univs = match decl.cook_universes with
   | Monomorphic_const ctx -> ctx

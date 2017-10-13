@@ -1,0 +1,7 @@
+The proof of nat should start with one of the following commands:
+Proof using . 
+Proof using Type*. 
+Proof using Type. 
+The proof of foo should start with one of the following commands:
+Proof using A B. 
+Proof using All. 
