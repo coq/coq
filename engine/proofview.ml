@@ -1005,6 +1005,10 @@ let goal_extra evars gl =
   let evi = Evd.find evars gl in
   evi.Evd.evar_extra
 
+let goal_source evars gl =
+  let evi = Evd.find evars gl in
+  evi.Evd.evar_source
+
 
 let catchable_exception = function
   | Logic_monad.Exception _ -> false
@@ -1027,6 +1031,7 @@ module Goal = struct
   let hyps {env} = EConstr.named_context env
   let concl {concl} = concl
   let extra {sigma; self} = goal_extra sigma self
+  let source {sigma; self} = goal_source sigma self
 
   let gmake_with info env sigma goal = 
     { env = Environ.reset_with_named_context (Evd.evar_filtered_hyps info) env ;

@@ -2,14 +2,14 @@
 (shelved: 1)
   
   ============================
-  ?Goal 0
+  ?P 0
 
 subgoal 2 is:
- forall n : nat, ?Goal n -> ?Goal (S n)
+ forall n : nat, ?P n -> ?P (S n)
 subgoal 3 is:
  nat
 unification constraint:
- ?Goal ?Goal2 <=
+ ?P ?n <=
    True /\ True /\ True \/
    veeryyyyyyyyyyyyloooooooooooooonggidentifier =
    veeryyyyyyyyyyyyloooooooooooooonggidentifier
@@ -18,14 +18,14 @@ unification constraint:
   
   n, m : nat
   ============================
-  ?Goal@{n:=n; m:=m} 0
+  ?P@{n:=n; m:=m} 0
 
 subgoal 2 is:
- forall n0 : nat, ?Goal@{n:=n; m:=m} n0 -> ?Goal@{n:=n; m:=m} (S n0)
+ forall n0 : nat, ?P@{n:=n; m:=m} n0 -> ?P@{n:=n; m:=m} (S n0)
 subgoal 3 is:
  nat
 unification constraint:
- ?Goal@{n:=n; m:=m} ?Goal2@{n:=n; m:=m} <=
+ ?P@{n:=n; m:=m} ?n@{n:=n; m:=m} <=
    True /\ True /\ True \/
    veeryyyyyyyyyyyyloooooooooooooonggidentifier =
    veeryyyyyyyyyyyyloooooooooooooonggidentifier
@@ -34,15 +34,15 @@ unification constraint:
   
   m : nat
   ============================
-  ?Goal1@{m:=m} 0
+  ?P@{m:=m} 0
 
 subgoal 2 is:
- forall n0 : nat, ?Goal1@{m:=m} n0 -> ?Goal1@{m:=m} (S n0)
+ forall n0 : nat, ?P@{m:=m} n0 -> ?P@{m:=m} (S n0)
 subgoal 3 is:
  nat
 unification constraint:
  
- n, m : nat |- ?Goal1@{m:=m} ?Goal0@{n:=n; m:=m} <=
+ n, m : nat |- ?P@{m:=m} ?n@{n:=n; m:=m} <=
    True /\ True /\ True \/
    veeryyyyyyyyyyyyloooooooooooooonggidentifier =
    veeryyyyyyyyyyyyloooooooooooooonggidentifier
@@ -51,15 +51,15 @@ unification constraint:
   
   m : nat
   ============================
-  ?Goal0@{m:=m} 0
+  ?P@{m:=m} 0
 
 subgoal 2 is:
- forall n0 : nat, ?Goal0@{m:=m} n0 -> ?Goal0@{m:=m} (S n0)
+ forall n0 : nat, ?P@{m:=m} n0 -> ?P@{m:=m} (S n0)
 subgoal 3 is:
  nat
 unification constraint:
  
- n, m : nat |- ?Goal0@{m:=m} ?Goal2@{n:=n} <=
+ n, m : nat |- ?P@{m:=m} ?Goal0@{n:=n} <=
    True /\ True /\ True \/
    veeryyyyyyyyyyyyloooooooooooooonggidentifier =
    veeryyyyyyyyyyyyloooooooooooooonggidentifier

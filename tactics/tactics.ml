@@ -196,6 +196,7 @@ let convert_concl ?(check=true) ty k =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let store = Proofview.Goal.extra gl in
+    let src = Proofview.Goal.source gl in
     let conclty = Proofview.Goal.concl gl in
     Refine.refine ~typecheck:false begin fun sigma ->
       let sigma =
@@ -205,7 +206,7 @@ let convert_concl ?(check=true) ty k =
           if not b then error "Not convertible.";
           sigma
         end else sigma in
-      let (sigma, x) = Evarutil.new_evar env sigma ~principal:true ~store ty in
+      let (sigma, x) = Evarutil.new_evar env sigma ~src ~principal:true ~store ty in
       let ans = if k == DEFAULTcast then x else mkCast(x,k,conclty) in
       (sigma, ans)
     end
