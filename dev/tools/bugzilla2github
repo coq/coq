@@ -810,24 +810,18 @@ def github_issue_append(issue):
 # Maybe we can generate a backtrace
 def github_issues_add(issues):
     postponed = {}
-    nb_postponed = 0
     id = 1 # No bug id 1 in Coq's Bugzilla
     while True:
         id += 1
         if id in issues:
             issue = issues[id]
         else:
-            if nb_postponed == 0:
+            if len(postponed) == 0:
                 print "Error: No more postponed issues."
                 exit(1)
-            # Certainly not the most efficient way to find the first postponed issue
-            bugzilla_id = 0
-            while True:
-                bugzilla_id += 1
-                if bugzilla_id in postponed:
-                    break
+            # Find the first postponed issue
+            bugzilla_id = sorted(postponed.keys())[0]
             issue = postponed.pop(bugzilla_id)
-            nb_postponed -= 1
         if id > existingIssues and id > bugzillaIssues:
             github_issue = github_get("issues/%d" % id)
         if id <= existingIssues or id <= bugzillaIssues or github_issue:
@@ -839,7 +833,6 @@ def github_issues_add(issues):
             else:
                 print "Issue #%d already exists, postponing..." % id
                 postponed[id] = issue
-                nb_postponed += 1
         else:
             print "Creating issue #%d..." % id
             # Make sure the previous issue already exist
