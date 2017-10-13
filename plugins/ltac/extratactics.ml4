@@ -1003,6 +1003,11 @@ TACTIC EXTEND revgoals
 | [ "revgoals" ] -> [ Proofview.revgoals ]
 END
 
+(* sorts the list of focused goals according to their location *)
+TACTIC EXTEND sortgoals
+| [ "sortgoals" ] -> [ Proofview.sortgoals () ]
+END
+
 type cmp =
   | Eq
   | Lt | Le

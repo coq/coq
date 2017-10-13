@@ -776,6 +776,24 @@ let numgoals =
   Comb.get >>= fun comb ->
   return (CList.length comb)
 
+let default_cmp (sigma : Evd.evar_map) (e1 : Evd.evar) (e2 : Evd.evar) : int =
+  let to_pair e =
+    let loc = fst (Evd.evar_source e sigma) in
+    begin match loc with
+    | None -> ()
+    | Some loc ->
+        Feedback.msg_info (str"Loc: " ++ int loc.Loc.line_nb ++
+          str" " ++ int loc.Loc.bp ++ str" " ++ int loc.Loc.ep)
+    end;
+      Option.map Loc.unloc loc
+  in
+    compare (to_pair e1) (to_pair e2)
+
+let sortgoals ?(cmp : Evd.evar_map -> Evd.evar -> Evd.evar -> int = default_cmp) () =
+  let open Proof in
+  InfoL.leaf (Info.Tactic (fun () -> Pp.str"sortgoals")) >>
+  Solution.get >>= fun sigma ->
+  Comb.modify (CList.sort (cmp sigma))
 
 
 (** {7 Access primitives} *)

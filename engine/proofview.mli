@@ -348,6 +348,10 @@ val revgoals : unit tactic
 (** [numgoals] returns the number of goals under focus. *)
 val numgoals : int tactic
 
+(** [sortgoals] sorts the list of focused goals according to
+    some comparison function. *)
+val sortgoals : ?cmp : (Evd.evar_map -> Evd.evar -> Evd.evar -> int) -> unit-> unit tactic
+
 
 (** {7 Access primitives} *)
 

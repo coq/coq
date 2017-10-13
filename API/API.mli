@@ -2968,6 +2968,7 @@ sig
   val cycle : int -> unit tactic
   val swap : int -> int -> unit tactic
   val revgoals : unit tactic
+  val sortgoals : ?cmp:(Evd.evar_map -> Evd.evar -> Evd.evar -> int) -> unit -> unit tactic
   val give_up : unit tactic
   val init : Evd.evar_map -> (Environ.env * EConstr.types) list -> entry * proofview
   val shelve : unit tactic
