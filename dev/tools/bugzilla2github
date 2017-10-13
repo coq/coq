@@ -571,9 +571,6 @@ def bug_convert(bug):
     ret["title"] = bug.pop("short_desc")
     # Convert creation_ts to created_at
     ret["created_at"] = date_convert(bug.pop("creation_ts"))
-    assignee = str2str(email2login, bug.pop("assigned_to"))
-    if assignee:
-        ret["assignee"] = assignee
     # Convert component to labels
     ret["labels"].extend(str2list(component2labels, bug.pop("component")))
     # Convert bug_status to state
@@ -581,8 +578,13 @@ def bug_convert(bug):
     if ret["closed"]:
         # Convert delta_ts to closed_at
         ret["closed_at"] = date_convert(bug.pop("delta_ts"))
+        bug.pop("assigned_to")
     else:
         bug.pop("delta_ts")
+        # We only assigned open bug reports
+        assignee = str2str(email2login, bug.pop("assigned_to"))
+        if assignee:
+            ret["assignee"] = assignee
     # Convert (optional) keywords to labels
     ret["labels"].extend(str2list(keywords2labels, bug.pop("keywords","")))
     # Convert resolution to labels
@@ -594,7 +596,6 @@ def bug_convert(bug):
 
     # Create the bug description
     ret["body"].append("Original bug ID: BZ#%d" % ret["number"])
-    ret["body"].append("Date: " + ret["created_at"])
     ret["body"].append("From: " + email_convert(bug.pop("reporter"),
                         bug.pop("reporter.name", None)))
     ret["body"].append("Reported version: " + bug.pop("version"))
@@ -770,6 +771,9 @@ def github_issue_append(issue):
     print "\tappending a new issue on GitHub..."
     u = "https://api.github.com/repos/%s/%s/import/issues" % (github_owner, github_repo)
     comments = issue.pop("comments")
+    # We can't assign people which are not in the organization / collaborators on the repo
+    if github_owner != "coq":
+        issue.pop("assignee", None)
     r = requests.post(u, params = params, headers = headers,
                       data = json.dumps({ "issue": issue, "comments": comments }))
     if not r:
@@ -888,7 +892,6 @@ def main(argv):
     github_labels_check(issues)
     print "===> Checking all the assignees exist on GitHub..."
     github_assignees_check(issues)
-
     # fake_issue = { "title": "Fake issue", "body": "Fake issue" }
     # for i in xrange(1,existingIssues + 1):
     #     github_issue_append(fake_issue)
