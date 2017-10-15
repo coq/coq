@@ -2414,7 +2414,6 @@ let new_doc { doc_type ; require_libs } =
   State.restore_root_state ();
 
   let doc = VCS.init doc_type Stateid.initial in
-  set_undo_classifier Backtrack.undo_vernac_classifier;
 
   begin match doc_type with
   | Interactive ln ->
@@ -2578,7 +2577,7 @@ let snapshot_vio ~doc ldir long_f_dot_vo =
 let reset_task_queue = Slaves.reset_task_queue
 
 (* Document building *)
-let process_transaction ?(newtip=Stateid.fresh ())
+let rec process_transaction ?(newtip=Stateid.fresh ())
   ({ verbose; loc; expr } as x) c =
   stm_pperr_endline (fun () -> str "{{{ processing: " ++ pr_ast x);
   let vcs = VCS.backup () in
@@ -2589,6 +2588,10 @@ let process_transaction ?(newtip=Stateid.fresh ())
       stm_prerr_endline (fun () ->
         "  classified as: " ^ string_of_vernac_classification c);
       match c with
+      (* Meta *)
+      | VtMeta, _ ->
+        let clas = Backtrack.undo_vernac_classifier expr in
+        process_transaction ~newtip x clas
       (* Back *)
       | VtBack (true, oid), w ->
           let id = VCS.new_node ~id:newtip () in

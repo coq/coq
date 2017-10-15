@@ -32,6 +32,7 @@ let string_of_vernac_type = function
   | VtProofMode s -> "ProofMode " ^ s
   | VtQuery (b, route) -> "Query " ^ string_of_in_script b ^ " route " ^ string_of_int route
   | VtBack (b, _) -> "Stm Back " ^ string_of_in_script b
+  | VtMeta -> "Meta "
 
 let string_of_vernac_when = function
   | VtLater -> "Later"
@@ -53,9 +54,6 @@ let make_polymorphic (a, b as x) =
       VtStartProof (x, Doesn'tGuaranteeOpacity, ids), b
   | _ -> x
 
-let undo_classifier = ref (fun _ -> assert false)
-let set_undo_classifier f = undo_classifier := f
-
 let rec classify_vernac e =
   let static_classifier e = match e with
     (* Univ poly compatibility: we run it now, so that we can just
@@ -75,7 +73,7 @@ let rec classify_vernac e =
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match classify_vernac e with
         | ( VtQuery _ | VtProofStep _ | VtSideff _
-          | VtBack _ | VtProofMode _ ), _ as x -> x
+          | VtBack _ | VtProofMode _ | VtMeta), _ as x -> x
         | VtQed _, _ ->
             VtProofStep { parallel = `No; proof_block_detection = None },
             VtNow
@@ -191,7 +189,7 @@ let rec classify_vernac e =
     | VernacBack _ | VernacAbortAll
     | VernacUndoTo _ | VernacUndo _
     | VernacResetName _ | VernacResetInitial
-    | VernacBacktrack _ | VernacBackTo _ | VernacRestart -> !undo_classifier e
+    | VernacBacktrack _ | VernacBackTo _ | VernacRestart -> VtMeta, VtNow
     (* What are these? *)
     | VernacToplevelControl _
     | VernacRestoreState _
