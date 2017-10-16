@@ -824,8 +824,12 @@ def github_issues_add(issues):
             issue = issues[id]
         else:
             if len(postponed) == 0:
-                print "Error: No more postponed issues."
-                exit(1)
+                if len(issues) == 0:
+                    print "===> All done."
+                    exit(0)
+                else:
+                    print "Error: No more postponed issues."
+                    exit(1)
             # Find the first postponed issue
             bugzilla_id = sorted(postponed.keys())[0]
             issue = postponed.pop(bugzilla_id)
@@ -848,8 +852,6 @@ def github_issues_add(issues):
                         % id
                 exit(1)
             github_issue_append(bugzilla_id, issue)
-
-    return postponed
 
 
 def args_parse(argv):
@@ -907,8 +909,7 @@ def main(argv):
     #     github_issue_append(0, fake_issue)
 
     print "===> Adding Bugzilla reports on GitHub..."
-    postponed = github_issues_add(issues)
-    print "===> All done."
+    github_issues_add(issues)
 
 
 if __name__ == "__main__":
