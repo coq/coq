@@ -121,8 +121,7 @@ module Level = struct
   (** Hashcons on levels + their hash *)
 
   module Self = struct
-    type _t = t
-    type t = _t
+    type nonrec t = t
     type u = unit
     let eq x y = x.hash == y.hash && RawLevel.hequal x.data y.data
     let hash x = x.hash
@@ -755,8 +754,7 @@ struct
 
   module HInstancestruct =
   struct
-    type _t = t
-    type t = _t
+    type nonrec t = t
     type u = Level.t -> Level.t
 
     let hashcons huniv a = 
