@@ -35,7 +35,7 @@ existingIssues = 1080
 # Can be used to skip over already imported issues if the script was interrupted.
 # Re-plays everything but without issuing API calls.
 # Room for improvement.
-bugzillaIssues = 3274
+bugzillaIssues = 3483
 force_update = False
 xml_file = "bugzilla.xml"
 github_url = "https://api.github.com"
@@ -774,7 +774,7 @@ def github_issue_get(number):
     return req.json()
 
 
-def github_issue_append(issue):
+def github_issue_append(bugzilla_id, issue):
     global github_owner, github_repo, github_token
     params = { "access_token": github_token }
     headers = { "Accept": "application/vnd.github.golden-comet-preview+json" }
@@ -802,7 +802,13 @@ def github_issue_append(issue):
     # The issue_url field of the answer should be of the form .../ISSUE_NUMBER
     # So it's easy to get the issue number, to check that it is what was expected
     # And even to spare a few get requests to the GitHub API
-    return r
+    result = re.match("https://api.github.com/repos/" + github_owner + "/" + github_repo + "/issues/(\d+)", r.json()["issue_url"])
+    if not result:
+        print "Error while parsing issue number:\n%s" % r.text
+    issue_number = result.group(1)
+    with open("bugzilla2github.log", "a") as f:
+        f.write("%d, %s\n" % (bugzilla_id, issue_number))
+    return issue_number
 
 
 # Room for improvement in this function
@@ -814,6 +820,7 @@ def github_issues_add(issues):
     while True:
         id += 1
         if id in issues:
+            bugzilla_id = id
             issue = issues[id]
         else:
             if len(postponed) == 0:
@@ -840,7 +847,7 @@ def github_issues_add(issues):
                 print "Error adding issue #%d on GitHub: previous issue does not exists" \
                         % id
                 exit(1)
-            github_issue_append(issue)
+            github_issue_append(bugzilla_id, issue)
 
     return postponed
 
@@ -897,7 +904,7 @@ def main(argv):
     github_assignees_check(issues)
     # fake_issue = { "title": "Fake issue", "body": "Fake issue" }
     # for i in xrange(1,existingIssues + 1):
-    #     github_issue_append(fake_issue)
+    #     github_issue_append(0, fake_issue)
 
     print "===> Adding Bugzilla reports on GitHub..."
     postponed = github_issues_add(issues)
