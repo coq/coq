@@ -48,7 +48,11 @@ Section ZMORPHISM.
   Notation "x - y " := (rsub x y).  Notation "- x" := (ropp x).
   Notation "x == y" := (req x y).
   Variable Rsth : Setoid_Theory R req.
-     Add Setoid R req Rsth as R_setoid3.
+     Add Parametric Relation : R req
+       reflexivity  proved by Rsth.(@Equivalence_Reflexive _ _)
+       symmetry     proved by Rsth.(@Equivalence_Symmetric _ _)
+       transitivity proved by Rsth.(@Equivalence_Transitive _ _)
+      as R_setoid3.
      Ltac rrefl := gen_reflexivity Rsth.
  Variable Reqe : ring_eq_ext radd rmul ropp req.
    Add Morphism radd with signature (req ==> req ==> req) as radd_ext3.
@@ -260,7 +264,11 @@ Section NMORPHISM.
   Notation "0" := rO.  Notation "1" := rI.
   Notation "x + y" := (radd x y).  Notation "x * y " := (rmul x y).
  Variable Rsth : Setoid_Theory R req.
-     Add Setoid R req Rsth as R_setoid4.
+     Add Parametric Relation : R req
+       reflexivity  proved by Rsth.(@Equivalence_Reflexive _ _)
+       symmetry     proved by Rsth.(@Equivalence_Symmetric _ _)
+       transitivity proved by Rsth.(@Equivalence_Transitive _ _)
+       as R_setoid4.
      Ltac rrefl := gen_reflexivity Rsth.
  Variable SReqe : sring_eq_ext radd rmul req.
  Variable SRth : semi_ring_theory 0 1 radd rmul req.
@@ -381,7 +389,11 @@ Section NWORDMORPHISM.
   Notation "x - y " := (rsub x y).  Notation "- x" := (ropp x).
   Notation "x == y" := (req x y).
   Variable Rsth : Setoid_Theory R req.
-     Add Setoid R req Rsth as R_setoid5.
+     Add Parametric Relation : R req
+       reflexivity  proved by Rsth.(@Equivalence_Reflexive _ _)
+       symmetry     proved by Rsth.(@Equivalence_Symmetric _ _)
+       transitivity proved by Rsth.(@Equivalence_Transitive _ _)
+      as R_setoid5.
      Ltac rrefl := gen_reflexivity Rsth.
  Variable Reqe : ring_eq_ext radd rmul ropp req.
    Add Morphism radd with signature (req ==> req ==> req) as radd_ext5.
@@ -566,7 +578,11 @@ Section GEN_DIV.
  Variable morph : ring_morph rO rI radd rmul rsub ropp req cO cI cadd cmul csub copp ceqb phi.
 
   (* Useful tactics *)
-  Add Setoid R req Rsth as R_set1.
+  Add Parametric Relation : R req
+    reflexivity  proved by Rsth.(@Equivalence_Reflexive _ _)
+    symmetry     proved by Rsth.(@Equivalence_Symmetric _ _)
+    transitivity proved by Rsth.(@Equivalence_Transitive _ _)
+   as R_set1.
  Ltac rrefl := gen_reflexivity Rsth.
   Add Morphism radd with signature (req ==> req ==> req) as radd_ext.
   Proof. exact (Radd_ext Reqe). Qed.

@@ -404,7 +404,11 @@ Section ALMOST_RING.
  Variable Csth : Equivalence ceq.
  Variable Ceqe : ring_eq_ext cadd cmul copp ceq.
 
-   Add Setoid C ceq Csth as C_setoid.
+   Add Parametric Relation : C ceq
+     reflexivity  proved by Csth.(@Equivalence_Reflexive _ _)
+     symmetry     proved by Csth.(@Equivalence_Symmetric _ _)
+     transitivity proved by Csth.(@Equivalence_Transitive _ _)
+    as C_setoid.
 
    Add Morphism cadd with signature (ceq ==> ceq ==> ceq) as cadd_ext.
    Proof. exact (Radd_ext Ceqe). Qed.

@@ -1612,7 +1612,11 @@ Section Complete.
   Notation "x / y " := (rdiv x y).  Notation "/ x" := (rinv x).
   Notation "x == y" := (req x y) (at level 70, no associativity).
  Variable Rsth : Setoid_Theory R req.
-   Add Setoid R req Rsth as R_setoid3.
+   Add Parametric Relation : R req
+     reflexivity  proved by Rsth.(@Equivalence_Reflexive _ _)
+     symmetry     proved by Rsth.(@Equivalence_Symmetric _ _)
+     transitivity proved by Rsth.(@Equivalence_Transitive _ _)
+    as R_setoid3.
  Variable Reqe : ring_eq_ext radd rmul ropp req.
    Add Morphism radd with signature (req ==> req ==> req) as radd_ext3.
    Proof. exact (Radd_ext Reqe). Qed.

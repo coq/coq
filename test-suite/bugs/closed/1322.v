@@ -12,7 +12,11 @@ Variable I_eq_equiv : Setoid_Theory I I_eq.
   transitivity proved by I_eq_equiv.(Seq_trans I I_eq)
 as I_eq_relation. *)
 
-Add Setoid I I_eq I_eq_equiv as I_with_eq.
+Add Parametric Relation : I I_eq
+  reflexivity  proved by I_eq_equiv.(@Equivalence_Reflexive _ _)
+  symmetry     proved by I_eq_equiv.(@Equivalence_Symmetric _ _)
+  transitivity proved by I_eq_equiv.(@Equivalence_Transitive _ _)
+  as I_with_eq.
 
 Variable F : I -> Type.
 Variable F_morphism : forall i j, I_eq i j -> F i = F j.
