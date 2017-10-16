@@ -27,15 +27,11 @@
 # Nix users can get the right environment by running:
 # $ nix-shell -p python2 python2Packages.requests
 
-import json, getopt, os, pprint, re, requests, sys, time, xml.etree.ElementTree
+import csv, getopt, json, os, pprint, re, requests, sys, time, xml.etree.ElementTree
 
 # Existing issues means issue numbers already taken on GitHub (by PRs mostly).
 # The script can find these by itself but this will spare API requests.
 existingIssues = 1080
-# Can be used to skip over already imported issues if the script was interrupted.
-# Re-plays everything but without issuing API calls.
-# Room for improvement.
-bugzillaIssues = 3483
 force_update = False
 xml_file = "bugzilla.xml"
 github_url = "https://api.github.com"
@@ -778,9 +774,9 @@ def github_issue_append(bugzilla_id, issue):
     global github_owner, github_repo, github_token
     params = { "access_token": github_token }
     headers = { "Accept": "application/vnd.github.golden-comet-preview+json" }
-    print "\tappending a new issue on GitHub..."
+    print "\timporting BZ#%d on GitHub..." % bugzilla_id
     u = "https://api.github.com/repos/%s/%s/import/issues" % (github_owner, github_repo)
-    comments = issue.pop("comments")
+    comments = issue.pop("comments", [])
     # We can't assign people which are not in the organization / collaborators on the repo
     if github_owner != "coq":
         issue.pop("assignee", None)
@@ -801,7 +797,6 @@ def github_issue_append(bugzilla_id, issue):
         exit(1)
     # The issue_url field of the answer should be of the form .../ISSUE_NUMBER
     # So it's easy to get the issue number, to check that it is what was expected
-    # And even to spare a few get requests to the GitHub API
     result = re.match("https://api.github.com/repos/" + github_owner + "/" + github_repo + "/issues/(\d+)", r.json()["issue_url"])
     if not result:
         print "Error while parsing issue number:\n%s" % r.text
@@ -811,9 +806,6 @@ def github_issue_append(bugzilla_id, issue):
     return issue_number
 
 
-# Room for improvement in this function
-# Maybe we can be more resilient
-# Maybe we can generate a backtrace
 def github_issues_add(issues):
     postponed = {}
     id = 1 # No bug id 1 in Coq's Bugzilla
@@ -833,17 +825,9 @@ def github_issues_add(issues):
             # Find the first postponed issue
             bugzilla_id = sorted(postponed.keys())[0]
             issue = postponed.pop(bugzilla_id)
-        if id > existingIssues and id > bugzillaIssues:
-            github_issue = github_get("issues/%d" % id)
-        if id <= existingIssues or id <= bugzillaIssues or github_issue:
-            # Check if the issue was imported from the Bugzilla
-            if id > existingIssues and id <= bugzillaIssues:
-                print "Issue #%d already imported." % id
-            elif id > existingIssues and ("Original bug ID: BZ#%d\n" % id).lower() in github_issue.json()["body"].lower():
-                print "Issue #%d already imported." % id
-            else:
-                print "Issue #%d already exists, postponing..." % id
-                postponed[id] = issue
+        if id <= existingIssues or github_get("issues/%d" % id):
+            print "Issue #%d already exists, postponing..." % id
+            postponed[bugzilla_id] = issue
         else:
             print "Creating issue #%d..." % id
             # Make sure the previous issue already exist
@@ -887,7 +871,7 @@ def args_parse(argv):
 
 
 def main(argv):
-    global xml_file, github_owner, github_repo
+    global xml_file, github_owner, github_repo, existingIssues
 
     # Parse command line arguments
     args_parse(argv)
@@ -900,11 +884,22 @@ def main(argv):
     xml_root = xml_tree.getroot()
     issues = bugs_convert(xml_root)
 
+    try:
+        with open("bugzilla2github.log", "r") as f:
+            print "===> Skipping already imported issues..."
+            imported_bugs = csv.reader(f)
+            for imported_bug in imported_bugs:
+                issues.pop(int(imported_bug[0]), None)
+                existingIssues = max(existingIssues, int(imported_bug[1]))
+    except IOError:
+        print "===> No log file found. Not skipping any issue."
+
     print "===> Checking all the labels exist on GitHub..."
     github_labels_check(issues)
     print "===> Checking all the assignees exist on GitHub..."
     github_assignees_check(issues)
-    # fake_issue = { "title": "Fake issue", "body": "Fake issue" }
+
+    # fake_issue = { "title": "Fake issue", "body": "Fake issue", "closed": True }
     # for i in xrange(1,existingIssues + 1):
     #     github_issue_append(0, fake_issue)
 
