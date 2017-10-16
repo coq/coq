@@ -153,10 +153,12 @@ install-ide-bin:
 
 install-ide-toploop:
 ifeq ($(BEST),opt)
+	$(MKDIR) $(FULLCOQLIB)/toploop/
 	$(INSTALLBIN) $(IDETOPLOOPCMA:.cma=.cmxs) $(FULLCOQLIB)/toploop/
 endif
 install-ide-toploop-byte:
 ifneq ($(BEST),opt)
+	$(MKDIR) $(FULLCOQLIB)/toploop/
 	$(INSTALLBIN) $(IDETOPLOOPCMA) $(FULLCOQLIB)/toploop/
 endif
 
