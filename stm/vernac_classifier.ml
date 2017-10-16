@@ -31,7 +31,6 @@ let string_of_vernac_type = function
         Option.default "" proof_block_detection
   | VtProofMode s -> "ProofMode " ^ s
   | VtQuery (b, route) -> "Query " ^ string_of_in_script b ^ " route " ^ string_of_int route
-  | VtBack (b, _) -> "Stm Back " ^ string_of_in_script b
   | VtMeta -> "Meta "
 
 let string_of_vernac_when = function
@@ -73,7 +72,7 @@ let rec classify_vernac e =
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match classify_vernac e with
         | ( VtQuery _ | VtProofStep _ | VtSideff _
-          | VtBack _ | VtProofMode _ | VtMeta), _ as x -> x
+          | VtProofMode _ | VtMeta), _ as x -> x
         | VtQed _, _ ->
             VtProofStep { parallel = `No; proof_block_detection = None },
             VtNow

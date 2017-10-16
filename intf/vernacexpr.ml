@@ -502,7 +502,6 @@ type vernac_type =
   | VtProofStep of proof_step
   | VtProofMode of string
   | VtQuery of vernac_part_of_script * Feedback.route_id
-  | VtBack of vernac_part_of_script * Stateid.t
   | VtMeta
   | VtUnknown
 and vernac_qed_type = VtKeep | VtKeepAsAxiom | VtDrop (* Qed/Admitted, Abort *)

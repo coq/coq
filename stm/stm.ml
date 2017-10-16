@@ -1036,8 +1036,8 @@ module Backtrack : sig
   (* we could navigate the dag, but this ways easy *)
   val branches_of : Stateid.t -> backup
 
-  (* To be installed during initialization *)
-  val undo_vernac_classifier : vernac_expr -> vernac_classification
+  (* Returns the state that the command should backtract to *)
+  val undo_vernac_classifier : vernac_expr -> Stateid.t * vernac_when
 
 end = struct (* {{{ *)
 
@@ -1105,7 +1105,7 @@ end = struct (* {{{ *)
     try
       match v with
       | VernacResetInitial ->
-          VtBack (true, Stateid.initial), VtNow
+          Stateid.initial, VtNow
       | VernacResetName (_,name) ->
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
           (try
@@ -1113,20 +1113,20 @@ end = struct (* {{{ *)
               fold_until (fun b (id,_,label,_,_) ->
                 if b then `Stop id else `Cont (List.mem name label))
               false id in
-            VtBack (true, oid), VtNow
+            oid, VtNow
           with Not_found ->
-            VtBack (true, id), VtNow)
+            id, VtNow)
       | VernacBack n ->
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
           let oid = fold_until (fun n (id,_,_,_,_) ->
             if Int.equal n 0 then `Stop id else `Cont (n-1)) n id in
-          VtBack (true, oid), VtNow
+          oid, VtNow
       | VernacUndo n ->
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
           let oid = fold_until (fun n (id,_,_,tactic,undo) ->
             let value = (if tactic then 1 else 0) - undo in
             if Int.equal n 0 then `Stop id else `Cont (n-value)) n id in
-          VtBack (true, oid), VtLater
+          oid, VtLater
       | VernacUndoTo _
       | VernacRestart as e ->
           let m = match e with VernacUndoTo m -> m | _ -> 0 in
@@ -1143,17 +1143,17 @@ end = struct (* {{{ *)
             0 id in
           let oid = fold_until (fun n (id,_,_,_,_) ->
             if Int.equal n 0 then `Stop id else `Cont (n-1)) (n-m-1) id in
-          VtBack (true, oid), VtLater
+          oid, VtLater
       | VernacAbortAll ->
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
           let oid = fold_until (fun () (id,vcs,_,_,_) ->
             match Vcs_.branches vcs with [_] -> `Stop id | _ -> `Cont ())
             () id in
-          VtBack (true, oid), VtLater
+          oid, VtLater
       | VernacBacktrack (id,_,_)
       | VernacBackTo id ->
-          VtBack (VCS.is_interactive () = `Yes, Stateid.of_int id), VtNow
-      | _ -> VtUnknown, VtNow
+          Stateid.of_int id, VtNow
+      | _ -> anomaly Pp.(str "incorrect VtMeta classification")
     with
     | Not_found ->
        CErrors.user_err ~hdr:"undo_vernac_classifier"
@@ -2577,7 +2577,38 @@ let snapshot_vio ~doc ldir long_f_dot_vo =
 let reset_task_queue = Slaves.reset_task_queue
 
 (* Document building *)
-let rec process_transaction ?(newtip=Stateid.fresh ())
+let process_back_meta_command ~part_of_script ~newtip ~head oid aast w =
+  match part_of_script, w with
+  | true, w ->
+    let id = VCS.new_node ~id:newtip () in
+    let { mine; others } = Backtrack.branches_of oid in
+    let valid = VCS.get_branch_pos head in
+    List.iter (fun branch ->
+        if not (List.mem_assoc branch (mine::others)) then
+          ignore(merge_proof_branch ~valid aast VtDrop branch))
+      (VCS.branches ());
+    VCS.checkout_shallowest_proof_branch ();
+    let head = VCS.current_branch () in
+    List.iter (fun b ->
+        if not(VCS.Branch.equal b head) then begin
+          VCS.checkout b;
+          VCS.commit (VCS.new_node ()) (Alias (oid,aast));
+        end)
+      (VCS.branches ());
+    VCS.checkout_shallowest_proof_branch ();
+    VCS.commit id (Alias (oid,aast));
+    Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
+
+  | false, VtNow ->
+    stm_prerr_endline (fun () -> "undo to state " ^ Stateid.to_string oid);
+    Backtrack.backto oid;
+    VCS.checkout_shallowest_proof_branch ();
+    Reach.known_state ~cache:(VCS.is_interactive ()) oid; `Ok
+
+  | false, VtLater ->
+    anomaly(str"undo classifier: VtMeta + VtLater must imply part_of_script.")
+
+let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
   ({ verbose; loc; expr } as x) c =
   stm_pperr_endline (fun () -> str "{{{ processing: " ++ pr_ast x);
   let vcs = VCS.backup () in
@@ -2590,36 +2621,8 @@ let rec process_transaction ?(newtip=Stateid.fresh ())
       match c with
       (* Meta *)
       | VtMeta, _ ->
-        let clas = Backtrack.undo_vernac_classifier expr in
-        process_transaction ~newtip x clas
-      (* Back *)
-      | VtBack (true, oid), w ->
-          let id = VCS.new_node ~id:newtip () in
-          let { mine; others } = Backtrack.branches_of oid in
-          let valid = VCS.get_branch_pos head in
-          List.iter (fun branch ->
-            if not (List.mem_assoc branch (mine::others)) then
-              ignore(merge_proof_branch ~valid x VtDrop branch))
-            (VCS.branches ());
-          VCS.checkout_shallowest_proof_branch ();
-          let head = VCS.current_branch () in
-          List.iter (fun b ->
-            if not(VCS.Branch.equal b head) then begin
-              VCS.checkout b;
-              VCS.commit (VCS.new_node ()) (Alias (oid,x));
-            end)
-            (VCS.branches ());
-          VCS.checkout_shallowest_proof_branch ();
-          VCS.commit id (Alias (oid,x));
-          Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
-      | VtBack (false, id), VtNow ->
-          stm_prerr_endline (fun () -> "undo to state " ^ Stateid.to_string id);
-          Backtrack.backto id;
-          VCS.checkout_shallowest_proof_branch ();
-          Reach.known_state ~cache:(VCS.is_interactive ()) id; `Ok
-      | VtBack (false, id), VtLater ->
-          anomaly(str"classifier: VtBack + VtLater must imply part_of_script.")
-
+        let id, w = Backtrack.undo_vernac_classifier expr in
+        process_back_meta_command ~part_of_script ~newtip ~head id x w
       (* Query *)
       | VtQuery (false, route), VtNow ->
         begin
@@ -2881,8 +2884,8 @@ let query ~doc ~at ~route s =
     let clas = classify_vernac ast in
     let aast = { verbose = true; indentation; strlen; loc; expr = ast } in
     match clas with
-    | VtBack (_,id), _ -> (* TODO: can this still happen ? *)
-       ignore(process_transaction aast (VtBack (false,id), VtNow))
+    | VtMeta , _ -> (* TODO: can this still happen ? *)
+       ignore(process_transaction ~part_of_script:false aast (VtMeta,VtNow))
     | _ ->
        ignore(process_transaction aast (VtQuery (false, route), VtNow)))
   s

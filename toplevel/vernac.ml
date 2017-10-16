@@ -119,7 +119,7 @@ let rec interp_vernac ~check ~interactive doc sid (loc,com) =
 
       (* XXX: We need to run this before add as the classification is
          highly dynamic and depends on the structure of the
-         document. Hopefully this is fixed when VtBack can be removed
+         document. Hopefully this is fixed when VtMeta can be removed
          and Undo etc... are just interpreted regularly. *)
 
       (* XXX: The classifier can emit warnings so we need to guard
@@ -127,7 +127,7 @@ let rec interp_vernac ~check ~interactive doc sid (loc,com) =
       let wflags = CWarnings.get_flags () in
       CWarnings.set_flags "none";
       let is_proof_step = match fst (Vernac_classifier.classify_vernac v) with
-        | VtProofStep _ | VtBack (_, _) | VtStartProof _ -> true
+        | VtProofStep _ | VtMeta | VtStartProof _ -> true
         | _ -> false
       in
       CWarnings.set_flags wflags;
