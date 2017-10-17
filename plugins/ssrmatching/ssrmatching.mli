@@ -133,9 +133,9 @@ type tpattern
   @raise UserEerror is the pattern is a wildcard *)
 val mk_tpattern :
   ?p_origin:ssrdir * EConstr.t ->
+  ?ok:(EConstr.t -> evar_map -> bool) ->
   env -> evar_map ->
   evar_map * EConstr.t ->
-  (EConstr.t -> evar_map -> bool) ->
   ssrdir -> EConstr.t ->
     evar_map * tpattern
 

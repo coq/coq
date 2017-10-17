@@ -259,8 +259,6 @@ let same_proj sigma t1 t2 =
   | Proj(c1,_), Proj(c2, _) -> Projection.CanOrd.equal c1 c2
   | _ -> false
 
-let all_ok _ _ = true
-
 let classify_pattern p = match p with
 | None -> None
 | Some p -> redex_of_pattern p
@@ -280,7 +278,7 @@ let unfoldintac occ rdx t (kt,_) =
   let unfold, conclude = match classify_pattern rdx with
   | None ->
     let ise = Evd.create_evar_defs sigma in
-    let ise, u = mk_tpattern env0 sigma0 (ise, t) all_ok L2R t in
+    let ise, u = mk_tpattern env0 sigma0 (ise, t) L2R t in
     let find_T, end_T =
       mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[u]) in
     (fun env c _ h ->
@@ -333,7 +331,7 @@ let foldtac occ rdx ft =
   | None ->
     let ise = Evd.create_evar_defs sigma in
     let ut = red_product_skip_id env0 sigma t in
-    let ise, ut = mk_tpattern env0 sigma0 (ise,t) all_ok L2R ut in
+    let ise, ut = mk_tpattern env0 sigma0 (ise,t) L2R ut in
     let find_T, end_T =
       mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[ut]) in
     (fun env c _ h -> try find_T env c h ~k:(fun env t _ _ -> t) with NoMatch ->c),
@@ -641,8 +639,7 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
       let upats_origin = dir, (snd rule) in
       let rpat env sigma0 (sigma, pats) (d, r, lhs, rhs) =
         let sigma, pat =
-          let rw_progress rhs t evd = rw_progress rhs t evd in
-          mk_tpattern env sigma0 (sigma, Reductionops.nf_evar sigma r) (rw_progress rhs) d (Reductionops.nf_evar sigma lhs) in
+          mk_tpattern ~ok:(rw_progress rhs) env sigma0 (sigma, Reductionops.nf_evar sigma r) d (Reductionops.nf_evar sigma lhs) in
         sigma, pats @ [pat] in
       let rpats = List.fold_left (rpat env0 sigma0) (r_sigma,[]) rules in
       let find_R, end_R = mk_tpattern_matcher sigma0 occ ~upats_origin rpats in
@@ -671,10 +668,9 @@ let ssrinstancesofrule ist dir arg =
     let upats_origin = dir, (snd rule) in
     let rpat env sigma0 (sigma, pats) (d, r, lhs, rhs) =
       let sigma, pat =
-        let rw_progress rhs t evd = rw_progress rhs t evd in
-        mk_tpattern env sigma0
+        mk_tpattern ~ok:(rw_progress rhs) env sigma0
           (sigma, Reductionops.nf_evar sigma r)
-          (rw_progress rhs) d
+          d
           (Reductionops.nf_evar sigma lhs) in
       sigma, pats @ [pat] in
     let rpats = List.fold_left (rpat env0 sigma0) (r_sigma,[]) rules in
