@@ -422,7 +422,7 @@ def id_convert(id):
     return "[BZ#" + id + "](https://github.com/" + github_owner + "/" + github_repo + "/issues?q=is%3Aissue%20%22Original%20bug%20ID%3A%20BZ%23" + id + "%22)"
 
 def id_convert_from_match(match):
-    return id_convert(match.group(1))
+    return re.sub(r'\#', "", match.group(1)) + id_convert(match.group(2))
 
 def ids_convert(ids):
     ret = []
@@ -537,7 +537,7 @@ def comment_convert(comment, attachments):
     # Syntax: convert "bug id" to "BZ#id"
     for i, val in enumerate(ret):
         val = re.sub(r"\(In reply to comment \#\d+\)","", val)
-        ret[i] = re.sub(r"(?i)(?:bug(?:\s+report)?\s+|feature wish\s+|\s\#)(\d\d?\d?\d?)", id_convert_from_match, val)
+        ret[i] = re.sub(r"(?i)(bug(?:\s+report)?\s+|feature wish\s+|\s\#)(\d\d?\d?\d?)", id_convert_from_match, val)
 
     created_at = date_convert(comment.pop("bug_when"))
 
