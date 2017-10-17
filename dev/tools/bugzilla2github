@@ -904,7 +904,10 @@ def main(argv):
         result = re.search("Original bug ID: BZ#(\d+)", github_issue.json()["body"])
         if result:
             print "Indeed, this was the case."
-            issues.pop(int(result.group(1)), None)
+            bugzilla_id = int(result.group(1))
+            issues.pop(bugzilla_id, None)
+            with open("bugzilla2github.log", "a") as f:
+                f.write("%d, %d\n" % (bugzilla_id, existingIssues + 1))
 
     print "===> Checking all the labels exist on GitHub..."
     github_labels_check(issues)
