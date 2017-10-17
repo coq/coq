@@ -890,7 +890,16 @@ def main(argv):
         print "===> No log file found. Not skipping any issue."
 
     print "===> Checking last existing issue actually exists."
-    github_issue_exist(existingIssues)
+    if not github_issue_exist(existingIssues):
+        print "    Last existing issue doesn't actually exist. Aborting!"
+        exit(1)
+    print "===> Checking whether the following issue was created but not saved."
+    github_issue = github_get("issues/%d" % (existingIssues + 1))
+    if github_issue:
+        result = re.search("Original bug ID: BZ#(\d+)", github_issue.json()["body"])
+        if result:
+            print "    Indeed, this was the case."
+            issues.pop(int(result.group(1)), None)
 
     print "===> Checking all the labels exist on GitHub..."
     github_labels_check(issues)
