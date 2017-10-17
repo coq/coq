@@ -220,23 +220,22 @@ let unif_FO env ise p c =
 (* Perform evar substitution in main term and prune substitution. *)
 let nf_open_term sigma0 ise c =
   let open EConstr in
-  let s = ise and s' = ref sigma0 in
-  let rec nf c' = match EConstr.kind s c' with
+  let s' = ref sigma0 in
+  let rec nf c' = match EConstr.kind ise c' with
   | Evar ex ->
     let k, a = ex in let a' = List.map nf a in
     if not (Evd.mem !s' k) then
-      s' := Evd.add !s' k (Evarutil.nf_evar_info s (Evd.find s k));
+      s' := Evd.add !s' k (Evarutil.nf_evar_info ise (Evd.find ise k));
     mkEvar (k, a')
-  | _ -> map s nf c' in
-  let copy_def k evi () =
-    if evar_body evi != Evd.Evar_empty then () else
-    match Evd.evar_body (Evd.find s k) with
-      | Evar_defined c' ->
-        let c' = nf c' in
-        s' := Evd.define k c' !s'
-    | _ -> () in
-  let c' = nf c in let _ = Evd.fold copy_def sigma0 () in
-  !s', Evd.evar_universe_context s, c'
+  | _ -> map ise nf c' in
+  let copy_def k _ () = match Evd.evar_body (Evd.find ise k) with
+  | Evar_defined c' ->
+    let c' = nf c' in
+    s' := Evd.define k c' !s'
+  | _ -> () in
+  let c' = nf c in
+  let _ = Evd.fold_undefined copy_def sigma0 () in
+  !s', Evd.evar_universe_context ise, c'
 
 let unif_end ?(solve_TC=true) env sigma0 ise0 pt ok =
   let ise = Evarconv.solve_unif_constraints_with_heuristics env ise0 in
