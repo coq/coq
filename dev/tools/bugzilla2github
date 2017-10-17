@@ -335,6 +335,7 @@ bug_unused_fields = [
     "classification_id",
     "comment_sort_order",
     "deadline",
+    "delta_ts",
     "estimated_time",
     "everconfirmed",
     "long_desc.isprivate",
@@ -584,16 +585,10 @@ def bug_convert(bug):
     ret["labels"].extend(str2list(component2labels, bug.pop("component")))
     # Convert bug_status to state
     ret["closed"] = str2str(status2state, bug.pop("bug_status"))
-    if ret["closed"]:
-        # Convert delta_ts to closed_at
-        ret["closed_at"] = date_convert(bug.pop("delta_ts"))
-        bug.pop("assigned_to")
-    else:
-        bug.pop("delta_ts")
-        # We only assigned open bug reports
-        assignee = str2str(email2login, bug.pop("assigned_to"))
-        if assignee:
-            ret["assignee"] = assignee
+    # We only assign open bug reports
+    assignee = str2str(email2login, bug.pop("assigned_to"))
+    if not ret["closed"] and assignee:
+        ret["assignee"] = assignee
     # Convert (optional) keywords to labels
     ret["labels"].extend(str2list(keywords2labels, bug.pop("keywords","")))
     # Convert resolution to labels
