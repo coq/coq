@@ -31,7 +31,7 @@ import csv, getopt, json, os, pprint, re, requests, sys, time, xml.etree.Element
 
 # Existing issues means issue numbers already taken on GitHub (by PRs mostly).
 # The script can find these by itself but this will spare API requests.
-existingIssues = 1080
+existingIssues = 1155
 force_update = False
 xml_file = "bugzilla.xml"
 github_url = "https://api.github.com"
@@ -536,7 +536,8 @@ def comment_convert(comment, attachments):
 
     # Syntax: convert "bug id" to "BZ#id"
     for i, val in enumerate(ret):
-        ret[i] = re.sub(r"(?i)(?:bug(?:\s+report)?\s+|feature wish\s+|\#)([0-9]+)", id_convert_from_match, val)
+        val = re.sub(r"\(In reply to comment \#\d+\)","", val)
+        ret[i] = re.sub(r"(?i)(?:bug(?:\s+report)?\s+|feature wish\s+|\s\#)(\d\d?\d?\d?)", id_convert_from_match, val)
 
     created_at = date_convert(comment.pop("bug_when"))
 
