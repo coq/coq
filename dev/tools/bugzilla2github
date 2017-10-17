@@ -882,7 +882,8 @@ def main(argv):
 
     try:
         with open("bugzilla2github.log", "r") as f:
-            print "===> Skipping already imported issues..."
+            print "===> Skipping already imported issues (WARNING: this shouldn't happen when you run this script for the first time)..."
+            time.sleep(5)
             imported_bugs = csv.reader(f)
             for imported_bug in imported_bugs:
                 issues.pop(int(imported_bug[0]), None)
@@ -892,14 +893,14 @@ def main(argv):
 
     print "===> Checking last existing issue actually exists."
     if not github_issue_exist(existingIssues):
-        print "    Last existing issue doesn't actually exist. Aborting!"
+        print "Last existing issue doesn't actually exist. Aborting!"
         exit(1)
     print "===> Checking whether the following issue was created but not saved."
     github_issue = github_get("issues/%d" % (existingIssues + 1))
     if github_issue:
         result = re.search("Original bug ID: BZ#(\d+)", github_issue.json()["body"])
         if result:
-            print "    Indeed, this was the case."
+            print "Indeed, this was the case."
             issues.pop(int(result.group(1)), None)
 
     print "===> Checking all the labels exist on GitHub..."
