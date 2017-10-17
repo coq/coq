@@ -298,6 +298,7 @@ type tpattern = {
   up_t : EConstr.t;                      (* equation proof term or matched term *)
   up_dir : ssrdir;                    (* direction of the rule *)
   up_ok : EConstr.t -> evar_map -> bool; (* progress test for rewrite *)
+  up_rigid : Evar.t -> bool;
   }
 
 let all_ok _ _ = true
@@ -385,7 +386,7 @@ let mk_tpattern ?p_origin ?(hack=false) ?(ok = all_ok) ~rigid env (ise, t) dir p
   let ise', p' = evars_for_FO ~hack ~rigid env ise (mkApp (f, aa)) in
   ise',
   { up_k = k; up_FO = p'; up_f = f;
-    up_a = aa; up_ok = ok; up_dir = dir; up_t = t}
+    up_a = aa; up_ok = ok; up_dir = dir; up_t = t; up_rigid = rigid }
 
 (* Specialize a pattern after a successful match: assign a precise head *)
 (* kind and arity for Proj and Flex patterns.                           *)
@@ -500,7 +501,7 @@ let dont_impact_evars_in sigma0 cl =
 (*    head is an evar or meta (e.g., it fails on ?1 = nat when ?1 : Type).  *)
 (*  - w_unify expands let-in (zeta conversion) eagerly, whereas we want to  *)
 (*    match a head let rigidly.                                             *)
-let match_upats_FO ~fresh upats env ise orig_c =
+let match_upats_FO upats env ise orig_c =
   let dont_impact_evars = dont_impact_evars_in ise orig_c in
   let rec loop c =
     let f, a = splay_app ise c in let i0 = ref (-1) in
@@ -531,6 +532,7 @@ let match_upats_FO ~fresh upats env ise orig_c =
              let p = mkApp (u.up_f, u.up_a) in
              try unif_HO env ise p c' with e when CErrors.noncritical e -> raise NoMatch in
            let lhs = mkSubApp f i a in
+           let fresh ev = not (u.up_rigid ev) in
            let pt' = unif_end ~fresh env ise' u.up_t (u.up_ok lhs) in
            raise (FoundUnif (ungen_upat lhs pt' u))
        with FoundUnif (_, s,_,_) as sig_u when dont_impact_evars s -> raise sig_u
@@ -541,7 +543,7 @@ let match_upats_FO ~fresh upats env ise orig_c =
   iter_constr_LR ise loop f; Array.iter loop a in
   try loop orig_c with Invalid_argument _ -> CErrors.anomaly (str"IN FO.")
 
-let match_upats_HO ~on_instance ~fresh upats env ise c =
+let match_upats_HO ~on_instance upats env ise c =
  let dont_impact_evars = dont_impact_evars_in ise c in
  let it_did_match = ref false in
  let failed_because_of_TC = ref false in
@@ -578,6 +580,7 @@ let match_upats_HO ~on_instance ~fresh upats env ise c =
         | _ -> unif_HO env ise u.up_f f in
         let ise'' = unif_HO_args env ise' u.up_a (i - Array.length u.up_a) a in
         let lhs = mkSubApp f i a in
+        let fresh ev = not (u.up_rigid ev) in
         let pt' = unif_end ~fresh env ise'' u.up_t (u.up_ok lhs) in
         on_instance (ungen_upat lhs pt' u)
       with FoundUnif (_,s,_,_) as sig_u when dont_impact_evars s -> raise sig_u
@@ -621,7 +624,7 @@ type conclude = unit ->
 
 (* upats_origin makes a better error message only            *)
 let mk_tpattern_matcher ?(all_instances=false)
-  ?(raise_NoMatch=false) ?upats_origin ~fresh occ (ise, upats)
+  ?(raise_NoMatch=false) ?upats_origin occ (ise, upats)
 =
   let nocc = ref 0 and skip_occ = ref false in
   let use_occ, occ_list = match occ with
@@ -685,8 +688,8 @@ let rec uniquize = function
   do_once upat_that_matched (fun () ->
     let failed_because_of_TC = ref false in
     try
-      if not all_instances then match_upats_FO ~fresh upats env ise c;
-      failed_because_of_TC:=match_upats_HO ~on_instance ~fresh upats env ise c;
+      if not all_instances then match_upats_FO upats env ise c;
+      failed_because_of_TC:=match_upats_HO ~on_instance upats env ise c;
       raise NoMatch
     with FoundUnif sigma_u -> env,0,[sigma_u]
     | (NoMatch|NoProgress) when all_instances && instances () <> [] ->
@@ -1101,7 +1104,6 @@ let noindex = Some(false,[])
 
 (* calls do_subst on every sub-term identified by (pattern,occ) *)
 let eval_pattern ?raise_NoMatch ~rigid env0 concl0 pattern occ do_subst =
-  let fresh ev = not (rigid ev) in
   let fs sigma x = Reductionops.nf_evar sigma x in
   let pop_evar sigma e p =
     let { Evd.evar_body = e_body } as e_def = Evd.find sigma e in
@@ -1123,7 +1125,7 @@ let eval_pattern ?raise_NoMatch ~rigid env0 concl0 pattern occ do_subst =
     let ise = create_evar_defs sigma in
     let occ = match pattern with Some (_, T _) -> occ | _ -> noindex in
     let rp = mk_upat_for ~rigid (ise, rp) in
-    let find_T, end_T = mk_tpattern_matcher ?raise_NoMatch ~fresh occ rp in
+    let find_T, end_T = mk_tpattern_matcher ?raise_NoMatch occ rp in
     let concl = find_T env0 concl0 1 ~k:do_subst in
     let _, _, (_, _, us, _) = end_T () in
     concl, us
@@ -1133,10 +1135,10 @@ let eval_pattern ?raise_NoMatch ~rigid env0 concl0 pattern occ do_subst =
     let ex = fst hole in
     let hole = EConstr.mkEvar hole in
     let rp = mk_upat_for ~hack:true ~rigid (sigma, p) in
-    let find_T, end_T = mk_tpattern_matcher ~fresh noindex rp in
+    let find_T, end_T = mk_tpattern_matcher noindex rp in
     (* we start from sigma, so hole is considered a rigid head *)
     let holep = mk_upat_for ~rigid:(fun ev -> Evd.mem sigma ev) (sigma, hole) in
-    let find_X, end_X = mk_tpattern_matcher ?raise_NoMatch ~fresh:(fun evk -> not (Evd.mem sigma evk)) occ holep in
+    let find_X, end_X = mk_tpattern_matcher ?raise_NoMatch occ holep in
     let concl = find_T env0 concl0 1 ~k:(fun env c _ h ->
       let p_sigma = unify_HO env (create_evar_defs sigma) c p in
       let sigma, e_body = pop_evar p_sigma ex p in
@@ -1149,11 +1151,11 @@ let eval_pattern ?raise_NoMatch ~rigid env0 concl0 pattern occ do_subst =
     let ex = fst hole in
     let hole = EConstr.mkEvar hole in
     let rp = mk_upat_for ~hack:true ~rigid (sigma, p) in
-    let find_T, end_T = mk_tpattern_matcher ~fresh noindex rp in
+    let find_T, end_T = mk_tpattern_matcher noindex rp in
     let holep = mk_upat_for ~rigid:(fun ev -> Evd.mem sigma ev) (sigma, hole) in
-    let find_X, end_X = mk_tpattern_matcher ~fresh:(fun evk -> not (Evd.mem sigma evk)) noindex holep in
+    let find_X, end_X = mk_tpattern_matcher noindex holep in
     let re = mk_upat_for ~rigid (sigma, e) in
-    let find_E, end_E = mk_tpattern_matcher ?raise_NoMatch ~fresh occ re in
+    let find_E, end_E = mk_tpattern_matcher ?raise_NoMatch occ re in
     let concl = find_T env0 concl0 1 ~k:(fun env c _ h ->
       let p_sigma = unify_HO env (create_evar_defs sigma) c p in
       let sigma, e_body = pop_evar p_sigma ex p in
@@ -1170,9 +1172,9 @@ let eval_pattern ?raise_NoMatch ~rigid env0 concl0 pattern occ do_subst =
       let e_sigma = unify_HO env0 sigma hole e in
       e_sigma, fs e_sigma p in
     let rp = mk_upat_for ~hack:true ~rigid rp in
-    let find_TE, end_TE = mk_tpattern_matcher ~fresh noindex rp in
+    let find_TE, end_TE = mk_tpattern_matcher noindex rp in
     let holep = mk_upat_for ~rigid:(fun ev -> Evd.mem sigma ev) (sigma, hole) in
-    let find_X, end_X = mk_tpattern_matcher ~fresh:(fun evk -> not (Evd.mem sigma evk)) occ holep in
+    let find_X, end_X = mk_tpattern_matcher occ holep in
     let concl = find_TE env0 concl0 1 ~k:(fun env c _ h ->
       let p_sigma = unify_HO env (create_evar_defs sigma) c p in
       let sigma, e_body = pop_evar p_sigma ex p in
@@ -1226,16 +1228,14 @@ let eval_pattern ?raise_NoMatch ~rigid env0 concl0 pattern occ do_subst =
 
 let pf_fill_occ ~rigid env concl occ p (sigma, t) h =
  let ise = create_evar_defs sigma in
- let fresh ev = not (rigid ev) in
  let ise, u = mk_tpattern ~rigid env (ise, t) L2R p in
  let find_U, end_U =
-   mk_tpattern_matcher ~raise_NoMatch:true ~fresh occ (ise,[u]) in
+   mk_tpattern_matcher ~raise_NoMatch:true occ (ise,[u]) in
  let concl = find_U env concl h ~k:(fun _ _ _ n -> EConstr.mkRel n) in
  let rdx, _, (c, sigma, uc, p) = end_U () in
  c, sigma, uc, p, concl, rdx
 
-let fill_occ_term env sigma0 cl occ (sigma, t) =
-  let rigid ev = Evd.mem sigma0 ev in
+let fill_occ_term ~rigid env cl occ (sigma, t) =
   let fresh ev = not (rigid ev) in
   try
     let changed, sigma', uc, t', cl, _= pf_fill_occ ~rigid env cl occ t (sigma, t) 1 in
@@ -1306,11 +1306,10 @@ let ssrinstancesof arg =
   let sigma0, cpat = interp_cpattern env sigma arg None in
   let pat = match cpat with T x -> x | _ -> errorstrm (str"Not supported") in
   let rigid ev = Evd.mem sigma ev in
-  let fresh ev = not (Evd.mem sigma ev) in
   let etpat, tpat = mk_tpattern ~rigid env (sigma0, pat) L2R pat in
   let find, conclude =
     mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true
-      ~fresh None (etpat,[tpat]) in
+      None (etpat,[tpat]) in
   let print env p c _ = ppnl (hov 1 (str"instance:" ++ spc() ++ pr_econstr_env env (Proofview.Goal.sigma gl) p ++ spc()
                                      ++ str "matches:" ++ spc() ++ pr_econstr_env env (Proofview.Goal.sigma gl) c)); c in
   ppnl (str"BEGIN INSTANCES");

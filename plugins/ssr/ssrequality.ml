@@ -280,10 +280,9 @@ let unfoldintac occ rdx t (kt,_) =
   let unfold, conclude = match classify_pattern rdx with
   | None ->
     let ise = Evd.create_evar_defs sigma in
-    let fresh ev = not (rigid ev) in
     let ise, u = mk_tpattern env0 ~rigid (ise, t) L2R t in
     let find_T, end_T =
-      mk_tpattern_matcher ~raise_NoMatch:true ~fresh occ (ise,[u]) in
+      mk_tpattern_matcher ~raise_NoMatch:true occ (ise,[u]) in
     (fun env c _ h ->
       try find_T env c h ~k:(fun env c _ _ -> body env t c)
       with NoMatch when easy -> c
@@ -335,10 +334,9 @@ let foldtac occ rdx ft =
   | None ->
     let ise = Evd.create_evar_defs sigma in
     let ut = red_product_skip_id env0 sigma t in
-    let fresh ev = not (rigid ev) in
     let ise, ut = mk_tpattern ~rigid env0 (ise,t) L2R ut in
     let find_T, end_T =
-      mk_tpattern_matcher ~raise_NoMatch:true ~fresh occ (ise,[ut]) in
+      mk_tpattern_matcher ~raise_NoMatch:true occ (ise,[ut]) in
     (fun env c _ h -> try find_T env c h ~k:(fun env t _ _ -> t) with NoMatch ->c),
     (fun () -> try ignore @@ end_T () with NoMatch -> ())
   | Some _ ->
@@ -640,7 +638,6 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
   let env0 = env in
   let concl0 = Proofview.Goal.concl gl in
   let rigid ev = Evd.mem sigma0 ev in
-  let fresh ev = not (rigid ev) in
   let find_R, conclude = match classify_pattern rdx_pat with
   | None ->
       let upats_origin = dir, (snd rule) in
@@ -649,7 +646,7 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
           mk_tpattern ~ok:(rw_progress rhs) ~rigid env0 (sigma, Reductionops.nf_evar sigma r) d (Reductionops.nf_evar sigma lhs) in
         sigma, pats @ [pat] in
       let rpats = List.fold_left rpat (r_sigma,[]) rules in
-      let find_R, end_R = mk_tpattern_matcher ~fresh occ ~upats_origin rpats in
+      let find_R, end_R = mk_tpattern_matcher occ ~upats_origin rpats in
       (fun e c _ i -> find_R ~k:(fun _ _ _ h -> EConstr.mkRel h) e c i),
       fun cl -> let rdx,d,r = end_R () in closed0_check env0 sigma0 cl rdx; (d,r),rdx
   | Some (_, e) ->
@@ -670,7 +667,6 @@ let ssrinstancesofrule ist dir arg =
   let sigma0 = Proofview.Goal.sigma gl in
   let concl0 = Proofview.Goal.concl gl in
   let rigid ev = Evd.mem sigma0 ev in
-  let fresh ev = not (rigid ev) in
   let rule = interp_term env0 sigma0 ist arg in
   let r_sigma, rules = rwprocess_rule env0 dir rule in
   let find, conclude =
@@ -683,7 +679,7 @@ let ssrinstancesofrule ist dir arg =
           (Reductionops.nf_evar sigma lhs) in
       sigma, pats @ [pat] in
     let rpats = List.fold_left rpat (r_sigma,[]) rules in
-    mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true ~fresh None ~upats_origin rpats in
+    mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true None ~upats_origin rpats in
   let print env p c _ = Feedback.msg_info Pp.(hov 1 (str"instance:" ++ spc() ++ pr_econstr_env env r_sigma p ++ spc() ++ str "matches:" ++ spc() ++ pr_econstr_env env r_sigma c)); c in
   Feedback.msg_info Pp.(str"BEGIN INSTANCES");
   try
@@ -749,7 +745,8 @@ let unfoldtac occ ko t kt =
   let sigma = Proofview.Goal.sigma gl in
   let concl = Proofview.Goal.concl gl in
   let concl = Evarutil.nf_evar sigma concl in
-  let cl, c = fill_occ_term env sigma concl occ (fst (strip_unfold_term env t kt)) in
+  let rigid ev = Evd.mem sigma ev in
+  let cl, c = fill_occ_term ~rigid env concl occ (fst (strip_unfold_term env t kt)) in
   let cl' = EConstr.Vars.subst1 (Tacred.unfoldn [OnlyOccurrences [1], get_evalref env sigma c] env sigma c) cl in
   let f = if ko = None then CClosure.betaiotazeta else CClosure.betaiota in
   convert_concl ~check:true (Reductionops.clos_norm_flags f env sigma cl')

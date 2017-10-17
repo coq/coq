@@ -171,7 +171,6 @@ val mk_tpattern_matcher :
   ?all_instances:bool ->
   ?raise_NoMatch:bool ->
   ?upats_origin:ssrdir * EConstr.t ->
-  fresh:(Evar.t -> bool) ->
   occ -> evar_map * tpattern list ->
     find_P * conclude
 
@@ -202,7 +201,7 @@ val mk_tpattern_matcher :
  * [concl] where [occ] occurrences of [t] have been replaced
  * by [Rel 1] and the instance of [t] *)
 
-val fill_occ_term : Environ.env -> Evd.evar_map -> EConstr.t -> occ -> evar_map * EConstr.t -> EConstr.t * EConstr.t
+val fill_occ_term : rigid:(Evar.t -> bool) -> Environ.env -> EConstr.t -> occ -> evar_map * EConstr.t -> EConstr.t * EConstr.t
 
 (** Helpers to make stateful closures. Example: a [find_P] function may be
     called many times, but the pattern instantiation phase is performed only the
