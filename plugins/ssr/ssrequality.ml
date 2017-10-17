@@ -632,7 +632,7 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
         try
           let ise = unify_HO env (Evd.create_evar_defs r_sigma) lhs rdx in
           if not (rw_progress rhs rdx ise) then raise NoMatch else
-          d, (ise, Evd.evar_universe_context ise, Reductionops.nf_evar ise r)
+          d, (ise, Reductionops.nf_evar ise r)
         with _ -> rwtac rs in
      rwtac rules in
   let env0 = env in
@@ -653,11 +653,11 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
       let r = ref None in
       (fun env c _ h -> do_once r (fun () -> find_rule c, c); EConstr.mkRel h),
       (fun concl -> closed0_check env0 sigma0 concl e;
-        let (d,(ev,ctx,c)) , x = assert_done r in (d,(true, ev,ctx, Reductionops.nf_evar ev c)) , x) in
+        let (d, (ev, c)), x = assert_done r in (d, (true, ev, Reductionops.nf_evar ev c)), x) in
   let concl0 = Reductionops.nf_evar sigma0 concl0 in
   let concl = eval_pattern ~rigid env0 concl0 rdx_pat occ find_R in
-  let (d, (_, sigma, uc, t)), rdx = conclude concl in
-  let r = Evd.merge_universe_context sigma uc, t in
+  let (d, (_, sigma, t)), rdx = conclude concl in
+  let r = sigma, t in
   rwcltac ?under ?map_redex concl rdx d r
   end
 
