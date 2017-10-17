@@ -521,7 +521,7 @@ def comment_convert(comment, attachments):
         ret.append("Comment author: "
                    + email_convert(comment.pop("who"), comment.pop("who.name", None)))
         ret.append("")
-    ret.append(comment.pop("thetext", "").replace("@", "@ "))
+    ret.append(comment.pop("thetext", "*No description provided.*").replace("@", "@ "))
     ret.append("")
     # Convert attachments if any
     if "attachid" in comment:
@@ -782,6 +782,7 @@ def github_issue_append(bugzilla_id, issue):
                       data = json.dumps({ "issue": issue, "comments": comments }))
     if not r:
         print "Error importing issue on GitHub:\n%s" % r.text
+        print "For the record, here was the request:\n%s" % json.dumps({ "issue": issue, "comments": comments })
         exit(1)
     u = r.json()["url"]
     wait = 1
