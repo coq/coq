@@ -348,7 +348,6 @@ bug_unused_fields = [
     "token",
 ]
 comment_unused_fields = [
-    "commentid",
     "comment_count",
     "attachid",
     "work_time",
@@ -515,8 +514,12 @@ def date_convert(date):
 def comment_convert(comment, attachments):
     ret = []
 
-    ret.append("Comment author: " + email_convert(comment.pop("who"), comment.pop("who.name", None)))
-    ret.append("")
+    id = int(comment.pop("commentid"))
+
+    if id >= 1658:
+        ret.append("Comment author: "
+                   + email_convert(comment.pop("who"), comment.pop("who.name", None)))
+        ret.append("")
     ret.append(comment.pop("thetext", "").replace("@", "@ "))
     ret.append("")
     # Convert attachments if any
@@ -808,34 +811,31 @@ def github_issue_append(bugzilla_id, issue):
 
 def github_issues_add(issues):
     postponed = {}
-    id = 1 # No bug id 1 in Coq's Bugzilla
+    id = 0
     while True:
         id += 1
-        if id in issues:
-            bugzilla_id = id
-            issue = issues[id]
-        else:
-            if len(postponed) == 0:
-                if len(issues) == 0:
-                    print "===> All done."
-                    exit(0)
-                else:
-                    print "Error: No more postponed issues."
-                    exit(1)
-            # Find the first postponed issue
-            bugzilla_id = sorted(postponed.keys())[0]
-            issue = postponed.pop(bugzilla_id)
         if id <= existingIssues or github_get("issues/%d" % id):
-            print "Issue #%d already exists, postponing..." % id
-            postponed[bugzilla_id] = issue
+            if id in issues:
+                print "Issue #%d already exists, postponing..." % id
+                postponed[id] = issues.pop(id)
         else:
-            print "Creating issue #%d..." % id
-            # Make sure the previous issue already exist
-            if force_update and id > 1 and not github_issue_exist(id - 1):
-                print "Error adding issue #%d on GitHub: previous issue does not exists" \
-                        % id
-                exit(1)
-            github_issue_append(bugzilla_id, issue)
+            if id in issues:
+                bugzilla_id = id
+                issue = issues.pop(id)
+            else:
+                if len(postponed) == 0:
+                    if len(issues) == 0:
+                        print "===> All done."
+                        exit(0)
+                    else:
+                        print "Error: No more postponed issues."
+                        exit(1)
+                # Find the first postponed issue
+                bugzilla_id = sorted(postponed.keys())[0]
+                issue = postponed.pop(bugzilla_id)
+            if force_update:
+                print "Creating issue #%d..." % id
+                github_issue_append(bugzilla_id, issue)
 
 
 def args_parse(argv):
@@ -893,6 +893,9 @@ def main(argv):
                 existingIssues = max(existingIssues, int(imported_bug[1]))
     except IOError:
         print "===> No log file found. Not skipping any issue."
+
+    print "===> Checking last existing issue actually exists."
+    github_issue_exist(existingIssues)
 
     print "===> Checking all the labels exist on GitHub..."
     github_labels_check(issues)
