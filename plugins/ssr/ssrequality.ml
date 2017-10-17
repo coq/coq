@@ -652,11 +652,11 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
       let r = ref None in
       (fun env c _ h -> do_once r (fun () -> find_rule c, c); EConstr.mkRel h),
       (fun concl -> closed0_check env0 sigma0 concl e;
-        let (d,(ev,ctx,c)) , x = assert_done r in (d,(ev,ctx, Reductionops.nf_evar ev c)) , x) in
+        let (d,(ev,ctx,c)) , x = assert_done r in (d,(true, ev,ctx, Reductionops.nf_evar ev c)) , x) in
   let concl0 = Reductionops.nf_evar sigma0 concl0 in
   let concl = eval_pattern env0 sigma0 concl0 rdx_pat occ find_R in
-  let (d, r), rdx = conclude concl in
-  let r = Evd.merge_universe_context (pi1 r) (pi2 r), (pi3 r) in
+  let (d, (_, sigma, uc, t)), rdx = conclude concl in
+  let r = Evd.merge_universe_context sigma uc, t in
   rwcltac ?under ?map_redex concl rdx d r
   end
 

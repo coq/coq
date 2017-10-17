@@ -235,12 +235,13 @@ let nf_open_term sigma0 ise c =
   | _ -> () in
   let c' = nf c in
   let _ = Evd.fold_undefined copy_def sigma0 () in
-  !s', Evd.evar_universe_context ise, c'
+  let changed = sigma0 != !s' in
+  changed, !s', Evd.evar_universe_context ise, c'
 
 let unif_end ?(solve_TC=true) env sigma0 ise0 pt ok =
   let ise = Evarconv.solve_unif_constraints_with_heuristics env ise0 in
   let tcs = Evd.get_typeclass_evars ise in
-  let s, uc, t = nf_open_term sigma0 ise pt in
+  let c, s, uc, t = nf_open_term sigma0 ise pt in
   let ise1 = create_evar_defs s in
   let ise1 = Evd.set_typeclass_evars ise1 (Evar.Set.filter (fun ev -> Evd.is_undefined ise1 ev) tcs) in
   let ise1 = Evd.set_universe_context ise1 uc in
@@ -248,14 +249,14 @@ let unif_end ?(solve_TC=true) env sigma0 ise0 pt ok =
     if solve_TC then Typeclasses.resolve_typeclasses ~fail:true env ise1
     else ise1 in
   if not (ok ise) then raise NoProgress else
-  if ise2 == ise1 then (s, uc, t)
+  if ise2 == ise1 then (c, s, uc, t)
   else
-    let s, uc', t = nf_open_term sigma0 ise2 t in
-    s, UState.union uc uc', t
+    let c, s, uc', t = nf_open_term sigma0 ise2 t in
+    c, s, UState.union uc uc', t
 
 let unify_HO env sigma0 t1 t2 =
   let sigma = unif_HO env sigma0 t1 t2 in
-  let sigma, uc, _ = unif_end ~solve_TC:false env sigma0 sigma t2 (fun _ -> true) in
+  let _, sigma, uc, _ = unif_end ~solve_TC:false env sigma0 sigma t2 (fun _ -> true) in
   Evd.set_universe_context sigma uc
 
 (* This is what the definition of iter_constr should be... *)
@@ -399,7 +400,7 @@ let mk_tpattern ?p_origin ?(hack=false) ?(ok = all_ok) ~rigid env (ise, t) dir p
 
 (* Specialize a pattern after a successful match: assign a precise head *)
 (* kind and arity for Proj and Flex patterns.                           *)
-let ungen_upat lhs (sigma, uc, t) u =
+let ungen_upat lhs (c, sigma, uc, t) u =
   let f, a = safeDestApp sigma lhs in
   let k = match kind (EConstr.Unsafe.to_constr f) with
   | Var _ | Ind _ | Construct _ -> KpatFixed
@@ -409,7 +410,7 @@ let ungen_upat lhs (sigma, uc, t) u =
   | LetIn _ -> KpatLet
   | Lambda _ -> KpatLam
   | _ -> KpatRigid in
-  sigma, uc, {u with up_k = k; up_FO = lhs; up_f = f; up_a = a; up_t = t}
+  c, sigma, uc, {u with up_k = k; up_FO = lhs; up_f = f; up_a = a; up_t = t}
 
 let nb_cs_proj_args ise pc f u =
   let open EConstr in
@@ -492,7 +493,7 @@ let filter_upat_FO sigma i0 f n u fpats =
   | KpatFlex -> i0 := n; true in
   if ok then begin if !i0 < np then i0 := np; (u, np) :: fpats end else fpats
 
-exception FoundUnif of (evar_map * UState.t * tpattern)
+exception FoundUnif of (bool * evar_map * UState.t * tpattern)
 (* Note: we don't update env as we descend into the term, as the primitive *)
 (* unification procedure always rejects subterms with bound variables.     *)
 
@@ -543,7 +544,7 @@ let match_upats_FO upats env sigma0 ise orig_c =
            let lhs = mkSubApp f i a in
            let pt' = unif_end env sigma0 ise' u.up_t (u.up_ok lhs) in
            raise (FoundUnif (ungen_upat lhs pt' u))
-       with FoundUnif (s,_,_) as sig_u when dont_impact_evars s -> raise sig_u
+       with FoundUnif (_, s,_,_) as sig_u when dont_impact_evars s -> raise sig_u
        | Not_found -> CErrors.anomaly (str"incomplete ise in match_upats_FO.")
        | e when CErrors.noncritical e -> () in
     List.iter one_match fpats
@@ -591,7 +592,7 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
         let lhs = mkSubApp f i a in
         let pt' = unif_end env sigma0 ise'' u.up_t (u.up_ok lhs) in
         on_instance (ungen_upat lhs pt' u)
-      with FoundUnif (s,_,_) as sig_u when dont_impact_evars s -> raise sig_u
+      with FoundUnif (_,s,_,_) as sig_u when dont_impact_evars s -> raise sig_u
       | NoProgress -> it_did_match := true
       | Pretype_errors.PretypeError
          (_,_,Pretype_errors.UnsatisfiableConstraints _) ->
@@ -629,7 +630,7 @@ type find_P =
   k:subst ->
      EConstr.t
 type conclude = unit ->
-  EConstr.t * ssrdir * (Evd.evar_map * UState.t * EConstr.t)
+  EConstr.t * ssrdir * (bool * Evd.evar_map * UState.t * EConstr.t)
 
 (* upats_origin makes a better error message only            *)
 let mk_tpattern_matcher ?(all_instances=false)
@@ -685,10 +686,10 @@ let on_instance, instances =
   (fun () -> !instances) in
 let rec uniquize = function
   | [] -> []
-  | (sigma,_,{ up_f = f; up_a = a; up_t = t } as x) :: xs ->
+  | (_, sigma,_,{ up_f = f; up_a = a; up_t = t } as x) :: xs ->
     let nf_evar sigma c = EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma c) in
     let equal sigma1 sigma2 c1 c2 = Constr.equal (nf_evar sigma1 c1) (nf_evar sigma2 c2) in
-    let neq (sigma1,_,{ up_f = f1; up_a = a1; up_t = t1 }) =
+    let neq (_, sigma1,_,{ up_f = f1; up_a = a1; up_t = t1 }) =
       not (equal sigma sigma1 t t1 &&
            equal sigma sigma1 f f1 && CArray.for_all2 (equal sigma sigma1) a a1) in
     x :: uniquize (List.filter neq xs) in
@@ -714,7 +715,7 @@ let rec uniquize = function
         errorstrm (str"all matches of "++ source env ++
           str"are equal to the " ++ pr_dir_side (inv_dir dir))
     | NoProgress -> raise NoMatch);
-  let sigma, _, ({up_f = pf; up_a = pa} as u) =
+  let _, sigma, _, ({up_f = pf; up_a = pa} as u) =
     if all_instances then assert_done_multires upat_that_matched
     else List.hd (pi3(assert_done upat_that_matched)) in
 (*   pp(lazy(str"sigma@tmatch=" ++ pr_evar_map None sigma)); *)
@@ -745,12 +746,12 @@ let rec uniquize = function
       mkApp (f', Array.map_left (subst_loop acc) a) in
       subst_loop (env,h) c) : find_P),
 ((fun () ->
-  let env, (sigma, uc, ({up_f = pf; up_a = pa} as u)) =
+  let env, (c, sigma, uc, ({up_f = pf; up_a = pa} as u)) =
     match !upat_that_matched with
     | Some (env,_,x) -> env,List.hd x | None when raise_NoMatch -> raise NoMatch
     | None -> CErrors.anomaly (str"companion function never called.") in
   let p' = EConstr.mkApp (pf, pa) in
-  if max_occ <= !nocc then p', u.up_dir, (sigma, uc, u.up_t)
+  if max_occ <= !nocc then p', u.up_dir, (c, sigma, uc, u.up_t)
   else errorstrm (str"Only " ++ int !nocc ++ str" < " ++ int max_occ ++
         str(String.plural !nocc " occurrence") ++ match upats_origin with
         | None -> str" of" ++ spc() ++ pr_econstr_pat env sigma p'
@@ -788,7 +789,7 @@ let pr_pattern_aux pr_constr = function
   | E_As_X_In_T (e,x,t) ->
       pr_constr e ++ str " as " ++ pr_hole pr_constr x ++ str " in " ++ pr_constr t
 let pp_pattern env (sigma, p) =
-  pr_pattern_aux (fun t -> pr_econstr_pat env sigma (pi3 (nf_open_term sigma sigma t))) p
+  pr_pattern_aux (fun t -> pr_econstr_pat env sigma t) p
 
 type cpattern =
   { kind : ssrtermkind
@@ -1137,7 +1138,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
     let rp = mk_upat_for ~rigid (ise, rp) in
     let find_T, end_T = mk_tpattern_matcher ?raise_NoMatch sigma0 occ rp in
     let concl = find_T env0 concl0 1 ~k:do_subst in
-    let _, _, (_, us, _) = end_T () in
+    let _, _, (_, _, us, _) = end_T () in
     concl, us
   | Some (sigma, (X_In_T (hole, p) | In_X_In_T (hole, p))) ->
     let p = fs sigma p in
@@ -1154,7 +1155,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
       let sigma, e_body = pop_evar p_sigma ex p in
       fs p_sigma (find_X env (fs sigma p) h
         ~k:(fun env _ -> do_subst env e_body))) in
-    let _ = end_X () in let _, _, (_, us, _) = end_T () in
+    let _ = end_X () in let _, _, (_, _, us, _) = end_T () in
     concl, us
   | Some (sigma, E_In_X_In_T (e, hole, p)) ->
     let p, e = fs sigma p, fs sigma e in
@@ -1171,7 +1172,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
       let sigma, e_body = pop_evar p_sigma ex p in
       fs p_sigma (find_X env (fs sigma p) h ~k:(fun env c _ h ->
         find_E env e_body h ~k:do_subst))) in
-    let _,_,(_,us,_) = end_E () in
+    let _, _, (_, _, us, _) = end_E () in
     let _ = end_X () in let _ = end_T () in
     concl, us
   | Some (sigma, E_As_X_In_T (e, hole, p)) ->
@@ -1192,9 +1193,8 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
         let e_sigma = unify_HO env sigma e_body e in
         let e_body = fs e_sigma e in
         do_subst env e_body e_body h))) in
-    let _ = end_X () in let _,_,(_,us,_) = end_TE () in
+    let _ = end_X () in let _, _ , (_, _, us, _) = end_TE () in
     concl, us
-;;
 
 let redex_of_pattern (sigma, p) = match p with
 | In_T _ | In_X_In_T _ -> None
@@ -1243,18 +1243,18 @@ let pf_fill_occ env concl occ sigma0 p (sigma, t) h =
  let find_U, end_U =
    mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[u]) in
  let concl = find_U env concl h ~k:(fun _ _ _ n -> EConstr.mkRel n) in
- let rdx, _, (sigma, uc, p) = end_U () in
- sigma, uc, p, concl, rdx
+ let rdx, _, (c, sigma, uc, p) = end_U () in
+ c, sigma, uc, p, concl, rdx
 
 let fill_occ_term env sigma0 cl occ (sigma, t) =
   try
-    let sigma',uc,t',cl,_= pf_fill_occ env cl occ sigma0 t (sigma, t) 1 in
-    if sigma' != sigma0 then CErrors.user_err Pp.(str "matching impacts evars")
+    let changed, sigma', uc, t', cl, _= pf_fill_occ env cl occ sigma0 t (sigma, t) 1 in
+    if changed then CErrors.user_err Pp.(str "matching impacts evars")
     else cl, t'
   with NoMatch -> try
-    let sigma', uc, t' =
+    let changed, sigma', uc, t' =
       unif_end env sigma0 (create_evar_defs sigma) t (fun _ -> true) in
-    if sigma' != sigma0 then raise NoMatch
+    if changed then raise NoMatch
     else cl, t'
   with _ ->
     errorstrm (str "partial term " ++ pr_econstr_pat env sigma t
