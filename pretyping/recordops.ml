@@ -171,7 +171,7 @@ let keep_true_projections projs kinds =
   let filter (p, (_, b)) = if b then Some p else None in
   List.map_filter filter (List.combine projs kinds)
 
-let cs_pattern_of_constr t =
+let cs_pattern_of_constr env t =
   match kind_of_term t with
       App (f,vargs) ->
 	begin
@@ -180,6 +180,10 @@ let cs_pattern_of_constr t =
 	end
     | Rel n -> Default_cs, Some n, []
     | Prod (_,a,b) when Vars.noccurn 1 b -> Prod_cs, None, [a; Vars.lift (-1) b]
+    | Proj (p, c) ->
+      let { Environ.uj_type = ty } = Typeops.infer env c in
+      let _, params = Inductive.find_rectype env ty in
+      Const_cs (ConstRef (Projection.constant p)), None, params @ [c]
     | Sort s -> Sort_cs (family_of_sort s), None, []
     | _ ->
 	begin
@@ -190,7 +194,6 @@ let cs_pattern_of_constr t =
 let warn_projection_no_head_constant =
   CWarnings.create ~name:"projection-no-head-constant" ~category:"typechecker"
          (fun (sign,env,t,con,proji_sp) ->
-          let sign = List.map (on_snd EConstr.Unsafe.to_constr) sign in
           let env = Termops.push_rels_assum sign env in
           let con_pp = Nametab.pr_global_env Id.Set.empty (ConstRef con) in
           let proji_sp_pp = Nametab.pr_global_env Id.Set.empty (ConstRef proji_sp) in
@@ -207,14 +210,16 @@ let compute_canonical_projections warn (con,ind) =
   let v = (mkConstU (con,u)) in
   let c = Environ.constant_value_in env (con,u) in
   let sign,t = Reductionops.splay_lam env Evd.empty (EConstr.of_constr c) in
+  let sign = List.map (on_snd EConstr.Unsafe.to_constr) sign in
   let t = EConstr.Unsafe.to_constr t in
-  let lt = List.rev_map (snd %> EConstr.Unsafe.to_constr) sign in
+  let lt = List.rev_map snd sign in
   let args = snd (decompose_app t) in
   let { s_EXPECTEDPARAM = p; s_PROJ = lpj; s_PROJKIND = kl } =
     lookup_structure ind in
   let params, projs = List.chop p args in
   let lpj = keep_true_projections lpj kl in
   let lps = List.combine lpj projs in
+  let nenv = Termops.push_rels_assum sign env in
   let comp =
     List.fold_left
       (fun l (spopt,t) -> (* comp=components *)
@@ -222,7 +227,7 @@ let compute_canonical_projections warn (con,ind) =
            | Some proji_sp ->
 	       begin
 		 try
-		   let patt, n , args = cs_pattern_of_constr t in
+		   let patt, n , args = cs_pattern_of_constr nenv t in
 		     ((ConstRef proji_sp, patt, t, n, args) :: l)
 		 with Not_found ->
                    if warn then warn_projection_no_head_constant (sign,env,t,con,proji_sp);
@@ -324,15 +329,25 @@ let declare_canonical_structure ref =
 let lookup_canonical_conversion (proj,pat) =
   assoc_pat pat (Refmap.find proj !object_table)
 
+let decompose_projection sigma c args =
+  match EConstr.kind sigma c with
+  | Const (c, u) ->
+     let n = find_projection_nparams (ConstRef c) in
+     (** Check if there is some canonical projection attached to this structure *)
+     let _ = Refmap.find (ConstRef c) !object_table in
+     let arg = Stack.nth args n in
+     arg
+  | Proj (p, c) ->
+     let _ = Refmap.find (ConstRef (Projection.constant p)) !object_table in
+     c
+  | _ -> raise Not_found
+
 let is_open_canonical_projection env sigma (c,args) =
   let open EConstr in
   try
-    let (ref, _) = Termops.global_of_constr sigma c in
-    let n = find_projection_nparams ref in
-    (** Check if there is some canonical projection attached to this structure *)
-    let _ = Refmap.find ref !object_table in
+    let arg = decompose_projection sigma c args in
     try
-      let arg = whd_all env sigma (Stack.nth args n) in
+      let arg = whd_all env sigma arg in
       let hd = match EConstr.kind sigma arg with App (hd, _) -> hd | _ -> arg in
       not (isConstruct sigma hd)
     with Failure _ -> false
