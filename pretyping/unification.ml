@@ -501,6 +501,10 @@ let expand_key ts env sigma = function
     in if EConstr.eq_constr sigma (EConstr.mkProj (p, c)) red then None else Some red
   | None -> None
 
+let isApp_or_Proj sigma c =
+  match kind sigma c with
+  | App _ | Proj _ -> true
+  | _ -> false
   
 type unirec_flags = {
   at_top: bool;
@@ -1020,7 +1024,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 
   and canonical_projections (curenv, _ as curenvnb) pb opt cM cN (sigma,_,_ as substn) =
     let f1 () =
-      if isApp sigma cM then
+      if isApp_or_Proj sigma cM then
 	let f1l1 = whd_nored_state sigma (cM,Stack.empty) in
 	  if is_open_canonical_projection curenv sigma f1l1 then
 	    let f2l2 = whd_nored_state sigma (cN,Stack.empty) in
@@ -1036,7 +1040,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	error_cannot_unify (fst curenvnb) sigma (cM,cN)
       else
 	try f1 () with e when precatchable_exception e ->
-	  if isApp sigma cN then
+	  if isApp_or_Proj sigma cN then
 	    let f2l2 = whd_nored_state sigma (cN, Stack.empty) in
 	      if is_open_canonical_projection curenv sigma f2l2 then
 		let f1l1 = whd_nored_state sigma (cM, Stack.empty) in
