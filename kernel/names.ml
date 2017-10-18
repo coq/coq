@@ -49,13 +49,15 @@ struct
 
   let of_string s =
     let () = check_valid s in
+    let s = String.copy s in
     String.hcons s
 
   let of_string_soft s =
     let () = check_valid ~strict:false s in
+    let s = String.copy s in
     String.hcons s
 
-  let to_string id = id
+  let to_string id = String.copy id
 
   let print id = str id
 
