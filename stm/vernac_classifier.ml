@@ -47,12 +47,6 @@ let declare_vernac_classifier
 =
   classifiers := !classifiers @ [s,f]
 
-let make_polymorphic (a, b as x) =
-  match a with
-  | VtStartProof (x, _, ids) ->
-      VtStartProof (x, Doesn'tGuaranteeOpacity, ids), b
-  | _ -> x
-
 let undo_classifier = ref (fun _ -> assert false)
 let set_undo_classifier f = undo_classifier := f
 
@@ -66,10 +60,7 @@ let rec classify_vernac e =
     (* Nested vernac exprs *)
     | VernacProgram e -> classify_vernac e
     | VernacLocal (_,e) -> classify_vernac e
-    | VernacPolymorphic (b, e) -> 
-      if b || Flags.is_universe_polymorphism () (* Ok or not? *) then
-	make_polymorphic (classify_vernac e)
-      else classify_vernac e
+    | VernacPolymorphic (b, e) -> classify_vernac e
     | VernacTimeout (_,e) -> classify_vernac e
     | VernacTime (_,e) | VernacRedirect (_, (_,e)) -> classify_vernac e
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
@@ -108,32 +99,32 @@ let rec classify_vernac e =
     (* StartProof *)
     | VernacDefinition (
        (Some Decl_kinds.Discharge,Decl_kinds.Definition),((_,i),_),ProveBody _) ->
-        VtStartProof(default_proof_mode (),Doesn'tGuaranteeOpacity,[i]), VtLater
+        VtStartProof(default_proof_mode (),[i]), VtLater
     | VernacDefinition (_,((_,i),_),ProveBody _) ->
-        VtStartProof(default_proof_mode (),GuaranteesOpacity,[i]), VtLater
+        VtStartProof(default_proof_mode (),[i]), VtLater
     | VernacStartTheoremProof (_,l) ->
-        let ids = 
+        let ids =
           CList.map_filter (function (Some ((_,i),pl), _) -> Some i | _ -> None) l in
-        VtStartProof (default_proof_mode (),GuaranteesOpacity,ids), VtLater
-    | VernacGoal _ -> VtStartProof (default_proof_mode (),GuaranteesOpacity,[]), VtLater
+        VtStartProof (default_proof_mode (),ids), VtLater
+    | VernacGoal _ -> VtStartProof (default_proof_mode (),[]), VtLater
     | VernacFixpoint (_,l) ->
         let ids, open_proof =
           List.fold_left (fun (l,b) ((((_,id),_),_,_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
-        then VtStartProof (default_proof_mode (),GuaranteesOpacity,ids), VtLater
+        then VtStartProof (default_proof_mode (),ids), VtLater
         else VtSideff ids, VtLater
     | VernacCoFixpoint (_,l) ->
         let ids, open_proof =
           List.fold_left (fun (l,b) ((((_,id),_),_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
-        then VtStartProof (default_proof_mode (),GuaranteesOpacity,ids), VtLater
+        then VtStartProof (default_proof_mode (),ids), VtLater
         else VtSideff ids, VtLater
     (* Sideff: apply to all open branches. usually run on master only *)
     | VernacAssumption (_,_,l) ->
         let ids = List.flatten (List.map (fun (_,(l,_)) -> List.map (fun (id, _) -> snd id) l) l) in
-        VtSideff ids, VtLater    
+        VtSideff ids, VtLater
     | VernacDefinition (_,((_,id),_),DefineBody _) -> VtSideff [id], VtLater
     | VernacInductive (_, _,_,l) ->
         let ids = List.map (fun (((_,((_,id),_)),_,_,_,cl),_) -> id :: match cl with
@@ -201,10 +192,7 @@ let rec classify_vernac e =
         try List.assoc s !classifiers l ()
         with Not_found -> anomaly(str"No classifier for"++spc()++str (fst s)++str".")
   in
-  let res = static_classifier e in
-    if Flags.is_universe_polymorphism () then
-      make_polymorphic res
-    else res
+  static_classifier e
 
 let classify_as_query = VtQuery (true,Feedback.default_route), VtLater
 let classify_as_sideeff = VtSideff [], VtLater

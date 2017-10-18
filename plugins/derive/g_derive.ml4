@@ -12,7 +12,7 @@ open Stdarg
 
 DECLARE PLUGIN "derive_plugin"
 
-let classify_derive_command _ = Vernacexpr.(VtStartProof ("Classic",Doesn'tGuaranteeOpacity,[]),VtLater)
+let classify_derive_command _ = Vernacexpr.(VtStartProof ("Classic",[]),VtLater)
 
 VERNAC COMMAND EXTEND Derive CLASSIFIED BY classify_derive_command
 | [ "Derive" ident(f) "SuchThat" constr(suchthat) "As" ident(lemma) ] ->

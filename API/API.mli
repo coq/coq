@@ -3719,12 +3719,9 @@ sig
      | VtKeep
      | VtKeepAsAxiom
      | VtDrop
-   and vernac_start = string * opacity_guarantee * Names.Id.t list
+   and vernac_start = string * Names.Id.t list
    and vernac_sideff_type = Names.Id.t list
    and vernac_part_of_script = bool
-   and opacity_guarantee =
-     | GuaranteesOpacity
-     | Doesn'tGuaranteeOpacity
    and proof_step = {
      parallel : [ `Yes of solving_tac * anon_abstracting_tac | `No ];
      proof_block_detection : proof_block_name option

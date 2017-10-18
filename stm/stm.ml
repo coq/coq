@@ -114,7 +114,7 @@ type cmd_t = {
            | `TacQueue of solving_tac * anon_abstracting_tac * cancel_switch
            | `QueryQueue of cancel_switch
            | `SkipQueue ] }
-type fork_t = aast * Vcs_.Branch.t * Vernacexpr.opacity_guarantee * Names.Id.t list
+type fork_t = aast * Vcs_.Branch.t * Names.Id.t list
 type qed_t = {
   qast : aast;
   keep : vernac_qed_type;
@@ -348,7 +348,7 @@ end = struct (* {{{ *)
     let fname =
       "stm_" ^ Str.global_replace (Str.regexp " ") "_" (System.process_id ()) in
     let string_of_transaction = function
-      | Cmd { cast = t } | Fork (t, _,_,_) ->
+      | Cmd { cast = t } | Fork (t,_,_) ->
           (try Pp.string_of_ppcmds (pr_ast t) with _ -> "ERR")
       | Sideff (ReplayCommand t) ->
           sprintf "Sideff(%s)"
@@ -960,7 +960,7 @@ let get_script prf =
        Stateid.equal id Stateid.dummy then acc else
     let view = VCS.visit id in
     match view.step with
-    | `Fork((_,_,_,ns), _) when test ns -> acc
+    | `Fork((_,_,ns), _) when test ns -> acc
     | `Qed (qed, proof) -> find [qed.qast.expr, (VCS.get_info id).n_goals] proof
     | `Sideff (ReplayCommand x,_) ->
          find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next
@@ -1083,7 +1083,7 @@ end = struct (* {{{ *)
         let ids, tactic, undo =
           if id = Stateid.initial || id = Stateid.dummy then [],false,0 else
           match VCS.visit id with
-          | { step = `Fork ((_,_,_,l),_) } -> l, false,0
+          | { step = `Fork ((_,_,l),_) } -> l, false,0
           | { step = `Cmd { cids = l; ctac } } -> l, ctac,0
           | { step = `Alias (_,{ expr = VernacUndo n}) } -> [], false, n
           | _ -> [],false,0 in
@@ -1590,7 +1590,7 @@ end = struct (* {{{ *)
       | Some (_, cur) ->
           match VCS.visit cur with
           | { step = `Cmd { cast = { loc } } }
-          | { step = `Fork (( { loc }, _, _, _), _) } 
+          | { step = `Fork (( { loc }, _, _), _) } 
           | { step = `Qed ( { qast = { loc } }, _) } 
           | { step = `Sideff (ReplayCommand { loc }, _) } ->
               let start, stop = Option.cata Loc.unloc (0,0) loc in
@@ -2062,15 +2062,13 @@ let collect_proof keep cur hd brkind id =
     | `Sideff (ReplayCommand x,_) -> collect (Some (id,x)) (id::accn) view.next
     (* An Alias could jump everywhere... we hope we can ignore it*)
     | `Alias _ -> `Sync (no_name,`Alias)
-    | `Fork((_,_,_,_::_::_), _) ->
+    | `Fork((_,_,_::_::_), _) ->
         `Sync (no_name,`MutualProofs)
-    | `Fork((_,_,Doesn'tGuaranteeOpacity,_), _) ->
-        `Sync (no_name,`Doesn'tGuaranteeOpacity)
-    | `Fork((_,hd',GuaranteesOpacity,ids), _) when has_proof_using last ->
+    | `Fork((_,hd',ids), _) when has_proof_using last ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
         `ASync (parent last,accn,name,delegate name)
-    | `Fork((_, hd', GuaranteesOpacity, ids), _) when
+    | `Fork((_, hd', ids), _) when
        has_proof_no_using last && not (State.is_cached_and_valid (parent last)) &&
        VCS.is_vio_doc () ->
         assert (VCS.Branch.equal hd hd'||VCS.Branch.equal hd VCS.edit_branch);
@@ -2082,7 +2080,7 @@ let collect_proof keep cur hd brkind id =
         with Not_found ->
           let name = name ids in
           `MaybeASync (parent last, accn, name, delegate name))
-    | `Fork((_, hd', GuaranteesOpacity, ids), _) ->
+    | `Fork((_, hd', ids), _) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
         `MaybeASync (parent last, accn, name, delegate name)
@@ -2258,12 +2256,12 @@ let known_state ?(redefine_qed=false) ~cache id =
           stm_vernac_interp id x;
           if eff then update_global_env ()
         ), (if eff then `Yes else cache), true
-      | `Fork ((x,_,_,_), None) -> (fun () ->
+      | `Fork ((x,_,_), None) -> (fun () ->
             resilient_command reach view.next;
             stm_vernac_interp id x;
             wall_clock_last_fork := Unix.gettimeofday ()
           ), `Yes, true
-      | `Fork ((x,_,_,_), Some prev) -> (fun () -> (* nested proof *)
+      | `Fork ((x,_,_), Some prev) -> (fun () -> (* nested proof *)
             reach ~cache:`Shallow prev;
             reach view.next;
             (try stm_vernac_interp id x;
@@ -2643,16 +2641,16 @@ let process_transaction ?(newtip=Stateid.fresh ())
           anomaly(str"classifier: VtQuery + VtLater must imply part_of_script.")
 
       (* Proof *)
-      | VtStartProof (mode, guarantee, names), w ->
+      | VtStartProof (mode, names), w ->
           let id = VCS.new_node ~id:newtip () in
           let bname = VCS.mk_branch_name x in
           VCS.checkout VCS.Branch.master;
           if VCS.Branch.equal head VCS.Branch.master then begin
-            VCS.commit id (Fork (x, bname, guarantee, names));
+            VCS.commit id (Fork (x, bname, names));
             VCS.branch bname (`Proof (mode, VCS.proof_nesting () + 1))
           end else begin
             VCS.branch bname (`Proof (mode, VCS.proof_nesting () + 1));
-            VCS.merge id ~ours:(Fork (x, bname, guarantee, names)) head
+            VCS.merge id ~ours:(Fork (x, bname, names)) head
           end;
           Proof_global.activate_proof_mode mode [@ocaml.warning "-3"];
           Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
@@ -2727,12 +2725,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
             if not in_proof && Proof_global.there_are_pending_proofs () then
             begin
               let bname = VCS.mk_branch_name x in
-              let rec opacity_of_produced_term = function
-                (* This AST is ambiguous, hence we check it dynamically *)
-                | VernacInstance (false, _,_ , None, _) -> GuaranteesOpacity
-                | VernacLocal (_,e) -> opacity_of_produced_term e
-                | _ -> Doesn'tGuaranteeOpacity in
-              VCS.commit id (Fork (x,bname,opacity_of_produced_term x.expr,[]));
+              VCS.commit id (Fork (x,bname,[]));
               let proof_mode = default_proof_mode () in
               VCS.branch bname (`Proof (proof_mode, VCS.proof_nesting () + 1));
               Proof_global.activate_proof_mode proof_mode [@ocaml.warning "-3"];
@@ -2762,7 +2755,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
 let get_ast ~doc id =
   match VCS.visit id with
   | { step = `Cmd { cast = { loc; expr } } }
-  | { step = `Fork (({ loc; expr }, _, _, _), _) } 
+  | { step = `Fork (({ loc; expr }, _, _), _) } 
   | { step = `Qed ({ qast = { loc; expr } }, _) } ->
          Some (Loc.tag ?loc expr)
   | _ -> None
