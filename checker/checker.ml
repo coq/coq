@@ -13,6 +13,12 @@ open System
 open Names
 open Check
 
+let _ = Feedback.add_feeder
+          (function
+           | { Feedback.contents = Feedback.Message (_,_,msg) } ->
+             Format.eprintf "%a\n%!" pp_with msg
+           | _ -> ())
+
 let () = at_exit flush_all
 
 let chk_pp = Pp.pp_with Format.std_formatter
