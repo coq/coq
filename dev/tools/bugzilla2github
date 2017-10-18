@@ -593,6 +593,10 @@ def bug_convert(bug):
     assignee = str2str(email2login, bug.pop("assigned_to"))
     if not ret["closed"] and assignee:
         ret["assignee"] = assignee
+    # Approximate closing date with last update date
+    updated_at = bug.pop("delta_ts")
+    if ret["closed"]:
+        ret["closed_at"] = date_convert(updated_at)
     # Convert (optional) keywords to labels
     ret["labels"].extend(str2list(keywords2labels, bug.pop("keywords","")))
     # Convert resolution to labels
