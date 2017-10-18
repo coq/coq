@@ -42,7 +42,7 @@ For any questions/suggestions about the Coq Club, please write to
 `coq-club-request@inria.fr`.
 
 ## Bugs report
-Send your bug reports by filling a form at [coq.inria.fr/bugs](http://coq.inria.fr/bugs).
+Please report any bug in [our issue tracker](https://github.com/coq/coq/issues).
 
 To be effective, bug reports should mention the OCaml version used
 to compile and run Coq, the Coq version (`coqtop -v`), the configuration
