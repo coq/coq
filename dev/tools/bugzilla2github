@@ -460,7 +460,8 @@ def emails_convert(emails):
     ret = []
     if isinstance(emails, list):
         for email in emails:
-            ret.append(email_convert(email, None))
+            if email != "coq-bugs-redist@lists.gforge.inria.fr":
+                ret.append(email_convert(email, None))
     else:
         ret.append(email_convert(emails, None))
 
