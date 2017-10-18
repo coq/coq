@@ -311,7 +311,7 @@ resolution2labels = {
     "FIXED": [],
     "DUPLICATE": ["resolved: duplicate"],
     "INVALID": ["resolved: invalid"],
-    "MOVED": ["resolved: closed"],
+    "MOVED": ["resolved: moved"],
     "WONTFIX": ["resolved: won't fix"],
     "WORKSFORME": ["resolved: works for me"],
 }
