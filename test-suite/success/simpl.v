@@ -1,6 +1,6 @@
 Require Import TestSuite.admit.
 (* Check that inversion of names of mutual inductive fixpoints works *)
-(* (cf bug #1031) *)
+(* (cf BZ#1031) *)
 
 Inductive tree : Set :=
 | node : nat -> forest -> tree

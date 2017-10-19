@@ -1,4 +1,4 @@
-(* Cf coqbugs #546 *)
+(* Cf BZ#546 *)
 
 Require Import Omega.
 

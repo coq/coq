@@ -52,7 +52,7 @@ Lemma lem5 : (H > 0)%Z.
 Qed.
 End B.
 
-(* From Nicolas Oury (bug #180): handling -> on Set (fixed Oct 2002) *)
+(* From Nicolas Oury (BZ#180): handling -> on Set (fixed Oct 2002) *)
 Lemma lem6 :
  forall (A : Set) (i : Z), (i <= 0)%Z -> ((i <= 0)%Z -> A) -> (i <= 0)%Z.
 intros.
@@ -88,7 +88,7 @@ romega with nat.
 Qed.
 
 (* Check that the interpretation of mult on nat enforces its positivity *)
-(* Submitted by Hubert Thierry (bug #743) *)
+(* Submitted by Hubert Thierry (BZ#743) *)
 (* Postponed... problem with goals of the form "(n*m=0)%nat -> (n*m=0)%Z" *)
 Lemma lem10 : forall n m : nat, le n (plus n (mult n m)).
 Proof.

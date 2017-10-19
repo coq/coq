@@ -132,7 +132,7 @@ intros.
 romega.
 Qed.
 
-(* Magaud #240 *)
+(* Magaud BZ#240 *)
 
 Lemma test_romega_8 : forall x y:Z, x*x<y*y-> ~ y*y <= x*x.
 Proof.
@@ -146,7 +146,7 @@ intros x y.
 romega.
 Qed.
 
-(* Besson #1298 *)
+(* Besson BZ#1298 *)
 
 Lemma test_romega9 : forall z z':Z, z<>z' -> z'=z -> False.
 Proof.

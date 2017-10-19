@@ -1,5 +1,5 @@
 (* Check that reset remains synchronised with the compilation unit cache *)
-(* See bug #1030 *)
+(* See BZ#1030 *)
 
 Section multiset_defs.
   Require Import Plus.

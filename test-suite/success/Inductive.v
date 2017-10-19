@@ -64,7 +64,7 @@ Check (fun x:I1 =>
   end).
 
 (* Check implicit parameters of inductive types (submitted by Pierre
-  Casteran and also implicit in #338) *)
+  Casteran and also implicit in BZ#338) *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -80,7 +80,7 @@ Inductive Finite (A : Set) : LList A -> Prop :=
   | Finite_LCons :
       forall (a : A) (l : LList A), Finite l -> Finite (LCons a l).
 
-(* Check positivity modulo reduction (cf bug #983) *)
+(* Check positivity modulo reduction (cf bug BZ#983) *)
 
 Record P:Type := {PA:Set; PB:Set}.
 

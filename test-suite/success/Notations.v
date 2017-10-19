@@ -1,5 +1,5 @@
 (* Check that "where" clause behaves as if given independently of the  *)
-(* definition (variant of bug #1132 submitted by Assia Mahboubi) *)
+(* definition (variant of BZ#1132 submitted by Assia Mahboubi) *)
 
 Fixpoint plus1 (n m:nat) {struct n} : nat :=
    match n with
