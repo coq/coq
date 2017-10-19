@@ -43,6 +43,9 @@
 : ${Iris_CI_BRANCH:=master}
 : ${Iris_CI_GITURL:=https://gitlab.mpi-sws.org/FP/iris-coq.git}
 
+: ${lambdaRust_CI_BRANCH:=master}
+: ${lambdaRust_CI_GITURL:=https://gitlab.mpi-sws.org/FP/LambdaRust-coq.git}
+
 ########################################################################
 # HoTT
 ########################################################################
