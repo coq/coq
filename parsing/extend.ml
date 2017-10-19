@@ -101,7 +101,7 @@ type ('self, 'a) symbol =
 | Aself : ('self, 'self) symbol
 | Anext : ('self, 'self) symbol
 | Aentry : 'a entry -> ('self, 'a) symbol
-| Aentryl : 'a entry * int -> ('self, 'a) symbol
+| Aentryl : 'a entry * string -> ('self, 'a) symbol
 | Arules : 'a rules list -> ('self, 'a) symbol
 
 and ('self, _, 'r) rule =

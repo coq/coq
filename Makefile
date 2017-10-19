@@ -74,9 +74,11 @@ endef
 ## Files in the source tree
 
 LEXFILES := $(call find, '*.mll')
+YACCFILES := $(call find, '*.mly')
 export MLLIBFILES := $(call find, '*.mllib')
 export MLPACKFILES := $(call find, '*.mlpack')
 export ML4FILES := $(call find, '*.ml4')
+export MLGFILES := $(call find, '*.mlg')
 export CFILES := $(call findindir, 'kernel/byterun', '*.c')
 export MERLINFILES := $(call find, '.merlin')
 
@@ -90,7 +92,8 @@ EXISTINGMLI := $(call find, '*.mli')
 ## Files that will be generated
 
 GENML4FILES:= $(ML4FILES:.ml4=.ml)
-export GENMLFILES:=$(LEXFILES:.mll=.ml) kernel/copcodes.ml
+GENMLGFILES:= $(MLGFILES:.mlg=.ml)
+export GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) $(GENMLGFILES) kernel/copcodes.ml
 export GENHFILES:=kernel/byterun/coq_jumptbl.h
 export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES)
 
@@ -100,7 +103,7 @@ export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES)
 
 ## More complex file lists
 
-export MLSTATICFILES := $(filter-out $(GENMLFILES) $(GENML4FILES), $(EXISTINGML))
+export MLSTATICFILES := $(filter-out $(GENMLFILES) $(GENML4FILES) $(GENMLGFILES), $(EXISTINGML))
 export MLIFILES := $(sort $(GENMLIFILES) $(EXISTINGMLI))
 
 include Makefile.common
@@ -223,7 +226,7 @@ clean-ide:
 	rm -rf $(COQIDEAPP)
 
 ml4clean:
-	rm -f $(GENML4FILES)
+	rm -f $(GENML4FILES) $(GENMLGFILES)
 
 depclean:
 	find . $(FIND_SKIP_DIRS) '(' -name '*.d' ')' -print | xargs rm -f

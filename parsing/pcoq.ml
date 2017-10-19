@@ -17,8 +17,16 @@ let curry f x y = f (x, y)
 let uncurry f (x,y) = f x y
 
 (** Location Utils  *)
+let ploc_file_of_coq_file = function
+| Loc.ToplevelInput -> ""
+| Loc.InFile f -> f
+
 let coq_file_of_ploc_file s =
   if s = "" then Loc.ToplevelInput else Loc.InFile s
+
+let of_coqloc loc =
+  let open Loc in
+  Ploc.make_loc (ploc_file_of_coq_file loc.fname) loc.line_nb loc.bol_pos (loc.bp, loc.ep) ""
 
 let to_coqloc loc =
   { Loc.fname = coq_file_of_ploc_file (Ploc.file_name loc);
@@ -236,7 +244,7 @@ let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> _ = function
   | Aentry e ->
     Symbols.snterm (G.Entry.obj e)
   | Aentryl (e, n) ->
-    Symbols.snterml (G.Entry.obj e, string_of_int n)
+    Symbols.snterml (G.Entry.obj e, n)
   | Arules rs ->
     G.srules' (List.map symbol_of_rules rs)
 
@@ -328,6 +336,7 @@ module Gram =
       I'm not entirely sure it makes sense, but at least it would be more correct.
           *)
       G.delete_rule e pil
+    let safe_extend e ext = grammar_extend e None ext
   end
 
 (** Remove extensions

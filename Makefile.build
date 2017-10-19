@@ -342,12 +342,17 @@ kernel/copcodes.ml: kernel/byterun/coq_instruct.h
 GRAMBASEDEPS := grammar/q_util.cmi
 GRAMCMO := grammar/q_util.cmo \
  grammar/argextend.cmo grammar/tacextend.cmo grammar/vernacextend.cmo
+COQPPCMO := grammar/coqpp_parse.cmo grammar/coqpp_lex.cmo
 
 grammar/argextend.cmo : $(GRAMBASEDEPS)
 grammar/q_util.cmo : $(GRAMBASEDEPS)
 grammar/tacextend.cmo : $(GRAMBASEDEPS) grammar/argextend.cmo
 grammar/vernacextend.cmo : $(GRAMBASEDEPS) grammar/tacextend.cmo \
  grammar/argextend.cmo
+
+grammar/coqpp_parse.cmi: grammar/coqpp_ast.cmi
+grammar/coqpp_parse.cmo: grammar/coqpp_ast.cmi grammar/coqpp_parse.cmi
+grammar/coqpp_lex.cmo: grammar/coqpp_ast.cmi grammar/coqpp_parse.cmo
 
 ## Ocaml compiler with the right options and -I for grammar
 
@@ -359,10 +364,14 @@ GRAMC := $(OCAMLFIND) ocamlc $(CAMLFLAGS) $(CAMLDEBUG) $(USERFLAGS) \
 grammar/grammar.cma : $(GRAMCMO)
 	$(SHOW)'Testing $@'
 	@touch grammar/test.mlp
-	$(HIDE)$(GRAMC) -pp '$(CAMLP5O) -I $(MYCAMLP5LIB) $^ -impl' -impl grammar/test.mlp -o grammar/test
+	$(HIDE)$(GRAMC) -pp '$(CAMLP5O) $^ -impl' -impl grammar/test.mlp -o grammar/test
 	@rm -f grammar/test.* grammar/test
 	$(SHOW)'OCAMLC -a $@'
 	$(HIDE)$(GRAMC) $^ -linkall -a -o $@
+
+grammar/coqpp: $(COQPPCMO) grammar/coqpp_main.ml
+	$(SHOW)'OCAMLC -a $@'
+	$(HIDE)$(GRAMC) $^ -linkall -o $@
 
 ## Support of Camlp5 and Camlp5
 
@@ -375,6 +384,10 @@ GRAMPP:=$(CAMLP5O) -I $(MYCAMLP5LIB) $(GRAMP4USE) $(CAMLP5COMPAT) -impl
 grammar/%.cmo: grammar/%.mlp | $(COMPATCMO)
 	$(SHOW)'OCAMLC -c -pp $<'
 	$(HIDE)$(GRAMC) -c -pp '$(GRAMPP)' -impl $<
+
+grammar/%.cmo: grammar/%.ml | $(COMPATCMO)
+	$(SHOW)'OCAMLC -c -pp $<'
+	$(HIDE)$(GRAMC) -c $<
 
 grammar/%.cmi: grammar/%.mli
 	$(SHOW)'OCAMLC -c $<'
@@ -746,11 +759,18 @@ plugins/%.cmx: plugins/%.ml
 	$(SHOW)'OCAMLLEX  $<'
 	$(HIDE)$(OCAMLLEX) -o $@ "$*.mll"
 
-%.ml: %.ml4 $(CAMLP5DEPS)
+%.ml %.mli: %.mly
+	$(SHOW)'OCAMLYACC  $<'
+	$(HIDE)$(OCAMLYACC) --strict "$*.mly"
+
+%.ml: %.ml4 $(CAMLP5DEPS) grammar/coqpp
 	$(SHOW)'CAMLP5O   $<'
 	$(HIDE)$(CAMLP5O) -I $(MYCAMLP5LIB) $(PR_O) \
 	  $(CAMLP5DEPS) $(CAMLP5USE) $(CAMLP5COMPAT) -impl $< -o $@
 
+%.ml: %.mlg grammar/coqpp
+	$(SHOW)'COQPP   $<'
+	$(HIDE)grammar/coqpp $<
 
 ###########################################################################
 # Dependencies of ML code

@@ -274,7 +274,7 @@ let make_sep_rules = function
   Arules [r]
 
 let symbol_of_target : type s. _ -> _ -> _ -> s target -> (s, s) symbol = fun p assoc from forpat ->
-  if is_binder_level from p then Aentryl (target_entry forpat, 200)
+  if is_binder_level from p then Aentryl (target_entry forpat, "200")
   else if is_self from p then Aself
   else
     let g = target_entry forpat in
@@ -282,7 +282,7 @@ let symbol_of_target : type s. _ -> _ -> _ -> s target -> (s, s) symbol = fun p 
     begin match lev with
     | None -> Aentry g
     | Some None -> Anext
-    | Some (Some (lev, cur)) -> Aentryl (g, lev)
+    | Some (Some (lev, cur)) -> Aentryl (g, string_of_int lev)
     end
 
 let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) symbol = fun assoc from typ -> match typ with
@@ -291,7 +291,7 @@ let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) symbol = fun as
   Alist1 (symbol_of_target typ' assoc from forpat)
 | TTConstrList (typ', tkl, forpat) ->
   Alist1sep (symbol_of_target typ' assoc from forpat, make_sep_rules tkl)
-| TTPattern p -> Aentryl (Constr.pattern, p)
+| TTPattern p -> Aentryl (Constr.pattern, string_of_int p)
 | TTClosedBinderList [] -> Alist1 (Aentry Constr.binder)
 | TTClosedBinderList tkl -> Alist1sep (Aentry Constr.binder, make_sep_rules tkl)
 | TTName -> Aentry Prim.name
@@ -428,6 +428,7 @@ let prepare_empty_levels forpat (pos,p4assoc,name,reinit) =
 let rec pure_sublevels : type a b c. int option -> (a, b, c) rule -> int list = fun level r -> match r with
 | Stop -> []
 | Next (rem, Aentryl (_, i)) ->
+  let i = int_of_string i in
   let rem = pure_sublevels level rem in
   begin match level with
   | Some j when Int.equal i j -> rem
