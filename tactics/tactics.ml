@@ -2471,7 +2471,7 @@ let exceed_bound n = function
 
   (* We delay thinning until the completion of the whole intros tactic
      to ensure that dependent hypotheses are cleared in the right
-     dependency order (see bug #1000); we use fresh names, not used in
+     dependency order (see BZ#1000); we use fresh names, not used in
      the tactic, for the hyps to clear *)
   (* In [intro_patterns_core b avoid ids thin destopt bound n tac patl]:
      [b]: compatibility flag, if false at toplevel, do not complete incomplete

@@ -54,7 +54,7 @@ but also a few steps toward a more user-friendly extraction:
 
 * bug fixes: 
 - many concerning Records. 
-- a Stack Overflow with mutual inductive (PR#320)
+- a Stack Overflow with mutual inductive (BZ#320)
 - some optimizations have been removed since they were not type-safe:
   For example if e has type:  type 'x a = A
   Then:       match e with A -> A     -----X---->    e
@@ -125,7 +125,7 @@ but also a few steps toward a more user-friendly extraction:
 
   - the dummy constant "__" have changed. see README
 
-  - a few bug-fixes (#191 and others)
+  - a few bug-fixes (BZ#191 and others)
 
 7.2 -> 7.3
 
