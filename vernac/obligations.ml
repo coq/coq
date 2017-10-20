@@ -556,7 +556,7 @@ let declare_mutual_definition l =
   let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) [] ctx)
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
-    List.iter Metasyntax.add_notation_interpretation first.prg_notations;
+    List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;
     Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
     let gr = List.hd kns in
     let kn = match gr with ConstRef kn -> kn | _ -> assert false in

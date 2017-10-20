@@ -430,11 +430,11 @@ let vernac_arguments_scope locality r scl =
 
 let vernac_infix locality local =
   let local = enforce_module_locality locality local in
-  Metasyntax.add_infix local
+  Metasyntax.add_infix local (Global.env())
 
 let vernac_notation locality local =
   let local = enforce_module_locality locality local in
-  Metasyntax.add_notation local
+  Metasyntax.add_notation local (Global.env())
 
 (***********)
 (* Gallina *)
@@ -953,7 +953,7 @@ let vernac_hints locality poly local lb h =
 let vernac_syntactic_definition locality lid x local y =
   Dumpglob.dump_definition lid false "syndef";
   let local = enforce_module_locality locality local in
-  Metasyntax.add_syntactic_definition (snd lid) x local y
+  Metasyntax.add_syntactic_definition (Global.env()) (snd lid) x local y
 
 let vernac_declare_implicits locality r l =
   let local = make_section_locality locality in

@@ -550,13 +550,12 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
     lift_implicits (Context.Rel.nhyps ctx_params) impls) arities in
   let arities = List.map pi1 arities and aritypoly = List.map pi2 arities in
   let impls = compute_internalization_env env0 ~impls (Inductive (params,true)) indnames fullarities indimpls in
-  let implsforntn = compute_internalization_env env0 Variable indnames fullarities indimpls in
   let mldatas = List.map2 (mk_mltype_data evdref env_params params) arities indnames in
 
   let constructors =
     Metasyntax.with_syntax_protection (fun () ->
      (* Temporary declaration of notations and scopes *)
-     List.iter (Metasyntax.set_notation_for_interpretation implsforntn) notations;
+     List.iter (Metasyntax.set_notation_for_interpretation env_params impls) notations;
      (* Interpret the constructor types *)
      List.map3 (interp_cstrs env_ar_params evdref impls) mldatas arities indl)
      () in
@@ -708,7 +707,7 @@ let do_mutual_inductive indl cum poly prv finite =
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (declare_mutual_inductive_with_eliminations mie pl impls);
   (* Declare the possible notations of inductive types *)
-  List.iter Metasyntax.add_notation_interpretation ntns;
+  List.iter (Metasyntax.add_notation_interpretation (Global.env ())) ntns;
   (* Declare the coercions *)
   List.iter (fun qid -> Class.try_add_new_coercion (locate qid) ~local:false poly) coes;
   (* If positivity is assumed declares itself as unsafe. *)
@@ -1110,7 +1109,7 @@ let interp_recursive isfix fixl notations =
   (* Interp bodies with rollback because temp use of notations/implicit *)
   let fixdefs =
     Metasyntax.with_syntax_protection (fun () ->
-      List.iter (Metasyntax.set_notation_for_interpretation impls) notations;
+      List.iter (Metasyntax.set_notation_for_interpretation env_rec impls) notations;
       List.map4
 	(fun fixctximpenv -> interp_fix_body env_rec evdref (Id.Map.fold Id.Map.add fixctximpenv impls))
 	fixctximpenvs fixctxs fixl fixccls)
@@ -1176,7 +1175,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
     fixpoint_message (Some indexes) fixnames;
   end;
   (* Declare notations *)
-  List.iter Metasyntax.add_notation_interpretation ntns
+  List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns
 
 let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
   if List.exists Option.is_empty fixdefs then
@@ -1207,7 +1206,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
     cofixpoint_message fixnames
   end;
   (* Declare notations *)
-  List.iter Metasyntax.add_notation_interpretation ntns
+  List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns
 
 let extract_decreasing_argument limit = function
   | (na,CStructRec) -> na

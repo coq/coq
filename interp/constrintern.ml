@@ -2132,8 +2132,7 @@ let intern_constr_pattern env ?(as_type=false) ?(ltacvars=empty_ltac_sign) c =
             ~pattern_mode:true ~ltacvars env c in
   pattern_of_glob_constr c
 
-let interp_notation_constr ?(impls=empty_internalization_env) nenv a =
-  let env = Global.env () in
+let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   (* [vl] is intended to remember the scope of the free variables of [a] *)
   let vl = Id.Map.map (fun typ -> (ref true, ref None, typ)) nenv.ninterp_var_type in
   let c = internalize (Global.env()) {ids = extract_ids env; unb = false;
@@ -2212,4 +2211,3 @@ let interp_context_evars ?(global_level=false) ?(impl_env=empty_internalization_
   let int_env,bl = intern_context global_level env impl_env params in
   let x = interp_glob_context_evars env evdref shift bl in
   int_env, x
-

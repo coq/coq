@@ -72,7 +72,7 @@ let interp_fields_evars env evars impls_env nots l =
 	      | None -> LocalAssum (i,t')
 	      | Some b' -> LocalDef (i,b',t')
       in
-      List.iter (Metasyntax.set_notation_for_interpretation impls) no;
+      List.iter (Metasyntax.set_notation_for_interpretation env impls) no;
       (EConstr.push_rel d env, impl :: uimpls, d::params, impls))
     (env, [], [], impls_env) nots l
 
