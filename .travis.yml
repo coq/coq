@@ -143,7 +143,7 @@ matrix:
       - NATIVE_COMP="no"
       - COQ_DEST="-local"
       before_install:
-      - brew update --debug --verbose
+      - brew update
       - brew install opam gnu-time
 
     - if: NOT (type = pull_request)
@@ -157,7 +157,7 @@ matrix:
       - EXTRA_CONF="-coqide opt -warn-error"
       - EXTRA_OPAM="lablgtk-extras"
       before_install:
-      - brew update --debug --verbose
+      - brew update
       - brew install opam gnu-time gtk+ expat gtksourceview libxml2 gdk-pixbuf python3
       - pip3 install macpack
       before_deploy:
