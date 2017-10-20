@@ -311,7 +311,7 @@ ci-hott:
     <<: *ci-template-vars
     EXTRA_PACKAGES: "$TIMING_PACKAGES autoconf"
 
-ci-iris-coq:
+ci-iris-lambda-rust:
   <<: *ci-template
 
 ci-math-classes:
