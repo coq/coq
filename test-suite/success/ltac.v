@@ -147,7 +147,7 @@ check_binding ipattern:(H).
 Abort.
 
 (* Check that variables explicitly parsed as ltac variables are not
-   seen as intro pattern or constr (bug #984) *)
+   seen as intro pattern or constr (BZ#984) *)
 
 Ltac afi tac := intros; tac.
 Goal 1 = 2.

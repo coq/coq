@@ -15,10 +15,7 @@ Tactics
   profiling, and "Set NativeCompute Profile Filename" customizes
   the profile filename.
 - The tactic "omega" is now aware of the bodies of context variables
-  such as "x := 5 : Z" (see bug #148). This could be disabled via
-  Unset Omega UseLocalDefs.
-- The tactic "omega" is now aware of the bodies of context variables
-  such as "x := 5 : Z" (see bug #148). This could be disabled via
+  such as "x := 5 : Z" (see BZ#148). This could be disabled via
   Unset Omega UseLocalDefs.
 - The tactic "romega" is also aware now of the bodies of context variables.
 
@@ -2397,7 +2394,7 @@ Tactics
   a registered setoid equality before starting to reduce in H. This is unlikely
   to break any script. Should this happen nonetheless, one can insert manually
   some "unfold ... in H" before rewriting.
-- Fixed various bugs about (setoid) rewrite ... in ... (in particular #1101)
+- Fixed various bugs about (setoid) rewrite ... in ... (in particular BZ#1101)
 - "rewrite ... in" now accepts a clause as place where to rewrite instead of
   juste a simple hypothesis name. For instance:
    rewrite H in H1,H2 |- * means rewrite H in H1; rewrite H in H2; rewrite H
@@ -2974,11 +2971,11 @@ Incompatibilities
 Bugs
 
 - Improved localisation of errors in Syntactic Definitions
-- Induction principle creation failure in presence of let-in fixed (#238)
-- Inversion bugs fixed (#212 and #220)
-- Omega bug related to Set fixed (#180)
-- Type-checking inefficiency of nested destructuring let-in fixed (#216)
-- Improved handling of let-in during holes resolution phase (#239)
+- Induction principle creation failure in presence of let-in fixed (BZ#238)
+- Inversion bugs fixed (BZ#212 and BZ#220)
+- Omega bug related to Set fixed (BZ#180)
+- Type-checking inefficiency of nested destructuring let-in fixed (BZ#216)
+- Improved handling of let-in during holes resolution phase (BZ#239)
 
 Efficiency
 
@@ -2991,18 +2988,18 @@ Changes from V7.3 to V7.3.1
 Bug fixes
 
   - Corrupted Field tactic and Match Context tactic construction fixed
-  - Checking of names already existing in Assert added (PR#182)
-  - Invalid argument bug in Exact tactic solved (PR#183)
-  - Colliding bound names bug fixed (PR#202)
-  - Wrong non-recursivity test for Record fixed (PR#189)
-  - Out of memory/seg fault bug related to parametric inductive fixed (PR#195)
+  - Checking of names already existing in Assert added (BZ#182)
+  - Invalid argument bug in Exact tactic solved (BZ#183)
+  - Colliding bound names bug fixed (BZ#202)
+  - Wrong non-recursivity test for Record fixed (BZ#189)
+  - Out of memory/seg fault bug related to parametric inductive fixed (BZ#195)
   - Setoid_replace/Setoid_rewrite bug wrt "==" fixed
 
 Misc
 
   - Ocaml version >= 3.06 is needed to compile Coq from sources
   - Simplification of fresh names creation strategy for Assert, Pose and
-    LetTac (PR#192)
+    LetTac (BZ#192)
 
 Changes from V7.2 to V7.3
 =========================

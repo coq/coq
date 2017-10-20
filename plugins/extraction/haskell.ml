@@ -145,7 +145,7 @@ let rec pp_expr par env args =
     | MLrel n ->
 	let id = get_db_name n env in
         (* Try to survive to the occurrence of a Dummy rel.
-           TODO: we should get rid of this hack (cf. #592) *)
+           TODO: we should get rid of this hack (cf. BZ#592) *)
         let id = if Id.equal id dummy_name then Id.of_string "__" else id in
         apply (Id.print id)
     | MLapp (f,args') ->

@@ -20,8 +20,7 @@ intro P; pattern P.
 apply lem2.
 Abort.
 
-(* Check managing of universe constraints in inversion *)
-(* Bug report #855 *)
+(* Check managing of universe constraints in inversion (BZ#855) *)
 
 Inductive dep_eq : forall X : Type, X -> X -> Prop :=
   | intro_eq : forall (X : Type) (f : X), dep_eq X f f
@@ -40,7 +39,7 @@ Proof.
 Abort.
 
 
-(* Submitted by Bas Spitters (bug report #935) *)
+(* Submitted by Bas Spitters (BZ#935) *)
 
 (* This is a problem with the status of the type in LetIn: is it a
    user-provided one or an inferred one? At the current time, the

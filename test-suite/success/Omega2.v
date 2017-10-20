@@ -1,6 +1,6 @@
 Require Import ZArith Omega.
 
-(* Submitted by Yegor Bryukhov (#922) *)
+(* Submitted by Yegor Bryukhov (BZ#922) *)
 
 Open Scope Z_scope.
 

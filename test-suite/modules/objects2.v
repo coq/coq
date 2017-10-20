@@ -2,7 +2,7 @@
    the logical objects in the environment
 *)
 
-(* Bug #1118 (simplified version), submitted by Evelyne Contejean
+(* BZ#1118 (simplified version), submitted by Evelyne Contejean
   (used to failed in pre-V8.1 trunk because of a call to lookup_mind
    for structure objects)
 *)

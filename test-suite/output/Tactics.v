@@ -7,12 +7,12 @@ Ltac f H := split; [a H|e H].
 Print Ltac f.
 
 (* Test printing of match context *)
-(* Used to fail after translator removal (see bug #1070) *)
+(* Used to fail after translator removal (see BZ#1070) *)
 
 Ltac g := match goal with |- context [if ?X then _ else _ ] => case X end.
 Print Ltac g.
 
-(* Test an error message (#5390) *)
+(* Test an error message (BZ#5390) *)
 Lemma myid (P : Prop) : P <-> P.
 Proof. split; auto. Qed.
 

@@ -4,7 +4,7 @@ rename n into p.
 induction p; auto.
 Qed.
 
-(* Submitted by Iris Loeb (#842) *)
+(* Submitted by Iris Loeb (BZ#842) *)
 
 Section rename.
 
