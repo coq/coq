@@ -11,7 +11,7 @@ CI_TARGETS=ci-all \
     ci-formal-topology \
     ci-geocoq \
     ci-hott \
-    ci-iris-coq \
+    ci-iris-lambda-rust \
     ci-math-classes \
     ci-math-comp \
     ci-metacoq \
