@@ -1325,25 +1325,6 @@ let main files =
   Minilib.log "End of Coqide.main"
 
 
-(** {2 Geoproof } *)
-
-(** This function check every tenth of second if GeoProof has send
-    something on his private clipboard *)
-
-let check_for_geoproof_input () =
-  let cb_Dr = GData.clipboard (Gdk.Atom.intern "_GeoProof") in
-  let handler () = match cb_Dr#text with
-    |None -> true
-    |Some "Ack" -> true
-    |Some s ->
-      on_current_term (fun sn -> sn.buffer#insert (s ^ "\n"));
-      (* cb_Dr#clear does not work so i use : *)
-      cb_Dr#set_text "Ack";
-      true
-  in
-  ignore (GMain.Timeout.add ~ms:100 ~callback:handler)
-
-
 (** {2 Argument parsing } *)
 
 (** By default, the coqtop we try to launch is exactly the current coqide

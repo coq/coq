@@ -685,7 +685,6 @@ let parse_args arglist =
     |"-profile-ltac-cutoff" -> Flags.profile_ltac := true; Flags.profile_ltac_cutoff := get_float opt (next ())
     |"-require" -> add_require (next (), None, Some false)
     |"-top" -> set_toplevel_name (dirpath_of_string (next ()))
-    |"-with-geoproof" -> Coq_config.with_geoproof := get_bool opt (next ())
     |"-main-channel" -> Spawned.main_channel := get_host_port opt (next())
     |"-control-channel" -> Spawned.control_channel := get_host_port opt (next())
     |"-vio2vo" ->
