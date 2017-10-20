@@ -4,13 +4,13 @@ Thank you for your interest in contributing to Coq! There are many ways to contr
 
 ## Bug Reports
 
-Bug reports are enormously useful to identify issues with Coq; we can't fix what we don't know about. To report a bug, please open an issue on the [Coq GitHub repository](https://github.com/coq/coq/issues) (you'll need a GitHub account). You can file a bug for any of the following:
+Bug reports are enormously useful to identify issues with Coq; we can't fix what we don't know about. To report a bug, please open an issue in the [Coq issue tracker](https://github.com/coq/coq/issues) (you'll need a GitHub account). You can file a bug for any of the following:
 
 - An anomaly. These are always considered bugs, so Coq will even ask you to file a bug report!
 - An error you didn't expect. If you're not sure whether it's a bug or intentional, feel free to file a bug anyway. We may want to improve the documentation or error message.
 - Missing documentation. It's helpful to track where the documentation should be improved, so please file a bug if you can't find or don't understand some bit of documentation.
 - An error message that wasn't as helpful as you'd like. Bonus points for suggesting what information would have helped you.
-- Bugs in CoqIDE should also be filed on the [GitHub issue tracker](https://github.com/coq/coq/issues). Bugs in the Emacs plugin should be filed against [ProofGeneral](https://github.com/ProofGeneral/PG/issues), or against [company-coq](https://github.com/cpitclaudel/company-coq/issues) if they are specific to company-coq features.
+- Bugs in CoqIDE should also be filed in the [Coq issue tracker](https://github.com/coq/coq/issues). Bugs in the Emacs plugin should be filed against [ProofGeneral](https://github.com/ProofGeneral/PG/issues), or against [company-coq](https://github.com/cpitclaudel/company-coq/issues) if they are specific to company-coq features.
 
 It would help if you search the existing issues before reporting a bug. This can be difficult, so consider it extra credit. We don't mind duplicate bug reports.
 
@@ -40,7 +40,7 @@ Here are a few tags Coq developers may add to your PR and what they mean. In gen
 
 Currently the process for contributing to the documentation is the same as for changing anything else in Coq, so please submit a pull request as described above.
 
-Our issue tracker includes a flag to mark bugs related to documentation. You can view a list of documentation-related bugs using a [GitHub issue search](https://github.com/coq/coq/pulls?utf8=%E2%9C%93&q=is%3Aopen%20is%3Aissue%20label%3A%22kind%3A%20documentation%22%20). Many of these bugs can be fixed by contributing writing, without knowledge of Coq's OCaml source code.
+Our issue tracker includes a flag to mark bugs related to documentation. You can view a list of documentation-related bugs using a [GitHub issue search](https://github.com/coq/coq/issues?q=is%3Aopen+is%3Aissue+label%3A%22kind%3A+documentation%22). Many of these bugs can be fixed by contributing writing, without knowledge of Coq's OCaml source code.
 
 The sources for the [Coq reference manual](https://coq.inria.fr/distrib/current/refman/) are at [`doc/refman`](/doc/refman). These are written in LaTeX and compiled to HTML with [HeVeA](http://hevea.inria.fr/).
 
