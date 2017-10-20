@@ -25,7 +25,7 @@ if %USEOPAM% == false (
     -destcyg=%CYGROOT% -destcoq=%DESTCOQ% -cygcache=%CYGCACHE% ^
     -setup %CYGROOT%\%SETUP% || GOTO ErrorExit
   copy "%CYGROOT%\build\coq-local\dev\nsis\*.exe" dev\nsis || GOTO ErrorExit
-  7z a coq-opensource-archive-%ARCHLONG%.zip %CYGROOT%\build\tarballs\* || GOTO ErrorExit
+  7z a coq-opensource-archive-windows-%ARCHLONG%.zip %CYGROOT%\build\tarballs\* || GOTO ErrorExit
 )
 
 if %USEOPAM% == true (
