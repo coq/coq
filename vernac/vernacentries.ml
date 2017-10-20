@@ -2148,23 +2148,48 @@ let locate_if_not_already ?loc (e, info) =
 exception HasNotFailed
 exception HasFailed of Pp.t
 
-let with_fail b f =
-  if not b then f ()
+type interp_state = { (* TODO: inline records in OCaml 4.03 *)
+  system  : States.state;        (* summary + libstack *)
+  proof   : Proof_global.state;  (* proof state *)
+  shallow : bool                 (* is the state trimmed down (libstack) *)
+}
+
+let s_cache = ref (States.freeze ~marshallable:`No)
+let s_proof = ref (Proof_global.freeze ~marshallable:`No)
+
+let invalidate_cache () =
+  s_cache := Obj.magic 0;
+  s_proof := Obj.magic 0
+
+let freeze_interp_state marshallable =
+  { system = (s_cache := States.freeze ~marshallable; !s_cache);
+    proof  = (s_proof := Proof_global.freeze ~marshallable; !s_proof);
+    shallow = marshallable = `Shallow }
+
+let unfreeze_interp_state { system; proof } =
+  if (!s_cache != system) then (s_cache := system; States.unfreeze system);
+  if (!s_proof != proof)  then (s_proof := proof;  Proof_global.unfreeze proof)
+
+(* XXX STATE: this type hints that restoring the state should be the
+   caller's responsibility *)
+let with_fail st b f =
+  if not b
+  then f ()
   else begin try
       (* If the command actually works, ignore its effects on the state.
        * Note that error has to be printed in the right state, hence
        * within the purified function *)
-      Future.purify
-        (fun v ->
-           try f v; raise HasNotFailed
-           with
-           | HasNotFailed as e -> raise e
-           | e ->
-              let e = CErrors.push e in
-              raise (HasFailed (CErrors.iprint
-                (ExplainErr.process_vernac_interp_error ~allow_uncaught:false e))))
-        ()
+      try f (); raise HasNotFailed
+      with
+      | HasNotFailed as e -> raise e
+      | e ->
+        let e = CErrors.push e in
+        raise (HasFailed (CErrors.iprint
+                            (ExplainErr.process_vernac_interp_error ~allow_uncaught:false e)))
     with e when CErrors.noncritical e ->
+      (* Restore the previous state XXX Careful here with the cache! *)
+      invalidate_cache ();
+      unfreeze_interp_state st;
       let (e, _) = CErrors.push e in
       match e with
       | HasNotFailed ->
@@ -2175,7 +2200,7 @@ let with_fail b f =
       | _ -> assert false
   end
 
-let interp ?(verbosely=true) ?proof (loc,c) =
+let interp ?(verbosely=true) ?proof st (loc,c) =
   let orig_program_mode = Flags.is_program_mode () in
   let rec aux ?locality ?polymorphism isprogcmd = function
 
@@ -2188,7 +2213,7 @@ let interp ?(verbosely=true) ?proof (loc,c) =
     | VernacPolymorphic (b, c) -> user_err Pp.(str "Polymorphism specified twice")
     | VernacLocal _ -> user_err Pp.(str "Locality specified twice")
     | VernacFail v ->
-        with_fail true (fun () -> aux ?locality ?polymorphism isprogcmd v)
+        with_fail st true (fun () -> aux ?locality ?polymorphism isprogcmd v)
     | VernacTimeout (n,v) ->
         current_timeout := Some n;
         aux ?locality ?polymorphism isprogcmd v
@@ -2227,3 +2252,8 @@ let interp ?(verbosely=true) ?proof (loc,c) =
   in
     if verbosely then Flags.verbosely (aux false) c
     else aux false c
+
+let interp ?verbosely ?proof st cmd =
+  unfreeze_interp_state st;
+  interp ?verbosely ?proof st cmd;
+  freeze_interp_state `No

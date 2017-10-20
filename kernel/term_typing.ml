@@ -266,7 +266,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let tyj = infer_type env typ in
       let proofterm =
-        Future.chain ~pure:true body (fun ((body,uctx),side_eff) ->
+        Future.chain body (fun ((body,uctx),side_eff) ->
           let j, uctx = match trust with
           | Pure ->
             let env = push_context_set uctx env in
@@ -535,7 +535,7 @@ let export_side_effects mb env ce =
       let { const_entry_body = body } = c in
       let _, eff = Future.force body in
       let ce = DefinitionEntry { c with
-        const_entry_body = Future.chain ~pure:true body
+        const_entry_body = Future.chain body
           (fun (b_ctx, _) -> b_ctx, ()) } in
       let not_exists (c,_,_,_) =
         try ignore(Environ.lookup_constant c env); false
@@ -628,7 +628,7 @@ let translate_local_def mb env id centry =
 let translate_mind env kn mie = Indtypes.check_inductive env kn mie
 
 let inline_entry_side_effects env ce = { ce with
-  const_entry_body = Future.chain ~pure:true
+  const_entry_body = Future.chain
     ce.const_entry_body (fun ((body, ctx), side_eff) ->
       let body, ctx',_ = inline_side_effects env body ctx side_eff in
       (body, ctx'), ());

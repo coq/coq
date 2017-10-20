@@ -10,7 +10,7 @@ open Context.Named.Declaration
 
 let map_const_entry_body (f:Term.constr->Term.constr) (x:Safe_typing.private_constants Entries.const_entry_body)
     : Safe_typing.private_constants Entries.const_entry_body =
-  Future.chain ~pure:true x begin fun ((b,ctx),fx) ->
+  Future.chain x begin fun ((b,ctx),fx) ->
     (f b , ctx) , fx
   end
 

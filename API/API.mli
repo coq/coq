@@ -1914,7 +1914,11 @@ module Summary :
 sig
 
   type frozen
-  type marshallable
+
+  type marshallable =
+    [ `Yes       (* Full data will be marshalled to disk                        *)
+    | `No        (* Full data will be store in memory, e.g. for Undo            *)
+    | `Shallow ] (* Only part of the data will be marshalled to a slave process *)
 
   type 'a summary_declaration =
     { freeze_function : marshallable -> 'a;
@@ -2060,7 +2064,8 @@ end
 
 module States :
 sig
-  val with_state_protection_on_exception : ('a -> 'b) -> 'a -> 'b
+  type state
+
   val with_state_protection : ('a -> 'b) -> 'a -> 'b
 end
 
@@ -3713,7 +3718,7 @@ sig
                    | VtProofStep of proof_step
                    | VtProofMode of string
                    | VtQuery of vernac_part_of_script * Feedback.route_id
-                   | VtBack of vernac_part_of_script * Stateid.t
+                   | VtMeta
                    | VtUnknown
    and vernac_qed_type =
      | VtKeep
@@ -4512,6 +4517,9 @@ end
 
 module Proof_global :
 sig
+
+  type state
+
   type proof_mode = {
       name : string;
       set : unit -> unit ;
@@ -5787,6 +5795,16 @@ end
 
 module Vernacentries :
 sig
+
+  type interp_state = { (* TODO: inline records in OCaml 4.03 *)
+    system  : States.state;        (* summary + libstack *)
+    proof   : Proof_global.state;  (* proof state *)
+    shallow : bool                 (* is the state trimmed down (libstack) *)
+  }
+
+  val freeze_interp_state : Summary.marshallable -> interp_state
+  val unfreeze_interp_state : interp_state -> unit
+
   val dump_global : Libnames.reference Misctypes.or_by_notation -> unit
   val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr ->
                             Evd.evar_map * Redexpr.red_expr) Hook.t
@@ -5814,11 +5832,11 @@ end
 module Stm :
 sig
   type doc
-  type state
 
   val get_doc : Feedback.doc_id -> doc
+
   val state_of_id : doc:doc ->
-    Stateid.t -> [ `Valid of state option | `Expired | `Error of exn ]
+    Stateid.t -> [ `Valid of Vernacentries.interp_state option | `Expired | `Error of exn ]
 end
 
 (************************************************************************)
