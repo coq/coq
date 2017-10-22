@@ -135,3 +135,9 @@
 ########################################################################
 : ${bignums_CI_BRANCH:=master}
 : ${bignums_CI_GITURL:=https://github.com/coq/bignums.git}
+
+########################################################################
+# Equations
+########################################################################
+: ${Equations_CI_BRANCH:=8.8+alpha}
+: ${Equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations.git}

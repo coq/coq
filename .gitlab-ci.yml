@@ -284,6 +284,9 @@ ci-coquelicot:
     <<: *ci-template-vars
     EXTRA_PACKAGES: "$TIMING_PACKAGES autoconf"
 
+ci-equations:
+  <<: *ci-template
+
 ci-geocoq:
   <<: *ci-template
   allow_failure: true
