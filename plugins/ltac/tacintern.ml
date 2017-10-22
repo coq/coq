@@ -468,9 +468,10 @@ let rec intern_match_goal_hyps ist ?(as_type=false) lfun = function
 (* Utilities *)
 let extract_let_names lrc =
   let fold accu ((loc, name), _) =
-    if Id.Set.mem name accu then user_err ?loc
+    Nameops.Name.fold_right (fun id accu ->
+    if Id.Set.mem id accu then user_err ?loc
       ~hdr:"glob_tactic" (str "This variable is bound several times.")
-    else Id.Set.add name accu
+    else Id.Set.add id accu) name accu
   in
   List.fold_left fold Id.Set.empty lrc
 
@@ -812,7 +813,7 @@ let notation_subst bindings tac =
   let fold id c accu =
     let loc = Glob_ops.loc_of_glob_constr (fst c) in
     let c = ConstrMayEval (ConstrTerm c) in
-    ((loc, id), c) :: accu
+    ((loc, Name id), c) :: accu
   in
   let bindings = Id.Map.fold fold bindings [] in
   (** This is theoretically not correct due to potential variable capture, but
