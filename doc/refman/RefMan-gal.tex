@@ -434,6 +434,7 @@ be shortened in {\tt fun~x~y~z~:~A~=>~t}).
 \subsection{Abstractions
 \label{abstractions}
 \index{abstractions}}
+\index{fun@{{\tt fun \ldots => \ldots}}}
 
 The expression ``{\tt fun} {\ident} {\tt :} {\type} {\tt =>}~{\term}''
 defines the {\em abstraction} of the variable {\ident}, of type
@@ -455,6 +456,7 @@ occurs in the list of binders, it is expanded to a let-in definition
 \subsection{Products
 \label{products}
 \index{products}}
+\index{forall@{{\tt forall \ldots, \ldots}}}
 
 The expression ``{\tt forall}~{\ident}~{\tt :}~{\type}{\tt
 ,}~{\term}'' denotes the {\em product} of the variable {\ident} of
@@ -495,6 +497,7 @@ arguments is used for making explicit the value of implicit arguments
 \subsection{Type cast
 \label{typecast}
 \index{Cast}}
+\index{cast@{{\tt(\ldots: \ldots)}}}
 
 The expression ``{\term}~{\tt :}~{\type}'' is a type cast
 expression. It enforces the type of {\term} to be {\type}.
@@ -514,6 +517,7 @@ symbol ``\_'' and {\Coq} will guess the missing piece of information.
 \label{let-in}
 \index{Let-in definitions}
 \index{let-in}}
+\index{let@{{\tt let \ldots := \ldots in \ldots}}}
 
 
 {\tt let}~{\ident}~{\tt :=}~{\term$_1$}~{\tt in}~{\term$_2$} denotes
