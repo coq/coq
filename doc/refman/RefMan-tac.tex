@@ -3523,8 +3523,13 @@ with its $\beta\iota$-normal form.
 \end{ErrMsgs}
 
 \begin{Variants}
+\item {\tt unfold {\qualid} in {\ident}}
+  \tacindex{unfold \dots in}
+
+  Replaces {\qualid} in hypothesis {\ident} with its definition
+  and replaces the hypothesis with its $\beta\iota$ normal form.
+
 \item {\tt unfold {\qualid}$_1$, \dots, \qualid$_n$}
-  \tacindex{unfold \dots\ in}
 
   Replaces {\em simultaneously} {\qualid}$_1$, \dots, {\qualid}$_n$
   with their definitions and replaces the current goal with its
