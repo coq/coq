@@ -42,6 +42,7 @@ sig
   val to_list : t -> t list option
   val to_option : t -> t option option
   val to_pair : t -> (t * t) option
+  val cast : 'a typed_abstract_argument_type -> Geninterp.Val.t -> 'a
 end
 
 (** {5 Coercion functions} *)
@@ -92,3 +93,21 @@ val coerce_to_int_or_var_list : Value.t -> int or_var list
 val wit_constr_context : (Empty.t, Empty.t, EConstr.constr) genarg_type
 
 val wit_constr_under_binders : (Empty.t, Empty.t, Ltac_pretype.constr_under_binders) genarg_type
+
+val error_ltac_variable : ?loc:Loc.t -> Id.t ->
+  (Environ.env * Evd.evar_map) option -> Value.t -> string -> 'a
+
+(** Abstract application, to print ltac functions *)
+type appl =
+  | UnnamedAppl (** For generic applications: nothing is printed *)
+  | GlbAppl of (Names.KerName.t * Val.t list) list
+       (** For calls to global constants, some may alias other. *)
+
+type tacvalue =
+  | VFun of appl*Tacexpr.ltac_trace * Val.t Id.Map.t *
+      Name.t list * Tacexpr.glob_tactic_expr
+  | VRec of Val.t Id.Map.t ref * Tacexpr.glob_tactic_expr
+
+val wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type
+
+val pr_value : (Environ.env * Evd.evar_map) option -> Geninterp.Val.t -> Pp.t

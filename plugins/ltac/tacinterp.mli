@@ -133,13 +133,5 @@ val interp_int : interp_sign -> lident -> int
 
 val interp_int_or_var : interp_sign -> int or_var -> int
 
-val error_ltac_variable : ?loc:Loc.t -> Id.t ->
-  (Environ.env * Evd.evar_map) option -> value -> string -> 'a
-
-(** Transforms a constr-expecting tactic into a tactic finding its arguments in
-    the Ltac environment according to the given names. *)
-val lift_constr_tac_to_ml_tac : Name.t list ->
-  (constr list -> Geninterp.interp_sign -> unit Proofview.tactic) -> Tacenv.ml_tactic
-
 val default_ist : unit -> Geninterp.interp_sign
 (** Empty ist with debug set on the current value. *)

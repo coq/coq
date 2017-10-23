@@ -16,6 +16,7 @@ open Misctypes
 open Genarg
 open Stdarg
 open Geninterp
+open Pp
 
 exception CannotCoerceTo of string
 
@@ -93,6 +94,38 @@ let to_list v = prj Val.typ_list v
 let to_option v = prj Val.typ_opt v
 
 let to_pair v = prj Val.typ_pair v
+
+let cast_error wit v =
+  let pr_v = Pptactic.pr_value Pptactic.ltop v in
+  let Val.Dyn (tag, _) = v in
+  let tag = Val.pr tag in
+  CErrors.user_err (str "Type error: value " ++ pr_v ++ str " is a " ++ tag
+    ++ str " while type " ++ Val.pr wit ++ str " was expected.")
+
+let unbox wit v ans = match ans with
+| None -> cast_error wit v
+| Some x -> x
+
+let rec prj : type a. a Val.tag -> Val.t -> a = fun tag v -> match tag with
+| Val.List tag -> List.map (fun v -> prj tag v) (unbox Val.typ_list v (to_list v))
+| Val.Opt tag -> Option.map (fun v -> prj tag v) (unbox Val.typ_opt v (to_option v))
+| Val.Pair (tag1, tag2) ->
+  let (x, y) = unbox Val.typ_pair v (to_pair v) in
+  (prj tag1 x, prj tag2 y)
+| Val.Base t ->
+  let Val.Dyn (t', x) = v in
+  match Val.eq t t' with
+  | None -> cast_error t v
+  | Some Refl -> x
+let rec tag_of_arg : type a b c. (a, b, c) genarg_type -> c Val.tag = fun wit -> match wit with
+| ExtraArg _ -> Geninterp.val_tag (topwit wit)
+| ListArg t -> Val.List (tag_of_arg t)
+| OptArg t -> Val.Opt (tag_of_arg t)
+| PairArg (t1, t2) -> Val.Pair (tag_of_arg t1, tag_of_arg t2)
+
+let val_cast arg v = prj (tag_of_arg arg) v
+
+let cast (Topwit wit) v = val_cast wit v
 
 end
 
@@ -334,3 +367,46 @@ let coerce_to_int_or_var_list v =
   | Some l ->
     let map n = ArgArg (coerce_to_int n) in
     List.map map l
+
+(** Abstract application, to print ltac functions *)
+type appl =
+  | UnnamedAppl (** For generic applications: nothing is printed *)
+  | GlbAppl of (Names.KerName.t * Val.t list) list
+       (** For calls to global constants, some may alias other. *)
+
+(* Values for interpretation *)
+type tacvalue =
+  | VFun of appl*Tacexpr.ltac_trace * Val.t Id.Map.t *
+      Name.t list * Tacexpr.glob_tactic_expr
+  | VRec of Val.t Id.Map.t ref * Tacexpr.glob_tactic_expr
+
+let (wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type) =
+  let wit = Genarg.create_arg "tacvalue" in
+  let () = register_val0 wit None in
+  let () = Genprint.register_val_print0 (base_val_typ wit)
+             (fun _ -> Genprint.TopPrinterBasic (fun () -> str "<tactic closure>")) in
+  wit
+
+let pr_argument_type arg =
+  let Val.Dyn (tag, _) = arg in
+  Val.pr tag
+
+(** TODO: unify printing of generic Ltac values in case of coercion failure. *)
+
+(* Displays a value *)
+let pr_value env v =
+  let pr_with_env pr =
+    match env with
+    | Some (env,sigma) -> pr env sigma
+    | None -> str "a value of type" ++ spc () ++ pr_argument_type v in
+  let open Genprint in
+  match generic_val_print v with
+  | TopPrinterBasic pr -> pr ()
+  | TopPrinterNeedsContext pr -> pr_with_env pr
+  | TopPrinterNeedsContextAndLevel { default_already_surrounded; printer } ->
+     pr_with_env (fun env sigma -> printer env sigma default_already_surrounded)
+
+let error_ltac_variable ?loc id env v s =
+   CErrors.user_err ?loc  (str "Ltac variable " ++ Id.print id ++
+   strbrk " is bound to" ++ spc () ++ pr_value env v ++ spc () ++
+   strbrk "which cannot be coerced to " ++ str s ++ str".")

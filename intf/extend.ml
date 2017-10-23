@@ -85,6 +85,15 @@ type 'a user_symbol =
 | Uentry of 'a
 | Uentryl of 'a * int
 
+type ('a,'b,'c) ty_user_symbol =
+| TUlist1 : ('a,'b,'c) ty_user_symbol -> ('a list,'b list,'c list) ty_user_symbol
+| TUlist1sep : ('a,'b,'c) ty_user_symbol * string -> ('a list,'b list,'c list) ty_user_symbol
+| TUlist0 : ('a,'b,'c) ty_user_symbol -> ('a list,'b list,'c list) ty_user_symbol
+| TUlist0sep : ('a,'b,'c) ty_user_symbol * string -> ('a list,'b list,'c list) ty_user_symbol
+| TUopt : ('a,'b,'c) ty_user_symbol -> ('a option, 'b option, 'c option) ty_user_symbol
+| TUentry : ('a, 'b, 'c) Genarg.ArgT.tag -> ('a,'b,'c) ty_user_symbol
+| TUentryl : ('a, 'b, 'c) Genarg.ArgT.tag * int -> ('a,'b,'c) ty_user_symbol
+
 (** {5 Type-safe grammar extension} *)
 
 type ('self, 'a) symbol =
