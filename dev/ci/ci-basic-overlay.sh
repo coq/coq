@@ -46,11 +46,8 @@
 ########################################################################
 # HoTT
 ########################################################################
-# Temporary overlay
-: ${HoTT_CI_BRANCH:=ocaml.4.02.3}
-: ${HoTT_CI_GITURL:=https://github.com/ejgallego/HoTT.git}
-# : ${HoTT_CI_BRANCH:=master}
-# : ${HoTT_CI_GITURL:=https://github.com/HoTT/HoTT.git}
+: ${HoTT_CI_BRANCH:=master}
+: ${HoTT_CI_GITURL:=https://github.com/HoTT/HoTT.git}
 
 ########################################################################
 # GeoCoq
