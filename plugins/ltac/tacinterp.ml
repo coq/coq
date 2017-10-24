@@ -38,6 +38,7 @@ open Tacintern
 open Taccoerce
 open Proofview.Notations
 open Context.Named.Declaration
+open Ltac_pretype
 
 let ltac_trace_info = Tactic_debug.ltac_trace_info
 
@@ -551,7 +552,6 @@ let interp_fresh_id ist env sigma l =
 
 (* Extract the uconstr list from lfun *)
 let extract_ltac_constr_context ist env sigma =
-  let open Glob_term in
   let add_uconstr id v map =
     try Id.Map.add id (coerce_to_uconstr env v) map
     with CannotCoerceTo _ -> map
@@ -602,10 +602,10 @@ let interp_gen kind ist pattern_mode flags env sigma c =
   let { closure = constrvars ; term } =
     interp_glob_closure ist env sigma ~kind:kind_for_intern ~pattern_mode c in
   let vars = {
-    Glob_term.ltac_constrs = constrvars.typed;
-    Glob_term.ltac_uconstrs = constrvars.untyped;
-    Glob_term.ltac_idents = constrvars.idents;
-    Glob_term.ltac_genargs = ist.lfun;
+    ltac_constrs = constrvars.typed;
+    ltac_uconstrs = constrvars.untyped;
+    ltac_idents = constrvars.idents;
+    ltac_genargs = ist.lfun;
   } in
   (* Jason Gross: To avoid unnecessary modifications to tacinterp, as
       suggested by Arnaud Spiwack, we run push_trace immediately.  We do

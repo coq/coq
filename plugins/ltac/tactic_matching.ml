@@ -22,7 +22,7 @@ module NamedDecl = Context.Named.Declaration
     those of {!Matching.matching_result}), and a {!Term.constr}
     substitution mapping corresponding to matched hypotheses. *)
 type 'a t = {
-  subst : Constr_matching.bound_ident_map * Pattern.extended_patvar_map ;
+  subst : Constr_matching.bound_ident_map * Ltac_pretype.extended_patvar_map ;
   context : EConstr.constr Id.Map.t;
   terms : EConstr.constr Id.Map.t;
   lhs : 'a;
@@ -36,8 +36,8 @@ type 'a t = {
 (** Some of the functions of {!Matching} return the substitution with a
     [patvar_map] instead of an [extended_patvar_map]. [adjust] coerces
     substitution of the former type to the latter. *)
-let adjust : Constr_matching.bound_ident_map * Pattern.patvar_map ->
-             Constr_matching.bound_ident_map * Pattern.extended_patvar_map =
+let adjust : Constr_matching.bound_ident_map * Ltac_pretype.patvar_map ->
+             Constr_matching.bound_ident_map * Ltac_pretype.extended_patvar_map =
   fun (l, lc) -> (l, Id.Map.map (fun c -> [], c) lc)
 
 

@@ -10,7 +10,6 @@ open Util
 open Names
 open Term
 open EConstr
-open Pattern
 open Misctypes
 open Genarg
 open Stdarg
@@ -24,7 +23,7 @@ let (wit_constr_context : (Empty.t, Empty.t, EConstr.constr) Genarg.genarg_type)
   wit
 
 (* includes idents known to be bound and references *)
-let (wit_constr_under_binders : (Empty.t, Empty.t, constr_under_binders) Genarg.genarg_type) =
+let (wit_constr_under_binders : (Empty.t, Empty.t, Ltac_pretype.constr_under_binders) Genarg.genarg_type) =
   let wit = Genarg.create_arg "constr_under_binders" in
   let () = register_val0 wit None in
   wit

@@ -13,6 +13,7 @@ open Globnames
 open Misctypes
 open Glob_term
 open Evar_kinds
+open Ltac_pretype
 
 (* Untyped intermediate terms, after ASTs and before constr. *)
 

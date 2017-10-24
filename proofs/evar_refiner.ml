@@ -14,6 +14,7 @@ open Evarutil
 open Evarsolve
 open Pp
 open Glob_term
+open Ltac_pretype
 
 (******************************************)
 (* Instantiation of existential variables *)

@@ -43,6 +43,7 @@ open Glob_term
 open Glob_ops
 open Evarconv
 open Misctypes
+open Ltac_pretype
 
 module NamedDecl = Context.Named.Declaration
 

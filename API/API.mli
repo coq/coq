@@ -2757,13 +2757,6 @@ sig
     | PFix of Term.fixpoint
     | PCoFix of Term.cofixpoint
 
-  type constr_under_binders = Names.Id.t list * EConstr.constr
-
-  (** Types of substitutions with or w/o bound variables *)
-
-  type patvar_map = EConstr.constr Names.Id.Map.t
-  type extended_patvar_map = constr_under_binders Names.Id.Map.t
-
 end
 
 module Namegen :
@@ -3185,34 +3178,6 @@ sig
    type any_glob_constr =
    | AnyGlobConstr : 'r glob_constr_g -> any_glob_constr
 
-   (** A globalised term together with a closure representing the value
-       of its free variables. Intended for use when these variables are taken
-       from the Ltac environment. *)
-
-   type closure = {
-     idents : Names.Id.t Names.Id.Map.t;
-     typed  : Pattern.constr_under_binders Names.Id.Map.t ;
-     untyped: closed_glob_constr Names.Id.Map.t }
-   and closed_glob_constr = {
-     closure: closure;
-     term: glob_constr }
-
-   (** Ltac variable maps *)
-   type var_map = Pattern.constr_under_binders Names.Id.Map.t
-   type uconstr_var_map = closed_glob_constr Names.Id.Map.t
-   type unbound_ltac_var_map = Geninterp.Val.t Names.Id.Map.t
-
-   type ltac_var_map = {
-     ltac_constrs : var_map;
-     (** Ltac variables bound to constrs *)
-     ltac_uconstrs : uconstr_var_map;
-     (** Ltac variables bound to untyped constrs *)
-     ltac_idents: Names.Id.t Names.Id.Map.t;
-     (** Ltac variables bound to identifiers *)
-     ltac_genargs : unbound_ltac_var_map;
-     (** Ltac variables bound to other kinds of arguments *)
-   }
-
 end
 
 module Notation_term :
@@ -3275,6 +3240,79 @@ end
 (************************************************************************)
 (* Modules from pretyping/                                              *)
 (************************************************************************)
+
+module Ltac_pretype :
+sig
+open Names
+open Glob_term
+
+(** {5 Maps of pattern variables} *)
+
+(** Type [constr_under_binders] is for representing the term resulting
+    of a matching. Matching can return terms defined in a some context
+    of named binders; in the context, variable names are ordered by
+    (<) and referred to by index in the term Thanks to the canonical
+    ordering, a matching problem like
+
+    [match ... with [(fun x y => ?p,fun y x => ?p)] => [forall x y => p]]
+
+    will be accepted. Thanks to the reference by index, a matching
+    problem like
+
+    [match ... with [(fun x => ?p)] => [forall x => p]]
+
+    will work even if [x] is also the name of an existing goal
+    variable.
+
+    Note: we do not keep types in the signature. Besides simplicity,
+    the main reason is that it would force to close the signature over
+    binders that occur only in the types of effective binders but not
+    in the term itself (e.g. for a term [f x] with [f:A -> True] and
+    [x:A]).
+
+    On the opposite side, by not keeping the types, we loose
+    opportunity to propagate type informations which otherwise would
+    not be inferable, as e.g. when matching [forall x, x = 0] with
+    pattern [forall x, ?h = 0] and using the solution "x|-h:=x" in
+    expression [forall x, h = x] where nothing tells how the type of x
+    could be inferred. We also loose the ability of typing ltac
+    variables before calling the right-hand-side of ltac matching clauses. *)
+
+type constr_under_binders = Id.t list * EConstr.constr
+
+(** Types of substitutions with or w/o bound variables *)
+
+type patvar_map = EConstr.constr Id.Map.t
+type extended_patvar_map = constr_under_binders Id.Map.t
+
+(** A globalised term together with a closure representing the value
+    of its free variables. Intended for use when these variables are taken
+    from the Ltac environment. *)
+type closure = {
+  idents:Id.t Id.Map.t;
+  typed: constr_under_binders Id.Map.t ;
+  untyped:closed_glob_constr Id.Map.t }
+and closed_glob_constr = {
+  closure: closure;
+  term: glob_constr }
+
+(** Ltac variable maps *)
+type var_map = constr_under_binders Id.Map.t
+type uconstr_var_map = closed_glob_constr Id.Map.t
+type unbound_ltac_var_map = Geninterp.Val.t Id.Map.t
+
+type ltac_var_map = {
+  ltac_constrs : var_map;
+  (** Ltac variables bound to constrs *)
+  ltac_uconstrs : uconstr_var_map;
+  (** Ltac variables bound to untyped constrs *)
+  ltac_idents: Id.t Id.Map.t;
+  (** Ltac variables bound to identifiers *)
+  ltac_genargs : unbound_ltac_var_map;
+  (** Ltac variables bound to other kinds of arguments *)
+}
+
+end
 
 module Locusops :
 sig
@@ -3513,7 +3551,7 @@ sig
   val map_glob_constr :
     (Glob_term.glob_constr -> Glob_term.glob_constr) -> Glob_term.glob_constr -> Glob_term.glob_constr
 
-  val empty_lvar : Glob_term.ltac_var_map
+  val empty_lvar : Ltac_pretype.ltac_var_map
 
 end
 
@@ -3529,7 +3567,7 @@ sig
   val subst_pattern : Mod_subst.substitution -> Pattern.constr_pattern -> Pattern.constr_pattern
   val pattern_of_constr : Environ.env -> Evd.evar_map -> Constr.t -> Pattern.constr_pattern
   val instantiate_pattern : Environ.env ->
-    Evd.evar_map -> Pattern.extended_patvar_map ->
+    Evd.evar_map -> Ltac_pretype.extended_patvar_map ->
     Pattern.constr_pattern -> Pattern.constr_pattern
 end
 
@@ -3542,16 +3580,16 @@ sig
   val is_matching : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> EConstr.constr -> bool
   val extended_matches :
     Environ.env -> Evd.evar_map -> binding_bound_vars * Pattern.constr_pattern ->
-    EConstr.constr -> bound_ident_map * Pattern.extended_patvar_map
+    EConstr.constr -> bound_ident_map * Ltac_pretype.extended_patvar_map
   exception PatternMatchingFailure
   type matching_result =
-    { m_sub : bound_ident_map * Pattern.patvar_map;
+    { m_sub : bound_ident_map * Ltac_pretype.patvar_map;
       m_ctx : EConstr.constr }
   val match_subterm_gen : Environ.env -> Evd.evar_map ->
                           bool ->
                           binding_bound_vars * Pattern.constr_pattern -> EConstr.constr ->
                           matching_result IStream.t
-  val matches : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> EConstr.constr -> Pattern.patvar_map
+  val matches : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> EConstr.constr -> Ltac_pretype.patvar_map
 end
 
 module Tacred :
@@ -4082,7 +4120,7 @@ sig
     }
 
   val understand_ltac : inference_flags ->
-                        Environ.env -> Evd.evar_map -> Glob_term.ltac_var_map ->
+                        Environ.env -> Evd.evar_map -> Ltac_pretype.ltac_var_map ->
                         typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.t
   val understand_tcc : ?flags:inference_flags -> Environ.env -> Evd.evar_map ->
                        ?expected_type:typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.constr
@@ -4091,11 +4129,11 @@ sig
   val check_evars : Environ.env -> Evd.evar_map -> Evd.evar_map -> EConstr.constr -> unit
   val register_constr_interp0 :
     ('r, 'g, 't) Genarg.genarg_type ->
-    (Glob_term.unbound_ltac_var_map -> Environ.env -> Evd.evar_map -> EConstr.types -> 'g -> EConstr.constr * Evd.evar_map) -> unit
+    (Ltac_pretype.unbound_ltac_var_map -> Environ.env -> Evd.evar_map -> EConstr.types -> 'g -> EConstr.constr * Evd.evar_map) -> unit
   val all_and_fail_flags : inference_flags
   val ise_pretype_gen :
     inference_flags -> Environ.env -> Evd.evar_map ->
-    Glob_term.ltac_var_map -> typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.constr
+    Ltac_pretype.ltac_var_map -> typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.constr
 end
 
 module Unification :
@@ -4203,7 +4241,7 @@ sig
   val wit_int_or_var : (int Misctypes.or_var, int Misctypes.or_var, int) Genarg.genarg_type
   val wit_ref : (Libnames.reference, Globnames.global_reference Loc.located Misctypes.or_var, Globnames.global_reference) Genarg.genarg_type
   val wit_clause_dft_concl :  (Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Locus.clause_expr) Genarg.genarg_type
-  val wit_uconstr : (Constrexpr.constr_expr , Tactypes.glob_constr_and_expr, Glob_term.closed_glob_constr) Genarg.genarg_type
+  val wit_uconstr : (Constrexpr.constr_expr , Tactypes.glob_constr_and_expr, Ltac_pretype.closed_glob_constr) Genarg.genarg_type
   val wit_red_expr :
     ((Constrexpr.constr_expr,Libnames.reference Misctypes.or_by_notation,Constrexpr.constr_expr) Genredexpr.red_expr_gen,
      (Tactypes.glob_constr_and_expr,Names.evaluable_global_reference Misctypes.and_short_name Misctypes.or_var,Tactypes.glob_constr_pattern_and_expr) Genredexpr.red_expr_gen,
@@ -4456,7 +4494,7 @@ end
 
 module Evar_refiner :
 sig
-  type glob_constr_ltac_closure = Glob_term.ltac_var_map * Glob_term.glob_constr
+  type glob_constr_ltac_closure = Ltac_pretype.ltac_var_map * Glob_term.glob_constr
 
   val w_refine : Evar.t * Evd.evar_info ->
                  glob_constr_ltac_closure -> Evd.evar_map -> Evd.evar_map
@@ -4994,16 +5032,16 @@ sig
   val pr_econstr_env : Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t
   val pr_constr_pattern_env : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> Pp.t
   val pr_lconstr_pattern_env : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> Pp.t
-  val pr_closed_glob : Glob_term.closed_glob_constr -> Pp.t
+  val pr_closed_glob : Ltac_pretype.closed_glob_constr -> Pp.t
   val pr_lglob_constr : Glob_term.glob_constr -> Pp.t
   val pr_leconstr_env : Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t
   val pr_leconstr : EConstr.constr -> Pp.t
   val pr_global : Globnames.global_reference -> Pp.t
-  val pr_lconstr_under_binders : Pattern.constr_under_binders -> Pp.t
-  val pr_lconstr_under_binders_env : Environ.env -> Evd.evar_map -> Pattern.constr_under_binders -> Pp.t
+  val pr_lconstr_under_binders : Ltac_pretype.constr_under_binders -> Pp.t
+  val pr_lconstr_under_binders_env : Environ.env -> Evd.evar_map -> Ltac_pretype.constr_under_binders -> Pp.t
 
-  val pr_constr_under_binders_env : Environ.env -> Evd.evar_map -> Pattern.constr_under_binders -> Pp.t
-  val pr_closed_glob_env : Environ.env -> Evd.evar_map -> Glob_term.closed_glob_constr -> Pp.t
+  val pr_constr_under_binders_env : Environ.env -> Evd.evar_map -> Ltac_pretype.constr_under_binders -> Pp.t
+  val pr_closed_glob_env : Environ.env -> Evd.evar_map -> Ltac_pretype.closed_glob_constr -> Pp.t
   val pr_rel_context_of : Environ.env -> Evd.evar_map -> Pp.t
   val pr_named_context_of : Environ.env -> Evd.evar_map -> Pp.t
   val pr_ltype : Term.types -> Pp.t
@@ -5158,7 +5196,7 @@ module Tactics :
 sig
   open Proofview
 
-  type change_arg = Pattern.patvar_map -> Evd.evar_map -> Evd.evar_map * EConstr.constr
+  type change_arg = Ltac_pretype.patvar_map -> Evd.evar_map -> Evd.evar_map * EConstr.constr
   type tactic_reduction = Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr
 
   type elim_scheme =

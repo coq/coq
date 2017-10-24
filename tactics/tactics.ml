@@ -839,7 +839,7 @@ let e_change_in_hyp redfun (id,where) =
     (convert_hyp c)
   end
 
-type change_arg = Pattern.patvar_map -> evar_map -> evar_map * EConstr.constr
+type change_arg = Ltac_pretype.patvar_map -> evar_map -> evar_map * EConstr.constr
 
 let make_change_arg c pats sigma = (sigma, replace_vars (Id.Map.bindings pats) c)
 

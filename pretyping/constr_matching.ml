@@ -22,6 +22,7 @@ open Pattern
 open Patternops
 open Misctypes
 open Context.Rel.Declaration
+open Ltac_pretype
 (*i*)
 
 (* Given a term with second-order variables in it,
