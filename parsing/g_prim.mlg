@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+{
+
 open Names
 open Libnames
 
@@ -30,93 +32,96 @@ let my_int_of_string loc s =
   with Failure _ | Exit ->
     CErrors.user_err ~loc  (Pp.str "Cannot support a so large number.")
 
-GEXTEND Gram
+}
+
+GRAMMAR EXTEND Gram
   GLOBAL:
     bigint natural integer identref name ident var preident
     fullyqualid qualid reference dirpath ne_lstring
     ne_string string lstring pattern_ident pattern_identref by_notation smart_global;
   preident:
-    [ [ s = IDENT -> s ] ]
+    [ [ s = IDENT -> { s } ] ]
   ;
   ident:
-    [ [ s = IDENT -> Id.of_string s ] ]
+    [ [ s = IDENT -> { Id.of_string s } ] ]
   ;
   pattern_ident:
-    [ [ LEFTQMARK; id = ident -> id ] ]
+    [ [ LEFTQMARK; id = ident -> { id } ] ]
   ;
   pattern_identref:
-    [ [ id = pattern_ident -> CAst.make ~loc:!@loc id ] ]
+    [ [ id = pattern_ident -> { CAst.make ~loc id } ] ]
   ;
   var: (* as identref, but interpret as a term identifier in ltac *)
-    [ [ id = ident -> CAst.make ~loc:!@loc id ] ]
+    [ [ id = ident -> { CAst.make ~loc id } ] ]
   ;
   identref:
-    [ [ id = ident -> CAst.make ~loc:!@loc id ] ]
+    [ [ id = ident -> { CAst.make ~loc id } ] ]
   ;
   field:
-    [ [ s = FIELD -> Id.of_string s ] ]
+    [ [ s = FIELD -> { Id.of_string s } ] ]
   ;
   fields:
-    [ [ id = field; (l,id') = fields -> (l@[id],id')
-      | id = field -> ([],id)
+    [ [ id = field; f = fields -> { let (l,id') = f in (l@[id],id') }
+      | id = field -> { ([],id) }
       ] ]
   ;
   fullyqualid:
-    [ [ id = ident; (l,id')=fields -> CAst.make ~loc:!@loc @@ id::List.rev (id'::l)
-      | id = ident -> CAst.make ~loc:!@loc [id]
+    [ [ id = ident; f=fields -> { let (l,id') = f in CAst.make ~loc @@ id::List.rev (id'::l) }
+      | id = ident -> { CAst.make ~loc [id] }
       ] ]
   ;
   basequalid:
-    [ [ id = ident; (l,id')=fields -> local_make_qualid !@loc (l@[id]) id'
-      | id = ident -> qualid_of_ident ~loc:!@loc id
+    [ [ id = ident; f=fields -> { let (l,id') = f in  local_make_qualid loc (l@[id]) id' }
+      | id = ident -> { qualid_of_ident ~loc id }
       ] ]
   ;
   name:
-    [ [ IDENT "_"  -> CAst.make ~loc:!@loc Anonymous
-      | id = ident -> CAst.make ~loc:!@loc @@ Name id ] ]
+    [ [ IDENT "_"  -> { CAst.make ~loc Anonymous }
+      | id = ident -> { CAst.make ~loc @@ Name id } ] ]
   ;
   reference:
-    [ [ id = ident; (l,id') = fields ->
-        local_make_qualid !@loc (l@[id]) id'
-      | id = ident -> local_make_qualid !@loc [] id
+    [ [ id = ident; f = fields -> {
+        let (l,id') = f in
+        local_make_qualid loc (l@[id]) id' }
+      | id = ident -> { local_make_qualid loc [] id }
       ] ]
   ;
   by_notation:
-    [ [ s = ne_string; sc = OPT ["%"; key = IDENT -> key ] -> (s, sc) ] ]
+    [ [ s = ne_string; sc = OPT ["%"; key = IDENT -> { key } ] -> { (s, sc) } ] ]
   ;
   smart_global:
-    [ [ c = reference -> CAst.make ~loc:!@loc @@ Constrexpr.AN c
-      | ntn = by_notation -> CAst.make ~loc:!@loc @@ Constrexpr.ByNotation ntn ] ]
+    [ [ c = reference -> { CAst.make ~loc @@ Constrexpr.AN c }
+      | ntn = by_notation -> { CAst.make ~loc @@ Constrexpr.ByNotation ntn } ] ]
   ;
   qualid:
-    [ [ qid = basequalid -> qid ] ]
+    [ [ qid = basequalid -> { qid } ] ]
   ;
   ne_string:
     [ [ s = STRING ->
-        if s="" then CErrors.user_err ~loc:!@loc (Pp.str"Empty string."); s
+        { if s="" then CErrors.user_err ~loc (Pp.str"Empty string."); s }
     ] ]
   ;
   ne_lstring:
-    [ [ s = ne_string -> CAst.make ~loc:!@loc s ] ]
+    [ [ s = ne_string -> { CAst.make ~loc s } ] ]
   ;
   dirpath:
     [ [ id = ident; l = LIST0 field ->
-        DirPath.make (List.rev (id::l)) ] ]
+        { DirPath.make (List.rev (id::l)) } ] ]
   ;
   string:
-    [ [ s = STRING -> s ] ]
+    [ [ s = STRING -> { s } ] ]
   ;
   lstring:
-    [ [ s = string -> (CAst.make ~loc:!@loc s) ] ]
+    [ [ s = string -> { CAst.make ~loc s } ] ]
   ;
   integer:
-    [ [ i = INT      -> my_int_of_string (!@loc) i
-      | "-"; i = INT -> - my_int_of_string (!@loc) i ] ]
+    [ [ i = INT      -> { my_int_of_string loc i }
+      | "-"; i = INT -> { - my_int_of_string loc i } ] ]
   ;
   natural:
-    [ [ i = INT -> my_int_of_string (!@loc) i ] ]
+    [ [ i = INT -> { my_int_of_string loc i } ] ]
   ;
   bigint: (* Negative numbers are dealt with elsewhere *)
-    [ [ i = INT -> i ] ]
+    [ [ i = INT -> { i } ] ]
   ;
 END
