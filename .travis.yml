@@ -64,6 +64,17 @@ env:
 matrix:
 
   include:
+    - env:
+      - TEST_TARGET="lint"
+      install: []
+      before_script: []
+      addons:
+      apt:
+        sources: []
+        packages: []
+      script:
+        - dev/lint-repository.sh
+
     # Full Coq test-suite with two compilers
     - env:
       - TEST_TARGET="test-suite"
@@ -134,17 +145,6 @@ matrix:
           sources:
           - avsm
           packages: *coqide-packages
-
-    - env:
-      - TEST_TARGET="lint"
-      install: []
-      before_script: []
-      addons:
-      apt:
-        sources: []
-        packages: []
-      script:
-        - dev/lint-repository.sh
 
     - os: osx
       osx_image: xcode8.3
