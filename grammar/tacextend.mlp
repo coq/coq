@@ -45,7 +45,7 @@ let rec make_let raw e = function
       <:expr< let $lid:p$ = $v$ in $e$ >>
   | _::l -> make_let raw e l
 
-let make_clause (pt,_,e) =
+let make_clause (pt,e) =
   (make_patt pt,
    ploc_vala None,
    make_let false e pt)
@@ -76,7 +76,7 @@ let make_prod_item = function
     <:expr< Tacentries.TacNonTerm (Loc.tag ( $mlexpr_of_symbol g$ , $mlexpr_of_option mlexpr_of_ident id$ ) ) >>
 
 let mlexpr_of_clause cl =
-  mlexpr_of_list (fun (a,_,_) -> mlexpr_of_list make_prod_item a) cl
+  mlexpr_of_list (fun (a,_) -> mlexpr_of_list make_prod_item a) cl
 
 (** Special treatment of constr entries *)
 let is_constr_gram = function
@@ -88,8 +88,8 @@ let make_var = function
   | ExtNonTerminal (_, p) -> p
   | _ -> assert false
 
-let declare_tactic loc tacname ~level classification clause = match clause with
-| [(ExtTerminal name) :: rem, _, tac] when List.for_all is_constr_gram rem ->
+let declare_tactic loc tacname ~level clause = match clause with
+| [(ExtTerminal name) :: rem, tac] when List.for_all is_constr_gram rem ->
   (** The extension is only made of a name followed by constr entries: we do not
       add any grammar nor printing rule and add it as a true Ltac definition. *)
   let patt = make_patt rem in
@@ -141,16 +141,14 @@ EXTEND
   str_item:
     [ [ "TACTIC"; "EXTEND"; s = tac_name;
         level = OPT [ "AT"; UIDENT "LEVEL"; level = INT -> level ];
-        c = OPT [ "CLASSIFIED"; "BY"; c = LIDENT -> <:expr< $lid:c$ >> ];
         OPT "|"; l = LIST1 tacrule SEP "|";
         "END" ->
         let level = match level with Some i -> int_of_string i | None -> 0 in
-         declare_tactic loc s ~level c l ] ]
+         declare_tactic loc s ~level l ] ]
   ;
   tacrule:
     [ [ "["; l = LIST1 tacargs; "]";
-        c = OPT [ "=>"; "["; c = Pcaml.expr; "]" -> c ];
-        "->"; "["; e = Pcaml.expr; "]" -> (l,c,e)
+        "->"; "["; e = Pcaml.expr; "]" -> (l,e)
     ] ]
   ;
   tacargs:
