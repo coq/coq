@@ -6,6 +6,7 @@ Tac2intern
 Tac2interp
 Tac2entries
 Tac2quote
+Tac2match
 Tac2core
 Tac2tactics
 Tac2stdlib

@@ -376,7 +376,7 @@ GEXTEND Gram
   GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause
           q_rewriting q_clause q_dispatch q_occurrences q_strategy_flag
           q_destruction_arg q_reference q_with_bindings q_constr_matching
-          q_hintdb q_move_location q_pose q_assert;
+          q_goal_matching q_hintdb q_move_location q_pose q_assert;
   anti:
     [ [ "$"; id = Prim.ident -> QAnti (Loc.tag ~loc:!@loc id) ] ]
   ;
@@ -682,14 +682,12 @@ GEXTEND Gram
   ;
   match_pattern:
     [ [ IDENT "context";  id = OPT Prim.ident;
-          "["; pat = Constr.lconstr_pattern; "]" -> (Some id, pat)
-      | pat = Constr.lconstr_pattern -> (None, pat) ] ]
+          "["; pat = Constr.lconstr_pattern; "]" -> Loc.tag ~loc:!@loc @@ QConstrMatchContext (id, pat)
+      | pat = Constr.lconstr_pattern -> Loc.tag ~loc:!@loc @@ QConstrMatchPattern pat ] ]
   ;
   match_rule:
     [ [ mp = match_pattern; "=>"; tac = tac2expr ->
-        match mp with
-        | None, pat -> Loc.tag ~loc:!@loc @@ QConstrMatchPattern (pat, tac)
-        | Some oid, pat -> Loc.tag ~loc:!@loc @@ QConstrMatchContext (oid, pat, tac)
+        Loc.tag ~loc:!@loc @@ (mp, tac)
     ] ]
   ;
   match_list:
@@ -698,6 +696,29 @@ GEXTEND Gram
   ;
   q_constr_matching:
     [ [ m = match_list -> m ] ]
+  ;
+  gmatch_hyp_pattern:
+    [ [ na = Prim.name; ":"; pat = match_pattern -> (na, pat) ] ]
+  ;
+  gmatch_pattern:
+    [ [ "["; hl = LIST0 gmatch_hyp_pattern SEP ","; "|-"; p = match_pattern; "]" ->
+        Loc.tag ~loc:!@loc @@ {
+          q_goal_match_concl = p;
+          q_goal_match_hyps = hl;
+        }
+    ] ]
+  ;
+  gmatch_rule:
+    [ [ mp = gmatch_pattern; "=>"; tac = tac2expr ->
+        Loc.tag ~loc:!@loc @@ (mp, tac)
+    ] ]
+  ;
+  gmatch_list:
+    [ [ mrl = LIST1 gmatch_rule SEP "|" -> Loc.tag ~loc:!@loc @@ mrl
+      | "|"; mrl = LIST1 gmatch_rule SEP "|" -> Loc.tag ~loc:!@loc @@ mrl ] ]
+  ;
+  q_goal_matching:
+    [ [ m = gmatch_list -> m ] ]
   ;
   move_location:
     [ [ "at"; IDENT "top" -> Loc.tag ~loc:!@loc @@ QMoveFirst

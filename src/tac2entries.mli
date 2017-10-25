@@ -77,6 +77,7 @@ val q_occurrences : occurrences Pcoq.Gram.entry
 val q_reference : Libnames.reference or_anti Pcoq.Gram.entry
 val q_strategy_flag : strategy_flag Pcoq.Gram.entry
 val q_constr_matching : constr_matching Pcoq.Gram.entry
+val q_goal_matching : goal_matching Pcoq.Gram.entry
 val q_hintdb : hintdb Pcoq.Gram.entry
 val q_move_location : move_location Pcoq.Gram.entry
 val q_pose : pose Pcoq.Gram.entry

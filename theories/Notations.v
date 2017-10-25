@@ -15,22 +15,20 @@ Ltac2 lazy_match0 t pats :=
   let rec interp m := match m with
   | [] => Control.zero Match_failure
   | p :: m =>
-    match p with
-    | Pattern.ConstrMatchPattern pat f =>
-      Control.plus
-        (fun _ =>
-          let bind := Pattern.matches_vect pat t in
-          fun _ => f bind
-        )
-        (fun _ => interp m)
-    | Pattern.ConstrMatchContext pat f =>
-      Control.plus
-        (fun _ =>
-          let ((context, bind)) := Pattern.matches_subterm_vect pat t in
-          fun _ => f context bind
-        )
-        (fun _ => interp m)
-    end
+    let next _ := interp m in
+    let ((knd, pat, f)) := p in
+    let p := match knd with
+    | Pattern.MatchPattern =>
+      (fun _ =>
+        let context := Pattern.empty_context () in
+        let bind := Pattern.matches_vect pat t in
+        fun _ => f context bind)
+    | Pattern.MatchContext =>
+      (fun _ =>
+        let ((context, bind)) := Pattern.matches_subterm_vect pat t in
+        fun _ => f context bind)
+    end in
+    Control.plus p next
   end in
   let ans := Control.once (fun () => interp pats) in
   ans ().
@@ -42,22 +40,20 @@ Ltac2 multi_match0 t pats :=
   let rec interp m := match m with
   | [] => Control.zero Match_failure
   | p :: m =>
-    match p with
-    | Pattern.ConstrMatchPattern pat f =>
-      Control.plus
-        (fun _ =>
-          let bind := Pattern.matches_vect pat t in
-          f bind
-        )
-        (fun _ => interp m)
-    | Pattern.ConstrMatchContext pat f =>
-      Control.plus
-        (fun _ =>
-          let ((context, bind)) := Pattern.matches_subterm_vect pat t in
-          f context bind
-        )
-        (fun _ => interp m)
-    end
+    let next _ := interp m in
+    let ((knd, pat, f)) := p in
+    let p := match knd with
+    | Pattern.MatchPattern =>
+      (fun _ =>
+        let context := Pattern.empty_context () in
+        let bind := Pattern.matches_vect pat t in
+        f context bind)
+    | Pattern.MatchContext =>
+      (fun _ =>
+        let ((context, bind)) := Pattern.matches_subterm_vect pat t in
+        f context bind)
+    end in
+    Control.plus p next
   end in
   interp pats.
 

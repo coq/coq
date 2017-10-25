@@ -528,6 +528,12 @@ end
 
 (** Patterns *)
 
+let empty_context = EConstr.mkMeta Constr_matching.special_meta
+
+let () = define0 "pattern_empty_context" begin
+  return (Value.of_constr empty_context)
+end
+
 let () = define2 "pattern_matches" pattern constr begin fun pat c ->
   pf_apply begin fun env sigma ->
     let ans =
@@ -589,6 +595,25 @@ let () = define2 "pattern_matches_subterm_vect" pattern constr begin fun pat c -
   pf_apply begin fun env sigma ->
     let ans = Constr_matching.match_appsubterm env sigma pat c in
     of_ans ans
+  end
+end
+
+let () = define3 "pattern_matches_goal" bool (list (pair bool pattern)) (pair bool pattern) begin fun rev hp cp ->
+  assert_focussed >>= fun () ->
+  Proofview.Goal.enter_one begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
+  let mk_pattern (b, pat) = if b then Tac2match.MatchContext pat else Tac2match.MatchPattern pat in
+  let r = (List.map mk_pattern hp, mk_pattern cp) in
+  Tac2match.match_goal env sigma concl ~rev r >>= fun (hyps, ctx, subst) ->
+    let of_ctxopt ctx = Value.of_constr (Option.default empty_context ctx) in
+    let hids = Value.of_array Value.of_ident (Array.map_of_list fst hyps) in
+    let hctx = Value.of_array of_ctxopt (Array.map_of_list snd hyps) in
+    let subs = Value.of_array Value.of_constr (Array.map_of_list snd (Id.Map.bindings subst)) in
+    let cctx = of_ctxopt ctx in
+    let ans = Value.of_tuple [| hids; hctx; subs; cctx |] in
+    Proofview.tclUNIT ans
   end
 end
 
@@ -1146,6 +1171,7 @@ let () = add_expr_scope "move_location" q_move_location Tac2quote.of_move_locati
 let () = add_expr_scope "pose" q_pose Tac2quote.of_pose
 let () = add_expr_scope "assert" q_assert Tac2quote.of_assertion
 let () = add_expr_scope "constr_matching" q_constr_matching Tac2quote.of_constr_matching
+let () = add_expr_scope "goal_matching" q_goal_matching Tac2quote.of_goal_matching
 
 let () = add_generic_scope "constr" Pcoq.Constr.constr Tac2quote.wit_constr
 let () = add_generic_scope "open_constr" Pcoq.Constr.constr Tac2quote.wit_open_constr

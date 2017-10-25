@@ -272,6 +272,16 @@ let to_tuple = function
 | ValBlk (0, cl) -> cl
 | _ -> assert false
 
+let of_pair f g (x, y) = ValBlk (0, [|f x; g y|])
+let to_pair f g = function
+| ValBlk (0, [|x; y|]) -> (f x, g y)
+| _ -> assert false
+let pair r0 r1 = {
+  r_of = (fun p -> of_pair r0.r_of r1.r_of p);
+  r_to = (fun p -> to_pair r0.r_to r1.r_to p);
+  r_id = false;
+}
+
 let of_array f vl = ValBlk (0, Array.map f vl)
 let to_array f = function
 | ValBlk (0, vl) -> Array.map f vl

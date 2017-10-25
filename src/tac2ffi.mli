@@ -109,6 +109,8 @@ val array : 'a repr -> 'a array repr
 val of_tuple : valexpr array -> valexpr
 val to_tuple : valexpr -> valexpr array
 
+val pair : 'a repr -> 'b repr -> ('a * 'b) repr
+
 val of_option : ('a -> valexpr) -> 'a option -> valexpr
 val to_option : (valexpr -> 'a) -> valexpr -> 'a option
 val option : 'a repr -> 'a option repr

@@ -118,13 +118,26 @@ type red_flag = red_flag_r located
 
 type strategy_flag = red_flag list located
 
-type constr_match_branch_r =
-| QConstrMatchPattern of Constrexpr.constr_expr * raw_tacexpr
-| QConstrMatchContext of Id.t option * Constrexpr.constr_expr * raw_tacexpr
+type constr_match_pattern_r =
+| QConstrMatchPattern of Constrexpr.constr_expr
+| QConstrMatchContext of Id.t option * Constrexpr.constr_expr
 
-type constr_match_branch = constr_match_branch_r located
+type constr_match_pattern = constr_match_pattern_r located
+
+type constr_match_branch = (constr_match_pattern * raw_tacexpr) located
 
 type constr_matching = constr_match_branch list located
+
+type goal_match_pattern_r = {
+  q_goal_match_concl : constr_match_pattern;
+  q_goal_match_hyps : (Name.t located * constr_match_pattern) list;
+}
+
+type goal_match_pattern = goal_match_pattern_r located
+
+type goal_match_branch = (goal_match_pattern * raw_tacexpr) located
+
+type goal_matching = goal_match_branch list located
 
 type hintdb_r =
 | QHintAll

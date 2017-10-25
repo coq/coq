@@ -21,6 +21,8 @@ src/tac2ffi.mli
 src/tac2qexpr.mli
 src/tac2quote.ml
 src/tac2quote.mli
+src/tac2match.ml
+src/tac2match.mli
 src/tac2core.ml
 src/tac2core.mli
 src/tac2tactics.ml
