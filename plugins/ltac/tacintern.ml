@@ -322,13 +322,23 @@ let intern_constr_pattern ist ~as_type ~ltacvars pc =
 
 let dummy_pat = PRel 0
 
-let intern_typed_pattern ist p =
+let intern_typed_pattern ist ~as_type ~ltacvars p =
   (* we cannot ensure in non strict mode that the pattern is closed *)
   (* keeping a constr_expr copy is too complicated and we want anyway to *)
   (* type it, so we remember the pattern as a glob_constr only *)
+  let metas,pat =
+    if !strict_check then
+      let ltacvars = {
+          Constrintern.ltac_vars = ltacvars;
+          ltac_bound = Id.Set.empty;
+          ltac_extra = ist.extra;
+        } in
+      Constrintern.intern_constr_pattern ist.genv ~as_type ~ltacvars p
+    else
+      [], dummy_pat in
   let (glob,_ as c) = intern_constr_gen true false ist p in
   let bound_names = Glob_ops.bound_glob_vars glob in
-  (bound_names,c,dummy_pat)
+  metas,(bound_names,c,pat)
 
 let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
   let interp_ref r =
@@ -364,7 +374,7 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
       (* We interpret similarly @ref and ref *)
       interp_ref (AN r)
   | Inr c ->
-      Inr (intern_typed_pattern ist c))
+      Inr (snd (intern_typed_pattern ist ~as_type:false ~ltacvars:ist.ltacvars c)))
 
 (* This seems fairly hacky, but it's the first way I've found to get proper
    globalization of [unfold].  --adamc *)
@@ -529,7 +539,12 @@ let rec intern_atomic lf ist x =
          then intern_type ist c else intern_constr ist c),
 	clause_app (intern_hyp_location ist) cl)
   | TacChange (Some p,c,cl) ->
-      TacChange (Some (intern_typed_pattern ist p),intern_constr ist c,
+      let { ltacvars } = ist in
+      let metas,pat = intern_typed_pattern ist ~as_type:false ~ltacvars p in
+      let fold accu x = Id.Set.add x accu in
+      let ltacvars = List.fold_left fold ltacvars metas in
+      let ist' = { ist with ltacvars } in
+      TacChange (Some pat,intern_constr ist' c,
 	clause_app (intern_hyp_location ist) cl)
 
   (* Equality and inversion *)
