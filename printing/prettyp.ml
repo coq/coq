@@ -807,7 +807,8 @@ let print_any_name = function
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
     let dir,str = repr_qualid qid in
     if not (DirPath.is_empty dir) then raise Not_found;
-    str |> Global.lookup_named |> NamedDecl.set_id str |> print_named_decl
+    str |> Global.lookup_named |> print_named_decl
+
   with Not_found ->
     user_err
       ~hdr:"print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
@@ -839,7 +840,7 @@ let print_opaque_name qid =
         let open EConstr in
 	print_typed_value (mkConstruct cstr, ty)
     | VarRef id ->
-        env |> lookup_named id |> NamedDecl.set_id id |> print_named_decl
+        env |> lookup_named id |> print_named_decl
 
 let print_about_any ?loc k =
   match k with

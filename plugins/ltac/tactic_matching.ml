@@ -203,7 +203,7 @@ module PatternMatching (E:StaticEnvironment) = struct
 
   let pick l = pick l imatching_error
 
-  (** Declares a subsitution, a context substitution and a term substitution. *)
+  (** Declares a substitution, a context substitution and a term substitution. *)
   let put subst context terms : unit m =
     let s = { subst ; context ; terms ; lhs = () } in
     { stream = fun k ctx -> match merge s ctx with None -> Proofview.tclZERO matching_error | Some s -> k () s }
