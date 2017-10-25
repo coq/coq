@@ -37,9 +37,10 @@ env:
   # Main test suites
   matrix:
   - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
+  - TEST_TARGET="test-suite" COMPILER="4.06.0+trunk" CAMLP5_VER="7.03" EXTRA_OPAM="num" FINDLIB_VER="1.7.3"
   - TEST_TARGET="validate"                           TW="travis_wait"
   - TEST_TARGET="validate"   COMPILER="4.02.3+32bit" TW="travis_wait"
-  - TEST_TARGET="validate"   COMPILER="4.05.0+flambda" CAMLP5_VER="7.01" NATIVE_COMP="no" EXTRA_CONF="-flambda-opts -O3" NATIVE_COMP="no"
+  - TEST_TARGET="validate"   COMPILER="4.06.0+trunk+flambda" CAMLP5_VER="7.03" NATIVE_COMP="no" EXTRA_CONF="-flambda-opts -O3" EXTRA_OPAM="num" FINDLIB_VER="1.7.3"
   - TEST_TARGET="ci-bignums TIMED=1"
   - TEST_TARGET="ci-color TIMED=1"
   - TEST_TARGET="ci-compcert TIMED=1"
@@ -95,7 +96,7 @@ matrix:
       - TEST_TARGET="test-suite"
       - COMPILER="4.05.0"
       - FINDLIB_VER="1.7.3"
-      - CAMLP5_VER="7.01"
+      - CAMLP5_VER="7.03"
       - EXTRA_CONF="-coqide opt -with-doc yes"
       - EXTRA_OPAM="lablgtk-extras hevea"
       addons:
@@ -109,7 +110,7 @@ matrix:
       - TEST_TARGET="test-suite"
       - COMPILER="4.05.0+flambda"
       - FINDLIB_VER="1.7.3"
-      - CAMLP5_VER="7.01"
+      - CAMLP5_VER="7.03"
       - NATIVE_COMP="no"
       - EXTRA_CONF="-coqide opt -with-doc yes -flambda-opts -O3"
       - EXTRA_OPAM="lablgtk-extras hevea"
@@ -139,7 +140,7 @@ matrix:
     - env:
       - TEST_TARGET="coqocaml"
       - COMPILER="4.05.0"
-      - CAMLP5_VER="7.01"
+      - CAMLP5_VER="7.03"
       - FINDLIB_VER="1.7.3"
       - EXTRA_CONF="-coqide opt -warn-error"
       - EXTRA_OPAM="lablgtk-extras hevea"
