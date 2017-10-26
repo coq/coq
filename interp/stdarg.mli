@@ -39,13 +39,15 @@ val wit_int_or_var : (int or_var, int or_var, int) genarg_type
 
 val wit_intro_pattern : (constr_expr intro_pattern_expr located, glob_constr_and_expr intro_pattern_expr located, intro_pattern) genarg_type
 
-val wit_ident : Id.t uniform_genarg_type
+val wit_ident : (Id.t, Id.t, tracked_ident) genarg_type
 
 val wit_var : (Id.t located, Id.t located, Id.t) genarg_type
 
 val wit_ref : (reference, global_reference located or_var, global_reference) genarg_type
 
 val wit_quant_hyp : quantified_hypothesis uniform_genarg_type
+
+val wit_sort_family : (Sorts.family, unit, unit) genarg_type
 
 val wit_constr : (constr_expr, glob_constr_and_expr, constr) genarg_type
 

@@ -8,7 +8,6 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
-open API
 open Util
 open Names
 open Term
@@ -60,13 +59,13 @@ let glob_view_hints lvh =
 
 let add_view_hints lvh i = Lib.add_anonymous_leaf (in_viewhint (i, lvh))
 
-let interp_view ist si env sigma gv v rid =
-  let open CAst in
-  match v with
-  | { v = GApp ( { v = GHole _ } , rargs); loc } ->
-    let rv = make ?loc @@ GApp (rid, rargs) in
+let interp_view ist si env sigma gv rv rid =
+  match DAst.get rv with
+  | GApp (h, rargs) when (match DAst.get h with GHole _ -> true | _ -> false) ->
+    let loc = rv.CAst.loc in
+    let rv = DAst.make ?loc @@ GApp (rid, rargs) in
     snd (interp_open_constr ist (re_sig si sigma) (rv, None))
-  | rv ->
+  | _ ->
   let interp rc rargs =
     interp_open_constr ist (re_sig si sigma) (mkRApp rc rargs, None) in
   let rec simple_view rargs n =

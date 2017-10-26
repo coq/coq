@@ -79,23 +79,23 @@ let _ =
    and only names of goal/section variables and rel names that do
    _not_ occur in the scope of the binder to be printed are avoided. *)
 
-let pr_constr_core goal_concl_style env sigma t =
+let pr_econstr_core goal_concl_style env sigma t =
   pr_constr_expr (extern_constr goal_concl_style env sigma t)
-let pr_lconstr_core goal_concl_style env sigma t =
+let pr_leconstr_core goal_concl_style env sigma t =
   pr_lconstr_expr (extern_constr goal_concl_style env sigma t)
 
-let pr_lconstr_env env = pr_lconstr_core false env
-let pr_constr_env env = pr_constr_core false env
+let pr_lconstr_env env sigma c = pr_leconstr_core false env sigma (EConstr.of_constr c)
+let pr_constr_env env sigma c = pr_econstr_core false env sigma (EConstr.of_constr c)
 let _ = Hook.set Refine.pr_constr pr_constr_env
 
-let pr_lconstr_goal_style_env env = pr_lconstr_core true env
-let pr_constr_goal_style_env env = pr_constr_core true env
+let pr_lconstr_goal_style_env env sigma c = pr_leconstr_core true env sigma (EConstr.of_constr c)
+let pr_constr_goal_style_env env sigma c = pr_econstr_core true env sigma (EConstr.of_constr c)
 
 let pr_open_lconstr_env env sigma (_,c) = pr_lconstr_env env sigma c
 let pr_open_constr_env env sigma (_,c) = pr_constr_env env sigma c
 
-let pr_leconstr_env env sigma c = pr_lconstr_env env sigma (EConstr.to_constr sigma c)
-let pr_econstr_env env sigma c = pr_constr_env env sigma (EConstr.to_constr sigma c)
+let pr_leconstr_env env sigma c = pr_leconstr_core false env sigma c
+let pr_econstr_env env sigma c = pr_econstr_core false env sigma c
 
 (* NB do not remove the eta-redexes! Global.env() has side-effects... *)
 let pr_lconstr t =
@@ -128,13 +128,13 @@ let pr_lconstr_under_binders c =
   let (sigma, env) = get_current_context () in
   pr_lconstr_under_binders_env env sigma c
 
-let pr_type_core goal_concl_style env sigma t =
+let pr_etype_core goal_concl_style env sigma t =
   pr_constr_expr (extern_type goal_concl_style env sigma t)
-let pr_ltype_core goal_concl_style env sigma t =
+let pr_letype_core goal_concl_style env sigma t =
   pr_lconstr_expr (extern_type goal_concl_style env sigma t)
 
-let pr_ltype_env env = pr_ltype_core false env
-let pr_type_env env = pr_type_core false env
+let pr_ltype_env env sigma c = pr_letype_core false env sigma (EConstr.of_constr c)
+let pr_type_env env sigma c = pr_etype_core false env sigma (EConstr.of_constr c)
 
 let pr_ltype t =
     let (sigma, env) = get_current_context () in
@@ -143,10 +143,9 @@ let pr_type t =
     let (sigma, env) = get_current_context () in
     pr_type_env env sigma t
 
-let pr_etype_env env sigma c = pr_type_env env sigma (EConstr.to_constr sigma c)
-let pr_letype_env env sigma c = pr_ltype_env env sigma (EConstr.to_constr sigma c)
-let pr_goal_concl_style_env env sigma c =
-  pr_ltype_core true env sigma (EConstr.to_constr sigma c)
+let pr_etype_env env sigma c = pr_etype_core false env sigma c
+let pr_letype_env env sigma c = pr_letype_core false env sigma c
+let pr_goal_concl_style_env env sigma c = pr_letype_core true env sigma c
 
 let pr_ljudge_env env sigma j =
   (pr_leconstr_env env sigma j.uj_val, pr_leconstr_env env sigma j.uj_type)
@@ -191,7 +190,7 @@ let pr_constr_pattern t =
 let pr_sort sigma s = pr_glob_sort (extern_sort sigma s)
 
 let _ = Termops.set_print_constr 
-  (fun env sigma t -> pr_lconstr_expr (extern_constr ~lax:true false env sigma (EConstr.Unsafe.to_constr t)))
+  (fun env sigma t -> pr_lconstr_expr (extern_constr ~lax:true false env sigma t))
 
 let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
 
@@ -311,7 +310,10 @@ let get_compact_context,set_compact_context =
   let compact_context = ref false in
   (fun () -> !compact_context),(fun b  -> compact_context := b)
 
-let pr_compacted_decl env sigma decl =
+let pr_id_with_privacy private_ids id =
+  if Id.Set.mem id private_ids then Pp.tag "name.unstable" (pr_id id) else pr_id id
+
+let pr_compacted_decl env sigma private_ids decl =
   let ids, pbody, typ = match decl with
     | CompactedDecl.LocalAssum (ids, typ) ->
        ids, mt (), typ
@@ -321,13 +323,13 @@ let pr_compacted_decl env sigma decl =
        let pb = if isCast c then surround pb else pb in
        ids, (str" := " ++ pb ++ cut ()), typ
   in
-  let pids = prlist_with_sep pr_comma pr_id ids in
+  let pids = prlist_with_sep pr_comma (pr_id_with_privacy private_ids) ids in
   let pt = pr_ltype_env env sigma typ in
   let ptyp = (str" : " ++ pt) in
   hov 0 (pids ++ pbody ++ ptyp)
 
-let pr_named_decl env sigma decl =
-  decl |> CompactedDecl.of_named_decl |> pr_compacted_decl env sigma
+let pr_named_decl env sigma private_ids decl =
+  decl |> CompactedDecl.of_named_decl |> pr_compacted_decl env sigma private_ids
 
 let pr_rel_decl env sigma decl =
   let na = RelDecl.get_name decl in
@@ -351,19 +353,22 @@ let pr_rel_decl env sigma decl =
 
 (* Prints a signature, all declarations on the same line if possible *)
 let pr_named_context_of env sigma =
-  let make_decl_list env d pps = pr_named_decl env sigma d :: pps in
+  let private_ids = named_context_private_ids (named_context_val env) in
+  let make_decl_list env d _ pps = pr_named_decl env sigma private_ids d :: pps in
   let psl = List.rev (fold_named_context make_decl_list env ~init:[]) in
   hv 0 (prlist_with_sep (fun _ -> ws 2) (fun x -> x) psl)
 
-let pr_var_list_decl env sigma decl =
-  hov 0 (pr_compacted_decl env sigma decl)
+let pr_var_list_decl env sigma private_ids decl =
+  hov 0 (pr_compacted_decl env sigma private_ids decl)
 
 let pr_named_context env sigma ne_context =
+  let private_ids = named_context_private_ids (named_context_val env) in
   hv 0 (Context.Named.fold_outside
-	  (fun d pps -> pps ++ ws 2 ++ pr_named_decl env sigma d)
+	  (fun d pps -> pps ++ ws 2 ++ pr_named_decl env sigma private_ids d)
           ne_context ~init:(mt ()))
 
 let pr_rel_context env sigma rel_context =
+  let rel_context = List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) rel_context in
   pr_binders (extern_rel_context None env sigma rel_context)
 
 let pr_rel_context_of env sigma =
@@ -371,10 +376,11 @@ let pr_rel_context_of env sigma =
 
 (* Prints an env (variables and de Bruijn). Separator: newline *)
 let pr_context_unlimited env sigma =
+  let private_ids = named_context_private_ids (named_context_val env) in
   let sign_env =
     Context.Compacted.fold
       (fun d pps ->
-         let pidt =  pr_compacted_decl env sigma d in
+         let pidt =  pr_compacted_decl env sigma private_ids d in
          (pps ++ fnl () ++ pidt))
       (Termops.compact_named_context (named_context env)) ~init:(mt ())
   in
@@ -402,30 +408,31 @@ let should_compact env sigma typ =
 (* If option Compact Contexts is set, we pack "simple" hypothesis in a
    hov box (with three sapaces as a separator), the global box being a
    v box *)
-let rec bld_sign_env env sigma ctxt pps =
+let rec bld_sign_env env sigma private_ids ctxt pps =
   match ctxt with
   | [] -> pps
   | CompactedDecl.LocalAssum (ids,typ)::ctxt' when should_compact env sigma typ ->
-    let pps',ctxt' = bld_sign_env_id env sigma ctxt (mt ()) true in
+    let pps',ctxt' = bld_sign_env_id env sigma private_ids ctxt (mt ()) true in
     (* putting simple hyps in a more horizontal flavor *)
-    bld_sign_env env sigma ctxt' (pps ++ brk (0,0) ++ hov 0 pps')
+    bld_sign_env env sigma private_ids ctxt' (pps ++ brk (0,0) ++ hov 0 pps')
   | d:: ctxt' ->
-    let pidt = pr_var_list_decl env sigma d in
+    let pidt = pr_var_list_decl env sigma private_ids d in
     let pps' = pps ++ brk (0,0) ++ pidt in
-    bld_sign_env env sigma ctxt' pps'
-and bld_sign_env_id env sigma ctxt pps is_start =
+    bld_sign_env env sigma private_ids ctxt' pps'
+and bld_sign_env_id env sigma private_ids ctxt pps is_start =
   match ctxt with
   | [] -> pps,ctxt
  | CompactedDecl.LocalAssum(ids,typ) as d :: ctxt' when should_compact env sigma typ ->
-    let pidt = pr_var_list_decl env sigma d in
+    let pidt = pr_var_list_decl env sigma private_ids d in
     let pps' = pps ++ (if not is_start then brk (3,0) else (mt ())) ++ pidt in
-    bld_sign_env_id env sigma ctxt' pps' false
+    bld_sign_env_id env sigma private_ids ctxt' pps' false
   | _ -> pps,ctxt
 
 
 (* compact printing an env (variables and de Bruijn). Separator: three
    spaces between simple hyps, and newline otherwise *)
 let pr_context_limit_compact ?n env sigma =
+  let private_ids = named_context_private_ids (named_context_val env) in
   let ctxt = Termops.compact_named_context (named_context env) in
   let lgth = List.length ctxt in
   let n_capped =
@@ -437,7 +444,7 @@ let pr_context_limit_compact ?n env sigma =
   (* a dot line hinting the number of hidden hyps. *)
   let hidden_dots = String.make (List.length ctxt_hidden) '.' in
   let sign_env = v 0 (str hidden_dots ++ (mt ())
-                 ++ bld_sign_env env sigma (List.rev ctxt_chopped) (mt ())) in
+                 ++ bld_sign_env env sigma private_ids (List.rev ctxt_chopped) (mt ())) in
   let db_env =
     fold_rel_context (fun env d pps -> pps ++ fnl () ++ pr_rel_decl env sigma d)
       env ~init:(mt ()) in
@@ -479,7 +486,8 @@ let pr_transparent_state (ids, csts) =
 
 (* display complete goal *)
 let default_pr_goal gs =
-  let (g,sigma) = Goal.V82.nf_evar (project gs) (sig_it gs) in
+  let g = sig_it gs in
+  let sigma = project gs in
   let env = Goal.V82.env sigma g in
   let concl = Goal.V82.concl sigma g in
   let goal =
@@ -727,7 +735,7 @@ let default_pr_subgoals ?(pr_first=true)
   match goals with
   | [] ->
       begin
-	let exl = Evarutil.non_instantiated sigma in
+	let exl = Evd.undefined_map sigma in
 	if Evar.Map.is_empty exl then
 	  (str"No more subgoals." ++ print_dependent_evars None sigma seeds)
 	else
@@ -758,9 +766,9 @@ let default_pr_subgoals ?(pr_first=true)
 
 
 type printer_pr = {
- pr_subgoals            : ?pr_first:bool -> std_ppcmds option -> evar_map -> evar list -> Goal.goal list -> int list -> goal list -> goal list -> std_ppcmds;
- pr_subgoal             : int -> evar_map -> goal list -> std_ppcmds;
- pr_goal                : goal sigma -> std_ppcmds;
+ pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> evar list -> Goal.goal list -> int list -> goal list -> goal list -> Pp.t;
+ pr_subgoal             : int -> evar_map -> goal list -> Pp.t;
+ pr_goal                : goal sigma -> Pp.t;
 }
 
 let default_printer_pr = {
@@ -805,7 +813,7 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
 	  | _ , _, _ ->
             let end_cmd =
               str "This subproof is complete, but there are some unfocused goals." ++
-              (let s = Proof_global.Bullet.suggest p in
+              (let s = Proof_bullet.suggest p in
                if Pp.ismt s then s else fnl () ++ s) ++
               fnl ()
             in
@@ -845,15 +853,6 @@ let pr_goal_by_uid uid =
 (* Elementary tactics *)
 
 let pr_prim_rule = function
-  | Cut (b,replace,id,t) ->
-     if b then
-       (* TODO: express "replace" *)
-       (str"assert " ++ str"(" ++ pr_id id ++ str":" ++ pr_lconstr t ++ str")")
-     else
-       let cl = if replace then str"clear " ++ pr_id id ++ str"; " else mt() in
-       (str"cut " ++ pr_constr t ++
-        str ";[" ++ cl ++ str"intro " ++ pr_id id ++ str"|idtac]")
-
   | Refine c ->
       (** FIXME *)
       str(if Termops.occur_meta Evd.empty (EConstr.of_constr c) then "refine " else "exact ") ++

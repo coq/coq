@@ -113,8 +113,7 @@ struct
 
   module Self_Hashcons =
     struct
-      type _t = t
-      type t = _t
+      type nonrec t = t
       type u = Id.t -> Id.t
       let hashcons hident = function
         | Name id -> Name (hident id)
@@ -236,8 +235,7 @@ struct
 
   module Self_Hashcons =
     struct
-      type _t = t
-      type t = _t
+      type nonrec t = t
       type u = (Id.t -> Id.t) * (DirPath.t -> DirPath.t)
       let hashcons (hid,hdir) (n,s,dir) = (n,hid s,hdir dir)
       let eq ((n1,s1,dir1) as x) ((n2,s2,dir2) as y) =
@@ -869,8 +867,7 @@ struct
 
   module Self_Hashcons =
     struct
-      type _t = t
-      type t = _t
+      type nonrec t = t
       type u = Constant.t -> Constant.t
       let hashcons hc (c,b) = (hc c,b)
       let eq ((c,b) as x) ((c',b') as y) =

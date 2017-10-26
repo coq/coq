@@ -7,9 +7,11 @@
 (************************************************************************)
 
 open Evd
-open Pretyping
+open Glob_term
 
 (** Refinement of existential variables. *)
+
+type glob_constr_ltac_closure = ltac_var_map * glob_constr
 
 val w_refine : evar * evar_info ->
   glob_constr_ltac_closure -> evar_map -> evar_map

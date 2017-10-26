@@ -1,6 +1,4 @@
-open API
 open Names
-open Pp
 
 (*
    The mk_?_id function build different name w.r.t. a function
@@ -12,7 +10,7 @@ val mk_complete_id : Id.t -> Id.t
 val mk_equation_id : Id.t -> Id.t
 
 
-val msgnl : std_ppcmds -> unit
+val msgnl : Pp.t -> unit
 
 val fresh_id : Id.t list -> string -> Id.t
 val fresh_name : Id.t list -> string -> Name.t
@@ -25,7 +23,7 @@ val id_of_name : Name.t -> Id.t
 val locate_ind : Libnames.reference -> inductive
 val locate_constant : Libnames.reference -> Constant.t
 val locate_with_msg :
-  Pp.std_ppcmds -> (Libnames.reference -> 'a) ->
+  Pp.t -> (Libnames.reference -> 'a) ->
   Libnames.reference -> 'a
 
 val filter_map : ('a -> bool) -> ('a -> 'b) -> 'a list -> 'b list
@@ -90,8 +88,8 @@ val update_Function : function_info -> unit
 
 
 (** debugging *)
-val pr_info : function_info -> Pp.std_ppcmds
-val pr_table : unit -> Pp.std_ppcmds
+val pr_info : function_info -> Pp.t
+val pr_table : unit -> Pp.t
 
 
 (* val function_debug : bool ref  *)
@@ -125,3 +123,5 @@ type tcc_lemma_value =
   | Undefined
   | Value of Term.constr
   | Not_needed
+
+val funind_purify : ('a -> 'b) -> ('a -> 'b)

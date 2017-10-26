@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Ltac_plugin
 open Declarations
 open CErrors
@@ -132,9 +131,9 @@ let generate_type evd g_to_f f graph i =
 			   | Name id -> Some id
 			   | Anonymous -> None
   in
-  let named_ctxt = List.map_filter filter fun_ctxt in
+  let named_ctxt = Id.Set.of_list (List.map_filter filter fun_ctxt) in
   let res_id = Namegen.next_ident_away_in_goal (Id.of_string "_res") named_ctxt in
-  let fv_id = Namegen.next_ident_away_in_goal (Id.of_string "fv") (res_id :: named_ctxt) in
+  let fv_id = Namegen.next_ident_away_in_goal (Id.of_string "fv") (Id.Set.add res_id named_ctxt) in
   (*i we can then type the argument to be applied to the function [f] i*)
   let args_as_rels = Array.of_list (args_from_decl 1 [] fun_ctxt) in
   (*i
@@ -190,7 +189,7 @@ let rec generate_fresh_id x avoid i =
   if i == 0
   then []
   else
-    let id = Namegen.next_ident_away_in_goal x avoid in
+    let id = Namegen.next_ident_away_in_goal x (Id.Set.of_list avoid) in
     id::(generate_fresh_id x (id::avoid) (pred i))
 
 
@@ -240,7 +239,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
        environment and due to the bug #1174, we will need to pose the principle
        using a name
     *)
-    let principle_id = Namegen.next_ident_away_in_goal (Id.of_string "princ") ids in
+    let principle_id = Namegen.next_ident_away_in_goal (Id.of_string "princ") (Id.Set.of_list ids) in
     let ids = principle_id :: ids in
     (* We get the branches of the principle *)
     let branches = List.rev princ_infos.branches in
@@ -249,7 +248,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       List.map
 	(fun decl ->
 	   List.map
-	     (fun id -> Loc.tag @@ IntroNaming (IntroIdentifier id))
+	     (fun id -> Loc.tag @@ IntroNaming (IntroIdentifier (id,true)))
 	     (generate_fresh_id (Id.of_string "y") ids (List.length (fst (decompose_prod_assum evd (RelDecl.get_type decl)))))
 	)
 	branches
@@ -267,7 +266,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       	List.fold_right
       	  (fun (_,pat) acc ->
       	     match pat with
-	       | IntroNaming (IntroIdentifier id) -> id::acc
+	       | IntroNaming (IntroIdentifier (id,_)) -> id::acc
       	       | _ -> anomaly (Pp.str "Not an identifier.")
       	  )
       	  (List.nth intro_pats (pred i))
@@ -362,7 +361,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	    observe_tac ("toto ") tclIDTAC;
     
 	    (* introducing the the result of the graph and the equality hypothesis *)
-	    observe_tac "introducing" (tclMAP (fun x -> Proofview.V82.of_tactic (Simple.intro x)) [res;hres]);
+	    observe_tac "introducing" (tclMAP (fun x -> Proofview.V82.of_tactic (Simple.intro x true)) [res;hres]);
 	    (* replacing [res] with its value *)
 	    observe_tac "rewriting res value" (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar hres)));
 	    (* Conclusion *)
@@ -397,7 +396,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       let params_bindings,avoid =
 	List.fold_left2
 	  (fun (bindings,avoid) decl p ->
-	     let id = Namegen.next_ident_away (Nameops.Name.get_id (RelDecl.get_name decl)) avoid in
+	     let id = Namegen.next_ident_away (Nameops.Name.get_id (RelDecl.get_name decl)) (Id.Set.of_list avoid) in
 	     p::bindings,id::avoid
 	  )
 	  ([],pf_ids_of_hyps g)
@@ -407,7 +406,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       let lemmas_bindings =
 	List.rev (fst  (List.fold_left2
 	  (fun (bindings,avoid) decl p ->
-	     let id = Namegen.next_ident_away (Nameops.Name.get_id (RelDecl.get_name decl)) avoid in
+	     let id = Namegen.next_ident_away (Nameops.Name.get_id (RelDecl.get_name decl)) (Id.Set.of_list avoid) in
 	     (nf_zeta p)::bindings,id::avoid)
 	  ([],avoid)
 	  princ_infos.predicates
@@ -418,10 +417,10 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
     tclTHENLIST
       [ 
 	observe_tac "principle" (Proofview.V82.of_tactic (assert_by
-	  (Name principle_id)
+	  (Name principle_id) true
 	  princ_type
 	  (exact_check f_principle)));
-	observe_tac "intro args_names" (tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id)) args_names);
+	observe_tac "intro args_names" (tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id true)) args_names);
 	(* observe_tac "titi" (pose_proof (Name (Id.of_string "__")) (Reductionops.nf_beta Evd.empty  ((mkApp (mkVar principle_id,Array.of_list bindings))))); *)
 	observe_tac "idtac" tclIDTAC;
 	tclTHEN_i
@@ -480,7 +479,7 @@ and intros_with_rewrite_aux : Tacmach.tactic =
  		      if Reductionops.is_conv (pf_env g) (project g) args.(1) args.(2)
 		      then
 			let id = pf_get_new_id (Id.of_string "y") g  in
-			tclTHENLIST [ Proofview.V82.of_tactic (Simple.intro id); thin [id]; intros_with_rewrite ] g
+			tclTHENLIST [ Proofview.V82.of_tactic (Simple.intro id true); thin [id]; intros_with_rewrite ] g
 		      else if isVar sigma args.(1) && (Environ.evaluable_named (destVar sigma args.(1)) (pf_env g)) 
 		      then tclTHENLIST[
 			Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, Names.EvalVarRef (destVar sigma args.(1)))]);
@@ -498,7 +497,7 @@ and intros_with_rewrite_aux : Tacmach.tactic =
 		      else if isVar sigma args.(1)
 		      then
 			let id = pf_get_new_id (Id.of_string "y") g  in
-			tclTHENLIST [ Proofview.V82.of_tactic (Simple.intro id);
+			tclTHENLIST [ Proofview.V82.of_tactic (Simple.intro id true);
 				     generalize_dependent_of (destVar sigma args.(1)) id;
 				     tclTRY (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar id)));
 				     intros_with_rewrite
@@ -507,7 +506,7 @@ and intros_with_rewrite_aux : Tacmach.tactic =
 		      else if isVar sigma args.(2) 
 		      then 
 			let id = pf_get_new_id (Id.of_string "y") g  in
-			tclTHENLIST [ Proofview.V82.of_tactic (Simple.intro id);
+			tclTHENLIST [ Proofview.V82.of_tactic (Simple.intro id true);
 				     generalize_dependent_of (destVar sigma args.(2)) id;
 				     tclTRY (Proofview.V82.of_tactic (Equality.rewriteRL (mkVar id)));
 				     intros_with_rewrite
@@ -517,7 +516,7 @@ and intros_with_rewrite_aux : Tacmach.tactic =
 			begin
 			  let id = pf_get_new_id (Id.of_string "y") g  in
 			  tclTHENLIST[
-			    Proofview.V82.of_tactic (Simple.intro id);
+			    Proofview.V82.of_tactic (Simple.intro id true);
 			    tclTRY (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar id)));
 			    intros_with_rewrite
 			  ] g
@@ -542,7 +541,7 @@ and intros_with_rewrite_aux : Tacmach.tactic =
 		      ] g
 		  | _ ->
 		      let id = pf_get_new_id (Id.of_string "y") g  in
-		      tclTHENLIST [ Proofview.V82.of_tactic (Simple.intro id);intros_with_rewrite] g
+		      tclTHENLIST [ Proofview.V82.of_tactic (Simple.intro id true);intros_with_rewrite] g
 	      end
 	  | LetIn _ ->
 	      tclTHENLIST[
@@ -687,7 +686,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : Tacmach.tacti
 	  with Option.IsNone -> anomaly (Pp.str "Cannot find equation lemma.")
 	in
 	tclTHENLIST[
-	  tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id)) ids;
+	  tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id true)) ids;
 	  Proofview.V82.of_tactic (Equality.rewriteLR (mkConst eq_lemma));
 	  (* Don't forget to $\zeta$ normlize the term since the principles
              have been $\zeta$-normalized *)
@@ -736,10 +735,10 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : Tacmach.tacti
     let open EConstr in
     let params = List.map mkVar params_names in
     tclTHENLIST
-      [ tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id)) (args_names@[res;hres]);
+      [ tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id true)) (args_names@[res;hres]);
 	observe_tac "h_generalize"
 	(Proofview.V82.of_tactic (generalize [mkApp(applist(graph_principle,params),Array.map (fun c -> applist(c,params)) lemmas)]));
-	Proofview.V82.of_tactic (Simple.intro graph_principle_id);
+	Proofview.V82.of_tactic (Simple.intro graph_principle_id true);
 	observe_tac "" (tclTHEN_i
 	  (observe_tac "elim" (Proofview.V82.of_tactic (elim false None (mkVar hres,NoBindings) (Some (mkVar graph_principle_id,NoBindings)))))
 	  (fun i g -> observe_tac "prove_branche" (prove_branche i) g ))
@@ -760,7 +759,8 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
   let funs = Array.of_list funs and graphs = Array.of_list graphs in
   let map (c, u) = mkConstU (c, EInstance.make u) in
   let funs_constr = Array.map map funs  in
-  States.with_state_protection_on_exception
+  (* XXX STATE Why do we need this... why is the toplevel protection not enought *)
+  funind_purify
     (fun () ->
      let env = Global.env () in
      let evd = ref (Evd.from_env env) in 
@@ -798,7 +798,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	       (fun entry ->
 		  (EConstr.of_constr (fst (fst(Future.force entry.Entries.const_entry_body))), EConstr.of_constr (Option.get entry.Entries.const_entry_type ))
 	       )
-	       (make_scheme evd (Array.map_to_list (fun const -> const,GType []) funs))
+	       (make_scheme evd (Array.map_to_list (fun const -> const,Sorts.InType) funs))
 	    )
 	)
     in
@@ -927,7 +927,7 @@ let revert_graph kn post_tac hid g =
 		    [
 		      Proofview.V82.of_tactic (generalize [applist(mkConst f_complete,(Array.to_list f_args)@[res.(0);mkVar hid])]);
 		      thin [hid];
-		      Proofview.V82.of_tactic (Simple.intro hid);
+		      Proofview.V82.of_tactic (Simple.intro hid true);
 		      post_tac hid
 		    ]
 		    g
@@ -972,7 +972,7 @@ let functional_inversion kn hid fconst f_correct : Tacmach.tactic =
 	    pre_tac hid;
 	    Proofview.V82.of_tactic (generalize [applist(f_correct,(Array.to_list f_args)@[res;mkVar hid])]);
 	    thin [hid];
-	    Proofview.V82.of_tactic (Simple.intro hid);
+	    Proofview.V82.of_tactic (Simple.intro hid false);
 	    Proofview.V82.of_tactic (Inv.inv FullInversion None (NamedHyp hid));
 	    (fun g ->
 	       let new_ids = List.filter (fun id -> not (Id.Set.mem id old_ids)) (pf_ids_of_hyps g) in

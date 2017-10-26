@@ -32,6 +32,8 @@ let supported_suffix f = match CUnix.get_extension f with
   | ".ml" | ".cmx" | ".cmo" | ".cmxa" | ".cma" | ".c" -> true
   | _ -> false
 
+let supported_flambda_option f = List.mem f Coq_config.flambda_flags
+
 (** From bytecode extension to native
 *)
 let native_suffix f = match CUnix.get_extension f with
@@ -175,8 +177,6 @@ let parse_args () =
     | "-top" :: rem -> top := true ; parse (op,fl) rem
     | "-no-start" :: rem -> no_start:=true; parse (op, fl) rem
     | "-echo" :: rem -> echo := true ; parse (op,fl) rem
-    | ("-v8"|"-full" as o) :: rem ->
-	Printf.eprintf "warning: option %s deprecated\n" o; parse (op,fl) rem
 
     (* Extra options with arity 0 or 1, directly passed to ocamlc/ocamlopt *)
     | ("-noassert"|"-compact"|"-g"|"-p"|"-thread"|"-dtypes" as o) :: rem ->
@@ -189,6 +189,7 @@ let parse_args () =
 	end
 
     | ("-h"|"-help"|"--help") :: _ -> usage ()
+    | f :: rem when supported_flambda_option f -> parse (op,fl) rem
     | f :: rem when supported_suffix f -> parse (op,f::fl) rem
     | f :: _ -> prerr_endline ("Don't know what to do with " ^ f); exit 1
   in
@@ -254,6 +255,17 @@ let create_tmp_main_file modules =
   with reraise ->
     clean main_name; raise reraise
 
+(* TODO: remove once OCaml 4.04 is adopted *)
+let split_on_char sep s =
+  let r = ref [] in
+  let j = ref (String.length s) in
+  for i = String.length s - 1 downto 0 do
+      if s.[i] = sep then begin
+      r := String.sub s (i + 1) (!j - i - 1) :: !r;
+      j := i
+    end
+  done;
+  String.sub s 0 !j :: !r
 
 (** {6 Main } *)
 
@@ -266,15 +278,17 @@ let main () =
   let prog = if !opt then "opt" else "ocamlc" in
   (* Which arguments ? *)
   if !opt && !top then failwith "no custom toplevel in native code!";
-  let flags = if !opt then [] else Coq_config.vmbyteflags in
+  let flags = if !opt then Coq_config.flambda_flags else Coq_config.vmbyteflags in
   let topstart = if !top then [ "topstart.cmo" ] else [] in
   let (modules, tolink) = files_to_link userfiles in
   let main_file = create_tmp_main_file modules in
   try
     (* - We add topstart.cmo explicitly because we shunted ocamlmktop wrapper.
        - With the coq .cma, we MUST use the -linkall option. *)
+    let coq_camlflags =
+      List.filter ((<>) "") (split_on_char ' ' Coq_config.caml_flags) in
     let args =
-      "-linkall" :: "-rectypes" :: "-w" :: "-31" :: flags @ copts @ options @
+      coq_camlflags @ "-linkall" :: "-w" :: "-31" :: flags @ copts @ options @
       (std_includes basedir) @ tolink @ [ main_file ] @ topstart
     in
     if !echo then begin

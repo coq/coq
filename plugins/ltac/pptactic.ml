@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Pp
 open Names
 open Namegen
@@ -19,7 +18,7 @@ open Geninterp
 open Stdarg
 open Tacarg
 open Libnames
-open Ppextend
+open Notation_term
 open Misctypes
 open Locus
 open Decl_kinds
@@ -68,22 +67,22 @@ let declare_notation_tactic_pprule kn pt =
   prnotation_tab := KNmap.add kn pt !prnotation_tab
 
 type 'a raw_extra_genarg_printer =
-    (constr_expr -> std_ppcmds) ->
-    (constr_expr -> std_ppcmds) ->
-    (tolerability -> raw_tactic_expr -> std_ppcmds) ->
-    'a -> std_ppcmds
+    (constr_expr -> Pp.t) ->
+    (constr_expr -> Pp.t) ->
+    (tolerability -> raw_tactic_expr -> Pp.t) ->
+    'a -> Pp.t
 
 type 'a glob_extra_genarg_printer =
-    (glob_constr_and_expr -> std_ppcmds) ->
-    (glob_constr_and_expr -> std_ppcmds) ->
-    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-    'a -> std_ppcmds
+    (glob_constr_and_expr -> Pp.t) ->
+    (glob_constr_and_expr -> Pp.t) ->
+    (tolerability -> glob_tactic_expr -> Pp.t) ->
+    'a -> Pp.t
 
 type 'a extra_genarg_printer =
-    (EConstr.constr -> std_ppcmds) ->
-    (EConstr.constr -> std_ppcmds) ->
-    (tolerability -> Val.t -> std_ppcmds) ->
-    'a -> std_ppcmds
+    (EConstr.constr -> Pp.t) ->
+    (EConstr.constr -> Pp.t) ->
+    (tolerability -> Val.t -> Pp.t) ->
+    'a -> Pp.t
 
   let keyword x = tag_keyword (str x)
   let primitive x = tag_primitive (str x)
@@ -97,7 +96,7 @@ type 'a extra_genarg_printer =
   | None -> assert false
   | Some Refl -> x
 
-  let rec pr_value lev v : std_ppcmds =
+  let rec pr_value lev v : Pp.t =
     if has_type v Val.typ_list then
       pr_sequence (fun x -> pr_value lev x) (unbox v Val.typ_list)
     else if has_type v Val.typ_opt then
@@ -273,7 +272,7 @@ type 'a extra_genarg_printer =
   | Glbwit (OptArg wit) -> Some (Option.map (in_gen (glbwit wit)) arg)
   | _ -> None
 
-  let rec pr_any_arg : type l. (_ -> l generic_argument -> std_ppcmds) -> _ -> l generic_argument -> std_ppcmds =
+  let rec pr_any_arg : type l. (_ -> l generic_argument -> Pp.t) -> _ -> l generic_argument -> Pp.t =
   fun prtac symb arg -> match symb with
   | Extend.Uentry tag when is_genarg tag (genarg_tag arg) -> prtac (1, Any) arg
   | Extend.Ulist1 s | Extend.Ulist0 s ->
@@ -337,7 +336,7 @@ type 'a extra_genarg_printer =
   let pr_ltac_constant kn =
     if !Flags.in_debugger then KerName.print kn
     else try
-           pr_qualid (Nametab.shortest_qualid_of_tactic kn)
+           pr_qualid (Tacenv.shortest_qualid_of_tactic kn)
       with Not_found -> (* local tactic not accessible anymore *)
         str "<" ++ KerName.print kn ++ str ">"
 
@@ -392,7 +391,7 @@ type 'a extra_genarg_printer =
   let pr_assumption prc prdc prlc ipat c = match ipat with
     (* Use this "optimisation" or use only the general case ?*)
     (* it seems that this "optimisation" is somehow more natural *)
-    | Some (_,IntroNaming (IntroIdentifier id)) ->
+    | Some (_,IntroNaming (IntroIdentifier (id,_))) ->
       spc() ++ surround (pr_id id ++ str " :" ++ spc() ++ prlc c)
     | ipat ->
       spc() ++ prc c ++ pr_as_ipat prdc ipat
@@ -478,12 +477,14 @@ type 'a extra_genarg_printer =
     if Int.equal i j then int i
     else int i ++ str "-" ++ int j
 
-  let pr_goal_selector = function
-    | SelectNth i -> int i ++ str ":"
-    | SelectList l -> str "[" ++ prlist_with_sep (fun () -> str ", ") pr_range_selector l ++
-        str "]" ++ str ":"
-    | SelectId id -> str "[" ++ Id.print id ++ str "]" ++ str ":"
-    | SelectAll -> str "all" ++ str ":"
+let pr_goal_selector toplevel = function
+  | SelectNth i -> int i ++ str ":"
+  | SelectList l -> prlist_with_sep (fun () -> str ", ") pr_range_selector l ++ str ":"
+  | SelectId id -> str "[" ++ Id.print id ++ str "]:"
+  | SelectAll -> assert toplevel; str "all:"
+
+let pr_goal_selector ~toplevel s =
+  (if toplevel then mt () else str "only ") ++ pr_goal_selector toplevel s
 
   let pr_lazy = function
     | General -> keyword "multi"
@@ -600,18 +601,18 @@ type 'a extra_genarg_printer =
       "raw", "glob" and "typed" levels *)
 
   type 'a printer = {
-    pr_tactic    : tolerability -> 'tacexpr -> std_ppcmds;
-    pr_constr    : 'trm -> std_ppcmds;
-    pr_lconstr   : 'trm -> std_ppcmds;
-    pr_dconstr   : 'dtrm -> std_ppcmds;
-    pr_pattern   : 'pat -> std_ppcmds;
-    pr_lpattern  : 'pat -> std_ppcmds;
-    pr_constant  : 'cst -> std_ppcmds;
-    pr_reference : 'ref -> std_ppcmds;
-    pr_name      : 'nam -> std_ppcmds;
-    pr_generic   : 'lev generic_argument -> std_ppcmds;
-    pr_extend    : int -> ml_tactic_entry -> 'a gen_tactic_arg list -> std_ppcmds;
-    pr_alias     : int -> KerName.t -> 'a gen_tactic_arg list -> std_ppcmds;
+    pr_tactic    : tolerability -> 'tacexpr -> Pp.t;
+    pr_constr    : 'trm -> Pp.t;
+    pr_lconstr   : 'trm -> Pp.t;
+    pr_dconstr   : 'dtrm -> Pp.t;
+    pr_pattern   : 'pat -> Pp.t;
+    pr_lpattern  : 'pat -> Pp.t;
+    pr_constant  : 'cst -> Pp.t;
+    pr_reference : 'ref -> Pp.t;
+    pr_name      : 'nam -> Pp.t;
+    pr_generic   : 'lev generic_argument -> Pp.t;
+    pr_extend    : int -> ml_tactic_entry -> 'a gen_tactic_arg list -> Pp.t;
+    pr_alias     : int -> KerName.t -> 'a gen_tactic_arg list -> Pp.t;
   }
 
   constraint 'a = <
@@ -663,14 +664,14 @@ type 'a extra_genarg_printer =
         let names =
           List.fold_left
             (fun ln (nal,_) -> List.fold_left
-              (fun ln na -> match na with (_,Name id) -> id::ln | _ -> ln)
+              (fun ln na -> match na with (_,Name id) -> Id.Set.add id ln | _ -> ln)
               ln nal)
-            [] bll in
+            Id.Set.empty bll in
         let idarg,bll = set_nth_name names n bll in
-        let annot = match names with
-          | [_] ->
+        let annot =
+          if Int.equal (Id.Set.cardinal names) 1 then
             mt ()
-          | _ ->
+          else
             spc() ++ str"{"
             ++ keyword "struct" ++ spc ()
             ++ pr_id idarg ++ str"}"
@@ -989,7 +990,7 @@ type 'a extra_genarg_printer =
               keyword "solve" ++ spc () ++ pr_seq_body (pr_tac ltop) tl, llet
             | TacComplete t ->
               pr_tac (lcomplete,E) t, lcomplete
-            | TacSelect (s, tac) -> pr_goal_selector s ++ spc () ++ pr_tac ltop tac, latom
+            | TacSelect (s, tac) -> pr_goal_selector ~toplevel:false s ++ spc () ++ pr_tac ltop tac, latom
             | TacId l ->
               keyword "idtac" ++ prlist (pr_arg (pr_message_token pr.pr_name)) l, latom
             | TacAtom (loc,t) ->
@@ -1041,7 +1042,7 @@ type 'a extra_genarg_printer =
   let strip_prod_binders_glob_constr n (ty,_) =
     let rec strip_ty acc n ty =
       if Int.equal n 0 then (List.rev acc, (ty,None)) else
-        match ty.CAst.v with
+        match DAst.get ty with
             Glob_term.GProd(na,Explicit,a,b) ->
               strip_ty (([Loc.tag na],(a,None))::acc) (n-1) b
           | _ -> user_err Pp.(str "Cannot translate fix tactic: not enough products") in
@@ -1196,7 +1197,7 @@ let () =
   Genprint.register_print0 wit_ref
     pr_reference (pr_or_var (pr_located pr_global)) pr_global;
   Genprint.register_print0 wit_ident
-    pr_id pr_id pr_id;
+    pr_id pr_id (fun (id,_) -> pr_id id);
   Genprint.register_print0 wit_var
     (pr_located pr_id) (pr_located pr_id) pr_id;
   Genprint.register_print0

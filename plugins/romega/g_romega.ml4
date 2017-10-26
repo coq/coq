@@ -8,7 +8,6 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open API
 
 DECLARE PLUGIN "romega_plugin"
 
@@ -49,6 +48,6 @@ END
 
 TACTIC EXTEND romega'
 | [ "romega" "with" ne_ident_list(l) ] ->
-    [ romega_tactic false (List.map Names.Id.to_string l) ]
+    [ romega_tactic false (List.map (fun (id,_) -> Names.Id.to_string id) l) ]
 | [ "romega" "with" "*" ] -> [ romega_tactic false ["nat";"positive";"N";"Z"] ]
 END

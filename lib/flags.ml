@@ -42,12 +42,8 @@ let with_extra_values o l f x =
     Exninfo.iraise reraise
 
 let boot = ref false
-let load_init = ref true
-let batch_mode = ref false
 
-type compilation_mode = BuildVo | BuildVio | Vio2Vo
-let compilation_mode = ref BuildVo
-let compilation_output_name = ref None
+let record_aux_file = ref false
 
 let test_mode = ref false
 
@@ -87,15 +83,12 @@ let in_toplevel = ref false
 
 let profile = false
 
-let xml_export = ref false
-
 let ide_slave = ref false
 let ideslave_coqtop_flags = ref None
 
 let time = ref false
 
 let raw_print = ref false
-
 
 let univ_print = ref false
 
@@ -106,7 +99,7 @@ let we_are_parsing = ref false
 (* Current means no particular compatibility consideration.
    For correct comparisons, this constructor should remain the last one. *)
 
-type compat_version = VOld | V8_5 | V8_6 | Current
+type compat_version = VOld | V8_5 | V8_6 | V8_7 | Current
 
 let compat_version = ref Current
 
@@ -120,6 +113,9 @@ let version_compare v1 v2 = match v1, v2 with
   | V8_6, V8_6 -> 0
   | V8_6, _ -> -1
   | _, V8_6 -> 1
+  | V8_7, V8_7 -> 0
+  | V8_7, _ -> -1
+  | _, V8_7 -> 1
   | Current, Current -> 0
 
 let version_strictly_greater v = version_compare !compat_version v > 0
@@ -129,6 +125,7 @@ let pr_version = function
   | VOld -> "old"
   | V8_5 -> "8.5"
   | V8_6 -> "8.6"
+  | V8_7 -> "8.7"
   | Current -> "current"
 
 (* Translate *)
@@ -163,9 +160,9 @@ let use_polymorphic_flag () =
 let make_polymorphic_flag b =
   local_polymorphic_flag := Some b
 
-let inductive_cumulativity = ref false
-let make_inductive_cumulativity b = inductive_cumulativity := b
-let is_inductive_cumulativity () = !inductive_cumulativity
+let polymorphic_inductive_cumulativity = ref false
+let make_polymorphic_inductive_cumulativity b = polymorphic_inductive_cumulativity := b
+let is_polymorphic_inductive_cumulativity () = !polymorphic_inductive_cumulativity
 
 (** [program_mode] tells that Program mode has been activated, either
     globally via [Set Program] or locally via the Program command prefix. *)

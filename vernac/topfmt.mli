@@ -37,20 +37,22 @@ val set_margin : int option -> unit
 val get_margin : unit -> int option
 
 (** Console display of feedback, we may add some location information *)
-val std_logger   : ?pre_hdr:Pp.std_ppcmds -> Feedback.level -> Pp.std_ppcmds -> unit
-val emacs_logger : ?pre_hdr:Pp.std_ppcmds -> Feedback.level -> Pp.std_ppcmds -> unit
+val std_logger   : ?pre_hdr:Pp.t -> Feedback.level -> Pp.t -> unit
+val emacs_logger : ?pre_hdr:Pp.t -> Feedback.level -> Pp.t -> unit
 
 (** Color output *)
-val init_color_output : unit -> unit
 val clear_styles : unit -> unit
 val parse_color_config : string -> unit
 val dump_tags : unit -> (string * Terminal.style) list
 
+(** Initialization of interpretation of tags *)
+val init_terminal_output : color:bool -> unit
+
 (** Error printing *)
 (* To be deprecated when we can fully move to feedback-based error
    printing. *)
-val pr_loc : Loc.t -> Pp.std_ppcmds
-val print_err_exn : ?extra:Pp.std_ppcmds -> exn -> unit
+val pr_loc : Loc.t -> Pp.t
+val print_err_exn : ?extra:Pp.t -> exn -> unit
 
 (** [with_output_to_file file f x] executes [f x] with logging
     redirected to a file [file] *)

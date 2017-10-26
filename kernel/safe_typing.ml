@@ -378,16 +378,17 @@ let safe_push_named d env =
       let _ = Environ.lookup_named id env in
       CErrors.user_err Pp.(pr_sequence str ["Identifier"; Id.to_string id; "already defined."])
     with Not_found -> () in
-  Environ.push_named d env
+  Environ.push_named d false env
 
 
 let push_named_def (id,de) senv =
-  let c,typ,univs = 
-    match Term_typing.translate_local_def senv.revstruct senv.env id de with
-    | c, typ, Monomorphic_const ctx -> c, typ, ctx
-    | _, _, Polymorphic_const _ -> assert false
+  let open Entries in
+  let trust = Term_typing.SideEffects senv.revstruct in
+  let c,typ,univs = Term_typing.translate_local_def trust senv.env id de in
+  let poly = match de.Entries.const_entry_universes with
+  | Monomorphic_const_entry _ -> false
+  | Polymorphic_const_entry _ -> true
   in
-  let poly = de.Entries.const_entry_polymorphic in
   let univs = Univ.ContextSet.of_context univs in
   let c, univs = match c with
     | Def c -> Mod_subst.force_constr c, univs
@@ -492,12 +493,16 @@ let add_field ((l,sfb) as field) gn senv =
 let update_resolver f senv = { senv with modresolver = f senv.modresolver }
 
 (** Insertion of constants and parameters in environment *)
+type 'a effect_entry =
+| EffectEntry : private_constants effect_entry
+| PureEntry : unit effect_entry
+
 type global_declaration =
-  | ConstantEntry of bool * private_constants Entries.constant_entry
+  | ConstantEntry : 'a effect_entry * 'a Entries.constant_entry -> global_declaration
   | GlobalRecipe of Cooking.recipe
 
 type exported_private_constant = 
-  constant * private_constants Entries.constant_entry * private_constant_role
+  constant * private_constant_role
 
 let add_constant_aux no_section senv (kn, cb) =
   let l = pi3 (Constant.repr3 kn) in
@@ -521,30 +526,29 @@ let add_constant_aux no_section senv (kn, cb) =
   in
   senv''
 
+let export_private_constants ~in_section ce senv =
+  let exported, ce = Term_typing.export_side_effects senv.revstruct senv.env ce in
+  let bodies = List.map (fun (kn, cb, _) -> (kn, cb)) exported in
+  let exported = List.map (fun (kn, _, r) -> (kn, r)) exported in
+  let no_section = not in_section in
+  let senv = List.fold_left (add_constant_aux no_section) senv bodies in
+  (ce, exported), senv
+
 let add_constant dir l decl senv =
   let kn = make_con senv.modpath dir l in
   let no_section = DirPath.is_empty dir in
-  let seff_to_export, decl =
-    match decl with
-    | ConstantEntry (true, ce) ->
-        let exports, ce =
-          Term_typing.export_side_effects senv.revstruct senv.env ce in
-        exports, ConstantEntry (false, ce)
-    | _ -> [], decl
-  in
-  let senv =
-    List.fold_left (add_constant_aux no_section) senv
-      (List.map (fun (kn,cb,_,_) -> kn, cb) seff_to_export) in
   let senv =
     let cb = 
       match decl with
-      | ConstantEntry (export_seff,ce) ->
-        Term_typing.translate_constant senv.revstruct senv.env kn ce
+      | ConstantEntry (EffectEntry, ce) ->
+        Term_typing.translate_constant (Term_typing.SideEffects senv.revstruct) senv.env kn ce
+      | ConstantEntry (PureEntry, ce) ->
+        Term_typing.translate_constant Term_typing.Pure senv.env kn ce
       | GlobalRecipe r ->
         let cb = Term_typing.translate_recipe senv.env kn r in
         if no_section then Declareops.hcons_const_body cb else cb in
     add_constant_aux no_section senv (kn, cb) in
-  (kn, List.map (fun (kn,_,ce,r) -> kn, ce, r) seff_to_export), senv
+  kn, senv
 
 (** Insertion of inductive types *)
 
@@ -570,7 +574,7 @@ let add_mind dir l mie senv =
 let add_modtype l params_mte inl senv =
   let mp = MPdot(senv.modpath, l) in
   let mtb = Mod_typing.translate_modtype senv.env mp inl params_mte  in
-  let mtb = Declareops.hcons_module_body mtb in
+  let mtb = Declareops.hcons_module_type mtb in
   let senv' = add_field (l,SFBmodtype mtb) MT senv in
   mp, senv'
 
@@ -673,18 +677,21 @@ let build_module_body params restype senv =
       (struc,None,senv.modresolver,senv.univ) restype'
   in
   let mb' = functorize_module params mb in
-  { mb' with mod_retroknowledge = senv.local_retroknowledge }
+  { mb' with mod_retroknowledge = ModBodyRK senv.local_retroknowledge }
 
 (** Returning back to the old pre-interactive-module environment,
     with one extra component and some updated fields
     (constraints, required, etc) *)
 
+let allow_delayed_constants = ref false
+
 let propagate_senv newdef newenv newresolver senv oldsenv =
   let now_cst, later_cst = List.partition Future.is_val senv.future_cst in
   (* This asserts that after Paral-ITP, standard vo compilation is behaving
    * exctly as before: the same universe constraints are added to modules *)
-  if !Flags.compilation_mode = Flags.BuildVo &&
-     !Flags.async_proofs_mode = Flags.APoff then assert(later_cst = []);
+  if not !allow_delayed_constants && later_cst <> [] then
+    CErrors.anomaly ~label:"safe_typing"
+      Pp.(str "True Future.t were created for opaque constants even if -async-proofs is off");
   { oldsenv with
     env = newenv;
     modresolver = newresolver;
@@ -728,12 +735,12 @@ let end_module l restype senv =
 
 let build_mtb mp sign cst delta =
   { mod_mp = mp;
-    mod_expr = Abstract;
+    mod_expr = ();
     mod_type = sign;
     mod_type_alg = None;
     mod_constraints = cst;
     mod_delta = delta;
-    mod_retroknowledge = [] }
+    mod_retroknowledge = ModTypeRK }
 
 let end_modtype l senv =
   let mp = senv.modpath in
@@ -849,7 +856,7 @@ let export ?except senv dir =
       mod_type_alg = None;
       mod_constraints = senv.univ;
       mod_delta = senv.modresolver;
-      mod_retroknowledge = senv.local_retroknowledge
+      mod_retroknowledge = ModBodyRK senv.local_retroknowledge
     }
   in
   let ast, symbols =

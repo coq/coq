@@ -1,4 +1,4 @@
-(* Bug report #932 *)
+(* BZ#932 *)
 (* Expected time < 1.00s *)
 
 (* Let n be the number of let-in. The complexity comes from the fact

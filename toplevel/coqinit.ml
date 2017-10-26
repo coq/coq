@@ -27,12 +27,12 @@ let set_rcfile s = rcfile := s; rcfile_specified := true
 let load_rc = ref true
 let no_load_rc () = load_rc := false
 
-let load_rcfile sid =
+let load_rcfile doc sid =
   if !load_rc then
     try
       if !rcfile_specified then
         if CUnix.file_readable_p !rcfile then
-          Vernac.load_vernac false sid !rcfile
+          Vernac.load_vernac ~verbosely:false ~interactive:false ~check:true doc sid !rcfile
         else raise (Sys_error ("Cannot read rcfile: "^ !rcfile))
       else
 	try
@@ -43,8 +43,8 @@ let load_rcfile sid =
 	    Envars.home ~warn / "."^rcdefaultname^"."^Coq_config.version;
 	    Envars.home ~warn / "."^rcdefaultname
 	  ] in
-          Vernac.load_vernac false sid inferedrc
-	with Not_found -> sid
+          Vernac.load_vernac ~verbosely:false ~interactive:false ~check:true doc sid inferedrc
+	with Not_found -> doc, sid
 	(*
 	Flags.if_verbose
 	  mSGNL (str ("No coqrc or coqrc."^Coq_config.version^
@@ -56,12 +56,12 @@ let load_rcfile sid =
       iraise reraise
   else
     (Flags.if_verbose Feedback.msg_info (str"Skipping rcfile loading.");
-     sid)
+     doc, sid)
 
 (* Recursively puts dir in the LoadPath if -nois was not passed *)
-let add_stdlib_path ~unix_path ~coq_root ~with_ml =
+let add_stdlib_path ~load_init ~unix_path ~coq_root ~with_ml =
   let add_ml = if with_ml then Mltop.AddRecML else Mltop.AddNoML in
-  Mltop.add_rec_path add_ml ~unix_path ~coq_root ~implicit:(!Flags.load_init)
+  Mltop.add_rec_path add_ml ~unix_path ~coq_root ~implicit:load_init
 
 let add_userlib_path ~unix_path =
   Mltop.add_rec_path Mltop.AddRecML ~unix_path
@@ -75,7 +75,7 @@ let ml_includes = ref []
 let push_ml_include s = ml_includes := s :: !ml_includes
 
 (* Initializes the LoadPath *)
-let init_load_path () =
+let init_load_path ~load_init =
   let coqlib = Envars.coqlib () in
   let user_contrib = coqlib/"user-contrib" in
   let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)) in
@@ -93,9 +93,9 @@ let init_load_path () =
     if System.exists_dir (coqlib/"toploop") then
       Mltop.add_ml_dir (coqlib/"toploop");
     (* then standard library *)
-    add_stdlib_path ~unix_path:(coqlib/"theories") ~coq_root ~with_ml:false;
+    add_stdlib_path ~load_init ~unix_path:(coqlib/"theories") ~coq_root ~with_ml:false;
     (* then plugins *)
-    add_stdlib_path ~unix_path:(coqlib/"plugins") ~coq_root ~with_ml:true;
+    add_stdlib_path ~load_init ~unix_path:(coqlib/"plugins") ~coq_root ~with_ml:true;
     (* then user-contrib *)
     if Sys.file_exists user_contrib then
       add_userlib_path ~unix_path:user_contrib;
@@ -114,9 +114,6 @@ let init_load_path () =
     (* additional ml directories, given with option -I *)
     List.iter Mltop.add_ml_dir (List.rev !ml_includes)
 
-let init_library_roots () =
-  includes := []
-
 (* Initialises the Ocaml toplevel before launching it, so that it can
    find the "include" file in the *source* directory *)
 let init_ocaml_path () =
@@ -125,14 +122,3 @@ let init_ocaml_path () =
   in
     Mltop.add_ml_dir (Envars.coqlib ());
     List.iter add_subdir Coq_config.all_src_dirs
-
-let get_compat_version ?(allow_old = true) = function
-  | "8.7" -> Flags.Current
-  | "8.6" -> Flags.V8_6
-  | "8.5" -> Flags.V8_5
-  | ("8.4" | "8.3" | "8.2" | "8.1" | "8.0") as s ->
-    if allow_old then Flags.VOld else
-    CErrors.user_err ~hdr:"get_compat_version"
-      (str "Compatibility with version " ++ str s ++ str " not supported.")
-  | s -> CErrors.user_err ~hdr:"get_compat_version"
-      (str "Unknown compatibility version \"" ++ str s ++ str "\".")

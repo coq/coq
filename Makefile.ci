@@ -11,7 +11,7 @@ CI_TARGETS=ci-all \
     ci-formal-topology \
     ci-geocoq \
     ci-hott \
-    ci-iris-coq \
+    ci-iris-lambda-rust \
     ci-math-classes \
     ci-math-comp \
     ci-metacoq \
@@ -22,6 +22,6 @@ CI_TARGETS=ci-all \
 
 .PHONY: $(CI_TARGETS)
 
-# Generic rule, we use make to easy travis integraton with mixed rules
+# Generic rule, we use make to ease travis integration with mixed rules
 $(CI_TARGETS): ci-%:
-	+./dev/ci/ci-$*.sh
+	+./dev/ci/ci-wrapper.sh ci-$*.sh

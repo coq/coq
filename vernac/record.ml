@@ -72,7 +72,7 @@ let interp_fields_evars env evars impls_env nots l =
 	      | None -> LocalAssum (i,t')
 	      | Some b' -> LocalDef (i,b',t')
       in
-      List.iter (Metasyntax.set_notation_for_interpretation impls) no;
+      List.iter (Metasyntax.set_notation_for_interpretation env impls) no;
       (EConstr.push_rel d env, impl :: uimpls, d::params, impls))
     (env, [], [], impls_env) nots l
 
@@ -95,8 +95,8 @@ let binders_of_decls = List.map binder_of_decl
 
 let typecheck_params_and_fields finite def id pl t ps nots fs =
   let env0 = Global.env () in
-  let ctx = Evd.make_evar_universe_context env0 pl in
-  let evars = ref (Evd.from_ctx ctx) in
+  let evd, decl = Univdecls.interp_univ_decl_opt env0 pl in
+  let evars = ref evd in
   let _ = 
     let error bk (loc, name) = 
       match bk, name with
@@ -165,9 +165,10 @@ let typecheck_params_and_fields finite def id pl t ps nots fs =
   let newps = List.map (EConstr.to_rel_decl evars) newps in
   let typ = EConstr.to_constr evars typ in
   let ce t = Pretyping.check_evars env0 Evd.empty evars (EConstr.of_constr t) in
+  let univs = Evd.check_univ_decl evars decl in
     List.iter (iter_constr ce) (List.rev newps);
     List.iter (iter_constr ce) (List.rev newfs);
-    Evd.universe_context ?names:pl evars, typ, template, imps, newps, impls, newfs
+    univs, typ, template, imps, newps, impls, newfs
 
 let degenerate_decl decl =
   let id = match RelDecl.get_name decl with
@@ -265,16 +266,10 @@ let warn_non_primitive_record =
 let declare_projections indsp ?(kind=StructureComponent) binder_name coers fieldimpls fields =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
-  let u = Declareops.inductive_polymorphic_instance mib in
-  let paramdecls = Inductive.inductive_paramdecls (mib, u) in
   let poly = Declareops.inductive_is_polymorphic mib in
-  let ctx =
-    match mib.mind_universes with
-    | Monomorphic_ind ctx -> ctx
-    | Polymorphic_ind auctx -> Univ.instantiate_univ_context auctx
-    | Cumulative_ind cumi -> 
-      Univ.instantiate_univ_context (Univ.ACumulativityInfo.univ_context cumi)
-  in
+  let ctx = Univ.AUContext.repr (Declareops.inductive_polymorphic_context mib) in
+  let u = Univ.UContext.instance ctx in
+  let paramdecls = Inductive.inductive_paramdecls (mib, u) in
   let indu = indsp, u in
   let r = mkIndU (indsp,u) in
   let rp = applist (r, Context.Rel.to_extended_list mkRel 0 paramdecls) in
@@ -328,14 +323,16 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
 		let projtyp =
                   it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
 	        try
+                  let univs =
+                    if poly then Polymorphic_const_entry ctx
+                    else Monomorphic_const_entry ctx
+                  in
 		  let entry = {
 		    const_entry_body =
 		      Future.from_val (Safe_typing.mk_pure_proof proj);
 		    const_entry_secctx = None;
 		    const_entry_type = Some projtyp;
-		    const_entry_polymorphic = poly;
-		    const_entry_universes =
-		      if poly then ctx else Univ.UContext.empty;
+		    const_entry_universes = univs;
 		    const_entry_opaque = false;
 		    const_entry_inline_code = false;
 		    const_entry_feedback = None } in
@@ -421,7 +418,6 @@ let declare_structure finite univs id idbuild paramimpls params arity template
       begin
         let env = Global.env () in
         let env' = Environ.push_context ctx env in
-        (* let env'' = Environ.push_rel_context params env' in *)
         let evd = Evd.from_env env' in
         Inductiveops.infer_inductive_subtyping env' evd mie
       end
@@ -431,6 +427,12 @@ let declare_structure finite univs id idbuild paramimpls params arity template
   let kn = Command.declare_mutual_inductive_with_eliminations mie [] [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
   let cstr = (rsp,1) in
+  let fields =
+    if poly then
+      let subst, _ = Univ.abstract_universes ctx in
+      Context.Rel.map (fun c -> Vars.subst_univs_level_constr subst c) fields
+    else fields
+  in
   let kinds,sp_projs = declare_projections rsp ~kind binder_name coers fieldimpls fields in
   let build = ConstructRef cstr in
   let () = if is_coe then Class.try_add_new_coercion build ~local:false poly in
@@ -454,7 +456,7 @@ let declare_class finite def cum poly ctx id idbuild paramimpls params arity
     let impls = implicits_of_context params in
       List.map (fun x -> impls @ Impargs.lift_implicits (succ len) x) fieldimpls
   in
-  let binder_name = Namegen.next_ident_away (snd id) (Termops.ids_of_context (Global.env())) in
+  let binder_name = Namegen.next_ident_away (snd id) (Termops.vars_of_env (Global.env())) in
   let impl, projs =
     match fields with
     | [LocalAssum (Name proj_name, field) | LocalDef (Name proj_name, _, field)] when def ->
@@ -518,8 +520,18 @@ let declare_class finite def cum poly ctx id idbuild paramimpls params arity
       | None -> None)
       params, params
   in
+  let univs, ctx_context, fields =
+    if poly then
+      let usubst, auctx = Univ.abstract_universes ctx in
+      let map c = Vars.subst_univs_level_constr usubst c in
+      let fields = Context.Rel.map map fields in
+      let ctx_context = on_snd (fun d -> Context.Rel.map map d) ctx_context in
+      auctx, ctx_context, fields
+    else Univ.AUContext.empty, ctx_context, fields
+  in
   let k =
-    { cl_impl = impl;
+    { cl_univs = univs;
+      cl_impl = impl;
       cl_strict = !typeclasses_strict;
       cl_unique = !typeclasses_unique;
       cl_context = ctx_context;
@@ -530,10 +542,11 @@ let declare_class finite def cum poly ctx id idbuild paramimpls params arity
 
 
 let add_constant_class cst =
-  let ty = Universes.unsafe_type_of_global (ConstRef cst) in
+  let ty, univs = Global.type_of_global_in_context (Global.env ()) (ConstRef cst) in
   let ctx, arity = decompose_prod_assum ty in
   let tc = 
-    { cl_impl = ConstRef cst;
+    { cl_univs = univs;
+      cl_impl = ConstRef cst;
       cl_context = (List.map (const None) ctx, ctx);
       cl_props = [LocalAssum (Anonymous, arity)];
       cl_projs = [];
@@ -547,12 +560,13 @@ let add_inductive_class ind =
   let mind, oneind = Global.lookup_inductive ind in
   let k =
     let ctx = oneind.mind_arity_ctxt in
-    let inst = Declareops.inductive_polymorphic_instance mind in
-    let ty = Inductive.type_of_inductive
-      (push_rel_context ctx (Global.env ()))
-      ((mind,oneind),inst)
-    in
-      { cl_impl = IndRef ind;
+    let univs = Declareops.inductive_polymorphic_context mind in
+    let env = push_context ~strict:false (Univ.AUContext.repr univs) (Global.env ()) in
+    let env = push_rel_context ctx env in
+    let inst = Univ.make_abstract_instance univs in
+    let ty = Inductive.type_of_inductive env ((mind, oneind), inst) in
+      { cl_univs = univs;
+        cl_impl = IndRef ind;
 	cl_context = List.map (const None) ctx, ctx;
 	cl_props = [LocalAssum (Anonymous, ty)];
 	cl_projs = [];

@@ -91,7 +91,7 @@ type locatable =
   | LocateTerm of reference or_by_notation
   | LocateLibrary of reference
   | LocateModule of reference
-  | LocateTactic of reference
+  | LocateOther of string * reference
   | LocateFile of string
 
 type showable =
@@ -139,8 +139,7 @@ type search_restriction =
 
 type rec_flag       = bool (* true = Rec;           false = NoRec          *)
 type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
-                           (*   list of idents for qed exporting           *)
-type opacity_flag   = Opaque of lident list option | Transparent
+type opacity_flag   = Opaque | Transparent
 type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
 type instance_flag  = bool option
   (* Some true = Backward instance; Some false = Forward instance, None = NoInstance *)
@@ -166,10 +165,13 @@ type option_ref_value =
   | StringRefValue of string
   | QualidRefValue of reference
 
-(** Identifier and optional list of bound universes. *)						 
-type plident = lident * lident list option
+(** Identifier and optional list of bound universes and constraints. *)
 
-type sort_expr = glob_sort
+type universe_decl_expr = (Id.t Loc.located list, glob_constraint list) gen_universe_decl
+
+type ident_decl = lident * universe_decl_expr option
+
+type sort_expr = Sorts.family
 
 type definition_expr =
   | ProveBody of local_binder_expr list * constr_expr
@@ -177,10 +179,10 @@ type definition_expr =
       * constr_expr option
 
 type fixpoint_expr =
-    plident * (Id.t located option * recursion_order_expr) * local_binder_expr list * constr_expr * constr_expr option
+    ident_decl * (Id.t located option * recursion_order_expr) * local_binder_expr list * constr_expr * constr_expr option
 
 type cofixpoint_expr =
-    plident * local_binder_expr list * constr_expr * constr_expr option
+    ident_decl * local_binder_expr list * constr_expr * constr_expr option
 
 type local_decl_expr =
   | AssumExpr of lname * constr_expr
@@ -199,14 +201,18 @@ type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
   | RecordDecl of lident option * local_decl_expr with_instance with_priority with_notation list
 type inductive_expr =
-  plident with_coercion * local_binder_expr list * constr_expr option * inductive_kind *
+  ident_decl with_coercion * local_binder_expr list * constr_expr option * inductive_kind *
     constructor_list_or_record_decl_expr
 
 type one_inductive_expr =
-  plident * local_binder_expr list * constr_expr option * constructor_expr list
+  ident_decl * local_binder_expr list * constr_expr option * constructor_expr list
+
+type typeclass_constraint = (Name.t Loc.located * universe_decl_expr option) * binding_kind * constr_expr
+
+and typeclass_context = typeclass_constraint list
 
 type proof_expr =
-  plident option * (local_binder_expr list * constr_expr)
+  ident_decl option * (local_binder_expr list * constr_expr)
 
 type syntax_modifier =
   | SetItemLevel of string list * Extend.production_level
@@ -230,6 +236,7 @@ type scheme =
 
 type section_subset_expr =
   | SsEmpty
+  | SsType
   | SsSingl of lident
   | SsCompl of section_subset_expr
   | SsUnion of section_subset_expr * section_subset_expr
@@ -280,11 +287,6 @@ type bullet =
     | Star of int
     | Plus of int
 
-(** {6 Types concerning Stm} *)
-type stm_vernac =
-  | JoinDocument
-  | Wait
-
 (** {6 Types concerning the module layer} *)
 
 (** Rigid / flexible module signature *)
@@ -305,6 +307,14 @@ type inline =
 type module_ast_inl = module_ast * inline
 type module_binder = bool option * lident list * module_ast_inl
 
+(** Cumulativity can be set globally, locally or unset locally and it
+   can not enabled at all. *)
+type cumulative_inductive_parsing_flag =
+  | GlobalCumulativity
+  | GlobalNonCumulativity
+  | LocalCumulativity
+  | LocalNonCumulativity
+
 (** {6 The type of vernacular expressions} *)
 
 type vernac_expr =
@@ -317,7 +327,7 @@ type vernac_expr =
 
   (* Syntax *)
   | VernacSyntaxExtension of
-      obsolete_locality * (lstring * syntax_modifier list)
+      bool * obsolete_locality * (lstring * syntax_modifier list)
   | VernacOpenCloseScope of obsolete_locality * (bool * scope_name)
   | VernacDelimiters of scope_name * string option
   | VernacBindScope of scope_name * class_rawexpr list
@@ -330,13 +340,13 @@ type vernac_expr =
 
   (* Gallina *)
   | VernacDefinition of
-      (locality option * definition_object_kind) * plident * definition_expr
+      (locality option * definition_object_kind) * ident_decl * definition_expr
   | VernacStartTheoremProof of theorem_kind * proof_expr list
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of (locality option * assumption_object_kind) *
-      inline * (plident list * constr_expr) with_coercion list
-  | VernacInductive of cumulative_inductive_flag * private_flag * inductive_flag * (inductive_expr * decl_notation list) list
+      inline * (ident_decl list * constr_expr) with_coercion list
+  | VernacInductive of cumulative_inductive_parsing_flag * private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of
       locality option * (fixpoint_expr * decl_notation list) list
   | VernacCoFixpoint of
@@ -344,7 +354,7 @@ type vernac_expr =
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
-  | VernacConstraint of (glob_level * Univ.constraint_type * glob_level) list
+  | VernacConstraint of glob_constraint list
 
   (* Gallina extensions *)
   | VernacBeginSection of lident
@@ -442,10 +452,6 @@ type vernac_expr =
   | VernacRegister of lident * register_kind
   | VernacComments of comment list
 
-  (* Stm backdoor: used in fake_id, will be removed when fake_ide
-     becomes aware of feedback about completed jobs. *)
-  | VernacStm of stm_vernac
-
   (* Proof management *)
   | VernacGoal of constr_expr
   | VernacAbort of lident option
@@ -496,16 +502,12 @@ type vernac_type =
   | VtProofStep of proof_step
   | VtProofMode of string
   | VtQuery of vernac_part_of_script * Feedback.route_id
-  | VtStm of vernac_control * vernac_part_of_script
+  | VtMeta
   | VtUnknown
 and vernac_qed_type = VtKeep | VtKeepAsAxiom | VtDrop (* Qed/Admitted, Abort *)
 and vernac_start = string * opacity_guarantee * Id.t list
 and vernac_sideff_type = Id.t list
 and vernac_part_of_script = bool
-and vernac_control =
-  | VtWait
-  | VtJoinDocument
-  | VtBack of Stateid.t
 and opacity_guarantee =
   | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
   | Doesn'tGuaranteeOpacity (** May generate transparent terms even with [Qed].*)

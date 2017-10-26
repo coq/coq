@@ -83,15 +83,29 @@ type notation_interp_env = {
 type grammar_constr_prod_item =
   | GramConstrTerminal of Tok.t
   | GramConstrNonTerminal of Extend.constr_prod_entry_key * Id.t option
-  | GramConstrListMark of int * bool
+  | GramConstrListMark of int * bool * int
     (* tells action rule to make a list of the n previous parsed items;
-       concat with last parsed list if true *)
+       concat with last parsed list when true; additionally release
+       the p last items as if they were parsed autonomously *)
 
-type notation_grammar = {
-  notgram_level : int;
+(** Dealing with precedences *)
+
+type precedence = int
+type parenRelation = L | E | Any | Prec of precedence
+type tolerability = precedence * parenRelation
+
+type level = precedence * tolerability list * notation_var_internalization_type list
+
+(** Grammar rules for a notation *)
+
+type one_notation_grammar = {
+  notgram_level : level;
   notgram_assoc : Extend.gram_assoc option;
   notgram_notation : Constrexpr.notation;
   notgram_prods : grammar_constr_prod_item list list;
-  notgram_typs : notation_var_internalization_type list;
+}
+
+type notation_grammar = {
   notgram_onlyprinting : bool;
+  notgram_rules : one_notation_grammar list
 }

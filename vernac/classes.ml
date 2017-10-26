@@ -68,7 +68,7 @@ let _ =
 let existing_instance glob g info =
   let c = global g in
   let info = Option.default Hints.empty_hint_info info in
-  let instance = Global.type_of_global_unsafe c in
+  let instance, _ = Global.type_of_global_in_context (Global.env ()) c in
   let _, r = decompose_prod_assum instance in
     match class_of_constr Evd.empty (EConstr.of_constr r) with
       | Some (_, ((tc,u), _)) -> add_instance (new_instance tc info glob
@@ -111,14 +111,14 @@ let instance_hook k info global imps ?hook cst =
   Typeclasses.declare_instance (Some info) (not global) cst;
   (match hook with Some h -> h cst | None -> ())
 
-let declare_instance_constant k info global imps ?hook id pl poly evm term termtype =
+let declare_instance_constant k info global imps ?hook id decl poly evm term termtype =
   let kind = IsDefinition Instance in
   let evm = 
     let levels = Univ.LSet.union (Univops.universes_of_constr termtype) 
 				 (Univops.universes_of_constr term) in
     Evd.restrict_universe_context evm levels 
   in
-  let pl, uctx = Evd.universe_context ?names:pl evm in
+  let pl, uctx = Evd.check_univ_decl evm decl in
   let entry = 
     Declare.definition_entry ~types:termtype ~poly ~univs:uctx term
   in
@@ -129,13 +129,13 @@ let declare_instance_constant k info global imps ?hook id pl poly evm term termt
     instance_hook k info global imps ?hook (ConstRef kn);
     id
 
-let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) poly ctx (instid, bk, cl) props
-    ?(generalize=true)
-    ?(tac:unit Proofview.tactic option) ?hook pri =
+let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
+  poly ctx (instid, bk, cl) props ?(generalize=true)
+  ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
   let ((loc, instid), pl) = instid in
-  let uctx = Evd.make_evar_universe_context env pl in
-  let evars = ref (Evd.from_ctx uctx) in
+  let evd, decl = Univdecls.interp_univ_decl_opt env pl in
+  let evars = ref evd in
   let tclass, ids =
     match bk with
     | Decl_kinds.Implicit ->
@@ -164,7 +164,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
     let ctx'' = ctx' @ ctx in
     let (k, u), args = Typeclasses.dest_class_app (push_rel_context ctx'' env) !evars (EConstr.of_constr c) in
     let u = EConstr.EInstance.kind !evars u in
-    let cl, u = Typeclasses.typeclass_univ_instance (k, u) in
+    let cl = Typeclasses.typeclass_univ_instance (k, u) in
     let _, args = 
       List.fold_right (fun decl (args, args') ->
 	match decl with
@@ -183,7 +183,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	    id
       | Anonymous ->
 	  let i = Nameops.add_suffix (id_of_class k) "_instance_0" in
-	    Namegen.next_global_ident_away i (Termops.ids_of_context env)
+	    Namegen.next_global_ident_away i (Termops.vars_of_env env)
   in
   let env' = push_rel_context ctx env in
   evars := Evarutil.nf_evar_map !evars;
@@ -202,7 +202,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	    nf t
 	in
 	Pretyping.check_evars env Evd.empty !evars (EConstr.of_constr termtype);
-	let pl, ctx = Evd.universe_context ?names:pl !evars in
+	let pl, ctx = Evd.check_univ_decl !evars decl in
 	let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
 	  (ParameterEntry 
             (None,poly,(termtype,ctx),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
@@ -302,7 +302,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
       in
       let term = Option.map nf term in
 	if not (Evd.has_undefined evm) && not (Option.is_empty term) then
-	  declare_instance_constant k pri global imps ?hook id pl
+	  declare_instance_constant k pri global imps ?hook id decl
             poly evm (Option.get term) termtype
 	else if Flags.is_program_mode () || refine || Option.is_empty term then begin
 	  let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
@@ -323,7 +323,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
               let hook = Lemmas.mk_hook hook in
 	      let ctx = Evd.evar_universe_context evm in
 		ignore (Obligations.add_definition id ?term:constr
- 			?pl typ ctx ~kind:(Global,poly,Instance) ~hook obls);
+ 			~univdecl:decl typ ctx ~kind:(Global,poly,Instance) ~hook obls);
 		id
 	    else
 	      (Flags.silently 
@@ -334,7 +334,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
                      the refinement manually.*)
 		let gls = List.rev (Evd.future_goals evm) in
                 let evm = Evd.reset_future_goals evm in
-                Lemmas.start_proof id ?pl kind evm (EConstr.of_constr termtype)
+                Lemmas.start_proof id ~pl:decl kind evm (EConstr.of_constr termtype)
 		(Lemmas.mk_hook
                   (fun _ -> instance_hook k pri global imps ?hook));
                  (* spiwack: I don't know what to do with the status here. *)

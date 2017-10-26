@@ -6,7 +6,6 @@
 
  *************************************************************************)
 
-open API
 open Names
 
 let module_refl_name = "ReflOmegaCore"
@@ -222,6 +221,7 @@ let mk_N = function
 
 module type Int = sig
   val typ : Term.constr Lazy.t
+  val is_int_typ : [ `NF ] Proofview.Goal.t -> Term.constr -> bool
   val plus : Term.constr Lazy.t
   val mult : Term.constr Lazy.t
   val opp : Term.constr Lazy.t
@@ -288,12 +288,14 @@ let pf_nf gl c =
   EConstr.Unsafe.to_constr
     (Tacmach.New.pf_apply Tacred.simpl gl (EConstr.of_constr c))
 
+let is_int_typ gl t =
+  match destructurate (pf_nf gl t) with
+  | Kapp("Z",[]) -> true
+  | _ -> false
+
 let parse_rel gl t =
   match destructurate t with
-  | Kapp("eq",[typ;t1;t2]) ->
-     (match destructurate (pf_nf gl typ) with
-      | Kapp("Z",[]) -> Req (t1,t2)
-      | _ -> Rother)
+  | Kapp("eq",[typ;t1;t2]) when is_int_typ gl typ -> Req (t1,t2)
   | Kapp("Zne",[t1;t2]) -> Rne (t1,t2)
   | Kapp("Z.le",[t1;t2]) -> Rle (t1,t2)
   | Kapp("Z.lt",[t1;t2]) -> Rlt (t1,t2)

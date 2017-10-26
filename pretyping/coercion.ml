@@ -77,8 +77,8 @@ let apply_pattern_coercion ?loc pat p =
   List.fold_left
     (fun pat (co,n) ->
        let f i =
-         if i<n then (CAst.make ?loc @@ Glob_term.PatVar Anonymous) else pat in
-        CAst.make ?loc @@ Glob_term.PatCstr (co, List.init (n+1) f, Anonymous))
+         if i<n then (DAst.make ?loc @@ Glob_term.PatVar Anonymous) else pat in
+        DAst.make ?loc @@ Glob_term.PatCstr (co, List.init (n+1) f, Anonymous))
     pat p
 
 (* raise Not_found if no coercion found *)
@@ -205,7 +205,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 	| _ -> subco ())
       | Prod (name, a, b), Prod (name', a', b') ->
 	  let name' = 
-	    Name (Namegen.next_ident_away Namegen.default_dependent_ident (Termops.ids_of_context env))
+	    Name (Namegen.next_ident_away Namegen.default_dependent_ident (Termops.vars_of_env env))
 	  in
 	  let env' = push_rel (LocalAssum (name', a')) env in
 	  let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in

@@ -1,5 +1,3 @@
-open API
-
 let contrib_name = "btauto"
 
 let init_constant dir s =

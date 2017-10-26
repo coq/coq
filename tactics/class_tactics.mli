@@ -27,7 +27,7 @@ val typeclasses_eauto : ?only_classes:bool -> ?st:transparent_state -> ?strategy
                         depth:(Int.t option) ->
                         Hints.hint_db_name list -> unit Proofview.tactic
 
-val head_of_constr : Id.t -> constr -> unit Proofview.tactic
+val head_of_constr : Misctypes.tracked_ident -> constr -> unit Proofview.tactic
 
 val not_evar : constr -> unit Proofview.tactic
 

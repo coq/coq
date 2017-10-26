@@ -6,6 +6,7 @@
 \newcommand\tele[1]{\overrightarrow{#1}}
 
 \achapter{\protect{Type Classes}}
+%HEVEA\cutname{type-classes.html}
 \aauthor{Matthieu Sozeau}
 \label{typeclasses}
 
@@ -486,15 +487,17 @@ where there is a hole in that place.
 
 \subsection{\tt Set Typeclasses Legacy Resolution}
 \optindex{Typeclasses Legacy Resolution}
+\emph{Deprecated since 8.7}
 
 This option (off by default) uses the 8.5 implementation of resolution.
 Use for compatibility purposes only (porting and debugging).
 
 \subsection{\tt Set Typeclasses Module Eta}
 \optindex{Typeclasses Modulo Eta}
+\emph{Deprecated since 8.7}
 
 This option allows eta-conversion for functions and records during
-unification of type-classes. This option is now unsupported in 8.6 with
+unification of type-classes. This option is unsupported since 8.6 with
 {\tt Typeclasses Filtered Unification} set, but still affects the
 default unification strategy, and the one used in {\tt Legacy
   Resolution} mode. It is \emph{unset} by default. If {\tt Typeclasses
@@ -505,7 +508,7 @@ pattern-matching is not up-to eta.
 \subsection{\tt Set Typeclasses Limit Intros}
 \optindex{Typeclasses Limit Intros}
 
-This option (on by default in Coq 8.6 and below) controls the ability to
+This option (on by default) controls the ability to
 apply hints while avoiding (functional) eta-expansions in the generated
 proof term. It does so by allowing hints that conclude in a product to
 apply to a goal with a matching product directly, avoiding an

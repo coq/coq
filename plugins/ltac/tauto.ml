@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Term
 open EConstr
 open Hipattern
@@ -23,9 +22,15 @@ open Proofview.Notations
 let tauto_plugin = "tauto_plugin"
 let () = Mltop.add_known_module tauto_plugin
 
-let assoc_var s ist =
+let assoc_constr_var s ist =
   let v = Id.Map.find (Names.Id.of_string s) ist.lfun in
   match Value.to_constr v with
+    | Some c -> c
+    | None -> failwith "tauto: anomaly"
+
+let assoc_ident_var s ist =
+  let v = Id.Map.find (Names.Id.of_string s) ist.lfun in
+  match Value.to_ident v with
     | Some c -> c
     | None -> failwith "tauto: anomaly"
 
@@ -112,7 +117,7 @@ let split = Tactics.split_with_bindings false [Misctypes.NoBindings]
 
 let is_empty _ ist =
   Proofview.tclEVARMAP >>= fun sigma ->
-  if is_empty_type sigma (assoc_var "X1" ist) then idtac else fail
+  if is_empty_type sigma (assoc_constr_var "X1" ist) then idtac else fail
 
 (* Strictly speaking, this exceeds the propositional fragment as it
    matches also equality types (and solves them if a reflexivity) *)
@@ -120,7 +125,7 @@ let is_unit_or_eq _ ist =
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
   let test = if flags.strict_unit then is_unit_type else is_unit_or_eq_type in
-  if test sigma (assoc_var "X1" ist) then idtac else fail
+  if test sigma (assoc_constr_var "X1" ist) then idtac else fail
 
 let bugged_is_binary sigma t =
   isApp sigma t &&
@@ -136,7 +141,7 @@ let bugged_is_binary sigma t =
 let is_conj _ ist =
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
-  let ind = assoc_var "X1" ist in
+  let ind = assoc_constr_var "X1" ist in
     if (not flags.binary_mode_bugged_detection || bugged_is_binary sigma ind) &&
        is_conjunction sigma
          ~strict:flags.strict_in_hyp_and_ccl
@@ -147,9 +152,9 @@ let is_conj _ ist =
 let flatten_contravariant_conj _ ist =
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
-  let typ = assoc_var "X1" ist in
-  let c = assoc_var "X2" ist in
-  let hyp = assoc_var "id" ist in
+  let typ = assoc_constr_var "X1" ist in
+  let c = assoc_constr_var "X2" ist in
+  let hyp,_ = assoc_ident_var "id" ist in
   match match_with_conjunction sigma
           ~strict:flags.strict_in_contravariant_hyp
           ~onlybinary:flags.binary_mode typ
@@ -157,8 +162,8 @@ let flatten_contravariant_conj _ ist =
   | Some (_,args) ->
     let newtyp = List.fold_right mkArrow args c in
     let intros = tclMAP (fun _ -> intro) args in
-    let by = tclTHENLIST [intros; apply hyp; split; assumption] in
-    tclTHENLIST [assert_ ~by newtyp; clear (destVar sigma hyp)]
+    let by = tclTHENLIST [intros; apply (mkVar hyp); split; assumption] in
+    tclTHENLIST [assert_ ~by newtyp; clear hyp]
   | _ -> fail
 
 (** Dealing with disjunction *)
@@ -166,7 +171,7 @@ let flatten_contravariant_conj _ ist =
 let is_disj _ ist =
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
-  let t = assoc_var "X1" ist in
+  let t = assoc_constr_var "X1" ist in
   if (not flags.binary_mode_bugged_detection || bugged_is_binary sigma t) &&
      is_disjunction sigma
        ~strict:flags.strict_in_hyp_and_ccl
@@ -177,9 +182,9 @@ let is_disj _ ist =
 let flatten_contravariant_disj _ ist =
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
-  let typ = assoc_var "X1" ist in
-  let c = assoc_var "X2" ist in
-  let hyp = assoc_var "id" ist in
+  let typ = assoc_constr_var "X1" ist in
+  let c = assoc_constr_var "X2" ist in
+  let hyp,_ = assoc_ident_var "id" ist in
   match match_with_disjunction sigma
           ~strict:flags.strict_in_contravariant_hyp
           ~onlybinary:flags.binary_mode
@@ -188,11 +193,11 @@ let flatten_contravariant_disj _ ist =
       let map i arg =
         let typ = mkArrow arg c in
         let ci = Tactics.constructor_tac false None (succ i) Misctypes.NoBindings in
-        let by = tclTHENLIST [intro; apply hyp; ci; assumption] in
+        let by = tclTHENLIST [intro; apply (mkVar hyp); ci; assumption] in
         assert_ ~by typ
       in
       let tacs = List.mapi map args in
-      let tac0 = clear (destVar sigma hyp) in
+      let tac0 = clear hyp in
       tclTHEN (tclTHENLIST tacs) tac0
   | _ -> fail
 

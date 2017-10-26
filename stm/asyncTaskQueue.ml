@@ -10,7 +10,7 @@ open CErrors
 open Pp
 open Util
 
-let stm_pr_err pp = Format.eprintf "%s] @[%a@]%!\n" (System.process_id ()) Pp.pp_with pp
+let stm_pr_err pp = Format.eprintf "%s] @[%a@]\n%!" (System.process_id ()) Pp.pp_with pp
 
 let stm_prerr_endline s = if !Flags.debug then begin stm_pr_err (str s) end else ()
 
@@ -123,7 +123,7 @@ module Make(T : Task) = struct
                  "-worker-id"; name;
                  "-async-proofs-worker-priority";
                    Flags.string_of_priority !Flags.async_proofs_worker_priority]
-        | ("-ideslave"|"-emacs"|"-emacs-U"|"-batch")::tl -> set_slave_opt tl
+        | ("-ideslave"|"-emacs"|"-batch")::tl -> set_slave_opt tl
         | ("-async-proofs" |"-toploop" |"-vio2vo"
           |"-load-vernac-source" |"-l" |"-load-vernac-source-verbose" |"-lv"
           |"-compile" |"-compile-verbose"
@@ -237,7 +237,7 @@ module Make(T : Task) = struct
   type queue = {
     active : Pool.pool;
     queue : (T.task * expiration) TQueue.t;
-    cleaner : Thread.t;
+    cleaner : Thread.t option;
   }
 
   let create size =
@@ -250,7 +250,7 @@ module Make(T : Task) = struct
     {
       active = Pool.create queue ~size;
       queue;
-      cleaner = Thread.create cleaner queue;
+      cleaner = if size > 0 then Some (Thread.create cleaner queue) else None;
     }
   
   let destroy { active; queue } =

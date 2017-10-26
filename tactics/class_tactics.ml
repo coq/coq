@@ -92,7 +92,7 @@ open Goptions
 
 let _ =
   declare_bool_option
-    { optdepr  = true;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "do typeclass search modulo eta conversion";
       optkey   = ["Typeclasses";"Modulo";"Eta"];
       optread  = get_typeclasses_modulo_eta;
@@ -125,7 +125,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "compat";
       optkey   = ["Typeclasses";"Legacy";"Resolution"];
       optread  = get_typeclasses_legacy_resolution;
@@ -494,16 +494,15 @@ let catchable = function
   | Refiner.FailError _ -> true
   | e -> Logic.catchable_exception e
 
-(* alternate separators in debug search path output *)
-let debug_seps = [| "." ; "-" |]
-let next_sep seps = 
-  let num_seps = Array.length seps in
-  let sep_index = ref 0 in
-  fun () ->
-    let sep = seps.(!sep_index) in
-    sep_index := (!sep_index + 1) mod num_seps;
-    str sep
-let pr_depth l = prlist_with_sep (next_sep debug_seps) int (List.rev l)
+let pr_depth l = 
+  let rec fmt elts =
+    match elts with
+    | [] -> []
+    | [n] -> [string_of_int n]
+    | n1::n2::rest ->
+       (string_of_int n1 ^ "." ^ string_of_int n2) :: fmt rest
+  in
+  prlist_with_sep (fun () -> str "-") str (fmt (List.rev l))
 
 let is_Prop env sigma concl =
   let ty = Retyping.get_type_of env sigma concl in
@@ -622,7 +621,7 @@ module V85 = struct
 
   type autoinfo = { hints : hint_db; is_evar: existential_key option;
                     only_classes: bool; unique : bool;
-                    auto_depth: int list; auto_last_tac: std_ppcmds Lazy.t;
+                    auto_depth: int list; auto_last_tac: Pp.t Lazy.t;
                     auto_path : global_reference option list;
                     auto_cut : hints_path }
   type autogoal = goal * autoinfo
@@ -973,7 +972,7 @@ end
 module Search = struct
   type autoinfo =
     { search_depth : int list;
-      last_tac : Pp.std_ppcmds Lazy.t;
+      last_tac : Pp.t Lazy.t;
       search_dep : bool;
       search_only_classes : bool;
       search_cut : hints_path;
@@ -1144,7 +1143,7 @@ module Search = struct
         let res =
           if j = 0 then tclUNIT ()
           else tclDISPATCH
-                 (List.init j (fun j' -> (tac_of gls i (Option.default 0 k + j))))
+                 (List.init j (fun j' -> (tac_of gls i (Option.default 0 k + j'))))
         in
         let finish nestedshelf sigma =
           let filter ev =
@@ -1343,7 +1342,7 @@ module Search = struct
                                             | Some i -> str ", with depth limit " ++ int i));
     tac
 
-  let run_on_evars p evm tac =
+  let run_on_evars env evm p tac =
     match evars_to_goals p evm with
     | None -> None (* This happens only because there's no evar having p *)
     | Some (goals, evm') ->
@@ -1358,7 +1357,7 @@ module Search = struct
        let pv = Proofview.unshelve goals pv in
        try
          let (), pv', (unsafe, shelved, gaveup), _ =
-           Proofview.apply (Global.env ()) tac pv
+           Proofview.apply env tac pv
          in
          if Proofview.finished pv' then
            let evm' = Proofview.return pv' in
@@ -1375,22 +1374,22 @@ module Search = struct
          else raise Not_found
        with Logic_monad.TacticFailure _ -> raise Not_found
 
-  let evars_eauto depth only_classes unique dep st hints p evd =
+  let evars_eauto env evd depth only_classes unique dep st hints p =
     let eauto_tac = eauto_tac ~st ~unique ~only_classes ~depth ~dep:(unique || dep) hints in
-    let res = run_on_evars p evd eauto_tac in
+    let res = run_on_evars env evd p eauto_tac in
     match res with
     | None -> evd
     | Some evd' -> evd'
 
-  let typeclasses_eauto ?depth unique st hints p evd =
-    evars_eauto depth true unique false st hints p evd
+  let typeclasses_eauto env evd ?depth unique st hints p =
+    evars_eauto env evd depth true unique false st hints p
   (** Typeclasses eauto is an eauto which tries to resolve only
       goals of typeclass type, and assumes that the initially selected
       evars in evd are independent of the rest of the evars *)
 
-  let typeclasses_resolve debug depth unique p evd =
+  let typeclasses_resolve env evd debug depth unique p =
     let db = searchtable_map typeclasses_db in
-    typeclasses_eauto ?depth unique (Hint_db.transparent_state db) [db] p evd
+    typeclasses_eauto env evd ?depth unique (Hint_db.transparent_state db) [db] p
 end
 
 (** Binding to either V85 or Search implementations. *)
@@ -1425,18 +1424,20 @@ let deps_of_constraints cstrs evm p =
     Intpart.union_set (Evar.Set.union evx evy) p)
     cstrs
 
-let evar_dependencies evm p =
+let evar_dependencies pred evm p =
   Evd.fold_undefined
     (fun ev evi _ ->
-      let evars = Evar.Set.add ev (Evarutil.undefined_evars_of_evar_info evm evi)
-      in Intpart.union_set evars p)
+      if Typeclasses.is_resolvable evi && pred evm ev evi then
+        let evars = Evar.Set.add ev (Evarutil.undefined_evars_of_evar_info evm evi)
+        in Intpart.union_set evars p
+      else ())
     evm ()
 
 (** [split_evars] returns groups of undefined evars according to dependencies *)
 
-let split_evars evm =
+let split_evars pred evm =
   let p = Intpart.create () in
-  evar_dependencies evm p;
+  evar_dependencies pred evm p;
   deps_of_constraints (snd (extract_all_conv_pbs evm)) evm p;
   Intpart.partition p
 
@@ -1459,7 +1460,6 @@ let is_mandatory p comp evd =
 (** In case of unsatisfiable constraints, build a nice error message *)
 
 let error_unresolvable env comp evd =
-  let evd = Evarutil.nf_evar_map_undefined evd in
   let is_part ev = match comp with
   | None -> true
   | Some s -> Evar.Set.mem ev s
@@ -1473,8 +1473,7 @@ let error_unresolvable env comp evd =
     else (found, accu)
    in
   let (_, ev) = Evd.fold_undefined fold evd (true, None) in
-    Pretype_errors.unsatisfiable_constraints
-      (Evarutil.nf_env_evar evd env) evd ev comp
+  Pretype_errors.unsatisfiable_constraints env evd ev comp
 
 (** Check if an evar is concerned by the current resolution attempt,
     (and in particular is in the current component), and also update
@@ -1521,7 +1520,7 @@ exception Unresolved
 (** If [do_split] is [true], we try to separate the problem in
     several components and then solve them separately *)
 let resolve_all_evars debug depth unique env p oevd do_split fail =
-  let split = if do_split then split_evars oevd else [Evar.Set.empty] in
+  let split = if do_split then split_evars p oevd else [Evar.Set.empty] in
   let in_comp comp ev = if do_split then Evar.Set.mem ev comp else true
   in
   let rec docomp evd = function
@@ -1533,7 +1532,7 @@ let resolve_all_evars debug depth unique env p oevd do_split fail =
           if get_typeclasses_legacy_resolution () then
             V85.resolve_all_evars_once debug depth unique p evd
           else
-            Search.typeclasses_resolve debug depth unique p evd
+            Search.typeclasses_resolve env evd debug depth unique p
         in
          if has_undefined p oevd evd' then raise Unresolved;
          docomp evd' comps
@@ -1570,9 +1569,10 @@ let _ =
   Hook.set Typeclasses.solve_all_instances_hook solve_inst
 
 let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
-  let nc, gl, subst, _, _ = Evarutil.push_rel_context_to_named_context env sigma gl in
+  let nc, private_ids, gl, subst, _, _ =
+    Evarutil.push_rel_context_to_named_context env Id.Set.empty sigma gl in
   let (gl,t,sigma) =
-    Goal.V82.mk_goal sigma nc gl Store.empty in
+    Goal.V82.mk_goal sigma nc private_ids gl Store.empty in
   let (ev, _) = destEvar sigma t in
   let gls = { it = gl ; sigma = sigma; } in
   let hints = searchtable_map typeclasses_db in
@@ -1607,10 +1607,10 @@ let rec head_of_constr sigma t =
     | App (f,args)  -> head_of_constr sigma f
     | _      -> t
 
-let head_of_constr h c =
+let head_of_constr (h,isprivate) c =
   Proofview.tclEVARMAP >>= fun sigma ->
   let c = head_of_constr sigma c in
-  letin_tac None (Name h) c None Locusops.allHyps
+  letin_tac None (Name h) isprivate c None Locusops.allHyps
 
 let not_evar c =
   Proofview.tclEVARMAP >>= fun sigma ->

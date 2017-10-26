@@ -28,5 +28,6 @@ let _ = Pre_env.empty_env
 EOT
 
 ${COQBIN}coq_makefile -f _CoqProject -o Makefile
+cat Makefile.conf
 
 make VERBOSE=1

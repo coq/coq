@@ -39,7 +39,9 @@ type doc_view =
 (* Following discussion on #390, we play on the safe side and make the
    internal representation opaque here. *)
 type t = doc_view
+
 type std_ppcmds = t
+[@@ocaml.deprecated "alias of Pp.t"]
 
 let repr x = x
 let unrepr x = x
@@ -80,10 +82,21 @@ let utf8_length s =
   done ;
   !cnt
 
-let app s1 s2 = match s1, s2 with
-  | Ppcmd_empty, s
-  | s, Ppcmd_empty -> s
-  | s1, s2         -> Ppcmd_glue [s1; s2]
+let rec app d1 d2 = match d1, d2 with
+  | Ppcmd_empty,        d
+  | d,                  Ppcmd_empty      -> d
+
+  (* Optimizations *)
+  | Ppcmd_glue [l1;l2], Ppcmd_glue l3    -> Ppcmd_glue (l1 :: l2 :: l3)
+  | Ppcmd_glue [l1;l2], d2               -> Ppcmd_glue [l1 ; l2 ; d2]
+  | d1,                 Ppcmd_glue l2    -> Ppcmd_glue (d1 :: l2)
+
+  | Ppcmd_tag(t1,d1),   Ppcmd_tag(t2,d2)
+    when t1 = t2                         -> Ppcmd_tag(t1,app d1 d2)
+  | d1, d2                               -> Ppcmd_glue [d1; d2]
+  (* Optimizations deemed too costly *)
+  (* | Ppcmd_glue l1,    Ppcmd_glue l2    -> Ppcmd_glue   (l1 @ l2) *)
+  (* | Ppcmd_string s1,  Ppcmd_string s2  -> Ppcmd_string (s1 ^ s2) *)
 
 let seq s = Ppcmd_glue s
 
@@ -153,7 +166,7 @@ let rec pr_com ft s =
     | None -> ()
 
 (* pretty printing functions *)
-let pp_with ft =
+let pp_with ft pp =
   let cpp_open_box = function
     | Pp_hbox n   -> Format.pp_open_hbox ft ()
     | Pp_vbox n   -> Format.pp_open_vbox ft n
@@ -175,7 +188,7 @@ let pp_with ft =
                                  pp_cmd s;
                                  pp_close_tag ft ()
   in
-  try pp_cmd
+  try pp_cmd pp
   with reraise ->
     let reraise = Backtrace.add_backtrace reraise in
     let () = Format.pp_print_flush ft () in
@@ -220,23 +233,25 @@ let prlist pr l = Ppcmd_glue (List.map pr l)
    if a strict behavior is needed, use [prlist_strict] instead.
    evaluation is done from left to right. *)
 
-let prlist_sep_lastsep no_empty sep lastsep elem =
-  let rec start = function
-    |[] -> mt ()
-    |[e] -> elem e
-    |h::t -> let e = elem h in
-        if no_empty && ismt e then start t else
-          let rec aux = function
-            |[] -> mt ()
-            |h::t ->
-               let e = elem h and r = aux t in
-                 if no_empty && ismt e then r else
-                   if ismt r
-                   then let s = lastsep () in s ++ e
-                   else let s = sep () in s ++ e ++ r
-          in let r = aux t in e ++ r
-  in start
-
+let prlist_sep_lastsep no_empty sep_thunk lastsep_thunk elem l =
+  let sep = sep_thunk () in
+  let lastsep = lastsep_thunk () in
+  let elems = List.map elem l in
+  let filtered_elems =
+    if no_empty then
+      List.filter (fun e -> not (ismt e)) elems
+    else
+      elems
+  in
+  let rec insert_seps es =
+    match es with
+    | []     -> mt ()
+    | [e]    -> e
+    | h::[e] -> h ++ lastsep ++ e
+    | h::t   -> h ++ sep ++ insert_seps t
+  in
+  insert_seps filtered_elems
+  
 let prlist_strict pr l = prlist_sep_lastsep true mt mt pr l
 (* [prlist_with_sep sep pr [a ; ... ; c]] outputs
    [pr a ++ sep() ++ ... ++ sep() ++ pr c] *)

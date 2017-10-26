@@ -176,6 +176,12 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
         let s = ESorts.kind sigma s in
 	lookup_canonical_conversion
 	  (proji, Sort_cs (family_of_sort s)),[]
+      | Proj (p, c) ->
+        let c2 = Globnames.ConstRef (Projection.constant p) in
+        let c = Retyping.expand_projection env sigma p c [] in
+        let _, args = destApp sigma c in
+        let sk2 = Stack.append_app args sk2 in
+        lookup_canonical_conversion (proji, Const_cs c2), sk2
       | _ ->
 	let (c2, _) = Termops.global_of_constr sigma t2 in
 	  lookup_canonical_conversion (proji, Const_cs c2),sk2
@@ -205,7 +211,8 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
       else match (Stack.strip_n_app (l_us-1) sk2_effective) with
       | None -> raise Not_found
       | Some (l',el,s') -> (l'@Stack.append_app [|el|] Stack.empty,s') in
-  let subst, ctx' = Universes.fresh_universe_context_set_instance ctx in
+  let u, ctx' = Universes.fresh_instance_from ctx None in
+  let subst = Univ.make_inverse_instance_subst u in
   let c = EConstr.of_constr c in
   let c' = subst_univs_level_constr subst c in
   let t' = EConstr.of_constr t' in
@@ -353,9 +360,8 @@ let exact_ise_stack2 env evd f sk1 sk2 =
 let check_leq_inductives evd cumi u u' =
   let u = EConstr.EInstance.kind evd u in
   let u' = EConstr.EInstance.kind evd u' in
-  let length_ind_instance = 
-    Univ.Instance.length
-      (Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi))
+  let length_ind_instance =
+    Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)
   in
   let ind_sbcst =  Univ.ACumulativityInfo.subtyp_context cumi in
   if not ((length_ind_instance = Univ.Instance.length u) &&
@@ -364,9 +370,7 @@ let check_leq_inductives evd cumi u u' =
   else
     begin
      let comp_subst = (Univ.Instance.append u u') in
-     let comp_cst = 
-       Univ.UContext.constraints (Univ.subst_instance_context comp_subst ind_sbcst)
-     in
+     let comp_cst =  Univ.AUContext.instantiate comp_subst ind_sbcst in
      Evd.add_constraints evd comp_cst
     end
 

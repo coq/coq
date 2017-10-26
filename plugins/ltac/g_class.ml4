@@ -8,7 +8,6 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open API
 open Class_tactics
 open Stdarg
 open Tacarg
@@ -21,7 +20,7 @@ let set_transparency cl b =
   List.iter (fun r ->
     let gr = Smartlocate.global_with_alias r in
     let ev = Tacred.evaluable_of_global_reference (Global.env ()) gr in
-      Classes.set_typeclass_transparency ev false b) cl
+      Classes.set_typeclass_transparency ev (Locality.make_section_locality None) b) cl
 
 VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings CLASSIFIED AS SIDEFF
 | [ "Typeclasses" "Transparent" reference_list(cl) ] -> [

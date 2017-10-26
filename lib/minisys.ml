@@ -36,23 +36,35 @@ let skipped_dirnames = ref ["CVS"; "_darcs"]
 
 let exclude_directory f = skipped_dirnames := f :: !skipped_dirnames
 
+(* Note: this test is possibly used for Coq module/file names but also for
+   OCaml filenames, whose syntax as of today is more restrictive for
+   module names (only initial letter then letter, digits, _ or quote),
+   but more permissive (though disadvised) for file names  *)
+
 let ok_dirname f =
   not (f = "") && f.[0] != '.' &&
-  not (List.mem f !skipped_dirnames) (*&&
-  (match Unicode.ident_refutation f with None -> true | _ -> false)*)
+  not (List.mem f !skipped_dirnames) &&
+  match Unicode.ident_refutation f with None -> true | _ -> false
 
 (* Check directory can be opened *)
 
 let exists_dir dir =
+  (* See BZ#5391 on windows failing on a trailing (back)slash *)
+  let rec strip_trailing_slash dir =
+    let len = String.length dir in
+    if len > 0 && (dir.[len-1] = '/' || dir.[len-1] = '\\')
+    then strip_trailing_slash (String.sub dir 0 (len-1)) else dir in
+  let dir = if Sys.os_type = "Win32" then strip_trailing_slash dir else dir in
   try Sys.is_directory dir with Sys_error _ -> false
 
 let apply_subdir f path name =
   (* we avoid all files and subdirs starting by '.' (e.g. .svn) *)
   (* as well as skipped files like CVS, ... *)
-  if ok_dirname name then
+  let base = try Filename.chop_extension name with Invalid_argument _ -> name in
+  if ok_dirname base then
     let path = if path = "." then name else path//name in
     match try (Unix.stat path).Unix.st_kind with Unix.Unix_error _ -> Unix.S_BLK with
-    | Unix.S_DIR -> f (FileDir (path,name))
+    | Unix.S_DIR when name = base -> f (FileDir (path,name))
     | Unix.S_REG -> f (FileRegular name)
     | _ -> ()
 

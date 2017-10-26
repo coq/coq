@@ -78,14 +78,14 @@ let iter_declarations (fn : global_reference -> env -> constr -> unit) =
   | "CONSTANT" ->
     let cst = Global.constant_of_delta_kn kn in
     let gr = ConstRef cst in
-    let typ = Global.type_of_global_unsafe gr in
+    let (typ, _) = Global.type_of_global_in_context (Global.env ()) gr in
       fn gr env typ
   | "INDUCTIVE" ->
     let mind = Global.mind_of_delta_kn kn in
     let mib = Global.lookup_mind mind in
     let iter_packet i mip =
       let ind = (mind, i) in
-      let u = Declareops.inductive_polymorphic_instance mib in
+      let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
       let i = (ind, u) in
       let typ = Inductiveops.type_of_inductive env i in
       let () = fn (IndRef ind) env typ in

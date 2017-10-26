@@ -8,7 +8,6 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
-open API
 open Names
 open Pp
 open Term
@@ -118,7 +117,7 @@ let delayed_clear force rest clr gl =
       List.split (List.map (fun x ->
         let x = hyp_id x in
         let x' = mk_anon_id (Id.to_string x) gl in
-        x', (x, x')) clr) in
+        x', (x, (x',false))) clr) in
     let ctx = { ctx with delayed_clears = ren_clr @ ctx.delayed_clears } in
     let gl = push_ctx ctx gl in
     tac_ctx (Proofview.V82.of_tactic (rename_hyp ren)) gl 

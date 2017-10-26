@@ -15,7 +15,6 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open API
 
 DECLARE PLUGIN "omega_plugin"
 
@@ -51,7 +50,7 @@ END
 
 TACTIC EXTEND omega'
 | [ "omega" "with" ne_ident_list(l) ] ->
-    [ omega_tactic (List.map Names.Id.to_string l) ]
+    [ omega_tactic (List.map (fun (id,_) -> Names.Id.to_string id) l) ]
 | [ "omega" "with" "*" ] -> [ omega_tactic ["nat";"positive";"N";"Z"] ]
 END
 

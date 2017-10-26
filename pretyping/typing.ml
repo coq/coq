@@ -35,11 +35,6 @@ let meta_type evd mv =
   let ty = Evd.map_fl EConstr.of_constr ty in
   meta_instance evd ty
 
-let constant_type_knowing_parameters env sigma (cst, u) jl =
-  let u = Unsafe.to_instance u in
-  let paramstyp = Array.map (fun j -> lazy (EConstr.to_constr sigma j.uj_type)) jl in
-  EConstr.of_constr (type_of_constant_knowing_parameters_in env (cst, u) paramstyp)
-
 let inductive_type_knowing_parameters env sigma (ind,u) jl =
   let u = Unsafe.to_instance u in
   let mspec = lookup_mind_specif env ind in
@@ -315,9 +310,6 @@ let rec execute env evdref cstr =
 	    | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
 		make_judge f
 		  (inductive_type_knowing_parameters env !evdref (ind, u) jl)
-	    | Const (cst, u) when EInstance.is_empty u && Environ.template_polymorphic_constant cst env ->
-		make_judge f
-		  (constant_type_knowing_parameters env !evdref (cst, u) jl)
 	    | _ ->
                 (* No template polymorphism *)
 		execute env evdref f

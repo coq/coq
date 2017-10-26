@@ -29,107 +29,6 @@ open Util
    union-find algorithm. The assertions $<$ and $\le$ are represented by
    adjacency lists *)
 
-module type Hashconsed =
-sig
-  type t
-  val hash : t -> int
-  val eq : t -> t -> bool
-  val hcons : t -> t
-end
-
-module HashedList (M : Hashconsed) :
-sig
-  type t = private Nil | Cons of M.t * int * t
-  val nil : t
-  val cons : M.t -> t -> t
-end =
-struct
-  type t = Nil | Cons of M.t * int * t
-  module Self =
-  struct
-    type _t = t
-    type t = _t
-    type u = (M.t -> M.t)
-    let hash = function Nil -> 0 | Cons (_, h, _) -> h
-    let eq l1 l2 = match l1, l2 with
-    | Nil, Nil -> true
-    | Cons (x1, _, l1), Cons (x2, _, l2) -> x1 == x2 && l1 == l2
-    | _ -> false
-    let hashcons hc = function
-    | Nil -> Nil
-    | Cons (x, h, l) -> Cons (hc x, h, l)
-  end
-  module Hcons = Hashcons.Make(Self)
-  let hcons = Hashcons.simple_hcons Hcons.generate Hcons.hcons M.hcons
-  (** No recursive call: the interface guarantees that all HLists from this
-      program are already hashconsed. If we get some external HList, we can
-      still reconstruct it by traversing it entirely. *)
-  let nil = Nil
-  let cons x l =
-    let h = M.hash x in
-    let hl = match l with Nil -> 0 | Cons (_, h, _) -> h in
-    let h = Hashset.Combine.combine h hl in
-    hcons (Cons (x, h, l))
-end
-
-module HList = struct
-
-  module type S = sig
-    type elt
-    type t = private Nil | Cons of elt * int * t
-    val hash : t -> int
-    val nil : t
-    val cons : elt -> t -> t
-    val tip : elt -> t
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-    val map : (elt -> elt) -> t -> t
-    val smartmap : (elt -> elt) -> t -> t
-    val exists : (elt -> bool) -> t -> bool
-    val for_all : (elt -> bool) -> t -> bool
-    val for_all2 : (elt -> elt -> bool) -> t -> t -> bool
-    val to_list : t -> elt list
-  end
-
-  module Make (H : Hashconsed) : S with type elt = H.t =
-  struct
-  type elt = H.t
-  include HashedList(H)
-
-  let hash = function Nil -> 0 | Cons (_, h, _) -> h
-
-  let tip e = cons e nil
-
-  let rec fold f l accu = match l with
-  | Nil -> accu
-  | Cons (x, _, l) -> fold f l (f x accu)
-
-  let rec map f = function
-  | Nil -> nil
-  | Cons (x, _, l) -> cons (f x) (map f l)
-
-  let smartmap = map
-  (** Apriori hashconsing ensures that the map is equal to its argument *)
-
-  let rec exists f = function
-  | Nil -> false
-  | Cons (x, _, l) -> f x || exists f l
-
-  let rec for_all f = function
-  | Nil -> true
-  | Cons (x, _, l) -> f x && for_all f l
-
-  let rec for_all2 f l1 l2 = match l1, l2 with
-  | Nil, Nil -> true
-  | Cons (x1, _, l1), Cons (x2, _, l2) -> f x1 x2 && for_all2 f l1 l2
-  | _ -> false
-
-  let rec to_list = function
-  | Nil -> []
-  | Cons (x, _, l) -> x :: to_list l
-
-  end
-end
-
 module RawLevel =
 struct
   open Names
@@ -167,24 +66,6 @@ struct
     | _, Level _ -> 1
     | Var n, Var m -> Int.compare n m
 
-  let hequal x y =
-    x == y ||
-      match x, y with
-      | Prop, Prop -> true
-      | Set, Set -> true
-      | Level (n,d), Level (n',d') ->
-        n == n' && d == d'
-      | Var n, Var n' -> n == n'
-      | _ -> false
-
-  let hcons = function
-    | Prop as x -> x
-    | Set as x -> x
-    | Level (n,d) as x -> 
-      let d' = Names.DirPath.hcons d in
-        if d' == d then x else Level (n,d')
-    | Var n as x -> x
-
   open Hashset.Combine
 
   let hash = function
@@ -216,24 +97,7 @@ module Level = struct
 
   let data x = x.data
 
-  (** Hashcons on levels + their hash *)
-
-  module Self = struct
-    type _t = t
-    type t = _t
-    type u = unit
-    let eq x y = x.hash == y.hash && RawLevel.hequal x.data y.data
-    let hash x = x.hash
-    let hashcons () x =
-      let data' = RawLevel.hcons x.data in
-      if x.data == data' then x else { x with data = data' }
-  end
-
-  let hcons =
-    let module H = Hashcons.Make(Self) in
-    Hashcons.simple_hcons H.generate H.hcons ()
-
-  let make l = hcons { hash = RawLevel.hash l; data = l }
+  let make l = { hash = RawLevel.hash l; data = l }
 
   let set = make Set
   let prop = make Prop
@@ -270,7 +134,7 @@ module Level = struct
 
   let pr u = str (to_string u)
 
-  let make m n = make (Level (n, Names.DirPath.hcons m))
+  let make m n = make (Level (n, m))
 
 end
 
@@ -303,48 +167,12 @@ struct
   module Expr = 
   struct
     type t = Level.t * int
-    type _t = t
 	
-    (* Hashing of expressions *)
-    module ExprHash = 
-    struct
-      type t = _t
-      type u = Level.t -> Level.t
-      let hashcons hdir (b,n as x) = 
-	let b' = hdir b in 
-	  if b' == b then x else (b',n)
-      let eq l1 l2 =
-        l1 == l2 || 
-        match l1,l2 with
-	| (b,n), (b',n') -> b == b' && n == n'
+    let make l = (l, 0)
 
-      let hash (x, n) = n + Level.hash x
-
-    end
-
-    module HExpr =
-    struct
-
-      module H = Hashcons.Make(ExprHash)
-
-      type t = ExprHash.t
-
-      let hcons =
-        Hashcons.simple_hcons H.generate H.hcons Level.hcons
-      let hash = ExprHash.hash
-      let eq x y = x == y ||
-        (let (u,n) = x and (v,n') = y in
-           Int.equal n n' && Level.equal u v)
-
-    end
-
-    let hcons = HExpr.hcons
-
-    let make l = hcons (l, 0)
-
-    let prop = make Level.prop
-    let set = make Level.set
-    let type1 = hcons (Level.set, 1)
+    let prop = (Level.prop, 0)
+    let set = (Level.set, 0)
+    let type1 = (Level.set, 1)
 
     let is_prop = function
       | (l,0) -> Level.is_prop l
@@ -363,13 +191,13 @@ struct
 
     let successor (u,n) =
       if Level.is_prop u then type1
-      else hcons (u, n + 1)
+      else (u, n + 1)
 
     let addn k (u,n as x) = 
       if k = 0 then x 
       else if Level.is_prop u then
-	hcons (Level.set,n+k)
-      else hcons (u,n+k)
+	(Level.set,n+k)
+      else (u,n+k)
 	
     let super (u,n as x) (v,n' as y) =
       let cmp = Level.compare u v in
@@ -394,31 +222,29 @@ struct
       let v' = f v in 
 	if v' == v then x
 	else if Level.is_prop v' && n != 0 then
-	  hcons (Level.set, n)
-	else hcons (v', n)
+	  (Level.set, n)
+	else (v', n)
 
   end
-    
-  module Huniv = HList.Make(Expr.HExpr)
-  type t = Huniv.t
-  open Huniv
-    
-  let equal x y = x == y || 
-    (Huniv.hash x == Huniv.hash y && 
-       Huniv.for_all2 Expr.equal x y)
 
-  let make l = Huniv.tip (Expr.make l)
-  let tip x = Huniv.tip x
-    
+  type t = Expr.t list
+
+  let tip u = [u]
+  let cons u v = u :: v
+
+  let equal x y = x == y || List.equal Expr.equal x y
+
+  let make l = tip (Expr.make l)
+
   let pr l = match l with
-    | Cons (u, _, Nil) -> Expr.pr u
+    | [u] -> Expr.pr u
     | _ -> 
       str "max(" ++ hov 0
-	(prlist_with_sep pr_comma Expr.pr (to_list l)) ++
+	(prlist_with_sep pr_comma Expr.pr l) ++
         str ")"
 
   let level l = match l with
-    | Cons (l, _, Nil) -> Expr.level l
+    | [l] -> Expr.level l
     | _ -> None
 
   (* The lower predicative level of the hierarchy that contains (impredicative)
@@ -438,16 +264,16 @@ struct
   (* Returns the formal universe that lies juste above the universe variable u.
      Used to type the sort u. *)
   let super l = 
-    Huniv.map (fun x -> Expr.successor x) l
+    List.map (fun x -> Expr.successor x) l
 
   let addn n l =
-    Huniv.map (fun x -> Expr.addn n x) l
+    List.map (fun x -> Expr.addn n x) l
 
   let rec merge_univs l1 l2 =
     match l1, l2 with
-    | Nil, _ -> l2
-    | _, Nil -> l1
-    | Cons (h1, _, t1), Cons (h2, _, t2) ->
+    | [], _ -> l2
+    | _, [] -> l1
+    | h1 :: t1, h2 :: t2 ->
       (match Expr.super h1 h2 with
       | Inl true (* h1 < h2 *) -> merge_univs t1 l2
       | Inl false -> merge_univs l1 t2
@@ -459,28 +285,28 @@ struct
   let sort u =
     let rec aux a l = 
       match l with
-      | Cons (b, _, l') ->
+      | b :: l' ->
         (match Expr.super a b with
 	| Inl false -> aux a l'
 	| Inl true -> l
 	| Inr c ->
 	  if c <= 0 then cons a l
 	  else cons b (aux a l'))
-      | Nil -> cons a l
+      | [] -> cons a l
     in 
-      fold (fun a acc -> aux a acc) u nil
+      List.fold_right (fun a acc -> aux a acc) u []
 	
   (* Returns the formal universe that is greater than the universes u and v.
      Used to type the products. *)
   let sup x y = merge_univs x y
 
-  let empty = nil
+  let empty = []
 
-  let exists = Huniv.exists
+  let exists = List.exists
 
-  let for_all = Huniv.for_all
+  let for_all = List.for_all
 
-  let smartmap = Huniv.smartmap
+  let smartmap = List.smartmap
 
 end
 
@@ -768,9 +594,9 @@ let check_equal_expr g x y =
 
 let check_eq_univs g l1 l2 =
   let f x1 x2 = check_equal_expr g x1 x2 in
-  let exists x1 l = Huniv.exists (fun x2 -> f x1 x2) l in
-    Huniv.for_all (fun x1 -> exists x1 l2) l1
-    && Huniv.for_all (fun x2 -> exists x2 l1) l2
+  let exists x1 l = List.exists (fun x2 -> f x1 x2) l in
+    List.for_all (fun x1 -> exists x1 l2) l1
+    && List.for_all (fun x2 -> exists x2 l1) l2
 
 let check_eq g u v =
   Universe.equal u v || check_eq_univs g u v
@@ -784,11 +610,11 @@ let check_smaller_expr g (u,n) (v,m) =
     | _ -> false
 
 let exists_bigger g ul l =
-  Huniv.exists (fun ul' -> 
+  Universe.exists (fun ul' -> 
     check_smaller_expr g ul ul') l
 
 let real_check_leq g u v =
-  Huniv.for_all (fun ul -> exists_bigger g ul v) u
+  Universe.for_all (fun ul -> exists_bigger g ul v) u
     
 let check_leq g u v =
   Universe.equal u v ||
@@ -1026,8 +852,8 @@ let check_univ_leq u v =
 
 let enforce_leq u v c =
   match v with
-  | Universe.Huniv.Cons (v, _, Universe.Huniv.Nil) ->
-    Universe.Huniv.fold (fun u -> constraint_add_leq u v) u c
+  | [v] ->
+    List.fold_right (fun u -> constraint_add_leq u v) u c
   | _ -> anomaly (Pp.str"A universe bound can only be a variable.")
 
 let enforce_leq u v c =
@@ -1071,71 +897,27 @@ module Instance : sig
     val equal : t -> t -> bool
     val subst_fn : universe_level_subst_fn -> t -> t
     val subst : universe_level_subst -> t -> t
-    val pr : t -> Pp.std_ppcmds
+    val pr : t -> Pp.t
     val check_eq : t check_function
     val length : t -> int
     val append : t -> t -> t
+    val of_array : Level.t array -> t
 end = 
 struct
   type t = Level.t array
 
-  let empty : t = [||]
-
-  module HInstancestruct =
-  struct
-    type _t = t
-    type t = _t
-    type u = Level.t -> Level.t
-
-    let hashcons huniv a = 
-      let len = Array.length a in
-	if Int.equal len 0 then empty
-	else begin
-	  for i = 0 to len - 1 do
-	    let x = Array.unsafe_get a i in
-	    let x' = huniv x in
-	      if x == x' then ()
-	      else Array.unsafe_set a i x'
-	  done;
-	  a
-	end
-
-    let eq t1 t2 =
-      t1 == t2 ||
-	(Int.equal (Array.length t1) (Array.length t2) &&
-	   let rec aux i =
-	     (Int.equal i (Array.length t1)) || (t1.(i) == t2.(i) && aux (i + 1))
-	   in aux 0)
-	
-    let hash a = 
-      let accu = ref 0 in
-	for i = 0 to Array.length a - 1 do
-	  let l = Array.unsafe_get a i in
-	  let h = Level.hash l in
-	    accu := Hashset.Combine.combine !accu h;
-	done;
-	(* [h] must be positive. *)
-	let h = !accu land 0x3FFFFFFF in
-	  h
-
-  end
-
-  module HInstance = Hashcons.Make(HInstancestruct)
-
-  let hcons = Hashcons.simple_hcons HInstance.generate HInstance.hcons Level.hcons
-    
-  let empty = hcons [||]
+  let empty = [||]
 
   let is_empty x = Int.equal (Array.length x) 0
 
   let subst_fn fn t = 
     let t' = CArray.smartmap fn t in
-      if t' == t then t else hcons t'
+      if t' == t then t else t'
 
   let subst s t =
     let t' = 
       CArray.smartmap (fun x -> try LMap.find x s with Not_found -> x) t
-    in if t' == t then t else hcons t'
+    in if t' == t then t else t'
 
   let pr =
     prvect_with_sep spc Level.pr
@@ -1157,111 +939,10 @@ struct
   let length = Array.length
 
   let append = Array.append
-  
-end
 
-type universe_instance = Instance.t
-
-type 'a puniverses = 'a * Instance.t
-(** A context of universe levels with universe constraints,
-    representiong local universe variables and constraints *)
-
-module UContext =
-struct
-  type t = Instance.t constrained
-
-  (** Universe contexts (variables as a list) *)
-  let empty = (Instance.empty, Constraint.empty)
-  let make x = x
-  let instance (univs, cst) = univs
-  let constraints (univs, cst) = cst
-
-  let is_empty (univs, cst) = Instance.is_empty univs && Constraint.is_empty cst
-  let pr prl (univs, cst as ctx) =
-    if is_empty ctx then mt() else
-      h 0 (Instance.pr univs ++ str " |= ") ++ h 0 (v 0 (Constraint.pr prl cst))
-end
-
-type universe_context = UContext.t
-
-module AUContext = UContext
-
-type abstract_universe_context = AUContext.t
-
-module CumulativityInfo =
-struct
-  type t = universe_context * universe_context
-
-  let make x =
-    if (Array.length (UContext.instance (snd x))) =
-       (Array.length (UContext.instance (fst x))) * 2 then x
-    else anomaly (Pp.str "Invalid subtyping information encountered!")
-
-  let empty = (UContext.empty, UContext.empty)
-
-  let halve_context ctx =
-    let len = Array.length ctx in
-    let halflen = len / 2 in
-    ((Array.sub ctx 0 halflen), (Array.sub ctx halflen halflen))
-
-  let univ_context (univcst, subtypcst) = univcst
-  let subtyp_context (univcst, subtypcst) = subtypcst
-
-  let create_trivial_subtyping ctx ctx' =
-    CArray.fold_left_i
-      (fun i cst l -> Constraint.add (l, Eq, Array.get ctx' i) cst)
-      Constraint.empty ctx
-
-  let from_universe_context univcst freshunivs =
-    let inst = (UContext.instance univcst) in
-    assert (Array.length freshunivs = Array.length inst);
-    (univcst, UContext.make (Array.append inst freshunivs,
-                             create_trivial_subtyping inst freshunivs))
-
-  let subtyping_other_instance (univcst, subtypcst) =
-    let (_, ctx') = (halve_context (UContext.instance subtypcst)) in ctx'
-  
-  let subtyping_susbst (univcst, subtypcst) =
-    let (ctx, ctx') = (halve_context (UContext.instance subtypcst)) in
-    Array.fold_left2 (fun subst l1 l2 -> LMap.add l1 l2 subst) LMap.empty ctx ctx'
+  let of_array i = i
 
 end
-
-type cumulativity_info = CumulativityInfo.t
-
-module ACumulativityInfo = CumulativityInfo
-type abstract_cumulativity_info = ACumulativityInfo.t
-
-module ContextSet =
-struct
-  type t = LSet.t constrained
-  let empty = LSet.empty, Constraint.empty
-  let constraints (_, cst) = cst
-  let levels (ctx, _) = ctx
-  let make ctx cst = (ctx, cst)
-end
-type universe_context_set = ContextSet.t
-
-
-
-(** Substitutions. *)
-
-let is_empty_subst = LMap.is_empty
-let empty_level_subst = LMap.empty
-let is_empty_level_subst = LMap.is_empty
-
-(** Substitution functions *)
-
-(** With level to level substitutions. *)
-let subst_univs_level_level subst l =
-  try LMap.find l subst
-  with Not_found -> l
-
-let subst_univs_level_universe subst u =
-  let f x = Universe.Expr.map (fun u -> subst_univs_level_level subst u) x in
-  let u' = Universe.smartmap f u in
-    if u == u' then u
-    else Universe.sort u'
 
 (** Substitute instance inst for ctx in csts *)
 
@@ -1290,18 +971,101 @@ let subst_instance_constraints s csts =
     (fun c csts -> Constraint.add (subst_instance_constraint s c) csts)
     csts Constraint.empty
 
-let subst_instance_context inst (inner_inst, inner_constr) =
-  (inner_inst, subst_instance_constraints inst inner_constr)
+type universe_instance = Instance.t
+
+type 'a puniverses = 'a * Instance.t
+(** A context of universe levels with universe constraints,
+    representiong local universe variables and constraints *)
+
+module UContext =
+struct
+  type t = Instance.t constrained
+
+  (** Universe contexts (variables as a list) *)
+  let empty = (Instance.empty, Constraint.empty)
+  let make x = x
+  let instance (univs, cst) = univs
+  let constraints (univs, cst) = cst
+  let size (univs, _) = Instance.length univs
+
+  let is_empty (univs, cst) = Instance.is_empty univs && Constraint.is_empty cst
+  let pr prl (univs, cst as ctx) =
+    if is_empty ctx then mt() else
+      h 0 (Instance.pr univs ++ str " |= ") ++ h 0 (v 0 (Constraint.pr prl cst))
+end
+
+type universe_context = UContext.t
+
+module AUContext =
+struct
+  include UContext
+
+  let repr (inst, cst) =
+    (Array.mapi (fun i l -> Level.var i) inst, cst)
+
+  let instantiate inst (u, cst) =
+    assert (Array.length u = Array.length inst);
+    subst_instance_constraints inst cst
+
+end
+
+type abstract_universe_context = AUContext.t
+
+module CumulativityInfo =
+struct
+  type t = universe_context * universe_context
+
+  let univ_context (univcst, subtypcst) = univcst
+  let subtyp_context (univcst, subtypcst) = subtypcst
+
+end
+
+module ACumulativityInfo = CumulativityInfo
+type abstract_cumulativity_info = ACumulativityInfo.t
+
+module ContextSet =
+struct
+  type t = LSet.t constrained
+  let empty = LSet.empty, Constraint.empty
+  let constraints (_, cst) = cst
+  let levels (ctx, _) = ctx
+  let make ctx cst = (ctx, cst)
+end
+type universe_context_set = ContextSet.t
+
+(** Instance subtyping *)
+
+let check_subtype univs ctxT ctx =
+  if AUContext.size ctx == AUContext.size ctx then
+    let (inst, cst) = AUContext.repr ctx in
+    let cstT = UContext.constraints (AUContext.repr ctxT) in
+    let push accu v = add_universe v false accu in
+    let univs = Array.fold_left push univs inst in
+    let univs = merge_constraints cstT univs in
+    check_constraints cst univs
+  else false
+
+(** Substitutions. *)
+
+let is_empty_subst = LMap.is_empty
+let empty_level_subst = LMap.empty
+let is_empty_level_subst = LMap.is_empty
+
+(** Substitution functions *)
+
+(** With level to level substitutions. *)
+let subst_univs_level_level subst l =
+  try LMap.find l subst
+  with Not_found -> l
+
+let subst_univs_level_universe subst u =
+  let f x = Universe.Expr.map (fun u -> subst_univs_level_level subst u) x in
+  let u' = Universe.smartmap f u in
+    if u == u' then u
+    else Universe.sort u'
 
 let make_abstract_instance (ctx, _) = 
   Array.mapi (fun i l -> Level.var i) ctx
-
-(** Substitute instance inst for ctx in csts *)
-let instantiate_univ_context (ctx, csts) = 
-  (ctx, subst_instance_constraints ctx csts)
-
-let instantiate_cumulativity_info (ctx, ctx') = 
-  (instantiate_univ_context ctx, instantiate_univ_context ctx')
 
 (** With level to universe substitutions. *)
 type universe_subst_fn = universe_level -> universe
@@ -1313,7 +1077,7 @@ let subst_univs_expr_opt fn (l,n) =
 
 let subst_univs_universe fn ul =
   let subst, nosubst = 
-    Universe.Huniv.fold (fun u (subst,nosubst) -> 
+    List.fold_right (fun u (subst,nosubst) -> 
       try let a' = subst_univs_expr_opt fn u in
 	    (a' :: subst, nosubst)
       with Not_found -> (subst, u :: nosubst))
@@ -1324,7 +1088,7 @@ let subst_univs_universe fn ul =
       let substs = 
 	List.fold_left Universe.merge_univs Universe.empty subst
       in
-	List.fold_left (fun acc u -> Universe.merge_univs acc (Universe.Huniv.tip u))
+	List.fold_left (fun acc u -> Universe.merge_univs acc (Universe.tip u))
 	  substs nosubst
 
 let merge_context strict ctx g =

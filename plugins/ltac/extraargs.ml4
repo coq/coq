@@ -8,8 +8,6 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open API
-open Grammar_API
 open Pp
 open Genarg
 open Stdarg
@@ -238,12 +236,29 @@ ARGUMENT EXTEND hloc
 
  END
 
-let pr_rename _ _ _ (n, m) = Id.print n ++ str " into " ++ Id.print m
+let pr_raw_rename _ _ _ ((_,n), m) = Id.print n ++ str " into " ++ Id.print m
+let pr_rename _ _ _ (n, (m,_)) = Id.print n ++ str " into " ++ Id.print m
+
+let try_interp_ltac_var coerce ist env ?loc id =
+  let v = Id.Map.find id ist.lfun in
+  try coerce v with CannotCoerceTo s -> error_ltac_variable ?loc id env v s
+
+let interp_ident ist env sigma id =
+  try try_interp_ltac_var (coerce_var_to_ident false env sigma) ist (Some (env,sigma)) id
+  with Not_found -> id, false
+
+let pf_interp_ident ist gl = interp_ident ist (pf_env gl) (project gl)
+
+let interp_rename ist gl (m,n) =
+  Tacmach.project gl, (pf_apply (interp_hyp ist) gl m,pf_interp_ident ist gl n)
 
 ARGUMENT EXTEND rename
-  TYPED AS ident * ident
+  TYPED AS hyp * ident
   PRINTED BY pr_rename
-| [ ident(n) "into" ident(m) ] -> [ (n, m) ]
+  INTERPRETED BY interp_rename
+  RAW_PRINTED BY pr_raw_rename
+  GLOB_PRINTED BY pr_raw_rename
+| [ hyp(n) "into" ident(m) ] -> [ (n, m) ]
 END
 
 (* Julien: Mise en commun des differentes version de replace with in by *)
@@ -251,7 +266,7 @@ END
 let pr_by_arg_tac _prc _prlc prtac opt_c =
   match opt_c with
     | None -> mt ()
-    | Some t -> hov 2 (str "by" ++ spc () ++ prtac (3,Ppextend.E) t)
+    | Some t -> hov 2 (str "by" ++ spc () ++ prtac (3,Notation_term.E) t)
 
 ARGUMENT EXTEND by_arg_tac
   TYPED AS tactic_opt

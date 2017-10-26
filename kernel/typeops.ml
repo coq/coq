@@ -65,6 +65,10 @@ let type_of_type u =
   let uu = Universe.super u in
     mkType uu
 
+let type_of_sort = function
+  | Prop c -> type1
+  | Type u -> type_of_type u
+
 (*s Type of a de Bruijn index. *)
 
 let type_of_relative env n =
@@ -111,36 +115,17 @@ let check_hyps_inclusion env f c sign =
 (* Type of constants *)
 
 
-let type_of_constant_type_knowing_parameters env t paramtyps =
-  match t with
-  | RegularArity t -> t
-  | TemplateArity (sign,ar) ->
-      let ctx = List.rev sign in
-      let ctx,s = instantiate_universes env ctx ar paramtyps in
-      mkArity (List.rev ctx,s)
-
-let type_of_constant_knowing_parameters env (kn,u as cst) args =
+let type_of_constant env (kn,u as cst) =
   let cb = lookup_constant kn env in
   let () = check_hyps_inclusion env mkConstU cst cb.const_hyps in
   let ty, cu = constant_type env cst in
-  let ty = type_of_constant_type_knowing_parameters env ty args in
   let () = check_constraints cu env in
     ty
 
-let type_of_constant_knowing_parameters_in env (kn,u as cst) args =
+let type_of_constant_in env (kn,u as cst) =
   let cb = lookup_constant kn env in
   let () = check_hyps_inclusion env mkConstU cst cb.const_hyps in
-  let ty = constant_type_in env cst in
-  type_of_constant_type_knowing_parameters env ty args
-
-let type_of_constant env cst =
-  type_of_constant_knowing_parameters env cst [||]
-
-let type_of_constant_in env cst =
-  type_of_constant_knowing_parameters_in env cst [||]
-
-let type_of_constant_type env t =
-  type_of_constant_type_knowing_parameters env t [||]
+  constant_type_in env cst
 
 (* Type of a lambda-abstraction. *)
 
@@ -342,11 +327,7 @@ let rec execute env cstr =
   let open Context.Rel.Declaration in
   match kind_of_term cstr with
     (* Atomic terms *)
-    | Sort (Prop c) ->
-      type1
-	
-    | Sort (Type u) ->
-      type_of_type u
+    | Sort s -> type_of_sort s
 
     | Rel n ->
       type_of_relative env n
@@ -369,9 +350,6 @@ let rec execute env cstr =
 	  | Ind ind when Environ.template_polymorphic_pind ind env ->
 	    let args = Array.map (fun t -> lazy t) argst in
               type_of_inductive_knowing_parameters env ind args
-	  | Const cst when Environ.template_polymorphic_pconstant cst env ->
-	    let args = Array.map (fun t -> lazy t) argst in
-              type_of_constant_knowing_parameters env cst args
 	  | _ ->
 	    (* No template polymorphism *)
             execute env f
@@ -509,8 +487,6 @@ let judge_of_relative env k = make_judge (mkRel k) (type_of_relative env k)
 let judge_of_variable env x = make_judge (mkVar x) (type_of_variable env x)
 
 let judge_of_constant env cst = make_judge (mkConstU cst) (type_of_constant env cst)
-let judge_of_constant_knowing_parameters env cst args =
-  make_judge (mkConstU cst) (type_of_constant_knowing_parameters env cst args)
 
 let judge_of_projection env p cj =
   make_judge (mkProj (p,cj.uj_val)) (type_of_projection env p cj.uj_val cj.uj_type)
@@ -559,34 +535,3 @@ let type_of_projection_constant env (p,u) =
       Vars.subst_instance_constr u pb.proj_type
     else pb.proj_type
   | None -> raise (Invalid_argument "type_of_projection: not a projection")
-
-(* Instantiation of terms on real arguments. *)
-
-(* Make a type polymorphic if an arity *)
-
-let extract_level env p =
-  let _,c = dest_prod_assum env p in
-  match kind_of_term c with Sort (Type u) -> Univ.Universe.level u | _ -> None
-
-let extract_context_levels env l =
-  let fold l = function
-    | RelDecl.LocalAssum (_,p) -> extract_level env p :: l
-    | RelDecl.LocalDef _ -> l
-  in
-  List.fold_left fold [] l
-
-let make_polymorphic_if_constant_for_ind env {uj_val = c; uj_type = t} =
-  let params, ccl = dest_prod_assum env t in
-  match kind_of_term ccl with
-  | Sort (Type u) ->
-     let ind, l = decompose_app (whd_all env c) in
-     if isInd ind && List.is_empty l then
-       let mis = lookup_mind_specif env (fst (destInd ind)) in
-       let nparams = Inductive.inductive_params mis in
-       let paramsl = CList.lastn nparams params in
-       let param_ccls = extract_context_levels env paramsl in
-       let s = { template_param_levels = param_ccls; template_level = u} in
-       TemplateArity (params,s)
-     else RegularArity t
-  | _ ->
-      RegularArity t

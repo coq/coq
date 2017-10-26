@@ -54,9 +54,7 @@ let inductive_paramdecls (mib,u) =
   Vars.subst_instance_context u mib.mind_params_ctxt
 
 let instantiate_inductive_constraints mib u =
-  let process auctx = 
-    Univ.UContext.constraints (Univ.subst_instance_context u auctx)
-  in
+  let process auctx =  Univ.AUContext.instantiate u auctx in
   match mib.mind_universes with
   | Monomorphic_ind _ -> Univ.Constraint.empty
   | Polymorphic_ind auctx -> process auctx
@@ -862,6 +860,8 @@ let filter_stack_domain env ci p stack =
     match stack, kind_of_term t with
     | elt :: stack', Prod (n,a,c0) ->
       let d = LocalAssum (n,a) in
+      let ctx, a = dest_prod_assum env a in
+      let env = push_rel_context ctx env in
       let ty, args = decompose_app (whd_all env a) in
       let elt = match kind_of_term ty with
       | Ind ind -> 

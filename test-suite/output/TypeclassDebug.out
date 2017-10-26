@@ -1,0 +1,18 @@
+Debug: 1: looking for foo without backtracking
+Debug: 1.1: simple apply H on foo, 1 subgoal(s)
+Debug: 1.1-1 : foo
+Debug: 1.1-1: looking for foo without backtracking
+Debug: 1.1-1.1: simple apply H on foo, 1 subgoal(s)
+Debug: 1.1-1.1-1 : foo
+Debug: 1.1-1.1-1: looking for foo without backtracking
+Debug: 1.1-1.1-1.1: simple apply H on foo, 1 subgoal(s)
+Debug: 1.1-1.1-1.1-1 : foo
+Debug: 1.1-1.1-1.1-1: looking for foo without backtracking
+Debug: 1.1-1.1-1.1-1.1: simple apply H on foo, 1 subgoal(s)
+Debug: 1.1-1.1-1.1-1.1-1 : foo
+Debug: 1.1-1.1-1.1-1.1-1: looking for foo without backtracking
+Debug: 1.1-1.1-1.1-1.1-1.1: simple apply H on foo, 1 subgoal(s)
+Debug: 1.1-1.1-1.1-1.1-1.1-1 : foo
+The command has indeed failed with message:
+Ltac call to "typeclasses eauto (int_or_var_opt) with (ne_preident_list)" failed.
+Tactic failure: Proof search reached its limit.

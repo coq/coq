@@ -86,16 +86,15 @@ let parse_args () =
         Envars.print_config stdout Coq_config.all_src_dirs;
         exit 0
       
-    |"--print-version" :: _ ->
+    | ("-print-version" | "--print-version") :: _ ->
         Usage.machine_readable_version 0
 
 (* Options for coqtop : a) options with 0 argument *)
 
-    | ("-notactics"|"-bt"|"-debug"|"-nolib"|"-boot"|"-time"|"-profile-ltac"
+    | ("-bt"|"-debug"|"-nolib"|"-boot"|"-time"|"-profile-ltac"
       |"-batch"|"-noinit"|"-nois"|"-noglob"|"-no-glob"
-      |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
-      |"-silent"|"-m"|"-xml"|"-v7"|"-v8"|"-beautify"|"-strict-implicit"
-      |"-dont-load-proofs"|"-load-proofs"|"-force-load-proofs"
+      |"-q"|"-profile"|"-echo" |"-quiet"
+      |"-silent"|"-m"|"-beautify"|"-strict-implicit"
       |"-impredicative-set"|"-vm"|"-native-compiler"
       |"-indices-matter"|"-quick"|"-type-in-type"
       |"-async-proofs-always-delegate"|"-async-proofs-never-reopen-branch"
@@ -110,7 +109,7 @@ let parse_args () =
       |"-load-ml-source"|"-require"|"-load-ml-object"
       |"-init-file"|"-dump-glob"|"-compat"|"-coqlib"|"-top"
       |"-async-proofs-j" |"-async-proofs-private-flags" |"-async-proofs" |"-w"
-      |"-o"|"-profile-ltac-cutoff" 
+      |"-o"|"-profile-ltac-cutoff"
       as o) :: rem ->
 	begin
 	  match rem with
@@ -157,6 +156,6 @@ let main () =
       else Filename.concat Envars.coqbin (!binary ^ Coq_config.exec_extension)
     in
       (*  List.iter (compile coqtopname args) cfiles*)
-      Unix.handle_unix_error (compile coqtopname args) cfiles
+      Unix.handle_unix_error (compile coqtopname ("-w"::"-generated-names"::args)) cfiles
 
 let _ = Printexc.print main ()

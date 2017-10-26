@@ -44,11 +44,13 @@ let wit_ident =
   make0 "ident"
 
 let wit_var =
-  make0 ~dyn:(val_tag (topwit wit_ident)) "var"
+  make0 "var"
 
 let wit_ref = make0 "ref"
 
 let wit_quant_hyp = make0 "quant_hyp"
+
+let wit_sort_family = make0 "sort_family"
 
 let wit_constr =
   make0 "constr"

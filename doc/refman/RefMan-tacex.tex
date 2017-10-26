@@ -1,4 +1,5 @@
 \chapter[Detailed examples of tactics]{Detailed examples of tactics\label{Tactics-examples}}
+%HEVEA\cutname{tactic-examples.html}
 
 This chapter presents detailed examples of certain tactics, to
 illustrate their behavior.
@@ -849,7 +850,7 @@ Ltac DSimplif trm :=
 Ltac Length trm :=
   match trm with
   | (_ * ?B) => let succ := Length B in constr:(S succ)
-  | _ => constr:1
+  | _ => constr:(1)
   end.
 Ltac assoc := repeat rewrite <- Ass.
 \end{coq_example}

@@ -187,35 +187,34 @@ let _ =
   add_option ["Info";"Trivial"] global_info_trivial;
   add_option ["Info";"Auto"] global_info_auto
 
-let no_dbg () = (Off,0,ref [])
+type debug_kind = ReportForTrivial | ReportForAuto
+
+let no_dbg (_,whatfor,_,_) = (Off,whatfor,0,ref [])
 
 let mk_trivial_dbg debug =
   let d =
     if debug == Debug || !global_debug_trivial then Debug
     else if debug == Info || !global_info_trivial then Info
     else Off
-  in (d,0,ref [])
-
-(** Note : we start the debug depth of auto at 1 to distinguish it
-   for trivial (whose depth is 0). *)
+  in (d,ReportForTrivial,0,ref [])
 
 let mk_auto_dbg debug =
   let d =
     if debug == Debug || !global_debug_auto then Debug
     else if debug == Info || !global_info_auto then Info
     else Off
-  in (d,1,ref [])
+  in (d,ReportForAuto,0,ref [])
 
-let incr_dbg = function (dbg,depth,trace) -> (dbg,depth+1,trace)
+let incr_dbg = function (dbg,whatfor,depth,trace) -> (dbg,whatfor,depth+1,trace)
 
 (** A tracing tactic for debug/info trivial/auto *)
 
-let tclLOG (dbg,depth,trace) pp tac =
+let tclLOG (dbg,_,depth,trace) pp tac =
   match dbg with
     | Off -> tac
     | Debug ->
        (* For "debug (trivial/auto)", we directly output messages *)
-      let s = String.make depth '*' in
+      let s = String.make (depth+1) '*' in
       Proofview.V82.tactic begin fun gl ->
 	try
 	  let out = Proofview.V82.of_tactic tac gl in
@@ -256,23 +255,23 @@ and erase_subtree depth = function
   | (d,_) :: l -> if Int.equal d depth then l else erase_subtree depth l
 
 let pr_info_atom (d,pp) =
-  str (String.make (d-1) ' ') ++ pp () ++ str "."
+  str (String.make d ' ') ++ pp () ++ str "."
 
 let pr_info_trace = function
-  | (Info,_,{contents=(d,Some pp)::l}) ->
+  | (Info,_,_,{contents=(d,Some pp)::l}) ->
       Feedback.msg_info (prlist_with_sep fnl pr_info_atom (cleanup_info_trace d [(d,pp)] l))
   | _ -> ()
 
 let pr_info_nop = function
-  | (Info,_,_) -> Feedback.msg_info (str "idtac.")
+  | (Info,_,_,_) -> Feedback.msg_info (str "idtac.")
   | _ -> ()
 
 let pr_dbg_header = function
-  | (Off,_,_) -> ()
-  | (Debug,0,_) -> Feedback.msg_debug (str "(* debug trivial: *)")
-  | (Debug,_,_) -> Feedback.msg_debug (str "(* debug auto: *)")
-  | (Info,0,_) -> Feedback.msg_info (str "(* info trivial: *)")
-  | (Info,_,_) -> Feedback.msg_info (str "(* info auto: *)")
+  | (Off,_,_,_) -> ()
+  | (Debug,ReportForTrivial,_,_) -> Feedback.msg_debug (str "(* debug trivial: *)")
+  | (Debug,ReportForAuto,_,_) -> Feedback.msg_debug (str "(* debug auto: *)")
+  | (Info,ReportForTrivial,_,_) -> Feedback.msg_info (str "(* info trivial: *)")
+  | (Info,ReportForAuto,_,_) -> Feedback.msg_info (str "(* info auto: *)")
 
 let tclTRY_dbg d tac =
   let delay f = Proofview.tclUNIT () >>= fun () -> f () in
@@ -382,7 +381,7 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=
         (unify_resolve_gen poly flags (c,cl))
 	(* With "(debug) trivial", we shouldn't end here, and
 	   with "debug auto" we don't display the details of inner trivial *)
-        (trivial_fail_db (no_dbg ()) (not (Option.is_empty flags)) db_list local_db)
+        (trivial_fail_db (no_dbg dbg) (not (Option.is_empty flags)) db_list local_db)
     | Unfold_nth c ->
       Proofview.Goal.enter begin fun gl ->
        if exists_evaluable_reference (Tacmach.New.pf_env gl) c then

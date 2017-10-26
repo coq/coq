@@ -1,4 +1,3 @@
-open API
 open Printer
 open CErrors
 open Util
@@ -12,7 +11,6 @@ open Tactics
 open Context.Rel.Declaration
 open Indfun_common
 open Functional_principles_proofs
-open Misctypes
 
 module RelDecl = Context.Rel.Declaration
 
@@ -41,7 +39,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
     | decl :: predicates ->
        (match Context.Rel.Declaration.get_name decl with
 	| Name x ->
-	   let id = Namegen.next_ident_away x avoid in
+	   let id = Namegen.next_ident_away x (Id.Set.of_list avoid) in
 	   Hashtbl.add tbl id x;
 	   RelDecl.set_name (Name id) decl :: change_predicates_names (id::avoid) predicates
 	| Anonymous -> anomaly (Pp.str "Anonymous property binder."))
@@ -71,7 +69,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
       0
       princ_type_info.predicates
   in
-  let env_with_params_and_predicates = List.fold_right Environ.push_named new_predicates env_with_params in
+  let env_with_params_and_predicates = List.fold_right (fun d -> Environ.push_named d true) new_predicates env_with_params in
   let rel_as_kn =
     fst (match princ_type_info.indref with
 	   | Some (Globnames.IndRef ind) -> ind
@@ -287,7 +285,7 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   (*    let time2 = System.get_time ()  in *)
   (*    Pp.msgnl (str "computing principle type := " ++ System.fmt_time_difference time1 time2); *)
   let new_princ_name =
-    next_ident_away_in_goal (Id.of_string "___________princ_________") []
+    next_ident_away_in_goal (Id.of_string "___________princ_________") Id.Set.empty
   in
   let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd (EConstr.of_constr new_principle_type) in
   let hook = Lemmas.mk_hook (hook new_principle_type) in
@@ -340,13 +338,14 @@ let generate_functional_principle (evd: Evd.evar_map ref)
     then
       (*     let id_of_f = Label.to_id (con_label f) in *)
       let register_with_sort fam_sort =
-	let evd' = Evd.from_env (Global.env ()) in
-	let evd',s = Evd.fresh_sort_in_family env evd' fam_sort in
-	let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
-	let evd',value = change_property_sort evd' s new_principle_type new_princ_name in
-	let evd' = fst (Typing.type_of ~refresh:true (Global.env ()) evd' (EConstr.of_constr value)) in
-	(* Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
-	let ce = Declare.definition_entry ~poly:(Flags.is_universe_polymorphism ()) ~univs:(snd (Evd.universe_context evd')) value in
+        let evd' = Evd.from_env (Global.env ()) in
+        let evd',s = Evd.fresh_sort_in_family env evd' fam_sort in
+        let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
+        let evd',value = change_property_sort evd' s new_principle_type new_princ_name in
+        let evd' = fst (Typing.type_of ~refresh:true (Global.env ()) evd' (EConstr.of_constr value)) in
+        (* Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
+        let univs = (snd (Evd.universe_context ~names:[] ~extensible:true evd')) in
+        let ce = Declare.definition_entry ~poly:(Flags.is_universe_polymorphism ()) ~univs value in
 	ignore(
 	  Declare.declare_constant
 	    name
@@ -407,7 +406,7 @@ let get_funs_constant mp dp =
   function const ->
     let find_constant_body const =
       match Global.body_of_constant const with
-	| Some body ->
+	| Some (body, _) ->
 	    let body = Tacred.cbv_norm_flags
 	      (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
 	      (Global.env ())
@@ -464,7 +463,7 @@ let get_funs_constant mp dp =
 exception No_graph_found
 exception Found_type of int
 
-let make_scheme evd (fas : (pconstant*glob_sort) list) : Safe_typing.private_constants definition_entry list =
+let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_constants definition_entry list =
   let env = Global.env () in
   let funs = List.map fst fas in
   let first_fun = List.hd funs in
@@ -501,7 +500,7 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Safe_typing.private_con
   let i = ref (-1) in
   let sorts =
     List.rev_map (fun (_,x) ->
-		  Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd (Pretyping.interp_elimination_sort x)
+		  Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd x
 	     )
       fas
   in
@@ -651,7 +650,7 @@ let build_case_scheme fa =
 (*   in  *)
   let funs =
     let (_,f,_) = fa in
-    try fst (Universes.unsafe_constr_of_global (Smartlocate.global_with_alias f))
+    try fst (Global.constr_of_global_in_context (Global.env ()) (Smartlocate.global_with_alias f))
     with Not_found ->
       user_err ~hdr:"FunInd.build_case_scheme"
         (str "Cannot find " ++ Libnames.pr_reference f) in
@@ -675,7 +674,7 @@ let build_case_scheme fa =
   let scheme_type = EConstr.Unsafe.to_constr ((Typing.unsafe_type_of env sigma) (EConstr.of_constr scheme)) in
   let sorts =
     (fun (_,_,x) ->
-       Universes.new_sort_in_family (Pretyping.interp_elimination_sort x)
+       Universes.new_sort_in_family x
     )
       fa
   in

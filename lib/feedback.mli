@@ -17,6 +17,9 @@ type level =
   | Error
 
 
+(** Document unique identifier for serialization *)
+type doc_id = int
+
 (** Coq "semantic" infos obtained during execution *)
 type route_id = int
 
@@ -40,10 +43,11 @@ type feedback_content =
   (* Extra metadata *)
   | Custom of Loc.t option * string * xml
   (* Generic messages *)
-  | Message of level * Loc.t option * Pp.std_ppcmds
+  | Message of level * Loc.t option * Pp.t
 
 type feedback = {
-  id       : Stateid.t;         (* The document part concerned *)
+  doc_id   : doc_id;            (* The document being concerned *)
+  span_id  : Stateid.t;         (* The document part concerned *)
   route    : route_id;          (* Extra routing info *)
   contents : feedback_content;  (* The payload *)
 }
@@ -60,13 +64,13 @@ val add_feeder : (feedback -> unit) -> int
 (** [del_feeder fid] removes the feeder with id [fid] *)
 val del_feeder : int -> unit
 
-(** [feedback ?id ?route fb] produces feedback fb, with [route] and
-    [id] set appropiatedly, if absent, it will use the defaults set by
-    [set_id_for_feedback] *)
-val feedback : ?id:Stateid.t -> ?route:route_id -> feedback_content -> unit
+(** [feedback ?did ?sid ?route fb] produces feedback [fb], with
+    [route] and [did, sid] set appropiatedly, if absent, it will use
+    the defaults set by [set_id_for_feedback] *)
+val feedback : ?did:doc_id -> ?id:Stateid.t -> ?route:route_id -> feedback_content -> unit
 
 (** [set_id_for_feedback route id] Set the defaults for feedback *)
-val set_id_for_feedback : ?route:route_id -> Stateid.t -> unit
+val set_id_for_feedback : ?route:route_id -> doc_id -> Stateid.t -> unit
 
 (** {6 output functions}
 
@@ -78,20 +82,20 @@ relaxed. *)
 (* Should we advertise these functions more? Should they be the ONLY
    allowed way to output something? *)
 
-val msg_info : ?loc:Loc.t -> Pp.std_ppcmds -> unit
+val msg_info : ?loc:Loc.t -> Pp.t -> unit
 (** Message that displays information, usually in verbose mode, such as [Foobar
     is defined] *)
 
-val msg_notice : ?loc:Loc.t -> Pp.std_ppcmds -> unit
+val msg_notice : ?loc:Loc.t -> Pp.t -> unit
 (** Message that should be displayed, such as [Print Foo] or [Show Bar]. *)
 
-val msg_warning : ?loc:Loc.t -> Pp.std_ppcmds -> unit
+val msg_warning : ?loc:Loc.t -> Pp.t -> unit
 (** Message indicating that something went wrong, but without serious
     consequences. *)
 
-val msg_error : ?loc:Loc.t -> Pp.std_ppcmds -> unit
+val msg_error : ?loc:Loc.t -> Pp.t -> unit
 (** Message indicating that something went really wrong, though still
     recoverable; otherwise an exception would have been raised. *)
 
-val msg_debug : ?loc:Loc.t -> Pp.std_ppcmds -> unit
+val msg_debug : ?loc:Loc.t -> Pp.t -> unit
 (** For debugging purposes *)

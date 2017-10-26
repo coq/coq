@@ -8,8 +8,12 @@
 
 (* Locations management *)
 
+type source =
+  | InFile of string
+  | ToplevelInput
+
 type t = {
-  fname : string; (** filename *)
+  fname : source; (** filename or toplevel input *)
   line_nb : int; (** start line number *)
   bol_pos : int; (** position of the beginning of start line *)
   line_nb_last : int; (** end line number *)
@@ -23,10 +27,15 @@ let create fname line_nb bol_pos bp ep = {
   line_nb_last = line_nb; bol_pos_last = bol_pos; bp = bp; ep = ep; }
 
 let make_loc (bp, ep) = {
-  fname = ""; line_nb = -1; bol_pos = 0; line_nb_last = -1; bol_pos_last = 0;
+  fname = ToplevelInput; line_nb = -1; bol_pos = 0; line_nb_last = -1; bol_pos_last = 0;
   bp = bp; ep = ep; }
 
+let mergeable loc1 loc2 =
+  loc1.fname = loc2.fname
+
 let merge loc1 loc2 =
+  if not (mergeable loc1 loc2) then
+    failwith "Trying to merge unmergeable locations.";
   if loc1.bp < loc2.bp then
     if loc1.ep < loc2.ep then {
       fname = loc1.fname;
@@ -52,6 +61,8 @@ let merge_opt l1 l2 = match l1, l2 with
   | Some l1, Some l2 -> Some (merge l1 l2)
 
 let unloc loc = (loc.bp, loc.ep)
+
+let shift_loc kb kp loc = { loc with bp = loc.bp + kb ; ep = loc.ep + kp }
 
 (** Located type *)
 type 'a located = t option * 'a

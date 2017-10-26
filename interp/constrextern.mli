@@ -9,6 +9,7 @@
 open Names
 open Term
 open Termops
+open EConstr
 open Environ
 open Libnames
 open Globnames
@@ -22,9 +23,9 @@ open Misctypes
 (** Translation of pattern, cases pattern, glob_constr and term into syntax
    trees for printing *)
 
-val extern_cases_pattern : Id.Set.t -> cases_pattern -> cases_pattern_expr
-val extern_glob_constr : Id.Set.t -> glob_constr -> constr_expr
-val extern_glob_type : Id.Set.t -> glob_constr -> constr_expr
+val extern_cases_pattern : Id.Set.t -> 'a cases_pattern_g -> cases_pattern_expr
+val extern_glob_constr : Id.Set.t -> 'a glob_constr_g -> constr_expr
+val extern_glob_type : Id.Set.t -> 'a glob_constr_g -> constr_expr
 val extern_constr_pattern : names_context -> Evd.evar_map ->
   constr_pattern -> constr_expr
 val extern_closed_glob : ?lax:bool -> bool -> env -> Evd.evar_map -> closed_glob_constr -> constr_expr
@@ -41,7 +42,7 @@ val extern_reference : ?loc:Loc.t -> Id.Set.t -> global_reference -> reference
 val extern_type : bool -> env -> Evd.evar_map -> types -> constr_expr
 val extern_sort : Evd.evar_map -> sorts -> glob_sort
 val extern_rel_context : constr option -> env -> Evd.evar_map ->
-  Context.Rel.t -> local_binder_expr list
+  rel_context -> local_binder_expr list
 
 (** Printing options *)
 val print_implicits : bool ref

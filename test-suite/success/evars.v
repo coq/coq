@@ -23,7 +23,7 @@ Definition f1 frm0 a1 : B := f frm0 a1.
 (* Checks that solvable ? in the type part of the definition are harmless *)
 Definition f2 frm0 a1 : B := f frm0 a1.
 
-(* Checks that sorts that are evars are handled correctly (bug 705) *)
+(* Checks that sorts that are evars are handled correctly (BZ#705) *)
 Require Import List.
 
 Fixpoint build (nl : list nat) :
@@ -58,7 +58,7 @@ Check
     (forall y n : nat, {q : nat | y = q * n}) ->
     forall n : nat, {q : nat | x = q * n}).
 
-(* Check instantiation of nested evars (bug #1089) *)
+(* Check instantiation of nested evars (BZ#1089) *)
 
 Check (fun f:(forall (v:Type->Type), v (v nat) -> nat) => f _ (Some (Some O))).
 
@@ -188,7 +188,7 @@ Abort.
 
 End Additions_while.
 
-(* Two examples from G. Melquiond (bugs #1878 and #1884) *)
+(* Two examples from G. Melquiond (BZ#1878 and BZ#1884) *)
 
 Parameter F1 G1 : nat -> Prop.
 Goal forall x : nat, F1 x -> G1 x.
@@ -207,7 +207,7 @@ Fixpoint filter (A:nat->Set) (l:list (sigT A)) : list (sigT A) :=
   | (existT _ k v)::l' => (existT _ k v):: (filter A l')
   end.
 
-(* Bug #2000: used to raise Out of memory in 8.2 while it should fail by
+(* BZ#2000: used to raise Out of memory in 8.2 while it should fail by
    lack of information on the conclusion of the type of j *)
 
 Goal True.
@@ -381,7 +381,7 @@ Section evar_evar_occur.
   Check match g _ with conj a b => f _ a b end.
 End evar_evar_occur.
 
-(* Eta expansion (bug #2936) *)
+(* Eta expansion (BZ#2936) *)
 Record iffT (X Y:Type) : Type := mkIff { iffLR : X->Y; iffRL : Y->X }.
 Record tri (R:Type->Type->Type) (S:Type->Type->Type) (T:Type->Type->Type) := mkTri {
   tri0 : forall a b c, R a b -> S a c -> T b c

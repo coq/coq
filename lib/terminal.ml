@@ -35,6 +35,8 @@ type style = {
   italic : bool option;
   underline : bool option;
   negative : bool option;
+  prefix : string option;
+  suffix : string option;
 }
 
 let set o1 o2 = match o1 with
@@ -51,9 +53,11 @@ let default = {
   italic = None;
   underline = None;
   negative = None;
+  prefix = None;
+  suffix = None;
 }
 
-let make ?fg_color ?bg_color ?bold ?italic ?underline ?negative ?style () =
+let make ?fg_color ?bg_color ?bold ?italic ?underline ?negative ?style ?prefix ?suffix () =
   let st = match style with
   | None -> default
   | Some st -> st
@@ -65,6 +69,8 @@ let make ?fg_color ?bg_color ?bold ?italic ?underline ?negative ?style () =
     italic = set st.italic italic;
     underline = set st.underline underline;
     negative = set st.negative negative;
+    prefix = set st.prefix prefix;
+    suffix = set st.suffix suffix;
   }
 
 let merge s1 s2 =
@@ -75,6 +81,8 @@ let merge s1 s2 =
     italic = set s1.italic s2.italic;
     underline = set s1.underline s2.underline;
     negative = set s1.negative s2.negative;
+    prefix = set s1.prefix s2.prefix;
+    suffix = set s1.suffix s2.suffix;
   }
 
 let base_color = function
@@ -168,6 +176,8 @@ let reset_style = {
   italic = Some false;
   underline = Some false;
   negative = Some false;
+  prefix = None;
+  suffix = None;
 }
 
 let has_style t =

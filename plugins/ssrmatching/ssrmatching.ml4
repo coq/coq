@@ -8,9 +8,6 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
-open API
-open Grammar_API
-
 (* Defining grammar rules with "xx" in it automatically declares keywords too,
  * we thus save the lexer to restore it at the end of the file *)
 let frozen_lexer = CLexer.get_keyword_state () ;;
@@ -137,6 +134,10 @@ let dC t = CastConv t
 let isCVar   = function { CAst.v = CRef (Ident _, _) } -> true | _ -> false
 let destCVar = function { CAst.v = CRef (Ident (_, id), _) } -> id | _ ->
   CErrors.anomaly (str"not a CRef.")
+let isGLambda c = match DAst.get c with GLambda (Name _, _, _, _) -> true | _ -> false
+let destGLambda c = match DAst.get c with GLambda (Name id, _, _, c) -> (id, c)
+  | _ -> CErrors.anomaly (str "not a GLambda")
+let isGHole c = match DAst.get c with GHole _ -> true | _ -> false
 let mkCHole ~loc = CAst.make ?loc @@ CHole (None, IntroAnonymous, None)
 let mkCLambda ?loc name ty t = CAst.make ?loc @@
    CLambdaN ([[Loc.tag ?loc name], Default Explicit, ty], t)
@@ -144,10 +145,10 @@ let mkCLetIn ?loc name bo t = CAst.make ?loc @@
    CLetIn ((Loc.tag ?loc name), bo, None, t)
 let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, dC ty)
 (** Constructors for rawconstr *)
-let mkRHole = CAst.make @@ GHole (InternalHole, IntroAnonymous, None)
-let mkRApp f args = if args = [] then f else CAst.make @@ GApp (f, args)
-let mkRCast rc rt =  CAst.make @@ GCast (rc, dC rt)
-let mkRLambda n s t = CAst.make @@ GLambda (n, Explicit, s, t)
+let mkRHole = DAst.make @@ GHole (InternalHole, IntroAnonymous, None)
+let mkRApp f args = if args = [] then f else DAst.make @@ GApp (f, args)
+let mkRCast rc rt =  DAst.make @@ GCast (rc, dC rt)
+let mkRLambda n s t = DAst.make @@ GLambda (n, Explicit, s, t)
 
 (* ssrterm conbinators *)
 let combineCG t1 t2 f g = match t1, t2 with
@@ -501,16 +502,16 @@ let ungen_upat lhs (sigma, uc, t) u =
 let nb_cs_proj_args pc f u =
   let na k =
     List.length (snd (lookup_canonical_conversion (ConstRef pc, k))).o_TCOMPS in
-  try match kind_of_term f with
-  | Prod _ -> na Prod_cs
-  | Sort s -> na (Sort_cs (family_of_sort s))
-  | Const (c',_) when Constant.equal c' pc ->
-      begin match kind_of_term u.up_f with
+  let nargs_of_proj t = match kind_of_term t with
       | App(_,args) -> Array.length args
       | Proj _ -> 0 (* if splay_app calls expand_projection, this has to be
                        the number of arguments including the projected *)
-      | _ -> assert false
-      end
+      | _ -> assert false in
+  try match kind_of_term f with
+  | Prod _ -> na Prod_cs
+  | Sort s -> na (Sort_cs (family_of_sort s))
+  | Const (c',_) when Constant.equal c' pc -> nargs_of_proj u.up_f 
+  | Proj (c',_) when Constant.equal (Projection.constant c') pc -> nargs_of_proj u.up_f
   | Var _ | Ind _ | Construct _ | Const _ -> na (Const_cs (global_of_constr f))
   | _ -> -1
   with Not_found -> -1
@@ -983,11 +984,10 @@ let pr_rpattern = pr_pattern
 
 type pattern = Evd.evar_map * (constr, constr) ssrpattern
 
-
-let id_of_cpattern = let open CAst in function
-  | _,(_,Some { v = CRef (Ident (_, x), _) } ) -> Some x
-  | _,(_,Some { v = CAppExpl ((_, Ident (_, x), _), []) } ) -> Some x
-  | _,({ v = GRef (VarRef x, _)} ,None) -> Some x
+let id_of_cpattern (_, (c1, c2)) = let open CAst in match DAst.get c1, c2 with
+  | _, Some { v = CRef (Ident (_, x), _) } -> Some x
+  | _, Some { v = CAppExpl ((_, Ident (_, x), _), []) } -> Some x
+  | GRef (VarRef x, _), None -> Some x
   | _ -> None
 let id_of_Cterm t = match id_of_cpattern t with
   | Some x -> x
@@ -1068,7 +1068,7 @@ let thin id sigma goal =
   | None -> sigma
   | Some (hyps, concl) ->
     let sigma = !evdref in
-    let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) in
+    let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps (Goal.V82.private_ids sigma goal) concl (Goal.V82.extra sigma goal) in
     let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
     sigma
 
@@ -1085,10 +1085,11 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
   let eAsXInT e x t = E_As_X_In_T(e,x,t) in
   let mkG ?(k=' ') x = k,(x,None) in
   let decode ist t ?reccall f g =
-    let open CAst in
-    try match (pf_intern_term ist gl t) with
-    | { v = GCast({ v = GHole _},CastConv({ v = GLambda(Name x,_,_,c)})) } -> f x (' ',(c,None))
-    | { v = GVar id }
+    try match DAst.get (pf_intern_term ist gl t) with
+    | GCast(t,CastConv c) when isGHole t && isGLambda c->
+      let (x, c) = destGLambda c in
+      f x (' ',(c,None))
+    | GVar id
       when Id.Map.mem id ist.lfun &&
            not(Option.is_empty reccall) &&
            not(Option.is_empty wit_ssrpatternarg) ->
@@ -1129,19 +1130,27 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
         thin name sigma e)
       sigma new_evars in
     sigma in
-  let red = let rec decode_red (ist,red) = let open CAst in match red with
-    | T(k,({ v = GCast ({ v = GHole _ },CastConv({ v = GLambda (Name id,_,_,t)}))},None))
-        when let id = Id.to_string id in let len = String.length id in
+  let red = let rec decode_red (ist,red) = match red with
+    | T(k,(t,None)) ->
+      begin match DAst.get t with
+      | GCast (c,CastConv t)
+        when isGHole c &&
+          let (id, t) = destGLambda t in
+          let id = Id.to_string id in let len = String.length id in
         (len > 8 && String.sub id 0 8 = "_ssrpat_") ->
+        let (id, t) = destGLambda t in
         let id = Id.to_string id in let len = String.length id in
-        (match String.sub id 8 (len - 8), t with
-        | "In", { v = GApp( _, [t]) } -> decodeG t xInT (fun x -> T x)
-        | "In", { v = GApp( _, [e; t]) } -> decodeG t (eInXInT (mkG e)) (bad_enc id)
-        | "In", { v = GApp( _, [e; t; e_in_t]) } ->
+        (match String.sub id 8 (len - 8), DAst.get t with
+        | "In", GApp( _, [t]) -> decodeG t xInT (fun x -> T x)
+        | "In", GApp( _, [e; t]) -> decodeG t (eInXInT (mkG e)) (bad_enc id)
+        | "In", GApp( _, [e; t; e_in_t]) ->
             decodeG t (eInXInT (mkG e))
               (fun _ -> decodeG e_in_t xInT (fun _ -> assert false))
-        | "As", { v = GApp(_, [e; t]) } -> decodeG t (eAsXInT (mkG e)) (bad_enc id)
+        | "As", GApp(_, [e; t]) -> decodeG t (eAsXInT (mkG e)) (bad_enc id)
         | _ -> bad_enc id ())
+      | _ ->
+        decode ist ~reccall:decode_red (k, (t, None)) xInT (fun x -> T x)
+      end
     | T t -> decode ist ~reccall:decode_red t xInT (fun x -> T x)
     | In_T t -> decode ist t inXInT inT
     | X_In_T (e,t) -> decode ist t (eInXInT e) (fun x -> xInT (id_of_Cterm e) x)
@@ -1166,7 +1175,7 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
   pp(lazy(str"typed as: " ++ pr_pattern_w_ids red));
   let mkXLetIn ?loc x (a,(g,c)) = match c with
   | Some b -> a,(g,Some (mkCLetIn ?loc x (mkCHole ~loc) b))
-  | None -> a,(CAst.make ?loc @@ GLetIn (x, CAst.make ?loc @@ GHole (BinderType x, IntroAnonymous, None), None, g), None) in
+  | None -> a,(DAst.make ?loc @@ GLetIn (x, DAst.make ?loc @@ GHole (BinderType x, IntroAnonymous, None), None, g), None) in
   match red with
   | T t -> let sigma, t = interp_term ist gl t in sigma, T t
   | In_T t -> let sigma, t = interp_term ist gl t in sigma, In_T t
@@ -1339,10 +1348,10 @@ let pf_fill_occ_term gl occ t =
   let cl,(_,t) = fill_occ_term env concl occ sigma0 t in
   cl, t
 
-let cpattern_of_id id = ' ', (CAst.make @@ GRef (VarRef  id, None), None)
+let cpattern_of_id id = ' ', (DAst.make @@ GRef (VarRef  id, None), None)
 
-let is_wildcard : cpattern -> bool = function
-  | _,(_,Some { CAst.v = CHole _ } | { CAst.v = GHole _ } ,None) -> true
+let is_wildcard ((_, (l, r)) : cpattern) : bool = match DAst.get l, r with
+  | _, Some { CAst.v = CHole _ } | GHole _, None -> true
   | _ -> false
 
 (* "ssrpattern" *)

@@ -16,13 +16,19 @@ type patvar = Id.t
 
 (** Introduction patterns *)
 
+type private_flag = bool (* true = non-canonically generated name *)
+type unstable_flag = bool (* true = not to consider canonically generated even if not alpha-converted *)
+
+type tracked_ident = Id.t * private_flag
+type possibly_stable_ident = Id.t * unstable_flag
+
 type 'constr intro_pattern_expr =
   | IntroForthcoming of bool
   | IntroNaming of intro_pattern_naming_expr
   | IntroAction of 'constr intro_pattern_action_expr
 and intro_pattern_naming_expr =
-  | IntroIdentifier of Id.t
-  | IntroFresh of Id.t
+  | IntroIdentifier of tracked_ident
+  | IntroFresh of possibly_stable_ident
   | IntroAnonymous
 and 'constr intro_pattern_action_expr =
   | IntroWildcard
@@ -53,6 +59,7 @@ type level_info = Name.t Loc.located option
 
 type glob_sort = sort_info glob_sort_gen
 type glob_level = level_info glob_sort_gen
+type glob_constraint = glob_level * Univ.constraint_type * glob_level
 
 (** A synonym of [Evar.t], also defined in Term *)
 
@@ -136,3 +143,9 @@ type inversion_kind =
   | SimpleInversion
   | FullInversion
   | FullInversionClear
+
+type ('a, 'b) gen_universe_decl = {
+  univdecl_instance : 'a; (* Declared universes *)
+  univdecl_extensible_instance : bool; (* Can new universes be added *)
+  univdecl_constraints : 'b; (* Declared constraints *)
+  univdecl_extensible_constraints : bool (* Can new constraints be added *) }

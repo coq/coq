@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 67309b04a86b247431fd3e580ecbb50d  checker/cic.mli
+MD5 62a4037e9e584d508909d631c5e8a759 checker/cic.mli
 
 *)
 
@@ -54,6 +54,7 @@ let v_enum name n = Sum(name,n,[||])
 
 let v_pair v1 v2 = v_tuple "*" [|v1; v2|]
 let v_bool = v_enum "bool" 2
+let v_unit = v_enum "unit" 1
 let v_ref v = v_tuple "ref" [|v|]
 
 let v_set v =
@@ -98,7 +99,7 @@ let v_raw_level = v_sum "raw_level" 2 (* Prop, Set *)
   [|(*Level*)[|Int;v_dp|]; (*Var*)[|Int|]|]
 let v_level = v_tuple "level" [|Int;v_raw_level|] 
 let v_expr = v_tuple "levelexpr" [|v_level;Int|]
-let rec v_univ = Sum ("universe", 1, [| [|v_expr; Int; v_univ|] |])
+let v_univ = List v_expr
 
 let v_cstrs =
   Annot
@@ -201,9 +202,6 @@ let v_engagement = v_impredicative_set
 let v_pol_arity =
   v_tuple "polymorphic_arity" [|List(Opt v_level);v_univ|]
 
-let v_cst_type =
-  v_sum "constant_type" 0 [|[|v_constr|]; [|v_pair v_rctxt v_pol_arity|]|]
-
 let v_cst_def =
   v_sum "constant_def" 0
     [|[|Opt Int|]; [|v_cstr_subst|]; [|v_lazy_constr|]|]
@@ -222,7 +220,7 @@ let v_const_univs = v_sum "constant_universes" 0 [|[|v_context|]; [|v_abs_contex
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
     v_cst_def;
-    v_cst_type;
+    v_constr;
     Any;
     v_const_univs;
     Opt v_projbody;
@@ -314,13 +312,13 @@ and v_impl =
   Sum ("module_impl",2, (* Abstract, FullStruct *)
   [|[|v_mexpr|];  (* Algebraic *)
     [|v_sign|]|])  (* Struct *)
-and v_noimpl = v_enum "no_impl" 1 (* Abstract is mandatory for mtb *)
+and v_noimpl = v_unit
 and v_module =
   Tuple ("module_body",
          [|v_mp;v_impl;v_sign;Opt v_mexpr;v_context_set;v_resolver;Any|])
 and v_modtype =
   Tuple ("module_type_body",
-         [|v_mp;v_noimpl;v_sign;Opt v_mexpr;v_context_set;v_resolver;Any|])
+         [|v_mp;v_noimpl;v_sign;Opt v_mexpr;v_context_set;v_resolver;v_unit|])
 
 (** kernel/safe_typing *)
 

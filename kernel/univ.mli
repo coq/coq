@@ -37,7 +37,7 @@ sig
   (** Create a new universe level from a unique identifier and an associated
       module path. *)
 
-  val pr : t -> Pp.std_ppcmds
+  val pr : t -> Pp.t
   (** Pretty-printing *)
 
   val to_string : t -> string
@@ -56,7 +56,7 @@ module LSet :
 sig 
   include CSig.SetS with type elt = universe_level
 	      
-  val pr : (Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
+  val pr : (Level.t -> Pp.t) -> t -> Pp.t
   (** Pretty-printing *)
 end
 
@@ -86,10 +86,10 @@ sig
   val make : Level.t -> t
   (** Create a universe representing the given level. *)
 
-  val pr : t -> Pp.std_ppcmds
+  val pr : t -> Pp.t
   (** Pretty-printing *)
 
-  val pr_with : (Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
+  val pr_with : (Level.t -> Pp.t) -> t -> Pp.t
 
   val is_level : t -> bool
   (** Test if the universe is a level or an algebraic universe. *)
@@ -127,7 +127,7 @@ type universe = Universe.t
 
 (** Alias name. *)
 
-val pr_uni : universe -> Pp.std_ppcmds
+val pr_uni : universe -> Pp.t
 	      
 (** The universes hierarchy: Type 0- = Prop <= Type 0 = Set <= Type 1 <= ... 
    Typing of universes: Type 0-, Type 0 : Type 1; Type i : Type (i+1) if i>0 *)
@@ -218,7 +218,7 @@ sig
   (** [subst_union x y] favors the bindings of the first map that are [Some],
       otherwise takes y's bindings. *)
 
-  val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
+  val pr : ('a -> Pp.t) -> 'a t -> Pp.t
   (** Pretty-printing *)
 end
 
@@ -270,7 +270,7 @@ sig
   val subst_fn : universe_level_subst_fn -> t -> t
   (** Substitution by a level-to-level function. *)
 
-  val pr : (Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
+  val pr : (Level.t -> Pp.t) -> t -> Pp.t
   (** Pretty-printing, no comments *)
 
   val levels : t -> LSet.t
@@ -319,14 +319,23 @@ module AUContext :
 sig 
   type t
 
-  val empty : t
+  val repr : t -> UContext.t
+  (** [repr ctx] is [(Var(0), ... Var(n-1) |= cstr] where [n] is the length of
+      the context and [cstr] the abstracted constraints. *)
 
+  val empty : t
+  val is_empty : t -> bool
+
+  (** Don't use. *)
   val instance : t -> Instance.t
-                        
+
   val size : t -> int
 
   (** Keeps the order of the instances *)
   val union : t -> t -> t
+
+  val instantiate : Instance.t -> t -> Constraint.t
+  (** Generate the set of instantiated constraints **)
 
 end
 
@@ -402,6 +411,7 @@ sig
   val add_instance : Instance.t -> t -> t
 
   (** Arbitrary choice of linear order of the variables *)
+  val sort_levels : Level.t array -> Level.t array
   val to_context : t -> universe_context
   val of_context : universe_context -> t
 
@@ -442,7 +452,6 @@ val subst_univs_constraints : universe_subst_fn -> constraints -> constraints
 (** Substitution of instances *)
 val subst_instance_instance : universe_instance -> universe_instance -> universe_instance
 val subst_instance_universe : universe_instance -> universe -> universe
-val subst_instance_context : universe_instance -> abstract_universe_context -> universe_context
 
 val make_instance_subst : universe_instance -> universe_level_subst
 val make_inverse_instance_subst : universe_instance -> universe_level_subst
@@ -453,26 +462,20 @@ val abstract_cumulativity_info : cumulativity_info -> universe_level_subst * abs
 
 val make_abstract_instance : abstract_universe_context -> universe_instance
 
-(** Get the instantiated graph. *)
-val instantiate_univ_context : abstract_universe_context -> universe_context
-
-(** Get the instantiated graphs for both universe constraints and subtyping constraints. *)
-val instantiate_cumulativity_info : abstract_cumulativity_info -> cumulativity_info
-
 (** {6 Pretty-printing of universes. } *)
 
-val pr_constraint_type : constraint_type -> Pp.std_ppcmds
-val pr_constraints : (Level.t -> Pp.std_ppcmds) -> constraints -> Pp.std_ppcmds
-val pr_universe_context : (Level.t -> Pp.std_ppcmds) -> universe_context -> Pp.std_ppcmds
-val pr_cumulativity_info : (Level.t -> Pp.std_ppcmds) -> cumulativity_info -> Pp.std_ppcmds
-val pr_abstract_universe_context : (Level.t -> Pp.std_ppcmds) -> abstract_universe_context -> Pp.std_ppcmds
-val pr_abstract_cumulativity_info : (Level.t -> Pp.std_ppcmds) -> abstract_cumulativity_info -> Pp.std_ppcmds
-val pr_universe_context_set : (Level.t -> Pp.std_ppcmds) -> universe_context_set -> Pp.std_ppcmds
-val explain_universe_inconsistency : (Level.t -> Pp.std_ppcmds) -> 
-  univ_inconsistency -> Pp.std_ppcmds
+val pr_constraint_type : constraint_type -> Pp.t
+val pr_constraints : (Level.t -> Pp.t) -> constraints -> Pp.t
+val pr_universe_context : (Level.t -> Pp.t) -> universe_context -> Pp.t
+val pr_cumulativity_info : (Level.t -> Pp.t) -> cumulativity_info -> Pp.t
+val pr_abstract_universe_context : (Level.t -> Pp.t) -> abstract_universe_context -> Pp.t
+val pr_abstract_cumulativity_info : (Level.t -> Pp.t) -> abstract_cumulativity_info -> Pp.t
+val pr_universe_context_set : (Level.t -> Pp.t) -> universe_context_set -> Pp.t
+val explain_universe_inconsistency : (Level.t -> Pp.t) -> 
+  univ_inconsistency -> Pp.t
 
-val pr_universe_level_subst : universe_level_subst -> Pp.std_ppcmds
-val pr_universe_subst : universe_subst -> Pp.std_ppcmds
+val pr_universe_level_subst : universe_level_subst -> Pp.t
+val pr_universe_subst : universe_subst -> Pp.t
 
 (** {6 Hash-consing } *)
 

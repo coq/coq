@@ -566,7 +566,6 @@ let compare_constr sigma cmp c1 c2 =
   let cmp c1 c2 = cmp (of_constr c1) (of_constr c2) in
   compare_gen kind (fun _ -> Univ.Instance.equal) Sorts.equal cmp (unsafe_to_constr c1) (unsafe_to_constr c2)
 
-(** TODO: factorize with universes.ml *)
 let test_constr_universes sigma leq m n =
   let open Universes in
   let kind c = kind_upto sigma c in
@@ -574,14 +573,20 @@ let test_constr_universes sigma leq m n =
   else 
     let cstrs = ref Constraints.empty in
     let eq_universes strict l l' = 
+      let l = EInstance.kind sigma (EInstance.make l) in
+      let l' = EInstance.kind sigma (EInstance.make l') in
       cstrs := enforce_eq_instances_univs strict l l' !cstrs; true in
     let eq_sorts s1 s2 = 
+      let s1 = ESorts.kind sigma (ESorts.make s1) in
+      let s2 = ESorts.kind sigma (ESorts.make s2) in
       if Sorts.equal s1 s2 then true
       else (cstrs := Constraints.add 
 	      (Sorts.univ_of_sort s1,UEq,Sorts.univ_of_sort s2) !cstrs; 
 	    true)
     in
     let leq_sorts s1 s2 = 
+      let s1 = ESorts.kind sigma (ESorts.make s1) in
+      let s2 = ESorts.kind sigma (ESorts.make s2) in
       if Sorts.equal s1 s2 then true
       else 
 	(cstrs := Constraints.add 
@@ -663,6 +668,10 @@ let cast_named_decl :
 
 let cast_named_context :
   type a b. (a,b) eq -> (a, a) Named.pt -> (b, b) Named.pt =
+  fun Refl x -> x
+
+let cast_named_context_with_privacy :
+  type a b. (a,b) eq -> ((a, a) Named.Declaration.pt * Misctypes.private_flag) list -> ((b, b) Named.Declaration.pt * Misctypes.private_flag) list =
   fun Refl x -> x
 
 
@@ -766,7 +775,7 @@ let it_mkLambda_or_LetIn t ctx = List.fold_left (fun c d -> mkLambda_or_LetIn d 
 let push_rel d e = push_rel (cast_rel_decl unsafe_eq d) e
 let push_rel_context d e = push_rel_context (cast_rel_context unsafe_eq d) e
 let push_named d e = push_named (cast_named_decl unsafe_eq d) e
-let push_named_context d e = push_named_context (cast_named_context unsafe_eq d) e
+let push_named_context d e = push_named_context (cast_named_context_with_privacy unsafe_eq d) e
 let push_named_context_val d e = push_named_context_val (cast_named_decl unsafe_eq d) e
 
 let rel_context e = cast_rel_context (sym unsafe_eq) (rel_context e)

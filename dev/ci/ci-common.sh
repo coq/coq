@@ -4,7 +4,8 @@ set -xe
 
 if [ -n "${GITLAB_CI}" ];
 then
-    export COQBIN=`pwd`/install/bin
+    export COQBIN=`pwd`/_install_ci/bin
+    export TRAVIS_BRANCH="$CI_COMMIT_REF_NAME"
 else
     export COQBIN=`pwd`/bin
 fi

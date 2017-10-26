@@ -8,18 +8,17 @@
 
 (** Entry point for generic printers *)
 
-open Pp
 open Genarg
 
-type 'a printer = 'a -> std_ppcmds
+type 'a printer = 'a -> Pp.t
 
-val raw_print : ('raw, 'glb, 'top) genarg_type -> 'raw -> std_ppcmds
+val raw_print : ('raw, 'glb, 'top) genarg_type -> 'raw -> Pp.t
 (** Printer for raw level generic arguments. *)
 
-val glb_print : ('raw, 'glb, 'top) genarg_type -> 'glb -> std_ppcmds
+val glb_print : ('raw, 'glb, 'top) genarg_type -> 'glb -> Pp.t
 (** Printer for glob level generic arguments. *)
 
-val top_print : ('raw, 'glb, 'top) genarg_type -> 'top -> std_ppcmds
+val top_print : ('raw, 'glb, 'top) genarg_type -> 'top -> Pp.t
 (** Printer for top level generic arguments. *)
 
 val generic_raw_print : rlevel generic_argument printer

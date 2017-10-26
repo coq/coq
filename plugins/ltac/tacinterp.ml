@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
-open Grammar_API
 open Constrintern
 open Patternops
 open Pp
@@ -141,7 +139,7 @@ let name_vfun appl vle =
 
 module TacStore = Geninterp.TacStore
 
-let f_avoid_ids : Id.t list TacStore.field = TacStore.field ()
+let f_avoid_ids : Id.Set.t TacStore.field = TacStore.field ()
 (* ids inherited from the call context (needed to get fresh ids) *)
 let f_debug : debug_info TacStore.field = TacStore.field ()
 let f_trace : ltac_trace TacStore.field = TacStore.field ()
@@ -323,9 +321,9 @@ let coerce_to_tactic loc id v =
     | _ -> fail ()
   else fail ()
 
-let intro_pattern_of_ident id = (Loc.tag @@ IntroNaming (IntroIdentifier id))
-let value_of_ident id =
-  in_gen (topwit wit_intro_pattern) (intro_pattern_of_ident id)
+let intro_pattern_of_ident isprivate id = (Loc.tag @@ IntroNaming (IntroIdentifier (id,isprivate)))
+let value_of_ident isprivate id =
+  in_gen (topwit wit_intro_pattern) (intro_pattern_of_ident isprivate id)
 
 let (+++) lfun1 lfun2 = Id.Map.fold Id.Map.add lfun1 lfun2
 
@@ -336,15 +334,18 @@ let extend_values_with_bindings (ln,lm) lfun =
   in
   (* For compatibility, bound variables are visible only if no other
      binding of the same name exists *)
-  let accu = Id.Map.map value_of_ident ln in
+  let accu = Id.Map.map (value_of_ident true) ln in
   let accu = lfun +++ accu in
   Id.Map.fold (fun id c accu -> Id.Map.add id (of_cub c) accu) lm accu
 
 (***************************************************************************)
 (* Evaluation/interpretation *)
 
-let is_variable env id =
-  Id.List.mem id (ids_of_named_context (Environ.named_context env))
+let is_variable ?loc env id =
+  let b = Id.List.mem id (ids_of_named_context (Environ.named_context env)) in
+  if Id.Set.mem id (Environ.named_context_private_ids (Environ.named_context_val env)) then
+    Constrintern.warn_private_name ?loc id;
+  b
 
 (* Debug reference *)
 let debug = ref DebugOff
@@ -383,20 +384,20 @@ let interp_ltac_var coerce ist env locid =
 
 let interp_ident ist env sigma id =
   try try_interp_ltac_var (coerce_var_to_ident false env sigma) ist (Some (env,sigma)) (Loc.tag id)
-  with Not_found -> id
+  with Not_found -> id, false
 
 (* Interprets an optional identifier, bound or fresh *)
 let interp_name ist env sigma = function
-  | Anonymous -> Anonymous
-  | Name id -> Name (interp_ident ist env sigma id)
+  | Anonymous -> Anonymous, true
+  | Name id -> let id,isprivate = interp_ident ist env sigma id in Name id, isprivate
 
-let interp_intro_pattern_var loc ist env sigma id =
+let interp_intro_pattern_var loc ist env sigma id isprivate =
   try try_interp_ltac_var (coerce_to_intro_pattern env sigma) ist (Some (env,sigma)) (loc,id)
-  with Not_found -> IntroNaming (IntroIdentifier id)
+  with Not_found -> IntroNaming (IntroIdentifier (id,isprivate))
 
-let interp_intro_pattern_naming_var loc ist env sigma id =
+let interp_intro_pattern_naming_var loc ist env sigma id isprivate =
   try try_interp_ltac_var (coerce_to_intro_pattern_naming env sigma) ist (Some (env,sigma)) (loc,id)
-  with Not_found -> IntroIdentifier id
+  with Not_found -> IntroIdentifier (id,isprivate)
 
 let interp_int ist locid =
   try try_interp_ltac_var coerce_to_int ist None locid
@@ -423,7 +424,7 @@ let interp_hyp ist env sigma (loc,id as locid) =
   try try_interp_ltac_var (coerce_to_hyp env sigma) ist (Some (env,sigma)) locid
   with Not_found ->
   (* Then look if bound in the proof context at calling time *)
-  if is_variable env id then id
+  if is_variable ?loc env id then id
   else Loc.raise ?loc (Logic.RefinerError (Logic.NoSuchHyp id))
 
 let interp_hyp_list_as_list ist env sigma (loc,id as x) =
@@ -503,29 +504,29 @@ let extract_ltac_constr_values ist env =
     could barely be defined as a feature... *)
 
 (* Extract the identifier list from lfun: join all branches (what to do else?)*)
-let rec intropattern_ids (loc,pat) = match pat with
-  | IntroNaming (IntroIdentifier id) -> [id]
+let rec intropattern_ids accu (loc,pat) = match pat with
+  | IntroNaming (IntroIdentifier (id,_)) -> Id.Set.add id accu
   | IntroAction (IntroOrAndPattern (IntroAndPattern l)) ->
-      List.flatten (List.map intropattern_ids l)
+      List.fold_left intropattern_ids accu l
   | IntroAction (IntroOrAndPattern (IntroOrPattern ll)) ->
-      List.flatten (List.map intropattern_ids (List.flatten ll))
+      List.fold_left intropattern_ids accu (List.flatten ll)
   | IntroAction (IntroInjection l) ->
-      List.flatten (List.map intropattern_ids l)
-  | IntroAction (IntroApplyOn ((_,c),pat)) -> intropattern_ids pat
+      List.fold_left intropattern_ids accu l
+  | IntroAction (IntroApplyOn ((_,c),pat)) -> intropattern_ids accu pat
   | IntroNaming (IntroAnonymous | IntroFresh _)
   | IntroAction (IntroWildcard | IntroRewrite _)
-  | IntroForthcoming _ -> []
+  | IntroForthcoming _ -> accu
 
-let extract_ids ids lfun =
+let extract_ids ids lfun accu =
   let fold id v accu =
     let v = Value.normalize v in
     if has_type v (topwit wit_intro_pattern) then
       let (_, ipat) = out_gen (topwit wit_intro_pattern) v in
       if Id.List.mem id ids then accu
-      else accu @ intropattern_ids (Loc.tag ipat)
+      else intropattern_ids accu (Loc.tag ipat)
     else accu
   in
-  Id.Map.fold fold lfun []
+  Id.Map.fold fold lfun accu
 
 let default_fresh_id = Id.of_string "H"
 
@@ -536,10 +537,10 @@ let interp_fresh_id ist env sigma l =
     with Not_found -> id in
   let ids = List.map_filter (function ArgVar (_, id) -> Some id | _ -> None) l in
   let avoid = match TacStore.get ist.extra f_avoid_ids with
-  | None -> []
+  | None -> Id.Set.empty
   | Some l -> l
   in
-  let avoid = (extract_ids ids ist.lfun) @ avoid in
+  let avoid = extract_ids ids ist.lfun avoid in
   let id =
     if List.is_empty l then default_fresh_id
     else
@@ -563,7 +564,7 @@ let extract_ltac_constr_context ist env sigma =
     with CannotCoerceTo _ -> map
   in
   let add_ident id v map =
-    try Id.Map.add id (coerce_var_to_ident false env sigma v) map
+    try Id.Map.add id (fst (coerce_var_to_ident false env sigma v)) map
     with CannotCoerceTo _ -> map
   in
   let fold id v {idents;typed;untyped} =
@@ -681,8 +682,8 @@ let interp_typed_pattern ist env sigma (_,c,_) =
 (* Interprets a constr expression *)
 let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
   let try_expand_ltac_var sigma x =
-    try match dest_fun x with
-    | { CAst.v = GVar id }, _ ->
+    try match DAst.get (fst (dest_fun x)) with
+    | GVar id ->
       let v = Id.Map.find id ist.lfun in
       sigma, List.map inj_fun (coerce_to_constr_list env v)
     | _ ->
@@ -691,7 +692,7 @@ let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
       (* dest_fun, List.assoc may raise Not_found *)
       let sigma, c = interp_fun ist env sigma x in
       sigma, [c] in
-  let sigma, l = List.fold_map try_expand_ltac_var sigma l in
+  let sigma, l = List.fold_left_map try_expand_ltac_var sigma l in
   sigma, List.flatten l
 
 let interp_constr_list ist env sigma c =
@@ -737,7 +738,7 @@ let interp_constr_with_occurrences_and_name_as_list =
     (fun ist env sigma (occ_c,na) ->
       let (sigma,c_interp) = interp_constr_with_occurrences ist env sigma occ_c in
       sigma, (c_interp,
-       interp_name ist env sigma na))
+       fst (interp_name ist env sigma na)))
 
 let interp_red_expr ist env sigma = function
   | Unfold l -> sigma , Unfold (List.map (interp_unfold ist env sigma) l)
@@ -884,15 +885,15 @@ let rec interp_intro_pattern ist env sigma = function
   | loc, IntroAction pat ->
       let (sigma,pat) = interp_intro_pattern_action ist env sigma pat in
       sigma, (loc, IntroAction pat)
-  | loc, IntroNaming (IntroIdentifier id) ->
-      sigma, (loc, interp_intro_pattern_var loc ist env sigma id)
+  | loc, IntroNaming (IntroIdentifier (id,isprivate)) ->
+      sigma, (loc, interp_intro_pattern_var loc ist env sigma id isprivate)
   | loc, IntroNaming pat ->
       sigma, (loc, IntroNaming (interp_intro_pattern_naming loc ist env sigma pat))
   | loc, IntroForthcoming _  as x -> sigma, x
 
 and interp_intro_pattern_naming loc ist env sigma = function
-  | IntroFresh id -> IntroFresh (interp_ident ist env sigma id)
-  | IntroIdentifier id -> interp_intro_pattern_naming_var loc ist env sigma id
+  | IntroFresh (id,unstable) -> IntroFresh (fst (interp_ident ist env sigma id),unstable)
+  | IntroIdentifier (id,isprivate) -> interp_intro_pattern_naming_var loc ist env sigma id isprivate
   | IntroAnonymous as x -> x
 
 and interp_intro_pattern_action ist env sigma = function
@@ -910,18 +911,18 @@ and interp_intro_pattern_action ist env sigma = function
 
 and interp_or_and_intro_pattern ist env sigma = function
   | IntroAndPattern l ->
-      let sigma, l = List.fold_map (interp_intro_pattern ist env) sigma l in
+      let sigma, l = List.fold_left_map (interp_intro_pattern ist env) sigma l in
       sigma, IntroAndPattern l
   | IntroOrPattern ll ->
-      let sigma, ll = List.fold_map (interp_intro_pattern_list_as_list ist env) sigma ll in
+      let sigma, ll = List.fold_left_map (interp_intro_pattern_list_as_list ist env) sigma ll in
       sigma, IntroOrPattern ll
 
 and interp_intro_pattern_list_as_list ist env sigma = function
-  | [loc,IntroNaming (IntroIdentifier id)] as l ->
+  | [loc,IntroNaming (IntroIdentifier (id,_))] as l ->
       (try sigma, coerce_to_intro_pattern_list ?loc env sigma (Id.Map.find id ist.lfun)
        with Not_found | CannotCoerceTo _ ->
-         List.fold_map (interp_intro_pattern ist env) sigma l)
-  | l -> List.fold_map (interp_intro_pattern ist env) sigma l
+         List.fold_left_map (interp_intro_pattern ist env) sigma l)
+  | l -> List.fold_left_map (interp_intro_pattern ist env) sigma l
 
 let interp_intro_pattern_naming_option ist env sigma = function
   | None -> None
@@ -975,7 +976,7 @@ let interp_bindings ist env sigma = function
     let sigma, l = interp_open_constr_list ist env sigma l in   
     sigma, ImplicitBindings l
 | ExplicitBindings l ->
-    let sigma, l = List.fold_map (interp_binding ist env) sigma l in
+    let sigma, l = List.fold_left_map (interp_binding ist env) sigma l in
     sigma, ExplicitBindings l
 
 let interp_constr_with_bindings ist env sigma (c,bl) =
@@ -1030,10 +1031,13 @@ let interp_destruction_arg ist gl arg =
         if has_type v (topwit wit_intro_pattern) then
           let v = out_gen (topwit wit_intro_pattern) v in
           match v with
-          | _, IntroNaming (IntroIdentifier id) -> try_cast_id id
+          | _, IntroNaming (IntroIdentifier (id,_)) -> try_cast_id id
           | _ -> error ()
         else if has_type v (topwit wit_var) then
           let id = out_gen (topwit wit_var) v in
+          try_cast_id id
+        else if has_type v (topwit wit_ident) then
+          let id,_ = out_gen (topwit wit_ident) v in
           try_cast_id id
         else if has_type v (topwit wit_int) then
           keep,ElimOnAnonHyp (out_gen (topwit wit_int) v)
@@ -1045,7 +1049,7 @@ let interp_destruction_arg ist gl arg =
 	if Tactics.is_quantified_hypothesis id gl then
           keep,ElimOnIdent (loc,id)
 	else
-          let c = (CAst.make ?loc @@ GVar id,Some (CAst.make @@ CRef (Ident (loc,id),None))) in
+          let c = (DAst.make ?loc @@ GVar id,Some (CAst.make @@ CRef (Ident (loc,id),None))) in
           let f env sigma =
             let (sigma,c) = interp_open_constr ist env sigma c in
             (sigma, (c,NoBindings))
@@ -1109,6 +1113,20 @@ let rec read_match_rule lfun ist env sigma = function
       Pat (read_match_goal_hyps lfun ist env sigma [] rl, read_pattern lfun ist env sigma mp,tc)
       :: read_match_rule lfun ist env sigma tl
   | [] -> []
+
+(* Fully evaluate an untyped constr *)
+let type_uconstr ?(flags = {(constr_flags ()) with use_hook = None })
+  ?(expected_type = WithoutTypeConstraint) ist c =
+  begin fun env sigma ->
+  let { closure; term } = c in
+  let vars = {
+    ltac_constrs = closure.typed;
+    ltac_uconstrs = closure.untyped;
+    ltac_idents = closure.idents;
+    ltac_genargs = Id.Map.empty;
+  } in
+  understand_ltac flags env sigma vars expected_type term
+  end
 
 let warn_deprecated_info =
   CWarnings.create ~name:"deprecated-info-tactical" ~category:"deprecated"
@@ -1186,7 +1204,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
          end
   | TacAbstract (tac,ido) ->
       Proofview.Goal.enter begin fun gl -> Tactics.tclABSTRACT
-        (Option.map (interp_ident ist (pf_env gl) (project gl)) ido) (interp_tactic ist tac)
+        (Option.map (fun id -> fst (interp_ident ist (pf_env gl) (project gl) id)) ido) (interp_tactic ist tac)
       end
   | TacThen (t1,t) ->
       Tacticals.New.tclTHEN (interp_tactic ist t1) (interp_tactic ist t)
@@ -1291,7 +1309,7 @@ and interp_ltac_reference ?loc' mustbetac ist r : Val.t Ftactic.t =
       if mustbetac then Ftactic.return (coerce_to_tactic loc id v) else Ftactic.return v
       end
   | ArgArg (loc,r) ->
-      let ids = extract_ids [] ist.lfun in
+      let ids = extract_ids [] ist.lfun Id.Set.empty in
       let loc_info = (Option.default loc loc',LtacNameCall r) in
       let extra = TacStore.set ist.extra f_avoid_ids ids in
       push_trace loc_info ist >>= fun trace ->
@@ -1322,7 +1340,7 @@ and interp_tacarg ist arg : Val.t Ftactic.t =
   | TacFreshId l ->
       Ftactic.enter begin fun gl ->
         let id = interp_fresh_id ist (pf_env gl) (project gl) l in
-        Ftactic.return (in_gen (topwit wit_intro_pattern) (Loc.tag @@ IntroNaming (IntroIdentifier id)))
+        Ftactic.return (in_gen (topwit wit_intro_pattern) (Loc.tag @@ IntroNaming (IntroIdentifier (id,true))))
       end
   | TacPretype c ->
       Ftactic.enter begin fun gl ->
@@ -1382,7 +1400,13 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
         if List.is_empty lval then Ftactic.return v else interp_app loc ist v lval
       else
         Ftactic.return (of_tacvalue (VFun(push_appl appl largs,trace,newlfun,lvar,body)))
-    | _ -> fail
+    | (VFun(appl,trace,olfun,[],body)) ->
+      let extra_args = List.length largs in
+      Tacticals.New.tclZEROMSG (str "Illegal tactic application: got " ++
+                                str (string_of_int extra_args) ++
+                                str " extra " ++ str (String.plural extra_args "argument") ++
+                                str ".")
+    | VRec(_,_) -> fail
   else fail
 
 (* Gives the tactic corresponding to the tactic value *)
@@ -1436,10 +1460,10 @@ and interp_letin ist llc u =
 
 (** [interp_match_success lz ist succ] interprets a single matching success
     (of type {!Tactic_matching.t}). *)
-and interp_match_success ist { Tactic_matching.subst ; context ; terms ; lhs } =
+and interp_match_success ist { Tactic_matching.subst ; context ; idents ; lhs } =
   let (>>=) = Ftactic.bind in
   let lctxt = Id.Map.map interp_context context in
-  let hyp_subst = Id.Map.map Value.of_constr terms in
+  let hyp_subst = Id.Map.map Value.of_ident idents in
   let lfun = extend_values_with_bindings subst (lctxt +++ hyp_subst +++ ist.lfun) in
   let ist = { ist with lfun } in
   val_interp ist lhs >>= fun v ->
@@ -1507,9 +1531,10 @@ and interp_match_goal ist lz lr lmr =
       let env = Proofview.Goal.env gl in
       let hyps = Proofview.Goal.hyps gl in
       let hyps = if lr then List.rev hyps else hyps in
+      let private_ids = Environ.named_context_private_ids (Environ.named_context_val env) in
       let concl = Proofview.Goal.concl gl in
       let ilr = read_match_rule (extract_ltac_constr_values ist env) ist env sigma lmr in
-      interp_match_successes lz ist (Tactic_matching.match_goal env sigma hyps concl ilr)
+      interp_match_successes lz ist (Tactic_matching.match_goal env sigma (hyps,private_ids) concl ilr)
     end
 
 (* Interprets extended tactic generic arguments *)
@@ -1659,7 +1684,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = project gl in 
         let sigma, cb = interp_open_constr_with_bindings ist env sigma cb in
-        let sigma, cbo = Option.fold_map (interp_open_constr_with_bindings ist env) sigma cbo in
+        let sigma, cbo = Option.fold_left_map (interp_open_constr_with_bindings ist env) sigma cbo in
         let named_tac =
           let tac = Tactics.elim ev keep cb cbo in
           name_atomic ~env (TacElim (ev,(keep,cb),cbo)) tac
@@ -1744,22 +1769,22 @@ and interp_atomic ist tac : unit Proofview.tactic =
         (* We try to fully-typecheck the term *)
           let flags = open_constr_use_classes_flags () in
           let (sigma,c_interp) = interp_open_constr ~flags ist env sigma c in
-          let let_tac b na c cl eqpat =
+          let let_tac b na isprivate c cl eqpat =
             let id = Option.default (Loc.tag IntroAnonymous) eqpat in
             let with_eq = if b then None else Some (true,id) in
-            Tactics.letin_tac with_eq na c None cl
+            Tactics.letin_tac with_eq na isprivate c None cl
           in
-          let na = interp_name ist env sigma na in
+          let na,isprivate = interp_name ist env sigma na in
           Tacticals.New.tclWITHHOLES ev
           (name_atomic ~env
             (TacLetTac(ev,na,c_interp,clp,b,eqpat))
-            (let_tac b na c_interp clp eqpat)) sigma
+            (let_tac b na isprivate c_interp clp eqpat)) sigma
         else
         (* We try to keep the pattern structure as much as possible *)
-          let let_pat_tac b na c cl eqpat =
+          let let_pat_tac b (na,isprivate) c cl eqpat =
             let id = Option.default (Loc.tag IntroAnonymous) eqpat in
             let with_eq = if b then None else Some (true,id) in
-            Tactics.letin_pat_tac ev with_eq na c cl
+            Tactics.letin_pat_tac ev with_eq na isprivate c cl
           in
           let (sigma',c) = interp_pure_open_constr ist env sigma c in
           name_atomic ~env
@@ -1777,7 +1802,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
         let sigma,l =
-          List.fold_map begin fun sigma (c,(ipato,ipats),cls) ->
+          List.fold_left_map begin fun sigma (c,(ipato,ipats),cls) ->
             (* TODO: move sigma as a side-effect *)
              (* spiwack: the [*p] variants are for printing *)
             let cp = c in
@@ -1791,7 +1816,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         let l,lp = List.split l in
         let sigma,el =
-          Option.fold_map (interp_open_constr_with_bindings ist env) sigma el in
+          Option.fold_left_map (interp_open_constr_with_bindings ist env) sigma el in
         Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (name_atomic ~env
           (TacInductionDestruct(isrec,ev,(lp,el)))
@@ -1944,7 +1969,7 @@ let interp_tac_gen lfun avoid_ids debug t =
     (intern_pure_tactic { (Genintern.empty_glob_sign env) with ltacvars } t)
   end
 
-let interp t = interp_tac_gen Id.Map.empty [] (get_debug()) t
+let interp t = interp_tac_gen Id.Map.empty Id.Set.empty (get_debug()) t
 
 (* Used to hide interpretation for pretty-print, now just launch tactics *)
 (* [global] means that [t] should be internalized outside of goals. *)
@@ -2002,7 +2027,7 @@ let lift f = (); fun ist x -> Ftactic.enter begin fun gl ->
   Ftactic.return (f ist env sigma x)
 end
 
-let lifts f = (); fun ist x -> Ftactic.nf_enter begin fun gl ->
+let lifts f = (); fun ist x -> Ftactic.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let (sigma, v) = f ist env sigma x in
@@ -2027,7 +2052,7 @@ let interp_destruction_arg' ist c = Ftactic.enter begin fun gl ->
 end
 
 let interp_pre_ident ist env sigma s =
-  s |> Id.of_string |> interp_ident ist env sigma |> Id.to_string
+  s |> Id.of_string |> interp_ident ist env sigma |> fst |> Id.to_string
 
 let () =
   register_interp0 wit_int_or_var (fun ist n -> Ftactic.return (interp_int_or_var ist n));

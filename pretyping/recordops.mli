@@ -57,7 +57,7 @@ type cs_pattern =
 
 type obj_typ = {
   o_DEF : constr;
-  o_CTX : Univ.ContextSet.t;
+  o_CTX : Univ.AUContext.t;
   o_INJ : int option;      (** position of trivial argument *)
   o_TABS : constr list;    (** ordered *)
   o_TPARAMS : constr list; (** ordered *)
@@ -65,9 +65,9 @@ type obj_typ = {
   o_TCOMPS : constr list } (** ordered *)
 
 (** Return the form of the component of a canonical structure *)
-val cs_pattern_of_constr : constr -> cs_pattern * int option * constr list
+val cs_pattern_of_constr : Environ.env -> constr -> cs_pattern * int option * constr list
 
-val pr_cs_pattern : cs_pattern -> Pp.std_ppcmds
+val pr_cs_pattern : cs_pattern -> Pp.t
 
 val lookup_canonical_conversion : (global_reference * cs_pattern) -> constr * obj_typ
 val declare_canonical_structure : global_reference -> unit

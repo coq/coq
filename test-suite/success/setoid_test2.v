@@ -134,8 +134,8 @@ Axiom SetoidS2 : Setoid_Theory S2 eqS2.
 Add Setoid S2 eqS2 SetoidS2 as S2setoid.
 
 Axiom f : S1 -> nat -> S2.
-Add Morphism f : f_compat. Admitted.
-Add Morphism f : f_compat2. Admitted.
+Add Morphism f with signature (eqS1 ==> eq ==> eqS2) as f_compat. Admitted.
+Add Morphism f with signature (eqS1 ==> eq ==> eqS2) as f_compat2. Admitted.
 
 Theorem test1: forall x y, (eqS1 x y) -> (eqS2 (f x 0) (f y 0)).
  intros.
@@ -151,7 +151,7 @@ Theorem test1': forall x y, (eqS1 x y) -> (eqS2 (f x 0) (f y 0)).
 Qed.
 
 Axiom g : S1 -> S2 -> nat.
-Add Morphism g : g_compat. Admitted.
+Add Morphism g with signature (eqS1 ==> eqS2 ==> eq) as g_compat. Admitted.
 
 Axiom P : nat -> Prop.
 Theorem test2:
@@ -190,13 +190,13 @@ Theorem test5:
 Qed.
 
 Axiom f_test6 : S2 -> Prop.
-Add Morphism f_test6 : f_test6_compat. Admitted.
+Add Morphism f_test6 with signature (eqS2 ==> iff) as f_test6_compat. Admitted.
 
 Axiom g_test6 : bool -> S2.
-Add Morphism g_test6 : g_test6_compat. Admitted.
+Add Morphism g_test6 with signature (eq ==> eqS2) as g_test6_compat. Admitted.
 
 Axiom h_test6 : S1 -> bool.
-Add Morphism h_test6 : h_test6_compat. Admitted.
+Add Morphism h_test6 with signature (eqS1 ==> eq) as h_test6_compat. Admitted.
 
 Theorem test6:
  forall E1 E2, (eqS1 E1 E2) -> (f_test6 (g_test6 (h_test6 E2))) ->
@@ -223,7 +223,7 @@ Add Setoid S1_test8 eqS1_test8 SetoidS1_test8 as S1_test8setoid.
 Instance eqS1_test8_default : DefaultRelation eqS1_test8.
 
 Axiom f_test8 : S2 -> S1_test8.
-Add Morphism f_test8 : f_compat_test8. Admitted.
+Add Morphism f_test8 with signature (eqS2 ==> eqS1_test8) as f_compat_test8. Admitted.
 
 Axiom eqS1_test8': S1_test8 -> S1_test8 -> Prop.
 Axiom SetoidS1_test8' : Setoid_Theory S1_test8 eqS1_test8'.
@@ -233,7 +233,7 @@ Add Setoid S1_test8 eqS1_test8' SetoidS1_test8' as S1_test8setoid'.
   (S1_test8, eqS1_test8'). However this does not happen and
   there is still no syntax for it ;-( *)
 Axiom g_test8 : S1_test8 -> S2.
-Add Morphism g_test8 : g_compat_test8. Admitted.
+Add Morphism g_test8 with signature (eqS1_test8 ==> eqS2) as g_compat_test8. Admitted.
 
 Theorem test8:
  forall x x': S2, (eqS2 x x') ->

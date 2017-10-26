@@ -8,8 +8,6 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
-open API
-open Grammar_API
 open Util
 open Names
 open Evd
@@ -178,24 +176,26 @@ open Globnames
 open Misctypes
 open Decl_kinds
 
-let mkRHole = CAst.make @@ GHole (Evar_kinds.InternalHole, IntroAnonymous, None)
+let mkRHole = DAst.make @@ GHole (Evar_kinds.InternalHole, IntroAnonymous, None)
 
 let rec mkRHoles n = if n > 0 then mkRHole :: mkRHoles (n - 1) else []
-let rec isRHoles = function { CAst.v = GHole _ } :: cl -> isRHoles cl | cl -> cl = []
-let mkRApp f args = if args = [] then f else CAst.make @@ GApp (f, args)
-let mkRVar id = CAst.make @@ GRef (VarRef id,None)
-let mkRltacVar id = CAst.make @@ GVar (id)
-let mkRCast rc rt =  CAst.make @@ GCast (rc, CastConv rt)
-let mkRType =  CAst.make @@ GSort (GType [])
-let mkRProp =  CAst.make @@ GSort (GProp)
-let mkRArrow rt1 rt2 = CAst.make @@ GProd (Anonymous, Explicit, rt1, rt2)
-let mkRConstruct c = CAst.make @@ GRef (ConstructRef c,None)
-let mkRInd mind = CAst.make @@ GRef (IndRef mind,None)
-let mkRLambda n s t = CAst.make @@ GLambda (n, Explicit, s, t)
+let rec isRHoles cl = match cl with
+| [] -> true
+| c :: l -> match DAst.get c with GHole _ -> isRHoles l | _ -> false
+let mkRApp f args = if args = [] then f else DAst.make @@ GApp (f, args)
+let mkRVar id = DAst.make @@ GRef (VarRef id,None)
+let mkRltacVar id = DAst.make @@ GVar (id)
+let mkRCast rc rt =  DAst.make @@ GCast (rc, CastConv rt)
+let mkRType =  DAst.make @@ GSort (GType [])
+let mkRProp =  DAst.make @@ GSort (GProp)
+let mkRArrow rt1 rt2 = DAst.make @@ GProd (Anonymous, Explicit, rt1, rt2)
+let mkRConstruct c = DAst.make @@ GRef (ConstructRef c,None)
+let mkRInd mind = DAst.make @@ GRef (IndRef mind,None)
+let mkRLambda n s t = DAst.make @@ GLambda (n, Explicit, s, t)
 
 let rec mkRnat n =
-  if n <= 0 then CAst.make @@ GRef (Coqlib.glob_O, None) else
-  mkRApp (CAst.make @@ GRef (Coqlib.glob_S, None)) [mkRnat (n - 1)]
+  if n <= 0 then DAst.make @@ GRef (Coqlib.glob_O, None) else
+  mkRApp (DAst.make @@ GRef (Coqlib.glob_S, None)) [mkRnat (n - 1)]
 
 let glob_constr ist genv = function
   | _, Some ce ->
@@ -712,7 +712,7 @@ let mkSsrRef name =
   try locate_reference (ssrqid name) with Not_found ->
   try locate_reference (ssrtopqid name) with Not_found ->
   CErrors.user_err (Pp.str "Small scale reflection library not loaded")
-let mkSsrRRef name = (CAst.make @@ GRef (mkSsrRef name,None)), None
+let mkSsrRRef name = (DAst.make @@ GRef (mkSsrRef name,None)), None
 let mkSsrConst name env sigma =
   EConstr.fresh_global env sigma (mkSsrRef name)
 let pf_mkSsrConst name gl =
@@ -814,8 +814,8 @@ let ssr_n_tac seed n gl =
   let name = if n = -1 then seed else ("ssr" ^ seed ^ string_of_int n) in
   let fail msg = CErrors.user_err (Pp.str msg) in
   let tacname = 
-    try Nametab.locate_tactic (Libnames.qualid_of_ident (Id.of_string name))
-    with Not_found -> try Nametab.locate_tactic (ssrqid name)
+    try Tacenv.locate_tactic (Libnames.qualid_of_ident (Id.of_string name))
+    with Not_found -> try Tacenv.locate_tactic (ssrqid name)
     with Not_found ->
       if n = -1 then fail "The ssreflect library was not loaded"
       else fail ("The tactic "^name^" was not found") in
@@ -847,10 +847,10 @@ let pf_interp_ty ?(resolve_typeclasses=false) ist gl ty =
    let n_binders = ref 0 in
    let ty = match ty with
    | a, (t, None) ->
-    let rec force_type ty = CAst.(map (function
+    let rec force_type ty = DAst.(map (function
      | GProd (x, k, s, t) -> incr n_binders; GProd (x, k, s, force_type t)
      | GLetIn (x, v, oty, t) -> incr n_binders; GLetIn (x, v, oty, force_type t)
-     | _ -> (mkRCast ty mkRType).v)) ty in
+     | _ -> DAst.get (mkRCast ty mkRType))) ty in
      a, (force_type t, None)
    | _, (_, Some ty) ->
     let rec force_type ty = CAst.(map (function

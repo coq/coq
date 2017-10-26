@@ -6,12 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Context.Named.Declaration
 
 let map_const_entry_body (f:Term.constr->Term.constr) (x:Safe_typing.private_constants Entries.const_entry_body)
     : Safe_typing.private_constants Entries.const_entry_body =
-  Future.chain ~pure:true x begin fun ((b,ctx),fx) ->
+  Future.chain x begin fun ((b,ctx),fx) ->
     (f b , ctx) , fx
   end
 
@@ -37,7 +36,7 @@ let start_deriving f suchthat lemma =
         TCons ( env , sigma , f_type , (fun sigma ef ->
         let f_type = EConstr.Unsafe.to_constr f_type in
         let ef = EConstr.Unsafe.to_constr ef in
-        let env' = Environ.push_named (LocalDef (f, ef, f_type)) env in
+        let env' = Environ.push_named (LocalDef (f, ef, f_type)) false env in
         let evdref = ref sigma in
         let suchthat = Constrintern.interp_type_evars env' evdref suchthat in
         TCons ( env' , !evdref , suchthat , (fun sigma _ ->

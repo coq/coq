@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Names
 open ModPath
 open Term
@@ -251,6 +250,11 @@ let modular () = !modular_ref
 let set_library b = library_ref := b
 let library () = !library_ref
 
+let extrcompute = ref false
+
+let set_extrcompute b = extrcompute := b
+let is_extrcompute () = !extrcompute
+
 (*s Printing. *)
 
 (* The following functions work even on objects not in [Global.env ()].
@@ -445,9 +449,10 @@ let error_MPfile_as_mod mp b =
 	    "Please "^s2^"use (Recursive) Extraction Library instead.\n"))
 
 let argnames_of_global r =
-  let typ = Global.type_of_global_unsafe r in
+  let env = Global.env () in
+  let typ, _ = Global.type_of_global_in_context env r in
   let rels,_ =
-    decompose_prod (Reduction.whd_all (Global.env ()) typ) in
+    decompose_prod (Reduction.whd_all env typ) in
   List.rev_map fst rels
 
 let msg_of_implicit = function
@@ -750,11 +755,11 @@ let extraction_implicit r l =
 
 let blacklist_table = Summary.ref Id.Set.empty ~name:"ExtrBlacklist"
 
-let modfile_ids = ref []
+let modfile_ids = ref Id.Set.empty
 let modfile_mps = ref MPmap.empty
 
 let reset_modfile () =
-  modfile_ids := Id.Set.elements !blacklist_table;
+  modfile_ids := !blacklist_table;
   modfile_mps := MPmap.empty
 
 let string_of_modfile mp =
@@ -763,7 +768,7 @@ let string_of_modfile mp =
     let id = Id.of_string (raw_string_of_modfile mp) in
     let id' = next_ident_away id !modfile_ids in
     let s' = Id.to_string id' in
-    modfile_ids := id' :: !modfile_ids;
+    modfile_ids := Id.Set.add id' !modfile_ids;
     modfile_mps := MPmap.add mp s' !modfile_mps;
     s'
 
@@ -878,7 +883,7 @@ let extract_constant_inline inline r ids s =
   match g with
     | ConstRef kn ->
 	let env = Global.env () in
-	let typ = Global.type_of_global_unsafe (ConstRef kn) in
+	let typ, _ = Global.type_of_global_in_context env (ConstRef kn) in
 	let typ = Reduction.whd_all env typ in
 	if Reduction.is_arity env typ
 	  then begin

@@ -545,47 +545,96 @@ Recursive Extraction test_proj.
 
 (*** TO SUM UP: ***)
 
-(* Was previously producing a "test_extraction.ml" *)
-Recursive Extraction
-  idnat id id' test2 test3 test4 test5 test6 test7 d d2
-  d3 d4 d5 d6 test8 id id' test9 test10 test11 test12
-  test13 test19 test20 nat sumbool_rect c Finite tree
-  tree_size test14 test15 eta_c test16 test17 test18 bidon
-  tb fbidon fbidon2 fbidon2 test_0 test_1 eq eq_rect tp1
-  tp1bis Truc oups test24 loop horibilis PropSet natbool
-  zerotrue zeroTrue zeroprop test21 test22 test23 f f_prop
-  f_arity f_normal Boite boite1 boite2 test_boite Box box1
-  zarb test_proj.
+Module Everything.
+ Definition idnat := idnat.
+ Definition id := id.
+ Definition id' := id'.
+ Definition test2 := test2.
+ Definition test3 := test3.
+ Definition test4 := test4.
+ Definition test5 := test5.
+ Definition test6 := test6.
+ Definition test7 := test7.
+ Definition d := d.
+ Definition d2 := d2.
+ Definition d3 := d3.
+ Definition d4 := d4.
+ Definition d5 := d5.
+ Definition d6 := d6.
+ Definition test8 := test8.
+ Definition test9 := test9.
+ Definition test10 := test10.
+ Definition test11 := test11.
+ Definition test12 := test12.
+ Definition test13 := test13.
+ Definition test19 := test19.
+ Definition test20 := test20.
+ Definition nat := nat.
+ Definition sumbool_rect := sumbool_rect.
+ Definition c := c.
+ Definition Finite := Finite.
+ Definition tree := tree.
+ Definition tree_size := tree_size.
+ Definition test14 := test14.
+ Definition test15 := test15.
+ Definition eta_c := eta_c.
+ Definition test16 := test16.
+ Definition test17 := test17.
+ Definition test18 := test18.
+ Definition bidon := bidon.
+ Definition tb := tb.
+ Definition fbidon := fbidon.
+ Definition fbidon2 := fbidon2.
+ Definition test_0 := test_0.
+ Definition test_1 := test_1.
+ Definition eq_rect := eq_rect.
+ Definition tp1 := tp1.
+ Definition tp1bis := tp1bis.
+ Definition Truc := Truc.
+ Definition oups := oups.
+ Definition test24 := test24.
+ Definition loop := loop.
+ Definition horibilis := horibilis.
+ Definition PropSet := PropSet.
+ Definition natbool := natbool.
+ Definition zerotrue := zerotrue.
+ Definition zeroTrue := zeroTrue.
+ Definition zeroprop := zeroprop.
+ Definition test21 := test21.
+ Definition test22 := test22.
+ Definition test23 := test23.
+ Definition f := f.
+ Definition f_prop := f_prop.
+ Definition f_arity := f_arity.
+ Definition f_normal := f_normal.
+ Definition Boite := Boite.
+ Definition boite1 := boite1.
+ Definition boite2 := boite2.
+ Definition test_boite := test_boite.
+ Definition Box := Box.
+ Definition box1 := box1.
+ Definition zarb := zarb.
+ Definition test_proj := test_proj.
+End Everything.
+
+(* Extraction "test_extraction.ml" Everything. *)
+Recursive Extraction Everything.
+(* Check that the previous OCaml code is compilable *)
+Extraction TestCompile Everything.
 
 Extraction Language Haskell.
-(* Was previously producing a "Test_extraction.hs" *)
-Recursive Extraction
- idnat id id' test2 test3 test4 test5 test6 test7 d d2
- d3 d4 d5 d6 test8 id id' test9 test10 test11 test12
- test13 test19 test20 nat sumbool_rect c Finite tree
- tree_size test14 test15 eta_c test16 test17 test18 bidon
- tb fbidon fbidon2 fbidon2 test_0 test_1 eq eq_rect tp1
- tp1bis Truc oups test24 loop horibilis PropSet natbool
- zerotrue zeroTrue zeroprop test21 test22 test23 f f_prop
- f_arity f_normal Boite boite1 boite2 test_boite Box box1
- zarb test_proj.
+(* Extraction "Test_extraction.hs" Everything. *)
+Recursive Extraction Everything.
 
 Extraction Language Scheme.
-(* Was previously producing a "test_extraction.scm" *)
-Recursive Extraction
- idnat id id' test2 test3 test4 test5 test6 test7 d d2
- d3 d4 d5 d6 test8 id id' test9 test10 test11 test12
- test13 test19 test20 nat sumbool_rect c Finite tree
- tree_size test14 test15 eta_c test16 test17 test18 bidon
- tb fbidon fbidon2 fbidon2 test_0 test_1 eq eq_rect tp1
- tp1bis Truc oups test24 loop horibilis PropSet natbool
- zerotrue zeroTrue zeroprop test21 test22 test23 f f_prop
- f_arity f_normal Boite boite1 boite2 test_boite Box box1
- zarb test_proj.
+(* Extraction "test_extraction.scm" Everything. *)
+Recursive Extraction Everything.
 
 
 (*** Finally, a test more focused on everyday's life situations ***)
 
 Require Import ZArith.
 
-Recursive Extraction two_or_two_plus_one Zdiv_eucl_exist.
+Extraction Language Ocaml.
+Recursive Extraction Z_modulo_2 Zdiv_eucl_exist.
+Extraction TestCompile Z_modulo_2 Zdiv_eucl_exist.

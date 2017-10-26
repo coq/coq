@@ -15,6 +15,7 @@ open Nameops
 open Libnames
 open Pputils
 open Ppextend
+open Notation_term
 open Constrexpr
 open Constrexpr_ops
 open Decl_kinds
@@ -116,7 +117,7 @@ let tag_var = tag Tag.variable
         let pp1 = str s in
         return unp pp1 pp2
       | UnpBox (b,sub) as unp :: l ->
-        let pp1 = ppcmd_of_box b (aux sub) in
+        let pp1 = ppcmd_of_box b (aux (List.map snd sub)) in
         let pp2 = aux l in
         return unp pp1 pp2
       | UnpCut cut as unp :: l ->
@@ -379,9 +380,9 @@ let tag_var = tag Tag.variable
     match bl with
       | [CLocalAssum (nal,k,t)] ->
         kw n ++ pr_binder false pr_c (nal,k,t)
-      | (CLocalAssum _ | CLocalPattern _) :: _ as bdl ->
+      | (CLocalAssum _ | CLocalPattern _ | CLocalDef _) :: _ as bdl ->
         kw n ++ pr_undelimited_binders sep pr_c bdl
-      | _ -> assert false
+      | [] -> assert false
 
   let pr_binders_gen pr_c sep is_open =
     if is_open then pr_delimited_binders pr_com_at sep pr_c
@@ -693,9 +694,9 @@ let tag_var = tag Tag.variable
         lif
         )
 
-      | CHole (_,Misctypes.IntroIdentifier id,_) ->
+      | CHole (_,Misctypes.IntroIdentifier (id,_),_) ->
         return (str "?[" ++ pr_id id ++ str "]", latom)
-      | CHole (_,Misctypes.IntroFresh id,_) ->
+      | CHole (_,Misctypes.IntroFresh (id,_),_) ->
         return (str "?[?" ++ pr_id id ++ str "]", latom)
       | CHole (_,_,_) ->
         return (str "_", latom)
@@ -731,13 +732,13 @@ let tag_var = tag Tag.variable
       (sep() ++ if prec_less prec inherited then strm else surround strm)
 
   type term_pr = {
-    pr_constr_expr   : constr_expr -> std_ppcmds;
-    pr_lconstr_expr  : constr_expr -> std_ppcmds;
-    pr_constr_pattern_expr  : constr_pattern_expr -> std_ppcmds;
-    pr_lconstr_pattern_expr : constr_pattern_expr -> std_ppcmds
+    pr_constr_expr   : constr_expr -> Pp.t;
+    pr_lconstr_expr  : constr_expr -> Pp.t;
+    pr_constr_pattern_expr  : constr_pattern_expr -> Pp.t;
+    pr_lconstr_pattern_expr : constr_pattern_expr -> Pp.t
   }
 
-  type precedence =  Ppextend.precedence * Ppextend.parenRelation
+  type precedence =  Notation_term.precedence * Notation_term.parenRelation
   let modular_constr_pr = pr
   let rec fix rf x = rf (fix rf) x
   let pr = fix modular_constr_pr mt

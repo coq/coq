@@ -7,5 +7,7 @@
 (************************************************************************)
 
 (** Compatibility file for making Coq act similar to Coq v8.6 *)
+Require Export Coq.Compat.Coq87.
+
 Require Export Coq.extraction.Extraction.
 Require Export Coq.funind.FunInd.

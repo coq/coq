@@ -30,7 +30,7 @@ val declare_instance_constant :
   Impargs.manual_explicitation list -> (** implicits *)
   ?hook:(Globnames.global_reference -> unit) ->
   Id.t -> (** name *)
-  Id.t Loc.located list option ->
+  Univdecls.universe_decl ->
   bool -> (* polymorphic *)
   Evd.evar_map -> (* Universes *)
   Constr.t -> (** body *)
@@ -43,7 +43,7 @@ val new_instance :
   ?refine:bool -> (** Allow refinement *)
   Decl_kinds.polymorphic ->
   local_binder_expr list ->
-  typeclass_constraint ->
+  Vernacexpr.typeclass_constraint ->
   (bool * constr_expr) option ->
   ?generalize:bool ->
   ?tac:unit Proofview.tactic  ->

@@ -27,7 +27,7 @@ Local Ltac simplif flags :=
       | id: ?X1 |- _ => is_disj flags X1; elim id; intro; clear id
       | id0: (forall (_: ?X1), ?X2), id1: ?X1|- _ =>
     (* generalize (id0 id1); intro; clear id0 does not work
-       (see Marco Maggiesi's bug PR#301)
+       (see Marco Maggiesi's BZ#301)
     so we instead use Assert and exact. *)
     assert X2; [exact (id0 id1) | clear id0]
       | id: forall (_ : ?X1), ?X2|- _ =>

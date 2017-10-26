@@ -8,13 +8,14 @@
 
 (** Unicode utilities *)
 
-type status = Letter | IdentPart | Symbol | Unknown
+type status = Letter | IdentPart | Symbol | IdentSep | Unknown
 
 (* The following table stores classes of Unicode characters that
-   are used by the lexer. There are 3 different classes so 2 bits are
-   allocated for each character. We only use 16 bits over the 31 bits
-   to simplify the masking process. (This choice seems to be a good
-   trade-off between speed and space after some benchmarks.) *)
+   are used by the lexer. There are 5 different classes so 3 bits
+   are allocated for each character. We encode the masks of 8
+   characters per word, thus using 24 bits over the 31 available
+   bits. (This choice seems to be a good trade-off between speed
+   and space after some benchmarks.) *)
 
 (* A 256 KiB table, initially filled with zeros. *)
 let table = Array.make (1 lsl 17) 0
@@ -24,14 +25,15 @@ let table = Array.make (1 lsl 17) 0
    define the position of the pattern in the word.
    Notice that pattern "00" means "undefined". *)
 let mask i = function
-  | Letter    -> 1 lsl ((i land 7) lsl 1) (* 01 *)
-  | IdentPart -> 2 lsl ((i land 7) lsl 1) (* 10 *)
-  | Symbol    -> 3 lsl ((i land 7) lsl 1) (* 11 *)
-  | Unknown   -> 0 lsl ((i land 7) lsl 1) (* 00 *)
+  | Letter    -> 1 lsl ((i land 7) * 3) (* 001 *)
+  | IdentPart -> 2 lsl ((i land 7) * 3) (* 010 *)
+  | Symbol    -> 3 lsl ((i land 7) * 3) (* 011 *)
+  | IdentSep  -> 4 lsl ((i land 7) * 3) (* 100 *)
+  | Unknown   -> 0 lsl ((i land 7) * 3) (* 000 *)
 
-(* Helper to reset 2 bits in a word. *)
+(* Helper to reset 3 bits in a word. *)
 let reset_mask i =
-  lnot (3 lsl ((i land 7) lsl 1))
+  lnot (7 lsl ((i land 7) * 3))
 
 (* Initialize the lookup table from a list of segments, assigning
    a status to every character of each segment. The order of these
@@ -50,13 +52,14 @@ let mk_lookup_table_from_unicode_tables_for status tables =
 
 (* Look up into the table and interpret the found pattern. *)
 let lookup x =
-  let v = (table.(x lsr 3) lsr ((x land 7) lsl 1)) land 3 in
+  let v = (table.(x lsr 3) lsr ((x land 7) * 3)) land 7 in
     if      v = 1 then Letter
     else if v = 2 then IdentPart
     else if v = 3 then Symbol
+    else if v = 4 then IdentSep
     else Unknown
 
-(* [classify] discriminates between 3 different kinds of
+(* [classify] discriminates between 5 different kinds of
    symbols based on the standard unicode classification (extracted from
    Camomile). *)
 let classify =
@@ -67,13 +70,13 @@ let classify =
         Unicodetable.sm;           (* Symbol, maths.                    *)
         Unicodetable.sc;           (* Symbol, currency.                 *)
         Unicodetable.so;           (* Symbol, modifier.                 *)
-        Unicodetable.pd;           (* Punctation, dash.                 *)
-        Unicodetable.pc;           (* Punctation, connector.            *)
-        Unicodetable.pe;           (* Punctation, open.                 *)
-        Unicodetable.ps;           (* Punctation, close.                *)
-        Unicodetable.pi;           (* Punctation, initial quote.        *)
-        Unicodetable.pf;           (* Punctation, final quote.          *)
-        Unicodetable.po;           (* Punctation, other.                *)
+        Unicodetable.pd;           (* Punctuation, dash.                *)
+        Unicodetable.pc;           (* Punctuation, connector.           *)
+        Unicodetable.pe;           (* Punctuation, open.                *)
+        Unicodetable.ps;           (* Punctution, close.                *)
+        Unicodetable.pi;           (* Punctuation, initial quote.       *)
+        Unicodetable.pf;           (* Punctuation, final quote.         *)
+        Unicodetable.po;           (* Punctuation, other.               *)
       ];
     mk_lookup_table_from_unicode_tables_for Letter
       [
@@ -107,14 +110,14 @@ let classify =
         [(0x02074, 0x02079)];      (* Superscript 4-9.                  *)
         single 0x0002E;            (* Dot.                              *)
       ];
-    mk_lookup_table_from_unicode_tables_for Letter
+    mk_lookup_table_from_unicode_tables_for IdentSep
       [
         single 0x005F;             (* Underscore.                       *)
         single 0x00A0;             (* Non breaking space.               *)
       ];
     mk_lookup_table_from_unicode_tables_for IdentPart
       [
-        single 0x0027;             (* Special space.                    *)
+        single 0x0027;             (* Single quote.                     *)
       ];
     (* Lookup *)
     lookup
@@ -163,23 +166,74 @@ let is_utf8 s =
   in
   try check 0 with End_of_input -> true | Invalid_argument _ -> false
 
+(* Escape string if it contains non-utf8 characters *)
+
+let escaped_non_utf8 s =
+  let mk_escape x = Printf.sprintf "%%%X" x in
+  let buff = Buffer.create (String.length s * 3) in
+  let rec process_trailing_aux i j =
+    if i = j then i else
+      match String.unsafe_get s i with
+      | '\128'..'\191' -> process_trailing_aux (i+1) j
+      | _ -> i in
+  let process_trailing i n =
+    let j = if i+n-1 >= String.length s then i+1 else process_trailing_aux (i+1) (i+n) in
+    (if j = i+n then
+      Buffer.add_string buff (String.sub s i n)
+    else
+      let v = Array.init (j-i) (fun k -> mk_escape (Char.code s.[i+k])) in
+      Buffer.add_string buff (String.concat "" (Array.to_list v)));
+    j in
+  let rec process i =
+    if i >= String.length s then Buffer.contents buff else
+      let c = String.unsafe_get s i in
+      match c with
+      | '\000'..'\127' -> Buffer.add_char buff c; process (i+1)
+      | '\128'..'\191' | '\248'..'\255' -> Buffer.add_string buff (mk_escape (Char.code c)); process (i+1)
+      | '\192'..'\223' -> process (process_trailing i 2)
+      | '\224'..'\239' -> process (process_trailing i 3)
+      | '\240'..'\247' -> process (process_trailing i 4)
+  in
+  process 0
+
+let escaped_if_non_utf8 s =
+  if is_utf8 s then s else escaped_non_utf8 s
+
 (* Check the well-formedness of an identifier *)
 
+let is_valid_ident_initial = function
+  | Letter | IdentSep -> true
+  | IdentPart | Symbol | Unknown -> false
+
 let initial_refutation j n s =
-  match classify n with
-  | Letter -> None
-  | _ ->
+  if is_valid_ident_initial (classify n) then None
+  else
       let c = String.sub s 0 j in
       Some (false,
             "Invalid character '"^c^"' at beginning of identifier \""^s^"\".")
 
+let is_valid_ident_trailing = function
+  | Letter | IdentSep | IdentPart -> true
+  | Symbol | Unknown -> false
+
 let trailing_refutation i j n s =
-  match classify n with
-  | Letter | IdentPart -> None
-  | _ ->
+  if is_valid_ident_trailing (classify n) then None
+  else
       let c = String.sub s i j in
       Some (false,
             "Invalid character '"^c^"' in identifier \""^s^"\".")
+
+let is_unknown = function
+  | Unknown -> true
+  | Letter | IdentSep | IdentPart | Symbol -> false
+
+let is_ident_part = function
+  | IdentPart -> true
+  | Letter | IdentSep | Symbol | Unknown -> false
+
+let is_ident_sep = function
+  | IdentSep -> true
+  | Letter | IdentPart | Symbol | Unknown -> false
 
 let ident_refutation s =
   if s = ".." then None else try
@@ -198,7 +252,7 @@ let ident_refutation s =
         |x -> x
   with
   | End_of_input -> Some (true,"The empty string is not an identifier.")
-  | Invalid_argument _ -> Some (true,s^": invalid utf8 sequence.")
+  | Invalid_argument _ -> Some (true,escaped_non_utf8 s^": invalid utf8 sequence.")
 
 let lowercase_unicode =
   let tree = Segmenttree.make Unicodetable.to_lower in
@@ -213,6 +267,26 @@ let lowercase_first_char s =
   assert (s <> "");
   let j, n = next_utf8 s 0 in
   utf8_of_unicode (lowercase_unicode n)
+
+let split_at_first_letter s =
+  let n, v = next_utf8 s 0 in
+  if ((* optim *) n = 1 && s.[0] != '_') || not (is_ident_sep (classify v)) then None
+  else begin
+    let n = ref n in
+    let p = ref 0 in
+    while !n < String.length s &&
+          let n', v = next_utf8 s !n in
+          p := n';
+          (* Test if not letter *)
+          ((* optim *) n' = 1 && (s.[!n] = '_' || s.[!n] = '\''))
+          || let st = classify v in
+             is_ident_sep st || is_ident_part st
+    do n := !n + !p
+    done;
+    let s1 = String.sub s 0 !n in
+    let s2 = String.sub s !n (String.length s - !n) in
+    Some (s1,s2)
+  end
 
 (** For extraction, we need to encode unicode character into ascii ones *)
 
@@ -268,9 +342,7 @@ let utf8_length s =
       | '\192'..'\223' -> nc := 1 (* expect 1 continuation byte *)
       | '\224'..'\239' -> nc := 2 (* expect 2 continuation bytes *)
       | '\240'..'\247' -> nc := 3 (* expect 3 continuation bytes *)
-      | '\248'..'\251' -> nc := 4 (* expect 4 continuation bytes *)
-      | '\252'..'\253' -> nc := 5 (* expect 5 continuation bytes *)
-      | '\254'..'\255' -> nc := 0 (* invalid byte *)
+      | '\248'..'\255' -> nc := 0 (* invalid byte *)
     end ;
     incr p ;
     while !p < len && !nc > 0 do
@@ -299,9 +371,7 @@ let utf8_sub s start_u len_u =
       |	'\192'..'\223' -> nc := 1 (* expect 1 continuation byte *)
       |	'\224'..'\239' -> nc := 2 (* expect 2 continuation bytes *)
       |	'\240'..'\247' -> nc := 3 (* expect 3 continuation bytes *)
-      |	'\248'..'\251' -> nc := 4 (* expect 4 continuation bytes *)
-      |	'\252'..'\253' -> nc := 5 (* expect 5 continuation bytes *)
-      |	'\254'..'\255' -> nc := 0 (* invalid byte *)
+      |	'\248'..'\255' -> nc := 0 (* invalid byte *)
     end ;
     incr p ;
     while !p < len_b && !nc > 0 do

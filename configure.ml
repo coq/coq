@@ -11,11 +11,11 @@
 #load "str.cma"
 open Printf
 
-let coq_version = "trunk"
-let coq_macos_version = "8.6.90" (** "[...] should be a string comprised of
+let coq_version = "8.8+alpha"
+let coq_macos_version = "8.7.90" (** "[...] should be a string comprised of
 three non-negative, period-separated integers [...]" *)
-let vo_magic = 8691
-let state_magic = 58691
+let vo_magic = 8791
+let state_magic = 58791
 let distributed_exec = ["coqtop";"coqc";"coqchk";"coqdoc";"coqmktop";"coqworkmgr";
 "coqdoc";"coq_makefile";"coq-tex";"gallina";"coqwc";"csdpcert";"coqdep"]
 
@@ -206,7 +206,7 @@ let get_date () =
   let year = 1900+now.Unix.tm_year in
   let month = months.(now.Unix.tm_mon) in
   sprintf "%s %d" month year,
-  sprintf "%s %d %d %d:%d:%d" (String.sub month 0 3) now.Unix.tm_mday year
+  sprintf "%s %d %d %d:%02d:%02d" (String.sub month 0 3) now.Unix.tm_mday year
     now.Unix.tm_hour now.Unix.tm_min now.Unix.tm_sec
 
 let short_date, full_date = get_date ()
@@ -258,15 +258,11 @@ module Prefs = struct
   let macintegration = ref true
   let browser = ref (None : string option)
   let withdoc = ref false
-  let geoproof = ref false
   let byteonly = ref false
+  let flambda_flags = ref []
   let debug = ref true
   let profile = ref false
   let annotate = ref false
-  (* Note, disabling this should be OK, but be careful with the
-     sharing invariants.
-  *)
-  let safe_string = ref true
   let nativecompiler = ref (not (os_type_win32 || os_type_cygwin))
   let coqwebsite = ref "http://coq.inria.fr/"
   let force_caml_version = ref false
@@ -300,27 +296,20 @@ let args_options = Arg.align [
     "<dir> Where to install doc files";
   "-emacslib", arg_string_option Prefs.emacslib,
     "<dir> Where to install emacs files";
-  "-emacs", Arg.String (fun s ->
-      prerr_endline "Warning: -emacs option is deprecated. Use -emacslib instead.";
-      Prefs.emacslib := Some s),
-    "<dir> Deprecated: same as -emacslib";
   "-coqdocdir", arg_string_option Prefs.coqdocdir,
     "<dir> Where to install Coqdoc style files";
   "-ocamlfind", arg_string_option Prefs.ocamlfindcmd,
     "<dir> Specifies the ocamlfind command to use";
   "-lablgtkdir", arg_string_option Prefs.lablgtkdir,
     "<dir> Specifies the path to the Lablgtk library";
-  "-usecamlp5", Arg.Unit (fun () ->
-      prerr_endline "Warning: -usecamlp5 option is deprecated. Camlp5 is already a required dependency."),
-    " Deprecated: Camlp5 is a required dependency (Camlp4 is not supported anymore)";
   "-camlp5dir",
     Arg.String (fun s -> Prefs.camlp5dir:=Some s),
     "<dir> Specifies where is the Camlp5 library and tells to use it";
+  "-flambda-opts",
+    Arg.String (fun s -> Prefs.flambda_flags := string_split ' ' s),
+    "<flags> Specifies additional flags to be passed to the flambda optimizing compiler";
   "-arch", arg_string_option Prefs.arch,
     "<arch> Specifies the architecture";
-  "-opt", Arg.Unit (fun () ->
-      prerr_endline "Warning: -opt option is deprecated. Native OCaml executables are detected automatically."),
-    " Deprecated: native OCaml executables detected automatically";
   "-natdynlink", arg_bool Prefs.natdynlink,
     "(yes|no) Use dynamic loading of native code or not";
   "-coqide", Arg.String (fun s -> Prefs.coqide := Some (get_ide s)),
@@ -329,33 +318,16 @@ let args_options = Arg.align [
     " Do not try to build CoqIDE MacOS integration";
   "-browser", arg_string_option Prefs.browser,
     "<command> Use <command> to open URL %s";
-  "-nodoc", Arg.Unit (fun () ->
-      prerr_endline "Warning: -nodoc option is deprecated. Use -with-doc no instead.";
-      Prefs.withdoc := false),
-    " Deprecated: use -with-doc no instead";
   "-with-doc", arg_bool Prefs.withdoc,
     "(yes|no) Compile the documentation or not";
-  "-with-geoproof", arg_bool Prefs.geoproof,
-    "(yes|no) Use Geoproof binding or not";
   "-byte-only", Arg.Set Prefs.byteonly,
     " Compiles only bytecode version of Coq";
-  "-byteonly", Arg.Unit (fun () ->
-      prerr_endline "Warning: -byteonly option is deprecated. Use -byte-only instead.";
-      Prefs.byteonly := true),
-    " Deprecated: use -byte-only instead";
-  "-debug", Arg.Unit (fun () ->
-      prerr_endline "Warning: -debug option is deprecated. Coq is compiled in debug mode by default.";
-      Prefs.debug := true),
-    " Deprecated: Coq is compiled in debug mode by default";
   "-nodebug", Arg.Clear Prefs.debug,
     " Do not add debugging information in the Coq executables";
   "-profile", Arg.Set Prefs.profile,
     " Add profiling information in the Coq executables";
   "-annotate", Arg.Set Prefs.annotate,
     " Dumps ml annotation files while compiling Coq";
-  "-makecmd", Arg.String (fun _ ->
-      prerr_endline "Warning: -makecmd option is deprecated and doesn't have any effect."),
-    "<command> Deprecated";
   "-native-compiler", arg_bool Prefs.nativecompiler,
     "(yes|no) Compilation to native code for conversion and normalization";
   "-coqwebsite", Arg.Set_string Prefs.coqwebsite,
@@ -401,8 +373,9 @@ let coq_annotate_flag =
   then if program_in_path "ocamlmerlin" then "-bin-annot" else "-annot"
   else ""
 
-let coq_safe_string =
-  if !Prefs.safe_string then "-safe-string" else ""
+(* This variable can be overriden only for debug purposes, use with
+   care. *)
+let coq_safe_string = "-safe-string"
 
 let cflags = "-Wall -Wno-unused -g -O2"
 
@@ -537,19 +510,22 @@ let camltag = match caml_version_list with
     50: unexpected documentation comment: too common and annoying to avoid
     56: unreachable match case: the [_ -> .] syntax doesn't exist in 4.02.3
 *)
-let coq_warn_flags =
-  let warnings = "-w +a-4-9-27-41-42-44-45-48-50" in
-  let errors =
+let coq_warnings = "-w +a-4-9-27-41-42-44-45-48-50"
+let coq_warn_error =
     if !Prefs.warn_error
     then "-warn-error +a"
          ^ (if caml_version_nums > [4;2;3]
             then "-56"
             else "")
     else ""
-  in
-  warnings ^ " " ^ errors
 
+(* Flags used to compile Coq and plugins (via coq_makefile) *)
+let caml_flags =
+  Printf.sprintf "-thread -rectypes %s %s %s" coq_warnings coq_annotate_flag coq_safe_string
 
+(* Flags used to compile Coq but _not_ plugins (via coq_makefile) *)
+let coq_caml_flags =
+  coq_warn_error
 
 (** * CamlpX configuration *)
 
@@ -974,7 +950,6 @@ let config_runtime () =
 
 let vmbyteflags = config_runtime ()
 
-
 (** * Summary of the configuration *)
 
 let print_summary () =
@@ -989,6 +964,7 @@ let print_summary () =
   pr "  OCaml version               : %s\n" caml_version;
   pr "  OCaml binaries in           : %s\n" camlbin;
   pr "  OCaml library in            : %s\n" camllib;
+  pr "  OCaml flambda flags         : %s\n" (String.concat " " !Prefs.flambda_flags);
   pr "  %s version              : %s\n"     capitalized_camlpX camlpX_version;
   pr "  %s binaries in          : %s\n"     capitalized_camlpX camlpXbindir;
   pr "  %s library in           : %s\n"     capitalized_camlpX camlpXlibdir;
@@ -1038,7 +1014,6 @@ let write_dbg_wrapper f =
 
 let _ = write_dbg_wrapper "dev/ocamldebug-coq"
 
-
 (** * Build the config/coq_config.ml file *)
 
 let write_configml f =
@@ -1049,8 +1024,9 @@ let write_configml f =
   let pr_b = pr "let %s = %B\n" in
   let pr_i = pr "let %s = %d\n" in
   let pr_p s o = pr "let %s = %S\n" s
-    (match o with Relative s -> s | Absolute s -> s)
-  in
+    (match o with Relative s -> s | Absolute s -> s) in
+  let pr_l  n l = pr "let %s = [%s]\n" n (String.concat ";" (List.map (fun s -> "\"" ^ s ^ "\"") l)) in
+  let pr_li n l = pr "let %s = [%s]\n" n (String.concat ";" (List.map string_of_int l)) in
   pr "(* DO NOT EDIT THIS FILE: automatically generated by ../configure *)\n";
   pr "(* Exact command that generated this file: *)\n";
   pr "(* %s *)\n\n" (String.concat " " (Array.to_list Sys.argv));
@@ -1075,10 +1051,12 @@ let write_configml f =
   pr_s "camlp4lib" camlpXlibdir;
   pr_s "camlp4compat" camlp4compat;
   pr_s "cflags" cflags;
+  pr_s "caml_flags" caml_flags;
   pr_s "best" best_compiler;
   pr_s "osdeplibs" osdeplibs;
   pr_s "version" coq_version;
   pr_s "caml_version" caml_version;
+  pr_li "caml_version_nums" caml_version_nums;
   pr_s "date" short_date;
   pr_s "compile_date" full_date;
   pr_s "arch" arch;
@@ -1089,9 +1067,9 @@ let write_configml f =
   pr "let gtk_platform = `%s\n" !idearchdef;
   pr_b "has_natdynlink" hasnatdynlink;
   pr_s "natdynlinkflag" natdynlinkflag;
+  pr_l "flambda_flags" !Prefs.flambda_flags;
   pr_i "vo_magic_number" vo_magic;
   pr_i "state_magic_number" state_magic;
-  pr "let with_geoproof = ref %B\n" !Prefs.geoproof;
   pr_s "browser" browser;
   pr_s "wwwcoq" !Prefs.coqwebsite;
   pr_s "wwwbugtracker" (!Prefs.coqwebsite ^ "bugs/");
@@ -1181,9 +1159,11 @@ let write_makefile f =
   pr "CAMLHLIB=%S\n\n" camllib;
   pr "# Caml link command and Caml make top command\n";
   pr "# Caml flags\n";
-  pr "CAMLFLAGS=-rectypes %s %s %s\n" coq_warn_flags coq_annotate_flag coq_safe_string;
+  pr "CAMLFLAGS=%s %s\n" caml_flags coq_caml_flags;
   pr "# User compilation flag\n";
   pr "USERFLAGS=\n\n";
+  (* XXX make this configurable *)
+  pr "FLAMBDA_FLAGS=%s\n" (String.concat " " !Prefs.flambda_flags);
   pr "# Flags for GCC\n";
   pr "CFLAGS=%s\n\n" cflags;
   pr "# Compilation debug flags\n";

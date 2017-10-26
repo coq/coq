@@ -1,4 +1,5 @@
 \chapter[Syntax extensions and interpretation scopes]{Syntax extensions and interpretation scopes\label{Addoc-syntax}}
+%HEVEA\cutname{syntax-extensions.html}
 
 In this chapter, we introduce advanced commands to modify the way
 {\Coq} parses and prints objects, i.e. the translations between the
@@ -980,7 +981,7 @@ delimited by key {\tt nat}, and bound to the type {\tt nat} (see \ref{bindscope}
 
 This scope includes the standard arithmetical operators and relations on
 type {\tt N} (binary natural numbers). It is delimited by key {\tt N}
-and comes with an interpretation for numerals as closed term of type {\tt Z}.
+and comes with an interpretation for numerals as closed term of type {\tt N}.
 
 \subsubsection{\tt Z\_scope}
 
@@ -1014,16 +1015,8 @@ fractions of an integer and a strictly positive integer.
 
 This scope includes the standard arithmetical operators and relations on
 type {\tt R} (axiomatic real numbers). It is delimited by key {\tt R}
-and comes with an interpretation for numerals as term of type {\tt
-R}. The interpretation is based on the binary decomposition.  The
-numeral 2 is represented by $1+1$.  The interpretation $\phi(n)$ of an
-odd positive numerals greater $n$ than 3 is {\tt 1+(1+1)*$\phi((n-1)/2)$}.
-The interpretation $\phi(n)$ of an even positive numerals greater $n$
-than 4 is {\tt (1+1)*$\phi(n/2)$}.  Negative numerals are represented as the
-opposite of the interpretation of their absolute value. E.g. the
-syntactic object {\tt -11} is interpreted as {\tt
--(1+(1+1)*((1+1)*(1+(1+1))))} where the unit $1$ and all the operations are
-those of {\tt R}.
+and comes with an interpretation for numerals using the {\tt IZR}
+morphism from binary integer numbers to {\tt R}.
 
 \subsubsection{\tt bool\_scope}
 

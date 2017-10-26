@@ -149,18 +149,18 @@ let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theo
 
 let build_by_tactic ?(side_eff=true) env sigma ?(poly=false) typ tac =
   let id = Id.of_string ("temporary_proof"^string_of_int (next())) in
-  let sign = val_of_named_context (named_context env) in
+  let private_ids = named_context_private_ids (named_context_val env) in
+  let sign = val_of_named_context (named_context env) private_ids in
   let gk = Global, poly, Proof Theorem in
   let ce, status, univs =
     build_constant_by_tactic id sigma sign ~goal_kind:gk typ tac in
   let ce =
     if side_eff then Safe_typing.inline_private_constants_in_definition_entry env ce
     else { ce with
-      const_entry_body = Future.chain ~pure:true ce.const_entry_body
-        (fun (pt, _) -> pt, Safe_typing.empty_private_constants) } in
-  let (cb, ctx), se = Future.force ce.const_entry_body in
+      const_entry_body = Future.chain ce.const_entry_body
+        (fun (pt, _) -> pt, ()) } in
+  let (cb, ctx), () = Future.force ce.const_entry_body in
   let univs' = Evd.merge_context_set Evd.univ_rigid (Evd.from_ctx univs) ctx in
-  assert(Safe_typing.empty_private_constants = se);
   cb, status, Evd.evar_universe_context univs'
 
 let refine_by_tactic env sigma ty tac =
@@ -240,7 +240,6 @@ let get_current_proof_name = Proof_global.get_current_proof_name
 let get_all_proof_names = Proof_global.get_all_proof_names
 
 type lemma_possible_guards = Proof_global.lemma_possible_guards
-type universe_binders = Proof_global.universe_binders
 
 let delete_proof = Proof_global.discard
 let delete_current_proof = Proof_global.discard_current
@@ -258,6 +257,5 @@ let set_used_variables l =
 let get_used_variables () =
   Proof_global.get_used_variables ()
 
-let get_universe_binders () =
-  Proof_global.get_universe_binders ()
-
+let get_universe_decl () =
+  Proof_global.get_universe_decl ()

@@ -8,7 +8,6 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
-open API
 open Tacmach
 open Names
 open Environ
@@ -42,7 +41,7 @@ val nohint : 'a ssrhint
 
 (******************************** misc ************************************)
 
-val errorstrm : Pp.std_ppcmds -> 'a
+val errorstrm : Pp.t -> 'a
 val anomaly : string -> 'a
 
 val array_app_tl : 'a array -> 'a list -> 'a list

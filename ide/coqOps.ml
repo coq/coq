@@ -58,7 +58,7 @@ module SentenceId : sig
   val connect : sentence -> signals
 
   val dbg_to_string :
-    GText.buffer -> bool -> Stateid.t option -> sentence -> Pp.std_ppcmds
+    GText.buffer -> bool -> Stateid.t option -> sentence -> Pp.t
 
 end = struct
 
@@ -163,7 +163,7 @@ let flags_to_color f =
   else `NAME Preferences.processed_color#get
 
 (* Move to utils? *)
-let rec validate (s : Pp.std_ppcmds) = match Pp.repr s with
+let rec validate (s : Pp.t) = match Pp.repr s with
   | Pp.Ppcmd_empty
   | Pp.Ppcmd_print_break _
   | Pp.Ppcmd_force_newline  -> true
@@ -422,7 +422,7 @@ object(self)
     let rec eat_feedback n =
       if n = 0 then true else
       let msg = Queue.pop feedbacks in
-      let id = msg.id in
+      let id = msg.span_id in
       let sentence =
         let finder _ state_id s =
           match state_id, id with
@@ -463,7 +463,7 @@ object(self)
           self#attach_tooltip ~loc sentence
             (Printf.sprintf "%s %s %s" filepath ident ty)
       | Message(Error, loc, msg), Some (id,sentence) ->
-          log_pp ?id Pp.(str "ErrorMsg" ++ msg);
+          log_pp ?id Pp.(str "ErrorMsg " ++ msg);
           remove_flag sentence `PROCESSING;
           let rmsg = Pp.string_of_ppcmds msg in
           add_flag sentence (`ERROR (loc, rmsg));
@@ -471,17 +471,20 @@ object(self)
           self#attach_tooltip ?loc sentence rmsg;
           self#position_tag_at_sentence ?loc Tags.Script.error sentence
       | Message(Warning, loc, msg), Some (id,sentence) ->
-          log_pp ?id Pp.(str "WarningMsg" ++ msg);
+          log_pp ?id Pp.(str "WarningMsg " ++ msg);
           let rmsg = Pp.string_of_ppcmds msg     in
           add_flag sentence (`WARNING (loc, rmsg));
           self#attach_tooltip ?loc sentence rmsg;
           self#position_tag_at_sentence ?loc Tags.Script.warning sentence;
           messages#push Warning msg
       | Message(lvl, loc, msg), Some (id,sentence) ->
-          log_pp ?id Pp.(str "Msg" ++ msg);
+          log_pp ?id Pp.(str "Msg " ++ msg);
           messages#push lvl msg
+      (* We do nothing here as for BZ#5583 *)
+      | Message(Error, loc, msg), None ->
+          log_pp Pp.(str "Error Msg without a sentence" ++ msg)
       | Message(lvl, loc, msg), None ->
-          log_pp Pp.(str "Msg" ++ msg);
+          log_pp Pp.(str "Msg without a sentence " ++ msg);
           messages#push lvl msg
       | InProgress n, _ ->
           if n < 0 then processed <- processed + abs n
@@ -655,7 +658,7 @@ object(self)
         with Doc.Empty -> initial_state | Invalid_argument _ -> assert false in
       loop tip [] in
     Coq.bind fill_queue process_queue
-  
+
   method join_document =
    let next = function
      | Good _ ->

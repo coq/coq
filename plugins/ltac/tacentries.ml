@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
-open Grammar_API
 open Pp
 open CErrors
 open Util
@@ -218,7 +216,6 @@ let interp_prod_item = function
       assert (String.equal s "tactic");
       begin match Tacarg.wit_tactic with
       | ExtraArg tag -> ArgT.Any tag
-      | _ -> assert false
       end
     in
     let symbol = interp_entry_name interp symbol in
@@ -412,7 +409,7 @@ let create_ltac_quotation name cast (e, l) =
 
 type tacdef_kind =
   | NewTac of Id.t
-  | UpdateTac of Nametab.ltac_constant
+  | UpdateTac of Tacexpr.ltac_constant
 
 let is_defined_tac kn =
   try ignore (Tacenv.interp_ltac kn); true with Not_found -> false
@@ -444,7 +441,7 @@ let register_ltac local tacl =
     | Tacexpr.TacticRedefinition (ident, body) ->
         let loc = loc_of_reference ident in
         let kn =
-          try Nametab.locate_tactic (snd (qualid_of_reference ident))
+          try Tacenv.locate_tactic (snd (qualid_of_reference ident))
           with Not_found ->
             CErrors.user_err ?loc 
                        (str "There is no Ltac named " ++ pr_reference ident ++ str ".")
@@ -467,18 +464,20 @@ let register_ltac local tacl =
   let defs () =
     (** Register locally the tactic to handle recursivity. This function affects
         the whole environment, so that we transactify it afterwards. *)
-    let iter_rec (sp, kn) = Nametab.push_tactic (Nametab.Until 1) sp kn in
+    let iter_rec (sp, kn) = Tacenv.push_tactic (Nametab.Until 1) sp kn in
     let () = List.iter iter_rec recvars in
     List.map map rfun
   in
-  let defs = Future.transactify defs () in
+  (* STATE XXX: Review what is going on here. Why does this needs
+     protection? Why is not the STM level protection enough? Fishy *)
+  let defs = States.with_state_protection defs () in
   let iter (def, tac) = match def with
   | NewTac id ->
     Tacenv.register_ltac false local id tac;
     Flags.if_verbose Feedback.msg_info (Id.print id ++ str " is defined")
   | UpdateTac kn ->
     Tacenv.redefine_ltac local kn tac;
-    let name = Nametab.shortest_qualid_of_tactic kn in
+    let name = Tacenv.shortest_qualid_of_tactic kn in
     Flags.if_verbose Feedback.msg_info (Libnames.pr_qualid name ++ str " is redefined")
   in
   List.iter iter defs
@@ -491,7 +490,7 @@ let print_ltacs () =
   let entries = List.sort sort entries in
   let map (kn, entry) =
     let qid =
-      try Some (Nametab.shortest_qualid_of_tactic kn)
+      try Some (Tacenv.shortest_qualid_of_tactic kn)
       with Not_found -> None
     in
     match qid with
@@ -508,6 +507,31 @@ let print_ltacs () =
     hov 2 (pr_qualid qid ++ prlist pr_ltac_fun_arg l)
   in
   Feedback.msg_notice (prlist_with_sep fnl pr_entry entries)
+
+let locatable_ltac = "Ltac"
+
+let () =
+  let open Prettyp in
+  let locate qid = try Some (Tacenv.locate_tactic qid) with Not_found -> None in
+  let locate_all = Tacenv.locate_extended_all_tactic in
+  let shortest_qualid = Tacenv.shortest_qualid_of_tactic in
+  let name kn = str "Ltac" ++ spc () ++ pr_path (Tacenv.path_of_tactic kn) in
+  let print kn =
+    let qid = qualid_of_path (Tacenv.path_of_tactic kn) in
+    Tacintern.print_ltac qid
+  in
+  let about = name in
+  register_locatable locatable_ltac {
+    locate;
+    locate_all;
+    shortest_qualid;
+    name;
+    print;
+    about;
+  }
+
+let print_located_tactic qid =
+  Feedback.msg_notice (Prettyp.print_located_other locatable_ltac qid)
 
 (** Grammar *)
 

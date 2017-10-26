@@ -122,14 +122,7 @@ type const_evaluation_result = NoBody | Opaque | IsProj
 let constraints_of cb u =
   match cb.const_universes with
   | Monomorphic_const _ -> Univ.Constraint.empty
-  | Polymorphic_const ctx -> 
-    Univ.UContext.constraints (Univ.subst_instance_context u ctx)
-
-let map_regular_arity f = function
-  | RegularArity a as ar -> 
-    let a' = f a in 
-      if a' == a then ar else RegularArity a'
-  | TemplateArity _ -> assert false
+  | Polymorphic_const ctx -> Univ.AUContext.instantiate u ctx
 
 (* constant_type gives the type of a constant *)
 let constant_type env (kn,u) =
@@ -138,7 +131,7 @@ let constant_type env (kn,u) =
   | Monomorphic_const _ -> cb.const_type, Univ.Constraint.empty
   | Polymorphic_const ctx -> 
     let csts = constraints_of cb u in
-    (map_regular_arity (subst_instance_constr u) cb.const_type, csts)
+    (subst_instance_constr u cb.const_type, csts)
 
 exception NotEvaluableConst of const_evaluation_result
 

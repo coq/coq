@@ -8,7 +8,6 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
-open API
 open Names
 open Termops
 open Tacmach
@@ -82,7 +81,7 @@ let pf_clauseids gl gens clseq =
 
 let hidden_clseq = function InHyps | InHypsSeq | InAllHyps -> true | _ -> false
 
-let settac id c = Tactics.letin_tac None (Name id) c None
+let settac id c = Tactics.letin_tac None (Name id) false c None
 let posetac id cl = Proofview.V82.of_tactic (settac id cl nowhere)
 
 let hidetacs clseq idhide cl0 =
@@ -117,7 +116,7 @@ let endclausestac id_map clseq gl_id cl0 gl =
       (convert_concl_no_check (unmark (pf_concl gl'))) gl' in
   let ctacs = if hide_goal then [Proofview.V82.of_tactic (Tactics.clear [gl_id])] else [] in
   let mktac itacs = Tacticals.tclTHENLIST (itacs @ utacs @ ugtac :: ctacs) in
-  let itac (_, id) = Proofview.V82.of_tactic (Tactics.introduction id) in
+  let itac (_, id) = Proofview.V82.of_tactic (Tactics.introduction id false) in
   if fits false (id_map, List.rev dc) then mktac (List.map itac id_map) gl else
   let all_ids = ids_of_rel_context dc @ pf_ids_of_hyps gl in
   if List.for_all not_hyp' all_ids && not c_hidden then mktac [] gl else

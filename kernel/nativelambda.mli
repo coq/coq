@@ -38,5 +38,5 @@ val compile_dynamic_int31 : bool -> prefix -> constructor -> lambda array ->
 val before_match_int31 : inductive -> bool -> prefix -> constructor -> lambda ->
 			 lambda
 
-val compile_prim : Primitives.t -> constant -> bool -> prefix -> lambda array ->
+val compile_prim : CPrimitives.t -> constant -> bool -> prefix -> lambda array ->
 		   lambda

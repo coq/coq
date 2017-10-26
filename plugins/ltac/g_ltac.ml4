@@ -8,9 +8,6 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open API
-open Grammar_API
-
 DECLARE PLUGIN "ltac_plugin"
 
 open Util
@@ -343,7 +340,7 @@ GEXTEND Gram
   command:
     [ [ IDENT "Proof"; "with"; ta = Pltac.tactic; 
         l = OPT [ "using"; l = G_vernac.section_subset_expr -> l ] ->
-          Vernacexpr.VernacProof (Some (in_tac ta), G_proofs.hint_proof_using G_vernac.section_subset_expr l)
+          Vernacexpr.VernacProof (Some (in_tac ta), l)
       | IDENT "Proof"; "using"; l = G_vernac.section_subset_expr;
         ta = OPT [ "with"; ta = Pltac.tactic -> in_tac ta ] ->
           Vernacexpr.VernacProof (ta,Some l) ] ]
@@ -391,16 +388,7 @@ let vernac_solve n info tcom b =
     p,status) in
     if not status then Feedback.feedback Feedback.AddedAxiom
 
-let pr_range_selector (i, j) =
-  if Int.equal i j then int i
-  else int i ++ str "-" ++ int j
-
-let pr_ltac_selector = function
-| SelectNth i -> int i ++ str ":"
-| SelectList l -> str "[" ++ prlist_with_sep (fun () -> str ", ") pr_range_selector l ++
-    str "]" ++ str ":"
-| SelectId id -> str "[" ++ Id.print id ++ str "]" ++ str ":"
-| SelectAll -> str "all" ++ str ":"
+let pr_ltac_selector s = Pptactic.pr_goal_selector ~toplevel:true s
 
 VERNAC ARGUMENT EXTEND ltac_selector PRINTED BY pr_ltac_selector
 | [ toplevel_selector(s) ] -> [ s ]
@@ -433,7 +421,7 @@ let is_explicit_terminator = function TacSolve _ -> true | _ -> false
 VERNAC tactic_mode EXTEND VernacSolve
 | [ - ltac_selector_opt(g) ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
     [ classify_as_proofstep ] -> [
-    let g = Option.default (Proof_global.get_default_goal_selector ()) g in
+    let g = Option.default (Proof_bullet.get_default_goal_selector ()) g in
     vernac_solve g n t def
   ]
 | [ - "par" ":" ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
@@ -492,6 +480,11 @@ END
 VERNAC COMMAND EXTEND VernacPrintLtac CLASSIFIED AS QUERY
 | [ "Print" "Ltac" reference(r) ] ->
   [ Feedback.msg_notice (Tacintern.print_ltac (snd (Libnames.qualid_of_reference r))) ]
+END
+
+VERNAC COMMAND EXTEND VernacLocateLtac CLASSIFIED AS QUERY
+| [ "Locate" "Ltac" reference(r) ] ->
+  [ Tacentries.print_located_tactic r ]
 END
 
 let pr_ltac_ref = Libnames.pr_reference

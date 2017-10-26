@@ -1,4 +1,3 @@
-open API
 open Names
 open Pp
 open Libnames
@@ -13,7 +12,7 @@ let mk_equation_id id = Nameops.add_suffix id "_equation"
 let msgnl m =
   ()
 
-let fresh_id avoid s = Namegen.next_ident_away_in_goal (Id.of_string s) avoid
+let fresh_id avoid s = Namegen.next_ident_away_in_goal (Id.of_string s) (Id.Set.of_list avoid)
 
 let fresh_name avoid s = Name (fresh_id avoid s)
 
@@ -67,7 +66,7 @@ let chop_rlambda_n  =
       if n == 0
       then List.rev acc,rt
       else
-	match rt.CAst.v with
+	match DAst.get rt with
 	  | Glob_term.GLambda(name,k,t,b) -> chop_lambda_n ((name,t,None)::acc) (n-1) b
 	  | Glob_term.GLetIn(name,v,t,b) -> chop_lambda_n ((name,v,t)::acc) (n-1) b
 	  | _ ->
@@ -81,7 +80,7 @@ let chop_rprod_n  =
       if n == 0
       then List.rev acc,rt
       else
-	match rt.CAst.v with
+	match DAst.get rt with
 	  | Glob_term.GProd(name,k,t,b) -> chop_prod_n ((name,t)::acc) (n-1) b
 	  | _ -> raise (CErrors.UserError(Some "chop_rprod_n",str "chop_rprod_n: Not enough products"))
   in
@@ -342,7 +341,7 @@ let pr_info f_info =
   str "function_constant_type := " ++
   (try
      Printer.pr_lconstr
-       (Global.type_of_global_unsafe (ConstRef f_info.function_constant))
+       (fst (Global.type_of_global_in_context (Global.env ()) (ConstRef f_info.function_constant)))
    with e when CErrors.noncritical e -> mt ()) ++ fnl () ++
   str "equation_lemma := " ++ pr_ocst f_info.equation_lemma ++ fnl () ++
   str "completeness_lemma :=" ++ pr_ocst f_info.completeness_lemma ++ fnl () ++
@@ -485,7 +484,7 @@ let jmeq_refl () =
   with e when CErrors.noncritical e -> raise (ToShow e)
 
 let h_intros l =
-  tclMAP (fun x -> Proofview.V82.of_tactic (Tactics.Simple.intro x)) l
+  tclMAP (fun x -> Proofview.V82.of_tactic (Tactics.Simple.intro x true)) l
 
 let h_id = Id.of_string "h"
 let hrec_id = Id.of_string "hrec"
@@ -550,3 +549,12 @@ type tcc_lemma_value =
   | Undefined
   | Value of Term.constr
   | Not_needed
+
+(* We only "purify" on exceptions *)
+let funind_purify f x =
+  let st = Vernacentries.freeze_interp_state `No in
+  try f x
+  with e ->
+    let e = CErrors.push e in
+    Vernacentries.unfreeze_interp_state st;
+    Exninfo.iraise e

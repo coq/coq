@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Names
 open ModPath
 open Globnames
@@ -18,10 +17,15 @@ open Mlutil
 
 (*S Functions upon ML modules. *)
 
+(** Note: a syntax like [(F M) with ...] is actually legal, see for instance
+    bug #4720. Hence the code below tries to handle [MTsig], maybe not in
+    a perfect way, but that should be enough for the use of [se_iter] below. *)
+
 let rec msid_of_mt = function
   | MTident mp -> mp
+  | MTsig(mp,_) -> mp
   | MTwith(mt,_)-> msid_of_mt mt
-  | _ -> anomaly ~label:"extraction" (Pp.str "the With operator isn't applied to a name.")
+  | MTfunsig _ -> assert false (* A functor cannot be inside a MTwith *)
 
 (*s Apply some functions upon all [ml_decl] and [ml_spec] found in a
    [ml_structure]. *)
@@ -37,7 +41,7 @@ let se_iter do_decl do_spec do_mp =
 	  List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl'
 	in
 	let r = ConstRef (Constant.make2 mp_w (Label.of_id l')) in
-	mt_iter mt; do_decl (Dtype(r,l,t))
+        mt_iter mt; do_spec (Stype(r,l,Some t))
     | MTwith (mt,ML_With_module(idl,mp))->
         let mp_mt = msid_of_mt mt in
         let mp_w =

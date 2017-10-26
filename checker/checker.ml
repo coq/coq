@@ -10,7 +10,6 @@ open Pp
 open CErrors
 open Util
 open System
-open Flags
 open Names
 open Check
 
@@ -74,7 +73,7 @@ let add_path ~unix_path:dir ~coq_root:coq_dirpath =
 let convert_string d =
   try Id.of_string d
   with CErrors.UserError _ ->
-    if_verbose Feedback.msg_warning
+    Flags.if_verbose Feedback.msg_warning
       (str "Directory " ++ str d ++ str " cannot be used as a Coq identifier (skipped)");
     raise Exit
 
@@ -342,7 +341,7 @@ let parse_args argv =
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
 
     | ("-v"|"--version") :: _ -> version ()
-    | "-boot" :: rem -> boot := true; parse rem
+    | "-boot" :: rem -> Flags.boot := true; parse rem
     | ("-m" | "--memory") :: rem -> Check_stat.memory_stat := true; parse rem
     | ("-o" | "--output-context") :: rem ->
         Check_stat.output_context := true; parse rem
@@ -366,15 +365,53 @@ let parse_args argv =
 (* To prevent from doing the initialization twice *)
 let initialized = ref false
 
+(* XXX: At some point we need to either port the checker to use the
+   feedback system or to remove its use completely. *)
+let init_feedback_listener () =
+  let open Format in
+  let pp_lvl fmt lvl = let open Feedback in match lvl with
+    | Error   -> fprintf fmt "Error: "
+    | Info    -> fprintf fmt "Info: "
+    | Debug   -> fprintf fmt "Debug: "
+    | Warning -> fprintf fmt "Warning: "
+    | Notice  -> fprintf fmt ""
+  in
+  let pp_loc fmt loc = let open Loc in match loc with
+    | None     -> fprintf fmt ""
+    | Some loc ->
+      let where =
+        match loc.fname with InFile f -> f | ToplevelInput -> "Toplevel input" in
+      fprintf fmt "\"%s\", line %d, characters %d-%d:@\n"
+        where loc.line_nb (loc.bp-loc.bol_pos) (loc.ep-loc.bol_pos) in
+  let checker_feed (fb : Feedback.feedback) = let open Feedback in
+  match fb.contents with
+  | Processed   -> ()
+  | Incomplete  -> ()
+  | Complete    -> ()
+  | ProcessingIn _ -> ()
+  | InProgress _ -> ()
+  | WorkerStatus (_,_) -> ()
+  | AddedAxiom  -> ()
+  | GlobRef (_,_,_,_,_) -> ()
+  | GlobDef (_,_,_,_) -> ()
+  | FileDependency (_,_) -> ()
+  | FileLoaded (_,_) -> ()
+  | Custom (_,_,_) -> ()
+  (* Re-enable when we switch back to feedback-based error printing *)
+  | Message (lvl,loc,msg) ->
+    Format.eprintf "@[%a@]%a@[%a@]\n%!" pp_loc loc pp_lvl lvl Pp.pp_with msg
+  in ignore(Feedback.add_feeder checker_feed)
+
 let init_with_argv argv =
   if not !initialized then begin
     initialized := true;
     Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
+    init_feedback_listener ();
     try
       parse_args argv;
       if !Flags.debug then Printexc.record_backtrace true;
       Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
-      if_verbose print_header ();
+      Flags.if_verbose print_header ();
       init_load_path ();
       engage ();
     with e ->

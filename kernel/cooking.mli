@@ -16,9 +16,14 @@ type recipe = { from : constant_body; info : Opaqueproof.cooking_info }
 
 type inline = bool
 
-type result =
-  constant_def * constant_type * projection_body option * 
-    constant_universes * inline * Context.Named.t option
+type result = {
+  cook_body : constant_def;
+  cook_type : types;
+  cook_proj : projection_body option;
+  cook_universes : constant_universes;
+  cook_inline : inline;
+  cook_context : Context.Named.t option;
+}
 
 val cook_constant : hcons:bool -> env -> recipe -> result
 val cook_constr : Opaqueproof.cooking_info -> Term.constr -> Term.constr

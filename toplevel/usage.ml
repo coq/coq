@@ -57,7 +57,7 @@ let print_usage_channel co command =
 \n  -where                 print Coq's standard library location and exit\
 \n  -config, --config      print Coq's configuration information and exit\
 \n  -v, --version          print Coq version and exit\
-\n  --print-version        print Coq version in easy to parse format and exit\
+\n  -print-version         print Coq version in easy to parse format and exit\
 \n  -list-tags             print highlight color tags known by Coq and exit\
 \n\
 \n  -quiet                 unset display of extra information (implies -w \"-all\")\
@@ -74,13 +74,9 @@ let print_usage_channel co command =
 \n  -emacs                 tells Coq it is executed under Emacs\
 \n  -noglob                do not dump globalizations\
 \n  -dump-glob f           dump globalizations in file f (to be used by coqdoc)\
-\n  -with-geoproof (yes|no) to (de)activate special functions for Geoproof within Coqide (default is yes)\
 \n  -impredicative-set     set sort Set impredicative\
 \n  -indices-matter        levels of indices (and nonuniform parameters) contribute to the level of inductives\
 \n  -type-in-type          disable universe consistency checking\
-\n  -xml                   export XML files either to the hierarchy rooted in\
-\n                         the directory $COQ_XML_LIBRARY_ROOT (if set) or to\
-\n                         stdout (if unset)\
 \n  -time                  display the time taken by each command\
 \n  -profile-ltac          display the time taken by each (sub)tactic\
 \n  -m, --memory           display total heap size at program exit\

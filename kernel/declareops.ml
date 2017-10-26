@@ -44,47 +44,19 @@ let hcons_template_arity ar =
 
 (** {6 Constants } *)
 
-let instantiate cb c =
-  match cb.const_universes with
-  | Monomorphic_const _ -> c
-  | Polymorphic_const ctx -> 
-     Vars.subst_instance_constr (Univ.AUContext.instance ctx) c
-
 let constant_is_polymorphic cb =
   match cb.const_universes with
   | Monomorphic_const _ -> false
   | Polymorphic_const _ -> true
 
-let body_of_constant otab cb = match cb.const_body with
-  | Undef _ -> None
-  | Def c -> Some (instantiate cb (force_constr c))
-  | OpaqueDef o -> Some (instantiate cb (Opaqueproof.force_proof otab o))
-
-let type_of_constant cb =
-  match cb.const_type with
-  | RegularArity t as x -> 
-    let t' = instantiate cb t in
-      if t' == t then x else RegularArity t'
-  | TemplateArity _ as x -> x
-
-let universes_of_polymorphic_constant otab cb = 
-  match cb.const_universes with
-  | Monomorphic_const _ -> Univ.UContext.empty
-  | Polymorphic_const ctx -> Univ.instantiate_univ_context ctx
-
 let constant_has_body cb = match cb.const_body with
   | Undef _ -> false
   | Def _ | OpaqueDef _ -> true
 
-let constant_polymorphic_instance cb =
-  match cb.const_universes with
-  | Monomorphic_const _ -> Univ.Instance.empty
-  | Polymorphic_const ctx -> Univ.AUContext.instance ctx
-
 let constant_polymorphic_context cb =
   match cb.const_universes with
-  | Monomorphic_const _ -> Univ.UContext.empty
-  | Polymorphic_const ctx -> Univ.instantiate_univ_context ctx
+  | Monomorphic_const _ -> Univ.AUContext.empty
+  | Polymorphic_const ctx -> ctx
 
 let is_opaque cb = match cb.const_body with
   | OpaqueDef _ -> true
@@ -97,10 +69,6 @@ let subst_rel_declaration sub =
 
 let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 
-let subst_template_cst_arity sub (ctx,s as arity) =
-  let ctx' = subst_rel_context sub ctx in
-    if ctx==ctx' then arity else (ctx',s)
-      
 let subst_const_type sub arity =
   if is_empty_subst sub then arity
   else subst_mps sub arity
@@ -122,7 +90,7 @@ let subst_const_body sub cb =
   if is_empty_subst sub then cb
   else
     let body' = subst_const_def sub cb.const_body in
-    let type' = subst_decl_arity subst_const_type subst_template_cst_arity sub cb.const_type in
+    let type' = subst_const_type sub cb.const_type in
     let proj' = Option.smartmap (subst_const_proj sub) cb.const_proj in
     if body' == cb.const_body && type' == cb.const_type
       && proj' == cb.const_proj then cb
@@ -148,14 +116,6 @@ let hcons_rel_decl =
 
 let hcons_rel_context l = List.smartmap hcons_rel_decl l
 
-let hcons_regular_const_arity t = Term.hcons_constr t
-
-let hcons_template_const_arity (ctx, ar) = 
-  (hcons_rel_context ctx, hcons_template_arity ar)
-
-let hcons_const_type = 
-  map_decl_arity hcons_regular_const_arity hcons_template_const_arity
-
 let hcons_const_def = function
   | Undef inl -> Undef inl
   | Def l_constr ->
@@ -173,7 +133,7 @@ let hcons_const_universes cbu =
 let hcons_const_body cb =
   { cb with
     const_body = hcons_const_def cb.const_body;
-    const_type = hcons_const_type cb.const_type;
+    const_type = Term.hcons_constr cb.const_type;
     const_universes = hcons_const_universes cb.const_universes }
 
 (** {6 Inductive types } *)
@@ -268,19 +228,11 @@ let subst_mind_body sub mib =
     mind_typing_flags = mib.mind_typing_flags;
   }
 
-let inductive_polymorphic_instance mib =
-  match mib.mind_universes with
-  | Monomorphic_ind _ -> Univ.Instance.empty
-  | Polymorphic_ind ctx -> Univ.AUContext.instance ctx
-  | Cumulative_ind cumi -> 
-    Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi)
-
 let inductive_polymorphic_context mib =
   match mib.mind_universes with
-  | Monomorphic_ind _ -> Univ.UContext.empty
-  | Polymorphic_ind ctx -> Univ.instantiate_univ_context ctx
-  | Cumulative_ind cumi -> 
-    Univ.instantiate_univ_context (Univ.ACumulativityInfo.univ_context cumi)
+  | Monomorphic_ind _ -> Univ.AUContext.empty
+  | Polymorphic_ind ctx -> ctx
+  | Cumulative_ind cumi -> Univ.ACumulativityInfo.univ_context cumi
 
 let inductive_is_polymorphic mib =
   match mib.mind_universes with
@@ -366,7 +318,7 @@ let rec hcons_structure_field_body sb = match sb with
   let mb' = hcons_module_body mb in
   if mb == mb' then sb else SFBmodule mb'
 | SFBmodtype mb ->
-  let mb' = hcons_module_body mb in
+  let mb' = hcons_module_type mb in
   if mb == mb' then sb else SFBmodtype mb'
 
 and hcons_structure_body sb =
@@ -379,10 +331,10 @@ and hcons_structure_body sb =
   List.smartmap map sb
 
 and hcons_module_signature ms =
-  hcons_functorize hcons_module_body hcons_structure_body hcons_module_signature ms
+  hcons_functorize hcons_module_type hcons_structure_body hcons_module_signature ms
 
 and hcons_module_expression me =
-  hcons_functorize hcons_module_body hcons_module_alg_expr hcons_module_expression me
+  hcons_functorize hcons_module_type hcons_module_alg_expr hcons_module_expression me
 
 and hcons_module_implementation mip = match mip with
 | Abstract -> Abstract
@@ -394,9 +346,11 @@ and hcons_module_implementation mip = match mip with
   if ms == ms' then mip else Struct ms
 | FullStruct -> FullStruct
 
-and hcons_module_body mb =
+and hcons_generic_module_body :
+  'a. ('a -> 'a) -> 'a generic_module_body -> 'a generic_module_body =
+  fun hcons_impl mb ->
   let mp' = mb.mod_mp in
-  let expr' = hcons_module_implementation mb.mod_expr in
+  let expr' = hcons_impl mb.mod_expr in
   let type' = hcons_module_signature mb.mod_type in
   let type_alg' = mb.mod_type_alg in
   let constraints' = Univ.hcons_universe_context_set mb.mod_constraints in
@@ -421,3 +375,9 @@ and hcons_module_body mb =
     mod_delta = delta';
     mod_retroknowledge = retroknowledge';
   }
+
+and hcons_module_body mb =
+  hcons_generic_module_body hcons_module_implementation mb
+
+and hcons_module_type mb =
+  hcons_generic_module_body (fun () -> ()) mb

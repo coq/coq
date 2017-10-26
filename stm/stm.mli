@@ -10,9 +10,35 @@ open Names
 
 (** state-transaction-machine interface *)
 
+(** The STM doc type determines some properties such as what
+    uncompleted proofs are allowed and recording of aux files. *)
+type stm_doc_type =
+  | VoDoc       of string
+  | VioDoc      of string
+  | Interactive of DirPath.t
+
+(* Main initalization routine *)
+type stm_init_options = {
+  doc_type     : stm_doc_type;
+  require_libs : (string * string option * bool option) list;
+(*
+  fb_handler   : Feedback.feedback -> unit;
+  iload_path   : (string list * string * bool) list;
+  implicit_std : bool;
+*)
+}
+
+(** The type of a STM document *)
+type doc
+
+val init_core : unit -> unit
+
+(* Starts a new document *)
+val new_doc  : stm_init_options -> doc * Stateid.t
+
 (* [parse_sentence sid pa] Reads a sentence from [pa] with parsing
    state [sid] Returns [End_of_input] if the stream ends *)
-val parse_sentence : Stateid.t -> Pcoq.Gram.coq_parsable ->
+val parse_sentence : doc:doc -> Stateid.t -> Pcoq.Gram.coq_parsable ->
   Vernacexpr.vernac_expr Loc.located
 
 (* Reminder: A parsable [pa] is constructed using
@@ -26,14 +52,14 @@ exception End_of_input
    sync, but it will eventually call edit_at on the fly if needed.
    If [newtip] is provided, then the returned state id is guaranteed
    to be [newtip] *)
-val add : ontop:Stateid.t -> ?newtip:Stateid.t ->
+val add : doc:doc -> ontop:Stateid.t -> ?newtip:Stateid.t ->
   bool -> Vernacexpr.vernac_expr Loc.located ->
-  Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
+  doc * Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
 
 (* [query at ?report_with cmd] Executes [cmd] at a given state [at],
    throwing away side effects except messages. Feedback will
    be sent with [report_with], which defaults to the dummy state id *)
-val query :
+val query : doc:doc ->
   at:Stateid.t -> route:Feedback.route_id -> Pcoq.Gram.coq_parsable -> unit
 
 (* [edit_at id] is issued to change the editing zone.  [`NewTip] is returned if
@@ -46,24 +72,27 @@ val query :
    If Flags.async_proofs_full is set, then [id] is not [observe]d, else it is.
 *)
 type focus = { start : Stateid.t; stop : Stateid.t; tip : Stateid.t }
-val edit_at : Stateid.t -> [ `NewTip | `Focus of focus ]
+val edit_at : doc:doc -> Stateid.t -> doc * [ `NewTip | `Focus of focus ]
 
 (* Evaluates the tip of the current branch *)
-val finish : unit -> unit
+val finish : doc:doc -> doc
 
-val observe : Stateid.t -> unit
+(* Internal use (fake_ide) only, do not use *)
+val wait : doc:doc -> doc
+
+val observe : doc:doc -> Stateid.t -> doc
 
 val stop_worker : string -> unit
 
 (* Joins the entire document.  Implies finish, but also checks proofs *)
-val join : unit -> unit
+val join : doc:doc -> doc
 
 (* Saves on the disk a .vio corresponding to the current status:
    - if the worker pool is empty, all tasks are saved
    - if the worker proof is not empty, then it waits until all workers
      are done with their current jobs and then dumps (or fails if one
      of the completed tasks is a failure) *)
-val snapshot_vio : DirPath.t -> string -> unit
+val snapshot_vio : doc:doc -> DirPath.t -> string -> doc
 
 (* Empties the task queue, can be used only if the worker pool is empty (E.g.
  * after having built a .vio in batch mode *)
@@ -78,23 +107,17 @@ val finish_tasks : string ->
     tasks -> Library.seg_univ * Library.seg_proofs
 
 (* Id of the tip of the current branch *)
-val get_current_state : unit -> Stateid.t
-
-(* Misc *)
-val init : unit -> unit
+val get_current_state : doc:doc -> Stateid.t
+val get_ldir : doc:doc -> Names.DirPath.t
 
 (* This returns the node at that position *)
-val get_ast : Stateid.t -> (Vernacexpr.vernac_expr Loc.located) option
+val get_ast : doc:doc -> Stateid.t -> (Vernacexpr.vernac_expr Loc.located) option
 
 (* Filename *)
 val set_compilation_hints : string -> unit
 
 (* Reorders the task queue putting forward what is in the perspective *)
-val set_perspective : Stateid.t list -> unit
-
-type document
-val backup : unit -> document
-val restore : document -> unit
+val set_perspective : doc:doc -> Stateid.t list -> unit
 
 (** workers **************************************************************** **)
 
@@ -109,20 +132,20 @@ module QueryTask : AsyncTaskQueue.Task
    While checking a proof, if an error occurs in a (valid) block then
    processing can skip the entire block and go on to give feedback
    on the rest of the proof.
-  
+
    static_block_detection and dynamic_block_validation are run when
    the closing block marker is parsed/executed respectively.
-  
+
    static_block_detection is for example called when "}" is parsed and
    declares a block containing all proof steps between it and the matching
    "{".
-  
+
    dynamic_block_validation is called when an error "crosses" the "}" statement.
    Depending on the nature of the goal focused by "{" the block may absorb the
    error or not.  For example if the focused goal occurs in the type of
    another goal, then the block is leaky.
    Note that one can design proof commands that need no dynamic validation.
-  
+
    Example of document:
 
       .. { tac1. tac2. } ..
@@ -130,7 +153,7 @@ module QueryTask : AsyncTaskQueue.Task
    Corresponding DAG:
 
       .. (3) <-- { -- (4) <-- tac1 -- (5) <-- tac2 -- (6) <-- } -- (7) ..
-                       
+
    Declaration of block  [-------------------------------------------]
 
       start = 5            the first state_id that could fail in the block
@@ -170,7 +193,7 @@ type recovery_action = {
 }
 
 type dynamic_block_error_recovery =
-  static_block_declaration -> [ `ValidBlock of recovery_action | `Leaks ]
+  doc -> static_block_declaration -> [ `ValidBlock of recovery_action | `Leaks ]
 
 val register_proof_block_delimiter :
   Vernacexpr.proof_block_name ->
@@ -194,14 +217,11 @@ val state_ready_hook : (Stateid.t -> unit) Hook.t
 (* Messages from the workers to the master *)
 val forward_feedback_hook : (Feedback.feedback -> unit) Hook.t
 
-type state = {
-  system : States.state;
-  proof : Proof_global.state;
-  shallow : bool
-}
-val state_of_id :
-  Stateid.t -> [ `Valid of state option | `Expired | `Error of exn ]
+val get_doc : Feedback.doc_id -> doc
+
+val state_of_id : doc:doc ->
+  Stateid.t -> [ `Valid of Vernacentries.interp_state option | `Expired | `Error of exn ]
 
 (* Queries for backward compatibility *)
-val current_proof_depth : unit -> int
-val get_all_proof_names : unit -> Id.t list
+val current_proof_depth : doc:doc -> int
+val get_all_proof_names : doc:doc -> Id.t list

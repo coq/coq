@@ -85,7 +85,7 @@ let destruct_on c = destruct false None c None None
 let destruct_on_using c id =
   destruct false None c
     (Some (Loc.tag @@ IntroOrPattern [[Loc.tag @@ IntroNaming IntroAnonymous];
-               [Loc.tag @@ IntroNaming (IntroIdentifier id)]]))
+               [Loc.tag @@ IntroNaming (IntroIdentifier (id,true))]]))
     None
 
 let destruct_on_as c l =
@@ -105,7 +105,7 @@ let mkFullInd (ind,u) n =
     else mkIndU (ind,u)
 
 let check_bool_is_defined () =
-  try let _ = Global.type_of_global_unsafe Coqlib.glob_bool in ()
+  try let _ = Global.type_of_global_in_context (Global.env ()) Coqlib.glob_bool in ()
   with e when CErrors.noncritical e -> raise (UndefinedCst "bool")
 
 let beq_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
@@ -533,7 +533,7 @@ open Namegen
 let compute_bl_goal ind lnamesparrec nparrec =
   let eqI, eff = eqI ind lnamesparrec in
   let list_id = list_id lnamesparrec in
-  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> id::l)) (List.map RelDecl.get_name lnamesparrec) [] in
+  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> Id.Set.add id l)) (List.map RelDecl.get_name lnamesparrec) Id.Set.empty in
   let create_input c =
     let x = next_ident_away (Id.of_string "x") avoid and
         y = next_ident_away (Id.of_string "y") avoid in
@@ -578,7 +578,7 @@ let compute_bl_tact mode bl_scheme_key ind lnamesparrec nparrec =
         ( List.map (fun (_,_,sbl,_ ) -> sbl) list_id )
       in
       let fresh_id s gl =
-          let fresh = fresh_id_in_env (!avoid) s (Proofview.Goal.env gl) in
+          let fresh = fresh_id_in_env (Id.Set.of_list !avoid) s (Proofview.Goal.env gl) in
           avoid := fresh::(!avoid); fresh
       in
       Proofview.Goal.enter begin fun gl ->
@@ -607,8 +607,8 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                          Proofview.Goal.enter begin fun gl ->
                            let fresht = fresh_id (Id.of_string "Z") gl in
                             destruct_on_as (EConstr.mkVar freshz)
-                                  (IntroOrPattern [[Loc.tag @@ IntroNaming (IntroIdentifier fresht);
-                                    Loc.tag @@ IntroNaming (IntroIdentifier freshz)]])
+                                  (IntroOrPattern [[Loc.tag @@ IntroNaming (IntroIdentifier (fresht,true));
+                                    Loc.tag @@ IntroNaming (IntroIdentifier (freshz,true))]])
                          end
                         ]);
 (*
@@ -676,7 +676,7 @@ let _ = bl_scheme_kind_aux := fun () -> bl_scheme_kind
 let compute_lb_goal ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
   let eq = Lazy.force eq and tt = Lazy.force tt and bb = Lazy.force bb in
-  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> id::l)) (List.map RelDecl.get_name lnamesparrec) [] in
+  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> Id.Set.add id l)) (List.map RelDecl.get_name lnamesparrec) Id.Set.empty in
   let eqI, eff = eqI ind lnamesparrec in
     let create_input c =
       let x = next_ident_away (Id.of_string "x") avoid and
@@ -722,7 +722,7 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
         ( List.map (fun (_,_,_,slb) -> slb) list_id )
       in
       let fresh_id s gl =
-          let fresh = fresh_id_in_env (!avoid) s (Proofview.Goal.env gl) in
+          let fresh = fresh_id_in_env (Id.Set.of_list !avoid) s (Proofview.Goal.env gl) in
           avoid := fresh::(!avoid); fresh
       in
       Proofview.Goal.enter begin fun gl ->
@@ -806,7 +806,7 @@ let compute_dec_goal ind lnamesparrec nparrec =
   check_not_is_defined ();
   let eq = Lazy.force eq and tt = Lazy.force tt and bb = Lazy.force bb in
   let list_id = list_id lnamesparrec in
-  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> id::l)) (List.map RelDecl.get_name lnamesparrec) [] in
+  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> Id.Set.add id l)) (List.map RelDecl.get_name lnamesparrec) Id.Set.empty in
     let create_input c =
       let x = next_ident_away (Id.of_string "x") avoid and
           y = next_ident_away (Id.of_string "y") avoid in
@@ -870,7 +870,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
       ( List.map (fun (_,_,_,slb) -> slb) list_id )
   in
   let fresh_id s gl =
-      let fresh = fresh_id_in_env (!avoid) s (Proofview.Goal.env gl) in
+      let fresh = fresh_id_in_env (Id.Set.of_list !avoid) s (Proofview.Goal.env gl) in
       avoid := fresh::(!avoid); fresh
   in
   Proofview.Goal.enter begin fun gl ->
@@ -899,7 +899,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
         intros_using fresh_first_intros;
         intros_using [freshn;freshm];
 	(*we do this so we don't have to prove the same goal twice *)
-        assert_by (Name freshH) (EConstr.of_constr (
+        assert_by (Name freshH) true (EConstr.of_constr (
           mkApp(sumbool(),[|eqtrue eqbnm; eqfalse eqbnm|])
 	))
 	  (Tacticals.New.tclTHEN (destruct_on (EConstr.of_constr eqbnm)) Auto.default_auto);
@@ -923,7 +923,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
               unfold_constr (Lazy.force Coqlib.coq_not_ref);
               intro;
               Equality.subst_all ();
-              assert_by (Name freshH3)
+              assert_by (Name freshH3) true
 		(EConstr.of_constr (mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|])))
 		(Tacticals.New.tclTHENLIST [
 		  apply (EConstr.of_constr (mkApp(lbI,Array.map (fun x->mkVar x) xargs)));

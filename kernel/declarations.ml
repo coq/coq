@@ -36,8 +36,6 @@ type ('a, 'b) declaration_arity =
   | RegularArity of 'a
   | TemplateArity of 'b
 
-type constant_type = (types, Context.Rel.t * template_arity) declaration_arity
-
 (** Inlining level of parameters at functor applications.
     None means no inlining *)
 
@@ -83,7 +81,7 @@ type typing_flags = {
 type constant_body = {
     const_hyps : Context.Named.t; (** New: younger hyp at top *)
     const_body : constant_def;
-    const_type : constant_type;
+    const_type : types;
     const_body_code : Cemitcodes.to_patch_substituted option;
     const_universes : constant_universes;
     const_proj : projection_body option;
@@ -252,16 +250,16 @@ and module_implementation =
   | Struct of module_signature (** interactive body *)
   | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
 
-and module_body =
+and 'a generic_module_body =
   { mod_mp : module_path; (** absolute path of the module *)
-    mod_expr : module_implementation; (** implementation *)
+    mod_expr : 'a; (** implementation *)
     mod_type : module_signature; (** expanded type *)
     mod_type_alg : module_expression option; (** algebraic type *)
     mod_constraints : Univ.ContextSet.t; (**
       set of all universes constraints in the module  *)
     mod_delta : Mod_subst.delta_resolver; (**
       quotiented set of equivalent constants and inductive names *)
-    mod_retroknowledge : Retroknowledge.action list }
+    mod_retroknowledge : 'a module_retroknowledge }
 
 (** For a module, there are five possible situations:
     - [Declare Module M : T] then [mod_expr = Abstract; mod_type_alg = Some T]
@@ -271,13 +269,19 @@ and module_body =
     - [Module M : T. ... End M] then [mod_expr = Struct; mod_type_alg = Some T]
     And of course, all these situations may be functors or not. *)
 
-(** A [module_type_body] is just a [module_body] with no
-    implementation ([mod_expr] always [Abstract]) and also
-    an empty [mod_retroknowledge]. Its [mod_type_alg] contains
+and module_body = module_implementation generic_module_body
+
+(** A [module_type_body] is just a [module_body] with no implementation and
+    also an empty [mod_retroknowledge]. Its [mod_type_alg] contains
     the algebraic definition of this module type, or [None]
     if it has been built interactively. *)
 
-and module_type_body = module_body
+and module_type_body = unit generic_module_body
+
+and _ module_retroknowledge =
+| ModBodyRK :
+  Retroknowledge.action list -> module_implementation module_retroknowledge
+| ModTypeRK : unit module_retroknowledge
 
 (** Extra invariants :
 

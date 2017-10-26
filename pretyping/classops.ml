@@ -9,7 +9,6 @@
 open CErrors
 open Util
 open Pp
-open Flags
 open Names
 open Libnames
 open Globnames
@@ -89,7 +88,7 @@ sig
     type t
     val compare : t -> t -> int
     val equal : t -> t -> bool
-    val print : t -> std_ppcmds
+    val print : t -> Pp.t
   end
   type 'a t
   val empty : 'a t
@@ -324,7 +323,7 @@ let coercion_value { coe_value = c; coe_type = t; coe_context = ctx;
 (* rajouter une coercion dans le graphe *)
 
 let path_printer = ref (fun _ -> str "<a class path>"
-                        : (Bijint.Index.t * Bijint.Index.t) * inheritance_path -> std_ppcmds)
+                        : (Bijint.Index.t * Bijint.Index.t) * inheritance_path -> Pp.t)
 
 let install_path_printer f = path_printer := f
 
@@ -387,7 +386,7 @@ let add_coercion_in_graph (ic,source,target) =
       old_inheritance_graph
   end;
   let is_ambig = match !ambig_paths with [] -> false | _ -> true in
-  if is_ambig && not !quiet then
+  if is_ambig && not !Flags.quiet then
     Feedback.msg_info (message_ambig !ambig_paths)
 
 type coercion = {
@@ -403,7 +402,7 @@ type coercion = {
 (* Computation of the class arity *)
 
 let reference_arity_length ref =
-  let t = Universes.unsafe_type_of_global ref in
+  let t, _ = Global.type_of_global_in_context (Global.env ()) ref in
   List.length (fst (Reductionops.splay_arity (Global.env()) Evd.empty (EConstr.of_constr t))) (** FIXME *)
 
 let projection_arity_length p =

@@ -35,11 +35,14 @@ type style = {
   italic : bool option;
   underline : bool option;
   negative : bool option;
+  prefix : string option;
+  suffix : string option;
 }
 
 val make : ?fg_color:color -> ?bg_color:color ->
   ?bold:bool -> ?italic:bool -> ?underline:bool ->
-  ?negative:bool -> ?style:style -> unit -> style
+  ?negative:bool -> ?style:style ->
+  ?prefix:string -> ?suffix:string -> unit -> style
 (** Create a style from the given flags. It is derived from the optional
     [style] argument if given. *)
 

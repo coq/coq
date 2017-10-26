@@ -17,7 +17,7 @@ val is_set_minimization : unit -> bool
 
 (** Universes *)
 
-val pr_with_global_universes : Level.t -> Pp.std_ppcmds
+val pr_with_global_universes : Level.t -> Pp.t
 
 (** Local universe name <-> level mapping *)
 
@@ -52,7 +52,7 @@ type universe_constraint = universe * universe_constraint_type * universe
 module Constraints : sig
   include Set.S with type elt = universe_constraint
 		       
-  val pr : t -> Pp.std_ppcmds
+  val pr : t -> Pp.t
 end
 
 type universe_constraints = Constraints.t
@@ -67,11 +67,6 @@ val enforce_eq_instances_univs : bool -> universe_instance universe_constraint_f
 
 val to_constraints : UGraph.t -> universe_constraints -> constraints
 
-(** [eq_constr_univs_infer u a b] is [true, c] if [a] equals [b] modulo alpha, casts,
-   application grouping, the universe constraints in [u] and additional constraints [c]. *)
-val eq_constr_univs_infer : UGraph.t -> 'a constraint_accumulator ->
-  constr -> constr -> 'a -> 'a option
-
 (** [eq_constr_univs_infer_With kind1 kind2 univs m n] is a variant of
     {!eq_constr_univs_infer} taking kind-of-term functions, to expose
     subterms of [m] and [n], arguments. *)
@@ -79,20 +74,6 @@ val eq_constr_univs_infer_with :
   (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
   (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
   UGraph.t -> 'a constraint_accumulator -> constr -> constr -> 'a -> 'a option
-
-(** [leq_constr_univs u a b] is [true, c] if [a] is convertible to [b]
-    modulo alpha, casts, application grouping, the universe constraints
-    in [u] and additional constraints [c]. *)
-val leq_constr_univs_infer : UGraph.t -> 'a constraint_accumulator ->
-  constr -> constr -> 'a -> 'a option
-
-(** [eq_constr_universes a b] [true, c] if [a] equals [b] modulo alpha, casts,
-    application grouping and the universe constraints in [c]. *)
-val eq_constr_universes : constr -> constr -> universe_constraints option
-
-(** [leq_constr_universes a b] [true, c] if [a] is convertible to [b] modulo
-    alpha, casts, application grouping and the universe constraints in [c]. *)
-val leq_constr_universes : constr -> constr -> universe_constraints option
 
 (** [eq_constr_universes a b] [true, c] if [a] equals [b] modulo alpha, casts,
     application grouping and the universe constraints in [c]. *)
@@ -189,35 +170,21 @@ val constr_of_global : Globnames.global_reference -> constr
 (** ** DEPRECATED ** synonym of [constr_of_global] *)
 val constr_of_reference : Globnames.global_reference -> constr
 
-(** [unsafe_constr_of_global gr] turns [gr] into a constr, works on polymorphic
-    references by taking the original universe instance that is not recorded 
-    anywhere. The constraints are forgotten as well. DO NOT USE in new code. *)
-val unsafe_constr_of_global : Globnames.global_reference -> constr in_universe_context
-
 (** Returns the type of the global reference, by creating a fresh instance of polymorphic 
     references and computing their instantiated universe context. (side-effect on the
     universe counter, use with care). *)
 val type_of_global : Globnames.global_reference -> types in_universe_context_set
-
-(** [unsafe_type_of_global gr] returns [gr]'s type, works on polymorphic
-    references by taking the original universe instance that is not recorded 
-    anywhere. The constraints are forgotten as well. 
-    USE with care. *)
-val unsafe_type_of_global : Globnames.global_reference -> types
 
 (** Full universes substitutions into terms *)
 
 val nf_evars_and_universes_opt_subst : (existential -> constr option) -> 
   universe_opt_subst -> constr -> constr
 
-val simplify_universe_context : universe_context_set -> 
-  universe_context_set * universe_level_subst
-
 val refresh_constraints : UGraph.t -> universe_context_set -> universe_context_set * UGraph.t
 
 (** Pretty-printing *)
 
-val pr_universe_opt_subst : universe_opt_subst -> Pp.std_ppcmds
+val pr_universe_opt_subst : universe_opt_subst -> Pp.t
 
 (** {6 Support for template polymorphism } *)
 

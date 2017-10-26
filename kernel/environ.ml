@@ -35,6 +35,8 @@ type named_context_val = Pre_env.named_context_val
 
 type env = Pre_env.env
 
+type private_flag = Pre_env.private_flag
+
 let pre_env env = env
 let env_of_pre_env env = env
 let oracle env = env.env_conv_oracle
@@ -100,6 +102,11 @@ let fold_rel_context f env ~init =
 (* Named context *)
 
 let named_context_of_val c = c.env_named_ctx
+let named_context_private_ids c = c.env_named_private
+
+let set_named_context_private = set_named_context_private
+
+let ids_of_named_context_val c = Id.Map.domain c.env_named_map
 
 (* [map_named_val f ctxt] apply [f] to the body and the type of
    each declarations.
@@ -109,11 +116,13 @@ let map_named_val = map_named_val
 let empty_named_context = Context.Named.empty
 
 let push_named = push_named
-let push_named_context = List.fold_right push_named
+let push_named_context = List.fold_right (fun (d,isprivate) -> push_named d isprivate)
 let push_named_context_val = push_named_context_val
 
-let val_of_named_context ctxt =
-  List.fold_right push_named_context_val ctxt empty_named_context_val
+open Context.Named.Declaration
+
+let val_of_named_context ctxt ids =
+  List.fold_right (fun d -> push_named_context_val d (Id.Set.mem (get_id d) ids)) ctxt empty_named_context_val
 
 
 let lookup_named = lookup_named
@@ -123,8 +132,6 @@ let eq_named_context_val c1 c2 =
    c1 == c2 || Context.Named.equal Constr.equal (named_context_of_val c1) (named_context_of_val c2)
 
 (* A local const is evaluable if it is defined  *)
-
-open Context.Named.Declaration
 
 let named_type id env =
   get_type (lookup_named id env)
@@ -156,10 +163,10 @@ let fold_named_context f env ~init =
   let rec fold_right env =
     match match_named_context_val env.env_named_context with
     | None -> init
-    | Some (d, v, rem) ->
+    | Some (d, v, isprivate, rem) ->
 	let env =
 	  reset_with_named_context rem env in
-	f env d (fold_right env)
+	f env d isprivate (fold_right env)
   in fold_right env
 
 let fold_named_context_reverse f ~init env =
@@ -230,14 +237,7 @@ let add_constant kn cb env =
 let constraints_of cb u =
   match cb.const_universes with
   | Monomorphic_const _ -> Univ.Constraint.empty
-  | Polymorphic_const ctx -> 
-    Univ.UContext.constraints (Univ.subst_instance_context u ctx)
-
-let map_regular_arity f = function
-  | RegularArity a as ar -> 
-    let a' = f a in 
-      if a' == a then ar else RegularArity a'
-  | TemplateArity _ -> assert false
+  | Polymorphic_const ctx -> Univ.AUContext.instantiate u ctx
 
 (* constant_type gives the type of a constant *)
 let constant_type env (kn,u) =
@@ -246,19 +246,13 @@ let constant_type env (kn,u) =
   | Monomorphic_const _ -> cb.const_type, Univ.Constraint.empty
   | Polymorphic_const ctx -> 
     let csts = constraints_of cb u in
-    (map_regular_arity (subst_instance_constr u) cb.const_type, csts)
-
-let constant_instance env kn =
-  let cb = lookup_constant kn env in
-  match cb.const_universes with
-  | Monomorphic_const _ -> Univ.Instance.empty
-  | Polymorphic_const ctx -> Univ.AUContext.instance ctx
+    (subst_instance_constr u cb.const_type, csts)
 
 let constant_context env kn =
   let cb = lookup_constant kn env in
   match cb.const_universes with
-  | Monomorphic_const _ -> Univ.UContext.empty
-  | Polymorphic_const ctx -> Univ.instantiate_univ_context ctx
+  | Monomorphic_const _ -> Univ.AUContext.empty
+  | Polymorphic_const ctx -> ctx
 
 type const_evaluation_result = NoBody | Opaque | IsProj
 
@@ -294,7 +288,7 @@ let constant_value_and_type env (kn, u) =
 	| OpaqueDef _ -> None
 	| Undef _ -> None
       in
-	b', map_regular_arity (subst_instance_constr u) cb.const_type, cst
+	b', subst_instance_constr u cb.const_type, cst
     else 
       let b' = match cb.const_body with
 	| Def l_body -> Some (Mod_subst.force_constr l_body)
@@ -310,7 +304,7 @@ let constant_value_and_type env (kn, u) =
 let constant_type_in env (kn,u) =
   let cb = lookup_constant kn env in
     if Declareops.constant_is_polymorphic cb then
-      map_regular_arity (subst_instance_constr u) cb.const_type
+      subst_instance_constr u cb.const_type
     else cb.const_type
 
 let constant_value_in env (kn,u) =
@@ -343,15 +337,6 @@ let polymorphic_pconstant (cst,u) env =
 
 let type_in_type_constant cst env =
   not (lookup_constant cst env).const_typing_flags.check_universes
-
-let template_polymorphic_constant cst env =
-  match (lookup_constant cst env).const_type with 
-  | TemplateArity _ -> true
-  | RegularArity _ -> false
-
-let template_polymorphic_pconstant (cst,u) env =
-  if not (Univ.Instance.is_empty u) then false
-  else template_polymorphic_constant cst env
 
 let lookup_projection cst env =
   match (lookup_constant (Projection.constant cst) env).const_proj with 
@@ -511,12 +496,12 @@ exception Hyp_not_found
 let apply_to_hyp ctxt id f =
   let rec aux rtail ctxt =
     match match_named_context_val ctxt with
-    | Some (d, v, ctxt) ->
+    | Some (d, v, isprivate, ctxt) ->
 	if Id.equal (get_id d) id then
-          push_named_context_val_val (f ctxt.env_named_ctx d rtail) v ctxt
+          push_named_context_val_val (f ctxt.env_named_ctx d rtail) v isprivate ctxt
 	else
 	  let ctxt' = aux (d::rtail) ctxt in
-	  push_named_context_val_val d v ctxt'
+	  push_named_context_val_val d v isprivate ctxt'
     | None -> raise Hyp_not_found
   in aux [] ctxt
 
@@ -524,7 +509,7 @@ let apply_to_hyp ctxt id f =
 let remove_hyps ids check_context check_value ctxt =
   let rec remove_hyps ctxt = match match_named_context_val ctxt with
   | None -> empty_named_context_val, false
-  | Some (d, v, rctxt) ->
+  | Some (d, v, isprivate, rctxt) ->
     let (ans, seen) = remove_hyps rctxt in
     if Id.Set.mem (get_id d) ids then (ans, true)
     else if not seen then ctxt, false
@@ -534,7 +519,7 @@ let remove_hyps ids check_context check_value ctxt =
       let v' = check_value v in
       if d == d' && v == v' && rctxt == rctxt' then
         ctxt, true
-      else push_named_context_val_val d' v' rctxt', true
+      else push_named_context_val_val d' v' isprivate rctxt', true
   in
   fst (remove_hyps ctxt)
 
@@ -646,39 +631,39 @@ fun rk value field ->
           native_constant_dynamic = Some Nativelambda.compile_dynamic_int31;
         }
     | KInt31 (_, Int31Plus) -> int31_binop_from_const Cbytecodes.Kaddint31
-							  Primitives.Int31add
+							  CPrimitives.Int31add
     | KInt31 (_, Int31PlusC) -> int31_binop_from_const Cbytecodes.Kaddcint31
-							   Primitives.Int31addc
+							   CPrimitives.Int31addc
     | KInt31 (_, Int31PlusCarryC) -> int31_binop_from_const Cbytecodes.Kaddcarrycint31
-								Primitives.Int31addcarryc
+								CPrimitives.Int31addcarryc
     | KInt31 (_, Int31Minus) -> int31_binop_from_const Cbytecodes.Ksubint31
-							   Primitives.Int31sub
+							   CPrimitives.Int31sub
     | KInt31 (_, Int31MinusC) -> int31_binop_from_const Cbytecodes.Ksubcint31
-							    Primitives.Int31subc
+							    CPrimitives.Int31subc
     | KInt31 (_, Int31MinusCarryC) -> int31_binop_from_const
-	                                Cbytecodes.Ksubcarrycint31 Primitives.Int31subcarryc
+	                                Cbytecodes.Ksubcarrycint31 CPrimitives.Int31subcarryc
     | KInt31 (_, Int31Times) -> int31_binop_from_const Cbytecodes.Kmulint31
-							   Primitives.Int31mul
+							   CPrimitives.Int31mul
     | KInt31 (_, Int31TimesC) -> int31_binop_from_const Cbytecodes.Kmulcint31
-							   Primitives.Int31mulc
+							   CPrimitives.Int31mulc
     | KInt31 (_, Int31Div21) -> int31_op_from_const 3 Cbytecodes.Kdiv21int31
-                                                           Primitives.Int31div21
+                                                           CPrimitives.Int31div21
     | KInt31 (_, Int31Diveucl) -> int31_binop_from_const Cbytecodes.Kdivint31
-							 Primitives.Int31diveucl
+							 CPrimitives.Int31diveucl
     | KInt31 (_, Int31AddMulDiv) -> int31_op_from_const 3 Cbytecodes.Kaddmuldivint31
-                                                         Primitives.Int31addmuldiv
+                                                         CPrimitives.Int31addmuldiv
     | KInt31 (_, Int31Compare) -> int31_binop_from_const Cbytecodes.Kcompareint31
-							     Primitives.Int31compare
+							     CPrimitives.Int31compare
     | KInt31 (_, Int31Head0) -> int31_unop_from_const Cbytecodes.Khead0int31
-							  Primitives.Int31head0
+							  CPrimitives.Int31head0
     | KInt31 (_, Int31Tail0) -> int31_unop_from_const Cbytecodes.Ktail0int31
-							  Primitives.Int31tail0
+							  CPrimitives.Int31tail0
     | KInt31 (_, Int31Lor) -> int31_binop_from_const Cbytecodes.Klorint31
-							 Primitives.Int31lor
+							 CPrimitives.Int31lor
     | KInt31 (_, Int31Land) -> int31_binop_from_const Cbytecodes.Klandint31
-							  Primitives.Int31land
+							  CPrimitives.Int31land
     | KInt31 (_, Int31Lxor) -> int31_binop_from_const Cbytecodes.Klxorint31
-							  Primitives.Int31lxor
+							  CPrimitives.Int31lxor
     | _ -> empty_reactive_info
 
 let _ = Hook.set Retroknowledge.dispatch_hook dispatch

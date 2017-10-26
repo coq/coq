@@ -8,7 +8,6 @@
 
 (* This file is the interface between the c-c algorithm and Coq *)
 
-open API
 open Evd
 open Names
 open Inductiveops
@@ -85,7 +84,8 @@ let rec decompose_term env sigma t=
     | Proj (p, c) -> 
 	let canon_const kn = Constant.make1 (Constant.canonical kn) in 
 	let p' = Projection.map canon_const p in
-	(Appli (Symb (Term.mkConst (Projection.constant p')), decompose_term env sigma c))
+	let c = Retyping.expand_projection env sigma p' c [] in
+	decompose_term env sigma c
     | _ ->
        let t = Termops.strip_outer_cast sigma t in
        if closed0 sigma t then Symb (EConstr.to_constr sigma t) else raise Not_found
@@ -232,7 +232,8 @@ let make_prb gls depth additionnal_terms =
 let build_projection intype (cstr:pconstructor) special default gls=
   let open Tacmach.New in
   let ci= (snd(fst cstr)) in
-  let sigma, body=Equality.build_selector (pf_env gls) (project gls) ci (mkRel 1) intype special default in
+  let sigma = project gls in
+  let body=Equality.build_selector (pf_env gls) sigma ci (mkRel 1) intype special default in
   let id=pf_get_new_id (Id.of_string "t") gls in
   sigma, mkLambda(Name id,intype,body)
 
@@ -441,11 +442,11 @@ let cc_tactic depth additionnal_terms =
             let open Glob_term in
             let env = Proofview.Goal.env gl in
             let terms_to_complete = List.map (build_term_to_complete uf) (epsilons uf) in
-            let hole = CAst.make @@ GHole (Evar_kinds.InternalHole, Misctypes.IntroAnonymous, None) in
+            let hole = DAst.make @@ GHole (Evar_kinds.InternalHole, Misctypes.IntroAnonymous, None) in
             let pr_missing (c, missing) =
-              let c = Detyping.detype ~lax:true false [] env sigma c in
+              let c = Detyping.detype Detyping.Now ~lax:true false Id.Set.empty env sigma c in
               let holes = List.init missing (fun _ -> hole) in
-              Printer.pr_glob_constr_env env (CAst.make @@ GApp (c, holes))
+              Printer.pr_glob_constr_env env (DAst.make @@ GApp (c, holes))
             in
 	    Feedback.msg_info
 	      (Pp.str "Goal is solvable by congruence but some arguments are missing.");

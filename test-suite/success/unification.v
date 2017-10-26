@@ -43,7 +43,7 @@ Check (fun _h1 => (zenon_notall nat _ (fun _T_0 =>
           (fun _h2 => (zenon_noteq _ _T_0 _h2))) _h1)).
 
 
-(* Core of an example submitted by Ralph Matthes (#849)
+(* Core of an example submitted by Ralph Matthes (BZ#849)
 
    It used to fail because of the K-variable x in the type of "sum_rec ..."
    which was not in the scope of the evar ?B. Solved by a head
@@ -131,7 +131,7 @@ try case nonemptyT_intro. (* check that it fails w/o anomaly *)
 Abort.
 
 (* Test handling of return type and when it is decided to make the
-   predicate dependent or not - see "bug" #1851 *)
+   predicate dependent or not - see "bug" BZ#1851 *)
 
 Goal forall X (a:X) (f':nat -> X), (exists f : nat -> X, True).
 intros.

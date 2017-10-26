@@ -14,6 +14,8 @@ type marshallable =
   | `No        (* Full data will be store in memory, e.g. for Undo            *)
   | `Shallow ] (* Only part of the data will be marshalled to a slave process *)
 
+(** Types of global Coq states. The ['a] type should be pure and marshallable by
+    the standard OCaml marshalling function. *)
 type 'a summary_declaration = {
   (** freeze_function [true] is for marshalling to disk. 
    *  e.g. lazy must be forced *)

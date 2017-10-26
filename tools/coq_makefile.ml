@@ -114,16 +114,16 @@ let read_whole_file s =
     close_in ic;
     Buffer.contents b
 
-let makefile_template =
-  let template = "/tools/CoqMakefile.in" in
-  Coq_config.coqlib ^ template
-
-let quote s = if String.contains s ' ' then "\"" ^ s ^ "\"" else s
+let quote s = if String.contains s ' ' then "'" ^ s ^ "'" else s
 
 let generate_makefile oc conf_file local_file args project =
+  let makefile_template =
+    let template = "/tools/CoqMakefile.in" in
+    Envars.coqlib () ^ template in
   let s = read_whole_file makefile_template in
   let s = List.fold_left
-    (fun s (k,v) -> Str.global_replace (Str.regexp_string k) v s) s
+    (* We use global_substitute to avoid running into backslash issues due to \1 etc. *)
+    (fun s (k,v) -> Str.global_substitute (Str.regexp_string k) (fun _ -> v) s) s
     [ "@CONF_FILE@", conf_file;
       "@LOCAL_FILE@", local_file;
       "@COQ_VERSION@", Coq_config.version;
@@ -193,13 +193,23 @@ let generate_conf_includes oc { ml_includes; r_includes; q_includes } =
     (S.concat " " (map (fun ({ path },l) -> dash2 "R" path l) r_includes))
 ;;
 
+let windrive s =
+  if Coq_config.arch_is_win32 && Str.(string_match (regexp "^[a-zA-Z]:") s 0)
+  then Str.matched_string s
+  else s
+;;
+
 let generate_conf_coq_config oc args bypass_API =
   section oc "Coq configuration.";
   let src_dirs = if bypass_API
                  then Coq_config.all_src_dirs
                  else Coq_config.api_dirs @ Coq_config.plugins_dirs in
   Envars.print_config ~prefix_var_name:"COQMF_" oc src_dirs;
-  fprintf oc "COQMF_MAKEFILE=%s\n" (quote (List.hd args)); 
+  if bypass_API then
+    Printf.fprintf oc "OCAML_API_FLAGS=\n"
+  else
+    Printf.fprintf oc "OCAML_API_FLAGS=-open API\n";
+  fprintf oc "COQMF_WINDRIVE=%s\n" (windrive Coq_config.coqlib)
 ;;
 
 let generate_conf_files oc
@@ -265,7 +275,7 @@ let generate_conf oc project args  =
 ;;
 
 let ensure_root_dir
-  ({ ml_includes; r_includes;
+  ({ ml_includes; r_includes; q_includes;
      v_files; ml_files; mli_files; ml4_files;
      mllib_files; mlpack_files } as project)
 =
@@ -274,6 +284,7 @@ let ensure_root_dir
   let not_tops = List.for_all (fun s -> s <> Filename.basename s) in
   if exists (fun { canonical_path = x } -> x = here) ml_includes
   || exists (fun ({ canonical_path = x },_) -> is_prefix x here) r_includes
+  || exists (fun ({ canonical_path = x },_) -> is_prefix x here) q_includes
   || (not_tops v_files &&
       not_tops mli_files && not_tops ml4_files && not_tops ml_files &&
       not_tops mllib_files && not_tops mlpack_files)
@@ -414,7 +425,7 @@ let _ =
 
   check_overlapping_include project;
 
-  Envars.set_coqlib ~fail:(fun x -> x);
+  Envars.set_coqlib ~fail:(fun x -> Printf.eprintf "Error: %s\n" x; exit 1);
   
   let ocm = Option.cata open_out stdout project.makefile in
   generate_makefile ocm conf_file local_file (prog :: args) project;

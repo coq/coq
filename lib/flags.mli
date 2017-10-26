@@ -11,14 +11,10 @@
 (** Command-line flags  *)
 
 val boot : bool ref
-val load_init : bool ref
 
-(* Will affect STM caching *)
-val batch_mode : bool ref
-
-type compilation_mode = BuildVo | BuildVio | Vio2Vo
-val compilation_mode : compilation_mode ref
-val compilation_output_name : string option ref
+(** Set by coqtop to tell the kernel to output to the aux file; will
+    be eventually removed by cleanups such as PR#1103 *)
+val record_aux_file : bool ref
 
 (* Flag set when the test-suite is called. Its only effect to display
    verbose information for `Fail` *)
@@ -56,11 +52,6 @@ val stm_debug : bool ref
 
 val profile : bool
 
-(* Legacy flags *)
-
-(* -xml option: xml hooks will be called *)
-val xml_export : bool ref
-
 (* -ide_slave: printing will be more verbose, will affect stm caching *)
 val ide_slave : bool ref
 val ideslave_coqtop_flags : string option ref
@@ -77,7 +68,7 @@ val raw_print : bool ref
 (* Univ print flag, never set anywere. Maybe should belong to Univ? *)
 val univ_print : bool ref
 
-type compat_version = VOld | V8_5 | V8_6 | Current
+type compat_version = VOld | V8_5 | V8_6 | V8_7 | Current
 val compat_version : compat_version ref
 val version_compare : compat_version -> compat_version -> int
 val version_strictly_greater : compat_version -> bool
@@ -119,9 +110,9 @@ val is_universe_polymorphism : unit -> bool
 val make_polymorphic_flag : bool -> unit
 val use_polymorphic_flag : unit -> bool
 
-(** Global inductive cumulativity flag. *)
-val make_inductive_cumulativity : bool -> unit
-val is_inductive_cumulativity : unit -> bool
+(** Global polymorphic inductive cumulativity flag. *)
+val make_polymorphic_inductive_cumulativity : bool -> unit
+val is_polymorphic_inductive_cumulativity : unit -> bool
 
 val warn : bool ref
 val make_warn : bool -> unit

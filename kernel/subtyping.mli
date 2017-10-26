@@ -11,5 +11,3 @@ open Declarations
 open Environ
 
 val check_subtypes : env -> module_type_body -> module_type_body -> constraints
-
-

@@ -78,21 +78,26 @@ val fold_rel_context :
 (** {5 Context of variables (section variables and goal assumptions) } *)
 
 val named_context_of_val : named_context_val -> Context.Named.t
-val val_of_named_context : Context.Named.t -> named_context_val
+val val_of_named_context : Context.Named.t -> Id.Set.t -> named_context_val
 val empty_named_context_val : named_context_val
+val ids_of_named_context_val : named_context_val -> Id.Set.t
 
+type private_flag = Pre_env.private_flag
+
+val named_context_private_ids : named_context_val -> Id.Set.t
 
 (** [map_named_val f ctxt] apply [f] to the body and the type of
    each declarations.
    *** /!\ ***   [f t] should be convertible with t *)
 val map_named_val :
-   (constr -> constr) -> named_context_val -> named_context_val
+   (Context.Named.Declaration.t -> Context.Named.Declaration.t) -> named_context_val -> named_context_val
 
-val push_named : Context.Named.Declaration.t -> env -> env
-val push_named_context : Context.Named.t -> env -> env
+val push_named : Context.Named.Declaration.t -> private_flag -> env -> env
+val push_named_context : (Context.Named.Declaration.t * private_flag) list -> env -> env
 val push_named_context_val  :
-    Context.Named.Declaration.t -> named_context_val -> named_context_val
+    Context.Named.Declaration.t -> private_flag -> named_context_val -> named_context_val
 
+val set_named_context_private : named_context_val -> Id.Set.t -> named_context_val
 
 
 (** Looks up in the context of local vars referred by names ([named_context]) 
@@ -107,7 +112,7 @@ val named_body : variable -> env -> constr option
 (** {6 Recurrence on [named_context]: older declarations processed first } *)
 
 val fold_named_context :
-  (env -> Context.Named.Declaration.t -> 'a -> 'a) -> env -> init:'a -> 'a
+  (env -> Context.Named.Declaration.t -> private_flag -> 'a -> 'a) -> env -> init:'a -> 'a
 
 (** Recurrence on [named_context] starting from younger decl *)
 val fold_named_context_reverse :
@@ -139,10 +144,6 @@ val polymorphic_constant  : constant -> env -> bool
 val polymorphic_pconstant : pconstant -> env -> bool
 val type_in_type_constant : constant -> env -> bool
 
-(** Old-style polymorphism *)
-val template_polymorphic_constant  : constant -> env -> bool
-val template_polymorphic_pconstant : pconstant -> env -> bool
-
 (** {6 ... } *)
 (** [constant_value env c] raises [NotEvaluableConst Opaque] if
    [c] is opaque and [NotEvaluableConst NoBody] if it has no
@@ -153,23 +154,20 @@ type const_evaluation_result = NoBody | Opaque | IsProj
 exception NotEvaluableConst of const_evaluation_result
 
 val constant_value : env -> constant puniverses -> constr constrained
-val constant_type : env -> constant puniverses -> constant_type constrained
+val constant_type : env -> constant puniverses -> types constrained
 
 val constant_opt_value : env -> constant puniverses -> (constr * Univ.constraints) option
 val constant_value_and_type : env -> constant puniverses -> 
-  constr option * constant_type * Univ.constraints
+  constr option * types * Univ.constraints
 (** The universe context associated to the constant, empty if not 
     polymorphic *)
-val constant_context : env -> constant -> Univ.universe_context
-(** The universe isntance associated to the constant, empty if not 
-    polymorphic *)
-val constant_instance : env -> constant -> Univ.universe_instance
+val constant_context : env -> constant -> Univ.abstract_universe_context
 
 (* These functions should be called under the invariant that [env] 
    already contains the constraints corresponding to the constant 
    application. *)
 val constant_value_in : env -> constant puniverses -> constr
-val constant_type_in : env -> constant puniverses -> constant_type
+val constant_type_in : env -> constant puniverses -> types
 val constant_opt_value_in : env -> constant puniverses -> constr option
 
 (** {6 Primitive projections} *)

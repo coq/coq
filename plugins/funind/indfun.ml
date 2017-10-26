@@ -1,4 +1,3 @@
-open API
 open CErrors
 open Util
 open Names
@@ -162,7 +161,7 @@ let build_newrecursive
 	let _, (_, impls') = Constrintern.interp_context_evars env evdref bl in
 	let impl = Constrintern.compute_internalization_data env0 Constrintern.Recursive arity impls' in
         let open Context.Named.Declaration in
-        (Environ.push_named (LocalAssum (recname,arity)) env, Id.Map.add recname impl impls))
+        (Environ.push_named (LocalAssum (recname,arity)) false env, Id.Map.add recname impl impls))
       (env0,Constrintern.empty_internalization_env) lnameargsardef in
   let recdef =
     (* Declare local notations *)
@@ -192,7 +191,7 @@ let error msg = user_err Pp.(str msg)
 let is_rec names =
   let names = List.fold_right Id.Set.add names Id.Set.empty in
   let check_id id names =  Id.Set.mem id names in
-  let rec lookup names gt = match gt.CAst.v with
+  let rec lookup names gt = match DAst.get gt with
     | GVar(id) -> check_id id names
     | GRef _ | GEvar _ | GPatVar _ | GSort _ |  GHole _ -> false
     | GCast(b,_) -> lookup names b
@@ -619,7 +618,7 @@ let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacex
   let fixl,ntns = Command.extract_fixpoint_components false fixpoint_exprl in
   let ((_,_,typel),_,ctx,_) = Command.interp_fixpoint fixl ntns in
   let constr_expr_typel = 
-    with_full_print (List.map (Constrextern.extern_constr false (Global.env ()) (Evd.from_ctx ctx))) typel in
+    with_full_print (List.map (fun c -> Constrextern.extern_constr false (Global.env ()) (Evd.from_ctx ctx) (EConstr.of_constr c))) typel in
   let fixpoint_exprl_with_new_bl = 
     List.map2 (fun ((lna,(rec_arg_opt,rec_order),bl,ret_typ,opt_body),notation_list) fix_typ -> 
      
@@ -851,14 +850,14 @@ let make_graph (f_ref:global_reference) =
   in
   (match Global.body_of_constant_body c_body with
      | None -> error "Cannot build a graph over an axiom!"
-     | Some body ->
+     | Some (body, _) ->
 	 let env = Global.env () in
 	 let sigma = Evd.from_env env in
 	 let extern_body,extern_type =
 	   with_full_print (fun () ->
-		(Constrextern.extern_constr false env sigma body,
+		(Constrextern.extern_constr false env sigma (EConstr.of_constr body),
 		 Constrextern.extern_type false env sigma
-                   ((*FIXME*) Typeops.type_of_constant_type env c_body.const_type)
+                   (EConstr.of_constr (*FIXME*) c_body.const_type)
 		)
 	     )
 	     ()

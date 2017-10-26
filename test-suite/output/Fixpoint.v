@@ -7,7 +7,7 @@ Check
              | a :: l => f a :: F _ _ f l
              end).
 
-(* V8 printing of this term used to failed in V8.0 and V8.0pl1 (cf bug #860) *)
+(* V8 printing of this term used to failed in V8.0 and V8.0pl1 (cf BZ#860) *)
 Check
   let fix f (m : nat) : nat :=
     match m with
@@ -33,13 +33,13 @@ Print Ltac f.
 Lemma even_pos_odd_pos: forall n, even n -> n >= 0.
 Proof.
 fix even_pos_odd_pos 2 with (odd_pos_even_pos n (H:odd n) {struct H} : n >= 1).
- intros.
- destruct H.
+ intros n H.
+ destruct H as [|? H].
    omega.
    apply odd_pos_even_pos in H.
    omega.
- intros.
- destruct H.
+ intros n H.
+ destruct H as [? H].
   apply even_pos_odd_pos in H.
   omega.
 Qed.

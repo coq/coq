@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Names
 open Libnames
 open Globnames
@@ -166,6 +165,9 @@ val modular : unit -> bool
 val set_library : bool -> unit
 val library : unit -> bool
 
+val set_extrcompute : bool -> unit
+val is_extrcompute : unit -> bool
+
 (*s Table for custom inlining *)
 
 val to_inline : global_reference -> bool
@@ -192,7 +194,7 @@ val find_custom_match : ml_branch array -> string
 
 val extraction_language : lang -> unit
 val extraction_inline : bool -> reference list -> unit
-val print_extraction_inline : unit -> Pp.std_ppcmds
+val print_extraction_inline : unit -> Pp.t
 val reset_extraction_inline : unit -> unit
 val extract_constant_inline :
   bool -> reference -> string list -> string -> unit
@@ -207,7 +209,7 @@ val extraction_implicit : reference -> int_or_id list -> unit
 
 val extraction_blacklist : Id.t list -> unit
 val reset_extraction_blacklist : unit -> unit
-val print_extraction_blacklist : unit -> Pp.std_ppcmds
+val print_extraction_blacklist : unit -> Pp.t
 
 
 

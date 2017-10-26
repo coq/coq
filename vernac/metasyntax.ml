@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Pp
-open Flags
 open CErrors
 open Util
 open Names
@@ -98,102 +97,104 @@ let pr_grammar = function
    quote (except a single quote alone) must be quoted) *)
 
 let parse_format ((loc, str) : lstring) =
-  let str = " "^str in
-  let l = String.length str in
-  let push_token a = function
-    | cur::l -> (a::cur)::l
-    | [] -> [[a]] in
-  let push_white n l =
-    if Int.equal n 0 then l else push_token (UnpTerminal (String.make n ' ')) l in
-  let close_box i b = function
-    | a::(_::_ as l) -> push_token (UnpBox (b,a)) l
-    | _ -> user_err Pp.(str "Non terminated box in format.") in
-  let close_quotation i =
-    if i < String.length str && str.[i] == '\'' && (Int.equal (i+1) l || str.[i+1] == ' ')
-    then i+1
-    else user_err Pp.(str "Incorrectly terminated quoted expression.") in
+  let len = String.length str in
+  (* TODO: update the line of the location when the string contains newlines *)
+  let make_loc i j = Option.map (Loc.shift_loc (i+1) (j-len)) loc in
+  let push_token loc a = function
+    | (i,cur)::l -> (i,(loc,a)::cur)::l
+    | [] -> assert false in
+  let push_white i n l =
+    if Int.equal n 0 then l else push_token (make_loc i (i+n)) (UnpTerminal (String.make n ' ')) l in
+  let close_box start stop b = function
+    | (_,a)::(_::_ as l) -> push_token (make_loc start stop) (UnpBox (b,a)) l
+    | [a] -> user_err ?loc:(make_loc start stop) Pp.(str "Non terminated box in format.")
+    | [] -> assert false in
+  let close_quotation start i =
+    if i < len && str.[i] == '\'' then
+      if (Int.equal (i+1) len || str.[i+1] == ' ')
+      then i+1
+      else user_err ?loc:(make_loc (i+1) (i+1)) Pp.(str "Space expected after quoted expression.")
+    else
+      user_err ?loc:(make_loc start (i-1)) Pp.(str "Beginning of quoted expression expected to be ended by a quote.") in
   let rec spaces n i =
-    if i < String.length str && str.[i] == ' ' then spaces (n+1) (i+1)
+    if i < len && str.[i] == ' ' then spaces (n+1) (i+1)
     else n in
   let rec nonspaces quoted n i =
-    if i < String.length str && str.[i] != ' ' then
+    if i < len && str.[i] != ' ' then
       if str.[i] == '\'' && quoted &&
-        (i+1 >= String.length str || str.[i+1] == ' ')
-      then if Int.equal n 0 then user_err Pp.(str "Empty quoted token.") else n
+        (i+1 >= len || str.[i+1] == ' ')
+      then if Int.equal n 0 then user_err ?loc:(make_loc (i-1) i) Pp.(str "Empty quoted token.") else n
       else nonspaces quoted (n+1) (i+1)
     else
-      if quoted then user_err Pp.(str "Spaces are not allowed in (quoted) symbols.")
+      if quoted then user_err ?loc:(make_loc i i) Pp.(str "Spaces are not allowed in (quoted) symbols.")
       else n in
   let rec parse_non_format i =
     let n = nonspaces false 0 i in
-    push_token (UnpTerminal (String.sub str i n)) (parse_token (i+n))
+    push_token (make_loc i (i+n-1)) (UnpTerminal (String.sub str i n)) (parse_token 1 (i+n))
   and parse_quoted n i =
-    if i < String.length str then match str.[i] with
+    if i < len then match str.[i] with
       (* Parse " // " *)
-      | '/' when i <= String.length str && str.[i+1] == '/' ->
-          (* We forget the useless n spaces... *)
-	  push_token (UnpCut PpFnl)
-            (parse_token (close_quotation (i+2)))
+      | '/' when i+1 < len && str.[i+1] == '/' ->
+          (* We discard the useless n spaces... *)
+	  push_token (make_loc (i-n) (i+1)) (UnpCut PpFnl)
+            (parse_token 1 (close_quotation i (i+2)))
       (* Parse " .. / .. " *)
-      | '/' when i <= String.length str ->
+      | '/' when i+1 < len ->
 	  let p = spaces 0 (i+1) in
-	  push_token (UnpCut (PpBrk (n,p)))
-            (parse_token (close_quotation (i+p+1)))
+	  push_token (make_loc (i-n) (i+p)) (UnpCut (PpBrk (n,p)))
+            (parse_token 1 (close_quotation i (i+p+1)))
       | c ->
       (* The spaces are real spaces *)
-      push_white n (match c with
+      push_white i n (match c with
       | '[' ->
-	  if i <= String.length str then match str.[i+1] with
+	  if i+1 < len then match str.[i+1] with
 	    (* Parse " [h .. ",  *)
-	    | 'h' when i+1 <= String.length str && str.[i+2] == 'v' ->
-		  (parse_box (fun n -> PpHVB n) (i+3))
+	    | 'h' when i+1 <= len && str.[i+2] == 'v' ->
+		  (parse_box i (fun n -> PpHVB n) (i+3))
 		(* Parse " [v .. ",  *)
 	    | 'v' ->
-		    parse_box (fun n -> PpVB n) (i+2)
+		    parse_box i (fun n -> PpVB n) (i+2)
 		(* Parse " [ .. ",  *)
 	    | ' ' | '\'' ->
-		parse_box (fun n -> PpHOVB n) (i+1)
-	    | _ -> user_err Pp.(str "\"v\", \"hv\", \" \" expected after \"[\" in format.")
-	  else user_err Pp.(str "\"v\", \"hv\" or \" \" expected after \"[\" in format.")
+		parse_box i (fun n -> PpHOVB n) (i+1)
+	    | _ -> user_err ?loc:(make_loc i i) Pp.(str "\"v\", \"hv\", \" \" expected after \"[\" in format.")
+	  else user_err ?loc:(make_loc i i) Pp.(str "\"v\", \"hv\" or \" \" expected after \"[\" in format.")
       (* Parse "]"  *)
       | ']' ->
-	  ([] :: parse_token (close_quotation (i+1)))
+	  ((i,[]) :: parse_token 1 (close_quotation i (i+1)))
       (* Parse a non formatting token *)
       | c ->
 	  let n = nonspaces true 0 i in
-	  push_token (UnpTerminal (String.sub str (i-1) (n+2)))
-	    (parse_token (close_quotation (i+n))))
+	  push_token (make_loc i (i+n-1)) (UnpTerminal (String.sub str (i-1) (n+2)))
+	    (parse_token 1 (close_quotation i (i+n))))
     else
       if Int.equal n 0 then []
-      else user_err Pp.(str "Ending spaces non part of a format annotation.")
-  and parse_box box i =
+      else user_err ?loc:(make_loc (len-n) len) Pp.(str "Ending spaces non part of a format annotation.")
+  and parse_box start box i =
     let n = spaces 0 i in
-    close_box i (box n) (parse_token (close_quotation (i+n)))
-  and parse_token i =
+    close_box start (i+n-1) (box n) (parse_token 1 (close_quotation i (i+n)))
+  and parse_token k i =
     let n = spaces 0 i in
     let i = i+n in
-    if i < l then match str.[i] with
+    if i < len then match str.[i] with
       (* Parse a ' *)
-      |	'\'' when i+1 >= String.length str || str.[i+1] == ' ' ->
-	  push_white (n-1) (push_token (UnpTerminal "'") (parse_token (i+1)))
+      |	'\'' when i+1 >= len || str.[i+1] == ' ' ->
+	  push_white (i-n) (n-k) (push_token (make_loc i (i+1)) (UnpTerminal "'") (parse_token 1 (i+1)))
       (* Parse the beginning of a quoted expression *)
       |	'\'' ->
-          parse_quoted (n-1) (i+1)
+          parse_quoted (n-k) (i+1)
       (* Otherwise *)
       | _ ->
-          push_white (n-1) (parse_non_format i)
-    else push_white n [[]]
+          push_white (i-n) (n-k) (parse_non_format i)
+    else push_white (i-n) n [(len,[])]
   in
-  try
-    if not (String.is_empty str) then match parse_token 0 with
-      | [l] -> l
-      | _ -> user_err Pp.(str "Box closed without being opened in format.")
-    else
-      user_err Pp.(str "Empty format.")
-  with reraise ->
-    let (e, info) = CErrors.push reraise in
-    let info = Option.cata (Loc.add_loc info) info loc in
-    iraise (e, info)
+  if not (String.is_empty str) then
+    match parse_token 0 0 with
+    | [_,l] -> l
+    | (i,_)::_ -> user_err ?loc:(make_loc i i) Pp.(str "Box closed without being opened.")
+    | [] -> assert false
+  else
+    []
 
 (***********************)
 (* Analyzing notations *)
@@ -384,11 +385,11 @@ let is_next_terminal = function Terminal _ :: _ -> true | _ -> false
 
 let is_next_break = function Break _ :: _ -> true | _ -> false
 
-let add_break n l = UnpCut (PpBrk(n,0)) :: l
+let add_break n l = (None,UnpCut (PpBrk(n,0))) :: l
 
 let add_break_if_none n = function
-  | ((UnpCut (PpBrk _) :: _) | []) as l -> l
-  | l -> UnpCut (PpBrk(n,0)) :: l
+  | (((_,UnpCut (PpBrk _)) :: _) | []) as l -> l
+  | l -> (None,UnpCut (PpBrk(n,0))) :: l
 
 let check_open_binder isopen sl m =
   let pr_token = function
@@ -414,30 +415,30 @@ let make_hunks etyps symbols from =
 	let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
 	let u = UnpMetaVar (i,prec) in
 	if is_next_non_terminal prods then
-	  u :: add_break_if_none 1 (make prods)
+	  (None,u) :: add_break_if_none 1 (make prods)
 	else
-	  u :: make_with_space prods
+	  (None,u) :: make_with_space prods
     | Terminal s :: prods when List.exists is_non_terminal prods ->
         if (is_comma s || is_operator s) then
           (* Always a breakable space after comma or separator *)
-	  UnpTerminal s :: add_break_if_none 1 (make prods)
+	  (None,UnpTerminal s) :: add_break_if_none 1 (make prods)
 	else if is_right_bracket s && is_next_terminal prods then
           (* Always no space after right bracked, but possibly a break *)
-	  UnpTerminal s :: add_break_if_none 0 (make prods)
+	  (None,UnpTerminal s) :: add_break_if_none 0 (make prods)
         else if is_left_bracket s  && is_next_non_terminal prods then
-	  UnpTerminal s :: make prods
+	  (None,UnpTerminal s) :: make prods
 	else if not (is_next_break prods) then
           (* Add rigid space, no break, unless user asked for something *)
-          UnpTerminal (s^" ") :: make prods
+          (None,UnpTerminal (s^" ")) :: make prods
         else
           (* Rely on user spaces *)
-          UnpTerminal s :: make prods
+          (None,UnpTerminal s) :: make prods
 
     | Terminal s :: prods ->
         (* Separate but do not cut a trailing sequence of terminal *)
         (match prods with
-        | Terminal _ :: _ -> UnpTerminal (s^" ") :: make prods
-        | _ -> UnpTerminal s :: make prods)
+        | Terminal _ :: _ -> (None,UnpTerminal (s^" ")) :: make prods
+        | _ -> (None,UnpTerminal s) :: make prods)
 
     | Break n :: prods ->
 	add_break n (make prods)
@@ -452,12 +453,12 @@ let make_hunks etyps symbols from =
           (* We add NonTerminal for simulation but remove it afterwards *)
 	  else snd (List.sep_last (make (sl@[NonTerminal m]))) in
 	let hunk = match typ with
-	  | ETConstr _ -> UnpListMetaVar (i,prec,sl')
+	  | ETConstr _ -> UnpListMetaVar (i,prec,List.map snd sl')
 	  | ETBinder isopen ->
 	      check_open_binder isopen sl m;
-	      UnpBinderListMetaVar (i,isopen,sl')
+	      UnpBinderListMetaVar (i,isopen,List.map snd sl')
 	  | _ -> assert false in
-	hunk :: make_with_space prods
+	(None,hunk) :: make_with_space prods
 
     | [] -> []
 
@@ -466,7 +467,7 @@ let make_hunks etyps symbols from =
     | Terminal s' :: prods'->
         if is_operator s' then
           (* A rigid space before operator and a breakable after *)
-          UnpTerminal (" "^s') :: add_break_if_none 1 (make prods')
+          (None,UnpTerminal (" "^s')) :: add_break_if_none 1 (make prods')
         else if is_comma s' then
           (* No space whatsoever before comma *)
           make prods
@@ -487,82 +488,63 @@ let make_hunks etyps symbols from =
 
 (* Build default printing rules from explicit format *)
 
-let error_format () = user_err Pp.(str "The format does not match the notation.")
+let error_format ?loc () = user_err ?loc Pp.(str "The format does not match the notation.")
 
 let rec split_format_at_ldots hd = function
-  | UnpTerminal s :: fmt when String.equal s (Id.to_string ldots_var) -> List.rev hd, fmt
+  | (loc,UnpTerminal s) :: fmt when String.equal s (Id.to_string ldots_var) -> loc, List.rev hd, fmt
   | u :: fmt ->
       check_no_ldots_in_box u;
       split_format_at_ldots (u::hd) fmt
   | [] -> raise Exit
 
 and check_no_ldots_in_box = function
-  | UnpBox (_,fmt) ->
+  | (_,UnpBox (_,fmt)) ->
       (try
-        let _ = split_format_at_ldots [] fmt in
-        user_err Pp.(str ("The special symbol \"..\" must occur at the same formatting depth than the variables of which it is the ellipse."))
+        let loc,_,_ = split_format_at_ldots [] fmt in
+        user_err ?loc Pp.(str ("The special symbol \"..\" must occur at the same formatting depth than the variables of which it is the ellipse."))
       with Exit -> ())
   | _ -> ()
 
+let error_not_same ?loc () =
+  user_err ?loc Pp.(str "The format is not the same on the right- and left-hand sides of the special token \"..\".")
+
 let skip_var_in_recursive_format = function
-  | UnpTerminal _ :: sl (* skip first var *) ->
+  | (_,UnpTerminal s) :: sl (* skip first var *) when not (List.for_all (fun c -> c = " ") (String.explode s)) ->
       (* To do, though not so important: check that the names match
          the names in the notation *)
       sl
-  | _ -> error_format ()
+  | (loc,_) :: _ -> error_not_same ?loc ()
+  | [] -> assert false
 
 let read_recursive_format sl fmt =
   let get_head fmt =
     let sl = skip_var_in_recursive_format fmt in
-    try split_format_at_ldots [] sl with Exit -> error_format () in
+    try split_format_at_ldots [] sl with Exit -> error_not_same ?loc:(fst (List.last (if sl = [] then fmt else sl))) () in
   let rec get_tail = function
-    | a :: sepfmt, b :: fmt when Pervasives.(=) a b -> get_tail (sepfmt, fmt) (* FIXME *)
+    | (loc,a) :: sepfmt, (_,b) :: fmt when Pervasives.(=) a b -> get_tail (sepfmt, fmt) (* FIXME *)
     | [], tail -> skip_var_in_recursive_format tail
-    | _ -> user_err Pp.(str "The format is not the same on the right and left hand side of the special token \"..\".") in
-  let slfmt, fmt = get_head fmt in
+    | (loc,_) :: _, ([] | (_,UnpTerminal _) :: _)-> error_not_same ?loc ()
+    | _, (loc,_)::_ -> error_not_same ?loc () in
+  let loc, slfmt, fmt = get_head fmt in
   slfmt, get_tail (slfmt, fmt)
 
-let warn_skip_spaces_curly =
-  CWarnings.create ~name:"skip-spaces-curly" ~category:"parsing"
-      (fun () ->strbrk "Skipping spaces inside curly brackets")
-
-let rec drop_spacing = function
-  | UnpCut _ :: fmt -> warn_skip_spaces_curly (); drop_spacing fmt
-  | UnpTerminal s' :: fmt when String.equal s' (String.make (String.length s') ' ') -> warn_skip_spaces_curly (); drop_spacing fmt
-  | fmt -> fmt
-
-let has_closing_curly_brace symbs fmt =
-  (* TODO: recognize and fail in case a box overlaps a pair of curly braces *)
-  let fmt = drop_spacing fmt in
-  match symbs, fmt with
-  | NonTerminal s :: symbs, (UnpTerminal s' as u) :: fmt when Id.equal s (Id.of_string s') ->
-     let fmt = drop_spacing fmt in
-     (match fmt with
-     | UnpTerminal "}" :: fmt -> Some (u :: fmt)
-     | _ -> None)
-  | _ -> None
-
 let hunks_of_format (from,(vars,typs)) symfmt =
-  let a = ref None in
   let rec aux = function
-  | symbs, (UnpTerminal s' as u) :: fmt
+  | symbs, (_,(UnpTerminal s' as u)) :: fmt
       when String.equal s' (String.make (String.length s') ' ') ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
-  | symbs, (UnpTerminal "{") :: fmt when (a := has_closing_curly_brace symbs fmt; !a <> None) ->
-      let newfmt = Option.get !a in
-      aux (symbs,newfmt)
-  | Terminal s :: symbs, (UnpTerminal s') :: fmt
+  | Terminal s :: symbs, (_,UnpTerminal s') :: fmt
       when String.equal s (String.drop_simple_quotes s') ->
       let symbs, l = aux (symbs,fmt) in symbs, UnpTerminal s :: l
-  | NonTerminal s :: symbs, UnpTerminal s' :: fmt when Id.equal s (Id.of_string s') ->
+  | NonTerminal s :: symbs, (_,UnpTerminal s') :: fmt when Id.equal s (Id.of_string s') ->
       let i = index_id s vars in
       let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
       let symbs, l = aux (symbs,fmt) in symbs, UnpMetaVar (i,prec) :: l
-  | symbs, UnpBox (a,b) :: fmt ->
+  | symbs, (_,UnpBox (a,b)) :: fmt ->
       let symbs', b' = aux (symbs,b) in
       let symbs', l = aux (symbs',fmt) in
-      symbs', UnpBox (a,b') :: l
-  | symbs, (UnpCut _ as u) :: fmt ->
+      symbs', UnpBox (a,List.map (fun x -> (None,x)) b') :: l
+  | symbs, (_,(UnpCut _ as u)) :: fmt ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
   | SProdList (m,sl) :: symbs, fmt ->
       let i = index_id m vars in
@@ -570,7 +552,7 @@ let hunks_of_format (from,(vars,typs)) symfmt =
       let _,prec = precedence_of_entry_type from typ in
       let slfmt,fmt = read_recursive_format sl fmt in
       let sl, slfmt = aux (sl,slfmt) in
-      if not (List.is_empty sl) then error_format ();
+      if not (List.is_empty sl) then error_format ?loc:(fst (List.last fmt)) ();
       let symbs, l = aux (symbs,fmt) in
       let hunk = match typ with
 	| ETConstr _ -> UnpListMetaVar (i,prec,slfmt)
@@ -580,7 +562,7 @@ let hunks_of_format (from,(vars,typs)) symfmt =
 	| _ -> assert false in
       symbs, hunk :: l
   | symbs, [] -> symbs, []
-  | _, _ -> error_format ()
+  | _, fmt -> error_format ?loc:(fst (List.hd fmt)) ()
   in
   match aux symfmt with
   | [], l -> l
@@ -615,46 +597,71 @@ let define_keywords = function
 
 let distribute a ll = List.map (fun l -> a @ l) ll
 
-  (* Expand LIST1(t,sep) into the combination of t and t;sep;LIST1(t,sep)
-     as many times as expected in [n] argument *)
-let rec expand_list_rule typ tkl x n i hds ll =
-  if Int.equal i n then
+  (* Expand LIST1(t,sep);sep;t;...;t (with the trailing pattern
+     occurring p times, possibly p=0) into the combination of
+     t;sep;t;...;t;sep;t (p+1 times)
+     t;sep;t;...;t;sep;t;sep;t (p+2 times)
+     ...
+     t;sep;t;...;t;sep;t;...;t;sep;t (p+n times)
+     t;sep;t;...;t;sep;t;...;t;sep;t;LIST1(t,sep) *)
+
+let expand_list_rule typ tkl x n p ll =
+  let camlp4_message_name = Some (add_suffix x ("_"^string_of_int n)) in
+  let main = GramConstrNonTerminal (ETConstr typ, camlp4_message_name) in
+  let tks = List.map (fun x -> GramConstrTerminal x) tkl in
+  let rec aux i hds ll =
+  if i < p then aux (i+1) (main :: tks @ hds) ll
+  else if Int.equal i (p+n) then
     let hds =
-      GramConstrListMark (n,true) :: hds
+      GramConstrListMark (p+n,true,p) :: hds
       @	[GramConstrNonTerminal (ETConstrList (typ,tkl), Some x)] in
     distribute hds ll
   else
-    let camlp4_message_name = Some (add_suffix x ("_"^string_of_int n)) in
-    let main = GramConstrNonTerminal (ETConstr typ, camlp4_message_name) in
-    let tks = List.map (fun x -> GramConstrTerminal x) tkl in
-    distribute (GramConstrListMark (i+1,false) :: hds @ [main]) ll @
-      expand_list_rule typ tkl x n (i+1) (main :: tks @ hds) ll
+    distribute (GramConstrListMark (i+1,false,p) :: hds @ [main]) ll @
+       aux (i+1) (main :: tks @ hds) ll in
+  aux 0 [] ll
+
+let is_constr_typ typ x etyps =
+  match List.assoc x etyps with
+  | ETConstr typ' -> typ = typ'
+  | _ -> false
+
+let include_possible_similar_trailing_pattern typ etyps sl l =
+  let rec aux n = function
+  | Terminal s :: sl, Terminal s'::l' when s = s' -> aux n (sl,l')
+  | [], NonTerminal x ::l' when is_constr_typ typ x etyps -> try_aux n l'
+  | _ -> raise Exit
+  and try_aux n l =
+    try aux (n+1) (sl,l)
+    with Exit -> n,l in
+  try_aux 0 l
 
 let make_production etyps symbols =
-  let prod =
-    List.fold_right
-      (fun t ll -> match t with
-        | NonTerminal m ->
-	    let typ = List.assoc m etyps in
-	    distribute [GramConstrNonTerminal (typ, Some m)] ll
-        | Terminal s ->
-	    distribute [GramConstrTerminal (CLexer.terminal s)] ll
-        | Break _ ->
-            ll
-        | SProdList (x,sl) ->
-            let tkl = List.flatten
-              (List.map (function Terminal s -> [CLexer.terminal s]
-                | Break _ -> []
-                | _ -> anomaly (Pp.str "Found a non terminal token in recursive notation separator.")) sl) in
-	    match List.assoc x etyps with
-            | ETConstr typ -> expand_list_rule typ tkl x 1 0 [] ll
-            | ETBinder o ->
-		distribute
-                  [GramConstrNonTerminal (ETBinderList (o,tkl), Some x)] ll
-            | _ ->
-                user_err Pp.(str "Components of recursive patterns in notation must be terms or binders."))
-      symbols [[]] in
-  List.map define_keywords prod
+  let rec aux = function
+    | [] -> [[]]
+    | NonTerminal m :: l ->
+        let typ = List.assoc m etyps in
+        distribute [GramConstrNonTerminal (typ, Some m)] (aux l)
+    | Terminal s :: l ->
+        distribute [GramConstrTerminal (CLexer.terminal s)] (aux l)
+    | Break _ :: l ->
+        aux l
+    | SProdList (x,sl) :: l ->
+        let tkl = List.flatten
+          (List.map (function Terminal s -> [CLexer.terminal s]
+            | Break _ -> []
+            | _ -> anomaly (Pp.str "Found a non terminal token in recursive notation separator.")) sl) in
+	match List.assoc x etyps with
+        | ETConstr typ ->
+            let p,l' = include_possible_similar_trailing_pattern typ etyps sl l in
+            expand_list_rule typ tkl x 1 p (aux l')
+        | ETBinder o ->
+	    distribute
+              [GramConstrNonTerminal (ETBinderList (o,tkl), Some x)] (aux l)
+        | _ ->
+           user_err Pp.(str "Components of recursive patterns in notation must be terms or binders.") in
+  let prods = aux symbols in
+  List.map define_keywords prods
 
 let rec find_symbols c_current c_next c_last = function
   | [] -> []
@@ -680,26 +687,40 @@ let recompute_assoc typs =
 (**************************************************************************)
 (* Registration of syntax extensions (parsing/printing, no interpretation)*)
 
-let pr_arg_level from = function
+let pr_arg_level from (lev,typ) =
+  let pplev = match lev with
   | (n,L) when Int.equal n from -> str "at next level"
   | (n,E) -> str "at level " ++ int n
   | (n,L) -> str "at level below " ++ int n
   | (n,Prec m) when Int.equal m n -> str "at level " ++ int n
-  | (n,_) -> str "Unknown level"
+  | (n,_) -> str "Unknown level" in
+  let pptyp = match typ with
+  | NtnInternTypeConstr -> mt ()
+  | NtnInternTypeBinder -> str " " ++ surround (str "binder")
+  | NtnInternTypeIdent -> str " " ++ surround (str "ident") in
+  pplev ++ pptyp
 
-let pr_level ntn (from,args) =
+let pr_level ntn (from,args,typs) =
   str "at level " ++ int from ++ spc () ++ str "with arguments" ++ spc() ++
-  prlist_with_sep pr_comma (pr_arg_level from) args
+  prlist_with_sep pr_comma (pr_arg_level from) (List.combine args typs)
 
 let error_incompatible_level ntn oldprec prec =
   user_err 
-    (str "Notation " ++ str ntn ++ str " is already defined" ++ spc() ++
+    (str "Notation " ++ qstring ntn ++ str " is already defined" ++ spc() ++
+    pr_level ntn oldprec ++
+    spc() ++ str "while it is now required to be" ++ spc() ++
+    pr_level ntn prec ++ str ".")
+
+let error_parsing_incompatible_level ntn ntn' oldprec prec =
+  user_err
+    (str "Notation " ++ qstring ntn ++ str " relies on a parsing rule for " ++ qstring ntn' ++ spc() ++
+    str " which is already defined" ++ spc() ++
     pr_level ntn oldprec ++
     spc() ++ str "while it is now required to be" ++ spc() ++
     pr_level ntn prec ++ str ".")
 
 type syntax_extension = {
-  synext_level : Notation.level;
+  synext_level : Notation_term.level;
   synext_notation : notation;
   synext_notgram : notation_grammar;
   synext_unparsing : unparsing list;
@@ -711,7 +732,17 @@ let is_active_compat = function
 | None -> true
 | Some v -> 0 <= Flags.version_compare v !Flags.compat_version
 
-type syntax_extension_obj = locality_flag * syntax_extension list
+type syntax_extension_obj = locality_flag * syntax_extension
+
+let check_and_extend_constr_grammar ntn rule =
+  try
+    let ntn_for_grammar = rule.notgram_notation in
+    if String.equal ntn ntn_for_grammar then raise Not_found;
+    let prec = rule.notgram_level in
+    let oldprec = Notation.level_of_notation ntn_for_grammar in
+    if not (Notation.level_eq prec oldprec) then error_parsing_incompatible_level ntn ntn_for_grammar oldprec prec;
+  with Not_found ->
+    Egramcoq.extend_constr_grammar rule
 
 let cache_one_syntax_extension se =
   let ntn = se.synext_notation in
@@ -719,31 +750,30 @@ let cache_one_syntax_extension se =
   let onlyprint = se.synext_notgram.notgram_onlyprinting in
   try
     let oldprec = Notation.level_of_notation ntn in
-    if not (Notation.level_eq prec oldprec) then error_incompatible_level ntn oldprec prec
+    if not (Notation.level_eq prec oldprec) then error_incompatible_level ntn oldprec prec;
   with Not_found ->
     if is_active_compat se.synext_compat then begin
       (* Reserve the notation level *)
       Notation.declare_notation_level ntn prec;
       (* Declare the parsing rule *)
-      if not onlyprint then Egramcoq.extend_constr_grammar prec se.synext_notgram;
+      if not onlyprint then List.iter (check_and_extend_constr_grammar ntn) se.synext_notgram.notgram_rules;
       (* Declare the notation rule *)
       Notation.declare_notation_rule ntn
-        ~extra:se.synext_extra (se.synext_unparsing, fst prec) se.synext_notgram
+        ~extra:se.synext_extra (se.synext_unparsing, pi1 prec) se.synext_notgram
     end
 
 let cache_syntax_extension (_, (_, sy)) =
-  List.iter cache_one_syntax_extension sy
+  cache_one_syntax_extension sy
 
 let subst_parsing_rule subst x = x
 
 let subst_printing_rule subst x = x
 
 let subst_syntax_extension (subst, (local, sy)) =
-  let map sy = { sy with
-    synext_notgram = subst_parsing_rule subst sy.synext_notgram;
+  (local, { sy with
+    synext_notgram = { sy.synext_notgram with notgram_rules = List.map (subst_parsing_rule subst) sy.synext_notgram.notgram_rules };
     synext_unparsing = subst_printing_rule subst sy.synext_unparsing;
-  } in
-  (local, List.map map sy)
+  })
 
 let classify_syntax_definition (local, _ as o) =
   if local then Dispose else Substitute o
@@ -771,7 +801,7 @@ type notation_modifier = {
   (* common to syn_data below *)
   only_parsing  : bool;
   only_printing : bool;
-  compat        : compat_version option;
+  compat        : Flags.compat_version option;
   format        : string Loc.located option;
   extra         : (string * string) list;
 }
@@ -961,7 +991,7 @@ let is_not_printable onlyparse nonreversible = function
      (warn_non_reversible_notation (); true)
   else onlyparse
 
-let find_precedence lev etyps symbols =
+let find_precedence lev etyps symbols onlyprint =
   let first_symbol =
     let rec aux = function
       | Break _ :: t -> aux t
@@ -979,8 +1009,13 @@ let find_precedence lev etyps symbols =
   | None -> [],0
   | Some (NonTerminal x) ->
       (try match List.assoc x etyps with
-	| ETConstr _ ->
-	    user_err Pp.(str "The level of the leftmost non-terminal cannot be changed.")
+        | ETConstr _ ->
+	   if onlyprint then
+	     if Option.is_empty lev then
+	       user_err Pp.(str "Explicit level needed in only-printing mode when the level of the leftmost non-terminal is given.")
+	     else [],Option.get lev
+	   else
+	     user_err Pp.(str "The level of the leftmost non-terminal cannot be changed.")
 	| ETName | ETBigint | ETReference ->
             begin match lev with
             | None ->
@@ -1024,13 +1059,10 @@ let remove_curly_brackets l =
   | Terminal "{" as t1 :: l ->
       let br,next = skip_break [] l in
       (match next with
-        | NonTerminal _ as x :: l' as l0 ->
+        | NonTerminal _ as x :: l' ->
             let br',next' = skip_break [] l' in
             (match next' with
-              | Terminal "}" as t2 :: l'' as l1 ->
-                 if not (List.equal Notation.symbol_eq l l0) ||
-		      not (List.equal Notation.symbol_eq l' l1) then
-		  warn_skip_spaces_curly ();
+              | Terminal "}" as t2 :: l'' ->
 		  if deb && List.is_empty l'' then [t1;x;t2] else begin
                     check_curly_brackets_notation_exists ();
                     x :: aux false l''
@@ -1042,6 +1074,8 @@ let remove_curly_brackets l =
 
 module SynData = struct
 
+  type subentry_types = (Id.t * (production_level, production_position) constr_entry_key_gen) list
+
   (* XXX: Document *)
   type syn_data = {
 
@@ -1051,12 +1085,12 @@ module SynData = struct
     (* Fields coming from the vernac-level modifiers *)
     only_parsing  : bool;
     only_printing : bool;
-    compat        : compat_version option;
+    compat        : Flags.compat_version option;
     format        : string Loc.located option;
     extra         : (string * string) list;
 
     (* XXX: Callback to printing, must remove *)
-    msgs          : ((std_ppcmds -> unit) * std_ppcmds) list;
+    msgs          : ((Pp.t -> unit) * Pp.t) list;
 
     (* Fields for internalization *)
     recvars       : (Id.t * Id.t) list;
@@ -1064,16 +1098,27 @@ module SynData = struct
     intern_typs   : notation_var_internalization_type list;
 
     (* Notation data for parsing *)
-
-    level         : int;
-    syntax_data   : (Id.t * (production_level, production_position) constr_entry_key_gen) list * (* typs    *)
-                    symbol list;                                                                 (* symbols *)
+    level         : level;
+    pa_syntax_data : subentry_types * symbol list;
+    pp_syntax_data : subentry_types * symbol list;
     not_data      : notation *                   (* notation *)
-                    (int * parenRelation) list * (* precedence *)
+                    level *                      (* level, precedence, types *)
                     bool;                        (* needs_squash *)
   }
 
 end
+
+let find_subentry_types n assoc etyps symbols =
+  let innerlevel = NumLevel 200 in
+  let typs =
+    find_symbols
+      (NumLevel n,BorderProd(Left,assoc))
+      (innerlevel,InternalProd)
+      (NumLevel n,BorderProd(Right,assoc))
+      symbols in
+  let sy_typs = List.map (set_entry_type etyps) typs in
+  let prec = List.map (assoc_of_type n) sy_typs in
+  sy_typs, prec
 
 let compute_syntax_data df modifiers =
   let open SynData in
@@ -1090,27 +1135,24 @@ let compute_syntax_data df modifiers =
 
   (* Notations for interp and grammar  *)
   let ntn_for_interp = make_notation_key symbols in
-  let symbols' = remove_curly_brackets symbols in
-  let ntn_for_grammar = make_notation_key symbols' in
-  if not onlyprint then check_rule_productivity symbols';
-
-  (* Misc *)
-  let need_squash = not (List.equal Notation.symbol_eq symbols symbols') in
-  let msgs,n = find_precedence mods.level mods.etyps symbols' in
-  let innerlevel = NumLevel 200 in
-  let typs =
-    find_symbols
-      (NumLevel n,BorderProd(Left,assoc))
-      (innerlevel,InternalProd)
-      (NumLevel n,BorderProd(Right,assoc))
-      symbols' in
+  let symbols_for_grammar = remove_curly_brackets symbols in
+  let need_squash = not (List.equal Notation.symbol_eq symbols symbols_for_grammar) in
+  let ntn_for_grammar = if need_squash then make_notation_key symbols_for_grammar else ntn_for_interp in
+  if not onlyprint then check_rule_productivity symbols_for_grammar;
+  let msgs,n = find_precedence mods.level mods.etyps symbols onlyprint in
   (* To globalize... *)
   let etyps = join_auxiliary_recursive_types recvars mods.etyps in
-  let sy_typs = List.map (set_entry_type etyps) typs in
-  let prec = List.map (assoc_of_type n) sy_typs in
+  let sy_typs, prec =
+    find_subentry_types n assoc etyps symbols in
+  let sy_typs_for_grammar, prec_for_grammar =
+    if need_squash then
+      find_subentry_types n assoc etyps symbols_for_grammar
+    else
+      sy_typs, prec in
   let i_typs = set_internalization_type sy_typs in
-  let sy_data = (sy_typs,symbols') in
-  let sy_fulldata = (ntn_for_grammar,prec,need_squash) in
+  let pa_sy_data = (sy_typs_for_grammar,symbols_for_grammar) in
+  let pp_sy_data = (sy_typs,symbols) in
+  let sy_fulldata = (ntn_for_grammar,(n,prec_for_grammar,i_typs),need_squash) in
   let df' = ((Lib.library_dp(),Lib.current_dirpath true),df) in
   let i_data = ntn_for_interp, df' in
 
@@ -1129,8 +1171,9 @@ let compute_syntax_data df modifiers =
     mainvars;
     intern_typs = i_typs;
 
-    level  = n;
-    syntax_data = sy_data;
+    level  = (n,prec,i_typs);
+    pa_syntax_data = pa_sy_data;
+    pp_syntax_data = pp_sy_data;
     not_data    = sy_fulldata;
   }
 
@@ -1211,25 +1254,9 @@ let with_syntax_protection f x =
 (**********************************************************************)
 (* Recovering existing syntax                                         *)
 
-let contract_notation ntn =
-  if String.equal ntn "{ _ }" then ntn else
-  let rec aux ntn i =
-    if i <= String.length ntn - 5 then
-      let ntn' =
-        if String.is_sub "{ _ }" ntn i &&
-           (i = 0 || ntn.[i-1] = ' ') &&
-           (i = String.length ntn - 5 || ntn.[i+5] = ' ')
-        then
-          String.sub ntn 0 i ^ "_" ^
-          String.sub ntn (i+5) (String.length ntn -i-5)
-        else ntn in
-      aux ntn' (i+1)
-    else ntn in
-  aux ntn 0
-
 exception NoSyntaxRule
 
-let recover_syntax ntn =
+let recover_notation_syntax ntn =
   try
     let prec = Notation.level_of_notation ntn in
     let pp_rule,_ = Notation.find_notation_printing_rule ntn in
@@ -1246,29 +1273,25 @@ let recover_syntax ntn =
     raise NoSyntaxRule
 
 let recover_squash_syntax sy =
-  let sq = recover_syntax "{ _ }" in
-  [sy; sq]
-
-let recover_notation_syntax rawntn =
-  let ntn = contract_notation rawntn in
-  let sy = recover_syntax ntn in
-  let need_squash = not (String.equal ntn rawntn) in
-  let rules = if need_squash then recover_squash_syntax sy else [sy] in
-  sy.synext_notgram.notgram_typs, rules, sy.synext_notgram.notgram_onlyprinting
+  let sq = recover_notation_syntax "{ _ }" in
+  sy :: sq.synext_notgram.notgram_rules
 
 (**********************************************************************)
 (* Main entry point for building parsing and printing rules           *)
 
-let make_pa_rule i_typs level (typs,symbols) ntn onlyprint =
+let make_pa_rule level (typs,symbols) ntn need_squash =
   let assoc = recompute_assoc typs in
   let prod = make_production typs symbols in
-  { notgram_level = level;
+  let sy = {
+    notgram_level = level;
     notgram_assoc = assoc;
     notgram_notation = ntn;
     notgram_prods = prod;
-    notgram_typs = i_typs;
-    notgram_onlyprinting = onlyprint;
-  }
+  } in
+  (* By construction, the rule for "{ _ }" is declared, but we need to
+     redeclare it because the file where it is declared needs not be open
+     when the current file opens (especially in presence of -nois) *)
+  if need_squash then recover_squash_syntax sy else [sy]
 
 let make_pp_rule level (typs,symbols) fmt =
   match fmt with
@@ -1277,21 +1300,16 @@ let make_pp_rule level (typs,symbols) fmt =
 
 (* let make_syntax_rules i_typs (ntn,prec,need_squash) sy_data fmt extra onlyprint compat = *)
 let make_syntax_rules (sd : SynData.syn_data) = let open SynData in
-  let ntn, prec, need_squash = sd.not_data in
-  let pa_rule = make_pa_rule sd.intern_typs sd.level sd.syntax_data ntn sd.only_printing in
-  let pp_rule = make_pp_rule sd.level sd.syntax_data sd.format in
-  let sy = {
-    synext_level    = (sd.level, prec);
-    synext_notation = ntn;
-    synext_notgram  = pa_rule;
+  let ntn_for_grammar, prec_for_grammar, need_squash = sd.not_data in
+  let pa_rule = make_pa_rule prec_for_grammar sd.pa_syntax_data ntn_for_grammar need_squash in
+  let pp_rule = make_pp_rule (pi1 sd.level) sd.pp_syntax_data sd.format in {
+    synext_level    = sd.level;
+    synext_notation = fst sd.info;
+    synext_notgram  = { notgram_onlyprinting = sd.only_printing; notgram_rules = pa_rule };
     synext_unparsing = pp_rule;
     synext_extra  = sd.extra;
     synext_compat = sd.compat;
-  } in
-  (* By construction, the rule for "{ _ }" is declared, but we need to
-     redeclare it because the file where it is declared needs not be open
-     when the current file opens (especially in presence of -nois) *)
-  if need_squash then recover_squash_syntax sy else [sy]
+  }
 
 (**********************************************************************)
 (* Main functions about notations                                     *)
@@ -1300,7 +1318,7 @@ let to_map l =
   let fold accu (x, v) = Id.Map.add x v accu in
   List.fold_left fold Id.Map.empty l
 
-let add_notation_in_scope local df c mods scope =
+let add_notation_in_scope local df env c mods scope =
   let open SynData in
   let sd = compute_syntax_data df mods in
   (* Prepare the interpretation *)
@@ -1311,7 +1329,7 @@ let add_notation_in_scope local df c mods scope =
     ninterp_var_type = to_map i_vars;
     ninterp_rec_vars = to_map sd.recvars;
   } in
-  let (acvars, ac, reversible) = interp_notation_constr nenv c in
+  let (acvars, ac, reversible) = interp_notation_constr env nenv c in
   let interp = make_interpretation_vars sd.recvars acvars in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let onlyparse = is_not_printable sd.only_parsing (not reversible) ac in
@@ -1331,16 +1349,16 @@ let add_notation_in_scope local df c mods scope =
   Lib.add_anonymous_leaf (inNotation notation);
   sd.info
 
-let add_notation_interpretation_core local df ?(impls=empty_internalization_env) c scope onlyparse onlyprint compat =
+let add_notation_interpretation_core local df env ?(impls=empty_internalization_env) c scope onlyparse onlyprint compat =
   let dfs = split_notation_string df in
   let (recvars,mainvars,symbs) = analyze_notation_tokens ~onlyprint dfs in
   (* Recover types of variables and pa/pp rules; redeclare them if needed *)
   let i_typs, onlyprint = if not (is_numeral symbs) then begin
-    let i_typs,sy_rules,onlyprint' = recover_notation_syntax (make_notation_key symbs) in
-    let () = Lib.add_anonymous_leaf (inSyntaxExtension (local,sy_rules)) in
+    let sy = recover_notation_syntax (make_notation_key symbs) in
+    let () = Lib.add_anonymous_leaf (inSyntaxExtension (local,sy)) in
     (** If the only printing flag has been explicitly requested, put it back *)
-    let onlyprint = onlyprint || onlyprint' in
-    i_typs, onlyprint
+    let onlyprint = onlyprint || sy.synext_notgram.notgram_onlyprinting in
+    pi3 sy.synext_level, onlyprint
   end else [], false in
   (* Declare interpretation *)
   let path = (Lib.library_dp(), Lib.current_dirpath true) in
@@ -1350,7 +1368,7 @@ let add_notation_interpretation_core local df ?(impls=empty_internalization_env)
     ninterp_var_type = to_map i_vars;
     ninterp_rec_vars = to_map recvars;
   } in
-  let (acvars, ac, reversible) = interp_notation_constr ~impls nenv c in
+  let (acvars, ac, reversible) = interp_notation_constr env ~impls nenv c in
   let interp = make_interpretation_vars recvars acvars in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let onlyparse = is_not_printable onlyparse (not reversible) ac in
@@ -1377,33 +1395,33 @@ let add_syntax_extension local ((loc,df),mods) = let open SynData in
 
 (* Notations with only interpretation *)
 
-let add_notation_interpretation ((loc,df),c,sc) =
-  let df' = add_notation_interpretation_core false df c sc false false None in
+let add_notation_interpretation env ((loc,df),c,sc) =
+  let df' = add_notation_interpretation_core false df env c sc false false None in
   Dumpglob.dump_notation (loc,df') sc true
 
-let set_notation_for_interpretation impls ((_,df),c,sc) =
+let set_notation_for_interpretation env impls ((_,df),c,sc) =
   (try ignore
-    (silently (fun () -> add_notation_interpretation_core false df ~impls c sc false false None) ());
+    (Flags.silently (fun () -> add_notation_interpretation_core false df env ~impls c sc false false None) ());
   with NoSyntaxRule ->
     user_err Pp.(str "Parsing rule for this notation has to be previously declared."));
   Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
 
 (* Main entry point *)
 
-let add_notation local c ((loc,df),modifiers) sc =
+let add_notation local env c ((loc,df),modifiers) sc =
   let df' =
    if no_syntax_modifiers modifiers then
     (* No syntax data: try to rely on a previously declared rule *)
     let onlyparse = is_only_parsing modifiers in
     let onlyprint = is_only_printing modifiers in
     let compat = get_compat_version modifiers in
-    try add_notation_interpretation_core local df c sc onlyparse onlyprint compat
+    try add_notation_interpretation_core local df env c sc onlyparse onlyprint compat
     with NoSyntaxRule ->
       (* Try to determine a default syntax rule *)
-      add_notation_in_scope local df c modifiers sc
+      add_notation_in_scope local df env c modifiers sc
    else
     (* Declare both syntax and interpretation *)
-    add_notation_in_scope local df c modifiers sc
+    add_notation_in_scope local df env c modifiers sc
   in
   Dumpglob.dump_notation (loc,df') sc true
 
@@ -1418,13 +1436,13 @@ let add_notation_extra_printing_rule df k v =
 
 let inject_var x = CAst.make @@ CRef (Ident (Loc.tag @@ Id.of_string x),None)
 
-let add_infix local ((loc,inf),modifiers) pr sc =
+let add_infix local env ((loc,inf),modifiers) pr sc =
   check_infix_modifiers modifiers;
   (* check the precedence *)
   let metas = [inject_var "x"; inject_var "y"] in
   let c = mkAppC (pr,metas) in
   let df = "x "^(quote_notation_token inf)^" y" in
-  add_notation local c ((loc,df),modifiers) sc
+  add_notation local env c ((loc,df),modifiers) sc
 
 (**********************************************************************)
 (* Delimiters and classes bound to scopes                             *)
@@ -1480,7 +1498,7 @@ let try_interp_name_alias = function
   | [], { CAst.v = CRef (ref,_) } -> intern_reference ref
   | _ -> raise Not_found
 
-let add_syntactic_definition ident (vars,c) local onlyparse =
+let add_syntactic_definition env ident (vars,c) local onlyparse =
   let nonprintable = ref false in
   let vars,pat =
     try [], NRef (try_interp_name_alias (vars,c))
@@ -1491,7 +1509,7 @@ let add_syntactic_definition ident (vars,c) local onlyparse =
         ninterp_var_type = i_vars;
         ninterp_rec_vars = Id.Map.empty;
       } in
-      let nvars, pat, reversible = interp_notation_constr nenv c in
+      let nvars, pat, reversible = interp_notation_constr env nenv c in
       let () = nonprintable := not reversible in
       let map id = let (_,sc,_) = Id.Map.find id nvars in (id, sc) in
       List.map map vars, pat

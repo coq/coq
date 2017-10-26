@@ -1,4 +1,9 @@
 (**********************************************************************)
+(* Check precedence, spacing, etc. in printing with curly brackets    *)
+
+Check {x|x=0}+{True/\False}+{forall x, x=0}.
+
+(**********************************************************************)
 (* Check printing of notations with several instances of a recursive pattern *)
 (* Was wrong but I could not trigger a problem due to the collision between *)
 (* different instances of ".." *)
@@ -160,3 +165,35 @@ End Bug4765.
 
 Notation "x === x" := (eq_refl x) (only printing, at level 10).
 Check (fun x => eq_refl x).
+
+(* Test recursive notations with the recursive pattern repeated on the right *)
+
+Notation "{{ x , .. , y , z }}" := (pair x .. (pair y z) ..).
+Check {{0,1}}.
+Check {{0,1,2}}.
+Check {{0,1,2,3}}.
+
+(* Test printing of #5608                                             *)
+
+Reserved Notation "'letpair' x [1] = { A } ; 'return' ( b0 , b1 , .. , b2 )"
+  (at level 200, format "'letpair'  x  [1]  =  { A } ; '//' 'return'  ( b0 ,  b1 ,  .. ,  b2 )").
+Notation "'letpair' x [1] = { a } ; 'return' ( b0 , b1 , .. , b2 )" :=
+  (let x:=a in ( .. (b0,b1) .., b2)).
+Check letpair x [1] = {0}; return (1,2,3,4).
+
+(* Test spacing in #5569 *)
+
+Notation "{ { xL | xR // xcut } }" := (xL+xR+xcut)
+  (at level 0, xR at level 39, format "{ {  xL  |  xR  //  xcut  } }").
+Check 1+1+1.
+
+(* Test presence of notation variables in the recursive parts (introduced in dfdaf4de) *)
+Notation "!!! x .. y , b" := ((fun x => b), .. ((fun y => b), True) ..) (at level 200, x binder).
+Check !!! (x y:nat), True.
+
+(* Allow level for leftmost nonterminal when printing-only, BZ#5739 *)
+
+Notation "* x" := (id x) (only printing, at level 15, format "* x").
+Notation "x . y" := (x + y) (only printing, at level 20, x at level 14, left associativity, format "x . y").
+Check (((id 1) + 2) + 3).
+Check (id (1 + 2)).

@@ -56,7 +56,9 @@ let head_constr_bound sigma t =
   | _ -> raise Bound
 
 let head_constr sigma c =
-  try head_constr_bound sigma c with Bound -> user_err Pp.(str "Bound head variable.")
+  try head_constr_bound sigma c
+  with Bound -> user_err (Pp.str "Head identifier must be a constant, section variable, \
+                                  (co)inductive type, (co)inductive type constructor, or projection.")
 
 let decompose_app_bound sigma t =
   let t = strip_outer_cast sigma t in
@@ -764,7 +766,9 @@ let rec nb_hyp sigma c = match EConstr.kind sigma c with
 
 let try_head_pattern c =
   try head_pattern_bound c
-  with BoundPattern -> user_err Pp.(str "Bound head variable.")
+  with BoundPattern ->
+    user_err (Pp.str "Head pattern or sub-pattern must be a global constant, a section variable, \
+                      an if, case, or let expression, an application, or a projection.")
 
 let with_uid c = { obj = c; uid = fresh_key () }
 
@@ -937,7 +941,7 @@ let make_extern pri pat tacast =
 
 let make_mode ref m = 
   let open Term in
-  let ty = Global.type_of_global_unsafe ref in
+  let ty, _ = Global.type_of_global_in_context (Global.env ()) ref in
   let ctx, t = decompose_prod ty in
   let n = List.length ctx in
   let m' = Array.of_list m in

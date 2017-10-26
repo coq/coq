@@ -102,7 +102,7 @@ val context : 'a document -> (id * 'a) list * (id * 'a) list
 
 (** debug print *)
 val print :
-  'a document -> (bool -> id option -> 'a ->  Pp.std_ppcmds) -> Pp.std_ppcmds
+  'a document -> (bool -> id option -> 'a ->  Pp.t) -> Pp.t
 
 (** Callbacks on documents *)
 

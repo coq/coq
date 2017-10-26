@@ -33,17 +33,17 @@ open Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 type object_pr = {
-  print_inductive           : mutual_inductive -> std_ppcmds;
-  print_constant_with_infos : constant -> std_ppcmds;
-  print_section_variable    : variable -> std_ppcmds;
-  print_syntactic_def       : kernel_name -> std_ppcmds;
-  print_module              : bool -> Names.module_path -> std_ppcmds;
-  print_modtype             : module_path -> std_ppcmds;
-  print_named_decl          : Context.Named.Declaration.t -> std_ppcmds;
-  print_library_entry       : bool -> (object_name * Lib.node) -> std_ppcmds option;
-  print_context             : bool -> int option -> Lib.library_segment -> std_ppcmds;
-  print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.std_ppcmds;
-  print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> std_ppcmds;
+  print_inductive           : mutual_inductive -> Pp.t;
+  print_constant_with_infos : constant -> Pp.t;
+  print_section_variable    : variable -> Pp.t;
+  print_syntactic_def       : kernel_name -> Pp.t;
+  print_module              : bool -> Names.module_path -> Pp.t;
+  print_modtype             : module_path -> Pp.t;
+  print_named_decl          : Context.Named.Declaration.t -> Pp.t;
+  print_library_entry       : bool -> (object_name * Lib.node) -> Pp.t option;
+  print_context             : bool -> int option -> Lib.library_segment -> Pp.t;
+  print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.t;
+  print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t;
 }
 
 let gallina_print_module  = print_module
@@ -70,7 +70,8 @@ let int_or_no n = if Int.equal n 0 then str "no" else int n
 let print_basename sp = pr_global (ConstRef sp)
 
 let print_ref reduce ref =
-  let typ = Global.type_of_global_unsafe ref in
+  let typ, ctx = Global.type_of_global_in_context (Global.env ()) ref in
+  let typ = Vars.subst_instance_constr (Univ.AUContext.instance ctx) typ in
   let typ = EConstr.of_constr typ in
   let typ =
     if reduce then
@@ -78,6 +79,8 @@ let print_ref reduce ref =
       in EConstr.it_mkProd_or_LetIn ccl ctx
     else typ in
   let univs = Global.universes_of_global ref in
+  let inst = Univ.AUContext.instance univs in
+  let univs = Univ.UContext.make (inst, Univ.AUContext.instantiate inst univs) in
   let env = Global.env () in
   let bl = Universes.universe_binders_of_global ref in
   let sigma = Evd.from_ctx (Evd.evar_universe_context_of_binders bl) in
@@ -135,7 +138,7 @@ let print_renames_list prefix l =
     hv 2 (prlist_with_sep pr_comma (fun x -> x) (List.map Name.print l))]
 
 let need_expansion impl ref =
-  let typ = Global.type_of_global_unsafe ref in
+  let typ, _ = Global.type_of_global_in_context (Global.env ()) ref in
   let ctx = prod_assum typ in
   let nprods = List.count is_local_assum ctx in
   not (List.is_empty impl) && List.length impl >= nprods &&
@@ -301,13 +304,32 @@ let print_inductive_argument_scopes =
 (*********************)
 (* "Locate" commands *)
 
+type 'a locatable_info = {
+  locate : qualid -> 'a option;
+  locate_all : qualid -> 'a list;
+  shortest_qualid : 'a -> qualid;
+  name : 'a -> Pp.t;
+  print : 'a -> Pp.t;
+  about : 'a -> Pp.t;
+}
+
+type locatable = Locatable : 'a locatable_info -> locatable
+
 type logical_name =
   | Term of global_reference
   | Dir of global_dir_reference
   | Syntactic of kernel_name
   | ModuleType of module_path
-  | Tactic of Nametab.ltac_constant
+  | Other : 'a * 'a locatable_info -> logical_name
   | Undefined of qualid
+
+(** Generic table for objects that are accessible through a name. *)
+let locatable_map : locatable String.Map.t ref = ref String.Map.empty
+
+let register_locatable name f =
+  locatable_map := String.Map.add name (Locatable f) !locatable_map
+
+exception ObjFound of logical_name
 
 let locate_any_name ref =
   let (loc,qid) = qualid_of_reference ref in
@@ -318,7 +340,13 @@ let locate_any_name ref =
   try Dir (Nametab.locate_dir qid)
   with Not_found ->
   try ModuleType (Nametab.locate_modtype qid)
-  with Not_found -> Undefined qid
+  with Not_found ->
+    let iter _ (Locatable info) = match info.locate qid with
+    | None -> ()
+    | Some ans -> raise (ObjFound (Other (ans, info)))
+    in
+    try String.Map.iter iter !locatable_map; Undefined qid
+    with ObjFound obj -> obj
 
 let pr_located_qualid = function
   | Term ref ->
@@ -341,8 +369,7 @@ let pr_located_qualid = function
       str s ++ spc () ++ pr_dirpath dir
   | ModuleType mp ->
       str "Module Type" ++ spc () ++ pr_path (Nametab.path_of_modtype mp)
-  | Tactic kn ->
-      str "Ltac" ++ spc () ++ pr_path (Nametab.path_of_tactic kn)
+  | Other (obj, info) -> info.name obj
   | Undefined qid ->
       pr_qualid qid ++ spc () ++ str "not a defined object."
 
@@ -380,10 +407,6 @@ let locate_term qid =
   in
   List.map expand (Nametab.locate_extended_all qid)
 
-let locate_tactic qid =
-  let all = Nametab.locate_extended_all_tactic qid in
-  List.map (fun kn -> (Tactic kn, Nametab.shortest_qualid_of_tactic kn)) all
-
 let locate_module qid =
   let all = Nametab.locate_extended_all_dir qid in
   let map dir = match dir with
@@ -405,13 +428,30 @@ let locate_modtype qid =
   in
   modtypes @ List.map_filter map all
 
+let locate_other s qid =
+  let Locatable info = String.Map.find s !locatable_map in
+  let ans = info.locate_all qid in
+  let map obj = (Other (obj, info), info.shortest_qualid obj) in
+  List.map map ans
+
+type locatable_kind =
+| LocTerm
+| LocModule
+| LocOther of string
+| LocAny
+
 let print_located_qualid name flags ref =
   let (loc,qid) = qualid_of_reference ref in
-  let located = [] in
-  let located = if List.mem `LTAC flags then locate_tactic qid @ located else located in
-  let located = if List.mem `MODTYPE flags then locate_modtype qid @ located else located in
-  let located = if List.mem `MODULE flags then locate_module qid @ located else located in
-  let located = if List.mem `TERM flags then locate_term qid @ located else located in
+  let located = match flags with
+  | LocTerm -> locate_term qid
+  | LocModule -> locate_modtype qid @ locate_module qid
+  | LocOther s -> locate_other s qid
+  | LocAny ->
+    locate_term qid @
+    locate_modtype qid @
+    locate_module qid @
+    String.Map.fold (fun s _ accu -> locate_other s qid @ accu) !locatable_map []
+  in
   match located with
     | [] ->
 	let (dir,id) = repr_qualid qid in
@@ -429,10 +469,10 @@ let print_located_qualid name flags ref =
 	   else mt ()) ++
           display_alias o)) l
 
-let print_located_term ref = print_located_qualid "term" [`TERM] ref
-let print_located_tactic ref = print_located_qualid "tactic" [`LTAC] ref
-let print_located_module ref = print_located_qualid "module" [`MODULE; `MODTYPE] ref
-let print_located_qualid ref = print_located_qualid "object" [`TERM; `LTAC; `MODULE; `MODTYPE] ref
+let print_located_term ref = print_located_qualid "term" LocTerm ref
+let print_located_other s ref = print_located_qualid s (LocOther s) ref
+let print_located_module ref = print_located_qualid "module" LocModule ref
+let print_located_qualid ref = print_located_qualid "object" LocAny ref
 
 (******************************************)
 (**** Printing declarations and judgments *)
@@ -498,19 +538,24 @@ let print_body env evd = function
 let print_typed_body env evd (val_0,typ) =
   (print_body env evd val_0 ++ fnl () ++ str "     : " ++ pr_ltype_env env evd typ)
 
-let ungeneralized_type_of_constant_type t = 
-  Typeops.type_of_constant_type (Global.env ()) t
-
 let print_instance sigma cb =
   if Declareops.constant_is_polymorphic cb then
-    pr_universe_instance sigma (Declareops.constant_polymorphic_context cb)
+    let univs = Declareops.constant_polymorphic_context cb in
+    let inst = Univ.AUContext.instance univs in
+    let univs = Univ.UContext.make (inst, Univ.AUContext.instantiate inst univs) in
+    pr_universe_instance sigma univs
   else mt()
 				
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   let val_0 = Global.body_of_constant_body cb in
-  let typ = Declareops.type_of_constant cb in
-  let typ = ungeneralized_type_of_constant_type typ in
+  let typ =
+    match cb.const_universes with
+    | Monomorphic_const _ -> cb.const_type
+    | Polymorphic_const univs ->
+      let inst = Univ.AUContext.instance univs in
+      Vars.subst_instance_constr inst cb.const_type
+  in
   let univs =
     let otab = Global.opaque_tables () in
     match cb.const_body with
@@ -518,7 +563,9 @@ let print_constant with_values sep sp =
       begin
         match cb.const_universes with
         | Monomorphic_const ctx -> ctx
-        | Polymorphic_const ctx -> Univ.instantiate_univ_context ctx
+        | Polymorphic_const ctx ->
+          let inst = Univ.AUContext.instance ctx in
+          Univ.UContext.make (inst, Univ.AUContext.instantiate inst ctx)
       end
     | OpaqueDef o ->
       let body_uctxs = Opaqueproof.force_constraints otab o in
@@ -528,7 +575,8 @@ let print_constant with_values sep sp =
         Univ.ContextSet.to_context (Univ.ContextSet.union body_uctxs uctxs)
       | Polymorphic_const ctx ->
         assert(Univ.ContextSet.is_empty body_uctxs);
-        Univ.instantiate_univ_context ctx
+        let inst = Univ.AUContext.instance ctx in
+        Univ.UContext.make (inst, Univ.AUContext.instantiate inst ctx)
   in
   let ctx =
     Evd.evar_universe_context_of_binders
@@ -543,9 +591,10 @@ let print_constant with_values sep sp =
 	print_basename sp ++ print_instance sigma cb ++ str " : " ++ cut () ++ pr_ltype typ ++
 	str" ]" ++
 	Printer.pr_universe_ctx sigma univs
-    | _ ->
+    | Some (c, ctx) ->
+        let c = Vars.subst_instance_constr (Univ.AUContext.instance ctx) c in
 	print_basename sp ++ print_instance sigma cb ++ str sep ++ cut () ++
-	(if with_values then print_typed_body env sigma (val_0,typ) else pr_ltype typ)++
+	(if with_values then print_typed_body env sigma (Some c,typ) else pr_ltype typ)++
         Printer.pr_universe_ctx sigma univs)
 
 let gallina_print_constant_with_infos sp =
@@ -679,7 +728,7 @@ let print_full_pure_context () =
       | "CONSTANT" ->
 	  let con = Global.constant_of_delta_kn kn in
 	  let cb = Global.lookup_constant con in
-	  let typ = ungeneralized_type_of_constant_type cb.const_type in
+	  let typ = cb.const_type in
 	  hov 0 (
 	    match cb.const_body with
 	      | Undef _ ->
@@ -753,12 +802,13 @@ let print_any_name = function
   | Dir (DirModule(dirpath,(mp,_))) -> print_module (printable_body dirpath) mp
   | Dir _ -> mt ()
   | ModuleType mp -> print_modtype mp
-  | Tactic kn -> mt () (** TODO *)
+  | Other (obj, info) -> info.print obj
   | Undefined qid ->
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
     let dir,str = repr_qualid qid in
     if not (DirPath.is_empty dir) then raise Not_found;
-    str |> Global.lookup_named |> NamedDecl.set_id str |> print_named_decl
+    str |> Global.lookup_named |> print_named_decl
+
   with Not_found ->
     user_err
       ~hdr:"print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
@@ -783,12 +833,14 @@ let print_opaque_name qid =
     | IndRef (sp,_) ->
         print_inductive sp
     | ConstructRef cstr as gr ->
-        let open EConstr in
-	let ty = Universes.unsafe_type_of_global gr in
+	let ty, ctx = Global.type_of_global_in_context env gr in
+	let inst = Univ.AUContext.instance ctx in
+	let ty = Vars.subst_instance_constr inst ty in
 	let ty = EConstr.of_constr ty in
+        let open EConstr in
 	print_typed_value (mkConstruct cstr, ty)
     | VarRef id ->
-        env |> lookup_named id |> NamedDecl.set_id id |> print_named_decl
+        env |> lookup_named id |> print_named_decl
 
 let print_about_any ?loc k =
   match k with
@@ -808,8 +860,9 @@ let print_about_any ?loc k =
       v 0 (
       print_syntactic_def kn ++ fnl () ++
       hov 0 (str "Expands to: " ++ pr_located_qualid k))
-  | Dir _ | ModuleType _ | Tactic _ | Undefined _ ->
+  | Dir _ | ModuleType _ | Undefined _ ->
       hov 0 (pr_located_qualid k)
+  | Other (obj, info) -> hov 0 (info.about obj)
 
 let print_about = function
   | ByNotation (loc,(ntn,sc)) ->

@@ -285,7 +285,7 @@ type obligation =
   { obl_name : Id.t;
     obl_type : types;
     obl_location : Evar_kinds.t Loc.located;
-    obl_body : constant obligation_body option;
+    obl_body : pconstant obligation_body option;
     obl_status : bool * Evar_kinds.obligation_definition_status;
     obl_deps : Int.Set.t;
     obl_tac : unit Proofview.tactic option;
@@ -304,7 +304,7 @@ type program_info_aux = {
   prg_body: constr;
   prg_type: constr;
   prg_ctx:  Evd.evar_universe_context;
-  prg_pl: Id.t Loc.located list option;
+  prg_univdecl: Univdecls.universe_decl;
   prg_obligations: obligations;
   prg_deps : Id.t list;
   prg_fixkind : fixpoint_kind option ;
@@ -350,7 +350,7 @@ let get_shrink_obligations () = !shrink_obligations
 
 let _ =
   declare_bool_option
-    { optdepr  = true;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "Shrinking of Program obligations";
       optkey   = ["Shrink";"Obligations"];
       optread  = get_shrink_obligations;
@@ -358,18 +358,8 @@ let _ =
 
 let evar_of_obligation o = make_evar (Global.named_context_val ()) o.obl_type
 
-let get_body obl =
-  match obl.obl_body with
-  | None -> None
-  | Some (DefinedObl c) ->
-    let u = Environ.constant_instance (Global.env ()) c in
-    let pc = (c, u) in
-      Some (DefinedObl pc)
-  | Some (TermObl c) ->
-      Some (TermObl c)
-
 let get_obligation_body expand obl =
-  match get_body obl with
+  match obl.obl_body with
   | None -> None
   | Some c ->
      if expand && snd obl.obl_status == Evar_kinds.Expand then
@@ -484,8 +474,7 @@ let declare_definition prg =
     (Evd.evar_universe_context_subst prg.prg_ctx) in
   let opaque = prg.prg_opaque in
   let fix_exn = Hook.get get_fix_exn () in
-  let pl, ctx =
-    Evd.universe_context ?names:prg.prg_pl (Evd.from_ctx prg.prg_ctx) in
+  let pl, ctx = Evd.check_univ_decl (Evd.from_ctx prg.prg_ctx) prg.prg_univdecl in
   let ce =
     definition_entry ~fix_exn
      ~opaque ~types:(nf typ) ~poly:(pi2 prg.prg_kind)
@@ -567,7 +556,7 @@ let declare_mutual_definition l =
   let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) [] ctx)
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
-    List.iter Metasyntax.add_notation_interpretation first.prg_notations;
+    List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;
     Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
     let gr = List.hd kns in
     let kn = match gr with ConstRef kn -> kn | _ -> assert false in
@@ -646,12 +635,12 @@ let declare_obligation prg obl body ty uctx =
 	  shrink_body body ty else [], body, ty, [||]
       in
       let body = ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
+      let univs = if poly then Polymorphic_const_entry uctx else Monomorphic_const_entry uctx in
       let ce =
         { const_entry_body = Future.from_val ~fix_exn:(fun x -> x) body;
           const_entry_secctx = None;
 	  const_entry_type = ty;
-	  const_entry_polymorphic = poly;
-	  const_entry_universes = uctx;
+	  const_entry_universes = univs;
 	  const_entry_opaque = opaque;
           const_entry_inline_code = false;
           const_entry_feedback = None;
@@ -660,15 +649,15 @@ let declare_obligation prg obl body ty uctx =
       let constant = Declare.declare_constant obl.obl_name ~local:true
 	(DefinitionEntry ce,IsProof Property)
       in
-	if not opaque then add_hint false prg constant;
+	if not opaque then add_hint (Locality.make_section_locality None) prg constant;
 	definition_message obl.obl_name;
 	true, { obl with obl_body =
 	    if poly then
-	      Some (DefinedObl constant)
+	      Some (DefinedObl (constant, Univ.UContext.instance uctx))
 	    else
 	      Some (TermObl (it_mkLambda_or_LetIn_or_clean (mkApp (mkConst constant, args)) ctx)) }
 
-let init_prog_info ?(opaque = false) sign n pl b t ctx deps fixkind
+let init_prog_info ?(opaque = false) sign n udecl b t ctx deps fixkind
 		   notations obls impls kind reduce hook =
   let obls', b =
     match b with
@@ -689,7 +678,7 @@ let init_prog_info ?(opaque = false) sign n pl b t ctx deps fixkind
 	  obls, b
   in
     { prg_name = n ; prg_body = b; prg_type = reduce t; 
-      prg_ctx = ctx; prg_pl = pl;
+      prg_ctx = ctx; prg_univdecl = udecl;
       prg_obligations = (obls', Array.length obls');
       prg_deps = deps; prg_fixkind = fixkind ; prg_notations = notations ;
       prg_implicits = impls; prg_kind = kind; prg_reduce = reduce; 
@@ -828,8 +817,7 @@ let solve_by_tac name evi t poly ctx =
     id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps concl (Tacticals.New.tclCOMPLETE t) in
   let env = Global.env () in
   let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
-  let body, eff = Future.force entry.const_entry_body in
-  assert(Safe_typing.empty_private_constants = eff);
+  let body, () = Future.force entry.const_entry_body in
   let ctx' = Evd.merge_context_set ~sideff:true Evd.univ_rigid (Evd.from_ctx ctx') (snd body) in
   Inductiveops.control_only_guard (Global.env ()) (fst body);
   (fst body), entry.const_entry_type, Evd.evar_universe_context ctx'
@@ -846,8 +834,7 @@ let obligation_terminator name num guard hook auto pf =
       let env = Global.env () in
       let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
       let ty = entry.Entries.const_entry_type in
-      let (body, cstr), eff = Future.force entry.Entries.const_entry_body in
-      assert(Safe_typing.empty_private_constants = eff);
+      let (body, cstr), () = Future.force entry.Entries.const_entry_body in
       let sigma = Evd.from_ctx (fst uctx) in
       let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma cstr in
       Inductiveops.control_only_guard (Global.env ()) body;
@@ -859,9 +846,9 @@ let obligation_terminator name num guard hook auto pf =
       let obl = obls.(num) in
       let status =
         match obl.obl_status, opq with
-        | (_, Evar_kinds.Expand), Vernacexpr.Opaque _ -> err_not_transp ()
-        | (true, _), Vernacexpr.Opaque _ -> err_not_transp ()
-        | (false, _), Vernacexpr.Opaque _ -> Evar_kinds.Define true
+        | (_, Evar_kinds.Expand), Vernacexpr.Opaque -> err_not_transp ()
+        | (true, _), Vernacexpr.Opaque -> err_not_transp ()
+        | (false, _), Vernacexpr.Opaque -> Evar_kinds.Define true
         | (_, Evar_kinds.Define true), Vernacexpr.Transparent -> Evar_kinds.Define false
         | (_, status), Vernacexpr.Transparent -> status
       in
@@ -892,20 +879,22 @@ let obligation_hook prg obl num auto ctx' _ gr =
        if not transparent then err_not_transp ()
     | _ -> ()
 in
-  let obl = { obl with obl_body = Some (DefinedObl cst) } in
-  let () = if transparent then add_hint true prg cst in
-  let obls = Array.copy obls in
-  let _ = obls.(num) <- obl in
   let ctx' = match ctx' with None -> prg.prg_ctx | Some ctx' -> ctx' in
-  let ctx' =
+  let inst, ctx' =
     if not (pi2 prg.prg_kind) (* Not polymorphic *) then
       (* The universe context was declared globally, we continue
          from the new global environment. *)
       let evd = Evd.from_env (Global.env ()) in
       let ctx' = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx')) in
-        Evd.evar_universe_context ctx'
-    else ctx'
+      Univ.Instance.empty, Evd.evar_universe_context ctx'
+    else
+      let (_, uctx) = UState.universe_context ~names:[] ~extensible:true ctx' in
+      Univ.UContext.instance uctx, ctx'
   in
+  let obl = { obl with obl_body = Some (DefinedObl (cst, inst)) } in
+  let () = if transparent then add_hint true prg cst in
+  let obls = Array.copy obls in
+  let _ = obls.(num) <- obl in
   let prg = { prg with prg_ctx = ctx' } in
   let () =
     try ignore (update_obls prg obls (pred rem))
@@ -1078,11 +1067,12 @@ let show_term n =
 	     Printer.pr_constr_env (Global.env ()) Evd.empty prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
 	    ++ Printer.pr_constr_env (Global.env ()) Evd.empty prg.prg_body)
 
-let add_definition n ?term t ctx ?pl ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
+let add_definition n ?term t ctx ?(univdecl=Univdecls.default_univ_decl)
+                   ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
     ?(reduce=reduce) ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) obls =
   let sign = Decls.initialize_named_context_for_proof () in
   let info = Id.print n ++ str " has type-checked" in
-  let prg = init_prog_info sign ~opaque n pl term t ctx [] None [] obls implicits kind reduce hook in
+  let prg = init_prog_info sign ~opaque n univdecl term t ctx [] None [] obls implicits kind reduce hook in
   let obls,_ = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose Feedback.msg_info (info ++ str ".");
@@ -1097,13 +1087,14 @@ let add_definition n ?term t ctx ?pl ?(implicits=[]) ?(kind=Global,false,Definit
 	| Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
 	| _ -> res)
 
-let add_mutual_definitions l ctx ?pl ?tactic ?(kind=Global,false,Definition) ?(reduce=reduce)
+let add_mutual_definitions l ctx ?(univdecl=Univdecls.default_univ_decl) ?tactic
+                           ?(kind=Global,false,Definition) ?(reduce=reduce)
     ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) notations fixkind =
   let sign = Decls.initialize_named_context_for_proof () in
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
     List.iter
     (fun  (n, b, t, imps, obls) ->
-     let prg = init_prog_info sign ~opaque n pl (Some b) t ctx deps (Some fixkind)
+     let prg = init_prog_info sign ~opaque n univdecl (Some b) t ctx deps (Some fixkind)
        notations obls imps kind reduce hook 
      in progmap_add n (CEphemeron.create prg)) l;
     let _defined =
@@ -1132,7 +1123,7 @@ let admit_prog prg =
               (ParameterEntry (None,false,(x.obl_type,ctx),None), IsAssumption Conjectural)
             in
               assumption_message x.obl_name;
-              obls.(i) <- { x with obl_body = Some (DefinedObl kn) }
+              obls.(i) <- { x with obl_body = Some (DefinedObl (kn, Univ.Instance.empty)) }
         | Some _ -> ())
       obls;
     ignore(update_obls prg obls 0)

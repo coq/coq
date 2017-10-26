@@ -173,12 +173,15 @@ let pr_meta_map evd =
   in
   prlist pr_meta_binding (meta_list evd)
 
-let pr_decl (decl,ok) =
+let pr_id_with_privacy isprivate id =
+  if isprivate then str "~" ++ pr_id id else pr_id id
+
+let pr_decl (decl,ok,isprivate) =
   let open NamedDecl in
   let print_constr = print_kconstr in
   match decl with
-  | LocalAssum (id,_) -> if ok then pr_id id else (str "{" ++ pr_id id ++ str "}")
-  | LocalDef (id,c,_) -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++
+  | LocalAssum (id,_) -> if ok then pr_id_with_privacy isprivate id else (str "{" ++ pr_id_with_privacy isprivate id ++ str "}")
+  | LocalDef (id,c,_) -> str (if ok then "(" else "{") ++ pr_id_with_privacy isprivate id ++ str ":=" ++
                            print_constr c ++ str (if ok then ")" else "}")
 
 let pr_evar_source = function
@@ -210,12 +213,14 @@ let pr_evar_source = function
 let pr_evar_info evi =
   let open Evd in
   let print_constr = print_kconstr in
+  let private_ids = named_context_private_ids (named_context_val (evar_filtered_env evi)) in
   let phyps =
     try
       let decls = match Filter.repr (evar_filter evi) with
       | None -> List.map (fun c -> (c, true)) (evar_context evi)
       | Some filter -> List.combine (evar_context evi) filter
       in
+      let decls = List.map (fun (c,b) -> (c,b,Idset.mem (NamedDecl.get_id c) private_ids)) decls in
       prlist_with_sep spc pr_decl (List.rev decls)
     with Invalid_argument _ -> str "Ill-formed filtered context" in
   let pty = print_constr evi.evar_concl in
@@ -452,7 +457,7 @@ let pr_rel_decl env decl =
 
 let print_named_context env =
   hv 0 (fold_named_context
-	  (fun env d pps ->
+	  (fun env d _ pps ->
 	    pps ++ ws 2 ++ pr_var_decl env d)
           env ~init:(mt ()))
 
@@ -464,7 +469,7 @@ let print_rel_context env =
 let print_env env =
   let sign_env =
     fold_named_context
-      (fun env d pps ->
+      (fun env d _ pps ->
          let pidt =  pr_var_decl env d in
 	 (pps ++ fnl () ++ pidt))
       env ~init:(mt ())
@@ -506,7 +511,7 @@ let push_named_rec_types (lna,typarray,_) env =
 	   | Anonymous -> anomaly (Pp.str "Fix declarations must be named."))
       lna typarray in
   Array.fold_left
-    (fun e assum -> push_named assum e) env ctxt
+    (fun e assum -> push_named assum false e) env ctxt
 
 let lookup_rel_id id sign =
   let open RelDecl in
@@ -580,6 +585,12 @@ let rec drop_extra_implicit_args sigma c = match EConstr.kind sigma c with
 let last_arg sigma c = match EConstr.kind sigma c with
   | App (f,cl) -> Array.last cl
   | _ -> anomaly (Pp.str "last_arg.")
+
+(** Get the explicitly named quantifiers or local definitions of a type *)
+let rec quantified_names_of_type sigma t =
+  match EConstr.kind sigma t with
+  | Prod (na,_,t) | LetIn (na,_,_,t) -> Name.fold_right Id.Set.add na (quantified_names_of_type sigma t)
+  | _ -> Id.Set.empty
 
 (* Get the last arg of an application *)
 let decompose_app_vect sigma c =
@@ -906,7 +917,7 @@ let collect_vars sigma c =
   aux Id.Set.empty c
 
 let vars_of_global_reference env gr =
-  let c, _ = Universes.unsafe_constr_of_global gr in
+  let c, _ = Global.constr_of_global_in_context env gr in
   vars_of_global (Global.env ()) c
 
 (* Tests whether [m] is a subterm of [t]:
@@ -994,12 +1005,14 @@ let rec strip_outer_cast sigma c = match EConstr.kind sigma c with
 (* flattens application lists throwing casts in-between *)
 let collapse_appl sigma c = match EConstr.kind sigma c with
   | App (f,cl) ->
+    if EConstr.isCast sigma f then
       let rec collapse_rec f cl2 =
         match EConstr.kind sigma (strip_outer_cast sigma f) with
         | App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
         | _ -> EConstr.mkApp (f,cl2)
       in
       collapse_rec f cl
+    else c
   | _ -> c
 
 (* First utilities for avoiding telescope computation for subst_term *)
@@ -1069,9 +1082,9 @@ let replace_term_gen sigma eq_fun c by_c in_t =
 let replace_term sigma c byc t = replace_term_gen sigma EConstr.eq_constr c byc t
 
 let vars_of_env env =
-  let s =
-    Context.Named.fold_outside (fun decl s -> Id.Set.add (NamedDecl.get_id decl) s)
-      (named_context env) ~init:Id.Set.empty in
+  let s = Environ.ids_of_named_context_val (Environ.named_context_val env) in
+  if List.is_empty (Environ.rel_context env) then s
+  else
   Context.Rel.fold_outside
     (fun decl s -> match RelDecl.get_name decl with Name id -> Id.Set.add id s | _ -> s)
     (rel_context env) ~init:s
@@ -1145,9 +1158,6 @@ let is_template_polymorphic env sigma f =
   | Ind (ind, u) ->
     if not (EConstr.EInstance.is_empty u) then false
     else Environ.template_polymorphic_ind ind env
-  | Const (cst, u) ->
-    if not (EConstr.EInstance.is_empty u) then false
-    else Environ.template_polymorphic_constant cst env
   | _ -> false
 
 let base_sort_cmp pb s0 s1 =
@@ -1164,6 +1174,24 @@ let rec is_Prop sigma c = match EConstr.kind sigma c with
     | _ -> false
     end
   | Cast (c,_,_) -> is_Prop sigma c
+  | _ -> false
+
+let rec is_Set sigma c = match EConstr.kind sigma c with
+  | Sort u ->
+    begin match EConstr.ESorts.kind sigma u with
+    | Prop Pos -> true
+    | _ -> false
+    end
+  | Cast (c,_,_) -> is_Set sigma c
+  | _ -> false
+
+let rec is_Type sigma c = match EConstr.kind sigma c with
+  | Sort u ->
+    begin match EConstr.ESorts.kind sigma u with
+    | Type _ -> true
+    | _ -> false
+    end
+  | Cast (c,_,_) -> is_Type sigma c
   | _ -> false
 
 (* eq_constr extended with universe erasure *)
@@ -1388,9 +1416,9 @@ let compact_named_context sign =
 
 let clear_named_body id env =
   let open NamedDecl in
-  let aux _ = function
-  | LocalDef (id',c,t) when Id.equal id id' -> push_named (LocalAssum (id,t))
-  | d -> push_named d in
+  let aux _ d isprivate = match d with
+  | LocalDef (id',c,t) when Id.equal id id' -> push_named (LocalAssum (id,t)) isprivate
+  | d -> push_named d isprivate in
   fold_named_context aux env ~init:(reset_context env)
 
 let global_vars_set env sigma constr =

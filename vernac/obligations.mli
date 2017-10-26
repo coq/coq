@@ -10,7 +10,6 @@ open Environ
 open Term
 open Evd
 open Names
-open Pp
 open Globnames
 
 (* This is a hack to make it possible for Obligations to craft a Qed
@@ -54,7 +53,7 @@ val default_tactic : unit Proofview.tactic ref
 
 val add_definition : Names.Id.t -> ?term:Term.constr -> Term.types -> 
   Evd.evar_universe_context ->
-  ?pl:(Id.t Loc.located list) -> (* Universe binders *)
+  ?univdecl:Univdecls.universe_decl -> (* Universe binders and constraints *)
   ?implicits:(Constrexpr.explicitation * (bool * bool * bool)) list ->
   ?kind:Decl_kinds.definition_kind ->
   ?tactic:unit Proofview.tactic ->
@@ -72,7 +71,7 @@ val add_mutual_definitions :
   (Names.Id.t * Term.constr * Term.types *
       (Constrexpr.explicitation * (bool * bool * bool)) list * obligation_info) list ->
   Evd.evar_universe_context ->
-  ?pl:(Id.t Loc.located list) -> (* Universe binders *)
+  ?univdecl:Univdecls.universe_decl -> (* Universe binders and constraints *)
   ?tactic:unit Proofview.tactic ->
   ?kind:Decl_kinds.definition_kind ->
   ?reduce:(Term.constr -> Term.constr) ->
@@ -96,12 +95,12 @@ val try_solve_obligations : Names.Id.t option -> unit Proofview.tactic option ->
 
 val show_obligations : ?msg:bool -> Names.Id.t option -> unit
 
-val show_term : Names.Id.t option -> std_ppcmds
+val show_term : Names.Id.t option -> Pp.t
 
 val admit_obligations : Names.Id.t option -> unit
 
 exception NoObligations of Names.Id.t option
 
-val explain_no_obligations : Names.Id.t option -> Pp.std_ppcmds
+val explain_no_obligations : Names.Id.t option -> Pp.t
 
 val set_program_mode : bool -> unit

@@ -12,7 +12,7 @@
 # Executables
 ###########################################################################
 
-COQMKTOP:=bin/coqmktop$(EXE) 
+COQMKTOP:=bin/coqmktop$(EXE)
 
 COQTOPBYTE:=bin/coqtop.byte$(EXE)
 COQTOPEXE:=bin/coqtop$(EXE)
@@ -25,9 +25,15 @@ COQWC:=bin/coqwc$(EXE)
 COQDOC:=bin/coqdoc$(EXE)
 COQC:=bin/coqc$(EXE)
 COQWORKMGR:=bin/coqworkmgr$(EXE)
+COQMAKE_ONE_TIME_FILE:=tools/make-one-time-file.py
+COQTIME_FILE_MAKER:=tools/TimeFileMaker.py
+COQMAKE_BOTH_TIME_FILES:=tools/make-both-time-files.py
+COQMAKE_BOTH_SINGLE_TIMING_FILES:=tools/make-both-single-timing-files.py
 
 TOOLS:=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQWC) $(COQDOC) $(COQC)\
 	$(COQWORKMGR)
+TOOLS_HELPERS:=tools/CoqMakefile.in $(COQMAKE_ONE_TIME_FILE) $(COQTIME_FILE_MAKER)\
+	$(COQMAKE_BOTH_TIME_FILES) $(COQMAKE_BOTH_SINGLE_TIMING_FILES)
 
 COQDEPBOOT:=bin/coqdep_boot$(EXE)
 OCAMLLIBDEP:=bin/ocamllibdep$(EXE)
@@ -64,7 +70,7 @@ DYNLIB:=.cma
 endif
 
 INSTALLBIN:=install
-INSTALLLIB:=install -m 644 
+INSTALLLIB:=install -m 644
 INSTALLSH:=./install.sh
 MKDIR:=install -d
 
@@ -99,11 +105,11 @@ BYTERUN:=$(addprefix kernel/byterun/, \
 CORECMA:=lib/clib.cma lib/lib.cma kernel/kernel.cma intf/intf.cma library/library.cma \
         engine/engine.cma pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma printing/printing.cma tactics/tactics.cma vernac/vernac.cma \
-	stm/stm.cma toplevel/toplevel.cma parsing/highparsing.cma API/API.cma
+	stm/stm.cma toplevel/toplevel.cma API/API.cma
 
 TOPLOOPCMA:=stm/proofworkertop.cma stm/tacworkertop.cma stm/queryworkertop.cma
 
-GRAMMARCMA:=grammar/compat5.cmo grammar/grammar.cma
+GRAMMARCMA:=grammar/grammar.cma
 
 # modules known by the toplevel of Coq
 
@@ -191,7 +197,7 @@ LIBFILES:=$(ALLVO) $(call vo_to_cm,$(ALLVO)) \
 	    $(call vo_to_obj,$(ALLVO)) \
 	    $(VFILES) $(GLOBFILES)
 
-# For emacs: 
-# Local Variables: 
-# mode: makefile 
+# For emacs:
+# Local Variables:
+# mode: makefile
 # End:

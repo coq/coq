@@ -83,7 +83,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
 	  let c',cst = match cb.const_body with
 	    | Undef _ | OpaqueDef _ ->
 	      let j = Typeops.infer env' c in
-	      let typ = Typeops.type_of_constant_type env' cb.const_type in
+	      let typ = cb.const_type in
 	      let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
 						j.uj_type typ in
 	      j.uj_val, cst'
@@ -92,37 +92,29 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
 	         c, Reduction.infer_conv env' (Environ.universes env') c c'
 	  in c', Monomorphic_const ctx, Univ.ContextSet.add_constraints cst (Univ.ContextSet.of_context ctx)
         | Polymorphic_const uctx ->
-          let uctx = Univ.instantiate_univ_context uctx in
-	  let cus, ccst = Univ.UContext.dest uctx in
-	  let newus, cst = Univ.UContext.dest ctx in
-	  let () =
-	    if not (Univ.Instance.length cus == Univ.Instance.length newus) then
-	      error_incorrect_with_constraint lab
-	  in
-	  let inst = Univ.Instance.append cus newus in
-	  let csti = Univ.enforce_eq_instances cus newus cst in
-	  let csta = Univ.Constraint.union csti ccst in
-	  let env' = Environ.push_context ~strict:false (Univ.UContext.make (inst, csta)) env in
-	  let () = if not (UGraph.check_constraints cst (Environ.universes env')) then
-		     error_incorrect_with_constraint lab
-	  in
+          let subst, ctx = Univ.abstract_universes ctx in
+          let c = Vars.subst_univs_level_constr subst c in
+          let () =
+            if not (UGraph.check_subtype (Environ.universes env) uctx ctx) then
+              error_incorrect_with_constraint lab
+          in
+          (** Terms are compared in a context with De Bruijn universe indices *)
+	  let env' = Environ.push_context ~strict:false (Univ.AUContext.repr uctx) env in
 	  let cst = match cb.const_body with
 	    | Undef _ | OpaqueDef _ ->
 	      let j = Typeops.infer env' c in
-	      let typ = Typeops.type_of_constant_type env' cb.const_type in
-	      let typ = Vars.subst_instance_constr cus typ in
+	      let typ = cb.const_type in
 	      let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
 						j.uj_type typ in
 	      cst'
 	    | Def cs ->
-	       let c' = Vars.subst_instance_constr cus (Mod_subst.force_constr cs) in
+	       let c' = Mod_subst.force_constr cs in
 	       let cst' = Reduction.infer_conv env' (Environ.universes env') c c' in
 	        cst'
 	  in
 	    if not (Univ.Constraint.is_empty cst) then
 	      error_incorrect_with_constraint lab;
-	    let subst, ctx = Univ.abstract_universes ctx in
-	      Vars.subst_univs_level_constr subst c, Polymorphic_const ctx, Univ.ContextSet.empty
+            c, Polymorphic_const ctx, Univ.ContextSet.empty
       in
       let def = Def (Mod_subst.from_val c') in
 (*      let ctx' = Univ.UContext.make (newus, cst) in *)
@@ -174,16 +166,10 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
       let mb_mp1 = lookup_module mp1 env in
       let mtb_mp1 = module_type_of_module mb_mp1 in
       let cst = match old.mod_expr with
-	| Abstract ->
-	  begin
-            try
-              let mtb_old = module_type_of_module old in
-              let chk_cst = Subtyping.check_subtypes env' mtb_mp1 mtb_old in
-              Univ.ContextSet.add_constraints chk_cst old.mod_constraints
-	    with Failure _ ->
-              (* TODO: where can a Failure come from ??? *)
-              error_incorrect_with_constraint lab
-	  end
+        | Abstract ->
+          let mtb_old = module_type_of_module old in
+          let chk_cst = Subtyping.check_subtypes env' mtb_mp1 mtb_old in
+          Univ.ContextSet.add_constraints chk_cst old.mod_constraints
 	| Algebraic (NoFunctor (MEident(mp'))) ->
 	  check_modpath_equiv env' mp1 mp';
 	  old.mod_constraints
@@ -272,7 +258,9 @@ let rec translate_mse env mpo inl = function
   |MEident mp1 as me ->
     let mb = match mpo with
       |Some mp -> strengthen_and_subst_mb (lookup_module mp1 env) mp false
-      |None -> lookup_modtype mp1 env
+      |None ->
+        let mt = lookup_modtype mp1 env in
+        module_body_of_type mt.mod_mp mt
     in
     mb.mod_type, me, mb.mod_delta, Univ.ContextSet.empty
   |MEapply (fe,mp1) ->
@@ -289,9 +277,11 @@ let mk_mod mp e ty cst reso =
     mod_type_alg = None;
     mod_constraints = cst;
     mod_delta = reso;
-    mod_retroknowledge = [] }
+    mod_retroknowledge = ModBodyRK []; }
 
-let mk_modtype mp ty cst reso = mk_mod mp Abstract ty cst reso
+let mk_modtype mp ty cst reso =
+  let mb = mk_mod mp Abstract ty cst reso in
+  { mb with mod_expr = (); mod_retroknowledge = ModTypeRK }
 
 let rec translate_mse_funct env mpo inl mse = function
   |[] ->
@@ -327,6 +317,7 @@ let finalize_module env mp (sign,alg,reso,cst) restype = match restype with
     { res_mtb with
       mod_mp = mp;
       mod_expr = impl;
+      mod_retroknowledge = ModBodyRK [];
       (** cst from module body typing,
           cst' from subtyping,
           constraints from module type. *)

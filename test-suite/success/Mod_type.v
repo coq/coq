@@ -1,4 +1,4 @@
-(* Check bug #1025 submitted by Pierre-Luc Carmel Biron *)
+(* Check BZ#1025 submitted by Pierre-Luc Carmel Biron *)
 
 Module Type FOO.
   Parameter A : Type.
@@ -18,7 +18,7 @@ Module Bar : BAR.
 
 End Bar.
 
-(* Check bug #2809: correct printing of modules with notations *)
+(* Check BZ#2809: correct printing of modules with notations *)
 
 Module C.
   Inductive test : Type :=

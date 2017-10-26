@@ -44,7 +44,7 @@ let compact el ({ solution } as pv) =
   let apply_subst_einfo _ ei =
     Evd.({ ei with
        evar_concl =  nf0 ei.evar_concl;
-       evar_hyps = Environ.map_named_val nf0 ei.evar_hyps;
+       evar_hyps = Environ.map_named_val (map_constr nf0) ei.evar_hyps;
        evar_candidates = Option.map (List.map nf0) ei.evar_candidates }) in
   let new_solution = Evd.raw_map_undefined apply_subst_einfo pruned_solution in
   let new_size = Evd.fold (fun _ _ i -> i+1) new_solution 0 in
@@ -70,7 +70,8 @@ let dependent_init =
   let rec aux = function
   | TNil sigma -> [], { solution = sigma; comb = []; shelf = [] }
   | TCons (env, sigma, typ, t) ->
-    let (sigma, econstr) = Evarutil.new_evar env sigma ~src ~store typ in
+    let concl_user_names = Termops.quantified_names_of_type sigma typ in
+    let (sigma, econstr) = Evarutil.new_evar env sigma ~src ~store ~concl_user_names typ in
     let (gl, _) = EConstr.destEvar sigma econstr in
     let ret, { solution = sol; comb = comb } = aux (t sigma econstr) in
     let entry = (econstr, typ) :: ret in
@@ -153,8 +154,12 @@ let focus i j sp =
   ( { sp with comb = new_comb } , context )
 
 (** [undefined defs l] is the list of goals in [l] which are still
-    unsolved (after advancing cleared goals). *)
-let undefined defs l = CList.map_filter (Evarutil.advance defs) l
+    unsolved (after advancing cleared goals). Note that order matters. *)
+let undefined defs l =
+  List.fold_right (fun evk l ->
+      match Evarutil.advance defs evk with
+      | Some evk -> List.add_set Evar.equal evk l
+      | None -> l) l []
 
 (** Unfocuses a proofview with respect to a context. *)
 let unfocus c sp =
@@ -332,7 +337,7 @@ exception NoSuchGoals of int
 (* This hook returns a string to be appended to the usual message.
    Primarily used to add a suggestion about the right bullet to use to
    focus the next goal, if applicable. *)
-let nosuchgoals_hook:(int -> std_ppcmds) ref = ref (fun n -> mt ())
+let nosuchgoals_hook:(int -> Pp.t) ref = ref (fun n -> mt ())
 let set_nosuchgoals_hook f = nosuchgoals_hook := f
 
 
@@ -1001,6 +1006,9 @@ let goal_extra evars gl =
   let evi = Evd.find evars gl in
   evi.Evd.evar_extra
 
+let goal_concl_user_names evars gl =
+  let evi = Evd.find evars gl in
+  evi.Evd.evar_concl_user_names
 
 let catchable_exception = function
   | Logic_monad.Exception _ -> false
@@ -1023,6 +1031,7 @@ module Goal = struct
   let hyps {env} = EConstr.named_context env
   let concl {concl} = concl
   let extra {sigma; self} = goal_extra sigma self
+  let concl_user_names {sigma; self} = goal_concl_user_names sigma self
 
   let gmake_with info env sigma goal = 
     { env = Environ.reset_with_named_context (Evd.evar_filtered_hyps info) env ;
@@ -1072,13 +1081,6 @@ module Goal = struct
     end
     end
 
-  exception NotExactlyOneSubgoal
-  let _ = CErrors.register_handler begin function
-  | NotExactlyOneSubgoal ->
-      CErrors.user_err (Pp.str"Not exactly one subgoal.")
-  | _ -> raise CErrors.Unhandled
-  end
-
   let enter_one f =
     let open Proof in
     Comb.get >>= function
@@ -1090,7 +1092,7 @@ module Goal = struct
          let (e, info) = CErrors.push e in
          tclZERO ~info e
       end
-    | _ -> tclZERO NotExactlyOneSubgoal
+    | _ -> assert false (* unsatisfied not-exactly-one-goal precondition *)
 
   let goals =
     Pv.get >>= fun step ->

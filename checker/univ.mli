@@ -18,7 +18,9 @@ sig
   (** Create a new universe level from a unique identifier and an associated
       module path. *)
 
-  val pr : t -> Pp.std_ppcmds
+  val var : int -> t
+
+  val pr : t -> Pp.t
   (** Pretty-printing *)
   
   val equal : t -> t -> bool
@@ -51,7 +53,7 @@ type universe = Universe.t
 
 (** Alias name. *)
 
-val pr_uni : universe -> Pp.std_ppcmds
+val pr_uni : universe -> Pp.t
 
 (** The universes hierarchy: Type 0- = Prop <= Type 0 = Set <= Type 1 <= ...
    Typing of universes: Type 0-, Type 0 : Type 1; Type i : Type (i+1) if i>0 *)
@@ -162,7 +164,6 @@ sig
   val is_empty : t -> bool
 
   val equal : t -> t -> bool
-  (** Equality (note: instances are hash-consed, this is O(1)) *)
 
   val subst_fn : universe_level_subst_fn -> t -> t
   (** Substitution by a level-to-level function. *)
@@ -170,7 +171,7 @@ sig
   val subst : universe_level_subst -> t -> t
   (** Substitution by a level-to-level function. *)
 
-  val pr : t -> Pp.std_ppcmds
+  val pr : t -> Pp.t
   (** Pretty-printing, no comments *)
 
   val check_eq : t check_function
@@ -178,6 +179,8 @@ sig
 
   val length : t -> int
   (** Compute the length of the instance  *)
+
+  val of_array : Level.t array -> t
 
   val append : t -> t -> t
   (** Append two universe instances *)
@@ -208,32 +211,14 @@ module AUContext :
 sig
   type t
 
-  val instance : t -> Instance.t
+  val size : t -> int
+
+  val instantiate : Instance.t -> t -> Constraint.t
+  val repr : t -> UContext.t
 
 end
 
 type abstract_universe_context = AUContext.t
-
-module CumulativityInfo :
-sig
-  type t
-
-  val make : universe_context * universe_context -> t
-
-  val empty : t
-
-  val univ_context : t -> universe_context
-  val subtyp_context : t -> universe_context
-
-  val from_universe_context : universe_context -> universe_instance -> t
-
-  val subtyping_other_instance : t -> universe_instance
-  
-  val subtyping_susbst : t -> universe_level_subst
-
-end
-
-type cumulativity_info = CumulativityInfo.t
 
 module ACumulativityInfo :
 sig
@@ -276,22 +261,20 @@ val subst_univs_universe : universe_subst_fn -> universe -> universe
 (** Substitution of instances *)
 val subst_instance_instance : universe_instance -> universe_instance -> universe_instance
 val subst_instance_universe : universe_instance -> universe -> universe
-val subst_instance_context : universe_instance -> abstract_universe_context -> universe_context
 
 (* val make_instance_subst : universe_instance -> universe_level_subst *)
 (* val make_inverse_instance_subst : universe_instance -> universe_level_subst *)
 
-(** Get the instantiated graph. *)
-val instantiate_univ_context : abstract_universe_context -> universe_context
-val instantiate_cumulativity_info : abstract_cumulativity_info -> cumulativity_info
-
 (** Build the relative instance corresponding to the context *)
 val make_abstract_instance : abstract_universe_context -> universe_instance
-									    
+
+(** Check instance subtyping *)
+val check_subtype : universes -> AUContext.t -> AUContext.t -> bool
+
 (** {6 Pretty-printing of universes. } *)
 
-val pr_constraint_type : constraint_type -> Pp.std_ppcmds
-val pr_constraints : (Level.t -> Pp.std_ppcmds) -> constraints -> Pp.std_ppcmds
-val pr_universe_context : (Level.t -> Pp.std_ppcmds) -> universe_context -> Pp.std_ppcmds
+val pr_constraint_type : constraint_type -> Pp.t
+val pr_constraints : (Level.t -> Pp.t) -> constraints -> Pp.t
+val pr_universe_context : (Level.t -> Pp.t) -> universe_context -> Pp.t
 
-val pr_universes : universes -> Pp.std_ppcmds
+val pr_universes : universes -> Pp.t

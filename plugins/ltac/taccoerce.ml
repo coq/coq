@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Util
 open Names
 open Term
@@ -56,6 +55,15 @@ struct
 type t = Val.t
 
 let normalize v = v
+
+let of_ident id = in_gen (topwit wit_ident) id
+
+let to_ident v =
+  let v = normalize v in
+  if has_type v (topwit wit_ident) then
+    let id = out_gen (topwit wit_ident) v in
+    Some id
+  else None
 
 let of_constr c = in_gen (topwit wit_constr) c
 
@@ -107,22 +115,29 @@ let coerce_to_constr_context v =
     out_gen (topwit wit_constr_context) v
   else raise (CannotCoerceTo "a term context")
 
+let is_private env id =
+  let private_ids = Environ.named_context_private_ids (Environ.named_context_val env) in
+  Id.Set.mem id private_ids
+
 (* Interprets an identifier which must be fresh *)
 let coerce_var_to_ident fresh env sigma v =
   let v = Value.normalize v in
   let fail () = raise (CannotCoerceTo "a fresh identifier") in
   if has_type v (topwit wit_intro_pattern) then
     match out_gen (topwit wit_intro_pattern) v with
-    | _, IntroNaming (IntroIdentifier id) -> id
+    | _, IntroNaming (IntroIdentifier (id,isprivate)) -> id,isprivate
     | _ -> fail ()
   else if has_type v (topwit wit_var) then
-    out_gen (topwit wit_var) v
+    let id = out_gen (topwit wit_var) v in
+    id, is_private env id
+  else if has_type v (topwit wit_ident) then
+    out_gen (topwit wit_ident) v
   else match Value.to_constr v with
   | None -> fail ()
   | Some c ->
     (* We need it fresh for intro e.g. in "Tac H = clear H; intro H" *)
     if isVar sigma c && not (fresh && is_variable env (destVar sigma c)) then
-      destVar sigma c
+      let id = destVar sigma c in id, is_private env id
     else fail ()
 
 
@@ -138,10 +153,12 @@ let id_of_name = function
   let fail () = raise (CannotCoerceTo "an identifier") in
   if has_type v (topwit wit_intro_pattern) then
     match out_gen (topwit wit_intro_pattern) v with
-    | _, IntroNaming (IntroIdentifier id) -> id
+    | _, IntroNaming (IntroIdentifier (id,_)) -> id
     | _ -> fail ()
   else if has_type v (topwit wit_var) then
     out_gen (topwit wit_var) v
+  else if has_type v (topwit wit_ident) then
+    fst (out_gen (topwit wit_ident) v)
   else
     match Value.to_constr v with
     | None -> fail ()
@@ -178,12 +195,15 @@ let coerce_to_intro_pattern env sigma v =
     snd (out_gen (topwit wit_intro_pattern) v)
   else if has_type v (topwit wit_var) then
     let id = out_gen (topwit wit_var) v in
-    IntroNaming (IntroIdentifier id)
+    IntroNaming (IntroIdentifier (id,false))
+  else if has_type v (topwit wit_ident) then
+    let id,isprivate = out_gen (topwit wit_ident) v in
+    IntroNaming (IntroIdentifier (id,isprivate))
   else match Value.to_constr v with
   | Some c when isVar sigma c ->
       (* This happens e.g. in definitions like "Tac H = clear H; intro H" *)
       (* but also in "destruct H as (H,H')" *)
-      IntroNaming (IntroIdentifier (destVar sigma c))
+      IntroNaming (IntroIdentifier (destVar sigma c,false))
   | _ -> raise (CannotCoerceTo "an introduction pattern")
 
 let coerce_to_intro_pattern_naming env sigma v =
@@ -195,7 +215,7 @@ let coerce_to_hint_base v =
   let v = Value.normalize v in
   if has_type v (topwit wit_intro_pattern) then
     match out_gen (topwit wit_intro_pattern) v with
-    | _, IntroNaming (IntroIdentifier id) -> Id.to_string id
+    | _, IntroNaming (IntroIdentifier (id,_)) -> Id.to_string id
     | _ -> raise (CannotCoerceTo "a hint base name")
   else raise (CannotCoerceTo "a hint base name")
 
@@ -210,7 +230,7 @@ let coerce_to_constr env v =
   let fail () = raise (CannotCoerceTo "a term") in
   if has_type v (topwit wit_intro_pattern) then
     match out_gen (topwit wit_intro_pattern) v with
-    | _, IntroNaming (IntroIdentifier id) ->
+    | _, IntroNaming (IntroIdentifier (id,_)) ->
       (try ([], constr_of_id env id) with Not_found -> fail ())
     | _ -> fail ()
   else if has_type v (topwit wit_constr) then
@@ -220,6 +240,9 @@ let coerce_to_constr env v =
     out_gen (topwit wit_constr_under_binders) v
   else if has_type v (topwit wit_var) then
     let id = out_gen (topwit wit_var) v in
+    (try [], constr_of_id env id with Not_found -> fail ())
+  else if has_type v (topwit wit_ident) then
+    let id,_ = out_gen (topwit wit_ident) v in
     (try [], constr_of_id env id with Not_found -> fail ())
   else fail ()
 
@@ -241,10 +264,14 @@ let coerce_to_evaluable_ref env sigma v =
   let ev =
   if has_type v (topwit wit_intro_pattern) then
     match out_gen (topwit wit_intro_pattern) v with
-    | _, IntroNaming (IntroIdentifier id) when is_variable env id -> EvalVarRef id
+    | _, IntroNaming (IntroIdentifier (id,_)) when is_variable env id -> EvalVarRef id
     | _ -> fail ()
   else if has_type v (topwit wit_var) then
     let id = out_gen (topwit wit_var) v in
+    if Id.List.mem id (Termops.ids_of_context env) then EvalVarRef id
+    else fail ()
+  else if has_type v (topwit wit_ident) then
+    let id,_ = out_gen (topwit wit_ident) v in
     if Id.List.mem id (Termops.ids_of_context env) then EvalVarRef id
     else fail ()
   else if has_type v (topwit wit_ref) then
@@ -281,10 +308,13 @@ let coerce_to_hyp env sigma v =
   let v = Value.normalize v in
   if has_type v (topwit wit_intro_pattern) then
     match out_gen (topwit wit_intro_pattern) v with
-    | _, IntroNaming (IntroIdentifier id) when is_variable env id -> id
+    | _, IntroNaming (IntroIdentifier (id,_)) when is_variable env id -> id
     | _ -> fail ()
   else if has_type v (topwit wit_var) then
     let id = out_gen (topwit wit_var) v in
+    if is_variable env id then id else fail ()
+  else if has_type v (topwit wit_ident) then
+    let id,_ = out_gen (topwit wit_ident) v in
     if is_variable env id then id else fail ()
   else match Value.to_constr v with
   | Some c when isVar sigma c -> destVar sigma c
@@ -316,10 +346,13 @@ let coerce_to_quantified_hypothesis sigma v =
   if has_type v (topwit wit_intro_pattern) then
     let v = out_gen (topwit wit_intro_pattern) v in
     match v with
-    | _, IntroNaming (IntroIdentifier id) -> NamedHyp id
+    | _, IntroNaming (IntroIdentifier (id,_)) -> NamedHyp id
     | _ -> raise (CannotCoerceTo "a quantified hypothesis")
   else if has_type v (topwit wit_var) then
     let id = out_gen (topwit wit_var) v in
+    NamedHyp id
+  else if has_type v (topwit wit_ident) then
+    let id,_ = out_gen (topwit wit_ident) v in
     NamedHyp id
   else if has_type v (topwit wit_int) then
     AnonHyp (out_gen (topwit wit_int) v)

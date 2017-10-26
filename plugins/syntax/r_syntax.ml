@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Util
 open Names
 open Globnames
@@ -28,6 +27,10 @@ let binnums = ["Coq";"Numbers";"BinNums"]
 let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 let make_path dir id = Libnames.make_path (make_dir dir) (Id.of_string id)
 
+let is_gr c gr = match DAst.get c with
+| GRef (r, _) -> Globnames.eq_gr r gr
+| _ -> false
+
 let positive_path = make_path binnums "positive"
 
 (* TODO: temporary hack *)
@@ -43,13 +46,13 @@ let glob_xO = ConstructRef path_of_xO
 let glob_xH = ConstructRef path_of_xH
 
 let pos_of_bignat ?loc x =
-  let ref_xI = CAst.make @@ GRef (glob_xI, None) in
-  let ref_xH = CAst.make @@ GRef (glob_xH, None) in
-  let ref_xO = CAst.make @@ GRef (glob_xO, None) in
+  let ref_xI = DAst.make @@ GRef (glob_xI, None) in
+  let ref_xH = DAst.make @@ GRef (glob_xH, None) in
+  let ref_xO = DAst.make @@ GRef (glob_xO, None) in
   let rec pos_of x =
     match div2_with_rest x with
-      | (q,false) -> CAst.make @@ GApp (ref_xO,[pos_of q])
-      | (q,true) when not (Bigint.equal q zero) -> CAst.make @@ GApp (ref_xI,[pos_of q])
+      | (q,false) -> DAst.make @@ GApp (ref_xO,[pos_of q])
+      | (q,true) when not (Bigint.equal q zero) -> DAst.make @@ GApp (ref_xI,[pos_of q])
       | (q,true) -> ref_xH
   in
   pos_of x
@@ -58,10 +61,10 @@ let pos_of_bignat ?loc x =
 (* Printing positive via scopes                                       *)
 (**********************************************************************)
 
-let rec bignat_of_pos = function
-  | { CAst.v = GApp ({ CAst.v = GRef (b,_)},[a]) } when Globnames.eq_gr b glob_xO -> mult_2(bignat_of_pos a)
-  | { CAst.v = GApp ({ CAst.v = GRef (b,_)},[a]) } when Globnames.eq_gr b glob_xI -> add_1(mult_2(bignat_of_pos a))
-  | { CAst.v = GRef (a, _) } when Globnames.eq_gr a glob_xH -> Bigint.one
+let rec bignat_of_pos c = match DAst.get c with
+  | GApp (r, [a]) when is_gr r glob_xO -> mult_2(bignat_of_pos a)
+  | GApp (r, [a]) when is_gr r glob_xI -> add_1(mult_2(bignat_of_pos a))
+  | GRef (a, _) when Globnames.eq_gr a glob_xH -> Bigint.one
   | _ -> raise Non_closed_number
 
 (**********************************************************************)
@@ -82,18 +85,18 @@ let z_of_int ?loc n =
   if not (Bigint.equal n zero) then
     let sgn, n =
       if is_pos_or_zero n then glob_POS, n else glob_NEG, Bigint.neg n in
-    CAst.make @@ GApp(CAst.make @@ GRef (sgn,None), [pos_of_bignat ?loc n])
+    DAst.make @@ GApp(DAst.make @@ GRef (sgn,None), [pos_of_bignat ?loc n])
   else
-    CAst.make @@ GRef (glob_ZERO, None)
+    DAst.make @@ GRef (glob_ZERO, None)
 
 (**********************************************************************)
 (* Printing Z via scopes                                              *)
 (**********************************************************************)
 
-let bigint_of_z = function
-  | { CAst.v = GApp ({ CAst.v = GRef (b,_)},[a]) } when Globnames.eq_gr b glob_POS -> bignat_of_pos a
-  | { CAst.v = GApp ({ CAst.v = GRef (b,_)},[a]) } when Globnames.eq_gr b glob_NEG -> Bigint.neg (bignat_of_pos a)
-  | { CAst.v = GRef (a, _) } when Globnames.eq_gr a glob_ZERO -> Bigint.zero
+let bigint_of_z c = match DAst.get c with
+  | GApp (r,[a]) when is_gr r glob_POS -> bignat_of_pos a
+  | GApp (r,[a]) when is_gr r glob_NEG -> Bigint.neg (bignat_of_pos a)
+  | GRef (a, _) when Globnames.eq_gr a glob_ZERO -> Bigint.zero
   | _ -> raise Non_closed_number
 
 (**********************************************************************)
@@ -109,18 +112,18 @@ let make_path dir id = Globnames.encode_con dir (Id.of_string id)
 let glob_IZR = ConstRef (make_path (make_dir rdefinitions) "IZR")
 
 let r_of_int ?loc z =
-  CAst.make @@ GApp (CAst.make @@ GRef(glob_IZR,None), [z_of_int ?loc z])
+  DAst.make @@ GApp (DAst.make @@ GRef(glob_IZR,None), [z_of_int ?loc z])
 
 (**********************************************************************)
 (* Printing R via scopes                                              *)
 (**********************************************************************)
 
-let bigint_of_r = function
-  | { CAst.v = GApp ({ CAst.v = GRef (o,_) }, [a]) } when Globnames.eq_gr o glob_IZR ->
+let bigint_of_r c = match DAst.get c with
+  | GApp (r, [a]) when is_gr r glob_IZR ->
       bigint_of_z a
   | _ -> raise Non_closed_number
 
-let uninterp_r p =
+let uninterp_r (AnyGlobConstr p) =
   try
     Some (bigint_of_r p)
   with Non_closed_number ->
@@ -129,6 +132,6 @@ let uninterp_r p =
 let _ = Notation.declare_numeral_interpreter "R_scope"
   (r_path,["Coq";"Reals";"Rdefinitions"])
   r_of_int
-  ([CAst.make @@ GRef (glob_IZR, None)],
+  ([DAst.make @@ GRef (glob_IZR, None)],
     uninterp_r,
     false)

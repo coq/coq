@@ -1,5 +1,6 @@
 \chapter[Vernacular commands]{Vernacular commands\label{Vernacular-commands}
 \label{Other-commands}}
+%HEVEA\cutname{vernacular.html}
 
 \section{Displaying}
 
@@ -656,7 +657,7 @@ dynamically.
 searched into the current {\ocaml} loadpath (see the command {\tt
 Add ML Path} in the Section~\ref{loadpath}).  Loading of {\ocaml}
 files is only possible under the bytecode version of {\tt coqtop}
-(i.e. {\tt coqtop} called with options {\tt -byte}, see chapter 
+(i.e. {\tt coqtop.byte}, see chapter 
 \ref{Addoc-coqc}), or when {\Coq} has been compiled with a version of
 {\ocaml} that supports native {\tt Dynlink} ($\ge$ 3.11).
 
@@ -739,7 +740,7 @@ the command {\tt Declare ML Module} in the Section~\ref{compiled}).
 \subsection[\tt Print ML Path {\str}.]{\tt Print ML Path {\str}.\comindex{Print ML Path}}
 This command displays the current {\ocaml} loadpath.
 This command makes sense only under the bytecode version of {\tt
-coqtop}, i.e. using option {\tt -byte} (see the
+coqtop}, i.e. {\tt coqtop.byte} (see the
 command {\tt Declare ML Module} in the section
 \ref{compiled}).
 
@@ -974,7 +975,20 @@ line provided it does not exceed the printing width (See {\tt Set
   Printing Width} above).
 
 \subsection[\tt Test Printing Compact Contexts.]{\tt Test Printing Compact Contexts.\optindex{Printing Compact Contexts}}
-This command displays the current state of compaction of goal d'isolat.
+This command displays the current state of compaction of goal.
+
+
+\subsection[\tt Unset Printing Unfocused.]{\tt Unset Printing Unfocused.\optindex{Printing Unfocused}}
+This command resets the displaying of goals to focused goals only
+(default). Unfocused goals are created by focusing other goals with
+bullets(see~\ref{bullets}) or curly braces (see~\ref{curlybacket}).
+
+\subsection[\tt Set Printing Unfocused.]{\tt Set Printing Unfocused.\optindex{Printing Unfocused}}
+This command enables the displaying of unfocused goals. The goals are
+displayed after the focused ones and are distinguished by a separator.
+
+\subsection[\tt Test Printing Unfocused.]{\tt Test Printing Unfocused.\optindex{Printing Unfocused}}
+This command displays the current state of unfocused goals display.
 
 \subsection[\tt Set Printing Dependent Evars Line.]{\tt Set Printing Dependent Evars Line.\optindex{Printing Dependent Evars Line}}
 This command enables the printing of the ``{\tt (dependent evars: \ldots)}''

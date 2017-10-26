@@ -1,6 +1,7 @@
 \newtheorem{cscexample}{Example}
 
 \achapter{\protect{Generalized rewriting}}
+%HEVEA\cutname{setoid.html}
 \aauthor{Matthieu Sozeau}
 \label{setoids}
 
@@ -156,9 +157,9 @@ compatibility constraints.
 \begin{cscexample}[Rewriting]
 Continuing the previous examples, suppose that the user must prove
 \texttt{set\_eq int (union int (union int S1 S2) S2) (f S1 S2)} under the
-hypothesis \texttt{H: set\_eq int S2 (nil int)}. It is possible to
+hypothesis \texttt{H: set\_eq int S2 (@nil int)}. It is possible to
 use the \texttt{rewrite} tactic to replace the first two occurrences of
-\texttt{S2} with \texttt{nil int} in the goal since the context
+\texttt{S2} with \texttt{@nil int} in the goal since the context
 \texttt{set\_eq int (union int (union int S1 nil) nil) (f S1 S2)}, being
 a composition of morphisms instances, is a morphism. However the tactic
 will fail replacing the third occurrence of \texttt{S2} unless \texttt{f}
@@ -223,7 +224,7 @@ the following command.
 
 \comindex{Add Parametric Morphism}
 \begin{quote}
-  \texttt{Add Parametric Morphism} ($x_1 : \T_!$) \ldots ($x_k : \T_k$)\\
+  \texttt{Add Parametric Morphism} ($x_1 : \T_1$) \ldots ($x_k : \T_k$) :
   (\textit{f $t_1$ \ldots $t_n$})\\
   \texttt{~with signature} \textit{sig}\\
   \texttt{~as id}.\\

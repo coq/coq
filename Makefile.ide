@@ -55,17 +55,22 @@ IDEFILES=$(wildcard ide/*.lang) ide/coq_style.xml ide/coq.png ide/MacOS/default_
 GTKSHARE=$(shell pkg-config --variable=prefix gtk+-2.0)/share
 GTKBIN=$(shell pkg-config --variable=prefix gtk+-2.0)/bin
 GTKLIBS=$(shell pkg-config --variable=libdir gtk+-2.0)
-
+PIXBUFBIN=$(shell pkg-config --variable=prefix gdk-pixbuf-2.0)/bin
+SOURCEVIEWSHARE=$(shell pkg-config --variable=prefix gtksourceview-2.0)/share
 
 ###########################################################################
 # CoqIde special targets
 ###########################################################################
 
-.PHONY: coqide coqide-opt coqide-byte coqide-files
+.PHONY: coqide coqide-opt coqide-byte coqide-files coqide-binaries
 .PHONY: ide-toploop ide-byteloop ide-optloop
 
-# target to build CoqIde
+# target to build CoqIde (native version) and the stuff needed to lauch it
 coqide: coqide-files coqide-opt theories/Init/Prelude.vo
+
+# target to build CoqIde (in native and byte versions), and no more
+# NB: this target is used in the opam package coq-coqide
+coqide-binaries: coqide-opt coqide-byte
 
 ifeq ($(HASCOQIDE),opt)
 coqide-opt: $(COQIDE) ide-toploop
@@ -123,12 +128,17 @@ ide/%.cmx: ide/%.ml
 ## Install targets
 ####################
 
-.PHONY: install-coqide install-ide-bin install-ide-toploop install-ide-files install-ide-info install-ide-devfiles install-ide-byte
+.PHONY: install-coqide install-ide-bin install-ide-toploop install-ide-files install-ide-info install-ide-devfiles install-ide-byte install-ide-toploop-byte install-coqide-byte
 
 ifeq ($(HASCOQIDE),no)
 install-coqide: install-ide-toploop
 else
 install-coqide: install-ide-bin install-ide-toploop install-ide-files install-ide-info install-ide-devfiles
+endif
+ifeq ($(HASCOQIDE),no)
+install-coqide-byte: install-ide-toploop-byte
+else
+install-coqide-byte: install-ide-toploop-byte install-ide-byte
 endif
 
 # Apparently, coqide.byte is not meant to be installed
@@ -136,8 +146,6 @@ endif
 install-ide-byte:
 	$(MKDIR) $(FULLCOQLIB)
 	$(INSTALLSH) $(FULLCOQLIB) $(IDECMA)
-	$(MKDIR) $(FULLCOQLIB)/toploop
-	$(INSTALLBIN) $(IDETOPLOOPCMA) $(FULLCOQLIB)/toploop/
 
 install-ide-bin:
 	$(MKDIR) $(FULLBINDIR)
@@ -145,7 +153,13 @@ install-ide-bin:
 
 install-ide-toploop:
 ifeq ($(BEST),opt)
+	$(MKDIR) $(FULLCOQLIB)/toploop/
 	$(INSTALLBIN) $(IDETOPLOOPCMA:.cma=.cmxs) $(FULLCOQLIB)/toploop/
+endif
+install-ide-toploop-byte:
+ifneq ($(BEST),opt)
+	$(MKDIR) $(FULLCOQLIB)/toploop/
+	$(INSTALLBIN) $(IDETOPLOOPCMA) $(FULLCOQLIB)/toploop/
 endif
 
 install-ide-devfiles:
@@ -189,15 +203,14 @@ $(COQIDEAPP)/Contents/Resources/share: $(COQIDEAPP)/Contents
 	$(MKDIR) $@/coq/
 	$(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $@/coq/
 	$(MKDIR) $@/gtksourceview-2.0/{language-specs,styles}
-	$(INSTALLLIB) "$(GTKSHARE)/"gtksourceview-2.0/language-specs/{def.lang,language2.rng} $@/gtksourceview-2.0/language-specs/
-	$(INSTALLLIB) "$(GTKSHARE)/"gtksourceview-2.0/styles/{styles.rng,classic.xml} $@/gtksourceview-2.0/styles/
+	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-2.0/language-specs/{def.lang,language2.rng} $@/gtksourceview-2.0/language-specs/
+	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-2.0/styles/{styles.rng,classic.xml} $@/gtksourceview-2.0/styles/
 	cp -R "$(GTKSHARE)/"locale $@
-	cp -R "$(GTKSHARE)/"icons $@
 	cp -R "$(GTKSHARE)/"themes $@
 
 $(COQIDEAPP)/Contents/Resources/loaders: $(COQIDEAPP)/Contents
 	$(MKDIR) $@
-	$(INSTALLLIB) $$("$(GTKBIN)/gdk-pixbuf-query-loaders" | sed -n -e '5 s!.*= \(.*\)$$!\1!p')/libpixbufloader-png.so $@
+	$(INSTALLLIB) $$("$(PIXBUFBIN)/gdk-pixbuf-query-loaders" | sed -n -e '5 s!.*= \(.*\)$$!\1!p')/libpixbufloader-png.so $@
 
 $(COQIDEAPP)/Contents/Resources/immodules: $(COQIDEAPP)/Contents
 	$(MKDIR) $@
@@ -208,7 +221,7 @@ $(COQIDEAPP)/Contents/Resources/etc: $(COQIDEAPP)/Contents/Resources/lib
 	$(MKDIR) $@/xdg/coq
 	$(INSTALLLIB) ide/MacOS/default_accel_map $@/xdg/coq/coqide.keys
 	$(MKDIR) $@/gtk-2.0
-	{ "$(GTKBIN)/gdk-pixbuf-query-loaders" $@/../loaders/*.so |\
+	{ "$(PIXBUFBIN)/gdk-pixbuf-query-loaders" $@/../loaders/*.so |\
 	 sed -e "s!/.*\(/loaders/.*.so\)!@executable_path/../Resources/\1!"; } \
 	> $@/gtk-2.0/gdk-pixbuf.loaders
 	{ "$(GTKBIN)/gtk-query-immodules-2.0" $@/../immodules/*.so |\
@@ -220,32 +233,11 @@ $(COQIDEAPP)/Contents/Resources/etc: $(COQIDEAPP)/Contents/Resources/lib
 
 $(COQIDEAPP)/Contents/Resources/lib: $(COQIDEAPP)/Contents/Resources/immodules $(COQIDEAPP)/Contents/Resources/loaders $(COQIDEAPP)/Contents $(COQIDEINAPP)
 	$(MKDIR) $@
-	$(INSTALLLIB) $(GTKLIBS)/charset.alias $@/
-	$(MKDIR) $@/pango/1.8.0/modules
-	$(INSTALLLIB) "$(GTKLIBS)/pango/1.8.0/modules/"*.so $@/pango/1.8.0/modules/
-	{ "$(GTKBIN)/pango-querymodules" $@/pango/1.8.0/modules/*.so |\
-	 sed -e "s!/.*\(/pango/1.8.0/modules/.*.so\)!@executable_path/../Resources/lib\1!"; } \
-	> $@/pango/1.8.0/modules.cache
-
-	for i in $$(otool -L $(COQIDEINAPP) |sed -n -e "\@$(GTKLIBS)@ s/[^/]*\(\/[^ ]*\) .*$$/\1/p"); \
-	    do cp $$i $@/; \
-	    ide/MacOS/relatify_with-respect-to_.sh $@/$$(basename $$i) $(GTKLIBS) $@; \
+	macpack -d ../Resources/lib $(COQIDEINAPP)
+	for i in $@/../loaders/*.so $@/../immodules/*.so; \
+	do \
+	  macpack -d ../lib $$i; \
 	done
-	for i in $@/../loaders/*.so $@/../immodules/*.so $@/pango/1.8.0/modules/*.so; \
-	    do \
-		for j in $$(otool -L $$i | sed -n -e "\@$(GTKLIBS)@ s/[^/]*\(\/[^ ]*\) .*$$/\1/p"); \
-		do cp $$j $@/; ide/MacOS/relatify_with-respect-to_.sh $@/$$(basename $$j) $(GTKLIBS) $@; done; \
-		ide/MacOS/relatify_with-respect-to_.sh $$i $(GTKLIBS) $@; \
-	    done
-	EXTRAWORK=1; \
-	while [ $${EXTRAWORK} -eq 1 ]; \
-	do EXTRAWORK=0; \
-	    for i in $@/*.dylib; \
-	    do for j in $$(otool -L $$i | sed -n -e "\@$(GTKLIBS)@ s/[^/]*\(\/[^ ]*\) .*$$/\1/p"); \
-		do EXTRAWORK=1; cp $$j $@/; ide/MacOS/relatify_with-respect-to_.sh $@/$$(basename $$j) $(GTKLIBS) $@; done; \
-	    done; \
-	done
-	ide/MacOS/relatify_with-respect-to_.sh $(COQIDEINAPP) $(GTKLIBS) $@
 
 $(COQIDEAPP)/Contents/Resources:$(COQIDEAPP)/Contents/Resources/etc $(COQIDEAPP)/Contents/Resources/share
 	$(INSTALLLIB) ide/MacOS/*.icns $@

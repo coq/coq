@@ -8,7 +8,6 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
-open API
 open Names
 open Tacmach
 
@@ -24,7 +23,7 @@ module RelDecl = Context.Rel.Declaration
 (** Defined identifier *)
 
 
-let settac id c = Tactics.letin_tac None (Name id) c None
+let settac id c = Tactics.letin_tac None (Name id) false c None
 let posetac id cl = Proofview.V82.of_tactic (settac id cl Locusops.nowhere)
 
 let ssrposetac ist (id, (_, t)) gl =
@@ -185,9 +184,13 @@ let havetac ist
       mkt ct, mkt cty, mkt (mkCHole None), loc
     | _, (_, Some ct) ->
       mkt ct, mkt (mkCHole None), mkt (mkCHole None), None
-    | _, ({ loc; v = GCast (ct, CastConv cty) }, None) ->
-      mkl ct, mkl cty, mkl mkRHole, loc
-    | _, (t, None) -> mkl t, mkl mkRHole, mkl mkRHole, None in
+    | _, (t, None) ->
+      begin match DAst.get t with
+      | GCast (ct, CastConv cty) ->
+        mkl ct, mkl cty, mkl mkRHole, t.CAst.loc
+      | _ -> mkl t, mkl mkRHole, mkl mkRHole, None
+      end
+  in
   let gl, cut, sol, itac1, itac2 =
    match fk, namefst, suff with
    | FwdHave, true, true ->
@@ -324,11 +327,18 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
   let mkpats = function
   | _, Some ((x, _), _) -> fun pats -> IPatId (hoi_id x) :: pats
   | _ -> fun x -> x in
-  let open CAst in
   let ct = match ct with
-  | (a, (b, Some { v = CCast (_, CastConv cty)})) -> a, (b, Some cty)
-  | (a, ({ v = GCast (_, CastConv cty) }, None)) -> a, (cty, None)
-  | _ -> anomaly "wlog: ssr cast hole deleted by typecheck" in
+  | (a, (b, Some ct)) ->
+    begin match ct.CAst.v with
+    | CCast (_, CastConv cty) -> a, (b, Some cty)
+    | _ -> anomaly "wlog: ssr cast hole deleted by typecheck"
+    end
+  | (a, (t, None)) ->
+    begin match DAst.get t with
+    | GCast (_, CastConv cty) -> a, (cty, None)
+    | _ -> anomaly "wlog: ssr cast hole deleted by typecheck"
+    end
+  in
   let cut_implies_goal = not (suff || ghave <> `NoGen) in
   let c, args, ct, gl =
     let gens = List.filter (function _, Some _ -> true | _ -> false) gens in
@@ -399,11 +409,18 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
 
 let sufftac ist ((((clr, pats),binders),simpl), ((_, c), hint)) =
   let htac = Tacticals.tclTHEN (introstac ~ist pats) (hinttac ist true hint) in
-  let open CAst in
   let c = match c with
-  | (a, (b, Some { v = CCast (_, CastConv cty)})) -> a, (b, Some cty)
-  | (a, ({ v = GCast (_, CastConv cty) }, None)) -> a, (cty, None)
-  | _ -> anomaly "suff: ssr cast hole deleted by typecheck" in
+  | (a, (b, Some ct)) ->
+    begin match ct.CAst.v with
+    | CCast (_, CastConv cty) -> a, (b, Some cty)
+    | _ -> anomaly "suff: ssr cast hole deleted by typecheck"
+    end
+  | (a, (t, None)) ->
+    begin match DAst.get t with
+    | GCast (_, CastConv cty) -> a, (cty, None)
+    | _ -> anomaly "suff: ssr cast hole deleted by typecheck"
+    end
+  in
   let ctac gl =
     let _,ty,_,uc = pf_interp_ty ist gl c in let gl = pf_merge_uc uc gl in
     basecuttac "ssr_suff" ty gl in

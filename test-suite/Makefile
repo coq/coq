@@ -27,12 +27,13 @@
 
 # Default value when called from a freshly compiled Coq, but can be
 # easily overridden
-LIB := $(shell cd ..; pwd)
-BIN := $(LIB)/bin/
+LIB := ..
+BIN := $(shell cd ..; pwd)/bin/
 
 coqtop := $(BIN)coqtop -coqlib $(LIB) -boot -q -batch -test-mode -R prerequisite TestSuite
 coqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite
 coqchk := $(BIN)coqchk -coqlib $(LIB) -R prerequisite TestSuite
+coqdoc := $(BIN)coqdoc
 coqtopbyte := $(BIN)coqtop.byte
 
 coqtopload := $(coqtop) -top Top -async-proofs-cache force -load-vernac-source
@@ -84,11 +85,14 @@ COMPLEXITY := $(if $(bogomips),complexity)
 
 BUGS := bugs/opened bugs/closed
 
+INTERACTIVE := interactive
+
 VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
-  output-modulo-time interactive micromega $(COMPLEXITY) modules stm
+  output-modulo-time $(INTERACTIVE) micromega $(COMPLEXITY) modules stm \
+  coqdoc
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coq-makefile
+SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coqwc coq-makefile
 
 PREREQUISITELOG = prerequisite/admit.v.log			\
   prerequisite/make_local.v.log prerequisite/make_notation.v.log
@@ -152,7 +156,9 @@ summary:
 	  $(call summary_dir, "IDE tests", ide); \
 	  $(call summary_dir, "VI tests", vio); \
 	  $(call summary_dir, "Coqchk tests", coqchk); \
+	  $(call summary_dir, "Coqwc tests", coqwc); \
 	  $(call summary_dir, "Coq makefile", coq-makefile); \
+	  $(call summary_dir, "Coqdoc tests", coqdoc); \
 	  nb_success=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_success) | wc -l`; \
 	  nb_failure=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_failure) | wc -l`; \
 	  nb_tests=`expr $$nb_success + $$nb_failure`; \
@@ -170,6 +176,7 @@ summary.log:
 report: summary.log
 	$(HIDE)./save-logs.sh
 	$(HIDE)if [ -n "${TRAVIS}" ]; then find logs/ -name '*.log' -not -name 'summary.log' -exec 'bash' '-c' 'echo "travis_fold:start:coq.logs.$$(echo '{}' | sed s,/,.,g)"' ';' -exec cat '{}' ';' -exec 'bash' '-c' 'echo "travis_fold:end:coq.logs.$$(echo '{}' | sed s,/,.,g)"' ';'; fi
+	$(HIDE)if [ -n "${APPVEYOR}" ]; then find logs/ -name '*.log' -not -name 'summary.log' -exec 'bash' '-c' 'echo {}' ';' -exec cat '{}' ';' -exec 'bash' '-c' 'echo' ';'; fi
 	$(HIDE)if grep -q -F 'Error!' summary.log ; then echo FAILURES; grep -F 'Error!' summary.log; false; else echo NO FAILURES; fi
 
 #######################################################################
@@ -293,7 +300,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	    | grep -v "^<W>" \
 	    | sed 's/File "[^"]*"/File "stdin"/' \
 	    > $$tmpoutput; \
-	  diff -u $*.out $$tmpoutput 2>&1; R=$$?; times; \
+	  diff -u --strip-trailing-cr $*.out $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -328,7 +335,7 @@ $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 		-e 's/\s*[-+]inf\s*//g' \
 		-e 's/^[^a-zA-Z]*//' \
 	       $*.out | sort > $$tmpexpected; \
-	  diff -b -u $$tmpexpected $$tmpoutput 2>&1; R=$$?; times; \
+	  diff  --strip-trailing-cr -b -u $$tmpexpected $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -445,7 +452,7 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(BIN)fake_ide $< "$(BIN)coqtop -coqlib $(LIB) -boot -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off" 2>&1; \
+	  $(BIN)fake_ide $< "-coqlib $(LIB) -boot -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off" 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -454,6 +461,8 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 	    echo "    $<...Error!"; \
 	  fi; \
 	} > "$@"
+
+# vio compilation
 
 vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
 
@@ -472,6 +481,8 @@ vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
 	  fi; \
 	} > "$@"
 
+# coqchk
+
 coqchk: $(patsubst %.v,%.chk.log,$(wildcard coqchk/*.v))
 
 %.chk.log:%.v
@@ -487,6 +498,28 @@ coqchk: $(patsubst %.v,%.chk.log,$(wildcard coqchk/*.v))
 	    echo "    $<...Error!"; \
 	  fi; \
 	} > "$@"
+
+# coqwc : test output
+
+coqwc : $(patsubst %.v,%.v.log,$(wildcard coqwc/*.v))
+
+coqwc/%.v.log : coqwc/%.v
+	$(HIDE){ \
+	  echo $(call log_intro,$<); \
+	  tmpoutput=`mktemp /tmp/coqwc.XXXXXX`; \
+	  $(BIN)coqwc $< 2>&1 > $$tmpoutput; \
+	  diff -u --strip-trailing-cr coqwc/$*.out $$tmpoutput 2>&1; R=$$?; times; \
+	  if [ $$R = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    $<...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    $<...Error! (unexpected output)"; \
+	  fi; \
+	  rm $$tmpoutput; \
+	} > "$@"
+
+# coq_makefile
 
 coq-makefile: $(patsubst %/run.sh,%.log,$(wildcard coq-makefile/*/run.sh))
 
@@ -504,3 +537,27 @@ coq-makefile/%.log : coq-makefile/%/run.sh
 	    echo "    $<...Error!"; \
 	  fi; \
 	) > "$@"
+
+# coqdoc
+
+coqdoc: $(patsubst %.sh,%.log,$(wildcard coqdoc/*.sh))
+
+$(addsuffix .log,$(wildcard coqdoc/*.v)): %.v.log: %.v %.html.out %.tex.out $(PREREQUISITELOG)
+	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
+	$(HIDE){ \
+	  echo $(call log_intro,$<); \
+	  $(coqc) -R coqdoc Coqdoc $* 2>&1; \
+	  cd coqdoc; \
+	  f=`basename $*`; \
+	  $(coqdoc) -R . Coqdoc -coqlib http://coq.inria.fr/stdlib --html $$f.v; \
+	  $(coqdoc) -R . Coqdoc -coqlib http://coq.inria.fr/stdlib --latex $$f.v; \
+	  diff -u --strip-trailing-cr $$f.html.out Coqdoc.$$f.html 2>&1; R=$$?; times; \
+	  grep -v "^%%" Coqdoc.$$f.tex | diff -u --strip-trailing-cr $$f.tex.out - 2>&1; S=$$?; times; \
+	  if [ $$R = 0 -a $$S = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    $<...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    $<...Error! (unexpected output)"; \
+	  fi; \
+	} > "$@"

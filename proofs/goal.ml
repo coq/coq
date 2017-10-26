@@ -41,13 +41,20 @@ module V82 = struct
   (* same as [hyps], but ensures that existential variables are
      normalised. *)
   let nf_hyps evars gl =
-    let hyps = Environ.named_context_of_val (hyps evars gl) in
+    let ctxt = hyps evars gl in
+    let hyps = Environ.named_context_of_val ctxt in
     Environ.val_of_named_context (Evarutil.nf_named_context_evar evars hyps)
+                                 (Environ.named_context_private_ids ctxt)
 
   (* Access to ".evar_concl" *)
   let concl evars gl =
     let evi = Evd.find evars gl in
     EConstr.of_constr evi.Evd.evar_concl
+
+  (* Access to ".private" *)
+  let private_ids evars gl =
+    let evi = Evd.find evars gl in
+    evi.Evd.evar_private
 
   (* Access to ".evar_extra" *)
   let extra evars gl =
@@ -55,7 +62,7 @@ module V82 = struct
     evi.Evd.evar_extra
 
   (* Old style mk_goal primitive *)
-  let mk_goal evars hyps concl extra =
+  let mk_goal evars hyps private_ids concl extra =
     (* A goal created that way will not be used by refine and will not
        be shelved. It must not appear as a future_goal, so the future
        goals are restored to their initial value after the evar is
@@ -66,6 +73,8 @@ module V82 = struct
     let evi = { Evd.evar_hyps = hyps;
 		Evd.evar_concl = concl;
 		Evd.evar_filter = Evd.Filter.identity;
+		Evd.evar_private = private_ids;
+		Evd.evar_concl_user_names = Names.Id.Set.empty;
 		Evd.evar_body = Evd.Evar_empty;
 		Evd.evar_source = (Loc.tag Evar_kinds.GoalEvar);
 		Evd.evar_candidates = None;
@@ -122,7 +131,7 @@ module V82 = struct
     let evi = Evd.find sigma gl in
     let hyps = evi.Evd.evar_hyps in
     let new_hyps =
-      List.fold_right Environ.push_named_context_val extra_hyps hyps in
+      List.fold_right (fun d -> Environ.push_named_context_val d true) extra_hyps hyps in
     let filter = evi.Evd.evar_filter in
     let new_filter = Evd.Filter.extend (List.length extra_hyps) filter in
     let new_evi =

@@ -9,7 +9,6 @@
 open CErrors
 open Util
 open Pp
-open Flags
 open Libobject
 open System
 
@@ -175,6 +174,7 @@ let warn_cannot_use_directory =
 let convert_string d =
   try Names.Id.of_string d
   with UserError _ ->
+    let d = Unicode.escaped_if_non_utf8 d in
     warn_cannot_use_directory d;
     raise Exit
 
@@ -365,7 +365,7 @@ let trigger_ml_object verb cache reinit ?path name =
   else begin
     let file = file_of_name (Option.default name path) in
     let path =
-      if_verbose_load (verb && not !quiet) load_ml_object name ?path file in
+      if_verbose_load (verb && not !Flags.quiet) load_ml_object name ?path file in
     add_loaded_module name (Some path);
     if cache then perform_cache_obj name
   end

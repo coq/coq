@@ -120,11 +120,11 @@ let rec add_prods_sign env sigma t =
     | Prod (na,c1,b) ->
 	let id = id_of_name_using_hdchar env sigma t na in
 	let b'= subst1 (mkVar id) b in
-        add_prods_sign (push_named (LocalAssum (id,c1)) env) sigma b'
+        add_prods_sign (push_named (LocalAssum (id,c1)) false env) sigma b'
     | LetIn (na,c1,t1,b) ->
 	let id = id_of_name_using_hdchar env sigma t na in
 	let b'= subst1 (mkVar id) b in
-        add_prods_sign (push_named (LocalDef (id,c1,t1)) env) sigma b'
+        add_prods_sign (push_named (LocalDef (id,c1,t1)) false env) sigma b'
     | _ -> (env,t)
 
 (* [dep_option] indicates whether the inversion lemma is dependent or not.
@@ -142,7 +142,7 @@ let rec add_prods_sign env sigma t =
 
 let compute_first_inversion_scheme env sigma ind sort dep_option =
   let indf,realargs = dest_ind_type ind in
-  let allvars = ids_of_context env in
+  let allvars = vars_of_env env in
   let p = next_ident_away (Id.of_string "P") allvars in
   let pty,goal =
     if dep_option  then
@@ -157,7 +157,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let ivars = global_vars env sigma i in
       let revargs,ownsign =
 	fold_named_context
-	  (fun env d (revargs,hyps) ->
+	  (fun env d _ (revargs,hyps) ->
             let d = map_named_decl EConstr.of_constr d in
              let id = NamedDecl.get_id d in
              if Id.List.mem id ivars then
@@ -171,7 +171,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       (pty,goal)
   in
   let npty = nf_all env sigma pty in
-  let extenv = push_named (LocalAssum (p,npty)) env in
+  let extenv = push_named (LocalAssum (p,npty)) true env in
   extenv, goal
 
 (* [inversion_scheme sign I]
@@ -208,13 +208,13 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let global_named_context = Global.named_context_val () in
   let ownSign = ref begin
     fold_named_context
-      (fun env d sign ->
+      (fun env d _ sign ->
         let d = map_named_decl EConstr.of_constr d in
          if mem_named_context_val (NamedDecl.get_id d) global_named_context then sign
 	 else Context.Named.add d sign)
       invEnv ~init:Context.Named.empty
   end in
-  let avoid = ref [] in
+  let avoid = ref Id.Set.empty in
   let { sigma=sigma } = Proof.V82.subgoals pf in
   let sigma = Evd.nf_constraints sigma in
   let rec fill_holes c =
@@ -222,7 +222,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
     | Evar (e,args) ->
 	let h = next_ident_away (Id.of_string "H") !avoid in
 	let ty,inst = Evarutil.generalize_evar_over_rels sigma (e,args) in
-	avoid := h::!avoid;
+	avoid := Id.Set.add h !avoid;
 	ownSign := Context.Named.add (LocalAssum (h,ty)) !ownSign;
 	applist (mkVar h, inst)
     | _ -> EConstr.map sigma fill_holes c
@@ -232,7 +232,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let invProof = it_mkNamedLambda_or_LetIn c !ownSign in
   let invProof = EConstr.Unsafe.to_constr invProof in
   let p = Evarutil.nf_evars_universes sigma invProof in
-    p, Evd.universe_context sigma
+    p, Evd.universe_context ~names:[] ~extensible:true sigma
 
 let add_inversion_lemma name env sigma t sort dep inv_op =
   let invProof, ctx = inversion_scheme env sigma t sort dep inv_op in
@@ -248,9 +248,9 @@ let add_inversion_lemma_exn na com comsort bool tac =
   let env = Global.env () in
   let evd = ref (Evd.from_env env) in
   let c = Constrintern.interp_type_evars env evd com in
-  let sigma, sort = Pretyping.interp_sort !evd comsort in
+  let evd, sort = Evd.fresh_sort_in_family ~rigid:univ_rigid env !evd comsort in
   try
-    add_inversion_lemma na env sigma c sort bool tac
+    add_inversion_lemma na env evd c sort bool tac
   with
     |   UserError (Some "Case analysis",s) -> (* Reference to Indrec *)
 	  user_err ~hdr:"Inv needs Nodep Prop Set" s

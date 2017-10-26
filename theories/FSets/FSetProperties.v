@@ -762,7 +762,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   rewrite (cardinal_2 (s:=remove x s') (s':=s') (x:=x)); eauto with set.
   Qed.
 
-  Add Morphism cardinal : cardinal_m.
+  Add Morphism cardinal with signature (Equal ==> Logic.eq) as cardinal_m.
   Proof.
   exact Equal_cardinal.
   Qed.

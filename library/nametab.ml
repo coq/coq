@@ -19,10 +19,6 @@ exception GlobalizationError of qualid
 let error_global_not_found ?loc q =
   Loc.raise ?loc (GlobalizationError q)
 
-(* Kinds of global names *)
-
-type ltac_constant = kernel_name
-
 (* The visibility can be registered either
    - for all suffixes not shorter then a given int - when the object
      is loaded inside a module
@@ -274,18 +270,13 @@ struct
 end
 
 module ExtRefEqual = ExtRefOrdered
-module KnEqual = Names.KerName
 module MPEqual = Names.ModPath
 
 module ExtRefTab = Make(FullPath)(ExtRefEqual)
-module KnTab = Make(FullPath)(KnEqual)
 module MPTab = Make(FullPath)(MPEqual)
 
 type ccitab = ExtRefTab.t
 let the_ccitab = ref (ExtRefTab.empty : ccitab)
-
-type kntab = KnTab.t
-let the_tactictab = ref (KnTab.empty : kntab)
 
 type mptab = MPTab.t
 let the_modtypetab = ref (MPTab.empty : mptab)
@@ -327,10 +318,6 @@ let the_modrevtab = ref (MPmap.empty : mprevtab)
 type mptrevtab = full_path MPmap.t
 let the_modtyperevtab = ref (MPmap.empty : mptrevtab)
 
-type knrevtab = full_path KNmap.t
-let the_tacticrevtab = ref (KNmap.empty : knrevtab)
-
-
 (* Push functions *********************************************************)
 
 (* This is for permanent constructions (never discharged -- but with
@@ -368,13 +355,6 @@ let push_modtype vis sp kn =
   the_modtypetab := MPTab.push vis sp kn !the_modtypetab;
   the_modtyperevtab := MPmap.add kn sp !the_modtyperevtab
 
-(* This is for tactic definition names *)
-
-let push_tactic vis sp kn =
-  the_tactictab := KnTab.push vis sp kn !the_tactictab;
-  the_tacticrevtab := KNmap.add kn sp !the_tacticrevtab
-
-
 (* This is to remember absolute Section/Module names and to avoid redundancy *)
 let push_dir vis dir dir_ref =
   the_dirtab := DirTab.push vis dir dir_ref !the_dirtab;
@@ -402,8 +382,6 @@ let locate_syndef qid = match locate_extended qid with
 let locate_modtype qid = MPTab.locate qid !the_modtypetab
 let full_name_modtype qid = MPTab.user_name qid !the_modtypetab
 
-let locate_tactic qid = KnTab.locate qid !the_tactictab
-
 let locate_dir qid = DirTab.locate qid !the_dirtab
 
 let locate_module qid =
@@ -427,8 +405,6 @@ let locate_all qid =
     (ExtRefTab.find_prefixes qid !the_ccitab) []
 
 let locate_extended_all qid = ExtRefTab.find_prefixes qid !the_ccitab
-
-let locate_extended_all_tactic qid = KnTab.find_prefixes qid !the_tactictab
 
 let locate_extended_all_dir qid = DirTab.find_prefixes qid !the_dirtab
 
@@ -471,8 +447,6 @@ let exists_module = exists_dir
 
 let exists_modtype sp = MPTab.exists sp !the_modtypetab
 
-let exists_tactic kn = KnTab.exists kn !the_tactictab
-
 (* Reverse locate functions ***********************************************)
 
 let path_of_global ref =
@@ -491,9 +465,6 @@ let path_of_syndef kn =
 
 let dirpath_of_module mp =
   MPmap.find mp !the_modrevtab
-
-let path_of_tactic kn =
-  KNmap.find kn !the_tacticrevtab
 
 let path_of_modtype mp =
   MPmap.find mp !the_modtyperevtab
@@ -519,10 +490,6 @@ let shortest_qualid_of_modtype kn =
   let sp = MPmap.find kn !the_modtyperevtab in
     MPTab.shortest_qualid Id.Set.empty sp !the_modtypetab
 
-let shortest_qualid_of_tactic kn =
-  let sp = KNmap.find kn !the_tacticrevtab in
-    KnTab.shortest_qualid Id.Set.empty sp !the_tactictab
-
 let pr_global_env env ref =
   try pr_qualid (shortest_qualid_of_global env ref)
   with Not_found as e ->
@@ -541,28 +508,24 @@ let global_inductive r =
 (********************************************************************)
 (* Registration of tables as a global table and rollback            *)
 
-type frozen = ccitab * dirtab * mptab * kntab
-    * globrevtab * mprevtab * mptrevtab * knrevtab
+type frozen = ccitab * dirtab * mptab
+    * globrevtab * mprevtab * mptrevtab
 
 let freeze _ : frozen =
   !the_ccitab,
   !the_dirtab,
   !the_modtypetab,
-  !the_tactictab,
   !the_globrevtab,
   !the_modrevtab,
-  !the_modtyperevtab,
-  !the_tacticrevtab
+  !the_modtyperevtab
 
-let unfreeze (ccit,dirt,mtyt,tact,globr,modr,mtyr,tacr) =
+let unfreeze (ccit,dirt,mtyt,globr,modr,mtyr) =
   the_ccitab := ccit;
   the_dirtab := dirt;
   the_modtypetab := mtyt;
-  the_tactictab := tact;
   the_globrevtab := globr;
   the_modrevtab := modr;
-  the_modtyperevtab := mtyr;
-  the_tacticrevtab := tacr
+  the_modtyperevtab := mtyr
 
 let _ =
   Summary.declare_summary "names"

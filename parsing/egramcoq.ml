@@ -34,6 +34,7 @@ let default_levels =
   [200,Extend.RightA,false;
    100,Extend.RightA,false;
    99,Extend.RightA,true;
+   90,Extend.RightA,true;
    10,Extend.RightA,false;
    9,Extend.RightA,false;
    8,Extend.RightA,true;
@@ -44,6 +45,7 @@ let default_pattern_levels =
   [200,Extend.RightA,true;
    100,Extend.RightA,false;
    99,Extend.RightA,true;
+   90,Extend.RightA,true;
    11,Extend.LeftA,false;
    10,Extend.RightA,false;
    1,Extend.LeftA,false;
@@ -354,7 +356,7 @@ type (_, _) ty_symbol =
 type ('self, _, 'r) ty_rule =
 | TyStop : ('self, 'r, 'r) ty_rule
 | TyNext : ('self, 'a, 'r) ty_rule * ('self, 'b) ty_symbol -> ('self, 'b -> 'a, 'r) ty_rule
-| TyMark : int * bool * ('self, 'a, 'r) ty_rule -> ('self, 'a, 'r) ty_rule
+| TyMark : int * bool * int * ('self, 'a, 'r) ty_rule -> ('self, 'a, 'r) ty_rule
 
 type 'r gen_eval = Loc.t -> 'r env -> 'r
 
@@ -368,18 +370,27 @@ let rec ty_eval : type s a. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> s env ->
 | TyNext (rem, TyNonTerm (forpat, e, _, true)) ->
   fun f env v ->
     ty_eval rem f (push_item forpat e env v)
-| TyMark (n, b, rem) ->
+| TyMark (n, b, p, rem) ->
   fun f env ->
     let heads, constrs = List.chop n env.constrs in
-    let constrlists =
-      if b then (heads @ List.hd env.constrlists) :: List.tl env.constrlists
-      else heads :: env.constrlists
+    let constrlists, constrs =
+      if b then
+         (* We rearrange constrs = c1..cn rem and constrlists = [d1..dr e1..ep] rem' into
+            constrs = e1..ep rem and constrlists [c1..cn d1..dr] rem' *)
+         let constrlist = List.hd env.constrlists in
+         let constrlist, tail = List.chop (List.length constrlist - p) constrlist in
+         (heads @ constrlist) :: List.tl env.constrlists, tail @ constrs
+      else
+         (* We rearrange constrs = c1..cn e1..ep rem into
+            constrs = e1..ep rem and add a constr list [c1..cn] *)
+        let constrlist, tail = List.chop (n - p) heads in
+        constrlist :: env.constrlists, tail @ constrs
     in
     ty_eval rem f { env with constrs; constrlists; } 
 
 let rec ty_erase : type s a r. (s, a, r) ty_rule -> (s, a, r) Extend.rule = function
 | TyStop -> Stop
-| TyMark (_, _, r) -> ty_erase r
+| TyMark (_, _, _, r) -> ty_erase r
 | TyNext (rem, TyTerm tok) -> Next (ty_erase rem, Atoken tok)
 | TyNext (rem, TyNonTerm (_, _, s, _)) -> Next (ty_erase rem, s)
 
@@ -398,9 +409,9 @@ let make_ty_rule assoc from forpat prods =
     let s = symbol_of_entry assoc from e in
     let bind = match var with None -> false | Some _ -> true in
     AnyTyRule (TyNext (r, TyNonTerm (forpat, e, s, bind)))
-  | GramConstrListMark (n, b) :: rem ->
+  | GramConstrListMark (n, b, p) :: rem ->
     let AnyTyRule r = make_ty_rule rem in
-    AnyTyRule (TyMark (n, b, r))
+    AnyTyRule (TyMark (n, b, p, r))
   in
   make_ty_rule (List.rev prods)
 
@@ -434,7 +445,7 @@ let make_act : type r. r target -> _ -> r gen_eval = function
   CAst.make ~loc @@ CPatNotation (notation, env, [])
 
 let extend_constr state forpat ng =
-  let n = ng.notgram_level in
+  let n,_,_ = ng.notgram_level in
   let assoc = ng.notgram_assoc in
   let (entry, level) = interp_constr_entry_key forpat n in
   let fold (accu, state) pt =
@@ -455,7 +466,7 @@ let extend_constr state forpat ng =
 
 let constr_levels = GramState.field ()
 
-let extend_constr_notation (_, ng) state =
+let extend_constr_notation ng state =
   let levels = match GramState.get state constr_levels with
   | None -> default_constr_levels
   | Some lev -> lev
@@ -467,7 +478,7 @@ let extend_constr_notation (_, ng) state =
   let state = GramState.set state constr_levels levels in
   (r @ r', state)
 
-let constr_grammar : (Notation.level * notation_grammar) grammar_command =
+let constr_grammar : one_notation_grammar grammar_command =
   create_grammar_command "Notation" extend_constr_notation
 
-let extend_constr_grammar pr ntn = extend_grammar_command constr_grammar (pr, ntn)
+let extend_constr_grammar ntn = extend_grammar_command constr_grammar ntn

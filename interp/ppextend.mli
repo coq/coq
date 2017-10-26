@@ -6,17 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
+open Notation_term
 
 (** {6 Pretty-print. } *)
-
-(** Dealing with precedences *)
-
-type precedence = int
-
-type parenRelation = L | E | Any | Prec of precedence
-
-type tolerability = precedence * parenRelation
 
 type ppbox =
   | PpHB of int
@@ -28,14 +20,14 @@ type ppcut =
   | PpBrk of int * int
   | PpFnl
 
-val ppcmd_of_box : ppbox -> std_ppcmds -> std_ppcmds
+val ppcmd_of_box : ppbox -> Pp.t -> Pp.t
 
-val ppcmd_of_cut : ppcut -> std_ppcmds
+val ppcmd_of_cut : ppcut -> Pp.t
 
 type unparsing =
   | UnpMetaVar of int * parenRelation
   | UnpListMetaVar of int * parenRelation * unparsing list
   | UnpBinderListMetaVar of int * bool * unparsing list
   | UnpTerminal of string
-  | UnpBox of ppbox * unparsing list
+  | UnpBox of ppbox * unparsing Loc.located list
   | UnpCut of ppcut

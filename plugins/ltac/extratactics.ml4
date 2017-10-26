@@ -8,8 +8,6 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open API
-open Grammar_API
 open Pp
 open Genarg
 open Stdarg
@@ -42,7 +40,7 @@ let with_delayed_uconstr ist c tac =
     fail_evar = false;
     expand_evars = true
   } in
-  let c = Pretyping.type_uconstr ~flags ist c in
+  let c = Tacinterp.type_uconstr ~flags ist c in
   Tacticals.New.tclDELAYEDWITHHOLES false c tac
 
 let replace_in_clause_maybe_by ist c1 c2 cl tac =
@@ -361,7 +359,7 @@ let refine_tac ist simple with_classes c =
     let flags =
       { constr_flags () with Pretyping.use_typeclasses = with_classes } in
     let expected_type = Pretyping.OfType concl in
-    let c = Pretyping.type_uconstr ~flags ~expected_type ist c in
+    let c = Tacinterp.type_uconstr ~flags ~expected_type ist c in
     let update = begin fun sigma ->
       c env sigma
     end in
@@ -405,38 +403,38 @@ open Leminv
 
 let seff id = Vernacexpr.VtSideff [id], Vernacexpr.VtLater
 
-VERNAC ARGUMENT EXTEND sort
-| [ "Set" ] -> [ GSet ]
-| [ "Prop" ] -> [ GProp ]
-| [ "Type" ] -> [ GType [] ]
-END
+(*VERNAC ARGUMENT EXTEND sort_family
+| [ "Set" ] -> [ InSet ]
+| [ "Prop" ] -> [ InProp ]
+| [ "Type" ] -> [ InType ]
+END*)
 
 VERNAC COMMAND EXTEND DeriveInversionClear
-| [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort(s) ]
+| [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
   -> [ add_inversion_lemma_exn na c s false inv_clear_tac ]
 
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ] => [ seff na ]
-  -> [ add_inversion_lemma_exn na c GProp false inv_clear_tac ]
+  -> [ add_inversion_lemma_exn na c InProp false inv_clear_tac ]
 END
 
 VERNAC COMMAND EXTEND DeriveInversion
-| [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort(s) ]
+| [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
   -> [ add_inversion_lemma_exn na c s false inv_tac ]
 
 | [ "Derive" "Inversion" ident(na) "with" constr(c) ] => [ seff na ]
-  -> [ add_inversion_lemma_exn na c GProp false inv_tac ]
+  -> [ add_inversion_lemma_exn na c InProp false inv_tac ]
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversion
-| [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort(s) ]
+| [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
   -> [ add_inversion_lemma_exn na c s true dinv_tac ]
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversionClear
-| [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort(s) ]
+| [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
   -> [ add_inversion_lemma_exn na c s true dinv_clear_tac ]
 END
@@ -464,13 +462,13 @@ open Evar_tactics
 (* TODO: add support for some test similar to g_constr.name_colon so that
    expressions like "evar (list A)" do not raise a syntax error *)
 TACTIC EXTEND evar
-  [ "evar" test_lpar_id_colon "(" ident(id) ":" lconstr(typ) ")" ] -> [ let_evar (Name.Name id) typ ]
-| [ "evar" constr(typ) ] -> [ let_evar Name.Anonymous typ ]
+  [ "evar" test_lpar_id_colon "(" ident(id) ":" lconstr(typ) ")" ] -> [ let id,isprivate = id in let_evar (Name.Name id,isprivate) typ ]
+| [ "evar" constr(typ) ] -> [ let_evar (Name.Anonymous,true) typ ]
 END
 
 TACTIC EXTEND instantiate
   [ "instantiate" "(" ident(id) ":=" lglob(c) ")" ] ->
-    [ Tacticals.New.tclTHEN (instantiate_tac_by_name id c) Proofview.V82.nf_evar_goals ]
+    [ Tacticals.New.tclTHEN (instantiate_tac_by_name (fst id) c) Proofview.V82.nf_evar_goals ]
 | [ "instantiate" "(" integer(i) ":=" lglob(c) ")" hloc(hl) ] ->
     [ Tacticals.New.tclTHEN (instantiate_tac i c hl) Proofview.V82.nf_evar_goals ]
 | [ "instantiate" ] -> [ Proofview.V82.nf_evar_goals ]
@@ -628,19 +626,19 @@ END
 let subst_var_with_hole occ tid t = 
   let occref = if occ > 0 then ref occ else Find_subterm.error_invalid_occurrence [occ] in
   let locref = ref 0 in
-  let rec substrec = function
-    | { CAst.v = GVar id } as x -> 
+  let rec substrec x = match DAst.get x with
+    | GVar id ->
         if Id.equal id tid 
         then
 	  (decr occref;
 	   if Int.equal !occref 0 then x
            else
 	     (incr locref;
-              CAst.make ~loc:(Loc.make_loc (!locref,0)) @@
+              DAst.make ~loc:(Loc.make_loc (!locref,0)) @@
 	      GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true,Anonymous),
                      Misctypes.IntroAnonymous, None)))
         else x
-    | c -> map_glob_constr_left_to_right substrec c in
+    | _ -> map_glob_constr_left_to_right substrec x in
   let t' = substrec t
   in
   if !occref > 0 then Find_subterm.error_invalid_occurrence [occ] else t'
@@ -648,15 +646,15 @@ let subst_var_with_hole occ tid t =
 let subst_hole_with_term occ tc t =
   let locref = ref 0 in
   let occref = ref occ in
-  let rec substrec = function
-    | { CAst.v = GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true,Anonymous),Misctypes.IntroAnonymous,s) } ->
+  let rec substrec c = match DAst.get c with
+    | GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true,Anonymous),Misctypes.IntroAnonymous,s) ->
         decr occref;
         if Int.equal !occref 0 then tc
         else
 	  (incr locref;
-           CAst.make ~loc:(Loc.make_loc (!locref,0)) @@
+           DAst.make ~loc:(Loc.make_loc (!locref,0)) @@
 	   GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true,Anonymous),Misctypes.IntroAnonymous,s))
-    | c -> map_glob_constr_left_to_right substrec c
+    | _ -> map_glob_constr_left_to_right substrec c
   in
   substrec t
 
@@ -667,9 +665,9 @@ let hResolve id c occ t =
   let sigma = Proofview.Goal.sigma gl in
   let env = Termops.clear_named_body id (Proofview.Goal.env gl) in
   let concl = Proofview.Goal.concl gl in
-  let env_ids = Termops.ids_of_context env in
-  let c_raw = Detyping.detype true env_ids env sigma c in
-  let t_raw = Detyping.detype true env_ids env sigma t in
+  let env_ids = Termops.vars_of_env env in
+  let c_raw = Detyping.detype Detyping.Now true env_ids env sigma c in
+  let t_raw = Detyping.detype Detyping.Now true env_ids env sigma t in
   let rec resolve_hole t_hole =
     try 
       Pretyping.understand env sigma t_hole
@@ -698,8 +696,8 @@ let hResolve_auto id c t =
   resolve_auto 1
 
 TACTIC EXTEND hresolve_core
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> [ hResolve id c occ t ]
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "in" constr(t) ] -> [ hResolve_auto id c t ]
+| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> [ hResolve (fst id) c occ t ]
+| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "in" constr(t) ] -> [ hResolve_auto (fst id) c t ]
 END
 
 (**
@@ -766,12 +764,12 @@ let case_eq_intros_rewrite x =
       mkCaseEq x;
     Proofview.Goal.enter begin fun gl ->
       let concl = Proofview.Goal.concl gl in
-      let hyps = Tacmach.New.pf_ids_of_hyps gl in
+      let hyps = Tacmach.New.pf_ids_set_of_hyps gl in
       let n' = nb_prod (Tacmach.New.project gl) concl in
       let h = fresh_id_in_env hyps (Id.of_string "heq") (Proofview.Goal.env gl)  in
       Tacticals.New.tclTHENLIST [
                     Tacticals.New.tclDO (n'-n-1) intro;
-		    introduction h;
+		    introduction h true;
 		    rewrite_except h]
     end
   ]
@@ -822,7 +820,7 @@ TACTIC EXTEND transparent_abstract
 | [ "transparent_abstract" tactic3(t) ] -> [ Proofview.Goal.nf_enter begin fun gl ->
       Tactics.tclABSTRACT ~opaque:false None (Tacinterp.tactic_of_value ist t) end ]
 | [ "transparent_abstract" tactic3(t) "using" ident(id) ] -> [ Proofview.Goal.nf_enter begin fun gl ->
-      Tactics.tclABSTRACT ~opaque:false (Some id) (Tacinterp.tactic_of_value ist t) end ]
+      Tactics.tclABSTRACT ~opaque:false (Some (fst id)) (Tacinterp.tactic_of_value ist t) end ]
 END
 
 (* ********************************************************************* *)

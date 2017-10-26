@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Util
 open Names
 open EConstr
@@ -36,6 +35,8 @@ sig
   val normalize : t -> t
   (** Eliminated the leading dynamic type casts. *)
 
+  val of_ident : tracked_ident -> t
+  val to_ident : t -> tracked_ident option (* Not using any coercion *)
   val of_constr : constr -> t
   val to_constr : t -> constr option
   val of_uconstr : Glob_term.closed_glob_constr -> t
@@ -51,7 +52,7 @@ end
 
 val coerce_to_constr_context : Value.t -> constr
 
-val coerce_var_to_ident : bool -> Environ.env -> Evd.evar_map -> Value.t -> Id.t
+val coerce_var_to_ident : bool -> Environ.env -> Evd.evar_map -> Value.t -> tracked_ident
 
 val coerce_to_ident_not_fresh : Environ.env -> Evd.evar_map -> Value.t -> Id.t
 

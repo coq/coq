@@ -654,19 +654,19 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
 
   Lemma xelements_bits_lt_1 : forall p p0 q m v,
      List.In (p0,v) (xelements m (append p (xO q))) -> E.bits_lt p0 p.
-  Proof.
+  Proof using.
   intros.
   generalize (xelements_complete _ _ _ _ H); clear H; intros.
-  revert p0 q m v H.
+  revert p0 H.
   induction p; destruct p0; simpl; intros; eauto; try discriminate.
   Qed.
 
   Lemma xelements_bits_lt_2 : forall p p0 q m v,
      List.In (p0,v) (xelements m (append p (xI q))) -> E.bits_lt p p0.
-  Proof.
+  Proof using.
   intros.
   generalize (xelements_complete _ _ _ _ H); clear H; intros.
-  revert p0 q m v H.
+  revert p0 H.
   induction p; destruct p0; simpl; intros; eauto; try discriminate.
   Qed.
 

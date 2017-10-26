@@ -10,8 +10,19 @@ open Pp
 open Util
 open Tok
 
+(** Location utilities  *)
+let ploc_file_of_coq_file = function
+| Loc.ToplevelInput -> ""
+| Loc.InFile f -> f
+
+let coq_file_of_ploc_file s =
+  if s = "" then Loc.ToplevelInput else Loc.InFile s
+
+let from_coqloc fname line_nb bol_pos bp ep =
+  Ploc.make_loc (ploc_file_of_coq_file fname) line_nb bol_pos (bp, ep) ""
+
 let to_coqloc loc =
-  { Loc.fname = Ploc.file_name loc;
+  { Loc.fname = coq_file_of_ploc_file (Ploc.file_name loc);
     Loc.line_nb = Ploc.line_nb loc;
     Loc.bol_pos = Ploc.bol_pos loc;
     Loc.bp = Ploc.first_pos loc;
@@ -117,14 +128,6 @@ open Error
 let err loc str = Loc.raise ~loc:(to_coqloc loc) (Error.E str)
 
 let bad_token str = raise (Error.E (Bad_token str))
-
-(** Location utilities  *)
-let file_loc_of_file = function
-| None -> ""
-| Some f -> f
-
-let make_loc fname line_nb bol_pos bp ep =
-  Ploc.make_loc (file_loc_of_file fname) line_nb bol_pos (bp, ep) ""
 
 (* Update a loc without allocating an intermediate pair *)
 let set_loc_pos loc bp ep =
@@ -242,8 +245,8 @@ let check_ident str =
         loop_id true s
     | [< s >] ->
         match unlocated lookup_utf8 Ploc.dummy s with
-        | Utf8Token (Unicode.Letter, n) -> njunk n s; loop_id true s
-        | Utf8Token (Unicode.IdentPart, n) when intail ->
+        | Utf8Token (st, n) when not intail && Unicode.is_valid_ident_initial st -> njunk n s; loop_id true s
+        | Utf8Token (st, n) when intail && Unicode.is_valid_ident_trailing st ->
           njunk n s;
           loop_id true s
         | EmptyStream -> ()
@@ -308,9 +311,9 @@ let rec ident_tail loc len = parser
       ident_tail loc (store len c) s
   | [< s >] ->
       match lookup_utf8 loc s with
-      | Utf8Token ((Unicode.IdentPart | Unicode.Letter), n) ->
+      | Utf8Token (st, n) when Unicode.is_valid_ident_trailing st ->
           ident_tail loc (nstore n len s) s
-      | Utf8Token (Unicode.Unknown, n) ->
+      | Utf8Token (st, n) when Unicode.is_unknown st ->
           let id = get_buff len in
           let u = String.concat "" (List.map (String.make 1) (Stream.npeek n s)) in
           warn_unrecognized_unicode ~loc:!@loc (u,id); len
@@ -368,11 +371,8 @@ let rec string loc ~comm_level bp len = parser
      let loc = set_loc_pos loc bp ep in
      err loc Unterminated_string
 
-(* Hook for exporting comment into xml theory files *)
-let (f_xml_output_comment, xml_output_comment) = Hook.make ~default:ignore ()
-
 (* To associate locations to a file name *)
-let current_file = ref None
+let current_file = ref Loc.ToplevelInput
 
 (* Utilities for comments in beautify *)
 let comment_begin = ref None
@@ -395,7 +395,7 @@ let rec split_comments comacc acc pos = function
 let extract_comments pos = split_comments [] [] pos !comments
 
 (* The state of the lexer visible from outside *)
-type lexer_state = int option * string * bool * ((int * int) * string) list * string option
+type lexer_state = int option * string * bool * ((int * int) * string) list * Loc.source
 
 let init_lexer_state f = (None,"",true,[],f)
 let set_lexer_state (o,s,b,c,f) =
@@ -407,7 +407,7 @@ let set_lexer_state (o,s,b,c,f) =
 let release_lexer_state () =
   (!comment_begin, Buffer.contents current_comment, !between_commands, !comments, !current_file)
 let drop_lexer_state () =
-    set_lexer_state (init_lexer_state None)
+    set_lexer_state (init_lexer_state Loc.ToplevelInput)
 
 let real_push_char c = Buffer.add_char current_comment c
 
@@ -432,9 +432,6 @@ let null_comment s =
 
 let comment_stop ep =
   let current_s = Buffer.contents current_comment in
-  if !Flags.xml_export && Buffer.length current_comment > 0 &&
-    (!between_commands || not(null_comment current_s)) then
-      Hook.get f_xml_output_comment current_s;
   (if !Flags.beautify && Buffer.length current_comment > 0 &&
     (!between_commands || not(null_comment current_s)) then
     let bp = match !comment_begin with
@@ -542,7 +539,7 @@ let parse_after_dot loc c bp =
       (try find_keyword loc ("."^field) s with Not_found -> FIELD field)
   | [< s >] ->
       match lookup_utf8 loc s with
-      | Utf8Token (Unicode.Letter, n) ->
+      | Utf8Token (st, n) when Unicode.is_valid_ident_initial st ->
           let len = ident_tail loc (nstore n 0 s) s in
           let field = get_buff len in
           (try find_keyword loc ("."^field) s with Not_found -> FIELD field)
@@ -556,7 +553,7 @@ let parse_after_qmark loc bp s =
     | None -> KEYWORD "?"
     | _ ->
         match lookup_utf8 loc s with
-          | Utf8Token (Unicode.Letter, _) -> LEFTQMARK
+          | Utf8Token (st, _) when Unicode.is_valid_ident_initial st -> LEFTQMARK
           | AsciiChar | Utf8Token _ | EmptyStream ->
             fst (process_chars loc bp '?' s)
 
@@ -621,13 +618,13 @@ let rec next_token loc = parser bp
       comment_stop bp; between_commands := new_between_commands; t
   | [< s >] ->
       match lookup_utf8 loc s with
-        | Utf8Token (Unicode.Letter, n) ->
+        | Utf8Token (st, n) when Unicode.is_valid_ident_initial st ->
             let len = ident_tail loc (nstore n 0 s) s in
             let id = get_buff len in
             let ep = Stream.count s in
             comment_stop bp;
             (try find_keyword loc id s with Not_found -> IDENT id), set_loc_pos loc bp ep
-        | AsciiChar | Utf8Token ((Unicode.Symbol | Unicode.IdentPart | Unicode.Unknown), _) ->
+        | AsciiChar | Utf8Token _ ->
             let t = process_chars loc bp (Stream.next s) s in
             comment_stop bp; t
         | EmptyStream ->
@@ -678,7 +675,7 @@ let token_text = function
 
 let func cs =
   let loct = loct_create () in
-  let cur_loc = ref (make_loc !current_file 1 0 0 0) in
+  let cur_loc = ref (from_coqloc !current_file 1 0 0 0) in
   let ts =
     Stream.from
       (fun i ->

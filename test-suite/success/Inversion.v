@@ -1,6 +1,6 @@
 Axiom magic : False.
 
-(* Submitted by Dachuan Yu (bug #220) *)
+(* Submitted by Dachuan Yu (BZ#220) *)
 Fixpoint T (n : nat) : Type :=
   match n with
   | O => nat -> Prop
@@ -16,7 +16,7 @@ Lemma Inversion_RO : forall l : nat, R 0 Psi0 l -> Psi00 l.
 inversion 1.
 Abort.
 
-(* Submitted by Pierre Casteran (bug #540) *)
+(* Submitted by Pierre Casteran (BZ#540) *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -64,7 +64,7 @@ elim magic.
 elim magic.
 Qed.
 
-(* Submitted by Boris Yakobowski (bug #529) *)
+(* Submitted by Boris Yakobowski (BZ#529) *)
 (* Check that Inversion does not fail due to unnormalized evars *)
 
 Set Implicit Arguments.
@@ -100,7 +100,7 @@ intros a b H.
 inversion H.
 Abort.
 
-(* Check non-regression of bug #1968 *)
+(* Check non-regression of BZ#1968 *)
 
 Inductive foo2 : option nat -> Prop := Foo : forall t, foo2 (Some t).
 Goal forall o, foo2 o -> 0 = 1.
@@ -130,7 +130,7 @@ Proof.
 intros. inversion H.
 Abort.
 
-(* Bug #2314 (simplified): check that errors do not show as anomalies *)
+(* BZ#2314 (simplified): check that errors do not show as anomalies *)
 
 Goal True -> True.
 intro.
@@ -158,7 +158,7 @@ reflexivity.
 Qed.
 
 (* Up to September 2014, Mapp below was called MApp0 because of a bug
-   in intro_replacing (short version of bug 2164.v)
+   in intro_replacing (short version of BZ#2164.v)
    (example taken from CoLoR) *)
 
 Parameter Term : Type.

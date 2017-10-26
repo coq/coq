@@ -86,16 +86,16 @@ let rec prolog l n gl =
   let prol = (prolog l (n-1)) in
   (tclFIRST (List.map (fun t -> (tclTHEN t prol)) (one_step l gl))) gl
 
-let out_term = function
+let out_term env = function
   | IsConstr (c, _) -> c
-  | IsGlobRef gr -> EConstr.of_constr (fst (Universes.fresh_global_instance (Global.env ()) gr))
+  | IsGlobRef gr -> EConstr.of_constr (fst (Universes.fresh_global_instance env gr))
 
 let prolog_tac l n =
   Proofview.V82.tactic begin fun gl ->
   let map c =
     let (sigma, c) = c (pf_env gl) (project gl) in
     let c = pf_apply (prepare_hint false (false,true)) gl (sigma, c) in
-    out_term c
+    out_term (pf_env gl) c
   in
   let l = List.map map l in
   try (prolog l n gl)
@@ -203,7 +203,7 @@ type search_state = {
   priority : int;
   depth : int; (*r depth of search before failing *)
   tacres : goal list sigma;
-  last_tactic : std_ppcmds Lazy.t;
+  last_tactic : Pp.t Lazy.t;
   dblist : hint_db list;
   localdb :  hint_db list;
   prev : prev_search_state;

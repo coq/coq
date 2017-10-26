@@ -142,7 +142,6 @@ let () =
   Coq.check_connection args;
   Coqide.sup_args := args;
   Coqide.main files;
-  if !Coq_config.with_geoproof then Coqide.check_for_geoproof_input ();
   os_specific_init ();
   try
     GMain.main ();

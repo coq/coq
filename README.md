@@ -1,6 +1,6 @@
 # Coq
 
-[![Travis](https://travis-ci.org/coq/coq.svg?branch=trunk)](https://travis-ci.org/coq/coq/builds) [![Gitter](https://badges.gitter.im/coq/coq.svg)](https://gitter.im/coq/coq)
+[![Travis](https://travis-ci.org/coq/coq.svg?branch=master)](https://travis-ci.org/coq/coq/builds) [![Build status](https://ci.appveyor.com/api/projects/status/eln43k05pa2vm908/branch/master?svg=true)](https://ci.appveyor.com/project/coq/coq/branch/master) [![Gitter](https://badges.gitter.im/coq/coq.svg)](https://gitter.im/coq/coq)
 
 Coq is a formal proof management system. It provides a formal language to write
 mathematical definitions, executable algorithms and theorems together with an
@@ -42,8 +42,12 @@ For any questions/suggestions about the Coq Club, please write to
 `coq-club-request@inria.fr`.
 
 ## Bugs report
-Send your bug reports by filling a form at [coq.inria.fr/bugs](http://coq.inria.fr/bugs).
+Please report any bug in [our issue tracker](https://github.com/coq/coq/issues).
 
 To be effective, bug reports should mention the OCaml version used
 to compile and run Coq, the Coq version (`coqtop -v`), the configuration
 used, and include a complete source example leading to the bug.
+
+## Contributing
+
+Guidelines for contributing to Coq in various ways are listed in the [contributor's guide](CONTRIBUTING.md).

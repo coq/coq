@@ -1,5 +1,54 @@
-Changes beyond V8.6
-===================
+Changes beyond 8.7
+==================
+
+Notations
+
+- Recursive notations with the recursive pattern repeating on the
+  right (e.g. "( x ; .. ; y ; z )") now supported.
+- Notations with a specific level for the leftmost nonterminal,
+  when printing-only, are supported.
+
+Tactics
+
+- On Linux, "native_compute" calls can be profiled using the "perf"
+  utility. The command "Set NativeCompute Profiling" enables
+  profiling, and "Set NativeCompute Profile Filename" customizes
+  the profile filename.
+- The tactic "omega" is now aware of the bodies of context variables
+  such as "x := 5 : Z" (see BZ#148). This could be disabled via
+  Unset Omega UseLocalDefs.
+- The tactic "romega" is also aware now of the bodies of context variables.
+
+Changes from 8.7+beta2 to 8.7.0
+===============================
+
+OCaml
+
+- Users can pass specific flags to the OCaml optimizing compiler by
+  -using the flambda-opts configure-time option.
+
+  Beware that compiling Coq with a flambda-enabled compiler is
+  experimental and may require large amounts of RAM and CPU, see
+  INSTALL for more details.
+
+Changes from 8.7+beta1 to 8.7+beta2
+===================================
+
+Tools
+
+- In CoqIDE, the "Compile Buffer" command takes account of flags in
+  _CoqProject or other project file.
+
+Improvements around some error messages.
+
+Many bug fixes including two important ones:
+
+- BZ#5730: CoqIDE becomes unresponsive on file open.
+- coq_makefile: make sure compile flags for Coq and coq_makefile are in sync
+  (in particular, make sure the `-safe-string` option is used to compile plugins).
+
+Changes from 8.6.1 to 8.7+beta1
+===============================
 
 Tactics
 
@@ -39,19 +88,46 @@ Tactics
 - In "Tactic Notation" or "TACTIC EXTEND", entry "constr_with_bindings"
   now uses type classes and rejects terms with unresolved holes, like
   entry "constr" does. To get the former behavior use
-  "open_constr_with_bindings" (possible source of incompatibility.
+  "open_constr_with_bindings" (possible source of incompatibility).
 - New e-variants eassert, eenough, epose proof, eset, eremember, epose
   which behave like the corresponding variants with no "e" but turn
   unresolved implicit arguments into existential variables, on the
   shelf, rather than failing.
+- Tactic injection has become more powerful (closes BZ#4890) and its
+  documentation has been updated.
+- New variants of the `first` and `solve` tacticals that do not rely
+  on parsing rules, meant to define tactic notations.
+- Added support for side effects hooks in `cbv`, `cbn` and `simpl`.
+  The side effects are provided via a plugin:
+  https://github.com/herbelin/reduction-effects/
+- It is now possible to take hint database names as parameters in a
+  Ltac definition or a Tactic Notation.
+- New option `Set Ltac Batch Debug` on top of `Set Ltac Debug` for
+  non-interactive Ltac debug output.
+
+Gallina
+
+- Now supporting all kinds of binders, including 'pat, in syntax of record fields.
 
 Vernacular Commands
 
-- Goals context can be printed in a more compact way when "Set
-  Printing Compact Contexts" is activated.
-
+- Goals context can be printed in a more compact way when `Set
+  Printing Compact Contexts` is activated.
+- Unfocused goals can be printed with the `Set Printing Unfocused`
+  option.
+- `Print` now shows the types of let-bindings.
+- The compatibility options for printing primitive projections
+  (`Set Printing Primitive Projection Parameters` and
+  `Set Printing Primitive Projection Compatibility`) are now off by default.
+- Possibility to unset the printing of notations in a more fine grained
+  fashion than `Unset Printing Notations` is provided without any
+  user-syntax. The goal is that someone creates a plugin to experiment
+  such a user-syntax, to be later integrated in Coq when stabilized.
+- `About` now tells if a reference is a coercion.
 - The deprecated `Save` vernacular and its form `Save Theorem id` to
   close proofs have been removed from the syntax. Please use `Qed`.
+- `Search` now sorts results by relevance (the relevance metric is a
+  weighted sum of number of distinct symbols and size of the term).
 
 Standard Library
 
@@ -61,7 +137,10 @@ Standard Library
   and, consequently, choice of representatives in equivalence classes.
   Various proof-theoretic characterizations of choice over setoids in
   file ChoiceFacts.v.
-- The BigN, BigZ, BigZ libraries are not part anymore of Coq standard
+- New lemmas about iff and about orders on positive and Z.
+- New lemmas on powerRZ.
+- Strengthened statement of JMeq_eq_dep (closes BZ#4912).
+- The BigN, BigZ, BigZ libraries are no longer part of the Coq standard
   library, they are now provided by a separate repository
     https://github.com/coq/bignums
   The split has been done just after the Int31 library.
@@ -74,7 +153,19 @@ Standard Library
 
 Plugins
 
+- The Ssreflect plugin is now distributed with Coq. Its documentation has
+  been integrated as a chapter of the reference manual. This chapter is
+  work in progress so feedback is welcome.
 - The mathematical proof language (also known as declarative mode) was removed.
+- A new command Extraction TestCompile has been introduced, not meant
+  for the general user but instead for Coq's test-suite.
+- The extraction plugin is no longer loaded by default. It must be
+  explicitly loaded with [Require Extraction], which is backwards
+  compatible.
+- The functional induction plugin (which provides the [Function]
+  vernacular) is no longer loaded by default. It must be explicitly
+  loaded with [Require FunInd], which is backwards compatible.
+
 
 Dependencies
 
@@ -95,6 +186,11 @@ Tools
   The current version contains code for retro compatibility that prints
   warnings when a deprecated feature is used.  Please upgrade your _CoqProject
   accordingly.
+  * Additionally, coq_makefile-made Makefiles now support experimental timing
+    targets `pretty-timed`, `pretty-timed-before`, `pretty-timed-after`,
+    `print-pretty-timed-diff`, `print-pretty-single-time-diff`,
+    `all.timing.diff`, and the variable `TIMING=1` (or `TIMING=before` or
+    `TIMING=after`); see the documentation for more details.
 
 Build Infrastructure
 
@@ -108,14 +204,77 @@ Build Infrastructure
 Universes
 
 - Cumulative inductive types. see prefixes "Cumulative", "NonCumulative"
-  for inductive definitions and the option "Set Inductive Cumulativity"
+  for inductive definitions and the option "Set Polymorphic Inductive Cumulativity"
   in the reference manual.
+- New syntax `foo@{_}` to instantiate a polymorphic definition with
+  anonymous universes (can also be used with `Type`).
 
-XML Protocol
+XML Protocol and internal changes
 
-- The `query` call has been modified, now it carries a mandatory
-  "route_id" integer parameter, that associated the result of such
-  query with its generated feedback.
+See dev/doc/changes.txt
+
+Many bugfixes including BZ#1859, BZ#2884, BZ#3613, BZ#3943, BZ#3994,
+BZ#4250, BZ#4709, BZ#4720, BZ#4824, BZ#4844, BZ#4911, BZ#5026, BZ#5233,
+BZ#5275, BZ#5315, BZ#5336, BZ#5360, BZ#5390, BZ#5414, BZ#5417, BZ#5420,
+BZ#5439, BZ#5449, BZ#5475, BZ#5476, BZ#5482, BZ#5501, BZ#5507, BZ#5520,
+BZ#5523, BZ#5524, BZ#5553, BZ#5577, BZ#5578, BZ#5589, BZ#5597, BZ#5598,
+BZ#5607, BZ#5618, BZ#5619, BZ#5620, BZ#5641, BZ#5648, BZ#5651, BZ#5671.
+
+Many bugfixes on OS X and Windows (now the test-suite passes on these
+platforms too).
+
+Many optimizations.
+
+Many documentation improvements.
+
+Changes from 8.6 to 8.6.1
+=========================
+
+- Fix #5380: Default colors for CoqIDE are actually applied.
+- Fix plugin warnings
+- Document named evars (including Show ident)
+- Fix Bug #5574, document function scope
+- Adding a test case as requested in bug 5205.
+- Fix Bug #5568, no dup notation warnings on repeated module imports
+- Fix documentation of Typeclasses eauto :=
+- Refactor documentation of records.
+- Protecting from warnings while compiling 8.6
+- Fixing an inconsistency between configure and configure.ml
+- Add test-suite checks for coqchk with constraints
+- Fix bug #5019 (looping zify on dependent types)
+- Fix bug 5550: "typeclasses eauto with" does not work with section variables.
+- Bug 5546, qualify datatype constructors when needed in Show Match
+- Bug #5535, test for Show with -emacs
+- Fix bug #5486, don't reverse ids in tuples 
+- Fixing #5522 (anomaly with free vars of pat)
+- Fix bug #5526, don't check for nonlinearity in notation if printing only
+- Fix bug #5255
+- Fix bug #3659: -time should understand multibyte encodings.
+- FIx bug #5300: Anomaly: Uncaught exception Not_found" in "Print Assumptions".
+- Fix outdated description in RefMan.
+- Repairing `Set Rewriting Schemes`
+- Fixing #5487 (v8.5 regression on ltac-matching expressions with evars).
+- Fix description of command-line arguments for Add (Rec) LoadPath
+- Fix bug #5377: @? patterns broken.
+- add XML protocol doc
+- Fix anomaly when doing [all:Check _.] during a proof.
+- Correction of bug #4306
+- Fix #5435: [Eval native_compute in] raises anomaly.
+- Instances should obey universe binders even when defined by tactics.
+- Intern names bound in match patterns
+- funind: Ignore missing info for current function
+- Do not typecheck twice the type of opaque constants.
+- show unused intro pattern warning
+- [future] Be eager when "chaining" already resolved future values.
+- Opaque side effects
+- Fix #5132: coq_makefile generates incorrect install goal 
+- Run non-tactic comands without resilient_command
+- Univs: fix bug #5365, generation of u+k <= v constraints
+- make `emit' tail recursive
+- Don't require printing-only notation to be productive
+- Fix the way setoid_rewrite handles bindings.
+- Fix for bug 5244 - set printing width ignored when given enough space
+- Fix bug 4969, autoapply was not tagging shelved subgoals correctly
 
 Changes from V8.6beta1 to V8.6
 ==============================
@@ -2235,7 +2394,7 @@ Tactics
   a registered setoid equality before starting to reduce in H. This is unlikely
   to break any script. Should this happen nonetheless, one can insert manually
   some "unfold ... in H" before rewriting.
-- Fixed various bugs about (setoid) rewrite ... in ... (in particular #1101)
+- Fixed various bugs about (setoid) rewrite ... in ... (in particular BZ#1101)
 - "rewrite ... in" now accepts a clause as place where to rewrite instead of
   juste a simple hypothesis name. For instance:
    rewrite H in H1,H2 |- * means rewrite H in H1; rewrite H in H2; rewrite H
@@ -2812,11 +2971,11 @@ Incompatibilities
 Bugs
 
 - Improved localisation of errors in Syntactic Definitions
-- Induction principle creation failure in presence of let-in fixed (#238)
-- Inversion bugs fixed (#212 and #220)
-- Omega bug related to Set fixed (#180)
-- Type-checking inefficiency of nested destructuring let-in fixed (#216)
-- Improved handling of let-in during holes resolution phase (#239)
+- Induction principle creation failure in presence of let-in fixed (BZ#238)
+- Inversion bugs fixed (BZ#212 and BZ#220)
+- Omega bug related to Set fixed (BZ#180)
+- Type-checking inefficiency of nested destructuring let-in fixed (BZ#216)
+- Improved handling of let-in during holes resolution phase (BZ#239)
 
 Efficiency
 
@@ -2829,18 +2988,18 @@ Changes from V7.3 to V7.3.1
 Bug fixes
 
   - Corrupted Field tactic and Match Context tactic construction fixed
-  - Checking of names already existing in Assert added (PR#182)
-  - Invalid argument bug in Exact tactic solved (PR#183)
-  - Colliding bound names bug fixed (PR#202)
-  - Wrong non-recursivity test for Record fixed (PR#189)
-  - Out of memory/seg fault bug related to parametric inductive fixed (PR#195)
+  - Checking of names already existing in Assert added (BZ#182)
+  - Invalid argument bug in Exact tactic solved (BZ#183)
+  - Colliding bound names bug fixed (BZ#202)
+  - Wrong non-recursivity test for Record fixed (BZ#189)
+  - Out of memory/seg fault bug related to parametric inductive fixed (BZ#195)
   - Setoid_replace/Setoid_rewrite bug wrt "==" fixed
 
 Misc
 
   - Ocaml version >= 3.06 is needed to compile Coq from sources
   - Simplification of fresh names creation strategy for Assert, Pose and
-    LetTac (PR#192)
+    LetTac (BZ#192)
 
 Changes from V7.2 to V7.3
 =========================

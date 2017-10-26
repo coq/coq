@@ -25,7 +25,7 @@ let plugin_name = <:expr< __coq_plugin_name >>
 let mlexpr_of_ident id =
   (** Workaround for badly-designed generic arguments lacking a closure *)
   let id = "$" ^ id in
-  <:expr< API.Names.Id.of_string_soft $str:id$ >>
+  <:expr< Names.Id.of_string_soft $str:id$ >>
 
 let rec make_patt = function
   | [] -> <:patt< [] >>
@@ -57,18 +57,18 @@ let make_fun_clauses loc s l =
 let get_argt e = <:expr< (fun e -> match e with [ Genarg.ExtraArg tag -> tag | _ -> assert False ]) $e$ >>
 
 let rec mlexpr_of_symbol = function
-| Ulist1 s -> <:expr< Grammar_API.Extend.Ulist1 $mlexpr_of_symbol s$ >>
-| Ulist1sep (s,sep) -> <:expr< Grammar_API.Extend.Ulist1sep $mlexpr_of_symbol s$ $str:sep$ >>
-| Ulist0 s -> <:expr< Grammar_API.Extend.Ulist0 $mlexpr_of_symbol s$ >>
-| Ulist0sep (s,sep) -> <:expr< Grammar_API.Extend.Ulist0sep $mlexpr_of_symbol s$ $str:sep$ >>
-| Uopt s -> <:expr< Grammar_API.Extend.Uopt $mlexpr_of_symbol s$ >>
+| Ulist1 s -> <:expr< Extend.Ulist1 $mlexpr_of_symbol s$ >>
+| Ulist1sep (s,sep) -> <:expr< Extend.Ulist1sep $mlexpr_of_symbol s$ $str:sep$ >>
+| Ulist0 s -> <:expr< Extend.Ulist0 $mlexpr_of_symbol s$ >>
+| Ulist0sep (s,sep) -> <:expr< Extend.Ulist0sep $mlexpr_of_symbol s$ $str:sep$ >>
+| Uopt s -> <:expr< Extend.Uopt $mlexpr_of_symbol s$ >>
 | Uentry e ->
   let arg = get_argt <:expr< $lid:"wit_"^e$ >> in
-  <:expr< Grammar_API.Extend.Uentry (Genarg.ArgT.Any $arg$) >>
+  <:expr< Extend.Uentry (Genarg.ArgT.Any $arg$) >>
 | Uentryl (e, l) ->
   assert (e = "tactic");
   let arg = get_argt <:expr< Tacarg.wit_tactic >> in
-  <:expr< Grammar_API.Extend.Uentryl (Genarg.ArgT.Any $arg$) $mlexpr_of_int l$>>
+  <:expr< Extend.Uentryl (Genarg.ArgT.Any $arg$) $mlexpr_of_int l$>>
 
 let make_prod_item = function
   | ExtTerminal s -> <:expr< Tacentries.TacTerm $str:s$ >>
@@ -113,12 +113,12 @@ let declare_tactic loc tacname ~level classification clause = match clause with
       the ML tactic retrieves its arguments in the [ist] environment instead.
       This is the rôle of the [lift_constr_tac_to_ml_tac] function. *)
   let body = <:expr< Tacexpr.TacFun ($vars$, Tacexpr.TacML (Loc.tag ( $ml$ , []))) >> in
-  let name = <:expr< API.Names.Id.of_string $name$ >> in
+  let name = <:expr< Names.Id.of_string $name$ >> in
   declare_str_items loc
     [ <:str_item< do {
       let obj () = Tacenv.register_ltac True False $name$ $body$ in
       let () = Tacenv.register_ml_tactic $se$ [|$tac$|] in
-      API.Mltop.declare_cache_obj obj $plugin_name$ } >>
+      Mltop.declare_cache_obj obj $plugin_name$ } >>
     ]
 | _ ->
   (** Otherwise we add parsing and printing rules to generate a call to a
@@ -131,7 +131,7 @@ let declare_tactic loc tacname ~level classification clause = match clause with
   declare_str_items loc
     [ <:str_item< do {
         Tacenv.register_ml_tactic $se$ (Array.of_list $make_fun_clauses loc tacname clause$);
-        Grammar_API.Mltop.declare_cache_obj $obj$ $plugin_name$; } >>
+        Mltop.declare_cache_obj $obj$ $plugin_name$; } >>
     ]
 
 open Pcaml

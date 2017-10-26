@@ -299,8 +299,8 @@ let get_names (allow_conj,issimple) (loc, pat as x) = match pat with
   | IntroAction (IntroRewrite _) ->
       user_err Pp.(str "Rewriting pattern not allowed for inversion equations.")
   | IntroAction (IntroOrAndPattern (IntroAndPattern [])) when allow_conj -> (None, [])
-  | IntroAction (IntroOrAndPattern (IntroAndPattern ((_,IntroNaming (IntroIdentifier id)) :: _ as l) | IntroOrPattern [(_,IntroNaming (IntroIdentifier id)) :: _ as l ]))
-      when allow_conj -> (Some id,l)
+  | IntroAction (IntroOrAndPattern (IntroAndPattern ((_,IntroNaming (IntroIdentifier (id,isprivate))) :: _ as l) | IntroOrPattern [(_,IntroNaming (IntroIdentifier (id,isprivate))) :: _ as l ]))
+      when allow_conj -> (Some (id,isprivate),l)
   | IntroAction (IntroOrAndPattern (IntroAndPattern _)) ->
       if issimple then
         user_err Pp.(str"Conjunctive patterns not allowed for simple inversion equations.")
@@ -312,8 +312,8 @@ let get_names (allow_conj,issimple) (loc, pat as x) = match pat with
       user_err Pp.(str "Disjunctive patterns not allowed for inversion equations.")
   | IntroAction (IntroApplyOn (c,pat)) ->
       user_err Pp.(str "Apply patterns not allowed for inversion equations.")
-  | IntroNaming (IntroIdentifier id) ->
-      (Some id,[x])
+  | IntroNaming (IntroIdentifier (id,isprivate)) ->
+      (Some (id,isprivate),[x])
 
 let rec tclMAP_i allow_conj n tacfun = function
   | [] -> tclDO n (tacfun (None,[]))
@@ -387,7 +387,7 @@ let rewrite_equations as_mode othin neqns names ba =
   Proofview.Goal.enter begin fun gl ->
   let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums gl in
   let first_eq = ref MoveLast in
-  let avoid = if as_mode then List.map NamedDecl.get_id nodepids else [] in
+  let avoid = if as_mode then Id.Set.of_list (List.map NamedDecl.get_id nodepids) else Id.Set.empty in
   match othin with
     | Some thin ->
         tclTHENLIST
@@ -403,7 +403,7 @@ let rewrite_equations as_mode othin neqns names ba =
 		   tclTRY (projectAndApply as_mode thin avoid id first_eq names depids)))))
 	       names;
 	     tclMAP (fun d -> tclIDTAC >>= fun () -> (* delay for [first_eq]. *)
-               let idopt = if as_mode then Some (NamedDecl.get_id d) else None in
+               let idopt = if as_mode then Some (NamedDecl.get_id d,false) else None in
 	       intro_move idopt (if thin then MoveLast else !first_eq))
 	       nodepids;
 	     (tclMAP (fun d -> tclTRY (clear [NamedDecl.get_id d])) depids)]

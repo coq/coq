@@ -29,6 +29,8 @@ val set_options : set_options_sty -> set_options_rty call
 val quit        : quit_sty        -> quit_rty call
 val init        : init_sty        -> init_rty call
 val stop_worker : stop_worker_sty -> stop_worker_rty call
+(* internal use (fake_ide) only, do not use *)
+val wait        : wait_sty        -> wait_rty call
 (* retrocompatibility *)
 val interp      : interp_sty      -> interp_rty call
 val print_ast   : print_ast_sty   -> print_ast_rty call

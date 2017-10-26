@@ -49,6 +49,7 @@ sig
     (int -> 'a -> bool) -> 'a list -> 'a list
   val partitioni :
     (int -> 'a -> bool) -> 'a list -> 'a list * 'a list
+  val map_of_array : ('a -> 'b) -> 'a array -> 'b list
   val smartfilter : ('a -> bool) -> 'a list -> 'a list
   val extend : bool list -> 'a -> 'a list -> 'a list
   val count : ('a -> bool) -> 'a list -> int
@@ -91,6 +92,10 @@ sig
   val map_append : ('a -> 'b list) -> 'a list -> 'b list
   val map_append2 : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
   val share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list
+  val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
+  val fold_right_map : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
+  val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b list -> 'c list -> 'a * 'd list
+  val fold_right2_map : ('b -> 'c -> 'a -> 'd * 'a) -> 'b list -> 'c list -> 'a -> 'd list * 'a
   val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
   val fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
   val map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
@@ -158,6 +163,21 @@ let map2 f l1 l2 = match l1, l2 with
   map2_loop f c l1 l2;
   cast c
 | _ -> invalid_arg "List.map2"
+
+let rec map_of_array_loop f p a i l =
+  if Int.equal i l then ()
+  else
+    let c = { head = f (Array.unsafe_get a i); tail = [] } in
+    p.tail <- cast c;
+    map_of_array_loop f c a (i + 1) l
+
+let map_of_array f a =
+  let l = Array.length a in
+  if Int.equal l 0 then []
+  else
+    let c = { head = f (Array.unsafe_get a 0); tail = [] } in
+    map_of_array_loop f c a 1 l;
+    cast c
 
 let rec append_loop p tl = function
 | [] -> p.tail <- tl
@@ -745,12 +765,14 @@ let share_tails l1 l2 =
   in
   shr_rev [] (List.rev l1, List.rev l2)
 
-let rec fold_map f e = function
+let rec fold_left_map f e = function
   |  []  -> (e,[])
   |  h::t ->
        let e',h' = f e h in
-       let e'',t' = fold_map f e' t in
+       let e'',t' = fold_left_map f e' t in
          e'',h'::t'
+
+let fold_map = fold_left_map
 
 (* (* tail-recursive version of the above function *)
 let fold_map f e l =
@@ -763,8 +785,16 @@ let fold_map f e l =
 *)
 
 (* The same, based on fold_right, with the effect accumulated on the right *)
-let fold_map' f l e =
+let fold_right_map f l e =
   List.fold_right (fun x (l,e) -> let (y,e) = f x e in (y::l,e)) l ([],e)
+
+let fold_map' = fold_right_map
+
+let fold_left2_map f e l l' =
+  List.fold_left2 (fun (e,l) x x' -> let (e,y) = f e x x' in (e,y::l)) (e,[]) l l'
+
+let fold_right2_map f l l' e =
+  List.fold_right2 (fun x x' (l,e) -> let (y,e) = f x x' e in (y::l,e)) l l' ([],e)
 
 let map_assoc f = List.map (fun (x,a) -> (x,f a))
 

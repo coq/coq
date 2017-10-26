@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open EConstr
 open Formula
 open Globnames
@@ -58,4 +57,4 @@ val extend_with_ref_list : Environ.env -> Evd.evar_map -> global_reference list 
 val extend_with_auto_hints : Environ.env -> Evd.evar_map -> Hints.hint_db_name list ->
   t -> t * Evd.evar_map
 
-val print_cmap: global_reference list CM.t -> Pp.std_ppcmds
+val print_cmap: global_reference list CM.t -> Pp.t

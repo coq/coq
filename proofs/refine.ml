@@ -34,10 +34,11 @@ let typecheck_evar ev env sigma =
     | LocalAssum _ -> ()
     | LocalDef (_,body,_) -> Typing.e_check env evdref (EConstr.of_constr body) t
     in
-    (!evdref, Environ.push_named decl env)
+    (!evdref, Environ.push_named decl false env)
   in
   let (common, changed) = extract_prefix env info in
-  let env = Environ.reset_with_named_context (Environ.val_of_named_context common) env in
+  let private_ids = Environ.named_context_private_ids (Environ.named_context_val env) in
+  let env = Environ.reset_with_named_context (Environ.val_of_named_context common private_ids) env in
   let (sigma, env) = List.fold_left type_hyp (sigma, env) changed in
   (** Typecheck the conclusion *)
   let evdref = ref sigma in
@@ -102,7 +103,12 @@ let generic_refine ~typecheck f gl =
   in
   (** Proceed to the refinement *)
   let c = EConstr.Unsafe.to_constr c in
-  let sigma = match evkmain with
+  let sigma = match Proofview.Unsafe.advance sigma self with
+  | None ->
+    (** Nothing to do, the goal has been solved by side-effect *)
+    sigma
+  | Some self ->
+    match evkmain with
     | None -> Evd.define self c sigma
     | Some evk ->
         let id = Evd.evar_ident self sigma in

@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Names
 open Environ
 open EConstr
@@ -62,8 +61,8 @@ val strategy_of_ast : (glob_constr_and_expr, raw_red_expr) strategy_ast -> strat
 val map_strategy : ('a -> 'b) -> ('c -> 'd) ->
   ('a, 'c) strategy_ast -> ('b, 'd) strategy_ast
 
-val pr_strategy : ('a -> Pp.std_ppcmds) -> ('b -> Pp.std_ppcmds) ->
-  ('a, 'b) strategy_ast -> Pp.std_ppcmds
+val pr_strategy : ('a -> Pp.t) -> ('b -> Pp.t) ->
+  ('a, 'b) strategy_ast -> Pp.t
 
 (** Entry point for user-level "rewrite_strat" *)
 val cl_rewrite_clause_strat : strategy -> Id.t option -> unit Proofview.tactic
@@ -111,7 +110,7 @@ val setoid_transitivity : constr option -> unit Proofview.tactic
 val apply_strategy :
   strategy ->
   Environ.env ->
-  Names.Id.t list ->
+  Names.Id.Set.t ->
   constr ->
   bool * constr ->
   evars -> rewrite_result

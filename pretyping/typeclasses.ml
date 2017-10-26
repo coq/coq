@@ -57,6 +57,9 @@ type direction = Forward | Backward
 
 (* This module defines type-classes *)
 type typeclass = {
+  (* Universe quantification *)
+  cl_univs : Univ.AUContext.t;
+
   (* The class implementation *)
   cl_impl : global_reference;
 
@@ -81,8 +84,8 @@ type instance = {
   is_class: global_reference;
   is_info: Vernacexpr.hint_info_expr;
   (* Sections where the instance should be redeclared,
-     -1 for discard, 0 for none. *)
-  is_global: int;
+     None for discard, Some 0 for none. *)
+  is_global: int option;
   is_poly: bool;
   is_impl: global_reference;
 }
@@ -95,9 +98,11 @@ let hint_priority is = is.is_info.Vernacexpr.hint_priority
 
 let new_instance cl info glob poly impl =
   let global =
-    if glob then Lib.sections_depth ()
-    else -1
+    if glob then Some (Lib.sections_depth ())
+    else None
   in
+  if match global with Some n -> n>0 && isVarRef impl | _ -> false then
+    CErrors.user_err (Pp.str "Cannot set Global an instance referring to a section variable.");
     { is_class = cl.cl_impl;
       is_info = info ;
       is_global = global ;
@@ -111,23 +116,11 @@ let new_instance cl info glob poly impl =
 let classes : typeclasses ref = Summary.ref Refmap.empty ~name:"classes"
 let instances : instances ref = Summary.ref Refmap.empty ~name:"instances"
 
-let typeclass_univ_instance (cl,u') =
-  let subst = 
-    let u = 
-      match cl.cl_impl with
-      | ConstRef c -> 
-        let cb = Global.lookup_constant c in
-        Declareops.constant_polymorphic_instance cb
-      | IndRef c ->
-         let mib,oib = Global.lookup_inductive c in
-         Declareops.inductive_polymorphic_instance mib
-      | _ -> Univ.Instance.empty
-    in Array.fold_left2 (fun subst u u' -> Univ.LMap.add u u' subst) 
-      Univ.LMap.empty (Univ.Instance.to_array u) (Univ.Instance.to_array u')
-  in
-  let subst_ctx = Context.Rel.map (subst_univs_level_constr subst) in
-    { cl with cl_context = fst cl.cl_context, subst_ctx (snd cl.cl_context);
-      cl_props = subst_ctx cl.cl_props}, u'
+let typeclass_univ_instance (cl, u) =
+  assert (Univ.AUContext.size cl.cl_univs == Univ.Instance.length u);
+  let subst_ctx c = Context.Rel.map (subst_instance_constr u) c in
+    { cl with cl_context = on_snd subst_ctx cl.cl_context;
+      cl_props = subst_ctx cl.cl_props}
 
 let class_info c =
   try Refmap.find c !classes
@@ -185,7 +178,8 @@ let subst_class (subst,cl) =
     do_subst_ctx ctx in
   let do_subst_projs projs = List.smartmap (fun (x, y, z) -> 
     (x, y, Option.smartmap do_subst_con z)) projs in
-  { cl_impl = do_subst_gr cl.cl_impl;
+  { cl_univs = cl.cl_univs;
+    cl_impl = do_subst_gr cl.cl_impl;
     cl_context = do_subst_context cl.cl_context;
     cl_props = do_subst_ctx cl.cl_props;
     cl_projs = do_subst_projs cl.cl_projs;
@@ -199,15 +193,14 @@ let discharge_class (_,cl) =
         let decl' = decl |> NamedDecl.map_constr (substn_vars 1 subst) |> NamedDecl.to_rel_decl in
 	(decl' :: ctx', NamedDecl.get_id decl :: subst)
     ) ctx ([], []) in
-  let discharge_rel_context subst n rel =
+  let discharge_rel_context (subst, usubst) n rel =
     let rel = Context.Rel.map (Cooking.expmod_constr repl) rel in
-    let ctx, _ =
-      List.fold_right
-	(fun decl (ctx, k) ->
-	   RelDecl.map_constr (substn_vars k subst) decl :: ctx, succ k
-	)
-	rel ([], n)
-    in ctx
+    let fold decl (ctx, k) =
+      let map c = subst_univs_level_constr usubst (substn_vars k subst c) in
+      RelDecl.map_constr map decl :: ctx, succ k
+    in
+    let ctx, _ = List.fold_right fold rel ([], n) in
+    ctx
   in
   let abs_context cl =
     match cl.cl_impl with
@@ -227,12 +220,14 @@ let discharge_class (_,cl) =
     in grs', discharge_rel_context subst 1 ctx @ ctx' in
   let cl_impl' = Lib.discharge_global cl.cl_impl in
   if cl_impl' == cl.cl_impl then cl else
-    let ctx, usubst, uctx = abs_context cl in
+    let ctx, _, _ as info = abs_context cl in
     let ctx, subst = rel_of_variable_context ctx in
-    let context = discharge_context ctx subst cl.cl_context in
-    let props = discharge_rel_context subst (succ (List.length (fst cl.cl_context))) cl.cl_props in
+    let usubst, cl_univs' = Lib.discharge_abstract_universe_context info cl.cl_univs in
+    let context = discharge_context ctx (subst, usubst) cl.cl_context in
+    let props = discharge_rel_context (subst, usubst) (succ (List.length (fst cl.cl_context))) cl.cl_props in
     let discharge_proj (x, y, z) = x, y, Option.smartmap Lib.discharge_con z in
-      { cl_impl = cl_impl';
+      { cl_univs = cl_univs';
+        cl_impl = cl_impl';
 	cl_context = context;
 	cl_props = props;
 	cl_projs = List.smartmap discharge_proj cl.cl_projs;
@@ -279,8 +274,10 @@ let build_subclasses ~check env sigma glob { hint_priority = pri } =
         Nameops.add_suffix _id ("_subinstance_" ^ string_of_int !i))
   in
   let ty, ctx = Global.type_of_global_in_context env glob in
+  let inst, ctx = Universes.fresh_instance_from ctx None in
+  let ty = Vars.subst_instance_constr inst ty in
   let ty = EConstr.of_constr ty in
-  let sigma = Evd.merge_context_set Evd.univ_rigid sigma (Univ.ContextSet.of_context ctx) in
+  let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
   let rec aux pri c ty path =
       match class_of_constr sigma ty with
       | None -> []
@@ -317,7 +314,7 @@ let build_subclasses ~check env sigma glob { hint_priority = pri } =
 	    hints @ (path', info, body) :: rest
 	in List.fold_left declare_proj [] projs 
   in
-  let term = Universes.constr_of_global_univ (glob,Univ.UContext.instance ctx) in
+  let term = Universes.constr_of_global_univ (glob, inst) in
     (*FIXME subclasses should now get substituted for each particular instance of
       the polymorphic superclass *)
     aux pri term ty [glob]
@@ -355,22 +352,34 @@ let subst_instance (subst, (action, inst)) = action,
       is_impl = fst (subst_global subst inst.is_impl) }
 
 let discharge_instance (_, (action, inst)) =
-  if inst.is_global <= 0 then None
-  else Some (action,
+  match inst.is_global with
+  | None -> None
+  | Some n ->
+    assert (not (isVarRef inst.is_impl));
+    Some (action,
     { inst with 
-      is_global = pred inst.is_global;
+      is_global = Some (pred n);
       is_class = Lib.discharge_global inst.is_class;
       is_impl = Lib.discharge_global inst.is_impl })
     
 
-let is_local i = Int.equal i.is_global (-1)
+let is_local i = (i.is_global == None)
+
+let is_local_for_hint i =
+  match i.is_global with
+  | None -> true  (* i.e. either no Global keyword not in section, or in section *)
+  | Some n -> n <> 0 (* i.e. in a section, declare the hint as local
+     since discharge is managed by rebuild_instance which calls again
+     add_instance_hint; don't ask hints to take discharge into account
+     itself *)
 
 let add_instance check inst =
   let poly = Global.is_polymorphic inst.is_impl in
-  add_instance_hint (IsGlobal inst.is_impl) [inst.is_impl] (is_local inst) 
+  let local = is_local_for_hint inst in
+  add_instance_hint (IsGlobal inst.is_impl) [inst.is_impl] local
     inst.is_info poly;
   List.iter (fun (path, pri, c) -> add_instance_hint (IsConstr c) path
-    (is_local inst) pri poly)
+    local pri poly)
     (build_subclasses ~check:(check && not (isVarRef inst.is_impl))
        (Global.env ()) (Evd.from_env (Global.env ())) inst.is_impl inst.is_info)
 
@@ -405,10 +414,11 @@ let remove_instance i =
   remove_instance_hint i.is_impl
 
 let declare_instance info local glob =
-  let ty = Global.type_of_global_unsafe glob in
+  let ty, _ = Global.type_of_global_in_context (Global.env ()) glob in
   let info = Option.default {hint_priority = None; hint_pattern = None} info in
     match class_of_constr Evd.empty (EConstr.of_constr ty) with
     | Some (rels, ((tc,_), args) as _cl) ->
+      assert (not (isVarRef glob) || local);
       add_instance (new_instance tc info (not local) (Flags.use_polymorphic_flag ()) glob)
     | None -> ()
 

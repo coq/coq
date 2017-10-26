@@ -64,7 +64,7 @@ Check (fun x:I1 =>
   end).
 
 (* Check implicit parameters of inductive types (submitted by Pierre
-  Casteran and also implicit in #338) *)
+  Casteran and also implicit in BZ#338) *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -80,7 +80,7 @@ Inductive Finite (A : Set) : LList A -> Prop :=
   | Finite_LCons :
       forall (a : A) (l : LList A), Finite l -> Finite (LCons a l).
 
-(* Check positivity modulo reduction (cf bug #983) *)
+(* Check positivity modulo reduction (cf bug BZ#983) *)
 
 Record P:Type := {PA:Set; PB:Set}.
 
@@ -183,3 +183,20 @@ Module PolyNoLowerProp.
   Fail Check Foo True : Prop.
 
 End PolyNoLowerProp.
+
+(* Test building of elimination scheme with noth let-ins and
+   non-recursively uniform parameters *)
+
+Module NonRecLetIn.
+
+  Unset Implicit Arguments.
+
+  Inductive Ind (b:=2) (a:nat) (c:=1) : Type :=
+  | Base : Ind a
+  | Rec : Ind (S a) -> Ind a.
+
+  Check Ind_rect (fun n (b:Ind n) => b = b)
+    (fun n => eq_refl)
+    (fun n b c => f_equal (Rec n) eq_refl) 0 (Rec 0 (Base 1)).
+
+End NonRecLetIn.

@@ -74,21 +74,21 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "trigger bugged context matching compatibility";
       optkey   = ["Tactic";"Compat";"Context"];
       optread  = (fun () -> !Flags.tactic_context_compat) ;
       optwrite = (fun b -> Flags.tactic_context_compat := b) }
 
-let apply_solve_class_goals = ref (false)
-let _ = Goptions.declare_bool_option {
-  Goptions.optdepr = true;
-  Goptions.optname =
-    "Perform typeclass resolution on apply-generated subgoals.";
-  Goptions.optkey = ["Typeclass";"Resolution";"After";"Apply"];
-  Goptions.optread = (fun () -> !apply_solve_class_goals);
-  Goptions.optwrite = (fun a -> apply_solve_class_goals:=a);
-}
+let apply_solve_class_goals = ref false
+
+let _ =
+  declare_bool_option
+    { optdepr = true; (* remove in 8.8 *)
+      optname = "Perform typeclass resolution on apply-generated subgoals.";
+      optkey = ["Typeclass";"Resolution";"After";"Apply"];
+      optread = (fun () -> !apply_solve_class_goals);
+      optwrite = (fun a -> apply_solve_class_goals := a); }
 
 let clear_hyp_by_default = ref false
 
@@ -124,7 +124,7 @@ let shrink_abstract = ref true
 
 let _ =
   declare_bool_option
-    { optdepr  = true;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "shrinking of abstracted proofs";
       optkey   = ["Shrink"; "Abstract"];
       optread  = (fun () -> !shrink_abstract) ;
@@ -143,7 +143,7 @@ let use_bracketing_last_or_and_intro_pattern () =
 
 let _ =
   declare_bool_option
-    { optdepr  = true; (* remove in 8.8 *)
+    { optdepr  = false;
       optname  = "bracketing last or-and introduction pattern";
       optkey   = ["Bracketing";"Last";"Introduction";"Pattern"];
       optread  = (fun () -> !bracketing_last_or_and_intro_pattern);
@@ -159,18 +159,18 @@ let _ =
 
 (** This tactic creates a partial proof realizing the introduction rule, but
     does not check anything. *)
-let unsafe_intro env store decl b =
+let unsafe_intro env store decl isprivate concl_user_names b =
   Refine.refine ~typecheck:false begin fun sigma ->
     let ctx = named_context_val env in
-    let nctx = push_named_context_val decl ctx in
+    let nctx = push_named_context_val decl isprivate ctx in
     let inst = List.map (NamedDecl.get_id %> mkVar) (named_context env) in
     let ninst = mkRel 1 :: inst in
     let nb = subst1 (mkVar (NamedDecl.get_id decl)) b in
-    let (sigma, ev) = new_evar_instance nctx sigma nb ~principal:true ~store ninst in
+    let (sigma, ev) = new_evar_instance nctx sigma nb ~concl_user_names ~principal:true ~store ninst in
     (sigma, mkNamedLambda_or_LetIn decl ev)
   end
 
-let introduction ?(check=true) id =
+let introduction ?(check=true) id isprivate =
   Proofview.Goal.enter begin fun gl ->
     let gl = Proofview.Goal.assume gl in
     let concl = Proofview.Goal.concl gl in
@@ -178,14 +178,17 @@ let introduction ?(check=true) id =
     let hyps = named_context_val (Proofview.Goal.env gl) in
     let store = Proofview.Goal.extra gl in
     let env = Proofview.Goal.env gl in
+    let concl_user_names = Proofview.Goal.concl_user_names gl in
     let () = if check && mem_named_context_val id hyps then
       user_err ~hdr:"Tactics.introduction"
         (str "Variable " ++ pr_id id ++ str " is already declared.")
     in
     let open Context.Named.Declaration in
     match EConstr.kind sigma concl with
-    | Prod (_, t, b) -> unsafe_intro env store (LocalAssum (id, t)) b
-    | LetIn (_, c, t, b) -> unsafe_intro env store (LocalDef (id, c, t)) b
+    | Prod (na, t, b) ->
+       unsafe_intro env store (LocalAssum (id, t)) isprivate (Name.fold_right Id.Set.remove na concl_user_names) b
+    | LetIn (na, c, t, b) ->
+       unsafe_intro env store (LocalDef (id, c, t)) isprivate (Name.fold_right Id.Set.remove na concl_user_names) b
     | _ -> raise (RefinerError IntroNeedsProduct)
   end
 
@@ -327,7 +330,7 @@ let move_hyp id dest =
 
 (* Renaming hypotheses *)
 let rename_hyp repl =
-  let fold accu (src, dst) = match accu with
+  let fold accu (src, (dst,isprivate)) = match accu with
   | None -> None
   | Some (srcs, dsts) ->
     if Id.Set.mem src srcs then None
@@ -363,16 +366,22 @@ let rename_hyp repl =
         with Not_found -> ()
       in
       (** All is well *)
-      let make_subst (src, dst) = (src, mkVar dst) in
+      let make_subst (src, (dst,_)) = (src, mkVar dst) in
       let subst = List.map make_subst repl in
       let subst c = Vars.replace_vars subst c in
       let map decl =
-        decl |> NamedDecl.map_id (fun id -> try List.assoc_f Id.equal id repl with Not_found -> id)
+        decl |> NamedDecl.map_id (fun id -> try fst (List.assoc_f Id.equal id repl) with Not_found -> id)
              |> NamedDecl.map_constr subst
       in
       let nhyps = List.map map hyps in
       let nconcl = subst concl in
-      let nctx = val_of_named_context nhyps in
+      let private_ids = Environ.named_context_private_ids (Environ.named_context_val (Proofview.Goal.env gl)) in
+      let update ids (src,(dst,isprivate)) =
+        (* Assuming vars in repl distinct *)
+        let ids = Id.Set.remove src ids in
+        if isprivate then Id.Set.add dst ids else ids in
+      let private_ids' = List.fold_left update private_ids repl in
+      let nctx = val_of_named_context nhyps private_ids' in
       let instance = List.map (NamedDecl.get_id %> mkVar) hyps in
       Refine.refine ~typecheck:false begin fun sigma ->
         Evarutil.new_evar_instance nctx sigma nconcl ~principal:true ~store instance
@@ -384,13 +393,23 @@ let rename_hyp repl =
 (**************************************************************)
 
 let fresh_id_in_env avoid id env =
-  next_ident_away_in_goal id (avoid@ids_of_named_context (named_context env))
+  let avoid' = ids_of_named_context_val (named_context_val env) in
+  let avoid = if Id.Set.is_empty avoid then avoid' else Id.Set.union avoid' avoid in
+  next_ident_away_in_goal id avoid
 
 let fresh_id avoid id gl =
   fresh_id_in_env avoid id (pf_env gl)
 
 let new_fresh_id avoid id gl =
   fresh_id_in_env avoid id (Proofview.Goal.env gl)
+
+let fresh_stable_id_in_env avoid (id,unstable) env =
+  let id' = fresh_id_in_env avoid id env in
+  let isprivate = unstable || not (Id.equal id id') in
+  id', isprivate
+
+let new_fresh_stable_id avoid id gl =
+  fresh_stable_id_in_env avoid id (Proofview.Goal.env gl)
 
 let id_of_name_with_default id = function
   | Anonymous -> id
@@ -412,43 +431,112 @@ let default_id env sigma decl =
    possibly a move to do after the introduction *)
 
 type name_flag =
-  | NamingAvoid of Id.t list
-  | NamingBasedOn of Id.t * Id.t list
-  | NamingMustBe of Id.t Loc.located
+  | NamingAvoid of Id.Set.t
+  | NamingBasedOn of Id.t * Misctypes.unstable_flag * Id.Set.t
+  | NamingMustBe of Id.t Loc.located * Misctypes.private_flag
 
 let naming_of_name = function
-  | Anonymous -> NamingAvoid []
-  | Name id -> NamingMustBe (Loc.tag id)
+  | Anonymous -> NamingAvoid Id.Set.empty
+  | Name id -> NamingMustBe ((Loc.tag id),false)
 
 let find_name mayrepl decl naming gl = match naming with
   | NamingAvoid idl ->
       (* this case must be compatible with [find_intro_names] below. *)
       let env = Proofview.Goal.env gl in
       let sigma = Tacmach.New.project gl in
-      new_fresh_id idl (default_id env sigma decl) gl
-  | NamingBasedOn (id,idl) ->  new_fresh_id idl id gl
-  | NamingMustBe (loc,id) ->
+      let concl_user_names = Proofview.Goal.concl_user_names gl in
+      let unstable = match RelDecl.get_name decl with Name id -> not (Id.Set.mem id concl_user_names) | _ -> true in
+      new_fresh_stable_id idl (default_id env sigma decl,unstable) gl
+  | NamingBasedOn (id,unstable,idl) -> new_fresh_stable_id idl (id,unstable) gl
+  | NamingMustBe ((loc,id),isprivate) ->
       (* When name is given, we allow to hide a global name *)
-      let ids_of_hyps = Tacmach.New.pf_ids_of_hyps gl in
+      let ids_of_hyps = Tacmach.New.pf_ids_set_of_hyps gl in
       let id' = next_ident_away id ids_of_hyps in
       if not mayrepl && not (Id.equal id' id) then
         user_err ?loc  (pr_id id ++ str" is already used.");
-      id
+      id, isprivate
+
+(**************************************************************)
+(*   Computing position of hypotheses for replacing           *)
+(**************************************************************)
+
+let get_next_hyp_position id =
+  let rec aux = function
+  | [] -> error_no_such_hypothesis id
+  | decl :: right ->
+    if Id.equal (NamedDecl.get_id decl) id then
+      match right with decl::_ -> MoveBefore (NamedDecl.get_id decl) | [] -> MoveFirst
+    else
+      aux right
+  in
+  aux
+
+let get_previous_hyp_position id =
+  let rec aux dest = function
+  | [] -> error_no_such_hypothesis id
+  | decl :: right ->
+      let hyp = NamedDecl.get_id decl in
+      if Id.equal hyp id then dest else aux (MoveAfter hyp) right
+  in
+  aux MoveLast
 
 (**************************************************************)
 (*            Cut rule                                        *)
 (**************************************************************)
 
+let clear_hyps2 env sigma ids sign t cl =
+  try
+    let evdref = ref (Evd.clear_metas sigma) in
+    let (hyps,t,cl) = Evarutil.clear_hyps2_in_evi env evdref sign t cl ids in
+    (hyps, t, cl, !evdref)
+  with Evarutil.ClearDependencyError (id,err) ->
+    error_replacing_dependency env sigma id err
+
+let internal_cut_gen ?(check=true) dir replace isprivate id t =
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Tacmach.New.project gl in
+    let concl = Proofview.Goal.concl gl in
+    let store = Proofview.Goal.extra gl in
+    let sign = named_context_val env in
+    let sign',t,concl,sigma =
+      if replace then
+        let nexthyp = get_next_hyp_position id (named_context_of_val sign) in
+        let sign',t,concl,sigma = clear_hyps2 env sigma (Id.Set.singleton id) sign t concl in
+        let sign' = insert_decl_in_named_context sigma (LocalAssum (id,t)) isprivate nexthyp sign' in
+        sign',t,concl,sigma
+      else
+        (if check && mem_named_context_val id sign then
+	   user_err (str "Variable " ++ pr_id id ++ str " is already declared.");
+         push_named_context_val (LocalAssum (id,t)) isprivate sign,t,concl,sigma) in
+    let concl_user_names = Termops.quantified_names_of_type sigma t in
+    let nf_t = nf_betaiota sigma t in
+    Proofview.tclTHEN
+      (Proofview.Unsafe.tclEVARS sigma)
+      (Refine.refine ~typecheck:false begin fun sigma ->
+        let (sigma,ev,ev') =
+          if dir then
+            let (sigma, ev) = Evarutil.new_evar_from_context sign sigma ~concl_user_names nf_t in
+            let (sigma, ev') = Evarutil.new_evar_from_context sign' sigma ~principal:true ~store concl in
+            (sigma,ev,ev')
+          else
+            let (sigma, ev') = Evarutil.new_evar_from_context sign' sigma ~principal:true ~store concl in
+            let (sigma, ev) = Evarutil.new_evar_from_context sign sigma ~concl_user_names nf_t in
+            (sigma,ev,ev') in
+        let term = mkLetIn (Name id, ev, t, EConstr.Vars.subst_var id ev') in
+        (sigma, term)
+      end)
+  end
+
+let internal_cut ?(check=true) = internal_cut_gen ~check true
+let internal_cut_rev ?(check=true) = internal_cut_gen ~check false
+
 let assert_before_then_gen b naming t tac =
   let open Context.Rel.Declaration in
   Proofview.Goal.enter begin fun gl ->
-    let id = find_name b (LocalAssum (Anonymous,t)) naming gl in
+    let id,isprivate = find_name b (LocalAssum (Anonymous,t)) naming gl in
     Tacticals.New.tclTHENLAST
-      (Proofview.V82.tactic
-         (fun gl ->
-           try Tacmach.internal_cut b id t gl
-           with Evarutil.ClearDependencyError (id,err) ->
-             error_replacing_dependency (pf_env gl) (project gl) id err))
+      (internal_cut b isprivate id t)
       (tac id)
   end
 
@@ -456,18 +544,14 @@ let assert_before_gen b naming t =
   assert_before_then_gen b naming t (fun _ -> Proofview.tclUNIT ())
 
 let assert_before na = assert_before_gen false (naming_of_name na)
-let assert_before_replacing id = assert_before_gen true (NamingMustBe (Loc.tag id))
+let assert_before_replacing id = assert_before_gen true (NamingMustBe (Loc.tag id,false))
 
 let assert_after_then_gen b naming t tac =
   let open Context.Rel.Declaration in
   Proofview.Goal.enter begin fun gl ->
-    let id = find_name b (LocalAssum (Anonymous,t)) naming gl in
+    let id,isprivate = find_name b (LocalAssum (Anonymous,t)) naming gl in
     Tacticals.New.tclTHENFIRST
-      (Proofview.V82.tactic
-         (fun gl ->
-           try Tacmach.internal_cut_rev b id t gl
-           with Evarutil.ClearDependencyError (id,err) ->
-             error_replacing_dependency (pf_env gl) (project gl) id err))
+      (internal_cut_rev b isprivate id t)
       (tac id)
   end
 
@@ -475,7 +559,7 @@ let assert_after_gen b naming t =
   assert_after_then_gen b naming t (fun _ -> (Proofview.tclUNIT ()))
 
 let assert_after na = assert_after_gen false (naming_of_name na)
-let assert_after_replacing id = assert_after_gen true (NamingMustBe (Loc.tag id))
+let assert_after_replacing id = assert_after_gen true (NamingMustBe (Loc.tag id,false))
 
 (**************************************************************)
 (*          Fixpoints and CoFixpoints                         *)
@@ -513,7 +597,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
   let all = firsts @ (f, n, concl) :: lasts in
   let rec mk_sign sign = function
   | [] -> sign
-  | (f, n, ar) :: oth ->
+  | ((f,isprivate), n, ar) :: oth ->
     let open Context.Named.Declaration in
     let (sp', u')  = check_mutind env sigma n ar in
     if not (eq_mind sp sp') then
@@ -521,12 +605,12 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
     if mem_named_context_val f sign then
       user_err ~hdr:"Logic.prim_refiner"
         (str "Name " ++ pr_id f ++ str " already used in the environment");
-    mk_sign (push_named_context_val (LocalAssum (f, ar)) sign) oth
+    mk_sign (push_named_context_val (LocalAssum (f, ar)) isprivate sign) oth
   in
   let nenv = reset_with_named_context (mk_sign (named_context_val env) all) env in
   Refine.refine ~typecheck:false begin fun sigma ->
     let (sigma, evs) = mk_holes nenv sigma (List.map pi3 all) in
-    let ids = List.map pi1 all in
+    let ids = List.map (fun ((id,_),_,_) -> id) all in
     let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
     let indxs = Array.of_list (List.map (fun n -> n-1) (List.map pi2 all)) in
     let funnames = Array.of_list (List.map (fun i -> Name i) ids) in
@@ -540,8 +624,8 @@ end
 let fix ido n = match ido with
   | None ->
     Proofview.Goal.enter begin fun gl ->
-      let name = Proof_global.get_current_proof_name () in
-      let id = new_fresh_id [] name gl in
+      let id = Proof_global.get_current_proof_name () in
+      let id = new_fresh_stable_id Id.Set.empty (id,false) gl in
       mutual_fix id n [] 0
     end
   | Some id ->
@@ -569,15 +653,16 @@ let mutual_cofix f others j = Proofview.Goal.enter begin fun gl ->
   List.iter (fun (_, c) -> check_is_mutcoind env sigma c) all;
   let rec mk_sign sign = function
   | [] -> sign
-  | (f, ar) :: oth ->
+  | ((f,isprivate), ar) :: oth ->
     let open Context.Named.Declaration in
     if mem_named_context_val f sign then
       error "Name already used in the environment.";
-    mk_sign (push_named_context_val (LocalAssum (f, ar)) sign) oth
+    mk_sign (push_named_context_val (LocalAssum (f, ar)) isprivate sign) oth
   in
   let nenv = reset_with_named_context (mk_sign (named_context_val env) all) env in
   Refine.refine ~typecheck:false begin fun sigma ->
     let (ids, types) = List.split all in
+    let ids = List.map fst ids in
     let (sigma, evs) = mk_holes nenv sigma types in
     let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
     let funnames = Array.of_list (List.map (fun i -> Name i) ids) in
@@ -591,8 +676,8 @@ end
 let cofix ido = match ido with
   | None ->
     Proofview.Goal.enter begin fun gl ->
-      let name = Proof_global.get_current_proof_name () in
-      let id = new_fresh_id [] name gl in
+      let id = Proof_global.get_current_proof_name () in
+      let id = new_fresh_stable_id Id.Set.empty (id,true) gl in
       mutual_cofix id [] 0
     end
   | Some id ->
@@ -913,19 +998,19 @@ let unfold_constr = function
    the type to build hyp names, we maintain an environment to be able
    to type dependent hyps. *)
 let find_intro_names ctxt gl =
-  let _, res = List.fold_right
+  let _, res, _ = List.fold_right
     (fun decl acc ->
-      let env,idl = acc in
-      let name = fresh_id idl (default_id env gl.sigma decl) gl in
+      let env,idl,avoid = acc in
+      let name = fresh_id avoid (default_id env gl.sigma decl) gl in
       let newenv = push_rel decl env in
-      (newenv,(name::idl)))
-    ctxt (pf_env gl , []) in
+      (newenv, name :: idl, Id.Set.add name avoid))
+    ctxt (pf_env gl, [], Id.Set.empty) in
   List.rev res
 
-let build_intro_tac id dest tac = match dest with
-  | MoveLast -> Tacticals.New.tclTHEN (introduction id) (tac id)
+let build_intro_tac id dest isprivate tac = match dest with
+  | MoveLast -> Tacticals.New.tclTHEN (introduction id isprivate) (tac id)
   | dest -> Tacticals.New.tclTHENLIST 
-    [introduction id; move_hyp id dest; tac id]
+    [introduction id isprivate; move_hyp id dest; tac id]
 
 let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
   let open Context.Rel.Declaration in
@@ -934,11 +1019,11 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
     let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
     match EConstr.kind sigma concl with
     | Prod (name,t,u) when not dep_flag || not (noccurn sigma 1 u) ->
-        let name = find_name false (LocalAssum (name,t)) name_flag gl in
-	build_intro_tac name move_flag tac
+        let name,isprivate = find_name false (LocalAssum (name,t)) name_flag gl in
+	build_intro_tac name move_flag isprivate tac
     | LetIn (name,b,t,u) when not dep_flag || not (noccurn sigma 1 u) ->
-        let name = find_name false (LocalDef (name,b,t)) name_flag gl in
-	build_intro_tac name move_flag tac
+        let name,isprivate = find_name false (LocalDef (name,b,t)) name_flag gl in
+	build_intro_tac name move_flag isprivate tac
     | _ ->
 	begin if not force_flag then Proofview.tclZERO (RefinerError IntroNeedsProduct)
             (* Note: red_in_concl includes betaiotazeta and this was like *)
@@ -958,19 +1043,19 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
   end
 
 let intro_gen n m f d = intro_then_gen n m f d (fun _ -> Proofview.tclUNIT ())
-let intro_mustbe_force id = intro_gen (NamingMustBe (Loc.tag id)) MoveLast true false
-let intro_using id = intro_gen (NamingBasedOn (id,[])) MoveLast false false
+let intro_mustbe_force id = intro_gen (NamingMustBe (Loc.tag id,false)) MoveLast true false
+let intro_using id = intro_gen (NamingBasedOn (id,false,Id.Set.empty)) MoveLast false false
 
-let intro_then = intro_then_gen (NamingAvoid []) MoveLast false false
-let intro = intro_gen (NamingAvoid []) MoveLast false false
-let introf = intro_gen (NamingAvoid []) MoveLast true false
+let intro_then = intro_then_gen (NamingAvoid Id.Set.empty) MoveLast false false
+let intro = intro_gen (NamingAvoid Id.Set.empty) MoveLast false false
+let introf = intro_gen (NamingAvoid Id.Set.empty) MoveLast true false
 let intro_avoiding l = intro_gen (NamingAvoid l) MoveLast false false
 
 let intro_move_avoid idopt avoid hto = match idopt with
   | None -> intro_gen (NamingAvoid avoid) hto true false
-  | Some id -> intro_gen (NamingMustBe (Loc.tag id)) hto true false
+  | Some (id,isprivate) -> intro_gen (NamingMustBe (Loc.tag id,isprivate)) hto true false
 
-let intro_move idopt hto = intro_move_avoid idopt [] hto
+let intro_move idopt hto = intro_move_avoid idopt Id.Set.empty hto
 
 (**** Multiple introduction tactics ****)
 
@@ -999,32 +1084,13 @@ let intro_forthcoming_then_gen name_flag move_flag dep_flag n bound tac =
   in
   aux n []
 
-let get_next_hyp_position id gl =
-  let rec aux = function
-  | [] -> raise (RefinerError (NoSuchHyp id))
-  | decl :: right ->
-    if Id.equal (NamedDecl.get_id decl) id then
-      match right with decl::_ -> MoveBefore (NamedDecl.get_id decl) | [] -> MoveLast
-    else
-      aux right
-  in
-  aux (Proofview.Goal.hyps (Proofview.Goal.assume gl))
-
-let get_previous_hyp_position id gl =
-  let rec aux dest = function
-  | [] -> raise (RefinerError (NoSuchHyp id))
-  | decl :: right ->
-      let hyp = NamedDecl.get_id decl in
-      if Id.equal hyp id then dest else aux (MoveAfter hyp) right
-  in
-  aux MoveLast (Proofview.Goal.hyps (Proofview.Goal.assume gl))
-
 let intro_replacing id =
   Proofview.Goal.enter begin fun gl ->
-  let next_hyp = get_next_hyp_position id gl in
+  let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+  let next_hyp = get_next_hyp_position id hyps in
   Tacticals.New.tclTHENLIST [
     clear_for_replacing [id];
-    introduction id;
+    introduction id false;
     move_hyp id next_hyp;
   ]
   end
@@ -1035,28 +1101,30 @@ let intro_replacing id =
 
 (* This version assumes that replacement is actually possible *)
 (* (ids given in the introduction order) *)
-(* We keep a sub-optimality in cleaing for compatibility with *)
+(* We keep a sub-optimality in cleaning for compatibility with *)
 (* the behavior of inversion *)
 let intros_possibly_replacing ids =
   let suboptimal = true in
   Proofview.Goal.enter begin fun gl ->
-    let posl = List.map (fun id -> (id, get_next_hyp_position id gl)) ids in
+    let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+    let posl = List.map (fun id -> (id, get_next_hyp_position id hyps)) ids in
     Tacticals.New.tclTHEN
       (Tacticals.New.tclMAP (fun id -> 
 	Tacticals.New.tclTRY (clear_for_replacing [id]))
 	 (if suboptimal then ids else List.rev ids))
       (Tacticals.New.tclMAP (fun (id,pos) ->
-        Tacticals.New.tclORELSE (intro_move (Some id) pos) (intro_using id))
+        Tacticals.New.tclORELSE (intro_move (Some (id,false)) pos) (intro_using id))
          posl)
   end
 
 (* This version assumes that replacement is actually possible *)
 let intros_replacing ids =
   Proofview.Goal.enter begin fun gl ->
-    let posl = List.map (fun id -> (id, get_next_hyp_position id gl)) ids in
+    let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+    let posl = List.map (fun id -> (id, get_next_hyp_position id hyps)) ids in
     Tacticals.New.tclTHEN
       (clear_for_replacing ids)
-      (Tacticals.New.tclMAP (fun (id,pos) -> intro_move (Some id) pos) posl)
+      (Tacticals.New.tclMAP (fun (id,pos) -> intro_move (Some (id,false)) pos) posl)
   end
 
 (* User-level introduction tactics *)
@@ -1127,8 +1195,8 @@ let try_intros_until tac = function
 
 let rec intros_move = function
   | [] -> Proofview.tclUNIT ()
-  | (hyp,destopt) :: rest ->
-      Tacticals.New.tclTHEN (intro_gen (NamingMustBe (Loc.tag hyp)) destopt false false)
+  | (hyp,isprivate,destopt) :: rest ->
+      Tacticals.New.tclTHEN (intro_gen (NamingMustBe (Loc.tag hyp,isprivate)) destopt false false)
 	(intros_move rest)
 
 (* Apply a tactic on a quantified hypothesis, an hypothesis in context
@@ -1162,6 +1230,8 @@ let onOpenInductionArg env sigma tac = function
       Tacticals.New.tclTHEN
         (try_intros_until_id_check id)
         (Proofview.Goal.enter begin fun gl ->
+         if Id.Set.mem id (named_context_private_ids (named_context_val (Proofview.Goal.env gl))) then
+           Constrintern.warn_private_name id;
          let sigma = Tacmach.New.project gl in
          tac clear_flag (sigma,(mkVar id,NoBindings))
         end)
@@ -1219,7 +1289,7 @@ let cut c =
       with e when Pretype_errors.precatchable_exception e -> false
     in
     if is_sort then
-      let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_of_hyps gl) in
+      let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_set_of_hyps gl) in
       (** Backward compat: normalize [c]. *)
       let c = if normalize_cut then local_strong whd_betaiota sigma c else c in
       Refine.refine ~typecheck:false begin fun h ->
@@ -1252,7 +1322,7 @@ let check_unresolved_evars_of_metas sigma clenv =
   (meta_list clenv.evd)
 
 let do_replace id = function
-  | NamingMustBe (_,id') when Option.equal Id.equal id (Some id') -> true
+  | NamingMustBe ((_,id'),_) when Option.equal Id.equal id (Some id') -> true
   | _ -> false
 
 (* For a clenv expressing some lemma [C[?1:T1,...,?n:Tn] : P] and some
@@ -1262,7 +1332,7 @@ let do_replace id = function
    [id] is replaced by P using the proof given by [tac] *)
 
 let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) 
-    targetid id sigma0 clenv tac =
+    (targetid,isprivate) id sigma0 clenv tac =
   let clenv = Clenvtac.clenv_pose_dependent_evars with_evars clenv in
   let clenv =
     if with_classes then
@@ -1276,7 +1346,7 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true)
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
   let exact_tac = Proofview.V82.tactic (Tacmach.refine_no_check new_hyp_prf) in
-  let naming = NamingMustBe (Loc.tag targetid) in
+  let naming = NamingMustBe (Loc.tag targetid,isprivate) in
   let with_clear = do_replace (Some id) naming in
   Tacticals.New.tclTHEN
     (Proofview.Unsafe.tclEVARS (clear_metas clenv.evd))
@@ -1532,11 +1602,11 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ())
   let elimclause = make_clenv_binding env sigma (elim, elimty) bindings in
   let indmv = destMeta sigma (nth_arg sigma i elimclause.templval.rebus) in
   let hypmv =
-    try match List.remove Int.equal indmv (clenv_independent elimclause) with
-      | [a] -> a
-      | _ -> failwith ""
-    with Failure _ -> user_err ~hdr:"elimination_clause"
-          (str "The type of elimination clause is not well-formed.") in
+    match List.remove Int.equal indmv (clenv_independent elimclause) with
+    | [a] -> a
+    | _ -> user_err ~hdr:"elimination_clause"
+             (str "The type of elimination clause is not well-formed.")
+  in
   let elimclause'  = clenv_fchain ~flags indmv elimclause indclause in
   let hyp = mkVar id in
   let hyp_typ = Retyping.get_type_of env sigma hyp in
@@ -1546,7 +1616,7 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ())
   if EConstr.eq_constr sigma hyp_typ new_hyp_typ then
     user_err ~hdr:"general_rewrite_in"
       (str "Nothing to rewrite in " ++ pr_id id ++ str".");
-  clenv_refine_in with_evars id id sigma elimclause''
+  clenv_refine_in with_evars (id,false) id sigma elimclause''
     (fun id -> Proofview.tclUNIT ())
   end
 
@@ -1718,7 +1788,7 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind :
         let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
         let tac =
           if with_destruct then
-            descend_in_conjunctions []
+            descend_in_conjunctions Id.Set.empty
               (fun b id ->
                 Tacticals.New.tclTHEN
                   (try_main_apply b (mkVar id))
@@ -1867,7 +1937,7 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
           ])
     with e when with_destruct && CErrors.noncritical e ->
       let (e, info) = CErrors.push e in
-        (descend_in_conjunctions [targetid]
+        (descend_in_conjunctions (Id.Set.singleton (fst targetid))
            (fun b id -> aux (id::idstoclear) b (mkVar id))
            (e, info) c)
     end
@@ -2032,7 +2102,7 @@ let clear_body ids =
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
     let sigma = Tacmach.New.project gl in
-    let ctx = named_context env in
+    let ctx = named_context_val env in
     let map = function
     | LocalAssum (id,t) as decl ->
       let () = if List.mem_f Id.equal id ids then
@@ -2042,11 +2112,12 @@ let clear_body ids =
     | LocalDef (id,_,t) as decl ->
       if List.mem_f Id.equal id ids then LocalAssum (id, t) else decl
     in
-    let ctx = List.map map ctx in
+    let ctx = map_named_val map ctx in
     let base_env = reset_context env in
-    let env = push_named_context ctx base_env in
+    let env = reset_with_named_context ctx env in
     let check =
       try
+        let private_ids = named_context_private_ids ctx in
         let check (env, sigma, seen) decl =
           (** Do no recheck hypotheses that do not depend *)
           let sigma =
@@ -2056,9 +2127,9 @@ let clear_body ids =
             else sigma
           in
           let seen = seen || List.mem_f Id.equal (NamedDecl.get_id decl) ids in
-          (push_named decl env, sigma, seen)
+          (push_named decl (Id.Set.mem (get_id decl) private_ids) env, sigma, seen)
         in
-        let (env, sigma, _) = List.fold_left check (base_env, sigma, false) (List.rev ctx) in
+        let (env, sigma, _) = List.fold_left check (base_env, sigma, false) (List.rev (named_context_of_val ctx)) in
         let sigma =
           if List.exists (fun id -> occur_var env sigma id concl) ids then
             check_is_type env sigma concl
@@ -2174,27 +2245,27 @@ let check_number_of_constructors expctdnumopt i nconstr =
   end;
   if i > nconstr then error "Not enough constructors."
 
-let constructor_tac with_evars expctdnumopt i lbind =
+let constructor_core with_evars cstr lbind =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
-    let cl = Tacmach.New.pf_concl gl in
-    let reduce_to_quantified_ind =
-      Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind gl
-    in
-    let (mind,redcl) = reduce_to_quantified_ind cl in
-    let nconstr =
-      Array.length (snd (Global.lookup_inductive (fst mind))).mind_consnames in
-      check_number_of_constructors expctdnumopt i nconstr;
+    let env = Proofview.Goal.env gl in
+    let (sigma, (cons, u)) = Evd.fresh_constructor_instance env sigma cstr in
+    let cons = mkConstructU (cons, EInstance.make u) in
+    let apply_tac = general_apply true false with_evars None (Loc.tag (cons,lbind)) in
+    Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma) apply_tac
+  end
 
-      let (sigma, (cons, u)) = Evd.fresh_constructor_instance
-	(Proofview.Goal.env gl) sigma (fst mind, i) in
-      let cons = mkConstructU (cons, EInstance.make u) in
-	
-      let apply_tac = general_apply true false with_evars None (Loc.tag (cons,lbind)) in
-      Tacticals.New.tclTHENLIST
-         [ Proofview.Unsafe.tclEVARS sigma;
-           convert_concl_no_check redcl DEFAULTcast;
-           intros; apply_tac]
+let constructor_tac with_evars expctdnumopt i lbind =
+  Proofview.Goal.enter begin fun gl ->
+    let cl = Tacmach.New.pf_concl gl in
+    let ((ind,_),redcl) = Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind gl cl in
+    let nconstr = Array.length (snd (Global.lookup_inductive ind)).mind_consnames in
+    check_number_of_constructors expctdnumopt i nconstr;
+    Tacticals.New.tclTHENLIST [
+      convert_concl_no_check redcl DEFAULTcast;
+      intros;
+      constructor_core with_evars (ind, i) lbind
+    ]
   end
 
 let one_constructor i lbind = constructor_tac false None i lbind
@@ -2204,24 +2275,26 @@ let one_constructor i lbind = constructor_tac false None i lbind
    Should be generalize in Constructor (Fun c : I -> tactic)
  *)
 
-let rec tclANY tac = function
-| [] -> Tacticals.New.tclZEROMSG (str "No applicable tactic.")
-| arg :: l ->
-  Tacticals.New.tclORD (tac arg) (fun () -> tclANY tac l)
-
 let any_constructor with_evars tacopt =
-  let t = match tacopt with None -> Proofview.tclUNIT () | Some t -> t in
-  let tac i = Tacticals.New.tclTHEN (constructor_tac with_evars None i NoBindings) t in
+  let one_constr =
+    let tac cstr = constructor_core with_evars cstr NoBindings in
+    match tacopt with
+    | None -> tac
+    | Some t -> fun cstr -> Tacticals.New.tclTHEN (tac cstr) t in
+  let rec any_constr ind n i () =
+    if Int.equal i n then one_constr (ind,i)
+    else Tacticals.New.tclORD (one_constr (ind,i)) (any_constr ind n (i + 1)) in
   Proofview.Goal.enter begin fun gl ->
     let cl = Tacmach.New.pf_concl gl in
-    let reduce_to_quantified_ind =
-      Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind gl
-    in
-    let mind = fst (reduce_to_quantified_ind cl) in
+    let (ind,_),redcl = Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind gl cl in
     let nconstr =
-      Array.length (snd (Global.lookup_inductive (fst mind))).mind_consnames in
+      Array.length (snd (Global.lookup_inductive ind)).mind_consnames in
     if Int.equal nconstr 0 then error "The type has no constructors.";
-    tclANY tac (List.interval 1 nconstr)
+    Tacticals.New.tclTHENLIST [
+      convert_concl_no_check redcl DEFAULTcast;
+      intros;
+      any_constr ind nconstr 1 ()
+    ]
  end
 
 let left_with_bindings  with_evars = constructor_tac with_evars (Some 2) 1
@@ -2344,16 +2417,17 @@ let rewrite_hyp_then assert_style with_evars thin l2r id tac =
   end 
 
 let prepare_naming ?loc = function
-  | IntroIdentifier id -> NamingMustBe (Loc.tag ?loc id)
-  | IntroAnonymous -> NamingAvoid []
-  | IntroFresh id -> NamingBasedOn (id,[])
+  | IntroIdentifier (id,isprivate) -> NamingMustBe (Loc.tag ?loc id,isprivate)
+  | IntroAnonymous -> NamingAvoid Id.Set.empty
+  | IntroFresh (id,unstable) -> NamingBasedOn (id, unstable, Id.Set.empty)
 
 let rec explicit_intro_names = function
 | (_, IntroForthcoming _) :: l -> explicit_intro_names l
-| (_, IntroNaming (IntroIdentifier id)) :: l -> id :: explicit_intro_names l
+| (_, IntroNaming (IntroIdentifier (id,_))) :: l -> Id.Set.add id (explicit_intro_names l)
 | (_, IntroAction (IntroOrAndPattern l)) :: l' ->
     let ll = match l with IntroAndPattern l -> [l] | IntroOrPattern ll -> ll in
-    List.flatten (List.map (fun l -> explicit_intro_names (l@l')) ll)
+    let fold accu l = Id.Set.union accu (explicit_intro_names (l@l')) in
+    List.fold_left fold Id.Set.empty ll
 | (_, IntroAction (IntroInjection l)) :: l' ->
     explicit_intro_names (l@l')
 | (_, IntroAction (IntroApplyOn (c,pat))) :: l' ->
@@ -2361,11 +2435,11 @@ let rec explicit_intro_names = function
 | (_, (IntroNaming (IntroAnonymous | IntroFresh _)
      | IntroAction (IntroWildcard | IntroRewrite _))) :: l ->
      explicit_intro_names l
-| [] -> []
+| [] -> Id.Set.empty
 
 let rec check_name_unicity env ok seen = function
 | (_, IntroForthcoming _) :: l -> check_name_unicity env ok seen l
-| (loc, IntroNaming (IntroIdentifier id)) :: l ->
+| (loc, IntroNaming (IntroIdentifier (id,_))) :: l ->
    (try
       ignore (if List.mem_f Id.equal id ok then raise Not_found else lookup_named id env);
       user_err ?loc (pr_id id ++ str" is already used.")
@@ -2397,7 +2471,7 @@ let check_thin_clash_then id thin avoid tac =
     let newid = next_ident_away (add_suffix id "'") avoid in
     let thin =
       List.map (on_snd (fun id' -> if Id.equal id id' then newid else id')) thin in
-    Tacticals.New.tclTHEN (rename_hyp [id,newid]) (tac thin)
+    Tacticals.New.tclTHEN (rename_hyp [id,(newid,true)]) (tac thin)
   else
     tac thin
 
@@ -2408,8 +2482,8 @@ let make_tmp_naming avoid l = function
      IntroAnonymous, but at the cost of a "renaming"; Note that in the
      case of IntroFresh, we should use check_thin_clash_then anyway to
      prevent the case of an IntroFresh precisely using the wild_id *)
-  | IntroWildcard -> NamingBasedOn (wild_id,avoid@explicit_intro_names l)
-  | pat -> NamingAvoid(avoid@explicit_intro_names ((Loc.tag @@ IntroAction pat)::l))
+  | IntroWildcard -> NamingBasedOn (wild_id, true, Id.Set.union avoid (explicit_intro_names l))
+  | pat -> NamingAvoid(Id.Set.union avoid (explicit_intro_names ((Loc.tag @@ IntroAction pat)::l)))
 
 let fit_bound n = function
   | None -> true
@@ -2421,7 +2495,7 @@ let exceed_bound n = function
 
   (* We delay thinning until the completion of the whole intros tactic
      to ensure that dependent hypotheses are cleared in the right
-     dependency order (see bug #1000); we use fresh names, not used in
+     dependency order (see BZ#1000); we use fresh names, not used in
      the tactic, for the hyps to clear *)
   (* In [intro_patterns_core b avoid ids thin destopt bound n tac patl]:
      [b]: compatibility flag, if false at toplevel, do not complete incomplete
@@ -2450,7 +2524,7 @@ let rec intro_patterns_core with_evars b avoid ids thin destopt bound n tac =
   if exceed_bound n bound then error_unexpected_extra_pattern loc bound pat else
   match pat with
   | IntroForthcoming onlydeps ->
-      intro_forthcoming_then_gen (NamingAvoid (avoid@explicit_intro_names l))
+      intro_forthcoming_then_gen (NamingAvoid (Id.Set.union avoid (explicit_intro_names l)))
 	  destopt onlydeps n bound
         (fun ids -> intro_patterns_core with_evars b avoid ids thin destopt bound
           (n+List.length ids) tac l)
@@ -2468,17 +2542,17 @@ let rec intro_patterns_core with_evars b avoid ids thin destopt bound n tac =
   (* Pi-introduction rule, used backwards *)
 and intro_pattern_naming loc with_evars b avoid ids pat thin destopt bound n tac l =
   match pat with
-  | IntroIdentifier id ->
+  | IntroIdentifier (id,isprivate) ->
       check_thin_clash_then id thin avoid (fun thin ->
-        intro_then_gen (NamingMustBe (loc,id)) destopt true false
+        intro_then_gen (NamingMustBe (Loc.tag ?loc id,isprivate)) destopt true false
           (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l))
   | IntroAnonymous ->
-      intro_then_gen (NamingAvoid (avoid@explicit_intro_names l))
+      intro_then_gen (NamingAvoid (Id.Set.union avoid (explicit_intro_names l)))
 	destopt true false
         (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l)
-  | IntroFresh id ->
+  | IntroFresh (id,unstable) ->
       (* todo: avoid thinned names to interfere with generation of fresh name *)
-      intro_then_gen (NamingBasedOn (id, avoid@explicit_intro_names l))
+      intro_then_gen (NamingBasedOn (id, unstable, Id.Set.union avoid (explicit_intro_names l)))
 	destopt true false
         (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l)
 
@@ -2494,9 +2568,9 @@ and intro_pattern_action ?loc with_evars b style pat thin destopt tac id =
       rewrite_hyp_then style with_evars thin l2r id (fun thin -> tac thin None [])
   | IntroApplyOn ((loc',f),(loc,pat)) ->
       let naming,tac_ipat =
-        prepare_intros ?loc with_evars (IntroIdentifier id) destopt pat in
+        prepare_intros ?loc with_evars (IntroIdentifier (id,true)) destopt pat in
       let doclear =
-        if naming = NamingMustBe (Loc.tag ?loc id) then
+        if match naming with NamingMustBe ((_,id'),_) when Id.equal id id' -> true | _ -> false then
           Proofview.tclUNIT () (* apply_in_once do a replacement *)
         else
           clear [id] in
@@ -2512,7 +2586,7 @@ and prepare_intros ?loc with_evars dft destopt = function
   | IntroAction ipat ->
       prepare_naming ?loc dft,
       (let tac thin bound =
-        intro_patterns_core with_evars true [] [] thin destopt bound 0
+        intro_patterns_core with_evars true Id.Set.empty [] thin destopt bound 0
           (fun _ l -> clear_wildcards l) in
       fun id ->
         intro_pattern_action ?loc with_evars true true ipat [] destopt tac id)
@@ -2523,7 +2597,7 @@ let intro_patterns_head_core with_evars b destopt bound pat =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     check_name_unicity env [] [] pat;
-    intro_patterns_core with_evars b [] [] [] destopt
+    intro_patterns_core with_evars b Id.Set.empty [] [] destopt
       bound 0 (fun _ l -> clear_wildcards l) pat
   end
 
@@ -2553,9 +2627,9 @@ let prepare_intros_opt with_evars dft destopt = function
   | None -> prepare_naming dft, (fun _id -> Proofview.tclUNIT ())
   | Some (loc,ipat) -> prepare_intros ?loc with_evars dft destopt ipat
 
-let ipat_of_name = function
+let ipat_of_name na isprivate = match na with
   | Anonymous -> None
-  | Name id -> Some (Loc.tag @@ IntroNaming (IntroIdentifier id))
+  | Name id -> Some (Loc.tag @@ IntroNaming (IntroIdentifier (id,isprivate)))
 
 let head_ident sigma c =
    let c = fst (decompose_app sigma (snd (decompose_lam_assum sigma c))) in
@@ -2578,12 +2652,16 @@ let general_apply_in sidecond_first with_delta with_destruct with_evars
   Proofview.Goal.enter begin fun gl ->
   let destopt =
     if with_evars then MoveLast (* evars would depend on the whole context *)
-    else get_previous_hyp_position id gl in
+    else
+      get_previous_hyp_position id (Proofview.Goal.hyps (Proofview.Goal.assume gl)) in
+  let isprivate =
+    let private_ids = named_context_private_ids (named_context_val (Proofview.Goal.env gl)) in
+    Id.Set.mem id private_ids in
   let naming,ipat_tac =
-    prepare_intros_opt with_evars (IntroIdentifier id) destopt ipat in
+    prepare_intros_opt with_evars (IntroIdentifier (id,isprivate)) destopt ipat in
   let lemmas_target, last_lemma_target =
     let last,first = List.sep_last lemmas in
-    List.map (fun lem -> (NamingMustBe (Loc.tag id),lem)) first, (naming,last)
+    List.map (fun lem -> (NamingMustBe (Loc.tag id,false),lem)) first, (naming,last)
   in
   (* We chain apply_in_once, ending with an intro pattern *)
   List.fold_right tac lemmas_target (tac last_lemma_target ipat_tac) id
@@ -2621,7 +2699,7 @@ let decode_hyp = function
    [...x:=c:T;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is true
 *)
 
-let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
+let letin_tac_gen with_eq (id,isprivate,depdecls,lastlhyp,ccl,c) ty =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
@@ -2633,10 +2711,10 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
     in
     let (sigma, (newcl, eq_tac)) = match with_eq with
       | Some (lr,(loc,ido)) ->
-          let heq = match ido with
-            | IntroAnonymous -> new_fresh_id [id] (add_prefix "Heq" id) gl
-            | IntroFresh heq_base -> new_fresh_id [id] heq_base gl
-            | IntroIdentifier id -> id in
+          let heq,isprivateeq = match ido with
+            | IntroAnonymous -> new_fresh_stable_id (Id.Set.singleton id) (add_prefix "Heq" id,false) gl
+            | IntroFresh (heq_base,unstable) -> new_fresh_stable_id (Id.Set.singleton id) (heq_base,unstable) gl
+            | IntroIdentifier (id,isprivate) -> id, isprivate in
           let eqdata = build_coq_eq_data () in
           let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
           let (sigma, eq) = Evd.fresh_global env sigma eqdata.eq in
@@ -2650,7 +2728,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
           let ans = term,
             Tacticals.New.tclTHENLIST
 	      [
-               intro_gen (NamingMustBe (loc,heq)) (decode_hyp lastlhyp) true false;
+               intro_gen (NamingMustBe (Loc.tag ?loc heq,isprivateeq)) (decode_hyp lastlhyp) true false;
 	      clear_body [heq;id]]
           in
           (sigma, ans)
@@ -2660,7 +2738,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
       Tacticals.New.tclTHENLIST
       [ Proofview.Unsafe.tclEVARS sigma;
         convert_concl_no_check newcl DEFAULTcast;
-        intro_gen (NamingMustBe (Loc.tag id)) (decode_hyp lastlhyp) true false;
+        intro_gen (NamingMustBe (Loc.tag id,isprivate)) (decode_hyp lastlhyp) true false;
         Tacticals.New.tclMAP convert_hyp_no_check depdecls;
         eq_tac ]
   end
@@ -2670,15 +2748,15 @@ let insert_before decls lasthyp env =
   | None -> push_named_context decls env
   | Some id ->
   Environ.fold_named_context
-    (fun _ d env ->
+    (fun _ d isprivate env ->
       let d = map_named_decl EConstr.of_constr d in
       let env = if Id.equal id (NamedDecl.get_id d) then push_named_context decls env else env in
-      push_named d env)
+      push_named d isprivate env)
     ~init:(reset_context env) env
 
 (* unsafe *)
 
-let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
+let mkletin_goal env sigma store with_eq dep (id,isprivate,lastlhyp,ccl,c) ty =
   let open Context.Named.Declaration in
   let t = match ty with Some t -> t | _ -> typ_of env sigma c in
   let decl = if dep then LocalDef (id,c,t)
@@ -2686,13 +2764,13 @@ let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
   in
   match with_eq with
   | Some (lr,(loc,ido)) ->
-      let heq = match ido with
-      | IntroAnonymous -> fresh_id_in_env [id] (add_prefix "Heq" id) env
-      | IntroFresh heq_base -> fresh_id_in_env [id] heq_base env
-      | IntroIdentifier id ->
+      let heq,isprivateeq = match ido with
+      | IntroAnonymous -> fresh_id_in_env (Id.Set.singleton id) (add_prefix "Heq" id) env, true
+      | IntroFresh (heq_base,isstable) -> fresh_id_in_env (Id.Set.singleton id) heq_base env, true
+      | IntroIdentifier (id,isprivate) ->
           if List.mem id (ids_of_named_context (named_context env)) then
-            user_err ?loc  (pr_id id ++ str" is already used.");
-          id in
+            user_err ?loc (pr_id id ++ str" is already used.");
+          id, isprivate in
       let eqdata = build_coq_eq_data () in
       let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
       let (sigma, eq) = Evd.fresh_global env sigma eqdata.eq in
@@ -2701,21 +2779,21 @@ let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
       let refl = EConstr.of_constr refl in
       let eq = applist (eq,args) in
       let refl = applist (refl, [t;mkVar id]) in
-      let newenv = insert_before [LocalAssum (heq,eq); decl] lastlhyp env in
+      let newenv = insert_before [LocalAssum (heq,eq),isprivateeq; decl,isprivate] lastlhyp env in
       let (sigma, x) = new_evar newenv sigma ~principal:true ~store ccl in
       (sigma, mkNamedLetIn id c t (mkNamedLetIn heq refl eq x))
   | None ->
-      let newenv = insert_before [decl] lastlhyp env in
+      let newenv = insert_before [decl,isprivate] lastlhyp env in
       let (sigma, x) = new_evar newenv sigma ~principal:true ~store ccl in
       (sigma, mkNamedLetIn id c t x)
 
-let letin_tac with_eq id c ty occs =
+let letin_tac with_eq na isprivate c ty occs =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let ccl = Proofview.Goal.concl gl in
-    let abs = AbstractExact (id,c,ty,occs,true) in
-    let (id,_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
+    let abs = AbstractExact (na,c,ty,occs,true) in
+    let ((id,isprivate'),_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
     (* We keep the original term to match but record the potential side-effects
        of unifying universes. *)
     let (sigma, c) = match res with
@@ -2723,22 +2801,22 @@ let letin_tac with_eq id c ty occs =
       | Some (sigma, _) -> (sigma, c)
     in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty)
+    (letin_tac_gen with_eq (id,isprivate||isprivate',depdecls,lastlhyp,ccl,c) ty)
   end
 
-let letin_pat_tac with_evars with_eq id c occs =
+let letin_pat_tac with_evars with_eq na isprivate c occs =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let ccl = Proofview.Goal.concl gl in
     let check t = true in
-    let abs = AbstractPattern (false,check,id,c,occs,false) in
-    let (id,_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
+    let abs = AbstractPattern (false,check,na,c,occs,false) in
+    let ((id,isprivate'),_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
     let (sigma, c) = match res with
     | None -> finish_evar_resolution ~flags:(tactic_infer_flags with_evars) env sigma c
     | Some res -> res in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) None)
+    (letin_tac_gen with_eq (id,isprivate||isprivate',depdecls,lastlhyp,ccl,c) None)
   end
 
 (* Tactics "pose proof" (usetac=None) and "assert"/"enough" (otherwise) *)
@@ -2761,9 +2839,9 @@ let forward b usetac ipat c =
         Tacticals.New.tclTHENS3PARTS
           (assert_as b None ipat c) [||] tac [|Tacticals.New.tclIDTAC|]
 
-let pose_proof na c = forward true None (ipat_of_name na) c
-let assert_by na t tac = forward true (Some (Some tac)) (ipat_of_name na) t
-let enough_by na t tac = forward false (Some (Some tac)) (ipat_of_name na) t
+let pose_proof na isprivate c = forward true None (ipat_of_name na isprivate) c
+let assert_by na isprivate t tac = forward true (Some (Some tac)) (ipat_of_name na isprivate) t
+let enough_by na isprivate t tac = forward false (Some (Some tac)) (ipat_of_name na isprivate) t
 
 (***************************)
 (*  Generalization tactics *)
@@ -2832,7 +2910,7 @@ let generalize_dep ?(with_let=false) c =
   let tothin = List.filter (fun id -> not (Id.List.mem id init_ids)) qhyps in
   let tothin' =
     match EConstr.kind sigma c with
-      | Var id when mem_named_context_val id (val_of_named_context sign) && not (Id.List.mem id init_ids)
+      | Var id when (* Isn't it a detour? *) mem_named_context_val id (val_of_named_context sign Idset.empty) && not (Id.List.mem id init_ids)
 	  -> id::tothin
       | _ -> tothin
   in
@@ -2979,15 +3057,18 @@ let specialize (c,lbind) ipat =
           sigma,hd'
         | _ ,_ -> assert false in
       let sigma,hd = rebuild_lambdas sigma (List.rev lprod) [] c_hd tstack in
-      sigma, hd
+      Evd.clear_metas sigma, hd
   in
   let typ = Retyping.get_type_of env sigma term in
   let tac =
     match EConstr.kind sigma (fst(EConstr.decompose_app sigma (snd(EConstr.decompose_lam_assum sigma c)))) with
     | Var id when Id.List.mem id (Tacmach.New.pf_ids_of_hyps gl) ->
       (* Like assert (id:=id args) but with the concept of specialization *)
+       let isprivate =
+         let private_ids = named_context_private_ids (named_context_val (Proofview.Goal.env gl)) in
+         Id.Set.mem id private_ids in
       let naming,tac =
-        prepare_intros_opt false (IntroIdentifier id) MoveLast ipat in
+        prepare_intros_opt false (IntroIdentifier (id,isprivate)) MoveLast ipat in
       let repl = do_replace (Some id) naming in
       Tacticals.New.tclTHENFIRST
         (assert_before_then_gen repl naming typ tac)
@@ -3074,41 +3155,40 @@ let expand_hyp id = Tacticals.New.tclTRY (unfold_body id) <*> clear [id]
 
  *)
 
-let warn_unused_intro_pattern =
+let warn_unused_intro_pattern env sigma =
   CWarnings.create ~name:"unused-intro-pattern" ~category:"tactics"
          (fun names ->
           strbrk"Unused introduction " ++ str (String.plural (List.length names) "pattern")
           ++ str": " ++ prlist_with_sep spc 
          (Miscprint.pr_intro_pattern 
-	 (fun c -> Printer.pr_econstr (snd (c (Global.env()) Evd.empty)))) names)
+	 (fun c -> Printer.pr_econstr (snd (c env sigma)))) names)
 
-let check_unused_names names =
+let check_unused_names env sigma names =
   if not (List.is_empty names) then
-    warn_unused_intro_pattern names
+    warn_unused_intro_pattern env sigma names
 
-let intropattern_of_name gl avoid = function
-  | Anonymous -> IntroNaming IntroAnonymous
-  | Name id -> IntroNaming (IntroIdentifier (new_fresh_id avoid id gl))
+let intropattern_of_name gl = function
+  | None -> IntroNaming IntroAnonymous
+  | Some (id,unstable) -> IntroNaming (IntroFresh (id,unstable))
 
 let rec consume_pattern avoid na isdep gl = function
-  | [] -> ((Loc.tag @@ intropattern_of_name gl avoid na), [])
+  | [] -> ((Loc.tag @@ intropattern_of_name gl na), [])
   | (loc,IntroForthcoming true)::names when not isdep ->
       consume_pattern avoid na isdep gl names
   | (loc,IntroForthcoming _)::names as fullpat ->
-      let avoid = avoid@explicit_intro_names names in
-      ((loc,intropattern_of_name gl avoid na), fullpat)
+      ((loc,intropattern_of_name gl na), fullpat)
   | (loc,IntroNaming IntroAnonymous)::names ->
-      let avoid = avoid@explicit_intro_names names in
-      ((loc,intropattern_of_name gl avoid na), names)
-  | (loc,IntroNaming (IntroFresh id'))::names ->
-      let avoid = avoid@explicit_intro_names names in
-      ((loc,IntroNaming (IntroIdentifier (new_fresh_id avoid id' gl))), names)
+      ((loc,intropattern_of_name gl na), names)
+  | (loc,IntroNaming (IntroFresh (id',unstable)))::names ->
+      let avoid = Id.Set.union avoid (explicit_intro_names names) in
+      let id,isprivate = new_fresh_stable_id avoid (id',unstable) gl in
+      ((loc,IntroNaming (IntroIdentifier (id,isprivate))), names)
   | pat::names -> (pat,names)
 
 let re_intro_dependent_hypotheses (lstatus,rstatus) (_,tophyp) =
   let tophyp = match tophyp with None -> MoveLast | Some hyp -> MoveAfter hyp in
   let newlstatus = (* if some IH has taken place at the top of hyps *)
-    List.map (function (hyp,MoveLast) -> (hyp,tophyp) | x -> x) lstatus
+    List.map (function (hyp,isprivate,MoveLast) -> (hyp,isprivate,tophyp) | x -> x) lstatus
   in
   Tacticals.New.tclTHEN
     (intros_move rstatus)
@@ -3130,7 +3210,7 @@ let safe_dest_intro_patterns with_evars avoid thin dest pat tac =
       | e -> Proofview.tclZERO ~info e
     end
 
-type elim_arg_kind = RecArg | IndArg | OtherArg
+type 'a elim_arg_kind = RecArg of 'a | IndArg of 'a | OtherArg
 
 type recarg_position =
   | AfterFixedPosition of Id.t option (* None = top of context *)
@@ -3148,6 +3228,14 @@ let get_recarg_dest (recargdests,tophyp) =
   | AfterFixedPosition None -> MoveLast
   | AfterFixedPosition (Some id) -> MoveAfter id
 
+let update_stability recvar hyprecvar ids names =
+  (* If the generated name for the recursive var is not granted, we
+     don't consider the corresponding induction hypothesis name as
+     stable *)
+  match recvar, hyprecvar, ids, names with
+  | (id,false), (hyprec,false), [id'], [] when not (Id.equal id' id) -> (hyprec,true)
+  | _ -> hyprecvar
+
 (* Current policy re-introduces recursive arguments of destructed
    variable at the place of the original variable while induction
    hypothesese are introduced at the top of the context. Since in the
@@ -3159,53 +3247,60 @@ let get_recarg_dest (recargdests,tophyp) =
 *)
 
 let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
-  let avoid = avoid @ avoid' in
+  let avoid = Id.Set.union avoid avoid' in
   let rec peel_tac ra dests names thin =
     match ra with
-    | (RecArg,_,deprec,recvarname) ::
-        (IndArg,_,depind,hyprecname) :: ra' ->
+    | (RecArg recvarname,_,deprec) ::
+        (IndArg hyprecname,_,depind) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
-        let (recpat,names) = match names with
-          | [loc,IntroNaming (IntroIdentifier id) as pat] ->
-              let id' = next_ident_away (add_prefix "IH" id) avoid in
-	      (pat, [Loc.tag @@ IntroNaming (IntroIdentifier id')])
-          | _ -> consume_pattern avoid (Name recvarname) deprec gl names in
+        let (recpat,names') = match names with
+          | [loc,IntroNaming (IntroIdentifier (id,isprivate)) as pat] ->
+              let indhypid = add_prefix "IH" id in
+              let indhypid' = next_ident_away indhypid avoid in
+              let isprivate = Id.equal indhypid indhypid' || isprivate in
+	      (pat, [Loc.tag @@ IntroNaming (IntroIdentifier (indhypid',isprivate))])
+          | _ -> consume_pattern avoid (Some recvarname) deprec gl names in
         let dest = get_recarg_dest dests in
         dest_intro_patterns with_evars avoid thin dest [recpat] (fun ids thin ->
         Proofview.Goal.enter begin fun gl ->
-          let (hyprec,names) =
-            consume_pattern avoid (Name hyprecname) depind gl names
+          let hyprecname = update_stability recvarname hyprecname ids names in
+          let (hyprec,names'') =
+            consume_pattern avoid (Some hyprecname) depind gl names'
           in
 	  dest_intro_patterns with_evars avoid thin MoveLast [hyprec] (fun ids' thin ->
-	    peel_tac ra' (update_dest dests ids') names thin)
+	    peel_tac ra' (update_dest dests ids') names'' thin)
                              end)
         end
-    | (IndArg,_,dep,hyprecname) :: ra' ->
+    | (IndArg hyprecname,_,dep) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
         let pat,names =
-          consume_pattern avoid (Name hyprecname) dep gl names in
+          consume_pattern avoid (Some hyprecname) dep gl names in
 	dest_intro_patterns with_evars avoid thin MoveLast [pat] (fun ids thin ->
         peel_tac ra' (update_dest dests ids) names thin)
         end
-    | (RecArg,_,dep,recvarname) :: ra' ->
+    | (RecArg recvarname,_,dep) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
         let (pat,names) =
-          consume_pattern avoid (Name recvarname) dep gl names in
+          consume_pattern avoid (Some recvarname) dep gl names in
         let dest = get_recarg_dest dests in
 	dest_intro_patterns with_evars avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
         end
-    | (OtherArg,_,dep,_) :: ra' ->
+    | (OtherArg,_,dep) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
-        let (pat,names) = consume_pattern avoid Anonymous dep gl names in
+        let (pat,names) = consume_pattern avoid None dep gl names in
         let dest = get_recarg_dest dests in
 	safe_dest_intro_patterns with_evars avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
         end
     | [] ->
-        check_unused_names names;
+        Proofview.Goal.enter begin fun gl ->
+        let env = Proofview.Goal.env gl in
+        let sigma = Proofview.Goal.sigma gl in
+        check_unused_names env sigma names;
         Tacticals.New.tclTHEN (clear_wildcards thin) (tac dests)
+        end
   in
   peel_tac ra dests names []
 
@@ -3251,7 +3346,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
             (* Based on the knowledge given by the user, all
                constraints on the variable are generalizable in the
                current environment so that it is clearable after destruction *)
-	    atomize_one (i-1) (c::args) (c::args') (id::avoid)
+	    atomize_one (i-1) (c::args) (c::args') (Id.Set.add id avoid)
 	| _ ->
 	   let c' = expand_projections env' sigma c in
             let dependent t = dependent sigma c t in
@@ -3272,13 +3367,13 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
             | Var id -> id
             | _ ->
             let type_of = Tacmach.New.pf_unsafe_type_of gl in
-            id_of_name_using_hdchar (Global.env()) sigma (type_of c) Anonymous in
+            id_of_name_using_hdchar env sigma (type_of c) Anonymous in
             let x = fresh_id_in_env avoid id env in
 	    Tacticals.New.tclTHEN
-	      (letin_tac None (Name x) c None allHypsAndConcl)
-	      (atomize_one (i-1) (mkVar x::args) (mkVar x::args') (x::avoid))
+	      (letin_tac None (Name x) true c None allHypsAndConcl)
+	      (atomize_one (i-1) (mkVar x::args) (mkVar x::args') (Id.Set.add x avoid))
   in
-  atomize_one (List.length argl) [] [] []
+  atomize_one (List.length argl) [] [] Id.Set.empty
   end
 
 (* [cook_sign] builds the lists [beforetoclear] (preceding the
@@ -3350,14 +3445,15 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
   (* First phase from L to R: get [toclear], [decldep] and [statuslist]
      for the hypotheses before (= more ancient than) hyp0 (see above) *)
   let toclear = ref [] in
-  let avoid = ref [] in
+  let avoid = ref Id.Set.empty in
   let decldeps = ref [] in
   let ldeps = ref [] in
   let rstatus = ref [] in
   let lstatus = ref [] in
   let before = ref true in
   let maindep = ref false in
-  let seek_deps env decl rhyp =
+  let private_ids = named_context_private_ids (named_context_val env) in
+  let seek_deps env decl isprivate rhyp =
     let decl = map_named_decl EConstr.of_constr decl in
     let hyp = NamedDecl.get_id decl in
     if (match hyp0_opt with Some hyp0 -> Id.equal hyp hyp0 | _ -> false)
@@ -3367,7 +3463,7 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
          is one of indvars too *)
       toclear := hyp::!toclear;
       MoveFirst (* fake value *)
-    end else if Id.List.mem hyp indvars then begin
+    end else if Id.Set.mem hyp indvars then begin
       (* The variables in indvars are such that they don't occur any
          more after generalization, so declare them to clear. *)
       toclear := hyp::!toclear;
@@ -3377,18 +3473,18 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
 	(Option.cata (fun id -> occur_var_in_decl env sigma id decl) false hyp0_opt)
       in
       let depother = List.is_empty inhyps &&
-	(List.exists (fun id -> occur_var_in_decl env sigma id decl) indvars ||
+	(Id.Set.exists (fun id -> occur_var_in_decl env sigma id decl) indvars ||
          List.exists (fun decl' -> occur_var_in_decl env sigma (NamedDecl.get_id decl') decl) !decldeps)
       in
       if not (List.is_empty inhyps) && Id.List.mem hyp inhyps
          || dephyp0 || depother
       then begin
 	decldeps := decl::!decldeps;
-	avoid := hyp::!avoid;
+	avoid := Id.Set.add hyp !avoid;
         maindep := dephyp0 || !maindep;
 	if !before then begin
           toclear := hyp::!toclear;
-	  rstatus := (hyp,rhyp)::!rstatus
+	  rstatus := (hyp,isprivate,rhyp)::!rstatus
         end
 	else begin
 	  toclear := hyp::!toclear;
@@ -3405,7 +3501,8 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
     if (match hyp0_opt with Some hyp0 -> Id.equal hyp hyp0 | _ -> false) then
       raise (Shunt lhyp);
     if Id.List.mem hyp !ldeps then begin
-      lstatus := (hyp,lhyp)::!lstatus;
+      let isprivate = Idset.mem hyp private_ids in
+      lstatus := (hyp,isprivate,lhyp)::!lstatus;
       lhyp
     end else
       if Id.List.mem hyp !toclear then lhyp else MoveAfter hyp
@@ -3496,9 +3593,9 @@ let make_base n id =
 (* Builds two different names from an optional inductive type and a
    number, also deals with a list of names to avoid. If the inductive
    type is None, then hyprecname is IHi where i is a number. *)
-let make_up_names n ind_opt cname =
+let make_up_names n ind_opt (cname,isprivate) =
   let is_hyp = String.equal (atompart_of_id cname) "H" in
-  let base = Id.to_string (make_base n cname) in
+  let base = make_base n cname in
   let ind_prefix = "IH" in
   let base_ind =
     if is_hyp then
@@ -3507,18 +3604,25 @@ let make_up_names n ind_opt cname =
 	| Some ind_id -> add_prefix ind_prefix (Nametab.basename_of_global ind_id)
     else add_prefix ind_prefix cname in
   let hyprecname = make_base n base_ind in
-  let avoid =
-    if Int.equal n 1 (* Only one recursive argument *) || Int.equal n 0 then []
+  if Int.equal n 1 (* Only one recursive argument *) || Int.equal n 0 then
+    (* a private name is necessary unstable, i.e. not preserving being user-derived *)
+    (fun _ -> (base,isprivate)), (fun _ -> (hyprecname,isprivate)), Id.Set.empty
+  else
+    let base_string = Id.to_string base in
+    let hyprec_string = Id.to_string hyprecname in
+    let mkbase isunstable p = (make_ident base_string (Some p),isunstable) in
+    let mkhyprecname isunstable p = (make_ident hyprec_string (Some p),isunstable) in
+    (* Forbid to use cname, cname0, hyprecname and hyprecname0 *)
+    (* in order to get names such as f1, f2, ... *)
+    let avoid =
+      Id.Set.add (make_ident hyprec_string None)
+      (Id.Set.singleton (make_ident hyprec_string (Some 0))) in
+    if not is_hyp then
+      (* a private name is necessary unstable, i.e. not preserving being user-derived *)
+      mkbase isprivate, mkhyprecname isprivate,
+      Id.Set.add (make_ident base_string (Some 0)) (Id.Set.add (make_ident base_string None) avoid)
     else
-      (* Forbid to use cname, cname0, hyprecname and hyprecname0 *)
-      (* in order to get names such as f1, f2, ... *)
-      let avoid =
-        (make_ident (Id.to_string hyprecname) None) ::
-        (make_ident (Id.to_string hyprecname) (Some 0)) :: [] in
-      if not (String.equal (atompart_of_id cname) "H") then
-        (make_ident base (Some 0)) :: (make_ident base None) :: avoid
-      else avoid in
-  Id.of_string base, hyprecname, avoid
+      (fun _ -> (base,true)), mkhyprecname true, avoid
 
 let error_ind_scheme s =
   let s = if not (String.is_empty s) then s^" " else s in
@@ -3675,10 +3779,10 @@ let abstract_args gl generalize_vars dep id defined f args =
   let env = Tacmach.New.pf_env gl in
   let concl = Tacmach.New.pf_concl gl in
   let dep = dep || local_occur_var !sigma id concl in
-  let avoid = ref [] in
+  let avoid = ref Id.Set.empty in
   let get_id name =
     let id = new_fresh_id !avoid (match name with Name n -> n | Anonymous -> Id.of_string "gen_x") gl in
-      avoid := id :: !avoid; id
+      avoid := Id.Set.add id !avoid; id
   in
     (* Build application generalized w.r.t. the argument plus the necessary eqs.
        From env |- c : forall G, T and args : G we build
@@ -3783,7 +3887,7 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
 	    if dep then
               Tacticals.New.tclTHENLIST [
                 tac;
-		 rename_hyp [(id, oldid)]; Tacticals.New.tclDO n intro;
+		 rename_hyp [(id, (oldid,true))]; Tacticals.New.tclDO n intro;
 		 generalize_dep ~with_let:true (mkVar oldid)]
             else Tacticals.New.tclTHENLIST [
                     tac;
@@ -3805,11 +3909,12 @@ let compare_upto_variables sigma x y =
   in
   compare x y
 
-let specialize_eqs id gl =
+let specialize_eqs id =
   let open Context.Rel.Declaration in
-  let env = Tacmach.pf_env gl in
-  let ty = Tacmach.pf_get_hyp_typ gl id in
-  let evars = ref (project gl) in
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let ty = Tacmach.New.pf_get_hyp_typ id gl in
+  let evars = ref (Proofview.Goal.sigma gl) in
   let unif env evars c1 c2 =
     compare_upto_variables !evars c1 c2 && Evarconv.e_conv env evars c1 c2
   in
@@ -3852,16 +3957,18 @@ let specialize_eqs id gl =
   and acc' = Tacred.whd_simpl env !evars acc' in
   let ty' = Evarutil.nf_evar !evars ty' in
     if worked then
-      tclTHENFIRST (Tacmach.internal_cut true id ty')
-	(Proofview.V82.of_tactic (exact_no_check ((* refresh_universes_strict *) acc'))) gl
-    else tclFAIL 0 (str "Nothing to do in hypothesis " ++ pr_id id) gl
-
+      Tacticals.New.tclTHENFIRST
+        (internal_cut true false id ty')
+	(exact_no_check ((* refresh_universes_strict *) acc'))
+    else
+      Tacticals.New.tclFAIL 0 (str "Nothing to do in hypothesis " ++ pr_id id)
+  end
 
 let specialize_eqs id = Proofview.Goal.enter begin fun gl ->
   let msg = str "Specialization not allowed on dependent hypotheses" in
   Proofview.tclOR (clear [id])
     (fun _ -> Tacticals.New.tclZEROMSG msg) >>= fun () ->
-    Proofview.V82.tactic (specialize_eqs id)
+    specialize_eqs id
 end
 
 let occur_rel sigma n c =
@@ -4011,9 +4118,9 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
       | Some (LocalAssum (_,ind)) -> (* Standard scheme from an inductive type *)
 	  let indhd,indargs = decompose_app evd ind in
 	  let cond hd = EConstr.eq_constr evd hd indhd in
-	  let check_concl is_pred p =
+	  let check_concl is_concl p =
 	    (* Check again conclusion *)
-	    let ccl_arg_ok = is_pred (p + scheme.nargs + 1) f == IndArg in
+	    let ccl_arg_ok = is_concl (p + scheme.nargs + 1) f in
 	    let ind_is_ok =
 	      List.equal (fun c1 c2 -> EConstr.eq_constr evd c1 c2)
 		(List.lastn scheme.nargs indargs)
@@ -4022,39 +4129,50 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
 	      error_ind_scheme "the conclusion of"
 	  in (cond, check_concl)
   in
-  let is_pred n c =
+  let is_concl k c =
     let hd = fst (decompose_app evd c) in
     match EConstr.kind evd hd with
-      | Rel q when n < q && q <= n+scheme.npredicates -> IndArg
-      | _ when cond hd -> RecArg
-      | _ -> OtherArg
+      | Rel q when k < q && q <= k+scheme.npredicates -> true
+      | _ -> false
   in
-  let rec check_branch p c =
+  let classify_arg k (rec_index,ind_index as index) c =
+    let hd = fst (decompose_app evd c) in
+    match EConstr.kind evd hd with
+      | Rel q when k < q && q <= k+scheme.npredicates -> (rec_index,ind_index+1), IndArg (ind_index+1)
+      | _ when cond hd -> (rec_index+1,ind_index), RecArg (rec_index+1)
+      | _ -> index, OtherArg
+  in
+  let rec check_branch k n c =
     match EConstr.kind evd c with
       | Prod (_,t,c) ->
-	(is_pred p t, true, not (Vars.noccurn evd 1 c)) :: check_branch (p+1) c
+        let n, b = classify_arg k n t in
+        let n, l = check_branch (k+1) n c in
+	n, (b, true, not (Vars.noccurn evd 1 c)) :: l
       | LetIn (_,_,_,c) ->
-	(OtherArg, false, not (Vars.noccurn evd 1 c)) :: check_branch (p+1) c
-      | _ when is_pred p c == IndArg -> []
+        let n, l = check_branch (k+1) n c in
+	n, (OtherArg, false, not (Vars.noccurn evd 1 c)) :: l
+      | _ when is_concl k c -> n,[]
       | _ -> raise Exit
   in
   let rec find_branches p lbrch =
     match lbrch with
       | LocalAssum (_,t) :: brs ->
 	(try
-	   let lchck_brch = check_branch p t in
-	   let n = List.fold_left
-	     (fun n (b,_,_) -> if b == RecArg then n+1 else n) 0 lchck_brch in
-	   let recvarname, hyprecname, avoid =
-	     make_up_names n scheme.indref names_info in
+	   let (nrecarg,_),lchck_brch = check_branch p (0,0) t in
+	   let mkrecvarname, mkhyprecname, avoid =
+	     make_up_names nrecarg scheme.indref names_info in
 	   let namesign =
 	     List.map (fun (b,is_assum,dep) ->
-	       (b,is_assum,dep,if b == IndArg then hyprecname else recvarname))
+               let kind = match b with
+                 | IndArg i -> IndArg (mkhyprecname i)
+                 | RecArg i -> RecArg (mkrecvarname i)
+                 | OtherArg -> OtherArg in
+	       (kind,is_assum,dep))
 	       lchck_brch in
 	   (avoid,namesign) :: find_branches (p+1) brs
 	 with Exit-> error_ind_scheme "the branches of")
       | LocalDef _ :: _ -> error_ind_scheme "the branches of"
-      | [] -> check_concl is_pred p; []
+      | [] -> check_concl is_concl p; []
   in
   Array.of_list (find_branches 0 (List.rev scheme.branches))
 
@@ -4069,7 +4187,7 @@ let compute_elim_signature (evd,(elimc,elimt),ind_type_guess) names_info =
   let scheme = compute_elim_sig evd ~elimc:elimc elimt in
     evd, (compute_scheme_signature evd scheme names_info ind_type_guess, scheme)
 
-let guess_elim isrec dep s hyp0 gl =
+let guess_elim isrec dep s (hyp0,_) gl =
   let tmptyp0 =	Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let (mind, u), _ = Tacmach.New.pf_reduce_to_quantified_ind gl tmptyp0 in
   let evd, elimc =
@@ -4078,7 +4196,7 @@ let guess_elim isrec dep s hyp0 gl =
       let env = Tacmach.New.pf_env gl in
       let sigma = Tacmach.New.project gl in
       let u = EInstance.kind (Tacmach.New.project gl) u in
-      if use_dependent_propositions_elimination () && dep
+      if use_dependent_propositions_elimination () && dep = Some true
       then
         let (sigma, ind) = build_case_analysis_scheme env sigma (mind, u) true s in
         let ind = EConstr.of_constr ind in
@@ -4091,7 +4209,7 @@ let guess_elim isrec dep s hyp0 gl =
   let elimt = Tacmach.New.pf_unsafe_type_of gl elimc in
     evd, ((elimc, NoBindings), elimt), mkIndU (mind, u)
 
-let given_elim hyp0 (elimc,lbind as e) gl =
+let given_elim (hyp0,_) (elimc,lbind as e) gl =
   let sigma = Tacmach.New.project gl in
   let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let ind_type_guess,_ = decompose_app sigma (snd (decompose_prod sigma tmptyp0)) in
@@ -4099,11 +4217,11 @@ let given_elim hyp0 (elimc,lbind as e) gl =
   Tacmach.New.project gl, (e, elimt), ind_type_guess
 
 type scheme_signature =
-    (Id.t list * (elim_arg_kind * bool * bool * Id.t) list) array
+    (Id.Set.t * ((Id.t * unstable_flag) elim_arg_kind * bool * bool) list) array
 
 type eliminator_source =
   | ElimUsing of (eliminator * EConstr.types) * scheme_signature
-  | ElimOver of bool * Id.t
+  | ElimOver of bool * tracked_ident
 
 let find_induction_type isrec elim hyp0 gl =
   let sigma = Tacmach.New.project gl in
@@ -4112,7 +4230,7 @@ let find_induction_type isrec elim hyp0 gl =
     | None ->
        let sort = Tacticals.New.elimination_sort_of_goal gl in
        let _, (elimc,elimt),_ = 
-	 guess_elim isrec (* dummy: *) true sort hyp0 gl in
+	 guess_elim isrec None sort hyp0 gl in
 	let scheme = compute_elim_sig sigma ~elimc elimt in
 	(* We drop the scheme waiting to know if it is dependent *)
 	scheme, ElimOver (isrec,hyp0)
@@ -4146,7 +4264,7 @@ let get_eliminator elim dep s gl =
   | ElimUsing (elim,indsign) ->
       Tacmach.New.project gl, (* bugged, should be computed *) true, elim, indsign
   | ElimOver (isrec,id) ->
-      let evd, (elimc,elimt),_ as elims = guess_elim isrec dep s id gl in
+      let evd, (elimc,elimt),_ as elims = guess_elim isrec (Some dep) s id gl in
       let _, (l, s) = compute_elim_signature elims id in
       let branchlengthes = List.map (fun d -> assert (RelDecl.is_local_assum d); pi1 (decompose_prod_letin (Tacmach.New.project gl) (RelDecl.get_type d)))
                                     (List.rev s.branches)
@@ -4227,7 +4345,7 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
         (fun a decl -> if NamedDecl.is_local_assum decl then (mkVar (NamedDecl.get_id decl))::a else a) [] deps in
     let (sigma, isrec, elim, indsign) = get_eliminator elim dep s (Proofview.Goal.assume gl) in
     let branchletsigns =
-      let f (_,is_not_let,_,_) = is_not_let in
+      let f (_,is_not_let,_) = is_not_let in
       Array.map (fun (_,l) -> List.map f l) indsign in
     let names = compute_induction_names branchletsigns names in
     Array.iter (check_name_unicity env toclear []) names;
@@ -4248,9 +4366,9 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) tac
   end
 
-let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps =
+let induction_with_atomization_of_ind_arg isrec with_evars elim names (hyp0,_ as id) inhyps =
   Proofview.Goal.enter begin fun gl ->
-  let elim_info = find_induction_type isrec elim hyp0 (Proofview.Goal.assume gl) in
+  let elim_info = find_induction_type isrec elim id (Proofview.Goal.assume gl) in
   atomize_param_of_ind_then elim_info hyp0 (fun indvars ->
     apply_induction_in_context with_evars (Some hyp0) inhyps (pi3 elim_info) indvars names
       (fun elim -> induction_tac with_evars [] [hyp0] elim))
@@ -4279,7 +4397,7 @@ let induction_without_atomization isrec with_evars elim names lid =
   then
     Tacticals.New.tclZEROMSG (msg_not_right_number_induction_arguments scheme)
   else
-  let indvars,lid_params = List.chop nargs_indarg_farg lid in
+  let indvars,lid_params = List.chop nargs_indarg_farg (List.map fst lid) in
   (* terms to patternify we must patternify indarg or farg if present in concl *)
   let realindvars = List.rev (if scheme.farg_in_concl then List.tl indvars else indvars) in
   let lidcstr = List.map mkVar (List.rev indvars) in
@@ -4290,7 +4408,7 @@ let induction_without_atomization isrec with_evars elim names lid =
        gt_wf_rec was taken as a functional scheme with no parameters,
        but by chance, because of the addition of at least hyp0 for
        cook_sign, it behaved as if there was a real induction arg. *)
-    if indvars = [] then [List.hd lid_params] else indvars in
+    if List.is_empty indvars then Id.Set.singleton (List.hd lid_params) else Id.Set.of_list indvars in
   let induct_tac elim = Tacticals.New.tclTHENLIST [
     (* pattern to make the predicate appear. *)
     reduce (Pattern (List.map inj_with_occurrences lidcstr)) onConcl;
@@ -4398,7 +4516,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
   let check = check_enough_applied env sigma elim in
   let (sigma', c) = use_bindings env sigma elim false (c0,lbind) t0 in
   let abs = AbstractPattern (from_prefix,check,Name id,(pending,c),cls,false) in
-  let (id,sign,_,lastlhyp,ccl,res) = make_abstraction env sigma' ccl abs in
+  let ((id,_),sign,_,lastlhyp,ccl,res) = make_abstraction env sigma' ccl abs in
   match res with
   | None ->
       (* pattern not found *)
@@ -4419,7 +4537,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
           let b = not with_evars && with_eq != None in
           let (sigma, c) = use_bindings env sigma elim b (c0,lbind) t0 in
           let t = Retyping.get_type_of env sigma c in
-          mkletin_goal env sigma store with_eq false (id,lastlhyp,ccl,c) (Some t)
+          mkletin_goal env sigma store with_eq false (id,true,lastlhyp,ccl,c) (Some t)
         end;
         if with_evars then Proofview.shelve_unifiable else guard_no_unifiable;
         if is_arg_pure_hyp
@@ -4439,7 +4557,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
       let tac =
       Tacticals.New.tclTHENLIST [
         Refine.refine ~typecheck:false begin fun sigma ->
-          mkletin_goal env sigma store with_eq true (id,lastlhyp,ccl,c) None
+          mkletin_goal env sigma store with_eq true (id,true,lastlhyp,ccl,c) None
         end;
         tac
       ]
@@ -4476,22 +4594,23 @@ let induction_gen clear_flag isrec with_evars elim
        clearable variable of the goal w/o occurrence selection
        and w/o equality kept: no need to generalize *)
     let id = destVar evd c in
+    let isprivate = Id.Set.mem id (named_context_private_ids (Environ.named_context_val env)) in
     Tacticals.New.tclTHEN
       (clear_unselected_context id inhyps cls)
       (induction_with_atomization_of_ind_arg
-         isrec with_evars elim names id inhyps)
+         isrec with_evars elim names (id,isprivate) inhyps)
   else
   (* Otherwise, we look for the pattern, possibly adding missing arguments and
      declaring the induction argument as a new local variable *)
     let id =
     (* Type not the right one if partially applied but anyway for internal use*)
-      let x = id_of_name_using_hdchar (Global.env()) evd t Anonymous in
-      new_fresh_id [] x gl in
+      let x = id_of_name_using_hdchar env evd t Anonymous in
+      new_fresh_id Id.Set.empty x gl in
     let info_arg = (is_arg_pure_hyp, not enough_applied) in
     pose_induction_arg_then
       isrec with_evars info_arg elim id arg t inhyps cls
     (induction_with_atomization_of_ind_arg
-       isrec with_evars elim names id inhyps)
+       isrec with_evars elim names (id,true) inhyps)
   end 
 
 (* Induction on a list of arguments. First make induction arguments
@@ -4510,25 +4629,27 @@ let induction_gen_l isrec with_evars elim names lc =
     match l with
       | [] -> Proofview.tclUNIT ()
       | c::l' ->
-          Proofview.tclEVARMAP >>= fun sigma ->
+          Proofview.Goal.enter begin fun gl ->
+          let sigma = Proofview.Goal.sigma gl in
+          let env = Proofview.Goal.env gl in
 	  match EConstr.kind sigma c with
 	    | Var id when not (mem_named_context_val id (Global.named_context_val ()))
 		&& not with_evars ->
-		let _ = newlc:= id::!newlc in
+                let private_ids = named_context_private_ids (Environ.named_context_val env) in
+                let isprivate = Id.Set.mem id private_ids in
+		let _ = newlc:= (id,isprivate)::!newlc in
 		atomize_list l'
 
 	    | _ ->
-                Proofview.Goal.enter begin fun gl ->
                 let type_of = Tacmach.New.pf_unsafe_type_of gl in
-                let sigma = Tacmach.New.project gl in
                 let x =
-		  id_of_name_using_hdchar (Global.env()) sigma (type_of c) Anonymous in
+		  id_of_name_using_hdchar env sigma (type_of c) Anonymous in
 
-                let id = new_fresh_id [] x gl in
+                let id = new_fresh_id Id.Set.empty x gl in
 		let newl' = List.map (fun r -> replace_term sigma c (mkVar id) r) l' in
-		let _ = newlc:=id::!newlc in
+		let _ = newlc:=(id,true)::!newlc in
 		Tacticals.New.tclTHEN
-		  (letin_tac None (Name id) c None allHypsAndConcl)
+		  (letin_tac None (Name id) true c None allHypsAndConcl)
 		  (atomize_list newl')
                 end in
   Tacticals.New.tclTHENLIST
@@ -4741,8 +4862,9 @@ let prove_symmetry hdcncl eq_kind =
 	one_constructor 1 NoBindings ])
 
 let match_with_equation sigma c =
+  Proofview.tclENV >>= fun env ->
   try
-    let res = match_with_equation sigma c in
+    let res = match_with_equation env sigma c in
     Proofview.tclUNIT res
   with NoEquationFound ->
     Proofview.tclZERO NoEquationFound
@@ -4957,10 +5079,10 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
         let id = NamedDecl.get_id d in
 	if mem_named_context_val id current_sign &&
           interpretable_as_section_decl evdref (lookup_named_val id current_sign) d
-        then (s1,push_named_context_val d s2)
+        then (s1,push_named_context_val d false s2)
 	else (Context.Named.add d s1,s2))
       global_sign (Context.Named.empty, empty_named_context_val) in
-  let id = next_global_ident_away id (pf_ids_of_hyps gl) in
+  let id = next_global_ident_away id (pf_ids_set_of_hyps gl) in
   let concl = match goal_type with
               | None ->  Proofview.Goal.concl gl
               | Some ty -> ty in
@@ -4977,7 +5099,10 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
       evd, ctx, nf concl
   in
   let concl = EConstr.of_constr concl in
-  let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac) in
+  let reintros =
+    let private_ids = named_context_private_ids (Environ.named_context_val (Proofview.Goal.env gl)) in
+    tclMAP (fun d -> let id = NamedDecl.get_id d in introduction id (Id.Set.mem id private_ids)) (List.rev sign) in
+  let solve_tac = tclCOMPLETE (tclTHEN reintros tac) in
   let ectx = Evd.evar_universe_context evd in
   let (const, safe, ectx) =
     try Pfedit.build_constant_by_tactic ~goal_kind:gk id ectx secsign concl solve_tac
@@ -5003,9 +5128,21 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
     Declare.declare_constant ~internal:Declare.InternalTacticRequest ~local:true id decl
   in
   let cst = Impargs.with_implicit_protection cst () in
-  (* let evd, lem = Evd.fresh_global (Global.env ()) evd (ConstRef cst) in *)
-  let lem, ctx = Universes.unsafe_constr_of_global (ConstRef cst) in
-  let lem = EConstr.of_constr lem in
+  let lem =
+    match const.Entries.const_entry_universes with
+    | Entries.Polymorphic_const_entry uctx ->
+      let uctx = Univ.ContextSet.of_context uctx in
+      (** Hack: the kernel may generate definitions whose universe variables are
+          not the same as requested in the entry because of constraints delayed
+          in the body, even in polymorphic mode. We mimick what it does for now
+          in hope it is fixed at some point. *)
+      let (_, body_uctx), _ = Future.force const.Entries.const_entry_body in
+      let uctx = Univ.ContextSet.to_context (Univ.ContextSet.union uctx body_uctx) in
+      let u = Univ.UContext.instance uctx in
+      mkConstU (cst, EInstance.make u)
+    | Entries.Monomorphic_const_entry _ ->
+      mkConst cst
+  in
   let evd = Evd.set_universe_context evd ectx in
   let open Safe_typing in
   let eff = private_con_of_con (Global.safe_env ()) cst in
@@ -5066,7 +5203,7 @@ let unify ?(state=full_transparent_state) x y =
 module Simple = struct
   (** Simplified version of some of the above tactics *)
 
-  let intro x = intro_move (Some x) MoveLast
+  let intro x isprivate = intro_move (Some (x,isprivate)) MoveLast
 
   let apply c =
     apply_with_bindings_gen false false [None,(Loc.tag (c,NoBindings))]

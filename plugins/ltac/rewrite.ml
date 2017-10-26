@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Names
 open Pp
 open CErrors
@@ -665,7 +664,7 @@ type rewrite_result =
 
 type 'a strategy_input = { state : 'a ; (* a parameter: for instance, a state *)
 			   env : Environ.env ;
-			   unfresh : Id.t list ; (* Unfresh names *)
+			   unfresh : Id.Set.t; (* Unfresh names *)
 			   term1 : constr ;
 			   ty1 : types ; (* first term and its type (convertible to rew_from) *)
 			   cstr : (bool (* prop *) * constr option) ;
@@ -801,6 +800,7 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
 	  (LocalDef (Id.of_string "do_subrelation",
 	             snd (app_poly_sort b env evars dosub [||]),
 	             snd (app_poly_nocheck env evars appsub [||])))
+          true
 	  env
     in
     let evars, morph = new_cstr_evar evars env' app in
@@ -1462,7 +1462,7 @@ let solve_constraints env (evars,cstrs) =
 let nf_zeta =
   Reductionops.clos_norm_flags (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
 
-exception RewriteFailure of Pp.std_ppcmds
+exception RewriteFailure of Pp.t
 
 type result = (evar_map * constr option * types) option option
 
@@ -1538,7 +1538,8 @@ let assert_replacing id newt tac =
     | [] -> assert false
     | d :: rem -> insert_dependent env sigma (LocalAssum (NamedDecl.get_id d, newt)) [] after @ rem
     in
-    let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
+    let private_ids = named_context_private_ids (named_context_val env) in
+    let env' = Environ.reset_with_named_context (val_of_named_context nc private_ids) env in
     Refine.refine ~typecheck:true begin fun sigma ->
       let (sigma, ev) = Evarutil.new_evar env' sigma concl in
       let (sigma, ev') = Evarutil.new_evar env sigma newt in
@@ -1608,14 +1609,15 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
     | None -> env
     | Some id ->
       (** Only consider variables not depending on [id] *)
-      let ctx = named_context env in
-      let filter decl = not (occur_var_in_decl env sigma id decl) in
-      let nctx = List.filter filter ctx in
-      Environ.reset_with_named_context (val_of_named_context nctx) env
+      fold_named_context
+        (fun _ decl isprivate env ->
+         let decl = EConstr.of_named_decl decl in
+         if occur_var_in_decl env sigma id decl then env else push_named decl isprivate env)
+        env ~init:(reset_context env)
     in
     try
       let res =
-        cl_rewrite_clause_aux ?abs strat env [] sigma ty clause
+        cl_rewrite_clause_aux ?abs strat env Id.Set.empty sigma ty clause
       in
       let sigma = match origsigma with None -> sigma | Some sigma -> sigma in
       treat sigma res <*>
@@ -1885,7 +1887,7 @@ let declare_projection n instance_id r =
     in it_mkProd_or_LetIn ccl ctx
   in
   let typ = it_mkProd_or_LetIn typ ctx in
-  let pl, ctx = Evd.universe_context sigma in
+  let pl, ctx = Evd.universe_context ~names:[] ~extensible:true sigma in
   let typ = EConstr.to_constr sigma typ in
   let term = EConstr.to_constr sigma term in
   let cst = 
@@ -1936,7 +1938,12 @@ let default_morphism sign m =
   let evars, mor = resolve_one_typeclass env (goalevars evars) morph in
     mor, proper_projection sigma mor morph
 
+let warn_add_setoid_deprecated =
+  CWarnings.create ~name:"add-setoid" ~category:"deprecated" (fun () ->
+      Pp.(str "Add Setoid is deprecated, please use Add Parametric Relation."))
+
 let add_setoid global binders a aeq t n =
+  warn_add_setoid_deprecated ?loc:a.CAst.loc ();
   init_setoid ();
   let _lemma_refl = declare_instance_refl global binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in
   let _lemma_sym = declare_instance_sym global binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
@@ -1955,7 +1962,12 @@ let make_tactic name =
   let tacname = Qualid (Loc.tag tacpath) in
   TacArg (Loc.tag @@ TacCall (Loc.tag (tacname, [])))
 
+let warn_add_morphism_deprecated =
+  CWarnings.create ~name:"add-morphism" ~category:"deprecated" (fun () ->
+      Pp.(str "Add Morphism f : id is deprecated, please use Add Morphism f with signature (...) as id"))
+
 let add_morphism_infer glob m n =
+  warn_add_morphism_deprecated ?loc:m.CAst.loc ();
   init_setoid ();
   let poly = Flags.is_universe_polymorphism () in
   let instance_id = add_suffix n "_Proper" in

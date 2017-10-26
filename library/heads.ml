@@ -128,11 +128,11 @@ let compute_head = function
    let is_Def = function Declarations.Def _ -> true | _ -> false in
    let body = 
      if cb.Declarations.const_proj = None && is_Def cb.Declarations.const_body
-     then Declareops.body_of_constant (Environ.opaque_tables env) cb else None 
+     then Global.body_of_constant cst else None
    in
      (match body with
      | None -> RigidHead (RigidParameter cst)
-     | Some c -> kind_of_head env c)
+     | Some (c, _) -> kind_of_head env c)
 | EvalVarRef id ->
     (match Global.lookup_named id with
      | LocalDef (_,c,_) when not (Decls.variable_opacity id) ->

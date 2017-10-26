@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Miniml
 open Term
 open Declarations
@@ -133,7 +132,7 @@ let rec add_labels mp = function
 exception Impossible
 
 let check_arity env cb =
-  let t = Typeops.type_of_constant_type env cb.const_type in
+  let t = cb.const_type in
   if Reduction.is_arity env t then raise Impossible
 
 let check_fix env cb i =
@@ -176,26 +175,32 @@ let factor_fix env l cb msb =
     (hack proposed by Elie)
 *)
 
-let expand_mexpr env mp me =
+let expand_mexpr env mpo me =
   let inl = Some (Flags.get_inline_level()) in
-  Mod_typing.translate_mse env (Some mp) inl me
+  Mod_typing.translate_mse env mpo inl me
 
-(** Ad-hoc update of environment, inspired by [Mod_type.check_with_aux_def].
-    To check with Elie. *)
-
-let rec mp_of_mexpr = function
-  | MEident mp -> mp
-  | MEwith (seb,_) -> mp_of_mexpr seb
-  | _ -> assert false
+let expand_modtype env mp me =
+  let inl = Some (Flags.get_inline_level()) in
+  Mod_typing.translate_modtype env mp inl ([],me)
 
 let no_delta = Mod_subst.empty_delta_resolver
 
-let env_for_mtb_with_def env mp me idl =
+let flatten_modtype env mp me_alg struc_opt =
+  match struc_opt with
+  | Some me -> me, no_delta
+  | None ->
+     let mtb = expand_modtype env mp me_alg in
+     mtb.mod_type, mtb.mod_delta
+
+(** Ad-hoc update of environment, inspired by [Mod_typing.check_with_aux_def].
+*)
+
+let env_for_mtb_with_def env mp me reso idl =
   let struc = Modops.destr_nofunctor me in
   let l = Label.of_id (List.hd idl) in
   let spot = function (l',SFBconst _) -> Label.equal l l' | _ -> false in
   let before = fst (List.split_when spot struc) in
-  Modops.add_structure mp before no_delta env
+  Modops.add_structure mp before reso env
 
 let make_cst resolver mp l =
   Mod_subst.constant_of_delta_kn resolver (KerName.make2 mp l)
@@ -235,20 +240,24 @@ let rec extract_structure_spec env mp reso = function
    [extract_mexpression_spec] should come from a [mod_type_alg] field.
    This way, any encountered [MEident] should be a true module type. *)
 
-and extract_mexpr_spec env mp1 (me_struct,me_alg) = match me_alg with
+and extract_mexpr_spec env mp1 (me_struct_o,me_alg) = match me_alg with
   | MEident mp -> Visit.add_mp_all mp; MTident mp
   | MEwith(me',WithDef(idl,(c,ctx)))->
-      let env' = env_for_mtb_with_def env (mp_of_mexpr me') me_struct idl in
-      let mt = extract_mexpr_spec env mp1 (me_struct,me') in
+      let me_struct,delta = flatten_modtype env mp1 me' me_struct_o in
+      let env' = env_for_mtb_with_def env mp1 me_struct delta idl in
+      let mt = extract_mexpr_spec env mp1 (None,me') in
       (match extract_with_type env' c with (* cb may contain some kn *)
 	 | None -> mt
-	 | Some (vl,typ) -> MTwith(mt,ML_With_type(idl,vl,typ)))
+	 | Some (vl,typ) ->
+            type_iter_references Visit.add_ref typ;
+            MTwith(mt,ML_With_type(idl,vl,typ)))
   | MEwith(me',WithMod(idl,mp))->
       Visit.add_mp_all mp;
-      MTwith(extract_mexpr_spec env mp1 (me_struct,me'), ML_With_module(idl,mp))
+      MTwith(extract_mexpr_spec env mp1 (None,me'), ML_With_module(idl,mp))
   | MEapply _ ->
      (* No higher-order module type in OCaml : we use the expanded version *)
-     extract_msignature_spec env mp1 no_delta (*TODO*) me_struct
+     let me_struct,delta = flatten_modtype env mp1 me_alg me_struct_o in
+     extract_msignature_spec env mp1 delta me_struct
 
 and extract_mexpression_spec env mp1 (me_struct,me_alg) = match me_alg with
   | MoreFunctor (mbid, mtb, me_alg') ->
@@ -259,8 +268,8 @@ and extract_mexpression_spec env mp1 (me_struct,me_alg) = match me_alg with
       let mp = MPbound mbid in
       let env' = Modops.add_module_type mp mtb env in
       MTfunsig (mbid, extract_mbody_spec env mp mtb,
-		extract_mexpression_spec env' mp1 (me_struct',me_alg'))
-  | NoFunctor m -> extract_mexpr_spec env mp1 (me_struct,m)
+                extract_mexpression_spec env' mp1 (me_struct',me_alg'))
+  | NoFunctor m -> extract_mexpr_spec env mp1 (Some me_struct,m)
 
 and extract_msignature_spec env mp1 reso = function
   | NoFunctor struc ->
@@ -272,7 +281,8 @@ and extract_msignature_spec env mp1 reso = function
       MTfunsig (mbid, extract_mbody_spec env mp mtb,
 		extract_msignature_spec env' mp1 reso me)
 
-and extract_mbody_spec env mp mb = match mb.mod_type_alg with
+and extract_mbody_spec : 'a. _ -> _ -> 'a generic_module_body -> _ =
+  fun env mp mb -> match mb.mod_type_alg with
   | Some ty -> extract_mexpression_spec env mp (mb.mod_type,ty)
   | None -> extract_msignature_spec env mp mb.mod_delta mb.mod_type
 
@@ -332,11 +342,11 @@ let rec extract_structure env mp reso ~all = function
 
 and extract_mexpr env mp = function
   | MEwith _ -> assert false (* no 'with' syntax for modules *)
-  | me when lang () != Ocaml ->
+  | me when lang () != Ocaml || Table.is_extrcompute () ->
       (* In Haskell/Scheme, we expand everything.
          For now, we also extract everything, dead code will be removed later
          (see [Modutil.optimize_struct]. *)
-      let sign,_,delta,_ = expand_mexpr env mp me in
+      let sign,_,delta,_ = expand_mexpr env (Some mp) me in
       extract_msignature env mp delta ~all:true sign
   | MEident mp ->
       if is_modfile mp && not (modular ()) then error_MPfile_as_mod mp false;
@@ -560,11 +570,12 @@ let print_structure_to_file (fn,si,mo) dry struc =
 let reset () =
   Visit.reset (); reset_tables (); reset_renaming_tables Everything
 
-let init modular library =
+let init ?(compute=false) modular library =
   check_inside_section (); check_inside_module ();
   set_keywords (descr ()).keywords;
   set_modular modular;
   set_library library;
+  set_extrcompute compute;
   reset ();
   if modular && lang () == Scheme then error_scheme ()
 
@@ -674,8 +685,22 @@ let extraction_library is_rec m =
   List.iter print struc;
   reset ()
 
+(** For extraction compute, we flatten all the module structure,
+    getting rid of module types or unapplied functors *)
+
+let flatten_structure struc =
+  let rec flatten_elem (lab,elem) = match elem with
+    |SEdecl d -> [d]
+    |SEmodtype _ -> []
+    |SEmodule m -> match m.ml_mod_expr with
+      |MEfunctor _ -> []
+      |MEident _ | MEapply _ -> assert false (* should be expanded *)
+      |MEstruct (_,elems) -> flatten_elems elems
+  and flatten_elems l = List.flatten (List.map flatten_elem l)
+  in flatten_elems (List.flatten (List.map snd struc))
+
 let structure_for_compute c =
-  init false false;
+  init false false ~compute:true;
   let env = Global.env () in
   let ast, mlt = Extraction.extract_constr env c in
   let ast = Mlutil.normalize ast in
@@ -684,5 +709,36 @@ let structure_for_compute c =
   let () = ast_iter_references add_ref add_ref add_ref ast in
   let refs = Refset.elements !refs in
   let struc = optimize_struct (refs,[]) (mono_environment refs []) in
-  let flatstruc = List.map snd (List.flatten (List.map snd struc)) in
-  flatstruc, ast, mlt
+  (flatten_structure struc), ast, mlt
+
+(* For the test-suite :
+   extraction to a temporary file + run ocamlc on it *)
+
+let compile f =
+  try
+    let args = ["ocamlc";"-I";Filename.dirname f;"-c";f^"i";f] in
+    let res = CUnix.sys_command (Envars.ocamlfind ()) args in
+    match res with
+    | Unix.WEXITED 0 -> ()
+    | Unix.WEXITED n | Unix.WSIGNALED n | Unix.WSTOPPED n ->
+       CErrors.user_err
+         Pp.(str "Compilation of file " ++ str f ++
+             str " failed with exit code " ++ int n)
+  with Unix.Unix_error (e,_,_) ->
+    CErrors.user_err
+      Pp.(str "Compilation of file " ++ str f ++
+          str " failed with error " ++ str (Unix.error_message e))
+
+let remove f =
+  if Sys.file_exists f then Sys.remove f
+
+let extract_and_compile l =
+  if lang () != Ocaml then
+    CErrors.user_err (Pp.str "This command only works with OCaml extraction");
+  let f = Filename.temp_file "testextraction" ".ml" in
+  let () = full_extraction (Some f) l in
+  let () = compile f in
+  let () = remove f; remove (f^"i") in
+  let base = Filename.chop_suffix f ".ml" in
+  let () = remove (base^".cmo"); remove (base^".cmi") in
+  Feedback.msg_notice (str "Extracted code successfully compiled")

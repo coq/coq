@@ -73,7 +73,7 @@ let generalize_right mk typ c1 c2 =
     let env = Proofview.Goal.env gl in
     let store = Proofview.Goal.extra gl in
   Refine.refine ~typecheck:false begin fun sigma ->
-    let na = Name (next_name_away_with_default "x" Anonymous (Termops.ids_of_context env)) in
+    let na = Name (next_name_away_with_default "x" Anonymous (Termops.vars_of_env env)) in
     let newconcl = mkProd (na, typ, mk typ c1 (mkRel 1)) in
     let (sigma, x) = Evarutil.new_evar env sigma ~principal:true ~store newconcl in
     (sigma, mkApp (x, [|c2|]))
@@ -114,7 +114,7 @@ let idx = Id.of_string "x"
 let idy = Id.of_string "y"
 
 let mkGenDecideEqGoal rectype ops g =
-  let hypnames = pf_ids_of_hyps g in
+  let hypnames = pf_ids_set_of_hyps g in
   let xname    = next_ident_away idx hypnames
   and yname    = next_ident_away idy hypnames in
   (mkNamedProd xname rectype
@@ -155,9 +155,9 @@ open Proofview.Notations
 
 (* spiwack: a PatternMatchingFailure wrapper around [Hipattern]. *)
 
-let match_eqdec sigma c =
+let match_eqdec env sigma c =
   try
-    let (eqonleft,_,c1,c2,ty) = match_eqdec sigma c in
+    let (eqonleft,_,c1,c2,ty) = match_eqdec env sigma c in
     let (op,eq1,noteq,eq2) =
       match EConstr.kind sigma c with
       | App (op,[|ty1;ty2|]) ->
@@ -202,8 +202,9 @@ let solveEqBranch rectype =
     begin
       Proofview.Goal.enter begin fun gl ->
         let concl = pf_concl gl in
+        let env = Proofview.Goal.env gl in
         let sigma = project gl in
-        match_eqdec sigma concl >>= fun (eqonleft,mk,lhs,rhs,_) ->
+        match_eqdec env sigma concl >>= fun (eqonleft,mk,lhs,rhs,_) ->
           let (mib,mip) = Global.lookup_inductive rectype in
           let nparams   = mib.mind_nparams in
           let getargs l = List.skipn nparams (snd (decompose_app sigma l)) in
@@ -229,8 +230,9 @@ let decideGralEquality =
     begin
       Proofview.Goal.enter begin fun gl ->
         let concl = pf_concl gl in
+        let env = Proofview.Goal.env gl in
         let sigma = project gl in
-        match_eqdec sigma concl >>= fun (eqonleft,mk,c1,c2,typ as data) ->
+        match_eqdec env sigma concl >>= fun (eqonleft,mk,c1,c2,typ as data) ->
         let headtyp = hd_app sigma (pf_compute gl typ) in
         begin match EConstr.kind sigma headtyp with
         | Ind (mi,_) -> Proofview.tclUNIT mi

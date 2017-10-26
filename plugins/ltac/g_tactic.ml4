@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
-open Grammar_API
 open Pp
 open CErrors
 open Util
@@ -303,9 +301,9 @@ GEXTEND Gram
       | "[="; tc = intropatterns; "]" -> IntroInjection tc ] ]
   ;
   naming_intropattern:
-    [ [ prefix = pattern_ident -> IntroFresh prefix
+    [ [ prefix = pattern_ident -> IntroFresh (prefix,true)
       | "?" -> IntroAnonymous
-      | id = ident -> IntroIdentifier id ] ]
+      | id = ident -> IntroIdentifier (id,false) ] ]
   ;
   nonsimple_intropattern:
     [ [ l = simple_intropattern -> l
@@ -567,26 +565,26 @@ GEXTEND Gram
       (* Alternative syntax for "pose proof c as id" *)
       | IDENT "assert"; test_lpar_id_coloneq; "("; (loc,id) = identref; ":=";
 	  c = lconstr; ")" ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,true,None,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,true,None,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier (id,false))),c))
       | IDENT "eassert"; test_lpar_id_coloneq; "("; (loc,id) = identref; ":=";
 	  c = lconstr; ")" ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,true,None,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,true,None,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier (id,false))),c))
 
       (* Alternative syntax for "assert c as id by tac" *)
       | IDENT "assert"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,true,Some tac,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,true,Some tac,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier (id,false))),c))
       | IDENT "eassert"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,true,Some tac,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,true,Some tac,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier (id,false))),c))
 
       (* Alternative syntax for "enough c as id by tac" *)
       | IDENT "enough"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,false,Some tac,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,false,Some tac,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier (id,false))),c))
       | IDENT "eenough"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,false,Some tac,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,false,Some tac,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier (id,false))),c))
 
       | IDENT "assert"; c = constr; ipat = as_ipat; tac = by_tactic ->
 	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,true,Some tac,ipat,c))

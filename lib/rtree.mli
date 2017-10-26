@@ -78,7 +78,7 @@ val map : ('a -> 'b) -> 'a t -> 'b t
 val smartmap : ('a -> 'a) -> 'a t -> 'a t
 
 (** A rather simple minded pretty-printer *)
-val pp_tree : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
+val pp_tree : ('a -> Pp.t) -> 'a t -> Pp.t
 
 val eq_rtree : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 (** @deprecated Same as [Rtree.equal] *)

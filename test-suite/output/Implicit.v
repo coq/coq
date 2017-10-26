@@ -1,7 +1,7 @@
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-(* Suggested by Pierre Casteran (bug #169) *)
+(* Suggested by Pierre Casteran (BZ#169) *)
 (* Argument 3 is needed to typecheck and should be printed *)
 Definition compose (A B C : Set) (f : A -> B) (g : B -> C) (x : A) := g (f x).
 Check (compose (C:=nat) S).

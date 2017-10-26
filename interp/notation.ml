@@ -41,7 +41,6 @@ open Context.Named.Declaration
 (**********************************************************************)
 (* Scope of symbols *)
 
-type level = precedence * tolerability list
 type delimiters = string
 type notation_location = (DirPath.t * DirPath.t) * string
 
@@ -83,11 +82,18 @@ let parenRelation_eq t1 t2 = match t1, t2 with
 | Prec l1, Prec l2 -> Int.equal l1 l2
 | _ -> false
 
-let level_eq (l1, t1) (l2, t2) =
+let notation_var_internalization_type_eq v1 v2 = match v1, v2 with
+| NtnInternTypeConstr, NtnInternTypeConstr -> true
+| NtnInternTypeBinder, NtnInternTypeBinder -> true
+| NtnInternTypeIdent, NtnInternTypeIdent -> true
+| (NtnInternTypeConstr | NtnInternTypeBinder | NtnInternTypeIdent), _ -> false
+
+let level_eq (l1, t1, u1) (l2, t2, u2) =
   let tolerability_eq (i1, r1) (i2, r2) =
     Int.equal i1 i2 && parenRelation_eq r1 r2
   in
   Int.equal l1 l2 && List.equal tolerability_eq t1 t2
+  && List.equal notation_var_internalization_type_eq u1 u2
 
 let declare_scope scope =
   try let _ = String.Map.find scope !scope_map in ()
@@ -259,19 +265,28 @@ let keymap_find key map =
 (* Scopes table : interpretation -> scope_name *)
 let notations_key_table = ref (KeyMap.empty : notation_rule list KeyMap.t)
 
-let prim_token_key_table = ref KeyMap.empty
+let prim_token_key_table = ref (KeyMap.empty : (string * (any_glob_constr -> prim_token option) * bool) KeyMap.t)
 
-let glob_prim_constr_key = function
-  | { CAst.v = GApp ({ CAst.v = GRef (ref,_) } ,_) } | { CAst.v = GRef (ref,_) } -> RefKey (canonical_gr ref)
+let glob_prim_constr_key c = match DAst.get c with
+  | GRef (ref, _) -> RefKey (canonical_gr ref)
+  | GApp (c, _) ->
+    begin match DAst.get c with
+    | GRef (ref, _) -> RefKey (canonical_gr ref)
+    | _ -> Oth
+    end
   | _ -> Oth
 
-let glob_constr_keys = function
-  | { CAst.v = GApp ({ CAst.v = GRef (ref,_) },_) } -> [RefKey (canonical_gr ref); Oth]
-  | { CAst.v = GRef (ref,_) } -> [RefKey (canonical_gr ref)]
+let glob_constr_keys c = match DAst.get c with
+  | GApp (c, _) ->
+    begin match DAst.get c with
+    | GRef (ref, _) -> [RefKey (canonical_gr ref); Oth]
+    | _ -> [Oth]
+    end
+  | GRef (ref,_) -> [RefKey (canonical_gr ref)]
   | _ -> [Oth]
 
-let cases_pattern_key = function
-  | { CAst.v = PatCstr (ref,_,_) } -> RefKey (canonical_gr (ConstructRef ref))
+let cases_pattern_key c = match DAst.get c with
+  | PatCstr (ref,_,_) -> RefKey (canonical_gr (ConstructRef ref))
   | _ -> Oth
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
@@ -294,7 +309,7 @@ type 'a prim_token_interpreter =
 type cases_pattern_status = bool (* true = use prim token in patterns *)
 
 type 'a prim_token_uninterpreter =
-    glob_constr list * (glob_constr -> 'a option) * cases_pattern_status
+    glob_constr list * (any_glob_constr -> 'a option) * cases_pattern_status
 
 type internal_prim_token_interpreter =
     ?loc:Loc.t -> prim_token -> required_module * (unit -> glob_constr)
@@ -410,7 +425,7 @@ let warn_notation_overridden =
   CWarnings.create ~name:"notation-overridden" ~category:"parsing"
                    (fun (ntn,which_scope) ->
                     str "Notation" ++ spc () ++ str ntn ++ spc ()
-                    ++ strbrk "was already used" ++ which_scope)
+                    ++ strbrk "was already used" ++ which_scope ++ str ".")
 
 let declare_notation_interpretation ntn scopt pat df ~onlyprint =
   let scope = match scopt with Some s -> s | None -> default_scope in
@@ -490,11 +505,15 @@ let interp_prim_token_gen ?loc g p local_scopes =
 let interp_prim_token ?loc =
   interp_prim_token_gen ?loc (fun _ -> ())
 
-let rec check_allowed_ref_in_pat looked_for = CAst.(with_val (function
+let rec check_allowed_ref_in_pat looked_for = DAst.(with_val (function
   | GVar _ | GHole _ -> ()
   | GRef (g,_) -> looked_for g
-  | GApp ({ v = GRef (g,_) },l) ->
-    looked_for g; List.iter (check_allowed_ref_in_pat looked_for) l
+  | GApp (f, l) ->
+    begin match DAst.get f with
+    | GRef (g, _) ->
+      looked_for g; List.iter (check_allowed_ref_in_pat looked_for) l
+    | _ -> raise Not_found
+    end
   | _ -> raise Not_found))
 
 let interp_prim_token_cases_pattern_expr ?loc looked_for p =
@@ -526,7 +545,7 @@ let uninterp_prim_token c =
   try
     let (sc,numpr,_) =
       KeyMap.find (glob_prim_constr_key c) !prim_token_key_table in
-    match numpr c with
+    match numpr (AnyGlobConstr c) with
       | None -> raise Notation_ops.No_match
       | Some n -> (sc,n)
   with Not_found -> raise Notation_ops.No_match
@@ -539,8 +558,8 @@ let uninterp_prim_token_ind_pattern ind args =
     if not b then raise Notation_ops.No_match;
     let args' = List.map
       (fun x -> snd (glob_constr_of_closed_cases_pattern x)) args in
-    let ref = CAst.make @@ GRef (ref,None) in
-    match numpr (CAst.make @@ GApp (ref,args')) with
+    let ref = DAst.make @@ GRef (ref,None) in
+    match numpr (AnyGlobConstr (DAst.make @@ GApp (ref,args'))) with
       | None -> raise Notation_ops.No_match
       | Some n -> (sc,n)
   with Not_found -> raise Notation_ops.No_match
@@ -551,7 +570,7 @@ let uninterp_prim_token_cases_pattern c =
     let (sc,numpr,b) = KeyMap.find k !prim_token_key_table in
     if not b then raise Notation_ops.No_match;
     let na,c = glob_constr_of_closed_cases_pattern c in
-    match numpr c with
+    match numpr (AnyGlobConstr c) with
       | None -> raise Notation_ops.No_match
       | Some n -> (na,sc,n)
   with Not_found -> raise Notation_ops.No_match
@@ -718,13 +737,13 @@ let rebuild_arguments_scope (req,r,n,l,_) =
   match req with
     | ArgsScopeNoDischarge -> assert false
     | ArgsScopeAuto ->
-        let scs,cls = compute_arguments_scope_full (fst(Universes.type_of_global r)(*FIXME?*)) in
+        let scs,cls = compute_arguments_scope_full (fst(Global.type_of_global_in_context (Global.env ()) r)(*FIXME?*)) in
 	(req,r,List.length scs,scs,cls)
     | ArgsScopeManual ->
 	(* Add to the manually given scopes the one found automatically
            for the extra parameters of the section. Discard the classes
            of the manually given scopes to avoid further re-computations. *)
-        let l',cls = compute_arguments_scope_full (Global.type_of_global_unsafe r) in
+        let l',cls = compute_arguments_scope_full (fst (Global.type_of_global_in_context (Global.env ()) r)) in
 	let l1 = List.firstn n l' in
         let cls1 = List.firstn n cls in
 	(req,r,0,l1@l,cls1)
@@ -768,7 +787,7 @@ let find_arguments_scope r =
   with Not_found -> []
 
 let declare_ref_arguments_scope ref =
-  let t = Global.type_of_global_unsafe ref in
+  let t, _ = Global.type_of_global_in_context (Global.env ()) ref in
   let (scs,cls as o) = compute_arguments_scope_full t in
   declare_arguments_scope_gen ArgsScopeAuto ref (List.length scs) o
 

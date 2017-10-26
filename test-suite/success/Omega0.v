@@ -132,7 +132,7 @@ intros.
 omega.
 Qed.
 
-(* Magaud #240 *)
+(* Magaud BZ#240 *)
 
 Lemma test_romega_8 : forall x y:Z, x*x<y*y-> ~ y*y <= x*x.
 intros.

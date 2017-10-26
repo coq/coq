@@ -22,7 +22,6 @@ open Proof_type
 open Type_errors
 open Retyping
 open Misctypes
-open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
 
@@ -93,15 +92,6 @@ let check_typability env sigma c =
 (* Implementation of the structural rules (moving and deleting
    hypotheses around) *)
 
-(* The Clear tactic: it scans the context for hypotheses to be removed
-   (instead of iterating on the list of identifier to be removed, which
-   forces the user to give them in order). *)
-
-let clear_hyps2 env sigma ids sign t cl =
-  let evdref = ref (Evd.clear_metas sigma) in
-  let (hyps,t,cl) = Evarutil.clear_hyps2_in_evi env evdref sign t cl ids in
-  (hyps, t, cl, !evdref)
-
 (* The ClearBody tactic *)
 
 (* Reordering of the context *)
@@ -171,8 +161,7 @@ let reorder_context env sigma sign ord =
 let reorder_val_context env sigma sign ord =
   let open EConstr in
   val_of_named_context (reorder_context env sigma (named_context_of_val sign) ord)
-
-
+                       (named_context_private_ids sign)
 
 
 let check_decl_position env sigma sign d =
@@ -200,14 +189,6 @@ let move_location_eq m1 m2 = match m1, m2 with
 | MoveFirst, MoveFirst -> true
 | _ -> false
 
-let rec get_hyp_after h = function
-  | [] -> error_no_such_hypothesis h
-  | d :: right ->
-      if Id.equal (NamedDecl.get_id d) h then
-	match right with d' ::_ -> MoveBefore (NamedDecl.get_id d') | [] -> MoveFirst
-      else
-       get_hyp_after h right
-
 let split_sign hfrom hto l =
   let rec splitrec left toleft = function
     | [] -> error_no_such_hypothesis hfrom
@@ -230,7 +211,7 @@ let hyp_of_move_location = function
   | MoveBefore id -> id
   | _ -> assert false
 
-let move_hyp sigma toleft (left,declfrom,right) hto =
+let move_hyp sigma private_ids toleft (left,declfrom,right) hto =
   let env = Global.env() in
   let test_dep d d2 =
     if toleft
@@ -264,23 +245,32 @@ let move_hyp sigma toleft (left,declfrom,right) hto =
 	  moverec first' middle' right
   in
   let open EConstr in
+  let push_named_context_val_with_privacy d sign =
+    push_named_context_val d (Id.Set.mem (NamedDecl.get_id d) private_ids) sign in
   if toleft then
     let right =
-      List.fold_right push_named_context_val right empty_named_context_val in
-    List.fold_left (fun sign d -> push_named_context_val d sign)
+      List.fold_right (fun d -> push_named_context_val_with_privacy d) right empty_named_context_val in
+    List.fold_left (fun sign d -> push_named_context_val_with_privacy d sign)
       right (moverec [] [declfrom] left)
   else
     let right =
-      List.fold_right push_named_context_val
+      List.fold_right (fun d -> push_named_context_val_with_privacy d)
 	(moverec [] [declfrom] right) empty_named_context_val in
-    List.fold_left (fun sign d -> push_named_context_val d sign)
+    List.fold_left (fun sign d -> push_named_context_val_with_privacy d sign)
       right left
 
 let move_hyp_in_named_context sigma hfrom hto sign =
   let open EConstr in
+  let private_ids = Environ.named_context_private_ids sign in
   let (left,right,declfrom,toleft) =
     split_sign hfrom hto (named_context_of_val sign) in
-  move_hyp sigma toleft (left,declfrom,right) hto
+  move_hyp sigma private_ids toleft (left,declfrom,right) hto
+
+let insert_decl_in_named_context sigma decl isprivate hto sign =
+  let open EConstr in
+  let private_ids = Environ.named_context_private_ids sign in
+  let private_ids = if isprivate then Id.Set.add (NamedDecl.get_id decl) private_ids else private_ids in
+  move_hyp sigma private_ids false ([],decl,named_context_of_val sign) hto
 
 (**********************************************************************)
 
@@ -338,7 +328,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
   let env = Goal.V82.env sigma goal in
   let hyps = Goal.V82.hyps sigma goal in
   let mk_goal hyps concl =
-    Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal)
+    Goal.V82.mk_goal sigma hyps (Goal.V82.private_ids sigma goal) concl (Goal.V82.extra sigma goal)
   in
     if (not !check) && not (occur_meta sigma (EConstr.of_constr trm)) then
       let t'ty = Retyping.get_type_of env sigma (EConstr.of_constr trm) in
@@ -426,7 +416,7 @@ and mk_hdgoals sigma goal goalacc trm =
   let env = Goal.V82.env sigma goal in
   let hyps = Goal.V82.hyps sigma goal in
   let mk_goal hyps concl = 
-    Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) in
+    Goal.V82.mk_goal sigma hyps (Goal.V82.private_ids sigma goal) concl (Goal.V82.extra sigma goal) in
   match kind_of_term trm with
     | Cast (c,_, ty) when isMeta c ->
 	check_typability env sigma ty;
@@ -535,37 +525,9 @@ let convert_hyp check sign sigma d =
 (* Primitive tactics are handled here *)
 
 let prim_refiner r sigma goal =
-  let env = Goal.V82.env sigma goal in
-  let sign = Goal.V82.hyps sigma goal in
   let cl = Goal.V82.concl sigma goal in
-  let mk_goal hyps concl = 
-    Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) 
-  in
-  let open EConstr in
   match r with
     (* Logical rules *)
-    | Cut (b,replace,id,t) ->
-(*        if !check && not (Retyping.get_sort_of env sigma t) then*)
-        let t = EConstr.of_constr t in
-        let (sg1,ev1,sigma) = mk_goal sign (nf_betaiota sigma t) in
-	let sign,t,cl,sigma =
-	  if replace then
-	    let nexthyp = get_hyp_after id (named_context_of_val sign) in
-	    let sign,t,cl,sigma = clear_hyps2 env sigma (Id.Set.singleton id) sign t cl in
-	    move_hyp sigma false ([], LocalAssum (id,t),named_context_of_val sign)
-	      nexthyp,
-	      t,cl,sigma
-	  else
-            (if !check && mem_named_context_val id sign then
-	      user_err ~hdr:"Logic.prim_refiner"
-                (str "Variable " ++ pr_id id ++ str " is already declared.");
-	     push_named_context_val (LocalAssum (id,t)) sign,t,cl,sigma) in
-        let (sg2,ev2,sigma) = 
-	  Goal.V82.mk_goal sigma sign cl (Goal.V82.extra sigma goal) in
-	let oterm = mkLetIn (Name id, ev1, t, EConstr.Vars.subst_var id ev2) in
-	let sigma = Goal.V82.partial_solution_to sigma goal sg2 oterm in
-        if b then ([sg1;sg2],sigma) else ([sg2;sg1],sigma)
-
     | Refine c ->
         let cl = EConstr.Unsafe.to_constr cl in
 	check_meta_variables c;

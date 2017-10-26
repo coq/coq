@@ -15,8 +15,11 @@ let curry f x y = f (x, y)
 let uncurry f (x,y) = f x y
 
 (** Location Utils  *)
+let coq_file_of_ploc_file s =
+  if s = "" then Loc.ToplevelInput else Loc.InFile s
+
 let to_coqloc loc =
-  { Loc.fname = Ploc.file_name loc;
+  { Loc.fname = coq_file_of_ploc_file (Ploc.file_name loc);
     Loc.line_nb = Ploc.line_nb loc;
     Loc.bol_pos = Ploc.bol_pos loc;
     Loc.bp = Ploc.first_pos loc;
@@ -80,7 +83,7 @@ module type S =
       Gramext.position option * single_extend_statment list
   type coq_parsable
 
-  val parsable : ?file:string -> char Stream.t -> coq_parsable
+  val parsable : ?file:Loc.source -> char Stream.t -> coq_parsable
   val action : 'a -> action
   val entry_create : string -> 'a entry
   val entry_parse : 'a entry -> coq_parsable -> 'a
@@ -104,7 +107,7 @@ end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
       Gramext.position option * single_extend_statment list
   type coq_parsable = parsable * CLexer.lexer_state ref
 
-  let parsable ?file c =
+  let parsable ?(file=Loc.ToplevelInput) c =
     let state = ref (CLexer.init_lexer_state file) in
     CLexer.set_lexer_state !state;
     let a = parsable c in
@@ -442,6 +445,7 @@ module Prim =
     let name = Gram.entry_create "Prim.name"
     let identref = Gram.entry_create "Prim.identref"
     let pidentref = Gram.entry_create "Prim.pidentref"
+    let ident_decl = Gram.entry_create "Prim.ident_decl"
     let pattern_ident = Gram.entry_create "pattern_ident"
     let pattern_identref = Gram.entry_create "pattern_identref"
 
@@ -471,6 +475,7 @@ module Constr =
     let global = make_gen_entry uconstr "global"
     let universe_level = make_gen_entry uconstr "universe_level"
     let sort = make_gen_entry uconstr "sort"
+    let sort_family = make_gen_entry uconstr "sort_family"
     let pattern = Gram.entry_create "constr:pattern"
     let constr_pattern = gec_constr "constr_pattern"
     let lconstr_pattern = gec_constr "lconstr_pattern"
@@ -631,6 +636,7 @@ let () =
   Grammar.register0 wit_ident (Prim.ident);
   Grammar.register0 wit_var (Prim.var);
   Grammar.register0 wit_ref (Prim.reference);
+  Grammar.register0 wit_sort_family (Constr.sort_family);
   Grammar.register0 wit_constr (Constr.constr);
   Grammar.register0 wit_red_expr (Vernac_.red_expr);
   ()

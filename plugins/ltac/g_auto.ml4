@@ -8,8 +8,6 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open API
-open Grammar_API
 open Pp
 open Genarg
 open Stdarg
@@ -50,7 +48,7 @@ let eval_uconstrs ist cs =
     expand_evars = true
   } in
   let map c env sigma = c env sigma in
-  List.map (fun c -> map (Pretyping.type_uconstr ~flags ist c)) cs
+  List.map (fun c -> map (Tacinterp.type_uconstr ~flags ist c)) cs
 
 let pr_auto_using_raw _ _ _  = Pptactic.pr_auto_using Ppconstr.pr_constr_expr
 let pr_auto_using_glob _ _ _ = Pptactic.pr_auto_using (fun (c,_) -> Printer.pr_glob_constr c)

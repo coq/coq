@@ -85,6 +85,9 @@ let init_alloc = ref 0.0
 let reset_profile () = List.iter reset_record !prof_table
 
 let init_profile () =
+  (* We test Flags.profile as a way to support declaring profiled
+     functions in plugins *)
+  if !prof_table <> [] || Flags.profile then begin
   let outside = create_record () in
   stack := [outside];
   last_alloc := get_alloc ();
@@ -92,6 +95,7 @@ let init_profile () =
   init_time := get_time ();
   outside.tottime <- - !init_time;
   outside.owntime <- - !init_time
+  end
 
 let ajoute n o =
   o.owntime <- o.owntime + n.owntime;
@@ -317,15 +321,15 @@ let adjust_time ov_bc ov_ad e =
      owntime = e.owntime - int_of_float (ad_imm +. bc_imm) }
 
 let close_profile print =
-  let dw = spent_alloc () in
-  let t = get_time () in
-  match !stack with
-    | [outside] ->
-	outside.tottime <- outside.tottime + t;
-	outside.owntime <- outside.owntime + t;
-	ajoute_ownalloc outside dw;
-	ajoute_totalloc outside dw;
-	if !prof_table <> [] then begin
+  if !prof_table <> [] then begin
+      let dw = spent_alloc () in
+      let t = get_time () in
+      match !stack with
+      | [outside] ->
+	  outside.tottime <- outside.tottime + t;
+	  outside.owntime <- outside.owntime + t;
+	  ajoute_ownalloc outside dw;
+	  ajoute_totalloc outside dw;
 	  let ov_bc = time_overhead_B_C () (* B+C overhead *) in
 	  let ov_ad = time_overhead_A_D () (* A+D overhead *) in
 	  let adjust (n,e) = (n, adjust_time ov_bc ov_ad e) in
@@ -346,8 +350,8 @@ let close_profile print =
 	  in
 	  if print then format_profile updated_data;
 	  init_profile ()
-	end
-    | _ -> failwith "Inconsistency"
+      | _ -> failwith "Inconsistency"
+    end
 
 let print_profile () = close_profile true
 
@@ -357,9 +361,6 @@ let declare_profile name =
   let e = create_record () in
   prof_table := (name,e)::!prof_table;
   e
-
-(* Default initialization, may be overridden *)
-let _ = init_profile ()
 
 (******************************)
 (* Entry points for profiling *)

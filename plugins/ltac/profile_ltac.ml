@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Unicode
 open Pp
 open Printer
@@ -368,18 +367,30 @@ let do_profile s call_trace tac =
 
 let get_local_profiling_results () = List.hd Local.(!stack)
 
-module SM = Map.Make(Stateid.Self)
+(* We maintain our own cache of document data, given that the
+   semantics of the STM implies that synchronized state for opaque
+   proofs will be lost on QED. This provides some complications later
+   on as we will have to simulate going back on the document on our
+   own. *)
+module DData = struct
+    type t = Feedback.doc_id * Stateid.t
+    let compare x y = Pervasives.compare x y
+end
+
+module SM = Map.Make(DData)
 
 let data = ref SM.empty
 
 let _ =
   Feedback.(add_feeder (function
-    | { id = s; contents = Custom (_, "ltacprof_results", xml) } ->
+    | { doc_id = d;
+        span_id = s;
+        contents = Custom (_, "ltacprof_results", xml) } ->
         let results = to_ltacprof_results xml in
         let other_results = (* Multi success can cause this *)
-          try SM.find s !data
+          try SM.find (d,s) !data
           with Not_found -> empty_treenode root in
-        data := SM.add s (merge_roots results other_results) !data
+        data := SM.add (d,s) (merge_roots results other_results) !data
     | _ -> ()))
 
 let reset_profile () =
@@ -389,7 +400,10 @@ let reset_profile () =
 (* ******************** *)
 
 let print_results_filter ~cutoff ~filter =
-  let valid id _ = Stm.state_of_id id <> `Expired in
+  (* The STM doesn't provide yet a proper document query and traversal
+     API, thus we need to re-check if some states are current anymore
+     (due to backtracking) using the `state_of_id` API. *)
+  let valid (did,id) _ = Stm.(state_of_id ~doc:(get_doc did) id) <> `Expired in
   data := SM.filter valid !data;
   let results =
     SM.fold (fun _ -> merge_roots ~disjoint:true) !data (empty_treenode root) in

@@ -51,19 +51,18 @@ let make_bullet s =
   | '*' -> Star n
   | _ -> assert false
 
-let extraction_err ~loc =
-  if not (Mltop.module_is_known "extraction_plugin") then
-    CErrors.user_err ~loc (str "Please do first a Require Extraction.")
-  else
-    (* The right grammar entries should have been loaded.
-       We could only end here in case of syntax error. *)
-    raise (Stream.Error "unexpected end of command")
-
-let funind_err ~loc =
-  if not (Mltop.module_is_known "recdef_plugin") then
-    CErrors.user_err ~loc (str "Please do first a Require Import FunInd.")
-  else
-    raise (Stream.Error "unexpected end of command") (* Same as above... *)
+let parse_compat_version ?(allow_old = true) = let open Flags in function
+  | "8.8" -> Current
+  | "8.7" -> V8_7
+  | "8.6" -> V8_6
+  | "8.5" -> V8_5
+  | ("8.4" | "8.3" | "8.2" | "8.1" | "8.0") as s ->
+    if allow_old then VOld else
+    CErrors.user_err ~hdr:"get_compat_version"
+      Pp.(str "Compatibility with version " ++ str s ++ str " not supported.")
+  | s ->
+    CErrors.user_err ~hdr:"get_compat_version"
+      Pp.(str "Unknown compatibility version \"" ++ str s ++ str "\".")
 
 GEXTEND Gram
   GLOBAL: vernac gallina_ext noedit_mode subprf;
@@ -75,10 +74,6 @@ GEXTEND Gram
 
       | IDENT "Local"; v = vernac_poly -> VernacLocal (true, v)
       | IDENT "Global"; v = vernac_poly -> VernacLocal (false, v)
-
-      (* Stm backdoor *)
-      | IDENT "Stm"; IDENT "JoinDocument"; "." -> VernacStm JoinDocument
-      | IDENT "Stm"; IDENT "Wait"; "." -> VernacStm Wait
 
       | v = vernac_poly -> v ]
     ]
@@ -136,20 +131,20 @@ let test_plural_form_types loc kwd = function
 
 let fresh_var env c =
   Namegen.next_ident_away (Id.of_string "pat")
-    (env @ Id.Set.elements (Topconstr.free_vars_of_constr_expr c))
+    (List.fold_left (fun accu id -> Id.Set.add id accu) (Topconstr.free_vars_of_constr_expr c) env)
 
 let _ = Hook.set Constrexpr_ops.fresh_var_hook fresh_var
 
 (* Gallina declarations *)
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion
-    record_field decl_notation rec_definition pidentref;
+    record_field decl_notation rec_definition pidentref ident_decl;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = pidentref; bl = binders; ":"; c = lconstr;
+    [ [ thm = thm_token; id = ident_decl; bl = binders; ":"; c = lconstr;
         l = LIST0
-          [ "with"; id = pidentref; bl = binders; ":"; c = lconstr ->
+          [ "with"; id = ident_decl; bl = binders; ":"; c = lconstr ->
           (Some id,(bl,c)) ] ->
           VernacStartTheoremProof (thm, (Some id,(bl,c))::l)
       | stre = assumption_token; nl = inline; bl = assum_list ->
@@ -157,7 +152,7 @@ GEXTEND Gram
       | (kwd,stre) = assumptions_token; nl = inline; bl = assum_list ->
 	  test_plural_form loc kwd bl;
 	  VernacAssumption (stre, nl, bl)
-      | d = def_token; id = pidentref; b = def_body ->
+      | d = def_token; id = ident_decl; b = def_body ->
           VernacDefinition (d, id, b)
       | IDENT "Let"; id = identref; b = def_body ->
           VernacDefinition ((Some Discharge, Definition), (id, None), b)
@@ -168,8 +163,13 @@ GEXTEND Gram
           let indl=List.map (fun ((a,b,c,d),e) -> ((a,b,c,k,d),e)) indl in
 	  let cum =
 	    match cum with
-	      Some b -> b
-	    | None -> Flags.is_inductive_cumulativity ()
+	      Some true -> LocalCumulativity
+            | Some false -> LocalNonCumulativity
+	    | None ->
+                if Flags.is_polymorphic_inductive_cumulativity () then
+                  GlobalCumulativity
+                else
+                  GlobalNonCumulativity
 	  in
           VernacInductive (cum, priv,f,indl)
       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
@@ -224,12 +224,28 @@ GEXTEND Gram
       | IDENT "Inline" -> DefaultInline
       | -> NoInline] ]
   ;
-  pidentref:
-    [ [ i = identref; l = OPT [ "@{" ; l = LIST0 identref; "}" -> l ] -> (i,l) ] ]
-  ;
   univ_constraint:
     [ [ l = universe_level; ord = [ "<" -> Univ.Lt | "=" -> Univ.Eq | "<=" -> Univ.Le ];
 	r = universe_level -> (l, ord, r) ] ]
+  ;
+  pidentref:
+    [ [ i = identref; l = OPT [ "@{" ; l = LIST0 identref; "}" -> l ] -> (i,l) ] ]
+  ;
+  univ_decl :
+    [ [  "@{" ; l = LIST0 identref; ext = [ "+" -> true | -> false ];
+         cs = [ "|"; l' = LIST0 univ_constraint SEP ",";
+                ext = [ "+" -> true | -> false ]; "}" -> (l',ext)
+              | ext = [ "}" -> true | "|}" -> false ] -> ([], ext) ]
+         ->
+         { univdecl_instance = l;
+           univdecl_extensible_instance = ext;
+           univdecl_constraints = fst cs;
+           univdecl_extensible_constraints = snd cs }
+    ] ]
+  ;
+  ident_decl:
+    [ [ i = identref; l = OPT univ_decl -> (i, l)
+  ] ]
   ;
   finite_token:
     [ [ IDENT "Inductive" -> (Inductive_kw,Finite)
@@ -288,7 +304,7 @@ GEXTEND Gram
       | -> RecordDecl (None, []) ] ]
   ;
   inductive_definition:
-    [ [ oc = opt_coercion; id = pidentref; indpar = binders;
+    [ [ oc = opt_coercion; id = ident_decl; indpar = binders;
         c = OPT [ ":"; c = lconstr -> c ];
         lc=opt_constructors_or_fields; ntn = decl_notation ->
 	   (((oc,id),indpar,c,lc),ntn) ] ]
@@ -314,14 +330,14 @@ GEXTEND Gram
   ;
   (* (co)-fixpoints *)
   rec_definition:
-    [ [ id = pidentref;
+    [ [ id = ident_decl;
 	bl = binders_fixannot;
         ty = type_cstr;
 	def = OPT [":="; def = lconstr -> def]; ntn = decl_notation ->
 	  let bl, annot = bl in ((id,annot,bl,ty,def),ntn) ] ]
   ;
   corec_definition:
-    [ [ id = pidentref; bl = binders; ty = type_cstr;
+    [ [ id = ident_decl; bl = binders; ty = type_cstr;
         def = OPT [":="; def = lconstr -> def]; ntn = decl_notation ->
           ((id,bl,ty,def),ntn) ] ]
   ;
@@ -336,13 +352,13 @@ GEXTEND Gram
   ;
   scheme_kind:
     [ [ IDENT "Induction"; "for"; ind = smart_global;
-          IDENT "Sort"; s = sort-> InductionScheme(true,ind,s)
+          IDENT "Sort"; s = sort_family-> InductionScheme(true,ind,s)
       | IDENT "Minimality"; "for"; ind = smart_global;
-          IDENT "Sort"; s = sort-> InductionScheme(false,ind,s)
+          IDENT "Sort"; s = sort_family-> InductionScheme(false,ind,s)
       | IDENT "Elimination"; "for"; ind = smart_global;
-          IDENT "Sort"; s = sort-> CaseScheme(true,ind,s)
+          IDENT "Sort"; s = sort_family-> CaseScheme(true,ind,s)
       | IDENT "Case"; "for"; ind = smart_global;
-          IDENT "Sort"; s = sort-> CaseScheme(false,ind,s)
+          IDENT "Sort"; s = sort_family-> CaseScheme(false,ind,s)
       | IDENT "Equality"; "for" ; ind = smart_global -> EqualityScheme(ind) ] ]
   ;
   (* Various Binders *)
@@ -393,7 +409,7 @@ GEXTEND Gram
     [ [ "("; a = simple_assum_coe; ")" -> a ] ]
   ;
   simple_assum_coe:
-    [ [ idl = LIST1 pidentref; oc = of_type_with_opt_coercion; c = lconstr ->
+    [ [ idl = LIST1 ident_decl; oc = of_type_with_opt_coercion; c = lconstr ->
         (not (Option.is_empty oc),(idl,c)) ] ]
   ;
 
@@ -564,8 +580,8 @@ GEXTEND Gram
   starredidentref:
     [ [ i = identref -> SsSingl i
       | i = identref; "*" -> SsFwdClose(SsSingl i)
-      | "Type" -> SsSingl (Loc.tag ~loc:!@loc @@ Id.of_string "Type")
-      | "Type"; "*" -> SsFwdClose (SsSingl (Loc.tag ~loc:!@loc @@ Id.of_string "Type")) ]]
+      | "Type" -> SsType
+      | "Type"; "*" -> SsFwdClose SsType ]]
   ;
   ssexpr:
     [ "35" 
@@ -796,7 +812,7 @@ GEXTEND Gram
       | IDENT "transparent" -> Conv_oracle.transparent ] ]
   ;
   instance_name:
-    [ [ name = pidentref; sup = OPT binders ->
+    [ [ name = ident_decl; sup = OPT binders ->
 	  (let ((loc,id),l) = name in ((loc, Name id),l)),
           (Option.default [] sup)
       | -> ((Loc.tag ~loc:!@loc Anonymous), None), []  ] ]
@@ -862,22 +878,6 @@ GEXTEND Gram
 	  VernacAddLoadPath (true, dir, alias)
       | IDENT "DelPath"; dir = ne_string ->
 	  VernacRemoveLoadPath dir
-
-      (* Some plugins are not loaded initially anymore : extraction,
-         and funind. To ease this transition toward a mandatory Require,
-         we hack here the vernac grammar in order to get customized
-         error messages telling what to Require instead of the dreadful
-         "Illegal begin of vernac". Normally, these fake grammar entries
-         are overloaded later by the grammar extensions in these plugins.
-         This code is meant to be removed in a few releases, when this
-         transition is considered finished. *)
-
-      | IDENT "Extraction" -> extraction_err ~loc:!@loc
-      | IDENT "Extract" -> extraction_err ~loc:!@loc
-      | IDENT "Recursive"; IDENT "Extraction" -> extraction_err ~loc:!@loc
-      | IDENT "Separate"; IDENT "Extraction" -> extraction_err ~loc:!@loc
-      | IDENT "Function" -> funind_err ~loc:!@loc
-      | IDENT "Functional" -> funind_err ~loc:!@loc
 
       (* Type-Checking (pas dans le refman) *)
       | "Type"; c = lconstr -> VernacGlobalCheck c
@@ -1020,8 +1020,7 @@ GEXTEND Gram
       | IDENT "Term"; qid = smart_global -> LocateTerm qid
       | IDENT "File"; f = ne_string -> LocateFile f
       | IDENT "Library"; qid = global -> LocateLibrary qid
-      | IDENT "Module"; qid = global -> LocateModule qid
-      | IDENT "Ltac"; qid = global -> LocateTactic qid ] ]
+      | IDENT "Module"; qid = global -> LocateModule qid ] ]
   ;
   option_value:
     [ [ n  = integer   -> IntValue (Some n)
@@ -1146,14 +1145,13 @@ GEXTEND Gram
 
      | IDENT "Reserved"; IDENT "Infix"; s = ne_lstring;
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ] ->
-	   Metasyntax.check_infix_modifiers l;
 	   let (loc,s) = s in
-	   VernacSyntaxExtension (false,((loc,"x '"^s^"' y"),l))
+	   VernacSyntaxExtension (true, false,((loc,"x '"^s^"' y"),l))
 
      | IDENT "Reserved"; IDENT "Notation"; local = obsolete_locality;
 	 s = ne_lstring;
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
-	 -> VernacSyntaxExtension (local,(s,l))
+	 -> VernacSyntaxExtension (false, local,(s,l))
 
      (* "Print" "Grammar" should be here but is in "command" entry in order
         to factorize with other "Print"-based vernac entries *)
@@ -1163,7 +1161,7 @@ GEXTEND Gram
     [ [ "("; IDENT "only"; IDENT "parsing"; ")" ->
          Some Flags.Current
       | "("; IDENT "compat"; s = STRING; ")" ->
-         Some (Coqinit.get_compat_version s)
+         Some (parse_compat_version s)
       | -> None ] ]
   ;
   obsolete_locality:
@@ -1181,7 +1179,7 @@ GEXTEND Gram
       | IDENT "only"; IDENT "printing" -> SetOnlyPrinting
       | IDENT "only"; IDENT "parsing" -> SetOnlyParsing
       | IDENT "compat"; s = STRING ->
-        SetCompatVersion (Coqinit.get_compat_version s)
+        SetCompatVersion (parse_compat_version s)
       | IDENT "format"; s1 = [s = STRING -> Loc.tag ~loc:!@loc s];
                         s2 = OPT [s = STRING -> Loc.tag ~loc:!@loc s] ->
           begin match s1, s2 with

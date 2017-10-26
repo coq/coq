@@ -384,7 +384,7 @@ let dummy = mkProp
 let vfx = Id.of_string "_expanded_fix_"
 let vfun = Id.of_string "_eliminator_function_"
 let venv = let open Context.Named.Declaration in
-           val_of_named_context [LocalAssum (vfx, dummy); LocalAssum (vfun, dummy)]
+           val_of_named_context [LocalAssum (vfx, dummy); LocalAssum (vfun, dummy)] Id.Set.empty
 
 (* Mark every occurrence of substituted vars (associated to a function)
    as a problem variable: an evar that can be instantiated either by
@@ -557,6 +557,12 @@ let match_eval_ref_value env sigma constr stack =
       Some (EConstr.of_constr (constant_value_in env (sp, u)))
     else
       None
+  | Proj (p, c) when not (Projection.unfolded p) ->
+     reduction_effect_hook env sigma (EConstr.to_constr sigma constr)
+        (lazy (EConstr.to_constr sigma (applist (constr,stack))));
+     if is_evaluable env (EvalConstRef (Projection.constant p)) then
+       Some (mkProj (Projection.unfold p, c))
+     else None
   | Var id when is_evaluable env (EvalVarRef id) -> 
      env |> lookup_named id |> NamedDecl.get_value
   | Rel n ->

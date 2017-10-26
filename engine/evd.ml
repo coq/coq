@@ -140,6 +140,8 @@ type evar_info = {
   evar_hyps : named_context_val;
   evar_body : evar_body;
   evar_filter : Filter.t;
+  evar_private : Id.Set.t;
+  evar_concl_user_names : Id.Set.t;
   evar_source : Evar_kinds.t Loc.located;
   evar_candidates : constr list option; (* if not None, list of allowed instances *)
   evar_extra : Store.t }
@@ -147,6 +149,8 @@ type evar_info = {
 let make_evar hyps ccl = {
   evar_concl = ccl;
   evar_hyps = hyps;
+  evar_private = Id.Set.empty;
+  evar_concl_user_names = Id.Set.empty;
   evar_body = Evar_empty;
   evar_filter = Filter.identity;
   evar_source = Loc.tag @@ Evar_kinds.InternalHole;
@@ -173,12 +177,13 @@ let evar_hyps evi = evi.evar_hyps
 let evar_filtered_hyps evi = match Filter.repr (evar_filter evi) with
 | None -> evar_hyps evi
 | Some filter ->
+  let private_ids = named_context_private_ids evi.evar_hyps in
   let rec make_hyps filter ctxt = match filter, ctxt with
   | [], [] -> empty_named_context_val
   | false :: filter, _ :: ctxt -> make_hyps filter ctxt
   | true :: filter, decl :: ctxt ->
     let hyps = make_hyps filter ctxt in
-    push_named_context_val decl hyps
+    push_named_context_val decl (Id.Set.mem (NamedDecl.get_id decl) private_ids) hyps
   | _ -> instance_mismatch ()
   in
   make_hyps filter (evar_context evi)
@@ -188,12 +193,13 @@ let evar_env evi = Global.env_of_context evi.evar_hyps
 let evar_filtered_env evi = match Filter.repr (evar_filter evi) with
 | None -> evar_env evi
 | Some filter ->
+  let private_ids = named_context_private_ids evi.evar_hyps in
   let rec make_env filter ctxt = match filter, ctxt with
   | [], [] -> reset_context (Global.env ())
   | false :: filter, _ :: ctxt -> make_env filter ctxt
   | true :: filter, decl :: ctxt ->
     let env = make_env filter ctxt in
-    push_named decl env
+    push_named decl (Id.Set.mem (NamedDecl.get_id decl) private_ids) env
   | _ -> instance_mismatch ()
   in
   make_env filter (evar_context evi)
@@ -205,7 +211,7 @@ let map_evar_body f = function
 let map_evar_info f evi =
   {evi with
     evar_body = map_evar_body f evi.evar_body;
-    evar_hyps = map_named_val f evi.evar_hyps;
+    evar_hyps = map_named_val (NamedDecl.map_constr f) evi.evar_hyps;
     evar_concl = f evi.evar_concl;
     evar_candidates = Option.map (List.map f) evi.evar_candidates }
 
@@ -630,7 +636,9 @@ let evar_source evk d = (find d evk).evar_source
 let evar_ident evk evd = EvNames.ident evk evd.evar_names
 let evar_key id evd = EvNames.key id evd.evar_names
 
-let define_aux def undef evk body =
+let restricted = Store.field ()
+
+let define_aux ?dorestrict def undef evk body =
   let oldinfo =
     try EvMap.find evk undef
     with Not_found ->
@@ -640,7 +648,10 @@ let define_aux def undef evk body =
         anomaly ~label:"Evd.define" (Pp.str "cannot define undeclared evar.")
   in
   let () = assert (oldinfo.evar_body == Evar_empty) in
-  let newinfo = { oldinfo with evar_body = Evar_defined body } in
+  let evar_extra = match dorestrict with
+    | Some evk' -> Store.set oldinfo.evar_extra restricted evk'
+    | None -> oldinfo.evar_extra in
+  let newinfo = { oldinfo with evar_body = Evar_defined body; evar_extra } in
   EvMap.add evk newinfo def, EvMap.remove evk undef
 
 (* define the existential of section path sp as the constr body *)
@@ -652,6 +663,9 @@ let define evk body evd =
   in
   let evar_names = EvNames.remove_name_defined evk evd.evar_names in
   { evd with defn_evars; undf_evars; last_mods; evar_names }
+
+let is_restricted_evar evi =
+  Store.get evi.evar_extra restricted
 
 let restrict evk filter ?candidates ?src evd =
   let evk' = new_untyped_evar () in
@@ -667,7 +681,7 @@ let restrict evk filter ?candidates ?src evd =
   let ctxt = Filter.filter_list filter (evar_context evar_info) in
   let id_inst = Array.map_of_list (NamedDecl.get_id %> mkVar) ctxt in
   let body = mkEvar(evk',id_inst) in
-  let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
+  let (defn_evars, undf_evars) = define_aux ~dorestrict:evk' evd.defn_evars evd.undf_evars evk body in
   { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
     defn_evars; last_mods; evar_names }, evk'
 
@@ -748,7 +762,10 @@ let evar_universe_context d = d.universes
 
 let universe_context_set d = UState.context_set d.universes
 
-let universe_context ?names evd = UState.universe_context ?names evd.universes
+let universe_context ~names ~extensible evd =
+  UState.universe_context ~names ~extensible evd.universes
+
+let check_univ_decl evd decl = UState.check_univ_decl evd.universes decl
 
 let restrict_universe_context evd vars =
   { evd with universes = UState.restrict evd.universes vars }

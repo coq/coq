@@ -19,9 +19,6 @@ val get_keyword_state : unit -> keyword_state
 val check_ident : string -> unit
 val is_ident : string -> bool
 val check_keyword : string -> unit
-
-val xml_output_comment : (string -> unit) Hook.t
-
 val terminal : string -> Tok.t
 
 (** The lexer of Coq: *)
@@ -52,7 +49,7 @@ end
 (* Mainly for comments state, etc... *)
 type lexer_state
 
-val init_lexer_state : string option -> lexer_state
+val init_lexer_state : Loc.source -> lexer_state
 val set_lexer_state : lexer_state -> unit
 val release_lexer_state : unit -> lexer_state
 val drop_lexer_state : unit -> unit

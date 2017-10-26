@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 
 (* Poor's man DECLARE PLUGIN *)
 let __coq_plugin_name = "nat_syntax_plugin"
@@ -38,11 +37,11 @@ let warn_large_nat =
 let nat_of_int ?loc n =
   if is_pos_or_zero n then begin
       if less_than threshold n then warn_large_nat ();
-      let ref_O = CAst.make ?loc @@ GRef (glob_O, None) in
-      let ref_S = CAst.make ?loc @@ GRef (glob_S, None) in
+      let ref_O = DAst.make ?loc @@ GRef (glob_O, None) in
+      let ref_S = DAst.make ?loc @@ GRef (glob_S, None) in
       let rec mk_nat acc n =
 	if n <> zero then
-	  mk_nat (CAst.make ?loc @@ GApp (ref_S, [acc])) (sub_1 n)
+	  mk_nat (DAst.make ?loc @@ GApp (ref_S, [acc])) (sub_1 n)
 	else
 	  acc
       in
@@ -57,13 +56,17 @@ let nat_of_int ?loc n =
 
 exception Non_closed_number
 
-let rec int_of_nat x = CAst.with_val (function
-  | GApp ({ CAst.v = GRef (s,_) } ,[a]) when Globnames.eq_gr s glob_S -> add_1 (int_of_nat a)
+let rec int_of_nat x = DAst.with_val (function
+  | GApp (r, [a]) ->
+    begin match DAst.get r with
+    | GRef (s,_) when Globnames.eq_gr s glob_S -> add_1 (int_of_nat a)
+    | _ -> raise Non_closed_number
+    end
   | GRef (z,_) when Globnames.eq_gr z glob_O -> zero
   | _ -> raise Non_closed_number
   ) x
 
-let uninterp_nat p =
+let uninterp_nat (AnyGlobConstr p) =
   try
     Some (int_of_nat p)
   with
@@ -76,4 +79,4 @@ let _ =
   Notation.declare_numeral_interpreter "nat_scope"
     (nat_path,datatypes_module_name)
     nat_of_int
-    ([CAst.make @@ GRef (glob_S,None); CAst.make @@ GRef (glob_O,None)], uninterp_nat, true)
+    ([DAst.make @@ GRef (glob_S,None); DAst.make @@ GRef (glob_O,None)], uninterp_nat, true)

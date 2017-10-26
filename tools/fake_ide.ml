@@ -252,11 +252,9 @@ let eval_print l coq =
       let to_id, _ = get_id id in
       eval_call (query (0,(phrase, to_id))) coq
   | [ Tok(_,"WAIT") ] ->
-      let phrase = "Stm Wait." in
-      eval_call (query (0,(phrase,tip_id()))) coq
+      eval_call (wait ()) coq
   | [ Tok(_,"JOIN") ] ->
-      let phrase = "Stm JoinDocument." in
-      eval_call (query (0,(phrase,tip_id()))) coq
+      eval_call (status true) coq
   | [ Tok(_,"ASSERT"); Tok(_,"TIP"); Tok(_,id) ] ->
       let to_id, _ = get_id id in
       if not(Stateid.equal (Document.tip doc) to_id) then error "Wrong tip"
@@ -293,15 +291,28 @@ let usage () =
 module Coqide = Spawn.Sync(struct end)
 
 let main =
-  Sys.set_signal Sys.sigpipe
+  if Sys.os_type = "Unix" then Sys.set_signal Sys.sigpipe
     (Sys.Signal_handle
        (fun _ -> prerr_endline "Broken Pipe (coqtop died ?)"; exit 1));
   let def_args = ["--xml_format=Ppcmds"; "-ideslave"] in
-  let coqtop_name, coqtop_args, input_file = match Sys.argv with
-    | [| _; f |] -> "coqtop", Array.of_list def_args, f
+  let coqtop_name = (* from ide/ideutils.ml *)
+    let prog_name = "fake_ide" in
+    let len_prog_name = String.length prog_name in
+    let fake_ide_path = Sys.executable_name in
+    let fake_ide_path_len = String.length fake_ide_path in
+    let pos = fake_ide_path_len - len_prog_name in
+    let rex = Str.regexp_string prog_name in
+    try
+      let i = Str.search_backward rex fake_ide_path pos in
+      String.sub fake_ide_path 0 i ^ "coqtop" ^
+      String.sub fake_ide_path (i + len_prog_name)
+        (fake_ide_path_len - i - len_prog_name) 
+    with Not_found -> assert false in
+  let coqtop_args, input_file = match Sys.argv with
+    | [| _; f |] -> Array.of_list def_args, f
     | [| _; f; ct |] ->
         let ct = Str.split (Str.regexp " ") ct in
-        List.hd ct, Array.of_list (def_args @ List.tl ct), f
+        Array.of_list (def_args @ ct), f
     | _ -> usage () in
   let inc = if input_file = "-" then stdin else open_in input_file in
   let coq =

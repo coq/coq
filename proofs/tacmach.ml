@@ -64,15 +64,11 @@ let pf_get_hyp_typ gls id =
   id |> pf_get_hyp gls |> NamedDecl.get_type
 
 let pf_ids_of_hyps gls = ids_of_named_context (pf_hyps gls)
+let pf_ids_set_of_hyps gls =
+  Environ.ids_of_named_context_val (Environ.named_context_val (pf_env gls))
 
 let pf_get_new_id id gls =
-  next_ident_away id (pf_ids_of_hyps gls)
-
-let pf_get_new_ids ids gls =
-  let avoid = pf_ids_of_hyps gls in
-  List.fold_right
-    (fun id acc -> (next_ident_away id (acc@avoid))::acc)
-    ids []
+  next_ident_away id (pf_ids_set_of_hyps gls)
 
 let pf_global gls id = EConstr.of_constr (Universes.constr_of_global (Constrintern.construct_reference (pf_hyps gls) id))
 
@@ -115,22 +111,12 @@ let pf_matches gl p c           = pf_apply Constr_matching.matches_conv gl p c
 
 let refiner = refiner
 
-let internal_cut_no_check replace id t gl =
-  let t = EConstr.Unsafe.to_constr t in
-  refiner (Cut (true,replace,id,t)) gl
-
-let internal_cut_rev_no_check replace id t gl =
-  let t = EConstr.Unsafe.to_constr t in
-  refiner (Cut (false,replace,id,t)) gl
-
 let refine_no_check c gl =
   let c = EConstr.Unsafe.to_constr c in
   refiner (Refine c) gl
 
 (* Versions with consistency checks *)
 
-let internal_cut b d t = with_check (internal_cut_no_check b d t)
-let internal_cut_rev b d t = with_check (internal_cut_rev_no_check b d t)
 let refine c           = with_check (refine_no_check c)
 
 (* Pretty-printers *)
@@ -187,8 +173,14 @@ module New = struct
     let hyps = Proofview.Goal.hyps gl in
     ids_of_named_context hyps
 
+  let pf_ids_set_of_hyps gl =
+    (** We only get the identifiers in [hyps] *)
+    let gl = Proofview.Goal.assume gl in
+    let env = Proofview.Goal.env gl in
+    Environ.ids_of_named_context_val (Environ.named_context_val env)
+
   let pf_get_new_id id gl =
-    let ids = pf_ids_of_hyps gl in
+    let ids = pf_ids_set_of_hyps gl in
     next_ident_away id ids
 
   let pf_get_hyp id gl =

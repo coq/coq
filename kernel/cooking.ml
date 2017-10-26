@@ -18,7 +18,6 @@ open Util
 open Names
 open Term
 open Declarations
-open Environ
 open Univ
 
 module NamedDecl = Context.Named.Declaration
@@ -151,9 +150,14 @@ let abstract_constant_body =
 type recipe = { from : constant_body; info : Opaqueproof.cooking_info }
 type inline = bool
 
-type result =
-  constant_def * constant_type * projection_body option * 
-    constant_universes * inline * Context.Named.t option
+type result = {
+  cook_body : constant_def;
+  cook_type : types;
+  cook_proj : projection_body option;
+  cook_universes : constant_universes;
+  cook_inline : inline;
+  cook_context : Context.Named.t option;
+}
 
 let on_body ml hy f = function
   | Undef _ as x -> x
@@ -161,11 +165,6 @@ let on_body ml hy f = function
   | OpaqueDef o ->
     OpaqueDef (Opaqueproof.discharge_direct_opaque ~cook_constr:f
                  { Opaqueproof.modlist = ml; abstract = hy } o)
-
-let constr_of_def otab = function
-  | Undef _ -> assert false
-  | Def cs -> Mod_subst.force_constr cs
-  | OpaqueDef lc -> Opaqueproof.force_proof otab lc
 
 let expmod_constr_subst cache modlist subst c =
   let c = expmod_constr cache modlist c in
@@ -184,13 +183,14 @@ let lift_univs cb subst =
     if (Univ.LMap.is_empty subst) then
       subst, (Polymorphic_const auctx)
     else
-      let inst = Univ.AUContext.instance auctx in
       let len = Univ.LMap.cardinal subst in
-      let subst = 
-        Array.fold_left_i 
-          (fun i acc v -> Univ.LMap.add (Level.var i) (Level.var (i + len)) acc)
-	  subst (Univ.Instance.to_array inst)
+      let rec gen_subst i acc =
+        if i < 0 then acc
+        else
+          let acc = Univ.LMap.add (Level.var i) (Level.var (i + len)) acc in
+          gen_subst (pred i) acc
       in
+      let subst = gen_subst (Univ.AUContext.size auctx - 1) subst in
       let auctx' = Univ.subst_univs_level_abstract_universe_context subst auctx in
       subst, (Polymorphic_const auctx')
 
@@ -214,17 +214,7 @@ let cook_constant ~hcons env { from = cb; info } =
       List.filter (fun decl' -> not (Id.equal (NamedDecl.get_id decl) (NamedDecl.get_id decl')))
 		  hyps)
       hyps ~init:cb.const_hyps in
-  let typ = match cb.const_type with
-    | RegularArity t ->
-  	let typ =
-          abstract_constant_type (expmod t) hyps in
-  	RegularArity typ
-    | TemplateArity (ctx,s) ->
-  	let t = mkArity (ctx,Type s.template_level) in
-  	let typ = abstract_constant_type (expmod t) hyps in
-  	let j = make_judge (constr_of_def (opaque_tables env) body) typ in
-  	Typeops.make_polymorphic_if_constant_for_ind env j
-  in
+  let typ = abstract_constant_type (expmod cb.const_type) hyps in
   let projection pb =
     let c' = abstract_constant_body (expmod pb.proj_body) hyps in
     let etab = abstract_constant_body (expmod (fst pb.proj_eta)) hyps in
@@ -238,9 +228,6 @@ let cook_constant ~hcons env { from = cb; info } =
 	  | _ -> assert false 
       with Not_found -> (((pb.proj_ind,0),Univ.Instance.empty), 0)
     in 
-    let typ = (* By invariant, a regular arity *)
-      match typ with RegularArity t -> t | TemplateArity _ -> assert false 
-    in
     let ctx, ty' = decompose_prod_n (n' + pb.proj_npars + 1) typ in
       { proj_ind = mind; proj_npars = pb.proj_npars + n'; proj_arg = pb.proj_arg;
 	proj_eta = etab, etat;
@@ -249,13 +236,18 @@ let cook_constant ~hcons env { from = cb; info } =
   let univs =
     match univs with
     | Monomorphic_const ctx -> 
-      Monomorphic_const (UContext.union (instantiate_univ_context abs_ctx) ctx)
+      assert (AUContext.is_empty abs_ctx); univs
     | Polymorphic_const auctx -> 
       Polymorphic_const (AUContext.union abs_ctx auctx)
   in
-    (body, typ, Option.map projection cb.const_proj, 
-     univs, cb.const_inline_code, 
-     Some const_hyps)
+  {
+    cook_body = body;
+    cook_type = typ;
+    cook_proj = Option.map projection cb.const_proj;
+    cook_universes = univs;
+    cook_inline = cb.const_inline_code;
+    cook_context = Some const_hyps;
+  }
 
 (* let cook_constant_key = Profile.declare_profile "cook_constant" *)
 (* let cook_constant = Profile.profile2 cook_constant_key cook_constant *)

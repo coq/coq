@@ -46,7 +46,7 @@ val check_constraints : Univ.constraints -> env -> bool
 (* Constants *)
 val lookup_constant : constant -> env -> Cic.constant_body
 val add_constant : constant -> Cic.constant_body -> env -> env
-val constant_type : env -> constant puniverses -> constant_type Univ.constrained
+val constant_type : env -> constant puniverses -> constr Univ.constrained
 type const_evaluation_result = NoBody | Opaque | IsProj
 exception NotEvaluableConst of const_evaluation_result
 val constant_value : env -> constant puniverses -> constr

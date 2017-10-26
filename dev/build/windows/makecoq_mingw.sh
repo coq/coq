@@ -910,6 +910,10 @@ function make_camlp5 {
     log2 make install
     # For some reason gramlib.a is not copied, but it is required by Coq
     cp lib/gramlib.a "$PREFIXOCAML/libocaml/camlp5/"
+    # For some reason META is not copied, but it is required by coq_makefile
+    log2 make -C etc META
+    mkdir -p "$PREFIXOCAML/libocaml/site-lib/camlp5/"
+    cp etc/META "$PREFIXOCAML/libocaml/site-lib/camlp5/"
     log2 make clean
     build_post
   fi
@@ -1058,13 +1062,18 @@ function copq_coq_gtk {
     install_rec  "$PREFIX/share/themes/" '*'                          "$PREFIXCOQ/share/themes"
     
     # This below item look like a bug in make install
+    if [ -d "$PREFIXCOQ/share/coq/" ] ; then
+      COQSHARE="$PREFIXCOQ/share/coq/"
+    else
+      COQSHARE="$PREFIXCOQ/share/"
+    fi
     if [[ ! $COQ_VERSION == 8.4* ]] ; then
-      mv "$PREFIXCOQ/share/coq/"*.lang "$PREFIXCOQ/share/gtksourceview-2.0/language-specs"
-      mv "$PREFIXCOQ/share/coq/"*.xml  "$PREFIXCOQ/share/gtksourceview-2.0/styles"
+      mv "$COQSHARE"*.lang "$PREFIXCOQ/share/gtksourceview-2.0/language-specs"
+      mv "$COQSHARE"*.xml  "$PREFIXCOQ/share/gtksourceview-2.0/styles"
     fi
     mkdir -p "$PREFIXCOQ/ide"
-    mv "$PREFIXCOQ/share/coq/"*.png  "$PREFIXCOQ/ide"
-    rmdir "$PREFIXCOQ/share/coq"
+    mv "$COQSHARE"*.png  "$PREFIXCOQ/ide"
+    rmdir "$PREFIXCOQ/share/coq" || true
   fi
 }
 
@@ -1119,11 +1128,11 @@ function make_coq {
   then
     if [ "$INSTALLMODE" == "relocatable" ]; then
       # HACK: for relocatable builds, first configure with ./, then build but before install reconfigure with the real target path
-      logn configure ./configure -debug -with-doc no -prefix ./ -libdir ./lib -mandir ./man
+      ./configure -with-doc no -prefix ./ -libdir ./lib -mandir ./man
     elif [ "$INSTALLMODE" == "absolute" ]; then
-      logn configure ./configure -debug -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib" -mandir "$PREFIXCOQ/man"
+      ./configure -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib" -mandir "$PREFIXCOQ/man"
     else
-      logn configure ./configure -debug -with-doc no -prefix "$PREFIXCOQ"
+      ./configure -with-doc no -prefix "$PREFIXCOQ"
     fi
 
     # The windows resource compiler binary name is hard coded
@@ -1134,17 +1143,17 @@ function make_coq {
     if [[ $COQ_VERSION == 8.4* ]] ; then
       log1 make
     else
-      log1 make $MAKE_OPT
+      make $MAKE_OPT
     fi
     
     if [ "$INSTALLMODE" == "relocatable" ]; then
-      logn reconfigure ./configure -debug -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib" -mandir "$PREFIXCOQ/man"
+      ./configure -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib" -mandir "$PREFIXCOQ/man"
     fi
 
-    log2 make install
-    log1 copy_coq_dlls
+    make install
+    copy_coq_dlls
     if [ "$INSTALLOCAML" == "Y" ]; then
-      log1 copy_coq_objects
+      copy_coq_objects
     fi
     
     copq_coq_gtk
@@ -1267,7 +1276,7 @@ function get_cygwin_mingw_sources {
 function make_coq_installer {
   make_coq
   make_mingw_make
-  # get_cygwin_mingw_sources
+  get_cygwin_mingw_sources
 
   # Prepare the file lists for the installer. We created to file list dumps of the target folder during the build:
   # ocaml: ocaml + menhir + camlp5 + findlib

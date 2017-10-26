@@ -8,8 +8,6 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
-open API
-open Grammar_API
 open Names
 open Pp
 open Pcoq
@@ -64,7 +62,7 @@ DECLARE PLUGIN "ssreflect_plugin"
  * we thus save the lexer to restore it at the end of the file *)
 let frozen_lexer = CLexer.get_keyword_state () ;;
 
-let tacltop = (5,Ppextend.E)
+let tacltop = (5,Notation_term.E)
 
 let pr_ssrtacarg _ _ prt = prt tacltop
 ARGUMENT EXTEND ssrtacarg TYPED AS tactic PRINTED BY pr_ssrtacarg
@@ -159,7 +157,7 @@ let intern_ssrhoi ist = function
 let interp_ssrhoi ist gl = function
   | Hyp h -> let s, h' = interp_hyp ist gl h in s, Hyp h'
   | Id (SsrHyp (loc, id)) ->
-    let s, id' = interp_wit wit_ident ist gl id in
+    let s, (id',_) = interp_wit wit_ident ist gl id in
     s, Id (SsrHyp (loc, id'))
 
 ARGUMENT EXTEND ssrhoi_hyp TYPED AS ssrhoirep PRINTED BY pr_ssrhoi
@@ -344,7 +342,7 @@ let interp_index ist gl idx =
         | None ->
         begin match Tacinterp.Value.to_constr v with
         | Some c ->
-          let rc = Detyping.detype false [] (pf_env gl) (project gl) c in
+          let rc = Detyping.detype Detyping.Now false Id.Set.empty (pf_env gl) (project gl) c in
           begin match Notation.uninterp_prim_token rc with
           | _, Constrexpr.Numeral (s,b) ->
              let n = int_of_string s in if b then n else -n
@@ -510,7 +508,7 @@ let remove_loc = snd
 
 let ipat_of_intro_pattern p = Misctypes.(
   let rec ipat_of_intro_pattern = function
-    | IntroNaming (IntroIdentifier id) -> IPatId id
+    | IntroNaming (IntroIdentifier (id,_)) -> IPatId id
     | IntroAction IntroWildcard -> IPatAnon Drop
     | IntroAction (IntroOrAndPattern (IntroOrPattern iorpat)) ->
       IPatCase 
@@ -521,7 +519,7 @@ let ipat_of_intro_pattern p = Misctypes.(
        [List.map ipat_of_intro_pattern (List.map remove_loc iandpat)]
     | IntroNaming IntroAnonymous -> IPatAnon One
     | IntroAction (IntroRewrite b) -> IPatRewrite (allocc, if b then L2R else R2L)
-    | IntroNaming (IntroFresh id) -> IPatAnon One
+    | IntroNaming (IntroFresh (id,_)) -> IPatAnon One
     | IntroAction (IntroApplyOn _) -> (* to do *) CErrors.user_err (Pp.str "TO DO")
     | IntroAction (IntroInjection ips) ->
         IPatInj [List.map ipat_of_intro_pattern (List.map remove_loc ips)]
@@ -571,13 +569,13 @@ let intern_ipats ist = List.map (intern_ipat ist)
 let interp_intro_pattern = interp_wit wit_intro_pattern
 
 let interp_introid ist gl id = Misctypes.(
- try IntroNaming (IntroIdentifier (hyp_id (snd (interp_hyp ist gl (SsrHyp (Loc.tag id))))))
- with _ -> snd(snd (interp_intro_pattern ist gl (Loc.tag @@ IntroNaming (IntroIdentifier id))))
+ try IntroNaming (IntroIdentifier (hyp_id (snd (interp_hyp ist gl (SsrHyp (Loc.tag id)))),false))
+ with _ -> snd(snd (interp_intro_pattern ist gl (Loc.tag @@ IntroNaming (IntroIdentifier (id,false)))))
 )
 
 let rec add_intro_pattern_hyps (loc, ipat) hyps = Misctypes.(
   match ipat with
-  | IntroNaming (IntroIdentifier id) ->
+  | IntroNaming (IntroIdentifier (id,_)) ->
     if not_section_id id then SsrHyp (loc, id) :: hyps else
     hyp_err ?loc "Can't delete section hypothesis " id
   | IntroAction IntroWildcard -> hyps
@@ -613,7 +611,7 @@ let interp_ipat ist gl = Misctypes.(
   | IPatNewHidden l ->
       IPatNewHidden
         (List.map (function
-           | IntroNaming (IntroIdentifier id) -> id
+           | IntroNaming (IntroIdentifier (id,_)) -> id
            | _ -> assert false)
         (List.map (interp_introid ist gl) l))
   | ipat -> ipat in
@@ -823,6 +821,34 @@ TACTIC EXTEND ssrtclintros
     Proofview.V82.tactic (Ssripats.tclINTROS ist (fun ist -> ssrevaltac ist tac) intros) ]
     END
 
+(* Defining a parser of ident without privacy flag *)
+
+let pr_ssrid _ _ _ id = pr_id id
+
+let try_interp_ltac_var coerce ist env ?loc id =
+  let v = Id.Map.find id ist.lfun in
+  try coerce v with Taccoerce.CannotCoerceTo s -> error_ltac_variable ?loc id env v s
+
+let interp_ident ist env sigma id =
+  try fst (try_interp_ltac_var (Taccoerce.coerce_var_to_ident false env sigma) ist (Some (env,sigma)) id)
+  with Not_found -> id
+
+let interp_ssrid ist gl id = Tacmach.project gl, interp_ident ist (pf_env gl) (project gl) id
+
+let glob_ssrid _ id = id (* Warning: not collecting the ident as a possible binding name *)
+
+let subst_ssrid _ id = id
+
+ARGUMENT EXTEND ssrid
+  PRINTED BY pr_ssrid
+  INTERPRETED BY interp_ssrid
+  GLOBALIZED BY glob_ssrid
+  SUBSTITUTED BY subst_ssrid
+  RAW_PRINTED BY pr_ssrid
+  GLOB_PRINTED BY pr_ssrid
+  | [ ident(id) ] -> [ id ]
+END
+
 (** Defined identifier *)
 let pr_ssrfwdid id = pr_spc () ++ pr_id id
 
@@ -830,7 +856,7 @@ let pr_ssrfwdidx _ _ _ = pr_ssrfwdid
 
 (* We use a primitive parser for the head identifier of forward *)
 (* tactis to avoid syntactic conflicts with basic Coq tactics. *)
-ARGUMENT EXTEND ssrfwdid TYPED AS ident PRINTED BY pr_ssrfwdidx
+ARGUMENT EXTEND ssrfwdid TYPED AS ssrid PRINTED BY pr_ssrfwdidx
   | [ "YouShouldNotTypeThis" ] -> [ anomaly "Grammar placeholder match" ]
 END
 
@@ -1064,32 +1090,32 @@ let rec format_glob_decl h0 d0 = match h0, d0 with
      Bdef (x, None, v) :: format_glob_decl [] d
   | _, [] -> []
 
-let rec format_glob_constr h0 c0 = let open CAst in match h0, c0 with
-  | BFvar :: h, { v = GLambda (x, _, _, c) } ->
+let rec format_glob_constr h0 c0 = match h0, DAst.get c0 with
+  | BFvar :: h, GLambda (x, _, _, c) ->
     let bs, c' = format_glob_constr h c in
     Bvar x :: bs, c'
-  | BFdecl 1 :: h, { v = GLambda (x, _, t, c) } ->
+  | BFdecl 1 :: h, GLambda (x, _, t, c) ->
     let bs, c' = format_glob_constr h c in
     Bdecl ([x], t) :: bs, c'
-  | BFdecl n :: h, { v = GLambda (x, _, t, c) } when n > 1 ->
+  | BFdecl n :: h, GLambda (x, _, t, c) when n > 1 ->
     begin match format_glob_constr (BFdecl (n - 1) :: h) c with
     | Bdecl (xs, _) :: bs, c' -> Bdecl (x :: xs, t) :: bs, c'
     | _ -> [Bdecl ([x], t)], c
     end
-  | BFdef :: h, { v = GLetIn(x, v, oty, c) } ->
+  | BFdef :: h, GLetIn(x, v, oty, c) ->
     let bs, c' = format_glob_constr h c in
     Bdef (x, oty, v) :: bs, c'
-  | [BFcast], { v = GCast (c, CastConv t) } ->
+  | [BFcast], GCast (c, CastConv t) ->
     [Bcast t], c
-  | BFrec (has_str, has_cast) :: h, { v = GRec (f, _, bl, t, c) }
+  | BFrec (has_str, has_cast) :: h, GRec (f, _, bl, t, c)
       when Array.length c = 1 ->
     let bs = format_glob_decl h bl.(0) in
     let bstr = match has_str, f with
     | true, GFix ([|Some i, GStructRec|], _) -> mkBstruct i bs
     | _ -> [] in
     bs @ bstr @ (if has_cast then [Bcast t.(0)] else []), c.(0)
-  | _, c ->
-    [], c
+  | _, _ ->
+    [], c0
 
 (** Forward chaining argument *)
 
@@ -1229,7 +1255,7 @@ let pr_ssrstruct _ _ _ = function
   | Some id -> str "{struct " ++ pr_id id ++ str "}"
   | None -> mt ()
 
-ARGUMENT EXTEND ssrstruct TYPED AS ident option PRINTED BY pr_ssrstruct
+ARGUMENT EXTEND ssrstruct TYPED AS ssrfwdid option PRINTED BY pr_ssrstruct
 | [ "{" "struct" ident(id) "}" ] -> [ Some id ]
 | [ ] -> [ None ]
 END
@@ -1256,7 +1282,7 @@ let bvar_locid = function
   | _ -> CErrors.user_err (Pp.str "Missing identifier after \"(co)fix\"")
 
 
-ARGUMENT EXTEND ssrfixfwd TYPED AS ident * ssrfwd PRINTED BY pr_ssrfixfwd
+ARGUMENT EXTEND ssrfixfwd TYPED AS ssrid * ssrfwd PRINTED BY pr_ssrfixfwd
   | [ "fix" ssrbvar(bv) ssrbinder_list(bs) ssrstruct(sid) ssrfwd(fwd) ] ->
     [ let (_, id) as lid = bvar_locid bv in
       let (fk, h), (ck, (rc, oc)) = fwd in
@@ -1556,8 +1582,8 @@ END
 let ssrautoprop gl =
   try 
     let tacname = 
-      try Nametab.locate_tactic (qualid_of_ident (Id.of_string "ssrautoprop"))
-      with Not_found -> Nametab.locate_tactic (ssrqid "ssrautoprop") in
+      try Tacenv.locate_tactic (qualid_of_ident (Id.of_string "ssrautoprop"))
+      with Not_found -> Tacenv.locate_tactic (ssrqid "ssrautoprop") in
     let tacexpr = Loc.tag @@ Tacexpr.Reference (ArgArg (Loc.tag @@ tacname)) in
     Proofview.V82.of_tactic (eval_tactic (Tacexpr.TacArg tacexpr)) gl
   with Not_found -> Proofview.V82.of_tactic (Auto.full_trivial []) gl
@@ -2307,7 +2333,7 @@ let pr_idcomma _ _ _ = function
   | Some None -> str"_, "
   | Some (Some id) -> pr_id id ++ str", "
 
-ARGUMENT EXTEND ssr_idcomma TYPED AS ident option option PRINTED BY pr_idcomma
+ARGUMENT EXTEND ssr_idcomma TYPED AS ssrid option option PRINTED BY pr_idcomma
   | [ ] -> [ None ]
 END
 

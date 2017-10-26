@@ -47,8 +47,6 @@ open Misctypes
 module NamedDecl = Context.Named.Declaration
 
 type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
-type glob_constr_ltac_closure = ltac_var_map * glob_constr
-type pure_open_constr = evar_map * EConstr.constr
 
 (************************************************************************)
 (* This concerns Cases *)
@@ -70,8 +68,9 @@ let get_extra env sigma =
   let open Context.Named.Declaration in
   let ids = List.map get_id (named_context env) in
   let avoid = List.fold_right Id.Set.add ids Id.Set.empty in
+  let private_ids = named_context_private_ids (named_context_val env) in
   Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context sigma d acc)
-    (rel_context env) ~init:(empty_csubst, [], avoid, named_context env)
+    (rel_context env) ~init:(empty_csubst, [], avoid, named_context env, private_ids)
 
 let make_env env sigma = { env = env; extra = lazy (get_extra env sigma) }
 let rel_context env = rel_context env.env
@@ -95,10 +94,10 @@ let e_new_evar env evdref ?src ?naming typ =
   let open Context.Named.Declaration in
   let inst_vars = List.map (get_id %> mkVar) (named_context env.env) in
   let inst_rels = List.rev (rel_list 0 (nb_rel env.env)) in
-  let (subst, vsubst, _, nc) = Lazy.force env.extra in
+  let (subst, vsubst, _, nc,private_ids) = Lazy.force env.extra in
   let typ' = subst2 subst vsubst typ in
   let instance = inst_rels @ inst_vars in
-  let sign = val_of_named_context nc in
+  let sign = val_of_named_context nc private_ids in
   let sigma = !evdref in
   let (sigma, e) = new_evar_instance sign sigma typ' ?src ?naming instance in
   evdref := sigma;
@@ -223,18 +222,6 @@ let interp_universe ?loc evd = function
 let interp_level_info ?loc evd : Misctypes.level_info -> _ = function
   | None -> new_univ_level_variable ?loc univ_rigid evd
   | Some (loc,s) -> interp_universe_level_name ~anon_rigidity:univ_flexible evd (Loc.tag ?loc s)
-
-let interp_sort ?loc evd = function
-  | GProp -> evd, Prop Null
-  | GSet -> evd, Prop Pos
-  | GType n -> 
-    let evd, u = interp_universe ?loc evd n in
-      evd, Type u
-
-let interp_elimination_sort = function
-  | GProp -> InProp
-  | GSet  -> InSet
-  | GType _ -> InType
 
 type inference_hook = env -> evar_map -> evar -> evar_map * constr
 
@@ -385,9 +372,6 @@ let adjust_evar_source evdref na c =
      end
   | _, _ -> c
 
-(* Allow references to syntactically nonexistent variables (i.e., if applied on an inductive) *)
-let allow_anonymous_refs = ref false
-
 (* coerce to tycon if any *)
 let inh_conv_coerce_to_tycon ?loc resolve_tc env evdref j = function
   | None -> j
@@ -511,8 +495,8 @@ let pretype_global ?loc rigid env evd gr us =
     match us with
     | None -> evd, None
     | Some l -> 
-       let _, ctx = Universes.unsafe_constr_of_global gr in
-       let len = Univ.UContext.size ctx in
+       let _, ctx = Global.constr_of_global_in_context env.ExtraEnv.env gr in
+       let len = Univ.AUContext.size ctx in
        interp_instance ?loc evd ~len l
   in
   let (sigma, c) = Evd.fresh_global ?loc ~rigid ?names:instance env.ExtraEnv.env evd gr in
@@ -577,7 +561,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
   let pretype = pretype k0 resolve_tc in
   let open Context.Rel.Declaration in
   let loc = t.CAst.loc in
-  match t.CAst.v with
+  match DAst.get t with
   | GRef (ref,u) ->
       inh_conv_coerce_to_tycon ?loc env evdref
 	(pretype_ref ?loc evdref env ref u)
@@ -918,9 +902,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       (* Make dependencies from arity signature impossible *)
     let arsgn =
       let arsgn,_ = get_arity env.ExtraEnv.env indf in
-	if not !allow_anonymous_refs then
-	  List.map (set_name Anonymous) arsgn
-	else arsgn
+      List.map (set_name Anonymous) arsgn
     in
       let indt = build_dependent_inductive env.ExtraEnv.env indf in
       let psign = LocalAssum (na, indt) :: arsgn in (* For locating names in [po] *)
@@ -981,10 +963,8 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 
       let arsgn =
 	let arsgn,_ = get_arity env.ExtraEnv.env indf in
-	  if not !allow_anonymous_refs then
-	      (* Make dependencies from arity signature impossible *)
-	    List.map (set_name Anonymous) arsgn
-	  else arsgn
+        (* Make dependencies from arity signature impossible *)
+        List.map (set_name Anonymous) arsgn
       in
       let nar = List.length arsgn in
       let indt = build_dependent_inductive env.ExtraEnv.env indf in
@@ -1018,13 +998,8 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	let pi = beta_applist !evdref (pi, [EConstr.of_constr (build_dependent_constructor cs)]) in
         let cs_args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cs.cs_args in
 	let csgn =
-	  if not !allow_anonymous_refs then
-	    List.map (set_name Anonymous) cs_args
-	  else
-	    List.map (map_name (function Name _ as n -> n
-				       | Anonymous -> Name Namegen.default_non_dependent_ident))
-		     cs_args
-	in
+          List.map (set_name Anonymous) cs_args
+        in
 	let env_c = push_rel_context !evdref csgn env in
 	let bj = pretype (mk_tycon pi) env_c evdref lvar b in
 	  it_mkLambda_or_LetIn bj.uj_val cs_args in
@@ -1114,17 +1089,9 @@ and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
   Array.map_of_list snd subst
 
 (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)
-and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
-  | { loc; CAst.v = GHole (knd, naming, None) } ->
-      let rec is_Type c = match EConstr.kind !evdref c with
-      | Sort s ->
-        begin match ESorts.kind !evdref s with
-        | Type _ -> true
-        | Prop _ -> false
-        end
-      | Cast (c, _, _) -> is_Type c
-      | _ -> false
-      in
+and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar c = match DAst.get c with
+  | GHole (knd, naming, None) ->
+      let loc = loc_of_glob_constr c in
       (match valcon with
        | Some v ->
            let s =
@@ -1132,18 +1099,23 @@ and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
 	     let t = Retyping.get_type_of env.ExtraEnv.env sigma v in
 	       match EConstr.kind sigma (whd_all env.ExtraEnv.env sigma t) with
                | Sort s -> ESorts.kind sigma s
-               | Evar ev when is_Type (existential_type sigma ev) ->
+               | Evar ev when is_Type sigma (existential_type sigma ev) ->
 		   evd_comb1 (define_evar_as_sort env.ExtraEnv.env) evdref ev
                | _ -> anomaly (Pp.str "Found a type constraint which is not a type.")
            in
-	     { utj_val = v;
-	       utj_type = s }
+           (* Correction of bug #5315 : we need to define an evar for *all* holes *)
+           let evkt = e_new_evar env evdref ~src:(loc, knd) ~naming (mkSort s) in
+           let ev,_ = destEvar !evdref evkt in
+           evdref := Evd.define ev (to_constr !evdref v) !evdref;
+           (* End of correction of bug #5315 *)
+           { utj_val = v;
+	     utj_type = s }
        | None ->
            let env = ltac_interp_name_env k0 lvar env !evdref in
 	   let s = evd_comb0 (new_sort_variable univ_flexible_alg) evdref in
 	     { utj_val = e_new_evar env evdref ~src:(loc, knd) ~naming (mkSort s);
 	       utj_type = s})
-  | c ->
+  | _ ->
       let j = pretype k0 resolve_tc empty_tycon env evdref lvar c in
       let loc = loc_of_glob_constr c in
       let tj = evd_comb1 (Coercion.inh_coerce_to_sort ?loc env.ExtraEnv.env) evdref j in
@@ -1186,29 +1158,6 @@ let no_classes_no_fail_inference_flags = {
 let all_and_fail_flags = default_inference_flags true
 let all_no_fail_flags = default_inference_flags false
 
-let on_judgment sigma f j =
-  let c = mkCast(j.uj_val,DEFAULTcast, j.uj_type) in
-  let (c,_,t) = destCast sigma (f c) in
-  {uj_val = c; uj_type = t}
-
-let understand_judgment env sigma c =
-  let env = make_env env sigma in
-  let evdref = ref sigma in
-  let k0 = Context.Rel.length (rel_context env) in
-  let j = pretype k0 true empty_tycon env evdref empty_lvar c in
-  let j = on_judgment sigma (fun c ->
-    let evd, c = process_inference_flags all_and_fail_flags env.ExtraEnv.env sigma (!evdref,c) in 
-      evdref := evd; c) j
-  in j, Evd.evar_universe_context !evdref
-
-let understand_judgment_tcc env evdref c =
-  let env = make_env env !evdref in
-  let k0 = Context.Rel.length (rel_context env) in
-  let j = pretype k0 true empty_tycon env evdref empty_lvar c in
-  on_judgment !evdref (fun c ->
-    let (evd,c) = process_inference_flags all_no_fail_flags env.ExtraEnv.env Evd.empty (!evdref,c) in
-    evdref := evd; c) j
-
 let ise_pretype_gen_ctx flags env sigma lvar kind c =
   let evd, c = ise_pretype_gen flags env sigma lvar kind c in
   let evd, f = Evarutil.nf_evars_and_universes evd in
@@ -1226,35 +1175,9 @@ let understand_tcc ?(flags=all_no_fail_flags) env sigma ?(expected_type=WithoutT
   let (sigma, c) = ise_pretype_gen flags env sigma empty_lvar expected_type c in
   (sigma, c)
 
-let understand_tcc_evars ?(flags=all_no_fail_flags) env evdref ?(expected_type=WithoutTypeConstraint) c =
-  let sigma, c = ise_pretype_gen flags env !evdref empty_lvar expected_type c in
-  evdref := sigma;
-  c
-
 let understand_ltac flags env sigma lvar kind c =
   let (sigma, c) = ise_pretype_gen flags env sigma lvar kind c in
   (sigma, c)
-
-let constr_flags = {
-  use_typeclasses = true;
-  solve_unification_constraints = true;
-  use_hook = None;
-  fail_evar = true;
-  expand_evars = true }
-
-(* Fully evaluate an untyped constr *)
-let type_uconstr ?(flags = constr_flags)
-  ?(expected_type = WithoutTypeConstraint) ist c =
-  begin fun env sigma ->
-  let { closure; term } = c in
-  let vars = {
-    ltac_constrs = closure.typed;
-    ltac_uconstrs = closure.untyped;
-    ltac_idents = closure.idents;
-    ltac_genargs = Id.Map.empty;
-  } in
-  understand_ltac flags env sigma vars expected_type term
-  end
 
 let pretype k0 resolve_tc typcon env evdref lvar t =
   pretype k0 resolve_tc typcon (make_env env !evdref) evdref lvar t

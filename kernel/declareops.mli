@@ -27,24 +27,13 @@ val subst_const_body : substitution -> constant_body -> constant_body
 
 val constant_has_body : constant_body -> bool
 
-val constant_polymorphic_instance : constant_body -> universe_instance
-val constant_polymorphic_context : constant_body -> universe_context
+val constant_polymorphic_context : constant_body -> abstract_universe_context
 
 (** Is the constant polymorphic? *)
 val constant_is_polymorphic : constant_body -> bool
 
-(** Accessing const_body, forcing access to opaque proof term if needed.
-    Only use this function if you know what you're doing. *)
-
-val body_of_constant :
-  Opaqueproof.opaquetab -> constant_body -> Term.constr option
-val type_of_constant : constant_body -> constant_type
-
 (** Return the universe context, in case the definition is polymorphic, otherwise
     the context is empty. *)
-
-val universes_of_polymorphic_constant :
-  Opaqueproof.opaquetab -> constant_body -> Univ.universe_context
 
 val is_opaque : constant_body -> bool
 
@@ -68,8 +57,7 @@ val subst_wf_paths : substitution -> wf_paths -> wf_paths
 
 val subst_mind_body : substitution -> mutual_inductive_body -> mutual_inductive_body
 
-val inductive_polymorphic_instance : mutual_inductive_body -> universe_instance
-val inductive_polymorphic_context : mutual_inductive_body -> universe_context
+val inductive_polymorphic_context : mutual_inductive_body -> abstract_universe_context
 
 (** Is the inductive polymorphic? *)
 val inductive_is_polymorphic : mutual_inductive_body -> bool
@@ -90,3 +78,4 @@ val safe_flags : typing_flags
 val hcons_const_body : constant_body -> constant_body
 val hcons_mind : mutual_inductive_body -> mutual_inductive_body
 val hcons_module_body : module_body -> module_body
+val hcons_module_type : module_type_body -> module_type_body

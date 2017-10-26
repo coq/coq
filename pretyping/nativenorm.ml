@@ -5,13 +5,11 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-open Pp
 open CErrors
 open Term
 open Vars
 open Environ
 open Reduction
-open Univ
 open Declarations
 open Names
 open Inductive
@@ -20,12 +18,63 @@ open Nativecode
 open Nativevalues
 open Context.Rel.Declaration
 
-module RelDecl = Context.Rel.Declaration
-
 (** This module implements normalization by evaluation to OCaml code *)
 
 exception Find_at of int
 
+(* profiling *)
+
+let profiling_enabled = ref false
+    
+(* for supported platforms, filename for profiler results *)
+
+let profile_filename = ref "native_compute_profile.data"
+
+let profiler_platform () =
+  match [@warning "-8"] Sys.os_type with
+  | "Unix" ->
+     let in_ch = Unix.open_process_in "uname" in
+     let uname = input_line in_ch in
+     let _ = close_in in_ch in
+     Format.sprintf "Unix (%s)" uname
+  | "Win32" -> "Windows (Win32)"
+  | "Cygwin" -> "Windows (Cygwin)"
+
+let get_profile_filename () = !profile_filename
+
+let set_profile_filename fn =
+  profile_filename := fn
+
+(* find unused profile filename *)
+let get_available_profile_filename () =
+  let profile_filename = get_profile_filename () in
+  let dir = Filename.dirname profile_filename in 
+  let base = Filename.basename profile_filename in 
+  (* starting with OCaml 4.04, could use Filename.remove_extension and Filename.extension, which
+     gets rid of need for exception-handling here
+  *)
+  let (name,ext) =
+    try
+      let nm = Filename.chop_extension base in
+      let nm_len = String.length nm in
+      let ex = String.sub base nm_len (String.length base - nm_len) in
+      (nm,ex)
+    with Invalid_argument _ -> (base,"")
+  in
+  try 
+    (* unlikely race: fn deleted, another process uses fn *)
+    Filename.temp_file ~temp_dir:dir (name ^ "_") ext
+  with Sys_error s ->
+    let msg = "When trying to find native_compute profile output file: " ^ s in
+    let _ = Feedback.msg_info (Pp.str msg) in
+    assert false
+
+let get_profiling_enabled () =
+  !profiling_enabled
+    
+let set_profiling_enabled b =
+  profiling_enabled := b
+    
 let invert_tag cst tag reloc_tbl =
   try
     for j = 0 to Array.length reloc_tbl - 1 do
@@ -123,44 +172,6 @@ let build_branches_type env sigma (mind,_ as _ind) mib mip u params dep p =
 let build_case_type dep p realargs c = 
   if dep then mkApp(mkApp(p, realargs), [|c|])
   else mkApp(p, realargs)
-
-(* TODO move this function *)
-let type_of_rel env n =
-  env |> lookup_rel n |> RelDecl.get_type |> lift n
-
-let type_of_prop = mkSort type1_sort
-
-let type_of_sort s = 
-  match s with
-  | Prop _ -> type_of_prop
-  | Type u -> mkType (Univ.super u)
-
-let type_of_var env id =
-  let open Context.Named.Declaration in
-  try env |> lookup_named id |> get_type
-  with Not_found ->
-    anomaly ~label:"type_of_var" (str "variable " ++ Id.print id ++ str " unbound.")
-
-let sort_of_product env domsort rangsort =
-  match (domsort, rangsort) with
-    (* Product rule (s,Prop,Prop) *)
-    | (_,       Prop Null)  -> rangsort
-    (* Product rule (Prop/Set,Set,Set) *)
-    | (Prop _,  Prop Pos) -> rangsort
-    (* Product rule (Type,Set,?) *)
-    | (Type u1, Prop Pos) ->
-        if is_impredicative_set env then
-          (* Rule is (Type,Set,Set) in the Set-impredicative calculus *)
-          rangsort
-        else
-          (* Rule is (Type_i,Set,Type_i) in the Set-predicative calculus *)
-          Type (sup u1 type0_univ)
-    (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop Pos,  Type u2)  -> Type (sup type0_univ u2)
-    (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop Null, Type _)  -> rangsort
-    (* Product rule (Type_i,Type_i,Type_i) *)
-    | (Type u1, Type u2) -> Type (sup u1 u2)
 
 (* normalisation of values *)
 
@@ -275,15 +286,15 @@ and nf_atom_type env sigma atom =
   match atom with
   | Arel i ->
       let n = (nb_rel env - i) in
-      mkRel n, type_of_rel env n
+      mkRel n, Typeops.type_of_relative env n
   | Aconstant cst ->
       mkConstU cst, Typeops.type_of_constant_in env cst
   | Aind ind ->
       mkIndU ind, Inductiveops.type_of_inductive env ind
   | Asort s ->
-      mkSort s, type_of_sort s
+      mkSort s, Typeops.type_of_sort s
   | Avar id ->
-      mkVar id, type_of_var env id
+      mkVar id, Typeops.type_of_variable env id
   | Acase(ans,accu,p,bs) ->
       let a,ta = nf_accu_type env sigma accu in
       let ((mind,_),u as ind),allargs = find_rectype_a env ta in
@@ -334,7 +345,7 @@ and nf_atom_type env sigma atom =
       let vn = mk_rel_accu (nb_rel env) in
       let env = push_rel (LocalAssum (n,dom)) env in
       let codom,s2 = nf_type_sort env sigma (codom vn) in
-      mkProd(n,dom,codom), mkSort (sort_of_product env s1 s2)
+      mkProd(n,dom,codom), Typeops.type_of_product env n s1 s2
   | Aevar(ev,ty) ->
      let ty = nf_type env sigma ty in
      mkEvar ev, ty
@@ -379,6 +390,52 @@ let evars_of_evar_map sigma =
     Nativelambda.evars_typ = Evd.existential_type sigma;
     Nativelambda.evars_metas = Evd.meta_type sigma }
 
+(* fork perf process, return profiler's process id *)
+let start_profiler_linux profile_fn =
+  let coq_pid = Unix.getpid () in (* pass pid of running coqtop *)
+  (* we don't want to see perf's console output *)
+  let dev_null = Unix.descr_of_out_channel (open_out_bin "/dev/null") in
+  let _ = Feedback.msg_info (Pp.str ("Profiling to file " ^ profile_fn)) in
+  let perf = "perf" in
+  let profiler_pid = 
+    Unix.create_process
+      perf
+      [|perf; "record"; "-g"; "-o"; profile_fn; "-p"; string_of_int coq_pid |]
+      Unix.stdin dev_null dev_null
+  in
+  (* doesn't seem to be a way to test whether process creation succeeded *)
+  if !Flags.debug then 
+    Feedback.msg_debug (Pp.str (Format.sprintf "Native compute profiler started, pid = %d, output to: %s" profiler_pid profile_fn));
+  Some profiler_pid
+
+(* kill profiler via SIGINT *)
+let stop_profiler_linux m_pid = 
+  match m_pid with 
+  | Some pid -> (
+    let _ = if !Flags.debug then Feedback.msg_debug (Pp.str "Stopping native code profiler") in
+    try 
+      Unix.kill pid Sys.sigint;
+      let _ = Unix.waitpid [] pid in ()
+    with Unix.Unix_error (Unix.ESRCH,"kill","") ->
+      Feedback.msg_info (Pp.str "Could not stop native code profiler, no such process")
+  )
+  | None -> ()
+
+let start_profiler () =
+  let profile_fn = get_available_profile_filename () in
+  match profiler_platform () with
+    "Unix (Linux)" -> start_profiler_linux profile_fn
+  | _ ->
+     let _ = Feedback.msg_info
+       (Pp.str (Format.sprintf "Native_compute profiling not supported on the platform: %s"
+		  (profiler_platform ()))) in
+     None
+
+let stop_profiler m_pid =
+  match profiler_platform() with
+    "Unix (Linux)" -> stop_profiler_linux m_pid
+  | _ -> ()
+     
 let native_norm env sigma c ty =
   let c = EConstr.Unsafe.to_constr c in
   let ty = EConstr.Unsafe.to_constr ty in
@@ -392,12 +449,15 @@ let native_norm env sigma c ty =
   *)
   let ml_filename, prefix = Nativelib.get_ml_filename () in
   let code, upd = mk_norm_code penv (evars_of_evar_map sigma) prefix c in
-  match Nativelib.compile ml_filename code with
+  let profile = get_profiling_enabled () in
+  match Nativelib.compile ml_filename code ~profile:profile with
     | true, fn ->
         if !Flags.debug then Feedback.msg_debug (Pp.str "Running norm ...");
+	let profiler_pid = if profile then start_profiler () else None in
         let t0 = Sys.time () in
         Nativelib.call_linker ~fatal:true prefix fn (Some upd);
         let t1 = Sys.time () in
+	if profile then stop_profiler profiler_pid;
         let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
         if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
         let res = nf_val env sigma !Nativelib.rt1 ty in

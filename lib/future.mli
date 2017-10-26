@@ -6,42 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Futures: asynchronous computations with some purity enforcing
+(* Futures: asynchronous computations.
  *
  * A Future.computation is like a lazy_t but with some extra bells and whistles
- * to deal with imperative code and eventual delegation to a slave process.
+ * to deal with eventual delegation to a slave process.
  *
- * Example of a simple scenario taken into account:
- *
- *   let f = Future.from_here (number_of_constants (Global.env())) in
- *   let g = Future.chain ~pure:false f (fun n ->
- *             n = number_of_constants (Global.env())) in
- *   ...
- *   Lemmas.save_named ...;
- *   ...
- *   let b = Future.force g in
- *
- * The Future.computation f holds a (immediate, no lazy here) value.
- * We then chain to obtain g that (will) hold false if (when it will be
- * run) the global environment has a different number of constants, true
- * if nothing changed.
- * Before forcing g, we add to the global environment one more constant.
- * When finally we force g.  Its value is going to be *true*.
- * This because Future.from_here stores in the computation not only the initial
- * value but the entire system state.  When g is forced the state is restored,
- * hence Global.env() returns the environment that was actual when f was
- * created.
- * Last, forcing g is run protecting the system state, hence when g finishes,
- * the actual system state is restored.
- *
- * If you compare this with lazy_t, you see that the value returned is *false*,
- * that is counter intuitive and error prone.
- *
- * Still not all computations are impure and access/alter the system state.
- * This class can be optimized by using ~pure:true, but there is no way to
- * statically check if this flag is misused, hence use it with care.
- *
- * Other differences with lazy_t is that a future computation that produces
+ * One difference with lazy_t is that a future computation that produces
  * and exception can be substituted for another computation of the same type.
  * Moreover a future computation can be delegated to another execution entity
  * that will be allowed to set the result.  Finally future computations can
@@ -113,27 +83,17 @@ val is_exn : 'a computation -> bool
 val peek_val : 'a computation -> 'a option
 val uuid : 'a computation -> UUID.t
 
-(* [chain pure c f] chains computation [c] with [f].
- * [chain] forces immediately the new computation if the old one is_over (Exn or Val).
- * The [pure] parameter is tricky:
- * [pure]:
- *   When pure is true, the returned computation will not keep a copy
- *   of the global state.
- *   [let c' = chain ~pure:true c f in let c'' = chain ~pure:false c' g in]
- *   is invalid.  It works if one forces [c''] since the whole computation
- *   will be executed in one go.  It will not work, and raise an anomaly, if
- *   one forces c' and then c''.
- *   [join c; chain ~pure:false c g] is invalid and fails at runtime.
- *   [force c; chain ~pure:false c g] is correct.
- *)
-val chain : pure:bool ->
-  'a computation -> ('a -> 'b) -> 'b computation
+(* [chain c f] chains computation [c] with [f].
+ * [chain] is eager, that is to say, it won't suspend the new computation
+ * if the old one is_over (Exn or Val).
+*)
+val chain : 'a computation -> ('a -> 'b) -> 'b computation
 
 (* Forcing a computation *)
 val force : 'a computation -> 'a
 val compute : 'a computation -> 'a value
 
-(* Final call, no more *inpure* chain allowed since the state is lost.
+(* Final call.
  * Also the fix_exn function is lost, hence error reporting can be incomplete
  * in a computation obtained by chaining on a joined future. *)
 val join : 'a computation -> 'a
@@ -148,19 +108,8 @@ val map2 :
   ('a computation -> 'b -> 'c) ->
      'a list computation -> 'b list -> 'c list
 
-(* Once set_freeze is called we can purify a computation *)
-val purify : ('a -> 'b) -> 'a -> 'b
-(* And also let a function alter the state but backtrack if it raises exn *)
-val transactify : ('a -> 'b) -> 'a -> 'b
-
 (** Debug: print a computation given an inner printing function. *)
-val print : ('a -> Pp.std_ppcmds) -> 'a computation -> Pp.std_ppcmds
+val print : ('a -> Pp.t) -> 'a computation -> Pp.t
 
-type freeze
-(* These functions are needed to get rid of side effects.
-   Thy are set for the outermos layer of the system, since they have to
-   deal with the whole system state. *)
-val set_freeze : (unit -> freeze) -> (freeze -> unit) -> unit
-
-val customize_not_ready_msg : (string -> Pp.std_ppcmds) -> unit
-val customize_not_here_msg : (string -> Pp.std_ppcmds) -> unit
+val customize_not_ready_msg : (string -> Pp.t) -> unit
+val customize_not_here_msg : (string -> Pp.t) -> unit

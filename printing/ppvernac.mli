@@ -10,10 +10,13 @@
     objects and their subcomponents. *)
 
 (** Prints a fixpoint body *)
-val pr_rec_definition : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) -> Pp.std_ppcmds
+val pr_rec_definition : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) -> Pp.t
 
 (** Prints a vernac expression *)
-val pr_vernac_body : Vernacexpr.vernac_expr -> Pp.std_ppcmds
+val pr_vernac_body : Vernacexpr.vernac_expr -> Pp.t
+
+(** Prints a "proof using X" clause. *)
+val pr_using : Vernacexpr.section_subset_expr -> Pp.t
 
 (** Prints a vernac expression and closes it with a dot. *)
-val pr_vernac : Vernacexpr.vernac_expr -> Pp.std_ppcmds
+val pr_vernac : Vernacexpr.vernac_expr -> Pp.t

@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Ltac_plugin
 open Pp
 open Util
@@ -132,7 +131,7 @@ let closed_term_ast l =
   let l = List.map (fun gr -> ArgArg(Loc.tag gr)) l in
   TacFun([Name(Id.of_string"t")],
   TacML(Loc.tag (tacname,
-  [TacGeneric (Genarg.in_gen (Genarg.glbwit Stdarg.wit_constr) (CAst.make @@ GVar(Id.of_string"t"),None));
+  [TacGeneric (Genarg.in_gen (Genarg.glbwit Stdarg.wit_constr) (DAst.make @@ GVar(Id.of_string"t"),None));
    TacGeneric (Genarg.in_gen (Genarg.glbwit (Genarg.wit_list Stdarg.wit_ref)) l)])))
 (*
 let _ = add_tacdef false ((Loc.ghost,Id.of_string"ring_closed_term"
@@ -181,7 +180,7 @@ let ltac_apply (f : Value.t) (args: Tacinterp.Value.t list) =
 
 let dummy_goal env sigma =
   let (gl,_,sigma) = 
-    Goal.V82.mk_goal sigma (named_context_val env) EConstr.mkProp Evd.Store.empty in
+    Goal.V82.mk_goal sigma (named_context_val env) Names.Id.Set.empty EConstr.mkProp Evd.Store.empty in
   {Evd.it = gl; Evd.sigma = sigma}
 
 let constr_of v = match Value.to_constr v with
@@ -221,7 +220,7 @@ let exec_tactic env evd n f args =
   let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter]))) gl in
   let evd, nf = Evarutil.nf_evars_and_universes (Refiner.project gls) in
   let nf c = nf (constr_of c) in
-  Array.map nf !tactic_res, snd (Evd.universe_context evd)
+  Array.map nf !tactic_res, snd (Evd.universe_context ~names:[] ~extensible:true evd)
 
 let stdlib_modules =
   [["Coq";"Setoids";"Setoid"];

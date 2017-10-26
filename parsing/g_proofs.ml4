@@ -17,12 +17,6 @@ open Pcoq.Vernac_
 
 let thm_token = G_vernac.thm_token
 
-let hint_proof_using e = function
-  | Some _ as x -> x
-  | None -> match Proof_using.get_default_proof_using () with
-     | None -> None
-     | Some s -> Some (Gram.entry_parse e (Gram.parsable (Stream.of_string s)))
-
 let hint = Gram.entry_create "hint"
 
 (* Proof commands *)
@@ -35,8 +29,7 @@ GEXTEND Gram
   ;
   command:
     [ [ IDENT "Goal"; c = lconstr -> VernacGoal c
-      | IDENT "Proof" ->
-          VernacProof (None,hint_proof_using G_vernac.section_subset_expr None)
+      | IDENT "Proof" -> VernacProof (None,None)
       | IDENT "Proof" ; IDENT "Mode" ; mn = string -> VernacProofMode mn
       | IDENT "Proof"; c = lconstr -> VernacExactProof c
       | IDENT "Abort" -> VernacAbort None
@@ -45,11 +38,9 @@ GEXTEND Gram
       | IDENT "Existential"; n = natural; c = constr_body ->
 	  VernacSolveExistential (n,c)
       | IDENT "Admitted" -> VernacEndProof Admitted
-      | IDENT "Qed" -> VernacEndProof (Proved (Opaque None,None))
-      | IDENT "Qed"; IDENT "exporting"; l = LIST0 identref SEP "," ->
-          VernacEndProof (Proved (Opaque (Some l),None))
+      | IDENT "Qed" -> VernacEndProof (Proved (Opaque,None))
       | IDENT "Save"; id = identref ->
-	  VernacEndProof (Proved (Opaque None, Some id))
+	  VernacEndProof (Proved (Opaque, Some id))
       | IDENT "Defined" -> VernacEndProof (Proved (Transparent,None))
       |	IDENT "Defined"; id=identref ->
 	  VernacEndProof (Proved (Transparent,Some id))

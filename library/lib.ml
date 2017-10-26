@@ -162,6 +162,13 @@ let find_entry_p p =
   in
   find !lib_state.lib_stk
 
+let find_entries_p p =
+  let rec find = function
+    | [] -> []
+    | ent::l -> if p ent then ent::find l else find l
+  in
+  find !lib_state.lib_stk
+
 let split_lib_gen test =
   let rec collect after equal = function
     | hd::before when test hd -> collect after (hd::equal) before
@@ -328,16 +335,18 @@ let start_compilation s mp =
   lib_state := { !lib_state with comp_name = Some s;
                                  path_prefix = prefix }
 
+let open_blocks_message es =
+  let open_block_name = function
+      | oname, OpenedSection _ -> str "section " ++ pr_id (basename (fst oname))
+      | oname, OpenedModule (ty,_,_,_) -> str (module_kind ty) ++ spc () ++ pr_id (basename (fst oname))
+      | _ -> assert false in
+  str "The " ++ pr_enum open_block_name es ++ spc () ++
+  str "need" ++ str (if List.length es == 1 then "s" else "") ++ str " to be closed."
+
 let end_compilation_checks dir =
-  let _ =
-    try match snd (find_entry_p is_opening_node) with
-      | OpenedSection _ -> user_err Pp.(str  "There are some open sections.")
-      | OpenedModule (ty,_,_,_) ->
-	user_err ~hdr:"Lib.end_compilation_checks"
-          (str "There are some open " ++ str (module_kind ty) ++ str "s.")
-      | _ -> assert false
-    with Not_found -> ()
-  in
+  let _ = match find_entries_p is_opening_node with
+    | [] -> ()
+    | es -> user_err ~hdr:"Lib.end_compilation_checks" (open_blocks_message es) in
   let is_opening_lib = function _,CompilingLibrary _ -> true | _ -> false
   in
   let oname =
@@ -465,9 +474,10 @@ let add_section_replacement f g poly hyps =
     let () = check_same_poly poly vars in
     let sechyps,ctx = extract_hyps (vars,hyps) in
     let ctx = Univ.ContextSet.to_context ctx in
+    let inst = Univ.UContext.instance ctx in
     let subst, ctx = Univ.abstract_universes ctx in
     let args = instance_from_variable_context (List.rev sechyps) in
-    sectab := (vars,f (Univ.AUContext.instance ctx,args) exps,
+    sectab := (vars,f (inst,args) exps,
 	      g (sechyps,subst,ctx) abs)::sl
 
 let add_section_kn poly kn =
@@ -511,11 +521,6 @@ let is_in_section ref =
 
 (*************)
 (* Sections. *)
-
-(* XML output hooks *)
-let (f_xml_open_section, xml_open_section) = Hook.make ~default:ignore ()
-let (f_xml_close_section, xml_close_section) = Hook.make ~default:ignore ()
-
 let open_section id =
   let olddir,(mp,oldsec) = !lib_state.path_prefix in
   let dir = add_dirpath_suffix olddir id in
@@ -527,7 +532,6 @@ let open_section id =
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
   Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
   lib_state := { !lib_state with path_prefix = prefix };
-  if !Flags.xml_export then Hook.get f_xml_open_section id;
   add_section ()
 
 
@@ -555,7 +559,6 @@ let close_section () =
   let full_olddir = fst !lib_state.path_prefix in
   pop_path_prefix ();
   add_entry oname (ClosedSection (List.rev (mark::secdecls)));
-  if !Flags.xml_export then Hook.get f_xml_close_section (basename (fst oname));
   let newdecls = List.map discharge_item secdecls in
   Summary.unfreeze_summaries fs;
   List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls;
@@ -644,3 +647,16 @@ let discharge_con cst =
 
 let discharge_inductive (kn,i) =
   (discharge_kn kn,i)
+
+let discharge_abstract_universe_context (_, subst, abs_ctx) auctx =
+  let open Univ in
+  let len = LMap.cardinal subst in
+  let rec gen_subst i acc =
+    if i < 0 then acc
+    else
+      let acc = LMap.add (Level.var i) (Level.var (i + len)) acc in
+      gen_subst (pred i) acc
+  in
+  let subst = gen_subst (AUContext.size auctx - 1) subst in
+  let auctx = Univ.subst_univs_level_abstract_universe_context subst auctx in
+  subst, AUContext.union abs_ctx auctx

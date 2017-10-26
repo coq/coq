@@ -16,7 +16,6 @@
 (*                                                                      *)
 (************************************************************************)
 
-open API
 open Pp
 open Mutils
 open Goptions
@@ -1982,12 +1981,12 @@ let micromega_gen
      | None -> Tacticals.New.tclFAIL 0 (Pp.str " Cannot find witness")
      | Some (ids,ff',res') -> 
        let (arith_goal,props,vars,ff_arith) = make_goal_of_formula sigma dumpexpr ff' in
-       let intro (id,_) = Tactics.introduction id  in 
+       let intro (id,_) = Tactics.introduction id true in
 
        let intro_vars = Tacticals.New.tclTHENLIST (List.map intro vars) in
        let intro_props = Tacticals.New.tclTHENLIST (List.map intro props) in
-       let ipat_of_name id = Some (Loc.tag @@ Misctypes.IntroNaming (Misctypes.IntroIdentifier id)) in
-       let goal_name = fresh_id [] (Names.Id.of_string "__arith") gl in
+       let ipat_of_name id = Some (Loc.tag @@ Misctypes.IntroNaming (Misctypes.IntroIdentifier (id,true))) in
+       let goal_name = fresh_id Id.Set.empty (Names.Id.of_string "__arith") gl in
        let env' = List.map (fun (id,i) -> EConstr.mkVar id,i) vars in 
 
        let tac_arith = Tacticals.New.tclTHENLIST [ intro_props ; intro_vars ; 
@@ -2058,7 +2057,7 @@ let micromega_order_changer cert env ff  =
          ("__wit", cert, cert_typ)
         ]
         (Tacmach.New.pf_concl gl)));
-     (*      Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)*)
+     (*      Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id true)) ids)*)
      ]
   end
 
@@ -2097,12 +2096,12 @@ let micromega_genr prover tac =
          let ff' = abstract_wrt_formula ff' ff  in
 
          let (arith_goal,props,vars,ff_arith) = make_goal_of_formula sigma (Lazy.force dump_rexpr)  ff' in
-         let intro (id,_) = Tactics.introduction id  in 
+         let intro (id,_) = Tactics.introduction id true in
 
        let intro_vars = Tacticals.New.tclTHENLIST (List.map intro vars) in
        let intro_props = Tacticals.New.tclTHENLIST (List.map intro props) in
-       let ipat_of_name id = Some (Loc.tag @@ Misctypes.IntroNaming (Misctypes.IntroIdentifier id)) in
-       let goal_name = fresh_id [] (Names.Id.of_string "__arith") gl in
+       let ipat_of_name id = Some (Loc.tag @@ Misctypes.IntroNaming (Misctypes.IntroIdentifier (id,true))) in
+       let goal_name = fresh_id Id.Set.empty (Names.Id.of_string "__arith") gl in
        let env' = List.map (fun (id,i) -> EConstr.mkVar id,i) vars in 
        
        let tac_arith = Tacticals.New.tclTHENLIST [ intro_props ; intro_vars ; 

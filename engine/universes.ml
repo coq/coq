@@ -14,7 +14,7 @@ open Environ
 open Univ
 open Globnames
 
-let pr_with_global_universes l = 
+let pr_with_global_universes l =
   try Nameops.pr_id (LMap.find l (snd (Global.global_universe_names ())))
   with Not_found -> Level.pr l
 
@@ -31,7 +31,7 @@ let universe_binders_of_global ref =
 
 let register_universe_binders ref l =
   universe_binders_table := Refmap.add ref l !universe_binders_table
-		     
+
 (* To disallow minimization to Set *)
 
 let set_minimization = ref true
@@ -131,47 +131,6 @@ let to_constraints g s =
 		   "to_constraints: non-trivial algebraic constraint between universes")
   in Constraints.fold tr s Constraint.empty
 
-let test_constr_univs_infer leq univs fold m n accu =
-  if m == n then Some accu
-  else 
-    let cstrs = ref accu in
-    let eq_universes strict l l' = UGraph.check_eq_instances univs l l' in
-    let eq_sorts s1 s2 = 
-      if Sorts.equal s1 s2 then true
-      else
-	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	match fold (Constraints.singleton (u1, UEq, u2)) !cstrs with
-	| None -> false
-	| Some accu -> cstrs := accu; true
-    in
-    let leq_sorts s1 s2 = 
-      if Sorts.equal s1 s2 then true
-      else 
-	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	match fold (Constraints.singleton (u1, ULe, u2)) !cstrs with
-	| None -> false
-	| Some accu -> cstrs := accu; true
-    in
-    let rec eq_constr' m n = 
-      m == n ||	Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
-    in
-    let res =
-      if leq then
-        let rec compare_leq m n =
-          Constr.compare_head_gen_leq eq_universes leq_sorts 
-            eq_constr' leq_constr' m n
-        and leq_constr' m n = m == n || compare_leq m n in
-        compare_leq m n
-      else Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
-    in
-    if res then Some !cstrs else None
-
-let eq_constr_univs_infer univs fold m n accu =
-  test_constr_univs_infer false univs fold m n accu
-
-let leq_constr_univs_infer univs fold m n accu =
-  test_constr_univs_infer true univs fold m n accu
-
 (** Variant of [eq_constr_univs_infer] taking kind-of-term functions,
     to expose subterms of [m] and [n], arguments. *)
 let eq_constr_univs_infer_with kind1 kind2 univs fold m n accu =
@@ -196,42 +155,6 @@ let eq_constr_univs_infer_with kind1 kind2 univs fold m n accu =
   in
   let res = Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' m n in
   if res then Some !cstrs else None
-
-let test_constr_universes leq m n =
-  if m == n then Some Constraints.empty
-  else 
-    let cstrs = ref Constraints.empty in
-    let eq_universes strict l l' = 
-      cstrs := enforce_eq_instances_univs strict l l' !cstrs; true in
-    let eq_sorts s1 s2 = 
-      if Sorts.equal s1 s2 then true
-      else (cstrs := Constraints.add 
-	      (Sorts.univ_of_sort s1,UEq,Sorts.univ_of_sort s2) !cstrs; 
-	    true)
-    in
-    let leq_sorts s1 s2 = 
-      if Sorts.equal s1 s2 then true
-      else 
-	(cstrs := Constraints.add 
-	   (Sorts.univ_of_sort s1,ULe,Sorts.univ_of_sort s2) !cstrs; 
-	 true)
-    in
-    let rec eq_constr' m n = 
-      m == n ||	Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
-    in
-    let res =
-      if leq then
-        let rec compare_leq m n =
-          Constr.compare_head_gen_leq eq_universes leq_sorts eq_constr' leq_constr' m n
-        and leq_constr' m n = m == n || compare_leq m n in
-        compare_leq m n
-      else
-        Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
-    in
-    if res then Some !cstrs else None
-
-let eq_constr_universes m n = test_constr_universes false m n
-let leq_constr_universes m n = test_constr_universes true m n
 
 let compare_head_gen_proj env equ eqs eqc' m n =
   match kind_of_term m, kind_of_term n with
@@ -282,28 +205,27 @@ let new_Type dp = mkType (new_univ dp)
 let new_Type_sort dp = Type (new_univ dp)
 
 let fresh_universe_instance ctx =
-  Instance.subst_fn (fun _ -> new_univ_level (Global.current_dirpath ())) 
-    (AUContext.instance ctx)
+  let init _ = new_univ_level (Global.current_dirpath ()) in
+  Instance.of_array (Array.init (AUContext.size ctx) init)
 
 let fresh_instance_from_context ctx =
   let inst = fresh_universe_instance ctx in
-  let constraints = UContext.constraints (subst_instance_context inst ctx) in
+  let constraints = AUContext.instantiate inst ctx in
     inst, constraints
 
 let fresh_instance ctx =
   let ctx' = ref LSet.empty in
-  let inst = 
-    Instance.subst_fn (fun v -> 
-      let u = new_univ_level (Global.current_dirpath ()) in
-	ctx' := LSet.add u !ctx'; u) 
-      (AUContext.instance ctx)
+  let init _ =
+    let u = new_univ_level (Global.current_dirpath ()) in
+    ctx' := LSet.add u !ctx'; u
+  in
+  let inst = Instance.of_array (Array.init (AUContext.size ctx) init)
   in !ctx', inst
 
 let existing_instance ctx inst = 
   let () = 
-    let a1 = Instance.to_array inst 
-    and a2 = Instance.to_array (AUContext.instance ctx) in
-    let len1 = Array.length a1 and len2 = Array.length a2 in 
+    let len1 = Array.length (Instance.to_array inst)
+    and len2 = AUContext.size ctx in
       if not (len1 == len2) then
 	CErrors.user_err ~hdr:"Universes"
 	  (str "Polymorphic constant expected " ++ int len2 ++ 
@@ -317,12 +239,9 @@ let fresh_instance_from ctx inst =
     | Some inst -> existing_instance ctx inst
     | None -> fresh_instance ctx 
   in
-  let constraints = UContext.constraints (subst_instance_context inst ctx) in
+  let constraints = AUContext.instantiate inst ctx in
     inst, (ctx', constraints)
 
-let unsafe_instance_from ctx =
-  (Univ.AUContext.instance ctx, Univ.instantiate_univ_context ctx)
-    
 (** Fresh universe polymorphic construction *)
 
 let fresh_constant_instance env c inst =
@@ -359,34 +278,6 @@ let fresh_constructor_instance env (ind,i) inst =
     let inst, ctx = fresh_instance_from (ACumulativityInfo.univ_context acumi) inst in
     (((ind,i),inst), ctx)
 
-let unsafe_constant_instance env c =
-  let cb = lookup_constant c env in
-  match cb.Declarations.const_universes with
-  | Declarations.Monomorphic_const _ ->
-    ((c,Instance.empty), UContext.empty)
-  | Declarations.Polymorphic_const auctx ->
-    let inst, ctx = unsafe_instance_from auctx in ((c, inst), ctx)
-
-let unsafe_inductive_instance env ind = 
-  let mib, mip = Inductive.lookup_mind_specif env ind in
-  match mib.Declarations.mind_universes with
-  | Declarations.Monomorphic_ind _ -> ((ind,Instance.empty), UContext.empty)
-  | Declarations.Polymorphic_ind auctx ->
-    let inst, ctx = unsafe_instance_from auctx in ((ind,inst), ctx)
-  | Declarations.Cumulative_ind acumi ->
-    let inst, ctx = unsafe_instance_from (ACumulativityInfo.univ_context acumi) in
-    ((ind,inst), ctx)
-
-let unsafe_constructor_instance env (ind,i) = 
-  let mib, mip = Inductive.lookup_mind_specif env ind in
-  match mib.Declarations.mind_universes with
-  | Declarations.Monomorphic_ind _ -> (((ind, i),Instance.empty), UContext.empty)
-  | Declarations.Polymorphic_ind auctx ->
-    let inst, ctx = unsafe_instance_from auctx in (((ind, i),inst), ctx)
-  | Declarations.Cumulative_ind acumi ->
-    let inst, ctx = unsafe_instance_from (ACumulativityInfo.univ_context acumi) in
-    (((ind, i),inst), ctx)
-
 open Globnames
 
 let fresh_global_instance ?names env gr =
@@ -411,19 +302,6 @@ let fresh_inductive_instance env sp =
 let fresh_constructor_instance env sp = 
   fresh_constructor_instance env sp None
 
-let unsafe_global_instance env gr =
-  match gr with
-  | VarRef id -> mkVar id, UContext.empty
-  | ConstRef sp -> 
-     let c, ctx = unsafe_constant_instance env sp in
-       mkConstU c, ctx
-  | ConstructRef sp ->
-     let c, ctx = unsafe_constructor_instance env sp in
-       mkConstructU c, ctx
-  | IndRef sp -> 
-     let c, ctx = unsafe_inductive_instance env sp in
-       mkIndU c, ctx
-
 let constr_of_global gr =
   let c, ctx = fresh_global_instance (Global.env ()) gr in
     if not (Univ.ContextSet.is_empty ctx) then
@@ -437,9 +315,6 @@ let constr_of_global gr =
     else c
 
 let constr_of_reference = constr_of_global
-
-let unsafe_constr_of_global gr =
-  unsafe_global_instance (Global.env ()) gr
 
 let constr_of_global_univ (gr,u) =
   match gr with
@@ -467,7 +342,7 @@ let type_of_reference env r =
   | VarRef id -> Environ.named_type id env, ContextSet.empty
   | ConstRef c ->
      let cb = Environ.lookup_constant c env in
-     let ty = Typeops.type_of_constant_type env cb.const_type in
+     let ty = cb.const_type in
      begin
        match cb.const_universes with
        | Monomorphic_const _ -> ty, ContextSet.empty
@@ -513,25 +388,6 @@ let type_of_reference env r =
      end
 
 let type_of_global t = type_of_reference (Global.env ()) t
-
-let unsafe_type_of_reference env r =
-  match r with
-  | VarRef id -> Environ.named_type id env
-  | ConstRef c ->
-     let cb = Environ.lookup_constant c env in
-       Typeops.type_of_constant_type env cb.const_type
-
-  | IndRef ind ->
-     let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
-     let (_, inst), _ = unsafe_inductive_instance env ind in
-       Inductive.type_of_inductive env (specif, inst)
-
-  | ConstructRef (ind, _ as cstr) ->
-     let (mib,oib as specif) = Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
-     let (_, inst), _ = unsafe_inductive_instance env ind in
-       Inductive.type_of_constructor (cstr,inst) specif
-
-let unsafe_type_of_global t = unsafe_type_of_reference (Global.env ()) t
 
 let fresh_sort_in_family env = function
   | InProp -> prop_sort, ContextSet.empty
@@ -1014,34 +870,6 @@ let normalize_context_set ctx us algs =
 
 (* let normalize_conkey = Profile.declare_profile "normalize_context_set" *)
 (* let normalize_context_set a b c = Profile.profile3 normalize_conkey normalize_context_set a b c *)
-
-let simplify_universe_context (univs,csts) =
-  let uf = UF.create () in
-  let noneqs =
-    Constraint.fold (fun (l,d,r) noneqs ->
-      if d == Eq && (LSet.mem l univs || LSet.mem r univs) then 
-	(UF.union l r uf; noneqs)
-      else Constraint.add (l,d,r) noneqs)
-      csts Constraint.empty
-  in
-  let partition = UF.partition uf in
-  let flex x = LSet.mem x univs in
-  let subst, univs', csts' = List.fold_left (fun (subst, univs, cstrs) s -> 
-    let canon, (global, rigid, flexible) = choose_canonical univs flex LSet.empty s in
-    (* Add equalities for globals which can't be merged anymore. *)
-    let cstrs = LSet.fold (fun g cst -> 
-      Constraint.add (canon, Univ.Eq, g) cst) (LSet.union global rigid)
-      cstrs 
-    in
-    let subst = LSet.fold (fun f -> LMap.add f canon)
-      flexible subst
-    in (subst, LSet.diff univs flexible, cstrs))
-    (LMap.empty, univs, noneqs) partition
-  in
-  (* Noneqs is now in canonical form w.r.t. equality constraints, 
-     and contains only inequality constraints. *)
-  let csts' = subst_univs_level_constraints subst csts' in
-    (univs', csts'), subst
 
 let is_trivial_leq (l,d,r) =
   Univ.Level.is_prop l && (d == Univ.Le || (d == Univ.Lt && Univ.Level.is_set r))

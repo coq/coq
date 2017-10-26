@@ -37,11 +37,29 @@ open Decl_kinds
     | Some loc -> let (b,_) = Loc.unloc loc in
                   pr_located pr_id @@ Loc.tag ~loc:(Loc.make_loc (b,b + String.length (Id.to_string id))) id
 
-  let pr_plident (lid, l) =
-    pr_lident lid ++
-    (match l with
-     | Some l -> prlist_with_sep spc pr_lident l
-     | None -> mt())
+  let pr_uconstraint (l, d, r) =
+    pr_glob_level l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
+      pr_glob_level r
+
+  let pr_univdecl_instance l extensible =
+    prlist_with_sep spc pr_lident l ++
+    (if extensible then str"+" else mt ())
+
+  let pr_univdecl_constraints l extensible =
+    if List.is_empty l && extensible then mt ()
+    else str"|" ++ spc () ++ prlist_with_sep (fun () -> str",") pr_uconstraint l ++
+           (if extensible then str"+" else mt())
+
+  let pr_universe_decl l =
+    let open Misctypes in
+    match l with
+    | None -> mt ()
+    | Some l ->
+      str"@{" ++ pr_univdecl_instance l.univdecl_instance l.univdecl_extensible_instance ++
+        pr_univdecl_constraints l.univdecl_constraints l.univdecl_extensible_constraints ++ str "}"
+
+  let pr_ident_decl (lid, l) =
+    pr_lident lid ++ pr_universe_decl l
     
   let string_of_fqid fqid =
     String.concat "." (List.map Id.to_string fqid)
@@ -105,7 +123,7 @@ open Decl_kinds
         | SearchString (s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
 
   let pr_search a gopt b pr_p =
-    pr_opt (fun g -> Proof_global.pr_goal_selector g ++ str ":"++ spc()) gopt
+    pr_opt (fun g -> Proof_bullet.pr_goal_selector g ++ str ":"++ spc()) gopt
     ++
       match a with
       | SearchHead c -> keyword "SearchHead" ++ spc() ++ pr_p c ++ pr_in_out_modules b
@@ -275,7 +293,7 @@ open Decl_kinds
         ) ++
           hov 0 ((if dep then keyword "Induction for" else keyword "Minimality for")
                  ++ spc() ++ pr_smart_global ind) ++ spc() ++
-          hov 0 (keyword "Sort" ++ spc() ++ pr_glob_sort s)
+          hov 0 (keyword "Sort" ++ spc() ++ Termops.pr_sort_family s)
       | CaseScheme (dep,ind,s) ->
         (match idop with
           | Some id -> hov 0 (pr_lident id ++ str" :=") ++ spc()
@@ -283,7 +301,7 @@ open Decl_kinds
         ) ++
           hov 0 ((if dep then keyword "Elimination for" else keyword "Case for")
                  ++ spc() ++ pr_smart_global ind) ++ spc() ++
-          hov 0 (keyword "Sort" ++ spc() ++ pr_glob_sort s)
+          hov 0 (keyword "Sort" ++ spc() ++ Termops.pr_sort_family s)
       | EqualityScheme ind ->
         (match idop with
           | Some id -> hov 0 (pr_lident id ++ str" :=") ++ spc()
@@ -371,24 +389,19 @@ open Decl_kinds
     | l -> spc() ++
       hov 1 (str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
 
-  let pr_univs pl =
-    match pl with
-    | None -> mt ()
-    | Some pl -> str"@{" ++ prlist_with_sep spc pr_lident pl ++ str"}"
-
-  let pr_rec_definition ((((loc,id),pl),ro,bl,type_,def),ntn) =
+  let pr_rec_definition ((iddecl,ro,bl,type_,def),ntn) =
     let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
     let annot = pr_guard_annot pr_lconstr_expr bl ro in
-    pr_id id ++ pr_univs pl ++ pr_binders_arg bl ++ annot
+    pr_ident_decl iddecl ++ pr_binders_arg bl ++ annot
     ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_
     ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_pure_lconstr def) def
     ++ prlist (pr_decl_notation pr_constr) ntn
 
   let pr_statement head (idpl,(bl,c)) =
     assert (not (Option.is_empty idpl));
-    let id, pl = Option.get idpl in
+    let idpl = Option.get idpl in
     hov 2
-      (head ++ spc() ++ pr_lident id ++ pr_univs pl ++ spc() ++
+      (head ++ spc() ++ pr_ident_decl idpl ++ spc() ++
          (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
          str":" ++ pr_spc_lconstr c)
 
@@ -490,7 +503,7 @@ open Decl_kinds
     | PrintVisibility s ->
       keyword "Print Visibility" ++ pr_opt str s
     | PrintAbout (qid,gopt) ->
-       pr_opt (fun g -> Proof_global.pr_goal_selector g ++ str ":"++ spc()) gopt
+       pr_opt (fun g -> Proof_bullet.pr_goal_selector g ++ str ":"++ spc()) gopt
        ++ keyword "About" ++ spc()  ++ pr_smart_global qid
     | PrintImplicit qid ->
       keyword "Print Implicit" ++ spc()  ++ pr_smart_global qid
@@ -511,7 +524,16 @@ open Decl_kinds
     | PrintStrategy (Some qid) ->
       keyword "Print Strategy" ++ pr_smart_global qid
 
-  let pr_using e = str (Proof_using.to_string e)
+  let pr_using e =
+    let rec aux = function
+      | SsEmpty -> "()"
+      | SsType -> "(Type)"
+      | SsSingl (_,id) -> "("^Id.to_string id^")"
+      | SsCompl e -> "-" ^ aux e^""
+      | SsUnion(e1,e2) -> "("^aux e1 ^" + "^ aux e2^")"
+      | SsSubstr(e1,e2) -> "("^aux e1 ^" - "^ aux e2^")"
+      | SsFwdClose e -> "("^aux e^")*"
+    in Pp.str (aux e)
 
   let rec pr_vernac_body v =
     let return = tag_vernac v in
@@ -523,12 +545,6 @@ open Decl_kinds
         return (keyword "Program" ++ spc() ++ pr_vernac_body v)
       | VernacLocal (local, v) ->
         return (pr_locality local ++ spc() ++ pr_vernac_body v)
-
-      (* Stm *)
-      | VernacStm JoinDocument ->
-        return (keyword "Stm JoinDocument")
-      | VernacStm Wait ->
-        return (keyword "Stm Wait")
 
       (* Proof management *)
       | VernacAbortAll ->
@@ -656,7 +672,7 @@ open Decl_kinds
                      | None -> mt()
                      | Some sc -> str" :" ++ spc() ++ str sc))
         )
-      | VernacSyntaxExtension (_,(s,l)) ->
+      | VernacSyntaxExtension (_, _,(s,l)) ->
         return (
           keyword "Reserved Notation" ++ spc() ++ pr_located qs s ++
             pr_syntax_modifiers l
@@ -692,7 +708,7 @@ open Decl_kinds
         return (
           hov 2 (
             pr_def_token d ++ spc()
-            ++ pr_plident id ++ binds ++ typ
+            ++ pr_ident_decl id ++ binds ++ typ
             ++ (match c with
               | None -> mt()
               | Some cc -> str" :=" ++ spc() ++ cc))
@@ -711,10 +727,7 @@ open Decl_kinds
         match o with
           | None -> (match opac with
               | Transparent -> keyword "Defined"
-              | Opaque None -> keyword "Qed"
-              | Opaque (Some l) ->
-                  keyword "Qed" ++ spc() ++ str"export" ++
-                    prlist_with_sep (fun () -> str", ") pr_lident l)
+              | Opaque      -> keyword "Qed")
           | Some id -> (if opac <> Transparent then keyword "Save" else keyword "Defined") ++ spc() ++ pr_lident id
       )
       | VernacExactProof c ->
@@ -722,7 +735,7 @@ open Decl_kinds
       | VernacAssumption (stre,t,l) ->
         let n = List.length (List.flatten (List.map fst (List.map snd l))) in
         let pr_params (c, (xl, t)) =
-          hov 2 (prlist_with_sep sep pr_plident xl ++ spc() ++
+          hov 2 (prlist_with_sep sep pr_ident_decl xl ++ spc() ++
             (if c then str":>" else str":" ++ spc() ++ pr_lconstr_expr t)) in
         let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
         return (hov 2 (pr_assumption_token (n > 1) stre ++
@@ -743,10 +756,10 @@ open Decl_kinds
           | RecordDecl (c,fs) ->
             pr_record_decl b c fs
         in
-        let pr_oneind key (((coe,(id,pl)),indpar,s,k,lc),ntn) =
+        let pr_oneind key (((coe,iddecl),indpar,s,k,lc),ntn) =
           hov 0 (
             str key ++ spc() ++
-              (if coe then str"> " else str"") ++ pr_lident id ++ pr_univs pl ++
+              (if coe then str"> " else str"") ++ pr_ident_decl iddecl ++
               pr_and_type_binders_arg indpar ++
               pr_opt (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) s ++
               str" :=") ++ pr_constructor_list k lc ++
@@ -760,7 +773,11 @@ open Decl_kinds
                        | Class _ -> "Class" | Variant -> "Variant"
           in
           if p then
-            let cm = if cum then "Cumulative" else "NonCumulative" in
+            let cm =
+              match cum with
+              | GlobalCumulativity | LocalCumulativity -> "Cumulative"
+              | GlobalNonCumulativity | LocalNonCumulativity -> "NonCumulative"
+            in
             cm ^ " " ^ kind
           else kind
         in
@@ -787,8 +804,8 @@ open Decl_kinds
           | Some Local -> keyword "Local" ++ spc ()
           | None | Some Global -> str ""
         in
-        let pr_onecorec ((((loc,id),pl),bl,c,def),ntn) =
-          pr_id id ++ pr_univs pl ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
+        let pr_onecorec ((iddecl,bl,c,def),ntn) =
+          pr_ident_decl iddecl ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
             spc() ++ pr_lconstr_expr c ++
             pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_lconstr def) def ++
             prlist (pr_decl_notation pr_constr) ntn
@@ -814,10 +831,6 @@ open Decl_kinds
                    prlist_with_sep (fun _ -> str",") pr_lident v)
         )
       | VernacConstraint v ->
-        let pr_uconstraint (l, d, r) =
-          pr_glob_level l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
-            pr_glob_level r
-        in
         return (
           hov 2 (keyword "Constraint" ++ spc () ++
                    prlist_with_sep (fun _ -> str",") pr_uconstraint v)
@@ -871,7 +884,7 @@ open Decl_kinds
             (if abst then keyword "Declare" ++ spc () else mt ()) ++
               keyword "Instance" ++
               (match instid with
-      	 | (loc, Name id), l -> spc () ++ pr_plident ((loc, id),l) ++ spc () 
+      	 | (loc, Name id), l -> spc () ++ pr_ident_decl ((loc, id),l) ++ spc ()
                | (_, Anonymous), _ -> mt ()) ++
               pr_and_type_binders_arg sup ++
               str":" ++ spc () ++
@@ -1132,7 +1145,7 @@ open Decl_kinds
           | None -> hov 2 (keyword "Check" ++ spc() ++ pr_lconstr c)
         in
         let pr_i = match io with None -> mt ()
-                               | Some i -> Proof_global.pr_goal_selector i ++ str ": " in
+                               | Some i -> Proof_bullet.pr_goal_selector i ++ str ": " in
         return (pr_i ++ pr_mayeval r c)
       | VernacGlobalCheck c ->
         return (hov 2 (keyword "Type" ++ pr_constrarg c))
@@ -1152,7 +1165,7 @@ open Decl_kinds
           | LocateFile f -> keyword "File" ++ spc() ++ qs f
           | LocateLibrary qid -> keyword "Library" ++ spc () ++ pr_module qid
           | LocateModule qid -> keyword "Module" ++ spc () ++ pr_module qid
-          | LocateTactic qid -> keyword "Ltac" ++ spc () ++ pr_ltac_ref qid
+          | LocateOther (s, qid) -> keyword s ++ spc () ++ pr_ltac_ref qid
         in
         return (keyword "Locate" ++ spc() ++ pr_locate loc)
       | VernacRegister (id, RegisterInline) ->

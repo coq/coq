@@ -379,8 +379,9 @@ struct
   (** Return the number of {e local declarations} in a given named-context. *)
   let length = List.length
 
-(** Return a declaration designated by a given de Bruijn index.
-    @raise Not_found if the designated identifier is not present in the designated named-context. *)   let rec lookup id = function
+(** Return a declaration designated by a given identifier
+    @raise Not_found if the designated identifier is not present in the designated named-context. *)
+  let rec lookup id = function
     | decl :: _ when Id.equal id (Declaration.get_id decl) -> decl
     | _ :: sign -> lookup id sign
     | [] -> raise Not_found

@@ -90,7 +90,8 @@ let rec build_lambda sigma vars ctx m = match vars with
   let pre, suf = List.chop (pred n) ctx in
   let (na, t, suf) = match suf with
   | [] -> assert false
-  | (_, na, t) :: suf -> (na, t, suf)
+  | (_, id, t) :: suf ->
+     (Name id, t, suf)
   in
   (** Check that the abstraction is legal by generating a transitive closure of
       its dependencies. *)
@@ -126,11 +127,11 @@ let rec build_lambda sigma vars ctx m = match vars with
     mkRel 1 ::
     List.mapi (fun i _ -> mkRel (i + keep + 2)) suf
   in
-  let map i (id, na, c) =
+  let map i (na, id, c) =
     let i = succ i in
     let subst = List.skipn i subst in
     let subst = List.map (fun c -> Vars.lift (- i) c) subst in
-    (id, na, substl subst c)
+    (na, id, substl subst c)
   in
   let pre = List.mapi map pre in
   let pre = List.filter_with clear pre in
@@ -150,11 +151,10 @@ let rec build_lambda sigma vars ctx m = match vars with
 
 let rec extract_bound_aux k accu frels ctx = match ctx with
 | [] -> accu
-| (na1, na2, _) :: ctx ->
+| (na, _, _) :: ctx ->
   if Int.Set.mem k frels then
-    begin match na1 with
+    begin match na with
     | Name id ->
-      let () = assert (match na2 with Anonymous -> false | Name _ -> true) in
       let () = if Id.Set.mem id accu then raise PatternMatchingFailure in
       extract_bound_aux (k + 1) (Id.Set.add id accu) frels ctx
     | Anonymous -> raise PatternMatchingFailure
@@ -167,12 +167,20 @@ let extract_bound_vars frels ctx =
 let dummy_constr = EConstr.mkProp
 
 let make_renaming ids = function
-| (Name id, Name _, _) ->
+| (Name id, _, _) ->
   begin
     try EConstr.mkRel (List.index Id.equal id ids)
     with Not_found -> dummy_constr
   end
 | _ -> dummy_constr
+
+let push_binder na1 na2 t ctx =
+  let id2 = match na2 with
+  | Name id2 -> id2
+  | Anonymous ->
+     let avoid = Id.Set.of_list (List.map pi2 ctx) in
+     Namegen.next_ident_away Namegen.default_non_dependent_ident avoid in
+  (na1, id2, t) :: ctx
 
 let to_fix (idx, (nas, cs, ts)) =
   let inj = EConstr.of_constr in
@@ -306,19 +314,19 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
           sorec ctx env subst c1 c2
 
       | PProd (na1,c1,d1), Prod(na2,c2,d2) ->
-	  sorec ((na1,na2,c2)::ctx) (EConstr.push_rel (LocalAssum (na2,c2)) env)
+	  sorec (push_binder na1 na2 c2 ctx) (EConstr.push_rel (LocalAssum (na2,c2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PLambda (na1,c1,d1), Lambda(na2,c2,d2) ->
-	  sorec ((na1,na2,c2)::ctx) (EConstr.push_rel (LocalAssum (na2,c2)) env)
+	  sorec (push_binder na1 na2 c2 ctx) (EConstr.push_rel (LocalAssum (na2,c2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PLetIn (na1,c1,Some t1,d1), LetIn(na2,c2,t2,d2) ->
-	  sorec ((na1,na2,t2)::ctx) (EConstr.push_rel (LocalDef (na2,c2,t2)) env)
+	  sorec (push_binder na1 na2 t2 ctx) (EConstr.push_rel (LocalDef (na2,c2,t2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env (sorec ctx env subst c1 c2) t1 t2)) d1 d2
 
       | PLetIn (na1,c1,None,d1), LetIn(na2,c2,t2,d2) ->
-	  sorec ((na1,na2,t2)::ctx) (EConstr.push_rel (LocalDef (na2,c2,t2)) env)
+	  sorec (push_binder na1 na2 t2 ctx) (EConstr.push_rel (LocalDef (na2,c2,t2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PIf (a1,b1,b1'), Case (ci,_,a2,[|b2;b2'|]) ->
@@ -327,7 +335,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
 	  let n = Context.Rel.length ctx_b2 in
           let n' = Context.Rel.length ctx_b2' in
 	  if Vars.noccur_between sigma 1 n b2 && Vars.noccur_between sigma 1 n' b2' then
-            let f l (LocalAssum (na,t) | LocalDef (na,_,t)) = (Anonymous,na,t)::l in
+            let f l (LocalAssum (na,t) | LocalDef (na,_,t)) = push_binder Anonymous na t l in
 	    let ctx_br = List.fold_left f ctx ctx_b2 in
 	    let ctx_br' = List.fold_left f ctx ctx_b2' in
 	    let b1 = lift_pattern n b1 and b1' = lift_pattern n' b1' in

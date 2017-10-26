@@ -397,8 +397,8 @@ let get_arity env ((ind,u),params) =
       mib.mind_params_ctxt
     else begin
       assert (Int.equal nparams mib.mind_nparams_rec);
-      let nnonrecparamdecls = List.length mib.mind_params_ctxt - mib.mind_nparams_rec in
-      snd (List.chop nnonrecparamdecls mib.mind_params_ctxt)
+      let nnonrecparamdecls = mib.mind_nparams - mib.mind_nparams_rec in
+      snd (Termops.context_chop nnonrecparamdecls mib.mind_params_ctxt)
     end in
   let parsign = Vars.subst_instance_context u parsign in
   let arproperlength = List.length mip.mind_arity_ctxt - List.length parsign in

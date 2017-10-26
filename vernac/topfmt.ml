@@ -149,7 +149,7 @@ let gen_logger dbg warn ?pre_hdr level msg = match level with
 (** Standard loggers *)
 
 (* We provide a generic clear_log_backend callback for backends
-   wanting to do clenaup after the print.
+   wanting to do cleanup after the print.
 *)
 let std_logger_cleanup = ref (fun () -> ())
 
@@ -178,6 +178,7 @@ let default_tag_map () = let open Terminal in [
   ; "tactic.keyword"   , make ~bold:true ()
   ; "tactic.primitive" , make ~fg_color:`LIGHT_GREEN ()
   ; "tactic.string"    , make ~fg_color:`LIGHT_RED ()
+  ; "name.unstable"    , make ~negative:true ()
   ]
 
 let tag_map = ref CString.Map.empty
@@ -207,6 +208,8 @@ let make_style_stack () =
       italic = Some false;
       underline = Some false;
       negative = Some false;
+      prefix = None;
+      suffix = None;
     })
   in
   let style_stack = ref [] in
@@ -235,20 +238,49 @@ let make_style_stack () =
   let clear () = style_stack := [] in
   push, pop, clear
 
-let init_color_output () =
+let make_printing_functions () =
+  let empty = Terminal.make () in
+  let print_prefix ft tag =
+    let style =
+      try CString.Map.find tag !tag_map
+      with | Not_found -> empty
+    in
+    match style.Terminal.prefix with Some s -> Format.pp_print_string ft s | None -> ()
+  in
+  let print_suffix ft tag =
+    let style =
+      try CString.Map.find tag !tag_map
+      with | Not_found -> empty
+    in
+    match style.Terminal.suffix with Some s -> Format.pp_print_string ft s | None -> ()
+  in
+  print_prefix, print_suffix
+
+let init_terminal_output ~color =
   init_tag_map (default_tag_map ());
   let push_tag, pop_tag, clear_tag = make_style_stack () in
-  std_logger_cleanup := clear_tag;
-  let tag_handler = {
+  let print_prefix, print_suffix = make_printing_functions () in
+  let tag_handler ft = {
     Format.mark_open_tag   = push_tag;
     Format.mark_close_tag  = pop_tag;
-    Format.print_open_tag  = ignore;
-    Format.print_close_tag = ignore;
+    Format.print_open_tag  = print_prefix ft;
+    Format.print_close_tag = print_suffix ft;
   } in
-  Format.pp_set_mark_tags !std_ft true;
-  Format.pp_set_mark_tags !err_ft true;
-  Format.pp_set_formatter_tag_functions !std_ft tag_handler;
-  Format.pp_set_formatter_tag_functions !err_ft tag_handler
+  if color then
+    (* Use 0-length markers *)
+    begin
+      std_logger_cleanup := clear_tag;
+      Format.pp_set_mark_tags !std_ft true;
+      Format.pp_set_mark_tags !err_ft true
+    end
+  else
+    (* Use textual markers *)
+    begin
+      Format.pp_set_print_tags !std_ft true;
+      Format.pp_set_print_tags !err_ft true
+    end;
+  Format.pp_set_formatter_tag_functions !std_ft (tag_handler !std_ft);
+  Format.pp_set_formatter_tag_functions !err_ft (tag_handler !err_ft)
 
 (* Rules for emacs:
    - Debug/info: emacs_quote_info
@@ -261,10 +293,11 @@ let emacs_logger = gen_logger Emacs.quote_info Emacs.quote_warning
 (* This is specific to the toplevel *)
 let pr_loc loc =
     let fname = loc.Loc.fname in
-    if CString.equal fname "" then
+    match fname with
+    | Loc.ToplevelInput ->
       Loc.(str"Toplevel input, characters " ++ int loc.bp ++
 	   str"-" ++ int loc.ep ++ str":")
-    else
+    | Loc.InFile fname ->
       Loc.(str"File " ++ str "\"" ++ str fname ++ str "\"" ++
 	   str", line " ++ int loc.line_nb ++ str", characters " ++
 	   int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos) ++

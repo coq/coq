@@ -33,34 +33,34 @@ val is_quantified_hypothesis : Id.t -> 'a Proofview.Goal.t -> bool
 
 (** {6 Primitive tactics. } *)
 
-val introduction    : ?check:bool -> Id.t -> unit Proofview.tactic
+val introduction    : ?check:bool -> Id.t -> bool -> unit Proofview.tactic
 val convert_concl   : ?check:bool -> types -> cast_kind -> unit Proofview.tactic
 val convert_hyp     : ?check:bool -> named_declaration -> unit Proofview.tactic
 val convert_concl_no_check : types -> cast_kind -> unit Proofview.tactic
 val convert_hyp_no_check : named_declaration -> unit Proofview.tactic
 val mutual_fix      :
-  Id.t -> int -> (Id.t * int * constr) list -> int -> unit Proofview.tactic
-val fix             : Id.t option -> int -> unit Proofview.tactic
-val mutual_cofix    : Id.t -> (Id.t * constr) list -> int -> unit Proofview.tactic
-val cofix           : Id.t option -> unit Proofview.tactic
+  tracked_ident -> int -> ((tracked_ident) * int * constr) list -> int -> unit Proofview.tactic
+val fix             : (tracked_ident) option -> int -> unit Proofview.tactic
+val mutual_cofix    : tracked_ident -> ((tracked_ident) * constr) list -> int -> unit Proofview.tactic
+val cofix           : (tracked_ident) option -> unit Proofview.tactic
 
 val convert         : constr -> constr -> unit Proofview.tactic
 val convert_leq     : constr -> constr -> unit Proofview.tactic
 
 (** {6 Introduction tactics. } *)
 
-val fresh_id_in_env : Id.t list -> Id.t -> env -> Id.t
-val fresh_id : Id.t list -> Id.t -> goal sigma -> Id.t
+val fresh_id_in_env : Id.Set.t -> Id.t -> env -> Id.t
+val fresh_id : Id.Set.t -> Id.t -> goal sigma -> Id.t
 val find_intro_names : rel_context -> goal sigma -> Id.t list
 
 val intro                : unit Proofview.tactic
 val introf               : unit Proofview.tactic
-val intro_move        : Id.t option -> Id.t move_location -> unit Proofview.tactic
-val intro_move_avoid  : Id.t option -> Id.t list -> Id.t move_location -> unit Proofview.tactic
+val intro_move        : (tracked_ident) option -> Id.t move_location -> unit Proofview.tactic
+val intro_move_avoid  : (tracked_ident) option -> Id.Set.t -> Id.t move_location -> unit Proofview.tactic
 
   (** [intro_avoiding idl] acts as intro but prevents the new Id.t
      to belong to [idl] *)
-val intro_avoiding       : Id.t list -> unit Proofview.tactic
+val intro_avoiding       : Id.Set.t -> unit Proofview.tactic
 
 val intro_replacing      : Id.t -> unit Proofview.tactic
 val intro_using          : Id.t -> unit Proofview.tactic
@@ -178,7 +178,7 @@ val apply_clear_request : clear_flag -> bool -> constr -> unit Proofview.tactic
 val specialize    : constr with_bindings -> intro_pattern option -> unit Proofview.tactic
 
 val move_hyp      : Id.t -> Id.t move_location -> unit Proofview.tactic
-val rename_hyp    : (Id.t * Id.t) list -> unit Proofview.tactic
+val rename_hyp    : (Id.t * (tracked_ident)) list -> unit Proofview.tactic
 
 val revert        : Id.t list -> unit Proofview.tactic
 
@@ -360,11 +360,11 @@ val assert_as     : (* true = before *) bool ->
 (** Implements the tactics assert, enough and pose proof; note that "by"
     applies on the first goal for both assert and enough *)
 
-val assert_by  : Name.t -> types -> unit Proofview.tactic ->
+val assert_by  : Name.t -> Misctypes.private_flag -> types -> unit Proofview.tactic ->
   unit Proofview.tactic
-val enough_by  : Name.t -> types -> unit Proofview.tactic ->
+val enough_by  : Name.t -> Misctypes.private_flag -> types -> unit Proofview.tactic ->
   unit Proofview.tactic
-val pose_proof : Name.t -> constr ->
+val pose_proof : Name.t -> Misctypes.private_flag -> constr ->
   unit Proofview.tactic
 
 (** Common entry point for user-level "assert", "enough" and "pose proof" *)
@@ -379,12 +379,12 @@ val cut        : types -> unit Proofview.tactic
 (** {6 Tactics for adding local definitions. } *)
 
 val letin_tac : (bool * intro_pattern_naming) option ->
-  Name.t -> constr -> types option -> clause -> unit Proofview.tactic
+  Name.t -> Misctypes.private_flag -> constr -> types option -> clause -> unit Proofview.tactic
 
 (** Common entry point for user-level "set", "pose" and "remember" *)
 
 val letin_pat_tac : evars_flag -> (bool * intro_pattern_naming) option ->
-  Name.t -> (evar_map * constr) -> clause -> unit Proofview.tactic
+  Name.t -> Misctypes.private_flag -> (evar_map * constr) -> clause -> unit Proofview.tactic
 
 (** {6 Generalize tactics. } *)
 
@@ -422,7 +422,7 @@ val declare_intro_decomp_eq :
 module Simple : sig
   (** Simplified version of some of the above tactics *)
 
-  val intro           : Id.t -> unit Proofview.tactic
+  val intro  : Id.t -> Misctypes.private_flag -> unit Proofview.tactic
   val apply  : constr -> unit Proofview.tactic
   val eapply : constr -> unit Proofview.tactic
   val elim   : constr -> unit Proofview.tactic

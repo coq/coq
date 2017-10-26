@@ -1,4 +1,3 @@
-open API
 open Pp
 open Glob_term
 open CErrors
@@ -11,36 +10,36 @@ open Misctypes
    Some basic functions to rebuild glob_constr
    In each of them the location is Loc.ghost
 *)
-let mkGRef ref          = CAst.make @@ GRef(ref,None)
-let mkGVar id           = CAst.make @@ GVar(id)
-let mkGApp(rt,rtl)      = CAst.make @@ GApp(rt,rtl)
-let mkGLambda(n,t,b)    = CAst.make @@ GLambda(n,Explicit,t,b)
-let mkGProd(n,t,b)      = CAst.make @@ GProd(n,Explicit,t,b)
-let mkGLetIn(n,b,t,c)   = CAst.make @@ GLetIn(n,b,t,c)
-let mkGCases(rto,l,brl) = CAst.make @@ GCases(Term.RegularStyle,rto,l,brl)
-let mkGSort s           = CAst.make @@ GSort(s)
-let mkGHole ()          = CAst.make @@ GHole(Evar_kinds.BinderType Anonymous,Misctypes.IntroAnonymous,None)
-let mkGCast(b,t)        = CAst.make @@ GCast(b,CastConv t)
+let mkGRef ref          = DAst.make @@ GRef(ref,None)
+let mkGVar id           = DAst.make @@ GVar(id)
+let mkGApp(rt,rtl)      = DAst.make @@ GApp(rt,rtl)
+let mkGLambda(n,t,b)    = DAst.make @@ GLambda(n,Explicit,t,b)
+let mkGProd(n,t,b)      = DAst.make @@ GProd(n,Explicit,t,b)
+let mkGLetIn(n,b,t,c)   = DAst.make @@ GLetIn(n,b,t,c)
+let mkGCases(rto,l,brl) = DAst.make @@ GCases(Term.RegularStyle,rto,l,brl)
+let mkGSort s           = DAst.make @@ GSort(s)
+let mkGHole ()          = DAst.make @@ GHole(Evar_kinds.BinderType Anonymous,Misctypes.IntroAnonymous,None)
+let mkGCast(b,t)        = DAst.make @@ GCast(b,CastConv t)
 
 (*
   Some basic functions to decompose glob_constrs
   These are analogous to the ones constrs
 *)
 let glob_decompose_prod =
-  let rec glob_decompose_prod args = function
-  | { CAst.v = GProd(n,k,t,b) } ->
+  let rec glob_decompose_prod args c = match DAst.get c with
+  | GProd(n,k,t,b) ->
       glob_decompose_prod ((n,t)::args) b
-  | rt -> args,rt
+  | _ -> args,c
   in
   glob_decompose_prod []
 
 let glob_decompose_prod_or_letin =
-  let rec glob_decompose_prod args = function
-  | { CAst.v = GProd(n,k,t,b) } ->
+  let rec glob_decompose_prod args rt = match DAst.get rt with
+  | GProd(n,k,t,b) ->
       glob_decompose_prod ((n,None,Some t)::args) b
-  | { CAst.v = GLetIn(n,b,t,c) } ->
+  | GLetIn(n,b,t,c) ->
       glob_decompose_prod ((n,Some b,t)::args) c
-  | rt -> args,rt
+  | _ -> args,rt
   in
   glob_decompose_prod []
 
@@ -59,10 +58,10 @@ let glob_decompose_prod_n n =
   let rec glob_decompose_prod i args c =
     if i<=0 then args,c
     else
-      match c with
-	| { CAst.v = GProd(n,_,t,b) } ->
+      match DAst.get c with
+	| GProd(n,_,t,b) ->
 	    glob_decompose_prod (i-1) ((n,t)::args) b
-	| rt -> args,rt
+	| _ -> args,c
   in
   glob_decompose_prod n []
 
@@ -71,12 +70,12 @@ let glob_decompose_prod_or_letin_n n =
   let rec glob_decompose_prod i args c =
     if i<=0 then args,c
     else
-      match c with
-	| { CAst.v = GProd(n,_,t,b) } ->
+      match DAst.get c with
+	| GProd(n,_,t,b) ->
 	    glob_decompose_prod (i-1) ((n,None,Some t)::args) b
-	| { CAst.v = GLetIn(n,b,t,c) } ->
+	| GLetIn(n,b,t,c) ->
 	    glob_decompose_prod (i-1) ((n,Some b,t)::args) c
-	| rt -> args,rt
+	| _ -> args,c
   in
   glob_decompose_prod n []
 
@@ -84,10 +83,10 @@ let glob_decompose_prod_or_letin_n n =
 let glob_decompose_app =
   let rec decompose_rapp acc rt =
 (*     msgnl (str "glob_decompose_app on : "++ Printer.pr_glob_constr rt); *)
-    match rt with
-    | { CAst.v = GApp(rt,rtl) } ->
+    match DAst.get rt with
+    | GApp(rt,rtl) ->
 	decompose_rapp (List.fold_left (fun y x -> x::y) acc rtl) rt
-    | rt -> rt,List.rev acc
+    | _ -> rt,List.rev acc
   in
   decompose_rapp []
 
@@ -121,7 +120,7 @@ let remove_name_from_mapping mapping na =
 
 let change_vars =
   let rec change_vars mapping rt =
-    CAst.map_with_loc (fun ?loc -> function
+    DAst.map_with_loc (fun ?loc -> function
       | GRef _ as x -> x
       | GVar id ->
 	  let new_id =
@@ -192,22 +191,22 @@ let change_vars =
 
 let rec alpha_pat excluded pat =
   let loc = pat.CAst.loc in
-  match pat.CAst.v with
+  match DAst.get pat with
     | PatVar Anonymous ->
 	let new_id = Indfun_common.fresh_id excluded "_x" in
-	(CAst.make ?loc @@ PatVar(Name new_id)),(new_id::excluded),Id.Map.empty
+	(DAst.make ?loc @@ PatVar(Name new_id)),(new_id::excluded),Id.Map.empty
     | PatVar(Name id) ->
 	if Id.List.mem id excluded
 	then
-	  let new_id = Namegen.next_ident_away id excluded in
-	  (CAst.make ?loc @@ PatVar(Name new_id)),(new_id::excluded),
+	  let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
+	  (DAst.make ?loc @@ PatVar(Name new_id)),(new_id::excluded),
 	(Id.Map.add id new_id Id.Map.empty)
 	else pat, excluded,Id.Map.empty
     | PatCstr(constr,patl,na) ->
 	let new_na,new_excluded,map =
 	  match na with
 	    | Name id when Id.List.mem id excluded ->
-		let new_id = Namegen.next_ident_away id excluded in
+		let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
 		Name new_id,new_id::excluded, Id.Map.add id new_id Id.Map.empty
 	    | _ -> na,excluded,Id.Map.empty
 	in
@@ -220,7 +219,7 @@ let rec alpha_pat excluded pat =
 	    ([],new_excluded,map)
 	    patl
 	in
-        (CAst.make ?loc @@ PatCstr(constr,List.rev new_patl,new_na)),new_excluded,new_map
+        (DAst.make ?loc @@ PatCstr(constr,List.rev new_patl,new_na)),new_excluded,new_map
 
 let alpha_patl excluded patl  =
   let patl,new_excluded,map =
@@ -239,7 +238,7 @@ let alpha_patl excluded patl  =
 
 let raw_get_pattern_id pat acc =
   let rec get_pattern_id pat =
-    match pat.CAst.v with
+    match DAst.get pat with
       | PatVar(Anonymous) -> assert false
       | PatVar(Name id) ->
 	  [id]
@@ -258,11 +257,11 @@ let get_pattern_id pat = raw_get_pattern_id pat []
 
 let rec alpha_rt excluded rt =
   let loc = rt.CAst.loc in
-  let new_rt = CAst.make ?loc @@
-    match rt.CAst.v with
+  let new_rt = DAst.make ?loc @@
+    match DAst.get rt with
       | GRef _ | GVar _ | GEvar _ | GPatVar _ as rt -> rt
       | GLambda(Anonymous,k,t,b) ->
-	  let new_id = Namegen.next_ident_away (Id.of_string "_x") excluded in
+	  let new_id = Namegen.next_ident_away (Id.of_string "_x") (Id.Set.of_list excluded) in
 	  let new_excluded = new_id :: excluded in
 	  let new_t = alpha_rt new_excluded t in
 	  let new_b = alpha_rt new_excluded b in
@@ -277,7 +276,7 @@ let rec alpha_rt excluded rt =
 	let new_c = alpha_rt excluded c in
 	GLetIn(Anonymous,new_b,new_t,new_c)
     | GLambda(Name id,k,t,b) ->
-	let new_id = Namegen.next_ident_away id excluded in
+	let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
 	let t,b =
 	  if Id.equal new_id id
 	  then t, b
@@ -290,7 +289,7 @@ let rec alpha_rt excluded rt =
 	let new_b = alpha_rt new_excluded b in
 	GLambda(Name new_id,k,new_t,new_b)
     | GProd(Name id,k,t,b) ->
-	let new_id = Namegen.next_ident_away id excluded in
+	let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
 	let new_excluded = new_id::excluded in
 	let t,b =
 	  if Id.equal new_id id
@@ -303,7 +302,7 @@ let rec alpha_rt excluded rt =
 	let new_b = alpha_rt new_excluded b in
 	GProd(Name new_id,k,new_t,new_b)
     | GLetIn(Name id,b,t,c) ->
-	let new_id = Namegen.next_ident_away id excluded in
+	let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
 	let c =
 	  if Id.equal new_id id then c
 	  else change_vars (Id.Map.add id new_id Id.Map.empty) c
@@ -321,7 +320,7 @@ let rec alpha_rt excluded rt =
 	       match na with
 		 | Anonymous -> (na::nal,excluded,mapping)
 		 | Name id ->
-		     let new_id = Namegen.next_ident_away id excluded in
+		     let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
 		     if Id.equal new_id id
 		     then
 		       na::nal,id::excluded,mapping
@@ -378,7 +377,7 @@ and alpha_br excluded (loc,(ids,patl,res)) =
    [is_free_in id rt] checks if [id] is a free variable in [rt]
 *)
 let is_free_in id =
-  let rec is_free_in x = CAst.with_loc_val (fun ?loc -> function
+  let rec is_free_in x = DAst.with_loc_val (fun ?loc -> function
     | GRef _ ->  false
     | GVar id' -> Id.compare id' id == 0
     | GEvar _ -> false
@@ -422,7 +421,7 @@ let is_free_in id =
 
 
 
-let rec pattern_to_term pt = CAst.with_val (function
+let rec pattern_to_term pt = DAst.with_val (function
   | PatVar Anonymous -> assert false
   | PatVar(Name id) ->
 	mkGVar id
@@ -449,8 +448,8 @@ let rec pattern_to_term pt = CAst.with_val (function
 
 
 let replace_var_by_term x_id term =
-  let rec replace_var_by_pattern x = CAst.map (function
-      | GVar id when Id.compare id x_id == 0 -> term.CAst.v
+  let rec replace_var_by_pattern x = DAst.map (function
+      | GVar id when Id.compare id x_id == 0 -> DAst.get term
       | GRef _
       | GVar _
       | GEvar _
@@ -523,11 +522,10 @@ exception NotUnifiable
 
 let rec are_unifiable_aux  = function
   | [] -> ()
-  | eq::eqs ->
-      let open CAst in
-      match eq with
-	 | { v = PatVar _ },_ | _, { v = PatVar _ } -> are_unifiable_aux eqs
-	 | { v = PatCstr(constructor1,cpl1,_) }, { v = PatCstr(constructor2,cpl2,_) } ->
+  | (l, r) ::eqs ->
+      match DAst.get l, DAst.get r with
+	 | PatVar _ ,_ | _, PatVar _-> are_unifiable_aux eqs
+	 | PatCstr(constructor1,cpl1,_), PatCstr(constructor2,cpl2,_) ->
 	     if not (eq_constructor constructor2 constructor1)
 	     then raise NotUnifiable
 	     else
@@ -546,11 +544,10 @@ let are_unifiable pat1 pat2 =
 
 let rec eq_cases_pattern_aux  = function
   | [] -> ()
-  | eq::eqs ->
-      let open CAst in
-      match eq with
-	 | { v = PatVar _ }, { v = PatVar _ } -> eq_cases_pattern_aux eqs
-	 | { v = PatCstr(constructor1,cpl1,_) }, { v = PatCstr(constructor2,cpl2,_) } ->
+  | (l, r) ::eqs ->
+      match DAst.get l, DAst.get r with
+	 | PatVar _, PatVar _ -> eq_cases_pattern_aux eqs
+	 | PatCstr(constructor1,cpl1,_), PatCstr(constructor2,cpl2,_) ->
 	     if not (eq_constructor constructor2 constructor1)
 	     then raise NotUnifiable
 	     else
@@ -570,7 +567,7 @@ let eq_cases_pattern pat1 pat2 =
 
 
 let ids_of_pat =
-  let rec ids_of_pat ids = CAst.with_val (function
+  let rec ids_of_pat ids = DAst.with_val (function
     | PatVar Anonymous -> ids
     | PatVar(Name id) -> Id.Set.add id ids
     | PatCstr(_,patl,_) -> List.fold_left ids_of_pat ids patl
@@ -584,9 +581,9 @@ let id_of_name = function
 
 (* TODO: finish Rec caes *)
 let ids_of_glob_constr c =
-  let rec ids_of_glob_constr acc {loc; CAst.v = c} =
+  let rec ids_of_glob_constr acc c =
     let idof = id_of_name in
-    match c with
+    match DAst.get c with
       | GVar id -> id::acc
       | GApp (g,args) ->
           ids_of_glob_constr [] g @ List.flatten (List.map (ids_of_glob_constr []) args) @ acc
@@ -611,7 +608,7 @@ let ids_of_glob_constr c =
 
 
 let zeta_normalize =
-  let rec zeta_normalize_term x = CAst.map (function
+  let rec zeta_normalize_term x = DAst.map (function
       | GRef _
       | GVar _
       | GEvar _
@@ -633,9 +630,9 @@ let zeta_normalize =
 		zeta_normalize_term b
 		 )
       | GLetIn(Name id,def,typ,b) ->
-	  (zeta_normalize_term (replace_var_by_term id def b)).CAst.v
+	  DAst.get (zeta_normalize_term (replace_var_by_term id def b))
       | GLetIn(Anonymous,def,typ,b) ->
-          (zeta_normalize_term b).CAst.v
+          DAst.get (zeta_normalize_term b)
       | GLetTuple(nal,(na,rto),def,b) ->
 	  GLetTuple(nal,
 		    (na,Option.map zeta_normalize_term rto),
@@ -671,19 +668,19 @@ let zeta_normalize =
 
 let expand_as =
 
-  let rec add_as map ({loc; CAst.v = pat } as rt) =
-    match pat with
+  let rec add_as map rt =
+    match DAst.get rt with
       | PatVar _ -> map
       | PatCstr(_,patl,Name id) ->
 	  Id.Map.add id (pattern_to_term rt) (List.fold_left add_as map patl)
       | PatCstr(_,patl,_) -> List.fold_left add_as map patl
   in
-  let rec expand_as map = CAst.map (function
+  let rec expand_as map = DAst.map (function
       | GRef _ | GEvar _ | GPatVar _ | GSort _ | GHole _ as rt -> rt
       | GVar id as rt ->
 	  begin
 	    try
-	      (Id.Map.find id map).CAst.v
+	      DAst.get (Id.Map.find id map)
 	    with Not_found -> rt
 	  end
       | GApp(f,args) -> GApp(expand_as map f,List.map (expand_as map) args)
@@ -709,9 +706,6 @@ let expand_as =
   in
   expand_as Id.Map.empty
 
-
-
-           
 (* [resolve_and_replace_implicits ?expected_type env sigma rt] solves implicits of [rt] w.r.t. [env] and [sigma] and then replace them by their solution 
  *)
 
@@ -727,7 +721,7 @@ If someone knows how to prevent solved existantial removal in  understand, pleas
 
   (* then we map [rt] to replace the implicit holes by their values *)
   let rec change rt =
-    match rt.CAst.v with
+    match DAst.get rt with
     | GHole(ImplicitArg(grk,pk,bk),_,_) -> (* we only want to deal with implicit arguments *)
        (
          try (* we scan the new evar map to find the evar corresponding to this hole (by looking the source *)
@@ -747,8 +741,32 @@ If someone knows how to prevent solved existantial removal in  understand, pleas
            match evi.evar_body with
            | Evar_defined c ->
            (* we just have to lift the solution in glob_term *)
-              Detyping.detype false [] env ctx (EConstr.of_constr (f c))
+              Detyping.detype Detyping.Now false Id.Set.empty env ctx (EConstr.of_constr (f c))
            | Evar_empty -> rt (* the hole was not solved : we do nothing *)
+       )
+    | (GHole(BinderType na,_,_)) -> (* we only want to deal with implicit arguments *)
+       (
+         let res = 
+           try (* we scan the new evar map to find the evar corresponding to this hole (by looking the source *)
+             Evd.fold (* to simulate an iter *)
+               (fun _ evi _ ->
+                 match evi.evar_source with
+                 | (loc_evi,BinderType na') ->
+                    if Name.equal na na' && rt.CAst.loc = loc_evi  then raise (Found evi)
+                 | _ -> ()
+               )
+               ctx
+               ();
+             (* the hole was not solved : we do nothing *)
+             rt
+           with Found evi -> (* we found the evar corresponding to this hole *)
+                match evi.evar_body with
+                | Evar_defined c ->
+                   (* we just have to lift the solution in glob_term *)
+                   Detyping.detype Detyping.Now false Id.Set.empty env ctx (EConstr.of_constr (f c))
+                | Evar_empty -> rt (* the hole was not solved : we d when falseo nothing *)
+         in 
+         res
        )
     | _ -> Glob_ops.map_glob_constr change rt 
   in

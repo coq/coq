@@ -73,7 +73,7 @@ module type S =
 
   type coq_parsable
 
-  val parsable : ?file:string -> char Stream.t -> coq_parsable
+  val parsable : ?file:Loc.source -> char Stream.t -> coq_parsable
   val action : 'a -> action
   val entry_create : string -> 'a entry
   val entry_parse : 'a entry -> coq_parsable -> 'a
@@ -195,6 +195,7 @@ module Prim :
     val name : Name.t located Gram.entry
     val identref : Id.t located Gram.entry
     val pidentref : (Id.t located * (Id.t located list) option) Gram.entry
+    val ident_decl : ident_decl Gram.entry
     val pattern_ident : Id.t Gram.entry
     val pattern_identref : Id.t located Gram.entry
     val base_ident : Id.t Gram.entry
@@ -225,6 +226,7 @@ module Constr :
     val global : reference Gram.entry
     val universe_level : glob_level Gram.entry
     val sort : glob_sort Gram.entry
+    val sort_family : Sorts.family Gram.entry
     val pattern : cases_pattern_expr Gram.entry
     val constr_pattern : constr_expr Gram.entry
     val lconstr_pattern : constr_expr Gram.entry

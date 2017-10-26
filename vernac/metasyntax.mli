@@ -11,15 +11,16 @@ open Vernacexpr
 open Notation
 open Constrexpr
 open Notation_term
+open Environ
 
 val add_token_obj : string -> unit
 
 (** Adding a (constr) notation in the environment*)
 
-val add_infix : locality_flag -> (lstring * syntax_modifier list) ->
+val add_infix : locality_flag -> env -> (lstring * syntax_modifier list) ->
   constr_expr -> scope_name option -> unit
 
-val add_notation : locality_flag -> constr_expr ->
+val add_notation : locality_flag -> env -> constr_expr ->
   (lstring * syntax_modifier list) -> scope_name option -> unit
 
 val add_notation_extra_printing_rule : string -> string -> string -> unit
@@ -33,11 +34,11 @@ val add_class_scope : scope_name -> scope_class list -> unit
 (** Add only the interpretation of a notation that already has pa/pp rules *)
 
 val add_notation_interpretation :
-  (lstring * constr_expr * scope_name option) -> unit
+  env -> (lstring * constr_expr * scope_name option) -> unit
 
 (** Add a notation interpretation for supporting the "where" clause *)
 
-val set_notation_for_interpretation : Constrintern.internalization_env ->
+val set_notation_for_interpretation : env -> Constrintern.internalization_env ->
   (lstring * constr_expr * scope_name option) -> unit
 
 (** Add only the parsing/printing rule of a notation *)
@@ -47,12 +48,12 @@ val add_syntax_extension :
 
 (** Add a syntactic definition (as in "Notation f := ...") *)
 
-val add_syntactic_definition : Id.t -> Id.t list * constr_expr ->
+val add_syntactic_definition : env -> Id.t -> Id.t list * constr_expr ->
   bool -> Flags.compat_version option -> unit
 
 (** Print the Camlp4 state of a grammar *)
 
-val pr_grammar : string -> Pp.std_ppcmds
+val pr_grammar : string -> Pp.t
 
 type any_entry = AnyEntry : 'a Pcoq.Gram.entry -> any_entry
 

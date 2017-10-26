@@ -9,7 +9,6 @@
 (** This file extends Matching with the main logic for Ltac's
     (lazy)match and (lazy)match goal. *)
 
-open API
 open Names
 open Tacexpr
 open Context.Named.Declaration
@@ -25,7 +24,7 @@ module NamedDecl = Context.Named.Declaration
 type 'a t = {
   subst : Constr_matching.bound_ident_map * Pattern.extended_patvar_map ;
   context : EConstr.constr Id.Map.t;
-  terms : EConstr.constr Id.Map.t;
+  idents : Misctypes.tracked_ident Id.Map.t;
   lhs : 'a;
 }
 
@@ -151,19 +150,19 @@ module PatternMatching (E:StaticEnvironment) = struct
       right hand substitution shadows the left hand one. *)
   let context_subst_prod = id_map_right_biased_union
 
-  (** The empty term substitution. *)
-  let empty_term_subst = Id.Map.empty
+  (** The empty ident substitution. *)
+  let empty_ident_subst = Id.Map.empty
 
-  (** Compose two terms substitutions, in case of conflict the
+  (** Compose two ident substitutions, in case of conflict the
       right hand substitution shadows the left hand one. *)
-  let term_subst_prod = id_map_right_biased_union
+  let ident_subst_prod = id_map_right_biased_union
 
   (** Merge two writers (and ignore the first value component). *)
   let merge m1 m2 =
     try Some {
       subst = subst_prod m1.subst m2.subst;
       context = context_subst_prod m1.context m2.context;
-      terms = term_subst_prod m1.terms m2.terms;
+      idents = ident_subst_prod m1.idents m2.idents;
       lhs = m2.lhs;
     }
     with Not_coherent_metas -> None
@@ -190,7 +189,7 @@ module PatternMatching (E:StaticEnvironment) = struct
     let ctx = {
       subst = empty_subst ;
       context = empty_context_subst ;
-      terms = empty_term_subst ;
+      idents = empty_ident_subst ;
       lhs = ();
     } in
     let eval lhs ctx = Proofview.tclUNIT { ctx with lhs } in
@@ -204,17 +203,16 @@ module PatternMatching (E:StaticEnvironment) = struct
 
   let pick l = pick l imatching_error
 
-  (** Declares a subsitution, a context substitution and a term substitution. *)
-  let put subst context terms : unit m =
-    let s = { subst ; context ; terms ; lhs = () } in
+  (** Declares a substitution, a context substitution and a term substitution. *)
+  let put subst context idents : unit m =
+    let s = { subst ; context ; idents ; lhs = () } in
     { stream = fun k ctx -> match merge s ctx with None -> Proofview.tclZERO matching_error | Some s -> k () s }
 
   (** Declares a substitution. *)
-  let put_subst subst : unit m = put subst empty_context_subst empty_term_subst
+  let put_subst subst : unit m = put subst empty_context_subst empty_ident_subst
 
-  (** Declares a term substitution. *)
-  let put_terms terms : unit m = put empty_subst empty_context_subst terms
-
+  (** Declares a ident substitution. *)
+  let put_idents idents : unit m = put empty_subst empty_context_subst idents
 
 
   (** {6 Pattern-matching} *)
@@ -246,8 +244,8 @@ module PatternMatching (E:StaticEnvironment) = struct
           | IStream.Cons ({ Constr_matching.m_sub ; m_ctx }, s) ->
             let subst = adjust m_sub in
             let context = id_map_try_add id_ctxt m_ctx Id.Map.empty in
-            let terms = empty_term_subst in
-            let nctx = { subst ; context ; terms ; lhs = () } in
+            let idents = empty_ident_subst in
+            let nctx = { subst ; context ; idents ; lhs = () } in
             match merge ctx nctx with
             | None -> (map s (e, info)).stream k ctx
             | Some nctx -> Proofview.tclOR (k lhs nctx) (fun e -> (map s e).stream k ctx)
@@ -281,24 +279,26 @@ module PatternMatching (E:StaticEnvironment) = struct
       hypothesis pattern [hypname:pat] against the hypotheses in
       [hyps]. Tries the hypotheses in order. For each success returns
       the name of the matched hypothesis. *)
-  let hyp_match_type hypname pat hyps =
+  let hyp_match_type hypname pat (hyps,private_ids) =
     pick hyps >>= fun decl ->
     let id = NamedDecl.get_id decl in
     let refresh = is_local_def decl in
+    let isprivate = Id.Set.mem id private_ids in
     pattern_match_term refresh pat (NamedDecl.get_type decl) () <*>
-    put_terms (id_map_try_add_name hypname (EConstr.mkVar id) empty_term_subst) <*>
+    put_idents (id_map_try_add_name hypname (id,isprivate) empty_ident_subst) <*>
     return id
 
   (** [hyp_match_type hypname bodypat typepat hyps] matches a single
       hypothesis pattern [hypname := bodypat : typepat] against the
       hypotheses in [hyps].Tries the hypotheses in order. For each
       success returns the name of the matched hypothesis. *)
-  let hyp_match_body_and_type hypname bodypat typepat hyps =
+  let hyp_match_body_and_type hypname bodypat typepat (hyps,private_ids) =
     pick hyps >>= function
       | LocalDef (id,body,hyp) ->
+          let isprivate = Id.Set.mem id private_ids in
           pattern_match_term false bodypat body () <*>
           pattern_match_term true typepat hyp () <*>
-          put_terms (id_map_try_add_name hypname (EConstr.mkVar id) empty_term_subst) <*>
+          put_idents (id_map_try_add_name hypname (id,isprivate) empty_ident_subst) <*>
           return id
       | LocalAssum (id,hyp) -> fail
 
@@ -323,7 +323,7 @@ module PatternMatching (E:StaticEnvironment) = struct
            with the matched hypothesis removed directly in
            [hyp_match]. *)
         let select_matched_hyp decl = Id.equal (NamedDecl.get_id decl) matched_hyp in
-        let hyps = CList.remove_first select_matched_hyp hyps in
+        let hyps = Util.on_fst (CList.remove_first select_matched_hyp) hyps in
         hyp_pattern_list_match pats hyps lhs
     | [] -> return lhs
 

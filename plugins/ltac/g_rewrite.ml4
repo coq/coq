@@ -10,8 +10,6 @@
 
 (* Syntax for rewriting with strategies *)
 
-open API
-open Grammar_API
 open Names
 open Misctypes
 open Locus
@@ -125,7 +123,7 @@ END
 
 let clsubstitute o c =
   Proofview.Goal.enter begin fun gl ->
-  let is_tac id = match fst (fst (snd c)) with { CAst.v = GVar id' } when Id.equal id' id -> true | _ -> false in
+  let is_tac id = match DAst.get (fst (fst (snd c))) with GVar id' when Id.equal id' id -> true | _ -> false in
   let hyps = Tacmach.New.pf_ids_of_hyps gl in
     Tacticals.New.tclMAP
       (fun cl ->

@@ -17,7 +17,7 @@
 # read
 #    http://miller.emu.id.au/pmiller/books/rmch/
 # before complaining.
-# 
+#
 # When you are working in a subdir, you can compile without moving to the
 # upper directory using "make -C ..", and the output is still understood
 # by Emacs' next-error.
@@ -42,9 +42,9 @@
 # to communicate between make sub-calls (in Win32, 8kb max per env variable,
 # 32kb total)
 
-# !! Before using FIND_VCS_CLAUSE, please read how you should in the !!
-# !! FIND_VCS_CLAUSE section of dev/doc/build-system.dev.txt         !!
-FIND_VCS_CLAUSE:='(' \
+# !! Before using FIND_SKIP_DIRS, please read how you should in the !!
+# !! FIND_SKIP_DIRS section of dev/doc/build-system.dev.txt         !!
+FIND_SKIP_DIRS:='(' \
   -name '{arch}' -o \
   -name '.svn' -o \
   -name '_darcs' -o \
@@ -54,26 +54,26 @@ FIND_VCS_CLAUSE:='(' \
   -name "$${GIT_DIR}" -o \
   -name '_build' -o \
   -name '_build_ci' -o \
+  -name '_install_ci' -o \
+  -name 'user-contrib' -o \
   -name 'coq-makefile' -o \
-  -name '.opamcache' \
+  -name '.opamcache' -o \
+  -name '.coq-native' \
 ')' -prune -o
 
 define find
- $(shell find . $(FIND_VCS_CLAUSE) '(' -name $(1) ')' -print | sed 's|^\./||')
+ $(shell find . $(FIND_SKIP_DIRS) '(' -name $(1) ')' -print | sed 's|^\./||')
 endef
 
 define findindir
- $(shell find $(1) $(FIND_VCS_CLAUSE) '(' -name $(2) ')' -print | sed 's|^\./||')
-endef
-
-define findx
- $(shell find . $(FIND_VCS_CLAUSE) '(' -name $(1) ')' -exec $(2) {} \; | sed 's|^\./||')
+ $(shell find $(1) $(FIND_SKIP_DIRS) '(' -name $(2) ')' -print | sed 's|^\./||')
 endef
 
 ## Files in the source tree
 
 LEXFILES := $(call find, '*.mll')
-export MLLIBFILES := $(call find, '*.mllib') $(call find, '*.mlpack')
+export MLLIBFILES := $(call find, '*.mllib')
+export MLPACKFILES := $(call find, '*.mlpack')
 export ML4FILES := $(call find, '*.ml4')
 export CFILES := $(call findindir, 'kernel/byterun', '*.c')
 
@@ -97,11 +97,7 @@ export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES)
 
 ## More complex file lists
 
-define diff
- $(strip $(foreach f, $(1), $(if $(filter $(f),$(2)),,$f)))
-endef
-
-export MLSTATICFILES := $(call diff, $(EXISTINGML), $(GENMLFILES) $(GENML4FILES))
+export MLSTATICFILES := $(filter-out $(GENMLFILES) $(GENML4FILES), $(EXISTINGML))
 export MLIFILES := $(sort $(GENMLIFILES) $(EXISTINGMLI))
 
 include Makefile.common
@@ -139,6 +135,38 @@ Then, you may want to consider whether you want to restore the autosaves)
 #run.
 endif
 
+# Check that every compiled file around has a known source file.
+# This should help preventing weird compilation failures caused by leftover
+# compiled files after deleting or moving some source files.
+
+ifeq (,$(findstring clean,$(MAKECMDGOALS))) # Skip this for 'make clean' and alii
+ifndef ACCEPT_ALIEN_VO
+EXISTINGVO:=$(call find, '*.vo')
+KNOWNVO:=$(patsubst %.v,%.vo,$(call find, '*.v'))
+ALIENVO:=$(filter-out $(KNOWNVO),$(EXISTINGVO))
+ifdef ALIENVO
+$(error Leftover compiled Coq files without known sources: $(ALIENVO); \
+remove them first, for instance via 'make voclean' \
+(or skip this check via 'make ACCEPT_ALIEN_VO=1'))
+endif
+endif
+
+ifndef ACCEPT_ALIEN_OBJ
+EXISTINGOBJS:=$(call find, '*.cm[oxia]' -o -name '*.cmxa')
+KNOWNML:=$(EXISTINGML) $(GENMLFILES) $(GENML4FILES) $(MLPACKFILES:.mlpack=.ml) \
+ $(patsubst %.mlp,%.ml,$(wildcard grammar/*.mlp))
+KNOWNOBJS:=$(KNOWNML:.ml=.cmo) $(KNOWNML:.ml=.cmx) $(KNOWNML:.ml=.cmi) \
+ $(MLIFILES:.mli=.cmi) \
+ $(MLLIBFILES:.mllib=.cma) $(MLLIBFILES:.mllib=.cmxa) grammar/grammar.cma
+ALIENOBJS:=$(filter-out $(KNOWNOBJS),$(EXISTINGOBJS))
+ifdef ALIENOBJS
+$(error Leftover compiled OCaml files without known sources: $(ALIENOBJS); \
+remove them first, for instance via 'make clean' \
+(or skip this check via 'make ACCEPT_ALIEN_OBJ=1'))
+endif
+endif
+endif
+
 # Apart from clean and tags, everything will be done in a sub-call to make
 # on Makefile.build. This way, we avoid doing here the -include of .d :
 # since they trigger some compilations, we do not want them for a mere clean.
@@ -168,7 +196,7 @@ Makefile $(wildcard Makefile.*) config/Makefile : ;
 # Cleaning
 ###########################################################################
 
-.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide ml4clean depclean cleanconfig distclean voclean devdocclean
+.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide ml4clean depclean cleanconfig distclean voclean timingclean devdocclean
 
 clean: objclean cruftclean depclean docclean devdocclean
 
@@ -218,7 +246,7 @@ archclean: clean-ide optclean voclean
 optclean:
 	rm -f $(COQTOPEXE) $(COQMKTOP) $(CHICKEN)
 	rm -f $(TOOLS) $(PRIVATEBINARIES) $(CSDPCERT)
-	find . -name '*.cmx' -o -name '*.cmxs' -o -name '*.cmxa' -o -name '*.[soa]' -o -name '*.so' | xargs rm -f
+	find . -name '*.cmx' -o -name '*.cmx[as]' -o -name '*.[soa]' -o -name '*.so' | xargs rm -f
 
 clean-ide:
 	rm -f $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDE)
@@ -231,7 +259,7 @@ ml4clean:
 	rm -f $(GENML4FILES)
 
 depclean:
-	find . $(FIND_VCS_CLAUSE) '(' -name '*.d' ')' -print | xargs rm -f
+	find . $(FIND_SKIP_DIRS) '(' -name '*.d' ')' -print | xargs rm -f
 
 cacheclean:
 	find theories plugins test-suite -name '.*.aux' -delete
@@ -239,16 +267,19 @@ cacheclean:
 cleanconfig:
 	rm -f config/Makefile config/coq_config.ml myocamlbuild_config.ml dev/ocamldebug-coq dev/camlp4.dbg config/Info-*.plist
 
-distclean: clean cleanconfig cacheclean
+distclean: clean cleanconfig cacheclean timingclean
 
 voclean:
 	find theories plugins test-suite \( -name '*.vo' -o -name '*.glob' -o -name "*.cmxs" -o -name "*.native" -o -name "*.cmx" -o -name "*.cmi" -o -name "*.o" \) -delete
 	find theories plugins test-suite -name .coq-native -empty -delete
 
+timingclean:
+	find theories plugins test-suite \( -name '*.v.timing' -o -name '*.v.before-timing' -o -name "*.v.after-timing" -o -name "*.v.timing.diff" -o -name "time-of-build.log" -o -name "time-of-build-before.log" -o -name "time-of-build-after.log" -o -name "time-of-build-pretty.log" -o -name "time-of-build-both.log" \) -delete
+
 devdocclean:
 	find . -name '*.dep.ps' -o -name '*.dot' | xargs rm -f
-	rm -f $(OCAMLDOCDIR)/*.log $(OCAMLDOCDIR)/*.aux $(OCAMLDOCDIR)/*.toc 
-	rm -f $(OCAMLDOCDIR)/ocamldoc.sty $(OCAMLDOCDIR)/coq.tex 
+	rm -f $(OCAMLDOCDIR)/*.log $(OCAMLDOCDIR)/*.aux $(OCAMLDOCDIR)/*.toc
+	rm -f $(OCAMLDOCDIR)/ocamldoc.sty $(OCAMLDOCDIR)/coq.tex
 	rm -f $(OCAMLDOCDIR)/html/*.html
 
 ###########################################################################
@@ -299,4 +330,3 @@ printenv:
 	@env | wc -L
 	@echo -n "Total (win32 limit is 32k) : "
 	@env | wc -m
-

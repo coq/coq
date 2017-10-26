@@ -63,14 +63,6 @@ val start_modtype :
 
 val end_modtype : unit -> module_path
 
-(** Hooks for XML output *)
-val xml_declare_module : (module_path -> unit) Hook.t
-val xml_start_module : (module_path -> unit) Hook.t
-val xml_end_module : (module_path -> unit) Hook.t
-val xml_declare_module_type : (module_path -> unit) Hook.t
-val xml_start_module_type : (module_path -> unit) Hook.t
-val xml_end_module_type : (module_path -> unit) Hook.t
-
 (** {6 Libraries i.e. modules on disk } *)
 
 type library_name = DirPath.t
@@ -121,7 +113,7 @@ val iter_all_segments :
   (Libnames.object_name -> Libobject.obj -> unit) -> unit
 
 
-val debug_print_modtab : unit -> Pp.std_ppcmds
+val debug_print_modtab : unit -> Pp.t
 
 (** For printing modules, [process_module_binding] adds names of
     bound module (and its components) to Nametab. It also loads

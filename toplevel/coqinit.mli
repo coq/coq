@@ -13,16 +13,13 @@ val set_debug : unit -> unit
 val set_rcfile : string -> unit
 
 val no_load_rc : unit -> unit
-val load_rcfile : Stateid.t -> Stateid.t
+val load_rcfile : Stm.doc -> Stateid.t -> Stm.doc * Stateid.t
 
 val push_include : string -> Names.DirPath.t -> bool -> unit
 (** [push_include phys_path log_path implicit] *)
 
 val push_ml_include : string -> unit
 
-val init_load_path : unit -> unit
-val init_library_roots : unit -> unit
+val init_load_path : load_init:bool -> unit
 
 val init_ocaml_path : unit -> unit
-
-val get_compat_version : ?allow_old:bool -> string -> Flags.compat_version

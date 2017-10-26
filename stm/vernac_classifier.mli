@@ -18,9 +18,6 @@ val classify_vernac : vernac_expr -> vernac_classification
 val declare_vernac_classifier :
   Vernacexpr.extend_name -> (raw_generic_argument list -> unit -> vernac_classification) -> unit
 
-(** Set by Stm *)
-val set_undo_classifier : (vernac_expr -> vernac_classification) -> unit
-
 (** Standard constant classifiers *)
 val classify_as_query : vernac_classification
 val classify_as_sideeff : vernac_classification

@@ -29,7 +29,7 @@ exception Elimconst
 
 let refolding_in_reduction = ref false
 let _ = Goptions.declare_bool_option {
-  Goptions.optdepr = false;
+  Goptions.optdepr = true; (* remove in 8.8 *)
   Goptions.optname =
     "Perform refolding of fixpoints/constants like cbn during reductions";
   Goptions.optkey = ["Refolding";"Reduction"];
@@ -272,7 +272,7 @@ module Stack :
 sig
   open EConstr
   type 'a app_node
-  val pr_app_node : ('a -> Pp.std_ppcmds) -> 'a app_node -> Pp.std_ppcmds
+  val pr_app_node : ('a -> Pp.t) -> 'a app_node -> Pp.t
 
   type cst_member =
     | Cst_const of pconstant
@@ -290,7 +290,7 @@ sig
 
   exception IncompatibleFold2
 
-  val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
+  val pr : ('a -> Pp.t) -> 'a t -> Pp.t
   val empty : 'a t
   val is_empty : 'a t -> bool
   val append_app : 'a array -> 'a t -> 'a t
@@ -1362,25 +1362,23 @@ let sigma_compare_instances ~flex i0 i1 sigma =
 	raise Reduction.NotConvertible
 
 let sigma_check_inductive_instances cv_pb uinfind u u' sigma =
-  let ind_instance = 
-    Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context uinfind) 
+  let len_instance =
+    Univ.AUContext.size (Univ.ACumulativityInfo.univ_context uinfind)
   in
   let ind_sbctx =  Univ.ACumulativityInfo.subtyp_context uinfind  in
-  if not ((Univ.Instance.length ind_instance = Univ.Instance.length u) &&
-          (Univ.Instance.length ind_instance = Univ.Instance.length u')) then
+  if not ((len_instance = Univ.Instance.length u) &&
+          (len_instance = Univ.Instance.length u')) then
      anomaly (Pp.str "Invalid inductive subtyping encountered!")
   else
     let comp_cst =
       let comp_subst = (Univ.Instance.append u u') in
-      Univ.UContext.constraints (Univ.subst_instance_context comp_subst ind_sbctx)
+      Univ.AUContext.instantiate comp_subst ind_sbctx
     in
     let comp_cst =
       match cv_pb with
         Reduction.CONV -> 
         let comp_subst = (Univ.Instance.append u' u) in
-        let comp_cst' = 
-          Univ.UContext.constraints(Univ.subst_instance_context comp_subst ind_sbctx)
-        in
+        let comp_cst' = Univ.AUContext.instantiate comp_subst ind_sbctx in
         Univ.Constraint.union comp_cst comp_cst'
       | Reduction.CUMUL -> comp_cst
     in
@@ -1440,17 +1438,13 @@ let sigma_univ_state =
 let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     ?(ts=full_transparent_state) env sigma x y =
   (** FIXME *)
-  let open Universes in
-  let x = EConstr.Unsafe.to_constr x in
-  let y = EConstr.Unsafe.to_constr y in
   try
-    let fold cstr accu = Some (Constraints.fold Constraints.add cstr accu) in
     let b, sigma = 
       let ans =
 	if pb == Reduction.CUMUL then 
-	  Universes.leq_constr_univs_infer (Evd.universes sigma) fold x y Constraints.empty
+	  EConstr.leq_constr_universes sigma x y
 	else
-	  Universes.eq_constr_univs_infer (Evd.universes sigma) fold x y Constraints.empty
+	  EConstr.eq_constr_universes sigma x y
       in
       let ans = match ans with
       | None -> None
@@ -1464,6 +1458,8 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     in
       if b then sigma, true
       else
+        let x = EConstr.Unsafe.to_constr x in
+        let y = EConstr.Unsafe.to_constr y in
 	let sigma' = 
 	  conv_fun pb ~l2r:false sigma ts
 	    env (sigma, sigma_univ_state) x y in

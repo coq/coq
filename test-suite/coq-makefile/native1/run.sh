@@ -1,25 +1,24 @@
 #!/usr/bin/env bash
 
-#set -x
-set -e
-
 NATIVECOMP=`grep "let no_native_compiler = false" ../../../config/coq_config.ml`||true
 if [[ `which ocamlopt` && $NATIVECOMP ]]; then
 
 . ../template/init.sh
 	
 coq_makefile -f _CoqProject -o Makefile
+cat Makefile.conf
 make
 make html mlihtml
 make install DSTROOT="$PWD/tmp"
 #make debug
-(cd `find tmp -name user-contrib`; find .) | sort > actual
+(cd `find tmp -name user-contrib` && find .) | sort > actual
 sort > desired <<EOT
 .
 ./test
 ./test/test.glob
 ./test/test_plugin.cmi
 ./test/test_plugin.cmx
+./test/test_plugin.cmxa
 ./test/test_plugin.cmxs
 ./test/test.v
 ./test/test.vo

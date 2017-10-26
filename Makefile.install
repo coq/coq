@@ -74,9 +74,10 @@ ifeq ($(BEST),opt)
 	$(INSTALLBIN) $(TOPLOOPCMA:.cma=.cmxs) $(FULLCOQLIB)/toploop/
 endif
 
-install-byte: install-ide-byte
+install-byte: install-coqide-byte
 	$(MKDIR) $(FULLBINDIR)
 	$(INSTALLBIN) $(COQTOPBYTE) $(FULLBINDIR)
+	$(MKDIR) $(FULLCOQLIB)/toploop
 	$(INSTALLBIN) $(TOPLOOPCMA) $(FULLCOQLIB)/toploop/
 	$(INSTALLSH) $(FULLCOQLIB) $(LINKCMO) $(PLUGINS)
 ifndef CUSTOM
@@ -87,7 +88,6 @@ install-tools:
 	$(MKDIR) $(FULLBINDIR)
 	# recopie des fichiers de style pour coqide
 	$(MKDIR) $(FULLCOQLIB)/tools/coqdoc
-	touch $(FULLCOQLIB)/tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc/coqdoc.css # to have the mode according to umask (bug #1715)
 	$(INSTALLLIB) tools/coqdoc/coqdoc.css tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc
 	$(INSTALLBIN) $(TOOLS) $(FULLBINDIR)
 
@@ -107,7 +107,7 @@ install-devfiles:
 	$(MKDIR) $(FULLCOQLIB)
 	$(INSTALLSH)  $(FULLCOQLIB) $(GRAMMARCMA)
 	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMI)
-	$(INSTALLSH)  $(FULLCOQLIB) tools/CoqMakefile.in
+	$(INSTALLSH)  $(FULLCOQLIB) $(TOOLS_HELPERS)
 ifeq ($(BEST),opt)
 	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMX) $(CORECMA:.cma=.a) $(STATICPLUGINS:.cma=.a)
 endif

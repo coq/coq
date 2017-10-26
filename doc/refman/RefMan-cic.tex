@@ -2,6 +2,7 @@
 \label{Cic}
 \index{Cic@\textsc{CIC}}
 \index{Calculus of Inductive Constructions}}
+%HEVEA\cutname{cic.html}
 
 The underlying formal language of {\Coq} is a {\em Calculus of
 Inductive Constructions} (\CIC) whose inference rules are presented in
@@ -558,7 +559,7 @@ $\Sort$ is called the sort of the inductive type $t$.
 \paragraph{Examples}
 
     \newcommand\ind[3]{$\mathsf{Ind}~[#1]\left(\hskip-.4em
-    \begin{array}{r @{\mathrm{~:=~}} l}
+    \begin{array}{r@{\mathrm{~:=~}}l}
       #2 & #3 \\
     \end{array}
     \hskip-.4em
@@ -569,7 +570,7 @@ The declaration for parameterized lists is:
 \begin{latexonly}
     \vskip.5em
 
-\ind{1}{[\List:\Set\ra\Set]}{\left[\begin{array}{r \colon l}
+    \ind{1}{[\List:\Set\ra\Set]}{\left[\begin{array}{r@{:}l}
                                       \Nil & \forall A:\Set,\List~A \\
                                       \cons & \forall A:\Set, A \ra \List~A \ra \List~A
                                    \end{array}
@@ -613,8 +614,8 @@ Inductive list (A:Set) : Set :=
 \noindent The declaration for a mutual inductive definition of {\tree} and {\forest} is:
 \begin{latexonly}
     \vskip.5em
-\ind{~}{\left[\begin{array}{r \colon l}\tree&\Set\\\forest&\Set\end{array}\right]}
-       {\left[\begin{array}{r \colon l}
+\ind{~}{\left[\begin{array}{r@{:}l}\tree&\Set\\\forest&\Set\end{array}\right]}
+    {\left[\begin{array}{r@{:}l}
              \node & \forest \ra \tree\\
              \emptyf & \forest\\
              \consf & \tree \ra \forest \ra \forest\\
@@ -680,15 +681,15 @@ with forest : Set :=
 
 \noindent The declaration for a mutual inductive definition of {\even} and {\odd} is:
 \begin{latexonly}
-    \newcommand\GammaI{\left[\begin{array}{r \colon l}
-                        \even & \nat\ra\Prop \\
-                        \odd & \nat\ra\Prop
+	\newcommand\GammaI{\left[\begin{array}{r@{:}l}
+			    \even & \nat\ra\Prop \\
+			    \odd & \nat\ra\Prop
                       \end{array}
                 \right]}
-    \newcommand\GammaC{\left[\begin{array}{r \colon l}
-                        \evenO & \even~\nO \\
-                        \evenS & \forall n : \nat, \odd~n \ra \even~(\nS~n)\\
-                        \oddS & \forall n : \nat, \even~n \ra \odd~(\nS~n)
+		\newcommand\GammaC{\left[\begin{array}{r@{:}l}
+			    \evenO & \even~\nO \\
+			    \evenS & \forall n : \nat, \odd~n \ra \even~(\nS~n)\\
+			    \oddS & \forall n : \nat, \even~n \ra \odd~(\nS~n)
                       \end{array}
                 \right]}
     \vskip.5em
@@ -769,7 +770,7 @@ Provided that our environment $E$ contains inductive definitions we showed befor
 these two inference rules above enable us to conclude that:
 \vskip.5em
 \newcommand\prefix{E[\Gamma]\vdash\hskip.25em}
-$\begin{array}{@{} l}
+$\begin{array}{@{}l}
    \prefix\even : \nat\ra\Prop\\
    \prefix\odd : \nat\ra\Prop\\
    \prefix\evenO : \even~\nO\\
@@ -1425,6 +1426,9 @@ If there is an hypothesis $h:a=b$ in the local context, it can be used for
 rewriting not only in logical propositions but also in any type.
 % In that case, the term \verb!eq_rec! which was defined as an axiom, is
 % now a term of the calculus.
+\begin{coq_eval}
+Require Extraction.
+\end{coq_eval}
 \begin{coq_example}
 Print eq_rec.
 Extraction eq_rec.

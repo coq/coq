@@ -21,7 +21,7 @@
     type).  `Simple carries the list of focused goals.
 *)
 val simple_goal : Evd.evar_map -> Goal.goal -> Goal.goal list -> bool
-val is_focused_goal_simple : Stateid.t -> [ `Simple of Goal.goal list | `Not ]
+val is_focused_goal_simple : doc:Stm.doc -> Stateid.t -> [ `Simple of Goal.goal list | `Not ]
 
 type 'a until = [ `Stop | `Found of Stm.static_block_declaration | `Cont of 'a ]
 

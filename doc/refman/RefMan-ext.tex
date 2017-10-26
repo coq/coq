@@ -1,4 +1,5 @@
 \chapter[Extensions of \Gallina{}]{Extensions of \Gallina{}\label{Gallina-extension}\index{Gallina}}
+%HEVEA\cutname{gallina-ext.html}
 
 {\gallina} is the kernel language of {\Coq}. We describe here extensions of
 the Gallina's syntax.
@@ -279,15 +280,78 @@ of the chapter devoted to coercions.
 \label{prim-proj}
 
 The option {\tt Set Primitive Projections} turns on the use of primitive
-projections when defining subsequent records. Primitive projections
+projections when defining subsequent records (even through the {\tt
+  Inductive} and {\tt CoInductive} commands). Primitive projections
 extended the Calculus of Inductive Constructions with a new binary term
 constructor {\tt r.(p)} representing a primitive projection p applied to
 a record object {\tt r} (i.e., primitive projections are always
 applied). Even if the record type has parameters, these do not appear at
 applications of the projection, considerably reducing the sizes of terms
 when manipulating parameterized records and typechecking time. On the
-user level, primitive projections are a transparent replacement
-for the usual defined ones.
+user level, primitive projections can be used as a replacement for the
+usual defined ones, although there are a few notable differences.
+
+The internally omitted parameters can be reconstructed at printing time
+even though they are absent in the actual AST manipulated by the kernel. This
+can be obtained by setting the {\tt Printing Primitive Projection Parameters}
+flag. Another compatibility printing can be activated thanks to the
+{\tt Printing Primitive Projection Compatibility} option which governs the
+printing of pattern-matching over primitive records.
+
+\subsubsection{Primitive Record Types}
+When the {\tt Set Primitive Projections} option is on, definitions of
+record types change meaning. When a type is declared with primitive
+projections, its {\tt match} construct is disabled (see
+\ref{primproj:compat} though). To eliminate the (co-)inductive type, one
+must use its defined primitive projections.
+
+There are currently two ways to introduce primitive records types:
+\begin{itemize}
+\item Through the {\tt Record} command, in which case the type has to be
+  non-recursive. The defined type enjoys eta-conversion definitionally,
+  that is the generalized form of surjective pairing for records:
+  {\tt $r$ = Build\_R ($r$.($p_1$) .. $r$.($p_n$))}. Eta-conversion allows to define
+  dependent elimination for these types as well.
+\item Through the {\tt Inductive} and {\tt CoInductive} commands, when
+  the body of the definition is a record declaration of the form {\tt
+    Build\_R \{ $p_1$ : $t_1$; .. ; $p_n$ : $t_n$ \}}. In this case the types can be
+  recursive and eta-conversion is disallowed. These kind of record types
+  differ from their traditional versions in the sense that dependent
+  elimination is not available for them and only non-dependent case analysis
+  can be defined.
+\end{itemize}
+
+\subsubsection{Reduction}
+
+The basic reduction rule of a primitive projection is {\tt $p_i$
+  (Build\_R $t_1$ .. $t_n$) $\rightarrow_{\iota}$ $t_i$}. However, to take the $\delta$ flag into
+account, projections can be in two states: folded or unfolded. An
+unfolded primitive projection application obeys the rule above, while
+the folded version delta-reduces to the unfolded version. This allows to
+precisely mimic the usual unfolding rules of constants. Projections
+obey the usual {\tt simpl} flags of the {\tt Arguments} command in particular.
+
+There is currently no way to input unfolded primitive projections at the
+user-level, and one must use the {\tt Printing Primitive Projection
+  Compatibility} to display unfolded primitive projections as matches
+and distinguish them from folded ones.
+
+\subsubsection{Compatibility Projections and {\tt match}}
+\label{primproj:compat}
+To ease compatibility with ordinary record types, each primitive
+projection is also defined as a ordinary constant taking parameters and
+an object of the record type as arguments, and whose body is an
+application of the unfolded primitive projection of the same name. These
+constants are used when elaborating partial applications of the
+projection. One can distinguish them from applications of the primitive
+projection if the {\tt Printing Primitive Projection Parameters} option
+is off: for a primitive projection application, parameters are printed
+as underscores while for the compatibility projections they are printed
+as usual.
+
+Additionally, user-written {\tt match} constructs on primitive records
+are desugared into substitution of the projections, they cannot be
+printed back as {\tt match} constructs.
 
   % - r.(p) and (p r) elaborate to native projection application, and
   %   the parameters cannot be mentioned. The following arguments are
@@ -304,13 +368,6 @@ for the usual defined ones.
   %   projection application.
   % - [pattern x at n], [rewrite x at n] and in general abstraction and selection
   %   of occurrences may fail due to the disappearance of parameters.
-
-The internally omitted parameters can be reconstructed at printing time
-even though they are absent in the actual AST manipulated by the kernel. This
-can be obtained by setting the {\tt Printing Primitive Projection Parameters}
-flag. Another compatibility printing can be activated thanks to the
-{\tt Printing Primitive Projection Compatibility} option which governs the
-printing of pattern-matching over primitive records.
 
 \section{Variants and extensions of {\mbox{\tt match}}
 \label{Extensions-of-match}
@@ -705,20 +762,20 @@ when the {\tt FunInd} library has been loaded via {\tt Require Import FunInd}:
 This command can be seen as a generalization of {\tt Fixpoint}.  It is actually
 a wrapper for several ways of defining a function \emph{and other useful
   related objects}, namely: an induction principle that reflects the
-recursive structure of the function (see \ref{FunInduction}), and its
+recursive structure of the function (see \ref{FunInduction}) and its
 fixpoint equality.
  The meaning of this
 declaration is to define a function {\it ident}, similarly to {\tt
   Fixpoint}. Like in {\tt Fixpoint}, the decreasing argument must be
-given (unless the function is not recursive), but it must not
-necessary be \emph{structurally} decreasing. The point of the {\tt
+given (unless the function is not recursive), but it might not
+necessarily be \emph{structurally} decreasing. The point of the {\tt
   \{\}} annotation is to name the decreasing argument \emph{and} to
 describe which kind of decreasing criteria must be used to ensure
 termination of recursive calls.
 
-The {\tt Function} construction enjoys also the {\tt with} extension
+The {\tt Function} construction also enjoys the {\tt with} extension
 to define mutually recursive definitions. However, this feature does
-not work for non structural recursive functions. % VRAI??
+not work for non structurally recursive functions. % VRAI??
 
 See the documentation of {\tt functional induction}
 (see Section~\ref{FunInduction}) and {\tt Functional Scheme}
@@ -749,7 +806,7 @@ Function plus (n m : nat) {struct n} : nat :=
 \end{coq_example*}
 
 \paragraph[Limitations]{Limitations\label{sec:Function-limitations}}
-\term$_0$ must be build as a \emph{pure pattern-matching tree}
+\term$_0$ must be built as a \emph{pure pattern-matching tree}
 (\texttt{match...with}) with applications only \emph{at the end} of
 each branch.  
 
@@ -776,7 +833,7 @@ For now dependent cases are not treated for non structurally terminating functio
 
   The generation of the graph relation \texttt{(R\_\ident)} used to
   compute the induction scheme of \ident\ raised a typing error. Only
-  the ident is defined, the induction scheme will not be generated.
+  the ident is defined; the induction scheme will not be generated.
 
   This error happens generally when:
 
@@ -848,14 +905,14 @@ the following:
       being the decreasing argument and \term$_1$ being a function
       from type of \ident$_0$ to \texttt{nat} for which value on the
       decreasing argument decreases (for the {\tt lt} order on {\tt
-      nat}) at each recursive call of \term$_0$, parameters of the
+      nat}) at each recursive call of \term$_0$. Parameters of the
       function are bound in  \term$_0$;
 \item {\tt \{wf} \term$_1$ \ident$_0${\tt\}} with \ident$_0$ being
       the decreasing argument and \term$_1$ an ordering relation on
       the type of \ident$_0$ (i.e. of type T$_{\ident_0}$
       $\to$ T$_{\ident_0}$ $\to$ {\tt Prop}) for which
       the decreasing argument decreases at each recursive call of
-      \term$_0$. The order must be well founded. parameters of the
+      \term$_0$. The order must be well founded. Parameters of the
       function are bound in  \term$_0$.
 \end{itemize} 
 
@@ -1664,7 +1721,7 @@ to be given as if none arguments were implicit. By symmetry, this also
 affects printing. To restore parsing and normal printing of implicit
 arguments, use:
 \begin{quote}
-{\tt Set Parsing Explicit.}
+{\tt Unset Parsing Explicit.}
 \end{quote}
 
 \subsection{Canonical structures

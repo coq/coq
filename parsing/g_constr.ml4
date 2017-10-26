@@ -123,8 +123,8 @@ let name_colon =
 let aliasvar = function { CAst.loc = loc; CAst.v = CPatAlias (_, id) } -> Some (loc,Name id) | _ -> None
 
 GEXTEND Gram
-  GLOBAL: binder_constr lconstr constr operconstr universe_level sort global
-  constr_pattern lconstr_pattern Constr.ident
+  GLOBAL: binder_constr lconstr constr operconstr universe_level sort sort_family
+  global constr_pattern lconstr_pattern Constr.ident
   closed_binder open_binders binder binders binders_fixannot
   record_declaration typeclass_constraint pattern appl_arg;
   Constr.ident:
@@ -147,6 +147,12 @@ GEXTEND Gram
       | "Prop" -> GProp
       | "Type" -> GType []
       | "Type"; "@{"; u = universe; "}" -> GType u
+      ] ]
+  ;
+  sort_family:
+    [ [ "Set"  -> Sorts.InSet
+      | "Prop" -> Sorts.InProp
+      | "Type" -> Sorts.InType
       ] ]
   ;
   universe:
@@ -283,8 +289,8 @@ GEXTEND Gram
       | n=INT    -> CAst.make ~loc:!@loc @@ CPrim (Numeral (n,true))
       | s=string -> CAst.make ~loc:!@loc @@ CPrim (String s)
       | "_"      -> CAst.make ~loc:!@loc @@ CHole (None, IntroAnonymous, None)
-      | "?"; "["; id=ident; "]"  -> CAst.make ~loc:!@loc @@  CHole (None, IntroIdentifier id, None)
-      | "?"; "["; id=pattern_ident; "]"  -> CAst.make ~loc:!@loc @@  CHole (None, IntroFresh id, None)
+      | "?"; "["; id=ident; "]"  -> CAst.make ~loc:!@loc @@  CHole (None, IntroIdentifier (id,false), None)
+      | "?"; "["; id=pattern_ident; "]"  -> CAst.make ~loc:!@loc @@  CHole (None, IntroFresh (id,false), None)
       | id=pattern_ident; inst = evar_instance -> CAst.make ~loc:!@loc @@ CEvar(id,inst) ] ]
   ;
   inst:
@@ -295,7 +301,7 @@ GEXTEND Gram
       | -> [] ] ]
   ;
   instance:
-    [ [ "@{"; l = LIST1 universe_level; "}" -> Some l
+    [ [ "@{"; l = LIST0 universe_level; "}" -> Some l
       | -> None ] ]
   ;
   universe_level:
@@ -370,6 +376,7 @@ GEXTEND Gram
     | "100" RIGHTA
       [ p = pattern; "|"; pl = LIST1 pattern SEP "|" -> CAst.make ~loc:!@loc @@ CPatOr (p::pl) ]
     | "99" RIGHTA [ ]
+    | "90" RIGHTA [ ]
     | "11" LEFTA
       [ p = pattern; "as"; id = ident ->
         CAst.make ~loc:!@loc @@ CPatAlias (p, id) ]

@@ -52,7 +52,9 @@ let dirmap = ref StrMap.empty
 
 let make_dir_table dir =
   let filter_dotfiles s f = if f.[0] = '.' then s else StrSet.add f s in
-  Array.fold_left filter_dotfiles StrSet.empty (readdir dir)
+  Array.fold_left filter_dotfiles StrSet.empty (Sys.readdir dir)
+
+let trust_file_cache = ref true
 
 let exists_in_dir_respecting_case dir bf =
   let cache_dir dir =
@@ -62,10 +64,10 @@ let exists_in_dir_respecting_case dir bf =
   let contents, fresh =
     try
       (* in batch mode, assume the directory content is still fresh *)
-      StrMap.find dir !dirmap, !Flags.batch_mode
+      StrMap.find dir !dirmap, !trust_file_cache
     with Not_found ->
       (* in batch mode, we are not yet sure the directory exists *)
-      if !Flags.batch_mode && not (exists_dir dir) then StrSet.empty, true
+      if !trust_file_cache && not (exists_dir dir) then StrSet.empty, true
       else cache_dir dir, true in
   StrSet.mem bf contents ||
     not fresh &&
@@ -80,7 +82,7 @@ let file_exists_respecting_case path f =
     let df = Filename.dirname f in
     (String.equal df "." || aux df)
     && exists_in_dir_respecting_case (Filename.concat path df) bf
-  in (!Flags.batch_mode || Sys.file_exists (Filename.concat path f)) && aux f
+  in (!trust_file_cache || Sys.file_exists (Filename.concat path f)) && aux f
 
 let rec search paths test =
   match paths with

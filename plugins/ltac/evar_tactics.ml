@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Util
 open Names
 open Term
@@ -78,7 +77,7 @@ let instantiate_tac_by_name id c =
   instantiate_evar evk c sigma gl
   end
 
-let let_evar name typ =
+let let_evar (name,isprivate) typ =
   let src = (Loc.tag Evar_kinds.GoalEvar) in
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
@@ -86,15 +85,15 @@ let let_evar name typ =
     let sigma = ref sigma in
     let _ = Typing.e_sort_of env sigma typ in
     let sigma = !sigma in
-    let id = match name with
-    | Name.Anonymous ->
+    let id,isprivate = match name with
+    | Name.Anonymous -> 
       let id = Namegen.id_of_name_using_hdchar env sigma typ name in
-      Namegen.next_ident_away_in_goal id (Termops.ids_of_named_context (Environ.named_context env))
-    | Name.Name id -> id
+      Namegen.next_ident_away_in_goal id (Termops.vars_of_env env), true
+    | Name.Name id -> id, isprivate
     in
-    let (sigma, evar) = Evarutil.new_evar env sigma ~src ~naming:(Misctypes.IntroFresh id) typ in
+    let (sigma, evar) = Evarutil.new_evar env sigma ~src ~naming:(Misctypes.IntroFresh (id,isprivate)) typ in
     Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (Tactics.letin_tac None (Name.Name id) evar None Locusops.nowhere)
+    (Tactics.letin_tac None (Name.Name id) isprivate evar None Locusops.nowhere)
   end
   
 let hget_evar n =

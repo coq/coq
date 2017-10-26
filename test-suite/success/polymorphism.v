@@ -156,6 +156,52 @@ Polymorphic Definition twoprojs (d : dyn) := dyn_proof d = dyn_proof d.
 
 End structures.
 
+
+Module binders.
+
+  Definition mynat@{|} := nat.
+
+  Definition foo@{i j | i < j, i < j} (A : Type@{i}) : Type@{j}.
+    exact A.
+  Defined.
+
+  Definition nomoreu@{i j | i < j +} (A : Type@{i}) : Type@{j}.
+    pose(foo:=Type).
+    exact A.
+    Fail Defined.
+  Abort.
+
+  Polymorphic Definition moreu@{i j +} (A : Type@{i}) : Type@{j}.
+    pose(foo:=Type).
+    exact A.
+  Defined.
+
+  Check moreu@{_ _ _ _}.
+  
+  Fail Definition morec@{i j|} (A : Type@{i}) : Type@{j} := A.
+
+  (* By default constraints are extensible *)
+  Polymorphic Definition morec@{i j} (A : Type@{i}) : Type@{j} := A.
+  Check morec@{_ _}.
+
+  (* Handled in proofs as well *)
+  Lemma bar@{i j | } : Type@{i}.
+    exact Type@{j}.
+    Fail Defined.
+  Abort.
+
+  Lemma bar@{i j| i < j} : Type@{j}.
+  Proof.
+    exact Type@{i}.
+  Qed.
+
+  Lemma barext@{i j|+} : Type@{j}.
+  Proof.
+    exact Type@{i}.
+  Qed.
+
+End binders.
+    
 Section cats.
   Local Set Universe Polymorphism.
   Require Import Utf8.

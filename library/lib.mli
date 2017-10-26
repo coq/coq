@@ -150,10 +150,6 @@ val unfreeze : frozen -> unit
 
 val init : unit -> unit
 
-(** XML output hooks *)
-val xml_open_section : (Names.Id.t -> unit) Hook.t
-val xml_close_section : (Names.Id.t -> unit) Hook.t
-
 (** {6 Section management for discharge } *)
 type variable_info = Context.Named.Declaration.t * Decl_kinds.binding_kind
 type variable_context = variable_info list 
@@ -165,7 +161,7 @@ val named_of_variable_context : variable_context -> Context.Named.t
 val section_segment_of_constant : Names.constant -> abstr_info
 val section_segment_of_mutual_inductive: Names.mutual_inductive -> abstr_info
 val variable_section_segment_of_reference : Globnames.global_reference -> variable_context
-                                                                                                     
+
 val section_instance : Globnames.global_reference -> Univ.universe_instance * Names.Id.t array
 val is_in_section : Globnames.global_reference -> bool
 
@@ -183,3 +179,5 @@ val discharge_kn :  Names.mutual_inductive -> Names.mutual_inductive
 val discharge_con : Names.constant -> Names.constant
 val discharge_global : Globnames.global_reference -> Globnames.global_reference
 val discharge_inductive : Names.inductive -> Names.inductive
+val discharge_abstract_universe_context :
+  abstr_info -> Univ.AUContext.t -> Univ.universe_level_subst * Univ.AUContext.t

@@ -557,7 +557,7 @@ let make_clenv_binding_gen hyps_only n env sigma (c,t) = function
       let clause = mk_clenv_from_env env sigma n (c,t) in
       clenv_constrain_dep_args hyps_only largs clause
   | ExplicitBindings lbind ->
-      let t = rename_bound_vars_as_displayed sigma [] [] t in
+      let t = rename_bound_vars_as_displayed sigma Id.Set.empty [] t in
       let clause = mk_clenv_from_env env sigma n
 	(c, t)
       in clenv_match_args lbind clause
@@ -605,7 +605,7 @@ let make_evar_clause env sigma ?len t =
   | Some n -> assert (0 <= n); n
   in
   (** FIXME: do the renaming online *)
-  let t = rename_bound_vars_as_displayed sigma [] [] t in
+  let t = rename_bound_vars_as_displayed sigma Id.Set.empty [] t in
   let rec clrec (sigma, holes) n t =
     if n = 0 then (sigma, holes, t)
     else match EConstr.kind sigma t with

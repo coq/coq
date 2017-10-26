@@ -30,7 +30,7 @@ sig
 
   val eq : 'a typ -> 'b typ -> ('a, 'b) CSig.eq option
   val repr : 'a typ -> string
-  val pr : 'a typ -> Pp.std_ppcmds
+  val pr : 'a typ -> Pp.t
 
   val typ_list : t list typ
   val typ_opt : t option typ

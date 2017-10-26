@@ -31,7 +31,7 @@ open Environ
 (** {6 Evars} *)
 
 type evar = existential_key
-(** Existential variables. TODO: Should be made opaque one day. *)
+(** Existential variables. *)
 
 val string_of_existential : evar -> string
 
@@ -100,6 +100,11 @@ type evar_info = {
   (** Boolean mask over {!evar_hyps}. Should have the same length.
       When filtered out, the corresponding variable is not allowed to occur
       in the solution *)
+  evar_private : Id.Set.t;
+  (** Subset of non-canonically or non user-generated variables of the context *)
+  evar_concl_user_names : Id.Set.t;
+  (** List of names of the products of the conclusion provided by user *)
+  (** Typically at the beginning of a proof, or after "assert" *)
   evar_source : Evar_kinds.t located;
   (** Information about the evar. *)
   evar_candidates : constr list option;
@@ -243,6 +248,9 @@ val restrict : evar -> Filter.t -> ?candidates:constr list ->
   ?src:Evar_kinds.t located -> evar_map -> evar_map * evar
 (** Restrict an undefined evar into a new evar by filtering context and
     possibly limiting the instances to a set of candidates *)
+
+val is_restricted_evar : evar_info -> evar option
+(** Tell if an evar comes from restriction of another evar, and if yes, which *)
 
 val downcast : evar -> types -> evar_map -> evar_map
 (** Change the type of an undefined evar to a new type assumed to be a
@@ -493,7 +501,7 @@ val empty_evar_universe_context : evar_universe_context
 val union_evar_universe_context : evar_universe_context -> evar_universe_context ->
   evar_universe_context
 val evar_universe_context_subst : evar_universe_context -> Universes.universe_opt_subst
-val constrain_variables : Univ.LSet.t -> evar_universe_context -> Univ.constraints
+val constrain_variables : Univ.LSet.t -> evar_universe_context -> evar_universe_context
 
 
 val evar_universe_context_of_binders :
@@ -547,11 +555,13 @@ val check_leq : evar_map -> Univ.universe -> Univ.universe -> bool
 
 val evar_universe_context : evar_map -> evar_universe_context
 val universe_context_set : evar_map -> Univ.universe_context_set
-val universe_context : ?names:(Id.t located) list -> evar_map ->
+val universe_context : names:(Id.t located) list -> extensible:bool -> evar_map ->
 		       (Id.t * Univ.Level.t) list * Univ.universe_context
 val universe_subst : evar_map -> Universes.universe_opt_subst
 val universes : evar_map -> UGraph.t
 
+val check_univ_decl : evar_map -> UState.universe_decl ->
+  Universes.universe_binders * Univ.universe_context
 
 val merge_universe_context : evar_map -> evar_universe_context -> evar_map
 val set_universe_context : evar_map -> evar_universe_context -> evar_map

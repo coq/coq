@@ -6,7 +6,6 @@
 
  *************************************************************************)
 
-open API
 
 (** Coq objects used in romega *)
 
@@ -104,6 +103,8 @@ module type Int =
   sig
     (* the coq type of the numbers *)
     val typ : Term.constr Lazy.t
+    (* Is a constr expands to the type of these numbers *)
+    val is_int_typ : [ `NF ] Proofview.Goal.t -> Term.constr -> bool
     (* the operations on the numbers *)
     val plus : Term.constr Lazy.t
     val mult : Term.constr Lazy.t

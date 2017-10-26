@@ -57,10 +57,10 @@ module MakeTable =
 	  val table : (string * key table_of_A) list ref
 	  val encode : key -> t
 	  val subst : substitution -> t -> t
-          val printer : t -> std_ppcmds
+          val printer : t -> Pp.t
           val key : option_name
           val title : string
-          val member_message : t -> bool -> std_ppcmds
+          val member_message : t -> bool -> Pp.t
         end) ->
   struct
     type option_mark =
@@ -131,7 +131,7 @@ module type StringConvertArg =
 sig
   val key : option_name
   val title : string
-  val member_message : string -> bool -> std_ppcmds
+  val member_message : string -> bool -> Pp.t
 end
 
 module StringConvert = functor (A : StringConvertArg) ->
@@ -161,10 +161,10 @@ sig
   val compare : t -> t -> int
   val encode : reference -> t
   val subst : substitution -> t -> t
-  val printer : t -> std_ppcmds
+  val printer : t -> Pp.t
   val key : option_name
   val title : string
-  val member_message : t -> bool -> std_ppcmds
+  val member_message : t -> bool -> Pp.t
 end
 
 module RefConvert = functor (A : RefConvertArg) ->

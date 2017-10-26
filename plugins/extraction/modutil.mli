@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Names
 open Globnames
 open Miniml
@@ -18,6 +17,7 @@ val struct_type_search : (ml_type -> bool) -> ml_structure -> bool
 
 type do_ref = global_reference -> unit
 
+val type_iter_references : do_ref -> ml_type -> unit
 val ast_iter_references : do_ref -> do_ref -> do_ref -> ml_ast -> unit
 val decl_iter_references : do_ref -> do_ref -> do_ref -> ml_decl -> unit
 val spec_iter_references : do_ref -> do_ref -> do_ref -> ml_spec -> unit

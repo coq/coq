@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Environ
 open Pattern
 open Names
@@ -59,16 +58,16 @@ val db_hyp_pattern_failure :
 val db_matching_failure : debug_info -> unit Proofview.NonLogical.t
 
 (** Prints an evaluation failure message for a rule *)
-val db_eval_failure : debug_info -> Pp.std_ppcmds -> unit Proofview.NonLogical.t
+val db_eval_failure : debug_info -> Pp.t -> unit Proofview.NonLogical.t
 
 (** An exception handler *)
-val explain_logic_error: exn -> Pp.std_ppcmds
+val explain_logic_error: exn -> Pp.t
 
 (** For use in the Ltac debugger: some exception that are usually
    consider anomalies are acceptable because they are caught later in
    the process that is being debugged.  One should not require
    from users that they report these anomalies. *)
-val explain_logic_error_no_anomaly : exn -> Pp.std_ppcmds
+val explain_logic_error_no_anomaly : exn -> Pp.t
 
 (** Prints a logic failure message for a rule *)
 val db_logic_failure : debug_info -> exn -> unit Proofview.NonLogical.t
@@ -78,4 +77,4 @@ val db_breakpoint : debug_info ->
   Id.t Loc.located message_token list -> unit Proofview.NonLogical.t
 
 val extract_ltac_trace :
-  ?loc:Loc.t -> Tacexpr.ltac_trace -> Pp.std_ppcmds option Loc.located
+  ?loc:Loc.t -> Tacexpr.ltac_trace -> Pp.t option Loc.located

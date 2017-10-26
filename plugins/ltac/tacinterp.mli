@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Names
 open Tactic_debug
 open EConstr
@@ -20,6 +19,8 @@ val ltac_trace_info : ltac_trace Exninfo.t
 module Value :
 sig
   type t = Geninterp.Val.t
+  val of_ident : tracked_ident -> t
+  val to_ident : t -> tracked_ident option (* Not using any coercion *)
   val of_constr : constr -> t
   val to_constr : t -> constr option
   val of_int : int -> t
@@ -41,7 +42,7 @@ type interp_sign = Geninterp.interp_sign = {
   lfun : value Id.Map.t;
   extra : TacStore.t }
 
-val f_avoid_ids : Id.t list TacStore.field
+val f_avoid_ids : Id.Set.t TacStore.field
 val f_debug : debug_info TacStore.field
 
 val extract_ltac_constr_values : interp_sign -> Environ.env ->
@@ -54,6 +55,11 @@ val set_debug : debug_info -> unit
 
 (** Gives the state of debug *)
 val get_debug : unit -> debug_info
+
+val type_uconstr :
+  ?flags:Pretyping.inference_flags ->
+  ?expected_type:Pretyping.typing_constraint ->
+  Geninterp.interp_sign -> Glob_term.closed_glob_constr -> constr Tactypes.delayed_open
 
 (** Adds an interpretation function for extra generic arguments *)
 
@@ -109,7 +115,7 @@ val tactic_of_value : interp_sign -> Value.t -> unit Proofview.tactic
 
 (** Globalization + interpretation *)
 
-val interp_tac_gen : value Id.Map.t -> Id.t list ->
+val interp_tac_gen : value Id.Map.t -> Id.Set.t ->
                  debug_info -> raw_tactic_expr -> unit Proofview.tactic
 
 val interp : raw_tactic_expr -> unit Proofview.tactic

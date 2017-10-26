@@ -43,6 +43,8 @@ let default_non_dependent_ident = Id.of_string default_non_dependent_string
 
 let default_dependent_ident = Id.of_string "x"
 
+let default_generated_non_letter_string = "x"
+
 (**********************************************************************)
 (* Globality of identifiers *)
 
@@ -107,7 +109,17 @@ let head_name sigma c = (* Find the head constant of a constr if any *)
   hdrec c
 
 let lowercase_first_char id = (* First character of a constr *)
-  Unicode.lowercase_first_char (Id.to_string id)
+  let s = Id.to_string id in
+  match Unicode.split_at_first_letter s with
+  | None ->
+    (* General case: nat -> n *)
+    Unicode.lowercase_first_char s
+  | Some (s,s') ->
+      if String.length s' = 0 then
+      (* No letter, e.g. __, or __'_, etc. *)
+        default_generated_non_letter_string
+      else
+        s ^ Unicode.lowercase_first_char s'
 
 let sort_hdchar = function
   | Prop(_) -> "P"
@@ -239,7 +251,7 @@ let visible_ids sigma (nenv, c) =
 let next_name_away_in_cases_pattern sigma env_t na avoid =
   let id = match na with Name id -> id | Anonymous -> default_dependent_ident in
   let visible = visible_ids sigma env_t in
-  let bad id = Id.List.mem id avoid || is_constructor id
+  let bad id = Id.Set.mem id avoid || is_constructor id
                                     || Id.Set.mem id visible in
   next_ident_away_from id bad
 
@@ -253,8 +265,8 @@ let next_name_away_in_cases_pattern sigma env_t na avoid =
      name is taken by finding a free subscript starting from 0 *)
 
 let next_ident_away_in_goal id avoid =
-  let id = if Id.List.mem id avoid then restart_subscript id else id in
-  let bad id = Id.List.mem id avoid || (is_global id && not (is_section_variable id)) in
+  let id = if Id.Set.mem id avoid then restart_subscript id else id in
+  let bad id = Id.Set.mem id avoid || (is_global id && not (is_section_variable id)) in
   next_ident_away_from id bad
 
 let next_name_away_in_goal na avoid =
@@ -271,16 +283,16 @@ let next_name_away_in_goal na avoid =
    beyond the current subscript *)
 
 let next_global_ident_away id avoid =
-  let id = if Id.List.mem id avoid then restart_subscript id else id in
-  let bad id = Id.List.mem id avoid || is_global id in
+  let id = if Id.Set.mem id avoid then restart_subscript id else id in
+  let bad id = Id.Set.mem id avoid || is_global id in
   next_ident_away_from id bad
 
 (* 4- Looks for next fresh name outside a list; if name already used,
    looks for same name with lower available subscript *)
 
 let next_ident_away id avoid =
-  if Id.List.mem id avoid then
-    next_ident_away_from (restart_subscript id) (fun id -> Id.List.mem id avoid)
+  if Id.Set.mem id avoid then
+    next_ident_away_from (restart_subscript id) (fun id -> Id.Set.mem id avoid)
   else id
 
 let next_name_away_with_default default na avoid =
@@ -302,7 +314,7 @@ let next_name_away = next_name_away_with_default default_non_dependent_string
 
 let make_all_name_different env sigma =
   (** FIXME: this is inefficient, but only used in printing *)
-  let avoid = ref (Id.Set.elements (Context.Named.to_vars (named_context env))) in
+  let avoid = ref (ids_of_named_context_val (named_context_val env)) in
   let sign = named_context_val env in
   let rels = rel_context env in
   let env0 = reset_with_named_context sign env in
@@ -310,7 +322,7 @@ let make_all_name_different env sigma =
     (fun decl newenv ->
        let na = named_hd newenv sigma (RelDecl.get_type decl) (RelDecl.get_name decl) in
        let id = next_name_away na !avoid in
-       avoid := id::!avoid;
+       avoid := Id.Set.add id !avoid;
        push_rel (RelDecl.set_name (Name id) decl) newenv)
     rels ~init:env0
 
@@ -321,7 +333,7 @@ let make_all_name_different env sigma =
 
 let next_ident_away_for_default_printing sigma env_t id avoid =
   let visible = visible_ids sigma env_t in
-  let bad id = Id.List.mem id avoid || Id.Set.mem id visible in
+  let bad id = Id.Set.mem id avoid || Id.Set.mem id visible in
   next_ident_away_from id bad
 
 let next_name_away_for_default_printing sigma env_t na avoid =
@@ -371,7 +383,7 @@ let compute_displayed_name_in sigma flags avoid na c =
   | _ ->
     let fresh_id = next_name_for_display sigma flags na avoid in
     let idopt = if noccurn sigma 1 c then Anonymous else Name fresh_id in
-    (idopt, fresh_id::avoid)
+    (idopt, Id.Set.add fresh_id avoid)
 
 let compute_and_force_displayed_name_in sigma flags avoid na c =
   match na with
@@ -379,11 +391,11 @@ let compute_and_force_displayed_name_in sigma flags avoid na c =
     (Anonymous,avoid)
   | _ ->
     let fresh_id = next_name_for_display sigma flags na avoid in
-    (Name fresh_id, fresh_id::avoid)
+    (Name fresh_id, Id.Set.add fresh_id avoid)
 
 let compute_displayed_let_name_in sigma flags avoid na c =
   let fresh_id = next_name_for_display sigma flags na avoid in
-  (Name fresh_id, fresh_id::avoid)
+  (Name fresh_id, Id.Set.add fresh_id avoid)
 
 let rename_bound_vars_as_displayed sigma avoid env c =
   let rec rename avoid env c =

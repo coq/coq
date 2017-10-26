@@ -284,6 +284,8 @@ let saveall _ =
       | Some f -> ignore (sn.fileops#save f))
     notebook#pages
 
+let () = Coq.save_all := saveall
+
 let revert_all _ =
   List.iter
     (fun sn -> if sn.fileops#changed_on_disk then sn.fileops#revert)
@@ -437,7 +439,9 @@ let compile sn =
   match sn.fileops#filename with
     |None -> flash_info "Active buffer has no name"
     |Some f ->
-      let cmd = cmd_coqc#get ^ " -I " ^ (Filename.quote (Filename.dirname f))
+      let args = Coq.get_arguments sn.coqtop in
+      let cmd = cmd_coqc#get 
+	^ " " ^ String.concat " " args
 	^ " " ^ (Filename.quote f) ^ " 2>&1"
       in
       let buf = Buffer.create 1024 in
@@ -1319,25 +1323,6 @@ let main files =
   MiscMenu.initial_about ();
   on_current_term (fun t -> t.script#misc#grab_focus ());
   Minilib.log "End of Coqide.main"
-
-
-(** {2 Geoproof } *)
-
-(** This function check every tenth of second if GeoProof has send
-    something on his private clipboard *)
-
-let check_for_geoproof_input () =
-  let cb_Dr = GData.clipboard (Gdk.Atom.intern "_GeoProof") in
-  let handler () = match cb_Dr#text with
-    |None -> true
-    |Some "Ack" -> true
-    |Some s ->
-      on_current_term (fun sn -> sn.buffer#insert (s ^ "\n"));
-      (* cb_Dr#clear does not work so i use : *)
-      cb_Dr#set_text "Ack";
-      true
-  in
-  ignore (GMain.Timeout.add ~ms:100 ~callback:handler)
 
 
 (** {2 Argument parsing } *)

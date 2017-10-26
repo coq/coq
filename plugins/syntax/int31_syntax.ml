@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 
 (* Poor's man DECLARE PLUGIN *)
 let __coq_plugin_name = "int31_syntax_plugin"
@@ -23,6 +22,10 @@ open Glob_term
 
 let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 let make_path dir id = Libnames.make_path (make_dir dir) (Id.of_string id)
+
+let is_gr c gr = match DAst.get c with
+| GRef (r, _) -> Globnames.eq_gr r gr
+| _ -> false
 
 let make_mind mp id = Names.MutInd.make2 mp (Label.make id)
 let make_mind_mpfile dir id = make_mind (ModPath.MPfile (make_dir dir)) id
@@ -50,9 +53,9 @@ exception Non_closed
 (* parses a *non-negative* integer (from bigint.ml) into an int31
    wraps modulo 2^31 *)
 let int31_of_pos_bigint ?loc n =
-  let ref_construct = CAst.make ?loc (GRef (int31_construct, None)) in
-  let ref_0 = CAst.make ?loc (GRef (int31_0, None)) in
-  let ref_1 = CAst.make ?loc (GRef (int31_1, None)) in
+  let ref_construct = DAst.make ?loc (GRef (int31_construct, None)) in
+  let ref_0 = DAst.make ?loc (GRef (int31_0, None)) in
+  let ref_1 = DAst.make ?loc (GRef (int31_1, None)) in
   let rec args counter n =
     if counter <= 0 then
       []
@@ -60,7 +63,7 @@ let int31_of_pos_bigint ?loc n =
       let (q,r) = div2_with_rest n in
 	(if r then ref_1 else ref_0)::(args (counter-1) q)
   in
-  CAst.make ?loc (GApp (ref_construct, List.rev (args 31 n)))
+  DAst.make ?loc (GApp (ref_construct, List.rev (args 31 n)))
 
 let error_negative ?loc =
   CErrors.user_err ?loc ~hdr:"interp_int31" (Pp.str "int31 are only non-negative numbers.")
@@ -77,15 +80,15 @@ let bigint_of_int31 =
   let rec args_parsing args cur =
     match args with
       | [] -> cur
-      | { CAst.v = GRef (b,_) }::l when eq_gr b int31_0 -> args_parsing l (mult_2 cur)
-      | { CAst.v = GRef (b,_) }::l when eq_gr b int31_1 -> args_parsing l (add_1 (mult_2 cur))
+      | r::l when is_gr r int31_0 -> args_parsing l (mult_2 cur)
+      | r::l when is_gr r int31_1 -> args_parsing l (add_1 (mult_2 cur))
       | _ -> raise Non_closed
   in
-  function
-  | { CAst.v = GApp ({ CAst.v = GRef (c, _) }, args) } when eq_gr c int31_construct -> args_parsing args zero
+  fun c -> match DAst.get c with
+  | GApp (r, args) when is_gr r int31_construct -> args_parsing args zero
   | _ -> raise Non_closed
 
-let uninterp_int31 i =
+let uninterp_int31 (AnyGlobConstr i) =
   try
     Some (bigint_of_int31 i)
   with Non_closed ->
@@ -95,6 +98,6 @@ let uninterp_int31 i =
 let _ = Notation.declare_numeral_interpreter int31_scope
   (int31_path, int31_module)
   interp_int31
-  ([CAst.make (GRef (int31_construct, None))],
+  ([DAst.make (GRef (int31_construct, None))],
    uninterp_int31,
    true)

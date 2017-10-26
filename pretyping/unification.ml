@@ -501,6 +501,10 @@ let expand_key ts env sigma = function
     in if EConstr.eq_constr sigma (EConstr.mkProj (p, c)) red then None else Some red
   | None -> None
 
+let isApp_or_Proj sigma c =
+  match kind sigma c with
+  | App _ | Proj _ -> true
+  | _ -> false
   
 type unirec_flags = {
   at_top: bool;
@@ -1020,7 +1024,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 
   and canonical_projections (curenv, _ as curenvnb) pb opt cM cN (sigma,_,_ as substn) =
     let f1 () =
-      if isApp sigma cM then
+      if isApp_or_Proj sigma cM then
 	let f1l1 = whd_nored_state sigma (cM,Stack.empty) in
 	  if is_open_canonical_projection curenv sigma f1l1 then
 	    let f2l2 = whd_nored_state sigma (cN,Stack.empty) in
@@ -1036,7 +1040,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	error_cannot_unify (fst curenvnb) sigma (cM,cN)
       else
 	try f1 () with e when precatchable_exception e ->
-	  if isApp sigma cN then
+	  if isApp_or_Proj sigma cN then
 	    let f2l2 = whd_nored_state sigma (cN, Stack.empty) in
 	      if is_open_canonical_projection curenv sigma f2l2 then
 		let f1l1 = whd_nored_state sigma (cM, Stack.empty) in
@@ -1613,25 +1617,25 @@ let make_eq_test env evd c =
   (make_eq_univs_test env evd c, out)
 
 let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
-  let id =
+  let id,isprivate =
     let t = match ty with Some t -> t | None -> get_type_of env sigma c in
     let x = id_of_name_using_hdchar (Global.env()) sigma t name in
-    let ids = ids_of_named_context (named_context env) in
-    if name == Anonymous then next_ident_away_in_goal x ids else
+    let ids = Environ.ids_of_named_context_val (named_context_val env) in
+    if name == Anonymous then next_ident_away_in_goal x ids, true else
     if mem_named_context_val x (named_context_val env) then
       user_err ~hdr:"Unification.make_abstraction_core"
         (str "The variable " ++ Nameops.pr_id x ++ str " is already declared.")
     else
-      x
+      x,false
   in
   let likefirst = clause_with_generic_occurrences occs in
   let mkvarid () = EConstr.mkVar id in
-  let compute_dependency _ d (sign,depdecls) =
+  let compute_dependency _ d isprivate (sign,depdecls) =
     let d = map_named_decl EConstr.of_constr d in
     let hyp = NamedDecl.get_id d in
     match occurrences_of_hyp hyp occs with
     | NoOccurrences, InHyp ->
-        (push_named_context_val d sign,depdecls)
+        (push_named_context_val d isprivate sign,depdecls)
     | AllOccurrences, InHyp as occ ->
         let occ = if likefirst then LikeFirst else AtOccs occ in
         let newdecl = replace_term_occ_decl_modulo sigma occ test mkvarid d in
@@ -1640,13 +1644,13 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
         then
           if check_occs && not (in_every_hyp occs)
           then raise (PretypeError (env,sigma,NoOccurrenceFound (c,Some hyp)))
-          else (push_named_context_val d sign, depdecls)
+          else (push_named_context_val d isprivate sign, depdecls)
         else
-          (push_named_context_val newdecl sign, newdecl :: depdecls)
+          (push_named_context_val newdecl isprivate sign, newdecl :: depdecls)
     | occ ->
         (* There are specific occurrences, hence not like first *)
         let newdecl = replace_term_occ_decl_modulo sigma (AtOccs occ) test mkvarid d in
-        (push_named_context_val newdecl sign, newdecl :: depdecls) in
+        (push_named_context_val newdecl isprivate sign, newdecl :: depdecls) in
   try
     let sign,depdecls =
       fold_named_context compute_dependency env
@@ -1663,7 +1667,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     | None -> None
     | Some (sigma, c) -> Some (sigma,c)
     in
-    (id,sign,depdecls,lastlhyp,ccl,res)
+    ((id,isprivate),sign,depdecls,lastlhyp,ccl,res)
   with
     SubtermUnificationError e ->
       raise (PretypeError (env,sigma,CannotUnifyOccurrences e))
@@ -1686,7 +1690,7 @@ type abstraction_request =
 | AbstractExact of Name.t * constr * types option * clause * bool
 
 type 'r abstraction_result =
-  Names.Id.t * named_context_val *
+  Misctypes.tracked_ident * named_context_val *
     named_declaration list * Names.Id.t option *
     types * (evar_map * constr) option
 

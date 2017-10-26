@@ -72,14 +72,14 @@ let define_pure_evar_as_product evd evk =
   let open Context.Named.Declaration in
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env evi in
-  let id = next_ident_away idx (ids_of_named_context (evar_context evi)) in
+  let id = next_ident_away idx (Environ.ids_of_named_context_val evi.evar_hyps) in
   let concl = Reductionops.whd_all evenv evd (EConstr.of_constr evi.evar_concl) in
   let s = destSort evd concl in
   let evd1,(dom,u1) =
     new_type_evar evenv evd univ_flexible_alg ~filter:(evar_filter evi)
   in
   let evd2,rng =
-    let newenv = push_named (LocalAssum (id, dom)) evenv in
+    let newenv = push_named (LocalAssum (id, dom)) true evenv in
     let src = evar_source evk evd1 in
     let filter = Filter.extend 1 (evar_filter evi) in
       if is_prop_sort (ESorts.kind evd1 s) then
@@ -127,10 +127,10 @@ let define_pure_evar_as_lambda env evd evk =
   | Prod (na,dom,rng) -> (evd,(na,dom,rng))
   | Evar ev' -> let evd,typ = define_evar_as_product evd ev' in evd,destProd evd typ
   | _ -> error_not_product env evd typ in
-  let avoid = ids_of_named_context (evar_context evi) in
+  let avoid = Environ.ids_of_named_context_val evi.evar_hyps in
   let id =
     next_name_away_with_default_using_types "x" na avoid (Reductionops.whd_evar evd dom) in
-  let newenv = push_named (LocalAssum (id, dom)) evenv in
+  let newenv = push_named (LocalAssum (id, dom)) true evenv in
   let filter = Filter.extend 1 (evar_filter evi) in
   let src = evar_source evk evd1 in
   let evd2,body = new_evar newenv evd1 ~src (subst1 (mkVar id) rng) ~filter in

@@ -6,11 +6,46 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Util
 open Pp
 open Names
 open Tacexpr
+
+(** Nametab for tactics *)
+
+(** TODO: Share me somewhere *)
+module FullPath =
+struct
+  open Libnames
+  type t = full_path
+  let equal = eq_full_path
+  let to_string = string_of_path
+  let repr sp =
+    let dir,id = repr_path sp in
+      id, (DirPath.repr dir)
+end
+
+module KnTab = Nametab.Make(FullPath)(KerName)
+
+let tactic_tab = Summary.ref ~name:"LTAC-NAMETAB" (KnTab.empty, KNmap.empty)
+
+let push_tactic vis sp kn =
+  let (tab, revtab) = !tactic_tab in
+  let tab = KnTab.push vis sp kn tab in
+  let revtab = KNmap.add kn sp revtab in
+  tactic_tab := (tab, revtab)
+
+let locate_tactic qid = KnTab.locate qid (fst !tactic_tab)
+
+let locate_extended_all_tactic qid = KnTab.find_prefixes qid (fst !tactic_tab)
+
+let exists_tactic kn = KnTab.exists kn (fst !tactic_tab)
+
+let path_of_tactic kn = KNmap.find kn (snd !tactic_tab)
+
+let shortest_qualid_of_tactic kn =
+  let sp = KNmap.find kn (snd !tactic_tab) in
+  KnTab.shortest_qualid Id.Set.empty sp (fst !tactic_tab)
 
 (** Tactic notations (TacAlias) *)
 
@@ -104,19 +139,19 @@ let replace kn path t =
 
 let load_md i ((sp, kn), (local, id, b, t)) = match id with
 | None ->
-  let () = if not local then Nametab.push_tactic (Until i) sp kn in
+  let () = if not local then push_tactic (Until i) sp kn in
   add kn b t
 | Some kn0 -> replace kn0 kn t
 
 let open_md i ((sp, kn), (local, id, b, t)) = match id with
 | None ->
-  let () = if not local then Nametab.push_tactic (Exactly i) sp kn in
+  let () = if not local then push_tactic (Exactly i) sp kn in
   add kn b t
 | Some kn0 -> replace kn0 kn t
 
 let cache_md ((sp, kn), (local, id ,b, t)) = match id with
 | None ->
-  let () = Nametab.push_tactic (Until 1) sp kn in
+  let () = push_tactic (Until 1) sp kn in
   add kn b t
 | Some kn0 -> replace kn0 kn t
 
@@ -129,7 +164,7 @@ let subst_md (subst, (local, id, b, t)) =
 
 let classify_md (local, _, _, _ as o) = Substitute o
 
-let inMD : bool * Nametab.ltac_constant option * bool * glob_tactic_expr -> obj =
+let inMD : bool * ltac_constant option * bool * glob_tactic_expr -> obj =
   declare_object {(default_object "TAC-DEFINITION") with
      cache_function  = cache_md;
      load_function   = load_md;

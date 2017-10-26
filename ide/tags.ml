@@ -49,6 +49,7 @@ struct
   let highlight = make_tag table ~name:"highlight" []
   let hypothesis = make_tag table ~name:"hypothesis" []
   let goal = make_tag table ~name:"goal" []
+  let unstablename = make_tag table ~name:"name.unstable" [`FOREGROUND "dark grey"]
 end
 module Message =
 struct

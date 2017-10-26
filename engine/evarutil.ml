@@ -110,7 +110,8 @@ let nf_rel_context_evar sigma ctx =
 let nf_env_evar sigma env =
   let nc' = nf_named_context_evar sigma (Environ.named_context env) in
   let rel' = nf_rel_context_evar sigma (EConstr.rel_context env) in
-    EConstr.push_rel_context rel' (reset_with_named_context (val_of_named_context nc') env)
+  let private_ids = named_context_private_ids (Environ.named_context_val env) in
+    EConstr.push_rel_context rel' (reset_with_named_context (val_of_named_context nc' private_ids) env)
 
 let nf_evar_info evc info = map_evar_info (nf_evar0 evc) info
 
@@ -286,13 +287,13 @@ let empty_csubst = (0, Int.Map.empty)
 
 type ext_named_context =
   csubst * (Id.t * EConstr.constr) list *
-  Id.Set.t * EConstr.named_context
+  Id.Set.t * EConstr.named_context * Id.Set.t
 
 let push_var id (n, s) =
   let s = Int.Map.add n (EConstr.mkVar id) s in
   (succ n, s)
 
-let push_rel_decl_to_named_context sigma decl (subst, vsubst, avoid, nc) =
+let push_rel_decl_to_named_context sigma decl (subst, vsubst, avoid, nc, private_ids) =
   let open EConstr in
   let open Vars in
   let map_decl f d =
@@ -332,33 +333,36 @@ let push_rel_decl_to_named_context sigma decl (subst, vsubst, avoid, nc) =
       let vsubst = (id0,mkVar id)::vsubst in
       let d = decl |> NamedDecl.of_rel_decl (fun _ -> id0) |> map_decl (subst2 subst vsubst) in
       let nc = List.map (replace_var_named_declaration id0 id) nc in
-      (push_var id0 subst, vsubst, Id.Set.add id avoid, d :: nc)
+      let private_ids = Id.Set.add id (Id.Set.remove id0 private_ids) in
+      (push_var id0 subst, vsubst, Id.Set.add id avoid, d :: nc, private_ids)
   | _ ->
       (* spiwack: if [id0] is a section variable renaming it is
           incorrect. We revert to a less robust behaviour where
           the new binder has name [id]. Which amounts to the same
           behaviour than when [id=id0]. *)
       let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> map_decl (subst2 subst vsubst) in
-      (push_var id subst, vsubst, Id.Set.add id avoid, d :: nc)
+      let private_ids = if na = Anonymous then Id.Set.add id private_ids else private_ids in
+      (push_var id subst, vsubst, Id.Set.add id avoid, d :: nc, private_ids)
 
-let push_rel_context_to_named_context env sigma typ =
+let push_rel_context_to_named_context env private_ids sigma typ =
   (* compute the instances relative to the named context and rel_context *)
   let open Context.Named.Declaration in
   let open EConstr in
   let ids = List.map get_id (named_context env) in
   let inst_vars = List.map mkVar ids in
   if List.is_empty (Environ.rel_context env) then
-    (named_context_val env, typ, inst_vars, empty_csubst, [])
+    (named_context_val env, private_ids, typ, inst_vars, empty_csubst, [])
   else
     let avoid = List.fold_right Id.Set.add ids Id.Set.empty in
     let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
     (* move the rel context to a named context and extend the named instance *)
     (* with vars of the rel context *)
     (* We do keep the instances corresponding to local definition (see above) *)
-    let (subst, vsubst, _, env) =
+    let private_ids = named_context_private_ids (named_context_val env) in
+    let (subst, vsubst, _, sign, private_ids) =
       Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context sigma d acc)
-        (rel_context env) ~init:(empty_csubst, [], avoid, named_context env) in
-    (val_of_named_context env, subst2 subst vsubst typ, inst_rels@inst_vars, subst, vsubst)
+        (rel_context env) ~init:(empty_csubst, [], avoid, named_context env, private_ids) in
+    (val_of_named_context sign private_ids, private_ids, subst2 subst vsubst typ, inst_rels@inst_vars, subst, vsubst)
 
 (*------------------------------------*
  * Entry points to define new evars   *
@@ -376,15 +380,15 @@ let new_pure_evar_full evd evi =
   let evd = Evd.declare_future_goal evk evd in
   (evd, evk)
 
-let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?candidates ?(store = Store.empty) ?naming ?(principal=false) typ =
+let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?candidates ?(private_ids = Id.Set.empty) ?(concl_user_names = Id.Set.empty) ?(store = Store.empty)?naming ?(principal=false) typ =
   let typ = EConstr.Unsafe.to_constr typ in
   let candidates = Option.map (fun l -> List.map EConstr.Unsafe.to_constr l) candidates in
   let default_naming = Misctypes.IntroAnonymous in
   let naming = Option.default default_naming naming in
   let name = match naming with
   | Misctypes.IntroAnonymous -> None
-  | Misctypes.IntroIdentifier id -> Some id
-  | Misctypes.IntroFresh id ->
+  | Misctypes.IntroIdentifier (id,_) -> Some id
+  | Misctypes.IntroFresh (id,_) ->
     let has_name id = try let _ = Evd.evar_key id evd in true with Not_found -> false in
     let id = Namegen.next_ident_away_from id has_name in
     Some id
@@ -394,6 +398,8 @@ let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?ca
     evar_concl = typ;
     evar_body = Evar_empty;
     evar_filter = filter;
+    evar_private = private_ids;
+    evar_concl_user_names = concl_user_names;
     evar_source = src;
     evar_candidates = candidates;
     evar_extra = store; }
@@ -405,24 +411,33 @@ let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?ca
   in
   (evd, newevk)
 
-let new_evar_instance sign evd typ ?src ?filter ?candidates ?store ?naming ?principal instance =
+let new_evar_instance sign evd typ ?src ?filter ?candidates ?private_ids ?concl_user_names ?store ?naming ?principal instance =
   let open EConstr in
   assert (not !Flags.debug ||
             List.distinct (ids_of_named_context (named_context_of_val sign)));
-  let (evd, newevk) = new_pure_evar sign evd ?src ?filter ?candidates ?store ?naming ?principal typ in
+  let (evd, newevk) = new_pure_evar sign evd ?src ?filter ?candidates ?private_ids ?concl_user_names ?store ?naming ?principal typ in
   evd, mkEvar (newevk,Array.of_list instance)
+
+let new_evar_from_context sign evd ?src ?filter ?candidates ?(private_ids=Id.Set.empty) ?(concl_user_names=Id.Set.empty) ?store ?naming ?principal typ =
+  let instance = List.map (NamedDecl.get_id %> EConstr.mkVar) (named_context_of_val sign) in
+  let instance =
+    match filter with
+    | None -> instance
+    | Some filter -> Filter.filter_list filter instance in
+  new_evar_instance sign evd typ ?src ?filter ?candidates ~private_ids ~concl_user_names ?store ?naming ?principal instance
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
-let new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
-  let sign,typ',instance,subst,vsubst = push_rel_context_to_named_context env evd typ in
+let new_evar env evd ?src ?filter ?candidates ?(private_ids=Id.Set.empty) ?(concl_user_names=Id.Set.empty) ?store ?naming ?principal typ =
+  let sign,private_ids,typ',instance,subst,vsubst =
+    push_rel_context_to_named_context env private_ids evd typ in
   let map c = subst2 subst vsubst c in
   let candidates = Option.map (fun l -> List.map map l) candidates in
   let instance =
     match filter with
     | None -> instance
     | Some filter -> Filter.filter_list filter instance in
-  new_evar_instance sign evd typ' ?src ?filter ?candidates ?store ?naming ?principal instance
+  new_evar_instance sign evd typ' ?src ?filter ?candidates ~private_ids ~concl_user_names ?store ?naming ?principal instance
 
 let new_type_evar env evd ?src ?filter ?naming ?principal rigid =
   let (evd', s) = new_sort_variable rigid evd in
@@ -444,8 +459,8 @@ let e_new_Type ?(rigid=Evd.univ_flexible) env evdref =
     evdref := evd'; EConstr.mkSort s
 
   (* The same using side-effect *)
-let e_new_evar env evdref ?(src=default_source) ?filter ?candidates ?store ?naming ?principal ty =
-  let (evd',ev) = new_evar env !evdref ~src:src ?filter ?candidates ?store ?naming ?principal ty in
+let e_new_evar env evdref ?(src=default_source) ?filter ?candidates ?private_ids ?concl_user_names ?store ?naming ?principal ty =
+  let (evd',ev) = new_evar env !evdref ~src:src ?filter ?candidates ?private_ids ?concl_user_names ?store ?naming ?principal ty in
   evdref := evd';
   ev
 
@@ -469,8 +484,6 @@ type clear_dependency_error =
 | EvarTypingBreak of existential
 
 exception ClearDependencyError of Id.t * clear_dependency_error
-
-let cleared = Store.field ()
 
 exception Depends of Id.t
 
@@ -544,13 +557,6 @@ let rec check_and_clear_in_constr env evdref err ids global c =
               let evd = !evdref in
               let (evd,_) = restrict_evar evd evk filter None in
               evdref := evd;
-	    (* spiwack: hacking session to mark the old [evk] as having been "cleared" *)
-	      let evi = Evd.find !evdref evk in
-	      let extra = evi.evar_extra in
-	      let extra' = Store.set extra cleared true in
-	      let evi' = { evi with evar_extra = extra' } in
-	      evdref := Evd.add !evdref evk evi' ;
-	    (* spiwack: /hacking session *)
               Evd.existential_value !evdref ev
 
       | _ -> map_constr (check_and_clear_in_constr env evdref err ids global) c
@@ -657,11 +663,9 @@ let rec advance sigma evk =
   match evi.evar_body with
   | Evar_empty -> Some evk
   | Evar_defined v ->
-      if Option.default false (Store.get evi.evar_extra cleared) then
-        let (evk,_) = Term.destEvar v in
-        advance sigma evk
-      else
-        None
+      match is_restricted_evar evi with
+      | Some evk -> advance sigma evk
+      | None -> None
 
 (** The following functions return the set of undefined evars
     contained in the object, the defined evars being traversed.

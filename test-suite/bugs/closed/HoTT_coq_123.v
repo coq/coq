@@ -104,11 +104,15 @@ Record Functor (C D : PreCategory) :=
     morphism_of : forall s d, morphism C s d -> morphism D (object_of s) (object_of d)
   }.
 
+(** Workaround to simpl losing universe constraints, see bug #5645. *)
+Ltac simpl' :=
+  simpl; match goal with [ |- ?P ] => let T := type of P in idtac end.
+
 Global Instance trunc_forall `{Funext} `{P : A -> Type} `{forall a, IsTrunc n (P a)}
 : IsTrunc n (forall a, P a) | 100.
 Proof.
     generalize dependent P.
-  induction n as [ | n' IH]; (simpl; intros P ?).
+  induction n as [ | n' IH]; (simpl'; intros P ?).
   - admit.
   - pose (fun f g => trunc_equiv (@apD10 A P f g) ^-1); admit.
 Defined.

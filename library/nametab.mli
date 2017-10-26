@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Names
 open Libnames
 open Globnames
@@ -79,10 +78,6 @@ val push_modtype : visibility -> full_path -> module_path -> unit
 val push_dir : visibility -> DirPath.t -> global_dir_reference -> unit
 val push_syndef : visibility -> full_path -> syndef_name -> unit
 
-type ltac_constant = kernel_name
-val push_tactic : visibility -> full_path -> ltac_constant -> unit
-
-
 (** {6 The following functions perform globalization of qualified names } *)
 
 (** These functions globalize a (partially) qualified name or fail with
@@ -96,7 +91,6 @@ val locate_modtype : qualid -> module_path
 val locate_dir : qualid -> global_dir_reference
 val locate_module : qualid -> module_path
 val locate_section : qualid -> DirPath.t
-val locate_tactic : qualid -> ltac_constant
 
 (** These functions globalize user-level references into global
    references, like [locate] and co, but raise a nice error message
@@ -110,7 +104,6 @@ val global_inductive : reference -> inductive
 
 val locate_all : qualid -> global_reference list
 val locate_extended_all : qualid -> extended_global_reference list
-val locate_extended_all_tactic : qualid -> ltac_constant list
 val locate_extended_all_dir : qualid -> global_dir_reference list
 val locate_extended_all_modtype : qualid -> module_path list
 
@@ -126,7 +119,6 @@ val exists_modtype : full_path -> bool
 val exists_dir : DirPath.t -> bool
 val exists_section : DirPath.t -> bool (** deprecated synonym of [exists_dir] *)
 val exists_module : DirPath.t -> bool (** deprecated synonym of [exists_dir] *)
-val exists_tactic : full_path -> bool (** deprecated synonym of [exists_dir] *)
 
 (** {6 These functions locate qualids into full user names } *)
 
@@ -145,7 +137,6 @@ val path_of_syndef : syndef_name -> full_path
 val path_of_global : global_reference -> full_path
 val dirpath_of_module : module_path -> DirPath.t
 val path_of_modtype : module_path -> full_path
-val path_of_tactic : ltac_constant -> full_path
 
 (** Returns in particular the dirpath or the basename of the full path
    associated to global reference *)
@@ -155,7 +146,7 @@ val basename_of_global : global_reference -> Id.t
 
 (** Printing of global references using names as short as possible.
     @raise Not_found when the reference is not in the global tables. *)
-val pr_global_env : Id.Set.t -> global_reference -> std_ppcmds
+val pr_global_env : Id.Set.t -> global_reference -> Pp.t
 
 
 (** The [shortest_qualid] functions given an object with [user_name]
@@ -167,7 +158,6 @@ val shortest_qualid_of_global : Id.Set.t -> global_reference -> qualid
 val shortest_qualid_of_syndef : Id.Set.t -> syndef_name -> qualid
 val shortest_qualid_of_modtype : module_path -> qualid
 val shortest_qualid_of_module : module_path -> qualid
-val shortest_qualid_of_tactic : ltac_constant -> qualid
 
 (** Deprecated synonyms *)
 

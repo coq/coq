@@ -1,8 +1,6 @@
 (* (c) Copyright 2006-2015 Microsoft Corporation and Inria.                  *)
 (* Distributed under the terms of CeCILL-B.                                  *)
 
-open API
-open Grammar_API
 open Goal
 open Genarg
 open Tacexpr
@@ -17,7 +15,7 @@ open Term
 (** The type of context patterns, the patterns of the [set] tactic and 
     [:] tactical. These are patterns that identify a precise subterm. *)
 type cpattern
-val pr_cpattern : cpattern -> Pp.std_ppcmds
+val pr_cpattern : cpattern -> Pp.t
 
 (** CS cpattern: (f _), (X in t), (t in X in t), (t as X in t) *)
 val cpattern         : cpattern Pcoq.Gram.entry
@@ -31,7 +29,7 @@ val wit_lcpattern     : cpattern uniform_genarg_type
     These patterns also include patterns that identify all the subterms
     of a context (i.e. "in" prefix) *)
 type rpattern
-val pr_rpattern : rpattern -> Pp.std_ppcmds
+val pr_rpattern : rpattern -> Pp.t
 
 (** OS rpattern: f _, in t, X in t, in X in t, t in X in t, t as X in t *)
 val rpattern         : rpattern Pcoq.Gram.entry
@@ -52,7 +50,7 @@ type ('ident, 'term) ssrpattern =
   | E_As_X_In_T of 'term * 'ident * 'term
 
 type pattern = evar_map * (constr, constr) ssrpattern
-val pp_pattern : pattern -> Pp.std_ppcmds
+val pp_pattern : pattern -> Pp.t
 
 (** Extracts the redex and applies to it the substitution part of the pattern.
   @raise Anomaly if called on [In_T] or [In_X_In_T] *)
@@ -117,7 +115,7 @@ val fill_occ_pattern :
    the T pattern above, and calls a continuation on its occurrences. *)
 
 type ssrdir = L2R | R2L
-val pr_dir_side : ssrdir -> Pp.std_ppcmds
+val pr_dir_side : ssrdir -> Pp.t
 
 (** a pattern for a term with wildcards *)
 type tpattern
@@ -227,7 +225,7 @@ val loc_of_cpattern : cpattern -> Loc.t option
 val id_of_pattern : pattern -> Names.Id.t option
 val is_wildcard : cpattern -> bool
 val cpattern_of_id : Names.Id.t -> cpattern
-val pr_constr_pat : constr -> Pp.std_ppcmds
+val pr_constr_pat : constr -> Pp.t
 val pf_merge_uc : UState.t -> goal Evd.sigma -> goal Evd.sigma
 val pf_unsafe_merge_uc : UState.t -> goal Evd.sigma -> goal Evd.sigma
 

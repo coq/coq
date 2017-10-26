@@ -11,5 +11,6 @@ End FSetHide.
 
 Module NatSet' := FSetHide NatSet.
 Recursive Extraction NatSet'.fold.
+Extraction TestCompile NatSet'.fold.
 
 (* Extraction "test2141.ml" NatSet'.fold. *)

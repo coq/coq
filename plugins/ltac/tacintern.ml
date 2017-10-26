@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
-open Grammar_API
 open Pattern
 open Pp
 open Genredexpr
@@ -108,19 +106,19 @@ let intern_ltac_variable ist = function
 
 let intern_constr_reference strict ist = function
   | Ident (_,id) as r when not strict && find_hyp id ist ->
-      (CAst.make @@ GVar id), Some (CAst.make @@ CRef (r,None))
+      (DAst.make @@ GVar id), Some (CAst.make @@ CRef (r,None))
   | Ident (_,id) as r when find_var id ist ->
-      (CAst.make @@ GVar id), if strict then None else Some (CAst.make @@ CRef (r,None))
+      (DAst.make @@ GVar id), if strict then None else Some (CAst.make @@ CRef (r,None))
   | r ->
       let loc,_ as lqid = qualid_of_reference r in
-      CAst.make @@ GRef (locate_global_with_alias lqid,None), 
+      DAst.make @@ GRef (locate_global_with_alias lqid,None), 
 	if strict then None else Some (CAst.make @@ CRef (r,None))
 
 (* Internalize an isolated reference in position of tactic *)
 
 let intern_isolated_global_tactic_reference r =
   let (loc,qid) = qualid_of_reference r in
-  TacCall (Loc.tag ?loc (ArgArg (loc,locate_tactic qid),[]))
+  TacCall (Loc.tag ?loc (ArgArg (loc,Tacenv.locate_tactic qid),[]))
 
 let intern_isolated_tactic_reference strict ist r =
   (* An ltac reference *)
@@ -139,7 +137,7 @@ let intern_isolated_tactic_reference strict ist r =
 
 let intern_applied_global_tactic_reference r =
   let (loc,qid) = qualid_of_reference r in
-  ArgArg (loc,locate_tactic qid)
+  ArgArg (loc,Tacenv.locate_tactic qid)
 
 let intern_applied_tactic_reference ist r =
   (* An ltac reference *)
@@ -166,7 +164,7 @@ let intern_non_tactic_reference strict ist r =
   (* By convention, use IntroIdentifier for unbound ident, when not in a def *)
   match r with
   | Ident (loc,id) when not strict ->
-    let ipat = in_gen (glbwit wit_intro_pattern) (loc, IntroNaming (IntroIdentifier id)) in
+    let ipat = in_gen (glbwit wit_intro_pattern) (loc, IntroNaming (IntroIdentifier (id,false))) in
     TacGeneric ipat
   | _ ->
   (* Reference not found *)
@@ -198,6 +196,10 @@ let intern_constr_gen pattern_mode isarity {ltacvars=lfun; genv=env; extra} c =
     ltac_bound = Id.Set.empty;
     ltac_extra = extra;
   } in
+  let env = if !strict_check then env else
+    (* Deactivate generated names warning in unstrict mode *)
+    Environ.reset_with_named_context
+      (Environ.set_named_context_private (Environ.named_context_val env) Id.Set.empty) env in
   let c' =
     warn (Constrintern.intern_gen scope ~pattern_mode ~ltacvars env) c
   in
@@ -229,10 +231,12 @@ let rec intern_intro_pattern lf ist = function
   | loc, IntroForthcoming _ as x -> x
 
 and intern_intro_pattern_naming lf ist = function
-  | IntroIdentifier id ->
-      IntroIdentifier (intern_ident lf ist id)
-  | IntroFresh id ->
-      IntroFresh (intern_ident lf ist id)
+  | IntroIdentifier (id,isprivate) ->
+      assert (not isprivate); (* user provided *)
+      IntroIdentifier (intern_ident lf ist id,false)
+  | IntroFresh (id,unstable) ->
+      assert unstable; (* user provided *)
+      IntroFresh (intern_ident lf ist id,unstable)
   | IntroAnonymous as x -> x
 
 and intern_intro_pattern_action lf ist = function
@@ -266,9 +270,10 @@ let intern_destruction_arg ist = function
   | clear,ElimOnIdent (loc,id) ->
       if !strict_check then
 	(* If in a defined tactic, no intros-until *)
-	match intern_constr ist (CAst.make @@ CRef (Ident (Loc.tag id), None)) with
-	| {loc; CAst.v = GVar id}, _ -> clear,ElimOnIdent (loc,id)
-	| c -> clear,ElimOnConstr (c,NoBindings)
+	let c, p = intern_constr ist (CAst.make @@ CRef (Ident (Loc.tag id), None)) in
+	match DAst.get c with
+	| GVar id -> clear,ElimOnIdent (c.CAst.loc,id)
+	| _ -> clear,ElimOnConstr ((c, p), NoBindings)
       else
 	clear,ElimOnIdent (loc,id)
 
@@ -350,7 +355,7 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
         ltac_extra = ist.extra;
       } in
       let c = Constrintern.interp_reference sign r in
-      match c.CAst.v with
+      match DAst.get c with
       | GRef (r,None) ->
           Inl (ArgArg (evaluable_of_global_reference ist.genv r,None))
       | GVar id ->
@@ -723,7 +728,7 @@ let pr_ltac_fun_arg n = spc () ++ Name.print n
 
 let print_ltac id =
  try
-  let kn = Nametab.locate_tactic id in
+  let kn = Tacenv.locate_tactic id in
   let entries = Tacenv.ltac_entries () in
   let tac = KNmap.find kn entries in
   let filter mp =

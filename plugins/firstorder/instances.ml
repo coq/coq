@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Unify
 open Rules
 open CErrors
@@ -116,8 +115,8 @@ let mk_open_instance env evmap id idc m t =
       let nid=(fresh_id_in_env avoid var_id env) in
       let (evmap, (c, _)) = Evarutil.new_type_evar env evmap Evd.univ_flexible in
       let decl = LocalAssum (Name nid, c) in
-	aux (n-1) (nid::avoid) (EConstr.push_rel decl env) evmap (decl::decls) in
-  let evmap, decls = aux m [] env evmap [] in
+	aux (n-1) (Id.Set.add nid avoid) (EConstr.push_rel decl env) evmap (decl::decls) in
+  let evmap, decls = aux m Id.Set.empty env evmap [] in
   (evmap, decls, revt)
 
 (* tactics   *)

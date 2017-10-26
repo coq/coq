@@ -43,14 +43,14 @@
 : ${Iris_CI_BRANCH:=master}
 : ${Iris_CI_GITURL:=https://gitlab.mpi-sws.org/FP/iris-coq.git}
 
+: ${lambdaRust_CI_BRANCH:=master}
+: ${lambdaRust_CI_GITURL:=https://gitlab.mpi-sws.org/FP/LambdaRust-coq.git}
+
 ########################################################################
 # HoTT
 ########################################################################
-# Temporary overlay
-: ${HoTT_CI_BRANCH:=ocaml.4.02.3}
-: ${HoTT_CI_GITURL:=https://github.com/ejgallego/HoTT.git}
-# : ${HoTT_CI_BRANCH:=master}
-# : ${HoTT_CI_GITURL:=https://github.com/HoTT/HoTT.git}
+: ${HoTT_CI_BRANCH:=master}
+: ${HoTT_CI_GITURL:=https://github.com/HoTT/HoTT.git}
 
 ########################################################################
 # GeoCoq
@@ -73,26 +73,26 @@
 ########################################################################
 # CompCert
 ########################################################################
-: ${CompCert_CI_BRANCH:=less_init_plugins}
-: ${CompCert_CI_GITURL:=https://github.com/letouzey/CompCert.git}
+: ${CompCert_CI_BRANCH:=master}
+: ${CompCert_CI_GITURL:=https://github.com/AbsInt/CompCert.git}
 
 ########################################################################
 # VST
 ########################################################################
-: ${VST_CI_BRANCH:=less_init_plugins}
-: ${VST_CI_GITURL:=https://github.com/letouzey/VST.git}
+: ${VST_CI_BRANCH:=master}
+: ${VST_CI_GITURL:=https://github.com/Zimmi48/VST.git}
 
 ########################################################################
 # fiat_parsers
 ########################################################################
-: ${fiat_parsers_CI_BRANCH:=trunk__API}
-: ${fiat_parsers_CI_GITURL:=https://github.com/matejkosik/fiat.git}
+: ${fiat_parsers_CI_BRANCH:=master}
+: ${fiat_parsers_CI_GITURL:=https://github.com/mit-plv/fiat.git}
 
 ########################################################################
 # fiat_crypto
 ########################################################################
-: ${fiat_crypto_CI_BRANCH:=less_init_plugins}
-: ${fiat_crypto_CI_GITURL:=https://github.com/letouzey/fiat-crypto.git}
+: ${fiat_crypto_CI_BRANCH:=master}
+: ${fiat_crypto_CI_GITURL:=https://github.com/mit-plv/fiat-crypto.git}
 
 ########################################################################
 # formal-topology
@@ -114,7 +114,9 @@
 ########################################################################
 # SF
 ########################################################################
-: ${sf_CI_TARURL:=https://www.cis.upenn.edu/~bcpierce/sf/current/sf.tgz}
+: ${sf_lf_CI_TARURL:=https://www.cis.upenn.edu/~bcpierce/sf/lf-current/lf.tgz}
+: ${sf_plf_CI_TARURL:=https://www.cis.upenn.edu/~bcpierce/sf/plf-current/plf.tgz}
+: ${sf_vfa_CI_TARURL:=https://www.cis.upenn.edu/~bcpierce/sf/vfa-current/vfa.tgz}
 
 ########################################################################
 # TLC

@@ -8,7 +8,6 @@
 
 (* Merging of induction principles. *)
 
-open API
 open Globnames
 open Tactics
 open Indfun_common
@@ -65,8 +64,8 @@ let string_of_name = id_of_name %> Id.to_string
 
 (** [isVarf f x] returns [true] if term [x] is of the form [(Var f)]. *)
 let isVarf f x =
-    match x with
-      | { CAst.v = GVar x } -> Id.equal x f
+    match DAst.get x with
+      | GVar x -> Id.equal x f
       | _ -> false
 
 (** [ident_global_exist id] returns true if identifier [id] is linked
@@ -492,38 +491,38 @@ exception NoMerge
 
 let rec merge_app c1 c2 id1 id2 shift filter_shift_stable =
   let lnk = Array.append shift.lnk1 shift.lnk2 in
-  match CAst.(c1.v, c2.v) with
+  match DAst.get c1, DAst.get c2 with
     | GApp(f1, arr1), GApp(f2,arr2) when isVarf id1 f1 && isVarf id2 f2 ->
         let _ = prstr "\nICI1!\n" in
         let args = filter_shift_stable lnk (arr1 @ arr2) in
-        CAst.make @@ GApp ((CAst.make @@ GVar shift.ident) , args)
+        DAst.make @@ GApp ((DAst.make @@ GVar shift.ident) , args)
     | GApp(f1, arr1), GApp(f2,arr2)  -> raise NoMerge
     | GLetIn(nme,bdy,typ,trm) , _ ->
         let _ = prstr "\nICI2!\n" in
         let newtrm = merge_app trm c2 id1 id2 shift filter_shift_stable in
-        CAst.make @@ GLetIn(nme,bdy,typ,newtrm)
+        DAst.make @@ GLetIn(nme,bdy,typ,newtrm)
     | _, GLetIn(nme,bdy,typ,trm) ->
         let _ = prstr "\nICI3!\n" in
         let newtrm = merge_app c1 trm id1 id2 shift filter_shift_stable in
-        CAst.make @@ GLetIn(nme,bdy,typ,newtrm)
+        DAst.make @@ GLetIn(nme,bdy,typ,newtrm)
     | _ -> let _ = prstr "\nICI4!\n" in
            raise NoMerge
 
 let rec merge_app_unsafe c1 c2 shift filter_shift_stable =
   let lnk = Array.append shift.lnk1 shift.lnk2 in
-  match CAst.(c1.v, c2.v) with
+  match DAst.get c1, DAst.get c2 with
     | GApp(f1, arr1), GApp(f2,arr2) ->
         let args = filter_shift_stable lnk (arr1 @ arr2) in
-        CAst.make @@ GApp (CAst.make @@ GVar shift.ident, args)
+        DAst.make @@ GApp (DAst.make @@ GVar shift.ident, args)
           (* FIXME: what if the function appears in the body of the let? *)
     | GLetIn(nme,bdy,typ,trm) , _ ->
       let _ = prstr "\nICI2 '!\n" in
         let newtrm = merge_app_unsafe trm c2 shift filter_shift_stable in
-        CAst.make @@ GLetIn(nme,bdy,typ,newtrm)
+        DAst.make @@ GLetIn(nme,bdy,typ,newtrm)
     | _, GLetIn(nme,bdy,typ,trm) ->
         let _ = prstr "\nICI3 '!\n" in
         let newtrm = merge_app_unsafe c1 trm shift filter_shift_stable in
-        CAst.make @@ GLetIn(nme,bdy,typ,newtrm)
+        DAst.make @@ GLetIn(nme,bdy,typ,newtrm)
     | _ -> let _ = prstr "\nICI4 '!\n" in raise NoMerge
 
 
@@ -534,16 +533,18 @@ let rec merge_app_unsafe c1 c2 shift filter_shift_stable =
 let rec merge_rec_hyps shift accrec
     (ltyp:(Name.t * glob_constr option * glob_constr option) list)
     filter_shift_stable : (Name.t * glob_constr option * glob_constr option) list =
+  let is_app c = match DAst.get c with GApp _ -> true | _ -> false in
   let mergeonehyp t reldecl =
     match reldecl with
-      | (nme,x,Some ({ CAst.v = GApp(i,args)} as ind))
+      | (nme,x,Some ind) when is_app ind
         -> nme,x, Some (merge_app_unsafe ind t shift filter_shift_stable)
       | (nme,Some _,None) -> error "letins with recursive calls not treated yet"
       | (nme,None,Some _) -> assert false
       | (nme,None,None) | (nme,Some _,Some _) -> assert false in
+  let is_app c = match DAst.get c with GApp (f, _) -> isVarf ind2name f | _ -> false in
   match ltyp with
     | [] -> []
-    | (nme,None,Some ({ CAst. v = GApp(f, largs) } as t)) :: lt when isVarf ind2name f ->
+    | (nme,None,Some t) :: lt when is_app t ->
         let rechyps = List.map (mergeonehyp t) accrec in
         rechyps @ merge_rec_hyps shift accrec lt filter_shift_stable
     | e::lt -> e :: merge_rec_hyps shift accrec lt filter_shift_stable
@@ -554,12 +555,13 @@ let build_suppl_reccall (accrec:(Name.t * glob_constr) list) concl2 shift =
 
 
 let find_app (nme:Id.t) ltyp =
+  let is_app c = match DAst.get c with GApp (f, _) -> isVarf nme f | _ -> false in
   try
     ignore
       (List.map
           (fun x ->
             match x with
-              | _,None,Some { CAst.v = GApp(f,_)} when isVarf nme f -> raise (Found 0)
+              | _,None,Some c when is_app c -> raise (Found 0)
               | _ -> ())
           ltyp);
     false
@@ -618,7 +620,7 @@ let rec merge_types shift accrec1
 
           rechyps , concl
       | (nme,None, Some t1)as e ::lt1 ->
-          (match t1.CAst.v with
+          (match DAst.get t1 with
             | GApp(f,carr) when isVarf ind1name f ->
                 merge_types shift (e::accrec1) lt1 concl1 ltyp2 concl2
             | _ ->
@@ -765,7 +767,7 @@ let merge_inductive_body (shift:merge_infos) avoid (oib1:one_inductive_body)
     (* first replace rel 1 by a varname *)
     let substindtyp = substitterm 0 (mkRel 1) (mkVar nme) typ in
     let substindtyp = EConstr.of_constr substindtyp in
-    Detyping.detype false (Id.Set.elements avoid) (Global.env()) Evd.empty substindtyp in
+    Detyping.detype Detyping.Now false avoid (Global.env()) Evd.empty substindtyp in
   let lcstr1: glob_constr list =
     Array.to_list (Array.map (mkrawcor ind1name avoid) oib1.mind_user_lc) in
   (* add  to avoid all indentifiers of lcstr1 *)
@@ -813,13 +815,13 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
         let typ = glob_constr_to_constr_expr tp in
         CLocalAssum ([(Loc.tag nme)], Constrexpr_ops.default_binder_kind, typ) :: acc)
       [] params in
-  let concl = Constrextern.extern_constr false (Global.env()) Evd.empty concl in
+  let concl = Constrextern.extern_constr false (Global.env()) Evd.empty (EConstr.of_constr concl) in
   let arity,_ =
     List.fold_left
       (fun (acc,env) decl ->
         let nm = Context.Rel.Declaration.get_name decl in
         let c = RelDecl.get_type decl in
-        let typ = Constrextern.extern_constr false env Evd.empty c in
+        let typ = Constrextern.extern_constr false env Evd.empty (EConstr.of_constr c) in
         let newenv = Environ.push_rel (LocalAssum (nm,c)) env in
         CAst.make @@ CProdN ([[(Loc.tag nm)],Constrexpr_ops.default_binder_kind,typ] , acc) , newenv)
       (concl,Global.env())
@@ -849,8 +851,8 @@ let mkProd_reldecl (rdecl:Context.Rel.Declaration.t) (t2:glob_constr) =
   match rdecl with
     | LocalAssum (nme,t) ->
         let t = EConstr.of_constr t in
-        let traw = Detyping.detype false [] (Global.env()) Evd.empty t in
-        CAst.make @@ GProd (nme,Explicit,traw,t2)
+        let traw = Detyping.detype Detyping.Now false Id.Set.empty (Global.env()) Evd.empty t in
+        DAst.make @@ GProd (nme,Explicit,traw,t2)
     | LocalDef _ -> assert false
 
 

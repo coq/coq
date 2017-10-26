@@ -680,8 +680,7 @@ let infer_check_conv_constructors
 
 let check_inductive_instances cv_pb cumi u u' univs =
   let length_ind_instance = 
-    Univ.Instance.length
-      (Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi))
+    Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)
   in
   let ind_subtypctx = Univ.ACumulativityInfo.subtyp_context cumi in
   if not ((length_ind_instance = Univ.Instance.length u) &&
@@ -690,16 +689,14 @@ let check_inductive_instances cv_pb cumi u u' univs =
   else
     let comp_cst =
       let comp_subst = (Univ.Instance.append u u') in
-      Univ.UContext.constraints
-        (Univ.subst_instance_context comp_subst ind_subtypctx)
+      Univ.AUContext.instantiate comp_subst ind_subtypctx
     in
     let comp_cst =
       match cv_pb with
         CONV -> 
         let comp_cst' = 
           let comp_subst = (Univ.Instance.append u' u) in
-          Univ.UContext.constraints 
-            (Univ.subst_instance_context comp_subst ind_subtypctx) 
+          Univ.AUContext.instantiate comp_subst ind_subtypctx
         in
         Univ.Constraint.union comp_cst comp_cst'
       | CUMUL -> comp_cst
@@ -767,8 +764,7 @@ let infer_convert_instances ~flex u u' (univs,cstrs) =
 
 let infer_inductive_instances cv_pb cumi u u' (univs, cstrs) =
   let length_ind_instance = 
-    Univ.Instance.length
-      (Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi))
+    Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)
   in
   let ind_subtypctx =  Univ.ACumulativityInfo.subtyp_context cumi in
   if not ((length_ind_instance = Univ.Instance.length u) &&
@@ -777,16 +773,15 @@ let infer_inductive_instances cv_pb cumi u u' (univs, cstrs) =
   else
     let comp_cst =
       let comp_subst = (Univ.Instance.append u u') in
-      Univ.UContext.constraints
-        (Univ.subst_instance_context comp_subst ind_subtypctx)
+      Univ.AUContext.instantiate comp_subst ind_subtypctx
     in
     let comp_cst =
       match cv_pb with
         CONV -> 
         let comp_cst' = 
           let comp_subst = (Univ.Instance.append u' u) in
-          Univ.UContext.constraints
-            (Univ.subst_instance_context comp_subst ind_subtypctx) in
+          Univ.AUContext.instantiate comp_subst ind_subtypctx
+        in
         Univ.Constraint.union comp_cst comp_cst'
       | CUMUL -> comp_cst
     in
