@@ -11,59 +11,34 @@ Require Ltac2.Control Ltac2.Pattern Ltac2.Array Ltac2.Int Ltac2.Std.
 
 (** Constr matching *)
 
-Ltac2 lazy_match0 t pats :=
-  let rec interp m := match m with
-  | [] => Control.zero Match_failure
-  | p :: m =>
-    let next _ := interp m in
-    let ((knd, pat, f)) := p in
-    let p := match knd with
-    | Pattern.MatchPattern =>
-      (fun _ =>
-        let context := Pattern.empty_context () in
-        let bind := Pattern.matches_vect pat t in
-        fun _ => f context bind)
-    | Pattern.MatchContext =>
-      (fun _ =>
-        let ((context, bind)) := Pattern.matches_subterm_vect pat t in
-        fun _ => f context bind)
-    end in
-    Control.plus p next
-  end in
-  let ans := Control.once (fun () => interp pats) in
-  ans ().
-
 Ltac2 Notation "lazy_match!" t(tactic(6)) "with" m(constr_matching) "end" :=
-  lazy_match0 t m.
-
-Ltac2 multi_match0 t pats :=
-  let rec interp m := match m with
-  | [] => Control.zero Match_failure
-  | p :: m =>
-    let next _ := interp m in
-    let ((knd, pat, f)) := p in
-    let p := match knd with
-    | Pattern.MatchPattern =>
-      (fun _ =>
-        let context := Pattern.empty_context () in
-        let bind := Pattern.matches_vect pat t in
-        f context bind)
-    | Pattern.MatchContext =>
-      (fun _ =>
-        let ((context, bind)) := Pattern.matches_subterm_vect pat t in
-        f context bind)
-    end in
-    Control.plus p next
-  end in
-  interp pats.
+  Pattern.lazy_match0 t m.
 
 Ltac2 Notation "multi_match!" t(tactic(6)) "with" m(constr_matching) "end" :=
-  multi_match0 t m.
-
-Ltac2 one_match0 t m := Control.once (fun _ => multi_match0 t m).
+  Pattern.multi_match0 t m.
 
 Ltac2 Notation "match!" t(tactic(6)) "with" m(constr_matching) "end" :=
-  one_match0 t m.
+  Pattern.one_match0 t m.
+
+(** Goal matching *)
+
+Ltac2 Notation "lazy_match!" "goal" "with" m(goal_matching) "end" :=
+  Pattern.lazy_goal_match0 false m.
+
+Ltac2 Notation "multi_match!" "goal" "with" m(goal_matching) "end" :=
+  Pattern.multi_goal_match0 false m.
+
+Ltac2 Notation "match!" "goal" "with" m(goal_matching) "end" :=
+  Pattern.one_goal_match0 false m.
+
+Ltac2 Notation "lazy_match!" "reverse" "goal" "with" m(goal_matching) "end" :=
+  Pattern.lazy_goal_match0 true m.
+
+Ltac2 Notation "multi_match!" "reverse" "goal" "with" m(goal_matching) "end" :=
+  Pattern.multi_goal_match0 true m.
+
+Ltac2 Notation "match!" "reverse" "goal" "with" m(goal_matching) "end" :=
+  Pattern.one_goal_match0 true m.
 
 (** Tacticals *)
 

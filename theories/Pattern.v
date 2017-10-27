@@ -7,6 +7,7 @@
 (************************************************************************)
 
 Require Import Ltac2.Init.
+Require Ltac2.Control.
 
 Ltac2 Type t := pattern.
 
@@ -64,3 +65,81 @@ Ltac2 @ external matches_goal : bool -> (match_kind * t) list -> (match_kind * t
 Ltac2 @ external instantiate : context -> constr -> constr :=
   "ltac2" "pattern_instantiate".
 (** Fill the hole of a context with the given term. *)
+
+(** Implementation of Ltac matching over terms and goals *)
+
+Ltac2 lazy_match0 t pats :=
+  let rec interp m := match m with
+  | [] => Control.zero Match_failure
+  | p :: m =>
+    let next _ := interp m in
+    let ((knd, pat, f)) := p in
+    let p := match knd with
+    | MatchPattern =>
+      (fun _ =>
+        let context := empty_context () in
+        let bind := matches_vect pat t in
+        fun _ => f context bind)
+    | MatchContext =>
+      (fun _ =>
+        let ((context, bind)) := matches_subterm_vect pat t in
+        fun _ => f context bind)
+    end in
+    Control.plus p next
+  end in
+  Control.once (fun () => interp pats) ().
+
+Ltac2 multi_match0 t pats :=
+  let rec interp m := match m with
+  | [] => Control.zero Match_failure
+  | p :: m =>
+    let next _ := interp m in
+    let ((knd, pat, f)) := p in
+    let p := match knd with
+    | MatchPattern =>
+      (fun _ =>
+        let context := empty_context () in
+        let bind := matches_vect pat t in
+        f context bind)
+    | MatchContext =>
+      (fun _ =>
+        let ((context, bind)) := matches_subterm_vect pat t in
+        f context bind)
+    end in
+    Control.plus p next
+  end in
+  interp pats.
+
+Ltac2 one_match0 t m := Control.once (fun _ => multi_match0 t m).
+
+Ltac2 lazy_goal_match0 rev pats :=
+  let rec interp m := match m with
+  | [] => Control.zero Match_failure
+  | p :: m =>
+    let next _ := interp m in
+    let ((pat, f)) := p in
+    let ((phyps, pconcl)) := pat in
+    let cur _ :=
+      let ((hids, hctx, subst, cctx)) := matches_goal rev phyps pconcl in
+      fun _ => f hids hctx subst cctx
+    in
+    Control.plus cur next
+  end in
+  interp pats ().
+
+Ltac2 multi_goal_match0 rev pats :=
+  let rec interp m := match m with
+  | [] => Control.zero Match_failure
+  | p :: m =>
+    let next _ := interp m in
+    let ((pat, f)) := p in
+    let ((phyps, pconcl)) := pat in
+    let cur _ :=
+      let ((hids, hctx, subst, cctx)) := matches_goal rev phyps pconcl in
+      f hids hctx subst cctx
+    in
+    Control.plus cur next
+  end in
+  interp pats.
+
+Ltac2 one_goal_match0 rev pats := Control.once (fun _ => multi_goal_match0 rev pats).

@@ -1,5 +1,12 @@
 Require Import Ltac2.Ltac2 Ltac2.Notations.
 
+Ltac2 Type exn ::= [ Nope ].
+
+Ltac2 check_id id id' := match Ident.equal id id' with
+| true => ()
+| false => Control.throw Nope
+end.
+
 Goal True -> False.
 Proof.
 Fail
@@ -24,4 +31,22 @@ let f c :=
   end
 in
 match! '(nat -> bool) with context [?a] => f a end.
+Abort.
+
+Goal forall (i j : unit) (x y : nat) (b : bool), True.
+Proof.
+Fail match! goal with
+| [ h : ?t, h' : ?t |- _ ] => ()
+end.
+intros i j x y b.
+match! goal with
+| [ h : ?t, h' : ?t |- _ ] =>
+  check_id h @x;
+  check_id h' @y
+end.
+match! reverse goal with
+| [ h : ?t, h' : ?t |- _ ] =>
+  check_id h @j;
+  check_id h' @i
+end.
 Abort.
