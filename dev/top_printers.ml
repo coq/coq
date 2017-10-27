@@ -306,6 +306,7 @@ let constr_display csr =
     incr cnt; pp (str "with " ++ int !cnt ++ str" " ++ Level.pr u ++ fnl ())
 
   and sort_display = function
+    | SProp -> "SProp"
     | Set -> "Set"
     | Prop -> "Prop"
     | Type u -> univ_display u;
@@ -430,6 +431,7 @@ let print_pure_constr csr =
     Array.iter (fun u -> print_space (); pp (Level.pr u)) (Instance.to_array u)
 
   and sort_display = function
+    | SProp -> print_string "SProp"
     | Set -> print_string "Set"
     | Prop -> print_string "Prop"
     | Type u -> open_hbox();

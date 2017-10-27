@@ -64,6 +64,7 @@ type ('constr, 'types) ptype_error =
       int * Name.t array * ('constr, 'types) punsafe_judgment array * 'types array
   | UnsatisfiedConstraints of Univ.Constraint.t
   | UndeclaredUniverse of Univ.Level.t
+  | DisallowedSProp
 
 type type_error = (constr, types) ptype_error
 
@@ -149,6 +150,9 @@ let error_unsatisfied_constraints env c =
 let error_undeclared_universe env l =
   raise (TypeError (env, UndeclaredUniverse l))
 
+let error_disallowed_sprop env =
+  raise (TypeError (env, DisallowedSProp))
+
 let map_pguard_error f = function
 | NotEnoughAbstractionInFixBody -> NotEnoughAbstractionInFixBody
 | RecursionNotOnInductiveType c -> RecursionNotOnInductiveType (f c)
@@ -189,3 +193,4 @@ let map_ptype_error f = function
   IllTypedRecBody (n, na, Array.map (on_judgment f) jv, Array.map f t)
 | UnsatisfiedConstraints g -> UnsatisfiedConstraints g
 | UndeclaredUniverse l -> UndeclaredUniverse l
+| DisallowedSProp -> DisallowedSProp

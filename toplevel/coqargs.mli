@@ -35,6 +35,8 @@ type t = {
   indices_matter : bool;
   enable_VM : bool;
   native_compiler : native_compiler;
+  allow_sprop : bool;
+  cumulative_sprop : bool;
 
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;

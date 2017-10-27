@@ -128,6 +128,7 @@ let type_of_reference env r =
 let type_of_global t = type_of_reference (Global.env ()) t
 
 let fresh_sort_in_family = function
+  | InSProp -> Sorts.sprop, ContextSet.empty
   | InProp -> Sorts.prop, ContextSet.empty
   | InSet -> Sorts.set, ContextSet.empty
   | InType ->

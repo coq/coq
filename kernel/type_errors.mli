@@ -65,6 +65,7 @@ type ('constr, 'types) ptype_error =
       int * Name.t array * ('constr, 'types) punsafe_judgment array * 'types array
   | UnsatisfiedConstraints of Univ.Constraint.t
   | UndeclaredUniverse of Univ.Level.t
+  | DisallowedSProp
 
 type type_error = (constr, types) ptype_error
 
@@ -133,6 +134,8 @@ val error_elim_explain : Sorts.family -> Sorts.family -> arity_error
 val error_unsatisfied_constraints : env -> Univ.Constraint.t -> 'a
 
 val error_undeclared_universe : env -> Univ.Level.t -> 'a
+
+val error_disallowed_sprop : env -> 'a
 
 val map_pguard_error : ('c -> 'd) -> 'c pguard_error -> 'd pguard_error
 val map_ptype_error : ('c -> 'd) -> ('c, 'c) ptype_error -> ('d, 'd) ptype_error

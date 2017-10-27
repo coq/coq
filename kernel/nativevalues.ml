@@ -117,7 +117,7 @@ let mk_ind_accu ind u =
 let mk_sort_accu s u =
   let open Sorts in
   match s with
-  | Prop | Set -> mk_accu (Asort s)
+  | SProp | Prop | Set -> mk_accu (Asort s)
   | Type s ->
      let u = Univ.Instance.of_array u in
      let s = Sorts.sort_of_univ (Univ.subst_instance_universe u s) in

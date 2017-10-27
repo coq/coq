@@ -962,7 +962,7 @@ let normalize_universe_instance evd l =
 
 let normalize_sort evars s =
   match s with
-  | Prop | Set -> s
+  | SProp | Prop | Set -> s
   | Type u -> 
     let u' = normalize_universe evars u in
     if u' == u then s else Sorts.sort_of_univ u'

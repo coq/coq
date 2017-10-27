@@ -32,6 +32,9 @@ val set_engagement : Declarations.engagement -> unit
 val set_indices_matter : bool -> unit
 val set_typing_flags : Declarations.typing_flags -> unit
 val typing_flags : unit -> Declarations.typing_flags
+val make_sprop_cumulative : unit -> unit
+val set_allow_sprop : bool -> unit
+val sprop_allowed : unit -> bool
 
 (** Variables, Local definitions, constants, inductive types *)
 

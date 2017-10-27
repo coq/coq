@@ -49,7 +49,8 @@ let functional_induction with_clean c princl pat =
 		    user_err  (str "Cannot find induction information on "++
                                        Printer.pr_leconstr_env (Tacmach.pf_env g) sigma (mkConst c') )
 		in
-		match Tacticals.elimination_sort_of_goal g with
+                match Tacticals.elimination_sort_of_goal g with
+                | InSProp -> finfo.sprop_lemma
 		| InProp -> finfo.prop_lemma
 		| InSet -> finfo.rec_lemma
 		| InType -> finfo.rect_lemma

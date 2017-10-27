@@ -398,11 +398,13 @@ let pretype_id pretype k0 loc env sigma id =
 (* Main pretyping function                                               *)
 
 let interp_known_glob_level ?loc evd = function
+  | GSProp -> Univ.Level.sprop
   | GProp -> Univ.Level.prop
   | GSet -> Univ.Level.set
   | GType s -> interp_known_level_info ?loc evd s
 
 let interp_glob_level ?loc evd : glob_level -> _ = function
+  | GSProp -> evd, Univ.Level.sprop
   | GProp -> evd, Univ.Level.prop
   | GSet -> evd, Univ.Level.set
   | GType s -> interp_level_info ?loc evd s
@@ -452,6 +454,7 @@ let judge_of_Type ?loc evd s =
     evd, judge
 
 let pretype_sort ?loc sigma = function
+  | GSProp -> sigma, judge_of_sprop
   | GProp -> sigma, judge_of_prop
   | GSet -> sigma, judge_of_set
   | GType s -> judge_of_Type ?loc sigma s

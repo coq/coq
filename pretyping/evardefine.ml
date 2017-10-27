@@ -72,7 +72,7 @@ let idx = Namegen.default_dependent_ident
 
 (* Refining an evar to a product *)
 
-let define_pure_evar_as_product evd evk =
+let define_pure_evar_as_product env evd evk =
   let open Context.Named.Declaration in
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env evi in
@@ -88,7 +88,7 @@ let define_pure_evar_as_product evd evk =
     let newenv = push_named (LocalAssum (id, dom)) evenv in
     let src = subterm_source evk ~where:Codomain evksrc in
     let filter = Filter.extend 1 (evar_filter evi) in
-      if Sorts.is_prop (ESorts.kind evd1 s) then
+      if Environ.is_impredicative_sort env (ESorts.kind evd1 s) then
        (* Impredicative product, conclusion must fall in [Prop]. *)
         new_evar newenv evd1 concl ~src ~filter
       else
@@ -106,8 +106,8 @@ let define_pure_evar_as_product evd evk =
 
 (* Refine an applied evar to a product and returns its instantiation *)
 
-let define_evar_as_product evd (evk,args) =
-  let evd,prod = define_pure_evar_as_product evd evk in
+let define_evar_as_product env evd (evk,args) =
+  let evd,prod = define_pure_evar_as_product env evd evk in
   (* Quick way to compute the instantiation of evk with args *)
   let na,dom,rng = destProd evd prod in
   let evdom = mkEvar (fst (destEvar evd dom), args) in
@@ -131,7 +131,7 @@ let define_pure_evar_as_lambda env evd evk =
   let typ = Reductionops.whd_all evenv evd (evar_concl evi) in
   let evd1,(na,dom,rng) = match EConstr.kind evd typ with
   | Prod (na,dom,rng) -> (evd,(na,dom,rng))
-  | Evar ev' -> let evd,typ = define_evar_as_product evd ev' in evd,destProd evd typ
+  | Evar ev' -> let evd,typ = define_evar_as_product env evd ev' in evd,destProd evd typ
   | _ -> error_not_product env evd typ in
   let avoid = Environ.ids_of_named_context_val evi.evar_hyps in
   let id =
@@ -182,10 +182,10 @@ let split_tycon ?loc env evd tycon =
       match EConstr.kind evd t with
 	| Prod (na,dom,rng) -> evd, (na, dom, rng)
 	| Evar ev (* ev is undefined because of whd_all *) ->
-	    let (evd',prod) = define_evar_as_product evd ev in
+            let (evd',prod) = define_evar_as_product env evd ev in
 	    let (_,dom,rng) = destProd evd prod in
 	      evd',(Anonymous, dom, rng)
-	| App (c,args) when isEvar evd c ->
+        | App (c,args) when isEvar evd c ->
 	    let (evd',lam) = define_evar_as_lambda env evd (destEvar evd c) in
 	    real_split evd' (mkApp (lam,args))
 	| _ -> error_not_product ?loc env evd c

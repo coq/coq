@@ -153,6 +153,7 @@ let pattern_of_constr env sigma t =
     | Rel n  -> PRel n
     | Meta n -> PMeta (Some (Id.of_string ("META" ^ string_of_int n)))
     | Var id -> PVar id
+    | Sort SProp -> PSort GSProp
     | Sort Prop -> PSort GProp
     | Sort Set -> PSort GSet
     | Sort (Type _) -> PSort (GType [])

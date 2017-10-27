@@ -69,7 +69,7 @@ let type_of_type u =
     mkType uu
 
 let type_of_sort = function
-  | Prop | Set -> type1
+  | SProp | Prop | Set -> type1
   | Type u -> type_of_type u
 
 (*s Type of a de Bruijn index. *)
@@ -264,6 +264,7 @@ let judge_of_int env i =
 
 let sort_of_product env domsort rangsort =
   match (domsort, rangsort) with
+    | (_, SProp) | (SProp, _) -> rangsort
     (* Product rule (s,Prop,Prop) *)
     | (_,       Prop)  -> rangsort
     (* Product rule (Prop/Set,Set,Set) *)
@@ -463,7 +464,11 @@ let rec execute env cstr =
   let open Context.Rel.Declaration in
   match kind cstr with
     (* Atomic terms *)
-    | Sort s -> type_of_sort s
+    | Sort s ->
+      (match s with
+       | SProp -> if not (Environ.sprop_allowed env) then error_disallowed_sprop env
+       | _ -> ());
+      type_of_sort s
 
     | Rel n ->
       type_of_relative env n

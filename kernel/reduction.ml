@@ -701,7 +701,8 @@ let check_sort_cmp_universes env pb s0 s1 univs =
       | CONV -> check_eq univs u0 u1
     in
     match (s0,s1) with
-    | Prop, Prop | Set, Set -> ()
+    | SProp, SProp | Prop, Prop | Set, Set -> ()
+    | SProp, _ | _, SProp -> raise NotConvertible
     | Prop, (Set | Type _) -> if not (is_cumul pb) then raise NotConvertible
     | Set, Prop -> raise NotConvertible
     | Set, Type u -> check_pb Univ.type0_univ u
@@ -749,7 +750,8 @@ let infer_cmp_universes env pb s0 s1 univs =
       | CONV -> infer_eq univs u0 u1
     in
     match (s0,s1) with
-    | Prop, Prop | Set, Set -> univs
+    | SProp, SProp | Prop, Prop | Set, Set -> univs
+    | SProp, _ | _, SProp -> raise NotConvertible
     | Prop, (Set | Type _) -> if not (is_cumul pb) then raise NotConvertible else univs
     | Set, Prop -> raise NotConvertible
     | Set, Type u -> infer_pb Univ.type0_univ u

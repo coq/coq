@@ -398,7 +398,7 @@ let inh_app_fun_core ~program_mode env evd j =
     match EConstr.kind evd t with
     | Prod (_,_,_) -> (evd,j)
     | Evar ev ->
-	let (evd',t) = Evardefine.define_evar_as_product evd ev in
+        let (evd',t) = Evardefine.define_evar_as_product env evd ev in
 	  (evd',{ uj_val = j.uj_val; uj_type = t })
     | _ ->
       	try let t,p =

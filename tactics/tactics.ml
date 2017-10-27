@@ -947,7 +947,7 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
         let name = find_name false (LocalDef (name,b,t)) name_flag gl in
 	build_intro_tac name move_flag tac
     | Evar ev when force_flag ->
-        let sigma, t = Evardefine.define_evar_as_product sigma ev in
+        let sigma, t = Evardefine.define_evar_as_product env sigma ev in
         Tacticals.New.tclTHEN
           (Proofview.Unsafe.tclEVARS sigma)
           (intro_then_gen name_flag move_flag force_flag dep_flag tac)

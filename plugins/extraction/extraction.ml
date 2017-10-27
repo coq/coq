@@ -73,13 +73,18 @@ type flag = info * scheme
 (*s [flag_of_type] transforms a type [t] into a [flag].
   Really important function. *)
 
+let info_of_family = function
+  | InSProp | InProp -> Logic
+  | InSet | InType -> Info
+
+let info_of_sort s = info_of_family (Sorts.family s)
+
 let rec flag_of_type env sg t : flag =
   let t = whd_all env sg t in
   match EConstr.kind sg t with
     | Prod (x,t,c) -> flag_of_type (EConstr.push_rel (LocalAssum (x,t)) env) sg c
-    | Sort s when Sorts.is_prop (EConstr.ESorts.kind sg s) -> (Logic,TypeScheme)
-    | Sort _ -> (Info,TypeScheme)
-    | _ -> if (sort_of env sg t) == InProp then (Logic,Default) else (Info,Default)
+    | Sort s -> (info_of_sort (EConstr.ESorts.kind sg s),TypeScheme)
+    | _ -> (info_of_family (sort_of env sg t),Default)
 
 (*s Two particular cases of [flag_of_type]. *)
 

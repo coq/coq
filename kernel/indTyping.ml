@@ -199,9 +199,10 @@ let check_constructors env_ar_par params lc (arity,indices,univ_info) =
 (* - all_sorts in case of small, unitary Prop (not smashed) *)
 (* - logical_sorts in case of large, unitary Prop (smashed) *)
 
-let all_sorts = [InProp;InSet;InType]
-let small_sorts = [InProp;InSet]
-let logical_sorts = [InProp]
+let all_sorts = [InSProp;InProp;InSet;InType]
+let small_sorts = [InSProp;InProp;InSet]
+let logical_sorts = [InSProp;InProp]
+let sprop_sorts = [InSProp]
 
 let allowed_sorts {ind_squashed;ind_univ;ind_min_univ=_} =
   if not ind_squashed then all_sorts
@@ -209,6 +210,7 @@ let allowed_sorts {ind_squashed;ind_univ;ind_min_univ=_} =
     | InType -> assert false
     | InSet -> small_sorts
     | InProp -> logical_sorts
+    | InSProp -> sprop_sorts
 
 (* Returns the list [x_1, ..., x_n] of levels contributing to template
    polymorphism. The elements x_k is None if the k-th parameter (starting

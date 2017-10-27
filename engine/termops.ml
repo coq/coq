@@ -1098,7 +1098,8 @@ let is_template_polymorphic_ind env sigma f =
 
 let base_sort_cmp pb s0 s1 =
   match (s0,s1) with
-  | Prop, Prop | Set, Set | Type _, Type _ -> true
+  | SProp, SProp | Prop, Prop | Set, Set | Type _, Type _ -> true
+  | SProp, _ | _, SProp -> false
   | Prop, Set | Prop, Type _ | Set, Type _ -> pb == Reduction.CUMUL
   | Set, Prop | Type _, Prop | Type _, Set -> false
 

@@ -70,6 +70,7 @@ type function_info =
       rect_lemma : Constant.t option;
       rec_lemma : Constant.t option;
       prop_lemma : Constant.t option;
+      sprop_lemma : Constant.t option;
       is_general : bool;
     }
 

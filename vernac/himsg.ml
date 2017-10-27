@@ -710,6 +710,9 @@ let explain_undeclared_universe env sigma l =
     Termops.pr_evd_level sigma l ++
     spc () ++ str "(maybe a bugged tactic)."
 
+let explain_disallowed_sprop () =
+  Pp.(str "SProp not allowed, you need to use -allow-sprop.")
+
 let explain_type_error env sigma err =
   let env = make_all_name_different env sigma in
   match err with
@@ -751,6 +754,7 @@ let explain_type_error env sigma err =
       explain_unsatisfied_constraints env sigma cst
   | UndeclaredUniverse l ->
      explain_undeclared_universe env sigma l
+  | DisallowedSProp -> explain_disallowed_sprop ()
 
 let pr_position (cl,pos) =
   let clpos = match cl with
@@ -864,6 +868,7 @@ let explain_pretype_error env sigma err =
   | TypingError t -> explain_type_error env sigma t
   | CannotUnifyOccurrences (b,c1,c2,e) -> explain_cannot_unify_occurrences env sigma b c1 c2 e
   | UnsatisfiableConstraints (c,comp) -> explain_unsatisfiable_constraints env sigma c comp
+  | DisallowedSProp -> explain_disallowed_sprop ()
 
 (* Module errors *)
 

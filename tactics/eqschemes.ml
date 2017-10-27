@@ -66,7 +66,7 @@ module RelDecl = Context.Rel.Declaration
 
 let hid = Id.of_string "H"
 let xid = Id.of_string "X"
-let default_id_of_sort = function InProp | InSet -> hid | InType -> xid
+let default_id_of_sort = function InSProp | InProp | InSet -> hid | InType -> xid
 let fresh env id = next_global_ident_away id Id.Set.empty
 let with_context_set ctx (b, ctx') = 
   (b, Univ.ContextSet.union ctx ctx')

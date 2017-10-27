@@ -150,7 +150,7 @@ let retype ?(polyprop=true) sigma =
     | Cast (c,_, s) when isSort sigma s -> destSort sigma s
     | Sort s ->
       begin match ESorts.kind sigma s with
-      | Prop | Set -> Sorts.type1
+      | SProp | Prop | Set -> Sorts.type1
       | Type u -> Sorts.sort_of_univ (Univ.super u)
       end
     | Prod (name,t,c2) ->

@@ -137,6 +137,7 @@ let hash_annot_switch asw =
 let pp_sort s =
   let open Sorts in
   match s with
+  | SProp -> Pp.str "SProp"
   | Prop -> Pp.str "Prop"
   | Set -> Pp.str "Set"
   | Type u -> Pp.(str "Type@{" ++ Univ.pr_uni u ++ str "}")

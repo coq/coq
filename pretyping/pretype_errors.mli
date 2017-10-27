@@ -67,6 +67,7 @@ type pretype_error =
   | UnsatisfiableConstraints of
     (Evar.t * Evar_kinds.t) option * Evar.Set.t option
     (** unresolvable evar, connex component *)
+  | DisallowedSProp
 
 exception PretypeError of env * Evd.evar_map * pretype_error
 
@@ -157,6 +158,8 @@ val error_not_product :
 val error_var_not_found : ?loc:Loc.t -> env -> Evd.evar_map -> Id.t -> 'b
 
 val error_evar_not_found : ?loc:Loc.t -> env -> Evd.evar_map -> Id.t -> 'b
+
+val error_disallowed_sprop : env -> Evd.evar_map -> 'a
 
 (** {6 Typeclass errors } *)
 

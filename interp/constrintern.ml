@@ -1020,6 +1020,7 @@ let sort_info_of_level_info (info: level_info) : (Libnames.qualid * int) option 
 
 let glob_sort_of_level (level: glob_level) : glob_sort =
   match level with
+  | GSProp -> GSProp
   | GProp -> GProp
   | GSet -> GSet
   | GType info -> GType [sort_info_of_level_info info]

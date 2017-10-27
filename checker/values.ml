@@ -95,9 +95,9 @@ let v_cons = v_tuple "constructor" [|v_ind;Int|]
 
 (** kernel/univ *)
 let v_level_global = v_tuple "Level.Global.t" [|v_dp;Int|]
-let v_raw_level = v_sum "raw_level" 2 (* Prop, Set *) 
+let v_raw_level = v_sum "raw_level" 3 (* SProp, Prop, Set *)
   [|(*Level*)[|v_level_global|]; (*Var*)[|Int|]|]
-let v_level = v_tuple "level" [|Int;v_raw_level|] 
+let v_level = v_tuple "level" [|Int;v_raw_level|]
 let v_expr = v_tuple "levelexpr" [|v_level;Int|]
 let v_univ = List v_expr
 
@@ -116,8 +116,8 @@ let v_context_set = v_tuple "universe_context_set" [|v_hset v_level;v_cstrs|]
 
 (** kernel/term *)
 
-let v_sort = v_sum "sort" 2 (*Prop, Set*) [|[|v_univ(*Type*)|]|]
-let v_sortfam = v_enum "sorts_family" 3
+let v_sort = v_sum "sort" 3 (*SProp, Prop, Set*) [|[|v_univ(*Type*)|]|]
+let v_sortfam = v_enum "sorts_family" 4
 
 let v_puniverses v = v_tuple "punivs" [|v;v_instance|]
 

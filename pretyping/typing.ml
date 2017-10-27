@@ -65,7 +65,7 @@ let judge_of_applied_inductive_knowing_parameters env sigma funj ind argjv =
          match EConstr.kind sigma (whd_all env sigma typ) with
          | Prod (_,c1,c2) -> sigma, (c1,c2)
          | Evar ev ->
-             let (sigma,t) = Evardefine.define_evar_as_product sigma ev in
+             let (sigma,t) = Evardefine.define_evar_as_product env sigma ev in
              let (_,c1,c2) = destProd sigma t in
              sigma, (c1,c2)
          | _ ->
@@ -90,7 +90,7 @@ let judge_of_apply env sigma funj argjv =
          match EConstr.kind sigma (whd_all env sigma typ) with
          | Prod (_,c1,c2) -> sigma, (c1,c2)
          | Evar ev ->
-             let (sigma,t) = Evardefine.define_evar_as_product sigma ev in
+             let (sigma,t) = Evardefine.define_evar_as_product env sigma ev in
              let (_,c1,c2) = destProd sigma t in
              sigma, (c1,c2)
          | _ ->
@@ -230,6 +230,10 @@ let check_cofix env sigma pcofix =
 
 (* The typing machine with universes and existential variables. *)
 
+let judge_of_sprop =
+  { uj_val = EConstr.mkSProp;
+    uj_type = EConstr.type1 }
+
 let judge_of_prop =
   { uj_val = EConstr.mkProp;
     uj_type = EConstr.mkSort Sorts.type1 }
@@ -361,6 +365,9 @@ let rec execute env sigma cstr =
 
     | Sort s ->
       begin match ESorts.kind sigma s with
+        | SProp ->
+          if Environ.sprop_allowed env then sigma, judge_of_sprop
+          else error_disallowed_sprop env sigma
         | Prop -> sigma, judge_of_prop
         | Set -> sigma, judge_of_set
         | Type u -> sigma, judge_of_type u
