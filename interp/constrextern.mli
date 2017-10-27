@@ -19,6 +19,7 @@ open Constrexpr
 open Notation_term
 open Notation
 open Misctypes
+open Ltac_pretype
 
 (** Translation of pattern, cases pattern, glob_constr and term into syntax
    trees for printing *)

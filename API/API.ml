@@ -131,6 +131,7 @@ module Geninterp = Geninterp
 (******************************************************************************)
 (* Pretyping                                                                  *)
 (******************************************************************************)
+module Ltac_pretype = Ltac_pretype
 module Locusops = Locusops
 module Pretype_errors = Pretype_errors
 module Reductionops = Reductionops

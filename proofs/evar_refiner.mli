@@ -8,6 +8,7 @@
 
 open Evd
 open Glob_term
+open Ltac_pretype
 
 (** Refinement of existential variables. *)
 

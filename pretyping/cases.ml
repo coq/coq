@@ -33,6 +33,7 @@ open Evarsolve
 open Evarconv
 open Evd
 open Context.Rel.Declaration
+open Ltac_pretype
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
@@ -245,7 +246,7 @@ let push_history_pattern n pci cont =
 
 type 'a pattern_matching_problem =
     { env       : env;
-      lvar      : Glob_term.ltac_var_map;
+      lvar      : Ltac_pretype.ltac_var_map;
       evdref    : evar_map ref;
       pred      : constr;
       tomatch   : tomatch_stack;

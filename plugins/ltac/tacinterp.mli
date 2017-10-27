@@ -44,7 +44,7 @@ val f_avoid_ids : Id.Set.t TacStore.field
 val f_debug : debug_info TacStore.field
 
 val extract_ltac_constr_values : interp_sign -> Environ.env ->
-  Pattern.constr_under_binders Id.Map.t
+  Ltac_pretype.constr_under_binders Id.Map.t
 (** Given an interpretation signature, extract all values which are coercible to
     a [constr]. *)
 
@@ -57,7 +57,7 @@ val get_debug : unit -> debug_info
 val type_uconstr :
   ?flags:Pretyping.inference_flags ->
   ?expected_type:Pretyping.typing_constraint ->
-  Geninterp.interp_sign -> Glob_term.closed_glob_constr -> constr Tactypes.delayed_open
+  Geninterp.interp_sign -> Ltac_pretype.closed_glob_constr -> constr Tactypes.delayed_open
 
 (** Adds an interpretation function for extra generic arguments *)
 
@@ -79,10 +79,10 @@ val interp_hyp : interp_sign -> Environ.env -> Evd.evar_map ->
 
 val interp_glob_closure : interp_sign -> Environ.env -> Evd.evar_map ->
   ?kind:Pretyping.typing_constraint -> ?pattern_mode:bool -> glob_constr_and_expr ->
-  Glob_term.closed_glob_constr
+  Ltac_pretype.closed_glob_constr
 
 val interp_uconstr : interp_sign -> Environ.env -> Evd.evar_map ->
-  glob_constr_and_expr -> Glob_term.closed_glob_constr
+  glob_constr_and_expr -> Ltac_pretype.closed_glob_constr
 
 val interp_constr_gen : Pretyping.typing_constraint -> interp_sign ->
   Environ.env -> Evd.evar_map -> glob_constr_and_expr -> Evd.evar_map * constr

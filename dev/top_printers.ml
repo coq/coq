@@ -108,8 +108,7 @@ let ppconstrunderbindersidmap l = pp (prconstrunderbindersidmap l)
 let ppunbound_ltac_var_map l = ppidmap (fun _ arg ->
   str"<genarg:" ++ pr_argument_type(genarg_tag arg) ++ str">")
 
-open Glob_term
-
+open Ltac_pretype
 let rec pr_closure {idents=idents;typed=typed;untyped=untyped} =
   hov 1 (str"{idents=" ++ prididmap idents ++ str";" ++ spc() ++
          str"typed=" ++ prconstrunderbindersidmap typed ++ str";" ++ spc() ++

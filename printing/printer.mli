@@ -14,6 +14,7 @@ open Pattern
 open Evd
 open Proof_type
 open Glob_term
+open Ltac_pretype
 
 (** These are the entry points for printing terms, context, tac, ... *)
 

@@ -15,6 +15,7 @@ open Pattern
 open Globnames
 open Locus
 open Univ
+open Ltac_pretype
 
 type reduction_tactic_error =
     InvalidAbstraction of env * evar_map * constr * (env * Type_errors.type_error)

@@ -18,6 +18,7 @@ open Evd
 open EConstr
 open Glob_term
 open Evarutil
+open Ltac_pretype
 
 (** An auxiliary function for searching for fixpoint guard indexes *)
 

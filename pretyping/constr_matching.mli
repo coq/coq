@@ -13,6 +13,7 @@ open Term
 open EConstr
 open Environ
 open Pattern
+open Ltac_pretype
 
 type binding_bound_vars = Id.Set.t
 

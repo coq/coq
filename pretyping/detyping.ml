@@ -27,6 +27,7 @@ open Mod_subst
 open Misctypes
 open Decl_kinds
 open Context.Named.Declaration
+open Ltac_pretype
 
 type _ delay =
 | Now : 'a delay

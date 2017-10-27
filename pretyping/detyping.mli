@@ -15,6 +15,7 @@ open Termops
 open Mod_subst
 open Misctypes
 open Evd
+open Ltac_pretype
 
 type _ delay =
 | Now : 'a delay

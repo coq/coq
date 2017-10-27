@@ -12,6 +12,7 @@ open Glob_term
 open Mod_subst
 open Misctypes
 open Pattern
+open Ltac_pretype
 
 (** {5 Functions on patterns} *)
 

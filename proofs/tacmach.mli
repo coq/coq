@@ -15,6 +15,7 @@ open Proof_type
 open Redexpr
 open Pattern
 open Locus
+open Ltac_pretype
 
 (** Operations for handling terms under a local typing context. *)
 
