@@ -883,56 +883,60 @@ the type $V$ satisfies the nested positivity condition for $X$
 \settowidth\framecharacterwidth{\hh}
 \newcommand\ws{\hbox{}\hskip\the\framecharacterwidth}
 \newcommand\ruleref[1]{\hskip.25em\dots\hskip.2em{\em (bullet #1)}}
+\newcommand{\NatTree}{\mbox{\textsf{nattree}}}
+\newcommand{\NatTreeA}{\mbox{\textsf{nattree}}~\ensuremath{A}}
+\newcommand{\cnode}{\mbox{\textsf{node}}}
+\newcommand{\cleaf}{\mbox{\textsf{leaf}}}
 
-\noindent For instance, if one considers the type
+\noindent For instance, if one considers the following variant of a tree type branching over the natural numbers
 
 \begin{verbatim}
-Inductive tree (A:Type) : Type :=
- | leaf : list A
- | node : A -> (nat -> tree A) -> tree A
+Inductive nattree (A:Type) : Type :=
+ | leaf : nattree A
+ | node : A -> (nat -> nattree A) -> nattree A
 \end{verbatim}
 
 \begin{latexonly}
-\noindent Then every instantiated constructor of $\ListA$ satisfies the nested positivity condition for $\List$\\
+\noindent Then every instantiated constructor of $\NatTreeA$ satisfies the nested positivity condition for $\NatTree$\\
 \noindent
 \ws\ws\vv\\
-\ws\ws\vh\hh\ws concerning type $\ListA$ of constructor $\Nil$:\\
-\ws\ws\vv\ws\ws\ws\ws Type $\ListA$ of constructor $\Nil$ satisfies the positivity condition for $\List$\\
-\ws\ws\vv\ws\ws\ws\ws because $\List$ does not appear in any (real) arguments of the type of that constructor\\
-\ws\ws\vv\ws\ws\ws\ws (primarily because $\List$ does not have any (real) arguments)\ruleref1\\
+\ws\ws\vh\hh\ws concerning type $\NatTreeA$ of constructor $\cleaf$:\\
+\ws\ws\vv\ws\ws\ws\ws Type $\NatTreeA$ of constructor $\cleaf$ satisfies the positivity condition for $\NatTree$\\
+\ws\ws\vv\ws\ws\ws\ws because $\NatTree$ does not appear in any (real) arguments of the type of that constructor\\
+\ws\ws\vv\ws\ws\ws\ws (primarily because $\NatTree$ does not have any (real) arguments)\ruleref1\\
 \ws\ws\vv\\
-\ws\ws\hv\hh\ws concerning type $\forall~A\ra\ListA\ra\ListA$ of constructor $\cons$:\\
-\ws\ws\ws\ws\ws\ws\ws Type $\forall~A:\Type,A\ra\ListA\ra\ListA$ of constructor $\cons$\\
-\ws\ws\ws\ws\ws\ws\ws satisfies the positivity condition for $\List$ because:\\
+\ws\ws\hv\hh\ws concerning type $\forall~A\ra(\NN\ra\NatTreeA)\ra\NatTreeA$ of constructor $\cnode$:\\
+    \ws\ws\ws\ws\ws\ws\ws Type $\forall~A:\Type,A\ra(\NN\ra\NatTreeA)\ra\NatTreeA$ of constructor $\cnode$\\
+\ws\ws\ws\ws\ws\ws\ws satisfies the positivity condition for $\NatTree$ because:\\
 \ws\ws\ws\ws\ws\ws\ws\vv\\
-\ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $\List$ occurs only strictly positively in $\Type$\ruleref3\\
+\ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $\NatTree$ occurs only strictly positively in $\Type$\ruleref1\\
 \ws\ws\ws\ws\ws\ws\ws\vv\\
-\ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $\List$ occurs only strictly positively in $A$\ruleref3\\
+\ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $\NatTree$ occurs only strictly positively in $A$\ruleref1\\
 \ws\ws\ws\ws\ws\ws\ws\vv\\
-\ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $\List$ occurs only strictly positively in $\ListA$\ruleref4\\
+    \ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $\NatTree$ occurs only strictly positively in $\NN\ra\NatTreeA$\ruleref{3+2}\\
 \ws\ws\ws\ws\ws\ws\ws\vv\\
-\ws\ws\ws\ws\ws\ws\ws\hv\hh\ws $\List$ satisfies the positivity condition for $\ListA$\ruleref1
+\ws\ws\ws\ws\ws\ws\ws\hv\hh\ws $\NatTree$ satisfies the positivity condition for $\NatTreeA$\ruleref1
 \end{latexonly}
 \begin{rawhtml}
 <pre>
-<span style="font-family:serif">Then every instantiated constructor of <span style="font-family:monospace">list A</span> satisfies the nested positivity condition for <span style="font-family:monospace">list</span></span>
+<span style="font-family:serif">Then every instantiated constructor of <span style="font-family:monospace">nattree A</span> satisfies the nested positivity condition for <span style="font-family:monospace">nattree</span></span>
   │
-  ├─ <span style="font-family:serif">concerning type <span style="font-family:monospace">list A</span> of constructor <span style="font-family:monospace">nil</span>:</span>
-  │    <span style="font-family:serif">Type <span style="font-family:monospace">list A</span> of constructor <span style="font-family:monospace">nil</span> satisfies the positivity condition for <span style="font-family:monospace">list</span></span>
-  │    <span style="font-family:serif">because <span style="font-family:monospace">list</span> does not appear in any (real) arguments of the type of that constructor</span>
-  │    <span style="font-family:serif">(primarily because list does not have any (real) arguments) ... <span style="font-style:italic">(bullet 1)</span></span>
+  ├─ <span style="font-family:serif">concerning type <span style="font-family:monospace">nattree A</span> of constructor <span style="font-family:monospace">nil</span>:</span>
+  │    <span style="font-family:serif">Type <span style="font-family:monospace">nattree A</span> of constructor <span style="font-family:monospace">nil</span> satisfies the positivity condition for <span style="font-family:monospace">nattree</span></span>
+  │    <span style="font-family:serif">because <span style="font-family:monospace">nattree</span> does not appear in any (real) arguments of the type of that constructor</span>
+  │    <span style="font-family:serif">(primarily because nattree does not have any (real) arguments) ... <span style="font-style:italic">(bullet 1)</span></span>
   │
-  ╰─ <span style="font-family:serif">concerning type <span style="font-family:monospace">∀ A → list A → list A</span> of constructor <span style="font-family:monospace">cons</span>:</span>
-       <span style="font-family:serif">Type <span style="font-family:monospace">∀ A : Type, A → list A → list A</span> of constructor <span style="font-family:monospace">cons</span></span>
-       <span style="font-family:serif">satisfies the positivity condition for <span style="font-family:monospace">list</span> because:</span>
+  ╰─ <span style="font-family:serif">concerning type <span style="font-family:monospace">∀ A → (nat → nattree A) → nattree A</span> of constructor <span style="font-family:monospace">cons</span>:</span>
+       <span style="font-family:serif">Type <span style="font-family:monospace">∀ A : Type, A → (nat → nattree A) → nattree A</span> of constructor <span style="font-family:monospace">cons</span></span>
+       <span style="font-family:serif">satisfies the positivity condition for <span style="font-family:monospace">nattree</span> because:</span>
        │
-       ├─ <span style="font-family:serif"><span style="font-family:monospace">list</span> occurs only strictly positively in <span style="font-family:monospace">Type</span> ... <span style="font-style:italic">(bullet 3)</span></span>
+       ├─ <span style="font-family:serif"><span style="font-family:monospace">nattree</span> occurs only strictly positively in <span style="font-family:monospace">Type</span> ... <span style="font-style:italic">(bullet 1)</span></span>
        │
-       ├─ <span style="font-family:serif"><span style="font-family:monospace">list</span> occurs only strictly positively in <span style="font-family:monospace">A</span> ... <span style="font-style:italic">(bullet 3)</span></span>
+       ├─ <span style="font-family:serif"><span style="font-family:monospace">nattree</span> occurs only strictly positively in <span style="font-family:monospace">A</span> ... <span style="font-style:italic">(bullet 1)</span></span>
        │
-       ├─ <span style="font-family:serif"><span style="font-family:monospace">list</span> occurs only strictly positively in <span style="font-family:monospace">list A</span> ... <span style="font-style:italic">(bullet 4)</span></span>
+       ├─ <span style="font-family:serif"><span style="font-family:monospace">nattree</span> occurs only strictly positively in <span style="font-family:monospace">nat → nattree A</span> ... <span style="font-style:italic">(bullet 3+2)</span></span>
        │
-       ╰─ <span style="font-family:serif"><span style="font-family:monospace">list</span> satisfies the positivity condition for <span style="font-family:monospace">list A</span> ... <span style="font-style:italic">(bullet 1)</span></span>
+       ╰─ <span style="font-family:serif"><span style="font-family:monospace">nattree</span> satisfies the positivity condition for <span style="font-family:monospace">nattree A</span> ... <span style="font-style:italic">(bullet 1)</span></span>
 </pre>
 \end{rawhtml}
 
