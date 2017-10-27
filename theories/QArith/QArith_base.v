@@ -171,6 +171,26 @@ Proof.
  auto with qarith.
 Qed.
 
+Lemma Qeq_bool_comm x y: Qeq_bool x y = Qeq_bool y x.
+Proof.
+ apply eq_true_iff_eq. rewrite !Qeq_bool_iff. now symmetry.
+Qed.
+
+Lemma Qeq_bool_refl x: Qeq_bool x x = true.
+Proof.
+  rewrite Qeq_bool_iff. now reflexivity.
+Qed.
+
+Lemma Qeq_bool_sym x y: Qeq_bool x y = true -> Qeq_bool y x = true.
+Proof.
+  rewrite !Qeq_bool_iff. now symmetry.
+Qed.
+
+Lemma Qeq_bool_trans x y z: Qeq_bool x y = true -> Qeq_bool y z = true -> Qeq_bool x z = true.
+Proof.
+  rewrite !Qeq_bool_iff; apply Qeq_trans.
+Qed.
+
 Hint Resolve Qnot_eq_sym : qarith.
 
 (** * Addition, multiplication and opposite *)
