@@ -268,7 +268,7 @@ not to compute the argument, and `foo` would have e.g. type
 `(unit -> unit) -> unit`.
 
 ```
-foo (fun () -> let x := 0 in bar)
+foo (fun () => let x := 0 in bar)
 ```
 
 ## Typing
@@ -559,7 +559,7 @@ for it.
 
 - `&x` as an Ltac2 expression expands to `hyp @x`.
 - `&x` as a Coq constr expression expands to
-  `ltac2:(refine (fun () => hyp @x))`.
+  `ltac2:(Control.refine (fun () => hyp @x))`.
 
 #### Dynamic semantics
 
@@ -587,14 +587,86 @@ Many standard tactics perform type-checking of their argument before going
 further. It is your duty to ensure that terms are well-typed when calling
 such tactics. Failure to do so will result in non-recoverable exceptions.
 
-## Patterns
+## Trivial Term Antiquotations
 
-Terms can be used in pattern position just as any Ltac constructor. The accepted
-syntax is a subset of the constr syntax in Ltac term position. It does not
-allow antiquotations.
+It is possible to refer to a variable of type `constr` in the Ltac2 environment
+through a specific syntax consistent with the antiquotations presented in
+the notation section.
 
-Patterns quotations are typically used with the matching functions provided
-in the `Pattern` module.
+```
+COQCONSTR ::=
+| "$" LIDENT
+```
+
+In a Coq term, writing `$x` is semantically equivalent to
+`ltac2:(Control.refine (fun () => x))`, up to re-typechecking. It allows to
+insert in a concise way an Ltac2 variable of type `constr` into a Coq term.
+
+## Match over terms
+
+Ltac2 features a construction similar to Ltac1 `match` over terms, although
+in a less hard-wired way.
+
+```
+TERM ::=
+| "match!" TERM "with" CONSTR-MATCHING* "end"
+| "lazy_match!" TERM "with" CONSTR-MATCHING* "end"
+| "multi_match!" TERM "with" CONSTR-MATCHING*"end"
+
+CONSTR-MATCHING :=
+| "|" CONSTR-PATTERN "=>" TERM
+
+CONSTR-PATTERN :=
+| CONSTR
+| "context" LIDENT? "[" CONSTR "]"
+```
+
+This construction is not primitive and is desugared at parsing time into
+calls to term matching functions from the `Pattern` module. Internally, it is
+implemented thanks to a specific scope accepting the `CONSTR-MATCHING` syntax.
+
+Variables from the `CONSTR-PATTERN` are statically bound in the body of the branch, to
+values of type `constr` for the variables from the `CONSTR` pattern and to a
+value of type `Pattern.context` for the variable `LIDENT`.
+
+Note that contrarily to Ltac, only lowercase identifiers are valid as Ltac2
+bindings, so that there will be a syntax error if one of the bound variables
+starts with an uppercase character.
+
+The semantics of this construction is otherwise the same as the corresponding
+one from Ltac1, except that it requires the goal to be focussed.
+
+## Match over goals
+
+Similarly, there is a way to match over goals in an elegant way, which is
+just a notation desugared at parsing time.
+
+```
+TERM ::=
+| "match!" MATCH-ORDER? "goal" "with" GOAL-MATCHING* "end"
+| "lazy_match!" MATCH-ORDER? "goal" "with" GOAL-MATCHING* "end"
+| "multi_match!" MATCH-ORDER? "goal" "with" GOAL-MATCHING*"end"
+
+GOAL-MATCHING :=
+| "|" "[" HYP-MATCHING* "|-" CONSTR-PATTERN "]" "=>" TERM
+
+HYP-MATCHING :=
+| LIDENT ":" CONSTR-PATTERN
+
+MATCH-ORDER :=
+| "reverse"
+```
+
+Variables from `HYP-MATCHING` and `CONSTR-PATTERN` are bound in the body of the
+branch. Their types are:
+- `constr` for pattern variables appearing in a `CONSTR`
+- `Pattern.context` for variables binding a context
+- `ident` for variables binding a hypothesis name.
+
+The same identifier caveat as in the case of matching over constr applies, and
+this features has the same semantics as in Ltac1. In particular, a `reverse`
+flag can be specified to match hypotheses from the more recently introduced to
+the least recently introduced one.
 
 # Notations
 
@@ -655,6 +727,9 @@ The following scopes are built-in.
     subscopes of the form STRING are left out of the returned tuple, instead
     of returning a useless unit value. It is forbidden for the various
     subscopes to refer to the global entry using self of next.
+
+A few other specific scopes exist to handle Ltac1-like syntax, but their use is
+discouraged and they are thus not documented.
 
 For now there is no way to declare new scopes from Ltac2 side, but this is
 planned.
