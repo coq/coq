@@ -188,7 +188,7 @@ Qed.
 
 Lemma Qeq_bool_trans x y z: Qeq_bool x y = true -> Qeq_bool y z = true -> Qeq_bool x z = true.
 Proof.
-  rewrite !Qeq_bool_iff. apply Qeq_trans.
+  rewrite !Qeq_bool_iff; apply Qeq_trans.
 Qed.
 
 Hint Resolve Qnot_eq_sym : qarith.
