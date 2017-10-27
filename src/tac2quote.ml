@@ -419,10 +419,10 @@ let of_goal_matching (loc, gm) =
   in
   let map (loc, (pat, tac)) =
     let (pat, hyps, hctx, subst, cctx) = mk_gpat pat in
-    let tac = abstract_vars loc hyps tac in
-    let tac = abstract_vars loc hctx tac in
+    let tac = Loc.tag ?loc @@ CTacFun ([Loc.tag ?loc @@ CPatVar cctx, None], tac) in
     let tac = abstract_vars loc subst tac in
-    let tac = abstract_vars loc [cctx] tac in
+    let tac = abstract_vars loc hctx tac in
+    let tac = abstract_vars loc hyps tac in
     of_tuple ?loc [pat; tac]
   in
   of_list ?loc map gm
