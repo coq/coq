@@ -32,6 +32,12 @@ We renamed the following datatypes:
 
 - `Pp.std_ppcmds` -> `Pp.t`
 
+Some tactics and related functions now support static configurability, e.g.:
+
+- injectable, dEq, etc. takes an argument ~keep_proofs which,
+  - if None, tells to behave as told with the flag Keep Proof Equalities
+  - if Some b, tells to keep proof equalities iff b is true
+
 ## Changes between Coq 8.6 and Coq 8.7
 
 ### Ocaml

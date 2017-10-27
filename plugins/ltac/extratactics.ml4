@@ -91,12 +91,12 @@ let elimOnConstrWithHoles tac with_evars c =
     (fun c -> tac with_evars (Some (None,ElimOnConstr c)))
 
 TACTIC EXTEND simplify_eq
-  [ "simplify_eq" ] -> [ dEq false None ]
-| [ "simplify_eq" destruction_arg(c) ] -> [ mytclWithHoles dEq false c ]
+  [ "simplify_eq" ] -> [ dEq ~keep_proofs:None false None ]
+| [ "simplify_eq" destruction_arg(c) ] -> [ mytclWithHoles (dEq ~keep_proofs:None) false c ]
 END
 TACTIC EXTEND esimplify_eq
-| [ "esimplify_eq" ] -> [ dEq true None ]
-| [ "esimplify_eq" destruction_arg(c) ] -> [ mytclWithHoles dEq true c ]
+| [ "esimplify_eq" ] -> [ dEq ~keep_proofs:None true None ]
+| [ "esimplify_eq" destruction_arg(c) ] -> [ mytclWithHoles (dEq ~keep_proofs:None) true c ]
 END
 
 let discr_main c = elimOnConstrWithHoles discr_tac false c
@@ -117,31 +117,31 @@ let discrHyp id =
   discr_main (fun env sigma -> (sigma, (EConstr.mkVar id, NoBindings)))
 
 let injection_main with_evars c =
- elimOnConstrWithHoles (injClause None) with_evars c
+ elimOnConstrWithHoles (injClause None None) with_evars c
 
 TACTIC EXTEND injection
-| [ "injection" ] -> [ injClause None false None ]
-| [ "injection" destruction_arg(c) ] -> [ mytclWithHoles (injClause None) false c ]
+| [ "injection" ] -> [ injClause None None false None ]
+| [ "injection" destruction_arg(c) ] -> [ mytclWithHoles (injClause None None) false c ]
 END
 TACTIC EXTEND einjection
-| [ "einjection" ] -> [ injClause None true None ]
-| [ "einjection" destruction_arg(c) ] -> [ mytclWithHoles (injClause None) true c ]
+| [ "einjection" ] -> [ injClause None None true None ]
+| [ "einjection" destruction_arg(c) ] -> [ mytclWithHoles (injClause None None) true c ]
 END
 TACTIC EXTEND injection_as
 | [ "injection" "as" intropattern_list(ipat)] ->
-    [ injClause (Some ipat) false None ]
+    [ injClause None (Some ipat) false None ]
 | [ "injection" destruction_arg(c) "as" intropattern_list(ipat)] ->
-    [ mytclWithHoles (injClause (Some ipat)) false c ]
+    [ mytclWithHoles (injClause None (Some ipat)) false c ]
 END
 TACTIC EXTEND einjection_as
 | [ "einjection" "as" intropattern_list(ipat)] ->
-    [ injClause (Some ipat) true None ]
+    [ injClause None (Some ipat) true None ]
 | [ "einjection" destruction_arg(c) "as" intropattern_list(ipat)] ->
-    [ mytclWithHoles (injClause (Some ipat)) true c ]
+    [ mytclWithHoles (injClause None (Some ipat)) true c ]
 END
 TACTIC EXTEND simple_injection
-| [ "simple" "injection" ] -> [ simpleInjClause false None ]
-| [ "simple" "injection" destruction_arg(c) ] -> [ mytclWithHoles simpleInjClause false c ]
+| [ "simple" "injection" ] -> [ simpleInjClause None false None ]
+| [ "simple" "injection" destruction_arg(c) ] -> [ mytclWithHoles (simpleInjClause None) false c ]
 END
 
 let injHyp id =

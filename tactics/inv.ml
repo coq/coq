@@ -371,7 +371,7 @@ let projectAndApply as_mode thin avoid id eqname names depids =
     (* If no immediate variable in the equation, try to decompose it *)
     (* and apply a trailer which again try to substitute *)
     (fun id ->
-      dEqThen false (deq_trailer id)
+      dEqThen ~keep_proofs:None false (deq_trailer id)
 	(Some (None,ElimOnConstr (EConstr.mkVar id,NoBindings))))
     id
 

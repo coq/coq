@@ -18,6 +18,8 @@ Tactics
   such as "x := 5 : Z" (see BZ#148). This could be disabled via
   Unset Omega UseLocalDefs.
 - The tactic "romega" is also aware now of the bodies of context variables.
+- Tactic "decide equality" now able to manage constructors which
+  contain proofs.
 
 Changes from 8.7+beta2 to 8.7.0
 ===============================

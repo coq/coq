@@ -67,23 +67,31 @@ val replace_in_clause_maybe_by : constr -> constr -> clause -> unit Proofview.ta
 val replace    : constr -> constr -> unit Proofview.tactic
 val replace_by : constr -> constr -> unit Proofview.tactic -> unit Proofview.tactic
 
+type inj_flags = {
+    keep_proof_equalities : bool; (* One may want it or not *)
+    injection_in_context : bool;  (* For regularity; one may want it from ML code but not interactively *)
+    injection_pattern_l2r_order : bool; (* Compatibility option: no reason not to want it *)
+  }
+
 val discr        : evars_flag -> constr with_bindings -> unit Proofview.tactic
 val discrConcl   : unit Proofview.tactic
 val discrHyp     : Id.t -> unit Proofview.tactic
 val discrEverywhere : evars_flag -> unit Proofview.tactic
 val discr_tac    : evars_flag ->
   constr with_bindings destruction_arg option -> unit Proofview.tactic
-val inj          : intro_patterns option -> evars_flag ->
+
+(* Below, if flag is [None], it takes the value from the dynamic value of the option *)
+val inj          : inj_flags option -> intro_patterns option -> evars_flag ->
   clear_flag -> constr with_bindings -> unit Proofview.tactic
-val injClause    : intro_patterns option -> evars_flag ->
+val injClause    : inj_flags option -> intro_patterns option -> evars_flag ->
   constr with_bindings destruction_arg option -> unit Proofview.tactic
-val injHyp       : clear_flag -> Id.t -> unit Proofview.tactic
-val injConcl     : unit Proofview.tactic
-val simpleInjClause : evars_flag ->
+val injHyp       : inj_flags option -> clear_flag -> Id.t -> unit Proofview.tactic
+val injConcl     : inj_flags option -> unit Proofview.tactic
+val simpleInjClause : inj_flags option -> evars_flag ->
   constr with_bindings destruction_arg option -> unit Proofview.tactic
 
-val dEq : evars_flag -> constr with_bindings destruction_arg option -> unit Proofview.tactic
-val dEqThen : evars_flag -> (clear_flag -> constr -> int -> unit Proofview.tactic) -> constr with_bindings destruction_arg option -> unit Proofview.tactic
+val dEq : keep_proofs:(bool option) -> evars_flag -> constr with_bindings destruction_arg option -> unit Proofview.tactic
+val dEqThen : keep_proofs:(bool option) -> evars_flag -> (clear_flag -> constr -> int -> unit Proofview.tactic) -> constr with_bindings destruction_arg option -> unit Proofview.tactic
 
 val make_iterated_tuple :
   env -> evar_map -> constr -> (constr * types) -> evar_map * (constr * constr * constr)
@@ -100,7 +108,7 @@ val rewriteInConcl : bool -> constr -> unit Proofview.tactic
 val discriminable : env -> evar_map -> constr -> constr -> bool
 
 (* Tells if tactic "injection" is applicable *)
-val injectable : env -> evar_map -> constr -> constr -> bool
+val injectable : env -> evar_map -> keep_proofs:(bool option) -> constr -> constr -> bool
 
 (* Subst *)
 

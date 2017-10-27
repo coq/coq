@@ -89,6 +89,12 @@ let mkBranches (eqonleft,mk,c1,c2,typ) =
      clear_last;
      intros]
 
+let inj_flags = Some {
+    Equality.keep_proof_equalities = true; (* necessary *)
+    Equality.injection_in_context = true; (* does not matter here *)
+    Equality.injection_pattern_l2r_order = true; (* does not matter here *)
+  }
+
 let discrHyp id =
   let c env sigma = (sigma, (mkVar id, NoBindings)) in
   let tac c = Equality.discr_tac false (Some (None, ElimOnConstr c)) in
@@ -136,7 +142,7 @@ let eqCase tac =
 
 let injHyp id =
   let c env sigma = (sigma, (mkVar id, NoBindings)) in
-  let tac c = Equality.injClause None false (Some (None, ElimOnConstr c)) in
+  let tac c = Equality.injClause inj_flags None false (Some (None, ElimOnConstr c)) in
   Tacticals.New.tclDELAYEDWITHHOLES false c tac
 
 let diseqCase hyps eqonleft =
