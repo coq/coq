@@ -320,7 +320,7 @@ let pr_glbexpr_gen lvl c =
         let kn = change_kn_label tpe id in
         pr_projection kn ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr E1 arg
       in
-      let args = prlist_with_sep (fun () -> str ";" ++ spc ()) pr_arg args in
+      let args = prlist_with_sep pr_semicolon pr_arg args in
       hv 0 (str "{" ++ spc () ++ args ++ spc () ++ str "}")
     | (GTydDef _ | GTydOpn) -> assert false
   in
@@ -374,7 +374,9 @@ let rec pr_valexpr env sigma v t = match kind t with
   | Some pr -> pr.val_printer env sigma v params
   | None ->
     let n, repr = Tac2env.interp_type kn in
-    match repr with
+    if KerName.equal kn t_list then
+      pr_val_list env sigma (to_list (fun v -> repr_to valexpr v) v) (List.hd params)
+    else match repr with
     | GTydDef None -> str "<abstr>"
     | GTydDef (Some _) ->
       (** Shouldn't happen thanks to kind *)
@@ -388,7 +390,7 @@ let rec pr_valexpr env sigma v t = match kind t with
         let knc = change_kn_label kn id in
         let args = pr_constrargs env sigma params args tpe in
         hv 2 (pr_constructor knc ++ spc () ++ str "(" ++ args ++ str ")")
-    | GTydRec rcd -> str "{}"
+    | GTydRec rcd -> str "{ TODO }"
     | GTydOpn ->
       begin match Tac2ffi.to_open v with
       | (knc, [||]) -> pr_constructor knc
@@ -399,6 +401,7 @@ let rec pr_valexpr env sigma v t = match kind t with
       end
   end
 | GTypArrow _ -> str "<fun>"
+| GTypRef (Tuple 0, []) -> str "()"
 | GTypRef (Tuple _, tl) ->
   let blk = Array.to_list (snd (to_block v)) in
   if List.length blk == List.length tl then
@@ -414,31 +417,59 @@ and pr_constrargs env sigma params args tpe =
   let args = List.combine args tpe in
   prlist_with_sep pr_comma (fun (v, t) -> pr_valexpr env sigma v t) args
 
+and pr_val_list env sigma args tpe =
+  let pr v = pr_valexpr env sigma v tpe in
+  str "[" ++ prlist_with_sep pr_semicolon pr args ++ str "]"
+
 let register_init n f =
   let kn = KerName.make2 Tac2env.coq_prefix (Label.make n) in
-  register_val_printer kn { val_printer = fun _ _ v _ -> f v }
+  register_val_printer kn { val_printer = fun env sigma v _ -> f env sigma v }
 
-let () = register_init "int" begin fun n ->
+let () = register_init "int" begin fun _ _ n ->
   let n = to_int n in
   Pp.int n
 end
 
-let () = register_init "string" begin fun s ->
+let () = register_init "string" begin fun _ _ s ->
   let s = to_string s in
-  Pp.quote (Pp.str (Bytes.to_string s))
+  Pp.quote (str (Bytes.to_string s))
 end
 
-let () = register_init "ident" begin fun id ->
+let () = register_init "ident" begin fun _ _ id ->
   let id = to_ident id in
-  Pp.str "@" ++ Id.print id
+  str "@" ++ Id.print id
 end
 
-let () = register_init "message" begin fun pp ->
+let () = register_init "constr" begin fun env sigma c ->
+  let c = to_constr c in
+  let c = try Printer.pr_leconstr_env env sigma c with _ -> str "..." in
+  str "constr:(" ++ c ++ str ")"
+end
+
+let () = register_init "pattern" begin fun env sigma c ->
+  let c = to_pattern c in
+  let c = try Printer.pr_lconstr_pattern_env env sigma c with _ -> str "..." in
+  str "pattern:(" ++ c ++ str ")"
+end
+
+let () = register_init "message" begin fun _ _ pp ->
   str "message:(" ++ to_pp pp ++ str ")"
 end
 
-let () = register_init "err" begin fun e ->
+let () = register_init "err" begin fun _ _ e ->
   let e = to_ext val_exn e in
   let (e, _) = ExplainErr.process_vernac_interp_error ~allow_uncaught:true e in
   str "err:(" ++ CErrors.print_no_report e ++ str ")"
 end
+
+let () =
+  let kn = KerName.make2 Tac2env.coq_prefix (Label.make "array") in
+  let val_printer env sigma v arg = match arg with
+  | [arg] ->
+    let (_, v) = to_block v in
+    str "[|" ++ spc () ++
+      prvect_with_sep pr_semicolon (fun a -> pr_valexpr env sigma a arg) v ++
+      spc () ++ str "|]"
+  | _ -> assert false
+  in
+  register_val_printer kn { val_printer }
