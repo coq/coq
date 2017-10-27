@@ -88,6 +88,7 @@ let tac2def_typ = Gram.entry_create "tactic:tac2def_typ"
 let tac2def_ext = Gram.entry_create "tactic:tac2def_ext"
 let tac2def_syn = Gram.entry_create "tactic:tac2def_syn"
 let tac2def_mut = Gram.entry_create "tactic:tac2def_mut"
+let tac2def_run = Gram.entry_create "tactic:tac2def_run"
 let tac2mode = Gram.entry_create "vernac:ltac2_command"
 
 (** FUCK YOU API *)
@@ -109,7 +110,7 @@ let pattern_of_qualid ?loc id =
 
 GEXTEND Gram
   GLOBAL: tac2expr tac2type tac2def_val tac2def_typ tac2def_ext tac2def_syn
-          tac2def_mut;
+          tac2def_mut tac2def_run;
   tac2pat:
     [ "1" LEFTA
       [ id = Prim.qualid; pl = LIST1 tac2pat LEVEL "0" ->
@@ -272,6 +273,9 @@ GEXTEND Gram
   ;
   tac2def_mut:
     [ [ "Set"; qid = Prim.qualid; ":="; e = tac2expr -> StrMut (qid, e) ] ]
+  ;
+  tac2def_run:
+    [ [ "Eval"; e = tac2expr -> StrRun e ] ]
   ;
   tac2typ_knd:
     [ [ t = tac2type -> CTydDef (Some t)
@@ -801,11 +805,12 @@ PRINTED BY pr_ltac2entry
 | [ tac2def_ext(e) ] -> [ e ]
 | [ tac2def_syn(e) ] -> [ e ]
 | [ tac2def_mut(e) ] -> [ e ]
+| [ tac2def_run(e) ] -> [ e ]
 END
 
 let classify_ltac2 = function
 | StrSyn _ -> Vernacexpr.VtUnknown, Vernacexpr.VtNow
-| StrMut _ | StrVal _ | StrPrm _  | StrTyp _ -> Vernac_classifier.classify_as_sideeff
+| StrMut _ | StrVal _ | StrPrm _  | StrTyp _ | StrRun _ -> Vernac_classifier.classify_as_sideeff
 
 VERNAC COMMAND EXTEND VernacDeclareTactic2Definition
 | [ "Ltac2" ltac2_entry(e) ] => [ classify_ltac2 e ] -> [

@@ -739,6 +739,36 @@ let register_redefinition ?(local = false) (loc, qid) e =
   } in
   Lib.add_anonymous_leaf (inTac2Redefinition def)
 
+let perform_eval e =
+  let open Proofview.Notations in
+  let env = Global.env () in
+  let (e, ty) = Tac2intern.intern ~strict:false e in
+  let v = Tac2interp.interp Tac2interp.empty_environment e in
+  let selector, proof =
+    try
+      Proof_bullet.get_default_goal_selector (),
+      Proof_global.give_me_the_proof ()
+    with Proof_global.NoCurrentProof ->
+      let sigma = Evd.from_env env in
+      Vernacexpr.SelectAll, Proof.start sigma []
+  in
+  let v = match selector with
+  | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i v
+  | Vernacexpr.SelectList l -> Proofview.tclFOCUSLIST l v
+  | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id v
+  | Vernacexpr.SelectAll -> v
+  in
+  (** HACK: the API doesn't allow to return a value *)
+  let ans = ref None in
+  let tac = (v >>= fun r -> ans := Some r; Proofview.tclUNIT ()) in
+  let (proof, _) = Proof.run_tactic (Global.env ()) tac proof in
+  let sigma = Proof.in_proof proof (fun sigma -> sigma) in
+  let ans = match !ans with None -> assert false | Some r -> r in
+  let name = int_name () in
+  Feedback.msg_notice (str "- : " ++ pr_glbtype name (snd ty)
+    ++ spc () ++  str "=" ++ spc () ++
+    Tac2print.pr_valexpr env sigma ans (snd ty))
+
 (** Toplevel entries *)
 
 let register_struct ?local str = match str with
@@ -747,6 +777,7 @@ let register_struct ?local str = match str with
 | StrPrm (id, t, ml) -> register_primitive ?local id t ml
 | StrSyn (tok, lev, e) -> register_notation ?local tok lev e
 | StrMut (qid, e) -> register_redefinition ?local qid e
+| StrRun e -> perform_eval e
 
 (** Toplevel exception *)
 

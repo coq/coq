@@ -727,6 +727,20 @@ foo 0 ↦ (fun x => x ()) (fun _ => 0)
 Note that abbreviations are not typechecked at all, and may result in typing
 errors after expansion.
 
+# Evaluation
+
+Ltac2 features a toplevel loop that can be used to evaluate expressions.
+
+```
+VERNAC ::=
+| "Ltac2" "Eval" TERM
+```
+
+This command evaluates the term in the current proof if there is one, or in the
+global environment otherwise, and displays the resulting value to the user
+together with its type. This function is pure in the sense that it does not
+modify the state of the proof, and in particular all side-effects are discarded.
+
 # Debug
 
 When the option `Ltac2 Backtrace` is set, toplevel failures will be printed with
