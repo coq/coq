@@ -41,11 +41,7 @@ val caml_flags : string     (* arguments passed to ocamlc (ie. CAMLFLAGS) *)
 val best : string       (* byte/opt *)
 val arch : string       (* architecture *)
 val arch_is_win32 : bool
-val osdeplibs : string  (* OS dependent link options for ocamlc *)
 val vmbyteflags : string list (* -custom/-dllib -lcoqrun *)
-
-
-(* val defined : string list  (* options for lib/ocamlpp *) *)
 
 val version : string    (* version number of Coq *)
 val caml_version : string    (* OCaml version used to compile Coq *)

@@ -179,14 +179,6 @@ let is_standard_doc_url url =
 let coqlib_spec = ref false
 let coqlib = ref "(not initialized yet)"
 
-(* Options for changing ocamlfind (used by coqmktop) *)
-let ocamlfind_spec = ref false
-let ocamlfind = ref Coq_config.camlbin
-
-(* Options for changing camlp4bin (used by coqmktop) *)
-let camlp4bin_spec = ref false
-let camlp4bin = ref Coq_config.camlp4bin
-
 (* Level of inlining during a functor application *)
 
 let default_inline_level = 100

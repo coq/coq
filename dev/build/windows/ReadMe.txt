@@ -418,7 +418,6 @@ Binary file ./bin/coqchk.exe matches
 Binary file ./bin/coqdep.exe matches
 Binary file ./bin/coqdoc.exe matches
 Binary file ./bin/coqide.exe matches
-Binary file ./bin/coqmktop.exe matches
 Binary file ./bin/coqtop.byte.exe matches
 Binary file ./bin/coqtop.exe matches
 Binary file ./bin/coqworkmgr.exe matches
@@ -438,7 +437,6 @@ Binary file ./bin/ocamldoc.exe matches
 Binary file ./bin/ocamldoc.opt.exe matches
 Binary file ./bin/ocamlfind.exe matches
 Binary file ./bin/ocamlmklib.exe matches
-Binary file ./bin/ocamlmktop.exe matches
 Binary file ./bin/ocamlobjinfo.exe matches
 Binary file ./bin/ocamlopt.exe matches
 Binary file ./bin/ocamlopt.opt.exe matches

@@ -153,19 +153,17 @@ let coqpath =
 
 let exe s = s ^ Coq_config.exec_extension
 
-let ocamlfind () =
-  if !Flags.ocamlfind_spec then !Flags.ocamlfind else Coq_config.ocamlfind
+let ocamlfind () = Coq_config.ocamlfind
 
 (** {2 Camlp4 paths} *)
 
 let guess_camlp4bin () = which (user_path ()) (exe Coq_config.camlp4)
 
 let camlp4bin () =
-  if !Flags.camlp4bin_spec then !Flags.camlp4bin else
-    if !Flags.boot then Coq_config.camlp4bin else
-      try guess_camlp4bin ()
-      with Not_found ->
-        Coq_config.camlp4bin
+  if !Flags.boot then Coq_config.camlp4bin else
+    try guess_camlp4bin ()
+    with Not_found ->
+      Coq_config.camlp4bin
 
 let camlp4 () = camlp4bin () / exe Coq_config.camlp4
 

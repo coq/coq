@@ -279,7 +279,7 @@ You can load them by switching to the window holding the "ocamldebug" shell and 
 Some of the functions were you might want to set a breakpoint and see what happens next
 ---------------------------------------------------------------------------------------
 
-- Coqtop.start : This function is called by the code produced by "coqmktop".
+- Coqtop.start : This function is the main entry point of coqtop.
 - Coqtop.parse_args : This function is responsible for parsing command-line arguments.
 - Coqloop.loop : This function implements the read-eval-print loop.
 - Vernacentries.interp : This function is called to execute the Vernacular command user have typed.\

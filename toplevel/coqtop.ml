@@ -848,5 +848,3 @@ let start () =
     end;
     CProfile.print_profile ();
     exit 0
-
-(* [Coqtop.start] will be called by the code produced by coqmktop *)

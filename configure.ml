@@ -16,7 +16,7 @@ let coq_macos_version = "8.7.90" (** "[...] should be a string comprised of
 three non-negative, period-separated integers [...]" *)
 let vo_magic = 8791
 let state_magic = 58791
-let distributed_exec = ["coqtop";"coqc";"coqchk";"coqdoc";"coqmktop";"coqworkmgr";
+let distributed_exec = ["coqtop";"coqc";"coqchk";"coqdoc";"coqworkmgr";
 "coqdoc";"coq_makefile";"coq-tex";"gallina";"coqwc";"csdpcert";"coqdep"]
 
 let verbose = ref false (* for debugging this script *)
@@ -666,17 +666,15 @@ let natdynlinkflag =
 
 (** * OS dependent libraries *)
 
-let osdeplibs = "-cclib -lunix"
-
-let operating_system, osdeplibs =
+let operating_system =
   if starts_with arch "sun4" then
     let os, _ = run "uname" ["-r"] in
     if starts_with os "5" then
-      "Sun Solaris "^os, osdeplibs^" -cclib -lnsl -cclib -lsocket"
+      "Sun Solaris "^os
     else
-      "Sun OS "^os, osdeplibs
+      "Sun OS "^os
   else
-    (try Sys.getenv "OS" with Not_found -> ""), osdeplibs
+    (try Sys.getenv "OS" with Not_found -> "")
 
 (** Num library *)
 
@@ -1001,7 +999,6 @@ let print_summary () =
     pr "  Operating system            : %s\n" operating_system;
   pr "  Coq VM bytecode link flags  : %s\n" (String.concat " " vmbyteflags);
   pr "  Other bytecode link flags   : %s\n" custom_flag;
-  pr "  OS dependent libraries      : %s\n" osdeplibs;
   pr "  OCaml version               : %s\n" caml_version;
   pr "  OCaml binaries in           : %s\n" (esc camlbin);
   pr "  OCaml library in            : %s\n" (esc camllib);
@@ -1094,7 +1091,6 @@ let write_configml f =
   pr_s "cflags" cflags;
   pr_s "caml_flags" caml_flags;
   pr_s "best" best_compiler;
-  pr_s "osdeplibs" osdeplibs;
   pr_s "version" coq_version;
   pr_s "caml_version" caml_version;
   pr_li "caml_version_nums" caml_version_nums;
@@ -1225,7 +1221,6 @@ let write_makefile f =
   pr "# Supplementary libs for some systems, currently:\n";
   pr "#  . Sun Solaris: -cclib -lunix -cclib -lnsl -cclib -lsocket\n";
   pr "#  . others     : -cclib -lunix\n";
-  pr "OSDEPLIBS=%s\n\n" osdeplibs;
   pr "# executable files extension, currently:\n";
   pr "#  Unix systems:\n";
   pr "#  Win32 systems : .exe\n";

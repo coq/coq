@@ -228,8 +228,8 @@ endef
 
 define bestocaml
 $(if $(OPT),\
-$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) $(LINKMETADATA) -o $@ $(1) $(addsuffix .cmxa,$(2)) $^ && $(STRIP) $@ && $(CODESIGN) $@,\
-$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(CUSTOM) -o $@ $(1) $(addsuffix .cma,$(2)) $^)
+$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) $(LINKMETADATA) -o $@ -linkpkg $(1) $^ && $(STRIP) $@ && $(CODESIGN) $@,\
+$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(CUSTOM) -o $@ -linkpkg $(1) $^)
 endef
 
 # Camlp5 settings
@@ -239,9 +239,8 @@ CAMLP4USE=pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
 
 PR_O := $(if $(READABLE_ML4),pr_o.cmo,pr_dump.cmo)
 
-SYSMOD:=str unix dynlink threads
-SYSCMA:=$(addsuffix .cma,$(SYSMOD))
-SYSCMXA:=$(addsuffix .cmxa,$(SYSMOD))
+# Main packages linked by Coq.
+SYSMOD:=-package num,str,unix,dynlink,threads
 
 # We do not repeat the dependencies already in SYSMOD here
 P4CMA:=gramlib.cma
@@ -370,19 +369,30 @@ grammar/%.cmi: grammar/%.mli
 
 
 ###########################################################################
-# Main targets (coqmktop, coqtop.opt, coqtop.byte)
+# Main targets (coqtop.opt, coqtop.byte)
 ###########################################################################
 
 .PHONY: coqbinaries coqbyte
 
-coqbinaries: $(COQMKTOP) $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(FAKEIDE)
+coqbinaries: $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(FAKEIDE)
 
 coqbyte: $(COQTOPBYTE) $(CHICKENBYTE)
 
+COQTOP_OPT_MLTOP=toplevel/coqtop_opt_bin.cmx
+COQTOP_BYTE_MLTOP=toplevel/coqtop_byte_bin.cmo
+
+$(COQTOP_BYTE_MLTOP): toplevel/coqtop_byte_bin.ml
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -package compiler-libs.toplevel -c $<
+
 ifeq ($(BEST),opt)
-$(COQTOPEXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(TOPLOOPCMA:.cma=.cmxs)
+$(COQTOPEXE): tools/tolink.cmx $(LINKCMX) $(LIBCOQRUN) $(TOPLOOPCMA:.cma=.cmxs) $(COQTOP_OPT_MLTOP)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) $(LINKMETADATA) -o $@
+	$(HIDE)$(OCAMLOPT) -linkall -linkpkg -I vernac -I toplevel -I tools \
+	                   -I kernel/byterun/ -cclib -lcoqrun \
+                           $(SYSMOD) -package camlp5.gramlib \
+	                   tools/tolink.cmx $(LINKCMX) $(OPTFLAGS) $(LINKMETADATA) \
+	                   $(COQTOP_OPT_MLTOP) toplevel/coqtop_bin.ml -o $@
 	$(STRIP) $@
 	$(CODESIGN) $@
 else
@@ -390,21 +400,18 @@ $(COQTOPEXE): $(COQTOPBYTE)
 	cp $< $@
 endif
 
-$(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(TOPLOOPCMA)
+# Are "-cclib lcoqrun -dllib -lcoqrun" necessary?
+$(COQTOPBYTE): tools/tolink.cmo $(LINKCMO) $(LIBCOQRUN) $(TOPLOOPCMA) $(COQTOP_BYTE_MLTOP)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(COQMKTOP) -boot -top $(BYTEFLAGS) -o $@
-
-# coqmktop
-
-COQMKTOPCMO:=lib/clib.cma lib/cErrors.cmo tools/tolink.cmo tools/coqmktop.cmo
-
-$(COQMKTOP): $(call bestobj, $(COQMKTOPCMO))
-	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml, $(OSDEPLIBS), $(SYSMOD))
+	$(HIDE)$(OCAMLC) -linkall -linkpkg -I vernac -I toplevel -I tools \
+	                 -I kernel/byterun -dllpath $(abspath kernel/byterun) -cclib -lcoqrun -dllib -lcoqrun \
+                         $(SYSMOD) -package camlp5.gramlib,compiler-libs.toplevel \
+	                 tools/tolink.cmo $(LINKCMO) $(BYTEFLAGS) \
+	                 $(COQTOP_BYTE_MLTOP) toplevel/coqtop_bin.ml -o $@
 
 tools/tolink.ml: Makefile.build Makefile.common
 	$(SHOW)"ECHO... >" $@
-	$(HIDE)echo "let copts = \"-cclib -lcoqrun\"" > $@
+	$(HIDE)echo "let static_modules = \""$(STATICPLUGINS)"\"" > $@
 	$(HIDE)echo "let core_libs = \""$(LINKCMO)"\"" >> $@
 	$(HIDE)echo "let core_objs = \""$(OBJSMOD)"\"" >> $@
 
@@ -414,7 +421,7 @@ COQCCMO:=lib/clib.cma lib/cErrors.cmo toplevel/usage.cmo tools/coqc.cmo
 
 $(COQC): $(call bestobj, $(COQCCMO))
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml, $(OSDEPLIBS), $(SYSMOD))
+	$(HIDE)$(call bestocaml, $(SYSMOD))
 
 ###########################################################################
 # other tools
@@ -451,11 +458,11 @@ tools/coqdep_boot.cmx : tools/coqdep_common.cmx
 
 $(COQDEPBOOT): $(call bestobj, $(COQDEPBOOTSRC))
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml, -I tools, unix)
+	$(HIDE)$(call bestocaml, -I tools -package unix)
 
 $(OCAMLLIBDEP): $(call bestobj, tools/ocamllibdep.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml, -I tools, unix)
+	$(HIDE)$(call bestocaml, -I tools -package unix)
 
 # The full coqdep (unused by this build, but distributed by make install)
 
@@ -466,36 +473,36 @@ COQDEPCMO:=lib/clib.cma lib/cErrors.cmo lib/cWarnings.cmo \
 
 $(COQDEP): $(call bestobj, $(COQDEPCMO))
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml, $(OSDEPLIBS), $(SYSMOD))
+	$(HIDE)$(call bestocaml, $(SYSMOD))
 
 $(GALLINA): $(call bestobj, tools/gallina_lexer.cmo tools/gallina.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,,)
+	$(HIDE)$(call bestocaml,)
 
 COQMAKEFILECMO:=lib/clib.cma tools/coq_makefile.cmo
 
 $(COQMAKEFILE): $(call bestobj,$(COQMAKEFILECMO))
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,,str unix threads)
+	$(HIDE)$(call bestocaml, -package str,unix,threads)
 
 $(COQTEX): $(call bestobj, tools/coq_tex.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,,str)
+	$(HIDE)$(call bestocaml, -package str)
 
 $(COQWC): $(call bestobj, tools/coqwc.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,,)
+	$(HIDE)$(call bestocaml, -package str)
 
 COQDOCCMO:=lib/clib.cma $(addprefix tools/coqdoc/, \
   cdglobals.cmo alpha.cmo index.cmo tokens.cmo output.cmo cpretty.cmo main.cmo )
 
 $(COQDOC): $(call bestobj, $(COQDOCCMO))
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,,str unix)
+	$(HIDE)$(call bestocaml, -package str,unix)
 
 $(COQWORKMGR): $(call bestobj, lib/clib.cma stm/coqworkmgrApi.cmo tools/coqworkmgr.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,, $(SYSMOD))
+	$(HIDE)$(call bestocaml, $(SYSMOD))
 
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
 # a connection to coqtop -ideslave
@@ -506,13 +513,13 @@ FAKEIDECMO:= lib/clib.cma lib/cErrors.cmo lib/spawn.cmo	ide/document.cmo \
 
 $(FAKEIDE): $(call bestobj, $(FAKEIDECMO)) | $(IDETOPLOOPCMA:.cma=$(BESTDYN))
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,-I ide,str unix threads)
+	$(HIDE)$(call bestocaml, -I ide -package str,unix,threads)
 
 # votour: a small vo explorer (based on the checker)
 
 bin/votour: $(call bestobj, lib/cObj.cmo checker/analyze.cmo checker/values.cmo checker/votour.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml, -I checker,)
+	$(HIDE)$(call bestocaml, -I checker)
 
 ###########################################################################
 # Csdp to micromega special targets
@@ -524,7 +531,7 @@ CSDPCERTCMO:=lib/clib.cma $(addprefix plugins/micromega/, \
 
 $(CSDPCERT): $(call bestobj, $(CSDPCERTCMO))
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,,nums unix)
+	$(HIDE)$(call bestocaml, -package num,unix)
 
 ###########################################################################
 # tests

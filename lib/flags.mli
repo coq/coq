@@ -143,12 +143,6 @@ val is_standard_doc_url : string -> bool
 val coqlib_spec : bool ref
 val coqlib : string ref
 
-(** Options for specifying where OCaml binaries reside *)
-val ocamlfind_spec : bool ref
-val ocamlfind : string ref
-val camlp4bin_spec : bool ref
-val camlp4bin : string ref
-
 (** Level of inlining during a functor application *)
 val set_inline_level : int -> unit
 val get_inline_level : unit -> int

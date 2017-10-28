@@ -12,8 +12,6 @@
 # Executables
 ###########################################################################
 
-COQMKTOP:=bin/coqmktop$(EXE)
-
 COQTOPBYTE:=bin/coqtop.byte$(EXE)
 COQTOPEXE:=bin/coqtop$(EXE)
 
