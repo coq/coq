@@ -15,6 +15,9 @@ val init_toplevel : string list -> (Stm.doc * Stateid.t) option
 
 val start : unit -> unit
 
+(* Last document seen after `Drop` *)
+val drop_last_doc : Stm.doc option ref
+
 (* For other toploops *)
 val toploop_init : (string list -> string list) ref
 val toploop_run : (Stm.doc -> unit) ref

@@ -350,7 +350,7 @@ let rec loop doc =
        not possible due exceptions. *)
     in vernac_loop doc (Stm.get_current_state ~doc)
   with
-    | CErrors.Drop -> ()
+    | CErrors.Drop -> doc
     | CErrors.Quit -> exit 0
     | any ->
       Feedback.msg_error (str "Anomaly: main loop exited with exception: " ++

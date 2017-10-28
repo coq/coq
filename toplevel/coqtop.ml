@@ -79,6 +79,7 @@ let toploop_init = ref begin fun x ->
    will not be generally be initialized, thus stateid, etc... may be
    bogus. For now we just print to the console too *)
 let coqtop_init_feed = Coqloop.coqloop_feed
+let drop_last_doc = ref None
 
 (* Default toplevel loop *)
 let console_toploop_run doc =
@@ -88,8 +89,9 @@ let console_toploop_run doc =
     Flags.if_verbose warning "Dumpglob cannot be used in interactive mode.";
     Dumpglob.noglob ()
   end;
-  Coqloop.loop doc;
+  let doc = Coqloop.loop doc in
   (* Initialise and launch the Ocaml toplevel *)
+  drop_last_doc := Some doc;
   Coqinit.init_ocaml_path();
   Mltop.ocaml_toploop();
   (* We let the feeder in place for users of Drop *)
@@ -183,9 +185,9 @@ let load_vernacular doc sid =
     (fun (doc,sid) (f_in, verbosely) ->
       let s = Loadpath.locate_file f_in in
       if !Flags.beautify then
-	Flags.with_option Flags.beautify_file (Vernac.load_vernac ~verbosely ~interactive:false ~check:true doc sid) f_in
+        Flags.with_option Flags.beautify_file (Vernac.load_vernac ~verbosely ~interactive:false ~check:true doc sid) f_in
       else
-	Vernac.load_vernac ~verbosely ~interactive:false ~check:true doc sid s)
+        Vernac.load_vernac ~verbosely ~interactive:false ~check:true doc sid s)
     (doc, sid) (List.rev !load_vernacular_list)
 
 let load_init_vernaculars doc sid =
@@ -726,7 +728,7 @@ let parse_args arglist =
     |"-no-glob"|"-noglob" -> Dumpglob.noglob (); glob_opt := true
     |"-native-compiler" ->
       if Coq_config.no_native_compiler then
-	warning "Native compilation was disabled at configure time."
+        warning "Native compilation was disabled at configure time."
       else Flags.native_compiler := true
     |"-output-context" -> output_context := true
     |"-profile-ltac" -> Flags.profile_ltac := true
