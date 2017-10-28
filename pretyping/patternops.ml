@@ -96,6 +96,31 @@ let rec occur_meta_pattern = function
   | PMeta _ | PSoApp _ -> true
   | PEvar _ | PVar _ | PRef _ | PRel _ | PSort _ | PFix _ | PCoFix _ -> false
 
+let rec occurn_pattern n = function
+  | PRel p -> Int.equal n p
+  | PApp (f,args) ->
+      (occurn_pattern n f) || (Array.exists (occurn_pattern n) args)
+  | PProj (_,arg) -> occurn_pattern n arg
+  | PLambda (na,t,c)  -> (occurn_pattern n t) || (occurn_pattern (n+1) c)
+  | PProd (na,t,c)  -> (occurn_pattern n t) || (occurn_pattern (n+1) c)
+  | PLetIn (na,b,t,c)  ->
+     Option.fold_left (fun b t -> b || occurn_pattern n t) (occurn_pattern n b) t ||
+     (occurn_pattern (n+1) c)
+  | PIf (c,c1,c2)  ->
+      (occurn_pattern n c) ||
+      (occurn_pattern n c1) || (occurn_pattern n c2)
+  | PCase(_,p,c,br) ->
+      (occurn_pattern n p) ||
+      (occurn_pattern n c) ||
+      (List.exists (fun (_,_,p) -> occurn_pattern n p) br)
+  | PMeta _ | PSoApp _ -> true
+  | PEvar (_,args) -> Array.exists (occurn_pattern n) args
+  | PVar _ | PRef _ | PSort _ -> false
+  | PFix fix -> not (noccurn n (mkFix fix))
+  | PCoFix cofix -> not (noccurn n (mkCoFix cofix))
+
+let noccurn_pattern n c = not (occurn_pattern n c)
+
 exception BoundPattern;;
 
 let rec head_pattern_bound t =
