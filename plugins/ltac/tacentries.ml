@@ -63,28 +63,37 @@ let get_separator = function
 | None -> user_err Pp.(str "Missing separator.")
 | Some sep -> sep
 
-let rec parse_user_entry s sep =
+let check_separator ?loc = function
+| None -> ()
+| Some _ -> user_err ?loc (str "Separator is only for arguments with suffix _list_sep.")
+
+let rec parse_user_entry ?loc s sep =
   let l = String.length s in
   if l > 8 && coincide s "ne_" 0 && coincide s "_list" (l - 5) then
-    let entry = parse_user_entry (String.sub s 3 (l-8)) None in
+    let entry = parse_user_entry ?loc (String.sub s 3 (l-8)) None in
+    check_separator ?loc sep;
     Ulist1 entry
   else if l > 12 && coincide s "ne_" 0 &&
                    coincide s "_list_sep" (l-9) then
-    let entry = parse_user_entry (String.sub s 3 (l-12)) None in
+    let entry = parse_user_entry ?loc (String.sub s 3 (l-12)) None in
     Ulist1sep (entry, get_separator sep)
   else if l > 5 && coincide s "_list" (l-5) then
-    let entry = parse_user_entry (String.sub s 0 (l-5)) None in
+    let entry = parse_user_entry ?loc (String.sub s 0 (l-5)) None in
+    check_separator ?loc sep;
     Ulist0 entry
   else if l > 9 && coincide s "_list_sep" (l-9) then
-    let entry = parse_user_entry (String.sub s 0 (l-9)) None in
+    let entry = parse_user_entry ?loc (String.sub s 0 (l-9)) None in
     Ulist0sep (entry, get_separator sep)
   else if l > 4 && coincide s "_opt" (l-4) then
-    let entry = parse_user_entry (String.sub s 0 (l-4)) None in
+    let entry = parse_user_entry ?loc (String.sub s 0 (l-4)) None in
+    check_separator ?loc sep;
     Uopt entry
   else if Int.equal l 7 && coincide s "tactic" 0 && '5' >= s.[6] && s.[6] >= '0' then
     let n = Char.code s.[6] - 48 in
+    check_separator ?loc sep;
     Uentryl ("tactic", n)
   else
+    let _ = check_separator ?loc sep in
     Uentry s
 
 let interp_entry_name interp symb =
@@ -203,7 +212,7 @@ let register_tactic_notation_entry name entry =
 let interp_prod_item = function
   | TacTerm s -> TacTerm s
   | TacNonTerm (loc, ((nt, sep), ido)) ->
-    let symbol = parse_user_entry nt sep in
+    let symbol = parse_user_entry ?loc nt sep in
     let interp s = function
     | None ->
       if String.Map.mem s !entry_names then String.Map.find s !entry_names
