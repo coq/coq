@@ -1220,8 +1220,8 @@ let pr_destruction_arg_env c = Genprint.PrinterNeedsContext (fun env sigma ->
 
 let make_constr_printer f c =
   Genprint.PrinterNeedsContextAndLevel {
-      Genprint.default_already_surrounded = Ppconstr.lsimpleconstr;
-      Genprint.default_ensure_surrounded = Ppconstr.ltop;
+      Genprint.default_already_surrounded = Ppconstr.ltop;
+      Genprint.default_ensure_surrounded = Ppconstr.lsimpleconstr;
       Genprint.printer = (fun env sigma n -> f env sigma n c)}
 
 let lift f a = Genprint.PrinterBasic (fun () -> f a)

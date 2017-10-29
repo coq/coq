@@ -236,24 +236,16 @@ let curr_debug ist = match TacStore.get ist.extra f_debug with
 (* Displays a value *)
 let pr_value env v =
   let v = Value.normalize v in
-  if has_type v (topwit wit_tacvalue) then str "a tactic"
-  else if has_type v (topwit wit_constr_context) then
-    let c = out_gen (topwit wit_constr_context) v in
+  let pr_with_env pr =
     match env with
-    | Some (env,sigma) -> pr_leconstr_env env sigma c
-    | _ -> str "a term"
-  else if has_type v (topwit wit_constr) then
-    let c = out_gen (topwit wit_constr) v in
-    match env with
-    | Some (env,sigma) -> pr_leconstr_env env sigma c
-    | _ -> str "a term"
-  else if has_type v (topwit wit_constr_under_binders) then
-    let c = out_gen (topwit wit_constr_under_binders) v in
-    match env with
-    | Some (env,sigma) -> pr_lconstr_under_binders_env env sigma c
-    | _ -> str "a term"
-  else
-    str "a value of type" ++ spc () ++ pr_argument_type v
+    | Some (env,sigma) -> pr env sigma
+    | None -> str "a value of type" ++ spc () ++ pr_argument_type v in
+  let open Genprint in
+  match generic_val_print v with
+  | PrinterBasic pr -> pr ()
+  | PrinterNeedsContext pr -> pr_with_env pr
+  | PrinterNeedsContextAndLevel { default_already_surrounded; printer } ->
+     pr_with_env (fun env sigma -> printer env sigma default_already_surrounded)
 
 let pr_closure env ist body =
   let pp_body = Pptactic.pr_glob_tactic env body in
@@ -823,51 +815,16 @@ let interp_constr_may_eval ist env sigma c =
   end
 
 (** TODO: should use dedicated printers *)
-let rec message_of_value v =
+let message_of_value v =
   let v = Value.normalize v in
-  let open Ftactic in
-  if has_type v (topwit wit_tacvalue) then
-    Ftactic.return (str "<tactic>")
-  else if has_type v (topwit wit_constr) then
-    let v = out_gen (topwit wit_constr) v in
-    Ftactic.enter begin fun gl -> Ftactic.return (pr_econstr_env (pf_env gl) (project gl) v) end
-  else if has_type v (topwit wit_constr_under_binders) then
-    let c = out_gen (topwit wit_constr_under_binders) v in
-    Ftactic.enter begin fun gl ->
-      Ftactic.return (pr_constr_under_binders_env (pf_env gl) (project gl) c)
-    end
-  else if has_type v (topwit wit_unit) then
-    Ftactic.return (str "()")
-  else if has_type v (topwit wit_int) then
-    Ftactic.return (int (out_gen (topwit wit_int) v))
-  else if has_type v (topwit wit_intro_pattern) then
-    let p = out_gen (topwit wit_intro_pattern) v in
-    let print env sigma c =
-      let (sigma, c) = c env sigma in
-      pr_econstr_env env sigma c
-    in
-    Ftactic.enter begin fun gl ->
-      Ftactic.return (Miscprint.pr_intro_pattern (fun c -> print (pf_env gl) (project gl) c) p)
-    end
-  else if has_type v (topwit wit_constr_context) then
-    let c = out_gen (topwit wit_constr_context) v in
-    Ftactic.enter begin fun gl -> Ftactic.return (pr_econstr_env (pf_env gl) (project gl) c) end
-  else if has_type v (topwit wit_uconstr) then
-    let c = out_gen (topwit wit_uconstr) v in
-    Ftactic.enter begin fun gl ->
-      Ftactic.return (pr_closed_glob_env (pf_env gl)
-                        (project gl) c)
-    end
-  else if has_type v (topwit wit_var) then
-    let id = out_gen (topwit wit_var) v in
-    Ftactic.enter begin fun gl -> Ftactic.return (Id.print id) end
-  else match Value.to_list v with
-  | Some l ->
-    Ftactic.List.map message_of_value l >>= fun l ->
-    Ftactic.return (prlist_with_sep spc (fun x -> x) l)
-  | None ->
-    let tag = pr_argument_type v in
-    Ftactic.return (str "<" ++ tag ++ str ">") (** TODO *)
+  let pr_with_env pr =
+    Ftactic.enter begin fun gl -> Ftactic.return (pr (pf_env gl) (project gl)) end in
+  let open Genprint in
+  match generic_val_print v with
+  | PrinterBasic pr -> Ftactic.return (pr ())
+  | PrinterNeedsContext pr -> pr_with_env pr
+  | PrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
+     pr_with_env (fun env sigma -> printer env sigma default_ensure_surrounded)
 
 let interp_message_token ist = function
   | MsgString s -> Ftactic.return (str s)
