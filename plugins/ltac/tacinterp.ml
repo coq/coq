@@ -908,13 +908,13 @@ let interp_in_hyp_as ist env sigma (id,ipat) =
   let sigma, ipat = interp_intro_pattern_option ist env sigma ipat in
   sigma,(interp_hyp ist env sigma id,ipat)
 
-let interp_binding_name ist sigma = function
+let interp_binding_name ist env sigma = function
   | AnonHyp n -> AnonHyp n
   | NamedHyp id ->
       (* If a name is bound, it has to be a quantified hypothesis *)
       (* user has to use other names for variables if these ones clash with *)
       (* a name intented to be used as a (non-variable) identifier *)
-      try try_interp_ltac_var (coerce_to_quantified_hypothesis sigma) ist None(Loc.tag id)
+      try try_interp_ltac_var (coerce_to_quantified_hypothesis sigma) ist (Some (env,sigma)) (Loc.tag id)
       with Not_found -> NamedHyp id
 
 let interp_declared_or_quantified_hypothesis ist env sigma = function
@@ -926,7 +926,7 @@ let interp_declared_or_quantified_hypothesis ist env sigma = function
 
 let interp_binding ist env sigma (loc,(b,c)) =
   let sigma, c = interp_open_constr ist env sigma c in
-  sigma, (loc,(interp_binding_name ist sigma b,c))
+  sigma, (loc,(interp_binding_name ist env sigma b,c))
 
 let interp_bindings ist env sigma = function
 | NoBindings ->
@@ -1348,10 +1348,14 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
         end >>= fun v ->
         (* No errors happened, we propagate the trace *)
         let v = append_trace trace v in
-        Proofview.tclLIFT begin
-          debugging_step ist
-	    (fun () ->
-	      str"evaluation returns"++fnl()++pr_value None v)
+        let call_debug env =
+          Proofview.tclLIFT (debugging_step ist (fun () -> str"evaluation returns"++fnl()++pr_value env v)) in
+        begin
+          let open Genprint in
+          match generic_val_print v with
+          | PrinterBasic _ -> call_debug None
+          | PrinterNeedsContext _ | PrinterNeedsContextAndLevel _ ->
+             Proofview.Goal.enter (fun gl -> call_debug (Some (pf_env gl,project gl)))
         end <*>
         if List.is_empty lval then Ftactic.return v else interp_app loc ist v lval
       else
