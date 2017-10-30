@@ -555,3 +555,8 @@ Ltac2 Notation "firstorder"
   tac(opt(thunk(tactic)))
   refs(opt(seq("using", list1(reference, ","))))
   ids(opt(seq("with", list1(ident)))) := firstorder0 tac refs ids.
+
+(** now *)
+
+Ltac2 now0 t := t (); ltac1:(easy).
+Ltac2 Notation "now" t(thunk(self)) := now0 t.
