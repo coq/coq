@@ -38,6 +38,8 @@ val left_with_bindings  : evars_flag -> bindings -> unit tactic
 val right_with_bindings : evars_flag -> bindings -> unit tactic
 val split_with_bindings : evars_flag -> bindings -> unit tactic
 
+val change : Pattern.constr_pattern option -> (constr array, constr) Tac2ffi.fun1 -> clause -> unit tactic
+
 val rewrite :
   evars_flag -> rewriting list -> clause -> unit tactic option -> unit tactic
 

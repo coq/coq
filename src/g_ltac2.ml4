@@ -378,7 +378,7 @@ let loc_of_ne_list l = Loc.merge_opt (fst (List.hd l)) (fst (List.last l))
 
 GEXTEND Gram
   GLOBAL: q_ident q_bindings q_intropattern q_intropatterns q_induction_clause
-          q_rewriting q_clause q_dispatch q_occurrences q_strategy_flag
+          q_conversion q_rewriting q_clause q_dispatch q_occurrences q_strategy_flag
           q_destruction_arg q_reference q_with_bindings q_constr_matching
           q_goal_matching q_hintdb q_move_location q_pose q_assert;
   anti:
@@ -584,6 +584,16 @@ GEXTEND Gram
   ;
   q_induction_clause:
     [ [ cl = induction_clause -> cl ] ]
+  ;
+  conversion:
+    [ [ c = Constr.constr ->
+        Loc.tag ~loc:!@loc @@ QConvert c
+      | c1 = Constr.constr; "with"; c2 = Constr.constr ->
+        Loc.tag ~loc:!@loc @@ QConvertWith (c1, c2)
+    ] ]
+  ;
+  q_conversion:
+    [ [ c = conversion -> c ] ]
   ;
   orient:
     [ [ "->" -> Loc.tag ~loc:!@loc (Some true)

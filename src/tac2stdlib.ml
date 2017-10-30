@@ -467,6 +467,13 @@ let () = define_red2 "eval_native" begin fun where c ->
   Tac2tactics.eval_native where c
 end
 
+let () = define_prim3 "tac_change" begin fun pat c cl ->
+  let pat = Value.to_option (fun p -> Value.to_pattern p) pat in
+  let c = Value.to_fun1 (array constr) constr c in
+  let cl = to_clause cl in
+  Tac2tactics.change pat c cl
+end
+
 let () = define_prim4 "tac_rewrite" begin fun ev rw cl by ->
   let ev = Value.to_bool ev in
   let rw = Value.to_list to_rewriting rw in

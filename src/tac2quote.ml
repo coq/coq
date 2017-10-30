@@ -208,6 +208,62 @@ let of_induction_clause (loc, cl) =
     std_proj "indcl_in", in_;
   ])
 
+let check_pattern_id ?loc id =
+  if Tac2env.is_constructor (Libnames.qualid_of_ident id) then
+    CErrors.user_err ?loc (str "Invalid pattern binding name " ++ Id.print id)
+
+let pattern_vars pat =
+  let rec aux () accu pat = match pat.CAst.v with
+  | Constrexpr.CPatVar id
+  | Constrexpr.CEvar (id, []) ->
+    let () = check_pattern_id ?loc:pat.CAst.loc id in
+    Id.Set.add id accu
+  | _ ->
+    Topconstr.fold_constr_expr_with_binders (fun _ () -> ()) aux () accu pat
+  in
+  aux () Id.Set.empty pat
+
+let abstract_vars loc vars tac =
+  let get_name = function Name id -> Some id | Anonymous -> None in
+  let def = try Some (List.find_map get_name vars) with Not_found -> None in
+  let na, tac = match def with
+  | None -> (Anonymous, tac)
+  | Some id0 ->
+      (** Trick: in order not to shadow a variable nor to choose an arbitrary
+          name, we reuse one which is going to be shadowed by the matched
+          variables anyways. *)
+      let build_bindings (n, accu) na = match na with
+      | Anonymous -> (n + 1, accu)
+      | Name _ ->
+        let get = global_ref ?loc (kername array_prefix "get")  in
+        let args = [of_variable (loc, id0); of_int (loc, n)] in
+        let e = Loc.tag ?loc @@ CTacApp (get, args) in
+        let accu = (Loc.tag ?loc @@ CPatVar na, None, e) :: accu in
+        (n + 1, accu)
+      in
+      let (_, bnd) = List.fold_left build_bindings (0, []) vars in
+      let tac = Loc.tag ?loc @@ CTacLet (false, bnd, tac) in
+      (Name id0, tac)
+  in
+  Loc.tag ?loc @@ CTacFun ([Loc.tag ?loc @@ CPatVar na, None], tac)
+
+let of_pattern p =
+  inj_wit ?loc:p.CAst.loc wit_pattern p
+
+let of_conversion (loc, c) = match c with
+| QConvert c ->
+  let pat = of_option ?loc of_pattern None in
+  let c = Loc.tag ?loc @@ CTacFun ([Loc.tag ?loc @@ CPatVar Anonymous, None], of_constr c) in
+  of_tuple ?loc [pat; c]
+| QConvertWith (pat, c) ->
+  let vars = pattern_vars pat in
+  let pat = of_option ?loc of_pattern (Some pat) in
+  let c = of_constr c in
+  (** Order is critical here *)
+  let vars = List.map (fun id -> Name id) (Id.Set.elements vars) in
+  let c = abstract_vars loc vars c in
+  of_tuple [pat; c]
+
 let of_repeat (loc, r) = match r with
 | QPrecisely n -> std_constructor ?loc "Precisely" [of_int n]
 | QUpTo n -> std_constructor ?loc "UpTo" [of_int n]
@@ -307,45 +363,6 @@ let of_hintdb (loc, hdb) = match hdb with
 | QHintAll -> of_option ?loc (fun l -> of_list (fun id -> of_anti of_ident id) l) None
 | QHintDbs ids -> of_option ?loc (fun l -> of_list (fun id -> of_anti of_ident id) l) (Some ids)
 
-let check_pattern_id ?loc id =
-  if Tac2env.is_constructor (Libnames.qualid_of_ident id) then
-    CErrors.user_err ?loc (str "Invalid pattern binding name " ++ Id.print id)
-
-let pattern_vars pat =
-  let rec aux () accu pat = match pat.CAst.v with
-  | Constrexpr.CPatVar id
-  | Constrexpr.CEvar (id, []) ->
-    let () = check_pattern_id ?loc:pat.CAst.loc id in
-    Id.Set.add id accu
-  | _ ->
-    Topconstr.fold_constr_expr_with_binders (fun _ () -> ()) aux () accu pat
-  in
-  aux () Id.Set.empty pat
-
-let abstract_vars loc vars tac =
-  let get_name = function Name id -> Some id | Anonymous -> None in
-  let def = try Some (List.find_map get_name vars) with Not_found -> None in
-  let na, tac = match def with
-  | None -> (Anonymous, tac)
-  | Some id0 ->
-      (** Trick: in order not to shadow a variable nor to choose an arbitrary
-          name, we reuse one which is going to be shadowed by the matched
-          variables anyways. *)
-      let build_bindings (n, accu) na = match na with
-      | Anonymous -> (n + 1, accu)
-      | Name _ ->
-        let get = global_ref ?loc (kername array_prefix "get")  in
-        let args = [of_variable (loc, id0); of_int (loc, n)] in
-        let e = Loc.tag ?loc @@ CTacApp (get, args) in
-        let accu = (Loc.tag ?loc @@ CPatVar na, None, e) :: accu in
-        (n + 1, accu)
-      in
-      let (_, bnd) = List.fold_left build_bindings (0, []) vars in
-      let tac = Loc.tag ?loc @@ CTacLet (false, bnd, tac) in
-      (Name id0, tac)
-  in
-  Loc.tag ?loc @@ CTacFun ([Loc.tag ?loc @@ CPatVar na, None], tac)
-
 let extract_name ?loc oid = match oid with
 | None -> Anonymous
 | Some id ->
@@ -377,9 +394,6 @@ let of_constr_matching (loc, m) =
     of_tuple [knd; pat; e]
   in
   of_list ?loc map m
-
-let of_pattern p =
-  inj_wit ?loc:p.CAst.loc wit_pattern p
 
 (** From the patterns and the body of the branch, generate:
     - a goal pattern: (constr_match list * constr_match)

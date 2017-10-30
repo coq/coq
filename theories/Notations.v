@@ -375,6 +375,12 @@ Ltac2 Notation "native_compute" pl(opt(seq(pattern, occurrences))) cl(opt(clause
   Std.native pl (default_on_concl cl).
 Ltac2 Notation native_compute := native_compute.
 
+Ltac2 change0 p cl :=
+  let ((pat, c)) := p in
+  Std.change pat c (default_on_concl cl).
+
+Ltac2 Notation "change" c(conversion) cl(opt(clause)) := change0 c cl.
+
 Ltac2 rewrite0 ev rw cl tac :=
   let cl := default_on_concl cl in
   Std.rewrite ev rw cl tac.

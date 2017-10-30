@@ -175,6 +175,8 @@ Ltac2 @ external eval_pattern : (constr * occurrences) list -> constr -> constr 
 Ltac2 @ external eval_vm : (pattern * occurrences) option -> constr -> constr := "ltac2" "eval_vm".
 Ltac2 @ external eval_native : (pattern * occurrences) option -> constr -> constr := "ltac2" "eval_native".
 
+Ltac2 @ external change : pattern option -> (constr array -> constr) -> clause -> unit := "ltac2" "tac_change".
+
 Ltac2 @ external rewrite : evar_flag -> rewriting list -> clause -> (unit -> unit) option -> unit := "ltac2" "tac_rewrite".
 
 Ltac2 @ external reflexivity : unit -> unit := "ltac2" "tac_reflexivity".

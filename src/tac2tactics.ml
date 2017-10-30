@@ -150,6 +150,18 @@ let split_with_bindings ev bnd =
   let bnd = mk_bindings bnd in
   Tactics.split_with_bindings ev [bnd]
 
+let change pat c cl =
+  let open Tac2ffi in
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let c subst sigma =
+    let subst = Array.map_of_list snd (Id.Map.bindings subst) in
+    delayed_of_tactic (Tac2ffi.app_fun1 c (array constr) constr subst) env sigma
+  in
+  let cl = mk_clause cl in
+  Tactics.change pat c cl
+  end
+
 let rewrite ev rw cl by =
   let map_rw (orient, repeat, c) =
     let c = c >>= fun c -> return (mk_with_bindings c) in

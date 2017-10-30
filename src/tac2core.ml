@@ -1160,6 +1160,7 @@ let () = add_expr_scope "intropattern" q_intropattern Tac2quote.of_intro_pattern
 let () = add_expr_scope "intropatterns" q_intropatterns Tac2quote.of_intro_patterns
 let () = add_expr_scope "destruction_arg" q_destruction_arg Tac2quote.of_destruction_arg
 let () = add_expr_scope "induction_clause" q_induction_clause Tac2quote.of_induction_clause
+let () = add_expr_scope "conversion" q_conversion Tac2quote.of_conversion
 let () = add_expr_scope "rewriting" q_rewriting Tac2quote.of_rewriting
 let () = add_expr_scope "clause" q_clause Tac2quote.of_clause
 let () = add_expr_scope "hintdb" q_hintdb Tac2quote.of_hintdb

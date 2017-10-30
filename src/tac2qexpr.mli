@@ -84,6 +84,12 @@ type induction_clause_r = {
 
 type induction_clause = induction_clause_r located
 
+type conversion_r =
+| QConvert of Constrexpr.constr_expr
+| QConvertWith of Constrexpr.constr_expr * Constrexpr.constr_expr
+
+type conversion = conversion_r located
+
 type multi_r =
 | QPrecisely of int located
 | QUpTo of int located

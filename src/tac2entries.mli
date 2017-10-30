@@ -70,6 +70,7 @@ val q_intropattern : intro_pattern Pcoq.Gram.entry
 val q_intropatterns : intro_pattern list located Pcoq.Gram.entry
 val q_destruction_arg : destruction_arg Pcoq.Gram.entry
 val q_induction_clause : induction_clause Pcoq.Gram.entry
+val q_conversion : conversion Pcoq.Gram.entry
 val q_rewriting : rewriting Pcoq.Gram.entry
 val q_clause : clause Pcoq.Gram.entry
 val q_dispatch : dispatch Pcoq.Gram.entry

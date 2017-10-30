@@ -260,3 +260,9 @@ Proof.
 assert (H : 0 + 0 = 0) by reflexivity.
 intros x; exact x.
 Qed.
+
+Goal 1 + 1 = 2.
+Proof.
+change (?a + 1 = 2) with (2 = $a + 1).
+reflexivity.
+Qed.
