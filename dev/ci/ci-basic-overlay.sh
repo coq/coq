@@ -73,8 +73,8 @@
 ########################################################################
 # CompCert
 ########################################################################
-: ${CompCert_CI_BRANCH:=less_init_plugins}
-: ${CompCert_CI_GITURL:=https://github.com/letouzey/CompCert.git}
+: ${CompCert_CI_BRANCH:=master}
+: ${CompCert_CI_GITURL:=https://github.com/AbsInt/CompCert.git}
 
 ########################################################################
 # VST
