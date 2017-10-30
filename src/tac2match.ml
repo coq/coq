@@ -14,7 +14,7 @@ module NamedDecl = Context.Named.Declaration
 type context = EConstr.t
 
 type result = {
-  subst : Pattern.patvar_map ;
+  subst : Ltac_pretype.patvar_map ;
 }
 
 type match_pattern =

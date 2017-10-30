@@ -20,8 +20,8 @@ val interp : environment -> glb_tacexpr -> valexpr Proofview.tactic
 
 (** {5 Cross-boundary encodings} *)
 
-val get_env : Glob_term.unbound_ltac_var_map -> environment
-val set_env : environment -> Glob_term.unbound_ltac_var_map -> Glob_term.unbound_ltac_var_map
+val get_env : Ltac_pretype.unbound_ltac_var_map -> environment
+val set_env : environment -> Ltac_pretype.unbound_ltac_var_map -> Ltac_pretype.unbound_ltac_var_map
 
 (** {5 Exceptions} *)
 

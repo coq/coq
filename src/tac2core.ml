@@ -828,7 +828,7 @@ let open_constr_no_classes_flags () =
 let to_lvar ist =
   let open Glob_ops in
   let lfun = Tac2interp.set_env ist Id.Map.empty in
-  { empty_lvar with Glob_term.ltac_genargs = lfun }
+  { empty_lvar with Ltac_pretype.ltac_genargs = lfun }
 
 let gtypref kn = GTypRef (Other kn, [])
 

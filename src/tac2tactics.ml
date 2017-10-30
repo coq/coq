@@ -343,7 +343,7 @@ let discriminate ev arg =
 let injection ev ipat arg =
   let arg = Option.map (fun arg -> None, arg) arg in
   let ipat = Option.map mk_intro_patterns ipat in
-  let tac ev arg = Equality.injClause ipat ev arg in
+  let tac ev arg = Equality.injClause None ipat ev arg in
   on_destruction_arg tac ev arg
 
 let autorewrite ~all by ids cl =
