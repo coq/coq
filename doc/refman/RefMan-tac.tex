@@ -3509,8 +3509,13 @@ with its $\beta\iota$-normal form.
 \end{ErrMsgs}
 
 \begin{Variants}
+\item {\tt unfold {\qualid} in {\ident}}
+  \tacindex{unfold \dots in}
+
+  Replaces {\qualid} in hypothesis {\ident} with its definition
+  and replaces the hypothesis with its $\beta\iota$ normal form.
+
 \item {\tt unfold {\qualid}$_1$, \dots, \qualid$_n$}
-  \tacindex{unfold \dots\ in}
 
   Replaces {\em simultaneously} {\qualid}$_1$, \dots, {\qualid}$_n$
   with their definitions and replaces the current goal with its
@@ -3821,6 +3826,26 @@ this tactic.
 
 % En attente d'un moyen de valoriser les fichiers de demos
 %\SeeAlso file \texttt{contrib/Rocq/DEMOS/Demo\_AutoRewrite.v}
+
+\subsection{\tt easy}
+\tacindex{easy}
+\label{easy}
+
+This tactic tries to solve the current goal by a number of standard closing steps.
+In particular, it tries to close the current goal using the closing tactics
+{\tt trivial}, reflexivity, symmetry, contradiction and inversion of hypothesis.
+If this fails, it tries introducing variables and splitting and-hypotheses,
+using the closing tactics afterwards, and splitting the goal using {\tt split} and recursing.
+
+This tactic solves goals that belong to many common classes; in particular, many cases of
+unsatisfiable hypotheses, and simple equality goals are usually solved by this tactic.
+
+\begin{Variant}
+\item {\tt now \tac}
+  \tacindex{now}
+
+  Run \tac\/ followed by easy. This is a notation for {\tt \tac; easy}.
+\end{Variant}
 
 \section{Controlling automation}
 
