@@ -88,7 +88,7 @@ let mk_clause cl = {
 
 let intros_patterns ev ipat =
   let ipat = mk_intro_patterns ipat in
-  Tactics.intro_patterns ev ipat
+  Tactics.intros_patterns ev ipat
 
 let apply adv ev cb cl =
   let map c =
