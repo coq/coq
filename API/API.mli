@@ -20,6 +20,10 @@
    See below in the file for their concrete position.
 *)
 
+(* Reexporting deprecated symbols throu module aliases triggers a
+   warning in 4.06.0 *)
+[@@@ocaml.warning "-3"]
+
 (************************************************************************)
 (* Modules from config/                                                 *)
 (************************************************************************)
@@ -300,21 +304,31 @@ sig
   [@@ocaml.deprecated "alias of API.Names.Constant.make3"]
 
   val debug_pr_con : Constant.t -> Pp.t
+  [@@ocaml.deprecated "Alias of Names"]
 
   val debug_pr_mind : MutInd.t -> Pp.t
+  [@@ocaml.deprecated "Alias of Names"]
 
   val pr_con : Constant.t -> Pp.t
+  [@@ocaml.deprecated "Alias of Names"]
 
   val string_of_con : Constant.t -> string
+  [@@ocaml.deprecated "Alias of Names"]
 
   val string_of_mind : MutInd.t -> string
+  [@@ocaml.deprecated "Alias of Names"]
 
   val debug_string_of_mind : MutInd.t -> string
+  [@@ocaml.deprecated "Alias of Names"]
 
   val debug_string_of_con : Constant.t -> string
+  [@@ocaml.deprecated "Alias of Names"]
 
   type identifier = Id.t
+  [@@ocaml.deprecated "Alias of Names"]
+
   module Idset  : Set.S with type elt = identifier and type t = Id.Set.t
+  [@@ocaml.deprecated "Alias of Id.Set.t"]
 
 end
 
@@ -329,6 +343,7 @@ sig
   end
 
   type universe_level = Level.t
+  [@@ocaml.deprecated "Deprecated form, see univ.ml"]
 
   module LSet :
   sig
@@ -343,6 +358,7 @@ sig
   end
 
   type universe = Universe.t
+  [@@ocaml.deprecated "Deprecated form, see univ.ml"]
 
   module Instance :
   sig
@@ -374,6 +390,7 @@ sig
   end
 
   type universe_context = UContext.t
+  [@@ocaml.deprecated "Deprecated form, see univ.ml"]
 
   module AUContext :
   sig
@@ -382,6 +399,7 @@ sig
   end
 
   type abstract_universe_context = AUContext.t
+  [@@ocaml.deprecated "Deprecated form, see univ.ml"]
 
   module CumulativityInfo :
   sig
@@ -389,12 +407,14 @@ sig
   end
 
   type cumulativity_info = CumulativityInfo.t
+  [@@ocaml.deprecated "Deprecated form, see univ.ml"]
 
   module ACumulativityInfo :
   sig
     type t
   end
   type abstract_cumulativity_info = ACumulativityInfo.t
+  [@@ocaml.deprecated "Deprecated form, see univ.ml"]
 
   module ContextSet :
   sig
@@ -408,8 +428,10 @@ sig
   type 'a in_universe_context = 'a * UContext.t
 
   type universe_context_set = ContextSet.t
+  [@@ocaml.deprecated "Deprecated form, see univ.ml"]
 
   type universe_set = LSet.t
+  [@@ocaml.deprecated "Deprecated form, see univ.ml"]
 
   type 'a constraint_function = 'a -> 'a -> Constraint.t -> Constraint.t
 
@@ -585,6 +607,10 @@ val compare_head : (constr -> constr -> bool) -> constr -> constr -> bool
   val mkLetIn : Name.t * t * types * t -> t
   val mkApp : t * t array -> t
   val map_puniverses : ('a -> 'b) -> 'a puniverses -> 'b puniverses
+
+  type rec_declaration = Name.t array * types array * constr array
+  type fixpoint = (int array * int) * rec_declaration
+  val mkFix : fixpoint -> constr
 
   val mkConst : Constant.t -> t
   val mkConstU : pconstant -> t
@@ -831,8 +857,10 @@ module Term :
 sig
 
   type sorts_family = Sorts.family = InProp | InSet | InType
+  [@@ocaml.deprecated "Alias of Sorts.family"]
 
   type contents = Sorts.contents = Pos | Null
+  [@@ocaml.deprecated "Alias of Sorts.contents"]
 
   type sorts = Sorts.t =
     | Prop of contents
@@ -840,35 +868,48 @@ sig
   [@@ocaml.deprecated "alias of API.Sorts.t"]
 
   type constr = Constr.t
+  [@@ocaml.deprecated "Alias of Constr.t"]
   type types = Constr.t
+  [@@ocaml.deprecated "Alias of Constr.types"]
 
   type metavariable = int
+  [@@ocaml.deprecated "Alias of Constr.metavariable"]
 
   type ('constr, 'types) prec_declaration = Names.Name.t array * 'types array * 'constr array
+  [@@ocaml.deprecated "Alias of Constr.prec_declaration"]
 
   type 'constr pexistential = 'constr Constr.pexistential
+  [@@ocaml.deprecated "Alias of Constr.pexistential"]
+
   type cast_kind = Constr.cast_kind =
                  | VMcast
                  | NATIVEcast
                  | DEFAULTcast
                  | REVERTcast
+  [@@ocaml.deprecated "Alias of Constr.cast_kind"]
 
   type 'a puniverses = 'a Univ.puniverses
+  [@@ocaml.deprecated "Alias of Constr.puniverses"]
   type pconstant = Names.Constant.t puniverses
+  [@@ocaml.deprecated "Alias of Constr.pconstant"]
   type pinductive = Names.inductive puniverses
+  [@@ocaml.deprecated "Alias of Constr.pinductive"]
   type pconstructor = Names.constructor puniverses
+  [@@ocaml.deprecated "Alias of Constr.pconstructor"]
   type case_style = Constr.case_style =
     | LetStyle
     | IfStyle
     | LetPatternStyle
     | MatchStyle
     | RegularStyle
+  [@@ocaml.deprecated "Alias of Constr.case_style"]
 
   type case_printing = Constr.case_printing =
     { ind_tags  : bool list;
       cstr_tags : bool list array;
       style     : case_style
     }
+  [@@ocaml.deprecated "Alias of Constr.case_printing"]
 
   type case_info = Constr.case_info =
     { ci_ind        : Names.inductive;
@@ -877,12 +918,15 @@ sig
       ci_cstr_nargs : int array;
       ci_pp_info    : case_printing
     }
+  [@@ocaml.deprecated "Alias of Constr.case_info"]
 
   type ('constr, 'types) pfixpoint =
     (int array * int) * ('constr, 'types) prec_declaration
+  [@@ocaml.deprecated "Alias of Constr.pfixpoint"]
 
   type ('constr, 'types) pcofixpoint =
     int * ('constr, 'types) prec_declaration
+  [@@ocaml.deprecated "Alias of Constr.pcofixpoint"]
 
   type ('constr, 'types, 'sort, 'univs) kind_of_term = ('constr, 'types, 'sort, 'univs) Constr.kind_of_term =
      | Rel       of int
@@ -902,11 +946,17 @@ sig
      | Fix       of ('constr, 'types) pfixpoint
      | CoFix     of ('constr, 'types) pcofixpoint
      | Proj      of Names.Projection.t * 'constr
+  [@@ocaml.deprecated "Alias of Constr.kind_of_term"]
   type existential = Constr.existential_key * constr array
+  [@@ocaml.deprecated "Alias of Constr.existential"]
   type rec_declaration = Names.Name.t array * constr array * constr array
+  [@@ocaml.deprecated "Alias of Constr.rec_declaration"]
   type fixpoint = (int array * int) * rec_declaration
+  [@@ocaml.deprecated "Alias of Constr.fixpoint"]
   type cofixpoint = int * rec_declaration
+  [@@ocaml.deprecated "Alias of Constr.cofixpoint"]
   val kind_of_term : constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term
+  [@@ocaml.deprecated "Alias of Constr.kind"]
   val applistc : constr -> constr list -> constr
 
   val applist : constr * constr list -> constr
@@ -914,29 +964,52 @@ sig
 
   val mkArrow : types -> types -> constr
   val mkRel : int -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkVar : Names.Id.t -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
 
   val mkMeta : Constr.metavariable -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
 
   val mkEvar : existential -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkSort : Sorts.t -> types
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkProp : types
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkSet  : types
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkType : Univ.Universe.t -> types
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkCast : constr * cast_kind * constr -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkProd : Names.Name.t * types * types -> types
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkLambda : Names.Name.t * types * constr -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkLetIn : Names.Name.t * constr * types * constr -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkApp : constr * constr array -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkConst : Names.Constant.t -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkProj : Names.Projection.t * constr -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkInd : Names.inductive -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkConstruct : Names.constructor -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkConstructU : Names.constructor puniverses -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkConstructUi : (pinductive * int) -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkCase : case_info * constr * constr * constr array -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkFix : fixpoint -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkCoFix : cofixpoint -> constr
+  [@@ocaml.deprecated "Alias of similarly named Constr function"]
+
   val mkNamedLambda : Names.Id.t -> types -> constr -> constr
   val mkNamedLetIn : Names.Id.t -> constr -> types -> constr -> constr
   val mkNamedProd : Names.Id.t -> types -> types -> types
@@ -975,26 +1048,37 @@ sig
   val isApp : constr -> bool
 
   val fold_constr : ('a -> constr -> 'a) -> 'a -> constr -> 'a
+  [@@ocaml.deprecated "Alias of Constr.fold"]
 
   val eq_constr : constr -> constr -> bool
+  [@@ocaml.deprecated "Alias of Constr.equal"]
 
   val hash_constr : constr -> int
+  [@@ocaml.deprecated "Alias of Constr.hash"]
+
   val it_mkLambda_or_LetIn : constr -> Context.Rel.t -> constr
   val it_mkProd_or_LetIn : types -> Context.Rel.t -> types
   val prod_applist : constr -> constr list -> constr
   exception DestKO
   val map_constr : (constr -> constr) -> constr -> constr
+  [@@ocaml.deprecated "Alias of Constr.map"]
 
   val mkIndU : pinductive -> constr
+  [@@ocaml.deprecated "Alias of Constr.mkIndU"]
   val mkConstU : pconstant -> constr
+  [@@ocaml.deprecated "Alias of Constr.mkConstU"]
   val map_constr_with_binders :
     ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
+  [@@ocaml.deprecated "Alias of Constr.map_with_binders"]
+
   val iter_constr : (constr -> unit) -> constr -> unit
+  [@@ocaml.deprecated "Alias of Constr.iter."]
 
   (* Quotients away universes: really needed?
    * Can't we just call eq_c_univs_infer and discard the inferred csts?
    *)
   val eq_constr_nounivs : constr -> constr -> bool
+  [@@ocaml.deprecated "Alias of Constr.qe_constr_nounivs."]
 
   type ('constr, 'types) kind_of_type =
     | SortType   of Sorts.t
@@ -1009,13 +1093,16 @@ sig
   [@@ocaml.deprecated "alias of API.Sorts.is_prop"]
 
   type existential_key = Constr.existential_key
+  [@@ocaml.deprecated "Alias of Constr.existential_key"]
 
   val family_of_sort : Sorts.t -> Sorts.family
+  [@@ocaml.deprecated "Alias of Sorts.family"]
 
   val compare : constr -> constr -> int
+  [@@ocaml.deprecated "Alias of Constr.compare."]
 
   val constr_ord : constr -> constr -> int
-  [@@ocaml.deprecated "alias of API.Term.compare"]
+  [@@ocaml.deprecated "alias of Term.compare"]
 
   val destInd : constr -> Names.inductive puniverses
   val univ_of_sort : Sorts.t -> Univ.Universe.t
@@ -1027,6 +1114,8 @@ sig
   val destFix : constr -> fixpoint
 
   val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
+  [@@ocaml.deprecated "Alias of Constr.compare_head."]
+
 end
 
 module Mod_subst :
@@ -1673,6 +1762,7 @@ sig
     | LetPatternStyle
     | MatchStyle
     | RegularStyle (** infer printing form from number of constructor *)
+  [@@ocaml.deprecated "Alias for Constr.case_style."]
 
   type 'a cast_type =
                     | CastConv of 'a
