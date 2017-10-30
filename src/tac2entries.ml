@@ -674,6 +674,7 @@ let register_notation ?(local = false) tkn lev body = match tkn, lev with
   let ids = List.fold_left fold Id.Set.empty entries in
   (** Globalize so that names are absolute *)
   let body = Tac2intern.globalize ids body in
+  let lev = match lev with Some _ -> lev | None -> Some 5 in
   let ext = {
     synext_tok = tkn;
     synext_exp = body;
