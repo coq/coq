@@ -432,12 +432,13 @@ type 'a extra_genarg_printer =
       let pr_occs = pr_with_occurrences (fun () -> str" |- *") (occs,()) in
       (prlist_with_sep (fun () -> str", ") (pr_hyp_location pr_id) l ++ pr_occs)
 
-  let pr_clauses default_is_concl pr_id = function
+  (* Some true = default is concl; Some false = default is all; None = no default *)
+  let pr_clauses has_default pr_id = function
     | { onhyps=Some []; concl_occs=occs }
-        when (match default_is_concl with Some true -> true | _ -> false) ->
+        when (match has_default with Some true -> true | _ -> false) ->
       pr_with_occurrences mt (occs,())
     | { onhyps=None; concl_occs=AllOccurrences }
-        when (match default_is_concl with Some false -> true | _ -> false) -> mt ()
+        when (match has_default with Some false -> true | _ -> false) -> mt ()
     | { onhyps=None; concl_occs=NoOccurrences } ->
       pr_in (str " * |-")
     | { onhyps=None; concl_occs=occs } ->
