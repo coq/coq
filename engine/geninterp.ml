@@ -47,6 +47,8 @@ struct
 
 end
 
+module ValTMap = ValT.Map
+
 module ValReprObj =
 struct
   type ('raw, 'glb, 'top) obj = 'top Val.tag

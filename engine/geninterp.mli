@@ -39,6 +39,10 @@ sig
   val inject : 'a tag -> 'a -> t
 
 end
+
+module ValTMap (M : Dyn.TParam) :
+  Dyn.MapS with type 'a obj = 'a M.t with type 'a key = 'a Val.typ
+
 (** Dynamic types for toplevel values. While the generic types permit to relate
     objects at various levels of interpretation, toplevel values are wearing
     their own type regardless of where they came from. This allows to use the
