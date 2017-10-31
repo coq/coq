@@ -15,6 +15,7 @@ open Globnames
 open Nameops
 open Term
 open Constr
+open Context
 open Glob_term
 open Pp
 open Mod_subst
@@ -158,12 +159,15 @@ let pattern_of_constr env sigma t =
     | Sort Set -> PSort GSet
     | Sort (Type _) -> PSort (GType [])
     | Cast (c,_,_)      -> pattern_of_constr env c
-    | LetIn (na,c,t,b) -> PLetIn (na,pattern_of_constr env c,Some (pattern_of_constr env t),
-				  pattern_of_constr (push_rel (LocalDef (na,c,t)) env) b)
-    | Prod (na,c,b)   -> PProd (na,pattern_of_constr env c,
-				pattern_of_constr (push_rel (LocalAssum (na, c)) env) b)
-    | Lambda (na,c,b) -> PLambda (na,pattern_of_constr env c,
-				  pattern_of_constr (push_rel (LocalAssum (na, c)) env) b)
+    | LetIn (na,c,t,b) -> PLetIn (na.binder_name,
+                                  pattern_of_constr env c,Some (pattern_of_constr env t),
+                                  pattern_of_constr (push_rel (LocalDef (na,c,t)) env) b)
+    | Prod (na,c,b)   -> PProd (na.binder_name,
+                                pattern_of_constr env c,
+                                pattern_of_constr (push_rel (LocalAssum (na, c)) env) b)
+    | Lambda (na,c,b) -> PLambda (na.binder_name,
+                                  pattern_of_constr env c,
+                                  pattern_of_constr (push_rel (LocalAssum (na, c)) env) b)
     | App (f,a) ->
         (match
           match kind f with
@@ -207,12 +211,12 @@ let pattern_of_constr env sigma t =
     | Fix (lni,(lna,tl,bl)) ->
        let push env na2 c2 = push_rel (LocalAssum (na2,c2)) env in
        let env' = Array.fold_left2 push env lna tl in
-       PFix (lni,(lna,Array.map (pattern_of_constr env) tl,
+       PFix (lni,(Array.map binder_name lna,Array.map (pattern_of_constr env) tl,
                   Array.map (pattern_of_constr env') bl))
     | CoFix (ln,(lna,tl,bl)) ->
        let push env na2 c2 = push_rel (LocalAssum (na2,c2)) env in
        let env' = Array.fold_left2 push env lna tl in
-       PCoFix (ln,(lna,Array.map (pattern_of_constr env) tl,
+       PCoFix (ln,(Array.map binder_name lna,Array.map (pattern_of_constr env) tl,
                   Array.map (pattern_of_constr env') bl))
     | Int i -> PInt i in
   pattern_of_constr env t

@@ -15,6 +15,7 @@ open Util
 open Names
 open Term
 open Constr
+open Context
 open Vars
 open Locus
 open Printer
@@ -136,7 +137,7 @@ let newssrcongrtac arg ist gl =
   (fun ty -> congrtac (arg, Detyping.detype Detyping.Now false Id.Set.empty (pf_env gl) (project gl) ty) ist)
   (fun () ->
     let lhs, gl' = mk_evar gl EConstr.mkProp in let rhs, gl' = mk_evar gl' EConstr.mkProp in
-    let arrow = EConstr.mkArrow lhs (EConstr.Vars.lift 1 rhs) in
+    let arrow = EConstr.mkArrow lhs Sorts.Relevant (EConstr.Vars.lift 1 rhs) in
     tclMATCH_GOAL (arrow, gl') (fun gl' -> [|fs gl' lhs;fs gl' rhs|])
     (fun lr -> tclTHEN (Proofview.V82.of_tactic (Tactics.apply (ssr_congr lr))) (congrtac (arg, mkRType) ist))
     (fun _ _ -> errorstrm Pp.(str"Conclusion is not an equality nor an arrow")))
@@ -335,7 +336,7 @@ let pirrel_rewrite pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
     let (sigma, ev) = Evarutil.new_evar env sigma (beta (EConstr.Vars.subst1 new_rdx pred)) in
     (sigma, ev)
   in
-  let pred = EConstr.mkNamedLambda pattern_id rdx_ty pred in
+  let pred = EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdx_ty pred in
   let elim, gl = 
     let ((kn, i) as ind, _), unfolded_c_ty = pf_reduce_to_quantified_ind gl c_ty in
     let sort = elimination_sort_of_goal gl in
@@ -362,7 +363,7 @@ let pirrel_rewrite pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
         let names = let rec aux t = function 0 -> [] | n ->
           let t = Reductionops.whd_all env sigma t in
           match EConstr.kind_of_type sigma t with
-          | ProdType (name, _, t) -> name :: aux t (n-1)
+          | ProdType (name, _, t) -> name.binder_name :: aux t (n-1)
           | _ -> assert false in aux hd_ty (Array.length args) in
         hd_ty, Util.List.map_filter (fun (t, name) ->
           let evs = Evar.Set.elements (Evarutil.undefined_evars_of_term sigma t) in
@@ -403,7 +404,7 @@ let rwcltac cl rdx dir sr gl =
           let new_rdx = if dir = L2R then a.(2) else a.(1) in
           pirrel_rewrite cl rdx rdxt new_rdx dir (sigma,c) c_ty, tclIDTAC, gl
       | _ -> 
-          let cl' = EConstr.mkApp (EConstr.mkNamedLambda pattern_id rdxt cl, [|rdx|]) in
+          let cl' = EConstr.mkApp (EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdxt cl, [|rdx|]) in
           let sigma, _ = Typing.type_of env sigma cl' in
           let gl = pf_merge_uc_of sigma gl in
           Proofview.V82.of_tactic (convert_concl cl'), rewritetac dir r', gl
@@ -413,8 +414,8 @@ let rwcltac cl rdx dir sr gl =
         try EConstr.destCast (project gl) r2 with _ ->
         errorstrm Pp.(str "no cast from " ++ pr_constr_pat (EConstr.Unsafe.to_constr (snd sr))
                     ++ str " to " ++ pr_econstr_env (pf_env gl) (project gl) r2) in
-      let cl' = EConstr.mkNamedProd rule_id (EConstr.it_mkProd_or_LetIn r3t dc) (EConstr.Vars.lift 1 cl) in
-      let cl'' = EConstr.mkNamedProd pattern_id rdxt cl' in
+      let cl' = EConstr.mkNamedProd (make_annot rule_id Sorts.Relevant) (EConstr.it_mkProd_or_LetIn r3t dc) (EConstr.Vars.lift 1 cl) in
+      let cl'' = EConstr.mkNamedProd (make_annot pattern_id Sorts.Relevant) rdxt cl' in
       let itacs = [introid pattern_id; introid rule_id] in
       let cltac = Proofview.V82.of_tactic (Tactics.clear [pattern_id; rule_id]) in
       let rwtacs = [rewritetac dir (EConstr.mkVar rule_id); cltac] in
@@ -426,7 +427,9 @@ let rwcltac cl rdx dir sr gl =
       if occur_existential (project gl) (Tacmach.pf_concl gl)
       then errorstrm Pp.(str "Rewriting impacts evars")
       else errorstrm Pp.(str "Dependent type error in rewrite of "
-        ++ pr_constr_env (pf_env gl) (project gl) (Term.mkNamedLambda pattern_id (EConstr.Unsafe.to_constr rdxt) (EConstr.Unsafe.to_constr cl)))
+        ++ pr_constr_env (pf_env gl) (project gl)
+          (Term.mkNamedLambda (make_annot pattern_id Sorts.Relevant)
+             (EConstr.Unsafe.to_constr rdxt) (EConstr.Unsafe.to_constr cl)))
   in
   tclTHEN cvtac' rwtac gl
 

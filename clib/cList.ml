@@ -98,6 +98,7 @@ sig
   val split : ('a * 'b) list -> 'a list * 'b list
   val combine : 'a list -> 'b list -> ('a * 'b) list
   val split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
+  val split4 : ('a * 'b * 'c * 'd) list -> 'a list * 'b list * 'c list * 'd list
   val combine3 : 'a list -> 'b list -> 'c list -> ('a * 'b * 'c) list
   val add_set : 'a eq -> 'a -> 'a list -> 'a list
   val eq_set : 'a eq -> 'a list -> 'a list -> bool
@@ -845,6 +846,12 @@ let split3 = function
     let cr = { head = z; tail = [] } in
     split3_loop cp cq cr l;
     (cast cp, cast cq, cast cr)
+
+(** XXX TODO tailrec *)
+let rec split4 = function
+  | [] -> ([], [], [], [])
+  | (a,b,c,d)::l ->
+      let (ra, rb, rc, rd) = split4 l in (a::ra, b::rb, c::rc, d::rd)
 
 let rec combine3_loop p l1 l2 l3 = match l1, l2, l3 with
   | [], [], [] -> ()

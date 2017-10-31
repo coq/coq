@@ -39,12 +39,12 @@ val solve_evars : env -> evar_map -> constr -> evar_map * constr
 (** Raise an error message if incorrect elimination for this inductive
     (first constr is term to match, second is return predicate) *)
 val check_allowed_sort : env -> evar_map -> pinductive -> constr -> constr ->
-  unit
+  Sorts.relevance
 
 (** Raise an error message if bodies have types not unifiable with the
     expected ones *)
 val check_type_fixpoint : ?loc:Loc.t -> env -> evar_map ->
-  Names.Name.t array -> types array -> unsafe_judgment array -> evar_map
+  Names.Name.t Context.binder_annot array -> types array -> unsafe_judgment array -> evar_map
 
 val judge_of_sprop : unsafe_judgment
 val judge_of_prop : unsafe_judgment

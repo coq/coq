@@ -13,6 +13,7 @@ open Util
 open Vars
 open Declare
 open Names
+open Context
 open Globnames
 open Constrexpr_ops
 open Constrintern
@@ -148,8 +149,9 @@ let do_assumptions ~program_mode kind nl l =
   (* We intepret all declarations in the same evar_map, i.e. as a telescope. *)
   let (sigma,_,_),l = List.fold_left_map (fun (sigma,env,ienv) (is_coe,(idl,c)) ->
     let sigma,(t,imps) = interp_assumption ~program_mode sigma env ienv c in
+    let r = Retyping.relevance_of_type env sigma t in
     let env =
-      EConstr.push_named_context (List.map (fun {CAst.v=id} -> LocalAssum (id,t)) idl) env in
+      EConstr.push_named_context (List.map (fun {CAst.v=id} -> LocalAssum (make_annot id r,t)) idl) env in
     let ienv = List.fold_right (fun {CAst.v=id} ienv ->
       let impls = compute_internalization_data env sigma Variable t imps in
       Id.Map.add id impls ienv) idl ienv in

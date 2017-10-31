@@ -48,8 +48,8 @@ type ('constr, 'types) ptype_error =
   | NotAType of ('constr, 'types) punsafe_judgment
   | BadAssumption of ('constr, 'types) punsafe_judgment
   | ReferenceVariables of Id.t * 'constr
-  | ElimArity of pinductive * Sorts.family list * 'constr * ('constr, 'types) punsafe_judgment
-      * (Sorts.family * Sorts.family * arity_error) option
+  | ElimArity of pinductive * 'constr * ('constr, 'types) punsafe_judgment
+      * (Sorts.family list * Sorts.family * Sorts.family * arity_error) option
   | CaseNotInductive of ('constr, 'types) punsafe_judgment
   | WrongCaseInfo of pinductive * case_info
   | NumberBranches of ('constr, 'types) punsafe_judgment * int
@@ -60,12 +60,13 @@ type ('constr, 'types) ptype_error =
   | CantApplyBadType of
       (int * 'constr * 'constr) * ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
   | CantApplyNonFunctional of ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
-  | IllFormedRecBody of 'constr pguard_error * Name.t array * int * env * ('constr, 'types) punsafe_judgment array
+  | IllFormedRecBody of 'constr pguard_error * Name.t Context.binder_annot array * int * env * ('constr, 'types) punsafe_judgment array
   | IllTypedRecBody of
-      int * Name.t array * ('constr, 'types) punsafe_judgment array * 'types array
+      int * Name.t Context.binder_annot array * ('constr, 'types) punsafe_judgment array * 'types array
   | UnsatisfiedConstraints of Univ.Constraint.t
   | UndeclaredUniverse of Univ.Level.t
   | DisallowedSProp
+  | BadRelevance
 
 type type_error = (constr, types) ptype_error
 
@@ -101,8 +102,8 @@ val error_assumption : env -> unsafe_judgment -> 'a
 val error_reference_variables : env -> Id.t -> constr -> 'a
 
 val error_elim_arity :
-  env -> pinductive -> Sorts.family list -> constr -> unsafe_judgment ->
-      (Sorts.family * Sorts.family * arity_error) option -> 'a
+  env -> pinductive -> constr -> unsafe_judgment ->
+      (Sorts.family list * Sorts.family * Sorts.family * arity_error) option -> 'a
 
 val error_case_not_inductive : env -> unsafe_judgment -> 'a
 
@@ -124,10 +125,10 @@ val error_cant_apply_bad_type :
       unsafe_judgment -> unsafe_judgment array -> 'a
 
 val error_ill_formed_rec_body :
-  env -> guard_error -> Name.t array -> int -> env -> unsafe_judgment array -> 'a
+  env -> guard_error -> Name.t Context.binder_annot array -> int -> env -> unsafe_judgment array -> 'a
 
 val error_ill_typed_rec_body  :
-  env -> int -> Name.t array -> unsafe_judgment array -> types array -> 'a
+  env -> int -> Name.t Context.binder_annot array -> unsafe_judgment array -> types array -> 'a
 
 val error_elim_explain : Sorts.family -> Sorts.family -> arity_error
 
@@ -136,6 +137,8 @@ val error_unsatisfied_constraints : env -> Univ.Constraint.t -> 'a
 val error_undeclared_universe : env -> Univ.Level.t -> 'a
 
 val error_disallowed_sprop : env -> 'a
+
+val error_bad_relevance : env -> 'a
 
 val map_pguard_error : ('c -> 'd) -> 'c pguard_error -> 'd pguard_error
 val map_ptype_error : ('c -> 'd) -> ('c, 'c) ptype_error -> ('d, 'd) ptype_error

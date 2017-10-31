@@ -11,6 +11,7 @@
 open CErrors
 open Names
 open Constr
+open Context
 open Declarations
 open Util
 open Nativevalues
@@ -763,7 +764,7 @@ let empty_env univ () =
   }
 
 let push_rel env id = 
-  let local = fresh_lname id in
+  let local = fresh_lname id.binder_name in
   local, { env with 
 	   env_rel = MLlocal local :: env.env_rel;
 	   env_bound = env.env_bound + 1
@@ -772,7 +773,7 @@ let push_rel env id =
 let push_rels env ids =
   let lnames, env_rel = 
     Array.fold_left (fun (names,env_rel) id ->
-      let local = fresh_lname id in
+      let local = fresh_lname id.binder_name in
       (local::names, MLlocal local::env_rel)) ([],env.env_rel) ids in
   Array.of_list (List.rev lnames), { env with 
 			  env_rel = env_rel;
@@ -1945,7 +1946,7 @@ let compile_mind mb mind stack =
       let tbl = ob.mind_reloc_tbl in
       (* Building info *)
       let ci = { ci_ind = ind; ci_npar = nparams;
-                 ci_cstr_nargs = [|0|];
+                 ci_cstr_nargs = [|0|]; ci_relevance = ob.mind_relevant;
                  ci_cstr_ndecls = [||] (*FIXME*);
                  ci_pp_info = { ind_tags = []; cstr_tags = [||] (*FIXME*); style = RegularStyle } } in
       let asw = { asw_ind = ind; asw_prefix = ""; asw_ci = ci;
@@ -1968,7 +1969,7 @@ let compile_mind mb mind stack =
     let projs = match mb.mind_record with
     | NotRecord | FakeRecord -> []
     | PrimRecord info ->
-      let _, _, pbs = info.(i) in
+      let _, _, _, pbs = info.(i) in
       Array.fold_left_i add_proj [] pbs
     in
     projs @ constructors @ gtype :: accu :: stack

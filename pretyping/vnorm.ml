@@ -13,6 +13,7 @@ open Names
 open Declarations
 open Term
 open Constr
+open Context
 open Vars
 open Environ
 open Inductive
@@ -31,10 +32,12 @@ module NamedDecl = Context.Named.Declaration
 let crazy_type =  mkSet
 
 let decompose_prod env t =
-  let (name,dom,codom as res) = destProd (whd_all env t) in
-  match name with
-  | Anonymous -> (Name (Id.of_string "x"), dom, codom)
-  | Name _ -> res
+  let (name,dom,codom) = destProd (whd_all env t) in
+  let name = map_annot (function
+  | Anonymous -> Name (Id.of_string "x")
+  | Name _ as na -> na) name
+  in
+  (name,dom,codom)
 
 exception Find_at of int
 
@@ -138,6 +141,8 @@ and nf_whd env sigma whd typ =
       let dom = nf_vtype env sigma (dom p) in
       let name = Name (Id.of_string "x") in
       let vc = reduce_fun (nb_rel env) (codom p) in
+      let r = Retyping.relevance_of_type env sigma (EConstr.of_constr dom) in
+      let name = make_annot name r in
       let codom = nf_vtype (push_rel (LocalAssum (name,dom)) env) sigma vc  in
       mkProd(name,dom,codom)
   | Vfun f -> nf_fun env sigma f typ
@@ -307,6 +312,8 @@ and nf_predicate env sigma ind mip params v pT =
       let rargs = Array.init n (fun i -> mkRel (n-i)) in
       let params = if Int.equal n 0 then params else Array.map (lift n) params in
       let dom = mkApp(mkIndU ind,Array.append params rargs) in
+      let r = Inductive.relevance_of_inductive env (fst ind) in
+      let name = make_annot name r in
       let body = nf_vtype (push_rel (LocalAssum (name,dom)) env) sigma vb in
       mkLambda(name,dom,body)
     | _ -> assert false
@@ -317,7 +324,7 @@ and nf_args env sigma vargs ?from:(f=0) t =
   let args =
     Array.init len
       (fun i ->
-	let _,dom,codom = decompose_prod env !t in
+        let _,dom,codom = decompose_prod env !t in
 	let c = nf_val env sigma (arg vargs (f+i)) dom in
 	t := subst1 c codom; c) in
   !t,args
@@ -328,7 +335,7 @@ and nf_bargs env sigma b ofs t =
   let args =
     Array.init len
       (fun i ->
-	let _,dom,codom = decompose_prod env !t in
+        let _,dom,codom = decompose_prod env !t in
 	let c = nf_val env sigma (bfield b (i+ofs)) dom in
 	t := subst1 c codom; c) in
   args
@@ -353,14 +360,17 @@ and nf_fix env sigma f =
   let vb, vt = reduce_fix k f in
   let ndef = Array.length vt in
   let ft = Array.map (fun v -> nf_val env sigma v crazy_type) vt in
-  let name = Array.init ndef (fun _ -> (Name (Id.of_string "Ffix"))) in
-  (* Third argument of the tuple is ignored by push_rec_types *)
-  let env = push_rec_types (name,ft,ft) env in
+  let name = Name (Id.of_string "Ffix") in
+  let names = Array.map (fun t ->
+      make_annot name @@
+      Retyping.relevance_of_type env sigma (EConstr.of_constr t)) ft in
+  (* Body argument of the tuple is ignored by push_rec_types *)
+  let env = push_rec_types (names,ft,ft) env in
   (* We lift here because the types of arguments (in tt) will be evaluated
      in an environment where the fixpoints have been pushed *)
   let norm_vb v t = nf_fun env sigma v (lift ndef t) in
   let fb = Util.Array.map2 norm_vb vb ft in
-  mkFix ((rec_args,init),(name,ft,fb))
+  mkFix ((rec_args,init),(names,ft,fb))
 
 and nf_fix_app env sigma f vargs =
   let fd = nf_fix env sigma f in
@@ -373,12 +383,14 @@ and nf_cofix env sigma cf =
   let init = current_cofix cf in
   let k = nb_rel env in
   let vb,vt = reduce_cofix k cf in
-  let ndef = Array.length vt in
   let cft = Array.map (fun v -> nf_val env sigma v crazy_type) vt in
-  let name = Array.init ndef (fun _ -> (Name (Id.of_string "Fcofix"))) in
-  let env = push_rec_types (name,cft,cft) env in
+  let name = Name (Id.of_string "Fcofix") in
+  let names = Array.map (fun t ->
+      make_annot name @@
+      Retyping.relevance_of_type env sigma (EConstr.of_constr t)) cft in
+  let env = push_rec_types (names,cft,cft) env in
   let cfb = Util.Array.map2 (fun v t -> nf_val env sigma v t) vb cft in
-  mkCoFix (init,(name,cft,cfb))
+  mkCoFix (init,(names,cft,cfb))
 
 let cbv_vm env sigma c t  =
   if Termops.occur_meta sigma c then

@@ -446,7 +446,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         (* Inconsistency: we tolerate that v1, v2 contain shift and update but
            we throw them away *)
         if not (is_empty_stack v1 && is_empty_stack v2) then
-	  anomaly (Pp.str "conversion was given ill-typed terms (FLambda).");
+          anomaly (Pp.str "conversion was given ill-typed terms (FLambda).");
         let (_,ty1,bd1) = destFLambda mk_clos hd1 in
         let (_,ty2,bd2) = destFLambda mk_clos hd2 in
         let el1 = el_stack lft1 v1 in
@@ -470,7 +470,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         | _ ->
           anomaly (Pp.str "conversion was given unreduced term (FLambda).")
         in
-        let (_,_ty1,bd1) = destFLambda mk_clos hd1 in
+        let (_,_,bd1) = destFLambda mk_clos hd1 in
         eqappr CONV l2r infos
 	  (el_lift lft1, (bd1, [])) (el_lift lft2, (hd2, eta_expand_stack v2)) cuniv
     | (_, FLambda _) ->
@@ -479,10 +479,10 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         | _ ->
 	  anomaly (Pp.str "conversion was given unreduced term (FLambda).")
 	in
-        let (_,_ty2,bd2) = destFLambda mk_clos hd2 in
+        let (_,_,bd2) = destFLambda mk_clos hd2 in
         eqappr CONV l2r infos
 	  (el_lift lft1, (hd1, eta_expand_stack v1)) (el_lift lft2, (bd2, [])) cuniv
-	
+
     (* only one constant, defined var or defined rel *)
     | (FFlex fl1, c2)      ->
       begin match unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 with
@@ -569,7 +569,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
        with Not_found -> raise NotConvertible)
 
     | (FFix (((op1, i1),(_,tys1,cl1)),e1), FFix(((op2, i2),(_,tys2,cl2)),e2)) ->
-	if Int.equal i1 i2 && Array.equal Int.equal op1 op2
+        if Int.equal i1 i2 && Array.equal Int.equal op1 op2
 	then
 	  let n = Array.length cl1 in
           let fty1 = Array.map (mk_clos e1) tys1 in
@@ -896,7 +896,7 @@ let dest_prod env =
     let t = whd_all env c in
     match kind t with
       | Prod (n,a,c0) ->
-	  let d = LocalAssum (n,a) in
+          let d = LocalAssum (n,a) in
 	  decrec (push_rel d env) (Context.Rel.add d m) c0
       | _ -> m,t
   in

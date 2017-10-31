@@ -109,9 +109,9 @@ val mkProp : t
 val mkSet  : t
 val mkType : Univ.Universe.t -> t
 val mkCast : t * cast_kind * t -> t
-val mkProd : Name.t * t * t -> t
-val mkLambda : Name.t * t * t -> t
-val mkLetIn : Name.t * t * t * t -> t
+val mkProd : Name.t Context.binder_annot * t * t -> t
+val mkLambda : Name.t Context.binder_annot * t * t -> t
+val mkLetIn : Name.t Context.binder_annot * t * t * t -> t
 val mkApp : t * t array -> t
 val mkConst : Constant.t -> t
 val mkConstU : Constant.t * EInstance.t -> t
@@ -124,7 +124,8 @@ val mkConstructUi : (inductive * EInstance.t) * int -> t
 val mkCase : case_info * t * t * t array -> t
 val mkFix : (t, t) pfixpoint -> t
 val mkCoFix : (t, t) pcofixpoint -> t
-val mkArrow : t -> t -> t
+val mkArrow : t -> Sorts.relevance  -> t -> t
+val mkArrowR : t -> t -> t
 val mkInt : Uint63.t -> t
 
 val mkRef : GlobRef.t * EInstance.t -> t
@@ -139,9 +140,9 @@ val mkLambda_or_LetIn : rel_declaration -> t -> t
 val it_mkProd_or_LetIn : t -> rel_context -> t
 val it_mkLambda_or_LetIn : t -> rel_context -> t
 
-val mkNamedLambda : Id.t -> types -> constr -> constr
-val mkNamedLetIn : Id.t -> constr -> types -> constr -> constr
-val mkNamedProd : Id.t -> types -> types -> types
+val mkNamedLambda : Id.t Context.binder_annot -> types -> constr -> constr
+val mkNamedLetIn : Id.t Context.binder_annot -> constr -> types -> constr -> constr
+val mkNamedProd : Id.t Context.binder_annot -> types -> types -> types
 val mkNamedLambda_or_LetIn : named_declaration -> types -> types
 val mkNamedProd_or_LetIn : named_declaration -> types -> types
 
@@ -179,9 +180,9 @@ val destMeta : Evd.evar_map -> t -> metavariable
 val destVar : Evd.evar_map -> t -> Id.t
 val destSort : Evd.evar_map -> t -> ESorts.t
 val destCast : Evd.evar_map -> t -> t * cast_kind * t
-val destProd : Evd.evar_map -> t -> Name.t * types * types
-val destLambda : Evd.evar_map -> t -> Name.t * types * t
-val destLetIn : Evd.evar_map -> t -> Name.t * t * types * t
+val destProd : Evd.evar_map -> t -> Name.t Context.binder_annot * types * types
+val destLambda : Evd.evar_map -> t -> Name.t Context.binder_annot * types * t
+val destLetIn : Evd.evar_map -> t -> Name.t Context.binder_annot * t * types * t
 val destApp : Evd.evar_map -> t -> t * t array
 val destConst : Evd.evar_map -> t -> Constant.t * EInstance.t
 val destEvar : Evd.evar_map -> t -> t pexistential
@@ -197,7 +198,7 @@ val destRef : Evd.evar_map -> t -> GlobRef.t * EInstance.t
 val decompose_app : Evd.evar_map -> t -> t * t list
 
 (** Pops lambda abstractions until there are no more, skipping casts. *)
-val decompose_lam : Evd.evar_map -> t -> (Name.t * t) list * t
+val decompose_lam : Evd.evar_map -> t -> (Name.t Context.binder_annot * t) list * t
 
 (** Pops lambda abstractions and letins until there are no more, skipping casts. *)
 val decompose_lam_assum : Evd.evar_map -> t -> rel_context * t
@@ -213,10 +214,10 @@ val decompose_lam_n_assum : Evd.evar_map -> int -> t -> rel_context * t
      @raise UserError if the term doesn't have enough lambdas/letins. *)
 val decompose_lam_n_decls : Evd.evar_map -> int -> t -> rel_context * t
 
-val compose_lam : (Name.t * t) list -> t -> t
+val compose_lam : (Name.t Context.binder_annot * t) list -> t -> t
 val to_lambda : Evd.evar_map -> int -> t -> t
 
-val decompose_prod : Evd.evar_map -> t -> (Name.t * t) list * t
+val decompose_prod : Evd.evar_map -> t -> (Name.t Context.binder_annot * t) list * t
 val decompose_prod_assum : Evd.evar_map -> t -> rel_context * t
 val decompose_prod_n_assum : Evd.evar_map -> int -> t -> rel_context * t
 

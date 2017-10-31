@@ -119,6 +119,9 @@ let v_context_set = v_tuple "universe_context_set" [|v_hset v_level;v_cstrs|]
 let v_sort = v_sum "sort" 3 (*SProp, Prop, Set*) [|[|v_univ(*Type*)|]|]
 let v_sortfam = v_enum "sorts_family" 4
 
+let v_relevance = v_sum "relevance" 2 [||]
+let v_binder_annot x = v_tuple "binder_annot" [|x;v_relevance|]
+
 let v_puniverses v = v_tuple "punivs" [|v;v_instance|]
 
 let v_boollist = List v_bool  
@@ -126,7 +129,7 @@ let v_boollist = List v_bool
 let v_caseinfo =
   let v_cstyle = v_enum "case_style" 5 in
   let v_cprint = v_tuple "case_printing" [|v_boollist;Array v_boollist;v_cstyle|] in
-  v_tuple "case_info" [|v_ind;Int;Array Int;Array Int;v_cprint|]
+  v_tuple "case_info" [|v_ind;Int;Array Int;Array Int;v_relevance;v_cprint|]
 
 let v_cast = v_enum "cast_kind" 4
 
@@ -141,9 +144,9 @@ let rec v_constr =
     [|Fail "Evar"|]; (* Evar *)
     [|v_sort|]; (* Sort *)
     [|v_constr;v_cast;v_constr|]; (* Cast *)
-    [|v_name;v_constr;v_constr|]; (* Prod *)
-    [|v_name;v_constr;v_constr|]; (* Lambda *)
-    [|v_name;v_constr;v_constr;v_constr|]; (* LetIn *)
+    [|v_binder_annot v_name;v_constr;v_constr|]; (* Prod *)
+    [|v_binder_annot v_name;v_constr;v_constr|]; (* Lambda *)
+    [|v_binder_annot v_name;v_constr;v_constr;v_constr|]; (* LetIn *)
     [|v_constr;Array v_constr|]; (* App *)
     [|v_puniverses v_cst|]; (* Const *)
     [|v_puniverses v_ind|]; (* Ind *)
@@ -156,12 +159,13 @@ let rec v_constr =
   |])
 
 and v_prec = Tuple ("prec_declaration",
-                    [|Array v_name; Array v_constr; Array v_constr|])
+                    [|Array (v_binder_annot v_name); Array v_constr; Array v_constr|])
 and v_fix = Tuple ("pfixpoint", [|Tuple ("fix2",[|Array Int;Int|]);v_prec|])
 and v_cofix = Tuple ("pcofixpoint",[|Int;v_prec|])
 
-let v_rdecl = v_sum "rel_declaration" 0 [| [|v_name; v_constr|];               (* LocalAssum *)
-                                           [|v_name; v_constr; v_constr|] |]   (* LocalDef *)
+let v_rdecl = v_sum "rel_declaration" 0
+    [| [|v_binder_annot v_name; v_constr|];               (* LocalAssum *)
+       [|v_binder_annot v_name; v_constr; v_constr|] |]   (* LocalDef *)
 let v_rctxt = List v_rdecl
 
 let v_section_ctxt = v_enum "emptylist" 1
@@ -231,6 +235,7 @@ let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
     v_cst_def;
     v_constr;
+    v_relevance;
     Any;
     v_univs;
     Opt v_context_set;
@@ -265,6 +270,7 @@ let v_one_ind = v_tuple "one_inductive_body"
     Array Int;
     Array Int;
     v_wfp;
+    v_relevance;
     Int;
     Int;
     Any|]
@@ -273,7 +279,7 @@ let v_finite = v_enum "recursivity_kind" 3
 
 let v_record_info =
   v_sum "record_info" 2
-    [| [| Array (v_tuple "record" [| v_id; Array v_id; Array v_constr |]) |] |]
+    [| [| Array (v_tuple "record" [| v_id; Array v_id; Array v_relevance; Array v_constr |]) |] |]
 
 let v_ind_pack = v_tuple "mutual_inductive_body"
   [|Array v_one_ind;

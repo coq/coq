@@ -17,12 +17,15 @@ open Constr
    [forall (_:t1), t2]. Beware [t_2] is NOT lifted.
    Eg: in context [A:Prop], [A->A] is built by [(mkArrow (mkRel 1) (mkRel 2))]
 *)
-val mkArrow : types -> types -> constr
+val mkArrow : types -> Sorts.relevance -> types -> constr
+
+val mkArrowR : types -> types -> constr
+(** For an always-relevant domain *)
 
 (** Named version of the functions from [Term]. *)
-val mkNamedLambda : Id.t -> types -> constr -> constr
-val mkNamedLetIn : Id.t -> constr -> types -> constr -> constr
-val mkNamedProd : Id.t -> types -> types -> types
+val mkNamedLambda : Id.t Context.binder_annot -> types -> constr -> constr
+val mkNamedLetIn : Id.t Context.binder_annot -> constr -> types -> constr -> constr
+val mkNamedProd : Id.t Context.binder_annot -> types -> types -> types
 
 (** Constructs either [(x:t)c] or [[x=b:t]c] *)
 val mkProd_or_LetIn : Constr.rel_declaration -> types -> types
@@ -45,24 +48,24 @@ val appvectc : constr -> constr array -> constr
 
 (** [prodn n l b] = [forall (x_1:T_1)...(x_n:T_n), b]
    where [l] is [(x_n,T_n)...(x_1,T_1)...]. *)
-val prodn : int -> (Name.t * constr) list -> constr -> constr
+val prodn : int -> (Name.t Context.binder_annot * constr) list -> constr -> constr
 
 (** [compose_prod l b]
    @return [forall (x_1:T_1)...(x_n:T_n), b]
    where [l] is [(x_n,T_n)...(x_1,T_1)].
    Inverse of [decompose_prod]. *)
-val compose_prod : (Name.t * constr) list -> constr -> constr
+val compose_prod : (Name.t Context.binder_annot * constr) list -> constr -> constr
 
 (** [lamn n l b]
     @return [fun (x_1:T_1)...(x_n:T_n) => b]
    where [l] is [(x_n,T_n)...(x_1,T_1)...]. *)
-val lamn : int -> (Name.t * constr) list -> constr -> constr
+val lamn : int -> (Name.t Context.binder_annot * constr) list -> constr -> constr
 
 (** [compose_lam l b]
    @return [fun (x_1:T_1)...(x_n:T_n) => b]
    where [l] is [(x_n,T_n)...(x_1,T_1)].
    Inverse of [it_destLam] *)
-val compose_lam : (Name.t * constr) list -> constr -> constr
+val compose_lam : (Name.t Context.binder_annot * constr) list -> constr -> constr
 
 (** [to_lambda n l]
    @return [fun (x_1:T_1)...(x_n:T_n) => T]
@@ -107,22 +110,22 @@ val prod_applist_assum : int -> types -> constr list -> types
 
 (** Transforms a product term {% $ %}(x_1:T_1)..(x_n:T_n)T{% $ %} into the pair
    {% $ %}([(x_n,T_n);...;(x_1,T_1)],T){% $ %}, where {% $ %}T{% $ %} is not a product. *)
-val decompose_prod : constr -> (Name.t*constr) list * constr
+val decompose_prod : constr -> (Name.t Context.binder_annot * constr) list * constr
 
 (** Transforms a lambda term {% $ %}[x_1:T_1]..[x_n:T_n]T{% $ %} into the pair
    {% $ %}([(x_n,T_n);...;(x_1,T_1)],T){% $ %}, where {% $ %}T{% $ %} is not a lambda. *)
-val decompose_lam : constr -> (Name.t*constr) list * constr
+val decompose_lam : constr -> (Name.t Context.binder_annot * constr) list * constr
 
 (** Given a positive integer n, decompose a product term
    {% $ %}(x_1:T_1)..(x_n:T_n)T{% $ %}
    into the pair {% $ %}([(xn,Tn);...;(x1,T1)],T){% $ %}.
    Raise a user error if not enough products. *)
-val decompose_prod_n : int -> constr -> (Name.t * constr) list * constr
+val decompose_prod_n : int -> constr -> (Name.t Context.binder_annot * constr) list * constr
 
 (** Given a positive integer {% $ %}n{% $ %}, decompose a lambda term
    {% $ %}[x_1:T_1]..[x_n:T_n]T{% $ %} into the pair {% $ %}([(x_n,T_n);...;(x_1,T_1)],T){% $ %}.
    Raise a user error if not enough lambdas. *)
-val decompose_lam_n : int -> constr -> (Name.t * constr) list * constr
+val decompose_lam_n : int -> constr -> (Name.t Context.binder_annot * constr) list * constr
 
 (** Extract the premisses and the conclusion of a term of the form
    "(xi:Ti) ... (xj:=cj:Tj) ..., T" where T is not a product nor a let *)
@@ -183,8 +186,8 @@ val isArity : types -> bool
 type ('constr, 'types) kind_of_type =
   | SortType   of Sorts.t
   | CastType   of 'types * 'types
-  | ProdType   of Name.t * 'types * 'types
-  | LetInType  of Name.t * 'constr * 'types * 'types
+  | ProdType   of Name.t Context.binder_annot * 'types * 'types
+  | LetInType  of Name.t Context.binder_annot * 'constr * 'types * 'types
   | AtomicType of 'constr * 'constr array
 
 val kind_of_type : types -> (constr, types) kind_of_type

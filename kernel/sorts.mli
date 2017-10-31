@@ -48,6 +48,16 @@ val sort_of_univ : Univ.Universe.t -> t
 
 val super : t -> t
 
+(** On binders: is this variable proof relevant *)
+type relevance = Relevant | Irrelevant
+
+val relevance_hash : relevance -> int
+
+val relevance_equal : relevance -> relevance -> bool
+
+val relevance_of_sort : t -> relevance
+val relevance_of_sort_family : family -> relevance
+
 val debug_print : t -> Pp.t
 
 val pr_sort_family : family -> Pp.t

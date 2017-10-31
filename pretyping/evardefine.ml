@@ -13,6 +13,7 @@ open Util
 open Pp
 open Names
 open Constr
+open Context
 open Termops
 open EConstr
 open Vars
@@ -84,8 +85,9 @@ let define_pure_evar_as_product env evd evk =
   let evd1,(dom,u1) =
     new_type_evar evenv evd univ_flexible_alg ~src ~filter:(evar_filter evi)
   in
+  let rdom = Sorts.Relevant in (* TODO relevance *)
   let evd2,rng =
-    let newenv = push_named (LocalAssum (id, dom)) evenv in
+    let newenv = push_named (LocalAssum (make_annot id rdom, dom)) evenv in
     let src = subterm_source evk ~where:Codomain evksrc in
     let filter = Filter.extend 1 (evar_filter evi) in
       if Environ.is_impredicative_sort env (ESorts.kind evd1 s) then
@@ -100,7 +102,7 @@ let define_pure_evar_as_product env evd evk =
         let evd3 = Evd.set_leq_sort evenv evd3 (Sorts.sort_of_univ prods) (ESorts.kind evd1 s) in
 	  evd3, rng
   in
-  let prod = mkProd (Name id, dom, subst_var id rng) in
+  let prod = mkProd (make_annot (Name id) rdom, dom, subst_var id rng) in
   let evd3 = Evd.define evk prod evd2 in
     evd3,prod
 
@@ -135,13 +137,15 @@ let define_pure_evar_as_lambda env evd evk =
   | _ -> error_not_product env evd typ in
   let avoid = Environ.ids_of_named_context_val evi.evar_hyps in
   let id =
-    next_name_away_with_default_using_types "x" na avoid (Reductionops.whd_evar evd dom) in
+    map_annot (fun na -> next_name_away_with_default_using_types "x" na avoid
+      (Reductionops.whd_evar evd dom)) na
+  in
   let newenv = push_named (LocalAssum (id, dom)) evenv in
   let filter = Filter.extend 1 (evar_filter evi) in
   let src = subterm_source evk ~where:Body (evar_source evk evd1) in
   let abstract_arguments = Abstraction.abstract_last evi.evar_abstract_arguments in
-  let evd2,body = new_evar newenv evd1 ~src (subst1 (mkVar id) rng) ~filter ~abstract_arguments in
-  let lam = mkLambda (Name id, dom, subst_var id body) in
+  let evd2,body = new_evar newenv evd1 ~src (subst1 (mkVar id.binder_name) rng) ~filter ~abstract_arguments in
+  let lam = mkLambda (map_annot Name.mk_name id, dom, subst_var id.binder_name body) in
   Evd.define evk lam evd2, lam
 
 let define_evar_as_lambda env evd (evk,args) =
@@ -180,21 +184,22 @@ let split_tycon ?loc env evd tycon =
   let rec real_split evd c =
     let t = Reductionops.whd_all env evd c in
       match EConstr.kind evd t with
-	| Prod (na,dom,rng) -> evd, (na, dom, rng)
+        | Prod (na,dom,rng) -> evd, (na, dom, rng)
 	| Evar ev (* ev is undefined because of whd_all *) ->
             let (evd',prod) = define_evar_as_product env evd ev in
-	    let (_,dom,rng) = destProd evd prod in
-	      evd',(Anonymous, dom, rng)
+            let (na,dom,rng) = destProd evd prod in
+            let anon = {na with binder_name = Anonymous} in
+              evd',(anon, dom, rng)
         | App (c,args) when isEvar evd c ->
-	    let (evd',lam) = define_evar_as_lambda env evd (destEvar evd c) in
+            let (evd',lam) = define_evar_as_lambda env evd (destEvar evd c) in
 	    real_split evd' (mkApp (lam,args))
 	| _ -> error_not_product ?loc env evd c
   in
     match tycon with
-      | None -> evd,(Anonymous,None,None)
+      | None -> evd,(make_annot Anonymous Relevant,None,None)
       | Some c ->
-	  let evd', (n, dom, rng) = real_split evd c in
-	    evd', (n, mk_tycon dom, mk_tycon rng)
+          let evd', (n, dom, rng) = real_split evd c in
+            evd', (n, mk_tycon dom, mk_tycon rng)
 
 let valcon_of_tycon x = x
 let lift_tycon n = Option.map (lift n)

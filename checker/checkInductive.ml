@@ -25,7 +25,7 @@ let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
   let nparams = List.length mb.mind_params_ctxt in (* include letins *)
   let mind_entry_record = match mb.mind_record with
     | NotRecord -> None | FakeRecord -> Some None
-    | PrimRecord data -> Some (Some (Array.map pi1 data))
+    | PrimRecord data -> Some (Some (Array.map (fun (x,_,_,_) -> x) data))
   in
   let mind_entry_universes = match mb.mind_universes with
     | Monomorphic univs -> Monomorphic_entry univs
@@ -95,8 +95,8 @@ let eq_in_context (ctx1, t1) (ctx2, t2) =
 let check_packet env mind ind
     { mind_typename; mind_arity_ctxt; mind_arity; mind_consnames; mind_user_lc;
       mind_nrealargs; mind_nrealdecls; mind_kelim; mind_nf_lc;
-      mind_consnrealargs; mind_consnrealdecls; mind_recargs; mind_nb_constant;
-      mind_nb_args; mind_reloc_tbl } =
+      mind_consnrealargs; mind_consnrealdecls; mind_recargs; mind_relevant;
+      mind_nb_constant; mind_nb_args; mind_reloc_tbl } =
   let check = check mind in
 
   ignore mind_typename; (* passed through *)
@@ -117,6 +117,8 @@ let check_packet env mind ind
 
   check "mind_recargs" (Rtree.equal eq_recarg ind.mind_recargs mind_recargs);
 
+  check "mind_relevant" (Sorts.relevance_equal ind.mind_relevant mind_relevant);
+
   check "mind_nb_args" Int.(equal ind.mind_nb_args mind_nb_args);
   check "mind_nb_constant" Int.(equal ind.mind_nb_constant mind_nb_constant);
   check "mind_reloc_tbl" (eq_reloc_tbl ind.mind_reloc_tbl mind_reloc_tbl);
@@ -128,7 +130,8 @@ let check_same_record r1 r2 = match r1, r2 with
   | PrimRecord r1, PrimRecord r2 ->
     (* The kernel doesn't care about the names, we just need to check
        that the saved types are correct. *)
-    Array.for_all2 (fun (_,_,tys1) (_,_,tys2) ->
+    Array.for_all2 (fun (_,_,r1,tys1) (_,_,r2,tys2) ->
+        Array.equal Sorts.relevance_equal r1 r2 &&
         Array.equal Constr.equal tys1 tys2)
       r1 r2
   | (NotRecord | FakeRecord | PrimRecord _), _ -> false

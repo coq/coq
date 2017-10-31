@@ -14,6 +14,7 @@ open CErrors
 open Names
 open Vars
 open Constr
+open Context
 
 (* Deprecated *)
 type sorts_family = Sorts.family = InSProp | InProp | InSet | InType
@@ -32,9 +33,11 @@ type sorts = Sorts.t = private
 (* Other term constructors *)
 (***************************)
 
-let mkNamedProd id typ c = mkProd (Name id, typ, subst_var id c)
-let mkNamedLambda id typ c = mkLambda (Name id, typ, subst_var id c)
-let mkNamedLetIn id c1 t c2 = mkLetIn (Name id, c1, t, subst_var id c2)
+let name_annot = map_annot Name.mk_name
+
+let mkNamedProd id typ c = mkProd (name_annot id, typ, subst_var id.binder_name c)
+let mkNamedLambda id typ c = mkLambda (name_annot id, typ, subst_var id.binder_name c)
+let mkNamedLetIn id c1 t c2 = mkLetIn (name_annot id, c1, t, subst_var id.binder_name c2)
 
 (* Constructs either [(x:t)c] or [[x=b:t]c] *)
 let mkProd_or_LetIn decl c =
@@ -60,10 +63,11 @@ let mkNamedProd_wo_LetIn decl c =
   let open Context.Named.Declaration in
   match decl with
     | LocalAssum (id,t) -> mkNamedProd id t c
-    | LocalDef (id,b,_t) -> subst1 b (subst_var id c)
+    | LocalDef (id,b,_) -> subst1 b (subst_var id.binder_name c)
 
 (* non-dependent product t1 -> t2 *)
-let mkArrow t1 t2 = mkProd (Anonymous, t1, t2)
+let mkArrow t1 r t2 = mkProd (make_annot Anonymous r, t1, t2)
+let mkArrowR t1 t2 = mkArrow t1 Sorts.Relevant t2
 
 (* Constructs either [[x:t]c] or [[x=b:t]c] *)
 let mkLambda_or_LetIn decl c =
@@ -366,8 +370,8 @@ let rec isArity c =
 type ('constr, 'types) kind_of_type =
   | SortType   of Sorts.t
   | CastType   of 'types * 'types
-  | ProdType   of Name.t * 'types * 'types
-  | LetInType  of Name.t * 'constr * 'types * 'types
+  | ProdType   of Name.t Context.binder_annot * 'types * 'types
+  | LetInType  of Name.t Context.binder_annot * 'constr * 'types * 'types
   | AtomicType of 'constr * 'constr array
 
 let kind_of_type t = match kind t with

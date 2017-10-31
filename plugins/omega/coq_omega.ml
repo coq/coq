@@ -19,6 +19,7 @@ open CErrors
 open Util
 open Names
 open Constr
+open Context
 open Nameops
 open EConstr
 open Tacticals.New
@@ -431,8 +432,8 @@ let destructurate_prop sigma t =
     | Ind (isp,_), args ->
 	Kapp (Other (string_of_path (path_of_global (IndRef isp))),args)
     | Var id,[] -> Kvar id
-    | Prod (Anonymous,typ,body), [] -> Kimp(typ,body)
-    | Prod (Name _,_,_),[] -> CErrors.user_err Pp.(str "Omega: Not a quantifier-free goal")
+    | Prod ({binder_name=Anonymous},typ,body), [] -> Kimp(typ,body)
+    | Prod ({binder_name=Name _},_,_),[] -> CErrors.user_err Pp.(str "Omega: Not a quantifier-free goal")
     | _ -> Kufo
 
 let nf = Tacred.simpl
@@ -499,13 +500,13 @@ let context sigma operation path (t : constr) =
       | (p, Fix ((_,n as ln),(tys,lna,v))) ->
 	  let l = Array.length v in
 	  let v' = Array.copy v in
-	  v'.(n)<- loop (Pervasives.(+) i l) p v.(n); (mkFix (ln,(tys,lna,v')))
+          v'.(n)<- loop (Pervasives.(+) i l) p v.(n); (mkFix (ln,(tys,lna,v')))
       | ((P_TYPE :: p), Prod (n,t,c)) ->
-	  (mkProd (n,loop i p t,c))
+          (mkProd (n,loop i p t,c))
       | ((P_TYPE :: p), Lambda (n,t,c)) ->
-	  (mkLambda (n,loop i p t,c))
+          (mkLambda (n,loop i p t,c))
       | ((P_TYPE :: p), LetIn (n,b,t,c)) ->
-	  (mkLetIn (n,b,loop i p t,c))
+          (mkLetIn (n,b,loop i p t,c))
       | (p, _) ->
 	  failwith ("abstract_path " ^ string_of_int(List.length p))
   in
@@ -528,7 +529,7 @@ let occurrence sigma path (t : constr) =
 let abstract_path sigma typ path t =
   let term_occur = ref (mkRel 0) in
   let abstract = context sigma (fun i t -> term_occur:= t; mkRel i) path t in
-  mkLambda (Name (Id.of_string "x"), typ, abstract), !term_occur
+  mkLambda (make_annot (Name (Id.of_string "x")) Sorts.Relevant, typ, abstract), !term_occur
 
 let focused_simpl path =
   let open Tacmach.New in
@@ -604,10 +605,10 @@ let clever_rewrite_base_poly typ p result theorem =
   let t =
     applist
       (mkLambda
-	 (Name (Id.of_string "P"),
-	  mkArrow typ mkProp,
+         (make_annot (Name (Id.of_string "P")) Sorts.Relevant,
+          mkArrow typ Sorts.Relevant mkProp,
           mkLambda
-	    (Name (Id.of_string "H"),
+            (make_annot (Name (Id.of_string "H")) Sorts.Relevant,
 	     applist (mkRel 1,[result]),
 	     mkApp (Lazy.force coq_eq_ind_r,
 		       [| typ; result; mkRel 2; mkRel 1; occ; theorem |]))),
@@ -1264,7 +1265,7 @@ let replay_history tactic_normalisation =
             mkApp (Lazy.force coq_ex, [|
 		      Lazy.force coq_Z;
 		      mkLambda
-			(Name vid,
+                        (make_annot (Name vid) Sorts.Relevant,
 			 Lazy.force coq_Z,
 			 mk_eq (mkRel 1) eq1) |])
 	  in
@@ -1725,11 +1726,11 @@ let destructure_hyps =
          try
            match destructurate_type env sigma typ with
            | Kapp(Nat,_) | Kapp(Z,_) ->
-              let hid = fresh_id Id.Set.empty (add_suffix i "_eqn") gl in
-              let hty = mk_gen_eq typ (mkVar i) body in
+              let hid = fresh_id Id.Set.empty (add_suffix i.binder_name "_eqn") gl in
+              let hty = mk_gen_eq typ (mkVar i.binder_name) body in
               tclTHEN
                 (assert_by (Name hid) hty reflexivity)
-                (loop (LocalAssum (hid, hty) :: lit))
+                (loop (LocalAssum (make_annot hid Sorts.Relevant, hty) :: lit))
            | _ -> loop lit
          with e when catchable_exception e -> loop lit
        end
@@ -1742,18 +1743,20 @@ let destructure_hyps =
           | Kapp(Or,[t1;t2]) ->
               (tclTHENS
                  (elim_id i)
-                 [ onClearedName i (fun i -> (loop (LocalAssum (i,t1)::lit)));
-                   onClearedName i (fun i -> (loop (LocalAssum (i,t2)::lit))) ])
+                 [ onClearedName i (fun i -> (loop (LocalAssum (make_annot i Sorts.Relevant,t1)::lit)));
+                   onClearedName i (fun i -> (loop (LocalAssum (make_annot i Sorts.Relevant,t2)::lit))) ])
           | Kapp(And,[t1;t2]) ->
               tclTHEN
 		(elim_id i)
 		(onClearedName2 i (fun i1 i2 ->
-		  loop (LocalAssum (i1,t1) :: LocalAssum (i2,t2) :: lit)))
+                     loop (LocalAssum (make_annot i1 Sorts.Relevant,t1) ::
+                           LocalAssum (make_annot i2 Sorts.Relevant,t2) :: lit)))
           | Kapp(Iff,[t1;t2]) ->
 	      tclTHEN
 		(elim_id i)
 		(onClearedName2 i (fun i1 i2 ->
-		  loop (LocalAssum (i1,mkArrow t1 t2) :: LocalAssum (i2,mkArrow t2 t1) :: lit)))
+       loop (LocalAssum (make_annot i1 Sorts.Relevant,mkArrow t1 Sorts.Relevant t2) ::
+             LocalAssum (make_annot i2 Sorts.Relevant,mkArrow t2 Sorts.Relevant t1) :: lit)))
           | Kimp(t1,t2) ->
 	      (* t1 and t2 might be in Type rather than Prop.
 		 For t1, the decidability check will ensure being Prop. *)
@@ -1764,7 +1767,7 @@ let destructure_hyps =
 		  (generalize_tac [mkApp (Lazy.force coq_imp_simp,
                                                                [| t1; t2; d1; mkVar i|])]);
 		  (onClearedName i (fun i ->
-		    (loop (LocalAssum (i,mk_or (mk_not t1) t2) :: lit))))
+                    (loop (LocalAssum (make_annot i Sorts.Relevant,mk_or (mk_not t1) t2) :: lit))))
                 ]
               else
 		loop lit
@@ -1775,7 +1778,7 @@ let destructure_hyps =
 		    (generalize_tac
                                             [mkApp (Lazy.force coq_not_or,[| t1; t2; mkVar i |])]);
 		    (onClearedName i (fun i ->
-                      (loop (LocalAssum (i,mk_and (mk_not t1) (mk_not t2)) :: lit))))
+                      (loop (LocalAssum (make_annot i Sorts.Relevant,mk_and (mk_not t1) (mk_not t2)) :: lit))))
                   ]
 	      | Kapp(And,[t1;t2]) ->
 		  let d1 = decidability t1 in
@@ -1784,7 +1787,7 @@ let destructure_hyps =
 		                            [mkApp (Lazy.force coq_not_and,
 				                    [| t1; t2; d1; mkVar i |])]);
 		    (onClearedName i (fun i ->
-                      (loop (LocalAssum (i,mk_or (mk_not t1) (mk_not t2)) :: lit))))
+                      (loop (LocalAssum (make_annot i Sorts.Relevant,mk_or (mk_not t1) (mk_not t2)) :: lit))))
                   ]
 	      | Kapp(Iff,[t1;t2]) ->
 		  let d1 = decidability t1 in
@@ -1794,7 +1797,7 @@ let destructure_hyps =
 		                            [mkApp (Lazy.force coq_not_iff,
 				                    [| t1; t2; d1; d2; mkVar i |])]);
 		    (onClearedName i (fun i ->
-                      (loop (LocalAssum (i, mk_or (mk_and t1 (mk_not t2))
+                      (loop (LocalAssum (make_annot i Sorts.Relevant,mk_or (mk_and t1 (mk_not t2))
 				                  (mk_and (mk_not t1) t2)) :: lit))))
                   ]
 	      | Kimp(t1,t2) ->
@@ -1806,14 +1809,14 @@ let destructure_hyps =
 		                            [mkApp (Lazy.force coq_not_imp,
 				                    [| t1; t2; d1; mkVar i |])]);
 		    (onClearedName i (fun i ->
-                      (loop (LocalAssum (i,mk_and t1 (mk_not t2)) :: lit))))
+                      (loop (LocalAssum (make_annot i Sorts.Relevant,mk_and t1 (mk_not t2)) :: lit))))
                   ]
 	      | Kapp(Not,[t]) ->
 		  let d = decidability t in
                   tclTHENLIST [
 		    (generalize_tac
 			                    [mkApp (Lazy.force coq_not_not, [| t; d; mkVar i |])]);
-		    (onClearedName i (fun i -> (loop (LocalAssum (i,t) :: lit))))
+                    (onClearedName i (fun i -> (loop (LocalAssum (make_annot i Sorts.Relevant,t) :: lit))))
                   ]
 	      | Kapp(op,[t1;t2]) ->
 		  (try

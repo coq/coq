@@ -449,11 +449,11 @@ let argnames_of_global r =
   let typ, _ = Typeops.type_of_global_in_context env r in
   let rels,_ =
     decompose_prod (Reduction.whd_all env typ) in
-  List.rev_map fst rels
+  List.rev_map (fun x -> Context.binder_name (fst x)) rels
 
 let msg_of_implicit = function
   | Kimplicit (r,i) ->
-     let name = match List.nth (argnames_of_global r) (i-1) with
+     let name = match (List.nth (argnames_of_global r) (i-1)) with
        | Anonymous -> ""
        | Name id -> "(" ^ Id.to_string id ^ ") "
      in

@@ -13,6 +13,7 @@
 open Pp
 open Names
 open Constr
+open Context
 open Tacmach
 
 open Ssrmatching_plugin.Ssrmatching
@@ -54,7 +55,7 @@ let ssrsettac id ((_, (pat, pty)), (_, occ)) gl =
   let c, (gl, cty) =  match EConstr.kind sigma c with
   | Cast(t, DEFAULTcast, ty) -> t, (gl, ty)
   | _ -> c, pfe_type_of gl c in
-  let cl' = EConstr.mkLetIn (Name id, c, cty, cl) in
+  let cl' = EConstr.mkLetIn (make_annot (Name id) Sorts.Relevant, c, cty, cl) in
   Tacticals.tclTHEN (Proofview.V82.of_tactic (convert_concl cl')) (introid id) gl
 
 open Util
@@ -162,7 +163,7 @@ let havetac ist
      let assert_is_conv gl =
        try Proofview.V82.of_tactic (convert_concl (EConstr.it_mkProd_or_LetIn concl ctx)) gl
        with _ -> errorstrm (str "Given proof term is not of type " ++
-         pr_econstr_env (pf_env gl) (project gl) (EConstr.mkArrow (EConstr.mkVar (Id.of_string "_")) concl)) in
+         pr_econstr_env (pf_env gl) (project gl) (EConstr.mkArrow (EConstr.mkVar (Id.of_string "_")) Sorts.Relevant concl)) in
      gl, ty, Tacticals.tclTHEN assert_is_conv (Proofview.V82.of_tactic (Tactics.apply t)), id, itac_c
    | FwdHave, false, false ->
      let skols = List.flatten (List.map (function
@@ -190,10 +191,10 @@ let havetac ist
             Proofview.V82.of_tactic (unfold [abstract; abstract_key]) gl))
    | _,true,true  ->
      let _, ty, uc = interp_ty gl fixtc cty in let gl = pf_merge_uc uc gl in
-     gl, EConstr.mkArrow ty concl, hint, itac, clr
+     gl, EConstr.mkArrow ty Sorts.Relevant concl, hint, itac, clr
    | _,false,true ->
      let _, ty, uc = interp_ty gl fixtc cty in let gl = pf_merge_uc uc gl in
-     gl, EConstr.mkArrow ty concl, hint, id, itac_c
+     gl, EConstr.mkArrow ty Sorts.Relevant concl, hint, id, itac_c
    | _, false, false -> 
      let n, cty, uc = interp_ty gl fixtc cty in let gl = pf_merge_uc uc gl in
      gl, cty, Tacticals.tclTHEN (binderstac n) hint, id, Tacticals.tclTHEN itac_c simpltac
@@ -233,7 +234,7 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
     let gens = List.filter (function _, Some _ -> true | _ -> false) gens in
     let concl = pf_concl gl in
     let c = EConstr.mkProp in
-    let c = if cut_implies_goal then EConstr.mkArrow c concl else c in
+    let c = if cut_implies_goal then EConstr.mkArrow c Sorts.Relevant concl else c in
     let gl, args, c = List.fold_right mkabs gens (gl,[],c) in
     let env, _ =
       List.fold_left (fun (env, c) _ ->
@@ -245,10 +246,10 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
     let fake_gl = {Evd.it = k; Evd.sigma = sigma} in
     let _, ct, _, uc = pf_interp_ty ist fake_gl ct in
     let rec var2rel c g s = match EConstr.kind sigma c, g with
-      | Prod(Anonymous,_,c), [] -> EConstr.mkProd(Anonymous, EConstr.Vars.subst_vars s ct, c)
+      | Prod({binder_name=Anonymous} as x,_,c), [] -> EConstr.mkProd(x, EConstr.Vars.subst_vars s ct, c)
       | Sort _, [] -> EConstr.Vars.subst_vars s ct
-      | LetIn(Name id as n,b,ty,c), _::g -> EConstr.mkLetIn (n,b,ty,var2rel c g (id::s))
-      | Prod(Name id as n,ty,c), _::g -> EConstr.mkProd (n,ty,var2rel c g (id::s))
+      | LetIn({binder_name=Name id} as n,b,ty,c), _::g -> EConstr.mkLetIn (n,b,ty,var2rel c g (id::s))
+      | Prod({binder_name=Name id} as n,ty,c), _::g -> EConstr.mkProd (n,ty,var2rel c g (id::s))
       | _ -> CErrors.anomaly(str"SSR: wlog: var2rel: " ++ pr_econstr_env env sigma c) in
     let c = var2rel c gens [] in
     let rec pired c = function

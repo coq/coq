@@ -15,6 +15,7 @@ open Util
 open Names
 open Term
 open Constr
+open Context
 open EConstr
 open Vars
 open Pp
@@ -142,12 +143,13 @@ let generate_type evd g_to_f f graph i =
     \[\forall (x_1:t_1)\ldots(x_n:t_n), let fv := f x_1\ldots x_n in, forall res,  \]
     i*)
   let pre_ctxt =
-    LocalAssum (Name res_id, lift 1 res_type) :: LocalDef (Name fv_id, mkApp (f,args_as_rels), res_type) :: fun_ctxt
+    LocalAssum (make_annot (Name res_id) Sorts.Relevant, lift 1 res_type) ::
+    LocalDef (make_annot (Name fv_id) Sorts.Relevant, mkApp (f,args_as_rels), res_type) :: fun_ctxt
   in
   (*i and we can return the solution depending on which lemma type we are defining i*)
   if g_to_f
-  then LocalAssum (Anonymous,graph_applied)::pre_ctxt,(lift 1 res_eq_f_of_args),graph
-  else LocalAssum (Anonymous,res_eq_f_of_args)::pre_ctxt,(lift 1 graph_applied),graph
+  then LocalAssum (make_annot Anonymous Sorts.Relevant,graph_applied)::pre_ctxt,(lift 1 res_eq_f_of_args),graph
+  else LocalAssum (make_annot Anonymous Sorts.Relevant,res_eq_f_of_args)::pre_ctxt,(lift 1 graph_applied),graph
 
 
 (*
@@ -270,10 +272,10 @@ let prove_fun_correct evd funs_constr graphs_constr schemes lemmas_types_infos i
 	     let type_of_hid = pf_unsafe_type_of g (mkVar hid) in
 	     let sigma = project g in
 	     match EConstr.kind sigma type_of_hid with
-	       | Prod(_,_,t') ->
+               | Prod(_,_,t') ->
 		   begin
 		     match EConstr.kind sigma t' with
-		       | Prod(_,t'',t''') ->
+                       | Prod(_,t'',t''') ->
 			   begin
 			     match EConstr.kind sigma t'',EConstr.kind sigma t''' with
 			       | App(eq,args), App(graph',_)
@@ -358,17 +360,16 @@ let prove_fun_correct evd funs_constr graphs_constr schemes lemmas_types_infos i
     (* end of branche proof *)
     let lemmas =
       Array.map
-	(fun ((_,(ctxt,concl))) ->
-	   match ctxt with
-	     | [] | [_] | [_;_] -> anomaly (Pp.str "bad context.")
-	     | hres::res::decl::ctxt ->
-		let res = EConstr.it_mkLambda_or_LetIn
-			    (EConstr.it_mkProd_or_LetIn concl [hres;res])
-			    (LocalAssum (RelDecl.get_name decl, RelDecl.get_type decl) :: ctxt)
-		in
-		res
-	)
-	lemmas_types_infos
+        (fun ((_,(ctxt,concl))) ->
+           match ctxt with
+           | [] | [_] | [_;_] -> anomaly (Pp.str "bad context.")
+           | hres::res::decl::ctxt ->
+             let res = EConstr.it_mkLambda_or_LetIn
+                 (EConstr.it_mkProd_or_LetIn concl [hres;res])
+                 (LocalAssum (RelDecl.get_annot decl, RelDecl.get_type decl) :: ctxt)
+             in
+             res)
+        lemmas_types_infos
     in
     let param_names = fst (List.chop princ_infos.nparams args_names) in
     let params = List.map mkVar param_names in
@@ -429,7 +430,7 @@ let generalize_dependent_of x hyp g =
   let open Context.Named.Declaration in
   tclMAP
     (function
-       | LocalAssum (id,t) when not (Id.equal id hyp) &&
+       | LocalAssum ({binder_name=id},t) when not (Id.equal id hyp) &&
 	   (Termops.occur_var (pf_env g) (project g) x t) -> tclTHEN (Proofview.V82.of_tactic (Tactics.generalize [mkVar id])) (thin [id])
        | _ -> tclIDTAC
     )
@@ -456,7 +457,7 @@ and intros_with_rewrite_aux : Tacmach.tactic =
     let eq_ind = make_eq () in
     let sigma = project g in
     match EConstr.kind sigma (pf_concl g) with
-	  | Prod(_,t,t') ->
+          | Prod(_,t,t') ->
 	      begin
 		match EConstr.kind sigma t with
 		  | App(eq,args) when (EConstr.eq_constr sigma eq eq_ind)  ->

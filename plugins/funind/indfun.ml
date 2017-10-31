@@ -3,6 +3,7 @@ open Sorts
 open Util
 open Names
 open Constr
+open Context
 open EConstr
 open Pp
 open Indfun_common
@@ -170,7 +171,8 @@ let build_newrecursive
         let evd, (_, (_, impls')) = Constrintern.interp_context_evars ~program_mode:false env evd bl in
         let impl = Constrintern.compute_internalization_data env0 evd Constrintern.Recursive arity impls' in
         let open Context.Named.Declaration in
-        (EConstr.push_named (LocalAssum (recname,arity)) env, Id.Map.add recname impl impls))
+        let r = Sorts.Relevant in (* TODO relevance *)
+        (EConstr.push_named (LocalAssum (make_annot recname r,arity)) env, Id.Map.add recname impl impls))
       (env0,Constrintern.empty_internalization_env) lnameargsardef in
   let recdef =
     (* Declare local notations *)
@@ -622,8 +624,8 @@ let rebuild_bl aux bl typ = rebuild_bl aux bl typ
 
 let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) = 
   let fixl,ntns = ComFixpoint.extract_fixpoint_components false fixpoint_exprl in
-  let ((_,_,typel),_,ctx,_) = ComFixpoint.interp_fixpoint ~cofix:false fixl ntns in
-  let constr_expr_typel = 
+  let ((_,_,_,typel),_,ctx,_) = ComFixpoint.interp_fixpoint ~cofix:false fixl ntns in
+  let constr_expr_typel =
     with_full_print (List.map (fun c -> Constrextern.extern_constr false (Global.env ()) (Evd.from_ctx ctx) (EConstr.of_constr c))) typel in
   let fixpoint_exprl_with_new_bl = 
     List.map2 (fun ((lna,(rec_arg_opt,rec_order),bl,ret_typ,opt_body),notation_list) fix_typ -> 

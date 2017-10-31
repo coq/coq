@@ -5,10 +5,10 @@ Pretype_errors
 Reductionops
 Inductiveops
 InferCumulativity
-Vnorm
 Arguments_renaming
-Nativenorm
 Retyping
+Vnorm
+Nativenorm
 Cbv
 Find_subterm
 Evardefine

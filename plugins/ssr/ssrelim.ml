@@ -15,6 +15,7 @@ open Names
 open Printer
 open Term
 open Constr
+open Context
 open Termops
 open Tactypes
 open Tacmach
@@ -364,14 +365,14 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
         let gl, eq = get_eq_type gl in
         let gen_eq_tac, gl =
           let refl = EConstr.mkApp (eq, [|t; c; c|]) in
-          let new_concl = EConstr.mkArrow refl (EConstr.Vars.lift 1 (pf_concl orig_gl)) in 
+          let new_concl = EConstr.mkArrow refl Sorts.Relevant (EConstr.Vars.lift 1 (pf_concl orig_gl)) in
           let new_concl = fire_subst gl new_concl in
           let erefl, gl = mkRefl t c gl in
           let erefl = fire_subst gl erefl in
           apply_type new_concl [erefl], gl in
         let rel = k + if c_is_head_p then 1 else 0 in
         let src, gl = mkProt EConstr.mkProp EConstr.(mkApp (eq,[|t; c; mkRel rel|])) gl in
-        let concl = EConstr.mkArrow src (EConstr.Vars.lift 1 concl) in
+        let concl = EConstr.mkArrow src Sorts.Relevant (EConstr.Vars.lift 1 concl) in
         let clr = if deps <> [] then clr else [] in
         concl, gen_eq_tac, clr, gl
     | _ -> concl, Tacticals.tclIDTAC, clr, gl in
@@ -446,7 +447,7 @@ let injecteq_id = mk_internal_id "injection equation"
 let revtoptac n0 gl =
   let n = pf_nb_prod gl - n0 in
   let dc, cl = EConstr.decompose_prod_n_assum (project gl) n (pf_concl gl) in
-  let dc' = dc @ [Context.Rel.Declaration.LocalAssum(Name rev_id, EConstr.it_mkProd_or_LetIn cl (List.rev dc))] in
+  let dc' = dc @ [Context.Rel.Declaration.LocalAssum(make_annot (Name rev_id) Sorts.Relevant, EConstr.it_mkProd_or_LetIn cl (List.rev dc))] in
   let f = EConstr.it_mkLambda_or_LetIn (mkEtaApp (EConstr.mkRel (n + 1)) (-n) 1) dc' in
   Refiner.refiner ~check:true EConstr.Unsafe.(to_constr (EConstr.mkApp (f, [|Evarutil.mk_new_meta ()|]))) gl
 
@@ -486,7 +487,7 @@ let perform_injection c gl =
     CErrors.user_err (Pp.str "can't decompose a quantified equality") else
   let cl = pf_concl gl in let n = List.length dc in
   let c_eq = mkEtaApp c n 2 in
-  let cl1 = EConstr.mkLambda EConstr.(Anonymous, mkArrow eqt cl, mkApp (mkRel 1, [|c_eq|])) in
+  let cl1 = EConstr.mkLambda EConstr.(make_annot Anonymous Sorts.Relevant, mkArrow eqt Sorts.Relevant cl, mkApp (mkRel 1, [|c_eq|])) in
   let id = injecteq_id in
   let id_with_ebind = (EConstr.mkVar id, NoBindings) in
   let injtac = Tacticals.tclTHEN (introid id) (injectidl2rtac id id_with_ebind) in 

@@ -1158,7 +1158,7 @@ let pr_goal_selector ~toplevel s =
       if n=0 then (List.rev acc, EConstr.of_constr ty) else
         match Constr.kind ty with
         | Constr.Prod(na,a,b) ->
-          strip_ty (([CAst.make na],EConstr.of_constr a)::acc) (n-1) b
+          strip_ty (([CAst.make na.Context.binder_name],EConstr.of_constr a)::acc) (n-1) b
         | _ -> user_err Pp.(str "Cannot translate fix tactic: not enough products") in
     strip_ty [] n ty
 

@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Constr
+open Context
 open Context.Named.Declaration
 
 let map_const_entry_body (f:constr->constr) (x:Safe_typing.private_constants Entries.const_entry_body)
@@ -39,7 +40,7 @@ let start_deriving f suchthat lemma =
         TCons ( env , sigma , f_type , (fun sigma ef ->
         let f_type = EConstr.Unsafe.to_constr f_type in
         let ef = EConstr.Unsafe.to_constr ef in
-        let env' = Environ.push_named (LocalDef (f, ef, f_type)) env in
+        let env' = Environ.push_named (LocalDef (annotR f, ef, f_type)) env in
         let sigma, suchthat = Constrintern.interp_type_evars ~program_mode:false env' sigma suchthat in
         TCons ( env' , sigma , suchthat , (fun sigma _ ->
         TNil sigma))))))

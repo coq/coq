@@ -23,6 +23,6 @@ val make_hyps
   -> atom_env
   -> EConstr.types list
   -> EConstr.named_context
-  -> (Names.Id.t * Proof_search.form) list
+  -> (Names.Id.t Context.binder_annot * Proof_search.form) list
 
 val rtauto_tac : unit Proofview.tactic

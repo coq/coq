@@ -10,6 +10,7 @@
 
 (*i*)
 open Names
+open Context
 open Decl_kinds
 open CErrors
 open Util
@@ -175,10 +176,10 @@ let combine_params avoid fn applied needed =
     match app, need with
 	[], [] -> List.rev ids, avoid
 
-      | app, (_, (LocalAssum (Name id, _) | LocalDef (Name id, _, _))) :: need when Id.List.mem_assoc id named ->
+      | app, (_, (LocalAssum ({binder_name=Name id}, _) | LocalDef ({binder_name=Name id}, _, _))) :: need when Id.List.mem_assoc id named ->
 	  aux (Id.List.assoc id named :: ids) avoid app need
 
-      | (x, None) :: app, (None, (LocalAssum (Name id, _) | LocalDef (Name id, _, _))) :: need ->
+      | (x, None) :: app, (None, (LocalAssum ({binder_name=Name id}, _) | LocalDef ({binder_name=Name id}, _, _))) :: need ->
 	  aux (x :: ids) avoid app need
 
       | _, (Some cl, _ as d) :: need ->

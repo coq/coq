@@ -16,6 +16,7 @@ open Util
 open Names
 open Nameops
 open Constr
+open Context
 open Termops
 open Environ
 open EConstr
@@ -472,7 +473,8 @@ let push_current_pattern ~program_mode sigma (cur,ty) eqn =
   let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
   match eqn.patterns with
     | pat::pats ->
-        let _,rhs_env = push_rel ~hypnaming sigma (LocalDef (alias_of_pat pat,cur,ty)) eqn.rhs.rhs_env in
+        let r = Sorts.Relevant in (* TODO relevance *)
+        let _,rhs_env = push_rel ~hypnaming sigma (LocalDef (make_annot (alias_of_pat pat) r,cur,ty)) eqn.rhs.rhs_env in
 	{ eqn with
             rhs = { eqn.rhs with rhs_env = rhs_env };
 	    patterns = pats }
@@ -762,7 +764,10 @@ let get_names avoid env sigma sign eqns =
       (fun (l,avoid) d na ->
 	 let na =
 	   merge_name
-	     (fun (LocalAssum (na,t) | LocalDef (na,_,t)) -> Name (next_name_away (named_hd env sigma t na) avoid))
+             (fun decl ->
+                let na = get_name decl in
+                let t = get_type decl in
+                Name (next_name_away (named_hd env sigma t na) avoid))
 	     d na
 	 in
          (na::l,Id.Set.add (Name.get_id na) avoid))
@@ -782,10 +787,10 @@ let recover_and_adjust_alias_names (_,avoid) names sign =
   let rec aux = function
   | [],[] ->
       []
-  | x::names, LocalAssum (_,t)::sign ->
-      (x, LocalAssum (alias_of_pat x,t)) :: aux (names,sign)
+  | x::names, LocalAssum (x',t)::sign ->
+      (x, LocalAssum ({x' with binder_name=alias_of_pat x},t)) :: aux (names,sign)
   | names, (LocalDef (na,_,_) as decl)::sign ->
-      (DAst.make @@ PatVar na, decl) :: aux (names,sign)
+      (DAst.make @@ PatVar na.binder_name, decl) :: aux (names,sign)
   | _ -> assert false
   in
   List.split (aux (names,sign))
@@ -1247,7 +1252,7 @@ let rec generalize_problem names sigma pb = function
       let pb',deps = generalize_problem names sigma pb l in
       let d = map_constr (lift i) (lookup_rel i !!(pb.env)) in
       begin match d with
-      | LocalDef (Anonymous,_,_) -> pb', deps
+      | LocalDef ({binder_name=Anonymous},_,_) -> pb', deps
       | _ ->
 	 (* for better rendering *)
         let d = RelDecl.map_type (fun c -> whd_betaiota sigma c) d in
@@ -1436,16 +1441,15 @@ let compile ~program_mode sigma pb =
                 brvals pb.tomatch pb.pred deps cstrs in
             let brvals = Array.map (fun (sign,body) ->
               it_mkLambda_or_LetIn body sign) brvals in
-	  let (pred,typ) =
+            let (pred,typ) =
               find_predicate pb.caseloc pb.env sigma
-	      pred current indt (names,dep) tomatch in
-            let ci = make_case_info !!(pb.env) (fst mind) pb.casestyle in
+                pred current indt (names,dep) tomatch
+            in
+            let rci = Typing.check_allowed_sort !!(pb.env) sigma mind current pred in
+            let ci = make_case_info !!(pb.env) (fst mind) rci pb.casestyle in
             let pred = nf_betaiota !!(pb.env) sigma pred in
-	  let case =
-              make_case_or_project !!(pb.env) sigma indf ci pred current brvals
-	  in
+            let case = make_case_or_project !!(pb.env) sigma indf ci pred current brvals in
             let sigma, _ = Typing.type_of !!(pb.env) sigma pred in
-            Typing.check_allowed_sort !!(pb.env) sigma mind current pred;
             sigma, { uj_val = applist (case, inst);
               uj_type = prod_applist sigma typ inst }
 
@@ -1460,7 +1464,7 @@ let compile ~program_mode sigma pb =
     let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
     let pb =
       { pb with
-         env = snd (push_rel ~hypnaming sigma (LocalDef (na,current,ty)) env);
+         env = snd (push_rel ~hypnaming sigma (LocalDef (annotR na,current,ty)) env);
          tomatch = tomatch;
          pred = lift_predicate 1 pred tomatch;
          history = pop_history pb.history;
@@ -1511,7 +1515,8 @@ let compile ~program_mode sigma pb =
   and compile_alias initial sigma pb (na,orig,(expanded,expanded_typ)) rest =
     let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
     let f c t =
-      let alias = LocalDef (na,c,t) in
+      let r = Retyping.relevance_of_type !!(pb.env) sigma t in
+      let alias = LocalDef (make_annot na r,c,t) in
       let pb =
         { pb with
            env = snd (push_rel ~hypnaming sigma alias pb.env);
@@ -1524,7 +1529,7 @@ let compile ~program_mode sigma pb =
           if isRel sigma c || isVar sigma c || count_occurrences sigma (mkRel 1) j.uj_val <= 1 then
             subst1 c j.uj_val
           else
-            mkLetIn (na,c,t,j.uj_val);
+            mkLetIn (make_annot na r,c,t,j.uj_val);
         uj_type = subst1 c j.uj_type } in
     (* spiwack: when an alias appears on a deep branch, its non-expanded
        form is automatically a variable of the same name. We avoid
@@ -1812,7 +1817,7 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
 	List.rev_append patl patl',acc_sign,acc
     | (t, NotInd (bo,typ)) :: tms ->
       let pat,acc = make_patvar t acc in
-      let d = LocalAssum (alias_of_pat pat,typ) in
+      let d = LocalAssum (annotR (alias_of_pat pat),typ) in
       let patl,acc_sign,acc = aux (n+1) (snd (push_rel ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma d env)) (d::acc_sign) tms acc in
       pat::patl,acc_sign,acc in
   let avoid0 = GlobEnv.vars_of_env env in
@@ -1913,9 +1918,11 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
     match tm with
       | NotInd (bo,typ) ->
 	  (match t with
-	    | None -> let sign = match bo with
-		       | None -> [LocalAssum (na, lift n typ)]
-                       | Some b -> [LocalDef (na, lift n b, lift n typ)] in sign
+            | None ->
+              let r = Sorts.Relevant in (* TODO relevance *)
+              let sign = match bo with
+                       | None -> [LocalAssum (make_annot na r, lift n typ)]
+                       | Some b -> [LocalDef (make_annot na r, lift n b, lift n typ)] in sign
             | Some {CAst.loc} ->
             user_err ?loc
                 (str"Unexpected type annotation for a term of non inductive type."))
@@ -1923,7 +1930,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
           let indf' = if dolift then lift_inductive_family n indf else indf in
 	  let ((ind,u),_) = dest_ind_family indf' in
 	  let nrealargs_ctxt = inductive_nrealdecls_env env0 ind in
-	  let arsign = fst (get_arity env0 indf') in
+          let arsign, inds = get_arity env0 indf' in
 	  let arsign = List.map (fun d -> map_rel_decl EConstr.of_constr d) arsign in
           let realnal =
 	    match t with
@@ -1935,8 +1942,9 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
                   List.rev realnal
 	      | None ->
                   List.make nrealargs_ctxt Anonymous in
+          let r = Sorts.relevance_of_sort_family inds in
           let t = EConstr.of_constr (build_dependent_inductive env0 indf') in
-          LocalAssum (na, t) :: List.map2 RelDecl.set_name realnal arsign in
+          LocalAssum (make_annot na r, t) :: List.map2 RelDecl.set_name realnal arsign in
   let rec buildrec n = function
     | [],[] -> []
     | (_,tm)::ltm, (_,x)::tmsign ->
@@ -2143,9 +2151,10 @@ let constr_of_pat env sigma arsign pat avoid =
 	  | Anonymous ->
 	      let previd, id = prime avoid (Name (Id.of_string "wildcard")) in
 		Name id, Id.Set.add id avoid
-	in
-          (sigma, (DAst.make ?loc @@ PatVar name), [LocalAssum (name, ty)] @ realargs, mkRel 1, ty,
-	   (List.map (fun x -> mkRel 1) realargs), 1, avoid)
+        in
+        let r = Sorts.Relevant in (* TODO relevance *)
+          (sigma, (DAst.make ?loc @@ PatVar name), [LocalAssum (make_annot name r, ty)] @ realargs, mkRel 1, ty,
+           (List.map (fun x -> mkRel 1) realargs), 1, avoid)
     | PatCstr (((_, i) as cstr),args,alias) ->
 	let cind = inductive_of_constructor cstr in
 	let IndType (indf, _) = 
@@ -2184,9 +2193,11 @@ let constr_of_pat env sigma arsign pat avoid =
 	  match alias with
 	      Anonymous ->
                 sigma, pat', sign, app, apptype, realargs, n, avoid
-	    | Name id ->
-		let sign = LocalAssum (alias, lift m ty) :: sign in
-		let avoid = Id.Set.add id avoid in
+            | Name id ->
+                let _, inds = get_arity env indf in
+                let r = Sorts.relevance_of_sort_family inds in
+                let sign = LocalAssum (make_annot alias r, lift m ty) :: sign in
+                let avoid = Id.Set.add id avoid in
                 let sigma, sign, i, avoid =
 		  try
                     let env = EConstr.push_rel_context sign env in
@@ -2196,11 +2207,12 @@ let constr_of_pat env sigma arsign pat avoid =
 		      (mkRel 1) (* alias *)
 		      (lift 1 app) (* aliased term *)
 		    in
-		    let neq = eq_id avoid id in
-                      sigma, LocalDef (Name neq, mkRel 0, eq_t) :: sign, 2, Id.Set.add neq avoid
+                    let neq = eq_id avoid id in
+                    (* if we ever allow using a SProp-typed coq_eq_ind this relevance will be wrong *)
+                      sigma, LocalDef (nameR neq, mkRel 0, eq_t) :: sign, 2, Id.Set.add neq avoid
                   with Evarconv.UnableToUnify _ -> sigma, sign, 1, avoid
 		in
-		  (* Mark the equality as a hole *)
+                  (* Mark the equality as a hole *)
                   sigma, pat', sign, lift i app, lift i apptype, realargs, n + i, avoid
   in
   let sigma, pat', sign, patc, patty, args, z, avoid = typ env sigma (RelDecl.get_type (List.hd arsign), List.tl arsign) pat avoid in
@@ -2222,18 +2234,18 @@ match EConstr.kind sigma t with
 let rels_of_patsign sigma =
   List.map (fun decl ->
 	    match decl with
-	    | LocalDef (na,t',t) when is_topvar sigma t' -> LocalAssum (na,t)
+            | LocalDef (na,t',t) when is_topvar sigma t' -> LocalAssum (na,t)
 	    | _ -> decl)
 
 let vars_of_ctx sigma ctx =
   let _, y =
     List.fold_right (fun decl (prev, vars) ->
       match decl with
-	| LocalDef (na,t',t) when is_topvar sigma t' ->
+        | LocalDef (na,t',t) when is_topvar sigma t' ->
 	    prev,
 	    (DAst.make @@ GApp (
 		(DAst.make @@ GRef (delayed_force coq_eq_refl_ref, None)), 
-		   [hole na; DAst.make @@ GVar prev])) :: vars
+                   [hole na.binder_name; DAst.make @@ GVar prev])) :: vars
 	| _ ->
 	    match RelDecl.get_name decl with
 		Anonymous -> invalid_arg "vars_of_ctx"
@@ -2343,12 +2355,13 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
 	   let args = List.rev args in
 	     substl args (liftn signlen (succ nargs) arity)
 	 in
-	 let rhs_rels', tycon =
+         let r = Sorts.Relevant in (* TODO relevance *)
+         let rhs_rels', tycon =
 	   let neqs_rels, arity =
 	     match ineqs with
 	     | None -> [], arity
 	     | Some ineqs ->
-		 [LocalAssum (Anonymous, ineqs)], lift 1 arity
+                 [LocalAssum (make_annot Anonymous r, ineqs)], lift 1 arity
 	   in
            let eqs_rels, arity = decompose_prod_n_assum sigma neqs arity in
 	     eqs_rels @ neqs_rels @ rhs_rels', arity
@@ -2359,7 +2372,7 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
 	 and btype = it_mkProd_or_LetIn j.uj_type rhs_rels' in
          let sigma, _btype = Typing.type_of !!env sigma bbody in
 	 let branch_name = Id.of_string ("program_branch_" ^ (string_of_int !i)) in
-	 let branch_decl = LocalDef (Name branch_name, lift !i bbody, lift !i btype) in
+         let branch_decl = LocalDef (make_annot (Name branch_name) r, lift !i bbody, lift !i btype) in
 	 let branch =
 	   let bref = DAst.make @@ GVar branch_name in
              match vars_of_ctx sigma rhs_rels with
@@ -2407,9 +2420,10 @@ let abstract_tomatch env sigma tomatchs tycon =
 	   | _ ->
 	       let tycon = Option.map
 		 (fun t -> subst_term sigma (lift 1 c) (lift 1 t)) tycon in
-	       let name = next_ident_away (Id.of_string "filtered_var") names in
+               let name = next_ident_away (Id.of_string "filtered_var") names in
+               let r = Sorts.Relevant in (* TODO relevance *)
 		 (mkRel 1, lift_tomatch_type (succ lenctx) t) :: lift_ctx 1 prev,
-	       LocalDef (Name name, lift lenctx c, lift lenctx $ type_of_tomatch t) :: ctx,
+               LocalDef (make_annot (Name name) r, lift lenctx c, lift lenctx $ type_of_tomatch t) :: ctx,
 	       Id.Set.add name names, tycon)
       ([], [], Id.Set.empty, tycon) tomatchs
   in List.rev prev, ctx, tycon
@@ -2471,8 +2485,8 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
 			make_prime avoid name
 		    in
                       (sigma, env, succ nargeqs,
-		       (LocalAssum (Name (eq_id avoid previd), eq)) :: argeqs,
-		       refl_arg :: refl_args,
+                       (LocalAssum (make_annot (Name (eq_id avoid previd)) Sorts.Relevant, eq)) :: argeqs,
+                       refl_arg :: refl_args,
 		       pred slift,
 		       RelDecl.set_name (Name id) decl :: argsign'))
                  (sigma, env, neqs, [], [], slift, []) args argsign
@@ -2486,8 +2500,8 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
 	     in
              let sigma, refl_eq = mk_JMeq_refl sigma ty tm in
 	     let previd, id = make_prime avoid appn in
-               (sigma, (LocalAssum (Name (eq_id avoid previd), eq) :: argeqs) :: eqs,
-		succ nargeqs,
+               (sigma, (LocalAssum (make_annot (Name (eq_id avoid previd)) Sorts.Relevant, eq) :: argeqs) :: eqs,
+                succ nargeqs,
 		refl_eq :: refl_args,
 		pred slift,
 		((RelDecl.set_name (Name id) app_decl :: argsign') :: arsigns))
@@ -2503,8 +2517,9 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
                 (mkRel slift) (lift nar tm)
             in
             let sigma, refl = mk_eq_refl sigma tomatch_ty tm in
+            let na = make_annot (Name (eq_id avoid previd)) Sorts.Relevant in
             (sigma,
-            [LocalAssum (Name (eq_id avoid previd), eq)] :: eqs, succ neqs,
+            [LocalAssum (na, eq)] :: eqs, succ neqs,
             refl :: refl_args,
             pred slift, (arsign' :: []) :: arsigns))
       (sigma, [], 0, [], nar, []) tomatchs arsign
@@ -2580,11 +2595,12 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
   (* We push the initial terms to match and push their alias to rhs' envs *)
   (* names of aliases will be recovered from patterns (hence Anonymous here) *)
 
-  let out_tmt na = function NotInd (None,t) -> LocalAssum (na,t)
-			  | NotInd (Some b, t) -> LocalDef (na,b,t)
-			  | IsInd (typ,_,_) -> LocalAssum (na,typ) in
+  (* TODO relevance *)
+  let out_tmt na = function NotInd (None,t) -> LocalAssum (make_annot na Sorts.Relevant,t)
+                          | NotInd (Some b, t) -> LocalDef (make_annot na Sorts.Relevant,b,t)
+                          | IsInd (typ,_,_) -> LocalAssum (make_annot na Sorts.Relevant,typ) in
   let typs = List.map2 (fun (na,_) (tm,tmt) -> (tm,out_tmt na tmt)) nal tomatchs in
-    
+
   let typs =
     List.map (fun (c,d) -> (c,extract_inductive_data !!env sigma d,d)) typs in
     
@@ -2654,10 +2670,11 @@ let compile_cases ?loc ~program_mode style (typing_fun, sigma) tycon env (predop
     (* names of aliases will be recovered from patterns (hence Anonymous *)
     (* here) *)
 
+    (* TODO relevance *)
     let out_tmt na = function NotInd (None,t) -> LocalAssum (na,t)
 			    | NotInd (Some b,t) -> LocalDef (na,b,t)
 			    | IsInd (typ,_,_) -> LocalAssum (na,typ) in
-    let typs = List.map2 (fun (na,_) (tm,tmt) -> (tm,out_tmt na tmt)) nal tomatchs in
+    let typs = List.map2 (fun (na,_) (tm,tmt) -> (tm,out_tmt (make_annot na Sorts.Relevant) tmt)) nal tomatchs in
 
     let typs =
       List.map (fun (c,d) -> (c,extract_inductive_data !!env sigma d,d)) typs in

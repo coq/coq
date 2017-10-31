@@ -14,6 +14,7 @@ open Names
 open Nameops
 open Namegen
 open Constr
+open Context
 open Termops
 open Environ
 open Pretype_errors
@@ -103,9 +104,9 @@ let canonize_constr sigma c =
   let dn = Name.Anonymous in
   let rec canonize_binders c =
     match EConstr.kind sigma c with
-    | Prod (_,t,b) -> mkProd(dn,t,b)
-    | Lambda (_,t,b) -> mkLambda(dn,t,b)
-    | LetIn (_,u,t,b) -> mkLetIn(dn,u,t,b)
+    | Prod (x,t,b) -> mkProd({x with binder_name=dn},t,b)
+    | Lambda (x,t,b) -> mkLambda({x with binder_name=dn},t,b)
+    | LetIn (x,u,t,b) -> mkLetIn({x with binder_name=dn},u,t,b)
     | _ -> EConstr.map sigma canonize_binders c
   in
   canonize_binders c
@@ -193,13 +194,13 @@ let rec pr_disjunction pr = function
   | a::l -> pr a ++ str "," ++ spc () ++ pr_disjunction pr l
   | [] -> assert false
 
-let explain_elim_arity env sigma ind sorts c pj okinds =
+let explain_elim_arity env sigma ind c pj okinds =
   let open EConstr in
   let env = make_all_name_different env sigma in
   let pi = pr_inductive env (fst ind) in
   let pc = pr_leconstr_env env sigma c in
   let msg = match okinds with
-  | Some(kp,ki,explanation) ->
+  | Some(sorts,kp,ki,explanation) ->
       let pki = Sorts.pr_sort_family ki in
       let pkp = Sorts.pr_sort_family kp in
       let explanation =	match explanation with
@@ -262,7 +263,7 @@ let explain_ill_formed_branch env sigma c ci actty expty =
 let explain_generalization env sigma (name,var) j =
   let pe = pr_ne_context_of (str "In environment") env sigma in
   let pv = pr_letype_env env sigma var in
-  let (pc,pt) = pr_ljudge_env (push_rel_assum (name,var) env) sigma j in
+  let (pc,pt) = pr_ljudge_env (push_rel_assum (make_annot name Sorts.Relevant,var) env) sigma j in
   pe ++ str "Cannot generalize" ++ brk(1,1) ++ pv ++ spc () ++
   str "over" ++ brk(1,1) ++ pc ++ str "," ++ spc () ++
   str "it has type" ++ spc () ++ pt ++
@@ -414,7 +415,7 @@ let explain_not_product env sigma c =
 let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
   let pr_lconstr_env env sigma c = pr_leconstr_env env sigma c in
   let prt_name i =
-    match names.(i) with
+    match names.(i).binder_name with
         Name id -> str "Recursive definition of " ++ Id.print id
       | Anonymous -> str "The " ++ pr_nth i ++ str " definition" in
 
@@ -429,7 +430,7 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
   | RecursionOnIllegalTerm(j,(arg_env, arg),le,lt) ->
       let arg_env = make_all_name_different arg_env sigma in
       let called =
-        match names.(j) with
+        match names.(j).binder_name with
             Name id -> Id.print id
           | Anonymous -> str "the " ++ pr_nth i ++ str " definition" in
       let pr_db x = quote (pr_db env x) in
@@ -449,7 +450,7 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
 
   | NotEnoughArgumentsForFixCall j ->
       let called =
-        match names.(j) with
+        match names.(j).binder_name with
             Name id -> Id.print id
           | Anonymous -> str "the " ++ pr_nth i ++ str " definition" in
      str "Recursive call to " ++ called ++ str " has not enough arguments"
@@ -713,6 +714,9 @@ let explain_undeclared_universe env sigma l =
 let explain_disallowed_sprop () =
   Pp.(str "SProp not allowed, you need to use -allow-sprop.")
 
+let explain_bad_relevance env =
+  strbrk "Bad relevance (maybe a bugged tactic)."
+
 let explain_type_error env sigma err =
   let env = make_all_name_different env sigma in
   match err with
@@ -726,8 +730,8 @@ let explain_type_error env sigma err =
       explain_bad_assumption env sigma c
   | ReferenceVariables (id,c) ->
       explain_reference_variables sigma id c
-  | ElimArity (ind, aritylst, c, pj, okinds) ->
-      explain_elim_arity env sigma ind aritylst c pj okinds
+  | ElimArity (ind, c, pj, okinds) ->
+      explain_elim_arity env sigma ind c pj okinds
   | CaseNotInductive cj ->
       explain_case_not_inductive env sigma cj
   | NumberBranches (cj, n) ->
@@ -755,6 +759,7 @@ let explain_type_error env sigma err =
   | UndeclaredUniverse l ->
      explain_undeclared_universe env sigma l
   | DisallowedSProp -> explain_disallowed_sprop ()
+  | BadRelevance -> explain_bad_relevance env
 
 let pr_position (cl,pos) =
   let clpos = match cl with

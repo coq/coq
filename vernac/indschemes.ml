@@ -228,17 +228,20 @@ let declare_one_case_analysis_scheme ind =
 let kinds_from_prop =
   [InType,rect_scheme_kind_from_prop;
    InProp,ind_scheme_kind_from_prop;
-   InSet,rec_scheme_kind_from_prop]
+   InSet,rec_scheme_kind_from_prop;
+   InSProp,sind_scheme_kind_from_prop]
 
 let kinds_from_type =
   [InType,rect_dep_scheme_kind_from_type;
    InProp,ind_dep_scheme_kind_from_type;
-   InSet,rec_dep_scheme_kind_from_type]
+   InSet,rec_dep_scheme_kind_from_type;
+   InSProp,sind_dep_scheme_kind_from_type]
 
 let nondep_kinds_from_type =
   [InType,rect_scheme_kind_from_type;
    InProp,ind_scheme_kind_from_type;
-   InSet,rec_scheme_kind_from_type]
+   InSet,rec_scheme_kind_from_type;
+   InSProp,sind_scheme_kind_from_type]
 
 let declare_one_induction_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in

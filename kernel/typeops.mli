@@ -34,8 +34,10 @@ val check_context :
 (** If [j] is the judgement {% $ %}c:t{% $ %}, then [assumption_of_judgement env j]
    returns the type {% $ %}c{% $ %}, checking that {% $ %}t{% $ %} is a sort. *)
 
-val assumption_of_judgment :  env -> unsafe_judgment -> types
+val assumption_of_judgment :  env -> unsafe_judgment -> types * Sorts.relevance
 val type_judgment          :  env -> unsafe_judgment -> unsafe_type_judgment
+
+val check_binder_annot : env -> Sorts.t -> Name.t Context.binder_annot -> unit
 
 (** {6 Type of sorts. } *)
 val type1 : types
@@ -65,21 +67,21 @@ val judge_of_apply :
     -> unsafe_judgment
 
 (** {6 Type of an abstraction. } *)
-val judge_of_abstraction :
-  env -> Name.t -> unsafe_type_judgment -> unsafe_judgment
-    -> unsafe_judgment
+(* val judge_of_abstraction : *)
+(*   env -> Name.t -> unsafe_type_judgment -> unsafe_judgment *)
+(*     -> unsafe_judgment *)
 
 (** {6 Type of a product. } *)
 val sort_of_product : env -> Sorts.t -> Sorts.t -> Sorts.t
-val type_of_product : env -> Name.t -> Sorts.t -> Sorts.t -> types
-val judge_of_product :
-  env -> Name.t -> unsafe_type_judgment -> unsafe_type_judgment
-    -> unsafe_judgment
+val type_of_product : env -> Name.t Context.binder_annot -> Sorts.t -> Sorts.t -> types
+(* val judge_of_product : *)
+(*   env -> Name.t -> unsafe_type_judgment -> unsafe_type_judgment *)
+(*     -> unsafe_judgment *)
 
 (** s Type of a let in. *)
-val judge_of_letin :
-  env -> Name.t -> unsafe_judgment -> unsafe_type_judgment -> unsafe_judgment
-    -> unsafe_judgment
+(* val judge_of_letin : *)
+(*   env -> Name.t -> unsafe_judgment -> unsafe_type_judgment -> unsafe_judgment *)
+(*     -> unsafe_judgment *)
 
 (** {6 Type of a cast. } *)
 val judge_of_cast :

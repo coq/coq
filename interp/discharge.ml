@@ -103,7 +103,7 @@ let process_inductive info modlist mib =
   let (params',inds') = abstract_inductive section_decls' nparamdecls inds in
   let record = match mib.mind_record with
     | PrimRecord info ->
-      Some (Some (Array.map pi1 info))
+      Some (Some (Array.map (fun (x,_,_,_) -> x) info))
     | FakeRecord -> Some None
     | NotRecord -> None
   in

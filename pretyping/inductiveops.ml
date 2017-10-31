@@ -15,6 +15,7 @@ open Univ
 open Term
 open Constr
 open Vars
+open Context
 open Termops
 open Declarations
 open Declareops
@@ -60,6 +61,8 @@ let lift_inductive_family n = liftn_inductive_family n 1
 
 let substnl_ind_family l n = map_ind_family (substnl l n)
 
+let relevance_of_inductive_family env ((ind,_),_ : inductive_family) =
+  Inductive.relevance_of_inductive env ind
 
 type inductive_type = IndType of inductive_family * EConstr.constr list
 
@@ -74,6 +77,9 @@ let liftn_inductive_type n d = map_inductive_type (EConstr.Vars.liftn n d)
 let lift_inductive_type n = liftn_inductive_type n 1
 
 let substnl_ind_type l n = map_inductive_type (EConstr.Vars.substnl l n)
+
+let relevance_of_inductive_type env (IndType (indf, _)) =
+  relevance_of_inductive_family env indf
 
 let mkAppliedInd (IndType ((ind,params), realargs)) =
   let open EConstr in
@@ -276,7 +282,7 @@ let has_dependent_elim mib =
   | NotRecord | FakeRecord -> true
 
 (* Annotation for cases *)
-let make_case_info env ind style =
+let make_case_info env ind r style =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let ind_tags =
     Context.Rel.to_tags (List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt) in
@@ -289,6 +295,7 @@ let make_case_info env ind style =
     ci_npar    = mib.mind_nparams;
     ci_cstr_ndecls = mip.mind_consnrealdecls;
     ci_cstr_nargs = mip.mind_consnrealargs;
+    ci_relevance = r;
     ci_pp_info = print_info }
 
 (*s Useful functions *)
@@ -419,12 +426,14 @@ let build_dependent_inductive env ((ind, params) as indf) =
 (* builds the arity of an elimination predicate in sort [s] *)
 
 let make_arity_signature env sigma dep indf =
-  let (arsign,_) = get_arity env indf in
+  let (arsign,s) = get_arity env indf in
+  let r = Sorts.relevance_of_sort_family s in
+  let anon = make_annot Anonymous r in
   let arsign = List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) arsign in
   if dep then
     (* We need names everywhere *)
     Namegen.name_context env sigma
-      ((LocalAssum (Anonymous,EConstr.of_constr (build_dependent_inductive env indf)))::arsign)
+      ((LocalAssum (anon,EConstr.of_constr (build_dependent_inductive env indf)))::arsign)
       (* Costly: would be better to name once for all at definition time *)
   else
     (* No need to enforce names *)
@@ -457,7 +466,9 @@ let compute_projections env (kn, i as ind) =
   let x = match mib.mind_record with
   | NotRecord | FakeRecord ->
     anomaly Pp.(str "Trying to build primitive projections for a non-primitive record")
-  | PrimRecord info-> Name (pi1 (info.(i)))
+  | PrimRecord info ->
+    let id, _, _, _ = info.(i) in
+    make_annot (Name id) mib.mind_packets.(i).mind_relevant
   in
   let pkt = mib.mind_packets.(i) in
   let { mind_nparams = nparamargs; mind_params_ctxt = params } = mib in
@@ -491,7 +502,7 @@ let compute_projections env (kn, i as ind) =
         let subst = c1 :: subst in
         (proj_arg, j+1, pbs, subst)
     | LocalAssum (na,t) ->
-      match na with
+      match na.binder_name with
       | Name id ->
         let lab = Label.of_id id in
         let kn = Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg lab in
@@ -601,7 +612,7 @@ let is_predicate_explicitly_dep env sigma pred arsign =
           From Coq > 8.2, using or not the effective dependency of
           the predicate is parametrable! *)
 
-          begin match na with
+          begin match na.binder_name with
           | Anonymous -> false
           | Name _ -> true
           end
@@ -643,9 +654,10 @@ let type_case_branches_with_names env sigma indspec p c =
 
 (* Type of Case predicates *)
 let arity_of_case_predicate env (ind,params) dep k =
-  let arsign,_ = get_arity env (ind,params) in
+  let arsign,s = get_arity env (ind,params) in
+  let r = Sorts.relevance_of_sort_family s in
   let mind = build_dependent_inductive env (ind,params) in
-  let concl = if dep then mkArrow mind (mkSort k) else mkSort k in
+  let concl = if dep then mkArrow mind r (mkSort k) else mkSort k in
   Term.it_mkProd_or_LetIn concl arsign
 
 (***********************************************)
@@ -720,7 +732,7 @@ let control_only_guard env sigma c =
     match kind c with
     | CoFix (_,(_,_,_) as cofix) ->
       Inductive.check_cofix e cofix
-    | Fix (_,(_,_,_) as fix) ->
+    | Fix fix ->
       Inductive.check_fix e fix
     | _ -> ()
   in

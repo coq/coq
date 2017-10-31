@@ -161,7 +161,8 @@ let check_arity env_params env_ar ind =
      full_arity is used as argument or subject to cast, an upper
      universe will be generated *)
   let arity = it_mkProd_or_LetIn arity (Environ.rel_context env_params) in
-  push_rel (LocalAssum (Name ind.mind_entry_typename, arity)) env_ar,
+  let x = Context.make_annot (Name ind.mind_entry_typename) (Sorts.relevance_of_sort ind_sort) in
+  push_rel (LocalAssum (x, arity)) env_ar,
   (arity, indices, univ_info)
 
 let check_constructor_univs env_ar_par univ_info (args,_) =

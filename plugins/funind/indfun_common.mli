@@ -110,9 +110,9 @@ val evaluable_of_global_reference : GlobRef.t -> Names.evaluable_global_referenc
 val list_rewrite : bool -> (EConstr.constr*bool) list -> Tacmach.tactic
 
 val decompose_lam_n : Evd.evar_map -> int -> EConstr.t ->
-  (Names.Name.t * EConstr.t) list * EConstr.t
-val compose_lam : (Names.Name.t * EConstr.t) list -> EConstr.t -> EConstr.t
-val compose_prod : (Names.Name.t * EConstr.t) list -> EConstr.t -> EConstr.t
+  (Names.Name.t Context.binder_annot * EConstr.t) list * EConstr.t
+val compose_lam : (Names.Name.t Context.binder_annot * EConstr.t) list -> EConstr.t -> EConstr.t
+val compose_prod : (Names.Name.t Context.binder_annot * EConstr.t) list -> EConstr.t -> EConstr.t
 
 type tcc_lemma_value =
   | Undefined

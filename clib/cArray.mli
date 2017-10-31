@@ -83,6 +83,8 @@ sig
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map3 :
     ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
+  val map3_i :
+    (int -> 'a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
 
   val map_left : ('a -> 'b) -> 'a array -> 'b array
   (** As [map] but guaranteed to be left-to-right. *)

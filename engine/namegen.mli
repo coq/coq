@@ -44,15 +44,15 @@ val id_of_name_using_hdchar : env -> evar_map -> types -> Name.t -> Id.t
 val named_hd : env -> evar_map -> types -> Name.t -> Name.t
 val head_name : evar_map -> types -> Id.t option
 
-val mkProd_name : env -> evar_map -> Name.t * types * types -> types
-val mkLambda_name : env -> evar_map -> Name.t * types * constr -> constr
+val mkProd_name : env -> evar_map -> Name.t Context.binder_annot * types * types -> types
+val mkLambda_name : env -> evar_map -> Name.t Context.binder_annot * types * constr -> constr
 
 (** Deprecated synonyms of [mkProd_name] and [mkLambda_name] *)
-val prod_name : env -> evar_map -> Name.t * types * types -> types
-val lambda_name : env -> evar_map -> Name.t * types * constr -> constr
+val prod_name : env -> evar_map -> Name.t Context.binder_annot * types * types -> types
+val lambda_name : env -> evar_map -> Name.t Context.binder_annot * types * constr -> constr
 
-val prod_create : env -> evar_map -> types * types -> constr
-val lambda_create : env -> evar_map -> types * constr -> constr
+val prod_create : env -> evar_map -> Sorts.relevance * types * types -> constr
+val lambda_create : env -> evar_map -> Sorts.relevance * types * constr -> constr
 val name_assumption : env -> evar_map -> rel_declaration -> rel_declaration
 val name_context : env -> evar_map -> rel_context -> rel_context
 

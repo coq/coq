@@ -91,6 +91,7 @@ type constant_body = {
     const_hyps : Constr.named_context; (** New: younger hyp at top *)
     const_body : Constr.t Mod_subst.substituted constant_def;
     const_type : types;
+    const_relevance : Sorts.relevance;
     const_body_code : Cemitcodes.to_patch_substituted option;
     const_universes : universes;
     const_private_poly_univs : Univ.ContextSet.t option;
@@ -133,7 +134,7 @@ v}
 type record_info =
 | NotRecord
 | FakeRecord
-| PrimRecord of (Id.t * Label.t array * types array) array
+| PrimRecord of (Id.t * Label.t array * Sorts.relevance array * types array) array
 
 type regular_inductive_arity = {
   mind_user_arity : types;
@@ -175,6 +176,8 @@ type one_inductive_body = {
  (** Length of the signature of the constructors (with let, w/o params) *)
 
     mind_recargs : wf_paths; (** Signature of recursive arguments in the constructors *)
+
+    mind_relevant : Sorts.relevance;
 
 (** {8 Datas for bytecode compilation } *)
 

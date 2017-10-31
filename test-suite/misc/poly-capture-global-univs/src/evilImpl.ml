@@ -16,7 +16,7 @@ let evil t f =
 
   let fe = Declare.definition_entry
       ~univs:(Polymorphic_entry ([|Anonymous|], UContext.make (Instance.of_array [|u|],Constraint.empty)))
-      ~types:(Term.mkArrow tc tu)
-      (mkLambda (Name.Name (Id.of_string "x"), tc, mkRel 1))
+      ~types:(Term.mkArrowR tc tu)
+      (mkLambda (Context.nameR (Id.of_string "x"), tc, mkRel 1))
   in
   ignore (Declare.declare_constant f (DefinitionEntry fe, k))

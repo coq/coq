@@ -16,6 +16,7 @@ open Names
 open Nameops
 open Namegen
 open Constr
+open Context
 open Libnames
 open Globnames
 open Impargs
@@ -2183,7 +2184,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                     (add_name match_acc CAst.(make ?loc x)) (CAst.make ?loc x::var_acc)
                 | _ ->
                   let fresh =
-                    Namegen.next_name_away_with_default_using_types "iV" cano_name forbidden_names (EConstr.of_constr ty) in
+                    Namegen.next_name_away_with_default_using_types "iV" cano_name.binder_name forbidden_names (EConstr.of_constr ty) in
                   canonize_args t tt (Id.Set.add fresh forbidden_names)
                     ((fresh,c)::match_acc) ((CAst.make ?loc:(cases_pattern_loc c) @@ Name fresh)::var_acc)
                 end
@@ -2432,9 +2433,10 @@ let interp_glob_context_evars ?(program_mode=false) env sigma k bl =
        in
        let sigma, t = understand_tcc ~flags env sigma ~expected_type:IsType t' in
 	match b with
-	    None ->
-	      let d = LocalAssum (na,t) in
-	      let impls =
+          None ->
+              let r = Retyping.relevance_of_type env sigma t in
+              let d = LocalAssum (make_annot na r,t) in
+              let impls =
 		if k == Implicit then
 		  let na = match na with Name n -> Some n | Anonymous -> None in
 		    (ExplByPos (n, na), (true, true, true)) :: impls
@@ -2443,7 +2445,8 @@ let interp_glob_context_evars ?(program_mode=false) env sigma k bl =
                 (push_rel d env, sigma, d::params, succ n, impls)
 	  | Some b ->
               let sigma, c = understand_tcc ~flags env sigma ~expected_type:(OfType t) b in
-	      let d = LocalDef (na, c, t) in
+              let r = Retyping.relevance_of_type env sigma t in
+              let d = LocalDef (make_annot na r, c, t) in
                 (push_rel d env, sigma, d::params, n, impls))
       (env,sigma,[],k+1,[]) (List.rev bl)
   in sigma, ((env, par), impls)

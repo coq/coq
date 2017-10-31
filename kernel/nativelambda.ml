@@ -26,9 +26,9 @@ type lambda =
   | Lmeta         of metavariable * lambda (* type *)
   | Levar         of Evar.t * lambda array (* arguments *)
   | Lprod         of lambda * lambda
-  | Llam          of Name.t array * lambda
-  | Lrec          of Name.t * lambda
-  | Llet          of Name.t * lambda * lambda
+  | Llam          of Name.t Context.binder_annot array * lambda
+  | Lrec          of Name.t Context.binder_annot * lambda
+  | Llet          of Name.t Context.binder_annot * lambda * lambda
   | Lapp          of lambda * lambda array
   | Lconst        of prefix * pconstant
   | Lproj         of prefix * inductive * int (* prefix, inductive, index starting from 0 *)
@@ -51,9 +51,9 @@ type lambda =
   | Llazy
   | Lforce
 
-and lam_branches = (constructor * Name.t array * lambda) array
+and lam_branches = (constructor * Name.t Context.binder_annot array * lambda) array
 
-and fix_decl =  Name.t array * lambda array * lambda array
+and fix_decl =  Name.t Context.binder_annot array * lambda array * lambda array
 
 type evars =
     { evars_val : existential -> constr option;
@@ -362,7 +362,8 @@ let prim env kn p args =
   Lprim(prefix, kn, p, args)
 
 let expand_prim env kn op arity =
-  let ids = Array.make arity Anonymous in
+  (* primitives are always Relevant *)
+  let ids = Array.make arity Context.anonR in
   let args = make_args arity 1 in
   Llam(ids, prim env kn op args)
 
@@ -395,7 +396,7 @@ module Cache =
 
     let get_construct_info cache env c : constructor_info =
       try ConstrTable.find cache c
-      with Not_found -> 
+      with Not_found ->
 	let ((mind,j), i) = c in
         let oib = lookup_mind mind env in
 	let oip = oib.mind_packets.(j) in
@@ -518,8 +519,10 @@ let rec lambda_of_constr cache env sigma c =
 	else 
 	  match b with
 	  | Llam(ids, body) when Int.equal (Array.length ids) arity -> (cn, ids, body)
-	  | _ -> 
-	      let ids = Array.make arity Anonymous in
+          | _ ->
+              (** TODO relevance *)
+              let anon = Context.make_annot Anonymous Sorts.Relevant in
+              let ids = Array.make arity anon in
 	      let args = make_args arity 1 in
 	      let ll = lam_lift arity b in
 	      (cn, ids, mkLapp  ll args) in

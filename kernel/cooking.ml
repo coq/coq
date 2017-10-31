@@ -21,6 +21,7 @@ open Term
 open Constr
 open Declarations
 open Univ
+open Context
 
 module NamedDecl = Context.Named.Declaration
 module RelDecl = Context.Rel.Declaration
@@ -134,12 +135,12 @@ let abstract_context hyps =
     | NamedDecl.LocalDef (id, b, t) ->
       let b = Vars.subst_vars subst b in
       let t = Vars.subst_vars subst t in
-      id, RelDecl.LocalDef (Name id, b, t)
+      id, RelDecl.LocalDef (map_annot Name.mk_name id, b, t)
     | NamedDecl.LocalAssum (id, t) ->
       let t = Vars.subst_vars subst t in
-      id, RelDecl.LocalAssum (Name id, t)
+      id, RelDecl.LocalAssum (map_annot Name.mk_name id, t)
     in
-    (decl :: ctx, id :: subst)
+    (decl :: ctx, id.binder_name :: subst)
   in
   Context.Named.fold_outside fold hyps ~init:([], [])
 
@@ -159,6 +160,7 @@ type result = {
   cook_type : types;
   cook_universes : universes;
   cook_private_univs : Univ.ContextSet.t option;
+  cook_relevance : Sorts.relevance;
   cook_inline : inline;
   cook_context : Constr.named_context option;
 }
@@ -241,6 +243,7 @@ let cook_constant ~hcons { from = cb; info } =
     cook_type = typ;
     cook_universes = univs;
     cook_private_univs = private_univs;
+    cook_relevance = cb.const_relevance;
     cook_inline = cb.const_inline_code;
     cook_context = Some const_hyps;
   }

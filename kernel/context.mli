@@ -24,6 +24,27 @@
 
 open Names
 
+type 'a binder_annot = { binder_name : 'a; binder_relevance : Sorts.relevance }
+val eq_annot : ('a -> 'a -> bool) -> 'a binder_annot -> 'a binder_annot -> bool
+
+val hash_annot : ('a -> int) -> 'a binder_annot -> int
+
+val map_annot : ('a -> 'b) -> 'a binder_annot -> 'b binder_annot
+
+val make_annot : 'a -> Sorts.relevance -> 'a binder_annot
+
+val binder_name : 'a binder_annot -> 'a
+val binder_relevance : 'a binder_annot -> Sorts.relevance
+
+val annotR : 'a -> 'a binder_annot
+(** Always Relevant *)
+
+val nameR : Id.t -> Name.t binder_annot
+(** Relevant + Name *)
+
+val anonR : Name.t binder_annot
+(** Relevant + Anonymous *)
+
 (** Representation of contexts that can capture anonymous as well as non-anonymous variables.
     Individual declarations are then designated by de Bruijn indexes. *)
 module Rel :
@@ -32,8 +53,10 @@ sig
   sig
     (* local declaration *)
     type ('constr, 'types) pt =
-    | LocalAssum of Name.t * 'types            (** name, type *)
-    | LocalDef of Name.t * 'constr * 'types   (** name, value, type *)
+    | LocalAssum of Name.t binder_annot * 'types            (** name, type *)
+    | LocalDef of Name.t binder_annot * 'constr * 'types   (** name, value, type *)
+
+    val get_annot : _ pt -> Name.t binder_annot
 
     (** Return the name bound by a given declaration. *)
     val get_name : ('c, 't) pt -> Name.t
@@ -43,6 +66,8 @@ sig
 
     (** Return the type of the name bound by a given declaration. *)
     val get_type : ('c, 't) pt -> 't
+
+    val get_relevance : ('c, 't) pt -> Sorts.relevance
 
     (** Set the name that is bound by a given declaration. *)
     val set_name : Name.t -> ('c, 't) pt -> ('c, 't) pt
@@ -87,7 +112,7 @@ sig
     (** Reduce all terms in a given declaration to a single value. *)
     val fold_constr : ('c -> 'a -> 'a) -> ('c, 'c) pt -> 'a -> 'a
 
-    val to_tuple : ('c, 't) pt -> Name.t * 'c option * 't
+    val to_tuple : ('c, 't) pt -> Name.t binder_annot * 'c option * 't
 
     (** Turn [LocalDef] into [LocalAssum], identity otherwise. *)
     val drop_body : ('c, 't) pt -> ('c, 't) pt
@@ -156,8 +181,10 @@ sig
   module Declaration :
   sig
     type ('constr, 'types) pt =
-      | LocalAssum of Id.t * 'types             (** identifier, type *)
-      | LocalDef of Id.t * 'constr * 'types    (** identifier, value, type *)
+      | LocalAssum of Id.t binder_annot * 'types             (** identifier, type *)
+      | LocalDef of Id.t binder_annot * 'constr * 'types    (** identifier, value, type *)
+
+    val get_annot : _ pt -> Id.t binder_annot
 
     (** Return the identifier bound by a given declaration. *)
     val get_id : ('c, 't) pt -> Id.t
@@ -167,6 +194,8 @@ sig
 
     (** Return the type of the name bound by a given declaration. *)
     val get_type : ('c, 't) pt -> 't
+
+    val get_relevance : ('c, 't) pt -> Sorts.relevance
 
     (** Set the identifier that is bound by a given declaration. *)
     val set_id : Id.t -> ('c, 't) pt -> ('c, 't) pt
@@ -208,8 +237,8 @@ sig
     (** Reduce all terms in a given declaration to a single value. *)
     val fold_constr : ('c -> 'a -> 'a) -> ('c, 'c) pt -> 'a -> 'a
 
-    val to_tuple : ('c, 't) pt -> Id.t * 'c option * 't
-    val of_tuple : Id.t * 'c option * 't -> ('c, 't) pt
+    val to_tuple : ('c, 't) pt -> Id.t binder_annot * 'c option * 't
+    val of_tuple : Id.t binder_annot * 'c option * 't -> ('c, 't) pt
 
     (** Turn [LocalDef] into [LocalAssum], identity otherwise. *)
     val drop_body : ('c, 't) pt -> ('c, 't) pt
@@ -276,8 +305,8 @@ sig
   module Declaration :
   sig
     type ('constr, 'types) pt =
-      | LocalAssum of Id.t list * 'types
-      | LocalDef of Id.t list * 'constr * 'types
+      | LocalAssum of Id.t binder_annot list * 'types
+      | LocalDef of Id.t binder_annot list * 'constr * 'types
 
     val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
     val of_named_decl : ('c, 't) Named.Declaration.pt -> ('c, 't) pt

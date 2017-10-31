@@ -19,6 +19,7 @@
 open Util
 open Pp
 open Names
+open Context
 
 module NamedDecl = Context.Named.Declaration
 
@@ -198,10 +199,10 @@ let set_used_variables l =
   let vars_of = Environ.global_vars_set in
   let aux env entry (ctx, all_safe as orig) =
     match entry with
-    | LocalAssum (x,_) ->
+    | LocalAssum ({binder_name=x},_) ->
        if Id.Set.mem x all_safe then orig
        else (ctx, all_safe)
-    | LocalDef (x,bo, ty) as decl ->
+    | LocalDef ({binder_name=x},bo, ty) as decl ->
        if Id.Set.mem x all_safe then orig else
        let vars = Id.Set.union (vars_of env bo) (vars_of env ty) in
        if Id.Set.subset vars all_safe

@@ -316,7 +316,7 @@ struct
       Term(DCoFix(i,Array.map pat_of_constr ta,Array.map pat_of_constr ca))
     | Cast (c,_,_)   -> pat_of_constr c
     | Lambda (_,t,c) -> Term(DLambda (pat_of_constr t, pat_of_constr c))
-    | (Prod (_,_,_) | LetIn(_,_,_,_))   ->
+    | (Prod _ | LetIn _)   ->
       let (ctx,c) = ctx_of_constr (Term DNil) c in Term (DCtx (ctx,c))
     | App (f,ca)     ->
       Array.fold_left (fun c a -> Term (DApp (c,a)))

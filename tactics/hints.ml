@@ -13,6 +13,7 @@ open Util
 open CErrors
 open Names
 open Constr
+open Context
 open Evd
 open EConstr
 open Vars
@@ -1275,7 +1276,7 @@ let prepare_hint check (poly,local) env init (sigma,c) =
       let id = next_ident_away_from default_prepare_hint_ident (fun id -> Id.Set.mem id !vars) in
       vars := Id.Set.add id !vars;
       subst := (evar,mkVar id)::!subst;
-      mkNamedLambda id t (iter (replace_term sigma evar (mkVar id) c)) in
+      mkNamedLambda (make_annot id Sorts.Relevant) t (iter (replace_term sigma evar (mkVar id) c)) in
   let c' = iter c in
     let env = Global.env () in
     let empty_sigma = Evd.from_env env in
@@ -1305,7 +1306,7 @@ let project_hint ~poly pri l2r r =
   let sigma, p = Evd.fresh_global env sigma p in
   let c = Reductionops.whd_beta sigma (mkApp (c, Context.Rel.to_extended_vect mkRel 0 sign)) in
   let c = it_mkLambda_or_LetIn
-    (mkApp (p,[|mkArrow a (lift 1 b);mkArrow b (lift 1 a);c|])) sign in
+    (mkApp (p,[|mkArrow a Sorts.Relevant (lift 1 b);mkArrow b Sorts.Relevant (lift 1 a);c|])) sign in
   let id =
     Nameops.add_suffix (Nametab.basename_of_global gr) ("_proj_" ^ (if l2r then "l2r" else "r2l"))
   in

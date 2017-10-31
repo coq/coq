@@ -114,9 +114,9 @@ type fterm =
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
   | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)
-  | FLambda of int * (Name.t * constr) list * constr * fconstr subs
-  | FProd of Name.t * fconstr * constr * fconstr subs
-  | FLetIn of Name.t * fconstr * fconstr * constr * fconstr subs
+  | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * fconstr subs
+  | FProd of Name.t Context.binder_annot * fconstr * constr * fconstr subs
+  | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * fconstr subs
   | FEvar of existential * fconstr subs
   | FInt of Uint63.t
   | FLIFT of int * fconstr
@@ -165,7 +165,7 @@ val mk_red : fterm -> fconstr
 val fterm_of : fconstr -> fterm
 val term_of_fconstr : fconstr -> constr
 val destFLambda :
-  (fconstr subs -> constr -> fconstr) -> fconstr -> Name.t * fconstr * fconstr
+  (fconstr subs -> constr -> fconstr) -> fconstr -> Name.t Context.binder_annot * fconstr * fconstr
 
 (** Global and local constant cache *)
 type clos_infos

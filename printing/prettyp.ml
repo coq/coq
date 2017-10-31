@@ -505,9 +505,9 @@ let gallina_print_named_decl env sigma =
   let open Context.Named.Declaration in
   function
   | LocalAssum (id, typ) ->
-     print_named_assum env sigma (Id.to_string id) typ
+     print_named_assum env sigma (Id.to_string id.Context.binder_name) typ
   | LocalDef (id, body, typ) ->
-     print_named_def env sigma (Id.to_string id) body typ
+     print_named_def env sigma (Id.to_string id.Context.binder_name) body typ
 
 let assumptions_for_print lna =
   List.fold_right (fun na env -> add_name na env) lna empty_names_context

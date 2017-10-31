@@ -10,6 +10,7 @@
 
 open Util
 open Names
+open Context
 
 open Ltac_plugin
 
@@ -95,7 +96,7 @@ let vsBOOTSTRAP = Goal.enter_one ~__LOC__ begin fun gl ->
   let concl = Goal.concl gl in
   let id = (* We keep the orig name for checks in "in" tcl *)
     match EConstr.kind_of_type (Goal.sigma gl) concl with
-    | Term.ProdType(Name.Name id, _, _)
+    | Term.ProdType({binder_name=Name.Name id}, _, _)
       when Ssrcommon.is_discharged_id id -> id
     | _ -> mk_anon_id "view_subject" (Tacmach.New.pf_ids_of_hyps gl) in
   let view = EConstr.mkVar id in

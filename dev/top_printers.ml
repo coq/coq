@@ -20,6 +20,7 @@ open Univ
 open Environ
 open Printer
 open Constr
+open Context
 open Genarg
 open Clenv
 
@@ -316,7 +317,7 @@ let constr_display csr =
     Array.fold_right (fun x i -> level_display x; (string_of_int !cnt)^(if not(i="")
         then (" "^i) else "")) (Instance.to_array l) ""
 
-  and name_display = function
+  and name_display x = match x.binder_name with
     | Name id -> "Name("^(Id.to_string id)^")"
     | Anonymous -> "Anonymous"
 
@@ -336,13 +337,13 @@ let print_pure_constr csr =
   | Cast (c,_, t) -> open_hovbox 1;
       print_string "("; (term_display c); print_cut();
       print_string "::"; (term_display t); print_string ")"; close_box()
-  | Prod (Name(id),t,c) ->
+  | Prod ({binder_name=Name(id)},t,c) ->
       open_hovbox 1;
       print_string"("; print_string (Id.to_string id);
       print_string ":"; box_display t;
       print_string ")"; print_cut();
       box_display c; close_box()
-  | Prod (Anonymous,t,c) ->
+  | Prod ({binder_name=Anonymous},t,c) ->
       print_string"("; box_display t; print_cut(); print_string "->";
       box_display c; print_string ")";
   | Lambda (na,t,c) ->
@@ -437,7 +438,7 @@ let print_pure_constr csr =
     | Type u -> open_hbox();
 	print_string "Type("; pp (pr_uni u); print_string ")"; close_box()
 
-  and name_display = function
+  and name_display x = match x.binder_name with
     | Name id -> print_string (Id.to_string id)
     | Anonymous -> print_string "_"
 (* Remove the top names for library and Scratch to avoid long names *)

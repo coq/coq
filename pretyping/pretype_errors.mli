@@ -102,12 +102,12 @@ val error_number_branches :
 
 val error_ill_typed_rec_body :
   ?loc:Loc.t -> env -> Evd.evar_map ->
-      int -> Name.t array -> unsafe_judgment array -> types array -> 'b
+      int -> Name.t Context.binder_annot array -> unsafe_judgment array -> types array -> 'b
 
 val error_elim_arity :
   ?loc:Loc.t -> env -> Evd.evar_map ->
-      pinductive -> Sorts.family list -> constr ->
-      unsafe_judgment -> (Sorts.family * Sorts.family * arity_error) option -> 'b
+      pinductive -> constr ->
+      unsafe_judgment -> (Sorts.family list * Sorts.family * Sorts.family * arity_error) option -> 'b
 
 val error_not_a_type :
   ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b

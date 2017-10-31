@@ -74,13 +74,14 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       in
       let j = infer env t in
       let usubst, univs = Declareops.abstract_universes uctx in
-      let c = Typeops.assumption_of_judgment env j in
+      let c, r = Typeops.assumption_of_judgment env j in
       let t = Constr.hcons (Vars.subst_univs_level_constr usubst c) in
       {
         Cooking.cook_body = Undef nl;
         cook_type = t;
         cook_universes = univs;
         cook_private_univs = None;
+        cook_relevance = r;
         cook_inline = false;
         cook_context = ctx;
       }
@@ -110,7 +111,8 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         cook_universes = Monomorphic uctxt;
         cook_private_univs = None;
         cook_inline = false;
-        cook_context = None
+        cook_context = None;
+        cook_relevance = Sorts.Relevant;
       }
 
   (** Definition [c] is opaque (Qed), non polymorphic and with a specified type,
@@ -159,6 +161,7 @@ the polymorphic case
         cook_type = typ;
         cook_universes = Monomorphic univs;
         cook_private_univs = None;
+        cook_relevance = Sorts.relevance_of_sort tyj.utj_type;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
       }
@@ -214,6 +217,7 @@ the polymorphic case
         cook_type = typ;
         cook_universes = univs;
         cook_private_univs = private_univs;
+        cook_relevance = Retypeops.relevance_of_term env body;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
       }
@@ -309,6 +313,7 @@ let build_constant_declaration _kn env result =
     const_body_code = tps;
     const_universes = univs;
     const_private_poly_univs = result.cook_private_univs;
+    const_relevance = result.cook_relevance;
     const_inline_code = result.cook_inline;
     const_typing_flags = Environ.typing_flags env }
 
@@ -366,7 +371,7 @@ let translate_local_def env _id centry =
     p
   | Undef _ | Primitive _ -> assert false
   in
-  c, typ
+  c, decl.cook_relevance, typ
 
 (* Insertion of inductive types. *)
 

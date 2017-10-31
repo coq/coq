@@ -51,7 +51,7 @@ val interp_recursive :
   (* env / signature / univs / evar_map *)
   (Environ.env * EConstr.named_context * UState.universe_decl * Evd.evar_map) *
   (* names / defs / types *)
-  (Id.t list * EConstr.constr option list * EConstr.types list) *
+  (Id.t list * Sorts.relevance list * EConstr.constr option list * EConstr.types list) *
   (* ctx per mutual def / implicits / struct annotations *)
   (EConstr.rel_context * Impargs.manual_explicitation list * int option) list
 
@@ -69,7 +69,7 @@ val extract_cofixpoint_components :
     structured_fixpoint_expr list * decl_notation list
 
 type recursive_preentry =
-  Id.t list * constr option list * types list
+  Id.t list * Sorts.relevance list * constr option list * types list
 
 val interp_fixpoint :
   cofix:bool ->

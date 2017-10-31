@@ -13,6 +13,7 @@ open Util
 open Names
 open Term
 open Constr
+open Context
 open Declarations
 open Declareops
 open Environ
@@ -184,7 +185,7 @@ let rec type_sign_vl env sg c =
     | Prod (n,t,d) ->
         let s,vl = type_sign_vl (push_rel_assum (n,t) env) sg d in
         if not (is_info_scheme env sg t) then Kill Kprop::s, vl
-        else Keep::s, (make_typvar n vl) :: vl
+        else Keep::s, (make_typvar n.binder_name vl) :: vl
     | _ -> [],[]
 
 let rec nb_default_params env sg c =
@@ -264,14 +265,14 @@ let rec extract_type env sg db j c args =
         (* We just accumulate the arguments. *)
         extract_type env sg db j d (Array.to_list args' @ args)
     | Lambda (_,_,d) ->
-	(match args with
+        (match args with
 	   | [] -> assert false (* A lambda cannot be a type. *)
            | a :: args -> extract_type env sg db j (EConstr.Vars.subst1 a d) args)
     | Prod (n,t,d) ->
-	assert (List.is_empty args);
-	let env' = push_rel_assum (n,t) env in
+        assert (List.is_empty args);
+        let env' = push_rel_assum (n,t) env in
         (match flag_of_type env sg t with
-	   | (Info, Default) ->
+           | (Info, Default) ->
 	       (* Standard case: two [extract_type] ... *)
                let mld = extract_type env' sg (0::db) j d [] in
 	       (match expand env mld with
@@ -296,7 +297,7 @@ let rec extract_type env sg db j c args =
         (match EConstr.lookup_rel n env with
            | LocalDef (_,t,_) ->
                extract_type env sg db j (EConstr.Vars.lift n t) args
-	   | _ ->
+           | _ ->
 	       (* Asks [db] a translation for [n]. *)
 	       if n > List.length db then Tunknown
 	       else let n' = List.nth db (n-1) in
@@ -497,8 +498,8 @@ and extract_really_ind env kn mib =
 	(* Now we're sure it's a record. *)
 	(* First, we find its field names. *)
 	let rec names_prod t = match Constr.kind t with
-	  | Prod(n,_,t) -> n::(names_prod t)
-	  | LetIn(_,_,_,t) -> names_prod t
+          | Prod(n,_,t) -> n::(names_prod t)
+          | LetIn(_,_,_,t) -> names_prod t
 	  | Cast(t,_,_) -> names_prod t
 	  | _ -> []
 	in
@@ -511,9 +512,9 @@ and extract_really_ind env kn mib =
 	  | [],[] -> []
 	  | _::l, typ::typs when isTdummy (expand env typ) ->
 	      select_fields l typs
-	  | Anonymous::l, typ::typs ->
+          | {binder_name=Anonymous}::l, typ::typs ->
 	      None :: (select_fields l typs)
-	  | Name id::l, typ::typs ->
+          | {binder_name=Name id}::l, typ::typs ->
 	      let knp = Constant.make2 mp (Label.of_id id) in
 	      (* Is it safe to use [id] for projections [foo.id] ? *)
 	      if List.for_all ((==) Keep) (type2signature env typ)
@@ -556,8 +557,8 @@ and extract_really_ind env kn mib =
 and extract_type_cons env sg db dbmap c i =
   match EConstr.kind sg (whd_all env sg c) with
     | Prod (n,t,d) ->
-	let env' = push_rel_assum (n,t) env in
-	let db' = (try Int.Map.find i dbmap with Not_found -> 0) :: db in
+        let env' = push_rel_assum (n,t) env in
+        let db' = (try Int.Map.find i dbmap with Not_found -> 0) :: db in
         let l = extract_type_cons env' sg db' dbmap d (i+1) in
         (extract_type env sg db 0 t []) :: l
     | _ -> []
@@ -620,17 +621,18 @@ let rec extract_term env sg mle mlt c args =
     | App (f,a) ->
        extract_term env sg mle mlt f (Array.to_list a @ args)
     | Lambda (n, t, d) ->
-	let id = id_of_name n in
+      let id = map_annot id_of_name n in
+      let idna = map_annot Name.mk_name id in
 	(match args with
 	   | a :: l ->
 	       (* We make as many [LetIn] as possible. *)
                let l' = List.map (EConstr.Vars.lift 1) l in
-               let d' = EConstr.mkLetIn (Name id,a,t,applistc d l') in
+               let d' = EConstr.mkLetIn (idna,a,t,applistc d l') in
                extract_term env sg mle mlt d' []
-	   | [] ->
-	       let env' = push_rel_assum (Name id, t) env in
+           | [] ->
+               let env' = push_rel_assum (idna, t) env in
 	       let id, a =
-                 try check_default env sg t; Id id, new_meta()
+                 try check_default env sg t; Id id.binder_name, new_meta()
                  with NotDefault d -> Dummy, Tdummy d
 	       in
 	       let b = new_meta () in
@@ -639,9 +641,9 @@ let rec extract_term env sg mle mlt c args =
                let d' = extract_term env' sg (Mlenv.push_type mle a) b d [] in
 	       put_magic_if magic (MLlam (id, d')))
     | LetIn (n, c1, t1, c2) ->
-	let id = id_of_name n in
-        let env' = EConstr.push_rel (LocalDef (Name id, c1, t1)) env in
-	(* We directly push the args inside the [LetIn].
+        let id = map_annot id_of_name n in
+        let env' = EConstr.push_rel (LocalDef (map_annot Name.mk_name id, c1, t1)) env in
+        (* We directly push the args inside the [LetIn].
            TODO: the opt_let_app flag is supposed to prevent that *)
         let args' = List.map (EConstr.Vars.lift 1) args in
 	(try
@@ -654,7 +656,7 @@ let rec extract_term env sg mle mlt c args =
 	    then Mlenv.push_gen mle a
 	    else Mlenv.push_type mle a
 	  in
-          MLletin (Id id, c1', extract_term env' sg mle' mlt c2 args')
+          MLletin (Id id.binder_name, c1', extract_term env' sg mle' mlt c2 args')
 	with NotDefault d ->
 	  let mle' = Mlenv.push_std_type mle (Tdummy d) in
           ast_pop (extract_term env' sg mle' mlt c2 args'))
@@ -918,7 +920,7 @@ and extract_fix env sg mle i (fi,ti,ci as recd) mlt =
   metas.(i) <- mlt;
   let mle = Array.fold_left Mlenv.push_type mle metas in
   let ei = Array.map2 (extract_maybe_term env sg mle) metas ci in
-  MLfix (i, Array.map id_of_name fi, ei)
+  MLfix (i, Array.map (fun x -> id_of_name x.binder_name) fi, ei)
 
 (*S ML declarations. *)
 
@@ -994,7 +996,7 @@ let extract_std_constant env sg kn body typ =
   (* The initial ML environment. *)
   let mle = List.fold_left Mlenv.push_std_type Mlenv.empty l in
   (* The lambdas names. *)
-  let ids = List.map (fun (n,_) -> Id (id_of_name n)) rels in
+  let ids = List.map (fun (n,_) -> Id (id_of_name n.binder_name)) rels in
   (* The according Coq environment. *)
   let env = push_rels_assum rels env in
   (* The real extraction: *)
@@ -1060,12 +1062,15 @@ let fake_match_projection env p =
     ci_npar = mib.mind_nparams;
     ci_cstr_ndecls = mip.mind_consnrealdecls;
     ci_cstr_nargs = mip.mind_consnrealargs;
+    ci_relevance = Declareops.relevance_of_projection_repr mib p;
     ci_pp_info;
   }
   in
   let x = match mib.mind_record with
     | NotRecord | FakeRecord -> assert false
-    | PrimRecord info -> Name (pi1 info.(snd ind))
+    | PrimRecord info ->
+      let x, _, _, _ = info.(snd ind) in
+      make_annot (Name x) mip.mind_relevant
   in
   let indty = mkApp (indu, Context.Rel.to_extended_vect mkRel 0 paramslet) in
   let rec fold arg j subst = function
@@ -1073,7 +1078,7 @@ let fake_match_projection env p =
     | LocalAssum (na,ty) :: rem ->
       let ty = Vars.substl subst (liftn 1 j ty) in
       if arg != proj_arg then
-        let lab = match na with Name id -> Label.of_id id | Anonymous -> assert false in
+        let lab = match na.binder_name with Name id -> Label.of_id id | Anonymous -> assert false in
         let kn = Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg:arg lab in
         fold (arg+1) (j+1) (mkProj (Projection.make kn false, mkRel 1)::subst) rem
       else

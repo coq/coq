@@ -16,6 +16,7 @@ open Pp
 open Genarg
 open Stdarg
 open Term
+open Context
 module CoqConstr = Constr
 open CoqConstr
 open Vars
@@ -383,7 +384,7 @@ let evars_for_FO ~hack env sigma0 (ise0:evar_map) c0 =
     | Context.Named.Declaration.LocalDef (x, b, t) ->
         d, mkNamedLetIn x (put b) (put t) c
     | Context.Named.Declaration.LocalAssum (x, t) ->
-        mkVar x :: d, mkNamedProd x (put t) c in
+        mkVar x.binder_name :: d, mkNamedProd x (put t) c in
     let a, t =
       Context.Named.fold_inside abs_dc
         ~init:([], (put @@ EConstr.Unsafe.to_constr evi.evar_concl))
@@ -548,7 +549,7 @@ let match_upats_FO upats env sigma0 ise orig_c =
          if skip || not (closed0 c') then () else try
            let _ = match u.up_k with
            | KpatFlex ->
-             let kludge v = mkLambda (Anonymous, mkProp, v) in
+             let kludge v = mkLambda (make_annot Anonymous Sorts.Relevant, mkProp, v) in
              unif_FO env ise (kludge u.up_FO) (kludge c')
            | KpatLet ->
              let kludge vla =
@@ -1286,7 +1287,7 @@ let ssrpatterntac _ist arg gl =
   let t = EConstr.of_constr t in
   let concl_x = EConstr.of_constr concl_x in
   let gl, tty = pf_type_of gl t in
-  let concl = EConstr.mkLetIn (Name (Id.of_string "selected"), t, tty, concl_x) in
+  let concl = EConstr.mkLetIn (make_annot (Name (Id.of_string "selected")) Sorts.Relevant, t, tty, concl_x) in
   Proofview.V82.of_tactic (convert_concl concl DEFAULTcast) gl
 
 (* Register "ssrpattern" tactic *)

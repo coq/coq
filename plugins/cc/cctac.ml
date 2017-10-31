@@ -15,6 +15,7 @@ open Names
 open Inductiveops
 open Declarations
 open Constr
+open Context
 open EConstr
 open Vars
 open Tactics
@@ -151,19 +152,19 @@ let patterns_of_constr env sigma nrels term=
 
 let rec quantified_atom_of_constr env sigma nrels term =
   match EConstr.kind sigma (whd_delta env sigma term) with
-      Prod (id,atom,ff) -> 
+      Prod (id,atom,ff) ->
 	if is_global sigma (Lazy.force _False) ff then
 	  let patts=patterns_of_constr env sigma nrels atom in
 	      `Nrule patts
 	else 
-	  quantified_atom_of_constr (EConstr.push_rel (RelDecl.LocalAssum (id,atom)) env) sigma (succ nrels) ff
+          quantified_atom_of_constr (EConstr.push_rel (RelDecl.LocalAssum (id,atom)) env) sigma (succ nrels) ff
     | _ ->  
 	let patts=patterns_of_constr env sigma nrels term in
 	    `Rule patts
 
 let litteral_of_constr env sigma term=
   match EConstr.kind sigma (whd_delta env sigma term) with
-    | Prod (id,atom,ff) -> 
+    | Prod (id,atom,ff) ->
 	if is_global sigma (Lazy.force _False) ff then
 	  match (atom_of_constr env sigma atom) with
 	      `Eq(t,a,b) -> `Neq(t,a,b)
@@ -171,7 +172,7 @@ let litteral_of_constr env sigma term=
 	else
 	  begin
 	    try 
-	      quantified_atom_of_constr (EConstr.push_rel (RelDecl.LocalAssum (id,atom)) env) sigma 1 ff
+              quantified_atom_of_constr (EConstr.push_rel (RelDecl.LocalAssum (id,atom)) env) sigma 1 ff
 	    with Not_found ->
 	      `Other (decompose_term env sigma term)
 	  end
@@ -233,7 +234,7 @@ let build_projection intype (cstr:pconstructor) special default gls=
   let sigma = project gls in
   let body=Equality.build_selector (pf_env gls) sigma ci (mkRel 1) intype special default in
   let id=pf_get_new_id (Id.of_string "t") gls in
-  sigma, mkLambda(Name id,intype,body)
+  sigma, mkLambda(make_annot (Name id) Sorts.Relevant,intype,body)
 
 (* generate an adhoc tactic following the proof tree  *)
 
@@ -318,7 +319,7 @@ let rec proof_tac p : unit Proofview.tactic =
 	refresh_universes (type_of tx1) (fun typx ->
 	refresh_universes (type_of (mkApp (tf1,[|tx1|]))) (fun typfx ->
         let id = Tacmach.New.pf_get_new_id (Id.of_string "f") gl in
-	let appx1 = mkLambda(Name id,typf,mkApp(mkRel 1,[|tx1|])) in
+        let appx1 = mkLambda(make_annot (Name id) Sorts.Relevant,typf,mkApp(mkRel 1,[|tx1|])) in
 	let lemma1 = app_global_with_holes _f_equal [|typf;typfx;appx1;tf1;tf2|] 1 in
 	let lemma2 = app_global_with_holes _f_equal [|typx;typfx;tf2;tx1;tx2|] 1 in
 	let prf =
@@ -377,7 +378,7 @@ let convert_to_goal_tac c t1 t2 p =
     let neweq= app_global _eq [|sort;tt1;tt2|] in
     let e = Tacmach.New.pf_get_new_id (Id.of_string "e") gl in
     let x = Tacmach.New.pf_get_new_id (Id.of_string "X") gl in
-    let identity=mkLambda (Name x,sort,mkRel 1) in
+    let identity=mkLambda (make_annot (Name x) Sorts.Relevant,sort,mkRel 1) in
     let endt = app_global _eq_rect [|sort;tt1;identity;c;tt2;mkVar e|] in
     Tacticals.New.tclTHENS (neweq (assert_before (Name e)))
 			   [proof_tac p; endt refine_exact_check]
