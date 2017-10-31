@@ -263,6 +263,8 @@ install:
 - opam config list
 - opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind.${FINDLIB_VER} ${EXTRA_OPAM}
 - opam list
+# We need the full history for version numbers based on `git describe`
+- git fetch --unshallow --tags
 
 script:
 
