@@ -60,6 +60,7 @@ val pr_lconstr_pattern_expr : constr_pattern_expr -> Pp.t
 val pr_constr_expr : constr_expr -> Pp.t
 val pr_lconstr_expr : constr_expr -> Pp.t
 val pr_cases_pattern_expr : cases_pattern_expr -> Pp.t
+val pr_constr_expr_n : tolerability -> constr_expr -> Pp.t
 
 type term_pr = {
   pr_constr_expr   : constr_expr -> Pp.t;

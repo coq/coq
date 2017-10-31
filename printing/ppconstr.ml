@@ -742,29 +742,36 @@ let tag_var = tag Tag.variable
   let rec fix rf x = rf (fix rf) x
   let pr = fix modular_constr_pr mt
 
+  let pr prec = function
+    (* A toplevel printer hack mimicking parsing, incidentally meaning
+       that we cannot use [pr] correctly anymore in a recursive loop
+       if the current expr is followed by other exprs which would be
+       interpreted as arguments *)
+    | { CAst.v = CAppExpl ((None,f,us),[]) } -> str "@" ++ pr_cref f us
+    | c -> pr prec c
+
   let transf env c =
     if !Flags.beautify_file then
       let r = Constrintern.for_grammar (Constrintern.intern_constr env) c in
       Constrextern.extern_glob_constr (Termops.vars_of_env env) r
     else c
 
-  let pr prec c = pr prec (transf (Global.env()) c)
+  let pr_expr prec c = pr prec (transf (Global.env()) c)
 
-  let pr_simpleconstr = function
-    | { CAst.v = CAppExpl ((None,f,us),[]) } -> str "@" ++ pr_cref f us
-    | c -> pr lsimpleconstr c
+  let pr_simpleconstr = pr_expr lsimpleconstr
 
   let default_term_pr = {
     pr_constr_expr   = pr_simpleconstr;
-    pr_lconstr_expr  = pr ltop;
+    pr_lconstr_expr  = pr_expr ltop;
     pr_constr_pattern_expr  = pr_simpleconstr;
-    pr_lconstr_pattern_expr = pr ltop
+    pr_lconstr_pattern_expr = pr_expr ltop
   }
 
   let term_pr = ref default_term_pr
 
   let set_term_pr = (:=) term_pr
 
+  let pr_constr_expr_n n c = pr_expr n c
   let pr_constr_expr c   = !term_pr.pr_constr_expr   c
   let pr_lconstr_expr c  = !term_pr.pr_lconstr_expr  c
   let pr_constr_pattern_expr c  = !term_pr.pr_constr_pattern_expr  c
@@ -774,5 +781,5 @@ let tag_var = tag Tag.variable
 
   let pr_record_body = pr_record_body_gen pr
 
-  let pr_binders = pr_undelimited_binders spc (pr ltop)
+  let pr_binders = pr_undelimited_binders spc (pr_expr ltop)
 
