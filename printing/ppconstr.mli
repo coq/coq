@@ -86,9 +86,8 @@ val default_term_pr : term_pr
   Which has the same type. We can turn a modular printer into a printer by
   taking its fixpoint. *)
 
-type precedence
-val lsimpleconstr : precedence
-val ltop : precedence
+val lsimpleconstr : tolerability
+val ltop : tolerability
 val modular_constr_pr :
-  ((unit->Pp.t) -> precedence -> constr_expr -> Pp.t) ->
-  (unit->Pp.t) -> precedence  -> constr_expr -> Pp.t
+  ((unit->Pp.t) -> tolerability -> constr_expr -> Pp.t) ->
+  (unit->Pp.t) -> tolerability -> constr_expr -> Pp.t
