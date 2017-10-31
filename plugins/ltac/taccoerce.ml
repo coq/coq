@@ -17,15 +17,23 @@ open Geninterp
 
 exception CannotCoerceTo of string
 
+let base_val_typ wit =
+  match val_tag (topwit wit) with Val.Base t -> t | _ -> CErrors.anomaly (Pp.str "Not a base val.")
+
 let (wit_constr_context : (Empty.t, Empty.t, EConstr.constr) Genarg.genarg_type) =
   let wit = Genarg.create_arg "constr_context" in
   let () = register_val0 wit None in
+  let () = Genprint.register_val_print0 (base_val_typ wit)
+    (Pptactic.make_constr_printer Printer.pr_econstr_n_env) in
   wit
 
 (* includes idents known to be bound and references *)
 let (wit_constr_under_binders : (Empty.t, Empty.t, Ltac_pretype.constr_under_binders) Genarg.genarg_type) =
   let wit = Genarg.create_arg "constr_under_binders" in
   let () = register_val0 wit None in
+  let () = Genprint.register_val_print0 (base_val_typ wit)
+             (fun c ->
+               Genprint.PrinterNeedsContext (fun env sigma -> Printer.pr_constr_under_binders_env env sigma c)) in
   wit
 
 (** All the types considered here are base types *)

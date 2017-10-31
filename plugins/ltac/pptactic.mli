@@ -125,3 +125,6 @@ val pr_value : tolerability -> Val.t -> Pp.t
 
 
 val ltop : tolerability
+
+val make_constr_printer : (env -> Evd.evar_map -> Notation_term.tolerability -> 'a -> Pp.t) ->
+  'a Genprint.top_printer

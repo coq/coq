@@ -76,6 +76,9 @@ let out_gen wit v =
 
 let val_tag wit = val_tag (topwit wit)
 
+let base_val_typ wit =
+  match val_tag wit with Val.Base t -> t | _ -> anomaly (str "Not a base val.")
+
 let pr_argument_type arg =
   let Val.Dyn (tag, _) = arg in
   Val.pr tag
@@ -124,6 +127,8 @@ type tacvalue =
 let (wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type) =
   let wit = Genarg.create_arg "tacvalue" in
   let () = register_val0 wit None in
+  let () = Genprint.register_val_print0 (base_val_typ wit)
+             (fun _ -> Genprint.PrinterBasic (fun () -> str "<tactic closure>")) in
   wit
 
 let of_tacvalue v = in_gen (topwit wit_tacvalue) v

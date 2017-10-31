@@ -8,13 +8,100 @@
 
 open Pp
 open Genarg
+open Geninterp
+
+(* We register printers at two levels:
+   - generic arguments for general printers
+   - generic values for printing ltac values *)
+
+(* Printing generic values *)
+
+type printer_with_level =
+  { default_already_surrounded : Notation_term.tolerability;
+    default_ensure_surrounded : Notation_term.tolerability;
+    printer : Environ.env -> Evd.evar_map -> Notation_term.tolerability -> Pp.t }
+
+type printer_result =
+| PrinterBasic of (unit -> Pp.t)
+| PrinterNeedsContext of (Environ.env -> Evd.evar_map -> Pp.t)
+| PrinterNeedsContextAndLevel of printer_with_level
 
 type 'a printer = 'a -> Pp.t
+
+type 'a top_printer = 'a -> printer_result
+
+module ValMap = ValTMap (struct type 'a t = 'a -> printer_result end)
+
+let print0_val_map = ref ValMap.empty
+
+let find_print_val_fun tag =
+  try ValMap.find tag !print0_val_map
+  with Not_found ->
+    let msg s = Pp.(str "print function not found for a value interpreted as " ++ str s ++ str ".") in
+    CErrors.anomaly (msg (Val.repr tag))
+
+let generic_val_print v =
+  let Val.Dyn (tag,v) = v in
+  find_print_val_fun tag v
+
+let register_val_print0 s pr =
+  print0_val_map := ValMap.add s pr !print0_val_map
+
+let combine_dont_needs pr_pair pr1 = function
+  | PrinterBasic pr2 ->
+     PrinterBasic (fun () -> pr_pair (pr1 ()) (pr2 ()))
+  | PrinterNeedsContext pr2 ->
+     PrinterNeedsContext (fun env sigma ->
+         pr_pair (pr1 ()) (pr2 env sigma))
+  | PrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
+     PrinterNeedsContext (fun env sigma ->
+         pr_pair (pr1 ()) (printer env sigma default_ensure_surrounded))
+
+let combine_needs pr_pair pr1 = function
+  | PrinterBasic pr2 ->
+     PrinterNeedsContext (fun env sigma -> pr_pair (pr1 env sigma) (pr2 ()))
+  | PrinterNeedsContext pr2 ->
+     PrinterNeedsContext (fun env sigma ->
+         pr_pair (pr1 env sigma) (pr2 env sigma))
+  | PrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
+     PrinterNeedsContext (fun env sigma ->
+         pr_pair (pr1 env sigma) (printer env sigma default_ensure_surrounded))
+
+let combine pr_pair pr1 v2 =
+  match pr1 with
+  | PrinterBasic pr1 ->
+     combine_dont_needs pr_pair pr1 (generic_val_print v2)
+  | PrinterNeedsContext pr1 ->
+     combine_needs pr_pair pr1 (generic_val_print v2)
+  | PrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
+     combine_needs pr_pair (fun env sigma -> printer env sigma default_ensure_surrounded)
+       (generic_val_print v2)
+
+let _ =
+  let pr_cons a b = Pp.(a ++ spc () ++ b) in
+  register_val_print0 Val.typ_list
+    (function
+     | [] -> PrinterBasic mt
+     | a::l ->
+        List.fold_left (combine pr_cons) (generic_val_print a) l)
+
+let _ =
+  register_val_print0 Val.typ_opt
+    (function
+     | None -> PrinterBasic Pp.mt
+     | Some v -> generic_val_print v)
+
+let _ =
+  let pr_pair a b = Pp.(a ++ spc () ++ b) in
+  register_val_print0 Val.typ_pair
+    (fun (v1,v2) -> combine pr_pair (generic_val_print v1) v2)
+
+(* Printing generic arguments *)
 
 type ('raw, 'glb, 'top) genprinter = {
   raw : 'raw printer;
   glb : 'glb printer;
-  top : 'top printer;
+  top : 'top -> printer_result;
 }
 
 module PrintObj =
@@ -27,7 +114,7 @@ struct
     let printer = {
       raw = (fun _ -> str "<genarg:" ++ str name ++ str ">");
       glb = (fun _ -> str "<genarg:" ++ str name ++ str ">");
-      top = (fun _ -> str "<genarg:" ++ str name ++ str ">");
+      top = (fun _ -> PrinterBasic (fun () -> str "<genarg:" ++ str name ++ str ">"));
     } in
     Some printer
   | _ -> assert false
@@ -37,7 +124,13 @@ module Print = Register (PrintObj)
 
 let register_print0 wit raw glb top =
   let printer = { raw; glb; top; } in
-  Print.register0 wit printer
+  Print.register0 wit printer;
+  match val_tag (Topwit wit), wit with
+  | Val.Base t, ExtraArg t' when Geninterp.Val.repr t = ArgT.repr t' ->
+     register_val_print0 t top
+  | _ ->
+     (* An alias, thus no primitive printer attached *)
+     ()
 
 let register_vernac_print0 wit raw =
   let glb _ = CErrors.anomaly (Pp.str "vernac argument needs not globwit printer.") in
