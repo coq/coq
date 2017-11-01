@@ -1886,6 +1886,328 @@ sig
   val is_global : global_reference -> Constr.t -> bool
 end
 
+(******************************************************************************)
+(* XXX: Moved from intf *)
+(******************************************************************************)
+module Pattern :
+sig
+
+  type case_info_pattern =
+    { cip_style : Misctypes.case_style;
+      cip_ind : Names.inductive option;
+      cip_ind_tags : bool list option; (** indicates LetIn/Lambda in arity *)
+      cip_extensible : bool (** does this match end with _ => _ ? *) }
+
+  type constr_pattern =
+    | PRef of Globnames.global_reference
+    | PVar of Names.Id.t
+    | PEvar of Evar.t * constr_pattern array
+    | PRel of int
+    | PApp of constr_pattern * constr_pattern array
+    | PSoApp of Names.Id.t * constr_pattern list
+    | PProj of Names.Projection.t * constr_pattern
+    | PLambda of Names.Name.t * constr_pattern * constr_pattern
+    | PProd of Names.Name.t * constr_pattern * constr_pattern
+    | PLetIn of Names.Name.t * constr_pattern * constr_pattern option * constr_pattern
+    | PSort of Misctypes.glob_sort
+    | PMeta of Names.Id.t option
+    | PIf of constr_pattern * constr_pattern * constr_pattern
+    | PCase of case_info_pattern * constr_pattern * constr_pattern *
+                 (int * bool list * constr_pattern) list (** index of constructor, nb of args *)
+    | PFix of Term.fixpoint
+    | PCoFix of Term.cofixpoint
+
+end
+
+module Evar_kinds :
+sig
+  type obligation_definition_status =
+    | Define of bool
+    | Expand
+
+  type matching_var_kind =
+    | FirstOrderPatVar of Names.Id.t
+    | SecondOrderPatVar of Names.Id.t
+
+  type t =
+         | ImplicitArg of Globnames.global_reference * (int * Names.Id.t option)
+                          * bool (** Force inference *)
+         | BinderType of Names.Name.t
+         | NamedHole of Names.Id.t (* coming from some ?[id] syntax *)
+         | QuestionMark of obligation_definition_status * Names.Name.t
+         | CasesType of bool (* true = a subterm of the type *)
+         | InternalHole
+         | TomatchTypeParameter of Names.inductive * int
+         | GoalEvar
+         | ImpossibleCase
+         | MatchingVar of matching_var_kind
+         | VarInstance of Names.Id.t
+         | SubEvar of Constr.existential_key
+end
+
+module Glob_term :
+sig
+  type 'a cases_pattern_r =
+    | PatVar  of Names.Name.t
+    | PatCstr of Names.constructor * 'a cases_pattern_g list * Names.Name.t
+  and 'a cases_pattern_g = ('a cases_pattern_r, 'a) DAst.t
+  type cases_pattern = [ `any ] cases_pattern_g
+  type existential_name = Names.Id.t
+  type 'a glob_constr_r =
+    | GRef of Globnames.global_reference * Misctypes.glob_level list option
+        (** An identifier that represents a reference to an object defined
+            either in the (global) environment or in the (local) context. *)
+    | GVar of Names.Id.t
+        (** An identifier that cannot be regarded as "GRef".
+            Bound variables are typically represented this way. *)
+    | GEvar   of existential_name * (Names.Id.t * 'a glob_constr_g) list
+    | GPatVar of Evar_kinds.matching_var_kind
+    | GApp    of 'a glob_constr_g * 'a glob_constr_g list
+    | GLambda of Names.Name.t * Decl_kinds.binding_kind *  'a glob_constr_g * 'a glob_constr_g
+    | GProd   of Names.Name.t * Decl_kinds.binding_kind * 'a glob_constr_g * 'a glob_constr_g
+    | GLetIn  of Names.Name.t * 'a glob_constr_g * 'a glob_constr_g option * 'a glob_constr_g
+    | GCases  of Term.case_style * 'a glob_constr_g option * 'a tomatch_tuples_g * 'a cases_clauses_g
+    | GLetTuple of Names.Name.t list * (Names.Name.t * 'a glob_constr_g option) * 'a glob_constr_g * 'a glob_constr_g
+    | GIf   of 'a glob_constr_g * (Names.Name.t * 'a glob_constr_g option) * 'a glob_constr_g * 'a glob_constr_g
+    | GRec  of 'a fix_kind_g * Names.Id.t array * 'a glob_decl_g list array *
+               'a glob_constr_g array * 'a glob_constr_g array
+    | GSort of Misctypes.glob_sort
+    | GHole of Evar_kinds.t * Misctypes.intro_pattern_naming_expr * Genarg.glob_generic_argument option
+    | GCast of 'a glob_constr_g * 'a glob_constr_g Misctypes.cast_type
+
+   and 'a glob_constr_g = ('a glob_constr_r, 'a) DAst.t
+
+   and 'a glob_decl_g = Names.Name.t * Decl_kinds.binding_kind * 'a glob_constr_g option * 'a glob_constr_g
+
+   and 'a fix_recursion_order_g =
+     | GStructRec
+     | GWfRec of 'a glob_constr_g
+     | GMeasureRec of 'a glob_constr_g * 'a glob_constr_g option
+
+   and 'a fix_kind_g =
+     | GFix of ((int option * 'a fix_recursion_order_g) array * int)
+     | GCoFix of int
+
+   and 'a predicate_pattern_g =
+     Names.Name.t * (Names.inductive * Names.Name.t list) Loc.located option
+
+   and 'a tomatch_tuple_g = ('a glob_constr_g * 'a predicate_pattern_g)
+
+   and 'a tomatch_tuples_g = 'a tomatch_tuple_g list
+
+   and 'a cases_clause_g = (Names.Id.t list * 'a cases_pattern_g list * 'a glob_constr_g) Loc.located
+   and 'a cases_clauses_g = 'a cases_clause_g list
+
+   type glob_constr = [ `any ] glob_constr_g
+   type tomatch_tuple = [ `any ] tomatch_tuple_g
+   type tomatch_tuples = [ `any ] tomatch_tuples_g
+   type cases_clause = [ `any ] cases_clause_g
+   type cases_clauses = [ `any ] cases_clauses_g
+   type glob_decl = [ `any ] glob_decl_g
+   type fix_kind = [ `any ] fix_kind_g
+   type predicate_pattern = [ `any ] predicate_pattern_g
+   type any_glob_constr =
+   | AnyGlobConstr : 'r glob_constr_g -> any_glob_constr
+
+end
+
+module Notation_term :
+sig
+  type scope_name = string
+  type notation_var_instance_type =
+                                  | NtnTypeConstr | NtnTypeOnlyBinder | NtnTypeConstrList | NtnTypeBinderList
+  type tmp_scope_name = scope_name
+
+  type subscopes = tmp_scope_name option * scope_name list
+  type notation_constr =
+                       | NRef of Globnames.global_reference
+                       | NVar of Names.Id.t
+                       | NApp of notation_constr * notation_constr list
+                       | NHole of Evar_kinds.t * Misctypes.intro_pattern_naming_expr * Genarg.glob_generic_argument option
+                       | NList of Names.Id.t * Names.Id.t * notation_constr * notation_constr * bool
+                       | NLambda of Names.Name.t * notation_constr * notation_constr
+                       | NProd of Names.Name.t * notation_constr * notation_constr
+                       | NBinderList of Names.Id.t * Names.Id.t * notation_constr * notation_constr
+                       | NLetIn of Names.Name.t * notation_constr * notation_constr option * notation_constr
+                       | NCases of Term.case_style * notation_constr option *
+                                     (notation_constr * (Names.Name.t * (Names.inductive * Names.Name.t list) option)) list *
+                                       (Glob_term.cases_pattern list * notation_constr) list
+                       | NLetTuple of Names.Name.t list * (Names.Name.t * notation_constr option) *
+                                        notation_constr * notation_constr
+                       | NIf of notation_constr * (Names.Name.t * notation_constr option) *
+                                  notation_constr * notation_constr
+                       | NRec of Glob_term.fix_kind * Names.Id.t array *
+                                   (Names.Name.t * notation_constr option * notation_constr) list array *
+                                     notation_constr array * notation_constr array
+                       | NSort of Misctypes.glob_sort
+                       | NCast of notation_constr * notation_constr Misctypes.cast_type
+  type interpretation = (Names.Id.t * (subscopes * notation_var_instance_type)) list *
+    notation_constr
+  type precedence = int
+  type parenRelation =
+    | L | E | Any | Prec of precedence
+  type tolerability = precedence * parenRelation
+end
+
+module Constrexpr :
+sig
+
+  type binder_kind =
+                   | Default of Decl_kinds.binding_kind
+                   | Generalized of Decl_kinds.binding_kind * Decl_kinds.binding_kind * bool
+
+  type explicitation =
+                     | ExplByPos of int * Names.Id.t option
+                     | ExplByName of Names.Id.t
+  type sign = bool
+  type raw_natural_number = string
+  type prim_token =
+    | Numeral of raw_natural_number * sign
+    | String of string
+
+  type notation = string
+  type instance_expr = Misctypes.glob_level list
+  type proj_flag = int option
+  type abstraction_kind =
+    | AbsLambda
+    | AbsPi
+
+  type cases_pattern_expr_r =
+    | CPatAlias of cases_pattern_expr * Names.Id.t
+    | CPatCstr  of Libnames.reference
+      * cases_pattern_expr list option * cases_pattern_expr list
+    (** [CPatCstr (_, c, Some l1, l2)] represents (@c l1) l2 *)
+    | CPatAtom of Libnames.reference option
+    | CPatOr   of cases_pattern_expr list
+    | CPatNotation of notation * cases_pattern_notation_substitution
+                      * cases_pattern_expr list
+    | CPatPrim   of prim_token
+    | CPatRecord of (Libnames.reference * cases_pattern_expr) list
+    | CPatDelimiters of string * cases_pattern_expr
+    | CPatCast   of cases_pattern_expr * constr_expr
+   and cases_pattern_expr = cases_pattern_expr_r CAst.t
+
+   and cases_pattern_notation_substitution =
+     cases_pattern_expr list * cases_pattern_expr list list
+
+   and constr_expr_r =
+     | CRef     of Libnames.reference * instance_expr option
+     | CFix     of Names.Id.t Loc.located * fix_expr list
+     | CCoFix   of Names.Id.t Loc.located * cofix_expr list
+     | CProdN   of binder_expr list * constr_expr
+     | CLambdaN of binder_expr list * constr_expr
+     | CLetIn   of Names.Name.t Loc.located * constr_expr * constr_expr option * constr_expr
+     | CAppExpl of (proj_flag * Libnames.reference * instance_expr option) * constr_expr list
+     | CApp     of (proj_flag * constr_expr) *
+                   (constr_expr * explicitation Loc.located option) list
+     | CRecord  of (Libnames.reference * constr_expr) list
+     | CCases of Term.case_style
+               * constr_expr option
+               * case_expr list
+               * branch_expr list
+     | CLetTuple of Names.Name.t Loc.located list * (Names.Name.t Loc.located option * constr_expr option) *
+                    constr_expr * constr_expr
+     | CIf of constr_expr * (Names.Name.t Loc.located option * constr_expr option)
+            * constr_expr * constr_expr
+     | CHole   of Evar_kinds.t option * Misctypes.intro_pattern_naming_expr * Genarg.raw_generic_argument option
+     | CPatVar of Names.Id.t
+     | CEvar   of Names.Id.t * (Names.Id.t * constr_expr) list
+     | CSort   of Misctypes.glob_sort
+     | CCast   of constr_expr * constr_expr Misctypes.cast_type
+     | CNotation of notation * constr_notation_substitution
+     | CGeneralization of Decl_kinds.binding_kind * abstraction_kind option * constr_expr
+     | CPrim of prim_token
+     | CDelimiters of string * constr_expr
+   and constr_expr = constr_expr_r CAst.t
+
+   and case_expr = constr_expr * Names.Name.t Loc.located option * cases_pattern_expr option
+
+   and branch_expr =
+     (cases_pattern_expr list Loc.located list * constr_expr) Loc.located
+
+   and binder_expr =
+     Names.Name.t Loc.located list * binder_kind * constr_expr
+
+   and fix_expr =
+     Names.Id.t Loc.located * (Names.Id.t Loc.located option * recursion_order_expr) *
+       local_binder_expr list * constr_expr * constr_expr
+
+   and cofix_expr =
+     Names.Id.t Loc.located * local_binder_expr list * constr_expr * constr_expr
+
+   and recursion_order_expr =
+                            | CStructRec
+                              | CWfRec of constr_expr
+                            | CMeasureRec of constr_expr * constr_expr option
+
+   and local_binder_expr =
+     | CLocalAssum   of Names.Name.t Loc.located list * binder_kind * constr_expr
+     | CLocalDef     of Names.Name.t Loc.located * constr_expr * constr_expr option
+     | CLocalPattern of (cases_pattern_expr * constr_expr option) Loc.located
+
+   and constr_notation_substitution =
+     constr_expr list *
+       constr_expr list list *
+         local_binder_expr list list
+
+  type constr_pattern_expr = constr_expr
+end
+
+module Genredexpr :
+sig
+
+  (** The parsing produces initially a list of [red_atom] *)
+  type 'a red_atom =
+    | FBeta
+    | FMatch
+    | FFix
+    | FCofix
+    | FZeta
+    | FConst of 'a list
+    | FDeltaBut of 'a list
+
+  (** This list of atoms is immediately converted to a [glob_red_flag] *)
+  type 'a glob_red_flag = {
+      rBeta : bool;
+      rMatch : bool;
+      rFix : bool;
+      rCofix : bool;
+      rZeta : bool;
+      rDelta : bool; (** true = delta all but rConst; false = delta only on rConst*)
+      rConst : 'a list
+    }
+
+  (** Generic kinds of reductions *)
+  type ('a,'b,'c) red_expr_gen =
+    | Red of bool
+    | Hnf
+    | Simpl of 'b glob_red_flag*('b,'c) Util.union Locus.with_occurrences option
+    | Cbv of 'b glob_red_flag
+    | Cbn of 'b glob_red_flag
+    | Lazy of 'b glob_red_flag
+    | Unfold of 'b Locus.with_occurrences list
+    | Fold of 'a list
+    | Pattern of 'a Locus.with_occurrences list
+    | ExtraRedExpr of string
+    | CbvVm of ('b,'c) Util.union Locus.with_occurrences option
+    | CbvNative of ('b,'c) Util.union Locus.with_occurrences option
+
+  type ('a,'b,'c) may_eval =
+    | ConstrTerm of 'a
+    | ConstrEval of ('a,'b,'c) red_expr_gen * 'a
+    | ConstrContext of Names.Id.t Loc.located * 'a
+    | ConstrTypeOf of 'a
+
+  type r_trm = Constrexpr.constr_expr
+  type r_pat = Constrexpr.constr_pattern_expr
+  type r_cst = Libnames.reference Misctypes.or_by_notation
+  type raw_red_expr = (r_trm, r_cst, r_pat) red_expr_gen
+end
+
+(******************************************************************************)
+(* XXX: end of moved from intf                                                *)
+(******************************************************************************)
+
 module Libobject :
 sig
   type obj
@@ -2204,33 +2526,6 @@ sig
 
 end
 
-(* XXX: Moved from intf *)
-module Evar_kinds :
-sig
-  type obligation_definition_status =
-    | Define of bool
-    | Expand
-
-  type matching_var_kind =
-    | FirstOrderPatVar of Names.Id.t
-    | SecondOrderPatVar of Names.Id.t
-
-  type t =
-         | ImplicitArg of Globnames.global_reference * (int * Names.Id.t option)
-                          * bool (** Force inference *)
-         | BinderType of Names.Name.t
-         | NamedHole of Names.Id.t (* coming from some ?[id] syntax *)
-         | QuestionMark of obligation_definition_status * Names.Name.t
-         | CasesType of bool (* true = a subterm of the type *)
-         | InternalHole
-         | TomatchTypeParameter of Names.inductive * int
-         | GoalEvar
-         | ImpossibleCase
-         | MatchingVar of matching_var_kind
-         | VarInstance of Names.Id.t
-         | SubEvar of Constr.existential_key
-end
-
 module Evd :
 sig
 
@@ -2402,164 +2697,6 @@ sig
   val fresh_sort_in_family : ?loc:Loc.t -> ?rigid:rigid -> Environ.env -> evar_map -> Sorts.family -> evar_map * Sorts.t
 end
 
-(* XXX: moved from intf *)
-module Constrexpr :
-sig
-
-  type binder_kind =
-                   | Default of Decl_kinds.binding_kind
-                   | Generalized of Decl_kinds.binding_kind * Decl_kinds.binding_kind * bool
-
-  type explicitation =
-                     | ExplByPos of int * Names.Id.t option
-                     | ExplByName of Names.Id.t
-  type sign = bool
-  type raw_natural_number = string
-  type prim_token =
-    | Numeral of raw_natural_number * sign
-    | String of string
-
-  type notation = string
-  type instance_expr = Misctypes.glob_level list
-  type proj_flag = int option
-  type abstraction_kind =
-    | AbsLambda
-    | AbsPi
-
-  type cases_pattern_expr_r =
-    | CPatAlias of cases_pattern_expr * Names.Id.t
-    | CPatCstr  of Libnames.reference
-      * cases_pattern_expr list option * cases_pattern_expr list
-    (** [CPatCstr (_, c, Some l1, l2)] represents (@c l1) l2 *)
-    | CPatAtom of Libnames.reference option
-    | CPatOr   of cases_pattern_expr list
-    | CPatNotation of notation * cases_pattern_notation_substitution
-                      * cases_pattern_expr list
-    | CPatPrim   of prim_token
-    | CPatRecord of (Libnames.reference * cases_pattern_expr) list
-    | CPatDelimiters of string * cases_pattern_expr
-    | CPatCast   of cases_pattern_expr * constr_expr
-   and cases_pattern_expr = cases_pattern_expr_r CAst.t
-
-   and cases_pattern_notation_substitution =
-     cases_pattern_expr list * cases_pattern_expr list list
-
-   and constr_expr_r =
-     | CRef     of Libnames.reference * instance_expr option
-     | CFix     of Names.Id.t Loc.located * fix_expr list
-     | CCoFix   of Names.Id.t Loc.located * cofix_expr list
-     | CProdN   of binder_expr list * constr_expr
-     | CLambdaN of binder_expr list * constr_expr
-     | CLetIn   of Names.Name.t Loc.located * constr_expr * constr_expr option * constr_expr
-     | CAppExpl of (proj_flag * Libnames.reference * instance_expr option) * constr_expr list
-     | CApp     of (proj_flag * constr_expr) *
-                   (constr_expr * explicitation Loc.located option) list
-     | CRecord  of (Libnames.reference * constr_expr) list
-     | CCases of Term.case_style
-               * constr_expr option
-               * case_expr list
-               * branch_expr list
-     | CLetTuple of Names.Name.t Loc.located list * (Names.Name.t Loc.located option * constr_expr option) *
-                    constr_expr * constr_expr
-     | CIf of constr_expr * (Names.Name.t Loc.located option * constr_expr option)
-            * constr_expr * constr_expr
-     | CHole   of Evar_kinds.t option * Misctypes.intro_pattern_naming_expr * Genarg.raw_generic_argument option
-     | CPatVar of Names.Id.t
-     | CEvar   of Names.Id.t * (Names.Id.t * constr_expr) list
-     | CSort   of Misctypes.glob_sort
-     | CCast   of constr_expr * constr_expr Misctypes.cast_type
-     | CNotation of notation * constr_notation_substitution
-     | CGeneralization of Decl_kinds.binding_kind * abstraction_kind option * constr_expr
-     | CPrim of prim_token
-     | CDelimiters of string * constr_expr
-   and constr_expr = constr_expr_r CAst.t
-
-   and case_expr = constr_expr * Names.Name.t Loc.located option * cases_pattern_expr option
-
-   and branch_expr =
-     (cases_pattern_expr list Loc.located list * constr_expr) Loc.located
-
-   and binder_expr =
-     Names.Name.t Loc.located list * binder_kind * constr_expr
-
-   and fix_expr =
-     Names.Id.t Loc.located * (Names.Id.t Loc.located option * recursion_order_expr) *
-       local_binder_expr list * constr_expr * constr_expr
-
-   and cofix_expr =
-     Names.Id.t Loc.located * local_binder_expr list * constr_expr * constr_expr
-
-   and recursion_order_expr =
-                            | CStructRec
-                              | CWfRec of constr_expr
-                            | CMeasureRec of constr_expr * constr_expr option
-
-   and local_binder_expr =
-     | CLocalAssum   of Names.Name.t Loc.located list * binder_kind * constr_expr
-     | CLocalDef     of Names.Name.t Loc.located * constr_expr * constr_expr option
-     | CLocalPattern of (cases_pattern_expr * constr_expr option) Loc.located
-
-   and constr_notation_substitution =
-     constr_expr list *
-       constr_expr list list *
-         local_binder_expr list list
-
-  type constr_pattern_expr = constr_expr
-end
-
-module Genredexpr :
-sig
-
-  (** The parsing produces initially a list of [red_atom] *)
-  type 'a red_atom =
-    | FBeta
-    | FMatch
-    | FFix
-    | FCofix
-    | FZeta
-    | FConst of 'a list
-    | FDeltaBut of 'a list
-
-  (** This list of atoms is immediately converted to a [glob_red_flag] *)
-  type 'a glob_red_flag = {
-      rBeta : bool;
-      rMatch : bool;
-      rFix : bool;
-      rCofix : bool;
-      rZeta : bool;
-      rDelta : bool; (** true = delta all but rConst; false = delta only on rConst*)
-      rConst : 'a list
-    }
-
-  (** Generic kinds of reductions *)
-  type ('a,'b,'c) red_expr_gen =
-    | Red of bool
-    | Hnf
-    | Simpl of 'b glob_red_flag*('b,'c) Util.union Locus.with_occurrences option
-    | Cbv of 'b glob_red_flag
-    | Cbn of 'b glob_red_flag
-    | Lazy of 'b glob_red_flag
-    | Unfold of 'b Locus.with_occurrences list
-    | Fold of 'a list
-    | Pattern of 'a Locus.with_occurrences list
-    | ExtraRedExpr of string
-    | CbvVm of ('b,'c) Util.union Locus.with_occurrences option
-    | CbvNative of ('b,'c) Util.union Locus.with_occurrences option
-
-  type ('a,'b,'c) may_eval =
-    | ConstrTerm of 'a
-    | ConstrEval of ('a,'b,'c) red_expr_gen * 'a
-    | ConstrContext of Names.Id.t Loc.located * 'a
-    | ConstrTypeOf of 'a
-
-  type r_trm = Constrexpr.constr_expr
-  type r_pat = Constrexpr.constr_pattern_expr
-  type r_cst = Libnames.reference Misctypes.or_by_notation
-  type raw_red_expr = (r_trm, r_cst, r_pat) red_expr_gen
-end
-
-(* XXX: end of moved from intf *)
-
 module EConstr :
 sig
   type t
@@ -2726,37 +2863,6 @@ sig
   val isProd : Evd.evar_map -> t -> bool
   val mkConstructUi : (Names.inductive * EInstance.t) * int -> t
   val isLambda : Evd.evar_map -> t -> bool
-end
-
-(* XXX: Located manually from intf *)
-module Pattern :
-sig
-
-  type case_info_pattern =
-    { cip_style : Misctypes.case_style;
-      cip_ind : Names.inductive option;
-      cip_ind_tags : bool list option; (** indicates LetIn/Lambda in arity *)
-      cip_extensible : bool (** does this match end with _ => _ ? *) }
-
-  type constr_pattern =
-    | PRef of Globnames.global_reference
-    | PVar of Names.Id.t
-    | PEvar of Evar.t * constr_pattern array
-    | PRel of int
-    | PApp of constr_pattern * constr_pattern array
-    | PSoApp of Names.Id.t * constr_pattern list
-    | PProj of Names.Projection.t * constr_pattern
-    | PLambda of Names.Name.t * constr_pattern * constr_pattern
-    | PProd of Names.Name.t * constr_pattern * constr_pattern
-    | PLetIn of Names.Name.t * constr_pattern * constr_pattern option * constr_pattern
-    | PSort of Misctypes.glob_sort
-    | PMeta of Names.Id.t option
-    | PIf of constr_pattern * constr_pattern * constr_pattern
-    | PCase of case_info_pattern * constr_pattern * constr_pattern *
-                 (int * bool list * constr_pattern) list (** index of constructor, nb of args *)
-    | PFix of Term.fixpoint
-    | PCoFix of Term.cofixpoint
-
 end
 
 module Namegen :
@@ -3112,126 +3218,6 @@ sig
   val val_tag : 'a Genarg.typed_abstract_argument_type -> 'a Val.tag
   val interp : ('raw, 'glb, 'top) Genarg.genarg_type -> ('glb, Val.t) interp_fun
 end
-
-(* XXX: Located manually from intf *)
-module Glob_term :
-sig
-  type 'a cases_pattern_r =
-    | PatVar  of Names.Name.t
-    | PatCstr of Names.constructor * 'a cases_pattern_g list * Names.Name.t
-  and 'a cases_pattern_g = ('a cases_pattern_r, 'a) DAst.t
-  type cases_pattern = [ `any ] cases_pattern_g
-  type existential_name = Names.Id.t
-  type 'a glob_constr_r =
-    | GRef of Globnames.global_reference * Misctypes.glob_level list option
-        (** An identifier that represents a reference to an object defined
-            either in the (global) environment or in the (local) context. *)
-    | GVar of Names.Id.t
-        (** An identifier that cannot be regarded as "GRef".
-            Bound variables are typically represented this way. *)
-    | GEvar   of existential_name * (Names.Id.t * 'a glob_constr_g) list
-    | GPatVar of Evar_kinds.matching_var_kind
-    | GApp    of 'a glob_constr_g * 'a glob_constr_g list
-    | GLambda of Names.Name.t * Decl_kinds.binding_kind *  'a glob_constr_g * 'a glob_constr_g
-    | GProd   of Names.Name.t * Decl_kinds.binding_kind * 'a glob_constr_g * 'a glob_constr_g
-    | GLetIn  of Names.Name.t * 'a glob_constr_g * 'a glob_constr_g option * 'a glob_constr_g
-    | GCases  of Term.case_style * 'a glob_constr_g option * 'a tomatch_tuples_g * 'a cases_clauses_g
-    | GLetTuple of Names.Name.t list * (Names.Name.t * 'a glob_constr_g option) * 'a glob_constr_g * 'a glob_constr_g
-    | GIf   of 'a glob_constr_g * (Names.Name.t * 'a glob_constr_g option) * 'a glob_constr_g * 'a glob_constr_g
-    | GRec  of 'a fix_kind_g * Names.Id.t array * 'a glob_decl_g list array *
-               'a glob_constr_g array * 'a glob_constr_g array
-    | GSort of Misctypes.glob_sort
-    | GHole of Evar_kinds.t * Misctypes.intro_pattern_naming_expr * Genarg.glob_generic_argument option
-    | GCast of 'a glob_constr_g * 'a glob_constr_g Misctypes.cast_type
-
-   and 'a glob_constr_g = ('a glob_constr_r, 'a) DAst.t
-
-   and 'a glob_decl_g = Names.Name.t * Decl_kinds.binding_kind * 'a glob_constr_g option * 'a glob_constr_g
-
-   and 'a fix_recursion_order_g =
-     | GStructRec
-     | GWfRec of 'a glob_constr_g
-     | GMeasureRec of 'a glob_constr_g * 'a glob_constr_g option
-
-   and 'a fix_kind_g =
-     | GFix of ((int option * 'a fix_recursion_order_g) array * int)
-     | GCoFix of int
-
-   and 'a predicate_pattern_g =
-     Names.Name.t * (Names.inductive * Names.Name.t list) Loc.located option
-
-   and 'a tomatch_tuple_g = ('a glob_constr_g * 'a predicate_pattern_g)
-
-   and 'a tomatch_tuples_g = 'a tomatch_tuple_g list
-
-   and 'a cases_clause_g = (Names.Id.t list * 'a cases_pattern_g list * 'a glob_constr_g) Loc.located
-   and 'a cases_clauses_g = 'a cases_clause_g list
-
-   type glob_constr = [ `any ] glob_constr_g
-   type tomatch_tuple = [ `any ] tomatch_tuple_g
-   type tomatch_tuples = [ `any ] tomatch_tuples_g
-   type cases_clause = [ `any ] cases_clause_g
-   type cases_clauses = [ `any ] cases_clauses_g
-   type glob_decl = [ `any ] glob_decl_g
-   type fix_kind = [ `any ] fix_kind_g
-   type predicate_pattern = [ `any ] predicate_pattern_g
-   type any_glob_constr =
-   | AnyGlobConstr : 'r glob_constr_g -> any_glob_constr
-
-end
-
-module Notation_term :
-sig
-  type scope_name = string
-  type notation_var_instance_type =
-                                  | NtnTypeConstr | NtnTypeOnlyBinder | NtnTypeConstrList | NtnTypeBinderList
-  type tmp_scope_name = scope_name
-
-  type subscopes = tmp_scope_name option * scope_name list
-  type notation_constr =
-                       | NRef of Globnames.global_reference
-                       | NVar of Names.Id.t
-                       | NApp of notation_constr * notation_constr list
-                       | NHole of Evar_kinds.t * Misctypes.intro_pattern_naming_expr * Genarg.glob_generic_argument option
-                       | NList of Names.Id.t * Names.Id.t * notation_constr * notation_constr * bool
-                       | NLambda of Names.Name.t * notation_constr * notation_constr
-                       | NProd of Names.Name.t * notation_constr * notation_constr
-                       | NBinderList of Names.Id.t * Names.Id.t * notation_constr * notation_constr
-                       | NLetIn of Names.Name.t * notation_constr * notation_constr option * notation_constr
-                       | NCases of Term.case_style * notation_constr option *
-                                     (notation_constr * (Names.Name.t * (Names.inductive * Names.Name.t list) option)) list *
-                                       (Glob_term.cases_pattern list * notation_constr) list
-                       | NLetTuple of Names.Name.t list * (Names.Name.t * notation_constr option) *
-                                        notation_constr * notation_constr
-                       | NIf of notation_constr * (Names.Name.t * notation_constr option) *
-                                  notation_constr * notation_constr
-                       | NRec of Glob_term.fix_kind * Names.Id.t array *
-                                   (Names.Name.t * notation_constr option * notation_constr) list array *
-                                     notation_constr array * notation_constr array
-                       | NSort of Misctypes.glob_sort
-                       | NCast of notation_constr * notation_constr Misctypes.cast_type
-  type interpretation = (Names.Id.t * (subscopes * notation_var_instance_type)) list *
-    notation_constr
-  type precedence = int
-  type parenRelation =
-    | L | E | Any | Prec of precedence
-  type tolerability = precedence * parenRelation
-end
-
-module Tactypes :
-sig
-  type glob_constr_and_expr = Glob_term.glob_constr * Constrexpr.constr_expr option
-  type glob_constr_pattern_and_expr = Names.Id.Set.t * glob_constr_and_expr * Pattern.constr_pattern
-  type 'a delayed_open = Environ.env -> Evd.evar_map -> Evd.evar_map * 'a
-  type delayed_open_constr = EConstr.constr delayed_open
-  type delayed_open_constr_with_bindings = EConstr.constr Misctypes.with_bindings delayed_open
-  type intro_pattern = delayed_open_constr Misctypes.intro_pattern_expr Loc.located
-  type intro_patterns = delayed_open_constr Misctypes.intro_pattern_expr Loc.located list
-  type intro_pattern_naming = Misctypes.intro_pattern_naming_expr Loc.located
-  type or_and_intro_pattern = delayed_open_constr Misctypes.or_and_intro_pattern_expr Loc.located
-end
-
-(* XXX: end of moved from intf *)
 
 (************************************************************************)
 (* End of modules from engine/                                          *)
@@ -4032,8 +4018,7 @@ sig
   and one_inductive_expr =
     ident_decl * Constrexpr.local_binder_expr list * Constrexpr.constr_expr option * constructor_expr list
 end
-
-(* XXX: end manual intf move *)
+(* XXX: end of moved from intf *)
 
 module Typeclasses :
 sig
@@ -4186,6 +4171,19 @@ end
 (************************************************************************)
 (* Modules from interp/                                              *)
 (************************************************************************)
+
+module Tactypes :
+sig
+  type glob_constr_and_expr = Glob_term.glob_constr * Constrexpr.constr_expr option
+  type glob_constr_pattern_and_expr = Names.Id.Set.t * glob_constr_and_expr * Pattern.constr_pattern
+  type 'a delayed_open = Environ.env -> Evd.evar_map -> Evd.evar_map * 'a
+  type delayed_open_constr = EConstr.constr delayed_open
+  type delayed_open_constr_with_bindings = EConstr.constr Misctypes.with_bindings delayed_open
+  type intro_pattern = delayed_open_constr Misctypes.intro_pattern_expr Loc.located
+  type intro_patterns = delayed_open_constr Misctypes.intro_pattern_expr Loc.located list
+  type intro_pattern_naming = Misctypes.intro_pattern_naming_expr Loc.located
+  type or_and_intro_pattern = delayed_open_constr Misctypes.or_and_intro_pattern_expr Loc.located
+end
 
 module Genintern :
 sig
