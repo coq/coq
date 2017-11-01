@@ -59,5 +59,4 @@ end
 
 end
 
-(** FIXME: use OCaml 4.02 generative functors when available *)
-module Make(M : CSig.EmptyS) : S
+module Make () : S

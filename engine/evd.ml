@@ -124,8 +124,7 @@ end
 
 (* The type of mappings for existential variables *)
 
-module Dummy = struct end
-module Store = Store.Make(Dummy)
+module Store = Store.Make ()
 
 type evar = Term.existential_key
 

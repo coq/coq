@@ -10,7 +10,7 @@ open Names
 open Mod_subst
 open Genarg
 
-module Store = Store.Make(struct end)
+module Store = Store.Make ()
 
 type glob_sign = {
   ltacvars : Id.Set.t;

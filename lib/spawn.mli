@@ -34,8 +34,6 @@ module type Control = sig
 end
 
 (* Abstraction to work with both threads and main loop models *)
-module type Empty = sig end
-
 module type MainLoopModel = sig
   type async_chan
   type condition
@@ -64,7 +62,7 @@ module Async(ML : MainLoopModel) : sig
 end
 
 (* spawn a process and read its output synchronously *)
-module Sync(T : Empty) : sig
+module Sync () : sig
   type process
   
   val spawn :

@@ -14,7 +14,7 @@ let check_vio (ts,f) =
   Stm.set_compilation_hints long_f_dot_v;
   List.fold_left (fun acc ids -> Stm.check_task f tasks ids && acc) true ts
 
-module Worker = Spawn.Sync(struct end)
+module Worker = Spawn.Sync ()
 
 module IntOT = struct
   type t = int

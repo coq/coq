@@ -49,7 +49,7 @@ end
 
 type expiration = bool ref
 
-module Make(T : Task) = struct
+module Make(T : Task) () = struct
 
   exception Die
   type response =
@@ -107,7 +107,7 @@ module Make(T : Task) = struct
     let open Feedback in
     feedback ~id:Stateid.initial (WorkerStatus(id, s))
 
-  module Worker = Spawn.Sync(struct end)
+  module Worker = Spawn.Sync ()
 
   module Model = struct
 
@@ -354,5 +354,5 @@ module Make(T : Task) = struct
 
 end
 
-module MakeQueue(T : Task) = struct include Make(T) end
-module MakeWorker(T : Task) = struct include Make(T) end
+module MakeQueue(T : Task) () = struct include Make(T) () end
+module MakeWorker(T : Task) () = struct include Make(T) () end

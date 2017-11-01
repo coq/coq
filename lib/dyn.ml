@@ -59,7 +59,7 @@ sig
 
 end
 
-module Make(M : CSig.EmptyS) = struct
+module Make () = struct
 module Self : PreS = struct
 (* Dynamics, programmed with DANGER !!! *)
 

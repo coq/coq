@@ -48,8 +48,6 @@ end
 (** Redeclaration of OCaml set signature, to preserve compatibility. See OCaml
     documentation for more information. *)
 
-module type EmptyS = sig end
-
 module type MapS =
 sig
     type key

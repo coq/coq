@@ -14,10 +14,6 @@
     stores, we might want something static to avoid troubles with
     plugins order. *)
 
-module type T =
-sig
-end
-
 module type S =
 sig
   type t
@@ -30,7 +26,7 @@ sig
   val field : unit -> 'a field
 end
 
-module Make (M : T) : S =
+module Make () : S =
 struct
 
   let next =

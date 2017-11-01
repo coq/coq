@@ -28,8 +28,6 @@ module type Control = sig
 
 end
 
-module type Empty = sig end
-
 module type MainLoopModel = sig
   type async_chan
   type condition
@@ -216,7 +214,7 @@ let rec wait p =
 
 end
 
-module Sync(T : Empty) = struct
+module Sync () = struct
 
 type process = {
   cin  : in_channel;

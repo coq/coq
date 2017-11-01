@@ -11,7 +11,7 @@ open Util
 
 module ArgT =
 struct
-  module DYN = Dyn.Make(struct end)
+  module DYN = Dyn.Make ()
   module Map = DYN.Map
   type ('a, 'b, 'c) tag = ('a * 'b * 'c) DYN.tag
   type any = Any : ('a, 'b, 'c) tag -> any

@@ -10,7 +10,7 @@ open Pp
 open CErrors
 open Util
 
-module Dyn = Dyn.Make(struct end)
+module Dyn = Dyn.Make ()
 
 type marshallable = [ `Yes | `No | `Shallow ]
 type 'a summary_declaration = {

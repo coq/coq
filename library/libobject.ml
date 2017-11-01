@@ -9,7 +9,7 @@
 open Libnames
 open Pp
 
-module Dyn = Dyn.Make(struct end)
+module Dyn = Dyn.Make ()
 
 type 'a substitutivity =
     Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
