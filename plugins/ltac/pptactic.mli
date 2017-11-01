@@ -46,6 +46,10 @@ val declare_extra_genarg_pprule :
   'b glob_extra_genarg_printer ->
   'c extra_genarg_printer -> unit
 
+val declare_extra_vernac_genarg_pprule :
+  ('a, 'b, 'c) genarg_type ->
+  'a raw_extra_genarg_printer -> unit
+
 type grammar_terminals = Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list
 
 type pp_tactic = {

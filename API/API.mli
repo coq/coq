@@ -4977,6 +4977,8 @@ sig
   val generic_top_print : Genarg.tlevel Genarg.generic_argument printer
   val register_print0 : ('raw, 'glb, 'top) Genarg.genarg_type ->
                         'raw printer -> 'glb printer -> 'top printer -> unit
+  val register_vernac_print0 : ('raw, 'glb, 'top) Genarg.genarg_type ->
+                        'raw printer -> unit
 end
 
 module Pputils :

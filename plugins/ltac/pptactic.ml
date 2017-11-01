@@ -1180,6 +1180,10 @@ let declare_extra_genarg_pprule wit
   in
   Genprint.register_print0 wit f g h
 
+let declare_extra_vernac_genarg_pprule wit f =
+  let f x = f pr_constr_expr pr_lconstr_expr pr_raw_tactic_level x in
+  Genprint.register_vernac_print0 wit f
+
 (** Registering *)
 
 let run_delayed c = c (Global.env ()) Evd.empty

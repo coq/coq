@@ -186,12 +186,7 @@ let declare_vernac_argument loc s pr cl =
       value ($lid:"wit_"^s$ : Genarg.genarg_type 'a unit unit) =
         Genarg.create_arg $se$ >>;
      make_extend loc s cl wit;
-    <:str_item< do {
-      Pptactic.declare_extra_genarg_pprule $wit$
-        $pr_rules$
-        (fun _ _ _ _ -> CErrors.anomaly (Pp.str "vernac argument needs not globwit printer."))
-        (fun _ _ _ _ -> CErrors.anomaly (Pp.str "vernac argument needs not wit printer.")) }
-      >> ]
+    <:str_item< Pptactic.declare_extra_vernac_genarg_pprule $wit$ $pr_rules$ >> ]
 
 open Pcaml
 

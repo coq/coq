@@ -39,6 +39,12 @@ let register_print0 wit raw glb top =
   let printer = { raw; glb; top; } in
   Print.register0 wit printer
 
+let register_vernac_print0 wit raw =
+  let glb _ = CErrors.anomaly (Pp.str "vernac argument needs not globwit printer.") in
+  let top _ = CErrors.anomaly (Pp.str "vernac argument needs not wit printer.") in
+  let printer = { raw; glb; top; } in
+  Print.register0 wit printer
+
 let raw_print wit v = (Print.obj wit).raw v
 let glb_print wit v = (Print.obj wit).glb v
 let top_print wit v = (Print.obj wit).top v

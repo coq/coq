@@ -27,3 +27,5 @@ val generic_top_print : tlevel generic_argument printer
 
 val register_print0 : ('raw, 'glb, 'top) genarg_type ->
   'raw printer -> 'glb printer -> 'top printer -> unit
+val register_vernac_print0 : ('raw, 'glb, 'top) genarg_type ->
+  'raw printer -> unit
