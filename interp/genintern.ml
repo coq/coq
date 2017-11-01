@@ -62,6 +62,9 @@ let generic_intern ist (GenArg (Rawwit wit, v)) =
   let (ist, v) = intern wit ist v in
   (ist, in_gen (glbwit wit) v)
 
+(* Useful to have this available already outside Ltac *)
+let (intern_open_constr_forward, intern_open_constr_hook) = Hook.make ()
+
 (** Substitution functions *)
 
 let substitute = Subst.obj
@@ -71,6 +74,9 @@ let generic_substitute subs (GenArg (Glbwit wit, v)) =
   in_gen (glbwit wit) (substitute wit subs v)
 
 let () = Hook.set Detyping.subst_genarg_hook generic_substitute
+
+(* Useful to have this available already outside Ltac *)
+let (subst_open_constr_forward, subst_open_constr_hook) = Hook.make ()
 
 (** Notation substitution *)
 

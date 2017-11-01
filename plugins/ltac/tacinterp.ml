@@ -2066,6 +2066,11 @@ let () =
     Ftactic.return (interp_uconstr ist (Proofview.Goal.env gl) (Tacmach.New.project gl) c)
   end)
 
+let () =
+  Hook.set Geninterp.interp_open_constr_hook
+           (fun wit ist v -> Ftactic.(lifts interp_open_constr ist v >>= fun v ->
+                                  return (Val.inject (val_tag wit) v)))
+
 (***************************************************************************)
 (* Other entry points *)
 

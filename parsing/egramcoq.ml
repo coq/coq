@@ -255,6 +255,11 @@ let register_custom_grammar s =
   let sp = "pattern:"^s in
   let wit1 = Genarg.create_arg sc in
   let wit2 = Genarg.create_arg sp in
+  let () = Geninterp.register_val0 wit1 (Some (Geninterp.val_tag (Genarg.topwit Stdarg.wit_constr))) in
+  (* Protect in case the ltac plugin is not loaded *)
+  let () = try Genintern.register_intern0 wit1 (Hook.get Genintern.intern_open_constr_forward) with _ -> () in
+  let () = try Geninterp.register_interp0 wit1 (Hook.get Geninterp.interp_open_constr_forward wit1) with _ -> () in
+  let () = try Genintern.register_subst0 wit1 (Hook.get Genintern.subst_open_constr_forward) with _ -> () in
   let c = (Gram.entry_create sc : constr_expr Gram.entry) in
   let p = (Gram.entry_create sp : cases_pattern_expr Gram.entry) in
   register_grammar wit1 c;

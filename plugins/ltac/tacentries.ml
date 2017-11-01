@@ -217,10 +217,15 @@ let interp_prod_item = function
     let symbol = parse_user_entry ?loc nt sep in
     let interp s = function
     | None ->
+      let _ = Termops.last_arg Evd.empty (EConstr.mkApp (EConstr.mkProp,[|EConstr.mkProp|])) in
       if String.Map.mem s !entry_names then String.Map.find s !entry_names
       else begin match ArgT.name s with
-      | None -> user_err Pp.(str ("Unknown entry "^s^"."))
       | Some arg -> arg
+      | None ->
+         (* Look for custom grammars (see Egramcoq) *)
+         match ArgT.name ("constr:"^s) with
+         | None -> user_err Pp.(str ("Unknown entry "^s^"."))
+         | Some arg -> arg
       end
     | Some n ->
       (** FIXME: do better someday *)

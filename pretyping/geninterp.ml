@@ -100,3 +100,6 @@ module Interp = Register(InterpObj)
 let interp = Interp.obj
 
 let register_interp0 = Interp.register0
+
+(* Useful to have this available already outside Ltac *)
+let (interp_open_constr_forward, interp_open_constr_hook) = Hook.make ()
