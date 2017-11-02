@@ -804,6 +804,7 @@ let () =
   Genintern.register_intern0 wit_bindings (lift intern_bindings);
   Genintern.register_intern0 wit_constr_with_bindings (lift intern_constr_with_bindings);
   Genintern.register_intern0 wit_destruction_arg (lift intern_destruction_arg);
+  Genintern.register_intern0 wit_tactic_arg (lift (intern_tacarg true false));
   ()
 
 (** Substitution for notations containing tactic-in-terms *)

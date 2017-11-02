@@ -294,6 +294,7 @@ let () =
   Genintern.register_subst0 wit_intro_pattern (fun _ v -> v);
   Genintern.register_subst0 wit_tactic subst_tactic;
   Genintern.register_subst0 wit_ltac subst_tactic;
+  Genintern.register_subst0 wit_tactic_arg subst_tacarg;
   Genintern.register_subst0 wit_constr subst_glob_constr;
   Genintern.register_subst0 wit_clause_dft_concl (fun _ v -> v);
   Genintern.register_subst0 wit_uconstr (fun subst c -> subst_glob_constr subst c);
