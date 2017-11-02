@@ -73,6 +73,7 @@ INSTALLSH:=./install.sh
 MKDIR:=install -d
 
 CORESRCDIRS:=\
+  version \
   config 	clib 		lib		kernel	intf	kernel/byterun	library \
   engine 	pretyping	interp	proofs	parsing 	printing \
   tactics 	vernac		stm		toplevel
@@ -158,8 +159,8 @@ else
 endif
 PLUGINSOPT:=$(PLUGINSCMO:.cmo=.cmxs)
 
-LINKCMO:=$(CORECMA) $(STATICPLUGINS)
-LINKCMX:=$(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cmo=.cmx)
+LINKCMO:=version/coqversion.cmo $(CORECMA) $(STATICPLUGINS)
+LINKCMX:=version/coqversion.cmx $(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cmo=.cmx)
 
 ###########################################################################
 # vo files

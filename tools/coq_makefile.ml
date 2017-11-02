@@ -136,7 +136,7 @@ let generate_makefile oc conf_file local_file args project =
     (fun s (k,v) -> Str.global_substitute (Str.regexp_string k) (fun _ -> v) s) s
     [ "@CONF_FILE@", conf_file;
       "@LOCAL_FILE@", local_file;
-      "@COQ_VERSION@", fst (Envars.coq_version ());
+      "@COQ_VERSION@", Coqversion.version.Coqversion.describe;
       "@PROJECT_FILE@", (Option.default "" project.project_file);
       "@COQ_MAKEFILE_INVOCATION@",String.concat " " (List.map quote args);
     ] in

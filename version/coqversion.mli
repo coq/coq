@@ -6,15 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Initialization. *)
-val set_debug : unit -> unit
+(** [get_version] returns the version and branch strings, set at
+    compile-time *)
+type version = { describe : string; branch : string; hash : string }
 
-val load_rcfile : rcfile:(string option) -> time:bool -> state:Vernac.State.t -> Vernac.State.t
-
-val init_ocaml_path : unit -> unit
-
-(* LoadPath for toploop toplevels *)
-val toplevel_init_load_path : unit ->  Mltop.coq_path list
-
-(* LoadPath for Coq user libraries *)
-val libs_init_load_path : load_init:bool -> Mltop.coq_path list
+val version : version
+val compile_date : string (* compile date *)

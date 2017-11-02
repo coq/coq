@@ -219,7 +219,6 @@ indepclean:
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
 	rm -f test-suite/check.log
 	rm -f glob.dump
-	rm -f config/revision.ml revision
 	rm -f plugins/micromega/.micromega.ml.generated
 	$(MAKE) -C test-suite clean
 

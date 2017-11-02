@@ -767,7 +767,7 @@ let about _ =
   dialog#set_name "CoqIDE";
   dialog#set_comments "The Coq Integrated Development Environment";
   dialog#set_website Coq_config.wwwcoq;
-  dialog#set_version (fst (Envars.coq_version ()));
+  dialog#set_version Coqversion.version.Coqversion.describe;
   dialog#set_copyright copyright;
   dialog#set_authors authors;
   dialog#show ()

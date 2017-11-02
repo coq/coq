@@ -12,8 +12,8 @@ open Coqargs
 let () = at_exit flush_all
 
 let print_header () =
-  let (ver,branch) = Envars.coq_version () in
-  Feedback.msg_notice (str "Welcome to Coq " ++ str ver ++ str " (" ++ str branch ++ str ")");
+  let open Coqversion in
+  Feedback.msg_notice (str "Welcome to Coq " ++ str version.describe ++ str " (" ++ str version.branch ++ str ")");
   flush_all ()
 
 let warning s = Flags.(with_option warn Feedback.msg_warning (strbrk s))

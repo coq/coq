@@ -277,8 +277,7 @@ script:
 - make -j ${NJOBS} ${MAIN_TARGET}
 - echo -en 'travis_fold:end:coq.build\\r'
 
-- echo 'Built Coq'
-- bin/coqtop -v
+- echo 'Coq built successfully, version info:' && bin/coqtop -v
 
 - echo 'Running tests...' && echo -en 'travis_fold:start:coq.test\\r'
 - if [ -n "${TEST_TARGET}" ]; then ${TW} make -j ${NJOBS} ${TEST_TARGET}; fi
