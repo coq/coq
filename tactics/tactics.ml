@@ -1696,7 +1696,7 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind :
     let try_apply thm_ty nprod =
       try
         let n = nb_prod_modulo_zeta sigma thm_ty - nprod in
-        if n<0 then error "Applied theorem has not enough premisses.";
+        if n<0 then error "Applied theorem does not have enough premises.";
         let clause = make_clenv_binding_apply env sigma (Some n) (c,thm_ty) lbind in
         Clenvtac.res_pf clause ~with_evars ~flags
       with exn when catchable_exception exn ->
