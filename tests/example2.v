@@ -266,3 +266,16 @@ Proof.
 change (?a + 1 = 2) with (2 = $a + 1).
 reflexivity.
 Qed.
+
+Goal (forall n, n = 0 -> False) -> False.
+Proof.
+intros H.
+specialize (H 0 eq_refl).
+destruct H.
+Qed.
+
+Goal (forall n, n = 0 -> False) -> False.
+Proof.
+intros H.
+specialize (H 0 eq_refl) as [].
+Qed.

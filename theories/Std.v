@@ -227,6 +227,8 @@ Ltac2 @ external move : ident -> move_location -> unit := "ltac2" "tac_move".
 
 Ltac2 @ external intro : ident option -> move_location option -> unit := "ltac2" "tac_intro".
 
+Ltac2 @ external specialize : constr_with_bindings -> intro_pattern option -> unit := "ltac2" "tac_specialize".
+
 (** extratactics *)
 
 Ltac2 @ external discriminate : evar_flag -> destruction_arg option -> unit := "ltac2" "tac_discriminate".

@@ -150,6 +150,11 @@ let split_with_bindings ev bnd =
   let bnd = mk_bindings bnd in
   Tactics.split_with_bindings ev [bnd]
 
+let specialize c pat =
+  let c = mk_with_bindings c in
+  let pat = Option.map mk_intro_pattern pat in
+  Tactics.specialize c pat
+
 let change pat c cl =
   let open Tac2ffi in
   Proofview.Goal.enter begin fun gl ->

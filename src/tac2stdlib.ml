@@ -569,6 +569,12 @@ let () = define_prim3 "tac_constructorn" begin fun ev n bnd ->
   Tac2tactics.constructor_tac ev None n bnd
 end
 
+let () = define_prim2 "tac_specialize" begin fun c ipat ->
+  let c = to_constr_with_bindings c in
+  let ipat = Value.to_option to_intro_pattern ipat in
+  Tac2tactics.specialize c ipat
+end
+
 let () = define_prim1 "tac_symmetry" begin fun cl ->
   let cl = to_clause cl in
   Tac2tactics.symmetry cl

@@ -204,6 +204,12 @@ Ltac2 Notation "econstructor" := Control.enter (fun () => Std.constructor true).
 Ltac2 Notation econstructor := econstructor.
 Ltac2 Notation "econstructor" n(tactic) bnd(thunk(with_bindings)) := constructor0 true n bnd.
 
+Ltac2 specialize0 c pat :=
+  enter_h false (fun _ c => Std.specialize c pat) c.
+
+Ltac2 Notation "specialize" c(thunk(seq(constr, with_bindings))) ipat(opt(seq("as", intropattern))) :=
+  specialize0 c ipat.
+
 Ltac2 elim0 ev c bnd use :=
   let f ev ((c, bnd, use)) := Std.elim ev (c, bnd) use in
   enter_h ev f (fun () => c (), bnd (), use ()).
