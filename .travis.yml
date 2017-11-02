@@ -61,6 +61,7 @@ env:
   - TEST_TARGET="ci-math-classes TIMED=1"
   - TEST_TARGET="ci-math-comp TIMED=1"
   - TEST_TARGET="ci-sf TIMED=1"
+  - TEST_TARGET="ci-unicoq TIMED=1"
   - TEST_TARGET="ci-unimath TIMED=1"
   - TEST_TARGET="ci-vst TIMED=1"
   # Not ready yet for 8.7

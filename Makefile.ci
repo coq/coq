@@ -18,6 +18,7 @@ CI_TARGETS=ci-all \
     ci-metacoq \
     ci-sf \
     ci-tlc \
+    ci-unicoq \
     ci-unimath \
     ci-vst
 
