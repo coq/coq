@@ -54,8 +54,10 @@ let std_proj ?loc name =
 let thunk e =
   let t_unit = coq_core "unit" in
   let loc = Tac2intern.loc_of_tacexpr e in
-  let var = [Loc.tag ?loc @@ CPatVar (Anonymous), Some (Loc.tag ?loc @@ CTypRef (AbsKn (Other t_unit), []))] in
-  Loc.tag ?loc @@ CTacFun (var, e)
+  let ty = Loc.tag ?loc @@ CTypRef (AbsKn (Other t_unit), []) in
+  let pat = Loc.tag ?loc @@ CPatVar (Anonymous) in
+  let pat = Loc.tag ?loc @@ CPatCnv (pat, ty) in
+  Loc.tag ?loc @@ CTacFun ([pat], e)
 
 let of_pair f g (loc, (e1, e2)) =
   Loc.tag ?loc @@ CTacApp (Loc.tag ?loc @@ CTacCst (AbsKn (Tuple 2)), [f e1; g e2])
@@ -238,14 +240,14 @@ let abstract_vars loc vars tac =
         let get = global_ref ?loc (kername array_prefix "get")  in
         let args = [of_variable (loc, id0); of_int (loc, n)] in
         let e = Loc.tag ?loc @@ CTacApp (get, args) in
-        let accu = (Loc.tag ?loc @@ CPatVar na, None, e) :: accu in
+        let accu = (Loc.tag ?loc @@ CPatVar na, e) :: accu in
         (n + 1, accu)
       in
       let (_, bnd) = List.fold_left build_bindings (0, []) vars in
       let tac = Loc.tag ?loc @@ CTacLet (false, bnd, tac) in
       (Name id0, tac)
   in
-  Loc.tag ?loc @@ CTacFun ([Loc.tag ?loc @@ CPatVar na, None], tac)
+  Loc.tag ?loc @@ CTacFun ([Loc.tag ?loc @@ CPatVar na], tac)
 
 let of_pattern p =
   inj_wit ?loc:p.CAst.loc wit_pattern p
@@ -253,7 +255,7 @@ let of_pattern p =
 let of_conversion (loc, c) = match c with
 | QConvert c ->
   let pat = of_option ?loc of_pattern None in
-  let c = Loc.tag ?loc @@ CTacFun ([Loc.tag ?loc @@ CPatVar Anonymous, None], of_constr c) in
+  let c = Loc.tag ?loc @@ CTacFun ([Loc.tag ?loc @@ CPatVar Anonymous], of_constr c) in
   of_tuple ?loc [pat; c]
 | QConvertWith (pat, c) ->
   let vars = pattern_vars pat in
@@ -389,7 +391,7 @@ let of_constr_matching (loc, m) =
     let vars = Id.Set.elements vars in
     let vars = List.map (fun id -> Name id) vars in
     let e = abstract_vars loc vars tac in
-    let e = Loc.tag ?loc @@ CTacFun ([Loc.tag ?loc @@ CPatVar na, None], e) in
+    let e = Loc.tag ?loc @@ CTacFun ([Loc.tag ?loc @@ CPatVar na], e) in
     let pat = inj_wit ?loc:ploc wit_pattern pat in
     of_tuple [knd; pat; e]
   in
@@ -433,7 +435,7 @@ let of_goal_matching (loc, gm) =
   in
   let map (loc, (pat, tac)) =
     let (pat, hyps, hctx, subst, cctx) = mk_gpat pat in
-    let tac = Loc.tag ?loc @@ CTacFun ([Loc.tag ?loc @@ CPatVar cctx, None], tac) in
+    let tac = Loc.tag ?loc @@ CTacFun ([Loc.tag ?loc @@ CPatVar cctx], tac) in
     let tac = abstract_vars loc subst tac in
     let tac = abstract_vars loc hctx tac in
     let tac = abstract_vars loc hyps tac in

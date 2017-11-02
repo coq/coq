@@ -91,6 +91,7 @@ type atom =
 type raw_patexpr_r =
 | CPatVar of Name.t
 | CPatRef of ltac_constructor or_tuple or_relid * raw_patexpr list
+| CPatCnv of raw_patexpr * raw_typexpr
 
 and raw_patexpr = raw_patexpr_r located
 
@@ -98,9 +99,9 @@ type raw_tacexpr_r =
 | CTacAtm of atom
 | CTacRef of tacref or_relid
 | CTacCst of ltac_constructor or_tuple or_relid
-| CTacFun of (raw_patexpr * raw_typexpr option) list * raw_tacexpr
+| CTacFun of raw_patexpr list * raw_tacexpr
 | CTacApp of raw_tacexpr * raw_tacexpr list
-| CTacLet of rec_flag * (raw_patexpr * raw_typexpr option * raw_tacexpr) list * raw_tacexpr
+| CTacLet of rec_flag * (raw_patexpr * raw_tacexpr) list * raw_tacexpr
 | CTacCnv of raw_tacexpr * raw_typexpr
 | CTacSeq of raw_tacexpr * raw_tacexpr
 | CTacCse of raw_tacexpr * raw_taccase list

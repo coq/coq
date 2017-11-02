@@ -277,11 +277,15 @@ let fresh_var avoid x =
   in
   Namegen.next_ident_away_from (Id.of_string x) bad
 
+let extract_pattern_type (loc, p as pat) = match p with
+| CPatCnv (pat, ty) -> pat, Some ty
+| CPatVar _ | CPatRef _ -> pat, None
+
 (** Mangle recursive tactics *)
 let inline_rec_tactic tactics =
   let avoid = List.fold_left (fun accu ((_, id), _) -> Id.Set.add id accu) Id.Set.empty tactics in
   let map (id, e) = match snd e with
-  | CTacFun (pat, _) -> (id, pat, e)
+  | CTacFun (pat, _) -> (id, List.map extract_pattern_type pat, e)
   | _ ->
     let loc, _ = id in
     user_err ?loc (str "Recursive tactic definitions must be functions")
@@ -295,11 +299,9 @@ let inline_rec_tactic tactics =
     in
     (** Fresh variables to abstract over the function patterns *)
     let _, vars = List.fold_left fold_var (avoid, []) pat in
-    let map_body ((loc, id), _, e) = (Loc.tag ?loc @@ CPatVar (Name id)), None, e in
+    let map_body ((loc, id), _, e) = (Loc.tag ?loc @@ CPatVar (Name id)), e in
     let bnd = List.map map_body tactics in
-    let pat_of_id (loc, id) =
-      ((Loc.tag ?loc @@ CPatVar (Name id)), None)
-    in
+    let pat_of_id (loc, id) = (Loc.tag ?loc @@ CPatVar (Name id)) in
     let var_of_id (loc, id) =
       let qid = (loc, qualid_of_ident id) in
       Loc.tag ?loc @@ CTacRef (RelId qid)
@@ -590,7 +592,7 @@ let perform_notation syn st =
   let mk loc args =
     let map (na, e) =
       let loc = loc_of_tacexpr e in
-      ((Loc.tag ?loc @@ CPatVar na), None, e)
+      ((Loc.tag ?loc @@ CPatVar na), e)
     in
     let bnd = List.map map args in
     Loc.tag ~loc @@ CTacLet (false, bnd, syn.synext_exp)

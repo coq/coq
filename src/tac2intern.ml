@@ -556,11 +556,13 @@ type glb_patexpr =
 | GPatVar of Name.t
 | GPatRef of ltac_constructor or_tuple * glb_patexpr list
 
-let rec intern_patexpr env (_, pat) = match pat with
+let rec intern_patexpr env (loc, pat) = match pat with
 | CPatVar na -> GPatVar na
 | CPatRef (qid, pl) ->
   let kn = get_constructor env qid in
   GPatRef (kn, List.map (fun p -> intern_patexpr env p) pl)
+| CPatCnv (pat, ty) ->
+  user_err ?loc (str "Pattern not handled yet")
 
 type pattern_kind =
 | PKind_empty
@@ -604,10 +606,15 @@ let rec ids_of_pattern accu (_, pat) = match pat with
 | CPatVar (Name id) -> Id.Set.add id accu
 | CPatRef (_, pl) ->
   List.fold_left ids_of_pattern accu pl
+| CPatCnv (pat, _) -> ids_of_pattern accu pat
 
 let loc_of_relid = function
 | RelId (loc, _) -> loc
 | AbsKn _ -> None
+
+let extract_pattern_type (loc, p as pat) = match p with
+| CPatCnv (pat, ty) -> pat, Some ty
+| CPatVar _ | CPatRef _ -> pat, None
 
 (** Expand pattern: [p => t] becomes [x => match x with p => t end] *)
 let expand_pattern avoid bnd =
@@ -667,6 +674,7 @@ let rec intern_rec env (loc, e) = match e with
   let kn = get_constructor env qid in
   intern_constructor env loc kn []
 | CTacFun (bnd, e) ->
+  let bnd = List.map extract_pattern_type bnd in
   let map (_, t) = match t with
   | None -> GTypVar (fresh_id env)
   | Some t -> intern_type env t
@@ -689,8 +697,9 @@ let rec intern_rec env (loc, e) = match e with
   let map arg =
     (** Thunk alias arguments *)
     let loc = loc_of_tacexpr arg in
-    let var = [Loc.tag ?loc @@ CPatVar Anonymous, Some (Loc.tag ?loc @@ CTypRef (AbsKn (Tuple 0), []))] in
-    Loc.tag ?loc @@ CTacFun (var, arg)
+    let t_unit = Loc.tag ?loc @@ CTypRef (AbsKn (Tuple 0), []) in
+    let var = Loc.tag ?loc @@ CPatCnv (Loc.tag ?loc @@ CPatVar Anonymous, t_unit) in
+    Loc.tag ?loc @@ CTacFun ([var], arg)
   in
   let args = List.map map args in
   intern_rec env (Loc.tag ?loc @@ CTacApp (e, args))
@@ -706,6 +715,11 @@ let rec intern_rec env (loc, e) = match e with
   let ret = unify_arrow ?loc env ft t in
   (GTacApp (f, args), ret)
 | CTacLet (is_rec, el, e) ->
+  let map (pat, e) =
+    let (pat, ty) = extract_pattern_type pat in
+    (pat, ty, e)
+  in
+  let el = List.map map el in
   let fold accu (pat, _, e) =
     let ids = ids_of_pattern Id.Set.empty pat in
     let common = Id.Set.inter ids accu in
@@ -826,7 +840,7 @@ and intern_let_rec env loc ids el e =
     let (loc, pat) = pat in
     let na = match pat with
     | CPatVar na -> na
-    | CPatRef _ ->
+    | CPatRef _ | CPatCnv _ ->
       user_err ?loc (str "This kind of pattern is forbidden in let-rec bindings")
     in
     let id = fresh_id env in
@@ -961,6 +975,8 @@ and intern_case env loc e pl =
             else warn_redundant_clause ?loc ()
         in
         brT
+      | CPatCnv _ ->
+        user_err ?loc (str "Pattern not handled yet")
       in
       let () = unify ?loc:(loc_of_tacexpr br) env tbr ret in
       intern_branch rem
@@ -1216,10 +1232,10 @@ let rec globalize ids (loc, er as e) = match er with
   let knc = get_constructor () qid in
   Loc.tag ?loc @@ CTacCst (AbsKn knc)
 | CTacFun (bnd, e) ->
-  let fold (pats, accu) (pat, t) =
+  let fold (pats, accu) pat =
     let accu = ids_of_pattern accu pat in
     let pat = globalize_pattern ids pat in
-    ((pat, t) :: pats, accu)
+    (pat :: pats, accu)
   in
   let bnd, ids = List.fold_left fold ([], ids) bnd in
   let bnd = List.rev bnd in
@@ -1230,13 +1246,14 @@ let rec globalize ids (loc, er as e) = match er with
   let el = List.map (fun e -> globalize ids e) el in
   Loc.tag ?loc @@ CTacApp (e, el)
 | CTacLet (isrec, bnd, e) ->
-  let fold accu (pat, _, _) = ids_of_pattern accu pat in
+  let fold accu (pat, _) = ids_of_pattern accu pat in
   let ext = List.fold_left fold Id.Set.empty bnd in
   let eids = Id.Set.union ext ids in
   let e = globalize eids e in
-  let map (qid, t, e) =
+  let map (qid, e) =
     let ids = if isrec then eids else ids in
-    (qid, t, globalize ids e)
+    let qid = globalize_pattern ids qid in
+    (qid, globalize ids e)
   in
   let bnd = List.map map bnd in
   Loc.tag ?loc @@ CTacLet (isrec, bnd, e)
@@ -1281,6 +1298,9 @@ and globalize_pattern ids (loc, pr as p) = match pr with
   let cst = AbsKn knc in
   let pl = List.map (fun p -> globalize_pattern ids p) pl in
   Loc.tag ?loc @@ CPatRef (cst, pl)
+| CPatCnv (pat, ty) ->
+  let pat = globalize_pattern ids pat in
+  Loc.tag ?loc @@ CPatCnv (pat, ty)
 
 (** Kernel substitution *)
 
@@ -1419,6 +1439,10 @@ let rec subst_rawpattern subst (loc, pr as p) = match pr with
   let pl' = List.smartmap (fun p -> subst_rawpattern subst p) pl in
   let c' = subst_or_relid subst c in
   if pl' == pl && c' == c then p else Loc.tag ?loc @@ CPatRef (c', pl')
+| CPatCnv (pat, ty) ->
+  let pat' = subst_rawpattern subst pat in
+  let ty' = subst_rawtype subst ty in
+  if pat' == pat && ty' == ty then p else Loc.tag ?loc @@ CPatCnv (pat', ty')
 
 (** Used for notations *)
 let rec subst_rawexpr subst (loc, tr as t) = match tr with
@@ -1430,10 +1454,7 @@ let rec subst_rawexpr subst (loc, tr as t) = match tr with
   let ref' = subst_or_relid subst ref in
   if ref' == ref then t else Loc.tag ?loc @@ CTacCst ref'
 | CTacFun (bnd, e) ->
-  let map (na, t as p) =
-    let t' = Option.smartmap (fun t -> subst_rawtype subst t) t in
-    if t' == t then p else (na, t')
-  in
+  let map pat = subst_rawpattern subst pat in
   let bnd' = List.smartmap map bnd in
   let e' = subst_rawexpr subst e in
   if bnd' == bnd && e' == e then t else Loc.tag ?loc @@ CTacFun (bnd', e')
@@ -1442,10 +1463,10 @@ let rec subst_rawexpr subst (loc, tr as t) = match tr with
   let el' = List.smartmap (fun e -> subst_rawexpr subst e) el in
   if e' == e && el' == el then t else Loc.tag ?loc @@ CTacApp (e', el')
 | CTacLet (isrec, bnd, e) ->
-  let map (na, t, e as p) =
-    let t' = Option.smartmap (fun t -> subst_rawtype subst t) t in
+  let map (na, e as p) =
+    let na' = subst_rawpattern subst na in
     let e' = subst_rawexpr subst e in
-    if t' == t && e' == e then p else (na, t', e')
+    if na' == na && e' == e then p else (na', e')
   in
   let bnd' = List.smartmap map bnd in
   let e' = subst_rawexpr subst e in

@@ -220,15 +220,15 @@ GEXTEND Gram
         | None -> te
         | Some args -> Loc.tag ~loc:!@loc @@ CTacFun (args, te)
         in
-        (pat, None, te)
+        (pat, te)
     ] ]
   ;
   let_binder:
     [ [ pats = LIST1 input_fun ->
         match pats with
-        | [(_, CPatVar _) as pat, None] -> (pat, None)
-        | ((_, CPatVar (Name id)) as pat, None) :: args -> (pat, Some args)
-        | [pat, None] -> (pat, None)
+        | [(_, CPatVar _) as pat] -> (pat, None)
+        | ((_, CPatVar (Name id)) as pat) :: args -> (pat, Some args)
+        | [pat] -> (pat, None)
         | _ -> CErrors.user_err ~loc:!@loc (str "Invalid pattern")
     ] ]
   ;
@@ -257,8 +257,12 @@ GEXTEND Gram
       | l = Prim.ident -> Loc.tag ~loc:!@loc (Name l) ] ]
   ;
   input_fun:
-    [ [ b = tac2pat LEVEL "0" -> (b, None)
-      | "("; b = tac2pat; t = OPT [ ":"; t = tac2type -> t ]; ")" -> (b, t) ] ]
+    [ [ b = tac2pat LEVEL "0" -> b
+      | "("; b = tac2pat; t = OPT [ ":"; t = tac2type -> t ]; ")" ->
+        match t with
+        | None -> b
+        | Some t -> Loc.tag ~loc:!@loc @@ CPatCnv (b, t)
+    ] ]
   ;
   tac2def_body:
     [ [ name = binder; it = LIST0 input_fun; ":="; e = tac2expr ->
