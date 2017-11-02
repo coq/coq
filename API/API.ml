@@ -270,7 +270,7 @@ module Obligations = Obligations
 module Command = Command
 module Classes = Classes
 (* module Record *)
-(* module Assumptions *)
+module Assumptions = Assumptions
 module Vernacstate = Vernacstate
 module Vernacinterp = Vernacinterp
 module Mltop = Mltop
