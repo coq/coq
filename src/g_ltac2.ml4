@@ -127,9 +127,19 @@ GEXTEND Gram
       [ "_" -> Loc.tag ~loc:!@loc @@ CPatVar Anonymous
       | "()" -> Loc.tag ~loc:!@loc @@ CPatRef (AbsKn (Tuple 0), [])
       | id = Prim.qualid -> pattern_of_qualid ~loc:!@loc id
-      | "("; pl = LIST0 tac2pat LEVEL "1" SEP ","; ")" ->
-        Loc.tag ~loc:!@loc @@ CPatRef (AbsKn (Tuple (List.length pl)), pl) ]
-    ]
+      | "("; p = atomic_tac2pat; ")" -> p
+    ] ]
+  ;
+  atomic_tac2pat:
+    [ [ ->
+        Loc.tag ~loc:!@loc @@ CPatRef (AbsKn (Tuple 0), [])
+      | p = tac2pat; ":"; t = tac2type ->
+        Loc.tag ~loc:!@loc @@ CPatCnv (p, t)
+      | p = tac2pat; ","; pl = LIST0 tac2pat SEP "," ->
+        let pl = p :: pl in
+        Loc.tag ~loc:!@loc @@ CPatRef (AbsKn (Tuple (List.length pl)), pl)
+      | p = tac2pat -> p
+    ] ]
   ;
   tac2expr:
     [ "6" RIGHTA
@@ -257,12 +267,7 @@ GEXTEND Gram
       | l = Prim.ident -> Loc.tag ~loc:!@loc (Name l) ] ]
   ;
   input_fun:
-    [ [ b = tac2pat LEVEL "0" -> b
-      | "("; b = tac2pat; t = OPT [ ":"; t = tac2type -> t ]; ")" ->
-        match t with
-        | None -> b
-        | Some t -> Loc.tag ~loc:!@loc @@ CPatCnv (b, t)
-    ] ]
+    [ [ b = tac2pat LEVEL "0" -> b ] ]
   ;
   tac2def_body:
     [ [ name = binder; it = LIST0 input_fun; ":="; e = tac2expr ->
