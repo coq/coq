@@ -1044,7 +1044,7 @@ let pr_goal_selector ~toplevel s =
           | (TacCall _|Tacexp _ | TacGeneric _) as a ->
             hov 0 (keyword "ltac:" ++ surround (pr_tac ltop (TacArg (Loc.tag a))))
 
-        in pr_tac
+        in pr_tac, pr_tacarg
 
   let strip_prod_binders_glob_constr n (ty,_) =
     let rec strip_ty acc n ty =
@@ -1058,8 +1058,7 @@ let pr_goal_selector ~toplevel s =
   let raw_printers =
     (strip_prod_binders_expr)
 
-  let rec pr_raw_tactic_level n (t:raw_tactic_expr) =
-    let pr = {
+  let pr_raw_of pr_raw_tactic_level = {
       pr_tactic = pr_raw_tactic_level;
       pr_constr = pr_constr_expr;
       pr_dconstr = pr_constr_expr;
@@ -1072,11 +1071,19 @@ let pr_goal_selector ~toplevel s =
       pr_generic = (fun arg -> Pputils.pr_raw_generic (Global.env ()) arg);
       pr_extend = pr_raw_extend_rec pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr;
       pr_alias = pr_raw_alias pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr;
-    } in
-    make_pr_tac
-      pr raw_printers
-      tag_raw_atomic_tactic_expr tag_raw_tactic_expr
+    }
+
+  let rec pr_raw_tactic_level n (t:raw_tactic_expr) =
+    fst (make_pr_tac
+      (pr_raw_of pr_raw_tactic_level) raw_printers
+      tag_raw_atomic_tactic_expr tag_raw_tactic_expr)
       n t
+
+  let pr_raw_tacarg_level (t:raw_tactic_arg) =
+    snd (make_pr_tac
+      (pr_raw_of pr_raw_tactic_level) raw_printers
+      tag_raw_atomic_tactic_expr tag_raw_tactic_expr)
+      t
 
   let pr_raw_tactic = pr_raw_tactic_level ltop
 
@@ -1084,35 +1091,44 @@ let pr_goal_selector ~toplevel s =
 
   let pr_pat_and_constr_expr pr (_,(c,_),_) = pr c
 
-  let pr_glob_tactic_level env n t =
+  let pr env prtac = {
+      pr_tactic = prtac;
+      pr_constr = pr_and_constr_expr (pr_glob_constr_env env);
+      pr_dconstr = pr_and_constr_expr (pr_glob_constr_env env);
+      pr_lconstr = pr_and_constr_expr (pr_lglob_constr_env env);
+      pr_pattern = pr_pat_and_constr_expr (pr_glob_constr_env env);
+      pr_lpattern = pr_pat_and_constr_expr (pr_lglob_constr_env env);
+      pr_constant = pr_or_var (pr_and_short_name (pr_evaluable_reference_env env));
+      pr_reference = pr_ltac_or_var (pr_located pr_ltac_constant);
+      pr_name = pr_lident;
+      pr_generic = (fun arg -> Pputils.pr_glb_generic (Global.env ()) arg);
+      pr_extend = pr_glob_extend_rec
+                    (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
+                    prtac (pr_pat_and_constr_expr (pr_glob_constr_env env));
+      pr_alias = pr_glob_alias
+                   (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
+                   prtac (pr_pat_and_constr_expr (pr_glob_constr_env env));
+    }
+
+  let pr_glob_tactic_level env =
     let glob_printers =
       (strip_prod_binders_glob_constr)
     in
     let rec prtac n (t:glob_tactic_expr) =
-      let pr = {
-        pr_tactic = prtac;
-        pr_constr = pr_and_constr_expr (pr_glob_constr_env env);
-        pr_dconstr = pr_and_constr_expr (pr_glob_constr_env env);
-        pr_lconstr = pr_and_constr_expr (pr_lglob_constr_env env);
-        pr_pattern = pr_pat_and_constr_expr (pr_glob_constr_env env);
-        pr_lpattern = pr_pat_and_constr_expr (pr_lglob_constr_env env);
-        pr_constant = pr_or_var (pr_and_short_name (pr_evaluable_reference_env env));
-        pr_reference = pr_ltac_or_var (pr_located pr_ltac_constant);
-        pr_name = pr_lident;
-        pr_generic = (fun arg -> Pputils.pr_glb_generic (Global.env ()) arg);
-        pr_extend = pr_glob_extend_rec
-          (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
-          prtac (pr_pat_and_constr_expr (pr_glob_constr_env env));
-        pr_alias = pr_glob_alias
-          (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
-          prtac (pr_pat_and_constr_expr (pr_glob_constr_env env));
-      } in
-      make_pr_tac
-        pr glob_printers
-        tag_glob_atomic_tactic_expr tag_glob_tactic_expr
+      fst (make_pr_tac
+        (pr env prtac) glob_printers
+        tag_glob_atomic_tactic_expr tag_glob_tactic_expr)
         n t
     in
-    prtac n t
+    prtac
+
+  let pr_glob_tacarg_level env =
+    let glob_printers =
+      (strip_prod_binders_glob_constr)
+    in
+    snd (make_pr_tac
+        (pr env (pr_glob_tactic_level env)) glob_printers
+        tag_glob_atomic_tactic_expr tag_glob_tactic_expr)
 
   let pr_glob_tactic env = pr_glob_tactic_level env ltop
 
@@ -1296,7 +1312,8 @@ let () =
   Genprint.register_print0 Stdarg.wit_bool pr_bool pr_bool (lift pr_bool);
   Genprint.register_print0 Stdarg.wit_unit pr_unit pr_unit (lift pr_unit);
   Genprint.register_print0 Stdarg.wit_pre_ident str str (lift str);
-  Genprint.register_print0 Stdarg.wit_string qstring qstring (lift qstring)
+  Genprint.register_print0 Stdarg.wit_string qstring qstring (lift qstring);
+  Genprint.register_print0 Tacarg.wit_tactic_arg pr_raw_tacarg_level (pr_glob_tacarg_level (Global.env())) (fun _ -> failwith "Not implemented")
 
 let () =
   let printer _ _ prtac = prtac (0, E) in
