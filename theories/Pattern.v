@@ -73,7 +73,7 @@ Ltac2 lazy_match0 t pats :=
   | [] => Control.zero Match_failure
   | p :: m =>
     let next _ := interp m in
-    let ((knd, pat, f)) := p in
+    let (knd, pat, f) := p in
     let p := match knd with
     | MatchPattern =>
       (fun _ =>
@@ -82,7 +82,7 @@ Ltac2 lazy_match0 t pats :=
         fun _ => f context bind)
     | MatchContext =>
       (fun _ =>
-        let ((context, bind)) := matches_subterm_vect pat t in
+        let (context, bind) := matches_subterm_vect pat t in
         fun _ => f context bind)
     end in
     Control.plus p next
@@ -94,7 +94,7 @@ Ltac2 multi_match0 t pats :=
   | [] => Control.zero Match_failure
   | p :: m =>
     let next _ := interp m in
-    let ((knd, pat, f)) := p in
+    let (knd, pat, f) := p in
     let p := match knd with
     | MatchPattern =>
       (fun _ =>
@@ -103,7 +103,7 @@ Ltac2 multi_match0 t pats :=
         f context bind)
     | MatchContext =>
       (fun _ =>
-        let ((context, bind)) := matches_subterm_vect pat t in
+        let (context, bind) := matches_subterm_vect pat t in
         f context bind)
     end in
     Control.plus p next
@@ -117,10 +117,10 @@ Ltac2 lazy_goal_match0 rev pats :=
   | [] => Control.zero Match_failure
   | p :: m =>
     let next _ := interp m in
-    let ((pat, f)) := p in
-    let ((phyps, pconcl)) := pat in
+    let (pat, f) := p in
+    let (phyps, pconcl) := pat in
     let cur _ :=
-      let ((hids, hctx, subst, cctx)) := matches_goal rev phyps pconcl in
+      let (hids, hctx, subst, cctx) := matches_goal rev phyps pconcl in
       fun _ => f hids hctx subst cctx
     in
     Control.plus cur next
@@ -132,10 +132,10 @@ Ltac2 multi_goal_match0 rev pats :=
   | [] => Control.zero Match_failure
   | p :: m =>
     let next _ := interp m in
-    let ((pat, f)) := p in
-    let ((phyps, pconcl)) := pat in
+    let (pat, f) := p in
+    let (phyps, pconcl) := pat in
     let cur _ :=
-      let ((hids, hctx, subst, cctx)) := matches_goal rev phyps pconcl in
+      let (hids, hctx, subst, cctx) := matches_goal rev phyps pconcl in
       f hids hctx subst cctx
     in
     Control.plus cur next

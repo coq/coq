@@ -46,7 +46,7 @@ Ltac2 orelse t f :=
 match Control.case t with
 | Err e => f e
 | Val ans =>
-  let ((x, k)) := ans in
+  let (x, k) := ans in
   Control.plus (fun _ => x) k
 end.
 
@@ -54,7 +54,7 @@ Ltac2 ifcatch t s f :=
 match Control.case t with
 | Err e => f e
 | Val ans =>
-  let ((x, k)) := ans in
+  let (x, k) := ans in
   Control.plus (fun _ => s x) (fun e => s (k e))
 end.
 
@@ -73,11 +73,11 @@ Ltac2 rec repeat0 (t : unit -> unit) :=
 
 Ltac2 Notation repeat := repeat0.
 
-Ltac2 dispatch0 t ((head, tail)) :=
+Ltac2 dispatch0 t (head, tail) :=
   match tail with
   | None => Control.enter (fun _ => t (); Control.dispatch head)
   | Some tacs =>
-    let ((def, rem)) := tacs in
+    let (def, rem) := tacs in
     Control.enter (fun _ => t (); Control.extend head def rem)
   end.
 
@@ -211,7 +211,7 @@ Ltac2 Notation "specialize" c(thunk(seq(constr, with_bindings))) ipat(opt(seq("a
   specialize0 c ipat.
 
 Ltac2 elim0 ev c bnd use :=
-  let f ev ((c, bnd, use)) := Std.elim ev (c, bnd) use in
+  let f ev (c, bnd, use) := Std.elim ev (c, bnd) use in
   enter_h ev f (fun () => c (), bnd (), use ()).
 
 Ltac2 Notation "elim" c(thunk(constr)) bnd(thunk(with_bindings))
@@ -242,7 +242,7 @@ match cl with
 end.
 
 Ltac2 pose0 ev p :=
-  enter_h ev (fun ev ((na, p)) => Std.pose na p) p.
+  enter_h ev (fun ev (na, p) => Std.pose na p) p.
 
 Ltac2 Notation "pose" p(thunk(pose)) :=
   pose0 false p.
@@ -382,7 +382,7 @@ Ltac2 Notation "native_compute" pl(opt(seq(pattern, occurrences))) cl(opt(clause
 Ltac2 Notation native_compute := native_compute.
 
 Ltac2 change0 p cl :=
-  let ((pat, c)) := p in
+  let (pat, c) := p in
   Std.change pat c (default_on_concl cl).
 
 Ltac2 Notation "change" c(conversion) cl(opt(clause)) := change0 c cl.
