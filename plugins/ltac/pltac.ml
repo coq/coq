@@ -59,6 +59,7 @@ let () =
   register_grammar wit_bindings (bindings);
   register_grammar wit_tactic (tactic);
   register_grammar wit_tactic_arg (tactic_arg);
+  register_grammar wit_tactic_as_arg (tactic);
   register_grammar wit_ltac (tactic);
   register_grammar wit_clause_dft_concl (clause_dft_concl);
   register_grammar wit_destruction_arg (destruction_arg);

@@ -27,3 +27,6 @@ let wit_destruction_arg =
 
 let wit_tactic_arg : (raw_tactic_arg, glob_tactic_arg, Val.t) genarg_type =
   make0 "tactic_arg"
+
+let wit_tactic_as_arg : (raw_tactic_expr, glob_tactic_arg, Val.t) genarg_type =
+  make0 ~dyn:(val_tag (topwit wit_tactic_arg)) "tactic_as_arg"

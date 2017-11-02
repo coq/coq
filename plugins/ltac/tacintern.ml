@@ -807,6 +807,12 @@ let () =
   Genintern.register_intern0 wit_tactic_arg (lift (intern_tacarg true false));
   ()
 
+let () =
+  let intern ist = function
+    | TacArg (_,arg) -> (ist, intern_tacarg true false ist arg)
+    | _ -> user_err (str "Tactic argument expected.") in
+  Genintern.register_intern0 wit_tactic_as_arg intern
+
 (** Substitution for notations containing tactic-in-terms *)
 
 let notation_subst bindings tac =

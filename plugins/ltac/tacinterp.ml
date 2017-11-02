@@ -2031,6 +2031,7 @@ let () =
   register_interp0 wit_open_constr_with_bindings interp_open_constr_with_bindings';
   register_interp0 wit_destruction_arg interp_destruction_arg';
   register_interp0 wit_tactic_arg interp_tacarg;
+  register_interp0 wit_tactic_as_arg interp_tacarg;
   ()
 
 let () =
