@@ -1108,7 +1108,7 @@ let iter ist tac arg =
   | None -> Tacticals.New.tclZEROMSG (str "Expecting a pair, list, or option.")
 
 TACTIC EXTEND iter
-| [ "iter" tactic(t) tactic_arg(c) ] -> [ iter ist t c ]
+| [ "iter" tactic(t) tactic_as_arg(c) ] -> [ iter ist t c ]
 END
 
 (** library/keys *)

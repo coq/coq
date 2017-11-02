@@ -57,3 +57,10 @@ match goal with |- ?x*?y => idtac x end.
 match goal with H: context [?x*?y] |- _ => idtac x end.
 match goal with |- context [?x*?y] => idtac x end.
 Abort.
+
+(* Test iter tactical *)
+
+Tactic Notation "iter_message" constr_list(l) := iter (fun x => idtac x) l.
+Goal True.
+iter_message 0 1 true False.
+Abort.
