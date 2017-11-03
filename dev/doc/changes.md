@@ -1,5 +1,17 @@
 ## Changes between Coq 8.7 and Coq 8.8
 
+### Bug tracker
+
+As of 18/10/2017, Coq uses [GitHub issues](https://github.com/coq/coq/issues)
+as bug tracker.
+Old bug reports were migrated from Bugzilla to GitHub issues using
+[this migration script](https://gist.github.com/Zimmi48/d923e52f64fe17c72852d9c148bfcdc6#file-bugzilla2github)
+as detailed in [this blog post](https://www.theozimmermann.net/2017/10/bugzilla-to-github/).
+
+All the bugs with a number below 1154 had to be renumbered, you can find
+a correspondence table [here](/dev/bugzilla2github_stripped.csv).
+All the other bugs kept their number.
+
 ### Plugin API
 
 Coq 8.8 offers a new module overlay containing a proposed plugin API
