@@ -53,6 +53,32 @@ Notation "{ x : A  & P }" := (sigT (A:=A) (fun x => P)) : type_scope.
 Notation "{ x : A  & P  & Q }" := (sigT2 (A:=A) (fun x => P) (fun x => Q)) :
   type_scope.
 
+Module SpecifPatternNotations.
+
+Reserved Notation "{ ' pat | P }"
+  (at level 0, pat strict pattern, format "{ ' pat  |  P  }").
+Reserved Notation "{ ' pat | P & Q }"
+  (at level 0, pat strict pattern, format "{ ' pat  |  P  & Q }").
+Reserved Notation "{ ' pat : A | P }"
+  (at level 0, pat strict pattern, format "{ ' pat  :  A  |  P }").
+Reserved Notation "{ ' pat : A | P & Q }"
+  (at level 0, pat strict pattern, format "{ ' pat  :  A  |  P  & Q }").
+Reserved Notation "{ ' pat : A & P }"
+  (at level 0, pat strict pattern, format "{ ' pat  :  A  & P }").
+Reserved Notation "{ ' pat : A & P & Q }"
+  (at level 0, pat strict pattern, format "{ ' pat  :  A  & P  & Q }").
+
+Notation "{ ' pat  |  P }" := (sig (fun pat => P)) : type_scope.
+Notation "{ ' pat  |  P  & Q }" := (sig2 (fun pat => P) (fun pat => Q)) : type_scope.
+Notation "{ ' pat : A  |  P }" := (sig (A:=A) (fun pat => P)) : type_scope.
+Notation "{ ' pat : A  |  P  & Q }" := (sig2 (A:=A) (fun pat => P) (fun pat => Q)) :
+  type_scope.
+Notation "{ ' pat : A  & P }" := (sigT (A:=A) (fun pat => P)) : type_scope.
+Notation "{ ' pat : A  & P  & Q }" := (sigT2 (A:=A) (fun pat => P) (fun pat => Q)) :
+  type_scope.
+
+End SpecifPatternNotations.
+
 Add Printing Let sig.
 Add Printing Let sig2.
 Add Printing Let sigT.

@@ -341,6 +341,10 @@ Check fun x => if x is n.+1 then n else 1.
 
 (* Examples with binding patterns *)
 
+Import SpecifPatternNotations.
+
+Check {'(x,y)|x+y=0}.
+
 Module D.
 Notation "'exists2'' x , p & q" := (ex2 (fun x => p) (fun x => q))
   (at level 200, x pattern, p at level 200, right associativity,
@@ -353,7 +357,15 @@ End D.
 (* Ensuring for reparsability that printer of notations does not use a
    pattern where only an ident could be reparsed *)
 
-Check ex2 (fun x => let '(y,z) := x in y>z) (fun x => let '(y,z) := x in z>y).
+Module E.
+Inductive myex2 {A:Type} (P Q:A -> Prop) : Prop :=
+  myex_intro2 : forall x:A, P x -> Q x -> myex2 P Q.
+Notation "'myexists2' x : A , p & q" := (myex2 (A:=A) (fun x => p) (fun x => q))
+  (at level 200, x ident, A at level 200, p at level 200, right associativity,
+    format "'[' 'myexists2'  '/  ' x  :  A ,  '/  ' '[' p  &  '/' q ']' ']'")
+  : type_scope.
+Check myex2 (fun x => let '(y,z) := x in y>z) (fun x => let '(y,z) := x in z>y).
+End E.
 
 (* A canonical example of a notation with a non-recursive binder *)
 
@@ -391,7 +403,7 @@ Check fun p => if p is S n then n else 0.
 Check fun p => if p is Lt then 1 else 0.
 
 (* Check that mixed binders and terms defaults to ident and not pattern *)
-Module E.
+Module F.
   (* First without an indirection *)
 Notation "[ n | t ]" := (n, (fun n : nat => t)).
 Check fun S : nat => [ S | S+S ].
@@ -400,4 +412,13 @@ Check fun N : nat => (N, (fun n => n+0)). (* another test in passing *)
 Notation "[[ n | p | t ]]" := (n, (fun p : nat => t)).
 Notation "[[ n | t ]]" := [[ n | n | t ]].
 Check fun S : nat => [[ S | S+S ]].
-End E.
+End F.
+
+(* Check parsability/printability of {x|P} and variants *)
+
+Check {I:nat|I=I}.
+Check {'I:True|I=I}.
+Check {'(x,y)|x+y=0}.
+
+(* Check exists2 with a pattern *)
+Check ex2 (fun x => let '(y,z) := x in y>z) (fun x => let '(y,z) := x in z>y).
