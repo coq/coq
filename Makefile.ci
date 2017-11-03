@@ -17,6 +17,7 @@ CI_TARGETS=ci-all \
     ci-math-classes \
     ci-math-comp \
     ci-metacoq \
+    ci-paramcoq \
     ci-sf \
     ci-tlc \
     ci-unimath \

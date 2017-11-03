@@ -141,3 +141,10 @@
 ########################################################################
 : ${Equations_CI_BRANCH:=8.8+alpha}
 : ${Equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations.git}
+
+########################################################################
+# paramcoq
+########################################################################
+: ${paramcoq_CI_BRANCH:=v8.8}
+: ${paramcoq_CI_GITURL:=https://github.com/aa755/paramcoq.git}
+
