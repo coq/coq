@@ -36,4 +36,4 @@ val do_vernac : Stm.doc -> Stateid.t -> Stm.doc * Stateid.t
 
 (** Main entry point of Coq: read and execute vernac commands. *)
 
-val loop : Stm.doc -> unit
+val loop : Stm.doc -> Stm.doc

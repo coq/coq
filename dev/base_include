@@ -233,8 +233,7 @@ let _ = Flags.in_toplevel := true
 let _ = Constrextern.set_extern_reference
   (fun ?loc _ r -> Libnames.Qualid (loc,Nametab.shortest_qualid_of_global Idset.empty r));;
 
-open Coqloop
-let go = loop
+let go () = Coqloop.loop Option.(get !Coqtop.drop_last_doc)
 
 let _ =
  print_string
