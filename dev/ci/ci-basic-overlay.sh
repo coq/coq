@@ -28,11 +28,11 @@
 ########################################################################
 # Mathclasses + Corn
 ########################################################################
-: ${math_classes_CI_BRANCH:=external-bignums}
-: ${math_classes_CI_GITURL:=https://github.com/letouzey/math-classes.git}
+: ${math_classes_CI_BRANCH:=master}
+: ${math_classes_CI_GITURL:=https://github.com/math-classes/math-classes.git}
 
-: ${Corn_CI_BRANCH:=external-bignums}
-: ${Corn_CI_GITURL:=https://github.com/letouzey/corn.git}
+: ${Corn_CI_BRANCH:=master}
+: ${Corn_CI_GITURL:=https://github.com/c-corn/corn.git}
 
 ########################################################################
 # Iris
