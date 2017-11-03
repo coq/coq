@@ -15,33 +15,22 @@ let make_tag (tt:GText.tag_table) ~name prop =
 
 module Script =
 struct
+  (* More recently defined tags have highest priority in case of overlapping *)
   let table = GText.tag_table ()
-  let comment = make_tag table ~name:"comment" []
-  let error = make_tag table ~name:"error" [`UNDERLINE `SINGLE]
   let warning = make_tag table ~name:"warning" [`UNDERLINE `SINGLE; `FOREGROUND "blue"]
+  let error = make_tag table ~name:"error" [`UNDERLINE `SINGLE]
   let error_bg = make_tag table ~name:"error_bg" []
   let to_process = make_tag table ~name:"to_process" []
   let processed = make_tag table ~name:"processed" []
-  let incomplete = make_tag table ~name:"incomplete" [
-          `BACKGROUND_STIPPLE_SET true;
-  ]
+  let incomplete = make_tag table ~name:"incomplete" [`BACKGROUND_STIPPLE_SET true]
   let unjustified = make_tag table ~name:"unjustified" [`BACKGROUND "gold"]
-  let found = make_tag table ~name:"found" [`BACKGROUND "blue"; `FOREGROUND "white"]
-  let sentence = make_tag table ~name:"sentence" []
   let tooltip = make_tag table ~name:"tooltip" [] (* debug:`BACKGROUND "blue" *)
-
   let ephemere =
     [error; warning; error_bg; tooltip; processed; to_process; incomplete; unjustified]
-
-  let all =
-    comment :: found :: sentence :: ephemere
-
-  let edit_zone =
-    let t = make_tag table ~name:"edit_zone" [`UNDERLINE `SINGLE] in
-    t#set_priority (List.length all);
-    t
-  let all = edit_zone :: all
-  
+  let comment = make_tag table ~name:"comment" []
+  let sentence = make_tag table ~name:"sentence" []
+  let edit_zone = make_tag table ~name:"edit_zone" [`UNDERLINE `SINGLE] (* for debugging *)
+  let all = edit_zone :: comment :: sentence :: ephemere
 end
 module Proof =
 struct

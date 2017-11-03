@@ -17,7 +17,6 @@ sig
   val processed : GText.tag
   val incomplete : GText.tag
   val unjustified : GText.tag
-  val found : GText.tag
   val sentence : GText.tag
   val tooltip : GText.tag
   val edit_zone : GText.tag (* for debugging *)
