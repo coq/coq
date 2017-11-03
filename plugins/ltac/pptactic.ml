@@ -116,7 +116,13 @@ type 'a extra_genarg_printer =
         | Val.Base t ->
           begin match Val.eq t tag with
           | None -> default
-          | Some Refl -> Genprint.generic_top_print (in_gen (Topwit wit) x)
+          | Some Refl ->
+             let open Genprint in
+             match generic_top_print (in_gen (Topwit wit) x) with
+             | PrinterBasic pr -> pr ()
+             | PrinterNeedsContext pr -> pr (Global.env()) Evd.empty
+             | PrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
+                printer (Global.env()) Evd.empty default_ensure_surrounded
           end
         | _ -> default
 
@@ -432,12 +438,13 @@ type 'a extra_genarg_printer =
       let pr_occs = pr_with_occurrences (fun () -> str" |- *") (occs,()) in
       (prlist_with_sep (fun () -> str", ") (pr_hyp_location pr_id) l ++ pr_occs)
 
-  let pr_clauses default_is_concl pr_id = function
+  (* Some true = default is concl; Some false = default is all; None = no default *)
+  let pr_clauses has_default pr_id = function
     | { onhyps=Some []; concl_occs=occs }
-        when (match default_is_concl with Some true -> true | _ -> false) ->
+        when (match has_default with Some true -> true | _ -> false) ->
       pr_with_occurrences mt (occs,())
     | { onhyps=None; concl_occs=AllOccurrences }
-        when (match default_is_concl with Some false -> true | _ -> false) -> mt ()
+        when (match has_default with Some false -> true | _ -> false) -> mt ()
     | { onhyps=None; concl_occs=NoOccurrences } ->
       pr_in (str " * |-")
     | { onhyps=None; concl_occs=occs } ->
@@ -1174,83 +1181,122 @@ let declare_extra_genarg_pprule wit
     g (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env)) (pr_glob_tactic_level env) x
   in
   let h x =
-    let env = Global.env () in
-    h (pr_econstr_env env Evd.empty) (pr_leconstr_env env Evd.empty) (fun _ _ -> str "<tactic>") x
+    Genprint.PrinterNeedsContext (fun env sigma ->
+        h (pr_econstr_env env sigma) (pr_leconstr_env env sigma) (fun _ _ -> str "<tactic>") x)
   in
   Genprint.register_print0 wit f g h
 
+let declare_extra_vernac_genarg_pprule wit f =
+  let f x = f pr_constr_expr pr_lconstr_expr pr_raw_tactic_level x in
+  Genprint.register_vernac_print0 wit f
+
 (** Registering *)
 
-let run_delayed c = c (Global.env ()) Evd.empty
+let pr_intro_pattern_env p = Genprint.PrinterNeedsContext (fun env sigma ->
+  let print_constr c = let (sigma, c) = c env sigma in pr_econstr_env env sigma c in
+  Miscprint.pr_intro_pattern print_constr p)
 
-let run_delayed_destruction_arg = function (* HH: Using Evd.empty looks suspicious *)
-  | clear_flag,ElimOnConstr g -> clear_flag,ElimOnConstr (snd (run_delayed g))
-  | clear_flag,ElimOnAnonHyp n as x -> x
-  | clear_flag,ElimOnIdent id as x -> x
+let pr_red_expr_env r = Genprint.PrinterNeedsContext (fun env sigma ->
+  pr_red_expr (pr_econstr_env env sigma, pr_leconstr_env env sigma,
+               pr_evaluable_reference_env env, pr_constr_pattern_env env sigma) r)
+
+let pr_bindings_env bl = Genprint.PrinterNeedsContext (fun env sigma ->
+  let sigma, bl = bl env sigma in
+  Miscprint.pr_bindings
+    (pr_econstr_env env sigma) (pr_leconstr_env env sigma) bl)
+
+let pr_with_bindings_env bl = Genprint.PrinterNeedsContext (fun env sigma ->
+  let sigma, bl = bl env sigma in
+  pr_with_bindings
+    (pr_econstr_env env sigma) (pr_leconstr_env env sigma) bl)
+
+let pr_destruction_arg_env c = Genprint.PrinterNeedsContext (fun env sigma ->
+  let sigma, c = match c with
+  | clear_flag,ElimOnConstr g -> let sigma,c = g env sigma in sigma,(clear_flag,ElimOnConstr c)
+  | clear_flag,ElimOnAnonHyp n as x -> sigma, x
+  | clear_flag,ElimOnIdent id as x -> sigma, x in
+  pr_destruction_arg
+    (pr_econstr_env env sigma) (pr_leconstr_env env sigma) c)
+
+let make_constr_printer f c =
+  Genprint.PrinterNeedsContextAndLevel {
+      Genprint.default_already_surrounded = Ppconstr.ltop;
+      Genprint.default_ensure_surrounded = Ppconstr.lsimpleconstr;
+      Genprint.printer = (fun env sigma n -> f env sigma n c)}
+
+let lift f a = Genprint.PrinterBasic (fun () -> f a)
 
 let () =
   let pr_bool b = if b then str "true" else str "false" in
   let pr_unit _ = str "()" in
-  let pr_string s = str "\"" ++ str s ++ str "\"" in
   Genprint.register_print0 wit_int_or_var
-    (pr_or_var int) (pr_or_var int) int;
+    (pr_or_var int) (pr_or_var int) (lift int);
   Genprint.register_print0 wit_ref
-    pr_reference (pr_or_var (pr_located pr_global)) pr_global;
+    pr_reference (pr_or_var (pr_located pr_global)) (lift pr_global);
   Genprint.register_print0 wit_ident
-    pr_id pr_id pr_id;
+    pr_id pr_id (lift pr_id);
   Genprint.register_print0 wit_var
-    (pr_located pr_id) (pr_located pr_id) pr_id;
+    (pr_located pr_id) (pr_located pr_id) (lift pr_id);
   Genprint.register_print0
     wit_intro_pattern
     (Miscprint.pr_intro_pattern pr_constr_expr)
     (Miscprint.pr_intro_pattern (fun (c,_) -> pr_glob_constr c))
-    (Miscprint.pr_intro_pattern (fun c -> pr_econstr (snd (run_delayed c))));
+    pr_intro_pattern_env;
   Genprint.register_print0
     wit_clause_dft_concl
     (pr_clauses (Some true) pr_lident)
     (pr_clauses (Some true) pr_lident)
-    (pr_clauses (Some true) (fun id -> pr_lident (Loc.tag id)))
+    (fun c -> Genprint.PrinterBasic (fun () -> pr_clauses (Some true) (fun id -> pr_lident (Loc.tag id)) c))
   ;
   Genprint.register_print0
     wit_constr
     Ppconstr.pr_constr_expr
     (fun (c, _) -> Printer.pr_glob_constr c)
-    Printer.pr_econstr
+    (make_constr_printer Printer.pr_econstr_n_env)
   ;
   Genprint.register_print0
     wit_uconstr
     Ppconstr.pr_constr_expr
     (fun (c,_) -> Printer.pr_glob_constr c)
-    Printer.pr_closed_glob
+    (make_constr_printer Printer.pr_closed_glob_n_env)
   ;
   Genprint.register_print0
     wit_open_constr
     Ppconstr.pr_constr_expr
     (fun (c, _) -> Printer.pr_glob_constr c)
-    Printer.pr_econstr
+    (make_constr_printer Printer.pr_econstr_n_env)
   ;
   Genprint.register_print0 wit_red_expr
     (pr_red_expr (pr_constr_expr, pr_lconstr_expr, pr_or_by_notation pr_reference, pr_constr_pattern_expr))
     (pr_red_expr (pr_and_constr_expr pr_glob_constr, pr_and_constr_expr pr_lglob_constr, pr_or_var (pr_and_short_name pr_evaluable_reference), pr_pat_and_constr_expr pr_glob_constr))
-    (pr_red_expr (pr_econstr, pr_leconstr, pr_evaluable_reference, pr_constr_pattern));
-  Genprint.register_print0 wit_quant_hyp pr_quantified_hypothesis pr_quantified_hypothesis pr_quantified_hypothesis;
+    pr_red_expr_env
+  ;
+  Genprint.register_print0 wit_quant_hyp pr_quantified_hypothesis pr_quantified_hypothesis (lift pr_quantified_hypothesis);
   Genprint.register_print0 wit_bindings
     (Miscprint.pr_bindings_no_with pr_constr_expr pr_lconstr_expr)
     (Miscprint.pr_bindings_no_with (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
-    (fun it -> Miscprint.pr_bindings_no_with pr_econstr pr_leconstr (snd (run_delayed it)));
+    pr_bindings_env
+  ;
   Genprint.register_print0 wit_constr_with_bindings
     (pr_with_bindings pr_constr_expr pr_lconstr_expr)
     (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
-    (fun it -> pr_with_bindings pr_econstr pr_leconstr (snd (run_delayed it)));
+    pr_with_bindings_env
+  ;
+  Genprint.register_print0 wit_open_constr_with_bindings
+    (pr_with_bindings pr_constr_expr pr_lconstr_expr)
+    (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
+    pr_with_bindings_env
+  ;
   Genprint.register_print0 Tacarg.wit_destruction_arg
     (pr_destruction_arg pr_constr_expr pr_lconstr_expr)
     (pr_destruction_arg (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
-    (fun it -> pr_destruction_arg pr_econstr pr_leconstr (run_delayed_destruction_arg it));
-  Genprint.register_print0 Stdarg.wit_int int int int;
-  Genprint.register_print0 Stdarg.wit_bool pr_bool pr_bool pr_bool;
-  Genprint.register_print0 Stdarg.wit_unit pr_unit pr_unit pr_unit;
-  Genprint.register_print0 Stdarg.wit_pre_ident str str str;
-  Genprint.register_print0 Stdarg.wit_string pr_string pr_string pr_string
+    pr_destruction_arg_env
+  ;
+  Genprint.register_print0 Stdarg.wit_int int int (lift int);
+  Genprint.register_print0 Stdarg.wit_bool pr_bool pr_bool (lift pr_bool);
+  Genprint.register_print0 Stdarg.wit_unit pr_unit pr_unit (lift pr_unit);
+  Genprint.register_print0 Stdarg.wit_pre_ident str str (lift str);
+  Genprint.register_print0 Stdarg.wit_string qstring qstring (lift qstring)
 
 let () =
   let printer _ _ prtac = prtac (0, E) in

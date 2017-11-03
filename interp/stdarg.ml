@@ -28,7 +28,7 @@ let wit_string : string uniform_genarg_type =
   make0 "string"
 
 let wit_pre_ident : string uniform_genarg_type =
-  make0 ~dyn:(val_tag (topwit wit_string)) "preident"
+  make0 "preident"
 
 let loc_of_or_by_notation f = function
   | AN c -> f c

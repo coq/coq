@@ -50,6 +50,13 @@ Some tactics and related functions now support static configurability, e.g.:
   - if None, tells to behave as told with the flag Keep Proof Equalities
   - if Some b, tells to keep proof equalities iff b is true
 
+Declaration of printers for arguments used only in vernac command
+
+- It should now use "declare_extra_vernac_genarg_pprule" rather than
+  "declare_extra_genarg_pprule", otherwise, a failure at runtime might
+  happen. An alternative is to register the corresponding argument as
+  a value, using "Geninterp.register_val0 wit None".
+
 ## Changes between Coq 8.6 and Coq 8.7
 
 ### Ocaml

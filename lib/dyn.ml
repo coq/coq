@@ -11,6 +11,26 @@ sig
   type 'a t
 end
 
+module type MapS =
+sig
+  type t
+  type 'a obj
+  type 'a key
+  val empty : t
+  val add : 'a key -> 'a obj -> t -> t
+  val remove : 'a key -> t -> t
+  val find : 'a key -> t -> 'a obj
+  val mem : 'a key -> t -> bool
+
+  type any = Any : 'a key * 'a obj -> any
+
+  type map = { map : 'a. 'a key -> 'a obj -> 'a obj }
+  val map : map -> t -> t
+
+  val iter : (any -> unit) -> t -> unit
+  val fold : (any -> 'r -> 'r) -> t -> 'r -> 'r
+end
+
 module type PreS =
 sig
 type 'a tag
@@ -24,24 +44,7 @@ type any = Any : 'a tag -> any
 
 val name : string -> any option
 
-module Map(M : TParam) :
-sig
-  type t
-  val empty : t
-  val add : 'a tag -> 'a M.t -> t -> t
-  val remove : 'a tag -> t -> t
-  val find : 'a tag -> t -> 'a M.t
-  val mem : 'a tag -> t -> bool
-
-  type any = Any : 'a tag * 'a M.t -> any
-
-  type map = { map : 'a. 'a tag -> 'a M.t -> 'a M.t }
-  val map : map -> t -> t
-
-  val iter : (any -> unit) -> t -> unit
-  val fold : (any -> 'r -> 'r) -> t -> 'r -> 'r
-
-end
+module Map(M : TParam) : MapS with type 'a obj = 'a M.t with type 'a key = 'a tag
 
 val dump : unit -> (int * string) list
 
@@ -104,6 +107,8 @@ let dump () = Int.Map.bindings !dyntab
 module Map(M : TParam) =
 struct
 type t = Obj.t M.t Int.Map.t
+type 'a obj = 'a M.t
+type 'a key = 'a tag
 let cast : 'a M.t -> 'b M.t = Obj.magic
 let empty = Int.Map.empty
 let add tag v m = Int.Map.add tag (cast v) m

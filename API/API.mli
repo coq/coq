@@ -4973,10 +4973,23 @@ end
 
 module Genprint :
 sig
+  type printer_with_level =
+    { default_already_surrounded : Notation_term.tolerability;
+      default_ensure_surrounded : Notation_term.tolerability;
+      printer : Environ.env -> Evd.evar_map -> Notation_term.tolerability -> Pp.t }
+  type printer_result =
+    | PrinterBasic of (unit -> Pp.t)
+    | PrinterNeedsContext of (Environ.env -> Evd.evar_map -> Pp.t)
+    | PrinterNeedsContextAndLevel of printer_with_level
   type 'a printer = 'a -> Pp.t
-  val generic_top_print : Genarg.tlevel Genarg.generic_argument printer
+  type 'a top_printer = 'a -> printer_result
   val register_print0 : ('raw, 'glb, 'top) Genarg.genarg_type ->
-                        'raw printer -> 'glb printer -> 'top printer -> unit
+                        'raw printer -> 'glb printer -> 'top top_printer -> unit
+  val register_vernac_print0 : ('raw, 'glb, 'top) Genarg.genarg_type ->
+                        'raw printer -> unit
+  val register_val_print0 : 'top Geninterp.Val.typ -> 'top top_printer -> unit
+  val generic_top_print : Genarg.tlevel Genarg.generic_argument top_printer
+  val generic_val_print : Geninterp.Val.t top_printer
 end
 
 module Pputils :
@@ -4997,6 +5010,8 @@ sig
   val pr_name : Names.Name.t -> Pp.t
   [@@ocaml.deprecated "alias of API.Names.Name.print"]
 
+  val lsimpleconstr : Notation_term.tolerability
+  val ltop : Notation_term.tolerability
   val pr_id : Names.Id.t -> Pp.t
   val pr_or_var : ('a -> Pp.t) -> 'a Misctypes.or_var -> Pp.t
   val pr_with_comments : ?loc:Loc.t -> Pp.t -> Pp.t
@@ -5029,6 +5044,7 @@ sig
   val pr_constr_pattern : Pattern.constr_pattern -> Pp.t
   val pr_glob_constr_env : Environ.env -> Glob_term.glob_constr -> Pp.t
   val pr_lglob_constr_env : Environ.env -> Glob_term.glob_constr -> Pp.t
+  val pr_econstr_n_env : Environ.env -> Evd.evar_map -> Notation_term.tolerability -> EConstr.constr -> Pp.t
   val pr_econstr_env : Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t
   val pr_constr_pattern_env : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> Pp.t
   val pr_lconstr_pattern_env : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> Pp.t
@@ -5041,6 +5057,7 @@ sig
   val pr_lconstr_under_binders_env : Environ.env -> Evd.evar_map -> Ltac_pretype.constr_under_binders -> Pp.t
 
   val pr_constr_under_binders_env : Environ.env -> Evd.evar_map -> Ltac_pretype.constr_under_binders -> Pp.t
+  val pr_closed_glob_n_env : Environ.env -> Evd.evar_map -> Notation_term.tolerability -> Ltac_pretype.closed_glob_constr -> Pp.t
   val pr_closed_glob_env : Environ.env -> Evd.evar_map -> Ltac_pretype.closed_glob_constr -> Pp.t
   val pr_rel_context_of : Environ.env -> Evd.evar_map -> Pp.t
   val pr_named_context_of : Environ.env -> Evd.evar_map -> Pp.t

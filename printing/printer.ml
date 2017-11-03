@@ -79,11 +79,14 @@ let _ =
    and only names of goal/section variables and rel names that do
    _not_ occur in the scope of the binder to be printed are avoided. *)
 
+let pr_econstr_n_core goal_concl_style env sigma n t =
+  pr_constr_expr_n n (extern_constr goal_concl_style env sigma t)
 let pr_econstr_core goal_concl_style env sigma t =
   pr_constr_expr (extern_constr goal_concl_style env sigma t)
 let pr_leconstr_core goal_concl_style env sigma t =
   pr_lconstr_expr (extern_constr goal_concl_style env sigma t)
 
+let pr_constr_n_env env sigma n c = pr_econstr_n_core false env sigma n (EConstr.of_constr c)
 let pr_lconstr_env env sigma c = pr_leconstr_core false env sigma (EConstr.of_constr c)
 let pr_constr_env env sigma c = pr_econstr_core false env sigma (EConstr.of_constr c)
 let _ = Hook.set Refine.pr_constr pr_constr_env
@@ -94,6 +97,7 @@ let pr_constr_goal_style_env env sigma c = pr_econstr_core true env sigma (ECons
 let pr_open_lconstr_env env sigma (_,c) = pr_lconstr_env env sigma c
 let pr_open_constr_env env sigma (_,c) = pr_constr_env env sigma c
 
+let pr_econstr_n_env env sigma c = pr_econstr_n_core false env sigma c
 let pr_leconstr_env env sigma c = pr_leconstr_core false env sigma c
 let pr_econstr_env env sigma c = pr_econstr_core false env sigma c
 
@@ -166,6 +170,8 @@ let pr_glob_constr c =
   let (sigma, env) = get_current_context () in
   pr_glob_constr_env env c
 
+let pr_closed_glob_n_env env sigma n c =
+  pr_constr_expr_n n (extern_closed_glob false env sigma c)
 let pr_closed_glob_env env sigma c =
   pr_constr_expr (extern_closed_glob false env sigma c)
 let pr_closed_glob c =

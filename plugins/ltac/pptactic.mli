@@ -46,6 +46,10 @@ val declare_extra_genarg_pprule :
   'b glob_extra_genarg_printer ->
   'c extra_genarg_printer -> unit
 
+val declare_extra_vernac_genarg_pprule :
+  ('a, 'b, 'c) genarg_type ->
+  'a raw_extra_genarg_printer -> unit
+
 type grammar_terminals = Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list
 
 type pp_tactic = {
@@ -69,11 +73,16 @@ val pr_may_eval :
 val pr_and_short_name : ('a -> Pp.t) -> 'a and_short_name -> Pp.t
 val pr_or_by_notation : ('a -> Pp.t) -> 'a or_by_notation -> Pp.t
 
+val pr_evaluable_reference_env : env -> evaluable_global_reference -> Pp.t
+
+val pr_quantified_hypothesis : quantified_hypothesis -> Pp.t
+
 val pr_in_clause :
   ('a -> Pp.t) -> 'a Locus.clause_expr -> Pp.t
 
-val pr_clauses :  bool option ->
+val pr_clauses : (* default: *) bool option ->
   ('a -> Pp.t) -> 'a Locus.clause_expr -> Pp.t
+  (* Some true = default is concl; Some false = default is all; None = no default *)
 
 val pr_raw_generic : env -> rlevel generic_argument -> Pp.t
 
@@ -116,3 +125,6 @@ val pr_value : tolerability -> Val.t -> Pp.t
 
 
 val ltop : tolerability
+
+val make_constr_printer : (env -> Evd.evar_map -> Notation_term.tolerability -> 'a -> Pp.t) ->
+  'a Genprint.top_printer

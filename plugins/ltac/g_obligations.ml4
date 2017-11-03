@@ -155,6 +155,4 @@ let () =
   | None -> mt ()
   | Some tac -> str "with" ++ spc () ++ Pptactic.pr_raw_tactic tac
   in
-  (* should not happen *)
-  let dummy _ _ _ expr = assert false in
-  Pptactic.declare_extra_genarg_pprule wit_withtac printer dummy dummy
+  Pptactic.declare_extra_vernac_genarg_pprule wit_withtac printer
