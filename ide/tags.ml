@@ -15,10 +15,11 @@ let make_tag (tt:GText.tag_table) ~name prop =
 
 module Script =
 struct
+  (* More recently defined tags have highest priority in case of overlapping *)
   let table = GText.tag_table ()
   let comment = make_tag table ~name:"comment" []
-  let error = make_tag table ~name:"error" [`UNDERLINE `SINGLE]
   let warning = make_tag table ~name:"warning" [`UNDERLINE `SINGLE; `FOREGROUND "blue"]
+  let error = make_tag table ~name:"error" [`UNDERLINE `SINGLE]
   let error_bg = make_tag table ~name:"error_bg" []
   let to_process = make_tag table ~name:"to_process" []
   let processed = make_tag table ~name:"processed" []
