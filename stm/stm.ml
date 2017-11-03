@@ -179,7 +179,7 @@ type 'vcs state_info = { (* TODO: Make this record private to VCS *)
 let default_info () =
   { n_reached = 0; n_goals = 0; state = Empty; vcs_backup = None,None }
 
-module DynBlockData : Dyn.S = Dyn.Make(struct end)
+module DynBlockData : Dyn.S = Dyn.Make ()
 
 (* Clusters of nodes implemented as Dag properties.  While Dag and Vcs impose
  * no constraint on properties, here we impose boxes to be non overlapping.
@@ -1558,7 +1558,7 @@ and Slaves : sig
 
 end = struct (* {{{ *)
 
-  module TaskQueue = AsyncTaskQueue.MakeQueue(ProofTask)
+  module TaskQueue = AsyncTaskQueue.MakeQueue(ProofTask) ()
   
   let queue = ref None
   let init () =
@@ -1884,7 +1884,7 @@ and Partac : sig
 
 end = struct (* {{{ *)
     
-  module TaskQueue = AsyncTaskQueue.MakeQueue(TacTask)
+  module TaskQueue = AsyncTaskQueue.MakeQueue(TacTask) ()
 
   let vernac_interp ~solve ~abstract cancel nworkers safe_id id
     { indentation; verbose; loc; expr = e; strlen }
@@ -2014,7 +2014,7 @@ and Query : sig
 
 end = struct (* {{{ *)
 
-  module TaskQueue = AsyncTaskQueue.MakeQueue(QueryTask)
+  module TaskQueue = AsyncTaskQueue.MakeQueue(QueryTask) ()
 
   let queue = ref None
 

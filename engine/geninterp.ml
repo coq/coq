@@ -9,11 +9,11 @@
 open Names
 open Genarg
 
-module TacStore = Store.Make(struct end)
+module TacStore = Store.Make ()
 
 (** Dynamic toplevel values *)
 
-module ValT = Dyn.Make(struct end)
+module ValT = Dyn.Make ()
 
 module Val =
 struct

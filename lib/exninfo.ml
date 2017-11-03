@@ -10,7 +10,7 @@
     containing a pair composed of the distinguishing [token] and the backtrace
     information. We discriminate the token by pointer equality. *)
 
-module Store = Store.Make(struct end)
+module Store = Store.Make ()
 
 type 'a t = 'a Store.field
 

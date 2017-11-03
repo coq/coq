@@ -288,7 +288,7 @@ let usage () =
      (Filename.basename Sys.argv.(0))
      (Parser.print grammar))
 
-module Coqide = Spawn.Sync(struct end)
+module Coqide = Spawn.Sync ()
 
 let main =
   if Sys.os_type = "Unix" then Sys.set_signal Sys.sigpipe

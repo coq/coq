@@ -9,11 +9,6 @@
 (*** This module implements an "untyped store", in this particular case we
         see it as an extensible record whose fields are left unspecified. ***)
 
-module type T =
-sig
-(** FIXME: Waiting for first-class modules... *)
-end
-
 module type S =
 sig
   type t
@@ -42,5 +37,5 @@ sig
 
 end
 
-module Make (M : T) : S
+module Make () : S
 (** Create a new store type. *)

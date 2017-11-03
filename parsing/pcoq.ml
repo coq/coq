@@ -543,11 +543,11 @@ let epsilon_value f e =
 
 (** Synchronized grammar extensions *)
 
-module GramState = Store.Make(struct end)
+module GramState = Store.Make ()
 
 type 'a grammar_extension = 'a -> GramState.t -> extend_rule list * GramState.t
 
-module GrammarCommand = Dyn.Make(struct end)
+module GrammarCommand = Dyn.Make ()
 module GrammarInterp = struct type 'a t = 'a grammar_extension end
 module GrammarInterpMap = GrammarCommand.Map(GrammarInterp)
 

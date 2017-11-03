@@ -41,7 +41,7 @@ end
 
 type expiration = bool ref
 
-module MakeQueue(T : Task) : sig
+module MakeQueue(T : Task) () : sig
 
   type queue
 
@@ -76,7 +76,7 @@ module MakeQueue(T : Task) : sig
 
 end
 
-module MakeWorker(T : Task) : sig
+module MakeWorker(T : Task) () : sig
 
   val main_loop : unit -> unit
   val init_stdout : unit -> unit

@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-module W = AsyncTaskQueue.MakeWorker(Stm.TacTask)
+module W = AsyncTaskQueue.MakeWorker(Stm.TacTask) ()
 
 let () = Coqtop.toploop_init := WorkerLoop.loop W.init_stdout
 
