@@ -7,6 +7,8 @@
 (************************************************************************)
 
 (** Universes. *)
+module Public : sig
+
 module Level :
 sig
   type t
@@ -511,3 +513,11 @@ val equal_universes : Universe.t -> Universe.t -> bool
 (** Universes of constraints *)
 val universes_of_constraints : constraints -> LSet.t
 [@@ocaml.deprecated "Use Constraint.universes_of"]
+
+end
+
+include module type of Public
+
+(* Nothing is internal for now, but likely some stuff should be added here *)
+module Internal : sig
+end

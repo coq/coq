@@ -19,6 +19,7 @@ open Pp
 open CErrors
 open Util
 
+module Internal = struct
 (* Universes are stratified by a partial ordering $\le$.
    Let $\~{}$ be the associated equivalence. We also have a strict ordering
    $<$ between equivalence classes, and we maintain that $<$ is acyclic,
@@ -1232,3 +1233,8 @@ let explain_universe_inconsistency prl (o,u,v,p) =
 let compare_levels = Level.compare
 let eq_levels = Level.equal
 let equal_universes = Universe.equal
+
+end
+
+module Public = Internal
+include Public
