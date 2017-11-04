@@ -226,12 +226,12 @@ module New : sig
 
   val nLastDecls  : 'a Proofview.Goal.t -> int -> named_context
 
-  val ifOnHyp     : (identifier * types -> bool) ->
-    (identifier -> unit Proofview.tactic) -> (identifier -> unit Proofview.tactic) ->
-    identifier -> unit Proofview.tactic
+  val ifOnHyp     : (Id.t * types -> bool) ->
+    (Id.t -> unit Proofview.tactic) -> (Id.t -> unit Proofview.tactic) ->
+    Id.t -> unit Proofview.tactic
 
-  val onNthHypId : int -> (identifier -> unit tactic) -> unit tactic
-  val onLastHypId      : (identifier -> unit tactic) -> unit tactic
+  val onNthHypId : int -> (Id.t -> unit tactic) -> unit tactic
+  val onLastHypId      : (Id.t -> unit tactic) -> unit tactic
   val onLastHyp        : (constr -> unit tactic) -> unit tactic
   val onLastDecl       : (named_declaration -> unit tactic) -> unit tactic
 
@@ -239,9 +239,9 @@ module New : sig
                     (named_context -> unit tactic) -> unit tactic
   val afterHyp    : Id.t -> (named_context -> unit tactic) -> unit tactic
 
-  val tryAllHyps          : (identifier -> unit tactic) -> unit tactic
-  val tryAllHypsAndConcl  : (identifier option -> unit tactic) -> unit tactic
-  val onClause   : (identifier option -> unit tactic) -> clause -> unit tactic
+  val tryAllHyps          : (Id.t -> unit tactic) -> unit tactic
+  val tryAllHypsAndConcl  : (Id.t option -> unit tactic) -> unit tactic
+  val onClause   : (Id.t option -> unit tactic) -> clause -> unit tactic
 
   val elimination_sort_of_goal : 'a Proofview.Goal.t -> sorts_family
   val elimination_sort_of_hyp  : Id.t -> 'a Proofview.Goal.t -> sorts_family

@@ -506,7 +506,7 @@ let save_proof ?proof = function
                   let env = Global.env () in
                   let ids_typ = Environ.global_vars_set env typ in
                   let ids_def = Environ.global_vars_set env pproof in
-                  Some (Environ.keep_hyps env (Idset.union ids_typ ids_def))
+                  Some (Environ.keep_hyps env (Id.Set.union ids_typ ids_def))
               | _ -> None in
 	    let decl = Proof_global.get_universe_decl () in
             let evd = Evd.from_ctx universes in

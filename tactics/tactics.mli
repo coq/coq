@@ -271,7 +271,7 @@ type eliminator = {
 val general_elim  : evars_flag -> clear_flag ->
   constr with_bindings -> eliminator -> unit Proofview.tactic
 
-val general_elim_clause : evars_flag -> unify_flags -> identifier option ->
+val general_elim_clause : evars_flag -> unify_flags -> Id.t option ->
   clausenv -> eliminator -> unit Proofview.tactic
 
 val default_elim  : evars_flag -> clear_flag -> constr with_bindings ->
@@ -355,7 +355,7 @@ val assert_before : Name.t -> types -> unit Proofview.tactic
 val assert_after  : Name.t -> types -> unit Proofview.tactic
 
 val assert_as     : (* true = before *) bool ->
-  (* optionally tell if a specialization of some hyp: *) identifier option ->
+  (* optionally tell if a specialization of some hyp: *) Id.t option ->
   intro_pattern option -> constr -> unit Proofview.tactic
 
 (** Implements the tactics assert, enough and pose proof; note that "by"
@@ -428,7 +428,7 @@ module Simple : sig
   val eapply : constr -> unit Proofview.tactic
   val elim   : constr -> unit Proofview.tactic
   val case   : constr -> unit Proofview.tactic
-  val apply_in : identifier -> constr -> unit Proofview.tactic
+  val apply_in : Id.t -> constr -> unit Proofview.tactic
 
 end
 

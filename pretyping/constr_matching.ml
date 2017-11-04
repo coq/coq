@@ -213,7 +213,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
   let open EConstr in
   let convref ref c = 
     match ref, EConstr.kind sigma c with
-    | VarRef id, Var id' -> Names.id_eq id id'
+    | VarRef id, Var id' -> Names.Id.equal id id'
     | ConstRef c, Const (c',_) -> Names.eq_constant c c'
     | IndRef i, Ind (i', _) -> Names.eq_ind i i'
     | ConstructRef c, Construct (c',u) -> Names.eq_constructor c c'

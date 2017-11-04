@@ -44,7 +44,7 @@ type atom =
   | Aconstant of pconstant
   | Aind of pinductive
   | Asort of sorts
-  | Avar of identifier
+  | Avar of Id.t
   | Acase of annot_sw * accumulator * t * (t -> t) 
   | Afix of t array * t array * rec_pos * int 
   | Acofix of t array * t array * int * t
@@ -62,7 +62,7 @@ val mk_rels_accu : int -> int -> t array
 val mk_constant_accu : constant -> Univ.Level.t array -> t
 val mk_ind_accu : inductive -> Univ.Level.t array -> t
 val mk_sort_accu : sorts -> Univ.Level.t array -> t
-val mk_var_accu : identifier -> t
+val mk_var_accu : Id.t -> t
 val mk_sw_accu : annot_sw -> accumulator -> t -> (t -> t)
 val mk_prod_accu : name -> t -> t -> t
 val mk_fix_accu : rec_pos  -> int -> t array -> t array -> t

@@ -202,7 +202,7 @@ let interp_universe_level_name ~anon_rigidity evd (loc, s) =
        with Not_found ->
 	 try
 	   let id = try Id.of_string s with _ -> raise Not_found in
-           evd, snd (Idmap.find id names)
+           evd, snd (Id.Map.find id names)
 	 with Not_found ->
 	   if not (is_strict_universe_declarations ()) then
   	     new_univ_level_variable ?loc ~name:s univ_rigid evd

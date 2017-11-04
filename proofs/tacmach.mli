@@ -97,7 +97,7 @@ val pr_glls   : goal list sigma -> Pp.t
 (* Variants of [Tacmach] functions built with the new proof engine *)
 module New : sig
   val pf_apply : (env -> evar_map -> 'a) -> 'b Proofview.Goal.t -> 'a
-  val pf_global : identifier -> 'a Proofview.Goal.t -> Globnames.global_reference
+  val pf_global : Id.t -> 'a Proofview.Goal.t -> Globnames.global_reference
   (** FIXME: encapsulate the level in an existential type. *)
   val of_old : (Proof_type.goal Evd.sigma -> 'a) -> [ `NF ] Proofview.Goal.t -> 'a
 
@@ -118,13 +118,13 @@ module New : sig
   val pf_type_of : 'a Proofview.Goal.t -> constr -> evar_map * types
   val pf_conv_x : 'a Proofview.Goal.t -> t -> t -> bool
 
-  val pf_get_new_id  : identifier -> 'a Proofview.Goal.t -> identifier
-  val pf_ids_of_hyps : 'a Proofview.Goal.t -> identifier list
+  val pf_get_new_id  : Id.t -> 'a Proofview.Goal.t -> Id.t
+  val pf_ids_of_hyps : 'a Proofview.Goal.t -> Id.t list
   val pf_ids_set_of_hyps : 'a Proofview.Goal.t -> Id.Set.t
-  val pf_hyps_types : 'a Proofview.Goal.t -> (identifier * types) list
+  val pf_hyps_types : 'a Proofview.Goal.t -> (Id.t * types) list
 
-  val pf_get_hyp : identifier -> 'a Proofview.Goal.t -> named_declaration
-  val pf_get_hyp_typ        : identifier -> 'a Proofview.Goal.t -> types
+  val pf_get_hyp : Id.t -> 'a Proofview.Goal.t -> named_declaration
+  val pf_get_hyp_typ        : Id.t -> 'a Proofview.Goal.t -> types
   val pf_last_hyp           : 'a Proofview.Goal.t -> named_declaration
 
   val pf_nf_concl : [ `LZ ] Proofview.Goal.t -> types

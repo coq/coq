@@ -190,7 +190,7 @@ let build_beq_scheme mode kn =
 	match EConstr.kind sigma c with
         | Rel x -> mkRel (x-nlist+ndx), Safe_typing.empty_private_constants
         | Var x ->
-          let eid = id_of_string ("eq_"^(string_of_id x)) in
+          let eid = Id.of_string ("eq_"^(Id.to_string x)) in
           let () =
             try ignore (Environ.lookup_named eid env)
             with Not_found -> raise (ParameterWithoutEquality (VarRef x))
