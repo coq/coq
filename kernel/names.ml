@@ -21,6 +21,8 @@
 open Pp
 open Util
 
+module Internal = struct
+
 (** {6 Identifiers } *)
 
 (** Representation and operations on identifiers. *)
@@ -950,3 +952,8 @@ let string_of_mind = MutInd.to_string
 let pr_mind = MutInd.print
 let debug_string_of_mind = MutInd.debug_to_string
 let debug_pr_mind = MutInd.debug_print
+
+end
+
+module Public = Internal
+include Public
