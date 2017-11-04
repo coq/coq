@@ -63,11 +63,11 @@ let empty_labmap = { objs = Label.Map.empty; mods = Label.Map.empty }
 
 let get_obj mp map l =
   try Label.Map.find l map.objs
-  with Not_found -> error_no_such_label_sub l (string_of_mp mp)
+  with Not_found -> error_no_such_label_sub l (ModPath.to_string mp)
 
 let get_mod mp map l =
   try Label.Map.find l map.mods
-  with Not_found -> error_no_such_label_sub l (string_of_mp mp)
+  with Not_found -> error_no_such_label_sub l (ModPath.to_string mp)
 
 let make_labmap mp list =
   let add_one (l,e) map =
@@ -181,7 +181,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
       let cst = check_inductive_type cst p2.mind_typename ty1 ty2 in
 	cst
   in
-  let mind = mind_of_kn kn1 in
+  let mind = MutInd.make1 kn1 in
   let check_cons_types i cst p1 p2 =
     Array.fold_left3
       (fun cst id t1 t2 -> check_conv (NotConvertibleConstructorField id) cst

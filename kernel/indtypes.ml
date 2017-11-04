@@ -787,7 +787,7 @@ exception UndefinableExpansion
     a substitution of the form [params, x : ind params] *)
 let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
     mind_consnrealdecls mind_consnrealargs paramslet ctx =
-  let mp, dp, l = repr_mind kn in
+  let mp, dp, l = MutInd.repr3 kn in
   (** We build a substitution smashing the lets in the record parameters so
       that typechecking projections requires just a substitution and not
       matching with a parameter context. *)

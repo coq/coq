@@ -19,7 +19,7 @@ open Mod_subst
 type reloc_info =
   | Reloc_annot of annot_switch
   | Reloc_const of structured_constant
-  | Reloc_getglobal of Names.constant
+  | Reloc_getglobal of Names.Constant.t
 
 type patch = reloc_info * int
 
@@ -348,12 +348,12 @@ let subst_to_patch s (code,pl,fv) =
 
 type body_code =
   | BCdefined of to_patch
-  | BCalias of Names.constant
+  | BCalias of Names.Constant.t
   | BCconstant
 
 type to_patch_substituted =
 | PBCdefined of to_patch substituted
-| PBCalias of Names.constant substituted
+| PBCalias of Names.Constant.t substituted
 | PBCconstant
 
 let from_val = function

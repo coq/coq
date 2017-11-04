@@ -301,7 +301,7 @@ let nametab_register_modparam mbid mtb =
       id
 
 let print_body is_impl env mp (l,body) =
-  let name = pr_label l in
+  let name = Label.print l in
   hov 2 (match body with
     | SFBmodule _ -> keyword "Module" ++ spc () ++ name
     | SFBmodtype _ -> keyword "Module Type" ++ spc () ++ name

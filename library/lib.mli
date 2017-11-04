@@ -81,8 +81,8 @@ val make_path : Names.Id.t -> Libnames.full_path
 val make_path_except_section : Names.Id.t -> Libnames.full_path
 
 (** Kernel-side names *)
-val current_mp : unit -> Names.module_path
-val make_kn : Names.Id.t -> Names.kernel_name
+val current_mp : unit -> Names.ModPath.t
+val make_kn : Names.Id.t -> Names.KerName.t
 
 (** Are we inside an opened section *)
 val sections_are_opened : unit -> bool
@@ -103,11 +103,11 @@ val find_opening_node : Names.Id.t -> node
 (** {6 Modules and module types } *)
 
 val start_module :
-  export -> Names.module_ident -> Names.module_path ->
+  export -> Names.module_ident -> Names.ModPath.t ->
   Summary.frozen -> Libnames.object_prefix
 
 val start_modtype :
-  Names.module_ident -> Names.module_path ->
+  Names.module_ident -> Names.ModPath.t ->
   Summary.frozen -> Libnames.object_prefix
 
 val end_module :
@@ -122,7 +122,7 @@ val end_modtype :
 
 (** {6 Compilation units } *)
 
-val start_compilation : Names.DirPath.t -> Names.module_path -> unit
+val start_compilation : Names.DirPath.t -> Names.ModPath.t -> unit
 val end_compilation_checks : Names.DirPath.t -> Libnames.object_name
 val end_compilation :
   Libnames.object_name-> Libnames.object_prefix * library_segment
@@ -132,8 +132,8 @@ val end_compilation :
 val library_dp : unit -> Names.DirPath.t
 
 (** Extract the library part of a name even if in a section *)
-val dp_of_mp : Names.module_path -> Names.DirPath.t
-val split_modpath : Names.module_path -> Names.DirPath.t * Names.Id.t list
+val dp_of_mp : Names.ModPath.t -> Names.DirPath.t
+val split_modpath : Names.ModPath.t -> Names.DirPath.t * Names.Id.t list
 val library_part :  Globnames.global_reference -> Names.DirPath.t
 
 (** {6 Sections } *)
@@ -158,8 +158,8 @@ type abstr_info = variable_context * Univ.universe_level_subst * Univ.AUContext.
 val instance_from_variable_context : variable_context -> Names.Id.t array
 val named_of_variable_context : variable_context -> Context.Named.t
 
-val section_segment_of_constant : Names.constant -> abstr_info
-val section_segment_of_mutual_inductive: Names.mutual_inductive -> abstr_info
+val section_segment_of_constant : Names.Constant.t -> abstr_info
+val section_segment_of_mutual_inductive: Names.MutInd.t -> abstr_info
 val variable_section_segment_of_reference : Globnames.global_reference -> variable_context
 
 val section_instance : Globnames.global_reference -> Univ.universe_instance * Names.Id.t array
@@ -168,15 +168,15 @@ val is_in_section : Globnames.global_reference -> bool
 val add_section_variable : Names.Id.t -> Decl_kinds.binding_kind -> Decl_kinds.polymorphic -> Univ.universe_context_set -> unit
 val add_section_context : Univ.universe_context_set -> unit
 val add_section_constant : Decl_kinds.polymorphic ->
-  Names.constant -> Context.Named.t -> unit
+  Names.Constant.t -> Context.Named.t -> unit
 val add_section_kn : Decl_kinds.polymorphic ->
-  Names.mutual_inductive -> Context.Named.t -> unit
+  Names.MutInd.t -> Context.Named.t -> unit
 val replacement_context : unit -> Opaqueproof.work_list
 
 (** {6 Discharge: decrease the section level if in the current section } *)
 
-val discharge_kn :  Names.mutual_inductive -> Names.mutual_inductive
-val discharge_con : Names.constant -> Names.constant
+val discharge_kn :  Names.MutInd.t -> Names.MutInd.t
+val discharge_con : Names.Constant.t -> Names.Constant.t
 val discharge_global : Globnames.global_reference -> Globnames.global_reference
 val discharge_inductive : Names.inductive -> Names.inductive
 val discharge_abstract_universe_context :

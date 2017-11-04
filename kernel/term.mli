@@ -26,7 +26,7 @@ type sorts_family = Sorts.family = InProp | InSet | InType
 type 'a puniverses = 'a Univ.puniverses
 
 (** Simply type aliases *)
-type pconstant = constant puniverses
+type pconstant = Constant.t puniverses
 type pinductive = inductive puniverses
 type pconstructor = constructor puniverses
 
@@ -80,7 +80,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Lambda    of Name.t * 'types * 'constr
   | LetIn     of Name.t * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
-  | Const     of (constant * 'univs)
+  | Const     of (Constant.t * 'univs)
   | Ind       of (inductive * 'univs)
   | Construct of (constructor * 'univs)
   | Case      of case_info * 'constr * 'constr * 'constr array
@@ -165,7 +165,7 @@ val decompose_app : constr -> constr * constr list
 val decompose_appvect : constr -> constr * constr array
 
 (** Destructs a constant *)
-val destConst : constr -> constant puniverses
+val destConst : constr -> Constant.t puniverses
 
 (** Destructs an existential variable *)
 val destEvar : constr -> existential
@@ -415,11 +415,11 @@ val mkProd : Name.t * types * types -> types
 val mkLambda : Name.t * types * constr -> constr
 val mkLetIn : Name.t * constr * types * constr -> constr
 val mkApp : constr * constr array -> constr
-val mkConst : constant -> constr
+val mkConst : Constant.t -> constr
 val mkProj : projection * constr -> constr
 val mkInd : inductive -> constr
 val mkConstruct : constructor -> constr
-val mkConstU : constant puniverses -> constr
+val mkConstU : Constant.t puniverses -> constr
 val mkIndU : inductive puniverses -> constr
 val mkConstructU : constructor puniverses -> constr
 val mkConstructUi : (pinductive * int) -> constr

@@ -59,7 +59,7 @@ type module_typing_error =
   | NotAFunctor
   | IsAFunctor
   | IncompatibleModuleTypes of module_type_body * module_type_body
-  | NotEqualModulePaths of module_path * module_path
+  | NotEqualModulePaths of ModPath.t * ModPath.t
   | NoSuchLabel of Label.t
   | IncompatibleLabels of Label.t * Label.t
   | NotAModule of string
@@ -68,7 +68,7 @@ type module_typing_error =
   | IncorrectWithConstraint of Label.t
   | GenerativeModuleExpected of Label.t
   | LabelMissing of Label.t * string
-  | IncludeRestrictedFunctor of module_path
+  | IncludeRestrictedFunctor of ModPath.t
 
 exception ModuleTypingError of module_typing_error
 
@@ -403,8 +403,8 @@ let inline_delta_resolver env inl mp mbid mtb delta =
 	      let constr = Mod_subst.force_constr body in
 	      add_inline_delta_resolver kn (lev, Some constr) l
 	with Not_found ->
-	  error_no_such_label_sub (con_label con)
-	    (string_of_mp (con_modpath con))
+	  error_no_such_label_sub (Constant.label con)
+	    (ModPath.to_string (Constant.modpath con))
   in
   make_inline delta constants
 

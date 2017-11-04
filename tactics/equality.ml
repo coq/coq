@@ -374,16 +374,16 @@ let find_elim hdcncl lft2rgt dep cls ot =
         | Some true, None
         | Some false, Some _ ->
 	  let c1 = destConstRef pr1 in 
-	  let mp,dp,l = repr_con (constant_of_kn (canonical_con c1)) in 
+	  let mp,dp,l = Constant.repr3 (Constant.make1 (Constant.canonical c1)) in 
 	  let l' = Label.of_id (add_suffix (Label.to_id l) "_r")  in 
-	  let c1' = Global.constant_of_delta_kn (make_kn mp dp l') in
+	  let c1' = Global.constant_of_delta_kn (KerName.make mp dp l') in
 	  begin 
 	    try 
 	      let _ = Global.lookup_constant c1' in
 		c1'
 	    with Not_found -> 
 	      user_err ~hdr:"Equality.find_elim"
-                (str "Cannot find rewrite principle " ++ pr_label l' ++ str ".")
+                (str "Cannot find rewrite principle " ++ Label.print l' ++ str ".")
 	  end
 	| _ -> destConstRef pr1
         end

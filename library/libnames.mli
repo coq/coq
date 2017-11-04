@@ -91,9 +91,9 @@ val qualid_of_ident : Id.t -> qualid
    can be substituted and a "syntactic" [full_path] which can be printed
 *)
 
-type object_name = full_path * kernel_name
+type object_name = full_path * KerName.t
 
-type object_prefix = DirPath.t * (module_path * DirPath.t)
+type object_prefix = DirPath.t * (ModPath.t * DirPath.t)
 
 val eq_op : object_prefix -> object_prefix -> bool
 

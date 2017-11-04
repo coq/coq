@@ -52,17 +52,17 @@ val definition_entry : ?fix_exn:Future.fix_exn ->
   internal specify if the constant has been created by the kernel or by the
   user, and in the former case, if its errors should be silent *)
 val declare_constant :
- ?internal:internal_flag -> ?local:bool -> Id.t -> ?export_seff:bool -> constant_declaration -> constant
+ ?internal:internal_flag -> ?local:bool -> Id.t -> ?export_seff:bool -> constant_declaration -> Constant.t
 
 val declare_definition : 
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->
   ?local:bool -> ?poly:polymorphic -> Id.t -> ?types:constr -> 
-  constr Univ.in_universe_context_set -> constant
+  constr Univ.in_universe_context_set -> Constant.t
 
 (** Since transparent constants' side effects are globally declared, we
  *  need that *)
 val set_declare_scheme :
-  (string -> (inductive * constant) array -> unit) -> unit
+  (string -> (inductive * Constant.t) array -> unit) -> unit
 
 (** [declare_mind me] declares a block of inductive types with
    their constructors in the current section; it returns the path of

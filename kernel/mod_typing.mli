@@ -21,16 +21,16 @@ open Names
 *)
 
 val translate_module :
-  env -> module_path -> inline -> module_entry -> module_body
+  env -> ModPath.t -> inline -> module_entry -> module_body
 
 (** [translate_modtype] produces a [module_type_body] whose [mod_type_alg]
     cannot be [None] (and of course [mod_expr] is [Abstract]). *)
 
 val translate_modtype :
-  env -> module_path -> inline -> module_type_entry -> module_type_body
+  env -> ModPath.t -> inline -> module_type_entry -> module_type_body
 
 (** Low-level function for translating a module struct entry :
-    - We translate to a module when a [module_path] is given,
+    - We translate to a module when a [ModPath.t] is given,
       otherwise to a module type.
     - The first output is the expanded signature
     - The second output is the algebraic expression, kept mostly for
@@ -40,14 +40,14 @@ type 'alg translation =
   module_signature * 'alg * delta_resolver * Univ.ContextSet.t
 
 val translate_mse :
-  env -> module_path option -> inline -> module_struct_entry ->
+  env -> ModPath.t option -> inline -> module_struct_entry ->
     module_alg_expr translation
 
 (** From an already-translated (or interactive) implementation and
     an (optional) signature entry, produces a final [module_body] *)
 
 val finalize_module :
-  env -> module_path -> (module_expression option) translation ->
+  env -> ModPath.t -> (module_expression option) translation ->
   (module_type_entry * inline) option ->
   module_body
 
@@ -55,5 +55,5 @@ val finalize_module :
     module type given to an Include *)
 
 val translate_mse_incl :
-  bool -> env -> module_path -> inline -> module_struct_entry ->
+  bool -> env -> ModPath.t -> inline -> module_struct_entry ->
     unit translation

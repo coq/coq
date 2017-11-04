@@ -67,7 +67,7 @@ type ('constr, 'types) pcofixpoint = ('constr, 'types) Constr.pcofixpoint
 type 'a puniverses = 'a Univ.puniverses
 
 (** Simply type aliases *)
-type pconstant = constant puniverses
+type pconstant = Constant.t puniverses
 type pinductive = inductive puniverses
 type pconstructor = constructor puniverses
 
@@ -83,7 +83,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Lambda    of Name.t * 'types * 'constr
   | LetIn     of Name.t * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
-  | Const     of (constant * 'univs)
+  | Const     of (Constant.t * 'univs)
   | Ind       of (inductive * 'univs)
   | Construct of (constructor * 'univs)
   | Case      of case_info * 'constr * 'constr * 'constr array

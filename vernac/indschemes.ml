@@ -407,7 +407,7 @@ let do_mutual_induction_scheme lnamedepindsort =
 let get_common_underlying_mutual_inductive = function
   | [] -> assert false
   | (id,(mind,i as ind))::l as all ->
-      match List.filter (fun (_,(mind',_)) -> not (eq_mind mind mind')) l with
+      match List.filter (fun (_,(mind',_)) -> not (MutInd.equal mind mind')) l with
       | (_,ind')::_ ->
 	  raise (RecursionSchemeError (NotMutualInScheme (ind,ind')))
       | [] ->

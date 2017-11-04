@@ -71,8 +71,8 @@ val jmeq_module_name : string list
 val datatypes_module_name : string list
 
 (** Identity  *)
-val id : constant
-val type_of_id : constant
+val id : Constant.t
+val type_of_id : Constant.t
 
 (** Natural numbers *)
 val nat_path : full_path

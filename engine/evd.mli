@@ -580,7 +580,7 @@ val update_sigma_env : evar_map -> env -> evar_map
 (** Polymorphic universes *)
 
 val fresh_sort_in_family : ?loc:Loc.t -> ?rigid:rigid -> env -> evar_map -> sorts_family -> evar_map * sorts
-val fresh_constant_instance : ?loc:Loc.t -> env -> evar_map -> constant -> evar_map * pconstant
+val fresh_constant_instance : ?loc:Loc.t -> env -> evar_map -> Constant.t -> evar_map * pconstant
 val fresh_inductive_instance : ?loc:Loc.t -> env -> evar_map -> inductive -> evar_map * pinductive
 val fresh_constructor_instance : ?loc:Loc.t -> env -> evar_map -> constructor -> evar_map * pconstructor
 

@@ -80,12 +80,12 @@ val print_located_module : reference -> Pp.t
 val print_located_other : string -> reference -> Pp.t
 
 type object_pr = {
-  print_inductive           : mutual_inductive -> Pp.t;
-  print_constant_with_infos : constant -> Pp.t;
+  print_inductive           : MutInd.t -> Pp.t;
+  print_constant_with_infos : Constant.t -> Pp.t;
   print_section_variable    : variable -> Pp.t;
-  print_syntactic_def       : kernel_name -> Pp.t;
-  print_module              : bool -> Names.module_path -> Pp.t;
-  print_modtype             : module_path -> Pp.t;
+  print_syntactic_def       : KerName.t -> Pp.t;
+  print_module              : bool -> ModPath.t -> Pp.t;
+  print_modtype             : ModPath.t -> Pp.t;
   print_named_decl          : Context.Named.Declaration.t -> Pp.t;
   print_library_entry       : bool -> (object_name * Lib.node) -> Pp.t option;
   print_context             : bool -> int option -> Lib.library_segment -> Pp.t;

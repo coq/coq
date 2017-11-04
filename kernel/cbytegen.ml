@@ -998,7 +998,7 @@ let compile_constant_body fail_on_error env univs = function
       match kind_of_term body with
 	| Const (kn',u) when is_univ_copy instance_size u ->
 	    (* we use the canonical name of the constant*)
-	    let con= constant_of_kn (canonical_con kn') in
+	    let con= Constant.make1 (Constant.canonical kn') in
 	      Some (BCalias (get_alias env con))
 	| _ ->
 	    let res = compile fail_on_error ~universes:instance_size env body in
@@ -1006,7 +1006,7 @@ let compile_constant_body fail_on_error env univs = function
 
 (* Shortcut of the previous function used during module strengthening *)
 
-let compile_alias kn = BCalias (constant_of_kn (canonical_con kn))
+let compile_alias kn = BCalias (Constant.make1 (Constant.canonical kn))
 
 (* spiwack: additional function which allow different part of compilation of the
       31-bit integers *)

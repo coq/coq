@@ -47,7 +47,7 @@ val uniq_seff : side_effects -> side_effect list
 val equal_eff : side_effect -> side_effect -> bool
 
 val translate_constant :
-  'a trust -> env -> constant -> 'a constant_entry ->
+  'a trust -> env -> Constant.t -> 'a constant_entry ->
     constant_body
 
 type side_effect_role =
@@ -55,7 +55,7 @@ type side_effect_role =
   | Schema of inductive * string
 
 type exported_side_effect = 
-  constant * constant_body * side_effect_role
+  Constant.t * constant_body * side_effect_role
   
 (* Given a constant entry containing side effects it exports them (either
  * by re-checking them or trusting them).  Returns the constant bodies to
@@ -66,14 +66,14 @@ val export_side_effects :
     exported_side_effect list * unit constant_entry
 
 val translate_mind :
-  env -> mutual_inductive -> mutual_inductive_entry -> mutual_inductive_body
+  env -> MutInd.t -> mutual_inductive_entry -> mutual_inductive_body
 
-val translate_recipe : env -> constant -> Cooking.recipe -> constant_body
+val translate_recipe : env -> Constant.t -> Cooking.recipe -> constant_body
 
 (** Internal functions, mentioned here for debug purpose only *)
 
-val infer_declaration : trust:'a trust -> env -> constant option -> 
+val infer_declaration : trust:'a trust -> env -> Constant.t option -> 
   'a constant_entry -> Cooking.result
 
 val build_constant_declaration :
-  constant -> env -> Cooking.result -> constant_body
+  Constant.t -> env -> Cooking.result -> constant_body

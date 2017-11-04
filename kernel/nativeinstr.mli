@@ -20,17 +20,17 @@ type uint =
   | UintDecomp of prefix * constructor * lambda
 
 and lambda =
-  | Lrel          of name * int 
+  | Lrel          of Name.t * int 
   | Lvar          of Id.t
   | Lmeta         of metavariable * lambda (* type *)
   | Levar         of existential * lambda (* type *)
   | Lprod         of lambda * lambda 
-  | Llam          of name array * lambda  
-  | Llet          of name * lambda * lambda
+  | Llam          of Name.t array * lambda  
+  | Llet          of Name.t * lambda * lambda
   | Lapp          of lambda * lambda array
   | Lconst        of prefix * pconstant
-  | Lproj         of prefix * constant (* prefix, projection name *)
-  | Lprim         of prefix * constant * CPrimitives.t * lambda array
+  | Lproj         of prefix * Constant.t (* prefix, projection name *)
+  | Lprim         of prefix * Constant.t * CPrimitives.t * lambda array
   | Lcase         of annot_sw * lambda * lambda * lam_branches 
                   (* annotations, term being matched, accu, branches *)
   | Lif           of lambda * lambda * lambda
@@ -48,6 +48,6 @@ and lambda =
   | Llazy
   | Lforce
 
-and lam_branches = (constructor * name array * lambda) array 
+and lam_branches = (constructor * Name.t array * lambda) array 
 
-and fix_decl =  name array * lambda array * lambda array
+and fix_decl =  Name.t array * lambda array * lambda array

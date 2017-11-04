@@ -75,7 +75,7 @@ type ('constr, 'types) pfixpoint =
 type ('constr, 'types) pcofixpoint =
     int * ('constr, 'types) prec_declaration
 type 'a puniverses = 'a Univ.puniverses
-type pconstant = constant puniverses
+type pconstant = Constant.t puniverses
 type pinductive = inductive puniverses
 type pconstructor = constructor puniverses
 
@@ -92,7 +92,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Lambda    of Name.t * 'types * 'constr
   | LetIn     of Name.t * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
-  | Const     of (constant * 'univs)
+  | Const     of (Constant.t * 'univs)
   | Ind       of (inductive * 'univs)
   | Construct of (constructor * 'univs)
   | Case      of case_info * 'constr * 'constr * 'constr array
@@ -520,7 +520,7 @@ let compare_head_gen_leq_with kind1 kind2 eq_universes leq_sorts eq leq t1 t2 =
         eq c1 c2 && Array.equal_norefl eq l1 l2
   | Proj (p1,c1), Proj (p2,c2) -> Projection.equal p1 p2 && eq c1 c2
   | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && Array.equal eq l1 l2
-  | Const (c1,u1), Const (c2,u2) -> eq_constant c1 c2 && eq_universes true u1 u2
+  | Const (c1,u1), Const (c2,u2) -> Constant.equal c1 c2 && eq_universes true u1 u2
   | Ind (c1,u1), Ind (c2,u2) -> eq_ind c1 c2 && eq_universes false u1 u2
   | Construct (c1,u1), Construct (c2,u2) -> eq_constructor c1 c2 && eq_universes false u1 u2
   | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
@@ -681,7 +681,7 @@ let constr_ord_int f t1 t2 =
     | Proj (p1,c1), Proj (p2,c2) -> (Projection.compare =? f) p1 p2 c1 c2
     | Evar (e1,l1), Evar (e2,l2) ->
         (Evar.compare =? (Array.compare f)) e1 e2 l1 l2
-    | Const (c1,u1), Const (c2,u2) -> con_ord c1 c2
+    | Const (c1,u1), Const (c2,u2) -> Constant.CanOrd.compare c1 c2
     | Ind (ind1, u1), Ind (ind2, u2) -> ind_ord ind1 ind2
     | Construct (ct1,u1), Construct (ct2,u2) -> constructor_ord ct1 ct2
     | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->

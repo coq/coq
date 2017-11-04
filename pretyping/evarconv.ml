@@ -297,7 +297,7 @@ let ise_stack2 no_app env evd f sk1 sk2 =
         | UnifFailure _ as x -> fail x)
       | UnifFailure _ as x -> fail x)
     | Stack.Proj (n1,a1,p1,_)::q1, Stack.Proj (n2,a2,p2,_)::q2 ->
-       if eq_constant (Projection.constant p1) (Projection.constant p2)
+       if Constant.equal (Projection.constant p1) (Projection.constant p2)
        then ise_stack2 true i q1 q2
        else fail (UnifFailure (i, NotSameHead))
     | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1,_)::q1,
@@ -341,7 +341,7 @@ let exact_ise_stack2 env evd f sk1 sk2 =
 	  (fun i -> ise_stack2 i a1 a2)]
       else UnifFailure (i,NotSameHead)
     | Stack.Proj (n1,a1,p1,_)::q1, Stack.Proj (n2,a2,p2,_)::q2 ->
-       if eq_constant (Projection.constant p1) (Projection.constant p2)
+       if Constant.equal (Projection.constant p1) (Projection.constant p2)
        then ise_stack2 i q1 q2
        else (UnifFailure (i, NotSameHead))
     | Stack.Update _ :: _, _ | Stack.Shift _ :: _, _
@@ -771,7 +771,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	    ise_try evd [f1; f2]
 	      
 	(* Catch the p.c ~= p c' cases *)
-	| Proj (p,c), Const (p',u) when eq_constant (Projection.constant p) p' ->
+	| Proj (p,c), Const (p',u) when Constant.equal (Projection.constant p) p' ->
 	  let res = 
 	    try Some (destApp evd (Retyping.expand_projection env evd p c []))
 	    with Retyping.RetypeError _ -> None
@@ -782,7 +782,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 		(appr2,csts2)
 	    | None -> UnifFailure (evd,NotSameHead))
 	      
-	| Const (p,u), Proj (p',c') when eq_constant p (Projection.constant p') ->
+	| Const (p,u), Proj (p',c') when Constant.equal p (Projection.constant p') ->
 	  let res = 
 	    try Some (destApp evd (Retyping.expand_projection env evd p' c' []))
 	    with Retyping.RetypeError _ -> None

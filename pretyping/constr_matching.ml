@@ -214,7 +214,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
   let convref ref c = 
     match ref, EConstr.kind sigma c with
     | VarRef id, Var id' -> Names.Id.equal id id'
-    | ConstRef c, Const (c',_) -> Names.eq_constant c c'
+    | ConstRef c, Const (c',_) -> Constant.equal c c'
     | IndRef i, Ind (i', _) -> Names.eq_ind i i'
     | ConstructRef c, Construct (c',u) -> Names.eq_constructor c c'
     | _, _ -> 
@@ -286,7 +286,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
 	   
       | PApp (c1,arg1), App (c2,arg2) ->
 	(match c1, EConstr.kind sigma c2 with
-	| PRef (ConstRef r), Proj (pr,c) when not (eq_constant r (Projection.constant pr))
+	| PRef (ConstRef r), Proj (pr,c) when not (Constant.equal r (Projection.constant pr))
 	    || Projection.unfolded pr ->
 	  raise PatternMatchingFailure
 	| PProj (pr1,c1), Proj (pr,c) ->
@@ -303,7 +303,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
           with Invalid_argument _ -> raise PatternMatchingFailure)
 	  
       | PApp (PRef (ConstRef c1), _), Proj (pr, c2) 
-	when Projection.unfolded pr || not (eq_constant c1 (Projection.constant pr)) -> 
+	when Projection.unfolded pr || not (Constant.equal c1 (Projection.constant pr)) -> 
 	raise PatternMatchingFailure
 	
       | PApp (c, args), Proj (pr, c2) ->

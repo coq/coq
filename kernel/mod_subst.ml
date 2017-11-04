@@ -23,13 +23,13 @@ open Term
 
 type delta_hint =
   | Inline of int * constr option
-  | Equiv of kernel_name
+  | Equiv of KerName.t
 
-(* NB: earlier constructor Prefix_equiv of module_path
+(* NB: earlier constructor Prefix_equiv of ModPath.t
    is now stored in a separate table, see Deltamap.t below *)
 
 module Deltamap = struct
-  type t = module_path MPmap.t * delta_hint KNmap.t
+  type t = ModPath.t MPmap.t * delta_hint KNmap.t
   let empty = MPmap.empty, KNmap.empty
   let is_empty (mm, km) =
     MPmap.is_empty mm && KNmap.is_empty km
@@ -45,7 +45,7 @@ module Deltamap = struct
 end
 
 (* Invariant: in the [delta_hint] map, an [Equiv] should only
-   relate [kernel_name] with the same label (and section dirpath). *)
+   relate [KerName.t] with the same label (and section dirpath). *)
 
 type delta_resolver = Deltamap.t
 
@@ -65,7 +65,7 @@ module Umap = struct
   let join map1 map2 = fold add_mp add_mbi map1 map2
 end
 
-type substitution = (module_path * delta_resolver) Umap.t
+type substitution = (ModPath.t * delta_resolver) Umap.t
 
 let empty_subst = Umap.empty
 
@@ -76,21 +76,21 @@ let is_empty_subst = Umap.is_empty
 let string_of_hint = function
   | Inline (_,Some _) -> "inline(Some _)"
   | Inline _ -> "inline()"
-  | Equiv kn -> string_of_kn kn
+  | Equiv kn -> KerName.to_string kn
 
 let debug_string_of_delta resolve =
   let kn_to_string kn hint l =
-    (string_of_kn kn ^ "=>" ^ string_of_hint hint) :: l
+    (KerName.to_string kn ^ "=>" ^ string_of_hint hint) :: l
   in
   let mp_to_string mp mp' l =
-    (string_of_mp mp ^ "=>" ^ string_of_mp mp') :: l
+    (ModPath.to_string mp ^ "=>" ^ ModPath.to_string mp') :: l
   in
   let l = Deltamap.fold mp_to_string kn_to_string resolve [] in
   String.concat ", " (List.rev l)
 
 let list_contents sub =
-  let one_pair (mp,reso) = (string_of_mp mp,debug_string_of_delta reso) in
-  let mp_one_pair mp0 p l = (string_of_mp mp0, one_pair p)::l in
+  let one_pair (mp,reso) = (ModPath.to_string mp,debug_string_of_delta reso) in
+  let mp_one_pair mp0 p l = (ModPath.to_string mp0, one_pair p)::l in
   let mbi_one_pair mbi p l = (MBId.debug_to_string mbi, one_pair p)::l in
   Umap.fold mp_one_pair mbi_one_pair sub []
 
@@ -117,7 +117,7 @@ let debug_pr_subst sub =
 let add_inline_delta_resolver kn (lev,oc) = Deltamap.add_kn kn (Inline (lev,oc))
 
 let add_kn_delta_resolver kn kn' =
-  assert (Label.equal (label kn) (label kn'));
+  assert (Label.equal (KerName.label kn) (KerName.label kn'));
   Deltamap.add_kn kn (Equiv kn')
 
 let add_mp_delta_resolver mp1 mp2 = Deltamap.add_mp mp1 mp2
@@ -165,12 +165,12 @@ let solve_delta_kn resolve kn =
       | Inline (lev, Some c) ->	raise (Change_equiv_to_inline (lev,c))
       | Inline (_, None) -> raise Not_found
   with Not_found ->
-    let mp,dir,l = repr_kn kn in
+    let mp,dir,l = KerName.repr kn in
     let new_mp = find_prefix resolve mp in
     if mp == new_mp then
       kn
     else
-      make_kn new_mp dir l
+      KerName.make new_mp dir l
 
 let kn_of_delta resolve kn =
   try solve_delta_kn resolve kn
@@ -242,18 +242,18 @@ let subst_mp sub mp =
   | Some (mp',_) -> mp'
 
 let subst_kn_delta sub kn =
- let mp,dir,l = repr_kn kn in
+ let mp,dir,l = KerName.repr kn in
   match subst_mp0 sub mp with
      Some (mp',resolve) ->
-      solve_delta_kn resolve (make_kn mp' dir l)
+      solve_delta_kn resolve (KerName.make mp' dir l)
    | None -> kn
 
 
 let subst_kn sub kn =
- let mp,dir,l = repr_kn kn in
+ let mp,dir,l = KerName.repr kn in
   match subst_mp0 sub mp with
      Some (mp',_) ->
-      (make_kn mp' dir l)
+      (KerName.make mp' dir l)
    | None -> kn
 
 exception No_subst
@@ -419,7 +419,7 @@ let subst_mps sub c =
 
 let rec replace_mp_in_mp mpfrom mpto mp =
   match mp with
-    | _ when mp_eq mp mpfrom -> mpto
+    | _ when ModPath.equal mp mpfrom -> mpto
     | MPdot (mp1,l) ->
 	let mp1' = replace_mp_in_mp mpfrom mpto mp1 in
 	  if mp1 == mp1' then mp
@@ -427,14 +427,14 @@ let rec replace_mp_in_mp mpfrom mpto mp =
     | _ -> mp
 
 let replace_mp_in_kn mpfrom mpto kn =
- let mp,dir,l = repr_kn kn in
+ let mp,dir,l = KerName.repr kn in
   let mp'' = replace_mp_in_mp mpfrom mpto mp in
     if mp==mp'' then kn
-    else make_kn mp'' dir l
+    else KerName.make mp'' dir l
 
 let rec mp_in_mp mp mp1 =
   match mp1 with
-    | _ when mp_eq mp1 mp -> true
+    | _ when ModPath.equal mp1 mp -> true
     | MPdot (mp2,l) -> mp_in_mp mp mp2
     | _ -> false
 
@@ -446,7 +446,7 @@ let subset_prefixed_by mp resolver =
     match hint with
       | Inline _ -> rslv
       | Equiv _ ->
-	if mp_in_mp mp (modpath kn) then Deltamap.add_kn kn hint rslv else rslv
+	if mp_in_mp mp (KerName.modpath kn) then Deltamap.add_kn kn hint rslv else rslv
   in
   Deltamap.fold mp_prefix kn_prefix resolver empty_delta_resolver
 
@@ -515,7 +515,7 @@ let add_delta_resolver resolver1 resolver2 =
 
 let substition_prefixed_by k mp subst =
   let mp_prefixmp kmp (mp_to,reso) sub =
-    if mp_in_mp mp kmp && not (mp_eq mp kmp) then
+    if mp_in_mp mp kmp && not (ModPath.equal mp kmp) then
       let new_key = replace_mp_in_mp mp k kmp in
       Umap.add_mp new_key (mp_to,reso) sub
     else sub

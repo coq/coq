@@ -64,7 +64,7 @@ val rename_glob_vars : (Id.t * Id.t) list -> 'a glob_constr_g -> 'a glob_constr_
     here by its relevant components [m] and [c]. It is used to
     interpret Ltac-bound names both in pretyping and printing of
     terms. *)
-val map_pattern_binders : (name -> name) ->
+val map_pattern_binders : (Name.t -> Name.t) ->
   tomatch_tuples -> cases_clauses -> (tomatch_tuples*cases_clauses)
 
 (** [map_pattern f m c] applies [f] to the return predicate and the
@@ -84,5 +84,5 @@ val glob_constr_of_closed_cases_pattern : 'a cases_pattern_g -> Name.t * 'a glob
 
 val add_patterns_for_params_remove_local_defs : constructor -> 'a cases_pattern_g list -> 'a cases_pattern_g list
 
-val ltac_interp_name : Ltac_pretype.ltac_var_map -> Names.name -> Names.name
+val ltac_interp_name : Ltac_pretype.ltac_var_map -> Name.t -> Name.t
 val empty_lvar : Ltac_pretype.ltac_var_map

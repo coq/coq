@@ -39,7 +39,7 @@ let inl2intopt = function
 
 type algebraic_objects =
   | Objs of Lib.lib_objects
-  | Ref of module_path * substitution
+  | Ref of ModPath.t * substitution
 
 type substitutive_objects = MBId.t list * algebraic_objects
 
@@ -62,9 +62,9 @@ type substitutive_objects = MBId.t list * algebraic_objects
 
 module ModSubstObjs :
  sig
-   val set : module_path -> substitutive_objects -> unit
-   val get : module_path -> substitutive_objects
-   val set_missing_handler : (module_path -> substitutive_objects) -> unit
+   val set : ModPath.t -> substitutive_objects -> unit
+   val get : ModPath.t -> substitutive_objects
+   val set_missing_handler : (ModPath.t -> substitutive_objects) -> unit
  end =
  struct
    let table =
@@ -126,8 +126,8 @@ type module_objects = object_prefix * Lib.lib_objects * Lib.lib_objects
 
 module ModObjs :
  sig
-   val set : module_path -> module_objects -> unit
-   val get : module_path -> module_objects (* may raise Not_found *)
+   val set : ModPath.t -> module_objects -> unit
+   val get : ModPath.t -> module_objects (* may raise Not_found *)
    val all : unit -> module_objects MPmap.t
  end =
  struct
@@ -143,11 +143,11 @@ module ModObjs :
 (** {6 Name management}
 
     Auxiliary functions to transform full_path and kernel_name given
-    by Lib into module_path and DirPath.t needed for modules
+    by Lib into ModPath.t and DirPath.t needed for modules
 *)
 
 let mp_of_kn kn =
-  let mp,sec,l = repr_kn kn in
+  let mp,sec,l = KerName.repr kn in
   assert (DirPath.is_empty sec);
   MPdot (mp,l)
 
@@ -336,8 +336,8 @@ let () = ModSubstObjs.set_missing_handler handle_missing_substobjs
 
 (** {6 From module expression to substitutive objects} *)
 
-(** Turn a chain of [MSEapply] into the head module_path and the
-    list of module_path parameters (deepest param coming first).
+(** Turn a chain of [MSEapply] into the head ModPath.t and the
+    list of ModPath.t parameters (deepest param coming first).
     The left part of a [MSEapply] must be either [MSEident] or
     another [MSEapply]. *)
 
@@ -911,7 +911,7 @@ let subst_import (subst,(export,mp as obj)) =
   let mp' = subst_mp subst mp in
   if mp'==mp then obj else (export,mp')
 
-let in_import : bool * module_path -> obj =
+let in_import : bool * ModPath.t -> obj =
   declare_object {(default_object "IMPORT MODULE") with
     cache_function = cache_import;
     open_function = open_import;
@@ -961,7 +961,7 @@ let debug_print_modtab _ =
     | l -> str "[." ++ int (List.length l) ++ str ".]"
   in
   let pr_modinfo mp (prefix,substobjs,keepobjs) s =
-    s ++ str (string_of_mp mp) ++ (spc ())
+    s ++ str (ModPath.to_string mp) ++ (spc ())
     ++ (pr_seg (Lib.segment_of_objects prefix (substobjs@keepobjs)))
   in
   let modules = MPmap.fold pr_modinfo (ModObjs.all ()) (mt ()) in

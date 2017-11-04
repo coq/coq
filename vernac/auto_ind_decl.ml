@@ -199,7 +199,7 @@ let build_beq_scheme mode kn =
         | Cast (x,_,_) -> aux (EConstr.applist (x,a))
         | App _ -> assert false
         | Ind ((kn',i as ind'),u) (*FIXME: universes *) -> 
-            if eq_mind kn kn' then mkRel(eqA-nlist-i+nb_ind-1), Safe_typing.empty_private_constants
+            if MutInd.equal kn kn' then mkRel(eqA-nlist-i+nb_ind-1), Safe_typing.empty_private_constants
             else begin
               try
                 let eq, eff =
@@ -367,8 +367,8 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
       (* if this happen then the args have to be already declared as a
               Parameter*)
       (
-        let mp,dir,lbl = repr_con (fst (destConst sigma v)) in
-          mkConst (make_con mp dir (mk_label (
+        let mp,dir,lbl = Constant.repr3 (fst (destConst sigma v)) in
+          mkConst (Constant.make3 mp dir (Label.make (
           if Int.equal offset 1 then ("eq_"^(Label.to_string lbl))
                        else ((Label.to_string lbl)^"_lb")
         )))
@@ -428,8 +428,8 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
       (* if this happen then the args have to be already declared as a
          Parameter*)
       (
-        let mp,dir,lbl = repr_con (fst (destConst sigma v)) in
-          mkConst (make_con mp dir (mk_label (
+        let mp,dir,lbl = Constant.repr3 (fst (destConst sigma v)) in
+          mkConst (Constant.make3 mp dir (Label.make (
           if Int.equal offset 1 then ("eq_"^(Label.to_string lbl))
                        else ((Label.to_string lbl)^"_bl")
         )))
@@ -504,7 +504,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
         with DestKO -> Tacticals.New.tclZEROMSG (str "The expected type is an inductive one.")
       end
   end >>= fun (sp2,i2) ->
-  if not (eq_mind sp1 sp2) || not (Int.equal i1 i2)
+  if not (MutInd.equal sp1 sp2) || not (Int.equal i1 i2)
   then Tacticals.New.tclZEROMSG (str "Eq should be on the same type")
   else aux (Array.to_list ca1) (Array.to_list ca2)
 
@@ -531,7 +531,7 @@ let eqI ind l =
   and e, eff = 
     try let c, eff = find_scheme beq_scheme_kind ind in mkConst c, eff 
     with Not_found -> user_err ~hdr:"AutoIndDecl.eqI"
-      (str "The boolean equality on " ++ pr_mind (fst ind) ++ str " is needed.");
+      (str "The boolean equality on " ++ MutInd.print (fst ind) ++ str " is needed.");
   in (if Array.equal Term.eq_constr eA [||] then e else mkApp(e,eA)), eff
 
 (**********************************************************************)

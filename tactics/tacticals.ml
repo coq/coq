@@ -622,7 +622,7 @@ module New = struct
       | _ ->
 	  let name_elim =
 	    match EConstr.kind sigma elim with
-	    | Const (kn, _) -> string_of_con kn
+	    | Const (kn, _) -> Constant.to_string kn
 	    | Var id -> Id.to_string id
 	    | _ -> "\b"
 	  in

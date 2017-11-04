@@ -90,7 +90,7 @@ val interp_mutual_inductive :
 
 val declare_mutual_inductive_with_eliminations :
   mutual_inductive_entry -> Universes.universe_binders -> one_inductive_impls list ->
-  mutual_inductive
+  MutInd.t
 
 (** Entry points for the vernacular commands Inductive and CoInductive *)
 

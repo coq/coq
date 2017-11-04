@@ -16,9 +16,9 @@ open Vernacexpr
 
 (** Build and register the boolean equalities associated to an inductive type *)
 
-val declare_beq_scheme : mutual_inductive -> unit
+val declare_beq_scheme : MutInd.t -> unit
 
-val declare_eq_decidability : mutual_inductive -> unit
+val declare_eq_decidability : MutInd.t -> unit
 
 (** Build and register a congruence scheme for an equality-like inductive type *)
 
@@ -39,10 +39,10 @@ val do_scheme : (Id.t located option * scheme) list -> unit
 
 (** Combine a list of schemes into a conjunction of them *)
 
-val build_combined_scheme : env -> constant list -> Evd.evar_map * constr * types
+val build_combined_scheme : env -> Constant.t list -> Evd.evar_map * constr * types
 
 val do_combined_scheme : Id.t located -> Id.t located list -> unit
 
 (** Hook called at each inductive type definition *)
 
-val declare_default_schemes : mutual_inductive -> unit
+val declare_default_schemes : MutInd.t -> unit

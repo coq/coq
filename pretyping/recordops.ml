@@ -37,7 +37,7 @@ type struc_typ = {
   s_CONST : constructor;
   s_EXPECTEDPARAM : int;
   s_PROJKIND : (Name.t * bool) list;
-  s_PROJ : constant option list }
+  s_PROJ : Constant.t option list }
 
 let structure_table =
   Summary.ref (Indmap.empty : struc_typ Indmap.t) ~name:"record-structs"
@@ -48,7 +48,7 @@ let projection_table =
    is the inductive always (fst constructor) ? It seems so... *)
 
 type struc_tuple =
-    inductive * constructor * (Name.t * bool) list * constant option list
+    inductive * constructor * (Name.t * bool) list * Constant.t option list
 
 let load_structure i (_,(ind,id,kl,projs)) =
   let n = (fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
@@ -286,7 +286,7 @@ let subst_canonical_structure (subst,(cst,ind as obj)) =
 let discharge_canonical_structure (_,(cst,ind)) =
   Some (Lib.discharge_con cst,Lib.discharge_inductive ind)
 
-let inCanonStruc : constant * inductive -> obj =
+let inCanonStruc : Constant.t * inductive -> obj =
   declare_object {(default_object "CANONICAL-STRUCTURE") with
     open_function = open_canonical_structure;
     cache_function = cache_canonical_structure;
