@@ -27,16 +27,8 @@ let rec print_prefix_list sep = function
   | x :: l -> print sep; print x; print_prefix_list sep l
   | [] -> ()
 
-let usage () =
-  output_string stderr "Usage summary:\
-\n\
-\ncoq_makefile .... [file.v] ... [file.ml[i4]?] ... [file.ml{lib,pack}]\
-\n  ... [any] ... [-extra[-phony] result dependencies command]\
-\n  ... [-I dir] ... [-R physicalpath logicalpath]\
-\n  ... [-Q physicalpath logicalpath] ... [VARIABLE = value]\
-\n  ...  [-arg opt] ... [-opt|-byte] [-no-install] [-f file] [-o file]\
-\n  [-h] [--help]\
-\n\
+let usage_common () =
+  output_string stderr "\
 \n[file.v]: Coq file to be compiled\
 \n[file.ml[i4]?]: Objective Caml file to be compiled\
 \n[file.ml{lib,pack}]: ocamlbuild file that describes a Objective Caml\
@@ -65,10 +57,29 @@ let usage () =
 \n[-install opt]: where opt is \"user\" to force install into user directory,\
 \n  \"none\" to build a makefile with no install target or\
 \n  \"global\" to force install in $COQLIB directory\
+\n[-bypass-API]: when compiling plugins, bypass Coq API\
+\n"
+
+let usage_coq_project () =
+  output_string stderr "Available arguments:";
+  usage_common ();
+  exit 1
+
+let usage_coq_makefile () =
+  output_string stderr "Usage summary:\
+\n\
+\ncoq_makefile .... [file.v] ... [file.ml[i4]?] ... [file.ml{lib,pack}]\
+\n  ... [any] ... [-extra[-phony] result dependencies command]\
+\n  ... [-I dir] ... [-R physicalpath logicalpath]\
+\n  ... [-Q physicalpath logicalpath] ... [VARIABLE = value]\
+\n  ...  [-arg opt] ... [-opt|-byte] [-no-install] [-f file] [-o file]\
+\n  [-h] [--help]\
+\n";
+  usage_common ();
+  output_string stderr "\
 \n[-f file]: take the contents of file as arguments\
 \n[-o file]: output should go in file file (recommended)\
 \n	Output file outside the current directory is forbidden.\
-\n[-bypass-API]: when compiling plugins, bypass Coq API\
 \n[-h]: print this usage summary\
 \n[--help]: equivalent to [-h]\n";
   exit 1
@@ -391,7 +402,7 @@ let _ =
 
   let project = 
     try cmdline_args_to_project ~curdir:Filename.current_dir_name args
-    with Parsing_error s -> prerr_endline s; usage () in
+    with Parsing_error s -> prerr_endline s; usage_coq_project () in
 
   if only_destination <> None then begin
     destination_of project (Option.get only_destination);

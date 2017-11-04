@@ -113,6 +113,7 @@ let exists_dir dir =
 
 
 let process_cmd_line orig_dir proj args =
+  let parsing_project_file = ref (proj.project_file <> None) in
   let orig_dir = (* avoids turning foo.v in ./foo.v *)
     if orig_dir = "." then "" else orig_dir in
   let error s = Feedback.msg_error (Pp.str (s^".")); exit 1 in
@@ -155,16 +156,22 @@ let process_cmd_line orig_dir proj args =
     aux { proj with r_includes = proj.r_includes @ [mk_path d,lp] } r
 
   | "-f" :: file :: r ->
+    if !parsing_project_file then
+      raise (Parsing_error ("Invalid option -f in project file " ^ Option.get proj.project_file));
     let file = CUnix.remove_path_dot (CUnix.correct_path file orig_dir) in
     let () = match proj.project_file with
       | None -> ()
       | Some _ -> Feedback.msg_warning (Pp.str
 	"Multiple project files are deprecated.")
     in
+    parsing_project_file := true;
     let proj = aux { proj with project_file = Some file } (parse file) in
+    parsing_project_file := false;
     aux proj r
 
   | "-o" :: file :: r ->
+    if !parsing_project_file then
+     raise (Parsing_error ("Invalid option -o in project file " ^ Option.get proj.project_file));
     if String.contains file '/' then
       error "Output file must be in the current directory";
     if proj.makefile <> None then
