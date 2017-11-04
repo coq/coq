@@ -12,6 +12,7 @@ CI_TARGETS=ci-all \
     ci-geocoq \
     ci-hott \
     ci-iris-lambda-rust \
+    ci-ltac2 \
     ci-math-classes \
     ci-math-comp \
     ci-metacoq \

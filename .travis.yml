@@ -53,6 +53,7 @@ env:
   - TEST_TARGET="ci-formal-topology TIMED=1"
   - TEST_TARGET="ci-hott TIMED=1"
   - TEST_TARGET="ci-iris-lambda-rust TIMED=1"
+  - TEST_TARGET="ci-ltac2 TIMED=1"
   - TEST_TARGET="ci-math-classes TIMED=1"
   - TEST_TARGET="ci-math-comp TIMED=1"
   - TEST_TARGET="ci-sf TIMED=1"
