@@ -280,6 +280,8 @@ let std_prefix =
 
 let wit_ltac2 = Genarg.make0 "ltac2:value"
 let wit_ltac2_quotation = Genarg.make0 "ltac2:quotation"
+let () = Geninterp.register_val0 wit_ltac2 None
+let () = Geninterp.register_val0 wit_ltac2_quotation None
 
 let is_constructor qid =
   let (_, id) = repr_qualid qid in
