@@ -838,17 +838,6 @@ let pr_goal_by_id id =
       pr_selected_subgoal (pr_id id) sigma g)
   with Not_found -> user_err Pp.(str "No such goal.")
 
-let pr_goal_by_uid uid =
-  let p = Proof_global.give_me_the_proof () in
-  let g = Goal.get_by_uid uid in
-  let pr gs =
-    v 0 (str "goal / evar " ++ str uid ++ str " is:" ++ cut ()
-	 ++ pr_goal gs)
-  in
-  try
-    Proof.in_proof p (fun sigma -> pr {it=g;sigma=sigma;})
-  with Not_found -> user_err Pp.(str "Invalid goal identifier.")
-
 (* Elementary tactics *)
 
 let pr_prim_rule = function

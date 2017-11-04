@@ -21,7 +21,6 @@ type goal = Evd.evar
 let pr_goal e = str "GOAL:" ++ Pp.int (Evar.repr e)
 
 let uid e = string_of_int (Evar.repr e)
-let get_by_uid u = Evar.unsafe_of_int (int_of_string u)
 
 (* Layer to implement v8.2 tactic engine ontop of the new architecture.
    Types are different from what they used to be due to a change of the

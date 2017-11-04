@@ -574,7 +574,7 @@ open Decl_kinds
           | OpenSubgoals -> mt ()
           | NthGoal n -> spc () ++ int n
           | GoalId id -> spc () ++ pr_id id
-          | GoalUid n -> spc () ++ str n in
+        in
         let pr_showable = function
           | ShowGoal n -> keyword "Show" ++ pr_goal_reference n
           | ShowProof -> keyword "Show Proof"
