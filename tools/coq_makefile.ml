@@ -66,7 +66,7 @@ let usage () =
 \n  \"none\" to build a makefile with no install target or\
 \n  \"global\" to force install in $COQLIB directory\
 \n[-f file]: take the contents of file as arguments\
-\n[-o file]: output should go in file file\
+\n[-o file]: output should go in file file (recommended)\
 \n	Output file outside the current directory is forbidden.\
 \n[-bypass-API]: when compiling plugins, bypass Coq API\
 \n[-h]: print this usage summary\
@@ -381,7 +381,6 @@ let share_prefix s1 s2 =
 
 let _ =
   let prog, args =
-    if Array.length Sys.argv = 1 then usage ();
     let args = Array.to_list Sys.argv in
     let prog = List.hd args in
     prog, List.tl args in
