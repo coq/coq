@@ -32,124 +32,7 @@ end
 (* Modules from kernel/                                                 *)
 (************************************************************************)
 module Names : module type of Names.Public
-
-module Univ :
-sig
-
-  module Level :
-  sig
-    type t
-    val set : t
-    val pr : t -> Pp.t
-  end
-
-  type universe_level = Level.t
-
-  module LSet :
-  sig
-    include CSig.SetS with type elt = universe_level
-    val pr : (Level.t -> Pp.t) -> t -> Pp.t
-  end
-
-  module Universe :
-  sig
-    type t
-    val pr : t -> Pp.t
-  end
-
-  type universe = Universe.t
-
-  module Instance :
-  sig
-    type t
-    val empty : t
-    val of_array : Level.t array -> t
-    val to_array : t -> Level.t array
-    val pr : (Level.t -> Pp.t) -> t -> Pp.t
-  end
-
-  type 'a puniverses = 'a * Instance.t
-
-  val out_punivs : 'a puniverses -> 'a
-
-  type constraint_type = Lt | Le | Eq
-
-  type univ_constraint = universe_level * constraint_type * universe_level
-
-  module Constraint : sig
-    include Set.S with type elt = univ_constraint
-  end
-
-  type 'a constrained = 'a * Constraint.t
-
-  module UContext :
-  sig
-    type t
-    val empty : t
-  end
-
-  type universe_context = UContext.t
-
-  module AUContext :
-  sig
-    type t
-    val empty : t
-  end
-
-  type abstract_universe_context = AUContext.t
-
-  module CumulativityInfo :
-  sig
-    type t
-  end
-
-  type cumulativity_info = CumulativityInfo.t
-
-  module ACumulativityInfo :
-  sig
-    type t
-  end
-  type abstract_cumulativity_info = ACumulativityInfo.t
-
-  module ContextSet :
-  sig
-    type t
-    val empty : t
-    val of_context : UContext.t -> t
-    val to_context : t -> UContext.t
-  end
-
-  type 'a in_universe_context_set = 'a * ContextSet.t
-  type 'a in_universe_context = 'a * UContext.t
-
-  type universe_context_set = ContextSet.t
-
-  type universe_set = LSet.t
-
-  type 'a constraint_function = 'a -> 'a -> Constraint.t -> Constraint.t
-
-  module LMap :
-  sig
-    include CMap.ExtS with type key = universe_level and module Set := LSet
-
-    val union : 'a t -> 'a t -> 'a t
-    val diff : 'a t -> 'a t -> 'a t
-    val subst_union : 'a option t -> 'a option t -> 'a option t
-    val pr : ('a -> Pp.t) -> 'a t -> Pp.t
-  end
-
-  type 'a universe_map = 'a LMap.t
-  type universe_subst = universe universe_map
-  type universe_level_subst = universe_level universe_map
-
-  val enforce_leq : Universe.t constraint_function
-  val pr_uni : Universe.t -> Pp.t
-  val pr_universe_context : (Level.t -> Pp.t) -> UContext.t -> Pp.t
-  val pr_universe_context_set : (Level.t -> Pp.t) -> ContextSet.t -> Pp.t
-  val pr_universe_subst : universe_subst -> Pp.t
-  val pr_universe_level_subst : universe_level_subst -> Pp.t
-  val pr_constraints : (Level.t -> Pp.t) -> Constraint.t -> Pp.t
-end
+module Univ : module type of Univ.Public
 
 module UGraph :
 sig
@@ -914,8 +797,8 @@ sig
     | TemplateArity of 'b
 
   type constant_universes =
-    | Monomorphic_const of Univ.universe_context
-    | Polymorphic_const of Univ.abstract_universe_context
+    | Monomorphic_const of Univ.UContext.t
+    | Polymorphic_const of Univ.AUContext.t
 
   type projection_body = {
         proj_ind : Names.MutInd.t;
@@ -981,9 +864,9 @@ sig
                        | MEwith of module_alg_expr * with_declaration
 
   type abstract_inductive_universes =
-  | Monomorphic_ind of Univ.universe_context
-  | Polymorphic_ind of Univ.abstract_universe_context
-  | Cumulative_ind of Univ.abstract_cumulativity_info
+  | Monomorphic_ind of Univ.UContext.t
+  | Polymorphic_ind of Univ.AUContext.t
+  | Cumulative_ind of Univ.ACumulativityInfo.t
 
   type record_body = (Id.t * Constant.t array * projection_body array) option
   
@@ -1048,9 +931,9 @@ sig
     | LocalAssumEntry of constr
 
   type inductive_universes =
-    | Monomorphic_ind_entry of Univ.universe_context
-    | Polymorphic_ind_entry of Univ.universe_context
-    | Cumulative_ind_entry of Univ.cumulativity_info
+    | Monomorphic_ind_entry of Univ.UContext.t
+    | Polymorphic_ind_entry of Univ.UContext.t
+    | Cumulative_ind_entry of Univ.CumulativityInfo.t
 
   type one_inductive_entry = {
     mind_entry_typename : Id.t;
@@ -1077,8 +960,8 @@ sig
   type 'a proof_output = Constr.t Univ.in_universe_context_set * 'a
   type 'a const_entry_body = 'a proof_output Future.computation
   type constant_universes_entry =
-    | Monomorphic_const_entry of Univ.universe_context
-    | Polymorphic_const_entry of Univ.universe_context
+    | Monomorphic_const_entry of Univ.UContext.t
+    | Polymorphic_const_entry of Univ.UContext.t
   type 'a definition_entry =
                                { const_entry_body   : 'a const_entry_body;
                                  (* List of section variables *)
@@ -1482,8 +1365,8 @@ end
 
 module Univops :
 sig
-  val universes_of_constr : Term.constr -> Univ.universe_set
-  val restrict_universe_context : Univ.universe_context_set -> Univ.universe_set -> Univ.universe_context_set
+  val universes_of_constr : Term.constr -> Univ.LSet.t
+  val restrict_universe_context : Univ.ContextSet.t -> Univ.LSet.t -> Univ.ContextSet.t
 end
 
 module Nameops :
@@ -5217,7 +5100,7 @@ end
 module Hints :
 sig
 
-  type raw_hint = EConstr.t * EConstr.types * Univ.universe_context_set
+  type raw_hint = EConstr.t * EConstr.types * Univ.ContextSet.t
 
   type 'a hint_ast =
     | Res_pf     of 'a (* Hint Apply *)
