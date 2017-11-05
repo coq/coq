@@ -12,6 +12,7 @@ open Constr
 open Vars
 open CClosure
 open Esubst
+open Esubst.Internal
 
 (**** Call by value reduction ****)
 
