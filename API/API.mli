@@ -34,12 +34,7 @@ end
 module Names  : module type of Names.Public
 module Univ   : module type of Univ.Public
 module UGraph : module type of UGraph.Public
-
-module Esubst :
-sig
-  type 'a subs
-  val subs_id : int -> 'a subs
-end
+module Esubst : module type of Esubst.Public
 
 module Sorts :
 sig

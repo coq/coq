@@ -12,6 +12,7 @@ open Names
 open Cic
 open Term
 open Esubst
+open Esubst.Internal
 open Environ
 
 let stats = ref false

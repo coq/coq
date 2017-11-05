@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+module Public : sig
+
 (** Explicit substitutions *)
 
 (** {6 Explicit substitutions } *)
@@ -21,6 +23,14 @@ type 'a subs = private
   | CONS of 'a array * 'a subs
   | SHIFT of int * 'a subs
   | LIFT of int * 'a subs
+
+val subs_id : int -> 'a subs
+
+end
+
+include module type of struct include Public end
+
+module Internal : sig
 
 (** Derived constructors granting basic invariants *)
 val subs_id : int -> 'a subs
@@ -66,3 +76,5 @@ val el_liftn : int -> lift -> lift
 val el_lift : lift -> lift
 val reloc_rel : int -> lift -> int
 val is_lift_id : lift -> bool
+
+end
