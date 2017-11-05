@@ -15,14 +15,16 @@
    ```
  *)
 
+[@@@ocaml.warning "-3"]
+
 (******************************************************************************)
 (* config                                                                     *)
 (******************************************************************************)
 module Coq_config = Coq_config
 
-(* Reexporting deprecated symbols throu module aliases triggers a
-   warning in 4.06.0 *)
-[@@@ocaml.warning "-3"]
+module Internal = struct
+  module Evar = Evar.Internal
+end
 
 (******************************************************************************)
 (* Kernel *)
@@ -38,8 +40,9 @@ module UGraph = UGraph
 module Esubst = Esubst
 module Sorts = Sorts
 module Evar = Evar
-
 module Constr = Constr
+
+(* Not moved out of API *)
 module Context = Context
 module Vars = Vars
 module Term = Term

@@ -27,6 +27,8 @@ open Util
 open Names
 open Univ
 
+module Internal = struct
+
 type existential_key = Evar.t
 type metavariable = int
 
@@ -1005,3 +1007,7 @@ let hcons =
 (* Type of abstract machine values *)
 (** FIXME: nothing to do there *)
 type values
+end
+
+module Public = Internal
+include Public

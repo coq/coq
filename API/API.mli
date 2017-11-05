@@ -32,146 +32,42 @@ sig
   val exec_extension : string
 end
 
+module Internal : sig
+  module Evar : module type of Evar.Internal
+end
+
 (************************************************************************)
 (* Modules from kernel/                                                 *)
 (************************************************************************)
+
+(* these constraints are workaround in order to make the aliases in
+   Term, etc... work; should go away once these modeles are ported to
+   the new system *)
 module Names  : module type of Names.Public
+  with type Id.t         = Names.Id.t
+   and type Name.t       = Names.Name.t
+   and type MutInd.t     = Names.MutInd.t
+   and type inductive    = Names.MutInd.t * int
+   and type constructor  = (Names.MutInd.t * int) * int
+   and type Constant.t   = Names.Constant.t
+   and type Projection.t = Names.Projection.t
+
 module Univ   : module type of Univ.Public
   with type Universe.t = Univ.Universe.t
+
 module UGraph : module type of UGraph.Public
 module Esubst : module type of Esubst.Public
 module Sorts  : module type of Sorts.Public
 (* Evar.Internal is used by ssreflect *)
-module Evar   : module type of Evar
+module Evar   : module type of Evar.Public
+module Constr : module type of Constr.Public
+  with type cast_kind = Constr.cast_kind
+   and type case_style = Constr.case_style
+   and type case_printing = Constr.case_printing
+   and type case_info = Constr.case_info
+   and type ('a,'b,'c,'d) kind_of_term = ('a,'b,'c,'d) Constr.kind_of_term
 
-module Constr :
-sig
-  open Names
-
-  type t
-
-  type constr = t
-  type types = t
-
-  type cast_kind =
-                 | VMcast
-                 | NATIVEcast
-                 | DEFAULTcast
-                 | REVERTcast
-
-  type metavariable = int
-
-  type existential_key = Evar.t
-  type 'constr pexistential = existential_key * 'constr array
-
-  type 'a puniverses = 'a Univ.puniverses
-  type pconstant = Constant.t puniverses
-  type pinductive = inductive puniverses
-  type pconstructor = constructor puniverses
-
-  type ('constr, 'types) prec_declaration =
-    Name.t array * 'types array * 'constr array
-
-  type ('constr, 'types) pfixpoint =
-    (int array * int) * ('constr, 'types) prec_declaration
-
-  type ('constr, 'types) pcofixpoint =
-    int * ('constr, 'types) prec_declaration
-
-  type case_style =
-      LetStyle | IfStyle | LetPatternStyle | MatchStyle
-    | RegularStyle (** infer printing form from number of constructor *)
-
-  type case_printing =
-    { ind_tags : bool list; (** tell whether letin or lambda in the arity of the inductive type *)
-      cstr_tags : bool list array; (** tell whether letin or lambda in the signature of each constructor *)
-      style     : case_style }
-
-  type case_info =
-    { ci_ind        : inductive;      (* inductive type to which belongs the value that is being matched *)
-      ci_npar       : int;            (* number of parameters of the above inductive type *)
-      ci_cstr_ndecls : int array;     (* For each constructor, the corresponding integer determines
-                                         the number of values that can be bound in a match-construct.
-                                         NOTE: parameters of the inductive type are therefore excluded from the count *)
-      ci_cstr_nargs : int array;      (* for each constructor, the corresponding integers determines
-                                         the number of values that can be applied to the constructor,
-                                         in addition to the parameters of the related inductive type
-                                         NOTE: "lets" are therefore excluded from the count
-                                         NOTE: parameters of the inductive type are also excluded from the count *)
-      ci_pp_info    : case_printing   (* not interpreted by the kernel *)
-    }
-
-  type ('constr, 'types, 'sort, 'univs) kind_of_term =
-     | Rel       of int
-     | Var       of Id.t
-     | Meta      of metavariable
-     | Evar      of 'constr pexistential
-     | Sort      of 'sort
-     | Cast      of 'constr * cast_kind * 'types
-     | Prod      of Name.t * 'types * 'types
-     | Lambda    of Name.t * 'types * 'constr
-     | LetIn     of Name.t * 'constr * 'types * 'constr
-     | App       of 'constr * 'constr array
-     | Const     of (Constant.t * 'univs)
-     | Ind       of (inductive * 'univs)
-     | Construct of (constructor * 'univs)
-     | Case      of case_info * 'constr * 'constr * 'constr array
-     | Fix       of ('constr, 'types) pfixpoint
-     | CoFix     of ('constr, 'types) pcofixpoint
-     | Proj      of Projection.t * 'constr
-
-  val kind : constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term
-  val of_kind : (constr, types, Sorts.t, Univ.Instance.t) kind_of_term -> constr
-
-val map_with_binders :
-  ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
-val map : (constr -> constr) -> constr -> constr
-
-val fold : ('a -> constr -> 'a) -> 'a -> constr -> 'a
-val iter : (constr -> unit) -> constr -> unit
-val compare_head : (constr -> constr -> bool) -> constr -> constr -> bool
-
-  val equal : t -> t -> bool
-  val eq_constr_nounivs : t -> t -> bool
-  val compare : t -> t -> int
-
-  val hash : t -> int
-
-  val mkRel : int -> t
-  val mkVar : Id.t -> t
-  val mkMeta : metavariable -> t
-  type existential = existential_key * constr array
-  val mkEvar : existential -> t
-  val mkSort : Sorts.t -> t
-  val mkProp : t
-  val mkSet  : t
-  val mkType : Univ.Universe.t -> t
-  val mkCast : t * cast_kind * t -> t
-  val mkProd : Name.t * types * types -> types
-  val mkLambda : Name.t * types * t -> t
-  val mkLetIn : Name.t * t * types * t -> t
-  val mkApp : t * t array -> t
-  val map_puniverses : ('a -> 'b) -> 'a puniverses -> 'b puniverses
-
-  type rec_declaration = Name.t array * types array * constr array
-  type fixpoint = (int array * int) * rec_declaration
-  val mkFix : fixpoint -> constr
-
-  val mkConst : Constant.t -> t
-  val mkConstU : pconstant -> t
-
-  val mkProj : (Projection.t * t) -> t
-
-  val mkInd : inductive -> t
-  val mkIndU : pinductive -> t
-
-  val mkConstruct : constructor -> t
-  val mkConstructU : pconstructor -> t
-  val mkConstructUi : pinductive * int -> t
-
-  val mkCase : case_info * t * t * t array -> t
-
-end
+  (* with type existential_key = Constr.existential_key *)
 
 module Context :
 sig
@@ -1498,15 +1394,17 @@ sig
 
   open Util
 
+  open Names
+
   type global_reference =
-    | VarRef of Names.Id.t
-    | ConstRef of Names.Constant.t
-    | IndRef of Names.inductive
-    | ConstructRef of Names.constructor
+    | VarRef of Id.t
+    | ConstRef of Constant.t
+    | IndRef of inductive
+    | ConstructRef of constructor
 
   type extended_global_reference =
-                                 | TrueGlobal of global_reference
-                                 | SynDef of Names.KerName.t
+    | TrueGlobal of global_reference
+    | SynDef of KerName.t
 
   (* Long term: change implementation so that only 1 kind of order is needed.
    * Today: _env ones are fine grained, which one to pick depends.  Eg.

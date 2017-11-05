@@ -245,7 +245,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
         abstract_constant_universes abstract uctx
       in
       let c = Typeops.assumption_of_judgment env j in
-      let t = Constr.hcons (Vars.subst_univs_level_constr usubst c) in
+      let t = Constr.Internal.hcons (Vars.subst_univs_level_constr usubst c) in
       {
         Cooking.cook_body = Undef nl;
         cook_type = t;
@@ -283,7 +283,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
             let _ = judge_of_cast env j DEFAULTcast tyj in
             j, uctx
           in
-          let c = Constr.hcons j.uj_val in
+          let c = Constr.Internal.hcons j.uj_val in
           feedback_completion_typecheck feedback_id;
           c, uctx) in
       let def = OpaqueDef (Opaqueproof.create proofterm) in
@@ -325,7 +325,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
            let _ = judge_of_cast env j DEFAULTcast tj in
            Vars.subst_univs_level_constr usubst t
       in
-      let def = Constr.hcons (Vars.subst_univs_level_constr usubst j.uj_val) in
+      let def = Constr.Internal.hcons (Vars.subst_univs_level_constr usubst j.uj_val) in
       let def = 
 	if opaque then OpaqueDef (Opaqueproof.create (Future.from_val (def, Univ.ContextSet.empty)))
 	else Def (Mod_subst.from_val def) 
@@ -359,7 +359,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
     in
     let term, typ = pb.proj_eta in
     {
-      Cooking.cook_body = Def (Mod_subst.from_val (Constr.hcons term));
+      Cooking.cook_body = Def (Mod_subst.from_val (Constr.Internal.hcons term));
       cook_type = typ;
       cook_proj = Some pb;
       cook_universes = univs;

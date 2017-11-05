@@ -204,7 +204,7 @@ let cook_constant ~hcons env { from = cb; info } =
   let hyps = Context.Named.map expmod abstract in
   let map c =
     let c = abstract_constant_body (expmod c) hyps in
-    if hcons then Constr.hcons c else c
+    if hcons then Constr.Internal.hcons c else c
   in
   let body = on_body modlist (hyps, usubst, abs_ctx)
     map
