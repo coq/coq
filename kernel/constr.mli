@@ -11,6 +11,8 @@
 
 open Names
 
+module Public : sig
+
 (** {6 Value under universe substitution } *)
 type 'a puniverses = 'a Univ.puniverses
 
@@ -344,7 +346,14 @@ val compare_head_gen_leq : (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) 
   (constr -> constr -> bool) ->
   (constr -> constr -> bool) ->
   constr -> constr -> bool
-  
+
+type values
+
+end
+
+include module type of Public
+
+module Internal : sig
 (** {6 Hashconsing} *)
 
 val hash : constr -> int
@@ -356,4 +365,4 @@ val hcons : constr -> constr
 
 (**************************************)
 
-type values
+end

@@ -1659,7 +1659,7 @@ end = struct (* {{{ *)
         let uc =
           Future.chain uc Univ.hcons_universe_context_set in
         let pr = Future.chain pr discharge in
-        let pr = Future.chain pr Constr.hcons in
+        let pr = Future.chain pr Constr.Internal.hcons in
         Future.sink pr;
         let extra = Future.join uc in
         u.(bucket) <- uc;
