@@ -358,37 +358,37 @@ let pr_evar_list sigma l =
     h 0 (str (string_of_existential ev) ++
       str "==" ++ pr_evar_info evi ++
       (if evi.evar_body == Evar_empty
-       then str " {" ++  pr_existential_key sigma ev ++ str "}"
+       then str " {" ++ pr_existential_key sigma ev ++ str "}"
        else mt ()))
   in
   h 0 (prlist_with_sep fnl pr l)
 
+let to_list d =
+  let open Evd in
+  (* Workaround for change in Map.fold behavior in ocaml 3.08.4 *)
+  let l = ref [] in
+  let fold_def evk evi () = match evi.evar_body with
+    | Evar_defined _ -> l := (evk, evi) :: !l
+    | Evar_empty -> ()
+  in
+  let fold_undef evk evi () = match evi.evar_body with
+    | Evar_empty -> l := (evk, evi) :: !l
+    | Evar_defined _ -> ()
+  in
+  Evd.fold fold_def d ();
+  Evd.fold fold_undef d ();
+  !l
+
 let pr_evar_by_depth depth sigma = match depth with
 | None ->
   (* Print all evars *)
-  let to_list d =
-    let open Evd in
-    (* Workaround for change in Map.fold behavior in ocaml 3.08.4 *)
-    let l = ref [] in
-    let fold_def evk evi () = match evi.evar_body with
-    | Evar_defined _ -> l := (evk, evi) :: !l
-    | Evar_empty -> ()
-    in
-    let fold_undef evk evi () = match evi.evar_body with
-    | Evar_empty -> l := (evk, evi) :: !l
-    | Evar_defined _ -> ()
-    in
-    Evd.fold fold_def d ();
-    Evd.fold fold_undef d ();
-    !l
-  in
-  str"EVARS:"++brk(0,1)++pr_evar_list sigma (to_list sigma)++fnl()
+  str"EVARS:" ++ brk(0,1) ++ pr_evar_list sigma (to_list sigma) ++ fnl()
 | Some n ->
-  (* Print all evars *)
+  (* Print closure of undefined evars *)
   str"UNDEFINED EVARS:"++
   (if Int.equal n 0 then mt() else str" (+level "++int n++str" closure):")++
   brk(0,1)++
-  pr_evar_list sigma (evar_dependency_closure n sigma)++fnl()
+  pr_evar_list sigma (evar_dependency_closure n sigma) ++ fnl()
 
 let pr_evar_by_filter filter sigma =
   let open Evd in
