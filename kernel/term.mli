@@ -16,6 +16,10 @@ open Constr
 
 *)
 
+module Public : sig
+
+open Constr
+
 (** {5 Simple term case analysis. } *)
 val isRel  : constr -> bool
 val isRelN : int -> constr -> bool
@@ -528,11 +532,19 @@ type values = Constr.values
 val hash_constr : Constr.constr -> int
 [@@ocaml.deprecated "Alias for Constr.hash"]
 
+end
+
+include module type of struct include Public end
+
+module Internal : sig
+
 val hcons_sorts : Sorts.t -> Sorts.t
-[@@ocaml.deprecated "Alias for [Sorts.hcons]"]
+(** Alias for [Constr.hashcons_sorts] *)
 
 val hcons_constr : Constr.constr -> Constr.constr
-[@@ocaml.deprecated "Alias for [Constr.hcons]"]
+(** Alias for [Constr.hashcons] *)
 
 val hcons_types : Constr.types -> Constr.types
-[@@ocaml.deprecated "Alias for [Constr.hcons]"]
+(** Alias for [Constr.hashcons] *)
+
+end

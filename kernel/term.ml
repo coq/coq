@@ -12,6 +12,8 @@ open CErrors
 open Names
 open Vars
 
+module Internal = struct
+
 (**********************************************************************)
 (**         Redeclaration of types from module Constr                 *)
 (**********************************************************************)
@@ -152,7 +154,7 @@ let map_constr_with_binders = Constr.map_with_binders
 let iter_constr = Constr.iter
 let iter_constr_with_binders = Constr.iter_with_binders
 let compare_constr = Constr.compare_head
-let hash_constr = Constr.Internal.hash
+let hash_constr = Constr.hash
 let hcons_sorts = Sorts.hcons
 let hcons_constr = Constr.Internal.hcons
 let hcons_types = Constr.Internal.hcons
@@ -695,3 +697,8 @@ let kind_of_type t = match kind_of_term t with
   | Proj _ | Case _ | Fix _ | CoFix _ | Ind _)
     -> AtomicType (t,[||])
   | (Lambda _ | Construct _) -> failwith "Not a type"
+
+end
+
+module Public = Internal
+include Public

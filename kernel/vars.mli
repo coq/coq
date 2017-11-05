@@ -10,6 +10,7 @@ open Names
 open Constr
 
 (** {6 Occur checks } *)
+module Public : sig
 
 (** [closedn n M] is true iff [M] is a (de Bruijn) closed term under n binders *)
 val closedn : int -> constr -> bool
@@ -146,3 +147,10 @@ val subst_instance_context : Instance.t -> Context.Rel.t -> Context.Rel.t
 
 type id_key = Constant.t tableKey
 val eq_id_key : id_key -> id_key -> bool
+
+end
+
+include module type of struct include Public end
+
+module Internal : sig
+end

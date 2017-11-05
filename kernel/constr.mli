@@ -347,16 +347,17 @@ val compare_head_gen_leq : (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) 
   (constr -> constr -> bool) ->
   constr -> constr -> bool
 
+val hash : constr -> int
+
 type values
 
 end
 
-include module type of Public
+include module type of struct include Public end
 
 module Internal : sig
 (** {6 Hashconsing} *)
 
-val hash : constr -> int
 val case_info_hash : case_info -> int
 
 (*********************************************************************)

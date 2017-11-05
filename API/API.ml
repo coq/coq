@@ -22,6 +22,7 @@ module Coq_config = Coq_config
 
 module Internal = struct
   module Evar = Evar.Internal
+  module Term = Term.Internal
 end
 
 (******************************************************************************)
@@ -40,10 +41,10 @@ module Sorts = Sorts
 module Evar = Evar
 module Constr = Constr
 module Context = Context
-
-(* Not moved out of API yet *)
 module Vars = Vars
 module Term = Term
+
+(* Not moved out of API yet *)
 module Mod_subst = Mod_subst
 module Cbytecodes = Cbytecodes
 (* module Copcodes *)
