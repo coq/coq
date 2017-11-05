@@ -327,11 +327,11 @@ let pr_evar_constraints sigma pbs =
       Namegen.make_all_name_different env sigma
     in
     print_env_short env ++ spc () ++ str "|-" ++ spc () ++
-      print_constr_env env sigma (EConstr.of_constr t1) ++ spc () ++
+      protect (print_constr_env env sigma) (EConstr.of_constr t1) ++ spc () ++
       str (match pbty with
             | Reduction.CONV -> "=="
             | Reduction.CUMUL -> "<=") ++
-      spc () ++ print_constr_env env Evd.empty (EConstr.of_constr t2)
+      spc () ++ protect (print_constr_env env Evd.empty) (EConstr.of_constr t2)
   in
   prlist_with_sep fnl pr_evconstr pbs
 
