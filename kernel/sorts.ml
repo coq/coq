@@ -8,6 +8,7 @@
 
 open Univ
 
+module Internal = struct
 type contents = Pos | Null
 
 type family = InProp | InSet | InType
@@ -107,3 +108,6 @@ module Hsorts =
     end)
 
 let hcons = Hashcons.simple_hcons Hsorts.generate Hsorts.hcons hcons_univ
+end
+module Public = Internal
+include Public

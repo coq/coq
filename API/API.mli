@@ -33,37 +33,12 @@ end
 (************************************************************************)
 module Names  : module type of Names.Public
 module Univ   : module type of Univ.Public
+  with type Universe.t = Univ.Universe.t
 module UGraph : module type of UGraph.Public
 module Esubst : module type of Esubst.Public
-
-module Sorts :
-sig
-  type contents = Pos | Null
-  type t =
-         | Prop of contents
-         | Type of Univ.Universe.t
-  val is_prop : t -> bool
-  val hash : t -> int
-
-  type family = InProp | InSet | InType
-  val family : t -> family
-end
-
-module Evar :
-sig
-  (** Unique identifier of some {i evar} *)
-  type t
-
-  (** Recover the underlying integer. *)
-  val repr : t -> int
-
-  val equal : t -> t -> bool
-
-  (** a set of unique identifiers of some {i evars} *)
-  module Set : Set.S with type elt = t
-  module Map : CMap.ExtS with type key = t and module Set := Set
-
-end
+module Sorts  : module type of Sorts.Public
+(* Evar.Internal is used by ssreflect *)
+module Evar   : module type of Evar
 
 module Constr :
 sig
@@ -418,13 +393,15 @@ end
 module Term :
 sig
 
+  open Univ
+
   type sorts_family = Sorts.family = InProp | InSet | InType
 
   type contents = Sorts.contents = Pos | Null
 
   type sorts = Sorts.t =
     | Prop of contents
-    | Type of Univ.Universe.t
+    | Type of Universe.t
   [@@ocaml.deprecated "alias of API.Sorts.t"]
 
   type constr = Constr.t

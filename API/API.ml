@@ -32,9 +32,9 @@ module Names = Names
 module Univ = Univ
 module UGraph = UGraph
 module Esubst = Esubst
-
 module Sorts = Sorts
 module Evar = Evar
+
 module Constr = Constr
 module Context = Context
 module Vars = Vars

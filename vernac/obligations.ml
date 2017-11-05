@@ -62,7 +62,7 @@ let subst_evar_constr evs n idf t =
 	      ev_hyps = hyps ; ev_chop = chop } =
 	  try evar_info k
 	  with Not_found ->
-	    anomaly ~label:"eterm" (Pp.str "existential variable " ++ int (Evar.repr k) ++ str " not found.")
+	    anomaly ~label:"eterm" (Pp.str "existential variable " ++ int (Evar.Internal.repr k) ++ str " not found.")
 	in
         seen := Int.Set.add id !seen;
 	  (* Evar arguments are created in inverse order,

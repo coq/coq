@@ -72,7 +72,7 @@ let rec pr_constr c = match kind c with
       (str"(" ++ pr_constr c ++ spc() ++
        prlist_with_sep spc pr_constr (Array.to_list l) ++ str")")
   | Evar (e,l) -> hov 1
-      (str"Evar#" ++ int (Evar.repr e) ++ str"{" ++
+      (str"Evar#" ++ int (Evar.Internal.repr e) ++ str"{" ++
        prlist_with_sep spc pr_constr (Array.to_list l) ++str"}")
   | Const (c,u) -> str"Cst(" ++ pr_puniverses (pr_con c) u ++ str")"
   | Ind ((sp,i),u) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str")"
