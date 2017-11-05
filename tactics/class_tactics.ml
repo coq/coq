@@ -338,7 +338,7 @@ let matches_pattern concl pat =
 
 let pr_gls sigma gls =
   prlist_with_sep spc
-   (fun ev -> int (Evar.repr ev) ++ spc () ++ pr_ev sigma ev) gls
+   (fun ev -> int (Evar.Internal.repr ev) ++ spc () ++ pr_ev sigma ev) gls
 
 (** Ensure the dependent subgoals are shelved after an apply/eapply. *)
 let shelve_dependencies gls =
@@ -1157,7 +1157,7 @@ module Search = struct
           let remaining = CList.map_filter filter shelf in
           (if !typeclasses_debug > 1 then
              let prunsolved (ev, _) =
-               int (Evar.repr ev) ++ spc () ++ pr_ev sigma ev in
+               int (Evar.Internal.repr ev) ++ spc () ++ pr_ev sigma ev in
              let unsolved = prlist_with_sep spc prunsolved remaining in
              Feedback.msg_debug
                (pr_depth (i :: info.search_depth) ++
@@ -1365,7 +1365,7 @@ module Search = struct
                       let okev = Evd.mem evm ev || List.mem ev shelved in
                       if not okev then
                         Feedback.msg_debug
-                          (str "leaking evar " ++ int (Evar.repr ev) ++
+                          (str "leaking evar " ++ int (Evar.Internal.repr ev) ++
                              spc () ++ pr_ev evm' ev);
                       acc && okev) evm' true);
            let evm' = Evd.restore_future_goals evm' (shelved @ fgoals) pgoal in

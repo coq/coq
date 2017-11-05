@@ -1014,7 +1014,7 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
 	(App (c,l), combinesmall 7 (combine hl hc))
       | Evar (e,l) ->
 	let l, hl = hash_term_array l in
-	(Evar (e,l), combinesmall 8 (combine (Evar.hash e) hl))
+	(Evar (e,l), combinesmall 8 (combine (Evar.Internal.hash e) hl))
       | Proj (p,c) ->
         let c, hc = sh_rec c in
 	let p' = Projection.hcons p in
@@ -1105,7 +1105,7 @@ let rec hash t =
     | Proj (p,c) ->
       combinesmall 17 (combine (Projection.hash p) (hash c))
     | Evar (e,l) ->
-      combinesmall 8 (combine (Evar.hash e) (hash_term_array l))
+      combinesmall 8 (combine (Evar.Internal.hash e) (hash_term_array l))
     | Const (c,u) ->
       combinesmall 9 (combine (Constant.hash c) (Instance.hash u))
     | Ind (ind,u) ->

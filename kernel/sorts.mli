@@ -7,7 +7,7 @@
 (************************************************************************)
 
 (** {6 The sorts of CCI. } *)
-
+module Public : sig
 type contents = Pos | Null
 
 type family = InProp | InSet | InType
@@ -40,3 +40,10 @@ end
 
 val univ_of_sort : t -> Univ.Universe.t
 val sort_of_univ : Univ.Universe.t -> t
+end
+
+include module type of struct include Public end
+
+module Internal : sig
+
+end
