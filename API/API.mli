@@ -31,14 +31,9 @@ end
 (************************************************************************)
 (* Modules from kernel/                                                 *)
 (************************************************************************)
-module Names : module type of Names.Public
-module Univ : module type of Univ.Public
-
-module UGraph :
-sig
-  type t
-  val pr_universes : (Univ.Level.t -> Pp.t) -> t -> Pp.t
-end
+module Names  : module type of Names.Public
+module Univ   : module type of Univ.Public
+module UGraph : module type of UGraph.Public
 
 module Esubst :
 sig
