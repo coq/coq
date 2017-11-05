@@ -842,12 +842,22 @@ let rec find_solution_type evarenv = function
   | (id,ProjectEvar _)::l -> find_solution_type evarenv l
   | [] -> assert false
 
-let find_most_recent_projection evi sols =
+let is_preferred_projection_over sign (id,p) (id',p') =
+  (* We give priority to projection of variables over instantiation of
+     an evar considering that the latter is a stronger decision which
+     may even procude an incorrect (ill-typed) solution *)
+  match p, p' with
+  | ProjectEvar _, ProjectVar -> false
+  | ProjectVar, ProjectEvar _ -> true
+  | _, _ ->
+     List.index Id.equal id sign < List.index Id.equal id' sign
+
+let choose_projection evi sols =
   let sign = List.map get_id (evar_filtered_context evi) in
   match sols with
   | y::l ->
      List.fold_right (fun (id,p as x) (id',_ as y) ->
-         if List.index Id.equal id sign < List.index Id.equal id' sign then x else y)
+         if is_preferred_projection_over sign x y then x else y)
     l y
   | _ -> assert false
 
@@ -1439,8 +1449,11 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
         | [] -> raise Not_found
         | [id,p] -> (mkVar id, p)
         | _ ->
-            let (id,p) = find_most_recent_projection evi sols in
-            if choose then (mkVar id, p) else raise (NotUniqueInType sols)
+            if choose then
+              let (id,p) = choose_projection evi sols in
+              (mkVar id, p)
+            else
+              raise (NotUniqueInType sols)
       in
       let ty = lazy (Retyping.get_type_of env !evdref (of_alias t)) in
       let evd = do_projection_effects (evar_define conv_algo ~choose) env ty !evdref p in
