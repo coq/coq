@@ -12,6 +12,7 @@
 
 open Util
 
+module Internal = struct
 (*********************)
 (*      Lifting      *)
 (*********************)
@@ -157,3 +158,6 @@ let rec comp mk_cl s1 s2 =
         if k<k'
         then subs_liftn k (comp mk_cl s (subs_liftn (k'-k) s'))
         else subs_liftn k' (comp mk_cl (subs_liftn (k-k') s) s')
+end
+module Public = Internal
+include Public

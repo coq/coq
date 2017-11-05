@@ -1659,7 +1659,7 @@ let vernac_print ?loc = let open Feedback in function
   | PrintCanonicalConversions -> msg_notice (Prettyp.print_canonical_projections ())
   | PrintUniverses (b, dst) ->
      let univ = Global.universes () in
-     let univ = if b then UGraph.Internal.sort_universes univ else univ in
+     let univ = if b then UGraph.sort_universes univ else univ in
      let pr_remaining =
        if Global.is_joined_environment () then mt ()
        else str"There may remain asynchronous universe constraints"

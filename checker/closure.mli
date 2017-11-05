@@ -10,6 +10,7 @@
 open Names
 open Cic
 open Esubst
+open Esubst.Internal
 open Environ
 (*i*)
 

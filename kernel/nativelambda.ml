@@ -7,7 +7,7 @@
 (************************************************************************)
 open Util
 open Names
-open Esubst
+open Esubst.Internal
 open Constr
 open Declarations
 open Pre_env

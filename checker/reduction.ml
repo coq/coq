@@ -11,7 +11,7 @@ open Util
 open Cic
 open Term
 open Closure
-open Esubst
+open Esubst.Internal
 open Environ
 
 let rec is_empty_stack = function

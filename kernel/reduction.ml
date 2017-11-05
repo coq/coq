@@ -22,7 +22,7 @@ open Constr
 open Vars
 open Environ
 open CClosure
-open Esubst
+open Esubst.Internal
 open Context.Rel.Declaration
 
 let rec is_empty_stack = function
