@@ -343,7 +343,7 @@ let dump_universes_gen g s =
     end
   in
   try
-    UGraph.dump_universes output_constraint g;
+    UGraph.Internal.dump_universes output_constraint g;
     close ();
     Feedback.msg_info (str "Universes written to file \"" ++ str s ++ str "\".")
   with reraise ->
