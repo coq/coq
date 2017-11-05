@@ -29,6 +29,8 @@
 open Util
 open Names
 
+module Internal = struct
+
 (** Representation of contexts that can capture anonymous as well as non-anonymous variables.
     Individual declarations are then designated by de Bruijn indexes. *)
 module Rel =
@@ -456,3 +458,8 @@ module Compacted =
 
     let fold f l ~init = List.fold_right f l init
   end
+
+end
+
+module Public = Internal
+include Public

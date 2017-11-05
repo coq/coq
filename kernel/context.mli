@@ -22,6 +22,8 @@
 
 open Names
 
+module Public : sig
+
 (** Representation of contexts that can capture anonymous as well as non-anonymous variables.
     Individual declarations are then designated by de Bruijn indexes. *)
 module Rel :
@@ -279,4 +281,10 @@ sig
   type t = Declaration.t list
 
   val fold : (('c, 't) Declaration.pt -> 'a -> 'a) -> ('c, 't) pt -> init:'a -> 'a
+end
+end
+
+include module type of struct include Public end
+
+module Internal : sig
 end

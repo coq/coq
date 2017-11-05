@@ -39,9 +39,9 @@ module Esubst = Esubst
 module Sorts = Sorts
 module Evar = Evar
 module Constr = Constr
-
-(* Not moved out of API *)
 module Context = Context
+
+(* Not moved out of API yet *)
 module Vars = Vars
 module Term = Term
 module Mod_subst = Mod_subst
