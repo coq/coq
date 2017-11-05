@@ -9,6 +9,8 @@
 open Univ
 
 (** {6 Graphs of universes. } *)
+module Public : sig
+
 type t
 type universes = t
 [@@ocaml.deprecated "Use UGraph.t"]
@@ -57,6 +59,12 @@ val empty_universes : t
 
 val sort_universes : t -> t
 
+end
+
+include module type of Public
+
+module Internal : sig
+
 val constraints_of_universes : t -> constraints
 
 val check_subtype : AUContext.t check_function
@@ -70,3 +78,5 @@ val dump_universes :
 
 (** {6 Debugging} *)
 val check_universes_invariants : t -> unit
+
+end
