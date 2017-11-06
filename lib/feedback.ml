@@ -63,6 +63,7 @@ let set_id_for_feedback ?(route=default_route) d i =
   span_id := i;
   feedback_route := route
 
+let warn_no_listeners = ref true
 let feedback ?did ?id ?route what =
   let m = {
      contents = what;
@@ -70,6 +71,8 @@ let feedback ?did ?id ?route what =
      doc_id   = Option.default !doc_id did;
      span_id  = Option.default !span_id id;
   } in
+  if !warn_no_listeners && Hashtbl.length feeders = 0 then
+    Format.eprintf "Warning, feedback message received but no listener to handle it!@\n%!";
   Hashtbl.iter (fun _ f -> f m) feeders
 
 (* Logging messages *)
@@ -81,3 +84,38 @@ let msg_notice  ?loc x = feedback_logger ?loc Notice x
 let msg_warning ?loc x = feedback_logger ?loc Warning x
 let msg_error   ?loc x = feedback_logger ?loc Error x
 let msg_debug   ?loc x = feedback_logger ?loc Debug x
+
+(* Helper for tools willing to understand only the messages *)
+let console_feedback_listener fmt =
+  let open Format in
+  let pp_lvl fmt lvl = match lvl with
+    | Error   -> fprintf fmt "Error: "
+    | Info    -> fprintf fmt "Info: "
+    | Debug   -> fprintf fmt "Debug: "
+    | Warning -> fprintf fmt "Warning: "
+    | Notice  -> fprintf fmt ""
+  in
+  let pp_loc fmt loc = let open Loc in match loc with
+    | None     -> fprintf fmt ""
+    | Some loc ->
+      let where =
+        match loc.fname with InFile f -> f | ToplevelInput -> "Toplevel input" in
+      fprintf fmt "\"%s\", line %d, characters %d-%d:@\n"
+        where loc.line_nb (loc.bp-loc.bol_pos) (loc.ep-loc.bol_pos) in
+  let checker_feed (fb : feedback) =
+  match fb.contents with
+  | Processed   -> ()
+  | Incomplete  -> ()
+  | Complete    -> ()
+  | ProcessingIn _ -> ()
+  | InProgress _ -> ()
+  | WorkerStatus (_,_) -> ()
+  | AddedAxiom  -> ()
+  | GlobRef (_,_,_,_,_) -> ()
+  | GlobDef (_,_,_,_) -> ()
+  | FileDependency (_,_) -> ()
+  | FileLoaded (_,_) -> ()
+  | Custom (_,_,_) -> ()
+  | Message (lvl,loc,msg) ->
+    fprintf fmt "@[%a@]%a@[%a@]\n%!" pp_loc loc pp_lvl lvl Pp.pp_with msg
+  in checker_feed

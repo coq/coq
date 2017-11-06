@@ -99,3 +99,11 @@ val msg_error : ?loc:Loc.t -> Pp.t -> unit
 
 val msg_debug : ?loc:Loc.t -> Pp.t -> unit
 (** For debugging purposes *)
+
+val console_feedback_listener : Format.formatter -> feedback -> unit
+(** Helper for tools willing to print to the feedback system *)
+
+val warn_no_listeners : bool ref
+(** The library will print a warning to the console if no listener is
+    available by default; ML-clients willing to use Coq without a
+    feedback handler should set this to false. *)
