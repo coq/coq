@@ -124,3 +124,38 @@ val check_evars : env -> evar_map -> evar_map -> constr -> unit
 val ise_pretype_gen :
   inference_flags -> env -> evar_map ->
   ltac_var_map -> typing_constraint -> glob_constr -> evar_map * constr * types
+
+(** {6 Open-recursion style pretyper} *)
+
+type 'a pretype_fun = ?loc:Loc.t -> program_mode:bool -> poly:bool -> bool -> Evardefine.type_constraint -> GlobEnv.t -> evar_map -> evar_map * 'a
+
+type pretyper = {
+  pretype_ref : pretyper -> GlobRef.t * glob_level list option -> unsafe_judgment pretype_fun;
+  pretype_var : pretyper -> Id.t -> unsafe_judgment pretype_fun;
+  pretype_evar : pretyper -> existential_name * (Id.t * glob_constr) list -> unsafe_judgment pretype_fun;
+  pretype_patvar : pretyper -> Evar_kinds.matching_var_kind -> unsafe_judgment pretype_fun;
+  pretype_app : pretyper -> glob_constr * glob_constr list -> unsafe_judgment pretype_fun;
+  pretype_lambda : pretyper -> Name.t * binding_kind * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_prod : pretyper -> Name.t * binding_kind * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_letin : pretyper -> Name.t * glob_constr * glob_constr option * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_cases : pretyper -> Constr.case_style * glob_constr option * tomatch_tuples * cases_clauses -> unsafe_judgment pretype_fun;
+  pretype_lettuple : pretyper -> Name.t list * (Name.t * glob_constr option) * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_if : pretyper -> glob_constr * (Name.t * glob_constr option) * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_rec : pretyper -> glob_fix_kind * Id.t array * glob_decl list array * glob_constr array * glob_constr array -> unsafe_judgment pretype_fun;
+  pretype_sort : pretyper -> glob_sort -> unsafe_judgment pretype_fun;
+  pretype_hole : pretyper -> Evar_kinds.t * Namegen.intro_pattern_naming_expr * Genarg.glob_generic_argument option -> unsafe_judgment pretype_fun;
+  pretype_cast : pretyper -> glob_constr * glob_constr cast_type -> unsafe_judgment pretype_fun;
+  pretype_int : pretyper -> Uint63.t -> unsafe_judgment pretype_fun;
+  pretype_float : pretyper -> Float64.t -> unsafe_judgment pretype_fun;
+}
+(** Type of pretyping algorithms in open-recursion style. A typical way to
+    implement a pretyping variant is to inherit from some pretyper using
+    record inheritance and replacing particular fields with the [where] clause.
+    Recursive calls to the subterms should call the [pretyper] provided as the
+    first argument to the function. This object can be turned in an actual
+    pretyping function through the {!eval_pretyper} function below. *)
+
+val default_pretyper : pretyper
+(** Coq vanilla pretyper. *)
+
+val eval_pretyper : pretyper -> program_mode:bool -> poly:bool -> bool -> Evardefine.type_constraint -> GlobEnv.t -> evar_map -> glob_constr -> evar_map * unsafe_judgment
