@@ -4933,9 +4933,9 @@ let intros_transitivity  n  = Tacticals.New.tclTHEN intros (transitivity_gen n)
    is solved by tac *)
 
 (** d1 is the section variable in the global context, d2 in the goal context *)
-let interpretable_as_section_decl evd d1 d2 =
+let interpretable_as_section_decl env evd d1 d2 =
   let open Context.Named.Declaration in
-  let e_eq_constr_univs sigma c1 c2 = match eq_constr_universes !sigma c1 c2 with
+  let e_eq_constr_univs sigma c1 c2 = match eq_constr_universes env !sigma c1 c2 with
   | None -> false
   | Some cstr ->
     try ignore (Evd.add_universe_constraints !sigma cstr); true
@@ -4999,6 +4999,7 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
   let open Tacmach.New in
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let current_sign = Global.named_context_val ()
   and global_sign = Proofview.Goal.hyps gl in
@@ -5008,7 +5009,7 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
       (fun d (s1,s2) ->
         let id = NamedDecl.get_id d in
 	if mem_named_context_val id current_sign &&
-          interpretable_as_section_decl evdref (lookup_named_val id current_sign) d
+          interpretable_as_section_decl env evdref (lookup_named_val id current_sign) d
         then (s1,push_named_context_val d s2)
 	else (Context.Named.add d s1,s2))
       global_sign (Context.Named.empty, empty_named_context_val) in

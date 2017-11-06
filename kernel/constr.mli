@@ -406,13 +406,18 @@ val iter_with_binders :
 
 val compare_head : (constr -> constr -> bool) -> constr -> constr -> bool
 
-(** [compare_head_gen u s f c1 c2] compare [c1] and [c2] using [f] to compare
-   the immediate subterms of [c1] of [c2] if needed, [u] to compare universe
-   instances (the first boolean tells if they belong to a Constant.t), [s] to 
-   compare sorts; Cast's, binders name and Cases annotations are not taken 
-    into account *)
+(** Convert a global reference applied to 2 instances. The int says
+   how many arguments are given (as we can only use cumulativity for
+   fully applied inductives/constructors) .*)
+type instance_compare_fn = global_reference -> int ->
+  Univ.Instance.t -> Univ.Instance.t -> bool
 
-val compare_head_gen : (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) ->
+(** [compare_head_gen u s f c1 c2] compare [c1] and [c2] using [f] to
+   compare the immediate subterms of [c1] of [c2] if needed, [u] to
+   compare universe instances, [s] to compare sorts; Cast's, binders
+   name and Cases annotations are not taken into account *)
+
+val compare_head_gen : instance_compare_fn ->
   (Sorts.t -> Sorts.t -> bool) ->
   (constr -> constr -> bool) ->
   constr -> constr -> bool
@@ -420,7 +425,7 @@ val compare_head_gen : (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) ->
 val compare_head_gen_leq_with :
   (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
   (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
-  (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) ->
+  instance_compare_fn ->
   (Sorts.t -> Sorts.t -> bool) ->
   (constr -> constr -> bool) ->
   (constr -> constr -> bool) ->
@@ -433,7 +438,7 @@ val compare_head_gen_leq_with :
 val compare_head_gen_with :
   (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
   (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
-  (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) ->
+  instance_compare_fn ->
   (Sorts.t -> Sorts.t -> bool) ->
   (constr -> constr -> bool) ->
   constr -> constr -> bool
@@ -445,7 +450,7 @@ val compare_head_gen_with :
     [s] to compare sorts for for subtyping; Cast's, binders name and
     Cases annotations are not taken into account *)
 
-val compare_head_gen_leq : (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) ->
+val compare_head_gen_leq : instance_compare_fn ->
   (Sorts.t -> Sorts.t -> bool) ->
   (constr -> constr -> bool) ->
   (constr -> constr -> bool) ->

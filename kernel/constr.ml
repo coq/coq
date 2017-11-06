@@ -652,6 +652,18 @@ let map_with_binders g f l c0 = match kind c0 with
     let bl' = CArray.Fun1.smartmap f l' bl in
     mkCoFix (ln,(lna,tl',bl'))
 
+type instance_compare_fn = global_reference -> int ->
+  Univ.Instance.t -> Univ.Instance.t -> bool
+
+(* [upto [kind], break [c] into a head [kind] and arguments ignoring casts. *)
+let rec break_app kind c =
+  match kind c with
+  | App (c, args) ->
+    let hd, args0 = break_app kind c in
+    hd, Array.append args0 args
+  | Cast (c, _, _) -> break_app kind c
+  | k -> k, [||]
+
 (* [compare_head_gen_evar k1 k2 u s e eq leq c1 c2] compare [c1] and
    [c2] (using [k1] to expose the structure of [c1] and [k2] to expose
    the structure [c2]) using [eq] to compare the immediate subterms of
@@ -663,28 +675,28 @@ let map_with_binders g f l c0 = match kind c0 with
    optimisation that physically equal arrays are equals (hence the
    calls to {!Array.equal_norefl}). *)
 
-let compare_head_gen_leq_with kind1 kind2 eq_universes leq_sorts eq leq t1 t2 =
-  match kind1 t1, kind2 t2 with
+let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq t1 t2 =
+  let hd1, args1 = break_app kind1 t1 in
+  let hd2, args2 = break_app kind2 t2 in
+  Int.equal (Array.length args1) (Array.length args2) &&
+  (match hd1, hd2 with
+  | App _, _ | _, App _ | Cast _, _ | _, Cast _ ->
+      assert false (* break_app prohibits these cases *)
   | Rel n1, Rel n2 -> Int.equal n1 n2
   | Meta m1, Meta m2 -> Int.equal m1 m2
   | Var id1, Var id2 -> Id.equal id1 id2
   | Sort s1, Sort s2 -> leq_sorts s1 s2
-  | Cast (c1,_,_), _ -> leq c1 t2
-  | _, Cast (c2,_,_) -> leq t1 c2
   | Prod (_,t1,c1), Prod (_,t2,c2) -> eq t1 t2 && leq c1 c2
   | Lambda (_,t1,c1), Lambda (_,t2,c2) -> eq t1 t2 && eq c1 c2
   | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> eq b1 b2 && eq t1 t2 && leq c1 c2
-  (* Why do we suddenly make a special case for Cast here? *)
-  | App (Cast(c1, _, _),l1), _ -> leq (mkApp (c1,l1)) t2
-  | _, App (Cast (c2, _, _),l2) -> leq t1 (mkApp (c2,l2))
-  | App (c1,l1), App (c2,l2) ->
-      Int.equal (Array.length l1) (Array.length l2) &&
-        eq c1 c2 && Array.equal_norefl eq l1 l2
   | Proj (p1,c1), Proj (p2,c2) -> Projection.equal p1 p2 && eq c1 c2
   | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && Array.equal eq l1 l2
-  | Const (c1,u1), Const (c2,u2) -> Constant.equal c1 c2 && eq_universes true u1 u2
-  | Ind (c1,u1), Ind (c2,u2) -> eq_ind c1 c2 && eq_universes false u1 u2
-  | Construct (c1,u1), Construct (c2,u2) -> eq_constructor c1 c2 && eq_universes false u1 u2
+  | Const (c1,u1), Const (c2,u2) ->
+      (* The args length currently isn't used but may as well pass it. *)
+      Constant.equal c1 c2 && leq_universes (ConstRef c1) (Array.length args1) u1 u2
+  | Ind (c1,u1), Ind (c2,u2) -> eq_ind c1 c2 && leq_universes (IndRef c1) (Array.length args1) u1 u2
+  | Construct (c1,u1), Construct (c2,u2) ->
+      eq_constructor c1 c2 && leq_universes (ConstructRef c1) (Array.length args1) u1 u2
   | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
       eq p1 p2 && eq c1 c2 && Array.equal eq bl1 bl2
   | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
@@ -692,9 +704,10 @@ let compare_head_gen_leq_with kind1 kind2 eq_universes leq_sorts eq leq t1 t2 =
       && Array.equal_norefl eq tl1 tl2 && Array.equal_norefl eq bl1 bl2
   | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
       Int.equal ln1 ln2 && Array.equal_norefl eq tl1 tl2 && Array.equal_norefl eq bl1 bl2
-  | (Rel _ | Meta _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _
+  | (Rel _ | Meta _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _
      | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _ | Fix _
-     | CoFix _), _ -> false
+     | CoFix _), _ -> false) &&
+  Array.equal_norefl eq args1 args2
 
 (* [compare_head_gen_leq u s eq leq c1 c2] compare [c1] and [c2] using [eq] to compare
    the immediate subterms of [c1] of [c2] for conversion if needed, [leq] for cumulativity,
@@ -702,8 +715,8 @@ let compare_head_gen_leq_with kind1 kind2 eq_universes leq_sorts eq leq t1 t2 =
    application associativity, binders name and Cases annotations are
    not taken into account *)
 
-let compare_head_gen_leq eq_universes leq_sorts eq leq t1 t2 =
-  compare_head_gen_leq_with kind kind  eq_universes leq_sorts eq leq t1 t2
+let compare_head_gen_leq leq_universes leq_sorts eq leq t1 t2 =
+  compare_head_gen_leq_with kind kind leq_universes leq_sorts eq leq t1 t2
 
 (* [compare_head_gen u s f c1 c2] compare [c1] and [c2] using [f] to
    compare the immediate subterms of [c1] of [c2] if needed, [u] to
@@ -720,7 +733,7 @@ let compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq t1 t2 =
 let compare_head_gen eq_universes eq_sorts eq t1 t2 =
   compare_head_gen_leq eq_universes eq_sorts eq eq t1 t2
 
-let compare_head = compare_head_gen (fun _ -> Univ.Instance.equal) Sorts.equal
+let compare_head = compare_head_gen (fun _ _ -> Univ.Instance.equal) Sorts.equal
 
 (*******************************)
 (*  alpha conversion functions *)
@@ -729,14 +742,14 @@ let compare_head = compare_head_gen (fun _ -> Univ.Instance.equal) Sorts.equal
 (* alpha conversion : ignore print names and casts *)
 
 let rec eq_constr m n =
-  (m == n) || compare_head_gen (fun _ -> Instance.equal) Sorts.equal eq_constr m n
+  (m == n) || compare_head_gen (fun _ _ -> Instance.equal) Sorts.equal eq_constr m n
 
 let equal m n = eq_constr m n (* to avoid tracing a recursive fun *)
 
 let eq_constr_univs univs m n =
   if m == n then true
   else 
-    let eq_universes _ = UGraph.check_eq_instances univs in
+    let eq_universes _ _ = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = s1 == s2 || UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let rec eq_constr' m n = 
       m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' m n
@@ -745,7 +758,7 @@ let eq_constr_univs univs m n =
 let leq_constr_univs univs m n =
   if m == n then true
   else 
-    let eq_universes _ = UGraph.check_eq_instances univs in
+    let eq_universes _ _ = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = s1 == s2 || 
       UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let leq_sorts s1 s2 = s1 == s2 || 
@@ -762,7 +775,7 @@ let eq_constr_univs_infer univs m n =
   if m == n then true, Constraint.empty
   else 
     let cstrs = ref Constraint.empty in
-    let eq_universes strict = UGraph.check_eq_instances univs in
+    let eq_universes _ _ = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else
@@ -782,7 +795,7 @@ let leq_constr_univs_infer univs m n =
   if m == n then true, Constraint.empty
   else 
     let cstrs = ref Constraint.empty in
-    let eq_universes strict l l' = UGraph.check_eq_instances univs l l' in
+    let eq_universes _ _ l l' = UGraph.check_eq_instances univs l l' in
     let eq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else
@@ -809,10 +822,8 @@ let leq_constr_univs_infer univs m n =
     let res = compare_leq m n in
     res, !cstrs
 
-let always_true _ _ = true
-
 let rec eq_constr_nounivs m n =
-  (m == n) || compare_head_gen (fun _ -> always_true) always_true eq_constr_nounivs m n
+  (m == n) || compare_head_gen (fun _ _ _ _ -> true) (fun _ _ -> true) eq_constr_nounivs m n
 
 let constr_ord_int f t1 t2 =
   let (=?) f g i1 i2 j1 j2=

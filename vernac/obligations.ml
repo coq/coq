@@ -1,5 +1,4 @@
 open Printf
-open Globnames
 open Libobject
 open Entries
 open Decl_kinds

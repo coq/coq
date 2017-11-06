@@ -552,32 +552,92 @@ let compare_gen k eq_inst eq_sort eq_constr c1 c2 =
 let eq_constr sigma c1 c2 =
   let kind c = kind_upto sigma c in
   let rec eq_constr c1 c2 =
-    compare_gen kind (fun _ -> Univ.Instance.equal) Sorts.equal eq_constr c1 c2
+    (* TODO upto cumulativity of inductives? *)
+    compare_gen kind (fun _ _ -> Univ.Instance.equal) Sorts.equal eq_constr c1 c2
   in
   eq_constr (unsafe_to_constr c1) (unsafe_to_constr c2)
 
 let eq_constr_nounivs sigma c1 c2 =
   let kind c = kind_upto sigma c in
   let rec eq_constr c1 c2 =
-    compare_gen kind (fun _ _ _ -> true) (fun _ _ -> true) eq_constr c1 c2
+    compare_gen kind (fun _ _ _ _ -> true) (fun _ _ -> true) eq_constr c1 c2
   in
   eq_constr (unsafe_to_constr c1) (unsafe_to_constr c2)
 
 let compare_constr sigma cmp c1 c2 =
   let kind c = kind_upto sigma c in
   let cmp c1 c2 = cmp (of_constr c1) (of_constr c2) in
-  compare_gen kind (fun _ -> Univ.Instance.equal) Sorts.equal cmp (unsafe_to_constr c1) (unsafe_to_constr c2)
+  (* TODO upto cumulativity of inductives? *)
+  compare_gen kind (fun _ _ -> Univ.Instance.equal) Sorts.equal cmp (unsafe_to_constr c1) (unsafe_to_constr c2)
 
-let test_constr_universes sigma leq m n =
+let cmp_inductives cv_pb (mind,ind) nargs u1 u2 cstrs =
+  let open Universes in
+  match mind.Declarations.mind_universes with
+  | Declarations.Monomorphic_ind _ ->
+    assert (Univ.Instance.length u1 = 0 && Univ.Instance.length u2 = 0);
+    cstrs
+  | Declarations.Polymorphic_ind _ ->
+     enforce_eq_instances_univs true u1 u2 cstrs
+  | Declarations.Cumulative_ind cumi ->
+    let num_param_arity =
+      mind.Declarations.mind_nparams +
+      mind.Declarations.mind_packets.(ind).Declarations.mind_nrealargs
+    in
+    if not (Int.equal num_param_arity nargs) then
+      enforce_eq_instances_univs true u1 u2 cstrs
+    else
+      let newcstrs = Reduction.get_cumulativity_constraints cv_pb cumi u1 u2 in
+      let newcstrs = of_constraints true newcstrs in
+      Constraints.union cstrs newcstrs
+
+let cmp_constructors (mind, ind, cns) nargs u1 u2 cstrs =
+  let open Universes in
+  match mind.Declarations.mind_universes with
+  | Declarations.Monomorphic_ind _ ->
+    assert (Univ.Instance.length u1 = 0 && Univ.Instance.length u2 = 0);
+    cstrs
+  | Declarations.Polymorphic_ind _ ->
+    enforce_eq_instances_univs true u1 u2 cstrs
+  | Declarations.Cumulative_ind cumi ->
+    let num_cnstr_args =
+      let nparamsctxt =
+        mind.Declarations.mind_nparams +
+        mind.Declarations.mind_packets.(ind).Declarations.mind_nrealargs
+        (* Context.Rel.length mind.Declarations.mind_params_ctxt *) in
+      nparamsctxt + mind.Declarations.mind_packets.(ind).Declarations.mind_consnrealargs.(cns - 1)
+    in
+    if not (Int.equal num_cnstr_args nargs) then
+      enforce_eq_instances_univs true u1 u2 cstrs
+    else
+      let newcstrs = Reduction.get_cumulativity_constraints Reduction.CONV cumi u1 u2 in
+      let newcstrs = of_constraints true newcstrs in
+      Constraints.union cstrs newcstrs
+
+let eq_universes env sigma cv_pb cstrs ref nargs l l' =
+  let open Universes in
+  let l = EInstance.kind sigma (EInstance.make l) in
+  let l' = EInstance.kind sigma (EInstance.make l') in
+  match ref with
+  | VarRef _ -> assert false (* variables don't have instances *)
+  | ConstRef _ ->
+    cstrs := enforce_eq_instances_univs true l l' !cstrs; true
+  | IndRef ind ->
+    let mind = Environ.lookup_mind (fst ind) env in
+    cstrs := cmp_inductives cv_pb (mind,snd ind) nargs l l' !cstrs;
+    true
+  | ConstructRef ((mi,ind),ctor) ->
+    let mind = Environ.lookup_mind mi env in
+    cstrs := cmp_constructors (mind,ind,ctor) nargs l l' !cstrs;
+    true
+
+let test_constr_universes env sigma leq m n =
   let open Universes in
   let kind c = kind_upto sigma c in
   if m == n then Some Constraints.empty
-  else 
+  else
+    let cv_pb = if leq then Reduction.CUMUL else Reduction.CONV in
     let cstrs = ref Constraints.empty in
-    let eq_universes strict l l' = 
-      let l = EInstance.kind sigma (EInstance.make l) in
-      let l' = EInstance.kind sigma (EInstance.make l') in
-      cstrs := enforce_eq_instances_univs strict l l' !cstrs; true in
+    let eq_universes ref nargs l l' = eq_universes env sigma cv_pb cstrs ref nargs l l' in
     let eq_sorts s1 s2 = 
       let s1 = ESorts.kind sigma (ESorts.make s1) in
       let s2 = ESorts.kind sigma (ESorts.make s2) in
@@ -607,10 +667,10 @@ let test_constr_universes sigma leq m n =
     in
     if res then Some !cstrs else None
 
-let eq_constr_universes sigma m n =
-  test_constr_universes sigma false (unsafe_to_constr m) (unsafe_to_constr n)
-let leq_constr_universes sigma m n =
-  test_constr_universes sigma true (unsafe_to_constr m) (unsafe_to_constr n)
+let eq_constr_universes env sigma m n =
+  test_constr_universes env sigma false (unsafe_to_constr m) (unsafe_to_constr n)
+let leq_constr_universes env sigma m n =
+  test_constr_universes env sigma true (unsafe_to_constr m) (unsafe_to_constr n)
 
 let compare_head_gen_proj env sigma equ eqs eqc' m n =
   let kind c = kind_upto sigma c in
@@ -632,9 +692,8 @@ let eq_constr_universes_proj env sigma m n =
   if m == n then Some Constraints.empty
   else 
     let cstrs = ref Constraints.empty in
-    let eq_universes strict l l' = 
-      cstrs := enforce_eq_instances_univs strict l l' !cstrs; true in
-    let eq_sorts s1 s2 = 
+    let eq_universes ref l l' = eq_universes env sigma Reduction.CONV cstrs ref l l' in
+    let eq_sorts s1 s2 =
       if Sorts.equal s1 s2 then true
       else
 	(cstrs := Constraints.add 

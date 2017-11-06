@@ -856,8 +856,9 @@ END
 
 let eq_constr x y = 
   Proofview.Goal.enter begin fun gl ->
+    let env = Tacmach.New.pf_env gl in
     let evd = Tacmach.New.project gl in
-      match EConstr.eq_constr_universes evd x y with
+      match EConstr.eq_constr_universes env evd x y with
       | Some _ -> Proofview.tclUNIT () 
       | None -> Tacticals.New.tclFAIL 0 (str "Not equal")
   end

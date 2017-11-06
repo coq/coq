@@ -350,11 +350,6 @@ let exact_ise_stack2 env evd f sk1 sk2 =
     ise_stack2 evd (List.rev sk1) (List.rev sk2)
   else UnifFailure (evd, (* Dummy *) NotSameHead)
 
-let check_leq_inductives evd cumi u u' =
-  let u = EConstr.EInstance.kind evd u in
-  let u' = EConstr.EInstance.kind evd u' in
-  Evd.add_constraints evd (Reduction.get_cumulativity_constraints CUMUL cumi u u')
-
 let rec evar_conv_x ts env evd pbty term1 term2 =
   let term1 = whd_head_evar evd term1 in
   let term2 = whd_head_evar evd term2 in
@@ -445,7 +440,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
   in
   let rigids env evd sk term sk' term' =
     let check_strict () =
-      let univs = EConstr.eq_constr_universes evd term term' in
+      let univs = EConstr.eq_constr_universes env evd term term' in
       match univs with
       | Some univs ->
         begin
@@ -456,84 +451,38 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
       | None ->
         UnifFailure (evd, NotSameHead)
     in
-    let first_try_strict_check cond u u' try_subtyping_constraints =
-      if cond then
-        let univs = EConstr.eq_constr_universes evd term term' in
-        match univs with
-        | Some univs ->
-          begin
-            let cstrs = Universes.to_constraints (Evd.universes evd) univs in
-            try Success (Evd.add_constraints evd cstrs)
-            with Univ.UniverseInconsistency p -> try_subtyping_constraints ()
-          end
-        | None ->
-          UnifFailure (evd, NotSameHead)
-      else
-        UnifFailure (evd, NotSameHead)
-    in
-    let compare_heads evd = 
+    let compare_heads evd =
       match EConstr.kind evd term, EConstr.kind evd term' with
       | Const (c, u), Const (c', u') ->
         check_strict ()
-      | Ind (ind, u), Ind (ind', u') ->
-        let check_subtyping_constraints () =
+      | Ind ((mi,i) as ind , u), Ind (ind', u') ->
           let nparamsaplied = Stack.args_size sk in
           let nparamsaplied' = Stack.args_size sk' in
-          begin
-            let mind = Environ.lookup_mind (fst ind) env in
-            match mind.Declarations.mind_universes with
-            | Declarations.Monomorphic_ind _ | Declarations.Polymorphic_ind _ ->
-              UnifFailure (evd, NotSameHead)
-            | Declarations.Cumulative_ind cumi ->
-              begin
-                let num_param_arity =
-                  mind.Declarations.mind_nparams + 
-                  mind.Declarations.mind_packets.(snd ind).Declarations.mind_nrealargs
-                in
-                if not (num_param_arity = nparamsaplied
-                        && num_param_arity = nparamsaplied') then
-                  UnifFailure (evd, NotSameHead)
-                else
-                  begin
-                    let evd' = check_leq_inductives evd cumi u u' in
-                    Success (check_leq_inductives evd' cumi u' u)
-                  end
-              end
-          end
-        in
-        first_try_strict_check (Names.eq_ind ind ind') u u' check_subtyping_constraints
-      | Construct (cons, u), Construct (cons', u') ->
-        let check_subtyping_constraints () =
-          let ind, ind' = fst cons, fst cons' in
-          let j, j' = snd cons, snd cons' in
-          let nparamsaplied = Stack.args_size sk in
-          let nparamsaplied' = Stack.args_size sk' in
-          let mind = Environ.lookup_mind (fst ind) env in
-          match mind.Declarations.mind_universes with
-          | Declarations.Monomorphic_ind _ | Declarations.Polymorphic_ind _ ->
-            UnifFailure (evd, NotSameHead)
-          | Declarations.Cumulative_ind cumi ->
+          if not (Names.eq_ind ind ind' && Int.equal nparamsaplied nparamsaplied')
+          then UnifFailure (evd, NotSameHead)
+          else
+            let mind = Environ.lookup_mind mi env in
+            let cstrs = EConstr.cmp_inductives CONV (mind,i) nparamsaplied
+                (EInstance.kind evd u) (EInstance.kind evd u') Universes.Constraints.empty
+            in
             begin
-              let num_cnstr_args =
-                let nparamsctxt =
-                  mind.Declarations.mind_nparams + 
-                  mind.Declarations.mind_packets.(snd ind).Declarations.mind_nrealargs
-                in
-                nparamsctxt + 
-                mind.Declarations.mind_packets.(snd ind).
-                  Declarations.mind_consnrealargs.(j - 1)
-              in
-              if not (num_cnstr_args = nparamsaplied 
-                      && num_cnstr_args = nparamsaplied') then
-                UnifFailure (evd, NotSameHead)
-              else
-                begin
-                  let evd' = check_leq_inductives evd cumi u u' in
-                  Success (check_leq_inductives evd' cumi u' u)
-                end
+              try Success (Evd.add_universe_constraints evd cstrs)
+              with UState.UniversesDiffer -> UnifFailure (evd, NotSameHead)
             end
-        in
-        first_try_strict_check (Names.eq_constructor cons cons') u u' check_subtyping_constraints
+      | Construct (((mi,ind),ctor as cons), u), Construct (cons', u') ->
+          let nparamsaplied = Stack.args_size sk in
+          let nparamsaplied' = Stack.args_size sk' in
+          if not (Names.eq_constructor cons cons' && Int.equal nparamsaplied nparamsaplied')
+          then UnifFailure (evd, NotSameHead)
+          else
+            let mind = Environ.lookup_mind mi env in
+            let cstrs = EConstr.cmp_constructors (mind,ind,ctor) nparamsaplied
+                (EInstance.kind evd u) (EInstance.kind evd u') Universes.Constraints.empty
+            in
+            begin
+              try Success (Evd.add_universe_constraints evd cstrs)
+              with UState.UniversesDiffer -> UnifFailure (evd, NotSameHead)
+            end
       | _, _ -> anomaly (Pp.str "")
     in
     ise_and evd [(fun i ->
@@ -780,7 +729,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	     allow this identification (first-order unification of universes). Otherwise
 	     fallback to unfolding.
 	  *)
-	  let univs = EConstr.eq_constr_universes evd term1 term2 in
+          let univs = EConstr.eq_constr_universes env evd term1 term2 in
           match univs with
           | Some univs ->
 	      ise_and i [(fun i -> 
@@ -1087,7 +1036,7 @@ let apply_on_subterm env evdref f c t =
     (* By using eq_constr, we make an approximation, for instance, we *)
     (* could also be interested in finding a term u convertible to t *)
     (* such that c occurs in u *)
-    let eq_constr c1 c2 = match EConstr.eq_constr_universes !evdref c1 c2 with
+    let eq_constr c1 c2 = match EConstr.eq_constr_universes env !evdref c1 c2 with
     | None -> false
     | Some cstr ->
       try ignore (Evd.add_universe_constraints !evdref cstr); true

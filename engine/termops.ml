@@ -913,12 +913,9 @@ let vars_of_global_reference env gr =
 (* Tests whether [m] is a subterm of [t]:
    [m] is appropriately lifted through abstractions of [t] *)
 
-let dependent_main noevar univs sigma m t =
+let dependent_main noevar sigma m t =
   let open EConstr in
-  let eqc x y =
-    if univs then not (Option.is_empty (eq_constr_universes sigma x y))
-    else eq_constr_nounivs sigma x y
-  in
+  let eqc x y = eq_constr_nounivs sigma x y in
   let rec deprec m t =
     if eqc m t then
       raise Occur
@@ -935,11 +932,8 @@ let dependent_main noevar univs sigma m t =
   in
   try deprec m t; false with Occur -> true
 
-let dependent sigma c t = dependent_main false false sigma c t
-let dependent_no_evar sigma c t = dependent_main true false sigma c t
-
-let dependent_univs sigma c t = dependent_main false true sigma c t
-let dependent_univs_no_evar sigma c t = dependent_main true true sigma c t
+let dependent sigma c t = dependent_main false sigma c t
+let dependent_no_evar sigma c t = dependent_main true sigma c t
 
 let dependent_in_decl sigma a decl =
   let open NamedDecl in

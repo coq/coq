@@ -105,8 +105,6 @@ val free_rels : Evd.evar_map -> constr -> Int.Set.t
 (** [dependent m t] tests whether [m] is a subterm of [t] *)
 val dependent : Evd.evar_map -> constr -> constr -> bool
 val dependent_no_evar : Evd.evar_map -> constr -> constr -> bool
-val dependent_univs : Evd.evar_map -> constr -> constr -> bool
-val dependent_univs_no_evar : Evd.evar_map -> constr -> constr -> bool
 val dependent_in_decl : Evd.evar_map -> constr -> named_declaration -> bool
 val count_occurrences : Evd.evar_map -> constr -> constr -> int
 val collect_metas : Evd.evar_map -> constr -> int list

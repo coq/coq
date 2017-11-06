@@ -1335,7 +1335,7 @@ type conv_fun_bool =
 
 let solve_refl ?(can_drop=false) conv_algo env evd pbty evk argsv1 argsv2 =
   let evdref = ref evd in
-  let eq_constr c1 c2 = match EConstr.eq_constr_universes !evdref c1 c2 with
+  let eq_constr c1 c2 = match EConstr.eq_constr_universes env !evdref c1 c2 with
   | None -> false
   | Some cstr ->
     try ignore (Evd.add_universe_constraints !evdref cstr); true

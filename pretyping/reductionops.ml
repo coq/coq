@@ -709,7 +709,7 @@ let magicaly_constant_of_fixbody env sigma reference bd = function
       match constant_opt_value_in env (cst,u) with
       | None -> bd
       | Some t ->
-        let csts = EConstr.eq_constr_universes sigma (EConstr.of_constr t) bd in
+        let csts = EConstr.eq_constr_universes env sigma (EConstr.of_constr t) bd in
         begin match csts with
         | Some csts ->
           let subst = Universes.Constraints.fold (fun (l,d,r) acc ->
@@ -1343,9 +1343,9 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     let b, sigma = 
       let ans =
 	if pb == Reduction.CUMUL then 
-	  EConstr.leq_constr_universes sigma x y
+          EConstr.leq_constr_universes env sigma x y
 	else
-	  EConstr.eq_constr_universes sigma x y
+          EConstr.eq_constr_universes env sigma x y
       in
       let ans = match ans with
       | None -> None

@@ -13,7 +13,7 @@ open Mod_subst
 open Libnames
 
 (*s Global reference is a kernel side type for all references together *)
-type global_reference =
+type global_reference = Names.global_reference =
   | VarRef of variable           (** A reference to the section-context. *)
   | ConstRef of Constant.t       (** A reference to the environment. *)
   | IndRef of inductive          (** A reference to an inductive type. *)

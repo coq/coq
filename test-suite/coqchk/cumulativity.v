@@ -25,7 +25,7 @@ Section ListLower.
 
 End ListLower.
 
-Lemma LowerL_Lem@{i j} (A : Type@{j}) (l : List@{i} A) : l = LowerL l.
+Lemma LowerL_Lem@{i j|j<i+} (A : Type@{j}) (l : List@{i} A) : l = LowerL l.
 Proof. reflexivity. Qed.
 (*
 I disable these tests because cqochk can't process them when compiled with

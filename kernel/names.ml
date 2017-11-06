@@ -699,6 +699,12 @@ end
 module Constrmap = Map.Make(ConstructorOrdered)
 module Constrmap_env = Map.Make(ConstructorOrdered_env)
 
+type global_reference =
+  | VarRef of variable           (** A reference to the section-context. *)
+  | ConstRef of Constant.t       (** A reference to the environment. *)
+  | IndRef of inductive          (** A reference to an inductive type. *)
+  | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
+
 (* Better to have it here that in closure, since used in grammar.cma *)
 type evaluable_global_reference =
   | EvalVarRef of Id.t

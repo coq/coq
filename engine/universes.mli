@@ -92,6 +92,8 @@ val enforce_eq_instances_univs : bool -> Instance.t universe_constraint_function
 
 val to_constraints : UGraph.t -> Constraints.t -> Constraint.t
 
+val of_constraints : bool -> Constraint.t -> Constraints.t
+
 (** [eq_constr_univs_infer_With kind1 kind2 univs m n] is a variant of
     {!eq_constr_univs_infer} taking kind-of-term functions, to expose
     subterms of [m] and [n], arguments. *)
@@ -99,10 +101,6 @@ val eq_constr_univs_infer_with :
   (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
   (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
   UGraph.t -> 'a constraint_accumulator -> constr -> constr -> 'a -> 'a option
-
-(** [eq_constr_universes a b] [true, c] if [a] equals [b] modulo alpha, casts,
-    application grouping and the universe constraints in [c]. *)
-val eq_constr_universes_proj : env -> constr -> constr -> bool universe_constrained
 
 (** Build a fresh instance for a given context, its associated substitution and 
     the instantiated constraints. *)
