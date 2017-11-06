@@ -8,7 +8,6 @@
 
 (** Global proof state. A quite redundant wrapper on {!Proof_global}. *)
 
-open Loc
 open Names
 open Term
 open Environ
@@ -122,84 +121,3 @@ val clear_implicit_tactic : unit -> unit
 
 (* Raise Exit if cannot solve *)
 val solve_by_implicit_tactic : unit -> Pretyping.inference_hook option
-
-(** {5 Deprecated functions in favor of [Proof_global]} *)
-
-(** {6 ... } *)
-(** Several proofs can be opened simultaneously but at most one is
-   focused at some time. The following functions work by side-effect
-   on current set of open proofs. In this module, ``proofs'' means an
-   open proof (something started by vernacular command [Goal], [Lemma]
-   or [Theorem]), and ``goal'' means a subgoal of the current focused
-   proof *)
-
-(** [refining ()] tells if there is some proof in progress, even if a not
-   focused one *)
-
-val refining : unit -> bool
-[@@ocaml.deprecated "use Proof_global.there_are_pending_proofs"]
-
-(** [check_no_pending_proofs ()] fails if there is still some proof in
-   progress *)
-
-val check_no_pending_proofs : unit -> unit
-[@@ocaml.deprecated "use Proof_global.check_no_pending_proofs"]
-
-(** {6 ... } *)
-(** [delete_proof name] deletes proof of name [name] or fails if no proof
-    has this name *)
-
-val delete_proof : Id.t located -> unit
-[@@ocaml.deprecated "use Proof_global.discard"]
-
-(** [delete_current_proof ()] deletes current focused proof or fails if
-    no proof is focused *)
-
-val delete_current_proof : unit -> unit
-[@@ocaml.deprecated "use Proof_global.discard_current"]
-
-(** [delete_all_proofs ()] deletes all open proofs if any *)
-val delete_all_proofs : unit -> unit
-[@@ocaml.deprecated "use Proof_global.discard_all"]
-
-(** [get_pftreestate ()] returns the current focused pending proof.
-   @raise NoCurrentProof if there is no pending proof. *)
-
-val get_pftreestate : unit -> Proof.proof
-[@@ocaml.deprecated "use Proof_global.give_me_the_proof"]
-
-(** {6 ... } *)
-(** [set_end_tac tac] applies tactic [tac] to all subgoal generate
-    by [solve] *)
-
-val set_end_tac : Genarg.glob_generic_argument -> unit
-[@@ocaml.deprecated "use Proof_global.set_endline_tactic"]
-
-(** {6 ... } *)
-(** [set_used_variables l] declares that section variables [l] will be
-    used in the proof *)
-val set_used_variables :
-  Id.t list -> Context.Named.t * Names.Id.t Loc.located list
-[@@ocaml.deprecated "use Proof_global.set_used_variables"]
-
-val get_used_variables : unit -> Context.Named.t option
-[@@ocaml.deprecated "use Proof_global.get_used_variables"]
-
-(** {6 Universe binders } *)
-val get_universe_decl : unit -> Univdecls.universe_decl
-[@@ocaml.deprecated "use Proof_global.get_universe_decl"]
-
-(** {6 ... } *)
-(** [get_current_proof_name ()] return the name of the current focused
-    proof or failed if no proof is focused *)
-val get_current_proof_name : unit -> Id.t
-[@@ocaml.deprecated "use Proof_global.get_current_proof_name"]
-
-(** [get_all_proof_names ()] returns the list of all pending proof names.
-    The first name is the current proof, the other names may come in
-    any order. *)
-val get_all_proof_names : unit -> Id.t list
-[@@ocaml.deprecated "use Proof_global.get_all_proof_names"]
-
-type lemma_possible_guards = Proof_global.lemma_possible_guards
-[@@ocaml.deprecated "use Proof_global.lemma_possible_guards"]

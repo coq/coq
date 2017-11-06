@@ -24,6 +24,12 @@ passing `-bypass-API`.
 
 ### ML API
 
+General deprecation
+
+- All functions marked [@@ocaml.deprecated] in 8.7 have been
+  removed. Please, make sure your plugin is warning-free in 8.7 before
+  trying to port it over 8.8.
+
 We removed the following functions:
 
 - `Universes.unsafe_constr_of_global`: use `Global.constr_of_global_in_context`

@@ -84,9 +84,3 @@ let raise ?loc e =
     let info = Exninfo.add Exninfo.null location loc in
     Exninfo.iraise (e, info)
 
-(** Deprecated *)
-let located_fold_left f x (_,a) = f x a
-let located_iter2 f (_,a) (_,b) = f a b
-let down_located f (_,a) = f a
-
-

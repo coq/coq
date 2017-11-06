@@ -137,8 +137,3 @@ let handled e =
   let bottom _ = raise Bottom in
   try let _ = print_gen bottom !handle_stack e in true
   with Bottom -> false
-
-(* Deprecated functions *)
-let error            string = user_err (str string)
-let user_err_loc (loc,hdr,msg) = user_err ~loc ~hdr msg
-let errorlabstrm hdr msg = user_err ~hdr msg

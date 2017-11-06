@@ -230,31 +230,3 @@ let apply_implicit_tactic tac = (); fun env sigma evk ->
 let solve_by_implicit_tactic () = match !implicit_tactic with
 | None -> None
 | Some tac -> Some (apply_implicit_tactic tac)
-
-(** Deprecated functions  *)
-let refining = Proof_global.there_are_pending_proofs
-let check_no_pending_proofs = Proof_global.check_no_pending_proof
-
-let get_current_proof_name = Proof_global.get_current_proof_name
-let get_all_proof_names = Proof_global.get_all_proof_names
-
-type lemma_possible_guards = Proof_global.lemma_possible_guards
-
-let delete_proof = Proof_global.discard
-let delete_current_proof = Proof_global.discard_current
-let delete_all_proofs = Proof_global.discard_all
-
-let get_pftreestate () =
-  Proof_global.give_me_the_proof ()
-
-let set_end_tac tac =
-  Proof_global.set_endline_tactic tac
-
-let set_used_variables l =
-  Proof_global.set_used_variables l
-
-let get_used_variables () =
-  Proof_global.get_used_variables ()
-
-let get_universe_decl () =
-  Proof_global.get_universe_decl ()

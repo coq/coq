@@ -2122,7 +2122,6 @@ sig
       elim  : Globnames.global_reference;
       intro : Globnames.global_reference;
       typ   : Globnames.global_reference }
-  val gen_reference : string -> string list -> string -> Globnames.global_reference
   val find_reference : string -> string list -> string -> Globnames.global_reference
   val check_required_library : string list -> unit
   val logic_module_name : string list
@@ -4730,14 +4729,6 @@ sig
     unit -> (Names.Id.t * (Safe_typing.private_constants Entries.definition_entry * Proof_global.proof_universes * Decl_kinds.goal_kind))
 
   val get_current_context : unit -> Evd.evar_map * Environ.env
-
-  (* Deprecated *)
-  val delete_current_proof : unit -> unit
-  [@@ocaml.deprecated "use Proof_global.discard_current"]
-
-  val get_current_proof_name : unit -> Names.Id.t
-  [@@ocaml.deprecated "use Proof_global.get_current_proof_name"]
-
   val current_proof_statement : unit -> Names.Id.t * Decl_kinds.goal_kind * EConstr.types
 end
 

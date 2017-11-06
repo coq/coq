@@ -65,14 +65,3 @@ val tag : ?loc:t -> 'a -> 'a located
 
 val map : ('a -> 'b) -> 'a located -> 'b located
 (** Modify an object carrying a location *)
-
-(** Deprecated functions  *)
-val located_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b located -> 'a
- [@@ocaml.deprecated "use pattern matching"]
-
-val down_located : ('a -> 'b) -> 'a located -> 'b
- [@@ocaml.deprecated "use pattern matching"]
-
-val located_iter2 : ('a -> 'b -> unit) -> 'a located -> 'b located -> unit
- [@@ocaml.deprecated "use pattern matching"]
-
