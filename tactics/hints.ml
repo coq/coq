@@ -113,7 +113,7 @@ type 'a hints_path_atom_gen =
   (* For forward hints, their names is the list of projections *)
   | PathAny
 
-type hints_path_atom = global_reference hints_path_atom_gen
+type hints_path_atom = Names.global_reference hints_path_atom_gen
 
 type 'a hints_path_gen =
   | PathAtom of 'a hints_path_atom_gen
@@ -124,10 +124,10 @@ type 'a hints_path_gen =
   | PathEpsilon
 
 type pre_hints_path = Libnames.reference hints_path_gen
-type hints_path = global_reference hints_path_gen
+type hints_path = Names.global_reference hints_path_gen
 
 type hint_term =
-  | IsGlobRef of global_reference
+  | IsGlobRef of Names.global_reference
   | IsConstr of constr * Univ.ContextSet.t
 
 type 'a with_uid = {
@@ -151,7 +151,7 @@ type 'a with_metadata = {
 
 type full_hint = hint with_metadata
 
-type hint_entry = global_reference option * 
+type hint_entry = Names.global_reference option *
   raw_hint hint_ast with_uid with_metadata
 
 type import_level = [ `LAX | `WARN | `STRICT ]
@@ -472,28 +472,28 @@ module Hint_db :
 sig
 type t
 val empty : ?name:hint_db_name -> transparent_state -> bool -> t
-val find : global_reference -> t -> search_entry
+val find : Names.global_reference -> t -> search_entry
 val map_none : secvars:Id.Pred.t -> t -> full_hint list
-val map_all : secvars:Id.Pred.t -> global_reference -> t -> full_hint list
+val map_all : secvars:Id.Pred.t -> Names.global_reference -> t -> full_hint list
 val map_existential : evar_map -> secvars:Id.Pred.t ->
-		      (global_reference * constr array) -> constr -> t -> full_hint list
+                      (Names.global_reference * constr array) -> constr -> t -> full_hint list
 val map_eauto : evar_map -> secvars:Id.Pred.t ->
-		(global_reference * constr array) -> constr -> t -> full_hint list
+                (Names.global_reference * constr array) -> constr -> t -> full_hint list
 val map_auto : evar_map -> secvars:Id.Pred.t ->
-	       (global_reference * constr array) -> constr -> t -> full_hint list
+               (Names.global_reference * constr array) -> constr -> t -> full_hint list
 val add_one : env -> evar_map -> hint_entry -> t -> t
 val add_list : env -> evar_map -> hint_entry list -> t -> t
-val remove_one : global_reference -> t -> t
-val remove_list : global_reference list -> t -> t
-val iter : (global_reference option -> hint_mode array list -> full_hint list -> unit) -> t -> unit
+val remove_one : Names.global_reference -> t -> t
+val remove_list : Names.global_reference list -> t -> t
+val iter : (Names.global_reference option -> hint_mode array list -> full_hint list -> unit) -> t -> unit
 val use_dn : t -> bool
 val transparent_state : t -> transparent_state
 val set_transparent_state : t -> transparent_state -> t
 val add_cut : hints_path -> t -> t
-val add_mode : global_reference -> hint_mode array -> t -> t
+val add_mode : Names.global_reference -> hint_mode array -> t -> t
 val cut : t -> hints_path
 val unfolds : t -> Id.Set.t * Cset.t
-val fold : (global_reference option -> hint_mode array list -> full_hint list -> 'a -> 'a) ->
+val fold : (Names.global_reference option -> hint_mode array list -> full_hint list -> 'a -> 'a) ->
   t -> 'a -> 'a
 
 end =
@@ -508,7 +508,7 @@ struct
     hintdb_map : search_entry Constr_map.t;
     (* A list of unindexed entries starting with an unfoldable constant
        or with no associated pattern. *)
-    hintdb_nopat : (global_reference option * stored_data) list;
+    hintdb_nopat : (Names.global_reference option * stored_data) list;
     hintdb_name : string option;
   }
 
@@ -1013,9 +1013,9 @@ type hint_action =
   | CreateDB of bool * transparent_state
   | AddTransparency of evaluable_global_reference list * bool
   | AddHints of hint_entry list
-  | RemoveHints of global_reference list
+  | RemoveHints of Names.global_reference list
   | AddCut of hints_path
-  | AddMode of global_reference * hint_mode array
+  | AddMode of Names.global_reference * hint_mode array
 
 let add_cut dbname path =
   let db = get_db dbname in
@@ -1224,7 +1224,7 @@ type hints_entry =
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference list * bool
-  | HintsModeEntry of global_reference * hint_mode list
+  | HintsModeEntry of Names.global_reference * hint_mode list
   | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 
 let default_prepare_hint_ident = Id.of_string "H"

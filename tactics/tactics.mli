@@ -15,7 +15,6 @@ open Proof_type
 open Evd
 open Clenv
 open Redexpr
-open Globnames
 open Pattern
 open Unification
 open Misctypes

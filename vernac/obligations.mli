@@ -10,7 +10,6 @@ open Environ
 open Constr
 open Evd
 open Names
-open Globnames
 
 (* This is a hack to make it possible for Obligations to craft a Qed
  * behind the scenes.  The fix_exn the Stm attaches to the Future proof

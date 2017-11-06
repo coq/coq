@@ -18,4 +18,4 @@ val functional_induction :
   Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
 
-val make_graph :  Globnames.global_reference -> unit
+val make_graph :  Names.global_reference -> unit

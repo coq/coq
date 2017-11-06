@@ -268,7 +268,7 @@ let rec var2var' = function
   | Tglob (r,l) -> Tglob (r, List.map var2var' l)
   | a -> a
 
-type abbrev_map = global_reference -> ml_type option
+type abbrev_map = Names.global_reference -> ml_type option
 
 (*s Delta-reduction of type constants everywhere in a ML type [t].
    [env] is a function of type [ml_type_env]. *)

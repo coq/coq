@@ -930,7 +930,7 @@ let interp_reference vars r =
 (** Private internalization patterns *)
 type 'a raw_cases_pattern_expr_r =
   | RCPatAlias of 'a raw_cases_pattern_expr * Id.t
-  | RCPatCstr  of Globnames.global_reference
+  | RCPatCstr  of Names.global_reference
     * 'a raw_cases_pattern_expr list * 'a raw_cases_pattern_expr list
   (** [RCPatCstr (loc, c, l1, l2)] represents ((@c l1) l2) *)
   | RCPatAtom  of Id.t option

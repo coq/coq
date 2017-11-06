@@ -22,7 +22,7 @@ val feedback_glob : unit -> unit
 val pause : unit -> unit
 val continue : unit -> unit
 
-val add_glob : ?loc:Loc.t -> Globnames.global_reference -> unit
+val add_glob : ?loc:Loc.t -> Names.global_reference -> unit
 val add_glob_kn : ?loc:Loc.t -> Names.KerName.t -> unit
 
 val dump_definition : Names.Id.t Loc.located -> bool -> string -> unit
@@ -41,4 +41,4 @@ val dump_constraint :
 
 val dump_string : string -> unit
 
-val type_of_global_ref : Globnames.global_reference -> string 
+val type_of_global_ref : Names.global_reference -> string

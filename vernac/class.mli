@@ -8,7 +8,6 @@
 
 open Names
 open Classops
-open Globnames
 
 (** Classes and coercions. *)
 

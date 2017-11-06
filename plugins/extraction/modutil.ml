@@ -8,7 +8,6 @@
 
 open Names
 open ModPath
-open Globnames
 open CErrors
 open Util
 open Miniml

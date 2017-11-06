@@ -109,7 +109,7 @@ val dependent_in_decl : Evd.evar_map -> constr -> named_declaration -> bool
 val count_occurrences : Evd.evar_map -> constr -> constr -> int
 val collect_metas : Evd.evar_map -> constr -> int list
 val collect_vars : Evd.evar_map -> constr -> Id.Set.t (** for visible vars only *)
-val vars_of_global_reference : env -> Globnames.global_reference -> Id.Set.t
+val vars_of_global_reference : env -> global_reference -> Id.Set.t
 val occur_term : Evd.evar_map -> constr -> constr -> bool (** Synonymous of dependent *)
 [@@ocaml.deprecated "alias of Termops.dependent"]
 
@@ -258,7 +258,7 @@ val clear_named_body : Id.t -> env -> env
 val global_vars : env -> Evd.evar_map -> constr -> Id.t list
 val global_vars_set : env -> Evd.evar_map -> constr -> Id.Set.t
 val global_vars_set_of_decl : env -> Evd.evar_map -> named_declaration -> Id.Set.t
-val global_app_of_constr : Evd.evar_map -> constr -> (Globnames.global_reference * EInstance.t) * constr option
+val global_app_of_constr : Evd.evar_map -> constr -> (global_reference * EInstance.t) * constr option
 
 (** Gives an ordered list of hypotheses, closed by dependencies,
    containing a given set *)
@@ -267,9 +267,9 @@ val dependency_closure : env -> Evd.evar_map -> named_context -> Id.Set.t -> Id.
 (** Test if an identifier is the basename of a global reference *)
 val is_section_variable : Id.t -> bool
 
-val global_of_constr : Evd.evar_map -> constr -> Globnames.global_reference * EInstance.t
+val global_of_constr : Evd.evar_map -> constr -> global_reference * EInstance.t
 
-val is_global : Evd.evar_map -> Globnames.global_reference -> constr -> bool
+val is_global : Evd.evar_map -> global_reference -> constr -> bool
 
 val isGlobalRef : Evd.evar_map -> constr -> bool
 

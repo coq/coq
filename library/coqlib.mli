@@ -8,7 +8,6 @@
 
 open Names
 open Libnames
-open Globnames
 open Util
 
 (** This module collects the global references, constructions and

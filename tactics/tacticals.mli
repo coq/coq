@@ -133,7 +133,7 @@ val elimination_sort_of_hyp  : Id.t -> goal sigma -> Sorts.family
 val elimination_sort_of_clause : Id.t option -> goal sigma -> Sorts.family
 
 val pf_with_evars :  (goal sigma -> Evd.evar_map * 'a) -> ('a -> tactic) -> tactic
-val pf_constr_of_global : Globnames.global_reference -> (constr -> tactic) -> tactic
+val pf_constr_of_global : Names.global_reference -> (constr -> tactic) -> tactic
 
 (** Tacticals defined directly in term of Proofview *)
 
@@ -263,5 +263,5 @@ module New : sig
   val elim_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
   val case_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
 
-  val pf_constr_of_global : Globnames.global_reference -> constr Proofview.tactic
+  val pf_constr_of_global : Names.global_reference -> constr Proofview.tactic
 end

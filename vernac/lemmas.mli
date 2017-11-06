@@ -11,10 +11,10 @@ open Decl_kinds
 
 type 'a declaration_hook
 val mk_hook :
-  (Decl_kinds.locality -> Globnames.global_reference -> 'a) -> 'a declaration_hook
+  (Decl_kinds.locality -> global_reference -> 'a) -> 'a declaration_hook
 
 val call_hook :
-  Future.fix_exn -> 'a declaration_hook -> Decl_kinds.locality -> Globnames.global_reference -> 'a
+  Future.fix_exn -> 'a declaration_hook -> Decl_kinds.locality -> global_reference -> 'a
 
 (** A hook start_proof calls on the type of the definition being started *)
 val set_start_hook : (EConstr.types -> unit) -> unit

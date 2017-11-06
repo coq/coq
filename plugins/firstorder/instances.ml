@@ -41,7 +41,7 @@ let compare_gr id1 id2 =
 
 module OrderedInstance=
 struct
-  type t=instance * Globnames.global_reference
+  type t=instance * global_reference
   let compare (inst1,id1) (inst2,id2)=
     (compare_instance =? compare_gr) inst2 inst1 id2 id1
     (* we want a __decreasing__ total order *)

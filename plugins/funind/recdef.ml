@@ -18,7 +18,6 @@ open Entries
 open Pp
 open Names
 open Libnames
-open Globnames
 open Nameops
 open CErrors
 open Util
@@ -204,7 +203,7 @@ let (value_f: Constr.t list -> global_reference -> Constr.t) =
 	(RegularStyle,None,
 	 [DAst.make @@ GApp(DAst.make @@ GRef(fterm,None), List.rev_map (fun x_id -> DAst.make @@ GVar x_id) rev_x_id_l),
 	  (Anonymous,None)],
-	 [Loc.tag ([v_id], [DAst.make @@ PatCstr ((destIndRef (delayed_force coq_sig_ref),1),
+         [Loc.tag ([v_id], [DAst.make @@ PatCstr ((Globnames.destIndRef (delayed_force coq_sig_ref),1),
 			   [DAst.make @@ PatVar(Name v_id); DAst.make @@ PatVar Anonymous],
                            Anonymous)],
 	    DAst.make @@ GVar v_id)])

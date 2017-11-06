@@ -9,7 +9,6 @@
 open Names
 open Constr
 open EConstr
-open Globnames
 
 type tactic = unit Proofview.tactic
 

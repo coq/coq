@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Constr
 open Evd
 open Environ
@@ -115,10 +114,10 @@ val classes_transparent_state_hook : (unit -> transparent_state) Hook.t
 val classes_transparent_state : unit -> transparent_state
 
 val add_instance_hint_hook : 
-  (global_reference_or_constr -> global_reference list ->
+  (Globnames.global_reference_or_constr -> global_reference list ->
    bool (* local? *) -> Vernacexpr.hint_info_expr -> Decl_kinds.polymorphic -> unit) Hook.t
 val remove_instance_hint_hook : (global_reference -> unit) Hook.t
-val add_instance_hint : global_reference_or_constr -> global_reference list -> 
+val add_instance_hint : Globnames.global_reference_or_constr -> global_reference list ->
   bool -> Vernacexpr.hint_info_expr -> Decl_kinds.polymorphic -> unit
 val remove_instance_hint : global_reference -> unit
 

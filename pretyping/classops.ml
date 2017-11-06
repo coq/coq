@@ -35,7 +35,7 @@ type cl_info_typ = {
   cl_param : int
 }
 
-type coe_typ = global_reference
+type coe_typ = Names.global_reference
 
 module CoeTypMap = Refmap_env
 

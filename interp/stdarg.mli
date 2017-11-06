@@ -12,7 +12,6 @@ open Loc
 open Names
 open EConstr
 open Libnames
-open Globnames
 open Genredexpr
 open Pattern
 open Constrexpr

@@ -142,7 +142,7 @@ val is_matching_sigma : Environ.env -> evar_map -> constr -> bool
 
 (** Match a decidable equality judgement (e.g [{t=u:>T}+{~t=u}]), returns
    [t,u,T] and a boolean telling if equality is on the left side *)
-val match_eqdec : Environ.env -> evar_map -> constr -> bool * Globnames.global_reference * constr * constr * constr
+val match_eqdec : Environ.env -> evar_map -> constr -> bool * Names.global_reference * constr * constr * constr
 
 (** Match a negation *)
 val is_matching_not : Environ.env -> evar_map -> constr -> bool

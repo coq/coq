@@ -12,7 +12,6 @@ open Evd
 open EConstr
 open Reductionops
 open Pattern
-open Globnames
 open Locus
 open Univ
 open Ltac_pretype
@@ -28,13 +27,13 @@ exception ReductionTacticError of reduction_tactic_error
 
 val is_evaluable : Environ.env -> evaluable_global_reference -> bool
 
-val error_not_evaluable : Globnames.global_reference -> 'a
+val error_not_evaluable : Names.global_reference -> 'a
 
 val evaluable_of_global_reference :
-  Environ.env -> Globnames.global_reference -> evaluable_global_reference
+  Environ.env -> Names.global_reference -> evaluable_global_reference
 
 val global_of_evaluable_reference :
-  evaluable_global_reference -> Globnames.global_reference
+  evaluable_global_reference -> Names.global_reference
 
 exception Redelimination
 
@@ -86,10 +85,10 @@ val reduce_to_quantified_ind : env ->  evar_map -> types -> (inductive * EInstan
 (** [reduce_to_quantified_ref env sigma ref t] try to put [t] in the form
    [t'=(x1:A1)..(xn:An)(ref args)] and fails with user error if not possible *)
 val reduce_to_quantified_ref :
-  env ->  evar_map -> global_reference -> types -> types
+  env ->  evar_map -> Names.global_reference -> types -> types
 
 val reduce_to_atomic_ref :
-  env ->  evar_map -> global_reference -> types -> types
+  env ->  evar_map -> Names.global_reference -> types -> types
 
 val find_hnf_rectype : 
   env ->  evar_map -> types -> (inductive * EInstance.t) * constr list

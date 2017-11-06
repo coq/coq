@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Miniml
 
 (** By default, in module Format, you can do horizontal placing of blocks

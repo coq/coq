@@ -18,7 +18,6 @@ open Proofview.Notations
 open Termops
 open Formula
 open Sequent
-open Globnames
 open Locus
 
 module NamedDecl = Context.Named.Declaration

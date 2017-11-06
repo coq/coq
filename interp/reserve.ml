@@ -20,7 +20,7 @@ open Notation_ops
 open Globnames
 
 type key =
-  | RefKey of global_reference
+  | RefKey of Names.global_reference
   | Oth
 
 (** TODO: share code from Notation *)

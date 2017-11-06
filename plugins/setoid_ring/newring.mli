@@ -9,7 +9,6 @@
 open Names
 open EConstr
 open Libnames
-open Globnames
 open Constrexpr
 open Newring_ast
 

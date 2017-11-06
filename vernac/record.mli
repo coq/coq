@@ -9,7 +9,6 @@
 open Names
 open Vernacexpr
 open Constrexpr
-open Globnames
 
 val primitive_flag : bool ref
 

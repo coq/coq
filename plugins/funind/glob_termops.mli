@@ -13,7 +13,7 @@ val pattern_to_term : cases_pattern -> glob_constr
    Some basic functions to rebuild glob_constr
    In each of them the location is Util.Loc.ghost
 *)
-val mkGRef : Globnames.global_reference -> glob_constr
+val mkGRef : global_reference -> glob_constr
 val mkGVar : Id.t -> glob_constr
 val mkGApp  : glob_constr*(glob_constr list) -> glob_constr
 val mkGLambda : Name.t * glob_constr * glob_constr -> glob_constr

@@ -11,7 +11,6 @@ open Constr
 open Evd
 open Environ
 open Libnames
-open Globnames
 open Glob_term
 open Pattern
 open Constrexpr
@@ -174,11 +173,11 @@ val interp_context_evars :
 (** Locating references of constructions, possibly via a syntactic definition 
    (these functions do not modify the glob file) *)
 
-val locate_reference :  Libnames.qualid -> Globnames.global_reference
+val locate_reference :  Libnames.qualid -> global_reference
 val is_global : Id.t -> bool
-val construct_reference : ('c, 't) Context.Named.pt -> Id.t -> Globnames.global_reference
-val global_reference : Id.t -> Globnames.global_reference
-val global_reference_in_absolute_module : DirPath.t -> Id.t -> Globnames.global_reference
+val construct_reference : ('c, 't) Context.Named.pt -> Id.t -> global_reference
+val global_reference : Id.t -> global_reference
+val global_reference_in_absolute_module : DirPath.t -> Id.t -> global_reference
 
 (** Interprets a term as the left-hand side of a notation. The returned map is
     guaranteed to have the same domain as the input one. *)

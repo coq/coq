@@ -622,7 +622,7 @@ module V85 = struct
   type autoinfo = { hints : hint_db; is_evar: existential_key option;
                     only_classes: bool; unique : bool;
                     auto_depth: int list; auto_last_tac: Pp.t Lazy.t;
-                    auto_path : global_reference option list;
+                    auto_path : Names.global_reference option list;
                     auto_cut : hints_path }
   type autogoal = goal * autoinfo
   type failure = NotApplicable | ReachedLimit

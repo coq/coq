@@ -11,7 +11,6 @@ open Names
 open EConstr
 open Environ
 open Constrexpr
-open Globnames
 
 type contexts = Parameters | Properties
 

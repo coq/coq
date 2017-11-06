@@ -484,7 +484,7 @@ type implicit_discharge_request =
   | ImplLocal
   | ImplConstant of Constant.t * implicits_flags
   | ImplMutualInductive of MutInd.t * implicits_flags
-  | ImplInteractive of global_reference * implicits_flags *
+  | ImplInteractive of Names.global_reference * implicits_flags *
       implicit_interactive_request
 
 let implicits_table = Summary.ref Refmap.empty ~name:"implicits"
@@ -605,7 +605,7 @@ let classify_implicits (req,_ as obj) = match req with
 
 type implicits_obj =
     implicit_discharge_request *
-      (global_reference * implicits_list list) list
+      (Names.global_reference * implicits_list list) list
 
 let inImplicits : implicits_obj -> obj =
   declare_object {(default_object "IMPLICITS") with

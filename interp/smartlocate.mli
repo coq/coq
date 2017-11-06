@@ -7,9 +7,9 @@
 (************************************************************************)
 
 open Loc
-open Names
 open Libnames
 open Globnames
+open Names
 open Misctypes
 
 (** [locate_global_with_alias] locates global reference possibly following

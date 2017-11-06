@@ -21,7 +21,7 @@ exception EqUnknown of string
 exception UndefinedCst of string
 exception InductiveWithProduct
 exception InductiveWithSort
-exception ParameterWithoutEquality of Globnames.global_reference
+exception ParameterWithoutEquality of global_reference
 exception NonSingletonProp of inductive
 exception DecidabilityMutualNotSupported
 exception NoDecidabilityCoInductive

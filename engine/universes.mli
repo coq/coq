@@ -32,8 +32,8 @@ type universe_binders = Univ.Level.t Names.Id.Map.t
 
 val empty_binders : universe_binders
 
-val register_universe_binders : Globnames.global_reference -> universe_binders -> unit
-val universe_binders_of_global : Globnames.global_reference -> universe_binders
+val register_universe_binders : global_reference -> universe_binders -> unit
+val universe_binders_of_global : global_reference -> universe_binders
 
 type univ_name_list = Name.t Loc.located list
 
@@ -43,7 +43,7 @@ type univ_name_list = Name.t Loc.located list
     May error if the lengths mismatch.
 
     Otherwise return [universe_binders_of_global ref]. *)
-val universe_binders_with_opt_names : Globnames.global_reference ->
+val universe_binders_with_opt_names : global_reference ->
   Univ.Level.t list -> univ_name_list option -> universe_binders
 
 (** The global universe counter *)
@@ -120,7 +120,7 @@ val fresh_inductive_instance : env -> inductive ->
 val fresh_constructor_instance : env -> constructor ->
   pconstructor in_universe_context_set
 
-val fresh_global_instance : ?names:Univ.Instance.t -> env -> Globnames.global_reference -> 
+val fresh_global_instance : ?names:Univ.Instance.t -> env -> global_reference ->
   constr in_universe_context_set
 
 val fresh_global_or_constr_instance : env -> Globnames.global_reference_or_constr -> 
@@ -132,9 +132,9 @@ val fresh_universe_context_set_instance : ContextSet.t ->
   universe_level_subst * ContextSet.t
 
 (** Raises [Not_found] if not a global reference. *)
-val global_of_constr : constr -> Globnames.global_reference puniverses
+val global_of_constr : constr -> global_reference puniverses
 
-val constr_of_global_univ : Globnames.global_reference puniverses -> constr
+val constr_of_global_univ : global_reference puniverses -> constr
 
 val extend_context : 'a in_universe_context_set -> ContextSet.t -> 
   'a in_universe_context_set
@@ -193,16 +193,15 @@ val normalize_universe_subst : universe_subst ref ->
     the constraints should be properly added to an evd. 
     See Evd.fresh_global, Evarutil.new_global, and pf_constr_of_global for
     the proper way to get a fresh copy of a global reference. *)
-val constr_of_global : Globnames.global_reference -> constr
+val constr_of_global : global_reference -> constr
 
-(** ** DEPRECATED ** synonym of [constr_of_global] *)
-val constr_of_reference : Globnames.global_reference -> constr
+val constr_of_reference : global_reference -> constr
 [@@ocaml.deprecated "synonym of [constr_of_global]"]
 
 (** Returns the type of the global reference, by creating a fresh instance of polymorphic 
     references and computing their instantiated universe context. (side-effect on the
     universe counter, use with care). *)
-val type_of_global : Globnames.global_reference -> types in_universe_context_set
+val type_of_global : global_reference -> types in_universe_context_set
 
 (** Full universes substitutions into terms *)
 

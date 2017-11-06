@@ -77,7 +77,7 @@ module type VISIT = sig
 
   (* Add reference / ... in the visit lists.
      These functions silently add the mp of their arg in the mp list *)
-  val add_ref : global_reference -> unit
+  val add_ref : Names.global_reference -> unit
   val add_kn : KerName.t -> unit
   val add_decl_deps : ml_decl -> unit
   val add_spec_deps : ml_spec -> unit

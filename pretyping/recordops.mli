@@ -8,7 +8,6 @@
 
 open Names
 open Constr
-open Globnames
 
 (** Operations concerning records and canonical structures *)
 

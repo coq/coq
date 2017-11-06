@@ -8,7 +8,7 @@
 
 open EConstr
 open Formula
-open Globnames
+open Names
 
 module CM: CSig.MapS with type key=Constr.t
 

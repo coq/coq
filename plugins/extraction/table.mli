@@ -8,7 +8,6 @@
 
 open Names
 open Libnames
-open Globnames
 open Miniml
 open Declarations
 

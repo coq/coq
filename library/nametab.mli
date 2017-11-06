@@ -6,9 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Globnames
 open Names
 open Libnames
-open Globnames
 
 (** This module contains the tables for globalization. *)
 

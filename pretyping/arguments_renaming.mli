@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Environ
 open Constr
 

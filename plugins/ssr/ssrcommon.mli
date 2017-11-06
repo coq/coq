@@ -206,7 +206,7 @@ val pf_mkprod :
            EConstr.t -> Goal.goal Evd.sigma * EConstr.types
 
 val mkSsrRRef : string -> Glob_term.glob_constr * 'a option
-val mkSsrRef : string -> Globnames.global_reference
+val mkSsrRef : string -> global_reference
 val mkSsrConst : 
            string ->
            env -> evar_map -> evar_map * EConstr.t
@@ -218,7 +218,7 @@ val new_wild_id : tac_ctx -> Names.Id.t * tac_ctx
 
 
 val pf_fresh_global :
-           Globnames.global_reference ->
+           global_reference ->
            Goal.goal Evd.sigma ->
            Constr.constr * Goal.goal Evd.sigma
 

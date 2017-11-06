@@ -121,26 +121,26 @@ val env_of_context : Environ.named_context_val -> Environ.env
 val join_safe_environment : ?except:Future.UUIDSet.t -> unit -> unit
 val is_joined_environment : unit -> bool
 
-val is_polymorphic : Globnames.global_reference -> bool
-val is_template_polymorphic : Globnames.global_reference -> bool
-val is_type_in_type : Globnames.global_reference -> bool
+val is_polymorphic : global_reference -> bool
+val is_template_polymorphic : global_reference -> bool
+val is_type_in_type : global_reference -> bool
 
 val constr_of_global_in_context : Environ.env ->
-  Globnames.global_reference -> Constr.types * Univ.AUContext.t
+  global_reference -> Constr.types * Univ.AUContext.t
 (** Returns the type of the constant in its local universe
     context. The type should not be used without pushing it's universe
     context in the environmnent of usage. For non-universe-polymorphic
     constants, it does not matter. *)
 
 val type_of_global_in_context : Environ.env -> 
-  Globnames.global_reference -> Constr.types * Univ.AUContext.t
+  global_reference -> Constr.types * Univ.AUContext.t
 (** Returns the type of the constant in its local universe
     context. The type should not be used without pushing it's universe
     context in the environmnent of usage. For non-universe-polymorphic
     constants, it does not matter. *)
 
 (** Returns the universe context of the global reference (whatever its polymorphic status is). *)
-val universes_of_global : Globnames.global_reference -> Univ.AUContext.t
+val universes_of_global : global_reference -> Univ.AUContext.t
 
 (** {6 Retroknowledge } *)
 

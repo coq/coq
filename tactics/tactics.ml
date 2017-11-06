@@ -3496,7 +3496,7 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
 type elim_scheme = {
   elimc: constr with_bindings option;
   elimt: types;
-  indref: global_reference option;
+  indref: Names.global_reference option;
   params: rel_context;      (* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
   nparams: int;               (* number of parameters *)
   predicates: rel_context;  (* (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)

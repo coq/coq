@@ -596,7 +596,7 @@ val fresh_inductive_instance : ?loc:Loc.t -> env -> evar_map -> inductive -> eva
 val fresh_constructor_instance : ?loc:Loc.t -> env -> evar_map -> constructor -> evar_map * pconstructor
 
 val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> env ->
-  evar_map -> Globnames.global_reference -> evar_map * constr
+  evar_map -> global_reference -> evar_map * constr
 
 (********************************************************************)
 (* constr with holes and pending resolution of classes, conversion  *)

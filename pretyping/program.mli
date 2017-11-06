@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open EConstr
-open Globnames
+open Names
 
 (** A bunch of Coq constants used by Progam *)
 

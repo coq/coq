@@ -54,7 +54,7 @@ struct
 	(priority e1.pat) - (priority e2.pat)
 end
 
-type h_item = global_reference * (int*Constr.t) option
+type h_item = Names.global_reference * (int*Constr.t) option
 
 module Hitem=
 struct
@@ -95,7 +95,7 @@ module HP=Heap.Functional(OrderedFormula)
 
 type t=
     {redexes:HP.t;
-     context:(global_reference list) CM.t;
+     context:(Names.global_reference list) CM.t;
      latoms:constr list;
      gl:types;
      glatom:constr option;

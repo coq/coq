@@ -13,7 +13,7 @@ open Term
 open Libobject
 
 type key =
-  | KGlob of global_reference
+  | KGlob of Names.global_reference
   | KLam
   | KLet
   | KProd

@@ -325,7 +325,7 @@ type 'a locatable_info = {
 type locatable = Locatable : 'a locatable_info -> locatable
 
 type logical_name =
-  | Term of global_reference
+  | Term of Names.global_reference
   | Dir of global_dir_reference
   | Syntactic of KerName.t
   | ModuleType of ModPath.t

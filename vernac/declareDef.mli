@@ -13,10 +13,10 @@ val get_locality : Id.t -> kind:string -> Decl_kinds.locality -> bool
 
 val declare_definition : Id.t -> definition_kind ->
   Safe_typing.private_constants Entries.definition_entry -> Universes.universe_binders -> Impargs.manual_implicits ->
-    Globnames.global_reference Lemmas.declaration_hook -> Globnames.global_reference
+    global_reference Lemmas.declaration_hook -> global_reference
 
 val declare_fix : ?opaque:bool -> definition_kind ->
   Universes.universe_binders -> Entries.constant_universes_entry ->
   Id.t -> Safe_typing.private_constants Entries.proof_output ->
   Constr.types -> Impargs.manual_implicits ->
-  Globnames.global_reference
+  global_reference

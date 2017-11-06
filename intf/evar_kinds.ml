@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Misctypes
 
 (** The kinds of existential variable *)

@@ -134,7 +134,7 @@ val library_dp : unit -> Names.DirPath.t
 (** Extract the library part of a name even if in a section *)
 val dp_of_mp : Names.ModPath.t -> Names.DirPath.t
 val split_modpath : Names.ModPath.t -> Names.DirPath.t * Names.Id.t list
-val library_part :  Globnames.global_reference -> Names.DirPath.t
+val library_part :  Names.global_reference -> Names.DirPath.t
 
 (** {6 Sections } *)
 
@@ -167,12 +167,12 @@ val named_of_variable_context : variable_context -> Context.Named.t
 
 val section_segment_of_constant : Names.Constant.t -> abstr_info
 val section_segment_of_mutual_inductive: Names.MutInd.t -> abstr_info
-val section_segment_of_reference : Globnames.global_reference -> abstr_info
+val section_segment_of_reference : Names.global_reference -> abstr_info
 
-val variable_section_segment_of_reference : Globnames.global_reference -> variable_context
+val variable_section_segment_of_reference : Names.global_reference -> variable_context
 
-val section_instance : Globnames.global_reference -> Univ.Instance.t * Names.Id.t array
-val is_in_section : Globnames.global_reference -> bool
+val section_instance : Names.global_reference -> Univ.Instance.t * Names.Id.t array
+val is_in_section : Names.global_reference -> bool
 
 val add_section_variable : Names.Id.t -> Decl_kinds.binding_kind -> Decl_kinds.polymorphic -> Univ.ContextSet.t -> unit
 val add_section_context : Univ.ContextSet.t -> unit
@@ -186,7 +186,7 @@ val replacement_context : unit -> Opaqueproof.work_list
 
 val discharge_kn :  Names.MutInd.t -> Names.MutInd.t
 val discharge_con : Names.Constant.t -> Names.Constant.t
-val discharge_global : Globnames.global_reference -> Globnames.global_reference
+val discharge_global : Names.global_reference -> Names.global_reference
 val discharge_inductive : Names.inductive -> Names.inductive
 val discharge_abstract_universe_context :
   abstr_info -> Univ.AUContext.t -> Univ.universe_level_subst * Univ.AUContext.t

@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Miniml
 
 (*s Functions upon ML modules. *)

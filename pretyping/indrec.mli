@@ -59,7 +59,7 @@ val weaken_sort_scheme : env -> evar_map -> bool -> Sorts.t -> int -> constr -> 
 
 (** Recursor names utilities *)
 
-val lookup_eliminator : inductive -> Sorts.family -> Globnames.global_reference
+val lookup_eliminator : inductive -> Sorts.family -> Names.global_reference
 val elimination_suffix : Sorts.family -> string
 val make_elimination_ident : Id.t -> Sorts.family -> Id.t
 

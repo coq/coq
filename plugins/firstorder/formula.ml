@@ -14,7 +14,6 @@ open Vars
 open Termops
 open Util
 open Declarations
-open Globnames
 
 module RelDecl = Context.Rel.Declaration
 

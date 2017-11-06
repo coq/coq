@@ -15,7 +15,6 @@ open Libobject
 open Environ
 open Pattern
 open Libnames
-open Globnames
 open Nametab
 
 module NamedDecl = Context.Named.Declaration
@@ -116,7 +115,7 @@ module ConstrPriority = struct
   (* The priority is memoised here. Because of the very localised use
      of this module, it is not worth it making a convenient interface. *)
   type t =
-    Globnames.global_reference * Environ.env * Constr.t * priority
+    global_reference * Environ.env * Constr.t * priority
   and priority = int
 
   module ConstrSet = CSet.Make(Constr)

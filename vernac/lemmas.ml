@@ -32,7 +32,7 @@ open Impargs
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
-type 'a declaration_hook = Decl_kinds.locality -> Globnames.global_reference -> 'a
+type 'a declaration_hook = Decl_kinds.locality -> Names.global_reference -> 'a
 let mk_hook hook = hook
 let call_hook fix_exn hook l c =
   try hook l c

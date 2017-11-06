@@ -10,7 +10,6 @@ open Util
 open Names
 open EConstr
 open Environ
-open Globnames
 open Decl_kinds
 open Evd
 open Misctypes
@@ -89,9 +88,9 @@ val pp_hints_path_atom : ('a -> Pp.t) -> 'a hints_path_atom_gen -> Pp.t
 val pp_hints_path : hints_path -> Pp.t
 val pp_hint_mode : hint_mode -> Pp.t
 val glob_hints_path_atom :
-  Libnames.reference hints_path_atom_gen -> Globnames.global_reference hints_path_atom_gen
+  Libnames.reference hints_path_atom_gen -> global_reference hints_path_atom_gen
 val glob_hints_path :
-  Libnames.reference hints_path_gen -> Globnames.global_reference hints_path_gen
+  Libnames.reference hints_path_gen -> global_reference hints_path_gen
 
 module Hint_db :
   sig

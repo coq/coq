@@ -11,7 +11,6 @@ open Term
 open EConstr
 open Names
 open Pattern
-open Globnames
 
 (* Discrimination nets with bounded depth.
    See the module dn.ml for further explanations.
@@ -26,7 +25,7 @@ type term_label =
 | SortLabel
 
 let compare_term_label t1 t2 = match t1, t2 with
-| GRLabel gr1, GRLabel gr2 -> RefOrdered.compare gr1 gr2
+| GRLabel gr1, GRLabel gr2 -> Globnames.RefOrdered.compare gr1 gr2
 | _ -> Pervasives.compare t1 t2 (** OK *)
 
 type 'res lookup_res = 'res Dn.lookup_res = Label of 'res | Nothing | Everything

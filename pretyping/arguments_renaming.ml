@@ -24,7 +24,7 @@ let name_table =
 
 type req =
   | ReqLocal
-  | ReqGlobal of global_reference * Name.t list
+  | ReqGlobal of Names.global_reference * Name.t list
 
 let load_rename_args _ (_, (_, (r, names))) =
   name_table := Refmap.add r names !name_table

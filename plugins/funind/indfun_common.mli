@@ -41,7 +41,7 @@ val chop_rprod_n : int -> Glob_term.glob_constr ->
 val def_of_const : Constr.t -> Constr.t
 val eq : EConstr.constr Lazy.t
 val refl_equal : EConstr.constr Lazy.t
-val const_of_id: Id.t ->  Globnames.global_reference(* constantyes *)
+val const_of_id: Id.t ->  Names.global_reference(* constantyes *)
 val jmeq : unit -> EConstr.constr
 val jmeq_refl : unit -> EConstr.constr
 
@@ -107,11 +107,11 @@ val h_intros: Names.Id.t list -> Tacmach.tactic
 val h_id :  Names.Id.t
 val hrec_id :  Names.Id.t
 val acc_inv_id :  EConstr.constr Util.delayed
-val ltof_ref : Globnames.global_reference Util.delayed
+val ltof_ref : Names.global_reference Util.delayed
 val well_founded_ltof : EConstr.constr Util.delayed
 val acc_rel : EConstr.constr Util.delayed
 val well_founded : EConstr.constr Util.delayed
-val evaluable_of_global_reference : Globnames.global_reference -> Names.evaluable_global_reference
+val evaluable_of_global_reference : Names.global_reference -> Names.evaluable_global_reference
 val list_rewrite : bool -> (EConstr.constr*bool) list -> Tacmach.tactic
 
 val decompose_lam_n : Evd.evar_map -> int -> EConstr.t ->

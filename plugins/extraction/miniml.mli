@@ -9,7 +9,6 @@
 (*s Target language for extraction: a core ML called MiniML. *)
 
 open Names
-open Globnames
 
 (* The [signature] type is used to know how many arguments a CIC
    object expects, and what these arguments will become in the ML

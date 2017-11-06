@@ -9,7 +9,6 @@
 open Names
 open Constr
 open Entries
-open Globnames
 open Vernacexpr
 open Constrexpr
 open Decl_kinds

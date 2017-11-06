@@ -68,8 +68,8 @@ val restrict_evar : evar_map -> Evar.t -> Filter.t ->
 
 (** Polymorphic constants *)
 
-val new_global : evar_map -> Globnames.global_reference -> evar_map * constr
-val e_new_global : evar_map ref -> Globnames.global_reference -> constr
+val new_global : evar_map -> global_reference -> evar_map * constr
+val e_new_global : evar_map ref -> global_reference -> constr
 
 (** Create a fresh evar in a context different from its definition context:
    [new_evar_instance sign evd ty inst] creates a new evar of context

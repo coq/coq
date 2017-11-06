@@ -11,7 +11,6 @@ open Names
 open Glob_term
 open Constrexpr
 open Libnames
-open Globnames
 
 val declare_generalizable : Vernacexpr.locality_flag -> (Id.t located) list option -> unit
 

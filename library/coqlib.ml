@@ -9,9 +9,9 @@
 open CErrors
 open Util
 open Pp
-open Names
 open Libnames
 open Globnames
+open Names
 open Nametab
 
 let coq = Libnames.coq_string (* "Coq" *)
