@@ -623,7 +623,7 @@ module New = struct
 	  let name_elim =
 	    match EConstr.kind sigma elim with
 	    | Const (kn, _) -> string_of_con kn
-	    | Var id -> string_of_id id
+	    | Var id -> Id.to_string id
 	    | _ -> "\b"
 	  in
 	  user_err ~hdr:"Tacticals.general_elim_then_using"

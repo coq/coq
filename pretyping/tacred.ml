@@ -1051,7 +1051,7 @@ let contextually byhead occs f env sigma t =
 let match_constr_evaluable_ref sigma c evref = 
   match EConstr.kind sigma c, evref with
   | Const (c,u), EvalConstRef c' when eq_constant c c' -> Some u
-  | Var id, EvalVarRef id' when id_eq id id' -> Some EInstance.empty
+  | Var id, EvalVarRef id' when Id.equal id id' -> Some EInstance.empty
   | _, _ -> None
 
 let substlin env sigma evalref n (nowhere_except_in,locs) c =

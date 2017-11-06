@@ -1376,7 +1376,7 @@ let enforce_prop_bound_names rename tac =
                 (* "very_standard" says that we should have "H" names only, but
                    this would break compatibility even more... *)
                 let s = match Namegen.head_name sigma t with
-                  | Some id when not very_standard -> string_of_id id
+                  | Some id when not very_standard -> Id.to_string id
                   | _ -> "" in
                 Name (add_suffix Namegen.default_prop_ident s)
               else

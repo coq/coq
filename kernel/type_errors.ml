@@ -44,7 +44,7 @@ type ('constr, 'types) ptype_error =
   | UnboundVar of variable
   | NotAType of ('constr, 'types) punsafe_judgment
   | BadAssumption of ('constr, 'types) punsafe_judgment
-  | ReferenceVariables of identifier * 'constr
+  | ReferenceVariables of Id.t * 'constr
   | ElimArity of pinductive * sorts_family list * 'constr * ('constr, 'types) punsafe_judgment
       * (sorts_family * sorts_family * arity_error) option
   | CaseNotInductive of ('constr, 'types) punsafe_judgment

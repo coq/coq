@@ -1192,7 +1192,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
   | PSort s -> GSort s
 
 let extern_constr_pattern env sigma pat =
-  extern true (None,[]) Id.Set.empty (glob_of_pat Idset.empty env sigma pat)
+  extern true (None,[]) Id.Set.empty (glob_of_pat Id.Set.empty env sigma pat)
 
 let extern_rel_context where env sigma sign =
   let a = detype_rel_context Detyping.Later where Id.Set.empty (names_of_rel_context env,env) sigma sign in

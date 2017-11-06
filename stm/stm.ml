@@ -517,8 +517,8 @@ end = struct (* {{{ *)
   let reachable id = reachable !vcs id
   let mk_branch_name { expr = x } = Branch.make
     (let rec aux x = match x with
-    | VernacDefinition (_,((_,i),_),_) -> Names.string_of_id i
-    | VernacStartTheoremProof (_,[Some ((_,i),_),_]) -> Names.string_of_id i
+    | VernacDefinition (_,((_,i),_),_) -> Names.Id.to_string i
+    | VernacStartTheoremProof (_,[Some ((_,i),_),_]) -> Names.Id.to_string i
     | VernacTime (_, e)
     | VernacTimeout (_, e) -> aux e
     | _ -> "branch" in aux x)
@@ -3097,7 +3097,7 @@ let current_proof_depth ~doc =
 let unmangle n =
   let n = VCS.Branch.to_string n in
   let idx = String.index n '_' + 1 in
-  Names.id_of_string (String.sub n idx (String.length n - idx))
+  Names.Id.of_string (String.sub n idx (String.length n - idx))
 
 let proofname b = match VCS.get_branch b with
   | { VCS.kind = (`Proof _| `Edit _) } -> Some b

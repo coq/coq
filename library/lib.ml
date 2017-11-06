@@ -505,7 +505,7 @@ let variable_section_segment_of_reference = function
 let section_instance = function
   | VarRef id ->
      let eq = function
-       | Variable (id',_,_,_) -> Names.id_eq id id'
+       | Variable (id',_,_,_) -> Names.Id.equal id id'
        | Context _ -> false
      in
      if List.exists eq (pi1 (List.hd !sectab))

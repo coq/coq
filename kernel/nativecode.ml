@@ -59,7 +59,7 @@ type gname =
   | Gnormtbl of label option * int
   | Ginternal of string
   | Grel of int
-  | Gnamed of identifier
+  | Gnamed of Id.t
 
 let eq_gname gn1 gn2 =
   match gn1, gn2 with
@@ -266,7 +266,7 @@ type primitive =
   | Mk_fix of rec_pos * int 
   | Mk_cofix of int
   | Mk_rel of int
-  | Mk_var of identifier
+  | Mk_var of Id.t
   | Mk_proj
   | Is_accu
   | Is_int
@@ -625,7 +625,7 @@ let decompose_MLlam c =
 
 (*s Global declaration *)
 type global =
-(*  | Gtblname of gname * identifier array *)
+(*  | Gtblname of gname * Id.t array *)
   | Gtblnorm of gname * lname array * mllambda array 
   | Gtblfixtype of gname * lname array * mllambda array
   | Glet of gname * mllambda
@@ -732,7 +732,7 @@ type env =
       env_bound : int; (* length of env_rel *)
       (* free variables *)
       env_urel : (int * mllambda) list ref; (* list of unbound rel *)
-      env_named : (identifier * mllambda) list ref;
+      env_named : (Id.t * mllambda) list ref;
       env_univ : lname option}
 
 let empty_env univ () =
@@ -1955,8 +1955,8 @@ let is_code_loaded ~interactive name =
       if is_loaded_native_file s then true
       else (name := NotLinked; false)
 
-let param_name = Name (id_of_string "params")
-let arg_name = Name (id_of_string "arg")
+let param_name = Name (Id.of_string "params")
+let arg_name = Name (Id.of_string "arg")
 
 let compile_mind prefix ~interactive mb mind stack =
   let u = Declareops.inductive_polymorphic_context mb in

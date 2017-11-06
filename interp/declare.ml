@@ -464,7 +464,7 @@ let cache_universes (p, l) =
   let glob = Global.global_universe_names () in
   let glob', ctx =
     List.fold_left (fun ((idl,lid),ctx) (id, lev) ->
-        ((Idmap.add id (p, lev) idl,
+        ((Id.Map.add id (p, lev) idl,
           Univ.LMap.add lev id lid),
          Univ.ContextSet.add_universe lev ctx))
       (glob, Univ.ContextSet.empty) l
@@ -525,7 +525,7 @@ let do_constraint poly l =
                      (str "Cannot declare constraints on anonymous universes")
     | GType (Some (loc, Name id)) ->
        let names, _ = Global.global_universe_names () in
-       try loc, Idmap.find id names
+       try loc, Id.Map.find id names
        with Not_found ->
          user_err ?loc ~hdr:"Constraint" (str "Undeclared universe " ++ pr_id id)
   in

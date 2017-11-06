@@ -52,7 +52,7 @@ type atom =
   | Aconstant of pconstant
   | Aind of pinductive
   | Asort of sorts
-  | Avar of identifier
+  | Avar of Id.t
   | Acase of annot_sw * accumulator * t * (t -> t)
   | Afix of t array * t array * rec_pos * int
             (* types, bodies, rec_pos, pos *)

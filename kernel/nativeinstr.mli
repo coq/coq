@@ -21,7 +21,7 @@ type uint =
 
 and lambda =
   | Lrel          of name * int 
-  | Lvar          of identifier
+  | Lvar          of Id.t
   | Lmeta         of metavariable * lambda (* type *)
   | Levar         of existential * lambda (* type *)
   | Lprod         of lambda * lambda 
