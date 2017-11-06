@@ -201,7 +201,6 @@ val pr_assumptionset :
   env -> Term.types ContextObjectMap.t -> Pp.t
 
 val pr_goal_by_id : Id.t -> Pp.t
-val pr_goal_by_uid : string -> Pp.t
 
 type printer_pr = {
  pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> evar list -> Goal.goal list -> int list -> goal list -> goal list -> Pp.t;

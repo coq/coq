@@ -1853,7 +1853,6 @@ let vernac_show = let open Feedback in function
       | OpenSubgoals -> pr_open_subgoals ()
       | NthGoal n -> pr_nth_open_subgoal n
       | GoalId id -> pr_goal_by_id id
-      | GoalUid id -> pr_goal_by_uid id
     in
     msg_notice info
   | ShowProof -> show_proof ()

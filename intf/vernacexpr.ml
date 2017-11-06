@@ -39,7 +39,6 @@ type goal_reference =
   | OpenSubgoals
   | NthGoal of int
   | GoalId of Id.t
-  | GoalUid of goal_identifier
 
 type printable =
   | PrintTables

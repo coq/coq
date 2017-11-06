@@ -15,9 +15,6 @@ type goal = Evar.t
 (* Gives a unique identifier to each goal. The identifier is
    guaranteed to contain no space. *)
 val uid : goal -> string
-(* Returns the goal (even if it has been partially solved)
-   corresponding to a unique identifier obtained by {!uid}. *)
-val get_by_uid : string -> goal
 
 (* Debugging help *)
 val pr_goal : goal -> Pp.t
