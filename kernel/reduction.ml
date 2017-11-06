@@ -200,13 +200,10 @@ let is_cumul = function CUMUL -> true | CONV -> false
 
 type 'a universe_compare = 
   { (* Might raise NotConvertible *)
-    compare : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
+    compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
     compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
-    conv_inductives : conv_pb -> (Declarations.mutual_inductive_body * int) -> Univ.Instance.t -> int ->
-      Univ.Instance.t -> int -> 'a -> 'a;
-    conv_constructors : (Declarations.mutual_inductive_body * int * int) ->
-      Univ.Instance.t -> int -> Univ.Instance.t -> int -> 'a -> 'a;
-  } 
+    compare_cumul_instances : conv_pb -> Univ.abstract_cumulativity_info ->
+      Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a }
 
 type 'a universe_state = 'a * 'a universe_compare
 
@@ -215,18 +212,49 @@ type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a 
 type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.Constraint.t
 
 let sort_cmp_universes env pb s0 s1 (u, check) =
-  (check.compare env pb s0 s1 u, check)
+  (check.compare_sorts env pb s0 s1 u, check)
 
 (* [flex] should be true for constants, false for inductive types and
    constructors. *)
 let convert_instances ~flex u u' (s, check) =
   (check.compare_instances ~flex u u' s, check)
   
-let convert_inductives cv_pb ind u1 sv1 u2 sv2 (s, check) =
-  (check.conv_inductives cv_pb ind u1 sv1 u2 sv2 s, check)
+let convert_inductives cv_pb (mind,ind) u1 sv1 u2 sv2 (s, check as univs) =
+  match mind.Declarations.mind_universes with
+  | Declarations.Monomorphic_ind _ ->
+    assert (Univ.Instance.length u1 = 0 && Univ.Instance.length u2 = 0);
+    univs
+  | Declarations.Polymorphic_ind _ ->
+    check.compare_instances ~flex:false u1 u2 s, check
+  | Declarations.Cumulative_ind cumi ->
+    let num_param_arity =
+      mind.Declarations.mind_nparams +
+      mind.Declarations.mind_packets.(ind).Declarations.mind_nrealargs
+    in
+    if not (num_param_arity = sv1 && num_param_arity = sv2) then
+      check.compare_instances ~flex:false u1 u2 s, check
+    else
+      check.compare_cumul_instances cv_pb cumi u1 u2 s, check
 
-let convert_constructors cons u1 sv1 u2 sv2 (s, check) =
-  (check.conv_constructors cons u1 sv1 u2 sv2 s, check)
+let convert_constructors (mind, ind, cns) u1 sv1 u2 sv2 (s, check as univs) =
+  match mind.Declarations.mind_universes with
+  | Declarations.Monomorphic_ind _ ->
+    assert (Univ.Instance.length u1 = 0 && Univ.Instance.length u2 = 0);
+    univs
+  | Declarations.Polymorphic_ind _ ->
+    check.compare_instances ~flex:false u1 u2 s, check
+  | Declarations.Cumulative_ind cumi ->
+    let num_cnstr_args =
+      let nparamsctxt =
+        mind.Declarations.mind_nparams +
+        mind.Declarations.mind_packets.(ind).Declarations.mind_nrealargs
+        (* Context.Rel.length mind.Declarations.mind_params_ctxt *) in
+      nparamsctxt + mind.Declarations.mind_packets.(ind).Declarations.mind_consnrealargs.(cns - 1)
+    in
+    if not (num_cnstr_args = sv1 && num_cnstr_args = sv2) then
+      check.compare_instances ~flex:false u1 u2 s, check
+    else
+      check.compare_cumul_instances CONV cumi u1 u2 s, check
 
 let conv_table_key infos k1 k2 cuniv =
   if k1 == k2 then cuniv else
@@ -510,12 +538,10 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         else
           let mind = Environ.lookup_mind (fst ind1) (info_env infos) in
           let cuniv =
-            match mind.Declarations.mind_universes with
-            | Declarations.Monomorphic_ind _ | Declarations.Polymorphic_ind _ ->
-              convert_instances ~flex:false u1 u2 cuniv
-            | Declarations.Cumulative_ind cumi ->
-              convert_inductives cv_pb (mind, snd ind1) u1 (CClosure.stack_args_size v1)
-                u2 (CClosure.stack_args_size v2) cuniv
+            convert_inductives cv_pb (mind, snd ind1)
+              u1 (CClosure.stack_args_size v1)
+              u2 (CClosure.stack_args_size v2)
+              cuniv
           in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible
@@ -528,13 +554,10 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         else
           let mind = Environ.lookup_mind (fst ind1) (info_env infos) in
           let cuniv =
-            match mind.Declarations.mind_universes with
-            | Declarations.Monomorphic_ind _ | Declarations.Polymorphic_ind _ ->
-              convert_instances ~flex:false u1 u2 cuniv
-            | Declarations.Cumulative_ind _ ->
-              convert_constructors
-                (mind, snd ind1, j1) u1 (CClosure.stack_args_size v1)
-                u2 (CClosure.stack_args_size v2) cuniv
+            convert_constructors (mind, snd ind1, j1)
+              u1 (CClosure.stack_args_size v1)
+              u2 (CClosure.stack_args_size v2)
+              cuniv
           in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible
@@ -653,41 +676,6 @@ let check_convert_instances ~flex u u' univs =
   else raise NotConvertible
 
 (* general conversion and inference functions *)
-let infer_check_conv_inductives
-    infer_check_convert_instances
-    infer_check_inductive_instances
-    cv_pb (mind, ind) u1 sv1 u2 sv2 univs =
-  match mind.Declarations.mind_universes with
-  | Declarations.Monomorphic_ind _ | Declarations.Polymorphic_ind _ ->
-    infer_check_convert_instances ~flex:false u1 u2 univs
-  | Declarations.Cumulative_ind cumi ->
-    let num_param_arity =
-      mind.Declarations.mind_nparams + mind.Declarations.mind_packets.(ind).Declarations.mind_nrealargs
-    in
-    if not (num_param_arity = sv1 && num_param_arity = sv2) then
-      infer_check_convert_instances ~flex:false u1 u2 univs
-    else
-      infer_check_inductive_instances cv_pb cumi u1 u2 univs
-
-let infer_check_conv_constructors
-    infer_check_convert_instances
-    infer_check_inductive_instances
-    (mind, ind, cns) u1 sv1 u2 sv2 univs =
-  match mind.Declarations.mind_universes with
-  | Declarations.Monomorphic_ind _ | Declarations.Polymorphic_ind _ ->
-    infer_check_convert_instances ~flex:false u1 u2 univs
-  | Declarations.Cumulative_ind cumi ->
-    let num_cnstr_args =
-      let nparamsctxt =
-        mind.Declarations.mind_nparams + mind.Declarations.mind_packets.(ind).Declarations.mind_nrealargs
-        (* Context.Rel.length mind.Declarations.mind_params_ctxt *) in
-      nparamsctxt + mind.Declarations.mind_packets.(ind).Declarations.mind_consnrealargs.(cns - 1)
-    in
-    if not (num_cnstr_args = sv1 && num_cnstr_args = sv2) then
-      infer_check_convert_instances ~flex:false u1 u2 univs
-    else
-      infer_check_inductive_instances CONV cumi u1 u2 univs
-
 let check_inductive_instances cv_pb cumi u u' univs =
   let length_ind_instance = 
     Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)
@@ -714,23 +702,10 @@ let check_inductive_instances cv_pb cumi u u' univs =
     if (UGraph.check_constraints comp_cst univs) then univs
     else raise NotConvertible
 
-let check_conv_inductives cv_pb ind u1 sv1 u2 sv2 univs =
-  infer_check_conv_inductives
-    check_convert_instances
-    check_inductive_instances
-    cv_pb ind u1 sv1 u2 sv2 univs
-
-let check_conv_constructors cns u1 sv1 u2 sv2 univs =
-  infer_check_conv_constructors
-    check_convert_instances
-    check_inductive_instances
-    cns u1 sv1 u2 sv2 univs
-
 let checked_universes =
-  { compare = checked_sort_cmp_universes;
+  { compare_sorts = checked_sort_cmp_universes;
     compare_instances = check_convert_instances;
-    conv_inductives = check_conv_inductives;
-    conv_constructors = check_conv_constructors}
+    compare_cumul_instances = check_inductive_instances; }
 
 let infer_eq (univs, cstrs as cuniv) u u' =
   if UGraph.check_eq univs u u' then cuniv
@@ -798,24 +773,10 @@ let infer_inductive_instances cv_pb cumi u u' (univs, cstrs) =
     in
     (univs, Univ.Constraint.union cstrs comp_cst)
 
-
-let infer_conv_inductives cv_pb ind u1 sv1 u2 sv2 univs =
-  infer_check_conv_inductives
-    infer_convert_instances
-    infer_inductive_instances
-    cv_pb ind u1 sv1 u2 sv2 univs
-
-let infer_conv_constructors cns u1 sv1 u2 sv2 univs =
-  infer_check_conv_constructors
-    infer_convert_instances
-    infer_inductive_instances
-    cns u1 sv1 u2 sv2 univs
-    
-let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare = 
-  { compare = infer_cmp_universes;
+let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare =
+  { compare_sorts = infer_cmp_universes;
     compare_instances = infer_convert_instances;
-    conv_inductives = infer_conv_inductives;
-    conv_constructors = infer_conv_constructors}
+    compare_cumul_instances = infer_inductive_instances; }
 
 let gen_conv cv_pb l2r reds env evars univs t1 t2 =
   let b = 

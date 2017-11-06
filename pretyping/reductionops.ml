@@ -1350,53 +1350,11 @@ let sigma_check_inductive_instances cv_pb uinfind u u' sigma =
        | Univ.UniverseInconsistency _ ->
       raise Reduction.NotConvertible
 
-let sigma_conv_inductives
-    cv_pb (mind, ind) u1 sv1 u2 sv2 sigma =
-  try sigma_compare_instances ~flex:false u1 u2 sigma with
-    Reduction.NotConvertible ->
-    match mind.Declarations.mind_universes with
-    | Declarations.Monomorphic_ind _ ->
-      raise Reduction.NotConvertible
-    | Declarations.Polymorphic_ind _ ->
-      raise Reduction.NotConvertible
-    | Declarations.Cumulative_ind cumi ->
-      let num_param_arity =
-        mind.Declarations.mind_nparams + 
-        mind.Declarations.mind_packets.(ind).Declarations.mind_nrealargs
-      in
-      if not (num_param_arity = sv1 && num_param_arity = sv2) then
-        raise Reduction.NotConvertible
-      else
-        sigma_check_inductive_instances cv_pb cumi u1 u2 sigma 
-
-let sigma_conv_constructors
-    (mind, ind, cns) u1 sv1 u2 sv2 sigma =
-  try sigma_compare_instances ~flex:false u1 u2 sigma with
-    Reduction.NotConvertible ->
-    match mind.Declarations.mind_universes with
-    | Declarations.Monomorphic_ind _ ->
-      raise Reduction.NotConvertible
-    | Declarations.Polymorphic_ind _ ->
-      raise Reduction.NotConvertible
-    | Declarations.Cumulative_ind cumi ->
-      let num_cnstr_args =
-        let nparamsctxt =
-          mind.Declarations.mind_nparams + 
-          mind.Declarations.mind_packets.(ind).Declarations.mind_nrealargs
-        in
-        nparamsctxt + 
-        mind.Declarations.mind_packets.(ind).Declarations.mind_consnrealargs.(cns - 1)
-      in
-      if not (num_cnstr_args = sv1 && num_cnstr_args = sv2) then
-        raise Reduction.NotConvertible
-      else
-        sigma_check_inductive_instances Reduction.CONV cumi u1 u2 sigma
-
 let sigma_univ_state = 
-  { Reduction.compare = sigma_compare_sorts;
-    Reduction.compare_instances = sigma_compare_instances;
-    Reduction.conv_inductives = sigma_conv_inductives;
-    Reduction.conv_constructors = sigma_conv_constructors}
+  let open Reduction in
+  { compare_sorts = sigma_compare_sorts;
+    compare_instances = sigma_compare_instances;
+    compare_cumul_instances = sigma_check_inductive_instances; }
 
 let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     ?(ts=full_transparent_state) env sigma x y =
