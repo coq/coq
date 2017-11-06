@@ -8,6 +8,7 @@ Tac2entries
 Tac2quote
 Tac2match
 Tac2core
+Tac2extffi
 Tac2tactics
 Tac2stdlib
 G_ltac2

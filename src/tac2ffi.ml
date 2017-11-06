@@ -78,6 +78,8 @@ type 'a repr = {
 let repr_of r x = r.r_of x
 let repr_to r x = r.r_to x
 
+let make_repr r_of r_to = { r_of; r_to; r_id = false; }
+
 (** Dynamic tags *)
 
 let val_exn = Val.create "exn"

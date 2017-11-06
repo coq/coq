@@ -25,6 +25,8 @@ src/tac2match.ml
 src/tac2match.mli
 src/tac2core.ml
 src/tac2core.mli
+src/tac2extffi.ml
+src/tac2extffi.mli
 src/tac2tactics.ml
 src/tac2tactics.mli
 src/tac2stdlib.ml

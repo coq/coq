@@ -19,7 +19,7 @@ open Proofview
 val intros_patterns : evars_flag -> intro_pattern list -> unit tactic
 
 val apply : advanced_flag -> evars_flag ->
-  constr_with_bindings tactic list ->
+  constr_with_bindings thunk list ->
   (Id.t * intro_pattern option) option -> unit tactic
 
 val induction_destruct : rec_flag -> evars_flag ->
@@ -43,7 +43,7 @@ val specialize : constr_with_bindings -> intro_pattern option -> unit tactic
 val change : Pattern.constr_pattern option -> (constr array, constr) Tac2ffi.fun1 -> clause -> unit tactic
 
 val rewrite :
-  evars_flag -> rewriting list -> clause -> unit tactic option -> unit tactic
+  evars_flag -> rewriting list -> clause -> unit thunk option -> unit tactic
 
 val symmetry : clause -> unit tactic
 
@@ -101,18 +101,18 @@ val discriminate : evars_flag -> destruction_arg option -> unit tactic
 
 val injection : evars_flag -> intro_pattern list option -> destruction_arg option -> unit tactic
 
-val autorewrite : all:bool -> unit tactic option -> Id.t list -> clause -> unit tactic
+val autorewrite : all:bool -> unit thunk option -> Id.t list -> clause -> unit tactic
 
-val trivial : Hints.debug -> constr tactic list -> Id.t list option ->
+val trivial : Hints.debug -> constr thunk list -> Id.t list option ->
   unit Proofview.tactic
 
-val auto : Hints.debug -> int option -> constr tactic list ->
+val auto : Hints.debug -> int option -> constr thunk list ->
   Id.t list option -> unit Proofview.tactic
 
-val new_auto : Hints.debug -> int option -> constr tactic list ->
+val new_auto : Hints.debug -> int option -> constr thunk list ->
   Id.t list option -> unit Proofview.tactic
 
-val eauto : Hints.debug -> int option -> int option -> constr tactic list ->
+val eauto : Hints.debug -> int option -> int option -> constr thunk list ->
   Id.t list option -> unit Proofview.tactic
 
 val typeclasses_eauto : Class_tactics.search_strategy option -> int option ->
@@ -122,4 +122,4 @@ val inversion : Misctypes.inversion_kind -> destruction_arg -> intro_pattern opt
 
 val contradiction : constr_with_bindings option -> unit tactic
 
-val firstorder : unit Proofview.tactic option -> global_reference list -> Id.t list -> unit tactic
+val firstorder : unit thunk option -> global_reference list -> Id.t list -> unit tactic

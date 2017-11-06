@@ -54,6 +54,8 @@ type 'a repr
 val repr_of : 'a repr -> 'a -> valexpr
 val repr_to : 'a repr -> valexpr -> 'a
 
+val make_repr : ('a -> valexpr) -> (valexpr -> 'a) -> 'a repr
+
 (** These functions allow to convert back and forth between OCaml and Ltac2
     data representation. The [to_*] functions raise an anomaly whenever the data
     has not expected shape. *)
@@ -109,6 +111,8 @@ val array : 'a repr -> 'a array repr
 val of_tuple : valexpr array -> valexpr
 val to_tuple : valexpr -> valexpr array
 
+val of_pair : ('a -> valexpr) -> ('b -> valexpr) -> 'a * 'b -> valexpr
+val to_pair : (valexpr -> 'a) -> (valexpr -> 'b) -> valexpr -> 'a * 'b
 val pair : 'a repr -> 'b repr -> ('a * 'b) repr
 
 val of_option : ('a -> valexpr) -> 'a option -> valexpr

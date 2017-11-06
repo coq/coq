@@ -11,38 +11,25 @@ open Genredexpr
 open Tac2expr
 open Tac2ffi
 open Tac2types
+open Tac2extffi
 open Proofview.Notations
 
 module Value = Tac2ffi
 
+(** Make a representation with a dummy from function *)
+let make_to_repr f = Tac2ffi.make_repr (fun _ -> assert false) f
+
 let return x = Proofview.tclUNIT x
 let v_unit = Value.of_unit ()
-let thaw f = Tac2ffi.apply (Value.to_closure f) [v_unit]
-
-let to_pair f g v = match Value.to_tuple v with
-| [| x; y |] -> (f x, g y)
-| _ -> assert false
+let thaw r f = Tac2ffi.app_fun1 f unit r ()
+let uthaw r f = Tac2ffi.app_fun1 (to_fun1 unit r f) unit r ()
+let thunk r = fun1 unit r
 
 let to_name c = match Value.to_option Value.to_ident c with
 | None -> Anonymous
 | Some id -> Name id
 
-let to_qhyp v = match Value.to_block v with
-| (0, [| i |]) -> AnonHyp (Value.to_int i)
-| (1, [| id |]) -> NamedHyp (Value.to_ident id)
-| _ -> assert false
-
-let to_bindings = function
-| ValInt 0 -> NoBindings
-| ValBlk (0, [| vl |]) ->
-  ImplicitBindings (Value.to_list Value.to_constr vl)
-| ValBlk (1, [| vl |]) ->
-  ExplicitBindings ((Value.to_list (fun p -> to_pair to_qhyp Value.to_constr p) vl))
-| _ -> assert false
-
-let to_constr_with_bindings v = match Value.to_tuple v with
-| [| c; bnd |] -> (Value.to_constr c, to_bindings bnd)
-| _ -> assert false
+let name = make_to_repr to_name
 
 let to_occurrences = function
 | ValInt 0 -> AllOccurrences
@@ -50,6 +37,8 @@ let to_occurrences = function
 | ValInt 1 -> NoOccurrences
 | ValBlk (1, [| vl |]) -> OnlyOccurrences (Value.to_list Value.to_int vl)
 | _ -> assert false
+
+let occurrences = make_to_repr to_occurrences
 
 let to_hyp_location_flag v = match Value.to_int v with
 | 0 -> InHyp
@@ -68,6 +57,8 @@ let to_clause v = match Value.to_tuple v with
   { onhyps = hyps; concl_occs = to_occurrences concl; }
 | _ -> assert false
 
+let clause = make_to_repr to_clause
+
 let to_red_flag v = match Value.to_tuple v with
 | [| beta; iota; fix; cofix; zeta; delta; const |] ->
   {
@@ -81,11 +72,13 @@ let to_red_flag v = match Value.to_tuple v with
   }
 | _ -> assert false
 
-let to_pattern_with_occs pat =
-  to_pair Value.to_pattern to_occurrences pat
+let red_flags = make_to_repr to_red_flag
 
-let to_constr_with_occs c =
-  to_pair Value.to_constr to_occurrences c
+let pattern_with_occs = pair pattern occurrences
+
+let constr_with_occs = pair constr occurrences
+
+let reference_with_occs = pair reference occurrences
 
 let rec to_intro_pattern v = match Value.to_block v with
 | (0, [| b |]) -> IntroForthcoming (Value.to_bool b)
@@ -121,13 +114,19 @@ and to_or_and_intro_pattern v = match Value.to_block v with
 and to_intro_patterns il =
   Value.to_list to_intro_pattern il
 
+let intro_pattern = make_to_repr to_intro_pattern
+
+let intro_patterns = make_to_repr to_intro_patterns
+
 let to_destruction_arg v = match Value.to_block v with
 | (0, [| c |]) ->
-  let c = thaw c >>= fun c -> return (to_constr_with_bindings c) in
+  let c = uthaw constr_with_bindings c in
   ElimOnConstr c
 | (1, [| id |]) -> ElimOnIdent (Value.to_ident id)
 | (2, [| n |]) -> ElimOnAnonHyp (Value.to_int n)
 | _ -> assert false
+
+let destruction_arg = make_to_repr to_destruction_arg
 
 let to_induction_clause v = match Value.to_tuple v with
 | [| arg; eqn; as_; in_ |] ->
@@ -138,6 +137,8 @@ let to_induction_clause v = match Value.to_tuple v with
   (arg, eqn, as_, in_)
 | _ ->
   assert false
+
+let induction_clause = make_to_repr to_induction_clause
 
 let to_assertion v = match Value.to_block v with
 | (0, [| ipat; t; tac |]) ->
@@ -150,6 +151,8 @@ let to_assertion v = match Value.to_block v with
   AssertValue (Value.to_ident id, Value.to_constr c)
 | _ -> assert false
 
+let assertion = make_to_repr to_assertion
+
 let to_multi = function
 | ValBlk (0, [| n |]) -> Precisely (Value.to_int n)
 | ValBlk (1, [| n |]) -> UpTo (Value.to_int n)
@@ -161,9 +164,11 @@ let to_rewriting v = match Value.to_tuple v with
 | [| orient; repeat; c |] ->
   let orient = Value.to_option Value.to_bool orient in
   let repeat = to_multi repeat in
-  let c = thaw c >>= fun c -> return (to_constr_with_bindings c) in
+  let c = uthaw constr_with_bindings c in
   (orient, repeat, c)
 | _ -> assert false
+
+let rewriting = make_to_repr to_rewriting
 
 let to_debug v = match Value.to_int v with
 | 0 -> Hints.Off
@@ -171,10 +176,14 @@ let to_debug v = match Value.to_int v with
 | 2 -> Hints.Debug
 | _ -> assert false
 
+let debug = make_to_repr to_debug
+
 let to_strategy v = match Value.to_int v with
 | 0 -> Class_tactics.Bfs
 | 1 -> Class_tactics.Dfs
 | _ -> assert false
+
+let strategy = make_to_repr to_strategy
 
 let to_inversion_kind v = match Value.to_int v with
 | 0 -> Misctypes.SimpleInversion
@@ -182,12 +191,23 @@ let to_inversion_kind v = match Value.to_int v with
 | 2 -> Misctypes.FullInversionClear
 | _ -> assert false
 
+let inversion_kind = make_to_repr to_inversion_kind
+
 let to_move_location = function
 | ValInt 0 -> Misctypes.MoveFirst
 | ValInt 1 -> Misctypes.MoveLast
 | ValBlk (0, [|id|]) -> Misctypes.MoveAfter (Value.to_ident id)
 | ValBlk (1, [|id|]) -> Misctypes.MoveBefore (Value.to_ident id)
 | _ -> assert false
+
+let move_location = make_to_repr to_move_location
+
+let to_generalize_arg v = match Value.to_tuple v with
+| [| c; occs; na |] ->
+  (Value.to_constr c, to_occurrences occs, to_name na)
+| _ -> assert false
+
+let generalize_arg = make_to_repr to_generalize_arg
 
 (** Standard tactics sharing their implementation with Ltac1 *)
 
@@ -199,189 +219,127 @@ let define_prim0 name tac =
   let tac _ = lift tac in
   Tac2env.define_primitive (pname name) (mk_closure arity_one tac)
 
-let define_prim1 name tac =
-  let tac x = lift (tac x) in
+let define_prim1 name r0 f =
+  let tac x = lift (f (Value.repr_to r0 x)) in
   Tac2env.define_primitive (pname name) (mk_closure arity_one tac)
 
-let define_prim2 name tac =
-  let tac x y = lift (tac x y) in
+let define_prim2 name r0 r1 f =
+  let tac x y = lift (f (Value.repr_to r0 x) (Value.repr_to r1 y)) in
   Tac2env.define_primitive (pname name) (mk_closure (arity_suc arity_one) tac)
 
-let define_prim3 name tac =
-  let tac x y z = lift (tac x y z) in
+let define_prim3 name r0 r1 r2 f =
+  let tac x y z = lift (f (Value.repr_to r0 x) (Value.repr_to r1 y) (Value.repr_to r2 z)) in
   Tac2env.define_primitive (pname name) (mk_closure (arity_suc (arity_suc arity_one)) tac)
 
-let define_prim4 name tac =
-  let tac x y z u = lift (tac x y z u) in
+let define_prim4 name r0 r1 r2 r3 f =
+  let tac x y z u = lift (f (Value.repr_to r0 x) (Value.repr_to r1 y) (Value.repr_to r2 z) (Value.repr_to r3 u)) in
   Tac2env.define_primitive (pname name) (mk_closure (arity_suc (arity_suc (arity_suc arity_one))) tac)
 
-let define_prim5 name tac =
-  let tac x y z u v = lift (tac x y z u v) in
+let define_prim5 name r0 r1 r2 r3 r4 f =
+  let tac x y z u v = lift (f (Value.repr_to r0 x) (Value.repr_to r1 y) (Value.repr_to r2 z) (Value.repr_to r3 u) (Value.repr_to r4 v)) in
   Tac2env.define_primitive (pname name) (mk_closure (arity_suc (arity_suc (arity_suc (arity_suc arity_one)))) tac)
 
 (** Tactics from Tacexpr *)
 
-let () = define_prim2 "tac_intros" begin fun ev ipat ->
-  let ev = Value.to_bool ev in
-  let ipat = to_intro_patterns ipat in
+let () = define_prim2 "tac_intros" bool intro_patterns begin fun ev ipat ->
   Tac2tactics.intros_patterns ev ipat
 end
 
-let () = define_prim4 "tac_apply" begin fun adv ev cb ipat ->
-  let adv = Value.to_bool adv in
-  let ev = Value.to_bool ev in
-  let map_cb c = thaw c >>= fun c -> return (to_constr_with_bindings c) in
-  let cb = Value.to_list map_cb cb in
-  let map p = Value.to_option to_intro_pattern p in
-  let map_ipat p = to_pair Value.to_ident map p in
-  let ipat = Value.to_option map_ipat ipat in
+let () = define_prim4 "tac_apply" bool bool (list (thunk constr_with_bindings)) (option (pair ident (option intro_pattern))) begin fun adv ev cb ipat ->
   Tac2tactics.apply adv ev cb ipat
 end
 
-let () = define_prim3 "tac_elim" begin fun ev c copt ->
-  let ev = Value.to_bool ev in
-  let c = to_constr_with_bindings c in
-  let copt = Value.to_option to_constr_with_bindings copt in
+let () = define_prim3 "tac_elim" bool constr_with_bindings (option constr_with_bindings) begin fun ev c copt ->
   Tac2tactics.elim ev c copt
 end
 
-let () = define_prim2 "tac_case" begin fun ev c ->
-  let ev = Value.to_bool ev in
-  let c = to_constr_with_bindings c in
+let () = define_prim2 "tac_case" bool constr_with_bindings begin fun ev c ->
   Tac2tactics.general_case_analysis ev c
 end
 
-let () = define_prim1 "tac_generalize" begin fun cl ->
-  let cast v = match Value.to_tuple v with
-  | [| c; occs; na |] ->
-    (Value.to_constr c, to_occurrences occs, to_name na)
-  | _ -> assert false
-  in
-  let cl = Value.to_list cast cl in
+let () = define_prim1 "tac_generalize" (list generalize_arg) begin fun cl ->
   Tac2tactics.generalize cl
 end
 
-let () = define_prim1 "tac_assert" begin fun ast ->
-  let ast = to_assertion ast in
+let () = define_prim1 "tac_assert" assertion begin fun ast ->
   Tac2tactics.assert_ ast
 end
 
-let () = define_prim3 "tac_enough" begin fun c tac ipat ->
-  let c = Value.to_constr c in
-  let of_tac t = Proofview.tclIGNORE (thaw t) in
-  let tac = Value.to_option (fun t -> Value.to_option of_tac t) tac in
-  let ipat = Value.to_option to_intro_pattern ipat in
+let () = define_prim3 "tac_enough" constr (option (option (thunk unit))) (option intro_pattern) begin fun c tac ipat ->
+  let tac = Option.map (fun o -> Option.map (fun f -> thaw unit f) o) tac in
   Tac2tactics.forward false tac ipat c
 end
 
-let () = define_prim2 "tac_pose" begin fun idopt c ->
-  let na = to_name idopt in
-  let c = Value.to_constr c in
+let () = define_prim2 "tac_pose" name constr begin fun na c ->
   Tactics.letin_tac None na c None Locusops.nowhere
 end
 
-let () = define_prim3 "tac_set" begin fun ev p cl ->
-  let ev = Value.to_bool ev in
-  let cl = to_clause cl in
+let () = define_prim3 "tac_set" bool (thunk (pair name constr)) clause begin fun ev p cl ->
   Proofview.tclEVARMAP >>= fun sigma ->
-  thaw p >>= fun p ->
-  let (na, c) = to_pair to_name Value.to_constr p in
+  thaw (pair name constr) p >>= fun (na, c) ->
   Tac2tactics.letin_pat_tac ev None na (sigma, c) cl
 end
 
-let () = define_prim5 "tac_remember" begin fun ev na c eqpat cl ->
-  let ev = Value.to_bool ev in
-  let na = to_name na in
-  let cl = to_clause cl in
-  let eqpat = Value.to_option to_intro_pattern eqpat in
+let () = define_prim5 "tac_remember" bool name (thunk constr) (option intro_pattern) clause begin fun ev na c eqpat cl ->
   let eqpat = Option.default (IntroNaming IntroAnonymous) eqpat in
   match eqpat with
   | IntroNaming eqpat ->
     Proofview.tclEVARMAP >>= fun sigma ->
-    thaw c >>= fun c ->
-    let c = Value.to_constr c in
+    thaw constr c >>= fun c ->
     Tac2tactics.letin_pat_tac ev (Some (true, eqpat)) na (sigma, c) cl
   | _ ->
     Tacticals.New.tclZEROMSG (Pp.str "Invalid pattern for remember")
 end
 
-let () = define_prim3 "tac_destruct" begin fun ev ic using ->
-  let ev = Value.to_bool ev in
-  let ic = Value.to_list to_induction_clause ic in
-  let using = Value.to_option to_constr_with_bindings using in
+let () = define_prim3 "tac_destruct" bool (list induction_clause) (option constr_with_bindings) begin fun ev ic using ->
   Tac2tactics.induction_destruct false ev ic using
 end
 
-let () = define_prim3 "tac_induction" begin fun ev ic using ->
-  let ev = Value.to_bool ev in
-  let ic = Value.to_list to_induction_clause ic in
-  let using = Value.to_option to_constr_with_bindings using in
+let () = define_prim3 "tac_induction" bool (list induction_clause) (option constr_with_bindings) begin fun ev ic using ->
   Tac2tactics.induction_destruct true ev ic using
 end
 
-let () = define_prim1 "tac_red" begin fun cl ->
-  let cl = to_clause cl in
+let () = define_prim1 "tac_red" clause begin fun cl ->
   Tac2tactics.reduce (Red false) cl
 end
 
-let () = define_prim1 "tac_hnf" begin fun cl ->
-  let cl = to_clause cl in
+let () = define_prim1 "tac_hnf" clause begin fun cl ->
   Tac2tactics.reduce Hnf cl
 end
 
-let () = define_prim3 "tac_simpl" begin fun flags where cl ->
-  let flags = to_red_flag flags in
-  let where = Value.to_option to_pattern_with_occs where in
-  let cl = to_clause cl in
+let () = define_prim3 "tac_simpl" red_flags (option pattern_with_occs) clause begin fun flags where cl ->
   Tac2tactics.simpl flags where cl
 end
 
-let () = define_prim2 "tac_cbv" begin fun flags cl ->
-  let flags = to_red_flag flags in
-  let cl = to_clause cl in
+let () = define_prim2 "tac_cbv" red_flags clause begin fun flags cl ->
   Tac2tactics.cbv flags cl
 end
 
-let () = define_prim2 "tac_cbn" begin fun flags cl ->
-  let flags = to_red_flag flags in
-  let cl = to_clause cl in
+let () = define_prim2 "tac_cbn" red_flags clause begin fun flags cl ->
   Tac2tactics.cbn flags cl
 end
 
-let () = define_prim2 "tac_lazy" begin fun flags cl ->
-  let flags = to_red_flag flags in
-  let cl = to_clause cl in
+let () = define_prim2 "tac_lazy" red_flags clause begin fun flags cl ->
   Tac2tactics.lazy_ flags cl
 end
 
-let () = define_prim2 "tac_unfold" begin fun refs cl ->
-  let map v = to_pair Value.to_reference to_occurrences v in
-  let refs = Value.to_list map refs in
-  let cl = to_clause cl in
+let () = define_prim2 "tac_unfold" (list reference_with_occs) clause begin fun refs cl ->
   Tac2tactics.unfold refs cl
 end
 
-let () = define_prim2 "tac_fold" begin fun args cl ->
-  let args = Value.to_list Value.to_constr args in
-  let cl = to_clause cl in
+let () = define_prim2 "tac_fold" (list constr) clause begin fun args cl ->
   Tac2tactics.reduce (Fold args) cl
 end
 
-let () = define_prim2 "tac_pattern" begin fun where cl ->
-  let where = Value.to_list to_constr_with_occs where in
-  let cl = to_clause cl in
+let () = define_prim2 "tac_pattern" (list constr_with_occs) clause begin fun where cl ->
   Tac2tactics.pattern where cl
 end
 
-let () = define_prim2 "tac_vm" begin fun where cl ->
-  let where = Value.to_option to_pattern_with_occs where in
-  let cl = to_clause cl in
+let () = define_prim2 "tac_vm" (option pattern_with_occs) clause begin fun where cl ->
   Tac2tactics.vm where cl
 end
 
-let () = define_prim2 "tac_native" begin fun where cl ->
-  let where = Value.to_option to_pattern_with_occs where in
-  let cl = to_clause cl in
+let () = define_prim2 "tac_native" (option pattern_with_occs) clause begin fun where cl ->
   Tac2tactics.native where cl
 end
 
@@ -389,105 +347,71 @@ end
 
 let lift tac = tac >>= fun c -> Proofview.tclUNIT (Value.of_constr c)
 
-let define_red1 name tac =
-  let tac x = lift (tac x) in
+let define_red1 name r0 f =
+  let tac x = lift (f (Value.repr_to r0 x)) in
   Tac2env.define_primitive (pname name) (mk_closure arity_one tac)
 
-let define_red2 name tac =
-  let tac x y = lift (tac x y) in
+let define_red2 name r0 r1 f =
+  let tac x y = lift (f (Value.repr_to r0 x) (Value.repr_to r1 y)) in
   Tac2env.define_primitive (pname name) (mk_closure (arity_suc arity_one) tac)
 
-let define_red3 name tac =
-  let tac x y z = lift (tac x y z) in
+let define_red3 name r0 r1 r2 f =
+  let tac x y z = lift (f (Value.repr_to r0 x) (Value.repr_to r1 y) (Value.repr_to r2 z)) in
   Tac2env.define_primitive (pname name) (mk_closure (arity_suc (arity_suc arity_one)) tac)
 
-let () = define_red1 "eval_red" begin fun c ->
-  let c = Value.to_constr c in
+let () = define_red1 "eval_red" constr begin fun c ->
   Tac2tactics.eval_red c
 end
 
-let () = define_red1 "eval_hnf" begin fun c ->
-  let c = Value.to_constr c in
+let () = define_red1 "eval_hnf" constr begin fun c ->
   Tac2tactics.eval_hnf c
 end
 
-let () = define_red3 "eval_simpl" begin fun flags where c ->
-  let flags = to_red_flag flags in
-  let where = Value.to_option to_pattern_with_occs where in
-  let c = Value.to_constr c in
+let () = define_red3 "eval_simpl" red_flags (option pattern_with_occs) constr begin fun flags where c ->
   Tac2tactics.eval_simpl flags where c
 end
 
-let () = define_red2 "eval_cbv" begin fun flags c ->
-  let flags = to_red_flag flags in
-  let c = Value.to_constr c in
+let () = define_red2 "eval_cbv" red_flags constr begin fun flags c ->
   Tac2tactics.eval_cbv flags c
 end
 
-let () = define_red2 "eval_cbn" begin fun flags c ->
-  let flags = to_red_flag flags in
-  let c = Value.to_constr c in
+let () = define_red2 "eval_cbn" red_flags constr begin fun flags c ->
   Tac2tactics.eval_cbn flags c
 end
 
-let () = define_red2 "eval_lazy" begin fun flags c ->
-  let flags = to_red_flag flags in
-  let c = Value.to_constr c in
+let () = define_red2 "eval_lazy" red_flags constr begin fun flags c ->
   Tac2tactics.eval_lazy flags c
 end
 
-let () = define_red2 "eval_unfold" begin fun refs c ->
-  let map v = to_pair Value.to_reference to_occurrences v in
-  let refs = Value.to_list map refs in
-  let c = Value.to_constr c in
+let () = define_red2 "eval_unfold" (list reference_with_occs) constr begin fun refs c ->
   Tac2tactics.eval_unfold refs c
 end
 
-let () = define_red2 "eval_fold" begin fun args c ->
-  let args = Value.to_list Value.to_constr args in
-  let c = Value.to_constr c in
+let () = define_red2 "eval_fold" (list constr) constr begin fun args c ->
   Tac2tactics.eval_fold args c
 end
 
-let () = define_red2 "eval_pattern" begin fun where c ->
-  let where = Value.to_list (fun p -> to_pair Value.to_constr to_occurrences p) where in
-  let c = Value.to_constr c in
+let () = define_red2 "eval_pattern" (list constr_with_occs) constr begin fun where c ->
   Tac2tactics.eval_pattern where c
 end
 
-let () = define_red2 "eval_vm" begin fun where c ->
-  let where = Value.to_option to_pattern_with_occs where in
-  let c = Value.to_constr c in
+let () = define_red2 "eval_vm" (option pattern_with_occs) constr begin fun where c ->
   Tac2tactics.eval_vm where c
 end
 
-let () = define_red2 "eval_native" begin fun where c ->
-  let where = Value.to_option to_pattern_with_occs where in
-  let c = Value.to_constr c in
+let () = define_red2 "eval_native" (option pattern_with_occs) constr begin fun where c ->
   Tac2tactics.eval_native where c
 end
 
-let () = define_prim3 "tac_change" begin fun pat c cl ->
-  let pat = Value.to_option (fun p -> Value.to_pattern p) pat in
-  let c = Value.to_fun1 (array constr) constr c in
-  let cl = to_clause cl in
+let () = define_prim3 "tac_change" (option pattern) (fun1 (array constr) constr) clause begin fun pat c cl ->
   Tac2tactics.change pat c cl
 end
 
-let () = define_prim4 "tac_rewrite" begin fun ev rw cl by ->
-  let ev = Value.to_bool ev in
-  let rw = Value.to_list to_rewriting rw in
-  let cl = to_clause cl in
-  let to_tac t = Proofview.tclIGNORE (thaw t) in
-  let by = Value.to_option to_tac by in
+let () = define_prim4 "tac_rewrite" bool (list rewriting) clause (option (thunk unit)) begin fun ev rw cl by ->
   Tac2tactics.rewrite ev rw cl by
 end
 
-let () = define_prim4 "tac_inversion" begin fun knd arg pat ids ->
-  let knd = to_inversion_kind knd in
-  let arg = to_destruction_arg arg in
-  let pat = Value.to_option to_intro_pattern pat in
-  let ids = Value.to_option (fun l -> Value.to_list Value.to_ident l) ids in
+let () = define_prim4 "tac_inversion" inversion_kind destruction_arg (option intro_pattern) (option (list ident)) begin fun knd arg pat ids ->
   Tac2tactics.inversion knd arg pat ids
 end
 
@@ -495,15 +419,11 @@ end
 
 let () = define_prim0 "tac_reflexivity" Tactics.intros_reflexivity
 
-let () = define_prim2 "tac_move" begin fun id mv ->
-  let id = Value.to_ident id in
-  let mv = to_move_location mv in
+let () = define_prim2 "tac_move" ident move_location begin fun id mv ->
   Tactics.move_hyp id mv
 end
 
-let () = define_prim2 "tac_intro" begin fun id mv ->
-  let id = Value.to_option Value.to_ident id in
-  let mv = Value.to_option to_move_location mv in
+let () = define_prim2 "tac_intro" (option ident) (option move_location) begin fun id mv ->
   let mv = Option.default Misctypes.MoveLast mv in
   Tactics.intro_move id mv
 end
@@ -518,150 +438,112 @@ END
 
 let () = define_prim0 "tac_assumption" Tactics.assumption
 
-let () = define_prim1 "tac_transitivity" begin fun c ->
-  let c = Value.to_constr c in
+let () = define_prim1 "tac_transitivity" constr begin fun c ->
   Tactics.intros_transitivity (Some c)
 end
 
 let () = define_prim0 "tac_etransitivity" (Tactics.intros_transitivity None)
 
-let () = define_prim1 "tac_cut" begin fun c ->
-  let c = Value.to_constr c in
+let () = define_prim1 "tac_cut" constr begin fun c ->
   Tactics.cut c
 end
 
-let () = define_prim2 "tac_left" begin fun ev bnd ->
-  let ev = Value.to_bool ev in
-  let bnd = to_bindings bnd in
+let () = define_prim2 "tac_left" bool bindings begin fun ev bnd ->
   Tac2tactics.left_with_bindings ev bnd
 end
-let () = define_prim2 "tac_right" begin fun ev bnd ->
-  let ev = Value.to_bool ev in
-  let bnd = to_bindings bnd in
+let () = define_prim2 "tac_right" bool bindings begin fun ev bnd ->
   Tac2tactics.right_with_bindings ev bnd
 end
 
-let () = define_prim1 "tac_introsuntil" begin fun h ->
-  Tactics.intros_until (to_qhyp h)
+let () = define_prim1 "tac_introsuntil" qhyp begin fun h ->
+  Tactics.intros_until h
 end
 
-let () = define_prim1 "tac_exactnocheck" begin fun c ->
-  Tactics.exact_no_check (Value.to_constr c)
+let () = define_prim1 "tac_exactnocheck" constr begin fun c ->
+  Tactics.exact_no_check c
 end
 
-let () = define_prim1 "tac_vmcastnocheck" begin fun c ->
-  Tactics.vm_cast_no_check (Value.to_constr c)
+let () = define_prim1 "tac_vmcastnocheck" constr begin fun c ->
+  Tactics.vm_cast_no_check c
 end
 
-let () = define_prim1 "tac_nativecastnocheck" begin fun c ->
-  Tactics.native_cast_no_check (Value.to_constr c)
+let () = define_prim1 "tac_nativecastnocheck" constr begin fun c ->
+  Tactics.native_cast_no_check c
 end
 
-let () = define_prim1 "tac_constructor" begin fun ev ->
-  let ev = Value.to_bool ev in
+let () = define_prim1 "tac_constructor" bool begin fun ev ->
   Tactics.any_constructor ev None
 end
 
-let () = define_prim3 "tac_constructorn" begin fun ev n bnd ->
-  let ev = Value.to_bool ev in
-  let n = Value.to_int n in
-  let bnd = to_bindings bnd in
+let () = define_prim3 "tac_constructorn" bool int bindings begin fun ev n bnd ->
   Tac2tactics.constructor_tac ev None n bnd
 end
 
-let () = define_prim2 "tac_specialize" begin fun c ipat ->
-  let c = to_constr_with_bindings c in
-  let ipat = Value.to_option to_intro_pattern ipat in
+let () = define_prim2 "tac_specialize" constr_with_bindings (option intro_pattern) begin fun c ipat ->
   Tac2tactics.specialize c ipat
 end
 
-let () = define_prim1 "tac_symmetry" begin fun cl ->
-  let cl = to_clause cl in
+let () = define_prim1 "tac_symmetry" clause begin fun cl ->
   Tac2tactics.symmetry cl
 end
 
-let () = define_prim2 "tac_split" begin fun ev bnd ->
-  let ev = Value.to_bool ev in
-  let bnd = to_bindings bnd in
+let () = define_prim2 "tac_split" bool bindings begin fun ev bnd ->
   Tac2tactics.split_with_bindings ev bnd
 end
 
-let () = define_prim1 "tac_rename" begin fun ids ->
-  let map c = match Value.to_tuple c with
-  | [|x; y|] -> (Value.to_ident x, Value.to_ident y)
-  | _ -> assert false
-  in
-  let ids = Value.to_list map ids in
+let () = define_prim1 "tac_rename" (list (pair ident ident)) begin fun ids ->
   Tactics.rename_hyp ids
 end
 
-let () = define_prim1 "tac_revert" begin fun ids ->
-  let ids = Value.to_list Value.to_ident ids in
+let () = define_prim1 "tac_revert" (list ident) begin fun ids ->
   Tactics.revert ids
 end
 
 let () = define_prim0 "tac_admit" Proofview.give_up
 
-let () = define_prim2 "tac_fix" begin fun idopt n ->
-  let idopt = Value.to_option Value.to_ident idopt in
-  let n = Value.to_int n in
+let () = define_prim2 "tac_fix" (option ident) int begin fun idopt n ->
   Tactics.fix idopt n
 end
 
-let () = define_prim1 "tac_cofix" begin fun idopt ->
-  let idopt = Value.to_option Value.to_ident idopt in
+let () = define_prim1 "tac_cofix" (option ident) begin fun idopt ->
   Tactics.cofix idopt
 end
 
-let () = define_prim1 "tac_clear" begin fun ids ->
-  let ids = Value.to_list Value.to_ident ids in
+let () = define_prim1 "tac_clear" (list ident) begin fun ids ->
   Tactics.clear ids
 end
 
-let () = define_prim1 "tac_keep" begin fun ids ->
-  let ids = Value.to_list Value.to_ident ids in
+let () = define_prim1 "tac_keep" (list ident) begin fun ids ->
   Tactics.keep ids
 end
 
-let () = define_prim1 "tac_clearbody" begin fun ids ->
-  let ids = Value.to_list Value.to_ident ids in
+let () = define_prim1 "tac_clearbody" (list ident) begin fun ids ->
   Tactics.clear_body ids
 end
 
 (** Tactics from extratactics *)
 
-let () = define_prim2 "tac_discriminate" begin fun ev arg ->
-  let ev = Value.to_bool ev in
-  let arg = Value.to_option to_destruction_arg arg in
+let () = define_prim2 "tac_discriminate" bool (option destruction_arg) begin fun ev arg ->
   Tac2tactics.discriminate ev arg
 end
 
-let () = define_prim3 "tac_injection" begin fun ev ipat arg ->
-  let ev = Value.to_bool ev in
-  let ipat = Value.to_option to_intro_patterns ipat in
-  let arg = Value.to_option to_destruction_arg arg in
+let () = define_prim3 "tac_injection" bool (option intro_patterns) (option destruction_arg) begin fun ev ipat arg ->
   Tac2tactics.injection ev ipat arg
 end
 
-let () = define_prim1 "tac_absurd" begin fun c ->
-  Contradiction.absurd (Value.to_constr c)
+let () = define_prim1 "tac_absurd" constr begin fun c ->
+  Contradiction.absurd c
 end
 
-let () = define_prim1 "tac_contradiction" begin fun c ->
-  let c = Value.to_option to_constr_with_bindings c in
+let () = define_prim1 "tac_contradiction" (option constr_with_bindings) begin fun c ->
   Tac2tactics.contradiction c
 end
 
-let () = define_prim4 "tac_autorewrite" begin fun all by ids cl ->
-  let all = Value.to_bool all in
-  let by = Value.to_option (fun tac -> Proofview.tclIGNORE (thaw tac)) by in
-  let ids = Value.to_list Value.to_ident ids in
-  let cl = to_clause cl in
+let () = define_prim4 "tac_autorewrite" bool (option (thunk unit)) (list ident) clause begin fun all by ids cl ->
   Tac2tactics.autorewrite ~all by ids cl
 end
 
-let () = define_prim1 "tac_subst" begin fun ids ->
-  let ids = Value.to_list Value.to_ident ids in
+let () = define_prim1 "tac_subst" (list ident) begin fun ids ->
   Equality.subst ids
 end
 
@@ -669,54 +551,28 @@ let () = define_prim0 "tac_substall" (return () >>= fun () -> Equality.subst_all
 
 (** Auto *)
 
-let () = define_prim3 "tac_trivial" begin fun dbg lems dbs ->
-  let dbg = to_debug dbg in
-  let map c = thaw c >>= fun c -> return (Value.to_constr c) in
-  let lems = Value.to_list map lems in
-  let dbs = Value.to_option (fun l -> Value.to_list Value.to_ident l) dbs in
+let () = define_prim3 "tac_trivial" debug (list (thunk constr)) (option (list ident)) begin fun dbg lems dbs ->
   Tac2tactics.trivial dbg lems dbs
 end
 
-let () = define_prim5 "tac_eauto" begin fun dbg n p lems dbs ->
-  let dbg = to_debug dbg in
-  let n = Value.to_option Value.to_int n in
-  let p = Value.to_option Value.to_int p in
-  let map c = thaw c >>= fun c -> return (Value.to_constr c) in
-  let lems = Value.to_list map lems in
-  let dbs = Value.to_option (fun l -> Value.to_list Value.to_ident l) dbs in
+let () = define_prim5 "tac_eauto" debug (option int) (option int) (list (thunk constr)) (option (list ident)) begin fun dbg n p lems dbs ->
   Tac2tactics.eauto dbg n p lems dbs
 end
 
-let () = define_prim4 "tac_auto" begin fun dbg n lems dbs ->
-  let dbg = to_debug dbg in
-  let n = Value.to_option Value.to_int n in
-  let map c = thaw c >>= fun c -> return (Value.to_constr c) in
-  let lems = Value.to_list map lems in
-  let dbs = Value.to_option (fun l -> Value.to_list Value.to_ident l) dbs in
+let () = define_prim4 "tac_auto" debug (option int) (list (thunk constr)) (option (list ident)) begin fun dbg n lems dbs ->
   Tac2tactics.auto dbg n lems dbs
 end
 
-let () = define_prim4 "tac_newauto" begin fun dbg n lems dbs ->
-  let dbg = to_debug dbg in
-  let n = Value.to_option Value.to_int n in
-  let map c = thaw c >>= fun c -> return (Value.to_constr c) in
-  let lems = Value.to_list map lems in
-  let dbs = Value.to_option (fun l -> Value.to_list Value.to_ident l) dbs in
+let () = define_prim4 "tac_newauto" debug (option int) (list (thunk constr)) (option (list ident)) begin fun dbg n lems dbs ->
   Tac2tactics.new_auto dbg n lems dbs
 end
 
-let () = define_prim3 "tac_typeclasses_eauto" begin fun str n dbs ->
-  let str = Value.to_option to_strategy str in
-  let n = Value.to_option Value.to_int n in
-  let dbs = Value.to_option (fun l -> Value.to_list Value.to_ident l) dbs in
+let () = define_prim3 "tac_typeclasses_eauto" (option strategy) (option int) (option (list ident)) begin fun str n dbs ->
   Tac2tactics.typeclasses_eauto str n dbs
 end
 
 (** Firstorder *)
 
-let () = define_prim3 "tac_firstorder" begin fun tac refs ids ->
-  let tac = Value.to_option (fun t -> Proofview.tclIGNORE (thaw t)) tac in
-  let refs = Value.to_list Value.to_reference refs in
-  let ids = Value.to_list Value.to_ident ids in
+let () = define_prim3 "tac_firstorder" (option (thunk unit)) (list reference) (list ident) begin fun tac refs ids ->
   Tac2tactics.firstorder tac refs ids
 end

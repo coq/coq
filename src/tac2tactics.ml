@@ -11,6 +11,7 @@ open Util
 open Names
 open Globnames
 open Tac2types
+open Tac2extffi
 open Genredexpr
 open Proofview.Notations
 
@@ -92,7 +93,7 @@ let intros_patterns ev ipat =
 
 let apply adv ev cb cl =
   let map c =
-    let c = c >>= fun c -> return (mk_with_bindings c) in
+    let c = thaw constr_with_bindings c >>= fun p -> return (mk_with_bindings p) in
     None, Loc.tag (delayed_of_tactic c)
   in
   let cb = List.map map cb in
@@ -174,7 +175,7 @@ let rewrite ev rw cl by =
   in
   let rw = List.map map_rw rw in
   let cl = mk_clause cl in
-  let by = Option.map (fun tac -> Tacticals.New.tclCOMPLETE tac, Equality.Naive) by in
+  let by = Option.map (fun tac -> Tacticals.New.tclCOMPLETE (thaw Tac2ffi.unit tac), Equality.Naive) by in
   Equality.general_multi_rewrite ev rw cl by
 
 let symmetry cl =
@@ -369,23 +370,25 @@ let autorewrite ~all by ids cl =
   let cl = mk_clause cl in
   match by with
   | None -> Autorewrite.auto_multi_rewrite ?conds ids cl
-  | Some by -> Autorewrite.auto_multi_rewrite_with ?conds by ids cl
+  | Some by ->
+    let by = thaw Tac2ffi.unit by in
+    Autorewrite.auto_multi_rewrite_with ?conds by ids cl
 
 (** Auto *)
 
 let trivial debug lems dbs =
-  let lems = List.map delayed_of_tactic lems in
+  let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
   let dbs = Option.map (fun l -> List.map Id.to_string l) dbs in
   Auto.h_trivial ~debug lems dbs
 
 let auto debug n lems dbs =
-  let lems = List.map delayed_of_tactic lems in
+  let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
   let dbs = Option.map (fun l -> List.map Id.to_string l) dbs in
   Auto.h_auto ~debug n lems dbs
 
 let new_auto debug n lems dbs =
   let make_depth n = snd (Eauto.make_dimension n None) in
-  let lems = List.map delayed_of_tactic lems in
+  let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
   match dbs with
   | None -> Auto.new_full_auto ~debug (make_depth n) lems
   | Some dbs ->
@@ -393,7 +396,7 @@ let new_auto debug n lems dbs =
     Auto.new_auto ~debug (make_depth n) lems dbs
 
 let eauto debug n p lems dbs =
-  let lems = List.map delayed_of_tactic lems in
+  let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
   let dbs = Option.map (fun l -> List.map Id.to_string l) dbs in
   Eauto.gen_eauto (Eauto.make_dimension n p) lems dbs
 
@@ -447,6 +450,7 @@ let firstorder tac refs ids =
   let open Ground_plugin in
   (** FUCK YOU API *)
   let ids = List.map Id.to_string ids in
+  let tac = Option.map (fun tac -> thaw Tac2ffi.unit tac) tac in
   let tac : unit API.Proofview.tactic option = Obj.magic (tac : unit Proofview.tactic option) in
   let refs : API.Globnames.global_reference list = Obj.magic (refs : Globnames.global_reference list) in
   let ids : API.Hints.hint_db_name list = Obj.magic (ids : Hints.hint_db_name list) in
