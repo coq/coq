@@ -467,9 +467,9 @@ val make_abstract_instance : abstract_universe_context -> universe_instance
 val pr_constraint_type : constraint_type -> Pp.t
 val pr_constraints : (Level.t -> Pp.t) -> constraints -> Pp.t
 val pr_universe_context : (Level.t -> Pp.t) -> universe_context -> Pp.t
-val pr_cumulativity_info : (Level.t -> Pp.t) -> cumulativity_info -> Pp.t
+val pr_cumulativity_info : (Level.t -> Pp.t) -> Names.Id.t -> cumulativity_info -> Pp.t
 val pr_abstract_universe_context : (Level.t -> Pp.t) -> abstract_universe_context -> Pp.t
-val pr_abstract_cumulativity_info : (Level.t -> Pp.t) -> abstract_cumulativity_info -> Pp.t
+val pr_abstract_cumulativity_info : (Level.t -> Pp.t) -> Names.Id.t -> abstract_cumulativity_info -> Pp.t
 val pr_universe_context_set : (Level.t -> Pp.t) -> universe_context_set -> Pp.t
 val explain_universe_inconsistency : (Level.t -> Pp.t) -> 
   univ_inconsistency -> Pp.t

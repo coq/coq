@@ -266,11 +266,11 @@ let pr_universe_ctx sigma c =
   else
     mt()
 
-let pr_cumulativity_info sigma cumi =
+let pr_cumulativity_info sigma id cumi =
   if !Detyping.print_universes 
   && not (Univ.UContext.is_empty (Univ.CumulativityInfo.univ_context cumi)) then
     fnl()++pr_in_comment (fun uii -> v 0 
-      (Univ.pr_cumulativity_info (Termops.pr_evd_level sigma) uii)) cumi
+      (Univ.pr_cumulativity_info (Termops.pr_evd_level sigma) id uii)) cumi
   else
     mt()
 

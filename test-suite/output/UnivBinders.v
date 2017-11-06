@@ -11,3 +11,7 @@ Print bar.
    order of appearance. *)
 Definition foo@{u +} := Type -> Type@{v} -> Type@{u}.
 Print foo.
+
+Cumulative Record TypBox@{i} := { unbox : Type@{i} }.
+
+Print TypBox.
