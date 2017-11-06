@@ -10,6 +10,7 @@ open CErrors
 open Util
 open Names
 open Term
+open Constr
 open Termops
 open Environ
 open EConstr
@@ -49,7 +50,7 @@ let _ = Goptions.declare_bool_option {
 let impossible_default_case () =
   let c, ctx = Universes.fresh_global_instance (Global.env()) (Globnames.ConstRef Coqlib.id) in
   let (_, u) = Term.destConst c in
-  Some (c, Term.mkConstU (Coqlib.type_of_id, u), ctx)
+  Some (c, Constr.mkConstU (Coqlib.type_of_id, u), ctx)
 
 let coq_unit_judge =
   let open Environ in
@@ -175,7 +176,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
       | Sort s ->
         let s = ESorts.kind sigma s in
 	lookup_canonical_conversion
-	  (proji, Sort_cs (family_of_sort s)),[]
+	  (proji, Sort_cs (Sorts.family s)),[]
       | Proj (p, c) ->
         let c2 = Globnames.ConstRef (Projection.constant p) in
         let c = Retyping.expand_projection env sigma p c [] in

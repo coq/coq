@@ -20,7 +20,7 @@ type contents = Sorts.contents = Pos | Null
 
 type sorts = Sorts.t =
   | Prop of contents       (** Prop and Set *)
-  | Type of Univ.universe  (** Type *)
+  | Type of Univ.Universe.t  (** Type *)
 
 type sorts_family = Sorts.family = InProp | InSet | InType
 

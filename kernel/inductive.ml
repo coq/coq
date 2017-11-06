@@ -10,7 +10,7 @@ open CErrors
 open Util
 open Names
 open Univ
-open Term
+open Constr
 open Vars
 open Declarations
 open Declareops
@@ -29,21 +29,21 @@ let lookup_mind_specif env (kn,tyi) =
   (mib, mib.mind_packets.(tyi))
 
 let find_rectype env c =
-  let (t, l) = decompose_app (whd_all env c) in
-  match kind_of_term t with
+  let (t, l) = Term.decompose_app (whd_all env c) in
+  match kind t with
   | Ind ind -> (ind, l)
   | _ -> raise Not_found
 
 let find_inductive env c =
-  let (t, l) = decompose_app (whd_all env c) in
-  match kind_of_term t with
+  let (t, l) = Term.decompose_app (whd_all env c) in
+  match kind t with
     | Ind ind
         when (fst (lookup_mind_specif env (out_punivs ind))).mind_finite <> Decl_kinds.CoFinite -> (ind, l)
     | _ -> raise Not_found
 
 let find_coinductive env c =
-  let (t, l) = decompose_app (whd_all env c) in
-  match kind_of_term t with
+  let (t, l) = Term.decompose_app (whd_all env c) in
+  match kind t with
     | Ind ind
         when (fst (lookup_mind_specif env (out_punivs ind))).mind_finite == Decl_kinds.CoFinite -> (ind, l)
     | _ -> raise Not_found
@@ -81,7 +81,7 @@ let instantiate_params full t u args sign =
   let (rem_args, subs, ty) =
     Context.Rel.fold_outside
       (fun decl (largs,subs,ty) ->
-        match (decl, largs, kind_of_term ty) with
+        match (decl, largs, kind ty) with
           | (LocalAssum _, a::args, Prod(_,_,t)) -> (args, a::subs, t)
           | (LocalDef (_,b,_), _, LetIn(_,_,_,t))    ->
 	     (largs, (substl subs (subst_instance_constr u b))::subs, t)
@@ -94,9 +94,9 @@ let instantiate_params full t u args sign =
   substl subs ty
 
 let full_inductive_instantiate mib u params sign =
-  let dummy = prop_sort in
-  let t = mkArity (Vars.subst_instance_context u sign,dummy) in
-    fst (destArity (instantiate_params true t u params mib.mind_params_ctxt))
+  let dummy = Sorts.prop in
+  let t = Term.mkArity (Vars.subst_instance_context u sign,dummy) in
+    fst (Term.destArity (instantiate_params true t u params mib.mind_params_ctxt))
 
 let full_constructor_instantiate ((mind,_),u,(mib,_),params) t =
   let inst_ind = constructor_instantiate mind u mib t in
@@ -128,7 +128,7 @@ where
 Remark: Set (predicative) is encoded as Type(0)
 *)
 
-let sort_as_univ = function
+let sort_as_univ = let open Sorts in function
 | Type u -> u
 | Prop Null -> Universe.type0m
 | Prop Pos -> Universe.type0
@@ -192,11 +192,11 @@ let instantiate_universes env ctx ar argsorts =
   let level = Univ.subst_univs_universe (Univ.make_subst subst) ar.template_level in
   let ty =
     (* Singleton type not containing types are interpretable in Prop *)
-    if is_type0m_univ level then prop_sort
+    if is_type0m_univ level then Sorts.prop
     (* Non singleton type not containing types are interpretable in Set *)
-    else if is_type0_univ level then set_sort
+    else if is_type0_univ level then Sorts.set
     (* This is a Type with constraints *)
-    else Type level
+    else Sorts.Type level
   in
     (ctx, ty)
 
@@ -211,9 +211,9 @@ let type_of_inductive_gen ?(polyprop=true) env ((mib,mip),u) paramtyps =
       (* The Ocaml extraction cannot handle (yet?) "Prop-polymorphism", i.e.
          the situation where a non-Prop singleton inductive becomes Prop
          when applied to Prop params *)
-      if not polyprop && not (is_type0m_univ ar.template_level) && is_prop_sort s
+      if not polyprop && not (is_type0m_univ ar.template_level) && Sorts.is_prop s
       then raise (SingletonInductiveBecomesProp mip.mind_typename);
-      mkArity (List.rev ctx,s)
+      Term.mkArity (List.rev ctx,s)
 
 let type_of_inductive env pind = 
   type_of_inductive_gen env pind [||]
@@ -233,7 +233,7 @@ let type_of_inductive_knowing_parameters env ?(polyprop=true) mip args =
 
 (* The max of an array of universes *)
 
-let cumulate_constructor_univ u = function
+let cumulate_constructor_univ u = let open Sorts in function
   | Prop Null -> u
   | Prop Pos -> Universe.sup Universe.type0 u
   | Type u' -> Universe.sup u u'
@@ -276,8 +276,8 @@ let type_of_constructors (ind,u) (mib,mip) =
 
 let inductive_sort_family mip =
   match mip.mind_arity with
-  | RegularArity s -> family_of_sort s.mind_sort
-  | TemplateArity _ -> InType
+  | RegularArity s -> Sorts.family s.mind_sort
+  | TemplateArity _ -> Sorts.InType
 
 let mind_arity mip =
   mip.mind_arity_ctxt, inductive_sort_family mip
@@ -296,19 +296,20 @@ let is_primitive_record (mib,_) =
 
 let build_dependent_inductive ind (_,mip) params =
   let realargs,_ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
-  applist
+  Term.applist
     (mkIndU ind,
        List.map (lift mip.mind_nrealdecls) params
        @ Context.Rel.to_extended_list mkRel 0 realargs)
 
 (* This exception is local *)
-exception LocalArity of (sorts_family * sorts_family * arity_error) option
+exception LocalArity of (Sorts.family * Sorts.family * arity_error) option
 
 let check_allowed_sort ksort specif =
+  let open Sorts in
   let eq_ksort s = match ksort, s with
   | InProp, InProp | InSet, InSet | InType, InType -> true
   | _ -> false in
-  if not (List.exists eq_ksort (elim_sorts specif)) then
+  if not (CList.exists eq_ksort (elim_sorts specif)) then
     let s = inductive_sort_family (snd specif) in
     raise (LocalArity (Some(ksort,s,error_elim_explain ksort s)))
 
@@ -316,7 +317,7 @@ let is_correct_arity env c pj ind specif params =
   let arsign,_ = get_instantiated_arity ind specif params in
   let rec srec env pt ar =
     let pt' = whd_all env pt in
-    match kind_of_term pt', ar with
+    match kind pt', ar with
       | Prod (na1,a1,t), (LocalAssum (_,a1'))::ar' ->
           let () =
             try conv env a1 a1'
@@ -325,8 +326,8 @@ let is_correct_arity env c pj ind specif params =
       (* The last Prod domain is the type of the scrutinee *)
       | Prod (na1,a1,a2), [] -> (* whnf of t was not needed here! *)
 	 let env' = push_rel (LocalAssum (na1,a1)) env in
-	 let ksort = match kind_of_term (whd_all env' a2) with
-	 | Sort s -> family_of_sort s
+	 let ksort = match kind (whd_all env' a2) with
+	 | Sort s -> Sorts.family s
 	 | _ -> raise (LocalArity None) in
 	 let dep_ind = build_dependent_inductive ind specif params in
 	 let _ =
@@ -351,22 +352,22 @@ let is_correct_arity env c pj ind specif params =
 let build_branches_type (ind,u) (_,mip as specif) params p =
   let build_one_branch i cty =
     let typi = full_constructor_instantiate (ind,u,specif,params) cty in
-    let (cstrsign,ccl) = decompose_prod_assum typi in
+    let (cstrsign,ccl) = Term.decompose_prod_assum typi in
     let nargs = Context.Rel.length cstrsign in
-    let (_,allargs) = decompose_app ccl in
+    let (_,allargs) = Term.decompose_app ccl in
     let (lparams,vargs) = List.chop (inductive_params specif) allargs in
     let cargs =
       let cstr = ith_constructor_of_inductive ind (i+1) in
-      let dep_cstr = applist (mkConstructU (cstr,u),lparams@(Context.Rel.to_extended_list mkRel 0 cstrsign)) in
+      let dep_cstr = Term.applist (mkConstructU (cstr,u),lparams@(Context.Rel.to_extended_list mkRel 0 cstrsign)) in
       vargs @ [dep_cstr] in
-    let base = lambda_appvect_assum (mip.mind_nrealdecls+1) (lift nargs p) (Array.of_list cargs) in
-    it_mkProd_or_LetIn base cstrsign in
+    let base = Term.lambda_appvect_assum (mip.mind_nrealdecls+1) (lift nargs p) (Array.of_list cargs) in
+    Term.it_mkProd_or_LetIn base cstrsign in
   Array.mapi build_one_branch mip.mind_nf_lc
 
 (* [p] is the predicate, [c] is the match object, [realargs] is the
    list of real args of the inductive type *)
 let build_case_type env n p c realargs =
-  whd_betaiota env (lambda_appvect_assum (n+1) p (Array.of_list (realargs@[c])))
+  whd_betaiota env (Term.lambda_appvect_assum (n+1) p (Array.of_list (realargs@[c])))
 
 let type_case_branches env (pind,largs) pj c =
   let specif = lookup_mind_specif env (fst pind) in
@@ -565,8 +566,8 @@ let check_inductive_codomain env p =
   let env = push_rel_context absctx env in
   let arctx, s = dest_prod_assum env ar in
   let env = push_rel_context arctx env in
-  let i,l' = decompose_app (whd_all env s) in
-  isInd i
+  let i,l' = Term.decompose_app (whd_all env s) in
+  Term.isInd i
 
 (* The following functions are almost duplicated from indtypes.ml, except
 that they carry here a poorer environment (containing less information). *)
@@ -589,7 +590,7 @@ let ienv_push_inductive (env, ra_env) ((mind,u),lpar) =
 let rec ienv_decompose_prod (env,_ as ienv) n c =
  if Int.equal n 0 then (ienv,c) else
    let c' = whd_all env c in
-   match kind_of_term c' with
+   match kind c' with
    Prod(na,a,b) ->
      let ienv' = ienv_push_var ienv (na,a,mk_norec) in
      ienv_decompose_prod ienv' (n-1) b
@@ -620,8 +621,8 @@ close to check_positive in indtypes.ml, but does no positivity check and does no
 compute the number of recursive arguments. *)
 let get_recargs_approx env tree ind args =
   let rec build_recargs (env, ra_env as ienv) tree c =
-    let x,largs = decompose_app (whd_all env c) in
-    match kind_of_term x with
+    let x,largs = Term.decompose_app (whd_all env c) in
+    match kind x with
     | Prod (na,b,d) ->
        assert (List.is_empty largs);
        build_recargs (ienv_push_var ienv (na, b, mk_norec)) tree d
@@ -679,8 +680,8 @@ let get_recargs_approx env tree ind args =
 
   and build_recargs_constructors ienv trees c =
     let rec recargs_constr_rec (env,ra_env as ienv) trees lrec c =
-      let x,largs = decompose_app (whd_all env c) in
-	match kind_of_term x with
+      let x,largs = Term.decompose_app (whd_all env c) in
+	match kind x with
 
           | Prod (na,b,d) ->
 	     let () = assert (List.is_empty largs) in
@@ -708,8 +709,8 @@ let restrict_spec env spec p =
   let env = push_rel_context absctx env in
   let arctx, s = dest_prod_assum env ar in
   let env = push_rel_context arctx env in
-  let i,args = decompose_app (whd_all env s) in
-  match kind_of_term i with
+  let i,args = Term.decompose_app (whd_all env s) in
+  match kind i with
   | Ind i ->
      begin match spec with
 	   | Dead_code -> spec
@@ -729,8 +730,8 @@ let restrict_spec env spec p =
 
 let rec subterm_specif renv stack t =
   (* maybe reduction is not always necessary! *)
-  let f,l = decompose_app (whd_all renv.env t) in
-    match kind_of_term f with
+  let f,l = Term.decompose_app (whd_all renv.env t) in
+    match kind f with
     | Rel k -> subterm_var k renv
     | Case (ci,p,c,lbr) ->
        let stack' = push_stack_closures renv l stack in
@@ -773,7 +774,7 @@ let rec subterm_specif renv stack t =
 	let decrArg = recindxs.(i) in
 	let theBody = bodies.(i)   in
 	let nbOfAbst = decrArg+1 in
-	let sign,strippedBody = decompose_lam_n_assum nbOfAbst theBody in
+	let sign,strippedBody = Term.decompose_lam_n_assum nbOfAbst theBody in
 		   (* pushing the fix parameters *)
 	let stack' = push_stack_closures renv l stack in
 	let renv'' = push_ctxt_renv renv' sign in
@@ -857,13 +858,13 @@ let filter_stack_domain env ci p stack =
   else let env = push_rel_context absctx env in
   let rec filter_stack env ar stack =
     let t = whd_all env ar in
-    match stack, kind_of_term t with
+    match stack, kind t with
     | elt :: stack', Prod (n,a,c0) ->
       let d = LocalAssum (n,a) in
       let ctx, a = dest_prod_assum env a in
       let env = push_rel_context ctx env in
-      let ty, args = decompose_app (whd_all env a) in
-      let elt = match kind_of_term ty with
+      let ty, args = Term.decompose_app (whd_all env a) in
+      let elt = match kind ty with
       | Ind ind -> 
         let spec' = stack_element_specif elt in
         (match (Lazy.force spec') with
@@ -893,8 +894,8 @@ let check_one_fix renv recpos trees def =
     (* if [t] does not make recursive calls, it is guarded: *)
     if noccur_with_meta renv.rel_min nfi t then ()
     else
-      let (f,l) = decompose_app (whd_betaiotazeta renv.env t) in
-      match kind_of_term f with
+      let (f,l) = Term.decompose_app (whd_betaiotazeta renv.env t) in
+      match kind f with
         | Rel p ->
             (* Test if [p] is a fixpoint (recursive call) *)
 	    if renv.rel_min <= p && p < renv.rel_min+nfi then
@@ -924,7 +925,7 @@ let check_one_fix renv recpos trees def =
                 | LocalDef (_,c,_) ->
                     try List.iter (check_rec_call renv []) l
                     with FixGuardError _ ->
-                      check_rec_call renv stack (applist(lift p c,l))
+                      check_rec_call renv stack (Term.applist(lift p c,l))
               end
 		
         | Case (ci,p,c_0,lrest) ->
@@ -970,7 +971,7 @@ let check_one_fix renv recpos trees def =
             if evaluable_constant kn renv.env then
               try List.iter (check_rec_call renv []) l
               with (FixGuardError _ ) ->
-		let value = (applist(constant_value_in renv.env cu, l)) in
+		let value = (Term.applist(constant_value_in renv.env cu, l)) in
 	        check_rec_call renv stack value
 	    else List.iter (check_rec_call renv []) l
 
@@ -1007,7 +1008,7 @@ let check_one_fix renv recpos trees def =
               | LocalDef (_,c,_) ->
                   try List.iter (check_rec_call renv []) l
                   with (FixGuardError _) -> 
-		    check_rec_call renv stack (applist(c,l))
+		    check_rec_call renv stack (Term.applist(c,l))
             end
 
 	| Sort _ ->
@@ -1022,7 +1023,7 @@ let check_one_fix renv recpos trees def =
     if Int.equal decr 0 then
       check_rec_call (assign_var_spec renv (1,recArgsDecrArg)) [] body
     else
-      match kind_of_term body with
+      match kind body with
 	| Lambda (x,a,b) ->
 	    check_rec_call renv [] a;
             let renv' = push_var_renv renv (x,a) in
@@ -1053,7 +1054,7 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
     (* check fi does not appear in the k+1 first abstractions,
        gives the type of the k+1-eme abstraction (must be an inductive)  *)
     let rec check_occur env n def =
-      match kind_of_term (whd_all env def) with
+      match kind (whd_all env def) with
         | Lambda (x,a,b) ->
 	    if noccur_with_meta n nbfix a then
 	      let env' = push_rel (LocalAssum (x,a)) env in
@@ -1108,7 +1109,7 @@ let anomaly_ill_typed () =
 
 let rec codomain_is_coind env c =
   let b = whd_all env c in
-  match kind_of_term b with
+  match kind b with
     | Prod (x,a,b) ->
 	codomain_is_coind (push_rel (LocalAssum (x,a)) env) b
     | _ ->
@@ -1119,8 +1120,8 @@ let rec codomain_is_coind env c =
 let check_one_cofix env nbfix def deftype =
   let rec check_rec_call env alreadygrd n tree vlra  t =
     if not (noccur_with_meta n nbfix t) then
-      let c,args = decompose_app (whd_all env t) in
-      match kind_of_term c with
+      let c,args = Term.decompose_app (whd_all env t) in
+      match kind c with
 	| Rel p when  n <= p && p < n+nbfix ->
 	    (* recursive call: must be guarded and no nested recursive
                call allowed *)

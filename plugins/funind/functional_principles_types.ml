@@ -2,6 +2,7 @@ open Printer
 open CErrors
 open Util
 open Term
+open Constr
 open Vars
 open Namegen
 open Names
@@ -80,7 +81,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let is_pte =
     let set = List.fold_right Id.Set.add ptes_vars Id.Set.empty in
     fun t ->
-      match kind_of_term t with
+      match Constr.kind t with
 	| Var id -> Id.Set.mem id set
 	| _ -> false
   in
@@ -100,13 +101,13 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let pre_princ = EConstr.Unsafe.to_constr pre_princ in
   let pre_princ = substl (List.map mkVar ptes_vars) pre_princ in
   let is_dom c =
-    match kind_of_term c with
+    match Constr.kind c with
       | Ind((u,_),_) -> MutInd.equal u rel_as_kn
       | Construct(((u,_),_),_) -> MutInd.equal u rel_as_kn
       | _ -> false
   in
   let get_fun_num c =
-    match kind_of_term c with
+    match Constr.kind c with
       | Ind((_,num),_) -> num
       | Construct(((_,num),_),_) -> num
       | _ -> assert false
@@ -119,7 +120,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   in
   let rec compute_new_princ_type remove env pre_princ : types*(constr list) =
     let (new_princ_type,_) as res =
-      match kind_of_term pre_princ with
+      match Constr.kind pre_princ with
 	| Rel n ->
 	    begin
 	      try match Environ.lookup_rel n env with
@@ -149,12 +150,12 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	    in
 	    let new_f,binders_to_remove_from_f = compute_new_princ_type remove env f in
 	    applistc new_f new_args,
-	    list_union_eq eq_constr binders_to_remove_from_f binders_to_remove
+	    list_union_eq Constr.equal binders_to_remove_from_f binders_to_remove
 	| LetIn(x,v,t,b) ->
 	    compute_new_princ_type_for_letin remove env x v t b
 	| _ -> pre_princ,[]
     in
-(*     let _ = match kind_of_term pre_princ with *)
+(*     let _ = match Constr.kind pre_princ with *)
 (* 	| Prod _ -> *)
 (* 	    observe(str "compute_new_princ_type for "++ *)
 (* 	      pr_lconstr_env env pre_princ ++ *)
@@ -170,13 +171,13 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	let new_x : Name.t = get_name (Termops.ids_of_context env) x in
 	let new_env = Environ.push_rel (LocalAssum (x,t)) env in
 	let new_b,binders_to_remove_from_b = compute_new_princ_type remove new_env b in
-	 if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b
-	 then (pop new_b), filter_map (eq_constr (mkRel 1)) pop binders_to_remove_from_b
+	 if List.exists (Constr.equal (mkRel 1)) binders_to_remove_from_b
+	 then (pop new_b), filter_map (Constr.equal (mkRel 1)) pop binders_to_remove_from_b
 	 else
 	   (
 	     bind_fun(new_x,new_t,new_b),
 	     list_union_eq
-	       eq_constr
+	       Constr.equal
 	       binders_to_remove_from_t
 	       (List.map pop binders_to_remove_from_b)
 	   )
@@ -189,7 +190,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	| Toberemoved_with_rel (n,c) ->
 (* 	    observe (str "Decl of "++Ppconstr.Name.print x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [c] n b)  in
-	    new_b, list_add_set_eq eq_constr (mkRel n) (List.map pop binders_to_remove_from_b)
+	    new_b, list_add_set_eq Constr.equal (mkRel n) (List.map pop binders_to_remove_from_b)
     end
   and compute_new_princ_type_for_letin remove env x v t b =
     begin
@@ -199,14 +200,14 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	let new_x : Name.t = get_name (Termops.ids_of_context env) x in
 	let new_env = Environ.push_rel (LocalDef (x,v,t)) env in
 	let new_b,binders_to_remove_from_b = compute_new_princ_type remove new_env b in
-	if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b
-	then (pop new_b),filter_map (eq_constr (mkRel 1)) pop binders_to_remove_from_b
+	if List.exists (Constr.equal (mkRel 1)) binders_to_remove_from_b
+	then (pop new_b),filter_map (Constr.equal (mkRel 1)) pop binders_to_remove_from_b
 	else
 	  (
 	    mkLetIn(new_x,new_v,new_t,new_b),
 	    list_union_eq
-	      eq_constr
-	      (list_union_eq eq_constr binders_to_remove_from_t binders_to_remove_from_v)
+	      Constr.equal
+	      (list_union_eq Constr.equal binders_to_remove_from_t binders_to_remove_from_v)
 	      (List.map pop binders_to_remove_from_b)
 	  )
 
@@ -218,12 +219,12 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	| Toberemoved_with_rel (n,c) ->
 (* 	    observe (str "Decl of "++Ppconstr.Name.print x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [c] n b)  in
-	    new_b, list_add_set_eq eq_constr (mkRel n) (List.map pop binders_to_remove_from_b)
+	    new_b, list_add_set_eq Constr.equal (mkRel n) (List.map pop binders_to_remove_from_b)
     end
   and  compute_new_princ_type_with_acc remove env e (c_acc,to_remove_acc)  =
     let new_e,to_remove_from_e = compute_new_princ_type remove env e
     in
-    new_e::c_acc,list_union_eq eq_constr to_remove_from_e to_remove_acc
+    new_e::c_acc,list_union_eq Constr.equal to_remove_from_e to_remove_acc
   in
 (*   observe (str "Computing new principe from " ++ pr_lconstr_env  env_with_params_and_predicates pre_princ); *)
   let pre_res,_ =
@@ -329,7 +330,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
       | Some (id) -> id,id
       | None ->
 	  let id_of_f = Label.to_id (Constant.label (fst f)) in
-	  id_of_f,Indrec.make_elimination_ident id_of_f (family_of_sort type_sort)
+	  id_of_f,Indrec.make_elimination_ident id_of_f (Sorts.family type_sort)
   in
   let names = ref [new_princ_name] in
   let hook =
@@ -389,7 +390,7 @@ exception Not_Rec
 
 let get_funs_constant mp dp =
   let get_funs_constant const e : (Names.Constant.t*int) array =
-    match kind_of_term ((strip_lam e)) with
+    match Constr.kind ((strip_lam e)) with
       | Fix((_,(na,_,_))) ->
 	  Array.mapi
 	    (fun i na ->
@@ -430,7 +431,7 @@ let get_funs_constant mp dp =
       let first_params = List.hd l_params  in
       List.iter
 	(fun params ->
-	   if not (List.equal (fun (n1, c1) (n2, c2) -> Name.equal n1 n2 && eq_constr c1 c2) first_params params)
+	   if not (List.equal (fun (n1, c1) (n2, c2) -> Name.equal n1 n2 && Constr.equal c1 c2) first_params params)
 	   then user_err Pp.(str "Not a mutal recursive block")
 	)
 	l_params
@@ -439,7 +440,7 @@ let get_funs_constant mp dp =
     let _check_bodies =
       try
 	let extract_info is_first body =
-	  match kind_of_term body with
+	  match Constr.kind body with
 	    | Fix((idxs,_),(na,ta,ca)) -> (idxs,na,ta,ca)
 	    | _ ->
 		if is_first && Int.equal (List.length l_bodies) 1
@@ -450,7 +451,7 @@ let get_funs_constant mp dp =
 	let check body  = (* Hope this is correct *)
 	  let eq_infos (ia1, na1, ta1, ca1) (ia2, na2, ta2, ca2) =
             Array.equal Int.equal ia1 ia2 && Array.equal Name.equal na1 na2 &&
-            Array.equal eq_constr ta1 ta2 && Array.equal eq_constr ca1 ca2
+            Array.equal Constr.equal ta1 ta2 && Array.equal Constr.equal ca1 ca2
 	  in
 	  if not (eq_infos first_infos (extract_info false body))
 	  then  user_err Pp.(str "Not a mutal recursive block")
@@ -574,7 +575,7 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
 		let t =  (strip_prod_assum t) in
 		let applied_g = List.hd (List.rev (snd (decompose_app t))) in
 		let g = fst (decompose_app applied_g) in
-		if eq_constr f g
+		if Constr.equal f g
 		then raise (Found_type j);
 		observe (Printer.pr_lconstr f ++ str " <> " ++
 			   Printer.pr_lconstr g)

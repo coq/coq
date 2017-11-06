@@ -12,10 +12,11 @@
 (* This module checks subtyping of module types *)
 
 (*i*)
-open Util
 open Names
 open Univ
+open Util
 open Term
+open Constr
 open Declarations
 open Declareops
 open Reduction
@@ -77,7 +78,7 @@ let make_labmap mp list =
     | SFBmodule mb -> { map with mods = Label.Map.add l (Module mb) map.mods }
     | SFBmodtype mtb -> { map with mods = Label.Map.add l (Modtype mtb) map.mods }
   in
-  List.fold_right add_one list empty_labmap
+  CList.fold_right add_one list empty_labmap
 
 
 let check_conv_error error why cst poly f env a1 a2 =
@@ -153,7 +154,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
     let (ctx2,s2) = dest_arity env t2 in
     let s1,s2 =
       match s1, s2 with
-      | Type _, Type _ -> (* shortcut here *) prop_sort, prop_sort
+      | Type _, Type _ -> (* shortcut here *) Sorts.prop, Sorts.prop
       | (Prop _, Type _) | (Type _,Prop _) ->
 	error (NotConvertibleInductiveField name)
       | _ -> (s1, s2) in
@@ -216,7 +217,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   (* we check that records and their field names are preserved. *)
   check (fun mib -> mib.mind_record <> None) (==) (fun x -> RecordFieldExpected x);
   if mib1.mind_record <> None then begin
-    let rec names_prod_letin t = match kind_of_term t with
+    let rec names_prod_letin t = match kind t with
       | Prod(n,_,t) -> n::(names_prod_letin t)
       | LetIn(n,_,_,t) -> n::(names_prod_letin t)
       | Cast(t,_,_) -> names_prod_letin t
@@ -272,13 +273,13 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
             | Type u when not (is_univ_variable u) ->
               (* Both types are inferred, no need to recheck them. We
                  cheat and collapse the types to Prop *)
-                mkArity (ctx1,prop_sort), mkArity (ctx2,prop_sort)
+                mkArity (ctx1,Sorts.prop), mkArity (ctx2,Sorts.prop)
             | Prop _ ->
               (* The type in the interface is inferred, it may be the case
                  that the type in the implementation is smaller because
                  the body is more reduced. We safely collapse the upper
                  type to Prop *)
-                mkArity (ctx1,prop_sort), mkArity (ctx2,prop_sort)
+                mkArity (ctx1,Sorts.prop), mkArity (ctx2,Sorts.prop)
             | Type _ ->
               (* The type in the interface is inferred and the type in the
                  implementation is not inferred or is inferred but from a

@@ -8,7 +8,7 @@
 
 open CErrors
 open Names
-open Term
+open Constr
 open Declarations
 open Util
 open Nativevalues
@@ -142,7 +142,7 @@ let fresh_gnormtbl l =
 
 type symbol =
   | SymbValue of Nativevalues.t
-  | SymbSort of sorts
+  | SymbSort of Sorts.t
   | SymbName of Name.t
   | SymbConst of Constant.t
   | SymbMatch of annot_sw
@@ -163,7 +163,7 @@ let eq_symbol sy1 sy2 =
   | SymbInd ind1, SymbInd ind2 -> eq_ind ind1 ind2
   | SymbMeta m1, SymbMeta m2 -> Int.equal m1 m2
   | SymbEvar (evk1,args1), SymbEvar (evk2,args2) ->
-     Evar.equal evk1 evk2 && Array.for_all2 eq_constr args1 args2
+     Evar.equal evk1 evk2 && Array.for_all2 Constr.equal args1 args2
   | SymbLevel l1, SymbLevel l2 -> Univ.Level.equal l1 l2
   | _, _ -> false
 
@@ -2016,7 +2016,7 @@ let compile_mind_deps env prefix ~interactive
 (* This function compiles all necessary dependencies of t, and generates code in
    reverse order, as well as linking information updates *)
 let rec compile_deps env sigma prefix ~interactive init t =
-  match kind_of_term t with
+  match kind t with
   | Ind ((mind,_),u) -> compile_mind_deps env prefix ~interactive init mind
   | Const c ->
       let c,u = get_alias env c in
@@ -2048,8 +2048,8 @@ let rec compile_deps env sigma prefix ~interactive init t =
   | Case (ci, p, c, ac) ->
       let mind = fst ci.ci_ind in
       let init = compile_mind_deps env prefix ~interactive init mind in
-      fold_constr (compile_deps env sigma prefix ~interactive) init t
-  | _ -> fold_constr (compile_deps env sigma prefix ~interactive) init t
+      Constr.fold (compile_deps env sigma prefix ~interactive) init t
+  | _ -> Constr.fold (compile_deps env sigma prefix ~interactive) init t
 
 let compile_constant_field env prefix con acc cb =
     let (gl, _) =

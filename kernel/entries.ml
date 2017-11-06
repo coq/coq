@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 
 (** This module defines the entry types for global declarations. This
    information is entered in the environments. This includes global
@@ -35,9 +35,9 @@ then, in i{^ th} block, [mind_entry_params] is [xn:Xn;...;x1:X1];
 *)
 
 type inductive_universes =
-  | Monomorphic_ind_entry of Univ.universe_context
-  | Polymorphic_ind_entry of Univ.universe_context
-  | Cumulative_ind_entry of Univ.cumulativity_info
+  | Monomorphic_ind_entry of Univ.UContext.t
+  | Polymorphic_ind_entry of Univ.UContext.t
+  | Cumulative_ind_entry  of Univ.CumulativityInfo.t
 
 type one_inductive_entry = {
   mind_entry_typename : Id.t;
@@ -65,8 +65,8 @@ type 'a proof_output = constr Univ.in_universe_context_set * 'a
 type 'a const_entry_body = 'a proof_output Future.computation
 
 type constant_universes_entry =
-  | Monomorphic_const_entry of Univ.universe_context
-  | Polymorphic_const_entry of Univ.universe_context
+  | Monomorphic_const_entry of Univ.UContext.t
+  | Polymorphic_const_entry of Univ.UContext.t
 
 type 'a definition_entry = {
   const_entry_body   : 'a const_entry_body;
@@ -112,7 +112,7 @@ type seff_env =
   [ `Nothing
   (* The proof term and its universes.
      Same as the constant_body's but not in an ephemeron *)
-  | `Opaque of Constr.t * Univ.universe_context_set ]
+  | `Opaque of Constr.t * Univ.ContextSet.t ]
 
 type side_eff =
   | SEsubproof of Constant.t * Declarations.constant_body * seff_env

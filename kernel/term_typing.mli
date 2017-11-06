@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Environ
 open Declarations
 open Entries
@@ -19,7 +19,7 @@ type _ trust =
 | SideEffects : structure_body -> side_effects trust
 
 val translate_local_def : 'a trust -> env -> Id.t -> 'a definition_entry ->
-  constant_def * types * Univ.universe_context
+  constant_def * types * Univ.UContext.t
 
 val translate_local_assum : env -> types -> types
 

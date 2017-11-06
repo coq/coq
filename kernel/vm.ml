@@ -7,7 +7,8 @@
 (************************************************************************)
 
 open Names
-open Term
+open Sorts
+open Constr
 open Cbytecodes
 
 external set_drawinstr : unit -> unit = "coq_set_drawinstr"
@@ -137,7 +138,7 @@ type vswitch = {
 type atom =
   | Aid of Vars.id_key
   | Aind of inductive
-  | Atype of Univ.universe
+  | Atype of Univ.Universe.t
 
 (* Zippers *)
 
@@ -152,7 +153,7 @@ type stack = zipper list
 type to_up = values
 
 type whd =
-  | Vsort of sorts
+  | Vsort of Sorts.t
   | Vprod of vprod
   | Vfun of vfun
   | Vfix of vfix * arguments option
@@ -160,7 +161,7 @@ type whd =
   | Vconstr_const of int
   | Vconstr_block of vblock
   | Vatom_stk of atom * stack
-  | Vuniv_level of Univ.universe_level
+  | Vuniv_level of Univ.Level.t
 
 (************************************************)
 (* Abstract machine *****************************)
@@ -216,7 +217,7 @@ let apply_varray vf varray =
 (* Destructors ***********************************)
 (*************************************************)
 
-let uni_lvl_val (v : values) : Univ.universe_level =
+let uni_lvl_val (v : values) : Univ.Level.t =
     let whd = Obj.magic v in
     match whd with
     | Vuniv_level lvl -> lvl

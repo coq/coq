@@ -12,6 +12,7 @@ open Util
 open Names
 open Nameops
 open Term
+open Constr
 open Vars
 open Environ
 
@@ -46,7 +47,7 @@ let pr_puniverses p u =
   if Univ.Instance.is_empty u then p 
   else p ++ str"(*" ++ Univ.Instance.pr Universes.pr_with_global_universes u ++ str"*)"
 
-let rec pr_constr c = match kind_of_term c with
+let rec pr_constr c = match kind c with
   | Rel n -> str "#"++int n
   | Meta n -> str "Meta(" ++ int n ++ str ")"
   | Var id -> pr_id id
@@ -798,7 +799,7 @@ let fold_constr_with_binders sigma g f n acc c =
 
 let iter_constr_with_full_binders g f l c =
   let open RelDecl in
-  match kind_of_term c with
+  match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> ()
   | Cast (c,_, t) -> f l c; f l t
@@ -983,9 +984,9 @@ let isMetaOf sigma mv c =
   match EConstr.kind sigma c with Meta mv' -> Int.equal mv mv' | _ -> false
 
 let rec subst_meta bl c =
-  match kind_of_term c with
+  match kind c with
     | Meta i -> (try Int.List.assoc i bl with Not_found -> c)
-    | _ -> map_constr (subst_meta bl) c
+    | _ -> Constr.map (subst_meta bl) c
 
 let rec strip_outer_cast sigma c = match EConstr.kind sigma c with
   | Cast (c,_,_) -> strip_outer_cast sigma c

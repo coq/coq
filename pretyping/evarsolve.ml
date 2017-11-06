@@ -10,6 +10,7 @@ open Util
 open CErrors
 open Names
 open Term
+open Constr
 open Environ
 open Termops
 open Evd
@@ -1391,7 +1392,7 @@ let occur_evar_upto_types sigma n c =
   let c = EConstr.Unsafe.to_constr c in
   let seen = ref Evar.Set.empty in
   (** FIXME: Is that supposed to be evar-insensitive? *)
-  let rec occur_rec c = match kind_of_term c with
+  let rec occur_rec c = match Constr.kind c with
     | Evar (sp,_) when Evar.equal sp n -> raise Occur
     | Evar (sp,args as e) ->
        if Evar.Set.mem sp !seen then

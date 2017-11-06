@@ -12,6 +12,7 @@ open Names
 open Globnames
 open Nameops
 open Term
+open Constr
 open Reduction
 open Declarations
 open Environ
@@ -167,7 +168,7 @@ let update pos rig (na,st) =
 
 (* modified is_rigid_reference with a truncated env *)
 let is_flexible_reference env bound depth f =
-  match kind_of_term f with
+  match kind f with
     | Rel n when n >= bound+depth -> (* inductive type *) false
     | Rel n when n >= depth -> (* previous argument *) true
     | Rel n -> (* since local definitions have been expanded *) false
@@ -191,7 +192,7 @@ let add_free_rels_until strict strongly_strict revpat bound env m pos acc =
   let rec frec rig (env,depth as ed) c =
     let hd = if strict then whd_all env c else c in
     let c = if strongly_strict then hd else c in
-    match kind_of_term hd with
+    match kind hd with
     | Rel n when (n < bound+depth) && (n >= depth) ->
 	let i = bound + depth - n - 1 in
         acc.(i) <- update pos rig acc.(i)
@@ -214,13 +215,13 @@ let add_free_rels_until strict strongly_strict revpat bound env m pos acc =
   let () = if not (Vars.noccur_between 1 bound m) then frec true (env,1) m in
   acc
 
-let rec is_rigid_head t = match kind_of_term t with
+let rec is_rigid_head t = match kind t with
   | Rel _ | Evar _ -> false
   | Ind _ | Const _ | Var _ | Sort _ -> true
   | Case (_,_,f,_) -> is_rigid_head f
   | Proj (p,c) -> true
   | App (f,args) ->
-      (match kind_of_term f with
+      (match kind f with
 	| Fix ((fi,i),_) -> is_rigid_head (args.(fi.(i)))
 	| _ -> is_rigid_head f)
   | Lambda _ | LetIn _ | Construct _ | CoFix _ | Fix _
@@ -240,7 +241,7 @@ let compute_implicits_gen strict strongly_strict revpat contextual all env t =
   let open Context.Rel.Declaration in
   let rec aux env avoid n names t =
     let t = whd_all env t in
-    match kind_of_term t with
+    match kind t with
       | Prod (na,a,b) ->
 	  let na',avoid' = find_displayed_name_in all avoid na (names,b) in
 	  add_free_rels_until strict strongly_strict revpat n env a (Hyp (n+1))
@@ -253,7 +254,7 @@ let compute_implicits_gen strict strongly_strict revpat contextual all env t =
 	    add_free_rels_until strict strongly_strict revpat n env t Conclusion v
 	  else v
   in
-  match kind_of_term (whd_all env t) with
+  match kind (whd_all env t) with
     | Prod (na,a,b) ->
 	let na',avoid = find_displayed_name_in all Id.Set.empty na ([],b) in
 	let v = aux (push_rel (LocalAssum (na',a)) env) avoid 1 [na'] b in

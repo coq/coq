@@ -6,7 +6,7 @@ open Genarg
 open Tacexpr
 open Environ
 open Evd
-open Term
+open Constr
 
 (** ******** Small Scale Reflection pattern matching facilities ************* *)
 

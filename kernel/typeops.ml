@@ -10,7 +10,8 @@ open CErrors
 open Util
 open Names
 open Univ
-open Term
+open Sorts
+open Constr
 open Vars
 open Declarations
 open Environ
@@ -38,7 +39,7 @@ let check_constraints cst env =
 
 (* This should be a type (a priori without intention to be an assumption) *)
 let check_type env c t =
-  match kind_of_term(whd_all env t) with
+  match kind(whd_all env t) with
   | Sort s -> s
   | _ -> error_not_type env (make_judge c t)
 
@@ -57,7 +58,7 @@ let check_assumption env t ty =
 
 (* Prop and Set *)
 
-let type1 = mkSort type1_sort
+let type1 = mkSort Sorts.type1
 
 (* Type of Type(i). *)
 
@@ -152,7 +153,7 @@ let type_of_apply env func funt argsv argstv =
   let rec apply_rec i typ = 
     if Int.equal i len then typ
     else 
-      (match kind_of_term (whd_all env typ) with
+      (match kind (whd_all env typ) with
       | Prod (_,c1,c2) ->
 	let arg = argsv.(i) and argt = argstv.(i) in
 	  (try
@@ -300,7 +301,7 @@ let type_of_projection env p c ct =
   in
   assert(MutInd.equal pb.proj_ind (fst ind));
   let ty = Vars.subst_instance_constr u pb.Declarations.proj_type in
-  substl (c :: List.rev args) ty
+  substl (c :: CList.rev args) ty
       
 
 (* Fixpoints. *)
@@ -325,7 +326,7 @@ let check_fixpoint env lna lar vdef vdeft =
     arbitraires et non plus des variables *)
 let rec execute env cstr =
   let open Context.Rel.Declaration in
-  match kind_of_term cstr with
+  match kind cstr with
     (* Atomic terms *)
     | Sort s -> type_of_sort s
 
@@ -346,7 +347,7 @@ let rec execute env cstr =
     | App (f,args) ->
         let argst = execute_array env args in
 	let ft =
-	  match kind_of_term f with
+	  match kind f with
 	  | Ind ind when Environ.template_polymorphic_pind ind env ->
 	    let args = Array.map (fun t -> lazy t) argst in
               type_of_inductive_knowing_parameters env ind args

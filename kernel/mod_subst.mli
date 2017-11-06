@@ -9,7 +9,7 @@
 (** {6 [Mod_subst] } *)
 
 open Names
-open Term
+open Constr
 
 (** {6 Delta resolver} *)
 
@@ -171,6 +171,5 @@ val occur_mbid : MBId.t -> substitution -> bool
 
 val repr_substituted : 'a substituted -> substitution list option * 'a
 
-val force_constr : Term.constr substituted -> Term.constr
-val subst_constr :
-  substitution -> Term.constr substituted -> Term.constr substituted
+val force_constr : constr substituted -> constr
+val subst_constr : substitution -> constr substituted -> constr substituted

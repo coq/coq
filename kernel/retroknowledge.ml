@@ -14,7 +14,7 @@
    for evaluation in the bytecode virtual machine *)
 
 open Names
-open Term
+open Constr
 
 (* The retroknowledge defines a bijective correspondance between some
    [entry]-s (which are, in fact, merely terms) and [field]-s which
@@ -102,7 +102,7 @@ module Reactive = Map.Make (EntryOrd)
 type reactive_info = {(*information required by the compiler of the VM *)
   vm_compiling :
       (*fastcomputation flag -> continuation -> result *)
-      (bool->Cbytecodes.comp_env->constr array ->
+      (bool -> Cbytecodes.comp_env -> constr array ->
        int->Cbytecodes.bytecodes->Cbytecodes.bytecodes)
       option;
   vm_constant_static :
@@ -117,7 +117,7 @@ type reactive_info = {(*information required by the compiler of the VM *)
   (* fastcomputation flag -> cont -> result *)
   vm_before_match : (bool -> Cbytecodes.bytecodes -> Cbytecodes.bytecodes) option;
   (* tag (= compiled int for instance) -> result *)
-  vm_decompile_const : (int -> Term.constr) option;
+  vm_decompile_const : (int -> constr) option;
 
   native_compiling :
       (bool -> Nativeinstr.prefix -> Nativeinstr.lambda array ->

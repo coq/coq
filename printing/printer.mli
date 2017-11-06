@@ -8,7 +8,7 @@
 
 open Names
 open Globnames
-open Term
+open Constr
 open Environ
 open Pattern
 open Evd
@@ -95,15 +95,15 @@ val pr_constr_pattern      : constr_pattern -> Pp.t
 
 val pr_cases_pattern       : cases_pattern -> Pp.t
 
-val pr_sort                : evar_map -> sorts -> Pp.t
+val pr_sort                : evar_map -> Sorts.t -> Pp.t
 
 (** Universe constraints *)
 
 val pr_polymorphic         : bool -> Pp.t
 val pr_cumulative          : bool -> bool -> Pp.t
-val pr_universe_instance   : evar_map -> Univ.universe_context -> Pp.t
-val pr_universe_ctx        : evar_map -> Univ.universe_context -> Pp.t
-val pr_cumulativity_info   : evar_map -> Univ.cumulativity_info -> Pp.t
+val pr_universe_instance   : evar_map -> Univ.UContext.t -> Pp.t
+val pr_universe_ctx        : evar_map -> Univ.UContext.t -> Pp.t
+val pr_cumulativity_info   : evar_map -> Univ.CumulativityInfo.t -> Pp.t
 
 (** Printing global references using names as short as possible *)
 
@@ -198,7 +198,7 @@ module ContextObjectMap : CMap.ExtS
   with type key = context_object and module Set := ContextObjectSet
 
 val pr_assumptionset :
-  env -> Term.types ContextObjectMap.t -> Pp.t
+  env -> types ContextObjectMap.t -> Pp.t
 
 val pr_goal_by_id : Id.t -> Pp.t
 

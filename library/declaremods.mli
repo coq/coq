@@ -72,7 +72,7 @@ type library_objects
 val register_library :
   library_name ->
   Safe_typing.compiled_library -> library_objects -> Safe_typing.vodigest ->
-  Univ.universe_context_set -> unit
+  Univ.ContextSet.t -> unit
 
 val get_library_native_symbols : library_name -> Nativecode.symbols
 

@@ -11,6 +11,7 @@ open CErrors
 open Util
 open Names
 open Term
+open Constr
 open Environ
 open Globnames
 open Nametab

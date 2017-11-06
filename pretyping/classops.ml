@@ -10,12 +10,12 @@ open CErrors
 open Util
 open Pp
 open Names
+open Constr
 open Libnames
 open Globnames
 open Nametab
 open Environ
 open Libobject
-open Term
 open Mod_subst
 
 (* usage qque peu general: utilise aussi dans record *)
@@ -43,7 +43,7 @@ type coe_info_typ = {
   coe_value : constr;
   coe_type : types;
   coe_local : bool;
-  coe_context : Univ.universe_context_set;
+  coe_context : Univ.ContextSet.t;
   coe_is_identity : bool;
   coe_is_projection : bool;
   coe_param : int }

@@ -14,6 +14,7 @@ open Util
 open Names
 open Nameops
 open Term
+open Constr
 open Termops
 open Environ
 open EConstr
@@ -1290,7 +1291,7 @@ let check_unresolved_evars_of_metas sigma clenv =
   (* Refiner.pose_all_metas_as_evars are resolved *)
   List.iter (fun (mv,b) -> match b with
   | Clval (_,(c,_),_) ->
-    (match kind_of_term c.rebus with
+    (match Constr.kind c.rebus with
     | Evar (evk,_) when Evd.is_undefined clenv.evd evk
                      && not (Evd.mem sigma evk) ->
       error_uninstantiated_metas (mkMeta mv) clenv
@@ -4958,7 +4959,7 @@ let interpretable_as_section_decl evd d1 d2 =
 let rec decompose len c t accu =
   let open Context.Rel.Declaration in
   if len = 0 then (c, t, accu)
-  else match kind_of_term c, kind_of_term t with 
+  else match Constr.kind c, Constr.kind t with 
   | Lambda (na, u, c), Prod (_, _, t) ->
     decompose (pred len) c t (LocalAssum (na, u) :: accu)
   | LetIn (na, b, u, c), LetIn (_, _, _, t) ->
@@ -4966,7 +4967,7 @@ let rec decompose len c t accu =
   | _ -> assert false
 
 let rec shrink ctx sign c t accu =
-  let open Term in
+  let open Constr in
   let open CVars in
   match ctx, sign with
   | [], [] -> (c, t, accu)
@@ -4976,8 +4977,8 @@ let rec shrink ctx sign c t accu =
         let t = subst1 mkProp t in
         shrink ctx sign c t accu
       else
-        let c = mkLambda_or_LetIn p c in
-        let t = mkProd_or_LetIn p t in
+        let c = Term.mkLambda_or_LetIn p c in
+        let t = Term.mkProd_or_LetIn p t in
         let accu = if RelDecl.is_local_assum p
                    then mkVar (NamedDecl.get_id decl) :: accu
                    else accu

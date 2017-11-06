@@ -10,6 +10,7 @@ open Equality
 open Names
 open Pp
 open Term
+open Constr
 open Termops
 open CErrors
 open Util
@@ -20,7 +21,7 @@ open Locus
 type rew_rule = { rew_lemma: constr;
 		  rew_type: types;
 		  rew_pat: constr;
-		  rew_ctx: Univ.universe_context_set;
+		  rew_ctx: Univ.ContextSet.t;
 		  rew_l2r: bool;
 		  rew_tac: Genarg.glob_generic_argument option }
 

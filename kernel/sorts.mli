@@ -14,7 +14,7 @@ type family = InProp | InSet | InType
 
 type t =
 | Prop of contents       (** Prop and Set *)
-| Type of Univ.universe  (** Type *)
+| Type of Univ.Universe.t  (** Type *)
 
 val set  : t
 val prop : t
@@ -38,5 +38,5 @@ module List : sig
   val intersect : family list -> family list -> family list
 end
 
-val univ_of_sort : t -> Univ.universe
-val sort_of_univ : Univ.universe -> t
+val univ_of_sort : t -> Univ.Universe.t
+val sort_of_univ : Univ.Universe.t -> t

@@ -11,13 +11,14 @@
 open Ltac_plugin
 open Util
 open Names
+open Term
+open Constr
 open Vars
 open Locus
 open Printer
 open Globnames
 open Termops
 open Tacinterp
-open Term
 
 open Ssrmatching_plugin
 open Ssrmatching
@@ -316,7 +317,7 @@ let rw_progress rhs lhs ise = not (EConstr.eq_constr ise lhs (Evarutil.nf_evar i
 (* such a generic Leibnitz equation -- short of inspecting the type  *)
 (* of the elimination lemmas.                                        *)
 
-let rec strip_prod_assum c = match Term.kind_of_term c with
+let rec strip_prod_assum c = match Constr.kind c with
   | Prod (_, _, c') -> strip_prod_assum c'
   | LetIn (_, v, _, c') -> strip_prod_assum (subst1 v c)
   | Cast (c', _, _) -> strip_prod_assum c'

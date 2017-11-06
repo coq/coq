@@ -5,7 +5,7 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-open Term
+open Constr
 open Names
 
 (** This modules defines the representation of values internally used by
@@ -43,7 +43,7 @@ type atom =
   | Arel of int
   | Aconstant of pconstant
   | Aind of pinductive
-  | Asort of sorts
+  | Asort of Sorts.t
   | Avar of Id.t
   | Acase of annot_sw * accumulator * t * (t -> t) 
   | Afix of t array * t array * rec_pos * int 
@@ -61,7 +61,7 @@ val mk_rel_accu : int -> t
 val mk_rels_accu : int -> int -> t array
 val mk_constant_accu : Constant.t -> Univ.Level.t array -> t
 val mk_ind_accu : inductive -> Univ.Level.t array -> t
-val mk_sort_accu : sorts -> Univ.Level.t array -> t
+val mk_sort_accu : Sorts.t -> Univ.Level.t array -> t
 val mk_var_accu : Id.t -> t
 val mk_sw_accu : annot_sw -> accumulator -> t -> (t -> t)
 val mk_prod_accu : Name.t -> t -> t -> t

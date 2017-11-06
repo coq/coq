@@ -10,6 +10,7 @@
 open Names
 open Globnames
 open Term
+open Constr
 open Environ
 open Util
 open Libobject
@@ -103,7 +104,7 @@ let rename_type_of_constructor env cstruct =
 let rename_typing env c =
   let j = Typeops.infer env c in
   let j' =
-    match kind_of_term c with
+    match kind c with
     | Const (c,u) -> { j with uj_type = rename_type j.uj_type (ConstRef c) }
     | Ind (i,u) -> { j with uj_type = rename_type j.uj_type (IndRef i) }
     | Construct (k,u) -> { j with uj_type = rename_type j.uj_type (ConstructRef k) }

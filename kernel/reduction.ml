@@ -18,7 +18,7 @@
 open CErrors
 open Util
 open Names
-open Term
+open Constr
 open Vars
 open Environ
 open CClosure
@@ -107,11 +107,11 @@ let pure_stack lfts stk =
 (****************************************************************************)
 
 let whd_betaiota env t =
-  match kind_of_term t with
+  match kind t with
     | (Sort _|Var _|Meta _|Evar _|Const _|Ind _|Construct _|
        Prod _|Lambda _|Fix _|CoFix _) -> t
     | App (c, _) ->
-      begin match kind_of_term c with
+      begin match kind c with
       | Ind _ | Construct _ | Evar _ | Meta _ | Const _ | LetIn _ -> t
       | _ -> whd_val (create_clos_infos betaiota env) (inject t)
       end
@@ -121,33 +121,33 @@ let nf_betaiota env t =
   norm_val (create_clos_infos betaiota env) (inject t)
 
 let whd_betaiotazeta env x =
-  match kind_of_term x with
+  match kind x with
     | (Sort _|Var _|Meta _|Evar _|Const _|Ind _|Construct _|
        Prod _|Lambda _|Fix _|CoFix _) -> x
     | App (c, _) ->
-      begin match kind_of_term c with
+      begin match kind c with
       | Ind _ | Construct _ | Evar _ | Meta _ | Const _ -> x
       | _ -> whd_val (create_clos_infos betaiotazeta env) (inject x)
       end
     | _ -> whd_val (create_clos_infos betaiotazeta env) (inject x)
 
 let whd_all env t =
-  match kind_of_term t with
+  match kind t with
     | (Sort _|Meta _|Evar _|Ind _|Construct _|
        Prod _|Lambda _|Fix _|CoFix _) -> t
     | App (c, _) ->
-      begin match kind_of_term c with
+      begin match kind c with
       | Ind _ | Construct _ | Evar _ | Meta _ -> t
       | _ -> whd_val (create_clos_infos all env) (inject t)
       end
     | _ -> whd_val (create_clos_infos all env) (inject t)
 
 let whd_allnolet env t =
-  match kind_of_term t with
+  match kind t with
     | (Sort _|Meta _|Evar _|Ind _|Construct _|
        Prod _|Lambda _|Fix _|CoFix _|LetIn _) -> t
     | App (c, _) ->
-      begin match kind_of_term c with
+      begin match kind c with
       | Ind _ | Construct _ | Evar _ | Meta _ | LetIn _ -> t
       | _ -> whd_val (create_clos_infos allnolet env) (inject t)
       end
@@ -189,7 +189,7 @@ let is_cumul = function CUMUL -> true | CONV -> false
 
 type 'a universe_compare = 
   { (* Might raise NotConvertible *)
-    compare : env -> conv_pb -> sorts -> sorts -> 'a -> 'a;
+    compare : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
     compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
     conv_inductives : conv_pb -> (Declarations.mutual_inductive_body * int) -> Univ.Instance.t -> int ->
       Univ.Instance.t -> int -> 'a -> 'a;
@@ -331,7 +331,7 @@ and eqappr env cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
   match (fterm_of hd1, fterm_of hd2) with
     (* case of leaves *)
     | (FAtom a1, FAtom a2) ->
-	(match kind_of_term a1, kind_of_term a2 with
+	(match kind a1, kind a2 with
 	   | (Sort s1, Sort s2) ->
 	       if not (is_empty_stack v1 && is_empty_stack v2) then
 		 anomaly (Pp.str "conversion was given ill-typed terms (Sort).");
@@ -615,6 +615,7 @@ let check_leq univs u u' =
   if not (UGraph.check_leq univs u u') then raise NotConvertible
 
 let check_sort_cmp_universes env pb s0 s1 univs =
+  let open Sorts in
   match (s0,s1) with
     | (Prop c1, Prop c2) when is_cumul pb ->
       begin match c1, c2 with
@@ -734,6 +735,7 @@ let infer_leq (univs, cstrs as cuniv) u u' =
       univs, cstrs'
 
 let infer_cmp_universes env pb s0 s1 univs =
+  let open Sorts in
   match (s0,s1) with
     | (Prop c1, Prop c2) when is_cumul pb ->
       begin match c1, c2 with
@@ -869,7 +871,7 @@ let warn_bytecode_compiler_failed =
          (fun () -> strbrk "Bytecode compiler failed, " ++
                       strbrk "falling back to standard conversion")
 
-let set_vm_conv (f:conv_pb -> Term.types kernel_conversion_function) = vm_conv := f
+let set_vm_conv (f:conv_pb -> types kernel_conversion_function) = vm_conv := f
 let vm_conv cv_pb env t1 t2 =
   try
     !vm_conv cv_pb env t1 t2
@@ -895,9 +897,9 @@ let conv env t1 t2 =
 
 let beta_applist c l =
   let rec app subst c l =
-    match kind_of_term c, l with
+    match kind c, l with
     | Lambda(_,_,c), arg::l -> app (arg::subst) c l
-    | _ -> applist (substl subst c, l) in
+    | _ -> Term.applist (substl subst c, l) in
   app [] c l
 
 let beta_appvect c v = beta_applist c (Array.to_list v)
@@ -905,7 +907,7 @@ let beta_appvect c v = beta_applist c (Array.to_list v)
 let beta_app c a = beta_applist c [a]
 
 (* Compatibility *)
-let betazeta_appvect = lambda_appvect_assum
+let betazeta_appvect = Term.lambda_appvect_assum
 
 (********************************************************************)
 (*             Special-Purpose Reduction                            *)
@@ -918,7 +920,7 @@ let betazeta_appvect = lambda_appvect_assum
  * error message. *)
 
 let hnf_prod_app env t n =
-  match kind_of_term (whd_all env t) with
+  match kind (whd_all env t) with
     | Prod (_,_,b) -> subst1 n b
     | _ -> anomaly ~label:"hnf_prod_app" (Pp.str "Need a product.")
 
@@ -930,7 +932,7 @@ let hnf_prod_applist env t nl =
 let dest_prod env =
   let rec decrec env m c =
     let t = whd_all env c in
-    match kind_of_term t with
+    match kind t with
       | Prod (n,a,c0) ->
 	  let d = LocalAssum (n,a) in
 	  decrec (push_rel d env) (Context.Rel.add d m) c0
@@ -942,7 +944,7 @@ let dest_prod env =
 let dest_prod_assum env =
   let rec prodec_rec env l ty =
     let rty = whd_allnolet env ty in
-    match kind_of_term rty with
+    match kind rty with
     | Prod (x,t,c)  ->
         let d = LocalAssum (x,t) in
 	prodec_rec (push_rel d env) (Context.Rel.add d l) c
@@ -952,7 +954,7 @@ let dest_prod_assum env =
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               ->
       let rty' = whd_all env rty in
-	if Term.eq_constr rty' rty then l, rty
+	if Constr.equal rty' rty then l, rty
 	else prodec_rec env l rty'
   in
   prodec_rec env Context.Rel.empty
@@ -960,7 +962,7 @@ let dest_prod_assum env =
 let dest_lam_assum env =
   let rec lamec_rec env l ty =
     let rty = whd_allnolet env ty in
-    match kind_of_term rty with
+    match kind rty with
     | Lambda (x,t,c)  ->
         let d = LocalAssum (x,t) in
 	lamec_rec (push_rel d env) (Context.Rel.add d l) c
@@ -976,7 +978,7 @@ exception NotArity
 
 let dest_arity env c =
   let l, c = dest_prod_assum env c in
-  match kind_of_term c with
+  match kind c with
     | Sort s -> l,s
     | _ -> raise NotArity
 

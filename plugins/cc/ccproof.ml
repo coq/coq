@@ -10,7 +10,7 @@
 (* proof-trees that will be transformed into proof-terms in cctac.ml4   *)
 
 open CErrors
-open Term
+open Constr
 open Ccalgo
 open Pp
 

@@ -8,7 +8,7 @@
 
 open Util
 open Names
-open Term
+open Constr
 open Environ
 open Univ
 
@@ -21,26 +21,26 @@ val pr_with_global_universes : Level.t -> Pp.t
 
 (** Local universe name <-> level mapping *)
 
-type universe_binders = (Id.t * Univ.universe_level) list
-					   
+type universe_binders = (Id.t * Univ.Level.t) list
+
 val register_universe_binders : Globnames.global_reference -> universe_binders -> unit
 val universe_binders_of_global : Globnames.global_reference -> universe_binders
 
 (** The global universe counter *)
-val set_remote_new_univ_level : universe_level RemoteCounter.installer
+val set_remote_new_univ_level : Level.t RemoteCounter.installer
 
 (** Side-effecting functions creating new universe levels. *)
 
-val new_univ_level : DirPath.t -> universe_level
-val new_univ : DirPath.t -> universe
+val new_univ_level : DirPath.t -> Level.t
+val new_univ : DirPath.t -> Universe.t
 val new_Type : DirPath.t -> types
-val new_Type_sort : DirPath.t -> sorts
+val new_Type_sort : DirPath.t -> Sorts.t
 
-val new_global_univ : unit -> universe in_universe_context_set
-val new_sort_in_family : sorts_family -> sorts
+val new_global_univ : unit -> Universe.t in_universe_context_set
+val new_sort_in_family : Sorts.family -> Sorts.t
 
 (** {6 Constraints for type inference}
-    
+
     When doing conversion of universes, not only do we have =/<= constraints but
     also Lub constraints which correspond to unification of two levels which might
     not be necessary if unfolding is performed.
@@ -48,7 +48,7 @@ val new_sort_in_family : sorts_family -> sorts
 
 type universe_constraint_type = ULe | UEq | ULub
 
-type universe_constraint = universe * universe_constraint_type * universe
+type universe_constraint = Universe.t * universe_constraint_type * Universe.t
 module Constraints : sig
   include Set.S with type elt = universe_constraint
 		       
@@ -63,7 +63,7 @@ type 'a universe_constraint_function = 'a -> 'a -> universe_constraints -> unive
 val subst_univs_universe_constraints : universe_subst_fn -> 
   universe_constraints -> universe_constraints
 
-val enforce_eq_instances_univs : bool -> universe_instance universe_constraint_function
+val enforce_eq_instances_univs : bool -> Instance.t universe_constraint_function
 
 val to_constraints : UGraph.t -> universe_constraints -> constraints
 
@@ -82,14 +82,14 @@ val eq_constr_universes_proj : env -> constr -> constr -> bool universe_constrai
 (** Build a fresh instance for a given context, its associated substitution and 
     the instantiated constraints. *)
 
-val fresh_instance_from_context : abstract_universe_context -> 
-  universe_instance constrained
+val fresh_instance_from_context : AUContext.t -> 
+  Instance.t constrained
 
-val fresh_instance_from : abstract_universe_context -> universe_instance option ->
-  universe_instance in_universe_context_set
+val fresh_instance_from : AUContext.t -> Instance.t option ->
+  Instance.t in_universe_context_set
 
-val fresh_sort_in_family : env -> sorts_family -> 
-  sorts in_universe_context_set
+val fresh_sort_in_family : env -> Sorts.family -> 
+  Sorts.t in_universe_context_set
 val fresh_constant_instance : env -> Constant.t ->
   pconstant in_universe_context_set
 val fresh_inductive_instance : env -> inductive ->
@@ -105,15 +105,15 @@ val fresh_global_or_constr_instance : env -> Globnames.global_reference_or_const
 
 (** Get fresh variables for the universe context.
     Useful to make tactics that manipulate constrs in universe contexts polymorphic. *)
-val fresh_universe_context_set_instance : universe_context_set -> 
-  universe_level_subst * universe_context_set
+val fresh_universe_context_set_instance : ContextSet.t -> 
+  universe_level_subst * ContextSet.t
 
 (** Raises [Not_found] if not a global reference. *)
 val global_of_constr : constr -> Globnames.global_reference puniverses
 
 val constr_of_global_univ : Globnames.global_reference puniverses -> constr
 
-val extend_context : 'a in_universe_context_set -> universe_context_set -> 
+val extend_context : 'a in_universe_context_set -> ContextSet.t -> 
   'a in_universe_context_set
 
 (** Simplification and pruning of constraints:
@@ -127,38 +127,38 @@ val extend_context : 'a in_universe_context_set -> universe_context_set ->
     (a global one if there is one) and transitively saturate
     the constraints w.r.t to the equalities. *)
 
-module UF : Unionfind.PartitionSig with type elt = universe_level
+module UF : Unionfind.PartitionSig with type elt = Level.t
 
-type universe_opt_subst = universe option universe_map
+type universe_opt_subst = Universe.t option universe_map
 
 val make_opt_subst : universe_opt_subst -> universe_subst_fn
 
 val subst_opt_univs_constr : universe_opt_subst -> constr -> constr
 
-val normalize_context_set : universe_context_set -> 
+val normalize_context_set : ContextSet.t -> 
   universe_opt_subst (* The defined and undefined variables *) ->
-  universe_set (* univ variables that can be substituted by algebraics *) -> 
-  (universe_opt_subst * universe_set) in_universe_context_set
+  LSet.t (* univ variables that can be substituted by algebraics *) -> 
+  (universe_opt_subst * LSet.t) in_universe_context_set
 
 val normalize_univ_variables : universe_opt_subst -> 
-  universe_opt_subst * universe_set * universe_set * universe_subst
+  universe_opt_subst * LSet.t * LSet.t * universe_subst
 
 val normalize_univ_variable : 
-  find:(universe_level -> universe) ->
-  update:(universe_level -> universe -> universe) ->
-  universe_level -> universe
+  find:(Level.t -> Universe.t) ->
+  update:(Level.t -> Universe.t -> Universe.t) ->
+  Level.t -> Universe.t
 
 val normalize_univ_variable_opt_subst : universe_opt_subst ref ->
-  (universe_level -> universe)
+  (Level.t -> Universe.t)
 
 val normalize_univ_variable_subst : universe_subst ref ->
-  (universe_level -> universe)
+  (Level.t -> Universe.t)
 
 val normalize_universe_opt_subst : universe_opt_subst ref ->
-  (universe -> universe)
+  (Universe.t -> Universe.t)
 
 val normalize_universe_subst : universe_subst ref ->
-  (universe -> universe)
+  (Universe.t -> Universe.t)
 
 (** Create a fresh global in the global environment, without side effects.
     BEWARE: this raises an ANOMALY on polymorphic constants/inductives: 
@@ -180,7 +180,7 @@ val type_of_global : Globnames.global_reference -> types in_universe_context_set
 val nf_evars_and_universes_opt_subst : (existential -> constr option) -> 
   universe_opt_subst -> constr -> constr
 
-val refresh_constraints : UGraph.t -> universe_context_set -> universe_context_set * UGraph.t
+val refresh_constraints : UGraph.t -> ContextSet.t -> ContextSet.t * UGraph.t
 
 (** Pretty-printing *)
 
@@ -188,11 +188,11 @@ val pr_universe_opt_subst : universe_opt_subst -> Pp.t
 
 (** {6 Support for template polymorphism } *)
 
-val solve_constraints_system : universe option array -> universe array -> universe array ->
-  universe array
+val solve_constraints_system : Universe.t option array -> Universe.t array -> Universe.t array ->
+  Universe.t array
 
 (** Operations for universe_info_ind *)
 
 (** Given a universe context representing constraints of an inductive
     this function produces a UInfoInd.t that with the trivial subtyping relation. *)
-val univ_inf_ind_from_universe_context : universe_context -> cumulativity_info
+val univ_inf_ind_from_universe_context : UContext.t -> CumulativityInfo.t

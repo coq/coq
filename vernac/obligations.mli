@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Environ
-open Term
+open Constr
 open Evd
 open Names
 open Globnames
@@ -39,7 +39,7 @@ val eterm_obligations : env -> Id.t -> evar_map -> int ->
        translation from obligation identifiers to constrs, new term, new type *)
 
 type obligation_info =
-  (Id.t * Term.types * Evar_kinds.t Loc.located *
+  (Id.t * types * Evar_kinds.t Loc.located *
       (bool * Evar_kinds.obligation_definition_status) * Int.Set.t * unit Proofview.tactic option) array
     (* ident, type, location, (opaque or transparent, expand or define),
        dependencies, tactic to solve it *)
@@ -51,13 +51,13 @@ type progress = (* Resolution status of a program *)
 
 val default_tactic : unit Proofview.tactic ref
 
-val add_definition : Names.Id.t -> ?term:Term.constr -> Term.types -> 
+val add_definition : Names.Id.t -> ?term:constr -> types -> 
   Evd.evar_universe_context ->
   ?univdecl:Univdecls.universe_decl -> (* Universe binders and constraints *)
   ?implicits:(Constrexpr.explicitation * (bool * bool * bool)) list ->
   ?kind:Decl_kinds.definition_kind ->
   ?tactic:unit Proofview.tactic ->
-  ?reduce:(Term.constr -> Term.constr) ->
+  ?reduce:(constr -> constr) ->
   ?hook:(Evd.evar_universe_context -> unit) Lemmas.declaration_hook -> ?opaque:bool -> obligation_info -> progress
 
 type notations =
@@ -68,13 +68,13 @@ type fixpoint_kind =
   | IsCoFixpoint
 
 val add_mutual_definitions :
-  (Names.Id.t * Term.constr * Term.types *
+  (Names.Id.t * constr * types *
       (Constrexpr.explicitation * (bool * bool * bool)) list * obligation_info) list ->
   Evd.evar_universe_context ->
   ?univdecl:Univdecls.universe_decl -> (* Universe binders and constraints *)
   ?tactic:unit Proofview.tactic ->
   ?kind:Decl_kinds.definition_kind ->
-  ?reduce:(Term.constr -> Term.constr) ->
+  ?reduce:(constr -> constr) ->
   ?hook:(Evd.evar_universe_context -> unit) Lemmas.declaration_hook -> ?opaque:bool ->
   notations ->
   fixpoint_kind -> unit

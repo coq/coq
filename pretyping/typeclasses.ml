@@ -11,6 +11,7 @@ open Names
 open Globnames
 open Decl_kinds
 open Term
+open Constr
 open Vars
 open Evd
 open Util

@@ -12,6 +12,7 @@ open Names
 open Globnames
 open Nameops
 open Term
+open Constr
 open Vars
 open Glob_term
 open Pp
@@ -75,8 +76,8 @@ and cofixpoint_eq (i1, r1) (i2, r2) =
 
 and rec_declaration_eq (n1, c1, r1) (n2, c2, r2) =
   Array.equal Name.equal n1 n2 &&
-  Array.equal Term.eq_constr c1 c2 &&
-  Array.equal Term.eq_constr r1 r2
+  Array.equal Constr.equal c1 c2 &&
+  Array.equal Constr.equal r1 r2
 
 let rec occur_meta_pattern = function
   | PApp (f,args) ->
@@ -149,7 +150,7 @@ let head_of_constr_reference sigma c = match EConstr.kind sigma c with
 let pattern_of_constr env sigma t =
   let rec pattern_of_constr env t =
   let open Context.Rel.Declaration in
-  match kind_of_term t with
+  match kind t with
     | Rel n  -> PRel n
     | Meta n -> PMeta (Some (Id.of_string ("META" ^ string_of_int n)))
     | Var id -> PVar id
@@ -165,7 +166,7 @@ let pattern_of_constr env sigma t =
 				  pattern_of_constr (push_rel (LocalAssum (na, c)) env) b)
     | App (f,a) ->
         (match
-          match kind_of_term f with
+          match kind f with
           | Evar (evk,args) ->
             (match snd (Evd.evar_source evk sigma) with
               Evar_kinds.MatchingVar (Evar_kinds.SecondOrderPatVar id) -> Some id

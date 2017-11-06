@@ -8,116 +8,117 @@
 
 
 (** Coq objects used in romega *)
+open Constr
 
 (* from Logic *)
-val coq_refl_equal : Term.constr lazy_t
-val coq_and : Term.constr lazy_t
-val coq_not : Term.constr lazy_t
-val coq_or : Term.constr lazy_t
-val coq_True : Term.constr lazy_t
-val coq_False : Term.constr lazy_t
-val coq_I : Term.constr lazy_t
+val coq_refl_equal : constr lazy_t
+val coq_and : constr lazy_t
+val coq_not : constr lazy_t
+val coq_or : constr lazy_t
+val coq_True : constr lazy_t
+val coq_False : constr lazy_t
+val coq_I : constr lazy_t
 
 (* from ReflOmegaCore/ZOmega *)
 
-val coq_t_int : Term.constr lazy_t
-val coq_t_plus : Term.constr lazy_t
-val coq_t_mult : Term.constr lazy_t
-val coq_t_opp : Term.constr lazy_t
-val coq_t_minus : Term.constr lazy_t
-val coq_t_var : Term.constr lazy_t
+val coq_t_int : constr lazy_t
+val coq_t_plus : constr lazy_t
+val coq_t_mult : constr lazy_t
+val coq_t_opp : constr lazy_t
+val coq_t_minus : constr lazy_t
+val coq_t_var : constr lazy_t
 
-val coq_proposition : Term.constr lazy_t
-val coq_p_eq : Term.constr lazy_t
-val coq_p_leq : Term.constr lazy_t
-val coq_p_geq : Term.constr lazy_t
-val coq_p_lt : Term.constr lazy_t
-val coq_p_gt : Term.constr lazy_t
-val coq_p_neq : Term.constr lazy_t
-val coq_p_true : Term.constr lazy_t
-val coq_p_false : Term.constr lazy_t
-val coq_p_not : Term.constr lazy_t
-val coq_p_or : Term.constr lazy_t
-val coq_p_and : Term.constr lazy_t
-val coq_p_imp : Term.constr lazy_t
-val coq_p_prop : Term.constr lazy_t
+val coq_proposition : constr lazy_t
+val coq_p_eq : constr lazy_t
+val coq_p_leq : constr lazy_t
+val coq_p_geq : constr lazy_t
+val coq_p_lt : constr lazy_t
+val coq_p_gt : constr lazy_t
+val coq_p_neq : constr lazy_t
+val coq_p_true : constr lazy_t
+val coq_p_false : constr lazy_t
+val coq_p_not : constr lazy_t
+val coq_p_or : constr lazy_t
+val coq_p_and : constr lazy_t
+val coq_p_imp : constr lazy_t
+val coq_p_prop : constr lazy_t
 
-val coq_s_bad_constant : Term.constr lazy_t
-val coq_s_divide : Term.constr lazy_t
-val coq_s_not_exact_divide : Term.constr lazy_t
-val coq_s_sum : Term.constr lazy_t
-val coq_s_merge_eq : Term.constr lazy_t
-val coq_s_split_ineq : Term.constr lazy_t
+val coq_s_bad_constant : constr lazy_t
+val coq_s_divide : constr lazy_t
+val coq_s_not_exact_divide : constr lazy_t
+val coq_s_sum : constr lazy_t
+val coq_s_merge_eq : constr lazy_t
+val coq_s_split_ineq : constr lazy_t
 
-val coq_direction : Term.constr lazy_t
-val coq_d_left : Term.constr lazy_t
-val coq_d_right : Term.constr lazy_t
+val coq_direction : constr lazy_t
+val coq_d_left : constr lazy_t
+val coq_d_right : constr lazy_t
 
-val coq_e_split : Term.constr lazy_t
-val coq_e_extract : Term.constr lazy_t
-val coq_e_solve : Term.constr lazy_t
+val coq_e_split : constr lazy_t
+val coq_e_extract : constr lazy_t
+val coq_e_solve : constr lazy_t
 
-val coq_interp_sequent : Term.constr lazy_t
-val coq_do_omega : Term.constr lazy_t
+val coq_interp_sequent : constr lazy_t
+val coq_do_omega : constr lazy_t
 
-val mk_nat : int -> Term.constr
-val mk_N : int -> Term.constr
+val mk_nat : int -> constr
+val mk_N : int -> constr
 
 (** Precondition: the type of the list is in Set *)
-val mk_list : Term.constr -> Term.constr list -> Term.constr
-val mk_plist : Term.types list -> Term.types
+val mk_list : constr -> constr list -> constr
+val mk_plist : types list -> types
 
 (** Analyzing a coq term *)
 
 (* The generic result shape of the analysis of a term.
    One-level depth, except when a number is found *)
 type parse_term =
-    Tplus of Term.constr * Term.constr
-  | Tmult of Term.constr * Term.constr
-  | Tminus of Term.constr * Term.constr
-  | Topp of Term.constr
-  | Tsucc of Term.constr
+    Tplus of constr * constr
+  | Tmult of constr * constr
+  | Tminus of constr * constr
+  | Topp of constr
+  | Tsucc of constr
   | Tnum of Bigint.bigint
   | Tother
 
 (* The generic result shape of the analysis of a relation.
    One-level depth. *)
 type parse_rel =
-    Req of Term.constr * Term.constr
-  | Rne of Term.constr * Term.constr
-  | Rlt of Term.constr * Term.constr
-  | Rle of Term.constr * Term.constr
-  | Rgt of Term.constr * Term.constr
-  | Rge of Term.constr * Term.constr
+    Req of constr * constr
+  | Rne of constr * constr
+  | Rlt of constr * constr
+  | Rle of constr * constr
+  | Rgt of constr * constr
+  | Rge of constr * constr
   | Rtrue
   | Rfalse
-  | Rnot of Term.constr
-  | Ror of Term.constr * Term.constr
-  | Rand of Term.constr * Term.constr
-  | Rimp of Term.constr * Term.constr
-  | Riff of Term.constr * Term.constr
+  | Rnot of constr
+  | Ror of constr * constr
+  | Rand of constr * constr
+  | Rimp of constr * constr
+  | Riff of constr * constr
   | Rother
 
 (* A module factorizing what we should now about the number representation *)
 module type Int =
   sig
     (* the coq type of the numbers *)
-    val typ : Term.constr Lazy.t
+    val typ : constr Lazy.t
     (* Is a constr expands to the type of these numbers *)
-    val is_int_typ : [ `NF ] Proofview.Goal.t -> Term.constr -> bool
+    val is_int_typ : [ `NF ] Proofview.Goal.t -> constr -> bool
     (* the operations on the numbers *)
-    val plus : Term.constr Lazy.t
-    val mult : Term.constr Lazy.t
-    val opp : Term.constr Lazy.t
-    val minus : Term.constr Lazy.t
+    val plus : constr Lazy.t
+    val mult : constr Lazy.t
+    val opp : constr Lazy.t
+    val minus : constr Lazy.t
     (* building a coq number *)
-    val mk : Bigint.bigint -> Term.constr
+    val mk : Bigint.bigint -> constr
     (* parsing a term (one level, except if a number is found) *)
-    val parse_term : Term.constr -> parse_term
+    val parse_term : constr -> parse_term
     (* parsing a relation expression, including = < <= >= > *)
-    val parse_rel : [ `NF ] Proofview.Goal.t -> Term.constr -> parse_rel
+    val parse_rel : [ `NF ] Proofview.Goal.t -> constr -> parse_rel
     (* Is a particular term only made of numbers and + * - ? *)
-    val get_scalar : Term.constr -> Bigint.bigint option
+    val get_scalar : constr -> Bigint.bigint option
   end
 
 (* Currently, we only use Z numbers *)

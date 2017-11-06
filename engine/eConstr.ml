@@ -10,6 +10,7 @@ open CErrors
 open Util
 open Names
 open Term
+open Constr
 open Context
 open Evd
 
@@ -34,7 +35,7 @@ end
 type t
 val kind : Evd.evar_map -> t -> (t, t, ESorts.t, EInstance.t) Constr.kind_of_term
 val kind_upto : Evd.evar_map -> constr -> (constr, types, Sorts.t, Univ.Instance.t) Constr.kind_of_term
-val kind_of_type : Evd.evar_map -> t -> (t, t) kind_of_type
+val kind_of_type : Evd.evar_map -> t -> (t, t) Term.kind_of_type
 val whd_evar : Evd.evar_map -> t -> t
 val of_kind : (t, t, ESorts.t, EInstance.t) Constr.kind_of_term -> t
 val of_constr : Constr.t -> t
@@ -84,16 +85,16 @@ let rec whd_evar sigma c =
     | Some c -> whd_evar sigma c
     | None -> c
     end
-  | App (f, args) when isEvar f ->
+  | App (f, args) when Term.isEvar f ->
     (** Enforce smart constructor invariant on applications *)
-    let ev = destEvar f in
+    let ev = Term.destEvar f in
     begin match safe_evar_value sigma ev with
     | None -> c
     | Some f -> whd_evar sigma (mkApp (f, args))
     end
-  | Cast (c0, k, t) when isEvar c0 ->
+  | Cast (c0, k, t) when Term.isEvar c0 ->
     (** Enforce smart constructor invariant on casts. *)
-    let ev = destEvar c0 in
+    let ev = Term.destEvar c0 in
     begin match safe_evar_value sigma ev with
     | None -> c
     | Some c -> whd_evar sigma (mkCast (c, k, t))

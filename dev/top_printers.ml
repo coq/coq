@@ -8,6 +8,7 @@
 
 (* Printers for the ocaml toplevel. *)
 
+open Sorts
 open Util
 open Pp
 open Names
@@ -17,7 +18,7 @@ open Nameops
 open Univ
 open Environ
 open Printer
-open Term
+open Constr
 open Evd
 open Goptions
 open Genarg
@@ -242,7 +243,7 @@ let cast_kind_display k =
   | NATIVEcast -> "NATIVEcast"
 
 let constr_display csr =
-  let rec term_display c = match kind_of_term c with
+  let rec term_display c = match kind c with
   | Rel n -> "Rel("^(string_of_int n)^")"
   | Meta n -> "Meta("^(string_of_int n)^")"
   | Var id -> "Var("^(Id.to_string id)^")"
@@ -314,7 +315,7 @@ let constr_display csr =
 open Format;;
 
 let print_pure_constr csr =
-  let rec term_display c = match kind_of_term c with
+  let rec term_display c = match Constr.kind c with
   | Rel n -> print_string "#"; print_int n
   | Meta n -> print_string "Meta("; print_int n; print_string ")"
   | Var id -> print_string (Id.to_string id)

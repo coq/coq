@@ -27,7 +27,7 @@ val subst_const_body : substitution -> constant_body -> constant_body
 
 val constant_has_body : constant_body -> bool
 
-val constant_polymorphic_context : constant_body -> abstract_universe_context
+val constant_polymorphic_context : constant_body -> AUContext.t
 
 (** Is the constant polymorphic? *)
 val constant_is_polymorphic : constant_body -> bool
@@ -57,7 +57,7 @@ val subst_wf_paths : substitution -> wf_paths -> wf_paths
 
 val subst_mind_body : substitution -> mutual_inductive_body -> mutual_inductive_body
 
-val inductive_polymorphic_context : mutual_inductive_body -> abstract_universe_context
+val inductive_polymorphic_context : mutual_inductive_body -> AUContext.t
 
 (** Is the inductive polymorphic? *)
 val inductive_is_polymorphic : mutual_inductive_body -> bool

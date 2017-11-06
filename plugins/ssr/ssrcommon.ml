@@ -12,6 +12,7 @@ open Util
 open Names
 open Evd
 open Term
+open Constr
 open Termops
 open Printer
 open Locusops
@@ -465,7 +466,6 @@ let ssrevaltac ist gtac =
 (* but stripping global ones. We use the variable names to encode the    *)
 (* the number of dependencies, so that the transformation is reversible. *)
 
-open Term
 let env_size env = List.length (Environ.named_context env)
 
 let pf_concl gl = EConstr.Unsafe.to_constr (pf_concl gl)
@@ -491,23 +491,23 @@ let pf_abs_evars2 gl rigid (sigma, c0) =
     | NamedDecl.LocalAssum (x,t) -> mkNamedProd x t c in
     let t = Context.Named.fold_inside abs_dc ~init:evi.evar_concl dc in
     nf_evar sigma t in
-  let rec put evlist c = match kind_of_term c with
+  let rec put evlist c = match Constr.kind c with
   | Evar (k, a) ->  
     if List.mem_assoc k evlist || Evd.mem sigma0 k || List.mem k rigid then evlist else
     let n = max 0 (Array.length a - nenv) in
     let t = abs_evar n k in (k, (n, t)) :: put evlist t
-  | _ -> fold_constr put evlist c in
+  | _ -> Constr.fold put evlist c in
   let evlist = put [] c0 in
   if evlist = [] then 0, EConstr.of_constr c0,[], ucst else
   let rec lookup k i = function
     | [] -> 0, 0
     | (k', (n, _)) :: evl -> if k = k' then i, n else lookup k (i + 1) evl in
-  let rec get i c = match kind_of_term c with
+  let rec get i c = match Constr.kind c with
   | Evar (ev, a) ->
     let j, n = lookup ev i evlist in
-    if j = 0 then map_constr (get i) c else if n = 0 then mkRel j else
+    if j = 0 then Constr.map (get i) c else if n = 0 then mkRel j else
     mkApp (mkRel j, Array.init n (fun k -> get i a.(n - 1 - k)))
-  | _ -> map_constr_with_binders ((+) 1) get i c in
+  | _ -> Constr.map_with_binders ((+) 1) get i c in
   let rec loop c i = function
   | (_, (n, t)) :: evl ->
     loop (mkLambda (mk_evar_name n, get (i - 1) t, c)) (i - 1) evl
@@ -551,7 +551,7 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
     | NamedDecl.LocalAssum (x,t) -> mkNamedProd x t c in
     let t = Context.Named.fold_inside abs_dc ~init:evi.evar_concl dc in
     nf_evar sigma0 (nf_evar sigma t) in
-  let rec put evlist c = match kind_of_term c with
+  let rec put evlist c = match Constr.kind c with
   | Evar (k, a) ->  
     if List.mem_assoc k evlist || Evd.mem sigma0 k then evlist else
     let n = max 0 (Array.length a - nenv) in
@@ -560,7 +560,7 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
         (pf_env gl) sigma (EConstr.of_constr (Evd.evar_concl (Evd.find sigma k))) in
     let is_prop = k_ty = InProp in
     let t = abs_evar n k in (k, (n, t, is_prop)) :: put evlist t
-  | _ -> fold_constr put evlist c in
+  | _ -> Constr.fold put evlist c in
   let evlist = put [] c0 in
   if evlist = [] then 0, c0 else
   let pr_constr t = Printer.pr_econstr (Reductionops.nf_beta (project gl) (EConstr.of_constr t)) in
@@ -588,17 +588,17 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
   let rec lookup k i = function
     | [] -> 0, 0
     | (k', (n,_,_)) :: evl -> if k = k' then i,n else lookup k (i + 1) evl in
-  let rec get evlist i c = match kind_of_term c with
+  let rec get evlist i c = match Constr.kind c with
   | Evar (ev, a) ->
     let j, n = lookup ev i evlist in
-    if j = 0 then map_constr (get evlist i) c else if n = 0 then mkRel j else
+    if j = 0 then Constr.map (get evlist i) c else if n = 0 then mkRel j else
     mkApp (mkRel j, Array.init n (fun k -> get evlist i a.(n - 1 - k)))
-  | _ -> map_constr_with_binders ((+) 1) (get evlist) i c in
+  | _ -> Constr.map_with_binders ((+) 1) (get evlist) i c in
   let rec app extra_args i c = match decompose_app c with
   | hd, args when isRel hd && destRel hd = i ->
       let j = destRel hd in
       mkApp (mkRel j, Array.of_list (List.map (Vars.lift (i-1)) extra_args @ args))
-  | _ -> map_constr_with_binders ((+) 1) (app extra_args) i c in
+  | _ -> Constr.map_with_binders ((+) 1) (app extra_args) i c in
   let rec loopP evlist c i = function
   | (_, (n, t, _)) :: evl ->
     let t = get evlist (i - 1) t in
@@ -645,7 +645,7 @@ let pf_abs_cterm gl n c0 =
   let c0 = EConstr.Unsafe.to_constr c0 in
   let noargs = [|0|] in
   let eva = Array.make n noargs in
-  let rec strip i c = match kind_of_term c with
+  let rec strip i c = match Constr.kind c with
   | App (f, a) when isRel f ->
     let j = i - destRel f in
     if j >= n || eva.(j) = noargs then mkApp (f, Array.map (strip i) a) else
@@ -653,8 +653,8 @@ let pf_abs_cterm gl n c0 =
     let nd = Array.length dp - 1 in
     let mkarg k = strip i a.(if k < nd then dp.(k + 1) - j else k + dp.(0)) in
     mkApp (f, Array.init (Array.length a - dp.(0)) mkarg)
-  | _ -> map_constr_with_binders ((+) 1) strip i c in
-  let rec strip_ndeps j i c = match kind_of_term c with
+  | _ -> Constr.map_with_binders ((+) 1) strip i c in
+  let rec strip_ndeps j i c = match Constr.kind c with
   | Prod (x, t, c1) when i < j ->
     let dl, c2 = strip_ndeps j (i + 1) c1 in
     if Vars.noccurn 1 c2 then dl, Vars.lift (-1) c2 else
@@ -665,7 +665,7 @@ let pf_abs_cterm gl n c0 =
     if Vars.noccurn 1 c2 then dl, Vars.lift (-1) c2 else
     i :: dl, mkLetIn (x, strip i b, strip i t, c2)
   | _ -> [], strip i c in
-  let rec strip_evars i c = match kind_of_term c with
+  let rec strip_evars i c = match Constr.kind c with
     | Lambda (x, t1, c1) when i < n ->
       let na = nb_evar_deps x in
       let dl, t2 = strip_ndeps (i + na) i t1 in
@@ -760,7 +760,7 @@ let clear_with_wilds wilds clr0 gl =
     let id = NamedDecl.get_id nd in
     if List.mem id clr || not (List.mem id wilds) then clr else
     let vars = Termops.global_vars_set_of_decl (pf_env gl) (project gl) nd in
-    let occurs id' = Idset.mem id' vars in
+    let occurs id' = Id.Set.mem id' vars in
     if List.exists occurs clr then id :: clr else clr in
   Proofview.V82.of_tactic (Tactics.clear (Context.Named.fold_inside extend_clr ~init:clr0 (Tacmach.pf_hyps gl))) gl
 

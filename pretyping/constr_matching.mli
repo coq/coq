@@ -9,7 +9,7 @@
 (** This module implements pattern-matching on terms *)
 
 open Names
-open Term
+open Constr
 open EConstr
 open Environ
 open Pattern

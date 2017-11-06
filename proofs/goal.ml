@@ -99,7 +99,7 @@ module V82 = struct
   let same_goal evars1 gl1 evars2 gl2 =
     let evi1 = Evd.find evars1 gl1 in
     let evi2 = Evd.find evars2 gl2 in
-    Term.eq_constr evi1.Evd.evar_concl evi2.Evd.evar_concl &&
+    Constr.equal evi1.Evd.evar_concl evi2.Evd.evar_concl &&
     Environ.eq_named_context_val evi1.Evd.evar_hyps evi2.Evd.evar_hyps
 
   let weak_progress glss gls =

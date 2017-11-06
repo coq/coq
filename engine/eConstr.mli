@@ -93,7 +93,7 @@ val mkEvar : t pexistential -> t
 val mkSort : Sorts.t -> t
 val mkProp : t
 val mkSet  : t
-val mkType : Univ.universe -> t
+val mkType : Univ.Universe.t -> t
 val mkCast : t * cast_kind * t -> t
 val mkProd : Name.t * t * t -> t
 val mkLambda : Name.t * t * t -> t

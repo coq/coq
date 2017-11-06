@@ -6,18 +6,18 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Term
+open Constr
 open Univ
 
 let universes_of_constr c =
   let rec aux s c = 
-    match kind_of_term c with
+    match kind c with
     | Const (_, u) | Ind (_, u) | Construct (_, u) ->
       LSet.fold LSet.add (Instance.levels u) s
     | Sort u when not (Sorts.is_small u) -> 
-      let u = univ_of_sort u in
+      let u = Term.univ_of_sort u in
       LSet.fold LSet.add (Universe.levels u) s
-    | _ -> fold_constr aux s c
+    | _ -> Constr.fold aux s c
   in aux LSet.empty c
 
 let restrict_universe_context (univs,csts) s =

@@ -16,7 +16,7 @@
 open Pp
 open Util
 open Names
-open Term
+open Constr
 
 (* For Inline, the int is an inlining level, and the constr (if present)
    is the term into which we should inline. *)
@@ -340,7 +340,7 @@ let subst_evaluable_reference subst = function
 
 let rec map_kn f f' c =
   let func = map_kn f f' in
-    match kind_of_term c with
+    match kind c with
       | Const kn -> (try snd (f' kn) with No_subst -> c)
       | Proj (p,t) -> 
           let p' = 

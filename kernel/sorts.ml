@@ -14,7 +14,7 @@ type family = InProp | InSet | InType
 
 type t =
   | Prop of contents                      (* proposition types *)
-  | Type of universe
+  | Type of Universe.t
 
 let prop = Prop Null
 let set = Prop Pos
@@ -91,7 +91,7 @@ module Hsorts =
     struct
       type _t = t
       type t = _t
-      type u = universe -> universe
+      type u = Universe.t -> Universe.t
 
       let hashcons huniv = function
         | Type u as c -> 

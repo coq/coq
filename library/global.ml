@@ -233,7 +233,7 @@ let universes_of_global gr =
 
 (** Global universe names *)
 type universe_names = 
-  (polymorphic * Univ.universe_level) Id.Map.t * Id.t Univ.LMap.t
+  (polymorphic * Univ.Level.t) Id.Map.t * Id.t Univ.LMap.t
 
 let global_universes =
   Summary.ref ~name:"Global universe names"

@@ -8,7 +8,7 @@
 
 open Names
 open Libnames
-open Term
+open Constr
 open Entries
 open Decl_kinds
 
@@ -42,7 +42,7 @@ type internal_flag =
 (* Defaut definition entries, transparent with no secctx or proj information *)
 val definition_entry : ?fix_exn:Future.fix_exn ->
   ?opaque:bool -> ?inline:bool -> ?types:types ->
-  ?poly:polymorphic -> ?univs:Univ.universe_context ->
+  ?poly:polymorphic -> ?univs:Univ.UContext.t ->
   ?eff:Safe_typing.private_constants -> constr -> Safe_typing.private_constants definition_entry
 
 (** [declare_constant id cd] declares a global declaration
@@ -84,7 +84,7 @@ val exists_name : Id.t -> bool
 
 (** Global universe contexts, names and constraints *)
 
-val declare_universe_context : polymorphic -> Univ.universe_context_set -> unit
+val declare_universe_context : polymorphic -> Univ.ContextSet.t -> unit
 
 val do_universe : polymorphic -> Id.t Loc.located list -> unit
 val do_constraint : polymorphic ->
