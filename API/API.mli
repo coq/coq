@@ -5831,7 +5831,7 @@ module Vernacinterp :
 sig
   type deprecation = bool
 
-  type vernac_command = Genarg.raw_generic_argument list -> unit -> unit
+  type vernac_command = Genarg.raw_generic_argument list -> Loc.t option -> unit
 
   val vinterp_add : deprecation -> Vernacexpr.extend_name ->
     vernac_command -> unit
