@@ -57,3 +57,14 @@ match goal with |- ?x*?y => idtac x end.
 match goal with H: context [?x*?y] |- _ => idtac x end.
 match goal with |- context [?x*?y] => idtac x end.
 Abort.
+
+(* Check printing of let in Ltac and Tactic Notation *)
+
+Ltac foo :=
+  let x := intros in
+  let y := intros -> in
+  let v := constr:(@ nil True) in
+  let w := () in
+  let z := 1 in
+  pose v.
+Print Ltac foo.
