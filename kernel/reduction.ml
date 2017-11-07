@@ -202,8 +202,7 @@ type 'a universe_compare =
   { (* Might raise NotConvertible *)
     compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
     compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
-    compare_cumul_instances : conv_pb -> Univ.abstract_cumulativity_info ->
-      Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a }
+    compare_cumul_instances : Univ.Constraint.t -> 'a -> 'a }
 
 type 'a universe_state = 'a * 'a universe_compare
 
@@ -218,31 +217,58 @@ let sort_cmp_universes env pb s0 s1 (u, check) =
    constructors. *)
 let convert_instances ~flex u u' (s, check) =
   (check.compare_instances ~flex u u' s, check)
-  
-let convert_inductives cv_pb (mind,ind) u1 sv1 u2 sv2 (s, check as univs) =
+
+let get_cumulativity_constraints cv_pb cumi u u' =
+  let length_ind_instance =
+    Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)
+  in
+  let ind_subtypctx = Univ.ACumulativityInfo.subtyp_context cumi in
+  if not ((length_ind_instance = Univ.Instance.length u) &&
+          (length_ind_instance = Univ.Instance.length u')) then
+     anomaly (Pp.str "Invalid inductive subtyping encountered!")
+  else
+    let comp_cst =
+      let comp_subst = (Univ.Instance.append u u') in
+      Univ.AUContext.instantiate comp_subst ind_subtypctx
+    in
+    match cv_pb with
+    | CONV ->
+      let comp_cst' =
+        let comp_subst = (Univ.Instance.append u' u) in
+        Univ.AUContext.instantiate comp_subst ind_subtypctx
+      in
+      Univ.Constraint.union comp_cst comp_cst'
+    | CUMUL -> comp_cst
+
+let convert_inductives_gen cmp_instances cmp_cumul cv_pb (mind,ind) nargs u1 u2 s =
   match mind.Declarations.mind_universes with
   | Declarations.Monomorphic_ind _ ->
     assert (Univ.Instance.length u1 = 0 && Univ.Instance.length u2 = 0);
-    univs
+    s
   | Declarations.Polymorphic_ind _ ->
-    check.compare_instances ~flex:false u1 u2 s, check
+    cmp_instances u1 u2 s
   | Declarations.Cumulative_ind cumi ->
     let num_param_arity =
       mind.Declarations.mind_nparams +
       mind.Declarations.mind_packets.(ind).Declarations.mind_nrealargs
     in
-    if not (num_param_arity = sv1 && num_param_arity = sv2) then
-      check.compare_instances ~flex:false u1 u2 s, check
+    if not (Int.equal num_param_arity nargs) then
+      cmp_instances u1 u2 s
     else
-      check.compare_cumul_instances cv_pb cumi u1 u2 s, check
+      let csts = get_cumulativity_constraints cv_pb cumi u1 u2 in
+      cmp_cumul csts s
 
-let convert_constructors (mind, ind, cns) u1 sv1 u2 sv2 (s, check as univs) =
+let convert_inductives cv_pb ind nargs u1 u2 (s, check) =
+  convert_inductives_gen (check.compare_instances ~flex:false) check.compare_cumul_instances
+    cv_pb ind nargs u1 u2 s, check
+
+let convert_constructors_gen cmp_instances cmp_cumul (mind, ind, cns) nargs u1 u2 s =
   match mind.Declarations.mind_universes with
   | Declarations.Monomorphic_ind _ ->
     assert (Univ.Instance.length u1 = 0 && Univ.Instance.length u2 = 0);
-    univs
+    s
   | Declarations.Polymorphic_ind _ ->
-    check.compare_instances ~flex:false u1 u2 s, check
+    cmp_instances u1 u2 s
   | Declarations.Cumulative_ind cumi ->
     let num_cnstr_args =
       let nparamsctxt =
@@ -251,10 +277,15 @@ let convert_constructors (mind, ind, cns) u1 sv1 u2 sv2 (s, check as univs) =
         (* Context.Rel.length mind.Declarations.mind_params_ctxt *) in
       nparamsctxt + mind.Declarations.mind_packets.(ind).Declarations.mind_consnrealargs.(cns - 1)
     in
-    if not (num_cnstr_args = sv1 && num_cnstr_args = sv2) then
-      check.compare_instances ~flex:false u1 u2 s, check
+    if not (Int.equal num_cnstr_args nargs) then
+      cmp_instances u1 u2 s
     else
-      check.compare_cumul_instances CONV cumi u1 u2 s, check
+      let csts = get_cumulativity_constraints CONV cumi u1 u2 in
+      cmp_cumul csts s
+
+let convert_constructors ctor nargs u1 u2 (s, check) =
+  convert_constructors_gen (check.compare_instances ~flex:false) check.compare_cumul_instances
+    ctor nargs u1 u2 s, check
 
 let conv_table_key infos k1 k2 cuniv =
   if k1 == k2 then cuniv else
@@ -537,13 +568,12 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else
           let mind = Environ.lookup_mind (fst ind1) (info_env infos) in
-          let cuniv =
-            convert_inductives cv_pb (mind, snd ind1)
-              u1 (CClosure.stack_args_size v1)
-              u2 (CClosure.stack_args_size v2)
-              cuniv
-          in
-          convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+          let nargs = CClosure.stack_args_size v1 in
+          if not (Int.equal nargs (CClosure.stack_args_size v2))
+          then raise NotConvertible
+          else
+            let cuniv = convert_inductives cv_pb (mind, snd ind1) nargs u1 u2 cuniv in
+            convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible
 
     | (FConstruct ((ind1,j1),u1), FConstruct ((ind2,j2),u2)) ->
@@ -553,13 +583,12 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else
           let mind = Environ.lookup_mind (fst ind1) (info_env infos) in
-          let cuniv =
-            convert_constructors (mind, snd ind1, j1)
-              u1 (CClosure.stack_args_size v1)
-              u2 (CClosure.stack_args_size v2)
-              cuniv
-          in
-          convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+          let nargs = CClosure.stack_args_size v1 in
+          if not (Int.equal nargs (CClosure.stack_args_size v2))
+          then raise NotConvertible
+          else
+            let cuniv = convert_constructors (mind, snd ind1, j1) nargs u1 u2 cuniv in
+            convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible
 	  
     (* Eta expansion of records *)
@@ -676,31 +705,9 @@ let check_convert_instances ~flex u u' univs =
   else raise NotConvertible
 
 (* general conversion and inference functions *)
-let check_inductive_instances cv_pb cumi u u' univs =
-  let length_ind_instance = 
-    Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)
-  in
-  let ind_subtypctx = Univ.ACumulativityInfo.subtyp_context cumi in
-  if not ((length_ind_instance = Univ.Instance.length u) &&
-          (length_ind_instance = Univ.Instance.length u')) then
-     anomaly (Pp.str "Invalid inductive subtyping encountered!")
-  else
-    let comp_cst =
-      let comp_subst = (Univ.Instance.append u u') in
-      Univ.AUContext.instantiate comp_subst ind_subtypctx
-    in
-    let comp_cst =
-      match cv_pb with
-        CONV -> 
-        let comp_cst' = 
-          let comp_subst = (Univ.Instance.append u' u) in
-          Univ.AUContext.instantiate comp_subst ind_subtypctx
-        in
-        Univ.Constraint.union comp_cst comp_cst'
-      | CUMUL -> comp_cst
-    in
-    if (UGraph.check_constraints comp_cst univs) then univs
-    else raise NotConvertible
+let check_inductive_instances csts univs =
+  if (UGraph.check_constraints csts univs) then univs
+  else raise NotConvertible
 
 let checked_universes =
   { compare_sorts = checked_sort_cmp_universes;
@@ -748,30 +755,8 @@ let infer_convert_instances ~flex u u' (univs,cstrs) =
     else Univ.enforce_eq_instances u u' cstrs
   in (univs, cstrs')
 
-let infer_inductive_instances cv_pb cumi u u' (univs, cstrs) =
-  let length_ind_instance = 
-    Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)
-  in
-  let ind_subtypctx =  Univ.ACumulativityInfo.subtyp_context cumi in
-  if not ((length_ind_instance = Univ.Instance.length u) &&
-          (length_ind_instance = Univ.Instance.length u')) then
-    anomaly (Pp.str "Invalid inductive subtyping encountered!")
-  else
-    let comp_cst =
-      let comp_subst = (Univ.Instance.append u u') in
-      Univ.AUContext.instantiate comp_subst ind_subtypctx
-    in
-    let comp_cst =
-      match cv_pb with
-        CONV -> 
-        let comp_cst' = 
-          let comp_subst = (Univ.Instance.append u' u) in
-          Univ.AUContext.instantiate comp_subst ind_subtypctx
-        in
-        Univ.Constraint.union comp_cst comp_cst'
-      | CUMUL -> comp_cst
-    in
-    (univs, Univ.Constraint.union cstrs comp_cst)
+let infer_inductive_instances csts (univs,csts') =
+  (univs, Univ.Constraint.union csts csts')
 
 let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare =
   { compare_sorts = infer_cmp_universes;

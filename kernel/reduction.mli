@@ -39,8 +39,7 @@ type 'a universe_compare =
   { (* Might raise NotConvertible *)
     compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
     compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
-    compare_cumul_instances : conv_pb -> Univ.abstract_cumulativity_info ->
-      Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a }
+    compare_cumul_instances : Univ.Constraint.t -> 'a -> 'a }
 
 type 'a universe_state = 'a * 'a universe_compare
 
