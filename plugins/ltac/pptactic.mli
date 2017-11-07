@@ -40,11 +40,36 @@ type 'a extra_genarg_printer =
     (tolerability -> Val.t -> Pp.t) ->
     'a -> Pp.t
 
+type 'a raw_extra_genarg_printer_with_level =
+    (constr_expr -> Pp.t) ->
+    (constr_expr -> Pp.t) ->
+    (tolerability -> raw_tactic_expr -> Pp.t) ->
+    tolerability -> 'a -> Pp.t
+
+type 'a glob_extra_genarg_printer_with_level =
+    (glob_constr_and_expr -> Pp.t) ->
+    (glob_constr_and_expr -> Pp.t) ->
+    (tolerability -> glob_tactic_expr -> Pp.t) ->
+    tolerability -> 'a -> Pp.t
+
+type 'a extra_genarg_printer_with_level =
+    (EConstr.constr -> Pp.t) ->
+    (EConstr.constr -> Pp.t) ->
+    (tolerability -> Val.t -> Pp.t) ->
+    tolerability -> 'a -> Pp.t
+
 val declare_extra_genarg_pprule :
   ('a, 'b, 'c) genarg_type ->
   'a raw_extra_genarg_printer ->
   'b glob_extra_genarg_printer ->
   'c extra_genarg_printer -> unit
+
+val declare_extra_genarg_pprule_with_level :
+  ('a, 'b, 'c) genarg_type ->
+  'a raw_extra_genarg_printer_with_level ->
+  'b glob_extra_genarg_printer_with_level ->
+  'c extra_genarg_printer_with_level ->
+  (* surroounded *) tolerability -> (* non-surroounded *) tolerability -> unit
 
 val declare_extra_vernac_genarg_pprule :
   ('a, 'b, 'c) genarg_type ->

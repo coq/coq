@@ -33,7 +33,7 @@ let (wit_constr_under_binders : (Empty.t, Empty.t, Ltac_pretype.constr_under_bin
   let () = register_val0 wit None in
   let () = Genprint.register_val_print0 (base_val_typ wit)
              (fun c ->
-               Genprint.PrinterNeedsContext (fun env sigma -> Printer.pr_constr_under_binders_env env sigma c)) in
+               Genprint.TopPrinterNeedsContext (fun env sigma -> Printer.pr_constr_under_binders_env env sigma c)) in
   wit
 
 (** All the types considered here are base types *)

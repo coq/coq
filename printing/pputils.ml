@@ -130,7 +130,10 @@ let rec pr_raw_generic env (GenArg (Rawwit wit, x)) =
       let q = in_gen (rawwit wit2) q in
       hov_if_not_empty 0 (pr_sequence (pr_raw_generic env) [p; q])
     | ExtraArg s ->
-      Genprint.generic_raw_print (in_gen (rawwit wit) x)
+       let open Genprint in
+       match generic_raw_print (in_gen (rawwit wit) x) with
+       | PrinterBasic pp -> pp ()
+       | PrinterNeedsLevel { default_ensure_surrounded; printer } -> printer default_ensure_surrounded
 
 
 let rec pr_glb_generic env (GenArg (Glbwit wit, x)) =
@@ -152,4 +155,7 @@ let rec pr_glb_generic env (GenArg (Glbwit wit, x)) =
       let ans = pr_sequence (pr_glb_generic env) [p; q] in
       hov_if_not_empty 0 ans
     | ExtraArg s ->
-      Genprint.generic_glb_print (in_gen (glbwit wit) x)
+       let open Genprint in
+       match generic_glb_print (in_gen (glbwit wit) x) with
+       | PrinterBasic pp -> pp ()
+       | PrinterNeedsLevel { default_ensure_surrounded; printer } -> printer default_ensure_surrounded
