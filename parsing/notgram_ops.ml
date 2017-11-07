@@ -53,11 +53,10 @@ let constr_entry_key_eq eq v1 v2 = match v1, v2 with
 | ETReference, ETReference -> true
 | ETBigint, ETBigint -> true
 | ETBinder b1, ETBinder b2 -> b1 == b2
-| ETConstr (s1,lev1), ETConstr (s2,lev2) -> notation_entry_eq s1 s2 && eq lev1 lev2
-| ETConstrAsBinder (s1,bk1,lev1), ETConstrAsBinder (s2,bk2,lev2) ->
-   notation_entry_eq s1 s2 && eq lev1 lev2 && bk1 = bk2
+| ETConstr (s1,bko1,lev1), ETConstr (s2,bko2,lev2) ->
+   notation_entry_eq s1 s2 && eq lev1 lev2 && Option.equal (=) bko1 bko2
 | ETPattern (b1,n1), ETPattern (b2,n2) -> b1 = b2 && Option.equal Int.equal n1 n2
-| (ETName | ETReference | ETBigint | ETBinder _ | ETConstr _ | ETPattern _ | ETConstrAsBinder _), _ -> false
+| (ETName | ETReference | ETBigint | ETBinder _ | ETConstr _ | ETPattern _), _ -> false
 
 let level_eq_gen strict (s1, l1, t1, u1) (s2, l2, t2, u2) =
   let tolerability_eq (i1, r1) (i2, r2) = Int.equal i1 i2 && parenRelation_eq r1 r2 in

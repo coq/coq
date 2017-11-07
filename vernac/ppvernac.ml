@@ -106,9 +106,9 @@ open Pputils
     | NextLevel -> keyword "at" ++ spc () ++ keyword "next" ++ spc () ++ keyword "level"
 
   let pr_constr_as_binder_kind = let open Notation_term in function
-    | AsIdent -> keyword "as ident"
-    | AsIdentOrPattern -> keyword "as pattern"
-    | AsStrictPattern -> keyword "as strict pattern"
+    | AsIdent -> spc () ++ keyword "as ident"
+    | AsIdentOrPattern -> spc () ++ keyword "as pattern"
+    | AsStrictPattern -> spc () ++ keyword "as strict pattern"
 
   let pr_strict b = if b then str "strict " else mt ()
 
@@ -117,8 +117,7 @@ open Pputils
     | ETReference -> str"global"
     | ETPattern (b,None) -> pr_strict b ++ str"pattern"
     | ETPattern (b,Some n) -> pr_strict b ++ str"pattern" ++ spc () ++ pr_at_level (NumLevel n)
-    | ETConstr (s,lev) -> pr_notation_entry s ++ pr lev
-    | ETConstrAsBinder (e,bk,lev) -> pr_notation_entry e ++ pr lev ++ spc () ++ pr_constr_as_binder_kind bk
+    | ETConstr (s,bko,lev) -> pr_notation_entry s ++ pr lev ++ pr_opt pr_constr_as_binder_kind bko
     | ETBigint -> str "bigint"
     | ETBinder true -> str "binder"
     | ETBinder false -> str "closed binder"
@@ -381,11 +380,9 @@ open Pputils
   let pr_thm_token k = keyword (Kindops.string_of_theorem_kind k)
 
   let pr_syntax_modifier = function
-    | SetItemLevel (l,n) ->
-      prlist_with_sep sep_v2 str l ++ spc () ++ pr_at_level n
-    | SetItemLevelAsBinder (l,bk,n) ->
-      prlist_with_sep sep_v2 str l ++
-      spc() ++ pr_at_level_opt n ++ spc() ++ pr_constr_as_binder_kind bk
+    | SetItemLevel (l,bko,n) ->
+      prlist_with_sep sep_v2 str l ++ spc () ++ pr_at_level_opt n ++
+      pr_opt pr_constr_as_binder_kind bko
     | SetLevel n -> pr_at_level (NumLevel n)
     | SetCustomEntry (s,n) -> keyword "in" ++ spc() ++ keyword "custom" ++ spc() ++ str s ++ (match n with None -> mt () | Some n -> pr_at_level (NumLevel n))
     | SetAssoc LeftA -> keyword "left associativity"
