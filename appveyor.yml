@@ -10,13 +10,13 @@ image:
 environment:
   CYGMIRROR: http://ftp.inf.tu-dresden.de/software/windows/cygwin32
   matrix:
-  - USEOPAM: true
-    ARCH: 64
+#  - USEOPAM: true
+#    ARCH: 64
 # Comment out until issue #5998 is fixed.
 #  - USEOPAM: false
 #    ARCH: 32
-#  - USEOPAM: false
-#    ARCH: 64
+  - USEOPAM: false
+    ARCH: 64
 
 build_script:
 - cmd: 'call %APPVEYOR_BUILD_FOLDER%\dev\ci\appveyor.bat'

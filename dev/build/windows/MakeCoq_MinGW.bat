@@ -345,7 +345,7 @@ IF "%COQREGTESTING%" == "Y" (
 SET "EXTRAPACKAGES= "
 
 IF NOT "%APPVEYOR%" == "True" (
-  SET EXTRAPACKAGES="-P wget,curl,git,gcc-core,gcc-g++,automake1.5"
+  SET EXTRAPACKAGES=-P wget,curl,git,gcc-core,gcc-g++,automake1.5
 )
 
 IF "%RUNSETUP%"=="Y" (
