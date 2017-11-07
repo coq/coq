@@ -22,6 +22,9 @@ let option_w = ref false
 let option_sort = ref false
 let option_dump = ref None
 
+(** when true, .v files will generate .v.d output *)
+let file_output = ref false
+
 let warning_mult suf iter =
   let tab = Hashtbl.create 151 in
   let check f d =
@@ -241,7 +244,7 @@ struct
       else
         let x = NSet.choose rem in
         let rem = NSet.remove x rem in
-        if NSet.mem x seen then 
+        if NSet.mem x seen then
           aux rem seen
         else
           let seen = NSet.add x seen in
@@ -456,6 +459,7 @@ let usage () =
   eprintf "  -suffix s : \n";
   eprintf "  -slash : deprecated, no effect\n";
   eprintf "  -dyndep (opt|byte|both|no|var) : set how dependencies over ML modules are printed";
+  eprintf "  -with-file-output : for each .v file. write dependency output to a .v.d file";
   exit 1
 
 let split_period = Str.split (Str.regexp (Str.quote "."))
@@ -488,6 +492,7 @@ let rec parse = function
   | "-dyndep" :: "byte" :: ll -> option_dynlink := Byte; parse ll
   | "-dyndep" :: "both" :: ll -> option_dynlink := Both; parse ll
   | "-dyndep" :: "var" :: ll -> option_dynlink := Variable; parse ll
+  | "-with-file-output" :: ll -> file_output := true; parse ll
   | ("-h"|"--help"|"-help") :: _ -> usage ()
   | f :: ll -> treat_file None f; parse ll
   | [] -> ()
@@ -524,7 +529,7 @@ let coqdep () =
   warning_mult ".ml" iter_ml_known;
   if !option_sort then begin sort (); exit 0 end;
   if !option_c && not !option_D then mL_dependencies ();
-  if not !option_D then coq_dependencies ();
+  if not !option_D then coq_dependencies !file_output;
   if !option_w || !option_D then declare_dependencies ();
   begin match !option_dump with
   | None -> ()

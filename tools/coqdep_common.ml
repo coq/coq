@@ -357,7 +357,7 @@ end
 
 module VCache = Set.Make(VData)
 
-let rec traite_fichier_Coq suffixe verbose f =
+let rec traite_fichier_Coq suffixe verbose f out_ch =
   try
     let chan = open_in f in
     let buf = Lexing.from_channel chan in
@@ -373,7 +373,7 @@ let rec traite_fichier_Coq suffixe verbose f =
 	          deja_vu_v := VCache.add (from, str) !deja_vu_v;
                   try
                     let file_str = safe_assoc from verbose f str in
-                    printf " %s%s" (canonize file_str) suffixe
+                    fprintf out_ch " %s%s" (canonize file_str) suffixe
                   with Not_found ->
 		    if verbose && not (is_in_coqlib ?from str) then
 		      let str =
@@ -388,11 +388,11 @@ let rec traite_fichier_Coq suffixe verbose f =
 		let base = escape (file_name s dir) in
                 match !option_dynlink with
                 | No -> ()
-                | Byte -> printf " %s%s" base suff
-                | Opt -> printf " %s.cmxs" base
-                | Both -> printf " %s%s %s.cmxs" base suff base
+                | Byte -> fprintf out_ch " %s%s" base suff
+                | Opt -> fprintf out_ch " %s.cmxs" base
+                | Both -> fprintf out_ch " %s%s %s.cmxs" base suff base
                 | Variable ->
-                   printf " %s%s" base
+                   fprintf out_ch " %s%s" base
                     (if suff=".cmo" then "$(DYNOBJ)" else "$(DYNLIB)")
               in
 	      let decl str =
@@ -417,8 +417,8 @@ let rec traite_fichier_Coq suffixe verbose f =
                 try
                   let (file_str, _) = Hashtbl.find vKnown [str] in
                   let canon = canonize file_str in
-                  printf " %s.v" canon;
-                  traite_fichier_Coq suffixe true (canon ^ ".v")
+                  fprintf out_ch " %s.v" canon;
+                  traite_fichier_Coq suffixe true (canon ^ ".v") out_ch
                 with Not_found -> ()
        	      end
           | AddLoadPath _ | AddRecLoadPath _ -> (* TODO *) ()
@@ -474,18 +474,26 @@ let mL_dependencies () =
        flush stdout)
     (List.rev !mlpackAccu)
 
-let coq_dependencies () =
+let coq_dependencies file_output =
   List.iter
-    (fun (name,_) ->
+    (fun (name,absname) ->
        let ename = escape name in
        let glob = if !option_noglob then "" else " "^ename^".glob" in
-       printf "%s%s%s %s.v.beautified: %s.v" ename !suffixe glob ename ename;
-       traite_fichier_Coq !suffixe true (name ^ ".v");
-       printf "\n";
-       printf "%s.vio: %s.v" ename ename;
-       traite_fichier_Coq ".vio" true (name ^ ".v");
-       printf "\n";
-       flush stdout)
+       let out_ch =
+         if file_output then
+           open_out (absname ^ ".v.d")
+         else
+           stdout
+       in
+       fprintf out_ch "%s%s%s %s.v.beautified: %s.v" ename !suffixe glob ename ename;
+       traite_fichier_Coq !suffixe true (name ^ ".v") out_ch;
+       fprintf out_ch "\n";
+       fprintf out_ch "%s.vio: %s.v" ename ename;
+       traite_fichier_Coq ".vio" true (name ^ ".v") out_ch;
+       fprintf out_ch "\n";
+       flush out_ch;
+       if out_ch != stdout then
+         close_out out_ch)
     (List.rev !vAccu)
 
 let rec suffixes = function
@@ -587,7 +595,7 @@ let rec treat_file old_dirname old_name =
 	   | (base,".v") ->
 	       let name = file_name base dirname
 	       and absname = absolute_file_name base dirname in
-	       addQueue vAccu (name, absname)
+               addQueue vAccu (name, absname);
 	   | (base,(".ml"|".ml4" as ext)) -> addQueue mlAccu (base,ext,dirname)
 	   | (base,".mli") -> addQueue mliAccu (base,dirname)
 	   | (base,".mllib") -> addQueue mllibAccu (base,dirname)

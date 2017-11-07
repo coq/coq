@@ -687,6 +687,7 @@ endif
 
 .SECONDARY: $(ALLDFILES)
 
+if_ok = || ( RV=$$?; exit $$RV )
 redir_if_ok = > "$@" || ( RV=$$?; rm -f "$@"; exit $$RV )
 
 $(addsuffix .d,$(MLIFILES)): %.mli.d: %.mli
@@ -709,9 +710,14 @@ $(addsuffix .d,$(MLPACKFILES)): %.mlpack.d: %.mlpack
 	$(SHOW)'COQDEP $<'
 	$(HIDE)$(COQDEP) $(OCAMLLIBS) -c "$<" $(redir_if_ok)
 
-$(addsuffix .d,$(VFILES)): %.v.d: %.v
-	$(SHOW)'COQDEP $<'
-	$(HIDE)$(COQDEP) $(COQLIBS) -dyndep var -c "$<" $(redir_if_ok)
+# .v.d files made from .v files ##############################################
+
+VDFILES=$(addsuffix .d,$(VFILES))
+
+vdfiles: $(VFILES)
+	$(SHOW)'COQDEP $^'
+	$(HIDE)$(COQDEP) $(COQLIBS) -dyndep var -c -with-file-output $^ $(if_ok)
+.PHONY: vdfiles
 
 # Misc ########################################################################
 

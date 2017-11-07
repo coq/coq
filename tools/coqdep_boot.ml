@@ -15,6 +15,9 @@ open Coqdep_common
     options (see for instance [option_natdynlk] below).
 *)
 
+(** when true, .v files will generate .v.d output *)
+let file_output = ref false
+  
 let rec parse = function
   | "-dyndep" :: "no" :: ll -> option_dynlink := No; parse ll
   | "-dyndep" :: "opt" :: ll -> option_dynlink := Opt; parse ll
@@ -31,6 +34,7 @@ let rec parse = function
        add_caml_dir r;
        norec_dirs := StrSet.add r !norec_dirs;
        parse ll
+  | "-with-file-output" :: ll -> file_output := true; parse ll
   | f :: ll -> treat_file None f; parse ll
   | [] -> ()
 
@@ -50,4 +54,4 @@ let _ =
     add_rec_dir_import (fun _ -> add_caml_known) "plugins" ["Coq"];
   end;
   if !option_c then mL_dependencies ();
-  coq_dependencies ()
+  coq_dependencies !file_output

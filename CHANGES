@@ -21,6 +21,13 @@ Tactics
 - Tactic "decide equality" now able to manage constructors which
   contain proofs.
 
+Tools
+
+- The coqdep tool can take the flag "-with-file-output", indicating that
+  that for each .v file on the command line, produce a corresponding .v.d
+  dependency file. Using this flag with multiple files can be much faster
+  than invoking the tool for each file.
+
 Changes from 8.7+beta2 to 8.7.0
 ===============================
 

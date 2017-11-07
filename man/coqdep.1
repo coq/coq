@@ -1,4 +1,4 @@
-.TH COQ 1 "28 March 1995" "Coq tools"
+.TH COQ 1 "6 November 2017" "Coq tools"
 
 .SH NAME
 coqdep \- Compute inter-module dependencies for Coq and Caml programs
@@ -103,9 +103,11 @@ Skips subdirectory
 Output the given file name ordered by dependencies.
 .TP 
 .B \-boot
-For coq developpers, prints dependencies over coq library files
+For coq developers, prints dependencies over coq library files
 (omitted by default).
-
+.TP
+.B \-with-file-output
+For each file.v on the command line, output a file.v.d dependency file
 
 .SH SEE ALSO
 
@@ -160,6 +162,23 @@ example% coqdep \-I . *.v
 .br
 .ne 7
 .LP
+To output the Coq dependencies directly to files:
+.IP
+.B
+example% coqdep \-I . -with-file-output X.v Y.v Z.v
+.RS
+.sp .5
+.nf
+.fi
+.RE
+.br
+.ne 7
+.LP
+which creates files X.v.d, Y.v.d, and Z.v.d
+.RE
+.br
+.ne 7
+.LP
 With a warning:
 .IP
 .B
@@ -199,5 +218,5 @@ example% coqdep \-c \-I . *.ml
 
 .SH BUGS
 
-Please report any bug to
-.B coq\-bugs@pauillac.inria.fr
+Please report any bugs at
+.B https://www.github.com/coq/coq/issues
