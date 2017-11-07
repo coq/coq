@@ -23,19 +23,24 @@ Require Import Logic.
     of elements of the type [A] which satisfy both [P] and [Q]. *)
 
 Inductive sig (A:Type) (P:A -> Prop) : Type :=
-    exist : forall x:A, P x -> sig P.
+    exist : forall x:A, P x -> { x | P x}
+ where "{ x  |  P }" := (sig (fun x => P)) : type_scope.
 
 Inductive sig2 (A:Type) (P Q:A -> Prop) : Type :=
-    exist2 : forall x:A, P x -> Q x -> sig2 P Q.
+    exist2 : forall x:A, P x -> Q x -> { x | P x & Q x }
+ where "{ x  |  P  & Q }" := (sig2 (fun x => P) (fun x => Q)) : type_scope.
 
 (** [(sigT A P)], or more suggestively [{x:A & (P x)}] is a Sigma-type.
     Similarly for [(sigT2 A P Q)], also written [{x:A & (P x) & (Q x)}]. *)
 
 Inductive sigT (A:Type) (P:A -> Type) : Type :=
-    existT : forall x:A, P x -> sigT P.
+    existT : forall x:A, P x -> { x : A & P x }
+ where "{ x : A & P }" := (sigT (A:=A) (fun x => P)) : type_scope.
 
 Inductive sigT2 (A:Type) (P Q:A -> Type) : Type :=
-    existT2 : forall x:A, P x -> Q x -> sigT2 P Q.
+    existT2 : forall x:A, P x -> Q x -> { x : A & P x & Q x }
+ where "{ x : A & P & Q }" := (sigT2 (A:=A) (fun x => P) (fun x => Q)) :
+  type_scope.
 
 (* Notations *)
 
@@ -44,13 +49,8 @@ Arguments sig2 (A P Q)%type.
 Arguments sigT (A P)%type.
 Arguments sigT2 (A P Q)%type.
 
-Notation "{ x  |  P }" := (sig (fun x => P)) : type_scope.
-Notation "{ x  |  P  & Q }" := (sig2 (fun x => P) (fun x => Q)) : type_scope.
 Notation "{ x : A  |  P }" := (sig (A:=A) (fun x => P)) : type_scope.
 Notation "{ x : A  |  P  & Q }" := (sig2 (A:=A) (fun x => P) (fun x => Q)) :
-  type_scope.
-Notation "{ x : A  & P }" := (sigT (A:=A) (fun x => P)) : type_scope.
-Notation "{ x : A  & P  & Q }" := (sigT2 (A:=A) (fun x => P) (fun x => Q)) :
   type_scope.
 
 Add Printing Let sig.
