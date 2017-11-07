@@ -1213,8 +1213,8 @@ let () =
   ;
   Genprint.register_print0
     wit_constr
-    Ppconstr.pr_constr_expr
-    (fun (c, _) -> Printer.pr_glob_constr c)
+    Ppconstr.pr_lconstr_expr
+    (fun (c, _) -> Printer.pr_lglob_constr c)
     Printer.pr_econstr
   ;
   Genprint.register_print0
