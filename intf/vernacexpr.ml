@@ -204,8 +204,7 @@ type proof_expr =
   ident_decl * (local_binder_expr list * constr_expr)
 
 type syntax_modifier =
-  | SetItemLevel of string list * Extend.production_level
-  | SetItemLevelAsBinder of string list * Extend.constr_as_binder_kind * Extend.production_level option
+  | SetItemLevel of string list * Extend.constr_as_binder_kind option * Extend.production_level option
   | SetLevel of int
   | SetCustomEntry of string
   | SetAssoc of Extend.gram_assoc
