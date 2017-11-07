@@ -996,7 +996,7 @@ let pr_goal_selector ~toplevel s =
             | TacAtom (loc,t) ->
               pr_with_comments ?loc (hov 1 (pr_atom pr strip_prod_binders tag_atom t)), ltatom
             | TacArg(_,Tacexp e) ->
-              pr.pr_tactic (latom,E) e, latom
+              pr_tac inherited e, latom
             | TacArg(_,ConstrMayEval (ConstrTerm c)) ->
               keyword "constr:" ++ pr.pr_constr c, latom
             | TacArg(_,ConstrMayEval c) ->
