@@ -2,7 +2,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <link href="coqdoc.css" rel="stylesheet" type="text/css" />
 <title>Coqdoc.bug5648</title>
 </head>
@@ -31,14 +31,14 @@
 <br/>
 <span class="id" title="keyword">Definition</span> <a name="d"><span class="id" title="definition">d</span></a> <span class="id" title="var">x</span> :=<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="Coqdoc.bug5648.html#x"><span class="id" title="variable">x</span></a> <span class="id" title="keyword">with</span><br/>
-&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#A"><span class="id" title="constructor">A</span></a> =&gt; 0<br/>
-&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#Add"><span class="id" title="constructor">Add</span></a> =&gt; 1<br/>
-&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#G"><span class="id" title="constructor">G</span></a> =&gt; 2<br/>
-&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#Goal"><span class="id" title="constructor">Goal</span></a> =&gt; 3<br/>
-&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#L"><span class="id" title="constructor">L</span></a> =&gt; 4<br/>
-&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#Lemma"><span class="id" title="constructor">Lemma</span></a> =&gt; 5<br/>
-&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#P"><span class="id" title="constructor">P</span></a> =&gt; 6<br/>
-&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#Proof"><span class="id" title="constructor">Proof</span></a> =&gt; 7<br/>
+&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#A"><span class="id" title="constructor">A</span></a> ⇒ 0<br/>
+&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#Add"><span class="id" title="constructor">Add</span></a> ⇒ 1<br/>
+&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#G"><span class="id" title="constructor">G</span></a> ⇒ 2<br/>
+&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#Goal"><span class="id" title="constructor">Goal</span></a> ⇒ 3<br/>
+&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#L"><span class="id" title="constructor">L</span></a> ⇒ 4<br/>
+&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#Lemma"><span class="id" title="constructor">Lemma</span></a> ⇒ 5<br/>
+&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#P"><span class="id" title="constructor">P</span></a> ⇒ 6<br/>
+&nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#Proof"><span class="id" title="constructor">Proof</span></a> ⇒ 7<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
 </div>
 </div>
