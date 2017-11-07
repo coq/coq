@@ -723,8 +723,10 @@ let pr_goal_selector ~toplevel s =
         | TacIntroPattern (ev,[]) as t ->
           pr_atom0 t
         | TacIntroPattern (ev,(_::_ as p)) ->
-           hov 1 (primitive (if ev then "eintros" else "intros") ++ spc () ++
-                    prlist_with_sep spc (Miscprint.pr_intro_pattern pr.pr_dconstr) p)
+           hov 1 (primitive (if ev then "eintros" else "intros") ++
+                    (match p with
+                    | [_,Misctypes.IntroForthcoming false] -> mt ()
+                    | _ -> spc () ++ prlist_with_sep spc (Miscprint.pr_intro_pattern pr.pr_dconstr) p))
         | TacApply (a,ev,cb,inhyp) ->
           hov 1 (
             (if a then mt() else primitive "simple ") ++

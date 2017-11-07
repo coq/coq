@@ -1,7 +1,7 @@
 The command has indeed failed with message:
 Ltac variable y depends on pattern variable name z which is not bound in current context.
 Ltac f x y z :=
-  symmetry in x, y; auto with z; auto; intros **; clearbody x; generalize
+  symmetry in x, y; auto with z; auto; intros; clearbody x; generalize
    dependent z
 The command has indeed failed with message:
 In nested Ltac calls to "g1" and "refine (uconstr)", last call failed.
