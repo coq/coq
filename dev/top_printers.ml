@@ -85,8 +85,13 @@ let prset' pr l = str "[" ++ hov 0 (prlist_with_sep pr_comma pr l) ++ str "]"
 let pridmap pr l =
   let pr (id,b) = Id.print id ++ str "=>" ++ pr id b in
   prset' pr (Id.Map.fold (fun a b l -> (a,b)::l) l [])
-
 let ppidmap pr l = pp (pridmap pr l)
+
+let pridmapgen l =
+  let dom = Id.Set.elements (Id.Map.domain l) in
+  if dom = [] then str "[]" else
+  str "[domain= " ++ hov 0 (prlist_with_sep spc Id.print dom) ++ str "]"
+let ppidmapgen l = pp (pridmapgen l)
 
 let ppevarsubst = ppidmap (fun id0 -> prset (fun (c,copt,id) ->
   hov 0
