@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 
 type retroknowledge
 
@@ -117,7 +117,7 @@ val get_vm_before_match_info : retroknowledge -> entry -> Cbytecodes.bytecodes
    recover the elements of that type from their compiled form if it's non
    standard (it is used (and can be used) only when the compiled form
    is not a block *)
-val get_vm_decompile_constant_info : retroknowledge -> entry -> int -> Term.constr
+val get_vm_decompile_constant_info : retroknowledge -> entry -> int -> constr
 
 
 val get_native_compiling_info  : retroknowledge -> entry -> Nativeinstr.prefix ->
@@ -163,7 +163,7 @@ type reactive_info = {(*information required by the compiler of the VM *)
   (* fastcomputation flag -> cont -> result *)
   vm_before_match : (bool -> Cbytecodes.bytecodes -> Cbytecodes.bytecodes) option;
   (* tag (= compiled int for instance) -> result *)
-  vm_decompile_const : (int -> Term.constr) option;
+  vm_decompile_const : (int -> constr) option;
 
   native_compiling :
       (bool -> Nativeinstr.prefix -> Nativeinstr.lambda array ->

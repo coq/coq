@@ -10,6 +10,7 @@
 open Names
 open Cic
 open Esubst
+open Esubst.Internal
 open Environ
 (*i*)
 
@@ -30,7 +31,7 @@ val all_opaque      : transparent_state
 val all_transparent : transparent_state
 
 val is_transparent_variable : transparent_state -> variable -> bool
-val is_transparent_constant : transparent_state -> constant -> bool
+val is_transparent_constant : transparent_state -> Constant.t -> bool
 
 (* Sets of reduction kinds. *)
 module type RedFlagsSig = sig
@@ -42,7 +43,7 @@ module type RedFlagsSig = sig
   val fDELTA : red_kind
   val fIOTA : red_kind
   val fZETA : red_kind
-  val fCONST : constant -> red_kind
+  val fCONST : Constant.t -> red_kind
   val fVAR : Id.t -> red_kind
 
   (* No reduction at all *)
@@ -71,7 +72,7 @@ type 'a tableKey =
   | VarKey of Id.t
   | RelKey of int
 
-type table_key = constant puniverses tableKey
+type table_key = Constant.t puniverses tableKey
 
 type 'a infos
 val ref_value_cache: 'a infos -> table_key -> 'a option
@@ -100,9 +101,9 @@ type fterm =
   | FCoFix of cofixpoint * fconstr subs
   | FCase of case_info * fconstr * fconstr * fconstr array
   | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)
-  | FLambda of int * (name * constr) list * constr * fconstr subs
-  | FProd of name * fconstr * fconstr
-  | FLetIn of name * fconstr * fconstr * constr * fconstr subs
+  | FLambda of int * (Name.t * constr) list * constr * fconstr subs
+  | FProd of Name.t * fconstr * fconstr
+  | FLetIn of Name.t * fconstr * fconstr * constr * fconstr subs
   | FEvar of existential_key * fconstr array
   | FLIFT of int * fconstr
   | FCLOS of constr * fconstr subs
@@ -142,7 +143,7 @@ val inject : constr -> fconstr
 val fterm_of : fconstr -> fterm
 val term_of_fconstr : fconstr -> constr
 val destFLambda :
-  (fconstr subs -> constr -> fconstr) -> fconstr -> name * fconstr * fconstr
+  (fconstr subs -> constr -> fconstr) -> fconstr -> Name.t * fconstr * fconstr
 
 (* Global and local constant cache *)
 type clos_infos

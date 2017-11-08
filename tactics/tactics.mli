@@ -8,7 +8,7 @@
 
 open Loc
 open Names
-open Term
+open Constr
 open EConstr
 open Environ
 open Proof_type

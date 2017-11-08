@@ -10,7 +10,7 @@
 
 type atom_env=
     {mutable next:int;
-     mutable env:(Term.constr*int) list}
+     mutable env:(Constr.t*int) list}
 
 val make_form : atom_env ->
     Goal.goal Evd.sigma -> EConstr.types -> Proof_search.form

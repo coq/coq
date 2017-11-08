@@ -9,6 +9,7 @@
 open Util
 open Names
 open Term
+open Constr
 open Vars
 open Mod_subst
 open Environ
@@ -25,7 +26,7 @@ open Context.Named.Declaration
    the evaluation of [phi(0)] and the head of [h] is declared unknown). *)
 
 type rigid_head_kind =
-| RigidParameter of constant (* a Const without body *)
+| RigidParameter of Constant.t (* a Const without body *)
 | RigidVar of variable (* a Var without body *)
 | RigidType (* an inductive, a product or a sort *)
 
@@ -57,7 +58,7 @@ let variable_head id  = Evalrefmap.find (EvalVarRef id) !head_map
 let constant_head cst = Evalrefmap.find (EvalConstRef cst) !head_map
 
 let kind_of_head env t =
-  let rec aux k l t b = match kind_of_term (Reduction.whd_betaiotazeta env t) with
+  let rec aux k l t b = match kind (Reduction.whd_betaiotazeta env t) with
   | Rel n when n > k -> NotImmediatelyComputableHead
   | Rel n -> FlexibleHead (k,k+1-n,List.length l,b)
   | Var id ->
@@ -156,7 +157,7 @@ let cache_head o =
 let subst_head_approximation subst = function
   | RigidHead (RigidParameter cst) as k ->
       let cst,c = subst_con_kn subst cst in
-      if isConst c && eq_constant (fst (destConst c)) cst then
+      if isConst c && Constant.equal (fst (destConst c)) cst then
         (* A change of the prefix of the constant *)
         k
       else

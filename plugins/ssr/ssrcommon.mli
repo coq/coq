@@ -190,7 +190,7 @@ val pf_merge_uc_of :
 val constr_name : evar_map -> EConstr.t -> Name.t
 val pf_type_of :
            Goal.goal Evd.sigma ->
-           Term.constr -> Goal.goal Evd.sigma * Term.types
+           Constr.constr -> Goal.goal Evd.sigma * Constr.types
 val pfe_type_of :
            Goal.goal Evd.sigma ->
            EConstr.t -> Goal.goal Evd.sigma * EConstr.types
@@ -220,7 +220,7 @@ val new_wild_id : tac_ctx -> Names.Id.t * tac_ctx
 val pf_fresh_global :
            Globnames.global_reference ->
            Goal.goal Evd.sigma ->
-           Term.constr * Goal.goal Evd.sigma
+           Constr.constr * Goal.goal Evd.sigma
 
 val is_discharged_id : Id.t -> bool
 val mk_discharged_id : Id.t -> Id.t
@@ -232,7 +232,7 @@ val new_tmp_id :
 val mk_anon_id : string -> Goal.goal Evd.sigma -> Id.t
 val pf_abs_evars_pirrel :
            Goal.goal Evd.sigma ->
-           evar_map * Term.constr -> int * Term.constr
+           evar_map * Constr.constr -> int * Constr.constr
 val pf_nbargs : Goal.goal Evd.sigma -> EConstr.t -> int
 val gen_tmp_ids : 
            ?ist:Geninterp.interp_sign ->

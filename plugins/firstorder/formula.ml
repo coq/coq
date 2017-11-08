@@ -8,7 +8,7 @@
 
 open Hipattern
 open Names
-open Term
+open Constr
 open EConstr
 open Vars
 open Termops
@@ -39,7 +39,7 @@ exception Is_atom of constr
 let meta_succ m = m+1
 
 let rec nb_prod_after n c=
-  match kind_of_term c with
+  match Constr.kind c with
     | Prod (_,_,b) ->if n>0 then nb_prod_after (n-1) b else
 	1+(nb_prod_after 0 b)
     | _ -> 0

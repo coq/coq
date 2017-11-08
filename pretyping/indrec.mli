@@ -7,14 +7,14 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Environ
 open Evd
 
 (** Errors related to recursors building *)
 
 type recursion_scheme_error =
-  | NotAllowedCaseAnalysis of (*isrec:*) bool * sorts * pinductive
+  | NotAllowedCaseAnalysis of (*isrec:*) bool * Sorts.t * pinductive
   | NotMutualInScheme of inductive * inductive
   | NotAllowedDependentAnalysis of (*isrec:*) bool * inductive
 
@@ -27,25 +27,25 @@ type dep_flag = bool
 (** Build a case analysis elimination scheme in some sort family *)
 
 val build_case_analysis_scheme : env -> Evd.evar_map -> pinductive ->
-      dep_flag -> sorts_family -> evar_map * Constr.t
+      dep_flag -> Sorts.family -> evar_map * Constr.t
 
 (** Build a dependent case elimination predicate unless type is in Prop
    or is a recursive record with primitive projections. *)
 
 val build_case_analysis_scheme_default : env -> evar_map -> pinductive ->
-      sorts_family -> evar_map * Constr.t
+      Sorts.family -> evar_map * Constr.t
 
 (** Builds a recursive induction scheme (Peano-induction style) in the same
    sort family as the inductive family; it is dependent if not in Prop
    or a recursive record with primitive projections.  *)
 
 val build_induction_scheme : env -> evar_map -> pinductive ->
-      dep_flag -> sorts_family -> evar_map * constr
+      dep_flag -> Sorts.family -> evar_map * constr
 
 (** Builds mutual (recursive) induction schemes *)
 
 val build_mutual_induction_scheme :
-  env -> evar_map -> (pinductive * dep_flag * sorts_family) list -> evar_map * constr list
+  env -> evar_map -> (pinductive * dep_flag * Sorts.family) list -> evar_map * constr list
 
 (** Scheme combinators *)
 
@@ -54,13 +54,13 @@ val build_mutual_induction_scheme :
    scheme quantified on sort [s]. [set] asks for [s] be declared equal to [i],
   otherwise just less or equal to [i]. *)
 
-val weaken_sort_scheme : env -> evar_map -> bool -> sorts -> int -> constr -> types -> 
+val weaken_sort_scheme : env -> evar_map -> bool -> Sorts.t -> int -> constr -> types ->
   evar_map * types * constr
 
 (** Recursor names utilities *)
 
-val lookup_eliminator : inductive -> sorts_family -> Globnames.global_reference
-val elimination_suffix : sorts_family -> string
-val make_elimination_ident : Id.t -> sorts_family -> Id.t
+val lookup_eliminator : inductive -> Sorts.family -> Globnames.global_reference
+val elimination_suffix : Sorts.family -> string
+val make_elimination_ident : Id.t -> Sorts.family -> Id.t
 
 val case_suffix : string

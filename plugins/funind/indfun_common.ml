@@ -1,8 +1,10 @@
 open Names
 open Pp
+open Constr
 open Libnames
 open Globnames
 open Refiner
+
 let mk_prefix pre id = Id.of_string (pre^(Id.to_string id))
 let mk_rel_id = mk_prefix "R_"
 let mk_correct_id id = Nameops.add_suffix (mk_rel_id id) "_correct"
@@ -111,7 +113,7 @@ let const_of_id id =
       (str "cannot find " ++ Id.print id)
 
 let def_of_const t =
-   match (Term.kind_of_term t) with
+   match Constr.kind t with
     Term.Const sp ->
       (try (match Environ.constant_opt_value_in (Global.env()) sp with
              | Some c -> c
@@ -330,8 +332,6 @@ let discharge_Function (_,finfos) =
 	   is_general = finfos.is_general
 	 }
 
-open Term
-
 let pr_ocst c =
   Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) c (mt ())
 
@@ -545,9 +545,9 @@ let prodn n env b =
 (* compose_prod [xn:Tn;..;x1:T1] b = (x1:T1)..(xn:Tn)b *)
 let compose_prod l b = prodn (List.length l) l b
 
-type tcc_lemma_value = 
+type tcc_lemma_value =
   | Undefined
-  | Value of Term.constr
+  | Value of constr
   | Not_needed
 
 (* We only "purify" on exceptions *)

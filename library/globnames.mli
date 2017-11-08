@@ -8,13 +8,13 @@
 
 open Util
 open Names
-open Term
+open Constr
 open Mod_subst
 
 (** {6 Global reference is a kernel side type for all references together } *)
 type global_reference =
   | VarRef of variable           (** A reference to the section-context. *)
-  | ConstRef of constant         (** A reference to the environment. *)
+  | ConstRef of Constant.t       (** A reference to the environment. *)
   | IndRef of inductive          (** A reference to an inductive type. *)
   | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
 
@@ -27,7 +27,7 @@ val eq_gr : global_reference -> global_reference -> bool
 val canonical_gr : global_reference -> global_reference
 
 val destVarRef : global_reference -> variable
-val destConstRef : global_reference -> constant
+val destConstRef : global_reference -> Constant.t
 val destIndRef : global_reference -> inductive
 val destConstructRef : global_reference -> constructor
 
@@ -72,7 +72,7 @@ module Refmap_env : Map.ExtS
 
 (** {6 Extended global references } *)
 
-type syndef_name = kernel_name
+type syndef_name = KerName.t
 
 type extended_global_reference =
   | TrueGlobal of global_reference
@@ -91,13 +91,13 @@ type global_reference_or_constr =
 
 (** {6 Temporary function to brutally form kernel names from section paths } *)
 
-val encode_mind : DirPath.t -> Id.t -> mutual_inductive
-val decode_mind : mutual_inductive -> DirPath.t * Id.t
-val encode_con : DirPath.t -> Id.t -> constant
-val decode_con : constant -> DirPath.t * Id.t
+val encode_mind : DirPath.t -> Id.t -> MutInd.t
+val decode_mind : MutInd.t -> DirPath.t * Id.t
+val encode_con : DirPath.t -> Id.t -> Constant.t
+val decode_con : Constant.t -> DirPath.t * Id.t
 
 (** {6 Popping one level of section in global names } *)
 
-val pop_con : constant -> constant
-val pop_kn : mutual_inductive-> mutual_inductive
+val pop_con : Constant.t -> Constant.t
+val pop_kn : MutInd.t-> MutInd.t
 val pop_global_reference : global_reference -> global_reference

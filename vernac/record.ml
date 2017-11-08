@@ -13,6 +13,7 @@ open Names
 open Globnames
 open Nameops
 open Term
+open Constr
 open Vars
 open Environ
 open Declarations
@@ -229,7 +230,7 @@ exception NotDefinable of record_error
 let subst_projection fid l c =
   let lv = List.length l in
   let bad_projs = ref [] in
-  let rec substrec depth c = match kind_of_term c with
+  let rec substrec depth c = match Constr.kind c with
     | Rel k ->
 	(* We are in context [[params;fields;x:ind;...depth...]] *)
         if k <= depth+1 then
@@ -244,7 +245,7 @@ let subst_projection fid l c =
                   " field which has no name.")
         else
 	  mkRel (k-lv)
-    | _ -> map_constr_with_binders succ substrec depth c
+    | _ -> Constr.map_with_binders succ substrec depth c
   in
   let c' = lift 1 c in (* to get [c] defined in ctxt [[params;fields;x:ind]] *)
   let c'' = substrec 0 c' in

@@ -17,9 +17,9 @@ type cl_typ =
   | CL_SORT
   | CL_FUN
   | CL_SECVAR of variable
-  | CL_CONST of constant
+  | CL_CONST of Constant.t
   | CL_IND of inductive
-  | CL_PROJ of constant
+  | CL_PROJ of Constant.t
 
 (** Equality over [cl_typ] *)
 val cl_typ_eq : cl_typ -> cl_typ -> bool

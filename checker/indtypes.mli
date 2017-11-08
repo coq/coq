@@ -12,8 +12,8 @@ open Cic
 open Environ
 (*i*)
 
-val prkn : kernel_name -> Pp.t
-val prcon : constant -> Pp.t
+val prkn : KerName.t -> Pp.t
+val prcon : Constant.t -> Pp.t
 
 (*s The different kinds of errors that may result of a malformed inductive
   definition. *)
@@ -34,4 +34,4 @@ exception InductiveError of inductive_error
 
 (*s The following function does checks on inductive declarations. *)
 
-val check_inductive : env -> mutual_inductive -> mutual_inductive_body -> env
+val check_inductive : env -> MutInd.t -> mutual_inductive_body -> env

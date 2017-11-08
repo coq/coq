@@ -9,7 +9,7 @@
 (* $Id$ *)
 
 open Names
-open Term
+open Constr
 
 type tag = int
 
@@ -26,13 +26,13 @@ val cofix_evaluated_tag : tag
 val last_variant_tag : tag
 
 type structured_constant =
-  | Const_sorts of sorts
+  | Const_sorts of Sorts.t
   | Const_ind of inductive
   | Const_proj of Constant.t
   | Const_b0 of tag
   | Const_bn of tag * structured_constant array
-  | Const_univ_level of Univ.universe_level
-  | Const_type of Univ.universe
+  | Const_univ_level of Univ.Level.t
+  | Const_type of Univ.Universe.t
 
 val pp_struct_const : structured_constant -> Pp.t
 
@@ -69,7 +69,7 @@ type instruction =
                    (** nb fv, init, lbl types, lbl bodies *)
   | Kclosurecofix of int * int * Label.t array * Label.t array
                    (** nb fv, init, lbl types, lbl bodies *)
-  | Kgetglobal of constant
+  | Kgetglobal of Constant.t
   | Kconst of structured_constant
   | Kmakeblock of (* size: *) int * tag (** allocate an ocaml block. Index 0
                                          ** is accu, all others are popped from

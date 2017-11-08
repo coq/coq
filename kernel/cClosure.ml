@@ -23,10 +23,11 @@ open CErrors
 open Util
 open Pp
 open Names
-open Term
+open Constr
 open Vars
 open Environ
 open Esubst
+open Esubst.Internal
 
 let stats = ref false
 let share = ref true
@@ -85,7 +86,7 @@ module type RedFlagsSig = sig
   val fFIX : red_kind
   val fCOFIX : red_kind
   val fZETA : red_kind
-  val fCONST : constant -> red_kind
+  val fCONST : Constant.t -> red_kind
   val fVAR : Id.t -> red_kind
   val no_red : reds
   val red_add : reds -> red_kind -> reds
@@ -114,7 +115,7 @@ module RedFlags = (struct
 
   type red_kind = BETA | DELTA | ETA | MATCH | FIX
               | COFIX | ZETA
-	      | CONST of constant | VAR of Id.t
+	      | CONST of Constant.t | VAR of Id.t
   let fBETA = BETA
   let fDELTA = DELTA
   let fETA = ETA
@@ -234,7 +235,7 @@ let unfold_red kn =
  * instantiations (cbv or lazy) are.
  *)
 
-type table_key = constant puniverses tableKey
+type table_key = Constant.t puniverses tableKey
 
 let eq_pconstant_key (c,u) (c',u') =
   eq_constant_key c c' && Univ.Instance.equal u u'
@@ -401,7 +402,7 @@ let update v1 no t =
 type stack_member =
   | Zapp of fconstr array
   | ZcaseT of case_info * constr * constr array * fconstr subs
-  | Zproj of int * int * constant
+  | Zproj of int * int * Constant.t
   | Zfix of fconstr * stack
   | Zshift of int
   | Zupdate of fconstr
@@ -516,7 +517,7 @@ let zupdate m s =
   else s
 
 let mk_lambda env t =
-  let (rvars,t') = decompose_lam t in
+  let (rvars,t') = Term.decompose_lam t in
   FLambda(List.length rvars, List.rev rvars, t', env)
 
 let destFLambda clos_fun t =
@@ -530,7 +531,7 @@ let destFLambda clos_fun t =
 (* Optimization: do not enclose variables in a closure.
    Makes variable access much faster *)
 let mk_clos e t =
-  match kind_of_term t with
+  match kind t with
     | Rel i -> clos_rel e i
     | Var x -> { norm = Red; term = FFlex (VarKey x) }
     | Const c -> { norm = Red; term = FFlex (ConstKey c) }
@@ -556,7 +557,7 @@ let mk_clos_vect env v = match v with
    subterms.
    Could be used insted of mk_clos. *)
 let mk_clos_deep clos_fun env t =
-  match kind_of_term t with
+  match kind t with
     | (Rel _|Ind _|Const _|Construct _|Var _|Meta _ | Sort _) ->
         mk_clos env t
     | Cast (a,k,b) ->
@@ -655,7 +656,7 @@ let term_of_fconstr =
     match v.term with
       | FCLOS(t,env) when is_subs_id env && is_lift_id lfts -> t
       | FLambda(_,tys,f,e) when is_subs_id e && is_lift_id lfts ->
-          compose_lam (List.rev tys) f
+          Term.compose_lam (List.rev tys) f
       | FFix(fx,e) when is_subs_id e && is_lift_id lfts -> mkFix fx
       | FCoFix(cfx,e) when is_subs_id e && is_lift_id lfts -> mkCoFix cfx
       | _ -> to_constr term_of_fconstr_lift lfts v in
@@ -891,7 +892,7 @@ let rec knh info m stk =
 
 (* The same for pure terms *)
 and knht info e t stk =
-  match kind_of_term t with
+  match kind t with
     | App(a,b) ->
         knht info e a (append_stack (mk_clos_vect e b) stk)
     | Case(ci,p,t,br) ->

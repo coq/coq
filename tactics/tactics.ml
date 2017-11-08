@@ -14,6 +14,7 @@ open Util
 open Names
 open Nameops
 open Term
+open Constr
 open Termops
 open Environ
 open EConstr
@@ -580,7 +581,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
   | (f, n, ar) :: oth ->
     let open Context.Named.Declaration in
     let (sp', u')  = check_mutind env sigma n ar in
-    if not (eq_mind sp sp') then
+    if not (MutInd.equal sp sp') then
       error "Fixpoints should be on the same mutual inductive declaration.";
     if mem_named_context_val f sign then
       user_err ~hdr:"Logic.prim_refiner"
@@ -1290,7 +1291,7 @@ let check_unresolved_evars_of_metas sigma clenv =
   (* Refiner.pose_all_metas_as_evars are resolved *)
   List.iter (fun (mv,b) -> match b with
   | Clval (_,(c,_),_) ->
-    (match kind_of_term c.rebus with
+    (match Constr.kind c.rebus with
     | Evar (evk,_) when Evd.is_undefined clenv.evd evk
                      && not (Evd.mem sigma evk) ->
       error_uninstantiated_metas (mkMeta mv) clenv
@@ -1607,7 +1608,7 @@ let general_elim_clause with_evars flags id c e =
 (* Apply a tactic below the products of the conclusion of a lemma *)
 
 type conjunction_status =
-  | DefinedRecord of constant option list
+  | DefinedRecord of Constant.t option list
   | NotADefinedRecordUseScheme of constr
 
 let make_projection env sigma params cstr sign elim i n c u =
@@ -4958,7 +4959,7 @@ let interpretable_as_section_decl evd d1 d2 =
 let rec decompose len c t accu =
   let open Context.Rel.Declaration in
   if len = 0 then (c, t, accu)
-  else match kind_of_term c, kind_of_term t with 
+  else match Constr.kind c, Constr.kind t with 
   | Lambda (na, u, c), Prod (_, _, t) ->
     decompose (pred len) c t (LocalAssum (na, u) :: accu)
   | LetIn (na, b, u, c), LetIn (_, _, _, t) ->
@@ -4966,7 +4967,7 @@ let rec decompose len c t accu =
   | _ -> assert false
 
 let rec shrink ctx sign c t accu =
-  let open Term in
+  let open Constr in
   let open CVars in
   match ctx, sign with
   | [], [] -> (c, t, accu)
@@ -4976,8 +4977,8 @@ let rec shrink ctx sign c t accu =
         let t = subst1 mkProp t in
         shrink ctx sign c t accu
       else
-        let c = mkLambda_or_LetIn p c in
-        let t = mkProd_or_LetIn p t in
+        let c = Term.mkLambda_or_LetIn p c in
+        let t = Term.mkProd_or_LetIn p t in
         let accu = if RelDecl.is_local_assum p
                    then mkVar (NamedDecl.get_id decl) :: accu
                    else accu

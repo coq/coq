@@ -26,7 +26,7 @@ let rec translate_mod prefix mp env mod_expr acc =
 and translate_field prefix mp env acc (l,x) =
   match x with
   | SFBconst cb ->
-     let con = make_con mp empty_dirpath l in
+     let con = Constant.make3 mp DirPath.empty l in
      (if !Flags.debug then
 	let msg = Printf.sprintf "Compiling constant %s..." (Constant.to_string con) in
 	Feedback.msg_debug (Pp.str msg));

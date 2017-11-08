@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open EConstr
 open Univ
 open Evd
@@ -258,7 +258,7 @@ val contract_fix : ?env:Environ.env -> evar_map -> ?reference:Constant.t -> fixp
 val fix_recarg : ('a, 'a) pfixpoint -> 'b Stack.t -> (int * 'b) option
 
 (** {6 Querying the kernel conversion oracle: opaque/transparent constants } *)
-val is_transparent : Environ.env -> constant tableKey -> bool
+val is_transparent : Environ.env -> Constant.t tableKey -> bool
 
 (** {6 Conversion Functions (uses closures, lazy strategy) } *)
 

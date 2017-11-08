@@ -15,7 +15,7 @@
 open CErrors
 open Util
 open Names
-open Term
+open Constr
 open Declarations
 open Environ
 open Entries
@@ -154,7 +154,7 @@ let inline_side_effects env body ctx side_eff =
       (** Lift free rel variables *)
       if n <= k then t
       else mkRel (n + len - i - 1)
-    | _ -> map_constr_with_binders ((+) 1) (fun k t -> subst_const i k t) k t
+    | _ -> Constr.map_with_binders ((+) 1) (fun k t -> subst_const i k t) k t
     in
     let map_args i (na, b, ty, opaque) =
       (** Both the type and the body may mention other constants *)
@@ -199,13 +199,13 @@ let check_signatures curmb sl =
 let skip_trusted_seff sl b e =
   let rec aux sl b e acc =
     let open Context.Rel.Declaration in
-    match sl, kind_of_term b with
+    match sl, kind b with
     | (None|Some 0), _ -> b, e, acc
     | Some sl, LetIn (n,c,ty,bo) ->
        aux (Some (sl-1)) bo
          (Environ.push_rel (LocalDef (n,c,ty)) e) (`Let(n,c,ty)::acc)
     | Some sl, App(hd,arg) ->
-       begin match kind_of_term hd with
+       begin match kind hd with
        | Lambda (n,ty,bo) ->
            aux (Some (sl-1)) bo
              (Environ.push_rel (LocalAssum (n,ty)) e) (`Cut(n,ty,arg)::acc)
@@ -245,7 +245,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
         abstract_constant_universes abstract uctx
       in
       let c = Typeops.assumption_of_judgment env j in
-      let t = hcons_constr (Vars.subst_univs_level_constr usubst c) in
+      let t = Constr.hcons (Vars.subst_univs_level_constr usubst c) in
       {
         Cooking.cook_body = Undef nl;
         cook_type = t;
@@ -283,7 +283,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
             let _ = judge_of_cast env j DEFAULTcast tyj in
             j, uctx
           in
-          let c = hcons_constr j.uj_val in
+          let c = Constr.hcons j.uj_val in
           feedback_completion_typecheck feedback_id;
           c, uctx) in
       let def = OpaqueDef (Opaqueproof.create proofterm) in
@@ -325,7 +325,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
            let _ = judge_of_cast env j DEFAULTcast tj in
            Vars.subst_univs_level_constr usubst t
       in
-      let def = hcons_constr (Vars.subst_univs_level_constr usubst j.uj_val) in
+      let def = Constr.hcons (Vars.subst_univs_level_constr usubst j.uj_val) in
       let def = 
 	if opaque then OpaqueDef (Opaqueproof.create (Future.from_val (def, Univ.ContextSet.empty)))
 	else Def (Mod_subst.from_val def) 
@@ -359,7 +359,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
     in
     let term, typ = pb.proj_eta in
     {
-      Cooking.cook_body = Def (Mod_subst.from_val (hcons_constr term));
+      Cooking.cook_body = Def (Mod_subst.from_val (Constr.hcons term));
       cook_type = typ;
       cook_proj = Some pb;
       cook_universes = univs;
@@ -525,7 +525,7 @@ type side_effect_role =
   | Schema of inductive * string
 
 type exported_side_effect = 
-  constant * constant_body * side_effect_role
+  Constant.t * constant_body * side_effect_role
 
 let export_side_effects mb env ce =
   match ce with

@@ -13,6 +13,7 @@ open Declare
 *)
 
 open Term
+open Constr
 open Vars
 open Names
 open Evd
@@ -55,13 +56,13 @@ let subst_evar_constr evs n idf t =
   let seen = ref Int.Set.empty in
   let transparent = ref Id.Set.empty in
   let evar_info id = List.assoc_f Evar.equal id evs in
-  let rec substrec (depth, fixrels) c = match kind_of_term c with
+  let rec substrec (depth, fixrels) c = match Constr.kind c with
     | Evar (k, args) ->
 	let { ev_name = (id, idstr) ;
 	      ev_hyps = hyps ; ev_chop = chop } =
 	  try evar_info k
 	  with Not_found ->
-	    anomaly ~label:"eterm" (Pp.str "existential variable " ++ int (Evar.repr k) ++ str " not found.")
+	    anomaly ~label:"eterm" (Pp.str "existential variable " ++ int (Evar.Internal.repr k) ++ str " not found.")
 	in
         seen := Int.Set.add id !seen;
 	  (* Evar arguments are created in inverse order,
@@ -85,15 +86,15 @@ let subst_evar_constr evs n idf t =
 	  in aux hyps args []
 	in
 	  if List.exists
-            (fun x -> match kind_of_term x with
+            (fun x -> match Constr.kind x with
             | Rel n -> Int.List.mem n fixrels
             | _ -> false) args
           then
 	    transparent := Id.Set.add idstr !transparent;
 	  mkApp (idf idstr, Array.of_list args)
     | Fix _ ->
-	map_constr_with_binders succfix substrec (depth, 1 :: fixrels) c
-    | _ -> map_constr_with_binders succfix substrec (depth, fixrels) c
+	Constr.map_with_binders succfix substrec (depth, 1 :: fixrels) c
+    | _ -> Constr.map_with_binders succfix substrec (depth, fixrels) c
   in
   let t' = substrec (0, []) t in
     t', !seen, !transparent
@@ -103,9 +104,9 @@ let subst_evar_constr evs n idf t =
   where n binders were passed through. *)
 let subst_vars acc n t =
   let var_index id = Util.List.index Id.equal id acc in
-  let rec substrec depth c = match kind_of_term c with
+  let rec substrec depth c = match Constr.kind c with
     | Var v -> (try mkRel (depth + (var_index v)) with Not_found -> c)
-    | _ -> map_constr_with_binders succ substrec depth c
+    | _ -> Constr.map_with_binders succ substrec depth c
   in
     substrec 0 t
 
@@ -144,7 +145,7 @@ let rec chop_product n t =
   let pop t = Vars.lift (-1) t in
   if Int.equal n 0 then Some t
   else
-    match kind_of_term t with
+    match Constr.kind t with
       | Prod (_, _, b) ->  if noccurn 1 b then chop_product (pred n) (pop b) else None
       | _ -> None
 
@@ -273,7 +274,7 @@ let explain_no_obligations = function
   | None -> str "No obligations remaining"
 
 type obligation_info =
-    (Names.Id.t * Term.types * Evar_kinds.t Loc.located *
+    (Names.Id.t * types * Evar_kinds.t Loc.located *
        (bool * Evar_kinds.obligation_definition_status)
        * Int.Set.t * unit Proofview.tactic option) array
 
@@ -384,7 +385,7 @@ let subst_deps expand obls deps t =
     (Vars.replace_vars (List.map (fun (n, (_, b)) -> n, b) osubst) t)
 
 let rec prod_app t n =
-  match kind_of_term (EConstr.Unsafe.to_constr (Termops.strip_outer_cast Evd.empty (EConstr.of_constr t))) (** FIXME *) with
+  match Constr.kind (EConstr.Unsafe.to_constr (Termops.strip_outer_cast Evd.empty (EConstr.of_constr t))) (** FIXME *) with
     | Prod (_,_,b) -> subst1 n b
     | LetIn (_, b, t, b') -> prod_app (subst1 b b') n
     | _ ->
@@ -400,13 +401,13 @@ let replace_appvars subst =
     let f, l = decompose_app c in
       if isVar f then
 	try
-	  let c' = List.map (map_constr aux) l in
+	  let c' = List.map (Constr.map aux) l in
 	  let (t, b) = Id.List.assoc (destVar f) subst in
 	    mkApp (delayed_force hide_obligation, 
 		   [| prod_applist t c'; applistc b c' |])
-	with Not_found -> map_constr aux c
-      else map_constr aux c
-  in map_constr aux
+	with Not_found -> Constr.map aux c
+      else Constr.map aux c
+  in Constr.map aux
        
 let subst_prog expand obls ints prg =
   let subst = obl_substitution expand obls ints in
@@ -490,7 +491,7 @@ let declare_definition prg =
   cst
 
 let rec lam_index n t acc =
-  match kind_of_term t with
+  match Constr.kind t with
     | Lambda (Name n', _, _) when Id.equal n n' ->
       acc
     | Lambda (_, _, b) ->
@@ -566,9 +567,9 @@ let declare_mutual_definition l =
 let decompose_lam_prod c ty =
   let open Context.Rel.Declaration in
   let rec aux ctx c ty =
-    match kind_of_term c, kind_of_term ty with
+    match Constr.kind c, Constr.kind ty with
     | LetIn (x, b, t, c), LetIn (x', b', t', ty)
-	 when eq_constr b b' && eq_constr t t' ->
+	 when Constr.equal b b' && Constr.equal t t' ->
        let ctx' = Context.Rel.add (LocalDef (x,b',t')) ctx in
        aux ctx' c ty
     | _, LetIn (x', b', t', ty) ->

@@ -10,6 +10,7 @@ open Util
 open Pp
 open Names
 open Term
+open Constr
 open Termops
 open EConstr
 open Vars
@@ -82,7 +83,7 @@ let define_pure_evar_as_product evd evk =
     let newenv = push_named (LocalAssum (id, dom)) evenv in
     let src = evar_source evk evd1 in
     let filter = Filter.extend 1 (evar_filter evi) in
-      if is_prop_sort (ESorts.kind evd1 s) then
+      if Sorts.is_prop (ESorts.kind evd1 s) then
        (* Impredicative product, conclusion must fall in [Prop]. *)
         new_evar newenv evd1 concl ~src ~filter
       else

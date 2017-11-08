@@ -12,7 +12,7 @@ open CErrors
 open Util
 open Nameops
 open Namegen
-open Term
+open Constr
 open EConstr
 open Vars
 open Reduction
@@ -426,7 +426,7 @@ let split_head = function
   | [] -> assert(false)
 
 let eq_pb (ty, env, x, y as pb) (ty', env', x', y' as pb') =
-  pb == pb' || (ty == ty' && Term.eq_constr x x' && Term.eq_constr y y')
+  pb == pb' || (ty == ty' && Constr.equal x x' && Constr.equal y y')
 
 let problem_inclusion x y =
   List.for_all (fun pb -> List.exists (fun pb' -> eq_pb pb pb') y) x
@@ -928,8 +928,8 @@ let fold_match ?(force=false) env sigma c =
 	it_mkProd_or_LetIn (subst1 mkProp body) (List.tl ctx)
     in
     let sk = 
-      if sortp == InProp then
-	if sortc == InProp then
+      if sortp == Sorts.InProp then
+	if sortc == Sorts.InProp then
 	  if dep then case_dep_scheme_kind_from_prop
 	  else case_scheme_kind_from_prop
 	else (

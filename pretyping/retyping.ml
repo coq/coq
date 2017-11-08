@@ -10,6 +10,7 @@ open Pp
 open CErrors
 open Util
 open Term
+open Constr
 open Inductive
 open Inductiveops
 open Names
@@ -146,7 +147,7 @@ let retype ?(polyprop=true) sigma =
     | Cast (c,_, s) when isSort sigma s -> destSort sigma s
     | Sort s ->
       begin match ESorts.kind sigma s with
-      | Prop _ -> type1_sort
+      | Prop _ -> Sorts.type1
       | Type u -> Type (Univ.super u)
       end
     | Prod (name,t,c2) ->
@@ -167,7 +168,7 @@ let retype ?(polyprop=true) sigma =
 
   and sort_family_of env t =
     match EConstr.kind sigma t with
-    | Cast (c,_, s) when isSort sigma s -> family_of_sort (destSort sigma s)
+    | Cast (c,_, s) when isSort sigma s -> Sorts.family (destSort sigma s)
     | Sort _ -> InType
     | Prod (name,t,c2) ->
 	let s2 = sort_family_of (push_rel (LocalAssum (name,t)) env) c2 in
@@ -175,12 +176,12 @@ let retype ?(polyprop=true) sigma =
 	   s2 == InSet && sort_family_of env t == InType then InType else s2
     | App(f,args) when is_template_polymorphic env sigma f ->
 	let t = type_of_global_reference_knowing_parameters env f args in
-        family_of_sort (sort_of_atomic_type env sigma t args)
+        Sorts.family (sort_of_atomic_type env sigma t args)
     | App(f,args) ->
-	family_of_sort (sort_of_atomic_type env sigma (type_of env f) args)
+	Sorts.family (sort_of_atomic_type env sigma (type_of env f) args)
     | Lambda _ | Fix _ | Construct _ -> retype_error NotAType
     | _ -> 
-      family_of_sort (decomp_sort env sigma (type_of env t))
+      Sorts.family (decomp_sort env sigma (type_of env t))
 
   and type_of_global_reference_knowing_parameters env c args =
     let argtyps =

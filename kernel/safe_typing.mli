@@ -60,8 +60,8 @@ val concat_private : private_constants -> private_constants -> private_constants
 (** [concat_private e1 e2] adds the constants of [e1] to [e2], i.e. constants in
     [e1] must be more recent than those of [e2]. *)
 
-val private_con_of_con : safe_environment -> constant -> private_constant
-val private_con_of_scheme : kind:string -> safe_environment -> (inductive * constant) list -> private_constant
+val private_con_of_con : safe_environment -> Constant.t -> private_constant
+val private_con_of_scheme : kind:string -> safe_environment -> (inductive * Constant.t) list -> private_constant
 
 val mk_pure_proof : Constr.constr -> private_constants Entries.proof_output
 val inline_private_constants_in_constr :
@@ -69,7 +69,7 @@ val inline_private_constants_in_constr :
 val inline_private_constants_in_definition_entry :
   Environ.env -> private_constants Entries.definition_entry -> unit Entries.definition_entry
 
-val universes_of_private : private_constants -> Univ.universe_context_set list
+val universes_of_private : private_constants -> Univ.ContextSet.t list
 
 val is_curmod_library : safe_environment -> bool
 
@@ -84,13 +84,13 @@ val is_joined_environment : safe_environment -> bool
 (** Insertion of local declarations (Local or Variables) *)
 
 val push_named_assum :
-  (Id.t * Term.types * bool (* polymorphic *))
+  (Id.t * Constr.types * bool (* polymorphic *))
     Univ.in_universe_context_set -> safe_transformer0
 
 (** Returns the full universe context necessary to typecheck the definition
   (futures are forced) *)
 val push_named_def :
-  Id.t * private_constants Entries.definition_entry -> Univ.universe_context_set safe_transformer
+  Id.t * private_constants Entries.definition_entry -> Univ.ContextSet.t safe_transformer
 
 (** Insertion of global axioms or definitions *)
 
@@ -103,7 +103,7 @@ type global_declaration =
   | GlobalRecipe of Cooking.recipe
 
 type exported_private_constant = 
-  constant * private_constant_role
+  Constant.t * private_constant_role
 
 val export_private_constants : in_section:bool ->
   private_constants Entries.constant_entry ->
@@ -113,30 +113,30 @@ val export_private_constants : in_section:bool ->
     unless one requires the side effects to be exported) *)
 val add_constant :
   DirPath.t -> Label.t -> global_declaration ->
-    constant safe_transformer
+    Constant.t safe_transformer
 
 (** Adding an inductive type *)
 
 val add_mind :
   DirPath.t -> Label.t -> Entries.mutual_inductive_entry ->
-    mutual_inductive safe_transformer
+    MutInd.t safe_transformer
 
 (** Adding a module or a module type *)
 
 val add_module :
   Label.t -> Entries.module_entry -> Declarations.inline ->
-    (module_path * Mod_subst.delta_resolver) safe_transformer
+    (ModPath.t * Mod_subst.delta_resolver) safe_transformer
 val add_modtype :
   Label.t -> Entries.module_type_entry -> Declarations.inline ->
-    module_path safe_transformer
+    ModPath.t safe_transformer
 
 (** Adding universe constraints *)
 
 val push_context_set :
-  bool -> Univ.universe_context_set -> safe_transformer0
+  bool -> Univ.ContextSet.t -> safe_transformer0
 
 val push_context :
-  bool -> Univ.universe_context -> safe_transformer0
+  bool -> Univ.UContext.t -> safe_transformer0
 
 val add_constraints :
   Univ.constraints -> safe_transformer0
@@ -150,9 +150,9 @@ val set_typing_flags : Declarations.typing_flags -> safe_transformer0
 
 (** {6 Interactive module functions } *)
 
-val start_module : Label.t -> module_path safe_transformer
+val start_module : Label.t -> ModPath.t safe_transformer
 
-val start_modtype : Label.t -> module_path safe_transformer
+val start_modtype : Label.t -> ModPath.t safe_transformer
 
 val add_module_parameter :
   MBId.t -> Entries.module_struct_entry -> Declarations.inline ->
@@ -166,17 +166,17 @@ val allow_delayed_constants : bool ref
 
 val end_module :
   Label.t -> (Entries.module_struct_entry * Declarations.inline) option ->
-    (module_path * MBId.t list * Mod_subst.delta_resolver) safe_transformer
+    (ModPath.t * MBId.t list * Mod_subst.delta_resolver) safe_transformer
 
-val end_modtype : Label.t -> (module_path * MBId.t list) safe_transformer
+val end_modtype : Label.t -> (ModPath.t * MBId.t list) safe_transformer
 
 val add_include :
   Entries.module_struct_entry -> bool -> Declarations.inline ->
    Mod_subst.delta_resolver safe_transformer
 
-val current_modpath : safe_environment -> module_path
+val current_modpath : safe_environment -> ModPath.t
 
-val current_dirpath : safe_environment -> dir_path
+val current_dirpath : safe_environment -> DirPath.t
 
 (** {6 Libraries : loading and saving compilation units } *)
 
@@ -186,26 +186,26 @@ type native_library = Nativecode.global list
 
 val get_library_native_symbols : safe_environment -> DirPath.t -> Nativecode.symbols
 
-val start_library : DirPath.t -> module_path safe_transformer
+val start_library : DirPath.t -> ModPath.t safe_transformer
 
 val export :
   ?except:Future.UUIDSet.t ->
   safe_environment -> DirPath.t ->
-    module_path * compiled_library * native_library
+    ModPath.t * compiled_library * native_library
 
 (* Constraints are non empty iff the file is a vi2vo *)
-val import : compiled_library -> Univ.universe_context_set -> vodigest ->
-  module_path safe_transformer
+val import : compiled_library -> Univ.ContextSet.t -> vodigest ->
+  ModPath.t safe_transformer
 
 (** {6 Safe typing judgments } *)
 
 type judgment
 
-val j_val : judgment -> Term.constr
-val j_type : judgment -> Term.constr
+val j_val : judgment -> Constr.constr
+val j_type : judgment -> Constr.constr
 
 (** The safe typing of a term returns a typing judgment. *)
-val typing : safe_environment -> Term.constr -> judgment
+val typing : safe_environment -> Constr.constr -> judgment
 
 (** {6 Queries } *)
 
@@ -221,9 +221,9 @@ open Retroknowledge
 val retroknowledge : (retroknowledge-> 'a) -> safe_environment -> 'a
 
 val register :
-  field -> Retroknowledge.entry -> Term.constr -> safe_transformer0
+  field -> Retroknowledge.entry -> Constr.constr -> safe_transformer0
 
-val register_inline : constant -> safe_transformer0
+val register_inline : Constant.t -> safe_transformer0
 
 val set_strategy :
-  safe_environment -> Names.constant Names.tableKey -> Conv_oracle.level -> safe_environment
+  safe_environment -> Names.Constant.t Names.tableKey -> Conv_oracle.level -> safe_environment

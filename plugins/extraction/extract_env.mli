@@ -34,4 +34,4 @@ val print_one_decl :
 (* Used by Extraction Compute *)
 
 val structure_for_compute :
-  Term.constr -> (Miniml.ml_decl list) * Miniml.ml_ast * Miniml.ml_type
+  Constr.t -> (Miniml.ml_decl list) * Miniml.ml_ast * Miniml.ml_type

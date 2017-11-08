@@ -11,11 +11,13 @@
 
 open Names
 
+module Public : sig
+
 (** {6 Value under universe substitution } *)
 type 'a puniverses = 'a Univ.puniverses
 
 (** {6 Simply type aliases } *)
-type pconstant = constant puniverses
+type pconstant = Constant.t puniverses
 type pinductive = inductive puniverses
 type pconstructor = constructor puniverses
 
@@ -87,7 +89,7 @@ val mkEvar : existential -> constr
 val mkSort : Sorts.t -> types
 val mkProp : types
 val mkSet  : types
-val mkType : Univ.universe -> types
+val mkType : Univ.Universe.t -> types
 
 
 (** This defines the strategy to use for verifiying a Cast *)
@@ -113,8 +115,8 @@ val mkApp : constr * constr array -> constr
 
 val map_puniverses : ('a -> 'b) -> 'a puniverses -> 'b puniverses
 
-(** Constructs a constant *)
-val mkConst : constant -> constr
+(** Constructs a Constant.t *)
+val mkConst : Constant.t -> constr
 val mkConstU : pconstant -> constr
 
 (** Constructs a projection application *)
@@ -208,7 +210,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
                                                           - [F] itself is not {!App}
                                                           - and [[|P1;..;Pn|]] is not empty. *)
 
-  | Const     of (constant * 'univs)                  (** Gallina-variable that was introduced by Vernacular-command that extends the global environment
+  | Const     of (Constant.t * 'univs)                  (** Gallina-variable that was introduced by Vernacular-command that extends the global environment
                                                           (i.e. [Parameter], or [Axiom], or [Definition], or [Theorem] etc.) *)
 
   | Ind       of (inductive * 'univs)                 (** A name of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
@@ -302,7 +304,7 @@ val compare_head : (constr -> constr -> bool) -> constr -> constr -> bool
 
 (** [compare_head_gen u s f c1 c2] compare [c1] and [c2] using [f] to compare
    the immediate subterms of [c1] of [c2] if needed, [u] to compare universe
-   instances (the first boolean tells if they belong to a constant), [s] to 
+   instances (the first boolean tells if they belong to a Constant.t), [s] to 
    compare sorts; Cast's, binders name and Cases annotations are not taken 
     into account *)
 
@@ -335,7 +337,7 @@ val compare_head_gen_with :
 (** [compare_head_gen_leq u s f fle c1 c2] compare [c1] and [c2] using
     [f] to compare the immediate subterms of [c1] of [c2] for
     conversion, [fle] for cumulativity, [u] to compare universe
-    instances (the first boolean tells if they belong to a constant),
+    instances (the first boolean tells if they belong to a Constant.t),
     [s] to compare sorts for for subtyping; Cast's, binders name and
     Cases annotations are not taken into account *)
 
@@ -344,7 +346,14 @@ val compare_head_gen_leq : (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) 
   (constr -> constr -> bool) ->
   (constr -> constr -> bool) ->
   constr -> constr -> bool
-  
+
+type values
+
+end
+
+include module type of Public
+
+module Internal : sig
 (** {6 Hashconsing} *)
 
 val hash : constr -> int
@@ -356,4 +365,4 @@ val hcons : constr -> constr
 
 (**************************************)
 
-type values
+end

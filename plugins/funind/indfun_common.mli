@@ -38,7 +38,7 @@ val chop_rlambda_n : int -> Glob_term.glob_constr ->
 val chop_rprod_n : int -> Glob_term.glob_constr ->
   (Name.t*Glob_term.glob_constr) list * Glob_term.glob_constr
 
-val def_of_const : Term.constr -> Term.constr
+val def_of_const : Constr.t -> Constr.t
 val eq : EConstr.constr Lazy.t
 val refl_equal : EConstr.constr Lazy.t
 val const_of_id: Id.t ->  Globnames.global_reference(* constantyes *)
@@ -118,10 +118,10 @@ val decompose_lam_n : Evd.evar_map -> int -> EConstr.t ->
   (Names.Name.t * EConstr.t) list * EConstr.t
 val compose_lam : (Names.Name.t * EConstr.t) list -> EConstr.t -> EConstr.t
 val compose_prod : (Names.Name.t * EConstr.t) list -> EConstr.t -> EConstr.t
-                                                        
-type tcc_lemma_value = 
+
+type tcc_lemma_value =
   | Undefined
-  | Value of Term.constr
+  | Value of Constr.t
   | Not_needed
 
 val funind_purify : ('a -> 'b) -> ('a -> 'b)

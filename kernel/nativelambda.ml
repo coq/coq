@@ -7,8 +7,8 @@
 (************************************************************************)
 open Util
 open Names
-open Esubst
-open Term
+open Esubst.Internal
+open Constr
 open Declarations
 open Pre_env
 open Nativevalues
@@ -378,7 +378,7 @@ module Renv =
     type constructor_info = tag * int * int (* nparam nrealargs *)
 
     type t = {
-	name_rel : name Vect.t;
+	name_rel : Name.t Vect.t;
 	construct_tbl : constructor_info ConstrTable.t;
 
        }
@@ -417,9 +417,9 @@ module Renv =
 
 (* What about pattern matching ?*)
 let is_lazy prefix t =
-  match kind_of_term t with
+  match kind t with
   | App (f,args) ->
-     begin match kind_of_term f with
+     begin match kind f with
      | Construct (c,_) ->
 	let entry = mkInd (fst c) in
 	(try
@@ -448,7 +448,7 @@ let empty_evars =
 let empty_ids = [||]
 
 let rec lambda_of_constr env sigma c =
-  match kind_of_term c with
+  match kind c with
   | Meta mv ->
      let ty = meta_type sigma mv in
      Lmeta (mv, lambda_of_constr env sigma ty)
@@ -480,7 +480,7 @@ let rec lambda_of_constr env sigma c =
       Lprod(ld,  Llam([|id|], lc))
 
   | Lambda _ ->
-      let params, body = decompose_lam c in
+      let params, body = Term.decompose_lam c in
       let ids = get_names (List.rev params) in
       Renv.push_rels env ids;
       let lb = lambda_of_constr env sigma body in
@@ -561,7 +561,7 @@ let rec lambda_of_constr env sigma c =
       Lcofix(init, (names, ltypes, lbodies))
 
 and lambda_of_app env sigma f args =
-  match kind_of_term f with
+  match kind f with
   | Const (kn,u as c) ->
       let kn,u = get_alias !global_env c in
       let cb = lookup_constant kn !global_env in
@@ -656,7 +656,7 @@ let compile_static_int31 fc args =
   if not fc then raise Not_found else
     Luint (UintVal
     (Uint31.of_int (Array.fold_left
-       (fun temp_i -> fun t -> match kind_of_term t with
+       (fun temp_i -> fun t -> match kind t with
           | Construct ((_,d),_) -> 2*temp_i+d-1
           | _ -> raise NotClosed)
        0 args)))

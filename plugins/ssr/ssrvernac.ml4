@@ -9,7 +9,8 @@
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
 open Names
-open Term
+module CoqConstr = Constr
+open CoqConstr
 open Termops
 open Constrexpr
 open Constrexpr_ops
@@ -364,7 +365,7 @@ let coerce_search_pattern_to_sort hpat =
 
 let interp_head_pat hpat =
   let filter_head, p = coerce_search_pattern_to_sort hpat in
-  let rec loop c = match kind_of_term c with
+  let rec loop c = match CoqConstr.kind c with
   | Cast (c', _, _) -> loop c'
   | Prod (_, _, c') -> loop c'
   | LetIn (_, _, _, c') -> loop c'

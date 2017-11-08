@@ -12,12 +12,12 @@ let get_inductive dir s =
   let glob_ref () = Coqlib.find_reference contrib_name ("Coq" :: dir) s in
   Lazy.from_fun (fun () -> Globnames.destIndRef (glob_ref ()))
 
-let decomp_term sigma (c : Term.constr) =
-  Term.kind_of_term (EConstr.Unsafe.to_constr (Termops.strip_outer_cast sigma (EConstr.of_constr c)))
+let decomp_term sigma (c : Constr.t) =
+  Constr.kind (EConstr.Unsafe.to_constr (Termops.strip_outer_cast sigma (EConstr.of_constr c)))
 
-let lapp c v  = Term.mkApp (Lazy.force c, v)
+let lapp c v  = Constr.mkApp (Lazy.force c, v)
 
-let (===) = Term.eq_constr
+let (===) = Constr.equal
 
 module CoqList = struct
   let path = ["Init"; "Datatypes"]
@@ -53,17 +53,11 @@ end
 
 module Env = struct
 
-  module ConstrHashed = struct
-    type t = Term.constr
-    let equal = Term.eq_constr
-    let hash = Term.hash_constr
-  end
-
-  module ConstrHashtbl = Hashtbl.Make (ConstrHashed)
+  module ConstrHashtbl = Hashtbl.Make (Constr)
 
   type t = (int ConstrHashtbl.t * int ref)
 
-  let add (tbl, off) (t : Term.constr) =
+  let add (tbl, off) (t : Constr.t) =
     try ConstrHashtbl.find tbl t 
     with
     | Not_found -> 
@@ -103,7 +97,7 @@ module Bool = struct
   | Negb of t
   | Ifb of t * t * t
 
-  let quote (env : Env.t) sigma (c : Term.constr) : t =
+  let quote (env : Env.t) sigma (c : Constr.t) : t =
     let trueb = Lazy.force trueb in
     let falseb = Lazy.force falseb in
     let andb = Lazy.force andb in
@@ -170,7 +164,7 @@ module Btauto = struct
   | Bool.Xorb (b1, b2) -> lapp f_xor [|convert b1; convert b2|]
   | Bool.Ifb (b1, b2, b3) -> lapp f_ifb [|convert b1; convert b2; convert b3|]
 
-  let convert_env env : Term.constr = 
+  let convert_env env : Constr.t = 
     CoqList.of_list (Lazy.force Bool.typ) env
 
   let reify env t = lapp eval [|convert_env env; convert t|]
@@ -249,7 +243,7 @@ module Btauto = struct
           let env = Env.to_list env in
           let fl = reify env fl in
           let fr = reify env fr in
-          let changed_gl = Term.mkApp (c, [|typ; fl; fr|]) in
+          let changed_gl = Constr.mkApp (c, [|typ; fl; fr|]) in
           let changed_gl = EConstr.of_constr changed_gl in
           Tacticals.New.tclTHENLIST [
             Tactics.change_concl changed_gl;

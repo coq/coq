@@ -6,10 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Sorts
 open Util
 open Pp
 open Names
-open Term
+open Constr
 open Environ
 open Univ
 open Globnames
@@ -20,7 +21,7 @@ let pr_with_global_universes l =
 
 (** Local universe names of polymorphic references *)
 
-type universe_binders = (Id.t * Univ.universe_level) list
+type universe_binders = (Id.t * Univ.Level.t) list
 
 let universe_binders_table = Summary.ref Refmap.empty ~name:"universe binders"
 
@@ -39,7 +40,7 @@ let is_set_minimization () = !set_minimization
 			    
 type universe_constraint_type = ULe | UEq | ULub
 
-type universe_constraint = universe * universe_constraint_type * universe
+type universe_constraint = Universe.t * universe_constraint_type * Universe.t
 
 module Constraints = struct
   module S = Set.Make(
@@ -157,11 +158,11 @@ let eq_constr_univs_infer_with kind1 kind2 univs fold m n accu =
   if res then Some !cstrs else None
 
 let compare_head_gen_proj env equ eqs eqc' m n =
-  match kind_of_term m, kind_of_term n with
+  match kind m, kind n with
   | Proj (p, c), App (f, args)
   | App (f, args), Proj (p, c) -> 
-      (match kind_of_term f with
-      | Const (p', u) when eq_constant (Projection.constant p) p' -> 
+      (match kind f with
+      | Const (p', u) when Constant.equal (Projection.constant p) p' -> 
           let pb = Environ.lookup_projection p env in
           let npars = pb.Declarations.proj_npars in
 	  if Array.length args == npars + 1 then
@@ -328,7 +329,7 @@ let fresh_global_or_constr_instance env = function
   | IsGlobal gr -> fresh_global_instance env gr
 
 let global_of_constr c =
-  match kind_of_term c with
+  match kind c with
   | Const (c, u) -> ConstRef c, u
   | Ind (i, u) -> IndRef i, u
   | Construct (c, u) -> ConstructRef c, u
@@ -390,8 +391,8 @@ let type_of_reference env r =
 let type_of_global t = type_of_reference (Global.env ()) t
 
 let fresh_sort_in_family env = function
-  | InProp -> prop_sort, ContextSet.empty
-  | InSet -> set_sort, ContextSet.empty
+  | InProp -> Sorts.prop, ContextSet.empty
+  | InSet -> Sorts.set, ContextSet.empty
   | InType -> 
     let u = fresh_level () in
       Type (Univ.Universe.make u), ContextSet.singleton u
@@ -449,7 +450,7 @@ let nf_evars_and_universes_opt_subst f subst =
   let subst = fun l -> match LMap.find l subst with None -> raise Not_found | Some l' -> l' in
   let lsubst = Univ.level_subst_of subst in
   let rec aux c =
-    match kind_of_term c with
+    match kind c with
     | Evar (evk, args) ->
       let args = Array.map aux args in
       (match try f (evk, args) with Not_found -> None with
@@ -467,7 +468,7 @@ let nf_evars_and_universes_opt_subst f subst =
     | Sort (Type u) ->
       let u' = Univ.subst_univs_universe subst u in
 	if u' == u then c else mkSort (sort_of_univ u')
-    | _ -> map_constr aux c
+    | _ -> Constr.map aux c
   in aux
 
 let fresh_universe_context_set_instance ctx =
@@ -526,7 +527,7 @@ let normalize_opt_subst ctx =
       else try ignore(normalize u) with Not_found -> assert(false)) ctx 
   in !ectx
 
-type universe_opt_subst = universe option universe_map
+type universe_opt_subst = Universe.t option universe_map
 	  
 let make_opt_subst s = 
   fun x -> 
@@ -788,7 +789,7 @@ let normalize_context_set ctx us algs =
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
     let g = Univ.LSet.fold (fun v g -> UGraph.add_universe v false g)
-			   ctx UGraph.empty_universes
+			   ctx UGraph.initial_universes
     in
     let g =
       Univ.Constraint.fold
@@ -807,7 +808,7 @@ let normalize_context_set ctx us algs =
 	 in g) csts g
     in
     let g = Univ.Constraint.fold UGraph.enforce_constraint csts g in
-      UGraph.constraints_of_universes g
+      UGraph.Internal.constraints_of_universes g
   in
   let noneqs =
     Constraint.fold (fun (l,d,r as cstr) noneqs ->

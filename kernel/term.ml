@@ -20,7 +20,7 @@ type contents = Sorts.contents = Pos | Null
 
 type sorts = Sorts.t =
   | Prop of contents       (** Prop and Set *)
-  | Type of Univ.universe  (** Type *)
+  | Type of Univ.Universe.t  (** Type *)
 
 type sorts_family = Sorts.family = InProp | InSet | InType
 
@@ -67,7 +67,7 @@ type ('constr, 'types) pcofixpoint = ('constr, 'types) Constr.pcofixpoint
 type 'a puniverses = 'a Univ.puniverses
 
 (** Simply type aliases *)
-type pconstant = constant puniverses
+type pconstant = Constant.t puniverses
 type pinductive = inductive puniverses
 type pconstructor = constructor puniverses
 
@@ -83,7 +83,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Lambda    of Name.t * 'types * 'constr
   | LetIn     of Name.t * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
-  | Const     of (constant * 'univs)
+  | Const     of (Constant.t * 'univs)
   | Ind       of (inductive * 'univs)
   | Construct of (constructor * 'univs)
   | Case      of case_info * 'constr * 'constr * 'constr array
@@ -152,10 +152,10 @@ let map_constr_with_binders = Constr.map_with_binders
 let iter_constr = Constr.iter
 let iter_constr_with_binders = Constr.iter_with_binders
 let compare_constr = Constr.compare_head
-let hash_constr = Constr.hash
+let hash_constr = Constr.Internal.hash
 let hcons_sorts = Sorts.hcons
-let hcons_constr = Constr.hcons
-let hcons_types = Constr.hcons
+let hcons_constr = Constr.Internal.hcons
+let hcons_types = Constr.Internal.hcons
 
 (**********************************************************************)
 (**         HERE BEGINS THE INTERESTING STUFF                         *)

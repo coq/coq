@@ -28,771 +28,44 @@ sig
   val exec_extension : string
 end
 
+module Internal : sig
+  module Evar : module type of Evar.Internal
+end
+
 (************************************************************************)
 (* Modules from kernel/                                                 *)
 (************************************************************************)
-module Names :
-sig
 
-  open Util
-
-  module Id :
-  sig
-    type t
-    val equal : t -> t -> bool
-    val compare : t -> t -> int
-    val hash : t -> int
-    val is_valid : string -> bool
-    val of_bytes : bytes -> t
-    val of_string : string -> t
-    val of_string_soft : string -> t
-    val to_string : t -> string
-    val print : t -> Pp.t
-
-    module Set  : Set.S with type elt = t
-    module Map  : Map.ExtS with type key = t and module Set := Set
-    module Pred : Predicate.S with type elt = t
-    module List : List.MonoS with type elt = t
-    val hcons : t -> t
-  end
-
-  module Name :
-  sig
-    type t = Anonymous     (** anonymous identifier *)
-	   | Name of Id.t  (** non-anonymous identifier *)
-    val mk_name : Id.t -> t
-    val is_anonymous : t -> bool
-    val is_name : t -> bool
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-    val hcons : t -> t
-    val print : t -> Pp.t
-  end
-
-  type name = Name.t =
-    | Anonymous
-    | Name of Id.t
-  [@@ocaml.deprecated "alias of API.Name.t"]
-
-  module DirPath :
-  sig
-    type t
-    val empty : t
-    val make : Id.t list -> t
-    val repr : t -> Id.t list
-    val equal : t -> t -> bool
-    val to_string : t -> string
-  end
-
-  module MBId : sig
-    type t
-    val equal : t -> t -> bool
-    val to_id : t -> Id.t
-    val repr : t -> int * Id.t * DirPath.t
-    val debug_to_string : t -> string
-  end
-
-  module Label :
-  sig
-    type t
-    val make : string -> t
-    val equal : t -> t -> bool
-    val compare : t -> t -> int
-    val of_id : Id.t -> t
-    val to_id : t -> Id.t
-    val to_string : t -> string
-  end
-
-  module ModPath :
-  sig
-    type t =
-      | MPfile of DirPath.t
-      | MPbound of MBId.t
-      | MPdot of t * Label.t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-    val initial : t
-    val to_string : t -> string
-    val debug_to_string : t -> string
-  end
-
-  module KerName :
-  sig
-    type t
-    val make : ModPath.t -> DirPath.t -> Label.t -> t
-    val make2 : ModPath.t -> Label.t -> t
-    val modpath : t -> ModPath.t
-    val equal : t -> t -> bool
-    val compare : t -> t -> int
-    val label : t -> Label.t
-    val repr : t -> ModPath.t * DirPath.t * Label.t
-    val print : t -> Pp.t
-    val to_string : t -> string
-  end
-
-  type kernel_name = KerName.t
-  [@@ocaml.deprecated "alias of API.Names.KerName.t"]
-
-  module Constant :
-  sig
-    type t
-    val equal : t -> t -> bool
-    val make1 : KerName.t -> t
-    val make2 : ModPath.t -> Label.t -> t
-    val make3 : ModPath.t -> DirPath.t -> Label.t -> t
-    val repr3 : t -> ModPath.t * DirPath.t * Label.t
-    val canonical : t -> KerName.t
-    val user : t -> KerName.t
-    val label : t -> Label.t
-  end
-
-  module MutInd :
-  sig
-    type t
-    val make1 : KerName.t -> t
-    val make2 : ModPath.t -> Label.t -> t
-    val equal : t -> t -> bool
-    val repr3 : t -> ModPath.t * DirPath.t * Label.t
-    val canonical : t -> KerName.t
-    val modpath : t -> ModPath.t
-    val label : t -> Label.t
-    val user : t -> KerName.t
-    val print : t -> Pp.t
-  end
-
-  module Projection :
-  sig
-    type t
-    val make : Constant.t -> bool -> t
-    val map : (Constant.t -> Constant.t) -> t -> t
-    val constant : t -> Constant.t
-    val equal : t -> t -> bool
-    val unfolded : t -> bool
-    val unfold : t -> t
-  end
-
-  type evaluable_global_reference =
-    | EvalVarRef of Id.t
-    | EvalConstRef of Constant.t
-
-  type inductive = MutInd.t * int
-  val eq_ind : inductive -> inductive -> bool
-
-  type constructor = inductive * int
-  val eq_constructor : constructor -> constructor -> bool
-  val constructor_hash : constructor -> int
-
-  module MPset : Set.S with type elt = ModPath.t
-  module MPmap : Map.ExtS with type key = ModPath.t and module Set := MPset
-
-  module KNset  : CSig.SetS with type elt = KerName.t
-  module KNpred : Predicate.S with type elt = KerName.t
-  module KNmap  : Map.ExtS with type key = KerName.t and module Set := KNset
-
-  module Cpred : Predicate.S with type elt = Constant.t
-  module Cset : CSig.SetS with type elt = Constant.t
-  module Cset_env  : CSig.SetS with type elt = Constant.t
-
-  module Cmap : Map.ExtS with type key = Constant.t and module Set := Cset
-  module Cmap_env : Map.ExtS with type key = Constant.t and module Set := Cset_env
-
-  module Mindset : CSig.SetS with type elt = MutInd.t
-  module Mindmap : Map.ExtS with type key = MutInd.t and module Set := Mindset
-  module Mindmap_env : CSig.MapS with type key = MutInd.t
-
-  module Indmap : CSig.MapS with type key = inductive
-  module Constrmap : CSig.MapS with type key = constructor
-  module Indmap_env : CSig.MapS with type key = inductive
-  module Constrmap_env : CSig.MapS with type key = constructor
-
-  type transparent_state = Id.Pred.t * Cpred.t
-
-  val empty_transparent_state : transparent_state
-  val full_transparent_state : transparent_state
-  val var_full_transparent_state : transparent_state
-  val cst_full_transparent_state : transparent_state
-
-  val pr_kn : KerName.t -> Pp.t
-  [@@ocaml.deprecated "alias of API.Names.KerName.print"]
-
-  val eq_constant : Constant.t -> Constant.t -> bool
-  [@@ocaml.deprecated "alias of API.Names.Constant.equal"]
-
-  type module_path = ModPath.t =
-    | MPfile of DirPath.t
-    | MPbound of MBId.t
-    | MPdot of ModPath.t * Label.t
-  [@@ocaml.deprecated "alias of API.Names.ModPath.t"]
-
-  type variable = Id.t
-
-  type 'a tableKey =
-    | ConstKey of 'a
-    | VarKey of Id.t
-    | RelKey of Int.t
-
-  val id_of_string : string -> Id.t
-  [@@ocaml.deprecated "alias of API.Names.Id.of_string"]
-
-  val string_of_id : Id.t -> string
-  [@@ocaml.deprecated "alias of API.Names.Id.to_string"]
-
-  type mutual_inductive = MutInd.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.t"]
-
-  val eq_mind : MutInd.t -> MutInd.t -> bool
-  [@@ocaml.deprecated "alias of API.Names.MutInd.equal"]
-
-  val repr_con : Constant.t -> ModPath.t * DirPath.t * Label.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.repr3"]
-
-  val repr_mind : MutInd.t -> ModPath.t * DirPath.t * Label.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.repr3"]
-
-  val initial_path : ModPath.t
-  [@@ocaml.deprecated "alias of API.Names.ModPath.initial"]
-
-  val con_label : Constant.t -> Label.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.label"]
-
-  val mind_label : MutInd.t -> Label.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.label"]
-
-  val string_of_mp : ModPath.t -> string
-  [@@ocaml.deprecated "alias of API.Names.ModPath.to_string"]
-
-  val mind_of_kn : KerName.t -> MutInd.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.make1"]
-
-  type constant = Constant.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.t"]
-
-  val mind_modpath : MutInd.t -> ModPath.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.modpath"]
-
-  val canonical_mind : MutInd.t -> KerName.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.canonical"]
-
-  val user_mind : MutInd.t -> KerName.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.user"]
-
-  val repr_kn : KerName.t -> ModPath.t * DirPath.t * Label.t
-  [@@ocaml.deprecated "alias of API.Names.KerName.repr"]
-
-  val constant_of_kn : KerName.t -> Constant.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.make1"]
-
-  val user_con : Constant.t -> KerName.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.user"]
-
-  val modpath : KerName.t -> ModPath.t
-  [@@ocaml.deprecated "alias of API.Names.KerName.modpath"]
-
-  val canonical_con : Constant.t -> KerName.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.canonical"]
-
-  val make_kn : ModPath.t -> DirPath.t -> Label.t -> KerName.t
-  [@@ocaml.deprecated "alias of API.Names.KerName.make"]
-
-  val make_con : ModPath.t -> DirPath.t -> Label.t -> Constant.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.make3"]
-
-  val debug_pr_con : Constant.t -> Pp.t
-
-  val debug_pr_mind : MutInd.t -> Pp.t
-
-  val pr_con : Constant.t -> Pp.t
-
-  val string_of_con : Constant.t -> string
-
-  val string_of_mind : MutInd.t -> string
-
-  val debug_string_of_mind : MutInd.t -> string
-
-  val debug_string_of_con : Constant.t -> string
-
-  type identifier = Id.t
-  module Idset  : Set.S with type elt = identifier and type t = Id.Set.t
-
-end
-
-module Univ :
-sig
-
-  module Level :
-  sig
-    type t
-    val set : t
-    val pr : t -> Pp.t
-  end
-
-  type universe_level = Level.t
-
-  module LSet :
-  sig
-    include CSig.SetS with type elt = universe_level
-    val pr : (Level.t -> Pp.t) -> t -> Pp.t
-  end
-
-  module Universe :
-  sig
-    type t
-    val pr : t -> Pp.t
-  end
-
-  type universe = Universe.t
-
-  module Instance :
-  sig
-    type t
-    val empty : t
-    val of_array : Level.t array -> t
-    val to_array : t -> Level.t array
-    val pr : (Level.t -> Pp.t) -> t -> Pp.t
-  end
-
-  type 'a puniverses = 'a * Instance.t
-
-  val out_punivs : 'a puniverses -> 'a
-
-  type constraint_type = Lt | Le | Eq
-
-  type univ_constraint = universe_level * constraint_type * universe_level
-
-  module Constraint : sig
-    include Set.S with type elt = univ_constraint
-  end
-
-  type 'a constrained = 'a * Constraint.t
-
-  module UContext :
-  sig
-    type t
-    val empty : t
-  end
-
-  type universe_context = UContext.t
-
-  module AUContext :
-  sig
-    type t
-    val empty : t
-  end
-
-  type abstract_universe_context = AUContext.t
-
-  module CumulativityInfo :
-  sig
-    type t
-  end
-
-  type cumulativity_info = CumulativityInfo.t
-
-  module ACumulativityInfo :
-  sig
-    type t
-  end
-  type abstract_cumulativity_info = ACumulativityInfo.t
-
-  module ContextSet :
-  sig
-    type t
-    val empty : t
-    val of_context : UContext.t -> t
-    val to_context : t -> UContext.t
-  end
-
-  type 'a in_universe_context_set = 'a * ContextSet.t
-  type 'a in_universe_context = 'a * UContext.t
-
-  type universe_context_set = ContextSet.t
-
-  type universe_set = LSet.t
-
-  type 'a constraint_function = 'a -> 'a -> Constraint.t -> Constraint.t
-
-  module LMap :
-  sig
-    include CMap.ExtS with type key = universe_level and module Set := LSet
-
-    val union : 'a t -> 'a t -> 'a t
-    val diff : 'a t -> 'a t -> 'a t
-    val subst_union : 'a option t -> 'a option t -> 'a option t
-    val pr : ('a -> Pp.t) -> 'a t -> Pp.t
-  end
-
-  type 'a universe_map = 'a LMap.t
-  type universe_subst = universe universe_map
-  type universe_level_subst = universe_level universe_map
-
-  val enforce_leq : Universe.t constraint_function
-  val pr_uni : Universe.t -> Pp.t
-  val pr_universe_context : (Level.t -> Pp.t) -> UContext.t -> Pp.t
-  val pr_universe_context_set : (Level.t -> Pp.t) -> ContextSet.t -> Pp.t
-  val pr_universe_subst : universe_subst -> Pp.t
-  val pr_universe_level_subst : universe_level_subst -> Pp.t
-  val pr_constraints : (Level.t -> Pp.t) -> Constraint.t -> Pp.t
-end
-
-module UGraph :
-sig
-  type t
-  val pr_universes : (Univ.Level.t -> Pp.t) -> t -> Pp.t
-end
-
-module Esubst :
-sig
-  type 'a subs
-  val subs_id : int -> 'a subs
-end
-
-module Sorts :
-sig
-  type contents = Pos | Null
-  type t =
-         | Prop of contents
-         | Type of Univ.Universe.t
-  val is_prop : t -> bool
-  val hash : t -> int
-
-  type family = InProp | InSet | InType
-  val family : t -> family
-end
-
-module Evar :
-sig
-  (** Unique identifier of some {i evar} *)
-  type t
-
-  (** Recover the underlying integer. *)
-  val repr : t -> int
-
-  val equal : t -> t -> bool
-
-  (** a set of unique identifiers of some {i evars} *)
-  module Set : Set.S with type elt = t
-  module Map : CMap.ExtS with type key = t and module Set := Set
-
-end
-
-module Constr :
-sig
-  open Names
-
-  type t
-
-  type constr = t
-  type types = t
-
-  type cast_kind =
-                 | VMcast
-                 | NATIVEcast
-                 | DEFAULTcast
-                 | REVERTcast
-
-  type metavariable = int
-
-  type existential_key = Evar.t
-  type 'constr pexistential = existential_key * 'constr array
-
-  type 'a puniverses = 'a Univ.puniverses
-  type pconstant = Constant.t puniverses
-  type pinductive = inductive puniverses
-  type pconstructor = constructor puniverses
-
-  type ('constr, 'types) prec_declaration =
-    Name.t array * 'types array * 'constr array
-
-  type ('constr, 'types) pfixpoint =
-    (int array * int) * ('constr, 'types) prec_declaration
-
-  type ('constr, 'types) pcofixpoint =
-    int * ('constr, 'types) prec_declaration
-
-  type case_style =
-      LetStyle | IfStyle | LetPatternStyle | MatchStyle
-    | RegularStyle (** infer printing form from number of constructor *)
-
-  type case_printing =
-    { ind_tags : bool list; (** tell whether letin or lambda in the arity of the inductive type *)
-      cstr_tags : bool list array; (** tell whether letin or lambda in the signature of each constructor *)
-      style     : case_style }
-
-  type case_info =
-    { ci_ind        : inductive;      (* inductive type to which belongs the value that is being matched *)
-      ci_npar       : int;            (* number of parameters of the above inductive type *)
-      ci_cstr_ndecls : int array;     (* For each constructor, the corresponding integer determines
-                                         the number of values that can be bound in a match-construct.
-                                         NOTE: parameters of the inductive type are therefore excluded from the count *)
-      ci_cstr_nargs : int array;      (* for each constructor, the corresponding integers determines
-                                         the number of values that can be applied to the constructor,
-                                         in addition to the parameters of the related inductive type
-                                         NOTE: "lets" are therefore excluded from the count
-                                         NOTE: parameters of the inductive type are also excluded from the count *)
-      ci_pp_info    : case_printing   (* not interpreted by the kernel *)
-    }
-
-  type ('constr, 'types, 'sort, 'univs) kind_of_term =
-     | Rel       of int
-     | Var       of Id.t
-     | Meta      of metavariable
-     | Evar      of 'constr pexistential
-     | Sort      of 'sort
-     | Cast      of 'constr * cast_kind * 'types
-     | Prod      of Name.t * 'types * 'types
-     | Lambda    of Name.t * 'types * 'constr
-     | LetIn     of Name.t * 'constr * 'types * 'constr
-     | App       of 'constr * 'constr array
-     | Const     of (Constant.t * 'univs)
-     | Ind       of (inductive * 'univs)
-     | Construct of (constructor * 'univs)
-     | Case      of case_info * 'constr * 'constr * 'constr array
-     | Fix       of ('constr, 'types) pfixpoint
-     | CoFix     of ('constr, 'types) pcofixpoint
-     | Proj      of Projection.t * 'constr
-
-  val equal : t -> t -> bool
-  val eq_constr_nounivs : t -> t -> bool
-  val compare : t -> t -> int
-
-  val hash : t -> int
-
-  val mkRel : int -> t
-  val mkVar : Id.t -> t
-  val mkMeta : metavariable -> t
-  type existential = existential_key * constr array
-  val mkEvar : existential -> t
-  val mkSort : Sorts.t -> t
-  val mkProp : t
-  val mkSet  : t
-  val mkType : Univ.Universe.t -> t
-  val mkCast : t * cast_kind * t -> t
-  val mkProd : Name.t * types * types -> types
-  val mkLambda : Name.t * types * t -> t
-  val mkLetIn : Name.t * t * types * t -> t
-  val mkApp : t * t array -> t
-  val map_puniverses : ('a -> 'b) -> 'a puniverses -> 'b puniverses
-
-  val mkConst : Constant.t -> t
-  val mkConstU : pconstant -> t
-
-  val mkProj : (Projection.t * t) -> t
-
-  val mkInd : inductive -> t
-  val mkIndU : pinductive -> t
-
-  val mkConstruct : constructor -> t
-  val mkConstructU : pconstructor -> t
-  val mkConstructUi : pinductive * int -> t
-
-  val mkCase : case_info * t * t * t array -> t
-
-end
-
-module Context :
-sig
-  module Rel :
-  sig
-    module Declaration :
-    sig
-      (* local declaration *)
-      (* local declaration *)
-      type ('constr, 'types) pt =
-        | LocalAssum of Names.Name.t * 'types            (** name, type *)
-        | LocalDef of Names.Name.t * 'constr * 'types    (** name, value, type *)
-
-      type t = (Constr.constr, Constr.types) pt
-
-      (** Return the name bound by a given declaration. *)
-      val get_name : ('c, 't) pt -> Names.Name.t
-
-      (** Return the type of the name bound by a given declaration. *)
-      val get_type : ('c, 't) pt -> 't
-
-      (** Set the name that is bound by a given declaration. *)
-      val set_name : Names.Name.t -> ('c, 't) pt -> ('c, 't) pt
-
-      (** Set the type of the bound variable in a given declaration. *)
-      val set_type : 't -> ('c, 't) pt -> ('c, 't) pt
-
-      (** Return [true] iff a given declaration is a local assumption. *)
-      val is_local_assum : ('c, 't) pt -> bool
-
-      (** Return [true] iff a given declaration is a local definition. *)
-      val is_local_def : ('c, 't) pt -> bool
-
-      (** Check whether the two given declarations are equal. *)
-      val equal : ('c -> 'c -> bool) -> ('c, 'c) pt -> ('c, 'c) pt -> bool
-
-      (** Map the name bound by a given declaration. *)
-      val map_name : (Names.Name.t -> Names.Name.t) -> ('c, 't) pt -> ('c, 't) pt
-
-      (** For local assumptions, this function returns the original local assumptions.
-        For local definitions, this function maps the value in the local definition. *)
-      val map_value : ('c -> 'c) -> ('c, 't) pt -> ('c, 't) pt
-
-      (** Map the type of the name bound by a given declaration. *)
-      val map_type : ('t -> 't) -> ('c, 't) pt -> ('c, 't) pt
-
-      (** Map all terms in a given declaration. *)
-      val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
-
-      (** Perform a given action on all terms in a given declaration. *)
-      val iter_constr : ('c -> unit) -> ('c, 'c) pt -> unit
-
-      (** Reduce all terms in a given declaration to a single value. *)
-      val fold_constr : ('c -> 'a -> 'a) -> ('c, 'c) pt -> 'a -> 'a
-    end
-
-    (** Rel-context is represented as a list of declarations.
-        Inner-most declarations are at the beginning of the list.
-        Outer-most declarations are at the end of the list. *)
-    type ('constr, 'types) pt = ('constr, 'types) Declaration.pt list
-    type t = Declaration.t list
-
-    (** empty rel-context *)
-    val empty : ('c, 't) pt
-
-    (** Return a new rel-context enriched by with a given inner-most declaration. *)
-    val add : ('c, 't) Declaration.pt -> ('c, 't) pt -> ('c, 't) pt
-
-    (** Return the number of {e local declarations} in a given context. *)
-    val length : ('c, 't) pt -> int
-
-    (** Check whether given two rel-contexts are equal. *)
-    val equal : ('c -> 'c -> bool) -> ('c, 'c) pt -> ('c, 'c) pt -> bool
-
-    (** Return the number of {e local assumptions} in a given rel-context. *)
-    val nhyps : ('c, 't) pt -> int
-
-    (** Return a declaration designated by a given de Bruijn index.
-      @raise Not_found if the designated de Bruijn index outside the range. *)
-    val lookup : int -> ('c, 't) pt -> ('c, 't) Declaration.pt
-
-    (** Map all terms in a given rel-context. *)
-    val map : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
-
-    (** Perform a given action on every declaration in a given rel-context. *)
-    val iter : ('c -> unit) -> ('c, 'c) pt -> unit
-
-    (** Reduce all terms in a given rel-context to a single value.
-      Innermost declarations are processed first. *)
-    val fold_inside : ('a -> ('c, 't) Declaration.pt -> 'a) -> init:'a -> ('c, 't) pt -> 'a
-
-    (** Reduce all terms in a given rel-context to a single value.
-      Outermost declarations are processed first. *)
-    val fold_outside : (('c, 't) Declaration.pt -> 'a -> 'a) -> ('c, 't) pt -> init:'a -> 'a
-
-    (** [extended_vect n Γ] does the same, returning instead an array. *)
-    val to_extended_vect : (int -> 'r) -> int -> ('c, 't) pt -> 'r array
-  end
-  module Named :
-  sig
-    module Declaration :
-    sig
-      (** local declaration *)
-      type ('constr, 'types) pt =
-        | LocalAssum of Names.Id.t * 'types             (** identifier, type *)
-        | LocalDef of Names.Id.t * 'constr * 'types     (** identifier, value, type *)
-
-      type t = (Constr.constr, Constr.types) pt
-
-      (** Return the identifier bound by a given declaration. *)
-      val get_id : ('c, 't) pt -> Names.Id.t
-
-      (** Return the type of the name bound by a given declaration. *)
-      val get_type : ('c, 't) pt -> 't
-
-      (** Set the identifier that is bound by a given declaration. *)
-      val set_id : Names.Id.t -> ('c, 't) pt -> ('c, 't) pt
-
-      (** Set the type of the bound variable in a given declaration. *)
-      val set_type : 't -> ('c, 't) pt -> ('c, 't) pt
-
-      (** Return [true] iff a given declaration is a local assumption. *)
-      val is_local_assum : ('c, 't) pt -> bool
-
-      (** Return [true] iff a given declaration is a local definition. *)
-      val is_local_def : ('c, 't) pt -> bool
-
-      (** Check whether any term in a given declaration satisfies a given predicate. *)
-      val exists : ('c -> bool) -> ('c, 'c) pt -> bool
-
-      (** Check whether all terms in a given declaration satisfy a given predicate. *)
-      val for_all : ('c -> bool) -> ('c, 'c) pt -> bool
-
-      (** Check whether the two given declarations are equal. *)
-      val equal : ('c -> 'c -> bool) -> ('c, 'c) pt -> ('c, 'c) pt -> bool
-
-      (** Map the identifier bound by a given declaration. *)
-      val map_id : (Names.Id.t -> Names.Id.t) -> ('c, 't) pt -> ('c, 't) pt
-
-      (** For local assumptions, this function returns the original local assumptions.
-        For local definitions, this function maps the value in the local definition. *)
-      val map_value : ('c -> 'c) -> ('c, 't) pt -> ('c, 't) pt
-
-      (** Map the type of the name bound by a given declaration. *)
-      val map_type : ('t -> 't) -> ('c, 't) pt -> ('c, 't) pt
-
-      (** Map all terms in a given declaration. *)
-      val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
-
-      (** Perform a given action on all terms in a given declaration. *)
-      val iter_constr : ('c -> unit) -> ('c, 'c) pt -> unit
-
-      (** Reduce all terms in a given declaration to a single value. *)
-      val fold_constr : ('c -> 'a -> 'a) -> ('c, 'c) pt -> 'a -> 'a
-
-      val to_rel_decl : ('c, 't) pt -> ('c, 't) Rel.Declaration.pt
-    end
-    (** Named-context is represented as a list of declarations.
-      Inner-most declarations are at the beginning of the list.
-      Outer-most declarations are at the end of the list. *)
-    type ('constr, 'types) pt = ('constr, 'types) Declaration.pt list
-    type t = Declaration.t list
-
-    (** empty named-context *)
-    val empty : ('c, 't) pt
-
-    (** Return a new named-context enriched by with a given inner-most declaration. *)
-    val add : ('c, 't) Declaration.pt -> ('c, 't) pt -> ('c, 't) pt
-
-    (** Return the number of {e local declarations} in a given named-context. *)
-    val length : ('c, 't) pt -> int
-
-    (** Return a declaration designated by an identifier of the variable bound in that declaration.
-      @raise Not_found if the designated identifier is not bound in a given named-context. *)
-    val lookup : Names.Id.t -> ('c, 't) pt -> ('c, 't) Declaration.pt
-
-    (** Check whether given two named-contexts are equal. *)
-    val equal : ('c -> 'c -> bool) -> ('c, 'c) pt -> ('c, 'c) pt -> bool
-
-    (** Map all terms in a given named-context. *)
-    val map : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
-
-    (** Perform a given action on every declaration in a given named-context. *)
-    val iter : ('c -> unit) -> ('c, 'c) pt -> unit
-
-    (** Reduce all terms in a given named-context to a single value.
-      Innermost declarations are processed first. *)
-    val fold_inside : ('a -> ('c, 't) Declaration.pt -> 'a) -> init:'a -> ('c, 't) pt -> 'a
-
-    (** Reduce all terms in a given named-context to a single value.
-      Outermost declarations are processed first. *)
-    val fold_outside : (('c, 't) Declaration.pt -> 'a -> 'a) -> ('c, 't) pt -> init:'a -> 'a
-
-    (** Return the set of all identifiers bound in a given named-context. *)
-    val to_vars : ('c, 't) pt -> Names.Id.Set.t
-
-    (** [to_instance Ω] builds an instance [args] such
-      that [Ω ⊢ args:Ω] where [Ω] is a named-context and with the local
-      definitions of [Ω] skipped. Example: for [id1:T,id2:=c,id3:U], it
-      gives [Var id1, Var id3]. All [idj] are supposed distinct. *)
-    val to_instance : (Names.Id.t -> 'r) -> ('c, 't) pt -> 'r list
-  end
-end
+(* these constraints are workaround in order to make the aliases in
+   Term, etc... work; should go away once these modeles are ported to
+   the new system *)
+module Names  : module type of Names.Public
+  with type Id.t         = Names.Id.t
+   and type Name.t       = Names.Name.t
+   and type MutInd.t     = Names.MutInd.t
+   and type inductive    = Names.MutInd.t * int
+   and type Constant.t   = Names.Constant.t
+   and type Projection.t = Names.Projection.t
+
+module Univ   : module type of Univ.Public
+  with type Universe.t = Univ.Universe.t
+
+module UGraph : module type of UGraph.Public
+module Esubst : module type of Esubst.Public
+module Sorts  : module type of Sorts.Public
+
+(* Evar.Internal is used by ssreflect *)
+module Evar   : module type of Evar.Public
+module Constr : module type of Constr.Public
+  with type t       = Constr.t
+   and type constr  = Constr.t
+   and type types   = Constr.t
+
+module Context : module type of Context.Public
+  with type ('a,'b) Rel.Declaration.pt = ('a,'b) Context.Rel.Declaration.pt
+   and type Rel.Declaration.t = (Constr.t, Constr.t) Context.Rel.Declaration.pt
+   and type ('a,'b) Named.Declaration.pt = ('a,'b) Context.Named.Declaration.pt
+   and type Named.Declaration.t = (Constr.t, Constr.t) Context.Named.Declaration.pt
 
 module Vars :
 sig
@@ -819,13 +92,15 @@ end
 module Term :
 sig
 
+  open Univ
+
   type sorts_family = Sorts.family = InProp | InSet | InType
 
   type contents = Sorts.contents = Pos | Null
 
   type sorts = Sorts.t =
     | Prop of contents
-    | Type of Univ.Universe.t
+    | Type of Universe.t
   [@@ocaml.deprecated "alias of API.Sorts.t"]
 
   type constr = Constr.t
@@ -1188,8 +463,8 @@ sig
     | TemplateArity of 'b
 
   type constant_universes =
-    | Monomorphic_const of Univ.universe_context
-    | Polymorphic_const of Univ.abstract_universe_context
+    | Monomorphic_const of Univ.UContext.t
+    | Polymorphic_const of Univ.AUContext.t
 
   type projection_body = {
         proj_ind : Names.MutInd.t;
@@ -1255,9 +530,9 @@ sig
                        | MEwith of module_alg_expr * with_declaration
 
   type abstract_inductive_universes =
-  | Monomorphic_ind of Univ.universe_context
-  | Polymorphic_ind of Univ.abstract_universe_context
-  | Cumulative_ind of Univ.abstract_cumulativity_info
+  | Monomorphic_ind of Univ.UContext.t
+  | Polymorphic_ind of Univ.AUContext.t
+  | Cumulative_ind of Univ.ACumulativityInfo.t
 
   type record_body = (Id.t * Constant.t array * projection_body array) option
   
@@ -1322,9 +597,9 @@ sig
     | LocalAssumEntry of constr
 
   type inductive_universes =
-    | Monomorphic_ind_entry of Univ.universe_context
-    | Polymorphic_ind_entry of Univ.universe_context
-    | Cumulative_ind_entry of Univ.cumulativity_info
+    | Monomorphic_ind_entry of Univ.UContext.t
+    | Polymorphic_ind_entry of Univ.UContext.t
+    | Cumulative_ind_entry of Univ.CumulativityInfo.t
 
   type one_inductive_entry = {
     mind_entry_typename : Id.t;
@@ -1351,8 +626,8 @@ sig
   type 'a proof_output = Constr.t Univ.in_universe_context_set * 'a
   type 'a const_entry_body = 'a proof_output Future.computation
   type constant_universes_entry =
-    | Monomorphic_const_entry of Univ.universe_context
-    | Polymorphic_const_entry of Univ.universe_context
+    | Monomorphic_const_entry of Univ.UContext.t
+    | Polymorphic_const_entry of Univ.UContext.t
   type 'a definition_entry =
                                { const_entry_body   : 'a const_entry_body;
                                  (* List of section variables *)
@@ -1548,7 +823,7 @@ sig
     | UnboundVar of variable
     | NotAType of ('constr, 'types) punsafe_judgment
     | BadAssumption of ('constr, 'types) punsafe_judgment
-    | ReferenceVariables of identifier * 'constr
+    | ReferenceVariables of Id.t * 'constr
     | ElimArity of pinductive * sorts_family list * 'constr * ('constr, 'types) punsafe_judgment
                    * (sorts_family * sorts_family * arity_error) option
     | CaseNotInductive of ('constr, 'types) punsafe_judgment
@@ -1756,8 +1031,8 @@ end
 
 module Univops :
 sig
-  val universes_of_constr : Term.constr -> Univ.universe_set
-  val restrict_universe_context : Univ.universe_context_set -> Univ.universe_set -> Univ.universe_context_set
+  val universes_of_constr : Term.constr -> Univ.LSet.t
+  val restrict_universe_context : Univ.ContextSet.t -> Univ.LSet.t -> Univ.ContextSet.t
 end
 
 module Nameops :
@@ -5482,7 +4757,7 @@ end
 module Hints :
 sig
 
-  type raw_hint = EConstr.t * EConstr.types * Univ.universe_context_set
+  type raw_hint = EConstr.t * EConstr.types * Univ.ContextSet.t
 
   type 'a hint_ast =
     | Res_pf     of 'a (* Hint Apply *)

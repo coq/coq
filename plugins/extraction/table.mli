@@ -180,7 +180,7 @@ val implicits_of_global : global_reference -> Int.Set.t
 (*s Table for user-given custom ML extractions. *)
 
 (* UGLY HACK: registration of a function defined in [extraction.ml] *)
-val type_scheme_nb_args_hook : (Environ.env -> Term.constr -> int) Hook.t
+val type_scheme_nb_args_hook : (Environ.env -> Constr.t -> int) Hook.t
 
 val is_custom : global_reference -> bool
 val is_inline_custom : global_reference -> bool

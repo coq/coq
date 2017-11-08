@@ -20,6 +20,10 @@
 (******************************************************************************)
 module Coq_config = Coq_config
 
+module Internal = struct
+  module Evar = Evar.Internal
+end
+
 (******************************************************************************)
 (* Kernel *)
 (******************************************************************************)
@@ -36,6 +40,8 @@ module Sorts = Sorts
 module Evar = Evar
 module Constr = Constr
 module Context = Context
+
+(* Not moved out of API yet *)
 module Vars = Vars
 module Term = Term
 module Mod_subst = Mod_subst

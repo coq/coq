@@ -19,7 +19,7 @@ open Pp
 open Names
 open Globnames
 open Nametab
-open Term
+open Constr
 open Libobject
 open Mod_subst
 open Reductionops
@@ -37,7 +37,7 @@ type struc_typ = {
   s_CONST : constructor;
   s_EXPECTEDPARAM : int;
   s_PROJKIND : (Name.t * bool) list;
-  s_PROJ : constant option list }
+  s_PROJ : Constant.t option list }
 
 let structure_table =
   Summary.ref (Indmap.empty : struc_typ Indmap.t) ~name:"record-structs"
@@ -48,7 +48,7 @@ let projection_table =
    is the inductive always (fst constructor) ? It seems so... *)
 
 type struc_tuple =
-    inductive * constructor * (Name.t * bool) list * constant option list
+    inductive * constructor * (Name.t * bool) list * Constant.t option list
 
 let load_structure i (_,(ind,id,kl,projs)) =
   let n = (fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
@@ -144,7 +144,7 @@ type obj_typ = {
 type cs_pattern =
     Const_cs of global_reference
   | Prod_cs
-  | Sort_cs of sorts_family
+  | Sort_cs of Sorts.family
   | Default_cs
 
 let eq_cs_pattern p1 p2 = match p1, p2 with
@@ -172,7 +172,7 @@ let keep_true_projections projs kinds =
   List.map_filter filter (List.combine projs kinds)
 
 let cs_pattern_of_constr env t =
-  match kind_of_term t with
+  match kind t with
       App (f,vargs) ->
 	begin
 	  try Const_cs (global_of_constr f) , None, Array.to_list vargs
@@ -184,7 +184,7 @@ let cs_pattern_of_constr env t =
       let { Environ.uj_type = ty } = Typeops.infer env c in
       let _, params = Inductive.find_rectype env ty in
       Const_cs (ConstRef (Projection.constant p)), None, params @ [c]
-    | Sort s -> Sort_cs (family_of_sort s), None, []
+    | Sort s -> Sort_cs (Sorts.family s), None, []
     | _ ->
 	begin
 	  try Const_cs (global_of_constr t) , None, []
@@ -213,7 +213,7 @@ let compute_canonical_projections warn (con,ind) =
   let sign = List.map (on_snd EConstr.Unsafe.to_constr) sign in
   let t = EConstr.Unsafe.to_constr t in
   let lt = List.rev_map snd sign in
-  let args = snd (decompose_app t) in
+  let args = snd (Term.decompose_app t) in
   let { s_EXPECTEDPARAM = p; s_PROJ = lpj; s_PROJKIND = kl } =
     lookup_structure ind in
   let params, projs = List.chop p args in
@@ -286,7 +286,7 @@ let subst_canonical_structure (subst,(cst,ind as obj)) =
 let discharge_canonical_structure (_,(cst,ind)) =
   Some (Lib.discharge_con cst,Lib.discharge_inductive ind)
 
-let inCanonStruc : constant * inductive -> obj =
+let inCanonStruc : Constant.t * inductive -> obj =
   declare_object {(default_object "CANONICAL-STRUCTURE") with
     open_function = open_canonical_structure;
     cache_function = cache_canonical_structure;
@@ -311,10 +311,10 @@ let check_and_decompose_canonical_structure ref =
     | None -> error_not_structure ref in
   let body = snd (splay_lam (Global.env()) Evd.empty (EConstr.of_constr vc)) (** FIXME *) in
   let body = EConstr.Unsafe.to_constr body in
-  let f,args = match kind_of_term body with
+  let f,args = match kind body with
     | App (f,args) -> f,args
     | _ -> error_not_structure ref in
-  let indsp = match kind_of_term f with
+  let indsp = match kind f with
     | Construct ((indsp,1),u) -> indsp
     | _ -> error_not_structure ref in
   let s = try lookup_structure indsp with Not_found -> error_not_structure ref in

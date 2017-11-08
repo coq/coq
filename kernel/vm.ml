@@ -7,7 +7,8 @@
 (************************************************************************)
 
 open Names
-open Term
+open Sorts
+open Constr
 open Cbytecodes
 
 external set_drawinstr : unit -> unit = "coq_set_drawinstr"
@@ -137,7 +138,7 @@ type vswitch = {
 type atom =
   | Aid of Vars.id_key
   | Aind of inductive
-  | Atype of Univ.universe
+  | Atype of Univ.Universe.t
 
 (* Zippers *)
 
@@ -152,7 +153,7 @@ type stack = zipper list
 type to_up = values
 
 type whd =
-  | Vsort of sorts
+  | Vsort of Sorts.t
   | Vprod of vprod
   | Vfun of vfun
   | Vfix of vfix * arguments option
@@ -160,7 +161,7 @@ type whd =
   | Vconstr_const of int
   | Vconstr_block of vblock
   | Vatom_stk of atom * stack
-  | Vuniv_level of Univ.universe_level
+  | Vuniv_level of Univ.Level.t
 
 (************************************************)
 (* Abstract machine *****************************)
@@ -216,7 +217,7 @@ let apply_varray vf varray =
 (* Destructors ***********************************)
 (*************************************************)
 
-let uni_lvl_val (v : values) : Univ.universe_level =
+let uni_lvl_val (v : values) : Univ.Level.t =
     let whd = Obj.magic v in
     match whd with
     | Vuniv_level lvl -> lvl
@@ -357,7 +358,7 @@ let val_of_proj kn v =
 
 module IdKeyHash =
 struct
-  type t = constant tableKey
+  type t = Constant.t tableKey
   let equal = Names.eq_table_key Constant.equal
   open Hashset.Combine
   let hash = function
@@ -654,10 +655,10 @@ let apply_whd k whd =
 let rec pr_atom a =
   Pp.(match a with
   | Aid c -> str "Aid(" ++ (match c with
-                            | ConstKey c -> Names.pr_con c
+                            | ConstKey c -> Constant.print c
 			    | RelKey i -> str "#" ++ int i
 			    | _ -> str "...") ++ str ")"
-  | Aind (mi,i) -> str "Aind(" ++ Names.pr_mind mi ++ str "#" ++ int i ++ str ")"
+  | Aind (mi,i) -> str "Aind(" ++ MutInd.print mi ++ str "#" ++ int i ++ str ")"
   | Atype _ -> str "Atype(")
 and pr_whd w =
   Pp.(match w with
@@ -679,4 +680,4 @@ and pr_zipper z =
   | Zapp args -> str "Zapp(len = " ++ int (nargs args) ++ str ")"
   | Zfix (f,args) -> str "Zfix(..., len=" ++ int (nargs args) ++ str ")"
   | Zswitch s -> str "Zswitch(...)"
-  | Zproj c -> str "Zproj(" ++ Names.pr_con c ++ str ")")
+  | Zproj c -> str "Zproj(" ++ Constant.print c ++ str ")")

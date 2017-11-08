@@ -110,7 +110,7 @@ val availability_of_prim_token :
 (** Binds a notation in a given scope to an interpretation *)
 type interp_rule =
   | NotationRule of scope_name option * notation
-  | SynDefRule of kernel_name
+  | SynDefRule of KerName.t
 
 val declare_notation_interpretation : notation -> scope_name option ->
       interpretation -> notation_location -> onlyprint:bool -> unit
@@ -165,8 +165,8 @@ val subst_scope_class :
 val declare_scope_class : scope_name -> scope_class -> unit
 val declare_ref_arguments_scope : global_reference -> unit
 
-val compute_arguments_scope : Term.types -> scope_name option list
-val compute_type_scope : Term.types -> scope_name option
+val compute_arguments_scope : Constr.types -> scope_name option list
+val compute_type_scope : Constr.types -> scope_name option
 
 (** Get the current scope bound to Sortclass, if it exists *)
 val current_type_scope_name : unit -> scope_name option

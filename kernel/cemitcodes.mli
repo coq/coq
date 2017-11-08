@@ -4,7 +4,7 @@ open Cbytecodes
 type reloc_info =
   | Reloc_annot of annot_switch
   | Reloc_const of structured_constant
-  | Reloc_getglobal of constant
+  | Reloc_getglobal of Constant.t
 
 type patch = reloc_info * int
 
@@ -23,7 +23,7 @@ val subst_to_patch : Mod_subst.substitution -> to_patch -> to_patch
 
 type body_code =
   | BCdefined of to_patch
-  | BCalias of constant
+  | BCalias of Constant.t
   | BCconstant
 
 

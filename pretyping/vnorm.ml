@@ -10,6 +10,7 @@ open Util
 open Names
 open Declarations
 open Term
+open Constr
 open Vars
 open Environ
 open Inductive
@@ -51,7 +52,7 @@ let invert_tag cst tag reloc_tbl =
 
 let find_rectype_a env c =
   let (t, l) = decompose_appvect (whd_all env c) in
-  match kind_of_term t with
+  match kind t with
   | Ind ind -> (ind, l)
   | _ -> assert false
 
@@ -262,7 +263,7 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
      nf_stk env sigma (mkProj(p',c)) ty stk
 
 and nf_predicate env sigma ind mip params v pT =
-  match whd_val v, kind_of_term pT with
+  match whd_val v, kind pT with
   | Vfun f, Prod _ ->
       let k = nb_rel env in
       let vb = body_of_vfun k f in

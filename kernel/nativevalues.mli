@@ -5,7 +5,7 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-open Term
+open Constr
 open Names
 
 (** This modules defines the representation of values internally used by
@@ -43,33 +43,33 @@ type atom =
   | Arel of int
   | Aconstant of pconstant
   | Aind of pinductive
-  | Asort of sorts
+  | Asort of Sorts.t
   | Avar of Id.t
   | Acase of annot_sw * accumulator * t * (t -> t) 
   | Afix of t array * t array * rec_pos * int 
   | Acofix of t array * t array * int * t
   | Acofixe of t array * t array * int * t
-  | Aprod of name * t * (t -> t)
+  | Aprod of Name.t * t * (t -> t)
   | Ameta of metavariable * t
   | Aevar of existential * t
-  | Aproj of constant * accumulator
+  | Aproj of Constant.t * accumulator
 
 (* Constructors *)
 
 val mk_accu : atom -> t
 val mk_rel_accu : int -> t
 val mk_rels_accu : int -> int -> t array
-val mk_constant_accu : constant -> Univ.Level.t array -> t
+val mk_constant_accu : Constant.t -> Univ.Level.t array -> t
 val mk_ind_accu : inductive -> Univ.Level.t array -> t
-val mk_sort_accu : sorts -> Univ.Level.t array -> t
+val mk_sort_accu : Sorts.t -> Univ.Level.t array -> t
 val mk_var_accu : Id.t -> t
 val mk_sw_accu : annot_sw -> accumulator -> t -> (t -> t)
-val mk_prod_accu : name -> t -> t -> t
+val mk_prod_accu : Name.t -> t -> t -> t
 val mk_fix_accu : rec_pos  -> int -> t array -> t array -> t
 val mk_cofix_accu : int -> t array -> t array -> t
 val mk_meta_accu : metavariable -> t
 val mk_evar_accu : existential -> t -> t
-val mk_proj_accu : constant -> accumulator -> t
+val mk_proj_accu : Constant.t -> accumulator -> t
 val upd_cofix : t -> t -> unit
 val force_cofix : t -> t 
 val mk_const : tag -> t

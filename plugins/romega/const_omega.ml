@@ -7,14 +7,16 @@
  *************************************************************************)
 
 open Names
+open Term
+open Constr
 
 let module_refl_name = "ReflOmegaCore"
 let module_refl_path = ["Coq"; "romega"; module_refl_name]
 
 type result =
   | Kvar of string
-  | Kapp of string * Term.constr list
-  | Kimp of Term.constr * Term.constr
+  | Kapp of string * constr list
+  | Kimp of constr * constr
   | Kufo
 
 let meaningful_submodule = [ "Z"; "N"; "Pos" ]
@@ -30,27 +32,27 @@ let string_of_global r =
   prefix^(Names.Id.to_string (Nametab.basename_of_global r))
 
 let destructurate t =
-  let c, args = Term.decompose_app t in
-  match Term.kind_of_term c, args with
-  | Term.Const (sp,_), args ->
+  let c, args = decompose_app t in
+  match Constr.kind c, args with
+  | Const (sp,_), args ->
      Kapp (string_of_global (Globnames.ConstRef sp), args)
-  | Term.Construct (csp,_) , args ->
+  | Construct (csp,_) , args ->
      Kapp (string_of_global (Globnames.ConstructRef csp), args)
-  | Term.Ind (isp,_), args ->
+  | Ind (isp,_), args ->
      Kapp (string_of_global (Globnames.IndRef isp), args)
-  | Term.Var id, [] -> Kvar(Names.Id.to_string id)
-  | Term.Prod (Anonymous,typ,body), [] -> Kimp(typ,body)
+  | Var id, [] -> Kvar(Names.Id.to_string id)
+  | Prod (Anonymous,typ,body), [] -> Kimp(typ,body)
   | _ -> Kufo
 
 exception DestConstApp
 
 let dest_const_apply t =
-  let f,args = Term.decompose_app t in
+  let f,args = decompose_app t in
   let ref =
-  match Term.kind_of_term f with
-    | Term.Const (sp,_)      -> Globnames.ConstRef sp
-    | Term.Construct (csp,_) -> Globnames.ConstructRef csp
-    | Term.Ind (isp,_)       -> Globnames.IndRef isp
+  match Constr.kind f with
+    | Const (sp,_)      -> Globnames.ConstRef sp
+    | Construct (csp,_) -> Globnames.ConstructRef csp
+    | Ind (isp,_)       -> Globnames.IndRef isp
     | _ -> raise DestConstApp
   in Nametab.basename_of_global ref, args
 
@@ -129,7 +131,7 @@ let coq_O = lazy(init_constant "O")
 
 let rec mk_nat = function
   | 0 -> Lazy.force coq_O
-  | n -> Term.mkApp (Lazy.force coq_S, [| mk_nat (n-1) |])
+  | n -> mkApp (Lazy.force coq_S, [| mk_nat (n-1) |])
 
 (* Lists *)
 
@@ -141,47 +143,47 @@ let mkListConst c =
     if Global.is_polymorphic r then fun u -> Univ.Instance.of_array [|u|]
     else fun _ -> Univ.Instance.empty
   in
-    fun u -> Term.mkConstructU (Globnames.destConstructRef r, inst u)
+    fun u -> mkConstructU (Globnames.destConstructRef r, inst u)
 
-let coq_cons univ typ = Term.mkApp (mkListConst "cons" univ, [|typ|])
-let coq_nil univ typ =  Term.mkApp (mkListConst "nil" univ, [|typ|])
+let coq_cons univ typ = mkApp (mkListConst "cons" univ, [|typ|])
+let coq_nil univ typ =  mkApp (mkListConst "nil" univ, [|typ|])
 
 let mk_list univ typ l =
   let rec loop = function
     | [] -> coq_nil univ typ
     | (step :: l) ->
-	Term.mkApp (coq_cons univ typ, [| step; loop l |]) in
+	mkApp (coq_cons univ typ, [| step; loop l |]) in
   loop l
 
 let mk_plist = 
   let type1lev = Universes.new_univ_level (Global.current_dirpath ()) in
-    fun l -> mk_list type1lev Term.mkProp l
+    fun l -> mk_list type1lev mkProp l
 
 let mk_list = mk_list Univ.Level.set
 
 type parse_term =
-  | Tplus of Term.constr * Term.constr
-  | Tmult of Term.constr * Term.constr
-  | Tminus of Term.constr * Term.constr
-  | Topp of Term.constr
-  | Tsucc of Term.constr
+  | Tplus of constr * constr
+  | Tmult of constr * constr
+  | Tminus of constr * constr
+  | Topp of constr
+  | Tsucc of constr
   | Tnum of Bigint.bigint
   | Tother
 
 type parse_rel =
-  | Req of Term.constr * Term.constr
-  | Rne of Term.constr * Term.constr
-  | Rlt of Term.constr * Term.constr
-  | Rle of Term.constr * Term.constr
-  | Rgt of Term.constr * Term.constr
-  | Rge of Term.constr * Term.constr
+  | Req of constr * constr
+  | Rne of constr * constr
+  | Rlt of constr * constr
+  | Rle of constr * constr
+  | Rgt of constr * constr
+  | Rge of constr * constr
   | Rtrue
   | Rfalse
-  | Rnot of Term.constr
-  | Ror of Term.constr * Term.constr
-  | Rand of Term.constr * Term.constr
-  | Rimp of Term.constr * Term.constr
-  | Riff of Term.constr * Term.constr
+  | Rnot of constr
+  | Ror of constr * constr
+  | Rand of constr * constr
+  | Rimp of constr * constr
+  | Riff of constr * constr
   | Rother
 
 let parse_logic_rel c = match destructurate c with
@@ -209,29 +211,29 @@ let rec mk_positive n =
   if Bigint.equal n Bigint.one then Lazy.force coq_xH
   else
     let (q,r) = Bigint.euclid n Bigint.two in
-    Term.mkApp
+    mkApp
       ((if Bigint.equal r Bigint.zero
         then Lazy.force coq_xO else Lazy.force coq_xI),
        [| mk_positive q |])
 
 let mk_N = function
   | 0 -> Lazy.force coq_N0
-  | n -> Term.mkApp (Lazy.force coq_Npos,
+  | n -> mkApp (Lazy.force coq_Npos,
                      [| mk_positive (Bigint.of_int n) |])
 
 module type Int = sig
-  val typ : Term.constr Lazy.t
-  val is_int_typ : [ `NF ] Proofview.Goal.t -> Term.constr -> bool
-  val plus : Term.constr Lazy.t
-  val mult : Term.constr Lazy.t
-  val opp : Term.constr Lazy.t
-  val minus : Term.constr Lazy.t
+  val typ : constr Lazy.t
+  val is_int_typ : [ `NF ] Proofview.Goal.t -> constr -> bool
+  val plus : constr Lazy.t
+  val mult : constr Lazy.t
+  val opp : constr Lazy.t
+  val minus : constr Lazy.t
 
-  val mk : Bigint.bigint -> Term.constr
-  val parse_term : Term.constr -> parse_term
-  val parse_rel : [ `NF ] Proofview.Goal.t -> Term.constr -> parse_rel
+  val mk : Bigint.bigint -> constr
+  val parse_term : constr -> parse_term
+  val parse_rel : [ `NF ] Proofview.Goal.t -> constr -> parse_rel
   (* check whether t is built only with numbers and + * - *)
-  val get_scalar : Term.constr -> Bigint.bigint option
+  val get_scalar : constr -> Bigint.bigint option
 end
 
 module Z : Int = struct
@@ -266,9 +268,9 @@ let recognize_Z t =
 let mk_Z n =
   if Bigint.equal n Bigint.zero then Lazy.force coq_Z0
   else if Bigint.is_strictly_pos n then
-    Term.mkApp (Lazy.force coq_Zpos, [| mk_positive n |])
+    mkApp (Lazy.force coq_Zpos, [| mk_positive n |])
   else
-    Term.mkApp (Lazy.force coq_Zneg, [| mk_positive (Bigint.neg n) |])
+    mkApp (Lazy.force coq_Zneg, [| mk_positive (Bigint.neg n) |])
 
 let mk = mk_Z
 

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Environ
 open Declarations
 open Entries
@@ -26,9 +26,9 @@ val destr_nofunctor : ('ty,'a) functorize -> 'a
 (** Conversions between [module_body] and [module_type_body] *)
 
 val module_type_of_module : module_body -> module_type_body
-val module_body_of_type : module_path -> module_type_body -> module_body
+val module_body_of_type : ModPath.t -> module_type_body -> module_body
 
-val check_modpath_equiv : env -> module_path -> module_path -> unit
+val check_modpath_equiv : env -> ModPath.t -> ModPath.t -> unit
 
 val implem_smartmap :
   (module_signature -> module_signature) ->
@@ -43,7 +43,7 @@ val subst_structure : substitution -> structure_body -> structure_body
 (** {6 Adding to an environment } *)
 
 val add_structure :
-  module_path -> structure_body -> delta_resolver -> env -> env
+  ModPath.t -> structure_body -> delta_resolver -> env -> env
 
 (** adds a module and its components, but not the constraints *)
 val add_module : module_body -> env -> env
@@ -53,19 +53,19 @@ the native compiler. The linking information is updated. *)
 val add_linked_module : module_body -> Pre_env.link_info -> env -> env
 
 (** same, for a module type *)
-val add_module_type : module_path -> module_type_body -> env -> env
+val add_module_type : ModPath.t -> module_type_body -> env -> env
 
 (** {6 Strengthening } *)
 
-val strengthen : module_type_body -> module_path -> module_type_body
+val strengthen : module_type_body -> ModPath.t -> module_type_body
 
 val inline_delta_resolver :
-  env -> inline -> module_path -> MBId.t -> module_type_body ->
+  env -> inline -> ModPath.t -> MBId.t -> module_type_body ->
   delta_resolver -> delta_resolver
 
-val strengthen_and_subst_mb : module_body -> module_path -> bool -> module_body
+val strengthen_and_subst_mb : module_body -> ModPath.t -> bool -> module_body
 
-val subst_modtype_and_resolver : module_type_body -> module_path ->
+val subst_modtype_and_resolver : module_type_body -> ModPath.t ->
   module_type_body
 
 (** {6 Cleaning a module expression from bounded parts }
@@ -118,7 +118,7 @@ type module_typing_error =
   | NotAFunctor
   | IsAFunctor
   | IncompatibleModuleTypes of module_type_body * module_type_body
-  | NotEqualModulePaths of module_path * module_path
+  | NotEqualModulePaths of ModPath.t * ModPath.t
   | NoSuchLabel of Label.t
   | IncompatibleLabels of Label.t * Label.t
   | NotAModule of string
@@ -127,7 +127,7 @@ type module_typing_error =
   | IncorrectWithConstraint of Label.t
   | GenerativeModuleExpected of Label.t
   | LabelMissing of Label.t * string
-  | IncludeRestrictedFunctor of module_path
+  | IncludeRestrictedFunctor of ModPath.t
 
 exception ModuleTypingError of module_typing_error
 
@@ -153,4 +153,4 @@ val error_generative_module_expected : Label.t -> 'a
 
 val error_no_such_label_sub : Label.t->string->'a
 
-val error_include_restricted_functor : module_path -> 'a
+val error_include_restricted_functor : ModPath.t -> 'a

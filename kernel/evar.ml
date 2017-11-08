@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+module Internal = struct
 type t = int
 
 let repr x = x
@@ -16,3 +17,7 @@ let hash = Int.hash
 
 module Set = Int.Set
 module Map = Int.Map
+end
+
+module Public = Internal
+include Public

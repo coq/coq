@@ -18,6 +18,7 @@ open Vernacexpr
 open Pp
 open Names
 open Term
+open Constr
 open Vars
 open Declarations
 open Glob_term
@@ -36,19 +37,19 @@ let rec popn i c = if i<=0 then c else pop (popn (i-1) c)
 
 (** Substitutions in constr *)
 let compare_constr_nosub t1 t2 =
-  if compare_constr (fun _ _ -> false) t1 t2
+  if Constr.compare_head (fun _ _ -> false) t1 t2
   then true
   else false
 
 let rec compare_constr' t1 t2 =
   if compare_constr_nosub t1 t2
   then true
-  else (compare_constr (compare_constr') t1 t2)
+  else (Constr.compare_head (compare_constr') t1 t2)
 
 let rec substitterm prof t by_t in_u =
   if (compare_constr' (lift prof t) in_u)
   then (lift prof by_t)
-  else map_constr_with_binders succ
+  else Constr.map_with_binders succ
     (fun i -> substitterm i t by_t) prof in_u
 
 let lift_ldecl n ldecl = List.map (fun (x,y) -> x,lift n y) ldecl
@@ -954,16 +955,16 @@ let funify_branches relinfo nfuns branch =
       | Some (IndRef ((mutual_ind,i) as ind)) -> mutual_ind,ind
       | _ -> assert false in
   let is_dom c =
-    match kind_of_term c with
+    match Constr.kind c with
       | Ind(((u,_),_)) | Construct(((u,_),_),_) -> MutInd.equal u mut_induct
       | _ -> false in
   let _dom_i c =
     assert (is_dom c);
-    match kind_of_term c with
+    match Constr.kind c with
       | Ind((u,i)) | Construct((u,_),i) -> i
       | _ -> assert false in
   let _is_pred c shift =
-    match kind_of_term c with
+    match Constr.kind c with
       | Rel i -> let reali = i-shift in (reali>=0 && reali<relinfo.nbranches)
       | _ -> false in
   (* FIXME: *)

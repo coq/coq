@@ -8,10 +8,11 @@
 
 open Pp
 open CErrors
+open Sorts
 open Util
 open Names
 open Nameops
-open Term
+open Constr
 open Vars
 open Environ
 
@@ -126,9 +127,9 @@ end
 
 module Store = Store.Make ()
 
-type evar = Term.existential_key
+type evar = existential_key
 
-let string_of_existential evk = "?X" ^ string_of_int (Evar.repr evk)
+let string_of_existential evk = "?X" ^ string_of_int (Evar.Internal.repr evk)
 
 type evar_body =
   | Evar_empty
@@ -242,7 +243,7 @@ let evar_instance_array test_id info args =
     instrec filter (evar_context info) 0
 
 let make_evar_instance_array info args =
-  evar_instance_array (NamedDecl.get_id %> isVarId) info args
+  evar_instance_array (NamedDecl.get_id %> Term.isVarId) info args
 
 let instantiate_evar_array info c args =
   let inst = make_evar_instance_array info args in
@@ -280,9 +281,9 @@ type 'a freelisted = {
 (* Collects all metavars appearing in a constr *)
 let metavars_of c =
   let rec collrec acc c =
-    match kind_of_term c with
+    match kind c with
       | Meta mv -> Int.Set.add mv acc
-      | _         -> Term.fold_constr collrec acc c
+      | _         -> Constr.fold collrec acc c
   in
   collrec Int.Set.empty c
 
@@ -467,7 +468,7 @@ let evar_counter_summary_name = "evar counter"
 (* Generator of existential names *)
 let new_untyped_evar =
   let evar_ctr = Summary.ref 0 ~name:evar_counter_summary_name in
-  fun () -> incr evar_ctr; Evar.unsafe_of_int !evar_ctr
+  fun () -> incr evar_ctr; Evar.Internal.unsafe_of_int !evar_ctr
 
 let new_evar evd ?name evi =
   let evk = new_untyped_evar () in
@@ -706,10 +707,10 @@ let extract_all_conv_pbs evd =
   extract_conv_pbs evd (fun _ -> true)
 
 let loc_of_conv_pb evd (pbty,env,t1,t2) =
-  match kind_of_term (fst (decompose_app t1)) with
+  match kind (fst (Term.decompose_app t1)) with
   | Evar (evk1,_) -> fst (evar_source evk1 evd)
   | _ ->
-  match kind_of_term (fst (decompose_app t2)) with
+  match kind (fst (Term.decompose_app t2)) with
   | Evar (evk2,_) -> fst (evar_source evk2 evd)
   | _             -> None
 
@@ -720,9 +721,9 @@ let loc_of_conv_pb evd (pbty,env,t1,t2) =
 
 let evars_of_term c =
   let rec evrec acc c =
-    match kind_of_term c with
+    match kind c with
     | Evar (n, l) -> Evar.Set.add n (Array.fold_left evrec acc l)
-    | _ -> Term.fold_constr evrec acc c
+    | _ -> Constr.fold evrec acc c
   in
   evrec Evar.Set.empty c
 

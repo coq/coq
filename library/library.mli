@@ -29,9 +29,9 @@ val require_library_from_dirpath : (DirPath.t * string) list -> bool option -> u
 type seg_sum
 type seg_lib
 type seg_univ = (* cst, all_cst, finished? *)
-  Univ.universe_context_set Future.computation array * Univ.universe_context_set * bool
+  Univ.ContextSet.t Future.computation array * Univ.ContextSet.t * bool
 type seg_discharge = Opaqueproof.cooking_info list array
-type seg_proofs = Term.constr Future.computation array
+type seg_proofs = Constr.constr Future.computation array
 
 (** Open a module (or a library); if the boolean is true then it's also
    an export otherwise just a simple import *)

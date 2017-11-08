@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Term
 open EConstr
 open Evd
 open Environ
@@ -39,7 +38,7 @@ val lift_tycon : int -> type_constraint -> type_constraint
 
 val define_evar_as_product : evar_map -> existential -> evar_map * types
 val define_evar_as_lambda : env -> evar_map -> existential -> evar_map * types
-val define_evar_as_sort : env -> evar_map -> existential -> evar_map * sorts
+val define_evar_as_sort : env -> evar_map -> existential -> evar_map * Sorts.t
 
 (** {6 debug pretty-printer:} *)
 

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Vernacexpr
 open Constrexpr
 open Impargs
@@ -22,7 +22,7 @@ val primitive_flag : bool ref
 val declare_projections :
   inductive -> ?kind:Decl_kinds.definition_object_kind -> Id.t ->
   coercion_flag list -> manual_explicitation list list -> Context.Rel.t ->
-  (Name.t * bool) list * constant option list
+  (Name.t * bool) list * Constant.t option list
 
 val declare_structure :
   Decl_kinds.recursivity_kind ->

@@ -9,7 +9,7 @@
 (** Legacy proof engine. Do not use in newly written code. *)
 
 open Names
-open Term
+open Constr
 open Evd
 open Proof_type
 

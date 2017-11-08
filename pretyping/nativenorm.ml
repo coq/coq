@@ -7,6 +7,7 @@
 (************************************************************************)
 open CErrors
 open Term
+open Constr
 open Vars
 open Environ
 open Reduction
@@ -98,7 +99,7 @@ let app_type env c =
  
 let find_rectype_a env c =
   let (t, l) = app_type env c in
-  match kind_of_term t with
+  match kind t with
   | Ind ind -> (ind, l)
   | _ -> raise Not_found
 
@@ -131,7 +132,7 @@ let construct_of_constr_notnative const env tag (mind, _ as ind) u allargs =
 
 let construct_of_constr const env tag typ =
   let t, l = app_type env typ in
-  match kind_of_term t with
+  match kind t with
   | Ind (ind,u) -> 
       construct_of_constr_notnative const env tag ind u l
   | _ -> assert false
@@ -360,7 +361,7 @@ and nf_atom_type env sigma atom =
 
 
 and  nf_predicate env sigma ind mip params v pT =
-  match kind_of_value v, kind_of_term pT with
+  match kind_of_value v, kind pT with
   | Vfun f, Prod _ ->
       let k = nb_rel env in
       let vb = f (mk_rel_accu k) in

@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Term
 open Environ
 open EConstr
 open Glob_term
@@ -40,7 +39,7 @@ val detype_names : bool -> Id.Set.t -> names_context -> env -> evar_map -> const
 
 val detype : 'a delay -> ?lax:bool -> bool -> Id.Set.t -> env -> evar_map -> constr -> 'a glob_constr_g
 
-val detype_sort : evar_map -> sorts -> glob_sort
+val detype_sort : evar_map -> Sorts.t -> glob_sort
 
 val detype_rel_context : 'a delay -> ?lax:bool -> constr option -> Id.Set.t -> (names_context * env) -> 
   evar_map -> rel_context -> 'a glob_decl_g list

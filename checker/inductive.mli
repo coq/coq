@@ -31,7 +31,7 @@ val type_of_inductive : env -> mind_specif puniverses -> constr
 (* Return type as quoted by the user *)
 val type_of_constructor : pconstructor -> mind_specif -> constr
 
-val arities_of_specif : mutual_inductive puniverses -> mind_specif -> constr array
+val arities_of_specif : MutInd.t puniverses -> mind_specif -> constr array
 
 (* [type_case_branches env (I,args) (p:A) c] computes useful types
    about the following Cases expression:

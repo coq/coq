@@ -11,7 +11,7 @@
     evar-based clauses. *)
 
 open Names
-open Term
+open Constr
 open Environ
 open Evd
 open EConstr

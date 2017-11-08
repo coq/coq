@@ -8,7 +8,7 @@
 
 open Util
 open Names
-open Term
+open Constr
 open EConstr
 open Misctypes
 open Genarg
@@ -172,8 +172,8 @@ let id_of_name = function
        | Sort s ->
 	  begin
 	    match ESorts.kind sigma s with
-	    | Prop _ -> Label.to_id (Label.make "Prop")
-	    | Type _ -> Label.to_id (Label.make "Type")
+	    | Sorts.Prop _ -> Label.to_id (Label.make "Prop")
+	    | Sorts.Type _ -> Label.to_id (Label.make "Type")
 	  end
        | _ -> fail()
 

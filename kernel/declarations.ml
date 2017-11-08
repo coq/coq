@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 
 (** This module defines the internal representation of global
    declarations. This includes global constants/axioms, mutual
@@ -28,8 +28,8 @@ type engagement = set_predicativity
 *)
 
 type template_arity = {
-  template_param_levels : Univ.universe_level option list;
-  template_level : Univ.universe;
+  template_param_levels : Univ.Level.t option list;
+  template_level : Univ.Universe.t;
 }
 
 type ('a, 'b) declaration_arity = 
@@ -48,7 +48,7 @@ type inline = int option
     always transparent. *)
 
 type projection_body = {
-  proj_ind : mutual_inductive;
+  proj_ind : MutInd.t;
   proj_npars : int;
   proj_arg : int;
   proj_type : types; (* Type under params *)
@@ -63,8 +63,8 @@ type constant_def =
   | OpaqueDef of Opaqueproof.opaque       (** or an opaque global definition *)
 
 type constant_universes =
-  | Monomorphic_const of Univ.universe_context
-  | Polymorphic_const of Univ.abstract_universe_context
+  | Monomorphic_const of Univ.UContext.t
+  | Polymorphic_const of Univ.AUContext.t
 
 (** The [typing_flags] are instructions to the type-checker which
     modify its behaviour. The typing flags used in the type-checking
@@ -115,11 +115,11 @@ v}
     - The constants associated to each projection.
     - The checked projection bodies. *)
 
-type record_body = (Id.t * constant array * projection_body array) option
+type record_body = (Id.t * Constant.t array * projection_body array) option
 
 type regular_inductive_arity = {
   mind_user_arity : types;
-  mind_sort : sorts;
+  mind_sort : Sorts.t;
 }
 
 type inductive_arity = (regular_inductive_arity, template_arity) declaration_arity
@@ -146,7 +146,7 @@ type one_inductive_body = {
 
     mind_nrealdecls : int; (** Length of realargs context (with let, no params) *)
 
-    mind_kelim : sorts_family list; (** List of allowed elimination sorts *)
+    mind_kelim : Sorts.family list; (** List of allowed elimination sorts *)
 
     mind_nf_lc : types array; (** Head normalized constructor types so that their conclusion exposes the inductive type *)
 
@@ -168,9 +168,9 @@ type one_inductive_body = {
   }
 
 type abstract_inductive_universes =
-  | Monomorphic_ind of Univ.universe_context
-  | Polymorphic_ind of Univ.abstract_universe_context
-  | Cumulative_ind of Univ.abstract_cumulativity_info
+  | Monomorphic_ind of Univ.UContext.t
+  | Polymorphic_ind of Univ.AUContext.t
+  | Cumulative_ind  of Univ.ACumulativityInfo.t
 
 type mutual_inductive_body = {
 
@@ -212,12 +212,12 @@ type ('ty,'a) functorize =
     only for short module printing and for extraction. *)
 
 type with_declaration =
-  | WithMod of Id.t list * module_path
+  | WithMod of Id.t list * ModPath.t
   | WithDef of Id.t list * constr Univ.in_universe_context
 
 type module_alg_expr =
-  | MEident of module_path
-  | MEapply of module_alg_expr * module_path
+  | MEident of ModPath.t
+  | MEapply of module_alg_expr * ModPath.t
   | MEwith of module_alg_expr * with_declaration
 
 (** A component of a module structure *)
@@ -251,7 +251,7 @@ and module_implementation =
   | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
 
 and 'a generic_module_body =
-  { mod_mp : module_path; (** absolute path of the module *)
+  { mod_mp : ModPath.t; (** absolute path of the module *)
     mod_expr : 'a; (** implementation *)
     mod_type : module_signature; (** expanded type *)
     mod_type_alg : module_expression option; (** algebraic type *)
@@ -290,5 +290,5 @@ and _ module_retroknowledge =
 
     - A module application is atomic, for instance ((M N) P) :
       * the head of [MEapply] can only be another [MEapply] or a [MEident]
-      * the argument of [MEapply] is now directly forced to be a [module_path].
+      * the argument of [MEapply] is now directly forced to be a [ModPath.t].
 *)

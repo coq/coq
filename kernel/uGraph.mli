@@ -9,32 +9,26 @@
 open Univ
 
 (** {6 Graphs of universes. } *)
+module Public : sig
 
 type t
-
 type universes = t
+[@@ocaml.deprecated "Use UGraph.t"]
 
-type 'a check_function = universes -> 'a -> 'a -> bool
-val check_leq : universe check_function
-val check_eq : universe check_function
-val check_eq_level : universe_level check_function
+type 'a check_function = t -> 'a -> 'a -> bool
 
-(** The empty graph of universes *)
-val empty_universes : universes
+val check_leq : Universe.t check_function
+val check_eq : Universe.t check_function
+val check_eq_level : Level.t check_function
 
 (** The initial graph of universes: Prop < Set *)
-val initial_universes : universes
+val initial_universes : t
 
-val is_initial_universes : universes -> bool
+(** Check if we are in the initial case *)
+val is_initial_universes : t -> bool
 
-val sort_universes : universes -> universes
-
-(** Adds a universe to the graph, ensuring it is >= or > Set.
-   @raises AlreadyDeclared if the level is already declared in the graph. *)
-
-exception AlreadyDeclared
-
-val add_universe : universe_level -> bool -> universes -> universes
+(** Check equality of instances w.r.t. a universe graph *)
+val check_eq_instances : Instance.t check_function
 
 (** {6 ... } *)
 (** Merge of constraints in a universes graph.
@@ -42,30 +36,47 @@ val add_universe : universe_level -> bool -> universes -> universes
   universes graph. It raises the exception [UniverseInconsistency] if the
   constraints are not satisfiable. *)
 
-val enforce_constraint : univ_constraint -> universes -> universes
-val merge_constraints : constraints -> universes -> universes
+val enforce_constraint : univ_constraint -> t -> t
+val merge_constraints : constraints -> t -> t
 
-val constraints_of_universes : universes -> constraints
+val check_constraint  : t -> univ_constraint -> bool
+val check_constraints : constraints -> t -> bool
 
-val check_constraint  : universes -> univ_constraint -> bool
-val check_constraints : constraints -> universes -> bool
+(** Adds a universe to the graph, ensuring it is >= or > Set.
+   @raises AlreadyDeclared if the level is already declared in the graph. *)
 
-val check_eq_instances : Instance.t check_function
-(** Check equality of instances w.r.t. a universe graph *)
+exception AlreadyDeclared
+
+val add_universe : Level.t -> bool -> t -> t
+
+(** {6 Pretty-printing of universes. } *)
+
+val pr_universes : (Level.t -> Pp.t) -> t -> Pp.t
+
+(** The empty graph of universes *)
+val empty_universes : t
+[@@ocaml.deprecated "Use UGraph.initial_universes"]
+
+val sort_universes : t -> t
+
+end
+
+include module type of Public
+
+module Internal : sig
+
+val constraints_of_universes : t -> constraints
 
 val check_subtype : AUContext.t check_function
 (** [check_subtype univ ctx1 ctx2] checks whether [ctx2] is an instance of
     [ctx1]. *)
 
-(** {6 Pretty-printing of universes. } *)
-
-val pr_universes : (Level.t -> Pp.t) -> universes -> Pp.t
-
 (** {6 Dumping to a file } *)
 
 val dump_universes :
-  (constraint_type -> string -> string -> unit) ->
-  universes -> unit
+  (constraint_type -> string -> string -> unit) -> t -> unit
 
 (** {6 Debugging} *)
-val check_universes_invariants : universes -> unit
+val check_universes_invariants : t -> unit
+
+end

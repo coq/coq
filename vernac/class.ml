@@ -11,6 +11,7 @@ open Util
 open Pp
 open Names
 open Term
+open Constr
 open Vars
 open Termops
 open Entries
@@ -148,7 +149,7 @@ let get_target t ind =
       
 
 let prods_of t =
-  let rec aux acc d = match kind_of_term d with
+  let rec aux acc d = match Constr.kind d with
     | Prod (_,c1,c2) -> aux (c1::acc) c2
     | Cast (c,_,_) -> aux acc c
     | _ -> (d,acc)
@@ -173,8 +174,8 @@ let get_strength stre ref cls clt =
 let ident_key_of_class = function
   | CL_FUN -> "Funclass"
   | CL_SORT -> "Sortclass"
-  | CL_CONST sp | CL_PROJ sp -> Label.to_string (con_label sp)
-  | CL_IND (sp,_) -> Label.to_string (mind_label sp)
+  | CL_CONST sp | CL_PROJ sp -> Label.to_string (Constant.label sp)
+  | CL_IND (sp,_) -> Label.to_string (MutInd.label sp)
   | CL_SECVAR id -> Id.to_string id
 
 (* Identity coercion *)

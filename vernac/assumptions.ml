@@ -18,7 +18,7 @@ open Pp
 open CErrors
 open Util
 open Names
-open Term
+open Constr
 open Declarations
 open Mod_subst
 open Globnames
@@ -89,7 +89,7 @@ and fields_of_mp mp =
   let mb = lookup_module_in_impl mp in
   let fields,inner_mp,subs = fields_of_mb empty_subst mb [] in
   let subs =
-    if mp_eq inner_mp mp then subs
+    if ModPath.equal inner_mp mp then subs
     else add_mp inner_mp mp mb.mod_delta subs
   in
   Modops.subst_structure subs fields
@@ -118,7 +118,7 @@ and fields_of_expression x = fields_of_functor fields_of_expr x
 
 let lookup_constant_in_impl cst fallback =
   try
-    let mp,dp,lab = repr_kn (canonical_con cst) in
+    let mp,dp,lab = KerName.repr (Constant.canonical cst) in
     let fields = memoize_fields_of_mp mp in
     (* A module found this way is necessarily closed, in particular
        our constant cannot be in an opened section : *)
@@ -131,7 +131,7 @@ let lookup_constant_in_impl cst fallback =
        - The label has not been found in the structure. This is an error *)
     match fallback with
       | Some cb -> cb
-      | None -> anomaly (str "Print Assumption: unknown constant " ++ pr_con cst ++ str ".")
+      | None -> anomaly (str "Print Assumption: unknown constant " ++ Constant.print cst ++ str ".")
 
 let lookup_constant cst =
   try
@@ -142,7 +142,7 @@ let lookup_constant cst =
 
 let lookup_mind_in_impl mind =
   try
-    let mp,dp,lab = repr_kn (canonical_mind mind) in
+    let mp,dp,lab = KerName.repr (MutInd.canonical mind) in
     let fields = memoize_fields_of_mp mp in
       search_mind_label lab fields
   with Not_found ->
@@ -156,14 +156,14 @@ let lookup_mind mind =
     traversed objects *)
 
 let label_of = function
-  | ConstRef kn -> pi3 (repr_con kn)
+  | ConstRef kn -> pi3 (Constant.repr3 kn)
   | IndRef (kn,_)
-  | ConstructRef ((kn,_),_) -> pi3 (repr_mind kn)
+  | ConstructRef ((kn,_),_) -> pi3 (MutInd.repr3 kn)
   | VarRef id -> Label.of_id id
 
 let fold_constr_with_full_binders g f n acc c =
   let open Context.Rel.Declaration in
-  match kind_of_term c with
+  match Constr.kind c with
   | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _ -> acc
   | Cast (c,_, t) -> f n (f n acc c) t
   | Prod (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
@@ -182,7 +182,7 @@ let fold_constr_with_full_binders g f n acc c =
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
 
-let rec traverse current ctx accu t = match kind_of_term t with
+let rec traverse current ctx accu t = match Constr.kind t with
 | Var id ->
   let body () = id |> Global.lookup_named |> NamedDecl.get_value in
   traverse_object accu body (VarRef id)

@@ -8,7 +8,7 @@
 
 open Names
 open Globnames
-open Term
+open Constr
 open Evd
 open Environ
 
@@ -36,7 +36,7 @@ type typeclass = {
       Some may be undefinable due to sorting restrictions or simply undefined if 
       no name is provided. The [int option option] indicates subclasses whose hint has
       the given priority. *)
-  cl_projs : (Name.t * (direction * Vernacexpr.hint_info_expr) option * constant option) list;
+  cl_projs : (Name.t * (direction * Vernacexpr.hint_info_expr) option * Constant.t option) list;
 
   (** Whether we use matching or full unification during resolution *)
   cl_strict : bool; 

@@ -8,7 +8,7 @@
 
 (** This files implements the autorewrite tactic. *)
 
-open Term
+open Constr
 open Equality
 
 (** Rewriting rules before tactic interpretation *)
@@ -28,7 +28,7 @@ val autorewrite_in : ?conds:conditions -> Names.Id.t -> unit Proofview.tactic ->
 type rew_rule = { rew_lemma: constr;
 		  rew_type: types;
 		  rew_pat: constr;
-		  rew_ctx: Univ.universe_context_set;
+		  rew_ctx: Univ.ContextSet.t;
 		  rew_l2r: bool;
 		  rew_tac: Genarg.glob_generic_argument option }
 
@@ -58,5 +58,5 @@ type hypinfo = {
 
 val find_applied_relation :
   ?loc:Loc.t -> bool ->
-  Environ.env -> Evd.evar_map -> Term.constr -> bool -> hypinfo
+  Environ.env -> Evd.evar_map -> constr -> bool -> hypinfo
 

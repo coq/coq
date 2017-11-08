@@ -7,8 +7,8 @@
 (************************************************************************)
 
 open Names
-open Term
 open Univ
+open Constr
 open Declarations
 open Environ
 
@@ -32,23 +32,23 @@ type mind_specif = mutual_inductive_body * one_inductive_body
 val lookup_mind_specif : env -> inductive -> mind_specif
 
 (** {6 Functions to build standard types related to inductive } *)
-val ind_subst : mutual_inductive -> mutual_inductive_body -> universe_instance -> constr list
+val ind_subst : MutInd.t -> mutual_inductive_body -> Instance.t -> constr list
 
 val inductive_paramdecls : mutual_inductive_body puniverses -> Context.Rel.t
 
-val instantiate_inductive_constraints : 
-  mutual_inductive_body -> universe_instance -> constraints
+val instantiate_inductive_constraints :
+  mutual_inductive_body -> Instance.t -> constraints
 
 val constrained_type_of_inductive : env -> mind_specif puniverses -> types constrained
-val constrained_type_of_inductive_knowing_parameters : 
+val constrained_type_of_inductive_knowing_parameters :
   env -> mind_specif puniverses -> types Lazy.t array -> types constrained
 
 val type_of_inductive : env -> mind_specif puniverses -> types
 
-val type_of_inductive_knowing_parameters : 
+val type_of_inductive_knowing_parameters :
   env -> ?polyprop:bool -> mind_specif puniverses -> types Lazy.t array -> types
 
-val elim_sorts : mind_specif -> sorts_family list
+val elim_sorts : mind_specif -> Sorts.family list
 
 val is_private : mind_specif -> bool
 val is_primitive_record : mind_specif -> bool
@@ -65,7 +65,7 @@ val arities_of_constructors : pinductive -> mind_specif -> types array
 val type_of_constructors : pinductive -> mind_specif -> types array
 
 (** Transforms inductive specification into types (in nf) *)
-val arities_of_specif : mutual_inductive puniverses -> mind_specif -> types array
+val arities_of_specif : MutInd.t puniverses -> mind_specif -> types array
 
 val inductive_params : mind_specif -> int
 
@@ -85,9 +85,9 @@ val build_branches_type :
     constr list -> constr -> types array
 
 (** Return the arity of an inductive type *)
-val mind_arity : one_inductive_body -> Context.Rel.t * sorts_family
+val mind_arity : one_inductive_body -> Context.Rel.t * Sorts.family
 
-val inductive_sort_family : one_inductive_body -> sorts_family
+val inductive_sort_family : one_inductive_body -> Sorts.family
 
 (** Check a [case_info] actually correspond to a Case expression on the
    given inductive type. *)
@@ -111,10 +111,10 @@ val check_cofix : env -> cofixpoint -> unit
 
 exception SingletonInductiveBecomesProp of Id.t
 
-val max_inductive_sort : sorts array -> universe
+val max_inductive_sort : Sorts.t array -> Universe.t
 
 val instantiate_universes : env -> Context.Rel.t ->
-  template_arity -> constr Lazy.t array -> Context.Rel.t * sorts
+  template_arity -> constr Lazy.t array -> Context.Rel.t * Sorts.t
 
 (** {6 Debug} *)
 
@@ -135,6 +135,6 @@ type stack_element = |SClosure of guard_env*constr |SArg of subterm_spec Lazy.t
 
 val subterm_specif : guard_env -> stack_element list -> constr -> subterm_spec
 
-val lambda_implicit_lift : int -> Constr.constr -> Term.constr
+val lambda_implicit_lift : int -> constr -> constr
 
-val abstract_mind_lc : int -> Int.t -> Constr.constr array -> Constr.constr array
+val abstract_mind_lc : int -> Int.t -> constr array -> constr array

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Evd
 open Environ
 open EConstr
@@ -54,11 +54,11 @@ val e_new_evar :
 val new_type_evar :
   env -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid ->
-  evar_map * (constr * sorts)
+  evar_map * (constr * Sorts.t)
 
 val e_new_type_evar : env -> evar_map ref ->
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid -> constr * sorts
+  ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid -> constr * Sorts.t
 
 val new_Type : ?rigid:rigid -> env -> evar_map -> evar_map * constr
 val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr

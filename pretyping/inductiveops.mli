@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Declarations
 open Environ
 open Evd
@@ -120,7 +120,7 @@ val constructor_nrealdecls_env : env -> constructor -> int
 val constructor_has_local_defs : constructor -> bool
 val inductive_has_local_defs : inductive -> bool
 
-val allowed_sorts : env -> inductive -> sorts_family list
+val allowed_sorts : env -> inductive -> Sorts.family list
 
 (** (Co)Inductive records with primitive projections do not have eta-conversion,
     hence no dependent elimination. *)
@@ -147,17 +147,17 @@ val get_constructor :
   pinductive * mutual_inductive_body * one_inductive_body * constr list ->
   int -> constructor_summary
 val get_constructors : env -> inductive_family -> constructor_summary array
-val get_projections  : env -> inductive_family -> constant array option
+val get_projections  : env -> inductive_family -> Constant.t array option
 
 (** [get_arity] returns the arity of the inductive family instantiated
     with the parameters; if recursively non-uniform parameters are not
     part of the inductive family, they appears in the arity *)
-val get_arity        : env -> inductive_family -> Context.Rel.t * sorts_family
+val get_arity        : env -> inductive_family -> Context.Rel.t * Sorts.family
 
 val build_dependent_constructor : constructor_summary -> constr
 val build_dependent_inductive   : env -> inductive_family -> constr
 val make_arity_signature : env -> evar_map -> bool -> inductive_family -> EConstr.rel_context
-val make_arity : env -> evar_map -> bool -> inductive_family -> sorts -> EConstr.types
+val make_arity : env -> evar_map -> bool -> inductive_family -> Sorts.t -> EConstr.types
 val build_branch_type : env -> evar_map -> bool -> constr -> constructor_summary -> types
 
 (** Raise [Not_found] if not given a valid inductive type *)
@@ -172,7 +172,7 @@ val find_coinductive : env -> evar_map -> EConstr.types -> (inductive * EConstr.
 
 (** Builds the case predicate arity (dependent or not) *)
 val arity_of_case_predicate :
-  env -> inductive_family -> bool -> sorts -> types
+  env -> inductive_family -> bool -> Sorts.t -> types
 
 val type_case_branches_with_names :
   env -> evar_map -> pinductive * EConstr.constr list -> constr -> constr -> types array * types
@@ -203,8 +203,8 @@ val control_only_guard : env -> types -> unit
 (* inference of subtyping condition for inductive types *)
 (* for debugging purposes only to be removed *)
 val infer_inductive_subtyping_arity_constructor : Environ.env * Evd.evar_map * Univ.Constraint.t ->
-(Term.constr -> Term.constr) ->
-Term.types -> bool -> Context.Rel.t -> Environ.env * Evd.evar_map * Univ.Constraint.t
+(constr -> constr) ->
+types -> bool -> Context.Rel.t -> Environ.env * Evd.evar_map * Univ.Constraint.t
 
 val infer_inductive_subtyping : Environ.env -> Evd.evar_map -> Entries.mutual_inductive_entry ->
   Entries.mutual_inductive_entry

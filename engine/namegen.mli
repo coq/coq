@@ -9,7 +9,6 @@
 (** This file features facilities to generate fresh names. *)
 
 open Names
-open Term
 open Environ
 open Evd
 open EConstr
@@ -27,7 +26,7 @@ val default_dependent_ident : Id.t     (* "x" *)
    Generating "intuitive" names from their type *)
 
 val lowercase_first_char : Id.t -> string
-val sort_hdchar : sorts -> string
+val sort_hdchar : Sorts.t -> string
 val hdchar : env -> evar_map -> types -> string
 val id_of_name_using_hdchar : env -> evar_map -> types -> Name.t -> Id.t
 val named_hd : env -> evar_map -> types -> Name.t -> Name.t

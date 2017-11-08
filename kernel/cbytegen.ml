@@ -14,7 +14,7 @@ open Util
 open Names
 open Cbytecodes
 open Cemitcodes
-open Term
+open Constr
 open Declarations
 open Pre_env
 
@@ -438,12 +438,12 @@ let get_strcst = function
   | _ -> raise Not_found
 
 let rec str_const c =
-  match kind_of_term c with
+  match kind c with
   | Sort s -> Bstrconst (Const_sorts s)
   | Cast(c,_,_) -> str_const c
   | App(f,args) ->
       begin
-	match kind_of_term f with
+	match kind f with
 	| Construct(((kn,j),i),u) -> 
             begin
 	    let oib = lookup_mind kn !global_env in
@@ -596,7 +596,7 @@ let rec get_alias env kn =
 (* sz is the size of the local stack *)
 let rec compile_constr reloc c sz cont =
   set_max_stack_size sz;
-  match kind_of_term c with
+  match kind c with
   | Meta _ -> invalid_arg "Cbytegen.compile_constr : Meta"
   | Evar _ -> invalid_arg "Cbytegen.compile_constr : Evar"
   | Proj (p,c) ->
@@ -621,9 +621,9 @@ let rec compile_constr reloc c sz cont =
 	   (Univ.Instance.to_array u)
 	   sz
 	   cont
-  | Sort (Prop _) | Construct _ ->
+  | Sort (Sorts.Prop _) | Construct _ ->
       compile_str_cst reloc (str_const c) sz cont
-  | Sort (Type u) ->
+  | Sort (Sorts.Type u) ->
      (* We separate global and local universes in [u]. The former will be part
         of the structured constant, while the later (if any) will be applied as
         arguments. *)
@@ -641,7 +641,7 @@ let rec compile_constr reloc c sz cont =
 	LSet.fold (fun lvl u -> Universe.sup u (Universe.make lvl)) global_levels Universe.type0m
       in
       if local_levels = [] then
-	compile_str_cst reloc (Bstrconst (Const_sorts (Type uglob))) sz cont
+	compile_str_cst reloc (Bstrconst (Const_sorts (Sorts.Type uglob))) sz cont
       else
 	let compile_get_univ reloc idx sz cont =
           set_max_stack_size sz;
@@ -659,7 +659,7 @@ let rec compile_constr reloc c sz cont =
 	Kpush :: compile_constr reloc dom (sz+1) (Kmakeprod :: cont) in
       compile_constr reloc (mkLambda(id,dom,codom)) sz cont1
   | Lambda _ ->
-      let params, body = decompose_lam c in
+      let params, body = Term.decompose_lam c in
       let arity = List.length params in
       let r_fun = comp_env_fun arity in
       let lbl_fun = Label.create() in
@@ -672,7 +672,7 @@ let rec compile_constr reloc c sz cont =
 
   | App(f,args) ->
       begin
-	match kind_of_term f with
+	match kind f with
 	| Construct _ -> compile_str_cst reloc (str_const c) sz cont
         | Const (kn,u) -> compile_const reloc kn u args sz cont
 	| _ -> comp_app compile_constr compile_constr reloc f args sz cont
@@ -694,7 +694,7 @@ let rec compile_constr reloc c sz cont =
       done;
       (* Compiling bodies *)
       for i = 0 to ndef - 1 do
-	let params,body = decompose_lam rec_bodies.(i) in
+	let params,body = Term.decompose_lam rec_bodies.(i) in
 	let arity = List.length params in
 	let env_body = comp_env_fix ndef i arity rfv in
 	let cont1 =
@@ -726,7 +726,7 @@ let rec compile_constr reloc c sz cont =
       done;
       (* Compiling bodies *)
       for i = 0 to ndef - 1 do
-	let params,body = decompose_lam rec_bodies.(i) in
+	let params,body = Term.decompose_lam rec_bodies.(i) in
 	let arity = List.length params in
 	let env_body = comp_env_cofix ndef arity rfv in
 	let lbl = Label.create () in
@@ -792,7 +792,7 @@ let rec compile_constr reloc c sz cont =
 	  lbl_consts.(tag) <- lbl_b;
 	  c := code_b
 	else
-	  let args, body = decompose_lam branchs.(i) in
+	  let args, body = Term.decompose_lam branchs.(i) in
 	  let nargs = List.length args in
          
           let code_b =  
@@ -953,9 +953,9 @@ let compile fail_on_error ?universes:(universes=0) env c =
          *)
         let reloc = empty_comp_env () in
         let arity , body =
-          match kind_of_term c with
+          match kind c with
           | Lambda _ ->
-            let params, body = decompose_lam c in
+            let params, body = Term.decompose_lam c in
             List.length params , body
           | _ -> 0 , c
         in
@@ -995,10 +995,10 @@ let compile_constant_body fail_on_error env univs = function
         | Monomorphic_const _ -> 0
         | Polymorphic_const univ -> Univ.AUContext.size univ
       in
-      match kind_of_term body with
+      match kind body with
 	| Const (kn',u) when is_univ_copy instance_size u ->
 	    (* we use the canonical name of the constant*)
-	    let con= constant_of_kn (canonical_con kn') in
+	    let con= Constant.make1 (Constant.canonical kn') in
 	      Some (BCalias (get_alias env con))
 	| _ ->
 	    let res = compile fail_on_error ~universes:instance_size env body in
@@ -1006,7 +1006,7 @@ let compile_constant_body fail_on_error env univs = function
 
 (* Shortcut of the previous function used during module strengthening *)
 
-let compile_alias kn = BCalias (constant_of_kn (canonical_con kn))
+let compile_alias kn = BCalias (Constant.make1 (Constant.canonical kn))
 
 (* spiwack: additional function which allow different part of compilation of the
       31-bit integers *)
@@ -1024,7 +1024,7 @@ let compile_structured_int31 fc args =
   if not fc then raise Not_found else
   Const_b0
     (Array.fold_left
-       (fun temp_i -> fun t -> match kind_of_term t with
+       (fun temp_i -> fun t -> match kind t with
           | Construct ((_,d),_) -> 2*temp_i+d-1
           | _ -> raise NotClosed)
        0 args

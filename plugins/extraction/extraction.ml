@@ -10,6 +10,7 @@
 open Util
 open Names
 open Term
+open Constr
 open Vars
 open Declarations
 open Declareops
@@ -81,7 +82,7 @@ let whd_betaiotazeta t =
 
 let rec flag_of_type env t : flag =
   let t = whd_all env t in
-  match kind_of_term t with
+  match Constr.kind t with
     | Prod (x,t,c) -> flag_of_type (push_rel (LocalAssum (x,t)) env) c
     | Sort s when Sorts.is_prop s -> (Logic,TypeScheme)
     | Sort _ -> (Info,TypeScheme)
@@ -111,14 +112,14 @@ let push_rel_assum (n, t) env =
 (*s [type_sign] gernerates a signature aimed at treating a type application. *)
 
 let rec type_sign env c =
-  match kind_of_term (whd_all env c) with
+  match Constr.kind (whd_all env c) with
     | Prod (n,t,d) ->
 	(if is_info_scheme env t then Keep else Kill Kprop)
 	:: (type_sign (push_rel_assum (n,t) env) d)
     | _ -> []
 
 let rec type_scheme_nb_args env c =
-  match kind_of_term (whd_all env c) with
+  match Constr.kind (whd_all env c) with
     | Prod (n,t,d) ->
 	let n = type_scheme_nb_args (push_rel_assum (n,t) env) d in
 	if is_info_scheme env t then n+1 else n
@@ -145,7 +146,7 @@ let make_typvar n vl =
   next_ident_away id' vl
 
 let rec type_sign_vl env c =
-  match kind_of_term (whd_all env c) with
+  match Constr.kind (whd_all env c) with
     | Prod (n,t,d) ->
 	let s,vl = type_sign_vl (push_rel_assum (n,t) env) d in
 	if not (is_info_scheme env t) then Kill Kprop::s, vl
@@ -153,7 +154,7 @@ let rec type_sign_vl env c =
     | _ -> [],[]
 
 let rec nb_default_params env c =
-  match kind_of_term (whd_all env c) with
+  match Constr.kind (whd_all env c) with
     | Prod (n,t,d) ->
 	let n = nb_default_params (push_rel_assum (n,t) env) d in
 	if is_default env t then n+1 else n
@@ -207,7 +208,7 @@ let parse_ind_args si args relmax =
     | [] -> Int.Map.empty
     | Kill _ :: s -> parse (i+1) j s
     | Keep :: s ->
-      (match kind_of_term args.(i-1) with
+      (match Constr.kind args.(i-1) with
 	 | Rel k -> Int.Map.add (relmax+1-k) j (parse (i+1) (j+1) s)
 	 | _ -> parse (i+1) (j+1) s)
   in parse 1 1 si
@@ -224,7 +225,7 @@ let parse_ind_args si args relmax =
 
 
 let rec extract_type env db j c args =
-  match kind_of_term (whd_betaiotazeta c) with
+  match Constr.kind (whd_betaiotazeta c) with
     | App (d, args') ->
 	(* We just accumulate the arguments. *)
 	extract_type env db j d (Array.to_list args' @ args)
@@ -299,7 +300,7 @@ let rec extract_type env db j c args =
     | Proj (p,t) ->
        (* Let's try to reduce, if it hasn't already been done. *)
        if Projection.unfolded p then Tunknown
-       else extract_type env db j (Term.mkProj (Projection.unfold p, t)) args
+       else extract_type env db j (mkProj (Projection.unfold p, t)) args
     | Case _ | Fix _ | CoFix _ -> Tunknown
     | _ -> assert false
 
@@ -331,7 +332,7 @@ and extract_type_scheme env db c p =
   if Int.equal p 0 then extract_type env db 0 c []
   else
     let c = whd_betaiotazeta c in
-    match kind_of_term c with
+    match Constr.kind c with
       | Lambda (n,t,d) ->
           extract_type_scheme (push_rel_assum (n,t) env) db d (p-1)
       | _ ->
@@ -415,8 +416,8 @@ and extract_really_ind env kn mib =
 	  let t = snd (decompose_prod_n npar types.(j)) in
 	  let prods,head = dest_prod epar t in
 	  let nprods = List.length prods in
-          let args = match kind_of_term head with
-            | App (f,args) -> args (* [kind_of_term f = Ind ip] *)
+          let args = match Constr.kind head with
+            | App (f,args) -> args (* [Constr.kind f = Ind ip] *)
             | _ -> [||]
           in
 	  let dbmap = parse_ind_args p.ip_sign args (nprods + npar) in
@@ -444,7 +445,7 @@ and extract_really_ind env kn mib =
 	if Option.is_empty mib.mind_record then raise (I Standard);
 	(* Now we're sure it's a record. *)
 	(* First, we find its field names. *)
-	let rec names_prod t = match kind_of_term t with
+	let rec names_prod t = match Constr.kind t with
 	  | Prod(n,_,t) -> n::(names_prod t)
 	  | LetIn(_,_,_,t) -> names_prod t
 	  | Cast(t,_,_) -> names_prod t
@@ -503,7 +504,7 @@ and extract_really_ind env kn mib =
 *)
 
 and extract_type_cons env db dbmap c i =
-  match kind_of_term (whd_all env c) with
+  match Constr.kind (whd_all env c) with
     | Prod (n,t,d) ->
 	let env' = push_rel_assum (n,t) env in
 	let db' = (try Int.Map.find i dbmap with Not_found -> 0) :: db in
@@ -564,7 +565,7 @@ let record_constant_type env kn opt_typ =
 (* [mlt] is the ML type we want our extraction of [(c args)] to have. *)
 
 let rec extract_term env mle mlt c args =
-  match kind_of_term c with
+  match Constr.kind c with
     | App (f,a) ->
 	extract_term env mle mlt f (Array.to_list a @ args)
     | Lambda (n, t, d) ->
@@ -874,7 +875,7 @@ let decomp_lams_eta_n n m env c t =
 (* Let's try to identify some situation where extracted code
    will allow generalisation of type variables *)
 
-let rec gentypvar_ok c = match kind_of_term c with
+let rec gentypvar_ok c = match Constr.kind c with
   | Lambda _ | Const _ -> true
   | App (c,v) ->
       (* if all arguments are variables, these variables will

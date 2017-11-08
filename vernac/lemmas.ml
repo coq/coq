@@ -14,6 +14,7 @@ open Util
 open Pp
 open Names
 open Term
+open Constr
 open Declarations
 open Declareops
 open Entries
@@ -62,7 +63,7 @@ let adjust_guardness_conditions const = function
      { const with const_entry_body =
         Future.chain const.const_entry_body
         (fun ((body, ctx), eff) ->
-          match kind_of_term body with
+          match Constr.kind body with
           | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
 (*      let possible_indexes =
 	List.map2 (fun i c -> match i with Some i -> i | None ->
@@ -97,7 +98,7 @@ let find_mutually_recursive_statements thms =
       let ind_hyps =
         List.flatten (List.map_i (fun i decl ->
           let t = RelDecl.get_type decl in
-          match kind_of_term t with
+          match Constr.kind t with
           | Ind ((kn,_ as ind),u) when
                 let mind = Global.lookup_mind kn in
                 mind.mind_finite <> Decl_kinds.CoFinite ->
@@ -107,7 +108,7 @@ let find_mutually_recursive_statements thms =
       let ind_ccl =
         let cclenv = push_rel_context hyps (Global.env()) in
         let whnf_ccl,_ = whd_all_stack cclenv Evd.empty (EConstr.of_constr ccl) in
-        match kind_of_term (EConstr.Unsafe.to_constr whnf_ccl) with
+        match Constr.kind (EConstr.Unsafe.to_constr whnf_ccl) with
         | Ind ((kn,_ as ind),u) when
               let mind = Global.lookup_mind kn in
               Int.equal mind.mind_ntypes n && mind.mind_finite == Decl_kinds.CoFinite ->
@@ -116,7 +117,7 @@ let find_mutually_recursive_statements thms =
             [] in
       ind_hyps,ind_ccl) thms in
     let inds_hyps,ind_ccls = List.split inds in
-    let of_same_mutind ((kn,_),_,_) = function ((kn',_),_,_) -> eq_mind kn kn' in
+    let of_same_mutind ((kn,_),_,_) = function ((kn',_),_,_) -> MutInd.equal kn kn' in
     (* Check if all conclusions are coinductive in the same type *)
     (* (degenerated cartesian product since there is at most one coind ccl) *)
     let same_indccl =
@@ -246,7 +247,7 @@ let save_remaining_recthms (locality,p,kind) norm ctx binders body opaq i (id,(t
   | Some body ->
       let body = norm body in
       let k = Kindops.logical_kind_of_goal_kind kind in
-      let rec body_i t = match kind_of_term t with
+      let rec body_i t = match Constr.kind t with
         | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
         | CoFix (0,decls) -> mkCoFix (i,decls)
         | LetIn(na,t1,ty,t2) -> mkLetIn (na,t1,ty, body_i t2)

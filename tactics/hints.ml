@@ -128,14 +128,14 @@ type hints_path = global_reference hints_path_gen
 
 type hint_term =
   | IsGlobRef of global_reference
-  | IsConstr of constr * Univ.universe_context_set
+  | IsConstr of constr * Univ.ContextSet.t
 
 type 'a with_uid = {
   obj : 'a;
   uid : KerName.t;
 }
 
-type raw_hint = constr * types * Univ.universe_context_set
+type raw_hint = constr * types * Univ.ContextSet.t
 
 type hint = (raw_hint * clausenv) hint_ast with_uid
 
