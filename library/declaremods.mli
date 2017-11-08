@@ -30,15 +30,15 @@ val declare_module :
   Id.t ->
   'modast module_params ->
   ('modast * inline) module_signature ->
-  ('modast * inline) list -> module_path
+  ('modast * inline) list -> ModPath.t
 
 val start_module :
   'modast module_interpretor ->
   bool option -> Id.t ->
   'modast module_params ->
-  ('modast * inline) module_signature -> module_path
+  ('modast * inline) module_signature -> ModPath.t
 
-val end_module : unit -> module_path
+val end_module : unit -> ModPath.t
 
 
 
@@ -53,15 +53,15 @@ val declare_modtype :
   'modast module_params ->
   ('modast * inline) list ->
   ('modast * inline) list ->
-  module_path
+  ModPath.t
 
 val start_modtype :
   'modast module_interpretor ->
   Id.t ->
   'modast module_params ->
-  ('modast * inline) list -> module_path
+  ('modast * inline) list -> ModPath.t
 
-val end_modtype : unit -> module_path
+val end_modtype : unit -> ModPath.t
 
 (** {6 Libraries i.e. modules on disk } *)
 
@@ -72,7 +72,7 @@ type library_objects
 val register_library :
   library_name ->
   Safe_typing.compiled_library -> library_objects -> Safe_typing.vodigest ->
-  Univ.universe_context_set -> unit
+  Univ.ContextSet.t -> unit
 
 val get_library_native_symbols : library_name -> Nativecode.symbols
 
@@ -90,13 +90,13 @@ val append_end_library_hook : (unit -> unit) -> unit
    every object of the module. Raises [Not_found] when [mp] is unknown
    or when [mp] corresponds to a functor. *)
 
-val really_import_module : module_path -> unit
+val really_import_module : ModPath.t -> unit
 
 (** [import_module export mp] is a synchronous version of
    [really_import_module]. If [export] is [true], the module is also
    opened every time the module containing it is. *)
 
-val import_module : bool -> module_path -> unit
+val import_module : bool -> ModPath.t -> unit
 
 (** Include  *)
 

@@ -8,13 +8,13 @@
 
 open Names
 open Globnames
-open Term
+open Constr
 open Misctypes
 
 (** {5 Patterns} *)
 
 type case_info_pattern =
-    { cip_style : case_style;
+    { cip_style : Constr.case_style;
       cip_ind : inductive option;
       cip_ind_tags : bool list option; (** indicates LetIn/Lambda in arity *)
       cip_extensible : bool (** does this match end with _ => _ ? *) }

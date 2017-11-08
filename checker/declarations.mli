@@ -34,12 +34,12 @@ val empty_delta_resolver : delta_resolver
 type 'a subst_fun = substitution -> 'a -> 'a
 
 val empty_subst : substitution
-val add_mbid : MBId.t -> module_path -> substitution -> substitution
-val add_mp   : module_path -> module_path -> substitution -> substitution
-val map_mbid : MBId.t -> module_path -> substitution
-val map_mp   : module_path -> module_path -> substitution
-val mp_in_delta : module_path -> delta_resolver -> bool
-val mind_of_delta : delta_resolver -> mutual_inductive -> mutual_inductive
+val add_mbid : MBId.t -> ModPath.t -> substitution -> substitution
+val add_mp   : ModPath.t -> ModPath.t -> substitution -> substitution
+val map_mbid : MBId.t -> ModPath.t -> substitution
+val map_mp   : ModPath.t -> ModPath.t -> substitution
+val mp_in_delta : ModPath.t -> delta_resolver -> bool
+val mind_of_delta : delta_resolver -> MutInd.t -> MutInd.t
 
 val subst_const_body : constant_body subst_fun
 val subst_mind : mutual_inductive_body subst_fun

@@ -189,7 +189,7 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 COQOPTS=$(NATIVECOMPUTE)
 BOOTCOQC=$(TIMER) $(COQTOPBEST) -boot $(COQOPTS) -compile
 
-LOCALINCLUDES=$(if $(filter plugins/%,$<),-I lib -I API -open API $(addprefix -I plugins/,$(PLUGINDIRS)),$(addprefix -I ,$(SRCDIRS)))
+LOCALINCLUDES=$(if $(filter plugins/%,$<),-I lib -I kernel -I API -open API $(addprefix -I plugins/,$(PLUGINDIRS)),$(addprefix -I ,$(SRCDIRS)))
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
 OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
@@ -574,7 +574,7 @@ kernel/kernel.cma: kernel/kernel.mllib
 # Make sure that API/API.mli cannot leak types from the Coq codebase.
 API/API.cmi : API/API.mli
 	$(SHOW)'OCAMLC    $<'
-	$(HIDE)$(OCAMLC) -I lib -I $(MYCAMLP4LIB) -c $<
+	$(HIDE)$(OCAMLC) -I lib -I $(MYCAMLP4LIB) -I kernel -c $<
 
 %.cma: %.mllib
 	$(SHOW)'OCAMLC -a -o $@'

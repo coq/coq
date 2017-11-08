@@ -17,7 +17,7 @@ open Mod_subst
 open Libobject
 open Nameops
 open Declarations
-open Term
+open Constr
 open CErrors
 open Util
 open Declare
@@ -29,7 +29,7 @@ open Pp
 (* Registering schemes in the environment *)
 
 type mutual_scheme_object_function =
-  internal_flag -> mutual_inductive -> constr array Evd.in_evar_universe_context * Safe_typing.private_constants
+  internal_flag -> MutInd.t -> constr array Evd.in_evar_universe_context * Safe_typing.private_constants
 type individual_scheme_object_function =
   internal_flag -> inductive -> constr Evd.in_evar_universe_context * Safe_typing.private_constants
 
@@ -57,7 +57,7 @@ let discharge_scheme (_,(kind,l)) =
   Some (kind,Array.map (fun (ind,const) ->
     (Lib.discharge_inductive ind,Lib.discharge_con const)) l)
 
-let inScheme : string * (inductive * constant) array -> obj =
+let inScheme : string * (inductive * Constant.t) array -> obj =
   declare_object {(default_object "SCHEME") with
                     cache_function = cache_scheme;
                     load_function = (fun _ -> cache_scheme);

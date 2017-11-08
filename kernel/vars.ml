@@ -7,7 +7,9 @@
 (************************************************************************)
 
 open Names
-open Esubst
+open Esubst.Internal
+
+module Internal = struct
 
 module RelDecl = Context.Rel.Declaration
 
@@ -354,5 +356,10 @@ let subst_instance_context s ctx =
   if Univ.Instance.is_empty s then ctx
   else Context.Rel.map (fun x -> subst_instance_constr s x) ctx
 
-type id_key = constant tableKey
+type id_key = Constant.t tableKey
 let eq_id_key x y = Names.eq_table_key Constant.equal x y
+
+end
+
+module Public = Internal
+include Public

@@ -13,6 +13,7 @@ open Ltac_plugin
 open CErrors
 open Util
 open Term
+open Constr
 open Tacmach
 open Proof_search
 open Context.Named.Declaration
@@ -82,7 +83,7 @@ let make_atom atom_env term=
   let term = EConstr.Unsafe.to_constr term in
   try
     let (_,i)=
-      List.find (fun (t,_)-> eq_constr term t) atom_env.env
+      List.find (fun (t,_)-> Constr.equal term t) atom_env.env
     in Atom i
   with Not_found ->
     let i=atom_env.next in

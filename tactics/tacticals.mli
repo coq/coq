@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open EConstr
 open Tacmach
 open Proof_type
@@ -127,9 +127,9 @@ val compute_constructor_signatures : rec_flag -> inductive * 'a -> bool list arr
 val compute_induction_names :
   bool list array -> or_and_intro_pattern option -> intro_patterns array
 
-val elimination_sort_of_goal : goal sigma -> sorts_family
-val elimination_sort_of_hyp  : Id.t -> goal sigma -> sorts_family
-val elimination_sort_of_clause : Id.t option -> goal sigma -> sorts_family
+val elimination_sort_of_goal : goal sigma -> Sorts.family
+val elimination_sort_of_hyp  : Id.t -> goal sigma -> Sorts.family
+val elimination_sort_of_clause : Id.t option -> goal sigma -> Sorts.family
 
 val pf_with_evars :  (goal sigma -> Evd.evar_map * 'a) -> ('a -> tactic) -> tactic
 val pf_constr_of_global : Globnames.global_reference -> (constr -> tactic) -> tactic
@@ -243,9 +243,9 @@ module New : sig
   val tryAllHypsAndConcl  : (Id.t option -> unit tactic) -> unit tactic
   val onClause   : (Id.t option -> unit tactic) -> clause -> unit tactic
 
-  val elimination_sort_of_goal : 'a Proofview.Goal.t -> sorts_family
-  val elimination_sort_of_hyp  : Id.t -> 'a Proofview.Goal.t -> sorts_family
-  val elimination_sort_of_clause : Id.t option -> 'a Proofview.Goal.t -> sorts_family
+  val elimination_sort_of_goal : 'a Proofview.Goal.t -> Sorts.family
+  val elimination_sort_of_hyp  : Id.t -> 'a Proofview.Goal.t -> Sorts.family
+  val elimination_sort_of_clause : Id.t option -> 'a Proofview.Goal.t -> Sorts.family
 
   val elimination_then :
     (branch_args -> unit Proofview.tactic) ->

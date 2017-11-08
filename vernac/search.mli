@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Environ
 open Pattern
 open Globnames

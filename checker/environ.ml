@@ -8,7 +8,7 @@ open Declarations
 type globals = {
   env_constants : constant_body Cmap_env.t;
   env_inductives : mutual_inductive_body Mindmap_env.t;
-  env_inductives_eq : kernel_name  KNmap.t;
+  env_inductives_eq : KerName.t KNmap.t;
   env_modules : module_body MPmap.t;
   env_modtypes : module_type_body MPmap.t}
 

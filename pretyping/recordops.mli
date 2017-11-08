@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Globnames
 
 (** Operations concerning records and canonical structures *)
@@ -20,10 +20,10 @@ type struc_typ = {
   s_CONST : constructor;
   s_EXPECTEDPARAM : int;
   s_PROJKIND : (Name.t * bool) list;
-  s_PROJ : constant option list }
+  s_PROJ : Constant.t option list }
 
 type struc_tuple =
-    inductive * constructor * (Name.t * bool) list * constant option list
+    inductive * constructor * (Name.t * bool) list * Constant.t option list
 
 val declare_structure : struc_tuple -> unit
 
@@ -35,7 +35,7 @@ val lookup_structure : inductive -> struc_typ
 (** [lookup_projections isp] returns the projections associated to the
    inductive path [isp] if it corresponds to a structure, otherwise
    it fails with [Not_found] *)
-val lookup_projections : inductive -> constant option list
+val lookup_projections : inductive -> Constant.t option list
 
 (** raise [Not_found] if not a projection *)
 val find_projection_nparams : global_reference -> int
@@ -52,7 +52,7 @@ val find_projection : global_reference -> struc_typ
 type cs_pattern =
     Const_cs of global_reference
   | Prod_cs
-  | Sort_cs of sorts_family
+  | Sort_cs of Sorts.family
   | Default_cs
 
 type obj_typ = {

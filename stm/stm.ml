@@ -1659,7 +1659,7 @@ end = struct (* {{{ *)
         let uc =
           Future.chain uc Univ.hcons_universe_context_set in
         let pr = Future.chain pr discharge in
-        let pr = Future.chain pr Constr.hcons in
+        let pr = Future.chain pr Constr.Internal.hcons in
         Future.sink pr;
         let extra = Future.join uc in
         u.(bucket) <- uc;
@@ -1933,7 +1933,7 @@ end = struct (* {{{ *)
           match Future.join f with
           | Some (pt, uc) ->
             stm_pperr_endline (fun () -> hov 0 (
-              str"g=" ++ int (Evar.repr gid) ++ spc () ++
+              str"g=" ++ int (Evar.Internal.repr gid) ++ spc () ++
               str"t=" ++ (Printer.pr_constr pt) ++ spc () ++
               str"uc=" ++ Termops.pr_evar_universe_context uc));
             (if abstract then Tactics.tclABSTRACT None else (fun x -> x))

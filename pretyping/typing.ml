@@ -160,7 +160,7 @@ let check_type_fixpoint ?loc env evdref lna lar vdefj =
 (* FIXME: might depend on the level of actual parameters!*)
 let check_allowed_sort env sigma ind c p =
   let pj = Retyping.get_judgment_of env sigma p in
-  let ksort = family_of_sort (ESorts.kind sigma (sort_of_arity env sigma pj.uj_type)) in
+  let ksort = Sorts.family (ESorts.kind sigma (sort_of_arity env sigma pj.uj_type)) in
   let specif = Global.lookup_inductive (fst ind) in
   let sorts = elim_sorts specif in
   if not (List.exists ((==) ksort) sorts) then
@@ -195,11 +195,11 @@ let check_cofix env sigma pcofix =
 
 let judge_of_prop =
   { uj_val = EConstr.mkProp;
-    uj_type = EConstr.mkSort type1_sort }
+    uj_type = EConstr.mkSort Sorts.type1 }
 
 let judge_of_set =
   { uj_val = EConstr.mkSet;
-    uj_type = EConstr.mkSort type1_sort }
+    uj_type = EConstr.mkSort Sorts.type1 }
 
 let judge_of_prop_contents = function
   | Null -> judge_of_prop

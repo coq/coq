@@ -320,7 +320,7 @@ let constrain_variables init uctx =
   let levels = Univ.Instance.levels (Univ.UContext.instance init) in
   UState.constrain_variables levels uctx
 
-type closed_proof_output = (Term.constr * Safe_typing.private_constants) list * Evd.evar_universe_context
+type closed_proof_output = (Constr.t * Safe_typing.private_constants) list * Evd.evar_universe_context
 
 let close_proof ~keep_body_ucst_separate ?feedback_id ~now
                 (fpl : closed_proof_output Future.computation) =

@@ -23,7 +23,7 @@
 open CErrors
 open Util
 open Names
-open Term
+open Constr
 open Vars
 open Declarations
 open Pre_env
@@ -391,7 +391,7 @@ let lookup_constructor_variables (ind,_) env =
 (* Returns the list of global variables in a term *)
 
 let vars_of_global env constr =
-  match kind_of_term constr with
+  match kind constr with
       Var id -> Id.Set.singleton id
     | Const (kn, _) -> lookup_constant_variables kn env
     | Ind (ind, _) -> lookup_inductive_variables ind env
@@ -402,12 +402,12 @@ let vars_of_global env constr =
 let global_vars_set env constr =
   let rec filtrec acc c =
     let acc =
-      match kind_of_term c with
+      match kind c with
       | Var _ | Const _ | Ind _ | Construct _ ->
 	  Id.Set.union (vars_of_global env c) acc
       | _ ->
 	  acc in
-    Term.fold_constr filtrec acc c
+    Constr.fold filtrec acc c
   in
     filtrec Id.Set.empty constr
 
@@ -478,7 +478,7 @@ let j_type j = j.uj_type
 
 type 'types punsafe_type_judgment = {
   utj_val : 'types;
-  utj_type : sorts }
+  utj_type : Sorts.t }
 
 type unsafe_type_judgment = types punsafe_type_judgment
 
@@ -538,7 +538,7 @@ let register_one env field entry =
 let register env field entry =
   match field with
     | KInt31 (grp, Int31Type) ->
-        let i31c = match kind_of_term entry with
+        let i31c = match kind entry with
                      | Ind i31t -> mkConstructUi (i31t, 1)
 		     | _ -> anomaly ~label:"Environ.register" (Pp.str "should be an inductive type.")
 	in
@@ -584,7 +584,7 @@ let dispatch =
 fun rk value field ->
   (* subfunction which shortens the (very common) dispatch of operations *)
   let int31_op_from_const n op prim =
-    match kind_of_term value with
+    match kind value with
       | Const kn ->  int31_op n op prim kn
       | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant.")
   in
@@ -601,13 +601,13 @@ fun rk value field ->
               (Pp.str "add_int31_decompilation_from_type called with an abnormal field.")
         in
         let i31bit_type =
-          match kind_of_term int31bit with
+          match kind int31bit with
           | Ind (i31bit_type,_) -> i31bit_type
           |  _ -> anomaly ~label:"Environ.register"
               (Pp.str "Int31Bits should be an inductive type.")
         in
         let int31_decompilation =
-          match kind_of_term value with
+          match kind value with
           | Ind (i31t,_) ->
               constr_of_int31 i31t i31bit_type
           | _ -> anomaly ~label:"Environ.register"

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Environ
 open EConstr
 open Type_errors
@@ -99,8 +99,8 @@ val error_ill_typed_rec_body :
 
 val error_elim_arity :
   ?loc:Loc.t -> env -> Evd.evar_map ->
-      pinductive -> sorts_family list -> constr ->
-      unsafe_judgment -> (sorts_family * sorts_family * arity_error) option -> 'b
+      pinductive -> Sorts.family list -> constr ->
+      unsafe_judgment -> (Sorts.family * Sorts.family * arity_error) option -> 'b
 
 val error_not_a_type :
   ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b

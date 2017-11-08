@@ -8,7 +8,7 @@
 
 open CErrors
 open Util
-open Term
+open Constr
 open Tactics
 open Coqlib
 
@@ -204,42 +204,42 @@ else
     mkt_app ttpow [Lazy.force tz; mkt_term t1; mkt_n (num_of_int n)]
 
 let rec parse_pos p =
-  match kind_of_term p with
+  match Constr.kind p with
 | App (a,[|p2|]) ->
-    if eq_constr a (Lazy.force pxO) then num_2 */ (parse_pos p2)
+    if Constr.equal a (Lazy.force pxO) then num_2 */ (parse_pos p2)
     else num_1 +/ (num_2 */ (parse_pos p2))
 | _ -> num_1
 
 let parse_z z =
-  match kind_of_term z with
+  match Constr.kind z with
 | App (a,[|p2|]) ->
-    if eq_constr a (Lazy.force zpos) then parse_pos p2 else (num_0 -/ (parse_pos p2))
+    if Constr.equal a (Lazy.force zpos) then parse_pos p2 else (num_0 -/ (parse_pos p2))
 | _ -> num_0
 
 let parse_n z =
-  match kind_of_term z with
+  match Constr.kind z with
 | App (a,[|p2|]) ->
     parse_pos p2
 | _ -> num_0
 
 let rec parse_term p =
-  match kind_of_term p with
+  match Constr.kind p with
 | App (a,[|_;p2|]) ->
-    if eq_constr a (Lazy.force ttvar) then Var (string_of_num (parse_pos p2))
-    else if eq_constr a (Lazy.force ttconst) then Const (parse_z p2)
-    else if eq_constr a (Lazy.force ttopp) then Opp (parse_term p2)
+    if Constr.equal a (Lazy.force ttvar) then Var (string_of_num (parse_pos p2))
+    else if Constr.equal a (Lazy.force ttconst) then Const (parse_z p2)
+    else if Constr.equal a (Lazy.force ttopp) then Opp (parse_term p2)
     else Zero
 | App (a,[|_;p2;p3|]) ->
-    if eq_constr a (Lazy.force ttadd) then Add (parse_term p2, parse_term p3)
-    else if eq_constr a (Lazy.force ttsub) then Sub (parse_term p2, parse_term p3)
-    else if eq_constr a (Lazy.force ttmul) then Mul (parse_term p2, parse_term p3)
-    else if eq_constr a (Lazy.force ttpow) then
+    if Constr.equal a (Lazy.force ttadd) then Add (parse_term p2, parse_term p3)
+    else if Constr.equal a (Lazy.force ttsub) then Sub (parse_term p2, parse_term p3)
+    else if Constr.equal a (Lazy.force ttmul) then Mul (parse_term p2, parse_term p3)
+    else if Constr.equal a (Lazy.force ttpow) then
       Pow (parse_term p2, int_of_num (parse_n p3))
     else Zero
 | _ -> Zero
 
 let rec parse_request lp =
-  match kind_of_term lp with
+  match Constr.kind lp with
     | App (_,[|_|])  -> []
     | App (_,[|_;p;lp1|])  ->
 	(parse_term p)::(parse_request lp1)

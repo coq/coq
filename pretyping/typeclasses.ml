@@ -11,6 +11,7 @@ open Names
 open Globnames
 open Decl_kinds
 open Term
+open Constr
 open Vars
 open Evd
 open Util
@@ -71,7 +72,7 @@ type typeclass = {
 
   (* The method implementaions as projections. *)
   cl_projs : (Name.t * (direction * Vernacexpr.hint_info_expr) option
-	      * constant option) list;
+	      * Constant.t option) list;
   
   cl_strict : bool;
 

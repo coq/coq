@@ -9,7 +9,7 @@
 (** Interpretation layer of redexprs such as hnf, cbv, etc. *)
 
 open Names
-open Term
+open Constr
 open EConstr
 open Pattern
 open Genredexpr

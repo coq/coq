@@ -11,14 +11,15 @@
 (* Plus some e-matching and constructor handling by P. Corbineau *)
 
 open CErrors
-open Util
 open Pp
 open Goptions
 open Names
 open Term
+open Constr
 open Vars
 open Tacmach
 open Evd
+open Util
 
 let init_size=5
 
@@ -154,7 +155,7 @@ let rec term_equal t1 t2 =
 open Hashset.Combine
 
 let rec hash_term = function
-  | Symb c -> combine 1 (hash_constr c)
+  | Symb c -> combine 1 (Constr.hash c)
   | Product (s1, s2) -> combine3 2 (Sorts.hash s1) (Sorts.hash s2)
   | Eps i -> combine 3 (Id.hash i)
   | Appli (t1, t2) -> combine3 4 (hash_term t1) (hash_term t2)
@@ -215,7 +216,7 @@ type representative=
      mutable lfathers:Int.Set.t;
      mutable fathers:Int.Set.t;
      mutable inductive_status: inductive_status;
-     class_type : Term.types;
+     class_type : types;
      mutable functions: Int.Set.t PafMap.t} (*pac -> term = app(constr,t) *)
 
 type cl = Rep of representative| Eqto of int*equality
@@ -232,7 +233,7 @@ type node =
 module Constrhash = Hashtbl.Make
   (struct type t = constr
 	  let equal = eq_constr_nounivs
-	  let hash = hash_constr
+	  let hash = Constr.hash
    end)
 module Typehash = Constrhash
 
@@ -438,7 +439,7 @@ and applist_proj c l =
   | Symb s -> applist_projection s l
   | _ -> applistc (constr_of_term c) l
 and applist_projection c l =
-  match kind_of_term c with
+  match Constr.kind c with
   | Const c when Environ.is_projection (fst c) (Global.env()) ->
     let p = Projection.make (fst c) false in
     (match l with 
@@ -454,7 +455,7 @@ and applist_projection c l =
 let rec canonize_name sigma c =
   let c = EConstr.Unsafe.to_constr c in
   let func c = canonize_name sigma (EConstr.of_constr c) in
-    match kind_of_term c with
+    match Constr.kind c with
       | Const (kn,u) ->
 	  let canon_const = Constant.make1 (Constant.canonical kn) in 
 	    (mkConstU (canon_const,u))

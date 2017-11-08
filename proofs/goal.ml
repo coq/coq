@@ -18,9 +18,9 @@ module NamedDecl = Context.Named.Declaration
 (* type of the goals *)
 type goal = Evd.evar
 
-let pr_goal e = str "GOAL:" ++ Pp.int (Evar.repr e)
+let pr_goal e = str "GOAL:" ++ Pp.int (Evar.Internal.repr e)
 
-let uid e = string_of_int (Evar.repr e)
+let uid e = string_of_int (Evar.Internal.repr e)
 
 (* Layer to implement v8.2 tactic engine ontop of the new architecture.
    Types are different from what they used to be due to a change of the
@@ -99,7 +99,7 @@ module V82 = struct
   let same_goal evars1 gl1 evars2 gl2 =
     let evi1 = Evd.find evars1 gl1 in
     let evi2 = Evd.find evars2 gl2 in
-    Term.eq_constr evi1.Evd.evar_concl evi2.Evd.evar_concl &&
+    Constr.equal evi1.Evd.evar_concl evi2.Evd.evar_concl &&
     Environ.eq_named_context_val evi1.Evd.evar_hyps evi2.Evd.evar_hyps
 
   let weak_progress glss gls =

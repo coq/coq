@@ -8,7 +8,7 @@
 
 open Names
 open Univ
-open Term
+open Constr
 open Mod_subst
 
 type work_list = (Instance.t * Id.t array) Cmap.t * 
@@ -17,7 +17,7 @@ type work_list = (Instance.t * Id.t array) Cmap.t *
 type cooking_info = { 
   modlist : work_list; 
   abstract : Context.Named.t * Univ.universe_level_subst * Univ.AUContext.t } 
-type proofterm = (constr * Univ.universe_context_set) Future.computation
+type proofterm = (constr * Univ.ContextSet.t) Future.computation
 type opaque =
   | Indirect of substitution list * DirPath.t * int (* subst, lib, index *)
   | Direct of cooking_info list * proofterm
@@ -138,7 +138,7 @@ let get_proof { opaque_val = prfs; opaque_dir = odp } = function
  
 module FMap = Future.UUIDMap
 
-let a_constr = Future.from_val (Term.mkRel 1)
+let a_constr = Future.from_val (mkRel 1)
 let a_univ = Future.from_val Univ.ContextSet.empty
 let a_discharge : cooking_info list = []
 

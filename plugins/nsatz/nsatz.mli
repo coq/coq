@@ -6,4 +6,4 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-val nsatz_compute : Term.constr -> unit Proofview.tactic
+val nsatz_compute : Constr.t -> unit Proofview.tactic

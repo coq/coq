@@ -17,6 +17,7 @@ open CErrors
 open Util
 open Names
 open Term
+open Constr
 open Declarations
 open Univ
 
@@ -29,15 +30,15 @@ let pop_dirpath p = match DirPath.repr p with
   | _::l -> DirPath.make l
 
 let pop_mind kn =
-  let (mp,dir,l) = Names.repr_mind kn in
-  Names.make_mind mp (pop_dirpath dir) l
+  let (mp,dir,l) = MutInd.repr3 kn in
+  MutInd.make3 mp (pop_dirpath dir) l
 
 let pop_con con =
-  let (mp,dir,l) = Names.repr_con con in
-  Names.make_con mp (pop_dirpath dir) l
+  let (mp,dir,l) = Constant.repr3 con in
+  Constant.make3 mp (pop_dirpath dir) l
 
 type my_global_reference =
-  | ConstRef of constant
+  | ConstRef of Constant.t
   | IndRef of inductive
   | ConstructRef of constructor
 
@@ -100,42 +101,42 @@ let expmod_constr cache modlist c =
   let share_univs = share_univs cache in
   let update_case_info = update_case_info cache in
   let rec substrec c =
-    match kind_of_term c with
+    match kind c with
       | Case (ci,p,t,br) ->
-	  map_constr substrec (mkCase (update_case_info ci modlist,p,t,br))
+	  Constr.map substrec (mkCase (update_case_info ci modlist,p,t,br))
 
       | Ind (ind,u) ->
 	  (try
 	    share_univs (IndRef ind) u modlist
 	   with
-	    | Not_found -> map_constr substrec c)
+	    | Not_found -> Constr.map substrec c)
 
       | Construct (cstr,u) ->
 	  (try
 	     share_univs (ConstructRef cstr) u modlist
 	   with
-	    | Not_found -> map_constr substrec c)
+	    | Not_found -> Constr.map substrec c)
 
       | Const (cst,u) ->
 	  (try
 	    share_univs (ConstRef cst) u modlist
 	   with
-	    | Not_found -> map_constr substrec c)
+	    | Not_found -> Constr.map substrec c)
 
       | Proj (p, c') ->
           (try 
 	     let p' = share_univs (ConstRef (Projection.constant p)) Univ.Instance.empty modlist in
 	     let make c = Projection.make c (Projection.unfolded p) in
-	     match kind_of_term p' with
+	     match kind p' with
 	     | Const (p',_) -> mkProj (make p', substrec c')
 	     | App (f, args) -> 
-	       (match kind_of_term f with 
+	       (match kind f with 
 	       | Const (p', _) -> mkProj (make p', substrec c')
 	       | _ -> assert false)
 	     | _ -> assert false
-	   with Not_found -> map_constr substrec c)
+	   with Not_found -> Constr.map substrec c)
 
-  | _ -> map_constr substrec c
+  | _ -> Constr.map substrec c
 
   in
   if is_empty_modlist modlist then c
@@ -203,7 +204,7 @@ let cook_constant ~hcons env { from = cb; info } =
   let hyps = Context.Named.map expmod abstract in
   let map c =
     let c = abstract_constant_body (expmod c) hyps in
-    if hcons then hcons_constr c else c
+    if hcons then Constr.Internal.hcons c else c
   in
   let body = on_body modlist (hyps, usubst, abs_ctx)
     map
@@ -222,7 +223,7 @@ let cook_constant ~hcons env { from = cb; info } =
     let ((mind, _), _), n' =
       try 
 	let c' = share_univs cache (IndRef (pb.proj_ind,0)) Univ.Instance.empty modlist in
-	  match kind_of_term c' with
+	  match kind c' with
 	  | App (f,l) -> (destInd f, Array.length l)
 	  | Ind ind -> ind, 0
 	  | _ -> assert false 

@@ -32,6 +32,7 @@ let ssrposetac ist (id, (_, t)) gl =
 
 open Pp
 open Term
+open Constr
 
 let ssrsettac ist id ((_, (pat, pty)), (_, occ)) gl =
   let pat = interp_cpattern ist gl pat (Option.map snd pty) in
@@ -59,10 +60,10 @@ let rec is_Evar_or_CastedMeta sigma x =
   (EConstr.isCast sigma x && is_Evar_or_CastedMeta sigma (pi1 (EConstr.destCast sigma x)))
 
 let occur_existential_or_casted_meta c =
-  let rec occrec c = match kind_of_term c with
+  let rec occrec c = match Constr.kind c with
     | Evar _ -> raise Not_found
     | Cast (m,_,_) when isMeta m -> raise Not_found
-    | _ -> iter_constr occrec c
+    | _ -> Constr.iter occrec c
   in try occrec c; false with Not_found -> true
 
 open Printer
@@ -84,12 +85,12 @@ let pf_find_abstract_proof check_lock gl abstract_n =
   let fire gl t = EConstr.Unsafe.to_constr (Reductionops.nf_evar (project gl) (EConstr.of_constr t)) in
   let abstract, gl = pf_mkSsrConst "abstract" gl in
   let l = Evd.fold_undefined (fun e ei l ->
-    match kind_of_term ei.Evd.evar_concl with
+    match Constr.kind ei.Evd.evar_concl with
     | App(hd, [|ty; n; lock|])
       when (not check_lock || 
                  (occur_existential_or_casted_meta  (fire gl ty) &&
                   is_Evar_or_CastedMeta (project gl) (EConstr.of_constr @@ fire gl lock))) &&
-      Term.eq_constr hd (EConstr.Unsafe.to_constr abstract) && Term.eq_constr n abstract_n -> e::l
+      Constr.equal hd (EConstr.Unsafe.to_constr abstract) && Constr.equal n abstract_n -> e::l
     | _ -> l) (project gl) [] in
   match l with
   | [e] -> e
@@ -286,7 +287,7 @@ let ssrabstract ist gens (*last*) gl =
             let p = mkApp (proj2,[|ty;concl;p|]) in
             let concl = mkApp(prod,[|ty; concl|]) in
             pf_unify_HO gl concl t, p
-        | App(hd, [|left; right|]) when Term.eq_constr hd prod ->
+        | App(hd, [|left; right|]) when Term.Constr.equal hd prod ->
             find_hole (mkApp (proj1,[|left;right;p|])) left
 *)
         | _ -> errorstrm(strbrk"abstract constant "++pr_econstr abstract_n++

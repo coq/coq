@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Util
-open Term
+open Constr
 open Names
 
 type pa_constructor =
@@ -85,7 +85,7 @@ type representative=
      mutable lfathers:Int.Set.t;
      mutable fathers:Int.Set.t;
      mutable inductive_status: inductive_status;
-     class_type : Term.types;
+     class_type : types;
      mutable functions: Int.Set.t PafMap.t} (*pac -> term = app(constr,t) *)
 
 type cl = Rep of representative| Eqto of int*equality

@@ -10,7 +10,7 @@ open Pp
 open CErrors
 open Util
 open Names
-open Term
+open Constr
 open EConstr
 open Termops
 open Declarations
@@ -224,9 +224,8 @@ let compute_induction_names = compute_induction_names_gen true
 
 (* Compute the let-in signature of case analysis or standard induction scheme *)
 let compute_constructor_signatures isrec ((_,k as ity),u) =
-  let open Term in
   let rec analrec c recargs =
-    match kind_of_term c, recargs with
+    match Constr.kind c, recargs with
     | Prod (_,_,c), recarg::rest ->
         let rest = analrec c rest in
         begin match Declareops.dest_recarg recarg with
@@ -242,7 +241,7 @@ let compute_constructor_signatures isrec ((_,k as ity),u) =
   let (mib,mip) = Global.lookup_inductive ity in
   let n = mib.mind_nparams in
   let lc =
-    Array.map (fun c -> snd (decompose_prod_n_assum n c)) mip.mind_nf_lc in
+    Array.map (fun c -> snd (Term.decompose_prod_n_assum n c)) mip.mind_nf_lc in
   let lrecargs = Declareops.dest_subterms mip.mind_recargs in
   Array.map2 analrec lc lrecargs
 
@@ -472,7 +471,7 @@ module New = struct
       let evi = Evd.find sigma evk in
       match Evd.evar_body evi with
       | Evd.Evar_empty -> Some (evk,evi)
-      | Evd.Evar_defined c -> match Term.kind_of_term c with
+      | Evd.Evar_defined c -> match Constr.kind c with
         | Term.Evar (evk,l) -> is_undefined_up_to_restriction sigma evk
         | _ -> 
           (* We make the assumption that there is no way to refine an
@@ -622,7 +621,7 @@ module New = struct
       | _ ->
 	  let name_elim =
 	    match EConstr.kind sigma elim with
-	    | Const (kn, _) -> string_of_con kn
+	    | Const (kn, _) -> Constant.to_string kn
 	    | Var id -> Id.to_string id
 	    | _ -> "\b"
 	  in

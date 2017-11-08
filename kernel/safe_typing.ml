@@ -114,7 +114,7 @@ module DPMap = Map.Make(DirPath)
 
 type safe_environment =
   { env : Environ.env;
-    modpath : module_path;
+    modpath : ModPath.t;
     modvariant : modvariant;
     modresolver : Mod_subst.delta_resolver;
     paramresolver : Mod_subst.delta_resolver;
@@ -125,7 +125,7 @@ type safe_environment =
     future_cst : Univ.ContextSet.t Future.computation list;
     engagement : engagement option;
     required : vodigest DPMap.t;
-    loads : (module_path * module_body) list;
+    loads : (ModPath.t * module_body) list;
     local_retroknowledge : Retroknowledge.action list;
     native_symbols : Nativecode.symbols DPMap.t }
 
@@ -143,7 +143,7 @@ let rec library_dp_of_senv senv =
 
 let empty_environment =
   { env = Environ.empty_env;
-    modpath = initial_path;
+    modpath = ModPath.initial;
     modvariant = NONE;
     modresolver = Mod_subst.empty_delta_resolver;
     paramresolver = Mod_subst.empty_delta_resolver;
@@ -160,7 +160,7 @@ let empty_environment =
 
 let is_initial senv =
   match senv.revstruct, senv.modvariant with
-  | [], NONE -> ModPath.equal senv.modpath initial_path
+  | [], NONE -> ModPath.equal senv.modpath ModPath.initial
   | _ -> false
 
 let delta_of_senv senv = senv.modresolver,senv.paramresolver
@@ -458,8 +458,8 @@ let constraints_of_sfb env sfb =
     It also performs the corresponding [add_constraints]. *)
 
 type generic_name =
-  | C of constant
-  | I of mutual_inductive
+  | C of Constant.t
+  | I of MutInd.t
   | M (** name already known, cf the mod_mp field *)
   | MT (** name already known, cf the mod_mp field *)
 
@@ -502,7 +502,7 @@ type global_declaration =
   | GlobalRecipe of Cooking.recipe
 
 type exported_private_constant = 
-  constant * private_constant_role
+  Constant.t * private_constant_role
 
 let add_constant_aux no_section senv (kn, cb) =
   let l = pi3 (Constant.repr3 kn) in
@@ -521,7 +521,7 @@ let add_constant_aux no_section senv (kn, cb) =
   let senv'' = match cb.const_body with
     | Undef (Some lev) ->
       update_resolver
-        (Mod_subst.add_inline_delta_resolver (user_con kn) (lev,None)) senv'
+        (Mod_subst.add_inline_delta_resolver (Constant.user kn) (lev,None)) senv'
     | _ -> senv'
   in
   senv''
@@ -535,7 +535,7 @@ let export_private_constants ~in_section ce senv =
   (ce, exported), senv
 
 let add_constant dir l decl senv =
-  let kn = make_con senv.modpath dir l in
+  let kn = Constant.make3 senv.modpath dir l in
   let no_section = DirPath.is_empty dir in
   let senv =
     let cb = 
@@ -562,7 +562,7 @@ let check_mind mie lab =
 
 let add_mind dir l mie senv =
   let () = check_mind mie l in
-  let kn = make_mind senv.modpath dir l in
+  let kn = MutInd.make3 senv.modpath dir l in
   let mib = Term_typing.translate_mind senv.env kn mie in
   let mib =
     match mib.mind_hyps with [] -> Declareops.hcons_mind mib | _ -> mib

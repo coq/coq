@@ -46,7 +46,7 @@ type 'a glob_constr_r =
   | GLambda of Name.t * binding_kind *  'a glob_constr_g * 'a glob_constr_g
   | GProd   of Name.t * binding_kind * 'a glob_constr_g * 'a glob_constr_g
   | GLetIn  of Name.t * 'a glob_constr_g * 'a glob_constr_g option * 'a glob_constr_g
-  | GCases  of case_style * 'a glob_constr_g option * 'a tomatch_tuples_g * 'a cases_clauses_g
+  | GCases  of Constr.case_style * 'a glob_constr_g option * 'a tomatch_tuples_g * 'a cases_clauses_g
       (** [GCases(style,r,tur,cc)] = "match 'tur' return 'r' with 'cc'" (in [MatchStyle]) *)
   | GLetTuple of Name.t list * (Name.t * 'a glob_constr_g option) * 'a glob_constr_g * 'a glob_constr_g
   | GIf   of 'a glob_constr_g * (Name.t * 'a glob_constr_g option) * 'a glob_constr_g * 'a glob_constr_g

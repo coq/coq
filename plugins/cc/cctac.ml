@@ -13,6 +13,7 @@ open Names
 open Inductiveops
 open Declarations
 open Term
+open Constr
 open EConstr
 open Vars
 open Tactics
@@ -76,11 +77,11 @@ let rec decompose_term env sigma t=
 	let (mind,i_ind),u = c in 
 	let u = EInstance.kind sigma u in
 	let canon_mind = MutInd.make1 (MutInd.canonical mind) in
-	let canon_ind = canon_mind,i_ind in  (Symb (Term.mkIndU (canon_ind,u)))
+	let canon_ind = canon_mind,i_ind in  (Symb (Constr.mkIndU (canon_ind,u)))
     | Const (c,u) -> 
 	let u = EInstance.kind sigma u in
 	let canon_const = Constant.make1 (Constant.canonical c) in 
-	  (Symb (Term.mkConstU (canon_const,u)))
+	  (Symb (Constr.mkConstU (canon_const,u)))
     | Proj (p, c) -> 
 	let canon_const kn = Constant.make1 (Constant.canonical kn) in 
 	let p' = Projection.map canon_const p in
@@ -198,7 +199,7 @@ let make_prb gls depth additionnal_terms =
       (fun decl ->
          let id = NamedDecl.get_id decl in
 	 begin
-	   let cid=Term.mkVar id in
+	   let cid=Constr.mkVar id in
 	   match litteral_of_constr env sigma (NamedDecl.get_type decl) with
 	       `Eq (t,a,b) -> add_equality state cid a b
 	     | `Neq (t,a,b) -> add_disequality state (Hyp cid) a b

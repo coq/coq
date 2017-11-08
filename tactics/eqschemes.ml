@@ -48,6 +48,7 @@ open CErrors
 open Util
 open Names
 open Term
+open Constr
 open Vars
 open Declarations
 open Environ
@@ -106,8 +107,8 @@ let get_coq_eq ctx =
 
 let univ_of_eq env eq =
   let eq = EConstr.of_constr eq in
-  match kind_of_term (EConstr.Unsafe.to_constr (Retyping.get_type_of env Evd.empty eq)) with
-  | Prod (_,t,_) -> (match kind_of_term t with Sort (Type u) -> u | _ -> assert false)
+  match Constr.kind (EConstr.Unsafe.to_constr (Retyping.get_type_of env Evd.empty eq)) with
+  | Prod (_,t,_) -> (match Constr.kind t with Sort (Type u) -> u | _ -> assert false)
   | _ -> assert false
 
 (**********************************************************************)
@@ -141,7 +142,7 @@ let get_sym_eq_data env (ind,u) =
   let paramsctxt = Vars.subst_instance_context u mib.mind_params_ctxt in
   let paramsctxt1,_ =
     List.chop (mib.mind_nparams-mip.mind_nrealargs) paramsctxt in
-  if not (List.equal Term.eq_constr params2 constrargs) then
+  if not (List.equal Constr.equal params2 constrargs) then
     error "Constructors arguments must repeat the parameters.";
   (* nrealargs_ctxt and nrealargs are the same here *)
   (specif,mip.mind_nrealargs,realsign,paramsctxt,paramsctxt1)

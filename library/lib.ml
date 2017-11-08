@@ -62,7 +62,7 @@ let classify_segment seg =
   let rec clean ((substl,keepl,anticipl) as acc) = function
     | (_,CompilingLibrary _) :: _ | [] -> acc
     | ((sp,kn),Leaf o) :: stk ->
-	let id = Names.Label.to_id (Names.label kn) in
+	let id = Names.Label.to_id (Names.KerName.label kn) in
 	  (match classify_object o with
 	     | Dispose -> clean acc stk
 	     | Keep o' ->
@@ -93,12 +93,12 @@ let segment_of_objects prefix =
    sections, but on the contrary there are many constructions of section
    paths based on the library path. *)
 
-let initial_prefix = default_library,(Names.initial_path,Names.DirPath.empty)
+let initial_prefix = default_library,(Names.ModPath.initial,Names.DirPath.empty)
 
 type lib_state = {
   comp_name   : Names.DirPath.t option;
   lib_stk     : library_segment;
-  path_prefix : Names.DirPath.t * (Names.module_path * Names.DirPath.t);
+  path_prefix : Names.DirPath.t * (Names.ModPath.t * Names.DirPath.t);
 }
 
 let initial_lib_state = {
@@ -137,7 +137,7 @@ let make_path_except_section id =
 
 let make_kn id =
   let mp,dir = current_prefix () in
-  Names.make_kn mp dir (Names.Label.of_id id)
+  Names.KerName.make mp dir (Names.Label.of_id id)
 
 let make_oname id = Libnames.make_oname !lib_state.path_prefix id
 
@@ -226,7 +226,7 @@ let add_anonymous_entry node =
   add_entry (make_oname (anonymous_id ())) node
 
 let add_leaf id obj =
-  if Names.ModPath.equal (current_mp ()) Names.initial_path then
+  if Names.ModPath.equal (current_mp ()) Names.ModPath.initial then
     user_err Pp.(str "No session module started (use -top dir)");
   let oname = make_oname id in
   cache_object (oname,obj);
@@ -417,8 +417,8 @@ type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 
 type secentry =
   | Variable of (Names.Id.t * Decl_kinds.binding_kind *
-		   Decl_kinds.polymorphic * Univ.universe_context_set)
-  | Context of Univ.universe_context_set
+		   Decl_kinds.polymorphic * Univ.ContextSet.t)
+  | Context of Univ.ContextSet.t
 
 let sectab =
   Summary.ref ([] : (secentry list * Opaqueproof.work_list * abstr_list) list)
@@ -597,7 +597,7 @@ let init () =
 
 let mp_of_global = function
   |VarRef id -> current_mp ()
-  |ConstRef cst -> Names.con_modpath cst
+  |ConstRef cst -> Names.Constant.modpath cst
   |IndRef ind -> Names.ind_modpath ind
   |ConstructRef constr -> Names.constr_modpath constr
 
@@ -621,12 +621,12 @@ let library_part = function
 (* Discharging names *)
 
 let con_defined_in_sec kn =
-  let _,dir,_ = Names.repr_con kn in
+  let _,dir,_ = Names.Constant.repr3 kn in
   not (Names.DirPath.is_empty dir) &&
   Names.DirPath.equal (pop_dirpath dir) (current_sections ())
 
 let defined_in_sec kn =
-  let _,dir,_ = Names.repr_mind kn in
+  let _,dir,_ = Names.MutInd.repr3 kn in
   not (Names.DirPath.is_empty dir) &&
   Names.DirPath.equal (pop_dirpath dir) (current_sections ())
 

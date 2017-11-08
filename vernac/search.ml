@@ -9,7 +9,7 @@
 open Pp
 open Util
 open Names
-open Term
+open Constr
 open Declarations
 open Libobject
 open Environ

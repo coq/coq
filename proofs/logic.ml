@@ -12,6 +12,7 @@ open Util
 open Names
 open Nameops
 open Term
+open Constr
 open Vars
 open Termops
 open Environ
@@ -284,12 +285,12 @@ let error_unsupported_deep_meta c =
     strbrk "supported; try \"refine\" instead.")
 
 let collect_meta_variables c =
-  let rec collrec deep acc c = match kind_of_term c with
+  let rec collrec deep acc c = match kind c with
     | Meta mv -> if deep then error_unsupported_deep_meta () else mv::acc
     | Cast(c,_,_) -> collrec deep acc c
-    | (App _| Case _) -> Term.fold_constr (collrec deep) acc c
+    | (App _| Case _) -> Constr.fold (collrec deep) acc c
     | Proj (_, c) -> collrec deep acc c
-    | _ -> Term.fold_constr (collrec true) acc c
+    | _ -> Constr.fold (collrec true) acc c
   in
   List.rev (collrec false [] c)
 
@@ -332,7 +333,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
       let sigma = check_conv_leq_goal env sigma trm t'ty conclty in
         (goalacc,t'ty,sigma,trm)
     else
-      match kind_of_term trm with
+      match kind trm with
       | Meta _ ->
 	let conclty = nf_betaiota sigma (EConstr.of_constr conclty) in
 	  if !check && occur_meta sigma conclty then
@@ -372,7 +373,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	in
 	let ((acc'',conclty',sigma), args) = mk_arggoals sigma goal acc' hdty l in
         let sigma = check_conv_leq_goal env sigma trm conclty' conclty in
-        let ans = if applicand == f && args == l then trm else Term.mkApp (applicand, args) in
+        let ans = if applicand == f && args == l then trm else mkApp (applicand, args) in
         (acc'',conclty',sigma, ans)
 
       | Proj (p,c) ->
@@ -394,7 +395,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
         let lf' = Array.rev_of_list rbranches in
         let ans =
           if p' == p && c' == c && Array.equal (==) lf' lf then trm
-          else Term.mkCase (ci,p',c',lf')
+          else mkCase (ci,p',c',lf')
         in
 	(acc'',conclty',sigma, ans)
 
@@ -413,7 +414,7 @@ and mk_hdgoals sigma goal goalacc trm =
   let hyps = Goal.V82.hyps sigma goal in
   let mk_goal hyps concl = 
     Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) in
-  match kind_of_term trm with
+  match kind trm with
     | Cast (c,_, ty) when isMeta c ->
 	check_typability env sigma ty;
 	let (gl,ev,sigma) = mk_goal hyps (nf_betaiota sigma (EConstr.of_constr ty)) in
@@ -433,7 +434,7 @@ and mk_hdgoals sigma goal goalacc trm =
 	  else mk_hdgoals sigma goal goalacc f
 	in
 	let ((acc'',conclty',sigma), args) = mk_arggoals sigma goal acc' hdty l in
-        let ans = if applicand == f && args == l then trm else Term.mkApp (applicand, args) in
+        let ans = if applicand == f && args == l then trm else mkApp (applicand, args) in
 	(acc'',conclty',sigma, ans)
 
     | Case (ci,p,c,lf) ->
@@ -447,7 +448,7 @@ and mk_hdgoals sigma goal goalacc trm =
 	let lf' = Array.rev_of_list rbranches in
 	let ans =
           if p' == p && c' == c && Array.equal (==) lf' lf then trm
-          else Term.mkCase (ci,p',c',lf')
+          else mkCase (ci,p',c',lf')
 	in
 	(acc'',conclty',sigma, ans)
 
@@ -468,12 +469,12 @@ and mk_arggoals sigma goal goalacc funty allargs =
   let foldmap (goalacc, funty, sigma) harg =
     let t = whd_all (Goal.V82.env sigma goal) sigma (EConstr.of_constr funty) in
     let t = EConstr.Unsafe.to_constr t in
-    let rec collapse t = match kind_of_term t with
+    let rec collapse t = match kind t with
     | LetIn (_, c1, _, b) -> collapse (subst1 c1 b)
     | _ -> t
     in
     let t = collapse t in
-    match kind_of_term t with
+    match kind t with
     | Prod (_, c1, b) ->
       let (acc, hargty, sigma, arg) = mk_refgoals sigma goal goalacc c1 harg in
       (acc, subst1 harg b, sigma), arg

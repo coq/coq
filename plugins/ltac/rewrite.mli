@@ -37,7 +37,7 @@ type ('constr,'redexpr) strategy_ast =
 
 type rewrite_proof = 
   | RewPrf of constr * constr
-  | RewCast of Term.cast_kind
+  | RewCast of Constr.cast_kind
 
 type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
 

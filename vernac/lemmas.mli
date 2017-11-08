@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Decl_kinds
 
 type 'a declaration_hook

@@ -10,6 +10,7 @@ open Names
 open CErrors
 open Util
 open Term
+open Constr
 open Vars
 open Declarations
 open Cooking

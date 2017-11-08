@@ -24,7 +24,7 @@ val cbv_norm         : cbv_infos -> constr -> constr
 (***********************************************************************
   i This is for cbv debug *)
 
-open Term
+open Constr
 
 type cbv_value =
   | VAL of int * constr

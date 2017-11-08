@@ -10,6 +10,7 @@ open Pp
 open CErrors
 open Util
 open Term
+open Constr
 open Vars
 open Termops
 open Environ
@@ -44,7 +45,7 @@ let do_constraint poly l = Declare.do_constraint poly l
 
 let rec under_binders env sigma f n c =
   if Int.equal n 0 then f env sigma (EConstr.of_constr c) else
-    match kind_of_term c with
+    match Constr.kind c with
       | Lambda (x,t,c) ->
 	  mkLambda (x,t,under_binders (push_rel (LocalAssum (x,t)) env) sigma f (n-1) c)
       | LetIn (x,b,t,c) ->
@@ -652,7 +653,7 @@ let extract_mutual_inductive_declaration_components indl =
 
 let is_recursive mie =
   let rec is_recursive_constructor lift typ =
-    match Term.kind_of_term typ with
+    match Constr.kind typ with
     | Prod (_,arg,rest) ->
         not (EConstr.Vars.noccurn Evd.empty (** FIXME *) lift (EConstr.of_constr arg)) ||
         is_recursive_constructor (lift+1) rest

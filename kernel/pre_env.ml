@@ -15,7 +15,7 @@
 
 open Util
 open Names
-open Term
+open Constr
 open Declarations
 
 module NamedDecl = Context.Named.Declaration

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Declarations
 
 (** The type of environments. *)
@@ -88,9 +88,9 @@ val env_of_named     : Id.t -> env -> env
 (** Global constants *)
 
 
-val lookup_constant_key : constant -> env -> constant_key
-val lookup_constant : constant -> env -> constant_body
+val lookup_constant_key : Constant.t -> env -> constant_key
+val lookup_constant : Constant.t -> env -> constant_body
 
 (** Mutual Inductives *)
-val lookup_mind_key : mutual_inductive -> env -> mind_key
-val lookup_mind : mutual_inductive -> env -> mutual_inductive_body
+val lookup_mind_key : MutInd.t -> env -> mind_key
+val lookup_mind : MutInd.t -> env -> mutual_inductive_body

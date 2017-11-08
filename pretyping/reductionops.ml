@@ -9,7 +9,7 @@
 open CErrors
 open Util
 open Names
-open Term
+open Constr
 open Termops
 open Univ
 open Evd
@@ -339,7 +339,7 @@ struct
 
   type 'a member =
   | App of 'a app_node
-  | Case of Term.case_info * 'a * 'a array * Cst_stack.t
+  | Case of case_info * 'a * 'a array * Cst_stack.t
   | Proj of int * int * projection * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Cst of cst_member * int * int list * 'a t * Cst_stack.t
@@ -358,7 +358,7 @@ struct
        ++ str ")"
     | Proj (n,m,p,cst) ->
       str "ZProj(" ++ int n ++ pr_comma () ++ int m ++
-	pr_comma () ++ pr_con (Projection.constant p) ++ str ")"
+	pr_comma () ++ Constant.print (Projection.constant p) ++ str ")"
     | Fix (f,args,cst) ->
        str "ZFix(" ++ Termops.pr_fix pr_c f
        ++ pr_comma () ++ pr pr_c args ++ str ")"

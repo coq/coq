@@ -18,6 +18,7 @@ open Libnames
 open Globnames
 open Nameops
 open Term
+open Constr
 open Vars
 open Namegen
 open Declarations
@@ -33,7 +34,7 @@ type dep_flag = bool
 
 (* Errors related to recursors building *)
 type recursion_scheme_error =
-  | NotAllowedCaseAnalysis of (*isrec:*) bool * sorts * pinductive
+  | NotAllowedCaseAnalysis of (*isrec:*) bool * Sorts.t * pinductive
   | NotMutualInScheme of inductive * inductive
   | NotAllowedDependentAnalysis of (*isrec:*) bool * inductive
 
@@ -168,7 +169,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
       let p',largs = whd_allnolet_stack env sigma (EConstr.of_constr p) in
       let p' = EConstr.Unsafe.to_constr p' in
       let largs = List.map EConstr.Unsafe.to_constr largs in
-      match kind_of_term p' with
+      match kind p' with
 	| Prod (n,t,c) ->
 	    let d = LocalAssum (n,t) in
 	    make_prod env (n,t,prec (push_rel d env) (i+1) (d::sign) c)
@@ -186,13 +187,13 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
       	| _ ->
 	   let t' = whd_all env sigma (EConstr.of_constr p) in
 	   let t' = EConstr.Unsafe.to_constr t' in
-	   if Term.eq_constr p' t' then assert false
+	   if Constr.equal p' t' then assert false
 	   else prec env i sign t'
     in
     prec env 0 []
   in
   let rec process_constr env i c recargs nhyps li =
-    if nhyps > 0 then match kind_of_term c with
+    if nhyps > 0 then match kind c with
       | Prod (n,t,c_0) ->
           let (optionpos,rest) =
 	    match recargs with
@@ -247,7 +248,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
       let p',largs = whd_allnolet_stack env sigma (EConstr.of_constr p) in
       let p' = EConstr.Unsafe.to_constr p' in
       let largs = List.map EConstr.Unsafe.to_constr largs in
-      match kind_of_term p' with
+      match kind p' with
 	| Prod (n,t,c) ->
 	    let d = LocalAssum (n,t) in
 	    mkLambda_name env (n,t,prec (push_rel d env) (i+1) (d::hyps) c)
@@ -261,7 +262,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
      	| _ ->
 	   let t' = whd_all env sigma (EConstr.of_constr p) in
 	   let t' = EConstr.Unsafe.to_constr t' in
-	     if Term.eq_constr t' p' then assert false
+	     if Constr.equal t' p' then assert false
 	     else prec env i hyps t'
     in
     prec env 0 []
@@ -505,7 +506,7 @@ let build_case_analysis_scheme_default env sigma pity kind =
    [rec] by [s] *)
 
 let change_sort_arity sort =
-  let rec drec a = match kind_of_term a with
+  let rec drec a = match kind a with
     | Cast (c,_,_) -> drec c
     | Prod (n,t,c) -> let s, c' = drec c in s, mkProd (n, t, c')
     | LetIn (n,b,t,c) -> let s, c' = drec c in s, mkLetIn (n,b,t,c')
@@ -519,7 +520,7 @@ let change_sort_arity sort =
 let weaken_sort_scheme env evd set sort npars term ty =
   let evdref = ref evd in
   let rec drec np elim =
-    match kind_of_term elim with
+    match kind elim with
       | Prod (n,t,c) ->
 	  if Int.equal np 0 then
             let osort, t' = change_sort_arity sort t in
@@ -566,7 +567,7 @@ let build_mutual_induction_scheme env sigma = function
     	(List.map
 	   (function ((mind',u'),dep',s') ->
 	      let (sp',_) = mind' in
-	      if eq_mind sp sp' then
+	      if MutInd.equal sp sp' then
                 let (mibi',mipi') = lookup_mind_specif env mind' in
 		((mind',u'),mibi',mipi',dep',s')
 	      else
@@ -605,7 +606,7 @@ let lookup_eliminator ind_sp s =
   (* Try first to get an eliminator defined in the same section as the *)
   (* inductive type *)
   try
-    let cst =Global.constant_of_delta_kn (make_kn mp dp (Label.of_id id)) in
+    let cst =Global.constant_of_delta_kn (KerName.make mp dp (Label.of_id id)) in
     let _ = Global.lookup_constant cst in
       ConstRef cst
   with Not_found ->

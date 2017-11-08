@@ -86,7 +86,7 @@ val close_proof : keep_body_ucst_separate:bool -> Future.fix_exn -> closed_proof
  * Both access the current proof state. The former is supposed to be
  * chained with a computation that completed the proof *)
 
-type closed_proof_output = (Term.constr * Safe_typing.private_constants) list * Evd.evar_universe_context
+type closed_proof_output = (Constr.t * Safe_typing.private_constants) list * Evd.evar_universe_context
 
 (* If allow_partial is set (default no) then an incomplete proof
  * is allowed (no error), and a warn is given if the proof is complete. *)

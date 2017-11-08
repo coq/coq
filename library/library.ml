@@ -97,7 +97,7 @@ type library_t = {
   library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   library_imports : compilation_unit_name array;
   library_digests : Safe_typing.vodigest;
-  library_extra_univs : Univ.universe_context_set;
+  library_extra_univs : Univ.ContextSet.t;
 }
 
 type library_summary = {
@@ -360,9 +360,9 @@ type 'a table_status =
   | Fetched of 'a Future.computation array
 
 let opaque_tables =
-  ref (LibraryMap.empty : (Term.constr table_status) LibraryMap.t)
+  ref (LibraryMap.empty : (Constr.constr table_status) LibraryMap.t)
 let univ_tables =
-  ref (LibraryMap.empty : (Univ.universe_context_set table_status) LibraryMap.t)
+  ref (LibraryMap.empty : (Univ.ContextSet.t table_status) LibraryMap.t)
 
 let add_opaque_table dp st =
   opaque_tables := LibraryMap.add dp st !opaque_tables
@@ -408,9 +408,9 @@ let () =
 type seg_sum = summary_disk
 type seg_lib = library_disk
 type seg_univ = (* true = vivo, false = vi *)
-  Univ.universe_context_set Future.computation array * Univ.universe_context_set * bool
+  Univ.ContextSet.t Future.computation array * Univ.ContextSet.t * bool
 type seg_discharge = Opaqueproof.cooking_info list array
-type seg_proofs = Term.constr Future.computation array
+type seg_proofs = Constr.constr Future.computation array
 
 let mk_library sd md digests univs =
   {

@@ -11,6 +11,7 @@ open Util
 open Names
 open Univ
 open Term
+open Constr
 open Vars
 open Declarations
 open Declareops
@@ -55,7 +56,7 @@ let weaker_noccur_between env x nvars t =
    else None
 
 let is_constructor_head t =
-  isRel(fst(decompose_app t))
+  Term.isRel(fst(Term.decompose_app t))
 
 (************************************************************************)
 (* Various well-formedness check for inductive declarations            *)
@@ -130,11 +131,11 @@ let is_unit constrsinfos =
 let infos_and_sort env t =
   let rec aux env t max =
     let t = whd_all env t in
-      match kind_of_term t with
+      match kind t with
       | Prod (name,c1,c2) ->
         let varj = infer_type env c1 in
 	let env1 = Environ.push_rel (LocalAssum (name,varj.utj_val)) env in
-	let max = Universe.sup max (univ_of_sort varj.utj_type) in
+	let max = Universe.sup max (Term.univ_of_sort varj.utj_type) in
 	  aux env1 c2 max
     | _ when is_constructor_head t -> max
     | _ -> (* don't fail if not positive, it is tested later *) max
@@ -168,7 +169,7 @@ let infer_constructor_packet env_ar_par params lc =
   let jlc = List.map (infer_type env_ar_par) lc in
   let jlc = Array.of_list jlc in
   (* generalize the constructor over the parameters *)
-  let lc'' = Array.map (fun j -> it_mkProd_or_LetIn j.utj_val params) jlc in
+  let lc'' = Array.map (fun j -> Term.it_mkProd_or_LetIn j.utj_val params) jlc in
   (* compute the max of the sorts of the products of the constructors types *)
   let levels = List.map (infos_and_sort env_ar_par) lc in
   let isunit = is_unit levels in
@@ -183,7 +184,7 @@ let cumulate_arity_large_levels env sign =
      match d with
      | LocalAssum (_,t) ->
 	let tj = infer_type env t in
-	let u = univ_of_sort tj.utj_type in
+	let u = Term.univ_of_sort tj.utj_type in
 	  (Universe.sup u lev, push_rel d env)
      | LocalDef _ ->
 	lev, push_rel d env)
@@ -199,8 +200,8 @@ let is_impredicative env u =
 let param_ccls paramsctxt =
   let fold acc = function
     | (LocalAssum (_, p)) ->
-      (let c = strip_prod_assum p in
-      match kind_of_term c with
+      (let c = Term.strip_prod_assum p in
+      match kind c with
         | Sort (Type u) -> Univ.Universe.level u
         | _ -> None) :: acc
     | LocalDef _ -> acc
@@ -208,7 +209,7 @@ let param_ccls paramsctxt =
   List.fold_left fold [] paramsctxt
 
 (* Check arities and constructors *)
-let check_subtyping_arity_constructor env (subst : constr -> constr) (arcn : Term.types) numparams is_arity =
+let check_subtyping_arity_constructor env (subst : constr -> constr) (arcn : types) numparams is_arity =
   let numchecked = ref 0 in
   let basic_check ev tp =
     if !numchecked < numparams then () else conv_leq ev tp (subst tp);
@@ -288,7 +289,7 @@ let typecheck_inductive env mie =
 	         (** We have an algebraic universe as the conclusion of the arity,
 		     typecheck the dummy Π ctx, Prop and do a special case for the conclusion.
 		 *)
-	         let proparity = infer_type env_params (mkArity (ctx, prop_sort)) in
+	         let proparity = infer_type env_params (mkArity (ctx, Sorts.prop)) in
 		 let (cctx, _) = destArity proparity.utj_val in
 		   (* Any universe is well-formed, we don't need to check [s] here *)
 		   mkArity (cctx, s)
@@ -468,7 +469,7 @@ let check_correct_par (env,n,ntypes,_) paramdecls ind_index args =
     | LocalDef _ :: paramdecls ->
       check param_index (paramdecl_index+1) paramdecls
     | _::paramdecls ->
-        match kind_of_term (whd_all env params.(param_index)) with
+        match kind (whd_all env params.(param_index)) with
 	  | Rel w when Int.equal w paramdecl_index ->
             check (param_index-1) (paramdecl_index+1) paramdecls
 	  | _ ->
@@ -495,7 +496,7 @@ if Int.equal nmr 0 then 0 else
 	| (_,[]) -> assert false (* |paramsctxt|>=nmr *)
 	| (lp, LocalDef _ :: paramsctxt) -> find k (index-1) (lp,paramsctxt)
 	| (p::lp,_::paramsctxt) ->
-       ( match kind_of_term (whd_all env p) with
+       ( match kind (whd_all env p) with
 	  | Rel w when Int.equal w index -> find (k+1) (index-1) (lp,paramsctxt)
           | _ -> k)
   in find 0 (n-1) (lpar,List.rev paramsctxt)
@@ -526,7 +527,7 @@ let ienv_push_inductive (env, n, ntypes, ra_env) ((mi,u),lrecparams) =
 let rec ienv_decompose_prod (env,_,_,_ as ienv) n c =
   if Int.equal n 0 then (ienv,c) else
     let c' = whd_all env c in
-    match kind_of_term c' with
+    match kind c' with
 	Prod(na,a,b) ->
 	  let ienv' = ienv_push_var ienv (na,a,mk_norec) in
 	  ienv_decompose_prod ienv' (n-1) b
@@ -554,8 +555,8 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
       constructor [cn] has a type of the shape [… -> c … -> P], where,
       more generally, the arrows may be dependent). *)
   let rec check_pos (env, n, ntypes, ra_env as ienv) nmr c =
-    let x,largs = decompose_app (whd_all env c) in
-      match kind_of_term x with
+    let x,largs = Term.decompose_app (whd_all env c) in
+      match kind x with
 	| Prod (na,b,d) ->
 	    let () = assert (List.is_empty largs) in
             (** If one of the inductives of the mutually inductive
@@ -662,8 +663,8 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
       inductive type. *)
   and check_constructors ienv check_head nmr c =
     let rec check_constr_rec (env,n,ntypes,ra_env as ienv) nmr lrec c =
-      let x,largs = decompose_app (whd_all env c) in
-	match kind_of_term x with
+      let x,largs = Term.decompose_app (whd_all env c) in
+	match kind x with
 
           | Prod (na,b,d) ->
 	      let () = assert (List.is_empty largs) in
@@ -746,7 +747,7 @@ let allowed_sorts is_smashed s =
 	   as well. *)
       all_sorts
   else 
-    match family_of_sort s with
+    match Sorts.family s with
     (* Type: all elimination allowed: above and below *)
     | InType -> all_sorts
     (* Smashed Set is necessarily impredicative: forbids large elimination *)
@@ -787,7 +788,7 @@ exception UndefinableExpansion
     a substitution of the form [params, x : ind params] *)
 let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
     mind_consnrealdecls mind_consnrealargs paramslet ctx =
-  let mp, dp, l = repr_mind kn in
+  let mp, dp, l = MutInd.repr3 kn in
   (** We build a substitution smashing the lets in the record parameters so
       that typechecking projections requires just a substitution and not
       matching with a parameter context. *)

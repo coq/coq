@@ -10,13 +10,13 @@
     needed in the kernel. *)
 
 open Names
-open Term
+open Constr
 open Environ
 open EConstr
 
 (** printers *)
-val print_sort : sorts -> Pp.t
-val pr_sort_family : sorts_family -> Pp.t
+val print_sort : Sorts.t -> Pp.t
+val pr_sort_family : Sorts.family -> Pp.t
 val pr_fix : ('a -> Pp.t) -> ('a, 'a) pfixpoint -> Pp.t
 
 (** about contexts *)
@@ -147,7 +147,7 @@ val subst_term : Evd.evar_map -> constr -> constr -> constr
 val replace_term : Evd.evar_map -> constr -> constr -> constr -> constr
 
 (** Alternative term equalities *)
-val base_sort_cmp : Reduction.conv_pb -> sorts -> sorts -> bool
+val base_sort_cmp : Reduction.conv_pb -> Sorts.t -> Sorts.t -> bool
 val compare_constr_univ : Evd.evar_map -> (Reduction.conv_pb -> constr -> constr -> bool) ->
   Reduction.conv_pb -> constr -> constr -> bool
 val constr_cmp : Evd.evar_map -> Reduction.conv_pb -> constr -> constr -> bool

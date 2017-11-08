@@ -37,7 +37,7 @@ val tclIDTAC_MESSAGE  : Pp.t -> tactic
 val tclEVARS : evar_map -> tactic
 val tclEVARUNIVCONTEXT : Evd.evar_universe_context -> tactic
 
-val tclPUSHCONTEXT : Evd.rigid -> Univ.universe_context_set -> tactic -> tactic
+val tclPUSHCONTEXT : Evd.rigid -> Univ.ContextSet.t -> tactic -> tactic
 val tclPUSHEVARUNIVCONTEXT : Evd.evar_universe_context -> tactic
 
 val tclPUSHCONSTRAINTS : Univ.constraints -> tactic

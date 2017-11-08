@@ -6,9 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Constr
 open Context.Named.Declaration
 
-let map_const_entry_body (f:Term.constr->Term.constr) (x:Safe_typing.private_constants Entries.const_entry_body)
+let map_const_entry_body (f:constr->constr) (x:Safe_typing.private_constants Entries.const_entry_body)
     : Safe_typing.private_constants Entries.const_entry_body =
   Future.chain x begin fun ((b,ctx),fx) ->
     (f b , ctx) , fx
@@ -67,7 +68,7 @@ let start_deriving f suchthat lemma =
       let f_def = { f_def with Entries.const_entry_opaque = false } in
       let f_def = Entries.DefinitionEntry f_def , Decl_kinds.(IsDefinition Definition) in
       let f_kn = Declare.declare_constant f f_def in
-      let f_kn_term = Term.mkConst f_kn in
+      let f_kn_term = mkConst f_kn in
       (** In the type and body of the proof of [suchthat] there can be
           references to the variable [f]. It needs to be replaced by
           references to the constant [f] declared above. This substitution

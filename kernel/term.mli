@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Names
+open Constr
 
 (** {5 Redeclaration of types from module Constr and Sorts}
 
@@ -15,83 +16,11 @@ open Names
 
 *)
 
-type contents = Sorts.contents = Pos | Null
+module Public : sig
 
-type sorts = Sorts.t =
-  | Prop of contents       (** Prop and Set *)
-  | Type of Univ.universe  (** Type *)
-
-type sorts_family = Sorts.family = InProp | InSet | InType
-
-type 'a puniverses = 'a Univ.puniverses
-
-(** Simply type aliases *)
-type pconstant = constant puniverses
-type pinductive = inductive puniverses
-type pconstructor = constructor puniverses
-
-type constr = Constr.constr
-(** Alias types, for compatibility. *)
-
-type types = Constr.types
-(** Same as [constr], for documentation purposes. *)
-
-type existential_key = Constr.existential_key
-
-type existential = Constr.existential
-
-type metavariable = Constr.metavariable
-
-type case_style = Constr.case_style =
-  LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle
-
-type case_printing = Constr.case_printing =
-  { ind_tags : bool list; cstr_tags : bool list array; style : case_style }
-
-type case_info = Constr.case_info =
-  { ci_ind        : inductive;
-    ci_npar       : int;
-    ci_cstr_ndecls : int array;
-    ci_cstr_nargs : int array;
-    ci_pp_info    : case_printing
-  }
-
-type cast_kind = Constr.cast_kind =
-  VMcast | NATIVEcast | DEFAULTcast | REVERTcast
-
-type rec_declaration = Constr.rec_declaration
-type fixpoint = Constr.fixpoint
-type cofixpoint = Constr.cofixpoint
-type 'constr pexistential = 'constr Constr.pexistential
-type ('constr, 'types) prec_declaration =
-  ('constr, 'types) Constr.prec_declaration
-type ('constr, 'types) pfixpoint = ('constr, 'types) Constr.pfixpoint
-type ('constr, 'types) pcofixpoint = ('constr, 'types) Constr.pcofixpoint
-
-type ('constr, 'types, 'sort, 'univs) kind_of_term =
-  ('constr, 'types, 'sort, 'univs) Constr.kind_of_term =
-  | Rel       of int
-  | Var       of Id.t
-  | Meta      of metavariable
-  | Evar      of 'constr pexistential
-  | Sort      of 'sort
-  | Cast      of 'constr * cast_kind * 'types
-  | Prod      of Name.t * 'types * 'types
-  | Lambda    of Name.t * 'types * 'constr
-  | LetIn     of Name.t * 'constr * 'types * 'constr
-  | App       of 'constr * 'constr array
-  | Const     of (constant * 'univs)
-  | Ind       of (inductive * 'univs)
-  | Construct of (constructor * 'univs)
-  | Case      of case_info * 'constr * 'constr * 'constr array
-  | Fix       of ('constr, 'types) pfixpoint
-  | CoFix     of ('constr, 'types) pcofixpoint
-  | Proj      of projection * 'constr
-
-type values = Constr.values
+open Constr
 
 (** {5 Simple term case analysis. } *)
-
 val isRel  : constr -> bool
 val isRelN : int -> constr -> bool
 val isVar  : constr -> bool
@@ -118,7 +47,7 @@ val is_Set  : constr -> bool
 val isprop : constr -> bool
 val is_Type : constr -> bool
 val iskind : constr -> bool
-val is_small : sorts -> bool
+val is_small : Sorts.t -> bool
 
 
 (** {5 Term destructors } *)
@@ -138,7 +67,7 @@ val destVar : constr -> Id.t
 
 (** Destructs a sort. [is_Prop] recognizes the sort {% \textsf{%}Prop{% }%}, whether
    [isprop] recognizes both {% \textsf{%}Prop{% }%} and {% \textsf{%}Set{% }%}. *)
-val destSort : constr -> sorts
+val destSort : constr -> Sorts.t
 
 (** Destructs a casted term *)
 val destCast : constr -> constr * cast_kind * constr
@@ -165,7 +94,7 @@ val decompose_app : constr -> constr * constr list
 val decompose_appvect : constr -> constr * constr array
 
 (** Destructs a constant *)
-val destConst : constr -> constant puniverses
+val destConst : constr -> Constant.t puniverses
 
 (** Destructs an existential variable *)
 val destEvar : constr -> existential
@@ -196,7 +125,6 @@ val destProj : constr -> projection * constr
 val destFix : constr -> fixpoint
 
 val destCoFix : constr -> cofixpoint
-
 
 (** {5 Derived constructors} *)
 
@@ -354,7 +282,7 @@ val strip_lam_assum : constr -> constr
     Such a term can canonically be seen as the pair of a context of types
     and of a sort *)
 
-type arity = Context.Rel.t * sorts
+type arity = Context.Rel.t * Sorts.t
 
 (** Build an "arity" from its canonical form *)
 val mkArity : arity -> types
@@ -368,7 +296,7 @@ val isArity : types -> bool
 (** {5 Kind of type} *)
 
 type ('constr, 'types) kind_of_type =
-  | SortType   of sorts
+  | SortType   of Sorts.t
   | CastType   of 'types * 'types
   | ProdType   of Name.t * 'types * 'types
   | LetInType  of Name.t * 'constr * 'types * 'types
@@ -378,23 +306,23 @@ val kind_of_type : types -> (constr, types) kind_of_type
 
 (** {5 Redeclaration of stuff from module [Sorts]} *)
 
-val set_sort  : sorts
-(** Alias for Sorts.set *)
+val set_sort  : Sorts.t
+[@@ocaml.deprecated "Alias for Sorts.set"]
 
-val prop_sort : sorts
-(** Alias for Sorts.prop *)
+val prop_sort : Sorts.t
+[@@ocaml.deprecated "Alias for Sorts.prop"]
 
-val type1_sort  : sorts
-(** Alias for Sorts.type1 *)
+val type1_sort  : Sorts.t
+[@@ocaml.deprecated "Alias for Sorts.type1"]
 
-val sorts_ord : sorts -> sorts -> int
-(** Alias for Sorts.compare *)
+val sorts_ord : Sorts.t -> Sorts.t -> int
+[@@ocaml.deprecated "Alias for Sorts.compare"]
 
-val is_prop_sort : sorts -> bool
-(** Alias for Sorts.is_prop *)
+val is_prop_sort : Sorts.t -> bool
+[@@ocaml.deprecated "Alias for Sorts.is_prop"]
 
-val family_of_sort : sorts -> sorts_family
-(** Alias for Sorts.family *)
+val family_of_sort : Sorts.t -> Sorts.family
+[@@ocaml.deprecated "Alias for Sorts.family"]
 
 (** {5 Redeclaration of stuff from module [Constr]}
 
@@ -403,90 +331,220 @@ val family_of_sort : sorts -> sorts_family
 (** {6 Term constructors. } *)
 
 val mkRel : int -> constr
+[@@ocaml.deprecated "Alias for Constr.mkRel"]
 val mkVar : Id.t -> constr
+[@@ocaml.deprecated "Alias for Constr.mkVar"]
 val mkMeta : metavariable -> constr
+[@@ocaml.deprecated "Alias for Constr.mkMeta"]
 val mkEvar : existential -> constr
-val mkSort : sorts -> types
+[@@ocaml.deprecated "Alias for Constr.mkEvar"]
+val mkSort : Sorts.t -> types
+[@@ocaml.deprecated "Alias for Constr.mkSort"]
 val mkProp : types
+[@@ocaml.deprecated "Alias for Constr.mkProp"]
 val mkSet  : types
-val mkType : Univ.universe -> types
+[@@ocaml.deprecated "Alias for Constr.mkSet"]
+val mkType : Univ.Universe.t -> types
+[@@ocaml.deprecated "Alias for Constr.mkType"]
 val mkCast : constr * cast_kind * constr -> constr
+[@@ocaml.deprecated "Alias for Constr"]
 val mkProd : Name.t * types * types -> types
+[@@ocaml.deprecated "Alias for Constr"]
 val mkLambda : Name.t * types * constr -> constr
+[@@ocaml.deprecated "Alias for Constr"]
 val mkLetIn : Name.t * constr * types * constr -> constr
+[@@ocaml.deprecated "Alias for Constr"]
 val mkApp : constr * constr array -> constr
-val mkConst : constant -> constr
+[@@ocaml.deprecated "Alias for Constr"]
+val mkConst : Constant.t -> constr
+[@@ocaml.deprecated "Alias for Constr"]
 val mkProj : projection * constr -> constr
+[@@ocaml.deprecated "Alias for Constr"]
 val mkInd : inductive -> constr
+[@@ocaml.deprecated "Alias for Constr"]
 val mkConstruct : constructor -> constr
-val mkConstU : constant puniverses -> constr
+[@@ocaml.deprecated "Alias for Constr"]
+val mkConstU : Constant.t puniverses -> constr
+[@@ocaml.deprecated "Alias for Constr"]
 val mkIndU : inductive puniverses -> constr
+[@@ocaml.deprecated "Alias for Constr"]
 val mkConstructU : constructor puniverses -> constr
+[@@ocaml.deprecated "Alias for Constr"]
 val mkConstructUi : (pinductive * int) -> constr
+[@@ocaml.deprecated "Alias for Constr"]
 val mkCase : case_info * constr * constr * constr array -> constr
+[@@ocaml.deprecated "Alias for Constr"]
 val mkFix : fixpoint -> constr
+[@@ocaml.deprecated "Alias for Constr"]
 val mkCoFix : cofixpoint -> constr
+[@@ocaml.deprecated "Alias for Constr"]
 
 (** {6 Aliases} *)
 
 val eq_constr : constr -> constr -> bool
-(** Alias for [Constr.equal] *)
+[@@ocaml.deprecated "Alias for Constr.equal"]
 
 (** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
    application grouping and the universe constraints in [u]. *)
 val eq_constr_univs : constr UGraph.check_function
+[@@ocaml.deprecated "Alias for Constr.eq_constr_univs"]
 
 (** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo 
     alpha, casts, application grouping and the universe constraints in [u]. *)
 val leq_constr_univs : constr UGraph.check_function
+[@@ocaml.deprecated "Alias for Constr.leq_constr_univs"]
 
 (** [eq_constr_univs a b] [true, c] if [a] equals [b] modulo alpha, casts,
    application grouping and ignoring universe instances. *)
 val eq_constr_nounivs : constr -> constr -> bool
+[@@ocaml.deprecated "Alias for Constr.qe_constr_nounivs"]
 
 val kind_of_term : constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term
-(** Alias for [Constr.kind] *)
+[@@ocaml.deprecated "Alias for Constr.kind"]
 
 val compare : constr -> constr -> int
-(** Alias for [Constr.compare] *)
+[@@ocaml.deprecated "Alias for [Constr.compare]"]
 
 val constr_ord : constr -> constr -> int
-(** Alias for [Term.compare] *)
+[@@ocaml.deprecated "Alias for [Term.compare]"]
 
 val fold_constr : ('a -> constr -> 'a) -> 'a -> constr -> 'a
-(** Alias for [Constr.fold] *)
+[@@ocaml.deprecated "Alias for [Constr.fold]"]
 
 val map_constr : (constr -> constr) -> constr -> constr
-(** Alias for [Constr.map] *)
+[@@ocaml.deprecated "Alias for [Constr.map]"]
 
 val map_constr_with_binders :
   ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
-(** Alias for [Constr.map_with_binders] *)
+[@@ocaml.deprecated "Alias for [Constr.map_with_binders]"]
 
 val map_puniverses : ('a -> 'b) -> 'a puniverses -> 'b puniverses
-val univ_of_sort : sorts -> Univ.universe
-val sort_of_univ : Univ.universe -> sorts
+val univ_of_sort : Sorts.t -> Univ.Universe.t
+val sort_of_univ : Univ.Universe.t -> Sorts.t
 
 val iter_constr : (constr -> unit) -> constr -> unit
-(** Alias for [Constr.iter] *)
+[@@ocaml.deprecated "Alias for [Constr.iter]"]
 
 val iter_constr_with_binders :
   ('a -> 'a) -> ('a -> constr -> unit) -> 'a -> constr -> unit
-(** Alias for [Constr.iter_with_binders] *)
+[@@ocaml.deprecated "Alias for [Constr.iter_with_binders]"]
 
 val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
-(** Alias for [Constr.compare_head] *)
+[@@ocaml.deprecated "Alias for [Constr.compare_head]"]
 
-val hash_constr : constr -> int
-(** Alias for [Constr.hash] *)
+type constr = Constr.constr
+[@@ocaml.deprecated "Alias for Constr.t"]
 
-(*********************************************************************)
+(** Alias types, for compatibility. *)
 
-val hcons_sorts : sorts -> sorts
+type types = Constr.types
+[@@ocaml.deprecated "Alias for Constr.types"]
+
+type contents = Sorts.contents = Pos | Null
+[@@ocaml.deprecated "Alias for Sorts.contents"]
+
+type sorts = Sorts.t =
+  | Prop of Sorts.contents   (** Prop and Set *)
+  | Type of Univ.Universe.t  (** Type *)
+[@@ocaml.deprecated "Alias for Sorts.t"]
+
+type sorts_family = Sorts.family = InProp | InSet | InType
+[@@ocaml.deprecated "Alias for Sorts.family"]
+
+type 'a puniverses = 'a Constr.puniverses
+[@@ocaml.deprecated "Alias for Constr.puniverses"]
+
+(** Simply type aliases *)
+type pconstant = Constr.pconstant
+[@@ocaml.deprecated "Alias for Constr.pconstant"]
+type pinductive = Constr.pinductive
+[@@ocaml.deprecated "Alias for Constr.pinductive"]
+type pconstructor = Constr.pconstructor
+[@@ocaml.deprecated "Alias for Constr.pconstructor"]
+type existential_key = Constr.existential_key
+[@@ocaml.deprecated "Alias for Constr.existential_key"]
+type existential = Constr.existential
+[@@ocaml.deprecated "Alias for Constr.existential"]
+type metavariable = Constr.metavariable
+[@@ocaml.deprecated "Alias for Constr.metavariable"]
+
+type case_style = Constr.case_style =
+  LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle
+[@@ocaml.deprecated "Alias for Constr.case_style"]
+
+type case_printing = Constr.case_printing =
+  { ind_tags : bool list; cstr_tags : bool list array; style : Constr.case_style }
+[@@ocaml.deprecated "Alias for Constr.case_printing"]
+
+type case_info = Constr.case_info =
+  { ci_ind         : inductive;
+    ci_npar        : int;
+    ci_cstr_ndecls : int array;
+    ci_cstr_nargs  : int array;
+    ci_pp_info     : Constr.case_printing
+  }
+[@@ocaml.deprecated "Alias for Constr.case_info"]
+
+type cast_kind = Constr.cast_kind =
+  VMcast | NATIVEcast | DEFAULTcast | REVERTcast
+[@@ocaml.deprecated "Alias for Constr.cast_kind"]
+
+type rec_declaration = Constr.rec_declaration
+[@@ocaml.deprecated "Alias for Constr.rec_declaration"]
+type fixpoint = Constr.fixpoint
+[@@ocaml.deprecated "Alias for Constr.fixpoint"]
+type cofixpoint = Constr.cofixpoint
+[@@ocaml.deprecated "Alias for Constr.cofixpoint"]
+type 'constr pexistential = 'constr Constr.pexistential
+[@@ocaml.deprecated "Alias for Constr.pexistential"]
+type ('constr, 'types) prec_declaration =
+  ('constr, 'types) Constr.prec_declaration
+[@@ocaml.deprecated "Alias for Constr.prec_declaration"]
+type ('constr, 'types) pfixpoint = ('constr, 'types) Constr.pfixpoint
+[@@ocaml.deprecated "Alias for Constr.pfixpoint"]
+type ('constr, 'types) pcofixpoint = ('constr, 'types) Constr.pcofixpoint
+[@@ocaml.deprecated "Alias for Constr.pcofixpoint"]
+
+type ('constr, 'types, 'sort, 'univs) kind_of_term =
+  ('constr, 'types, 'sort, 'univs) Constr.kind_of_term =
+  | Rel       of int
+  | Var       of Id.t
+  | Meta      of Constr.metavariable
+  | Evar      of 'constr Constr.pexistential
+  | Sort      of 'sort
+  | Cast      of 'constr * Constr.cast_kind * 'types
+  | Prod      of Name.t * 'types * 'types
+  | Lambda    of Name.t * 'types * 'constr
+  | LetIn     of Name.t * 'constr * 'types * 'constr
+  | App       of 'constr * 'constr array
+  | Const     of (Constant.t * 'univs)
+  | Ind       of (inductive * 'univs)
+  | Construct of (constructor * 'univs)
+  | Case      of Constr.case_info * 'constr * 'constr * 'constr array
+  | Fix       of ('constr, 'types) Constr.pfixpoint
+  | CoFix     of ('constr, 'types) Constr.pcofixpoint
+  | Proj      of projection * 'constr
+[@@ocaml.deprecated "Alias for Constr.kind_of_term"]
+
+type values = Constr.values
+[@@ocaml.deprecated "Alias for Constr.values"]
+
+val hash_constr : Constr.constr -> int
+[@@ocaml.deprecated "Alias for Constr.hash"]
+
+end
+
+include module type of struct include Public end
+
+module Internal : sig
+
+val hcons_sorts : Sorts.t -> Sorts.t
 (** Alias for [Constr.hashcons_sorts] *)
 
-val hcons_constr : constr -> constr
+val hcons_constr : Constr.constr -> Constr.constr
 (** Alias for [Constr.hashcons] *)
 
-val hcons_types : types -> types
+val hcons_types : Constr.types -> Constr.types
 (** Alias for [Constr.hashcons] *)
+
+end

@@ -21,6 +21,7 @@ open Names
 open Declarations
 open Entries
 open Term
+open Constr
 open Inductive
 open Decl_kinds
 open Indrec
@@ -407,7 +408,7 @@ let do_mutual_induction_scheme lnamedepindsort =
 let get_common_underlying_mutual_inductive = function
   | [] -> assert false
   | (id,(mind,i as ind))::l as all ->
-      match List.filter (fun (_,(mind',_)) -> not (eq_mind mind mind')) l with
+      match List.filter (fun (_,(mind',_)) -> not (MutInd.equal mind mind')) l with
       | (_,ind')::_ ->
 	  raise (RecursionSchemeError (NotMutualInScheme (ind,ind')))
       | [] ->
@@ -458,7 +459,7 @@ let build_combined_scheme env schemes =
   let find_inductive ty =
     let (ctx, arity) = decompose_prod ty in
     let (_, last) = List.hd ctx in
-      match kind_of_term last with
+      match Constr.kind last with
 	| App (ind, args) ->
 	    let ind = destInd ind in
 	    let (_,spec) = Inductive.lookup_mind_specif env (fst ind) in

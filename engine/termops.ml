@@ -12,6 +12,7 @@ open Util
 open Names
 open Nameops
 open Term
+open Constr
 open Vars
 open Environ
 
@@ -31,7 +32,7 @@ let pr_sort_family = function
   | InProp -> (str "Prop")
   | InType -> (str "Type")
 
-let pr_con sp = str(string_of_con sp)
+let pr_con sp = str(Constant.to_string sp)
 
 let pr_fix pr_constr ((t,i),(lna,tl,bl)) =
   let fixl = Array.mapi (fun i na -> (na,t.(i),tl.(i),bl.(i))) lna in
@@ -46,7 +47,7 @@ let pr_puniverses p u =
   if Univ.Instance.is_empty u then p 
   else p ++ str"(*" ++ Univ.Instance.pr Universes.pr_with_global_universes u ++ str"*)"
 
-let rec pr_constr c = match kind_of_term c with
+let rec pr_constr c = match kind c with
   | Rel n -> str "#"++int n
   | Meta n -> str "Meta(" ++ int n ++ str ")"
   | Var id -> pr_id id
@@ -71,12 +72,12 @@ let rec pr_constr c = match kind_of_term c with
       (str"(" ++ pr_constr c ++ spc() ++
        prlist_with_sep spc pr_constr (Array.to_list l) ++ str")")
   | Evar (e,l) -> hov 1
-      (str"Evar#" ++ int (Evar.repr e) ++ str"{" ++
+      (str"Evar#" ++ int (Evar.Internal.repr e) ++ str"{" ++
        prlist_with_sep spc pr_constr (Array.to_list l) ++str"}")
   | Const (c,u) -> str"Cst(" ++ pr_puniverses (pr_con c) u ++ str")"
-  | Ind ((sp,i),u) -> str"Ind(" ++ pr_puniverses (pr_mind sp ++ str"," ++ int i) u ++ str")"
+  | Ind ((sp,i),u) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str")"
   | Construct (((sp,i),j),u) ->
-      str"Constr(" ++ pr_puniverses (pr_mind sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"
+      str"Constr(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"
   | Proj (p,c) -> str"Proj(" ++ pr_con (Projection.constant p) ++ str"," ++ bool (Projection.unfolded p) ++ pr_constr c ++ str")"
   | Case (ci,p,c,bl) -> v 0
       (hv 0 (str"<"++pr_constr p++str">"++ cut() ++ str"Case " ++
@@ -798,7 +799,7 @@ let fold_constr_with_binders sigma g f n acc c =
 
 let iter_constr_with_full_binders g f l c =
   let open RelDecl in
-  match kind_of_term c with
+  match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> ()
   | Cast (c,_, t) -> f l c; f l t
@@ -983,9 +984,9 @@ let isMetaOf sigma mv c =
   match EConstr.kind sigma c with Meta mv' -> Int.equal mv mv' | _ -> false
 
 let rec subst_meta bl c =
-  match kind_of_term c with
+  match kind c with
     | Meta i -> (try Int.List.assoc i bl with Not_found -> c)
-    | _ -> map_constr (subst_meta bl) c
+    | _ -> Constr.map (subst_meta bl) c
 
 let rec strip_outer_cast sigma c = match EConstr.kind sigma c with
   | Cast (c,_,_) -> strip_outer_cast sigma c

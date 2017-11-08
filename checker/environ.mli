@@ -6,7 +6,7 @@ open Cic
 type globals = {
   env_constants : constant_body Cmap_env.t;
   env_inductives : mutual_inductive_body Mindmap_env.t;
-  env_inductives_eq : kernel_name KNmap.t;
+  env_inductives_eq : KerName.t KNmap.t;
   env_modules : module_body MPmap.t;
   env_modtypes : module_type_body MPmap.t}
 type stratification = {
@@ -34,7 +34,7 @@ val rel_context : env -> rel_context
 val lookup_rel : int -> env -> rel_declaration
 val push_rel : rel_declaration -> env -> env
 val push_rel_context : rel_context -> env -> env
-val push_rec_types : name array * constr array * 'a -> env -> env
+val push_rec_types : Name.t array * constr array * 'a -> env -> env
 
 (* Universes *)
 val universes : env -> Univ.universes
@@ -44,31 +44,31 @@ val push_context_set : ?strict:bool -> Univ.universe_context_set -> env -> env
 val check_constraints : Univ.constraints -> env -> bool
 
 (* Constants *)
-val lookup_constant : constant -> env -> Cic.constant_body
-val add_constant : constant -> Cic.constant_body -> env -> env
-val constant_type : env -> constant puniverses -> constr Univ.constrained
+val lookup_constant : Constant.t -> env -> Cic.constant_body
+val add_constant : Constant.t -> Cic.constant_body -> env -> env
+val constant_type : env -> Constant.t puniverses -> constr Univ.constrained
 type const_evaluation_result = NoBody | Opaque | IsProj
 exception NotEvaluableConst of const_evaluation_result
-val constant_value : env -> constant puniverses -> constr
-val evaluable_constant : constant -> env -> bool
+val constant_value : env -> Constant.t puniverses -> constr
+val evaluable_constant : Constant.t -> env -> bool
 
-val is_projection : constant -> env -> bool
+val is_projection : Constant.t -> env -> bool
 val lookup_projection : projection -> env -> projection_body
 
 (* Inductives *)
 val mind_equiv : env -> inductive -> inductive -> bool
 
 val lookup_mind :
-  mutual_inductive -> env -> Cic.mutual_inductive_body
+  MutInd.t -> env -> Cic.mutual_inductive_body
 
 val add_mind :
-  mutual_inductive -> Cic.mutual_inductive_body -> env -> env
+  MutInd.t -> Cic.mutual_inductive_body -> env -> env
 
 (* Modules *)
 val add_modtype :
-  module_path -> Cic.module_type_body -> env -> env
+  ModPath.t -> Cic.module_type_body -> env -> env
 val shallow_add_module :
-  module_path -> Cic.module_body -> env -> env
-val shallow_remove_module : module_path -> env -> env
-val lookup_module : module_path -> env -> Cic.module_body
-val lookup_modtype : module_path -> env -> Cic.module_type_body
+  ModPath.t -> Cic.module_body -> env -> env
+val shallow_remove_module : ModPath.t -> env -> env
+val lookup_module : ModPath.t -> env -> Cic.module_body
+val lookup_modtype : ModPath.t -> env -> Cic.module_type_body

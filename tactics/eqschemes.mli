@@ -9,7 +9,7 @@
 (** This file builds schemes relative to equality inductive types *)
 
 open Names
-open Term
+open Constr
 open Environ
 open Ind_tables
 
@@ -22,14 +22,14 @@ val rew_l2r_forward_dep_scheme_kind : individual scheme_kind
 val rew_r2l_dep_scheme_kind : individual scheme_kind
 val rew_r2l_scheme_kind : individual scheme_kind
 
-val build_r2l_rew_scheme : bool -> env -> inductive -> sorts_family -> 
+val build_r2l_rew_scheme : bool -> env -> inductive -> Sorts.family -> 
   constr Evd.in_evar_universe_context
-val build_l2r_rew_scheme : bool -> env -> inductive -> sorts_family -> 
+val build_l2r_rew_scheme : bool -> env -> inductive -> Sorts.family -> 
   constr Evd.in_evar_universe_context * Safe_typing.private_constants
 val build_r2l_forward_rew_scheme :
-  bool -> env -> inductive -> sorts_family -> constr Evd.in_evar_universe_context
+  bool -> env -> inductive -> Sorts.family -> constr Evd.in_evar_universe_context
 val build_l2r_forward_rew_scheme :
-  bool -> env -> inductive -> sorts_family -> constr Evd.in_evar_universe_context
+  bool -> env -> inductive -> Sorts.family -> constr Evd.in_evar_universe_context
 
 (** Builds a symmetry scheme for a symmetrical equality type *)
 
@@ -43,5 +43,5 @@ val sym_involutive_scheme_kind : individual scheme_kind
 (** Builds a congruence scheme for an equality type *)
 
 val congr_scheme_kind : individual scheme_kind
-val build_congr : env -> constr * constr * Univ.universe_context_set -> inductive -> 
+val build_congr : env -> constr * constr * Univ.ContextSet.t -> inductive -> 
   constr Evd.in_evar_universe_context

@@ -10,6 +10,7 @@ open Names
 open Constr
 
 (** {6 Occur checks } *)
+module Public : sig
 
 (** [closedn n M] is true iff [M] is a (de Bruijn) closed term under n binders *)
 val closedn : int -> constr -> bool
@@ -33,7 +34,7 @@ val noccur_with_meta : int -> int -> constr -> bool
 (** {6 Relocation and substitution } *)
 
 (** [exliftn el c] lifts [c] with lifting [el] *)
-val exliftn : Esubst.lift -> constr -> constr
+val exliftn : Esubst.Internal.lift -> constr -> constr
 
 (** [liftn n k c] lifts by [n] indexes above or equal to [k] in [c] *)
 val liftn : int -> int -> constr -> constr
@@ -141,8 +142,15 @@ val subst_univs_level_constr : universe_level_subst -> constr -> constr
 val subst_univs_level_context : Univ.universe_level_subst -> Context.Rel.t -> Context.Rel.t
 
 (** Instance substitution for polymorphism. *)
-val subst_instance_constr : universe_instance -> constr -> constr
-val subst_instance_context : universe_instance -> Context.Rel.t -> Context.Rel.t
+val subst_instance_constr : Instance.t -> constr -> constr
+val subst_instance_context : Instance.t -> Context.Rel.t -> Context.Rel.t
 
-type id_key = constant tableKey
+type id_key = Constant.t tableKey
 val eq_id_key : id_key -> id_key -> bool
+
+end
+
+include module type of struct include Public end
+
+module Internal : sig
+end

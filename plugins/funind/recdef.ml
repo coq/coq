@@ -10,6 +10,7 @@
 module CVars = Vars
 
 open Term
+open Constr
 open EConstr
 open Vars
 open Namegen
@@ -69,7 +70,7 @@ let declare_fun f_id kind ?(ctx=Univ.UContext.empty) value =
 let defined () = Lemmas.save_proof (Vernacexpr.(Proved (Transparent,None)))
 
 let def_of_const t =
-   match (kind_of_term t) with
+   match (Constr.kind t) with
     Const sp ->
       (try (match constant_opt_value_in (Global.env ()) sp with
              | Some c -> c
@@ -143,7 +144,7 @@ let nat = function () -> (coq_init_constant "nat")
 let iter_ref () =  
   try find_reference ["Recdef"] "iter" 
   with Not_found -> user_err Pp.(str "module Recdef not loaded")
-let iter = function () -> (constr_of_global (delayed_force iter_ref))
+let iter_rd = function () -> (constr_of_global (delayed_force iter_ref))
 let eq = function () -> (coq_init_constant "eq")
 let le_lt_SS = function () -> (constant ["Recdef"] "le_lt_SS")
 let le_lt_n_Sm = function () -> (coq_constant arith_Lt "le_lt_n_Sm")
@@ -175,8 +176,9 @@ let simpl_iter clause =
     clause
 
 (* Others ugly things ... *)
-let (value_f:Term.constr list -> global_reference -> Term.constr) =
+let (value_f: Constr.t list -> global_reference -> Constr.t) =
   let open Term in
+  let open Constr in
   fun al fterm ->
     let rev_x_id_l =
       (
@@ -207,7 +209,7 @@ let (value_f:Term.constr list -> global_reference -> Term.constr) =
     let body = fst (understand env (Evd.from_env env) glob_body)(*FIXME*) in
     it_mkLambda_or_LetIn body context
 
-let (declare_f : Id.t -> logical_kind -> Term.constr list -> global_reference -> global_reference) =
+let (declare_f : Id.t -> logical_kind -> Constr.t list -> global_reference -> global_reference) =
   fun f_id kind input_type fterm_ref ->
     declare_fun f_id kind (value_f input_type fterm_ref);;
 
@@ -1039,11 +1041,12 @@ let prove_eq = travel equation_info
 *)
 let compute_terminate_type nb_args func =
   let open Term in
+  let open Constr in
   let open CVars in
   let _,a_arrow_b,_ = destLambda(def_of_const (constr_of_global func)) in
   let rev_args,b = decompose_prod_n nb_args a_arrow_b in
   let left =
-    mkApp(delayed_force iter,
+    mkApp(delayed_force iter_rd,
 	  Array.of_list
 	    (lift 5 a_arrow_b:: mkRel 3::
 	       constr_of_global func::mkRel 1::
@@ -1460,7 +1463,7 @@ let start_equation (f:global_reference) (term_f:global_reference)
 
 let (com_eqn : int -> Id.t ->
        global_reference -> global_reference -> global_reference
-	 -> Term.constr -> unit) =
+	 -> Constr.t -> unit) =
   fun nb_arg eq_name functional_ref f_ref terminate_ref equation_lemma_type ->
     let open CVars in
     let opacity =
@@ -1514,6 +1517,7 @@ let (com_eqn : int -> Id.t ->
 let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num eq
     generate_induction_principle using_lemmas : unit =
   let open Term in
+  let open Constr in
   let open CVars in
   let env = Global.env() in
   let evd = ref (Evd.from_env env) in
@@ -1536,7 +1540,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
 (*     Pp.msgnl (str "res_var :=" ++ Printer.pr_lconstr_env (push_rel_context (List.map (function (x,t) -> (x,None,t)) res_vars) env) eq'); *)
 (*     Pp.msgnl (str "rec_arg_num := " ++ str (string_of_int rec_arg_num)); *)
 (*     Pp.msgnl (str "eq' := " ++ str (string_of_int rec_arg_num)); *)
-    match kind_of_term eq' with
+    match Constr.kind eq' with
       | App(e,[|_;_;eq_fix|]) ->
 	  mkLambda (Name function_name,function_type,subst_var function_name (compose_lam res_vars  eq_fix))
       | _ -> failwith "Recursive Definition (res not eq)"

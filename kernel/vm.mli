@@ -1,5 +1,13 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2017     *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
 open Names
-open Term
+open Constr
 open Cbytecodes
 
 (** Debug printing *)
@@ -23,7 +31,7 @@ type arguments
 type atom =
   | Aid of Vars.id_key
   | Aind of inductive
-  | Atype of Univ.universe
+  | Atype of Univ.Universe.t
 
 (** Zippers *)
 
@@ -38,7 +46,7 @@ type stack = zipper list
 type to_up
 
 type whd =
-  | Vsort of sorts
+  | Vsort of Sorts.t
   | Vprod of vprod
   | Vfun of vfun
   | Vfix of vfix * arguments option
@@ -46,7 +54,7 @@ type whd =
   | Vconstr_const of int
   | Vconstr_block of vblock
   | Vatom_stk of atom * stack
-  | Vuniv_level of Univ.universe_level
+  | Vuniv_level of Univ.Level.t
 
 (** For debugging purposes only *)
 
@@ -59,14 +67,14 @@ val pr_stack : stack -> Pp.t
 val val_of_str_const : structured_constant -> values
 val val_of_rel : int -> values
 val val_of_named : Id.t -> values
-val val_of_constant : constant -> values
+val val_of_constant : Constant.t -> values
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
 
 (** Destructors *)
 
 val whd_val : values -> whd
-val uni_lvl_val : values -> Univ.universe_level
+val uni_lvl_val : values -> Univ.Level.t
 
 (** Arguments *)
 

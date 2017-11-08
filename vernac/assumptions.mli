@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Globnames
 open Printer
 
@@ -21,11 +21,11 @@ open Printer
 val traverse :
   Label.t -> constr ->
     (Refset_env.t * Refset_env.t Refmap_env.t *
-     (label * Context.Rel.t * types) list Refmap_env.t)
+     (Label.t * Context.Rel.t * types) list Refmap_env.t)
 
 (** Collects all the assumptions (optionally including opaque definitions)
    on which a term relies (together with their type). The above warning of
    {!traverse} also applies. *)
 val assumptions :
   ?add_opaque:bool -> ?add_transparent:bool -> transparent_state ->
-     global_reference -> constr -> Term.types ContextObjectMap.t
+     global_reference -> constr -> types ContextObjectMap.t

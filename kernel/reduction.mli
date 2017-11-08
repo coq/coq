@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Term
+open Constr
 open Environ
 
 (***********************************************************************
@@ -37,7 +37,7 @@ type conv_pb = CONV | CUMUL
 
 type 'a universe_compare = 
   { (* Might raise NotConvertible *)
-    compare : env -> conv_pb -> sorts -> sorts -> 'a -> 'a;
+    compare : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
     compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
     conv_inductives : conv_pb -> (Declarations.mutual_inductive_body * int) -> Univ.Instance.t -> int ->
       Univ.Instance.t -> int -> 'a -> 'a;
@@ -51,7 +51,7 @@ type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a 
 
 type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.constraints
 
-val sort_cmp_universes : env -> conv_pb -> sorts -> sorts ->
+val sort_cmp_universes : env -> conv_pb -> Sorts.t -> Sorts.t ->
   'a * 'a universe_compare -> 'a * 'a universe_compare
 
 (* [flex] should be true for constants, false for inductive types and
@@ -115,7 +115,7 @@ val dest_lam_assum  : env -> types -> Context.Rel.t * types
 
 exception NotArity
 
-val dest_arity : env -> types -> arity (* raises NotArity if not an arity *)
+val dest_arity : env -> types -> Term.arity (* raises NotArity if not an arity *)
 val is_arity   : env -> types -> bool
 
 val warn_bytecode_compiler_failed : ?loc:Loc.t -> unit -> unit

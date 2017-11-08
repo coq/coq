@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Environ
 open Reduction
 
@@ -45,8 +45,8 @@ type ('constr, 'types) ptype_error =
   | NotAType of ('constr, 'types) punsafe_judgment
   | BadAssumption of ('constr, 'types) punsafe_judgment
   | ReferenceVariables of Id.t * 'constr
-  | ElimArity of pinductive * sorts_family list * 'constr * ('constr, 'types) punsafe_judgment
-      * (sorts_family * sorts_family * arity_error) option
+  | ElimArity of pinductive * Sorts.family list * 'constr * ('constr, 'types) punsafe_judgment
+      * (Sorts.family * Sorts.family * arity_error) option
   | CaseNotInductive of ('constr, 'types) punsafe_judgment
   | WrongCaseInfo of pinductive * case_info
   | NumberBranches of ('constr, 'types) punsafe_judgment * int
@@ -115,6 +115,7 @@ let error_ill_typed_rec_body env i lna vdefj vargs =
   raise (TypeError (env, IllTypedRecBody (i,lna,vdefj,vargs)))
 
 let error_elim_explain kp ki =
+  let open Sorts in
   match kp,ki with
   | (InType | InSet), InProp -> NonInformativeToInformative
   | InType, InSet -> StrongEliminationOnNonSmallType (* if Set impredicative *)

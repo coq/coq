@@ -33,10 +33,10 @@ type uinfo = {
 (* 2nd part used to check consistency on the fly. *)
 type t =
  { uctx_names : Univ.Level.t UNameMap.t * uinfo Univ.LMap.t;
-   uctx_local : Univ.universe_context_set; (** The local context of variables *)
+   uctx_local : Univ.ContextSet.t; (** The local context of variables *)
    uctx_univ_variables : Universes.universe_opt_subst;
    (** The local universes that are unification variables *)
-   uctx_univ_algebraic : Univ.universe_set; 
+   uctx_univ_algebraic : Univ.LSet.t; 
    (** The subset of unification variables that can be instantiated with
         algebraic universes as they appear in inferred types only. *)
    uctx_universes : UGraph.t; (** The current graph extended with the local constraints *)

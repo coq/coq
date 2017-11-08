@@ -54,13 +54,7 @@ struct
 	(priority e1.pat) - (priority e2.pat)
 end
 
-module OrderedConstr=
-struct
-  type t=Term.constr
-  let compare=Term.compare
-end
-
-type h_item = global_reference * (int*Term.constr) option
+type h_item = global_reference * (int*Constr.t) option
 
 module Hitem=
 struct
@@ -70,13 +64,13 @@ struct
     if c = 0 then
       let cmp (i1, c1) (i2, c2) =
         let c = Int.compare i1 i2 in
-        if c = 0 then OrderedConstr.compare c1 c2 else c
+        if c = 0 then Constr.compare c1 c2 else c
       in
       Option.compare cmp co1 co2
     else c
 end
 
-module CM=Map.Make(OrderedConstr)
+module CM=Map.Make(Constr)
 
 module History=Set.Make(Hitem)
 
