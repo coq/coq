@@ -59,7 +59,7 @@ Various checks for coqdoc
 \coqdocnoindent
 \coqdoceol
 \coqdocnoindent
-\coqdockw{where} \coqdef{Coqdoc.links.:type scope:x '=' x ':>' x}{"}{"}x = y :> A" := (@\coqref{Coqdoc.links.eq}{\coqdocinductive{eq}} \coqdocvariable{A} \coqdocvariable{x} \coqdocvar{y}) : \coqdocvar{type\_scope}.\coqdoceol
+\coqdockw{where} \coqdef{Coqdoc.links.:type scope:x '=' x ':>' x}{"}{"}x = y :> A" := (@\coqref{Coqdoc.links.eq}{\coqdocinductive{eq}} \coqdocvar{A} \coqdocvar{x} \coqdocvar{y}) : \coqdocvar{type\_scope}.\coqdoceol
 \coqdocemptyline
 \coqdocnoindent
 \coqdockw{Definition} \coqdef{Coqdoc.links.eq0}{eq0}{\coqdocdefinition{eq0}} := 0 \coqref{Coqdoc.links.:type scope:x '=' x ':>' x}{\coqdocnotation{=}} 0 \coqref{Coqdoc.links.:type scope:x '=' x ':>' x}{\coqdocnotation{:>}} \coqexternalref{nat}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{nat}}.\coqdoceol
