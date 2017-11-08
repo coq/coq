@@ -87,14 +87,6 @@ val verbosely : ('a -> 'b) -> 'a -> 'b
 val if_silent : ('a -> unit) -> 'a -> unit
 val if_verbose : ('a -> unit) -> 'a -> unit
 
-(* Deprecated *)
-val make_silent : bool -> unit
-[@@ocaml.deprecated "Please use Flags.quiet"]
-val is_silent : unit -> bool
-[@@ocaml.deprecated "Please use Flags.quiet"]
-val is_verbose : unit -> bool
-[@@ocaml.deprecated "Please use Flags.quiet"]
-
 (* Miscellaneus flags for vernac *)
 val make_auto_intros : bool -> unit
 val is_auto_intros : unit -> bool

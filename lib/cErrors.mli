@@ -93,14 +93,3 @@ val noncritical : exn -> bool
 (** Check whether an exception is handled by some toplevel printer. The
     [Anomaly] exception is never handled. *)
 val handled : exn -> bool
-
-(** Deprecated functions  *)
-val error : string -> 'a
- [@@ocaml.deprecated "use [user_err] instead"]
-
-val errorlabstrm : string -> Pp.t -> 'a
- [@@ocaml.deprecated "use [user_err ~hdr] instead"]
-
-val user_err_loc : Loc.t * string * Pp.t -> 'a
- [@@ocaml.deprecated "use [user_err ~loc] instead"]
-
