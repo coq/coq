@@ -3,7 +3,7 @@
 
 #### Version
 
-<!-- You can get this information by running `coqtop -v`. -->
+<!-- You can get this information by running `coqtop -v`, or `echo | coqtop` if you built from git source. -->
 
 
 #### Operating system
