@@ -26,3 +26,9 @@ Reserved Notation "%% a" (at level 70).
 Record R :=
   {g : forall {A} (a:A), a=a where "%% x" := (g x);
    k : %% 0 = eq_refl}.
+
+(* An extra example *)
+
+Module A.
+Inductive I {A:Type} := C : # 0 -> I where "# I" := (I = I) : I_scope.
+End A.

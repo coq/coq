@@ -90,3 +90,9 @@ Check fun A (x :prod' bool A) => match x with #### 0 y 0 => 2 | _ => 1 end.
 Notation "##### x" := (pair' x) (at level 0, x at level 1).
 Check ##### 0 _ 0%bool 0%bool : prod' bool bool.
 Check fun A (x :prod' bool A) => match x with ##### 0 _ y 0%bool => 2 | _ => 1 end.
+
+(* 10. Check computation of binding variable through other notations *)
+(* i should be detected as binding variable and the scopes not being checked *)
+
+Notation "'FUNNAT' i => t" := (fun i : nat => i = t) (at level 200).
+Notation "'Funnat' i => t" := (FUNNAT i => t + i%nat) (at level 200).
