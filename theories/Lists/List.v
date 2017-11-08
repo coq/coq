@@ -52,7 +52,7 @@ Section Lists.
 
   Definition tl (l:list A) :=
     match l with
-      | [] => nil
+      | [] => l
       | a :: m => m
     end.
 
@@ -2373,7 +2373,7 @@ Section Repeat.
   Variable A : Type.
   Fixpoint repeat (x : A) (n: nat ) :=
     match n with
-      | O => []
+      | O => @nil A
       | S k => x::(repeat x k)
     end.
 
