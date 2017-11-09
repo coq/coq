@@ -126,15 +126,6 @@ Open Scope boolean_if_scope.
 Delimit Scope form_scope with FORM.
 Open Scope form_scope.
 
-(* Allow overloading of the cast (x : T) syntax, put whitespace around the    *)
-(* ":" symbol to avoid lexical clashes (and for consistency with the parsing  *)
-(* precedence of the notation, which binds less tightly than application),    *)
-(* and put printing boxes that print the type of a long definition on a       *)
-(* separate line rather than force-fit it at the right margin.                *)
-Notation "x : T" := (x : T)
-  (at level 100, right associativity,
-   format "'[hv' x '/ '  :  T ']'") : core_scope.
-
 (* Allow the casual use of notations like nat * nat for explicit Type         *)
 (* declarations. Note that (nat * nat : Type) is NOT equivalent to            *)
 (* (nat * nat)%type, whose inferred type is legacy type "Set".                *)
