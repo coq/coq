@@ -1,2 +1,6 @@
 nat * nat : Type
      : Type
+0 * 0 : nat
+     : nat
+0 * 0 : Z
+     : Z

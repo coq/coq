@@ -1062,8 +1062,9 @@ let rec extern inctx ?impargs scopes vars r =
   | GGenarg arg -> CGenargGlob arg
 
   | GCast (c, k, c') ->
+    let scl = Notation.compute_glob_type_scope c' in
     let c' = extern_typ scopes vars c' in
-    let c = if isCSort c' then extern_typ scopes vars c else sub_extern true scopes vars c in
+    let c = extern true (fst scopes,(scl, snd (snd scopes))) vars c in
     CCast (c, k, c')
 
   | GInt i ->
