@@ -1097,7 +1097,11 @@ let any_any_branch =
   (* | _ => _ *)
   Loc.tag ([],[CAst.make @@ PatVar Anonymous], CAst.make @@ GHole (Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None))
 
-let rec glob_of_pat env sigma pat = CAst.make @@ match pat with
+let compute_displayed_name_in_pattern sigma avoid na c =
+  let open Namegen in
+  compute_displayed_name_in_gen (fun _ -> Patternops.noccurn_pattern) sigma avoid na c
+
+let rec glob_of_pat avoid env sigma pat = CAst.make @@ match pat with
   | PRef ref -> GRef (ref,None)
   | PVar id  -> GVar id
   | PEvar (evk,l) ->
@@ -1107,7 +1111,7 @@ let rec glob_of_pat env sigma pat = CAst.make @@ match pat with
       | None -> Id.of_string "__"
       | Some id -> id
       in
-      GEvar (id,List.map (on_snd (glob_of_pat env sigma)) l)
+      GEvar (id,List.map (on_snd (glob_of_pat avoid env sigma)) l)
   | PRel n ->
       let id = try match lookup_name_of_rel n env with
 	| Name id   -> id
@@ -1118,30 +1122,36 @@ let rec glob_of_pat env sigma pat = CAst.make @@ match pat with
   | PMeta None -> GHole (Evar_kinds.InternalHole, Misctypes.IntroAnonymous,None)
   | PMeta (Some n) -> GPatVar (Evar_kinds.FirstOrderPatVar n)
   | PProj (p,c) -> GApp (CAst.make @@ GRef (ConstRef (Projection.constant p),None),
-			 [glob_of_pat env sigma c])
+			 [glob_of_pat avoid env sigma c])
   | PApp (f,args) ->
-      GApp (glob_of_pat env sigma f,Array.map_to_list (glob_of_pat env sigma) args)
+      GApp (glob_of_pat avoid env sigma f,Array.map_to_list (glob_of_pat avoid env sigma) args)
   | PSoApp (n,args) ->
       GApp (CAst.make @@ GPatVar (Evar_kinds.SecondOrderPatVar n),
-        List.map (glob_of_pat env sigma) args)
+        List.map (glob_of_pat avoid env sigma) args)
   | PProd (na,t,c) ->
-      GProd (na,Explicit,glob_of_pat env sigma t,glob_of_pat (na::env) sigma c)
+      let na',avoid' = compute_displayed_name_in_pattern sigma avoid na c in
+      let env' = Termops.add_name na' env in
+      GProd (na',Explicit,glob_of_pat avoid env sigma t,glob_of_pat avoid' env' sigma c)
   | PLetIn (na,b,t,c) ->
-      GLetIn (na,glob_of_pat env sigma b, Option.map (glob_of_pat env sigma) t,
-              glob_of_pat (na::env) sigma c)
+      let na',avoid' = Namegen.compute_displayed_let_name_in sigma Namegen.RenamingForGoal avoid na c in
+      let env' = Termops.add_name na' env in
+      GLetIn (na',glob_of_pat avoid env sigma b, Option.map (glob_of_pat avoid env sigma) t,
+              glob_of_pat avoid' env' sigma c)
   | PLambda (na,t,c) ->
-      GLambda (na,Explicit,glob_of_pat env sigma t, glob_of_pat (na::env) sigma c)
+      let na',avoid' = compute_displayed_name_in_pattern sigma avoid na c in
+      let env' = Termops.add_name na' env in
+      GLambda (na',Explicit,glob_of_pat avoid env sigma t, glob_of_pat avoid' env' sigma c)
   | PIf (c,b1,b2) ->
-      GIf (glob_of_pat env sigma c, (Anonymous,None),
-           glob_of_pat env sigma b1, glob_of_pat env sigma b2)
+      GIf (glob_of_pat avoid env sigma c, (Anonymous,None),
+           glob_of_pat avoid env sigma b1, glob_of_pat avoid env sigma b2)
   | PCase ({cip_style=LetStyle; cip_ind_tags=None},PMeta None,tm,[(0,n,b)]) ->
-      let nal,b = it_destRLambda_or_LetIn_names n (glob_of_pat env sigma b) in
-      GLetTuple (nal,(Anonymous,None),glob_of_pat env sigma tm,b)
+      let nal,b = it_destRLambda_or_LetIn_names n (glob_of_pat avoid env sigma b) in
+      GLetTuple (nal,(Anonymous,None),glob_of_pat avoid env sigma tm,b)
   | PCase (info,p,tm,bl) ->
       let mat = match bl, info.cip_ind with
 	| [], _ -> []
 	| _, Some ind ->
-	  let bl' = List.map (fun (i,n,c) -> (i,n,glob_of_pat env sigma c)) bl in
+	  let bl' = List.map (fun (i,n,c) -> (i,n,glob_of_pat avoid env sigma c)) bl in
 	  simple_cases_matrix_of_branches ind bl'
 	| _, None -> anomaly (Pp.str "PCase with some branches but unknown inductive.")
       in
@@ -1150,16 +1160,16 @@ let rec glob_of_pat env sigma pat = CAst.make @@ match pat with
       let indnames,rtn = match p, info.cip_ind, info.cip_ind_tags with
 	| PMeta None, _, _ -> (Anonymous,None),None
 	| _, Some ind, Some nargs ->
-	  return_type_of_predicate ind nargs (glob_of_pat env sigma p)
+	  return_type_of_predicate ind nargs (glob_of_pat avoid env sigma p)
 	| _ -> anomaly (Pp.str "PCase with non-trivial predicate but unknown inductive.")
       in
-      GCases (RegularStyle,rtn,[glob_of_pat env sigma tm,indnames],mat)
-  | PFix f -> (Detyping.detype_names false [] env (Global.env()) sigma (EConstr.of_constr (mkFix f))).v (** FIXME bad env *)
-  | PCoFix c -> (Detyping.detype_names false [] env (Global.env()) sigma (EConstr.of_constr (mkCoFix c))).v
+      GCases (RegularStyle,rtn,[glob_of_pat avoid env sigma tm,indnames],mat)
+  | PFix f -> (Detyping.detype_names false avoid env (Global.env()) sigma (EConstr.of_constr (mkFix f))).v (** FIXME bad env *)
+  | PCoFix c -> (Detyping.detype_names false avoid env (Global.env()) sigma (EConstr.of_constr (mkCoFix c))).v
   | PSort s -> GSort s
 
 let extern_constr_pattern env sigma pat =
-  extern true (None,[]) Id.Set.empty (glob_of_pat env sigma pat)
+  extern true (None,[]) Id.Set.empty (glob_of_pat [] env sigma pat)
 
 let extern_rel_context where env sigma sign =
   let a = detype_rel_context where [] (names_of_rel_context env,env) sigma sign in

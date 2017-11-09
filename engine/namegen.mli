@@ -107,9 +107,14 @@ val compute_displayed_name_in :
 val compute_and_force_displayed_name_in :
   evar_map -> renaming_flags -> Id.t list -> Name.t -> constr -> Name.t * Id.t list
 val compute_displayed_let_name_in :
-  evar_map -> renaming_flags -> Id.t list -> Name.t -> constr -> Name.t * Id.t list
+  evar_map -> renaming_flags -> Id.t list -> Name.t -> 'a -> Name.t * Id.t list
 val rename_bound_vars_as_displayed :
   evar_map -> Id.t list -> Name.t list -> types -> types
+
+(* Generic function expecting a "not occurn" function *)
+val compute_displayed_name_in_gen :
+  (evar_map -> int -> 'a -> bool) ->
+  evar_map -> Id.t list -> Name.t -> 'a -> Name.t * Id.t list
 
 (**********************************************************************)
 (* Naming strategy for arguments in Prop when eliminating inductive types *)

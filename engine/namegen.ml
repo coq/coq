@@ -376,14 +376,21 @@ let next_name_for_display sigma flags =
   | RenamingElsewhereFor env_t -> next_name_away_for_default_printing sigma env_t
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
-let compute_displayed_name_in sigma flags avoid na c =
+let compute_displayed_name_in_gen_poly noccurn_fun sigma flags avoid na c =
   match na with
-  | Anonymous when noccurn sigma 1 c ->
+  | Anonymous when noccurn_fun sigma 1 c ->
     (Anonymous,avoid)
   | _ ->
     let fresh_id = next_name_for_display sigma flags na avoid in
-    let idopt = if noccurn sigma 1 c then Anonymous else Name fresh_id in
+    let idopt = if noccurn_fun sigma 1 c then Anonymous else Name fresh_id in
     (idopt, fresh_id::avoid)
+
+let compute_displayed_name_in = compute_displayed_name_in_gen_poly noccurn
+
+let compute_displayed_name_in_gen f sigma =
+  (* only flag which does not need a constr, maybe to be refined *)
+  let flag = RenamingForGoal in
+  compute_displayed_name_in_gen_poly f sigma flag
 
 let compute_and_force_displayed_name_in sigma flags avoid na c =
   match na with
