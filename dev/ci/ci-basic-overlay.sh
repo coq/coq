@@ -80,7 +80,7 @@
 # VST
 ########################################################################
 : ${VST_CI_BRANCH:=master}
-: ${VST_CI_GITURL:=https://github.com/Zimmi48/VST.git}
+: ${VST_CI_GITURL:=https://github.com/PrincetonUniversity/VST.git}
 
 ########################################################################
 # fiat_parsers
