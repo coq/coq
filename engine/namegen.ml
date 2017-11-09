@@ -132,8 +132,8 @@ let hdchar env sigma c =
     | Cast (c,_,_) | App (c,_) -> hdrec k c
     | Proj (kn,_) -> lowercase_first_char (Label.to_id (con_label (Projection.constant kn)))
     | Const (kn,_) -> lowercase_first_char (Label.to_id (con_label kn))
-    | Ind (x,_) -> lowercase_first_char (basename_of_global (IndRef x))
-    | Construct (x,_) -> lowercase_first_char (basename_of_global (ConstructRef x))
+    | Ind (x,_) -> (try lowercase_first_char (basename_of_global (IndRef x)) with Not_found when !Flags.in_debugger -> "zz")
+    | Construct (x,_) -> (try lowercase_first_char (basename_of_global (ConstructRef x)) with Not_found when !Flags.in_debugger -> "zz")
     | Var id  -> lowercase_first_char id
     | Sort s -> sort_hdchar (ESorts.kind sigma s)
     | Rel n ->
