@@ -4,7 +4,7 @@ ci_dir="$(dirname "$0")"
 
 # This script could be included inside other ones
 # Let's avoid to source ci-common twice in this case
-if [ -z "${CI_BUILD_DIR}"];
+if [ -z "${CI_BUILD_DIR}" ];
 then
     source ${ci_dir}/ci-common.sh
 fi
