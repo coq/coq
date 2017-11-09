@@ -594,11 +594,11 @@ let intern_letin_binder intern ntnvars env (({loc;v=na} as locna),def,ty) =
    (na,term,ty))
 
 let intern_cases_pattern_as_binder intern test_kind ntnvars env bk (CAst.{v=p;loc} as pv) =
-  let p,t = match p with
-  | CPatCast (p, t) -> (p, Some t)
-  | _ -> (pv, None) in
+  let p,t,tmp_scope = match p with
+  | CPatCast (p, t) -> (p, Some t, (* Redone later, not nice: *) Notation.compute_glob_type_scope (intern (set_type_scope env) t))
+  | _ -> (pv, None, []) in
   let il,disjpat =
-    let (il, subst_disjpat) = !intern_cases_pattern_fwd test_kind ntnvars (env_for_pattern (reset_tmp_scope env)) p in
+    let (il, subst_disjpat) = !intern_cases_pattern_fwd test_kind ntnvars (env_for_pattern {env with tmp_scope}) p in
     let substl,disjpat = List.split subst_disjpat in
     if not (List.for_all (fun subst -> Id.Map.equal Id.equal subst Id.Map.empty) substl) then
       user_err ?loc (str "Unsupported nested \"as\" clause.");
