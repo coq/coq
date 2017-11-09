@@ -2390,8 +2390,9 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         DAst.make ?loc @@
         GSort (intern_sort ~local_univs:env.local_univs s)
     | CCast (c1, k, c2) ->
+        let c1 = if isCSort c2 then intern_type env c1 else intern env c1 in
         DAst.make ?loc @@
-        GCast (intern env c1, k, intern_type (slide_binders env) c2)
+        GCast (c1, k, intern_type (slide_binders env) c2)
     | CArray(u,t,def,ty) ->
       DAst.make ?loc @@ GArray(intern_instance ~local_univs:env.local_univs u, Array.map (intern env) t, intern env def, intern env ty)
     )

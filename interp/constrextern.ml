@@ -1062,7 +1062,9 @@ let rec extern inctx ?impargs scopes vars r =
   | GGenarg arg -> CGenargGlob arg
 
   | GCast (c, k, c') ->
-    CCast (sub_extern true scopes vars c, k, extern_typ scopes vars c')
+    let c' = extern_typ scopes vars c' in
+    let c = if isCSort c' then extern_typ scopes vars c else sub_extern true scopes vars c in
+    CCast (c, k, c')
 
   | GInt i ->
      extern_prim_token_delimiter_if_required
