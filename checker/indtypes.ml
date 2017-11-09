@@ -564,14 +564,23 @@ let check_subtyping cumi paramsctxt env inds =
       We must produce the substitution σ : [ Var(i) -> Var (i + n) | 0 <= i < n]
       and push the constraints [ Var(n) ... Var(2n - 1) |- cst{σ} ], together
       with the cumulativity constraints [ cumul_cst ]. *)
-  let len = AUContext.size (ACumulativityInfo.univ_context cumi) in
-  let inst = Instance.of_array (Array.init len (fun i -> Level.var (i + len))) in
+  let uctx = ACumulativityInfo.univ_context cumi in
+  let len = AUContext.size uctx in
+  let inst = Instance.of_array @@ Array.init len (fun i -> Level.var (i + len)) in
+
   let other_context = ACumulativityInfo.univ_context cumi in
   let uctx_other = UContext.make (inst, AUContext.instantiate inst other_context) in
-  let cumul_context = AUContext.repr (ACumulativityInfo.subtyp_context cumi) in
-  let cumul_cst = UContext.constraints cumul_context in
+  let cumul_cst =
+    Array.fold_left_i (fun i csts var ->
+        match var with
+        | Variance.Irrelevant -> csts
+        | Variance.Covariant -> Constraint.add (Level.var i,Le,Level.var (i+len)) csts
+        | Variance.Invariant -> Constraint.add (Level.var i,Eq,Level.var (i+len)) csts)
+      Constraint.empty (ACumulativityInfo.variance cumi)
+  in
   let env = Environ.push_context uctx_other env in
   let env = Environ.add_constraints cumul_cst env in
+
   (* process individual inductive types: *)
   Array.iter (fun { mind_user_lc = lc; mind_arity = arity } ->
       match arity with

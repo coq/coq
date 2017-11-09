@@ -501,7 +501,7 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
          match univs with
          | Polymorphic_const_entry univs ->
            if cum then
-             Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context univs)
+             Cumulative_ind_entry (Univ.CumulativityInfo.from_universe_context univs)
            else
              Polymorphic_ind_entry univs
          | Monomorphic_const_entry univs ->
@@ -632,7 +632,7 @@ let definition_structure (kind,cum,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cf
         match univs with
         | Polymorphic_const_entry univs ->
           if cum then
-            Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context univs)
+            Cumulative_ind_entry (Univ.CumulativityInfo.from_universe_context univs)
           else
             Polymorphic_ind_entry univs
         | Monomorphic_const_entry univs ->

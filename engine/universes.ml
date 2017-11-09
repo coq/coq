@@ -1103,14 +1103,3 @@ let solve_constraints_system levels level_bounds level_min =
     done;
   done;
   v
-
-
-(** Operations for universe_info_ind *)
-
-(** Given a universe context representing constraints of an inductive
-    this function produces a UInfoInd.t that with the trivial subtyping relation. *)
-let univ_inf_ind_from_universe_context univcst =
-  let freshunivs = Instance.of_array
-      (Array.map (fun _ -> new_univ_level ())
-         (Instance.to_array (UContext.instance univcst)))
-  in CumulativityInfo.from_universe_context univcst freshunivs

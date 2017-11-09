@@ -694,6 +694,43 @@ let infer_inductive_subtyping_arity_constructor
   let last_contexts = Context.Rel.fold_outside infer_typ typs ~init:(env, evd, csts) in
   if not is_arity then basic_check last_contexts codom else last_contexts
 
+type ukind =
+  Global | Orig of int | New of int
+
+let make_variance uctx lmap csts =
+  let variance = Array.init (UContext.size uctx) (fun _ -> Variance.Irrelevant) in
+  let geti = Array.fold_left_i (fun i geti u -> LMap.add u i geti)
+      LMap.empty (Instance.to_array @@ UContext.instance uctx)
+  in
+  let lmap_rev = LMap.fold (fun u v lmap_rev -> LMap.add v u lmap_rev) lmap LMap.empty in
+  let analyse_univ u =
+    match LMap.find u lmap_rev with
+    | exception Not_found ->
+      begin match LMap.find u lmap with
+        | exception Not_found -> Global
+        | _ -> Orig (LMap.find u geti)
+      end
+    | uorig -> New (LMap.find uorig geti)
+  in
+  Constraint.iter (fun (l,d,r) ->
+      match analyse_univ l, analyse_univ r with
+      | Orig i, New j when Int.equal i j ->
+        begin match d with
+          | Lt -> anomaly ~label:"make_variance" Pp.(str "unexpected orig < new constraint")
+          | Eq -> variance.(i) <- Variance.sup variance.(i) Variance.Invariant
+          | Le -> variance.(i) <- Variance.sup variance.(i) Variance.Covariant
+        end
+      | New i, Orig j when Int.equal i j ->
+        begin match d with
+          | Lt -> anomaly ~label:"make_variance" Pp.(str "unexpected orig > new constraint")
+          | Eq -> variance.(i) <- Variance.sup variance.(i) Variance.Invariant
+          | Le -> anomaly ~label:"make_variance" Pp.(str "unexpected orig >= new constraint")
+        end
+      | (Global | Orig _ | New _), _ ->
+        anomaly ~label:"make_variance" Pp.(str "unexpected constraint between non copy universes")
+    ) csts;
+  variance
+
 let infer_inductive_subtyping env evd mind_ent =
   let { Entries.mind_entry_params = params;
         Entries.mind_entry_inds = entries;
@@ -706,22 +743,23 @@ let infer_inductive_subtyping env evd mind_ent =
     | Entries.Polymorphic_ind_entry _ -> ground_univs
     | Entries.Cumulative_ind_entry cumi -> 
       begin
-        let uctx = Univ.CumulativityInfo.univ_context cumi in
-        let sbsubst = Univ.CumulativityInfo.subtyping_subst cumi in
-        let dosubst = subst_univs_level_constr sbsubst in
-        let instance_other = 
-          Univ.subst_univs_level_instance sbsubst (Univ.UContext.instance uctx) 
+        let uctx = CumulativityInfo.univ_context cumi in
+        let new_levels = Array.init (UContext.size uctx) (Level.make DirPath.empty) in
+        let lmap = Array.fold_left2 (fun lmap u u' -> LMap.add u u' lmap)
+            LMap.empty (Instance.to_array @@ UContext.instance uctx) new_levels
         in
+        let dosubst = subst_univs_level_constr lmap in
+        let instance_other = Instance.of_array new_levels in
         let constraints_other = 
           Univ.subst_univs_level_constraints
-            sbsubst (Univ.UContext.constraints uctx) 
+            lmap (Univ.UContext.constraints uctx)
         in
         let uctx_other = Univ.UContext.make (instance_other, constraints_other) in
         let env = Environ.push_context uctx env in
         let env = Environ.push_context uctx_other env in
         let evd = 
-          Evd.merge_universe_context
-            evd (UState.of_context_set (Univ.ContextSet.of_context uctx_other)) 
+          Evd.merge_context_set UState.UnivRigid
+            evd (Univ.ContextSet.of_context uctx_other)
         in
         let (_, _, subtyp_constraints) =
           List.fold_left
@@ -737,12 +775,10 @@ let infer_inductive_subtyping env evd mind_ent =
                  )
                  ctxs' indentry.Entries.mind_entry_lc
             ) (env, evd, Univ.Constraint.empty) entries
-        in 
+        in
+        let variance = make_variance uctx lmap subtyp_constraints in
         Entries.Cumulative_ind_entry
           (Univ.CumulativityInfo.make 
-             (Univ.CumulativityInfo.univ_context cumi,
-              Univ.UContext.make
-                (Univ.UContext.instance (Univ.CumulativityInfo.subtyp_context cumi),
-                 subtyp_constraints)))
+             (uctx, variance))
       end
   in {mind_ent with Entries.mind_entry_universes = uinfind;}

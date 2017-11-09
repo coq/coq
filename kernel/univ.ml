@@ -911,66 +911,86 @@ end
 type abstract_universe_context = AUContext.t
 let hcons_abstract_universe_context = AUContext.hcons
 
-(** Universe info for cumulative inductive types:
-    A context of universe levels
-    with universe constraints, representing local universe variables
-    and constraints, together with a context of universe levels with
-    universe constraints, representing conditions for subtyping used
-    for inductive types.
+module Variance =
+struct
+  (** A universe position in the instance given to a cumulative
+     inductive can be the following. Note there is no Contravariant
+     case because [forall x : A, B <= forall x : A', B'] requires [A =
+     A'] as opposed to [A' <= A]. *)
+  type t = Irrelevant | Covariant | Invariant
 
-    This data structure maintains the invariant that the context for
-    subtyping constraints is exactly twice as big as the context for
-    universe constraints. *)
+  let sup x y =
+    match x, y with
+    | Irrelevant, s | s, Irrelevant -> s
+    | Invariant, _ | _, Invariant -> Invariant
+    | Covariant, Covariant -> Covariant
+
+  let pr = function
+    | Irrelevant -> str "*"
+    | Covariant -> str "+"
+    | Invariant -> str "="
+
+  let leq_constraint csts variance u u' =
+    match variance with
+    | Irrelevant -> csts
+    | Covariant -> enforce_leq_level u u' csts
+    | Invariant -> enforce_eq_level u u' csts
+
+  let eq_constraint csts variance u u' =
+    match variance with
+    | Irrelevant -> csts
+    | Covariant | Invariant -> enforce_eq_level u u' csts
+
+  let leq_constraints variance u u' csts =
+    let len = Array.length u in
+    assert (len = Array.length u' && len = Array.length variance);
+    Array.fold_left3 leq_constraint csts variance u u'
+
+  let eq_constraints variance u u' csts =
+    let len = Array.length u in
+    assert (len = Array.length u' && len = Array.length variance);
+    Array.fold_left3 eq_constraint csts variance u u'
+end
+
+(** Universe info for cumulative inductive types: A context of
+   universe levels with universe constraints, representing local
+   universe variables and constraints, together with an array of
+   Variance.t.
+
+    This data structure maintains the invariant that the variance
+   array has the same length as the universe instance. *)
 module CumulativityInfo =
 struct
-  type t = universe_context * universe_context
+  type t = universe_context * Variance.t array
 
   let make x =
-    if (Instance.length (UContext.instance (snd x))) =
-       (Instance.length (UContext.instance (fst x))) * 2 then x
+    if (Instance.length (UContext.instance (fst x))) =
+       (Array.length (snd x)) then x
     else anomaly (Pp.str "Invalid subtyping information encountered!")
 
-  let empty = (UContext.empty, UContext.empty)
-  let is_empty (univcst, subtypcst) = UContext.is_empty univcst && UContext.is_empty subtypcst
+  let empty = (UContext.empty, [||])
+  let is_empty (univs, variance) = UContext.is_empty univs && Array.is_empty variance
 
-  let halve_context ctx =
-    let len = Array.length (Instance.to_array ctx) in
-    let halflen = len / 2 in
-    (Instance.of_array (Array.sub (Instance.to_array ctx) 0 halflen),
-     Instance.of_array (Array.sub (Instance.to_array ctx) halflen halflen))
+  let pr prl (univs, variance) =
+    if UContext.is_empty univs then mt() else
+      let ppu i u =
+        let v = variance.(i) in
+        Variance.pr v ++ prl u
+      in
+      h 0 (prvecti_with_sep spc ppu (UContext.instance univs) ++ str " |= ") ++
+      h 0 (v 0 (Constraint.pr prl (UContext.constraints univs)))
 
-  let pr prl (univcst, subtypcst) =
-    if UContext.is_empty univcst then mt() else
-      let (ctx, ctx') = halve_context (UContext.instance subtypcst) in
-      (UContext.pr prl univcst) ++ fnl () ++ fnl () ++
-        h 0 (str "~@{" ++ Instance.pr prl ctx ++ str "} <= ~@{" ++ Instance.pr prl ctx' ++ str "} iff ")
-         ++ fnl () ++ h 0 (v 0 (Constraint.pr prl (UContext.constraints subtypcst)))
+  let hcons (univs, variance) = (* should variance be hconsed? *)
+    (UContext.hcons univs, variance)
 
-  let hcons (univcst, subtypcst) =
-    (UContext.hcons univcst, UContext.hcons subtypcst)
-
-  let univ_context (univcst, subtypcst) = univcst
-  let subtyp_context (univcst, subtypcst) = subtypcst
-
-  let create_trivial_subtyping ctx ctx' =
-    CArray.fold_left_i
-      (fun i cst l -> Constraint.add (l, Eq, Array.get ctx' i) cst)
-      Constraint.empty (Instance.to_array ctx)
+  let univ_context (univs, subtypcst) = univs
+  let variance (univs, variance) = variance
 
   (** This function takes a universe context representing constraints
-      of an inductive and a Instance.t of fresh universe names for the
-      subtyping (with the same length as the context in the given
-      universe context) and produces a UInfoInd.t that with the
-      trivial subtyping relation. *)
-  let from_universe_context univcst freshunivs =
-    let inst = (UContext.instance univcst) in
-    assert (Instance.length freshunivs = Instance.length inst);
-    (univcst, UContext.make (Instance.append inst freshunivs,
-                             create_trivial_subtyping inst freshunivs))
-
-  let subtyping_subst (univcst, subtypcst) =
-      let (ctx, ctx') = (halve_context (UContext.instance subtypcst))in
-      Array.fold_left2 (fun subst l1 l2 -> LMap.add l1 l2 subst) LMap.empty ctx ctx'
+     of an inductive and produces a CumulativityInfo.t with the
+     trivial subtyping relation. *)
+  let from_universe_context univs =
+    (univs, Array.init (UContext.size univs) (fun _ -> Variance.Invariant))
 
 end
 
@@ -1138,10 +1158,9 @@ let abstract_universes ctx =
   let ctx = UContext.make (instance, cstrs) in
   instance, ctx
 
-let abstract_cumulativity_info (univcst, substcst) = 
-  let instance, univcst = abstract_universes univcst in
-  let _, substcst = abstract_universes substcst in
-  (instance, (univcst, substcst))
+let abstract_cumulativity_info (univs, variance) =
+  let subst, univs = abstract_universes univs in
+  subst, (univs, variance)
 
 (** Pretty-printing *)
 

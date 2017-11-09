@@ -1003,12 +1003,42 @@ end
 
 type abstract_universe_context = AUContext.t
 
+module Variance =
+struct
+  (** A universe position in the instance given to a cumulative
+     inductive can be the following. Note there is no Contravariant
+     case because [forall x : A, B <= forall x : A', B'] requires [A =
+     A'] as opposed to [A' <= A]. *)
+  type t = Irrelevant | Covariant | Invariant
+
+  let leq_constraint csts variance u u' =
+    match variance with
+    | Irrelevant -> csts
+    | Covariant -> Constraint.add (u, Le, u') csts
+    | Invariant -> Constraint.add (u, Eq, u') csts
+
+  let eq_constraint csts variance u u' =
+    match variance with
+    | Irrelevant -> csts
+    | Covariant | Invariant -> Constraint.add (u, Eq, u') csts
+
+  let leq_constraints variance u u' csts =
+    let len = Array.length u in
+    assert (len = Array.length u' && len = Array.length variance);
+    Array.fold_left3 leq_constraint csts variance u u'
+
+  let eq_constraints variance u u' csts =
+    let len = Array.length u in
+    assert (len = Array.length u' && len = Array.length variance);
+    Array.fold_left3 eq_constraint csts variance u u'
+end
+
 module CumulativityInfo =
 struct
-  type t = universe_context * universe_context
+  type t = universe_context * Variance.t array
 
   let univ_context (univcst, subtypcst) = univcst
-  let subtyp_context (univcst, subtypcst) = subtypcst
+  let variance (univs, variance) = variance
 
 end
 

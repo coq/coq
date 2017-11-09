@@ -98,3 +98,13 @@ Section down.
     intros H f g Hfg. exact (H f g Hfg).
   Defined.
 End down.
+
+Record Arrow@{i j} := { arrow : Type@{i} -> Type@{j} }.
+
+Fail Definition arrow_lift@{i i' j j' | i' < i, j < j'}
+  : Arrow@{i j} -> Arrow@{i' j'}
+  := fun x => x.
+
+Definition arrow_lift@{i i' j j' | i' = i, j < j'}
+  : Arrow@{i j} -> Arrow@{i' j'}
+  := fun x => x.

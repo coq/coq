@@ -47,6 +47,9 @@ type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a 
 
 type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.Constraint.t
 
+val get_cumulativity_constraints : conv_pb -> Univ.ACumulativityInfo.t ->
+  Univ.Instance.t -> Univ.Instance.t -> Univ.Constraint.t
+
 val sort_cmp_universes : env -> conv_pb -> Sorts.t -> Sorts.t ->
   'a * 'a universe_compare -> 'a * 'a universe_compare
 

@@ -219,26 +219,13 @@ let convert_instances ~flex u u' (s, check) =
   (check.compare_instances ~flex u u' s, check)
 
 let get_cumulativity_constraints cv_pb cumi u u' =
-  let length_ind_instance =
-    Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)
-  in
-  let ind_subtypctx = Univ.ACumulativityInfo.subtyp_context cumi in
-  if not ((length_ind_instance = Univ.Instance.length u) &&
-          (length_ind_instance = Univ.Instance.length u')) then
-     anomaly (Pp.str "Invalid inductive subtyping encountered!")
-  else
-    let comp_cst =
-      let comp_subst = (Univ.Instance.append u u') in
-      Univ.AUContext.instantiate comp_subst ind_subtypctx
-    in
-    match cv_pb with
-    | CONV ->
-      let comp_cst' =
-        let comp_subst = (Univ.Instance.append u' u) in
-        Univ.AUContext.instantiate comp_subst ind_subtypctx
-      in
-      Univ.Constraint.union comp_cst comp_cst'
-    | CUMUL -> comp_cst
+  match cv_pb with
+  | CONV ->
+    Univ.Variance.eq_constraints (Univ.ACumulativityInfo.variance cumi)
+      u u' Univ.Constraint.empty
+  | CUMUL ->
+    Univ.Variance.leq_constraints (Univ.ACumulativityInfo.variance cumi)
+      u u' Univ.Constraint.empty
 
 let convert_inductives_gen cmp_instances cmp_cumul cv_pb (mind,ind) nargs u1 u2 s =
   match mind.Declarations.mind_universes with

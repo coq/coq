@@ -234,22 +234,32 @@ let check_subtyping_arity_constructor env (subst : constr -> constr) (arcn : typ
 (* This check produces a value of the unit type if successful or raises an anomaly if check fails. *)
 let check_subtyping cumi paramsctxt env_ar inds = 
     let numparams = Context.Rel.nhyps paramsctxt in
-    let sbsubst = CumulativityInfo.subtyping_subst cumi in
-    let dosubst = subst_univs_level_constr sbsubst in
     let uctx = CumulativityInfo.univ_context cumi in
-    let instance_other = Univ.subst_univs_level_instance sbsubst (Univ.UContext.instance uctx) in
-    let constraints_other = Univ.subst_univs_level_constraints sbsubst (Univ.UContext.constraints uctx) in
+    let new_levels = Array.init (UContext.size uctx) (Level.make DirPath.empty) in
+    let lmap = Array.fold_left2 (fun lmap u u' -> LMap.add u u' lmap)
+        LMap.empty (Instance.to_array @@ UContext.instance uctx) new_levels
+    in
+    let dosubst = subst_univs_level_constr lmap in
+    let instance_other = Instance.of_array new_levels in
+    let constraints_other = Univ.subst_univs_level_constraints lmap (Univ.UContext.constraints uctx) in
     let uctx_other = Univ.UContext.make (instance_other, constraints_other) in
     let env = Environ.push_context uctx env_ar in
     let env = Environ.push_context uctx_other env in
-    let env = push_context (CumulativityInfo.subtyp_context cumi) env in
+    let subtyp_constraints =
+      Variance.leq_constraints (CumulativityInfo.variance cumi)
+        (UContext.instance uctx) instance_other
+        Constraint.empty
+    in
+    let env = Environ.add_constraints subtyp_constraints env in
     (* process individual inductive types: *)
     Array.iter (fun (id,cn,lc,(sign,arity)) ->
       match arity with
         | RegularArity (_, full_arity, _) ->
            check_subtyping_arity_constructor env dosubst full_arity numparams true;
            Array.iter (fun cnt -> check_subtyping_arity_constructor env dosubst cnt numparams false) lc
-        | TemplateArity _ -> ()
+        | TemplateArity _ ->
+          anomaly ~label:"check_subtyping"
+            Pp.(str "template polymorphism and cumulative polymorphism are not compatible")
     ) inds
 
 (* Type-check an inductive definition. Does not check positivity
