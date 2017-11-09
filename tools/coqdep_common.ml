@@ -475,15 +475,17 @@ let mL_dependencies () =
     (List.rev !mlpackAccu)
 
 let coq_dependencies file_output =
+  let vd_sfx = ".v.d" in
   List.iter
     (fun (name,absname) ->
        let ename = escape name in
        let glob = if !option_noglob then "" else " "^ename^".glob" in
-       let out_ch =
+       let (out_fn,out_ch) =
          if file_output then
-           open_out (absname ^ ".v.d")
+           (* Coq filename can't begin with _, so can't clash *)
+           Filename.open_temp_file ~temp_dir:(Filename.dirname absname) "_tmp" vd_sfx
          else
-           stdout
+           ("" (* dummy, ignored *),stdout)
        in
        fprintf out_ch "%s%s%s %s.v.beautified: %s.v" ename !suffixe glob ename ename;
        traite_fichier_Coq !suffixe true (name ^ ".v") out_ch;
@@ -492,8 +494,20 @@ let coq_dependencies file_output =
        traite_fichier_Coq ".vio" true (name ^ ".v") out_ch;
        fprintf out_ch "\n";
        flush out_ch;
-       if out_ch != stdout then
-         close_out out_ch)
+       if out_ch != stdout then (
+         close_out out_ch;
+         let st = stat out_fn in
+         if st.st_size = 0 then
+           Sys.remove out_fn
+         else (
+           let vd_name = absname ^ vd_sfx in
+           (* OCaml manual says rename may raise exn if file exists *)
+           if Sys.file_exists vd_name then
+             Sys.remove vd_name;
+           Sys.rename out_fn vd_name
+         )
+       )
+    )
     (List.rev !vAccu)
 
 let rec suffixes = function
