@@ -145,7 +145,7 @@ let print_mutual_inductive env mind mib =
          | Monomorphic_ind _ | Polymorphic_ind _ -> str ""
          | Cumulative_ind cumi ->
            Printer.pr_cumulativity_info
-             sigma (instantiate_cumulativity_info cumi))
+             sigma (mib.mind_packets.(0).mind_typename) (instantiate_cumulativity_info cumi))
 
 let get_fields =
   let rec prodec_rec l subst c =
@@ -203,7 +203,7 @@ let print_record env mind mib =
     | Monomorphic_ind _ | Polymorphic_ind _ -> str ""
     | Cumulative_ind cumi ->
       Printer.pr_cumulativity_info
-        sigma (instantiate_cumulativity_info cumi)
+        sigma mip.mind_typename (instantiate_cumulativity_info cumi)
   )
 
 let pr_mutual_inductive_body env mind mib =

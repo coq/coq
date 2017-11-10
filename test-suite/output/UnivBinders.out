@@ -10,3 +10,12 @@ Type@{Top.8} -> Type@{v} -> Type@{u}
 (* u Top.8 v |=  *)
 
 foo is universe polymorphic
+Cumulative Record TypBox : Type@{i+1} := Build_TypBox
+  { unbox : Type@{i} }
+(* i |= 
+   
+   TypBox@{i} <= TypBox@{Top.12} iff 
+   i <= Top.12
+    *)
+
+For Build_TypBox: Argument scope is [type_scope]

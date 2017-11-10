@@ -951,11 +951,12 @@ struct
     (Instance.of_array (Array.sub (Instance.to_array ctx) 0 halflen),
      Instance.of_array (Array.sub (Instance.to_array ctx) halflen halflen))
 
-  let pr prl (univcst, subtypcst) =
+  let pr prl id (univcst, subtypcst) =
     if UContext.is_empty univcst then mt() else
       let (ctx, ctx') = halve_context (UContext.instance subtypcst) in
       (UContext.pr prl univcst) ++ fnl () ++ fnl () ++
-        h 0 (str "~@{" ++ Instance.pr prl ctx ++ str "} <= ~@{" ++ Instance.pr prl ctx' ++ str "} iff ")
+      h 0 (Names.Id.print id ++ str "@{" ++ Instance.pr prl ctx ++ str "} <= " ++
+           Names.Id.print id ++ str "@{" ++ Instance.pr prl ctx' ++ str "} iff ")
          ++ fnl () ++ h 0 (v 0 (Constraint.pr prl (UContext.constraints subtypcst)))
 
   let hcons (univcst, subtypcst) =
