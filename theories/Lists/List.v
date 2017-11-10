@@ -2110,13 +2110,13 @@ Section Exists_Forall.
       {Exists l} + {~ Exists l}.
     Proof.
       intro Pdec. induction l as [|a l' Hrec].
-      - right. now rewrite Exists_nil.
+      - right. abstract now rewrite Exists_nil.
       - destruct Hrec as [Hl'|Hl'].
         * left. now apply Exists_cons_tl.
         * destruct (Pdec a) as [Ha|Ha].
           + left. now apply Exists_cons_hd.
-          + right. now inversion_clear 1.
-    Qed.
+          + right. abstract now inversion 1.
+    Defined.
 
     Inductive Forall : list A -> Prop :=
       | Forall_nil : Forall nil
@@ -2152,9 +2152,9 @@ Section Exists_Forall.
       - destruct Hrec as [Hl'|Hl'].
         + destruct (Pdec a) as [Ha|Ha].
           * left. now apply Forall_cons.
-          * right. now inversion_clear 1.
-        + right. now inversion_clear 1.
-    Qed.
+          * right. abstract now inversion 1.
+        + right. abstract now inversion 1.
+    Defined.
 
   End One_predicate.
 
@@ -2179,6 +2179,16 @@ Section Exists_Forall.
        * now apply Exists_cons_hd.
   Qed.
 
+  Lemma neg_Forall_Exists_neg (P:A->Prop) (l:list A) :
+    (forall x:A, {P x} + { ~ P x }) ->
+    ~ Forall P l ->
+    Exists (fun x => ~ P x) l.
+  Proof.
+    intro Dec.
+    apply Exists_Forall_neg; intros.
+    destruct (Dec x); auto.
+  Qed.
+
   Lemma Forall_Exists_dec (P:A->Prop) :
     (forall x:A, {P x} + { ~ P x }) ->
     forall l:list A,
@@ -2186,9 +2196,8 @@ Section Exists_Forall.
   Proof.
     intros Pdec l.
     destruct (Forall_dec P Pdec l); [left|right]; trivial.
-    apply Exists_Forall_neg; trivial.
-    intro x. destruct (Pdec x); [now left|now right].
-  Qed.
+    now apply neg_Forall_Exists_neg.
+  Defined.
 
   Lemma Forall_impl : forall (P Q : A -> Prop), (forall a, P a -> Q a) ->
     forall l, Forall P l -> Forall Q l.
