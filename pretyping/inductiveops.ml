@@ -660,20 +660,20 @@ let control_only_guard env c =
 (* inference of subtyping condition for inductive types *)
 
 let infer_inductive_subtyping_arity_constructor
-    (env, evd, csts) (subst : constr -> constr) (arcn : types) is_arity (params : Context.Rel.t) =
+    (env, csts) (subst : constr -> constr) (arcn : types) is_arity (params : Context.Rel.t) =
   let numchecked = ref 0 in
   let numparams = Context.Rel.nhyps params in
-  let update_contexts (env, evd, csts) csts' =
-    (Environ.add_constraints csts' env, Evd.add_constraints evd csts', Univ.Constraint.union csts csts')
+  let update_contexts (env, csts) csts' =
+    (Environ.add_constraints csts' env, Univ.Constraint.union csts csts')
   in
-  let basic_check (env, evd, csts) tp =
+  let basic_check (env, csts) tp =
     let result =
       if !numchecked >= numparams then
         let csts' =
-          Reduction.infer_conv_leq ~evars:(Evd.existential_opt_value evd) env (Evd.universes evd) tp (subst tp)
-        in update_contexts (env, evd, csts) csts'
+          Reduction.infer_conv_leq env (Environ.universes env) tp (subst tp)
+        in update_contexts (env, csts) csts'
       else
-        (env, evd, csts)
+        (env, csts)
     in
     numchecked := !numchecked + 1; result
   in
@@ -682,7 +682,7 @@ let infer_inductive_subtyping_arity_constructor
      | LocalAssum (_, typ') ->
        begin
          try
-           let (env, evd, csts) = basic_check ctxs typ' in (Environ.push_rel typ env, evd, csts)
+           let (env, csts) = basic_check ctxs typ' in (Environ.push_rel typ env, csts)
          with Reduction.NotConvertible -> 
            anomaly ~label:"inference of record/inductive subtyping relation failed"
              (Pp.str "Can't infer subtyping for record/inductive type")
@@ -691,7 +691,7 @@ let infer_inductive_subtyping_arity_constructor
   in
   let arcn' = Term.it_mkProd_or_LetIn arcn params in
   let typs, codom = Reduction.dest_prod env arcn' in
-  let last_contexts = Context.Rel.fold_outside infer_typ typs ~init:(env, evd, csts) in
+  let last_contexts = Context.Rel.fold_outside infer_typ typs ~init:(env, csts) in
   if not is_arity then basic_check last_contexts codom else last_contexts
 
 type ukind =
@@ -731,7 +731,7 @@ let make_variance uctx lmap csts =
     ) csts;
   variance
 
-let infer_inductive_subtyping env evd mind_ent =
+let infer_inductive_subtyping env mind_ent =
   let { Entries.mind_entry_params = params;
         Entries.mind_entry_inds = entries;
         Entries.mind_entry_universes = ground_univs;
@@ -744,6 +744,7 @@ let infer_inductive_subtyping env evd mind_ent =
     | Entries.Cumulative_ind_entry cumi -> 
       begin
         let uctx = CumulativityInfo.univ_context cumi in
+        let env = Environ.push_context uctx env in
         let new_levels = Array.init (UContext.size uctx) (Level.make DirPath.empty) in
         let lmap = Array.fold_left2 (fun lmap u u' -> LMap.add u u' lmap)
             LMap.empty (Instance.to_array @@ UContext.instance uctx) new_levels
@@ -757,11 +758,7 @@ let infer_inductive_subtyping env evd mind_ent =
         let uctx_other = Univ.UContext.make (instance_other, constraints_other) in
         let env = Environ.push_context uctx env in
         let env = Environ.push_context uctx_other env in
-        let evd = 
-          Evd.merge_context_set UState.UnivRigid
-            evd (Univ.ContextSet.of_context uctx_other)
-        in
-        let (_, _, subtyp_constraints) =
+        let (_, subtyp_constraints) =
           List.fold_left
             (fun ctxs indentry ->
                let _, params = Typeops.infer_local_decls env params in
@@ -774,7 +771,7 @@ let infer_inductive_subtyping env evd mind_ent =
                       ctxs dosubst cons false params
                  )
                  ctxs' indentry.Entries.mind_entry_lc
-            ) (env, evd, Univ.Constraint.empty) entries
+            ) (env, Univ.Constraint.empty) entries
         in
         let variance = make_variance uctx lmap subtyp_constraints in
         Entries.Cumulative_ind_entry
