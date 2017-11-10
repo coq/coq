@@ -7,7 +7,7 @@ mathematical definitions, executable algorithms and theorems together with an
 environment for semi-interactive development of machine-checked proofs.
 
 ## Installation
-Go to the [download page](https://coq.inria.fr/download) for Windows and MacOS packages;
+Download the pre-built packages of the [latest release](https://github.com/coq/coq/releases/latest) for Windows and MacOS;
 read the [help page](https://coq.inria.fr/opam/www/using.html) on how to install Coq with OPAM;
 or refer to the [`INSTALL` file](/INSTALL) for the procedure to install from source.
 
@@ -20,9 +20,6 @@ web site at [coq.inria.fr/documentation](http://coq.inria.fr/documentation).
 There is a file named [`CHANGES`](/CHANGES) that explains the differences and the
 incompatibilities since last versions. If you upgrade Coq, please read
 it carefully.
-
-## Availability
-Coq is available from [coq.inria.fr](http://coq.inria.fr).
 
 ## The Coq Club
 The Coq Club moderated mailing list is meant to be a standard way
@@ -38,11 +35,8 @@ The topics to be discussed in the club should include:
 * theoretical questions about typed lambda-calculi which are
   closely related to Coq.
 
-For any questions/suggestions about the Coq Club, please write to
-`coq-club-request@inria.fr`.
-
 ## Bugs report
-Please report any bug in [our issue tracker](https://github.com/coq/coq/issues).
+Please report any bug / feature request in [our issue tracker](https://github.com/coq/coq/issues).
 
 To be effective, bug reports should mention the OCaml version used
 to compile and run Coq, the Coq version (`coqtop -v`), the configuration
