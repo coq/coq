@@ -423,7 +423,7 @@ let declare_structure finite ubinders univs id idbuild paramimpls params arity t
       mind_entry_universes = univs;
     }
   in
-  let mie = Inductiveops.infer_inductive_subtyping (Global.env ()) mie in
+  let mie = InferCumulativity.infer_inductive (Global.env ()) mie in
   let kn = ComInductive.declare_mutual_inductive_with_eliminations mie ubinders [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
   let cstr = (rsp,1) in

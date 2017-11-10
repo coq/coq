@@ -199,7 +199,3 @@ val type_of_inductive_knowing_conclusion :
 
 (********************)
 val control_only_guard : env -> types -> unit
-
-(* inference of subtyping condition for inductive types *)
-val infer_inductive_subtyping : Environ.env -> Entries.mutual_inductive_entry ->
-  Entries.mutual_inductive_entry

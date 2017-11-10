@@ -50,6 +50,9 @@ type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.Constrai
 val get_cumulativity_constraints : conv_pb -> Univ.ACumulativityInfo.t ->
   Univ.Instance.t -> Univ.Instance.t -> Univ.Constraint.t
 
+val inductive_cumulativity_arguments : (Declarations.mutual_inductive_body * int) -> int
+val constructor_cumulativity_arguments : (Declarations.mutual_inductive_body * int * int) -> int
+
 val sort_cmp_universes : env -> conv_pb -> Sorts.t -> Sorts.t ->
   'a * 'a universe_compare -> 'a * 'a universe_compare
 

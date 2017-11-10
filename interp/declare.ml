@@ -365,7 +365,7 @@ let infer_inductive_subtyping (pth, mind_ent) =
     begin
       let env = Global.env () in
       (* let (env'', typed_params) = Typeops.infer_local_decls env' (mind_ent.mind_entry_params) in *)
-        (pth, Inductiveops.infer_inductive_subtyping env mind_ent)
+        (pth, InferCumulativity.infer_inductive env mind_ent)
     end
 
 type inductive_obj = Dischargedhypsmap.discharged_hyps * mutual_inductive_entry
