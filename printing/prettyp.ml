@@ -78,6 +78,15 @@ let print_ref reduce ref udecl =
       in EConstr.it_mkProd_or_LetIn ccl ctx
     else typ in
   let univs = Global.universes_of_global ref in
+  let variance = match ref with
+    | VarRef _ | ConstRef _ -> None
+    | IndRef (ind,_) | ConstructRef ((ind,_),_) ->
+      let mind = Environ.lookup_mind ind (Global.env ()) in
+      begin match mind.Declarations.mind_universes with
+        | Declarations.Monomorphic_ind _ | Declarations.Polymorphic_ind _ -> None
+        | Declarations.Cumulative_ind cumi -> Some (Univ.ACumulativityInfo.variance cumi)
+      end
+  in
   let inst = Univ.AUContext.instance univs in
   let univs = Univ.UContext.make (inst, Univ.AUContext.instantiate inst univs) in
   let env = Global.env () in
@@ -89,7 +98,7 @@ let print_ref reduce ref udecl =
     else mt ()
   in
   hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_letype_env env sigma typ ++ 
-  	   Printer.pr_universe_ctx sigma univs)
+           Printer.pr_universe_ctx sigma ?variance univs)
 
 (********************************)
 (** Printing implicit arguments *)
