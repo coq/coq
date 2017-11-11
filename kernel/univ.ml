@@ -712,7 +712,48 @@ type universe_level_subst = universe_level universe_map
 (** A full substitution might involve algebraic universes *)
 type universe_subst = universe universe_map
 
-module Instance : sig 
+module Variance =
+struct
+  (** A universe position in the instance given to a cumulative
+     inductive can be the following. Note there is no Contravariant
+     case because [forall x : A, B <= forall x : A', B'] requires [A =
+     A'] as opposed to [A' <= A]. *)
+  type t = Irrelevant | Covariant | Invariant
+
+  let sup x y =
+    match x, y with
+    | Irrelevant, s | s, Irrelevant -> s
+    | Invariant, _ | _, Invariant -> Invariant
+    | Covariant, Covariant -> Covariant
+
+  let pr = function
+    | Irrelevant -> str "*"
+    | Covariant -> str "+"
+    | Invariant -> str "="
+
+  let leq_constraint csts variance u u' =
+    match variance with
+    | Irrelevant -> csts
+    | Covariant -> enforce_leq_level u u' csts
+    | Invariant -> enforce_eq_level u u' csts
+
+  let eq_constraint csts variance u u' =
+    match variance with
+    | Irrelevant -> csts
+    | Covariant | Invariant -> enforce_eq_level u u' csts
+
+  let leq_constraints variance u u' csts =
+    let len = Array.length u in
+    assert (len = Array.length u' && len = Array.length variance);
+    Array.fold_left3 leq_constraint csts variance u u'
+
+  let eq_constraints variance u u' csts =
+    let len = Array.length u in
+    assert (len = Array.length u' && len = Array.length variance);
+    Array.fold_left3 eq_constraint csts variance u u'
+end
+
+module Instance : sig
     type t = Level.t array
 
     val empty : t
@@ -732,7 +773,7 @@ module Instance : sig
 
     val subst_fn : universe_level_subst_fn -> t -> t
     
-    val pr : (Level.t -> Pp.t) -> t -> Pp.t
+    val pr : (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
     val levels : t -> LSet.t
 end = 
 struct
@@ -808,8 +849,12 @@ struct
 
   let levels x = LSet.of_array x
 
-  let pr =
-    prvect_with_sep spc
+  let pr prl ?variance =
+    let ppu i u =
+      let v = Option.map (fun v -> v.(i)) variance in
+      pr_opt_no_spc Variance.pr v ++ prl u
+    in
+    prvecti_with_sep spc ppu
 
   let equal t u = 
     t == u ||
@@ -873,9 +918,9 @@ struct
   let empty = (Instance.empty, Constraint.empty)
   let is_empty (univs, cst) = Instance.is_empty univs && Constraint.is_empty cst
 
-  let pr prl (univs, cst as ctx) =
+  let pr prl ?variance (univs, cst as ctx) =
     if is_empty ctx then mt() else
-      h 0 (Instance.pr prl univs ++ str " |= ") ++ h 0 (v 0 (Constraint.pr prl cst))
+      h 0 (Instance.pr prl ?variance univs ++ str " |= ") ++ h 0 (v 0 (Constraint.pr prl cst))
 
   let hcons (univs, cst) =
     (Instance.hcons univs, hcons_constraints cst)
@@ -911,47 +956,6 @@ end
 type abstract_universe_context = AUContext.t
 let hcons_abstract_universe_context = AUContext.hcons
 
-module Variance =
-struct
-  (** A universe position in the instance given to a cumulative
-     inductive can be the following. Note there is no Contravariant
-     case because [forall x : A, B <= forall x : A', B'] requires [A =
-     A'] as opposed to [A' <= A]. *)
-  type t = Irrelevant | Covariant | Invariant
-
-  let sup x y =
-    match x, y with
-    | Irrelevant, s | s, Irrelevant -> s
-    | Invariant, _ | _, Invariant -> Invariant
-    | Covariant, Covariant -> Covariant
-
-  let pr = function
-    | Irrelevant -> str "*"
-    | Covariant -> str "+"
-    | Invariant -> str "="
-
-  let leq_constraint csts variance u u' =
-    match variance with
-    | Irrelevant -> csts
-    | Covariant -> enforce_leq_level u u' csts
-    | Invariant -> enforce_eq_level u u' csts
-
-  let eq_constraint csts variance u u' =
-    match variance with
-    | Irrelevant -> csts
-    | Covariant | Invariant -> enforce_eq_level u u' csts
-
-  let leq_constraints variance u u' csts =
-    let len = Array.length u in
-    assert (len = Array.length u' && len = Array.length variance);
-    Array.fold_left3 leq_constraint csts variance u u'
-
-  let eq_constraints variance u u' csts =
-    let len = Array.length u in
-    assert (len = Array.length u' && len = Array.length variance);
-    Array.fold_left3 eq_constraint csts variance u u'
-end
-
 (** Universe info for cumulative inductive types: A context of
    universe levels with universe constraints, representing local
    universe variables and constraints, together with an array of
@@ -972,13 +976,7 @@ struct
   let is_empty (univs, variance) = UContext.is_empty univs && Array.is_empty variance
 
   let pr prl (univs, variance) =
-    if UContext.is_empty univs then mt() else
-      let ppu i u =
-        let v = variance.(i) in
-        Variance.pr v ++ prl u
-      in
-      h 0 (prvecti_with_sep spc ppu (UContext.instance univs) ++ str " |= ") ++
-      h 0 (v 0 (Constraint.pr prl (UContext.constraints univs)))
+    UContext.pr prl ~variance univs
 
   let hcons (univs, variance) = (* should variance be hconsed? *)
     (UContext.hcons univs, variance)
@@ -991,6 +989,9 @@ struct
      trivial subtyping relation. *)
   let from_universe_context univs =
     (univs, Array.init (UContext.size univs) (fun _ -> Variance.Invariant))
+
+  let leq_constraints (_,variance) u u' csts = Variance.leq_constraints variance u u' csts
+  let eq_constraints (_,variance) u u' csts = Variance.eq_constraints variance u u' csts
 
 end
 

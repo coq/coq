@@ -246,7 +246,7 @@ let check_subtyping cumi paramsctxt env_ar inds =
     let env = Environ.push_context uctx env_ar in
     let env = Environ.push_context uctx_other env in
     let subtyp_constraints =
-      Variance.leq_constraints (CumulativityInfo.variance cumi)
+      CumulativityInfo.leq_constraints cumi
         (UContext.instance uctx) instance_other
         Constraint.empty
     in
