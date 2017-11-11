@@ -172,7 +172,7 @@ COQDOCFLAGS?=-interpolate -utf8 $(COQLIBS_NOML)
 
 # The version of Coq being run and the version of coq_makefile that
 # generated this makefile
-COQ_VERSION:=$(shell $(COQC) --print-version | cut -d ' ' -f 1)
+COQ_VERSION:=$(shell $(COQC) --print-version | cut -d " " -f 1)
 COQMAKEFILE_VERSION:=@COQ_VERSION@
 
 COQSRCLIBS?= $(foreach d,$(COQ_SRC_SUBDIRS), -I "$(COQLIB)$(d)")
