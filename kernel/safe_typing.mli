@@ -69,7 +69,7 @@ val inline_private_constants_in_constr :
 val inline_private_constants_in_definition_entry :
   Environ.env -> private_constants Entries.definition_entry -> unit Entries.definition_entry
 
-val universes_of_private : private_constants -> Univ.universe_context_set list
+val universes_of_private : private_constants -> Univ.ContextSet.t list
 
 val is_curmod_library : safe_environment -> bool
 
@@ -84,13 +84,13 @@ val is_joined_environment : safe_environment -> bool
 (** Insertion of local declarations (Local or Variables) *)
 
 val push_named_assum :
-  (Id.t * Term.types * bool (* polymorphic *))
+  (Id.t * Constr.types * bool (* polymorphic *))
     Univ.in_universe_context_set -> safe_transformer0
 
 (** Returns the full universe context necessary to typecheck the definition
   (futures are forced) *)
 val push_named_def :
-  Id.t * private_constants Entries.definition_entry -> Univ.universe_context_set safe_transformer
+  Id.t * private_constants Entries.definition_entry -> Univ.ContextSet.t safe_transformer
 
 (** Insertion of global axioms or definitions *)
 
@@ -133,10 +133,10 @@ val add_modtype :
 (** Adding universe constraints *)
 
 val push_context_set :
-  bool -> Univ.universe_context_set -> safe_transformer0
+  bool -> Univ.ContextSet.t -> safe_transformer0
 
 val push_context :
-  bool -> Univ.universe_context -> safe_transformer0
+  bool -> Univ.UContext.t -> safe_transformer0
 
 val add_constraints :
   Univ.constraints -> safe_transformer0
@@ -194,18 +194,18 @@ val export :
     ModPath.t * compiled_library * native_library
 
 (* Constraints are non empty iff the file is a vi2vo *)
-val import : compiled_library -> Univ.universe_context_set -> vodigest ->
+val import : compiled_library -> Univ.ContextSet.t -> vodigest ->
   ModPath.t safe_transformer
 
 (** {6 Safe typing judgments } *)
 
 type judgment
 
-val j_val : judgment -> Term.constr
-val j_type : judgment -> Term.constr
+val j_val : judgment -> Constr.constr
+val j_type : judgment -> Constr.constr
 
 (** The safe typing of a term returns a typing judgment. *)
-val typing : safe_environment -> Term.constr -> judgment
+val typing : safe_environment -> Constr.constr -> judgment
 
 (** {6 Queries } *)
 
@@ -221,7 +221,7 @@ open Retroknowledge
 val retroknowledge : (retroknowledge-> 'a) -> safe_environment -> 'a
 
 val register :
-  field -> Retroknowledge.entry -> Term.constr -> safe_transformer0
+  field -> Retroknowledge.entry -> Constr.constr -> safe_transformer0
 
 val register_inline : Constant.t -> safe_transformer0
 

@@ -6,9 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Term
-open EConstr
 open Names
+open Constr
+open EConstr
 open Globnames
 
 type tactic = unit Proofview.tactic

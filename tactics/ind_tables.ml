@@ -17,7 +17,7 @@ open Mod_subst
 open Libobject
 open Nameops
 open Declarations
-open Term
+open Constr
 open CErrors
 open Util
 open Declare

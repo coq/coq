@@ -165,8 +165,8 @@ val subst_scope_class :
 val declare_scope_class : scope_name -> scope_class -> unit
 val declare_ref_arguments_scope : global_reference -> unit
 
-val compute_arguments_scope : Term.types -> scope_name option list
-val compute_type_scope : Term.types -> scope_name option
+val compute_arguments_scope : Constr.types -> scope_name option list
+val compute_type_scope : Constr.types -> scope_name option
 
 (** Get the current scope bound to Sortclass, if it exists *)
 val current_type_scope_name : unit -> scope_name option

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Environ
 
 (** This module is about the computation of an approximation of the

@@ -15,7 +15,7 @@ open Names
 open Libnames
 open Globnames
 open Nameops
-open Term
+open Constr
 open Declarations
 open Entries
 open Libobject
@@ -440,7 +440,7 @@ let assumption_message id =
 
 (** Global universe names, in a different summary *)
 
-type universe_context_decl = polymorphic * Univ.universe_context_set
+type universe_context_decl = polymorphic * Univ.ContextSet.t
 
 let cache_universe_context (p, ctx) =
   Global.push_context_set p ctx;
@@ -458,7 +458,7 @@ let declare_universe_context poly ctx =
   Lib.add_anonymous_leaf (input_universe_context (poly, ctx))
 
 (* Discharged or not *)
-type universe_decl = polymorphic * (Id.t * Univ.universe_level) list
+type universe_decl = polymorphic * (Id.t * Univ.Level.t) list
 
 let cache_universes (p, l) =
   let glob = Global.global_universe_names () in

@@ -13,7 +13,7 @@ open CErrors
 open Util
 open Names
 open Nameops
-open Term
+open Constr
 open Termops
 open Environ
 open EConstr
@@ -1014,7 +1014,7 @@ let adjust_impossible_cases pb pred tomatch submat =
         this means that the Evd.define below may redefine an already defined
         evar. See e.g. first definition of test for bug #3388. *)
     let pred = EConstr.Unsafe.to_constr pred in
-    begin match kind_of_term pred with
+    begin match Constr.kind pred with
     | Evar (evk,_) when snd (evar_source evk !(pb.evdref)) == Evar_kinds.ImpossibleCase ->
         if not (Evd.is_defined !(pb.evdref) evk) then begin
 	  let evd, default = use_unit_judge !(pb.evdref) in

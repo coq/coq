@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 
 (** This module defines the internal representation of global
    declarations. This includes global constants/axioms, mutual
@@ -28,8 +28,8 @@ type engagement = set_predicativity
 *)
 
 type template_arity = {
-  template_param_levels : Univ.universe_level option list;
-  template_level : Univ.universe;
+  template_param_levels : Univ.Level.t option list;
+  template_level : Univ.Universe.t;
 }
 
 type ('a, 'b) declaration_arity = 
@@ -63,8 +63,8 @@ type constant_def =
   | OpaqueDef of Opaqueproof.opaque       (** or an opaque global definition *)
 
 type constant_universes =
-  | Monomorphic_const of Univ.universe_context
-  | Polymorphic_const of Univ.abstract_universe_context
+  | Monomorphic_const of Univ.UContext.t
+  | Polymorphic_const of Univ.AUContext.t
 
 (** The [typing_flags] are instructions to the type-checker which
     modify its behaviour. The typing flags used in the type-checking
@@ -119,7 +119,7 @@ type record_body = (Id.t * Constant.t array * projection_body array) option
 
 type regular_inductive_arity = {
   mind_user_arity : types;
-  mind_sort : sorts;
+  mind_sort : Sorts.t;
 }
 
 type inductive_arity = (regular_inductive_arity, template_arity) declaration_arity
@@ -146,7 +146,7 @@ type one_inductive_body = {
 
     mind_nrealdecls : int; (** Length of realargs context (with let, no params) *)
 
-    mind_kelim : sorts_family list; (** List of allowed elimination sorts *)
+    mind_kelim : Sorts.family list; (** List of allowed elimination sorts *)
 
     mind_nf_lc : types array; (** Head normalized constructor types so that their conclusion exposes the inductive type *)
 
@@ -168,9 +168,9 @@ type one_inductive_body = {
   }
 
 type abstract_inductive_universes =
-  | Monomorphic_ind of Univ.universe_context
-  | Polymorphic_ind of Univ.abstract_universe_context
-  | Cumulative_ind of Univ.abstract_cumulativity_info
+  | Monomorphic_ind of Univ.UContext.t
+  | Polymorphic_ind of Univ.AUContext.t
+  | Cumulative_ind  of Univ.ACumulativityInfo.t
 
 type mutual_inductive_body = {
 

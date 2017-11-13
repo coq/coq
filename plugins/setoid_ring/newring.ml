@@ -10,7 +10,7 @@ open Ltac_plugin
 open Pp
 open Util
 open Names
-open Term
+open Constr
 open EConstr
 open Vars
 open CClosure
@@ -58,13 +58,13 @@ let rec mk_clos_but f_map subs t =
   match f_map (global_of_constr_nofail t) with
     | Some map -> tag_arg (mk_clos_but f_map subs) map subs (-1) t
     | None ->
-        (match kind_of_term t with
+        (match Constr.kind t with
             App(f,args) -> mk_clos_app_but f_map subs f args 0
           | Prod _ -> mk_clos_deep (mk_clos_but f_map) subs t
           | _ -> mk_atom t)
 
 and mk_clos_app_but f_map subs f args n =
-  let open Term in
+  let open Constr in
   if n >= Array.length args then mk_atom(mkApp(f, args))
   else
     let fargs, args' = Array.chop n args in
@@ -151,7 +151,7 @@ let ic_unsafe c = (*FIXME remove *)
     EConstr.of_constr (fst (Constrintern.interp_constr env sigma c))
 
 let decl_constant na ctx c =
-  let open Term in
+  let open Constr in
   let vars = Univops.universes_of_constr c in
   let ctx = Univops.restrict_universe_context (Univ.ContextSet.of_context ctx) vars in
   mkConst(declare_constant (Id.of_string na) 
@@ -346,11 +346,7 @@ let _ = add_map "ring"
 
 let pr_constr c = pr_econstr c
 
-module M = struct
-  type t = Term.constr
-  let compare = Term.compare
-end
-module Cmap = Map.Make(M)
+module Cmap = Map.Make(Constr)
 
 let from_carrier = Summary.ref Cmap.empty ~name:"ring-tac-carrier-table"
 let from_name = Summary.ref Spmap.empty ~name:"ring-tac-name-table"
@@ -395,7 +391,7 @@ let subst_th (subst,th) =
   let posttac'= Tacsubst.subst_tactic subst th.ring_post_tac in
   if c' == th.ring_carrier &&
      eq' == th.ring_req &&
-     Term.eq_constr set' th.ring_setoid &&
+     Constr.equal set' th.ring_setoid &&
      ext' == th.ring_ext &&
      morph' == th.ring_morph &&
      th' == th.ring_th &&
@@ -933,7 +929,7 @@ let field_equality evd r inv req =
 	  inv_m_lem
 
 let add_field_theory0 name fth eqth morphth cst_tac inj (pre,post) power sign odiv =
-  let open Term in
+  let open Constr in
   check_required_library (cdir@["Field_tac"]);
   let (sigma,fth) = ic fth in
   let env = Global.env() in

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Miniml
-open Term
+open Constr
 open Declarations
 open Names
 open ModPath
@@ -138,7 +138,7 @@ let check_arity env cb =
 let check_fix env cb i =
   match cb.const_body with
     | Def lbody ->
-	(match kind_of_term (Mod_subst.force_constr lbody) with
+	(match Constr.kind (Mod_subst.force_constr lbody) with
 	  | Fix ((_,j),recd) when Int.equal i j -> check_arity env cb; (true,recd)
 	  | CoFix (j,recd) when Int.equal i j -> check_arity env cb; (false,recd)
 	  | _ -> raise Impossible)
@@ -146,8 +146,8 @@ let check_fix env cb i =
 
 let prec_declaration_equal (na1, ca1, ta1) (na2, ca2, ta2) =
   Array.equal Name.equal na1 na2 &&
-  Array.equal eq_constr ca1 ca2 &&
-  Array.equal eq_constr ta1 ta2
+  Array.equal Constr.equal ca1 ca2 &&
+  Array.equal Constr.equal ta1 ta2
 
 let factor_fix env l cb msb =
   let _,recd as check = check_fix env cb 0 in

@@ -28,13 +28,13 @@ val is_empty : t -> bool
 
 val union : t -> t -> t
 
-val of_context_set : Univ.universe_context_set -> t
+val of_context_set : Univ.ContextSet.t -> t
 
 val of_binders : Universes.universe_binders -> t
 
 (** {5 Projections} *)
 
-val context_set : t -> Univ.universe_context_set
+val context_set : t -> Univ.ContextSet.t
 (** The local context of the state, i.e. a set of bound variables together
     with their associated constraints. *)
 
@@ -54,7 +54,7 @@ val algebraics : t -> Univ.LSet.t
 val constraints : t -> Univ.constraints
 (** Shorthand for {!context_set} composed with {!ContextSet.constraints}. *)
 
-val context : t -> Univ.universe_context
+val context : t -> Univ.UContext.t
 (** Shorthand for {!context_set} with {!Context_set.to_context}. *)
 
 (** {5 Constraints handling} *)
@@ -79,7 +79,7 @@ val universe_of_name : t -> string -> Univ.Level.t
 
 (** {5 Unification} *)
 
-val restrict : t -> Univ.universe_set -> t
+val restrict : t -> Univ.LSet.t -> t
 
 type rigid = 
   | UnivRigid
@@ -89,7 +89,7 @@ val univ_rigid : rigid
 val univ_flexible : rigid
 val univ_flexible_alg : rigid
 
-val merge : ?loc:Loc.t -> bool -> rigid -> t -> Univ.universe_context_set -> t
+val merge : ?loc:Loc.t -> bool -> rigid -> t -> Univ.ContextSet.t -> t
 val merge_subst : t -> Universes.universe_opt_subst -> t
 val emit_side_effects : Safe_typing.private_constants -> t -> t
 
@@ -130,12 +130,12 @@ val normalize : t -> t
     Also return the association list of universe names and universes
     (including those not in [names]). *)
 val universe_context : names:(Id.t Loc.located) list -> extensible:bool -> t ->
-  (Id.t * Univ.Level.t) list * Univ.universe_context
+  (Id.t * Univ.Level.t) list * Univ.UContext.t
 
 type universe_decl =
   (Names.Id.t Loc.located list, Univ.Constraint.t) Misctypes.gen_universe_decl
 
-val check_univ_decl : t -> universe_decl -> Universes.universe_binders * Univ.universe_context
+val check_univ_decl : t -> universe_decl -> Universes.universe_binders * Univ.UContext.t
 
 (** {5 TODO: Document me} *)
 

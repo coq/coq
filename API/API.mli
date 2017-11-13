@@ -553,6 +553,17 @@ sig
      | CoFix     of ('constr, 'types) pcofixpoint
      | Proj      of Projection.t * 'constr
 
+  val kind : constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term
+  val of_kind : (constr, types, Sorts.t, Univ.Instance.t) kind_of_term -> constr
+
+val map_with_binders :
+  ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
+val map : (constr -> constr) -> constr -> constr
+
+val fold : ('a -> constr -> 'a) -> 'a -> constr -> 'a
+val iter : (constr -> unit) -> constr -> unit
+val compare_head : (constr -> constr -> bool) -> constr -> constr -> bool
+
   val equal : t -> t -> bool
   val eq_constr_nounivs : t -> t -> bool
   val compare : t -> t -> int

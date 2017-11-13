@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Environ
 open EConstr
 open Evd
@@ -26,7 +26,7 @@ val type_of : ?refresh:bool -> env -> evar_map -> constr -> evar_map * types
 val e_type_of : ?refresh:bool -> env -> evar_map ref -> constr -> types
 
 (** Typecheck a type and return its sort *)
-val e_sort_of : env -> evar_map ref -> types -> sorts
+val e_sort_of : env -> evar_map ref -> types -> Sorts.t
 
 (** Typecheck a term has a given type (assuming the type is OK) *)
 val e_check   : env -> evar_map ref -> constr -> types -> unit

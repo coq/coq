@@ -13,6 +13,7 @@ open CErrors
 open Util
 open Pp
 open Term
+open Constr
 open Vars
 open Termops
 open Declarations
@@ -532,7 +533,7 @@ let eqI ind l =
     try let c, eff = find_scheme beq_scheme_kind ind in mkConst c, eff 
     with Not_found -> user_err ~hdr:"AutoIndDecl.eqI"
       (str "The boolean equality on " ++ MutInd.print (fst ind) ++ str " is needed.");
-  in (if Array.equal Term.eq_constr eA [||] then e else mkApp(e,eA)), eff
+  in (if Array.equal Constr.equal eA [||] then e else mkApp(e,eA)), eff
 
 (**********************************************************************)
 (* Boolean->Leibniz *)

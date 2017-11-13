@@ -8,7 +8,7 @@
 
 open Util
 open Names
-open Term
+open Constr
 open Mod_subst
 
 (** {6 Global reference is a kernel side type for all references together } *)

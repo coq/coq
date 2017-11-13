@@ -7,9 +7,9 @@
 (************************************************************************)
 
 open Names
-open Term
-open Declarations
 open Univ
+open Constr
+open Declarations
 
 (** Unsafe environments. We define here a datatype for environments.
    Since typing is not yet defined, it is not possible to check the
@@ -157,7 +157,7 @@ val constant_value_and_type : env -> Constant.t puniverses ->
   constr option * types * Univ.constraints
 (** The universe context associated to the constant, empty if not 
     polymorphic *)
-val constant_context : env -> Constant.t -> Univ.abstract_universe_context
+val constant_context : env -> Constant.t -> Univ.AUContext.t
 
 (* These functions should be called under the invariant that [env] 
    already contains the constraints corresponding to the constant 
@@ -207,8 +207,8 @@ val add_constraints : Univ.constraints -> env -> env
 
 (** Check constraints are satifiable in the environment. *)
 val check_constraints : Univ.constraints -> env -> bool
-val push_context : ?strict:bool -> Univ.universe_context -> env -> env
-val push_context_set : ?strict:bool -> Univ.universe_context_set -> env -> env
+val push_context : ?strict:bool -> Univ.UContext.t -> env -> env
+val push_context_set : ?strict:bool -> Univ.ContextSet.t -> env -> env
 val push_constraints_to_env : 'a Univ.constrained -> env -> env
 
 val set_engagement : engagement -> env -> env
@@ -247,7 +247,7 @@ val j_type : ('constr, 'types) punsafe_judgment -> 'types
 
 type 'types punsafe_type_judgment = {
   utj_val : 'types;
-  utj_type : sorts }
+  utj_type : Sorts.t }
 
 type unsafe_type_judgment = types punsafe_type_judgment
 

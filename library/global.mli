@@ -32,7 +32,7 @@ val set_typing_flags : Declarations.typing_flags -> unit
 (** Variables, Local definitions, constants, inductive types *)
 
 val push_named_assum : (Id.t * Constr.types * bool) Univ.in_universe_context_set -> unit
-val push_named_def   : (Id.t * Safe_typing.private_constants Entries.definition_entry) -> Univ.universe_context_set
+val push_named_def   : (Id.t * Safe_typing.private_constants Entries.definition_entry) -> Univ.ContextSet.t
 
 val export_private_constants : in_section:bool ->
   Safe_typing.private_constants Entries.constant_entry ->
@@ -46,8 +46,8 @@ val add_mind :
 (** Extra universe constraints *)
 val add_constraints : Univ.constraints -> unit
 
-val push_context : bool -> Univ.universe_context -> unit
-val push_context_set : bool -> Univ.universe_context_set -> unit
+val push_context : bool -> Univ.UContext.t -> unit
+val push_context_set : bool -> Univ.ContextSet.t -> unit
 
 (** Non-interactive modules and module types *)
 
@@ -93,18 +93,18 @@ val mind_of_delta_kn : KerName.t -> MutInd.t
 
 val opaque_tables : unit -> Opaqueproof.opaquetab
 
-val body_of_constant : Constant.t -> (Term.constr * Univ.AUContext.t) option
+val body_of_constant : Constant.t -> (Constr.constr * Univ.AUContext.t) option
 (** Returns the body of the constant if it has any, and the polymorphic context
     it lives in. For monomorphic constant, the latter is empty, and for
     polymorphic constants, the term contains De Bruijn universe variables that
     need to be instantiated. *)
 
-val body_of_constant_body : Declarations.constant_body -> (Term.constr * Univ.AUContext.t) option
+val body_of_constant_body : Declarations.constant_body -> (Constr.constr * Univ.AUContext.t) option
 (** Same as {!body_of_constant} but on {!Declarations.constant_body}. *)
 
 (** Global universe name <-> level mapping *)
 type universe_names = 
-  (Decl_kinds.polymorphic * Univ.universe_level) Id.Map.t * Id.t Univ.LMap.t
+  (Decl_kinds.polymorphic * Univ.Level.t) Id.Map.t * Id.t Univ.LMap.t
 
 val global_universe_names : unit -> universe_names
 val set_global_universe_names : universe_names -> unit
@@ -115,7 +115,7 @@ val start_library : DirPath.t -> ModPath.t
 val export : ?except:Future.UUIDSet.t -> DirPath.t ->
   ModPath.t * Safe_typing.compiled_library * Safe_typing.native_library
 val import :
-  Safe_typing.compiled_library -> Univ.universe_context_set -> Safe_typing.vodigest ->
+  Safe_typing.compiled_library -> Univ.ContextSet.t -> Safe_typing.vodigest ->
   ModPath.t
 
 (** {6 Misc } *)
@@ -147,12 +147,12 @@ val type_of_global_in_context : Environ.env ->
     constants, it does not matter. *)
 
 (** Returns the universe context of the global reference (whatever its polymorphic status is). *)
-val universes_of_global : Globnames.global_reference -> Univ.abstract_universe_context
+val universes_of_global : Globnames.global_reference -> Univ.AUContext.t
 
 (** {6 Retroknowledge } *)
 
 val register :
-  Retroknowledge.field -> Term.constr -> Term.constr -> unit
+  Retroknowledge.field -> Constr.constr -> Constr.constr -> unit
 
 val register_inline : Constant.t -> unit
 

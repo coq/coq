@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 
 val generate_functional_principle :
   Evd.evar_map ref -> 

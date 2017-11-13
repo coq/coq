@@ -9,7 +9,7 @@
 open Names
 open Globnames
 open Environ
-open Term
+open Constr
 
 val rename_arguments : bool -> global_reference -> Name.t list -> unit
 

@@ -112,7 +112,7 @@ let subst_const_body sub cb =
     themselves. But would it really bring substantial gains ? *)
 
 let hcons_rel_decl =
-  RelDecl.map_name Names.Name.hcons %> RelDecl.map_value Term.hcons_constr %> RelDecl.map_type Term.hcons_types
+  RelDecl.map_name Names.Name.hcons %> RelDecl.map_value Constr.hcons %> RelDecl.map_type Constr.hcons
 
 let hcons_rel_context l = List.smartmap hcons_rel_decl l
 
@@ -120,7 +120,7 @@ let hcons_const_def = function
   | Undef inl -> Undef inl
   | Def l_constr ->
     let constr = force_constr l_constr in
-    Def (from_val (Term.hcons_constr constr))
+    Def (from_val (Constr.hcons constr))
   | OpaqueDef _ as x -> x (* hashconsed when turned indirect *)
 
 let hcons_const_universes cbu =
@@ -133,7 +133,7 @@ let hcons_const_universes cbu =
 let hcons_const_body cb =
   { cb with
     const_body = hcons_const_def cb.const_body;
-    const_type = Term.hcons_constr cb.const_type;
+    const_type = Constr.hcons cb.const_type;
     const_universes = hcons_const_universes cb.const_universes }
 
 (** {6 Inductive types } *)
@@ -249,8 +249,8 @@ let inductive_is_cumulative mib =
 (** {6 Hash-consing of inductive declarations } *)
 
 let hcons_regular_ind_arity a =
-  { mind_user_arity = Term.hcons_constr a.mind_user_arity;
-    mind_sort = Term.hcons_sorts a.mind_sort }
+  { mind_user_arity = Constr.hcons a.mind_user_arity;
+    mind_sort = Sorts.hcons a.mind_sort }
 
 (** Just as for constants, this hash-consing is quite partial *)
 
@@ -260,8 +260,8 @@ let hcons_ind_arity =
 (** Substitution of inductive declarations *)
 
 let hcons_mind_packet oib =
-  let user = Array.smartmap Term.hcons_types oib.mind_user_lc in
-  let nf = Array.smartmap Term.hcons_types oib.mind_nf_lc in
+  let user = Array.smartmap Constr.hcons oib.mind_user_lc in
+  let nf = Array.smartmap Constr.hcons oib.mind_nf_lc in
   (* Special optim : merge [mind_user_lc] and [mind_nf_lc] if possible *)
   let nf = if Array.equal (==) user nf then user else nf in
   { oib with

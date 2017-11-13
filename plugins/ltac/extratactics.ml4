@@ -415,7 +415,7 @@ VERNAC COMMAND EXTEND DeriveInversionClear
   -> [ add_inversion_lemma_exn na c s false inv_clear_tac ]
 
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ] => [ seff na ]
-  -> [ add_inversion_lemma_exn na c InProp false inv_clear_tac ]
+  -> [ add_inversion_lemma_exn na c Sorts.InProp false inv_clear_tac ]
 END
 
 VERNAC COMMAND EXTEND DeriveInversion
@@ -424,7 +424,7 @@ VERNAC COMMAND EXTEND DeriveInversion
   -> [ add_inversion_lemma_exn na c s false inv_tac ]
 
 | [ "Derive" "Inversion" ident(na) "with" constr(c) ] => [ seff na ]
-  -> [ add_inversion_lemma_exn na c InProp false inv_tac ]
+  -> [ add_inversion_lemma_exn na c Sorts.InProp false inv_tac ]
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversion
@@ -514,7 +514,7 @@ let cache_transitivity_lemma (_,(left,lem)) =
 
 let subst_transitivity_lemma (subst,(b,ref)) = (b,subst_mps subst ref)
 
-let inTransitivity : bool * Term.constr -> obj =
+let inTransitivity : bool * Constr.t -> obj =
   declare_object {(default_object "TRANSITIVITY-STEPS") with
     cache_function = cache_transitivity_lemma;
     open_function = (fun i o -> if Int.equal i 1 then cache_transitivity_lemma o);

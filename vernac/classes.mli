@@ -34,7 +34,7 @@ val declare_instance_constant :
   bool -> (* polymorphic *)
   Evd.evar_map -> (* Universes *)
   Constr.t -> (** body *)
-  Term.types -> (** type *)
+  Constr.types -> (** type *)
   Names.Id.t
 
 val new_instance :

@@ -131,5 +131,5 @@ val coq_string : string (** "Coq" *)
 val default_root_prefix : DirPath.t
 
 (** Metavariables *)
-val pr_meta : Term.metavariable -> Pp.t
-val string_of_meta : Term.metavariable -> string
+val pr_meta : Constr.metavariable -> Pp.t
+val string_of_meta : Constr.metavariable -> string

@@ -6,8 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Term
 open Names
+open Constr
 open Declare
 
 (** This module provides support for registering inductive scheme builders,

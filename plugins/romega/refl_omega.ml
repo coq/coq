@@ -8,6 +8,7 @@
 
 open Pp
 open Util
+open Constr
 open Const_omega
 module OmegaSolver = Omega_plugin.Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver
@@ -26,8 +27,6 @@ let pp i = print_int i; print_newline (); flush stdout
 
 (* More readable than the prefix notation *)
 let (>>) = Tacticals.New.tclTHEN
-
-let mkApp = Term.mkApp
 
 (* \section{Types}
   \subsection{How to walk in a term}
@@ -68,14 +67,14 @@ type comparaison = Eq | Leq | Geq | Gt | Lt | Neq
    (it could contains some [Term.Var] but no [Term.Rel]). So no need to
    lift when breaking or creating arrows. *)
 type oproposition =
-    Pequa of Term.constr * oequation (* constr = copy of the Coq formula *)
+    Pequa of constr * oequation (* constr = copy of the Coq formula *)
   | Ptrue
   | Pfalse
   | Pnot of oproposition
   | Por of int * oproposition * oproposition
   | Pand of int * oproposition * oproposition
   | Pimp of int * oproposition * oproposition
-  | Pprop of Term.constr
+  | Pprop of constr
 
 (* The equations *)
 and oequation = {
@@ -102,9 +101,9 @@ and oequation = {
 
 type environment = {
   (* La liste des termes non reifies constituant l'environnement global *)
-  mutable terms : Term.constr list;
+  mutable terms : constr list;
   (* La meme chose pour les propositions *)
-  mutable props : Term.constr list;
+  mutable props : constr list;
   (* Traduction des indices utilisés ici en les indices finaux utilisés par
    * la tactique Omega après dénombrement des variables utiles *)
   real_indices : int IntHtbl.t;
@@ -219,7 +218,7 @@ let display_omega_var i = Printf.sprintf "OV%d" i
    calcul des variables utiles. *)
 
 let add_reified_atom t env =
-  try List.index0 Term.eq_constr t env.terms
+  try List.index0 Constr.equal t env.terms
   with Not_found ->
     let i = List.length env.terms in
     env.terms <- env.terms @ [t]; i
@@ -237,7 +236,7 @@ let set_reified_atom v t env =
 (* \subsection{Gestion de l'environnement de proposition pour Omega} *)
 (* ajout d'une proposition *)
 let add_prop env t =
-  try List.index0 Term.eq_constr t env.props
+  try List.index0 Constr.equal t env.props
   with Not_found ->
     let i = List.length env.props in  env.props <- env.props @ [t]; i
 
@@ -560,7 +559,7 @@ let reify_hyp env gl i =
   | LocalDef (_,d,t) when Z.is_int_typ gl (EConstr.Unsafe.to_constr t) ->
      let d = EConstr.Unsafe.to_constr d in
      let dummy = Lazy.force coq_True in
-     let p = mk_equation env ctxt dummy Eq (Term.mkVar i) d in
+     let p = mk_equation env ctxt dummy Eq (mkVar i) d in
      i,Defined,p
   | LocalDef (_,_,t) | LocalAssum (_,t) ->
      let t = EConstr.Unsafe.to_constr t in
@@ -1012,7 +1011,7 @@ let resolution unsafe env (reified_concl,reified_hyps) systems_list =
       (fun id ->
         match Id.Map.find id reified_hyps with
         | Defined,p ->
-           reified_of_proposition env p, mk_refl (Term.mkVar id)
+           reified_of_proposition env p, mk_refl (mkVar id)
         | Assumed,p ->
            reified_of_proposition env (maximize_prop useful_equa_ids p),
            EConstr.mkVar id

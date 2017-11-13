@@ -8,7 +8,7 @@
 
 (*i*)
 open Util
-open Term
+open Constr
 open Names
 open Globnames
 open Mod_subst
@@ -257,7 +257,7 @@ struct
   let pat_of_constr c : term_pattern =
     (** To each evar we associate a unique identifier. *)
     let metas = ref Evar.Map.empty in
-    let rec pat_of_constr c = match kind_of_term c with
+    let rec pat_of_constr c = match Constr.kind c with
     | Rel _          -> Term DRel
     | Sort _         -> Term DSort
     | Var i          -> Term (DRef (VarRef i))
@@ -290,7 +290,7 @@ struct
     | Proj (p,c) -> 
         Term (DApp (Term (DRef (ConstRef (Projection.constant p))), pat_of_constr c))
 
-    and ctx_of_constr ctx c = match kind_of_term c with
+    and ctx_of_constr ctx c = match Constr.kind c with
     | Prod (_,t,c)   -> ctx_of_constr (Term(DCons((pat_of_constr t,None),ctx))) c
     | LetIn(_,d,t,c) -> ctx_of_constr (Term(DCons((pat_of_constr t, Some (pat_of_constr d)),ctx))) c
     | _ -> ctx,pat_of_constr c

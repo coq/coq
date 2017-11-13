@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 open Names
-open Term
+open Constr
 open Nativevalues
 
 (** This file defines the lambda code for the native compiler. It has been
@@ -43,7 +43,7 @@ and lambda =
 	(* A partially applied constructor *)
   | Luint         of uint
   | Lval          of Nativevalues.t
-  | Lsort         of sorts
+  | Lsort         of Sorts.t
   | Lind          of prefix * pinductive
   | Llazy
   | Lforce

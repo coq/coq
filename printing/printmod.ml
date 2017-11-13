@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Util
-open Term
+open Constr
 open Pp
 open Names
 open Environ
@@ -149,7 +149,7 @@ let print_mutual_inductive env mind mib =
 
 let get_fields =
   let rec prodec_rec l subst c =
-    match kind_of_term c with
+    match kind c with
     | Prod (na,t,c) ->
         let id = match na with Name id -> id | Anonymous -> Id.of_string "_" in
         prodec_rec ((id,true,Vars.substl subst t)::l) (mkVar id::subst) c

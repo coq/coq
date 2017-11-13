@@ -417,8 +417,8 @@ type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 
 type secentry =
   | Variable of (Names.Id.t * Decl_kinds.binding_kind *
-		   Decl_kinds.polymorphic * Univ.universe_context_set)
-  | Context of Univ.universe_context_set
+		   Decl_kinds.polymorphic * Univ.ContextSet.t)
+  | Context of Univ.ContextSet.t
 
 let sectab =
   Summary.ref ([] : (secentry list * Opaqueproof.work_list * abstr_list) list)

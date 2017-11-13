@@ -162,11 +162,11 @@ val section_segment_of_constant : Names.Constant.t -> abstr_info
 val section_segment_of_mutual_inductive: Names.MutInd.t -> abstr_info
 val variable_section_segment_of_reference : Globnames.global_reference -> variable_context
 
-val section_instance : Globnames.global_reference -> Univ.universe_instance * Names.Id.t array
+val section_instance : Globnames.global_reference -> Univ.Instance.t * Names.Id.t array
 val is_in_section : Globnames.global_reference -> bool
 
-val add_section_variable : Names.Id.t -> Decl_kinds.binding_kind -> Decl_kinds.polymorphic -> Univ.universe_context_set -> unit
-val add_section_context : Univ.universe_context_set -> unit
+val add_section_variable : Names.Id.t -> Decl_kinds.binding_kind -> Decl_kinds.polymorphic -> Univ.ContextSet.t -> unit
+val add_section_context : Univ.ContextSet.t -> unit
 val add_section_constant : Decl_kinds.polymorphic ->
   Names.Constant.t -> Context.Named.t -> unit
 val add_section_kn : Decl_kinds.polymorphic ->

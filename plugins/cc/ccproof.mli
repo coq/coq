@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Ccalgo
-open Term
+open Constr
 
 type rule=
     Ax of constr

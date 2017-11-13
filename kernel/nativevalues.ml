@@ -5,10 +5,11 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-open Term
-open Names
-open CErrors
+
 open Util
+open CErrors
+open Names
+open Constr
 
 (** This module defines the representation of values internally used by
 the native compiler *)
@@ -51,7 +52,7 @@ type atom =
   | Arel of int
   | Aconstant of pconstant
   | Aind of pinductive
-  | Asort of sorts
+  | Asort of Sorts.t
   | Avar of Id.t
   | Acase of annot_sw * accumulator * t * (t -> t)
   | Afix of t array * t array * rec_pos * int
@@ -111,6 +112,7 @@ let mk_ind_accu ind u =
   mk_accu (Aind (ind,Univ.Instance.of_array u))
 
 let mk_sort_accu s u =
+  let open Sorts in
   match s with
   | Prop _ -> mk_accu (Asort s)
   | Type s ->

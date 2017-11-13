@@ -2,6 +2,7 @@ open Printer
 open Pp
 open Names
 open Term
+open Constr
 open Vars
 open Glob_term
 open Glob_ops
@@ -1015,7 +1016,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    let eq'_as_constr,ctx = Pretyping.understand env (Evd.from_env env) eq' in
 		    observe (str " computing new type for jmeq : done") ;
 		    let new_args =
-		      match kind_of_term eq'_as_constr with
+		      match Constr.kind eq'_as_constr with
 			| App(_,[|_;_;ty;_|]) ->
 			    let ty = Array.to_list (snd (destApp ty)) in
 			    let ty' = snd (Util.List.chop nparam ty) in
@@ -1297,7 +1298,7 @@ let rec rebuild_return_type rt =
 			    CAst.make @@ Constrexpr.CSort(GType []))
 
 let do_build_inductive
-      evd (funconstants: Term.pconstant list) (funsargs: (Name.t * glob_constr * glob_constr option) list list)
+      evd (funconstants: pconstant list) (funsargs: (Name.t * glob_constr * glob_constr option) list list)
       returned_types
       (rtl:glob_constr list) =
   let _time1 = System.get_time () in

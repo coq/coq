@@ -300,7 +300,6 @@ module KNset  : CSig.SetS with type elt = KerName.t
 module KNpred : Predicate.S with type elt = KerName.t
 module KNmap  : Map.ExtS with type key = KerName.t and module Set := KNset
 
-
 (** {6 Constant Names } *)
 
 module Constant:

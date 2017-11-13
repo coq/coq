@@ -12,7 +12,7 @@ open CErrors
 open Pp
 open Util
 open Names
-open Term
+open Constr
 open Termops
 open Environ
 open EConstr
@@ -68,10 +68,10 @@ let _ = Goptions.declare_bool_option {
 
 let unsafe_occur_meta_or_existential c =
   let c = EConstr.Unsafe.to_constr c in
-  let rec occrec c = match kind_of_term c with
+  let rec occrec c = match Constr.kind c with
     | Evar _ -> raise Occur
     | Meta _ -> raise Occur
-    | _ -> iter_constr occrec c
+    | _ -> Constr.iter occrec c
   in try occrec c; false with Occur -> true
 
 
@@ -79,7 +79,7 @@ let occur_meta_or_undefined_evar evd c =
   (** This is performance-critical. Using the evar-insensitive API changes the
       resulting heuristic. *)
   let c = EConstr.Unsafe.to_constr c in
-  let rec occrec c = match kind_of_term c with
+  let rec occrec c = match Constr.kind c with
     | Meta _ -> raise Occur
     | Evar (ev,args) ->
         (match evar_body (Evd.find evd ev) with
@@ -613,7 +613,7 @@ let subst_defined_metas_evars sigma (bl,el) c =
   (** This seems to be performance-critical, and using the evar-insensitive
       primitives blow up the time passed in this function. *)
   let c = EConstr.Unsafe.to_constr c in
-  let rec substrec c = match kind_of_term c with
+  let rec substrec c = match Constr.kind c with
     | Meta i ->
       let select (j,_,_) = Int.equal i j in
       substrec (EConstr.Unsafe.to_constr (pi2 (List.find select bl)))

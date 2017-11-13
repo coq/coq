@@ -18,7 +18,7 @@ open Pp
 open CErrors
 open Util
 open Names
-open Term
+open Constr
 open Declarations
 open Mod_subst
 open Globnames
@@ -163,7 +163,7 @@ let label_of = function
 
 let fold_constr_with_full_binders g f n acc c =
   let open Context.Rel.Declaration in
-  match kind_of_term c with
+  match Constr.kind c with
   | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _ -> acc
   | Cast (c,_, t) -> f n (f n acc c) t
   | Prod (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
@@ -182,7 +182,7 @@ let fold_constr_with_full_binders g f n acc c =
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
 
-let rec traverse current ctx accu t = match kind_of_term t with
+let rec traverse current ctx accu t = match Constr.kind t with
 | Var id ->
   let body () = id |> Global.lookup_named |> NamedDecl.get_value in
   traverse_object accu body (VarRef id)

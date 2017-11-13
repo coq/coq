@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Term
+open Constr
 open Declarations
 open Environ
 
@@ -26,7 +26,7 @@ type result = {
 }
 
 val cook_constant : hcons:bool -> env -> recipe -> result
-val cook_constr : Opaqueproof.cooking_info -> Term.constr -> Term.constr
+val cook_constr : Opaqueproof.cooking_info -> constr -> constr
 
 (** {6 Utility functions used in module [Discharge]. } *)
 

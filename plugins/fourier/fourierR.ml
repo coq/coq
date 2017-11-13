@@ -12,7 +12,7 @@
 des inéquations et équations sont entiers. En attendant la tactique Field.
 *)
 
-open Term
+open Constr
 open Tactics
 open Names
 open Globnames
@@ -27,11 +27,7 @@ qui donne le coefficient d'un terme du calcul des constructions,
 qui est zéro si le terme n'y est pas.
 *)
 
-module Constrhash = Hashtbl.Make
-  (struct type t = constr
-	  let equal = eq_constr
-	  let hash = hash_constr
-   end)
+module Constrhash = Hashtbl.Make(Constr)
 
 type flin = {fhom: rational Constrhash.t;
              fcste:rational};;
@@ -84,7 +80,7 @@ let string_of_R_constant kn =
     | _ -> "constant_not_of_R"
 
 let rec string_of_R_constr c =
- match kind_of_term c with
+ match Constr.kind c with
    Cast (c,_,_) -> string_of_R_constr c
   |Const (c,_) -> string_of_R_constant c
   | _ -> "not_of_constant"
@@ -92,7 +88,7 @@ let rec string_of_R_constr c =
 exception NoRational
 
 let rec rational_of_constr c =
-  match kind_of_term c with
+  match Constr.kind c with
   | Cast (c,_,_) -> (rational_of_constr c)
   | App (c,args) ->
       (match (string_of_R_constr c) with
@@ -125,7 +121,7 @@ exception NoLinear
 
 let rec flin_of_constr c =
   try(
-    match kind_of_term c with
+    match Constr.kind c with
   | Cast (c,_,_) -> (flin_of_constr c)
   | App (c,args) ->
       (match (string_of_R_constr c) with
@@ -192,9 +188,9 @@ exception NoIneq
 let ineq1_of_constr (h,t) =
   let h = EConstr.Unsafe.to_constr h in
   let t = EConstr.Unsafe.to_constr t in
-    match (kind_of_term t) with
+    match (Constr.kind t) with
       | App (f,args) ->
-        (match kind_of_term f with
+        (match Constr.kind f with
           | Const (c,_) when Array.length args = 2 ->
             let t1= args.(0) in
             let t2= args.(1) in
@@ -233,7 +229,7 @@ let ineq1_of_constr (h,t) =
             let t0= args.(0) in
             let t1= args.(1) in
             let t2= args.(2) in
-	    (match (kind_of_term t0) with
+	    (match (Constr.kind t0) with
               | Const (c,_) ->
 		(match (string_of_R_constant c) with
 		  | "R"->
@@ -438,7 +434,7 @@ let tac_use h =
 
 (*
 let is_ineq (h,t) =
-    match (kind_of_term t) with
+    match (Constr.kind t) with
 	App (f,args) ->
 	  (match (string_of_R_constr f) with
 	       "Rlt" -> true
@@ -479,7 +475,7 @@ let rec fourier () =
     (* si le but est une inéquation, on introduit son contraire,
        et le but à prouver devient False *)
     try 
-      match (kind_of_term goal) with
+      match (Constr.kind goal) with
       App (f,args) ->
       let get = eget in
       (match (string_of_R_constr f) with

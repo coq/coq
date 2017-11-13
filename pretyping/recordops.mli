@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Globnames
 
 (** Operations concerning records and canonical structures *)
@@ -52,7 +52,7 @@ val find_projection : global_reference -> struc_typ
 type cs_pattern =
     Const_cs of global_reference
   | Prod_cs
-  | Sort_cs of sorts_family
+  | Sort_cs of Sorts.family
   | Default_cs
 
 type obj_typ = {

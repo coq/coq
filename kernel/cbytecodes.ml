@@ -13,7 +13,7 @@
 (* This file defines the type of bytecode instructions *)
 
 open Names
-open Term
+open Constr
 
 type tag = int
 
@@ -32,13 +32,13 @@ let cofix_evaluated_tag = 7
 let last_variant_tag = 245 
 
 type structured_constant =
-  | Const_sorts of sorts
+  | Const_sorts of Sorts.t
   | Const_ind of inductive
   | Const_proj of Constant.t
   | Const_b0 of tag
   | Const_bn of tag * structured_constant array
-  | Const_univ_level of Univ.universe_level
-  | Const_type of Univ.universe
+  | Const_univ_level of Univ.Level.t
+  | Const_type of Univ.Universe.t
 
 type reloc_table = (tag * int) array
 
@@ -186,7 +186,8 @@ open Pp
 open Util
 
 let pp_sort s =
-  match family_of_sort s with
+  let open Sorts in
+  match family s with
   | InSet -> str "Set"
   | InProp -> str "Prop"
   | InType -> str "Type"

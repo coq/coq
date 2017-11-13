@@ -9,7 +9,7 @@
 (** Legacy proof engine. Do not use in newly written code. *)
 
 open Evd
-open Term
+open Constr
 
 (** This module defines the structure of proof tree and the tactic type. So, it
    is used by [Proof_tree] and [Refiner] *)

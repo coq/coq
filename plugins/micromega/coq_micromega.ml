@@ -20,6 +20,7 @@ open Pp
 open Mutils
 open Goptions
 open Names
+open Constr
 
 (**
   * Debug flag 
@@ -580,9 +581,9 @@ struct
     | Ukn
     | BadStr of string
     | BadNum of int
-    | BadTerm of Term.constr
+    | BadTerm of constr
     | Msg   of string
-    | Goal of (Term.constr list ) * Term.constr * parse_error
+    | Goal of (constr list ) * constr * parse_error
 
   let string_of_error = function
    | Ukn -> "ukn"
@@ -1521,7 +1522,7 @@ let rec witness prover   l1 l2 =
 let rec apply_ids t ids =
  match ids with
   | [] -> t
-  | i::ids -> apply_ids (Term.mkApp(t,[| Term.mkVar i |])) ids
+  | i::ids -> apply_ids (mkApp(t,[| mkVar i |])) ids
 
 let coq_Node = 
  lazy (gen_constant_in_modules "VarMap"

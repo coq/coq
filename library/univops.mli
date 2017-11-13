@@ -6,10 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Term
+open Constr
 open Univ
 
 (** Shrink a universe context to a restricted set of variables *)
 
-val universes_of_constr : constr -> universe_set
-val restrict_universe_context : universe_context_set -> universe_set -> universe_context_set
+val universes_of_constr : constr -> LSet.t
+val restrict_universe_context : ContextSet.t -> LSet.t -> ContextSet.t

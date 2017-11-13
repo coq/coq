@@ -24,7 +24,7 @@ open Misctypes
 open Context.Rel.Declaration
 
 let compare_instance inst1 inst2=
-        let cmp c1 c2 = OrderedConstr.compare (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2) in
+        let cmp c1 c2 = Constr.compare (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2) in
 	match inst1,inst2 with
 	    Phantom(d1),Phantom(d2)->
 	      (cmp d1 d2)

@@ -10,6 +10,7 @@ open CErrors
 open Util
 open Names
 open Term
+open Constr
 open Termops
 open Namegen
 open Pre_env
@@ -56,12 +57,12 @@ let new_global evd x =
 exception Uninstantiated_evar of existential_key
 
 let rec flush_and_check_evars sigma c =
-  match kind_of_term c with
+  match kind c with
   | Evar (evk,_ as ev) ->
       (match existential_opt_value sigma ev with
        | None -> raise (Uninstantiated_evar evk)
        | Some c -> flush_and_check_evars sigma c)
-  | _ -> map_constr (flush_and_check_evars sigma) c
+  | _ -> Constr.map (flush_and_check_evars sigma) c
 
 let flush_and_check_evars sigma c =
   flush_and_check_evars sigma (EConstr.Unsafe.to_constr c)
@@ -162,7 +163,7 @@ exception NoHeadEvar
 let head_evar sigma c =
   (** FIXME: this breaks if using evar-insensitive code *)
   let c = EConstr.Unsafe.to_constr c in
-  let rec hrec c = match kind_of_term c with
+  let rec hrec c = match kind c with
     | Evar (evk,_)   -> evk
     | Case (_,_,c,_) -> hrec c
     | App (c,_)      -> hrec c
@@ -485,7 +486,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
      (ie the hypotheses ids have been removed from the contexts of
      evars). [global] should be true iff there is some variable of [ids] which
      is a section variable *)
-    match kind_of_term c with
+    match kind c with
       | Var id' ->
       if Id.Set.mem id' ids then raise (ClearDependencyError (id', err)) else c
 
@@ -552,7 +553,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
               evdref := evd;
               Evd.existential_value !evdref ev
 
-      | _ -> map_constr (check_and_clear_in_constr env evdref err ids global) c
+      | _ -> Constr.map (check_and_clear_in_constr env evdref err ids global) c
 
 let clear_hyps_in_evi_main env evdref hyps terms ids =
   (* clear_hyps_in_evi erases hypotheses ids in hyps, checking if some
@@ -696,10 +697,10 @@ let undefined_evars_of_evar_info evd evi =
    do not have this luxury, and need the more complete version. *)
 let occur_evar_upto sigma n c =
   let c = EConstr.Unsafe.to_constr c in
-  let rec occur_rec c = match kind_of_term c with
+  let rec occur_rec c = match kind c with
     | Evar (sp,_) when Evar.equal sp n -> raise Occur
     | Evar e -> Option.iter occur_rec (existential_opt_value sigma e)
-    | _ -> iter_constr occur_rec c
+    | _ -> Constr.iter occur_rec c
   in
   try occur_rec c; false with Occur -> true
 

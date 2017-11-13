@@ -8,7 +8,7 @@
 
 open Util
 open Names
-open Term
+open Constr
 open Vars
 open CClosure
 open Esubst
@@ -211,7 +211,7 @@ and reify_value = function (* reduction under binders *)
     t
       (* map_constr_with_binders subs_lift (cbv_norm_term) env t *)
   | LAM (n,ctxt,b,env) ->
-      List.fold_left (fun c (n,t)  -> Term.mkLambda (n, t, c)) b ctxt
+      List.fold_left (fun c (n,t)  -> mkLambda (n, t, c)) b ctxt
   | FIXP ((lij,(names,lty,bds)),env,args) ->
       mkApp
         (mkFix (lij,
@@ -240,7 +240,7 @@ and reify_value = function (* reduction under binders *)
 
 let rec norm_head info env t stack =
   (* no reduction under binders *)
-  match kind_of_term t with
+  match kind t with
   (* stack grows (remove casts) *)
   | App (head,args) -> (* Applied terms are normalized immediately;
                         they could be computed when getting out of the stack *)
@@ -294,7 +294,7 @@ let rec norm_head info env t stack =
 
   (* non-neutral cases *)
   | Lambda _ ->
-      let ctxt,b = decompose_lam t in
+      let ctxt,b = Term.decompose_lam t in
       (LAM(List.length ctxt, List.rev ctxt,b,env), stack)
   | Fix fix -> (FIXP(fix,env,[||]), stack)
   | CoFix cofix -> (COFIXP(cofix,env,[||]), stack)
@@ -411,12 +411,12 @@ and cbv_norm_value info = function (* reduction under binders *)
   | STACK (n,v,stk) ->
       lift n (apply_stack info (cbv_norm_value info v) stk)
   | CBN(t,env) ->
-      map_constr_with_binders subs_lift (cbv_norm_term info) env t
+      Constr.map_with_binders subs_lift (cbv_norm_term info) env t
   | LAM (n,ctxt,b,env) ->
       let nctxt =
         List.map_i (fun i (x,ty) ->
           (x,cbv_norm_term info (subs_liftn i env) ty)) 0 ctxt in
-      compose_lam (List.rev nctxt) (cbv_norm_term info (subs_liftn n env) b)
+      Term.compose_lam (List.rev nctxt) (cbv_norm_term info (subs_liftn n env) b)
   | FIXP ((lij,(names,lty,bds)),env,args) ->
       mkApp
         (mkFix (lij,

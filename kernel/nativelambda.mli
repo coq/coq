@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 open Names
-open Term
+open Constr
 open Pre_env
 open Nativeinstr
 

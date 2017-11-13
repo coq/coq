@@ -1120,10 +1120,10 @@ let pr_goal_selector ~toplevel s =
     let ty = EConstr.Unsafe.to_constr ty in
     let rec strip_ty acc n ty =
       if n=0 then (List.rev acc, EConstr.of_constr ty) else
-        match Term.kind_of_term ty with
-            Term.Prod(na,a,b) ->
-              strip_ty (([Loc.tag na],EConstr.of_constr a)::acc) (n-1) b
-          | _ -> user_err Pp.(str "Cannot translate fix tactic: not enough products") in
+        match Constr.kind ty with
+        | Constr.Prod(na,a,b) ->
+          strip_ty (([Loc.tag na],EConstr.of_constr a)::acc) (n-1) b
+        | _ -> user_err Pp.(str "Cannot translate fix tactic: not enough products") in
     strip_ty [] n ty
 
   let pr_atomic_tactic_level env sigma n t =

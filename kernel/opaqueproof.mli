@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Mod_subst
 
 (** This module implements the handling of opaque proof terms.
@@ -19,7 +19,7 @@ open Mod_subst
     When it is [turn_indirect] the data is relocated to an opaque table
     and the [opaque] is turned into an index. *)
 
-type proofterm = (constr * Univ.universe_context_set) Future.computation
+type proofterm = (constr * Univ.ContextSet.t) Future.computation
 type opaquetab
 type opaque
 
@@ -36,10 +36,10 @@ val turn_indirect : DirPath.t -> opaque -> opaquetab -> opaque * opaquetab
 (** From a [opaque] back to a [constr]. This might use the
     indirect opaque accessor configured below. *)
 val force_proof : opaquetab -> opaque -> constr
-val force_constraints : opaquetab -> opaque -> Univ.universe_context_set
-val get_proof : opaquetab -> opaque -> Term.constr Future.computation
+val force_constraints : opaquetab -> opaque -> Univ.ContextSet.t
+val get_proof : opaquetab -> opaque -> constr Future.computation
 val get_constraints :
-  opaquetab -> opaque -> Univ.universe_context_set Future.computation option
+  opaquetab -> opaque -> Univ.ContextSet.t Future.computation option
 
 val subst_opaque : substitution -> opaque -> opaque
 val iter_direct_opaque : (constr -> unit) -> opaque -> opaque
@@ -63,7 +63,7 @@ val join_opaque : opaquetab -> opaque -> unit
 
 val dump : opaquetab ->
   Constr.t Future.computation array *
-  Univ.universe_context_set Future.computation array *
+  Univ.ContextSet.t Future.computation array *
   cooking_info list array *
   int Future.UUIDMap.t
 
@@ -75,7 +75,7 @@ val dump : opaquetab ->
 *)
 
 val set_indirect_opaque_accessor :
-  (DirPath.t -> int -> Term.constr Future.computation) -> unit
+  (DirPath.t -> int -> constr Future.computation) -> unit
 val set_indirect_univ_accessor :
-  (DirPath.t -> int -> Univ.universe_context_set Future.computation option) -> unit
+  (DirPath.t -> int -> Univ.ContextSet.t Future.computation option) -> unit
 

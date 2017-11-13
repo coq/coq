@@ -19,7 +19,7 @@ module NamedDecl = Context.Named.Declaration
 (** Datas associated to section variables and local definitions *)
 
 type variable_data =
-  DirPath.t * bool (* opacity *) * Univ.universe_context_set * polymorphic * logical_kind
+  DirPath.t * bool (* opacity *) * Univ.ContextSet.t * polymorphic * logical_kind
 
 let vartab =
   Summary.ref (Id.Map.empty : variable_data Id.Map.t) ~name:"VARIABLE"

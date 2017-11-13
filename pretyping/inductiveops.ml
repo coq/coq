@@ -11,6 +11,7 @@ open Util
 open Names
 open Univ
 open Term
+open Constr
 open Vars
 open Termops
 open Declarations
@@ -643,7 +644,7 @@ let type_of_projection_knowing_arg env sigma p c ty =
    syntactic conditions *)
 
 let control_only_guard env c =
-  let check_fix_cofix e c = match kind_of_term c with
+  let check_fix_cofix e c = match kind c with
     | CoFix (_,(_,_,_) as cofix) ->
       Inductive.check_cofix e cofix
     | Fix (_,(_,_,_) as fix) ->
@@ -659,7 +660,7 @@ let control_only_guard env c =
 (* inference of subtyping condition for inductive types *)
 
 let infer_inductive_subtyping_arity_constructor
-    (env, evd, csts) (subst : constr -> constr) (arcn : Term.types) is_arity (params : Context.Rel.t) =
+    (env, evd, csts) (subst : constr -> constr) (arcn : types) is_arity (params : Context.Rel.t) =
   let numchecked = ref 0 in
   let numparams = Context.Rel.nhyps params in
   let update_contexts (env, evd, csts) csts' =

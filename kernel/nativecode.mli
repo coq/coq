@@ -5,8 +5,8 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-open Term
 open Names
+open Constr
 open Declarations
 open Pre_env
 open Nativelambda
@@ -32,7 +32,7 @@ val clear_symbols : unit -> unit
 
 val get_value : symbols -> int -> Nativevalues.t
 
-val get_sort : symbols -> int -> sorts
+val get_sort : symbols -> int -> Sorts.t
 
 val get_name : symbols -> int -> Name.t
 

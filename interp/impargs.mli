@@ -7,8 +7,8 @@
 (************************************************************************)
 
 open Names
+open Constr
 open Globnames
-open Term
 open Environ
 
 (** {6 Implicit Arguments } *)

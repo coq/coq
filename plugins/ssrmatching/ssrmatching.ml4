@@ -18,10 +18,13 @@ let frozen_lexer = CLexer.get_keyword_state () ;;
 open Ltac_plugin
 open Names
 open Pp
-open Pcoq
 open Genarg
 open Stdarg
 open Term
+module CoqConstr = Constr
+open CoqConstr
+open Pcoq
+open Pcoq.Constr
 open Vars
 open Libnames
 open Tactics
@@ -35,10 +38,8 @@ open Evd
 open Tacexpr
 open Tacinterp
 open Pretyping
-open Constr
 open Ppconstr
 open Printer
-
 open Globnames
 open Misctypes
 open Decl_kinds
@@ -73,7 +74,7 @@ let pp s = !pp_ref s
 (** Utils {{{ *****************************************************************)
 let env_size env = List.length (Environ.named_context env)
 let safeDestApp c =
-  match kind_of_term c with App (f, a) -> f, a | _ -> c, [| |]
+  match kind c with App (f, a) -> f, a | _ -> c, [| |]
 (* Toplevel constr must be globalized twice ! *)
 let glob_constr ist genv = function
   | _, Some ce ->
@@ -325,7 +326,7 @@ let unif_FO env ise p c =
 let nf_open_term sigma0 ise c =
   let c = EConstr.Unsafe.to_constr c in
   let s = ise and s' = ref sigma0 in
-  let rec nf c' = match kind_of_term c' with
+  let rec nf c' = match kind c' with
   | Evar ex ->
     begin try nf (existential_value s ex) with _ ->
     let k, a = ex in let a' = Array.map nf a in
@@ -333,7 +334,7 @@ let nf_open_term sigma0 ise c =
       s' := Evd.add !s' k (Evarutil.nf_evar_info s (Evd.find s k));
     mkEvar (k, a')
     end
-  | _ -> map_constr nf c' in
+  | _ -> map nf c' in
   let copy_def k evi () =
     if evar_body evi != Evd.Evar_empty then () else
     match Evd.evar_body (Evd.find s k) with
@@ -365,7 +366,7 @@ let pf_unify_HO gl t1 t2 =
   re_sig si sigma
 
 (* This is what the definition of iter_constr should be... *)
-let iter_constr_LR f c = match kind_of_term c with
+let iter_constr_LR f c = match kind c with
   | Evar (k, a) -> Array.iter f a
   | Cast (cc, _, t) -> f cc; f t  
   | Prod (_, t, b) | Lambda (_, t, b)  -> f t; f b
@@ -418,14 +419,14 @@ let all_ok _ _ = true
 let proj_nparams c =
   try 1 + Recordops.find_projection_nparams (ConstRef c) with _ -> 0
 
-let isRigid c = match kind_of_term c with
+let isRigid c = match kind c with
   | Prod _ | Sort _ | Lambda _ | Case _ | Fix _ | CoFix _ -> true
   | _ -> false
 
 let hole_var = mkVar (Id.of_string "_")
 let pr_constr_pat c0 =
   let rec wipe_evar c =
-    if isEvar c then hole_var else map_constr wipe_evar c in
+    if isEvar c then hole_var else map wipe_evar c in
   pr_constr (wipe_evar c0)
 
 (* Turn (new) evars into metas *)
@@ -433,11 +434,11 @@ let evars_for_FO ~hack env sigma0 (ise0:evar_map) c0 =
   let ise = ref ise0 in
   let sigma = ref ise0 in
   let nenv = env_size env + if hack then 1 else 0 in
-  let rec put c = match kind_of_term c with
+  let rec put c = match kind c with
   | Evar (k, a as ex) ->
     begin try put (existential_value !sigma ex)
     with NotInstantiatedEvar ->
-    if Evd.mem sigma0 k then map_constr put c else
+    if Evd.mem sigma0 k then map put c else
     let evi = Evd.find !sigma k in
     let dc = List.firstn (max 0 (Array.length a - nenv)) (evar_filtered_context evi) in
     let abs_dc (d, c) = function
@@ -452,7 +453,7 @@ let evars_for_FO ~hack env sigma0 (ise0:evar_map) c0 =
     sigma := Evd.define k (applistc (mkMeta m) a) !sigma;
     put (existential_value !sigma ex)
     end
-  | _ -> map_constr put c in
+  | _ -> map put c in
   let c1 = put c0 in !ise, c1
 
 (* Compile a match pattern from a term; t is the term to fill. *)
@@ -462,7 +463,7 @@ let mk_tpattern ?p_origin ?(hack=false) env sigma0 (ise, t) ok dir p =
     let f, a = Reductionops.whd_betaiota_stack ise (EConstr.of_constr p) in
     let f = EConstr.Unsafe.to_constr f in
     let a = List.map EConstr.Unsafe.to_constr a in
-    match kind_of_term f with
+    match kind f with
     | Const (p,_) ->
       let np = proj_nparams p in
       if np = 0 || np > List.length a then KpatConst, f, a else
@@ -490,7 +491,7 @@ let mk_tpattern ?p_origin ?(hack=false) env sigma0 (ise, t) ok dir p =
 (* kind and arity for Proj and Flex patterns.                           *)
 let ungen_upat lhs (sigma, uc, t) u =
   let f, a = safeDestApp lhs in
-  let k = match kind_of_term f with
+  let k = match kind f with
   | Var _ | Ind _ | Construct _ -> KpatFixed
   | Const _ -> KpatConst
   | Evar (k, _) -> if is_defined sigma k then raise NoMatch else KpatEvar k
@@ -502,14 +503,14 @@ let ungen_upat lhs (sigma, uc, t) u =
 let nb_cs_proj_args pc f u =
   let na k =
     List.length (snd (lookup_canonical_conversion (ConstRef pc, k))).o_TCOMPS in
-  let nargs_of_proj t = match kind_of_term t with
+  let nargs_of_proj t = match kind t with
       | App(_,args) -> Array.length args
       | Proj _ -> 0 (* if splay_app calls expand_projection, this has to be
                        the number of arguments including the projected *)
       | _ -> assert false in
-  try match kind_of_term f with
+  try match kind f with
   | Prod _ -> na Prod_cs
-  | Sort s -> na (Sort_cs (family_of_sort s))
+  | Sort s -> na (Sort_cs (Sorts.family s))
   | Const (c',_) when Constant.equal c' pc -> nargs_of_proj u.up_f 
   | Proj (c',_) when Constant.equal (Projection.constant c') pc -> nargs_of_proj u.up_f
   | Var _ | Ind _ | Construct _ | Const _ -> na (Const_cs (global_of_constr f))
@@ -517,22 +518,22 @@ let nb_cs_proj_args pc f u =
   with Not_found -> -1
 
 let isEvar_k k f =
-  match kind_of_term f with Evar (k', _) -> k = k' | _ -> false
+  match kind f with Evar (k', _) -> k = k' | _ -> false
 
 let nb_args c =
-  match kind_of_term c with App (_, a) -> Array.length a | _ -> 0
+  match kind c with App (_, a) -> Array.length a | _ -> 0
 
 let mkSubArg i a = if i = Array.length a then a else Array.sub a 0 i
 let mkSubApp f i a = if i = 0 then f else mkApp (f, mkSubArg i a)
 
 let splay_app ise =
-  let rec loop c a = match kind_of_term c with
+  let rec loop c a = match kind c with
   | App (f, a') -> loop f (Array.append a' a)
   | Cast (c', _, _) -> loop c' a
   | Evar ex ->
     (try loop (existential_value ise ex) a with _ -> c, a)
   | _ -> c, a in
-  fun c -> match kind_of_term c with
+  fun c -> match kind c with
   | App (f, a) -> loop f a
   | Cast _ | Evar _ -> loop c [| |]
   | _ -> c, [| |]
@@ -541,8 +542,8 @@ let filter_upat i0 f n u fpats =
   let na = Array.length u.up_a in
   if n < na then fpats else
   let np = match u.up_k with
-  | KpatConst when Term.eq_constr u.up_f f -> na
-  | KpatFixed when Term.eq_constr u.up_f f -> na 
+  | KpatConst when equal u.up_f f -> na
+  | KpatFixed when equal u.up_f f -> na 
   | KpatEvar k when isEvar_k k f -> na
   | KpatLet when isLetIn f -> na
   | KpatLam when isLambda f -> na
@@ -554,7 +555,7 @@ let filter_upat i0 f n u fpats =
   if np < na then fpats else
   let () = if !i0 < np then i0 := n in (u, np) :: fpats
 
-let eq_prim_proj c t = match kind_of_term t with
+let eq_prim_proj c t = match kind t with
   | Proj(p,_) -> Constant.equal (Projection.constant p) c
   | _ -> false
 
@@ -562,13 +563,13 @@ let filter_upat_FO i0 f n u fpats =
   let np = nb_args u.up_FO in
   if n < np then fpats else
   let ok = match u.up_k with
-  | KpatConst -> Term.eq_constr u.up_f f 
-  | KpatFixed -> Term.eq_constr u.up_f f 
+  | KpatConst -> equal u.up_f f 
+  | KpatFixed -> equal u.up_f f 
   | KpatEvar k -> isEvar_k k f
   | KpatLet -> isLetIn f
   | KpatLam -> isLambda f
   | KpatRigid -> isRigid f
-  | KpatProj pc -> Term.eq_constr f (mkConst pc) || eq_prim_proj pc f
+  | KpatProj pc -> equal f (mkConst pc) || eq_prim_proj pc f
   | KpatFlex -> i0 := n; true in
   if ok then begin if !i0 < np then i0 := np; (u, np) :: fpats end else fpats
 
@@ -741,13 +742,13 @@ let mk_tpattern_matcher ?(all_instances=false)
       let x, pv, t, pb = destLetIn u.up_f in
       let env' =
         Environ.push_rel (Context.Rel.Declaration.LocalAssum(x, t)) env in
-      let match_let f = match kind_of_term f with
+      let match_let f = match kind f with
       | LetIn (_, v, _, b) -> unif_EQ env sigma pv v && unif_EQ env' sigma pb b
       | _ -> false in match_let
-    | KpatFixed -> Term.eq_constr u.up_f
-    | KpatConst -> Term.eq_constr u.up_f
+    | KpatFixed -> equal u.up_f
+    | KpatConst -> equal u.up_f
     | KpatLam -> fun c ->
-       (match kind_of_term c with
+       (match kind c with
        | Lambda _ -> unif_EQ env sigma u.up_f c
        | _ -> false)
     | _ -> unif_EQ env sigma u.up_f in
@@ -778,8 +779,8 @@ let rec uniquize = function
       let t1 = nf_evar sigma1 t1 in
       let f1 = nf_evar sigma1 f1 in
       let a1 = Array.map (nf_evar sigma1) a1 in
-      not (Term.eq_constr t t1 &&
-           Term.eq_constr f f1 && CArray.for_all2 Term.eq_constr a a1) in
+      not (equal t t1 &&
+           equal f f1 && CArray.for_all2 equal a a1) in
     x :: uniquize (List.filter neq xs) in
 
 ((fun env c h ~k -> 
@@ -1018,7 +1019,7 @@ let input_ssrtermkind strm = match stream_nth 0 strm with
   | Tok.KEYWORD "(" -> '('
   | Tok.KEYWORD "@" -> '@'
   | _ -> ' '
-let ssrtermkind = Gram.Entry.of_parser "ssrtermkind" input_ssrtermkind
+let ssrtermkind = Pcoq.Gram.Entry.of_parser "ssrtermkind" input_ssrtermkind
 
 let interp_ssrterm _ gl t = Tacmach.project gl, t
 
@@ -1100,7 +1101,7 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
   let decodeG t f g = decode ist (mkG t) f g in
   let bad_enc id _ = CErrors.anomaly (str"bad encoding for pattern "++str id++str".") in
   let cleanup_XinE h x rp sigma =
-    let h_k = match kind_of_term h with Evar (k,_) -> k | _ -> assert false in
+    let h_k = match kind h with Evar (k,_) -> k | _ -> assert false in
     let to_clean, update = (* handle rename if x is already used *)
       let ctx = pf_hyps gl in
       let len = Context.Named.length ctx in
@@ -1115,11 +1116,11 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
       with Not_found -> ref (Some x), fun _ -> () in
     let sigma0 = project gl in
     let new_evars =
-      let rec aux acc t = match kind_of_term t with
+      let rec aux acc t = match kind t with
       | Evar (k,_) ->
           if k = h_k || List.mem k acc || Evd.mem sigma0 k then acc else
           (update k; k::acc)
-      | _ -> fold_constr aux acc t in 
+      | _ -> CoqConstr.fold aux acc t in 
       aux [] (nf_evar sigma rp) in
     let sigma = 
       List.fold_left (fun sigma e ->
@@ -1202,7 +1203,7 @@ let interp_cpattern ist gl red redty = interp_pattern ist gl (T red) redty;;
 let interp_rpattern ~wit_ssrpatternarg ist gl red = interp_pattern ~wit_ssrpatternarg ist gl red None;;
 
 let id_of_pattern = function
-  | _, T t -> (match kind_of_term t with Var id -> Some id | _ -> None)
+  | _, T t -> (match kind t with Var id -> Some id | _ -> None)
   | _ -> None
 
 (* The full occurrence set *)
@@ -1222,7 +1223,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
       Evd.add (Evd.remove sigma e) e {e_def with Evd.evar_body = Evar_empty} in
     sigma, e_body in
   let ex_value hole =
-    match kind_of_term hole with Evar (e,_) -> e | _ -> assert false in
+    match kind hole with Evar (e,_) -> e | _ -> assert false in
   let mk_upat_for ?hack env sigma0 (sigma, t) ?(p=t) ok =
     let sigma,pat= mk_tpattern ?hack env sigma0 (sigma,p) ok L2R (fs sigma t) in
     sigma, [pat] in
@@ -1407,7 +1408,7 @@ let () =
 
 let ssrinstancesof ist arg gl =
   let ok rhs lhs ise = true in
-(*   not (Term.eq_constr lhs (Evarutil.nf_evar ise rhs)) in *)
+(*   not (equal lhs (Evarutil.nf_evar ise rhs)) in *)
   let env, sigma, concl = pf_env gl, project gl, pf_concl gl in
   let concl = EConstr.Unsafe.to_constr concl in
   let sigma0, cpat = interp_cpattern ist gl arg None in

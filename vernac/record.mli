@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Vernacexpr
 open Constrexpr
 open Impargs

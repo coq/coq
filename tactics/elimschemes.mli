@@ -13,7 +13,7 @@ open Ind_tables
 val optimize_non_type_induction_scheme : 
   'a Ind_tables.scheme_kind ->
   Indrec.dep_flag ->
-  Term.sorts_family ->
+  Sorts.family ->
   'b ->
   Names.inductive ->
   (Constr.constr * Evd.evar_universe_context) * Safe_typing.private_constants

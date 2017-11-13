@@ -8,7 +8,7 @@
 
 open Names
 open Globnames
-open Term
+open Constr
 open Evd
 open Environ
 

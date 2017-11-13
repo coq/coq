@@ -79,7 +79,7 @@ and constr_expr_r =
   | CRecord  of (reference * constr_expr) list
 
   (* representation of the "let" and "match" constructs *)
-  | CCases of case_style          (* determines whether this value represents "let" or "match" construct *)
+  | CCases of Constr.case_style   (* determines whether this value represents "let" or "match" construct *)
             * constr_expr option  (* return-clause *)
             * case_expr list
             * branch_expr list    (* branches *)

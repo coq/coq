@@ -9,7 +9,7 @@
 (** Global proof state. A quite redundant wrapper on {!Proof_global}. *)
 
 open Names
-open Term
+open Constr
 open Environ
 open Decl_kinds
 

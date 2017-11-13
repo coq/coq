@@ -9,7 +9,7 @@
 (* $Id$ *)
 
 open Names
-open Term
+open Constr
 open Pre_env
 
 val val_of_constr : env -> constr -> values

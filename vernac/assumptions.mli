@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Term
+open Constr
 open Globnames
 open Printer
 
@@ -28,4 +28,4 @@ val traverse :
    {!traverse} also applies. *)
 val assumptions :
   ?add_opaque:bool -> ?add_transparent:bool -> transparent_state ->
-     global_reference -> constr -> Term.types ContextObjectMap.t
+     global_reference -> constr -> types ContextObjectMap.t
