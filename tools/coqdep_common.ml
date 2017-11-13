@@ -483,7 +483,7 @@ let coq_dependencies file_output =
        let (out_fn,out_ch) =
          if file_output then
            (* Coq filename can't begin with _, so can't clash *)
-           Filename.open_temp_file ~temp_dir:(Filename.dirname absname) "_tmp" vd_sfx
+           Filename.open_temp_file ~temp_dir:(Filename.dirname absname) "_coqdeptmp" vd_sfx
          else
            ("" (* dummy, ignored *),stdout)
        in
