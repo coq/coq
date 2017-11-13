@@ -314,6 +314,9 @@ ci-hott:
 ci-iris-lambda-rust:
   <<: *ci-template
 
+ci-ltac2:
+  <<: *ci-template
+
 ci-math-classes:
   <<: *ci-template
 
