@@ -68,7 +68,7 @@ let _ =
 
 (* Extra info on proofs. *)
 type lemma_possible_guards = int list list
-type proof_universes = Evd.evar_universe_context * Universes.universe_binders option
+type proof_universes = UState.t * Universes.universe_binders option
 
 type proof_object = {
   id : Names.Id.t;
@@ -320,7 +320,7 @@ let constrain_variables init uctx =
   let levels = Univ.Instance.levels (Univ.UContext.instance init) in
   UState.constrain_variables levels uctx
 
-type closed_proof_output = (Constr.t * Safe_typing.private_constants) list * Evd.evar_universe_context
+type closed_proof_output = (Constr.t * Safe_typing.private_constants) list * UState.t
 
 let close_proof ~keep_body_ucst_separate ?feedback_id ~now
                 (fpl : closed_proof_output Future.computation) =

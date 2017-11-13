@@ -112,7 +112,7 @@ type proof = {
   (* List of goals that have been given up *)
   given_up : Goal.goal list;
   (* The initial universe context (for the statement) *)
-  initial_euctx : Evd.evar_universe_context
+  initial_euctx : UState.t
 }
 
 (*** General proof functions ***)

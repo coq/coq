@@ -16,6 +16,7 @@ open EConstr
 open Proof_type
 open Tacticals
 open Tacmach
+open Evd
 open Tactics
 open Clenv
 open Auto

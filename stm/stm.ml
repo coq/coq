@@ -1749,7 +1749,7 @@ end (* }}} *)
 
 and TacTask : sig
 
-  type output = (Constr.constr * Evd.evar_universe_context) option
+  type output = (Constr.constr * UState.t) option
   type task = {
     t_state    : Stateid.t;
     t_state_fb : Stateid.t;
@@ -1763,7 +1763,7 @@ and TacTask : sig
 
 end = struct (* {{{ *)
 
-  type output = (Constr.constr * Evd.evar_universe_context) option
+  type output = (Constr.constr * UState.t) option
   
   let forward_feedback msg = Hooks.(call forward_feedback msg)
 
@@ -1785,7 +1785,7 @@ end = struct (* {{{ *)
     r_name     : string }
 
   type response =
-    | RespBuiltSubProof of (Constr.constr * Evd.evar_universe_context)
+    | RespBuiltSubProof of (Constr.constr * UState.t)
     | RespError of Pp.t
     | RespNoProgress
 

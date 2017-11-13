@@ -304,7 +304,7 @@ type program_info_aux = {
   prg_name: Id.t;
   prg_body: constr;
   prg_type: constr;
-  prg_ctx:  Evd.evar_universe_context;
+  prg_ctx:  UState.t;
   prg_univdecl: Univdecls.universe_decl;
   prg_obligations: obligations;
   prg_deps : Id.t list;
@@ -313,7 +313,7 @@ type program_info_aux = {
   prg_notations : notations ;
   prg_kind : definition_kind;
   prg_reduce : constr -> constr;
-  prg_hook : (Evd.evar_universe_context -> unit) Lemmas.declaration_hook;
+  prg_hook : (UState.t -> unit) Lemmas.declaration_hook;
   prg_opaque : bool;
   prg_sign: named_context_val;
 }

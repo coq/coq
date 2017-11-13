@@ -1476,7 +1476,7 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   let sort = Tacticals.New.elimination_sort_of_goal gl in
   let mind = on_snd (fun u -> EInstance.kind sigma u) mind in
   let (sigma, elim) =
-    if occur_term sigma c concl then
+    if dependent sigma c concl then
       build_case_analysis_scheme env sigma mind true sort
     else
       build_case_analysis_scheme_default env sigma mind sort in

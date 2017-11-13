@@ -47,6 +47,7 @@ val global_of_constr : constr -> global_reference
 
 (** Obsolete synonyms for constr_of_global and global_of_constr *)
 val reference_of_constr : constr -> global_reference
+[@@ocaml.deprecated "Alias of Globnames.global_of_constr"]
 
 module RefOrdered : sig
   type t = global_reference
