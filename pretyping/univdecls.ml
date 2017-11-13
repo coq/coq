@@ -6,10 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
-open Nameops
-open CErrors
 open Pp
+open CErrors
+open Names
 
 (** Local universes and constraints declarations *)
 type universe_decl =
@@ -34,7 +33,7 @@ let interp_univ_constraints env evd cstrs =
     | GType (Some (loc, Name id)) ->
        try loc, Evd.universe_of_name evd (Id.to_string id)
        with Not_found ->
-         user_err ?loc ~hdr:"interp_constraint" (str "Undeclared universe " ++ pr_id id)
+         user_err ?loc ~hdr:"interp_constraint" (str "Undeclared universe " ++ Id.print id)
   in
   let interp (evd,cstrs) (u, d, u') =
     let lloc, ul = u_of_id u and rloc, u'l = u_of_id u' in

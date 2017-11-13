@@ -12,7 +12,6 @@ open CErrors
 open Names
 open Locus
 open EConstr
-open Nameops
 open Termops
 open Pretype_errors
 
@@ -30,7 +29,7 @@ let explain_invalid_occurrence l =
   ++ prlist_with_sep spc int l ++ str "."
 
 let explain_incorrect_in_value_occurrence id =
-  pr_id id ++ str " has no value."
+  Id.print id ++ str " has no value."
 
 let explain_occurrence_error = function
   | InvalidOccurrence l -> explain_invalid_occurrence l

@@ -6,8 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Misctypes
 open Pp
+open Names
+open Misctypes
 
 (** Printing of [intro_pattern] *)
 
@@ -18,8 +19,8 @@ let rec pr_intro_pattern prc (_,pat) = match pat with
   | IntroAction p -> pr_intro_pattern_action prc p
 
 and pr_intro_pattern_naming = function
-  | IntroIdentifier id -> Nameops.pr_id id
-  | IntroFresh id -> str "?" ++ Nameops.pr_id id
+  | IntroIdentifier id -> Id.print id
+  | IntroFresh id -> str "?" ++ Id.print id
   | IntroAnonymous -> str "?"
 
 and pr_intro_pattern_action prc = function

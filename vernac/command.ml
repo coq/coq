@@ -60,7 +60,7 @@ let rec complete_conclusion a cs = CAst.map_with_loc (fun ?loc -> function
       if not has_no_args then
 	user_err ?loc
 	 (strbrk"Cannot infer the non constant arguments of the conclusion of "
-	  ++ pr_id cs ++ str ".");
+	  ++ Id.print cs ++ str ".");
       let args = List.map (fun id -> CAst.make ?loc @@ CRef(Ident(loc,id),None)) params in
       CAppExpl ((None,Ident(loc,name),None),List.rev args)
   | c -> c
@@ -181,7 +181,7 @@ match local with
   let () = assumption_message ident in
   let () =
     if not !Flags.quiet && Proof_global.there_are_pending_proofs () then
-    Feedback.msg_info (str"Variable" ++ spc () ++ pr_id ident ++
+    Feedback.msg_info (str"Variable" ++ spc () ++ Id.print ident ++
     strbrk " is not visible from current goals")
   in
   let r = VarRef ident in
@@ -328,9 +328,9 @@ type structured_inductive_expr =
 
 let minductive_message warn = function
   | []  -> user_err Pp.(str "No inductive definition.")
-  | [x] -> (pr_id x ++ str " is defined" ++ 
+  | [x] -> (Id.print x ++ str " is defined" ++ 
 	    if warn then str " as a non-primitive record" else mt())
-  | l   -> hov 0  (prlist_with_sep pr_comma pr_id l ++
+  | l   -> hov 0  (prlist_with_sep pr_comma Id.print l ++
 		     spc () ++ str "are defined")
 
 let check_all_names_different indl =
@@ -764,11 +764,11 @@ let rec partial_order cmp = function
 let non_full_mutual_message x xge y yge isfix rest =
   let reason =
     if Id.List.mem x yge then
-      pr_id y ++ str " depends on " ++ pr_id x ++ strbrk " but not conversely"
+      Id.print y ++ str " depends on " ++ Id.print x ++ strbrk " but not conversely"
     else if Id.List.mem y xge then
-      pr_id x ++ str " depends on " ++ pr_id y ++ strbrk " but not conversely"
+      Id.print x ++ str " depends on " ++ Id.print y ++ strbrk " but not conversely"
     else
-      pr_id y ++ str " and " ++ pr_id x ++ strbrk " are not mutually dependent" in
+      Id.print y ++ str " and " ++ Id.print x ++ strbrk " are not mutually dependent" in
   let e = if List.is_empty rest then reason else strbrk "e.g., " ++ reason in
   let k = if isfix then "fixpoint" else "cofixpoint" in
   let w =

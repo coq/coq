@@ -129,7 +129,7 @@ module Store = Store.Make ()
 
 type evar = existential_key
 
-let string_of_existential evk = "?X" ^ string_of_int (Evar.repr evk)
+let string_of_existential evk = "?X" ^ string_of_int (Evar.Internal.repr evk)
 
 type evar_body =
   | Evar_empty
@@ -380,7 +380,7 @@ let add_name_newly_undefined id evk evi (evtoid, idtoev as names) =
   | None -> names
   | Some id ->
     if Id.Map.mem id idtoev then
-      user_err  (str "Already an existential evar of name " ++ pr_id id);
+      user_err  (str "Already an existential evar of name " ++ Id.print id);
     (EvMap.add evk id evtoid, Id.Map.add id evk idtoev)
 
 let add_name_undefined naming evk evi (evtoid,idtoev as evar_names) =
@@ -468,7 +468,7 @@ let evar_counter_summary_name = "evar counter"
 (* Generator of existential names *)
 let new_untyped_evar =
   let evar_ctr = Summary.ref 0 ~name:evar_counter_summary_name in
-  fun () -> incr evar_ctr; Evar.unsafe_of_int !evar_ctr
+  fun () -> incr evar_ctr; Evar.Internal.unsafe_of_int !evar_ctr
 
 let new_evar evd ?name evi =
   let evk = new_untyped_evar () in

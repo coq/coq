@@ -230,8 +230,8 @@ let error_instantiate_pattern id l =
   | [_] -> "is" 
   | _ -> "are"
   in
-  user_err  (str "Cannot substitute the term bound to " ++ pr_id id
-    ++ strbrk " in pattern because the term refers to " ++ pr_enum pr_id l
+  user_err  (str "Cannot substitute the term bound to " ++ Id.print id
+    ++ strbrk " in pattern because the term refers to " ++ pr_enum Id.print l
     ++ strbrk " which " ++ str is ++ strbrk " not bound in the pattern.")
 
 let instantiate_pattern env sigma lvar c =

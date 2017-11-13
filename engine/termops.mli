@@ -113,6 +113,7 @@ val collect_metas : Evd.evar_map -> constr -> int list
 val collect_vars : Evd.evar_map -> constr -> Id.Set.t (** for visible vars only *)
 val vars_of_global_reference : env -> Globnames.global_reference -> Id.Set.t
 val occur_term : Evd.evar_map -> constr -> constr -> bool (** Synonymous of dependent *)
+[@@ocaml.deprecated "alias of Termops.dependent"]
 
 (* Substitution of metavariables *)
 type meta_value_map = (metavariable * Constr.constr) list
@@ -290,7 +291,7 @@ val pr_evar_map : ?with_univs:bool -> int option -> evar_map -> Pp.t
 val pr_evar_map_filter : ?with_univs:bool -> (Evar.t -> evar_info -> bool) ->
   evar_map -> Pp.t
 val pr_metaset : Metaset.t -> Pp.t
-val pr_evar_universe_context : evar_universe_context -> Pp.t
+val pr_evar_universe_context : UState.t -> Pp.t
 val pr_evd_level : evar_map -> Univ.Level.t -> Pp.t
 
 (** debug printer: do not use to display terms to the casual user... *)

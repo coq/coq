@@ -10,6 +10,8 @@ open Pp
 open Util
 open Univ
 
+module Internal = struct
+
 (* Created in Caml by Gérard Huet for CoC 4.8 [Dec 1988] *)
 (* Functional code by Jean-Christophe Filliâtre for Coq V7.0 [1999] *)
 (* Extension with algebraic universes by HH for Coq V7.0 [Sep 2001] *)
@@ -910,4 +912,7 @@ let check_leq =
     let check_leq_key = Profile.declare_profile "check_leq" in
       Profile.profile3 check_leq_key check_leq
   else check_leq
+end
 
+module Public = Internal
+include Public

@@ -12,7 +12,6 @@ open CErrors
 open Util
 open Names
 open Globnames
-open Nameops
 open Termops
 open Reductionops
 open Term
@@ -55,7 +54,7 @@ exception PatternMatchingFailure
 let warn_meta_collision =
   CWarnings.create ~name:"meta-collision" ~category:"ltac"
          (fun name ->
-          strbrk "Collision between bound variable " ++ pr_id name ++
+          strbrk "Collision between bound variable " ++ Id.print name ++
             strbrk " and a metavariable of same name.")
 
 

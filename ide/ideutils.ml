@@ -372,8 +372,7 @@ let read_file name buf =
 let io_read_all chan =
   Buffer.clear read_buffer;
   let read_once () =
-    (* XXX: Glib.Io must be converted to bytes / -safe-string upstream *)
-    let len = Glib.Io.read_chars ~buf:(Bytes.unsafe_to_string read_string) ~pos:0 ~len:maxread chan in
+    let len = Glib.Io.read_chars ~buf:read_string ~pos:0 ~len:maxread chan in
     Buffer.add_subbytes read_buffer read_string 0 len
   in
   begin

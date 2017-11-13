@@ -15,10 +15,16 @@
    ```
  *)
 
+[@@@ocaml.warning "-3"]
+
 (******************************************************************************)
 (* config                                                                     *)
 (******************************************************************************)
 module Coq_config = Coq_config
+
+module Internal = struct
+  module Evar = Evar.Internal
+end
 
 (******************************************************************************)
 (* Kernel *)
@@ -35,6 +41,8 @@ module Esubst = Esubst
 module Sorts = Sorts
 module Evar = Evar
 module Constr = Constr
+
+(* Not moved out of API *)
 module Context = Context
 module Vars = Vars
 module Term = Term

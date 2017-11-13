@@ -123,6 +123,15 @@ ide/%.cmx: ide/%.ml
 	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
 
+# We need to compile this file without -safe-string due mess with
+# lablgtk API. Other option is to require lablgtk >= 2.8.16
+ide/ideutils.cmo: ide/ideutils.ml
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(filter-out -safe-string,$(OCAMLC)) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+
+ide/ideutils.cmx: ide/ideutils.ml
+	$(SHOW)'OCAMLOPT  $<'
+	$(HIDE)$(filter-out -safe-string,$(OCAMLOPT)) $(COQIDEFLAGS) $(filter-out -safe-string,$(OPTFLAGS)) -c $<
 
 ####################
 ## Install targets

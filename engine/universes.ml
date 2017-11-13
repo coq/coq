@@ -16,7 +16,7 @@ open Univ
 open Globnames
 
 let pr_with_global_universes l =
-  try Nameops.pr_id (LMap.find l (snd (Global.global_universe_names ())))
+  try Id.print (LMap.find l (snd (Global.global_universe_names ())))
   with Not_found -> Level.pr l
 
 (** Local universe names of polymorphic references *)
@@ -808,7 +808,7 @@ let normalize_context_set ctx us algs =
 	 in g) csts g
     in
     let g = Univ.Constraint.fold UGraph.enforce_constraint csts g in
-      UGraph.constraints_of_universes g
+      UGraph.Internal.constraints_of_universes g
   in
   let noneqs =
     Constraint.fold (fun (l,d,r as cstr) noneqs ->

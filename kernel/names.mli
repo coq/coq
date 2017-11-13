@@ -22,6 +22,8 @@
 
 open Util
 
+module Public : sig
+
 (** {6 Identifiers } *)
 
 (** Representation and operations on identifiers. *)
@@ -836,3 +838,11 @@ val debug_pr_mind : MutInd.t -> Pp.t
 
 val debug_string_of_mind : MutInd.t -> string
 [@@ocaml.deprecated "Same as [MutInd.debug_to_string]"]
+
+end
+
+include module type of Public
+
+(* Nothing is internal for now *)
+module Internal : sig
+end

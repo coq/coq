@@ -10,7 +10,6 @@ open Names
 open Constr
 open Environ
 open EConstr
-open Evd
 open Proof_type
 open Redexpr
 open Pattern
@@ -19,7 +18,10 @@ open Ltac_pretype
 
 (** Operations for handling terms under a local typing context. *)
 
-type 'a sigma   = 'a Evd.sigma;;
+type 'a sigma   = 'a Evd.sigma
+[@@ocaml.deprecated "alias of Evd.sigma"]
+
+open Evd
 type tactic     = Proof_type.tactic;;
 
 val sig_it  : 'a sigma   -> 'a

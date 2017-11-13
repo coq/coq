@@ -50,13 +50,13 @@ let pr_puniverses p u =
 let rec pr_constr c = match kind c with
   | Rel n -> str "#"++int n
   | Meta n -> str "Meta(" ++ int n ++ str ")"
-  | Var id -> pr_id id
+  | Var id -> Id.print id
   | Sort s -> print_sort s
   | Cast (c,_, t) -> hov 1
       (str"(" ++ pr_constr c ++ cut() ++
        str":" ++ pr_constr t ++ str")")
   | Prod (Name(id),t,c) -> hov 1
-      (str"forall " ++ pr_id id ++ str":" ++ pr_constr t ++ str"," ++
+      (str"forall " ++ Id.print id ++ str":" ++ pr_constr t ++ str"," ++
        spc() ++ pr_constr c)
   | Prod (Anonymous,t,c) -> hov 0
       (str"(" ++ pr_constr t ++ str " ->" ++ spc() ++
@@ -72,7 +72,7 @@ let rec pr_constr c = match kind c with
       (str"(" ++ pr_constr c ++ spc() ++
        prlist_with_sep spc pr_constr (Array.to_list l) ++ str")")
   | Evar (e,l) -> hov 1
-      (str"Evar#" ++ int (Evar.repr e) ++ str"{" ++
+      (str"Evar#" ++ int (Evar.Internal.repr e) ++ str"{" ++
        prlist_with_sep spc pr_constr (Array.to_list l) ++str"}")
   | Const (c,u) -> str"Cst(" ++ pr_puniverses (pr_con c) u ++ str")"
   | Ind ((sp,i),u) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str")"
@@ -130,9 +130,9 @@ let pr_existential_key sigma evk =
 let open Evd in
 match evar_ident evk sigma with
 | None ->
-  str "?" ++ pr_id (pr_evar_suggested_name evk sigma)
+  str "?" ++ Id.print (pr_evar_suggested_name evk sigma)
 | Some id ->
-  str "?" ++ pr_id id
+  str "?" ++ Id.print id
 
 let pr_instance_status (sc,typ) =
   let open Evd in
@@ -158,7 +158,7 @@ let pr_meta_map evd =
   let open Evd in
   let print_constr = print_kconstr in
   let pr_name = function
-      Name id -> str"[" ++ pr_id id ++ str"]"
+      Name id -> str"[" ++ Id.print id ++ str"]"
     | _ -> mt() in
   let pr_meta_binding = function
     | (mv,Cltyp (na,b)) ->
@@ -178,23 +178,23 @@ let pr_decl (decl,ok) =
   let open NamedDecl in
   let print_constr = print_kconstr in
   match decl with
-  | LocalAssum (id,_) -> if ok then pr_id id else (str "{" ++ pr_id id ++ str "}")
-  | LocalDef (id,c,_) -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++
+  | LocalAssum (id,_) -> if ok then Id.print id else (str "{" ++ Id.print id ++ str "}")
+  | LocalDef (id,c,_) -> str (if ok then "(" else "{") ++ Id.print id ++ str ":=" ++
                            print_constr c ++ str (if ok then ")" else "}")
 
 let pr_evar_source = function
-  | Evar_kinds.NamedHole id -> pr_id id
+  | Evar_kinds.NamedHole id -> Id.print id
   | Evar_kinds.QuestionMark _ -> str "underscore"
   | Evar_kinds.CasesType false -> str "pattern-matching return predicate"
   | Evar_kinds.CasesType true ->
       str "subterm of pattern-matching return predicate"
-  | Evar_kinds.BinderType (Name id) -> str "type of " ++ Nameops.pr_id id
+  | Evar_kinds.BinderType (Name id) -> str "type of " ++ Id.print id
   | Evar_kinds.BinderType Anonymous -> str "type of anonymous binder"
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
       let open Globnames in
       let print_constr = print_kconstr in
       let id = Option.get ido in
-      str "parameter " ++ pr_id id ++ spc () ++ str "of" ++
+      str "parameter " ++ Id.print id ++ spc () ++ str "of" ++
       spc () ++ print_constr (printable_constr_of_global c)
   | Evar_kinds.InternalHole -> str "internal placeholder"
   | Evar_kinds.TomatchTypeParameter (ind,n) ->
@@ -203,7 +203,7 @@ let pr_evar_source = function
   | Evar_kinds.GoalEvar -> str "goal evar"
   | Evar_kinds.ImpossibleCase -> str "type of impossible pattern-matching clause"
   | Evar_kinds.MatchingVar _ -> str "matching variable"
-  | Evar_kinds.VarInstance id -> str "instance of " ++ pr_id id
+  | Evar_kinds.VarInstance id -> str "instance of " ++ Id.print id
   | Evar_kinds.SubEvar evk ->
       let open Evd in
       str "subterm of " ++ str (string_of_existential evk)
@@ -435,7 +435,7 @@ let pr_var_decl env decl =
 	  (str" := " ++ pb ++ cut () ) in
   let pt = print_constr_env env Evd.empty (EConstr.of_constr (get_type decl)) in
   let ptyp = (str" : " ++ pt) in
-    (pr_id (get_id decl) ++ hov 0 (pbody ++ ptyp))
+    (Id.print (get_id decl) ++ hov 0 (pbody ++ ptyp))
 
 let pr_rel_decl env decl =
   let open RelDecl in
@@ -449,7 +449,7 @@ let pr_rel_decl env decl =
   let ptyp = print_constr_env env Evd.empty (EConstr.of_constr (get_type decl)) in
     match get_name decl with
       | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
-      | Name id -> hov 0 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+      | Name id -> hov 0 (Id.print id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
 
 let print_named_context env =
   hv 0 (fold_named_context

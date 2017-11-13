@@ -33,7 +33,7 @@ val noccur_with_meta : int -> int -> constr -> bool
 (** {6 Relocation and substitution } *)
 
 (** [exliftn el c] lifts [c] with lifting [el] *)
-val exliftn : Esubst.lift -> constr -> constr
+val exliftn : Esubst.Internal.lift -> constr -> constr
 
 (** [liftn n k c] lifts by [n] indexes above or equal to [k] in [c] *)
 val liftn : int -> int -> constr -> constr

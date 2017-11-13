@@ -269,7 +269,7 @@ let universe_context ~names ~extensible ctx =
            try UNameMap.find (Id.to_string id) (fst ctx.uctx_names)
            with Not_found ->
              user_err ?loc ~hdr:"universe_context"
-               (str"Universe " ++ Nameops.pr_id id ++ str" is not bound anymore.")
+               (str"Universe " ++ Id.print id ++ str" is not bound anymore.")
          in (l :: newinst, Univ.LSet.remove l acc))
       names ([], levels)
   in

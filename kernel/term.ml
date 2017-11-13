@@ -154,8 +154,8 @@ let iter_constr_with_binders = Constr.iter_with_binders
 let compare_constr = Constr.compare_head
 let hash_constr = Constr.hash
 let hcons_sorts = Sorts.hcons
-let hcons_constr = Constr.hcons
-let hcons_types = Constr.hcons
+let hcons_constr = Constr.Internal.hcons
+let hcons_types = Constr.Internal.hcons
 
 (**********************************************************************)
 (**         HERE BEGINS THE INTERESTING STUFF                         *)

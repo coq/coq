@@ -310,7 +310,7 @@ let rec get_notation_vars onlyprint = function
 	(* don't check for nonlinearity if printing only, see Bug 5526 *)
 	if not onlyprint && Id.List.mem id vars then 
 	  user_err ~hdr:"Metasyntax.get_notation_vars"
-            (str "Variable " ++ pr_id id ++ str " occurs more than once.")
+            (str "Variable " ++ Id.print id ++ str " occurs more than once.")
 	else id::vars
   | (Terminal _ | Break _) :: sl -> get_notation_vars onlyprint sl
   | SProdList _ :: _ -> assert false
@@ -323,7 +323,7 @@ let analyze_notation_tokens ~onlyprint l =
 
 let error_not_same_scope x y =
   user_err ~hdr:"Metasyntax.error_not_name_scope"
-    (str "Variables " ++ pr_id x ++ str " and " ++ pr_id y ++ str " must be in the same scope.")
+    (str "Variables " ++ Id.print x ++ str " and " ++ Id.print y ++ str " must be in the same scope.")
 
 (**********************************************************************)
 (* Build pretty-printing rules                                        *)
@@ -398,7 +398,7 @@ let check_open_binder isopen sl m =
   | _ -> assert false
   in
   if isopen && not (List.is_empty sl) then
-    user_err  (str "as " ++ pr_id m ++
+    user_err  (str "as " ++ Id.print m ++
       str " is a non-closed binder, no such \"" ++
       prlist_with_sep spc pr_token sl
       ++ strbrk "\" is allowed to occur.")
@@ -865,7 +865,7 @@ let check_useless_entry_types recvars mainvars etyps =
   let vars = let (l1,l2) = List.split recvars in l1@l2@mainvars in
   match List.filter (fun (x,etyp) -> not (List.mem x vars)) etyps with
   | (x,_)::_ -> user_err ~hdr:"Metasyntax.check_useless_entry_types"
-                  (pr_id x ++ str " is unbound in the notation.")
+                  (Id.print x ++ str " is unbound in the notation.")
   | _ -> ()
 
 let check_binder_type recvars etyps =
@@ -922,7 +922,7 @@ let join_auxiliary_recursive_types recvars etyps =
     | Some xtyp, Some ytyp when Pervasives.(=) xtyp ytyp -> typs (* FIXME *)
     | Some xtyp, Some ytyp ->
 	user_err 
-	  (strbrk "In " ++ pr_id x ++ str " .. " ++ pr_id y ++
+	  (strbrk "In " ++ Id.print x ++ str " .. " ++ Id.print y ++
 	   strbrk ", both ends have incompatible types."))
     recvars etyps
 

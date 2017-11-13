@@ -1216,7 +1216,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
     let { Evd.evar_body = e_body } as e_def = Evd.find sigma e in
     let e_body = match e_body with Evar_defined c -> c
     | _ -> errorstrm (str "Matching the pattern " ++ pr_constr p ++
-          str " did not instantiate ?" ++ int (Evar.repr e) ++ spc () ++
+          str " did not instantiate ?" ++ int (Internal.Evar.repr e) ++ spc () ++
           str "Does the variable bound by the \"in\" construct occur "++
           str "in the pattern?") in
     let sigma = 

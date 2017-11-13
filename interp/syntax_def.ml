@@ -6,16 +6,15 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open CErrors
 open Util
 open Pp
+open CErrors
 open Names
 open Libnames
-open Notation_term
 open Libobject
 open Lib
-open Nameops
 open Nametab
+open Notation_term
 
 (* Syntactic definitions. *)
 
@@ -31,7 +30,7 @@ let add_syntax_constant kn c onlyparse =
 let load_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
   if Nametab.exists_cci sp then
     user_err ~hdr:"cache_syntax_constant"
-      (pr_id (basename sp) ++ str " already exists");
+      (Id.print (basename sp) ++ str " already exists");
   add_syntax_constant kn pat onlyparse;
   Nametab.push_syndef (Nametab.Until i) sp kn
 

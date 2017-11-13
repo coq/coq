@@ -94,7 +94,7 @@ let check_conv_error error why cst poly f env a1 a2 =
 let check_polymorphic_instance error env auctx1 auctx2 =
   if not (Univ.AUContext.size auctx1 == Univ.AUContext.size auctx2) then
     error IncompatibleInstances
-  else if not (UGraph.check_subtype (Environ.universes env) auctx2 auctx1) then
+  else if not (UGraph.Internal.check_subtype (Environ.universes env) auctx2 auctx1) then
     error (IncompatibleConstraints auctx1)
   else
     Environ.push_context ~strict:false (Univ.AUContext.repr auctx2) env

@@ -16,7 +16,7 @@ val noccur_between : int -> int -> constr -> bool
 val noccur_with_meta : int -> int -> constr -> bool
 val map_constr_with_binders :
   ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
-val exliftn : Esubst.lift -> constr -> constr
+val exliftn : Esubst.Internal.lift -> constr -> constr
 val liftn : int -> int -> constr -> constr
 val lift : int -> constr -> constr
 type info = Closed | Open | Unknown
