@@ -1397,9 +1397,9 @@ and tactic_of_value ist vle =
 and interp_letrec ist llc u =
   Proofview.tclUNIT () >>= fun () -> (* delay for the effects of [lref], just in case. *)
   let lref = ref ist.lfun in
-  let fold accu ((_, id), b) =
+  let fold accu ((_, na), b) =
     let v = of_tacvalue (VRec (lref, TacArg (Loc.tag b))) in
-    Id.Map.add id v accu
+    Name.fold_right (fun id -> Id.Map.add id v) na accu
   in
   let lfun = List.fold_left fold ist.lfun llc in
   let () = lref := lfun in
@@ -1412,9 +1412,9 @@ and interp_letin ist llc u =
   | [] ->
     let ist = { ist with lfun } in
     val_interp ist u
-  | ((_, id), body) :: defs ->
+  | ((_, na), body) :: defs ->
     Ftactic.bind (interp_tacarg ist body) (fun v ->
-    fold (Id.Map.add id v lfun) defs)
+    fold (Name.fold_right (fun id -> Id.Map.add id v) na lfun) defs)
   in
   fold ist.lfun llc
 

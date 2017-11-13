@@ -536,8 +536,8 @@ let pr_goal_selector ~toplevel s =
 
   let pr_funvar n = spc () ++ Name.print n
 
-  let pr_let_clause k pr (id,(bl,t)) =
-    hov 0 (keyword k ++ spc () ++ pr_lident id ++ prlist pr_funvar bl ++
+  let pr_let_clause k pr (na,(bl,t)) =
+    hov 0 (keyword k ++ spc () ++ pr_lname na ++ prlist pr_funvar bl ++
              str " :=" ++ brk (1,1) ++ pr (TacArg (Loc.tag t)))
 
   let pr_let_clauses recflag pr = function

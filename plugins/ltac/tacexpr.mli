@@ -254,7 +254,7 @@ and 'a gen_tactic_expr =
   | TacFail of global_flag * int or_var * 'n message_token list
   | TacInfo of 'a gen_tactic_expr
   | TacLetIn of rec_flag *
-      (Id.t located * 'a gen_tactic_arg) list *
+      (Name.t located * 'a gen_tactic_arg) list *
       'a gen_tactic_expr
   | TacMatch of lazy_flag *
       'a gen_tactic_expr *

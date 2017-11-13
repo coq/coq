@@ -232,10 +232,12 @@ GEXTEND Gram
       | l = ident -> Name.Name l ] ]
   ;
   let_clause:
-    [ [ id = identref; ":="; te = tactic_expr ->
-         (id, arg_of_expr te)
-      | id = identref; args = LIST1 input_fun; ":="; te = tactic_expr ->
-         (id, arg_of_expr (TacFun(args,te))) ] ]
+    [ [ (l,id) = identref; ":="; te = tactic_expr ->
+         ((l,Name id), arg_of_expr te)
+      | na = ["_" -> (Some !@loc,Anonymous)]; ":="; te = tactic_expr ->
+         (na, arg_of_expr te)
+      | (l,id) = identref; args = LIST1 input_fun; ":="; te = tactic_expr ->
+         ((l,Name id), arg_of_expr (TacFun(args,te))) ] ]
   ;
   match_pattern:
     [ [ IDENT "context";  oid = OPT Constr.ident;
