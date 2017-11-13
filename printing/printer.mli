@@ -81,11 +81,11 @@ val pr_closed_glob         : closed_glob_constr -> Pp.t
 val pr_ljudge_env          : env -> evar_map -> EConstr.unsafe_judgment -> Pp.t * Pp.t
 val pr_ljudge              : EConstr.unsafe_judgment -> Pp.t * Pp.t
 
-val pr_lglob_constr_env      : env -> glob_constr -> Pp.t
-val pr_lglob_constr          : glob_constr -> Pp.t
+val pr_lglob_constr_env      : env -> 'a glob_constr_g -> Pp.t
+val pr_lglob_constr          : 'a glob_constr_g -> Pp.t
 
-val pr_glob_constr_env       : env -> glob_constr -> Pp.t
-val pr_glob_constr           : glob_constr -> Pp.t
+val pr_glob_constr_env       : env -> 'a glob_constr_g -> Pp.t
+val pr_glob_constr           : 'a glob_constr_g -> Pp.t
 
 val pr_lconstr_pattern_env : env -> evar_map -> constr_pattern -> Pp.t
 val pr_lconstr_pattern     : constr_pattern -> Pp.t
