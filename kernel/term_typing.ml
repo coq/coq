@@ -525,7 +525,7 @@ type side_effect_role =
   | Schema of inductive * string
 
 type exported_side_effect = 
-  constant * constant_body * side_effect_role
+  Constant.t * constant_body * side_effect_role
 
 let export_side_effects mb env ce =
   match ce with

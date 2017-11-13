@@ -25,7 +25,7 @@ open Context.Named.Declaration
    the evaluation of [phi(0)] and the head of [h] is declared unknown). *)
 
 type rigid_head_kind =
-| RigidParameter of constant (* a Const without body *)
+| RigidParameter of Constant.t (* a Const without body *)
 | RigidVar of variable (* a Var without body *)
 | RigidType (* an inductive, a product or a sort *)
 
@@ -156,7 +156,7 @@ let cache_head o =
 let subst_head_approximation subst = function
   | RigidHead (RigidParameter cst) as k ->
       let cst,c = subst_con_kn subst cst in
-      if isConst c && eq_constant (fst (destConst c)) cst then
+      if isConst c && Constant.equal (fst (destConst c)) cst then
         (* A change of the prefix of the constant *)
         k
       else

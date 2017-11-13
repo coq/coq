@@ -6,4 +6,4 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-val check_module : Environ.env -> Names.module_path -> Cic.module_body -> unit
+val check_module : Environ.env -> Names.ModPath.t -> Cic.module_body -> unit

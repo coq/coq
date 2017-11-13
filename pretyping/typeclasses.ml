@@ -71,7 +71,7 @@ type typeclass = {
 
   (* The method implementaions as projections. *)
   cl_projs : (Name.t * (direction * Vernacexpr.hint_info_expr) option
-	      * constant option) list;
+	      * Constant.t option) list;
   
   cl_strict : bool;
 

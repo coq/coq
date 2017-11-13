@@ -32,7 +32,7 @@ type mind_specif = mutual_inductive_body * one_inductive_body
 val lookup_mind_specif : env -> inductive -> mind_specif
 
 (** {6 Functions to build standard types related to inductive } *)
-val ind_subst : mutual_inductive -> mutual_inductive_body -> universe_instance -> constr list
+val ind_subst : MutInd.t -> mutual_inductive_body -> universe_instance -> constr list
 
 val inductive_paramdecls : mutual_inductive_body puniverses -> Context.Rel.t
 
@@ -65,7 +65,7 @@ val arities_of_constructors : pinductive -> mind_specif -> types array
 val type_of_constructors : pinductive -> mind_specif -> types array
 
 (** Transforms inductive specification into types (in nf) *)
-val arities_of_specif : mutual_inductive puniverses -> mind_specif -> types array
+val arities_of_specif : MutInd.t puniverses -> mind_specif -> types array
 
 val inductive_params : mind_specif -> int
 

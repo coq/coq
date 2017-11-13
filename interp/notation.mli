@@ -110,7 +110,7 @@ val availability_of_prim_token :
 (** Binds a notation in a given scope to an interpretation *)
 type interp_rule =
   | NotationRule of scope_name option * notation
-  | SynDefRule of kernel_name
+  | SynDefRule of KerName.t
 
 val declare_notation_interpretation : notation -> scope_name option ->
       interpretation -> notation_location -> onlyprint:bool -> unit

@@ -31,10 +31,10 @@ val set_remote_new_univ_level : universe_level RemoteCounter.installer
 
 (** Side-effecting functions creating new universe levels. *)
 
-val new_univ_level : Names.dir_path -> universe_level
-val new_univ : Names.dir_path -> universe
-val new_Type : Names.dir_path -> types
-val new_Type_sort : Names.dir_path -> sorts
+val new_univ_level : DirPath.t -> universe_level
+val new_univ : DirPath.t -> universe
+val new_Type : DirPath.t -> types
+val new_Type_sort : DirPath.t -> sorts
 
 val new_global_univ : unit -> universe in_universe_context_set
 val new_sort_in_family : sorts_family -> sorts
@@ -90,7 +90,7 @@ val fresh_instance_from : abstract_universe_context -> universe_instance option 
 
 val fresh_sort_in_family : env -> sorts_family -> 
   sorts in_universe_context_set
-val fresh_constant_instance : env -> constant ->
+val fresh_constant_instance : env -> Constant.t ->
   pconstant in_universe_context_set
 val fresh_inductive_instance : env -> inductive ->
   pinductive in_universe_context_set

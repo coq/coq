@@ -25,7 +25,7 @@ to OCaml code. *)
 (** Local names **)
 
 (* The first component is there for debugging purposes only *)
-type lname = { lname : name; luid : int }
+type lname = { lname : Name.t; luid : int }
 
 let eq_lname ln1 ln2 =
   Int.equal ln1.luid ln2.luid
@@ -50,13 +50,13 @@ let fresh_lname n =
 type gname = 
   | Gind of string * inductive (* prefix, inductive name *)
   | Gconstruct of string * constructor (* prefix, constructor name *)
-  | Gconstant of string * constant (* prefix, constant name *)
-  | Gproj of string * constant (* prefix, constant name *)
-  | Gcase of label option * int
-  | Gpred of label option * int
-  | Gfixtype of label option * int
-  | Gnorm of label option * int
-  | Gnormtbl of label option * int
+  | Gconstant of string * Constant.t (* prefix, constant name *)
+  | Gproj of string * Constant.t (* prefix, constant name *)
+  | Gcase of Label.t option * int
+  | Gpred of Label.t option * int
+  | Gfixtype of Label.t option * int
+  | Gnorm of Label.t option * int
+  | Gnormtbl of Label.t option * int
   | Ginternal of string
   | Grel of int
   | Gnamed of Id.t
@@ -143,8 +143,8 @@ let fresh_gnormtbl l =
 type symbol =
   | SymbValue of Nativevalues.t
   | SymbSort of sorts
-  | SymbName of name
-  | SymbConst of constant
+  | SymbName of Name.t
+  | SymbConst of Constant.t
   | SymbMatch of annot_sw
   | SymbInd of inductive
   | SymbMeta of metavariable
@@ -296,7 +296,7 @@ type primitive =
   | MLmagic
   | MLarrayget
   | Mk_empty_instance
-  | Coq_primitive of CPrimitives.t * (prefix * constant) option
+  | Coq_primitive of CPrimitives.t * (prefix * Constant.t) option
 
 let eq_primitive p1 p2 =
   match p1, p2 with
@@ -921,7 +921,7 @@ let merge_branches t =
 
 
 type prim_aux = 
-  | PAprim of string * constant * CPrimitives.t * prim_aux array
+  | PAprim of string * Constant.t * CPrimitives.t * prim_aux array
   | PAml of mllambda
 
 let add_check cond args =
@@ -1504,7 +1504,7 @@ let string_of_dirpath = function
 (* OCaml as a module identifier.                                           *)
 let string_of_dirpath s = "N"^string_of_dirpath s
 
-let mod_uid_of_dirpath dir = string_of_dirpath (repr_dirpath dir)
+let mod_uid_of_dirpath dir = string_of_dirpath (DirPath.repr dir)
 
 let link_info_of_dirpath dir =
   Linked (mod_uid_of_dirpath dir ^ ".")
@@ -1523,19 +1523,19 @@ let string_of_label_def l =
 let rec list_of_mp acc = function
   | MPdot (mp,l) -> list_of_mp (string_of_label l::acc) mp
   | MPfile dp ->
-      let dp = repr_dirpath dp in
+      let dp = DirPath.repr dp in
       string_of_dirpath dp :: acc
-  | MPbound mbid -> ("X"^string_of_id (id_of_mbid mbid))::acc
+  | MPbound mbid -> ("X"^string_of_id (MBId.to_id mbid))::acc
 
 let list_of_mp mp = list_of_mp [] mp
 
 let string_of_kn kn =
-  let (mp,dp,l) = repr_kn kn in
+  let (mp,dp,l) = KerName.repr kn in
   let mp = list_of_mp mp in
   String.concat "_" mp ^ "_" ^ string_of_label l
 
-let string_of_con c = string_of_kn (user_con c)
-let string_of_mind mind = string_of_kn (user_mind mind)
+let string_of_con c = string_of_kn (Constant.user c)
+let string_of_mind mind = string_of_kn (MutInd.user mind)
 
 let string_of_gname g =
   match g with
@@ -1877,7 +1877,7 @@ let compile_constant env sigma prefix ~interactive con cb =
         if interactive then LinkedInteractive prefix
         else Linked prefix
       in
-      let l = con_label con in
+      let l = Constant.label con in
       let auxdefs,code =
 	if no_univs then compile_with_fv env sigma None [] (Some l) code
 	else

@@ -378,7 +378,7 @@ module Renv =
     type constructor_info = tag * int * int (* nparam nrealargs *)
 
     type t = {
-	name_rel : name Vect.t;
+	name_rel : Name.t Vect.t;
 	construct_tbl : constructor_info ConstrTable.t;
 
        }

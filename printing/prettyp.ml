@@ -33,12 +33,12 @@ open Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 type object_pr = {
-  print_inductive           : mutual_inductive -> Pp.t;
-  print_constant_with_infos : constant -> Pp.t;
+  print_inductive           : MutInd.t -> Pp.t;
+  print_constant_with_infos : Constant.t -> Pp.t;
   print_section_variable    : variable -> Pp.t;
-  print_syntactic_def       : kernel_name -> Pp.t;
-  print_module              : bool -> Names.module_path -> Pp.t;
-  print_modtype             : module_path -> Pp.t;
+  print_syntactic_def       : KerName.t -> Pp.t;
+  print_module              : bool -> ModPath.t -> Pp.t;
+  print_modtype             : ModPath.t -> Pp.t;
   print_named_decl          : Context.Named.Declaration.t -> Pp.t;
   print_library_entry       : bool -> (object_name * Lib.node) -> Pp.t option;
   print_context             : bool -> int option -> Lib.library_segment -> Pp.t;
@@ -318,8 +318,8 @@ type locatable = Locatable : 'a locatable_info -> locatable
 type logical_name =
   | Term of global_reference
   | Dir of global_dir_reference
-  | Syntactic of kernel_name
-  | ModuleType of module_path
+  | Syntactic of KerName.t
+  | ModuleType of ModPath.t
   | Other : 'a * 'a locatable_info -> logical_name
   | Undefined of qualid
 
@@ -623,14 +623,14 @@ let gallina_print_leaf_entry with_values ((sp,kn as oname),lobj) =
              constraints *)
 	  (try Some(print_named_decl (basename sp)) with Not_found -> None)
       | (_,"CONSTANT") ->
-	  Some (print_constant with_values sep (constant_of_kn kn))
+	  Some (print_constant with_values sep (Constant.make1 kn))
       | (_,"INDUCTIVE") ->
-	  Some (gallina_print_inductive (mind_of_kn kn))
+	  Some (gallina_print_inductive (MutInd.make1 kn))
       | (_,"MODULE") ->
-	  let (mp,_,l) = repr_kn kn in
+	  let (mp,_,l) = KerName.repr kn in
 	    Some (print_module with_values (MPdot (mp,l)))
       | (_,"MODULE TYPE") ->
-	  let (mp,_,l) = repr_kn kn in
+	  let (mp,_,l) = KerName.repr kn in
 	  Some (print_modtype (MPdot (mp,l)))
       | (_,("AUTOHINT"|"GRAMMAR"|"SYNTAXCONSTANT"|"PPSYNTAX"|"TOKEN"|"CLASS"|
 	    "COERCION"|"REQUIRE"|"END-SECTION"|"STRUCTURE")) -> None
@@ -750,12 +750,12 @@ let print_full_pure_context () =
 	    str "." ++ fnl () ++ fnl ()
       | "MODULE" ->
 	  (* TODO: make it reparsable *)
-	  let (mp,_,l) = repr_kn kn in
+	  let (mp,_,l) = KerName.repr kn in
 	  print_module true (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
       | "MODULE TYPE" ->
 	  (* TODO: make it reparsable *)
 	  (* TODO: make it reparsable *)
-	  let (mp,_,l) = repr_kn kn in
+	  let (mp,_,l) = KerName.repr kn in
 	  print_modtype (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
       | _ -> mt () in
       prec rest ++ pp

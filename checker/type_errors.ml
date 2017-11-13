@@ -52,14 +52,14 @@ type type_error =
   | WrongCaseInfo of inductive * case_info
   | NumberBranches of unsafe_judgment * int
   | IllFormedBranch of constr * int * constr * constr
-  | Generalization of (name * constr) * unsafe_judgment
+  | Generalization of (Name.t * constr) * unsafe_judgment
   | ActualType of unsafe_judgment * constr
   | CantApplyBadType of
       (int * constr * constr) * unsafe_judgment * unsafe_judgment array
   | CantApplyNonFunctional of unsafe_judgment * unsafe_judgment array
-  | IllFormedRecBody of guard_error * name array * int
+  | IllFormedRecBody of guard_error * Name.t array * int
   | IllTypedRecBody of
-      int * name array * unsafe_judgment array * constr array
+      int * Name.t array * unsafe_judgment array * constr array
   | UnsatisfiedConstraints of Univ.constraints
 
 exception TypeError of env * type_error

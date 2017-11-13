@@ -58,10 +58,10 @@ type atom =
             (* types, bodies, rec_pos, pos *)
   | Acofix of t array * t array * int * t
   | Acofixe of t array * t array * int * t
-  | Aprod of name * t * (t -> t)
+  | Aprod of Name.t * t * (t -> t)
   | Ameta of metavariable * t
   | Aevar of existential * t
-  | Aproj of constant * accumulator
+  | Aproj of Constant.t * accumulator
 
 let accumulate_tag = 0
 

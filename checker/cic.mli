@@ -81,7 +81,7 @@ type 'constr pfixpoint =
 type 'constr pcofixpoint =
     int * 'constr prec_declaration
 type 'a puniverses = 'a Univ.puniverses
-type pconstant = constant puniverses
+type pconstant = Constant.t puniverses
 type pinductive = inductive puniverses
 type pconstructor = constructor puniverses
 
@@ -127,12 +127,12 @@ type section_context = unit
 
 type delta_hint =
   | Inline of int * constr option
-  | Equiv of kernel_name
+  | Equiv of KerName.t
 
-type delta_resolver = module_path MPmap.t * delta_hint KNmap.t
+type delta_resolver = ModPath.t MPmap.t * delta_hint KNmap.t
 
 type 'a umap_t = 'a MPmap.t * 'a MBImap.t
-type substitution = (module_path * delta_resolver) umap_t
+type substitution = (ModPath.t * delta_resolver) umap_t
 
 (** {6 Delayed constr} *)
 
@@ -194,7 +194,7 @@ type inline = int option
     always transparent. *)
 
 type projection_body = {
-  proj_ind : mutual_inductive;
+  proj_ind : MutInd.t;
   proj_npars : int;
   proj_arg : int;
   proj_type : constr; (* Type under params *)
@@ -241,7 +241,7 @@ type recarg =
 
 type wf_paths = recarg Rtree.t
 
-type record_body = (Id.t * constant array * projection_body array) option
+type record_body = (Id.t * Constant.t array * projection_body array) option
     (* The body is empty for non-primitive records, otherwise we get its
        binder name in projections and list of projections if it is primitive. *)
 
@@ -347,12 +347,12 @@ type ('ty,'a) functorize =
     only for short module printing and for extraction. *)
 
 type with_declaration =
-  | WithMod of Id.t list * module_path
+  | WithMod of Id.t list * ModPath.t
   | WithDef of Id.t list * (constr * Univ.universe_context)
 
 type module_alg_expr =
-  | MEident of module_path
-  | MEapply of module_alg_expr * module_path
+  | MEident of ModPath.t
+  | MEapply of module_alg_expr * ModPath.t
   | MEwith of module_alg_expr * with_declaration
 
 (** A component of a module structure *)
@@ -386,7 +386,7 @@ and module_implementation =
   | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
 
 and 'a generic_module_body =
-  { mod_mp : module_path; (** absolute path of the module *)
+  { mod_mp : ModPath.t; (** absolute path of the module *)
     mod_expr : 'a; (** implementation *)
     mod_type : module_signature; (** expanded type *)
     (** algebraic type, kept if it's relevant for extraction *)

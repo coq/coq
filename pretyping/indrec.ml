@@ -566,7 +566,7 @@ let build_mutual_induction_scheme env sigma = function
     	(List.map
 	   (function ((mind',u'),dep',s') ->
 	      let (sp',_) = mind' in
-	      if eq_mind sp sp' then
+	      if MutInd.equal sp sp' then
                 let (mibi',mipi') = lookup_mind_specif env mind' in
 		((mind',u'),mibi',mipi',dep',s')
 	      else
@@ -605,7 +605,7 @@ let lookup_eliminator ind_sp s =
   (* Try first to get an eliminator defined in the same section as the *)
   (* inductive type *)
   try
-    let cst =Global.constant_of_delta_kn (make_kn mp dp (Label.of_id id)) in
+    let cst =Global.constant_of_delta_kn (KerName.make mp dp (Label.of_id id)) in
     let _ = Global.lookup_constant cst in
       ConstRef cst
   with Not_found ->

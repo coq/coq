@@ -30,8 +30,8 @@ val variable_exists : variable -> bool
 
 (** Registration and access to the table of constants *)
 
-val add_constant_kind : constant -> logical_kind -> unit
-val constant_kind : constant -> logical_kind
+val add_constant_kind : Constant.t -> logical_kind -> unit
+val constant_kind : Constant.t -> logical_kind
 
 (* Prepare global named context for proof session: remove proofs of
    opaque section definitions and remove vm-compiled code *)

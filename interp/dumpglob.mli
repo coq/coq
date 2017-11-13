@@ -23,11 +23,11 @@ val pause : unit -> unit
 val continue : unit -> unit
 
 val add_glob : ?loc:Loc.t -> Globnames.global_reference -> unit
-val add_glob_kn : ?loc:Loc.t -> Names.kernel_name -> unit
+val add_glob_kn : ?loc:Loc.t -> Names.KerName.t -> unit
 
 val dump_definition : Names.Id.t Loc.located -> bool -> string -> unit
-val dump_moddef : ?loc:Loc.t -> Names.module_path -> string -> unit
-val dump_modref  : ?loc:Loc.t -> Names.module_path -> string -> unit
+val dump_moddef : ?loc:Loc.t -> Names.ModPath.t -> string -> unit
+val dump_modref  : ?loc:Loc.t -> Names.ModPath.t -> string -> unit
 val dump_reference  : ?loc:Loc.t -> string -> string -> string -> unit
 val dump_libref : ?loc:Loc.t -> Names.DirPath.t -> string -> unit
 val dump_notation_location : (int * int) list -> Constrexpr.notation ->

@@ -98,8 +98,8 @@ val compute_implicits_names : env -> types -> Name.t list
 (** {6 Computation of implicits (done using the global environment). } *)
 
 val declare_var_implicits : variable -> unit
-val declare_constant_implicits : constant -> unit
-val declare_mib_implicits : mutual_inductive -> unit
+val declare_constant_implicits : Constant.t -> unit
+val declare_mib_implicits : MutInd.t -> unit
 
 val declare_implicits : bool -> global_reference -> unit
 

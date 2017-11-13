@@ -74,7 +74,7 @@ val error_global_not_found : ?loc:Loc.t -> qualid -> 'a
 type visibility = Until of int | Exactly of int
 
 val push : visibility -> full_path -> global_reference -> unit
-val push_modtype : visibility -> full_path -> module_path -> unit
+val push_modtype : visibility -> full_path -> ModPath.t -> unit
 val push_dir : visibility -> DirPath.t -> global_dir_reference -> unit
 val push_syndef : visibility -> full_path -> syndef_name -> unit
 
@@ -85,11 +85,11 @@ val push_syndef : visibility -> full_path -> syndef_name -> unit
 
 val locate : qualid -> global_reference
 val locate_extended : qualid -> extended_global_reference
-val locate_constant : qualid -> constant
+val locate_constant : qualid -> Constant.t
 val locate_syndef : qualid -> syndef_name
-val locate_modtype : qualid -> module_path
+val locate_modtype : qualid -> ModPath.t
 val locate_dir : qualid -> global_dir_reference
-val locate_module : qualid -> module_path
+val locate_module : qualid -> ModPath.t
 val locate_section : qualid -> DirPath.t
 
 (** These functions globalize user-level references into global
@@ -105,7 +105,7 @@ val global_inductive : reference -> inductive
 val locate_all : qualid -> global_reference list
 val locate_extended_all : qualid -> extended_global_reference list
 val locate_extended_all_dir : qualid -> global_dir_reference list
-val locate_extended_all_modtype : qualid -> module_path list
+val locate_extended_all_modtype : qualid -> ModPath.t list
 
 (** Mapping a full path to a global reference *)
 
@@ -135,8 +135,8 @@ val full_name_module : qualid -> DirPath.t
 
 val path_of_syndef : syndef_name -> full_path
 val path_of_global : global_reference -> full_path
-val dirpath_of_module : module_path -> DirPath.t
-val path_of_modtype : module_path -> full_path
+val dirpath_of_module : ModPath.t -> DirPath.t
+val path_of_modtype : ModPath.t -> full_path
 
 (** Returns in particular the dirpath or the basename of the full path
    associated to global reference *)
@@ -156,8 +156,8 @@ val pr_global_env : Id.Set.t -> global_reference -> Pp.t
 
 val shortest_qualid_of_global : Id.Set.t -> global_reference -> qualid
 val shortest_qualid_of_syndef : Id.Set.t -> syndef_name -> qualid
-val shortest_qualid_of_modtype : module_path -> qualid
-val shortest_qualid_of_module : module_path -> qualid
+val shortest_qualid_of_modtype : ModPath.t -> qualid
+val shortest_qualid_of_module : ModPath.t -> qualid
 
 (** Deprecated synonyms *)
 

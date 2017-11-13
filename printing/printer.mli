@@ -110,7 +110,7 @@ val pr_cumulativity_info   : evar_map -> Univ.cumulativity_info -> Pp.t
 val pr_global_env          : Id.Set.t -> global_reference -> Pp.t
 val pr_global              : global_reference -> Pp.t
 
-val pr_constant            : env -> constant -> Pp.t
+val pr_constant            : env -> Constant.t -> Pp.t
 val pr_existential_key     : evar_map -> existential_key -> Pp.t
 val pr_existential         : env -> evar_map -> existential -> Pp.t
 val pr_constructor         : env -> constructor -> Pp.t
@@ -183,15 +183,15 @@ val prterm                 : constr -> Pp.t (** = pr_lconstr *)
 
 (** Declarations for the "Print Assumption" command *)
 type axiom =
-  | Constant of constant (* An axiom or a constant. *)
+  | Constant of Constant.t (* An axiom or a constant. *)
   | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
-  | Guarded of constant (* a constant whose (co)fixpoints have been assumed to be guarded *)
+  | Guarded of Constant.t (* a constant whose (co)fixpoints have been assumed to be guarded *)
 
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
   | Axiom of axiom * (Label.t * Context.Rel.t * types) list
-  | Opaque of constant     (* An opaque constant. *)
-  | Transparent of constant
+  | Opaque of Constant.t     (* An opaque constant. *)
+  | Transparent of Constant.t
 
 module ContextObjectSet : Set.S with type elt = context_object
 module ContextObjectMap : CMap.ExtS

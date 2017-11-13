@@ -85,7 +85,7 @@ module type RedFlagsSig = sig
   val fFIX : red_kind
   val fCOFIX : red_kind
   val fZETA : red_kind
-  val fCONST : constant -> red_kind
+  val fCONST : Constant.t -> red_kind
   val fVAR : Id.t -> red_kind
   val no_red : reds
   val red_add : reds -> red_kind -> reds
@@ -114,7 +114,7 @@ module RedFlags = (struct
 
   type red_kind = BETA | DELTA | ETA | MATCH | FIX
               | COFIX | ZETA
-	      | CONST of constant | VAR of Id.t
+	      | CONST of Constant.t | VAR of Id.t
   let fBETA = BETA
   let fDELTA = DELTA
   let fETA = ETA
@@ -234,7 +234,7 @@ let unfold_red kn =
  * instantiations (cbv or lazy) are.
  *)
 
-type table_key = constant puniverses tableKey
+type table_key = Constant.t puniverses tableKey
 
 let eq_pconstant_key (c,u) (c',u') =
   eq_constant_key c c' && Univ.Instance.equal u u'
@@ -401,7 +401,7 @@ let update v1 no t =
 type stack_member =
   | Zapp of fconstr array
   | ZcaseT of case_info * constr * constr array * fconstr subs
-  | Zproj of int * int * constant
+  | Zproj of int * int * Constant.t
   | Zfix of fconstr * stack
   | Zshift of int
   | Zupdate of fconstr

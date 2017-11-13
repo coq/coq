@@ -855,15 +855,15 @@ let prterm = pr_lconstr
    It is used primarily by the Print Assumptions command. *)
 
 type axiom =
-  | Constant of constant (* An axiom or a constant. *)
+  | Constant of Constant.t (* An axiom or a constant. *)
   | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
-  | Guarded of constant (* a constant whose (co)fixpoints have been assumed to be guarded *)
+  | Guarded of Constant.t (* a constant whose (co)fixpoints have been assumed to be guarded *)
 
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
   | Axiom of axiom * (Label.t * Context.Rel.t * types) list
-  | Opaque of constant     (* An opaque constant. *)
-  | Transparent of constant
+  | Opaque of Constant.t     (* An opaque constant. *)
+  | Transparent of Constant.t
 
 (* Defines a set of [assumption] *)
 module OrderedContextObject =
@@ -873,11 +873,11 @@ struct
   let compare_axiom x y =
     match x,y with
     | Constant k1 , Constant k2 ->
-        con_ord k1 k2
+        Constant.CanOrd.compare k1 k2
     | Positive m1 , Positive m2 ->
         MutInd.CanOrd.compare m1 m2
     | Guarded k1 , Guarded k2 ->
-        con_ord k1 k2
+        Constant.CanOrd.compare k1 k2
     | _ , Constant _ -> 1
     | _ , Positive _ -> 1
     | _ -> -1
@@ -890,10 +890,10 @@ struct
     | Axiom (k1,_) , Axiom (k2, _) -> compare_axiom k1 k2
     | Axiom _ , _ -> -1
     | _ , Axiom _ -> 1
-    | Opaque k1 , Opaque k2 -> con_ord k1 k2
+    | Opaque k1 , Opaque k2 -> Constant.CanOrd.compare k1 k2
     | Opaque _ , _ -> -1
     | _ , Opaque _ -> 1
-    | Transparent k1 , Transparent k2 -> con_ord k1 k2
+    | Transparent k1 , Transparent k2 -> Constant.CanOrd.compare k1 k2
 end
 
 module ContextObjectSet = Set.Make (OrderedContextObject)
@@ -907,8 +907,8 @@ let pr_assumptionset env s =
     let safe_pr_constant env kn =
       try pr_constant env kn
       with Not_found ->
-	let mp,_,lab = repr_con kn in
-        str (string_of_mp mp) ++ str "." ++ pr_label lab
+	let mp,_,lab = Constant.repr3 kn in
+        str (ModPath.to_string mp) ++ str "." ++ Label.print lab
     in
     let safe_pr_ltype typ =
       try str " : " ++ pr_ltype typ
@@ -942,7 +942,7 @@ let pr_assumptionset env s =
         let ax = pr_axiom env axiom typ ++
           cut() ++
           prlist_with_sep cut (fun (lbl, ctx, ty) ->
-            str " used in " ++ pr_label lbl ++
+            str " used in " ++ Label.print lbl ++
             str " to prove:" ++ safe_pr_ltype_relctx (ctx,ty))
           l in
         (v, ax :: a, o, tr)

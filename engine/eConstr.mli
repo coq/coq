@@ -99,8 +99,8 @@ val mkProd : Name.t * t * t -> t
 val mkLambda : Name.t * t * t -> t
 val mkLetIn : Name.t * t * t * t -> t
 val mkApp : t * t array -> t
-val mkConst : constant -> t
-val mkConstU : constant * EInstance.t -> t
+val mkConst : Constant.t -> t
+val mkConstU : Constant.t * EInstance.t -> t
 val mkProj : (projection * t) -> t
 val mkInd : inductive -> t
 val mkIndU : inductive * EInstance.t -> t
@@ -157,7 +157,7 @@ val destProd : Evd.evar_map -> t -> Name.t * types * types
 val destLambda : Evd.evar_map -> t -> Name.t * types * t
 val destLetIn : Evd.evar_map -> t -> Name.t * t * types * t
 val destApp : Evd.evar_map -> t -> t * t array
-val destConst : Evd.evar_map -> t -> constant * EInstance.t
+val destConst : Evd.evar_map -> t -> Constant.t * EInstance.t
 val destEvar : Evd.evar_map -> t -> t pexistential
 val destInd : Evd.evar_map -> t -> inductive * EInstance.t
 val destConstruct : Evd.evar_map -> t -> constructor * EInstance.t

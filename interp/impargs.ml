@@ -483,8 +483,8 @@ type implicit_interactive_request =
 
 type implicit_discharge_request =
   | ImplLocal
-  | ImplConstant of constant * implicits_flags
-  | ImplMutualInductive of mutual_inductive * implicits_flags
+  | ImplConstant of Constant.t * implicits_flags
+  | ImplMutualInductive of MutInd.t * implicits_flags
   | ImplInteractive of global_reference * implicits_flags *
       implicit_interactive_request
 

@@ -124,7 +124,7 @@ val prepare_predicate : ?loc:Loc.t ->
            (types * tomatch_type) list ->
            (rel_context * rel_context) list ->
            constr option ->
-           glob_constr option -> (Evd.evar_map * Names.name list * constr) list
+           glob_constr option -> (Evd.evar_map * Name.t list * constr) list
 
-val make_return_predicate_ltac_lvar : Evd.evar_map -> Names.name ->
+val make_return_predicate_ltac_lvar : Evd.evar_map -> Name.t ->
   Glob_term.glob_constr -> constr -> Ltac_pretype.ltac_var_map -> ltac_var_map

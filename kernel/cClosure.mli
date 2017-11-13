@@ -29,7 +29,7 @@ val all_opaque      : transparent_state
 val all_transparent : transparent_state
 
 val is_transparent_variable : transparent_state -> variable -> bool
-val is_transparent_constant : transparent_state -> constant -> bool
+val is_transparent_constant : transparent_state -> Constant.t -> bool
 
 (** Sets of reduction kinds. *)
 module type RedFlagsSig = sig
@@ -46,7 +46,7 @@ module type RedFlagsSig = sig
   val fFIX : red_kind
   val fCOFIX : red_kind
   val fZETA : red_kind
-  val fCONST : constant -> red_kind
+  val fCONST : Constant.t -> red_kind
   val fVAR : Id.t -> red_kind
 
   (** No reduction at all *)
@@ -92,7 +92,7 @@ val unfold_side_red : reds
 val unfold_red : evaluable_global_reference -> reds
 
 (***********************************************************************)
-type table_key = constant puniverses tableKey
+type table_key = Constant.t puniverses tableKey
 
 type 'a infos_cache
 type 'a infos = {
@@ -145,7 +145,7 @@ type fterm =
 type stack_member =
   | Zapp of fconstr array
   | ZcaseT of case_info * constr * constr array * fconstr subs
-  | Zproj of int * int * constant
+  | Zproj of int * int * Constant.t
   | Zfix of fconstr * stack
   | Zshift of int
   | Zupdate of fconstr

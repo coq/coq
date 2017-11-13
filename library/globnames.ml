@@ -15,7 +15,7 @@ open Libnames
 (*s Global reference is a kernel side type for all references together *)
 type global_reference =
   | VarRef of variable           (** A reference to the section-context. *)
-  | ConstRef of constant         (** A reference to the environment. *)
+  | ConstRef of Constant.t       (** A reference to the environment. *)
   | IndRef of inductive          (** A reference to an inductive type. *)
   | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
 
@@ -26,7 +26,7 @@ let isConstructRef = function ConstructRef _ -> true | _ -> false
 
 let eq_gr gr1 gr2 =
   gr1 == gr2 || match gr1,gr2 with
-    | ConstRef con1, ConstRef con2 -> eq_constant con1 con2
+    | ConstRef con1, ConstRef con2 -> Constant.equal con1 con2
     | IndRef kn1, IndRef kn2 -> eq_ind kn1 kn2
     | ConstructRef kn1, ConstructRef kn2 -> eq_constructor kn1 kn2
     | VarRef v1, VarRef v2 -> Id.equal v1 v2
@@ -67,9 +67,9 @@ let subst_global subst ref = match ref with
 	if c'==c then ref,t else ConstructRef c', t
 
 let canonical_gr = function
-  | ConstRef con -> ConstRef(constant_of_kn(canonical_con con))
-  | IndRef (kn,i) -> IndRef(mind_of_kn(canonical_mind kn),i)
-  | ConstructRef ((kn,i),j )-> ConstructRef((mind_of_kn(canonical_mind kn),i),j)
+  | ConstRef con -> ConstRef(Constant.make1 (Constant.canonical con))
+  | IndRef (kn,i) -> IndRef(MutInd.make1(MutInd.canonical kn),i)
+  | ConstructRef ((kn,i),j )-> ConstructRef((MutInd.make1(MutInd.canonical kn),i),j)
   | VarRef id -> VarRef id
 
 let global_of_constr c = match kind_of_term c with
@@ -81,7 +81,7 @@ let global_of_constr c = match kind_of_term c with
 
 let is_global c t =
   match c, kind_of_term t with
-  | ConstRef c, Const (c', _) -> eq_constant c c'
+  | ConstRef c, Const (c', _) -> Constant.equal c c'
   | IndRef i, Ind (i', _) -> eq_ind i i'
   | ConstructRef i, Construct (i', _) -> eq_constructor i i'
   | VarRef id, Var id' -> Id.equal id id'
@@ -157,7 +157,7 @@ module Refset_env = Refmap_env.Set
 
 (* Extended global references *)
 
-type syndef_name = kernel_name
+type syndef_name = KerName.t
 
 type extended_global_reference =
   | TrueGlobal of global_reference
@@ -180,7 +180,7 @@ module ExtRefOrdered = struct
     if x == y then 0
     else match x, y with
       | TrueGlobal rx, TrueGlobal ry -> RefOrdered_env.compare rx ry
-      | SynDef knx, SynDef kny -> kn_ord knx kny
+      | SynDef knx, SynDef kny -> KerName.compare knx kny
       | TrueGlobal _, SynDef _ -> -1
       | SynDef _, TrueGlobal _ -> 1
 
@@ -215,12 +215,12 @@ let decode_mind kn =
 	  id::(DirPath.repr dp)
     | MPdot(mp,l) -> (Label.to_id l)::(dir_of_mp mp)
   in
-  let mp,sec_dir,l = repr_mind kn in
+  let mp,sec_dir,l = MutInd.repr3 kn in
   check_empty_section sec_dir;
   (DirPath.make (dir_of_mp mp)),Label.to_id l
 
 let decode_con kn =
-  let mp,sec_dir,l = repr_con kn in
+  let mp,sec_dir,l = Constant.repr3 kn in
   check_empty_section sec_dir;
   match mp with
     | MPfile dir -> (dir,Label.to_id l)
@@ -231,12 +231,12 @@ let decode_con kn =
     user and canonical kernel names must be equal. *)
 
 let pop_con con =
-  let (mp,dir,l) = repr_con con in
-  Names.make_con mp (pop_dirpath dir) l
+  let (mp,dir,l) = Constant.repr3 con in
+  Constant.make3 mp (pop_dirpath dir) l
 
 let pop_kn kn =
-  let (mp,dir,l) = repr_mind kn in
-  Names.make_mind mp (pop_dirpath dir) l
+  let (mp,dir,l) = MutInd.repr3 kn in
+  MutInd.make3 mp (pop_dirpath dir) l
 
 let pop_global_reference = function
   | ConstRef con -> ConstRef (pop_con con)

@@ -580,7 +580,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
   | (f, n, ar) :: oth ->
     let open Context.Named.Declaration in
     let (sp', u')  = check_mutind env sigma n ar in
-    if not (eq_mind sp sp') then
+    if not (MutInd.equal sp sp') then
       error "Fixpoints should be on the same mutual inductive declaration.";
     if mem_named_context_val f sign then
       user_err ~hdr:"Logic.prim_refiner"
@@ -1607,7 +1607,7 @@ let general_elim_clause with_evars flags id c e =
 (* Apply a tactic below the products of the conclusion of a lemma *)
 
 type conjunction_status =
-  | DefinedRecord of constant option list
+  | DefinedRecord of Constant.t option list
   | NotADefinedRecordUseScheme of constr
 
 let make_projection env sigma params cstr sign elim i n c u =

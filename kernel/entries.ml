@@ -85,7 +85,7 @@ type parameter_entry =
     Context.Named.t option * bool * types Univ.in_universe_context * inline 
 
 type projection_entry = {
-  proj_entry_ind : mutual_inductive;
+  proj_entry_ind : MutInd.t;
   proj_entry_arg : int }
 
 type 'a constant_entry =
@@ -115,8 +115,8 @@ type seff_env =
   | `Opaque of Constr.t * Univ.universe_context_set ]
 
 type side_eff =
-  | SEsubproof of constant * Declarations.constant_body * seff_env
-  | SEscheme of (inductive * constant * Declarations.constant_body * seff_env) list * string
+  | SEsubproof of Constant.t * Declarations.constant_body * seff_env
+  | SEscheme of (inductive * Constant.t * Declarations.constant_body * seff_env) list * string
 
 type side_effect = {
   from_env : Declarations.structure_body CEphemeron.key;

@@ -39,9 +39,9 @@ val export_private_constants : in_section:bool ->
   unit Entries.constant_entry * Safe_typing.exported_private_constant list
 
 val add_constant :
-  DirPath.t -> Id.t -> Safe_typing.global_declaration -> constant
+  DirPath.t -> Id.t -> Safe_typing.global_declaration -> Constant.t
 val add_mind :
-  DirPath.t -> Id.t -> Entries.mutual_inductive_entry -> mutual_inductive
+  DirPath.t -> Id.t -> Entries.mutual_inductive_entry -> MutInd.t
 
 (** Extra universe constraints *)
 val add_constraints : Univ.constraints -> unit
@@ -53,23 +53,23 @@ val push_context_set : bool -> Univ.universe_context_set -> unit
 
 val add_module :
   Id.t -> Entries.module_entry -> Declarations.inline ->
-    module_path * Mod_subst.delta_resolver
+    ModPath.t * Mod_subst.delta_resolver
 val add_modtype :
-  Id.t -> Entries.module_type_entry -> Declarations.inline -> module_path
+  Id.t -> Entries.module_type_entry -> Declarations.inline -> ModPath.t
 val add_include :
   Entries.module_struct_entry -> bool -> Declarations.inline ->
     Mod_subst.delta_resolver
 
 (** Interactive modules and module types *)
 
-val start_module : Id.t -> module_path
-val start_modtype : Id.t -> module_path
+val start_module : Id.t -> ModPath.t
+val start_modtype : Id.t -> ModPath.t
 
 val end_module : Summary.frozen -> Id.t ->
   (Entries.module_struct_entry * Declarations.inline) option ->
-    module_path * MBId.t list * Mod_subst.delta_resolver
+    ModPath.t * MBId.t list * Mod_subst.delta_resolver
 
-val end_modtype : Summary.frozen -> Id.t -> module_path * MBId.t list
+val end_modtype : Summary.frozen -> Id.t -> ModPath.t * MBId.t list
 
 val add_module_parameter :
   MBId.t -> Entries.module_struct_entry -> Declarations.inline ->
@@ -78,22 +78,22 @@ val add_module_parameter :
 (** {6 Queries in the global environment } *)
 
 val lookup_named     : variable -> Context.Named.Declaration.t
-val lookup_constant  : constant -> Declarations.constant_body
+val lookup_constant  : Constant.t -> Declarations.constant_body
 val lookup_inductive : inductive ->
   Declarations.mutual_inductive_body * Declarations.one_inductive_body
 val lookup_pinductive : Constr.pinductive -> 
   Declarations.mutual_inductive_body * Declarations.one_inductive_body
-val lookup_mind      : mutual_inductive -> Declarations.mutual_inductive_body
-val lookup_module    : module_path -> Declarations.module_body
-val lookup_modtype   : module_path -> Declarations.module_type_body
+val lookup_mind      : MutInd.t -> Declarations.mutual_inductive_body
+val lookup_module    : ModPath.t -> Declarations.module_body
+val lookup_modtype   : ModPath.t -> Declarations.module_type_body
 val exists_objlabel  : Label.t -> bool
 
-val constant_of_delta_kn : kernel_name -> constant
-val mind_of_delta_kn : kernel_name -> mutual_inductive
+val constant_of_delta_kn : KerName.t -> Constant.t
+val mind_of_delta_kn : KerName.t -> MutInd.t
 
 val opaque_tables : unit -> Opaqueproof.opaquetab
 
-val body_of_constant : constant -> (Term.constr * Univ.AUContext.t) option
+val body_of_constant : Constant.t -> (Term.constr * Univ.AUContext.t) option
 (** Returns the body of the constant if it has any, and the polymorphic context
     it lives in. For monomorphic constant, the latter is empty, and for
     polymorphic constants, the term contains De Bruijn universe variables that
@@ -111,12 +111,12 @@ val set_global_universe_names : universe_names -> unit
 
 (** {6 Compiled libraries } *)
 
-val start_library : DirPath.t -> module_path
+val start_library : DirPath.t -> ModPath.t
 val export : ?except:Future.UUIDSet.t -> DirPath.t ->
-  module_path * Safe_typing.compiled_library * Safe_typing.native_library
+  ModPath.t * Safe_typing.compiled_library * Safe_typing.native_library
 val import :
   Safe_typing.compiled_library -> Univ.universe_context_set -> Safe_typing.vodigest ->
-  module_path
+  ModPath.t
 
 (** {6 Misc } *)
 
@@ -154,16 +154,16 @@ val universes_of_global : Globnames.global_reference -> Univ.abstract_universe_c
 val register :
   Retroknowledge.field -> Term.constr -> Term.constr -> unit
 
-val register_inline : constant -> unit
+val register_inline : Constant.t -> unit
 
 (** {6 Oracle } *)
 
-val set_strategy : Names.constant Names.tableKey -> Conv_oracle.level -> unit
+val set_strategy : Constant.t Names.tableKey -> Conv_oracle.level -> unit
 
 (* Modifies the global state, registering new universes *)
 
-val current_dirpath : unit -> Names.dir_path
+val current_dirpath : unit -> DirPath.t
 
-val with_global : (Environ.env -> Names.dir_path -> 'a Univ.in_universe_context_set) -> 'a
+val with_global : (Environ.env -> DirPath.t -> 'a Univ.in_universe_context_set) -> 'a
 
 val global_env_summary_name : string

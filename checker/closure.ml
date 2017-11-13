@@ -63,7 +63,7 @@ module type RedFlagsSig = sig
   val fDELTA : red_kind
   val fIOTA : red_kind
   val fZETA : red_kind
-  val fCONST : constant -> red_kind
+  val fCONST : Constant.t -> red_kind
   val fVAR : Id.t -> red_kind
   val no_red : reds
   val red_add : reds -> red_kind -> reds
@@ -86,7 +86,7 @@ module RedFlags = (struct
     r_iota : bool }
 
   type red_kind = BETA | DELTA | IOTA | ZETA
-	      | CONST of constant | VAR of Id.t
+	      | CONST of Constant.t | VAR of Id.t
   let fBETA = BETA
   let fDELTA = DELTA
   let fIOTA = IOTA
@@ -165,7 +165,7 @@ type 'a tableKey =
   | VarKey of Id.t
   | RelKey of int
 
-type table_key = constant puniverses tableKey
+type table_key = Constant.t puniverses tableKey
 
 module KeyHash =
 struct
@@ -281,9 +281,9 @@ and fterm =
   | FCoFix of cofixpoint * fconstr subs
   | FCase of case_info * fconstr * fconstr * fconstr array
   | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)
-  | FLambda of int * (name * constr) list * constr * fconstr subs
-  | FProd of name * fconstr * fconstr
-  | FLetIn of name * fconstr * fconstr * constr * fconstr subs
+  | FLambda of int * (Name.t * constr) list * constr * fconstr subs
+  | FProd of Name.t * fconstr * fconstr
+  | FLetIn of Name.t * fconstr * fconstr * constr * fconstr subs
   | FEvar of existential_key * fconstr array (* why diff from kernel/closure? *)
   | FLIFT of int * fconstr
   | FCLOS of constr * fconstr subs

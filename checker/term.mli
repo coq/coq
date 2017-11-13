@@ -38,8 +38,8 @@ val fold_rel_context_outside :
 val map_rel_decl : (constr -> constr) -> rel_declaration -> rel_declaration
 val map_rel_context : (constr -> constr) -> rel_context -> rel_context
 val extended_rel_list : int -> rel_context -> constr list
-val compose_lam : (name * constr) list -> constr -> constr
-val decompose_lam : constr -> (name * constr) list * constr
+val compose_lam : (Name.t * constr) list -> constr -> constr
+val decompose_lam : constr -> (Name.t * constr) list * constr
 val decompose_lam_n_assum : int -> constr -> rel_context * constr
 val mkProd_or_LetIn : rel_declaration -> constr -> constr
 val it_mkProd_or_LetIn : constr -> rel_context -> constr
