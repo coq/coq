@@ -217,7 +217,7 @@ let compute_proof_name locality = function
       if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
 	 locality == Global && Nametab.exists_cci (Lib.make_path_except_section id)
       then
-        user_err ?loc  (pr_id id ++ str " already exists.");
+        user_err ?loc  (Id.print id ++ str " already exists.");
       id
   | None ->
     let avoid = Id.Set.of_list (Proof_global.get_all_proof_names ()) in
@@ -294,7 +294,7 @@ let save_anonymous ?export_seff proof save_ident =
 
 let warn_let_as_axiom =
   CWarnings.create ~name:"let-as-axiom" ~category:"vernacular"
-                   (fun id -> strbrk "Let definition" ++ spc () ++ pr_id id ++
+                   (fun id -> strbrk "Let definition" ++ spc () ++ Id.print id ++
                                 spc () ++ strbrk "declared as an axiom.")
 
 let admit (id,k,e) pl hook () =

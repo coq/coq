@@ -1863,6 +1863,9 @@ end
 
 module Nameops :
 sig
+
+  open Names
+
   val atompart_of_id : Names.Id.t -> string
 
   val pr_id : Names.Id.t -> Pp.t
@@ -1871,19 +1874,28 @@ sig
   val pr_name : Names.Name.t -> Pp.t
   [@@ocaml.deprecated "alias of API.Names.Name.print"]
 
-  val name_fold : (Names.Id.t -> 'a -> 'a) -> Names.Name.t -> 'a -> 'a
-  val name_app : (Names.Id.t -> Names.Id.t) -> Names.Name.t -> Names.Name.t
-  val add_suffix : Names.Id.t -> string -> Names.Id.t
-  val increment_subscript : Names.Id.t -> Names.Id.t
-  val make_ident : string -> int option -> Names.Id.t
-  val out_name : Names.Name.t -> Names.Id.t
-  val pr_lab : Names.Label.t -> Pp.t
-  module Name :
-  sig
-    include module type of struct include Names.Name end
+  module Name : sig
+    include module type of struct include Name end
+
+    val map : (Id.t -> Id.t) -> Name.t -> t
     val get_id : t -> Names.Id.t
     val fold_right : (Names.Id.t -> 'a -> 'a) -> t -> 'a -> 'a
+
   end
+
+  val name_fold : (Id.t -> 'a -> 'a) -> Name.t -> 'a -> 'a
+  [@@ocaml.deprecated "alias of API.Names"]
+
+  val name_app : (Id.t -> Id.t) -> Name.t -> Name.t
+  [@@ocaml.deprecated "alias of API.Names"]
+
+  val add_suffix : Id.t -> string -> Id.t
+  val increment_subscript : Id.t -> Id.t
+  val make_ident : string -> int option -> Id.t
+  val out_name : Name.t -> Id.t
+  [@@ocaml.deprecated "alias of API.Names"]
+  val pr_lab : Label.t -> Pp.t
+  [@@ocaml.deprecated "alias of API.Names"]
 end
 
 module Libnames :

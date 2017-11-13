@@ -90,33 +90,34 @@ module Name : sig
 end
 
 val out_name : Name.t -> Id.t
-(** @deprecated Same as [Name.get_id] *)
+[@@ocaml.deprecated "Same as [Name.get_id]"]
 
 val name_fold : (Id.t -> 'a -> 'a) -> Name.t -> 'a -> 'a
-(** @deprecated Same as [Name.fold_right] *)
+[@@ocaml.deprecated "Same as [Name.fold_right]"]
 
 val name_iter : (Id.t -> unit) -> Name.t -> unit
-(** @deprecated Same as [Name.iter] *)
+[@@ocaml.deprecated "Same as [Name.iter]"]
 
 val name_app : (Id.t -> Id.t) -> Name.t -> Name.t
-(** @deprecated Same as [Name.map] *)
+[@@ocaml.deprecated "Same as [Name.map]"]
 
 val name_fold_map : ('a -> Id.t -> 'a * Id.t) -> 'a -> Name.t -> 'a * Name.t
-(** @deprecated Same as [Name.fold_left_map] *)
+[@@ocaml.deprecated "Same as [Name.fold_left_map]"]
 
 val name_max : Name.t -> Name.t -> Name.t
-(** @deprecated Same as [Name.pick] *)
+[@@ocaml.deprecated "Same as [Name.pick]"]
 
 val name_cons : Name.t -> Id.t list -> Id.t list
-(** @deprecated Same as [Name.cons] *)
+[@@ocaml.deprecated "Same as [Name.cons]"]
 
 val pr_name : Name.t -> Pp.t
-(** @deprecated Same as [Name.print] *)
+[@@ocaml.deprecated "Same as [Name.print]"]
 
 val pr_id : Id.t -> Pp.t
-(** @deprecated Same as [Names.Id.print] *)
+[@@ocaml.deprecated "Same as [Names.Id.print]"]
 
 val pr_lab : Label.t -> Pp.t
+[@@ocaml.deprecated "Same as [Names.Label.print]"]
 
 (** some preset paths *)
 

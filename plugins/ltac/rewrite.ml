@@ -6,10 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
 open Pp
 open CErrors
 open Util
+open Names
 open Nameops
 open Namegen
 open Constr
@@ -1143,7 +1143,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
       (* 	    | _ -> b') *)
 
       | Lambda (n, t, b) when flags.under_lambdas ->
-        let n' = name_app (fun id -> Tactics.fresh_id_in_env unfresh id env) n in
+        let n' = Nameops.Name.map (fun id -> Tactics.fresh_id_in_env unfresh id env) n in
         let open Context.Rel.Declaration in
 	let env' = EConstr.push_rel (LocalAssum (n', t)) env in
 	let bty = Retyping.get_type_of env' (goalevars evars) b in

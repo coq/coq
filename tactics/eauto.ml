@@ -10,7 +10,6 @@ open Pp
 open CErrors
 open Util
 open Names
-open Nameops
 open Term
 open Termops
 open EConstr
@@ -261,7 +260,7 @@ module SearchProblem = struct
       let g = find_first_goal lg in
       let hyps = pf_ids_of_hyps g in
       let secvars = secvars_of_hyps (pf_hyps g) in
-      let map_assum id = (e_give_exact (mkVar id), (-1), lazy (str "exact" ++ spc () ++ pr_id id)) in
+      let map_assum id = (e_give_exact (mkVar id), (-1), lazy (str "exact" ++ spc () ++ Id.print id)) in
       let assumption_tacs =
         let tacs = List.map map_assum hyps in
         let l = filter_tactics s.tacres tacs in

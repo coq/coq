@@ -180,7 +180,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 	Name id ->
 	  let sp = Lib.make_path id in
 	    if Nametab.exists_cci sp then
-	      user_err ~hdr:"new_instance" (Nameops.pr_id id ++ Pp.str " already exists.");
+	      user_err ~hdr:"new_instance" (Id.print id ++ Pp.str " already exists.");
 	    id
       | Anonymous ->
 	  let i = Nameops.add_suffix (id_of_class k) "_instance_0" in

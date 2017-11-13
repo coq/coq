@@ -186,14 +186,14 @@ let split_at_annot bl na =
 	| CLocalDef ((_,na),_,_) as x :: rest ->
            if Name.equal (Name id) na then
              user_err ?loc
-               (Nameops.pr_id id ++ str" must be a proper parameter and not a local definition.")
+               (Id.print id ++ str" must be a proper parameter and not a local definition.")
            else
              aux (x :: acc) rest
         | CLocalPattern (_,_) :: rest ->
             Loc.raise ?loc (Stream.Error "pattern with quote not allowed after fix")
 	| [] ->
-            user_err ?loc 
-			 (str "No parameter named " ++ Nameops.pr_id id ++ str".")
+            user_err ?loc
+			 (str "No parameter named " ++ Id.print id ++ str".")
       in aux [] bl
 
 (* Used in correctness and interface *)

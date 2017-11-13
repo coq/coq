@@ -10,7 +10,6 @@ open CErrors
 open Util
 open Names
 open Globnames
-open Nameops
 open Term
 open Constr
 open Reduction
@@ -344,7 +343,7 @@ let check_correct_manual_implicits autoimps l =
     | ExplByName id,(b,fi,forced) ->
 	if not forced then
 	  user_err 
-            (str "Wrong or non-dependent implicit argument name: " ++ pr_id id ++ str ".")
+            (str "Wrong or non-dependent implicit argument name: " ++ Id.print id ++ str ".")
     | ExplByPos (i,_id),_t ->
 	if i<1 || i>List.length autoimps then
 	  user_err 

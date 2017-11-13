@@ -437,7 +437,7 @@ let close sec =
     let keys = map_keys !from_prg in
       user_err ~hdr:"Program" 
 	(str "Unsolved obligations when closing " ++ str sec ++ str":" ++ spc () ++
-	   prlist_with_sep spc (fun x -> Nameops.pr_id x) keys ++
+	   prlist_with_sep spc (fun x -> Id.print x) keys ++
 	   (str (if Int.equal (List.length keys) 1 then " has " else " have ") ++
 	      str "unsolved obligations"))
 
@@ -716,10 +716,10 @@ let get_prog name =
 	       | _ ->
                 let progs = Id.Set.elements (ProgMap.domain prg_infos) in
                 let prog = List.hd progs in
-                let progs = prlist_with_sep pr_comma Nameops.pr_id progs in
+                let progs = prlist_with_sep pr_comma Id.print progs in
                 user_err 
                   (str "More than one program with unsolved obligations: " ++ progs
-                  ++ str "; use the \"of\" clause to specify, as in \"Obligation 1 of " ++ Nameops.pr_id prog ++ str "\""))
+                  ++ str "; use the \"of\" clause to specify, as in \"Obligation 1 of " ++ Id.print prog ++ str "\""))
 
 let get_any_prog () =
   let prg_infos = !from_prg in

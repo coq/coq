@@ -185,7 +185,7 @@ let msg_proofs () =
   match get_all_proof_names () with
     | [] -> (spc () ++ str"(No proof-editing in progress).")
     | l ->  (str"." ++ fnl () ++ str"Proofs currently edited:" ++ spc () ++
-               (pr_sequence Nameops.pr_id l) ++ str".")
+               (pr_sequence Id.print l) ++ str".")
 
 let there_is_a_proof () = not (List.is_empty !pstates)
 let there_are_pending_proofs () = there_is_a_proof ()

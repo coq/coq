@@ -1760,7 +1760,7 @@ let subst_one_var dep_proof_ok x =
           let test hyp _ = is_eq_x gl x hyp in
           Context.Named.fold_outside test ~init:() hyps;
           user_err ~hdr:"Subst"
-            (str "Cannot find any non-recursive equality over " ++ pr_id x ++
+            (str "Cannot find any non-recursive equality over " ++ Id.print x ++
 	       str".")
         with FoundHyp res -> res in
       subst_one dep_proof_ok x res

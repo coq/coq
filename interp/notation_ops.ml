@@ -239,7 +239,7 @@ let subtract_loc loc1 loc2 =
 
 let check_is_hole id t = match DAst.get t with GHole _ -> () | _ ->
   user_err ?loc:(loc_of_glob_constr t)
-   (strbrk "In recursive notation with binders, " ++ pr_id id ++
+   (strbrk "In recursive notation with binders, " ++ Id.print id ++
     strbrk " is expected to come without type.")
 
 let pair_equal eq1 eq2 (a,b) (a',b') = eq1 a a' && eq2 b b'
@@ -400,7 +400,7 @@ let check_variables_and_reversibility nenv (found,foundrec,foundrecbinding) =
   let vars = Id.Map.filter filter nenv.ninterp_var_type in
   let check_recvar x =
     if Id.List.mem x found then
-      user_err  (pr_id x ++
+      user_err  (Id.print x ++
 	strbrk " should only be used in the recursive part of a pattern.") in
   let check (x, y) = check_recvar x; check_recvar y in
   let () = List.iter check foundrec in
@@ -419,8 +419,8 @@ let check_variables_and_reversibility nenv (found,foundrec,foundrecbinding) =
   in
   let check_pair s x y where =
     if not (List.mem_f (pair_equal Id.equal Id.equal) (x,y) where) then
-      user_err  (strbrk "in the right-hand side, " ++ pr_id x ++
-	str " and " ++ pr_id y ++ strbrk " should appear in " ++ str s ++
+      user_err  (strbrk "in the right-hand side, " ++ Id.print x ++
+	str " and " ++ Id.print y ++ strbrk " should appear in " ++ str s ++
 	str " position as part of a recursive pattern.") in
   let check_type x typ =
     match typ with
@@ -838,7 +838,7 @@ let bind_bindinglist_as_term_env alp (terms,onlybinders,termlists,binderlists) v
       | Name id' ->
          if Id.equal (rename_var (snd alp) id) id' then na' else raise No_match in
     let unify_pat p p' =
-      if cases_pattern_eq (map_cases_pattern_name_left (name_app (rename_var (snd alp))) p) p' then p'
+      if cases_pattern_eq (map_cases_pattern_name_left (Name.map (rename_var (snd alp))) p) p' then p'
       else raise No_match in
     let unify_term_binder c = DAst.(map (fun b' ->
       match DAst.get c, b' with

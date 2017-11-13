@@ -1628,7 +1628,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     if name == Anonymous then next_ident_away_in_goal x ids else
     if mem_named_context_val x (named_context_val env) then
       user_err ~hdr:"Unification.make_abstraction_core"
-        (str "The variable " ++ Nameops.pr_id x ++ str " is already declared.")
+        (str "The variable " ++ Id.print x ++ str " is already declared.")
     else
       x
   in

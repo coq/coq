@@ -181,7 +181,7 @@ let introduction ?(check=true) id =
     let env = Proofview.Goal.env gl in
     let () = if check && mem_named_context_val id hyps then
       user_err ~hdr:"Tactics.introduction"
-        (str "Variable " ++ pr_id id ++ str " is already declared.")
+        (str "Variable " ++ Id.print id ++ str " is already declared.")
     in
     let open Context.Named.Declaration in
     match EConstr.kind sigma concl with
@@ -244,11 +244,11 @@ let convert_leq x y = convert_gen Reduction.CUMUL x y
 
 let clear_dependency_msg env sigma id = function
   | Evarutil.OccurHypInSimpleClause None ->
-      pr_id id ++ str " is used in conclusion."
+      Id.print id ++ str " is used in conclusion."
   | Evarutil.OccurHypInSimpleClause (Some id') ->
-      pr_id id ++ strbrk " is used in hypothesis " ++ pr_id id' ++ str"."
+      Id.print id ++ strbrk " is used in hypothesis " ++ Id.print id' ++ str"."
   | Evarutil.EvarTypingBreak ev ->
-      str "Cannot remove " ++ pr_id id ++
+      str "Cannot remove " ++ Id.print id ++
       strbrk " without breaking the typing of " ++
       Printer.pr_existential env sigma ev ++ str"."
 
@@ -257,12 +257,12 @@ let error_clear_dependency env sigma id err =
 
 let replacing_dependency_msg env sigma id = function
   | Evarutil.OccurHypInSimpleClause None ->
-      str "Cannot change " ++ pr_id id ++ str ", it is used in conclusion."
+      str "Cannot change " ++ Id.print id ++ str ", it is used in conclusion."
   | Evarutil.OccurHypInSimpleClause (Some id') ->
-      str "Cannot change " ++ pr_id id ++
-      strbrk ", it is used in hypothesis " ++ pr_id id' ++ str"."
+      str "Cannot change " ++ Id.print id ++
+      strbrk ", it is used in hypothesis " ++ Id.print id' ++ str"."
   | Evarutil.EvarTypingBreak ev ->
-      str "Cannot change " ++ pr_id id ++
+      str "Cannot change " ++ Id.print id ++
       strbrk " without breaking the typing of " ++
       Printer.pr_existential env sigma ev ++ str"."
 
@@ -360,7 +360,7 @@ let rename_hyp repl =
       let () =
         try
           let elt = Id.Set.choose (Id.Set.inter dst mods) in
-          CErrors.user_err  (pr_id elt ++ str " is already used")
+          CErrors.user_err  (Id.print elt ++ str " is already used")
         with Not_found -> ()
       in
       (** All is well *)
@@ -435,7 +435,7 @@ let find_name mayrepl decl naming gl = match naming with
       let ids_of_hyps = Tacmach.New.pf_ids_set_of_hyps gl in
       let id' = next_ident_away id ids_of_hyps in
       if not mayrepl && not (Id.equal id' id) then
-        user_err ?loc  (pr_id id ++ str" is already used.");
+        user_err ?loc  (Id.print id ++ str" is already used.");
       id
 
 (**************************************************************)
@@ -489,7 +489,7 @@ let internal_cut_gen ?(check=true) dir replace id t =
         sign',t,concl,sigma
       else
         (if check && mem_named_context_val id sign then
-	   user_err (str "Variable " ++ pr_id id ++ str " is already declared.");
+	   user_err (str "Variable " ++ Id.print id ++ str " is already declared.");
          push_named_context_val (LocalAssum (id,t)) sign,t,concl,sigma) in
     let nf_t = nf_betaiota sigma t in
     Proofview.tclTHEN
@@ -585,7 +585,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
       error "Fixpoints should be on the same mutual inductive declaration.";
     if mem_named_context_val f sign then
       user_err ~hdr:"Logic.prim_refiner"
-        (str "Name " ++ pr_id f ++ str " already used in the environment");
+        (str "Name " ++ Id.print f ++ str " already used in the environment");
     mk_sign (push_named_context_val (LocalAssum (f, ar)) sign) oth
   in
   let nenv = reset_with_named_context (mk_sign (named_context_val env) all) env in
@@ -675,7 +675,7 @@ let pf_reduce_decl redfun where decl gl =
   match decl with
   | LocalAssum (id,ty) ->
       if where == InHypValueOnly then
-	user_err  (pr_id id ++ str " has no value.");
+	user_err  (Id.print id ++ str " has no value.");
       LocalAssum (id,redfun' ty)
   | LocalDef (id,b,ty) ->
       let b' = if where != InHypTypeOnly then redfun' b else b in
@@ -776,7 +776,7 @@ let pf_e_reduce_decl redfun where decl gl =
   match decl with
   | LocalAssum (id,ty) ->
       if where == InHypValueOnly then
-	user_err  (pr_id id ++ str " has no value.");
+	user_err  (Id.print id ++ str " has no value.");
     let (sigma, ty') = redfun sigma ty in
     (sigma, LocalAssum (id, ty'))
   | LocalDef (id,b,ty) ->
@@ -819,7 +819,7 @@ let e_pf_change_decl (redfun : bool -> e_reduction_function) where decl env sigm
   match decl with
   | LocalAssum (id,ty) ->
       if where == InHypValueOnly then
-	user_err  (pr_id id ++ str " has no value.");
+	user_err  (Id.print id ++ str " has no value.");
     let (sigma, ty') = redfun false env sigma ty in
     (sigma, LocalAssum (id, ty'))
   | LocalDef (id,b,ty) ->
@@ -1133,7 +1133,7 @@ let is_quantified_hypothesis id gl =
 
 let msg_quantified_hypothesis = function
   | NamedHyp id ->
-      str "quantified hypothesis named " ++ pr_id id
+      str "quantified hypothesis named " ++ Id.print id
   | AnonHyp n ->
       pr_nth n ++
       str " non dependent hypothesis"
@@ -1284,7 +1284,7 @@ let error_uninstantiated_metas t clenv =
   let t = EConstr.Unsafe.to_constr t in
   let na = meta_name clenv.evd (List.hd (Metaset.elements (metavars_of t))) in
   let id = match na with Name id -> id | _ -> anomaly (Pp.str "unnamed dependent meta.")
-  in user_err  (str "Cannot find an instance for " ++ pr_id id ++ str".")
+  in user_err  (str "Cannot find an instance for " ++ Id.print id ++ str".")
 
 let check_unresolved_evars_of_metas sigma clenv =
   (* This checks that Metas turned into Evars by *)
@@ -1593,7 +1593,7 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ())
   let new_hyp_typ  = clenv_type elimclause'' in
   if EConstr.eq_constr sigma hyp_typ new_hyp_typ then
     user_err ~hdr:"general_rewrite_in"
-      (str "Nothing to rewrite in " ++ pr_id id ++ str".");
+      (str "Nothing to rewrite in " ++ Id.print id ++ str".");
   clenv_refine_in with_evars id id sigma elimclause''
     (fun id -> Proofview.tclUNIT ())
   end
@@ -2046,8 +2046,8 @@ let assumption =
 
 let on_the_bodies = function
 | [] -> assert false
-| [id] -> str " depends on the body of " ++ pr_id id
-| l -> str " depends on the bodies of " ++ pr_sequence pr_id l
+| [id] -> str " depends on the body of " ++ Id.print id
+| l -> str " depends on the bodies of " ++ pr_sequence Id.print l
 
 exception DependsOnBody of Id.t option
 
@@ -2084,7 +2084,7 @@ let clear_body ids =
     let map = function
     | LocalAssum (id,t) as decl ->
       let () = if List.mem_f Id.equal id ids then
-        user_err  (str "Hypothesis " ++ pr_id id ++ str " is not a local definition")
+        user_err  (str "Hypothesis " ++ Id.print id ++ str " is not a local definition")
       in
       decl
     | LocalDef (id,_,t) as decl ->
@@ -2116,7 +2116,7 @@ let clear_body ids =
       with DependsOnBody where ->
         let msg = match where with
         | None -> str "Conclusion" ++ on_the_bodies ids
-        | Some id -> str "Hypothesis " ++ pr_id id ++ on_the_bodies ids
+        | Some id -> str "Hypothesis " ++ Id.print id ++ on_the_bodies ids
         in
         Tacticals.New.tclZEROMSG msg
     in
@@ -2419,10 +2419,10 @@ let rec check_name_unicity env ok seen = function
 | (loc, IntroNaming (IntroIdentifier id)) :: l ->
    (try
       ignore (if List.mem_f Id.equal id ok then raise Not_found else lookup_named id env);
-      user_err ?loc (pr_id id ++ str" is already used.")
+      user_err ?loc (Id.print id ++ str" is already used.")
    with Not_found ->
      if List.mem_f Id.equal id seen then
-       user_err ?loc (pr_id id ++ str" is used twice.")
+       user_err ?loc (Id.print id ++ str" is used twice.")
      else
        check_name_unicity env ok (id::seen) l)
 | (_, IntroAction (IntroOrAndPattern l)) :: l' ->
@@ -2743,7 +2743,7 @@ let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
       | IntroFresh heq_base -> fresh_id_in_env (Id.Set.singleton id) heq_base env
       | IntroIdentifier id ->
           if List.mem id (ids_of_named_context (named_context env)) then
-            user_err ?loc  (pr_id id ++ str" is already used.");
+            user_err ?loc  (Id.print id ++ str" is already used.");
           id in
       let eqdata = build_coq_eq_data () in
       let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
@@ -2826,7 +2826,7 @@ let enough_by na t tac = forward false (Some (Some tac)) (ipat_of_name na) t
 let generalized_name env sigma c t ids cl = function
   | Name id as na ->
       if Id.List.mem id ids then
-	user_err  (pr_id id ++ str " is already used.");
+	user_err  (Id.print id ++ str " is already used.");
       na
   | Anonymous ->
       match EConstr.kind sigma c with
@@ -3076,7 +3076,7 @@ let unfold_body x =
   let env = Proofview.Goal.env (Proofview.Goal.assume gl) in
   let xval = match Environ.lookup_named x env with
   | LocalAssum _ -> user_err ~hdr:"unfold_body"
-    (pr_id x ++ str" is not a defined hypothesis.")
+    (Id.print x ++ str" is not a defined hypothesis.")
   | LocalDef (_,xval,_) -> xval
   in
   let xval = EConstr.of_constr xval in
@@ -3913,7 +3913,7 @@ let specialize_eqs id =
         (internal_cut true id ty')
 	(exact_no_check ((* refresh_universes_strict *) acc'))
     else
-      Tacticals.New.tclFAIL 0 (str "Nothing to do in hypothesis " ++ pr_id id)
+      Tacticals.New.tclFAIL 0 (str "Nothing to do in hypothesis " ++ Id.print id)
   end
 
 let specialize_eqs id = Proofview.Goal.enter begin fun gl ->
@@ -4369,7 +4369,7 @@ let clear_unselected_context id inhyps cls =
   if occur_var (Tacmach.New.pf_env gl) (Tacmach.New.project gl) id (Tacmach.New.pf_concl gl) &&
     cls.concl_occs == NoOccurrences
   then user_err 
-    (str "Conclusion must be mentioned: it depends on " ++ pr_id id
+    (str "Conclusion must be mentioned: it depends on " ++ Id.print id
      ++ str ".");
   match cls.onhyps with
   | Some hyps ->
