@@ -753,12 +753,15 @@ endif
 	$(SHOW)PYTHON TIMING-DIFF $<
 	$(HIDE)$(MAKE) --no-print-directory print-pretty-single-time-diff BEFORE=$*.v.before-timing AFTER=$*.v.after-timing TIME_OF_PRETTY_BUILD_FILE="$@"
 
-
 # Dependencies of .v files
 
-%.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT)
-	$(SHOW)'COQDEP    $<'
-	$(HIDE)$(COQDEPBOOT) -boot $(DYNDEP) "$<" $(TOTARGET)
+# timestamp .vdfiles says all .v.d files built
+.vdfiles: $(COQDEPBOOT) $(VFILES)
+	$(SHOW)'COQDEP $(VFILES)'
+	$(HIDE)$(COQDEPBOOT) -boot $(DYNDEP) -with-file-output $(VFILES) && touch .vdfiles
+
+$(addsuffix .d,$(VFILES)): .vdfiles
+	@true # without something here, falls into catch-all rule below
 
 ###########################################################################
 
