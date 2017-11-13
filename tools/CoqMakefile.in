@@ -363,7 +363,7 @@ post-all::
 	@# Extension point
 .PHONY: post-all
 
-real-all: $(VDFILES) $(VOFILES) $(if $(USEBYTE),bytefiles,optfiles)
+real-all: $(VOFILES) $(if $(USEBYTE),bytefiles,optfiles)
 .PHONY: real-all
 
 real-all.timing.diff: $(VOFILES:.vo=.v.timing.diff)
@@ -533,11 +533,11 @@ clean::
 	$(HIDE)rm -f $(CMOFILES:.cmo=.o)
 	$(HIDE)rm -f $(CMXAFILES:.cmxa=.a)
 	$(HIDE)rm -f $(ALLDFILES)
+	$(HIDE)rm -f .vdfiles
 	$(HIDE)rm -f $(ALLNATIVEFILES)
 	$(HIDE)find . -name .coq-native -type d -empty -delete
 	$(HIDE)rm -f $(VOFILES)
 	$(HIDE)rm -f $(VOFILES:.vo=.vio)
-	$(HIDE)rm -f $(VDFILES) .vdfiles
 	$(HIDE)rm -f $(GFILES)
 	$(HIDE)rm -f $(BEAUTYFILES) $(VFILES:=.old)
 	$(HIDE)rm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob all-mli.tex
