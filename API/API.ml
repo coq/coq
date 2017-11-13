@@ -80,6 +80,7 @@ module Locus = Locus
 module Glob_term = Glob_term
 module Extend = Extend
 module Misctypes = Misctypes
+module Pattern = Pattern
 module Decl_kinds = Decl_kinds
 module Vernacexpr = Vernacexpr
 module Notation_term = Notation_term
@@ -118,8 +119,6 @@ module Universes = Universes
 module UState = UState
 module Evd = Evd
 module EConstr = EConstr
-module Tactypes = Tactypes
-module Pattern = Pattern
 module Namegen = Namegen
 module Termops = Termops
 module Proofview_monad = Proofview_monad
@@ -167,6 +166,7 @@ module Univdecls = Univdecls
 (******************************************************************************)
 (* interp                                                                     *)
 (******************************************************************************)
+module Tactypes = Tactypes
 module Stdarg = Stdarg
 module Genintern = Genintern
 module Constrexpr_ops = Constrexpr_ops
