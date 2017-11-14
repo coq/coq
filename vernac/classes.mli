@@ -28,7 +28,7 @@ val declare_instance_constant :
   Vernacexpr.hint_info_expr -> (** priority *)
   bool -> (** globality *)
   Impargs.manual_explicitation list -> (** implicits *)
-  ?hook:(Globnames.global_reference -> unit) ->
+  ?hook:(GlobRef.t -> unit) ->
   Id.t -> (** name *)
   Univdecls.universe_decl ->
   bool -> (* polymorphic *)
@@ -47,7 +47,7 @@ val new_instance :
   (bool * constr_expr) option ->
   ?generalize:bool ->
   ?tac:unit Proofview.tactic  ->
-  ?hook:(Globnames.global_reference -> unit) ->
+  ?hook:(GlobRef.t -> unit) ->
   Vernacexpr.hint_info_expr ->
   Id.t
 

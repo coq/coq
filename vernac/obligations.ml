@@ -741,7 +741,7 @@ let all_programs () =
 type progress =
     | Remain of int
     | Dependent
-    | Defined of global_reference
+    | Defined of GlobRef.t
 
 let obligations_message rem =
   if rem > 0 then

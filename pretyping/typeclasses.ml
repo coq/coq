@@ -62,10 +62,10 @@ type typeclass = {
   cl_univs : Univ.AUContext.t;
 
   (* The class implementation *)
-  cl_impl : global_reference;
+  cl_impl : GlobRef.t;
 
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. *)
-  cl_context : (global_reference * bool) option list * Context.Rel.t;
+  cl_context : (GlobRef.t * bool) option list * Context.Rel.t;
 
   (* Context of definitions and properties on defs, will not be shared *)
   cl_props : Context.Rel.t;
@@ -82,13 +82,13 @@ type typeclass = {
 type typeclasses = typeclass Refmap.t
 
 type instance = {
-  is_class: global_reference;
+  is_class: GlobRef.t;
   is_info: Vernacexpr.hint_info_expr;
   (* Sections where the instance should be redeclared,
      None for discard, Some 0 for none. *)
   is_global: int option;
   is_poly: bool;
-  is_impl: global_reference;
+  is_impl: GlobRef.t;
 }
 
 type instances = (instance Refmap.t) Refmap.t
@@ -473,7 +473,7 @@ let instances r =
   let cl = class_info r in instances_of cl    
 
 let is_class gr = 
-  Refmap.exists (fun _ v -> eq_gr v.cl_impl gr) !classes
+  Refmap.exists (fun _ v -> GlobRef.equal v.cl_impl gr) !classes
 
 let is_instance = function
   | ConstRef c ->

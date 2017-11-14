@@ -11,7 +11,6 @@ open Constr
 open Vernacexpr
 open Constrexpr
 open Impargs
-open Globnames
 
 val primitive_flag : bool ref
 
@@ -41,6 +40,6 @@ val definition_structure :
   inductive_kind * Decl_kinds.cumulative_inductive_flag * Decl_kinds.polymorphic *
   Decl_kinds.recursivity_kind * ident_decl with_coercion * local_binder_expr list *
   (local_decl_expr with_instance with_priority with_notation) list *
-  Id.t * constr_expr option -> global_reference
+  Id.t * constr_expr option -> GlobRef.t
 
-val declare_existing_class : global_reference -> unit
+val declare_existing_class : GlobRef.t -> unit

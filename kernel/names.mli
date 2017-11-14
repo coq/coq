@@ -739,6 +739,22 @@ end
 
 type projection = Projection.t
 
+(** {6 Global reference is a kernel side type for all references together } *)
+
+(* XXX: Should we define GlobRefCan GlobRefUser? *)
+module GlobRef : sig
+
+  type t =
+    | VarRef of variable           (** A reference to the section-context. *)
+    | ConstRef of Constant.t       (** A reference to the environment. *)
+    | IndRef of inductive          (** A reference to an inductive type. *)
+    | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
+
+  val equal : t -> t -> bool
+
+end
+
+
 val constant_of_kn_equiv : KerName.t -> KerName.t -> Constant.t
 [@@ocaml.deprecated "Same as [Constant.make]"]
 

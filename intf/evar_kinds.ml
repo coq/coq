@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Misctypes
 
 (** The kinds of existential variable *)
@@ -20,7 +19,7 @@ type obligation_definition_status = Define of bool | Expand
 type matching_var_kind = FirstOrderPatVar of patvar | SecondOrderPatVar of patvar
 
 type t =
-  | ImplicitArg of global_reference * (int * Id.t option)
+  | ImplicitArg of GlobRef.t * (int * Id.t option)
      * bool (** Force inference *)
   | BinderType of Name.t
   | NamedHole of Id.t (* coming from some ?[id] syntax *)
