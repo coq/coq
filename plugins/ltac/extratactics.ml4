@@ -1091,6 +1091,26 @@ TACTIC EXTEND decompose
 | [ "decompose" "[" ne_constr_list(l) "]" constr(c) ] -> [ decompose l c ]
 END
 
+let iter ist tac arg =
+  let open Tacinterp in
+  let open Taccoerce in
+  let map tac =
+    Tacticals.New.tclMAP (fun a -> Ftactic.run (interp_app None ist tac [a]) (tactic_of_value ist)) in
+  match Value.to_list arg with
+  | Some l -> map tac l
+  | None ->
+  match Value.to_option arg with
+  | Some (Some v) -> map tac [v]
+  | Some None -> Proofview.tclUNIT ()
+  | None ->
+  match Value.to_pair arg with
+  | Some (a,b) -> map tac [a;b]
+  | None -> Tacticals.New.tclZEROMSG (str "Expecting a pair, list, or option.")
+
+TACTIC EXTEND iter
+| [ "iter" tactic(t) tactic_as_arg(c) ] -> [ iter ist t c ]
+END
+
 (** library/keys *)
 
 VERNAC COMMAND EXTEND Declare_keys CLASSIFIED AS SIDEFF

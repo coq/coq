@@ -38,7 +38,7 @@ let clause_dft_concl =
 
 
 (* Main entries for ltac *)
-let tactic_arg = Gram.entry_create "tactic:tactic_arg"
+let tactic_arg = make_gen_entry utactic "tactic_arg"
 let tactic_expr = make_gen_entry utactic "tactic_expr"
 let binder_tactic = make_gen_entry utactic "binder_tactic"
 
@@ -58,6 +58,8 @@ let () =
   register_grammar wit_constr_with_bindings (constr_with_bindings);
   register_grammar wit_bindings (bindings);
   register_grammar wit_tactic (tactic);
+  register_grammar wit_tactic_arg (tactic_arg);
+  register_grammar wit_tactic_as_arg (tactic);
   register_grammar wit_ltac (tactic);
   register_grammar wit_clause_dft_concl (clause_dft_concl);
   register_grammar wit_destruction_arg (destruction_arg);

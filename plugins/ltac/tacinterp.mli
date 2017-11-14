@@ -118,6 +118,14 @@ val interp_tac_gen : value Id.Map.t -> Id.Set.t ->
 
 val interp : raw_tactic_expr -> unit Proofview.tactic
 
+(** Interpret an application *)
+
+val interp_app : Loc.t option -> interp_sign -> Value.t -> Value.t list -> Value.t Ftactic.t
+
+(** Interpret a tactic argument *)
+
+val interp_tacarg : interp_sign -> glob_tactic_arg -> Value.t Ftactic.t
+
 (** Hides interpretation for pretty-print *)
 
 val hide_interp : bool -> raw_tactic_expr -> unit Proofview.tactic option -> unit Proofview.tactic
