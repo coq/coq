@@ -534,7 +534,7 @@ type clear_dependency_error =
 | OccurHypInSimpleClause of Id.t option
 | EvarTypingBreak of existential
 
-exception ClearDependencyError of Id.t * clear_dependency_error * Globnames.global_reference option
+exception ClearDependencyError of Id.t * clear_dependency_error * GlobRef.t option
 
 exception Depends of Id.t
 

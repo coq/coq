@@ -576,7 +576,7 @@ If someone knows how to prevent solved existantial removal in  understand, pleas
              (fun _ evi _ ->
                match evi.evar_source with
                | (loc_evi,ImplicitArg(gr_evi,p_evi,b_evi)) ->
-                  if Globnames.eq_gr grk gr_evi && pk=p_evi && bk=b_evi  && rt.CAst.loc = loc_evi
+                  if GlobRef.equal grk gr_evi && pk=p_evi && bk=b_evi  && rt.CAst.loc = loc_evi
                   then raise (Found evi)
                | _ -> ()
              )

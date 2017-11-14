@@ -22,7 +22,7 @@ open Globnames
 let dnet_depth = ref 8
 
 type term_label =
-| GRLabel of global_reference
+| GRLabel of GlobRef.t
 | ProdLabel
 | LambdaLabel
 | SortLabel

@@ -171,16 +171,16 @@ let jmeq_kn = make_ind jmeq_module "JMeq"
 let glob_jmeq = IndRef (jmeq_kn,0)
 
 type coq_sigma_data = {
-  proj1 : global_reference;
-  proj2 : global_reference;
-  elim  : global_reference;
-  intro : global_reference;
-  typ   : global_reference }
+  proj1 : GlobRef.t;
+  proj2 : GlobRef.t;
+  elim  : GlobRef.t;
+  intro : GlobRef.t;
+  typ   : GlobRef.t }
 
 type coq_bool_data  = {
-  andb : global_reference;
-  andb_prop : global_reference;
-  andb_true_intro : global_reference}
+  andb : GlobRef.t;
+  andb_prop : GlobRef.t;
+  andb_true_intro : GlobRef.t}
 
 let build_bool_type () =
   { andb =  init_reference ["Datatypes"] "andb";
@@ -213,18 +213,18 @@ let build_prod () =
 
 (* Equalities *)
 type coq_eq_data = {
-  eq   : global_reference;
-  ind  : global_reference;
-  refl : global_reference;
-  sym  : global_reference;
-  trans: global_reference;
-  congr: global_reference }
+  eq   : GlobRef.t;
+  ind  : GlobRef.t;
+  refl : GlobRef.t;
+  sym  : GlobRef.t;
+  trans: GlobRef.t;
+  congr: GlobRef.t }
 
 (* Data needed for discriminate and injection *)
 type coq_inversion_data = {
-  inv_eq   : global_reference; (* : forall params, t -> Prop *)
-  inv_ind  : global_reference; (* : forall params P y, eq params y -> P y *)
-  inv_congr: global_reference  (* : forall params B (f:t->B) y, eq params y -> f c=f y *)
+  inv_eq   : GlobRef.t; (* : forall params, t -> Prop *)
+  inv_ind  : GlobRef.t; (* : forall params P y, eq params y -> P y *)
+  inv_congr: GlobRef.t  (* : forall params B (f:t->B) y, eq params y -> f c=f y *)
 }
 
 let lazy_init_reference dir id = lazy (init_reference dir id)

@@ -59,7 +59,7 @@ let rec eq_ml_type t1 t2 = match t1, t2 with
 | Tarr (tl1, tr1), Tarr (tl2, tr2) ->
   eq_ml_type tl1 tl2 && eq_ml_type tr1 tr2
 | Tglob (gr1, t1), Tglob (gr2, t2) ->
-  eq_gr gr1 gr2 && List.equal eq_ml_type t1 t2
+  GlobRef.equal gr1 gr2 && List.equal eq_ml_type t1 t2
 | Tvar i1, Tvar i2 -> Int.equal i1 i2
 | Tvar' i1, Tvar' i2 -> Int.equal i1 i2
 | Tmeta m1, Tmeta m2 -> eq_ml_meta m1 m2
@@ -120,7 +120,7 @@ let rec mgu = function
       | None -> m.contents <- Some t)
   | Tarr(a, b), Tarr(a', b') ->
       mgu (a, a'); mgu (b, b')
-  | Tglob (r,l), Tglob (r',l') when Globnames.eq_gr r r' ->
+  | Tglob (r,l), Tglob (r',l') when GlobRef.equal r r' ->
        List.iter mgu (List.combine l l')
   | Tdummy _, Tdummy _ -> ()
   | Tvar i, Tvar j when Int.equal i j -> ()
@@ -270,7 +270,7 @@ let rec var2var' = function
   | Tglob (r,l) -> Tglob (r, List.map var2var' l)
   | a -> a
 
-type abbrev_map = global_reference -> ml_type option
+type abbrev_map = GlobRef.t -> ml_type option
 
 (*s Delta-reduction of type constants everywhere in a ML type [t].
    [env] is a function of type [ml_type_env]. *)
@@ -381,9 +381,9 @@ let rec eq_ml_ast t1 t2 = match t1, t2 with
   eq_ml_ident na1 na2 && eq_ml_ast t1 t2
 | MLletin (na1, c1, t1), MLletin (na2, c2, t2) ->
   eq_ml_ident na1 na2 && eq_ml_ast c1 c2 && eq_ml_ast t1 t2
-| MLglob gr1, MLglob gr2 -> eq_gr gr1 gr2
+| MLglob gr1, MLglob gr2 -> GlobRef.equal gr1 gr2
 | MLcons (t1, gr1, c1), MLcons (t2, gr2, c2) ->
-  eq_ml_type t1 t2 && eq_gr gr1 gr2 && List.equal eq_ml_ast c1 c2
+  eq_ml_type t1 t2 && GlobRef.equal gr1 gr2 && List.equal eq_ml_ast c1 c2
 | MLtuple t1, MLtuple t2 ->
   List.equal eq_ml_ast t1 t2
 | MLcase (t1, c1, p1), MLcase (t2, c2, p2) ->
@@ -398,13 +398,13 @@ let rec eq_ml_ast t1 t2 = match t1, t2 with
 
 and eq_ml_pattern p1 p2 = match p1, p2 with
 | Pcons (gr1, p1), Pcons (gr2, p2) ->
-  eq_gr gr1 gr2 && List.equal eq_ml_pattern p1 p2
+  GlobRef.equal gr1 gr2 && List.equal eq_ml_pattern p1 p2
 | Ptuple p1, Ptuple p2 ->
   List.equal eq_ml_pattern p1 p2
 | Prel i1, Prel i2 ->
   Int.equal i1 i2
 | Pwild, Pwild -> true
-| Pusual gr1, Pusual gr2 -> eq_gr gr1 gr2
+| Pusual gr1, Pusual gr2 -> GlobRef.equal gr1 gr2
 | _ -> false
 
 and eq_ml_branch (id1, p1, t1) (id2, p2, t2) =
@@ -984,7 +984,7 @@ let rec iota_red i lift br ((typ,r,a) as cons) =
   if i >= Array.length br then raise Impossible;
   let (ids,p,c) = br.(i) in
   match p with
-    | Pusual r' | Pcons (r',_) when not (Globnames.eq_gr r' r) -> iota_red (i+1) lift br cons
+    | Pusual r' | Pcons (r',_) when not (GlobRef.equal r' r) -> iota_red (i+1) lift br cons
     | Pusual r' ->
       let c = named_lams (List.rev ids) c in
       let c = ast_lift lift c

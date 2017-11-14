@@ -10,12 +10,13 @@
 
 (** Keys for unification and indexing *)
 
-open Globnames
+open Names
 open Term
+open Globnames
 open Libobject
 
 type key =
-  | KGlob of global_reference
+  | KGlob of GlobRef.t
   | KLam
   | KLet
   | KProd
@@ -126,7 +127,7 @@ let constr_key kind c =
       | Construct (c,u) -> KGlob (ConstructRef c)
       | Var id -> KGlob (VarRef id)
       | App (f, _) -> aux f
-      | Proj (p, _) -> KGlob (ConstRef (Names.Projection.constant p))
+      | Proj (p, _) -> KGlob (ConstRef (Projection.constant p))
       | Cast (p, _, _) -> aux p
       | Lambda _ -> KLam 
       | Prod _ -> KProd

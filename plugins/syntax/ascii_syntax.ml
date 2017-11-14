@@ -28,7 +28,7 @@ let make_kn dir id = Globnames.encode_mind (make_dir dir) (Id.of_string id)
 let make_path dir id = Libnames.make_path (make_dir dir) (Id.of_string id)
 
 let is_gr c gr = match DAst.get c with
-| GRef (r, _) -> Globnames.eq_gr r gr
+| GRef (r, _) -> GlobRef.equal r gr
 | _ -> false
 
 let ascii_module = ["Coq";"Strings";"Ascii"]

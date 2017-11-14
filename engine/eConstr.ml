@@ -500,6 +500,7 @@ let eq_universes env sigma cstrs cv_pb ref nargs l l' =
     let l = Evd.normalize_universe_instance sigma l
     and l' = Evd.normalize_universe_instance sigma l' in
     let open Universes in
+    let open GlobRef in
     match ref with
     | VarRef _ -> assert false (* variables don't have instances *)
     | ConstRef _ ->

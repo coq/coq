@@ -12,7 +12,6 @@
 
 open Names
 open Libnames
-open Globnames
 
 val simple_extraction : reference -> unit
 val full_extraction : string option -> reference list -> unit
@@ -26,7 +25,7 @@ val extract_and_compile : reference list -> unit
 (* For debug / external output via coqtop.byte + Drop : *)
 
 val mono_environment :
- global_reference list -> ModPath.t list -> Miniml.ml_structure
+ GlobRef.t list -> ModPath.t list -> Miniml.ml_structure
 
 (* Used by the Relation Extraction plugin *)
 

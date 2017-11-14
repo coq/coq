@@ -9,14 +9,13 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Environ
 open Constr
 
-val rename_arguments : bool -> global_reference -> Name.t list -> unit
+val rename_arguments : bool -> GlobRef.t -> Name.t list -> unit
 
 (** [Not_found] is raised if no names are defined for [r] *)
-val arguments_names : global_reference -> Name.t list
+val arguments_names : GlobRef.t -> Name.t list
 
 val rename_type_of_constant : env -> pconstant -> types
 val rename_type_of_inductive : env -> pinductive -> types

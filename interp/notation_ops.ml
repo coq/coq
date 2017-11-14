@@ -28,7 +28,7 @@ open Notation_term
 let get_var_ndx id vs = try Some (List.index Id.equal id vs) with Not_found -> None
 
 let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
-| NRef gr1, NRef gr2 -> eq_gr gr1 gr2
+| NRef gr1, NRef gr2 -> GlobRef.equal gr1 gr2
 | NVar id1, NVar id2 -> (
    match (get_var_ndx id1 vars1,get_var_ndx id2 vars2) with
    | Some n,Some m -> Int.equal n m
@@ -1123,7 +1123,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
 
   (* Matching compositionally *)
   | GVar id1, NVar id2 when alpha_var id1 id2 (fst alp) -> sigma
-  | GRef (r1,_), NRef r2 when (eq_gr r1 r2) -> sigma
+  | GRef (r1,_), NRef r2 when (GlobRef.equal r1 r2) -> sigma
   | GApp (f1,l1), NApp (f2,l2) ->
       let n1 = List.length l1 and n2 = List.length l2 in
       let f1,l1,f2,l2 =

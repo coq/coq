@@ -17,7 +17,6 @@
    arguments and pattern-matching compilation are not. *)
 
 open Names
-open Globnames
 open Decl_kinds
 open Misctypes
 
@@ -36,7 +35,7 @@ type cases_pattern = [ `any ] cases_pattern_g
 
 (** Representation of an internalized (or in other words globalized) term. *)
 type 'a glob_constr_r =
-  | GRef of global_reference * glob_level list option
+  | GRef of GlobRef.t * glob_level list option
       (** An identifier that represents a reference to an object defined
           either in the (global) environment or in the (local) context. *)
   | GVar of Id.t

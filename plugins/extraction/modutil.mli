@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Miniml
 
 (*s Functions upon ML modules. *)
@@ -17,7 +16,7 @@ open Miniml
 val struct_ast_search : (ml_ast -> bool) -> ml_structure -> bool
 val struct_type_search : (ml_type -> bool) -> ml_structure -> bool
 
-type do_ref = global_reference -> unit
+type do_ref = GlobRef.t -> unit
 
 val type_iter_references : do_ref -> ml_type -> unit
 val ast_iter_references : do_ref -> do_ref -> do_ref -> ml_ast -> unit
@@ -30,7 +29,7 @@ val mtyp_of_mexpr : ml_module_expr -> ml_module_type
 
 val msid_of_mt : ml_module_type -> ModPath.t
 
-val get_decl_in_structure : global_reference -> ml_structure -> ml_decl
+val get_decl_in_structure : GlobRef.t -> ml_structure -> ml_decl
 
 (* Some transformations of ML terms. [optimize_struct] simplify
    all beta redexes (when the argument does not occur, it is just
@@ -39,5 +38,5 @@ val get_decl_in_structure : global_reference -> ml_structure -> ml_decl
    optimizations. The first argument is the list of objects we want to appear.
 *)
 
-val optimize_struct : global_reference list * ModPath.t list ->
+val optimize_struct : GlobRef.t list * ModPath.t list ->
   ml_structure -> ml_structure

@@ -11,7 +11,6 @@
 open Bigint
 open Names
 open Libnames
-open Globnames
 open Constrexpr
 open Glob_term
 open Notation_term
@@ -91,7 +90,7 @@ val declare_string_interpreter : scope_name -> required_module ->
 val interp_prim_token : ?loc:Loc.t -> prim_token -> local_scopes ->
   glob_constr * (notation_location * scope_name option)
 (* This function returns a glob_const representing a pattern *)
-val interp_prim_token_cases_pattern_expr : ?loc:Loc.t -> (global_reference -> unit) -> prim_token ->
+val interp_prim_token_cases_pattern_expr : ?loc:Loc.t -> (GlobRef.t -> unit) -> prim_token ->
   local_scopes -> glob_constr * (notation_location * scope_name option)
 
 (** Return the primitive token associated to a [term]/[cases_pattern];
@@ -143,8 +142,8 @@ val level_of_notation : notation -> level (** raise [Not_found] if no level *)
 
 (** {6 Miscellaneous} *)
 
-val interp_notation_as_global_reference : ?loc:Loc.t -> (global_reference -> bool) ->
-      notation -> delimiters option -> global_reference
+val interp_notation_as_global_reference : ?loc:Loc.t -> (GlobRef.t -> bool) ->
+      notation -> delimiters option -> GlobRef.t
 
 (** Checks for already existing notations *)
 val exists_notation_in_scope : scope_name option -> notation ->
@@ -152,9 +151,9 @@ val exists_notation_in_scope : scope_name option -> notation ->
 
 (** Declares and looks for scopes associated to arguments of a global ref *)
 val declare_arguments_scope :
-  bool (** true=local *) -> global_reference -> scope_name option list -> unit
+  bool (** true=local *) -> GlobRef.t -> scope_name option list -> unit
 
-val find_arguments_scope : global_reference -> scope_name option list
+val find_arguments_scope : GlobRef.t -> scope_name option list
 
 type scope_class
 
@@ -165,7 +164,7 @@ val subst_scope_class :
   Mod_subst.substitution -> scope_class -> scope_class option
 
 val declare_scope_class : scope_name -> scope_class -> unit
-val declare_ref_arguments_scope : Evd.evar_map -> global_reference -> unit
+val declare_ref_arguments_scope : Evd.evar_map -> GlobRef.t -> unit
 
 val compute_arguments_scope : Evd.evar_map -> EConstr.types -> scope_name option list
 val compute_type_scope : Evd.evar_map -> EConstr.types -> scope_name option

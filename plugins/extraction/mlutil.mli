@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Miniml
 open Table
 
@@ -59,7 +58,7 @@ val type_recomp : ml_type list * ml_type -> ml_type
 
 val var2var' : ml_type -> ml_type
 
-type abbrev_map = global_reference -> ml_type option
+type abbrev_map = GlobRef.t -> ml_type option
 
 val type_expand : abbrev_map -> ml_type -> ml_type
 val type_simpl : ml_type -> ml_type
@@ -117,7 +116,7 @@ val dump_unused_vars : ml_ast -> ml_ast
 
 val normalize : ml_ast -> ml_ast
 val optimize_fix : ml_ast -> ml_ast
-val inline : global_reference -> ml_ast -> bool
+val inline : GlobRef.t -> ml_ast -> bool
 
 val is_basic_pattern : ml_pattern -> bool
 val has_deep_pattern : ml_branch array -> bool

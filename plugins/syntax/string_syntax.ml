@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Names
 open Globnames
 open Ascii_syntax_plugin.Ascii_syntax
 open Glob_term
@@ -34,7 +35,7 @@ let glob_String = lazy (make_reference "String")
 let glob_EmptyString = lazy (make_reference "EmptyString")
 
 let is_gr c gr = match DAst.get c with
-| GRef (r, _) -> Globnames.eq_gr r gr
+| GRef (r, _) -> GlobRef.equal r gr
 | _ -> false
 
 open Lazy
@@ -55,7 +56,7 @@ let uninterp_string (AnyGlobConstr r) =
 	(match uninterp_ascii a with
 	  | Some c -> Buffer.add_char b (Char.chr c); aux s
 	  | _ -> raise Non_closed_string)
-    | GRef (z,_) when eq_gr z (force glob_EmptyString) ->
+    | GRef (z,_) when GlobRef.equal z (force glob_EmptyString) ->
 	Some (Buffer.contents b)
     | _ ->
 	raise Non_closed_string

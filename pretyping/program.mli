@@ -8,37 +8,37 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Names
 open EConstr
-open Globnames
 
 (** A bunch of Coq constants used by Progam *)
 
-val sig_typ : unit -> global_reference
-val sig_intro : unit -> global_reference
-val sig_proj1 : unit -> global_reference
-val sigT_typ : unit -> global_reference
-val sigT_intro : unit -> global_reference
-val sigT_proj1 : unit -> global_reference
-val sigT_proj2 : unit -> global_reference
+val sig_typ : unit -> GlobRef.t
+val sig_intro : unit -> GlobRef.t
+val sig_proj1 : unit -> GlobRef.t
+val sigT_typ : unit -> GlobRef.t
+val sigT_intro : unit -> GlobRef.t
+val sigT_proj1 : unit -> GlobRef.t
+val sigT_proj2 : unit -> GlobRef.t
 
-val prod_typ : unit -> global_reference
-val prod_intro : unit -> global_reference
-val prod_proj1 : unit -> global_reference
-val prod_proj2 : unit -> global_reference
+val prod_typ : unit -> GlobRef.t
+val prod_intro : unit -> GlobRef.t
+val prod_proj1 : unit -> GlobRef.t
+val prod_proj2 : unit -> GlobRef.t
 
-val coq_eq_ind : unit -> global_reference
-val coq_eq_refl : unit -> global_reference
-val coq_eq_refl_ref : unit -> global_reference
-val coq_eq_rect : unit -> global_reference
+val coq_eq_ind : unit -> GlobRef.t
+val coq_eq_refl : unit -> GlobRef.t
+val coq_eq_refl_ref : unit -> GlobRef.t
+val coq_eq_rect : unit -> GlobRef.t
 
-val coq_JMeq_ind : unit -> global_reference
-val coq_JMeq_refl : unit -> global_reference
+val coq_JMeq_ind : unit -> GlobRef.t
+val coq_JMeq_refl : unit -> GlobRef.t
 
 val mk_coq_and : Evd.evar_map -> constr list -> Evd.evar_map * constr
 val mk_coq_not : Evd.evar_map -> constr -> Evd.evar_map * constr
 
 (** Polymorphic application of delayed references *)
-val papp : Evd.evar_map ref -> (unit -> global_reference) -> constr array -> constr
+val papp : Evd.evar_map ref -> (unit -> GlobRef.t) -> constr array -> constr
 
 val get_proofs_transparency : unit -> bool
 val is_program_cases : unit -> bool

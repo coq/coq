@@ -71,13 +71,13 @@ let interp_positive ?loc n =
 (**********************************************************************)
 
 let is_gr c gr = match DAst.get c with
-| GRef (r, _) -> Globnames.eq_gr r gr
+| GRef (r, _) -> GlobRef.equal r gr
 | _ -> false
 
 let rec bignat_of_pos x = DAst.with_val (function
   | GApp (r ,[a]) when is_gr r glob_xO -> mult_2(bignat_of_pos a)
   | GApp (r ,[a]) when is_gr r glob_xI -> add_1(mult_2(bignat_of_pos a))
-  | GRef (a, _)                when Globnames.eq_gr a glob_xH -> Bigint.one
+  | GRef (a, _)                when GlobRef.equal a glob_xH -> Bigint.one
   | _ -> raise Non_closed_number
   ) x
 
@@ -132,7 +132,7 @@ let n_of_int ?loc n =
 
 let bignat_of_n n = DAst.with_val (function
   | GApp (r, [a]) when is_gr r glob_Npos -> bignat_of_pos a
-  | GRef (a,_) when Globnames.eq_gr a glob_N0 -> Bigint.zero
+  | GRef (a,_) when GlobRef.equal a glob_N0 -> Bigint.zero
   | _ -> raise Non_closed_number
   ) n
 
@@ -180,7 +180,7 @@ let z_of_int ?loc n =
 let bigint_of_z z = DAst.with_val (function
   | GApp (r, [a]) when is_gr r glob_POS -> bignat_of_pos a
   | GApp (r, [a]) when is_gr r glob_NEG -> Bigint.neg (bignat_of_pos a)
-  | GRef (a, _) when Globnames.eq_gr a glob_ZERO -> Bigint.zero
+  | GRef (a, _) when GlobRef.equal a glob_ZERO -> Bigint.zero
   | _ -> raise Non_closed_number
   ) z
 

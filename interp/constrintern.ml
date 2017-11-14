@@ -1077,7 +1077,7 @@ let interp_reference vars r =
 (** Private internalization patterns *)
 type 'a raw_cases_pattern_expr_r =
   | RCPatAlias of 'a raw_cases_pattern_expr * Misctypes.lname
-  | RCPatCstr  of Globnames.global_reference
+  | RCPatCstr  of GlobRef.t
     * 'a raw_cases_pattern_expr list * 'a raw_cases_pattern_expr list
   (** [RCPatCstr (loc, c, l1, l2)] represents [((@ c l1) l2)] *)
   | RCPatAtom  of (Misctypes.lident * (Notation_term.tmp_scope_name option * Notation_term.scope_name list)) option
@@ -1314,7 +1314,7 @@ let sort_fields ~complete loc fields completer =
               | [] -> (idx, acc_first_idx, acc)
               | (Some field_glob_id) :: projs ->
                  let field_glob_ref = ConstRef field_glob_id in
-                 let first_field = eq_gr field_glob_ref first_field_glob_ref in
+                 let first_field = GlobRef.equal field_glob_ref first_field_glob_ref in
                  begin match proj_kinds with
                     | [] -> anomaly (Pp.str "Number of projections mismatch.")
                     | (_, regular) :: proj_kinds ->
@@ -1352,7 +1352,7 @@ let sort_fields ~complete loc fields completer =
                  user_err ?loc ~hdr:"intern"
                                (str "The field \"" ++ pr_reference field_ref ++ str "\" does not exist.") in
                let remaining_projs, (field_index, _) =
-                 let the_proj (idx, glob_id) = eq_gr field_glob_ref (ConstRef glob_id) in
+                 let the_proj (idx, glob_id) = GlobRef.equal field_glob_ref (ConstRef glob_id) in
                  try CList.extract_first the_proj remaining_projs
                  with Not_found ->
                    user_err ?loc 

@@ -54,7 +54,7 @@ exception EqUnknown of string
 exception UndefinedCst of string
 exception InductiveWithProduct
 exception InductiveWithSort
-exception ParameterWithoutEquality of global_reference
+exception ParameterWithoutEquality of GlobRef.t
 exception NonSingletonProp of inductive
 exception DecidabilityMutualNotSupported
 exception NoDecidabilityCoInductive
@@ -635,7 +635,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                         | App (c,ca) -> (
                           match EConstr.kind sigma c with
                           | Ind (indeq, u) ->
-                              if eq_gr (IndRef indeq) Coqlib.glob_eq
+                              if GlobRef.equal (IndRef indeq) Coqlib.glob_eq
                               then
                                 Tacticals.New.tclTHEN
                                   (do_replace_bl mode bl_scheme_key ind

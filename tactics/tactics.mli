@@ -16,7 +16,6 @@ open Proof_type
 open Evd
 open Clenv
 open Redexpr
-open Globnames
 open Pattern
 open Unification
 open Misctypes
@@ -177,7 +176,7 @@ val change            :
 val pattern_option    :
   (occurrences * constr) list -> goal_location -> unit Proofview.tactic
 val reduce            : red_expr -> clause -> unit Proofview.tactic
-val unfold_constr     : global_reference -> unit Proofview.tactic
+val unfold_constr     : GlobRef.t -> unit Proofview.tactic
 
 (** {6 Modification of the local context. } *)
 
@@ -253,7 +252,7 @@ val apply_delayed_in :
 type elim_scheme = {
   elimc: constr with_bindings option;
   elimt: types;
-  indref: global_reference option;
+  indref: GlobRef.t option;
   params: rel_context;      (** (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
   nparams: int;               (** number of parameters *)
   predicates: rel_context;  (** (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)

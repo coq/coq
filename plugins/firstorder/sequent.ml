@@ -8,13 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open EConstr
-open CErrors
 open Util
+open Pp
+open CErrors
+open Names
+open EConstr
 open Formula
 open Unify
-open Globnames
-open Pp
 
 let newcnt ()=
   let cnt=ref (-1) in
@@ -56,7 +56,7 @@ struct
 	(priority e1.pat) - (priority e2.pat)
 end
 
-type h_item = global_reference * (int*Constr.t) option
+type h_item = GlobRef.t * (int*Constr.t) option
 
 module Hitem=
 struct
@@ -87,7 +87,7 @@ let cm_remove sigma typ nam cm=
   let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma typ in
   try
     let l=CM.find typ cm in
-    let l0=List.filter (fun id-> not (Globnames.eq_gr id nam)) l in
+    let l0=List.filter (fun id-> not (GlobRef.equal id nam)) l in
       match l0 with
 	  []->CM.remove typ cm
 	| _ ->CM.add typ l0 cm
@@ -97,7 +97,7 @@ module HP=Heap.Functional(OrderedFormula)
 
 type t=
     {redexes:HP.t;
-     context:(global_reference list) CM.t;
+     context:(GlobRef.t list) CM.t;
      latoms:constr list;
      gl:types;
      glatom:constr option;
@@ -117,7 +117,7 @@ let lookup sigma item seq=
 	let p (id2,o)=
 	  match o with
 	      None -> false
-	    | Some (m2, t2)-> Globnames.eq_gr id id2 && m2>m && more_general sigma (m2, EConstr.of_constr t2) (m, EConstr.of_constr t) in
+            | Some (m2, t2)-> GlobRef.equal id id2 && m2>m && more_general sigma (m2, EConstr.of_constr t2) (m, EConstr.of_constr t) in
 	  History.exists p seq.history
 
 let add_formula env sigma side nam t seq =
@@ -187,9 +187,9 @@ let empty_seq depth=
 
 let expand_constructor_hints =
   List.map_append (function
-    | IndRef ind ->
+    | GlobRef.IndRef ind ->
         List.init (Inductiveops.nconstructors ind)
-          (fun i -> ConstructRef (ind,i+1))
+          (fun i -> GlobRef.ConstructRef (ind,i+1))
     | gr ->
 	[gr])
 

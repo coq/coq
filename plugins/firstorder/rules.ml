@@ -29,7 +29,7 @@ type tactic = unit Proofview.tactic
 
 type seqtac= (Sequent.t -> tactic) -> Sequent.t -> tactic
 
-type lseqtac= global_reference -> seqtac
+type lseqtac= GlobRef.t -> seqtac
 
 type 'a with_backtracking = tactic -> 'a
 

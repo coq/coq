@@ -1279,7 +1279,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
             error_cannot_recognize ref
       | _ ->
 	  try
-	    if eq_gr (fst (global_of_constr sigma c)) ref
+            if GlobRef.equal (fst (global_of_constr sigma c)) ref
 	    then it_mkProd_or_LetIn t l
 	    else raise Not_found
 	  with Not_found ->

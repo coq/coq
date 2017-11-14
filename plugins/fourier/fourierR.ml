@@ -227,7 +227,7 @@ let ineq1_of_constr (h,t) =
 			   hstrict=false}]
               |_-> raise NoIneq)
           | Ind ((kn,i),_) ->
-            if not (eq_gr (IndRef(kn,i)) Coqlib.glob_eq) then raise NoIneq;
+            if not (GlobRef.equal (IndRef(kn,i)) Coqlib.glob_eq) then raise NoIneq;
             let t0= args.(0) in
             let t1= args.(1) in
             let t2= args.(2) in

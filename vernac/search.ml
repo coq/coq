@@ -22,8 +22,8 @@ open Nametab
 
 module NamedDecl = Context.Named.Declaration
 
-type filter_function = global_reference -> env -> constr -> bool
-type display_function = global_reference -> env -> constr -> unit
+type filter_function = GlobRef.t -> env -> constr -> bool
+type display_function = GlobRef.t -> env -> constr -> unit
 
 (* This option restricts the output of [SearchPattern ...],
 [SearchAbout ...], etc. to the names of the symbols matching the
@@ -61,7 +61,7 @@ let iter_named_context_name_type f =
   List.iter (fun decl -> f (NamedDecl.get_id decl) (NamedDecl.get_type decl))
 
 (* General search over hypothesis of a goal *)
-let iter_hypothesis glnum (fn : global_reference -> env -> constr -> unit) =
+let iter_hypothesis glnum (fn : GlobRef.t -> env -> constr -> unit) =
   let env = Global.env () in
   let iter_hyp idh typ = fn (VarRef idh) env typ in
   let evmap,e = Pfedit.get_goal_context glnum in
@@ -69,7 +69,7 @@ let iter_hypothesis glnum (fn : global_reference -> env -> constr -> unit) =
   iter_named_context_name_type iter_hyp pfctxt
 
 (* General search over declarations *)
-let iter_declarations (fn : global_reference -> env -> constr -> unit) =
+let iter_declarations (fn : GlobRef.t -> env -> constr -> unit) =
   let env = Global.env () in
   let iter_obj (sp, kn) lobj = match object_tag lobj with
   | "VARIABLE" ->
@@ -117,8 +117,7 @@ module ConstrPriority = struct
 
   (* The priority is memoised here. Because of the very localised use
      of this module, it is not worth it making a convenient interface. *)
-  type t =
-    Globnames.global_reference * Environ.env * Constr.t * priority
+  type t = GlobRef.t * Environ.env * Constr.t * priority
   and priority = int
 
   module ConstrSet = CSet.Make(Constr)

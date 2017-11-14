@@ -87,7 +87,7 @@ val ppclosedglobconstr : Ltac_pretype.closed_glob_constr -> unit
 val ppclosedglobconstridmap :
   Ltac_pretype.closed_glob_constr Names.Id.Map.t -> unit
 
-val ppglobal : Globnames.global_reference -> unit
+val ppglobal : Names.GlobRef.t -> unit
 
 val ppconst :
   Names.KerName.t * (Constr.constr, 'a) Environ.punsafe_judgment -> unit

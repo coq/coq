@@ -16,11 +16,12 @@ let () = Mltop.add_known_module __coq_plugin_name
 (* This file defines the printer for natural numbers in [nat] *)
 
 (*i*)
+open Pp
+open CErrors
+open Names
 open Glob_term
 open Bigint
 open Coqlib
-open Pp
-open CErrors
 (*i*)
 
 (**********************************************************************)
@@ -61,10 +62,10 @@ exception Non_closed_number
 let rec int_of_nat x = DAst.with_val (function
   | GApp (r, [a]) ->
     begin match DAst.get r with
-    | GRef (s,_) when Globnames.eq_gr s glob_S -> add_1 (int_of_nat a)
+    | GRef (s,_) when GlobRef.equal s glob_S -> add_1 (int_of_nat a)
     | _ -> raise Non_closed_number
     end
-  | GRef (z,_) when Globnames.eq_gr z glob_O -> zero
+  | GRef (z,_) when GlobRef.equal z glob_O -> zero
   | _ -> raise Non_closed_number
   ) x
 

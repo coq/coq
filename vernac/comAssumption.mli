@@ -11,7 +11,6 @@
 open Names
 open Constr
 open Entries
-open Globnames
 open Vernacexpr
 open Constrexpr
 open Decl_kinds
@@ -33,4 +32,4 @@ val declare_assumption : coercion_flag -> assumption_kind ->
   types in_constant_universes_entry ->
   Universes.universe_binders -> Impargs.manual_implicits ->
   bool (** implicit *) -> Declaremods.inline -> variable CAst.t ->
-  global_reference * Univ.Instance.t * bool
+  GlobRef.t * Univ.Instance.t * bool

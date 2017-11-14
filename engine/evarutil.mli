@@ -78,8 +78,8 @@ val restrict_evar : evar_map -> Evar.t -> Filter.t ->
 
 (** Polymorphic constants *)
 
-val new_global : evar_map -> Globnames.global_reference -> evar_map * constr
-val e_new_global : evar_map ref -> Globnames.global_reference -> constr
+val new_global : evar_map -> GlobRef.t -> evar_map * constr
+val e_new_global : evar_map ref -> GlobRef.t -> constr
 
 (** Create a fresh evar in a context different from its definition context:
    [new_evar_instance sign evd ty inst] creates a new evar of context
@@ -235,7 +235,7 @@ type clear_dependency_error =
 | OccurHypInSimpleClause of Id.t option
 | EvarTypingBreak of Constr.existential
 
-exception ClearDependencyError of Id.t * clear_dependency_error * Globnames.global_reference option
+exception ClearDependencyError of Id.t * clear_dependency_error * GlobRef.t option
 
 val clear_hyps_in_evi : env -> evar_map ref -> named_context_val -> types ->
   Id.Set.t -> named_context_val * types

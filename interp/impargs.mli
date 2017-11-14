@@ -10,7 +10,6 @@
 
 open Names
 open EConstr
-open Globnames
 open Environ
 
 (** {6 Implicit Arguments } *)
@@ -103,7 +102,7 @@ val declare_var_implicits : variable -> unit
 val declare_constant_implicits : Constant.t -> unit
 val declare_mib_implicits : MutInd.t -> unit
 
-val declare_implicits : bool -> global_reference -> unit
+val declare_implicits : bool -> GlobRef.t -> unit
 
 (** [declare_manual_implicits local ref enriching l]
    Manual declaration of which arguments are expected implicit.
@@ -111,15 +110,15 @@ val declare_implicits : bool -> global_reference -> unit
    implicits depending on the current state.
    Unsets implicits if [l] is empty. *)
 
-val declare_manual_implicits : bool -> global_reference -> ?enriching:bool ->
+val declare_manual_implicits : bool -> GlobRef.t -> ?enriching:bool ->
   manual_implicits list -> unit
 
 (** If the list is empty, do nothing, otherwise declare the implicits. *)
 
-val maybe_declare_manual_implicits : bool -> global_reference -> ?enriching:bool ->
+val maybe_declare_manual_implicits : bool -> GlobRef.t -> ?enriching:bool ->
   manual_implicits -> unit
 
-val implicits_of_global : global_reference -> implicits_list list
+val implicits_of_global : GlobRef.t -> implicits_list list
 
 val extract_impargs_data :
   implicits_list list -> ((int * int) option * implicit_status list) list

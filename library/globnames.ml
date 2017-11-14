@@ -15,7 +15,7 @@ open Mod_subst
 open Libnames
 
 (*s Global reference is a kernel side type for all references together *)
-type global_reference = Names.global_reference =
+type global_reference = GlobRef.t =
   | VarRef of variable           (** A reference to the section-context. *)
   | ConstRef of Constant.t       (** A reference to the environment. *)
   | IndRef of inductive          (** A reference to an inductive type. *)
@@ -25,14 +25,6 @@ let isVarRef = function VarRef _ -> true | _ -> false
 let isConstRef = function ConstRef _ -> true | _ -> false
 let isIndRef = function IndRef _ -> true | _ -> false
 let isConstructRef = function ConstructRef _ -> true | _ -> false
-
-let eq_gr gr1 gr2 =
-  gr1 == gr2 || match gr1,gr2 with
-    | ConstRef con1, ConstRef con2 -> Constant.equal con1 con2
-    | IndRef kn1, IndRef kn2 -> eq_ind kn1 kn2
-    | ConstructRef kn1, ConstructRef kn2 -> eq_constructor kn1 kn2
-    | VarRef v1, VarRef v2 -> Id.equal v1 v2
-    | (ConstRef _ | IndRef _ | ConstructRef _ | VarRef _), _ -> false
 
 let destVarRef = function VarRef ind -> ind | _ -> failwith "destVarRef"
 let destConstRef = function ConstRef ind -> ind | _ -> failwith "destConstRef"
@@ -245,3 +237,6 @@ let pop_global_reference = function
   | IndRef (kn,i) -> IndRef (pop_kn kn,i)
   | ConstructRef ((kn,i),j) -> ConstructRef ((pop_kn kn,i),j)
   | VarRef id -> anomaly (Pp.str "VarRef not poppable.")
+
+(* Deprecated *)
+let eq_gr = GlobRef.equal

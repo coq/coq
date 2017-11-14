@@ -113,7 +113,7 @@ let instance_eq f (x1,c1) (x2,c2) =
   Id.equal x1 x2 && f c1 c2
 
 let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
-  | GRef (gr1, _), GRef (gr2, _) -> eq_gr gr1 gr2
+  | GRef (gr1, _), GRef (gr2, _) -> GlobRef.equal gr1 gr2
   | GVar id1, GVar id2 -> Id.equal id1 id2
   | GEvar (id1, arg1), GEvar (id2, arg2) ->
     Id.equal id1 id2 && List.equal (instance_eq f) arg1 arg2

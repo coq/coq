@@ -37,7 +37,7 @@ type coercion_error_kind =
   | ForbiddenSourceClass of cl_typ
   | NoTarget
   | WrongTarget of cl_typ * cl_typ
-  | NotAClass of global_reference
+  | NotAClass of GlobRef.t
 
 exception CoercionError of coercion_error_kind
 

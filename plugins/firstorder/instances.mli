@@ -8,13 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Globnames
+open Names
 open Rules
 
 val collect_quantified : Evd.evar_map -> Sequent.t -> Formula.t list * Sequent.t
 
 val give_instances : Evd.evar_map -> Formula.t list -> Sequent.t ->
-  (Unify.instance * global_reference) list
+  (Unify.instance * GlobRef.t) list
 
 val quantified_tac : Formula.t list -> seqtac with_backtracking
 

@@ -294,13 +294,13 @@ let match_with_equation env sigma t =
   let (hdapp,args) = destApp sigma t in
   match EConstr.kind sigma hdapp with
   | Ind (ind,u) ->
-      if eq_gr (IndRef ind) glob_eq then
+      if GlobRef.equal (IndRef ind) glob_eq then
 	Some (build_coq_eq_data()),hdapp,
 	PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-      else if eq_gr (IndRef ind) glob_identity then
+      else if GlobRef.equal (IndRef ind) glob_identity then
 	Some (build_coq_identity_data()),hdapp,
 	PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-      else if eq_gr (IndRef ind) glob_jmeq then
+      else if GlobRef.equal (IndRef ind) glob_jmeq then
 	Some (build_coq_jmeq_data()),hdapp,
 	HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
       else

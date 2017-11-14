@@ -12,7 +12,6 @@ open Names
 open Constr
 open Environ
 open Pattern
-open Globnames
 
 (** {6 Search facilities. } *)
 
@@ -20,8 +19,8 @@ type glob_search_about_item =
   | GlobSearchSubPattern of constr_pattern
   | GlobSearchString of string
 
-type filter_function = global_reference -> env -> constr -> bool
-type display_function = global_reference -> env -> constr -> unit
+type filter_function = GlobRef.t -> env -> constr -> bool
+type display_function = GlobRef.t -> env -> constr -> unit
 
 (** {6 Generic filter functions} *)
 
