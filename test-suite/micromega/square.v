@@ -40,7 +40,7 @@ Proof.
 Qed.
 
 
-Lemma QdenZpower : forall x : Q, ' Qden (x ^ 2)%Q = ('(Qden x) ^ 2) %Z.
+Lemma QdenZpower : forall x : Q, Zpos (Qden (x ^ 2)%Q) = (Zpos (Qden x) ^ 2) %Z.
 Proof.
   intros.
   destruct x.
@@ -54,9 +54,9 @@ Qed.
 Theorem sqrt2_not_rational : ~exists x:Q, x^2==2#1.
 Proof.
  unfold Qeq; intros (x,HQeq); simpl (Qden (2#1)) in HQeq; rewrite Z.mul_1_r in HQeq.
- assert (Heq : (Qnum x ^ 2 = 2 * ' Qden x ^ 2%Q)%Z) by
+ assert (Heq : (Qnum x ^ 2 = 2 * Zpos (Qden x) ^ 2%Q)%Z) by
    (rewrite QnumZpower in HQeq ; rewrite QdenZpower in HQeq ; auto).
  assert (Hnx : (Qnum x <> 0)%Z)
  by (intros Hx; simpl in HQeq; rewrite Hx in HQeq; discriminate HQeq).
- apply integer_statement; exists (Qnum x); exists (' Qden x); auto.
+ apply integer_statement; exists (Qnum x); exists (Zpos (Qden x)); auto.
 Qed.
