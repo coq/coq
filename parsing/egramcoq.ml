@@ -259,9 +259,11 @@ let is_binder_level from e = match e with
 | (NumLevel 200, (BorderProd (Right, _) | InternalProd)) -> from = 200
 | _ -> false
 
-let make_sep_rules tkl =
-  let rec mkrule : Tok.t list -> unit rules = function
-  | [] -> Rules ({ norec_rule = Stop }, ignore)
+let make_sep_rules = function
+  | [tk] -> Atoken tk
+  | tkl ->
+  let rec mkrule : Tok.t list -> string rules = function
+  | [] -> Rules ({ norec_rule = Stop }, fun _ -> (* dropped anyway: *) "")
   | tkn :: rem ->
     let Rules ({ norec_rule = r }, f) = mkrule rem in
     let r = { norec_rule = Next (r, Atoken tkn) } in
