@@ -30,17 +30,21 @@ env:
   - NJOBS=2
   # system is == 4.02.3
   - COMPILER="system"
+  - COMPILER_BE="4.06.0"
   - CAMLP5_VER="6.14"
+  - CAMLP5_VER_BE="7.03"
   - FINDLIB_VER="1.4.1"
+  - FINDLIB_VER_BE="1.7.3"
+  - LABLGTK="lablgtk.2.16.0 lablgtk-extras.1.5"
+  - LABLGTK_BE="lablgtk.2.18.6 lablgtk-extras.1.6"
   - NATIVE_COMP="yes"
   - COQ_DEST="-local"
   # Main test suites
   matrix:
   - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
-  - TEST_TARGET="test-suite" COMPILER="4.06.0+trunk" CAMLP5_VER="7.03" EXTRA_OPAM="num" FINDLIB_VER="1.7.3"
   - TEST_TARGET="validate"                           TW="travis_wait"
   - TEST_TARGET="validate"   COMPILER="4.02.3+32bit" TW="travis_wait"
-  - TEST_TARGET="validate"   COMPILER="4.06.0+trunk+flambda" CAMLP5_VER="7.03" NATIVE_COMP="no" EXTRA_CONF="-flambda-opts -O3" EXTRA_OPAM="num" FINDLIB_VER="1.7.3"
+  - TEST_TARGET="validate"   COMPILER="${COMPILER_BE}+flambda" CAMLP5_VER="${CAMLP5_VER_BE}" NATIVE_COMP="no" EXTRA_CONF="-flambda-opts -O3" EXTRA_OPAM="num" FINDLIB_VER="${FINDLIB_VER_BE}"
   - TEST_TARGET="ci-bignums TIMED=1"
   - TEST_TARGET="ci-color TIMED=1"
   - TEST_TARGET="ci-compcert TIMED=1"
@@ -82,7 +86,7 @@ matrix:
     - env:
       - TEST_TARGET="test-suite"
       - EXTRA_CONF="-coqide opt -with-doc yes"
-      - EXTRA_OPAM="lablgtk-extras hevea"
+      - EXTRA_OPAM="hevea ${LABLGTK}"
       addons:
         apt:
           sources:
@@ -106,11 +110,11 @@ matrix:
 
     - env:
       - TEST_TARGET="test-suite"
-      - COMPILER="4.05.0"
-      - FINDLIB_VER="1.7.3"
-      - CAMLP5_VER="7.03"
+      - COMPILER="${COMPILER_BE}"
+      - FINDLIB_VER="${FINDLIB_VER_BE}"
+      - CAMLP5_VER="${CAMLP5_VER_BE}"
       - EXTRA_CONF="-coqide opt -with-doc yes"
-      - EXTRA_OPAM="lablgtk-extras hevea"
+      - EXTRA_OPAM="num hevea ${LABLGTK_BE}"
       addons:
         apt:
           sources:
@@ -120,12 +124,12 @@ matrix:
     # Full test-suite with flambda
     - env:
       - TEST_TARGET="test-suite"
-      - COMPILER="4.05.0+flambda"
-      - FINDLIB_VER="1.7.3"
-      - CAMLP5_VER="7.03"
+      - COMPILER="${COMPILER_BE}+flambda"
+      - FINDLIB_VER="${FINDLIB_VER_BE}"
+      - CAMLP5_VER="${CAMLP5_VER_BE}"
       - NATIVE_COMP="no"
       - EXTRA_CONF="-coqide opt -with-doc yes -flambda-opts -O3"
-      - EXTRA_OPAM="lablgtk-extras hevea"
+      - EXTRA_OPAM="num hevea ${LABLGTK_BE}"
       addons:
         apt:
           sources:
@@ -136,7 +140,7 @@ matrix:
     - env:
       - TEST_TARGET="coqocaml"
       - EXTRA_CONF="-coqide opt -warn-error"
-      - EXTRA_OPAM="lablgtk-extras hevea"
+      - EXTRA_OPAM="hevea ${LABLGTK}"
       # dummy target
       - BUILD_TARGET="clean"
       addons:
@@ -151,11 +155,11 @@ matrix:
 
     - env:
       - TEST_TARGET="coqocaml"
-      - COMPILER="4.05.0"
-      - CAMLP5_VER="7.03"
-      - FINDLIB_VER="1.7.3"
+      - COMPILER="${COMPILER_BE}"
+      - FINDLIB_VER="${FINDLIB_VER_BE}"
+      - CAMLP5_VER="${CAMLP5_VER_BE}"
       - EXTRA_CONF="-coqide opt -warn-error"
-      - EXTRA_OPAM="lablgtk-extras hevea"
+      - EXTRA_OPAM="num hevea ${LABLGTK_BE}"
       # dummy target
       - BUILD_TARGET="clean"
       addons:
@@ -184,7 +188,7 @@ matrix:
       - NATIVE_COMP="no"
       - COQ_DEST="-prefix ${PWD}/_install"
       - EXTRA_CONF="-coqide opt -warn-error"
-      - EXTRA_OPAM="lablgtk-extras"
+      - EXTRA_OPAM="${LABLGTK}"
       before_install:
       - brew update
       - brew install opam gnu-time gtk+ expat gtksourceview libxml2 gdk-pixbuf python3

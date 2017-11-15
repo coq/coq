@@ -369,11 +369,11 @@ val mkConstructU : constructor puniverses -> constr
 val mkConstructUi : (pinductive * int) -> constr
 [@@ocaml.deprecated "Alias for Constr"]
 val mkCase : case_info * constr * constr * constr array -> constr
-[@@ocaml.deprecated "Alias for Constr"]
+[@@ocaml.deprecated "Alias for Constr.mkCase"]
 val mkFix : fixpoint -> constr
-[@@ocaml.deprecated "Alias for Constr"]
+[@@ocaml.deprecated "Alias for Constr.mkFix"]
 val mkCoFix : cofixpoint -> constr
-[@@ocaml.deprecated "Alias for Constr"]
+[@@ocaml.deprecated "Alias for Constr.mkCoFix"]
 
 (** {6 Aliases} *)
 
