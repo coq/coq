@@ -54,9 +54,10 @@ Debugging from Caml debugger
      of each of error* functions or anomaly* functions in lib/util.ml
    - If "source db" fails, do a "make printers" and try again (it should build
      top_printers.cmo and the core cma files).
-   - If you have the OCAMLRUNPARAM environment variable set, Coq may hang on
-     startup when run from the debugger. If this happens, unset the variable,
-     re-start Emacs, and run the debugger again.
+   - If you build Coq with an OCaml version earlier than 4.06, and have the 
+     OCAMLRUNPARAM environment variable set, Coq may hang on startup when run 
+     from the debugger. If this happens, unset the variable, re-start Emacs, and 
+     run the debugger again.
 
 Global gprof-based profiling
 ============================
