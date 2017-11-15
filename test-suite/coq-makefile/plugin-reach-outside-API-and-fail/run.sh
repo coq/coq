@@ -2,8 +2,6 @@
 
 set -e
 
-git clean -dfx
-
 cat > _CoqProject <<EOT
 -I src/
 
