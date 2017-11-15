@@ -2065,6 +2065,7 @@ let collect_proof keep cur hd brkind id =
    | id :: _ -> Names.Id.to_string id in
  let loc = (snd cur).loc in
  let rec is_defined_expr = function
+   | VernacEndProof (Proved (Transparent,_)) -> true
    | VernacTime (_, e) -> is_defined_expr e
    | VernacRedirect (_, (_, e)) -> is_defined_expr e
    | VernacTimeout (_, e) -> is_defined_expr e
