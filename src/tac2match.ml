@@ -173,7 +173,7 @@ module PatternMatching (E:StaticEnvironment) = struct
             | Some nctx -> Proofview.tclOR (k (Some m_ctx) nctx) (fun e -> (map s e).stream k ctx)
         }
       in
-      map (Constr_matching.match_appsubterm E.env E.sigma p term) imatching_error
+      map (Constr_matching.match_subterm E.env E.sigma (Id.Set.empty,p) term) imatching_error
 
   let hyp_match_type pat hyps =
     pick hyps >>= fun decl ->
