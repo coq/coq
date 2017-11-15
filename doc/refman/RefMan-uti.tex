@@ -134,6 +134,7 @@ The optional file {\tt CoqMakefile.local} is included by the generated file
 	  compiler, like {\tt -bin-annot} or {\tt -w...}.
   \item[COQC, COQDEP, COQDOC] can be set in order to use alternative 
 	  binaries (e.g. wrappers)
+  \item[COQ\_SRC\_SUBDIRS] can be extended by including other paths in which {\tt *.cm*} files are searched. For example {\tt COQ\_SRC\_SUBDIRS+=user-contrib/Unicoq} lets you build a plugin containing OCaml code that depends on the OCaml code of {\tt Unicoq}.
   \end{description}
 \item[Rule extension]
   The following makefile rules can be extended. For example
