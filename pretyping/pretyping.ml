@@ -382,9 +382,9 @@ let check_instance loc subst = function
   | [] -> ()
   | (id,_) :: _ ->
       if List.mem_assoc id subst then
-        user_err ?loc  (pr_id id ++ str "appears more than once.")
+        user_err ?loc  (Id.print id ++ str "appears more than once.")
       else
-        user_err ?loc  (str "No such variable in the signature of the existential variable: " ++ pr_id id ++ str ".")
+        user_err ?loc  (str "No such variable in the signature of the existential variable: " ++ Id.print id ++ str ".")
 
 (* used to enforce a name in Lambda when the type constraints itself
    is named, hence possibly dependent *)
@@ -410,8 +410,8 @@ let invert_ltac_bound_name lvar env id0 id =
   let id' = Id.Map.find id lvar.ltac_idents in
   try mkRel (pi1 (lookup_rel_id id' (rel_context env)))
   with Not_found ->
-    user_err  (str "Ltac variable " ++ pr_id id0 ++
-		       str " depends on pattern variable name " ++ pr_id id ++
+    user_err  (str "Ltac variable " ++ Id.print id0 ++
+		       str " depends on pattern variable name " ++ Id.print id ++
 		       str " which is not bound in current context.")
 
 let protected_get_type_of env sigma c =
@@ -454,7 +454,7 @@ let pretype_id pretype k0 loc env evdref lvar id =
       if Id.Map.mem id lvar.ltac_genargs then begin
         let Geninterp.Val.Dyn (typ, _) = Id.Map.find id lvar.ltac_genargs in
 	user_err ?loc 
-         (str "Variable " ++ pr_id id ++ str " should be bound to a term but is \
+         (str "Variable " ++ Id.print id ++ str " should be bound to a term but is \
           bound to a " ++ Geninterp.Val.pr typ ++ str ".")
       end;
       (* Check if [id] is a section or goal variable *)
@@ -1089,7 +1089,7 @@ and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
       with Not_found ->
         user_err ?loc  (str "Cannot interpret " ++
           pr_existential_key !evdref evk ++
-          str " in current context: no binding for " ++ pr_id id ++ str ".") in
+          str " in current context: no binding for " ++ Id.print id ++ str ".") in
     ((id,c)::subst, update) in
   let subst,inst = List.fold_right f hyps ([],update) in
   check_instance loc subst inst;

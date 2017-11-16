@@ -140,9 +140,9 @@ let reorder_context env sigma sign ord =
           let ((d,h),mh) = find_q top moved_hyps in
           if occur_vars_in_decl env sigma h d then
             user_err ~hdr:"reorder_context"
-              (str "Cannot move declaration " ++ pr_id top ++ spc() ++
+              (str "Cannot move declaration " ++ Id.print top ++ spc() ++
               str "before " ++
-              pr_sequence pr_id
+              pr_sequence Id.print
                 (Id.Set.elements (Id.Set.inter h
                   (global_vars_set_of_decl env sigma d))));
           step ord' expected ctxt_head mh (d::ctxt_tail)
@@ -173,7 +173,7 @@ let check_decl_position env sigma sign d =
   let deps = dependency_closure env sigma (named_context_of_val sign) needed in
   if Id.List.mem x deps then
     user_err ~hdr:"Logic.check_decl_position"
-      (str "Cannot create self-referring hypothesis " ++ pr_id x);
+      (str "Cannot create self-referring hypothesis " ++ Id.print x);
   x::deps
 
 (* Auxiliary functions for primitive MOVE tactic
@@ -234,10 +234,10 @@ let move_hyp sigma toleft (left,declfrom,right) hto =
 	    if not (move_location_eq hto (MoveAfter hyp)) then
 	      (first, d::middle)
             else
-	      user_err ~hdr:"move_hyp" (str "Cannot move " ++ pr_id (NamedDecl.get_id declfrom) ++
-	        Miscprint.pr_move_location pr_id hto ++
+	      user_err ~hdr:"move_hyp" (str "Cannot move " ++ Id.print (NamedDecl.get_id declfrom) ++
+	        Miscprint.pr_move_location Id.print hto ++
 	        str (if toleft then ": it occurs in the type of " else ": it depends on ")
-	        ++ pr_id hyp ++ str ".")
+	        ++ Id.print hyp ++ str ".")
           else
 	    (d::first, middle)
 	in
@@ -507,10 +507,10 @@ let convert_hyp check sign sigma d =
         let env = Global.env_of_context sign in
         if check && not (is_conv env sigma (NamedDecl.get_type d) (EConstr.of_constr (NamedDecl.get_type d'))) then
 	  user_err ~hdr:"Logic.convert_hyp"
-            (str "Incorrect change of the type of " ++ pr_id id ++ str ".");
+            (str "Incorrect change of the type of " ++ Id.print id ++ str ".");
         if check && not (Option.equal (is_conv env sigma) b c) then
 	  user_err ~hdr:"Logic.convert_hyp"
-            (str "Incorrect change of the body of "++ pr_id id ++ str ".");
+            (str "Incorrect change of the body of "++ Id.print id ++ str ".");
        if check then reorder := check_decl_position env sigma sign d;
        map_named_decl EConstr.Unsafe.to_constr d) in
   reorder_val_context env sigma sign' !reorder

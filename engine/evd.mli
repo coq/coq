@@ -125,6 +125,7 @@ val map_evar_info : (constr -> constr) -> evar_info -> evar_info
 (** {6 Unification state} **)
 
 type evar_universe_context = UState.t
+[@@ocaml.deprecated "Alias of UState.t"]
 (** The universe context associated to an evar map *)
 
 type evar_map
@@ -138,7 +139,7 @@ val from_env : env -> evar_map
 (** The empty evar map with given universe context, taking its initial 
     universes from env. *)
 
-val from_ctx : evar_universe_context -> evar_map
+val from_ctx : UState.t -> evar_map
 (** The empty evar map with given universe context *)
 
 val is_empty : evar_map -> bool
@@ -486,37 +487,37 @@ val univ_rigid : rigid
 val univ_flexible : rigid
 val univ_flexible_alg : rigid
 
-type 'a in_evar_universe_context = 'a * evar_universe_context
+type 'a in_evar_universe_context = 'a * UState.t
 
-val evar_universe_context_set : evar_universe_context -> Univ.ContextSet.t
-val evar_universe_context_constraints : evar_universe_context -> Univ.constraints
-val evar_context_universe_context : evar_universe_context -> Univ.UContext.t
-val evar_universe_context_of : Univ.ContextSet.t -> evar_universe_context
-val empty_evar_universe_context : evar_universe_context
-val union_evar_universe_context : evar_universe_context -> evar_universe_context ->
-  evar_universe_context
-val evar_universe_context_subst : evar_universe_context -> Universes.universe_opt_subst
-val constrain_variables : Univ.LSet.t -> evar_universe_context -> evar_universe_context
+val evar_universe_context_set : UState.t -> Univ.ContextSet.t
+val evar_universe_context_constraints : UState.t -> Univ.constraints
+val evar_context_universe_context : UState.t -> Univ.UContext.t
+val evar_universe_context_of : Univ.ContextSet.t -> UState.t
+val empty_evar_universe_context : UState.t
+val union_evar_universe_context : UState.t -> UState.t ->
+  UState.t
+val evar_universe_context_subst : UState.t -> Universes.universe_opt_subst
+val constrain_variables : Univ.LSet.t -> UState.t -> UState.t
 
 
 val evar_universe_context_of_binders :
-  Universes.universe_binders -> evar_universe_context
+  Universes.universe_binders -> UState.t
 							    
-val make_evar_universe_context : env -> (Id.t located) list option -> evar_universe_context
+val make_evar_universe_context : env -> (Id.t located) list option -> UState.t
 val restrict_universe_context : evar_map -> Univ.LSet.t -> evar_map							   
 (** Raises Not_found if not a name for a universe in this map. *)
 val universe_of_name : evar_map -> string -> Univ.Level.t
 val add_universe_name : evar_map -> string -> Univ.Level.t -> evar_map
 
-val add_constraints_context : evar_universe_context -> 
-  Univ.constraints -> evar_universe_context
+val add_constraints_context : UState.t -> 
+  Univ.constraints -> UState.t
 
 
-val normalize_evar_universe_context_variables : evar_universe_context -> 
+val normalize_evar_universe_context_variables : UState.t -> 
   Univ.universe_subst in_evar_universe_context
 
-val normalize_evar_universe_context : evar_universe_context -> 
-  evar_universe_context
+val normalize_evar_universe_context : UState.t -> 
+  UState.t
 
 val new_univ_level_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * Univ.Level.t
 val new_univ_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * Univ.Universe.t
@@ -548,7 +549,7 @@ val set_eq_instances : ?flex:bool ->
 val check_eq : evar_map -> Univ.Universe.t -> Univ.Universe.t -> bool
 val check_leq : evar_map -> Univ.Universe.t -> Univ.Universe.t -> bool
 
-val evar_universe_context : evar_map -> evar_universe_context
+val evar_universe_context : evar_map -> UState.t
 val universe_context_set : evar_map -> Univ.ContextSet.t
 val universe_context : names:(Id.t located) list -> extensible:bool -> evar_map ->
 		       (Id.t * Univ.Level.t) list * Univ.UContext.t
@@ -558,8 +559,8 @@ val universes : evar_map -> UGraph.t
 val check_univ_decl : evar_map -> UState.universe_decl ->
   Universes.universe_binders * Univ.UContext.t
 
-val merge_universe_context : evar_map -> evar_universe_context -> evar_map
-val set_universe_context : evar_map -> evar_universe_context -> evar_map
+val merge_universe_context : evar_map -> UState.t -> evar_map
+val set_universe_context : evar_map -> UState.t -> evar_map
 
 val merge_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> Univ.ContextSet.t -> evar_map
 val merge_universe_subst : evar_map -> Universes.universe_opt_subst -> evar_map
@@ -567,7 +568,7 @@ val merge_universe_subst : evar_map -> Universes.universe_opt_subst -> evar_map
 val with_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a Univ.in_universe_context_set -> evar_map * 'a
 
 val nf_univ_variables : evar_map -> evar_map * Univ.universe_subst
-val abstract_undefined_variables : evar_universe_context -> evar_universe_context
+val abstract_undefined_variables : UState.t -> UState.t
 
 val fix_undefined_variables : evar_map -> evar_map
 

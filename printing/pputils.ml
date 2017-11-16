@@ -9,7 +9,6 @@
 open Util
 open Pp
 open Genarg
-open Nameops
 open Misctypes
 open Locus
 open Genredexpr
@@ -27,7 +26,7 @@ let pr_located pr (loc, x) =
 
 let pr_or_var pr = function
   | ArgArg x -> pr x
-  | ArgVar (_,s) -> pr_id s
+  | ArgVar (_,s) -> Names.Id.print s
 
 let pr_with_occurrences pr keyword (occs,c) =
   match occs with

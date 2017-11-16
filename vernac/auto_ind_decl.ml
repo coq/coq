@@ -19,7 +19,6 @@ open Termops
 open Declarations
 open Names
 open Globnames
-open Nameops
 open Inductiveops
 open Tactics
 open Ind_tables
@@ -361,7 +360,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
             else user_err ~hdr:"AutoIndDecl.do_replace_lb"
-                   (str "Var " ++ pr_id s ++ str " seems unknown.")
+                   (str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
   with e when CErrors.noncritical e ->
@@ -422,7 +421,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
             else user_err ~hdr:"AutoIndDecl.do_replace_bl"
-                   (str "Var " ++ pr_id s ++ str " seems unknown.")
+                   (str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
   with e when CErrors.noncritical e ->

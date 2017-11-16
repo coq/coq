@@ -16,7 +16,7 @@ open Univ
 open Globnames
 
 let pr_with_global_universes l =
-  try Nameops.pr_id (LMap.find l (snd (Global.global_universe_names ())))
+  try Id.print (LMap.find l (snd (Global.global_universe_names ())))
   with Not_found -> Level.pr l
 
 (** Local universe names of polymorphic references *)

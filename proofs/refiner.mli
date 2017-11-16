@@ -35,10 +35,10 @@ val tclIDTAC_MESSAGE  : Pp.t -> tactic
 
 (** [tclEVARS sigma] changes the current evar map *)
 val tclEVARS : evar_map -> tactic
-val tclEVARUNIVCONTEXT : Evd.evar_universe_context -> tactic
+val tclEVARUNIVCONTEXT : UState.t -> tactic
 
 val tclPUSHCONTEXT : Evd.rigid -> Univ.ContextSet.t -> tactic -> tactic
-val tclPUSHEVARUNIVCONTEXT : Evd.evar_universe_context -> tactic
+val tclPUSHEVARUNIVCONTEXT : UState.t -> tactic
 
 val tclPUSHCONSTRAINTS : Univ.constraints -> tactic
 

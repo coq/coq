@@ -1760,7 +1760,7 @@ let subst_one_var dep_proof_ok x =
           let test hyp _ = is_eq_x gl x hyp in
           Context.Named.fold_outside test ~init:() hyps;
           user_err ~hdr:"Subst"
-            (str "Cannot find any non-recursive equality over " ++ pr_id x ++
+            (str "Cannot find any non-recursive equality over " ++ Id.print x ++
 	       str".")
         with FoundHyp res -> res in
       subst_one dep_proof_ok x res
@@ -1824,9 +1824,9 @@ let subst_all ?(flags=default_subst_tactic_flags) () =
     (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
     if EConstr.eq_constr sigma x y then Proofview.tclUNIT () else
       match EConstr.kind sigma x, EConstr.kind sigma y with
-      | Var x', _ when not (occur_term sigma x y) && not (is_evaluable env (EvalVarRef x')) ->
+      | Var x', _ when not (dependent sigma x y) && not (is_evaluable env (EvalVarRef x')) ->
           subst_one flags.rewrite_dependent_proof x' (hyp,y,true)
-      | _, Var y' when not (occur_term sigma y x) && not (is_evaluable env (EvalVarRef y')) ->
+      | _, Var y' when not (dependent sigma y x) && not (is_evaluable env (EvalVarRef y')) ->
           subst_one flags.rewrite_dependent_proof y' (hyp,x,false)
       | _ ->
           Proofview.tclUNIT ()

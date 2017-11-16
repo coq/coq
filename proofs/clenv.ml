@@ -154,7 +154,7 @@ let error_incompatible_inst clenv mv  =
       Name id ->
         user_err ~hdr:"clenv_assign"
           (str "An incompatible instantiation has already been found for " ++
-           pr_id id)
+           Id.print id)
     | _ ->
         anomaly ~label:"clenv_assign" (Pp.str "non dependent metavar already assigned.")
 
@@ -417,7 +417,7 @@ let check_bindings bl =
   match List.duplicates qhyp_eq (List.map (fun x -> fst (snd x)) bl) with
     | NamedHyp s :: _ ->
 	user_err 
-	  (str "The variable " ++ pr_id s ++
+	  (str "The variable " ++ Id.print s ++
 	   str " occurs more than once in binding list.");
     | AnonHyp n :: _ ->
 	user_err 
@@ -435,12 +435,12 @@ let explain_no_such_bound_variable evd id =
   in
   let mvl = List.fold_left fold [] (Evd.meta_list evd) in
   user_err ~hdr:"Evd.meta_with_name"
-    (str"No such bound variable " ++ pr_id id ++
+    (str"No such bound variable " ++ Id.print id ++
      (if mvl == [] then str " (no bound variables at all in the expression)."
       else
         (str" (possible name" ++
          str (if List.length mvl == 1 then " is: " else "s are: ") ++
-         pr_enum pr_id mvl ++ str").")))
+         pr_enum Id.print mvl ++ str").")))
 
 let meta_with_name evd id =
   let na = Name id in
@@ -460,7 +460,7 @@ let meta_with_name evd id =
         n
     | _  ->
         user_err ~hdr:"Evd.meta_with_name"
-          (str "Binder name \"" ++ pr_id id ++
+          (str "Binder name \"" ++ Id.print id ++
            strbrk "\" occurs more than once in clause.")
 
 let meta_of_binder clause loc mvs = function
@@ -474,7 +474,7 @@ let error_already_defined b =
   match b with
     | NamedHyp id ->
         user_err 
-          (str "Binder name \"" ++ pr_id id ++
+          (str "Binder name \"" ++ Id.print id ++
            str"\" already defined with incompatible value.")
     | AnonHyp n ->
         anomaly
@@ -639,10 +639,10 @@ let explain_no_such_bound_variable holes id =
   let mvl = List.fold_right fold holes [] in
   let expl = match mvl with
   | [] -> str " (no bound variables at all in the expression)."
-  | [id] -> str "(possible name is: " ++ pr_id id ++ str ")."
-  | _ -> str "(possible names are: " ++ pr_enum pr_id mvl ++ str ")."
+  | [id] -> str "(possible name is: " ++ Id.print id ++ str ")."
+  | _ -> str "(possible names are: " ++ pr_enum Id.print mvl ++ str ")."
   in
-  user_err  (str "No such bound variable " ++ pr_id id ++ expl)
+  user_err  (str "No such bound variable " ++ Id.print id ++ expl)
 
 let evar_with_name holes id =
   let map h = match h.hole_name with
@@ -655,7 +655,7 @@ let evar_with_name holes id =
   | [h] -> h.hole_evar
   | _ ->
     user_err 
-      (str "Binder name \"" ++ pr_id id ++
+      (str "Binder name \"" ++ Id.print id ++
         str "\" occurs more than once in clause.")
 
 let evar_of_binder holes = function

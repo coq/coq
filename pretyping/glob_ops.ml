@@ -290,7 +290,7 @@ let warn_variable_collision =
   let open Pp in
   CWarnings.create ~name:"variable-collision" ~category:"ltac"
          (fun name ->
-          strbrk "Collision between bound variables of name " ++ pr_id name)
+          strbrk "Collision between bound variables of name " ++ Id.print name)
 
 let add_and_check_ident id set =
   if Id.Set.mem id set then warn_variable_collision id;
@@ -524,7 +524,7 @@ let ltac_interp_name { ltac_idents ; ltac_genargs } = function
       try Name (Id.Map.find id ltac_idents)
       with Not_found ->
         if Id.Map.mem id ltac_genargs then
-          user_err (str"Ltac variable"++spc()++ pr_id id ++
+          user_err (str"Ltac variable"++spc()++ Id.print id ++
                            spc()++str"is not bound to an identifier."++spc()++
                            str"It cannot be used in a binder.")
         else n

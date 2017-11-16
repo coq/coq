@@ -617,7 +617,7 @@ let check_coq_overwriting p id =
   let is_empty = match l with [] -> true | _ -> false in
   if not !Flags.boot && not is_empty && Id.equal (List.last l) coq_root then
     user_err 
-      (str "Cannot build module " ++ pr_dirpath p ++ str "." ++ pr_id id ++ str "." ++ spc () ++
+      (str "Cannot build module " ++ pr_dirpath p ++ str "." ++ Id.print id ++ str "." ++ spc () ++
       str "it starts with prefix \"Coq\" which is reserved for the Coq library.")
 
 let start_library fo =

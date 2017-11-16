@@ -478,7 +478,7 @@ let pr_predicate pr_elt (b, elts) =
       if List.is_empty elts then str"none" else pr_elts
 
 let pr_cpred p = pr_predicate (pr_constant (Global.env())) (Cpred.elements p)
-let pr_idpred p = pr_predicate Nameops.pr_id (Id.Pred.elements p)
+let pr_idpred p = pr_predicate Id.print (Id.Pred.elements p)
 
 let pr_transparent_state (ids, csts) =
   hv 0 (str"VARIABLES: " ++ pr_idpred ids ++ fnl () ++

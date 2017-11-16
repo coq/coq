@@ -94,7 +94,7 @@ let print_ref reduce ref =
 (********************************)
 (** Printing implicit arguments *)
 
-let pr_impl_name imp = pr_id (name_of_implicit imp)
+let pr_impl_name imp = Id.print (name_of_implicit imp)
 
 let print_impargs_by_name max = function
   | []  -> []
@@ -238,7 +238,7 @@ let print_primitive_record recflag mipv = function
     | Decl_kinds.CoFinite | Decl_kinds.Finite -> str" without eta conversion"
     | Decl_kinds.BiFinite -> str " with eta conversion"
     in
-    [pr_id mipv.(0).mind_typename ++ str" has primitive projections" ++ eta ++ str"."]
+    [Id.print mipv.(0).mind_typename ++ str" has primitive projections" ++ eta ++ str"."]
   | _ -> []
 
 let print_primitive ref =
@@ -271,7 +271,7 @@ let print_name_infos ref =
 
 let print_id_args_data test pr id l =
   if List.exists test l then
-    pr (str "For " ++ pr_id id) l
+    pr (str "For " ++ Id.print id) l
   else
     []
 
@@ -456,7 +456,7 @@ let print_located_qualid name flags ref =
     | [] ->
 	let (dir,id) = repr_qualid qid in
 	if DirPath.is_empty dir then
-	  str "No " ++ str name ++ str " of basename" ++ spc () ++ pr_id id
+	  str "No " ++ str name ++ str " of basename" ++ spc () ++ Id.print id
 	else
 	  str "No " ++ str name ++ str " of suffix" ++ spc () ++ pr_qualid qid
     | l ->
@@ -608,7 +608,7 @@ let gallina_print_syntactic_def kn =
   hov 2
     (hov 4
        (str "Notation " ++ pr_qualid qid ++
-        prlist (fun id -> spc () ++ pr_id id) (List.map fst vars) ++
+        prlist (fun id -> spc () ++ Id.print id) (List.map fst vars) ++
         spc () ++ str ":=") ++
      spc () ++
      Constrextern.without_specific_symbols
@@ -638,7 +638,7 @@ let gallina_print_leaf_entry with_values ((sp,kn as oname),lobj) =
       | (_,s) -> None
 
 let gallina_print_library_entry with_values ent =
-  let pr_name (sp,_) = pr_id (basename sp) in
+  let pr_name (sp,_) = Id.print (basename sp) in
   match ent with
     | (oname,Lib.Leaf lobj) ->
 	gallina_print_leaf_entry with_values (oname,lobj)

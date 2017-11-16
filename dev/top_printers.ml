@@ -14,7 +14,6 @@ open Pp
 open Names
 open Libnames
 open Globnames
-open Nameops
 open Univ
 open Environ
 open Printer
@@ -38,7 +37,7 @@ let ppfuture kx = pp (Future.print (fun _ -> str "_") kx)
 
 (* name printers *)
 let ppid id = pp (Id.print id)
-let pplab l = pp (pr_lab l)
+let pplab l = pp (Label.print l)
 let ppmbid mbid = pp (str (MBId.debug_to_string mbid))
 let ppdir dir = pp (pr_dirpath dir)
 let ppmp mp = pp(str (ModPath.debug_to_string mp))
