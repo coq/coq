@@ -58,7 +58,6 @@ let preamble mod_name comment used_modules usf =
    else
      str "#ifdef __GLASGOW_HASKELL__" ++ fnl () ++
      str "import qualified GHC.Base" ++ fnl () ++
-     str "import qualified GHC.Prim" ++ fnl () ++
      str "#else" ++ fnl () ++
      str "-- HUGS" ++ fnl () ++
      str "import qualified IOExts" ++ fnl () ++
@@ -78,7 +77,7 @@ let preamble mod_name comment used_modules usf =
   (if not usf.tunknown then mt ()
    else
      str "#ifdef __GLASGOW_HASKELL__" ++ fnl () ++
-     str "type Any = GHC.Prim.Any" ++ fnl () ++
+     str "type Any = GHC.Base.Any" ++ fnl () ++
      str "#else" ++ fnl () ++
      str "-- HUGS" ++ fnl () ++
      str "type Any = ()" ++ fnl () ++
