@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Miniml
 
 (** By default, in module Format, you can do horizontal placing of blocks
@@ -52,7 +51,7 @@ val opened_libraries : unit -> ModPath.t list
 
 type kind = Term | Type | Cons | Mod
 
-val pp_global : kind -> global_reference -> string
+val pp_global : kind -> GlobRef.t -> string
 val pp_module : ModPath.t -> string
 
 val top_visible_mp : unit -> ModPath.t

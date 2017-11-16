@@ -10,7 +10,6 @@ open Names
 open Constr
 open Entries
 open Libnames
-open Globnames
 open Vernacexpr
 open Constrexpr
 open Decl_kinds
@@ -46,7 +45,7 @@ val declare_assumption : coercion_flag -> assumption_kind ->
   types Univ.in_universe_context_set ->
   Universes.universe_binders -> Impargs.manual_implicits ->
   bool (** implicit *) -> Vernacexpr.inline -> variable Loc.located ->
-  global_reference * Univ.Instance.t * bool
+  GlobRef.t * Univ.Instance.t * bool
 
 val do_assumptions : locality * polymorphic * assumption_object_kind ->
   Vernacexpr.inline -> (Vernacexpr.ident_decl list * constr_expr) with_coercion list -> bool

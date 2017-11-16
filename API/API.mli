@@ -35,302 +35,7 @@ end
 (************************************************************************)
 (* Modules from kernel/                                                 *)
 (************************************************************************)
-module Names :
-sig
-
-  open Util
-
-  module Id :
-  sig
-    type t
-    val equal : t -> t -> bool
-    val compare : t -> t -> int
-    val hash : t -> int
-    val is_valid : string -> bool
-    val of_bytes : bytes -> t
-    val of_string : string -> t
-    val of_string_soft : string -> t
-    val to_string : t -> string
-    val print : t -> Pp.t
-
-    module Set  : Set.S with type elt = t
-    module Map  : Map.ExtS with type key = t and module Set := Set
-    module Pred : Predicate.S with type elt = t
-    module List : List.MonoS with type elt = t
-    val hcons : t -> t
-  end
-
-  module Name :
-  sig
-    type t = Anonymous     (** anonymous identifier *)
-	   | Name of Id.t  (** non-anonymous identifier *)
-    val mk_name : Id.t -> t
-    val is_anonymous : t -> bool
-    val is_name : t -> bool
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-    val hcons : t -> t
-    val print : t -> Pp.t
-  end
-
-  type name = Name.t =
-    | Anonymous
-    | Name of Id.t
-  [@@ocaml.deprecated "alias of API.Name.t"]
-
-  module DirPath :
-  sig
-    type t
-    val empty : t
-    val make : Id.t list -> t
-    val repr : t -> Id.t list
-    val equal : t -> t -> bool
-    val to_string : t -> string
-  end
-
-  module MBId : sig
-    type t
-    val equal : t -> t -> bool
-    val to_id : t -> Id.t
-    val repr : t -> int * Id.t * DirPath.t
-    val debug_to_string : t -> string
-  end
-
-  module Label :
-  sig
-    type t
-    val make : string -> t
-    val equal : t -> t -> bool
-    val compare : t -> t -> int
-    val of_id : Id.t -> t
-    val to_id : t -> Id.t
-    val to_string : t -> string
-  end
-
-  module ModPath :
-  sig
-    type t =
-      | MPfile of DirPath.t
-      | MPbound of MBId.t
-      | MPdot of t * Label.t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-    val initial : t
-    val to_string : t -> string
-    val debug_to_string : t -> string
-  end
-
-  module KerName :
-  sig
-    type t
-    val make : ModPath.t -> DirPath.t -> Label.t -> t
-    val make2 : ModPath.t -> Label.t -> t
-    val modpath : t -> ModPath.t
-    val equal : t -> t -> bool
-    val compare : t -> t -> int
-    val label : t -> Label.t
-    val repr : t -> ModPath.t * DirPath.t * Label.t
-    val print : t -> Pp.t
-    val to_string : t -> string
-  end
-
-  type kernel_name = KerName.t
-  [@@ocaml.deprecated "alias of API.Names.KerName.t"]
-
-  module Constant :
-  sig
-    type t
-    val equal : t -> t -> bool
-    val make1 : KerName.t -> t
-    val make2 : ModPath.t -> Label.t -> t
-    val make3 : ModPath.t -> DirPath.t -> Label.t -> t
-    val repr3 : t -> ModPath.t * DirPath.t * Label.t
-    val canonical : t -> KerName.t
-    val user : t -> KerName.t
-    val label : t -> Label.t
-  end
-
-  module MutInd :
-  sig
-    type t
-    val make1 : KerName.t -> t
-    val make2 : ModPath.t -> Label.t -> t
-    val equal : t -> t -> bool
-    val repr3 : t -> ModPath.t * DirPath.t * Label.t
-    val canonical : t -> KerName.t
-    val modpath : t -> ModPath.t
-    val label : t -> Label.t
-    val user : t -> KerName.t
-    val print : t -> Pp.t
-  end
-
-  module Projection :
-  sig
-    type t
-    val make : Constant.t -> bool -> t
-    val map : (Constant.t -> Constant.t) -> t -> t
-    val constant : t -> Constant.t
-    val equal : t -> t -> bool
-    val unfolded : t -> bool
-    val unfold : t -> t
-  end
-
-  type evaluable_global_reference =
-    | EvalVarRef of Id.t
-    | EvalConstRef of Constant.t
-
-  type inductive = MutInd.t * int
-  val eq_ind : inductive -> inductive -> bool
-
-  type constructor = inductive * int
-  val eq_constructor : constructor -> constructor -> bool
-  val constructor_hash : constructor -> int
-
-  module MPset : Set.S with type elt = ModPath.t
-  module MPmap : Map.ExtS with type key = ModPath.t and module Set := MPset
-
-  module KNset  : CSig.SetS with type elt = KerName.t
-  module KNpred : Predicate.S with type elt = KerName.t
-  module KNmap  : Map.ExtS with type key = KerName.t and module Set := KNset
-
-  module Cpred : Predicate.S with type elt = Constant.t
-  module Cset : CSig.SetS with type elt = Constant.t
-  module Cset_env  : CSig.SetS with type elt = Constant.t
-
-  module Cmap : Map.ExtS with type key = Constant.t and module Set := Cset
-  module Cmap_env : Map.ExtS with type key = Constant.t and module Set := Cset_env
-
-  module Mindset : CSig.SetS with type elt = MutInd.t
-  module Mindmap : Map.ExtS with type key = MutInd.t and module Set := Mindset
-  module Mindmap_env : CSig.MapS with type key = MutInd.t
-
-  module Indmap : CSig.MapS with type key = inductive
-  module Constrmap : CSig.MapS with type key = constructor
-  module Indmap_env : CSig.MapS with type key = inductive
-  module Constrmap_env : CSig.MapS with type key = constructor
-
-  type transparent_state = Id.Pred.t * Cpred.t
-
-  val empty_transparent_state : transparent_state
-  val full_transparent_state : transparent_state
-  val var_full_transparent_state : transparent_state
-  val cst_full_transparent_state : transparent_state
-
-  val pr_kn : KerName.t -> Pp.t
-  [@@ocaml.deprecated "alias of API.Names.KerName.print"]
-
-  val eq_constant : Constant.t -> Constant.t -> bool
-  [@@ocaml.deprecated "alias of API.Names.Constant.equal"]
-
-  type module_path = ModPath.t =
-    | MPfile of DirPath.t
-    | MPbound of MBId.t
-    | MPdot of ModPath.t * Label.t
-  [@@ocaml.deprecated "alias of API.Names.ModPath.t"]
-
-  type variable = Id.t
-
-  type 'a tableKey =
-    | ConstKey of 'a
-    | VarKey of Id.t
-    | RelKey of Int.t
-
-  val id_of_string : string -> Id.t
-  [@@ocaml.deprecated "alias of API.Names.Id.of_string"]
-
-  val string_of_id : Id.t -> string
-  [@@ocaml.deprecated "alias of API.Names.Id.to_string"]
-
-  type mutual_inductive = MutInd.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.t"]
-
-  val eq_mind : MutInd.t -> MutInd.t -> bool
-  [@@ocaml.deprecated "alias of API.Names.MutInd.equal"]
-
-  val repr_con : Constant.t -> ModPath.t * DirPath.t * Label.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.repr3"]
-
-  val repr_mind : MutInd.t -> ModPath.t * DirPath.t * Label.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.repr3"]
-
-  val initial_path : ModPath.t
-  [@@ocaml.deprecated "alias of API.Names.ModPath.initial"]
-
-  val con_label : Constant.t -> Label.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.label"]
-
-  val mind_label : MutInd.t -> Label.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.label"]
-
-  val string_of_mp : ModPath.t -> string
-  [@@ocaml.deprecated "alias of API.Names.ModPath.to_string"]
-
-  val mind_of_kn : KerName.t -> MutInd.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.make1"]
-
-  type constant = Constant.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.t"]
-
-  val mind_modpath : MutInd.t -> ModPath.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.modpath"]
-
-  val canonical_mind : MutInd.t -> KerName.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.canonical"]
-
-  val user_mind : MutInd.t -> KerName.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.user"]
-
-  val repr_kn : KerName.t -> ModPath.t * DirPath.t * Label.t
-  [@@ocaml.deprecated "alias of API.Names.KerName.repr"]
-
-  val constant_of_kn : KerName.t -> Constant.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.make1"]
-
-  val user_con : Constant.t -> KerName.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.user"]
-
-  val modpath : KerName.t -> ModPath.t
-  [@@ocaml.deprecated "alias of API.Names.KerName.modpath"]
-
-  val canonical_con : Constant.t -> KerName.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.canonical"]
-
-  val make_kn : ModPath.t -> DirPath.t -> Label.t -> KerName.t
-  [@@ocaml.deprecated "alias of API.Names.KerName.make"]
-
-  val make_con : ModPath.t -> DirPath.t -> Label.t -> Constant.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.make3"]
-
-  val debug_pr_con : Constant.t -> Pp.t
-  [@@ocaml.deprecated "Alias of Names"]
-
-  val debug_pr_mind : MutInd.t -> Pp.t
-  [@@ocaml.deprecated "Alias of Names"]
-
-  val pr_con : Constant.t -> Pp.t
-  [@@ocaml.deprecated "Alias of Names"]
-
-  val string_of_con : Constant.t -> string
-  [@@ocaml.deprecated "Alias of Names"]
-
-  val string_of_mind : MutInd.t -> string
-  [@@ocaml.deprecated "Alias of Names"]
-
-  val debug_string_of_mind : MutInd.t -> string
-  [@@ocaml.deprecated "Alias of Names"]
-
-  val debug_string_of_con : Constant.t -> string
-  [@@ocaml.deprecated "Alias of Names"]
-
-  type identifier = Id.t
-  [@@ocaml.deprecated "Alias of Names"]
-
-  module Idset  : Set.S with type elt = identifier and type t = Id.Set.t
-  [@@ocaml.deprecated "Alias of Id.Set.t"]
-
-end
+module Names : module type of Names.Public
 
 module Univ :
 sig
@@ -1648,7 +1353,7 @@ sig
     | UnboundVar of variable
     | NotAType of ('constr, 'types) punsafe_judgment
     | BadAssumption of ('constr, 'types) punsafe_judgment
-    | ReferenceVariables of identifier * 'constr
+    | ReferenceVariables of Id.t * 'constr
     | ElimArity of pinductive * sorts_family list * 'constr * ('constr, 'types) punsafe_judgment
                    * (sorts_family * sorts_family * arity_error) option
     | CaseNotInductive of ('constr, 'types) punsafe_judgment
@@ -1847,6 +1552,178 @@ sig
   type goal_location = hyp_location option
 end
 
+module Pattern :
+sig
+
+  open Names
+
+  type case_info_pattern =
+    { cip_style : Misctypes.case_style;
+      cip_ind : Names.inductive option;
+      cip_ind_tags : bool list option; (** indicates LetIn/Lambda in arity *)
+      cip_extensible : bool (** does this match end with _ => _ ? *) }
+
+  type constr_pattern =
+    | PRef of GlobRef.t
+    | PVar of Names.Id.t
+    | PEvar of Evar.t * constr_pattern array
+    | PRel of int
+    | PApp of constr_pattern * constr_pattern array
+    | PSoApp of Names.Id.t * constr_pattern list
+    | PProj of Names.Projection.t * constr_pattern
+    | PLambda of Names.Name.t * constr_pattern * constr_pattern
+    | PProd of Names.Name.t * constr_pattern * constr_pattern
+    | PLetIn of Names.Name.t * constr_pattern * constr_pattern option * constr_pattern
+    | PSort of Misctypes.glob_sort
+    | PMeta of Names.Id.t option
+    | PIf of constr_pattern * constr_pattern * constr_pattern
+    | PCase of case_info_pattern * constr_pattern * constr_pattern *
+                 (int * bool list * constr_pattern) list (** index of constructor, nb of args *)
+    | PFix of Term.fixpoint
+    | PCoFix of Term.cofixpoint
+
+end
+
+module Evar_kinds :
+sig
+  open Names
+
+  type obligation_definition_status =
+    | Define of bool
+    | Expand
+
+  type matching_var_kind =
+    | FirstOrderPatVar of Names.Id.t
+    | SecondOrderPatVar of Names.Id.t
+
+  type t =
+    | ImplicitArg of GlobRef.t * (int * Names.Id.t option) * bool (** Force inference *)
+    | BinderType of Names.Name.t
+    | NamedHole of Names.Id.t (* coming from some ?[id] syntax *)
+    | QuestionMark of obligation_definition_status * Names.Name.t
+    | CasesType of bool (* true = a subterm of the type *)
+    | InternalHole
+    | TomatchTypeParameter of Names.inductive * int
+    | GoalEvar
+    | ImpossibleCase
+    | MatchingVar of matching_var_kind
+    | VarInstance of Names.Id.t
+    | SubEvar of Constr.existential_key
+end
+
+module Glob_term :
+sig
+
+  open Names
+  open Misctypes
+
+  type 'a cases_pattern_r =
+    | PatVar  of Names.Name.t
+    | PatCstr of Names.constructor * 'a cases_pattern_g list * Names.Name.t
+  and 'a cases_pattern_g = ('a cases_pattern_r, 'a) DAst.t
+  type cases_pattern = [ `any ] cases_pattern_g
+  type existential_name = Names.Id.t
+  type 'a glob_constr_r =
+    | GRef of GlobRef.t * glob_level list option
+        (** An identifier that represents a reference to an object defined
+            either in the (global) environment or in the (local) context. *)
+    | GVar of Names.Id.t
+        (** An identifier that cannot be regarded as "GRef".
+            Bound variables are typically represented this way. *)
+    | GEvar   of existential_name * (Names.Id.t * 'a glob_constr_g) list
+    | GPatVar of Evar_kinds.matching_var_kind
+    | GApp    of 'a glob_constr_g * 'a glob_constr_g list
+    | GLambda of Names.Name.t * Decl_kinds.binding_kind *  'a glob_constr_g * 'a glob_constr_g
+    | GProd   of Names.Name.t * Decl_kinds.binding_kind * 'a glob_constr_g * 'a glob_constr_g
+    | GLetIn  of Names.Name.t * 'a glob_constr_g * 'a glob_constr_g option * 'a glob_constr_g
+    | GCases  of Term.case_style * 'a glob_constr_g option * 'a tomatch_tuples_g * 'a cases_clauses_g
+    | GLetTuple of Names.Name.t list * (Names.Name.t * 'a glob_constr_g option) * 'a glob_constr_g * 'a glob_constr_g
+    | GIf   of 'a glob_constr_g * (Names.Name.t * 'a glob_constr_g option) * 'a glob_constr_g * 'a glob_constr_g
+    | GRec  of 'a fix_kind_g * Names.Id.t array * 'a glob_decl_g list array *
+               'a glob_constr_g array * 'a glob_constr_g array
+    | GSort of Misctypes.glob_sort
+    | GHole of Evar_kinds.t * Misctypes.intro_pattern_naming_expr * Genarg.glob_generic_argument option
+    | GCast of 'a glob_constr_g * 'a glob_constr_g Misctypes.cast_type
+
+   and 'a glob_constr_g = ('a glob_constr_r, 'a) DAst.t
+
+   and 'a glob_decl_g = Names.Name.t * Decl_kinds.binding_kind * 'a glob_constr_g option * 'a glob_constr_g
+
+   and 'a fix_recursion_order_g =
+     | GStructRec
+     | GWfRec of 'a glob_constr_g
+     | GMeasureRec of 'a glob_constr_g * 'a glob_constr_g option
+
+   and 'a fix_kind_g =
+     | GFix of ((int option * 'a fix_recursion_order_g) array * int)
+     | GCoFix of int
+
+   and 'a predicate_pattern_g =
+     Names.Name.t * (Names.inductive * Names.Name.t list) Loc.located option
+
+   and 'a tomatch_tuple_g = ('a glob_constr_g * 'a predicate_pattern_g)
+
+   and 'a tomatch_tuples_g = 'a tomatch_tuple_g list
+
+   and 'a cases_clause_g = (Names.Id.t list * 'a cases_pattern_g list * 'a glob_constr_g) Loc.located
+   and 'a cases_clauses_g = 'a cases_clause_g list
+
+   type glob_constr = [ `any ] glob_constr_g
+   type tomatch_tuple = [ `any ] tomatch_tuple_g
+   type tomatch_tuples = [ `any ] tomatch_tuples_g
+   type cases_clause = [ `any ] cases_clause_g
+   type cases_clauses = [ `any ] cases_clauses_g
+   type glob_decl = [ `any ] glob_decl_g
+   type fix_kind = [ `any ] fix_kind_g
+   type predicate_pattern = [ `any ] predicate_pattern_g
+   type any_glob_constr =
+   | AnyGlobConstr : 'r glob_constr_g -> any_glob_constr
+
+end
+
+module Notation_term :
+sig
+  open Names
+
+  type scope_name = string
+  type notation_var_instance_type =
+    | NtnTypeConstr | NtnTypeOnlyBinder | NtnTypeConstrList | NtnTypeBinderList
+  type tmp_scope_name = scope_name
+
+  type subscopes = tmp_scope_name option * scope_name list
+  type notation_constr =
+    | NRef of GlobRef.t
+    | NVar of Names.Id.t
+    | NApp of notation_constr * notation_constr list
+    | NHole of Evar_kinds.t * Misctypes.intro_pattern_naming_expr * Genarg.glob_generic_argument option
+    | NList of Names.Id.t * Names.Id.t * notation_constr * notation_constr * bool
+    | NLambda of Names.Name.t * notation_constr * notation_constr
+    | NProd of Names.Name.t * notation_constr * notation_constr
+    | NBinderList of Names.Id.t * Names.Id.t * notation_constr * notation_constr
+    | NLetIn of Names.Name.t * notation_constr * notation_constr option * notation_constr
+    | NCases of Term.case_style * notation_constr option *
+                (notation_constr * (Names.Name.t * (Names.inductive * Names.Name.t list) option)) list *
+                (Glob_term.cases_pattern list * notation_constr) list
+    | NLetTuple of Names.Name.t list * (Names.Name.t * notation_constr option) *
+                   notation_constr * notation_constr
+    | NIf of notation_constr * (Names.Name.t * notation_constr option) *
+             notation_constr * notation_constr
+    | NRec of Glob_term.fix_kind * Names.Id.t array *
+              (Names.Name.t * notation_constr option * notation_constr) list array *
+              notation_constr array * notation_constr array
+    | NSort of Misctypes.glob_sort
+    | NCast of notation_constr * notation_constr Misctypes.cast_type
+
+  type interpretation = (Names.Id.t * (subscopes * notation_var_instance_type)) list *
+                        notation_constr
+  type precedence = int
+
+  type parenRelation =
+    | L | E | Any | Prec of precedence
+  type tolerability = precedence * parenRelation
+
+end
+
 (************************************************************************)
 (* End Modules from intf/                                               *)
 (************************************************************************)
@@ -1950,16 +1827,18 @@ module Globnames :
 sig
 
   open Util
+  open Names
 
-  type global_reference =
+  type global_reference = GlobRef.t =
     | VarRef of Names.Id.t
     | ConstRef of Names.Constant.t
     | IndRef of Names.inductive
     | ConstructRef of Names.constructor
+  [@@ocaml.deprecated "Use Names.GlobRef.t"]
 
   type extended_global_reference =
-                                 | TrueGlobal of global_reference
-                                 | SynDef of Names.KerName.t
+    | TrueGlobal of global_reference
+    | SynDef of Names.KerName.t
 
   (* Long term: change implementation so that only 1 kind of order is needed.
    * Today: _env ones are fine grained, which one to pick depends.  Eg.
@@ -1982,7 +1861,10 @@ sig
   end
 
   val pop_global_reference : global_reference -> global_reference
+
   val eq_gr : global_reference -> global_reference -> bool
+  [@@ocaml.deprecated "Use Names.GlobRef.equal"]
+
   val destIndRef : global_reference -> Names.inductive
 
   val encode_mind : Names.DirPath.t -> Names.Id.t -> Names.MutInd.t
@@ -2002,176 +1884,17 @@ end
 (******************************************************************************)
 (* XXX: Moved from intf *)
 (******************************************************************************)
-module Pattern :
-sig
-
-  type case_info_pattern =
-    { cip_style : Misctypes.case_style;
-      cip_ind : Names.inductive option;
-      cip_ind_tags : bool list option; (** indicates LetIn/Lambda in arity *)
-      cip_extensible : bool (** does this match end with _ => _ ? *) }
-
-  type constr_pattern =
-    | PRef of Globnames.global_reference
-    | PVar of Names.Id.t
-    | PEvar of Evar.t * constr_pattern array
-    | PRel of int
-    | PApp of constr_pattern * constr_pattern array
-    | PSoApp of Names.Id.t * constr_pattern list
-    | PProj of Names.Projection.t * constr_pattern
-    | PLambda of Names.Name.t * constr_pattern * constr_pattern
-    | PProd of Names.Name.t * constr_pattern * constr_pattern
-    | PLetIn of Names.Name.t * constr_pattern * constr_pattern option * constr_pattern
-    | PSort of Misctypes.glob_sort
-    | PMeta of Names.Id.t option
-    | PIf of constr_pattern * constr_pattern * constr_pattern
-    | PCase of case_info_pattern * constr_pattern * constr_pattern *
-                 (int * bool list * constr_pattern) list (** index of constructor, nb of args *)
-    | PFix of Term.fixpoint
-    | PCoFix of Term.cofixpoint
-
-end
-
-module Evar_kinds :
-sig
-  type obligation_definition_status =
-    | Define of bool
-    | Expand
-
-  type matching_var_kind =
-    | FirstOrderPatVar of Names.Id.t
-    | SecondOrderPatVar of Names.Id.t
-
-  type t =
-         | ImplicitArg of Globnames.global_reference * (int * Names.Id.t option)
-                          * bool (** Force inference *)
-         | BinderType of Names.Name.t
-         | NamedHole of Names.Id.t (* coming from some ?[id] syntax *)
-         | QuestionMark of obligation_definition_status * Names.Name.t
-         | CasesType of bool (* true = a subterm of the type *)
-         | InternalHole
-         | TomatchTypeParameter of Names.inductive * int
-         | GoalEvar
-         | ImpossibleCase
-         | MatchingVar of matching_var_kind
-         | VarInstance of Names.Id.t
-         | SubEvar of Constr.existential_key
-end
-
-module Glob_term :
-sig
-  type 'a cases_pattern_r =
-    | PatVar  of Names.Name.t
-    | PatCstr of Names.constructor * 'a cases_pattern_g list * Names.Name.t
-  and 'a cases_pattern_g = ('a cases_pattern_r, 'a) DAst.t
-  type cases_pattern = [ `any ] cases_pattern_g
-  type existential_name = Names.Id.t
-  type 'a glob_constr_r =
-    | GRef of Globnames.global_reference * Misctypes.glob_level list option
-        (** An identifier that represents a reference to an object defined
-            either in the (global) environment or in the (local) context. *)
-    | GVar of Names.Id.t
-        (** An identifier that cannot be regarded as "GRef".
-            Bound variables are typically represented this way. *)
-    | GEvar   of existential_name * (Names.Id.t * 'a glob_constr_g) list
-    | GPatVar of Evar_kinds.matching_var_kind
-    | GApp    of 'a glob_constr_g * 'a glob_constr_g list
-    | GLambda of Names.Name.t * Decl_kinds.binding_kind *  'a glob_constr_g * 'a glob_constr_g
-    | GProd   of Names.Name.t * Decl_kinds.binding_kind * 'a glob_constr_g * 'a glob_constr_g
-    | GLetIn  of Names.Name.t * 'a glob_constr_g * 'a glob_constr_g option * 'a glob_constr_g
-    | GCases  of Term.case_style * 'a glob_constr_g option * 'a tomatch_tuples_g * 'a cases_clauses_g
-    | GLetTuple of Names.Name.t list * (Names.Name.t * 'a glob_constr_g option) * 'a glob_constr_g * 'a glob_constr_g
-    | GIf   of 'a glob_constr_g * (Names.Name.t * 'a glob_constr_g option) * 'a glob_constr_g * 'a glob_constr_g
-    | GRec  of 'a fix_kind_g * Names.Id.t array * 'a glob_decl_g list array *
-               'a glob_constr_g array * 'a glob_constr_g array
-    | GSort of Misctypes.glob_sort
-    | GHole of Evar_kinds.t * Misctypes.intro_pattern_naming_expr * Genarg.glob_generic_argument option
-    | GCast of 'a glob_constr_g * 'a glob_constr_g Misctypes.cast_type
-
-   and 'a glob_constr_g = ('a glob_constr_r, 'a) DAst.t
-
-   and 'a glob_decl_g = Names.Name.t * Decl_kinds.binding_kind * 'a glob_constr_g option * 'a glob_constr_g
-
-   and 'a fix_recursion_order_g =
-     | GStructRec
-     | GWfRec of 'a glob_constr_g
-     | GMeasureRec of 'a glob_constr_g * 'a glob_constr_g option
-
-   and 'a fix_kind_g =
-     | GFix of ((int option * 'a fix_recursion_order_g) array * int)
-     | GCoFix of int
-
-   and 'a predicate_pattern_g =
-     Names.Name.t * (Names.inductive * Names.Name.t list) Loc.located option
-
-   and 'a tomatch_tuple_g = ('a glob_constr_g * 'a predicate_pattern_g)
-
-   and 'a tomatch_tuples_g = 'a tomatch_tuple_g list
-
-   and 'a cases_clause_g = (Names.Id.t list * 'a cases_pattern_g list * 'a glob_constr_g) Loc.located
-   and 'a cases_clauses_g = 'a cases_clause_g list
-
-   type glob_constr = [ `any ] glob_constr_g
-   type tomatch_tuple = [ `any ] tomatch_tuple_g
-   type tomatch_tuples = [ `any ] tomatch_tuples_g
-   type cases_clause = [ `any ] cases_clause_g
-   type cases_clauses = [ `any ] cases_clauses_g
-   type glob_decl = [ `any ] glob_decl_g
-   type fix_kind = [ `any ] fix_kind_g
-   type predicate_pattern = [ `any ] predicate_pattern_g
-   type any_glob_constr =
-   | AnyGlobConstr : 'r glob_constr_g -> any_glob_constr
-
-end
-
-module Notation_term :
-sig
-  type scope_name = string
-  type notation_var_instance_type =
-                                  | NtnTypeConstr | NtnTypeOnlyBinder | NtnTypeConstrList | NtnTypeBinderList
-  type tmp_scope_name = scope_name
-
-  type subscopes = tmp_scope_name option * scope_name list
-  type notation_constr =
-                       | NRef of Globnames.global_reference
-                       | NVar of Names.Id.t
-                       | NApp of notation_constr * notation_constr list
-                       | NHole of Evar_kinds.t * Misctypes.intro_pattern_naming_expr * Genarg.glob_generic_argument option
-                       | NList of Names.Id.t * Names.Id.t * notation_constr * notation_constr * bool
-                       | NLambda of Names.Name.t * notation_constr * notation_constr
-                       | NProd of Names.Name.t * notation_constr * notation_constr
-                       | NBinderList of Names.Id.t * Names.Id.t * notation_constr * notation_constr
-                       | NLetIn of Names.Name.t * notation_constr * notation_constr option * notation_constr
-                       | NCases of Term.case_style * notation_constr option *
-                                     (notation_constr * (Names.Name.t * (Names.inductive * Names.Name.t list) option)) list *
-                                       (Glob_term.cases_pattern list * notation_constr) list
-                       | NLetTuple of Names.Name.t list * (Names.Name.t * notation_constr option) *
-                                        notation_constr * notation_constr
-                       | NIf of notation_constr * (Names.Name.t * notation_constr option) *
-                                  notation_constr * notation_constr
-                       | NRec of Glob_term.fix_kind * Names.Id.t array *
-                                   (Names.Name.t * notation_constr option * notation_constr) list array *
-                                     notation_constr array * notation_constr array
-                       | NSort of Misctypes.glob_sort
-                       | NCast of notation_constr * notation_constr Misctypes.cast_type
-  type interpretation = (Names.Id.t * (subscopes * notation_var_instance_type)) list *
-    notation_constr
-  type precedence = int
-  type parenRelation =
-    | L | E | Any | Prec of precedence
-  type tolerability = precedence * parenRelation
-end
-
 module Constrexpr :
 sig
 
   type binder_kind =
-                   | Default of Decl_kinds.binding_kind
-                   | Generalized of Decl_kinds.binding_kind * Decl_kinds.binding_kind * bool
+    | Default of Decl_kinds.binding_kind
+    | Generalized of Decl_kinds.binding_kind * Decl_kinds.binding_kind * bool
 
   type explicitation =
-                     | ExplByPos of int * Names.Id.t option
-                     | ExplByName of Names.Id.t
+    | ExplByPos of int * Names.Id.t option
+    | ExplByName of Names.Id.t
+
   type sign = bool
   type raw_natural_number = string
   type prim_token =
@@ -2231,6 +1954,7 @@ sig
      | CGeneralization of Decl_kinds.binding_kind * abstraction_kind option * constr_expr
      | CPrim of prim_token
      | CDelimiters of string * constr_expr
+
    and constr_expr = constr_expr_r CAst.t
 
    and case_expr = constr_expr * Names.Name.t Loc.located option * cases_pattern_expr option

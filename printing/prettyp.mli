@@ -10,7 +10,6 @@ open Names
 open Environ
 open Reductionops
 open Libnames
-open Globnames
 open Misctypes
 
 (** A Pretty-Printer for the Calculus of Inductive Constructions. *)
@@ -45,7 +44,7 @@ val print_canonical_projections : unit -> Pp.t
 
 (** Pretty-printing functions for type classes and instances *)
 val print_typeclasses : unit -> Pp.t
-val print_instances : global_reference -> Pp.t
+val print_instances : GlobRef.t -> Pp.t
 val print_all_instances : unit -> Pp.t
 
 val inspect : int -> Pp.t
