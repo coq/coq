@@ -84,16 +84,9 @@ let check_target clt = function
 
 (* condition d'heritage uniforme *)
 
-let uniform_cond sigma nargs lt =
-  let open EConstr in
-  let rec aux = function
-    | (0,[]) -> true
-    | (n,t::l) ->
-      let t = strip_outer_cast sigma t in
-      isRel sigma t && Int.equal (destRel sigma t) n && aux ((n-1),l)
-    | _ -> false
-  in
-  aux (nargs,lt)
+let uniform_cond sigma ctx lt =
+  List.for_all2eq (EConstr.eq_constr sigma)
+    lt (Context.Rel.to_extended_list EConstr.mkRel 0 ctx)
 
 let class_of_global = function
   | ConstRef sp -> 
@@ -119,24 +112,29 @@ l'indice de la classe source dans la liste lp
 *)
 
 let get_source lp source =
+  let open Context.Rel.Declaration in
   match source with
     | None ->
-	let (cl1,u1,lv1) =
-          match lp with
-	    | [] -> raise Not_found
-            | t1::_ -> find_class_type Evd.empty (EConstr.of_constr t1)
-        in
-	(cl1,u1,lv1,1)
+       (* Take the latest non let-in argument *)
+       let rec aux = function
+         | [] -> raise Not_found
+         | LocalDef _ :: lt -> aux lt
+         | LocalAssum (_,t1) :: lt ->
+            let cl1,u1,lv1 = find_class_type Evd.empty (EConstr.of_constr t1) in
+            cl1,lt,lv1,1
+       in aux lp
     | Some cl ->
-	let rec aux = function
-	  | [] -> raise Not_found
-	  | t1::lt ->
-	      try
-		let cl1,u1,lv1 = find_class_type Evd.empty (EConstr.of_constr t1) in
-		if cl_typ_eq cl cl1 then cl1,u1,lv1,(List.length lt+1)
-		else raise Not_found
-              with Not_found -> aux lt
-	in aux (List.rev lp)
+       (* Take the first argument that matches *)
+       let rec aux acc = function
+         | [] -> raise Not_found
+         | LocalDef _ as decl :: lt -> aux (decl::acc) lt
+         | LocalAssum (_,t1) as decl :: lt ->
+            try
+              let cl1,u1,lv1 = find_class_type Evd.empty (EConstr.of_constr t1) in
+              if cl_typ_eq cl cl1 then cl1,acc,lv1,Context.Rel.nhyps lt+1
+              else raise Not_found
+            with Not_found -> aux (decl::acc) lt
+       in aux [] (List.rev lp)
 
 let get_target t ind =
   if (ind > 1) then
@@ -147,15 +145,6 @@ let get_target t ind =
       CL_PROJ p
     | x -> x
       
-
-let prods_of t =
-  let rec aux acc d = match Constr.kind d with
-    | Prod (_,c1,c2) -> aux (c1::acc) c2
-    | Cast (c,_,_) -> aux acc c
-    | _ -> (d,acc)
-  in
-  aux [] t
-
 let strength_of_cl = function
   | CL_CONST kn -> `GLOBAL
   | CL_SECVAR id -> `LOCAL
@@ -258,17 +247,18 @@ let add_new_coercion_core coef stre poly source target isid =
   check_source source;
   let t, _ = Global.type_of_global_in_context (Global.env ()) coef in
   if coercion_exists coef then raise (CoercionError AlreadyExists);
-  let tg,lp = prods_of t in
+  let lp,tg = decompose_prod_assum t in
   let llp = List.length lp in
   if Int.equal llp 0 then raise (CoercionError NotAFunction);
-  let (cls,us,lvs,ind) =
+  let (cls,ctx,lvs,ind) =
     try
       get_source lp source
     with Not_found ->
       raise (CoercionError (NoSource source))
   in
   check_source (Some cls);
-  if not (uniform_cond Evd.empty (** FIXME *) (llp-ind) lvs) then
+  if not (uniform_cond Evd.empty (** FIXME - for when possibly called with unresolved evars in the future *)
+                       ctx lvs) then
     warn_uniform_inheritance coef;
   let clt =
     try
