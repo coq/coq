@@ -21,6 +21,8 @@
 open Pp
 open Util
 
+module Internal = struct
+
 (** {6 Identifiers } *)
 
 (** Representation and operations on identifiers. *)
@@ -894,6 +896,26 @@ end
 
 type projection = Projection.t
 
+
+module GlobRef = struct
+
+  type t =
+    | VarRef of variable           (** A reference to the section-context. *)
+    | ConstRef of Constant.t       (** A reference to the environment. *)
+    | IndRef of inductive          (** A reference to an inductive type. *)
+    | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
+
+  let equal gr1 gr2 =
+    gr1 == gr2 || match gr1,gr2 with
+    | ConstRef con1, ConstRef con2 -> Constant.equal con1 con2
+    | IndRef kn1, IndRef kn2 -> eq_ind kn1 kn2
+    | ConstructRef kn1, ConstructRef kn2 -> eq_constructor kn1 kn2
+    | VarRef v1, VarRef v2 -> Id.equal v1 v2
+    | _ -> false
+
+end
+
+
 let constant_of_kn = Constant.make1
 let constant_of_kn_equiv = Constant.make
 let make_con = Constant.make3
@@ -930,3 +952,8 @@ let string_of_mind = MutInd.to_string
 let pr_mind = MutInd.print
 let debug_string_of_mind = MutInd.debug_to_string
 let debug_pr_mind = MutInd.debug_print
+
+end
+
+module Public = Internal
+include Public

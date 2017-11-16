@@ -142,13 +142,13 @@ type obj_typ = {
   o_TCOMPS : constr list } (* ordered *)
 
 type cs_pattern =
-    Const_cs of global_reference
+    Const_cs of GlobRef.t
   | Prod_cs
   | Sort_cs of Sorts.family
   | Default_cs
 
 let eq_cs_pattern p1 p2 = match p1, p2 with
-| Const_cs gr1, Const_cs gr2 -> eq_gr gr1 gr2
+| Const_cs gr1, Const_cs gr2 -> GlobRef.equal gr1 gr2
 | Prod_cs, Prod_cs -> true
 | Sort_cs s1, Sort_cs s2 -> Sorts.family_equal s1 s2
 | Default_cs, Default_cs -> true
@@ -300,7 +300,7 @@ let add_canonical_structure x = Lib.add_anonymous_leaf (inCanonStruc x)
 
 let error_not_structure ref =
   user_err ~hdr:"object_declare"
-    (Nameops.pr_id (basename_of_global ref) ++ str" is not a structure object.")
+    (Id.print (basename_of_global ref) ++ str" is not a structure object.")
 
 let check_and_decompose_canonical_structure ref =
   let sp = match ref with ConstRef sp -> sp | _ -> error_not_structure ref in

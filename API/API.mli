@@ -35,428 +35,8 @@ end
 (************************************************************************)
 (* Modules from kernel/                                                 *)
 (************************************************************************)
-module Names :
-sig
-
-  open Util
-
-  module Id :
-  sig
-    type t
-    val equal : t -> t -> bool
-    val compare : t -> t -> int
-    val hash : t -> int
-    val is_valid : string -> bool
-    val of_bytes : bytes -> t
-    val of_string : string -> t
-    val of_string_soft : string -> t
-    val to_string : t -> string
-    val print : t -> Pp.t
-
-    module Set  : Set.S with type elt = t
-    module Map  : Map.ExtS with type key = t and module Set := Set
-    module Pred : Predicate.S with type elt = t
-    module List : List.MonoS with type elt = t
-    val hcons : t -> t
-  end
-
-  module Name :
-  sig
-    type t = Anonymous     (** anonymous identifier *)
-	   | Name of Id.t  (** non-anonymous identifier *)
-    val mk_name : Id.t -> t
-    val is_anonymous : t -> bool
-    val is_name : t -> bool
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-    val hcons : t -> t
-    val print : t -> Pp.t
-  end
-
-  type name = Name.t =
-    | Anonymous
-    | Name of Id.t
-  [@@ocaml.deprecated "alias of API.Name.t"]
-
-  module DirPath :
-  sig
-    type t
-    val empty : t
-    val make : Id.t list -> t
-    val repr : t -> Id.t list
-    val equal : t -> t -> bool
-    val to_string : t -> string
-  end
-
-  module MBId : sig
-    type t
-    val equal : t -> t -> bool
-    val to_id : t -> Id.t
-    val repr : t -> int * Id.t * DirPath.t
-    val debug_to_string : t -> string
-  end
-
-  module Label :
-  sig
-    type t
-    val make : string -> t
-    val equal : t -> t -> bool
-    val compare : t -> t -> int
-    val of_id : Id.t -> t
-    val to_id : t -> Id.t
-    val to_string : t -> string
-  end
-
-  module ModPath :
-  sig
-    type t =
-      | MPfile of DirPath.t
-      | MPbound of MBId.t
-      | MPdot of t * Label.t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val hash : t -> int
-    val initial : t
-    val to_string : t -> string
-    val debug_to_string : t -> string
-  end
-
-  module KerName :
-  sig
-    type t
-    val make : ModPath.t -> DirPath.t -> Label.t -> t
-    val make2 : ModPath.t -> Label.t -> t
-    val modpath : t -> ModPath.t
-    val equal : t -> t -> bool
-    val compare : t -> t -> int
-    val label : t -> Label.t
-    val repr : t -> ModPath.t * DirPath.t * Label.t
-    val print : t -> Pp.t
-    val to_string : t -> string
-  end
-
-  type kernel_name = KerName.t
-  [@@ocaml.deprecated "alias of API.Names.KerName.t"]
-
-  module Constant :
-  sig
-    type t
-    val equal : t -> t -> bool
-    val make1 : KerName.t -> t
-    val make2 : ModPath.t -> Label.t -> t
-    val make3 : ModPath.t -> DirPath.t -> Label.t -> t
-    val repr3 : t -> ModPath.t * DirPath.t * Label.t
-    val canonical : t -> KerName.t
-    val user : t -> KerName.t
-    val label : t -> Label.t
-  end
-
-  module MutInd :
-  sig
-    type t
-    val make1 : KerName.t -> t
-    val make2 : ModPath.t -> Label.t -> t
-    val equal : t -> t -> bool
-    val repr3 : t -> ModPath.t * DirPath.t * Label.t
-    val canonical : t -> KerName.t
-    val modpath : t -> ModPath.t
-    val label : t -> Label.t
-    val user : t -> KerName.t
-    val print : t -> Pp.t
-  end
-
-  module Projection :
-  sig
-    type t
-    val make : Constant.t -> bool -> t
-    val map : (Constant.t -> Constant.t) -> t -> t
-    val constant : t -> Constant.t
-    val equal : t -> t -> bool
-    val unfolded : t -> bool
-    val unfold : t -> t
-  end
-
-  type evaluable_global_reference =
-    | EvalVarRef of Id.t
-    | EvalConstRef of Constant.t
-
-  type inductive = MutInd.t * int
-  val eq_ind : inductive -> inductive -> bool
-
-  type constructor = inductive * int
-  val eq_constructor : constructor -> constructor -> bool
-  val constructor_hash : constructor -> int
-
-  module MPset : Set.S with type elt = ModPath.t
-  module MPmap : Map.ExtS with type key = ModPath.t and module Set := MPset
-
-  module KNset  : CSig.SetS with type elt = KerName.t
-  module KNpred : Predicate.S with type elt = KerName.t
-  module KNmap  : Map.ExtS with type key = KerName.t and module Set := KNset
-
-  module Cpred : Predicate.S with type elt = Constant.t
-  module Cset : CSig.SetS with type elt = Constant.t
-  module Cset_env  : CSig.SetS with type elt = Constant.t
-
-  module Cmap : Map.ExtS with type key = Constant.t and module Set := Cset
-  module Cmap_env : Map.ExtS with type key = Constant.t and module Set := Cset_env
-
-  module Mindset : CSig.SetS with type elt = MutInd.t
-  module Mindmap : Map.ExtS with type key = MutInd.t and module Set := Mindset
-  module Mindmap_env : CSig.MapS with type key = MutInd.t
-
-  module Indmap : CSig.MapS with type key = inductive
-  module Constrmap : CSig.MapS with type key = constructor
-  module Indmap_env : CSig.MapS with type key = inductive
-  module Constrmap_env : CSig.MapS with type key = constructor
-
-  type transparent_state = Id.Pred.t * Cpred.t
-
-  val empty_transparent_state : transparent_state
-  val full_transparent_state : transparent_state
-  val var_full_transparent_state : transparent_state
-  val cst_full_transparent_state : transparent_state
-
-  val pr_kn : KerName.t -> Pp.t
-  [@@ocaml.deprecated "alias of API.Names.KerName.print"]
-
-  val eq_constant : Constant.t -> Constant.t -> bool
-  [@@ocaml.deprecated "alias of API.Names.Constant.equal"]
-
-  type module_path = ModPath.t =
-    | MPfile of DirPath.t
-    | MPbound of MBId.t
-    | MPdot of ModPath.t * Label.t
-  [@@ocaml.deprecated "alias of API.Names.ModPath.t"]
-
-  type variable = Id.t
-
-  type 'a tableKey =
-    | ConstKey of 'a
-    | VarKey of Id.t
-    | RelKey of Int.t
-
-  val id_of_string : string -> Id.t
-  [@@ocaml.deprecated "alias of API.Names.Id.of_string"]
-
-  val string_of_id : Id.t -> string
-  [@@ocaml.deprecated "alias of API.Names.Id.to_string"]
-
-  type mutual_inductive = MutInd.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.t"]
-
-  val eq_mind : MutInd.t -> MutInd.t -> bool
-  [@@ocaml.deprecated "alias of API.Names.MutInd.equal"]
-
-  val repr_con : Constant.t -> ModPath.t * DirPath.t * Label.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.repr3"]
-
-  val repr_mind : MutInd.t -> ModPath.t * DirPath.t * Label.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.repr3"]
-
-  val initial_path : ModPath.t
-  [@@ocaml.deprecated "alias of API.Names.ModPath.initial"]
-
-  val con_label : Constant.t -> Label.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.label"]
-
-  val mind_label : MutInd.t -> Label.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.label"]
-
-  val string_of_mp : ModPath.t -> string
-  [@@ocaml.deprecated "alias of API.Names.ModPath.to_string"]
-
-  val mind_of_kn : KerName.t -> MutInd.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.make1"]
-
-  type constant = Constant.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.t"]
-
-  val mind_modpath : MutInd.t -> ModPath.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.modpath"]
-
-  val canonical_mind : MutInd.t -> KerName.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.canonical"]
-
-  val user_mind : MutInd.t -> KerName.t
-  [@@ocaml.deprecated "alias of API.Names.MutInd.user"]
-
-  val repr_kn : KerName.t -> ModPath.t * DirPath.t * Label.t
-  [@@ocaml.deprecated "alias of API.Names.KerName.repr"]
-
-  val constant_of_kn : KerName.t -> Constant.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.make1"]
-
-  val user_con : Constant.t -> KerName.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.user"]
-
-  val modpath : KerName.t -> ModPath.t
-  [@@ocaml.deprecated "alias of API.Names.KerName.modpath"]
-
-  val canonical_con : Constant.t -> KerName.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.canonical"]
-
-  val make_kn : ModPath.t -> DirPath.t -> Label.t -> KerName.t
-  [@@ocaml.deprecated "alias of API.Names.KerName.make"]
-
-  val make_con : ModPath.t -> DirPath.t -> Label.t -> Constant.t
-  [@@ocaml.deprecated "alias of API.Names.Constant.make3"]
-
-  val debug_pr_con : Constant.t -> Pp.t
-  [@@ocaml.deprecated "Alias of Names"]
-
-  val debug_pr_mind : MutInd.t -> Pp.t
-  [@@ocaml.deprecated "Alias of Names"]
-
-  val pr_con : Constant.t -> Pp.t
-  [@@ocaml.deprecated "Alias of Names"]
-
-  val string_of_con : Constant.t -> string
-  [@@ocaml.deprecated "Alias of Names"]
-
-  val string_of_mind : MutInd.t -> string
-  [@@ocaml.deprecated "Alias of Names"]
-
-  val debug_string_of_mind : MutInd.t -> string
-  [@@ocaml.deprecated "Alias of Names"]
-
-  val debug_string_of_con : Constant.t -> string
-  [@@ocaml.deprecated "Alias of Names"]
-
-  type identifier = Id.t
-  [@@ocaml.deprecated "Alias of Names"]
-
-  module Idset  : Set.S with type elt = identifier and type t = Id.Set.t
-  [@@ocaml.deprecated "Alias of Id.Set.t"]
-
-end
-
-module Univ :
-sig
-
-  module Level :
-  sig
-    type t
-    val set : t
-    val pr : t -> Pp.t
-  end
-
-  type universe_level = Level.t
-  [@@ocaml.deprecated "Deprecated form, see univ.ml"]
-
-  module LSet :
-  sig
-    include CSig.SetS with type elt = universe_level
-    val pr : (Level.t -> Pp.t) -> t -> Pp.t
-  end
-
-  module Universe :
-  sig
-    type t
-    val pr : t -> Pp.t
-  end
-
-  type universe = Universe.t
-  [@@ocaml.deprecated "Deprecated form, see univ.ml"]
-
-  module Instance :
-  sig
-    type t
-    val empty : t
-    val of_array : Level.t array -> t
-    val to_array : t -> Level.t array
-    val pr : (Level.t -> Pp.t) -> t -> Pp.t
-  end
-
-  type 'a puniverses = 'a * Instance.t
-
-  val out_punivs : 'a puniverses -> 'a
-
-  type constraint_type = Lt | Le | Eq
-
-  type univ_constraint = universe_level * constraint_type * universe_level
-
-  module Constraint : sig
-    include Set.S with type elt = univ_constraint
-  end
-
-  type 'a constrained = 'a * Constraint.t
-
-  module UContext :
-  sig
-    type t
-    val empty : t
-  end
-
-  type universe_context = UContext.t
-  [@@ocaml.deprecated "Deprecated form, see univ.ml"]
-
-  module AUContext :
-  sig
-    type t
-    val empty : t
-  end
-
-  type abstract_universe_context = AUContext.t
-  [@@ocaml.deprecated "Deprecated form, see univ.ml"]
-
-  module CumulativityInfo :
-  sig
-    type t
-  end
-
-  type cumulativity_info = CumulativityInfo.t
-  [@@ocaml.deprecated "Deprecated form, see univ.ml"]
-
-  module ACumulativityInfo :
-  sig
-    type t
-  end
-  type abstract_cumulativity_info = ACumulativityInfo.t
-  [@@ocaml.deprecated "Deprecated form, see univ.ml"]
-
-  module ContextSet :
-  sig
-    type t
-    val empty : t
-    val of_context : UContext.t -> t
-    val to_context : t -> UContext.t
-  end
-
-  type 'a in_universe_context_set = 'a * ContextSet.t
-  type 'a in_universe_context = 'a * UContext.t
-
-  type universe_context_set = ContextSet.t
-  [@@ocaml.deprecated "Deprecated form, see univ.ml"]
-
-  type universe_set = LSet.t
-  [@@ocaml.deprecated "Deprecated form, see univ.ml"]
-
-  type 'a constraint_function = 'a -> 'a -> Constraint.t -> Constraint.t
-
-  module LMap :
-  sig
-    include CMap.ExtS with type key = universe_level and module Set := LSet
-
-    val union : 'a t -> 'a t -> 'a t
-    val diff : 'a t -> 'a t -> 'a t
-    val subst_union : 'a option t -> 'a option t -> 'a option t
-    val pr : ('a -> Pp.t) -> 'a t -> Pp.t
-  end
-
-  type 'a universe_map = 'a LMap.t
-  type universe_subst = universe universe_map
-  type universe_level_subst = universe_level universe_map
-
-  val enforce_leq : Universe.t constraint_function
-  val pr_uni : Universe.t -> Pp.t
-  val pr_universe_context : (Level.t -> Pp.t) -> UContext.t -> Pp.t
-  val pr_universe_context_set : (Level.t -> Pp.t) -> ContextSet.t -> Pp.t
-  val pr_universe_subst : universe_subst -> Pp.t
-  val pr_universe_level_subst : universe_level_subst -> Pp.t
-  val pr_constraints : (Level.t -> Pp.t) -> Constraint.t -> Pp.t
-end
+module Names : module type of Names.Public
+module Univ : module type of Univ.Public
 
 module UGraph :
 sig
@@ -1288,8 +868,8 @@ sig
     | TemplateArity of 'b
 
   type constant_universes =
-    | Monomorphic_const of Univ.universe_context
-    | Polymorphic_const of Univ.abstract_universe_context
+    | Monomorphic_const of Univ.UContext.t
+    | Polymorphic_const of Univ.AUContext.t
 
   type projection_body = {
         proj_ind : Names.MutInd.t;
@@ -1355,9 +935,9 @@ sig
                        | MEwith of module_alg_expr * with_declaration
 
   type abstract_inductive_universes =
-  | Monomorphic_ind of Univ.universe_context
-  | Polymorphic_ind of Univ.abstract_universe_context
-  | Cumulative_ind of Univ.abstract_cumulativity_info
+  | Monomorphic_ind of Univ.UContext.t
+  | Polymorphic_ind of Univ.AUContext.t
+  | Cumulative_ind of Univ.ACumulativityInfo.t
 
   type record_body = (Id.t * Constant.t array * projection_body array) option
   
@@ -1422,9 +1002,9 @@ sig
     | LocalAssumEntry of constr
 
   type inductive_universes =
-    | Monomorphic_ind_entry of Univ.universe_context
-    | Polymorphic_ind_entry of Univ.universe_context
-    | Cumulative_ind_entry of Univ.cumulativity_info
+    | Monomorphic_ind_entry of Univ.UContext.t
+    | Polymorphic_ind_entry of Univ.UContext.t
+    | Cumulative_ind_entry of Univ.CumulativityInfo.t
 
   type one_inductive_entry = {
     mind_entry_typename : Id.t;
@@ -1451,8 +1031,8 @@ sig
   type 'a proof_output = Constr.t Univ.in_universe_context_set * 'a
   type 'a const_entry_body = 'a proof_output Future.computation
   type constant_universes_entry =
-    | Monomorphic_const_entry of Univ.universe_context
-    | Polymorphic_const_entry of Univ.universe_context
+    | Monomorphic_const_entry of Univ.UContext.t
+    | Polymorphic_const_entry of Univ.UContext.t
   type 'a definition_entry =
                                { const_entry_body   : 'a const_entry_body;
                                  (* List of section variables *)
@@ -1648,7 +1228,7 @@ sig
     | UnboundVar of variable
     | NotAType of ('constr, 'types) punsafe_judgment
     | BadAssumption of ('constr, 'types) punsafe_judgment
-    | ReferenceVariables of identifier * 'constr
+    | ReferenceVariables of Id.t * 'constr
     | ElimArity of pinductive * sorts_family list * 'constr * ('constr, 'types) punsafe_judgment
                    * (sorts_family * sorts_family * arity_error) option
     | CaseNotInductive of ('constr, 'types) punsafe_judgment
@@ -1847,151 +1427,10 @@ sig
   type goal_location = hyp_location option
 end
 
-(************************************************************************)
-(* End Modules from intf/                                               *)
-(************************************************************************)
-
-(************************************************************************)
-(* Modules from library/                                                *)
-(************************************************************************)
-
-module Univops :
-sig
-  val universes_of_constr : Term.constr -> Univ.universe_set
-  val restrict_universe_context : Univ.universe_context_set -> Univ.universe_set -> Univ.universe_context_set
-end
-
-module Nameops :
-sig
-  val atompart_of_id : Names.Id.t -> string
-
-  val pr_id : Names.Id.t -> Pp.t
-  [@@ocaml.deprecated "alias of API.Names.Id.print"]
-
-  val pr_name : Names.Name.t -> Pp.t
-  [@@ocaml.deprecated "alias of API.Names.Name.print"]
-
-  val name_fold : (Names.Id.t -> 'a -> 'a) -> Names.Name.t -> 'a -> 'a
-  val name_app : (Names.Id.t -> Names.Id.t) -> Names.Name.t -> Names.Name.t
-  val add_suffix : Names.Id.t -> string -> Names.Id.t
-  val increment_subscript : Names.Id.t -> Names.Id.t
-  val make_ident : string -> int option -> Names.Id.t
-  val out_name : Names.Name.t -> Names.Id.t
-  val pr_lab : Names.Label.t -> Pp.t
-  module Name :
-  sig
-    include module type of struct include Names.Name end
-    val get_id : t -> Names.Id.t
-    val fold_right : (Names.Id.t -> 'a -> 'a) -> t -> 'a -> 'a
-  end
-end
-
-module Libnames :
-sig
-
-  open Util
-  open Names
-
-  type full_path
-  val pr_path : full_path -> Pp.t
-  val make_path : Names.DirPath.t -> Names.Id.t -> full_path
-  val eq_full_path : full_path -> full_path -> bool
-  val repr_path : full_path -> Names.DirPath.t * Names.Id.t
-  val dirpath : full_path -> Names.DirPath.t
-  val path_of_string : string -> full_path
-
-  type qualid
-  val make_qualid : Names.DirPath.t -> Names.Id.t -> qualid
-  val qualid_eq : qualid -> qualid -> bool
-  val repr_qualid : qualid -> Names.DirPath.t * Names.Id.t
-  val pr_qualid : qualid -> Pp.t
-  val string_of_qualid : qualid -> string
-  val qualid_of_string : string -> qualid
-  val qualid_of_path : full_path -> qualid
-  val qualid_of_dirpath : Names.DirPath.t -> qualid
-  val qualid_of_ident : Names.Id.t -> qualid
-
-  type reference =
-    | Qualid of qualid Loc.located
-    | Ident of Names.Id.t Loc.located
-  val loc_of_reference : reference -> Loc.t option
-  val qualid_of_reference : reference -> qualid Loc.located
-  val pr_reference : reference -> Pp.t
-
-  val is_dirpath_prefix_of : Names.DirPath.t -> Names.DirPath.t -> bool
-  val split_dirpath : Names.DirPath.t -> Names.DirPath.t * Names.Id.t
-  val dirpath_of_string : string -> Names.DirPath.t
-  val pr_dirpath : Names.DirPath.t -> Pp.t
-
-  val string_of_path : full_path -> string
-  val basename : full_path -> Names.Id.t
-
-  type object_name = full_path * Names.KerName.t
-  type object_prefix = Names.DirPath.t * (Names.ModPath.t * Names.DirPath.t)
-
-  module Dirset : Set.S with type elt = DirPath.t
-  module Dirmap : Map.ExtS with type key = DirPath.t and module Set := Dirset
-  module Spmap  : CSig.MapS with type key = full_path
-end
-
-module Globnames :
-sig
-
-  open Util
-
-  type global_reference =
-    | VarRef of Names.Id.t
-    | ConstRef of Names.Constant.t
-    | IndRef of Names.inductive
-    | ConstructRef of Names.constructor
-
-  type extended_global_reference =
-                                 | TrueGlobal of global_reference
-                                 | SynDef of Names.KerName.t
-
-  (* Long term: change implementation so that only 1 kind of order is needed.
-   * Today: _env ones are fine grained, which one to pick depends.  Eg.
-   *   - conversion rule are implemented by the non_env ones
-   *   - pretty printing (of user provided names/aliases) are implemented by
-   *     the _env ones
-   *)
-  module Refset : CSig.SetS with type elt = global_reference
-  module Refmap : Map.ExtS
-    with type key = global_reference and module Set := Refset
-
-  module Refset_env : CSig.SetS with type elt = global_reference
-  module Refmap_env : Map.ExtS
-    with type key = global_reference and module Set := Refset_env
-
-  module RefOrdered :
-  sig
-    type t = global_reference
-    val compare : t -> t -> int
-  end
-
-  val pop_global_reference : global_reference -> global_reference
-  val eq_gr : global_reference -> global_reference -> bool
-  val destIndRef : global_reference -> Names.inductive
-
-  val encode_mind : Names.DirPath.t -> Names.Id.t -> Names.MutInd.t
-  val encode_con : Names.DirPath.t -> Names.Id.t -> Names.Constant.t
-
-  val global_of_constr : Constr.t -> global_reference
-
-  val subst_global : Mod_subst.substitution -> global_reference -> global_reference * Constr.t
-  val destConstructRef : global_reference -> Names.constructor
-
-  val reference_of_constr : Constr.t -> global_reference
-  [@@ocaml.deprecated "alias of API.Globnames.global_of_constr"]
-
-  val is_global : global_reference -> Constr.t -> bool
-end
-
-(******************************************************************************)
-(* XXX: Moved from intf *)
-(******************************************************************************)
 module Pattern :
 sig
+
+  open Names
 
   type case_info_pattern =
     { cip_style : Misctypes.case_style;
@@ -2000,7 +1439,7 @@ sig
       cip_extensible : bool (** does this match end with _ => _ ? *) }
 
   type constr_pattern =
-    | PRef of Globnames.global_reference
+    | PRef of GlobRef.t
     | PVar of Names.Id.t
     | PEvar of Evar.t * constr_pattern array
     | PRel of int
@@ -2022,6 +1461,8 @@ end
 
 module Evar_kinds :
 sig
+  open Names
+
   type obligation_definition_status =
     | Define of bool
     | Expand
@@ -2031,23 +1472,26 @@ sig
     | SecondOrderPatVar of Names.Id.t
 
   type t =
-         | ImplicitArg of Globnames.global_reference * (int * Names.Id.t option)
-                          * bool (** Force inference *)
-         | BinderType of Names.Name.t
-         | NamedHole of Names.Id.t (* coming from some ?[id] syntax *)
-         | QuestionMark of obligation_definition_status * Names.Name.t
-         | CasesType of bool (* true = a subterm of the type *)
-         | InternalHole
-         | TomatchTypeParameter of Names.inductive * int
-         | GoalEvar
-         | ImpossibleCase
-         | MatchingVar of matching_var_kind
-         | VarInstance of Names.Id.t
-         | SubEvar of Constr.existential_key
+    | ImplicitArg of GlobRef.t * (int * Names.Id.t option) * bool (** Force inference *)
+    | BinderType of Names.Name.t
+    | NamedHole of Names.Id.t (* coming from some ?[id] syntax *)
+    | QuestionMark of obligation_definition_status * Names.Name.t
+    | CasesType of bool (* true = a subterm of the type *)
+    | InternalHole
+    | TomatchTypeParameter of Names.inductive * int
+    | GoalEvar
+    | ImpossibleCase
+    | MatchingVar of matching_var_kind
+    | VarInstance of Names.Id.t
+    | SubEvar of Constr.existential_key
 end
 
 module Glob_term :
 sig
+
+  open Names
+  open Misctypes
+
   type 'a cases_pattern_r =
     | PatVar  of Names.Name.t
     | PatCstr of Names.constructor * 'a cases_pattern_g list * Names.Name.t
@@ -2055,7 +1499,7 @@ sig
   type cases_pattern = [ `any ] cases_pattern_g
   type existential_name = Names.Id.t
   type 'a glob_constr_r =
-    | GRef of Globnames.global_reference * Misctypes.glob_level list option
+    | GRef of GlobRef.t * glob_level list option
         (** An identifier that represents a reference to an object defined
             either in the (global) environment or in the (local) context. *)
     | GVar of Names.Id.t
@@ -2114,52 +1558,218 @@ end
 
 module Notation_term :
 sig
+  open Names
+
   type scope_name = string
   type notation_var_instance_type =
-                                  | NtnTypeConstr | NtnTypeOnlyBinder | NtnTypeConstrList | NtnTypeBinderList
+    | NtnTypeConstr | NtnTypeOnlyBinder | NtnTypeConstrList | NtnTypeBinderList
   type tmp_scope_name = scope_name
 
   type subscopes = tmp_scope_name option * scope_name list
   type notation_constr =
-                       | NRef of Globnames.global_reference
-                       | NVar of Names.Id.t
-                       | NApp of notation_constr * notation_constr list
-                       | NHole of Evar_kinds.t * Misctypes.intro_pattern_naming_expr * Genarg.glob_generic_argument option
-                       | NList of Names.Id.t * Names.Id.t * notation_constr * notation_constr * bool
-                       | NLambda of Names.Name.t * notation_constr * notation_constr
-                       | NProd of Names.Name.t * notation_constr * notation_constr
-                       | NBinderList of Names.Id.t * Names.Id.t * notation_constr * notation_constr
-                       | NLetIn of Names.Name.t * notation_constr * notation_constr option * notation_constr
-                       | NCases of Term.case_style * notation_constr option *
-                                     (notation_constr * (Names.Name.t * (Names.inductive * Names.Name.t list) option)) list *
-                                       (Glob_term.cases_pattern list * notation_constr) list
-                       | NLetTuple of Names.Name.t list * (Names.Name.t * notation_constr option) *
-                                        notation_constr * notation_constr
-                       | NIf of notation_constr * (Names.Name.t * notation_constr option) *
-                                  notation_constr * notation_constr
-                       | NRec of Glob_term.fix_kind * Names.Id.t array *
-                                   (Names.Name.t * notation_constr option * notation_constr) list array *
-                                     notation_constr array * notation_constr array
-                       | NSort of Misctypes.glob_sort
-                       | NCast of notation_constr * notation_constr Misctypes.cast_type
+    | NRef of GlobRef.t
+    | NVar of Names.Id.t
+    | NApp of notation_constr * notation_constr list
+    | NHole of Evar_kinds.t * Misctypes.intro_pattern_naming_expr * Genarg.glob_generic_argument option
+    | NList of Names.Id.t * Names.Id.t * notation_constr * notation_constr * bool
+    | NLambda of Names.Name.t * notation_constr * notation_constr
+    | NProd of Names.Name.t * notation_constr * notation_constr
+    | NBinderList of Names.Id.t * Names.Id.t * notation_constr * notation_constr
+    | NLetIn of Names.Name.t * notation_constr * notation_constr option * notation_constr
+    | NCases of Term.case_style * notation_constr option *
+                (notation_constr * (Names.Name.t * (Names.inductive * Names.Name.t list) option)) list *
+                (Glob_term.cases_pattern list * notation_constr) list
+    | NLetTuple of Names.Name.t list * (Names.Name.t * notation_constr option) *
+                   notation_constr * notation_constr
+    | NIf of notation_constr * (Names.Name.t * notation_constr option) *
+             notation_constr * notation_constr
+    | NRec of Glob_term.fix_kind * Names.Id.t array *
+              (Names.Name.t * notation_constr option * notation_constr) list array *
+              notation_constr array * notation_constr array
+    | NSort of Misctypes.glob_sort
+    | NCast of notation_constr * notation_constr Misctypes.cast_type
+
   type interpretation = (Names.Id.t * (subscopes * notation_var_instance_type)) list *
-    notation_constr
+                        notation_constr
   type precedence = int
+
   type parenRelation =
     | L | E | Any | Prec of precedence
   type tolerability = precedence * parenRelation
+
 end
 
+(************************************************************************)
+(* End Modules from intf/                                               *)
+(************************************************************************)
+
+(************************************************************************)
+(* Modules from library/                                                *)
+(************************************************************************)
+
+module Univops :
+sig
+  val universes_of_constr : Term.constr -> Univ.LSet.t
+  val restrict_universe_context : Univ.ContextSet.t -> Univ.LSet.t -> Univ.ContextSet.t
+end
+
+module Nameops :
+sig
+
+  open Names
+
+  val atompart_of_id : Names.Id.t -> string
+
+  val pr_id : Names.Id.t -> Pp.t
+  [@@ocaml.deprecated "alias of API.Names.Id.print"]
+
+  val pr_name : Names.Name.t -> Pp.t
+  [@@ocaml.deprecated "alias of API.Names.Name.print"]
+
+  module Name : sig
+    include module type of struct include Name end
+
+    val map : (Id.t -> Id.t) -> Name.t -> t
+    val get_id : t -> Names.Id.t
+    val fold_right : (Names.Id.t -> 'a -> 'a) -> t -> 'a -> 'a
+
+  end
+
+  val name_fold : (Id.t -> 'a -> 'a) -> Name.t -> 'a -> 'a
+  [@@ocaml.deprecated "alias of API.Names"]
+
+  val name_app : (Id.t -> Id.t) -> Name.t -> Name.t
+  [@@ocaml.deprecated "alias of API.Names"]
+
+  val add_suffix : Id.t -> string -> Id.t
+  val increment_subscript : Id.t -> Id.t
+  val make_ident : string -> int option -> Id.t
+  val out_name : Name.t -> Id.t
+  [@@ocaml.deprecated "alias of API.Names"]
+  val pr_lab : Label.t -> Pp.t
+  [@@ocaml.deprecated "alias of API.Names"]
+end
+
+module Libnames :
+sig
+
+  open Util
+  open Names
+
+  type full_path
+  val pr_path : full_path -> Pp.t
+  val make_path : Names.DirPath.t -> Names.Id.t -> full_path
+  val eq_full_path : full_path -> full_path -> bool
+  val repr_path : full_path -> Names.DirPath.t * Names.Id.t
+  val dirpath : full_path -> Names.DirPath.t
+  val path_of_string : string -> full_path
+
+  type qualid
+  val make_qualid : Names.DirPath.t -> Names.Id.t -> qualid
+  val qualid_eq : qualid -> qualid -> bool
+  val repr_qualid : qualid -> Names.DirPath.t * Names.Id.t
+  val pr_qualid : qualid -> Pp.t
+  val string_of_qualid : qualid -> string
+  val qualid_of_string : string -> qualid
+  val qualid_of_path : full_path -> qualid
+  val qualid_of_dirpath : Names.DirPath.t -> qualid
+  val qualid_of_ident : Names.Id.t -> qualid
+
+  type reference =
+    | Qualid of qualid Loc.located
+    | Ident of Names.Id.t Loc.located
+  val loc_of_reference : reference -> Loc.t option
+  val qualid_of_reference : reference -> qualid Loc.located
+  val pr_reference : reference -> Pp.t
+
+  val is_dirpath_prefix_of : Names.DirPath.t -> Names.DirPath.t -> bool
+  val split_dirpath : Names.DirPath.t -> Names.DirPath.t * Names.Id.t
+  val dirpath_of_string : string -> Names.DirPath.t
+  val pr_dirpath : Names.DirPath.t -> Pp.t
+
+  val string_of_path : full_path -> string
+  val basename : full_path -> Names.Id.t
+
+  type object_name = full_path * Names.KerName.t
+  type object_prefix = Names.DirPath.t * (Names.ModPath.t * Names.DirPath.t)
+
+  module Dirset : Set.S with type elt = DirPath.t
+  module Dirmap : Map.ExtS with type key = DirPath.t and module Set := Dirset
+  module Spmap  : CSig.MapS with type key = full_path
+end
+
+module Globnames :
+sig
+
+  open Util
+  open Names
+
+  type global_reference = GlobRef.t =
+    | VarRef of Names.Id.t
+    | ConstRef of Names.Constant.t
+    | IndRef of Names.inductive
+    | ConstructRef of Names.constructor
+  [@@ocaml.deprecated "Use Names.GlobRef.t"]
+
+  type extended_global_reference =
+    | TrueGlobal of global_reference
+    | SynDef of Names.KerName.t
+
+  (* Long term: change implementation so that only 1 kind of order is needed.
+   * Today: _env ones are fine grained, which one to pick depends.  Eg.
+   *   - conversion rule are implemented by the non_env ones
+   *   - pretty printing (of user provided names/aliases) are implemented by
+   *     the _env ones
+   *)
+  module Refset : CSig.SetS with type elt = global_reference
+  module Refmap : Map.ExtS
+    with type key = global_reference and module Set := Refset
+
+  module Refset_env : CSig.SetS with type elt = global_reference
+  module Refmap_env : Map.ExtS
+    with type key = global_reference and module Set := Refset_env
+
+  module RefOrdered :
+  sig
+    type t = global_reference
+    val compare : t -> t -> int
+  end
+
+  val pop_global_reference : global_reference -> global_reference
+
+  val eq_gr : global_reference -> global_reference -> bool
+  [@@ocaml.deprecated "Use Names.GlobRef.equal"]
+
+  val destIndRef : global_reference -> Names.inductive
+
+  val encode_mind : Names.DirPath.t -> Names.Id.t -> Names.MutInd.t
+  val encode_con : Names.DirPath.t -> Names.Id.t -> Names.Constant.t
+
+  val global_of_constr : Constr.t -> global_reference
+
+  val subst_global : Mod_subst.substitution -> global_reference -> global_reference * Constr.t
+  val destConstructRef : global_reference -> Names.constructor
+
+  val reference_of_constr : Constr.t -> global_reference
+  [@@ocaml.deprecated "alias of API.Globnames.global_of_constr"]
+
+  val is_global : global_reference -> Constr.t -> bool
+end
+
+(******************************************************************************)
+(* XXX: Moved from intf *)
+(******************************************************************************)
 module Constrexpr :
 sig
 
   type binder_kind =
-                   | Default of Decl_kinds.binding_kind
-                   | Generalized of Decl_kinds.binding_kind * Decl_kinds.binding_kind * bool
+    | Default of Decl_kinds.binding_kind
+    | Generalized of Decl_kinds.binding_kind * Decl_kinds.binding_kind * bool
 
   type explicitation =
-                     | ExplByPos of int * Names.Id.t option
-                     | ExplByName of Names.Id.t
+    | ExplByPos of int * Names.Id.t option
+    | ExplByName of Names.Id.t
+
   type sign = bool
   type raw_natural_number = string
   type prim_token =
@@ -2219,6 +1829,7 @@ sig
      | CGeneralization of Decl_kinds.binding_kind * abstraction_kind option * constr_expr
      | CPrim of prim_token
      | CDelimiters of string * constr_expr
+
    and constr_expr = constr_expr_r CAst.t
 
    and case_expr = constr_expr * Names.Name.t Loc.located option * cases_pattern_expr option
@@ -5581,7 +5192,7 @@ end
 module Hints :
 sig
 
-  type raw_hint = EConstr.t * EConstr.types * Univ.universe_context_set
+  type raw_hint = EConstr.t * EConstr.types * Univ.ContextSet.t
 
   type 'a hint_ast =
     | Res_pf     of 'a (* Hint Apply *)

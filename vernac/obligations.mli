@@ -10,7 +10,6 @@ open Environ
 open Constr
 open Evd
 open Names
-open Globnames
 
 (* This is a hack to make it possible for Obligations to craft a Qed
  * behind the scenes.  The fix_exn the Stm attaches to the Future proof
@@ -47,18 +46,18 @@ type obligation_info =
 type progress = (* Resolution status of a program *)
   | Remain of int  (* n obligations remaining *)
   | Dependent (* Dependent on other definitions *)
-  | Defined of global_reference (* Defined as id *)
+  | Defined of GlobRef.t (* Defined as id *)
 
 val default_tactic : unit Proofview.tactic ref
 
 val add_definition : Names.Id.t -> ?term:constr -> types -> 
-  Evd.evar_universe_context ->
+  UState.t ->
   ?univdecl:Univdecls.universe_decl -> (* Universe binders and constraints *)
   ?implicits:(Constrexpr.explicitation * (bool * bool * bool)) list ->
   ?kind:Decl_kinds.definition_kind ->
   ?tactic:unit Proofview.tactic ->
   ?reduce:(constr -> constr) ->
-  ?hook:(Evd.evar_universe_context -> unit) Lemmas.declaration_hook -> ?opaque:bool -> obligation_info -> progress
+  ?hook:(UState.t -> unit) Lemmas.declaration_hook -> ?opaque:bool -> obligation_info -> progress
 
 type notations =
     (Vernacexpr.lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
@@ -70,12 +69,12 @@ type fixpoint_kind =
 val add_mutual_definitions :
   (Names.Id.t * constr * types *
       (Constrexpr.explicitation * (bool * bool * bool)) list * obligation_info) list ->
-  Evd.evar_universe_context ->
+  UState.t ->
   ?univdecl:Univdecls.universe_decl -> (* Universe binders and constraints *)
   ?tactic:unit Proofview.tactic ->
   ?kind:Decl_kinds.definition_kind ->
   ?reduce:(constr -> constr) ->
-  ?hook:(Evd.evar_universe_context -> unit) Lemmas.declaration_hook -> ?opaque:bool ->
+  ?hook:(UState.t -> unit) Lemmas.declaration_hook -> ?opaque:bool ->
   notations ->
   fixpoint_kind -> unit
 

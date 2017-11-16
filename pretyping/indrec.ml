@@ -616,7 +616,7 @@ let lookup_eliminator ind_sp s =
   with Not_found ->
     user_err ~hdr:"default_elim"
       (strbrk "Cannot find the elimination combinator " ++
-       pr_id id ++ strbrk ", the elimination of the inductive definition " ++
+       Id.print id ++ strbrk ", the elimination of the inductive definition " ++
        pr_global_env Id.Set.empty (IndRef ind_sp) ++
        strbrk " on sort " ++ Termops.pr_sort_family s ++
        strbrk " is probably not allowed.")

@@ -426,7 +426,7 @@ module Unsafe : sig
   val tclGETGOALS : Evd.evar list tactic
 
   (** Sets the evar universe context. *)
-  val tclEVARUNIVCONTEXT : Evd.evar_universe_context -> unit tactic
+  val tclEVARUNIVCONTEXT : UState.t -> unit tactic
 
   (** Clears the future goals store in the proof view. *)
   val reset_future_goals : proofview -> proofview

@@ -43,6 +43,8 @@ val pr_sep_com :
 
 val pr_id : Id.t -> Pp.t
 val pr_name : Name.t -> Pp.t
+[@@ocaml.deprecated "alias of Names.Name.print"]
+
 val pr_qualid : qualid -> Pp.t
 val pr_patvar : patvar -> Pp.t
 

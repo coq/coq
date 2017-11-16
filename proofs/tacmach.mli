@@ -10,7 +10,6 @@ open Names
 open Constr
 open Environ
 open EConstr
-open Evd
 open Proof_type
 open Redexpr
 open Pattern
@@ -19,7 +18,10 @@ open Ltac_pretype
 
 (** Operations for handling terms under a local typing context. *)
 
-type 'a sigma   = 'a Evd.sigma;;
+type 'a sigma   = 'a Evd.sigma
+[@@ocaml.deprecated "alias of Evd.sigma"]
+
+open Evd
 type tactic     = Proof_type.tactic;;
 
 val sig_it  : 'a sigma   -> 'a
@@ -97,7 +99,7 @@ val pr_glls   : goal list sigma -> Pp.t
 (* Variants of [Tacmach] functions built with the new proof engine *)
 module New : sig
   val pf_apply : (env -> evar_map -> 'a) -> 'b Proofview.Goal.t -> 'a
-  val pf_global : Id.t -> 'a Proofview.Goal.t -> Globnames.global_reference
+  val pf_global : Id.t -> 'a Proofview.Goal.t -> GlobRef.t
   (** FIXME: encapsulate the level in an existential type. *)
   val of_old : (Proof_type.goal Evd.sigma -> 'a) -> [ `NF ] Proofview.Goal.t -> 'a
 

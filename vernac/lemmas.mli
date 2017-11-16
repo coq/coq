@@ -12,10 +12,10 @@ open Decl_kinds
 
 type 'a declaration_hook
 val mk_hook :
-  (Decl_kinds.locality -> Globnames.global_reference -> 'a) -> 'a declaration_hook
+  (Decl_kinds.locality -> GlobRef.t -> 'a) -> 'a declaration_hook
 
 val call_hook :
-  Future.fix_exn -> 'a declaration_hook -> Decl_kinds.locality -> Globnames.global_reference -> 'a
+  Future.fix_exn -> 'a declaration_hook -> Decl_kinds.locality -> GlobRef.t -> 'a
 
 (** A hook start_proof calls on the type of the definition being started *)
 val set_start_hook : (EConstr.types -> unit) -> unit
@@ -27,10 +27,10 @@ val start_proof : Id.t -> ?pl:Univdecls.universe_decl -> goal_kind -> Evd.evar_m
    unit declaration_hook -> unit
 
 val start_proof_univs : Id.t -> ?pl:Univdecls.universe_decl -> goal_kind -> Evd.evar_map ->
-  ?terminator:(Proof_global.lemma_possible_guards -> (Evd.evar_universe_context option -> unit declaration_hook) -> Proof_global.proof_terminator) ->
+  ?terminator:(Proof_global.lemma_possible_guards -> (UState.t option -> unit declaration_hook) -> Proof_global.proof_terminator) ->
   ?sign:Environ.named_context_val -> EConstr.types ->
   ?init_tac:unit Proofview.tactic -> ?compute_guard:Proof_global.lemma_possible_guards -> 
-  (Evd.evar_universe_context option -> unit declaration_hook) -> unit
+  (UState.t option -> unit declaration_hook) -> unit
 
 val start_proof_com :
   ?inference_hook:Pretyping.inference_hook ->
@@ -46,7 +46,7 @@ val start_proof_with_initialization :
 
 val universe_proof_terminator :
   Proof_global.lemma_possible_guards ->
-    (Evd.evar_universe_context option -> unit declaration_hook) ->
+    (UState.t option -> unit declaration_hook) ->
     Proof_global.proof_terminator
 
 val standard_proof_terminator :

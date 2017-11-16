@@ -69,7 +69,7 @@ val map_structured_proof : proof -> (Evd.evar_map -> Goal.goal -> 'a) -> ('a pre
 val start : Evd.evar_map -> (Environ.env * EConstr.types) list -> proof
 val dependent_start : Proofview.telescope -> proof
 val initial_goals : proof -> (EConstr.constr * EConstr.types) list
-val initial_euctx : proof -> Evd.evar_universe_context
+val initial_euctx : proof -> UState.t
 
 (* Returns [true] if the considered proof is completed, that is if no goal remain
     to be considered (this does not require that all evars have been solved). *)

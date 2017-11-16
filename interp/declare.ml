@@ -14,7 +14,6 @@ open Util
 open Names
 open Libnames
 open Globnames
-open Nameops
 open Constr
 open Declarations
 open Entries
@@ -46,7 +45,7 @@ let cache_variable ((sp,_),o) =
   | Inr (id,(p,d,mk)) ->
   (* Constr raisonne sur les noms courts *)
   if variable_exists id then
-    alreadydeclared (pr_id id ++ str " already exists");
+    alreadydeclared (Id.print id ++ str " already exists");
 
   let impl,opaq,poly,ctx = match d with (* Fails if not well-typed *)
     | SectionLocalAssum ((ty,ctx),poly,impl) ->
@@ -107,7 +106,7 @@ type constant_declaration = Safe_typing.private_constants constant_entry * logic
 (* section (if Remark or Fact) is needed to access a construction *)
 let load_constant i ((sp,kn), obj) =
   if Nametab.exists_cci sp then
-    alreadydeclared (pr_id (basename sp) ++ str " already exists");
+    alreadydeclared (Id.print (basename sp) ++ str " already exists");
   let con = Global.constant_of_delta_kn kn in
   Nametab.push (Nametab.Until i) sp (ConstRef con);
   add_constant_kind con obj.cst_kind
@@ -132,7 +131,7 @@ let exists_name id =
 
 let check_exists sp =
   let id = basename sp in
-  if exists_name id then alreadydeclared (pr_id id ++ str " already exists")
+  if exists_name id then alreadydeclared (Id.print id ++ str " already exists")
 
 let cache_constant ((sp,kn), obj) =
   let id = basename sp in
@@ -407,11 +406,11 @@ let pr_rank i = pr_nth (i+1)
 let fixpoint_message indexes l =
   Flags.if_verbose Feedback.msg_info (match l with
   | [] -> anomaly (Pp.str "no recursive definition.")
-  | [id] -> pr_id id ++ str " is recursively defined" ++
+  | [id] -> Id.print id ++ str " is recursively defined" ++
       (match indexes with
 	 | Some [|i|] -> str " (decreasing on "++pr_rank i++str " argument)"
 	 | _ -> mt ())
-  | l -> hov 0 (prlist_with_sep pr_comma pr_id l ++
+  | l -> hov 0 (prlist_with_sep pr_comma Id.print l ++
 		  spc () ++ str "are recursively defined" ++
 		  match indexes with
 		    | Some a -> spc () ++ str "(decreasing respectively on " ++
@@ -422,21 +421,21 @@ let fixpoint_message indexes l =
 let cofixpoint_message l =
   Flags.if_verbose Feedback.msg_info (match l with
   | [] -> anomaly (Pp.str "No corecursive definition.")
-  | [id] -> pr_id id ++ str " is corecursively defined"
-  | l -> hov 0 (prlist_with_sep pr_comma pr_id l ++
+  | [id] -> Id.print id ++ str " is corecursively defined"
+  | l -> hov 0 (prlist_with_sep pr_comma Id.print l ++
                     spc () ++ str "are corecursively defined"))
 
 let recursive_message isfix i l =
   (if isfix then fixpoint_message i else cofixpoint_message) l
 
 let definition_message id =
-  Flags.if_verbose Feedback.msg_info (pr_id id ++ str " is defined")
+  Flags.if_verbose Feedback.msg_info (Id.print id ++ str " is defined")
 
 let assumption_message id =
   (* Changing "assumed" to "declared", "assuming" referring more to
   the type of the object than to the name of the object (see
   discussion on coqdev: "Chapter 4 of the Reference Manual", 8/10/2015) *)
-  Flags.if_verbose Feedback.msg_info (pr_id id ++ str " is declared")
+  Flags.if_verbose Feedback.msg_info (Id.print id ++ str " is declared")
 
 (** Global universe names, in a different summary *)
 
@@ -527,7 +526,7 @@ let do_constraint poly l =
        let names, _ = Global.global_universe_names () in
        try loc, Id.Map.find id names
        with Not_found ->
-         user_err ?loc ~hdr:"Constraint" (str "Undeclared universe " ++ pr_id id)
+         user_err ?loc ~hdr:"Constraint" (str "Undeclared universe " ++ Id.print id)
   in
   let in_section = Lib.sections_are_opened () in
   let () =

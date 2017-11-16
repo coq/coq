@@ -11,18 +11,17 @@ open Declare
 open Entries
 open Globnames
 open Impargs
-open Nameops
 
 let warn_definition_not_visible =
   CWarnings.create ~name:"definition-not-visible" ~category:"implicits"
     Pp.(fun ident ->
         strbrk "Section definition " ++
-        pr_id ident ++ strbrk " is not visible from current goals")
+        Names.Id.print ident ++ strbrk " is not visible from current goals")
 
 let warn_local_declaration =
   CWarnings.create ~name:"local-declaration" ~category:"scope"
     Pp.(fun (id,kind) ->
-        pr_id id ++ strbrk " is declared as a local " ++ str kind)
+        Names.Id.print id ++ strbrk " is declared as a local " ++ str kind)
 
 let get_locality id ~kind = function
 | Discharge ->

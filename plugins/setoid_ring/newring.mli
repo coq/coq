@@ -9,7 +9,6 @@
 open Names
 open EConstr
 open Libnames
-open Globnames
 open Constrexpr
 open Newring_ast
 
@@ -17,7 +16,7 @@ val protect_tac_in : string -> Id.t -> unit Proofview.tactic
 
 val protect_tac : string -> unit Proofview.tactic
 
-val closed_term : EConstr.constr -> global_reference list -> unit Proofview.tactic
+val closed_term : EConstr.constr -> GlobRef.t list -> unit Proofview.tactic
 
 val add_theory :
   Id.t ->

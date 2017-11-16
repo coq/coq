@@ -159,7 +159,7 @@ let pr_explicit env sigma t1 t2 =
 let pr_db env i =
   try
     match env |> lookup_rel i |> get_name with
-      | Name id -> pr_id id
+      | Name id -> Id.print id
       | Anonymous -> str "<>"
   with Not_found -> str "UNBOUND_REL_" ++ int i
 
@@ -169,7 +169,7 @@ let explain_unbound_rel env sigma n =
   str "The reference " ++ int n ++ str " is free."
 
 let explain_unbound_var env v =
-  let var = pr_id v in
+  let var = Id.print v in
   str "No such section variable or assumption: " ++ var ++ str "."
 
 let explain_not_type env sigma j =
@@ -189,7 +189,7 @@ let explain_bad_assumption env sigma j =
 let explain_reference_variables sigma id c =
   (* c is intended to be a global reference *)
   let pc = pr_global (fst (Termops.global_of_constr sigma c)) in
-  pc ++ strbrk " depends on the variable " ++ pr_id id ++
+  pc ++ strbrk " depends on the variable " ++ Id.print id ++
   strbrk " which is not declared in the context."
 
 let rec pr_disjunction pr = function
@@ -415,7 +415,7 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
   let pr_lconstr_env env sigma c = pr_leconstr_env env sigma c in
   let prt_name i =
     match names.(i) with
-        Name id -> str "Recursive definition of " ++ pr_id id
+        Name id -> str "Recursive definition of " ++ Id.print id
       | Anonymous -> str "The " ++ pr_nth i ++ str " definition" in
 
   let st = match err with
@@ -430,7 +430,7 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
       let arg_env = make_all_name_different arg_env sigma in
       let called =
         match names.(j) with
-            Name id -> pr_id id
+            Name id -> Id.print id
           | Anonymous -> str "the " ++ pr_nth i ++ str " definition" in
       let pr_db x = quote (pr_db env x) in
       let vars =
@@ -450,7 +450,7 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
   | NotEnoughArgumentsForFixCall j ->
       let called =
         match names.(j) with
-            Name id -> pr_id id
+            Name id -> Id.print id
           | Anonymous -> str "the " ++ pr_nth i ++ str " definition" in
      str "Recursive call to " ++ called ++ str " has not enough arguments"
 
@@ -528,7 +528,7 @@ let pr_trailing_ne_context_of env sigma =
 
 let rec explain_evar_kind env sigma evk ty = function
   | Evar_kinds.NamedHole id ->
-      strbrk "the existential variable named " ++ pr_id id
+      strbrk "the existential variable named " ++ Id.print id
   | Evar_kinds.QuestionMark _ ->
       strbrk "this placeholder of type " ++ ty
   | Evar_kinds.CasesType false ->
@@ -537,12 +537,12 @@ let rec explain_evar_kind env sigma evk ty = function
       strbrk "a subterm of type " ++ ty ++
       strbrk " in the type of this pattern-matching problem"
   | Evar_kinds.BinderType (Name id) ->
-      strbrk "the type of " ++ Nameops.pr_id id
+      strbrk "the type of " ++ Id.print id
   | Evar_kinds.BinderType Anonymous ->
       strbrk "the type of this anonymous binder"
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
       let id = Option.get ido in
-      strbrk "the implicit parameter " ++ pr_id id ++ spc () ++ str "of" ++
+      strbrk "the implicit parameter " ++ Id.print id ++ spc () ++ str "of" ++
       spc () ++ Nametab.pr_global_env Id.Set.empty c ++
       strbrk " whose type is " ++ ty
   | Evar_kinds.InternalHole -> strbrk "an internal placeholder of type " ++ ty
@@ -558,7 +558,7 @@ let rec explain_evar_kind env sigma evk ty = function
       assert false
   | Evar_kinds.VarInstance id ->
       strbrk "an instance of type " ++ ty ++
-      str " for the variable " ++ pr_id id
+      str " for the variable " ++ Id.print id
   | Evar_kinds.SubEvar evk' ->
       let evi = Evd.find sigma evk' in
       let pc = match evi.evar_body with
@@ -598,7 +598,7 @@ let explain_unsolvable_implicit env sigma evk explain =
   explain_placeholder_kind env sigma evi.evar_concl explain ++ pe
 
 let explain_var_not_found env id =
-  str "The variable" ++ spc () ++ pr_id id ++
+  str "The variable" ++ spc () ++ Id.print id ++
   spc () ++ str "was not found" ++
   spc () ++ str "in the current" ++ spc () ++ str "environment" ++ str "."
 
@@ -638,7 +638,7 @@ let explain_no_occurrence_found env sigma c id =
   str "Found no subterm matching " ++ pr_lconstr_env env sigma c ++
   str " in " ++
     (match id with
-      | Some id -> pr_id id
+      | Some id -> Id.print id
       | None -> str"the current goal") ++ str "."
 
 let explain_cannot_unify_binding_type env sigma m n =
@@ -660,7 +660,7 @@ let explain_wrong_abstraction_type env sigma na abs expected result =
   let abs = EConstr.to_constr sigma abs in
   let expected = EConstr.to_constr sigma expected in
   let result = EConstr.to_constr sigma result in
-  let ppname = match na with Name id -> pr_id id ++ spc () | _ -> mt () in
+  let ppname = match na with Name id -> Id.print id ++ spc () | _ -> mt () in
   str "Cannot instantiate metavariable " ++ ppname ++ strbrk "of type " ++
   pr_lconstr_env env sigma expected ++ strbrk " with abstraction " ++
   pr_lconstr_env env sigma abs ++ strbrk " of incompatible type " ++
@@ -723,9 +723,9 @@ let explain_type_error env sigma err =
 let pr_position (cl,pos) =
   let clpos = match cl with
     | None -> str " of the goal"
-    | Some (id,Locus.InHyp) -> str " of hypothesis " ++ pr_id id
-    | Some (id,Locus.InHypTypeOnly) -> str " of the type of hypothesis " ++ pr_id id
-    | Some (id,Locus.InHypValueOnly) -> str " of the body of hypothesis " ++ pr_id id in
+    | Some (id,Locus.InHyp) -> str " of hypothesis " ++ Id.print id
+    | Some (id,Locus.InHypTypeOnly) -> str " of the type of hypothesis " ++ Id.print id
+    | Some (id,Locus.InHypValueOnly) -> str " of the body of hypothesis " ++ Id.print id in
   int pos ++ clpos
 
 let explain_cannot_unify_occurrences env sigma nested ((cl2,pos2),t2) ((cl1,pos1),t1) e =
@@ -844,7 +844,7 @@ let explain_not_match_error = function
   | ModuleTypeFieldExpected ->
     strbrk "a module type is expected"
   | NotConvertibleInductiveField id | NotConvertibleConstructorField id ->
-    str "types given to " ++ pr_id id ++ str " differ"
+    str "types given to " ++ Id.print id ++ str " differ"
   | NotConvertibleBodyField ->
     str "the body of definitions differs"
   | NotConvertibleTypeField (env, typ1, typ2) ->
@@ -869,7 +869,7 @@ let explain_not_match_error = function
   | RecordProjectionsExpected nal ->
     (if List.length nal >= 2 then str "expected projection names are "
      else str "expected projection name is ") ++
-    pr_enum (function Name id -> pr_id id | _ -> str "_") nal
+    pr_enum (function Name id -> Id.print id | _ -> str "_") nal
   | NotEqualInductiveAliases ->
     str "Aliases to inductive types do not match"
   | NoTypeConstraintExpected ->
@@ -1016,7 +1016,7 @@ let explain_not_a_class env c =
   pr_constr_env env Evd.empty c ++ str" is not a declared type class."
 
 let explain_unbound_method env cid id =
-  str "Unbound method name " ++ Nameops.pr_id (snd id) ++ spc () ++
+  str "Unbound method name " ++ Id.print (snd id) ++ spc () ++
   str"of class" ++ spc () ++ pr_global cid ++ str "."
 
 let pr_constr_exprs exprs =
@@ -1061,7 +1061,7 @@ let explain_intro_needs_product () =
 
 let explain_does_not_occur_in c hyp =
   str "The term" ++ spc () ++ pr_lconstr c ++ spc () ++
-  str "does not occur in" ++ spc () ++ pr_id hyp ++ str "."
+  str "does not occur in" ++ spc () ++ Id.print hyp ++ str "."
 
 let explain_non_linear_proof c =
   str "Cannot refine with term" ++ brk(1,1) ++ pr_lconstr c ++
@@ -1072,7 +1072,7 @@ let explain_meta_in_type c =
   str " of another meta"
 
 let explain_no_such_hyp id =
-  str "No such hypothesis: " ++ pr_id id
+  str "No such hypothesis: " ++ Id.print id
 
 let explain_refiner_error = function
   | BadType (arg,ty,conclty) -> explain_refiner_bad_type arg ty conclty
@@ -1102,7 +1102,7 @@ let error_ill_formed_inductive env c v =
 let error_ill_formed_constructor env id c v nparams nargs =
   let pv = pr_lconstr_env env Evd.empty v in
   let atomic = Int.equal (nb_prod Evd.empty (EConstr.of_constr c)) (** FIXME *) 0 in
-  str "The type of constructor" ++ brk(1,1) ++ pr_id id ++ brk(1,1) ++
+  str "The type of constructor" ++ brk(1,1) ++ Id.print id ++ brk(1,1) ++
   str "is not valid;" ++ brk(1,1) ++
   strbrk (if atomic then "it must be " else "its conclusion must be ") ++
   pv ++
@@ -1130,17 +1130,17 @@ let error_bad_ind_parameters env c n v1 v2  =
   str " as " ++ pr_nth n ++ str " argument in" ++ brk(1,1) ++ pc ++ str "."
 
 let error_same_names_types id =
-  str "The name" ++ spc () ++ pr_id id ++ spc () ++
+  str "The name" ++ spc () ++ Id.print id ++ spc () ++
   str "is used more than once."
 
 let error_same_names_constructors id =
-  str "The constructor name" ++ spc () ++ pr_id id ++ spc () ++
+  str "The constructor name" ++ spc () ++ Id.print id ++ spc () ++
   str "is used more than once."
 
 let error_same_names_overlap idl =
   strbrk "The following names are used both as type names and constructor " ++
   str "names:" ++ spc () ++
-  prlist_with_sep pr_comma pr_id idl ++ str "."
+  prlist_with_sep pr_comma Id.print idl ++ str "."
 
 let error_not_an_arity env c =
   str "The type" ++ spc () ++ pr_lconstr_env env Evd.empty c ++ spc () ++

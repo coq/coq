@@ -19,7 +19,6 @@ open Termops
 open Declarations
 open Names
 open Globnames
-open Nameops
 open Inductiveops
 open Tactics
 open Ind_tables
@@ -53,7 +52,7 @@ exception EqUnknown of string
 exception UndefinedCst of string
 exception InductiveWithProduct
 exception InductiveWithSort
-exception ParameterWithoutEquality of global_reference
+exception ParameterWithoutEquality of GlobRef.t
 exception NonSingletonProp of inductive
 exception DecidabilityMutualNotSupported
 exception NoDecidabilityCoInductive
@@ -361,7 +360,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
             else user_err ~hdr:"AutoIndDecl.do_replace_lb"
-                   (str "Var " ++ pr_id s ++ str " seems unknown.")
+                   (str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
   with e when CErrors.noncritical e ->
@@ -422,7 +421,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
             else user_err ~hdr:"AutoIndDecl.do_replace_bl"
-                   (str "Var " ++ pr_id s ++ str " seems unknown.")
+                   (str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
   with e when CErrors.noncritical e ->
@@ -632,7 +631,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                         | App (c,ca) -> (
                           match EConstr.kind sigma c with
                           | Ind (indeq, u) ->
-                              if eq_gr (IndRef indeq) Coqlib.glob_eq
+                              if GlobRef.equal (IndRef indeq) Coqlib.glob_eq
                               then
                                 Tacticals.New.tclTHEN
                                   (do_replace_bl mode bl_scheme_key ind

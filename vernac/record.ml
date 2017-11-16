@@ -138,7 +138,7 @@ let typecheck_params_and_fields finite def id pl t ps nots fs =
   let arity = EConstr.it_mkProd_or_LetIn typ newps in
   let env_ar = EConstr.push_rel_context newps (EConstr.push_rel (LocalAssum (Name id,arity)) env0) in
   let assums = List.filter is_local_assum newps in
-  let params = List.map (RelDecl.get_name %> out_name) assums in
+  let params = List.map (RelDecl.get_name %> Name.get_id) assums in
   let ty = Inductive (params,(finite != BiFinite)) in
   let impls_env = compute_internalization_env env0 ~impls:impls_env ty [id] [EConstr.to_constr !evars arity] [imps] in
   let env2,impls,newfs,data =
@@ -194,24 +194,24 @@ let warning_or_error coe indsp err =
   let st = match err with
     | MissingProj (fi,projs) ->
 	let s,have = if List.length projs > 1 then "s","were" else "","was" in
-        (pr_id fi ++
+        (Id.print fi ++
 	   strbrk" cannot be defined because the projection" ++ str s ++ spc () ++
-           prlist_with_sep pr_comma pr_id projs ++ spc () ++ str have ++
+           prlist_with_sep pr_comma Id.print projs ++ spc () ++ str have ++
 	   strbrk " not defined.")
     | BadTypedProj (fi,ctx,te) ->
 	match te with
 	  | ElimArity (_,_,_,_,Some (_,_,NonInformativeToInformative)) ->
-              (pr_id fi ++
+              (Id.print fi ++
 		strbrk" cannot be defined because it is informative and " ++
 		Printer.pr_inductive (Global.env()) indsp ++
 		strbrk " is not.")
 	  | ElimArity (_,_,_,_,Some (_,_,StrongEliminationOnNonSmallType)) ->
-	      (pr_id fi ++
+	      (Id.print fi ++
 		strbrk" cannot be defined because it is large and " ++
 		Printer.pr_inductive (Global.env()) indsp ++
 		strbrk " is not.")
 	  | _ ->
-              (pr_id fi ++ strbrk " cannot be defined because it is not typable.")
+              (Id.print fi ++ strbrk " cannot be defined because it is not typable.")
   in
   if coe then user_err ~hdr:"structure" st;
   warn_cannot_define_projection (hov 0 st)
@@ -240,7 +240,7 @@ let subst_projection fid l c =
 	    | Projection t -> lift depth t
 	    | NoProjection (Name id) -> bad_projs := id :: !bad_projs; mkRel k
 	    | NoProjection Anonymous ->
-                user_err  (str "Field " ++ pr_id fid ++
+                user_err  (str "Field " ++ Id.print fid ++
                   str " depends on the " ++ pr_nth (k-depth-1) ++ str
                   " field which has no name.")
         else

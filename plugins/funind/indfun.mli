@@ -1,3 +1,4 @@
+open Names
 open Misctypes
 
 val warn_cannot_define_graph : ?loc:Loc.t -> Pp.t * Pp.t -> unit
@@ -18,4 +19,4 @@ val functional_induction :
   Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
 
-val make_graph :  Globnames.global_reference -> unit
+val make_graph : GlobRef.t -> unit

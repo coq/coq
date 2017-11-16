@@ -171,17 +171,17 @@ let tag_var = tag Tag.variable
 
   let pr_qualid sp =
     let (sl, id) = repr_qualid sp in
-    let id = tag_ref (pr_id id) in
+    let id = tag_ref (Id.print id) in
     let sl = match List.rev (DirPath.repr sl) with
     | [] -> mt ()
     | sl ->
-      let pr dir = tag_path (pr_id dir) ++ str "." in
+      let pr dir = tag_path (Id.print dir) ++ str "." in
       prlist pr sl
     in
     sl ++ id
 
-  let pr_id = pr_id
-  let pr_name = pr_name
+  let pr_id = Id.print
+  let pr_name = Name.print
   let pr_qualid = pr_qualid
   let pr_patvar = pr_id
 

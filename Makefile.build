@@ -574,7 +574,7 @@ kernel/kernel.cma: kernel/kernel.mllib
 # Make sure that API/API.mli cannot leak types from the Coq codebase.
 API/API.cmi : API/API.mli
 	$(SHOW)'OCAMLC    $<'
-	$(HIDE)$(OCAMLC) -I lib -I $(MYCAMLP4LIB) -c $<
+	$(HIDE)$(OCAMLC) -I lib -I $(MYCAMLP4LIB) -I kernel -c $<
 
 %.cma: %.mllib
 	$(SHOW)'OCAMLC -a -o $@'

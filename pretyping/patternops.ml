@@ -29,7 +29,7 @@ let case_info_pattern_eq i1 i2 =
   i1.cip_extensible == i2.cip_extensible
 
 let rec constr_pattern_eq p1 p2 = match p1, p2 with
-| PRef r1, PRef r2 -> eq_gr r1 r2
+| PRef r1, PRef r2 -> GlobRef.equal r1 r2
 | PVar v1, PVar v2 -> Id.equal v1 v2
 | PEvar (ev1, ctx1), PEvar (ev2, ctx2) ->
   Evar.equal ev1 ev2 && Array.equal constr_pattern_eq ctx1 ctx2
@@ -230,8 +230,8 @@ let error_instantiate_pattern id l =
   | [_] -> "is" 
   | _ -> "are"
   in
-  user_err  (str "Cannot substitute the term bound to " ++ pr_id id
-    ++ strbrk " in pattern because the term refers to " ++ pr_enum pr_id l
+  user_err  (str "Cannot substitute the term bound to " ++ Id.print id
+    ++ strbrk " in pattern because the term refers to " ++ pr_enum Id.print l
     ++ strbrk " which " ++ str is ++ strbrk " not bound in the pattern.")
 
 let instantiate_pattern env sigma lvar c =

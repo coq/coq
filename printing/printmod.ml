@@ -12,7 +12,6 @@ open Pp
 open Names
 open Environ
 open Declarations
-open Nameops
 open Globnames
 open Libnames
 open Goptions
@@ -80,7 +79,7 @@ let print_params env sigma params =
 let print_constructors envpar sigma names types =
   let pc =
     prlist_with_sep (fun () -> brk(1,0) ++ str "| ")
-      (fun (id,c) -> pr_id id ++ str " : " ++ Printer.pr_lconstr_env envpar sigma c)
+      (fun (id,c) -> Id.print id ++ str " : " ++ Printer.pr_lconstr_env envpar sigma c)
       (Array.to_list (Array.map2 (fun n t -> (n,t)) names types))
   in
   hv 0 (str "  " ++ pc)
@@ -107,7 +106,7 @@ let print_one_inductive env sigma mib ((_,i) as ind) =
     else mt ()
   in
   hov 0 (
-    pr_id mip.mind_typename ++ inst ++ brk(1,4) ++ print_params env sigma params ++
+    Id.print mip.mind_typename ++ inst ++ brk(1,4) ++ print_params env sigma params ++
     str ": " ++ Printer.pr_lconstr_env envpar sigma arity ++ str " :=") ++
   brk(0,2) ++ print_constructors envpar sigma mip.mind_consnames cstrtypes
 
@@ -189,15 +188,15 @@ let print_record env mind mib =
       Printer.pr_cumulative
         (Declareops.inductive_is_polymorphic mib)
         (Declareops.inductive_is_cumulative mib) ++
-      def keyword ++ spc () ++ pr_id mip.mind_typename ++ brk(1,4) ++
+      def keyword ++ spc () ++ Id.print mip.mind_typename ++ brk(1,4) ++
       print_params env sigma params ++
       str ": " ++ Printer.pr_lconstr_env envpar sigma arity ++ brk(1,2) ++
-      str ":= " ++ pr_id mip.mind_consnames.(0)) ++
+      str ":= " ++ Id.print mip.mind_consnames.(0)) ++
     brk(1,2) ++
     hv 2 (str "{ " ++
       prlist_with_sep (fun () -> str ";" ++ brk(2,0))
         (fun (id,b,c) ->
-          pr_id id ++ str (if b then " : " else " := ") ++
+          Id.print id ++ str (if b then " : " else " := ") ++
           Printer.pr_lconstr_env envpar sigma c) fields) ++ str" }" ++
     match mib.mind_universes with
     | Monomorphic_ind _ | Polymorphic_ind _ -> str ""
@@ -215,9 +214,9 @@ let pr_mutual_inductive_body env mind mib =
 (** Modpaths *)
 
 let rec print_local_modpath locals = function
-  | MPbound mbid -> pr_id (Util.List.assoc_f MBId.equal mbid locals)
+  | MPbound mbid -> Id.print (Util.List.assoc_f MBId.equal mbid locals)
   | MPdot(mp,l) ->
-      print_local_modpath locals mp ++ str "." ++ pr_lab l
+      print_local_modpath locals mp ++ str "." ++ Label.print l
   | MPfile _ -> raise Not_found
 
 let print_modpath locals mp =
@@ -403,7 +402,7 @@ let rec print_functor fty fatom is_type env mp locals = function
       let kwd = if is_type then "Funsig" else "Functor" in
       hov 2
         (keyword kwd ++ spc () ++
-	 str "(" ++ pr_id id ++ str ":" ++ pr_mtb1 ++ str ")" ++
+	 str "(" ++ Id.print id ++ str ":" ++ pr_mtb1 ++ str ")" ++
 	 spc() ++ print_functor fty fatom is_type env' mp locals' me2)
 
 let rec print_expression x =

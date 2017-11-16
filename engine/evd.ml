@@ -380,7 +380,7 @@ let add_name_newly_undefined id evk evi (evtoid, idtoev as names) =
   | None -> names
   | Some id ->
     if Id.Map.mem id idtoev then
-      user_err  (str "Already an existential evar of name " ++ pr_id id);
+      user_err  (str "Already an existential evar of name " ++ Id.print id);
     (EvMap.add evk id evtoid, Id.Map.add id evk idtoev)
 
 let add_name_undefined naming evk evi (evtoid,idtoev as evar_names) =

@@ -9,6 +9,7 @@
 open Pp
 open CErrors
 open Util
+open Names
 open Libnames
 open Globnames
 open Nameops
@@ -285,7 +286,7 @@ let start_mod is_type export id mp fs =
     else Nametab.exists_module dir
   in
   if exists then
-    user_err ~hdr:"open_module" (pr_id id ++ str " already exists");
+    user_err ~hdr:"open_module" (Id.print id ++ str " already exists");
   add_entry (make_oname id) (OpenedModule (is_type,export,prefix,fs));
   lib_state := { !lib_state with path_prefix = prefix} ;
   prefix
@@ -296,7 +297,7 @@ let start_modtype = start_mod true None
 let error_still_opened string oname =
   let id = basename (fst oname) in
   user_err 
-    (str "The " ++ str string ++ str " " ++ pr_id id ++ str " is still opened.")
+    (str "The " ++ str string ++ str " " ++ Id.print id ++ str " is still opened.")
 
 let end_mod is_type =
   let oname,fs =
@@ -337,8 +338,8 @@ let start_compilation s mp =
 
 let open_blocks_message es =
   let open_block_name = function
-      | oname, OpenedSection _ -> str "section " ++ pr_id (basename (fst oname))
-      | oname, OpenedModule (ty,_,_,_) -> str (module_kind ty) ++ spc () ++ pr_id (basename (fst oname))
+      | oname, OpenedSection _ -> str "section " ++ Id.print (basename (fst oname))
+      | oname, OpenedModule (ty,_,_,_) -> str (module_kind ty) ++ spc () ++ Id.print (basename (fst oname))
       | _ -> assert false in
   str "The " ++ pr_enum open_block_name es ++ spc () ++
   str "need" ++ str (if List.length es == 1 then "s" else "") ++ str " to be closed."
@@ -395,7 +396,7 @@ let find_opening_node id =
     let id' = basename (fst oname) in
     if not (Names.Id.equal id id') then
       user_err ~hdr:"Lib.find_opening_node"
-        (str "Last block to end has name " ++ pr_id id' ++ str ".");
+        (str "Last block to end has name " ++ Id.print id' ++ str ".");
     entry
   with Not_found -> user_err Pp.(str "There is nothing to end.")
 
@@ -526,7 +527,7 @@ let open_section id =
   let dir = add_dirpath_suffix olddir id in
   let prefix = dir, (mp, add_dirpath_suffix oldsec id) in
   if Nametab.exists_section dir then
-    user_err ~hdr:"open_section" (pr_id id ++ str " already exists.");
+    user_err ~hdr:"open_section" (Id.print id ++ str " already exists.");
   let fs = Summary.freeze_summaries ~marshallable:`No in
   add_entry (make_oname id) (OpenedSection (prefix, fs));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)

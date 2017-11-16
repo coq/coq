@@ -122,7 +122,7 @@ type internalization_error =
 exception InternalizationError of internalization_error Loc.located
 
 let explain_variable_capture id id' =
-  pr_id id ++ str " is dependent in the type of " ++ pr_id id' ++
+  Id.print id ++ str " is dependent in the type of " ++ Id.print id' ++
   strbrk ": cannot interpret both of them with the same type"
 
 let explain_illegal_metavariable =
@@ -132,12 +132,12 @@ let explain_not_a_constructor ref =
   str "Unknown constructor: " ++ pr_reference ref
 
 let explain_unbound_fix_name is_cofix id =
-  str "The name" ++ spc () ++ pr_id id ++
+  str "The name" ++ spc () ++ Id.print id ++
   spc () ++ str "is not bound in the corresponding" ++ spc () ++
   str (if is_cofix then "co" else "") ++ str "fixpoint definition"
 
 let explain_non_linear_pattern id =
-  str "The variable " ++ pr_id id ++ str " is bound several times in pattern"
+  str "The variable " ++ Id.print id ++ str " is bound several times in pattern"
 
 let explain_bad_patterns_number n1 n2 =
   str "Expecting " ++ int n1 ++ str (String.plural n1 " pattern") ++
@@ -163,7 +163,7 @@ let error_parameter_not_implicit ?loc =
     "they must be replaced by '_'.")
 
 let error_ldots_var ?loc =
-  user_err ?loc  (str "Special token " ++ pr_id ldots_var ++
+  user_err ?loc  (str "Special token " ++ Id.print ldots_var ++
     str " is for use in the Notation command.")
 
 (**********************************************************************)
@@ -263,13 +263,13 @@ let pr_scope_stack = function
 
 let error_inconsistent_scope ?loc id scopes1 scopes2 =
   user_err ?loc ~hdr:"set_var_scope"
-   (pr_id id ++ str " is here used in " ++
+   (Id.print id ++ str " is here used in " ++
     pr_scope_stack scopes2 ++ strbrk " while it was elsewhere used in " ++
     pr_scope_stack scopes1)
 
 let error_expect_binder_notation_type ?loc id =
   user_err ?loc 
-   (pr_id id ++
+   (Id.print id ++
     str " is expected to occur in binding position in the right-hand side.")
 
 let set_var_scope ?loc id istermvar env ntnvars =
@@ -365,7 +365,7 @@ let check_hidden_implicit_parameters ?loc id impls =
     | (Inductive (indparams,check),_,_,_) when check -> Id.List.mem id indparams
     | _ -> false) impls
   then
-    user_err ?loc (pr_id id ++ strbrk " is already used as name of " ++
+    user_err ?loc (Id.print id ++ strbrk " is already used as name of " ++
       strbrk "a parameter of the inductive type; bound variables in " ++
       strbrk "the type of a constructor shall use a different name.")
 
@@ -743,7 +743,7 @@ let string_of_ty = function
 let gvar (loc, id) us = match us with
 | None -> DAst.make ?loc @@ GVar id
 | Some _ ->
-  user_err ?loc  (str "Variable " ++ pr_id id ++
+  user_err ?loc  (str "Variable " ++ Id.print id ++
     str " cannot have a universe instance")
 
 let intern_var genv (ltacvars,ntnvars) namedctx loc id us =
@@ -772,7 +772,7 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id us =
   else if Id.Set.mem id ltacvars.ltac_bound then
     (* Is [id] bound to a free name in ltac (this is an ltac error message) *)
     user_err ?loc ~hdr:"intern_var"
-     (str "variable " ++ pr_id id ++ str " should be bound to a term.")
+     (str "variable " ++ Id.print id ++ str " should be bound to a term.")
   else
     (* Is [id] a goal or section variable *)
     let _ = Context.Named.lookup id namedctx in
@@ -911,7 +911,7 @@ let interp_reference vars r =
 (** Private internalization patterns *)
 type 'a raw_cases_pattern_expr_r =
   | RCPatAlias of 'a raw_cases_pattern_expr * Id.t
-  | RCPatCstr  of Globnames.global_reference
+  | RCPatCstr  of GlobRef.t
     * 'a raw_cases_pattern_expr list * 'a raw_cases_pattern_expr list
   (** [RCPatCstr (loc, c, l1, l2)] represents ((@c l1) l2) *)
   | RCPatAtom  of Id.t option
@@ -1145,7 +1145,7 @@ let sort_fields ~complete loc fields completer =
               | [] -> (idx, acc_first_idx, acc)
               | (Some field_glob_id) :: projs ->
                  let field_glob_ref = ConstRef field_glob_id in
-                 let first_field = eq_gr field_glob_ref first_field_glob_ref in
+                 let first_field = GlobRef.equal field_glob_ref first_field_glob_ref in
                  begin match proj_kinds with
                     | [] -> anomaly (Pp.str "Number of projections mismatch.")
                     | (_, regular) :: proj_kinds ->
@@ -1183,7 +1183,7 @@ let sort_fields ~complete loc fields completer =
                  user_err ?loc:(loc_of_reference field_ref) ~hdr:"intern"
                                (str "The field \"" ++ pr_reference field_ref ++ str "\" does not exist.") in
                let remaining_projs, (field_index, _) =
-                 let the_proj (idx, glob_id) = eq_gr field_glob_ref (ConstRef glob_id) in
+                 let the_proj (idx, glob_id) = GlobRef.equal field_glob_ref (ConstRef glob_id) in
                  try CList.extract_first the_proj remaining_projs
                  with Not_found ->
                    user_err ?loc 
@@ -1570,9 +1570,9 @@ let extract_explicit_arg imps args =
 	  | ExplByName id ->
 	      if not (exists_implicit_name id imps) then
 		user_err ?loc 
-		  (str "Wrong argument name: " ++ pr_id id ++ str ".");
+		  (str "Wrong argument name: " ++ Id.print id ++ str ".");
 	      if Id.Map.mem id eargs then
-		user_err ?loc  (str "Argument name " ++ pr_id id
+		user_err ?loc  (str "Argument name " ++ Id.print id
 		++ str " occurs more than once.");
 	      id
 	  | ExplByPos (p,_id) ->
@@ -1990,7 +1990,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 	    (let (id,(loc,_)) = Id.Map.choose eargs in
 	       user_err ?loc  (str "Not enough non implicit \
 	    arguments to accept the argument bound to " ++
-		 pr_id id ++ str"."));
+		 Id.print id ++ str"."));
 	  []
       | ([], rargs) ->
 	  assert (Id.Map.is_empty eargs);

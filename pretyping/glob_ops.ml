@@ -100,7 +100,7 @@ let instance_eq f (x1,c1) (x2,c2) =
   Id.equal x1 x2 && f c1 c2
 
 let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
-  | GRef (gr1, _), GRef (gr2, _) -> eq_gr gr1 gr2
+  | GRef (gr1, _), GRef (gr2, _) -> GlobRef.equal gr1 gr2
   | GVar id1, GVar id2 -> Id.equal id1 id2
   | GEvar (id1, arg1), GEvar (id2, arg2) ->
     Id.equal id1 id2 && List.equal (instance_eq f) arg1 arg2
@@ -290,7 +290,7 @@ let warn_variable_collision =
   let open Pp in
   CWarnings.create ~name:"variable-collision" ~category:"ltac"
          (fun name ->
-          strbrk "Collision between bound variables of name " ++ pr_id name)
+          strbrk "Collision between bound variables of name " ++ Id.print name)
 
 let add_and_check_ident id set =
   if Id.Set.mem id set then warn_variable_collision id;
@@ -524,7 +524,7 @@ let ltac_interp_name { ltac_idents ; ltac_genargs } = function
       try Name (Id.Map.find id ltac_idents)
       with Not_found ->
         if Id.Map.mem id ltac_genargs then
-          user_err (str"Ltac variable"++spc()++ pr_id id ++
+          user_err (str"Ltac variable"++spc()++ Id.print id ++
                            spc()++str"is not bound to an identifier."++spc()++
                            str"It cannot be used in a binder.")
         else n

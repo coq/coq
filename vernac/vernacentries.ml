@@ -84,10 +84,10 @@ let show_intro all =
     let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma (pf_concl gl)) in
     if all then
       let lid = Tactics.find_intro_names l gl in
-      Feedback.msg_notice (hov 0 (prlist_with_sep  spc pr_id lid))
+      Feedback.msg_notice (hov 0 (prlist_with_sep  spc Id.print lid))
     else if not (List.is_empty l) then
       let n = List.last l in
-      Feedback.msg_notice (pr_id (List.hd (Tactics.find_intro_names [n] gl)))
+      Feedback.msg_notice (Id.print (List.hd (Tactics.find_intro_names [n] gl)))
   end
 
 (** Prepare a "match" template for a given inductive type.
@@ -252,7 +252,7 @@ let print_namespace ns =
     (* spiwack: I'm ignoring the dirpath, is that bad? *)
     let (mp,_,lbl) = Names.KerName.repr kn in
     let qn = (qualified_minus (List.length ns) mp)@[Names.Label.to_id lbl] in
-    print_list pr_id qn
+    print_list Id.print qn
   in
   let print_constant k body =
     (* FIXME: universes *)
@@ -272,7 +272,7 @@ let print_namespace ns =
         acc
     ) constants (str"")
   in
-  Feedback.msg_notice ((print_list pr_id ns)++str":"++fnl()++constants_in_namespace)
+  Feedback.msg_notice ((print_list Id.print ns)++str":"++fnl()++constants_in_namespace)
 
 let print_strategy r =
   let open Conv_oracle in
@@ -656,7 +656,7 @@ let vernac_declare_module export (loc, id) binders_ast mty_ast =
       id binders_ast (Enforce mty_ast) []
   in
   Dumpglob.dump_moddef ?loc mp "mod";
-  Flags.if_verbose Feedback.msg_info (str "Module " ++ pr_id id ++ str " is declared");
+  Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is declared");
   Option.iter (fun export -> vernac_import export [Ident (Loc.tag id)]) export
 
 let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
@@ -678,7 +678,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
        in
        Dumpglob.dump_moddef ?loc mp "mod";
        Flags.if_verbose Feedback.msg_info
-         (str "Interactive Module " ++ pr_id id ++ str " started");
+         (str "Interactive Module " ++ Id.print id ++ str " started");
        List.iter
          (fun (export,id) ->
            Option.iter
@@ -696,14 +696,14 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
        in
        Dumpglob.dump_moddef ?loc mp "mod";
        Flags.if_verbose Feedback.msg_info
-	 (str "Module " ++ pr_id id ++ str " is defined");
+	 (str "Module " ++ Id.print id ++ str " is defined");
        Option.iter (fun export -> vernac_import export [Ident (Loc.tag id)])
          export
 
 let vernac_end_module export (loc,id as lid) =
   let mp = Declaremods.end_module () in
   Dumpglob.dump_modref ?loc mp "mod";
-  Flags.if_verbose Feedback.msg_info (str "Module " ++ pr_id id ++ str " is defined");
+  Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is defined");
   Option.iter (fun export -> vernac_import export [Ident lid]) export
 
 let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
@@ -725,7 +725,7 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
        in
        Dumpglob.dump_moddef ?loc mp "modtype";
        Flags.if_verbose Feedback.msg_info
-	 (str "Interactive Module Type " ++ pr_id id ++ str " started");
+	 (str "Interactive Module Type " ++ Id.print id ++ str " started");
        List.iter
          (fun (export,id) ->
            Option.iter
@@ -744,12 +744,12 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
         in
         Dumpglob.dump_moddef ?loc mp "modtype";
 	Flags.if_verbose Feedback.msg_info
-	  (str "Module Type " ++ pr_id id ++ str " is defined")
+	  (str "Module Type " ++ Id.print id ++ str " is defined")
 
 let vernac_end_modtype (loc,id) =
   let mp = Declaremods.end_modtype () in
   Dumpglob.dump_modref ?loc mp "modtype";
-  Flags.if_verbose Feedback.msg_info (str "Module Type " ++ pr_id id ++ str " is defined")
+  Flags.if_verbose Feedback.msg_info (str "Module Type " ++ Id.print id ++ str " is defined")
 
 let vernac_include l =
   Declaremods.declare_include Modintern.interp_module_ast l
@@ -874,7 +874,7 @@ let vernac_set_used_variables e =
   List.iter (fun id -> 
     if not (List.exists (NamedDecl.get_id %> Id.equal id) vars) then
       user_err ~hdr:"vernac_set_used_variables"
-        (str "Unknown variable: " ++ pr_id id))
+        (str "Unknown variable: " ++ Id.print id))
     l;
   let _, to_clear = Proof_global.set_used_variables l in
   let to_clear = List.map snd to_clear in
@@ -1628,7 +1628,7 @@ let print_about_hyp_globs ?loc ref_or_by_not glopt =
     let natureofid = match decl with
                      | LocalAssum _ -> "Hypothesis"
                      | LocalDef (_,bdy,_) ->"Constant (let in)" in
-    v 0 (pr_id id ++ str":" ++ pr_econstr (NamedDecl.get_type decl) ++ fnl() ++ fnl()
+    v 0 (Id.print id ++ str":" ++ pr_econstr (NamedDecl.get_type decl) ++ fnl() ++ fnl()
 	 ++ str natureofid ++ str " of the goal context.")
   with (* fallback to globals *)
     | NoHyp | Not_found -> print_about ref_or_by_not
@@ -1859,7 +1859,7 @@ let vernac_show = let open Feedback in function
   | ShowExistentials -> show_top_evars ()
   | ShowUniverses -> show_universes ()
   | ShowProofNames ->
-      msg_notice (pr_sequence pr_id (Proof_global.get_all_proof_names()))
+      msg_notice (pr_sequence Id.print (Proof_global.get_all_proof_names()))
   | ShowIntros all -> show_intro all
   | ShowMatch id -> show_match id
 
