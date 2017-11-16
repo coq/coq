@@ -549,8 +549,8 @@ $(addsuffix .log,$(wildcard coqdoc/*.v)): %.v.log: %.v %.html.out %.tex.out $(PR
 	  $(coqc) -R coqdoc Coqdoc $* 2>&1; \
 	  cd coqdoc; \
 	  f=`basename $*`; \
-	  $(coqdoc) -R . Coqdoc -coqlib http://coq.inria.fr/stdlib --html $$f.v; \
-	  $(coqdoc) -R . Coqdoc -coqlib http://coq.inria.fr/stdlib --latex $$f.v; \
+	  $(coqdoc) -utf8 -R . Coqdoc -coqlib http://coq.inria.fr/stdlib --html $$f.v; \
+	  $(coqdoc) -utf8 -R . Coqdoc -coqlib http://coq.inria.fr/stdlib --latex $$f.v; \
 	  diff -u --strip-trailing-cr $$f.html.out Coqdoc.$$f.html 2>&1; R=$$?; times; \
 	  grep -v "^%%" Coqdoc.$$f.tex | diff -u --strip-trailing-cr $$f.tex.out - 2>&1; S=$$?; times; \
 	  if [ $$R = 0 -a $$S = 0 ]; then \
