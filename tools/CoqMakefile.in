@@ -286,13 +286,15 @@ ALLNATIVEFILES = \
 	$(OBJFILES:.o=.cmi) \
 	$(OBJFILES:.o=.cmx) \
 	$(OBJFILES:.o=.cmxs)
-# trick: wildcard filters out non-existing files
-NATIVEFILESTOINSTALL = $(foreach f, $(ALLNATIVEFILES), $(wildcard $f))
+# trick: wildcard filters out non-existing files, so that `install` doesn't show
+# warnings and `clean` doesn't pass to rm a list of files that is too long for
+# the shell.
+NATIVEFILES = $(wildcard $(ALLNATIVEFILES))
 FILESTOINSTALL = \
 	$(VOFILES) \
 	$(VFILES) \
 	$(GLOBFILES) \
-	$(NATIVEFILESTOINSTALL) \
+	$(NATIVEFILES) \
 	$(CMIFILESTOINSTALL)
 BYTEFILESTOINSTALL = \
 	$(CMOFILESTOINSTALL) \
@@ -532,7 +534,7 @@ clean::
 	$(HIDE)rm -f $(CMOFILES:.cmo=.o)
 	$(HIDE)rm -f $(CMXAFILES:.cmxa=.a)
 	$(HIDE)rm -f $(ALLDFILES)
-	$(HIDE)rm -f $(ALLNATIVEFILES)
+	$(HIDE)rm -f $(NATIVEFILES)
 	$(HIDE)find . -name .coq-native -type d -empty -delete
 	$(HIDE)rm -f $(VOFILES)
 	$(HIDE)rm -f $(VOFILES:.vo=.vio)
@@ -560,7 +562,7 @@ cleanall:: clean
 archclean::
 	@# Extension point
 	$(SHOW)'CLEAN *.cmx *.o'
-	$(HIDE)rm -f $(ALLNATIVEFILES)
+	$(HIDE)rm -f $(NATIVEFILES)
 	$(HIDE)rm -f $(CMOFILES:%.cmo=%.cmx)
 .PHONY: archclean
 
