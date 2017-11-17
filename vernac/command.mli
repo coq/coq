@@ -43,7 +43,7 @@ val do_definition : Id.t -> definition_kind -> lident list option ->
 (** returns [false] if the assumption is neither local to a section,
     nor in a module type and meant to be instantiated. *)
 val declare_assumption : coercion_flag -> assumption_kind -> 
-  types Univ.in_universe_context_set ->
+  types Univ.in_universe_context ->
   Universes.universe_binders -> Impargs.manual_implicits ->
   bool (** implicit *) -> Vernacexpr.inline -> variable Loc.located ->
   global_reference * Univ.Instance.t * bool
