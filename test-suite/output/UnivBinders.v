@@ -86,3 +86,16 @@ Module SomeFunct (In : SomeTyp).
 End SomeFunct.
 Module Applied := SomeFunct(SomeMod).
 Print Applied.infunct.
+
+(* Multi-axiom declaration
+
+   In polymorphic mode the domain Type gets separate universes for the
+   different axioms, but all axioms have to declare all universes. In
+   polymorphic mode they get the same universes, ie the type is only
+   interpd once. *)
+Axiom axfoo@{i+} axbar : Type -> Type@{i}.
+Monomorphic Axiom axfoo'@{i+} axbar' : Type -> Type@{i}.
+
+About axfoo. About axbar. About axfoo'. About axbar'.
+
+Fail Axiom failfoo failbar@{i} : Type.

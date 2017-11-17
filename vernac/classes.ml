@@ -412,15 +412,15 @@ let context poly l =
       in
       let impl = List.exists test impls in
       let decl = (Discharge, poly, Definitional) in
+      let univs = if poly
+        then Polymorphic_const_entry (Univ.ContextSet.to_context !uctx)
+        else Monomorphic_const_entry !uctx
+      in
       let nstatus = match b with
       | None ->
-        pi3 (Command.declare_assumption false decl (t, !uctx) Universes.empty_binders [] impl
+        pi3 (Command.declare_assumption false decl (t, univs) Universes.empty_binders [] impl
           Vernacexpr.NoInline (Loc.tag id))
       | Some b ->
-        let univs = if poly
-          then Polymorphic_const_entry (Univ.ContextSet.to_context !uctx)
-          else Monomorphic_const_entry !uctx
-        in
         let decl = (Discharge, poly, Definition) in
         let entry = Declare.definition_entry ~univs ~types:t b in
         let hook = Lemmas.mk_hook (fun _ gr -> gr) in

@@ -129,3 +129,27 @@ inmod@{u} -> Type@{v}
 (* u v |=  *)
 
 Applied.infunct is universe polymorphic
+axfoo@{i Top.33 Top.34} : Type@{Top.33} -> Type@{i}
+(* i Top.33 Top.34 |=  *)
+
+axfoo is universe polymorphic
+Argument scope is [type_scope]
+Expands to: Constant Top.axfoo
+axbar@{i Top.33 Top.34} : Type@{Top.34} -> Type@{i}
+(* i Top.33 Top.34 |=  *)
+
+axbar is universe polymorphic
+Argument scope is [type_scope]
+Expands to: Constant Top.axbar
+axfoo' : Type@{Top.36} -> Type@{i}
+
+axfoo' is not universe polymorphic
+Argument scope is [type_scope]
+Expands to: Constant Top.axfoo'
+axbar' : Type@{Top.36} -> Type@{i}
+
+axbar' is not universe polymorphic
+Argument scope is [type_scope]
+Expands to: Constant Top.axbar'
+The command has indeed failed with message:
+When declaring multiple axioms in one command, only the first is allowed a universe binder (which will be shared by the whole block).
