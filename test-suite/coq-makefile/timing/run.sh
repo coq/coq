@@ -41,6 +41,9 @@ for ext in "" .desired; do
     done
 done
 for file in time-of-build-before.log time-of-build-after.log time-of-build-both.log; do
+    echo "cat $file"
+    cat "$file"
+    echo
     diff -u $file.desired.processed $file.processed || exit $?
 done
 
@@ -56,6 +59,13 @@ make all TIMING=after -j2 || exit $?
 
 find ../per-file-before/ -name "*.before-timing" -exec 'cp' '{}' './' ';'
 make all.timing.diff -j2 || exit $?
+echo "cat A.v.before-timing"
+cat A.v.before-timing
+echo
+echo "cat A.v.after-timing"
+cat A.v.after-timing
+echo
+echo "cat A.v.timing.diff"
 cat A.v.timing.diff
 echo
 
