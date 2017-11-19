@@ -144,7 +144,7 @@ install-coq-manpages:
 
 install-emacs:
 	$(MKDIR) $(FULLEMACSLIB)
-	$(INSTALLLIB) tools/gallina-db.el tools/coq-font-lock.el tools/gallina-syntax.el tools/gallina.el tools/coq-inferior.el $(FULLEMACSLIB)
+	$(INSTALLLIB) tools/gallina-db.el tools/coq-font-lock.el tools/gallina-syntax.el tools/gallina.el tools/inferior-coq.el $(FULLEMACSLIB)
 
 # command to update TeX' kpathsea database
 #UPDATETEX = $(MKTEXLSR) /usr/share/texmf /var/spool/texmf $(BASETEXDIR) > /dev/null
