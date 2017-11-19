@@ -2,6 +2,8 @@
 .gitignore export-ignore
 .mailmap export-ignore
 
+*.out -whitespace
+
 *.asciidoc whitespace=trailing-space,tab-in-indent
 *.bat whitespace=cr-at-eol,trailing-space,tab-in-indent
 *.bib whitespace=trailing-space,tab-in-indent
