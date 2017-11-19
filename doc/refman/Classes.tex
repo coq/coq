@@ -462,11 +462,18 @@ abbreviate a type, like {\tt relation A := A -> A -> Prop}.
 
 This is equivalent to {\tt Hint Transparent,Opaque} {\ident} {\tt: typeclass\_instances}.
 
+\subsection{\tt Set Typeclasses Axioms Are Instances}
+\optindex{Typeclasses Axioms Are Instances}
+
+This option (off by default since 8.8) automatically declares axioms
+whose type is a typeclass at declaration time as instances of that
+class.
+
 \subsection{\tt Set Typeclasses Dependency Order}
 \optindex{Typeclasses Dependency Order}
 
 This option (on by default since 8.6) respects the dependency order between
-subgoals, meaning that subgoals which are depended on by other subgoals 
+subgoals, meaning that subgoals which are depended on by other subgoals
 come first, while the non-dependent subgoals were put before the
 dependent ones previously (Coq v8.5 and below). This can result in quite
 different performance behaviors of proof search.

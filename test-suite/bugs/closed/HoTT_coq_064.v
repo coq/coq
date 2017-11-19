@@ -178,6 +178,7 @@ Definition IsColimit `{Funext} C D (F : Functor D C)
 
 Generalizable All Variables.
 Axiom fs : Funext.
+Existing Instance fs.
 
 Section bar.
 

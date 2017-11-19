@@ -174,6 +174,24 @@ let do_definition ident k univdecl bl red_option c ctypopt hook =
 
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
+let axiom_into_instance = ref false
+
+let _ =
+  let open Goptions in
+  declare_bool_option
+    { optdepr = false;
+      optname = "automatically declare axioms whose type is a typeclass as instances";
+      optkey = ["Typeclasses";"Axioms";"Are";"Instances"];
+      optread = (fun _ -> !axiom_into_instance);
+      optwrite = (:=) axiom_into_instance; }
+
+let should_axiom_into_instance = function
+  | Discharge ->
+    (* The typeclass behaviour of Variable and Context doesn't depend
+       on section status *)
+    true
+  | Global | Local -> !axiom_into_instance
+
 let declare_assumption is_coe (local,p,kind) (c,ctx) pl imps impl nl (_,ident) =
 match local with
 | Discharge when Lib.sections_are_opened () ->
@@ -195,6 +213,7 @@ match local with
   (r,Univ.Instance.empty,true)
 
 | Global | Local | Discharge ->
+  let do_instance = should_axiom_into_instance local in
   let local = DeclareDef.get_locality ident ~kind:"axiom" local in
   let inl = match nl with
     | NoInline -> None
@@ -207,7 +226,7 @@ match local with
   let () = maybe_declare_manual_implicits false gr imps in
   let () = Universes.register_universe_binders gr pl in
   let () = assumption_message ident in
-  let () = Typeclasses.declare_instance None false gr in
+  let () = if do_instance then Typeclasses.declare_instance None false gr in
   let () = if is_coe then Class.try_add_new_coercion gr ~local p in
   let inst = match ctx with
     | Polymorphic_const_entry ctx -> Univ.UContext.instance ctx

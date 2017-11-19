@@ -15,3 +15,6 @@
    and breaks at least fiat-crypto. *)
 Declare ML Module "omega_plugin".
 Unset Omega UseLocalDefs.
+
+
+Set Typeclasses Axioms Are Instances.

@@ -65,6 +65,7 @@ Axiom path_iff_hprop_uncurried : forall `{IsHProp A, IsHProp B}, (A <-> B) -> A
 = B.
 Inductive V : Type@{U'} := | set {A : Type@{U}} (f : A -> V) : V.
 Axiom is0trunc_V : IsTrunc (trunc_S (trunc_S minus_two)) V.
+Existing Instance is0trunc_V.
 Axiom bisimulation : V@{U' U} -> V@{U' U} -> hProp@{U'}.
 Axiom bisimulation_refl : forall (v : V), bisimulation v v.
 Axiom bisimulation_eq : forall (u v : V), bisimulation u v -> u = v.
