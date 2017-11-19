@@ -482,6 +482,7 @@ sig
 
   type family = InProp | InSet | InType
   val family : t -> family
+  val univ_of_sort : t -> Univ.Universe.t
 end
 
 module Evar :
@@ -502,6 +503,7 @@ end
 
 module Constr :
 sig
+
   open Names
 
   type t
@@ -579,13 +581,13 @@ sig
   val kind : constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term
   val of_kind : (constr, types, Sorts.t, Univ.Instance.t) kind_of_term -> constr
 
-val map_with_binders :
-  ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
-val map : (constr -> constr) -> constr -> constr
+  val map_with_binders :
+    ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
+  val map : (constr -> constr) -> constr -> constr
 
-val fold : ('a -> constr -> 'a) -> 'a -> constr -> 'a
-val iter : (constr -> unit) -> constr -> unit
-val compare_head : (constr -> constr -> bool) -> constr -> constr -> bool
+  val fold : ('a -> constr -> 'a) -> 'a -> constr -> 'a
+  val iter : (constr -> unit) -> constr -> unit
+  val compare_head : (constr -> constr -> bool) -> constr -> constr -> bool
 
   val equal : t -> t -> bool
   val eq_constr_nounivs : t -> t -> bool
@@ -626,6 +628,109 @@ val compare_head : (constr -> constr -> bool) -> constr -> constr -> bool
   val mkConstructUi : pinductive * int -> t
 
   val mkCase : case_info * t * t * t array -> t
+
+  (** {6 Simple case analysis} *)
+  val isRel  : constr -> bool
+  val isRelN : int -> constr -> bool
+  val isVar  : constr -> bool
+  val isVarId : Id.t -> constr -> bool
+  val isInd  : constr -> bool
+  val isEvar : constr -> bool
+  val isMeta : constr -> bool
+  val isEvar_or_Meta : constr -> bool
+  val isSort : constr -> bool
+  val isCast : constr -> bool
+  val isApp : constr -> bool
+  val isLambda : constr -> bool
+  val isLetIn : constr -> bool
+  val isProd : constr -> bool
+  val isConst : constr -> bool
+  val isConstruct : constr -> bool
+  val isFix : constr -> bool
+  val isCoFix : constr -> bool
+  val isCase : constr -> bool
+  val isProj : constr -> bool
+
+  val is_Prop : constr -> bool
+  val is_Set  : constr -> bool
+  val isprop : constr -> bool
+  val is_Type : constr -> bool
+  val iskind : constr -> bool
+  val is_small : Sorts.t -> bool
+
+  (** {6 Term destructors } *)
+  (** Destructor operations are partial functions and
+      @raise DestKO if the term has not the expected form. *)
+
+  exception DestKO
+
+  (** Destructs a de Bruijn index *)
+  val destRel : constr -> int
+
+  (** Destructs an existential variable *)
+  val destMeta : constr -> metavariable
+
+  (** Destructs a variable *)
+  val destVar : constr -> Id.t
+
+  (** Destructs a sort. [is_Prop] recognizes the sort {% \textsf{%}Prop{% }%}, whether
+      [isprop] recognizes both {% \textsf{%}Prop{% }%} and {% \textsf{%}Set{% }%}. *)
+  val destSort : constr -> Sorts.t
+
+  (** Destructs a casted term *)
+  val destCast : constr -> constr * cast_kind * constr
+
+  (** Destructs the product {% $ %}(x:t_1)t_2{% $ %} *)
+  val destProd : types -> Name.t * types * types
+
+  (** Destructs the abstraction {% $ %}[x:t_1]t_2{% $ %} *)
+  val destLambda : constr -> Name.t * types * constr
+
+  (** Destructs the let {% $ %}[x:=b:t_1]t_2{% $ %} *)
+  val destLetIn : constr -> Name.t * constr * types * constr
+
+  (** Destructs an application *)
+  val destApp : constr -> constr * constr array
+
+  (** Decompose any term as an applicative term; the list of args can be empty *)
+  val decompose_app : constr -> constr * constr list
+
+  (** Same as [decompose_app], but returns an array. *)
+  val decompose_appvect : constr -> constr * constr array
+
+  (** Destructs a constant *)
+  val destConst : constr -> Constant.t puniverses
+
+  (** Destructs an existential variable *)
+  val destEvar : constr -> existential
+
+  (** Destructs a (co)inductive type *)
+  val destInd : constr -> inductive puniverses
+
+  (** Destructs a constructor *)
+  val destConstruct : constr -> constructor puniverses
+
+  (** Destructs a [match c as x in I args return P with ... |
+      Ci(...yij...) => ti | ... end] (or [let (..y1i..) := c as x in I args
+      return P in t1], or [if c then t1 else t2])
+      @return [(info,c,fun args x => P,[|...|fun yij => ti| ...|])]
+      where [info] is pretty-printing information *)
+  val destCase : constr -> case_info * constr * constr * constr array
+
+  (** Destructs a projection *)
+  val destProj : constr -> Projection.t * constr
+
+  (** Destructs the {% $ %}i{% $ %}th function of the block
+      [Fixpoint f{_ 1} ctx{_ 1} = b{_ 1}
+      with    f{_ 2} ctx{_ 2} = b{_ 2}
+      ...
+      with    f{_ n} ctx{_ n} = b{_ n}],
+      where the length of the {% $ %}j{% $ %}th context is {% $ %}ij{% $ %}.
+  *)
+  val destFix : constr -> fixpoint
+
+  type cofixpoint = int * rec_declaration
+  val destCoFix : constr -> cofixpoint
 
 end
 
@@ -1016,6 +1121,8 @@ sig
   val mkNamedProd : Names.Id.t -> types -> types -> types
 
   val decompose_app : constr -> constr * constr list
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
+
   val decompose_prod : constr -> (Names.Name.t*constr) list * constr
   val decompose_prod_n : int -> constr -> (Names.Name.t * constr) list * constr
   val decompose_prod_assum : types -> Context.Rel.t * types
@@ -1027,26 +1134,46 @@ sig
   val compose_lam : (Names.Name.t * constr) list -> constr -> constr
 
   val destSort : constr -> Sorts.t
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val destVar : constr -> Names.Id.t
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val destApp : constr -> constr * constr array
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val destProd : types -> Names.Name.t * types * types
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val destLetIn : constr -> Names.Name.t * constr * types * constr
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val destEvar : constr -> existential
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val destRel : constr -> int
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val destConst : constr -> Names.Constant.t puniverses
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val destCast : constr -> constr * cast_kind * constr
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val destLambda : constr -> Names.Name.t * types * constr
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
 
   val isRel : constr -> bool
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val isVar  : constr -> bool
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val isEvar : constr -> bool
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val isLetIn : constr -> bool
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val isLambda : constr -> bool
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val isConst : constr -> bool
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val isEvar_or_Meta : constr -> bool
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val isCast : constr -> bool
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val isMeta : constr -> bool
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val isApp : constr -> bool
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
 
   val fold_constr : ('a -> constr -> 'a) -> 'a -> constr -> 'a
   [@@ocaml.deprecated "Alias of Constr.fold"]
@@ -1060,7 +1187,7 @@ sig
   val it_mkLambda_or_LetIn : constr -> Context.Rel.t -> constr
   val it_mkProd_or_LetIn : types -> Context.Rel.t -> types
   val prod_applist : constr -> constr list -> constr
-  exception DestKO
+
   val map_constr : (constr -> constr) -> constr -> constr
   [@@ocaml.deprecated "Alias of Constr.map"]
 
@@ -1106,13 +1233,16 @@ sig
   [@@ocaml.deprecated "alias of Term.compare"]
 
   val destInd : constr -> Names.inductive puniverses
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val univ_of_sort : Sorts.t -> Univ.Universe.t
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
 
   val strip_lam : constr -> constr
   val strip_prod_assum : types -> types
 
   val decompose_lam_assum : constr -> Context.Rel.t * constr
   val destFix : constr -> fixpoint
+  [@@ocaml.deprecated "Alias for the function in [Constr]"]
 
   val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
   [@@ocaml.deprecated "Alias of Constr.compare_head."]

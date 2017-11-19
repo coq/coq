@@ -9,7 +9,6 @@
 open CErrors
 open Util
 open Names
-open Term
 open Constr
 open Termops
 open Environ
@@ -49,7 +48,7 @@ let _ = Goptions.declare_bool_option {
    "data.id.type" etc... *)
 let impossible_default_case () =
   let c, ctx = Universes.fresh_global_instance (Global.env()) (Globnames.ConstRef Coqlib.id) in
-  let (_, u) = Term.destConst c in
+  let (_, u) = Constr.destConst c in
   Some (c, Constr.mkConstU (Coqlib.type_of_id, u), ctx)
 
 let coq_unit_judge =

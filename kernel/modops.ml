@@ -266,9 +266,9 @@ let subst_structure subst = subst_structure subst do_delta_codom
 (* lclrk : retroknowledge_action list, rkaction : retroknowledge action *)
 let add_retroknowledge mp =
   let perform rkaction env = match rkaction with
-    |Retroknowledge.RKRegister (f, e) when (Term.isConst e || Term.isInd e) ->
+    | Retroknowledge.RKRegister (f, e) when (isConst e || isInd e) ->
       Environ.register env f e
-    |_ ->
+    | _ ->
       CErrors.anomaly ~label:"Modops.add_retroknowledge"
         (Pp.str "had to import an unsupported kind of term.")
   in

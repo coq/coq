@@ -12,7 +12,6 @@ open Evd
 open Names
 open Inductiveops
 open Declarations
-open Term
 open Constr
 open EConstr
 open Vars

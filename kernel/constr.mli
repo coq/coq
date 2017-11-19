@@ -225,6 +225,110 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
 val kind : constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term
 val of_kind : (constr, types, Sorts.t, Univ.Instance.t) kind_of_term -> constr
 
+(** {6 Simple case analysis} *)
+val isRel  : constr -> bool
+val isRelN : int -> constr -> bool
+val isVar  : constr -> bool
+val isVarId : Id.t -> constr -> bool
+val isInd  : constr -> bool
+val isEvar : constr -> bool
+val isMeta : constr -> bool
+val isEvar_or_Meta : constr -> bool
+val isSort : constr -> bool
+val isCast : constr -> bool
+val isApp : constr -> bool
+val isLambda : constr -> bool
+val isLetIn : constr -> bool
+val isProd : constr -> bool
+val isConst : constr -> bool
+val isConstruct : constr -> bool
+val isFix : constr -> bool
+val isCoFix : constr -> bool
+val isCase : constr -> bool
+val isProj : constr -> bool
+
+val is_Prop : constr -> bool
+val is_Set  : constr -> bool
+val isprop : constr -> bool
+val is_Type : constr -> bool
+val iskind : constr -> bool
+val is_small : Sorts.t -> bool
+
+(** {6 Term destructors } *)
+(** Destructor operations are partial functions and
+    @raise DestKO if the term has not the expected form. *)
+
+exception DestKO
+
+(** Destructs a de Bruijn index *)
+val destRel : constr -> int
+
+(** Destructs an existential variable *)
+val destMeta : constr -> metavariable
+
+(** Destructs a variable *)
+val destVar : constr -> Id.t
+
+(** Destructs a sort. [is_Prop] recognizes the sort {% \textsf{%}Prop{% }%}, whether
+   [isprop] recognizes both {% \textsf{%}Prop{% }%} and {% \textsf{%}Set{% }%}. *)
+val destSort : constr -> Sorts.t
+
+(** Destructs a casted term *)
+val destCast : constr -> constr * cast_kind * constr
+
+(** Destructs the product {% $ %}(x:t_1)t_2{% $ %} *)
+val destProd : types -> Name.t * types * types
+
+(** Destructs the abstraction {% $ %}[x:t_1]t_2{% $ %} *)
+val destLambda : constr -> Name.t * types * constr
+
+(** Destructs the let {% $ %}[x:=b:t_1]t_2{% $ %} *)
+val destLetIn : constr -> Name.t * constr * types * constr
+
+(** Destructs an application *)
+val destApp : constr -> constr * constr array
+
+(** Decompose any term as an applicative term; the list of args can be empty *)
+val decompose_app : constr -> constr * constr list
+
+(** Same as [decompose_app], but returns an array. *)
+val decompose_appvect : constr -> constr * constr array
+
+(** Destructs a constant *)
+val destConst : constr -> Constant.t puniverses
+
+(** Destructs an existential variable *)
+val destEvar : constr -> existential
+
+(** Destructs a (co)inductive type *)
+val destInd : constr -> inductive puniverses
+
+(** Destructs a constructor *)
+val destConstruct : constr -> constructor puniverses
+
+(** Destructs a [match c as x in I args return P with ... |
+Ci(...yij...) => ti | ... end] (or [let (..y1i..) := c as x in I args
+return P in t1], or [if c then t1 else t2])
+@return [(info,c,fun args x => P,[|...|fun yij => ti| ...|])]
+where [info] is pretty-printing information *)
+val destCase : constr -> case_info * constr * constr * constr array
+
+(** Destructs a projection *)
+val destProj : constr -> projection * constr
+
+(** Destructs the {% $ %}i{% $ %}th function of the block
+   [Fixpoint f{_ 1} ctx{_ 1} = b{_ 1}
+    with    f{_ 2} ctx{_ 2} = b{_ 2}
+    ...
+    with    f{_ n} ctx{_ n} = b{_ n}],
+   where the length of the {% $ %}j{% $ %}th context is {% $ %}ij{% $ %}.
+*)
+val destFix : constr -> fixpoint
+
+val destCoFix : constr -> cofixpoint
+
+(** {6 Equality} *)
+
 (** [equal a b] is true if [a] equals [b] modulo alpha, casts,
    and application grouping *)
 val equal : constr -> constr -> bool
@@ -344,7 +448,7 @@ val compare_head_gen_leq : (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) 
   (constr -> constr -> bool) ->
   (constr -> constr -> bool) ->
   constr -> constr -> bool
-  
+
 (** {6 Hashconsing} *)
 
 val hash : constr -> int

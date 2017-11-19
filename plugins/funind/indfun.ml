@@ -1,7 +1,8 @@
 open CErrors
+open Sorts
 open Util
 open Names
-open Term
+open Constr
 open EConstr
 open Pp
 open Indfun_common

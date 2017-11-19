@@ -1200,7 +1200,7 @@ module V82 = struct
    { Evd.it = comb ; sigma = solution }
 
   let top_goals initial { solution=solution; } =
-    let goals = CList.map (fun (t,_) -> fst (Term.destEvar (EConstr.Unsafe.to_constr t))) initial in
+    let goals = CList.map (fun (t,_) -> fst (Constr.destEvar (EConstr.Unsafe.to_constr t))) initial in
     { Evd.it = goals ; sigma=solution; }
 
   let top_evars initial =

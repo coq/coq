@@ -9,7 +9,6 @@
 open Equality
 open Names
 open Pp
-open Term
 open Constr
 open Termops
 open CErrors

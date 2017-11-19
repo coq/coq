@@ -29,20 +29,20 @@ let lookup_mind_specif env (kn,tyi) =
   (mib, mib.mind_packets.(tyi))
 
 let find_rectype env c =
-  let (t, l) = Term.decompose_app (whd_all env c) in
+  let (t, l) = decompose_app (whd_all env c) in
   match kind t with
   | Ind ind -> (ind, l)
   | _ -> raise Not_found
 
 let find_inductive env c =
-  let (t, l) = Term.decompose_app (whd_all env c) in
+  let (t, l) = decompose_app (whd_all env c) in
   match kind t with
     | Ind ind
         when (fst (lookup_mind_specif env (out_punivs ind))).mind_finite <> Decl_kinds.CoFinite -> (ind, l)
     | _ -> raise Not_found
 
 let find_coinductive env c =
-  let (t, l) = Term.decompose_app (whd_all env c) in
+  let (t, l) = decompose_app (whd_all env c) in
   match kind t with
     | Ind ind
         when (fst (lookup_mind_specif env (out_punivs ind))).mind_finite == Decl_kinds.CoFinite -> (ind, l)
@@ -354,7 +354,7 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
     let typi = full_constructor_instantiate (ind,u,specif,params) cty in
     let (cstrsign,ccl) = Term.decompose_prod_assum typi in
     let nargs = Context.Rel.length cstrsign in
-    let (_,allargs) = Term.decompose_app ccl in
+    let (_,allargs) = decompose_app ccl in
     let (lparams,vargs) = List.chop (inductive_params specif) allargs in
     let cargs =
       let cstr = ith_constructor_of_inductive ind (i+1) in
@@ -566,8 +566,8 @@ let check_inductive_codomain env p =
   let env = push_rel_context absctx env in
   let arctx, s = dest_prod_assum env ar in
   let env = push_rel_context arctx env in
-  let i,l' = Term.decompose_app (whd_all env s) in
-  Term.isInd i
+  let i,l' = decompose_app (whd_all env s) in
+  isInd i
 
 (* The following functions are almost duplicated from indtypes.ml, except
 that they carry here a poorer environment (containing less information). *)
@@ -621,7 +621,7 @@ close to check_positive in indtypes.ml, but does no positivity check and does no
 compute the number of recursive arguments. *)
 let get_recargs_approx env tree ind args =
   let rec build_recargs (env, ra_env as ienv) tree c =
-    let x,largs = Term.decompose_app (whd_all env c) in
+    let x,largs = decompose_app (whd_all env c) in
     match kind x with
     | Prod (na,b,d) ->
        assert (List.is_empty largs);
@@ -680,7 +680,7 @@ let get_recargs_approx env tree ind args =
 
   and build_recargs_constructors ienv trees c =
     let rec recargs_constr_rec (env,ra_env as ienv) trees lrec c =
-      let x,largs = Term.decompose_app (whd_all env c) in
+      let x,largs = decompose_app (whd_all env c) in
 	match kind x with
 
           | Prod (na,b,d) ->
@@ -709,7 +709,7 @@ let restrict_spec env spec p =
   let env = push_rel_context absctx env in
   let arctx, s = dest_prod_assum env ar in
   let env = push_rel_context arctx env in
-  let i,args = Term.decompose_app (whd_all env s) in
+  let i,args = decompose_app (whd_all env s) in
   match kind i with
   | Ind i ->
      begin match spec with
@@ -730,7 +730,7 @@ let restrict_spec env spec p =
 
 let rec subterm_specif renv stack t =
   (* maybe reduction is not always necessary! *)
-  let f,l = Term.decompose_app (whd_all renv.env t) in
+  let f,l = decompose_app (whd_all renv.env t) in
     match kind f with
     | Rel k -> subterm_var k renv
     | Case (ci,p,c,lbr) ->
@@ -863,7 +863,7 @@ let filter_stack_domain env ci p stack =
       let d = LocalAssum (n,a) in
       let ctx, a = dest_prod_assum env a in
       let env = push_rel_context ctx env in
-      let ty, args = Term.decompose_app (whd_all env a) in
+      let ty, args = decompose_app (whd_all env a) in
       let elt = match kind ty with
       | Ind ind -> 
         let spec' = stack_element_specif elt in
@@ -894,7 +894,7 @@ let check_one_fix renv recpos trees def =
     (* if [t] does not make recursive calls, it is guarded: *)
     if noccur_with_meta renv.rel_min nfi t then ()
     else
-      let (f,l) = Term.decompose_app (whd_betaiotazeta renv.env t) in
+      let (f,l) = decompose_app (whd_betaiotazeta renv.env t) in
       match kind f with
         | Rel p ->
             (* Test if [p] is a fixpoint (recursive call) *)
@@ -1120,7 +1120,7 @@ let rec codomain_is_coind env c =
 let check_one_cofix env nbfix def deftype =
   let rec check_rec_call env alreadygrd n tree vlra  t =
     if not (noccur_with_meta n nbfix t) then
-      let c,args = Term.decompose_app (whd_all env t) in
+      let c,args = decompose_app (whd_all env t) in
       match kind c with
 	| Rel p when  n <= p && p < n+nbfix ->
 	    (* recursive call: must be guarded and no nested recursive

@@ -8,7 +8,6 @@
 
 open Util
 open Names
-open Term
 open Constr
 open Vars
 open Mod_subst

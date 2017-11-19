@@ -1,7 +1,7 @@
 open Printer
 open CErrors
 open Util
-open Term
+open Constr
 open EConstr
 open Vars
 open Namegen

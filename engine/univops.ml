@@ -6,8 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Constr
 open Univ
+open Constr
 
 let universes_of_constr c =
   let rec aux s c = 
@@ -15,7 +15,7 @@ let universes_of_constr c =
     | Const (_, u) | Ind (_, u) | Construct (_, u) ->
       LSet.fold LSet.add (Instance.levels u) s
     | Sort u when not (Sorts.is_small u) -> 
-      let u = Term.univ_of_sort u in
+      let u = Sorts.univ_of_sort u in
       LSet.fold LSet.add (Universe.levels u) s
     | _ -> Constr.fold aux s c
   in aux LSet.empty c

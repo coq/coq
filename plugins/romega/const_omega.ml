@@ -7,7 +7,6 @@
  *************************************************************************)
 
 open Names
-open Term
 open Constr
 
 let module_refl_name = "ReflOmegaCore"

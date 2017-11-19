@@ -11,6 +11,7 @@ open Pp
 open CErrors
 open Names
 open Vars
+open Constr
 
 (**********************************************************************)
 (**         Redeclaration of types from module Constr                 *)
@@ -165,167 +166,52 @@ let hcons_types = Constr.hcons
 (*          Non primitive term destructors                            *)
 (**********************************************************************)
 
-(* Destructor operations : partial functions
-   Raise [DestKO] if the const has not the expected form *)
-
-exception DestKO
-
+exception DestKO = DestKO
 (* Destructs a de Bruijn index *)
-let destRel c = match kind_of_term c with
-  | Rel n -> n
-  | _ -> raise DestKO
-
-(* Destructs an existential variable *)
-let destMeta c = match kind_of_term c with
-  | Meta n -> n
-  | _ -> raise DestKO
-
-let isMeta c = match kind_of_term c with Meta _ -> true | _ -> false
-
-(* Destructs a variable *)
-let destVar c = match kind_of_term c with
-  | Var id -> id
-  | _ -> raise DestKO
-
-(* Destructs a type *)
-let isSort c = match kind_of_term c with
-  | Sort _ -> true
-  | _ -> false
-
-let destSort c = match kind_of_term c with
-  | Sort s -> s
-  | _ -> raise DestKO
-
-let rec isprop c = match kind_of_term c with
-  | Sort (Prop _) -> true
-  | Cast (c,_,_) -> isprop c
-  | _ -> false
-
-let rec is_Prop c = match kind_of_term c with
-  | Sort (Prop Null) -> true
-  | Cast (c,_,_) -> is_Prop c
-  | _ -> false
-
-let rec is_Set c = match kind_of_term c with
-  | Sort (Prop Pos) -> true
-  | Cast (c,_,_) -> is_Set c
-  | _ -> false
-
-let rec is_Type c = match kind_of_term c with
-  | Sort (Type _) -> true
-  | Cast (c,_,_) -> is_Type c
-  | _ -> false
-
-let is_small = Sorts.is_small
-
-let iskind c = isprop c || is_Type c
-
-(* Tests if an evar *)
-let isEvar c = match kind_of_term c with Evar _ -> true | _ -> false
-
-let isEvar_or_Meta c = match kind_of_term c with
-  | Evar _ | Meta _ -> true
-  | _ -> false
-
-(* Destructs a casted term *)
-let destCast c = match kind_of_term c with
-  | Cast (t1,k,t2) -> (t1,k,t2)
-  | _ -> raise DestKO
-
-let isCast c = match kind_of_term c with Cast _ -> true | _ -> false
-
-
-(* Tests if a de Bruijn index *)
-let isRel c = match kind_of_term c with Rel _ -> true | _ -> false
-let isRelN n c =
-  match kind_of_term c with Rel n' -> Int.equal n n' | _ -> false
-
-(* Tests if a variable *)
-let isVar c = match kind_of_term c with Var _ -> true | _ -> false
-let isVarId id c =
-  match kind_of_term c with Var id' -> Id.equal id id' | _ -> false
-
-(* Tests if an inductive *)
-let isInd c = match kind_of_term c with Ind _ -> true | _ -> false
-
-(* Destructs the product (x:t1)t2 *)
-let destProd c = match kind_of_term c with
-  | Prod (x,t1,t2) -> (x,t1,t2)
-  | _ -> raise DestKO
-
-let isProd c = match kind_of_term c with | Prod _ -> true | _ -> false
-
-(* Destructs the abstraction [x:t1]t2 *)
-let destLambda c = match kind_of_term c with
-  | Lambda (x,t1,t2) -> (x,t1,t2)
-  | _ -> raise DestKO
-
-let isLambda c = match kind_of_term c with | Lambda _ -> true | _ -> false
-
-(* Destructs the let [x:=b:t1]t2 *)
-let destLetIn c = match kind_of_term c with
-  | LetIn (x,b,t1,t2) -> (x,b,t1,t2)
-  | _ -> raise DestKO
-
-let isLetIn c =  match kind_of_term c with LetIn _ -> true | _ -> false
-
-(* Destructs an application *)
-let destApp c = match kind_of_term c with
-  | App (f,a) -> (f, a)
-  | _ -> raise DestKO
-
+let destRel = destRel
+let destMeta = destRel
+let isMeta = isMeta
+let destVar = destVar
+let isSort = isSort
+let destSort = destSort
+let isprop = isprop
+let is_Prop = is_Prop
+let is_Set = is_Set
+let is_Type = is_Type
+let is_small = is_small
+let iskind = iskind
+let isEvar = isEvar
+let isEvar_or_Meta = isEvar_or_Meta
+let destCast = destCast
+let isCast = isCast
+let isRel = isRel
+let isRelN = isRelN
+let isVar = isVar
+let isVarId = isVarId
+let isInd = isInd
+let destProd = destProd
+let isProd = isProd
+let destLambda = destLambda
+let isLambda = isLambda
+let destLetIn = destLetIn
+let isLetIn = isLetIn
+let destApp = destApp
 let destApplication = destApp
-
-let isApp c = match kind_of_term c with App _ -> true | _ -> false
-
-(* Destructs a constant *)
-let destConst c = match kind_of_term c with
-  | Const kn -> kn
-  | _ -> raise DestKO
-
-let isConst c = match kind_of_term c with Const _ -> true | _ -> false
-
-(* Destructs an existential variable *)
-let destEvar c = match kind_of_term c with
-  | Evar (kn, a as r) -> r
-  | _ -> raise DestKO
-
-(* Destructs a (co)inductive type named kn *)
-let destInd c = match kind_of_term c with
-  | Ind (kn, a as r) -> r
-  | _ -> raise DestKO
-
-(* Destructs a constructor *)
-let destConstruct c = match kind_of_term c with
-  | Construct (kn, a as r) -> r
-  | _ -> raise DestKO
-
-let isConstruct c = match kind_of_term c with Construct _ -> true | _ -> false
-
-(* Destructs a term <p>Case c of lc1 | lc2 .. | lcn end *)
-let destCase c = match kind_of_term c with
-  | Case (ci,p,c,v) -> (ci,p,c,v)
-  | _ -> raise DestKO
-
-let isCase c =  match kind_of_term c with Case _ -> true | _ -> false
-
-let isProj c =  match kind_of_term c with Proj _ -> true | _ -> false
-
-let destProj c = match kind_of_term c with
-  | Proj (p, c) -> (p, c)
-  | _ -> raise DestKO
-
-let destFix c = match kind_of_term c with
-  | Fix fix -> fix
-  | _ -> raise DestKO
-
-let isFix c =  match kind_of_term c with Fix _ -> true | _ -> false
-
-let destCoFix c = match kind_of_term c with
-  | CoFix cofix -> cofix
-  | _ -> raise DestKO
-
-let isCoFix c =  match kind_of_term c with CoFix _ -> true | _ -> false
+let isApp = isApp
+let destConst = destConst
+let isConst = isConst
+let destEvar = destEvar
+let destInd = destInd
+let destConstruct = destConstruct
+let isConstruct = isConstruct
+let destCase = destCase
+let isCase = isCase
+let isProj = isProj
+let destProj = destProj
+let destFix = destFix
+let isFix = isFix
+let destCoFix = destCoFix
+let isCoFix = isCoFix
 
 (******************************************************************)
 (* Flattening and unflattening of embedded applications and casts *)
