@@ -14,21 +14,11 @@ val dump_global : Libnames.reference or_by_notation -> unit
 val vernac_require :
   Libnames.reference option -> bool option -> Libnames.reference list -> unit
 
-type interp_state = { (* TODO: inline records in OCaml 4.03 *)
-  system  : States.state;        (* summary + libstack *)
-  proof   : Proof_global.state;  (* proof state *)
-  shallow : bool                 (* is the state trimmed down (libstack) *)
-}
-
-val freeze_interp_state : Summary.marshallable -> interp_state
-val unfreeze_interp_state : interp_state -> unit
-
 (** The main interpretation function of vernacular expressions *)
 val interp :
   ?verbosely:bool ->
   ?proof:Proof_global.closed_proof ->
-  interp_state ->
-    Vernacexpr.vernac_expr Loc.located -> interp_state
+  Vernacstate.t -> Vernacexpr.vernac_expr Loc.located -> Vernacstate.t
 
 (** Prepare a "match" template for a given inductive type.
     For each branch of the match, we list the constructor name
@@ -40,7 +30,7 @@ val make_cases : string -> string list list
 
 (* XXX STATE: this type hints that restoring the state should be the
    caller's responsibility *)
-val with_fail : interp_state -> bool -> (unit -> unit) -> unit
+val with_fail : Vernacstate.t -> bool -> (unit -> unit) -> unit
 
 val command_focus : unit Proof.focus_kind
 

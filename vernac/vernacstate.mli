@@ -6,19 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Interpretation of extended vernac phrases. *)
+type t = { (* TODO: inline records in OCaml 4.03 *)
+  system  : States.state;        (* summary + libstack *)
+  proof   : Proof_global.state;  (* proof state *)
+  shallow : bool                 (* is the state trimmed down (libstack) *)
+}
 
-type deprecation = bool
+val freeze_interp_state : Summary.marshallable -> t
+val unfreeze_interp_state : t -> unit
 
-type vernac_command = Genarg.raw_generic_argument list -> Loc.t option ->
-  Vernacstate.t -> Vernacstate.t
-
-val vinterp_add : deprecation -> Vernacexpr.extend_name -> vernac_command -> unit
-
-val overwriting_vinterp_add : Vernacexpr.extend_name -> vernac_command -> unit
-
-val vinterp_init : unit -> unit
-
-val call : ?locality:bool -> ?loc:Loc.t ->
-  Vernacexpr.extend_name * Genarg.raw_generic_argument list ->
-  Vernacstate.t -> Vernacstate.t
+(* WARNING: Do not use, it will go away in future releases *)
+val invalidate_cache : unit -> unit

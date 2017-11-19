@@ -550,11 +550,11 @@ type tcc_lemma_value =
   | Value of constr
   | Not_needed
 
-(* We only "purify" on exceptions *)
+(* We only "purify" on exceptions. XXX: What is this doing here? *)
 let funind_purify f x =
-  let st = Vernacentries.freeze_interp_state `No in
+  let st = Vernacstate.freeze_interp_state `No in
   try f x
   with e ->
     let e = CErrors.push e in
-    Vernacentries.unfreeze_interp_state st;
+    Vernacstate.unfreeze_interp_state st;
     Exninfo.iraise e

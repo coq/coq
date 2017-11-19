@@ -158,18 +158,26 @@ EXTEND
   deprecation:
     [ [ "DEPRECATED" -> () ] ]
   ;
-  (* spiwack: comment-by-guessing: it seems that the isolated string (which
-      otherwise could have been another argument) is not passed to the
-      VernacExtend interpreter function to discriminate between the clauses. *)
+  (* spiwack: comment-by-guessing: it seems that the isolated string
+      (which otherwise could have been another argument) is not passed
+      to the VernacExtend interpreter function to discriminate between
+      the clauses. *)
+
+  (* ejga: Due to the LocalityFixme abomination we cannot eta-expand
+      [e] as we'd like to, so we need to use the below mess with [fun
+      st -> st].
+
+      At some point We should solve the mess and extend
+      vernacextend.mlp with locality info. *)
   rule:
     [ [ "["; s = STRING; l = LIST0 args; "]";
         d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
       let () = if s = "" then failwith "Command name is empty." in
-      let b = <:expr< fun loc -> $e$ >> in
+      let b = <:expr< fun loc -> ( let () = $e$ in fun st -> st ) >> in
       { r_head = Some s; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
       | "[" ; "-" ; l = LIST1 args ; "]" ;
         d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
-      let b = <:expr< fun loc -> $e$ >> in
+      let b = <:expr< fun loc -> ( let () = $e$ in fun st -> st ) >> in
       { r_head = None; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
     ] ]
   ;

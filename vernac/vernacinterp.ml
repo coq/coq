@@ -11,7 +11,8 @@ open Pp
 open CErrors
 
 type deprecation = bool
-type vernac_command = Genarg.raw_generic_argument list -> Loc.t option -> unit
+type vernac_command = Genarg.raw_generic_argument list -> Loc.t option ->
+  Vernacstate.t -> Vernacstate.t
 
 (* Table of vernac entries *)
 let vernac_tab =
@@ -66,8 +67,9 @@ let call ?locality ?loc (opn,converted_args) =
     let hunk = callback converted_args in
     phase := "Executing command";
     Locality.LocalityFixme.set locality;
-    hunk loc;
-    Locality.LocalityFixme.assert_consumed()
+    let res = hunk loc in
+    Locality.LocalityFixme.assert_consumed ();
+    res
   with
     | Drop -> raise Drop
     | reraise ->
