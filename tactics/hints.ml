@@ -1467,11 +1467,11 @@ let pr_hint_term sigma cl =
 (* print all hints that apply to the concl of the current goal *)
 let pr_applicable_hint () =
   let pts = Proof_global.give_me_the_proof () in
-  let glss = Proof.V82.subgoals pts in
-  match glss.Evd.it with
+  let glss,_,_,_,sigma = Proof.proof pts in
+  match glss with
   | [] -> CErrors.user_err Pp.(str "No focused goal.")
   | g::_ ->
-    pr_hint_term glss.Evd.sigma (Goal.V82.concl glss.Evd.sigma g)
+    pr_hint_term sigma (Goal.V82.concl sigma g)
 
 let pp_hint_mode = function
   | ModeInput -> str"+"

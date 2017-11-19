@@ -51,9 +51,8 @@ end
 
 let get_nth_V82_goal i =
   let p = Proof_global.give_me_the_proof () in
-  let { it=goals ; sigma = sigma; } = Proof.V82.subgoals p in
-  try
-          { it=(List.nth goals (i-1)) ; sigma=sigma; }
+  let goals,_,_,_,sigma = Proof.proof p in
+  try { it = List.nth goals (i-1) ; sigma }
   with Failure _ -> raise NoSuchGoal
 
 let get_goal_context_gen i =

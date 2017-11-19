@@ -4645,16 +4645,23 @@ sig
   type proof
   type 'a focus_kind
 
+  val proof : proof ->
+    Goal.goal list * (Goal.goal list * Goal.goal list) list *
+    Goal.goal list * Goal.goal list * Evd.evar_map
+
   val run_tactic : Environ.env ->
                    unit Proofview.tactic -> proof -> proof * (bool * Proofview_monad.Info.tree)
   val unshelve : proof -> proof
   val maximal_unfocus : 'a focus_kind -> proof -> proof
   val pr_proof : proof -> Pp.t
+
   module V82 :
   sig
     val grab_evars : proof -> proof
 
     val subgoals : proof -> Goal.goal list Evd.sigma
+    [@@ocaml.deprecated "Use the first and fifth argument of [Proof.proof]"]
+
   end
 end
 
