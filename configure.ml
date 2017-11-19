@@ -519,9 +519,6 @@ let check_caml_version () =
 
 let _ = check_caml_version ()
 
-let coq_debug_flag_opt =
-  if caml_version_nums >= [3;10] then coq_debug_flag else ""
-
 let camltag = match caml_version_list with
   | x::y::_ -> "OCAML"^x^y
   | _ -> assert false
@@ -1185,7 +1182,7 @@ let write_makefile f =
   pr "CFLAGS=%s\n\n" cflags;
   pr "# Compilation debug flags\n";
   pr "CAMLDEBUG=%s\n" coq_debug_flag;
-  pr "CAMLDEBUGOPT=%s\n\n" coq_debug_flag_opt;
+  pr "CAMLDEBUGOPT=%s\n\n" coq_debug_flag;
   pr "# Compilation profile flag\n";
   pr "CAMLTIMEPROF=%s\n\n" coq_profile_flag;
   pr "# Camlp4 : flavor, binaries, libraries ...\n";
