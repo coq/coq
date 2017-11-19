@@ -94,8 +94,8 @@ let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
   let rec aux bdvars l c = match CAst.(c.v) with
     | CRef (Ident (loc,id),_) -> found loc id bdvars l
     | CNotation ("{ _ : _ | _ }", ({ CAst.v = CRef (Ident (_, id),_) } :: _, [], [])) when not (Id.Set.mem id bdvars) ->
-	Topconstr.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux (Id.Set.add id bdvars) l c
-    | _ -> Topconstr.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux bdvars l c
+      Constrexpr_ops.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux (Id.Set.add id bdvars) l c
+    | _ -> Constrexpr_ops.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux bdvars l c
   in aux bound l c
 
 let ids_of_names l =

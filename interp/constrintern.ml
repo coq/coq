@@ -24,7 +24,6 @@ open Constrexpr
 open Constrexpr_ops
 open Notation_term
 open Notation_ops
-open Topconstr
 open Nametab
 open Notation
 open Inductiveops

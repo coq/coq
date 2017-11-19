@@ -396,7 +396,7 @@ let tag_var = tag Tag.variable
       extract_prod_binders c
     | { loc; v = CProdN ([[_,Name id],bk,t],
               { v = CCases (LetPatternStyle,None, [{ v = CRef (Ident (_,id'),None)},None,None],[(_,([_,[p]],b))])} ) }
-         when Id.equal id id' && not (Id.Set.mem id (Topconstr.free_vars_of_constr_expr b)) ->
+         when Id.equal id id' && not (Id.Set.mem id (free_vars_of_constr_expr b)) ->
       let bl,c = extract_prod_binders b in
       CLocalPattern (loc, (p,None)) :: bl, c
     | { loc; v = CProdN ((nal,bk,t)::bl,c) } ->
@@ -412,7 +412,7 @@ let tag_var = tag Tag.variable
       extract_lam_binders c
     | CLambdaN ([[_,Name id],bk,t],
                 { v = CCases (LetPatternStyle,None, [{ v = CRef (Ident (_,id'),None)},None,None],[(_,([_,[p]],b))])} )
-         when Id.equal id id' && not (Id.Set.mem id (Topconstr.free_vars_of_constr_expr b)) ->
+         when Id.equal id id' && not (Id.Set.mem id (free_vars_of_constr_expr b)) ->
       let bl,c = extract_lam_binders b in
       CLocalPattern (ce.loc,(p,None)) :: bl, c
     | CLambdaN ((nal,bk,t)::bl,c) ->
@@ -430,7 +430,7 @@ let tag_var = tag Tag.variable
   let rename na na' t c =
     match (na,na') with
       | (_,Name id), (_,Name id') ->
-        (na',t,Topconstr.replace_vars_constr_expr (Id.Map.singleton id id') c)
+        (na',t,replace_vars_constr_expr (Id.Map.singleton id id') c)
       | (_,Name id), (_,Anonymous) -> (na,t,c)
       | _ -> (na',t,c)
 

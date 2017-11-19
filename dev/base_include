@@ -130,7 +130,6 @@ open Reserve
 open Syntax_def
 open Constrexpr
 open Constrexpr_ops
-open Topconstr
 open Notation_term
 open Notation_ops
 open Prettyp

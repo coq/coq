@@ -21,7 +21,6 @@ open CAst
 open Constrexpr
 open Constrexpr_ops
 open Notation_ops
-open Topconstr
 open Glob_term
 open Glob_ops
 open Pattern
@@ -424,7 +423,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 	    with
 		Not_found | No_match | Exit ->
                   let c = extern_reference ?loc Id.Set.empty (ConstructRef cstrsp) in
-		  if !Topconstr.asymmetric_patterns then
+                  if !asymmetric_patterns then
 		    if pattern_printable_in_both_syntax cstrsp
 		    then CPatCstr (c, None, args)
 		    else CPatCstr (c, Some (add_patt_for_params (fst cstrsp) args), [])
@@ -456,7 +455,7 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
 		List.map (extern_cases_pattern_in_scope subscope vars) c)
 		substlist in
 	    let l2 = List.map (extern_cases_pattern_in_scope allscopes vars) more_args in
-	    let l2' = if !Topconstr.asymmetric_patterns || not (List.is_empty ll) then l2
+            let l2' = if !asymmetric_patterns || not (List.is_empty ll) then l2
 	      else
 		match drop_implicits_in_patt gr nb_to_drop l2 with
 		  |Some true_args -> true_args
@@ -472,7 +471,7 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
           extern_cases_pattern_in_scope (scopt,scl@scopes) vars c)
           subst in
       let l2 = List.map (extern_cases_pattern_in_scope allscopes vars) more_args in
-      let l2' = if !Topconstr.asymmetric_patterns then l2
+      let l2' = if !asymmetric_patterns then l2
 	else
 	  match drop_implicits_in_patt gr (nb_to_drop + List.length l1) l2 with
 	    |Some true_args -> true_args
