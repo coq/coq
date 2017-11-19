@@ -15,7 +15,7 @@ type vernac_command = Genarg.raw_generic_argument list -> Loc.t option -> unit
 
 (* Table of vernac entries *)
 let vernac_tab =
-  (Hashtbl.create 51 :
+  (Hashtbl.create 211 :
     (Vernacexpr.extend_name, deprecation * vernac_command) Hashtbl.t)
 
 let vinterp_add depr s f =
