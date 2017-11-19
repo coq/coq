@@ -87,6 +87,7 @@ sig
     val repr : t -> Id.t list
     val equal : t -> t -> bool
     val to_string : t -> string
+    val print : t -> Pp.t
   end
 
   module MBId : sig
@@ -1934,8 +1935,10 @@ sig
   val split_dirpath : Names.DirPath.t -> Names.DirPath.t * Names.Id.t
   val dirpath_of_string : string -> Names.DirPath.t
   val pr_dirpath : Names.DirPath.t -> Pp.t
+  [@@ocaml.deprecated "Alias for DirPath.print"]
 
   val string_of_path : full_path -> string
+
   val basename : full_path -> Names.Id.t
 
   type object_name = full_path * Names.KerName.t

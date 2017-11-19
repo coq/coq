@@ -203,13 +203,14 @@ let pr_name = print
 
 let pr_lab l = Label.print l
 
-let default_library = Names.DirPath.initial (* = ["Top"] *)
-
-(*s Roots of the space of absolute names *)
-let coq_string = "Coq"
-let coq_root = Id.of_string coq_string
-let default_root_prefix = DirPath.empty
-
 (* Metavariables *)
 let pr_meta = Pp.int
 let string_of_meta = string_of_int
+
+(* Deprecated *)
+open Libnames
+let default_library = default_library
+let coq_string = coq_string
+let coq_root = coq_root
+let default_root_prefix = default_root_prefix
+

@@ -152,7 +152,7 @@ let show_match id =
 (* "Print" commands *)
 
 let print_path_entry p =
-  let dir = pr_dirpath (Loadpath.logical p) in
+  let dir = DirPath.print (Loadpath.logical p) in
   let path = str (Loadpath.physical p) in
   Pp.hov 2 (dir ++ spc () ++ path)
 
@@ -175,9 +175,9 @@ let print_modules () =
   let loaded_opened = List.intersect DirPath.equal opened loaded
   and only_loaded = List.subtract DirPath.equal loaded opened in
   str"Loaded and imported library files: " ++
-  pr_vertical_list pr_dirpath loaded_opened ++ fnl () ++
+  pr_vertical_list DirPath.print loaded_opened ++ fnl () ++
   str"Loaded and not imported library files: " ++
-  pr_vertical_list pr_dirpath only_loaded
+  pr_vertical_list DirPath.print only_loaded
 
 
 let print_module r =
@@ -361,29 +361,29 @@ let locate_file f =
 let msg_found_library = function
   | Library.LibLoaded, fulldir, file ->
       Feedback.msg_info (hov 0
-	(pr_dirpath fulldir ++ strbrk " has been loaded from file " ++
+       (DirPath.print fulldir ++ strbrk " has been loaded from file " ++
 	 str file))
   | Library.LibInPath, fulldir, file ->
       Feedback.msg_info (hov 0
-	(pr_dirpath fulldir ++ strbrk " is bound to file " ++ str file))
+       (DirPath.print fulldir ++ strbrk " is bound to file " ++ str file))
 
 let err_unmapped_library ?loc ?from qid =
   let dir = fst (repr_qualid qid) in
   let prefix = match from with
   | None -> str "."
   | Some from ->
-    str " and prefix " ++ pr_dirpath from ++ str "."
+    str " and prefix " ++ DirPath.print from ++ str "."
   in
   user_err ?loc
     ~hdr:"locate_library"
     (strbrk "Cannot find a physical path bound to logical path matching suffix " ++
-       pr_dirpath dir ++ prefix)
+       DirPath.print dir ++ prefix)
 
 let err_notfound_library ?loc ?from qid =
   let prefix = match from with
   | None -> str "."
   | Some from ->
-    str " with prefix " ++ pr_dirpath from ++ str "."
+    str " with prefix " ++ DirPath.print from ++ str "."
   in
   user_err ?loc ~hdr:"locate_library"
      (strbrk "Unable to locate library " ++ pr_qualid qid ++ prefix)
@@ -893,7 +893,7 @@ let expand filename =
 
 let vernac_add_loadpath implicit pdir ldiropt =
   let pdir = expand pdir in
-  let alias = Option.default Nameops.default_root_prefix ldiropt in
+  let alias = Option.default Libnames.default_root_prefix ldiropt in
   Mltop.add_rec_path Mltop.AddTopML ~unix_path:pdir ~coq_root:alias ~implicit
 
 let vernac_remove_loadpath path =

@@ -14,7 +14,7 @@ open Libnames
 open Globnames
 open Nametab
 
-let coq = Nameops.coq_string (* "Coq" *)
+let coq = Libnames.coq_string (* "Coq" *)
 
 (************************************************************************)
 (* Generic functions to find Coq objects *)
@@ -32,7 +32,7 @@ let find_reference locstr dir s =
        of not found errors here *)
     user_err ~hdr:locstr
       Pp.(str "cannot find " ++ Libnames.pr_path sp ++
-          str "; maybe library " ++ Libnames.pr_dirpath dp ++
+          str "; maybe library " ++ DirPath.print dp ++
           str " has to be required first.")
 
 let coq_reference locstr dir s = find_reference locstr (coq::dir) s
@@ -52,14 +52,14 @@ let gen_reference_in_modules locstr dirs s =
     | [] ->
 	anomaly ~label:locstr (str "cannot find " ++ str s ++
 	str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
-	prlist_with_sep pr_comma pr_dirpath dirs ++ str ".")
+        prlist_with_sep pr_comma DirPath.print dirs ++ str ".")
     | l ->
       anomaly ~label:locstr
 	(str "ambiguous name " ++ str s ++ str " can represent " ++
 	   prlist_with_sep pr_comma
 	   (fun x -> Libnames.pr_path (Nametab.path_of_global x)) l ++
 	   str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
-	   prlist_with_sep pr_comma pr_dirpath dirs ++ str ".")
+           prlist_with_sep pr_comma DirPath.print dirs ++ str ".")
 
 (* For tactics/commands requiring vernacular libraries *)
 
@@ -79,7 +79,7 @@ let check_required_library d =
 *)
 (* or failing ...*)
       user_err ~hdr:"Coqlib.check_required_library"
-        (str "Library " ++ pr_dirpath dir ++ str " has to be required first.")
+        (str "Library " ++ DirPath.print dir ++ str " has to be required first.")
 
 (************************************************************************)
 (* Specific Coq objects *)

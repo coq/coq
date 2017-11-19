@@ -447,7 +447,7 @@ open Decl_kinds
     | PrintGrammar ent ->
       keyword "Print Grammar" ++ spc() ++ str ent
     | PrintLoadPath dir ->
-      keyword "Print LoadPath" ++ pr_opt pr_dirpath dir
+      keyword "Print LoadPath" ++ pr_opt DirPath.print dir
     | PrintModules ->
       keyword "Print Modules"
     | PrintMLLoadPath ->
@@ -518,7 +518,7 @@ open Decl_kinds
       in
       keyword cmd ++ spc() ++ pr_smart_global qid
     | PrintNamespace dp ->
-      keyword "Print Namespace" ++ pr_dirpath dp
+      keyword "Print Namespace" ++ DirPath.print dp
     | PrintStrategy None ->
       keyword "Print Strategies"
     | PrintStrategy (Some qid) ->
@@ -964,7 +964,7 @@ open Decl_kinds
                keyword "LoadPath" ++ spc() ++ qs s ++
                (match d with
                  | None -> mt()
-                 | Some dir -> spc() ++ keyword "as" ++ spc() ++ pr_dirpath dir))
+                 | Some dir -> spc() ++ keyword "as" ++ spc() ++ DirPath.print dir))
         )
       | VernacRemoveLoadPath s ->
         return (keyword "Remove LoadPath" ++ qs s)

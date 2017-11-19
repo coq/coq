@@ -12,9 +12,8 @@ open Util
 
 open Names
 open Libnames
-open Nameops
-open Libobject
 open Lib
+open Libobject
 
 (************************************************************************)
 (*s Low-level interning/externing of libraries to files *)
@@ -132,7 +131,7 @@ let try_find_library dir =
   try find_library dir
   with Not_found ->
     user_err ~hdr:"Library.find_library"
-      (str "Unknown library " ++ pr_dirpath dir)
+      (str "Unknown library " ++ DirPath.print dir)
 
 let register_library_filename dir f =
   (* Not synchronized: overwrite the previous binding if one existed *)
@@ -331,7 +330,7 @@ let error_unmapped_dir qid =
   let prefix, _ = repr_qualid qid in
   user_err ~hdr:"load_absolute_library_from"
     (str "Cannot load " ++ pr_qualid qid ++ str ":" ++ spc () ++
-     str "no physical path bound to" ++ spc () ++ pr_dirpath prefix ++ fnl ())
+     str "no physical path bound to" ++ spc () ++ DirPath.print prefix ++ fnl ())
 
 let error_lib_not_found qid =
   user_err ~hdr:"load_absolute_library_from"
@@ -465,8 +464,8 @@ let rec intern_library (needed, contents) (dir, f) from =
   if not (DirPath.equal dir m.library_name) then
     user_err ~hdr:"load_physical_library"
       (str "The file " ++ str f ++ str " contains library" ++ spc () ++
-       pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
-       spc() ++ pr_dirpath dir);
+       DirPath.print m.library_name ++ spc () ++ str "and not library" ++
+       spc() ++ DirPath.print dir);
   Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
   m.library_digests, intern_library_deps (needed, contents) dir m f
 
@@ -477,9 +476,9 @@ and intern_library_deps libs dir m from =
 and intern_mandatory_library caller from libs (dir,d) =
   let digest, libs = intern_library libs (dir, None) (Some from) in
   if not (Safe_typing.digest_match ~actual:digest ~required:d) then
-    user_err (str "Compiled library " ++ pr_dirpath caller ++
+    user_err (str "Compiled library " ++ DirPath.print caller ++
     str " (in file " ++ str from ++ str ") makes inconsistent assumptions \
-    over library " ++ pr_dirpath dir);
+    over library " ++ DirPath.print dir);
   libs
 
 let rec_intern_library libs (dir, f) =
@@ -617,7 +616,7 @@ let check_coq_overwriting p id =
   let is_empty = match l with [] -> true | _ -> false in
   if not !Flags.boot && not is_empty && Id.equal (List.last l) coq_root then
     user_err 
-      (str "Cannot build module " ++ pr_dirpath p ++ str "." ++ Id.print id ++ str "." ++ spc () ++
+      (str "Cannot build module " ++ DirPath.print p ++ str "." ++ Id.print id ++ str "." ++ spc () ++
       str "it starts with prefix \"Coq\" which is reserved for the Coq library.")
 
 let start_library fo =
@@ -625,7 +624,7 @@ let start_library fo =
     try
       let lp = Loadpath.find_load_path (Filename.dirname fo) in
       Loadpath.logical lp
-    with Not_found -> Nameops.default_root_prefix
+    with Not_found -> Libnames.default_root_prefix
   in
   let file = Filename.chop_extension (Filename.basename fo) in
   let id = Id.of_string file in
@@ -665,7 +664,7 @@ let current_reexports () = !libraries_exports_list
 
 let error_recursively_dependent_library dir =
   user_err 
-    (strbrk "Unable to use logical name " ++ pr_dirpath dir ++
+    (strbrk "Unable to use logical name " ++ DirPath.print dir ++
      strbrk " to save current library because" ++
      strbrk " it already depends on a library of this name.")
 

@@ -13,7 +13,7 @@ open Names
 
 (**********************************************)
 
-let pr_dirpath sl = str (DirPath.to_string sl)
+let pr_dirpath sl = DirPath.print sl
 
 (*s Operations on dirpaths *)
 
@@ -231,6 +231,14 @@ let join_reference ns r =
   | Ident (_, id1), Ident (loc, id2) ->
     Qualid (loc, make_qualid
       (dirpath_of_string (Names.Id.to_string id1)) id2)
+
+(* Default paths *)
+let default_library = Names.DirPath.initial (* = ["Top"] *)
+
+(*s Roots of the space of absolute names *)
+let coq_string = "Coq"
+let coq_root = Id.of_string coq_string
+let default_root_prefix = DirPath.empty
 
 (* Deprecated synonyms *)
 

@@ -366,7 +366,7 @@ let pr_located_qualid = function
 	| DirModule (dir,_) -> "Module", dir
 	| DirClosedSection dir -> "Closed Section", dir
       in
-      str s ++ spc () ++ pr_dirpath dir
+      str s ++ spc () ++ DirPath.print dir
   | ModuleType mp ->
       str "Module Type" ++ spc () ++ pr_path (Nametab.path_of_modtype mp)
   | Other (obj, info) -> info.name obj
@@ -647,7 +647,7 @@ let gallina_print_library_entry env sigma with_values ent =
     | (oname,Lib.ClosedSection _) ->
         Some (str " >>>>>>> Closed Section " ++ pr_name oname)
     | (_,Lib.CompilingLibrary (dir,_)) ->
-	Some (str " >>>>>>> Library " ++ pr_dirpath dir)
+        Some (str " >>>>>>> Library " ++ DirPath.print dir)
     | (oname,Lib.OpenedModule _) ->
 	Some (str " >>>>>>> Module " ++ pr_name oname)
     | (oname,Lib.ClosedModule _) ->

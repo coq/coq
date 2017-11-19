@@ -89,6 +89,10 @@ module Name : sig
 
 end
 
+(** Metavariables *)
+val pr_meta : Constr.metavariable -> Pp.t
+val string_of_meta : Constr.metavariable -> string
+
 val out_name : Name.t -> Id.t
 [@@ocaml.deprecated "Same as [Name.get_id]"]
 
@@ -119,18 +123,16 @@ val pr_id : Id.t -> Pp.t
 val pr_lab : Label.t -> Pp.t
 [@@ocaml.deprecated "Same as [Names.Label.print]"]
 
-(** some preset paths *)
-
+(** Deprecated stuff to libnames *)
 val default_library : DirPath.t
+[@@ocaml.deprecated "Same as [Libnames.default_library]"]
 
-(** This is the root of the standard library of Coq *)
 val coq_root : module_ident (** "Coq" *)
+[@@ocaml.deprecated "Same as [Libnames.coq_root]"]
+
 val coq_string : string (** "Coq" *)
+[@@ocaml.deprecated "Same as [Libnames.coq_string]"]
 
-(** This is the default root prefix for developments which doesn't
-   mention a root *)
 val default_root_prefix : DirPath.t
+[@@ocaml.deprecated "Same as [Libnames.default_root_prefix]"]
 
-(** Metavariables *)
-val pr_meta : Constr.metavariable -> Pp.t
-val string_of_meta : Constr.metavariable -> string

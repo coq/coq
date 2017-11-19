@@ -65,7 +65,7 @@ let add_stdlib_path ~load_init ~unix_path ~coq_root ~with_ml =
 
 let add_userlib_path ~unix_path =
   Mltop.add_rec_path Mltop.AddRecML ~unix_path
-    ~coq_root:Nameops.default_root_prefix ~implicit:false
+    ~coq_root:Libnames.default_root_prefix ~implicit:false
 
 (* Options -I, -I-as, and -R of the command line *)
 let includes = ref []
@@ -80,7 +80,7 @@ let init_load_path ~load_init =
   let user_contrib = coqlib/"user-contrib" in
   let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)) in
   let coqpath = Envars.coqpath in
-  let coq_root = Names.DirPath.make [Nameops.coq_root] in
+  let coq_root = Names.DirPath.make [Libnames.coq_root] in
     (* NOTE: These directories are searched from last to first *)
     (* first, developer specific directory to open *)
     if Coq_config.local then
@@ -105,7 +105,7 @@ let init_load_path ~load_init =
     List.iter (fun s -> add_userlib_path ~unix_path:s) coqpath;
     (* then current directory (not recursively!) *)
     Mltop.add_ml_dir ".";
-    Loadpath.add_load_path "." Nameops.default_root_prefix ~implicit:false;
+    Loadpath.add_load_path "." Libnames.default_root_prefix ~implicit:false;
     (* additional loadpath, given with options -Q and -R *)
     List.iter
       (fun (unix_path, coq_root, implicit) ->
