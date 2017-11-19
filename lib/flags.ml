@@ -6,13 +6,17 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-let with_option o f x =
-  let old = !o in o:=true;
-   try let r = f x in if !o = true then o := old; r
-   with reraise ->
-     let reraise = Backtrace.add_backtrace reraise in
-     let () = o := old in
-     Exninfo.iraise reraise
+let with_modified_ref r nf f x =
+  let old_ref = !r in r := nf !r;
+  try let res = f x in r := old_ref; res
+  with reraise ->
+    let reraise = Backtrace.add_backtrace reraise in
+    r := old_ref;
+    Exninfo.iraise reraise
+
+let with_option o f x = with_modified_ref o (fun _ -> true) f x
+let without_option o f x = with_modified_ref o (fun _ -> false) f x
+let with_extra_values o l f x = with_modified_ref o (fun ol -> ol@l) f x
 
 let with_options ol f x =
   let vl = List.map (!) ol in
@@ -23,22 +27,6 @@ let with_options ol f x =
   with reraise ->
     let reraise = Backtrace.add_backtrace reraise in
     let () = List.iter2 (:=) ol vl in
-    Exninfo.iraise reraise
-
-let without_option o f x =
-  let old = !o in o:=false;
-  try let r = f x in if !o = false then o := old; r
-  with reraise ->
-    let reraise = Backtrace.add_backtrace reraise in
-    let () = o := old in
-    Exninfo.iraise reraise
-
-let with_extra_values o l f x =
-  let old = !o in o:=old@l;
-  try let r = f x in o := old; r
-  with reraise ->
-    let reraise = Backtrace.add_backtrace reraise in
-    let () = o := old in
     Exninfo.iraise reraise
 
 let boot = ref false

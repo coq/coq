@@ -185,18 +185,8 @@ let with_universes f = Flags.with_option print_universes f
 let with_meta_as_hole f = Flags.with_option print_meta_as_hole f
 let without_symbols f = Flags.with_option print_no_symbol f
 
-(* XXX: Where to put this in the library? Util maybe? *)
-let protect_ref r nf f x =
-  let old_ref = !r in
-  r := nf !r;
-  try let res = f x in r := old_ref; res
-  with reraise ->
-    let reraise = Backtrace.add_backtrace reraise in
-    r := old_ref;
-    Exninfo.iraise reraise
-
 let without_specific_symbols l =
-  protect_ref inactive_notations_table
+  Flags.with_modified_ref inactive_notations_table
     (fun tbl -> IRuleSet.(union (of_list l) tbl))
 
 (**********************************************************************)
