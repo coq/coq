@@ -35,13 +35,13 @@ module NamedDecl = Context.Named.Declaration
 type object_pr = {
   print_inductive           : MutInd.t -> Pp.t;
   print_constant_with_infos : Constant.t -> Pp.t;
-  print_section_variable    : variable -> Pp.t;
-  print_syntactic_def       : KerName.t -> Pp.t;
+  print_section_variable    : env -> Evd.evar_map -> variable -> Pp.t;
+  print_syntactic_def       : env -> KerName.t -> Pp.t;
   print_module              : bool -> ModPath.t -> Pp.t;
   print_modtype             : ModPath.t -> Pp.t;
-  print_named_decl          : Context.Named.Declaration.t -> Pp.t;
-  print_library_entry       : bool -> (object_name * Lib.node) -> Pp.t option;
-  print_context             : bool -> int option -> Lib.library_segment -> Pp.t;
+  print_named_decl          : env -> Evd.evar_map -> Context.Named.Declaration.t -> Pp.t;
+  print_library_entry       : env -> Evd.evar_map -> bool -> (object_name * Lib.node) -> Pp.t option;
+  print_context             : env -> Evd.evar_map -> bool -> int option -> Lib.library_segment -> Pp.t;
   print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.t;
   print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t;
 }
@@ -487,25 +487,25 @@ let gallina_print_typed_value_in_env env sigma (trm,typ) =
    the pretty-print of a proposition (P:(nat->nat)->Prop)(P [u]u)
    synthesizes the type nat of the abstraction on u *)
 
-let print_named_def name body typ =
-  let pbody = pr_lconstr body in
-  let ptyp = pr_ltype typ in
+let print_named_def env sigma name body typ =
+  let pbody = pr_lconstr_env env sigma body in
+  let ptyp = pr_ltype_env env sigma typ in
   let pbody = if isCast body then surround pbody else pbody in
   (str "*** [" ++ str name ++ str " " ++
      hov 0 (str ":=" ++ brk (1,2) ++ pbody ++ spc () ++
 	      str ":" ++ brk (1,2) ++ ptyp) ++
 	   str "]")
 
-let print_named_assum name typ =
-  str "*** [" ++ str name ++ str " : " ++ pr_ltype typ ++ str "]"
+let print_named_assum env sigma name typ =
+  str "*** [" ++ str name ++ str " : " ++ pr_ltype_env env sigma typ ++ str "]"
 
-let gallina_print_named_decl =
+let gallina_print_named_decl env sigma =
   let open Context.Named.Declaration in
   function
   | LocalAssum (id, typ) ->
-     print_named_assum (Id.to_string id) typ
+     print_named_assum env sigma (Id.to_string id) typ
   | LocalDef (id, body, typ) ->
-     print_named_def (Id.to_string id) body typ
+     print_named_def env sigma (Id.to_string id) body typ
 
 let assumptions_for_print lna =
   List.fold_right (fun na env -> add_name na env) lna empty_names_context
@@ -524,11 +524,11 @@ let gallina_print_inductive sp =
      print_inductive_implicit_args sp mipv @
      print_inductive_argument_scopes sp mipv)
 
-let print_named_decl id =
-  gallina_print_named_decl (Global.lookup_named id) ++ fnl ()
+let print_named_decl env sigma id =
+  gallina_print_named_decl env sigma (Global.lookup_named id) ++ fnl ()
 
-let gallina_print_section_variable id =
-  print_named_decl id ++
+let gallina_print_section_variable env sigma id =
+  print_named_decl env sigma id ++
   with_line_skip (print_name_infos (VarRef id))
 
 let print_body env evd = function
@@ -601,7 +601,7 @@ let gallina_print_constant_with_infos sp =
   print_constant true " = " sp ++
   with_line_skip (print_name_infos (ConstRef sp))
 
-let gallina_print_syntactic_def kn =
+let gallina_print_syntactic_def env kn =
   let qid = Nametab.shortest_qualid_of_syndef Id.Set.empty kn
   and (vars,a) = Syntax_def.search_syntactic_definition kn in
   let c = Notation_ops.glob_constr_of_notation_constr a in
@@ -612,16 +612,16 @@ let gallina_print_syntactic_def kn =
         spc () ++ str ":=") ++
      spc () ++
      Constrextern.without_specific_symbols
-       [Notation.SynDefRule kn] pr_glob_constr c)
+       [Notation.SynDefRule kn] (pr_glob_constr_env env) c)
 
-let gallina_print_leaf_entry with_values ((sp,kn as oname),lobj) =
+let gallina_print_leaf_entry env sigma with_values ((sp,kn as oname),lobj) =
   let sep = if with_values then " = " else " : "
   and tag = object_tag lobj in
     match (oname,tag) with
       | (_,"VARIABLE") ->
 	  (* Outside sections, VARIABLES still exist but only with universes
              constraints *)
-	  (try Some(print_named_decl (basename sp)) with Not_found -> None)
+          (try Some(print_named_decl env sigma (basename sp)) with Not_found -> None)
       | (_,"CONSTANT") ->
 	  Some (print_constant with_values sep (Constant.make1 kn))
       | (_,"INDUCTIVE") ->
@@ -637,11 +637,11 @@ let gallina_print_leaf_entry with_values ((sp,kn as oname),lobj) =
       (* To deal with forgotten cases... *)
       | (_,s) -> None
 
-let gallina_print_library_entry with_values ent =
+let gallina_print_library_entry env sigma with_values ent =
   let pr_name (sp,_) = Id.print (basename sp) in
   match ent with
     | (oname,Lib.Leaf lobj) ->
-	gallina_print_leaf_entry with_values (oname,lobj)
+        gallina_print_leaf_entry env sigma with_values (oname,lobj)
     | (oname,Lib.OpenedSection (dir,_)) ->
         Some (str " >>>>>>> Section " ++ pr_name oname)
     | (oname,Lib.ClosedSection _) ->
@@ -653,10 +653,10 @@ let gallina_print_library_entry with_values ent =
     | (oname,Lib.ClosedModule _) ->
         Some (str " >>>>>>> Closed Module " ++ pr_name oname)
 
-let gallina_print_context with_values =
+let gallina_print_context env sigma with_values =
   let rec prec n = function
     | h::rest when Option.is_empty n || Option.get n > 0 ->
-	(match gallina_print_library_entry with_values h with
+        (match gallina_print_library_entry env sigma with_values h with
 	  | None -> prec n rest
 	  | Some pp -> prec (Option.map ((+) (-1)) n) rest ++ pp ++ fnl ())
     | _ -> mt ()
@@ -718,10 +718,10 @@ let print_safe_judgment env sigma j =
 (*********************)
 (* *)
 
-let print_full_context () = print_context true None (Lib.contents ())
-let print_full_context_typ () = print_context false None (Lib.contents ())
+let print_full_context env sigma = print_context env sigma true None (Lib.contents ())
+let print_full_context_typ env sigma = print_context env sigma false None (Lib.contents ())
 
-let print_full_pure_context () =
+let print_full_pure_context env sigma =
   let rec prec = function
   | ((_,kn),Lib.Leaf lobj)::rest ->
       let pp = match object_tag lobj with
@@ -733,15 +733,15 @@ let print_full_pure_context () =
 	    match cb.const_body with
 	      | Undef _ ->
 		str "Parameter " ++
-		print_basename con ++ str " : " ++ cut () ++ pr_ltype typ
+                print_basename con ++ str " : " ++ cut () ++ pr_ltype_env env sigma typ
 	      | OpaqueDef lc ->
 		str "Theorem " ++ print_basename con ++ cut () ++
-		str " : " ++ pr_ltype typ ++ str "." ++ fnl () ++
-		str "Proof " ++ pr_lconstr (Opaqueproof.force_proof (Global.opaque_tables ()) lc)
+                str " : " ++ pr_ltype_env env sigma typ ++ str "." ++ fnl () ++
+                str "Proof " ++ pr_lconstr_env env sigma (Opaqueproof.force_proof (Global.opaque_tables ()) lc)
 	      | Def c ->
 		str "Definition " ++ print_basename con ++ cut () ++
-		str "  : " ++ pr_ltype typ ++ cut () ++ str " := " ++
-		pr_lconstr (Mod_subst.force_constr c))
+                str "  : " ++ pr_ltype_env env sigma typ ++ cut () ++ str " := " ++
+                pr_lconstr_env env sigma (Mod_subst.force_constr c))
           ++ str "." ++ fnl () ++ fnl ()
       | "INDUCTIVE" ->
 	  let mind = Global.mind_of_delta_kn kn in
@@ -787,18 +787,18 @@ let read_sec_context r =
   let cxt = Lib.contents () in
   List.rev (get_cxt [] cxt)
 
-let print_sec_context sec =
-  print_context true None (read_sec_context sec)
+let print_sec_context env sigma sec =
+  print_context env sigma true None (read_sec_context sec)
 
-let print_sec_context_typ sec =
-  print_context false None (read_sec_context sec)
+let print_sec_context_typ env sigma sec =
+  print_context env sigma false None (read_sec_context sec)
 
-let print_any_name = function
+let print_any_name env sigma = function
   | Term (ConstRef sp) -> print_constant_with_infos sp
   | Term (IndRef (sp,_)) -> print_inductive sp
   | Term (ConstructRef ((sp,_),_)) -> print_inductive sp
-  | Term (VarRef sp) -> print_section_variable sp
-  | Syntactic kn -> print_syntactic_def kn
+  | Term (VarRef sp) -> print_section_variable env sigma sp
+  | Syntactic kn -> print_syntactic_def env kn
   | Dir (DirModule(dirpath,(mp,_))) -> print_module (printable_body dirpath) mp
   | Dir _ -> mt ()
   | ModuleType mp -> print_modtype mp
@@ -807,22 +807,21 @@ let print_any_name = function
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
     let dir,str = repr_qualid qid in
     if not (DirPath.is_empty dir) then raise Not_found;
-    str |> Global.lookup_named |> print_named_decl
+    str |> Global.lookup_named |> print_named_decl env sigma
 
   with Not_found ->
     user_err
       ~hdr:"print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
-let print_name = function
+let print_name env sigma = function
   | ByNotation (loc,(ntn,sc)) ->
-      print_any_name
+      print_any_name env sigma
         (Term (Notation.interp_notation_as_global_reference ?loc (fun _ -> true)
                ntn sc))
   | AN ref ->
-      print_any_name (locate_any_name ref)
+      print_any_name env sigma (locate_any_name ref)
 
-let print_opaque_name qid =
-  let env = Global.env () in
+let print_opaque_name env sigma qid =
   match Nametab.global qid with
     | ConstRef cst ->
 	let cb = Global.lookup_constant cst in
@@ -840,9 +839,9 @@ let print_opaque_name qid =
         let open EConstr in
 	print_typed_value (mkConstruct cstr, ty)
     | VarRef id ->
-        env |> lookup_named id |> print_named_decl
+        env |> lookup_named id |> print_named_decl env sigma
 
-let print_about_any ?loc k =
+let print_about_any ?loc env sigma k =
   match k with
   | Term ref ->
     let rb = Reductionops.ReductionBehaviour.print ref in
@@ -858,23 +857,23 @@ let print_about_any ?loc k =
     | [],Notation_term.NRef ref -> Dumpglob.add_glob ?loc ref
     | _ -> () in
       v 0 (
-      print_syntactic_def kn ++ fnl () ++
+      print_syntactic_def env kn ++ fnl () ++
       hov 0 (str "Expands to: " ++ pr_located_qualid k))
   | Dir _ | ModuleType _ | Undefined _ ->
       hov 0 (pr_located_qualid k)
   | Other (obj, info) -> hov 0 (info.about obj)
 
-let print_about = function
+let print_about env sigma = function
   | ByNotation (loc,(ntn,sc)) ->
-      print_about_any ?loc
+      print_about_any ?loc env sigma
         (Term (Notation.interp_notation_as_global_reference ?loc (fun _ -> true)
                ntn sc))
   | AN ref ->
-      print_about_any ?loc:(loc_of_reference ref) (locate_any_name ref)
+      print_about_any ?loc:(loc_of_reference ref) env sigma (locate_any_name ref)
 
 (* for debug *)
-let inspect depth =
-  print_context false (Some depth) (Lib.contents ())
+let inspect env sigma depth =
+  print_context env sigma false (Some depth) (Lib.contents ())
 
 
 (*************************************************************************)
@@ -882,18 +881,20 @@ let inspect depth =
 
 open Classops
 
-let print_coercion_value v = pr_lconstr (get_coercion_value v)
+let print_coercion_value env sigma v = pr_lconstr_env env sigma (get_coercion_value v)
 
 let print_class i =
   let cl,_ = class_info_from_index i in
   pr_class cl
 
 let print_path ((i,j),p) =
+  let sigma, env = Pfedit.get_current_context () in
   hov 2 (
-    str"[" ++ hov 0 (prlist_with_sep pr_semicolon print_coercion_value p) ++
+    str"[" ++ hov 0 (prlist_with_sep pr_semicolon (print_coercion_value env sigma) p) ++
     str"] : ") ++
   print_class i ++ str" >-> " ++ print_class j
 
+(* XXX: This is suspicious!!! *)
 let _ = Classops.install_path_printer print_path
 
 let print_graph () =
@@ -902,8 +903,8 @@ let print_graph () =
 let print_classes () =
   pr_sequence pr_class (classes())
 
-let print_coercions () =
-  pr_sequence print_coercion_value (coercions())
+let print_coercions env sigma =
+  pr_sequence (print_coercion_value env sigma) (coercions())
 
 let index_of_class cl =
   try
@@ -925,11 +926,11 @@ let print_path_between cls clt =
   in
   print_path ((i,j),p)
 
-let print_canonical_projections () =
+let print_canonical_projections env sigma =
   prlist_with_sep fnl
     (fun ((r1,r2),o) -> pr_cs_pattern r2 ++
     str " <- " ++
-    pr_global r1 ++ str " ( " ++ pr_lconstr o.o_DEF ++ str " )")
+    pr_global r1 ++ str " ( " ++ pr_lconstr_env env sigma o.o_DEF ++ str " )")
     (canonical_projections ())
 
 (*************************************************************************)

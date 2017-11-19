@@ -31,8 +31,12 @@ type constr_expr_with_bindings = constr_expr with_bindings
 type glob_constr_with_bindings = Tacexpr.glob_constr_and_expr with_bindings
 type glob_constr_with_bindings_sign = interp_sign * Tacexpr.glob_constr_and_expr with_bindings
 
-let pr_glob_constr_with_bindings_sign _ _ _ (ge : glob_constr_with_bindings_sign) = Printer.pr_glob_constr (fst (fst (snd ge)))
-let pr_glob_constr_with_bindings _ _ _ (ge : glob_constr_with_bindings) = Printer.pr_glob_constr (fst (fst ge))
+let pr_glob_constr_with_bindings_sign _ _ _ (ge : glob_constr_with_bindings_sign) =
+  let _, env = Pfedit.get_current_context () in
+  Printer.pr_glob_constr_env env (fst (fst (snd ge)))
+let pr_glob_constr_with_bindings _ _ _ (ge : glob_constr_with_bindings) =
+  let _, env = Pfedit.get_current_context () in
+  Printer.pr_glob_constr_env env (fst (fst ge))
 let pr_constr_expr_with_bindings prc _ _ (ge : constr_expr_with_bindings) = prc (fst ge)
 let interp_glob_constr_with_bindings ist gl c = Tacmach.project gl , (ist, c)
 let glob_glob_constr_with_bindings ist l = Tacintern.intern_constr_with_bindings ist l
@@ -272,5 +276,7 @@ TACTIC EXTEND setoid_transitivity
 END
 
 VERNAC COMMAND EXTEND PrintRewriteHintDb CLASSIFIED AS QUERY
-  [ "Print" "Rewrite" "HintDb" preident(s) ] -> [ Feedback.msg_notice (Autorewrite.print_rewrite_hintdb s) ]
+  [ "Print" "Rewrite" "HintDb" preident(s) ] ->
+  [ let sigma, env = Pfedit.get_current_context () in
+    Feedback.msg_notice (Autorewrite.print_rewrite_hintdb env sigma s) ]
 END

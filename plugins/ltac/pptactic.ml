@@ -1243,6 +1243,15 @@ let make_constr_printer f c =
 
 let lift f a = Genprint.PrinterBasic (fun () -> f a)
 
+
+let pr_glob_constr_pptac c =
+  let _, env = Pfedit.get_current_context () in
+  pr_glob_constr_env env c
+
+let pr_lglob_constr_pptac c =
+  let _, env = Pfedit.get_current_context () in
+  pr_lglob_constr_env env c
+
 let () =
   let pr_bool b = if b then str "true" else str "false" in
   let pr_unit _ = str "()" in
@@ -1257,7 +1266,7 @@ let () =
   Genprint.register_print0
     wit_intro_pattern
     (Miscprint.pr_intro_pattern pr_constr_expr)
-    (Miscprint.pr_intro_pattern (fun (c,_) -> pr_glob_constr c))
+    (Miscprint.pr_intro_pattern (fun (c, _) -> pr_glob_constr_pptac c))
     pr_intro_pattern_env;
   Genprint.register_print0
     wit_clause_dft_concl
@@ -1267,46 +1276,46 @@ let () =
   ;
   Genprint.register_print0
     wit_constr
-    Ppconstr.pr_lconstr_expr
-    (fun (c, _) -> Printer.pr_lglob_constr c)
+    Ppconstr.pr_constr_expr
+    (fun (c, _) -> pr_glob_constr_pptac c)
     (make_constr_printer Printer.pr_econstr_n_env)
   ;
   Genprint.register_print0
     wit_uconstr
     Ppconstr.pr_constr_expr
-    (fun (c,_) -> Printer.pr_glob_constr c)
+    (fun (c, _) -> pr_glob_constr_pptac c)
     (make_constr_printer Printer.pr_closed_glob_n_env)
   ;
   Genprint.register_print0
     wit_open_constr
     Ppconstr.pr_constr_expr
-    (fun (c, _) -> Printer.pr_glob_constr c)
+    (fun (c, _) -> pr_glob_constr_pptac c)
     (make_constr_printer Printer.pr_econstr_n_env)
   ;
   Genprint.register_print0 wit_red_expr
     (pr_red_expr (pr_constr_expr, pr_lconstr_expr, pr_or_by_notation pr_reference, pr_constr_pattern_expr))
-    (pr_red_expr (pr_and_constr_expr pr_glob_constr, pr_and_constr_expr pr_lglob_constr, pr_or_var (pr_and_short_name pr_evaluable_reference), pr_pat_and_constr_expr pr_glob_constr))
+    (pr_red_expr (pr_and_constr_expr pr_glob_constr_pptac, pr_and_constr_expr pr_lglob_constr_pptac, pr_or_var (pr_and_short_name pr_evaluable_reference), pr_pat_and_constr_expr pr_glob_constr_pptac))
     pr_red_expr_env
   ;
   Genprint.register_print0 wit_quant_hyp pr_quantified_hypothesis pr_quantified_hypothesis (lift pr_quantified_hypothesis);
   Genprint.register_print0 wit_bindings
     (Miscprint.pr_bindings_no_with pr_constr_expr pr_lconstr_expr)
-    (Miscprint.pr_bindings_no_with (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
+    (Miscprint.pr_bindings_no_with (pr_and_constr_expr pr_glob_constr_pptac) (pr_and_constr_expr pr_lglob_constr_pptac))
     pr_bindings_env
   ;
   Genprint.register_print0 wit_constr_with_bindings
     (pr_with_bindings pr_constr_expr pr_lconstr_expr)
-    (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
+    (pr_with_bindings (pr_and_constr_expr pr_glob_constr_pptac) (pr_and_constr_expr pr_lglob_constr_pptac))
     pr_with_bindings_env
   ;
   Genprint.register_print0 wit_open_constr_with_bindings
     (pr_with_bindings pr_constr_expr pr_lconstr_expr)
-    (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
+    (pr_with_bindings (pr_and_constr_expr pr_glob_constr_pptac) (pr_and_constr_expr pr_lglob_constr_pptac))
     pr_with_bindings_env
   ;
   Genprint.register_print0 Tacarg.wit_destruction_arg
     (pr_destruction_arg pr_constr_expr pr_lconstr_expr)
-    (pr_destruction_arg (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
+    (pr_destruction_arg (pr_and_constr_expr pr_glob_constr_pptac) (pr_and_constr_expr pr_lglob_constr_pptac))
     pr_destruction_arg_env
   ;
   Genprint.register_print0 Stdarg.wit_int int int (lift int);

@@ -44,6 +44,10 @@ let observe_tac s tac g = observe_tac_stream (str s) tac g
   *)
 
 
+let pr_leconstr_fp =
+  let sigma, env = Pfedit.get_current_context () in
+  Printer.pr_leconstr_env env sigma
+
 let debug_queue = Stack.create ()
 
 let rec print_debug_queue e = 
@@ -172,7 +176,7 @@ let is_incompatible_eq sigma t =
 	| _ -> false
     with e when CErrors.noncritical e -> false
   in
-  if res then   observe (str "is_incompatible_eq " ++ Printer.pr_leconstr t);
+  if res then   observe (str "is_incompatible_eq " ++ pr_leconstr_fp t);
   res
 
 let change_hyp_with_using msg hyp_id t tac : tactic =
@@ -220,7 +224,8 @@ let find_rectype env sigma c =
 let isAppConstruct ?(env=Global.env ()) sigma t =
   try
     let t',l = find_rectype env sigma t in
-    observe (str "isAppConstruct : " ++ Printer.pr_leconstr t ++ str " -> " ++ Printer.pr_leconstr (applist  (t',l)));
+    observe (str "isAppConstruct : " ++ Printer.pr_leconstr_env env sigma t ++ str " -> " ++
+             Printer.pr_leconstr_env env sigma (applist  (t',l)));
     true
   with Not_found -> false
 
@@ -233,7 +238,8 @@ exception NoChange
 let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
   let nochange ?t' msg  =
     begin
-      observe (str ("Not treating ( "^msg^" )") ++ pr_leconstr t  ++ str "    " ++ match t' with None -> str "" | Some t -> Printer.pr_leconstr t );
+      observe (str ("Not treating ( "^msg^" )") ++ pr_leconstr_env env sigma t  ++ str "    " ++
+               match t' with None -> str "" | Some t -> Printer.pr_leconstr_env env sigma t );
       raise NoChange;
     end
   in
@@ -841,7 +847,7 @@ let build_proof
 	  | Rel _ -> anomaly (Pp.str "Free var in goal conclusion!")
   and build_proof do_finalize dyn_infos g =
 (*     observe (str "proving with "++Printer.pr_lconstr dyn_infos.info++ str " on goal " ++ pr_gls g); *)
-    observe_tac_stream (str "build_proof with " ++ Printer.pr_leconstr dyn_infos.info ) (build_proof_aux do_finalize dyn_infos) g
+    observe_tac_stream (str "build_proof with " ++ pr_leconstr_fp dyn_infos.info ) (build_proof_aux do_finalize dyn_infos) g
   and build_proof_args do_finalize dyn_infos (* f_args'  args *) :tactic =
     fun g ->
       let (f_args',args) = dyn_infos.info in
@@ -1135,7 +1141,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	       princ_params
 	    );
     observe (str "fbody_with_full_params := " ++
-	       pr_leconstr fbody_with_full_params
+               pr_leconstr_env (Global.env ()) !evd fbody_with_full_params
 	    );
     let all_funs_with_full_params =
       Array.map (fun f -> applist(f, List.rev_map var_of_decl full_params)) all_funs

@@ -103,6 +103,9 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) keyword = function
   | CbvNative o ->
     keyword "native_compute" ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern) keyword) o
 
+let pr_red_expr_env env sigma (pr_constr,pr_lconstr,pr_ref,pr_pattern) =
+  pr_red_expr (pr_constr env sigma, pr_lconstr env sigma, pr_ref, pr_pattern env sigma)
+
 let pr_or_by_notation f = function
   | AN v -> f v
   | ByNotation (_,(s,sc)) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc

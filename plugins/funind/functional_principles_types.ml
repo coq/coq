@@ -115,7 +115,9 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let dummy_var = mkVar (Id.of_string "________") in
   let mk_replacement c i args =
     let res = mkApp(rel_to_fun.(i), Array.map pop (array_get_start args)) in
-    observe (str "replacing " ++ pr_lconstr c ++ str " by "  ++ pr_lconstr res);
+    observe (str "replacing " ++
+             pr_lconstr_env env Evd.empty c ++ str " by "  ++
+             pr_lconstr_env env Evd.empty res);
     res
   in
   let rec compute_new_princ_type remove env pre_princ : types*(constr list) =
@@ -565,7 +567,7 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
       List.map (* we can now compute the other principles *)
 	(fun scheme_type ->
 	   incr i;
-	   observe (Printer.pr_lconstr scheme_type);
+           observe (Printer.pr_lconstr_env env sigma scheme_type);
 	   let type_concl = (strip_prod_assum scheme_type) in
 	   let applied_f = List.hd (List.rev (snd (decompose_app type_concl))) in
 	   let f = fst (decompose_app applied_f) in
@@ -577,8 +579,8 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
 		let g = fst (decompose_app applied_g) in
 		if Constr.equal f g
 		then raise (Found_type j);
-		observe (Printer.pr_lconstr f ++ str " <> " ++
-			   Printer.pr_lconstr g)
+                observe (Printer.pr_lconstr_env env sigma f ++ str " <> " ++
+                         Printer.pr_lconstr_env env sigma g)
 
 	     )
 	     ta;

@@ -46,7 +46,7 @@ let analyze_eliminator elimty env sigma =
     if not (EConstr.eq_constr sigma t t') then loop ctx t' else
       errorstrm Pp.(str"The eliminator has the wrong shape."++spc()++
       str"A (applied) bound variable was expected as the conclusion of "++
-      str"the eliminator's"++Pp.cut()++str"type:"++spc()++pr_econstr elimty) in
+      str"the eliminator's"++Pp.cut()++str"type:"++spc()++pr_econstr_env env' sigma elimty) in
   let ctx, pred_id, elim_is_dep, n_pred_args,concl = loop [] elimty in
   let n_elim_args = Context.Rel.nhyps ctx in
   let is_rec_elim = 
@@ -126,7 +126,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
     ppdebug(lazy Pp.(str"matching: " ++ pr_occ occ ++ pp_pattern p));
     let (c,ucst), cl =
       fill_occ_pattern ~raise_NoMatch:true env sigma0 (EConstr.Unsafe.to_constr cl) p occ h in
-    ppdebug(lazy Pp.(str"     got: " ++ pr_constr c));
+    ppdebug(lazy Pp.(str"     got: " ++ pr_constr_env env sigma0 c));
     c, EConstr.of_constr cl, ucst in
   let mkTpat gl t = (* takes a term, refreshes it and makes a T pattern *)
     let n, t, _, ucst = pf_abs_evars orig_gl (project gl, fire_subst gl t) in 
@@ -239,8 +239,8 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
       | Some (c, _, _,gl) -> true, gl
       | None ->
         errorstrm Pp.(str"Unable to apply the eliminator to the term"++
-          spc()++pr_econstr c++spc()++str"or to unify it's type with"++
-          pr_econstr inf_arg_ty) in
+          spc()++pr_econstr_env env (project gl) c++spc()++str"or to unify it's type with"++
+          pr_econstr_env env (project gl) inf_arg_ty) in
   ppdebug(lazy Pp.(str"c_is_head_p= " ++ bool c_is_head_p));
   let gl, predty = pfe_type_of gl pred in
   (* Patterns for the inductive types indexes to be bound in pred are computed

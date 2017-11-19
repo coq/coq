@@ -24,7 +24,7 @@ let pp_concat hd ?(sep=str", ") = function [] -> hd | x :: xs ->
   hd ++ List.fold_left (fun acc x -> acc ++ sep ++ x) x xs
 
 let pp_term gl t =
-  let t = Reductionops.nf_evar (project gl) t in pr_econstr t
+  let t = Reductionops.nf_evar (project gl) t in pr_econstr_env (pf_env gl) (project gl) t
 
 (* FIXME *)
 (* terms are pre constr, the kind is parsing/printing flag to distinguish

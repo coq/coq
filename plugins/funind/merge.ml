@@ -90,20 +90,28 @@ let next_ident_fresh (id:Id.t) =
 (* comment this line to see debug msgs *)
 let msg x = () ;; let pr_lconstr c = str ""
 (* uncomment this to see debugging *)
-let prconstr c =  msg (str"  " ++ Printer.pr_lconstr c)
-let prconstrnl c =  msg (str"  " ++ Printer.pr_lconstr c ++ str"\n")
+let prconstr c   =
+  let sigma, env = Pfedit.get_current_context () in
+  msg (str"  " ++ Printer.pr_lconstr_env env sigma c)
+
+let prconstrnl c =
+  let sigma, env = Pfedit.get_current_context () in
+  msg (str"  " ++ Printer.pr_lconstr_env env sigma c ++ str"\n")
+
 let prlistconstr lc = List.iter prconstr lc
 let prstr s = msg(str s)
 let prNamedConstr s c =
+  let sigma, env = Pfedit.get_current_context () in
   begin
     msg(str "");
-    msg(str(s^" {§ ") ++ Printer.pr_lconstr c ++ str " §} ");
+    msg(str(s^" {§ ") ++ Printer.pr_lconstr_env env sigma c ++ str " §} ");
     msg(str "");
   end
 let prNamedRConstr s c =
+  let sigma, env = Pfedit.get_current_context () in
   begin
     msg(str "");
-    msg(str(s^" {§ ") ++ Printer.pr_glob_constr c ++ str " §} ");
+    msg(str(s^" {§ ") ++ Printer.pr_glob_constr_env env c ++ str " §} ");
     msg(str "");
   end
 let prNamedLConstr_aux lc = List.iter (prNamedConstr "\n") lc

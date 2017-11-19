@@ -388,7 +388,7 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=
 	 Tacticals.New.tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl)
        else Tacticals.New.tclFAIL 0 (str"Unbound reference")
        end
-    | Extern tacast -> 
+    | Extern tacast ->
       conclPattern concl p tacast
   in
   let pr_hint () =
@@ -396,7 +396,8 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=
     | None -> mt ()
     | Some n -> str " (in " ++ str n ++ str ")"
     in
-    pr_hint t ++ origin
+    let sigma, env = Pfedit.get_current_context () in
+    pr_hint env sigma t ++ origin
   in
   tclLOG dbg pr_hint (run_hint t tactic)
 

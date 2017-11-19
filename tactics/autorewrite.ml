@@ -74,12 +74,12 @@ let find_matches bas pat =
   let res = HintDN.search_pattern base pat in
   List.map snd res
 
-let print_rewrite_hintdb bas =
+let print_rewrite_hintdb env sigma bas =
   (str "Database " ++ str bas ++ fnl () ++
 	   prlist_with_sep fnl
 	   (fun h ->
 	     str (if h.rew_l2r then "rewrite -> " else "rewrite <- ") ++
-	       Printer.pr_lconstr h.rew_lemma ++ str " of type " ++ Printer.pr_lconstr h.rew_type ++
+               Printer.pr_lconstr_env env sigma h.rew_lemma ++ str " of type " ++ Printer.pr_lconstr_env env sigma h.rew_type ++
 	       Option.cata (fun tac -> str " then use tactic " ++
 	       Pputils.pr_glb_generic (Global.env()) tac) (mt ()) h.rew_tac)
 	   (find_rewrites bas))

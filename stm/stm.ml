@@ -1931,9 +1931,10 @@ end = struct (* {{{ *)
           let open Notations in
           match Future.join f with
           | Some (pt, uc) ->
+            let sigma, env = Pfedit.get_current_context () in
             stm_pperr_endline (fun () -> hov 0 (
               str"g=" ++ int (Evar.repr gid) ++ spc () ++
-              str"t=" ++ (Printer.pr_constr pt) ++ spc () ++
+              str"t=" ++ (Printer.pr_constr_env env sigma pt) ++ spc () ++
               str"uc=" ++ Termops.pr_evar_universe_context uc));
             (if abstract then Tactics.tclABSTRACT None else (fun x -> x))
               (V82.tactic (Refiner.tclPUSHEVARUNIVCONTEXT uc) <*>

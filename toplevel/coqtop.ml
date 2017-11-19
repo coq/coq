@@ -844,8 +844,10 @@ let start () =
     exit 1
   | _ ->
     flush_all();
-    if !output_context then
-      Feedback.msg_notice Flags.(with_option raw_print Prettyp.print_full_pure_context () ++ fnl ());
+    if !output_context then begin
+      let sigma, env = Pfedit.get_current_context () in
+      Feedback.msg_notice (Flags.(with_option raw_print (Prettyp.print_full_pure_context env) sigma) ++ fnl ())
+    end;
     Profile.print_profile ();
     exit 0
 

@@ -66,3 +66,4 @@ val save_proof : ?proof:Proof_global.closed_proof -> Vernacexpr.proof_end -> uni
    and the current global env *)
 
 val get_current_context : unit -> Evd.evar_map * Environ.env
+[@@ocaml.deprecated "please use [Pfedit.get_current_context]"]

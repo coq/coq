@@ -851,7 +851,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	   EConstr.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt
 	 in
 	 let type_of_lemma = nf_zeta type_of_lemma in
-	 observe (str "type_of_lemma := " ++ Printer.pr_leconstr type_of_lemma);
+         observe (str "type_of_lemma := " ++ Printer.pr_leconstr_env env !evd type_of_lemma);
 	 type_of_lemma,type_info
 	)
 	funs_constr

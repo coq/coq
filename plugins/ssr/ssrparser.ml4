@@ -1131,7 +1131,7 @@ let pr_fwd_guarded prval prval' = function
 | (fk, h), (_, (_, Some c)) ->
   pr_gen_fwd prval pr_constr_expr prl_constr_expr fk (format_constr_expr h c)
 | (fk, h), (_, (c, None)) ->
-  pr_gen_fwd prval' pr_glob_constr prl_glob_constr fk (format_glob_constr h c)
+  pr_gen_fwd prval' pr_glob_constr_env prl_glob_constr fk (format_glob_constr h c)
 
 let pr_unguarded prc prlc = prlc
 

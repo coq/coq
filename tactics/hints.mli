@@ -260,14 +260,15 @@ val rewrite_db : hint_db_name
 
 (** Printing  hints *)
 
-val pr_searchtable : unit -> Pp.t
+val pr_searchtable : env -> evar_map -> Pp.t
 val pr_applicable_hint : unit -> Pp.t
-val pr_hint_ref : global_reference -> Pp.t
-val pr_hint_db_by_name : hint_db_name -> Pp.t
+val pr_hint_ref : env -> evar_map -> global_reference -> Pp.t
+val pr_hint_db_by_name : env -> evar_map -> hint_db_name -> Pp.t
+val pr_hint_db_env : env -> evar_map -> Hint_db.t -> Pp.t
 val pr_hint_db : Hint_db.t -> Pp.t
-val pr_hint : hint -> Pp.t
+[@@ocaml.deprecated "please used pr_hint_db_env"]
+val pr_hint : env -> evar_map -> hint -> Pp.t
 
 (** Hook for changing the initialization of auto *)
-
 val add_hints_init : (unit -> unit) -> unit
 

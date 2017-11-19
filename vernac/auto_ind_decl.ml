@@ -377,6 +377,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
   Proofview.Goal.enter begin fun gl ->
     let type_of_pq = Tacmach.New.pf_unsafe_type_of gl p in
     let sigma = Tacmach.New.project gl in
+    let env = Tacmach.New.pf_env gl in
     let u,v = destruct_ind sigma type_of_pq
     in let lb_type_of_p =
         try
@@ -389,7 +390,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
 	    (str "Leibniz->boolean:" ++
              str "You have to declare the" ++
 	     str "decidability over " ++
-	     Printer.pr_econstr type_of_pq ++
+             Printer.pr_econstr_env env sigma type_of_pq ++
 	     str " first.")
           in
           Tacticals.New.tclZEROMSG err_msg
@@ -442,6 +443,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
         Proofview.Goal.enter begin fun gl ->
         let tt1 = Tacmach.New.pf_unsafe_type_of gl t1 in
         let sigma = Tacmach.New.project gl in
+        let env = Tacmach.New.pf_env gl in
         if EConstr.eq_constr sigma t1 t2 then aux q1 q2
         else (
           let u,v = try  destruct_ind sigma tt1
@@ -461,7 +463,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
 	                                (str "boolean->Leibniz:" ++
                                          str "You have to declare the" ++
 			   	         str "decidability over " ++
-				         Printer.pr_econstr tt1 ++
+                                         Printer.pr_econstr_env env sigma tt1 ++
 				         str " first.")
 		 in
 		 user_err err_msg

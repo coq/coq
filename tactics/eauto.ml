@@ -178,7 +178,8 @@ and e_my_find_search sigma db_list local_db secvars hdc concl =
         | Extern tacast -> conclPattern concl p tacast
        in
        let tac = run_hint t tac in
-       (tac, lazy (pr_hint t)))
+       let sigma, env = Pfedit.get_current_context () in
+       (tac, lazy (pr_hint env sigma t)))
   in
   List.map tac_of_hint hintl
 

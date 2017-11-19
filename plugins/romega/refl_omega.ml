@@ -183,8 +183,9 @@ let print_env_reification env =
   let rec loop c i = function
       [] ->  str "  ===============================\n\n"
     | t :: l ->
+      let sigma, env = Pfedit.get_current_context () in
       let s = Printf.sprintf "(%c%02d)" c i in
-      spc () ++ str s ++ str " := " ++ Printer.pr_lconstr t ++ fnl () ++
+      spc () ++ str s ++ str " := " ++ Printer.pr_lconstr_env env sigma t ++ fnl () ++
       loop c (succ i) l
   in
   let prop_info = str "ENVIRONMENT OF PROPOSITIONS :" ++ fnl () ++ loop 'P' 0 env.props in

@@ -54,6 +54,10 @@ let coq_constant m s = EConstr.of_constr @@ Universes.constr_of_global @@
 let arith_Nat = ["Arith";"PeanoNat";"Nat"]
 let arith_Lt = ["Arith";"Lt"]
 
+let pr_leconstr_rd =
+  let sigma, env = Pfedit.get_current_context () in
+  Printer.pr_leconstr_env env sigma
+
 let coq_init_constant s =
   EConstr.of_constr (
     Universes.constr_of_global @@
@@ -337,7 +341,8 @@ let check_not_nested sigma forbidden e =
   try 
     check_not_nested e 
   with UserError(_,p) -> 
-    user_err ~hdr:"_" (str "on expr : " ++ Printer.pr_leconstr e ++ str " " ++ p)
+    let _, env = Pfedit.get_current_context () in
+    user_err ~hdr:"_" (str "on expr : " ++ Printer.pr_leconstr_env env sigma e ++ str " " ++ p)
 
 (* ['a info] contains the local information for traveling *)
 type 'a infos = 
@@ -455,7 +460,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) g =
 	  check_not_nested sigma (expr_info.f_id::expr_info.forbidden_ids) expr_info.info;
 	  jinfo.otherS () expr_info continuation_tac expr_info g
 	with e when CErrors.noncritical e ->
-	  user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr expr_info.info ++ str " can not contain a recursive call to " ++ Id.print expr_info.f_id)
+          user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr_env (pf_env g) sigma expr_info.info ++ str " can not contain a recursive call to " ++ Id.print expr_info.f_id)
       end
     | Lambda(n,t,b) -> 
       begin
@@ -463,7 +468,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) g =
 	  check_not_nested sigma (expr_info.f_id::expr_info.forbidden_ids) expr_info.info;
 	  jinfo.otherS () expr_info continuation_tac expr_info g
 	with e when CErrors.noncritical e ->
-	  user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr expr_info.info ++ str " can not contain a recursive call to " ++ Id.print expr_info.f_id)
+          user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr_env (pf_env g) sigma expr_info.info ++ str " can not contain a recursive call to " ++ Id.print expr_info.f_id)
       end
     | Case(ci,t,a,l) -> 
       begin
@@ -491,8 +496,8 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) g =
 	      jinfo.apP (f,args) expr_info continuation_tac in 
 	    travel_args jinfo
 	      expr_info.is_main_branch new_continuation_tac new_infos g
-	  | Case _ ->  user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr expr_info.info ++ str " can not contain an applied match (See Limitation in Section 2.3 of refman)")
-	  | _ -> anomaly (Pp.str "travel_aux : unexpected "++ Printer.pr_leconstr expr_info.info ++ Pp.str ".")
+          | Case _ ->  user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr_env (pf_env g) sigma expr_info.info ++ str " can not contain an applied match (See Limitation in Section 2.3 of refman)")
+          | _ -> anomaly (Pp.str "travel_aux : unexpected "++ Printer.pr_leconstr_env (pf_env g) sigma expr_info.info ++ Pp.str ".")
       end
     | Cast(t,_,_) -> travel jinfo continuation_tac {expr_info with info=t} g
     | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _ ->
@@ -515,7 +520,7 @@ and travel_args jinfo is_final continuation_tac infos =
 	{infos with info=arg;is_final=false} 
 and travel jinfo continuation_tac expr_info = 
   observe_tac 
-    (str jinfo.message ++ Printer.pr_leconstr expr_info.info) 
+    (str jinfo.message ++ pr_leconstr_rd expr_info.info)
     (travel_aux jinfo continuation_tac expr_info)
 
 (* Termination proof *) 
@@ -731,7 +736,7 @@ let terminate_case next_step (ci,a,t,l) expr_info continuation_tac infos g =
   let destruct_tac,rev_to_thin_intro = 
     mkDestructEq [expr_info.rec_arg_id] a' g in 
   let to_thin_intro = List.rev rev_to_thin_intro in 
-  observe_tac (str "treating cases (" ++ int (Array.length l) ++ str")" ++ spc () ++ Printer.pr_leconstr a') 
+  observe_tac (str "treating cases (" ++ int (Array.length l) ++ str")" ++ spc () ++ Printer.pr_leconstr_env (pf_env g) sigma a')
     (try
       (tclTHENS
 	 destruct_tac
@@ -740,7 +745,7 @@ let terminate_case next_step (ci,a,t,l) expr_info continuation_tac infos g =
     with 
       | UserError(Some "Refiner.thensn_tac3",_) 
       | UserError(Some "Refiner.tclFAIL_s",_) ->
-	(observe_tac (str "is computable " ++ Printer.pr_leconstr new_info.info) (next_step continuation_tac {new_info with info = nf_betaiotazeta new_info.info} )
+        (observe_tac (str "is computable " ++ Printer.pr_leconstr_env (pf_env g) sigma new_info.info) (next_step continuation_tac {new_info with info = nf_betaiotazeta new_info.info} )
 	))
     g
     
@@ -991,11 +996,11 @@ let rec intros_values_eq expr_info acc =
 let equation_others _ expr_info continuation_tac infos = 
   if expr_info.is_final && expr_info.is_main_branch 
   then 
-    observe_tac (str "equation_others (cont_tac +intros) " ++ Printer.pr_leconstr expr_info.info)
+    observe_tac (str "equation_others (cont_tac +intros) " ++ pr_leconstr_rd expr_info.info)
 		(tclTHEN 
       (continuation_tac infos) 
-      (observe_tac (str "intros_values_eq equation_others "  ++ Printer.pr_leconstr expr_info.info) (intros_values_eq expr_info [])))
-  else observe_tac (str "equation_others (cont_tac) " ++ Printer.pr_leconstr expr_info.info) (continuation_tac infos)
+      (observe_tac (str "intros_values_eq equation_others "  ++ pr_leconstr_rd expr_info.info) (intros_values_eq expr_info [])))
+  else observe_tac (str "equation_others (cont_tac) " ++ pr_leconstr_rd expr_info.info) (continuation_tac infos)
 
 let equation_app f_and_args expr_info continuation_tac infos = 
     if expr_info.is_final && expr_info.is_main_branch 
@@ -1419,7 +1424,7 @@ let com_terminate
     nb_args ctx
     hook =
   let start_proof ctx (tac_start:tactic) (tac_end:tactic) =
-    let (evmap, env) = Lemmas.get_current_context() in
+    let evmap, env = Pfedit.get_current_context () in
     Lemmas.start_proof thm_name
       (Global, false (* FIXME *), Proof Lemma) ~sign:(Environ.named_context_val env)
       ctx (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref)) hook;
@@ -1471,7 +1476,7 @@ let (com_eqn : int -> Id.t ->
 	| ConstRef c -> is_opaque_constant c
 	| _ -> anomaly ~label:"terminate_lemma" (Pp.str "not a constant.")
     in
-    let (evmap, env) = Lemmas.get_current_context() in
+    let evmap, env = Pfedit.get_current_context () in
     let evmap = Evd.from_ctx (Evd.evar_universe_context evmap) in
     let f_constr = constr_of_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in

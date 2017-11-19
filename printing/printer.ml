@@ -26,9 +26,6 @@ module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 module CompactedDecl = Context.Compacted.Declaration
 
-let get_current_context () =
-  Pfedit.get_current_context ()
-
 let enable_unfocused_goal_printing = ref false
 let enable_goal_tags_printing = ref false
 let enable_goal_names_printing = ref false
@@ -104,10 +101,10 @@ let pr_econstr_env env sigma c = pr_econstr_core false env sigma c
 
 (* NB do not remove the eta-redexes! Global.env() has side-effects... *)
 let pr_lconstr t =
-  let (sigma, env) = get_current_context () in
+  let (sigma, env) = Pfedit.get_current_context () in
   pr_lconstr_env env sigma t
 let pr_constr t =
-  let (sigma, env) = get_current_context () in
+  let (sigma, env) = Pfedit.get_current_context () in
   pr_constr_env env sigma t
 
 let pr_open_lconstr (_,c) = pr_lconstr c
@@ -127,10 +124,10 @@ let pr_constr_under_binders_env = pr_constr_under_binders_env_gen pr_econstr_env
 let pr_lconstr_under_binders_env = pr_constr_under_binders_env_gen pr_leconstr_env
 
 let pr_constr_under_binders c =
-  let (sigma, env) = get_current_context () in
+  let (sigma, env) = Pfedit.get_current_context () in
   pr_constr_under_binders_env env sigma c
 let pr_lconstr_under_binders c =
-  let (sigma, env) = get_current_context () in
+  let (sigma, env) = Pfedit.get_current_context () in
   pr_lconstr_under_binders_env env sigma c
 
 let pr_etype_core goal_concl_style env sigma t =
@@ -142,10 +139,10 @@ let pr_ltype_env env sigma c = pr_letype_core false env sigma (EConstr.of_constr
 let pr_type_env env sigma c = pr_etype_core false env sigma (EConstr.of_constr c)
 
 let pr_ltype t =
-    let (sigma, env) = get_current_context () in
+    let (sigma, env) = Pfedit.get_current_context () in
     pr_ltype_env env sigma t
 let pr_type t =
-    let (sigma, env) = get_current_context () in
+    let (sigma, env) = Pfedit.get_current_context () in
     pr_type_env env sigma t
 
 let pr_etype_env env sigma c = pr_etype_core false env sigma c
@@ -156,7 +153,7 @@ let pr_ljudge_env env sigma j =
   (pr_leconstr_env env sigma j.uj_val, pr_leconstr_env env sigma j.uj_type)
 
 let pr_ljudge j =
-  let (sigma, env) = get_current_context () in
+  let (sigma, env) = Pfedit.get_current_context () in
   pr_ljudge_env env sigma j
 
 let pr_lglob_constr_env env c =
@@ -165,10 +162,10 @@ let pr_glob_constr_env env c =
   pr_constr_expr (extern_glob_constr (Termops.vars_of_env env) c)
 
 let pr_lglob_constr c =
-  let (sigma, env) = get_current_context () in
+  let (sigma, env) = Pfedit.get_current_context () in
   pr_lglob_constr_env env c
 let pr_glob_constr c =
-  let (sigma, env) = get_current_context () in
+  let (sigma, env) = Pfedit.get_current_context () in
   pr_glob_constr_env env c
 
 let pr_closed_glob_n_env env sigma n c =
@@ -176,7 +173,7 @@ let pr_closed_glob_n_env env sigma n c =
 let pr_closed_glob_env env sigma c =
   pr_constr_expr (extern_closed_glob false env sigma c)
 let pr_closed_glob c =
-  let (sigma, env) = get_current_context () in
+  let (sigma, env) = Pfedit.get_current_context () in
   pr_closed_glob_env env sigma c
 
 let pr_lconstr_pattern_env env sigma c =
@@ -188,10 +185,10 @@ let pr_cases_pattern t =
   pr_cases_pattern_expr (extern_cases_pattern Names.Id.Set.empty t)
 
 let pr_lconstr_pattern t =
-  let (sigma, env) = get_current_context () in
+  let (sigma, env) = Pfedit.get_current_context () in
   pr_lconstr_pattern_env env sigma t
 let pr_constr_pattern t =
-  let (sigma, env) = get_current_context () in
+  let (sigma, env) = Pfedit.get_current_context () in
   pr_constr_pattern_env env sigma t
 
 let pr_sort sigma s = pr_glob_sort (extern_sort sigma s)
@@ -253,11 +250,11 @@ let safe_gen f env sigma c =
 let safe_pr_lconstr_env = safe_gen pr_lconstr_env
 let safe_pr_constr_env = safe_gen pr_constr_env
 let safe_pr_lconstr t =
-  let (sigma, env) = get_current_context () in
+  let (sigma, env) = Pfedit.get_current_context () in
   safe_pr_lconstr_env env sigma t
 
 let safe_pr_constr t =
-  let (sigma, env) = get_current_context () in
+  let (sigma, env) = Pfedit.get_current_context () in
   safe_pr_constr_env env sigma t
 
 let pr_universe_ctx sigma c =
@@ -788,7 +785,7 @@ let pr_goal     x = !printer_pr.pr_goal     x
 (* End abstraction layer                                              *)
 (**********************************************************************)
 
-let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
+let pr_open_subgoals ~proof =
   (* spiwack: it shouldn't be the job of the printer to look up stuff
      in the [evar_map], I did stuff that way because it was more
      straightforward, but seriously, [Proof.proof] should return
@@ -826,15 +823,13 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
      pr_subgoals ~pr_first:true None bsigma seeds shelf [] unfocused_if_needed bgoals_focused
   end
 
-let pr_nth_open_subgoal n =
-  let pf = Proof_global.give_me_the_proof () in
-  let gls,_,_,_,sigma = Proof.proof pf in
+let pr_nth_open_subgoal ~proof n =
+  let gls,_,_,_,sigma = Proof.proof proof in
   pr_subgoal n sigma gls
 
-let pr_goal_by_id id =
-  let p = Proof_global.give_me_the_proof () in
+let pr_goal_by_id ~proof id =
   try
-    Proof.in_proof p (fun sigma ->
+    Proof.in_proof proof (fun sigma ->
       let g = Evd.evar_key id sigma in
       pr_selected_subgoal (pr_id id) sigma g)
   with Not_found -> user_err Pp.(str "No such goal.")
@@ -916,7 +911,7 @@ let pr_assumptionset env s =
       with e when CErrors.noncritical e -> mt ()
     in
     let safe_pr_ltype_relctx (rctx, typ) =
-      let sigma, env = get_current_context () in
+      let sigma, env = Pfedit.get_current_context () in
       let env = Environ.push_rel_context rctx env in
       try str " " ++ pr_ltype_env env sigma typ
       with e when CErrors.noncritical e -> mt ()

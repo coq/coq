@@ -92,9 +92,7 @@ let jv_nf_betaiotaevar sigma jl =
 
 (** Printers *)
 
-let pr_lconstr c = quote (pr_lconstr c)
 let pr_lconstr_env e s c = quote (pr_lconstr_env e s c)
-let pr_leconstr c = quote (pr_leconstr c)
 let pr_leconstr_env e s c = quote (pr_leconstr_env e s c)
 let pr_ljudge_env e s c = let v,t = pr_ljudge_env e s c in (quote v,quote t)
 
@@ -1037,52 +1035,52 @@ let explain_typeclass_error env = function
 
 (* Refiner errors *)
 
-let explain_refiner_bad_type arg ty conclty =
+let explain_refiner_bad_type env sigma arg ty conclty =
   str "Refiner was given an argument" ++ brk(1,1) ++
-  pr_lconstr arg ++ spc () ++
-  str "of type" ++ brk(1,1) ++ pr_lconstr ty ++ spc () ++
-  str "instead of" ++ brk(1,1) ++ pr_lconstr conclty ++ str "."
+  pr_lconstr_env env sigma arg ++ spc () ++
+  str "of type" ++ brk(1,1) ++ pr_lconstr_env env sigma ty ++ spc () ++
+  str "instead of" ++ brk(1,1) ++ pr_lconstr_env env sigma conclty ++ str "."
 
 let explain_refiner_unresolved_bindings l =
   str "Unable to find an instance for the " ++
   str (String.plural (List.length l) "variable") ++ spc () ++
   prlist_with_sep pr_comma Name.print l ++ str"."
 
-let explain_refiner_cannot_apply t harg =
+let explain_refiner_cannot_apply env sigma t harg =
   str "In refiner, a term of type" ++ brk(1,1) ++
-  pr_lconstr t ++ spc () ++ str "could not be applied to" ++ brk(1,1) ++
-  pr_lconstr harg ++ str "."
+  pr_lconstr_env env sigma t ++ spc () ++ str "could not be applied to" ++ brk(1,1) ++
+  pr_lconstr_env env sigma harg ++ str "."
 
-let explain_refiner_not_well_typed c =
-  str "The term " ++ pr_lconstr c ++ str " is not well-typed."
+let explain_refiner_not_well_typed env sigma c =
+  str "The term " ++ pr_lconstr_env env sigma c ++ str " is not well-typed."
 
 let explain_intro_needs_product () =
   str "Introduction tactics needs products."
 
-let explain_does_not_occur_in c hyp =
-  str "The term" ++ spc () ++ pr_lconstr c ++ spc () ++
+let explain_does_not_occur_in env sigma c hyp =
+  str "The term" ++ spc () ++ pr_lconstr_env env sigma c ++ spc () ++
   str "does not occur in" ++ spc () ++ Id.print hyp ++ str "."
 
-let explain_non_linear_proof c =
-  str "Cannot refine with term" ++ brk(1,1) ++ pr_lconstr c ++
+let explain_non_linear_proof env sigma c =
+  str "Cannot refine with term" ++ brk(1,1) ++ pr_lconstr_env env sigma c ++
   spc () ++ str "because a metavariable has several occurrences."
 
-let explain_meta_in_type c =
-  str "In refiner, a meta appears in the type " ++ brk(1,1) ++ pr_leconstr c ++
+let explain_meta_in_type env sigma c =
+  str "In refiner, a meta appears in the type " ++ brk(1,1) ++ pr_leconstr_env env sigma c ++
   str " of another meta"
 
 let explain_no_such_hyp id =
   str "No such hypothesis: " ++ Id.print id
 
-let explain_refiner_error = function
-  | BadType (arg,ty,conclty) -> explain_refiner_bad_type arg ty conclty
+let explain_refiner_error env sigma = function
+  | BadType (arg,ty,conclty) -> explain_refiner_bad_type env sigma arg ty conclty
   | UnresolvedBindings t -> explain_refiner_unresolved_bindings t
-  | CannotApply (t,harg) -> explain_refiner_cannot_apply t harg
-  | NotWellTyped c -> explain_refiner_not_well_typed c
+  | CannotApply (t,harg) -> explain_refiner_cannot_apply env sigma t harg
+  | NotWellTyped c -> explain_refiner_not_well_typed env sigma c
   | IntroNeedsProduct -> explain_intro_needs_product ()
-  | DoesNotOccurIn (c,hyp) -> explain_does_not_occur_in c hyp
-  | NonLinearProof c -> explain_non_linear_proof c
-  | MetaInType c -> explain_meta_in_type c
+  | DoesNotOccurIn (c,hyp) -> explain_does_not_occur_in env sigma c hyp
+  | NonLinearProof c -> explain_non_linear_proof env sigma c
+  | MetaInType c -> explain_meta_in_type env sigma c
   | NoSuchHyp id -> explain_no_such_hyp id
 
 (* Inductive errors *)

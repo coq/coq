@@ -46,7 +46,7 @@ let functional_induction with_clean c princl pat =
 		  try find_Function_infos c'
 		  with Not_found ->
 		    user_err  (str "Cannot find induction information on "++
-				       Printer.pr_leconstr (mkConst c') )
+                                       Printer.pr_leconstr_env (Tacmach.pf_env g) sigma (mkConst c') )
 		in
 		match Tacticals.elimination_sort_of_goal g with
 		| InProp -> finfo.prop_lemma
@@ -74,7 +74,7 @@ let functional_induction with_clean c princl pat =
 		    (* mkConst(const_of_id princ_name ),g (\* FIXME *\) *)
 		  with Not_found -> (* This one is neither defined ! *)
 		    user_err  (str "Cannot find induction principle for "
-				     ++Printer.pr_leconstr (mkConst c') )
+                                     ++ Printer.pr_leconstr_env (Tacmach.pf_env g) sigma (mkConst c') )
 	      in
 	      let princ = EConstr.of_constr princ in
 	      (princ,NoBindings,Tacmach.pf_unsafe_type_of g' princ,g')
@@ -841,12 +841,13 @@ let rec get_args b t : Constrexpr.local_binder_expr list *
 let make_graph (f_ref:global_reference) =
   let c,c_body =
     match f_ref with
-      | ConstRef c ->
-	  begin try c,Global.lookup_constant c
-	  with Not_found ->
-	    raise (UserError (None,str "Cannot find " ++ Printer.pr_leconstr (mkConst c)) )
-	  end
-      | _ -> raise (UserError (None, str "Not a function reference") )
+    | ConstRef c ->
+      begin try c,Global.lookup_constant c
+        with Not_found ->
+          let sigma, env = Pfedit.get_current_context () in
+          raise (UserError (None,str "Cannot find " ++ Printer.pr_leconstr_env env sigma (mkConst c)) )
+      end
+    | _ -> raise (UserError (None, str "Not a function reference") )
   in
   (match Global.body_of_constant_body c_body with
      | None -> error "Cannot build a graph over an axiom!"

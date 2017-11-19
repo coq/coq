@@ -76,7 +76,8 @@ let process_vernac_interp_error exn = match fst exn with
   | Tacred.ReductionTacticError e ->
       wrap_vernac_error exn (Himsg.explain_reduction_tactic_error e)
   | Logic.RefinerError e ->
-      wrap_vernac_error exn (Himsg.explain_refiner_error e)
+    let sigma, env = Pfedit.get_current_context () in
+    wrap_vernac_error exn (Himsg.explain_refiner_error env sigma e)
   | Nametab.GlobalizationError q ->
       wrap_vernac_error exn
         (str "The reference" ++ spc () ++ Libnames.pr_qualid q ++
