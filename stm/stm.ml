@@ -25,14 +25,14 @@ open Vernacexpr
 
 (* Protect against state changes *)
 let stm_purify f x =
-  let st = Vernacentries.freeze_interp_state `No in
+  let st = Vernacstate.freeze_interp_state `No in
   try
     let res = f x in
-    Vernacentries.unfreeze_interp_state st;
+    Vernacstate.unfreeze_interp_state st;
     res
   with e ->
     let e = CErrors.push e in
-    Vernacentries.unfreeze_interp_state st;
+    Vernacstate.unfreeze_interp_state st;
     Exninfo.iraise e
 
 let execution_error ?loc state_id msg =
@@ -165,7 +165,7 @@ let summary_pstate = [ Evarutil.meta_counter_summary_name;
 type cached_state =
   | Empty
   | Error of Exninfo.iexn
-  | Valid of Vernacentries.interp_state
+  | Valid of Vernacstate.t
 
 type branch = Vcs_.Branch.t * branch_type Vcs_.branch_info
 type backup = { mine : branch; others : branch list }
@@ -735,16 +735,16 @@ module State : sig
   val exn_on : Stateid.t -> valid:Stateid.t -> Exninfo.iexn -> Exninfo.iexn
 
   (* to send states across worker/master *)
-  val get_cached : Stateid.t -> Vernacentries.interp_state
-  val same_env : Vernacentries.interp_state -> Vernacentries.interp_state -> bool
+  val get_cached : Stateid.t -> Vernacstate.t
+  val same_env : Vernacstate.t -> Vernacstate.t -> bool
 
   type proof_part
 
   type partial_state =
-    [ `Full of Vernacentries.interp_state
+    [ `Full of Vernacstate.t
     | `ProofOnly of Stateid.t * proof_part ]
 
-  val proof_part_of_frozen : Vernacentries.interp_state -> proof_part
+  val proof_part_of_frozen : Vernacstate.t -> proof_part
   val assign : Stateid.t -> partial_state -> unit
 
   (* Handlers for initial state, prior to document creation. *)
@@ -757,8 +757,6 @@ module State : sig
 
 end = struct (* {{{ *)
 
-  open Vernacentries
-
   (* cur_id holds Stateid.dummy in case the last attempt to define a state
    * failed, so the global state may contain garbage *)
   let cur_id = ref Stateid.dummy
@@ -768,15 +766,15 @@ end = struct (* {{{ *)
     Proof_global.state * Summary.frozen_bits (* only meta counters *)
 
   type partial_state =
-    [ `Full of Vernacentries.interp_state
+    [ `Full of Vernacstate.t
     | `ProofOnly of Stateid.t * proof_part ]
 
-  let proof_part_of_frozen { Vernacentries.proof; system } =
+  let proof_part_of_frozen { Vernacstate.proof; system } =
     proof,
     Summary.project_summary (States.summary_of_state system) summary_pstate
 
   let freeze marshallable id =
-    VCS.set_state id (Valid (Vernacentries.freeze_interp_state marshallable))
+    VCS.set_state id (Valid (Vernacstate.freeze_interp_state marshallable))
 
   let freeze_invalid id iexn = VCS.set_state id (Error iexn)
 
@@ -800,7 +798,7 @@ end = struct (* {{{ *)
   let install_cached id =
     match VCS.get_info id with
     | { state = Valid s } ->
-       Vernacentries.unfreeze_interp_state s;
+       Vernacstate.unfreeze_interp_state s;
        cur_id := id
 
     | { state = Error ie } ->
@@ -819,6 +817,7 @@ end = struct (* {{{ *)
     with VCS.Expired -> anomaly Pp.(str "not a cached state (expired).")
 
   let assign id what =
+    let open Vernacstate in
     if VCS.get_state id <> Empty then () else
     try match what with
     | `Full s ->
@@ -826,7 +825,7 @@ end = struct (* {{{ *)
            try
             let prev = (VCS.visit id).next in
             if is_cached_and_valid prev
-            then { s with Vernacentries.proof = 
+            then { s with proof =
               Proof_global.copy_terminators
                 ~src:(get_cached prev).proof ~tgt:s.proof }
             else s
@@ -854,7 +853,7 @@ end = struct (* {{{ *)
         execution_error ?loc id (iprint (e, info));
         (e, Stateid.add info ~valid id)
 
-  let same_env { system = s1 } { system = s2 } =
+  let same_env { Vernacstate.system = s1 } { Vernacstate.system = s2 } =
     let s1 = States.summary_of_state s1 in
     let e1 = Summary.project_summary s1 [Global.global_env_summary_name] in
     let s2 = States.summary_of_state s2 in
@@ -902,11 +901,11 @@ end = struct (* {{{ *)
   let init_state = ref None
 
   let register_root_state () =
-    init_state := Some (Vernacentries.freeze_interp_state `No)
+    init_state := Some (Vernacstate.freeze_interp_state `No)
 
   let restore_root_state () =
     cur_id := Stateid.dummy;
-    Vernacentries.unfreeze_interp_state (Option.get !init_state);
+    Vernacstate.unfreeze_interp_state (Option.get !init_state);
 
 end (* }}} *)
 
@@ -1001,7 +1000,7 @@ end
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 (* It is currently called 19 times, this number should be certainly
    reduced... *)
-let stm_vernac_interp ?proof ?route id st { verbose; loc; expr } : Vernacentries.interp_state =
+let stm_vernac_interp ?proof ?route id st { verbose; loc; expr } : Vernacstate.t =
   (* The Stm will gain the capability to interpret commmads affecting
      the whole document state, such as backtrack, etc... so we start
      to design the stm command interpreter now *)
@@ -1437,19 +1436,19 @@ end = struct (* {{{ *)
        * a bad fixpoint *)
       let fix_exn = Future.fix_exn_of future_proof in
       (* STATE: We use the current installed imperative state *)
-      let st = Vernacentries.freeze_interp_state `No in
+      let st = Vernacstate.freeze_interp_state `No in
       if not drop then begin
         let checked_proof = Future.chain future_proof (fun p ->
 
           (* Unfortunately close_future_proof and friends are not pure so we need
              to set the state manually here *)
-          Vernacentries.unfreeze_interp_state st;
+          Vernacstate.unfreeze_interp_state st;
           let pobject, _ =
             Proof_global.close_future_proof ~feedback_id:stop (Future.from_val ~fix_exn p) in
           let terminator = (* The one sent by master is an InvalidKey *)
             Lemmas.(standard_proof_terminator [] (mk_hook (fun _ _ -> ()))) in
 
-          let st = Vernacentries.freeze_interp_state `No in
+          let st = Vernacstate.freeze_interp_state `No in
           stm_vernac_interp stop
             ~proof:(pobject, terminator) st
             { verbose = false; loc; indentation = 0; strlen = 0;
@@ -1457,7 +1456,7 @@ end = struct (* {{{ *)
         ignore(Future.join checked_proof);
       end;
       (* STATE: Restore the state XXX: handle exn *)
-      Vernacentries.unfreeze_interp_state st;
+      Vernacstate.unfreeze_interp_state st;
       RespBuiltProof(proof,time)
     with
     | e when CErrors.noncritical e || e = Stack_overflow ->
@@ -1598,7 +1597,7 @@ end = struct (* {{{ *)
        * => takes nothing from the itermediate states.
        *)
       (* STATE We use the state resulting from reaching start. *)
-      let st = Vernacentries.freeze_interp_state `No in
+      let st = Vernacstate.freeze_interp_state `No in
       ignore(stm_vernac_interp stop ~proof st
         { verbose = false; loc; indentation = 0; strlen = 0;
           expr = (VernacEndProof (Proved (Opaque,None))) });
@@ -1855,7 +1854,7 @@ end = struct (* {{{ *)
          * => captures state id in a future closure, which will
            discard execution state but for the proof + univs.
         *)
-        let st = Vernacentries.freeze_interp_state `No in
+        let st = Vernacstate.freeze_interp_state `No in
         ignore(stm_vernac_interp r_state_fb st ast);
         let _,_,_,_,sigma = Proof.proof (Proof_global.give_me_the_proof ()) in
         match Evd.(evar_body (find sigma r_goal)) with
@@ -1895,7 +1894,7 @@ end = struct (* {{{ *)
         | VernacRedirect (_,(_,e)) -> find ~time ~fail e
         | VernacFail e -> find ~time ~fail:true e
         | e -> e, time, fail in find ~time:false ~fail:false e in
-    let st = Vernacentries.freeze_interp_state `No in
+    let st = Vernacstate.freeze_interp_state `No in
     Vernacentries.with_fail st fail (fun () ->
     (if time then System.with_time !Flags.time else (fun x -> x)) (fun () ->
     ignore(TaskQueue.with_n_workers nworkers (fun queue ->
@@ -1989,7 +1988,7 @@ end = struct (* {{{ *)
     VCS.print ();
     Reach.known_state ~cache:`No r_where;
     (* STATE *)
-    let st = Vernacentries.freeze_interp_state `No in
+    let st = Vernacstate.freeze_interp_state `No in
     try
       (* STATE SPEC:
        * - start: r_where
@@ -2204,7 +2203,7 @@ let known_state ?(redefine_qed=false) ~cache id =
              Proofview.give_up else Proofview.tclUNIT ()
               end in
            match (VCS.get_info base_state).state with
-           | Valid { Vernacentries.proof } ->
+           | Valid { Vernacstate.proof } ->
                Proof_global.unfreeze proof;
                Proof_global.with_current_proof (fun _ p ->
                  feedback ~id:id Feedback.AddedAxiom;
@@ -2214,7 +2213,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                 * - end  : maybe after recovery command.
                *)
                (* STATE: We use an updated state with proof *)
-               let st = Vernacentries.freeze_interp_state `No in
+               let st = Vernacstate.freeze_interp_state `No in
                Option.iter (fun expr -> ignore(stm_vernac_interp id st {
                   verbose = true; loc = None; expr; indentation = 0;
                   strlen = 0 } ))
@@ -2294,7 +2293,7 @@ let known_state ?(redefine_qed=false) ~cache id =
             resilient_tactic id cblock (fun () ->
               reach view.next;
               (* State resulting from reach *)
-              let st = Vernacentries.freeze_interp_state `No in
+              let st = Vernacstate.freeze_interp_state `No in
               ignore(stm_vernac_interp id st x)
             );
 	    if eff then update_global_env ()
@@ -2304,13 +2303,13 @@ let known_state ?(redefine_qed=false) ~cache id =
            | Flags.APon | Flags.APonLazy ->
              resilient_command reach view.next
            | Flags.APoff -> reach view.next);
-          let st = Vernacentries.freeze_interp_state `No in
+          let st = Vernacstate.freeze_interp_state `No in
           ignore(stm_vernac_interp id st x);
           if eff then update_global_env ()
         ), (if eff then `Yes else cache), true
       | `Fork ((x,_,_,_), None) -> (fun () ->
             resilient_command reach view.next;
-            let st = Vernacentries.freeze_interp_state `No in
+            let st = Vernacstate.freeze_interp_state `No in
             ignore(stm_vernac_interp id st x);
             wall_clock_last_fork := Unix.gettimeofday ()
           ), `Yes, true
@@ -2319,7 +2318,7 @@ let known_state ?(redefine_qed=false) ~cache id =
             reach view.next;
 
             (try
-               let st = Vernacentries.freeze_interp_state `No in
+               let st = Vernacstate.freeze_interp_state `No in
                ignore(stm_vernac_interp id st x);
             with e when CErrors.noncritical e ->
               let (e, info) = CErrors.push e in
@@ -2370,7 +2369,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                       Proof_global.close_future_proof ~feedback_id:id fp in
                     if not delegate then ignore(Future.compute fp);
                     reach view.next;
-                    let st = Vernacentries.freeze_interp_state `No in
+                    let st = Vernacstate.freeze_interp_state `No in
                     ignore(stm_vernac_interp id ~proof st x);
                     feedback ~id:id Incomplete
                 | { VCS.kind = `Master }, _ -> assert false
@@ -2379,7 +2378,7 @@ let known_state ?(redefine_qed=false) ~cache id =
               ), (if redefine_qed then `No else `Yes), true
           | `Sync (name, `Immediate) -> (fun () -> 
                 reach eop;
-                let st = Vernacentries.freeze_interp_state `No in
+                let st = Vernacstate.freeze_interp_state `No in
                 ignore(stm_vernac_interp id st x);
                 Proof_global.discard_all ()
               ), `Yes, true
@@ -2402,7 +2401,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                 if keep != VtKeepAsAxiom then
                   reach view.next;
                 let wall_clock2 = Unix.gettimeofday () in
-                let st = Vernacentries.freeze_interp_state `No in
+                let st = Vernacstate.freeze_interp_state `No in
                 ignore(stm_vernac_interp id ?proof st x);
                 let wall_clock3 = Unix.gettimeofday () in
                 Aux_file.record_in_aux_at ?loc:x.loc "proof_check_time"
@@ -2420,7 +2419,7 @@ let known_state ?(redefine_qed=false) ~cache id =
           aux (collect_proof keep (view.next, x) brname brinfo eop)
       | `Sideff (ReplayCommand x,_) -> (fun () ->
             reach view.next;
-            let st = Vernacentries.freeze_interp_state `No in
+            let st = Vernacstate.freeze_interp_state `No in
             ignore(stm_vernac_interp id st x);
             update_global_env ()
           ), cache, true
@@ -2689,7 +2688,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
       | VtQuery (false,route), VtNow ->
         let query_sid = VCS.cur_tip () in
         (try
-           let st = Vernacentries.freeze_interp_state `No in
+           let st = Vernacstate.freeze_interp_state `No in
            ignore(stm_vernac_interp ~route query_sid st x)
          with e ->
            let e = CErrors.push e in
@@ -2763,7 +2762,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
 
       (* Side effect on all branches *)
       | VtUnknown, _ when expr = VernacToplevelControl Drop ->
-        let st = Vernacentries.freeze_interp_state `No in
+        let st = Vernacstate.freeze_interp_state `No in
         ignore(stm_vernac_interp (VCS.get_branch_pos head) st x);
         `Ok
 
@@ -2791,7 +2790,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
             VCS.checkout VCS.Branch.master;
             let mid = VCS.get_branch_pos VCS.Branch.master in
             let _st' = Reach.known_state ~cache:(VCS.is_interactive ()) mid in
-            let st = Vernacentries.freeze_interp_state `No in
+            let st = Vernacstate.freeze_interp_state `No in
             ignore(stm_vernac_interp id st x);
             (* Vernac x may or may not start a proof *)
             if not in_proof && Proof_global.there_are_pending_proofs () then

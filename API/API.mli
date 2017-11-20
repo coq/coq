@@ -5929,14 +5929,30 @@ sig
     Names.Id.t
 end
 
+module Vernacstate :
+sig
+
+  type t = { (* TODO: inline records in OCaml 4.03 *)
+    system  : States.state;        (* summary + libstack *)
+    proof   : Proof_global.state;  (* proof state *)
+    shallow : bool                 (* is the state trimmed down (libstack) *)
+  }
+
+  (* XXX: This should not be exported *)
+  val freeze_interp_state : Summary.marshallable -> t
+  val unfreeze_interp_state : t -> unit
+
+end
+
 module Vernacinterp :
 sig
+
   type deprecation = bool
 
-  type vernac_command = Genarg.raw_generic_argument list -> Loc.t option -> unit
+  type vernac_command =
+    Genarg.raw_generic_argument list -> Loc.t option -> Vernacstate.t -> Vernacstate.t
 
-  val vinterp_add : deprecation -> Vernacexpr.extend_name ->
-    vernac_command -> unit
+  val vinterp_add : deprecation -> Vernacexpr.extend_name -> vernac_command -> unit
 
 end
 
@@ -5957,15 +5973,6 @@ end
 
 module Vernacentries :
 sig
-
-  type interp_state = { (* TODO: inline records in OCaml 4.03 *)
-    system  : States.state;        (* summary + libstack *)
-    proof   : Proof_global.state;  (* proof state *)
-    shallow : bool                 (* is the state trimmed down (libstack) *)
-  }
-
-  val freeze_interp_state : Summary.marshallable -> interp_state
-  val unfreeze_interp_state : interp_state -> unit
 
   val dump_global : Libnames.reference Misctypes.or_by_notation -> unit
   val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr ->
@@ -5998,7 +6005,7 @@ sig
   val get_doc : Feedback.doc_id -> doc
 
   val state_of_id : doc:doc ->
-    Stateid.t -> [ `Valid of Vernacentries.interp_state option | `Expired | `Error of exn ]
+    Stateid.t -> [ `Valid of Vernacstate.t option | `Expired | `Error of exn ]
 end
 
 (************************************************************************)

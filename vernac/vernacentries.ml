@@ -1909,7 +1909,7 @@ let vernac_load interp fname =
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
-let interp ?proof ?loc locality poly c =
+let interp ?proof ?loc locality poly st c =
   vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac c);
   match c with
   (* The below vernac are candidates for removal from the main type
@@ -2069,7 +2069,10 @@ let interp ?proof ?loc locality poly c =
   | VernacProofMode mn -> Proof_global.set_proof_mode mn [@ocaml.warning "-3"]
 
   (* Extensions *)
-  | VernacExtend (opn,args) -> Vernacinterp.call ?locality ?loc (opn,args)
+  | VernacExtend (opn,args) ->
+    (* XXX: Here we are returning the state! :) *)
+    let _st : Vernacstate.t = Vernacinterp.call ?locality ?loc (opn,args) st in
+    ()
 
 (* Vernaculars that take a locality flag *)
 let check_vernac_supports_locality c l =
@@ -2147,28 +2150,6 @@ let locate_if_not_already ?loc (e, info) =
 exception HasNotFailed
 exception HasFailed of Pp.t
 
-type interp_state = { (* TODO: inline records in OCaml 4.03 *)
-  system  : States.state;        (* summary + libstack *)
-  proof   : Proof_global.state;  (* proof state *)
-  shallow : bool                 (* is the state trimmed down (libstack) *)
-}
-
-let s_cache = ref (States.freeze ~marshallable:`No)
-let s_proof = ref (Proof_global.freeze ~marshallable:`No)
-
-let invalidate_cache () =
-  s_cache := Obj.magic 0;
-  s_proof := Obj.magic 0
-
-let freeze_interp_state marshallable =
-  { system = (s_cache := States.freeze ~marshallable; !s_cache);
-    proof  = (s_proof := Proof_global.freeze ~marshallable; !s_proof);
-    shallow = marshallable = `Shallow }
-
-let unfreeze_interp_state { system; proof } =
-  if (!s_cache != system) then (s_cache := system; States.unfreeze system);
-  if (!s_proof != proof)  then (s_proof := proof;  Proof_global.unfreeze proof)
-
 (* XXX STATE: this type hints that restoring the state should be the
    caller's responsibility *)
 let with_fail st b f =
@@ -2187,8 +2168,8 @@ let with_fail st b f =
                             (ExplainErr.process_vernac_interp_error ~allow_uncaught:false e)))
     with e when CErrors.noncritical e ->
       (* Restore the previous state XXX Careful here with the cache! *)
-      invalidate_cache ();
-      unfreeze_interp_state st;
+      Vernacstate.invalidate_cache ();
+      Vernacstate.unfreeze_interp_state st;
       let (e, _) = CErrors.push e in
       match e with
       | HasNotFailed ->
@@ -2230,8 +2211,8 @@ let interp ?(verbosely=true) ?proof st (loc,c) =
         try
           vernac_timeout begin fun () ->
           if verbosely
-            then Flags.verbosely (interp ?proof ?loc locality poly) c
-            else Flags.silently  (interp ?proof ?loc locality poly) c;
+            then Flags.verbosely (interp ?proof ?loc locality poly st) c
+            else Flags.silently  (interp ?proof ?loc locality poly st) c;
           if orig_program_mode || not !Flags.program_mode || isprogcmd then
             Flags.program_mode := orig_program_mode;
 	  ignore (Flags.use_polymorphic_flag ())
@@ -2252,7 +2233,9 @@ let interp ?(verbosely=true) ?proof st (loc,c) =
     if verbosely then Flags.verbosely (aux false) c
     else aux false c
 
+(* XXX: There is a bug here in case of an exception, see @gares
+   comments on the PR *)
 let interp ?verbosely ?proof st cmd =
-  unfreeze_interp_state st;
+  Vernacstate.unfreeze_interp_state st;
   interp ?verbosely ?proof st cmd;
-  freeze_interp_state `No
+  Vernacstate.freeze_interp_state `No

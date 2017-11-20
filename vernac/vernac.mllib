@@ -15,6 +15,7 @@ Command
 Classes
 Record
 Assumptions
+Vernacstate
 Vernacinterp
 Mltop
 Topfmt
