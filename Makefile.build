@@ -147,8 +147,14 @@ endif
 # For creating the missing .d, make will recursively build things like
 # coqdep_boot (for the .v.d files) or grammar.cma (for .ml4 -> .ml -> .ml.d).
 
+VDFILE := .vfiles
+MLDFILE := .mlfiles
+PLUGMLDFILE := plugins/.mlfiles
+MLLIBDFILE := .mllibfiles
+PLUGMLLIBDFILE := plugins/.mllibfiles
+
 DEPENDENCIES := \
- $(addsuffix .d, $(MLFILES) $(MLIFILES) $(MLLIBFILES) $(MLPACKFILES) $(CFILES) $(VFILES))
+ $(addsuffix .d, $(MLDFILE) $(MLLIBDFILE) $(PLUGMLDFILE) $(PLUGMLLIBDFILE) $(CFILES) $(VDFILE))
 
 -include $(DEPENDENCIES)
 
@@ -189,7 +195,7 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 COQOPTS=$(NATIVECOMPUTE)
 BOOTCOQC=$(TIMER) $(COQTOPBEST) -boot $(COQOPTS) -compile
 
-LOCALINCLUDES=$(if $(filter plugins/%,$<),-I lib -I API -open API $(addprefix -I plugins/,$(PLUGINDIRS)),$(addprefix -I ,$(SRCDIRS)))
+LOCALINCLUDES=$(if $(filter plugins/%,$@),-I lib -I API -open API $(addprefix -I plugins/,$(PLUGINDIRS)),$(addprefix -I ,$(SRCDIRS)))
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
 OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
@@ -197,7 +203,7 @@ OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 
 BYTEFLAGS=$(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=$(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS) $(FLAMBDA_FLAGS)
-DEPFLAGS=$(LOCALINCLUDES)$(if $(filter plugins/%,$<),, -I ide -I ide/utils)
+DEPFLAGS=$(LOCALINCLUDES)$(if $(filter plugins/%,$@),, -I ide -I ide/utils)
 
 # On MacOS, the binaries are signed, except our private ones
 ifeq ($(shell which codesign > /dev/null 2>&1 && echo $(ARCH)),Darwin)
@@ -670,21 +676,24 @@ plugins/%.cmx: plugins/%.ml
 # Ocamldep is now used directly again (thanks to -ml-synonym in OCaml >= 3.12)
 OCAMLDEP = $(OCAMLFIND) ocamldep -slash -ml-synonym .ml4 -ml-synonym .mlpack
 
-%.ml.d: $(D_DEPEND_BEFORE_SRC) %.ml $(D_DEPEND_AFTER_SRC) $(GENFILES)
-	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) "$<" $(TOTARGET)
+MAINMLFILES := $(filter-out checker/% plugins/%, $(MLFILES) $(MLIFILES))
+MAINMLLIBFILES := $(filter-out checker/% plugins/%, $(MLLIBFILES) $(MLPACKFILES))
 
-%.mli.d: $(D_DEPEND_BEFORE_SRC) %.mli $(D_DEPEND_AFTER_SRC) $(GENFILES)
-	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) "$<" $(TOTARGET)
+$(MLDFILE).d: $(D_DEPEND_BEFORE_SRC) $(MAINMLFILES) $(D_DEPEND_AFTER_SRC) $(GENFILES)
+	$(SHOW)'OCAMLDEP  MLFILES MLIFILES'
+	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $(MAINMLFILES) $(TOTARGET)
 
-%.mllib.d: $(D_DEPEND_BEFORE_SRC) %.mllib $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
-	$(SHOW)'OCAMLLIBDEP  $<'
-	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) "$<" $(TOTARGET)
+$(MLLIBDFILE).d: $(D_DEPEND_BEFORE_SRC) $(MAINMLLIBFILES) $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
+	$(SHOW)'OCAMLLIBDEP  MLLIBFILES MLPACKFILES'
+	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) $(MAINMLLIBFILES) $(TOTARGET)
 
-%.mlpack.d: $(D_DEPEND_BEFORE_SRC) %.mlpack $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
-	$(SHOW)'OCAMLLIBDEP  $<'
-	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) "$<" $(TOTARGET)
+$(PLUGMLDFILE).d: $(D_DEPEND_BEFORE_SRC) $(filter plugins/%, $(MLFILES) $(MLIFILES)) $(D_DEPEND_AFTER_SRC) $(GENFILES)
+	$(SHOW)'OCAMLDEP  plugins/MLFILES plugins/MLIFILES'
+	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $(filter plugins/%, $(MLFILES) $(MLIFILES)) $(TOTARGET)
+
+$(PLUGMLLIBDFILE).d: $(D_DEPEND_BEFORE_SRC) $(filter plugins/%, $(MLLIBFILES) $(MLPACKFILES)) $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
+	$(SHOW)'OCAMLLIBDEP  plugins/MLLIBFILES plugins/MLPACKFILES'
+	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) $(filter plugins/%, $(MLLIBFILES) $(MLPACKFILES)) $(TOTARGET)
 
 ###########################################################################
 # Compilation of .v files
@@ -756,9 +765,9 @@ endif
 
 # Dependencies of .v files
 
-%.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT)
-	$(SHOW)'COQDEP    $<'
-	$(HIDE)$(COQDEPBOOT) -boot $(DYNDEP) "$<" $(TOTARGET)
+$(VDFILE).d: $(D_DEPEND_BEFORE_SRC) $(VFILES) $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT)
+	$(SHOW)'COQDEP    VFILES'
+	$(HIDE)$(COQDEPBOOT) -boot $(DYNDEP) $(VFILES) $(TOTARGET)
 
 ###########################################################################
 
