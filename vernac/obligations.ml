@@ -678,6 +678,7 @@ let init_prog_info ?(opaque = false) sign n udecl b t ctx deps fixkind
 	      obl_deps = d; obl_tac = tac })
 	  obls, b
   in
+  let ctx = UState.make_flexible_nonalgebraic ctx in
     { prg_name = n ; prg_body = b; prg_type = reduce t; 
       prg_ctx = ctx; prg_univdecl = udecl;
       prg_obligations = (obls', Array.length obls');
@@ -841,6 +842,9 @@ let obligation_terminator name num guard hook auto pf =
       Inductiveops.control_only_guard (Global.env ()) body;
       (** Declare the obligation ourselves and drop the hook *)
       let prg = get_info (ProgMap.find name !from_prg) in
+      (** Ensure universes are substituted properly in body and type *)
+      let body = EConstr.to_constr sigma (EConstr.of_constr body) in
+      let ty = Option.map (fun x -> EConstr.to_constr sigma (EConstr.of_constr x)) ty in
       let ctx = Evd.evar_universe_context sigma in
       let prg = { prg with prg_ctx = ctx } in
       let obls, rem = prg.prg_obligations in
