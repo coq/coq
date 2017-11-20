@@ -194,7 +194,6 @@ module Prim :
     val ident : Id.t Gram.entry
     val name : Name.t located Gram.entry
     val identref : Id.t located Gram.entry
-    val pidentref : (Id.t located * (Id.t located list) option) Gram.entry
     val ident_decl : ident_decl Gram.entry
     val pattern_ident : Id.t Gram.entry
     val pattern_identref : Id.t located Gram.entry

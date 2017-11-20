@@ -138,7 +138,7 @@ let _ = Hook.set Constrexpr_ops.fresh_var_hook fresh_var
 (* Gallina declarations *)
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion
-    record_field decl_notation rec_definition pidentref ident_decl;
+    record_field decl_notation rec_definition ident_decl;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
@@ -227,9 +227,6 @@ GEXTEND Gram
   univ_constraint:
     [ [ l = universe_level; ord = [ "<" -> Univ.Lt | "=" -> Univ.Eq | "<=" -> Univ.Le ];
 	r = universe_level -> (l, ord, r) ] ]
-  ;
-  pidentref:
-    [ [ i = identref; l = OPT [ "@{" ; l = LIST0 identref; "}" -> l ] -> (i,l) ] ]
   ;
   univ_decl :
     [ [  "@{" ; l = LIST0 identref; ext = [ "+" -> true | -> false ];
