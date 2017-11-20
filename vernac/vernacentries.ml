@@ -472,33 +472,33 @@ let vernac_definition_hook p = function
 | SubClass -> Class.add_subclass_hook p
 | _ -> no_hook
 
-let vernac_definition ~atts p (local,k) ((loc,id as lid),pl) def =
+let vernac_definition ~atts (local,k) ((loc,id as lid),pl) def =
   let local = enforce_locality_exp atts.locality local in
-  let hook = vernac_definition_hook p k in
+  let hook = vernac_definition_hook atts.polymorphic k in
   let () = match local with
   | Discharge -> Dumpglob.dump_definition lid true "var"
   | Local | Global -> Dumpglob.dump_definition lid false "def"
   in
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
-	  start_proof_and_print (local,p,DefinitionBody k)
+          start_proof_and_print (local, atts.polymorphic, DefinitionBody k)
 	    [Some (lid,pl), (bl,t)] hook
     | DefineBody (bl,red_option,c,typ_opt) ->
  	let red_option = match red_option with
           | None -> None
           | Some r ->
-            let sigma, env= Pfedit.get_current_context () in
+            let sigma, env = Pfedit.get_current_context () in
             Some (snd (Hook.get f_interp_redexp env sigma r)) in
-	do_definition id (local,p,k) pl bl red_option c typ_opt hook)
+        do_definition id (local, atts.polymorphic,k) pl bl red_option c typ_opt hook)
 
-let vernac_start_proof ~atts p kind l =
+let vernac_start_proof ~atts kind l =
   let local = enforce_locality_exp atts.locality None in
   if Dumpglob.dump () then
     List.iter (fun (id, _) ->
       match id with
 	| Some (lid,_) -> Dumpglob.dump_definition lid false "prf"
 	| None -> ()) l;
-  start_proof_and_print (local, p, Proof kind) l no_hook
+  start_proof_and_print (local, atts.polymorphic, Proof kind) l no_hook
 
 let vernac_end_proof ?proof = function
   | Admitted          -> save_proof ?proof Admitted
@@ -511,10 +511,10 @@ let vernac_exact_proof c =
   save_proof (Vernacexpr.(Proved(Opaque,None)));
   if not status then Feedback.feedback Feedback.AddedAxiom
 
-let vernac_assumption ~atts poly (local, kind) l nl =
+let vernac_assumption ~atts (local, kind) l nl =
   let local = enforce_locality_exp atts.locality local in
   let global = local == Global in
-  let kind = local, poly, kind in
+  let kind = local, atts.polymorphic, kind in
   List.iter (fun (is_coe,(idl,c)) ->
     if Dumpglob.dump () then
       List.iter (fun (lid, _) ->
@@ -554,8 +554,8 @@ let vernac_record cum k poly finite struc binders sort nameopt cfs =
     then the type is declared private (as per the [Private] keyword). [finite]
     indicates whether the type is inductive, co-inductive or
     neither. *)
-let vernac_inductive cum poly lo finite indl =
-  let is_cumulative = should_treat_as_cumulative cum poly in
+let vernac_inductive ~atts cum lo finite indl =
+  let is_cumulative = should_treat_as_cumulative cum atts.polymorphic in
   if Dumpglob.dump () then
     List.iter (fun (((coe,(lid,_)), _, _, _, cstrs), _) ->
       match cstrs with
@@ -572,13 +572,13 @@ let vernac_inductive cum poly lo finite indl =
       user_err Pp.(str "The Variant keyword does not support syntax { ... }.")
   | [ ( id , bl , c , b, RecordDecl (oc,fs) ), [] ] ->
       vernac_record cum (match b with Class _ -> Class false | _ -> b)
-       poly finite id bl c oc fs
+       atts.polymorphic finite id bl c oc fs
   | [ ( id , bl , c , Class _, Constructors [l]), [] ] ->
       let f =
 	let (coe, ((loc, id), ce)) = l in
 	let coe' = if coe then Some true else None in
   	  (((coe', AssumExpr ((loc, Name id), ce)), None), [])
-      in vernac_record cum (Class true) poly finite id bl c None [f]
+      in vernac_record cum (Class true) atts.polymorphic finite id bl c None [f]
   | [ ( _ , _, _, Class _, Constructors _), [] ] ->
       user_err Pp.(str "Inductive classes not supported")
   | [ ( id , bl , c , Class _, _), _ :: _ ] ->
@@ -592,19 +592,19 @@ let vernac_inductive cum poly lo finite indl =
       | _ -> user_err Pp.(str "Cannot handle mutually (co)inductive records.")
     in
     let indl = List.map unpack indl in
-    do_mutual_inductive indl is_cumulative poly lo finite
+    do_mutual_inductive indl is_cumulative atts.polymorphic lo finite
 
-let vernac_fixpoint ~atts poly local l =
+let vernac_fixpoint ~atts local l =
   let local = enforce_locality_exp atts.locality local in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  do_fixpoint local poly l
+  do_fixpoint local atts.polymorphic l
 
-let vernac_cofixpoint ~atts poly local l =
+let vernac_cofixpoint ~atts local l =
   let local = enforce_locality_exp atts.locality local in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  do_cofixpoint local poly l
+  do_cofixpoint local atts.polymorphic l
 
 let vernac_scheme l =
   if Dumpglob.dump () then
@@ -622,19 +622,19 @@ let vernac_combined_scheme lid l =
      List.iter (fun lid -> dump_global (Misctypes.AN (Ident lid))) l);
  Indschemes.do_combined_scheme lid l
 
-let vernac_universe loc poly l =
-  if poly && not (Lib.sections_are_opened ()) then
-    user_err ?loc ~hdr:"vernac_universe"
+let vernac_universe ~atts l =
+  if atts.polymorphic && not (Lib.sections_are_opened ()) then
+    user_err ?loc:atts.loc ~hdr:"vernac_universe"
 		 (str"Polymorphic universes can only be declared inside sections, " ++
 		  str "use Monomorphic Universe instead");
-  do_universe poly l
+  do_universe atts.polymorphic l
 
-let vernac_constraint loc poly l =
-  if poly && not (Lib.sections_are_opened ()) then
-    user_err ?loc ~hdr:"vernac_constraint"
+let vernac_constraint ~atts l =
+  if atts.polymorphic && not (Lib.sections_are_opened ()) then
+    user_err ?loc:atts.loc ~hdr:"vernac_constraint"
 		 (str"Polymorphic universe constraints can only be declared"
 		  ++ str " inside sections, use Monomorphic Constraint instead");
-  do_constraint poly l
+  do_constraint atts.polymorphic l
 
 (**********************)
 (* Modules            *)
@@ -812,29 +812,29 @@ let vernac_require from import qidl =
 let vernac_canonical r =
   Recordops.declare_canonical_structure (smart_global r)
 
-let vernac_coercion ~atts poly local ref qids qidt =
+let vernac_coercion ~atts local ref qids qidt =
   let local = enforce_locality atts.locality local in
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
   let ref' = smart_global ref in
-  Class.try_add_new_coercion_with_target ref' ~local poly ~source ~target;
+  Class.try_add_new_coercion_with_target ref' ~local atts.polymorphic ~source ~target;
   Flags.if_verbose Feedback.msg_info (pr_global ref' ++ str " is now a coercion")
 
-let vernac_identity_coercion ~atts poly local id qids qidt =
+let vernac_identity_coercion ~atts local id qids qidt =
   let local = enforce_locality atts.locality local in
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
-  Class.try_add_new_identity_coercion id ~local poly ~source ~target
+  Class.try_add_new_identity_coercion id ~local atts.polymorphic ~source ~target
 
 (* Type classes *)
 
-let vernac_instance abst ~atts poly sup inst props pri =
+let vernac_instance ~atts abst sup inst props pri =
   let global = not (make_section_locality atts.locality) in
   Dumpglob.dump_constraint inst false "inst";
-  ignore(Classes.new_instance ~abstract:abst ~global poly sup inst props pri)
+  ignore(Classes.new_instance ~abstract:abst ~global atts.polymorphic sup inst props pri)
 
-let vernac_context poly l =
-  if not (Classes.context poly l) then Feedback.feedback Feedback.AddedAxiom
+let vernac_context ~atts l =
+  if not (Classes.context atts.polymorphic l) then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_declare_instances ~atts insts =
   let glob = not (make_section_locality atts.locality) in
@@ -947,9 +947,9 @@ let vernac_remove_hints ~atts dbs ids =
   let local = make_module_locality atts.locality in
   Hints.remove_hints local dbs (List.map Smartlocate.global_with_alias ids)
 
-let vernac_hints ~atts poly local lb h =
+let vernac_hints ~atts local lb h =
   let local = enforce_module_locality atts.locality local in
-  Hints.add_hints local lb (Hints.interp_hints poly h)
+  Hints.add_hints local lb (Hints.interp_hints atts.polymorphic h)
 
 let vernac_syntactic_definition ~atts lid x local y =
   Dumpglob.dump_definition lid false "syndef";
@@ -1917,7 +1917,7 @@ let vernac_load interp fname =
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
-let interp ?proof poly ~atts ~st c =
+let interp ?proof ~atts ~st c =
   let open Vernacinterp in
   vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac c);
   match c with
@@ -1970,18 +1970,18 @@ let interp ?proof poly ~atts ~st c =
       Metasyntax.add_notation_extra_printing_rule n k v
 
   (* Gallina *)
-  | VernacDefinition (k,lid,d) -> vernac_definition ~atts poly k lid d
-  | VernacStartTheoremProof (k,l) -> vernac_start_proof ~atts poly k l
+  | VernacDefinition (k,lid,d) -> vernac_definition ~atts k lid d
+  | VernacStartTheoremProof (k,l) -> vernac_start_proof ~atts k l
   | VernacEndProof e -> vernac_end_proof ?proof e
   | VernacExactProof c -> vernac_exact_proof c
-  | VernacAssumption (stre,nl,l) -> vernac_assumption ~atts poly stre l nl
-  | VernacInductive (cum, priv,finite,l) -> vernac_inductive cum poly priv finite l
-  | VernacFixpoint (local, l) -> vernac_fixpoint ~atts poly local l
-  | VernacCoFixpoint (local, l) -> vernac_cofixpoint ~atts poly local l
+  | VernacAssumption (stre,nl,l) -> vernac_assumption ~atts stre l nl
+  | VernacInductive (cum, priv,finite,l) -> vernac_inductive ~atts cum priv finite l
+  | VernacFixpoint (local, l) -> vernac_fixpoint ~atts local l
+  | VernacCoFixpoint (local, l) -> vernac_cofixpoint ~atts local l
   | VernacScheme l -> vernac_scheme l
   | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
-  | VernacUniverse l -> vernac_universe atts.loc poly l
-  | VernacConstraint l -> vernac_constraint atts.loc poly l
+  | VernacUniverse l -> vernac_universe ~atts l
+  | VernacConstraint l -> vernac_constraint ~atts l
 
   (* Modules *)
   | VernacDeclareModule (export,lid,bl,mtyo) ->
@@ -2002,14 +2002,14 @@ let interp ?proof poly ~atts ~st c =
   | VernacRequire (from, export, qidl) -> vernac_require from export qidl
   | VernacImport (export,qidl) -> vernac_import export qidl
   | VernacCanonical qid -> vernac_canonical qid
-  | VernacCoercion (local,r,s,t) -> vernac_coercion ~atts poly local r s t
+  | VernacCoercion (local,r,s,t) -> vernac_coercion ~atts local r s t
   | VernacIdentityCoercion (local,(_,id),s,t) ->
-      vernac_identity_coercion ~atts poly local id s t
+      vernac_identity_coercion ~atts local id s t
 
   (* Type classes *)
   | VernacInstance (abst, sup, inst, props, info) ->
-      vernac_instance abst ~atts poly sup inst props info
-  | VernacContext sup -> vernac_context poly sup
+      vernac_instance ~atts abst sup inst props info
+  | VernacContext sup -> vernac_context ~atts sup
   | VernacDeclareInstances insts -> vernac_declare_instances ~atts insts
   | VernacDeclareClass id -> vernac_declare_class id
 
@@ -2031,7 +2031,7 @@ let interp ?proof poly ~atts ~st c =
   | VernacCreateHintDb (dbname,b) -> vernac_create_hintdb ~atts dbname b
   | VernacRemoveHints (dbnames,ids) -> vernac_remove_hints ~atts dbnames ids
   | VernacHints (local,dbnames,hints) ->
-      vernac_hints ~atts poly local dbnames hints
+      vernac_hints ~atts local dbnames hints
   | VernacSyntacticDefinition (id,c,local,b) ->
       vernac_syntactic_definition ~atts id c local b
   | VernacDeclareImplicits (qid,l) ->
@@ -2061,7 +2061,7 @@ let interp ?proof poly ~atts ~st c =
   | VernacComments l -> Flags.if_verbose Feedback.msg_info (str "Comments ok\n")
 
   (* Proof management *)
-  | VernacGoal t -> vernac_start_proof ~atts poly Theorem [None,([],t)]
+  | VernacGoal t -> vernac_start_proof ~atts Theorem [None,([],t)]
   | VernacFocus n -> vernac_focus n
   | VernacUnfocus -> vernac_unfocus ()
   | VernacUnfocused -> vernac_unfocused ()
@@ -2217,14 +2217,14 @@ let interp ?(verbosely=true) ?proof st (loc,c) =
     | c -> 
         check_vernac_supports_locality c locality;
         check_vernac_supports_polymorphism c polymorphism;
-	let poly = enforce_polymorphism polymorphism in
+        let polymorphic = enforce_polymorphism polymorphism in
         Obligations.set_program_mode isprogcmd;
         try
           vernac_timeout begin fun () ->
-            let atts = { loc; locality } in
+            let atts = { loc; locality; polymorphic } in
             if verbosely
-            then Flags.verbosely (interp ?proof ~atts poly ~st) c
-            else Flags.silently  (interp ?proof ~atts poly ~st) c;
+            then Flags.verbosely (interp ?proof ~atts ~st) c
+            else Flags.silently  (interp ?proof ~atts ~st) c;
           if orig_program_mode || not !Flags.program_mode || isprogcmd then
             Flags.program_mode := orig_program_mode;
 	  ignore (Flags.use_polymorphic_flag ())

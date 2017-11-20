@@ -13,6 +13,7 @@ type deprecation = bool
 type atts = {
   loc : Loc.t option;
   locality : bool option;
+  polymorphic : bool;
 }
 
 type 'a vernac_command = 'a -> atts:atts -> st:Vernacstate.t -> Vernacstate.t
