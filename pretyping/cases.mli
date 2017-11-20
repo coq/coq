@@ -13,8 +13,8 @@ open Environ
 open EConstr
 open Inductiveops
 open Glob_term
-open Evarutil
 open Ltac_pretype
+open Evardefine
 
 (** {5 Compilation of pattern-matching } *)
 
@@ -116,7 +116,7 @@ type 'a pattern_matching_problem =
 val compile : 'a pattern_matching_problem -> unsafe_judgment
 
 val prepare_predicate : ?loc:Loc.t ->
-           (Evarutil.type_constraint ->
+           (type_constraint ->
             Environ.env -> Evd.evar_map ref -> ltac_var_map -> glob_constr -> unsafe_judgment) ->
            Environ.env ->
            Evd.evar_map ->

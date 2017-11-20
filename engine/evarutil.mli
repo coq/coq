@@ -238,7 +238,8 @@ val subterm_source : existential_key -> Evar_kinds.t Loc.located ->
 
 val meta_counter_summary_name : string
 
-(** Deprecater *)
-
+(** Deprecated *)
 type type_constraint = types option
+[@@ocaml.deprecated "use the version in Evardefine"]
 type val_constraint = constr option
+[@@ocaml.deprecated "use the version in Evardefine"]
