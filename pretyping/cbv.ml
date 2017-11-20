@@ -208,24 +208,31 @@ and reify_value = function (* reduction under binders *)
   | STACK (n,v,stk) ->
       lift n (reify_stack (reify_value v) stk)
   | CBN(t,env) ->
-    t
-      (* map_constr_with_binders subs_lift (cbv_norm_term) env t *)
-  | LAM (n,ctxt,b,env) ->
-      List.fold_left (fun c (n,t)  -> Term.mkLambda (n, t, c)) b ctxt
+    apply_env env t
+  | LAM (k,ctxt,b,env) ->
+    apply_env env @@
+    List.fold_left (fun c (n,t) ->
+        mkLambda (n, t, c)) b ctxt
   | FIXP ((lij,(names,lty,bds)),env,args) ->
-      mkApp
-        (mkFix (lij,
-		(names,
-		 lty,
-		 bds)),
-         Array.map reify_value args)
+    let fix = mkFix (lij, (names, lty, bds)) in
+    mkApp (apply_env env fix, Array.map reify_value args)
   | COFIXP ((j,(names,lty,bds)),env,args) ->
-      mkApp
-        (mkCoFix (j,
-		  (names,lty,bds)),
-         Array.map reify_value args)
+    let cofix = mkCoFix (j, (names,lty,bds)) in
+    mkApp (apply_env env cofix, Array.map reify_value args)
   | CONSTR (c,args) ->
       mkApp(mkConstructU c, Array.map reify_value args)
+
+and apply_env env t =
+  match Constr.kind t with
+  | Rel i ->
+    begin match expand_rel i env with
+      | Inl (k, v) ->
+        reify_value (shift_value k v)
+      | Inr (k,_) ->
+        mkRel k
+    end
+  | _ ->
+    Constr.map_with_binders subs_lift apply_env env t
 
 (* The main recursive functions
  *
@@ -290,7 +297,10 @@ let rec norm_head info env t stack =
   | Evar ev ->
       (match evar_value info.infos.i_cache ev with
           Some c -> norm_head info env c stack
-        | None -> (VAL(0, t), stack))
+        | None ->
+          let e, xs = ev in
+          let xs' = Array.map (apply_env env) xs in
+          (VAL(0, mkEvar (e,xs')), stack))
 
   (* non-neutral cases *)
   | Lambda _ ->
