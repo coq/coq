@@ -981,8 +981,8 @@ let rec or_cnf unsat deduce f f' =
 
 (** val and_cnf : 'a1 cnf -> 'a1 cnf -> 'a1 cnf **)
 
-let and_cnf f1 f2 =
-  app f1 f2
+let and_cnf =
+  app
 
 (** val xcnf :
     ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> ('a1 -> 'a2 cnf) -> ('a1
@@ -1204,22 +1204,22 @@ type 't formula = { flhs : 't pExpr; fop : op2; frhs : 't pExpr }
     'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
     -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pExpr -> 'a1 pol **)
 
-let norm cO cI cplus ctimes cminus copp ceqb =
-  norm_aux cO cI cplus ctimes cminus copp ceqb
+let norm =
+  norm_aux
 
 (** val psub0 :
     'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1) -> ('a1
     -> 'a1 -> bool) -> 'a1 pol -> 'a1 pol -> 'a1 pol **)
 
-let psub0 cO cplus cminus copp ceqb =
-  psub cO cplus cminus copp ceqb
+let psub0 =
+  psub
 
 (** val padd0 :
     'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pol -> 'a1 pol
     -> 'a1 pol **)
 
-let padd0 cO cplus ceqb =
-  padd cO cplus ceqb
+let padd0 =
+  padd
 
 (** val xnormalise :
     'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
