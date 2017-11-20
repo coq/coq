@@ -110,6 +110,15 @@ val warn : bool ref
 val make_warn : bool -> unit
 val if_warn : ('a -> unit) -> 'a -> unit
 
+(** [with_modified_ref r nf f x] Temporarily modify a reference in the
+    call to [f x] . Be very careful with these functions, it is very
+    easy to fall in the typical problem with effects:
+
+    with_modified_ref r nf f x y != with_modified_ref r nf (f x) y
+
+*)
+val with_modified_ref : 'c ref -> ('c -> 'c) -> ('a -> 'b) -> 'a -> 'b
+
 (** Temporarily activate an option (to activate option [o] on [f x y z],
    use [with_option o (f x y) z]) *)
 val with_option : bool ref -> ('a -> 'b) -> 'a -> 'b
