@@ -146,7 +146,7 @@ module Impargs = Impargs
 module Retyping = Retyping
 (* module Cbv *)
 module Find_subterm = Find_subterm
-(* module Evardefine *)
+module Evardefine = Evardefine
 module Evarsolve = Evarsolve
 module Recordops = Recordops
 module Evarconv = Evarconv

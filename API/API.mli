@@ -435,6 +435,14 @@ sig
 
   type 'a constraint_function = 'a -> 'a -> Constraint.t -> Constraint.t
 
+  type explanation = (constraint_type * universe) list
+  type univ_inconsistency = constraint_type * universe * universe * explanation option
+
+  exception UniverseInconsistency of univ_inconsistency
+
+  val explain_universe_inconsistency : (Level.t -> Pp.t) ->
+    univ_inconsistency -> Pp.t
+
   module LMap :
   sig
     include CMap.ExtS with type key = universe_level and module Set := LSet
@@ -472,6 +480,7 @@ end
 
 module Sorts :
 sig
+
   type contents = Pos | Null
   type t =
          | Prop of contents
@@ -481,6 +490,10 @@ sig
 
   type family = InProp | InSet | InType
   val family : t -> family
+
+  val univ_of_sort : t -> Univ.universe
+  val sort_of_univ : Univ.universe -> t
+
 end
 
 module Evar :
@@ -630,6 +643,8 @@ end
 
 module Context :
 sig
+  open Names
+
   module Rel :
   sig
     module Declaration :
@@ -644,6 +659,9 @@ sig
 
       (** Return the name bound by a given declaration. *)
       val get_name : ('c, 't) pt -> Names.Name.t
+
+      (** Return [Some value] for local-declarations and [None] for local-assumptions. *)
+      val get_value : ('c, 't) pt -> 'c option
 
       (** Return the type of the name bound by a given declaration. *)
       val get_type : ('c, 't) pt -> 't
@@ -739,6 +757,9 @@ sig
       (** Return the identifier bound by a given declaration. *)
       val get_id : ('c, 't) pt -> Names.Id.t
 
+      (** Return [Some value] for local-declarations and [None] for local-assumptions. *)
+      val get_value : ('c, 't) pt -> 'c option
+
       (** Return the type of the name bound by a given declaration. *)
       val get_type : ('c, 't) pt -> 't
 
@@ -781,6 +802,8 @@ sig
 
       (** Reduce all terms in a given declaration to a single value. *)
       val fold_constr : ('c -> 'a -> 'a) -> ('c, 'c) pt -> 'a -> 'a
+
+      val of_tuple : Id.t * 'c option * 't -> ('c, 't) pt
 
       val to_rel_decl : ('c, 't) pt -> ('c, 't) Rel.Declaration.pt
     end
@@ -1110,6 +1133,8 @@ sig
   val strip_lam : constr -> constr
   val strip_prod_assum : types -> types
 
+  type arity = Context.Rel.t * Sorts.t
+
   val decompose_lam_assum : constr -> Context.Rel.t * constr
   val destFix : constr -> fixpoint
 
@@ -1260,7 +1285,11 @@ end
 
 module Conv_oracle :
 sig
+  type oracle
   type level
+
+  val get_transp_state : oracle -> Names.transparent_state
+
 end
 
 module Declarations :
@@ -1481,7 +1510,13 @@ end
 
 module Environ :
 sig
+
+  open Names
+
   type env
+
+  val oracle : env -> Conv_oracle.oracle
+
   type named_context_val
 
   type ('constr, 'types) punsafe_judgment =
@@ -1502,11 +1537,17 @@ sig
   val lookup_rel : int -> env -> Context.Rel.Declaration.t
   val lookup_named : Names.Id.t -> env -> Context.Named.Declaration.t
   val lookup_named_val : Names.Id.t -> named_context_val -> Context.Named.Declaration.t
+
   val lookup_constant : Names.Constant.t -> env -> Declarations.constant_body
+  val evaluable_constant : Constant.t -> env -> bool
+
   val opaque_tables : env -> Opaqueproof.opaquetab
   val is_projection : Names.Constant.t -> env -> bool
   val lookup_projection : Names.Projection.t -> env -> Declarations.projection_body
+
   val named_context_of_val : named_context_val -> Context.Named.t
+  val empty_named_context_val : named_context_val
+
   val push_named : Context.Named.Declaration.t -> env -> env
   val named_context : env -> Context.Named.t
   val named_context_val : env -> named_context_val
@@ -1520,10 +1561,18 @@ sig
     ('a -> Context.Named.Declaration.t -> 'a) -> init:'a -> env -> 'a
   val evaluable_named  : Names.Id.t -> env -> bool
   val push_context_set : ?strict:bool -> Univ.ContextSet.t -> env -> env
+
+  val push_named_context : Context.Named.t -> env -> env
+
 end
 
 module CClosure :
 sig
+
+  open Names
+
+  val is_transparent_variable : transparent_state -> variable -> bool
+  val is_transparent_constant : transparent_state -> Constant.t -> bool
 
   type table_key = Names.Constant.t Univ.puniverses Names.tableKey
 
@@ -1592,16 +1641,18 @@ end
 
 module Reduction :
 sig
+
+  open Environ
+  open Term
+
   exception NotConvertible
   type conv_pb =
-               | CONV
-               | CUMUL
+    | CONV
+    | CUMUL
 
   val whd_all : Environ.env -> Constr.t -> Constr.t
 
   val whd_betaiotazeta : Environ.env -> Constr.t -> Constr.t
-
-  val is_arity : Environ.env -> Term.types -> bool
 
   val dest_prod : Environ.env -> Term.types -> Context.Rel.t * Term.types
 
@@ -1610,6 +1661,11 @@ sig
     ?evars:((Term.existential->Constr.t option) * UGraph.t) ->
     'a -> 'a -> unit
   val conv : Constr.t extended_conversion_function
+
+  exception NotArity
+  val dest_arity : env -> types -> arity
+  val is_arity : env -> Term.types -> bool
+
 end
 
 module Type_errors :
@@ -2641,6 +2697,9 @@ end
 module Evd :
 sig
 
+  open Term
+  open Environ
+
   type evar = Constr.existential_key
 
   val string_of_existential : Evar.t -> string
@@ -2679,12 +2738,19 @@ sig
       evar_extra : Store.t
     }
 
-  val evar_concl : evar_info -> Constr.t
-  val evar_body : evar_info -> evar_body
-  val evar_context : evar_info -> Context.Named.t
   val instantiate_evar_array : evar_info -> Constr.t -> Constr.t array -> Constr.t
-  val evar_filtered_env : evar_info -> Environ.env
+
+  val make_evar : named_context_val -> types -> evar_info
+  val evar_concl : evar_info -> Constr.t
+  val evar_context : evar_info -> Context.Named.t
+  (* val evar_filtered_context : evar_info -> Context.Named.t *)
   val evar_hyps : evar_info -> Environ.named_context_val
+  (* val evar_filtered_hyps : evar_info -> named_context_val *)
+  val evar_body : evar_info -> evar_body
+  (* val evar_filter : evar_info -> Filter.t *)
+(* val evar_filter : evar_info -> Filter.t *)
+  val evar_env :  evar_info -> env
+  val evar_filtered_env : evar_info -> Environ.env
 
   (* ------------------------------------ *)
 
@@ -2724,6 +2790,16 @@ sig
     val is_defined : evar_map -> Evar.t -> bool
     val mem : evar_map -> Evar.t -> bool
     val add : evar_map -> Evar.t -> evar_info -> evar_map
+
+    val set_leq_sort : env -> evar_map -> Sorts.t -> Sorts.t -> evar_map
+    val set_eq_sort : env -> evar_map -> Sorts.t -> Sorts.t -> evar_map
+
+    val check_eq : evar_map -> Univ.universe -> Univ.universe -> bool
+    val check_leq : evar_map -> Univ.universe -> Univ.universe -> bool
+
+    val set_eq_instances : ?flex:bool ->
+      evar_map -> Univ.Instance.t -> Univ.Instance.t -> evar_map
+
     val evar_universe_context : evar_map -> UState.t
     val set_universe_context : evar_map -> UState.t -> evar_map
     val universes : evar_map -> UGraph.t
@@ -2778,7 +2854,13 @@ sig
 
   val sig_it  : 'a sigma -> 'a
 
+  val downcast : evar -> Constr.types -> evar_map -> evar_map
+  (** Change the type of an undefined evar to a new type assumed to be a
+      subtype of its current type; subtyping must be ensured by caller *)
+
   type 'a in_evar_universe_context = 'a * UState.t
+
+  val new_univ_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * Univ.universe
 
   val univ_flexible : rigid
   val univ_flexible_alg : rigid
@@ -2803,6 +2885,7 @@ sig
 
   val existential_opt_value : evar_map -> Term.existential -> Constr.t option
   val existential_value : evar_map -> Term.existential -> Constr.t
+  val existential_type : evar_map -> Term.existential -> Constr.types
 
   exception NotInstantiatedEvar
 
@@ -2811,6 +2894,9 @@ end
 
 module EConstr :
 sig
+
+  open Names
+
   type t
   type constr = t
   type types = t
@@ -2880,6 +2966,7 @@ sig
   val isVar : Evd.evar_map -> constr -> bool
   val isConst : Evd.evar_map -> constr -> bool
   val isConstruct : Evd.evar_map -> constr -> bool
+  val isVarId  : Evd.evar_map -> Names.Id.t -> t -> bool
 
   val destInd : Evd.evar_map -> constr -> Names.inductive * EInstance.t
   val destVar : Evd.evar_map -> constr -> Names.Id.t
@@ -2931,9 +3018,13 @@ sig
     val substl : constr list -> constr -> constr
     val lift : int -> constr -> constr
     val liftn : int -> int -> t -> t
-    val subst_var : Names.Id.t -> t -> t
-    val subst_vars : Names.Id.t list -> t -> t
+    val replace_vars : (Id.t * t) list -> t -> t
+    val subst_var : Id.t -> t -> t
+    val subst_vars : Id.t list -> t -> t
   end
+
+  val lookup_rel : int -> Environ.env -> rel_declaration
+  val lookup_named : variable -> Environ.env -> named_declaration
 
   val fresh_global :
     ?loc:Loc.t -> ?rigid:UState.rigid -> ?names:Univ.Instance.t -> Environ.env ->
@@ -2973,12 +3064,15 @@ sig
   val map : Evd.evar_map -> (t -> t) -> t -> t
   val mkConstU : Names.Constant.t * EInstance.t -> t
   val isProd : Evd.evar_map -> t -> bool
+  val isArity : Evd.evar_map -> t -> bool
   val mkConstructUi : (Names.inductive * EInstance.t) * int -> t
   val isLambda : Evd.evar_map -> t -> bool
 end
 
 module Namegen :
 sig
+  open Names
+
   (** *)
 
   (** [next_ident_away original_id unwanted_ids] returns a new identifier as close as possible
@@ -2999,8 +3093,11 @@ sig
       E.g. if we take [foo42], then [42] is the {i subscript}, and [foo] is the root. *)
   val next_ident_away : Names.Id.t -> Names.Id.Set.t -> Names.Id.t
 
+  val next_name_away  : Name.t -> Id.Set.t -> Id.t
+
   val hdchar : Environ.env -> Evd.evar_map -> EConstr.types -> string
   val id_of_name_using_hdchar : Environ.env -> Evd.evar_map -> EConstr.types -> Names.Name.t -> Names.Id.t
+  val named_hd : Environ.env -> Evd.evar_map -> EConstr.types -> Name.t -> Name.t
   val next_ident_away_in_goal : Names.Id.t -> Names.Id.Set.t -> Names.Id.t
   val default_dependent_ident : Names.Id.t
   val next_global_ident_away : Names.Id.t -> Names.Id.Set.t -> Names.Id.t
@@ -3010,6 +3107,7 @@ end
 
 module Termops :
 sig
+
   val it_mkLambda_or_LetIn : Constr.t -> Context.Rel.t -> Constr.t
   val local_occur_var : Evd.evar_map -> Names.Id.t -> EConstr.constr -> bool
   val occur_var : Environ.env -> Evd.evar_map -> Names.Id.t -> EConstr.constr -> bool
@@ -3059,6 +3157,8 @@ sig
   val vars_of_env: Environ.env -> Names.Id.Set.t
   val ids_of_named_context : ('c, 't) Context.Named.pt -> Names.Id.t list
   val ids_of_context : Environ.env -> Names.Id.t list
+  val occur_meta : Evd.evar_map -> EConstr.t -> bool
+
   val global_of_constr : Evd.evar_map -> EConstr.constr -> Globnames.global_reference * EConstr.EInstance.t
   val print_named_context : Environ.env -> Pp.t
   val print_constr_env : Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t
@@ -3077,6 +3177,8 @@ sig
   val subst_meta : meta_value_map -> Constr.t -> Constr.t
 
   val free_rels : Evd.evar_map -> EConstr.constr -> Int.Set.t
+
+  val collect_vars : Evd.evar_map -> EConstr.t -> Names.Id.Set.t (** for visible vars only *)
 
   val occur_term : Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool
   [@@ocaml.deprecated "alias of API.Termops.dependent"]
@@ -3100,6 +3202,10 @@ end
 
 module Evarutil :
 sig
+
+  open Evd
+  open EConstr
+
   val e_new_global : Evd.evar_map ref -> Globnames.global_reference -> EConstr.constr
 
   val nf_evars_and_universes : Evd.evar_map -> Evd.evar_map * (Constr.t -> Constr.t)
@@ -3134,6 +3240,8 @@ sig
     | OccurHypInSimpleClause of Names.Id.t option
     | EvarTypingBreak of Constr.existential
 
+  val new_pure_evar_full : evar_map -> evar_info -> evar_map * evar
+
   exception ClearDependencyError of Names.Id.t * clear_dependency_error
   val undefined_evars_of_term : Evd.evar_map -> EConstr.constr -> Evar.Set.t
   val e_new_evar :
@@ -3148,6 +3256,10 @@ sig
   val nf_evars_universes : Evd.evar_map -> Constr.t -> Constr.t
   val safe_evar_value : Evd.evar_map -> Term.existential -> Constr.t option
   val evd_comb1 : (Evd.evar_map -> 'b -> Evd.evar_map * 'a) -> Evd.evar_map ref -> 'b -> 'a
+
+  open Evd
+  val whd_head_evar : evar_map -> EConstr.t -> EConstr.t
+  val is_ground_term :  evar_map -> constr -> bool
 end
 
 module Proofview :
@@ -3427,7 +3539,24 @@ end
 
 module Pretype_errors :
 sig
-  type unification_error
+
+open Term
+open Environ
+open EConstr
+
+type unification_error =
+  | OccurCheck of existential_key * constr
+  | NotClean of existential * env * constr
+  | NotSameArgSize
+  | NotSameHead
+  | NoCanonicalStructure
+  | ConversionFailed of env * constr * constr
+  | MetaOccurInBody of existential_key
+  | InstanceNotSameType of existential_key * env * types * types
+  | UnifUnivInconsistency of Univ.univ_inconsistency
+  | CannotSolveConstraint of Evd.evar_constraint * unification_error
+  | ProblemBeyondCapabilities
+
   type subterm_unification_error
 
   type type_error = (EConstr.t, EConstr.types) Type_errors.ptype_error
@@ -3461,6 +3590,12 @@ end
 
 module Reductionops :
 sig
+
+  open Names
+  open Environ
+  open Evd
+  open EConstr
+
   type local_reduction_function = Evd.evar_map -> EConstr.constr -> EConstr.constr
 
   type reduction_function = Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr
@@ -3469,7 +3604,6 @@ sig
     Evd.evar_map -> EConstr.constr -> EConstr.constr * EConstr.constr list
 
   type e_reduction_function = Environ.env -> Evd.evar_map -> EConstr.constr -> Evd.evar_map * EConstr.constr
-  type state
 
   val clos_whd_flags : CClosure.RedFlags.reds -> reduction_function
   val nf_beta : local_reduction_function
@@ -3494,17 +3628,39 @@ sig
   val nf_evar : Evd.evar_map -> EConstr.constr -> EConstr.constr
   val nf_meta : Evd.evar_map -> EConstr.constr -> EConstr.constr
   val hnf_prod_appvect : Environ.env ->  Evd.evar_map -> EConstr.constr -> EConstr.constr array -> EConstr.constr
-  val pr_state : state -> Pp.t
+
   module Stack :
   sig
+
     type 'a t
+
     val pr : ('a -> Pp.t) -> 'a t -> Pp.t
+
+    val empty : 'a t
+    val append_app_list : 'a list -> 'a t -> 'a t
+    val list_of_app_stack : constr t -> constr list option
+    val zip : ?refold:bool -> evar_map -> constr * constr t -> constr
+
   end
+
+  type state = constr * constr Stack.t
+  val pr_state : state -> Pp.t
+
   module Cst_stack :
   sig
     type t
+
+    val empty : t
     val pr : t -> Pp.t
   end
+
+  val infer_conv : ?catch_incon:bool -> ?pb:Reduction.conv_pb -> ?ts:transparent_state -> 
+    env -> evar_map -> constr -> constr -> evar_map * bool
+
+  val whd_betaiota_deltazeta_for_iota_state :
+    Names.transparent_state -> Environ.env -> Evd.evar_map -> Cst_stack.t -> state ->
+    state * Cst_stack.t
+
 end
 
 module Inductiveops :
@@ -3575,11 +3731,42 @@ sig
   val error_invalid_occurrence : int list -> 'a
 end
 
+module Evardefine :
+sig
+
+  open Environ
+  open Evd
+  open EConstr
+
+  val define_evar_as_lambda : env -> evar_map -> existential -> evar_map * types
+
+end
+
 module Evarsolve :
 sig
+
+  open Environ
+  open Evd
+  open EConstr
+
+  type unification_result =
+    | Success of evar_map
+    | UnifFailure of evar_map * Pretype_errors.unification_error
+
+  type conv_fun =
+    env ->  evar_map -> Reduction.conv_pb -> constr -> constr -> unification_result
+
   val refresh_universes :
     ?status:Evd.rigid -> ?onlyalg:bool -> ?refreshset:bool -> bool option ->
     Environ.env -> Evd.evar_map -> EConstr.types -> Evd.evar_map * EConstr.types
+
+  type alias
+
+  val solve_simple_eqn : conv_fun -> ?choose:bool -> env ->  evar_map ->
+    bool option * existential * constr -> unification_result
+
+  val solve_pattern_eqn : env -> evar_map -> alias list -> constr -> constr
+
 end
 
 module Recordops :
@@ -3607,10 +3794,23 @@ end
 
 module Evarconv :
 sig
+
+  open Names
+  open Environ
+  open Evd
+  open EConstr
+
   val e_conv : Environ.env -> ?ts:Names.transparent_state -> Evd.evar_map ref -> EConstr.constr -> EConstr.constr -> bool
   val the_conv_x : Environ.env -> ?ts:Names.transparent_state -> EConstr.constr -> EConstr.constr -> Evd.evar_map -> Evd.evar_map
   val the_conv_x_leq : Environ.env -> ?ts:Names.transparent_state -> EConstr.constr -> EConstr.constr -> Evd.evar_map -> Evd.evar_map
   val solve_unif_constraints_with_heuristics : Environ.env -> ?ts:Names.transparent_state -> Evd.evar_map -> Evd.evar_map
+
+  type unify_fun = transparent_state ->
+    env -> evar_map -> Reduction.conv_pb -> constr -> constr -> Evarsolve.unification_result
+
+  (** Override default [evar_conv_x] algorithm. *)
+  val set_evar_conv : unify_fun -> unit
+
 end
 
 module Typing :
@@ -3692,7 +3892,11 @@ end
 
 module Tacred :
 sig
-  val try_red_product : Reductionops.reduction_function
+  open Reductionops
+
+  val compute :  reduction_function  (** = [cbv_betadeltaiota] *)
+
+  val try_red_product : reduction_function
   val simpl : Reductionops.reduction_function
   val unfoldn :
     (Locus.occurrences * Names.evaluable_global_reference) list ->  Reductionops.reduction_function
@@ -4227,7 +4431,9 @@ sig
   val register_constr_interp0 :
     ('r, 'g, 't) Genarg.genarg_type ->
     (Ltac_pretype.unbound_ltac_var_map -> Environ.env -> Evd.evar_map -> EConstr.types -> 'g -> EConstr.constr * Evd.evar_map) -> unit
+  val all_no_fail_flags : inference_flags
   val all_and_fail_flags : inference_flags
+
   val ise_pretype_gen :
     inference_flags -> Environ.env -> Evd.evar_map ->
     Ltac_pretype.ltac_var_map -> typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.constr

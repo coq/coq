@@ -19,8 +19,10 @@
 ########################################################################
 # Unicoq + Metacoq
 ########################################################################
-: ${unicoq_CI_BRANCH:=master}
-: ${unicoq_CI_GITURL:=https://github.com/unicoq/unicoq.git}
+# : ${unicoq_CI_BRANCH:=master}
+# : ${unicoq_CI_GITURL:=https://github.com/unicoq/unicoq.git}
+: ${unicoq_CI_BRANCH:=coq+8.8}
+: ${unicoq_CI_GITURL:=https://github.com/ejgallego/unicoq.git}
 
 : ${metacoq_CI_BRANCH:=master}
 : ${metacoq_CI_GITURL:=https://github.com/MetaCoq/MetaCoq.git}

@@ -332,6 +332,9 @@ ci-sf:
     <<: *ci-template-vars
     EXTRA_PACKAGES: "$TIMING_PACKAGES wget"
 
+ci-unicoq:
+  <<: *ci-template
+
 ci-unimath:
   <<: *ci-template
 
