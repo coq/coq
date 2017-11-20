@@ -29,6 +29,7 @@ open Redexpr
 open Lemmas
 open Misctypes
 open Locality
+open Vernacinterp
 
 module NamedDecl = Context.Named.Declaration
 
@@ -408,8 +409,8 @@ let dump_global r =
 (**********)
 (* Syntax *)
 
-let vernac_syntax_extension locality local infix l =
-  let local = enforce_module_locality locality local in
+let vernac_syntax_extension atts local infix l =
+  let local = enforce_module_locality atts.locality local in
   if infix then Metasyntax.check_infix_modifiers (snd l);
   Metasyntax.add_syntax_extension local l
 
@@ -420,20 +421,20 @@ let vernac_delimiters sc = function
 let vernac_bind_scope sc cll =
   Metasyntax.add_class_scope sc (List.map scope_class_of_qualid cll)
 
-let vernac_open_close_scope locality local (b,s) =
-  let local = enforce_section_locality locality local in
+let vernac_open_close_scope ~atts local (b,s) =
+  let local = enforce_section_locality atts.locality local in
   Notation.open_close_scope (local,b,s)
 
-let vernac_arguments_scope locality r scl =
-  let local = make_section_locality locality in
+let vernac_arguments_scope ~atts r scl =
+  let local = make_section_locality atts.locality in
   Notation.declare_arguments_scope local (smart_global r) scl
 
-let vernac_infix locality local =
-  let local = enforce_module_locality locality local in
+let vernac_infix ~atts local =
+  let local = enforce_module_locality atts.locality local in
   Metasyntax.add_infix local (Global.env())
 
-let vernac_notation locality local =
-  let local = enforce_module_locality locality local in
+let vernac_notation ~atts local =
+  let local = enforce_module_locality atts.locality local in
   Metasyntax.add_notation local (Global.env())
 
 (***********)
@@ -471,8 +472,8 @@ let vernac_definition_hook p = function
 | SubClass -> Class.add_subclass_hook p
 | _ -> no_hook
 
-let vernac_definition locality p (local,k) ((loc,id as lid),pl) def =
-  let local = enforce_locality_exp locality local in
+let vernac_definition ~atts p (local,k) ((loc,id as lid),pl) def =
+  let local = enforce_locality_exp atts.locality local in
   let hook = vernac_definition_hook p k in
   let () = match local with
   | Discharge -> Dumpglob.dump_definition lid true "var"
@@ -490,8 +491,8 @@ let vernac_definition locality p (local,k) ((loc,id as lid),pl) def =
             Some (snd (Hook.get f_interp_redexp env sigma r)) in
 	do_definition id (local,p,k) pl bl red_option c typ_opt hook)
 
-let vernac_start_proof locality p kind l =
-  let local = enforce_locality_exp locality None in
+let vernac_start_proof ~atts p kind l =
+  let local = enforce_locality_exp atts.locality None in
   if Dumpglob.dump () then
     List.iter (fun (id, _) ->
       match id with
@@ -510,8 +511,8 @@ let vernac_exact_proof c =
   save_proof (Vernacexpr.(Proved(Opaque,None)));
   if not status then Feedback.feedback Feedback.AddedAxiom
 
-let vernac_assumption locality poly (local, kind) l nl =
-  let local = enforce_locality_exp locality local in
+let vernac_assumption ~atts poly (local, kind) l nl =
+  let local = enforce_locality_exp atts.locality local in
   let global = local == Global in
   let kind = local, poly, kind in
   List.iter (fun (is_coe,(idl,c)) ->
@@ -593,14 +594,14 @@ let vernac_inductive cum poly lo finite indl =
     let indl = List.map unpack indl in
     do_mutual_inductive indl is_cumulative poly lo finite
 
-let vernac_fixpoint locality poly local l =
-  let local = enforce_locality_exp locality local in
+let vernac_fixpoint ~atts poly local l =
+  let local = enforce_locality_exp atts.locality local in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   do_fixpoint local poly l
 
-let vernac_cofixpoint locality poly local l =
-  let local = enforce_locality_exp locality local in
+let vernac_cofixpoint ~atts poly local l =
+  let local = enforce_locality_exp atts.locality local in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   do_cofixpoint local poly l
@@ -811,32 +812,32 @@ let vernac_require from import qidl =
 let vernac_canonical r =
   Recordops.declare_canonical_structure (smart_global r)
 
-let vernac_coercion locality poly local ref qids qidt =
-  let local = enforce_locality locality local in
+let vernac_coercion ~atts poly local ref qids qidt =
+  let local = enforce_locality atts.locality local in
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
   let ref' = smart_global ref in
   Class.try_add_new_coercion_with_target ref' ~local poly ~source ~target;
   Flags.if_verbose Feedback.msg_info (pr_global ref' ++ str " is now a coercion")
 
-let vernac_identity_coercion locality poly local id qids qidt =
-  let local = enforce_locality locality local in
+let vernac_identity_coercion ~atts poly local id qids qidt =
+  let local = enforce_locality atts.locality local in
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
   Class.try_add_new_identity_coercion id ~local poly ~source ~target
 
 (* Type classes *)
 
-let vernac_instance abst locality poly sup inst props pri =
-  let global = not (make_section_locality locality) in
+let vernac_instance abst ~atts poly sup inst props pri =
+  let global = not (make_section_locality atts.locality) in
   Dumpglob.dump_constraint inst false "inst";
   ignore(Classes.new_instance ~abstract:abst ~global poly sup inst props pri)
 
 let vernac_context poly l =
   if not (Classes.context poly l) then Feedback.feedback Feedback.AddedAxiom
 
-let vernac_declare_instances locality insts =
-  let glob = not (make_section_locality locality) in
+let vernac_declare_instances ~atts insts =
+  let glob = not (make_section_locality atts.locality) in
   List.iter (fun (id, info) -> Classes.existing_instance glob id (Some info)) insts
 
 let vernac_declare_class id =
@@ -904,8 +905,8 @@ let vernac_remove_loadpath path =
 let vernac_add_ml_path isrec path =
   (if isrec then Mltop.add_rec_ml_dir else Mltop.add_ml_dir) (expand path)
 
-let vernac_declare_ml_module locality l =
-  let local = make_locality locality in
+let vernac_declare_ml_module ~atts l =
+  let local = make_locality atts.locality in
   Mltop.declare_ml_modules local (List.map expand l)
 
 let vernac_chdir = function
@@ -938,25 +939,25 @@ let vernac_restore_state file =
 (************)
 (* Commands *)
 
-let vernac_create_hintdb locality id b =
-  let local = make_module_locality locality in
+let vernac_create_hintdb ~atts id b =
+  let local = make_module_locality atts.locality in
   Hints.create_hint_db local id full_transparent_state b
 
-let vernac_remove_hints locality dbs ids =
-  let local = make_module_locality locality in
+let vernac_remove_hints ~atts dbs ids =
+  let local = make_module_locality atts.locality in
   Hints.remove_hints local dbs (List.map Smartlocate.global_with_alias ids)
 
-let vernac_hints locality poly local lb h =
-  let local = enforce_module_locality locality local in
+let vernac_hints ~atts poly local lb h =
+  let local = enforce_module_locality atts.locality local in
   Hints.add_hints local lb (Hints.interp_hints poly h)
 
-let vernac_syntactic_definition locality lid x local y =
+let vernac_syntactic_definition ~atts lid x local y =
   Dumpglob.dump_definition lid false "syndef";
-  let local = enforce_module_locality locality local in
+  let local = enforce_module_locality atts.locality local in
   Metasyntax.add_syntactic_definition (Global.env()) (snd lid) x local y
 
-let vernac_declare_implicits locality r l =
-  let local = make_section_locality locality in
+let vernac_declare_implicits ~atts r l =
+  let local = make_section_locality atts.locality in
   match l with
   | [] ->
       Impargs.declare_implicits local (smart_global r)
@@ -976,7 +977,7 @@ let warn_arguments_assert =
 (* [nargs_for_red] is the number of arguments required to trigger reduction,
    [args] is the main list of arguments statuses,
    [more_implicits] is a list of extra lists of implicit statuses  *)
-let vernac_arguments locality reference args more_implicits nargs_for_red flags =
+let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
   let assert_flag = List.mem `Assert flags in
   let rename_flag = List.mem `Rename flags in
   let clear_scopes_flag = List.mem `ClearScopes flags in
@@ -1184,7 +1185,7 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
   (* Actions *)
 
   if renaming_specified then begin
-    let local = make_section_locality locality in
+    let local = make_section_locality atts.locality in
     Arguments_renaming.rename_arguments local sr names
   end;
 
@@ -1194,20 +1195,20 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
         with UserError _ ->
           Notation.find_delimiters_scope ?loc k)) scopes
       in
-      vernac_arguments_scope locality reference scopes
+      vernac_arguments_scope ~atts reference scopes
     end;
 
   if implicits_specified || clear_implicits_flag then
-    vernac_declare_implicits locality reference implicits;
+    vernac_declare_implicits ~atts reference implicits;
 
   if default_implicits_flag then
-    vernac_declare_implicits locality reference [];
+    vernac_declare_implicits ~atts reference [];
 
   if red_modifiers_specified then begin
     match sr with
     | ConstRef _ as c ->
        Reductionops.ReductionBehaviour.set
-         (make_section_locality locality) c
+         (make_section_locality atts.locality) c
          (rargs, Option.default ~-1 nargs_for_red, red_flags)
     | _ -> user_err
              (strbrk "Modifiers of the behavior of the simpl tactic "++
@@ -1235,8 +1236,8 @@ let vernac_reserve bl =
     Reserve.declare_reserved_type idl t)
   in List.iter sb_decl bl
 
-let vernac_generalizable locality =
-  let local = make_non_locality locality in
+let vernac_generalizable ~atts =
+  let local = make_non_locality atts.locality in
   Implicit_quantifiers.declare_generalizable local
 
 let _ =
@@ -1473,8 +1474,8 @@ let _ =
       optread  = Nativenorm.get_profiling_enabled;
       optwrite = Nativenorm.set_profiling_enabled }
 
-let vernac_set_strategy locality l =
-  let local = make_locality locality in
+let vernac_set_strategy ~atts l =
+  let local = make_locality atts.locality in
   let glob_ref r =
     match smart_global r with
       | ConstRef sp -> EvalConstRef sp
@@ -1484,8 +1485,8 @@ let vernac_set_strategy locality l =
   let l = List.map (fun (lev,ql) -> (lev,List.map glob_ref ql)) l in
   Redexpr.set_strategy local l
 
-let vernac_set_opacity locality (v,l) =
-  let local = make_non_locality locality in
+let vernac_set_opacity ~atts (v,l) =
+  let local = make_non_locality atts.locality in
   let glob_ref r =
     match smart_global r with
       | ConstRef sp -> EvalConstRef sp
@@ -1495,18 +1496,18 @@ let vernac_set_opacity locality (v,l) =
   let l = List.map glob_ref l in
   Redexpr.set_strategy local [v,l]
 
-let vernac_set_option locality key = function
-  | StringValue s -> set_string_option_value_gen locality key s
-  | StringOptValue (Some s) -> set_string_option_value_gen locality key s
-  | StringOptValue None -> unset_option_value_gen locality key
-  | IntValue n -> set_int_option_value_gen locality key n
-  | BoolValue b -> set_bool_option_value_gen locality key b
+let vernac_set_option ~atts key = function
+  | StringValue s -> set_string_option_value_gen atts.locality key s
+  | StringOptValue (Some s) -> set_string_option_value_gen atts.locality key s
+  | StringOptValue None -> unset_option_value_gen atts.locality key
+  | IntValue n -> set_int_option_value_gen atts.locality key n
+  | BoolValue b -> set_bool_option_value_gen atts.locality key b
 
-let vernac_set_append_option locality key s =
-  set_string_option_append_value_gen locality key s
+let vernac_set_append_option ~atts key s =
+  set_string_option_append_value_gen atts.locality key s
 
-let vernac_unset_option locality key =
-  unset_option_value_gen locality key
+let vernac_unset_option ~atts key =
+  unset_option_value_gen atts.locality key
 
 let vernac_add_option key lv =
   let f = function
@@ -1547,8 +1548,8 @@ let query_command_selector ?loc = function
   | _ -> user_err ?loc ~hdr:"query_command_selector"
       (str "Query commands only support the single numbered goal selector.")
 
-let vernac_check_may_eval ?loc redexp glopt rc =
-  let glopt = query_command_selector ?loc glopt in
+let vernac_check_may_eval ~atts redexp glopt rc =
+  let glopt = query_command_selector ?loc:atts.loc glopt in
   let (sigma, env) = get_current_context_of_args glopt in
   let sigma', c = interp_open_constr env sigma rc in
   let c = EConstr.Unsafe.to_constr c in
@@ -1582,8 +1583,8 @@ let vernac_check_may_eval ?loc redexp glopt rc =
         in
 	Feedback.msg_notice (print_eval redfun env sigma' rc j)
 
-let vernac_declare_reduction locality s r =
-  let local = make_locality locality in
+let vernac_declare_reduction ~atts s r =
+  let local = make_locality atts.locality in
   declare_red_expr local s (snd (Hook.get f_interp_redexp (Global.env()) Evd.empty r))
 
   (* The same but avoiding the current goal context if any *)
@@ -1636,8 +1637,10 @@ let print_about_hyp_globs ?loc ref_or_by_not glopt =
     let sigma, env = Pfedit.get_current_context () in
     print_about env sigma ref_or_by_not
 
-
-let vernac_print ?loc env sigma = let open Feedback in function
+let vernac_print ~atts env sigma =
+  let open Feedback in
+  let loc = atts.loc in
+  function
   | PrintTables -> msg_notice (print_tables ())
   | PrintFullContext-> msg_notice (print_full_context_typ env sigma)
   | PrintSectionContext qid -> msg_notice (print_sec_context_typ env sigma qid)
@@ -1746,8 +1749,8 @@ let _ =
       optread  = (fun () -> !search_output_name_only);
       optwrite = (:=) search_output_name_only }
 
-let vernac_search ?loc s gopt r =
-  let gopt = query_command_selector ?loc gopt in
+let vernac_search ~atts s gopt r =
+  let gopt = query_command_selector ?loc:atts.loc gopt in
   let r = interp_search_restriction r in
   let env,gopt =
     match gopt with | None ->
@@ -1914,7 +1917,8 @@ let vernac_load interp fname =
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
-let interp ?proof ?loc locality poly st c =
+let interp ?proof poly ~atts ~st c =
+  let open Vernacinterp in
   vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac c);
   match c with
   (* The below vernac are candidates for removal from the main type
@@ -1954,30 +1958,30 @@ let interp ?proof ?loc locality poly st c =
 
   (* Syntax *)
   | VernacSyntaxExtension (infix, local,sl) ->
-      vernac_syntax_extension locality local infix sl
+      vernac_syntax_extension atts local infix sl
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
   | VernacBindScope (sc,rl) -> vernac_bind_scope sc rl
-  | VernacOpenCloseScope (local, s) -> vernac_open_close_scope locality local s
-  | VernacArgumentsScope (qid,scl) -> vernac_arguments_scope locality qid scl
-  | VernacInfix (local,mv,qid,sc) -> vernac_infix locality local mv qid sc
+  | VernacOpenCloseScope (local, s) -> vernac_open_close_scope ~atts local s
+  | VernacArgumentsScope (qid,scl) -> vernac_arguments_scope ~atts qid scl
+  | VernacInfix (local,mv,qid,sc) -> vernac_infix ~atts local mv qid sc
   | VernacNotation (local,c,infpl,sc) ->
-      vernac_notation locality local c infpl sc
+      vernac_notation ~atts local c infpl sc
   | VernacNotationAddFormat(n,k,v) ->
       Metasyntax.add_notation_extra_printing_rule n k v
 
   (* Gallina *)
-  | VernacDefinition (k,lid,d) -> vernac_definition locality poly k lid d
-  | VernacStartTheoremProof (k,l) -> vernac_start_proof locality poly k l
+  | VernacDefinition (k,lid,d) -> vernac_definition ~atts poly k lid d
+  | VernacStartTheoremProof (k,l) -> vernac_start_proof ~atts poly k l
   | VernacEndProof e -> vernac_end_proof ?proof e
   | VernacExactProof c -> vernac_exact_proof c
-  | VernacAssumption (stre,nl,l) -> vernac_assumption locality poly stre l nl
+  | VernacAssumption (stre,nl,l) -> vernac_assumption ~atts poly stre l nl
   | VernacInductive (cum, priv,finite,l) -> vernac_inductive cum poly priv finite l
-  | VernacFixpoint (local, l) -> vernac_fixpoint locality poly local l
-  | VernacCoFixpoint (local, l) -> vernac_cofixpoint locality poly local l
+  | VernacFixpoint (local, l) -> vernac_fixpoint ~atts poly local l
+  | VernacCoFixpoint (local, l) -> vernac_cofixpoint ~atts poly local l
   | VernacScheme l -> vernac_scheme l
   | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
-  | VernacUniverse l -> vernac_universe loc poly l
-  | VernacConstraint l -> vernac_constraint loc poly l
+  | VernacUniverse l -> vernac_universe atts.loc poly l
+  | VernacConstraint l -> vernac_constraint atts.loc poly l
 
   (* Modules *)
   | VernacDeclareModule (export,lid,bl,mtyo) ->
@@ -1998,15 +2002,15 @@ let interp ?proof ?loc locality poly st c =
   | VernacRequire (from, export, qidl) -> vernac_require from export qidl
   | VernacImport (export,qidl) -> vernac_import export qidl
   | VernacCanonical qid -> vernac_canonical qid
-  | VernacCoercion (local,r,s,t) -> vernac_coercion locality poly local r s t
+  | VernacCoercion (local,r,s,t) -> vernac_coercion ~atts poly local r s t
   | VernacIdentityCoercion (local,(_,id),s,t) ->
-      vernac_identity_coercion locality poly local id s t
+      vernac_identity_coercion ~atts poly local id s t
 
   (* Type classes *)
   | VernacInstance (abst, sup, inst, props, info) ->
-      vernac_instance abst locality poly sup inst props info
+      vernac_instance abst ~atts poly sup inst props info
   | VernacContext sup -> vernac_context poly sup
-  | VernacDeclareInstances insts -> vernac_declare_instances locality insts
+  | VernacDeclareInstances insts -> vernac_declare_instances ~atts insts
   | VernacDeclareClass id -> vernac_declare_class id
 
   (* Solving *)
@@ -2016,7 +2020,7 @@ let interp ?proof ?loc locality poly st c =
   | VernacAddLoadPath (isrec,s,alias) -> vernac_add_loadpath isrec s alias
   | VernacRemoveLoadPath s -> vernac_remove_loadpath s
   | VernacAddMLPath (isrec,s) -> vernac_add_ml_path isrec s
-  | VernacDeclareMLModule l -> vernac_declare_ml_module locality l
+  | VernacDeclareMLModule l -> vernac_declare_ml_module ~atts l
   | VernacChdir s -> vernac_chdir s
 
   (* State management *)
@@ -2024,40 +2028,40 @@ let interp ?proof ?loc locality poly st c =
   | VernacRestoreState s -> vernac_restore_state s
 
   (* Commands *)
-  | VernacCreateHintDb (dbname,b) -> vernac_create_hintdb locality dbname b
-  | VernacRemoveHints (dbnames,ids) -> vernac_remove_hints locality dbnames ids
+  | VernacCreateHintDb (dbname,b) -> vernac_create_hintdb ~atts dbname b
+  | VernacRemoveHints (dbnames,ids) -> vernac_remove_hints ~atts dbnames ids
   | VernacHints (local,dbnames,hints) ->
-      vernac_hints locality poly local dbnames hints
+      vernac_hints ~atts poly local dbnames hints
   | VernacSyntacticDefinition (id,c,local,b) ->
-      vernac_syntactic_definition locality  id c local b
+      vernac_syntactic_definition ~atts id c local b
   | VernacDeclareImplicits (qid,l) ->
-      vernac_declare_implicits locality qid l
+      vernac_declare_implicits ~atts qid l
   | VernacArguments (qid, args, more_implicits, nargs, flags) ->
-      vernac_arguments locality qid args more_implicits nargs flags
+      vernac_arguments ~atts qid args more_implicits nargs flags
   | VernacReserve bl -> vernac_reserve bl
-  | VernacGeneralizable gen -> vernac_generalizable locality gen
-  | VernacSetOpacity qidl -> vernac_set_opacity locality qidl
-  | VernacSetStrategy l -> vernac_set_strategy locality l
-  | VernacSetOption (key,v) -> vernac_set_option locality key v
-  | VernacSetAppendOption (key,v) -> vernac_set_append_option locality key v
-  | VernacUnsetOption key -> vernac_unset_option locality key
+  | VernacGeneralizable gen -> vernac_generalizable ~atts gen
+  | VernacSetOpacity qidl -> vernac_set_opacity ~atts qidl
+  | VernacSetStrategy l -> vernac_set_strategy ~atts l
+  | VernacSetOption (key,v) -> vernac_set_option ~atts key v
+  | VernacSetAppendOption (key,v) -> vernac_set_append_option ~atts key v
+  | VernacUnsetOption key -> vernac_unset_option ~atts key
   | VernacRemoveOption (key,v) -> vernac_remove_option key v
   | VernacAddOption (key,v) -> vernac_add_option key v
   | VernacMemOption (key,v) -> vernac_mem_option key v
   | VernacPrintOption key -> vernac_print_option key
-  | VernacCheckMayEval (r,g,c) -> vernac_check_may_eval ?loc r g c
-  | VernacDeclareReduction (s,r) -> vernac_declare_reduction locality s r
+  | VernacCheckMayEval (r,g,c) -> vernac_check_may_eval ~atts r g c
+  | VernacDeclareReduction (s,r) -> vernac_declare_reduction ~atts s r
   | VernacGlobalCheck c -> vernac_global_check c
   | VernacPrint p ->
     let sigma, env = Pfedit.get_current_context () in
-    vernac_print ?loc env sigma p
-  | VernacSearch (s,g,r) -> vernac_search ?loc s g r
+    vernac_print ~atts env sigma p
+  | VernacSearch (s,g,r) -> vernac_search ~atts s g r
   | VernacLocate l -> vernac_locate l
   | VernacRegister (id, r) -> vernac_register id r
   | VernacComments l -> Flags.if_verbose Feedback.msg_info (str "Comments ok\n")
 
   (* Proof management *)
-  | VernacGoal t -> vernac_start_proof locality poly Theorem [None,([],t)]
+  | VernacGoal t -> vernac_start_proof ~atts poly Theorem [None,([],t)]
   | VernacFocus n -> vernac_focus n
   | VernacUnfocus -> vernac_unfocus ()
   | VernacUnfocused -> vernac_unfocused ()
@@ -2070,7 +2074,7 @@ let interp ?proof ?loc locality poly st c =
     let using = Option.append using (Proof_using.get_default_proof_using ()) in
     let tacs = if Option.is_empty tac then "tac:no" else "tac:yes" in
     let usings = if Option.is_empty using then "using:no" else "using:yes" in
-    Aux_file.record_in_aux_at ?loc "VernacProof" (tacs^" "^usings);
+    Aux_file.record_in_aux_at ?loc:atts.loc "VernacProof" (tacs^" "^usings);
     Option.iter vernac_set_end_tac tac;
     Option.iter vernac_set_used_variables using
   | VernacProofMode mn -> Proof_global.set_proof_mode mn [@ocaml.warning "-3"]
@@ -2078,7 +2082,7 @@ let interp ?proof ?loc locality poly st c =
   (* Extensions *)
   | VernacExtend (opn,args) ->
     (* XXX: Here we are returning the state! :) *)
-    let _st : Vernacstate.t = Vernacinterp.call ?locality ?loc (opn,args) ~st in
+    let _st : Vernacstate.t = Vernacinterp.call ~atts opn args ~st in
     ()
 
 (* Vernaculars that take a locality flag *)
@@ -2217,9 +2221,10 @@ let interp ?(verbosely=true) ?proof st (loc,c) =
         Obligations.set_program_mode isprogcmd;
         try
           vernac_timeout begin fun () ->
-          if verbosely
-            then Flags.verbosely (interp ?proof ?loc locality poly st) c
-            else Flags.silently  (interp ?proof ?loc locality poly st) c;
+            let atts = { loc; locality } in
+            if verbosely
+            then Flags.verbosely (interp ?proof ~atts poly ~st) c
+            else Flags.silently  (interp ?proof ~atts poly ~st) c;
           if orig_program_mode || not !Flags.program_mode || isprogcmd then
             Flags.program_mode := orig_program_mode;
 	  ignore (Flags.use_polymorphic_flag ())

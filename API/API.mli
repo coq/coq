@@ -6114,12 +6114,11 @@ sig
     locality : bool option;
   }
 
-  type vernac_command =
-    Genarg.raw_generic_argument list ->
-    atts:atts -> st:Vernacstate.t ->
-    Vernacstate.t
+  type 'a vernac_command = 'a -> atts:atts -> st:Vernacstate.t -> Vernacstate.t
 
-  val vinterp_add : deprecation -> Vernacexpr.extend_name -> vernac_command -> unit
+  type plugin_args = Genarg.raw_generic_argument list
+
+  val vinterp_add : deprecation -> Vernacexpr.extend_name -> plugin_args vernac_command -> unit
 
 end
 
