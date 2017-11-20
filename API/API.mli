@@ -5982,8 +5982,15 @@ sig
 
   type deprecation = bool
 
+  type atts = {
+    loc : Loc.t option;
+    locality : bool option;
+  }
+
   type vernac_command =
-    Genarg.raw_generic_argument list -> Loc.t option -> Vernacstate.t -> Vernacstate.t
+    Genarg.raw_generic_argument list ->
+    atts:atts -> st:Vernacstate.t ->
+    Vernacstate.t
 
   val vinterp_add : deprecation -> Vernacexpr.extend_name -> vernac_command -> unit
 

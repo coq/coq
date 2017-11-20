@@ -2078,7 +2078,7 @@ let interp ?proof ?loc locality poly st c =
   (* Extensions *)
   | VernacExtend (opn,args) ->
     (* XXX: Here we are returning the state! :) *)
-    let _st : Vernacstate.t = Vernacinterp.call ?locality ?loc (opn,args) st in
+    let _st : Vernacstate.t = Vernacinterp.call ?locality ?loc (opn,args) ~st in
     ()
 
 (* Vernaculars that take a locality flag *)

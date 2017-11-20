@@ -173,11 +173,11 @@ EXTEND
     [ [ "["; s = STRING; l = LIST0 args; "]";
         d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
       let () = if s = "" then failwith "Command name is empty." in
-      let b = <:expr< fun loc -> ( let () = $e$ in fun st -> st ) >> in
+      let b = <:expr< fun ~atts ~st -> ( let () = $e$ in st ) >> in
       { r_head = Some s; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
       | "[" ; "-" ; l = LIST1 args ; "]" ;
         d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
-      let b = <:expr< fun loc -> ( let () = $e$ in fun st -> st ) >> in
+      let b = <:expr< fun ~atts ~st -> ( let () = $e$ in st ) >> in
       { r_head = None; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
     ] ]
   ;

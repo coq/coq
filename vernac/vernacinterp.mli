@@ -10,8 +10,15 @@
 
 type deprecation = bool
 
-type vernac_command = Genarg.raw_generic_argument list -> Loc.t option ->
-  Vernacstate.t -> Vernacstate.t
+type atts = {
+  loc : Loc.t option;
+  locality : bool option;
+}
+
+type vernac_command =
+  Genarg.raw_generic_argument list ->
+  atts:atts -> st:Vernacstate.t ->
+  Vernacstate.t
 
 val vinterp_add : deprecation -> Vernacexpr.extend_name -> vernac_command -> unit
 
@@ -21,4 +28,4 @@ val vinterp_init : unit -> unit
 
 val call : ?locality:bool -> ?loc:Loc.t ->
   Vernacexpr.extend_name * Genarg.raw_generic_argument list ->
-  Vernacstate.t -> Vernacstate.t
+  st:Vernacstate.t -> Vernacstate.t
