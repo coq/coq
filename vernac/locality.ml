@@ -6,21 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
-
 (** * Managing locality *)
 
 let local_of_bool = function
   | true -> Decl_kinds.Local
   | false -> Decl_kinds.Global
-
-let check_locality locality_flag =
-  match locality_flag with
-  | Some b ->
-    let s = if b then "Local" else "Global" in
-    CErrors.user_err ~hdr:"Locality.check_locality"
-      (str "This command does not support the \"" ++ str s ++ str "\" prefix.")
-  | None -> ()
 
 (** Extracting the locality flag *)
 
@@ -95,13 +85,3 @@ let make_module_locality = function
 
 let enforce_module_locality locality_flag local =
   make_module_locality (enforce_locality_full locality_flag local)
-
-module LocalityFixme = struct
-  let locality = ref None
-  let set l = locality := l
-  let consume () =
-    let l = !locality in
-    locality := None;
-    l
-  let assert_consumed () = check_locality !locality
-end

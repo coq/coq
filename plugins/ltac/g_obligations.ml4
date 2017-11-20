@@ -123,11 +123,15 @@ VERNAC COMMAND EXTEND Admit_Obligations CLASSIFIED AS SIDEFF
 | [ "Admit" "Obligations" ] -> [ admit_obligations None ]
 END
 
-VERNAC COMMAND EXTEND Set_Solver CLASSIFIED AS SIDEFF
+VERNAC COMMAND FUNCTIONAL EXTEND Set_Solver CLASSIFIED AS SIDEFF
 | [ "Obligation" "Tactic" ":=" tactic(t) ] -> [
-    set_default_tactic
-      (Locality.make_section_locality (Locality.LocalityFixme.consume ()))
-      (Tacintern.glob_tactic t) ]
+    fun ~atts ~st -> begin
+        let open Vernacinterp in
+        set_default_tactic
+          (Locality.make_section_locality atts.locality)
+          (Tacintern.glob_tactic t);
+        st
+      end]
 END
 
 open Pp

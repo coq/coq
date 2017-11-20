@@ -74,11 +74,8 @@ let call ?locality ?loc (opn,converted_args) =
     phase := "Checking arguments";
     let hunk = callback converted_args in
     phase := "Executing command";
-    Locality.LocalityFixme.set locality;
     let atts = { loc; locality } in
-    let res = hunk ~atts in
-    Locality.LocalityFixme.assert_consumed ();
-    res
+    hunk ~atts
   with
     | Drop -> raise Drop
     | reraise ->

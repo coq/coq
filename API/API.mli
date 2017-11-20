@@ -5837,9 +5837,6 @@ end
 module Locality :
 sig
   val make_section_locality : bool option -> bool
-  module LocalityFixme : sig
-    val consume : unit -> bool option
-  end
   val make_module_locality : bool option -> bool
 end
 

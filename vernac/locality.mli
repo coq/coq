@@ -41,11 +41,3 @@ val enforce_section_locality : bool option -> bool -> bool
 
 val make_module_locality : bool option -> bool
 val enforce_module_locality : bool option -> bool -> bool
-
-(* This is the old imperative interface that is still used for
- * VernacExtend vernaculars.  Time permitting this could be trashed too *)
-module LocalityFixme : sig
-  val set : bool option -> unit
-  val consume : unit -> bool option
-  val assert_consumed : unit -> unit
-end

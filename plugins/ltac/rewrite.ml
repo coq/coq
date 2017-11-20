@@ -1800,9 +1800,9 @@ let declare_instance_trans global binders a aeq n lemma =
   in anew_instance global binders instance
        [(Ident (Loc.tag @@ Id.of_string "transitivity"),lemma)]
 
-let declare_relation ?(binders=[]) a aeq n refl symm trans =
+let declare_relation ?locality ?(binders=[]) a aeq n refl symm trans =
   init_setoid ();
-  let global = not (Locality.make_section_locality (Locality.LocalityFixme.consume ())) in
+  let global = not (Locality.make_section_locality locality) in
   let instance = declare_instance a aeq (add_suffix n "_relation") "Coq.Classes.RelationClasses.RewriteRelation"
   in ignore(anew_instance global binders instance []);
   match (refl,symm,trans) with

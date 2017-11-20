@@ -65,11 +65,14 @@ let default_intuition_tac =
 let (set_default_solver, default_solver, print_default_solver) = 
   Tactic_option.declare_tactic_option ~default:default_intuition_tac "Firstorder default solver"
 
-VERNAC COMMAND EXTEND Firstorder_Set_Solver CLASSIFIED AS SIDEFF
+VERNAC COMMAND FUNCTIONAL EXTEND Firstorder_Set_Solver CLASSIFIED AS SIDEFF
 | [ "Set" "Firstorder" "Solver" tactic(t) ] -> [
-    set_default_solver 
-      (Locality.make_section_locality (Locality.LocalityFixme.consume ()))
-      (Tacintern.glob_tactic t) ]
+    fun ~atts ~st -> let open Vernacinterp in
+      set_default_solver
+        (Locality.make_section_locality atts.locality)
+        (Tacintern.glob_tactic t);
+        st
+  ]
 END
 
 VERNAC COMMAND EXTEND Firstorder_Print_Solver CLASSIFIED AS QUERY

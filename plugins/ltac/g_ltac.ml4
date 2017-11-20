@@ -469,13 +469,13 @@ VERNAC ARGUMENT EXTEND ltac_production_item PRINTED BY pr_ltac_production_item
   [ Tacentries.TacNonTerm (Loc.tag ~loc ((Id.to_string nt, None), None)) ]
 END
 
-VERNAC COMMAND EXTEND VernacTacticNotation
+VERNAC COMMAND FUNCTIONAL EXTEND VernacTacticNotation
 | [ "Tactic" "Notation" ltac_tactic_level_opt(n) ne_ltac_production_item_list(r) ":=" tactic(e) ] =>
   [ VtUnknown, VtNow ] ->
-  [
-    let l = Locality.LocalityFixme.consume () in
-    let n = Option.default 0 n in
-    Tacentries.add_tactic_notation (Locality.make_module_locality l) n r e
+  [ fun ~atts ~st -> let open Vernacinterp in
+      let n = Option.default 0 n in
+      Tacentries.add_tactic_notation (Locality.make_module_locality atts.locality) n r e;
+      st
   ]
 END
 
@@ -512,15 +512,15 @@ PRINTED BY pr_tacdef_body
 | [ tacdef_body(t) ] -> [ t ]
 END
 
-VERNAC COMMAND EXTEND VernacDeclareTacticDefinition
+VERNAC COMMAND FUNCTIONAL EXTEND VernacDeclareTacticDefinition
 | [ "Ltac" ne_ltac_tacdef_body_list_sep(l, "with") ] => [
     VtSideff (List.map (function
       | TacticDefinition ((_,r),_) -> r
       | TacticRedefinition (Ident (_,r),_) -> r
       | TacticRedefinition (Qualid (_,q),_) -> snd(repr_qualid q)) l), VtLater
-  ] -> [
-    let lc = Locality.LocalityFixme.consume () in
-    Tacentries.register_ltac (Locality.make_module_locality lc) l
+  ] -> [ fun ~atts ~st -> let open Vernacinterp in
+           Tacentries.register_ltac (Locality.make_module_locality atts.locality) l;
+           st
   ]
 END
 
