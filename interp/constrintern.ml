@@ -534,8 +534,9 @@ let traverse_binder (terms,_,_ as subst) avoid (renaming,env) = function
  | Name id ->
   try
     (* Binders bound in the notation are considered first-order objects *)
-    let _,na = coerce_to_name (fst (Id.Map.find id terms)) in
-    (renaming,{env with ids = Name.fold_right Id.Set.add na env.ids}), na
+    let _,na as locna = coerce_to_name (fst (Id.Map.find id terms)) in
+    let env = push_name_env Id.Map.empty (Variable,[],[],[]) env locna in
+    (renaming,env), na
   with Not_found ->
     (* Binders not bound in the notation do not capture variables *)
     (* outside the notation (i.e. in the substitution) *)
@@ -747,7 +748,14 @@ let gvar (loc, id) us = match us with
     str " cannot have a universe instance")
 
 let intern_var genv (ltacvars,ntnvars) namedctx loc id us =
-  (* Is [id] an inductive type potentially with implicit *)
+  (* Is [id] a notation variable *)
+  if Id.Map.mem id ntnvars then
+    begin
+      if not (Id.Map.mem id genv.impls) then set_var_scope ?loc id true genv ntnvars;
+      gvar (loc,id) us, [], [], []
+    end
+  else
+  (* Is [id] registered with implicit arguments *)
   try
     let ty,expl_impls,impls,argsc = Id.Map.find id genv.impls in
     let expl_impls = List.map
@@ -760,12 +768,8 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id us =
   if Id.Set.mem id genv.ids || Id.Set.mem id ltacvars.ltac_vars
   then
     gvar (loc,id) us, [], [], []
-  (* Is [id] a notation variable *)
-  else if Id.Map.mem id ntnvars
-  then
-    (set_var_scope ?loc id true genv ntnvars; gvar (loc,id) us, [], [], [])
-  (* Is [id] the special variable for recursive notations *)
   else if Id.equal id ldots_var
+  (* Is [id] the special variable for recursive notations? *)
   then if Id.Map.is_empty ntnvars
     then error_ldots_var ?loc
     else gvar (loc,id) us, [], [], []
