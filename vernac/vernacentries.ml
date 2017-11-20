@@ -2114,7 +2114,7 @@ let check_vernac_supports_polymorphism c p =
   | None, _ -> ()
   | Some _, (
       VernacDefinition _ | VernacFixpoint _ | VernacCoFixpoint _
-    | VernacAssumption _ | VernacInductive _ 
+    | VernacAssumption _ | VernacInductive _
     | VernacStartTheoremProof _
     | VernacCoercion _ | VernacIdentityCoercion _
     | VernacInstance _ | VernacDeclareInstances _
@@ -2123,7 +2123,7 @@ let check_vernac_supports_polymorphism c p =
   | Some _, _ -> user_err Pp.(str "This command does not support Polymorphism")
 
 let enforce_polymorphism = function
-  | None -> Flags.is_universe_polymorphism ()
+  | None   -> Flags.is_universe_polymorphism ()
   | Some b -> Flags.make_polymorphic_flag b; b
 
 (** A global default timeout, controlled by option "Set Default Timeout n".
@@ -2191,43 +2191,57 @@ let with_fail st b f =
       | _ -> assert false
   end
 
-let interp ?(verbosely=true) ?proof st (loc,c) =
+let interp ?(verbosely=true) ?proof ~st (loc,c) =
   let orig_program_mode = Flags.is_program_mode () in
-  let rec aux ?locality ?polymorphism isprogcmd = function
+  let rec aux ?polymorphism ~atts isprogcmd = function
 
-    | VernacProgram c when not isprogcmd -> aux ?locality ?polymorphism true c
-    | VernacProgram _ -> user_err Pp.(str "Program mode specified twice")
-    | VernacLocal (b, c) when Option.is_empty locality -> 
-      aux ~locality:b ?polymorphism isprogcmd c
-    | VernacPolymorphic (b, c) when polymorphism = None -> 
-      aux ?locality ~polymorphism:b isprogcmd c
-    | VernacPolymorphic (b, c) -> user_err Pp.(str "Polymorphism specified twice")
-    | VernacLocal _ -> user_err Pp.(str "Locality specified twice")
+    | VernacProgram c when not isprogcmd ->
+      aux ?polymorphism ~atts true c
+
+    | VernacProgram _ ->
+      user_err Pp.(str "Program mode specified twice")
+
+    | VernacPolymorphic (b, c) when polymorphism = None ->
+      aux ~polymorphism:b ~atts:atts isprogcmd c
+
+    | VernacPolymorphic (b, c) ->
+      user_err Pp.(str "Polymorphism specified twice")
+
+    | VernacLocal (b, c) when Option.is_empty atts.locality ->
+      aux ?polymorphism ~atts:{atts with locality = Some b} isprogcmd c
+
+    | VernacLocal _ ->
+      user_err Pp.(str "Locality specified twice")
+
     | VernacFail v ->
-        with_fail st true (fun () -> aux ?locality ?polymorphism isprogcmd v)
+      with_fail st true (fun () -> aux ?polymorphism ~atts isprogcmd v)
+
     | VernacTimeout (n,v) ->
-        current_timeout := Some n;
-        aux ?locality ?polymorphism isprogcmd v
+      current_timeout := Some n;
+      aux ?polymorphism ~atts isprogcmd v
+
     | VernacRedirect (s, (_,v)) ->
-         Topfmt.with_output_to_file s (aux ?locality ?polymorphism isprogcmd) v
+      Topfmt.with_output_to_file s (aux ?polymorphism ~atts isprogcmd) v
+
     | VernacTime (_,v) ->
-        System.with_time !Flags.time
-          (aux ?locality ?polymorphism isprogcmd) v;
-    | VernacLoad (_,fname) -> vernac_load (aux false) fname
-    | c -> 
-        check_vernac_supports_locality c locality;
-        check_vernac_supports_polymorphism c polymorphism;
-        let polymorphic = enforce_polymorphism polymorphism in
-        Obligations.set_program_mode isprogcmd;
-        try
-          vernac_timeout begin fun () ->
-            let atts = { loc; locality; polymorphic } in
-            if verbosely
-            then Flags.verbosely (interp ?proof ~atts ~st) c
-            else Flags.silently  (interp ?proof ~atts ~st) c;
+      System.with_time !Flags.time (aux ?polymorphism ~atts isprogcmd) v;
+
+    | VernacLoad (_,fname) -> vernac_load (aux ?polymorphism ~atts false) fname
+
+    | c ->
+      check_vernac_supports_locality c atts.locality;
+      check_vernac_supports_polymorphism c polymorphism;
+      let polymorphic = enforce_polymorphism polymorphism in
+      Obligations.set_program_mode isprogcmd;
+      try
+        vernac_timeout begin fun () ->
+          let atts = { atts with polymorphic } in
+          if verbosely
+          then Flags.verbosely (interp ?proof ~atts ~st) c
+          else Flags.silently  (interp ?proof ~atts ~st) c;
           if orig_program_mode || not !Flags.program_mode || isprogcmd then
             Flags.program_mode := orig_program_mode;
-	  ignore (Flags.use_polymorphic_flag ())
+          ignore (Flags.use_polymorphic_flag ())
           end
         with
         | reraise when
@@ -2242,12 +2256,14 @@ let interp ?(verbosely=true) ?proof st (loc,c) =
 	    ignore (Flags.use_polymorphic_flag ());
             iraise e
   in
-    if verbosely then Flags.verbosely (aux false) c
-    else aux false c
+  let atts = { loc; locality = None; polymorphic = false; } in
+  if verbosely
+  then Flags.verbosely (aux ~atts orig_program_mode) c
+  else aux ~atts orig_program_mode c
 
 (* XXX: There is a bug here in case of an exception, see @gares
    comments on the PR *)
-let interp ?verbosely ?proof st cmd =
+let interp ?verbosely ?proof ~st cmd =
   Vernacstate.unfreeze_interp_state st;
-  interp ?verbosely ?proof st cmd;
+  interp ?verbosely ?proof ~st cmd;
   Vernacstate.freeze_interp_state `No
