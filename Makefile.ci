@@ -5,6 +5,7 @@ CI_TARGETS=ci-all \
     ci-coq-dpdgraph \
     ci-coquelicot \
     ci-cpdt \
+    ci-equations \
     ci-fiat-crypto \
     ci-fiat-parsers \
     ci-flocq \
