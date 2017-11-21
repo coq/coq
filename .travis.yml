@@ -71,6 +71,9 @@ env:
 
 matrix:
 
+  allow_failures:
+    - env: TEST_TARGET="lint"
+
   include:
     - env:
       - TEST_TARGET="lint"
