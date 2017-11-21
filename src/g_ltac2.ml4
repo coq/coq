@@ -831,10 +831,11 @@ let classify_ltac2 = function
 | StrSyn _ -> Vernacexpr.VtUnknown, Vernacexpr.VtNow
 | StrMut _ | StrVal _ | StrPrm _  | StrTyp _ | StrRun _ -> Vernac_classifier.classify_as_sideeff
 
-VERNAC COMMAND EXTEND VernacDeclareTactic2Definition
+VERNAC COMMAND FUNCTIONAL EXTEND VernacDeclareTactic2Definition
 | [ "Ltac2" ltac2_entry(e) ] => [ classify_ltac2 e ] -> [
-    let local = Locality.LocalityFixme.consume () in
-    Tac2entries.register_struct ?local e
+    fun ~atts ~st -> let open Vernacinterp in
+    Tac2entries.register_struct ?local:atts.locality e;
+    st
   ]
 END
 
