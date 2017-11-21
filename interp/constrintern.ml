@@ -2161,6 +2161,7 @@ let intern_constr_pattern env ?(as_type=false) ?(ltacvars=empty_ltac_sign) c =
 let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   (* [vl] is intended to remember the scope of the free variables of [a] *)
   let vl = Id.Map.map (fun typ -> (ref true, ref None, typ)) nenv.ninterp_var_type in
+  let impls = Id.Map.fold (fun id _ impls -> Id.Map.remove id impls) nenv.ninterp_var_type impls in
   let c = internalize (Global.env()) {ids = extract_ids env; unb = false;
 						tmp_scope = None; scopes = []; impls = impls}
     false (empty_ltac_sign, vl) a in
