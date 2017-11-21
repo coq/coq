@@ -3689,6 +3689,9 @@ hints of the database named {\tt core}.
   This variant is very useful for getting a better understanding of automation,
   or to know what lemmas/assumptions were used.
 
+\item {\tt debug auto} Behaves like {\tt auto} but shows the tactics
+  it tries to solve the goal, including failing paths.
+
 \item {\tt \zeroone{info\_}auto \zeroone{\num}} \zeroone{{\tt using} \nterm{lemma}$_1$
   {\tt ,} {\ldots} {\tt ,} \nterm{lemma}$_n$} \zeroone{{\tt with}
   \ident$_1$ {\ldots} \ident$_n$}
@@ -3709,6 +3712,8 @@ hints of the database named {\tt core}.
 
 \item {\tt info\_trivial}
 
+\item {\tt debug trivial}
+
 \item {\tt \zeroone{info\_}trivial} \zeroone{{\tt using} \nterm{lemma}$_1$
   {\tt ,} {\ldots} {\tt ,} \nterm{lemma}$_n$} \zeroone{{\tt with}
   \ident$_1$ {\ldots} \ident$_n$}
@@ -3717,6 +3722,19 @@ hints of the database named {\tt core}.
 
 \Rem {\tt auto} either solves completely the goal or else leaves it
 intact. \texttt{auto} and \texttt{trivial} never fail.
+
+\Rem The following options enable printing of informative or debug
+information for the {\tt auto} and {\tt trivial} tactics:
+\begin{quote}
+  \optindex{Info Auto}
+  {\tt Set Info Auto}
+  \optindex{Debug Auto}
+  {\tt Set Debug Auto}
+  \optindex{Info Trivial}
+  {\tt Set Info Trivial}
+  \optindex{Debug Trivial}
+  {\tt Set Debug Trivial}
+\end{quote}
 
 \SeeAlso Section~\ref{Hints-databases}
 
@@ -3753,6 +3771,14 @@ Note that {\tt ex\_intro} should be declared as a hint.
   The various options for eauto are the same as for auto.
 
 \end{Variants}
+
+\Rem {\tt eauto} obeys the following options:
+\begin{quote}
+  \optindex{Info Eauto}
+  {\tt Set Info Eauto}
+  \optindex{Debug Eauto}
+  {\tt Set Debug Eauto}
+\end{quote}
 
 \SeeAlso Section~\ref{Hints-databases}
 
