@@ -4389,6 +4389,8 @@ sig
   val default_binder_kind : Constrexpr.binder_kind
   val mkLetInC : Names.Name.t Loc.located * Constrexpr.constr_expr * Constrexpr.constr_expr option * Constrexpr.constr_expr -> Constrexpr.constr_expr
   val mkCProdN : ?loc:Loc.t -> Constrexpr.local_binder_expr list -> Constrexpr.constr_expr -> Constrexpr.constr_expr
+  val replace_vars_constr_expr :
+    Names.Id.t Names.Id.Map.t -> Constrexpr.constr_expr -> Constrexpr.constr_expr
 end
 
 module Notation_ops :
@@ -4443,8 +4445,11 @@ end
 
 module Topconstr :
 sig
+
   val replace_vars_constr_expr :
-  Names.Id.t Names.Id.Map.t -> Constrexpr.constr_expr -> Constrexpr.constr_expr
+    Names.Id.t Names.Id.Map.t -> Constrexpr.constr_expr -> Constrexpr.constr_expr
+  [@@ocaml.deprecated "use Constrexpr_ops.free_vars_of_constr_expr"]
+
 end
 
 module Constrintern :

@@ -1,13 +1,13 @@
 Tactypes
 Stdarg
 Genintern
-Constrexpr_ops
 Notation_ops
-Ppextend
 Notation
-Dumpglob
 Syntax_def
 Smartlocate
+Constrexpr_ops
+Ppextend
+Dumpglob
 Topconstr
 Reserve
 Impargs
