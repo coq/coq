@@ -40,17 +40,17 @@ let _=
   in
     declare_int_option gdopt
 
-let congruence_depth=ref 100
 
 let _=
+  let congruence_depth=ref 100 in
   let gdopt=
-    { optdepr=false;
+    { optdepr=true; (* noop *)
       optname="Congruence Depth";
       optkey=["Congruence";"Depth"];
       optread=(fun ()->Some !congruence_depth);
       optwrite=
    (function
-	None->congruence_depth:=0
+        None->congruence_depth:=0
       |	Some i->congruence_depth:=(max i 0))}
   in
     declare_int_option gdopt
