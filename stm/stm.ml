@@ -2478,12 +2478,16 @@ let new_doc { doc_type ; require_libs } =
 
   begin match doc_type with
   | Interactive ln ->
+    Safe_typing.allow_delayed_constants := true;
     Declaremods.start_library ln
+
   | VoDoc ln ->
     let ldir = Flags.verbosely Library.start_library ln in
     VCS.set_ldir ldir;
     set_compilation_hints ln
+
   | VioDoc ln ->
+    Safe_typing.allow_delayed_constants := true;
     let ldir = Flags.verbosely Library.start_library ln in
     VCS.set_ldir ldir;
     set_compilation_hints ln

@@ -333,8 +333,8 @@ let compile ~verbosely ~f_in ~f_out =
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       Aux_file.stop_aux_file ();
       Dumpglob.end_dump_glob ()
-  | BuildVio ->
 
+  | BuildVio ->
       Flags.record_aux_file := false;
       Dumpglob.noglob ();
 
@@ -734,9 +734,7 @@ let parse_args arglist =
     |"-profile-ltac" -> Flags.profile_ltac := true
     |"-q" -> Coqinit.no_load_rc ()
     |"-quiet"|"-silent" -> Flags.quiet := true; Flags.make_warn false
-    |"-quick" ->
-      Safe_typing.allow_delayed_constants := true;
-      compilation_mode := BuildVio
+    |"-quick" -> compilation_mode := BuildVio
     |"-list-tags" -> print_tags := true
     |"-time" -> Flags.time := true
     |"-type-in-type" -> set_type_in_type ()
