@@ -3515,6 +3515,13 @@ of {\tt cbn} while doing reductions in unification, type inference and
 tactic applications. It can result in expensive unifications, as
 refolding currently uses a potentially exponential heuristic.
 
+\begin{quote}
+  \optindex{Debug RAKAM}
+  {\tt Set Debug RAKAM}
+\end{quote}
+This option makes {\tt cbn} print various debugging information.
+{\tt RAKAM} is the Refolding Algebraic Krivine Abstract Machine.
+
 \subsection{\tt unfold \qualid}
 \tacindex{unfold}
 \label{unfold}
