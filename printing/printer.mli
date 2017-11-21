@@ -27,10 +27,12 @@ val enable_goal_names_printing     : bool ref
 
 val pr_lconstr_env         : env -> evar_map -> constr -> Pp.t
 val pr_lconstr             : constr -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 val pr_lconstr_goal_style_env : env -> evar_map -> constr -> Pp.t
 
 val pr_constr_env          : env -> evar_map -> constr -> Pp.t
 val pr_constr              : constr -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 val pr_constr_goal_style_env : env -> evar_map -> constr -> Pp.t
 
 val pr_constr_n_env        : env -> evar_map -> Notation_term.tolerability -> constr -> Pp.t
@@ -41,14 +43,18 @@ val pr_constr_n_env        : env -> evar_map -> Notation_term.tolerability -> co
 
 val safe_pr_lconstr_env         : env -> evar_map -> constr -> Pp.t
 val safe_pr_lconstr             : constr -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
 val safe_pr_constr_env          : env -> evar_map -> constr -> Pp.t
 val safe_pr_constr              : constr -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
 val pr_econstr_env     : env -> evar_map -> EConstr.t -> Pp.t
 val pr_econstr         : EConstr.t -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 val pr_leconstr_env     : env -> evar_map -> EConstr.t -> Pp.t
 val pr_leconstr         : EConstr.t -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
 val pr_econstr_n_env    : env -> evar_map -> Notation_term.tolerability -> EConstr.t -> Pp.t
 
@@ -57,41 +63,53 @@ val pr_letype_env           : env -> evar_map -> EConstr.types -> Pp.t
 
 val pr_open_constr_env     : env -> evar_map -> open_constr -> Pp.t
 val pr_open_constr         : open_constr -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
 val pr_open_lconstr_env    : env -> evar_map -> open_constr -> Pp.t
 val pr_open_lconstr        : open_constr -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
 val pr_constr_under_binders_env  : env -> evar_map -> constr_under_binders -> Pp.t
 val pr_constr_under_binders      : constr_under_binders -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
 val pr_lconstr_under_binders_env : env -> evar_map -> constr_under_binders -> Pp.t
 val pr_lconstr_under_binders     : constr_under_binders -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
 val pr_goal_concl_style_env : env -> evar_map -> EConstr.types -> Pp.t
 val pr_ltype_env           : env -> evar_map -> types -> Pp.t
 val pr_ltype               : types -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
 val pr_type_env            : env -> evar_map -> types -> Pp.t
 val pr_type                : types -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
 val pr_closed_glob_n_env   : env -> evar_map -> Notation_term.tolerability -> closed_glob_constr -> Pp.t
 val pr_closed_glob_env     : env -> evar_map -> closed_glob_constr -> Pp.t
 val pr_closed_glob         : closed_glob_constr -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
 val pr_ljudge_env          : env -> evar_map -> EConstr.unsafe_judgment -> Pp.t * Pp.t
 val pr_ljudge              : EConstr.unsafe_judgment -> Pp.t * Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
 val pr_lglob_constr_env      : env -> 'a glob_constr_g -> Pp.t
 val pr_lglob_constr          : 'a glob_constr_g -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
 val pr_glob_constr_env       : env -> 'a glob_constr_g -> Pp.t
 val pr_glob_constr           : 'a glob_constr_g -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
 val pr_lconstr_pattern_env : env -> evar_map -> constr_pattern -> Pp.t
 val pr_lconstr_pattern     : constr_pattern -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
 val pr_constr_pattern_env  : env -> evar_map -> constr_pattern -> Pp.t
 val pr_constr_pattern      : constr_pattern -> Pp.t
+[@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
 val pr_cases_pattern       : cases_pattern -> Pp.t
 
@@ -166,8 +184,8 @@ val pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> evar l
 val pr_subgoal             : int -> evar_map -> goal list -> Pp.t
 val pr_concl               : int -> evar_map -> goal -> Pp.t
 
-val pr_open_subgoals       : ?proof:Proof.proof -> unit -> Pp.t
-val pr_nth_open_subgoal    : int -> Pp.t
+val pr_open_subgoals       : proof:Proof.proof -> Pp.t
+val pr_nth_open_subgoal    : proof:Proof.proof -> int -> Pp.t
 val pr_evar                : evar_map -> (evar * evar_info) -> Pp.t
 val pr_evars_int           : evar_map -> int -> evar_info Evar.Map.t -> Pp.t
 val pr_evars               : evar_map -> evar_info Evar.Map.t -> Pp.t
@@ -200,13 +218,13 @@ module ContextObjectMap : CMap.ExtS
 val pr_assumptionset :
   env -> types ContextObjectMap.t -> Pp.t
 
-val pr_goal_by_id : Id.t -> Pp.t
+val pr_goal_by_id : proof:Proof.proof -> Id.t -> Pp.t
 
 type printer_pr = {
  pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> evar list -> Goal.goal list -> int list -> goal list -> goal list -> Pp.t;
  pr_subgoal             : int -> evar_map -> goal list -> Pp.t;
  pr_goal                : goal sigma -> Pp.t;
-};;
+}
 
 val set_printer_pr : printer_pr -> unit
 

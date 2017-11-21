@@ -272,7 +272,7 @@ let (introstac : ?ist:Tacinterp.interp_sign -> ssripats -> Tacmach.tactic),
 let elim_intro_tac ipats ?ist what eqid ssrelim is_rec clr gl =
   (* Utils of local interest only *)
   let iD s ?t gl = let t = match t with None -> pf_concl gl | Some x -> x in
-                   ppdebug(lazy Pp.(str s ++ pr_econstr t)); Tacticals.tclIDTAC gl in
+                   ppdebug(lazy Pp.(str s ++ pr_econstr_env (pf_env gl) (project gl) t)); Tacticals.tclIDTAC gl in
   let protectC, gl = pf_mkSsrConst "protect_term" gl in
   let eq, gl = pf_fresh_global (Coqlib.build_coq_eq ()) gl in
   let eq = EConstr.of_constr eq in

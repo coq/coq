@@ -60,6 +60,7 @@ let pprecarg = function
 let ppwf_paths x = pp (Rtree.pp_tree pprecarg x)
 
 (* term printers *)
+let envpp pp = let sigma,env = Pfedit.get_current_context () in pp env sigma
 let rawdebug = ref false
 let ppevar evk = pp (str (Evd.string_of_existential evk))
 let ppconstr x = pp (Termops.print_constr (EConstr.of_constr x))
@@ -69,9 +70,9 @@ let ppconstrdb x = pp(Flags.with_option rawdebug Termops.print_constr (EConstr.o
 let ppterm = ppconstr
 let ppsconstr x = ppconstr (Mod_subst.force_constr x)
 let ppconstr_univ x = Constrextern.with_universes ppconstr x
-let ppglob_constr = (fun x -> pp(pr_lglob_constr x))
-let pppattern = (fun x -> pp(pr_constr_pattern x))
-let pptype = (fun x -> try pp(pr_ltype x) with e -> pp (str (Printexc.to_string e)))
+let ppglob_constr = (fun x -> pp(pr_lglob_constr_env (Global.env()) x))
+let pppattern = (fun x -> pp(envpp pr_constr_pattern_env x))
+let pptype = (fun x -> try pp(envpp pr_ltype_env x) with e -> pp (str (Printexc.to_string e)))
 let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
 
 let ppbigint n = pp (str (Bigint.to_string n));;
@@ -121,7 +122,7 @@ let rec pr_closure {idents=idents;typed=typed;untyped=untyped} =
 and pr_closed_glob_constr_idmap x =
   pridmap (fun _ -> pr_closed_glob_constr) x
 and pr_closed_glob_constr {closure=closure;term=term} =
-  pr_closure closure ++ pr_lglob_constr term
+  pr_closure closure ++ (pr_lglob_constr_env Global.(env ())) term
 
 let ppclosure x = pp (pr_closure x)
 let ppclosedglobconstr x = pp (pr_closed_glob_constr x)
@@ -140,14 +141,14 @@ let safe_pr_global = function
 let ppglobal x = try pp(pr_global x) with _ -> safe_pr_global x
 
 let ppconst (sp,j) =
-    pp (str"#" ++ KerName.print sp ++ str"=" ++ pr_lconstr j.uj_val)
+    pp (str"#" ++ KerName.print sp ++ str"=" ++ envpp pr_lconstr_env j.uj_val)
 
 let ppvar ((id,a)) =
-    pp (str"#" ++ Id.print id ++ str":" ++ pr_lconstr a)
+    pp (str"#" ++ Id.print id ++ str":" ++ envpp pr_lconstr_env a)
 
 let genppj f j = let (c,t) = f j in (c ++ str " : " ++ t)
 
-let ppj j = pp (genppj pr_ljudge j)
+let ppj j = pp (genppj (envpp pr_ljudge_env) j)
 
 let prsubst s = pp (Mod_subst.debug_pr_subst s)
 let prdelta s = pp (Mod_subst.debug_pr_delta s)
@@ -175,13 +176,13 @@ let ppclenv clenv = pp(pr_clenv clenv)
 let ppgoalgoal gl = pp(Goal.pr_goal gl)
 let ppgoal g = pp(Printer.pr_goal g)
 let ppgoalsigma g = pp(Printer.pr_goal g ++ Termops.pr_evar_map None (Refiner.project g))
-let pphintdb db = pp(Hints.pr_hint_db db)
+let pphintdb db = pp(envpp Hints.pr_hint_db_env db)
 let ppproofview p =
   let gls,sigma = Proofview.proofview p in
   pp(pr_enum Goal.pr_goal gls ++ fnl () ++ Termops.pr_evar_map (Some 1) sigma)
 
 let ppopenconstr (x : Evd.open_constr) =
-  let (evd,c) = x in pp (Termops.pr_evar_map (Some 2) evd ++ pr_constr c)
+  let (evd,c) = x in pp (Termops.pr_evar_map (Some 2) evd ++ envpp pr_constr_env c)
 (* spiwack: deactivated until a replacement is found
 let pppftreestate p = pp(print_pftreestate p)
 *)

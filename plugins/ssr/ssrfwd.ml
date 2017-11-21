@@ -72,13 +72,14 @@ let examine_abstract id gl =
   let gl, tid = pfe_type_of gl id in
   let abstract, gl = pf_mkSsrConst "abstract" gl in
   let sigma = project gl in
+  let env = pf_env gl in
   if not (EConstr.isApp sigma tid) || not (EConstr.eq_constr sigma (fst(EConstr.destApp sigma tid)) abstract) then
-    errorstrm(strbrk"not an abstract constant: "++pr_econstr id);
+    errorstrm(strbrk"not an abstract constant: "++ pr_econstr_env env sigma id);
   let _, args_id = EConstr.destApp sigma tid in
   if Array.length args_id <> 3 then
-    errorstrm(strbrk"not a proper abstract constant: "++pr_econstr id);
+    errorstrm(strbrk"not a proper abstract constant: "++ pr_econstr_env env sigma id);
   if not (is_Evar_or_CastedMeta sigma args_id.(2)) then
-    errorstrm(strbrk"abstract constant "++pr_econstr id++str" already used");
+    errorstrm(strbrk"abstract constant "++ pr_econstr_env env sigma id++str" already used");
   tid, args_id
 
 let pf_find_abstract_proof check_lock gl abstract_n = 
@@ -94,7 +95,7 @@ let pf_find_abstract_proof check_lock gl abstract_n =
     | _ -> l) (project gl) [] in
   match l with
   | [e] -> e
-  | _ -> errorstrm(strbrk"abstract constant "++pr_constr abstract_n++
+  | _ -> errorstrm(strbrk"abstract constant "++ pr_constr_env (pf_env gl) (project gl) abstract_n ++
            strbrk" not found in the evar map exactly once. "++
            strbrk"Did you tamper with it?")
 
@@ -205,7 +206,7 @@ let havetac ist
      let assert_is_conv gl =
        try Proofview.V82.of_tactic (convert_concl (EConstr.it_mkProd_or_LetIn concl ctx)) gl
        with _ -> errorstrm (str "Given proof term is not of type " ++
-         pr_econstr (EConstr.mkArrow (EConstr.mkVar (Id.of_string "_")) concl)) in
+         pr_econstr_env (pf_env gl) (project gl) (EConstr.mkArrow (EConstr.mkVar (Id.of_string "_")) concl)) in
      gl, ty, Tacticals.tclTHEN assert_is_conv (Proofview.V82.of_tactic (Tactics.apply t)), id, itac_c
    | FwdHave, false, false ->
      let skols = List.flatten (List.map (function
@@ -271,7 +272,7 @@ let ssrabstract ist gens (*last*) gl =
     let gl, proof =
       let pf_unify_HO gl a b =
         try pf_unify_HO gl a b
-        with _ -> errorstrm(strbrk"The abstract variable "++pr_econstr id++
+        with _ -> errorstrm(strbrk"The abstract variable "++ pr_econstr_env env (project gl) id++
           strbrk" cannot abstract this goal.  Did you generalize it?") in
       let find_hole p t =
         match EConstr.kind (project gl) t with
@@ -290,7 +291,7 @@ let ssrabstract ist gens (*last*) gl =
         | App(hd, [|left; right|]) when Term.Constr.equal hd prod ->
             find_hole (mkApp (proj1,[|left;right;p|])) left
 *)
-        | _ -> errorstrm(strbrk"abstract constant "++pr_econstr abstract_n++
+        | _ -> errorstrm(strbrk"abstract constant "++ pr_econstr_env env (project gl) abstract_n++
                strbrk" has an unexpected shape. Did you tamper with it?")
       in
         find_hole
@@ -361,14 +362,14 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
       | Sort _, [] -> EConstr.Vars.subst_vars s ct
       | LetIn(Name id as n,b,ty,c), _::g -> EConstr.mkLetIn (n,b,ty,var2rel c g (id::s))
       | Prod(Name id as n,ty,c), _::g -> EConstr.mkProd (n,ty,var2rel c g (id::s))
-      | _ -> CErrors.anomaly(str"SSR: wlog: var2rel: " ++ pr_econstr c) in
+      | _ -> CErrors.anomaly(str"SSR: wlog: var2rel: " ++ pr_econstr_env env sigma c) in
     let c = var2rel c gens [] in
     let rec pired c = function
       | [] -> c
       | t::ts as args -> match EConstr.kind sigma c with
          | Prod(_,_,c) -> pired (EConstr.Vars.subst1 t c) ts
          | LetIn(id,b,ty,c) -> EConstr.mkLetIn (id,b,ty,pired c args)
-         | _ -> CErrors.anomaly(str"SSR: wlog: pired: " ++ pr_econstr c) in
+         | _ -> CErrors.anomaly(str"SSR: wlog: pired: " ++ pr_econstr_env env sigma c) in
     c, args, pired c args, pf_merge_uc uc gl in
   let tacipat pats = introstac ~ist pats in
   let tacigens = 
@@ -396,8 +397,8 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
       | Some id ->
         if pats = [] then Tacticals.tclIDTAC else
         let args = Array.of_list args in
-        ppdebug(lazy(str"specialized="++pr_econstr EConstr.(mkApp (mkVar id,args))));
-        ppdebug(lazy(str"specialized_ty="++pr_econstr ct));
+        ppdebug(lazy(str"specialized="++ pr_econstr_env (pf_env gl) (project gl) EConstr.(mkApp (mkVar id,args))));
+        ppdebug(lazy(str"specialized_ty="++ pr_econstr_env (pf_env gl) (project gl) ct));
         Tacticals.tclTHENS (basecuttac "ssr_have" ct)
           [Proofview.V82.of_tactic (Tactics.apply EConstr.(mkApp (mkVar id,args))); Tacticals.tclIDTAC] in
       "ssr_have",

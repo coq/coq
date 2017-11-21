@@ -464,15 +464,16 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes sigma co
       in
       let tac = run_hint t tac in
       let tac = if complete then Tacticals.New.tclCOMPLETE tac else tac in
+      let _, env = Pfedit.get_current_context () in
       let pp =
         match p with
         | Some pat when get_typeclasses_filtered_unification () ->
-           str " with pattern " ++ Printer.pr_constr_pattern pat
+           str " with pattern " ++ Printer.pr_constr_pattern_env env sigma pat
         | _ -> mt ()
       in
         match repr_hint t with
-        | Extern _ -> (tac, b, true, name, lazy (pr_hint t ++ pp))
-        | _ -> (tac, b, false, name, lazy (pr_hint t ++ pp))
+        | Extern _ -> (tac, b, true, name, lazy (pr_hint env sigma t ++ pp))
+        | _ -> (tac, b, false, name, lazy (pr_hint env sigma t ++ pp))
   in List.map tac_of_hint hintl
 
 and e_trivial_resolve db_list local_db secvars only_classes sigma concl =

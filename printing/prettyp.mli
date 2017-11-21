@@ -18,37 +18,37 @@ open Misctypes
 val assumptions_for_print : Name.t list -> Termops.names_context
 
 val print_closed_sections : bool ref
-val print_context : bool -> int option -> Lib.library_segment -> Pp.t
-val print_library_entry : bool -> (object_name * Lib.node) -> Pp.t option
-val print_full_context : unit -> Pp.t
-val print_full_context_typ : unit -> Pp.t
-val print_full_pure_context : unit -> Pp.t
-val print_sec_context : reference -> Pp.t
-val print_sec_context_typ : reference -> Pp.t
+val print_context : env -> Evd.evar_map -> bool -> int option -> Lib.library_segment -> Pp.t
+val print_library_entry : env -> Evd.evar_map -> bool -> (object_name * Lib.node) -> Pp.t option
+val print_full_context : env -> Evd.evar_map -> Pp.t
+val print_full_context_typ : env -> Evd.evar_map -> Pp.t
+val print_full_pure_context : env -> Evd.evar_map -> Pp.t
+val print_sec_context : env -> Evd.evar_map -> reference -> Pp.t
+val print_sec_context_typ : env -> Evd.evar_map -> reference -> Pp.t
 val print_judgment : env -> Evd.evar_map -> EConstr.unsafe_judgment -> Pp.t
 val print_safe_judgment : env -> Evd.evar_map -> Safe_typing.judgment -> Pp.t
 val print_eval :
   reduction_function -> env -> Evd.evar_map ->
     Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t
 
-val print_name : reference or_by_notation -> Pp.t
-val print_opaque_name : reference -> Pp.t
-val print_about : reference or_by_notation -> Pp.t
+val print_name : env -> Evd.evar_map -> reference or_by_notation -> Pp.t
+val print_opaque_name : env -> Evd.evar_map -> reference -> Pp.t
+val print_about : env -> Evd.evar_map -> reference or_by_notation -> Pp.t
 val print_impargs : reference or_by_notation -> Pp.t
 
 (** Pretty-printing functions for classes and coercions *)
 val print_graph : unit -> Pp.t
 val print_classes : unit -> Pp.t
-val print_coercions : unit -> Pp.t
+val print_coercions : env -> Evd.evar_map -> Pp.t
 val print_path_between : Classops.cl_typ -> Classops.cl_typ -> Pp.t
-val print_canonical_projections : unit -> Pp.t
+val print_canonical_projections : env -> Evd.evar_map -> Pp.t
 
 (** Pretty-printing functions for type classes and instances *)
 val print_typeclasses : unit -> Pp.t
 val print_instances : global_reference -> Pp.t
 val print_all_instances : unit -> Pp.t
 
-val inspect : int -> Pp.t
+val inspect : env -> Evd.evar_map -> int -> Pp.t
 
 (** {5 Locate} *)
 
@@ -82,15 +82,15 @@ val print_located_other : string -> reference -> Pp.t
 type object_pr = {
   print_inductive           : MutInd.t -> Pp.t;
   print_constant_with_infos : Constant.t -> Pp.t;
-  print_section_variable    : variable -> Pp.t;
-  print_syntactic_def       : KerName.t -> Pp.t;
+  print_section_variable    : env -> Evd.evar_map -> variable -> Pp.t;
+  print_syntactic_def       : env -> KerName.t -> Pp.t;
   print_module              : bool -> ModPath.t -> Pp.t;
   print_modtype             : ModPath.t -> Pp.t;
-  print_named_decl          : Context.Named.Declaration.t -> Pp.t;
-  print_library_entry       : bool -> (object_name * Lib.node) -> Pp.t option;
-  print_context             : bool -> int option -> Lib.library_segment -> Pp.t;
+  print_named_decl          : env -> Evd.evar_map -> Context.Named.Declaration.t -> Pp.t;
+  print_library_entry       : env -> Evd.evar_map -> bool -> (object_name * Lib.node) -> Pp.t option;
+  print_context             : env -> Evd.evar_map -> bool -> int option -> Lib.library_segment -> Pp.t;
   print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.t;
-  print_eval                : reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t
+  print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t;
 }
 
 val set_object_pr : object_pr -> unit

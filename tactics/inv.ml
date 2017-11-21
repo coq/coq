@@ -282,10 +282,11 @@ let generalizeRewriteIntros as_mode tac depids id =
 let error_too_many_names pats =
   let loc = Loc.merge_opt (fst (List.hd pats)) (fst (List.last pats)) in
   Proofview.tclENV >>= fun env ->
+  Proofview.tclEVARMAP >>= fun sigma ->
   tclZEROMSG ?loc (
     str "Unexpected " ++
     str (String.plural (List.length pats) "introduction pattern") ++
-    str ": " ++ pr_enum (Miscprint.pr_intro_pattern (fun c -> Printer.pr_constr (EConstr.Unsafe.to_constr (snd (c env Evd.empty))))) pats ++
+    str ": " ++ pr_enum (Miscprint.pr_intro_pattern (fun c -> Printer.pr_constr_env env sigma (EConstr.Unsafe.to_constr (snd (c env Evd.empty))))) pats ++
     str ".")
 
 let get_names (allow_conj,issimple) (loc, pat as x) = match pat with

@@ -100,7 +100,9 @@ let print_cmd_header ?loc com =
   Format.pp_print_flush !Topfmt.std_ft ()
 
 let pr_open_cur_subgoals () =
-  try Printer.pr_open_subgoals ()
+  try
+    let proof = Proof_global.give_me_the_proof () in
+    Printer.pr_open_subgoals ~proof
   with Proof_global.NoCurrentProof -> Pp.str ""
 
 (* Reenable when we get back to feedback printing *)

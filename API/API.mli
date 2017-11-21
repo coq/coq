@@ -5150,12 +5150,20 @@ sig
   val pr_lconstr_env : Environ.env -> Evd.evar_map -> Constr.t -> Pp.t
 
   val pr_constr : Constr.t -> Pp.t
+  [@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
   val pr_lconstr : Constr.t -> Pp.t
+  [@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
 
   val pr_econstr : EConstr.constr -> Pp.t
+  [@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
+
   val pr_glob_constr : Glob_term.glob_constr -> Pp.t
+  [@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
+
   val pr_constr_pattern : Pattern.constr_pattern -> Pp.t
+  [@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
+
   val pr_glob_constr_env : Environ.env -> Glob_term.glob_constr -> Pp.t
   val pr_lglob_constr_env : Environ.env -> Glob_term.glob_constr -> Pp.t
   val pr_econstr_n_env : Environ.env -> Evd.evar_map -> Notation_term.tolerability -> EConstr.constr -> Pp.t
@@ -5163,11 +5171,17 @@ sig
   val pr_constr_pattern_env : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> Pp.t
   val pr_lconstr_pattern_env : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> Pp.t
   val pr_closed_glob : Ltac_pretype.closed_glob_constr -> Pp.t
+  [@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
   val pr_lglob_constr : Glob_term.glob_constr -> Pp.t
+  [@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
   val pr_leconstr_env : Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t
   val pr_leconstr : EConstr.constr -> Pp.t
+  [@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
+
   val pr_global : Globnames.global_reference -> Pp.t
   val pr_lconstr_under_binders : Ltac_pretype.constr_under_binders -> Pp.t
+  [@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
+
   val pr_lconstr_under_binders_env : Environ.env -> Evd.evar_map -> Ltac_pretype.constr_under_binders -> Pp.t
 
   val pr_constr_under_binders_env : Environ.env -> Evd.evar_map -> Ltac_pretype.constr_under_binders -> Pp.t
@@ -5176,7 +5190,11 @@ sig
   val pr_rel_context_of : Environ.env -> Evd.evar_map -> Pp.t
   val pr_named_context_of : Environ.env -> Evd.evar_map -> Pp.t
   val pr_ltype : Term.types -> Pp.t
+  [@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
+
   val pr_ljudge : EConstr.unsafe_judgment -> Pp.t * Pp.t
+  [@@ocaml.deprecated "The global printing API is deprecated, please use the _env functions"]
+
   val pr_idpred : Names.Id.Pred.t -> Pp.t
   val pr_cpred : Names.Cpred.t -> Pp.t
   val pr_transparent_state : Names.transparent_state -> Pp.t
@@ -5689,7 +5707,9 @@ sig
   val create_hint_db : bool -> hint_db_name -> Names.transparent_state -> bool -> unit
   val empty_hint_info : 'a Vernacexpr.hint_info_gen
   val repr_hint : hint -> (raw_hint * Clenv.clausenv) hint_ast
+  val pr_hint_db_env : Environ.env -> Evd.evar_map -> Hint_db.t -> Pp.t
   val pr_hint_db : Hint_db.t -> Pp.t
+  [@@ocaml.deprecated "please used pr_hint_db_env"]
 end
 
 module Auto :
@@ -5766,7 +5786,7 @@ sig
   val add_rew_rules : string -> raw_rew_rule list -> unit
   val find_rewrites : string -> rew_rule list
   val find_matches : string -> Constr.t -> rew_rule list
-  val print_rewrite_hintdb : string -> Pp.t
+  val print_rewrite_hintdb : Environ.env -> Evd.evar_map -> string -> Pp.t
 end
 
 (************************************************************************)
@@ -5799,11 +5819,12 @@ sig
     Future.fix_exn -> 'a declaration_hook -> Decl_kinds.locality -> Globnames.global_reference -> 'a
   val save_proof : ?proof:Proof_global.closed_proof -> Vernacexpr.proof_end -> unit
   val get_current_context : unit -> Evd.evar_map * Environ.env
+  [@@ocaml.deprecated "please use [Pfedit.get_current_context]"]
 end
 
 module Himsg :
 sig
-  val explain_refiner_error : Logic.refiner_error -> Pp.t
+  val explain_refiner_error : Environ.env -> Evd.evar_map -> Logic.refiner_error -> Pp.t
   val explain_pretype_error : Environ.env -> Evd.evar_map -> Pretype_errors.pretype_error -> Pp.t
 end
 

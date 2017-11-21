@@ -374,9 +374,12 @@ let rec print_typ_expr env mp locals mty =
   | MEwith(me,WithDef(idl,(c, _)))->
       let env' = None in (* TODO: build a proper environment if env <> None *)
       let s = String.concat "." (List.map Id.to_string idl) in
+      (* XXX: What should env and sigma be here? *)
+      let env = Global.env () in
+      let sigma = Evd.empty in
       hov 2 (print_typ_expr env' mp locals me ++ spc() ++ str "with" ++ spc()
              ++ def "Definition"++ spc() ++ str s ++ spc() ++ str ":="++ spc()
-             ++ Printer.pr_lconstr c)
+             ++ Printer.pr_lconstr_env env sigma c)
   | MEwith(me,WithMod(idl,mp'))->
       let s = String.concat "." (List.map Id.to_string idl) in
       hov 2 (print_typ_expr env mp locals me ++ spc() ++ str "with" ++ spc() ++

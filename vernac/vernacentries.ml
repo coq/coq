@@ -56,8 +56,9 @@ let scope_class_of_qualid qid =
 let show_proof () =
   (* spiwack: this would probably be cooler with a bit of polishing. *)
   let p = Proof_global.give_me_the_proof () in
+  let sigma, env = Pfedit.get_current_context () in
   let pprf = Proof.partial_proof p in
-  Feedback.msg_notice (Pp.prlist_with_sep Pp.fnl Printer.pr_econstr pprf)
+  Feedback.msg_notice (Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf)
 
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
@@ -255,7 +256,8 @@ let print_namespace ns =
   let print_constant k body =
     (* FIXME: universes *)
     let t = body.Declarations.const_type in
-    print_kn k ++ str":" ++ spc() ++ Printer.pr_type t
+    let sigma, env = Pfedit.get_current_context () in
+    print_kn k ++ str":" ++ spc() ++ Printer.pr_type_env env sigma t
   in
   let matches mp = match match_modulepath ns mp with
   | Some [] -> true
@@ -484,8 +486,8 @@ let vernac_definition locality p (local,k) ((loc,id as lid),pl) def =
  	let red_option = match red_option with
           | None -> None
           | Some r ->
-	      let (evc,env)= get_current_context () in
- 		Some (snd (Hook.get f_interp_redexp env evc r)) in
+            let sigma, env= Pfedit.get_current_context () in
+            Some (snd (Hook.get f_interp_redexp env sigma r)) in
 	do_definition id (local,p,k) pl bl red_option c typ_opt hook)
 
 let vernac_start_proof locality p kind l =
@@ -1537,7 +1539,7 @@ let vernac_print_option key =
 
 let get_current_context_of_args = function
   | Some n -> Pfedit.get_goal_context n
-  | None -> get_current_context ()
+  | None -> Pfedit.get_current_context ()
 
 let query_command_selector ?loc = function
   | None -> None
@@ -1626,17 +1628,20 @@ let print_about_hyp_globs ?loc ref_or_by_not glopt =
     let natureofid = match decl with
                      | LocalAssum _ -> "Hypothesis"
                      | LocalDef (_,bdy,_) ->"Constant (let in)" in
-    v 0 (Id.print id ++ str":" ++ pr_econstr (NamedDecl.get_type decl) ++ fnl() ++ fnl()
+    let sigma, env = Pfedit.get_current_context () in
+    v 0 (Id.print id ++ str":" ++ pr_econstr_env env sigma (NamedDecl.get_type decl) ++ fnl() ++ fnl()
 	 ++ str natureofid ++ str " of the goal context.")
   with (* fallback to globals *)
-    | NoHyp | Not_found -> print_about ref_or_by_not
+    | NoHyp | Not_found ->
+    let sigma, env = Pfedit.get_current_context () in
+    print_about env sigma ref_or_by_not
 
-	       
-let vernac_print ?loc = let open Feedback in function
+
+let vernac_print ?loc env sigma = let open Feedback in function
   | PrintTables -> msg_notice (print_tables ())
-  | PrintFullContext-> msg_notice (print_full_context_typ ())
-  | PrintSectionContext qid -> msg_notice (print_sec_context_typ qid)
-  | PrintInspect n -> msg_notice (inspect n)
+  | PrintFullContext-> msg_notice (print_full_context_typ env sigma)
+  | PrintSectionContext qid -> msg_notice (print_sec_context_typ env sigma qid)
+  | PrintInspect n -> msg_notice (inspect env sigma n)
   | PrintGrammar ent -> msg_notice (Metasyntax.pr_grammar ent)
   | PrintLoadPath dir -> (* For compatibility ? *) msg_notice (print_loadpath dir)
   | PrintModules -> msg_notice (print_modules ())
@@ -1646,15 +1651,15 @@ let vernac_print ?loc = let open Feedback in function
   | PrintMLLoadPath -> msg_notice (Mltop.print_ml_path ())
   | PrintMLModules -> msg_notice (Mltop.print_ml_modules ())
   | PrintDebugGC -> msg_notice (Mltop.print_gc ())
-  | PrintName qid -> dump_global qid; msg_notice (print_name qid)
+  | PrintName qid -> dump_global qid; msg_notice (print_name env sigma qid)
   | PrintGraph -> msg_notice (Prettyp.print_graph())
   | PrintClasses -> msg_notice (Prettyp.print_classes())
   | PrintTypeClasses -> msg_notice (Prettyp.print_typeclasses())
   | PrintInstances c -> msg_notice (Prettyp.print_instances (smart_global c))
-  | PrintCoercions -> msg_notice (Prettyp.print_coercions())
+  | PrintCoercions -> msg_notice (Prettyp.print_coercions env sigma)
   | PrintCoercionPaths (cls,clt) ->
       msg_notice (Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt))
-  | PrintCanonicalConversions -> msg_notice (Prettyp.print_canonical_projections ())
+  | PrintCanonicalConversions -> msg_notice (Prettyp.print_canonical_projections env sigma)
   | PrintUniverses (b, dst) ->
      let univ = Global.universes () in
      let univ = if b then UGraph.sort_universes univ else univ in
@@ -1666,16 +1671,16 @@ let vernac_print ?loc = let open Feedback in function
      | None -> msg_notice (UGraph.pr_universes Universes.pr_with_global_universes univ ++ pr_remaining)
      | Some s -> dump_universes_gen univ s
      end
-  | PrintHint r -> msg_notice (Hints.pr_hint_ref (smart_global r))
+  | PrintHint r -> msg_notice (Hints.pr_hint_ref env sigma (smart_global r))
   | PrintHintGoal -> msg_notice (Hints.pr_applicable_hint ())
-  | PrintHintDbName s -> msg_notice (Hints.pr_hint_db_by_name s)
-  | PrintHintDb -> msg_notice (Hints.pr_searchtable ())
+  | PrintHintDbName s -> msg_notice (Hints.pr_hint_db_by_name env sigma s)
+  | PrintHintDb -> msg_notice (Hints.pr_searchtable env sigma)
   | PrintScopes ->
-      msg_notice (Notation.pr_scopes (Constrextern.without_symbols pr_lglob_constr))
+      msg_notice (Notation.pr_scopes (Constrextern.without_symbols (pr_lglob_constr_env env)))
   | PrintScope s ->
-      msg_notice (Notation.pr_scope (Constrextern.without_symbols pr_lglob_constr) s)
+      msg_notice (Notation.pr_scope (Constrextern.without_symbols (pr_lglob_constr_env env)) s)
   | PrintVisibility s ->
-      msg_notice (Notation.pr_visibility (Constrextern.without_symbols pr_lglob_constr) s)
+      msg_notice (Notation.pr_visibility (Constrextern.without_symbols (pr_lglob_constr_env env)) s)
   | PrintAbout (ref_or_by_not,glnumopt) ->
      msg_notice (print_about_hyp_globs ?loc ref_or_by_not glnumopt)
   | PrintImplicit qid ->
@@ -1778,9 +1783,10 @@ let vernac_locate = let open Feedback in function
   | LocateTerm (AN qid) -> msg_notice (print_located_term qid)
   | LocateAny (ByNotation (_, (ntn, sc))) (** TODO : handle Ltac notations *)
   | LocateTerm (ByNotation (_, (ntn, sc))) ->
-      msg_notice
-        (Notation.locate_notation
-          (Constrextern.without_symbols pr_lglob_constr) ntn sc)
+    let _, env = Pfedit.get_current_context () in
+    msg_notice
+      (Notation.locate_notation
+         (Constrextern.without_symbols (pr_lglob_constr_env env)) ntn sc)
   | LocateLibrary qid -> print_located_library qid
   | LocateModule qid -> msg_notice (print_located_module qid)
   | LocateOther (s, qid) -> msg_notice (print_located_other s qid)
@@ -1847,10 +1853,11 @@ let vernac_bullet (bullet : Proof_bullet.t) =
 let vernac_show = let open Feedback in function
   | ShowScript -> assert false  (* Only the stm knows the script *)
   | ShowGoal goalref ->
+    let proof = Proof_global.give_me_the_proof () in
     let info = match goalref with
-      | OpenSubgoals -> pr_open_subgoals ()
-      | NthGoal n -> pr_nth_open_subgoal n
-      | GoalId id -> pr_goal_by_id id
+      | OpenSubgoals -> pr_open_subgoals ~proof
+      | NthGoal n -> pr_nth_open_subgoal ~proof n
+      | GoalId id -> pr_goal_by_id ~proof id
     in
     msg_notice info
   | ShowProof -> show_proof ()
@@ -2041,7 +2048,9 @@ let interp ?proof ?loc locality poly st c =
   | VernacCheckMayEval (r,g,c) -> vernac_check_may_eval ?loc r g c
   | VernacDeclareReduction (s,r) -> vernac_declare_reduction locality s r
   | VernacGlobalCheck c -> vernac_global_check c
-  | VernacPrint p -> vernac_print ?loc p
+  | VernacPrint p ->
+    let sigma, env = Pfedit.get_current_context () in
+    vernac_print ?loc env sigma p
   | VernacSearch (s,g,r) -> vernac_search ?loc s g r
   | VernacLocate l -> vernac_locate l
   | VernacRegister (id, r) -> vernac_register id r

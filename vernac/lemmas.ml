@@ -253,7 +253,9 @@ let save_remaining_recthms (locality,p,kind) norm ctx binders body opaq i (id,(t
         | LetIn(na,t1,ty,t2) -> mkLetIn (na,t1,ty, body_i t2)
         | Lambda(na,ty,t) -> mkLambda(na,ty,body_i t)
         | App (t, args) -> mkApp (body_i t, args)
-        | _ -> anomaly Pp.(str "Not a proof by induction: " ++ Printer.pr_constr body ++ str ".") in
+        | _ ->
+          let sigma, env = Pfedit.get_current_context () in
+          anomaly Pp.(str "Not a proof by induction: " ++ Printer.pr_constr_env env sigma body ++ str ".") in
       let body_i = body_i body in
       match locality with
       | Discharge ->
@@ -530,7 +532,5 @@ let save_proof ?proof = function
       Proof_global.(apply_terminator terminator (Proved (is_opaque,idopt,proof_obj)))
 
 (* Miscellaneous *)
+let get_current_context () = Pfedit.get_current_context ()
 
-let get_current_context () =
-  Pfedit.get_current_context ()
-           

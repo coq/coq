@@ -344,8 +344,6 @@ let _ = add_map "ring"
 (****************************************************************************)
 (* Ring database *)
 
-let pr_constr c = pr_econstr c
-
 module Cmap = Map.Make(Constr)
 
 let from_carrier = Summary.ref Cmap.empty ~name:"ring-tac-carrier-table"
@@ -368,7 +366,7 @@ let find_ring_structure env sigma l =
         with Not_found ->
           CErrors.user_err ~hdr:"ring"
             (str"cannot find a declared ring structure over"++
-             spc()++str"\""++pr_constr ty++str"\""))
+             spc() ++ str"\"" ++ pr_econstr_env env sigma ty ++ str"\""))
     | [] -> assert false
 
 let add_entry (sp,_kn) e =
@@ -529,19 +527,19 @@ let ring_equality env evd (r,add,mul,opp,req) =
 		  op_morph r add mul opp req add_m_lem mul_m_lem opp_m_lem in
 		  Flags.if_verbose
 		    Feedback.msg_info
-		    (str"Using setoid \""++pr_constr req++str"\""++spc()++
-			str"and morphisms \""++pr_constr add_m_lem ++
-			str"\","++spc()++ str"\""++pr_constr mul_m_lem++
-			str"\""++spc()++str"and \""++pr_constr opp_m_lem++
+                    (str"Using setoid \""++ pr_econstr_env env !evd req++str"\""++spc()++
+                        str"and morphisms \""++pr_econstr_env env !evd add_m_lem ++
+                        str"\","++spc()++ str"\""++pr_econstr_env env !evd mul_m_lem++
+                        str"\""++spc()++str"and \""++pr_econstr_env env !evd opp_m_lem++
 			str"\"");
 		  op_morph)
             | None ->
 		(Flags.if_verbose
 		    Feedback.msg_info
-		    (str"Using setoid \""++pr_constr req ++str"\"" ++ spc() ++
-			str"and morphisms \""++pr_constr add_m_lem ++
+                    (str"Using setoid \""++pr_econstr_env env !evd req ++str"\"" ++ spc() ++
+                        str"and morphisms \""++pr_econstr_env env !evd add_m_lem ++
 			str"\""++spc()++str"and \""++
-			pr_constr mul_m_lem++str"\"");
+                        pr_econstr_env env !evd mul_m_lem++str"\"");
 		 op_smorph r add mul req add_m_lem mul_m_lem) in
           (setoid,op_morph)
 
@@ -861,7 +859,7 @@ let find_field_structure env sigma l =
         with Not_found ->
           CErrors.user_err ~hdr:"field"
             (str"cannot find a declared field structure over"++
-             spc()++str"\""++pr_constr ty++str"\""))
+             spc()++str"\""++pr_econstr_env env sigma ty++str"\""))
     | [] -> assert false
 
 let add_field_entry (sp,_kn) e =

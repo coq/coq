@@ -133,7 +133,9 @@ let pr_occurrences = pr_occurrences () () ()
 
 let pr_gen prc _prlc _prtac c = prc c
 
-let pr_globc _prc _prlc _prtac (_,glob) = Printer.pr_glob_constr glob
+let pr_globc _prc _prlc _prtac (_,glob) =
+  let _, env = Pfedit.get_current_context () in
+  Printer.pr_glob_constr_env env glob
 
 let interp_glob ist gl (t,_) = Tacmach.project gl , (ist,t)
 

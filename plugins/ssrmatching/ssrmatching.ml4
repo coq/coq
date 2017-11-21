@@ -100,7 +100,6 @@ let pr_guarded guard prc c =
   let s = Pp.string_of_ppcmds (prc c) ^ "$" in
   if guard s (skip_wschars s 0) then pr_paren prc c else prc c
 (* More sensible names for constr printers *)
-let pr_constr = pr_constr
 let prl_glob_constr c = pr_lglob_constr_env (Global.env ()) c
 let pr_glob_constr c = pr_glob_constr_env (Global.env ()) c
 let prl_constr_expr = pr_lconstr_expr
@@ -427,7 +426,8 @@ let hole_var = mkVar (Id.of_string "_")
 let pr_constr_pat c0 =
   let rec wipe_evar c =
     if isEvar c then hole_var else map wipe_evar c in
-  pr_constr (wipe_evar c0)
+  let sigma, env = Pfedit.get_current_context () in
+  pr_constr_env env sigma (wipe_evar c0)
 
 (* Turn (new) evars into metas *)
 let evars_for_FO ~hack env sigma0 (ise0:evar_map) c0 =
@@ -1215,7 +1215,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
   let pop_evar sigma e p =
     let { Evd.evar_body = e_body } as e_def = Evd.find sigma e in
     let e_body = match e_body with Evar_defined c -> c
-    | _ -> errorstrm (str "Matching the pattern " ++ pr_constr p ++
+    | _ -> errorstrm (str "Matching the pattern " ++ pr_constr_env env0 sigma0 p ++
           str " did not instantiate ?" ++ int (Evar.repr e) ++ spc () ++
           str "Does the variable bound by the \"in\" construct occur "++
           str "in the pattern?") in
@@ -1417,7 +1417,8 @@ let ssrinstancesof ist arg gl =
   let find, conclude =
     mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true
       sigma None (etpat,[tpat]) in
-  let print env p c _ = ppnl (hov 1 (str"instance:" ++ spc() ++ pr_constr p ++ spc() ++ str "matches:" ++ spc() ++ pr_constr c)); c in
+  let print env p c _ = ppnl (hov 1 (str"instance:" ++ spc() ++ pr_constr_env (pf_env gl) (gl.sigma) p ++ spc()
+                                     ++ str "matches:" ++ spc() ++ pr_constr_env (pf_env gl) (gl.sigma)  c)); c in
   ppnl (str"BEGIN INSTANCES");
   try
     while true do

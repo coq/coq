@@ -343,7 +343,7 @@ let coerce_search_pattern_to_sort hpat =
   let hpat' = if np = na then hpat else mkPApp hpat (np - na) [||] in
   let warn () =
     Feedback.msg_warning (str "Listing only lemmas with conclusion matching " ++ 
-      pr_constr_pattern hpat') in
+      pr_constr_pattern_env env sigma hpat') in
   if EConstr.isSort sigma ht then begin warn (); true, hpat' end else
   let filter_head, coe_path =
     try 
@@ -359,7 +359,7 @@ let coerce_search_pattern_to_sort hpat =
       let n_imps = Option.get (Classops.hide_coercion coe_ref) in
       mkPApp (Pattern.PRef coe_ref) n_imps [|hp|]
     with _ ->
-    errorstrm (str "need explicit coercion " ++ pr_constr coe ++ spc ()
+    errorstrm (str "need explicit coercion " ++ pr_constr_env env sigma coe ++ spc ()
             ++ str "to interpret head search pattern as type") in
   filter_head, List.fold_left coerce hpat' coe_path
 
@@ -468,10 +468,12 @@ let pr_raw_ssrhintref prc _ _ = let open CAst in function
     prc c ++ str "|" ++ int (List.length args)
   | c -> prc c
 
-let pr_rawhintref c = match DAst.get c with
+let pr_rawhintref c =
+  let _, env = Pfedit.get_current_context () in
+  match DAst.get c with
   | GApp (f, args) when isRHoles args ->
-    pr_glob_constr f ++ str "|" ++ int (List.length args)
-  | _ -> pr_glob_constr c
+    pr_glob_constr_env env f ++ str "|" ++ int (List.length args)
+  | _ -> pr_glob_constr_env env c
 
 let pr_glob_ssrhintref _ _ _ (c, _) = pr_rawhintref c
 

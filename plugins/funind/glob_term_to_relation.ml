@@ -379,29 +379,30 @@ let add_pat_variables pat typ env : Environ.env =
     fst (
       Context.Rel.fold_outside
 	(fun decl (env,ctxt) ->
-         let open Context.Rel.Declaration in
-	 match decl with
+           let open Context.Rel.Declaration in
+           let sigma, _ = Pfedit.get_current_context () in
+           match decl with
 	   | LocalAssum (Anonymous,_) | LocalDef (Anonymous,_,_) -> assert false
 	   | LocalAssum (Name id, t) ->
-	       let new_t =  substl ctxt t in
-	       observe (str "for variable " ++ Ppconstr.pr_id id ++  fnl () ++
-			  str "old type := " ++ Printer.pr_lconstr t ++ fnl () ++
-			  str "new type := " ++ Printer.pr_lconstr new_t ++ fnl ()
-		       );
-               let open Context.Named.Declaration in
-	       (Environ.push_named (LocalAssum (id,new_t)) env,mkVar id::ctxt)
-	   | LocalDef (Name id, v, t) ->
-	       let new_t =  substl ctxt t in
-	       let new_v = substl ctxt v in
-	       observe (str "for variable " ++ Ppconstr.pr_id id ++  fnl () ++
-			  str "old type := " ++ Printer.pr_lconstr t ++ fnl () ++
-			  str "new type := " ++ Printer.pr_lconstr new_t ++ fnl () ++
-			  str "old value := " ++ Printer.pr_lconstr v ++ fnl () ++
-			  str "new value := " ++ Printer.pr_lconstr new_v ++ fnl ()
-		       );
-               let open Context.Named.Declaration in
-	       (Environ.push_named (LocalDef (id,new_v,new_t)) env,mkVar id::ctxt)
-      )
+             let new_t =  substl ctxt t in
+             observe (str "for variable " ++ Ppconstr.pr_id id ++  fnl () ++
+                      str "old type := " ++ Printer.pr_lconstr_env env sigma t ++ fnl () ++
+                      str "new type := " ++ Printer.pr_lconstr_env env sigma new_t ++ fnl ()
+                     );
+             let open Context.Named.Declaration in
+             (Environ.push_named (LocalAssum (id,new_t)) env,mkVar id::ctxt)
+           | LocalDef (Name id, v, t) ->
+             let new_t =  substl ctxt t in
+             let new_v = substl ctxt v in
+             observe (str "for variable " ++ Ppconstr.pr_id id ++  fnl () ++
+                      str "old type := "  ++ Printer.pr_lconstr_env env sigma t ++ fnl () ++
+                      str "new type := "  ++ Printer.pr_lconstr_env env sigma new_t ++ fnl () ++
+                      str "old value := " ++ Printer.pr_lconstr_env env sigma v ++ fnl () ++
+                      str "new value := " ++ Printer.pr_lconstr_env env sigma new_v ++ fnl ()
+                     );
+             let open Context.Named.Declaration in
+             (Environ.push_named (LocalDef (id,new_v,new_t)) env,mkVar id::ctxt)
+        )
 	(Environ.rel_context new_env)
 	~init:(env,[])
     )
@@ -479,7 +480,7 @@ let rec pattern_to_term_and_type env typ  = DAst.with_val (function
 
 
 let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
-  observe (str " Entering : " ++ Printer.pr_glob_constr rt);
+  observe (str " Entering : " ++ Printer.pr_glob_constr_env env rt);
   let open CAst in
   match DAst.get rt with
     | GRef _ | GVar _ | GEvar _ | GPatVar _ | GSort _  | GHole _ ->
@@ -652,8 +653,8 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	  try Inductiveops.find_inductive env (Evd.from_env env) b_typ
 	  with Not_found ->
 	    user_err  (str "Cannot find the inductive associated to " ++
-			       Printer.pr_glob_constr b ++ str " in " ++
-			       Printer.pr_glob_constr rt ++ str ". try again with a cast")
+                               Printer.pr_glob_constr_env env b ++ str " in " ++
+                               Printer.pr_glob_constr_env env rt ++ str ". try again with a cast")
 	in
 	let case_pats = build_constructors_of_type (fst ind) [] in
 	assert (Int.equal (Array.length case_pats) 2);
@@ -684,8 +685,8 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	    try Inductiveops.find_inductive env (Evd.from_env env) b_typ
 	    with Not_found ->
 	      user_err  (str "Cannot find the inductive associated to " ++
-				 Printer.pr_glob_constr b ++ str " in " ++
-				 Printer.pr_glob_constr rt ++ str ". try again with a cast")
+                                 Printer.pr_glob_constr_env env b ++ str " in " ++
+                                 Printer.pr_glob_constr_env env rt ++ str ". try again with a cast")
 	  in
 	  let case_pats = build_constructors_of_type (fst ind) nal_as_glob_constr in
 	  assert (Int.equal (Array.length case_pats) 1);
@@ -897,24 +898,24 @@ let same_raw_term rt1 rt2 =
     | GHole _, GHole _ -> true
     | _ -> false
 let decompose_raw_eq lhs rhs = 
-  let rec decompose_raw_eq lhs rhs acc = 
-    observe (str "decomposing eq for " ++ pr_glob_constr lhs ++ str " " ++ pr_glob_constr rhs);
-    let (rhd,lrhs) = glob_decompose_app rhs in 
-    let (lhd,llhs) = glob_decompose_app lhs in 
-    observe (str "lhd := " ++ pr_glob_constr lhd);
-    observe (str "rhd := " ++ pr_glob_constr rhd);
+  let _, env = Pfedit.get_current_context () in
+  let rec decompose_raw_eq lhs rhs acc =
+    observe (str "decomposing eq for " ++ pr_glob_constr_env env lhs ++ str " " ++ pr_glob_constr_env env rhs);
+    let (rhd,lrhs) = glob_decompose_app rhs in
+    let (lhd,llhs) = glob_decompose_app lhs in
+    observe (str "lhd := " ++ pr_glob_constr_env env lhd);
+    observe (str "rhd := " ++ pr_glob_constr_env env rhd);
     observe (str "llhs := " ++ int (List.length llhs));
     observe (str "lrhs := " ++ int (List.length lrhs));
-    let sllhs = List.length llhs in 
-    let slrhs = List.length lrhs in 
-    if same_raw_term lhd rhd && Int.equal sllhs slrhs 
+    let sllhs = List.length llhs in
+    let slrhs = List.length lrhs in
+    if same_raw_term lhd rhd && Int.equal sllhs slrhs
     then
       (* let _ = assert false in  *)
       List.fold_right2 decompose_raw_eq	llhs lrhs acc
     else (lhs,rhs)::acc
   in
   decompose_raw_eq lhs rhs []
-     
 
 exception Continue
 (*
@@ -923,7 +924,7 @@ exception Continue
    eliminates some meaningless equalities, applies some rewrites......
 *)
 let rec rebuild_cons env nb_args relname args crossed_types depth rt =
-  observe (str "rebuilding : " ++ pr_glob_constr rt);
+  observe (str "rebuilding : " ++ pr_glob_constr_env env rt);
   let open Context.Rel.Declaration in
   let open CAst in
   match DAst.get rt with
@@ -967,7 +968,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
                 let id = match DAst.get id with GVar id -> id | _ -> assert false in
 		begin
 		  try
-		    observe (str "computing new type for eq : " ++ pr_glob_constr rt);
+                    observe (str "computing new type for eq : " ++ pr_glob_constr_env env rt);
 		    let t' =
 		      try fst (Pretyping.understand env (Evd.from_env env) t)(*FIXME*)
                       with e when CErrors.noncritical e -> raise Continue
@@ -1012,7 +1013,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    let eq' =
 		      DAst.make ?loc:loc1 @@ GApp(DAst.make ?loc:loc2 @@GRef(jmeq,None),[ty;DAst.make ?loc:loc3 @@ GVar id;rt_typ;rt])
 		    in
-		    observe (str "computing new type for jmeq : " ++ pr_glob_constr eq');
+                    observe (str "computing new type for jmeq : " ++ pr_glob_constr_env env eq');
 		    let eq'_as_constr,ctx = Pretyping.understand env (Evd.from_env env) eq' in
 		    observe (str " computing new type for jmeq : done") ;
 		    let new_args =
@@ -1099,7 +1100,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    rebuild_cons env nb_args relname args crossed_types depth new_rt
 		  else raise Continue
 	      with Continue -> 
-		observe (str "computing new type for prod : " ++ pr_glob_constr rt);
+                observe (str "computing new type for prod : " ++ pr_glob_constr_env env rt);
 		let t',ctx = Pretyping.understand env (Evd.from_env env) t in
 		let new_env = Environ.push_rel (LocalAssum (n,t')) env in
 		let new_b,id_to_exclude =
@@ -1115,7 +1116,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		  | _ -> mkGProd(n,t,new_b),Id.Set.filter not_free_in_t id_to_exclude
 	      end
 	    | _ ->
-		observe (str "computing new type for prod : " ++ pr_glob_constr rt);
+                observe (str "computing new type for prod : " ++ pr_glob_constr_env env rt);
 		let t',ctx = Pretyping.understand env (Evd.from_env env) t in
 		let new_env = Environ.push_rel (LocalAssum (n,t')) env in
 		let new_b,id_to_exclude =
@@ -1134,7 +1135,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 	begin
 	  let not_free_in_t id = not (is_free_in id t) in
 	  let new_crossed_types = t :: crossed_types in
-	  observe (str "computing new type for lambda : " ++ pr_glob_constr rt);
+          observe (str "computing new type for lambda : " ++ pr_glob_constr_env env rt);
 	  let t',ctx = Pretyping.understand env (Evd.from_env env) t in
 	  match n with
 	    | Name id ->

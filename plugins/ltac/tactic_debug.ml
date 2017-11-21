@@ -20,7 +20,9 @@ let prmatchpatt env sigma hyp =
   Pptactic.pr_match_pattern (Printer.pr_constr_pattern_env env sigma) hyp
 let prmatchrl rl =
   Pptactic.pr_match_rule false (Pptactic.pr_glob_tactic (Global.env()))
-    (fun (_,p) -> Printer.pr_constr_pattern p) rl
+    (fun (_,p) ->
+       let sigma, env = Pfedit.get_current_context () in
+       Printer.pr_constr_pattern_env env sigma p) rl
 
 (* This module intends to be a beginning of debugger for tactic expressions.
    Currently, it is quite simple and we can hope to have, in the future, a more
@@ -369,7 +371,8 @@ let explain_ltac_call_trace last trace loc =
           strbrk " (with " ++
             prlist_with_sep pr_comma
             (fun (id,c) ->
-                Id.print id ++ str ":=" ++ Printer.pr_lconstr_under_binders c)
+              let sigma, env = Pfedit.get_current_context () in
+              Id.print id ++ str ":=" ++ Printer.pr_lconstr_under_binders_env env sigma c)
             (List.rev (Id.Map.bindings vars)) ++ str ")"
         else mt())
   in

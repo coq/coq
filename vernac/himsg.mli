@@ -27,7 +27,7 @@ val explain_typeclass_error : env -> typeclass_error -> Pp.t
 
 val explain_recursion_scheme_error : recursion_scheme_error -> Pp.t
 
-val explain_refiner_error : refiner_error -> Pp.t
+val explain_refiner_error : env -> Evd.evar_map -> refiner_error -> Pp.t
 
 val explain_pattern_matching_error :
   env -> Evd.evar_map -> pattern_matching_error -> Pp.t

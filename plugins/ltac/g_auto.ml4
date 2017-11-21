@@ -51,8 +51,12 @@ let eval_uconstrs ist cs =
   List.map (fun c -> map (Tacinterp.type_uconstr ~flags ist c)) cs
 
 let pr_auto_using_raw _ _ _  = Pptactic.pr_auto_using Ppconstr.pr_constr_expr
-let pr_auto_using_glob _ _ _ = Pptactic.pr_auto_using (fun (c,_) -> Printer.pr_glob_constr c)
-let pr_auto_using _ _ _ = Pptactic.pr_auto_using Printer.pr_closed_glob
+let pr_auto_using_glob _ _ _ = Pptactic.pr_auto_using (fun (c,_) ->
+    let _, env = Pfedit.get_current_context () in
+    Printer.pr_glob_constr_env env c)
+let pr_auto_using _ _ _ = Pptactic.pr_auto_using
+    (let sigma, env = Pfedit.get_current_context () in
+     Printer.pr_closed_glob_env env sigma)
 
 ARGUMENT EXTEND auto_using
   TYPED AS uconstr_list

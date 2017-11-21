@@ -1392,14 +1392,14 @@ let make_db_list dbnames =
 (*                    Functions for printing the hints                    *)
 (**************************************************************************)
 
-let pr_hint_elt (c, _, _) = pr_econstr c
+let pr_hint_elt env sigma (c, _, _) = pr_econstr_env env sigma c
 
-let pr_hint h = match h.obj with
-  | Res_pf (c, _) -> (str"simple apply " ++ pr_hint_elt c)
-  | ERes_pf (c, _) -> (str"simple eapply " ++ pr_hint_elt c)
-  | Give_exact (c, _) -> (str"exact " ++ pr_hint_elt c)
+let pr_hint env sigma h = match h.obj with
+  | Res_pf (c, _) -> (str"simple apply " ++ pr_hint_elt env sigma c)
+  | ERes_pf (c, _) -> (str"simple eapply " ++ pr_hint_elt env sigma c)
+  | Give_exact (c, _) -> (str"exact " ++ pr_hint_elt env sigma c)
   | Res_pf_THEN_trivial_fail (c, _) ->
-      (str"simple apply " ++ pr_hint_elt c ++ str" ; trivial")
+      (str"simple apply " ++ pr_hint_elt env sigma c ++ str" ; trivial")
   | Unfold_nth c -> (str"unfold " ++  pr_evaluable_reference c)
   | Extern tac ->
       let env =
@@ -1410,21 +1410,21 @@ let pr_hint h = match h.obj with
       in
       (str "(*external*) " ++ Pputils.pr_glb_generic env tac)
 
-let pr_id_hint (id, v) =
-  let pr_pat p = str", pattern " ++ pr_lconstr_pattern p in
-  (pr_hint v.code ++ str"(level " ++ int v.pri ++ pr_opt_no_spc pr_pat v.pat
+let pr_id_hint env sigma (id, v) =
+  let pr_pat p = str", pattern " ++ pr_lconstr_pattern_env env sigma p in
+  (pr_hint env sigma v.code ++ str"(level " ++ int v.pri ++ pr_opt_no_spc pr_pat v.pat
    ++ str", id " ++ int id ++ str ")" ++ spc ())
 
-let pr_hint_list hintlist =
-  (str "  " ++ hov 0 (prlist pr_id_hint hintlist) ++ fnl ())
+let pr_hint_list env sigma hintlist =
+  (str "  " ++ hov 0 (prlist (pr_id_hint env sigma) hintlist) ++ fnl ())
 
-let pr_hints_db (name,db,hintlist) =
+let pr_hints_db env sigma (name,db,hintlist) =
   (str "In the database " ++ str name ++ str ":" ++
      if List.is_empty hintlist then (str " nothing" ++ fnl ())
-     else (fnl () ++ pr_hint_list hintlist))
+     else (fnl () ++ pr_hint_list env sigma hintlist))
 
 (* Print all hints associated to head c in any database *)
-let pr_hint_list_for_head c =
+let pr_hint_list_for_head env sigma c =
   let dbs = current_db () in
   let validate (name, db) =
     let hints = List.map (fun v -> 0, v) (Hint_db.map_all ~secvars:Id.Pred.full c db) in
@@ -1436,13 +1436,13 @@ let pr_hint_list_for_head c =
   else
     hov 0
       (str"For " ++ pr_global c ++ str" -> " ++ fnl () ++
-	 hov 0 (prlist pr_hints_db valid_dbs))
+         hov 0 (prlist (pr_hints_db env sigma) valid_dbs))
 
 let pr_hint_ref ref = pr_hint_list_for_head ref
 
 (* Print all hints associated to head id in any database *)
 
-let pr_hint_term sigma cl =
+let pr_hint_term env sigma cl =
   try
     let dbs = current_db () in
     let valid_dbs =
@@ -1460,18 +1460,19 @@ let pr_hint_term sigma cl =
 	(str "No hint applicable for current goal")
       else
 	(str "Applicable Hints :" ++ fnl () ++
-	    hov 0 (prlist pr_hints_db valid_dbs))
+            hov 0 (prlist (pr_hints_db env sigma) valid_dbs))
   with Match_failure _ | Failure _ ->
     (str "No hint applicable for current goal")
 
 (* print all hints that apply to the concl of the current goal *)
 let pr_applicable_hint () =
+  let env = Global.env () in
   let pts = Proof_global.give_me_the_proof () in
   let glss,_,_,_,sigma = Proof.proof pts in
   match glss with
   | [] -> CErrors.user_err Pp.(str "No focused goal.")
   | g::_ ->
-    pr_hint_term sigma (Goal.V82.concl sigma g)
+    pr_hint_term env sigma (Goal.V82.concl sigma g)
 
 let pp_hint_mode = function
   | ModeInput -> str"+"
@@ -1479,9 +1480,9 @@ let pp_hint_mode = function
   | ModeOutput -> str"-"
 
 (* displays the whole hint database db *)
-let pr_hint_db db =
+let pr_hint_db_env env sigma db =
   let pr_mode = prvect_with_sep spc pp_hint_mode in
-  let pr_modes l = 
+  let pr_modes l =
     if List.is_empty l then mt ()
     else str" (modes " ++ prlist_with_sep pr_comma pr_mode l ++ str")"
   in
@@ -1491,7 +1492,7 @@ let pr_hint_db db =
       | None -> str "For any goal"
       | Some head -> str "For " ++ pr_global head ++ pr_modes modes
       in
-      let hints = pr_hint_list (List.map (fun x -> (0, x)) hintlist) in
+      let hints = pr_hint_list env sigma (List.map (fun x -> (0, x)) hintlist) in
       let hint_descr = hov 0 (goal_descr ++ str " -> " ++ hints) in
       accu ++ hint_descr
     in
@@ -1506,17 +1507,21 @@ let pr_hint_db db =
   hov 2 (str"Cut: " ++ pp_hints_path (Hint_db.cut db)) ++ fnl () ++
   content
 
-let pr_hint_db_by_name dbname =
+let pr_hint_db db =
+  let sigma, env = Pfedit.get_current_context () in
+  pr_hint_db_env env sigma db
+
+let pr_hint_db_by_name env sigma dbname =
   try
-    let db = searchtable_map dbname in pr_hint_db db
+    let db = searchtable_map dbname in pr_hint_db_env env sigma db
   with Not_found ->
     error_no_such_hint_database dbname
 
 (* displays all the hints of all databases *)
-let pr_searchtable () =
+let pr_searchtable env sigma =
   let fold name db accu =
     accu ++ str "In the database " ++ str name ++ str ":" ++ fnl () ++
-    pr_hint_db db ++ fnl ()
+    pr_hint_db_env env sigma db ++ fnl ()
   in
   Hintdbmap.fold fold !searchtable (mt ())
 
@@ -1534,10 +1539,13 @@ let warn_non_imported_hint =
           strbrk "Hint used but not imported: " ++ hint ++ print_mp mp)
 
 let warn h x =
-  let hint = pr_hint h in
-  let (mp, _, _) = KerName.repr h.uid in
-  warn_non_imported_hint (hint,mp);
-  Proofview.tclUNIT x
+  let open Proofview in
+  tclBIND tclENV     (fun env   ->
+  tclBIND tclEVARMAP (fun sigma ->
+          let hint = pr_hint env sigma h in
+          let (mp, _, _) = KerName.repr h.uid in
+          warn_non_imported_hint (hint,mp);
+          Proofview.tclUNIT x))
 
 let run_hint tac k = match !warn_hint with
 | `LAX -> k tac.obj

@@ -945,10 +945,14 @@ let reduction_clause redexp cl =
 	(None, bind_red_expr_occurrences occs nbcl redexp)) cl
 
 let reduce redexp cl =
-  let trace () =
+  let trace env sigma =
     let open Printer in
-    let pr = (pr_econstr, pr_leconstr, pr_evaluable_reference, pr_constr_pattern) in
-    Pp.(hov 2 (Pputils.pr_red_expr pr str redexp))
+    let pr = (pr_econstr_env, pr_leconstr_env, pr_evaluable_reference, pr_constr_pattern_env) in
+    Pp.(hov 2 (Pputils.pr_red_expr_env env sigma pr str redexp))
+  in
+  let trace () =
+    let sigma, env = Pfedit.get_current_context () in
+    trace env sigma
   in
   Proofview.Trace.name_tactic trace begin
   Proofview.Goal.enter begin fun gl ->
@@ -3128,11 +3132,11 @@ let expand_hyp id = Tacticals.New.tclTRY (unfold_body id) <*> clear [id]
 
 let warn_unused_intro_pattern env sigma =
   CWarnings.create ~name:"unused-intro-pattern" ~category:"tactics"
-         (fun names ->
-          strbrk"Unused introduction " ++ str (String.plural (List.length names) "pattern")
-          ++ str": " ++ prlist_with_sep spc 
-         (Miscprint.pr_intro_pattern 
-	 (fun c -> Printer.pr_econstr (snd (c env sigma)))) names)
+    (fun names ->
+       strbrk"Unused introduction " ++ str (String.plural (List.length names) "pattern") ++
+       str": " ++ prlist_with_sep spc
+         (Miscprint.pr_intro_pattern
+            (fun c -> Printer.pr_econstr_env env sigma (snd (c env sigma)))) names)
 
 let check_unused_names env sigma names =
   if not (List.is_empty names) then
