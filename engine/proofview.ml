@@ -645,12 +645,13 @@ let unifiable_delayed g l =
   CList.exists (fun (tgt, lazy evs) -> not (Evar.equal g tgt) && Evar.Set.mem g evs) l
 
 let free_evars sigma l =
+  let cache = Evarutil.create_undefined_evars_cache () in
   let map ev =
   (** Computes the set of evars appearing in the hypotheses, the conclusion or
       the body of the evar_info [evi]. Note: since we want to use it on goals,
       the body is actually supposed to be empty. *)
     let evi = Evd.find sigma ev in
-    let fevs = lazy (Evd.evars_of_filtered_evar_info (Evarutil.nf_evar_info sigma evi)) in
+    let fevs = lazy (Evarutil.filtered_undefined_evars_of_evar_info ~cache sigma evi) in
     (ev, fevs)
   in
   List.map map l
