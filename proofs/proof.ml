@@ -163,6 +163,7 @@ let map_structured_proof pfts process_goal: 'a pre_goals =
 let rec unroll_focus pv = function
   | (_,_,ctx)::stk -> unroll_focus (Proofview.unfocus ctx pv) stk
   | [] -> pv
+
 (* spiwack: a proof is considered completed even if its still focused, if the focus
    doesn't hide any goal.
    Unfocusing is handled in {!return}. *)
@@ -391,10 +392,12 @@ let pr_proof p =
 (*** Compatibility layer with <=v8.2 ***)
 module V82 = struct
   let subgoals p =
-    Proofview.V82.goals p.proofview
+    let it, sigma = Proofview.proofview p.proofview in
+    Evd.{ it; sigma }
 
   let background_subgoals p =
-    Proofview.V82.goals (unroll_focus p.proofview p.focus_stack)
+    let it, sigma = Proofview.proofview (unroll_focus p.proofview p.focus_stack) in
+    Evd.{ it; sigma }
 
   let top_goal p =
     let { Evd.it=gls ; sigma=sigma; } =

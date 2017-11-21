@@ -1225,8 +1225,8 @@ let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_a
 
 let get_current_subgoals_types () =
   let p = Proof_global.give_me_the_proof () in
-  let { Evd.it=sgs ; sigma=sigma } = Proof.V82.subgoals p in
-    sigma, List.map (Goal.V82.abstract_type sigma) sgs
+  let sgs,_,_,_,sigma = Proof.proof p in
+  sigma, List.map (Goal.V82.abstract_type sigma) sgs
 
 exception EmptySubgoals
 let build_and_l sigma l =

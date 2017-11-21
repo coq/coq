@@ -563,6 +563,7 @@ module V82 : sig
   (* Returns the open goals of the proofview together with the evar_map to 
      interpret them. *)
   val goals : proofview -> Evar.t list Evd.sigma
+  [@@ocaml.deprecated "Use [Proofview.proofview]"]
 
   val top_goals : entry -> proofview -> Evar.t list Evd.sigma
   

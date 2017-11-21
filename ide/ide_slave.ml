@@ -217,7 +217,7 @@ let evars () =
     let doc = get_doc () in
     set_doc @@ Stm.finish ~doc;
     let pfts = Proof_global.give_me_the_proof () in
-    let { Evd.it = all_goals ; sigma = sigma } = Proof.V82.subgoals pfts in
+    let all_goals, _, _, _, sigma = Proof.proof pfts in
     let exl = Evar.Map.bindings (Evd.undefined_map sigma) in
     let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar sigma ev); } in
     let el = List.map map_evar exl in
@@ -227,7 +227,7 @@ let evars () =
 let hints () =
   try
     let pfts = Proof_global.give_me_the_proof () in
-    let { Evd.it = all_goals ; sigma = sigma } = Proof.V82.subgoals pfts in
+    let all_goals, _, _, _, sigma = Proof.proof pfts in
     match all_goals with
     | [] -> None
     | g :: _ ->

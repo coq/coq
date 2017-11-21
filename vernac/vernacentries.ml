@@ -62,14 +62,12 @@ let show_proof () =
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
   let pfts = Proof_global.give_me_the_proof () in
-  let gls = Proof.V82.subgoals pfts in
-  let sigma = gls.Evd.sigma in
+  let gls,_,_,_,sigma = Proof.proof pfts in
   Feedback.msg_notice (pr_evars_int sigma 1 (Evd.undefined_map sigma))
 
 let show_universes () =
   let pfts = Proof_global.give_me_the_proof () in
-  let gls = Proof.V82.subgoals pfts in
-  let sigma = gls.Evd.sigma in
+  let gls,_,_,_,sigma = Proof.proof pfts in
   let ctx = Evd.universe_context_set (Evd.nf_constraints sigma) in
     Feedback.msg_notice (Termops.pr_evar_universe_context (Evd.evar_universe_context sigma));
     Feedback.msg_notice (str"Normalized constraints: " ++ Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx)
@@ -78,7 +76,7 @@ let show_universes () =
 let show_intro all =
   let open EConstr in
   let pf = Proof_global.give_me_the_proof() in
-  let {Evd.it=gls ; sigma=sigma; } = Proof.V82.subgoals pf in
+  let gls,_,_,_,sigma = Proof.proof pf in
   if not (List.is_empty gls) then begin
     let gl = {Evd.it=List.hd gls ; sigma = sigma; } in
     let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma (pf_concl gl)) in
@@ -1601,7 +1599,7 @@ let vernac_global_check c =
 
 let get_nth_goal n =
   let pf = Proof_global.give_me_the_proof() in
-  let {Evd.it=gls ; sigma=sigma; } = Proof.V82.subgoals pf in
+  let gls,_,_,_,sigma = Proof.proof pf in
   let gl = {Evd.it=List.nth gls (n-1) ; sigma = sigma; } in
   gl
   

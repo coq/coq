@@ -65,7 +65,6 @@ val map_structured_proof : proof -> (Evd.evar_map -> Goal.goal -> 'a) -> ('a pre
 
 
 (*** General proof functions ***)
-
 val start : Evd.evar_map -> (Environ.env * EConstr.types) list -> proof
 val dependent_start : Proofview.telescope -> proof
 val initial_goals : proof -> (EConstr.constr * EConstr.types) list
@@ -187,6 +186,7 @@ val pr_proof : proof -> Pp.t
 (*** Compatibility layer with <=v8.2 ***)
 module V82 : sig
   val subgoals : proof -> Goal.goal list Evd.sigma
+  [@@ocaml.deprecated "Use the first and fifth argument of [Proof.proof]"]
 
   (* All the subgoals of the proof, including those which are not focused. *)
   val background_subgoals : proof -> Goal.goal list Evd.sigma

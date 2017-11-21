@@ -828,7 +828,7 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
 
 let pr_nth_open_subgoal n =
   let pf = Proof_global.give_me_the_proof () in
-  let { it=gls ; sigma=sigma } = Proof.V82.subgoals pf in
+  let gls,_,_,_,sigma = Proof.proof pf in
   pr_subgoal n sigma gls
 
 let pr_goal_by_id id =
