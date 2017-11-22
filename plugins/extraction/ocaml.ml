@@ -100,11 +100,33 @@ let pp_global k r = str (str_global k r)
 
 let pp_modname mp = str (Common.pp_module mp)
 
+(* grammar from OCaml 4.06 manual, "Prefix and infix symbols" *)
+
+let infix_symbols =
+  ['=' ; '<' ; '>' ; '@' ; '^' ; ';' ; '&' ; '+' ; '-' ; '*' ; '/' ; '$' ; '%' ]
+let operator_chars =
+  [ '!' ; '$' ; '%' ; '&' ; '*' ; '+' ; '-' ; '.' ; '/' ; ':' ; '<' ; '=' ; '>' ; '?' ; '@' ; '^' ; '|' ; '~' ]
+
+let substring_all_opchars s start stop =
+  let rec check_char i =
+    if i >= stop then true
+    else
+      List.mem s.[i] operator_chars && check_char (i+1)
+  in
+  check_char start
+
 let is_infix r =
   is_inline_custom r &&
   (let s = find_custom r in
-   let l = String.length s in
-   l >= 2 && s.[0] == '(' && s.[l-1] == ')')
+   let len = String.length s in
+   len >= 3 &&
+     (* parenthesized *)
+     (s.[0] == '(' && s.[len-1] == ')' &&
+        (* either, begins with infix symbol, any remainder is all operator chars *)
+        (List.mem s.[1] infix_symbols && substring_all_opchars s 2 (len-1))
+      ||
+        (* or, starts with #, at least one more char, all are operator chars *)
+        (s.[1] == '#' && len >= 4 && substring_all_opchars s 2 (len-1))))
 
 let get_infix r =
   let s = find_custom r in
