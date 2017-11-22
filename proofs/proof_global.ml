@@ -68,17 +68,16 @@ let _ =
 
 (* Extra info on proofs. *)
 type lemma_possible_guards = int list list
-type proof_universes = UState.t * Universes.universe_binders option
 
 type proof_object = {
   id : Names.Id.t;
   entries : Safe_typing.private_constants Entries.definition_entry list;
   persistence : Decl_kinds.goal_kind;
-  universes: proof_universes;
+  universes: UState.t;
 }
 
 type proof_ending =
-  | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry * proof_universes
+  | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry * UState.t
   | Proved of Vernacexpr.opacity_flag *
               Vernacexpr.lident option *
               proof_object
@@ -333,7 +332,6 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
   in
   let fpl, univs = Future.split2 fpl in
   let universes = if poly || now then Future.force univs else initial_euctx in
-  let binders = if poly then Some (UState.universe_binders universes) else None in
   (* Because of dependent subgoals at the beginning of proofs, we could
      have existential variables in the initial types of goals, we need to
      normalise them for the kernel. *)
@@ -409,7 +407,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
   in
   let entries = Future.map2 entry_fn fpl initial_goals in
   { id = pid; entries = entries; persistence = strength;
-    universes = (universes, binders) },
+    universes },
   fun pr_ending -> CEphemeron.get terminator pr_ending
 
 let return_proof ?(allow_partial=false) () =

@@ -177,7 +177,7 @@ let look_for_possibly_mutual_statements = function
 
 (* Saving a goal *)
 
-let save ?export_seff id const cstrs pl do_guard (locality,poly,kind) hook =
+let save ?export_seff id const uctx do_guard (locality,poly,kind) hook =
   let fix_exn = Future.fix_exn_of const.Entries.const_entry_body in
   try
     let const = adjust_guardness_conditions const do_guard in
@@ -204,7 +204,7 @@ let save ?export_seff id const cstrs pl do_guard (locality,poly,kind) hook =
           (locality, ConstRef kn)
     in
     definition_message id;
-    Universes.register_universe_binders r (Option.default Universes.empty_binders pl);
+    Declare.declare_univ_binders r (UState.universe_binders uctx);
     call_hook (fun exn -> exn) hook l r
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in
@@ -286,17 +286,17 @@ let save_hook = ref ignore
 let set_save_hook f = save_hook := f
 
 let save_named ?export_seff proof =
-  let id,const,(cstrs,pl),do_guard,persistence,hook = proof in
-  save ?export_seff id const cstrs pl do_guard persistence hook
+  let id,const,uctx,do_guard,persistence,hook = proof in
+  save ?export_seff id const uctx do_guard persistence hook
 
 let check_anonymity id save_ident =
   if not (String.equal (atompart_of_id id) (Id.to_string (default_thm_id))) then
     user_err Pp.(str "This command can only be used for unnamed theorem.")
 
 let save_anonymous ?export_seff proof save_ident =
-  let id,const,(cstrs,pl),do_guard,persistence,hook = proof in
+  let id,const,uctx,do_guard,persistence,hook = proof in
   check_anonymity id save_ident;
-  save ?export_seff save_ident const cstrs pl do_guard persistence hook
+  save ?export_seff save_ident const uctx do_guard persistence hook
 
 (* Admitted *)
 
@@ -312,7 +312,7 @@ let admit (id,k,e) pl hook () =
   | Local, _, _ | Discharge, _, _ -> warn_let_as_axiom id
   in
   let () = assumption_message id in
-  Universes.register_universe_binders (ConstRef kn) (Option.default Universes.empty_binders pl);
+  Declare.declare_univ_binders (ConstRef kn) pl;
   call_hook (fun exn -> exn) hook Global (ConstRef kn)
 
 (* Starting a goal *)
@@ -330,8 +330,8 @@ let get_proof proof do_guard hook opacity =
 let universe_proof_terminator compute_guard hook =
   let open Proof_global in
   make_terminator begin function
-  | Admitted (id,k,pe,(ctx,pl)) ->
-      admit (id,k,pe) pl (hook (Some ctx)) ();
+  | Admitted (id,k,pe,ctx) ->
+      admit (id,k,pe) (UState.universe_binders ctx) (hook (Some ctx)) ();
       Feedback.feedback Feedback.AddedAxiom
   | Proved (opaque,idopt,proof) ->
       let is_opaque, export_seff = match opaque with
@@ -339,7 +339,7 @@ let universe_proof_terminator compute_guard hook =
         | Vernacexpr.Opaque      -> true, false
       in
       let proof = get_proof proof compute_guard
-	(hook (Some (fst proof.Proof_global.universes))) is_opaque in
+        (hook (Some (proof.Proof_global.universes))) is_opaque in
       begin match idopt with
       | None -> save_named ~export_seff proof
       | Some (_,id) -> save_anonymous ~export_seff proof id
@@ -417,7 +417,7 @@ let start_proof_with_initialization kind ctx decl recguard thms snl hook =
   | (id,(t,(_,imps)))::other_thms ->
       let hook ctx strength ref =
         let ctx = match ctx with
-        | None -> Evd.empty_evar_universe_context
+        | None -> UState.empty
         | Some ctx -> ctx
         in
         let other_thms_data =
@@ -426,9 +426,9 @@ let start_proof_with_initialization kind ctx decl recguard thms snl hook =
             let body,opaq = retrieve_first_recthm ctx ref in
             let subst = Evd.evar_universe_context_subst ctx in
             let norm c = Universes.subst_opt_univs_constr subst c in
-            let ctx = UState.check_univ_decl ~poly:(pi2 kind) ctx decl in
             let body = Option.map norm body in
-            List.map_i (save_remaining_recthms kind norm ctx body opaq) 1 other_thms in
+            let uctx = UState.check_univ_decl ~poly:(pi2 kind) ctx decl in
+            List.map_i (save_remaining_recthms kind norm uctx body opaq) 1 other_thms in
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
@@ -496,7 +496,7 @@ let save_proof ?proof = function
             if const_entry_type = None then
               user_err Pp.(str "Admitted requires an explicit statement");
             let typ = Option.get const_entry_type in
-            let ctx = UState.const_univ_entry ~poly:(pi2 k) (fst universes) in
+            let ctx = UState.const_univ_entry ~poly:(pi2 k) universes in
             let sec_vars = if !keep_admitted_vars then const_entry_secctx else None in
             Admitted(id, k, (sec_vars, (typ, ctx), None), universes)
         | None ->
@@ -518,12 +518,9 @@ let save_proof ?proof = function
                   Some (Environ.keep_hyps env (Id.Set.union ids_typ ids_def))
               | _ -> None in
 	    let decl = Proof_global.get_universe_decl () in
-            let evd = Evd.from_ctx universes in
             let poly = pi2 k in
-            let ctx = Evd.check_univ_decl ~poly evd decl in
-            let binders = if poly then Some (UState.universe_binders universes) else None in
-            Admitted(id,k,(sec_vars, (typ, ctx), None),
-		     (universes, binders))
+            let ctx = UState.check_univ_decl ~poly universes decl in
+            Admitted(id,k,(sec_vars, (typ, ctx), None), universes)
       in
       Proof_global.apply_terminator (Proof_global.get_terminator ()) pe
   | Vernacexpr.Proved (is_opaque,idopt) ->

@@ -645,6 +645,24 @@ let eq_constr_universes_proj env sigma m n =
     let res = eq_constr' (unsafe_to_constr m) (unsafe_to_constr n) in
     if res then Some !cstrs else None
 
+let universes_of_constr sigma c =
+  let open Univ in
+  let rec aux s c =
+    match kind sigma c with
+    | Const (_, u) | Ind (_, u) | Construct (_, u) ->
+      LSet.fold LSet.add (Instance.levels (EInstance.kind sigma u)) s
+    | Sort u ->
+       let sort = ESorts.kind sigma u in
+       if Sorts.is_small sort then s
+       else
+         let u = Sorts.univ_of_sort sort in
+         LSet.fold LSet.add (Universe.levels u) s
+    | Evar (k, args) ->
+       let concl = Evd.evar_concl (Evd.find sigma k) in
+       fold sigma aux (aux s (of_constr concl)) c
+    | _ -> fold sigma aux s c
+  in aux LSet.empty c
+
 open Context
 open Environ
 

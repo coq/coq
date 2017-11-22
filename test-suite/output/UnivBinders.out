@@ -44,26 +44,45 @@ bar@{u} = nat
 bar is universe polymorphic
 foo@{u Top.17 v} = 
 Type@{Top.17} -> Type@{v} -> Type@{u}
-     : Type@{max(u+1, Top.17+1, v+1)}
+     : Type@{max(u+1,Top.17+1,v+1)}
 (* u Top.17 v |=  *)
 
 foo is universe polymorphic
-Monomorphic mono = Type@{u}
-     : Type@{u+1}
-(* {u} |=  *)
+Monomorphic mono = Type@{mono.u}
+     : Type@{mono.u+1}
+(* {mono.u} |=  *)
 
 mono is not universe polymorphic
+mono
+     : Type@{mono.u+1}
+Type@{mono.u}
+     : Type@{mono.u+1}
+The command has indeed failed with message:
+Universe u already exists.
+monomono
+     : Type@{MONOU+1}
+mono.monomono
+     : Type@{mono.MONOU+1}
+monomono
+     : Type@{MONOU+1}
+mono
+     : Type@{mono.u+1}
+The command has indeed failed with message:
+Universe u already exists.
+bobmorane = 
+let tt := Type@{tt.v} in let ff := Type@{ff.v} in tt -> ff
+     : Type@{max(tt.u,ff.u)}
 The command has indeed failed with message:
 Universe u already bound.
 foo@{E M N} = 
 Type@{M} -> Type@{N} -> Type@{E}
-     : Type@{max(E+1, M+1, N+1)}
+     : Type@{max(E+1,M+1,N+1)}
 (* E M N |=  *)
 
 foo is universe polymorphic
 foo@{Top.16 Top.17 Top.18} = 
 Type@{Top.17} -> Type@{Top.18} -> Type@{Top.16}
-     : Type@{max(Top.16+1, Top.17+1, Top.18+1)}
+     : Type@{max(Top.16+1,Top.17+1,Top.18+1)}
 (* Top.16 Top.17 Top.18 |=  *)
 
 foo is universe polymorphic
@@ -88,9 +107,10 @@ The command has indeed failed with message:
 This object does not support universe names.
 The command has indeed failed with message:
 Cannot enforce v < u because u < gU < gV < v
-Monomorphic bind_univs.mono = Type@{u}
-     : Type@{u+1}
-(* {u} |=  *)
+Monomorphic bind_univs.mono = 
+Type@{bind_univs.mono.u}
+     : Type@{bind_univs.mono.u+1}
+(* {bind_univs.mono.u} |=  *)
 
 bind_univs.mono is not universe polymorphic
 bind_univs.poly@{u} = Type@{u}
@@ -99,12 +119,12 @@ bind_univs.poly@{u} = Type@{u}
 
 bind_univs.poly is universe polymorphic
 insec@{v} = Type@{u} -> Type@{v}
-     : Type@{max(u+1, v+1)}
+     : Type@{max(u+1,v+1)}
 (* v |=  *)
 
 insec is universe polymorphic
 insec@{u v} = Type@{u} -> Type@{v}
-     : Type@{max(u+1, v+1)}
+     : Type@{max(u+1,v+1)}
 (* u v |=  *)
 
 insec is universe polymorphic
@@ -125,28 +145,28 @@ inmod@{u} = Type@{u}
 inmod is universe polymorphic
 Applied.infunct@{u v} = 
 inmod@{u} -> Type@{v}
-     : Type@{max(u+1, v+1)}
+     : Type@{max(u+1,v+1)}
 (* u v |=  *)
 
 Applied.infunct is universe polymorphic
-axfoo@{i Top.33 Top.34} : Type@{Top.33} -> Type@{i}
-(* i Top.33 Top.34 |=  *)
+axfoo@{i Top.41 Top.42} : Type@{Top.41} -> Type@{i}
+(* i Top.41 Top.42 |=  *)
 
 axfoo is universe polymorphic
 Argument scope is [type_scope]
 Expands to: Constant Top.axfoo
-axbar@{i Top.33 Top.34} : Type@{Top.34} -> Type@{i}
-(* i Top.33 Top.34 |=  *)
+axbar@{i Top.41 Top.42} : Type@{Top.42} -> Type@{i}
+(* i Top.41 Top.42 |=  *)
 
 axbar is universe polymorphic
 Argument scope is [type_scope]
 Expands to: Constant Top.axbar
-axfoo' : Type@{Top.36} -> Type@{i}
+axfoo' : Type@{Top.44} -> Type@{axbar'.i}
 
 axfoo' is not universe polymorphic
 Argument scope is [type_scope]
 Expands to: Constant Top.axfoo'
-axbar' : Type@{Top.36} -> Type@{i}
+axbar' : Type@{Top.44} -> Type@{axbar'.i}
 
 axbar' is not universe polymorphic
 Argument scope is [type_scope]

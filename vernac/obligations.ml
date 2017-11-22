@@ -833,7 +833,7 @@ let obligation_terminator name num guard hook auto pf =
     let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
     let ty = entry.Entries.const_entry_type in
     let (body, cstr), () = Future.force entry.Entries.const_entry_body in
-    let sigma = Evd.from_ctx (fst uctx) in
+    let sigma = Evd.from_ctx uctx in
     let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma cstr in
     Inductiveops.control_only_guard (Global.env ()) body;
     (** Declare the obligation ourselves and drop the hook *)

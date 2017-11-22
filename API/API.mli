@@ -4847,17 +4847,16 @@ sig
       set : unit -> unit ;
       reset : unit -> unit
     }
-  type proof_universes = UState.t * Universes.universe_binders option
   type proof_object = {
     id : Names.Id.t;
     entries : Safe_typing.private_constants Entries.definition_entry list;
     persistence : Decl_kinds.goal_kind;
-    universes: proof_universes;
+    universes: UState.t;
   }
 
   type proof_ending =
   | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry *
-                  proof_universes
+                  UState.t
   | Proved of Vernacexpr.opacity_flag *
               Vernacexpr.lident option *
               proof_object
@@ -5011,7 +5010,7 @@ sig
       Vernacexpr.goal_selector -> int option -> unit Proofview.tactic ->
       Proof.t -> Proof.t * bool
   val cook_proof :
-    unit -> (Names.Id.t * (Safe_typing.private_constants Entries.definition_entry * Proof_global.proof_universes * Decl_kinds.goal_kind))
+    unit -> (Names.Id.t * (Safe_typing.private_constants Entries.definition_entry * UState.t * Decl_kinds.goal_kind))
 
   val get_current_context : unit -> Evd.evar_map * Environ.env
   val current_proof_statement : unit -> Names.Id.t * Decl_kinds.goal_kind * EConstr.types
