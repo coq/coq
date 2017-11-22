@@ -19,3 +19,8 @@ Extraction test.
 
 Extract Inductive I => "foo" [ "(@?:::)" ].
 Extraction test.
+
+(* allow whitespace around infix operator *)
+
+Extract Inductive I => "foo" [ "(  @?:::  )" ].
+Extraction test.

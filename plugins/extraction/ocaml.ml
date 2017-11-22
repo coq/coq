@@ -122,11 +122,13 @@ let is_infix r =
    len >= 3 &&
      (* parenthesized *)
      (s.[0] == '(' && s.[len-1] == ')' &&
+        let inparens = String.trim (String.sub s 1 (len - 2)) in
+        let inparens_len = String.length inparens in
         (* either, begins with infix symbol, any remainder is all operator chars *)
-        (List.mem s.[1] infix_symbols && substring_all_opchars s 2 (len-1))
+        (List.mem inparens.[0] infix_symbols && substring_all_opchars inparens 1 inparens_len)
       ||
         (* or, starts with #, at least one more char, all are operator chars *)
-        (s.[1] == '#' && len >= 4 && substring_all_opchars s 2 (len-1))))
+        (inparens.[0] == '#' && inparens_len >= 2 && substring_all_opchars inparens 1 inparens_len)))
 
 let get_infix r =
   let s = find_custom r in
