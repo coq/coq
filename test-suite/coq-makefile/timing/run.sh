@@ -3,9 +3,12 @@
 #set -x
 set -e
 
-. ../template/init.sh
+. ../template/path-init.sh
 
-cd error
+cd precomputed-time-tests
+./run.sh || exit $?
+
+cd ../error
 coq_makefile -f _CoqProject -o Makefile
 make cleanall
 if make pretty-timed TGTS="all" -j1; then
