@@ -14,3 +14,7 @@ let test =
 
 let test =
   True@?:::False
+(** val test : foo **)
+
+let test =
+  True  @?:::  False
