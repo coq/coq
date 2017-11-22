@@ -81,22 +81,25 @@ struct
 
   let ws = Sys.word_size / 8
 
-  let rec init_size seen = function
-  | Int _ | Atm _ | Fun _ -> 0
+  let rec init_size seen k = function
+  | Int _ | Atm _ | Fun _ -> k 0
   | Ptr p ->
-    if seen.(p) then 0
+    if seen.(p) then k 0
     else
       let () = seen.(p) <- true in
       match (!memory).(p) with
       | Struct (tag, os) ->
-        let fold accu o = accu + 1 + init_size seen o in
-        let size = Array.fold_left fold 1 os in
-        let () = (!sizes).(p) <- size in
-        size
+        let len = Array.length os in
+        let rec fold i accu k =
+          if i == len then k accu
+          else
+            init_size seen (fun n -> fold (succ i) (accu + 1 + n) k) os.(i)
+        in
+        fold 0 1 (fun size -> let () = (!sizes).(p) <- size in k size)
       | String s ->
         let size = 2 + (String.length s / ws) in
         let () = (!sizes).(p) <- size in
-        size
+        k size
 
   let size = function
   | Int _ | Atm _ | Fun _ -> 0
@@ -116,7 +119,7 @@ struct
     let () = memory := mem in
     let () = sizes := Array.make (Array.length mem) (-1) in
     let seen = Array.make (Array.length mem) false in
-    let _ = init_size seen obj in
+    let () = init_size seen ignore obj in
     obj
 
   let oid = function
