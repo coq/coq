@@ -2170,8 +2170,9 @@ let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   (* Splits variables into those that are binding, bound, or both *)
   (* binding and bound *)
   let out_scope = function None -> None,[] | Some (a,l) -> a,l in
-  let vars = Id.Map.map (fun (isonlybinding, sc, typ) ->
-    (!isonlybinding, out_scope !sc, typ)) vl in
+  let unused = match reversible with NonInjective ids -> ids | _ -> [] in
+  let vars = Id.Map.mapi (fun id (isonlybinding, sc, typ) ->
+    (!isonlybinding && not (List.mem_f Id.equal id unused), out_scope !sc, typ)) vl in
   (* Returns [a] and the ordered list of variables with their scopes *)
   vars, a, reversible
 

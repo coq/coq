@@ -92,8 +92,7 @@ Check ##### 0 _ 0%bool 0%bool : prod' bool bool.
 Check fun A (x :prod' bool A) => match x with ##### 0 _ y 0%bool => 2 | _ => 1 end.
 
 (* 10. Check computation of binding variable through other notations *)
-(* i should be detected as binding variable and the scopes not being checked *)
-
+(* it should be detected as binding variable and the scopes not being checked *)
 Notation "'FUNNAT' i => t" := (fun i : nat => i = t) (at level 200).
 Notation "'Funnat' i => t" := (FUNNAT i => t + i%nat) (at level 200).
 
@@ -105,3 +104,10 @@ Notation "[:: x1 ; .. ; xn ]" := (cons x1 .. (cons xn nil) ..).
 Check [:: 1 ; 2 ; 3 ].
 Check [:: 1 ; 2 ; 3 & nil ]. (* was failing *)
 End A.
+
+(* 12. Preventively check that a variable which does not occur can be instantiated *)
+(* by any term. In particular, it should not be restricted to a binder *)
+Module M12.
+Notation "N ++ x" := (S x) (only parsing).
+Check 2 ++ 0.
+End M12.
