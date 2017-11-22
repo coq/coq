@@ -391,9 +391,11 @@ Extract Inductive bool => "bool" [ "true" "false" ].
 Extract Inductive sumbool => "bool" [ "true" "false" ].
 \end{coq_example}
 
-\noindent If an inductive constructor or type has arity 2 and the corresponding 
-string is enclosed by parenthesis, then the rest of the string is used
-as infix constructor or type. 
+\noindent When extracting to Ocaml, if an inductive constructor or type
+has arity 2 and the corresponding string is enclosed by parentheses,
+and the string meets Ocaml's lexical criteria for an infix symbol,
+then the rest of the string is used as infix constructor or type.
+
 \begin{coq_example}
 Extract Inductive list => "list" [ "[]" "(::)" ].
 Extract Inductive prod => "(*)"  [ "(,)" ].
