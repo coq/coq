@@ -1,8 +1,4 @@
-set -e
-set -o pipefail
-
-export PATH=$COQBIN:$PATH
-export LC_ALL=C
+. ../template/path-init.sh
 
 rm -rf theories src Makefile Makefile.conf tmp
 git clean -dfx || true
