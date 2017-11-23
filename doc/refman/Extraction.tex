@@ -13,12 +13,12 @@ be used (abusively) to refer to any of the three.
 
 %% \paragraph{Differences with old versions.}
 %% The current extraction mechanism is new for version 7.0 of {\Coq}.
-%% In particular, the \FW\ toplevel used as an intermediate step between 
-%% \Coq\ and ML has been withdrawn.  It is also not possible 
+%% In particular, the \FW\ toplevel used as an intermediate step between
+%% \Coq\ and ML has been withdrawn.  It is also not possible
 %% any more to import ML objects in this \FW\ toplevel.
 %% The current mechanism also differs from
 %% the one in previous versions of \Coq: there is no more
-%% an explicit toplevel for the language (formerly called \textsc{Fml}). 
+%% an explicit toplevel for the language (formerly called \textsc{Fml}).
 
 Before using any of the commands or options described in this chapter,
 the extraction framework should first be loaded explicitly
@@ -53,26 +53,26 @@ extraction. They both display extracted term(s) inside \Coq.
 %% TODO error messages
 
 \noindent All the following commands produce real ML files. User can choose to produce
-one monolithic file or one file per \Coq\ library. 
+one monolithic file or one file per \Coq\ library.
 
 \begin{description}
-\item {\tt Extraction "{\em file}"}  
+\item {\tt Extraction "{\em file}"}
       \qualid$_1$ \dots\ \qualid$_n$. ~\par
   Recursive extraction of all the globals (or modules) \qualid$_1$ \dots\
   \qualid$_n$ and all their dependencies in one monolithic file {\em file}.
   Global and local identifiers are renamed according to the chosen ML
   language to fulfill its syntactic conventions, keeping original
   names as much as possible.
-  
-\item {\tt Extraction Library} \ident. ~\par 
+
+\item {\tt Extraction Library} \ident. ~\par
   Extraction of the whole \Coq\ library {\tt\ident.v} to an ML module
   {\tt\ident.ml}.  In case of name clash, identifiers are here renamed
   using prefixes \verb!coq_!  or \verb!Coq_! to ensure a
   session-independent renaming.
 
 \item {\tt Recursive Extraction Library} \ident. ~\par
-  Extraction of the \Coq\ library {\tt\ident.v} and all other modules 
-  {\tt\ident.v} depends on. 
+  Extraction of the \Coq\ library {\tt\ident.v} and all other modules
+  {\tt\ident.v} depends on.
 
 \item {\tt Separate Extraction}
       \qualid$_1$ \dots\ \qualid$_n$. ~\par
@@ -177,21 +177,21 @@ not always perfect; if you want to disable this feature, do it by Unset.
 {\tt Extraction [Inline|NoInline] \qualid$_1$ \dots\ \qualid$_n$}.
 
 In addition to the automatic inline feature, you can tell to
-inline some more constants by the {\tt Extraction Inline} command. Conversely, 
+inline some more constants by the {\tt Extraction Inline} command. Conversely,
 you can forbid the automatic inlining of some specific constants by
 the {\tt Extraction NoInline} command.
-Those two commands enable a precise control of what is inlined and what is not. 
+Those two commands enable a precise control of what is inlined and what is not.
 
 \item \comindex{Print Extraction Inline}
-{\tt Print Extraction Inline}. 
+{\tt Print Extraction Inline}.
 
-Prints the current state of the table recording the custom inlinings 
-declared by the two previous commands. 
+Prints the current state of the table recording the custom inlinings
+declared by the two previous commands.
 
 \item \comindex{Reset Extraction Inline}
-{\tt Reset Extraction Inline}. 
+{\tt Reset Extraction Inline}.
 
-Puts the table recording the custom inlinings back to empty. 
+Puts the table recording the custom inlinings back to empty.
 
 \end{description}
 
@@ -204,19 +204,19 @@ A user can explicitly ask for a constant to be extracted by two means:
 \item by extracting the whole \Coq\ module of this constant.
 \end{itemize}
 In both cases, the declaration of this constant will be present in the
-produced file. 
+produced file.
 But this same constant may or may not be inlined in the following
-terms, depending on the automatic/custom inlining mechanism.  
+terms, depending on the automatic/custom inlining mechanism.
 
 
 For the constants non-explicitly required but needed for dependency
-reasons, there are two cases: 
+reasons, there are two cases:
 \begin{itemize}
 \item If an inlining decision is taken, whether automatically or not,
 all occurrences of this constant are replaced by its extracted body, and
 this constant is not declared in the generated file.
 \item If no inlining decision is taken, the constant is normally
-  declared in the produced file. 
+  declared in the produced file.
 \end{itemize}
 
 \asubsection{Extra elimination of useless arguments}
@@ -261,17 +261,17 @@ depending of the use of these remaining implicited variables.
 \asubsection{Realizing axioms}\label{extraction:axioms}
 
 Extraction will fail if it encounters an informative
-axiom not realized (see Section~\ref{extraction:axioms}). 
+axiom not realized (see Section~\ref{extraction:axioms}).
 A warning will be issued if it encounters a logical axiom, to remind the
 user that inconsistent logical axioms may lead to incorrect or
-non-terminating extracted terms. 
+non-terminating extracted terms.
 
 It is possible to assume some axioms while developing a proof. Since
 these axioms can be any kind of proposition or object or type, they may
 perfectly well have some computational content. But a program must be
 a closed term, and of course the system cannot guess the program which
 realizes an axiom.  Therefore, it is possible to tell the system
-what ML term corresponds to a given axiom. 
+what ML term corresponds to a given axiom.
 
 \comindex{Extract Constant}
 \begin{description}
@@ -284,7 +284,7 @@ what ML term corresponds to a given axiom.
 \end{description}
 
 \noindent Note that the {\tt Extract Inlined Constant} command is sugar
-for an {\tt Extract Constant} followed by a {\tt Extraction Inline}. 
+for an {\tt Extract Constant} followed by a {\tt Extraction Inline}.
 Hence a {\tt Reset Extraction Inline} will have an effect on the
 realized and inlined axiom.
 
@@ -310,7 +310,7 @@ variables have to be given. The syntax is then:
 \item{\tt Extract Constant \qualid\ \str$_1$ \dots\ \str$_n$ => \str.}
 \end{description}
 
-\noindent The number of type variables is checked by the system. 
+\noindent The number of type variables is checked by the system.
 
 \Example
 \begin{coq_example*}
@@ -331,7 +331,7 @@ an exception labeled {\tt AXIOM TO BE REALIZED}. The user must then
 search these exceptions inside the extracted file and replace them by
 real code.
 
-\comindex{Extract Inductive} 
+\comindex{Extract Inductive}
 
 The system also provides a mechanism to specify ML terms for inductive
 types and constructors.  For instance, the user may want to use the ML
@@ -358,7 +358,7 @@ early evaluation of the branch: \verb$| O => bar$ leads to the functional
 form \verb$(fun () -> bar)$. For instance, when extracting {\tt nat}
 into {\tt int}, the code to provide has type:
 {\tt (unit->'a)->(int->'a)->int->'a}.
-    
+
 As for {\tt Extract Inductive}, this command should be used with care:
 \begin{itemize}
 \item The ML code provided by the user is currently \emph{not} checked at all by
@@ -391,9 +391,9 @@ Extract Inductive bool => "bool" [ "true" "false" ].
 Extract Inductive sumbool => "bool" [ "true" "false" ].
 \end{coq_example}
 
-\noindent If an inductive constructor or type has arity 2 and the corresponding 
+\noindent If an inductive constructor or type has arity 2 and the corresponding
 string is enclosed by parenthesis, then the rest of the string is used
-as infix constructor or type. 
+as infix constructor or type.
 \begin{coq_example}
 Extract Inductive list => "list" [ "[]" "(::)" ].
 Extract Inductive prod => "(*)"  [ "(,)" ].
@@ -412,16 +412,16 @@ Extract Inductive nat => int [ "0" "succ" ]
 
 When using {\tt Extraction Library}, the names of the extracted files
 directly depends from the names of the \Coq\ files. It may happen that
-these filenames are in conflict with already existing files, 
+these filenames are in conflict with already existing files,
 either in the standard library of the target language or in other
-code that is meant to be linked with the extracted code. 
+code that is meant to be linked with the extracted code.
 For instance the module {\tt List} exists both in \Coq\ and in Ocaml.
 It is possible to instruct the extraction not to use particular filenames.
 
 \begin{description}
 \item{\tt Extraction Blacklist} \ident\ \dots\ \ident. ~\par
   Instruct the extraction to avoid using these names as filenames
-  for extracted code. 
+  for extracted code.
 \item{\tt Print Extraction Blacklist.} ~\par
   Show the current list of filenames the extraction should avoid.
 \item{\tt Reset Extraction Blacklist.} ~\par
@@ -434,9 +434,9 @@ It is possible to instruct the extraction not to use particular filenames.
 \asection{Differences between \Coq\ and ML type systems}
 
 
-Due to differences between \Coq\ and ML type systems, 
-some extracted programs are not directly typable in ML. 
-We now solve this problem (at least in Ocaml) by adding 
+Due to differences between \Coq\ and ML type systems,
+some extracted programs are not directly typable in ML.
+We now solve this problem (at least in Ocaml) by adding
 when needed some unsafe casting {\tt Obj.magic}, which give
 a generic type {\tt 'a} to any term.
 
@@ -449,7 +449,7 @@ For example, here are two kinds of problem that can occur:
     type-checker. A very well known example is the {\em distr-pair}
     function:
 \begin{verbatim}
-Definition dp := 
+Definition dp :=
  fun (A B:Set)(x:A)(y:B)(f:forall C:Set, C->C) => (f A x, f B y).
 \end{verbatim}
 
@@ -484,11 +484,11 @@ In Ocaml, we must cast any argument of the constructor dummy.
 
 \noindent Even with those unsafe castings, you should never get error like
 ``segmentation fault''. In fact even if your program may seem
-ill-typed to the Ocaml type-checker, it can't go wrong: it comes 
-from a Coq well-typed terms, so for example inductives will always 
-have the correct number of arguments, etc. 
+ill-typed to the Ocaml type-checker, it can't go wrong: it comes
+from a Coq well-typed terms, so for example inductives will always
+have the correct number of arguments, etc.
 
-More details about the correctness of the extracted programs can be 
+More details about the correctness of the extracted programs can be
 found in \cite{Let02}.
 
 We have to say, though, that in most ``realistic'' programs, these
@@ -499,8 +499,8 @@ accepted by Caml type-checker without any {\tt Obj.magic} (see examples below).
 
 \asection{Some examples}
 
-We present here two examples of extractions, taken from the 
-\Coq\ Standard Library. We choose \ocaml\ as target language, 
+We present here two examples of extractions, taken from the
+\Coq\ Standard Library. We choose \ocaml\ as target language,
 but all can be done in the other dialects with slight modifications.
 We then indicate where to find other examples and tests of Extraction.
 
@@ -535,8 +535,8 @@ Recursive Extraction eucl_dev.
 
 \noindent The inlining of {\tt gt\_wf\_rec} and others is not
 mandatory. It only enhances readability of extracted code.
-You can then copy-paste the output to a file {\tt euclid.ml} or let 
-\Coq\ do it for you with the following command: 
+You can then copy-paste the output to a file {\tt euclid.ml} or let
+\Coq\ do it for you with the following command:
 
 \begin{verbatim}
 Extraction "euclid" eucl_dev.
@@ -562,7 +562,7 @@ It is easier to test on \ocaml\ integers:
 val nat_of_int : int -> nat = <fun>
 # let rec int_of_nat = function O -> 0 | S p -> 1+(int_of_nat p);;
 val int_of_nat : nat -> int = <fun>
-# let div a b = 
+# let div a b =
      let Divex (q,r) = eucl_dev (nat_of_int b) (nat_of_int a)
      in (int_of_nat q, int_of_nat r);;
 val div : int -> int -> int * int = <fun>
@@ -612,7 +612,7 @@ probably due to an heavy use of impredicativity. After compilation, those
 two examples run nonetheless, thanks to the correction of the
 extraction~\cite{Let02}.
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:

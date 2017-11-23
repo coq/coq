@@ -35,7 +35,7 @@ let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type x xs)
  * checks if the eliminator is recursive or not *)
 let analyze_eliminator elimty env sigma =
   let rec loop ctx t = match EConstr.kind_of_type sigma t with
-  | AtomicType (hd, args) when EConstr.isRel sigma hd -> 
+  | AtomicType (hd, args) when EConstr.isRel sigma hd ->
     ctx, EConstr.destRel sigma hd, not (EConstr.Vars.noccurn sigma 1 t), Array.length args, t
   | CastType (t, _) -> loop ctx t
   | ProdType (x, ty, t) -> loop (RelDecl.LocalAssum (x, ty) :: ctx) t
@@ -49,7 +49,7 @@ let analyze_eliminator elimty env sigma =
       str"the eliminator's"++Pp.cut()++str"type:"++spc()++pr_econstr_env env' sigma elimty) in
   let ctx, pred_id, elim_is_dep, n_pred_args,concl = loop [] elimty in
   let n_elim_args = Context.Rel.nhyps ctx in
-  let is_rec_elim = 
+  let is_rec_elim =
      let count_occurn n term =
        let count = ref 0 in
        let rec occur_rec n c = match EConstr.kind sigma c with
@@ -58,7 +58,7 @@ let analyze_eliminator elimty env sigma =
        in
        occur_rec n term; !count in
      let occurr2 n t = count_occurn n t > 1 in
-     not (List.for_all_i 
+     not (List.for_all_i
        (fun i (_,rd) -> pred_id <= i || not (occurr2 (pred_id - i) rd))
        1 (assums_of_rel_context ctx))
   in
@@ -67,7 +67,7 @@ let analyze_eliminator elimty env sigma =
 
 let subgoals_tys sigma (relctx, concl) =
   let rec aux cur_depth acc = function
-    | hd :: rest -> 
+    | hd :: rest ->
         let ty = Context.Rel.Declaration.get_type hd in
         if EConstr.Vars.noccurn sigma cur_depth concl &&
            List.for_all_i (fun i -> function
@@ -93,7 +93,7 @@ let subgoals_tys sigma (relctx, concl) =
  * 1. find the eliminator if not given as ~elim and analyze it
  * 2. build the patterns to be matched against the conclusion, looking at
  *    (occ, c), deps and the pattern inferred from the type of the eliminator
- * 3. build the new predicate matching the patterns, and the tactic to 
+ * 3. build the new predicate matching the patterns, and the tactic to
  *    generalize the equality in case eqid is not None
  * 4. build the tactic handle intructions and clears as required in ipats and
  *    by eqid *)
@@ -121,7 +121,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
   let is_undef_pat = function
   | sigma, T t -> EConstr.isEvar sigma (EConstr.of_constr t)
   | _ -> false in
-  let match_pat env p occ h cl = 
+  let match_pat env p occ h cl =
     let sigma0 = project orig_gl in
     ppdebug(lazy Pp.(str"matching: " ++ pr_occ occ ++ pp_pattern p));
     let (c,ucst), cl =
@@ -129,11 +129,11 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
     ppdebug(lazy Pp.(str"     got: " ++ pr_constr_env env sigma0 c));
     c, EConstr.of_constr cl, ucst in
   let mkTpat gl t = (* takes a term, refreshes it and makes a T pattern *)
-    let n, t, _, ucst = pf_abs_evars orig_gl (project gl, fire_subst gl t) in 
+    let n, t, _, ucst = pf_abs_evars orig_gl (project gl, fire_subst gl t) in
     let t, _, _, sigma = saturate ~beta:true env (project gl) t n in
     Evd.merge_universe_context sigma ucst, T (EConstr.Unsafe.to_constr t) in
   let unif_redex gl (sigma, r as p) t = (* t is a hint for the redex of p *)
-    let n, t, _, ucst = pf_abs_evars orig_gl (project gl, fire_subst gl t) in 
+    let n, t, _, ucst = pf_abs_evars orig_gl (project gl, fire_subst gl t) in
     let t, _, _, sigma = saturate ~beta:true env sigma t n in
     let sigma = Evd.merge_universe_context sigma ucst in
     match r with
@@ -160,7 +160,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
         else
           let c = Option.get oc in let gl, c_ty = pfe_type_of gl c in
           let pc = match c_gen with
-            | Some p -> interp_cpattern (Option.get ist) orig_gl p None 
+            | Some p -> interp_cpattern (Option.get ist) orig_gl p None
             | _ -> mkTpat gl c in
           Some(c, c_ty, pc), gl in
       cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred, gl
@@ -194,7 +194,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
         pf_saturate ~beta:is_case gl elim ~ty:elimty n_elim_args in
       let pred = List.assoc pred_id elim_args in
       let pc = match n_c_args, c_gen with
-        | 0, Some p -> interp_cpattern (Option.get ist) orig_gl p None 
+        | 0, Some p -> interp_cpattern (Option.get ist) orig_gl p None
         | _ -> mkTpat gl c in
       let cty = Some (c, c_ty, pc) in
       let elimty = Reductionops.whd_all env (project gl) elimty in
@@ -219,7 +219,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
   let c_is_head_p, gl = match cty with
     | None -> true, gl  (* The user wrote elim: _ *)
     | Some (c, c_ty, _) ->
-    let res = 
+    let res =
       (* we try to see if c unifies with the last arg of elim *)
       if elim_is_dep then None else
       let arg = List.assoc (n_elim_args - 1) elim_args in
@@ -259,11 +259,11 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
           (* if we are the index for the equation we do not clear *)
           let clr_t = if deps = [] && eqid <> None then [] else clr_t in
           let p = if is_undef_pat p then mkTpat gl inf_t else p in
-          loop (patterns @ [i, p, inf_t, occ]) 
+          loop (patterns @ [i, p, inf_t, occ])
             (clr_t @ clr) (i+1) (deps, inf_deps)
-      | [], c :: inf_deps -> 
+      | [], c :: inf_deps ->
           ppdebug(lazy Pp.(str"adding inf pattern " ++ pr_constr_pat (EConstr.Unsafe.to_constr c)));
-          loop (patterns @ [i, mkTpat gl c, c, allocc]) 
+          loop (patterns @ [i, mkTpat gl c, c, allocc])
             clr (i+1) ([], inf_deps)
       | _::_, [] -> errorstrm Pp.(str "Too many dependent abstractions") in
     let deps, head_p, inf_deps_r = match what, c_is_head_p, cty with
@@ -274,7 +274,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
          let occ = if occ = None then allocc else occ in
          let inf_p, inf_deps_r = List.hd inf_deps_r, List.tl inf_deps_r in
          deps, [1, pc, inf_p, occ], inf_deps_r in
-    let patterns, clr, gl = 
+    let patterns, clr, gl =
       loop [] orig_clr (List.length head_p+1) (List.rev deps, inf_deps_r) in
     head_p @ patterns, Util.List.uniquize clr, gl
   in
@@ -282,7 +282,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
   ppdebug(lazy Pp.(pp_concat (str"inf. patterns=") (List.map (pp_inf_pat gl) patterns)));
   (* Predicate generation, and (if necessary) tactic to generalize the
    * equation asked by the user *)
-  let elim_pred, gen_eq_tac, clr, gl = 
+  let elim_pred, gen_eq_tac, clr, gl =
     let error gl t inf_t = errorstrm Pp.(str"The given pattern matches the term"++
       spc()++pp_term gl t++spc()++str"while the inferred pattern"++
       spc()++pr_constr_pat (EConstr.Unsafe.to_constr (fire_subst gl inf_t))++spc()++ str"doesn't") in
@@ -297,18 +297,18 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
         let c = EConstr.of_constr c in
         let gl = try pf_unify_HO gl inf_t c with _ -> error gl c inf_t in
         cl, gl, post
-      with 
+      with
       | NoMatch | NoProgress ->
           let e, ucst = redex_of_pattern env p in
           let gl = pf_merge_uc ucst gl in
           let e = EConstr.of_constr e in
           let n, e, _, _ucst =  pf_abs_evars gl (fst p, e) in
-          let e, _, _, gl = pf_saturate ~beta:true gl e n in 
+          let e, _, _, gl = pf_saturate ~beta:true gl e n in
           let gl = try pf_unify_HO gl inf_t e with _ -> error gl e inf_t in
           cl, gl, post
-    in        
+    in
     let rec match_all concl gl patterns =
-      let concl, gl, postponed = 
+      let concl, gl, postponed =
         List.fold_left match_or_postpone (concl, gl, []) patterns in
       if postponed = [] then concl, gl
       else if List.length postponed = List.length patterns then
@@ -317,14 +317,14 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
       else match_all concl gl postponed in
     let concl, gl = match_all concl gl patterns in
     let pred_rctx, _ = EConstr.decompose_prod_assum (project gl) (fire_subst gl predty) in
-    let concl, gen_eq_tac, clr, gl = match eqid with 
-    | Some (IPatId _) when not is_rec -> 
+    let concl, gen_eq_tac, clr, gl = match eqid with
+    | Some (IPatId _) when not is_rec ->
         let k = List.length deps in
         let c = fire_subst gl (List.assoc (n_elim_args - k - 1) elim_args) in
         let gl, t = pfe_type_of gl c in
         let gen_eq_tac, gl =
           let refl = EConstr.mkApp (eq, [|t; c; c|]) in
-          let new_concl = EConstr.mkArrow refl (EConstr.Vars.lift 1 (pf_concl orig_gl)) in 
+          let new_concl = EConstr.mkArrow refl (EConstr.Vars.lift 1 (pf_concl orig_gl)) in
           let new_concl = fire_subst gl new_concl in
           let erefl, gl = mkRefl t c gl in
           let erefl = fire_subst gl erefl in
@@ -337,7 +337,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
     | _ -> concl, Tacticals.tclIDTAC, clr, gl in
     let mk_lam t r = EConstr.mkLambda_or_LetIn r t in
     let concl = List.fold_left mk_lam concl pred_rctx in
-    let gl, concl = 
+    let gl, concl =
       if eqid <> None && is_rec then
         let gl, concls = pfe_type_of gl concl in
         let concl, gl = mkProt concls concl gl in
@@ -352,10 +352,10 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
   let elim = fire_subst gl elim in
   let gl, _ = pf_e_type_of gl elim in
   (* check that the patterns do not contain non instantiated dependent metas *)
-  let () = 
+  let () =
     let evars_of_term = Evarutil.undefined_evars_of_term (project gl) in
     let patterns = List.map (fun (_,_,t,_) -> fire_subst gl t) patterns in
-    let patterns_ev = List.map evars_of_term patterns in 
+    let patterns_ev = List.map evars_of_term patterns in
     let ev = List.fold_left Evar.Set.union Evar.Set.empty patterns_ev in
     let ty_ev = Evar.Set.fold (fun i e ->
          let ex = i in
@@ -372,7 +372,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
     end
   in
   (* the elim tactic, with the eliminator and the predicated we computed *)
-  let elim = project gl, elim in 
+  let elim = project gl, elim in
   let elim_tac gl =
     Tacticals.tclTHENLIST [refine_with ~with_evars:false elim; cleartac clr] gl in
   Tacticals.tclTHENLIST [gen_eq_tac; elim_intro_tac ?ist what eqid elim_tac is_rec clr] orig_gl
@@ -433,7 +433,7 @@ let perform_injection c gl =
   let cl1 = EConstr.mkLambda EConstr.(Anonymous, mkArrow eqt cl, mkApp (mkRel 1, [|c_eq|])) in
   let id = injecteq_id in
   let id_with_ebind = (EConstr.mkVar id, NoBindings) in
-  let injtac = Tacticals.tclTHEN (introid id) (injectidl2rtac id id_with_ebind) in 
+  let injtac = Tacticals.tclTHEN (introid id) (injectidl2rtac id id_with_ebind) in
   Tacticals.tclTHENLAST (Proofview.V82.of_tactic (Tactics.apply (EConstr.compose_lam dc cl1))) injtac gl
 
 let ssrscasetac force_inj c gl =

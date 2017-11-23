@@ -1,8 +1,8 @@
 (* -*- mode: coq; coq-prog-args: ("-nois" "-indices-matter" "-R" "." "Top" "-top" "bug_bad_univ_length_01") -*- *)
-(* File reduced by coq-bug-finder from original input, then from 1199 lines to 
-430 lines, then from 444 lines to 430 lines, then from 964 lines to 255 lines, 
+(* File reduced by coq-bug-finder from original input, then from 1199 lines to
+430 lines, then from 444 lines to 430 lines, then from 964 lines to 255 lines,
 then from 269 lines to 255 lines *)
-(* coqc version 8.5 (January 2016) compiled on Jan 23 2016 16:15:22 with OCaml 
+(* coqc version 8.5 (January 2016) compiled on Jan 23 2016 16:15:22 with OCaml
 4.01.0
    coqtop version 8.5 (January 2016) *)
 Declare ML Module "ltac_plugin".
@@ -36,7 +36,7 @@ Module Export Specif.
 
 Set Implicit Arguments.
 
-Record sig {A} (P : A -> Type) := exist { proj1_sig : A ; proj2_sig : P 
+Record sig {A} (P : A -> Type) := exist { proj1_sig : A ; proj2_sig : P
 proj1_sig }.
 
 Notation sigT := sig (only parsing).
@@ -49,11 +49,11 @@ Notation projT2 := proj2_sig (only parsing).
 End Specif.
 Definition Type1@{i} := Eval hnf in let gt := (Set : Type@{i}) in Type@{i}.
 
-Definition Type2@{i j} := Eval hnf in let gt := (Type1@{j} : Type@{i}) in 
+Definition Type2@{i j} := Eval hnf in let gt := (Type1@{j} : Type@{i}) in
 Type@{i}.
 
 Definition Type2le@{i j} := Eval hnf in let gt := (Set : Type@{i}) in
-                                        let ge := ((fun x => x) : Type1@{j} -> 
+                                        let ge := ((fun x => x) : Type1@{j} ->
 Type@{i}) in Type@{i}.
 
 Notation idmap := (fun x => x).
@@ -71,7 +71,7 @@ Notation "x .2" := (pr2 x) (at level 3, format "x '.2'") : fibration_scope.
 
 Notation compose := (fun g f x => g (f x)).
 
-Notation "g 'o' f" := (compose g%function f%function) (at level 40, left 
+Notation "g 'o' f" := (compose g%function f%function) (at level 40, left
 associativity) : function_scope.
 
 Inductive paths {A : Type} (a : A) : A -> Type :=
@@ -98,7 +98,7 @@ Definition ap {A B:Type} (f:A -> B) {x y:A} (p:x = y) : f x = f y
 Definition pointwise_paths {A} {P:A->Type} (f g:forall x:A, P x)
   := forall x:A, f x = g x.
 
-Notation "f == g" := (pointwise_paths f g) (at level 70, no associativity) : 
+Notation "f == g" := (pointwise_paths f g) (at level 70, no associativity) :
 type_scope.
 
 Definition Sect {A B : Type} (s : A -> B) (r : B -> A) :=
@@ -114,7 +114,7 @@ Class IsEquiv {A B : Type} (f : A -> B) := BuildIsEquiv {
 Arguments eisretr {A B}%type_scope f%function_scope {_} _.
 Arguments eissect {A B}%type_scope f%function_scope {_} _.
 
-Notation "f ^-1" := (@equiv_inv _ _ f _) (at level 3, format "f '^-1'") : 
+Notation "f ^-1" := (@equiv_inv _ _ f _) (at level 3, format "f '^-1'") :
 function_scope.
 
 Inductive Unit : Type1 :=
@@ -181,11 +181,11 @@ Module Type ReflectiveSubuniverses.
   Parameter In@{u a i} : forall (O : ReflectiveSubuniverse@{u a}),
                    Type2le@{i a} -> Type2le@{i a}.
 
-  Parameter O_inO@{u a i} : forall (O : ReflectiveSubuniverse@{u a}) (T : 
+  Parameter O_inO@{u a i} : forall (O : ReflectiveSubuniverse@{u a}) (T :
 Type@{i}),
                                In@{u a i} O (O_reflector@{u a i} O T).
 
-  Parameter to@{u a i} : forall (O : ReflectiveSubuniverse@{u a}) (T : 
+  Parameter to@{u a i} : forall (O : ReflectiveSubuniverse@{u a}) (T :
 Type@{i}),
                    T -> O_reflector@{u a i} O T.
 
@@ -198,7 +198,7 @@ Type@{i}),
         In@{u a j} O U.
 
   Parameter extendable_to_O@{u a i j k}
-  : forall (O : ReflectiveSubuniverse@{u a}) {P : Type2le@{i a}} {Q : 
+  : forall (O : ReflectiveSubuniverse@{u a}) {P : Type2le@{i a}} {Q :
 Type2le@{j a}} {Q_inO : In@{u a j} O Q},
       ooExtendableAlong@{i i j k} (to O P) (fun _ => Q).
 
@@ -250,7 +250,7 @@ Section Reflective_Subuniverse.
  exact H.
     Defined.
 
-    Definition inO_paths@{i} (S : Type@{i}) {S_inO : In@{Ou Oa i} O S} (x y : 
+    Definition inO_paths@{i} (S : Type@{i}) {S_inO : In@{Ou Oa i} O S} (x y :
 S)    : In@{Ou Oa i} O (x=y).
     Proof.
       simple refine (inO_to_O_retract@{i} _ _ _); intro u.

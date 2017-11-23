@@ -29,7 +29,7 @@ For each line if FILTER returns nil, then the keyword is not added to the
 regexp.  See `coq-syntax-db' for DB structure."
   (let ((l db) (res ()))
     (while l
-      (let* ((hd (car l)) (tl (cdr l))	; hd is the first infos list
+      (let* ((hd (car l)) (tl (cdr l))  ; hd is the first infos list
              (e1 (car hd)) (tl1 (cdr hd)) ; e1 = menu entry
              (e2 (car tl1)) (tl2 (cdr tl1)) ; e2 = abbreviation
              (e3 (car tl2)) (tl3 (cdr tl2)) ; e3 = completion
@@ -68,7 +68,7 @@ regexp.  See `coq-syntax-db' for DB structure."
   "Generate a regular expression for separated lists of identifiers PROOF-ID.
 Default is comma separated, or SEPREGEXP if set."
   (concat proof-id "\\(\\s-*"   (or sepregexp ",") "\\s-*"
-	  proof-id "\\)*"))
+          proof-id "\\)*"))
 
 (defun proof-ids-to-regexp (l)
   "Maps a non-empty list of tokens `L' to a regexp matching any element."
@@ -81,7 +81,7 @@ Default is comma separated, or SEPREGEXP if set."
 (defconst pg-defface-window-systems
   '(x            ;; bog standard
     mswindows    ;; Windows
-    w32	         ;; Windows
+    w32          ;; Windows
     gtk          ;; gtk emacs (obsolete?)
     mac          ;; used by Aquamacs
     carbon       ;; used by Carbon XEmacs
@@ -98,12 +98,12 @@ syntax colouring behaviour.")
     (apply 'append
      (mapcar
      (lambda (ty) (list
-		     (list (list (list 'type ty) '(class color)
-			   (list 'background 'light))
-			   (quote ,bl))
-		     (list (list (list 'type ty) '(class color)
-				 (list 'background 'dark))
-			   (quote ,bd))))
+                     (list (list (list 'type ty) '(class color)
+                           (list 'background 'light))
+                           (quote ,bl))
+                     (list (list (list 'type ty) '(class color)
+                                 (list 'background 'dark))
+                           (quote ,bd))))
      pg-defface-window-systems))
     (list (list t (quote ,ow)))))
 

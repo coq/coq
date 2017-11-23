@@ -16,4 +16,4 @@ Lemma sigT_obj_eq
 Proof.
   intros.
   Set Debug Tactic Unification.
-  apply path_forall. 
+  apply path_forall.

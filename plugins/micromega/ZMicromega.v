@@ -592,7 +592,7 @@ Definition eval_Psatz  : list (NFormula Z) -> ZWitness ->  option (NFormula Z) :
 
 
 Definition valid_cut_sign (op:Op1) :=
-  match op with 
+  match op with
     | Equal => true
     | NonStrict => true
     | _         => false
@@ -623,7 +623,7 @@ Fixpoint ZChecker (l:list (NFormula Z)) (pf : ZArithProof)  {struct pf} : bool :
            match genCuttingPlane f1 , genCuttingPlane f2 with
              |Some (e1,z1,op1) , Some (e2,z2,op2) =>
                if (valid_cut_sign op1 && valid_cut_sign op2 && is_pol_Z0 (padd e1 e2))
-                 then 
+                 then
                    (fix label (pfs:list ZArithProof) :=
                    fun lb ub =>
                      match pfs with
@@ -736,9 +736,9 @@ Proof.
   change (eval_pol env e = 0) in H2.
   case_eq (Z.gtb g 0).
   intros.
-  rewrite <- Zgt_is_gt_bool in H.  
+  rewrite <- Zgt_is_gt_bool in H.
   rewrite Zgcd_pol_correct_lt with (1:= H1)  in H2; auto with zarith.
-  unfold nformula_of_cutting_plane.  
+  unfold nformula_of_cutting_plane.
   change (eval_pol env (padd e' (Pc z)) = 0).
   inv H3.
   rewrite eval_pol_add.
@@ -957,8 +957,8 @@ Proof.
   destruct H4.
   intros.
   exists x0 ; split;tauto.
-  intros until 1. 
-  apply H ; auto. 
+  intros until 1.
+  apply H ; auto.
   unfold ltof in *.
   simpl in *.
   zify. omega.

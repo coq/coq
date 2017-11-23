@@ -45,7 +45,7 @@ val compile_cases :
   env -> ltac_var_map -> glob_constr option * tomatch_tuples * cases_clauses ->
   unsafe_judgment
 
-val constr_of_pat : 
+val constr_of_pat :
            Environ.env ->
            Evd.evar_map ref ->
            rel_context ->

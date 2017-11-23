@@ -8,7 +8,7 @@ Arguments Nat.sub !n !m /.
 About Nat.sub.
 Arguments Nat.sub !n !m.
 About Nat.sub.
-Definition pf (D1 C1 : Type) (f : D1 -> C1) (D2 C2 : Type) (g : D2 -> C2) := 
+Definition pf (D1 C1 : Type) (f : D1 -> C1) (D2 C2 : Type) (g : D2 -> C2) :=
   fun x => (f (fst x), g (snd x)).
 Delimit Scope foo_scope with F.
 Arguments pf {D1%F C1%type} f [D2 C2] g x : simpl never.

@@ -13,7 +13,7 @@ Module onlyclasses.
 
   Module RJung.
     Class Foo (x : nat).
-      
+
       Instance foo x : x = 2 -> Foo x.
       Hint Extern 0 (_ = _) => reflexivity : typeclass_instances.
       Typeclasses eauto := debug.
@@ -48,12 +48,12 @@ Module RefineVsNoTceauto.
   Hint Extern 0 (_ = _) => refine eq_refl : typeclass_instances.
   Goal exists (f : Foo nat), @foo _ f = 0.
   Proof.
-    unshelve (notypeclasses refine (ex_intro _ _ _)). 
+    unshelve (notypeclasses refine (ex_intro _ _ _)).
     Set Typeclasses Debug. Set Printing All.
     all:once (typeclasses eauto).
     Fail idtac. (* Check no subgoals are left *)
     Undo 3.
-    (** In this case, the (_ = _) subgoal is not considered 
+    (** In this case, the (_ = _) subgoal is not considered
         by typeclass resolution *)
     refine (ex_intro _ _ _). Fail reflexivity.
   Abort.
@@ -156,7 +156,7 @@ Defined.
 
 End mon.
 
-(* Correct treatment of dependent goals *) 
+(* Correct treatment of dependent goals *)
 
 (* First some preliminaries: *)
 
@@ -224,7 +224,7 @@ Module IterativeDeepening.
   Instance: C -> A | 0.
   Instance: C -> B -> A | 0.
   Instance: A -> A | 0.
-  
+
   Goal C -> A.
     intros.
     Set Typeclasses Debug.

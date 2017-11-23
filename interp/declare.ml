@@ -51,7 +51,7 @@ let cache_variable ((sp,_),o) =
     | SectionLocalAssum ((ty,ctx),poly,impl) ->
       let () = Global.push_named_assum ((id,ty,poly),ctx) in
       let impl = if impl then Implicit else Explicit in
-	impl, true, poly, ctx
+        impl, true, poly, ctx
     | SectionLocalDef (de) ->
       let univs = Global.push_named_def (id,de) in
       let poly = match de.const_entry_universes with
@@ -123,7 +123,7 @@ let open_constant i ((sp,kn), obj) =
     | OpaqueDef lc ->
         match Opaqueproof.get_constraints (Global.opaque_tables ()) lc with
         | Some f when Future.is_val f ->
-	   Global.push_context_set false (Future.force f)
+           Global.push_context_set false (Future.force f)
         | _ -> ()
 
 let exists_name id =
@@ -283,18 +283,18 @@ let inductive_names sp kn mie =
   let names, _ =
     List.fold_left
       (fun (names, n) ind ->
-	 let ind_p = (kn,n) in
-	 let names, _ =
-	   List.fold_left
-	     (fun (names, p) l ->
-		let sp =
-		  Libnames.make_path dp l
-		in
-		  ((sp, ConstructRef (ind_p,p)) :: names, p+1))
-	     (names, 1) ind.mind_entry_consnames in
-	 let sp = Libnames.make_path dp ind.mind_entry_typename
-	 in
-	   ((sp, IndRef ind_p) :: names, n+1))
+         let ind_p = (kn,n) in
+         let names, _ =
+           List.fold_left
+             (fun (names, p) l ->
+                let sp =
+                  Libnames.make_path dp l
+                in
+                  ((sp, ConstructRef (ind_p,p)) :: names, p+1))
+             (names, 1) ind.mind_entry_consnames in
+         let sp = Libnames.make_path dp ind.mind_entry_typename
+         in
+           ((sp, IndRef ind_p) :: names, n+1))
       ([], 0) mie.mind_entry_inds
   in names
 
@@ -378,12 +378,12 @@ let declare_projections mind =
     match spec.mind_record with
     | Some (Some (_, kns, pjs)) ->
       Array.iteri (fun i kn ->
-	let id = Label.to_id (Constant.label kn) in
-	let entry = {proj_entry_ind = mind; proj_entry_arg = i} in
-	let kn' = declare_constant id (ProjectionEntry entry,
-				       IsDefinition StructureComponent)
-	in
-	  assert(Constant.equal kn kn')) kns; true,true
+        let id = Label.to_id (Constant.label kn) in
+        let entry = {proj_entry_ind = mind; proj_entry_arg = i} in
+        let kn' = declare_constant id (ProjectionEntry entry,
+                                       IsDefinition StructureComponent)
+        in
+          assert(Constant.equal kn kn')) kns; true,true
     | Some None -> true,false
     | None -> false,false
 
@@ -408,15 +408,15 @@ let fixpoint_message indexes l =
   | [] -> anomaly (Pp.str "no recursive definition.")
   | [id] -> Id.print id ++ str " is recursively defined" ++
       (match indexes with
-	 | Some [|i|] -> str " (decreasing on "++pr_rank i++str " argument)"
-	 | _ -> mt ())
+         | Some [|i|] -> str " (decreasing on "++pr_rank i++str " argument)"
+         | _ -> mt ())
   | l -> hov 0 (prlist_with_sep pr_comma Id.print l ++
-		  spc () ++ str "are recursively defined" ++
-		  match indexes with
-		    | Some a -> spc () ++ str "(decreasing respectively on " ++
-			prvect_with_sep pr_comma pr_rank a ++
-			str " arguments)"
-		    | None -> mt ()))
+                  spc () ++ str "are recursively defined" ++
+                  match indexes with
+                    | Some a -> spc () ++ str "(decreasing respectively on " ++
+                        prvect_with_sep pr_comma pr_rank a ++
+                        str " arguments)"
+                    | None -> mt ()))
 
 let cofixpoint_message l =
   Flags.if_verbose Feedback.msg_info (match l with
@@ -488,8 +488,8 @@ let do_universe poly l =
   in
   let l =
     List.map (fun (l, id) ->
-	      let lev = Universes.new_univ_level (Global.current_dirpath ()) in
-	      (id, lev)) l
+              let lev = Universes.new_univ_level (Global.current_dirpath ()) in
+              (id, lev)) l
   in
     Lib.add_anonymous_leaf (input_universes (poly, l))
 

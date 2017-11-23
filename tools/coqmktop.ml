@@ -163,11 +163,11 @@ let parse_args () =
 
     (* Directories *)
     | "-coqlib" :: d :: rem ->
-	Flags.coqlib_spec := true; Flags.coqlib := d ; parse (op,fl) rem
+        Flags.coqlib_spec := true; Flags.coqlib := d ; parse (op,fl) rem
     | "-ocamlfind" :: d :: rem ->
-	Flags.ocamlfind_spec := true; Flags.ocamlfind := d ; parse (op,fl) rem
+        Flags.ocamlfind_spec := true; Flags.ocamlfind := d ; parse (op,fl) rem
     | "-camlp4bin" :: d :: rem ->
-	Flags.camlp4bin_spec := true; Flags.camlp4bin := d ; parse (op,fl) rem
+        Flags.camlp4bin_spec := true; Flags.camlp4bin := d ; parse (op,fl) rem
     | "-R" :: d :: rem -> parse (incl_all_subdirs d op,fl) rem
     | ("-coqlib"|"-camlbin"|"-camlp4bin"|"-R") :: [] -> usage ()
 
@@ -182,11 +182,11 @@ let parse_args () =
     | ("-noassert"|"-compact"|"-g"|"-p"|"-thread"|"-dtypes" as o) :: rem ->
         parse (o::op,fl) rem
     | ("-cclib"|"-ccopt"|"-I"|"-o"|"-w" as o) :: rem' ->
-	begin
-	  match rem' with
-	    | a :: rem -> parse (a::o::op,fl) rem
-	    | []       -> usage ()
-	end
+        begin
+          match rem' with
+            | a :: rem -> parse (a::o::op,fl) rem
+            | []       -> usage ()
+        end
 
     | ("-h"|"-help"|"--help") :: _ -> usage ()
     | f :: rem when supported_flambda_option f -> parse (op,fl) rem
@@ -295,8 +295,8 @@ let main () =
       let command = String.concat " " (Envars.ocamlfind ()::prog::args) in
       print_endline command;
       print_endline
-	("(command length is " ^
-	    (string_of_int (String.length command)) ^ " characters)");
+        ("(command length is " ^
+            (string_of_int (String.length command)) ^ " characters)");
       flush Pervasives.stdout
     end;
     let exitcode = run_command (Envars.ocamlfind ()) (prog::args) in

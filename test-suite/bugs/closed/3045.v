@@ -28,7 +28,7 @@ Fixpoint ReifiedMorphismSimplifyWithProof objC C s d (m : @ReifiedMorphism objC 
 refine match m with
          | ReifiedComposedMorphism _ _ s0 d0 d0' m1 m2 => _
        end; clear m.
-(* This fails with an error rather than an anomaly, but morally 
+(* This fails with an error rather than an anomaly, but morally
    it should work, if destruct were able to do the good generalization
    in advance, before doing the "intros []". *)
 Fail destruct (@ReifiedMorphismSimplifyWithProof T s1 d0 d0' m1) as [ [] ? ].

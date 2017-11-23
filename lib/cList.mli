@@ -45,7 +45,7 @@ sig
   val subtractq : 'a list -> 'a list -> 'a list
 
   val interval : int -> int -> int list
-  (** [interval i j] creates the list [[i; i + 1; ...; j]], or [[]] when 
+  (** [interval i j] creates the list [[i; i + 1; ...; j]], or [[]] when
       [j <= i]. *)
 
   val make : int -> 'a -> 'a list
@@ -193,7 +193,7 @@ sig
   (** [map_append f [x1; ...; xn]] returns [(f x1)@(f x2)@...@(f xn)]. *)
 
   val map_append2 : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
-  (** As [map_append]. Raises [Invalid_argument _] if the two lists don't have 
+  (** As [map_append]. Raises [Invalid_argument _] if the two lists don't have
       the same length. *)
 
   val share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list

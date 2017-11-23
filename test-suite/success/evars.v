@@ -352,7 +352,7 @@ Variable F : I -> J -> R.
 Check (eq_bigr _ _ _ _ _ _ _ _ (fun _ _ => big_tnth _ _ _ _ rI _ _))
   : (bigop R J idx op rJ
         (fun j : J => let k:=j in xQ k)
-        (fun j : J => let k:=j in 
+        (fun j : J => let k:=j in
          bigop R I idx
            op rI
            (fun i : I => P i /\ Q i k) (fun i : I => let k:=j in F i k))) = idx.
@@ -362,7 +362,7 @@ Check (eq_bigr _ _ _ _ _ _ _ _ (fun _ _ => big_tnth _ _ _ _ rI _ _))
 Check (eq_bigr _ _ _ _ _ _ _ _ (fun _ _ => big_tnth_with_letin _ _ _ _ rI _ _))
   : (bigop R J idx op rJ
         (fun j : J => let k:=j in xQ k)
-        (fun j : J => let k:=j in 
+        (fun j : J => let k:=j in
          bigop R I idx
            op rI
            (fun i : I => P i /\ Q i k) (fun i : I => let k:=j in F i k))) = idx.

@@ -9,7 +9,7 @@
 \newcommand{\listun}{\textit{LIST$_1$}}
 \newcommand{\sep}{\textit{SEP}}
 
-\title{Minicoq: a type-checker for the pure \\ 
+\title{Minicoq: a type-checker for the pure \\
        Calculus of Inductive Constructions}
 
 
@@ -24,7 +24,7 @@
 
 \section{Grammar of terms}
 
-The grammar of \minicoq's terms is given in Figure~\ref{fig:terms}. 
+The grammar of \minicoq's terms is given in Figure~\ref{fig:terms}.
 
 \begin{figure}[htbp]
   \hrulefill
@@ -46,10 +46,10 @@ The grammar of \minicoq's terms is given in Figure~\ref{fig:terms}.
            & $|$ & \terminal{(} \listun\ term \terminal{)} \\
            & $|$ & \terminal{(} term \terminal{::} term \terminal{)} \\
            & $|$ & \verb!<! term \verb!>! \terminal{Case}
-                   term \terminal{of} \listzero\ term \terminal{end} 
+                   term \terminal{of} \listzero\ term \terminal{end}
       \\[1em]
       name & ::= & \verb!_! \\
-           & $|$ & identifier 
+           & $|$ & identifier
    \end{tabular}
   \end{center}
   \hrulefill
@@ -70,12 +70,12 @@ Figure~\ref{fig:commands}. All commands end with a dot.
                       \terminal{:=} term. \\
               & $|$ & \terminal{Parameter} identifier \terminal{:} term. \\
               & $|$ & \terminal{Variable} identifier \terminal{:} term. \\
-              & $|$ & \terminal{Inductive} \terminal{[} \listzero\ param 
-                      \terminal{]} \listun\ inductive \sep\ 
+              & $|$ & \terminal{Inductive} \terminal{[} \listzero\ param
+                      \terminal{]} \listun\ inductive \sep\
                       \terminal{with}. \\
-              & $|$ & \terminal{Check} term. 
+              & $|$ & \terminal{Check} term.
       \\[1em]
-      param   & ::= & identifier 
+      param   & ::= & identifier
       \\[1em]
       inductive & ::= & identifier \terminal{:} term \terminal{:=}
                         \listzero\ constructor \sep\ \terminal{$|$}
@@ -92,7 +92,7 @@ Figure~\ref{fig:commands}. All commands end with a dot.
 \end{document}
 
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: t
-%%% End: 
+%%% End:

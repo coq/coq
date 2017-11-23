@@ -11,7 +11,7 @@ Qed.
 
 Lemma two_x_y_eq_1 : forall x y, 2 * x + 2 * y = 1 -> False.
 Proof.
-  intros. 
+  intros.
   lia.
 Qed.
 
@@ -75,7 +75,7 @@ Proof.
 Qed.
 
 Class Foo {x : Z} := { T : Type ; dec : T -> Z }.
-Goal forall bound {F : @Foo bound} (x y : T), 0 <= dec x < bound -> 0 <= dec y 
+Goal forall bound {F : @Foo bound} (x y : T), 0 <= dec x < bound -> 0 <= dec y
 < bound -> dec x + dec y >= bound -> dec x + dec y < 2 * bound.
 Proof.
   intros.

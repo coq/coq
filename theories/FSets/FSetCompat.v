@@ -283,7 +283,7 @@ Module Update_WSets
 
   Lemma is_empty_spec : is_empty s = true <-> Empty s.
   Proof. intros; symmetry; apply MF.is_empty_iff. Qed.
-  
+
   Declare Equivalent Keys In M.In.
 
   Lemma add_spec : In y (add x s) <-> E.eq y x \/ In y s.

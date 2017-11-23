@@ -49,23 +49,23 @@ let facteurs_liste div constant lp =
           let p_dans_lmin = ref false in
           List.iter (fun q -> try (let r = div p q in
                                    if not (constant r)
-				   then l1:=r::(!l1)
+                                   then l1:=r::(!l1)
                                    else p_dans_lmin:=true)
-			      with e when CErrors.noncritical e -> ())
+                              with e when CErrors.noncritical e -> ())
                      lmin;
           if !p_dans_lmin
           then factor lmin lp1
           else if (!l1)=[]
           (* aucun q de lmin ne divise p *)
           then (let l1=ref lp1 in
-		let lmin1=ref [] in
+                let lmin1=ref [] in
                 List.iter (fun q -> try (let r = div q p in
-					 if not (constant r)
-					 then l1:=r::(!l1))
-				    with e when CErrors.noncritical e ->
+                                         if not (constant r)
+                                         then l1:=r::(!l1))
+                                    with e when CErrors.noncritical e ->
                                       lmin1:=q::(!lmin1))
                           lmin;
-	        factor (List.rev (p::(!lmin1))) !l1)
+                factor (List.rev (p::(!lmin1))) !l1)
           (* au moins un q de lmin divise p non trivialement *)
           else factor lmin ((!l1)@lp1))
     in
@@ -88,11 +88,11 @@ let factorise_tableau div zero c f l1 =
       if not (zero p)
       then
       Array.iteri (fun j q ->
-	              try (while true do
+                      try (while true do
                                let rr = div !r q in
-      	                       li:=j::(!li);
+                               li:=j::(!li);
                                r:=rr;
-			   done)
+                           done)
                       with e when CErrors.noncritical e -> ())
                   l1;
       res.(i)<-(!r,!li))

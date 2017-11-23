@@ -11,7 +11,7 @@ Definition Bar (b : bar) : b = b.
 Defined.
 Goal forall f b, Bar b = Bar b -> Foo f = Foo f.
   intros f b.
-  destruct f, b. 
+  destruct f, b.
   simpl.
   Fail progress unfold Bar. (* success *)
   Fail progress unfold Foo. (* failed to progress *)

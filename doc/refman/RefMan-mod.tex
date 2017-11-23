@@ -45,7 +45,7 @@ This command is used to start an interactive module named {\ident}.
 
 \item{\tt Module {\ident} \verb.:. {\modtype}}
 
-  Starts an interactive module specifying its module type. 
+  Starts an interactive module specifying its module type.
 
 \item{\tt Module {\ident} {\modbindings} \verb.:. {\modtype}}
 
@@ -54,7 +54,7 @@ This command is used to start an interactive module named {\ident}.
 
 \item{\tt Module {\ident} \verb.<:. {\modtype$_1$} \verb.<:. $\ldots$ \verb.<:.{ \modtype$_n$}}
 
-  Starts an interactive module satisfying each {\modtype$_i$}. 
+  Starts an interactive module satisfying each {\modtype$_i$}.
 
 \item{\tt Module {\ident} {\modbindings} \verb.<:. {\modtype$_1$} \verb.<:. $\ldots$ \verb.<:. {\modtype$_n$}}
 
@@ -79,7 +79,7 @@ This command is used to start an interactive module named {\ident}.
  expression then the system tries to instantiate {\module}
  by the current interactive module.
 
-\item {\tt Include {\module$_1$} \verb.<+. $\ldots$ \verb.<+. {\module$_n$}} 
+\item {\tt Include {\module$_1$} \verb.<+. $\ldots$ \verb.<+. {\module$_n$}}
 
 is a shortcut for {\tt Include {\module$_1$}}  $\ldots$ {\tt Include {\module$_n$}}
 \end{enumerate}
@@ -103,7 +103,7 @@ now available through the dot notation.
 \comindex{Module}}
 
 This command defines the module identifier {\ident} to be equal to
-{\modexpr}. 
+{\modexpr}.
 
 \begin{Variants}
 \item{\tt Module {\ident} {\modbindings} := {\modexpr}}
@@ -122,12 +122,12 @@ This command defines the module identifier {\ident} to be equal to
     {\modexpr}}
 
   Defines a functor with parameters given by {\modbindings} (possibly none),
-  and output module type {\modtype}, with body {\modexpr}. 
+  and output module type {\modtype}, with body {\modexpr}.
 
 \item{\tt Module {\ident} {\modbindings} \verb.<:.  {\modtype$_1$} \verb.<:. $\ldots$ \verb.<:. {\modtype$_n$}:=
     {\modexpr}}
 
-  Defines a functor with parameters given by {\modbindings} (possibly none) 
+  Defines a functor with parameters given by {\modbindings} (possibly none)
   with body {\modexpr}. The body is checked against each {\modtype$_i$}.
 
 \item{\tt Module {\ident} {\modbindings} := {\modexpr$_1$} \verb.<+. $\ldots$ \verb.<+. {\modexpr$_n$}}
@@ -156,7 +156,7 @@ This command is used to start an interactive module type {\ident}.
 
  Same as {\tt Include} inside a module.
 
-\item {\tt Include {\module$_1$} \verb.<+. $\ldots$ \verb.<+. {\module$_n$}} 
+\item {\tt Include {\module$_1$} \verb.<+. $\ldots$ \verb.<+. {\module$_n$}}
 
 is a shortcut for {\tt Include {\module$_1$}}  $\ldots$ {\tt Include {\module$_n$}}
 
@@ -325,7 +325,7 @@ Reset Initial.
 
     \smallskip
     \noindent
-    {\tt Module N : SIG := M.} 
+    {\tt Module N : SIG := M.}
     \smallskip
 
     or
@@ -334,8 +334,8 @@ Reset Initial.
     {\tt Module N : SIG.\\
       \ \ \dots\\
       End N.}
-    \smallskip 
-    
+    \smallskip
+
     hints and the like valid for \texttt{N} are not those defined in
     \texttt{M} (or the module body) but the ones defined in
     \texttt{SIG}.
@@ -418,7 +418,7 @@ Prints the module type corresponding to {\ident}.
 Prints the full name of the module {\qualid}.
 
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:

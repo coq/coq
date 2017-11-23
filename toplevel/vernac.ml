@@ -80,8 +80,8 @@ let pp_cmd_header ?loc com =
   in
   let noblank s = String.map (fun c ->
       match c with
-	| ' ' | '\n' | '\t' | '\r' -> '~'
-	| x -> x
+        | ' ' | '\n' | '\t' | '\r' -> '~'
+        | x -> x
       ) s
   in
   let (start,stop) = Option.cata Loc.unloc (0,0) loc in
@@ -113,7 +113,7 @@ let pr_open_cur_subgoals () =
 let rec interp_vernac ~check ~interactive doc sid (loc,com) =
   let interp = function
     | VernacLoad (verbosely, fname) ->
-	let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
+        let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
         let fname = CUnix.make_suffix fname ".v" in
         let f = Loadpath.locate_file fname in
         load_vernac ~verbosely ~check ~interactive doc sid f
@@ -232,7 +232,7 @@ and load_vernac ~verbosely ~check ~interactive doc sid file =
           !rdoc, !rsid
       | reraise ->
          if !Flags.beautify_file then close_beautify ();
-	 iraise (disable_drop e, info)
+         iraise (disable_drop e, info)
 
 (** [eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> unit]
    It executes one vernacular command. By default the command is

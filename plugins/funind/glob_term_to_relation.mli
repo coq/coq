@@ -8,10 +8,10 @@ open Names
 
 val build_inductive :
 (*  (ModPath.t * DirPath.t) option ->
-  Id.t list -> (* The list of function name *) 
+  Id.t list -> (* The list of function name *)
  *)
   Evd.evar_map ->
-  Constr.pconstant list -> 
+  Constr.pconstant list ->
   (Name.t*Glob_term.glob_constr*Glob_term.glob_constr option) list list -> (* The list of function args *)
   Constrexpr.constr_expr list -> (* The list of function returned type *)
   Glob_term.glob_constr list -> (* the list of body *)

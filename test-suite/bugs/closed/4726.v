@@ -2,7 +2,7 @@ Set Universe Polymorphism.
 
 Definition le@{i j} : Type@{j} :=
   (fun A : Type@{j} => A)
-  (unit : Type@{i}).  
+  (unit : Type@{i}).
 Definition eq@{i j} : Type@{j} := let x := le@{i j} in le@{j i}.
 
 Record Inj@{i j} (A : Type@{i}) (B : Type@{j}) : Type@{j} :=

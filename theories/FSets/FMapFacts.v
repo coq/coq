@@ -674,7 +674,7 @@ Qed.
 Add Parametric Morphism elt : (@Empty elt)
  with signature Equal ==> iff as Empty_m.
 Proof.
-unfold Empty; intros m m' Hm. split; intros; intro. 
+unfold Empty; intros m m' Hm. split; intros; intro.
 rewrite <-Hm in H0; eapply H, H0.
 rewrite Hm in H0; eapply H, H0.
 Qed.
@@ -756,7 +756,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
 
   Instance eqk_equiv : Equivalence eqk.
   Proof. unfold eq_key; split; eauto. Qed.
-  
+
   Instance eqke_equiv : Equivalence eqke.
   Proof.
    unfold eq_key_elt; split; repeat red; firstorder.

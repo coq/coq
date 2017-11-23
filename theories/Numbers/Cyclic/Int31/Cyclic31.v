@@ -126,7 +126,7 @@ Section Basics.
 
  Lemma nshiftl_S_tail :
   forall n x, nshiftl x (S n) = nshiftl (shiftl x) n.
- Proof. 
+ Proof.
  intros n; elim n; simpl; intros; now f_equal.
  Qed.
 
@@ -1274,7 +1274,7 @@ Section Int31_Specs.
  Qed.
 
  Lemma spec_add_carry :
-	 forall x y, [|x+y+1|] = ([|x|] + [|y|] + 1) mod wB.
+         forall x y, [|x+y+1|] = ([|x|] + [|y|] + 1) mod wB.
  Proof.
  unfold add31; intros.
  repeat rewrite phi_phi_inv.
@@ -1776,7 +1776,7 @@ Section Int31_Specs.
  Qed.
 
  Lemma spec_head0  : forall x,  0 < [|x|] ->
-	 wB/ 2 <= 2 ^ ([|head031 x|]) * [|x|] < wB.
+         wB/ 2 <= 2 ^ ([|head031 x|]) * [|x|] < wB.
  Proof.
  intros.
  rewrite head031_equiv.

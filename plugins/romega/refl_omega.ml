@@ -78,15 +78,15 @@ type oproposition =
 
 (* The equations *)
 and oequation = {
-    e_comp: comparaison;		(* comparaison *)
-    e_left: oformula;			(* formule brute gauche *)
-    e_right: oformula;			(* formule brute droite *)
-    e_origin: occurrence;		(* l'hypothèse dont vient le terme *)
-    e_negated: bool;			(* vrai si apparait en position nié
-					   après normalisation *)
-    e_depends: direction list;		(* liste des points de disjonction dont
-					   dépend l'accès à l'équation avec la
-					   direction (branche) pour y accéder *)
+    e_comp: comparaison;                (* comparaison *)
+    e_left: oformula;                   (* formule brute gauche *)
+    e_right: oformula;                  (* formule brute droite *)
+    e_origin: occurrence;               (* l'hypothèse dont vient le terme *)
+    e_negated: bool;                    (* vrai si apparait en position nié
+                                           après normalisation *)
+    e_depends: direction list;          (* liste des points de disjonction dont
+                                           dépend l'accès à l'équation avec la
+                                           direction (branche) pour y accéder *)
     e_omega: OmegaSolver.afine (* normalized formula *)
   }
 
@@ -640,8 +640,8 @@ let display_systems syst_list =
     List.iter display_depend oformula_eq.e_depends;
     Printf.printf "\n  Path: %s"
       (String.concat ""
-	 (List.map (function O_left -> "L" | O_right -> "R" | O_mono -> "M")
-	    oformula_eq.e_origin.o_path));
+         (List.map (function O_left -> "L" | O_right -> "R" | O_mono -> "M")
+            oformula_eq.e_origin.o_path));
     Printf.printf "\n  Origin: %s (negated : %s)\n\n"
       (Id.to_string oformula_eq.e_origin.o_hyp)
       (if oformula_eq.e_negated then "yes" else "no") in
@@ -791,25 +791,25 @@ let rec display_solution_tree ch = function
                                       (IntSet.elements t.s_equa_deps))))
   | Tree(i,t1,t2) ->
       Printf.fprintf ch "S%d(%a,%a)" i
-	display_solution_tree t1 display_solution_tree t2
+        display_solution_tree t1 display_solution_tree t2
 
 let rec solve_with_constraints all_solutions path =
   let rec build_tree sol buf = function
       [] -> Leaf sol
     | (Left i :: remainder) ->
-	Tree(i,
-	     build_tree sol (Left i :: buf) remainder,
-	     solve_with_constraints all_solutions (List.rev(Right i :: buf)))
+        Tree(i,
+             build_tree sol (Left i :: buf) remainder,
+             solve_with_constraints all_solutions (List.rev(Right i :: buf)))
     | (Right i :: remainder) ->
-	 Tree(i,
-	      solve_with_constraints all_solutions (List.rev (Left i ::  buf)),
-	      build_tree sol (Right i :: buf) remainder) in
+         Tree(i,
+              solve_with_constraints all_solutions (List.rev (Left i ::  buf)),
+              build_tree sol (Right i :: buf) remainder) in
   let weighted = filter_compatible_systems path all_solutions in
   let (winner_sol,winner_deps) =
     try select_smaller weighted
     with reraise ->
       Printf.printf "%d - %d\n"
-	(List.length weighted) (List.length all_solutions);
+        (List.length weighted) (List.length all_solutions);
       List.iter display_depend path; raise reraise
   in
   build_tree winner_sol (List.rev path) winner_deps
@@ -821,10 +821,10 @@ let find_path {o_hyp=id;o_path=p} env =
     | _ -> None in
   let rec loop_id i = function
       CCHyp{o_hyp=id';o_path=p'} :: l when Id.equal id id' ->
-	begin match loop_path (p',p) with
-	  Some r -> i,r
-	| None -> loop_id (succ i) l
-	end
+        begin match loop_path (p',p) with
+          Some r -> i,r
+        | None -> loop_id (succ i) l
+        end
     | _ :: l -> loop_id (succ i) l
     | [] -> failwith "find_path" in
   loop_id 0 env
@@ -904,15 +904,15 @@ let rec decompose_tree env ctxt = function
      let org =
        try IntHtbl.find env.constructors i
        with Not_found ->
-	 failwith (Printf.sprintf "Cannot find constructor %d" i) in
+         failwith (Printf.sprintf "Cannot find constructor %d" i) in
      let (index,path) = find_path org ctxt in
      let left_hyp = CCHyp{o_hyp=org.o_hyp;o_path=org.o_path @ [O_left]} in
      let right_hyp = CCHyp{o_hyp=org.o_hyp;o_path=org.o_path @ [O_right]} in
      app coq_e_split
        [| mk_nat index;
-	  mk_direction_list path;
-	  decompose_tree env (left_hyp::ctxt) left;
-	  decompose_tree env (right_hyp::ctxt) right |]
+          mk_direction_list path;
+          decompose_tree env (left_hyp::ctxt) left;
+          decompose_tree env (right_hyp::ctxt) right |]
   | Leaf s ->
       decompose_tree_hyps s.s_trace env ctxt (IntSet.elements s.s_equa_deps)
 and decompose_tree_hyps trace env ctxt = function
@@ -921,11 +921,11 @@ and decompose_tree_hyps trace env ctxt = function
       let equation =
         try IntHtbl.find env.equations i
         with Not_found ->
-	  failwith (Printf.sprintf "Cannot find equation %d" i) in
+          failwith (Printf.sprintf "Cannot find equation %d" i) in
       let (index,path) = find_path equation.e_origin ctxt in
       let cont =
-	decompose_tree_hyps trace env
-	   (CCEqua equation.e_omega.id :: ctxt) l in
+        decompose_tree_hyps trace env
+           (CCEqua equation.e_omega.id :: ctxt) l in
       app coq_e_extract [|mk_nat index; mk_direction_list path; cont |]
 
 let solve_system env index list_eq =

@@ -229,7 +229,7 @@ intros f g lb ub f_incr_interv Hyp g_wf x x_encad.
    intro cond. apply Rlt_le ; apply f_incr_interv ; assumption.
    intro cond ; right ; rewrite cond ; reflexivity.
  assert (Hyp2:forall x, lb <= x <= ub -> f (g (f x)) = f x).
-  intros ; apply Hyp.  apply f_incr_interv2 ; intuition. 
+  intros ; apply Hyp.  apply f_incr_interv2 ; intuition.
  apply f_incr_interv2 ; intuition.
  unfold comp ; unfold comp in Hyp.
  apply f_inj.
@@ -289,8 +289,8 @@ Proof.
 intros. (* f x y f_cont_interv x_lt_y fx_neg fy_pos.*)
   cut (x <= y).
   intro.
-  generalize (dicho_lb_cv x y (fun z:R => cond_positivity (f z)) H3). 
-  generalize (dicho_up_cv x y (fun z:R => cond_positivity (f z)) H3). 
+  generalize (dicho_lb_cv x y (fun z:R => cond_positivity (f z)) H3).
+  generalize (dicho_up_cv x y (fun z:R => cond_positivity (f z)) H3).
   intros X X0.
   elim X; intros x0 p.
   elim X0; intros x1 p0.
@@ -421,10 +421,10 @@ Qed.
 
 (* begin hide *)
 Ltac case_le H :=
-   let t := type of H in 
-   let h' := fresh in 
+   let t := type of H in
+   let h' := fresh in
       match t with ?x <= ?y => case (total_order_T x y);
-         [intros h'; case h'; clear h' | 
+         [intros h'; case h'; clear h' |
           intros h'; clear -H h'; elimtype False; fourier ] end.
 (* end hide *)
 
@@ -595,7 +595,7 @@ intros f g lb ub lb_lt_ub f_incr_interv f_eq_g f_cont_interv b b_encad.
   assert (x1_lt_x2 : x1 < x2).
    apply Rlt_trans with (r2:=x) ; assumption.
    assert (f_cont_myinterv : forall a : R, x1 <= a <= x2 -> continuity_pt f a).
-    intros ; apply f_cont_interv ; split. 
+    intros ; apply f_cont_interv ; split.
     apply Rle_trans with (r2 := x1) ; intuition.
     apply Rle_trans with (r2 := x2) ; intuition.
    elim (f_interv_is_interv f x1 x2 y x1_lt_x2 Main f_cont_myinterv) ; intros x' Temp.
@@ -718,7 +718,7 @@ intros f g lb ub x Prf g_cont_pur lb_lt_ub x_encad Prg_incr f_eq_g df_neq.
        rewrite l_null in Hl.
        apply df_neq.
        rewrite derive_pt_eq.
-       exact Hl.                
+       exact Hl.
      elim (Hlinv' Premisse Premisse2 eps eps_pos).
      intros alpha cond.
       assert (alpha_pos := proj1 cond) ; assert (inv_cont := proj2 cond) ; clear cond.
@@ -773,7 +773,7 @@ intros f g lb ub x Prf g_cont_pur lb_lt_ub x_encad Prg_incr f_eq_g df_neq.
          replace ((g (x + h) - g x) / h) with (1/ (h / (g (x + h) - g x))).
          assert (Hrewr : h = (comp f g ) (x+h) - (comp f g) x).
           rewrite f_eq_g. rewrite f_eq_g ; unfold id. rewrite Rplus_comm ;
-          unfold Rminus ; rewrite Rplus_assoc ; rewrite Rplus_opp_r. intuition. intuition.    
+          unfold Rminus ; rewrite Rplus_assoc ; rewrite Rplus_opp_r. intuition. intuition.
  assumption.
          split ; [|intuition].
          assert (Sublemma : forall x y z, - z <= y - x -> x <= y + z).
@@ -801,7 +801,7 @@ intros f g lb ub x Prf g_cont_pur lb_lt_ub x_encad Prg_incr f_eq_g df_neq.
           rewrite f_eq_g. rewrite f_eq_g. unfold id ; rewrite Rplus_comm ;
           unfold Rminus ; rewrite Rplus_assoc ; rewrite Rplus_opp_r ; intuition.
           assumption. assumption.
-         rewrite Hrewr at 1. 
+         rewrite Hrewr at 1.
          unfold comp.
          replace (g(x+h)) with (g x + (g (x+h) - g(x))) by field.
          pose (h':=g (x+h) - g x).
@@ -821,7 +821,7 @@ intros f g lb ub x Prf g_cont_pur lb_lt_ub x_encad Prg_incr f_eq_g df_neq.
          apply inv_cont.
          split.
           exact h'_neq.
-          rewrite Rminus_0_r. 
+          rewrite Rminus_0_r.
           unfold continuity_pt, continue_in, limit1_in, limit_in in g_cont_pur.
           elim (g_cont_pur mydelta mydelta_pos).
           intros delta3 cond3.
@@ -840,7 +840,7 @@ intros f g lb ub x Prf g_cont_pur lb_lt_ub x_encad Prg_incr f_eq_g df_neq.
             intro Hfalse ; apply h_neq.
              apply (Rplus_0_r_uniq x).
              symmetry ; assumption.
-            replace (x + h - x) with h by field. 
+            replace (x + h - x) with h by field.
             apply Rlt_le_trans with (r2:=delta'').
             assumption ; unfold delta''. intuition.
             apply Rle_trans with (r2:=mydelta''). apply Req_le. unfold delta''. intuition.
@@ -947,8 +947,8 @@ intros f g lb ub x Prf Prg lb_lt_ub x_encad local_recip Df_neq.
   ((derive_pt g x Prg) * (derive_pt f (g x) Prf) * / (derive_pt f (g x) Prf)).
  unfold Rdiv.
  rewrite (Rmult_comm _ (/ derive_pt f (g x) Prf)).
- rewrite (Rmult_comm _ (/ derive_pt f (g x) Prf)). 
- apply Rmult_eq_compat_l. 
+ rewrite (Rmult_comm _ (/ derive_pt f (g x) Prf)).
+ apply Rmult_eq_compat_l.
  rewrite Rmult_comm.
  rewrite <- derive_pt_comp.
  assert (x_encad2 : lb <= x <= ub) by intuition.
@@ -958,7 +958,7 @@ intros f g lb ub x Prf Prg lb_lt_ub x_encad local_recip Df_neq.
  assumption.
 Qed.
 
-Lemma derive_pt_recip_interv_prelim1_0 : forall (f g:R->R) (lb ub x:R), 
+Lemma derive_pt_recip_interv_prelim1_0 : forall (f g:R->R) (lb ub x:R),
        lb < ub ->
        f lb < x < f ub ->
        (forall x y : R, lb <= x -> x < y -> y <= ub -> f x < f y) ->
@@ -977,7 +977,7 @@ intros f g lb ub x lb_lt_ub x_encad f_incr g_wf f_eq_g.
  intuition.
 Qed.
 
-Lemma derive_pt_recip_interv_prelim1_1 : forall (f g:R->R) (lb ub x:R), 
+Lemma derive_pt_recip_interv_prelim1_1 : forall (f g:R->R) (lb ub x:R),
        lb < ub ->
        f lb < x < f ub ->
        (forall x y : R, lb <= x -> x < y -> y <= ub -> f x < f y) ->
@@ -1015,7 +1015,7 @@ intros.
  [intuition | intuition | | intuition].
  exact (derive_pt_recip_interv_prelim1_0 f g lb ub x lb_lt_ub x_encad f_incr g_wf f_eq_g).
 Qed.
-  
+
 (****************************************************)
 (** * Existence of the derivative of a function which is the limit of a sequence of functions *)
 (****************************************************)
@@ -1115,7 +1115,7 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
           Rabs h * Rabs (fn' N c - g c) + Rabs h * Rabs (g c - g x)).
     rewrite Rplus_assoc ; rewrite Rplus_assoc ; rewrite Rplus_assoc ;
     apply Rplus_le_compat_l ; apply Rplus_le_compat_l ;
-    rewrite <- Rmult_plus_distr_l ; apply Rmult_le_compat_l. 
+    rewrite <- Rmult_plus_distr_l ; apply Rmult_le_compat_l.
      solve[apply Rabs_pos].
     solve[apply Rabs_triang].
    apply Rlt_trans with (Rabs h * eps / 4 + Rabs h * eps / 4 +
@@ -1139,11 +1139,11 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
       solve[unfold no_cond ; intuition].
      apply Rgt_not_eq ; exact (proj2 P).
     apply Rlt_trans with (Rabs h).
-     apply Rabs_def1. 
+     apply Rabs_def1.
       apply Rlt_trans with 0.
        destruct P; fourier.
       apply Rabs_pos_lt ; assumption.
-     rewrite <- Rabs_Ropp, Rabs_pos_eq, Ropp_involutive;[ | fourier]. 
+     rewrite <- Rabs_Ropp, Rabs_pos_eq, Ropp_involutive;[ | fourier].
      destruct P; fourier.
     clear -Pdelta xhinbxdelta.
     apply Pdelta in xhinbxdelta; destruct xhinbxdelta as [_ P'].
@@ -1152,7 +1152,7 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
    rewrite Rplus_assoc ; rewrite Rplus_assoc ; rewrite <- Rmult_plus_distr_l.
    replace (Rabs h * eps / 4 + (Rabs h * eps / 4 + Rabs h * (eps / 8 + eps / 8))) with
       (Rabs h * (eps / 4 + eps / 4 + eps / 8 + eps / 8)) by field.
-   apply Rmult_lt_compat_l. 
+   apply Rmult_lt_compat_l.
     apply Rabs_pos_lt ; assumption.
    fourier.
   assert (H := pr1 c P) ; elim H ; clear H ; intros l Hl.
@@ -1221,7 +1221,7 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
           Rabs h * Rabs (fn' N c - g c) + Rabs h * Rabs (g c - g x)).
     rewrite Rplus_assoc ; rewrite Rplus_assoc ; rewrite Rplus_assoc ;
     apply Rplus_le_compat_l ; apply Rplus_le_compat_l ;
-    rewrite <- Rmult_plus_distr_l ; apply Rmult_le_compat_l. 
+    rewrite <- Rmult_plus_distr_l ; apply Rmult_le_compat_l.
      solve[apply Rabs_pos].
     solve[apply Rabs_triang].
    apply Rlt_trans with (Rabs h * eps / 4 + Rabs h * eps / 4 +
@@ -1257,7 +1257,7 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
   rewrite Rplus_assoc ; rewrite Rplus_assoc ; rewrite <- Rmult_plus_distr_l.
   replace (Rabs h * eps / 4 + (Rabs h * eps / 4 + Rabs h * (eps / 8 + eps / 8))) with
       (Rabs h * (eps / 4 + eps / 4 + eps / 8 + eps / 8)) by field.
-  apply Rmult_lt_compat_l. 
+  apply Rmult_lt_compat_l.
    apply Rabs_pos_lt ; assumption.
   fourier.
  assert (H := pr1 c P) ; elim H ; clear H ; intros l Hl.
@@ -1280,7 +1280,7 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
    apply uniqueness_limite with (f:= fn N) (x:=c) ; assumption.
   rewrite Main ; reflexivity.
  reflexivity.
- replace ((f (x + h) - f x) / h - g x) with ((/h) * ((f (x + h) - f x) - h * g x)). 
+ replace ((f (x + h) - f x) / h - g x) with ((/h) * ((f (x + h) - f x) - h * g x)).
  rewrite Rabs_mult ; rewrite Rabs_Rinv.
  replace eps with (/ Rabs h * (Rabs h * eps)).
  apply Rmult_lt_compat_l.

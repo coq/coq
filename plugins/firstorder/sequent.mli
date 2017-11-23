@@ -25,13 +25,13 @@ val cm_remove : Evd.evar_map -> constr -> global_reference -> global_reference l
 module HP: Heap.S with type elt=Formula.t
 
 type t = {redexes:HP.t;
-	  context: global_reference list CM.t;
-	  latoms:constr list;
-	  gl:types;
-	  glatom:constr option;
-	  cnt:counter;
-	  history:History.t;
-	  depth:int}
+          context: global_reference list CM.t;
+          latoms:constr list;
+          gl:types;
+          glatom:constr option;
+          cnt:counter;
+          history:History.t;
+          depth:int}
 
 val deepen: t -> t
 

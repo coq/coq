@@ -28,8 +28,8 @@ Proof.
   pose (x _).
   pose (@isequiv_homotopic _ _ ((g o f) o f^-1) g _
                            (fun b => ap g (eisretr f b))).
-  Undo. 
+  Undo.
   apply (@isequiv_homotopic _ _ ((g o f) o f^-1) g _
                            (fun b => ap g (eisretr f b))).
 Qed.
-  
+

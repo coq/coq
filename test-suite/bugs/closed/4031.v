@@ -4,7 +4,7 @@ Inductive myunit : Set := mytt.
   (* Proof below works when definition is in Type,
      however builtin types such as unit are in Set. *)
 
-Lemma demo_hide_generic : 
+Lemma demo_hide_generic :
    let x := mytt in x = x.
 Proof.
   intros.

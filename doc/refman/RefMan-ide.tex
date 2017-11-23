@@ -34,7 +34,7 @@ A sample \CoqIDE{} main screen, while navigating into a file
 \verb|Fermat.v|, is shown on Figure~\ref{fig:coqide}.  At
 the top is a menu bar, and a tool bar below it. The large window on
 the left is displaying the various \emph{script buffers}. The upper right
-window is the \emph{goal window}, where goals to 
+window is the \emph{goal window}, where goals to
 prove are displayed. The lower right window is the \emph{message window},
 where various messages resulting from commands are displayed. At the
 bottom is the status bar.
@@ -46,14 +46,14 @@ edit. The \emph{File} menu allows you to open files or create some,
 save them, print or export them into various formats. Among all these
 buffers, there is always one which is the current \emph{running
   buffer}, whose name is displayed on a green background, which is the
-one where Coq commands are currently executed. 
+one where Coq commands are currently executed.
 
 Buffers may be edited as in any text editor, and classical basic
 editing commands (Copy/Paste, \ldots) are available in the \emph{Edit}
 menu. \CoqIDE{} offers only basic editing commands, so if you need
 more complex editing commands, you may launch your favorite text
 editor on the current buffer, using the \emph{Edit/External Editor}
-menu. 
+menu.
 
 \section{Interactive navigation into \Coq{} scripts}
 
@@ -69,7 +69,7 @@ On Figure~\ref{fig:coqide}, the running buffer is \verb|Fermat.v|, all
 commands until the \verb|Theorem| have been already executed, and the
 user tried to go forward executing \verb|Induction n|. That command
 failed because no such tactic exist (tactics are now in
-lowercase\ldots), and the wrong word is underlined. 
+lowercase\ldots), and the wrong word is underlined.
 
 Notice that the green part of the running buffer is not editable. If
 you ever want to modify something you have to go backward using the up
@@ -85,7 +85,7 @@ general to run several commands using the \textsf{goto} button, the
 If you ever try to execute a command which happens to run during a
 long time, and would like to abort it before its
 termination, you may use the interrupt button (the white cross on a red circle).
- 
+
 Finally, notice that these navigation buttons are also available in
 the menu, where their keyboard shortcuts are given.
 
@@ -117,7 +117,7 @@ menu. The proof shall be enclosed between \texttt{Proof.} and \texttt{Qed.},
 both with their final dots. The proof that shall be hidden or revealed is the
 first one whose beginning statement (such as \texttt{Theorem}) precedes the
 insertion cursor.
- 
+
 \section{Vernacular commands, templates}
 
 The \texttt{Templates} menu allows using shortcuts to insert
@@ -126,7 +126,7 @@ of the spelling of the command you want.
 
 Moreover, this menu offers some \emph{templates} which will automatic
 insert a complex command like Fixpoint with a convenient shape for its
-arguments. 
+arguments.
 
 \section{Queries}
 
@@ -177,10 +177,10 @@ The \verb|Compile| menu offers direct commands to:
 
 You may customize your environment using menu
 \texttt{Edit/Preferences}. A new window will be displayed, with
-several customization sections presented as a notebook. 
+several customization sections presented as a notebook.
 
 The first section is for selecting the text font used for scripts, goal
-and message windows. 
+and message windows.
 
 The second section is devoted to file management: you may
 configure automatic saving of files, by periodically saving the
@@ -191,28 +191,28 @@ it again for you. Note that in the case you edited that same file, you
 will be prompt to choose to either discard your changes or not. The
 \texttt{File charset encoding} choice is described below in
 Section~\ref{sec:coqidecharencoding}
- 
+
 
 The \verb|Externals| section allows customizing the external commands
 for compilation, printing, web browsing. In the browser command, you
 may use \verb|%s| to denote the URL to open, for example: %
-\verb|mozilla -remote "OpenURL(%s)"|. 
+\verb|mozilla -remote "OpenURL(%s)"|.
 
 The \verb|Tactics Wizard| section allows defining the set of tactics
 that should be tried, in sequence, to solve the current goal.
 
 The last section is for miscellaneous boolean settings, such as the
 ``contextual menu on goals'' feature presented in
-Section~\ref{sec:trytactics}. 
+Section~\ref{sec:trytactics}.
 
 Notice that these settings are saved in the file \verb|.coqiderc| of
-your home directory. 
+your home directory.
 
 A gtk2 accelerator keymap is saved under the name \verb|.coqide.keys|.
 It is not recommanded to edit this file manually: to modify a given menu
 shortcut, go to the corresponding menu item without releasing the
 mouse button, press the key you want for the new shortcut, and release
-the mouse button afterwards. If your system does not allow it, you may still 
+the mouse button afterwards. If your system does not allow it, you may still
 edit this configuration file by hand, but this is more involved.
 
 \section{Using Unicode symbols}
@@ -225,7 +225,7 @@ notations.
 
 You just need to define suitable notations as described in
 Chapter~\ref{Addoc-syntax}. For example, to use the mathematical symbols
-$\forall$ and $\exists$, you may define 
+$\forall$ and $\exists$, you may define
 \begin{quote}\tt
 Notation "$\forall$ x : t, P" := \\
 \qquad  (forall x:t, P) (at level 200, x ident).\\
@@ -233,7 +233,7 @@ Notation "$\exists$ x : t, P" := \\
 \qquad  (exists x:t, P) (at level 200, x ident).
 \end{quote}
 There exists a small set of such notations already defined, in the
-file \verb|utf8.v| of \Coq{} library, so you may enable them just by 
+file \verb|utf8.v| of \Coq{} library, so you may enable them just by
 \verb|Require utf8| inside \CoqIDE{}, or equivalently, by starting
 \CoqIDE{} with \verb|coqide -l utf8|.
 
@@ -251,7 +251,7 @@ To input a Unicode symbol, a general method provided by GTK+
 is to simultaneously press the
 Control, Shift and ``u'' keys, release, then type the hexadecimal code of the
 symbol required, for example \verb|2200| for the $\forall$ symbol.
-A list of symbol codes is available at \url{http://www.unicode.org}. 
+A list of symbol codes is available at \url{http://www.unicode.org}.
 
 An alternative method which does not require to know the hexadecimal
 code of the character is to use an Input Method Editor. On POSIX
@@ -278,13 +278,13 @@ replaced by $\Gamma$ as soon as you type the second "a".
 \subsection[Character encoding for saved files]{Character encoding for saved files\label{sec:coqidecharencoding}}
 
 In the \texttt{Files} section of the preferences, the encoding option
-is related to the way files are saved. 
+is related to the way files are saved.
 
 If you have no need to exchange files with non UTF-8 aware
 applications, it is better to choose the UTF-8 encoding, since it
 guarantees that your files will be read again without problems. (This
 is because when \CoqIDE{} reads a file, it tries to automatically
-detect its character encoding.) 
+detect its character encoding.)
 
 If you choose something else than UTF-8, then missing characters will
 be written encoded by \verb|\x{....}| or \verb|\x{........}| where
@@ -292,7 +292,7 @@ each dot is an hexadecimal digit: the number between braces is the
 hexadecimal Unicode index for the missing character.
 
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:

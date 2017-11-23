@@ -22,18 +22,18 @@ let ignore = space | ('#' [^ '\n']*)
 
 rule prefs m = parse
   |ignore* (ident as id) ignore* '=' { let conf = str_list [] lexbuf in
-				 prefs (Util.String.Map.add id conf m) lexbuf }
+                                 prefs (Util.String.Map.add id conf m) lexbuf }
   | _     { let c = lexeme_start lexbuf in
-	      eprintf "coqiderc: invalid character (%d)\n@." c;
-	      prefs m lexbuf }
+              eprintf "coqiderc: invalid character (%d)\n@." c;
+              prefs m lexbuf }
   | eof   { m }
 
 and str_list l = parse
   | ignore* '"'   { Buffer.reset string_buffer;
-		    Buffer.add_char string_buffer '"';
-		    string lexbuf;
-		    let s = Buffer.contents string_buffer in
-		      str_list ((Scanf.sscanf s "%S" (fun s -> s))::l) lexbuf }
+                    Buffer.add_char string_buffer '"';
+                    string lexbuf;
+                    let s = Buffer.contents string_buffer in
+                      str_list ((Scanf.sscanf s "%S" (fun s -> s))::l) lexbuf }
   |ignore+ { List.rev l}
 
 and string = parse

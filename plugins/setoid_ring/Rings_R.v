@@ -18,7 +18,7 @@ try (try apply Rsth;
   intros; try rewrite H; try rewrite H0; reflexivity)).
  exact Rplus_0_l. exact Rplus_comm. symmetry. apply Rplus_assoc.
  exact Rmult_1_l.  exact Rmult_1_r. symmetry. apply Rmult_assoc.
- exact Rmult_plus_distr_r. intros; apply Rmult_plus_distr_l. 
+ exact Rmult_plus_distr_r. intros; apply Rmult_plus_distr_l.
 exact Rplus_opp_r.
 Defined.
 
@@ -29,6 +29,6 @@ Lemma R_one_zero: 1%R <> 0%R.
 discrR.
 Qed.
 
-Instance Rdi : (Integral_domain (Rcr:=Rcri)). 
-constructor. 
+Instance Rdi : (Integral_domain (Rcr:=Rcri)).
+constructor.
 exact Rmult_integral. exact R_one_zero. Defined.

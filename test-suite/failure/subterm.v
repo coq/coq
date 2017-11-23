@@ -1,8 +1,8 @@
-Module Foo. 
+Module Foo.
   Inductive True2:Prop:= I2: (False->True2)->True2.
 
   Axiom Heq: (False->True2)=True2.
-  
+
   Fail Fixpoint con (x:True2) :False :=
     match x with
         I2 f => con (match Heq with @eq_refl _ _ => f end)

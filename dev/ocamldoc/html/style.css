@@ -1,5 +1,5 @@
 a:visited {
-  color: #416DFF; text-decoration: none; 
+  color: #416DFF; text-decoration: none;
 }
 
 a:link {
@@ -11,59 +11,59 @@ a:hover {
 }
 
 a:active {
-  color: Red; text-decoration: underline; 
+  color: Red; text-decoration: underline;
 }
 
 .keyword {
-  font-weight: bold; color: Red 
+  font-weight: bold; color: Red
 }
 
 .keywordsign {
-  color: #C04600 
+  color: #C04600
 }
 
 .superscript {
-  font-size: 8 
+  font-size: 8
 }
 
 .subscript {
-  font-size: 8 
+  font-size: 8
 }
 
 .comment {
-  color: Green 
+  color: Green
 }
 
 .constructor {
-  color: Blue 
+  color: Blue
 }
 
 .type {
-  color: #5C6585 
+  color: #5C6585
 }
 
 .string {
-  color: Maroon 
+  color: Maroon
 }
 
 .warning {
-  color: Red; font-weight: bold 
+  color: Red; font-weight: bold
 }
 
 .info {
-  margin-left: 3em; margin-right: 3em 
+  margin-left: 3em; margin-right: 3em
 }
 
 .param_info {
-  margin-top: 4px; margin-left: 3em; margin-right: 3em 
+  margin-top: 4px; margin-left: 3em; margin-right: 3em
 }
 
 .code {
-  color: #465F91; 
+  color: #465F91;
 }
 
 h1 {
-  font-size: 20pt; text-align: center; 
+  font-size: 20pt; text-align: center;
 }
 
 h5, h6, div.h7, div.h8, div.h9 {

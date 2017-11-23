@@ -64,9 +64,9 @@ type left_pattern=
   | LA of constr*left_arrow_pattern
 
 type t={id: global_reference;
-	constr: constr;
-	pat: (left_pattern,right_pattern) sum;
-	atoms: atoms}
+        constr: constr;
+        pat: (left_pattern,right_pattern) sum;
+        atoms: atoms}
 
 (*exception Is_atom of constr*)
 

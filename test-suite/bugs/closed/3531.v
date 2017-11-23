@@ -38,10 +38,10 @@ Admitted.
 Goal forall b, (exists e1 e2 e3,
       (exists (m : mem) (v : nat) (F : pred), b)
         <==> (exists x : e1, stars (e2 x) * [[e3 x]])).
- intros. 
+ intros.
  Set Printing Universes.
  Show Universes.
- do 3 eapply ex_intro.  
+ do 3 eapply ex_intro.
  eapply piff_trans; [ apply flatten_exists | apply piff_refl ]; intros.
  eapply piff_trans; [ apply flatten_exists | apply piff_refl ]; intros.
  eapply piff_trans; [ apply flatten_exists | apply piff_refl ]; intros.

@@ -1,5 +1,5 @@
 Class ORDER A := Order {
-  LEQ : A -> A -> bool; 
+  LEQ : A -> A -> bool;
   leqRefl: forall x, true = LEQ x x
 }.
 

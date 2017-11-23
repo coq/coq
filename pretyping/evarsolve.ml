@@ -30,7 +30,7 @@ let normalize_evar evd ev =
 let get_polymorphic_positions sigma f =
   let open Declarations in
   match EConstr.kind sigma f with
-  | Ind (ind, u) | Construct ((ind, _), u) -> 
+  | Ind (ind, u) | Construct ((ind, _), u) ->
     let mib,oib = Global.lookup_inductive ind in
       (match oib.mind_arity with
       | RegularArity _ -> assert false
@@ -38,14 +38,14 @@ let get_polymorphic_positions sigma f =
   | _ -> assert false
 
 let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
-		      pbty env evd t =
+                      pbty env evd t =
   let evdref = ref evd in
   let modified = ref false in
   (* direction: true for fresh universes lower than the existing ones *)
   let refresh_sort status ~direction s =
     let s = ESorts.kind !evdref s in
     let s' = evd_comb0 (new_sort_variable status) evdref in
-    let evd = 
+    let evd =
       if direction then set_leq_sort env !evdref s' s
       else set_leq_sort env !evdref s s'
     in
@@ -57,23 +57,23 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
       begin match ESorts.kind !evdref s with
       | Type u ->
        (match Univ.universe_level u with
-	| None -> refresh_sort status ~direction s
-	| Some l ->
-	   (match Evd.universe_rigidity evd l with
-	    | UnivRigid ->
-	       if not onlyalg then refresh_sort status ~direction s
-	       else t
-	    | UnivFlexible alg ->
-	       if onlyalg && alg then
-	         (evdref := Evd.make_flexible_variable !evdref ~algebraic:false l; t)
-	       else t))
+        | None -> refresh_sort status ~direction s
+        | Some l ->
+           (match Evd.universe_rigidity evd l with
+            | UnivRigid ->
+               if not onlyalg then refresh_sort status ~direction s
+               else t
+            | UnivFlexible alg ->
+               if onlyalg && alg then
+                 (evdref := Evd.make_flexible_variable !evdref ~algebraic:false l; t)
+               else t))
       | Prop Pos when refreshset && not direction ->
        (* Cannot make a universe "lower" than "Set",
           only refreshing when we want higher universes. *)
        refresh_sort status ~direction s
       | _ -> t
       end
-    | Prod (na,u,v) -> 
+    | Prod (na,u,v) ->
       mkProd (na, u, refresh ~onlyalg status ~direction v)
     | _ -> t
   (** Refresh the types of evars under template polymorphic references *)
@@ -81,36 +81,36 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
     match EConstr.kind !evdref t with
     | App (f, args) when is_template_polymorphic env !evdref f ->
       let pos = get_polymorphic_positions !evdref f in
-	refresh_polymorphic_positions args pos
-    | App (f, args) when top && isEvar !evdref f -> 
-      refresh_term_evars true false f; 
+        refresh_polymorphic_positions args pos
+    | App (f, args) when top && isEvar !evdref f ->
+      refresh_term_evars true false f;
       Array.iter (refresh_term_evars onevars false) args
     | Evar (ev, a) when onevars ->
       let evi = Evd.find !evdref ev in
       let ty' = refresh ~onlyalg univ_flexible ~direction:true (EConstr.of_constr evi.evar_concl) in
-	if !modified then 
-	  evdref := Evd.add !evdref ev {evi with evar_concl = EConstr.Unsafe.to_constr ty'}
-	else ()
+        if !modified then
+          evdref := Evd.add !evdref ev {evi with evar_concl = EConstr.Unsafe.to_constr ty'}
+        else ()
     | _ -> EConstr.iter !evdref (refresh_term_evars onevars false) t
   and refresh_polymorphic_positions args pos =
     let rec aux i = function
-      | Some l :: ls -> 
-        if i < Array.length args then 
-	  ignore(refresh_term_evars true false args.(i));
+      | Some l :: ls ->
+        if i < Array.length args then
+          ignore(refresh_term_evars true false args.(i));
         aux (succ i) ls
-      | None :: ls -> 
-        if i < Array.length args then 
+      | None :: ls ->
+        if i < Array.length args then
           ignore(refresh_term_evars false false args.(i));
-	aux (succ i) ls
+        aux (succ i) ls
       | [] -> ()
     in aux 0 pos
   in
-  let t' = 
+  let t' =
     if isArity !evdref t then
       match pbty with
       | None ->
-	 (* No cumulativity needed, but we still need to refresh the algebraics *)
-	 refresh ~onlyalg:true univ_flexible ~direction:false t
+         (* No cumulativity needed, but we still need to refresh the algebraics *)
+         refresh ~onlyalg:true univ_flexible ~direction:false t
       | Some direction -> refresh ~onlyalg status ~direction t
     else (refresh_term_evars false true t; t)
   in
@@ -119,7 +119,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
 let get_type_of_refresh ?(polyprop=true) ?(lax=false) env sigma c =
   let ty = Retyping.get_type_of ~polyprop ~lax env sigma c in
     refresh_universes (Some false) env sigma ty
-		      
+
 
 (************************)
 (* Unification results  *)
@@ -154,22 +154,22 @@ let recheck_applications conv_algo env evdref t =
        let fty = Retyping.get_type_of env !evdref f in
        let argsty = Array.map (fun x -> aux env x; Retyping.get_type_of env !evdref x) args in
        let rec aux i ty =
-	 if i < Array.length argsty then
-	 match EConstr.kind !evdref (whd_all env !evdref ty) with
-	 | Prod (na, dom, codom) ->
-	    (match conv_algo env !evdref Reduction.CUMUL argsty.(i) dom with
-	     | Success evd -> evdref := evd;
-			     aux (succ i) (subst1 args.(i) codom)
-	     | UnifFailure (evd, reason) ->
-		Pretype_errors.error_cannot_unify env evd ~reason (argsty.(i), dom))
-	 | _ -> raise (IllTypedInstance (env, ty, argsty.(i)))
+         if i < Array.length argsty then
+         match EConstr.kind !evdref (whd_all env !evdref ty) with
+         | Prod (na, dom, codom) ->
+            (match conv_algo env !evdref Reduction.CUMUL argsty.(i) dom with
+             | Success evd -> evdref := evd;
+                             aux (succ i) (subst1 args.(i) codom)
+             | UnifFailure (evd, reason) ->
+                Pretype_errors.error_cannot_unify env evd ~reason (argsty.(i), dom))
+         | _ -> raise (IllTypedInstance (env, ty, argsty.(i)))
        else ()
      in aux 0 fty
     | _ ->
        iter_with_full_binders !evdref (fun d env -> push_rel d env) aux env t
   in aux env t
 
-	  
+
 (*------------------------------------*
  * Restricting existing evars         *
  *------------------------------------*)
@@ -313,25 +313,25 @@ let compute_var_aliases sign sigma =
 
 let compute_rel_aliases var_aliases rels sigma =
   snd (List.fold_right
-	 (fun decl (n,aliases) ->
-	  (n-1,
-	   match decl with
-	   | LocalDef (_,t,u) ->
-	      (match EConstr.kind sigma t with
-	       | Var id' ->
-		  let aliases_of_n =
-		    try Id.Map.find id' var_aliases with Not_found -> empty_aliasing in
-		  Int.Map.add n (push_alias aliases_of_n (VarAlias id')) aliases
-	       | Rel p ->
-		  let aliases_of_n =
-		    try Int.Map.find (p+n) aliases with Not_found -> empty_aliasing in
-		  Int.Map.add n (push_alias aliases_of_n (RelAlias (p+n))) aliases
-	       | _ ->
-		  Int.Map.add n (make_aliasing (lift n (mkCast(t,DEFAULTcast,u)))) aliases)
-	   | LocalAssum _ -> aliases)
-	 )
-	 rels
-	 (List.length rels,Int.Map.empty))
+         (fun decl (n,aliases) ->
+          (n-1,
+           match decl with
+           | LocalDef (_,t,u) ->
+              (match EConstr.kind sigma t with
+               | Var id' ->
+                  let aliases_of_n =
+                    try Id.Map.find id' var_aliases with Not_found -> empty_aliasing in
+                  Int.Map.add n (push_alias aliases_of_n (VarAlias id')) aliases
+               | Rel p ->
+                  let aliases_of_n =
+                    try Int.Map.find (p+n) aliases with Not_found -> empty_aliasing in
+                  Int.Map.add n (push_alias aliases_of_n (RelAlias (p+n))) aliases
+               | _ ->
+                  Int.Map.add n (make_aliasing (lift n (mkCast(t,DEFAULTcast,u)))) aliases)
+           | LocalAssum _ -> aliases)
+         )
+         rels
+         (List.length rels,Int.Map.empty))
 
 let make_alias_map env sigma =
   (* We compute the chain of aliases for each var and rel *)
@@ -690,7 +690,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
       let evd,t_in_sign =
         let s = Retyping.get_sort_of env evd t_in_env in
         let evd,ty_t_in_sign = refresh_universes
-	 ~status:univ_flexible (Some false) env evd (mkSort s) in
+         ~status:univ_flexible (Some false) env evd (mkSort s) in
         define_evar_from_virtual_equation define_fun env evd src t_in_env
           ty_t_in_sign sign filter inst_in_env in
       let evd,d' = match d with
@@ -1251,7 +1251,7 @@ let update_evar_source ev1 ev2 evd =
      let evi = Evd.find evd ev1 in
      Evd.add evd ev1 {evi with evar_source = loc, evs2}
   | _ -> evd
-  
+
 let solve_evar_evar_l2r force f g env evd aliases pbty ev1 (evk2,_ as ev2) =
   try
     let evd,body = project_evar_on_evar force g env evd aliases 0 pbty ev1 ev2 in
@@ -1292,9 +1292,9 @@ let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,ar
   let evi = Evd.find evd evk1 in
   let downcast evk t evd = downcast evk (EConstr.Unsafe.to_constr t) evd in
   let evd =
-    try 
+    try
       (* ?X : Π Δ. Type i = ?Y : Π Δ'. Type j.
-	 The body of ?X and ?Y just has to be of type Π Δ. Type k for some k <= i, j. *)
+         The body of ?X and ?Y just has to be of type Π Δ. Type k for some k <= i, j. *)
       let evienv = Evd.evar_env evi in
       let ctx1, i = Reduction.dest_arity evienv evi.evar_concl in
       let ctx1 = List.map (fun c -> map_rel_decl EConstr.of_constr c) ctx1 in
@@ -1303,22 +1303,22 @@ let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,ar
       let ctx2, j = Reduction.dest_arity evi2env evi2.evar_concl in
       let ctx2 = List.map (fun c -> map_rel_decl EConstr.of_constr c) ctx2 in
       let ui, uj = univ_of_sort i, univ_of_sort j in
-	if i == j || Evd.check_eq evd ui uj
-	then (* Shortcut, i = j *) 
-	  evd
-	else if Evd.check_leq evd ui uj then
+        if i == j || Evd.check_eq evd ui uj
+        then (* Shortcut, i = j *)
+          evd
+        else if Evd.check_leq evd ui uj then
           let t2 = it_mkProd_or_LetIn (mkSort i) ctx2 in
           downcast evk2 t2 evd
-	else if Evd.check_leq evd uj ui then
+        else if Evd.check_leq evd uj ui then
           let t1 = it_mkProd_or_LetIn (mkSort j) ctx1 in
           downcast evk1 t1 evd
-	else
-	  let evd, k = Evd.new_sort_variable univ_flexible_alg evd in
+        else
+          let evd, k = Evd.new_sort_variable univ_flexible_alg evd in
           let t1 = it_mkProd_or_LetIn (mkSort k) ctx1 in
           let t2 = it_mkProd_or_LetIn (mkSort k) ctx2 in
-	  let evd = Evd.set_leq_sort env (Evd.set_leq_sort env evd k i) k j in
+          let evd = Evd.set_leq_sort env (Evd.set_leq_sort env evd k i) k j in
           downcast evk2 t2 (downcast evk1 t1 evd)
-    with Reduction.NotArity -> 
+    with Reduction.NotArity ->
       evd in
   solve_evar_evar_aux force f g env evd pbty ev1 ev2
 
@@ -1380,9 +1380,9 @@ let solve_candidates conv_algo env evd (evk,argsv) rhs =
           (* solve_candidates might have been called recursively in the mean *)
           (* time and the evar been solved by the filtering process *)
          if Evd.is_undefined evd evk then
-	   let evd' = Evd.define evk (EConstr.Unsafe.to_constr c) evd in
-	     check_evar_instance evd' evk c conv_algo
-	 else evd
+           let evd' = Evd.define evk (EConstr.Unsafe.to_constr c) evd in
+             check_evar_instance evd' evk c conv_algo
+         else evd
       | l when List.length l < List.length l' ->
           let candidates = List.map fst l in
           restrict_evar evd evk None (UpdateWith candidates)
@@ -1399,8 +1399,8 @@ let occur_evar_upto_types sigma n c =
          Array.iter occur_rec args
        else (
          seen := Evar.Set.add sp !seen;
-	 Option.iter occur_rec (existential_opt_value sigma e);
-	 occur_rec (Evd.existential_type sigma e))
+         Option.iter occur_rec (existential_opt_value sigma e);
+         occur_rec (Evd.existential_type sigma e))
     | _ -> Constr.iter occur_rec c
   in
   try occur_rec c; false with Occur -> true
@@ -1528,7 +1528,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
             try
               let evd,body = project_evar_on_evar false conv_algo env' evd aliases 0 None ev'' ev' in
               let evd = Evd.define evk' (EConstr.Unsafe.to_constr body) evd in
-		check_evar_instance evd evk' body conv_algo
+                check_evar_instance evd evk' body conv_algo
             with
             | EvarSolvedOnTheFly _ -> assert false (* ev has no candidates *)
             | CannotProject (evd,ev'') ->
@@ -1570,10 +1570,10 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
         | None ->
            (* Evar/Rigid problem (or assimilated if not normal): we "imitate" *)
           map_constr_with_full_binders !evdref (fun d (env,k) -> push_rel d env, k+1)
-					imitate envk t
+                                        imitate envk t
   in
   let rhs = whd_beta evd rhs (* heuristic *) in
-  let fast rhs = 
+  let fast rhs =
     let filter_ctxt = evar_filtered_context evi in
     let names = ref Id.Set.empty in
     let rec is_id_subst ctxt s =
@@ -1583,21 +1583,21 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
         names := Id.Set.add id !names;
         isVarId evd id c && is_id_subst ctxt' s'
       | [], [] -> true
-      | _ -> false 
+      | _ -> false
     in
       is_id_subst filter_ctxt (Array.to_list argsv) &&
       closed0 evd rhs &&
-      Id.Set.subset (collect_vars evd rhs) !names 
+      Id.Set.subset (collect_vars evd rhs) !names
   in
   let body =
     if fast rhs then EConstr.of_constr (EConstr.to_constr evd rhs) (** FIXME? *)
     else
       let t' = imitate (env,0) rhs in
-	if !progress then
-	  (recheck_applications conv_algo (evar_env evi) evdref t'; t')
-	else t'
+        if !progress then
+          (recheck_applications conv_algo (evar_env evi) evdref t'; t')
+        else t'
   in (!evdref,body)
-     
+
 (* [define] tries to solve the problem "?ev[args] = rhs" when "?ev" is
  * an (uninstantiated) evar such that "hyps |- ?ev : typ". Otherwise said,
  * [define] tries to find an instance lhs such that
@@ -1657,10 +1657,10 @@ and evar_define conv_algo ?(choose=false) env evd pbty (evk,argsv as ev) rhs =
         let c = whd_all env evd rhs in
         match EConstr.kind evd c with
         | Evar (evk',argsv2) when Evar.equal evk evk' ->
-	    solve_refl (fun env sigma pb c c' -> is_fconv pb env sigma c c')
+            solve_refl (fun env sigma pb c c' -> is_fconv pb env sigma c c')
               env evd pbty evk argsv argsv2
         | _ ->
-	    raise (OccurCheckIn (evd,rhs))
+            raise (OccurCheckIn (evd,rhs))
 
 (* This code (i.e. solve_pb, etc.) takes a unification
  * problem, and tries to solve it. If it solves it, then it removes

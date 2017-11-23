@@ -26,7 +26,7 @@ Definition path_prod {A B : Type} (z z' : A * B)
 : (fst z = fst z') -> (snd z = snd z') -> (z = z').
 Proof.
   destruct z, z'; simpl; intros [] []; reflexivity.
-Defined.  
+Defined.
 
 Module Type TypeM.
   Parameter m : Type2.

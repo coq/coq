@@ -32,7 +32,7 @@ Check exists myx y, myx = y.
 
 (* Test notation for anonymous functions up to eta-expansion *)
 
-Check fun P:nat->nat->Prop => fun x:nat => ex (P x). 
+Check fun P:nat->nat->Prop => fun x:nat => ex (P x).
 
 (* Test notations with binders *)
 

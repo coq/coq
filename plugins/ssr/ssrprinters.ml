@@ -79,7 +79,7 @@ let _ =
       Goptions.optkey   = ["Debug";"Ssreflect"];
       Goptions.optdepr  = false;
       Goptions.optread  = (fun _ -> !ppdebug_ref == ssr_pp);
-      Goptions.optwrite = (fun b -> 
+      Goptions.optwrite = (fun b ->
         Ssrmatching.debug b;
         if b then ppdebug_ref := ssr_pp else ppdebug_ref := fun _ -> ()) }
 let ppdebug s = !ppdebug_ref s

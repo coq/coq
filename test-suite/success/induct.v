@@ -44,7 +44,7 @@ Qed.
 
 (* Check selection of occurrences by pattern *)
 
-Goal forall x, S x = S (S x).   
+Goal forall x, S x = S (S x).
 intros.
 induction (S _) in |- * at -2.
 now_show (0=1).
@@ -84,20 +84,20 @@ Abort.
 
 (* This was not working in 8.4 *)
 
-Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2. 
+Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2.
 intros h H H0.
 induction h in H |- *.
 Abort.
 
 (* "at" was not granted in 8.4 in the next two examples *)
 
-Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2. 
+Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2.
 intros h H H0.
 induction h in H at 2, H0 at 1.
 change (h 0 = 0) in H.
 Abort.
 
-Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2. 
+Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2.
 intros h H H0.
 Fail induction h in H at 2 |- *. (* Incompatible occurrences *)
 Abort.

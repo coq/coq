@@ -72,7 +72,7 @@ let frozen_lexer = CLexer.get_keyword_state () ;;
 (* as this can't be done from an ML extension file, the new       *)
 (* syntax will only work when ssreflect.v is imported.            *)
 
-let no_ct = None, None and no_rt = None in 
+let no_ct = None, None and no_rt = None in
 let aliasvar = function
   | [_, [{ CAst.v = CPatAlias (_, id); loc }]] -> Some (loc,Name id)
   | _ -> None in
@@ -99,8 +99,8 @@ GEXTEND Gram
     [ "if"; c = operconstr LEVEL "200"; "is"; db1 = ssr_dthen; b2 = ssr_else ->
       let b1, ct, rt = db1 in CAst.make ~loc:!@loc @@ CCases (MatchStyle, rt, [mk_pat c ct], [b1; b2])
     | "if"; c = operconstr LEVEL "200";"isn't";db1 = ssr_dthen; b2 = ssr_else ->
-      let b1, ct, rt = db1 in 
-      let b1, b2 = 
+      let b1, ct, rt = db1 in
+      let b1, b2 =
         let (l1, (p1, r1)), (l2, (p2, r2)) = b1, b2 in (l1, (p1, r2)), (l2, (p2, r1)) in
       CAst.make ~loc:!@loc @@ CCases (MatchStyle, rt, [mk_pat c ct], [b1; b2])
     | "let"; ":"; mp = ssr_mpat; ":="; c = lconstr; "in"; c1 = lconstr ->
@@ -139,7 +139,7 @@ END
 
 let declare_one_prenex_implicit locality f =
   let fref =
-    try Smartlocate.global_with_alias f 
+    try Smartlocate.global_with_alias f
     with _ -> errorstrm (pr_reference f ++ str " is not declared") in
   let rec loop = function
   | a :: args' when Impargs.is_status_implicit a ->
@@ -319,7 +319,7 @@ END
 
 (* Main type conclusion pattern filter *)
 
-let rec splay_search_pattern na = function 
+let rec splay_search_pattern na = function
   | Pattern.PApp (fp, args) -> splay_search_pattern (na + Array.length args) fp
   | Pattern.PLetIn (_, _, _, bp) -> splay_search_pattern na bp
   | Pattern.PRef hr -> hr, na
@@ -342,11 +342,11 @@ let coerce_search_pattern_to_sort hpat =
   if np < na then CErrors.user_err (Pp.str "too many arguments in head search pattern") else
   let hpat' = if np = na then hpat else mkPApp hpat (np - na) [||] in
   let warn () =
-    Feedback.msg_warning (str "Listing only lemmas with conclusion matching " ++ 
+    Feedback.msg_warning (str "Listing only lemmas with conclusion matching " ++
       pr_constr_pattern_env env sigma hpat') in
   if EConstr.isSort sigma ht then begin warn (); true, hpat' end else
   let filter_head, coe_path =
-    try 
+    try
       let _, cp =
         Classops.lookup_path_to_sort_from (push_rels_assum dc env) sigma ht in
       warn ();
@@ -388,7 +388,7 @@ let interp_search_arg arg =
       interp_search_notation ~loc s key
   | RGlobSearchSubPattern p ->
       try
-        let intern = Constrintern.intern_constr_pattern in 
+        let intern = Constrintern.intern_constr_pattern in
         Search.GlobSearchSubPattern (snd (intern (Global.env()) p))
       with e -> let e = CErrors.push e in iraise (ExplainErr.process_vernac_interp_error e)) arg in
   let hpat, a1 = match arg with
@@ -542,14 +542,14 @@ GEXTEND Gram
   gallina_ext:
       (* Canonical structure *)
      [[ IDENT "Canonical"; qid = Constr.global ->
-	  Vernacexpr.VernacCanonical (AN qid)
+          Vernacexpr.VernacCanonical (AN qid)
       | IDENT "Canonical"; ntn = Prim.by_notation ->
-	  Vernacexpr.VernacCanonical (ByNotation ntn)
+          Vernacexpr.VernacCanonical (ByNotation ntn)
       | IDENT "Canonical"; qid = Constr.global;
           d = G_vernac.def_body ->
           let s = coerce_reference_to_id qid in
-	  Vernacexpr.VernacDefinition
-	    ((Some Decl_kinds.Global,Decl_kinds.CanonicalStructure),
+          Vernacexpr.VernacDefinition
+            ((Some Decl_kinds.Global,Decl_kinds.CanonicalStructure),
              ((Loc.tag s),None),(d  ))
   ]];
 END
@@ -581,9 +581,9 @@ END
 GEXTEND Gram
   GLOBAL: hloc;
 hloc: [
-  [ "in"; "("; "Type"; "of"; id = ident; ")" -> 
+  [ "in"; "("; "Type"; "of"; id = ident; ")" ->
     Tacexpr.HypLocation ((Loc.tag id), Locus.InHypTypeOnly)
-  | "in"; "("; IDENT "Value"; "of"; id = ident; ")" -> 
+  | "in"; "("; IDENT "Value"; "of"; id = ident; ")" ->
     Tacexpr.HypLocation ((Loc.tag id), Locus.InHypValueOnly)
   ] ];
 END

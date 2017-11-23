@@ -81,7 +81,7 @@ val universe_of_name : t -> string -> Univ.Level.t
 
 val restrict : t -> Univ.LSet.t -> t
 
-type rigid = 
+type rigid =
   | UnivRigid
   | UnivFlexible of bool (** Is substitution by an algebraic ok? *)
 

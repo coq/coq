@@ -4,7 +4,7 @@ Debugging from Coq toplevel using Caml trace mechanism
   1. Launch bytecode version of Coq (coqtop.byte)
   2. Access Ocaml toplevel using vernacular command 'Drop.'
   3. Install load paths and pretty printers for terms, idents, ... using
-     Ocaml command '#use "base_include";;' (use '#use "include";;' for 
+     Ocaml command '#use "base_include";;' (use '#use "include";;' for
      installing the advanced term pretty printers)
   4. Use #trace to tell which function(s) to trace
   5. Go back to Coq toplevel with 'go();;'
@@ -37,26 +37,26 @@ Debugging from Caml debugger
       source
    6. get more help from ocamldebug manual
          run
-	 step
+         step
          back
          start
-	 next
-	 last
-	 print x (abbreviated into p x)
-	 ...
-   7. some hints: 
+         next
+         last
+         print x (abbreviated into p x)
+         ...
+   7. some hints:
 
    - To debug a failure/error/anomaly, add a breakpoint in
      Vernac.vernac_com at the with clause of the "try ... interp com
      with ..." block, then go "back" a few steps to find where the
      failure/error/anomaly has been raised
-   - Alternatively, for an error or an anomaly, add breakpoints in the middle  
+   - Alternatively, for an error or an anomaly, add breakpoints in the middle
      of each of error* functions or anomaly* functions in lib/util.ml
    - If "source db" fails, do a "make printers" and try again (it should build
      top_printers.cmo and the core cma files).
-   - If you build Coq with an OCaml version earlier than 4.06, and have the 
-     OCAMLRUNPARAM environment variable set, Coq may hang on startup when run 
-     from the debugger. If this happens, unset the variable, re-start Emacs, and 
+   - If you build Coq with an OCaml version earlier than 4.06, and have the
+     OCAMLRUNPARAM environment variable set, Coq may hang on startup when run
+     from the debugger. If this happens, unset the variable, re-start Emacs, and
      run the debugger again.
 
 Global gprof-based profiling

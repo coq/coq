@@ -1,12 +1,12 @@
 open Constr
 
 (* val evaluable_of_global_reference : Libnames.global_reference -> Names.evaluable_global_reference *)
-val tclUSER_if_not_mes : 
+val tclUSER_if_not_mes :
   Tacmach.tactic ->
-  bool -> 
-  Names.Id.t list option -> 
+  bool ->
+  Names.Id.t list option ->
   Tacmach.tactic
-val recursive_definition :  
+val recursive_definition :
 bool ->
            Names.Id.t ->
            Constrintern.internalization_env ->

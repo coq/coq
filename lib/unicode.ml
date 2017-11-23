@@ -368,16 +368,16 @@ let utf8_sub s start_u len_u =
       match s.[!p] with
       | '\000'..'\127' -> nc := 0 (* ascii char *)
       | '\128'..'\191' -> nc := 0 (* cannot start with a continuation byte *)
-      |	'\192'..'\223' -> nc := 1 (* expect 1 continuation byte *)
-      |	'\224'..'\239' -> nc := 2 (* expect 2 continuation bytes *)
-      |	'\240'..'\247' -> nc := 3 (* expect 3 continuation bytes *)
-      |	'\248'..'\255' -> nc := 0 (* invalid byte *)
+      | '\192'..'\223' -> nc := 1 (* expect 1 continuation byte *)
+      | '\224'..'\239' -> nc := 2 (* expect 2 continuation bytes *)
+      | '\240'..'\247' -> nc := 3 (* expect 3 continuation bytes *)
+      | '\248'..'\255' -> nc := 0 (* invalid byte *)
     end ;
     incr p ;
     while !p < len_b && !nc > 0 do
       match s.[!p] with
-      |	'\128'..'\191' (* next continuation byte *) -> incr p ; decr nc
-      |	_ (* not a continuation byte *) -> nc := 0
+      | '\128'..'\191' (* next continuation byte *) -> incr p ; decr nc
+      | _ (* not a continuation byte *) -> nc := 0
     done ;
     incr cnt
   done ;

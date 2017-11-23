@@ -126,7 +126,7 @@ Module Type DecidableTypeFull' := DecidableTypeFull <+ EqNotation.
       [EqualityType] and [DecidableType] *)
 
 Module BackportEq (E:Eq)(F:IsEq E) <: IsEqOrig E.
- Definition eq_refl := F.eq_equiv.(@Equivalence_Reflexive _ _). 
+ Definition eq_refl := F.eq_equiv.(@Equivalence_Reflexive _ _).
  Definition eq_sym := F.eq_equiv.(@Equivalence_Symmetric _ _).
  Definition eq_trans := F.eq_equiv.(@Equivalence_Transitive _ _).
 End BackportEq.

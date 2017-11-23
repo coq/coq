@@ -14,9 +14,9 @@ we are interested in the problem of determining if it can be well
 typed modulo insertion of appropriate coercions.  We allow to write:
 
 \begin{itemize}
-\item $f~a$ where $f:forall~ x:A, B$ and $a:A'$ when $A'$ can 
+\item $f~a$ where $f:forall~ x:A, B$ and $a:A'$ when $A'$ can
       be seen in some sense as a subtype of $A$.
-\item $x:A$ when $A$ is not a type, but can be seen in 
+\item $x:A$ when $A$ is not a type, but can be seen in
       a certain sense as a type: set, group, category etc.
 \item $f~a$ when $f$ is not a function, but can be seen in a certain sense
       as a function: bijection, functor, any structure morphism etc.
@@ -32,10 +32,10 @@ classes.  An object of a class $C$ is any term of type $C~t_1
 classes:
 
 \begin{itemize}
-\item {\tt Sortclass}, the class of sorts; 
+\item {\tt Sortclass}, the class of sorts;
   its objects are the terms whose type is a sort.
-\item {\tt Funclass}, the class of functions; 
-  its objects are all the terms with a functional 
+\item {\tt Funclass}, the class of functions;
+  its objects are all the terms with a functional
   type, i.e. of form $forall~ x:A, B$.
 \end{itemize}
 
@@ -45,7 +45,7 @@ Formally, the syntax of a classes is defined on Figure~\ref{fig:classes}.
 \begin{tabular}{lcl}
 {\class} & ::= & {\qualid} \\
   & $|$ & {\tt Sortclass} \\
-  & $|$ & {\tt Funclass} 
+  & $|$ & {\tt Funclass}
 \end{tabular}
 \end{centerframe}
 \caption{Syntax of classes}
@@ -66,9 +66,9 @@ conditions holds:
       $forall~ (x_1 \oftype A_1)..(x_n \oftype A_n)(y\oftype C~x_1..x_n), D~u_1..u_m$ where $m$
       is the number of parameters of $D$.
 \item $D$ is {\tt Funclass}, then the type of $f$ must have the form
-      $forall~ (x_1\oftype A_1)..(x_n\oftype A_n)(y\oftype C~x_1..x_n)(x:A), B$. 
+      $forall~ (x_1\oftype A_1)..(x_n\oftype A_n)(y\oftype C~x_1..x_n)(x:A), B$.
 \item $D$ is {\tt Sortclass}, then the type of $f$ must have the form
-      $forall~ (x_1\oftype A_1)..(x_n\oftype A_n)(y\oftype C~x_1..x_n), s$ with $s$ a sort. 
+      $forall~ (x_1\oftype A_1)..(x_n\oftype A_n)(y\oftype C~x_1..x_n), s$ with $s$ a sort.
 \end{itemize}
 
 We then write $f:C \mbox{\texttt{>->}} D$. The restriction on the type
@@ -141,7 +141,7 @@ term consists of the successive application of its coercions.
 
 % \begin{Variant}
 % \item {\tt Class Local {\qualid}.} \\
-% Declares the construction denoted by {\qualid} as a new local class to 
+% Declares the construction denoted by {\qualid} as a new local class to
 % the current section.
 % \end{Variant}
 
@@ -155,7 +155,7 @@ Declares the construction denoted by {\qualid} as a coercion between
 
 % Useless information
 % The classes {\class$_1$} and {\class$_2$} are first declared if necessary.
-   
+
 \begin{ErrMsgs}
 \item {\qualid} \errindex{not declared}
 \item {\qualid} \errindex{is already a coercion}
@@ -193,9 +193,9 @@ valid coercion paths are ignored; they are signaled by a warning.
   source and its target.
 
 \item {\tt Coercion {\ident} := {\term} : {\type}}\\
-  This defines {\ident} just like 
+  This defines {\ident} just like
   \texttt{Definition {\ident} : {\type} := {\term}}, and then
-  declares {\ident} as a coercion between it source and its target. 
+  declares {\ident} as a coercion between it source and its target.
 
 \item {\tt Local Coercion {\ident} := {\term}}\comindex{Local Coercion}\\
   This defines {\ident} just like \texttt{Let {\ident} :=
@@ -203,7 +203,7 @@ valid coercion paths are ignored; they are signaled by a warning.
   source and its target.
 
 \item Assumptions can be declared as coercions at declaration
-time. This extends the grammar of assumptions from 
+time. This extends the grammar of assumptions from
 Figure~\ref{sentences-syntax} as follows:
 \comindex{Variable \mbox{\rm (and coercions)}}
 \comindex{Axiom \mbox{\rm (and coercions)}}
@@ -217,7 +217,7 @@ Figure~\ref{sentences-syntax} as follows:
 {\assums} & ::= & {\simpleassums} \\
           & $|$ & \nelist{{\tt (} \simpleassums {\tt )}}{} \\
 &&\\
-{\simpleassums} & ::= &  \nelist{\ident}{} {\tt :}\zeroone{{\tt >}} {\term}\\  
+{\simpleassums} & ::= &  \nelist{\ident}{} {\tt :}\zeroone{{\tt >}} {\term}\\
 \end{tabular}
 
 If the extra {\tt >} is present before the type of some assumptions, these
@@ -225,18 +225,18 @@ assumptions are declared as coercions.
 
 \item Constructors of inductive types can be declared as coercions at
 definition time of the inductive type. This extends and modifies the
-grammar of inductive types from Figure \ref{sentences-syntax} as follows: 
+grammar of inductive types from Figure \ref{sentences-syntax} as follows:
 \comindex{Inductive \mbox{\rm (and coercions)}}
 \comindex{CoInductive \mbox{\rm (and coercions)}}
 
 \begin{center}
 \begin{tabular}{lcl}
 %% Inductives
-{\inductive} & ::= & 
+{\inductive} & ::= &
            {\tt Inductive} \nelist{\inductivebody}{with} {\tt .} \\
  & $|$ & {\tt CoInductive} \nelist{\inductivebody}{with} {\tt .} \\
            & & \\
-{\inductivebody} & ::= & 
+{\inductivebody} & ::= &
   {\ident} \zeroone{\binders} {\tt :} {\term} {\tt :=} \\
    && ~~~\zeroone{\zeroone{\tt |} \nelist{\constructor}{|}} \\
            & & \\
@@ -248,7 +248,7 @@ Especially, if the extra {\tt >} is present in a constructor
 declaration, this constructor is declared as a coercion.
 \end{Variants}
 
-\asubsection{\tt Identity Coercion {\ident}:{\class$_1$} >-> {\class$_2$}.} 
+\asubsection{\tt Identity Coercion {\ident}:{\class$_1$} >-> {\class$_2$}.}
 \comindex{Identity Coercion}
 
 We check that {\class$_1$} is a constant with a value of the form
@@ -260,7 +260,7 @@ $forall~ (x_1:T_1)..(x_n:T_n)(y:\mbox{\class}_1~x_1..x_n),
 coercion between {\class$_1$} and {\class$_2$}.
 
 \begin{ErrMsgs}
-\item {\class$_1$} \errindex{must be a transparent constant} 
+\item {\class$_1$} \errindex{must be a transparent constant}
 \end{ErrMsgs}
 
 \begin{Variants}
@@ -272,9 +272,9 @@ Idem but locally to the current section.
  If {\type} is a class
 {\ident'} applied to some arguments then {\ident} is defined and an
 identity coercion of name {\tt Id\_{\ident}\_{\ident'}} is
-declared. Otherwise said, this is an abbreviation for 
+declared. Otherwise said, this is an abbreviation for
 
-{\tt Definition {\ident} := {\type}.} 
+{\tt Definition {\ident} := {\type}.}
 
  followed by
 
@@ -287,7 +287,7 @@ Same as before but locally to the current section.
 
 \asection{Displaying Available Coercions}
 
-\asubsection{\tt Print Classes.} 
+\asubsection{\tt Print Classes.}
 \comindex{Print Classes}
 Print the list of declared classes in the current context.
 
@@ -295,11 +295,11 @@ Print the list of declared classes in the current context.
 \comindex{Print Coercions}
 Print the list of declared coercions in the current context.
 
-\asubsection{\tt Print Graph.} 
+\asubsection{\tt Print Graph.}
 \comindex{Print Graph}
 Print the list of valid coercion paths in the current context.
 
-\asubsection{\tt Print Coercion Paths {\class$_1$} {\class$_2$}.} 
+\asubsection{\tt Print Coercion Paths {\class$_1$} {\class$_2$}.}
 \comindex{Print Coercion Paths}
 Print the list of valid coercion paths from {\class$_1$} to {\class$_2$}.
 
@@ -321,7 +321,7 @@ This command forces coercion denoted by {\qualid} to be printed.
 To skip the printing of coercion {\qualid}, use
  {\tt Remove Printing Coercion {\qualid}}.
 By default, a coercion is never printed.
- 
+
 \asection{Classes as Records}
 \label{Coercions-and-records}
 \index{Coercions!and records}
@@ -363,7 +363,7 @@ mechanism. The global classes and coercions defined inside a section
 are redefined after its closing, using their new value and new
 type. The classes and coercions which are local to the section are
 simply forgotten.
-Coercions with a local source class or a local target class, and 
+Coercions with a local source class or a local target class, and
 coercions which do not verify the uniform inheritance condition any longer
 are also forgotten.
 
@@ -557,7 +557,7 @@ Print Graph.
 \end{itemize}
 
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:

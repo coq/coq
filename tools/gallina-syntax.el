@@ -1,5 +1,5 @@
 ;; gallina-syntax.el Font lock expressions for Coq
-;; Copyright (C) 1997-2007 LFCS Edinburgh. 
+;; Copyright (C) 1997-2007 LFCS Edinburgh.
 ;; Authors: Thomas Kleymann, Healfdene Goguen, Pierre Courtieu
 ;; License:     GPL (GNU GENERAL PUBLIC LICENSE)
 ;; Maintainer: Pierre Courtieu <courtieu@lri.fr>
@@ -101,7 +101,7 @@
 
 
 (defvar coq-tactics-db
-  (append 
+  (append
    coq-user-tactics-db
    '(
      ("absurd " "abs" "absurd " t "absurd")
@@ -275,12 +275,12 @@
      ("solve" nil "solve [ # | # ]" nil "solve")
      ("tauto" "ta" "tauto" t "tauto")
      ))
-  "Coq tactic(al)s that solve a subgoal." 
+  "Coq tactic(al)s that solve a subgoal."
   )
 
 
 (defvar coq-tacticals-db
-  (append 
+  (append
    coq-user-tacticals-db
    '(
      ("info" nil "info #" nil "info")
@@ -319,7 +319,7 @@
     ("Parameters" "par" "Parameter #: #" t "Parameters")
     ("Conjecture" "conj" "Conjecture #: #." t "Conjecture")
     ("Variable" "v" "Variable #: #." t "Variable")
-    ("Variables" "vs" "Variables # , #: #." t "Variables")	
+    ("Variables" "vs" "Variables # , #: #." t "Variables")
     ("Coercion" "coerc" "Coercion @{id} : @{typ1} >-> @{typ2}." t "Coercion")
     )
   "Coq declaration keywords information list. See `coq-syntax-db' for syntax."
@@ -328,7 +328,7 @@
 (defvar coq-defn-db
   '(
     ("CoFixpoint" "cfix" "CoFixpoint # (#:#) : # :=\n#." t "CoFixpoint")
-    ("CoInductive" "coindv" "CoInductive # : # :=\n|# : #." t "CoInductive") 
+    ("CoInductive" "coindv" "CoInductive # : # :=\n|# : #." t "CoInductive")
     ("Declare Module : :=" "dm" "Declare Module # : # := #." t "Declare\\s-+Module")
     ("Declare Module <: :=" "dm2" "Declare Module # <: # := #." t);; careful
     ("Declare Module Import : :=" "dmi" "Declare Module # : # := #." t)
@@ -377,7 +377,7 @@
     ("Scheme" "sc" "Scheme @{name} := #." t "Scheme")
     ("Scheme Induction" "sci" "Scheme @{name} := Induction for # Sort #." t)
     ("Scheme Minimality" "scm" "Scheme @{name} := Minimality for # Sort #." t)
-    ("Structure" "str" "Structure # : # := {\n# : #;\n# : # }" t "Structure")	
+    ("Structure" "str" "Structure # : # := {\n# : #;\n# : # }" t "Structure")
     )
   "Coq definition keywords information list. See `coq-syntax-db' for syntax. "
   )
@@ -532,14 +532,14 @@
      ("Unset Printing Notations" "unsprn" "Unset Printing Notations" nil "Unset\\s-+Printing\\s-+Notations")
      ("Unset Undo" nil "Unset Undo." nil "Unset\\s-+Undo")
  ;    ("print" "pr" "print #" "print")
-     )   
+     )
    "Command that are not declarations, definition or goal starters."
   )
 
 (defvar coq-commands-db
   (append coq-decl-db coq-defn-db coq-goal-starters-db
           coq-other-commands-db coq-user-commands-db)
-  "Coq all commands keywords information list. See `coq-syntax-db' for syntax. "      
+  "Coq all commands keywords information list. See `coq-syntax-db' for syntax. "
   )
 
 
@@ -578,7 +578,7 @@
 
 ;; FIXME da: this one function breaks the nice configuration of Proof General:
 ;; would like to have proof-goal-regexp instead.
-;; Unfortunately Coq allows "Definition" and friends to perhaps have a goal, 
+;; Unfortunately Coq allows "Definition" and friends to perhaps have a goal,
 ;; so it appears more difficult than just a proof-goal-regexp setting.
 ;; Future improvement may simply to be allow a function value for
 ;; proof-goal-regexp.
@@ -596,19 +596,19 @@
 ;;    uniquement hors d'un MT
 ;;    - si :=MEXPR est absent, elle demarre un nouveau module interactif
 ;;    - si :=MEXPR est present, elle definit un module
-;;    (la fonction vernac_define_module dans toplevel/vernacentries) 
+;;    (la fonction vernac_define_module dans toplevel/vernacentries)
 ;;
 ;; *) la nouvelle commande Declare Module M [ ( : | <: ) MTYP ] [ := MEXPR ]
 ;;    est valable uniquement dans un MT
 ;;    - si :=MEXPR absent, :MTYP absent, elle demarre un nouveau module
 ;;      interactif
-;;    - si (:=MEXPR absent, :MTYP present) 
+;;    - si (:=MEXPR absent, :MTYP present)
 ;;      ou (:=MEXPR present, :MTYP absent)
 ;;      elle declare un module.
 ;;    (la fonction vernac_declare_module dans toplevel/vernacentries)
 
 (defun coq-count-match (regexp strg)
-  "Count the number of (maximum, non overlapping) matching substring 
+  "Count the number of (maximum, non overlapping) matching substring
  of STRG matching REGEXP. Empty match are counted once."
   (let ((nbmatch 0) (str strg))
     (while (and (proof-string-match regexp str) (not (string-equal str "")))
@@ -629,17 +629,17 @@
 (defun coq-goal-command-str-v80-p (str)
   "See `coq-goal-command-p'."
   (let* ((match (coq-count-match "\\<match\\>" str))
-	 (with (coq-count-match "\\<with\\>" str))
-	 (letwith (+ (coq-count-match "\\<let\\>" str) (- with match)))
-	 (affect (coq-count-match ":=" str)))
+         (with (coq-count-match "\\<with\\>" str))
+         (letwith (+ (coq-count-match "\\<let\\>" str) (- with match)))
+         (affect (coq-count-match ":=" str)))
 
     (and (proof-string-match coq-goal-command-regexp str)
- 	 (not				; 
- 	  (and 
- 	   (proof-string-match "\\`\\(Local\\|Definition\\|Lemma\\|Module\\)\\>" str)
- 	   (not (= letwith affect))))
- 	 (not (proof-string-match "\\`Declare\\s-+Module\\(\\w\\|\\s-\\|<\\)*:" str))
- 	 )
+         (not                           ;
+          (and
+           (proof-string-match "\\`\\(Local\\|Definition\\|Lemma\\|Module\\)\\>" str)
+           (not (= letwith affect))))
+         (not (proof-string-match "\\`Declare\\s-+Module\\(\\w\\|\\s-\\|<\\)*:" str))
+         )
     )
   )
 
@@ -650,14 +650,14 @@
 ;; TODO: have opened section/chapter in the prompt too, and get rid of
 ;; syntactical tests everywhere
 (defun coq-module-opening-p (str)
-  "Decide whether STR is a module or section opening or not. 
+  "Decide whether STR is a module or section opening or not.
 Used by `coq-goal-command-p'"
   (let* ((match (coq-count-match "\\<match\\>" str))
- 	 (with (coq-count-match "\\<with\\>" str))
- 	 (letwith (+ (coq-count-match "\\<let\\>" str) (- with match)))
- 	 (affect (coq-count-match ":=" str)))
+         (with (coq-count-match "\\<with\\>" str))
+         (letwith (+ (coq-count-match "\\<let\\>" str) (- with match)))
+         (affect (coq-count-match ":=" str)))
     (and (proof-string-match "\\`\\(Module\\)\\>" str)
- 	 (= letwith affect))
+         (= letwith affect))
     ))
 
 (defun coq-section-command-p (str)
@@ -684,15 +684,15 @@ Used by `coq-goal-command-p'"
   (or (span-property span 'goalcmd)
       ;; module and section starts are detected here
       (let ((str (or (span-property span 'cmd) "")))
- 	(or (coq-section-command-p str)
- 	    (coq-module-opening-p str))
+        (or (coq-section-command-p str)
+            (coq-module-opening-p str))
         )))
 
 ;; In coq > 8.1 This is used only for indentation.
 (defun coq-goal-command-str-p (str)
   "Decide whether argument is a goal or not.  Use
    `coq-goal-command-p' on a span instead if posible."
-  (cond 
+  (cond
    (coq-version-is-V8-1 (coq-goal-command-str-v81-p str))
    (coq-version-is-V8-0 (coq-goal-command-str-v80-p str))
    (t (coq-goal-command-str-v80-p str));; this is temporary
@@ -701,7 +701,7 @@ Used by `coq-goal-command-p'"
 ;; This is used for backtracking
 (defun coq-goal-command-p (span)
   "Decide whether argument is a goal or not."
-  (cond 
+  (cond
    (coq-version-is-V8-1 (coq-goal-command-p-v81 span))
    (coq-version-is-V8-0 (coq-goal-command-str-v80-p (span-property span 'cmd)))
    (t (coq-goal-command-str-v80-p (span-property span 'cmd)));; this is temporary
@@ -728,7 +728,7 @@ Used by `coq-goal-command-p'"
   )
 
 
-(defvar coq-keywords-kill-goal 
+(defvar coq-keywords-kill-goal
   '("Abort"))
 
 ;; Following regexps are all state changing
@@ -753,7 +753,7 @@ Used by `coq-goal-command-p'"
    coq-keywords-goal))                  ; idem
 
 
-;; 
+;;
 (defvar coq-keywords-state-preserving-commands
   (coq-build-regexp-list-from-db coq-commands-db 'filter-state-preserving))
 
@@ -761,7 +761,7 @@ Used by `coq-goal-command-p'"
 ;; whole commands-db
 (defvar coq-keywords-commands
   (append coq-keywords-state-changing-commands
- 	  coq-keywords-state-preserving-commands)
+          coq-keywords-state-preserving-commands)
   "All commands keyword.")
 
 (defvar coq-solve-tactics
@@ -775,7 +775,7 @@ Used by `coq-goal-command-p'"
 
  ;; From JF Monin:
 (defvar coq-reserved
-  (append 
+  (append
    coq-user-reserved-db
    '(
      "False" "True" "after" "as" "cofix" "fix" "forall" "fun" "match"
@@ -804,7 +804,7 @@ Used by `coq-goal-command-p'"
 
 (defvar coq-keywords
   (append coq-keywords-goal coq-keywords-save coq-keywords-decl
- 	  coq-keywords-defn coq-keywords-commands)
+          coq-keywords-defn coq-keywords-commands)
   "All keywords in a Coq script.")
 
 
@@ -854,7 +854,7 @@ Used by `coq-goal-command-p'"
    (list (coq-first-abstr-regexp "\\<forall\\>" "\\(?:,\\|:\\)") 1 'font-lock-variable-name-face)
                                         ;   (list "\\<forall\\>"
                                         ;         (list 0 font-lock-type-face)
-                                        ;         (list (concat "[^ :]\\s-*\\(" coq-ids "\\)\\s-*") nil nil 
+                                        ;         (list (concat "[^ :]\\s-*\\(" coq-ids "\\)\\s-*") nil nil
                                         ;               (list 0 font-lock-variable-name-face)))
    ;; parenthesized binders
    (list (coq-first-abstr-regexp "(" ":[ a-zA-Z]") 1 'font-lock-variable-name-face)
@@ -867,27 +867,27 @@ Used by `coq-goal-command-p'"
 ;; It is understood here as being a goal.  This is important for
 ;; recognizing global identifiers, see coq-global-p.
 (defconst coq-save-command-regexp-strict
-  (proof-anchor-regexp 
+  (proof-anchor-regexp
    (concat "\\(Time\\s-+\\|\\)\\(" (proof-ids-to-regexp coq-keywords-save-strict)
            "\\)")))
 (defconst coq-save-command-regexp
-  (proof-anchor-regexp 
+  (proof-anchor-regexp
    (concat "\\(Time\\s-+\\|\\)\\(" (proof-ids-to-regexp coq-keywords-save)
            "\\)")))
 (defconst coq-save-with-hole-regexp
   (concat "\\(Time\\s-+\\|\\)\\(" (proof-ids-to-regexp coq-keywords-save-strict)
- 	  "\\)\\s-+\\(" coq-id "\\)\\s-*\\."))
+          "\\)\\s-+\\(" coq-id "\\)\\s-*\\."))
 
 (defconst coq-goal-command-regexp
   (proof-anchor-regexp (proof-ids-to-regexp coq-keywords-goal)))
 
 (defconst coq-goal-with-hole-regexp
   (concat "\\(" (proof-ids-to-regexp coq-keywords-goal)
- 	  "\\)\\s-+\\(" coq-id "\\)\\s-*:?"))
+          "\\)\\s-+\\(" coq-id "\\)\\s-*:?"))
 
 (defconst coq-decl-with-hole-regexp
   (concat "\\(" (proof-ids-to-regexp coq-keywords-decl)
- 	  "\\)\\s-+\\(" coq-ids "\\)\\s-*:"))
+          "\\)\\s-+\\(" coq-ids "\\)\\s-*:"))
 
 ;;  (defconst coq-decl-with-hole-regexp
 ;;    (if coq-variable-highlight-enable coq-decl-with-hole-regexp-1 'nil))
@@ -900,10 +900,10 @@ Used by `coq-goal-command-p'"
 ;; "with f x y :" (followed by = or not)
 ;; "with f x y (z:" (not followed by =)
 ;; BUT NOT:
-;; "with f ... (x:=" 
+;; "with f ... (x:="
 ;; "match ... with .. => "
 (defconst coq-with-with-hole-regexp
-  (concat "\\(with\\)\\s-+\\(" coq-id "\\)\\s-*\\([^=(.]*:\\|[^(]*(\\s-*" 
+  (concat "\\(with\\)\\s-+\\(" coq-id "\\)\\s-*\\([^=(.]*:\\|[^(]*(\\s-*"
           coq-id "\\s-*:[^=]\\)"))
 ;; marche aussi a peu pres
 ;;  (concat "\\(with\\)\\s-+\\(" coq-id "\\)\\s-*\\([^(.]*:\\|.*)[^(.]*:=\\)"))
@@ -954,7 +954,7 @@ Used by `coq-goal-command-p'"
   (modify-syntax-entry ?\| ".")
 
 ;; should maybe be "_" but it makes coq-find-and-forget (in gallina.el) bug
-  (modify-syntax-entry ?\. ".") 
+  (modify-syntax-entry ?\. ".")
 
   (condition-case nil
       ;; Try to use Emacs-21's nested comments.
@@ -966,11 +966,11 @@ Used by `coq-goal-command-p'"
 
 
 (defconst coq-generic-expression
-  (mapcar (lambda (kw) 
- 	    (list (capitalize kw)
- 		  (concat "\\<" kw "\\>" "\\s-+\\(\\w+\\)\\W" )
- 		  1))
- 	  (append coq-keywords-decl coq-keywords-defn coq-keywords-goal)))
+  (mapcar (lambda (kw)
+            (list (capitalize kw)
+                  (concat "\\<" kw "\\>" "\\s-+\\(\\w+\\)\\W" )
+                  1))
+          (append coq-keywords-decl coq-keywords-defn coq-keywords-goal)))
 
 (provide 'gallina-syntax)
  ;;; gallina-syntax.el ends here

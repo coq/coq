@@ -18,7 +18,7 @@ Require Import ZArith_base.
 Require Import Zcomplements.
 Require Import Fourier.
 Require Import Ranalysis1.
-Require Import Rsqrt_def. 
+Require Import Rsqrt_def.
 Require Import PSeries_reg.
 Require Export Rtrigo1.
 Require Export Ratan.

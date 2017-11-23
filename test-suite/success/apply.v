@@ -289,7 +289,7 @@ Qed.
 (* Check that "as" clause applies to main premise only and leave the
    side conditions away *)
 
-Lemma side_condition : 
+Lemma side_condition :
   forall (A:Type) (B:Prop) x, (True -> B -> x=0) -> B -> x=x.
 Proof.
 intros.
@@ -301,7 +301,7 @@ Qed.
 (* Check that "apply" is chained on the last subgoal of each lemma and
    that side conditions come first (as it is the case since 8.2) *)
 
-Lemma chaining : 
+Lemma chaining :
   forall A B C : Prop,
   (1=1 -> (2=2 -> A -> B) /\ True) ->
   (3=3 -> (True /\ (4=4 -> C -> A))) -> C -> B.
@@ -320,7 +320,7 @@ Qed.
    calls to "apply in" w/o destruction of conjunction since 8.2) *)
 
 Lemma chaining_in :
-  forall A B C : Prop, 
+  forall A B C : Prop,
   (1=1 -> True /\ (B -> 2=2 -> 5=0)) ->
   (3=3 -> (A -> 4=4 -> B) /\ True) -> A -> 0=5.
 Proof.
@@ -426,7 +426,7 @@ Variable map : forall (T1 T2 : Type) (f : T1 -> T2) (t11 t12 : T1),
 Variable mapfuncomp : forall (X Y Z : Type) (f : X -> Y) (g : Y -> Z) (x x' : X),
   identity (map Y Z g (f x) (f x')) (map X Z (fun x0 : X => g (f x0)) x x').
 
-Goal forall X:Type, forall Y:Type, forall f:X->Y, forall x : X, forall x' : X, 
+Goal forall X:Type, forall Y:Type, forall f:X->Y, forall x : X, forall x' : X,
   forall g : Y -> X,
   let gf := (fun x : X => g (f x)) : X -> X in
    identity (map Y X g (f x) (f x')) (map X X gf x x').

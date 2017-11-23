@@ -71,8 +71,8 @@ let pure_stack lfts stk =
             | (Zshift n,(l,pstk)) -> (el_shft n l, pstk)
             | (Zapp a, (l,pstk)) ->
                 (l,zlapp (Array.map (fun t -> (l,t)) a) pstk)
-	    | (Zproj (n,m,c), (l,pstk)) ->
-		(l, Zlproj (c,l)::pstk)
+            | (Zproj (n,m,c), (l,pstk)) ->
+                (l, Zlproj (c,l)::pstk)
             | (Zfix(fx,a),(l,pstk)) ->
                 let (lfx,pa) = pure_rec l a in
                 (l, Zlfix((lfx,fx),pa)::pstk)
@@ -140,15 +140,15 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 =
             | (Zlapp a1,Zlapp a2) -> Array.iter2 f a1 a2
             | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
                 f fx1 fx2; cmp_rec a1 a2
-	    | (Zlproj (c1,l1),Zlproj (c2,l2)) -> 
-	       if not (Names.eq_con_chk
-		       (Names.Projection.constant c1)
-		       (Names.Projection.constant c2)) then 
-		raise NotConvertible
+            | (Zlproj (c1,l1),Zlproj (c2,l2)) ->
+               if not (Names.eq_con_chk
+                       (Names.Projection.constant c1)
+                       (Names.Projection.constant c2)) then
+                raise NotConvertible
             | (Zlcase(ci1,l1,p1,br1),Zlcase(ci2,l2,p2,br2)) ->
                 if not (fmind ci1.ci_ind ci2.ci_ind) then
-		  raise NotConvertible;
-		f (l1,p1) (l2,p2);
+                  raise NotConvertible;
+                f (l1,p1) (l2,p2);
                 Array.iter2 (fun c1 c2 -> f (l1,c1) (l2,c2)) br1 br2
             | _ -> assert false)
       | _ -> () in
@@ -223,9 +223,9 @@ let sort_cmp env univ pb s0 s1 =
         (** FIXME: handle type-in-type option here *)
         if (* snd (engagement env) == StratifiedType && *)
           not
-	  (match pb with
+          (match pb with
             | CONV -> Univ.check_eq univ u1 u2
-	    | CUMUL -> Univ.check_leq univ u1 u2)
+            | CUMUL -> Univ.check_leq univ u1 u2)
         then begin
           if !Flags.debug then begin
             let op = match pb with CONV -> "=" | CUMUL -> "<=" in
@@ -313,15 +313,15 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
   match (fterm_of hd1, fterm_of hd2) with
     (* case of leaves *)
     | (FAtom a1, FAtom a2) ->
-	(match a1, a2 with
-	   | (Sort s1, Sort s2) ->
-	       assert (is_empty_stack v1 && is_empty_stack v2);
-	       sort_cmp (infos_env infos) univ cv_pb s1 s2
-	   | (Meta n, Meta m) ->
+        (match a1, a2 with
+           | (Sort s1, Sort s2) ->
+               assert (is_empty_stack v1 && is_empty_stack v2);
+               sort_cmp (infos_env infos) univ cv_pb s1 s2
+           | (Meta n, Meta m) ->
                if n=m
-	       then convert_stacks univ infos lft1 lft2 v1 v2
+               then convert_stacks univ infos lft1 lft2 v1 v2
                else raise NotConvertible
-	   | _ -> raise NotConvertible)
+           | _ -> raise NotConvertible)
     | (FEvar (ev1,args1), FEvar (ev2,args2)) ->
         if ev1=ev2 then
           (convert_stacks univ infos lft1 lft2 v1 v2;
@@ -336,8 +336,8 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
 
     (* 2 constants, 2 local defined vars or 2 defined rels *)
     | (FFlex fl1, FFlex fl2) ->
-	(try (* try first intensional equality *)
-	  if eq_table_key fl1 fl2
+        (try (* try first intensional equality *)
+          if eq_table_key fl1 fl2
           then convert_stacks univ infos lft1 lft2 v1 v2
           else raise NotConvertible
         with NotConvertible ->
@@ -351,18 +351,18 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
                 | Some def2 -> (appr1, (lft2, whd_stack infos def2 v2))
                 | None -> raise NotConvertible)
             else
-	      match unfold_reference infos fl2 with
+              match unfold_reference infos fl2 with
               | Some def2 -> (appr1, (lft2, whd_stack infos def2 v2))
               | None ->
                 (match unfold_reference infos fl1 with
                 | Some def1 -> ((lft1, whd_stack infos def1 v1), appr2)
-		| None -> raise NotConvertible) in
+                | None -> raise NotConvertible) in
             eqappr univ cv_pb infos app1 app2)
-	  
+
     | (FProj (p1,c1), _) ->
       let (def1, s1) = unfold_projection infos p1 c1 in
         eqappr univ cv_pb infos (lft1, whd_stack infos def1 (s1 :: v1)) appr2
-	  
+
     | (_, FProj (p2,c2)) ->
       let (def2, s2) = unfold_projection infos p2 c2 in
         eqappr univ cv_pb infos appr1 (lft2, whd_stack infos def2 (s2 :: v2))
@@ -379,7 +379,7 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
 
     | (FProd (_,c1,c2), FProd (_,c'1,c'2)) ->
         assert (is_empty_stack v1 && is_empty_stack v2);
-	(* Luo's system *)
+        (* Luo's system *)
         ccnv univ CONV infos el1 el2 c1 c'1;
         ccnv univ cv_pb infos (el_lift el1) (el_lift el2) c2 c'2
 
@@ -401,29 +401,29 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
     | (FFlex fl1, c2)      ->
         (match unfold_reference infos fl1 with
            | Some def1 ->
-	       eqappr univ cv_pb infos (lft1, whd_stack infos def1 v1) appr2
-           | None -> 
-	     match c2 with 
-	     | FConstruct ((ind2,j2),u2) ->
-	       (try
- 	     	  let v2, v1 = 
- 		    eta_expand_ind_stack (infos_env infos) ind2 hd2 v2 (snd appr1)
- 		  in convert_stacks univ infos lft1 lft2 v1 v2
- 	     	with Not_found -> raise NotConvertible)
-	     | _ -> raise NotConvertible)
+               eqappr univ cv_pb infos (lft1, whd_stack infos def1 v1) appr2
+           | None ->
+             match c2 with
+             | FConstruct ((ind2,j2),u2) ->
+               (try
+                  let v2, v1 =
+                    eta_expand_ind_stack (infos_env infos) ind2 hd2 v2 (snd appr1)
+                  in convert_stacks univ infos lft1 lft2 v1 v2
+                with Not_found -> raise NotConvertible)
+             | _ -> raise NotConvertible)
 
     | (c1, FFlex fl2)      ->
         (match unfold_reference infos fl2 with
            | Some def2 ->
-	       eqappr univ cv_pb infos appr1 (lft2, whd_stack infos def2 v2)
-           | None -> 
-	     match c1 with 
-	     | FConstruct ((ind1,j1),u1) ->
- 	       (try let v1, v2 = 
-		      eta_expand_ind_stack (infos_env infos) ind1 hd1 v1 (snd appr2)
-		    in convert_stacks univ infos lft1 lft2 v1 v2
-		with Not_found -> raise NotConvertible)
-	     | _ -> raise NotConvertible)
+               eqappr univ cv_pb infos appr1 (lft2, whd_stack infos def2 v2)
+           | None ->
+             match c1 with
+             | FConstruct ((ind1,j1),u1) ->
+               (try let v1, v2 =
+                      eta_expand_ind_stack (infos_env infos) ind1 hd1 v1 (snd appr2)
+                    in convert_stacks univ infos lft1 lft2 v1 v2
+                with Not_found -> raise NotConvertible)
+             | _ -> raise NotConvertible)
 
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
 
@@ -463,43 +463,43 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
      (* Eta expansion of records *)
      | (FConstruct ((ind1,j1),u1), _) ->
        (try
-    	  let v1, v2 =
-    	    eta_expand_ind_stack (infos_env infos) ind1 hd1 v1 (snd appr2)
-    	  in convert_stacks univ infos lft1 lft2 v1 v2
-	with Not_found -> raise NotConvertible)
-	 
+          let v1, v2 =
+            eta_expand_ind_stack (infos_env infos) ind1 hd1 v1 (snd appr2)
+          in convert_stacks univ infos lft1 lft2 v1 v2
+        with Not_found -> raise NotConvertible)
+
      | (_, FConstruct ((ind2,j2),u2)) ->
        (try
-    	  let v2, v1 =
-    	    eta_expand_ind_stack (infos_env infos) ind2 hd2 v2 (snd appr1)
-    	  in convert_stacks univ infos lft1 lft2 v1 v2
-	with Not_found -> raise NotConvertible)
+          let v2, v1 =
+            eta_expand_ind_stack (infos_env infos) ind2 hd2 v2 (snd appr1)
+          in convert_stacks univ infos lft1 lft2 v1 v2
+        with Not_found -> raise NotConvertible)
 
      | (FFix ((op1,(_,tys1,cl1)),e1), FFix((op2,(_,tys2,cl2)),e2)) ->
-	 if op1 = op2
-	 then
-	   let n = Array.length cl1 in
+         if op1 = op2
+         then
+           let n = Array.length cl1 in
            let fty1 = Array.map (mk_clos e1) tys1 in
            let fty2 = Array.map (mk_clos e2) tys2 in
            let fcl1 = Array.map (mk_clos (subs_liftn n e1)) cl1 in
            let fcl2 = Array.map (mk_clos (subs_liftn n e2)) cl2 in
            convert_vect univ infos el1 el2 fty1 fty2;
            convert_vect univ infos
-	     (el_liftn n el1) (el_liftn n el2) fcl1 fcl2;
+             (el_liftn n el1) (el_liftn n el2) fcl1 fcl2;
            convert_stacks univ infos lft1 lft2 v1 v2
          else raise NotConvertible
 
      | (FCoFix ((op1,(_,tys1,cl1)),e1), FCoFix((op2,(_,tys2,cl2)),e2)) ->
          if op1 = op2
          then
-	   let n = Array.length cl1 in
+           let n = Array.length cl1 in
            let fty1 = Array.map (mk_clos e1) tys1 in
            let fty2 = Array.map (mk_clos e2) tys2 in
            let fcl1 = Array.map (mk_clos (subs_liftn n e1)) cl1 in
            let fcl2 = Array.map (mk_clos (subs_liftn n e2)) cl2 in
            convert_vect univ infos el1 el2 fty1 fty2;
-	   convert_vect univ infos
-	     (el_liftn n el1) (el_liftn n el2) fcl1 fcl2;
+           convert_vect univ infos
+             (el_liftn n el1) (el_liftn n el2) fcl1 fcl2;
            convert_stacks univ infos lft1 lft2 v1 v2
          else raise NotConvertible
 
@@ -564,7 +564,7 @@ let dest_prod env =
     match t with
       | Prod (n,a,c0) ->
           let d = LocalAssum (n,a) in
-	  decrec (push_rel d env) (d::m) c0
+          decrec (push_rel d env) (d::m) c0
       | _ -> m,t
   in
   decrec env empty_rel_context
@@ -576,15 +576,15 @@ let dest_prod_assum env =
     match rty with
     | Prod (x,t,c)  ->
         let d = LocalAssum (x,t) in
-	prodec_rec (push_rel d env) (d::l) c
+        prodec_rec (push_rel d env) (d::l) c
     | LetIn (x,b,t,c) ->
         let d = LocalDef (x,b,t) in
-	prodec_rec (push_rel d env) (d::l) c
+        prodec_rec (push_rel d env) (d::l) c
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               ->
       let rty' = whd_all env rty in
-	if Term.eq_constr rty' rty then l, rty
-	else prodec_rec env l rty'
+        if Term.eq_constr rty' rty then l, rty
+        else prodec_rec env l rty'
   in
   prodec_rec env empty_rel_context
 
@@ -594,10 +594,10 @@ let dest_lam_assum env =
     match rty with
     | Lambda (x,t,c)  ->
         let d = LocalAssum (x,t) in
-	lamec_rec (push_rel d env) (d::l) c
+        lamec_rec (push_rel d env) (d::l) c
     | LetIn (x,b,t,c) ->
         let d = LocalDef (x,b,t) in
-	lamec_rec (push_rel d env) (d::l) c
+        lamec_rec (push_rel d env) (d::l) c
     | Cast (c,_,_)    -> lamec_rec env l c
     | _               -> l,rty
   in

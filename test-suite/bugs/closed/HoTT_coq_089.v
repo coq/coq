@@ -1,4 +1,4 @@
-Set Implicit Arguments. 
+Set Implicit Arguments.
 Set Universe Polymorphism.
 Set Printing Universes.
 
@@ -40,5 +40,5 @@ The term "Type (* Top.51 *)" has type "Type (* Top.51+1 *)"
 while it is expected to have type "Type (* Top.51 *)"
 (Universe inconsistency: Cannot enforce Top.51 < Top.51 because Top.51
 = Top.51)). *)
-  
+
 Defined.

@@ -24,5 +24,5 @@ Goal forall (C D : hSet), IsEquiv (fun x : C = D => (equiv_path C D (ap setT x))
   intros.
   change (IsEquiv (equiv_path C D o @ap _ _ setT C D)).
   apply @isequiv_compose; [ | admit ].
-  Set Typeclasses Debug. 
+  Set Typeclasses Debug.
   typeclasses eauto.

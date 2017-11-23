@@ -395,7 +395,7 @@ Proof.
 Qed.
 
 Lemma Riemann_integrable_ext :
-  forall f g a b, 
+  forall f g a b,
     (forall x, Rmin a b <= x <= Rmax a b -> f x = g x) ->
     Riemann_integrable f a b -> Riemann_integrable g a b.
 intros f g a b fg rif eps; destruct (rif eps) as [phi [psi [P1 P2]]].
@@ -3231,7 +3231,7 @@ split; apply RiemannInt_P19; try assumption;
 Qed.
 
 Lemma Riemann_integrable_scal :
-  forall f a b k, 
+  forall f a b k,
      Riemann_integrable f a b ->
      Riemann_integrable (fun x => k * f x) a b.
 intros f a b k ri.
@@ -3244,7 +3244,7 @@ Qed.
 Arguments Riemann_integrable_scal [f a b] k _ eps.
 
 Lemma Riemann_integrable_Ropp :
-  forall f a b, Riemann_integrable f a b -> 
+  forall f a b, Riemann_integrable f a b ->
     Riemann_integrable (fun x => - f x) a b.
 intros ff a b h.
 apply Riemann_integrable_ext with (f := fun x => (-1) * ff x).

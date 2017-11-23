@@ -4,13 +4,13 @@ val warn_cannot_define_graph : ?loc:Loc.t -> Pp.t * Pp.t -> unit
 
 val warn_cannot_define_principle : ?loc:Loc.t -> Pp.t * Pp.t -> unit
 
-val do_generate_principle :  
-  bool -> 
-  (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list -> 
+val do_generate_principle :
+  bool ->
+  (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list ->
   unit
 
 
-val functional_induction :  
+val functional_induction :
   bool ->
   EConstr.constr ->
   (EConstr.constr * EConstr.constr bindings) option ->

@@ -151,7 +151,7 @@ Qed.
 (* Check an example which was working with case/elim in 8.4 but not with
    destruct/induction *)
 
-Goal forall x, (True -> x = 0) -> 0=0. 
+Goal forall x, (True -> x = 0) -> 0=0.
 intros.
 destruct H.
 - trivial.
@@ -161,7 +161,7 @@ Qed.
 (* Check an example which was working with case/elim in 8.4 but not with
    destruct/induction (not the different order between induction/destruct) *)
 
-Goal forall x, (True -> x = 0) -> 0=0. 
+Goal forall x, (True -> x = 0) -> 0=0.
 intros.
 induction H.
 - apply (eq_refl x).
@@ -171,7 +171,7 @@ Qed.
 (* This test assumes that destruct/induction on non-dependent hypotheses behave the same
    when using holes or not
 
-Goal forall x, (True -> x = 0) -> 0=0. 
+Goal forall x, (True -> x = 0) -> 0=0.
 intros.
 destruct (H _).
 - apply I.

@@ -1,4 +1,4 @@
 Module A.
-Section	B.
+Section B.
 Fail End A.
 (*End A.*)

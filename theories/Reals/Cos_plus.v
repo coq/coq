@@ -34,7 +34,7 @@ Proof.
   cut (0 < eps / C0);
     [ intro
       | unfold Rdiv; apply Rmult_lt_0_compat;
-	[ assumption | apply Rinv_0_lt_compat; assumption ] ].
+        [ assumption | apply Rinv_0_lt_compat; assumption ] ].
   elim (H1 (eps / C0) H3); intros N0 H4.
   exists N0; intros.
   replace (Majxy x y n) with (C0 ^ S n / INR (fact n)).
@@ -77,18 +77,18 @@ Proof.
   apply Rle_trans with
     (sum_f_R0
       (fun k:nat =>
-	Rabs
+        Rabs
         (sum_f_R0
           (fun l:nat =>
             (-1) ^ S (l + k) / INR (fact (2 * S (l + k))) *
             x ^ (2 * S (l + k)) *
             ((-1) ^ (N - l) / INR (fact (2 * (N - l)))) *
             y ^ (2 * (N - l))) (pred (N - k)))) (
-	      pred N)).
+              pred N)).
   apply
     (Rsum_abs
       (fun k:nat =>
-	sum_f_R0
+        sum_f_R0
         (fun l:nat =>
           (-1) ^ S (l + k) / INR (fact (2 * S (l + k))) *
           x ^ (2 * S (l + k)) * ((-1) ^ (N - l) / INR (fact (2 * (N - l)))) *
@@ -96,26 +96,26 @@ Proof.
   apply Rle_trans with
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0
+        sum_f_R0
         (fun l:nat =>
           Rabs
           ((-1) ^ S (l + k) / INR (fact (2 * S (l + k))) *
             x ^ (2 * S (l + k)) *
             ((-1) ^ (N - l) / INR (fact (2 * (N - l)))) *
             y ^ (2 * (N - l)))) (pred (N - k))) (
-	      pred N)).
+              pred N)).
   apply sum_Rle.
   intros.
   apply
     (Rsum_abs
       (fun l:nat =>
-	(-1) ^ S (l + n) / INR (fact (2 * S (l + n))) * x ^ (2 * S (l + n)) *
-	((-1) ^ (N - l) / INR (fact (2 * (N - l)))) *
-	y ^ (2 * (N - l))) (pred (N - n))).
+        (-1) ^ S (l + n) / INR (fact (2 * S (l + n))) * x ^ (2 * S (l + n)) *
+        ((-1) ^ (N - l) / INR (fact (2 * (N - l)))) *
+        y ^ (2 * (N - l))) (pred (N - n))).
   apply Rle_trans with
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0
+        sum_f_R0
         (fun l:nat =>
           / INR (fact (2 * S (l + k)) * fact (2 * (N - l))) *
           C ^ (2 * S (N + k))) (pred (N - k))) (pred N)).
@@ -194,7 +194,7 @@ Proof.
   apply Rle_trans with
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0
+        sum_f_R0
         (fun l:nat =>
           / INR (fact (2 * S (l + k)) * fact (2 * (N - l))) * C ^ (4 * N))
         (pred (N - k))) (pred N)).
@@ -215,7 +215,7 @@ Proof.
   apply Rle_trans with
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0 (fun l:nat => C ^ (4 * N) * Rsqr (/ INR (fact (S (N + k)))))
+        sum_f_R0 (fun l:nat => C ^ (4 * N) * Rsqr (/ INR (fact (S (N + k)))))
         (pred (N - k))) (pred N)).
   apply sum_Rle; intros.
   apply sum_Rle; intros.
@@ -366,52 +366,52 @@ Proof.
   apply Rle_trans with
     (sum_f_R0
       (fun k:nat =>
-	Rabs
+        Rabs
         (sum_f_R0
           (fun l:nat =>
             (-1) ^ S (l + k) / INR (fact (2 * S (l + k) + 1)) *
             x ^ (2 * S (l + k) + 1) *
             ((-1) ^ (N - l) / INR (fact (2 * (N - l) + 1))) *
             y ^ (2 * (N - l) + 1)) (pred (N - k)))) (
-	      pred N)).
+              pred N)).
   apply
     (Rsum_abs
       (fun k:nat =>
-	sum_f_R0
+        sum_f_R0
         (fun l:nat =>
           (-1) ^ S (l + k) / INR (fact (2 * S (l + k) + 1)) *
           x ^ (2 * S (l + k) + 1) *
           ((-1) ^ (N - l) / INR (fact (2 * (N - l) + 1))) *
           y ^ (2 * (N - l) + 1)) (pred (N - k))) (
-	    pred N)).
+            pred N)).
   apply Rle_trans with
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0
+        sum_f_R0
         (fun l:nat =>
           Rabs
           ((-1) ^ S (l + k) / INR (fact (2 * S (l + k) + 1)) *
             x ^ (2 * S (l + k) + 1) *
             ((-1) ^ (N - l) / INR (fact (2 * (N - l) + 1))) *
             y ^ (2 * (N - l) + 1))) (pred (N - k))) (
-	      pred N)).
+              pred N)).
   apply sum_Rle.
   intros.
   apply
     (Rsum_abs
       (fun l:nat =>
-	(-1) ^ S (l + n) / INR (fact (2 * S (l + n) + 1)) *
-	x ^ (2 * S (l + n) + 1) *
-	((-1) ^ (N - l) / INR (fact (2 * (N - l) + 1))) *
-	y ^ (2 * (N - l) + 1)) (pred (N - n))).
+        (-1) ^ S (l + n) / INR (fact (2 * S (l + n) + 1)) *
+        x ^ (2 * S (l + n) + 1) *
+        ((-1) ^ (N - l) / INR (fact (2 * (N - l) + 1))) *
+        y ^ (2 * (N - l) + 1)) (pred (N - n))).
   apply Rle_trans with
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0
+        sum_f_R0
         (fun l:nat =>
           / INR (fact (2 * S (l + k) + 1) * fact (2 * (N - l) + 1)) *
           C ^ (2 * S (S (N + k)))) (pred (N - k))) (
-	    pred N)).
+            pred N)).
   apply sum_Rle; intros.
   apply sum_Rle; intros.
   unfold Rdiv; repeat rewrite Rabs_mult.
@@ -466,7 +466,7 @@ Proof.
   apply Rle_trans with
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0
+        sum_f_R0
         (fun l:nat =>
           / INR (fact (2 * S (l + k) + 1) * fact (2 * (N - l) + 1)) *
           C ^ (4 * S N)) (pred (N - k))) (pred N)).
@@ -489,7 +489,7 @@ Proof.
   apply Rle_trans with
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0
+        sum_f_R0
         (fun l:nat => C ^ (4 * S N) * Rsqr (/ INR (fact (S (S (N + k))))))
         (pred (N - k))) (pred N)).
   apply sum_Rle; intros.
@@ -762,7 +762,7 @@ Proof.
   cut (0 < eps / 3);
     [ intro
       | unfold Rdiv; apply Rmult_lt_0_compat;
-	[ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ].
+        [ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ].
   elim (H4 (eps / 3) H7); intros N1 H8.
   elim (H5 (eps / 3) H7); intros N2 H9.
   elim (H6 (eps / 3) H7); intros N3 H10.

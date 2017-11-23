@@ -36,14 +36,14 @@ GEXTEND Gram
       | IDENT "Abort"; IDENT "All" -> VernacAbortAll
       | IDENT "Abort"; id = identref -> VernacAbort (Some id)
       | IDENT "Existential"; n = natural; c = constr_body ->
-	  VernacSolveExistential (n,c)
+          VernacSolveExistential (n,c)
       | IDENT "Admitted" -> VernacEndProof Admitted
       | IDENT "Qed" -> VernacEndProof (Proved (Opaque,None))
       | IDENT "Save"; id = identref ->
-	  VernacEndProof (Proved (Opaque, Some id))
+          VernacEndProof (Proved (Opaque, Some id))
       | IDENT "Defined" -> VernacEndProof (Proved (Transparent,None))
-      |	IDENT "Defined"; id=identref ->
-	  VernacEndProof (Proved (Transparent,Some id))
+      | IDENT "Defined"; id=identref ->
+          VernacEndProof (Proved (Transparent,Some id))
       | IDENT "Restart" -> VernacRestart
       | IDENT "Undo" -> VernacUndo 1
       | IDENT "Undo"; n = natural -> VernacUndo n
@@ -66,19 +66,19 @@ GEXTEND Gram
       | IDENT "Guarded" -> VernacCheckGuard
       (* Hints for Auto and EAuto *)
       | IDENT "Create"; IDENT "HintDb" ;
-	  id = IDENT ; b = [ "discriminated" -> true | -> false ] ->
-	    VernacCreateHintDb (id, b)
+          id = IDENT ; b = [ "discriminated" -> true | -> false ] ->
+            VernacCreateHintDb (id, b)
       | IDENT "Remove"; IDENT "Hints"; ids = LIST1 global; dbnames = opt_hintbases ->
-	  VernacRemoveHints (dbnames, ids)
+          VernacRemoveHints (dbnames, ids)
       | IDENT "Hint"; local = obsolete_locality; h = hint;
-	  dbnames = opt_hintbases ->
-	  VernacHints (local,dbnames, h)
+          dbnames = opt_hintbases ->
+          VernacHints (local,dbnames, h)
       (* Declare "Resolve" explicitly so as to be able to later extend with
          "Resolve ->" and "Resolve <-" *)
-      | IDENT "Hint"; IDENT "Resolve"; lc = LIST1 reference_or_constr; 
-	info = hint_info; dbnames = opt_hintbases ->
-	  VernacHints (false,dbnames,
-	    HintsResolve (List.map (fun x -> (info, true, x)) lc))
+      | IDENT "Hint"; IDENT "Resolve"; lc = LIST1 reference_or_constr;
+        info = hint_info; dbnames = opt_hintbases ->
+          VernacHints (false,dbnames,
+            HintsResolve (List.map (fun x -> (info, true, x)) lc))
       ] ];
   obsolete_locality:
     [ [ IDENT "Local" -> true | -> false ] ]

@@ -19,5 +19,5 @@ Definition lift {T} : T -> Lift T := fun x => x.
 
 Goal forall x y : Type, x = y.
   intros.
-  pose proof ((fun H0 : idmap _ => (@path_universe _ _ (@lift x) (H0 x) @ 
+  pose proof ((fun H0 : idmap _ => (@path_universe _ _ (@lift x) (H0 x) @
                                                    (@path_universe _ _ (@lift x) (H0 x))^)))%path as H''.

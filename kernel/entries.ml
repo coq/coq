@@ -47,7 +47,7 @@ type one_inductive_entry = {
   mind_entry_lc : constr list }
 
 type mutual_inductive_entry = {
-  mind_entry_record : (Id.t option) option; 
+  mind_entry_record : (Id.t option) option;
   (** Some (Some id): primitive record with id the binder name of the record
       in projections.
       Some None: non-primitive record *)
@@ -81,8 +81,8 @@ type 'a definition_entry = {
 
 type inline = int option (* inlining level, None for no inlining *)
 
-type parameter_entry = 
-    Context.Named.t option * bool * types Univ.in_universe_context * inline 
+type parameter_entry =
+    Context.Named.t option * bool * types Univ.in_universe_context * inline
 
 type projection_entry = {
   proj_entry_ind : MutInd.t;

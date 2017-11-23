@@ -13,7 +13,7 @@ Let T_fzip `{TMonad T} := fun (A B: Type) (f: T (A -> B)) (t: T A)
                   => bind t (fun a => bind f (fun g => ret (g a) )).
 Let T_pure `{TMonad T} := @ret _ _.
 
-Let T_pure_id `{TMonad T} {A: Type} (t: A -> A) (x: T A): 
+Let T_pure_id `{TMonad T} {A: Type} (t: A -> A) (x: T A):
         path (T_fzip A A (T_pure (A -> A) t) x) x.
   unfold T_fzip, T_pure.
   Fail rewrite (ret_unit_left (fun g a => ret (g a)) (fun x => x)).

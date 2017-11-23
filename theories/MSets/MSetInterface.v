@@ -345,7 +345,7 @@ Module Type WRawSets (E : DecidableType).
       predicate [Ok]. If [Ok] isn't decidable, [isok] may be the
       always-false function. *)
   Parameter isok : t -> bool.
-  (** MS: 
+  (** MS:
     Dangerous instance, the [isok s = true] hypothesis cannot be discharged
    with typeclass resolution. Is it really an instance? *)
   Declare Instance isok_Ok s `(isok s = true) : Ok s | 10.

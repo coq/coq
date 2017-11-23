@@ -73,32 +73,32 @@ Module Type WSfun (E : DecidableType).
 
     Parameter add : key -> elt -> t elt -> t elt.
     (** [add x y m] returns a map containing the same bindings as [m],
-	plus a binding of [x] to [y]. If [x] was already bound in [m],
-	its previous binding disappears. *)
+        plus a binding of [x] to [y]. If [x] was already bound in [m],
+        its previous binding disappears. *)
 
     Parameter find : key -> t elt -> option elt.
     (** [find x m] returns the current binding of [x] in [m],
-	or [None] if no such binding exists. *)
+        or [None] if no such binding exists. *)
 
     Parameter remove : key -> t elt -> t elt.
     (** [remove x m] returns a map containing the same bindings as [m],
-	except for [x] which is unbound in the returned map. *)
+        except for [x] which is unbound in the returned map. *)
 
     Parameter mem : key -> t elt -> bool.
     (** [mem x m] returns [true] if [m] contains a binding for [x],
-	and [false] otherwise. *)
+        and [false] otherwise. *)
 
     Variable elt' elt'' : Type.
 
     Parameter map : (elt -> elt') -> t elt -> t elt'.
     (** [map f m] returns a map with same domain as [m], where the associated
-	value a of all bindings of [m] has been replaced by the result of the
-	application of [f] to [a]. Since Coq is purely functional, the order
+        value a of all bindings of [m] has been replaced by the result of the
+        application of [f] to [a]. Since Coq is purely functional, the order
         in which the bindings are passed to [f] is irrelevant. *)
 
     Parameter mapi : (key -> elt -> elt') -> t elt -> t elt'.
     (** Same as [map], but the function receives as arguments both the
-	key and the associated value for each binding of the map. *)
+        key and the associated value for each binding of the map. *)
 
     Parameter map2 :
      (option elt -> option elt' -> option elt'') -> t elt -> t elt' ->  t elt''.
@@ -116,8 +116,8 @@ Module Type WSfun (E : DecidableType).
 
     Parameter fold : forall A: Type, (key -> elt -> A -> A) -> t elt -> A -> A.
     (** [fold f m a] computes [(f kN dN ... (f k1 d1 a)...)],
-	where [k1] ... [kN] are the keys of all bindings in [m]
-	(in any order), and [d1] ... [dN] are the associated data. *)
+        where [k1] ... [kN] are the keys of all bindings in [m]
+        (in any order), and [d1] ... [dN] are the associated data. *)
 
     Parameter equal : (elt -> elt -> bool) -> t elt -> t elt -> bool.
     (** [equal cmp m1 m2] tests whether the maps [m1] and [m2] are equal,
@@ -184,7 +184,7 @@ Module Type WSfun (E : DecidableType).
 
     (** Specification of [fold] *)
       Parameter fold_1 :
-	forall (A : Type) (i : A) (f : key -> elt -> A -> A),
+        forall (A : Type) (i : A) (f : key -> elt -> A -> A),
         fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
 
     (** Equality of maps *)
@@ -233,12 +233,12 @@ Module Type WSfun (E : DecidableType).
 
     (** Specification of [map2] *)
       Parameter map2_1 : forall (elt elt' elt'':Type)(m: t elt)(m': t elt')
-	(x:key)(f:option elt->option elt'->option elt''),
-	In x m \/ In x m' ->
+        (x:key)(f:option elt->option elt'->option elt''),
+        In x m \/ In x m' ->
         find x (map2 f m m') = f (find x m) (find x m').
 
      Parameter map2_2 : forall (elt elt' elt'':Type)(m: t elt)(m': t elt')
-	(x:key)(f:option elt->option elt'->option elt''),
+        (x:key)(f:option elt->option elt'->option elt''),
         In x (map2 f m m') -> In x m \/ In x m'.
 
   Hint Immediate MapsTo_1 mem_2 is_empty_2

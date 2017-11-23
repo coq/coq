@@ -131,7 +131,7 @@ type reactive_info = {(*information required by the compiler of the VM *)
        Nativeinstr.lambda array -> Nativeinstr.lambda) option;
 
   native_before_match : (bool -> Nativeinstr.prefix -> constructor ->
-			 Nativeinstr.lambda -> Nativeinstr.lambda) option
+                         Nativeinstr.lambda -> Nativeinstr.lambda) option
 
 }
 

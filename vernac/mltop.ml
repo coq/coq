@@ -128,7 +128,7 @@ let ml_load s =
     | WithoutTop ->
         try
           Dynlink.loadfile s; s
-	with Dynlink.Error a ->
+        with Dynlink.Error a ->
           user_err ~hdr:"Mltop.load_object"
             (strbrk "while loading " ++ str s ++
              strbrk ": " ++ str (Dynlink.error_message a))
@@ -147,8 +147,8 @@ let dir_ml_use s =
     | WithTop t -> t.use_file s
     | _ ->
        let moreinfo =
-	 if Dynlink.is_native then " Loading ML code works only in bytecode."
-	 else ""
+         if Dynlink.is_native then " Loading ML code works only in bytecode."
+         else ""
        in
       user_err ~hdr:"Mltop.dir_ml_use" (str "Could not load ML code." ++ str moreinfo)
 

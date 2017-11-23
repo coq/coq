@@ -41,10 +41,10 @@ let evd_comb2 f evdref x y =
     evdref := evd';
     z
 
-let e_new_global evdref x = 
+let e_new_global evdref x =
   EConstr.of_constr (evd_comb1 (Evd.fresh_global (Global.env())) evdref x)
 
-let new_global evd x = 
+let new_global evd x =
   let (evd, c) = Evd.fresh_global (Global.env()) evd x in
   (evd, EConstr.of_constr c)
 
@@ -83,9 +83,9 @@ let tj_nf_evar sigma {utj_val=v;utj_type=t} =
   {utj_val=nf_evar sigma v;utj_type=t}
 
 let nf_evars_universes evm =
-  Universes.nf_evars_and_universes_opt_subst (safe_evar_value evm) 
+  Universes.nf_evars_and_universes_opt_subst (safe_evar_value evm)
     (Evd.universe_subst evm)
-    
+
 let nf_evars_and_universes evm =
   let evm = Evd.nf_constraints evm in
     evm, nf_evars_universes evm
@@ -100,7 +100,7 @@ let nf_evar_map_universes evm =
     if Univ.LMap.is_empty subst then evm, nf_evar0 evm
     else
       let f = nf_evars_universes evm in
-	Evd.raw_map (fun _ -> map_evar_info f) evm, f
+        Evd.raw_map (fun _ -> map_evar_info f) evm, f
 
 let nf_named_context_evar sigma ctx =
   Context.Named.map (nf_evar0 sigma) ctx
@@ -443,7 +443,7 @@ let e_new_type_evar env evdref ?src ?filter ?naming ?principal rigid =
     evdref := evd;
     c
 
-let new_Type ?(rigid=Evd.univ_flexible) env evd = 
+let new_Type ?(rigid=Evd.univ_flexible) env evd =
   let open EConstr in
   let (evd, s) = new_sort_variable rigid evd in
   (evd, mkSort s)
@@ -501,20 +501,20 @@ let rec check_and_clear_in_constr env evdref err ids global c =
         c
 
       | Evar (evk,l as ev) ->
-	  if Evd.is_defined !evdref evk then
-	    (* If evk is already defined we replace it by its definition *)
-	    let nc = Evd.existential_value !evdref ev in
-	      (check_and_clear_in_constr env evdref err ids global nc)
-	  else
-	    (* We check for dependencies to elements of ids in the
-	       evar_info corresponding to e and in the instance of
-	       arguments. Concurrently, we build a new evar
-	       corresponding to e where hypotheses of ids have been
-	       removed *)
-	    let evi = Evd.find_undefined !evdref evk in
-	    let ctxt = Evd.evar_filtered_context evi in
-	    let ctxt = List.map (fun d -> map_named_decl EConstr.of_constr d) ctxt in
-	    let (rids,filter) =
+          if Evd.is_defined !evdref evk then
+            (* If evk is already defined we replace it by its definition *)
+            let nc = Evd.existential_value !evdref ev in
+              (check_and_clear_in_constr env evdref err ids global nc)
+          else
+            (* We check for dependencies to elements of ids in the
+               evar_info corresponding to e and in the instance of
+               arguments. Concurrently, we build a new evar
+               corresponding to e where hypotheses of ids have been
+               removed *)
+            let evi = Evd.find_undefined !evdref evk in
+            let ctxt = Evd.evar_filtered_context evi in
+            let ctxt = List.map (fun d -> map_named_decl EConstr.of_constr d) ctxt in
+            let (rids,filter) =
               List.fold_right2
                 (fun h a (ri,filter) ->
                   try
@@ -533,16 +533,16 @@ let rec check_and_clear_in_constr env evdref err ids global c =
                   (* No dependency at all, we can keep this ev's context hyp *)
                     (ri, true::filter)
                   with Depends id -> (Id.Map.add (NamedDecl.get_id h) id ri, false::filter))
-		ctxt (Array.to_list l) (Id.Map.empty,[]) in
-	    (* Check if some rid to clear in the context of ev has dependencies
-	       in the type of ev and adjust the source of the dependency *)
-	    let _nconcl =
-	      try
+                ctxt (Array.to_list l) (Id.Map.empty,[]) in
+            (* Check if some rid to clear in the context of ev has dependencies
+               in the type of ev and adjust the source of the dependency *)
+            let _nconcl =
+              try
                 let nids = Id.Map.domain rids in
                 let global = Id.Set.exists is_section_variable nids in
                 check_and_clear_in_constr env evdref (EvarTypingBreak ev) nids global (evar_concl evi)
-	      with ClearDependencyError (rid,err) ->
-		raise (ClearDependencyError (Id.Map.find rid rids,err)) in
+              with ClearDependencyError (rid,err) ->
+                raise (ClearDependencyError (Id.Map.find rid rids,err)) in
 
             if Id.Map.is_empty rids then c
             else
@@ -629,7 +629,7 @@ let gather_dependent_evars q evm =
     let (is_dependent,e) = Queue.pop q in
     (* checks if [e] has already been added to [!acc] *)
     begin if not (Evar.Map.mem e !acc) then
-        acc := process_dependent_evar q !acc evm is_dependent e  
+        acc := process_dependent_evar q !acc evm is_dependent e
     end
   done;
   !acc
@@ -671,7 +671,7 @@ let undefined_evars_of_term evd t =
     match EConstr.kind evd c with
       | Evar (n, l) ->
         let acc = Evar.Set.add n acc in
-	Array.fold_left evrec acc l
+        Array.fold_left evrec acc l
       | _ -> EConstr.fold evd evrec acc c
   in
   evrec Evar.Set.empty t
@@ -686,10 +686,10 @@ let undefined_evars_of_evar_info evd evi =
   Evar.Set.union (undefined_evars_of_term evd (EConstr.of_constr evi.evar_concl))
     (Evar.Set.union
        (match evi.evar_body with
-	 | Evar_empty -> Evar.Set.empty
-	 | Evar_defined b -> undefined_evars_of_term evd (EConstr.of_constr b))
+         | Evar_empty -> Evar.Set.empty
+         | Evar_defined b -> undefined_evars_of_term evd (EConstr.of_constr b))
        (undefined_evars_of_named_context evd
-	  (named_context_of_val evi.evar_hyps)))
+          (named_context_of_val evi.evar_hyps)))
 
 (* spiwack: this is a more complete version of
    {!Termops.occur_evar}. The latter does not look recursively into an

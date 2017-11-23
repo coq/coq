@@ -209,7 +209,7 @@ let compute_rhs env sigma bodyi index_of_f =
     match EConstr.kind sigma c with
       | App (j, args) when isRel sigma j && Int.equal (destRel sigma j) index_of_f (* recursive call *) ->
           let i = destRel sigma (Array.last args) in
-	  PMeta (Some (coerce_meta_in i))
+          PMeta (Some (coerce_meta_in i))
       | App (f,args) ->
           PApp (pattern_of_constr env sigma (EConstr.to_constr sigma f), Array.map aux args)
       | Cast (c,_,_) -> aux c
@@ -266,11 +266,11 @@ let compute_ivs f cs gl =
 
               if Option.is_empty !c_lhs && Option.is_empty !v_lhs then i_can't_do_that ();
 
-	      (* The Cases predicate is a lambda; we assume no dependency *)
-	      let p = match EConstr.kind sigma p with
-		| Lambda (_,_,p) -> Termops.pop p
-		| _ -> p
-	      in
+              (* The Cases predicate is a lambda; we assume no dependency *)
+              let p = match EConstr.kind sigma p with
+                | Lambda (_,_,p) -> Termops.pop p
+                | _ -> p
+              in
 
               { normal_lhs_rhs = List.rev !n_lhs_rhs;
                 variable_lhs = !v_lhs;
@@ -406,7 +406,7 @@ let quote_terms env sigma ivs lc =
             begin try
               let s1 = Id.Map.bindings (matches env sigma rhs c) in
               let s2 = List.map (fun (i,c_i) -> (coerce_meta_out i,aux c_i)) s1
-	      in
+              in
               subst_meta s2 lhs
             with PatternMatchingFailure -> auxl tail
             end
@@ -420,21 +420,21 @@ let quote_terms env sigma ivs lc =
                | Some var_lhs ->
                    begin match ivs.constant_lhs with
                      | Some c_lhs when closed_under sigma ivs.constants c ->
-			 subst_meta [1, c] c_lhs
+                         subst_meta [1, c] c_lhs
                      | _ ->
-			 begin
+                         begin
                            try Constrhash.find varhash (EConstr.Unsafe.to_constr c)
                            with Not_found ->
                              let newvar =
                                subst_meta [1, (path_of_int !counter)]
-				 var_lhs in
+                                 var_lhs in
                              begin
                                incr counter;
                                varlist := c :: !varlist;
                                Constrhash.add varhash (EConstr.Unsafe.to_constr c) newvar;
                                newvar
                              end
-			 end
+                         end
                    end
              end
     in

@@ -3,7 +3,7 @@ Class Bar := b : Type.
 
 Instance foo : Foo := _.
 (* 1 subgoals, subgoal 1 (ID 4)
-  
+
   ============================
    Foo *)
 

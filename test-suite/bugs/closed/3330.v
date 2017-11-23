@@ -4,7 +4,7 @@ Require Import TestSuite.admit.
 Set Universe Polymorphism.
 Definition setleq (A : Type@{i}) (B : Type@{j}) := A : Type@{j}.
 
-Inductive foo : Type@{l} := bar : foo . 
+Inductive foo : Type@{l} := bar : foo .
 Section MakeEq.
   Variables (a : foo@{i}) (b : foo@{j}).
 
@@ -18,7 +18,7 @@ Section foo.
 
   Variables x : foo@{i}.
   Variables y : foo@{j}.
-  
+
   Let AleqB := let foo := make_eq x y in (Type * Type)%type.
 
   Definition baz := same x y.
@@ -1072,12 +1072,12 @@ Section Adjunction.
   Variable F : Functor C D.
   Variable G : Functor D C.
 
- Let Adjunction_Type := 
+ Let Adjunction_Type :=
     Eval simpl in (hom_functor D) o (F^op, 1) <~=~> (hom_functor C) o (1, G).
 
   Record AdjunctionHom :=
     {
-      mate_of : 
+      mate_of :
         @NaturalIsomorphism H
                          (Prod.prod (Category.Dual.opposite C) D)
                          (@set_cat H)

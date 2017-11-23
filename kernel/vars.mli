@@ -130,7 +130,7 @@ val subst_var : Id.t -> constr -> constr
 open Univ
 
 val subst_univs_fn_constr : universe_subst_fn -> constr -> constr
-val subst_univs_fn_puniverses : universe_level_subst_fn -> 
+val subst_univs_fn_puniverses : universe_level_subst_fn ->
   'a puniverses -> 'a puniverses
 
 val subst_univs_constr : universe_subst -> constr -> constr

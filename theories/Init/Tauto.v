@@ -60,9 +60,9 @@ Local Ltac tauto_intuit flags t_reduce t_solver :=
   cut X3;
     [ intro; clear id; t_tauto_intuit
     | cut (forall (_: X1), X2);
-	[ exact id
-	| generalize (fun y:X2 => id (fun x:X1 => y)); intro; clear id;
-	  solve [ t_tauto_intuit ]]]
+        [ exact id
+        | generalize (fun y:X2 => id (fun x:X1 => y)); intro; clear id;
+          solve [ t_tauto_intuit ]]]
     | id:forall (_:not ?X1), ?X3|- _ =>
   cut X3;
     [ intro; clear id; t_tauto_intuit

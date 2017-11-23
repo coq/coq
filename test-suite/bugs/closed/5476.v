@@ -1,9 +1,9 @@
 Require Setoid.
 
-Goal forall (P : Prop) (T : Type) (m m' : T) (T0 T1 : Type) (P2 : forall _ : 
-Prop, Prop) 
+Goal forall (P : Prop) (T : Type) (m m' : T) (T0 T1 : Type) (P2 : forall _ :
+Prop, Prop)
             (P0 : Set) (x0 : P0) (P1 : forall (_ : P0) (_ : T), Prop)
-            (P3 : forall (_ : forall (_ : P0) (_ : T0) (_ : Prop), Prop) (_ : 
+            (P3 : forall (_ : forall (_ : P0) (_ : T0) (_ : Prop), Prop) (_ :
 T) (_ : Prop), Prop)
             (o : forall _ : P0, option T1)
             (_ : P3
@@ -12,9 +12,9 @@ T) (_ : Prop), Prop)
                       | Some _ => True
                       | None => False
                       end) m' P) (_ : P2 (P1 x0 m))
-            (_ : forall (f : forall (_ : P0) (_ : T0) (_ : Prop), Prop) (m1 m2 
-: T) 
-                        (k : P0) (e : T0) (_ : P2 (P1 k m1)), iff (P3 f m2 P) 
+            (_ : forall (f : forall (_ : P0) (_ : T0) (_ : Prop), Prop) (m1 m2
+: T)
+                        (k : P0) (e : T0) (_ : P2 (P1 k m1)), iff (P3 f m2 P)
 (f k e (P3 f m1 P))), False.
 Proof.
   intros ???????????? H0 H H1.

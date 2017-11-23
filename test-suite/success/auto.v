@@ -14,7 +14,7 @@ Hint Resolve L.
 
 Goal G unit Q -> F (Q tt).
   intro.
-  eauto. 
+  eauto.
 Qed.
 
 (* Test implicit arguments in "using" clause *)
@@ -42,7 +42,7 @@ Hint Mode C + + : test2.
 
 Goal exists n, C n nat.
 Proof.
-  eexists. Fail progress debug eauto with test2. 
+  eexists. Fail progress debug eauto with test2.
   progress eauto with test.
 Qed.
 
@@ -50,9 +50,9 @@ Qed.
     It is not so for apply/exact hints *)
 
 Class B (A : Type).
-Class I. 
+Class I.
 Instance i : I.
-  
+
 Definition flip {A B C : Type} (f : A -> B -> C) := fun y x => f x y.
 Class D (f : nat -> nat -> nat).
 Definition ftest (x y : nat) := x + y.
@@ -75,8 +75,8 @@ Module Instnopat.
   Local Instance: D ftest.
   Local Hint Resolve flipD | 0 : typeclass_instances.
   (* pattern: D (flip _) *)
-  Fail Timeout 1 Check (_ : D _). (* loops applying flipD *)  
-  
+  Fail Timeout 1 Check (_ : D _). (* loops applying flipD *)
+
 End Instnopat.
 
 Module InstnopatApply.
@@ -93,7 +93,7 @@ Module InstnopatApply.
     eauto with typeclass_instances.
   Qed.
 End InstnopatApply.
-  
+
 Module InstPat.
   Hint Extern 3 (B nat) => split : typeclass_instances.
   (* map_eauto -> Extern hint *)

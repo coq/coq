@@ -38,8 +38,8 @@ let define_and_solve_constraints evk c env evd =
   match
     List.fold_left
       (fun p (pbty,env,t1,t2) -> match p with
-	| Success evd -> Evarconv.evar_conv_x full_transparent_state env evd pbty (EConstr.of_constr t1) (EConstr.of_constr t2)
-	| UnifFailure _ as x -> x) (Success evd)
+        | Success evd -> Evarconv.evar_conv_x full_transparent_state env evd pbty (EConstr.of_constr t1) (EConstr.of_constr t2)
+        | UnifFailure _ as x -> x) (Success evd)
       pbs
   with
     | Success evd -> evd
@@ -60,7 +60,7 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
       env sigma ltac_var (Pretyping.OfType (EConstr.of_constr evi.evar_concl)) rawc
     with e when CErrors.noncritical e ->
       let loc = Glob_ops.loc_of_glob_constr rawc in
-      user_err ?loc 
+      user_err ?loc
                 (str "Instance is not well-typed in the environment of " ++
                  Termops.pr_existential_key sigma evk ++ str ".")
   in

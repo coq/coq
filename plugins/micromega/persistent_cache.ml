@@ -19,12 +19,12 @@ module type PHashtable =
 
     val create : int -> string -> 'a t
     (** [create i f] creates an empty persistent table
-	with initial size i associated with file [f] *)
+        with initial size i associated with file [f] *)
 
 
     val open_in : string -> 'a t
     (** [open_in f] rebuilds a table from the records stored in file [f].
-	As marshaling is not type-safe, it migth segault.
+        As marshaling is not type-safe, it migth segault.
     *)
 
     val find : 'a t -> key -> 'a
@@ -32,17 +32,17 @@ module type PHashtable =
 
     val add  : 'a t -> key -> 'a -> unit
     (** [add tbl key elem] adds the binding [key] [elem] to the table [tbl].
-	(and writes the binding to the file associated with [tbl].)
-	If [key] is already bound, raises KeyAlreadyBound *)
+        (and writes the binding to the file associated with [tbl].)
+        If [key] is already bound, raises KeyAlreadyBound *)
 
     val close : 'a t -> unit
     (** [close tbl] is closing the table.
-	Once closed, a table cannot be used.
-	i.e, find,add will raise UnboundTable *)
+        Once closed, a table cannot be used.
+        i.e, find,add will raise UnboundTable *)
 
     val memo : string -> (key -> 'a) -> (key -> 'a)
       (** [memo cache f] returns a memo function for [f] using file [cache] as persistent table.
-	  Note that the cache will only be loaded when the function is used for the first time *)
+          Note that the cache will only be loaded when the function is used for the first time *)
 
   end
 
@@ -63,9 +63,9 @@ struct
 
   type 'a t =
       {
-	outch : out_channel ;
-	mutable status : mode ;
-	htbl : 'a Table.t
+        outch : out_channel ;
+        mutable status : mode ;
+        htbl : 'a Table.t
       }
 
 
@@ -94,49 +94,49 @@ let read_key_elem inch =
     | End_of_file -> None
     | e when CErrors.noncritical e -> raise InvalidTableFormat
 
-(** 
+(**
     We used to only lock/unlock regions.
-    Is-it more robust/portable to lock/unlock a fixed region e.g. [0;1]?  
+    Is-it more robust/portable to lock/unlock a fixed region e.g. [0;1]?
     In case of locking failure, the cache is not used.
 **)
 
 type lock_kind = Read | Write
 
-let lock kd fd = 
- let pos = lseek fd 0 SEEK_CUR in 
- let success   = 
-  try 
+let lock kd fd =
+ let pos = lseek fd 0 SEEK_CUR in
+ let success   =
+  try
    ignore (lseek fd 0 SEEK_SET);
-   let lk =  match kd with 
-    | Read  -> F_RLOCK 
-    | Write -> F_LOCK in  
+   let lk =  match kd with
+    | Read  -> F_RLOCK
+    | Write -> F_LOCK in
    lockf fd lk 1; true
   with Unix.Unix_error(_,_,_) -> false in
- ignore (lseek fd pos SEEK_SET) ; 
+ ignore (lseek fd pos SEEK_SET) ;
  success
 
-let unlock fd = 
+let unlock fd =
   let pos = lseek fd 0 SEEK_CUR in
-  try 
-   ignore (lseek fd 0 SEEK_SET) ; 
+  try
+   ignore (lseek fd 0 SEEK_SET) ;
    lockf fd F_ULOCK 1
-  with 
-   Unix.Unix_error(_,_,_) -> ()    
-    (* Here, this is really bad news -- 
+  with
+   Unix.Unix_error(_,_,_) -> ()
+    (* Here, this is really bad news --
        there is a pending lock which could cause a deadlock.
        Should it be an anomaly or produce a warning ?
     *);
-  ignore (lseek fd pos SEEK_SET) 
+  ignore (lseek fd pos SEEK_SET)
 
 
 (* We make the assumption that an acquired lock can always be released *)
 
-let do_under_lock kd fd f = 
+let do_under_lock kd fd f =
  if lock kd fd
  then
   finally f (fun () -> unlock fd)
  else f ()
-  
+
 
 
 let open_in f =
@@ -149,12 +149,12 @@ let open_in f =
     match read_key_elem inch with
       | None -> ()
       | Some (key,elem) ->
-	  Table.add htbl key elem ;
-	  xload () in
+          Table.add htbl key elem ;
+          xload () in
     try
       (* Locking of the (whole) file while reading *)
-      do_under_lock Read finch xload ; 
-      close_in_noerr inch ; 
+      do_under_lock Read finch xload ;
+      close_in_noerr inch ;
       {
        outch = out_channel_of_descr (openfile f [O_WRONLY;O_APPEND;O_CREAT] 0o666) ;
        status = Open ;
@@ -167,11 +167,11 @@ let open_in f =
       let flags = [O_WRONLY; O_TRUNC;O_CREAT] in
       let out =  (openfile f flags 0o666) in
       let outch = out_channel_of_descr out in
-      do_under_lock Write out 
-       (fun () -> 
-	Table.iter 
-	  (fun k e -> Marshal.to_channel outch (k,e) [Marshal.No_sharing]) htbl;
-        flush outch) ; 
+      do_under_lock Write out
+       (fun () ->
+        Table.iter
+          (fun k e -> Marshal.to_channel outch (k,e) [Marshal.No_sharing]) htbl;
+        flush outch) ;
       { outch = outch ;
         status = Open ;
         htbl   = htbl
@@ -184,9 +184,9 @@ let close t =
     match t.status with
     | Closed -> () (* don't do it twice *)
     | Open  ->
-	close_out outch ;
-	Table.clear tbl ;
-	t.status <- Closed
+        close_out outch ;
+        Table.clear tbl ;
+        t.status <- Closed
 
 let add t k e =
   let {outch = outch ; status = status ; htbl = tbl} = t in
@@ -196,8 +196,8 @@ let add t k e =
       let fd = descr_of_out_channel outch in
       begin
        Table.add tbl k e ;
-       do_under_lock Write fd 
-        (fun _ -> 
+       do_under_lock Write fd
+        (fun _ ->
          Marshal.to_channel outch (k,e) [Marshal.No_sharing] ;
          flush outch
         )
@@ -209,7 +209,7 @@ let find t k =
     then raise UnboundTable
     else
       let res = Table.find tbl k in
-	res
+        res
 
 let memo cache f =
   let tbl = lazy (try Some (open_in cache) with _ -> None) in
@@ -217,13 +217,13 @@ let memo cache f =
   match Lazy.force tbl with
   | None -> f x
   | Some tbl ->
-	try
-	  find tbl x
-	with
-	    Not_found ->
-	      let res = f x in
-		add tbl x res ;
-		res
+        try
+          find tbl x
+        with
+            Not_found ->
+              let res = f x in
+                add tbl x res ;
+                res
 
 end
 

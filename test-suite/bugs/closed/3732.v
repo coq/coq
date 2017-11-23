@@ -91,7 +91,7 @@ Goal    forall (G : list Type) (A : Type) (p : propX pc state (@cons Type A G))
               (fun a : forall _ : A, PropX pc state => P (@SPush G A s a)).
   intros ? ? ? ? H ? H'.
   apply simplify_fwd_ExistsX in H.
-  firstorder. 
+  firstorder.
 Qed.
  (* Toplevel input, characters 15-19:
 Error: Illegal application:

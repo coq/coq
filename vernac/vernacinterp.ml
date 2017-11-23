@@ -75,5 +75,5 @@ let call ?locality ?loc (opn,converted_args) =
     | reraise ->
         let reraise = CErrors.push reraise in
         if !Flags.debug then
-	  Feedback.msg_debug (str"Vernac Interpreter " ++ str !phase);
+          Feedback.msg_debug (str"Vernac Interpreter " ++ str !phase);
         iraise reraise

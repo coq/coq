@@ -168,7 +168,7 @@ Ltac rsimpl := simpl.
   intros x y; repeat rewrite same_genZ; generalize x y;clear x y.
   induction x;destruct y;simpl;norm.
   apply ARgen_phiPOS_add.
-  apply gen_phiZ1_add_pos_neg. 
+  apply gen_phiZ1_add_pos_neg.
    rewrite gen_phiZ1_add_pos_neg. rewrite ring_add_comm.
 reflexivity.
  rewrite ARgen_phiPOS_add. rewrite ring_opp_add. reflexivity.

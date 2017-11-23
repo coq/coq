@@ -41,12 +41,12 @@ Section Defs.
   Class Reflexive (R : crelation A) :=
     reflexivity : forall x : A, R x x.
 
-  Definition complement (R : crelation A) : crelation A := 
+  Definition complement (R : crelation A) : crelation A :=
     fun x y => R x y -> False.
 
   (** Opaque for proof-search. *)
   Typeclasses Opaque complement iffT.
-  
+
   (** These are convertible. *)
   Lemma complement_inverse R : complement (flip R) = flip (complement R).
   Proof. reflexivity. Qed.
@@ -56,15 +56,15 @@ Section Defs.
 
   Class Symmetric (R : crelation A) :=
     symmetry : forall {x y}, R x y -> R y x.
-  
+
   Class Asymmetric (R : crelation A) :=
     asymmetry : forall {x y}, R x y -> (complement R y x : Type).
-  
+
   Class Transitive (R : crelation A) :=
     transitivity : forall {x y z}, R x y -> R y z -> R x z.
 
   (** Various combinations of reflexivity, symmetry and transitivity. *)
-  
+
   (** A [PreOrder] is both Reflexive and Transitive. *)
 
   Class PreOrder (R : crelation A)  := {
@@ -82,7 +82,7 @@ Section Defs.
   Proof. firstorder. Qed.
 
   (** A partial equivalence crelation is Symmetric and Transitive. *)
-  
+
   Class PER (R : crelation A)  := {
     PER_Symmetric :> Symmetric R | 3 ;
     PER_Transitive :> Transitive R | 3 }.
@@ -95,38 +95,38 @@ Section Defs.
     Equivalence_Transitive :> Transitive R }.
 
   (** An Equivalence is a PER plus reflexivity. *)
-  
+
   Global Instance Equivalence_PER {R} `(Equivalence R) : PER R | 10 :=
     { PER_Symmetric := Equivalence_Symmetric ;
       PER_Transitive := Equivalence_Transitive }.
 
   (** We can now define antisymmetry w.r.t. an equivalence crelation on the carrier. *)
-  
+
   Class Antisymmetric eqA `{equ : Equivalence eqA} (R : crelation A) :=
     antisymmetry : forall {x y}, R x y -> R y x -> eqA x y.
 
   Class subrelation (R R' : crelation A) :=
     is_subrelation : forall {x y}, R x y -> R' x y.
-  
+
   (** Any symmetric crelation is equal to its inverse. *)
-  
+
   Lemma subrelation_symmetric R `(Symmetric R) : subrelation (flip R) R.
   Proof. hnf. intros x y H'. red in H'. apply symmetry. assumption. Qed.
 
   Section flip.
-  
+
     Lemma flip_Reflexive `{Reflexive R} : Reflexive (flip R).
     Proof. tauto. Qed.
-    
+
     Program Definition flip_Irreflexive `(Irreflexive R) : Irreflexive (flip R) :=
       irreflexivity (R:=R).
-    
+
     Program Definition flip_Symmetric `(Symmetric R) : Symmetric (flip R) :=
       fun x y H => symmetry (R:=R) H.
-    
+
     Program Definition flip_Asymmetric `(Asymmetric R) : Asymmetric (flip R) :=
       fun x y H H' => asymmetry (R:=R) H H'.
-    
+
     Program Definition flip_Transitive `(Transitive R) : Transitive (flip R) :=
       fun x y z H H' => transitivity (R:=R) H' H.
 
@@ -173,7 +173,7 @@ Section Defs.
 
   (** Any [Equivalence] declared in the context is automatically considered
    a rewrite crelation. *)
-    
+
   Global Instance equivalence_rewrite_crelation `(Equivalence eqA) : RewriteRelation eqA.
 
   (** Leibniz equality. *)
@@ -181,14 +181,14 @@ Section Defs.
     Global Instance eq_Reflexive : Reflexive (@eq A) := @eq_refl A.
     Global Instance eq_Symmetric : Symmetric (@eq A) := @eq_sym A.
     Global Instance eq_Transitive : Transitive (@eq A) := @eq_trans A.
-    
+
     (** Leibinz equality [eq] is an equivalence crelation.
         The instance has low priority as it is always applicable
         if only the type is constrained. *)
-    
+
     Global Program Instance eq_equivalence : Equivalence (@eq A) | 10.
   End Leibniz.
-  
+
 End Defs.
 
 (** Default rewrite crelations handled by [setoid_rewrite]. *)
@@ -210,7 +210,7 @@ Hint Extern 3 (Transitive (flip _)) => class_apply flip_Transitive : typeclass_i
 Hint Extern 3 (StrictOrder (flip _)) => class_apply flip_StrictOrder : typeclass_instances.
 Hint Extern 3 (PreOrder (flip _)) => class_apply flip_PreOrder : typeclass_instances.
 
-Hint Extern 4 (subrelation (flip _) _) => 
+Hint Extern 4 (subrelation (flip _) _) =>
   class_apply @subrelation_symmetric : typeclass_instances.
 
 Hint Resolve irreflexivity : ord.
@@ -270,14 +270,14 @@ Instance iff_Transitive : Transitive iff := iff_trans.
 
 (** Logical equivalence [iff] is an equivalence crelation. *)
 
-Program Instance iff_equivalence : Equivalence iff. 
+Program Instance iff_equivalence : Equivalence iff.
 Program Instance arrow_Reflexive : Reflexive arrow.
 Program Instance arrow_Transitive : Transitive arrow.
 
-Instance iffT_Reflexive : Reflexive iffT. 
+Instance iffT_Reflexive : Reflexive iffT.
 Proof. firstorder. Defined.
-Instance iffT_Symmetric : Symmetric iffT. 
-Proof. firstorder. Defined. 
+Instance iffT_Symmetric : Symmetric iffT.
+Proof. firstorder. Defined.
 Instance iffT_Transitive : Transitive iffT.
 Proof. firstorder. Defined.
 
@@ -297,22 +297,22 @@ Section Binary.
     fun R R' => forall x y, iffT (R x y) (R' x y).
 
   Global Instance: RewriteRelation relation_equivalence.
-  
+
   Definition relation_conjunction (R : crelation A) (R' : crelation A) : crelation A :=
     fun x y => prod (R x y) (R' x y).
 
   Definition relation_disjunction (R : crelation A) (R' : crelation A) : crelation A :=
     fun x y => sum (R x y) (R' x y).
-  
+
   (** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
 
   Global Instance relation_equivalence_equivalence :
     Equivalence relation_equivalence.
-  Proof. split; red; unfold relation_equivalence, iffT. firstorder. 
-    firstorder. 
+  Proof. split; red; unfold relation_equivalence, iffT. firstorder.
+    firstorder.
     intros. specialize (X x0 y0). specialize (X0 x0 y0). firstorder.
   Qed.
-    
+
   Global Instance relation_implication_preorder : PreOrder (@subrelation A).
   Proof. firstorder. Qed.
 
@@ -323,7 +323,7 @@ Section Binary.
 
   Class PartialOrder eqA `{equ : Equivalence A eqA} R `{preo : PreOrder A R} :=
     partial_order_equivalence : relation_equivalence eqA (relation_conjunction R (flip R)).
-  
+
   (** The equivalence proof is sufficient for proving that [R] must be a
    morphism for equivalence (see Morphisms).  It is also sufficient to
    show that [R] is antisymmetric w.r.t. [eqA] *)

@@ -93,7 +93,7 @@ Here we show how to deal with type constructors, i.e. how to make the
 following example work:
 
 \begin{coq_example}
-Fail Check forall (e : EQ.type) (a b : EQ.obj e), (a,b) == (a,b). 
+Fail Check forall (e : EQ.type) (a b : EQ.obj e), (a,b) == (a,b).
 \end{coq_example}
 
 The error message is telling that Coq has no idea on how to compare
@@ -358,9 +358,9 @@ for \texttt{T} and hence can be inferred by Coq.
 \texttt{Pack} is a notation, hence it is not type checked at the time of its
 declaration.  It will be type checked when it is used, an in that case
 \texttt{T} is going to be a concrete type.  The odd arguments \texttt{\_} and \texttt{id} we
-pass to the 
+pass to the
 packager represent respectively the classes to be inferred (like \texttt{e}, \texttt{o}, etc) and a token (\texttt{id}) to force their inference.  Again, for all the details the
-reader can refer to~\cite{CSwcu}. 
+reader can refer to~\cite{CSwcu}.
 
 The declaration of canonical instances can now be way more compact:
 
@@ -377,7 +377,7 @@ the message).
 Fail Canonical Structure err := Eval hnf in Pack bool nat_LEQmx.
 \end{coq_example}
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:

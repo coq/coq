@@ -1,4 +1,4 @@
-(* Testing 8.5 regression with type classes not solving evars 
+(* Testing 8.5 regression with type classes not solving evars
    redefined while trying to solve them with the type class mechanism *)
 
 Class A := {}.

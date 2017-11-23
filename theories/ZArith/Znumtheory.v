@@ -301,9 +301,9 @@ Section extended_euclid_algorithm.
     forall v3:Z,
       0 <= v3 ->
       forall u1 u2 u3 v1 v2:Z,
-	u1 * a + u2 * b = u3 ->
-	v1 * a + v2 * b = v3 ->
-	(forall d:Z, Zis_gcd u3 v3 d -> Zis_gcd a b d) -> Euclid.
+        u1 * a + u2 * b = u3 ->
+        v1 * a + v2 * b = v3 ->
+        (forall d:Z, Zis_gcd u3 v3 d -> Zis_gcd a b d) -> Euclid.
   Proof.
     intros v3 Hv3; generalize Hv3; pattern v3.
     apply Zlt_0_rec.
@@ -340,12 +340,12 @@ Section extended_euclid_algorithm.
     case (Z_le_gt_dec 0 b); intro.
     intros;
       apply euclid_rec with
-	(u1 := 1) (u2 := 0) (u3 := a) (v1 := 0) (v2 := 1) (v3 := b);
-	auto with zarith; ring.
+        (u1 := 1) (u2 := 0) (u3 := a) (v1 := 0) (v2 := 1) (v3 := b);
+        auto with zarith; ring.
     intros;
       apply euclid_rec with
-	(u1 := 1) (u2 := 0) (u3 := a) (v1 := 0) (v2 := -1) (v3 := - b);
-	auto with zarith; try ring.
+        (u1 := 1) (u2 := 0) (u3 := a) (v1 := 0) (v2 := -1) (v3 := - b);
+        auto with zarith; try ring.
   Qed.
 
 End extended_euclid_algorithm.

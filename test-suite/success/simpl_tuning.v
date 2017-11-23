@@ -4,10 +4,10 @@ Arguments minus !n / m.
 Lemma foo x y : S (S x) - S y = 0.
 simpl.
 match goal with |- (match y with O => S x | S _ => _ end = 0) => idtac end.
-Abort. 
+Abort.
 
 (* we avoid exposing a match *)
-Arguments minus n m : simpl nomatch. 
+Arguments minus n m : simpl nomatch.
 
 Lemma foo x : minus 0 x = 0.
 simpl.
@@ -25,7 +25,7 @@ match goal with |-(S x - (match y with O => _ | S _ => _ end) = 0) => idtac end.
 Abort.
 
 (* we unfold as soon as we have 1 args, but we avoid exposing a match *)
-Arguments minus n / m : simpl nomatch. 
+Arguments minus n / m : simpl nomatch.
 
 Lemma foo : minus 0 = fun x => 0.
 simpl.
@@ -35,10 +35,10 @@ Abort.
    as "strong (whd_simpl_state)" and after unfolding minus you have
    (fun m => match 0 => 0 | S n => ...) that is already in whd and exposes
    a match, that of course "strong" would reduce away but at that stage
-   we don't know, and reducing by hand under the lambda is against whd *) 
+   we don't know, and reducing by hand under the lambda is against whd *)
 
 (* extra tuning for the usual heuristic *)
-Arguments minus !n / m : simpl nomatch. 
+Arguments minus !n / m : simpl nomatch.
 
 Lemma foo x y : S (S x) - S y = 0.
 simpl.
@@ -76,7 +76,7 @@ simpl.
 match goal with |-(S x - (match y with O => _ | S _ => _ end) = 0) => idtac end.
 Abort.
 
-Definition pf (D1 C1 : Type) (f : D1 -> C1) (D2 C2 : Type) (g : D2 -> C2) := 
+Definition pf (D1 C1 : Type) (f : D1 -> C1) (D2 C2 : Type) (g : D2 -> C2) :=
   fun x => (f (fst x), g (snd x)).
 
 Delimit Scope foo_scope with F.
@@ -98,12 +98,12 @@ Notation "f \o g" := (fcomp f g) (at level 50).
 Lemma foo (f g h : nat -> nat) x : pf (f \o g) h x = pf f h (g (fst x), snd x).
 simpl.
 match goal with |- (pf (f \o g) h x = _) => idtac end.
-case x; intros x1 x2. 
+case x; intros x1 x2.
 simpl.
 match goal with |- (pf (f \o g) h _ = pf f h _) => idtac end.
 unfold pf; simpl.
 match goal with |- (f (g x1), h x2) = (f (g x1), h x2) => idtac end.
-Abort. 
+Abort.
 
 Definition volatile := fun x : nat => x.
 Arguments volatile / _.

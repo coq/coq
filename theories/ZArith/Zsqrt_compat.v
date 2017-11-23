@@ -31,13 +31,13 @@ Ltac compute_POS :=
   match goal with
     |  |- context [(Zpos (xI ?X1))] =>
       match constr:(X1) with
-	| context [1%positive] => fail 1
-	| _ => rewrite (Pos2Z.inj_xI X1)
+        | context [1%positive] => fail 1
+        | _ => rewrite (Pos2Z.inj_xI X1)
       end
     |  |- context [(Zpos (xO ?X1))] =>
       match constr:(X1) with
-	| context [1%positive] => fail 1
-	| _ => rewrite (Pos2Z.inj_xO X1)
+        | context [1%positive] => fail 1
+        | _ => rewrite (Pos2Z.inj_xO X1)
       end
   end.
 
@@ -48,46 +48,46 @@ Definition sqrtrempos : forall p:positive, sqrt_data (Zpos p).
   refine
     (fix sqrtrempos (p:positive) : sqrt_data (Zpos p) :=
       match p return sqrt_data (Zpos p) with
-	| xH => c_sqrt 1 1 0 _ _
-	| xO xH => c_sqrt 2 1 1 _ _
-	| xI xH => c_sqrt 3 1 2 _ _
-	| xO (xO p') =>
+        | xH => c_sqrt 1 1 0 _ _
+        | xO xH => c_sqrt 2 1 1 _ _
+        | xI xH => c_sqrt 3 1 2 _ _
+        | xO (xO p') =>
           match sqrtrempos p' with
             | c_sqrt _ s' r' Heq Hint =>
               match Z_le_gt_dec (4 * s' + 1) (4 * r') with
-		| left Hle =>
+                | left Hle =>
                   c_sqrt (Zpos (xO (xO p'))) (2 * s' + 1)
                   (4 * r' - (4 * s' + 1)) _ _
-		| right Hgt => c_sqrt (Zpos (xO (xO p'))) (2 * s') (4 * r') _ _
+                | right Hgt => c_sqrt (Zpos (xO (xO p'))) (2 * s') (4 * r') _ _
               end
           end
-	| xO (xI p') =>
+        | xO (xI p') =>
           match sqrtrempos p' with
             | c_sqrt _ s' r' Heq Hint =>
               match Z_le_gt_dec (4 * s' + 1) (4 * r' + 2) with
-		| left Hle =>
+                | left Hle =>
                   c_sqrt (Zpos (xO (xI p'))) (2 * s' + 1)
                   (4 * r' + 2 - (4 * s' + 1)) _ _
-		| right Hgt =>
+                | right Hgt =>
                   c_sqrt (Zpos (xO (xI p'))) (2 * s') (4 * r' + 2) _ _
               end
           end
-	| xI (xO p') =>
+        | xI (xO p') =>
           match sqrtrempos p' with
             | c_sqrt _ s' r' Heq Hint =>
               match Z_le_gt_dec (4 * s' + 1) (4 * r' + 1) with
-		| left Hle =>
+                | left Hle =>
                   c_sqrt (Zpos (xI (xO p'))) (2 * s' + 1)
                   (4 * r' + 1 - (4 * s' + 1)) _ _
-		| right Hgt =>
+                | right Hgt =>
                   c_sqrt (Zpos (xI (xO p'))) (2 * s') (4 * r' + 1) _ _
               end
           end
-	| xI (xI p') =>
+        | xI (xI p') =>
           match sqrtrempos p' with
             | c_sqrt _ s' r' Heq Hint =>
               match Z_le_gt_dec (4 * s' + 1) (4 * r' + 3) with
-		| left Hle =>
+                | left Hle =>
                   c_sqrt (Zpos (xI (xI p'))) (2 * s' + 1)
                   (4 * r' + 3 - (4 * s' + 1)) _ _
             | right Hgt =>
@@ -106,16 +106,16 @@ Definition Zsqrt :
   refine
     (fun x =>
       match
-	x
-	return
+        x
+        return
         0 <= x ->
         {s : Z &  {r : Z | x = s * s + r /\ s * s <= x < (s + 1) * (s + 1)}}
-	with
-	| Zpos p =>
+        with
+        | Zpos p =>
           fun h =>
             match sqrtrempos p with
               | c_sqrt _ s r Heq Hint =>
-		existT
+                existT
                 (fun s:Z =>
                   {r : Z |
                     Zpos p = s * s + r /\ s * s <= Zpos p < (s + 1) * (s + 1)})
@@ -125,14 +125,14 @@ Definition Zsqrt :
                     Zpos p = s * s + r /\
                     s * s <= Zpos p < (s + 1) * (s + 1)) r _)
             end
-	| Zneg p =>
+        | Zneg p =>
           fun h =>
             False_rec
             {s : Z &
               {r : Z |
-		Zneg p = s * s + r /\ s * s <= Zneg p < (s + 1) * (s + 1)}}
+                Zneg p = s * s + r /\ s * s <= Zneg p < (s + 1) * (s + 1)}}
             (h (eq_refl Datatypes.Gt))
-	| Z0 =>
+        | Z0 =>
           fun h =>
             existT
             (fun s:Z =>
@@ -150,7 +150,7 @@ Definition Zsqrt_plain (x:Z) : Z :=
   match x with
     | Zpos p =>
       match Zsqrt (Zpos p) (Pos2Z.is_nonneg p) with
-	| existT _ s _ => s
+        | existT _ s _ => s
       end
     | Zneg p => 0
     | Z0 => 0

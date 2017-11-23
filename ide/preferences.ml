@@ -321,7 +321,7 @@ let modifier_for_navigation =
 
 let modifier_for_templates =
   new preference ~name:["modifier_for_templates"] ~init:"<Control><Shift>" ~repr:Repr.(string)
- 
+
 let modifier_for_tactics =
   new preference ~name:["modifier_for_tactics"] ~init:"<Control><Alt>" ~repr:Repr.(string)
 
@@ -669,13 +669,13 @@ let configure ?(apply=(fun () -> ())) () =
       "Goal (∃n : nat, n ≤ 0)∧(∀x,y,z, x∈y⋃z↔x∈y∨x∈z).";
     box#pack ~expand:true w#coerce;
     ignore (w#misc#connect#realize
-	      ~callback:(fun () -> w#set_font_name text_font#get));
+              ~callback:(fun () -> w#set_font_name text_font#get));
     custom
       ~label:"Fonts for text"
       box
       (fun () ->
-	 let fd =  w#font_name in
-	 text_font#set fd)
+         let fd =  w#font_name in
+         text_font#set fd)
       true
   in
 
@@ -782,14 +782,14 @@ let configure ?(apply=(fun () -> ())) () =
   let show_toolbar =
     bool
       ~f:(fun s ->
-	    current.show_toolbar <- s;
-	    !show_toolbar s)
+            current.show_toolbar <- s;
+            !show_toolbar s)
       "Show toolbar" current.show_toolbar
   in
   let window_height =
     string
     ~f:(fun s -> current.window_height <- (try int_of_string s with _ -> 600);
-	  !resize_window ();
+          !resize_window ();
        )
       "Window height"
       (string_of_int current.window_height)
@@ -797,7 +797,7 @@ let configure ?(apply=(fun () -> ())) () =
   let window_width =
     string
     ~f:(fun s -> current.window_width <-
-	  (try int_of_string s with _ -> 800))
+          (try int_of_string s with _ -> 800))
       "Window width"
       (string_of_int current.window_width)
   in
@@ -809,7 +809,7 @@ let configure ?(apply=(fun () -> ())) () =
   let global_auto_revert_delay =
     string
     ~f:(fun s -> global_auto_revert_delay#set
-	  (try int_of_string s with _ -> 10000))
+          (try int_of_string s with _ -> 10000))
       "Global auto revert delay (ms)"
       (string_of_int global_auto_revert_delay#get)
   in
@@ -818,7 +818,7 @@ let configure ?(apply=(fun () -> ())) () =
   let auto_save_delay =
     string
     ~f:(fun s -> auto_save_delay#set
-	  (try int_of_string s with _ -> 10000))
+          (try int_of_string s with _ -> 10000))
       "Auto save delay (ms)"
       (string_of_int auto_save_delay#get)
   in
@@ -837,8 +837,8 @@ let configure ?(apply=(fun () -> ())) () =
       ~f:(fun s -> encoding#set (inputenc_of_string s))
       ~new_allowed: true
       ("UTF-8"::"LOCALE":: match encoding#get with
-	|Emanual s -> [s]
-	|_ -> []
+        |Emanual s -> [s]
+        |_ -> []
       )
       (string_of_inputenc encoding#get)
   in
@@ -998,31 +998,31 @@ let configure ?(apply=(fun () -> ())) () =
    (shame on Benjamin) *)
   let cmds =
     [Section("Fonts", Some `SELECT_FONT,
-	     [config_font]);
+             [config_font]);
      Section("Colors", Some `SELECT_COLOR,
              [config_color; source_language; source_style]);
      Section("Tags", Some `SELECT_COLOR,
              [config_tags]);
      Section("Editor", Some `EDIT, [config_editor]);
      Section("Files", Some `DIRECTORY,
-	     [global_auto_revert;global_auto_revert_delay;
-	      auto_save; auto_save_delay; (* auto_save_name*)
-	      encodings; line_ending;
-	     ]);
+             [global_auto_revert;global_auto_revert_delay;
+              auto_save; auto_save_delay; (* auto_save_name*)
+              encodings; line_ending;
+             ]);
      Section("Project", Some (`STOCK "gtk-page-setup"),
-	     [project_file_name;read_project;
-	     ]);
+             [project_file_name;read_project;
+             ]);
 (*
      Section("Appearance",
-	     config_appearance);
+             config_appearance);
 *)
      Section("Externals", None,
-	     [cmd_coqtop;cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc;
-	      cmd_print;cmd_editor;cmd_browse;doc_url;library_url]);
+             [cmd_coqtop;cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc;
+              cmd_print;cmd_editor;cmd_browse;doc_url;library_url]);
      Section("Tactics Wizard", None,
-	     [automatic_tactics]);
+             [automatic_tactics]);
      Section("Shortcuts", Some `PREFERENCES,
-	     [modifiers_valid; modifier_for_tactics;
+             [modifiers_valid; modifier_for_tactics;
         modifier_for_templates; modifier_for_display; modifier_for_navigation;
         modifier_for_queries; user_queries]);
      Section("Misc", Some `ADD,

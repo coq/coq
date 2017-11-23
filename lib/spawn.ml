@@ -204,8 +204,8 @@ let stats { oob_req; oob_resp; alive } =
   input_value oob_resp
 
 let rec wait p =
-  (* On windows kill is not reliable, so wait may never return. *) 
-  if Sys.os_type = "Unix" then 
+  (* On windows kill is not reliable, so wait may never return. *)
+  if Sys.os_type = "Unix" then
     try snd (Unix.waitpid [] p.pid)
     with
     | Unix.Unix_error (Unix.EINTR, _, _) -> wait p
@@ -255,8 +255,8 @@ let stats { oob_req; oob_resp; alive } =
   let RespStats g = input_value oob_resp in g
 
 let rec wait p =
-  (* On windows kill is not reliable, so wait may never return. *) 
-  if Sys.os_type = "Unix" then 
+  (* On windows kill is not reliable, so wait may never return. *)
+  if Sys.os_type = "Unix" then
     try snd (Unix.waitpid [] p.pid)
     with
     | Unix.Unix_error (Unix.EINTR, _, _) -> wait p

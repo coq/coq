@@ -23,7 +23,7 @@ Universes
 
   Universe instances (an array of levels) gets substituted when
 unfolding definitions, are used to typecheck and are unified according
-to the rules in the ITP'14 paper on universe polymorphism in Coq.  
+to the rules in the ITP'14 paper on universe polymorphism in Coq.
 
 type Level.t = Set | Prop | Level of int * dirpath (* hashconsed *)
 type Instance.t = Level.t array
@@ -31,14 +31,14 @@ type Universe.t = Level.t list (* hashconsed *)
 
 The universe module defines modules and abstract types for levels,
 universes etc.. Structures are hashconsed (with a hack to take care
-of the fact that deserialization breaks sharing). 
+of the fact that deserialization breaks sharing).
 
-  Definitions (constants, inductives) now carry around not only 
+  Definitions (constants, inductives) now carry around not only
 constraints but also the universes they introduced (a Univ.UContext.t).
-There is another kind of contexts [Univ.ContextSet.t], the latter has 
+There is another kind of contexts [Univ.ContextSet.t], the latter has
 a set of universes, while the former has serialized the levels in an
-array, and is used for polymorphic objects. Both have "reified" 
-constraints depending on global and local universes. 
+array, and is used for polymorphic objects. Both have "reified"
+constraints depending on global and local universes.
 
   A polymorphic definition is abstract w.r.t. the variables in this
 context, while a monomorphic one (or template polymorphic) just adds the
@@ -51,7 +51,7 @@ and [infer_conv]: the former just checks the definition in the current env
 (in which we usually push_universe_context of the associated context),
 and [infer_conv] which produces constraints that were not implied by the
 ambient constraints. Ideally, that one could be put out of the kernel,
-but currently module subtyping needs it. 
+but currently module subtyping needs it.
 
  Inference of universes is now done during refinement, and the evar_map
 carries the incrementally built universe context, starting from the
@@ -75,7 +75,7 @@ If they constr is polymorphic, it will add the necessary constraints to
 the evar_map. Even if a constr is not polymorphic, we have to take care
 of keeping track of its universes. Typically, using:
 
-  mkApp (coq_id_function, [| A; a |]) 
+  mkApp (coq_id_function, [| A; a |])
 
 and putting it in a proof term is not enough now. One has to somehow
 show that A's type is in cumululativity relation with id's type
@@ -92,11 +92,11 @@ Other than that, unification (w_unify and evarconv) now take account of universe
 produce only well-typed evar_maps.
 
 Some syntactic comparisons like the one used in [change] have to be
-adapted to allow identification up-to-universes (when dealing with 
-polymorphic references), [make_eq_univs_test] is there to help. 
+adapted to allow identification up-to-universes (when dealing with
+polymorphic references), [make_eq_univs_test] is there to help.
 In constr, there are actually many new comparison functions to deal with
 that:
- 
+
 (** [equal a b] is true if [a] equals [b] modulo alpha, casts,
    and application grouping *)
 val equal : constr -> constr -> bool
@@ -105,7 +105,7 @@ val equal : constr -> constr -> bool
    application grouping and the universe equalities in [u]. *)
 val eq_constr_univs : constr Univ.check_function
 
-(** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo 
+(** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo
     alpha, casts, application grouping and the universe inequalities in [u]. *)
 val leq_constr_univs : constr Univ.check_function
 
@@ -122,33 +122,33 @@ val leq_constr_universes : constr -> constr -> bool Univ.universe_constrained
 val eq_constr_nounivs : constr -> constr -> bool
 
 The [_univs] versions are doing checking of universe constraints
-according to a graph, while the [_universes] are producing (non-atomic) 
+according to a graph, while the [_universes] are producing (non-atomic)
 universe constraints. The non-atomic universe constraints include the
 [ULub] constructor: when comparing [f (* u1 u2 *) c] and [f (* u1' u2'
 *) c] we add ULub constraints on [u1, u1'] and [u2, u2']. These are
 treated specially: as unfolding [f] might not result in these
 unifications, we need to keep track of the fact that failure to satisfy
 them does not mean that the term are actually equal. This is used in
-unification but probably not necessary to the average programmer. 
+unification but probably not necessary to the average programmer.
 
 Another issue for ML programmers is that tables of constrs now usually
 need to take a [constr Univ.in_universe_context_set] instead, and
-properly refresh the universes context when using the constr, e.g. using 
-Clenv.refresh_undefined_univs clenv or: 
+properly refresh the universes context when using the constr, e.g. using
+Clenv.refresh_undefined_univs clenv or:
 
 (** Get fresh variables for the universe context.
     Useful to make tactics that manipulate constrs in universe contexts polymorphic. *)
-val fresh_universe_context_set_instance : universe_context_set -> 
+val fresh_universe_context_set_instance : universe_context_set ->
   universe_level_subst * universe_context_set
 
-The substitution should be applied to the constr(s) under consideration, 
+The substitution should be applied to the constr(s) under consideration,
 and the context_set merged with the current evar_map with:
 
 val merge_context_set : rigid -> evar_map -> Univ.universe_context_set -> evar_map
 
 The [rigid] flag here should be [Evd.univ_flexible] most of the
 time. This means the universe levels of polymorphic objects in the
-constr might get instantiated instead of generating equality constraints 
+constr might get instantiated instead of generating equality constraints
 (Evd.univ_rigid does that).
 
 On this issue, I recommend forcing commands to take [global_reference]s
@@ -211,7 +211,7 @@ Projections are reduced _eagerly_ everywhere, and introduce a new Zproj
 constructor in the abstract machines that obeys both the delta (for the
 constant opacity) and iota laws (for the actual reduction). Refolding
 works as well (afaict), but there is a slight hack there related to
-universes (not projections). 
+universes (not projections).
 
 For the ML programmer, the biggest change is that pattern-matchings on
 kind_of_term require an additional case, that is handled usually exactly
@@ -222,7 +222,7 @@ projection form of f when one does [Hint Resolve f]. Usually hint
 resolve will typecheck the term, resulting in a partially applied
 projection (disallowed), so we allow it to take
 [constr_or_global_reference] arguments instead and special-case on
-projections. Other tactic extensions might need similar treatment. 
+projections. Other tactic extensions might need similar treatment.
 
 WIP
 ===
@@ -231,7 +231,7 @@ WIP
 except when it goes to a normal form with no projections or polymorphic
 constants left (the most common case). E.g. Ring with Set Universe
 Polymorphism and Set Primitive Projections work (at least it did at some
-point, I didn't recheck yet).  
+point, I didn't recheck yet).
 
 - [native_compute] works with universes and projections.
 
@@ -255,7 +255,7 @@ typing without being refreshed, meaning that they can be lowered (have
 upper constraints) with user-introduced universes. In most cases this
 won't work, so ?x and ?y have to be instantiated earlier, either from
 the type of the actual projected pair term (some t : prod A B) or the
-typing constraint. Adding the correct type annotations will always fix 
+typing constraint. Adding the correct type annotations will always fix
 this.
 
 
@@ -266,7 +266,7 @@ In Ltac, matching with:
 
 - a universe polymorphic constant [c] matches any instance of the
   constant.
-- a variable ?x already bound to a term [t] (non-linear pattern) uses 
+- a variable ?x already bound to a term [t] (non-linear pattern) uses
   strict equality of universes (e.g., Type@{i} and Type@{j} are not
   equal).
 

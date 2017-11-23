@@ -1,6 +1,6 @@
 Class C (A : Type) := c : A -> Type.
 
-Record Inhab (A : Type) := { witness : A }. 
+Record Inhab (A : Type) := { witness : A }.
 
 Instance inhab_C : C Type := Inhab.
 

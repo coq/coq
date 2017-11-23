@@ -23,7 +23,7 @@ type engagement = set_predicativity
     and constants hiding inductives are implicitely polymorphic when
     applied to parameters, on the universes appearing in the whnf of
     their parameters and their conclusion, in a template style.
-    
+
     In truely universe polymorphic mode, we always use RegularArity.
 *)
 
@@ -32,7 +32,7 @@ type template_arity = {
   template_level : Univ.Universe.t;
 }
 
-type ('a, 'b) declaration_arity = 
+type ('a, 'b) declaration_arity =
   | RegularArity of 'a
   | TemplateArity of 'b
 
@@ -44,7 +44,7 @@ type inline = int option
 (** A constant can have no body (axiom/parameter), or a
     transparent body, or an opaque one *)
 
-(** Projections are a particular kind of constant: 
+(** Projections are a particular kind of constant:
     always transparent. *)
 
 type projection_body = {

@@ -87,13 +87,13 @@ let define_pure_evar_as_product evd evk =
        (* Impredicative product, conclusion must fall in [Prop]. *)
         new_evar newenv evd1 concl ~src ~filter
       else
-	let status = univ_flexible_alg in
-	let evd3, (rng, srng) =
+        let status = univ_flexible_alg in
+        let evd3, (rng, srng) =
           new_type_evar newenv evd1 status ~src ~filter
         in
-	let prods = Univ.sup (univ_of_sort u1) (univ_of_sort srng) in
-	let evd3 = Evd.set_leq_sort evenv evd3 (Type prods) (ESorts.kind evd1 s) in
-	  evd3, rng
+        let prods = Univ.sup (univ_of_sort u1) (univ_of_sort srng) in
+        let evd3 = Evd.set_leq_sort evenv evd3 (Type prods) (ESorts.kind evd1 s) in
+          evd3, rng
   in
   let prod = mkProd (Name id, dom, subst_var id rng) in
   let evd3 = Evd.define evk (EConstr.Unsafe.to_constr prod) evd2 in
@@ -159,7 +159,7 @@ let rec evar_absorb_arguments env evd (evk,args as ev) = function
 
 let define_evar_as_sort env evd (ev,args) =
   let evd, u = new_univ_variable univ_rigid evd in
-  let evi = Evd.find_undefined evd ev in 
+  let evi = Evd.find_undefined evd ev in
   let s = Type u in
   let concl = Reductionops.whd_all (evar_env evi) evd (EConstr.of_constr evi.evar_concl) in
   let sort = destSort evd concl in
@@ -175,21 +175,21 @@ let split_tycon ?loc env evd tycon =
   let rec real_split evd c =
     let t = Reductionops.whd_all env evd c in
       match EConstr.kind evd t with
-	| Prod (na,dom,rng) -> evd, (na, dom, rng)
-	| Evar ev (* ev is undefined because of whd_all *) ->
-	    let (evd',prod) = define_evar_as_product evd ev in
-	    let (_,dom,rng) = destProd evd prod in
-	      evd',(Anonymous, dom, rng)
-	| App (c,args) when isEvar evd c ->
-	    let (evd',lam) = define_evar_as_lambda env evd (destEvar evd c) in
-	    real_split evd' (mkApp (lam,args))
-	| _ -> error_not_product ?loc env evd c
+        | Prod (na,dom,rng) -> evd, (na, dom, rng)
+        | Evar ev (* ev is undefined because of whd_all *) ->
+            let (evd',prod) = define_evar_as_product evd ev in
+            let (_,dom,rng) = destProd evd prod in
+              evd',(Anonymous, dom, rng)
+        | App (c,args) when isEvar evd c ->
+            let (evd',lam) = define_evar_as_lambda env evd (destEvar evd c) in
+            real_split evd' (mkApp (lam,args))
+        | _ -> error_not_product ?loc env evd c
   in
     match tycon with
       | None -> evd,(Anonymous,None,None)
       | Some c ->
-	  let evd', (n, dom, rng) = real_split evd c in
-	    evd', (n, mk_tycon dom, mk_tycon rng)
+          let evd', (n, dom, rng) = real_split evd c in
+            evd', (n, mk_tycon dom, mk_tycon rng)
 
 let valcon_of_tycon x = x
 let lift_tycon n = Option.map (lift n)

@@ -163,7 +163,7 @@ Lemma Q2R_inv : forall x : Q, ~ x==0 -> Q2R (/x) = (/ Q2R x)%R.
 Proof.
 unfold Qinv, Q2R, Qeq; intros (x1, x2). case x1; unfold Qnum, Qden.
 simpl; intros; elim H; trivial.
-intros; field; auto. 
+intros; field; auto.
 intros;
   change (IZR (Zneg x2)) with (- IZR (' x2))%R;
   change (IZR (Zneg p)) with (- IZR (' p))%R;

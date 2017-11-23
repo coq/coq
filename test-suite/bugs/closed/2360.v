@@ -2,7 +2,7 @@
 Definition interp (etyp : nat -> Type) (p: nat) := etyp p.
 
 Record Value (etyp : nat -> Type) := Mk {
-  typ : nat; 
+  typ : nat;
   value : interp etyp typ
 }.
 

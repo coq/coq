@@ -101,7 +101,7 @@ Proof.
                                             | acc_Abs f x => fun pf => pf tt
                                             | _ => I
                                           end (fun _ => rec e))
-            end); 
+            end);
     try solve [ inversion _H ].
 Defined.
 

@@ -93,10 +93,10 @@ assert (c1 - r1 <= Rmax (c1 - r1) (c2 - r2)) by apply Rmax_l.
 assert (c2 - r2 <= Rmax (c1 - r1) (c2 - r2)) by apply Rmax_r.
 assert (Rmin (c1 + r1) (c2 + r2) <= c1 + r1) by apply Rmin_l.
 assert (Rmin (c1 + r1) (c2 + r2) <= c2 + r2) by apply Rmin_r.
-assert (Rmin (x - Rmax (c1 - r1) (c2 - r2)) 
+assert (Rmin (x - Rmax (c1 - r1) (c2 - r2))
          (Rmin (c1 + r1) (c2 + r2) - x) <= x - Rmax (c1 - r1) (c2 - r2))
  by apply Rmin_l.
-assert (Rmin (x - Rmax (c1 - r1) (c2 - r2)) 
+assert (Rmin (x - Rmax (c1 - r1) (c2 - r2))
          (Rmin (c1 + r1) (c2 + r2) - x) <= Rmin (c1 + r1) (c2 + r2) - x)
  by apply Rmin_r.
 simpl.
@@ -460,7 +460,7 @@ assert (CVU rho_ rho c d ).
          forall y, Boule c d y -> x <> y ->
          Rabs ((f n y - f n x)/(y - x) - (f p y - f p x)/(y - x)) < eps/4).
   intros n p nN pN y b_y xny.
-  assert (mm0 : (Rmin x y = x /\ Rmax x y = y) \/ 
+  assert (mm0 : (Rmin x y = x /\ Rmax x y = y) \/
                 (Rmin x y = y /\ Rmax x y = x)).
    destruct (Rle_dec x y) as [H | H].
     rewrite Rmin_left, Rmax_right.
@@ -511,7 +511,7 @@ assert (CVU rho_ rho c d ).
      revert inz; rewrite ?q1, ?q2; intros;
     try assumption; split; apply Rlt_le; tauto.
    rewrite q1, q2; apply Rminus_eq_contra; assumption.
-  rewrite q1, q2; field; split; 
+  rewrite q1, q2; field; split;
     apply Rminus_eq_contra;[apply not_eq_sym |]; assumption.
  assert (unif_ac :
   forall n p, (N <= n)%nat -> (N <= p)%nat ->

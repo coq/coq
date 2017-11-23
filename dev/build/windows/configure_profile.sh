@@ -17,13 +17,13 @@ donefile=~/.bash_profile.upated
 if [ ! -f $donefile ] ; then
 
     echo >> $rcfile
-    
+
     if [ "$1" != "" -a "$1" != " " ]; then
       echo export http_proxy="http://$1" >> $rcfile
       echo export https_proxy="http://$1" >> $rcfile
       echo export ftp_proxy="http://$1" >> $rcfile
     fi
-    
+
     mkdir -p $RESULT_INSTALLDIR_CFMT/bin
 
     # A tightly controlled path helps to avoid issues
@@ -35,7 +35,7 @@ if [ ! -f $donefile ] ; then
     # find and xargs complain if the environment is larger than (I think) 8k.
     # ORIGINAL_PATH (set by cygwin) can be a few k and exceed the limit
     echo unset ORIGINAL_PATH >> $rcfile
-    
+
     # Other installations of OCaml will mess up things
     echo unset OCAMLLIB >> $rcfile
 

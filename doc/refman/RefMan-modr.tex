@@ -8,7 +8,7 @@ a means of massive abstraction.
 
 \section{Modules and module types}
 
-\paragraph{Access path.} It is denoted by $p$, it can be either a module 
+\paragraph{Access path.} It is denoted by $p$, it can be either a module
 variable $X$ or, if $p'$ is an access path and $id$ an identifier, then
 $p'.id$ is an access path.
 
@@ -22,20 +22,20 @@ definition of a constant, an assumption, a definition of an inductive,
 \item a plain structure $\struct{\nelist{\elem}{;}}$
 \item a functor $\functor{X}{S}{S'}$, where $X$ is a module variable,
   $S$ and $S'$ are structure expression
-\item an application $S\,p$, where $S$ is a structure expression and $p$ 
-an access path 
+\item an application $S\,p$, where $S$ is a structure expression and $p$
+an access path
 \item a refined structure $\with{S}{p}{p'}$ or $\with{S}{p}{t:T}$ where $S$
-is a structure expression, $p$ and $p'$ are access paths, $t$ is a term 
+is a structure expression, $p$ and $p'$ are access paths, $t$ is a term
 and $T$ is the type of $t$.
 \end{itemize}
 
 \paragraph{Module definition,} is written $\Mod{X}{S}{S'}$ and
  consists of a module variable $X$, a module type
-$S$ which can be any structure expression and optionally a module implementation $S'$ 
+$S$ which can be any structure expression and optionally a module implementation $S'$
  which can be any structure expression except a refined structure.
 
 \paragraph{Module alias,} is written $\ModA{X}{p}$ and
- consists of a module variable $X$ and a module path $p$. 
+ consists of a module variable $X$ and a module path $p$.
 
 \paragraph{Module type abbreviation,} is written $\ModType{Y}{S}$, where
 $Y$ is an identifier and $S$ is any structure expression .
@@ -47,17 +47,17 @@ In order to introduce the typing system we first slightly extend
 the syntactic class of terms and environments given in
 section~\ref{Terms}. The environments, apart from definitions of
 constants and inductive types now also hold any other structure elements.
-Terms, apart from variables, constants and complex terms, 
+Terms, apart from variables, constants and complex terms,
 include also access paths.
 
-We also need additional typing judgments: 
+We also need additional typing judgments:
 \begin{itemize}
-\item \WFT{E}{S}, denoting that a structure $S$ is well-formed, 
+\item \WFT{E}{S}, denoting that a structure $S$ is well-formed,
 
 \item \WTM{E}{p}{S}, denoting that the module pointed by $p$ has type $S$ in
 environment $E$.
 
-\item \WEV{E}{S}{\overline{S}}, denoting that a structure $S$ is evaluated to 
+\item \WEV{E}{S}{\overline{S}}, denoting that a structure $S$ is evaluated to
 a structure $\overline{S}$ in weak head normal form.
 
 \item \WS{E}{S_1}{S_2}, denoting that a structure $S_1$ is a subtype of a
@@ -260,7 +260,7 @@ meaning:
 The notation $\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}$ denotes an
 inductive definition that is definitionally equal to the inductive
 definition in the module denoted by the path $p$. All rules which have
-$\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I}$ as premises are also valid for 
+$\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I}$ as premises are also valid for
 $\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}$. We give the formation rule
 for $\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}$ below as well as
 the equality rules on inductive types and constructors. \\
@@ -557,8 +557,8 @@ In the rules below we assume $\Gamma_P$ is $[p_1:P_1;\ldots;p_r:P_r]$,
 % \end{itemize}
 
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:
 

@@ -39,8 +39,8 @@ Canonical Structure addMorh x := mkM (plus x).
 Definition test_lam x := (refl_equal _ : Q (my_f _) = Q (plus x)).
 Definition test_lam' := (refl_equal _ : Q (my_f _) = Q (plus 0)).
 
-(* Simple tests to justify Sort and Prod as "named". 
-   They are already normal, so they cannot loose their names, 
+(* Simple tests to justify Sort and Prod as "named".
+   They are already normal, so they cannot loose their names,
    but still... *)
 Structure Sot := mkS { T : Type }.
 Axiom R : Type -> Prop.

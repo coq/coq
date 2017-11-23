@@ -36,7 +36,7 @@
 % For the Addendum table of contents
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\aauthor}[1]{{\LARGE \bf #1} \bigskip}  % 3 \bigskip's that were here originally
-						    % may be good for LaTeX but too much for HTML    
+                                                    % may be good for LaTeX but too much for HTML
 \newcommand{\atableofcontents}{}
 \newcommand{\achapter}[1]{\chapter{#1}}
 \newcommand{\asection}{\section}

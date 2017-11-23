@@ -71,11 +71,11 @@ let share cache r (cstl,knl) =
   let f,(u,l) =
     match r with
     | IndRef (kn,i) ->
-	IndRef (pop_mind kn,i), Mindmap.find kn knl
+        IndRef (pop_mind kn,i), Mindmap.find kn knl
     | ConstructRef ((kn,i),j) ->
-	ConstructRef ((pop_mind kn,i),j), Mindmap.find kn knl
+        ConstructRef ((pop_mind kn,i),j), Mindmap.find kn knl
     | ConstRef cst ->
-	ConstRef (pop_con cst), Cmap.find cst cstl in
+        ConstRef (pop_con cst), Cmap.find cst cstl in
   let c = (f, (u, Array.map mkVar l)) in
   RefTable.add cache r c;
   c
@@ -103,38 +103,38 @@ let expmod_constr cache modlist c =
   let rec substrec c =
     match kind c with
       | Case (ci,p,t,br) ->
-	  Constr.map substrec (mkCase (update_case_info ci modlist,p,t,br))
+          Constr.map substrec (mkCase (update_case_info ci modlist,p,t,br))
 
       | Ind (ind,u) ->
-	  (try
-	    share_univs (IndRef ind) u modlist
-	   with
-	    | Not_found -> Constr.map substrec c)
+          (try
+            share_univs (IndRef ind) u modlist
+           with
+            | Not_found -> Constr.map substrec c)
 
       | Construct (cstr,u) ->
-	  (try
-	     share_univs (ConstructRef cstr) u modlist
-	   with
-	    | Not_found -> Constr.map substrec c)
+          (try
+             share_univs (ConstructRef cstr) u modlist
+           with
+            | Not_found -> Constr.map substrec c)
 
       | Const (cst,u) ->
-	  (try
-	    share_univs (ConstRef cst) u modlist
-	   with
-	    | Not_found -> Constr.map substrec c)
+          (try
+            share_univs (ConstRef cst) u modlist
+           with
+            | Not_found -> Constr.map substrec c)
 
       | Proj (p, c') ->
-          (try 
-	     let p' = share_univs (ConstRef (Projection.constant p)) Univ.Instance.empty modlist in
-	     let make c = Projection.make c (Projection.unfolded p) in
-	     match kind p' with
-	     | Const (p',_) -> mkProj (make p', substrec c')
-	     | App (f, args) -> 
-	       (match kind f with 
-	       | Const (p', _) -> mkProj (make p', substrec c')
-	       | _ -> assert false)
-	     | _ -> assert false
-	   with Not_found -> Constr.map substrec c)
+          (try
+             let p' = share_univs (ConstRef (Projection.constant p)) Univ.Instance.empty modlist in
+             let make c = Projection.make c (Projection.unfolded p) in
+             match kind p' with
+             | Const (p',_) -> mkProj (make p', substrec c')
+             | App (f, args) ->
+               (match kind f with
+               | Const (p', _) -> mkProj (make p', substrec c')
+               | _ -> assert false)
+             | _ -> assert false
+           with Not_found -> Constr.map substrec c)
 
   | _ -> Constr.map substrec c
 
@@ -180,7 +180,7 @@ let cook_constr { Opaqueproof.modlist ; abstract } c =
 let lift_univs cb subst =
   match cb.const_universes with
   | Monomorphic_const ctx -> subst, (Monomorphic_const ctx)
-  | Polymorphic_const auctx ->  
+  | Polymorphic_const auctx ->
     if (Univ.LMap.is_empty subst) then
       subst, (Polymorphic_const auctx)
     else
@@ -213,7 +213,7 @@ let cook_constant ~hcons env { from = cb; info } =
   let const_hyps =
     Context.Named.fold_outside (fun decl hyps ->
       List.filter (fun decl' -> not (Id.equal (NamedDecl.get_id decl) (NamedDecl.get_id decl')))
-		  hyps)
+                  hyps)
       hyps ~init:cb.const_hyps in
   let typ = abstract_constant_type (expmod cb.const_type) hyps in
   let projection pb =
@@ -221,24 +221,24 @@ let cook_constant ~hcons env { from = cb; info } =
     let etab = abstract_constant_body (expmod (fst pb.proj_eta)) hyps in
     let etat = abstract_constant_body (expmod (snd pb.proj_eta)) hyps in
     let ((mind, _), _), n' =
-      try 
-	let c' = share_univs cache (IndRef (pb.proj_ind,0)) Univ.Instance.empty modlist in
-	  match kind c' with
-	  | App (f,l) -> (destInd f, Array.length l)
-	  | Ind ind -> ind, 0
-	  | _ -> assert false 
+      try
+        let c' = share_univs cache (IndRef (pb.proj_ind,0)) Univ.Instance.empty modlist in
+          match kind c' with
+          | App (f,l) -> (destInd f, Array.length l)
+          | Ind ind -> ind, 0
+          | _ -> assert false
       with Not_found -> (((pb.proj_ind,0),Univ.Instance.empty), 0)
-    in 
+    in
     let ctx, ty' = decompose_prod_n (n' + pb.proj_npars + 1) typ in
       { proj_ind = mind; proj_npars = pb.proj_npars + n'; proj_arg = pb.proj_arg;
-	proj_eta = etab, etat;
-	proj_type = ty'; proj_body = c' }
+        proj_eta = etab, etat;
+        proj_type = ty'; proj_body = c' }
   in
   let univs =
     match univs with
-    | Monomorphic_const ctx -> 
+    | Monomorphic_const ctx ->
       assert (AUContext.is_empty abs_ctx); univs
-    | Polymorphic_const auctx -> 
+    | Polymorphic_const auctx ->
       Polymorphic_const (AUContext.union abs_ctx auctx)
   in
   {

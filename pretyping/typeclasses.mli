@@ -32,18 +32,18 @@ type typeclass = {
   (** Context of definitions and properties on defs, will not be shared *)
   cl_props : Context.Rel.t;
 
-  (** The methods implementations of the typeclass as projections. 
-      Some may be undefinable due to sorting restrictions or simply undefined if 
+  (** The methods implementations of the typeclass as projections.
+      Some may be undefinable due to sorting restrictions or simply undefined if
       no name is provided. The [int option option] indicates subclasses whose hint has
       the given priority. *)
   cl_projs : (Name.t * (direction * Vernacexpr.hint_info_expr) option * Constant.t option) list;
 
   (** Whether we use matching or full unification during resolution *)
-  cl_strict : bool; 
+  cl_strict : bool;
 
-  (** Whether we can assume that instances are unique, which allows 
+  (** Whether we can assume that instances are unique, which allows
       no backtracking and sharing of resolution. *)
-  cl_unique : bool; 
+  cl_unique : bool;
 }
 
 type instance
@@ -72,7 +72,7 @@ val typeclass_univ_instance : typeclass puniverses -> typeclass
 
 (** Just return None if not a class *)
 val class_of_constr : evar_map -> EConstr.constr -> (EConstr.rel_context * ((typeclass * EConstr.EInstance.t) * constr list)) option
-  
+
 val instance_impl : instance -> global_reference
 
 val hint_priority : instance -> int option
@@ -83,7 +83,7 @@ val is_instance : global_reference -> bool
 (** Returns the term and type for the given instance of the parameters and fields
    of the type class. *)
 
-val instance_constructor : typeclass puniverses -> constr list -> 
+val instance_constructor : typeclass puniverses -> constr list ->
   constr option * types
 
 (** Filter which evars to consider for resolution. *)
@@ -115,11 +115,11 @@ val set_typeclass_transparency : evaluable_global_reference -> bool -> bool -> u
 val classes_transparent_state_hook : (unit -> transparent_state) Hook.t
 val classes_transparent_state : unit -> transparent_state
 
-val add_instance_hint_hook : 
+val add_instance_hint_hook :
   (global_reference_or_constr -> global_reference list ->
    bool (* local? *) -> Vernacexpr.hint_info_expr -> Decl_kinds.polymorphic -> unit) Hook.t
 val remove_instance_hint_hook : (global_reference -> unit) Hook.t
-val add_instance_hint : global_reference_or_constr -> global_reference list -> 
+val add_instance_hint : global_reference_or_constr -> global_reference list ->
   bool -> Vernacexpr.hint_info_expr -> Decl_kinds.polymorphic -> unit
 val remove_instance_hint : global_reference -> unit
 
@@ -130,9 +130,9 @@ val declare_instance : Vernacexpr.hint_info_expr option -> bool -> global_refere
 
 
 (** Build the subinstances hints for a given typeclass object.
-    check tells if we should check for existence of the 
+    check tells if we should check for existence of the
     subinstances and add only the missing ones. *)
 
 val build_subclasses : check:bool -> env -> evar_map -> global_reference ->
-		       Vernacexpr.hint_info_expr ->
-		       (global_reference list * Vernacexpr.hint_info_expr * constr) list
+                       Vernacexpr.hint_info_expr ->
+                       (global_reference list * Vernacexpr.hint_info_expr * constr) list

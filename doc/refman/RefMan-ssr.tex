@@ -937,7 +937,7 @@ might start with
 where \ssrC{move} does nothing, but \ssrL|=> m n le_m_n| changes the
 variables and assumption of the goal in the constants \ssrC{m n : nat}
 and the fact \ssrL|le_n_m : n <= m|, thus exposing the conclusion\\
- \ssrC{m - n + n = m}. 
+ \ssrC{m - n + n = m}.
 
 The `\ssrC{:}' tactical is the converse of `\ssrC{=>}': it removes facts
 and constants from the context by turning them into variables and assumptions.
@@ -1115,7 +1115,7 @@ Hence the command:
 on a goal of the form \ssrC{False -> G} will succeed and prove the goal.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection*{The \ssrC{elim} tactic.} 
+\subsubsection*{The \ssrC{elim} tactic.}
 \idx{elim: \dots{}}
 
 The \ssrC{elim} tactic performs
@@ -1205,7 +1205,7 @@ an Ltac expression named \ssrC{ssrautoprop}.
 
 The general syntax of the discharging tactical `\ssrC{:}' is:
 \begin{center}
-	{\tac} \optional{\ssrN{ident}} \ssrC{:} \ssrN[1]{d-item} $\dots$ \ssrN[n]{d-item} \optional{\ssrN{clear-switch}}
+        {\tac} \optional{\ssrN{ident}} \ssrC{:} \ssrN[1]{d-item} $\dots$ \ssrN[n]{d-item} \optional{\ssrN{clear-switch}}
 \end{center}
 where $n > 0$, and \ssrN{d-item} and \ssrN{clear-switch} are defined as
 \begin{longtable}{rcl}
@@ -1398,14 +1398,14 @@ proved after this.
 All these operations are performed by the introduction tactical
 `\ssrC{=>}', whose general syntax is
 \begin{center}
-	{\tac} \ssrC{=>} \ssrN[1]{i-item} $\dots$ \ssrN[n]{i-item}
+        {\tac} \ssrC{=>} \ssrN[1]{i-item} $\dots$ \ssrN[n]{i-item}
 \end{center}
 where {\tac} can be any tactic, $n > 0$ and
 \begin{longtable}{rcl}
   \ssrN{i-item}& ::=& \ssrN{i-pattern} {\optsep} \ssrN{s-item} {\optsep} \ssrN{clear-switch} {\optsep} \ssrC{/}{\term} \\
   \ssrN{s-item}& ::=& \ssrC{/=} {\optsep} \ssrC{//} {\optsep} \ssrC{//=} \\
   \ssrN{i-pattern}& ::=& \ssrN{ident} {\optsep} \ssrC{_} {\optsep} \ssrC{?} {\optsep} \ssrC{*} {\optsep} \optional{\ssrN{occ-switch}}\ssrC{->} {\optsep} \optional{\ssrN{occ-switch}}\ssrC{<-} {\optsep} \\
-	   &&      \ssrC{[} \ssrN[1]{i-item}$^*$ \ssrC{|} $\dots$ \ssrC{|} \ssrN[m]{i-item}$^*$ \ssrC{]} {\optsep} \ssrC{-} {\optsep} \ssrC{[:} \ssrN{ident}$^+$ \ssrC{]}
+           &&      \ssrC{[} \ssrN[1]{i-item}$^*$ \ssrC{|} $\dots$ \ssrC{|} \ssrN[m]{i-item}$^*$ \ssrC{]} {\optsep} \ssrC{-} {\optsep} \ssrC{[:} \ssrN{ident}$^+$ \ssrC{]}
 \end{longtable}
 
 The `\ssrC{=>}' tactical first executes {\tac}, then the
@@ -2039,7 +2039,7 @@ respectively \ssrC{k : nat} and \ssrC{l : nat} in their context.
 tactics, thanks to the \ssrC{do} tactical, whose general syntax is:
 
 \begin{center}
-	\ssrC{do} \optional{\ssrN{mult}} \ssrC{[} \ssrN[1]{tactic} \ssrC{|} $\dots$ \ssrC{|} \ssrN[n]{tactic} \ssrC{]}
+        \ssrC{do} \optional{\ssrN{mult}} \ssrC{[} \ssrN[1]{tactic} \ssrC{|} $\dots$ \ssrC{|} \ssrN[n]{tactic} \ssrC{]}
 \end{center}
 where \ssrN{mult} is a \emph{multiplier}.
 
@@ -2103,7 +2103,7 @@ In sections \ref{ssec:loc} and \ref{ssec:profstack}, we have already
 presented the \emph{localization} tactical \ssrC{in}, whose general
 syntax is:
 \begin{center}
-	{\tac} \ssrC{in} \ssrN{ident}$^+$ \optional{\ssrC{*}}
+        {\tac} \ssrC{in} \ssrN{ident}$^+$ \optional{\ssrC{*}}
 \end{center}
 
 where \ssrN{ident}$^+$ is a non empty list of fact
@@ -2146,12 +2146,12 @@ From \ssr{} 1.5 the grammar for the \ssrC{in} tactical has been extended
 to the following one:
 
 \begin{center}
-  {\tac} \ssrC{in} \optional{ 
-	  \ssrN{clear-switch} {\optsep}
-	  \optional{\ssrC{@}}\ssrN{ident} {\optsep}
+  {\tac} \ssrC{in} \optional{
+          \ssrN{clear-switch} {\optsep}
+          \optional{\ssrC{@}}\ssrN{ident} {\optsep}
           \ssrC{(}\ssrN{ident}\ssrC{)} {\optsep}
-	  \ssrC{(}\optional{\ssrC{@}}\ssrN{ident} \ssrC{:=} \ssrN{c-pattern}\ssrC{)}
-		}$^+$ \optional{\ssrC{*}}
+          \ssrC{(}\optional{\ssrC{@}}\ssrN{ident} \ssrC{:=} \ssrN{c-pattern}\ssrC{)}
+                }$^+$ \optional{\ssrC{*}}
 \end{center}
 
 In its simplest form the last option lets one rename hypotheses that can't be
@@ -2226,10 +2226,10 @@ The behavior of the defective \ssrC{have} tactic makes it possible to
 generalize it in the
 following general construction:
 \begin{center}
-	\ssrC{have} \ssrN{i-item}$^*$ \optional{\ssrN{i-pattern}}
-	\optional{\ssrN{s-item} {\optsep} \ssrN{binder}$^+$}
-	\optional{\ssrC{:} \ssrN[1]{term}}
-	\optional{\ssrC{:=} \ssrN[2]{term} {\optsep} \ssrC{by} {\tac}}
+        \ssrC{have} \ssrN{i-item}$^*$ \optional{\ssrN{i-pattern}}
+        \optional{\ssrN{s-item} {\optsep} \ssrN{binder}$^+$}
+        \optional{\ssrC{:} \ssrN[1]{term}}
+        \optional{\ssrC{:=} \ssrN[2]{term} {\optsep} \ssrC{by} {\tac}}
 \end{center}
 
 Open syntax is supported for $\ssrN[1]{term}$ and $\ssrN[2]{term}$. For the
@@ -2413,18 +2413,18 @@ classes inference.
 
 \begin{itemize}
 \item \ssrC{have foo : ty.}
-	Full inference for \ssrC{ty}.
-	The first subgoal demands a proof of such instantiated statement.
+        Full inference for \ssrC{ty}.
+        The first subgoal demands a proof of such instantiated statement.
 \item \ssrC{have foo : ty := .}
-	No inference for \ssrC{ty}. Unresolved instances are quantified in
-	\ssrC{ty}.  The first subgoal demands a proof of such quantified
-	statement.  Note that no proof term follows \ssrC{:=}, hence two
-	subgoals are generated.
+        No inference for \ssrC{ty}. Unresolved instances are quantified in
+        \ssrC{ty}.  The first subgoal demands a proof of such quantified
+        statement.  Note that no proof term follows \ssrC{:=}, hence two
+        subgoals are generated.
 \item \ssrC{have foo : ty := t.}
-	No inference for \ssrC{ty} and \ssrC{t}.
+        No inference for \ssrC{ty} and \ssrC{t}.
 \item \ssrC{have foo := t.}
-	No inference for \ssrC{t}. Unresolved instances are quantified in the
-	(inferred) type of \ssrC{t} and abstracted in \ssrC{t}.
+        No inference for \ssrC{t}. Unresolved instances are quantified in the
+        (inferred) type of \ssrC{t} and abstracted in \ssrC{t}.
 \end{itemize}
 
 The behavior of \ssr{} 1.4 and below (never resolve type classes)
@@ -2662,7 +2662,7 @@ where:
 
 \begin{longtable}{rcl}
 \ssrN{r-prefix} & ::= &
-	\optional{\ssrC{-}} \optional{\ssrN{mult}} \optional{\ssrN{occ-switch} {\optsep} \ssrN{clear-switch}} \optional{\ssrC{[}\ssrN{r-pattern}\ssrC{]}}\\
+        \optional{\ssrC{-}} \optional{\ssrN{mult}} \optional{\ssrN{occ-switch} {\optsep} \ssrN{clear-switch}} \optional{\ssrC{[}\ssrN{r-pattern}\ssrC{]}}\\
 \ssrN{r-pattern} & ::= &
 {\term} {\optsep} \ssrC{in} \optional{\ssrN{ident} \ssrC{in}} {\term} {\optsep} \optional{{\term} \ssrC{in} {\optsep} {\term} \ssrC{as} } \ssrN{ident} \ssrC{in} {\term}\\
 \ssrN{r-item} & ::= &
@@ -4288,11 +4288,11 @@ There are three steps in the behaviour of an assumption view tactic:
 \item If the type of \ssrN[0]{term} is neither a double implication nor
   an instance of the \ssrC{reflect} predicate, then the tactic
   automatically generalises a term of the form:
-  
+
 \begin{center}
   \ssrC{(}\ssrN[0]{term} \ssrN[1]{term} $\dots$ \ssrN[n]{term}\ssrC{)}
 \end{center}
-  
+
   where the terms \ssrN[1]{term} $\dots$ \ssrN[n]{term} instantiate the
   possible quantified variables of \ssrN[0]{term}, in order for
   \ssrC{(}\ssrN[0]{term} \ssrN[1]{term} $\dots$ \ssrN[n]{term} \ssrC{top)} to be well typed.
@@ -4372,7 +4372,7 @@ but actually used its propositional interpretation.
 A goal interpretation view tactic of the form:
 
 \begin{center}
-	\ssrC{apply/} \ssrN[0]{term}
+        \ssrC{apply/} \ssrN[0]{term}
 \end{center}
 applied to a goal \ssrC{top} is interpreted in the following way:
 \begin{itemize}
@@ -4511,7 +4511,7 @@ equivalences are indeed taken into account, otherwise only single
 \ssr{} proposes an extension of the \ssrC{Search} command. Its syntax is:
 
 \begin{center}
-	\ssrC{Search} \optional{\ssrN{pattern}} \optional{\optional{\ssrC{\-}} \optional{\ssrN{string}\optional{\ssrC{\%}\ssrN{key}} {\optsep} \ssrN{pattern}}}$^*$ \optional{\ssrC{in} \optional{\optional{\ssrC{\-}} \ssrN{name} }$^+$}
+        \ssrC{Search} \optional{\ssrN{pattern}} \optional{\optional{\ssrC{\-}} \optional{\ssrN{string}\optional{\ssrC{\%}\ssrN{key}} {\optsep} \ssrN{pattern}}}$^*$ \optional{\ssrC{in} \optional{\optional{\ssrC{\-}} \ssrN{name} }$^+$}
 \end{center}
 
 % \begin{lstlisting}
@@ -4893,13 +4893,13 @@ New features:
 Incompatibilities:
 \begin{itemize}
 \item The \ssrC{have} tactic now performs type classes resolution.  The old
-	behavior can be restored with \ssrC{Set SsrHave NoTCResolution}
+        behavior can be restored with \ssrC{Set SsrHave NoTCResolution}
 \end{itemize}
 Fixes:
 \begin{itemize}
 \item The \ssrC{let foo := type of t in} syntax of standard \ssrC{Ltac} has
-	been made compatible with \ssr{} and can be freely used even if
-	the \ssr{} plugin is loaded
+        been made compatible with \ssr{} and can be freely used even if
+        the \ssr{} plugin is loaded
 \end{itemize}
 New features:
 \begin{itemize}
@@ -4913,18 +4913,18 @@ New features:
       tactical (see section~\ref{ssec:gloc}).\\
       \ssrC{$\dots$ in H1 \{H2\} (n := m).}
 \item Handling of type classes in \ssrC{have}
-	(see page~\pageref{ssec:havetcresolution}).\\
-	\ssrC{have foo : ty. (* TC inference for ty *)}\\
-	\ssrC{have foo : ty := . (* no TC inference for ty *)}\\
-	\ssrC{have foo : ty := t. (* no TC inference for ty and t *)}\\
-	\ssrC{have foo := t. (* no TC inference for t *)}
+        (see page~\pageref{ssec:havetcresolution}).\\
+        \ssrC{have foo : ty. (* TC inference for ty *)}\\
+        \ssrC{have foo : ty := . (* no TC inference for ty *)}\\
+        \ssrC{have foo : ty := t. (* no TC inference for ty and t *)}\\
+        \ssrC{have foo := t. (* no TC inference for t *)}
 \item Transparent flag for \ssrC{have} to generate a \ssrC{let in} context entry
-	(see page~\pageref{sec:havetransparent}).\\
+        (see page~\pageref{sec:havetransparent}).\\
         \ssrC{have @i : 'I\_n by apply: (Sub m); auto.}
 \item Intro pattern \ssrC{[: foo bar ]} to create abstract variables
-	(see page~\pageref{ssec:introabstract}).
+        (see page~\pageref{ssec:introabstract}).
 \item Tactic \ssrC{abstract:} to assign an abstract variable
-	(see page~\pageref{ssec:abstract}).\\
+        (see page~\pageref{ssec:abstract}).\\
   \ssrC{have [: blurb ] @i : 'I\_n by apply: (Sub m); abstract: blurb; auto.}\\
   \ssrC{have [: blurb ] i : 'I\_n := Sub m  blurb; first by auto.}
 

@@ -30,7 +30,7 @@ rule mllib_list = parse
   | uppercase+ { let s = Lexing.lexeme lexbuf in
                  s :: mllib_list lexbuf }
   | caml_up_ident { let s = uncapitalize (Lexing.lexeme lexbuf)
-		in s :: mllib_list lexbuf }
+                in s :: mllib_list lexbuf }
   | "*predef*" { mllib_list lexbuf }
   | space+ { mllib_list lexbuf }
   | eof { [] }
@@ -55,16 +55,16 @@ let escape =
       let c = s.[i] in
       if c = ' ' || c = '#' || c = ':' (* separators and comments *)
         || c = '%' (* pattern *)
-	|| c = '?' || c = '[' || c = ']' || c = '*' (* expansion in filenames *)
-	|| i=0 && c = '~' && (String.length s = 1 || s.[1] = '/' || 
-	    'A' <= s.[1] && s.[1] <= 'Z' || 
-	    'a' <= s.[1] && s.[1] <= 'z') (* homedir expansion *)
+        || c = '?' || c = '[' || c = ']' || c = '*' (* expansion in filenames *)
+        || i=0 && c = '~' && (String.length s = 1 || s.[1] = '/' ||
+            'A' <= s.[1] && s.[1] <= 'Z' ||
+            'a' <= s.[1] && s.[1] <= 'z') (* homedir expansion *)
       then begin
-	let j = ref (i-1) in
-	while !j >= 0 && s.[!j] = '\\' do 
-	  Buffer.add_char s' '\\'; decr j (* escape all preceding '\' *)
-	done;
-	Buffer.add_char s' '\\';
+        let j = ref (i-1) in
+        while !j >= 0 && s.[!j] = '\\' do
+          Buffer.add_char s' '\\'; decr j (* escape all preceding '\' *)
+        done;
+        Buffer.add_char s' '\\';
       end;
       if c = '$' then Buffer.add_char s' '$';
       Buffer.add_char s' c
@@ -156,9 +156,9 @@ let traite_fichier_modules md ext =
        match search_mlpack_known str with
        | Some mldir -> (file_name str mldir) :: acc
        | None ->
-	  match search_ml_known str with
-	  | Some mldir -> (file_name str mldir) :: acc
-	  | None -> acc) [] (List.rev list)
+          match search_ml_known str with
+          | Some mldir -> (file_name str mldir) :: acc
+          | None -> acc) [] (List.rev list)
   with
     | Sys_error _ -> []
     | Syntax_error (i,j) -> error_cannot_parse (md^ext) (i,j)

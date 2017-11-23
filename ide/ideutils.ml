@@ -15,8 +15,8 @@ let warn_image () =
   img#set_icon_size `DIALOG;
   img
 
-let warning msg = 
-   GToolbox.message_box ~title:"Warning" ~icon:(warn_image ())#coerce msg 
+let warning msg =
+   GToolbox.message_box ~title:"Warning" ~icon:(warn_image ())#coerce msg
 
 let cb = GData.clipboard Gdk.Atom.primary
 
@@ -139,15 +139,15 @@ let try_export file_name s =
     try match encoding#get with
       |Eutf8 -> Minilib.log "UTF-8 is enforced" ; s
       |Elocale ->
-	let is_unicode,char_set = Glib.Convert.get_charset () in
-	if is_unicode then
-	  (Minilib.log "Locale is UTF-8" ; s)
-	else
-	  (Minilib.log ("Locale is "^char_set);
-	   Glib.Convert.convert_with_fallback
+        let is_unicode,char_set = Glib.Convert.get_charset () in
+        if is_unicode then
+          (Minilib.log "Locale is UTF-8" ; s)
+        else
+          (Minilib.log ("Locale is "^char_set);
+           Glib.Convert.convert_with_fallback
              ~from_codeset:"UTF-8" ~to_codeset:char_set s)
       |Emanual enc ->
-	(Minilib.log ("Manual charset is "^ enc);
+        (Minilib.log ("Manual charset is "^ enc);
          Glib.Convert.convert_with_fallback
            ~from_codeset:"UTF-8" ~to_codeset:enc s)
     with e ->
@@ -203,9 +203,9 @@ let select_file_for_open ~title ?filename () =
     match file_chooser#run () with
     | `OPEN ->
       begin
-	match file_chooser#filename with
-	  | None -> None
-	  | Some _ as f ->
+        match file_chooser#filename with
+          | None -> None
+          | Some _ as f ->
             project_path#set file_chooser#current_folder; f
       end
     | `DELETE_EVENT | `CANCEL -> None in
@@ -281,9 +281,9 @@ let coqtop_path () =
     | Some s -> s
     | None ->
       match cmd_coqtop#get with
-	| Some s -> s
-	| None ->
-	  try
+        | Some s -> s
+        | None ->
+          try
             let old_prog = Sys.executable_name in
             let pos = String.length old_prog - 6 in
             let i = Str.search_backward (Str.regexp_string "coqide") old_prog pos
@@ -292,14 +292,14 @@ let coqtop_path () =
             Bytes.blit_string "coqtop" 0 new_prog i 6;
             let new_prog = Bytes.to_string new_prog in
             if Sys.file_exists new_prog then new_prog
-	    else
-	      let in_macos_bundle =
-		Filename.concat
-		  (Filename.dirname new_prog)
-		  (Filename.concat "../Resources/bin" (Filename.basename new_prog))
-	      in if Sys.file_exists in_macos_bundle then in_macos_bundle
-		 else "coqtop"
-	  with Not_found -> "coqtop"
+            else
+              let in_macos_bundle =
+                Filename.concat
+                  (Filename.dirname new_prog)
+                  (Filename.concat "../Resources/bin" (Filename.basename new_prog))
+              in if Sys.file_exists in_macos_bundle then in_macos_bundle
+                 else "coqtop"
+          with Not_found -> "coqtop"
   in file
 
 (* In win32, when a command-line is to be executed via cmd.exe

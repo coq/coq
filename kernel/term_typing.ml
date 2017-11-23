@@ -99,7 +99,7 @@ let inline_side_effects env body ctx side_eff =
     in
     let not_exists (c,_,_) =
       try ignore(Environ.lookup_constant c env); false
-      with Not_found -> true in 
+      with Not_found -> true in
     let cbl = List.filter not_exists cbl in
     (cbl, mb)
   in
@@ -241,7 +241,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
       let env = push_context ~strict:(not poly) uctx env in
       let j = infer env t in
       let abstract = poly && not (Option.is_empty kn) in
-      let usubst, univs = 
+      let usubst, univs =
         abstract_constant_universes abstract uctx
       in
       let c = Typeops.assumption_of_judgment env j in
@@ -261,7 +261,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
       delay even in the polymorphic case.  *)
   | DefinitionEntry ({ const_entry_type = Some typ;
                        const_entry_opaque = true;
-		       const_entry_universes = Monomorphic_const_entry univs } as c) ->
+                       const_entry_universes = Monomorphic_const_entry univs } as c) ->
       let env = push_context ~strict:true univs env in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let tyj = infer_type env typ in
@@ -315,7 +315,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
       let abstract = poly && not (Option.is_empty kn) in
       let usubst, univs =
         abstract_constant_universes abstract (Univ.ContextSet.to_context ctx)
-      in      
+      in
       let j = infer env body in
       let typ = match typ with
         | None ->
@@ -326,11 +326,11 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
            Vars.subst_univs_level_constr usubst t
       in
       let def = Constr.hcons (Vars.subst_univs_level_constr usubst j.uj_val) in
-      let def = 
-	if opaque then OpaqueDef (Opaqueproof.create (Future.from_val (def, Univ.ContextSet.empty)))
-	else Def (Mod_subst.from_val def) 
+      let def =
+        if opaque then OpaqueDef (Opaqueproof.create (Future.from_val (def, Univ.ContextSet.empty)))
+        else Def (Mod_subst.from_val def)
       in
-	feedback_completion_typecheck feedback_id;
+        feedback_completion_typecheck feedback_id;
       {
         Cooking.cook_body = def;
         cook_type = typ;
@@ -342,12 +342,12 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
 
   | ProjectionEntry {proj_entry_ind = ind; proj_entry_arg = i} ->
     let mib, _ = Inductive.lookup_mind_specif env (ind,0) in
-    let kn, pb = 
+    let kn, pb =
       match mib.mind_record with
-      | Some (Some (id, kns, pbs)) -> 
-	if i < Array.length pbs then
-	  kns.(i), pbs.(i)
-	else assert false
+      | Some (Some (id, kns, pbs)) ->
+        if i < Array.length pbs then
+          kns.(i), pbs.(i)
+        else assert false
       | _ -> assert false
     in
     let univs =
@@ -409,7 +409,7 @@ let build_constant_declaration kn env result =
     let context_ids = List.map NamedDecl.get_id (named_context env) in
     let def = result.cook_body in
     match result.cook_context with
-    | None when not (List.is_empty context_ids) -> 
+    | None when not (List.is_empty context_ids) ->
         (* No declared section vars, and non-empty section context:
            we must look at the body NOW, if any *)
         let ids_typ = global_vars_set env typ in
@@ -448,30 +448,30 @@ let build_constant_declaration kn env result =
               let inferred = keep_hyps env (Id.Set.union ids_typ ids_def) in
               check declared inferred) lc) in
   let univs = result.cook_universes in
-  let tps = 
+  let tps =
     let res =
       match result.cook_proj with
       | None -> compile_constant_body env univs def
       | Some pb ->
-	(* The compilation of primitive projections is a bit tricky, because
+        (* The compilation of primitive projections is a bit tricky, because
            they refer to themselves (the body of p looks like fun c =>
            Proj(p,c)). We break the cycle by building an ad-hoc compilation
            environment. A cleaner solution would be that kernel projections are
            simply Proj(i,c) with i an int and c a constr, but we would have to
            get rid of the compatibility layer. *)
-	let cb =
-	  { const_hyps = hyps;
-	    const_body = def;
-	    const_type = typ;
-	    const_proj = result.cook_proj;
-	    const_body_code = None;
-	    const_universes = univs;
-	    const_inline_code = result.cook_inline;
-	    const_typing_flags = Environ.typing_flags env;
-	    }
-	in
-	let env = add_constant kn cb env in
-	compile_constant_body env univs def
+        let cb =
+          { const_hyps = hyps;
+            const_body = def;
+            const_type = typ;
+            const_proj = result.cook_proj;
+            const_body_code = None;
+            const_universes = univs;
+            const_inline_code = result.cook_inline;
+            const_typing_flags = Environ.typing_flags env;
+            }
+        in
+        let env = add_constant kn cb env in
+        compile_constant_body env univs def
     in Option.map Cemitcodes.from_val res
   in
   { const_hyps = hyps;
@@ -494,7 +494,7 @@ let constant_entry_of_side_effect cb u =
     match cb.const_universes with
     | Monomorphic_const uctx ->
       Monomorphic_const_entry uctx
-    | Polymorphic_const auctx -> 
+    | Polymorphic_const auctx ->
       Polymorphic_const_entry (Univ.AUContext.repr auctx)
   in
   let pt =
@@ -524,7 +524,7 @@ type side_effect_role =
   | Subproof
   | Schema of inductive * string
 
-type exported_side_effect = 
+type exported_side_effect =
   Constant.t * constant_body * side_effect_role
 
 let export_side_effects mb env ce =
@@ -539,7 +539,7 @@ let export_side_effects mb env ce =
           (fun (b_ctx, _) -> b_ctx, ()) } in
       let not_exists (c,_,_,_) =
         try ignore(Environ.lookup_constant c env); false
-        with Not_found -> true in 
+        with Not_found -> true in
       let aux (acc,sl) { eff = se; from_env = mb } =
         let cbl = match se with
           | SEsubproof (c,cb,b) -> [c,cb,b,Subproof]
@@ -577,7 +577,7 @@ let export_side_effects mb env ce =
              List.fold_left (fun (env,cbs) (kn, ocb, u, r) ->
                let ce = constant_entry_of_side_effect ocb u in
                let cb = translate_constant Pure env kn ce in
-               (push_seff env (kn, cb,`Nothing, Subproof),(kn,cb,r) :: cbs)) 
+               (push_seff env (kn, cb,`Nothing, Subproof),(kn,cb,r) :: cbs))
              (env,[]) cbs in
            translate_seff sl rest (cbs @ acc) env
         | Some sl, cbs :: rest ->

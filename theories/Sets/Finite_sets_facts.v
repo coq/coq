@@ -13,11 +13,11 @@
 (*              Rocquencourt                        Sophia-Antipolis        *)
 (*                                                                          *)
 (*                                 Coq V6.1                                 *)
-(*									    *)
-(*			         Gilles Kahn 				    *)
-(*				 Gerard Huet				    *)
-(*									    *)
-(*									    *)
+(*                                                                          *)
+(*                               Gilles Kahn                                *)
+(*                               Gerard Huet                                *)
+(*                                                                          *)
+(*                                                                          *)
 (*                                                                          *)
 (* Acknowledgments: This work was started in July 1993 by F. Prost. Thanks  *)
 (* to the Newton Institute for providing an exceptional work environment    *)
@@ -232,7 +232,7 @@ Section Finite_sets_facts.
     forall (X:Ensemble U) (c1:nat),
       cardinal U X c1 ->
       forall (Y:Ensemble U) (c2:nat),
-	cardinal U Y c2 -> Strict_Included U X Y -> c2 > c1.
+        cardinal U Y c2 -> Strict_Included U X Y -> c2 > c1.
   Proof.
     intros X c1 H'; elim H'.
     intros Y c2 H'0; elim H'0; auto with sets arith.
@@ -281,8 +281,8 @@ Section Finite_sets_facts.
   Lemma G_aux :
     forall P:Ensemble U -> Prop,
       (forall X:Ensemble U,
-	Finite U X ->
-	(forall Y:Ensemble U, Strict_Included U Y X -> P Y) -> P X) ->
+        Finite U X ->
+        (forall Y:Ensemble U, Strict_Included U Y X -> P Y) -> P X) ->
       P (Empty_set U).
   Proof.
     intros P H'; try assumption.
@@ -298,8 +298,8 @@ Section Finite_sets_facts.
   Lemma Generalized_induction_on_finite_sets :
     forall P:Ensemble U -> Prop,
       (forall X:Ensemble U,
-	Finite U X ->
-	(forall Y:Ensemble U, Strict_Included U Y X -> P Y) -> P X) ->
+        Finite U X ->
+        (forall Y:Ensemble U, Strict_Included U Y X -> P Y) -> P X) ->
       forall X:Ensemble U, Finite U X -> P X.
   Proof.
     intros P H'0 X H'1.
@@ -320,8 +320,8 @@ Section Finite_sets_facts.
     intros H'2 H'4.
     elim (Included_Add U Y0 X x);
       [ intro H'14
-	| intro H'14; elim H'14; intros A' E; elim E; intros H'15 H'16; clear E H'14
-	| idtac ]; auto with sets.
+        | intro H'14; elim H'14; intros A' E; elim E; intros H'15 H'16; clear E H'14
+        | idtac ]; auto with sets.
     elim (Included_Strict_Included U Y0 X); auto with sets.
     intro H'9; apply H'5 with (Y := Y0); auto with sets.
     intro H'9; rewrite H'9.

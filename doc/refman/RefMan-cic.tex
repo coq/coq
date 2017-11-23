@@ -71,7 +71,7 @@ index for the universe and checks that the constraints between these
 indexes can be solved. From the user point of view we consequently
 have {\Type}:{\Type}.
 We shall make precise in the typing rules the constraints between the
-indexes. 
+indexes.
 
 \paragraph{Implementation issues}
 In practice, the {\Type} hierarchy is implemented using
@@ -98,7 +98,7 @@ inconsistency} error (see also Section~\ref{PrintingUniverses}).
 %% defined objects, but also objects related to inductive definitions
 %% (either the type itself or one of its constructors or destructors).
 
-%% \medskip\noindent {\bf Remark. } In other presentations of \CIC, 
+%% \medskip\noindent {\bf Remark. } In other presentations of \CIC,
 %% the inductive objects are not seen as
 %% external declarations but as first-class terms. Usually the
 %% definitions are also completely ignored.  This is a nice theoretical
@@ -149,8 +149,8 @@ More precisely the language of the {\em Calculus of Inductive
   $\lambda$-calculus\index{lambda-calculus@$\lambda$-calculus}
   \cite{Bar81}. The term $\lb x:T \mto u$ is a function which maps
   elements of $T$ to the expression $u$.
-\item if $t$ and $u$ are terms then $(t\ u)$ is a term  
- ($t~u$ in \Coq{} concrete syntax).  The term $(t\ 
+\item if $t$ and $u$ are terms then $(t\ u)$ is a term
+ ($t~u$ in \Coq{} concrete syntax).  The term $(t\
   u)$ reads as {\it ``t applied to u''}.
 \item if $x$ is a variable, and $t$, $T$ and $u$ are terms then
   $\kw{let}~x:=t:T~\kw{in}~u$ is a
@@ -316,22 +316,22 @@ be derived from the following rules.
 \item[Prod-Prop]  \index{Typing rules!Prod-Prop}
 \inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~
     \WTE{\Gamma::(x:T)}{U}{\Prop}}
-      { \WTEG{\forall~x:T,U}{\Prop}}} 
+      { \WTEG{\forall~x:T,U}{\Prop}}}
 \item[Prod-Set]  \index{Typing rules!Prod-Set}
 \inference{\frac{\WTEG{T}{s}~~~~s \in\{\Prop, \Set\}~~~~~~
     \WTE{\Gamma::(x:T)}{U}{\Set}}
-      { \WTEG{\forall~x:T,U}{\Set}}} 
+      { \WTEG{\forall~x:T,U}{\Set}}}
 \item[Prod-Type]  \index{Typing rules!Prod-Type}
 \inference{\frac{\WTEG{T}{\Type(i)}~~~~
     \WTE{\Gamma::(x:T)}{U}{\Type(i)}}
     {\WTEG{\forall~x:T,U}{\Type(i)}}}
-\item[Lam]\index{Typing rules!Lam} 
+\item[Lam]\index{Typing rules!Lam}
 \inference{\frac{\WTEG{\forall~x:T,U}{s}~~~~ \WTE{\Gamma::(x:T)}{t}{U}}
         {\WTEG{\lb x:T\mto t}{\forall x:T, U}}}
 \item[App]\index{Typing rules!App}
  \inference{\frac{\WTEG{t}{\forall~x:U,T}~~~~\WTEG{u}{U}}
                  {\WTEG{(t\ u)}{\subst{T}{x}{u}}}}
-\item[Let]\index{Typing rules!Let} 
+\item[Let]\index{Typing rules!Let}
 \inference{\frac{\WTEG{t}{T}~~~~ \WTE{\Gamma::(x:=t:T)}{u}{U}}
         {\WTEG{\letin{x}{t:T}{u}}{\subst{U}{x}{t}}}}
 \end{description}
@@ -364,7 +364,7 @@ $\lb x:T\mto x$. In any global environment $E$ and local context $\Gamma$, we wa
 application $((\lb x:T\mto x)~a)$. We define for this a {\em reduction} (or a
 {\em conversion}) rule we call $\beta$:
 \[ \WTEGRED{((\lb x:T\mto
-  t)~u)}{\triangleright_{\beta}}{\subst{t}{x}{u}} \] 
+  t)~u)}{\triangleright_{\beta}}{\subst{t}{x}{u}} \]
 We say that $\subst{t}{x}{u}$ is the {\em $\beta$-contraction} of
 $((\lb x:T\mto t)~u)$ and, conversely, that $((\lb x:T\mto t)~u)$
 is the {\em $\beta$-expansion} of $\subst{t}{x}{u}$.
@@ -681,15 +681,15 @@ with forest : Set :=
 
 \noindent The declaration for a mutual inductive definition of {\even} and {\odd} is:
 \begin{latexonly}
-	\newcommand\GammaI{\left[\begin{array}{r@{:}l}
-			    \even & \nat\ra\Prop \\
-			    \odd & \nat\ra\Prop
+        \newcommand\GammaI{\left[\begin{array}{r@{:}l}
+                            \even & \nat\ra\Prop \\
+                            \odd & \nat\ra\Prop
                       \end{array}
                 \right]}
-		\newcommand\GammaC{\left[\begin{array}{r@{:}l}
-			    \evenO & \even~\nO \\
-			    \evenS & \forall n : \nat, \odd~n \ra \even~(\nS~n)\\
-			    \oddS & \forall n : \nat, \even~n \ra \odd~(\nS~n)
+                \newcommand\GammaC{\left[\begin{array}{r@{:}l}
+                            \evenO & \even~\nO \\
+                            \evenS & \forall n : \nat, \odd~n \ra \even~(\nS~n)\\
+                            \oddS & \forall n : \nat, \even~n \ra \odd~(\nS~n)
                       \end{array}
                 \right]}
     \vskip.5em
@@ -852,11 +852,11 @@ following cases:
   $I$ is the name of an inductive declaration of the form
   $\Ind{\Gamma}{m}{I:A}{c_1:\forall p_1:P_1,\ldots \forall
     p_m:P_m,C_1;\ldots;c_n:\forall p_1:P_1,\ldots \forall
-    p_m:P_m,C_n}$ 
+    p_m:P_m,C_n}$
   (in particular, it is not mutually defined and it has $m$
   parameters) and $X$ does not occur in any of the $t_i$, and the
   (instantiated) types of constructor $C_i\{p_j/a_j\}_{j=1\ldots m}$
-  of $I$ satisfy 
+  of $I$ satisfy
   the nested positivity condition for $X$
 %\item more generally, when $T$ is not a type, $X$ occurs strictly
 %positively in $T[x:U]u$ if $X$ does not occur in $U$ but occurs
@@ -948,8 +948,8 @@ inductive definition.
 \item[W-Ind] Let $E$ be a global environment and
   $\Gamma_P,\Gamma_I,\Gamma_C$ are contexts such that
   $\Gamma_I$ is $[I_1:\forall \Gamma_P,A_1;\ldots;I_k:\forall
-  \Gamma_P,A_k]$ and $\Gamma_C$ is 
-  $[c_1:\forall \Gamma_P,C_1;\ldots;c_n:\forall \Gamma_P,C_n]$. 
+  \Gamma_P,A_k]$ and $\Gamma_C$ is
+  $[c_1:\forall \Gamma_P,C_1;\ldots;c_n:\forall \Gamma_P,C_n]$.
 \inference{
   \frac{
   (\WTE{\Gamma_P}{A_j}{s'_j})_{j=1\ldots  k}
@@ -960,7 +960,7 @@ provided that the following side conditions hold:
 \begin{itemize}
 \item $k>0$ and all of $I_j$ and $c_i$ are distinct names for $j=1\ldots  k$ and $i=1\ldots  n$,
 \item $p$ is the number of parameters of \NInd{}{\Gamma_I}{\Gamma_C}
-  and $\Gamma_P$ is the context of parameters, 
+  and $\Gamma_P$ is the context of parameters,
 \item for $j=1\ldots  k$ we have that $A_j$ is an arity of sort $s_j$ and $I_j
   \notin E$,
 \item for $i=1\ldots  n$ we have that $C_i$ is a type of constructor of
@@ -971,7 +971,7 @@ provided that the following side conditions hold:
 One can remark that there is a constraint between the sort of the
 arity of the inductive type and the sort of the type of its
 constructors which will always be satisfied for the impredicative sort
-{\Prop} but may fail to define inductive definition 
+{\Prop} but may fail to define inductive definition
 on sort \Set{} and generate constraints between universes for
 inductive definitions in the {\Type} hierarchy.
 
@@ -992,7 +992,7 @@ Fail Inductive exSet (P:Set->Prop) : Set :=
   exS_intro : forall X:Set, P X -> exSet P.
 \end{coq_example}
 It is possible to declare the same inductive definition in the
-universe \Type. 
+universe \Type.
 The \texttt{exType} inductive definition has type  $(\Type_i \ra\Prop)\ra
 \Type_j$ with the constraint that the parameter \texttt{X} of \texttt{exT\_intro} has type $\Type_k$ with $k<j$ and $k\leq i$.
 \begin{coq_example*}
@@ -1001,7 +1001,7 @@ Inductive exType (P:Type->Prop) : Type :=
 \end{coq_example*}
 %We shall assume for the following definitions that, if necessary, we
 %annotated the type of constructors such that we know if the argument
-%is recursive or not.  We shall write the type $(x:_R T)C$ if it is 
+%is recursive or not.  We shall write the type $(x:_R T)C$ if it is
 %a recursive argument and $(x:_P T)C$ if the argument is not recursive.
 
 \paragraph[Template polymorphism.]{Template polymorphism.\index{Template polymorphism}}
@@ -1084,10 +1084,10 @@ instance of $\Ind{}{p}{\Gamma_I}{\Gamma_C}$.
 \newcommand{\Single}{\mbox{\textsf{Set}}}
 
 In practice, the rule {\bf Ind-Family} is used by {\Coq} only when all the
-inductive types of the inductive definition are declared with an arity whose 
+inductive types of the inductive definition are declared with an arity whose
 sort is in the $\Type$
 hierarchy. Then, the polymorphism is over the parameters whose
-type is an arity of sort in the {\Type} hierarchy. 
+type is an arity of sort in the {\Type} hierarchy.
 The sort $s_j$ are
 chosen canonically so that each $s_j$ is minimal with respect to the
 hierarchy ${\Prop}\subset{\Set_p}\subset\Type$ where $\Set_p$ is
@@ -1095,7 +1095,7 @@ predicative {\Set}.
 %and ${\Prop_u}$ is the sort of small singleton
 %inductive types (i.e. of inductive types with one single constructor
 %and that contains either proofs or inhabitants of singleton types
-%only). 
+%only).
 More precisely, an empty or small singleton inductive definition
 (i.e. an inductive definition of which all inductive types are
 singleton -- see paragraph~\ref{singleton}) is set in
@@ -1106,11 +1106,11 @@ and otherwise in the {\Type} hierarchy.
 Note that the side-condition about allowed elimination sorts in the
 rule~{\bf Ind-Family} is just to avoid to recompute the allowed
 elimination sorts at each instance of a pattern-matching (see
-section~\ref{elimdep}).  
+section~\ref{elimdep}).
 As an example, let us consider the following definition:
 \begin{coq_example*}
-Inductive option (A:Type) : Type := 
-| None : option A 
+Inductive option (A:Type) : Type :=
+| None : option A
 | Some : A -> option A.
 \end{coq_example*}
 %
@@ -1189,7 +1189,7 @@ In case the inductive definition is effectively a recursive one, we
 want to capture the extra property that we have built the smallest
 fixed point of this recursive equation.  This says that we are only
 manipulating finite objects. This analysis provides induction
-principles.  
+principles.
 For instance, in order to prove $\forall l:\ListA,(\haslengthA~l~(\length~l))$
 it is enough to prove:
 %
@@ -1218,7 +1218,7 @@ primitive recursion over the structure.
 But this operator is rather tedious to implement and use. We choose in
 this version of {\Coq} to factorize the operator for primitive recursion
 into two more primitive operations as was first suggested by Th. Coquand
-in~\cite{Coq92}.  One is the definition by pattern-matching. The second one is a definition by guarded fixpoints. 
+in~\cite{Coq92}.  One is the definition by pattern-matching. The second one is a definition by guarded fixpoints.
 
 \subsubsection[The {\tt match\ldots with \ldots end} construction.]{The {\tt match\ldots with \ldots end} construction.\label{Caseexpr}
 \index{match@{\tt match\ldots with\ldots end}}}
@@ -1283,14 +1283,14 @@ compact notation:
 % principle that we stated before with a predicate which does not depend
 % explicitly on the object in the inductive definition.
 
-% For instance, a function testing whether a list is empty 
+% For instance, a function testing whether a list is empty
 % can be
 % defined as:
 % \[\kw{fun} l:\ListA \Ra \kw{match}~l~\kw{with}~ \Nil \Ra \true~
 % |~(\cons~a~m) \Ra \false \kw{end}\]
 % represented by
 % \[\lb l:\ListA \mto\Case{\bool}{l}{\true~ |~ \lb a~m,~\false}\]
-%\noindent {\bf Remark. } 
+%\noindent {\bf Remark. }
 
 % In the system \Coq\ the expression above, can be
 % written without mentioning
@@ -1317,7 +1317,7 @@ $I$.
 
 The case of inductive definitions in sorts \Set\ or \Type{} is simple.
 There is no restriction on the sort of the predicate to be
-eliminated. 
+eliminated.
 %
 \begin{description}
 \item[Prod] \inference{\frac{\compat{(I~x):A'}{B'}}
@@ -1388,7 +1388,7 @@ Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
 Reset proof_irrelevance.
 \end{coq_eval}
 The elimination of an inductive definition of type \Prop\ on a
-predicate $P$ of type $I\ra \Type$ leads to a paradox when applied to 
+predicate $P$ of type $I\ra \Type$ leads to a paradox when applied to
 impredicative inductive definition like the second-order existential
 quantifier \texttt{exProp} defined above, because it give access to
 the two projections on this type.
@@ -1400,7 +1400,7 @@ the two projections on this type.
 %strong elimination on \Typeset\ was not compatible with the current
 %extraction procedure. In this version, strong elimination on \Typeset\
 %is accepted but a dummy element is extracted from it and may generate
-%problems if extracted terms are explicitly used such as in the 
+%problems if extracted terms are explicitly used such as in the
 %{\tt Program} tactic or when extracting ML programs.
 
 \paragraph[Empty and singleton elimination]{Empty and singleton elimination\label{singleton}
@@ -1408,9 +1408,9 @@ the two projections on this type.
 \index{Elimination!Empty elimination}}
 
 There are special inductive definitions in \Prop\ for which more
-eliminations are allowed. 
+eliminations are allowed.
 \begin{description}
-\item[\Prop-extended] 
+\item[\Prop-extended]
 \inference{
    \frac{I \mbox{~is an empty or singleton
        definition}~~~s \in \Sort}{\compat{I:\Prop}{I\ra s}}
@@ -1425,7 +1425,7 @@ definition} has only one constructor and all the arguments of this
 constructor have type \Prop. In that case, there is a canonical
 way to interpret the informative extraction on an object in that type,
 such that the elimination on any sort $s$ is legal.  Typical examples are
-the conjunction of non-informative propositions and the equality. 
+the conjunction of non-informative propositions and the equality.
 If there is an hypothesis $h:a=b$ in the local context, it can be used for
 rewriting not only in logical propositions but also in any type.
 % In that case, the term \verb!eq_rec! which was defined as an axiom, is
@@ -1451,7 +1451,7 @@ branch corresponding to the $c:C$ constructor.
 \[
 \begin{array}{ll}
 \CI{c:(I~p_1\ldots p_r\ t_1 \ldots t_p)}{P} &\equiv (P~t_1\ldots ~t_p~c) \\[2mm]
-\CI{c:\forall~x:T,C}{P} &\equiv \forall~x:T,\CI{(c~x):C}{P} 
+\CI{c:\forall~x:T,C}{P} &\equiv \forall~x:T,\CI{(c~x):C}{P}
 \end{array}
 \]
 We write \CI{c}{P} for \CI{c:C}{P} with $C$ the type of $c$.
@@ -1497,12 +1497,12 @@ Given some $P$, then \CI{(\Nil~\nat)}{P} represents the expected type of $f_1$, 
 
 Our very general destructor for inductive definition enjoys the
 following typing rule
-% , where we write 
+% , where we write
 % \[
 % \Case{P}{c}{[x_{11}:T_{11}]\ldots[x_{1p_1}:T_{1p_1}]g_1\ldots
 %   [x_{n1}:T_{n1}]\ldots[x_{np_n}:T_{np_n}]g_n}
 % \]
-% for 
+% for
 % \[
 % \Case{P}{c}{(c_1~x_{11}~...~x_{1p_1}) \Ra g_1 ~|~\ldots~|~
 % (c_n~x_{n1}...x_{np_n}) \Ra g_n }
@@ -1518,7 +1518,7 @@ following typing rule
 {\WTEG{\Case{P}{c}{f_1|\ldots  |f_l}}{(P\ t_1\ldots  t_s\ c)}}}%\\[3mm]
 
 provided $I$ is an inductive type in a definition
-\Ind{}{r}{\Gamma_I}{\Gamma_C} with 
+\Ind{}{r}{\Gamma_I}{\Gamma_C} with
 $\Gamma_C = [c_1:C_1;\ldots;c_n:C_n]$ and $c_{p_1}\ldots  c_{p_l}$ are the
 only constructors of $I$.
 \end{description}
@@ -1552,18 +1552,18 @@ to the general reduction rule:
     f_n} \triangleright_{\iota} (f_i~a_1\ldots a_m) \]
 
 \subsection[Fixpoint definitions]{Fixpoint definitions\label{Fix-term} \index{Fix@{\tt Fix}}}
-The second operator for elimination is fixpoint definition. 
+The second operator for elimination is fixpoint definition.
 This fixpoint may involve several mutually recursive definitions.
-The basic concrete syntax for a recursive set of mutually recursive 
-declarations is (with $\Gamma_i$ contexts): 
+The basic concrete syntax for a recursive set of mutually recursive
+declarations is (with $\Gamma_i$ contexts):
 \[\kw{fix}~f_1 (\Gamma_1) :A_1:=t_1~\kw{with} \ldots \kw{with}~ f_n
 (\Gamma_n) :A_n:=t_n\]
 The terms are obtained by projections from this set of declarations
-and are written 
+and are written
 \[\kw{fix}~f_1 (\Gamma_1) :A_1:=t_1~\kw{with} \ldots \kw{with}~ f_n
 (\Gamma_n) :A_n:=t_n~\kw{for}~f_i\]
 In the inference rules, we represent such a
-term by 
+term by
 \[\Fix{f_i}{f_1:A_1':=t_1' \ldots f_n:A_n':=t_n'}\]
 with $t_i'$ (resp. $A_i'$) representing the term $t_i$ abstracted
 (resp. generalized) with
@@ -1583,7 +1583,7 @@ The typing rule is the expected one for a fixpoint.
 Any fixpoint definition cannot be accepted because non-normalizing terms
 allow proofs of absurdity.
 %
-The basic scheme of recursion that should be allowed is the one needed for 
+The basic scheme of recursion that should be allowed is the one needed for
 defining primitive
 recursive functionals. In that case the fixpoint enjoys a special
 syntactic restriction, namely one of the arguments belongs to an
@@ -1591,7 +1591,7 @@ inductive type, the function starts with a case analysis and recursive
 calls are done on variables coming from patterns and representing subterms.
 %
 For instance in the case of natural numbers, a proof of the induction
-principle of type 
+principle of type
 \[\forall P:\nat\ra\Prop, (P~\nO)\ra(\forall n:\nat, (P~n)\ra(P~(\nS~n)))\ra
 \forall n:\nat, (P~n)\]
 can be represented by the term:
@@ -1611,12 +1611,12 @@ The first stage is to precise on which argument the fixpoint will be
 decreasing. The type of this argument should be an inductive
 definition.
 %
-For doing this, the syntax of fixpoints is extended and becomes 
+For doing this, the syntax of fixpoints is extended and becomes
  \[\Fix{f_i}{f_1/k_1:A_1:=t_1 \ldots f_n/k_n:A_n:=t_n}\]
 where $k_i$ are positive integers.
 Each $k_i$ represents the index of pararameter of $f_i$, on which $f_i$ is decreasing.
 Each $A_i$ should be a type (reducible to a term) starting with at least
-$k_i$ products $\forall y_1:B_1,\ldots \forall y_{k_i}:B_{k_i}, A'_i$ 
+$k_i$ products $\forall y_1:B_1,\ldots \forall y_{k_i}:B_{k_i}, A'_i$
 and $B_{k_i}$ an is unductive type.
 
 Now in the definition $t_i$, if $f_j$ occurs then it should be applied
@@ -1625,18 +1625,18 @@ syntactically recognized as structurally smaller than $y_{k_i}$
 
 
 The definition of being structurally smaller is a bit technical.
-One needs first to  define the notion of 
+One needs first to  define the notion of
 {\em recursive arguments of a constructor}\index{Recursive arguments}.
 For an inductive definition \Ind{}{r}{\Gamma_I}{\Gamma_C},
 if the type of a constructor $c$ has the form
-$\forall p_1:P_1,\ldots \forall p_r:P_r, 
-\forall x_1:T_1, \ldots \forall x_r:T_r, (I_j~p_1\ldots 
+$\forall p_1:P_1,\ldots \forall p_r:P_r,
+\forall x_1:T_1, \ldots \forall x_r:T_r, (I_j~p_1\ldots
 p_r~t_1\ldots  t_s)$, then the recursive arguments will correspond to $T_i$ in
 which one of the $I_l$ occurs.
 
 The main rules for being structurally smaller are the following:\\
 Given a variable $y$ of type an inductive
-definition in a declaration 
+definition in a declaration
 \Ind{}{r}{\Gamma_I}{\Gamma_C}
 where $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$, and $\Gamma_C$ is
   $[c_1:C_1;\ldots;c_n:C_n]$.
@@ -1647,9 +1647,9 @@ The terms structurally smaller than $y$ are:
   smaller than $y$. \\
   If $c$ is $y$ or is structurally smaller than $y$, its type is an inductive
   definition $I_p$ part of the inductive
-  declaration corresponding to $y$. 
+  declaration corresponding to $y$.
   Each $f_i$ corresponds to a type of constructor $C_q \equiv
-  \forall p_1:P_1,\ldots,\forall p_r:P_r, \forall y_1:B_1, \ldots \forall y_k:B_k, (I~a_1\ldots a_k)$ 
+  \forall p_1:P_1,\ldots,\forall p_r:P_r, \forall y_1:B_1, \ldots \forall y_k:B_k, (I~a_1\ldots a_k)$
   and can consequently be
   written $\lb y_1:B'_1\mto \ldots \lb y_k:B'_k\mto g_i$.
   ($B'_i$ is obtained from $B_i$ by substituting parameters variables)
@@ -1712,17 +1712,17 @@ The following reductions are now possible:
 % presentations of the Calculus of Inductive Constructions is now just a
 % macro definition which generates the good combination of {\tt Case}
 % and {\tt Fix} operators in order to generate an operator for primitive
-% recursive definitions. It always considers an inductive definition as 
+% recursive definitions. It always considers an inductive definition as
 % a single inductive definition.
 
 % The following examples illustrates this feature.
 % \begin{coq_example}
-% Definition nat_pr : (C:Set)C->(nat->C->C)->nat->C 
+% Definition nat_pr : (C:Set)C->(nat->C->C)->nat->C
 %   :=[C,x,g,n]Match n with x g end.
 % Print nat_pr.
 % \end{coq_example}
 % \begin{coq_example}
-% Definition forest_pr 
+% Definition forest_pr
 %   : (C:Set)C->(tree->forest->C->C)->forest->C
 %   := [C,x,g,n]Match n with x g end.
 % \end{coq_example}
@@ -1730,7 +1730,7 @@ The following reductions are now possible:
 % Cet exemple faisait error (HH le 12/12/96), j'ai change pour une
 % version plus simple
 %\begin{coq_example}
-%Definition forest_pr 
+%Definition forest_pr
 %  : (P:forest->Set)(P emptyf)->((t:tree)(f:forest)(P f)->(P (consf t f)))
 %    ->(f:forest)(P f)
 %  := [C,x,g,n]Match n with x g end.
@@ -1738,7 +1738,7 @@ The following reductions are now possible:
 
 \subsubsection{Mutual induction}
 
-The principles of mutual induction can be automatically generated 
+The principles of mutual induction can be automatically generated
 using the {\tt Scheme} command described in Section~\ref{Scheme}.
 
 \section{Admissible rules for global environments}
@@ -1817,14 +1817,14 @@ consequently derive the following property.
 \paragraph{First pruning property:}
 \inference{\frac{\WF{E;c:U;E'}{\Gamma} \qquad c \mbox{ does not occur in $E'$ and $\Gamma$}}
                 {\WF{E;E'}{\Gamma}}}
- 
+
 \paragraph{Second pruning property:}
 \inference{\frac{\WF{E;c:=u:U;E'}{\Gamma} \qquad c \mbox{ does not occur in $E'$ and $\Gamma$}}
                 {\WF{E;E'}{\Gamma}}}
- 
+
 \section{Co-inductive types}
 The implementation contains also co-inductive definitions, which are
-types inhabited by infinite objects. 
+types inhabited by infinite objects.
 More information on co-inductive definitions can be found
 in~\cite{Gimenez95b,Gim98,GimCas05}.
 %They are described in Chapter~\ref{Co-inductives}.
@@ -1854,10 +1854,10 @@ in the sort \Set, which is extended to a domain in any sort:
 \item [Prod]  \index{Typing rules!Prod (impredicative Set)}
 \inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~~~~
     \WTE{\Gamma::(x:T)}{U}{\Set}}
-      { \WTEG{\forall~x:T,U}{\Set}}} 
+      { \WTEG{\forall~x:T,U}{\Set}}}
 \end{description}
 This extension has consequences on the inductive definitions which are
-allowed. 
+allowed.
 In the impredicative system, one can build so-called {\em large inductive
   definitions} like the example of second-order existential
 quantifier (\texttt{exSet}).
@@ -1873,9 +1873,9 @@ impredicative system for sort \Set{} become:
          {\compat{I:\Set}{I\ra s}}}
 \end{description}
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:
 
 

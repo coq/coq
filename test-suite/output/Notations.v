@@ -250,11 +250,11 @@ Notation NONE := None.
 Check (fun x => match x with SOME x => x | NONE => 0 end).
 
 Notation NONE2 := (@None _).
-Notation SOME2 := (@Some _).     
+Notation SOME2 := (@Some _).
 Check (fun x => match x with SOME2 x => x | NONE2 => 0 end).
 
 Notation NONE3 := @None.
-Notation SOME3 := @Some.     
+Notation SOME3 := @Some.
 Check (fun x => match x with SOME3 _ x => x | NONE3 _ => 0 end).
 
 Notation "a :'" := (cons a) (at level 12).

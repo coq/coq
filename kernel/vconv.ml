@@ -68,11 +68,11 @@ and conv_whd env pb k whd1 whd2 cu =
       let tag1 = btag b1 and tag2 = btag b2 in
       let sz = bsize b1 in
       if Int.equal tag1 tag2 && Int.equal sz (bsize b2) then
-	let rcu = ref cu in
-	for i = 0 to sz - 1 do
-	  rcu := conv_val env CONV k (bfield b1 i) (bfield b2 i) !rcu
-	done;
-	!rcu
+        let rcu = ref cu in
+        for i = 0 to sz - 1 do
+          rcu := conv_val env CONV k (bfield b1 i) (bfield b2 i) !rcu
+        done;
+        !rcu
       else raise NotConvertible
   | Vatom_stk(a1,stk1), Vatom_stk(a2,stk2) ->
       conv_atom env pb k a1 stk1 a2 stk2 cu
@@ -91,15 +91,15 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
     if eq_ind ind1 ind2 && compare_stack stk1 stk2 then
       if Environ.polymorphic_ind ind1 env then
         let mib = Environ.lookup_mind mi env in
-	let ulen = 
+        let ulen =
           match mib.Declarations.mind_universes with
           | Declarations.Monomorphic_ind ctx -> Univ.UContext.size ctx
           | Declarations.Polymorphic_ind auctx -> Univ.AUContext.size auctx
-          | Declarations.Cumulative_ind cumi -> 
+          | Declarations.Cumulative_ind cumi ->
             Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)
         in
         match stk1 , stk2 with
-	| [], [] -> assert (Int.equal ulen 0); cu
+        | [], [] -> assert (Int.equal ulen 0); cu
         | Zapp args1 :: stk1' , Zapp args2 :: stk2' ->
           assert (ulen <= nargs args1);
           assert (ulen <= nargs args2);
@@ -109,14 +109,14 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
           let u2 = Univ.Instance.of_array u2 in
           let cu = convert_instances ~flex:false u1 u2 cu in
           conv_arguments env ~from:ulen k args1 args2
-	    (conv_stack env k stk1' stk2' cu)
+            (conv_stack env k stk1' stk2' cu)
         | _, _ -> assert false (* Should not happen if problem is well typed *)
       else
-	conv_stack env k stk1 stk2 cu
+        conv_stack env k stk1 stk2 cu
     else raise NotConvertible
   | Aid ik1, Aid ik2 ->
     if Vars.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
-	conv_stack env k stk1 stk2 cu
+        conv_stack env k stk1 stk2 cu
       else raise NotConvertible
   | Atype _ , _ | _, Atype _ -> assert false
   | Aind _, _ | Aid _, _ -> raise NotConvertible
@@ -128,17 +128,17 @@ and conv_stack env k stk1 stk2 cu =
       conv_stack env k stk1 stk2 (conv_arguments env k args1 args2 cu)
   | Zfix(f1,args1) :: stk1, Zfix(f2,args2) :: stk2 ->
       conv_stack env k stk1 stk2
-	(conv_arguments env k args1 args2 (conv_fix env k f1 f2 cu))
+        (conv_arguments env k args1 args2 (conv_fix env k f1 f2 cu))
   | Zswitch sw1 :: stk1, Zswitch sw2 :: stk2 ->
       if check_switch sw1 sw2 then
-	let vt1,vt2 = type_of_switch sw1, type_of_switch sw2 in
-	let rcu = ref (conv_val env CONV k vt1 vt2 cu) in
-	let b1, b2 = branch_of_switch k sw1, branch_of_switch k sw2 in
-	for i = 0 to Array.length b1 - 1 do
-	  rcu :=
-	    conv_val env CONV (k + fst b1.(i)) (snd b1.(i)) (snd b2.(i)) !rcu
-	done;
-	conv_stack env k stk1 stk2 !rcu
+        let vt1,vt2 = type_of_switch sw1, type_of_switch sw2 in
+        let rcu = ref (conv_val env CONV k vt1 vt2 cu) in
+        let b1, b2 = branch_of_switch k sw1, branch_of_switch k sw2 in
+        for i = 0 to Array.length b1 - 1 do
+          rcu :=
+            conv_val env CONV (k + fst b1.(i)) (snd b1.(i)) (snd b2.(i)) !rcu
+        done;
+        conv_stack env k stk1 stk2 !rcu
       else raise NotConvertible
   | Zproj p1 :: stk1, Zproj p2 :: stk2 ->
     if Constant.equal p1 p2 then conv_stack env k stk1 stk2 cu
@@ -179,13 +179,13 @@ and conv_arguments env ?from:(from=0) k args1 args2 cu =
     if Int.equal n (nargs args2) then
       let rcu = ref cu in
       for i = from to n - 1 do
-	rcu := conv_val env CONV k (arg args1 i) (arg args2 i) !rcu
+        rcu := conv_val env CONV k (arg args1 i) (arg args2 i) !rcu
       done;
       !rcu
     else raise NotConvertible
 
 let vm_conv_gen cv_pb env univs t1 t2 =
-  try 
+  try
     let v1 = val_of_constr env t1 in
     let v2 = val_of_constr env t2 in
     fst (conv_val env cv_pb (nb_rel env) v1 v2 univs)

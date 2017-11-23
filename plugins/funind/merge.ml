@@ -459,7 +459,7 @@ let shift_linked_params mib1 mib2 (lnk1:linked_var array) (lnk2:linked_var array
   let _ = prstr "\notherprms1:\n" in
   let _ =
     List.iter (fun decl -> prstr (string_of_name (RelDecl.get_name decl) ^ " : ");
-			   prconstr (RelDecl.get_type decl); prstr "\n")
+                           prconstr (RelDecl.get_type decl); prstr "\n")
     otherprms1 in
   let _ = prstr "\notherprms2:\n" in
   let _ =

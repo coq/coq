@@ -30,21 +30,21 @@ Global Instance list_caset_Proper'' {A P}
 Admitted.
 
 Goal    forall (Char : Type) (P : forall _ : list bool, Prop) (l : list bool) (l0 : forall _ : forall _ : Char, bool, list bool)
-               
+
                (T : Type) (T0 : forall _ : T, Type) (t : T),
-    
+
     let predata := t in
 
     forall (splitdata : T0 predata) (l5 : forall _ : T0 t, list nat) (T1 : Type) (b : forall (_ : T1) (_ : Char), bool)
-           
+
            (T2 : Type) (a11 : T2) (xs : list T2) (T3 : Type) (i0 : T3) (P0 : Set) (b1 : forall (_ : nat) (_ : P0), bool)
-           
+
            (l2 : forall (_ : forall _ : T1, list bool) (_ : forall _ : P0, list bool) (_ : T2), list bool)
-           
+
            (l1 : forall (_ : forall _ : forall _ : Char, bool, list bool) (_ : forall _ : P0, list bool) (_ : T3), list bool)
-           
+
            (_ : forall NT : forall _ : P0, list bool, @eq (list bool) (l1 l0 NT i0) (l2 (fun f : T1 => l0 (b f)) NT a11)),
-      
+
       P
         (@list_caset T2 (fun _ : list T2 => list bool) l
                      (fun (_ : T2) (_ : list T2) => l1 l0 (fun a9 : P0 => @map nat bool (fun x0 : nat => b1 x0 a9) (l5 splitdata)) i0

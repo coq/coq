@@ -135,11 +135,11 @@ let rec mk_nat = function
 
 (* Lists *)
 
-let mkListConst c = 
-  let r = 
+let mkListConst c =
+  let r =
     Coqlib.coq_reference "" ["Init";"Datatypes"] c
-  in 
-  let inst = 
+  in
+  let inst =
     if Global.is_polymorphic r then fun u -> Univ.Instance.of_array [|u|]
     else fun _ -> Univ.Instance.empty
   in
@@ -152,10 +152,10 @@ let mk_list univ typ l =
   let rec loop = function
     | [] -> coq_nil univ typ
     | (step :: l) ->
-	mkApp (coq_cons univ typ, [| step; loop l |]) in
+        mkApp (coq_cons univ typ, [| step; loop l |]) in
   loop l
 
-let mk_plist = 
+let mk_plist =
   let type1lev = Universes.new_univ_level (Global.current_dirpath ()) in
     fun l -> mk_list type1lev mkProp l
 

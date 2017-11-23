@@ -62,7 +62,7 @@ Qed.
 
 (** Functional extensionality *)
 
-Local Notation FunctionalExtensionality := 
+Local Notation FunctionalExtensionality :=
   (forall A B (f g : A -> B), (forall x, f x = g x) -> f = g).
 
 (** Equality of projections from diagonal *)
@@ -86,7 +86,7 @@ Local Notation BijectivityBijectiveComp := (forall A B C (f:A->B) g,
 Theorem FunctExt_iff_EqDeltaProjs : FunctionalExtensionality <-> EqDeltaProjs.
 Proof.
   split.
-  - intros FunExt *; apply FunExt, diagonal_projs_same_behavior. 
+  - intros FunExt *; apply FunExt, diagonal_projs_same_behavior.
   - intros EqProjs **; change f with (fun x => pi1 {|pi1:=f x; pi2:=g x; eq:=H x|}).
     rewrite EqProjs; reflexivity.
 Qed.
@@ -108,7 +108,7 @@ Qed.
 
 Theorem FunctExt_iff_UniqInverse : FunctionalExtensionality <-> UniqueInverse.
 Proof.
-  split. 
+  split.
   - apply FunctExt_UniqInverse.
   - intro; apply FunctExt_iff_EqDeltaProjs, UniqInverse_EqDeltaProjs; trivial.
 Qed.

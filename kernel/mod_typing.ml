@@ -66,12 +66,12 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
     if List.is_empty idl then
       (* Toplevel definition *)
       let cb = match spec with
-	| SFBconst cb -> cb
-	| _ -> error_not_a_constant lab
+        | SFBconst cb -> cb
+        | _ -> error_not_a_constant lab
       in
       (* In the spirit of subtyping.check_constant, we accept
          any implementations of parameters and opaques terms,
-	 as long as they have the right type *)
+         as long as they have the right type *)
       let c', univs, ctx' =
         match cb.const_universes with
         | Monomorphic_const _ ->
@@ -79,18 +79,18 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
               environment, because they do not appear in the type of the
               definition. Any inconsistency will be raised at a later stage
               when joining the environment. *)
-	  let env' = Environ.push_context ~strict:true ctx env' in
-	  let c',cst = match cb.const_body with
-	    | Undef _ | OpaqueDef _ ->
-	      let j = Typeops.infer env' c in
-	      let typ = cb.const_type in
-	      let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
-						j.uj_type typ in
-	      j.uj_val, cst'
-	    | Def cs ->
-	       let c' = Mod_subst.force_constr cs in
-	         c, Reduction.infer_conv env' (Environ.universes env') c c'
-	  in c', Monomorphic_const ctx, Univ.ContextSet.add_constraints cst (Univ.ContextSet.of_context ctx)
+          let env' = Environ.push_context ~strict:true ctx env' in
+          let c',cst = match cb.const_body with
+            | Undef _ | OpaqueDef _ ->
+              let j = Typeops.infer env' c in
+              let typ = cb.const_type in
+              let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
+                                                j.uj_type typ in
+              j.uj_val, cst'
+            | Def cs ->
+               let c' = Mod_subst.force_constr cs in
+                 c, Reduction.infer_conv env' (Environ.universes env') c c'
+          in c', Monomorphic_const ctx, Univ.ContextSet.add_constraints cst (Univ.ContextSet.of_context ctx)
         | Polymorphic_const uctx ->
           let subst, ctx = Univ.abstract_universes ctx in
           let c = Vars.subst_univs_level_constr subst c in
@@ -99,38 +99,38 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
               error_incorrect_with_constraint lab
           in
           (** Terms are compared in a context with De Bruijn universe indices *)
-	  let env' = Environ.push_context ~strict:false (Univ.AUContext.repr uctx) env in
-	  let cst = match cb.const_body with
-	    | Undef _ | OpaqueDef _ ->
-	      let j = Typeops.infer env' c in
-	      let typ = cb.const_type in
-	      let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
-						j.uj_type typ in
-	      cst'
-	    | Def cs ->
-	       let c' = Mod_subst.force_constr cs in
-	       let cst' = Reduction.infer_conv env' (Environ.universes env') c c' in
-	        cst'
-	  in
-	    if not (Univ.Constraint.is_empty cst) then
-	      error_incorrect_with_constraint lab;
+          let env' = Environ.push_context ~strict:false (Univ.AUContext.repr uctx) env in
+          let cst = match cb.const_body with
+            | Undef _ | OpaqueDef _ ->
+              let j = Typeops.infer env' c in
+              let typ = cb.const_type in
+              let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
+                                                j.uj_type typ in
+              cst'
+            | Def cs ->
+               let c' = Mod_subst.force_constr cs in
+               let cst' = Reduction.infer_conv env' (Environ.universes env') c c' in
+                cst'
+          in
+            if not (Univ.Constraint.is_empty cst) then
+              error_incorrect_with_constraint lab;
             c, Polymorphic_const ctx, Univ.ContextSet.empty
       in
       let def = Def (Mod_subst.from_val c') in
 (*      let ctx' = Univ.UContext.make (newus, cst) in *)
       let cb' =
-	{ cb with
-	  const_body = def;
+        { cb with
+          const_body = def;
           const_universes = univs ;
-	  const_body_code = Option.map Cemitcodes.from_val
+          const_body_code = Option.map Cemitcodes.from_val
                               (compile_constant_body env' cb.const_universes def) }
       in
       before@(lab,SFBconst(cb'))::after, c', ctx'
     else
       (* Definition inside a sub-module *)
       let mb = match spec with
-	| SFBmodule mb -> mb
-	| _ -> error_not_a_module (Label.to_string lab)
+        | SFBmodule mb -> mb
+        | _ -> error_not_a_module (Label.to_string lab)
       in
       begin match mb.mod_expr with
       | Abstract ->
@@ -140,9 +140,9 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
         in
         let mb' = { mb with
           mod_type = NoFunctor struc';
-	  mod_type_alg = None }
+          mod_type_alg = None }
         in
-	before@(lab,SFBmodule mb')::after, c', cst
+        before@(lab,SFBmodule mb')::after, c', cst
       | _ -> error_generative_module_expected lab
       end
   with
@@ -170,10 +170,10 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
           let mtb_old = module_type_of_module old in
           let chk_cst = Subtyping.check_subtypes env' mtb_mp1 mtb_old in
           Univ.ContextSet.add_constraints chk_cst old.mod_constraints
-	| Algebraic (NoFunctor (MEident(mp'))) ->
-	  check_modpath_equiv env' mp1 mp';
-	  old.mod_constraints
-	| _ -> error_generative_module_expected lab
+        | Algebraic (NoFunctor (MEident(mp'))) ->
+          check_modpath_equiv env' mp1 mp';
+          old.mod_constraints
+        | _ -> error_generative_module_expected lab
       in
       let mp' = MPdot (mp,lab) in
       let new_mb = strengthen_and_subst_mb mb_mp1 mp' false in
@@ -185,7 +185,7 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
       in
       let new_equiv = add_delta_resolver equiv new_mb.mod_delta in
       (* we propagate the new equality in the rest of the signature
-	 with the identity substitution accompagned by the new resolver*)
+         with the identity substitution accompagned by the new resolver*)
       let id_subst = map_mp mp' mp' new_mb.mod_delta in
       let new_after = subst_structure id_subst after in
       before@(lab,SFBmodule new_mb')::new_after, new_equiv, cst
@@ -194,28 +194,28 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
       let mp' = MPdot (mp,lab) in
       let old = match spec with
         | SFBmodule msb -> msb
-	| _ -> error_not_a_module (Label.to_string lab)
+        | _ -> error_not_a_module (Label.to_string lab)
       in
       begin match old.mod_expr with
       | Abstract ->
         let struc = destr_nofunctor old.mod_type in
-	let struc',equiv',cst =
+        let struc',equiv',cst =
           check_with_mod env' struc (idl,mp1) mp' old.mod_delta
         in
-	let new_mb =
+        let new_mb =
           { old with
             mod_type = NoFunctor struc';
             mod_type_alg = None;
             mod_delta = equiv' }
         in
-	let new_equiv = add_delta_resolver equiv equiv' in
-	let id_subst = map_mp mp' mp' equiv' in
+        let new_equiv = add_delta_resolver equiv equiv' in
+        let id_subst = map_mp mp' mp' equiv' in
         let new_after = subst_structure id_subst after in
-	before@(lab,SFBmodule new_mb)::new_after, new_equiv, cst
+        before@(lab,SFBmodule new_mb)::new_after, new_equiv, cst
       | Algebraic (NoFunctor (MEident mp0)) ->
-	let mpnew = rebuild_mp mp0 idl in
-	check_modpath_equiv env' mpnew mp;
-	before@(lab,spec)::after, equiv, Univ.ContextSet.empty
+        let mpnew = rebuild_mp mp0 idl in
+        check_modpath_equiv env' mpnew mp;
+        before@(lab,spec)::after, equiv, Univ.ContextSet.empty
       | _ -> error_generative_module_expected lab
       end
   with

@@ -10,7 +10,7 @@ let ppripos (ri,pos) =
   | Reloc_annot a ->
       let sp,i = a.ci.ci_ind in
       print_string
-	("annot : MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^")\n")
+        ("annot : MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^")\n")
   | Reloc_const _ ->
       print_string "structured constant\n"
   | Reloc_getglobal kn ->
@@ -43,7 +43,7 @@ let rec ppzipper z =
       let n = nargs args in
       open_hbox ();
       for i = 0 to n-2 do
-	ppvalues (arg args i);print_string ";";print_space()
+        ppvalues (arg args i);print_string ";";print_space()
       done;
       if n-1 >= 0 then ppvalues (arg args (n-1));
       close_box()

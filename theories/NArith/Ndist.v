@@ -115,7 +115,7 @@ Lemma ni_min_assoc :
 Proof.
   simple induction d; trivial. simple induction d'; trivial.
   simple induction d''; trivial.
-  unfold ni_min. intro. 
+  unfold ni_min. intro.
   enough (min (min n n0) n1 = min n (min n0 n1)) by (rewrite H; reflexivity).
   induction n in n0, n1 |- *; trivial.
   destruct n0; trivial. destruct n1; trivial.

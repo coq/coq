@@ -41,8 +41,8 @@ let collapse_appl c = match c with
   | App (f,cl) ->
       let rec collapse_rec f cl2 =
         match (strip_outer_cast f) with
-	| App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
-	| _ -> App (f,cl2)
+        | App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
+        | _ -> App (f,cl2)
       in
       collapse_rec f cl
   | _ -> c
@@ -128,9 +128,9 @@ let noccur_with_meta n m term =
   let rec occur_rec n c = match c with
     | Rel p -> if n<=p && p<n+m then raise LocalOccur
     | App(f,cl) ->
-	(match f with
+        (match f with
            | (Cast (Meta _,_,_)| Meta _) -> ()
-	   | _ -> iter_constr_with_binders succ occur_rec n c)
+           | _ -> iter_constr_with_binders succ occur_rec n c)
     | Evar (_, _) -> ()
     | _ -> iter_constr_with_binders succ occur_rec n c
   in
@@ -444,6 +444,6 @@ let subst_instance_constr subst c =
     in
     aux c
 
-let subst_instance_context s ctx = 
+let subst_instance_context s ctx =
   if Univ.Instance.is_empty s then ctx
   else map_rel_context (fun x -> subst_instance_constr s x) ctx

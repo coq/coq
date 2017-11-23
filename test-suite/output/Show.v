@@ -5,7 +5,7 @@
 Theorem nums : forall (n m : nat), n = m -> (S n) = (S m).
 Proof.
   intros.
-  induction n as [| n'].  
+  induction n as [| n'].
   induction m as [| m'].
   Show.
 Admitted.

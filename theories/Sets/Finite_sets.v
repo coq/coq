@@ -13,11 +13,11 @@
 (*              Rocquencourt                        Sophia-Antipolis        *)
 (*                                                                          *)
 (*                                 Coq V6.1                                 *)
-(*									    *)
-(*			         Gilles Kahn 				    *)
-(*				 Gerard Huet				    *)
-(*									    *)
-(*									    *)
+(*                                                                          *)
+(*                               Gilles Kahn                                *)
+(*                               Gerard Huet                                *)
+(*                                                                          *)
+(*                                                                          *)
 (*                                                                          *)
 (* Acknowledgments: This work was started in July 1993 by F. Prost. Thanks  *)
 (* to the Newton Institute for providing an exceptional work environment    *)
@@ -55,8 +55,8 @@ Section Ensembles_finis_facts.
     forall (X:Ensemble U) (p:nat),
       cardinal U X p ->
       match p with
-	| O => X = Empty_set U
-	| S n =>
+        | O => X = Empty_set U
+        | S n =>
           exists A : _,
             (exists x : _, X = Add U A x /\ ~ In U A x /\ cardinal U A n)
       end.
@@ -69,8 +69,8 @@ Section Ensembles_finis_facts.
     forall (X:Ensemble U) (p:nat),
       cardinal U X p ->
       match p with
-	| O => X = Empty_set U
-	| S n => Inhabited U X
+        | O => X = Empty_set U
+        | S n => Inhabited U X
       end.
   Proof.
     intros X p C; elim C; simpl; trivial with sets.

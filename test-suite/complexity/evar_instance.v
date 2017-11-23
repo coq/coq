@@ -5,7 +5,7 @@
    involves a few of each part of the unification algorithme (and especially
    evar-evar unification and evar-term instantiation) *)
 
-(* In 8.2, the example was in O(n^3) in the number of section variables; 
+(* In 8.2, the example was in O(n^3) in the number of section variables;
    From current commit it is in O(n^2) *)
 
 (* For the record: with coqtop.byte on a Dual Core 2:

@@ -80,12 +80,12 @@ let lpar_id_coloneq =
       match stream_nth 0 strm with
         | KEYWORD "(" ->
             (match stream_nth 1 strm with
-	      | IDENT s ->
+              | IDENT s ->
                   (match stream_nth 2 strm with
                     | KEYWORD ":=" ->
                         stream_njunk 3 strm;
                         Names.Id.of_string s
-	            | _ -> err ())
+                    | _ -> err ())
               | _ -> err ())
         | _ -> err ())
 
@@ -93,26 +93,26 @@ let impl_ident_head =
   Gram.Entry.of_parser "impl_ident_head"
     (fun strm ->
       match stream_nth 0 strm with
-	| KEYWORD "{" ->
-	    (match stream_nth 1 strm with
-	      | IDENT ("wf"|"struct"|"measure") -> err ()
-	      | IDENT s ->
-		  stream_njunk 2 strm;
-		  Names.Id.of_string s
-	      | _ -> err ())
-	| _ -> err ())
+        | KEYWORD "{" ->
+            (match stream_nth 1 strm with
+              | IDENT ("wf"|"struct"|"measure") -> err ()
+              | IDENT s ->
+                  stream_njunk 2 strm;
+                  Names.Id.of_string s
+              | _ -> err ())
+        | _ -> err ())
 
 let name_colon =
   Gram.Entry.of_parser "name_colon"
     (fun strm ->
       match stream_nth 0 strm with
-	| IDENT s ->
+        | IDENT s ->
             (match stream_nth 1 strm with
               | KEYWORD ":" ->
                   stream_njunk 2 strm;
                   Name (Names.Id.of_string s)
               | _ -> err ())
-	| KEYWORD "_" ->
+        | KEYWORD "_" ->
           (match stream_nth 1 strm with
               | KEYWORD ":" ->
                   stream_njunk 2 strm;
@@ -199,7 +199,7 @@ GEXTEND Gram
     | "8" [ ]
     | "1" LEFTA
       [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->
-	CAst.make ~loc:(!@loc) @@ CApp((Some (List.length args+1), CAst.make @@ CRef (f,None)),args@[c,None])
+        CAst.make ~loc:(!@loc) @@ CApp((Some (List.length args+1), CAst.make @@ CRef (f,None)),args@[c,None])
       | c=operconstr; ".("; "@"; f=global;
         args=LIST0 (operconstr LEVEL "9"); ")" ->
         CAst.make ~loc:(!@loc) @@ CAppExpl((Some (List.length args+1),f,None),args@[c])
@@ -214,9 +214,9 @@ GEXTEND Gram
             | _ -> c)
       | "{|"; c = record_declaration; "|}" -> c
       | "`{"; c = operconstr LEVEL "200"; "}" ->
-	  CAst.make ~loc:(!@loc) @@ CGeneralization (Implicit, None, c)
+          CAst.make ~loc:(!@loc) @@ CGeneralization (Implicit, None, c)
       | "`("; c = operconstr LEVEL "200"; ")" ->
-	  CAst.make ~loc:(!@loc) @@ CGeneralization (Explicit, None, c)
+          CAst.make ~loc:(!@loc) @@ CGeneralization (Explicit, None, c)
       ] ]
   ;
   record_declaration:
@@ -254,33 +254,33 @@ GEXTEND Gram
             | _ -> assert false in
           CAst.make ~loc:!@loc @@ CLetIn((li,Name id),fixp,None,c)
       | "let"; lb = ["("; l=LIST0 name SEP ","; ")" -> l | "()" -> []];
-	  po = return_type;
-	  ":="; c1 = operconstr LEVEL "200"; "in";
+          po = return_type;
+          ":="; c1 = operconstr LEVEL "200"; "in";
           c2 = operconstr LEVEL "200" ->
           CAst.make ~loc:!@loc @@ CLetTuple (lb,po,c1,c2)
       | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
           "in"; c2 = operconstr LEVEL "200" ->
-	    CAst.make ~loc:!@loc @@
+            CAst.make ~loc:!@loc @@
             CCases (LetPatternStyle, None,    [c1, None, None],       [Loc.tag ~loc:!@loc ([(Loc.tag ~loc:!@loc [p])], c2)])
       | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
-	  rt = case_type; "in"; c2 = operconstr LEVEL "200" ->
-	    CAst.make ~loc:!@loc @@
+          rt = case_type; "in"; c2 = operconstr LEVEL "200" ->
+            CAst.make ~loc:!@loc @@
             CCases (LetPatternStyle, Some rt, [c1, aliasvar p, None], [Loc.tag ~loc:!@loc ([(Loc.tag ~loc:!@loc [p])], c2)])
 
       | "let"; "'"; p=pattern; "in"; t = pattern LEVEL "200";
-	  ":="; c1 = operconstr LEVEL "200"; rt = case_type;
+          ":="; c1 = operconstr LEVEL "200"; rt = case_type;
           "in"; c2 = operconstr LEVEL "200" ->
-	    CAst.make ~loc:!@loc @@
+            CAst.make ~loc:!@loc @@
             CCases (LetPatternStyle, Some rt, [c1, aliasvar p, Some t], [Loc.tag ~loc:!@loc ([(Loc.tag ~loc:!@loc [p])], c2)])
       | "if"; c=operconstr LEVEL "200"; po = return_type;
-	"then"; b1=operconstr LEVEL "200";
+        "then"; b1=operconstr LEVEL "200";
         "else"; b2=operconstr LEVEL "200" ->
           CAst.make ~loc:(!@loc) @@ CIf (c, po, b1, b2)
       | c=fix_constr -> c ] ]
   ;
   appl_arg:
     [ [ id = lpar_id_coloneq; c=lconstr; ")" ->
-	  (c,Some (Loc.tag ~loc:!@loc @@ ExplByName id))
+          (c,Some (Loc.tag ~loc:!@loc @@ ExplByName id))
       | c=operconstr LEVEL "9" -> (c,None) ] ]
   ;
   atomic_constr:
@@ -337,8 +337,8 @@ GEXTEND Gram
   case_item:
     [ [ c=operconstr LEVEL "100";
         ona = OPT ["as"; id=name -> id];
-	ty = OPT ["in"; t=pattern -> t] ->
-	   (c,ona,ty) ] ]
+        ty = OPT ["in"; t=pattern -> t] ->
+           (c,ona,ty) ] ]
   ;
   case_type:
     [ [ "return"; ty = operconstr LEVEL "100" -> ty ] ]
@@ -383,12 +383,12 @@ GEXTEND Gram
     | "10" RIGHTA
       [ p = pattern; lp = LIST1 NEXT ->
         (let open CAst in match p with
-	  | { v = CPatAtom (Some r) } -> CAst.make ~loc:!@loc @@ CPatCstr (r, None, lp)
-	  | { v = CPatCstr (r, None, l2); loc } ->
+          | { v = CPatAtom (Some r) } -> CAst.make ~loc:!@loc @@ CPatCstr (r, None, lp)
+          | { v = CPatCstr (r, None, l2); loc } ->
                  CErrors.user_err ?loc ~hdr:"compound_pattern"
                  (Pp.str "Nested applications not supported.")
-	  | { v = CPatCstr (r, l1, l2) }  -> CAst.make ~loc:!@loc @@ CPatCstr (r, l1 , l2@lp)
-	  | { v = CPatNotation (n, s, l) } -> CAst.make ~loc:!@loc @@ CPatNotation (n , s, l@lp)
+          | { v = CPatCstr (r, l1, l2) }  -> CAst.make ~loc:!@loc @@ CPatCstr (r, l1 , l2@lp)
+          | { v = CPatNotation (n, s, l) } -> CAst.make ~loc:!@loc @@ CPatNotation (n , s, l@lp)
           | _ -> CErrors.user_err
                  ?loc:(cases_pattern_expr_loc p) ~hdr:"compound_pattern"
                  (Pp.str "Such pattern cannot have arguments."))
@@ -412,7 +412,7 @@ GEXTEND Gram
                  CAst.make ~loc:!@loc @@ CPatNotation("( _ )",([p],[]),[])
             | _ -> p
           in
-	  CAst.make ~loc:!@loc @@ CPatCast (p, ty)
+          CAst.make ~loc:!@loc @@ CPatCast (p, ty)
       | n = INT    -> CAst.make ~loc:!@loc @@ CPatPrim (Numeral (n,true))
       | s = string -> CAst.make ~loc:!@loc @@ CPatPrim (String s) ] ]
   ;
@@ -424,14 +424,14 @@ GEXTEND Gram
         (fun na -> CLocalAssum (na::nal,Default Implicit,
                                 CAst.make ?loc:(Loc.merge_opt (fst na) (Some !@loc)) @@ CHole (Some (Evar_kinds.BinderType (snd na)), IntroAnonymous, None)))
     | ":"; c=lconstr; "}" ->
-	(fun na -> CLocalAssum ([na],Default Implicit,c))
+        (fun na -> CLocalAssum ([na],Default Implicit,c))
     ] ]
   ;
   fixannot:
     [ [ "{"; IDENT "struct"; id=identref; "}" -> (Some id, CStructRec)
     | "{"; IDENT "wf"; rel=constr; id=OPT identref; "}" -> (id, CWfRec rel)
     | "{"; IDENT "measure"; m=constr; id=OPT identref;
-	rel=OPT constr; "}" -> (id, CMeasureRec (m,rel))
+        rel=OPT constr; "}" -> (id, CMeasureRec (m,rel))
     ] ]
   ;
   impl_name_head:
@@ -451,14 +451,14 @@ GEXTEND Gram
     [ [ (* open binder *)
         id = name; idl = LIST0 name; ":"; c = lconstr ->
           [CLocalAssum (id::idl,Default Explicit,c)]
-	(* binders factorized with open binder *)
+        (* binders factorized with open binder *)
       | id = name; idl = LIST0 name; bl = binders ->
           binders_of_names (id::idl) @ bl
       | id1 = name; ".."; id2 = name ->
           [CLocalAssum ([id1;(Loc.tag ~loc:!@loc (Name ldots_var));id2],
-	                  Default Explicit, CAst.make ~loc:!@loc @@ CHole (None, IntroAnonymous, None))]
+                          Default Explicit, CAst.make ~loc:!@loc @@ CHole (None, IntroAnonymous, None))]
       | bl = closed_binder; bl' = binders ->
-	  bl@bl'
+          bl@bl'
     ] ]
   ;
   binders:
@@ -488,9 +488,9 @@ GEXTEND Gram
       | "{"; id=name; idl=LIST1 name; "}" ->
           List.map (fun id -> CLocalAssum ([id],Default Implicit, CAst.make ~loc:!@loc @@ CHole (None, IntroAnonymous, None))) (id::idl)
       | "`("; tc = LIST1 typeclass_constraint SEP "," ; ")" ->
-	  List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (Implicit, Explicit, b), t)) tc
+          List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (Implicit, Explicit, b), t)) tc
       | "`{"; tc = LIST1 typeclass_constraint SEP "," ; "}" ->
-	  List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (Implicit, Implicit, b), t)) tc
+          List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (Implicit, Implicit, b), t)) tc
       | "'"; p = pattern LEVEL "0" ->
           let (p, ty) =
             match p.CAst.v with
@@ -503,11 +503,11 @@ GEXTEND Gram
   typeclass_constraint:
     [ [ "!" ; c = operconstr LEVEL "200" -> (Loc.tag ~loc:!@loc Anonymous), true, c
       | "{"; id = name; "}"; ":" ; expl = [ "!" -> true | -> false ] ; c = operconstr LEVEL "200" ->
-	  id, expl, c
+          id, expl, c
       | iid=name_colon ; expl = [ "!" -> true | -> false ] ; c = operconstr LEVEL "200" ->
-	  (Loc.tag ~loc:!@loc iid), expl, c
+          (Loc.tag ~loc:!@loc iid), expl, c
       | c = operconstr LEVEL "200" ->
-	  (Loc.tag ~loc:!@loc Anonymous), false, c
+          (Loc.tag ~loc:!@loc Anonymous), false, c
     ] ]
   ;
 

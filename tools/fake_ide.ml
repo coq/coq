@@ -193,9 +193,9 @@ module GUILogic = struct
         Document.unfocus doc;
         ignore(Document.cut_at doc tip);
         print_document ()
-  
+
   let at id id' _ = Stateid.equal id' id
-  
+
   let after_edit_at (id,need_unfocus) = function
     | Interface.Fail (_,_,s) -> print_error s; exit 1
     | Interface.Good (Util.Inl ()) ->
@@ -208,13 +208,13 @@ module GUILogic = struct
         Document.focus doc ~cond_top:(at start_id) ~cond_bot:(at stop_id);
         ignore(Document.cut_at doc id);
         print_document ()
-  
+
   let get_id_pred pred =
     try Document.find_id doc pred
     with Not_found -> error "No state found"
 
   let get_id id = get_id_pred (fun _ { name } -> name = id)
-  
+
   let after_fail coq = function
     | Interface.Fail (safe_id,_,s) ->
         prerr_endline "The command failed as expected";
@@ -306,7 +306,7 @@ let main =
       let i = Str.search_backward rex fake_ide_path pos in
       String.sub fake_ide_path 0 i ^ "coqtop" ^
       String.sub fake_ide_path (i + len_prog_name)
-        (fake_ide_path_len - i - len_prog_name) 
+        (fake_ide_path_len - i - len_prog_name)
     with Not_found -> assert false in
   let coqtop_args, input_file = match Sys.argv with
     | [| _; f |] -> Array.of_list def_args, f

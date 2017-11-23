@@ -388,5 +388,5 @@ Definition findex n s1 s2 :=
   with the ascii codes of the characters).
 *)
 
-Example HelloWorld := "	""Hello world!""
+Example HelloWorld := " ""Hello world!""
 ".

@@ -805,17 +805,17 @@ Section ListOps.
 
     Lemma rev_list_ind :
       forall P:list A-> Prop,
-	P [] ->
-	(forall (a:A) (l:list A), P (rev l) -> P (rev (a :: l))) ->
-	forall l:list A, P (rev l).
+        P [] ->
+        (forall (a:A) (l:list A), P (rev l) -> P (rev (a :: l))) ->
+        forall l:list A, P (rev l).
     Proof.
       induction l; auto.
     Qed.
 
     Theorem rev_ind :
       forall P:list A -> Prop,
-	P [] ->
-	(forall (x:A) (l:list A), P l -> P (l ++ [x])) -> forall l:list A, P l.
+        P [] ->
+        (forall (x:A) (l:list A), P l -> P (l ++ [x])) -> forall l:list A, P l.
     Proof.
       intros.
       generalize (rev_involutive l).
@@ -1121,7 +1121,7 @@ End Fold_Right_Recursor.
     match l with
       | nil => cons nil nil
       | cons x t =>
-	flat_map (fun f:list (A * B) => map (fun y:B => cons (x, y) f) l')
+        flat_map (fun f:list (A * B) => map (fun y:B => cons (x, y) f) l')
         (list_power t l')
     end.
 
@@ -1139,8 +1139,8 @@ End Fold_Right_Recursor.
 
     Fixpoint existsb (l:list A) : bool :=
       match l with
-	| nil => false
-	| a::l => f a || existsb l
+        | nil => false
+        | a::l => f a || existsb l
       end.
 
     Lemma existsb_exists :
@@ -1179,8 +1179,8 @@ End Fold_Right_Recursor.
 
     Fixpoint forallb (l:list A) : bool :=
       match l with
-	| nil => true
-	| a::l => f a && forallb l
+        | nil => true
+        | a::l => f a && forallb l
       end.
 
     Lemma forallb_forall :
@@ -1206,8 +1206,8 @@ End Fold_Right_Recursor.
 
     Fixpoint filter (l:list A) : list A :=
       match l with
-	| nil => nil
-	| x :: l => if f x then x::(filter l) else filter l
+        | nil => nil
+        | x :: l => if f x then x::(filter l) else filter l
       end.
 
     Lemma filter_In : forall x l, In x (filter l) <-> In x l /\ f x = true.
@@ -1222,8 +1222,8 @@ End Fold_Right_Recursor.
 
     Fixpoint find (l:list A) : option A :=
       match l with
-	| nil => None
-	| x :: tl => if f x then Some x else find tl
+        | nil => None
+        | x :: tl => if f x then Some x else find tl
       end.
 
     Lemma find_some l x : find l = Some x -> In x l /\ f x = true.
@@ -1245,9 +1245,9 @@ End Fold_Right_Recursor.
 
     Fixpoint partition (l:list A) : list A * list A :=
       match l with
-	| nil => (nil, nil)
-	| x :: tl => let (g,d) := partition tl in
-	  if f x then (x::g,d) else (g,x::d)
+        | nil => (nil, nil)
+        | x :: tl => let (g,d) := partition tl in
+          if f x then (x::g,d) else (g,x::d)
       end.
 
   Theorem partition_cons1 a l l1 l2:
@@ -1313,8 +1313,8 @@ End Fold_Right_Recursor.
 
     Fixpoint split (l:list (A*B)) : list A * list B :=
       match l with
-	| [] => ([], [])
-	| (x,y) :: tl => let (left,right) := split tl in (x::left, y::right)
+        | [] => ([], [])
+        | (x,y) :: tl => let (left,right) := split tl in (x::left, y::right)
       end.
 
     Lemma in_split_l : forall (l:list (A*B))(p:A*B),
@@ -1368,8 +1368,8 @@ End Fold_Right_Recursor.
 
     Fixpoint combine (l : list A) (l' : list B) : list (A*B) :=
       match l,l' with
-	| x::tl, y::tl' => (x,y)::(combine tl tl')
-	| _, _ => nil
+        | x::tl, y::tl' => (x,y)::(combine tl tl')
+        | _, _ => nil
       end.
 
     Lemma split_combine : forall (l: list (A*B)),
@@ -1436,33 +1436,33 @@ End Fold_Right_Recursor.
     Fixpoint list_prod (l:list A) (l':list B) :
       list (A * B) :=
       match l with
-	| nil => nil
-	| cons x t => (map (fun y:B => (x, y)) l')++(list_prod t l')
+        | nil => nil
+        | cons x t => (map (fun y:B => (x, y)) l')++(list_prod t l')
       end.
 
     Lemma in_prod_aux :
       forall (x:A) (y:B) (l:list B),
-	In y l -> In (x, y) (map (fun y0:B => (x, y0)) l).
+        In y l -> In (x, y) (map (fun y0:B => (x, y0)) l).
     Proof.
       induction l;
-	[ simpl; auto
-	  | simpl; destruct 1 as [H1| ];
-	    [ left; rewrite H1; trivial | right; auto ] ].
+        [ simpl; auto
+          | simpl; destruct 1 as [H1| ];
+            [ left; rewrite H1; trivial | right; auto ] ].
     Qed.
 
     Lemma in_prod :
       forall (l:list A) (l':list B) (x:A) (y:B),
-	In x l -> In y l' -> In (x, y) (list_prod l l').
+        In x l -> In y l' -> In (x, y) (list_prod l l').
     Proof.
       induction l;
-	[ simpl; tauto
-	  | simpl; intros; apply in_or_app; destruct H;
-	    [ left; rewrite H; apply in_prod_aux; assumption | right; auto ] ].
+        [ simpl; tauto
+          | simpl; intros; apply in_or_app; destruct H;
+            [ left; rewrite H; apply in_prod_aux; assumption | right; auto ] ].
     Qed.
 
     Lemma in_prod_iff :
       forall (l:list A)(l':list B)(x:A)(y:B),
-	In (x,y) (list_prod l l') <-> In x l /\ In y l'.
+        In (x,y) (list_prod l l') <-> In x l /\ In y l'.
     Proof.
       split; [ | intros; apply in_prod; intuition ].
       induction l; simpl; intros.
@@ -1628,9 +1628,9 @@ Section Cutting.
     match n with
       | 0 => nil
       | S n => match l with
-		 | nil => nil
-		 | a::l => a::(firstn n l)
-	       end
+                 | nil => nil
+                 | a::l => a::(firstn n l)
+               end
     end.
 
   Lemma firstn_nil n: firstn n [] = [].
@@ -1711,9 +1711,9 @@ Section Cutting.
     match n with
       | 0 => l
       | S n => match l with
-		 | nil => nil
-		 | a::l => skipn n l
-	       end
+                 | nil => nil
+                 | a::l => skipn n l
+               end
     end.
 
   Lemma firstn_skipn : forall n l, firstn n l ++ skipn n l = l.

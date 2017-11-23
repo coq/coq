@@ -37,7 +37,7 @@ open Constr
 let ssrsettac ist id ((_, (pat, pty)), (_, occ)) gl =
   let pat = interp_cpattern ist gl pat (Option.map snd pty) in
   let cl, sigma, env = pf_concl gl, project gl, pf_env gl in
-  let (c, ucst), cl = 
+  let (c, ucst), cl =
     let cl = EConstr.Unsafe.to_constr cl in
     try fill_occ_pattern ~raise_NoMatch:true env sigma cl pat occ 1
     with NoMatch -> redex_of_pattern ~resolve_typeclasses:true env pat, cl in
@@ -82,13 +82,13 @@ let examine_abstract id gl =
     errorstrm(strbrk"abstract constant "++ pr_econstr_env env sigma id++str" already used");
   tid, args_id
 
-let pf_find_abstract_proof check_lock gl abstract_n = 
+let pf_find_abstract_proof check_lock gl abstract_n =
   let fire gl t = EConstr.Unsafe.to_constr (Reductionops.nf_evar (project gl) (EConstr.of_constr t)) in
   let abstract, gl = pf_mkSsrConst "abstract" gl in
   let l = Evd.fold_undefined (fun e ei l ->
     match Constr.kind ei.Evd.evar_concl with
     | App(hd, [|ty; n; lock|])
-      when (not check_lock || 
+      when (not check_lock ||
                  (occur_existential_or_casted_meta  (fire gl ty) &&
                   is_Evar_or_CastedMeta (project gl) (EConstr.of_constr @@ fire gl lock))) &&
       Constr.equal hd (EConstr.Unsafe.to_constr abstract) && Constr.equal n abstract_n -> e::l
@@ -127,8 +127,8 @@ let _ =
         Lib.add_anonymous_leaf (inHaveTCResolution b)) }
 
 
-open Constrexpr 
-open Glob_term 
+open Constrexpr
+open Glob_term
 open Misctypes
 
 let combineCG t1 t2 f g = match t1, t2 with
@@ -145,7 +145,7 @@ let basecuttac name c gl =
 
 let havetac ist
   (transp,((((clr, pats), binders), simpl), (((fk, _), t), hint)))
-  suff namefst gl 
+  suff namefst gl
 =
  let concl = pf_concl gl in
  let skols, pats =
@@ -240,7 +240,7 @@ let havetac ist
    | _,false,true ->
      let _, ty, uc = interp_ty gl fixtc cty in let gl = pf_merge_uc uc gl in
      gl, EConstr.mkArrow ty concl, hint, id, itac_c
-   | _, false, false -> 
+   | _, false, false ->
      let n, cty, uc = interp_ty gl fixtc cty in let gl = pf_merge_uc uc gl in
      gl, cty, Tacticals.tclTHEN (binderstac n) hint, id, Tacticals.tclTHEN itac_c simpltac
    | _, true, false -> assert false in
@@ -268,7 +268,7 @@ let ssrabstract ist gens (*last*) gl =
     let id = EConstr.mkVar (Option.get (id_of_pattern cid_interpreted)) in
     let idty, args_id = examine_abstract id gl in
     let abstract_n = args_id.(1) in
-    let abstract_proof = pf_find_abstract_proof true gl (EConstr.Unsafe.to_constr abstract_n) in 
+    let abstract_proof = pf_find_abstract_proof true gl (EConstr.Unsafe.to_constr abstract_n) in
     let gl, proof =
       let pf_unify_HO gl a b =
         try pf_unify_HO gl a b
@@ -372,7 +372,7 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
          | _ -> CErrors.anomaly(str"SSR: wlog: pired: " ++ pr_econstr_env env sigma c) in
     c, args, pired c args, pf_merge_uc uc gl in
   let tacipat pats = introstac ~ist pats in
-  let tacigens = 
+  let tacigens =
     Tacticals.tclTHEN
       (Tacticals.tclTHENLIST(List.rev(List.fold_right mkclr gens [cleartac clr0])))
       (introstac ~ist (List.fold_right mkpats gens [])) in

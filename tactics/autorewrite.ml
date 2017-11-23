@@ -19,11 +19,11 @@ open Locus
 
 (* Rewriting rules *)
 type rew_rule = { rew_lemma: constr;
-		  rew_type: types;
-		  rew_pat: constr;
-		  rew_ctx: Univ.ContextSet.t;
-		  rew_l2r: bool;
-		  rew_tac: Genarg.glob_generic_argument option }
+                  rew_type: types;
+                  rew_pat: constr;
+                  rew_ctx: Univ.ContextSet.t;
+                  rew_l2r: bool;
+                  rew_tac: Genarg.glob_generic_argument option }
 
 let subst_hint subst hint =
   let cst' = subst_mps subst hint.rew_lemma in
@@ -32,8 +32,8 @@ let subst_hint subst hint =
   let t' = Option.smartmap (Genintern.generic_substitute subst) hint.rew_tac in
     if hint.rew_lemma == cst' && hint.rew_type == typ' && hint.rew_tac == t' then hint else
       { hint with
-	rew_lemma = cst'; rew_type = typ';
-	rew_pat = pat';	rew_tac = t' }
+        rew_lemma = cst'; rew_type = typ';
+        rew_pat = pat'; rew_tac = t' }
 
 module HintIdent =
 struct
@@ -76,13 +76,13 @@ let find_matches bas pat =
 
 let print_rewrite_hintdb env sigma bas =
   (str "Database " ++ str bas ++ fnl () ++
-	   prlist_with_sep fnl
-	   (fun h ->
-	     str (if h.rew_l2r then "rewrite -> " else "rewrite <- ") ++
+           prlist_with_sep fnl
+           (fun h ->
+             str (if h.rew_l2r then "rewrite -> " else "rewrite <- ") ++
                Printer.pr_lconstr_env env sigma h.rew_lemma ++ str " of type " ++ Printer.pr_lconstr_env env sigma h.rew_type ++
-	       Option.cata (fun tac -> str " then use tactic " ++
-	       Pputils.pr_glb_generic (Global.env()) tac) (mt ()) h.rew_tac)
-	   (find_rewrites bas))
+               Option.cata (fun tac -> str " then use tactic " ++
+               Pputils.pr_glb_generic (Global.env()) tac) (mt ()) h.rew_tac)
+           (find_rewrites bas))
 
 type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option) Loc.located
 
@@ -98,7 +98,7 @@ let one_base general_rewrite_maybe_in tac_main bas =
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (general_rewrite_maybe_in dir c' tc)
   end in
-  let lrul = List.map (fun h -> 
+  let lrul = List.map (fun h ->
   let tac = match h.rew_tac with
   | None -> Proofview.tclUNIT ()
   | Some (Genarg.GenArg (Genarg.Glbwit wit, tac)) ->
@@ -109,7 +109,7 @@ let one_base general_rewrite_maybe_in tac_main bas =
     Tacticals.New.tclREPEAT_MAIN (Proofview.tclPROGRESS (List.fold_left (fun tac (ctx,csr,dir,tc) ->
       Tacticals.New.tclTHEN tac
         (Tacticals.New.tclREPEAT_MAIN
-	    (Tacticals.New.tclTHENFIRST (try_rewrite dir ctx csr tc) tac_main)))
+            (Tacticals.New.tclTHENFIRST (try_rewrite dir ctx csr tc) tac_main)))
       (Proofview.tclUNIT()) lrul))
 
 (* The AutoRewrite tactic *)
@@ -118,9 +118,9 @@ let autorewrite ?(conds=Naive) tac_main lbas =
     (List.fold_left (fun tac bas ->
        Tacticals.New.tclTHEN tac
         (one_base (fun dir c tac ->
-	  let tac = (tac, conds) in
-	    general_rewrite dir AllOccurrences true false ~tac (EConstr.of_constr c))
-	  tac_main bas))
+          let tac = (tac, conds) in
+            general_rewrite dir AllOccurrences true false ~tac (EConstr.of_constr c))
+          tac_main bas))
       (Proofview.tclUNIT()) lbas))
 
 let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
@@ -151,19 +151,19 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
   else
     let compose_tac t1 t2 =
       match cl.onhyps with
-	| Some [] -> t1
-	| _ ->      Tacticals.New.tclTHENFIRST t1 t2
+        | Some [] -> t1
+        | _ ->      Tacticals.New.tclTHENFIRST t1 t2
     in
     compose_tac
-	(if cl.concl_occs != NoOccurrences then autorewrite ~conds tac_main lbas else Proofview.tclUNIT ())
-	(match cl.onhyps with
-	   | Some l -> try_do_hyps (fun ((_,id),_) -> id) l
-	   | None ->
-		 (* try to rewrite in all hypothesis
-		    (except maybe the rewritten one) *)
+        (if cl.concl_occs != NoOccurrences then autorewrite ~conds tac_main lbas else Proofview.tclUNIT ())
+        (match cl.onhyps with
+           | Some l -> try_do_hyps (fun ((_,id),_) -> id) l
+           | None ->
+                 (* try to rewrite in all hypothesis
+                    (except maybe the rewritten one) *)
                Proofview.Goal.nf_enter begin fun gl ->
                  let ids = Tacmach.New.pf_ids_of_hyps gl in
-		 try_do_hyps (fun id -> id)  ids
+                 try_do_hyps (fun id -> id)  ids
                end)
 
 let auto_multi_rewrite ?(conds=Naive) lems cl =
@@ -173,10 +173,10 @@ let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl =
   let onconcl = match cl.Locus.concl_occs with NoOccurrences -> false | _ -> true in
   match onconcl,cl.Locus.onhyps with
     | false,Some [_] | true,Some [] | false,Some [] ->
-	(* autorewrite with .... in clause using tac n'est sur que
-	   si clause represente soit le but soit UNE hypothese
-	*)
-	Proofview.V82.wrap_exceptions (fun () -> gen_auto_multi_rewrite conds tac_main lbas cl)
+        (* autorewrite with .... in clause using tac n'est sur que
+           si clause represente soit le but soit UNE hypothese
+        *)
+        Proofview.V82.wrap_exceptions (fun () -> gen_auto_multi_rewrite conds tac_main lbas cl)
     | _ ->
         Tacticals.New.tclZEROMSG (strbrk "autorewrite .. in .. using can only be used either with a unique hypothesis or on the conclusion.")
 
@@ -231,39 +231,39 @@ let decompose_applied_relation metas env sigma c ctype left2right =
     let rec split_last_two = function
       | [c1;c2] -> [],(c1, c2)
       | x::y::z ->
-	  let l,res = split_last_two (y::z) in x::l, res
+          let l,res = split_last_two (y::z) in x::l, res
       | _ -> raise Not_found
     in
       try
-	let others,(c1,c2) = split_last_two args in
-	let ty1, ty2 =
-	  Typing.unsafe_type_of env eqclause.evd (EConstr.of_constr c1), Typing.unsafe_type_of env eqclause.evd (EConstr.of_constr c2)
-	in
-	let ty = EConstr.Unsafe.to_constr ty in
-	let ty1 = EConstr.Unsafe.to_constr ty1 in
-(* 	  if not (evd_convertible env eqclause.evd ty1 ty2) then None *)
-(* 	  else *)
-	    Some { hyp_cl=eqclause; hyp_prf=EConstr.Unsafe.to_constr (Clenv.clenv_value eqclause); hyp_ty = ty;
-		   hyp_car=ty1; hyp_rel=mkApp (equiv, Array.of_list others);
-		   hyp_l2r=left2right; hyp_left=c1; hyp_right=c2; }
+        let others,(c1,c2) = split_last_two args in
+        let ty1, ty2 =
+          Typing.unsafe_type_of env eqclause.evd (EConstr.of_constr c1), Typing.unsafe_type_of env eqclause.evd (EConstr.of_constr c2)
+        in
+        let ty = EConstr.Unsafe.to_constr ty in
+        let ty1 = EConstr.Unsafe.to_constr ty1 in
+(*        if not (evd_convertible env eqclause.evd ty1 ty2) then None *)
+(*        else *)
+            Some { hyp_cl=eqclause; hyp_prf=EConstr.Unsafe.to_constr (Clenv.clenv_value eqclause); hyp_ty = ty;
+                   hyp_car=ty1; hyp_rel=mkApp (equiv, Array.of_list others);
+                   hyp_l2r=left2right; hyp_left=c1; hyp_right=c2; }
       with Not_found -> None
   in
     match find_rel ctype with
     | Some c -> Some c
     | None ->
-	let ctx,t' = Reductionops.splay_prod_assum env sigma ctype in (* Search for underlying eq *)
-	match find_rel (it_mkProd_or_LetIn t' ctx) with
-	| Some c -> Some c
-	| None -> None
+        let ctx,t' = Reductionops.splay_prod_assum env sigma ctype in (* Search for underlying eq *)
+        match find_rel (it_mkProd_or_LetIn t' ctx) with
+        | Some c -> Some c
+        | None -> None
 
 let find_applied_relation ?loc metas env sigma c left2right =
   let ctype = Typing.unsafe_type_of env sigma (EConstr.of_constr c) in
     match decompose_applied_relation metas env sigma c ctype left2right with
     | Some c -> c
     | None ->
-	user_err ?loc ~hdr:"decompose_applied_relation"
-		    (str"The type" ++ spc () ++ Printer.pr_econstr_env env sigma ctype ++
-		       spc () ++ str"of this term does not end with an applied relation.")
+        user_err ?loc ~hdr:"decompose_applied_relation"
+                    (str"The type" ++ spc () ++ Printer.pr_econstr_env env sigma ctype ++
+                       spc () ++ str"of this term does not end with an applied relation.")
 
 (* To add rewriting rules to a base *)
 let add_rew_rules base lrul =
@@ -275,13 +275,13 @@ let add_rew_rules base lrul =
   let lrul =
     List.fold_left
       (fun dn (loc,((c,ctx),b,t)) ->
-	let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
-	let info = find_applied_relation ?loc false env sigma c b in
-	let pat = if b then info.hyp_left else info.hyp_right in
-	let rul = { rew_lemma = c; rew_type = info.hyp_ty;
-		    rew_pat = pat; rew_ctx = ctx; rew_l2r = b;
-		    rew_tac = Option.map intern t}
-	in incr counter;
-	  HintDN.add pat (!counter, rul) dn) HintDN.empty lrul
+        let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
+        let info = find_applied_relation ?loc false env sigma c b in
+        let pat = if b then info.hyp_left else info.hyp_right in
+        let rul = { rew_lemma = c; rew_type = info.hyp_ty;
+                    rew_pat = pat; rew_ctx = ctx; rew_l2r = b;
+                    rew_tac = Option.map intern t}
+        in incr counter;
+          HintDN.add pat (!counter, rul) dn) HintDN.empty lrul
   in Lib.add_anonymous_leaf (inHintRewrite (base,lrul))
 

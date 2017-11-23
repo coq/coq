@@ -91,7 +91,7 @@ val reduce_to_quantified_ref :
 val reduce_to_atomic_ref :
   env ->  evar_map -> global_reference -> types -> types
 
-val find_hnf_rectype : 
+val find_hnf_rectype :
   env ->  evar_map -> types -> (inductive * EInstance.t) * constr list
 
 val contextually : bool -> occurrences * constr_pattern ->

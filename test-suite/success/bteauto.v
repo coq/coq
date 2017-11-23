@@ -7,7 +7,7 @@ Module Backtracking.
   Lemma aeq (a : A) : foo = foo.
     reflexivity.
   Qed.
-  
+
   Arguments foo A : clear implicits.
   Example find42 : exists n, n = 42.
   Proof.
@@ -17,7 +17,7 @@ Module Backtracking.
     refine (@aeq ?a).
     Unshelve. all:cycle 1.
     typeclasses eauto.
-    Fail reflexivity. 
+    Fail reflexivity.
     Undo 2.
     (* Without multiple successes it fails *)
     Set Typeclasses Debug Verbosity 2.
@@ -27,13 +27,13 @@ Module Backtracking.
     all:[> typeclasses eauto + reflexivity .. ].
     Undo 1.
     all:(typeclasses eauto + reflexivity). (* Note "+" is a focussing combinator *)
-    Show Proof.  
+    Show Proof.
   Qed.
 
   Print find42.
-  
+
   Hint Extern 0 (_ = _) => reflexivity : equality.
-  
+
   Goal exists n, n = 42.
     eexists.
     eapply eq_trans.
@@ -43,21 +43,21 @@ Module Backtracking.
     typeclasses eauto.
     Fail reflexivity.
     Undo 2.
-    
+
     (* Does backtrack between individual goals *)
     Set Typeclasses Debug.
     all:(typeclasses eauto with typeclass_instances equality).
   Qed.
-  
+
   Unset Typeclasses Debug.
 
   Module Leivant.
     Axiom A : Type.
     Existing Class A.
     Axioms a b c d e: A.
-    
+
     Ltac get_value H := eval cbv delta [H] in H.
-    
+
     Goal True.
       Fail refine (let H := _ : A in _); let v := get_value H in idtac v; fail.
     Admitted.
@@ -67,7 +67,7 @@ Module Backtracking.
       refine (@ex_intro _ _ t _).
       all:cycle 1.
       all:(typeclasses eauto + reflexivity).
-    Qed.      
+    Qed.
   End Leivant.
 End Backtracking.
 
@@ -152,7 +152,7 @@ Module IterativeDeepening.
   Instance: C -> A | 0.
   Instance: C -> B -> A | 0.
   Instance: A -> A | 0.
-  
+
   Goal C -> A.
     intros.
     Fail Timeout 1 typeclasses eauto.

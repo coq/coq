@@ -26,7 +26,7 @@ module type Control = sig
   val stats : handle -> Gc.stat
   val wait : handle -> Unix.process_status
   val unixpid : handle -> int
-  
+
   (* What is used in debug messages *)
   val uid : handle -> string
 
@@ -53,7 +53,7 @@ module Async(ML : MainLoopModel) : sig
   (* If the returned value is false the callback is never called again and
    * the process is killed *)
   type callback = ML.condition list -> read_all:(unit -> string) -> bool
-  
+
   val spawn :
     ?prefer_sock:bool -> ?env:string array -> string -> string array ->
       callback -> process * out_channel
@@ -64,7 +64,7 @@ end
 (* spawn a process and read its output synchronously *)
 module Sync () : sig
   type process
-  
+
   val spawn :
     ?prefer_sock:bool -> ?env:string array -> string -> string array ->
       process * in_channel * out_channel

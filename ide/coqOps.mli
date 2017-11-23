@@ -29,7 +29,7 @@ object
 
 
   method handle_failure : Interface.handle_exn_rty -> unit task
-  
+
   method destroy : unit -> unit
 end
 

@@ -41,7 +41,7 @@ let r1 = {num=1;den=1};;
 let rnorm x = let x = (if x.den<0 then {num=(-x.num);den=(-x.den)} else x) in
               if x.num=0 then r0
               else (let d=pgcd x.num x.den in
-		    let d= (if d<0 then -d else d) in
+                    let d= (if d<0 then -d else d) in
                     {num=(x.num)/d;den=(x.den)/d});;
 
 let rop x = rnorm {num=(-x.num);den=x.den};;
@@ -79,7 +79,7 @@ let partitionne s =
    List.iter (fun ie -> match ie.coef with
                         [] ->  raise (Failure "empty ineq")
                        |(c::r) -> if rinf c r0
-           	                  then pop ie lneg
+                                  then pop ie lneg
                                   else if rinf r0 c then pop ie lpos
                                               else pop ie lnul)
              s;
@@ -108,12 +108,12 @@ let add_hist le =
 (* additionne deux inéquations *)
 let ie_add ie1 ie2 = {coef=List.map2 rplus ie1.coef ie2.coef;
                       hist=List.map2 rplus ie1.hist ie2.hist;
-		      strict=ie1.strict || ie2.strict}
+                      strict=ie1.strict || ie2.strict}
 ;;
 (* multiplication d'une inéquation par un rationnel (positif) *)
 let ie_emult a ie = {coef=List.map (fun x -> rmult a x) ie.coef;
                      hist=List.map (fun x -> rmult a x) ie.hist;
-		     strict= ie.strict}
+                     strict= ie.strict}
 ;;
 (* on enlève le premier coefficient *)
 let ie_tl ie = {coef=List.tl ie.coef;hist=ie.hist;strict=ie.strict}
@@ -127,12 +127,12 @@ let hd_coef ie = List.hd ie.coef
 let deduce_add lneg lpos =
    let res=ref [] in
    List.iter (fun i1 ->
-		 List.iter (fun i2 ->
-				let a = rop (hd_coef i1) in
-				let b = hd_coef i2 in
-				pop (ie_tl (ie_add (ie_emult b i1)
-						   (ie_emult a i2))) res)
-		           lpos)
+                 List.iter (fun i2 ->
+                                let a = rop (hd_coef i1) in
+                                let b = hd_coef i2 in
+                                pop (ie_tl (ie_add (ie_emult b i1)
+                                                   (ie_emult a i2))) res)
+                           lpos)
              lneg;
    !res
 ;;

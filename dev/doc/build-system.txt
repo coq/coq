@@ -116,7 +116,7 @@ Targets for cleaning various parts:
 .ml4/.mlp files
 ---------------
 
-There is now two kinds of preprocessed files : 
+There is now two kinds of preprocessed files :
  - a .mlp do not need grammar.cma (they are in grammar/)
  - a .ml4 is now always preprocessed with grammar.cma (and q_constr.cmo),
    except coqide_main.ml4 and its specific rule

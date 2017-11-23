@@ -120,7 +120,7 @@ sig
   (** @deprecated Same as [fold_right2_map] *)
 
   val distinct : 'a array -> bool
-  (** Return [true] if every element of the array is unique (for default 
+  (** Return [true] if every element of the array is unique (for default
       equality). *)
 
   val rev_of_list : 'a list -> 'a array

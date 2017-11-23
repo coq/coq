@@ -248,8 +248,8 @@ defined with the {\tt Record} keyword can be activated with the
      {\ident} (see Sections~\ref{Fixpoint} and~\ref{Caseexpr}).
    \item The type of the projections {\ident$_i$} depends on previous
    projections which themselves could not be defined.
-   \end{enumerate}  
-\end{Warnings}     
+   \end{enumerate}
+\end{Warnings}
 
 \begin{ErrMsgs}
 
@@ -441,7 +441,7 @@ Check (fun x (H:{x=0}+{x<>0}) =>
 Notice that the printing uses the {\tt if} syntax because {\tt sumbool} is
 declared as such (see Section~\ref{printing-options}).
 
-\subsection{Irrefutable patterns: the destructuring {\tt let} variants 
+\subsection{Irrefutable patterns: the destructuring {\tt let} variants
 \index{let in@{\tt let ... in}}
 \label{Letin}}
 
@@ -463,7 +463,7 @@ Definition fst (A B:Set) (H:A * B) := match H with
                                       end.
 \end{coq_example}
 
-can be alternatively written 
+can be alternatively written
 
 \begin{coq_eval}
 Reset fst.
@@ -703,7 +703,7 @@ a given type. See Section~\ref{Show}.
 % \subsection{Still not dead old notations}
 
 % The following variant of {\tt match} is inherited from older version
-% of {\Coq}. 
+% of {\Coq}.
 
 % \medskip
 % \begin{tabular}{lcl}
@@ -808,7 +808,7 @@ Function plus (n m : nat) {struct n} : nat :=
 \paragraph[Limitations]{Limitations\label{sec:Function-limitations}}
 \term$_0$ must be built as a \emph{pure pattern-matching tree}
 (\texttt{match...with}) with applications only \emph{at the end} of
-each branch.  
+each branch.
 
 Function does not support partial application of the function being defined. Thus, the following example cannot be accepted due to the presence of partial application of \ident{wrong} into the body of \ident{wrong}~:
 \begin{coq_eval}
@@ -881,7 +881,7 @@ given below.
   \end{itemize}
 \item \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
     {\tt \{}{\tt struct} \ident$_0${\tt\}} : type$_0$ := \term$_0$}
-  
+
   Defines the structural recursive function \ident\ as if declared
   with \texttt{Fixpoint}.  Moreover the following are defined:
 
@@ -889,7 +889,7 @@ given below.
   \item The same objects as above;
   \item The fixpoint equation of \ident: \texttt{\ident\_equation}.
   \end{itemize}
-  
+
 \item \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$} {\tt
       \{}{\tt measure \term$_1$} \ident$_0${\tt\}} : type$_0$ :=
     \term$_0$}
@@ -914,7 +914,7 @@ the following:
       the decreasing argument decreases at each recursive call of
       \term$_0$. The order must be well founded. Parameters of the
       function are bound in  \term$_0$.
-\end{itemize} 
+\end{itemize}
 
 Depending on the annotation, the user is left with some proof
 obligations that will be used to define the function. These proofs
@@ -1012,7 +1012,7 @@ inside section {\tt s1} and outside.
 which appear inside a section are canceled when the
 section is closed.
 % see Section~\ref{LongNames}
-%\item Usually all identifiers must be distinct. 
+%\item Usually all identifiers must be distinct.
 %However, a name already used in a closed section (see \ref{Section})
 %can be reused. In this case, the old name is no longer accessible.
 
@@ -1176,7 +1176,7 @@ See Section~\ref{coqoptions} for a more general view over the {\Coq}
 command line options.
 
 %% \paragraph{The special case of remarks and facts}
-%% 
+%%
 %% In contrast with definitions, lemmas, theorems, axioms and parameters,
 %% the absolute name of remarks includes the segment of sections in which
 %% it is defined. Concretely, if a remark {\tt R} is defined in
@@ -1198,18 +1198,18 @@ inference of implicit arguments.
 
 \subsection{The different kinds of implicit arguments}
 
-\subsubsection{Implicit arguments inferable from the knowledge of other 
+\subsubsection{Implicit arguments inferable from the knowledge of other
 arguments of a function}
 
 The first kind of implicit arguments covers the arguments that are
 inferable from the knowledge of the type of other arguments of the
 function, or of the type of the surrounding context of the
-application.  Especially, such implicit arguments correspond to 
+application.  Especially, such implicit arguments correspond to
 parameters dependent in the type of the function. Typical implicit
-arguments are the type arguments in polymorphic functions.  
+arguments are the type arguments in polymorphic functions.
 There are several kinds of such implicit arguments.
 
-\paragraph{Strict Implicit Arguments.} 
+\paragraph{Strict Implicit Arguments.}
 An implicit argument can be either strict or non strict. An implicit
 argument is said {\em strict} if, whatever the other arguments of the
 function are, it is still inferable from the type of some other
@@ -1227,7 +1227,7 @@ For instance, the first argument of
 in module {\tt List.v} is strict because {\tt list} is an inductive
 type and {\tt A} will always be inferable from the type {\tt
 list A} of the third argument of {\tt cons}.
-On the contrary, the second argument of a term of type 
+On the contrary, the second argument of a term of type
 \begin{quote}
 \verb|forall P:nat->Prop, forall n:nat, P n -> ex nat P|
 \end{quote}
@@ -1242,7 +1242,7 @@ the third argument has type {\tt True}, then any {\tt P} of the form
 {\tt fun n => match n with 0 => True | \_ => \mbox{\em anything} end} would
 be a solution of the inference problem).
 
-\paragraph{Contextual Implicit Arguments.} 
+\paragraph{Contextual Implicit Arguments.}
 An implicit argument can be {\em contextual} or not. An implicit
 argument is said {\em contextual} if it can be inferred only from the
 knowledge of the type of the context of the current expression. For
@@ -1337,7 +1337,7 @@ This automatically declares the argument {\tt A} of {\tt id} as a
 maximally inserted implicit argument. One can then do as-if the argument
 was absent in every situation but still be able to specify it if needed:
 \begin{coq_example}
-Definition compose {A B C} (g : B -> C) (f : A -> B) := 
+Definition compose {A B C} (g : B -> C) (f : A -> B) :=
   fun x => g (f x).
 Goal forall A, compose id id = id (A:=A).
 \end{coq_example}
@@ -1401,8 +1401,8 @@ module.
 
 For names of constants, inductive types, constructors, lemmas which
 can only be applied to a fixed number of arguments (this excludes for
-instance constants whose type is polymorphic), multiple 
-implicit arguments decflarations can be given. 
+instance constants whose type is polymorphic), multiple
+implicit arguments decflarations can be given.
 Depending on the number of arguments {\qualid} is applied
 to in practice, the longest applicable list of implicit arguments is
 used to select which implicit arguments are inserted.
@@ -1418,7 +1418,7 @@ Reset Initial.
 \end{coq_eval}
 \begin{coq_example*}
 Inductive list (A:Type) : Type :=
- | nil : list A 
+ | nil : list A
  | cons : A -> list A -> list A.
 \end{coq_example*}
 \begin{coq_example}
@@ -1475,8 +1475,8 @@ module.
 Reset Initial.
 \end{coq_eval}
 \begin{coq_example*}
-Inductive list (A:Set) : Set := 
-  | nil : list A 
+Inductive list (A:Set) : Set :=
+  | nil : list A
   | cons : A -> list A -> list A.
 \end{coq_example*}
 \begin{coq_example}
@@ -1561,9 +1561,9 @@ declare the strict implicit arguments as implicit.
 
 By default, {\Coq} does not automatically set implicit the contextual
 implicit arguments. To tell {\Coq} to infer also contextual implicit
-argument, use command  
+argument, use command
 \begin{quote}
-\tt Set Contextual Implicit. 
+\tt Set Contextual Implicit.
 \end{quote}
 Conversely, use command {\tt Unset Contextual Implicit} to
 unset the contextual implicit mode.
@@ -1574,9 +1574,9 @@ unset the contextual implicit mode.
 
 By default, {\Coq} does not automatically set implicit the reversible-pattern
 implicit arguments. To tell {\Coq} to infer also reversible-pattern implicit
-argument, use command  
+argument, use command
 \begin{quote}
-\tt Set Reversible Pattern Implicit. 
+\tt Set Reversible Pattern Implicit.
 \end{quote}
 Conversely, use command {\tt Unset Reversible Pattern Implicit} to
 unset the reversible-pattern implicit mode.
@@ -1590,7 +1590,7 @@ function is partially applied and the next argument of the function is
 an implicit one. In case the implicit arguments are automatically
 declared (with the command {\tt Set Implicit Arguments}), the command
 \begin{quote}
-\tt Set Maximal Implicit Insertion. 
+\tt Set Maximal Implicit Insertion.
 \end{quote}
 is used to tell to declare the implicit arguments with a maximal
 insertion status. By default, automatically declared implicit
@@ -1754,7 +1754,7 @@ Require Import Relations.
 Require Import EqNat.
 Set Implicit Arguments.
 Unset Strict Implicit.
-Structure Setoid : Type := 
+Structure Setoid : Type :=
   {Carrier :> Set;
    Equal : relation Carrier;
    Prf_equiv : equivalence Carrier Equal}.
@@ -1780,7 +1780,7 @@ only the structure declared first as canonical is considered.
  {\tt Canonical Structure {\ident} : {\type} := {\term}.}
 
 These are equivalent to a regular definition of {\ident} followed by
-the declaration 
+the declaration
 
 {\tt Canonical Structure {\ident}}.
 \end{Variants}
@@ -1793,7 +1793,7 @@ the declaration
 
 This displays the list of global names that are components of some
 canonical structure. For each of them, the canonical structure of
-which it is a projection is indicated. For instance, the above example 
+which it is a projection is indicated. For instance, the above example
 gives the following output:
 
 \begin{coq_example}
@@ -1832,7 +1832,7 @@ This is useful for declaring the implicit type of a single variable.
  {\tt Implicit Types\,%
 (\,{\ident$_{1,1}$}\ldots{\ident$_{1,k_1}$}\,{\tt :}\,{\term$_1$} {\tt )}\,%
 \ldots\,{\tt (}\,{\ident$_{n,1}$}\ldots{\ident$_{n,k_n}$}\,{\tt :}\,%
-{\term$_n$} {\tt )}.}\\ 
+{\term$_n$} {\tt )}.}\\
   Adds $n$ blocks of implicit types with different specifications.
 \end{Variants}
 
@@ -1873,16 +1873,16 @@ the command:
 \end{quote}
 
 \begin{Variants}
-\item {\tt Generalizable All Variables.} All variables are candidate for 
+\item {\tt Generalizable All Variables.} All variables are candidate for
   generalization if they appear free in the context under a
   generalization delimiter. This may result in confusing errors in
   case of typos. In such cases, the context will probably contain some
   unexpected generalized variable.
 
-\item {\tt Generalizable No Variables.} Disable implicit generalization 
+\item {\tt Generalizable No Variables.} Disable implicit generalization
   entirely. This is the default behavior.
 
-\item {\tt Generalizable Variable(s)? {\ident$_1$ \ident$_n$}.} 
+\item {\tt Generalizable Variable(s)? {\ident$_1$ \ident$_n$}.}
   Allow generalization of the given identifiers only. Calling this
   command multiple times adds to the allowed identifiers.
 
@@ -2006,7 +2006,7 @@ instances when using tactics such that \texttt{eapply} (see
 Section~\ref{eapply}). An existential variable is defined in a
 context, which is the context of variables of the placeholder which
 generated the existential variable, and a type, which is the expected
-type of the placeholder. 
+type of the placeholder.
 
 As a consequence of typing constraints, existential variables can be
 duplicated in such a way that they possibly appear in different
@@ -2092,7 +2092,7 @@ This mechanism is comparable to the {\tt Declare Implicit Tactic} command
 defined at~\ref{DeclareImplicit}, except that the used tactic is local to each
 hole instead of being declared globally.
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:

@@ -3,7 +3,7 @@
 
 Set Implicit Arguments.
 Set Asymmetric Patterns.
-  
+
 Variable A : Type.
 Variable typ : A -> Type.
 

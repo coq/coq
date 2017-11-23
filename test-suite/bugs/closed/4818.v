@@ -15,7 +15,7 @@ Goal GCov (IS * S) -> GCov IS.
 intros X0. induction X0; intros.
 destruct i.
 specialize (locS i).
-clear -locS. 
+clear -locS.
 destruct locS. Show Universes.
 Admitted.
 

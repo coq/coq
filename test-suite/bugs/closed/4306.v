@@ -1,6 +1,6 @@
 Require Import List.
 Require Import Arith.
-Require Import Recdef. 
+Require Import Recdef.
 Require Import Omega.
 
 Function foo (xys : (list nat * list nat)) {measure (fun xys => length (fst xys) + length (snd xys))} : list nat :=

@@ -1,5 +1,5 @@
 
-  
+
 Set Primitive Projections.
 Record total2 (P : nat -> Prop) := tpair { pr1 : nat; pr2 : P pr1 }.
 Theorem onefiber' (q : total2 (fun y => y = 0)) : True.

@@ -3,15 +3,15 @@
 \aauthor{Frédéric Besson and Evgeny Makarov}
 \newtheorem{theorem}{Theorem}
 
- 
+
 \asection{Short description of the tactics}
-\tacindex{psatz}  \tacindex{lra} \tacindex{lia}  \tacindex{nia} \tacindex{nra} 
+\tacindex{psatz}  \tacindex{lra} \tacindex{lia}  \tacindex{nia} \tacindex{nra}
 \label{sec:psatz-hurry}
 The {\tt Psatz} module ({\tt Require Import Psatz.}) gives access to
 several tactics for solving arithmetic goals over {\tt Z}, {\tt Q}, and
 {\tt R}:\footnote{Support for {\tt nat} and {\tt N} is obtained by
   pre-processing the goal with the {\tt zify} tactic.}.
-It also possible to get the tactics for integers by a {\tt Require Import Lia}, rationals {\tt Require Import Lqa} 
+It also possible to get the tactics for integers by a {\tt Require Import Lia}, rationals {\tt Require Import Lqa}
 and reals {\tt Require Import Lra}.
 \begin{itemize}
 \item {\tt lia} is a decision procedure for linear integer arithmetic (see Section~\ref{sec:lia});
@@ -162,7 +162,7 @@ To remedy this weakness, the {\tt lia} tactic is using recursively a combination
 \end{itemize}
 
 \paragraph{Cutting plane proofs} are a way to take into account the discreetness of $\mathbb{Z}$ by rounding up
-(rational) constants up-to the closest integer. 
+(rational) constants up-to the closest integer.
 %
 \begin{theorem}
   Let $p$ be an integer and $c$ a rational constant.
@@ -222,7 +222,7 @@ It performs a pre-processing similar to {\tt nra}. The obtained goal is solved u
 The {\tt psatz} tactic explores the $\mathit{Cone}$ by increasing degrees -- hence the depth parameter $n$.
 In theory, such a proof search is complete -- if the goal is provable the search eventually stops.
 Unfortunately, the external oracle is using numeric (approximate) optimization techniques that might miss a
-refutation. 
+refutation.
 
 To illustrate the working of the tactic, consider we wish to prove the following Coq goal.
 \begin{coq_eval}
@@ -250,7 +250,7 @@ Theorem~\ref{thm:psatz}, the goal is valid.
 
 
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:

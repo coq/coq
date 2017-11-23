@@ -44,7 +44,7 @@ apply Rgt_not_eq, cos_gt_0; rewrite <- ?Ropp_div; tauto.
 rewrite !atan_right_inv; assumption.
 Qed.
 
-Lemma tech : forall x y , -1 <= x <= 1 -> -1 < y < 1 -> 
+Lemma tech : forall x y , -1 <= x <= 1 -> -1 < y < 1 ->
   -PI/2 < atan x - atan y < PI/2.
 Proof.
 assert (ut := PI_RGT_0).
@@ -128,7 +128,7 @@ Qed.
 
 (* More efficient way to compute approximations of PI. *)
 
-Definition PI_2_3_7_tg n := 
+Definition PI_2_3_7_tg n :=
   2 * Ratan_seq (/3) n + Ratan_seq (/7) n.
 
 Lemma PI_2_3_7_ineq :

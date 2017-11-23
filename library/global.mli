@@ -81,7 +81,7 @@ val lookup_named     : variable -> Context.Named.Declaration.t
 val lookup_constant  : Constant.t -> Declarations.constant_body
 val lookup_inductive : inductive ->
   Declarations.mutual_inductive_body * Declarations.one_inductive_body
-val lookup_pinductive : Constr.pinductive -> 
+val lookup_pinductive : Constr.pinductive ->
   Declarations.mutual_inductive_body * Declarations.one_inductive_body
 val lookup_mind      : MutInd.t -> Declarations.mutual_inductive_body
 val lookup_module    : ModPath.t -> Declarations.module_body
@@ -103,7 +103,7 @@ val body_of_constant_body : Declarations.constant_body -> (Constr.constr * Univ.
 (** Same as {!body_of_constant} but on {!Declarations.constant_body}. *)
 
 (** Global universe name <-> level mapping *)
-type universe_names = 
+type universe_names =
   (Decl_kinds.polymorphic * Univ.Level.t) Id.Map.t * Id.t Univ.LMap.t
 
 val global_universe_names : unit -> universe_names
@@ -139,7 +139,7 @@ val constr_of_global_in_context : Environ.env ->
     context in the environmnent of usage. For non-universe-polymorphic
     constants, it does not matter. *)
 
-val type_of_global_in_context : Environ.env -> 
+val type_of_global_in_context : Environ.env ->
   Globnames.global_reference -> Constr.types * Univ.AUContext.t
 (** Returns the type of the constant in its local universe
     context. The type should not be used without pushing it's universe

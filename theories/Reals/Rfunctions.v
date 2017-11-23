@@ -891,7 +891,7 @@ Qed.
 Lemma R_dist_mult_l : forall a b c,
   R_dist (a * b) (a * c) = Rabs a * R_dist b c.
 Proof.
-unfold R_dist. 
+unfold R_dist.
 intros a b c; rewrite <- Rmult_minus_distr_l, Rabs_mult; reflexivity.
 Qed.
 

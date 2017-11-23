@@ -312,7 +312,7 @@ let tag_var = tag Tag.variable
                    ++ str " =>") ++
             pr_sep_com spc (pr ltop) rhs))
 
-  let begin_of_binder l_bi = 
+  let begin_of_binder l_bi =
     let b_loc l = fst (Option.cata Loc.unloc (0,0) l) in
     match l_bi with
     | CLocalDef((loc,_),_,_) -> b_loc loc

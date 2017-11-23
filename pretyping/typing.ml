@@ -62,17 +62,17 @@ let e_judge_of_apply env evdref funj argjv =
   | hj::restjl ->
       match EConstr.kind !evdref (whd_all env !evdref typ) with
       | Prod (_,c1,c2) ->
-	 if Evarconv.e_cumul env evdref hj.uj_type c1 then
-	   apply_rec (n+1) (subst1 hj.uj_val c2) restjl
-	 else
-	   error_cant_apply_bad_type env !evdref (n, c1, hj.uj_type) funj argjv
+         if Evarconv.e_cumul env evdref hj.uj_type c1 then
+           apply_rec (n+1) (subst1 hj.uj_val c2) restjl
+         else
+           error_cant_apply_bad_type env !evdref (n, c1, hj.uj_type) funj argjv
       | Evar ev ->
-	  let (evd',t) = Evardefine.define_evar_as_product !evdref ev in
+          let (evd',t) = Evardefine.define_evar_as_product !evdref ev in
           evdref := evd';
           let (_,_,c2) = destProd evd' t in
-	  apply_rec (n+1) (subst1 hj.uj_val c2) restjl
+          apply_rec (n+1) (subst1 hj.uj_val c2) restjl
       | _ ->
-	  error_cant_apply_not_functional env !evdref funj argjv
+          error_cant_apply_not_functional env !evdref funj argjv
   in
   apply_rec 1 funj.uj_type (Array.to_list argjv)
 
@@ -152,7 +152,7 @@ let check_type_fixpoint ?loc env evdref lna lar vdefj =
     if Int.equal (Array.length lar) lt then
       for i = 0 to lt-1 do
         if not (Evarconv.e_cumul env evdref (vdefj.(i)).uj_type
-		  (lift lt lar.(i))) then
+                  (lift lt lar.(i))) then
           error_ill_typed_rec_body ?loc env !evdref
             i lna vdefj lar
       done
@@ -250,13 +250,13 @@ let rec execute env evdref cstr =
         { uj_val = cstr; uj_type = meta_type !evdref n }
 
     | Evar ev ->
-	let ty = EConstr.existential_type !evdref ev in
-	let jty = execute env evdref ty in
-	let jty = e_assumption_of_judgment env evdref jty in
-	{ uj_val = cstr; uj_type = jty }
+        let ty = EConstr.existential_type !evdref ev in
+        let jty = execute env evdref ty in
+        let jty = e_assumption_of_judgment env evdref jty in
+        { uj_val = cstr; uj_type = jty }
 
     | Rel n ->
-	judge_of_relative env n
+        judge_of_relative env n
 
     | Var id ->
         judge_of_variable env id
@@ -267,11 +267,11 @@ let rec execute env evdref cstr =
 
     | Ind (ind, u) ->
         let u = EInstance.kind !evdref u in
-	make_judge cstr (EConstr.of_constr (rename_type_of_inductive env (ind, u)))
+        make_judge cstr (EConstr.of_constr (rename_type_of_inductive env (ind, u)))
 
     | Construct (cstruct, u) ->
         let u = EInstance.kind !evdref u in
-	make_judge cstr (EConstr.of_constr (rename_type_of_constructor env (cstruct, u)))
+        make_judge cstr (EConstr.of_constr (rename_type_of_constructor env (cstruct, u)))
 
     | Case (ci,p,c,lf) ->
         let cj = execute env evdref c in
@@ -281,15 +281,15 @@ let rec execute env evdref cstr =
 
     | Fix ((vn,i as vni),recdef) ->
         let (_,tys,_ as recdef') = execute_recdef env evdref recdef in
-	let fix = (vni,recdef') in
+        let fix = (vni,recdef') in
         check_fix env !evdref fix;
-	make_judge (mkFix fix) tys.(i)
+        make_judge (mkFix fix) tys.(i)
 
     | CoFix (i,recdef) ->
         let (_,tys,_ as recdef') = execute_recdef env evdref recdef in
         let cofix = (i,recdef') in
         check_cofix env !evdref cofix;
-	make_judge (mkCoFix cofix) tys.(i)
+        make_judge (mkCoFix cofix) tys.(i)
 
     | Sort s ->
       begin match ESorts.kind !evdref s with
@@ -299,37 +299,37 @@ let rec execute env evdref cstr =
         judge_of_type u
       end
 
-    | Proj (p, c) -> 
+    | Proj (p, c) ->
         let cj = execute env evdref c in
-	  judge_of_projection env !evdref p cj
+          judge_of_projection env !evdref p cj
 
     | App (f,args) ->
         let jl = execute_array env evdref args in
-	let j =
-	  match EConstr.kind !evdref f with
-	    | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
-		make_judge f
-		  (inductive_type_knowing_parameters env !evdref (ind, u) jl)
-	    | _ ->
+        let j =
+          match EConstr.kind !evdref f with
+            | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
+                make_judge f
+                  (inductive_type_knowing_parameters env !evdref (ind, u) jl)
+            | _ ->
                 (* No template polymorphism *)
-		execute env evdref f
-	in
-	e_judge_of_apply env evdref j jl
+                execute env evdref f
+        in
+        e_judge_of_apply env evdref j jl
 
     | Lambda (name,c1,c2) ->
         let j = execute env evdref c1 in
-	let var = e_type_judgment env evdref j in
-	let env1 = push_rel (LocalAssum (name, var.utj_val)) env in
+        let var = e_type_judgment env evdref j in
+        let env1 = push_rel (LocalAssum (name, var.utj_val)) env in
         let j' = execute env1 evdref c2 in
         judge_of_abstraction env1 name var j'
 
     | Prod (name,c1,c2) ->
         let j = execute env evdref c1 in
         let varj = e_type_judgment env evdref j in
-	let env1 = push_rel (LocalAssum (name, varj.utj_val)) env in
+        let env1 = push_rel (LocalAssum (name, varj.utj_val)) env in
         let j' = execute env1 evdref c2 in
         let varj' = e_type_judgment env1 evdref j' in
-	judge_of_product env name varj varj'
+        judge_of_product env name varj varj'
 
      | LetIn (name,c1,c2,c3) ->
         let j1 = execute env evdref c1 in
@@ -343,7 +343,7 @@ let rec execute env evdref cstr =
     | Cast (c,k,t) ->
         let cj = execute env evdref c in
         let tj = execute env evdref t in
-	let tj = e_type_judgment env evdref tj in
+        let tj = e_type_judgment env evdref tj in
         e_judge_of_cast env evdref cj k tj
 
 and execute_recdef env evdref (names,lar,vdef) =

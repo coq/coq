@@ -80,7 +80,7 @@ Module KeyDecidableType(D:DecidableType).
   Lemma InA_eqke_eqk :
      forall x m, InA eqke x m -> InA eqk x m.
   Proof.
-    unfold eqke; induction 1; intuition. 
+    unfold eqke; induction 1; intuition.
   Qed.
   Hint Resolve InA_eqke_eqk.
 

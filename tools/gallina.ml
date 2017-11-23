@@ -51,8 +51,8 @@ let _ =
     | "-stdout" -> option_stdout := true
     | "-nocomments" -> comments := false
     | f ->
-	if Filename.check_suffix f ".v" then
-       	  vfiles := (Filename.chop_suffix f ".v") :: !vfiles
+        if Filename.check_suffix f ".v" then
+          vfiles := (Filename.chop_suffix f ".v") :: !vfiles
   in
   Array.iter treat Sys.argv;
   if !option_moins then

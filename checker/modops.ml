@@ -57,15 +57,15 @@ let rec add_structure mp sign resolver env =
     let con = Constant.make1 kn in
     let mind = mind_of_delta resolver (MutInd.make1 kn) in
       match elem with
-	| SFBconst cb ->
-	   (* let con =  constant_of_delta resolver con in*)
-	      Environ.add_constant con cb env
-	| SFBmind mib ->
-	   (* let mind =  mind_of_delta resolver mind in*)
-	    Environ.add_mind mind mib env
-	| SFBmodule mb -> add_module mb env
-	      (* adds components as well *)
-	| SFBmodtype mtb -> Environ.add_modtype mtb.mod_mp mtb env
+        | SFBconst cb ->
+           (* let con =  constant_of_delta resolver con in*)
+              Environ.add_constant con cb env
+        | SFBmind mib ->
+           (* let mind =  mind_of_delta resolver mind in*)
+            Environ.add_mind mind mib env
+        | SFBmodule mb -> add_module mb env
+              (* adds components as well *)
+        | SFBmodtype mtb -> Environ.add_modtype mtb.mod_mp mtb env
   in
   List.fold_left add_one env sign
 
@@ -89,7 +89,7 @@ let strengthen_const mp_from l cb resolver =
       | Polymorphic_const auctx -> Univ.make_abstract_instance auctx
       in
       { cb with
-	const_body = Def (Declarations.from_val (Const (con,u))) }
+        const_body = Def (Declarations.from_val (Const (con,u))) }
 
 let rec strengthen_mod mp_from mp_to mb =
   if Declarations.mp_in_delta mb.mod_mp mb.mod_delta then mb
@@ -113,23 +113,23 @@ and strengthen_sig mp_from sign mp_to resolver =
   match sign with
     | [] -> empty_delta_resolver,[]
     | (l,SFBconst cb) :: rest ->
-	let item' = l,SFBconst (strengthen_const mp_from l cb resolver) in
-	let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
-	resolve_out,item'::rest'
+        let item' = l,SFBconst (strengthen_const mp_from l cb resolver) in
+        let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
+        resolve_out,item'::rest'
     | (_,SFBmind _ as item):: rest ->
-	let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
-	  resolve_out,item::rest'
+        let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
+          resolve_out,item::rest'
     | (l,SFBmodule mb) :: rest ->
-	let mp_from' = MPdot (mp_from,l) in
-	let mp_to' = MPdot(mp_to,l) in
-	let mb_out = strengthen_mod mp_from' mp_to' mb in
-	let item' = l,SFBmodule (mb_out) in
-	let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
-	resolve_out (*add_delta_resolver resolve_out mb.mod_delta*),
-	item':: rest'
+        let mp_from' = MPdot (mp_from,l) in
+        let mp_to' = MPdot(mp_to,l) in
+        let mb_out = strengthen_mod mp_from' mp_to' mb in
+        let item' = l,SFBmodule (mb_out) in
+        let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
+        resolve_out (*add_delta_resolver resolve_out mb.mod_delta*),
+        item':: rest'
     | (l,SFBmodtype mty as item) :: rest ->
-	let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
-	resolve_out,item::rest'
+        let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
+        resolve_out,item::rest'
 
 let strengthen mtb mp =
   strengthen_body ignore mtb.mod_mp mp mtb

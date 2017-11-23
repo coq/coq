@@ -207,7 +207,7 @@
           id     ID     #REQUIRED
           type   %sort; #REQUIRED
           binder CDATA  #IMPLIED>
-          
+
 <!ELEMENT def %term;>
 <!ATTLIST def
           id     ID     #REQUIRED

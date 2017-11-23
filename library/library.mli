@@ -38,7 +38,7 @@ type seg_proofs = Constr.constr Future.computation array
 val import_module : bool -> qualid located list -> unit
 
 (** Start the compilation of a file as a library. The first argument must be
-    output file, and the 
+    output file, and the
     returned path is the associated absolute logical path of the library. *)
 val start_library : CUnix.physical_path -> DirPath.t
 

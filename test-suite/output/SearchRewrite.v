@@ -1,7 +1,7 @@
 (* Some tests of the SearchRewrite command *)
 
-SearchRewrite (_+0). 			(* left *)
-SearchRewrite (0+_). 			(* right *)
+SearchRewrite (_+0).                    (* left *)
+SearchRewrite (0+_).                    (* right *)
 
 Definition newdef := fun x:nat => x.
 

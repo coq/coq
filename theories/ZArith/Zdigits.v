@@ -74,16 +74,16 @@ Section ENCODING_VALUE.
     match z with
       | Z0 => 0%Z
       | Zpos p => match p with
-		    | xI q => Zpos q
-		    | xO q => Zpos q
-		    | xH => 0%Z
-		  end
+                    | xI q => Zpos q
+                    | xO q => Zpos q
+                    | xH => 0%Z
+                  end
       | Zneg p =>
-	match p with
-	  | xI q => (Zneg q - 1)%Z
-	  | xO q => Zneg q
-	  | xH => (-1)%Z
-	end
+        match p with
+          | xI q => (Zneg q - 1)%Z
+          | xO q => Zneg q
+          | xH => (-1)%Z
+        end
     end.
 
 

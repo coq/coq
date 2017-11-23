@@ -42,7 +42,7 @@ Check ($ 5).
 (* Check regression of bug #2087 *)
 
 Notation "'exists' x , P" := (x, P)
-   (at level 200, x ident, right associativity,	only parsing).
+   (at level 200, x ident, right associativity, only parsing).
 
 Definition foo P := let '(exists x, Q) := P in x = Q :> nat.
 

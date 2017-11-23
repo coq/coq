@@ -1,6 +1,6 @@
 Set Implicit Arguments.
 
-Class Pointed (M:Type -> Type) := 
+Class Pointed (M:Type -> Type) :=
 {
   creturn: forall {A: Type}, A -> M A
 }.

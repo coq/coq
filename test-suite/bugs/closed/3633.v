@@ -4,7 +4,7 @@ Definition foo {A} `{Contr A} : A.
 Proof.
   apply center.
   Undo.
-  (* Ensure the constraints are solved independently, otherwise a frozen ?A 
+  (* Ensure the constraints are solved independently, otherwise a frozen ?A
   makes a search for Contr ?A fail when finishing to apply (fun x => x) *)
-  apply (fun x => x), center. 
+  apply (fun x => x), center.
 Qed.

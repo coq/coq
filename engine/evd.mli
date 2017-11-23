@@ -136,7 +136,7 @@ val empty : evar_map
 (** The empty evar map. *)
 
 val from_env : env -> evar_map
-(** The empty evar map with given universe context, taking its initial 
+(** The empty evar map with given universe context, taking its initial
     universes from env. *)
 
 val from_ctx : UState.t -> evar_map
@@ -234,7 +234,7 @@ val evar_instance_array : (Context.Named.Declaration.t -> 'a -> bool) -> evar_in
 
 val instantiate_evar_array : evar_info -> constr -> constr array -> constr
 
-val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool -> 
+val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool ->
   evar_map ->  evar_map -> evar_map
 (** spiwack: this function seems to somewhat break the abstraction. *)
 
@@ -502,21 +502,21 @@ val constrain_variables : Univ.LSet.t -> UState.t -> UState.t
 
 val evar_universe_context_of_binders :
   Universes.universe_binders -> UState.t
-							    
+
 val make_evar_universe_context : env -> (Id.t located) list option -> UState.t
-val restrict_universe_context : evar_map -> Univ.LSet.t -> evar_map							   
+val restrict_universe_context : evar_map -> Univ.LSet.t -> evar_map
 (** Raises Not_found if not a name for a universe in this map. *)
 val universe_of_name : evar_map -> string -> Univ.Level.t
 val add_universe_name : evar_map -> string -> Univ.Level.t -> evar_map
 
-val add_constraints_context : UState.t -> 
+val add_constraints_context : UState.t ->
   Univ.constraints -> UState.t
 
 
-val normalize_evar_universe_context_variables : UState.t -> 
+val normalize_evar_universe_context_variables : UState.t ->
   Univ.universe_subst in_evar_universe_context
 
-val normalize_evar_universe_context : UState.t -> 
+val normalize_evar_universe_context : UState.t ->
   UState.t
 
 val new_univ_level_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * Univ.Level.t
@@ -529,8 +529,8 @@ val universe_rigidity : evar_map -> Univ.Level.t -> rigid
 val make_flexible_variable : evar_map -> algebraic:bool -> Univ.Level.t -> evar_map
 (** See [UState.make_flexible_variable] *)
 
-val is_sort_variable : evar_map -> Sorts.t -> Univ.Level.t option 
-(** [is_sort_variable evm s] returns [Some u] or [None] if [s] is 
+val is_sort_variable : evar_map -> Sorts.t -> Univ.Level.t option
+(** [is_sort_variable evm s] returns [Some u] or [None] if [s] is
     not a local sort variable declared in [evm] *)
 val is_flexible_level : evar_map -> Univ.Level.t -> bool
 
@@ -543,7 +543,7 @@ val set_eq_sort : env -> evar_map -> Sorts.t -> Sorts.t -> evar_map
 val has_lub : evar_map -> Univ.Universe.t -> Univ.Universe.t -> evar_map
 val set_eq_level : evar_map -> Univ.Level.t -> Univ.Level.t -> evar_map
 val set_leq_level : evar_map -> Univ.Level.t -> Univ.Level.t -> evar_map
-val set_eq_instances : ?flex:bool -> 
+val set_eq_instances : ?flex:bool ->
   evar_map -> Univ.Instance.t -> Univ.Instance.t -> evar_map
 
 val check_eq : evar_map -> Univ.Universe.t -> Univ.Universe.t -> bool
@@ -552,7 +552,7 @@ val check_leq : evar_map -> Univ.Universe.t -> Univ.Universe.t -> bool
 val evar_universe_context : evar_map -> UState.t
 val universe_context_set : evar_map -> Univ.ContextSet.t
 val universe_context : names:(Id.t located) list -> extensible:bool -> evar_map ->
-		       (Id.t * Univ.Level.t) list * Univ.UContext.t
+                       (Id.t * Univ.Level.t) list * Univ.UContext.t
 val universe_subst : evar_map -> Universes.universe_opt_subst
 val universes : evar_map -> UGraph.t
 

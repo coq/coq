@@ -60,7 +60,7 @@ open Decl_kinds
 
   let pr_ident_decl (lid, l) =
     pr_lident lid ++ pr_universe_decl l
-    
+
   let string_of_fqid fqid =
     String.concat "." (List.map Id.to_string fqid)
 
@@ -130,7 +130,7 @@ open Decl_kinds
       | SearchPattern c -> keyword "SearchPattern" ++ spc() ++ pr_p c ++ pr_in_out_modules b
       | SearchRewrite c -> keyword "SearchRewrite" ++ spc() ++ pr_p c ++ pr_in_out_modules b
       | SearchAbout sl ->
-	 keyword "Search" ++ spc() ++ prlist_with_sep spc pr_search_about sl ++ pr_in_out_modules b
+         keyword "Search" ++ spc() ++ prlist_with_sep spc pr_search_about sl ++ pr_in_out_modules b
 
   let pr_locality local = if local then keyword "Local" else keyword "Global"
 
@@ -884,7 +884,7 @@ open Decl_kinds
             (if abst then keyword "Declare" ++ spc () else mt ()) ++
               keyword "Instance" ++
               (match instid with
-      	 | (loc, Name id), l -> spc () ++ pr_ident_decl ((loc, id),l) ++ spc ()
+         | (loc, Name id), l -> spc () ++ pr_ident_decl ((loc, id),l) ++ spc ()
                | (_, Anonymous), _ -> mt ()) ++
               pr_and_type_binders_arg sup ++
               str":" ++ spc () ++

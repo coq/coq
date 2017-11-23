@@ -190,7 +190,7 @@ END
 let pr_hints_path prc prx pry c = Hints.pp_hints_path c
 let pr_pre_hints_path prc prx pry c = Hints.pp_hints_path_gen Libnames.pr_reference c
 let glob_hints_path ist = Hints.glob_hints_path
-							      
+
 ARGUMENT EXTEND hints_path
 PRINTED BY pr_hints_path
 

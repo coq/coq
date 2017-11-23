@@ -1,18 +1,18 @@
 (* -*- mode: coq; coq-prog-args: ("-boot" "-nois") -*- *)
-(* File reduced by coq-bug-finder from original input, then from 286 lines to 
-27 lines, then from 224 lines to 53 lines, then from 218 lines to 56 lines, 
-then from 269 lines to 180 lines, then from 132 lines to 48 lines, then from 
+(* File reduced by coq-bug-finder from original input, then from 286 lines to
+27 lines, then from 224 lines to 53 lines, then from 218 lines to 56 lines,
+then from 269 lines to 180 lines, then from 132 lines to 48 lines, then from
 253 lines to 65 lines, then from 79 lines to 65 lines *)
-(* coqc version 8.6.0 (November 2016) compiled on Nov 12 2016 14:43:52 with 
+(* coqc version 8.6.0 (November 2016) compiled on Nov 12 2016 14:43:52 with
 OCaml 4.02.3
-   coqtop version jgross-Leopard-WS:/home/jgross/Downloads/coq/coq-v8.6,v8.6 
+   coqtop version jgross-Leopard-WS:/home/jgross/Downloads/coq/coq-v8.6,v8.6
 (7e992fa784ee6fa48af8a2e461385c094985587d) *)
 Axiom admit : forall {T}, T.
 Set Printing Implicit.
 Inductive nat := O | S (_ : nat).
 Axiom f : forall (_ _ : nat), nat.
 Class ZLikeOps (e : nat)
-  := { LargeT : Type ; SmallT : Type ; CarryAdd : forall (_ _ : LargeT), LargeT 
+  := { LargeT : Type ; SmallT : Type ; CarryAdd : forall (_ _ : LargeT), LargeT
 }.
 Class BarrettParameters :=
   { b : nat ; k : nat ; ops : ZLikeOps (f b k) }.

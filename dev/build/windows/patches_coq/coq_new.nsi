@@ -37,13 +37,13 @@ Var INSTDIR_DBS       ; INSTDIR with \\ instead of \
 
   ;Folder selection page
   InstallDir "C:\${MY_PRODUCT}"
-  
+
   ;Remember install folder
   InstallDirRegKey HKCU "Software\${MY_PRODUCT}" ""
 
 ;--------------------------------
 ;Modern UI Configuration
-  
+
   !define MUI_ICON "${COQ_ICON}"
 
   !insertmacro MUI_PAGE_WELCOME
@@ -53,17 +53,17 @@ Var INSTDIR_DBS       ; INSTDIR with \\ instead of \
   !insertmacro MUI_PAGE_DIRECTORY
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
-  
+
   !insertmacro MUI_UNPAGE_WELCOME
   !insertmacro MUI_UNPAGE_CONFIRM
   !insertmacro MUI_UNPAGE_INSTFILES
-  !insertmacro MUI_UNPAGE_FINISH  
+  !insertmacro MUI_UNPAGE_FINISH
 
 ;--------------------------------
 ;Languages
- 
+
   !insertmacro MUI_LANGUAGE "English"
-  
+
 ;--------------------------------
 ;Language Strings
 
@@ -103,7 +103,7 @@ Section "Coq" Sec1
 
   ;Store install folder
   WriteRegStr HKCU "Software\${MY_PRODUCT}" "" $INSTDIR
-  
+
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Coq" \
@@ -121,7 +121,7 @@ Section "Coq" Sec1
 
   ; Create start menu entries
   ; SetOutPath is required for the path in the .lnk files
-  SetOutPath "$INSTDIR" 
+  SetOutPath "$INSTDIR"
   CreateDirectory "$SMPROGRAMS\Coq"
   ; The first shortcut set here is treated as main application by Windows 7/8.
   ; Use CoqIDE as main application
@@ -136,20 +136,20 @@ SectionEnd
 ;OCAML Section "Ocaml for native compute and plugin development" Sec2
 ;OCAML   SetOutPath "$INSTDIR\"
 ;OCAML   !include "..\..\..\filelists\ocaml.nsh"
-;OCAML 
+;OCAML
 ;OCAML   ; Create a few slash / backslash variants of the source and install path
 ;OCAML   ; Note: NSIS has variables, written as $VAR and defines, written as ${VAR}
 ;OCAML   !insertmacro StrRep $COQ_SRC_PATH_BS  ${COQ_SRC_PATH} "/" "\"
 ;OCAML   !insertmacro StrRep $COQ_SRC_PATH_DBS ${COQ_SRC_PATH} "/" "\\"
 ;OCAML   !insertmacro StrRep $INSTDIR_DBS      $INSTDIR        "\" "\\"
-;OCAML 
+;OCAML
 ;OCAML   ; Replace absolute paths in some OCaml config files
 ;OCAML   ; These are not all, see ReadMe.txt
 ;OCAML   !insertmacro ReplaceInFile "$INSTDIR\libocaml\ld.conf" "/"  "\"
 ;OCAML   !insertmacro ReplaceInFile "$INSTDIR\libocaml\ld.conf" "$COQ_SRC_PATH_BS"  "$INSTDIR"
 ;OCAML   !insertmacro ReplaceInFile "$INSTDIR\etc\findlib.conf" "$COQ_SRC_PATH_DBS" "$INSTDIR_DBS"
 ;OCAML SectionEnd
- 
+
 Section "Coq files for plugin developers" Sec3
   SetOutPath "$INSTDIR\"
   !include "..\..\..\filelists\coq_plugindev.nsh"
@@ -181,7 +181,7 @@ SectionEnd
   ;OCAML !insertmacro MUI_DESCRIPTION_TEXT ${Sec4} $(DESC_4)
   ;OCAML !insertmacro MUI_DESCRIPTION_TEXT ${Sec5} $(DESC_5)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
- 
+
 ;--------------------------------
 ;Uninstaller Section
 
@@ -207,7 +207,7 @@ Section "Uninstall"
   Delete "$SMPROGRAMS\Coq\The Coq HomePage.url"
   Delete "$SMPROGRAMS\Coq\The Coq Standard Library.url"
   Delete "$INSTDIR\Uninstall.exe"
-  
+
   ; Registry keys
   DeleteRegKey HKCU "Software\${MY_PRODUCT}"
   DeleteRegKey HKLM "SOFTWARE\Coq"

@@ -50,7 +50,7 @@ let pr_search_strategy _prc _prlc _prt = function
 ARGUMENT EXTEND eauto_search_strategy PRINTED BY pr_search_strategy
 | [ "(bfs)" ] -> [ Some Bfs ]
 | [ "(dfs)" ] -> [ Some Dfs ]
-| [ ] -> [ None ] 
+| [ ] -> [ None ]
 END
 
 (* true = All transparent, false = Opaque if possible *)

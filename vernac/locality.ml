@@ -35,15 +35,15 @@ let enforce_locality_full locality_flag local =
   let local =
     match locality_flag with
     | Some false when local ->
-	CErrors.user_err Pp.(str "Cannot be simultaneously Local and Global.")
+        CErrors.user_err Pp.(str "Cannot be simultaneously Local and Global.")
     | Some true when local ->
-	CErrors.user_err Pp.(str "Use only prefix \"Local\".")
+        CErrors.user_err Pp.(str "Use only prefix \"Local\".")
     | None ->
-	if local then begin
-	    warn_deprecated_local_syntax ();
-	    Some true
-	end else
-	None
+        if local then begin
+            warn_deprecated_local_syntax ();
+            Some true
+        end else
+        None
     | Some b -> Some b in
   local
 
@@ -87,8 +87,8 @@ let enforce_section_locality locality_flag local =
 let make_module_locality = function
   | Some false ->
       if Lib.sections_are_opened () then
-	CErrors.user_err Pp.(str
-	  "This command does not support the Global option in sections.");
+        CErrors.user_err Pp.(str
+          "This command does not support the Global option in sections.");
       false
   | Some true -> true
   | None -> false

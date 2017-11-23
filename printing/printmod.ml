@@ -61,9 +61,9 @@ let get_new_id locals id =
   let rec get_id l id =
     let dir = DirPath.make [id] in
       if not (Nametab.exists_module dir) then
-	id
+        id
       else
-	get_id (Id.Set.add id l) (Namegen.next_ident_away id l)
+        get_id (Id.Set.add id l) (Namegen.next_ident_away id l)
   in
   let avoid = List.fold_left (fun accu (_, id) -> Id.Set.add id accu) Id.Set.empty locals in
     get_id avoid id
@@ -88,7 +88,7 @@ let build_ind_type env mip =
   Inductive.type_of_inductive env mip
 
 let print_one_inductive env sigma mib ((_,i) as ind) =
-  let u = if Declareops.inductive_is_polymorphic mib then 
+  let u = if Declareops.inductive_is_polymorphic mib then
       Univ.AUContext.instance (Declareops.inductive_polymorphic_context mib)
     else Univ.Instance.empty in
   let mip = mib.mind_packets.(i) in
@@ -135,7 +135,7 @@ let print_mutual_inductive env mind mib =
   let sigma = Evd.from_ctx (Evd.evar_universe_context_of_binders bl) in
   hov 0 (Printer.pr_polymorphic (Declareops.inductive_is_polymorphic mib) ++
          Printer.pr_cumulative
-           (Declareops.inductive_is_polymorphic mib) 
+           (Declareops.inductive_is_polymorphic mib)
            (Declareops.inductive_is_cumulative mib) ++
          def keyword ++ spc () ++
          prlist_with_sep (fun () -> fnl () ++ str"  with ")
@@ -160,10 +160,10 @@ let get_fields =
   prodec_rec [] []
 
 let print_record env mind mib =
-  let u = 
-    if Declareops.inductive_is_polymorphic mib then 
+  let u =
+    if Declareops.inductive_is_polymorphic mib then
       Univ.AUContext.instance (Declareops.inductive_polymorphic_context mib)
-    else Univ.Instance.empty 
+    else Univ.Instance.empty
   in
   let mip = mib.mind_packets.(0) in
   let params = Inductive.inductive_paramdecls (mib,u) in
@@ -232,10 +232,10 @@ let print_kn locals kn =
       pr_qualid qid
   with
       Not_found ->
-	try
-	  print_local_modpath locals kn
-	with
-	    Not_found -> print_modpath locals kn
+        try
+          print_local_modpath locals kn
+        with
+            Not_found -> print_modpath locals kn
 
 let nametab_register_dir mp =
   let id = mk_fake_top () in
@@ -261,11 +261,11 @@ let nametab_register_body mp dir (l,body) =
     | SFBmind mib ->
       let mind = MutInd.make2 mp l in
       Array.iteri
-	(fun i mip ->
-	  push mip.mind_typename (IndRef (mind,i));
-	  Array.iteri (fun j id -> push id (ConstructRef ((mind,i),j+1)))
-	    mip.mind_consnames)
-	mib.mind_packets
+        (fun i mip ->
+          push mip.mind_typename (IndRef (mind,i));
+          Array.iteri (fun j id -> push id (ConstructRef ((mind,i),j+1)))
+            mip.mind_consnames)
+        mib.mind_packets
 
 let nametab_register_module_body mp struc =
   (* If [mp] is a globally visible module, we simply import it *)
@@ -307,35 +307,35 @@ let print_body is_impl env mp (l,body) =
     | SFBconst cb ->
        let ctx = Declareops.constant_polymorphic_context cb in
        let u =
-	 if Declareops.constant_is_polymorphic cb then
+         if Declareops.constant_is_polymorphic cb then
             Univ.AUContext.instance ctx
-	 else Univ.Instance.empty
+         else Univ.Instance.empty
        in
        let ctx = Univ.UContext.make (u, Univ.AUContext.instantiate u ctx) in
        let sigma = Evd.empty in
       (match cb.const_body with
-	| Def _ -> def "Definition" ++ spc ()
-	| OpaqueDef _ when is_impl -> def "Theorem" ++ spc ()
-	| _ -> def "Parameter" ++ spc ()) ++ name ++
+        | Def _ -> def "Definition" ++ spc ()
+        | OpaqueDef _ when is_impl -> def "Theorem" ++ spc ()
+        | _ -> def "Parameter" ++ spc ()) ++ name ++
       (match env with
-	  | None -> mt ()
-	  | Some env ->
-	    str " :" ++ spc () ++
-	    hov 0 (Printer.pr_ltype_env env sigma
-		(Vars.subst_instance_constr u
-   		  cb.const_type)) ++
-	    (match cb.const_body with
-	      | Def l when is_impl ->
-		spc () ++
-		hov 2 (str ":= " ++
-		       Printer.pr_lconstr_env env sigma
-			  (Vars.subst_instance_constr u (Mod_subst.force_constr l)))
-	      | _ -> mt ()) ++ str "." ++
-	    Printer.pr_universe_ctx sigma ctx)
+          | None -> mt ()
+          | Some env ->
+            str " :" ++ spc () ++
+            hov 0 (Printer.pr_ltype_env env sigma
+                (Vars.subst_instance_constr u
+                  cb.const_type)) ++
+            (match cb.const_body with
+              | Def l when is_impl ->
+                spc () ++
+                hov 2 (str ":= " ++
+                       Printer.pr_lconstr_env env sigma
+                          (Vars.subst_instance_constr u (Mod_subst.force_constr l)))
+              | _ -> mt ()) ++ str "." ++
+            Printer.pr_universe_ctx sigma ctx)
     | SFBmind mib ->
       try
-	let env = Option.get env in
-	pr_mutual_inductive_body env (MutInd.make2 mp l) mib
+        let env = Option.get env in
+        pr_mutual_inductive_body env (MutInd.make2 mp l) mib
       with e when CErrors.noncritical e ->
         let keyword =
           let open Decl_kinds in
@@ -344,7 +344,7 @@ let print_body is_impl env mp (l,body) =
           | BiFinite -> def "Variant"
           | CoFinite -> def "CoInductive"
         in
-	keyword ++ spc () ++ name)
+        keyword ++ spc () ++ name)
 
 let print_struct is_impl env mp struc =
   prlist_with_sep spc (print_body is_impl env mp) struc
@@ -355,7 +355,7 @@ let print_structure is_type env mp locals struc =
   nametab_register_module_body mp struc;
   let kwd = if is_type then "Sig" else "Struct" in
   hv 2 (keyword kwd ++ spc () ++ print_struct false env' mp struc ++
-	brk (1,-2) ++ keyword "End")
+        brk (1,-2) ++ keyword "End")
 
 let rec flatten_app mexpr l = match mexpr with
   | MEapply (mexpr, arg) -> flatten_app mexpr (arg::l)
@@ -370,7 +370,7 @@ let rec print_typ_expr env mp locals mty =
       let fapp = List.hd lapp in
       let mapp = List.tl lapp in
       hov 3 (str"(" ++ (print_kn locals fapp) ++ spc () ++
-		 prlist_with_sep spc (print_modpath locals) mapp ++ str")")
+                 prlist_with_sep spc (print_modpath locals) mapp ++ str")")
   | MEwith(me,WithDef(idl,(c, _)))->
       let env' = None in (* TODO: build a proper environment if env <> None *)
       let s = String.concat "." (List.map Id.to_string idl) in
@@ -405,8 +405,8 @@ let rec print_functor fty fatom is_type env mp locals = function
       let kwd = if is_type then "Funsig" else "Functor" in
       hov 2
         (keyword kwd ++ spc () ++
-	 str "(" ++ Id.print id ++ str ":" ++ pr_mtb1 ++ str ")" ++
-	 spc() ++ print_functor fty fatom is_type env' mp locals' me2)
+         str "(" ++ Id.print id ++ str ":" ++ pr_mtb1 ++ str ")" ++
+         spc() ++ print_functor fty fatom is_type env' mp locals' me2)
 
 let rec print_expression x =
   print_functor
@@ -425,11 +425,11 @@ let rec printable_body dir =
     DirPath.is_empty dir ||
     try
       match Nametab.locate_dir (qualid_of_dirpath dir) with
-	  DirOpenModtype _ -> false
-	| DirModule _ | DirOpenModule _ -> printable_body dir
-	| _ -> true
+          DirOpenModtype _ -> false
+        | DirModule _ | DirOpenModule _ -> printable_body dir
+        | _ -> true
     with
-	Not_found -> true
+        Not_found -> true
 
 (** Since we might play with nametab above, we should reset to prior
     state after the printing *)
@@ -475,9 +475,9 @@ let print_modtype kn =
   hv 1
     (keyword "Module Type" ++ spc () ++ name ++ str " =" ++ spc () ++
      (try
-	if !short then raise ShortPrinting;
-	print_signature' true (Some (Global.env ())) kn mtb.mod_type
+        if !short then raise ShortPrinting;
+        print_signature' true (Some (Global.env ())) kn mtb.mod_type
       with e when CErrors.noncritical e ->
-	print_signature' true None kn mtb.mod_type))
+        print_signature' true None kn mtb.mod_type))
 
 

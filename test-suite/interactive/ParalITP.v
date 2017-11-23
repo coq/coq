@@ -28,7 +28,7 @@ Proof using i.
 Qed.
 
 Lemma b : True.
-Proof using i. 
+Proof using i.
   sleep time.
   idtac.
   sleep time.

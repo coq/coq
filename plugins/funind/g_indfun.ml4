@@ -84,9 +84,9 @@ TACTIC EXTEND newfunind
    ["functional" "induction" ne_constr_list(cl) fun_ind_using(princl) with_names(pat)] ->
      [
        let c = match cl with
-	 | [] -> assert false
-	 | [c] -> c
-	 | c::cl -> EConstr.applist(c,cl)
+         | [] -> assert false
+         | [c] -> c
+         | c::cl -> EConstr.applist(c,cl)
        in
        Extratactics.onSomeWithHoles (fun x -> functional_induction true c x pat) princl ]
 END
@@ -95,9 +95,9 @@ TACTIC EXTEND snewfunind
    ["soft" "functional" "induction" ne_constr_list(cl) fun_ind_using(princl) with_names(pat)] ->
      [
        let c = match cl with
-	 | [] -> assert false
-	 | [c] -> c
-	 | c::cl -> EConstr.applist(c,cl)
+         | [] -> assert false
+         | [c] -> c
+         | c::cl -> EConstr.applist(c,cl)
        in
        Extratactics.onSomeWithHoles (fun x -> functional_induction false c x pat) princl ]
 END
@@ -193,30 +193,30 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
    ->
     [
       begin
-	try
-	  Functional_principles_types.build_scheme fas
-	with Functional_principles_types.No_graph_found ->
-	  begin
-	    match fas with
-	      | (_,fun_name,_)::_ ->
-		  begin
-		    begin
-		      make_graph (Smartlocate.global_with_alias fun_name)
-		    end
-		  ;
-		    try Functional_principles_types.build_scheme fas
-		    with Functional_principles_types.No_graph_found ->
-		      CErrors.user_err Pp.(str "Cannot generate induction principle(s)")
-		      | e when CErrors.noncritical e ->
-			  let names = List.map (fun (_,na,_) -> na) fas in
-			  warning_error names e
+        try
+          Functional_principles_types.build_scheme fas
+        with Functional_principles_types.No_graph_found ->
+          begin
+            match fas with
+              | (_,fun_name,_)::_ ->
+                  begin
+                    begin
+                      make_graph (Smartlocate.global_with_alias fun_name)
+                    end
+                  ;
+                    try Functional_principles_types.build_scheme fas
+                    with Functional_principles_types.No_graph_found ->
+                      CErrors.user_err Pp.(str "Cannot generate induction principle(s)")
+                      | e when CErrors.noncritical e ->
+                          let names = List.map (fun (_,na,_) -> na) fas in
+                          warning_error names e
 
-		  end
-	      | _ -> assert false (* we can only have non empty  list *)
-	  end
-	  | e when CErrors.noncritical e ->
-	      let names = List.map (fun (_,na,_) -> na) fas in
-	      warning_error names e
+                  end
+              | _ -> assert false (* we can only have non empty  list *)
+          end
+          | e when CErrors.noncritical e ->
+              let names = List.map (fun (_,na,_) -> na) fas in
+              warning_error names e
       end
 
     ]

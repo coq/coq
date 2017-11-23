@@ -198,9 +198,9 @@ let declare_delimiters scope key =
     | Some oldkey when String.equal oldkey key -> ()
     | Some oldkey ->
         (** FIXME: implement multikey scopes? *)
-	Flags.if_verbose Feedback.msg_info
-	  (str "Overwriting previous delimiting key " ++ str oldkey ++ str " in scope " ++ str scope);
-	scope_map := String.Map.add scope newsc !scope_map
+        Flags.if_verbose Feedback.msg_info
+          (str "Overwriting previous delimiting key " ++ str oldkey ++ str " in scope " ++ str scope);
+        scope_map := String.Map.add scope newsc !scope_map
   end;
   try
     let oldscope = String.Map.find key !delimiters_map in
@@ -381,29 +381,29 @@ let find_with_delimiters = function
   | None -> None
   | Some scope ->
       match (String.Map.find scope !scope_map).delimiters with
-	| Some key -> Some (Some scope, Some key)
-	| None -> None
+        | Some key -> Some (Some scope, Some key)
+        | None -> None
 
 let rec find_without_delimiters find (ntn_scope,ntn) = function
   | Scope scope :: scopes ->
       (* Is the expected ntn/numpr attached to the most recently open scope? *)
       begin match ntn_scope with
       | Some scope' when String.equal scope scope' ->
-	Some (None,None)
+        Some (None,None)
       | _ ->
-	(* If the most recently open scope has a notation/numeral printer
-    	   but not the expected one then we need delimiters *)
-	if find scope then
-	  find_with_delimiters ntn_scope
-	else
-	  find_without_delimiters find (ntn_scope,ntn) scopes
+        (* If the most recently open scope has a notation/numeral printer
+           but not the expected one then we need delimiters *)
+        if find scope then
+          find_with_delimiters ntn_scope
+        else
+          find_without_delimiters find (ntn_scope,ntn) scopes
       end
   | SingleNotation ntn' :: scopes ->
       begin match ntn_scope, ntn with
       | None, Some ntn when String.equal ntn ntn' ->
-	Some (None, None)
+        Some (None, None)
       | _ ->
-	find_without_delimiters find (ntn_scope,ntn) scopes
+        find_without_delimiters find (ntn_scope,ntn) scopes
       end
   | [] ->
       (* Can we switch to [scope]? Yes if it has defined delimiters *)
@@ -523,7 +523,7 @@ let interp_notation ?loc ntn local_scopes =
   let scopes = make_current_scopes local_scopes in
   try find_interpretation ntn (find_notation ntn) scopes
   with Not_found ->
-    user_err ?loc 
+    user_err ?loc
     (str "Unknown interpretation for notation \"" ++ str ntn ++ str "\".")
 
 let uninterp_notations c =
@@ -606,7 +606,7 @@ let exists_notation_in_scope scopt ntn onlyprint r =
   try
     let sc = String.Map.find scope !scope_map in
     let n = String.Map.find ntn sc.notations in
-    onlyprint = n.not_onlyprinting && 
+    onlyprint = n.not_onlyprinting &&
     interpretation_eq n.not_interp r
   with Not_found -> false
 
@@ -655,8 +655,8 @@ let find_scope_class_opt = function
 let rec compute_arguments_classes t =
   match Constr.kind (EConstr.Unsafe.to_constr (Reductionops.whd_betaiotazeta Evd.empty (EConstr.of_constr t))) with
     | Prod (_,t,u) ->
-	let cl = try Some (compute_scope_class t) with Not_found -> None in
-	cl :: compute_arguments_classes u
+        let cl = try Some (compute_scope_class t) with Not_found -> None in
+        cl :: compute_arguments_classes u
     | _ -> []
 
 let compute_arguments_scope_full t =
@@ -738,15 +738,15 @@ let rebuild_arguments_scope (req,r,n,l,_) =
     | ArgsScopeNoDischarge -> assert false
     | ArgsScopeAuto ->
         let scs,cls = compute_arguments_scope_full (fst(Global.type_of_global_in_context (Global.env ()) r)(*FIXME?*)) in
-	(req,r,List.length scs,scs,cls)
+        (req,r,List.length scs,scs,cls)
     | ArgsScopeManual ->
-	(* Add to the manually given scopes the one found automatically
+        (* Add to the manually given scopes the one found automatically
            for the extra parameters of the section. Discard the classes
            of the manually given scopes to avoid further re-computations. *)
         let l',cls = compute_arguments_scope_full (fst (Global.type_of_global_in_context (Global.env ()) r)) in
-	let l1 = List.firstn n l' in
+        let l1 = List.firstn n l' in
         let cls1 = List.firstn n cls in
-	(req,r,0,l1@l,cls1)
+        (req,r,0,l1@l,cls1)
 
 type arguments_scope_obj =
     arguments_scope_discharge_request * global_reference *
@@ -773,7 +773,7 @@ let declare_arguments_scope local r scl =
   (* We empty the list of argument classes to disable further scope
      re-computations and keep these manually given scopes. *)
   declare_arguments_scope_gen req r 0 (scl,[])
-                              
+
 let find_arguments_scope r =
   try
     let (scl,cls,stamp) = Refmap.find r !arguments_scope in
@@ -826,7 +826,7 @@ let decompose_notation_key s =
     if n>=len then List.rev dirs else
     let pos =
       try
-	String.index_from s n ' '
+        String.index_from s n ' '
       with Not_found -> len
     in
     let tok =
@@ -873,7 +873,7 @@ let pr_named_scope prglob scope sc =
   ++ pr_scope_classes scope
   ++ String.Map.fold
        (fun ntn { not_interp  = (_, r); not_location = (_, df) } strm ->
-	 pr_notation_info prglob df r ++ fnl () ++ strm)
+         pr_notation_info prglob df r ++ fnl () ++ strm)
        sc.notations (mt ())
 
 let pr_scope prglob scope = pr_named_scope prglob scope (find_scope scope)
@@ -897,10 +897,10 @@ let factorize_entries = function
   | [] -> []
   | (ntn,c)::l ->
       let (ntn,l_of_ntn,rest) =
-	List.fold_left
+        List.fold_left
           (fun (a',l,rest) (a,c) ->
-	    if String.equal a a' then (a',c::l,rest) else (a,[c],(a',l)::rest))
-	  (ntn,[c],[]) l in
+            if String.equal a a' then (a',c::l,rest) else (a,[c],(a',l)::rest))
+          (ntn,[c],[]) l in
       (ntn,l_of_ntn)::rest
 
 let browse_notation strict ntn map =
@@ -916,8 +916,8 @@ let browse_notation strict ntn map =
   let l =
     String.Map.fold
       (fun scope_name sc ->
-	String.Map.fold (fun ntn { not_interp  = (_, r); not_location = df } l ->
-	  if find ntn then (ntn,(scope_name,r,df))::l else l) sc.notations)
+        String.Map.fold (fun ntn { not_interp  = (_, r); not_location = df } l ->
+          if find ntn then (ntn,(scope_name,r,df))::l else l) sc.notations)
       map [] in
   List.sort (fun x y -> String.compare (fst x) (fst y)) l
 
@@ -932,7 +932,7 @@ let error_ambiguous_notation ?loc _ntn =
   user_err ?loc (str "Ambiguous notation.")
 
 let error_notation_not_reference ?loc ntn =
-  user_err ?loc 
+  user_err ?loc
    (str "Unable to interpret " ++ quote (str ntn) ++
     str " as a reference.")
 
@@ -969,15 +969,15 @@ let locate_notation prglob ntn scope =
     prlist (fun (ntn,l) ->
       let scope = find_default ntn scopes in
       prlist
-	(fun (sc,r,(_,df)) ->
-	  hov 0 (
-	    pr_notation_info prglob df r ++
-	    (if String.equal sc default_scope then mt ()
+        (fun (sc,r,(_,df)) ->
+          hov 0 (
+            pr_notation_info prglob df r ++
+            (if String.equal sc default_scope then mt ()
              else (spc () ++ str ": " ++ str sc)) ++
-	    (if Option.equal String.equal (Some sc) scope
+            (if Option.equal String.equal (Some sc) scope
              then spc () ++ str "(default interpretation)" else mt ())
-	    ++ fnl ()))
-	l) ntns
+            ++ fnl ()))
+        l) ntns
 
 let collect_notation_in_scope scope sc known =
   assert (not (String.equal scope default_scope));
@@ -990,22 +990,22 @@ let collect_notations stack =
   fst (List.fold_left
     (fun (all,knownntn as acc) -> function
       | Scope scope ->
-	  if String.List.mem_assoc scope all then acc
-	  else
-	    let (l,knownntn) =
-	      collect_notation_in_scope scope (find_scope scope) knownntn in
-	    ((scope,l)::all,knownntn)
+          if String.List.mem_assoc scope all then acc
+          else
+            let (l,knownntn) =
+              collect_notation_in_scope scope (find_scope scope) knownntn in
+            ((scope,l)::all,knownntn)
       | SingleNotation ntn ->
-	  if String.List.mem ntn knownntn then (all,knownntn)
-	  else
-	    let { not_interp  = (_, r); not_location = (_, df) } =
-	      String.Map.find ntn (find_scope default_scope).notations in
-	    let all' = match all with
-	      | (s,lonelyntn)::rest when String.equal s default_scope ->
-		  (s,(df,r)::lonelyntn)::rest
-	      | _ ->
-		  (default_scope,[df,r])::all in
-	    (all',ntn::knownntn))
+          if String.List.mem ntn knownntn then (all,knownntn)
+          else
+            let { not_interp  = (_, r); not_location = (_, df) } =
+              String.Map.find ntn (find_scope default_scope).notations in
+            let all' = match all with
+              | (s,lonelyntn)::rest when String.equal s default_scope ->
+                  (s,(df,r)::lonelyntn)::rest
+              | _ ->
+                  (default_scope,[df,r])::all in
+            (all',ntn::knownntn))
     ([],[]) stack)
 
 let pr_visible_in_scope prglob (scope,ntns) =

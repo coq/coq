@@ -72,8 +72,8 @@ type typeclass = {
 
   (* The method implementaions as projections. *)
   cl_projs : (Name.t * (direction * Vernacexpr.hint_info_expr) option
-	      * Constant.t option) list;
-  
+              * Constant.t option) list;
+
   cl_strict : bool;
 
   cl_unique : bool;
@@ -129,7 +129,7 @@ let class_info c =
 
 let global_class_of_constr env sigma c =
   try let gr, u = Termops.global_of_constr sigma c in
-	class_info gr, u
+        class_info gr, u
   with Not_found -> not_a_class env c
 
 let dest_class_app env sigma c =
@@ -145,9 +145,9 @@ let class_of_constr sigma c =
   try Some (dest_class_arity (Global.env ()) sigma c)
   with e when CErrors.noncritical e -> None
 
-let is_class_constr sigma c = 
+let is_class_constr sigma c =
   try let gr, u = Termops.global_of_constr sigma c in
-	Refmap.mem gr !classes
+        Refmap.mem gr !classes
   with Not_found -> false
 
 let rec is_class_type evd c =
@@ -156,7 +156,7 @@ let rec is_class_type evd c =
     | Prod (_, _, t) -> is_class_type evd t
     | Cast (t, _, _) -> is_class_type evd t
     | _ -> is_class_constr evd c
-      
+
 let is_class_evar evd evi =
   is_class_type evd (EConstr.of_constr evi.Evd.evar_concl)
 
@@ -177,7 +177,7 @@ let subst_class (subst,cl) =
   let do_subst_context (grs,ctx) =
     List.smartmap (Option.smartmap (fun (gr,b) -> do_subst_gr gr, b)) grs,
     do_subst_ctx ctx in
-  let do_subst_projs projs = List.smartmap (fun (x, y, z) -> 
+  let do_subst_projs projs = List.smartmap (fun (x, y, z) ->
     (x, y, Option.smartmap do_subst_con z)) projs in
   { cl_univs = cl.cl_univs;
     cl_impl = do_subst_gr cl.cl_impl;
@@ -192,7 +192,7 @@ let discharge_class (_,cl) =
   let rel_of_variable_context ctx = List.fold_right
     ( fun (decl,_) (ctx', subst) ->
         let decl' = decl |> NamedDecl.map_constr (substn_vars 1 subst) |> NamedDecl.to_rel_decl in
-	(decl' :: ctx', NamedDecl.get_id decl :: subst)
+        (decl' :: ctx', NamedDecl.get_id decl :: subst)
     ) ctx ([], []) in
   let discharge_rel_context (subst, usubst) n rel =
     let rel = Context.Rel.map (Cooking.expmod_constr repl) rel in
@@ -211,10 +211,10 @@ let discharge_class (_,cl) =
   let discharge_context ctx' subst (grs, ctx) =
     let grs' =
       let newgrs = List.map (fun decl ->
-			     match decl |> RelDecl.get_type |> EConstr.of_constr |> class_of_constr Evd.empty with
-			     | None -> None
-			     | Some (_, ((tc,_), _)) -> Some (tc.cl_impl, true))
-			    ctx'
+                             match decl |> RelDecl.get_type |> EConstr.of_constr |> class_of_constr Evd.empty with
+                             | None -> None
+                             | Some (_, ((tc,_), _)) -> Some (tc.cl_impl, true))
+                            ctx'
       in
       List.smartmap (Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b)) grs
       @ newgrs
@@ -229,15 +229,15 @@ let discharge_class (_,cl) =
     let discharge_proj (x, y, z) = x, y, Option.smartmap Lib.discharge_con z in
       { cl_univs = cl_univs';
         cl_impl = cl_impl';
-	cl_context = context;
-	cl_props = props;
-	cl_projs = List.smartmap discharge_proj cl.cl_projs;
-	cl_strict = cl.cl_strict;
-	cl_unique = cl.cl_unique
+        cl_context = context;
+        cl_props = props;
+        cl_projs = List.smartmap discharge_proj cl.cl_projs;
+        cl_strict = cl.cl_strict;
+        cl_unique = cl.cl_unique
       }
 
-let rebuild_class cl = 
-  try 
+let rebuild_class cl =
+  try
     let cst = Tacred.evaluable_of_global_reference (Global.env ()) cl.cl_impl in
       set_typeclass_transparency cst false false; cl
   with e when CErrors.noncritical e -> cl
@@ -259,7 +259,7 @@ let add_class cl =
 (** Build the subinstances hints. *)
 
 let check_instance env sigma c =
-  try 
+  try
     let (evd, c) = resolve_one_typeclass env sigma
       (Retyping.get_type_of env sigma c) in
       not (Evd.has_undefined evd)
@@ -269,8 +269,8 @@ open Vernacexpr
 
 let build_subclasses ~check env sigma glob { hint_priority = pri } =
   let _id = Nametab.basename_of_global glob in
-  let _next_id = 
-    let i = ref (-1) in 
+  let _next_id =
+    let i = ref (-1) in
       (fun () -> incr i;
         Nameops.add_suffix _id ("_subinstance_" ^ string_of_int !i))
   in
@@ -283,37 +283,37 @@ let build_subclasses ~check env sigma glob { hint_priority = pri } =
       match class_of_constr sigma ty with
       | None -> []
       | Some (rels, ((tc,u), args)) ->
-	let instapp = 
-	  Reductionops.whd_beta sigma (EConstr.of_constr (appvectc c (Context.Rel.to_extended_vect mkRel 0 rels)))
-	in
-	let instapp = EConstr.Unsafe.to_constr instapp in
-	let projargs = Array.of_list (args @ [instapp]) in
-	let projs = List.map_filter 
-	  (fun (n, b, proj) ->
-	   match b with 
-	   | None -> None
-	   | Some (Backward, _) -> None
-	   | Some (Forward, info) ->
-	     let proj = Option.get proj in
-	     let rels = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) rels in
-	     let u = EConstr.EInstance.kind sigma u in
-	     let body = it_mkLambda_or_LetIn (mkApp (mkConstU (proj,u), projargs)) rels in
-	       if check && check_instance env sigma (EConstr.of_constr body) then None
-	       else 
-		 let newpri =
-		   match pri, info.hint_priority with
-		   | Some p, Some p' -> Some (p + p')
-		   | Some p, None -> Some (p + 1)
-		   | _, _ -> None
-		 in
-		   Some (ConstRef proj, { info with hint_priority = newpri }, body)) tc.cl_projs
-	in
-	let declare_proj hints (cref, info, body) =
-	  let path' = cref :: path in
-	  let ty = Retyping.get_type_of env sigma (EConstr.of_constr body) in
-	  let rest = aux pri body ty path' in
-	    hints @ (path', info, body) :: rest
-	in List.fold_left declare_proj [] projs 
+        let instapp =
+          Reductionops.whd_beta sigma (EConstr.of_constr (appvectc c (Context.Rel.to_extended_vect mkRel 0 rels)))
+        in
+        let instapp = EConstr.Unsafe.to_constr instapp in
+        let projargs = Array.of_list (args @ [instapp]) in
+        let projs = List.map_filter
+          (fun (n, b, proj) ->
+           match b with
+           | None -> None
+           | Some (Backward, _) -> None
+           | Some (Forward, info) ->
+             let proj = Option.get proj in
+             let rels = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) rels in
+             let u = EConstr.EInstance.kind sigma u in
+             let body = it_mkLambda_or_LetIn (mkApp (mkConstU (proj,u), projargs)) rels in
+               if check && check_instance env sigma (EConstr.of_constr body) then None
+               else
+                 let newpri =
+                   match pri, info.hint_priority with
+                   | Some p, Some p' -> Some (p + p')
+                   | Some p, None -> Some (p + 1)
+                   | _, _ -> None
+                 in
+                   Some (ConstRef proj, { info with hint_priority = newpri }, body)) tc.cl_projs
+        in
+        let declare_proj hints (cref, info, body) =
+          let path' = cref :: path in
+          let ty = Retyping.get_type_of env sigma (EConstr.of_constr body) in
+          let rest = aux pri body ty path' in
+            hints @ (path', info, body) :: rest
+        in List.fold_left declare_proj [] projs
   in
   let term = Universes.constr_of_global_univ (glob, inst) in
     (*FIXME subclasses should now get substituted for each particular instance of
@@ -324,31 +324,31 @@ let build_subclasses ~check env sigma glob { hint_priority = pri } =
  * instances persistent object
  *)
 
-type instance_action = 
+type instance_action =
   | AddInstance
   | RemoveInstance
 
-let load_instance inst = 
-  let insts = 
+let load_instance inst =
+  let insts =
     try Refmap.find inst.is_class !instances
     with Not_found -> Refmap.empty in
   let insts = Refmap.add inst.is_impl inst insts in
   instances := Refmap.add inst.is_class insts !instances
 
 let remove_instance inst =
-  let insts = 
+  let insts =
     try Refmap.find inst.is_class !instances
     with Not_found -> assert false in
   let insts = Refmap.remove inst.is_impl insts in
   instances := Refmap.add inst.is_class insts !instances
 
 let cache_instance (_, (action, i)) =
-  match action with 
+  match action with
   | AddInstance -> load_instance i
-  | RemoveInstance -> remove_instance i      
+  | RemoveInstance -> remove_instance i
 
 let subst_instance (subst, (action, inst)) = action,
-  { inst with 
+  { inst with
       is_class = fst (subst_global subst inst.is_class);
       is_impl = fst (subst_global subst inst.is_impl) }
 
@@ -358,11 +358,11 @@ let discharge_instance (_, (action, inst)) =
   | Some n ->
     assert (not (isVarRef inst.is_impl));
     Some (action,
-    { inst with 
+    { inst with
       is_global = Some (pred n);
       is_class = Lib.discharge_global inst.is_class;
       is_impl = Lib.discharge_global inst.is_impl })
-    
+
 
 let is_local i = (i.is_global == None)
 
@@ -426,16 +426,16 @@ let declare_instance info local glob =
 let add_class cl =
   add_class cl;
   List.iter (fun (n, inst, body) ->
-	     match inst with
-	     | Some (Backward, info) ->
-	       (match body with
-	       | None -> CErrors.user_err Pp.(str "Non-definable projection can not be declared as a subinstance")
-	       | Some b -> declare_instance (Some info) false (ConstRef b))
-	     | _ -> ())
+             match inst with
+             | Some (Backward, info) ->
+               (match body with
+               | None -> CErrors.user_err Pp.(str "Non-definable projection can not be declared as a subinstance")
+               | Some b -> declare_instance (Some info) false (ConstRef b))
+             | _ -> ())
   cl.cl_projs
 
 
-      
+
 (*
  * interface functions
  *)
@@ -444,17 +444,17 @@ let instance_constructor (cl,u) args =
   let lenpars = List.count is_local_assum (snd cl.cl_context) in
   let pars = fst (List.chop lenpars args) in
     match cl.cl_impl with
-      | IndRef ind -> 
+      | IndRef ind ->
         let ind = ind, u in
           (Some (applistc (mkConstructUi (ind, 1)) args),
-	   applistc (mkIndU ind) pars)
-      | ConstRef cst -> 
+           applistc (mkIndU ind) pars)
+      | ConstRef cst ->
         let cst = cst, u in
-	let term = match args with
-	  | [] -> None
-	  | _ -> Some (List.last args)
-	in
-	  (term, applistc (mkConstU cst) pars)
+        let term = match args with
+          | [] -> None
+          | _ -> Some (List.last args)
+        in
+          (term, applistc (mkConstU cst) pars)
       | _ -> assert false
 
 let typeclasses () = Refmap.fold (fun _ l c -> l :: c) !classes []
@@ -464,15 +464,15 @@ let cmap_elements c = Refmap.fold (fun k v acc -> v :: acc) c []
 let instances_of c =
   try cmap_elements (Refmap.find c.cl_impl !instances) with Not_found -> []
 
-let all_instances () = 
+let all_instances () =
   Refmap.fold (fun k v acc ->
     Refmap.fold (fun k v acc -> v :: acc) v acc)
     !instances []
 
-let instances r = 
-  let cl = class_info r in instances_of cl    
+let instances r =
+  let cl = class_info r in instances_of cl
 
-let is_class gr = 
+let is_class gr =
   Refmap.exists (fun _ v -> eq_gr v.cl_impl gr) !classes
 
 let is_instance = function
@@ -484,7 +484,7 @@ let is_instance = function
       (match Decls.variable_kind v with
       | IsDefinition Instance -> true
       | _ -> false)
-  | ConstructRef (ind,_) -> 
+  | ConstructRef (ind,_) ->
       is_class (IndRef ind)
   | _ -> false
 

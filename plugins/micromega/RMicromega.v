@@ -94,7 +94,7 @@ Proof.
   compute. apply Rinv_1.
 Qed.
 
-Lemma IQR_inv_ext : forall x, 
+Lemma IQR_inv_ext : forall x,
   IQR (/ x) = (if Qeq_bool x 0 then 0 else / IQR x).
 Proof.
   intros.
@@ -135,7 +135,7 @@ Proof.
 Qed.
 
 
-(* Syntactic ring coefficients. 
+(* Syntactic ring coefficients.
    For computing, we use Q. *)
 Inductive Rcst :=
 | C0
@@ -172,9 +172,9 @@ Fixpoint R_of_Rcst (r : Rcst) : R :=
     | CPlus r1 r2  => (R_of_Rcst r1) + (R_of_Rcst r2)
     | CMinus r1 r2 => (R_of_Rcst r1) - (R_of_Rcst r2)
     | CMult r1 r2  => (R_of_Rcst r1) * (R_of_Rcst r2)
-    | CInv r       => 
+    | CInv r       =>
       if Qeq_bool (Q_of_Rcst r) (0 # 1)
-        then R0 
+        then R0
         else Rinv (R_of_Rcst r)
       | COpp r       => - (R_of_Rcst r)
   end.
@@ -182,8 +182,8 @@ Fixpoint R_of_Rcst (r : Rcst) : R :=
 Lemma Q_of_RcstR : forall c, IQR (Q_of_Rcst c) = R_of_Rcst c.
 Proof.
     induction c ; simpl ; try (rewrite <- IHc1 ; rewrite <- IHc2).
-    apply IQR_0. 
-    apply IQR_1. 
+    apply IQR_0.
+    apply IQR_1.
     reflexivity.
     unfold IQR. simpl. rewrite Rinv_1. reflexivity.
     apply Q2R_plus.
@@ -224,7 +224,7 @@ Definition Reval_formula (e: PolEnv R) (ff : Formula Rcst) :=
 Definition Reval_formula' :=
   eval_sformula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt N.to_nat pow R_of_Rcst.
 
-Definition QReval_formula := 
+Definition QReval_formula :=
   eval_formula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt IQR N.to_nat pow .
 
 Lemma Reval_formula_compat : forall env f, Reval_formula env f <-> Reval_formula' env f.
@@ -299,7 +299,7 @@ Proof.
   destruct t.
   apply (check_inconsistent_sound Rsor QSORaddon) ; auto.
   unfold rdeduce. apply (nformula_plus_nformula_correct Rsor QSORaddon).
-  now apply (cnf_normalise_correct Rsor QSORaddon).  
+  now apply (cnf_normalise_correct Rsor QSORaddon).
   intros. now apply (cnf_negate_correct Rsor QSORaddon).
   intros t w0.
   apply RWeakChecker_sound.

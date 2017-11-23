@@ -824,13 +824,13 @@ let cartesians op init ll =
 
 let combinations l = cartesians (fun x l -> x::l) [] l
 
-let rec combine3 x y z = 
+let rec combine3 x y z =
   match x, y, z with
   | [], [], [] -> []
   | (x :: xs), (y :: ys), (z :: zs) ->
       (x, y, z) :: combine3 xs ys zs
   | _, _, _ -> invalid_arg "List.combine3"
-  
+
 (* Keep only those products that do not return None *)
 
 let cartesian_filter op l1 l2 =

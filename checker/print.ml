@@ -61,7 +61,7 @@ let print_pure_constr csr =
       print_string "Constr(";
       sp_display sp;
       print_string ",";
-      print_int i; print_string ","; print_int j; 
+      print_int i; print_string ","; print_int j;
       print_string ","; print_instance u; print_string ")"
   | Case (ci,p,c,bl) ->
       open_vbox 0;
@@ -80,12 +80,12 @@ let print_pure_constr csr =
       open_vbox 0;
       let print_fix () =
         for k = 0 to (Array.length tl) - 1 do
-	  open_vbox 0;
-	  name_display lna.(k); print_string "/";
-	  print_int t.(k); print_cut(); print_string ":";
-	  box_display tl.(k) ; print_cut(); print_string ":=";
-	  box_display bl.(k); close_box ();
-	  print_cut()
+          open_vbox 0;
+          name_display lna.(k); print_string "/";
+          print_int t.(k); print_cut(); print_string ":";
+          box_display tl.(k) ; print_cut(); print_string ":=";
+          box_display bl.(k); close_box ();
+          print_cut()
         done
       in print_string"{"; print_fix(); print_string"}"
   | CoFix(i,(lna,tl,bl)) ->
@@ -95,14 +95,14 @@ let print_pure_constr csr =
       let print_fix () =
         for k = 0 to (Array.length tl) - 1 do
           open_vbox 1;
-	  name_display lna.(k);  print_cut(); print_string ":";
-	  box_display tl.(k) ; print_cut(); print_string ":=";
-	  box_display bl.(k); close_box ();
-	  print_cut();
+          name_display lna.(k);  print_cut(); print_string ":";
+          box_display tl.(k) ; print_cut(); print_string ":=";
+          box_display bl.(k); close_box ();
+          print_cut();
         done
       in print_string"{"; print_fix (); print_string"}"
   | Proj (p, c) ->
-    print_string "Proj("; sp_con_display (Projection.constant p); print_string ","; 
+    print_string "Proj("; sp_con_display (Projection.constant p); print_string ",";
     box_display c; print_string ")"
 
   and box_display c = open_hovbox 1; term_display c; close_box()
@@ -121,8 +121,8 @@ let print_pure_constr csr =
     let ls =
       match List.rev_map Id.to_string (DirPath.repr dir) with
           ("Top"::l)-> l
-	| ("Coq"::_::l) -> l
-	| l             -> l
+        | ("Coq"::_::l) -> l
+        | l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
       print_string (MutInd.debug_to_string sp)
   and sp_con_display sp =
@@ -130,8 +130,8 @@ let print_pure_constr csr =
     let ls =
       match List.rev_map Id.to_string (DirPath.repr dir) with
           ("Top"::l)-> l
-	| ("Coq"::_::l) -> l
-	| l             -> l
+        | ("Coq"::_::l) -> l
+        | l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
       print_string (Constant.debug_to_string sp)
 
@@ -139,8 +139,8 @@ let print_pure_constr csr =
     try
      box_display csr; print_flush()
     with e ->
-	print_string (Printexc.to_string e);print_flush ();
-	raise e
+        print_string (Printexc.to_string e);print_flush ();
+        raise e
 
 
 

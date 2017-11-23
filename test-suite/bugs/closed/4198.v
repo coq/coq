@@ -20,15 +20,15 @@ Goal forall A (x x' : A) (xs xs' : list A) (H : x::xs = x'::xs'),
    construct for generically matching a "match") *)
 
 Ltac find_head_of_head_match T :=
-  match T with context [?E] => 
-    match T with  
-    | E => fail 1 
-    | _ => constr:(E) 
-    end 
+  match T with context [?E] =>
+    match T with
+    | E => fail 1
+    | _ => constr:(E)
+    end
   end.
 
 Ltac mydestruct :=
-  match goal with 
+  match goal with
   | |- ?T1 = _ => let E := find_head_of_head_match T1 in destruct E
   end.
 

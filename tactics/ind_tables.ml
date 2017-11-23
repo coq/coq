@@ -62,8 +62,8 @@ let inScheme : string * (inductive * Constant.t) array -> obj =
                     cache_function = cache_scheme;
                     load_function = (fun _ -> cache_scheme);
                     subst_function = subst_scheme;
-		    classify_function = (fun obj -> Substitute obj);
-		    discharge_function = discharge_scheme}
+                    classify_function = (fun obj -> Substitute obj);
+                    discharge_function = discharge_scheme}
 
 (**********************************************************************)
 (* The table of scheme building functions *)
@@ -121,7 +121,7 @@ let define internal id c p univs =
   let fd = declare_constant ~internal in
   let id = compute_name internal id in
   let ctx = Evd.normalize_evar_universe_context univs in
-  let c = Vars.subst_univs_fn_constr 
+  let c = Vars.subst_univs_fn_constr
     (Universes.make_opt_subst (Evd.evar_universe_context_subst ctx)) c in
   let univs = Evd.evar_context_universe_context ctx in
   let univs =
@@ -169,15 +169,15 @@ let define_mutual_scheme_base kind suff f mode names mind =
   let ids = Array.init (Array.length mib.mind_packets) (fun i ->
       try Int.List.assoc i names
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
-  let consts = Array.map2 (fun id cl -> 
+  let consts = Array.map2 (fun id cl ->
      define mode id cl (Declareops.inductive_is_polymorphic mib) ctx) ids cl in
   let schemes = Array.mapi (fun i cst -> ((mind,i),cst)) consts in
   declare_scheme kind schemes;
   consts,
-  Safe_typing.add_private 
+  Safe_typing.add_private
     (Safe_typing.private_con_of_scheme
       ~kind (Global.safe_env()) (Array.to_list schemes))
-    eff 
+    eff
 
 let define_mutual_scheme kind mode names mind =
   match Hashtbl.find scheme_object_table kind with

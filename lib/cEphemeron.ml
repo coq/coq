@@ -11,7 +11,7 @@ type key_type = int
 type boxed_key = key_type ref ref
 
 let mk_key : unit -> boxed_key =
-  (* TODO: take a random value here. Is there a random function in OCaml? *) 
+  (* TODO: take a random value here. Is there a random function in OCaml? *)
   let bid = ref 0 in
   (* According to OCaml Gc module documentation, Pervasives.ref is one of the
      few ways of getting a boxed value the compiler will never alias. *)

@@ -28,14 +28,14 @@ exception NotConvertible
 exception NotConvertibleVect of int
 
 type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
-type 'a extended_conversion_function = 
+type 'a extended_conversion_function =
   ?l2r:bool -> ?reds:Names.transparent_state -> env ->
   ?evars:((existential->constr option) * UGraph.t) ->
   'a -> 'a -> unit
 
 type conv_pb = CONV | CUMUL
 
-type 'a universe_compare = 
+type 'a universe_compare =
   { (* Might raise NotConvertible *)
     compare : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
     compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
@@ -43,7 +43,7 @@ type 'a universe_compare =
       Univ.Instance.t -> int -> 'a -> 'a;
     conv_constructors : (Declarations.mutual_inductive_body * int * int) ->
       Univ.Instance.t -> int -> Univ.Instance.t -> int -> 'a -> 'a;
-  } 
+  }
 
 type 'a universe_state = 'a * 'a universe_compare
 
@@ -71,9 +71,9 @@ val conv_leq : types extended_conversion_function
 
 (** These conversion functions are used by module subtyping, which needs to infer
     universe constraints inside the kernel *)
-val infer_conv : ?l2r:bool -> ?evars:(existential->constr option) -> 
+val infer_conv : ?l2r:bool -> ?evars:(existential->constr option) ->
   ?ts:Names.transparent_state -> constr infer_conversion_function
-val infer_conv_leq : ?l2r:bool -> ?evars:(existential->constr option) -> 
+val infer_conv_leq : ?l2r:bool -> ?evars:(existential->constr option) ->
   ?ts:Names.transparent_state -> types infer_conversion_function
 
 (** Depending on the universe state functions, this might raise

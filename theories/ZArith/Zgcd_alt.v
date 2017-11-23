@@ -36,10 +36,10 @@ Open Scope Z_scope.
    match n with
      | O => 1 (* arbitrary, since n should be big enough *)
      | S n => match a with
-	        | Z0 => Z.abs b
-	        | Zpos _ => Zgcdn n (Z.modulo b a) a
-	        | Zneg a => Zgcdn n (Z.modulo b (Zpos a)) (Zpos a)
-  	      end
+                | Z0 => Z.abs b
+                | Zpos _ => Zgcdn n (Z.modulo b a) a
+                | Zneg a => Zgcdn n (Z.modulo b (Zpos a)) (Zpos a)
+              end
    end.
 
  Definition Zgcd_bound (a:Z) :=

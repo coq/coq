@@ -571,28 +571,28 @@ let test_constr_universes sigma leq m n =
   let open Universes in
   let kind c = kind_upto sigma c in
   if m == n then Some Constraints.empty
-  else 
+  else
     let cstrs = ref Constraints.empty in
-    let eq_universes strict l l' = 
+    let eq_universes strict l l' =
       let l = EInstance.kind sigma (EInstance.make l) in
       let l' = EInstance.kind sigma (EInstance.make l') in
       cstrs := enforce_eq_instances_univs strict l l' !cstrs; true in
-    let eq_sorts s1 s2 = 
+    let eq_sorts s1 s2 =
       let s1 = ESorts.kind sigma (ESorts.make s1) in
       let s2 = ESorts.kind sigma (ESorts.make s2) in
       if Sorts.equal s1 s2 then true
-      else (cstrs := Constraints.add 
-	      (Sorts.univ_of_sort s1,UEq,Sorts.univ_of_sort s2) !cstrs; 
-	    true)
+      else (cstrs := Constraints.add
+              (Sorts.univ_of_sort s1,UEq,Sorts.univ_of_sort s2) !cstrs;
+            true)
     in
-    let leq_sorts s1 s2 = 
+    let leq_sorts s1 s2 =
       let s1 = ESorts.kind sigma (ESorts.make s1) in
       let s2 = ESorts.kind sigma (ESorts.make s2) in
       if Sorts.equal s1 s2 then true
-      else 
-	(cstrs := Constraints.add 
-	   (Sorts.univ_of_sort s1,ULe,Sorts.univ_of_sort s2) !cstrs; 
-	 true)
+      else
+        (cstrs := Constraints.add
+           (Sorts.univ_of_sort s1,ULe,Sorts.univ_of_sort s2) !cstrs;
+         true)
     in
     let rec eq_constr' m n = compare_gen kind eq_universes eq_sorts eq_constr' m n in
     let res =
@@ -615,33 +615,33 @@ let compare_head_gen_proj env sigma equ eqs eqc' m n =
   let kind c = kind_upto sigma c in
   match kind_upto sigma m, kind_upto sigma n with
   | Proj (p, c), App (f, args)
-  | App (f, args), Proj (p, c) -> 
+  | App (f, args), Proj (p, c) ->
       (match kind_upto sigma f with
-      | Const (p', u) when Constant.equal (Projection.constant p) p' -> 
+      | Const (p', u) when Constant.equal (Projection.constant p) p' ->
           let pb = Environ.lookup_projection p env in
           let npars = pb.Declarations.proj_npars in
-	  if Array.length args == npars + 1 then
-	    eqc' c args.(npars)
-	  else false
+          if Array.length args == npars + 1 then
+            eqc' c args.(npars)
+          else false
       | _ -> false)
   | _ -> Constr.compare_head_gen_with kind kind equ eqs eqc' m n
 
 let eq_constr_universes_proj env sigma m n =
   let open Universes in
   if m == n then Some Constraints.empty
-  else 
+  else
     let cstrs = ref Constraints.empty in
-    let eq_universes strict l l' = 
+    let eq_universes strict l l' =
       cstrs := enforce_eq_instances_univs strict l l' !cstrs; true in
-    let eq_sorts s1 s2 = 
+    let eq_sorts s1 s2 =
       if Sorts.equal s1 s2 then true
       else
-	(cstrs := Constraints.add 
-	   (Sorts.univ_of_sort s1, UEq, Sorts.univ_of_sort s2) !cstrs;
-	 true)
+        (cstrs := Constraints.add
+           (Sorts.univ_of_sort s1, UEq, Sorts.univ_of_sort s2) !cstrs;
+         true)
     in
-    let rec eq_constr' m n = 
-      m == n ||	compare_head_gen_proj env sigma eq_universes eq_sorts eq_constr' m n
+    let rec eq_constr' m n =
+      m == n || compare_head_gen_proj env sigma eq_universes eq_sorts eq_constr' m n
     in
     let res = eq_constr' (unsafe_to_constr m) (unsafe_to_constr n) in
     if res then Some !cstrs else None

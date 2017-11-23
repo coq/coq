@@ -50,9 +50,9 @@ let match_with_non_recursive_type sigma t =
         (match EConstr.kind sigma hdapp with
            | Ind (ind,u) ->
                if (Global.lookup_mind (fst ind)).mind_finite == Decl_kinds.CoFinite then
-		 Some (hdapp,args)
-	       else
-		 None
+                 Some (hdapp,args)
+               else
+                 None
            | _ -> None)
     | _ -> None
 
@@ -66,8 +66,8 @@ let is_non_recursive_type sigma t = op2bool (match_with_non_recursive_type sigma
 let rec has_nodep_prod_after n sigma c =
   match EConstr.kind sigma c with
     | Prod (_,_,b) | LetIn (_,_,_,b) ->
-	( n>0 || Vars.noccurn sigma 1 b)
-	&& (has_nodep_prod_after (n-1) sigma b)
+        ( n>0 || Vars.noccurn sigma 1 b)
+        && (has_nodep_prod_after (n-1) sigma b)
     | _            -> true
 
 let has_nodep_prod sigma c = has_nodep_prod_after 0 sigma c
@@ -95,32 +95,32 @@ let match_with_one_constructor sigma style onlybinary allow_rec t =
   | Ind ind ->
       let (mib,mip) = Global.lookup_inductive (fst ind) in
       if Int.equal (Array.length mip.mind_consnames) 1
-	&& (allow_rec || not (mis_is_recursive (fst ind,mib,mip)))
+        && (allow_rec || not (mis_is_recursive (fst ind,mib,mip)))
         && (Int.equal mip.mind_nrealargs 0)
       then
-	if is_strict_conjunction style (* strict conjunction *) then
-	  let ctx =
-	    (prod_assum sigma (snd
-	      (decompose_prod_n_assum sigma mib.mind_nparams (EConstr.of_constr mip.mind_nf_lc.(0))))) in
-	  if
-	    List.for_all
-	      (fun decl -> let c = RelDecl.get_type decl in
-	                   is_local_assum decl &&
-			   isRel sigma c &&
+        if is_strict_conjunction style (* strict conjunction *) then
+          let ctx =
+            (prod_assum sigma (snd
+              (decompose_prod_n_assum sigma mib.mind_nparams (EConstr.of_constr mip.mind_nf_lc.(0))))) in
+          if
+            List.for_all
+              (fun decl -> let c = RelDecl.get_type decl in
+                           is_local_assum decl &&
+                           isRel sigma c &&
                            Int.equal (destRel sigma c) mib.mind_nparams) ctx
-	  then
-	    Some (hdapp,args)
-	  else None
-	else
-	  let ctyp = Termops.prod_applist sigma (EConstr.of_constr mip.mind_nf_lc.(0)) args in
-	  let cargs = List.map RelDecl.get_type (prod_assum sigma ctyp) in
-	  if not (is_lax_conjunction style) || has_nodep_prod sigma ctyp then
-	    (* Record or non strict conjunction *)
-	    Some (hdapp,List.rev cargs)
-	  else
-	      None
+          then
+            Some (hdapp,args)
+          else None
+        else
+          let ctyp = Termops.prod_applist sigma (EConstr.of_constr mip.mind_nf_lc.(0)) args in
+          let cargs = List.map RelDecl.get_type (prod_assum sigma ctyp) in
+          if not (is_lax_conjunction style) || has_nodep_prod sigma ctyp then
+            (* Record or non strict conjunction *)
+            Some (hdapp,List.rev cargs)
+          else
+              None
       else
-	None
+        None
   | _ -> None in
   match res with
   | Some (hdapp, args) when not onlybinary -> res
@@ -170,21 +170,21 @@ let match_with_disjunction ?(strict=false) ?(onlybinary=false) sigma t =
       let car = constructors_nrealargs ind in
       let (mib,mip) = Global.lookup_inductive ind in
       if Array.for_all (fun ar -> Int.equal ar 1) car
-	&& not (mis_is_recursive (ind,mib,mip))
+        && not (mis_is_recursive (ind,mib,mip))
         && (Int.equal mip.mind_nrealargs 0)
       then
-	if strict then
-	  if test_strict_disjunction mib.mind_nparams mip.mind_nf_lc then
-	    Some (hdapp,args)
-	  else
-	    None
-	else
-	  let cargs =
-	    Array.map (fun ar -> pi2 (destProd sigma (prod_applist sigma (EConstr.of_constr ar) args)))
-	      mip.mind_nf_lc in
-	  Some (hdapp,Array.to_list cargs)
+        if strict then
+          if test_strict_disjunction mib.mind_nparams mip.mind_nf_lc then
+            Some (hdapp,args)
+          else
+            None
+        else
+          let cargs =
+            Array.map (fun ar -> pi2 (destProd sigma (prod_applist sigma (EConstr.of_constr ar) args)))
+              mip.mind_nf_lc in
+          Some (hdapp,Array.to_list cargs)
       else
-	None
+        None
   | _ -> None in
   match res with
   | Some (hdapp,args) when not onlybinary -> res
@@ -203,7 +203,7 @@ let match_with_empty_type sigma t =
     | Ind (ind, _) ->
         let (mib,mip) = Global.lookup_inductive ind in
         let nconstr = Array.length mip.mind_consnames in
-	if Int.equal nconstr 0 then Some hdapp else None
+        if Int.equal nconstr 0 then Some hdapp else None
     | _ ->  None
 
 let is_empty_type sigma t = op2bool (match_with_empty_type sigma t)
@@ -219,10 +219,10 @@ let match_with_unit_or_eq_type sigma t =
         let constr_types = mip.mind_nf_lc in
         let nconstr = Array.length mip.mind_consnames in
         let zero_args c = Int.equal (nb_prod sigma (EConstr.of_constr c)) mib.mind_nparams in
-	if Int.equal nconstr 1 && zero_args constr_types.(0) then
-	  Some hdapp
-	else
-	  None
+        if Int.equal nconstr 1 && zero_args constr_types.(0) then
+          Some hdapp
+        else
+          None
     | _ -> None
 
 let is_unit_or_eq_type sigma t = op2bool (match_with_unit_or_eq_type sigma t)
@@ -286,26 +286,26 @@ let match_with_equation env sigma t =
   match EConstr.kind sigma hdapp with
   | Ind (ind,u) ->
       if eq_gr (IndRef ind) glob_eq then
-	Some (build_coq_eq_data()),hdapp,
-	PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
+        Some (build_coq_eq_data()),hdapp,
+        PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
       else if eq_gr (IndRef ind) glob_identity then
-	Some (build_coq_identity_data()),hdapp,
-	PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
+        Some (build_coq_identity_data()),hdapp,
+        PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
       else if eq_gr (IndRef ind) glob_jmeq then
-	Some (build_coq_jmeq_data()),hdapp,
-	HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
+        Some (build_coq_jmeq_data()),hdapp,
+        HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
       else
         let (mib,mip) = Global.lookup_inductive ind in
         let constr_types = mip.mind_nf_lc in
         let nconstr = Array.length mip.mind_consnames in
-	if Int.equal nconstr 1 then
+        if Int.equal nconstr 1 then
           if is_matching env sigma coq_refl_leibniz1_pattern (EConstr.of_constr constr_types.(0)) then
-	    None, hdapp, MonomorphicLeibnizEq(args.(0),args.(1))
-	  else if is_matching env sigma coq_refl_leibniz2_pattern (EConstr.of_constr constr_types.(0)) then
-	    None, hdapp, PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-	  else if is_matching env sigma coq_refl_jm_pattern (EConstr.of_constr constr_types.(0)) then
-	    None, hdapp, HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
-	  else raise NoEquationFound
+            None, hdapp, MonomorphicLeibnizEq(args.(0),args.(1))
+          else if is_matching env sigma coq_refl_leibniz2_pattern (EConstr.of_constr constr_types.(0)) then
+            None, hdapp, PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
+          else if is_matching env sigma coq_refl_jm_pattern (EConstr.of_constr constr_types.(0)) then
+            None, hdapp, HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
+          else raise NoEquationFound
         else raise NoEquationFound
     | _ -> raise NoEquationFound
 
@@ -368,15 +368,15 @@ let match_with_nodep_ind sigma t =
     match EConstr.kind sigma hdapp with
       | Ind (ind, _)  ->
           let (mib,mip) = Global.lookup_inductive ind in
-	    if Array.length (mib.mind_packets)>1 then None else
-	      let nodep_constr c = has_nodep_prod_after mib.mind_nparams sigma (EConstr.of_constr c) in
-		if Array.for_all nodep_constr mip.mind_nf_lc then
-		  let params=
-		    if Int.equal mip.mind_nrealargs 0 then args else
-		      fst (List.chop mib.mind_nparams args) in
-		    Some (hdapp,params,mip.mind_nrealargs)
-		else
-		  None
+            if Array.length (mib.mind_packets)>1 then None else
+              let nodep_constr c = has_nodep_prod_after mib.mind_nparams sigma (EConstr.of_constr c) in
+                if Array.for_all nodep_constr mip.mind_nf_lc then
+                  let params=
+                    if Int.equal mip.mind_nrealargs 0 then args else
+                      fst (List.chop mib.mind_nparams args) in
+                    Some (hdapp,params,mip.mind_nrealargs)
+                else
+                  None
       | _ -> None
 
 let is_nodep_ind sigma t = op2bool (match_with_nodep_ind sigma t)
@@ -387,13 +387,13 @@ let match_with_sigma_type sigma t =
     | Ind (ind, _) ->
         let (mib,mip) = Global.lookup_inductive ind in
           if Int.equal (Array.length (mib.mind_packets)) 1 &&
-	    (Int.equal mip.mind_nrealargs 0) &&
-	    (Int.equal (Array.length mip.mind_consnames)1) &&
-	    has_nodep_prod_after (mib.mind_nparams+1) sigma (EConstr.of_constr mip.mind_nf_lc.(0)) then
-	      (*allowing only 1 existential*)
-	      Some (hdapp,args)
-	  else
-	    None
+            (Int.equal mip.mind_nrealargs 0) &&
+            (Int.equal (Array.length mip.mind_consnames)1) &&
+            has_nodep_prod_after (mib.mind_nparams+1) sigma (EConstr.of_constr mip.mind_nf_lc.(0)) then
+              (*allowing only 1 existential*)
+              Some (hdapp,args)
+          else
+            None
     | _ -> None
 
 let is_sigma_type sigma t = op2bool (match_with_sigma_type sigma t)
@@ -467,7 +467,7 @@ let match_eq_nf gls eqn (ref, hetero) =
   match Id.Map.bindings (pf_matches gls pat eqn) with
     | [(m1,t);(m2,x);(m3,y)] ->
         assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);
-	(t,pf_whd_all gls x,pf_whd_all gls y)
+        (t,pf_whd_all gls x,pf_whd_all gls y)
     | _ -> anomaly ~label:"match_eq" (Pp.str "an eq pattern should match 3 terms.")
 
 let dest_nf_eq gls eqn =
@@ -480,12 +480,12 @@ let dest_nf_eq gls eqn =
 
 let match_sigma env sigma ex =
   match EConstr.kind sigma ex with
-  | App (f, [| a; p; car; cdr |]) when Termops.is_global sigma (Lazy.force coq_exist_ref) f -> 
+  | App (f, [| a; p; car; cdr |]) when Termops.is_global sigma (Lazy.force coq_exist_ref) f ->
       build_sigma (), (snd (destConstruct sigma f), a, p, car, cdr)
-  | App (f, [| a; p; car; cdr |]) when Termops.is_global sigma (Lazy.force coq_existT_ref) f -> 
+  | App (f, [| a; p; car; cdr |]) when Termops.is_global sigma (Lazy.force coq_existT_ref) f ->
     build_sigma_type (), (snd (destConstruct sigma f), a, p, car, cdr)
   | _ -> raise PatternMatchingFailure
-    
+
 let find_sigma_data_decompose env ex = (* fails with PatternMatchingFailure *)
   match_sigma env ex
 

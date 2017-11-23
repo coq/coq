@@ -44,7 +44,7 @@ Fail Check g 0 0 1. (* 2nd 0 in bool *)
 
 (* Another test on arguments scopes: checking scope for expanding arities *)
 (* Not sure this is very useful, but why not *)
-                  
+
 Fixpoint arr n := match n with 0%nat => nat | S n => nat -> arr n end.
 Fixpoint lam n : arr n := match n with 0%nat => 0%nat | S n => fun x => lam n  end.
 Notation "0" := true.

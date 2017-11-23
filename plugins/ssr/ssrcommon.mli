@@ -34,7 +34,7 @@ val hoi_id : ssrhyp_or_id -> Id.t
 
 (******************************* hints ***********************************)
 
-val mk_hint : 'a -> 'a ssrhint 
+val mk_hint : 'a -> 'a ssrhint
 val mk_orhint : 'a -> bool * 'a
 val nullhint : bool * 'a list
 val nohint : 'a ssrhint
@@ -116,7 +116,7 @@ val mkCLambda : ?loc:Loc.t -> Name.t -> constr_expr ->  constr_expr ->  constr_e
 val isCHoles : constr_expr list -> bool
 val isCxHoles : (constr_expr * 'a option) list -> bool
 
-val intern_term : 
+val intern_term :
   Tacinterp.interp_sign -> env ->
     ssrterm -> Glob_term.glob_constr
 
@@ -146,7 +146,7 @@ val pf_e_type_of :
   Goal.goal Evd.sigma ->
   EConstr.constr -> Goal.goal Evd.sigma * EConstr.types
 
-val splay_open_constr : 
+val splay_open_constr :
            Goal.goal Evd.sigma ->
            evar_map * EConstr.t ->
            (Names.Name.t * EConstr.t) list * EConstr.t
@@ -170,7 +170,7 @@ val mk_evar_name : int -> Name.t
 val ssr_anon_hyp : string
 val pf_type_id :  Goal.goal Evd.sigma -> EConstr.types -> Id.t
 
-val pf_abs_evars : 
+val pf_abs_evars :
            Goal.goal Evd.sigma ->
            evar_map * EConstr.t ->
            int * EConstr.t * Evar.t list *
@@ -207,7 +207,7 @@ val pf_mkprod :
 
 val mkSsrRRef : string -> Glob_term.glob_constr * 'a option
 val mkSsrRef : string -> Globnames.global_reference
-val mkSsrConst : 
+val mkSsrConst :
            string ->
            env -> evar_map -> evar_map * EConstr.t
 val pf_mkSsrConst :
@@ -226,7 +226,7 @@ val is_discharged_id : Id.t -> bool
 val mk_discharged_id : Id.t -> Id.t
 val is_tagged : string -> string -> bool
 val has_discharged_tag : string -> bool
-val ssrqid : string -> Libnames.qualid 
+val ssrqid : string -> Libnames.qualid
 val new_tmp_id :
   tac_ctx -> (Names.Id.t * Name.t ref) * tac_ctx
 val mk_anon_id : string -> Goal.goal Evd.sigma -> Id.t
@@ -234,7 +234,7 @@ val pf_abs_evars_pirrel :
            Goal.goal Evd.sigma ->
            evar_map * Constr.constr -> int * Constr.constr
 val pf_nbargs : Goal.goal Evd.sigma -> EConstr.t -> int
-val gen_tmp_ids : 
+val gen_tmp_ids :
            ?ist:Geninterp.interp_sign ->
            (Goal.goal * tac_ctx) Evd.sigma ->
            (Goal.goal * tac_ctx) list Evd.sigma
@@ -334,7 +334,7 @@ val rewritetac : ssrdir -> EConstr.t -> tactic
 
 type name_hint = (int * EConstr.types array) option ref
 
-val gentac : 
+val gentac :
   (Geninterp.interp_sign ->
    (Ssrast.ssrdocc) *
      Ssrmatching_plugin.Ssrmatching.cpattern -> Tacmach.tactic)
@@ -367,7 +367,7 @@ val pf_interp_gen_aux :
 val is_name_in_ipats :
            Id.t -> ssripats -> bool
 
-type profiler = { 
+type profiler = {
   profile : 'a 'b. ('a -> 'b) -> 'a -> 'b;
   reset : unit -> unit;
   print : unit -> unit }

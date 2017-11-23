@@ -98,38 +98,38 @@ let rec make_form atom_env gls term =
   let cciterm=special_whd gls term  in
   let sigma = Tacmach.project gls in
     match EConstr.kind sigma cciterm with
-	Prod(_,a,b) ->
-	  if noccurn sigma 1 b &&
-	    Retyping.get_sort_family_of
-	    (pf_env gls) sigma a == InProp
-	  then
-	    let fa=make_form atom_env gls a in
-	    let fb=make_form atom_env gls b in
-	      Arrow (fa,fb)
-	  else
-	    make_atom atom_env (normalize term)
+        Prod(_,a,b) ->
+          if noccurn sigma 1 b &&
+            Retyping.get_sort_family_of
+            (pf_env gls) sigma a == InProp
+          then
+            let fa=make_form atom_env gls a in
+            let fb=make_form atom_env gls b in
+              Arrow (fa,fb)
+          else
+            make_atom atom_env (normalize term)
       | Cast(a,_,_) ->
-	  make_form atom_env gls a
+          make_form atom_env gls a
       | Ind (ind, _) ->
-	  if Names.eq_ind ind (fst (Lazy.force li_False)) then
-	    Bot
-	  else
-	    make_atom atom_env (normalize term)
+          if Names.eq_ind ind (fst (Lazy.force li_False)) then
+            Bot
+          else
+            make_atom atom_env (normalize term)
       | App(hd,argv) when Int.equal (Array.length argv) 2 ->
-	  begin
-	    try
-	      let ind, _ = destInd sigma hd in
-		if Names.eq_ind ind (fst (Lazy.force li_and)) then
-		  let fa=make_form atom_env gls argv.(0) in
-		  let fb=make_form atom_env gls argv.(1) in
-		    Conjunct (fa,fb)
-		else if Names.eq_ind ind (fst (Lazy.force li_or)) then
-		  let fa=make_form atom_env gls argv.(0) in
-		  let fb=make_form atom_env gls argv.(1) in
-		    Disjunct (fa,fb)
-		else make_atom atom_env (normalize term)
-	    with DestKO -> make_atom atom_env (normalize term)
-	  end
+          begin
+            try
+              let ind, _ = destInd sigma hd in
+                if Names.eq_ind ind (fst (Lazy.force li_and)) then
+                  let fa=make_form atom_env gls argv.(0) in
+                  let fb=make_form atom_env gls argv.(1) in
+                    Conjunct (fa,fb)
+                else if Names.eq_ind ind (fst (Lazy.force li_or)) then
+                  let fa=make_form atom_env gls argv.(0) in
+                  let fb=make_form atom_env gls argv.(1) in
+                    Disjunct (fa,fb)
+                else make_atom atom_env (normalize term)
+            with DestKO -> make_atom atom_env (normalize term)
+          end
       | _ -> make_atom atom_env (normalize term)
 
 let rec make_hyps atom_env gls lenv = function
@@ -138,14 +138,14 @@ let rec make_hyps atom_env gls lenv = function
       make_hyps atom_env gls (typ::body::lenv) rest
   | LocalAssum (id,typ)::rest ->
       let hrec=
-	make_hyps atom_env gls (typ::lenv) rest in
-	if List.exists (fun c -> Termops.local_occur_var Evd.empty (** FIXME *) id c) lenv ||
-	  (Retyping.get_sort_family_of
-	     (pf_env gls) (Tacmach.project gls) typ != InProp)
-	then
-	  hrec
-	else
-	  (id,make_form atom_env gls typ)::hrec
+        make_hyps atom_env gls (typ::lenv) rest in
+        if List.exists (fun c -> Termops.local_occur_var Evd.empty (** FIXME *) id c) lenv ||
+          (Retyping.get_sort_family_of
+             (pf_env gls) (Tacmach.project gls) typ != InProp)
+        then
+          hrec
+        else
+          (id,make_form atom_env gls typ)::hrec
 
 let rec build_pos n =
   if n<=1 then force node_count l_xH
@@ -168,9 +168,9 @@ let rec decal k = function
     [] -> k
   | (start,delta)::rest ->
       if k>start then
-	k - delta
+        k - delta
       else
-	decal k rest
+        decal k rest
 
 let add_pop size d pops=
   match pops with
@@ -180,57 +180,57 @@ let add_pop size d pops=
 let rec build_proof pops size =
   function
       Ax i ->
-	mkApp (force step_count l_Ax,
-	       [|build_pos (decal i pops)|])
+        mkApp (force step_count l_Ax,
+               [|build_pos (decal i pops)|])
       | I_Arrow p ->
-	  mkApp (force step_count l_I_Arrow,
-		 [|build_proof pops (size + 1) p|])
+          mkApp (force step_count l_I_Arrow,
+                 [|build_proof pops (size + 1) p|])
       | E_Arrow(i,j,p) ->
-	  mkApp (force step_count l_E_Arrow,
-		 [|build_pos (decal i pops);
-		   build_pos (decal j pops);
-		   build_proof pops (size + 1) p|])
+          mkApp (force step_count l_E_Arrow,
+                 [|build_pos (decal i pops);
+                   build_pos (decal j pops);
+                   build_proof pops (size + 1) p|])
       | D_Arrow(i,p1,p2) ->
-	  mkApp (force step_count l_D_Arrow,
-		 [|build_pos (decal i pops);
-		   build_proof pops (size + 2) p1;
-		   build_proof pops (size + 1) p2|])
+          mkApp (force step_count l_D_Arrow,
+                 [|build_pos (decal i pops);
+                   build_proof pops (size + 2) p1;
+                   build_proof pops (size + 1) p2|])
       | E_False i ->
-	  mkApp (force step_count l_E_False,
-		 [|build_pos (decal i pops)|])
+          mkApp (force step_count l_E_False,
+                 [|build_pos (decal i pops)|])
       | I_And(p1,p2) ->
-	  mkApp (force step_count l_I_And,
-		 [|build_proof pops size p1;
-		   build_proof pops size p2|])
+          mkApp (force step_count l_I_And,
+                 [|build_proof pops size p1;
+                   build_proof pops size p2|])
       | E_And(i,p) ->
-	  mkApp (force step_count l_E_And,
-		 [|build_pos (decal i pops);
-		   build_proof pops (size + 2) p|])
+          mkApp (force step_count l_E_And,
+                 [|build_pos (decal i pops);
+                   build_proof pops (size + 2) p|])
       | D_And(i,p) ->
-	  mkApp (force step_count l_D_And,
-		 [|build_pos (decal i pops);
-		   build_proof pops (size + 1) p|])
+          mkApp (force step_count l_D_And,
+                 [|build_pos (decal i pops);
+                   build_proof pops (size + 1) p|])
       | I_Or_l(p) ->
-	  mkApp (force step_count l_I_Or_l,
-		 [|build_proof pops size p|])
+          mkApp (force step_count l_I_Or_l,
+                 [|build_proof pops size p|])
       | I_Or_r(p) ->
-	  mkApp (force step_count l_I_Or_r,
-		 [|build_proof pops size p|])
+          mkApp (force step_count l_I_Or_r,
+                 [|build_proof pops size p|])
       | E_Or(i,p1,p2) ->
-	  mkApp (force step_count l_E_Or,
-		 [|build_pos (decal i pops);
-		   build_proof pops (size + 1) p1;
-		   build_proof pops (size + 1) p2|])
+          mkApp (force step_count l_E_Or,
+                 [|build_pos (decal i pops);
+                   build_proof pops (size + 1) p1;
+                   build_proof pops (size + 1) p2|])
       | D_Or(i,p) ->
-	  mkApp (force step_count l_D_Or,
-		 [|build_pos (decal i pops);
-		   build_proof pops (size + 2) p|])
+          mkApp (force step_count l_D_Or,
+                 [|build_pos (decal i pops);
+                   build_proof pops (size + 2) p|])
       | Pop(d,p) ->
-	  build_proof (add_pop size d pops) size p
+          build_proof (add_pop size d pops) size p
 
 let build_env gamma=
   List.fold_right (fun (p,_) e ->
-		     mkApp(force node_count l_push,[|mkProp;p;e|]))
+                     mkApp(force node_count l_push,[|mkProp;p;e|]))
     gamma.env (mkApp (force node_count l_empty,[|mkProp|]))
 
 open Goptions
@@ -279,7 +279,7 @@ let rtauto_tac gls=
     begin
       reset_info ();
       if !verbose then
-	Feedback.msg_info (str "Starting proof-search ...");
+        Feedback.msg_info (str "Starting proof-search ...");
     end in
   let search_start_time = System.get_time () in
   let prf =
@@ -290,29 +290,29 @@ let rtauto_tac gls=
   let _ = if !verbose then
     begin
       Feedback.msg_info (str "Proof tree found in " ++
-	     System.fmt_time_difference search_start_time search_end_time);
+             System.fmt_time_difference search_start_time search_end_time);
       pp_info ();
       Feedback.msg_info (str "Building proof term ... ")
     end in
   let build_start_time=System.get_time () in
   let _ = step_count := 0; node_count := 0 in
   let main = mkApp (force node_count l_Reflect,
-		    [|build_env gamma;
-		      build_form formula;
-		      build_proof [] 0 prf|]) in
+                    [|build_env gamma;
+                      build_form formula;
+                      build_proof [] 0 prf|]) in
   let term=
     applistc main (List.rev_map (fun (id,_) -> mkVar id) hyps) in
   let build_end_time=System.get_time () in
   let _ = if !verbose then
     begin
       Feedback.msg_info (str "Proof term built in " ++
-	     System.fmt_time_difference build_start_time build_end_time ++
-	     fnl () ++
-	     str "Proof size : " ++ int !step_count ++
-	     str " steps" ++ fnl () ++
-	     str "Proof term size : " ++ int (!step_count+ !node_count) ++
-	     str " nodes (constants)" ++ fnl () ++
-	     str "Giving proof term to Coq ... ")
+             System.fmt_time_difference build_start_time build_end_time ++
+             fnl () ++
+             str "Proof size : " ++ int !step_count ++
+             str " steps" ++ fnl () ++
+             str "Proof term size : " ++ int (!step_count+ !node_count) ++
+             str " nodes (constants)" ++ fnl () ++
+             str "Giving proof term to Coq ... ")
     end in
   let tac_start_time = System.get_time () in
   let term = EConstr.of_constr term in
@@ -326,6 +326,6 @@ let rtauto_tac gls=
     if !check then Feedback.msg_info (str "Proof term type-checking is on");
     if !verbose then
       Feedback.msg_info (str "Internal tactic executed in " ++
-	     System.fmt_time_difference tac_start_time tac_end_time) in
+             System.fmt_time_difference tac_start_time tac_end_time) in
     result
 

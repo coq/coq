@@ -108,7 +108,7 @@ type comment =
   | CommentString of string
   | CommentInt of int
 
-type reference_or_constr = 
+type reference_or_constr =
   | HintsReference of reference
   | HintsConstr of constr_expr
 
@@ -278,7 +278,7 @@ type extend_name =
 
 (* This type allows registering the inlining of constants in native compiler.
    It will be extended with primitive inductive types and operators *)
-type register_kind = 
+type register_kind =
   | RegisterInline
 
 type bullet =
@@ -366,15 +366,15 @@ type vernac_expr =
       class_rawexpr * class_rawexpr
   | VernacIdentityCoercion of obsolete_locality * lident *
       class_rawexpr * class_rawexpr
-  | VernacNameSectionHypSet of lident * section_subset_expr 
+  | VernacNameSectionHypSet of lident * section_subset_expr
 
   (* Type classes *)
   | VernacInstance of
       bool * (* abstract instance *)
       local_binder_expr list * (* super *)
-	typeclass_constraint * (* instance name, class name, params *)
-	(bool * constr_expr) option * (* props *)
-	hint_info_expr
+        typeclass_constraint * (* instance name, class name, params *)
+        (bool * constr_expr) option * (* props *)
+        hint_info_expr
 
   | VernacContext of local_binder_expr list
 

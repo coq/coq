@@ -61,7 +61,7 @@ Proof.
 Qed.
 
 Goal forall x : Q, x * x >= 0.
-  intro; nra. 
+  intro; nra.
 Qed.
 
 Goal forall x, -x^2 >= 0 -> x - 1 >= 0 -> False.

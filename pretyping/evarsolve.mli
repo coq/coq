@@ -21,7 +21,7 @@ type unification_result =
 
 val is_success : unification_result -> bool
 
-(** Replace the vars and rels that are aliases to other vars and rels by 
+(** Replace the vars and rels that are aliases to other vars and rels by
    their representative that is most ancient in the context *)
 val expand_vars_in_term : env -> evar_map -> constr -> constr
 
@@ -36,7 +36,7 @@ type conv_fun =
 type conv_fun_bool =
   env ->  evar_map -> conv_pb -> constr -> constr -> bool
 
-val evar_define : conv_fun -> ?choose:bool -> env -> evar_map -> 
+val evar_define : conv_fun -> ?choose:bool -> env -> evar_map ->
   bool option -> existential -> constr -> evar_map
 
 val refresh_universes :
@@ -83,5 +83,5 @@ val check_evar_instance :
 val remove_instance_local_defs :
   evar_map -> existential_key -> 'a array -> 'a list
 
-val get_type_of_refresh : 
+val get_type_of_refresh :
   ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> evar_map * types

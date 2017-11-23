@@ -24,7 +24,7 @@ OCaml Style:
   - from about 8.2, the tendency is to use the following format which
     limit excessive indentation while providing an interesting "block" aspect
     type t =
-    | A 
+    | A
     | B of machin
 
     let f expr = match expr with

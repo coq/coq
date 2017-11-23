@@ -18,7 +18,7 @@ Require Import Coq.Arith.Max.
 Require Import List.
 Set Implicit Arguments.
 
-(* 
+(*
  * This adds a Leaf constructor to the varmap data structure (plugins/quote/Quote.v)
  * --- it is harmless and spares a lot of Empty.
  * It also means smaller proof-terms.
@@ -26,7 +26,7 @@ Set Implicit Arguments.
  *)
 
 Section MakeVarMap.
-  
+
   Variable A : Type.
   Variable default : A.
 
@@ -53,7 +53,7 @@ Section MakeVarMap.
     | xO p => Node (singleton p v) default Empty
     | xI p => Node Empty default (singleton p v)
     end.
-  
+
   Fixpoint vm_add (x: positive) (v : A) (m : t) {struct m} : t :=
     match m with
     | Empty   => singleton x v
@@ -63,7 +63,7 @@ Section MakeVarMap.
       | xO p => Node (singleton p v) vl Empty
       | xI p => Node Empty vl (singleton p v)
       end
-    | Node l o r => 
+    | Node l o r =>
       match x with
       | xH => Node l v r
       | xI p => Node l o (vm_add p v r)
@@ -71,5 +71,5 @@ Section MakeVarMap.
       end
     end.
 
-  
-End MakeVarMap.  
+
+End MakeVarMap.

@@ -89,7 +89,7 @@ exists (Rmin a a'); split.
 intros y cy; rewrite <- !q.
   apply Pa'.
   split;[| apply Rlt_le_trans with (Rmin a a');[ | apply Rmin_r]];tauto.
- rewrite R_dist_eq; assumption.   
+ rewrite R_dist_eq; assumption.
 apply Rlt_le_trans with (Rmin a a');[ | apply Rmin_l]; tauto.
 Qed.
 
@@ -496,7 +496,7 @@ Qed.
 
 (* Extensionally equal functions have the same derivative. *)
 
-Lemma derivable_pt_lim_ext : forall f g x l, (forall z, f z = g z) -> 
+Lemma derivable_pt_lim_ext : forall f g x l, (forall z, f z = g z) ->
   derivable_pt_lim f x l -> derivable_pt_lim g x l.
 intros f g x l fg df e ep; destruct (df e ep) as [d pd]; exists d; intros h;
 rewrite <- !fg; apply pd.
@@ -504,7 +504,7 @@ Qed.
 
 (* extensionally equal functions have the same derivative, locally. *)
 
-Lemma derivable_pt_lim_locally_ext : forall f g x a b l, 
+Lemma derivable_pt_lim_locally_ext : forall f g x a b l,
   a < x < b ->
   (forall z, a < z < b -> f z = g z) ->
   derivable_pt_lim f x l -> derivable_pt_lim g x l.

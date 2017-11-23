@@ -3318,7 +3318,7 @@ evaluating purely computational expressions (i.e. with little dead code).
   compilation cost is higher, so it is worth using only for intensive
   computations.
 
-  On Linux, if you have the {\tt perf} profiler installed, you can profile {\tt native\_compute} evaluations. 
+  On Linux, if you have the {\tt perf} profiler installed, you can profile {\tt native\_compute} evaluations.
   The command
   \begin{quote}
     {\tt Set Native Compute Profiling}
@@ -3327,7 +3327,7 @@ evaluating purely computational expressions (i.e. with little dead code).
   \begin{quote}
     {\tt Set NativeCompute Profile Filename \str}
   \end{quote}
-  to specify the profile output; the default is {\tt native\_compute\_profile.data}. The actual filename used 
+  to specify the profile output; the default is {\tt native\_compute\_profile.data}. The actual filename used
   will contain extra characters to avoid overwriting an existing file; that filename is reported to the user. That means
   you can individually profile multiple uses of {\tt native\_compute} in a script. From the Linux command line, run {\tt perf report} on
   the profile file to see the results. Consult the {\tt perf} documentation for more details.

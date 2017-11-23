@@ -26,7 +26,7 @@ exception Find_at of int
 (* profiling *)
 
 let profiling_enabled = ref false
-    
+
 (* for supported platforms, filename for profiler results *)
 
 let profile_filename = ref "native_compute_profile.data"
@@ -49,8 +49,8 @@ let set_profile_filename fn =
 (* find unused profile filename *)
 let get_available_profile_filename () =
   let profile_filename = get_profile_filename () in
-  let dir = Filename.dirname profile_filename in 
-  let base = Filename.basename profile_filename in 
+  let dir = Filename.dirname profile_filename in
+  let base = Filename.basename profile_filename in
   (* starting with OCaml 4.04, could use Filename.remove_extension and Filename.extension, which
      gets rid of need for exception-handling here
   *)
@@ -62,7 +62,7 @@ let get_available_profile_filename () =
       (nm,ex)
     with Invalid_argument _ -> (base,"")
   in
-  try 
+  try
     (* unlikely race: fn deleted, another process uses fn *)
     Filename.temp_file ~temp_dir:dir (name ^ "_") ext
   with Sys_error s ->
@@ -72,16 +72,16 @@ let get_available_profile_filename () =
 
 let get_profiling_enabled () =
   !profiling_enabled
-    
+
 let set_profiling_enabled b =
   profiling_enabled := b
-    
+
 let invert_tag cst tag reloc_tbl =
   try
     for j = 0 to Array.length reloc_tbl - 1 do
       let tagj,arity = reloc_tbl.(j) in
       if Int.equal tag tagj && (cst && Int.equal arity 0 || not(cst || Int.equal arity 0)) then
-	raise (Find_at j)
+        raise (Find_at j)
       else ()
     done;raise Not_found
   with Find_at j -> (j+1)
@@ -96,7 +96,7 @@ let app_type env c =
   let t = whd_all env c in
   try destApp t with DestKO -> (t,[||])
 
- 
+
 let find_rectype_a env c =
   let (t, l) = app_type env c in
   match kind t with
@@ -111,7 +111,7 @@ let type_constructor mind mib u typ params =
   let nparams = Array.length params in
   if Int.equal nparams 0 then ctyp
   else
-    let _,ctyp = decompose_prod_n nparams ctyp in   
+    let _,ctyp = decompose_prod_n nparams ctyp in
     substl (List.rev (Array.to_list params)) ctyp
 
 let construct_of_constr_notnative const env tag (mind, _ as ind) u allargs =
@@ -128,16 +128,16 @@ let construct_of_constr_notnative const env tag (mind, _ as ind) u allargs =
   let i = invert_tag const tag mip.mind_reloc_tbl in
   let ctyp = type_constructor mind mib u (mip.mind_nf_lc.(i-1)) params in
   (mkApp(mkConstructU((ind,i),u), params), ctyp)
- 
+
 
 let construct_of_constr const env tag typ =
   let t, l = app_type env typ in
   match kind t with
-  | Ind (ind,u) -> 
+  | Ind (ind,u) ->
       construct_of_constr_notnative const env tag ind u l
   | _ -> assert false
 
-let construct_of_constr_const env tag typ = 
+let construct_of_constr_const env tag typ =
   fst (construct_of_constr true env tag typ)
 
 let construct_of_constr_block = construct_of_constr false
@@ -160,27 +160,27 @@ let build_branches_type env sigma (mind,_ as _ind) mib mip u params dep p =
       let ndecl = List.length decl in
       let papp = mkApp(lift ndecl p,crealargs) in
       if dep then
-	let cstr = ith_constructor_of_inductive (fst ind) (i+1) in
+        let cstr = ith_constructor_of_inductive (fst ind) (i+1) in
         let relargs = Array.init carity (fun i -> mkRel (carity-i)) in
-	let params = Array.map (lift ndecl) params in
-	let dep_cstr = mkApp(mkApp(mkConstructU (cstr,snd ind),params),relargs) in
-	mkApp(papp,[|dep_cstr|])
+        let params = Array.map (lift ndecl) params in
+        let dep_cstr = mkApp(mkApp(mkConstructU (cstr,snd ind),params),relargs) in
+        mkApp(papp,[|dep_cstr|])
       else papp
-    in 
+    in
     decl, decl_with_letin, codom
   in Array.mapi build_one_branch mip.mind_nf_lc
 
-let build_case_type dep p realargs c = 
+let build_case_type dep p realargs c =
   if dep then mkApp(mkApp(p, realargs), [|c|])
   else mkApp(p, realargs)
 
 (* normalisation of values *)
 
-let branch_of_switch lvl ans bs = 
+let branch_of_switch lvl ans bs =
   let tbl = ans.asw_reloc in
-  let branch i = 
+  let branch i =
     let tag,arity = tbl.(i) in
-    let ci = 
+    let ci =
       if Int.equal arity 0 then mk_const tag
       else mk_block tag (mk_rels_accu lvl arity) in
     bs ci in
@@ -189,11 +189,11 @@ let branch_of_switch lvl ans bs =
 let rec nf_val env sigma v typ =
   match kind_of_value v with
   | Vaccu accu -> nf_accu env sigma accu
-  | Vfun f -> 
+  | Vfun f ->
       let lvl = nb_rel env in
-      let name,dom,codom = 
-	try decompose_prod env typ
-	with DestKO ->
+      let name,dom,codom =
+        try decompose_prod env typ
+        with DestKO ->
           CErrors.anomaly
             (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
@@ -213,7 +213,7 @@ and nf_type env sigma v =
 
 and nf_type_sort env sigma v =
   match kind_of_value v with
-  | Vaccu accu -> 
+  | Vaccu accu ->
       let t,s = nf_accu_type env sigma accu in
       let s = try destSort s with DestKO -> assert false in
       t, s
@@ -236,12 +236,12 @@ and nf_accu_type env sigma accu =
     mkApp(a,Array.of_list args), t
 
 and nf_args env sigma accu t =
-  let aux arg (t,l) = 
+  let aux arg (t,l) =
     let _,dom,codom =
       try decompose_prod env t with
-	DestKO ->
-	CErrors.anomaly
-	  (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
+        DestKO ->
+        CErrors.anomaly
+          (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
     in
     let c = nf_val env sigma arg dom in
     (subst1 c codom, c::l)
@@ -255,10 +255,10 @@ and nf_bargs env sigma b t =
   Array.init len
     (fun i ->
       let _,dom,codom =
-	try decompose_prod env !t with
-	  DestKO ->
-	  CErrors.anomaly
-	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
+        try decompose_prod env !t with
+          DestKO ->
+          CErrors.anomaly
+            (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
       let c = nf_val env sigma (block_field b i) dom in
       t := subst1 c codom; c)
@@ -280,7 +280,7 @@ and nf_atom env sigma atom =
   | Aevar (ev,_) -> mkEvar ev
   | Aproj(p,c) ->
       let c = nf_accu env sigma c in
-	mkProj(Projection.make p true,c)
+        mkProj(Projection.make p true,c)
   | _ -> fst (nf_atom_type env sigma atom)
 
 and nf_atom_type env sigma atom =
@@ -302,9 +302,9 @@ and nf_atom_type env sigma atom =
       let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
       let nparams = mib.mind_nparams in
       let params,realargs = Array.chop nparams allargs in
-      let pT = 
-	hnf_prod_applist env 
-	  (Inductiveops.type_of_inductive env ind) (Array.to_list params) in
+      let pT =
+        hnf_prod_applist env
+          (Inductiveops.type_of_inductive env ind) (Array.to_list params) in
       let pT = whd_all env pT in
       let dep, p = nf_predicate env sigma ind mip params p pT in
       (* Calcul du type des branches *)
@@ -315,11 +315,11 @@ and nf_atom_type env sigma atom =
        let decl,decl_with_letin,codom = btypes.(i) in
        let b = nf_val (Termops.push_rels_assum decl env) sigma v codom in
         Termops.it_mkLambda_or_LetIn_from_no_LetIn b decl_with_letin
-      in 
+      in
       let branchs = Array.mapi mkbranch bsw in
       let tcase = build_case_type dep p realargs a in
       let ci = ans.asw_ci in
-      mkCase(ci, p, a, branchs), tcase 
+      mkCase(ci, p, a, branchs), tcase
   | Afix(tt,ft,rp,s) ->
       let tt = Array.map (fun t -> nf_type env sigma t) tt in
       let name = Array.map (fun _ -> (Name (Id.of_string "Ffix"))) tt in
@@ -366,15 +366,15 @@ and  nf_predicate env sigma ind mip params v pT =
       let k = nb_rel env in
       let vb = f (mk_rel_accu k) in
       let name,dom,codom =
-	try decompose_prod env pT with
-	  DestKO ->
-	  CErrors.anomaly
-	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
+        try decompose_prod env pT with
+          DestKO ->
+          CErrors.anomaly
+            (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
-      let dep,body = 
-	nf_predicate (push_rel (LocalAssum (name,dom)) env) sigma ind mip params vb codom in
+      let dep,body =
+        nf_predicate (push_rel (LocalAssum (name,dom)) env) sigma ind mip params vb codom in
       dep, mkLambda(name,dom,body)
-  | Vfun f, _ -> 
+  | Vfun f, _ ->
       let k = nb_rel env in
       let vb = f (mk_rel_accu k) in
       let name = Name (Id.of_string "c") in
@@ -398,23 +398,23 @@ let start_profiler_linux profile_fn =
   let dev_null = Unix.descr_of_out_channel (open_out_bin "/dev/null") in
   let _ = Feedback.msg_info (Pp.str ("Profiling to file " ^ profile_fn)) in
   let perf = "perf" in
-  let profiler_pid = 
+  let profiler_pid =
     Unix.create_process
       perf
       [|perf; "record"; "-g"; "-o"; profile_fn; "-p"; string_of_int coq_pid |]
       Unix.stdin dev_null dev_null
   in
   (* doesn't seem to be a way to test whether process creation succeeded *)
-  if !Flags.debug then 
+  if !Flags.debug then
     Feedback.msg_debug (Pp.str (Format.sprintf "Native compute profiler started, pid = %d, output to: %s" profiler_pid profile_fn));
   Some profiler_pid
 
 (* kill profiler via SIGINT *)
-let stop_profiler_linux m_pid = 
-  match m_pid with 
+let stop_profiler_linux m_pid =
+  match m_pid with
   | Some pid -> (
     let _ = if !Flags.debug then Feedback.msg_debug (Pp.str "Stopping native code profiler") in
-    try 
+    try
       Unix.kill pid Sys.sigint;
       let _ = Unix.waitpid [] pid in ()
     with Unix.Unix_error (Unix.ESRCH,"kill","") ->
@@ -429,14 +429,14 @@ let start_profiler () =
   | _ ->
      let _ = Feedback.msg_info
        (Pp.str (Format.sprintf "Native_compute profiling not supported on the platform: %s"
-		  (profiler_platform ()))) in
+                  (profiler_platform ()))) in
      None
 
 let stop_profiler m_pid =
   match profiler_platform() with
     "Unix (Linux)" -> stop_profiler_linux m_pid
   | _ -> ()
-     
+
 let native_norm env sigma c ty =
   let c = EConstr.Unsafe.to_constr c in
   let ty = EConstr.Unsafe.to_constr ty in
@@ -454,11 +454,11 @@ let native_norm env sigma c ty =
   match Nativelib.compile ml_filename code ~profile:profile with
     | true, fn ->
         if !Flags.debug then Feedback.msg_debug (Pp.str "Running norm ...");
-	let profiler_pid = if profile then start_profiler () else None in
+        let profiler_pid = if profile then start_profiler () else None in
         let t0 = Sys.time () in
         Nativelib.call_linker ~fatal:true prefix fn (Some upd);
         let t1 = Sys.time () in
-	if profile then stop_profiler profiler_pid;
+        if profile then stop_profiler profiler_pid;
         let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
         if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
         let res = nf_val env sigma !Nativelib.rt1 ty in
@@ -466,7 +466,7 @@ let native_norm env sigma c ty =
         let time_info = Format.sprintf "Reification done in %.5f@." (t2 -. t1) in
         if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
         EConstr.of_constr res
-    | _ -> anomaly (Pp.str "Compilation failure.") 
+    | _ -> anomaly (Pp.str "Compilation failure.")
 
 let native_conv_generic pb sigma t =
   Nativeconv.native_conv_gen pb (evars_of_evar_map sigma) t

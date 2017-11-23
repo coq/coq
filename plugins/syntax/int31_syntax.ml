@@ -61,7 +61,7 @@ let int31_of_pos_bigint ?loc n =
       []
     else
       let (q,r) = div2_with_rest n in
-	(if r then ref_1 else ref_0)::(args (counter-1) q)
+        (if r then ref_1 else ref_0)::(args (counter-1) q)
   in
   DAst.make ?loc (GApp (ref_construct, List.rev (args 31 n)))
 

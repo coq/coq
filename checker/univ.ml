@@ -86,11 +86,11 @@ module Level = struct
   | Var of int
 
   (** Embed levels with their hash value *)
-  type t = { 
+  type t = {
     hash : int;
     data : RawLevel.t }
 
-  let equal x y = 
+  let equal x y =
     x == y || Int.equal x.hash y.hash && RawLevel.equal x.data y.data
 
   let hash x = x.hash
@@ -102,8 +102,8 @@ module Level = struct
   let set = make Set
   let prop = make Prop
   let var i = make (Var i)
-		  
-  let is_small x = 
+
+  let is_small x =
     match data x with
     | Level _ -> false
     | _ -> true
@@ -122,10 +122,10 @@ module Level = struct
     if u == v then 0
     else
       let c = Int.compare (hash u) (hash v) in
-	if c == 0 then RawLevel.compare (data u) (data v)
-	else c
-	    
-  let to_string x = 
+        if c == 0 then RawLevel.compare (data u) (data v)
+        else c
+
+  let to_string x =
     match data x with
     | Prop -> "Prop"
     | Set -> "Set"
@@ -164,10 +164,10 @@ module Universe =
 struct
   (* Invariants: non empty, sorted and without duplicates *)
 
-  module Expr = 
+  module Expr =
   struct
     type t = Level.t * int
-	
+
     let make l = (l, 0)
 
     let prop = (Level.prop, 0)
@@ -180,33 +180,33 @@ struct
 
     let equal x y = x == y ||
       (let (u,n) = x and (v,n') = y in
-	 Int.equal n n' && Level.equal u v)
+         Int.equal n n' && Level.equal u v)
 
     let leq (u,n) (v,n') =
       let cmp = Level.compare u v in
-	if Int.equal cmp 0 then n <= n'
-	else if n <= n' then 
-	  (Level.is_prop u && Level.is_small v)
-	else false
+        if Int.equal cmp 0 then n <= n'
+        else if n <= n' then
+          (Level.is_prop u && Level.is_small v)
+        else false
 
     let successor (u,n) =
       if Level.is_prop u then type1
       else (u, n + 1)
 
-    let addn k (u,n as x) = 
-      if k = 0 then x 
+    let addn k (u,n as x) =
+      if k = 0 then x
       else if Level.is_prop u then
-	(Level.set,n+k)
+        (Level.set,n+k)
       else (u,n+k)
-	
+
     let super (u,n as x) (v,n' as y) =
       let cmp = Level.compare u v in
-	if Int.equal cmp 0 then 
-	  if n < n' then Inl true
-	  else Inl false
-	else if is_prop x then Inl true
-	else if is_prop y then Inl false
-	else Inr cmp
+        if Int.equal cmp 0 then
+          if n < n' then Inl true
+          else Inl false
+        else if is_prop x then Inl true
+        else if is_prop y then Inl false
+        else Inr cmp
 
     let to_string (v, n) =
       if Int.equal n 0 then Level.to_string v
@@ -218,12 +218,12 @@ struct
       | (v,0) -> Some v
       | _ -> None
 
-    let map f (v, n as x) = 
-      let v' = f v in 
-	if v' == v then x
-	else if Level.is_prop v' && n != 0 then
-	  (Level.set, n)
-	else (v', n)
+    let map f (v, n as x) =
+      let v' = f v in
+        if v' == v then x
+        else if Level.is_prop v' && n != 0 then
+          (Level.set, n)
+        else (v', n)
 
   end
 
@@ -238,9 +238,9 @@ struct
 
   let pr l = match l with
     | [u] -> Expr.pr u
-    | _ -> 
+    | _ ->
       str "max(" ++ hov 0
-	(prlist_with_sep pr_comma Expr.pr l) ++
+        (prlist_with_sep pr_comma Expr.pr l) ++
         str ")"
 
   let level l = match l with
@@ -255,7 +255,7 @@ struct
   let type0 = tip Expr.set
 
   (* When typing [Prop] and [Set], there is no constraint on the level,
-     hence the definition of [type1_univ], the type of [Prop] *)    
+     hence the definition of [type1_univ], the type of [Prop] *)
   let type1 = tip (Expr.successor Expr.set)
 
   let is_type0m x = equal type0m x
@@ -263,7 +263,7 @@ struct
 
   (* Returns the formal universe that lies juste above the universe variable u.
      Used to type the sort u. *)
-  let super l = 
+  let super l =
     List.map (fun x -> Expr.successor x) l
 
   let addn n l =
@@ -277,25 +277,25 @@ struct
       (match Expr.super h1 h2 with
       | Inl true (* h1 < h2 *) -> merge_univs t1 l2
       | Inl false -> merge_univs l1 t2
-      | Inr c -> 
+      | Inr c ->
         if c <= 0 (* h1 < h2 is name order *)
-	then cons h1 (merge_univs t1 l2)
-	else cons h2 (merge_univs l1 t2))
+        then cons h1 (merge_univs t1 l2)
+        else cons h2 (merge_univs l1 t2))
 
   let sort u =
-    let rec aux a l = 
+    let rec aux a l =
       match l with
       | b :: l' ->
         (match Expr.super a b with
-	| Inl false -> aux a l'
-	| Inl true -> l
-	| Inr c ->
-	  if c <= 0 then cons a l
-	  else cons b (aux a l'))
+        | Inl false -> aux a l'
+        | Inl true -> l
+        | Inr c ->
+          if c <= 0 then cons a l
+          else cons b (aux a l'))
       | [] -> cons a l
-    in 
+    in
       List.fold_right (fun a acc -> aux a acc) u []
-	
+
   (* Returns the formal universe that is greater than the universes u and v.
      Used to type the products. *)
   let sup x y = merge_univs x y
@@ -371,7 +371,7 @@ let repr g u =
     let a =
       try UMap.find u g
       with Not_found -> anomaly ~label:"Univ.repr"
-	  (str"Universe " ++ Level.pr u ++ str" undefined.")
+          (str"Universe " ++ Level.pr u ++ str" undefined.")
     in
     match a with
       | Equiv v -> repr_rec v
@@ -382,34 +382,34 @@ let repr g u =
 let get_set_arc g = repr g Level.set
 
 exception AlreadyDeclared
-	    
+
 let add_universe vlev strict g =
   try
     let _arcv = UMap.find vlev g in
       raise AlreadyDeclared
-  with Not_found -> 
+  with Not_found ->
     let v = terminal vlev in
     let arc =
       let arc = get_set_arc g in
-	if strict then
-	  { arc with lt=vlev::arc.lt}
-	else 
-	  { arc with le=vlev::arc.le}
+        if strict then
+          { arc with lt=vlev::arc.lt}
+        else
+          { arc with le=vlev::arc.le}
     in
     let g = enter_arc arc g in
       enter_arc v g
-		       
+
 (* reprleq : canonical_arc -> canonical_arc list *)
 (* All canonical arcv such that arcu<=arcv with arcv#arcu *)
 let reprleq g arcu =
   let rec searchrec w = function
     | [] -> w
     | v :: vl ->
-	let arcv = repr g v in
+        let arcv = repr g v in
         if List.memq arcv w || arcu==arcv then
-	  searchrec w vl
+          searchrec w vl
         else
-	  searchrec (arcv :: w) vl
+          searchrec (arcv :: w) vl
   in
   searchrec [] arcu.le
 
@@ -430,14 +430,14 @@ let between g arcu arcv =
       input    (* (good, bad, b or false) *)
     else
       let leq = reprleq g arcu in
-	(* is some universe >= u good ? *)
+        (* is some universe >= u good ? *)
       let good, bad, b_leq =
-	List.fold_left explore (good, bad, false) leq
+        List.fold_left explore (good, bad, false) leq
       in
-	if b_leq then
-	  arcu::good, bad, true (* b or true *)
-	else
-	  good, arcu::bad, b    (* b or false *)
+        if b_leq then
+          arcu::good, bad, true (* b or true *)
+        else
+          good, arcu::bad, b    (* b or false *)
   in
   let good,_,_ = explore ([arcv],[],false) arcu in
     good
@@ -509,9 +509,9 @@ let fast_compare_neq strict g arcu arcv =
   | [], arc::le_todo ->
     if arc == arcv then
       (* No need to continue inspecting universes above arc:
-	 if arcv is strictly above arc, then we would have a cycle.
+         if arcv is strictly above arc, then we would have a cycle.
          But we cannot answer LE yet, a stronger constraint may
-	 come later from [le_todo]. *)
+         come later from [le_todo]. *)
       if strict then cmp FastLE lt_done le_done [] le_todo else FastLE
     else
       if (List.memq arc lt_done) || (List.memq arc le_done) then
@@ -543,7 +543,7 @@ let is_leq g arcu arcv =
     (match fast_compare_neq false g arcu arcv with
     | FastNLE -> false
     | (FastEQ|FastLE|FastLT) -> true)
-    
+
 let is_lt g arcu arcv =
   if arcu == arcv then false
   else
@@ -580,8 +580,8 @@ let check_smaller g strict u v =
   if strict then
     is_lt g arcu arcv
   else
-    is_prop_arc arcu 
-    || (is_set_arc arcu && arcv.predicative) 
+    is_prop_arc arcu
+    || (is_set_arc arcu && arcv.predicative)
     || is_leq g arcu arcv
 
 (** Then, checks on universes *)
@@ -589,8 +589,8 @@ let check_smaller g strict u v =
 type 'a check_function = universes -> 'a -> 'a -> bool
 
 let check_equal_expr g x y =
-  x == y || (let (u, n) = x and (v, m) = y in 
-	       Int.equal n m && check_equal g u v)
+  x == y || (let (u, n) = x and (v, m) = y in
+               Int.equal n m && check_equal g u v)
 
 let check_eq_univs g l1 l2 =
   let f x1 x2 = check_equal_expr g x1 x2 in
@@ -610,12 +610,12 @@ let check_smaller_expr g (u,n) (v,m) =
     | _ -> false
 
 let exists_bigger g ul l =
-  Universe.exists (fun ul' -> 
+  Universe.exists (fun ul' ->
     check_smaller_expr g ul ul') l
 
 let real_check_leq g u v =
   Universe.for_all (fun ul -> exists_bigger g ul v) u
-    
+
 let check_leq g u v =
   Universe.equal u v ||
     Universe.is_type0m u ||
@@ -624,7 +624,7 @@ let check_leq g u v =
 (** Enforcing new constraints : [setlt], [setleq], [merge], [merge_disc] *)
 
 (** To speed up tests of Set </<= i *)
-let set_predicative g arcv = 
+let set_predicative g arcv =
   enter_arc {arcv with predicative = true} g
 
 (* setlt : Level.t -> Level.t -> reason -> unit *)
@@ -632,7 +632,7 @@ let set_predicative g arcv =
 (* this is normally an update of u in g rather than a creation. *)
 let setlt g arcu arcv =
   let arcu' = {arcu with lt=arcv.univ::arcu.lt} in
-  let g = 
+  let g =
     if is_set_arc arcu then set_predicative g arcv
     else g
   in
@@ -649,7 +649,7 @@ let setlt_if (g,arcu) v =
 (* this is normally an update of u in g rather than a creation. *)
 let setleq g arcu arcv =
   let arcu' = {arcu with le=arcv.univ::arcu.le} in
-  let g = 
+  let g =
     if is_set_arc arcu' then
       set_predicative g arcv
     else g
@@ -682,8 +682,8 @@ let merge g arcu arcv =
           else begin
               (* one redirected node also has max_rank *)
             let arcu = {best_arc with rank = max_rank + 1} in
-	      arcu, enter_arc arcu g, rest
-          end 
+              arcu, enter_arc arcu g, rest
+          end
   in
   let redirect (g,w,w') arcv =
     let g' = enter_equiv_arc arcv.univ arcu.univ g in
@@ -700,10 +700,10 @@ let merge g arcu arcv =
 (* merge_disc u v  forces u ~ v with repr u as canonical repr *)
 let merge_disc g arc1 arc2 =
   let arcu, arcv = if arc1.rank < arc2.rank then arc2, arc1 else arc1, arc2 in
-  let arcu, g = 
+  let arcu, g =
     if not (Int.equal arc1.rank arc2.rank) then arcu, g
     else
-      let arcu = {arcu with rank = succ arcu.rank} in 
+      let arcu = {arcu with rank = succ arcu.rank} in
       arcu, enter_arc arcu g
   in
   let g' = enter_equiv_arc arcv.univ arcu.univ g in
@@ -762,7 +762,7 @@ let enforce_univ_lt u v g =
     | FastEQ -> error_inconsistency Lt u v
     | FastNLE ->
       match fast_compare_neq false g arcv arcu with
-	FastNLE -> fst (setlt g arcu arcv)
+        FastNLE -> fst (setlt g arcu arcv)
       | FastEQ -> anomaly (Pp.str "Univ.compare.")
       | FastLE | FastLT -> error_inconsistency Lt u v
 
@@ -772,7 +772,7 @@ let initial_universes =
   let g = enter_arc (terminal Level.prop) g in
     enforce_univ_lt Level.prop Level.set g
 
-(* Constraints and sets of constraints. *)    
+(* Constraints and sets of constraints. *)
 
 type univ_constraint = Level.t * constraint_type * Level.t
 
@@ -794,28 +794,28 @@ struct
       else Level.compare v v'
 end
 
-let pr_constraint_type op = 
+let pr_constraint_type op =
   let op_str = match op with
     | Lt -> " < "
     | Le -> " <= "
     | Eq -> " = "
   in str op_str
 
-module Constraint = 
-struct 
+module Constraint =
+struct
   module S = Set.Make(UConstraintOrd)
   include S
 
   let pr prl c =
     fold (fun (u1,op,u2) pp_std ->
       pp_std ++ prl u1 ++ pr_constraint_type op ++
-	prl u2 ++ fnl () )  c (str "")
+        prl u2 ++ fnl () )  c (str "")
 end
 
 let empty_constraint = Constraint.empty
 let merge_constraints c g =
   Constraint.fold enforce_constraint c g
-		  
+
 type constraints = Constraint.t
 
 (** A value with universe constraints. *)
@@ -828,26 +828,26 @@ type 'a constraint_function = 'a -> 'a -> constraints -> constraints
 let constraint_add_leq v u c =
   (* We just discard trivial constraints like u<=u *)
   if Expr.equal v u then c
-  else 
+  else
     match v, u with
-    | (x,n), (y,m) -> 
+    | (x,n), (y,m) ->
     let j = m - n in
       if j = -1 (* n = m+1, v+1 <= u <-> v < u *) then
-	Constraint.add (x,Lt,y) c
+        Constraint.add (x,Lt,y) c
       else if j <= -1 (* n = m+k, v+k <= u <-> v+(k-1) < u *) then
-	if Level.equal x y then (* u+(k+1) <= u *)
-	  raise (UniverseInconsistency (Le, Universe.tip v, Universe.tip u))
-	else anomaly (Pp.str"Unable to handle arbitrary u+k <= v constraints.")
+        if Level.equal x y then (* u+(k+1) <= u *)
+          raise (UniverseInconsistency (Le, Universe.tip v, Universe.tip u))
+        else anomaly (Pp.str"Unable to handle arbitrary u+k <= v constraints.")
       else if j = 0 then
-	Constraint.add (x,Le,y) c
+        Constraint.add (x,Le,y) c
       else (* j >= 1 *) (* m = n + k, u <= v+k *)
-	if Level.equal x y then c (* u <= u+k, trivial *)
-	else if Level.is_small x then c (* Prop,Set <= u+S k, trivial *)
-	else anomaly (Pp.str"Unable to handle arbitrary u <= v+k constraints.")
-	  
+        if Level.equal x y then c (* u <= u+k, trivial *)
+        else if Level.is_small x then c (* Prop,Set <= u+S k, trivial *)
+        else anomaly (Pp.str"Unable to handle arbitrary u <= v+k constraints.")
+
 let check_univ_leq_one u v = Universe.exists (Expr.leq u) v
 
-let check_univ_leq u v = 
+let check_univ_leq u v =
   Universe.for_all (fun u -> check_univ_leq_one u v) u
 
 let enforce_leq u v c =
@@ -881,15 +881,15 @@ type universe_level_subst = universe_level universe_map
 (** A full substitution might involve algebraic universes *)
 type universe_subst = universe universe_map
 
-let level_subst_of f = 
-  fun l -> 
-    try let u = f l in 
-	  match Universe.level u with
-	  | None -> l
-	  | Some l -> l
+let level_subst_of f =
+  fun l ->
+    try let u = f l in
+          match Universe.level u with
+          | None -> l
+          | Some l -> l
     with Not_found -> l
-     
-module Instance : sig 
+
+module Instance : sig
     type t = Level.t array
 
     val empty : t
@@ -902,7 +902,7 @@ module Instance : sig
     val length : t -> int
     val append : t -> t -> t
     val of_array : Level.t array -> t
-end = 
+end =
 struct
   type t = Level.t array
 
@@ -910,31 +910,31 @@ struct
 
   let is_empty x = Int.equal (Array.length x) 0
 
-  let subst_fn fn t = 
+  let subst_fn fn t =
     let t' = CArray.smartmap fn t in
       if t' == t then t else t'
 
   let subst s t =
-    let t' = 
+    let t' =
       CArray.smartmap (fun x -> try LMap.find x s with Not_found -> x) t
     in if t' == t then t else t'
 
   let pr =
     prvect_with_sep spc Level.pr
 
-  let equal t u = 
+  let equal t u =
     t == u ||
       (Array.is_empty t && Array.is_empty u) ||
-      (CArray.for_all2 Level.equal t u 
-	 (* Necessary as universe instances might come from different modules and 
-	    unmarshalling doesn't preserve sharing *))
+      (CArray.for_all2 Level.equal t u
+         (* Necessary as universe instances might come from different modules and
+            unmarshalling doesn't preserve sharing *))
 
   let check_eq g t1 t2 =
     t1 == t2 ||
       (Int.equal (Array.length t1) (Array.length t2) &&
-	 let rec aux i =
-	   (Int.equal i (Array.length t1)) || (check_eq_level g t1.(i) t2.(i) && aux (i + 1))
-	 in aux 0)
+         let rec aux i =
+           (Int.equal i (Array.length t1)) || (check_eq_level g t1.(i) t2.(i) && aux (i + 1))
+         in aux 0)
 
   let length = Array.length
 
@@ -948,10 +948,10 @@ end
 
 let subst_instance_level s l =
   match l.Level.data with
-  | Level.Var n -> s.(n) 
+  | Level.Var n -> s.(n)
   | _ -> l
 
-let subst_instance_instance s i = 
+let subst_instance_instance s i =
   Array.smartmap (fun l -> subst_instance_level s l) i
 
 let subst_instance_universe s u =
@@ -967,7 +967,7 @@ let subst_instance_constraint s (u,d,v as c) =
     else (u',d,v')
 
 let subst_instance_constraints s csts =
-  Constraint.fold 
+  Constraint.fold
     (fun c csts -> Constraint.add (subst_instance_constraint s c) csts)
     csts Constraint.empty
 
@@ -1064,7 +1064,7 @@ let subst_univs_level_universe subst u =
     if u == u' then u
     else Universe.sort u'
 
-let make_abstract_instance (ctx, _) = 
+let make_abstract_instance (ctx, _) =
   Array.mapi (fun i l -> Level.var i) ctx
 
 (** With level to universe substitutions. *)
@@ -1076,39 +1076,39 @@ let subst_univs_expr_opt fn (l,n) =
   Universe.addn n (fn l)
 
 let subst_univs_universe fn ul =
-  let subst, nosubst = 
-    List.fold_right (fun u (subst,nosubst) -> 
+  let subst, nosubst =
+    List.fold_right (fun u (subst,nosubst) ->
       try let a' = subst_univs_expr_opt fn u in
-	    (a' :: subst, nosubst)
+            (a' :: subst, nosubst)
       with Not_found -> (subst, u :: nosubst))
       ul ([], [])
-  in 
+  in
     if CList.is_empty subst then ul
-    else 
-      let substs = 
-	List.fold_left Universe.merge_univs Universe.empty subst
+    else
+      let substs =
+        List.fold_left Universe.merge_univs Universe.empty subst
       in
-	List.fold_left (fun acc u -> Universe.merge_univs acc (Universe.tip u))
-	  substs nosubst
+        List.fold_left (fun acc u -> Universe.merge_univs acc (Universe.tip u))
+          substs nosubst
 
 let merge_context strict ctx g =
   let g = Array.fold_left
-   (* Be lenient, module typing reintroduces universes and 
+   (* Be lenient, module typing reintroduces universes and
       constraints due to includes *)
-	    (fun g v -> try add_universe v strict g with AlreadyDeclared -> g)
-	    g (UContext.instance ctx)
+            (fun g v -> try add_universe v strict g with AlreadyDeclared -> g)
+            g (UContext.instance ctx)
   in merge_constraints (UContext.constraints ctx) g
 
 let merge_context_set strict ctx g =
   let g = LSet.fold
-	    (fun v g -> try add_universe v strict g with AlreadyDeclared -> g)
-	    (ContextSet.levels ctx) g
+            (fun v g -> try add_universe v strict g with AlreadyDeclared -> g)
+            (ContextSet.levels ctx) g
   in merge_constraints (ContextSet.constraints ctx) g
 
 (** Pretty-printing *)
 
 let pr_constraints prl = Constraint.pr prl
-    
+
 let pr_universe_context = UContext.pr
 
 let pr_arc = function
@@ -1122,7 +1122,7 @@ let pr_arc = function
       Level.pr u ++ str " " ++
       v 0
         (pr_sequence (fun v -> str "< " ++ Level.pr v) lt ++
-	 opt_sep ++
+         opt_sep ++
          pr_sequence (fun v -> str "<= " ++ Level.pr v) le) ++
       fnl ()
   | u, Equiv v ->

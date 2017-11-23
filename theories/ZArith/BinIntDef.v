@@ -364,18 +364,18 @@ Definition div_eucl (a b:Z) : Z * Z :=
     | pos a', pos _ => pos_div_eucl a' b
     | neg a', pos _ =>
       let (q, r) := pos_div_eucl a' b in
-	match r with
-	  | 0 => (- q, 0)
-	  | _ => (- (q + 1), b - r)
-	end
+        match r with
+          | 0 => (- q, 0)
+          | _ => (- (q + 1), b - r)
+        end
     | neg a', neg b' =>
       let (q, r) := pos_div_eucl a' (pos b') in (q, - r)
     | pos a', neg b' =>
       let (q, r) := pos_div_eucl a' (pos b') in
-	match r with
-	  | 0 => (- q, 0)
-	  | _ => (- (q + 1), b + r)
-	end
+        match r with
+          | 0 => (- q, 0)
+          | _ => (- (q + 1), b + r)
+        end
   end.
 
 Definition div (a b:Z) : Z := let (q, _) := div_eucl a b in q.

@@ -10,7 +10,7 @@ Arguments prod : clear implicits.
 Check (@projT1 _ (fun x : nat => x = x)).
 Check (fun s : @sigT nat (fun x : nat => x = x) => s.(projT1)).
 
-Record rimpl {b : bool} {n : nat} := { foo : forall {x : nat}, x = n }. 
+Record rimpl {b : bool} {n : nat} := { foo : forall {x : nat}, x = n }.
 
 Check (fun r : @rimpl true 0 => r.(foo) (x:=0)).
 Check (fun r : @rimpl true 0 => @foo true 0 r 0).
@@ -51,7 +51,7 @@ Local Instance isequiv_tgt_compose' A B
 Local Instance isequiv_tgt_compose'' A B
 : @IsEquiv (A -> {xy : B * B & fst xy = snd xy})
            (A -> B)
-           (@compose A {xy : B * B & fst xy = snd xy} B (@compose {xy : B * B & fst xy = snd xy} _ B (@snd _ _) 
+           (@compose A {xy : B * B & fst xy = snd xy} B (@compose {xy : B * B & fst xy = snd xy} _ B (@snd _ _)
                                                                   (fun s => s.(projT1)))).
 (* Toplevel input, characters 15-241:
 Error:

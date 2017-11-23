@@ -106,7 +106,7 @@ Proof.
   unfold Qinv.
   case_eq n; intros; simpl in *; apply Qeq_refl.
 Qed.
-  
+
 Lemma Qabs_Qminus x y: Qabs (x - y) = Qabs (y - x).
 Proof.
  unfold Qminus, Qopp. simpl.

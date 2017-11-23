@@ -130,7 +130,7 @@ val has_dependent_elim : mutual_inductive_body -> bool
 val projection_nparams : projection -> int
 val projection_nparams_env : env -> projection -> int
 val type_of_projection_knowing_arg : env -> evar_map -> Projection.t ->
-				     EConstr.t -> EConstr.types -> types
+                                     EConstr.t -> EConstr.types -> types
 
 
 (** Extract information from an inductive family *)

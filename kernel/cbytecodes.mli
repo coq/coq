@@ -73,7 +73,7 @@ type instruction =
   | Kconst of structured_constant
   | Kmakeblock of (* size: *) int * tag (** allocate an ocaml block. Index 0
                                          ** is accu, all others are popped from
-					 ** the top of the stack  *)
+                                         ** the top of the stack  *)
   | Kmakeprod
   | Kmakeswitchblock of Label.t * Label.t * annot_switch * int
   | Kswitch of Label.t array * Label.t array (** consts,blocks *)
@@ -97,24 +97,24 @@ type instruction =
   | Ksubcarrycint31                     (** subtraction -1, keeps the carry *)
   | Kmulint31                           (** multiplication modulo *)
   | Kmulcint31                          (** multiplication, result in two
-					   int31, for exact computation *)
+                                           int31, for exact computation *)
   | Kdiv21int31                         (** divides a double size integer
                                            (represented by an int31 in the
-					   accumulator and one on the top of
-					   the stack) by an int31. The result
-					   is a pair of the quotient and the
-					   rest.
-					   If the divisor is 0, it returns
-					   0. *)
+                                           accumulator and one on the top of
+                                           the stack) by an int31. The result
+                                           is a pair of the quotient and the
+                                           rest.
+                                           If the divisor is 0, it returns
+                                           0. *)
   | Kdivint31                           (** euclidian division (returns a pair
-					   quotient,rest) *)
+                                           quotient,rest) *)
   | Kaddmuldivint31                     (** generic operation for shifting and
-					   cycling. Takes 3 int31 i j and s,
-					   and returns x*2^s+y/(2^(31-s) *)
+                                           cycling. Takes 3 int31 i j and s,
+                                           and returns x*2^s+y/(2^(31-s) *)
   | Kcompareint31                        (** unsigned comparison of int31
-					   cf COMPAREINT31 in
-					   kernel/byterun/coq_interp.c
-					   for more info *)
+                                           cf COMPAREINT31 in
+                                           kernel/byterun/coq_interp.c
+                                           for more info *)
   | Khead0int31                         (** Give the numbers of 0 in head of a in31*)
   | Ktail0int31                         (** Give the numbers of 0 in tail of a in31
                                            ie low bits *)

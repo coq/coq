@@ -10,7 +10,7 @@ open Names
 open Constr
 
 val generate_functional_principle :
-  Evd.evar_map ref -> 
+  Evd.evar_map ref ->
   (* do we accept interactive proving *)
   bool ->
   (* induction principle on rel *)

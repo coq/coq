@@ -269,7 +269,7 @@ Section ZModulo.
  Qed.
 
  Lemma spec_add_carry :
-	 forall x y, [|add_carry x y|] = ([|x|] + [|y|] + 1) mod wB.
+         forall x y, [|add_carry x y|] = ([|x|] + [|y|] + 1) mod wB.
  Proof.
  intros; unfold add_carry, to_Z.
  rewrite <- Zplus_mod_idemp_l.
@@ -682,7 +682,7 @@ Section ZModulo.
 
 
  Lemma spec_head0  : forall x,  0 < [|x|] ->
-	 wB/ 2 <= 2 ^ ([|head0 x|]) * [|x|] < wB.
+         wB/ 2 <= 2 ^ ([|head0 x|]) * [|x|] < wB.
  Proof.
  intros; unfold head0.
  generalize (spec_to_Z x).

@@ -158,12 +158,12 @@ Section Acc_generator.
   Variable A : Type.
   Variable R : A -> A -> Prop.
 
-  (* *Lazily* add 2^n - 1 Acc_intro on top of wf. 
-     Needed for fast reductions using Function and Program Fixpoint 
-     and probably using Fix and Fix_F_2 
-   *)    
-  Fixpoint Acc_intro_generator n (wf : well_founded R)  := 
-    match n with 
+  (* *Lazily* add 2^n - 1 Acc_intro on top of wf.
+     Needed for fast reductions using Function and Program Fixpoint
+     and probably using Fix and Fix_F_2
+   *)
+  Fixpoint Acc_intro_generator n (wf : well_founded R)  :=
+    match n with
         | O => wf
         | S n => fun x => Acc_intro x (fun y _ => Acc_intro_generator n (Acc_intro_generator n wf) y)
     end.

@@ -21,7 +21,7 @@ Table of contents
 -----------------
 
 I) Implicit Arguments
- 1) Strict Implicit Arguments 
+ 1) Strict Implicit Arguments
  2) Implicit Arguments in standard library
 
 II) Notations
@@ -29,7 +29,7 @@ II) Notations
  2) Translating a V7 notation which conflicts with the new syntax
   a) Associativity conflicts
   b) Conflicts with other notations
-   b1) A notation hides another notation 
+   b1) A notation hides another notation
    b2) A notation conflicts with the V8 grammar
    b3) My notation is already defined at another level
   c) How to use V8only with Distfix ?
@@ -50,7 +50,7 @@ III) Various pitfalls
 I) Implicit Arguments
    ------------------
 
-1) Strict Implicit Arguments 
+1) Strict Implicit Arguments
 
   "Set Implicit Arguments" changes its meaning in V8: the default is
 to turn implicit only the arguments that are _strictly_ implicit (or
@@ -105,7 +105,7 @@ full list):
 
   By default, the translator keeps the associativity given in V7 while
 the levels are mapped according to the following table:
- 
+
   the V7 levels             [  0;  1;  2;  3;  4;  5;  6;  7;  8;  9;  10]
   are resp. mapped in V8 to [  0; 20; 30; 40; 50; 70; 80; 85; 90; 95; 100]
   with predefined assoc     [ No;  L;  R;  L;  L; No;  R;  R;  R; No;   L]
@@ -122,7 +122,7 @@ another level with a compatible associativity.
 
   You can choose any level between 0 and 200, knowing that the
 standard operators are already set at the levels shown on the list
-above. 
+above.
 
 Example 1: Assume you have a notation
 
@@ -169,7 +169,7 @@ Since the new syntax comes with new keywords and new predefined
 symbols, new conflicts can occur. Again, you can use the option V8only
 to inform the translator of the new syntax to use.
 
-b1) A notation hides another notation 
+b1) A notation hides another notation
 
 Rem: use Print Grammar constr in V8 to diagnose the overlap and see the
 section on factorization in the chapter on notations of the Reference
@@ -316,7 +316,7 @@ whose name clashes with a keyword.
   "Case" and "Match" are normally automatically translated into
   "match" or "match" and "fix", but sometimes it fails to do so. It
   typically fails when the Case or Match is argument of a tactic whose
-  typing context is unknown because of a preceding Intro/Intros, as e.g. in 
+  typing context is unknown because of a preceding Intro/Intros, as e.g. in
 
      Intros; Exists [m:nat](<quasiterm>Case m of t [p:nat](f m) end)
 
@@ -382,7 +382,7 @@ e.g in
 of the arguments in the resulting type can be written
 
     "let (x,y,z) as u return P u := t in v"
-     
+
   Local fixpoints are written
 
     "fix f (n m:nat) z (x : X) {struct m} : nat := ...
@@ -433,7 +433,7 @@ assumptions is now done as follows
   Variable m : t.
   Variables m n p : t.
   Variables (m n : t) (u v : s) (w : r).
-  
+
 b) Definitions
 
   Definitions are done as follows
@@ -451,7 +451,7 @@ b) Definitions
 c) Fixpoints
 
   Fixpoints are done this way
-  
+
   Fixpoint f x (y : t) z a (b c : u) {struct z} : v := ... with ... .
   Fixpoint f x : v := ... .
   Fixpoint f (x : t) : v := ... .
@@ -488,8 +488,8 @@ ML-style notation as follows
   It is even possible to define a syntax at the same time, as follows:
 
   Inductive or (A B:Prop) : Prop as "A \/ B":=
-    | or_introl (a:A) : A \/ B 
+    | or_introl (a:A) : A \/ B
     | or_intror (b:B) : A \/ B.
 
   Inductive and (A B:Prop) : Prop as "A /\ B" := conj (a:A) (b:B).
-  
+

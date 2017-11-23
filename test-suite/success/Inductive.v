@@ -94,7 +94,7 @@ Inductive I_F:Set := c : (F (Build_P nat I_F)) -> I_F.
 Set Implicit Arguments.
 Inductive bool_comp2 (b: bool): bool -> Prop :=
 | Opp2: forall q, (match b return Prop with
-                  | true => match q return Prop with 
+                  | true => match q return Prop with
                               true => False |
                               false => True end
                   | false => match q return Prop with
@@ -167,9 +167,9 @@ Inductive IND6 (A:Type) (T:=A) := CONS6 : IND6 T -> IND6 A.
 Module TemplateProp.
 
   (** Check lowering of a template universe polymorphic inductive to Prop *)
-  
+
   Inductive Foo (A : Type) : Type := foo : A -> Foo A.
-  
+
   Check Foo True : Prop.
 
 End TemplateProp.
@@ -177,9 +177,9 @@ End TemplateProp.
 Module PolyNoLowerProp.
 
   (** Check lowering of a general universe polymorphic inductive to Prop is _failing_ *)
-  
+
   Polymorphic Inductive Foo (A : Type) : Type := foo : A -> Foo A.
-  
+
   Fail Check Foo True : Prop.
 
 End PolyNoLowerProp.

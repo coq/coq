@@ -15,7 +15,7 @@ this is the place where you can do that.
 When you try to print values belonging to abstract data types:
 
   # let sigma, env = Lemmas.get_current_context ();;
-  
+
   val sigma : Evd.evar_map = <abstr>
   val env : Environ.env = <abstr>
 

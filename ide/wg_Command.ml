@@ -85,9 +85,9 @@ object(self)
       combo, entry, ok_b in
     let r_bin =
       GBin.scrolled_window
-	~vpolicy:`AUTOMATIC
-	~hpolicy:`AUTOMATIC
-	~packing:(vbox#pack ~fill:true ~expand:true) () in
+        ~vpolicy:`AUTOMATIC
+        ~hpolicy:`AUTOMATIC
+        ~packing:(vbox#pack ~fill:true ~expand:true) () in
     let result = GText.view ~packing:r_bin#add () in
     views <- (frame#coerce, result, combo#entry) :: views;
     let cb clr = result#misc#modify_base [`NORMAL, `NAME clr] in
@@ -109,16 +109,16 @@ object(self)
         (* We need to adapt this to route_id and redirect to the result buffer below *)
         coqops#raw_coq_query phrase
         (*
-	Coq.bind (Coq.query (phrase,sid)) (function
+        Coq.bind (Coq.query (phrase,sid)) (function
           | Interface.Fail (_,l,str) ->
             let width = Ideutils.textview_width result in
             Ideutils.insert_xml result#buffer (Richpp.richpp_of_pp width str);
             notebook#set_page ~tab_label:(new_tab_lbl "Error") frame#coerce;
-	    Coq.return ()
+            Coq.return ()
           | Interface.Good res ->
             result#buffer#insert res;
             notebook#set_page ~tab_label:(new_tab_lbl arg) frame#coerce;
-	    Coq.return ())
+            Coq.return ())
          *)
       in
       result#buffer#set_text ("Result for command " ^ phrase ^ ":\n");

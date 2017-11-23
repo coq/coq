@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 f4b00c567a972ae950b9ed10c533fda5 checker/cic.mli
+MD5 e7a565a0b250483f210496215265c647 checker/cic.mli
 
 *)
 
@@ -95,9 +95,9 @@ let v_cons = v_tuple "constructor" [|v_ind;Int|]
 
 (** kernel/univ *)
 
-let v_raw_level = v_sum "raw_level" 2 (* Prop, Set *) 
+let v_raw_level = v_sum "raw_level" 2 (* Prop, Set *)
   [|(*Level*)[|Int;v_dp|]; (*Var*)[|Int|]|]
-let v_level = v_tuple "level" [|Int;v_raw_level|] 
+let v_level = v_tuple "level" [|Int;v_raw_level|]
 let v_expr = v_tuple "levelexpr" [|v_level;Int|]
 let v_univ = List v_expr
 
@@ -121,7 +121,7 @@ let v_sortfam = v_enum "sorts_family" 3
 
 let v_puniverses v = v_tuple "punivs" [|v;v_instance|]
 
-let v_boollist = List v_bool  
+let v_boollist = List v_bool
 
 let v_caseinfo =
   let v_cstyle = v_enum "case_style" 5 in
@@ -208,9 +208,9 @@ let v_cst_def =
 
 let v_projbody =
   v_tuple "projection_body"
-	  [|v_cst;Int;Int;v_constr;
-	    v_tuple "proj_eta" [|v_constr;v_constr|];
-	    v_constr|]
+          [|v_cst;Int;Int;v_constr;
+            v_tuple "proj_eta" [|v_constr;v_constr|];
+            v_constr|]
 
 let v_typing_flags =
   v_tuple "typing_flags" [|v_bool; v_bool|]
@@ -260,10 +260,10 @@ let v_one_ind = v_tuple "one_inductive_body"
     Any|]
 
 let v_finite = v_enum "recursivity_kind" 3
-let v_mind_record = Annot ("mind_record", 
-			   Opt (Opt (v_tuple "record" [| v_id; Array v_cst; Array v_projbody |])))
+let v_mind_record = Annot ("mind_record",
+                           Opt (Opt (v_tuple "record" [| v_id; Array v_cst; Array v_projbody |])))
 
-let v_ind_pack_univs = 
+let v_ind_pack_univs =
   v_sum "abstract_inductive_universes" 0
     [|[|v_context|]; [|v_abs_context|]; [|v_abs_cum_info|]|]
 

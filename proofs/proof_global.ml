@@ -291,7 +291,7 @@ let set_used_variables l =
     match entry with
     | LocalAssum (x,_) ->
        if Id.Set.mem x all_safe then orig
-       else (ctx, all_safe, (Loc.tag x)::to_clear) 
+       else (ctx, all_safe, (Loc.tag x)::to_clear)
     | LocalDef (x,bo, ty) as decl ->
        if Id.Set.mem x all_safe then orig else
        let vars = Id.Set.union (vars_of env bo) (vars_of env ty) in
@@ -344,11 +344,11 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
     if poly || now then
       let make_body t (c, eff) =
         let body = c in
-	let typ =
-	  if not (keep_body_ucst_separate || not (Safe_typing.empty_private_constants = eff)) then
-	    nf t
-	  else t
-	in
+        let typ =
+          if not (keep_body_ucst_separate || not (Safe_typing.empty_private_constants = eff)) then
+            nf t
+          else t
+        in
         let used_univs_body = Univops.universes_of_constr body in
         let used_univs_typ = Univops.universes_of_constr typ in
         if keep_body_ucst_separate ||
@@ -358,7 +358,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
           (* For vi2vo compilation proofs are computed now but we need to
              complement the univ constraints of the typ with the ones of
              the body.  So we keep the two sets distinct. *)
-	  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+          let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
           let ctx_body = UState.restrict ctx used_univs in
           let _, univs = Evd.check_univ_decl (Evd.from_ctx ctx_body) universe_decl in
           (initunivs, typ), ((body, Univ.ContextSet.of_context univs), eff)
@@ -372,7 +372,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
           let ctx = UState.restrict universes used_univs in
           let _, univs = Evd.check_univ_decl (Evd.from_ctx ctx) universe_decl in
           (univs, typ), ((body, Univ.ContextSet.empty), eff)
-      in 
+      in
        fun t p -> Future.split2 (Future.chain p (make_body t))
     else
       fun t p ->
@@ -440,7 +440,7 @@ let return_proof ?(allow_partial=false) () =
   (** ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
       side-effects... This may explain why one need to uniquize side-effects
       thereafter... *)
-  let proofs = 
+  let proofs =
     List.map (fun (c, _) -> (Evarutil.nf_evars_universes evd (EConstr.Unsafe.to_constr c), eff)) initial_goals in
     proofs, Evd.evar_universe_context evd
 
@@ -467,7 +467,7 @@ module V82 = struct
 end
 
 type state = pstate list
-        
+
 let freeze ~marshallable =
   match marshallable with
   | `Yes ->

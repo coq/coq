@@ -13,13 +13,13 @@ open Names
 
 module StringOrd = struct type t = string let compare = String.compare end
 module UNameMap = struct
-    
+
   include Map.Make(StringOrd)
-    
-  let union s t = 
+
+  let union s t =
     if s == t then s
     else
-      merge (fun k l r -> 
+      merge (fun k l r ->
         match l, r with
         | Some _, _ -> l
         | _, _ -> r) s t
@@ -36,13 +36,13 @@ type t =
    uctx_local : Univ.ContextSet.t; (** The local context of variables *)
    uctx_univ_variables : Universes.universe_opt_subst;
    (** The local universes that are unification variables *)
-   uctx_univ_algebraic : Univ.LSet.t; 
+   uctx_univ_algebraic : Univ.LSet.t;
    (** The subset of unification variables that can be instantiated with
         algebraic universes as they appear in inferred types only. *)
    uctx_universes : UGraph.t; (** The current graph extended with the local constraints *)
    uctx_initial_universes : UGraph.t; (** The graph at the creation of the evar_map *)
  }
-  
+
 let empty =
   { uctx_names = UNameMap.empty, Univ.LMap.empty;
     uctx_local = Univ.ContextSet.empty;
@@ -52,11 +52,11 @@ let empty =
     uctx_initial_universes = UGraph.initial_universes; }
 
 let make u =
-    { empty with 
+    { empty with
       uctx_universes = u; uctx_initial_universes = u}
 
 let is_empty ctx =
-  Univ.ContextSet.is_empty ctx.uctx_local && 
+  Univ.ContextSet.is_empty ctx.uctx_local &&
     Univ.LMap.is_empty ctx.uctx_univ_variables
 
 let union ctx ctx' =
@@ -74,12 +74,12 @@ let union ctx ctx' =
     let names_rev = Univ.LMap.union (snd ctx.uctx_names) (snd ctx'.uctx_names) in
       { uctx_names = (names, names_rev);
         uctx_local = local;
-        uctx_univ_variables = 
+        uctx_univ_variables =
           Univ.LMap.subst_union ctx.uctx_univ_variables ctx'.uctx_univ_variables;
-        uctx_univ_algebraic = 
+        uctx_univ_algebraic =
           Univ.LSet.union ctx.uctx_univ_algebraic ctx'.uctx_univ_algebraic;
         uctx_initial_universes = declarenew ctx.uctx_initial_universes;
-        uctx_universes = 
+        uctx_universes =
           if local == ctx.uctx_local then ctx.uctx_universes
           else
             let cstrsr = Univ.ContextSet.constraints ctx'.uctx_local in
@@ -168,7 +168,7 @@ let process_universe_constraints ctx cstrs =
   let unify_universes (l, d, r) local =
     let l = normalize l and r = normalize r in
       if Univ.Universe.equal l r then local
-      else 
+      else
           match d with
           | Universes.ULe ->
             if UGraph.check_leq univs l r then
@@ -202,16 +202,16 @@ let process_universe_constraints ctx cstrs =
             end
           | Universes.UEq -> equalize_universes l r local
   in
-  let local = 
+  let local =
     Universes.Constraints.fold unify_universes cstrs Univ.Constraint.empty
   in
     !vars, local
 
 let add_constraints ctx cstrs =
   let univs, local = ctx.uctx_local in
-  let cstrs' = Univ.Constraint.fold (fun (l,d,r) acc -> 
+  let cstrs' = Univ.Constraint.fold (fun (l,d,r) acc ->
     let l = Univ.Universe.make l and r = Univ.Universe.make r in
-    let cstr' = 
+    let cstr' =
       if d == Univ.Lt then (Univ.Universe.super l, Universes.ULe, r)
       else (l, (if d == Univ.Le then Universes.ULe else Universes.UEq), r)
     in Universes.Constraints.add cstr' acc)
@@ -248,10 +248,10 @@ let constrain_variables diff ctx =
       diff (univs, ctx.uctx_univ_variables, local)
   in
   { ctx with uctx_local = (univs, local); uctx_univ_variables = vars }
-  
 
-let pr_uctx_level uctx = 
-  let map, map_rev = uctx.uctx_names in 
+
+let pr_uctx_level uctx =
+  let map, map_rev = uctx.uctx_names in
     fun l ->
       try str (Option.get (Univ.LMap.find l map_rev).uname)
       with Not_found | Option.IsNone ->
@@ -284,8 +284,8 @@ let universe_context ~names ~extensible ctx =
     in
     user_err ?loc ~hdr:"universe_context"
       ((str(CString.plural n "Universe") ++ spc () ++
-	Univ.LSet.pr (pr_uctx_level ctx) left ++
-	spc () ++ str (CString.conjugate_verb_to_be n) ++
+        Univ.LSet.pr (pr_uctx_level ctx) left ++
+        spc () ++ str (CString.conjugate_verb_to_be n) ++
         str" unbound."))
   else
     let left = Univ.ContextSet.sort_levels (Array.of_list (Univ.LSet.elements left)) in
@@ -319,7 +319,7 @@ let restrict ctx vars =
   let uctx' = Univops.restrict_universe_context ctx.uctx_local vars in
   { ctx with uctx_local = uctx' }
 
-type rigid = 
+type rigid =
   | UnivRigid
   | UnivFlexible of bool (** Is substitution by an algebraic ok? *)
 
@@ -385,20 +385,20 @@ let new_univ_variable ?loc rigid name
   let uctx', pred =
     match rigid with
     | UnivRigid -> uctx, true
-    | UnivFlexible b -> 
+    | UnivFlexible b ->
       let uvars' = Univ.LMap.add u None uvars in
         if b then {uctx with uctx_univ_variables = uvars';
           uctx_univ_algebraic = Univ.LSet.add u avars}, false
         else {uctx with uctx_univ_variables = uvars'}, false
   in
-  let names = 
+  let names =
     match name with
     | Some n -> add_uctx_names ?loc n u uctx.uctx_names
     | None -> add_uctx_loc u loc uctx.uctx_names
   in
   let initial =
     UGraph.add_universe u false uctx.uctx_initial_universes
-  in                                                 
+  in
   let uctx' =
     {uctx' with uctx_names = names; uctx_local = ctx';
                 uctx_universes = UGraph.add_universe u false uctx.uctx_universes;
@@ -409,7 +409,7 @@ let add_global_univ uctx u =
   let initial =
     UGraph.add_universe u true uctx.uctx_initial_universes
   in
-  let univs = 
+  let univs =
     UGraph.add_universe u true uctx.uctx_universes
   in
   { uctx with uctx_local = Univ.ContextSet.add_universe u uctx.uctx_local;
@@ -419,7 +419,7 @@ let add_global_univ uctx u =
 let make_flexible_variable ctx ~algebraic u =
   let {uctx_local = cstrs; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} = ctx in
   let uvars' = Univ.LMap.add u None uvars in
-  let avars' = 
+  let avars' =
     if algebraic then
       let uu = Univ.Universe.make u in
       let substu_not_alg u' v =
@@ -431,17 +431,17 @@ let make_flexible_variable ctx ~algebraic u =
           (Univ.ContextSet.constraints cstrs)
       in
         if not (Univ.LMap.exists substu_not_alg uvars || has_upper_constraint ())
-        then Univ.LSet.add u avars else avars 
-    else avars 
+        then Univ.LSet.add u avars else avars
+    else avars
   in
-  {ctx with uctx_univ_variables = uvars'; 
+  {ctx with uctx_univ_variables = uvars';
       uctx_univ_algebraic = avars'}
 
-let is_sort_variable uctx s = 
-  match s with 
-  | Sorts.Type u -> 
+let is_sort_variable uctx s =
+  match s with
+  | Sorts.Type u ->
     (match Univ.universe_level u with
-    | Some l as x -> 
+    | Some l as x ->
         if Univ.LSet.mem l (Univ.ContextSet.levels uctx.uctx_local) then x
         else None
     | None -> None)
@@ -451,8 +451,8 @@ let subst_univs_context_with_def def usubst (ctx, cst) =
   (Univ.LSet.diff ctx def, Univ.subst_univs_constraints usubst cst)
 
 let normalize_variables uctx =
-  let normalized_variables, undef, def, subst = 
-    Universes.normalize_univ_variables uctx.uctx_univ_variables 
+  let normalized_variables, undef, def, subst =
+    Universes.normalize_univ_variables uctx.uctx_univ_variables
   in
   let ctx_local = subst_univs_context_with_def def (Univ.make_subst subst) uctx.uctx_local in
   let ctx_local', univs = Universes.refresh_constraints uctx.uctx_initial_universes ctx_local in
@@ -461,7 +461,7 @@ let normalize_variables uctx =
       uctx_universes = univs }
 
 let abstract_undefined_variables uctx =
-  let vars' = 
+  let vars' =
     Univ.LMap.fold (fun u v acc ->
       if v == None then Univ.LSet.remove u acc
       else acc)
@@ -470,11 +470,11 @@ let abstract_undefined_variables uctx =
       uctx_univ_algebraic = vars' }
 
 let fix_undefined_variables uctx =
-  let algs', vars' = 
+  let algs', vars' =
     Univ.LMap.fold (fun u v (algs, vars as acc) ->
       if v == None then (Univ.LSet.remove u algs, Univ.LMap.remove u vars)
       else acc)
-      uctx.uctx_univ_variables 
+      uctx.uctx_univ_variables
       (uctx.uctx_univ_algebraic, uctx.uctx_univ_variables)
   in
   { uctx with uctx_univ_variables = vars';
@@ -482,13 +482,13 @@ let fix_undefined_variables uctx =
 
 let refresh_undefined_univ_variables uctx =
   let subst, ctx' = Universes.fresh_universe_context_set_instance uctx.uctx_local in
-  let alg = Univ.LSet.fold (fun u acc -> Univ.LSet.add (Univ.subst_univs_level_level subst u) acc) 
-    uctx.uctx_univ_algebraic Univ.LSet.empty 
+  let alg = Univ.LSet.fold (fun u acc -> Univ.LSet.add (Univ.subst_univs_level_level subst u) acc)
+    uctx.uctx_univ_algebraic Univ.LSet.empty
   in
-  let vars = 
+  let vars =
     Univ.LMap.fold
       (fun u v acc ->
-        Univ.LMap.add (Univ.subst_univs_level_level subst u) 
+        Univ.LMap.add (Univ.subst_univs_level_level subst u)
           (Option.map (Univ.subst_univs_level_universe subst) v) acc)
       uctx.uctx_univ_variables Univ.LMap.empty
   in
@@ -497,16 +497,16 @@ let refresh_undefined_univ_variables uctx =
   let initial = declare uctx.uctx_initial_universes in
   let univs = declare UGraph.initial_universes in
   let uctx' = {uctx_names = uctx.uctx_names;
-               uctx_local = ctx'; 
+               uctx_local = ctx';
                uctx_univ_variables = vars; uctx_univ_algebraic = alg;
                uctx_universes = univs;
                uctx_initial_universes = initial } in
     uctx', subst
 
-let normalize uctx = 
-  let ((vars',algs'), us') = 
+let normalize uctx =
+  let ((vars',algs'), us') =
     Universes.normalize_context_set uctx.uctx_local uctx.uctx_univ_variables
-				    uctx.uctx_univ_algebraic
+                                    uctx.uctx_univ_algebraic
   in
   if Univ.ContextSet.equal us' uctx.uctx_local then uctx
   else
@@ -514,13 +514,13 @@ let normalize uctx =
       Universes.refresh_constraints uctx.uctx_initial_universes us'
     in
       { uctx_names = uctx.uctx_names;
-        uctx_local = us'; 
-        uctx_univ_variables = vars'; 
+        uctx_local = us';
+        uctx_univ_variables = vars';
         uctx_univ_algebraic = algs';
         uctx_universes = universes;
         uctx_initial_universes = uctx.uctx_initial_universes }
 
-let universe_of_name uctx s = 
+let universe_of_name uctx s =
   UNameMap.find s (fst uctx.uctx_names)
 
 let add_universe_name uctx s l =

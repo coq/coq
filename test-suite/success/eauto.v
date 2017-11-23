@@ -43,7 +43,7 @@ Proof.
   eexists. eexists. typeclasses eauto.
 Defined.
 
-Class C {T} `(a : A T) (t : T). 
+Class C {T} `(a : A T) (t : T).
 Require Import Classes.Init.
 Hint Extern 0 { x : ?A & _ } =>
   unshelve class_apply @existT : typeclass_instances.
@@ -62,7 +62,7 @@ Goal exists (T : Type), { x : A T & D T x }.
 Proof.
   eexists. typeclasses eauto.
 Defined.
-  
+
 
 (* Example from Nicolas Magaud on coq-club - Jul 2000 *)
 
@@ -88,7 +88,7 @@ Lemma simpl_plus_l_rr1 :
   Time eauto. (* does EApply H *)
 Qed.
 
-(* Example from Nicolas Tabareau on coq-club - Feb 2016. 
+(* Example from Nicolas Tabareau on coq-club - Feb 2016.
   Full backtracking on dependent subgoals.
  *)
 Require Import Coq.Classes.Init.
@@ -100,7 +100,7 @@ Unset Typeclasses Iterative Deepening.
 Notation "x .1" := (projT1 x) (at level 3).
 Notation "x .2" := (projT2 x) (at level 3).
 
-Parameter myType: Type. 
+Parameter myType: Type.
 
 Class Foo (a:myType) := {}.
 
@@ -126,7 +126,7 @@ Hint Extern 1 myType => unshelve refine (barToqux _ _).1 : typeclass_instances.
 Hint Extern 0 { x : _ & _ } => simple refine (existT _ _ _) : typeclass_instances.
 
 Unset Typeclasses Debug.
-Definition trivial a (H : Foo a) : {b : myType & Qux b}. 
+Definition trivial a (H : Foo a) : {b : myType & Qux b}.
 Proof.
   Time typeclasses eauto 10 with typeclass_instances.
   Undo. Set Typeclasses Iterative Deepening.
@@ -142,7 +142,7 @@ Unset Typeclasses Iterative Deepening.
 Notation "x .1" := (projT1 x) (at level 3).
 Notation "x .2" := (projT2 x) (at level 3).
 
-Parameter myType: Type. 
+Parameter myType: Type.
 Existing Class myType.
 
 Class Foo (a:myType) := {}.
@@ -172,7 +172,7 @@ Hint Extern 0 { x : _ & _ } =>
 
 Unset Typeclasses Debug.
 
-Definition trivial a (H : Foo a) : {b : myType & Qux b}. 
+Definition trivial a (H : Foo a) : {b : myType & Qux b}.
 Proof.
   Time typeclasses eauto 10 with typeclass_instances.
   Undo. Set Typeclasses Iterative Deepening.

@@ -121,8 +121,8 @@ val zeta_normalize : Glob_term.glob_constr -> Glob_term.glob_constr
 val expand_as : glob_constr -> glob_constr
 
 
-(* [resolve_and_replace_implicits ?expected_type env sigma rt] solves implicits of [rt] w.r.t. [env] and [sigma] and then replace them by their solution 
+(* [resolve_and_replace_implicits ?expected_type env sigma rt] solves implicits of [rt] w.r.t. [env] and [sigma] and then replace them by their solution
  *)
 val resolve_and_replace_implicits :
-      ?flags:Pretyping.inference_flags -> 
+      ?flags:Pretyping.inference_flags ->
       ?expected_type:Pretyping.typing_constraint -> Environ.env -> Evd.evar_map -> glob_constr -> glob_constr

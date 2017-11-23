@@ -193,7 +193,7 @@ let pr_constr_pattern t =
 
 let pr_sort sigma s = pr_glob_sort (extern_sort sigma s)
 
-let _ = Termops.set_print_constr 
+let _ = Termops.set_print_constr
   (fun env sigma t -> pr_lconstr_expr (extern_constr ~lax:true false env sigma t))
 
 let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
@@ -259,15 +259,15 @@ let safe_pr_constr t =
 
 let pr_universe_ctx sigma c =
   if !Detyping.print_universes && not (Univ.UContext.is_empty c) then
-    fnl()++pr_in_comment (fun c -> v 0 
+    fnl()++pr_in_comment (fun c -> v 0
       (Univ.pr_universe_context (Termops.pr_evd_level sigma) c)) c
   else
     mt()
 
 let pr_cumulativity_info sigma cumi =
-  if !Detyping.print_universes 
+  if !Detyping.print_universes
   && not (Univ.UContext.is_empty (Univ.CumulativityInfo.univ_context cumi)) then
-    fnl()++pr_in_comment (fun uii -> v 0 
+    fnl()++pr_in_comment (fun uii -> v 0
       (Univ.pr_cumulativity_info (Termops.pr_evd_level sigma) uii)) cumi
   else
     mt()
@@ -279,7 +279,7 @@ let pr_global_env = pr_global_env
 let pr_global = pr_global_env Id.Set.empty
 
 let pr_puniverses f env (c,u) =
-  f env c ++ 
+  f env c ++
   (if !Constrextern.print_universes then
     str"(*" ++ Univ.Instance.pr Universes.pr_with_global_universes u ++ str"*)"
    else mt ())
@@ -338,10 +338,10 @@ let pr_rel_decl env sigma decl =
   let pbody = match decl with
     | RelDecl.LocalAssum _ -> mt ()
     | RelDecl.LocalDef (_,c,_) ->
-	(* Force evaluation *)
-	let pb = pr_lconstr_env env sigma c in
-	let pb = if isCast c then surround pb else pb in
-	(str":=" ++ spc () ++ pb ++ spc ()) in
+        (* Force evaluation *)
+        let pb = pr_lconstr_env env sigma c in
+        let pb = if isCast c then surround pb else pb in
+        (str":=" ++ spc () ++ pb ++ spc ()) in
   let ptyp = pr_ltype_env env sigma typ in
   match na with
   | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
@@ -363,7 +363,7 @@ let pr_var_list_decl env sigma decl =
 
 let pr_named_context env sigma ne_context =
   hv 0 (Context.Named.fold_outside
-	  (fun d pps -> pps ++ ws 2 ++ pr_named_decl env sigma d)
+          (fun d pps -> pps ++ ws 2 ++ pr_named_decl env sigma d)
           ne_context ~init:(mt ()))
 
 let pr_rel_context env sigma rel_context =
@@ -470,7 +470,7 @@ let pr_predicate pr_elt (b, elts) =
   let pr_elts = prlist_with_sep spc pr_elt elts in
     if b then
       str"all" ++
-	(if List.is_empty elts then mt () else str" except: " ++ pr_elts)
+        (if List.is_empty elts then mt () else str" except: " ++ pr_elts)
     else
       if List.is_empty elts then str"none" else pr_elts
 
@@ -479,7 +479,7 @@ let pr_idpred p = pr_predicate Id.print (Id.Pred.elements p)
 
 let pr_transparent_state (ids, csts) =
   hv 0 (str"VARIABLES: " ++ pr_idpred ids ++ fnl () ++
-	str"CONSTANTS: " ++ pr_cpred csts ++ fnl ())
+        str"CONSTANTS: " ++ pr_cpred csts ++ fnl ())
 
 (* display complete goal *)
 let default_pr_goal gs =
@@ -506,7 +506,7 @@ let pr_goal_name sigma g =
 let pr_goal_header nme sigma g =
   let (g,sigma) = Goal.V82.nf_evar sigma g in
   str "subgoal " ++ nme ++ (if should_tag() then pr_goal_tag g else str"")
-  ++ (if should_gname() then str " " ++ Pp.surround (pr_existential_key sigma g) else mt ())  
+  ++ (if should_gname() then str " " ++ Pp.surround (pr_existential_key sigma g) else mt ())
 
 (* display the conclusion of a goal *)
 let pr_concl n sigma g =
@@ -577,10 +577,10 @@ let default_pr_subgoal n sigma =
   let rec prrec p = function
     | [] -> user_err Pp.(str "No such goal.")
     | g::rest ->
-	if Int.equal p 1 then
+        if Int.equal p 1 then
           pr_selected_subgoal (int n) sigma g
-	else
-	  prrec (p-1) rest
+        else
+          prrec (p-1) rest
   in
   prrec n
 
@@ -607,7 +607,7 @@ let print_evar_constraints gl sigma =
           indices, so we protect the error printing code in this case by giving
           names to every de Bruijn variable in the rel_context of the conversion
           problem. MS: we should rather stop depending on anonymous variables, they
-          can be used to indicate independency. Also, this depends on a strategy for 
+          can be used to indicate independency. Also, this depends on a strategy for
           naming/renaming *)
       Namegen.make_all_name_different env sigma in
     str" " ++
@@ -652,16 +652,16 @@ let print_dependent_evars gl sigma seeds =
     if !should_print_dependent_evars then
       let evars = Evarutil.gather_dependent_evars sigma seeds in
       let evars =
-	Evar.Map.fold begin fun e i s ->
-	  let e' = pr_internal_existential_key e in
-	  match i with
-	  | None -> s ++ str" " ++ e' ++ str " open,"
-	  | Some i ->
-	    s ++ str " " ++ e' ++ str " using " ++
-	      Evar.Set.fold begin fun d s ->
-		pr_internal_existential_key d ++ str " " ++ s
-	      end i (str ",")
-	end evars (str "")
+        Evar.Map.fold begin fun e i s ->
+          let e' = pr_internal_existential_key e in
+          match i with
+          | None -> s ++ str" " ++ e' ++ str " open,"
+          | Some i ->
+            s ++ str " " ++ e' ++ str " using " ++
+              Evar.Set.fold begin fun d s ->
+                pr_internal_existential_key d ++ str " " ++ s
+              end i (str ",")
+        end evars (str "")
     in
     cut () ++ cut () ++
     str "(dependent evars:" ++ evars ++ str ")"
@@ -720,7 +720,7 @@ let default_pr_subgoals ?(pr_first=true)
       default_pr_goal { it = g ; sigma = sigma; }
       ++ (if l=[] then mt () else cut ())
       ++ pr_rec 2 l
-    else 
+    else
       pr_rec 1 (g::l)
   in
   (* Side effect! This has to be made more robust *)
@@ -732,14 +732,14 @@ let default_pr_subgoals ?(pr_first=true)
   match goals with
   | [] ->
       begin
-	let exl = Evd.undefined_map sigma in
-	if Evar.Map.is_empty exl then
-	  (str"No more subgoals." ++ print_dependent_evars None sigma seeds)
-	else
-	  let pei = pr_evars_int sigma 1 exl in
-	  v 0 ((str "No more subgoals,"
+        let exl = Evd.undefined_map sigma in
+        if Evar.Map.is_empty exl then
+          (str"No more subgoals." ++ print_dependent_evars None sigma seeds)
+        else
+          let pei = pr_evars_int sigma 1 exl in
+          v 0 ((str "No more subgoals,"
                 ++ str " but there are non-instantiated existential variables:"
-	        ++ cut () ++ (hov 0 pei)
+                ++ cut () ++ (hov 0 pei)
                 ++ print_dependent_evars None sigma seeds
                 ++ cut () ++ str "You can use Grab Existential Variables."))
       end
@@ -747,7 +747,7 @@ let default_pr_subgoals ?(pr_first=true)
       let goals = print_multiple_goals g1 rest in
       let ngoals = List.length rest+1 in
       v 0 (
-	int ngoals ++ focused_if_needed ++ str(String.plural ngoals "subgoal")
+        int ngoals ++ focused_if_needed ++ str(String.plural ngoals "subgoal")
         ++ print_extra
         ++ str (if (should_gname()) then ", subgoal 1" else "")
         ++ (if should_tag() then pr_goal_tag g1 else str"")
@@ -755,7 +755,7 @@ let default_pr_subgoals ?(pr_first=true)
         ++ (if unfocused=[] then str ""
            else (cut() ++ cut() ++ str "*** Unfocused goals:" ++ cut()
                  ++ pr_rec (List.length rest + 2) unfocused))
-	++ print_dependent_evars (Some g1) sigma seeds
+        ++ print_dependent_evars (Some g1) sigma seeds
       )
 
 (**********************************************************************)
@@ -797,26 +797,26 @@ let pr_open_subgoals ~proof =
   begin match goals with
   | [] -> let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
           begin match bgoals,shelf,given_up with
-	  | [] , [] , [] -> pr_subgoals None sigma seeds shelf stack [] goals
+          | [] , [] , [] -> pr_subgoals None sigma seeds shelf stack [] goals
           | [] , [] , _ ->
-	     Feedback.msg_info (str "No more subgoals, but there are some goals you gave up:");
-	     fnl ()
+             Feedback.msg_info (str "No more subgoals, but there are some goals you gave up:");
+             fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] [] given_up
             ++ fnl () ++ str "You need to go back and solve them."
           | [] , _ , _ ->
-	    Feedback.msg_info (str "All the remaining goals are on the shelf.");
-	    fnl ()
+            Feedback.msg_info (str "All the remaining goals are on the shelf.");
+            fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] [] shelf
-	  | _ , _, _ ->
+          | _ , _, _ ->
             let end_cmd =
               str "This subproof is complete, but there are some unfocused goals." ++
               (let s = Proof_bullet.suggest p in
                if Pp.ismt s then s else fnl () ++ s) ++
               fnl ()
             in
-	    pr_subgoals ~pr_first:false (Some end_cmd) bsigma seeds shelf [] [] bgoals
-	  end
-  | _ -> 
+            pr_subgoals ~pr_first:false (Some end_cmd) bsigma seeds shelf [] [] bgoals
+          end
+  | _ ->
      let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
      let bgoals_focused, bgoals_unfocused = List.partition (fun x -> List.mem x goals) bgoals in
      let unfocused_if_needed = if should_unfoc() then bgoals_unfocused else [] in
@@ -903,7 +903,7 @@ let pr_assumptionset env s =
     let safe_pr_constant env kn =
       try pr_constant env kn
       with Not_found ->
-	let mp,_,lab = Constant.repr3 kn in
+        let mp,_,lab = Constant.repr3 kn in
         str (ModPath.to_string mp) ++ str "." ++ Label.print lab
     in
     let safe_pr_ltype typ =
@@ -949,17 +949,17 @@ let pr_assumptionset env s =
         let tran = safe_pr_constant env kn ++ safe_pr_ltype typ in
         (v, a, o, tran :: tr)
     in
-    let (vars, axioms, opaque, trans) = 
+    let (vars, axioms, opaque, trans) =
       ContextObjectMap.fold fold s ([], [], [], [])
     in
     let theory =
       if is_impredicative_set env then
-	[str "Set is impredicative"]
+        [str "Set is impredicative"]
       else []
     in
     let theory =
       if type_in_type env then
-	str "Type hierarchy is collapsed (logic is inconsistent)" :: theory
+        str "Type hierarchy is collapsed (logic is inconsistent)" :: theory
       else theory
     in
     let opt_list title = function
@@ -979,7 +979,7 @@ let pr_assumptionset env s =
     ] in
     prlist_with_sep fnl (fun x -> x) (Option.List.flatten assums)
 
-let xor a b = 
+let xor a b =
   (a && not b) || (not a && b)
 
 let pr_cumulative poly cum =
@@ -987,7 +987,7 @@ let pr_cumulative poly cum =
     if cum then str "Cumulative " else str "NonCumulative "
   else mt ()
 
-let pr_polymorphic b = 
+let pr_polymorphic b =
   let print = xor (Flags.is_universe_polymorphism ()) b in
   if print then
     if b then str"Polymorphic " else str"Monomorphic "

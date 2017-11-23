@@ -109,7 +109,7 @@ Proof.
 exists g f.
 intro a.
 unfold f, g; simpl.
-apply AC. 
+apply AC.
 exists (fun x:pow U => x) (fun x:pow U => x).
 trivial.
 Qed.

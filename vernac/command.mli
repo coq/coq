@@ -27,7 +27,7 @@ val do_constraint : polymorphic ->
 
 val interp_definition :
   Vernacexpr.universe_decl_expr option -> local_binder_expr list -> polymorphic -> red_expr option -> constr_expr ->
-  constr_expr option -> Safe_typing.private_constants definition_entry * Evd.evar_map * 
+  constr_expr option -> Safe_typing.private_constants definition_entry * Evd.evar_map *
                         Univdecls.universe_decl * Universes.universe_binders * Impargs.manual_implicits
 
 val do_definition : Id.t -> definition_kind -> Vernacexpr.universe_decl_expr option ->
@@ -42,7 +42,7 @@ val do_definition : Id.t -> definition_kind -> Vernacexpr.universe_decl_expr opt
 
 (** returns [false] if the assumption is neither local to a section,
     nor in a module type and meant to be instantiated. *)
-val declare_assumption : coercion_flag -> assumption_kind -> 
+val declare_assumption : coercion_flag -> assumption_kind ->
   types Univ.in_universe_context_set ->
   Universes.universe_binders -> Impargs.manual_implicits ->
   bool (** implicit *) -> Vernacexpr.inline -> variable Loc.located ->
@@ -143,7 +143,7 @@ val declare_fixpoint :
   (Context.Rel.t * Impargs.manual_implicits * int option) list ->
   Proof_global.lemma_possible_guards -> decl_notation list -> unit
 
-val declare_cofixpoint : locality -> polymorphic -> 
+val declare_cofixpoint : locality -> polymorphic ->
   recursive_preentry * Univdecls.universe_decl * UState.t *
   (Context.Rel.t * Impargs.manual_implicits * int option) list ->
   decl_notation list -> unit

@@ -154,7 +154,7 @@ Lemma permut_add_cons_inside :
 Proof.
   intros;
     replace (a :: l) with ([] ++ a :: l); trivial;
-	apply permut_add_inside; trivial.
+        apply permut_add_inside; trivial.
 Qed.
 
 Lemma permut_middle :
@@ -168,8 +168,8 @@ Lemma permut_sym_app :
 Proof.
   intros l1 l2;
     unfold permutation, meq;
-	intro a; do 2 rewrite list_contents_app; simpl;
-	  auto with arith.
+        intro a; do 2 rewrite list_contents_app; simpl;
+          auto with arith.
 Qed.
 
 Lemma permut_rev :

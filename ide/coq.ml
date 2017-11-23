@@ -55,7 +55,7 @@ let rec read_all_lines in_chan =
     let len = String.length arg  in
     let arg =
       if len > 0 && arg.[len - 1] = '\r' then
-	String.sub arg 0 (len - 1)
+        String.sub arg 0 (len - 1)
       else arg
     in
     arg::(read_all_lines in_chan)
@@ -129,14 +129,14 @@ and asks_for_coqtop args =
     | `DELETE_EVENT | `NO ->
       let () = pb_mes#destroy () in
       let cmd_sel = GWindow.file_selection
-	~title:"Coqtop to execute (edit your preference then)"
-	~filename:(coqtop_path ()) ~urgency_hint:true () in
+        ~title:"Coqtop to execute (edit your preference then)"
+        ~filename:(coqtop_path ()) ~urgency_hint:true () in
       match cmd_sel#run () with
-	| `OK ->
-	  let () = custom_coqtop := (Some cmd_sel#filename) in
-	  let () = cmd_sel#destroy () in
-	  filter_coq_opts args
-	| `CANCEL | `DELETE_EVENT | `HELP -> exit 0
+        | `OK ->
+          let () = custom_coqtop := (Some cmd_sel#filename) in
+          let () = cmd_sel#destroy () in
+          filter_coq_opts args
+        | `CANCEL | `DELETE_EVENT | `HELP -> exit 0
 
 exception WrongExitStatus of string
 
@@ -578,8 +578,8 @@ struct
     let opts = Hashtbl.fold mkopt current_state [] in
     eval_call (Xmlprotocol.set_options opts) h
       (function
-	| Interface.Good () -> k ()
-	| _ -> failwith "Cannot set options. Resetting coqtop")
+        | Interface.Good () -> k ()
+        | _ -> failwith "Cannot set options. Resetting coqtop")
 
 end
 

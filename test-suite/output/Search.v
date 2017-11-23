@@ -1,12 +1,12 @@
 (* Some tests of the Search command *)
 
-Search le.				(* app nodes *)
-Search bool. 				(* no apps *)
-Search (@eq nat).			(* complex pattern *)
+Search le.                              (* app nodes *)
+Search bool.                            (* no apps *)
+Search (@eq nat).                       (* complex pattern *)
 Search (@eq _ _ true).
 Search (@eq _ _ _) true -false.         (* andb_prop *)
 Search (@eq _ _ _) true -false "prop" -"intro".  (* andb_prop *)
-       
+
 Definition newdef := fun x:nat => x.
 
 Goal forall n:nat, n <> newdef n -> newdef n <> n -> False.

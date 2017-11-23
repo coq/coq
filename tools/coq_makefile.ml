@@ -67,7 +67,7 @@ let usage () =
 \n  \"global\" to force install in $COQLIB directory\
 \n[-f file]: take the contents of file as arguments\
 \n[-o file]: output should go in file file\
-\n	Output file outside the current directory is forbidden.\
+\n      Output file outside the current directory is forbidden.\
 \n[-bypass-API]: when compiling plugins, bypass Coq API\
 \n[-h]: print this usage summary\
 \n[--help]: equivalent to [-h]\n";
@@ -172,7 +172,7 @@ let generate_conf_subdirs oc sds =
   List.iter (fprintf oc "clean::\n\tcd \"%s\" && $(MAKE) clean\n") sds;
   List.iter (fprintf oc "archclean::\n\tcd \"%s\" && $(MAKE) archclean\n") sds;
   List.iter (fprintf oc "install-extra::\n\tcd \"%s\" && $(MAKE) install\n") sds
-   
+
 
 let generate_conf_includes oc { ml_includes; r_includes; q_includes } =
   section oc "Path directives (-I, -R, -Q).";
@@ -297,7 +297,7 @@ let ensure_root_dir
         r_includes = (here_path, "Top") :: r_includes }
 ;;
 
-let warn_install_at_root_directory 
+let warn_install_at_root_directory
   { q_includes; r_includes;
     v_files; ml_files; mli_files; ml4_files;
     mllib_files; mlpack_files }
@@ -323,11 +323,11 @@ let check_overlapping_include { q_includes; r_includes } =
   let aux = function
     | [] -> ()
     | ({ path; canonical_path }, _) :: l ->
-	if not (is_prefix pwd canonical_path) then
-	  eprintf "Warning: %s (used in -R or -Q) is not a subdirectory of the current directory\n\n" path;
-	List.iter (fun ({ path = p; canonical_path = cp }, _) ->
-	  if is_prefix canonical_path cp  || is_prefix cp canonical_path then
-	    eprintf "Warning: %s and %s overlap (used in -R or -Q)\n\n"
+        if not (is_prefix pwd canonical_path) then
+          eprintf "Warning: %s (used in -R or -Q) is not a subdirectory of the current directory\n\n" path;
+        List.iter (fun ({ path = p; canonical_path = cp }, _) ->
+          if is_prefix canonical_path cp  || is_prefix cp canonical_path then
+            eprintf "Warning: %s and %s overlap (used in -R or -Q)\n\n"
               path p) l
   in
     aux (q_includes @ r_includes)
@@ -390,7 +390,7 @@ let _ =
     | "-destination-of" :: tgt :: rest -> Some tgt, rest
     | _ -> None, args in
 
-  let project = 
+  let project =
     try cmdline_args_to_project ~curdir:Filename.current_dir_name args
     with Parsing_error s -> prerr_endline s; usage () in
 
@@ -418,7 +418,7 @@ let _ =
   end;
 
   let project = ensure_root_dir project in
-  
+
   if project.install_kind <> (Some CoqProject_file.NoInstall) then begin
     warn_install_at_root_directory project;
   end;
@@ -426,7 +426,7 @@ let _ =
   check_overlapping_include project;
 
   Envars.set_coqlib ~fail:(fun x -> Printf.eprintf "Error: %s\n" x; exit 1);
-  
+
   let ocm = Option.cata open_out stdout project.makefile in
   generate_makefile ocm conf_file local_file (prog :: args) project;
   close_out ocm;

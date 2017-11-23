@@ -108,7 +108,7 @@ type global_dir_reference =
   | DirClosedSection of DirPath.t
       (** this won't last long I hope! *)
 
-val eq_global_dir_reference : 
+val eq_global_dir_reference :
   global_dir_reference -> global_dir_reference -> bool
 
 (** {6 ... } *)

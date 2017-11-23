@@ -90,7 +90,7 @@ let check_polymorphic_instance error env auctx1 auctx2 =
     Environ.push_context ~strict:false (Univ.AUContext.repr auctx2) env
 
 (* for now we do not allow reorderings *)
-let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2= 
+let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
   let kn = MutInd.make2 mp1 l in
   let error () = error_not_match l spec2 in
   let check_conv f = check_conv_error error f in
@@ -187,7 +187,7 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
   check (==) (fun mib -> mib.mind_finite);
   check Int.equal (fun mib -> mib.mind_ntypes);
   assert (Array.length mib1.mind_packets >= 1
-	    && Array.length mib2.mind_packets >= 1);
+            && Array.length mib2.mind_packets >= 1);
 
   (* Check that the expected numbers of uniform parameters are the same *)
   (* No need to check the contexts of parameters: it is checked *)
@@ -200,12 +200,12 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
     match mib2.mind_equiv with
       | None -> ()
       | Some kn2' ->
-	  let kn2 = scrape_mind env kn2' in
-	  let kn1 = match mib1.mind_equiv with
-	      None -> kn
-	    | Some kn1' -> scrape_mind env kn1'
-	  in
-	    if kn1 <> kn2 then error ()
+          let kn2 = scrape_mind env kn2' in
+          let kn1 = match mib1.mind_equiv with
+              None -> kn
+            | Some kn1' -> scrape_mind env kn1'
+          in
+            if kn1 <> kn2 then error ()
   end;*)
   (* we check that records and their field names are preserved. *)
   let record_equal x y =
@@ -291,35 +291,35 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
   in
     match info1 with
       | Constant cb1 ->
-	let cb1 = subst_const_body subst1 cb1 in
-	let cb2 = subst_const_body subst2 cb2 in
-	(*Start by checking types*)
-	let typ1 = cb1.const_type in
-	let typ2 = cb2.const_type in
-	check_type env typ1 typ2;
-	(* Now we check the bodies:
-	 - A transparent constant can only be implemented by a compatible
-	   transparent constant.
+        let cb1 = subst_const_body subst1 cb1 in
+        let cb2 = subst_const_body subst2 cb2 in
+        (*Start by checking types*)
+        let typ1 = cb1.const_type in
+        let typ2 = cb2.const_type in
+        check_type env typ1 typ2;
+        (* Now we check the bodies:
+         - A transparent constant can only be implemented by a compatible
+           transparent constant.
          - In the signature, an opaque is handled just as a parameter:
            anything of the right type can implement it, even if bodies differ.
-	*)
-	(match cb2.const_body with
-	  | Undef _ | OpaqueDef _ -> ()
-	  | Def lc2 ->
-	    (match cb1.const_body with
-	      | Undef _ | OpaqueDef _ -> error ()
-	      | Def lc1 ->
-	        (* NB: cb1 might have been strengthened and appear as transparent.
-	           Anyway [check_conv] will handle that afterwards. *)
-		let c1 = force_constr lc1 in
-		let c2 = force_constr lc2 in
-		check_conv conv env c1 c2))
+        *)
+        (match cb2.const_body with
+          | Undef _ | OpaqueDef _ -> ()
+          | Def lc2 ->
+            (match cb1.const_body with
+              | Undef _ | OpaqueDef _ -> error ()
+              | Def lc1 ->
+                (* NB: cb1 might have been strengthened and appear as transparent.
+                   Anyway [check_conv] will handle that afterwards. *)
+                let c1 = force_constr lc1 in
+                let c2 = force_constr lc2 in
+                check_conv conv env c1 c2))
       | IndType ((kn,i),mind1) ->
         CErrors.user_err (Pp.str (
-		    "The kernel does not recognize yet that a parameter can be " ^
-		      "instantiated by an inductive type. Hint: you can rename the " ^
-		      "inductive type and give a definition to map the old name to the new " ^
-		      "name."))
+                    "The kernel does not recognize yet that a parameter can be " ^
+                      "instantiated by an inductive type. Hint: you can rename the " ^
+                      "inductive type and give a definition to map the old name to the new " ^
+                      "name."))
    | IndConstr (((kn,i),j),mind1) ->
       CErrors.user_err (Pp.str (
        "The kernel does not recognize yet that a parameter can be " ^
@@ -331,36 +331,36 @@ let rec check_modules  env msb1 msb2 subst1 subst2 =
   let mty1 = module_type_of_module None msb1 in
   let mty2 = module_type_of_module None msb2 in
     check_modtypes env mty1 mty2 subst1 subst2 false;
- 
 
-and check_signatures env mp1 sig1 sig2 subst1 subst2 = 
+
+and check_signatures env mp1 sig1 sig2 subst1 subst2 =
   let map1 = make_labmap mp1 sig1 in
   let check_one_body  (l,spec2) =
       match spec2 with
-	| SFBconst cb2 ->
-	    check_constant  env mp1 l (get_obj mp1 map1 l)
-	      cb2 spec2 subst1 subst2
-	| SFBmind mib2 ->
-	    check_inductive env mp1 l (get_obj mp1 map1 l)
-	      mib2 spec2 subst1 subst2
-	| SFBmodule msb2 ->
-	    begin
-	      match get_mod mp1 map1 l with
-		| Module msb -> check_modules env msb msb2 
-		    subst1 subst2
-		| _ -> error_not_match l spec2
-	    end
-	| SFBmodtype mtb2 ->
-	    let mtb1 =
-	      match get_mod mp1 map1 l with
-		| Modtype mtb -> mtb
-		| _ -> error_not_match l spec2
-	    in
-	    let env =
-              add_module_type mtb2.mod_mp mtb2
-	        (add_module_type mtb1.mod_mp mtb1 env)
+        | SFBconst cb2 ->
+            check_constant  env mp1 l (get_obj mp1 map1 l)
+              cb2 spec2 subst1 subst2
+        | SFBmind mib2 ->
+            check_inductive env mp1 l (get_obj mp1 map1 l)
+              mib2 spec2 subst1 subst2
+        | SFBmodule msb2 ->
+            begin
+              match get_mod mp1 map1 l with
+                | Module msb -> check_modules env msb msb2
+                    subst1 subst2
+                | _ -> error_not_match l spec2
+            end
+        | SFBmodtype mtb2 ->
+            let mtb1 =
+              match get_mod mp1 map1 l with
+                | Modtype mtb -> mtb
+                | _ -> error_not_match l spec2
             in
-	    check_modtypes env mtb1 mtb2 subst1 subst2 true
+            let env =
+              add_module_type mtb2.mod_mp mtb2
+                (add_module_type mtb1.mod_mp mtb1 env)
+            in
+            check_modtypes env mtb1 mtb2 subst1 subst2 true
   in
   List.iter check_one_body sig2
 
@@ -371,34 +371,34 @@ and check_modtypes env mtb1 mtb2 subst1 subst2 equiv =
       match str1,str2 with
       | NoFunctor (list1),
         NoFunctor (list2) ->
-	  check_signatures env mtb1.mod_mp list1 list2 subst1 subst2;
-	  if equiv then
-	    check_signatures env mtb2.mod_mp list2 list1 subst1 subst2
-	  else
-	    ()
+          check_signatures env mtb1.mod_mp list1 list2 subst1 subst2;
+          if equiv then
+            check_signatures env mtb2.mod_mp list2 list1 subst1 subst2
+          else
+            ()
       | MoreFunctor (arg_id1,arg_t1,body_t1),
-	MoreFunctor (arg_id2,arg_t2,body_t2) ->
-	  check_modtypes env
-	    arg_t2 arg_t1
-	    (map_mp arg_t1.mod_mp arg_t2.mod_mp) subst2
-	    equiv;
-	  (* contravariant *)
-	  let env = add_module_type (MPbound arg_id2) arg_t2 env in
-	  let env =
+        MoreFunctor (arg_id2,arg_t2,body_t2) ->
+          check_modtypes env
+            arg_t2 arg_t1
+            (map_mp arg_t1.mod_mp arg_t2.mod_mp) subst2
+            equiv;
+          (* contravariant *)
+          let env = add_module_type (MPbound arg_id2) arg_t2 env in
+          let env =
             if is_functor body_t1 then env
             else
-	      let env = shallow_remove_module mtb1.mod_mp env in
-	      add_module {mod_mp = mtb1.mod_mp;
-			  mod_expr = Abstract;
-			  mod_type = body_t1;
-			  mod_type_alg = None;
-			  mod_constraints = mtb1.mod_constraints;
-			  mod_retroknowledge = ModBodyRK [];
-			  mod_delta = mtb1.mod_delta} env
-	  in
-	  check_structure env body_t1 body_t2 equiv
-	    (join (map_mbid arg_id1 (MPbound arg_id2)) subst1)
-	    subst2
+              let env = shallow_remove_module mtb1.mod_mp env in
+              add_module {mod_mp = mtb1.mod_mp;
+                          mod_expr = Abstract;
+                          mod_type = body_t1;
+                          mod_type_alg = None;
+                          mod_constraints = mtb1.mod_constraints;
+                          mod_retroknowledge = ModBodyRK [];
+                          mod_delta = mtb1.mod_delta} env
+          in
+          check_structure env body_t1 body_t2 equiv
+            (join (map_mbid arg_id1 (MPbound arg_id2)) subst1)
+            subst2
       | _ , _ -> error_incompatible_modtypes mtb1 mtb2
     in
     check_structure env mtb1.mod_type mtb2.mod_type equiv subst1 subst2

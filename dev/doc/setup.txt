@@ -15,16 +15,16 @@ Getting build dependencies:
   sudo apt-get install make opam git
   opam init --comp 4.02.3
   # Then follow the advice displayed at the end as how to update your ~/.bashrc and ~/.ocamlinit files.
-  
+
   source ~/.bashrc
-  
+
   # needed if you want to build "coqtop" target
   opam install camlp5
-  
+
   # needed if you want to build "coqide" target
   sudo apt-get install liblablgtksourceview2-ocaml-dev libgtk2.0-dev libgtksourceview2.0-dev
   opam install lablgtk
-  
+
   # needed if you want to build "doc" target
   sudo apt-get install texlive-latex-recommended texlive-fonts-extra texlive-math-extra \
                        hevea texlive-latex-extra latex-xcolor
@@ -91,7 +91,7 @@ How to install and configure Merlin (for Emacs)
 
   opam install tuareg
   # Follow the advice displayed at the end as how to update your ~/.emacs file.
-  
+
   opam install merlin
   # Follow the advice displayed at the end as how to update your ~/.emacs file.
 
@@ -103,7 +103,7 @@ Then add this:
   (add-hook 'tuareg-mode-hook 'merlin-mode)
   (add-hook 'caml-mode-hook 'merlin-mode)
   (load "~/.opam/4.02.3/share/emacs/site-lisp/tuareg-site-file")
-  
+
   ;; Do not use TABs. These confuse Merlin.
   (setq-default indent-tabs-mode nil)
 

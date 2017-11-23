@@ -527,7 +527,7 @@ Fixpoint mapi (f: key -> elt -> elt') (m:t elt) : t elt' :=
    | nil => nil
    | (k,e)::m' => (k,f k e) :: mapi f m'
   end.
- 
+
 End Elt.
 Section Elt2.
 (* A new section is necessary for previous definitions to work
@@ -543,11 +543,11 @@ Proof.
  intros m x e f.
  (* functional induction map elt elt' f m.  *) (* Marche pas ??? *)
  induction m.
- inversion 1. 
+ inversion 1.
 
  destruct a as (x',e').
  simpl.
- inversion_clear 1.  
+ inversion_clear 1.
  constructor 1.
  unfold eqke in *; simpl in *; intuition congruence.
  unfold MapsTo in *; auto.
@@ -1136,15 +1136,15 @@ Section Elt.
  Proof. intros elt elt' m; exact (@Raw.mapi_2 elt elt' m.(this)). Qed.
 
  Lemma map2_1 : forall (elt elt' elt'':Type)(m: t elt)(m': t elt')
-	(x:key)(f:option elt->option elt'->option elt''),
-	In x m \/ In x m' ->
+        (x:key)(f:option elt->option elt'->option elt''),
+        In x m \/ In x m' ->
         find x (map2 f m m') = f (find x m) (find x m').
  Proof.
  intros elt elt' elt'' m m' x f;
  exact (@Raw.map2_1 elt elt' elt'' f m.(this) m.(sorted) m'.(this) m'.(sorted) x).
  Qed.
  Lemma map2_2 : forall (elt elt' elt'':Type)(m: t elt)(m': t elt')
-	(x:key)(f:option elt->option elt'->option elt''),
+        (x:key)(f:option elt->option elt'->option elt''),
         In x (map2 f m m') -> In x m \/ In x m'.
  Proof.
  intros elt elt' elt'' m m' x f;

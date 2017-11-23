@@ -39,8 +39,8 @@ Notation "f |# v <- x" := (#f ; v <- x)
 Notation "f |# < v" := (#f ; < v)
                           (at level 199, left associativity) : Erasable_scope.
 
-Ltac name_evars id := 
-  repeat match goal with |- context[?V] => 
+Ltac name_evars id :=
+  repeat match goal with |- context[?V] =>
                          is_evar V; let H := fresh id in set (H:=V) in * end.
 
 Lemma Twoto0 : 2^0 = 1.
@@ -69,7 +69,7 @@ Inductive zot'(eis2 : ##bool)(value : ##Z) : Set :=
 Definition de2{eis2 value}(z : zot' eis2 value) : zot' #false value.
 Proof.
   case z.
-  intros is2 iseq next_is2 ok next_value n1s veq next. 
+  intros is2 iseq next_is2 ok next_value n1s veq next.
   subst.
   destruct is2.
   2:trivial.

@@ -1,7 +1,7 @@
 Require Import EquivDec List.
 Generalizable All Variables.
 
-Program Definition list_eqdec `(eqa : EqDec A eq) : EqDec (list A) eq := 
+Program Definition list_eqdec `(eqa : EqDec A eq) : EqDec (list A) eq :=
  (fun (x y : list A) => _).
 Admit Obligations of list_eqdec.
 

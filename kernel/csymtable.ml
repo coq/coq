@@ -164,12 +164,12 @@ let rec slot_for_getglobal env kn =
       match cb.const_body_code with
       | None -> set_global (val_of_constant kn)
       | Some code ->
-	 match Cemitcodes.force code with
-	 | BCdefined(code,pl,fv) ->
+         match Cemitcodes.force code with
+         | BCdefined(code,pl,fv) ->
            let v = eval_to_patch env (code,pl,fv) in
            set_global v
-	 | BCalias kn' -> slot_for_getglobal env kn'
-	 | BCconstant -> set_global (val_of_constant kn)
+         | BCalias kn' -> slot_for_getglobal env kn'
+         | BCconstant -> set_global (val_of_constant kn)
     in
 (*Pp.msgnl(str"value stored at: "++int pos);*)
     rk := Some (CEphemeron.create pos);
@@ -191,14 +191,14 @@ and slot_for_fv env fv =
       let nv = Pre_env.lookup_named_val id env in
       begin match force_lazy_val nv with
       | None ->
-	 env |> Pre_env.lookup_named id |> NamedDecl.get_value |> fill_fv_cache nv id val_of_named idfun
+         env |> Pre_env.lookup_named id |> NamedDecl.get_value |> fill_fv_cache nv id val_of_named idfun
       | Some (v, _) -> v
       end
   | FVrel i ->
       let rv = Pre_env.lookup_rel_val i env in
       begin match force_lazy_val rv with
       | None ->
-	 env.env_rel_context |> Context.Rel.lookup i |> RelDecl.get_value |> fill_fv_cache rv i val_of_rel env_of_rel
+         env.env_rel_context |> Context.Rel.lookup i |> RelDecl.get_value |> fill_fv_cache rv i val_of_rel env_of_rel
       | Some (v, _) -> v
       end
   | FVuniv_var idu ->

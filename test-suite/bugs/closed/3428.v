@@ -1,6 +1,6 @@
 (* File reduced by coq-bug-finder from original input, then from 2809 lines to 39 lines *)
 Set Primitive Projections.
-Set Implicit Arguments. 
+Set Implicit Arguments.
 Module Export foo.
   Record prod (A B : Type) := pair { fst : A ; snd : B }.
 End foo.

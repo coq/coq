@@ -263,8 +263,8 @@ Section Properties.
 
     Lemma clos_refl_trans_ind_left :
       forall (x:A) (P:A -> Prop), P x ->
-	(forall y z:A, clos_refl_trans R x y -> P y -> R y z -> P z) ->
-	forall z:A, clos_refl_trans R x z -> P z.
+        (forall y z:A, clos_refl_trans R x y -> P y -> R y z -> P z) ->
+        forall z:A, clos_refl_trans R x z -> P z.
     Proof.
       intros.
       revert H H0.

@@ -315,20 +315,20 @@ module Gram =
     include G
     let extend e =
       curry
-	(fun ext ->
-	   camlp4_state :=
-	     (ByEXTEND ((fun () -> grammar_delete e None ext),
-			(fun () -> uncurry (G.extend e) ext)))
-	   :: !camlp4_state;
-	   uncurry (G.extend e) ext)
+        (fun ext ->
+           camlp4_state :=
+             (ByEXTEND ((fun () -> grammar_delete e None ext),
+                        (fun () -> uncurry (G.extend e) ext)))
+           :: !camlp4_state;
+           uncurry (G.extend e) ext)
     let delete_rule e pil =
       (* spiwack: if you use load an ML module which contains GDELETE_RULE
-	  in a section, God kills a kitty. As it would corrupt remove_grammars.
+          in a section, God kills a kitty. As it would corrupt remove_grammars.
           There does not seem to be a good way to undo a delete rule. As deleting
-	  takes fewer arguments than extending. The production rule isn't returned
-	  by delete_rule. If we could retrieve the necessary information, then
-	  ByEXTEND provides just the framework we need to allow this in section.
-	  I'm not entirely sure it makes sense, but at least it would be more correct.
+          takes fewer arguments than extending. The production rule isn't returned
+          by delete_rule. If we could retrieve the necessary information, then
+          ByEXTEND provides just the framework we need to allow this in section.
+          I'm not entirely sure it makes sense, but at least it would be more correct.
           *)
       G.delete_rule e pil
   end

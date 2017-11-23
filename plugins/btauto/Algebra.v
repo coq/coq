@@ -30,7 +30,7 @@ Qed.
 Lemma Decidable_sound_alt : forall P (H : Decidable P),
    ~ P -> decide P = false.
 Proof.
-intros P [wit spec] Hd; destruct wit; simpl; tauto. 
+intros P [wit spec] Hd; destruct wit; simpl; tauto.
 Qed.
 
 Lemma Decidable_complete_alt : forall P (H : Decidable P),
@@ -93,21 +93,21 @@ Section Definitions.
 
 (** * Global, inductive definitions. *)
 
-(** A Horner polynomial is either a constant, or a product P × (i + Q), where i 
+(** A Horner polynomial is either a constant, or a product P × (i + Q), where i
   is a variable. *)
 
 Inductive poly :=
 | Cst : bool -> poly
 | Poly : poly -> positive -> poly -> poly.
 
-(* TODO: We should use [positive] instead of [nat] to encode variables, for 
+(* TODO: We should use [positive] instead of [nat] to encode variables, for
  efficiency purpose. *)
 
 Inductive null : poly -> Prop :=
 | null_intro : null (Cst false).
 
-(** Polynomials satisfy a uniqueness condition whenever they are valid. A 
-  polynomial [p] satisfies [valid n p] whenever it is well-formed and each of 
+(** Polynomials satisfy a uniqueness condition whenever they are valid. A
+  polynomial [p] satisfies [valid n p] whenever it is well-formed and each of
   its variable indices is < [n]. *)
 
 Inductive valid : positive -> poly -> Prop :=
@@ -115,7 +115,7 @@ Inductive valid : positive -> poly -> Prop :=
 | valid_poly : forall k p i q,
   Pos.lt i k -> ~ null q -> valid i p -> valid (Pos.succ i) q -> valid k (Poly p i q).
 
-(** Linear polynomials are valid polynomials in which every variable appears at 
+(** Linear polynomials are valid polynomials in which every variable appears at
   most once. *)
 
 Inductive linear : positive -> poly -> Prop :=

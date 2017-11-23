@@ -25,7 +25,7 @@ type project = {
   q_includes  : (path * logic_path) list;
   extra_args : string list;
   defs : (string * string) list;
-  
+
   extra_targets : extra_target list;
   subdirs : string list;
 }
@@ -128,7 +128,7 @@ let process_cmd_line orig_dir proj args =
     error "Use \"-install none\" instead of \"-no-install\""
   | "-custom" :: _ ->
     error "Use \"-extra[-phony] target deps command\" instead of \"-custom command deps target\""
-  
+
   | ("-no-opt"|"-byte") :: r -> aux { proj with use_ocamlopt =  false } r
   | ("-full"|"-opt") :: r -> aux { proj with use_ocamlopt =  true } r
   | "-install" :: d :: r ->
@@ -159,7 +159,7 @@ let process_cmd_line orig_dir proj args =
     let () = match proj.project_file with
       | None -> ()
       | Some _ -> Feedback.msg_warning (Pp.str
-	"Multiple project files are deprecated.")
+        "Multiple project files are deprecated.")
     in
     let proj = aux { proj with project_file = Some file } (parse file) in
     aux proj r
@@ -169,7 +169,7 @@ let process_cmd_line orig_dir proj args =
       error "Output file must be in the current directory";
     if proj.makefile <> None then
       error "Option -o given more than once";
-    aux { proj with makefile = Some file } r  
+    aux { proj with makefile = Some file } r
   | v :: "=" :: def :: r ->
     aux { proj with defs = proj.defs @ [v,def] } r
   | "-arg" :: a :: r ->

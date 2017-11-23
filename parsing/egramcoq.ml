@@ -72,7 +72,7 @@ let error_level_assoc p current expected =
     | Extend.LeftA -> str "left"
     | Extend.RightA -> str "right"
     | Extend.NonA -> str "non" in
-  user_err 
+  user_err
     (str "Level " ++ int p ++ str " is already declared " ++
      pr_assoc current ++ str " associative while it is now expected to be " ++
      pr_assoc expected ++ str " associative.")
@@ -92,30 +92,30 @@ let find_position_gen current ensure assoc lev =
         | (p,_,_ as pa)::l when p > n -> pa :: add_level (Some p) l
         | (p,a,reinit)::l when Int.equal p n ->
             if reinit then
-	      let a' = create_assoc assoc in
+              let a' = create_assoc assoc in
               (init := Some (a',create_pos q); (p,a',false)::l)
-	    else if admissible_assoc (a,assoc) then
-	      raise Exit
+            else if admissible_assoc (a,assoc) then
+              raise Exit
             else
-	      error_level_assoc p a (Option.get assoc)
-	| l -> after := q; (n,create_assoc assoc,ensure)::l
+              error_level_assoc p a (Option.get assoc)
+        | l -> after := q; (n,create_assoc assoc,ensure)::l
       in
       try
-	let updated = add_level None current in
-	let assoc = create_assoc assoc in
+        let updated = add_level None current in
+        let assoc = create_assoc assoc in
         begin match !init with
         | None ->
-	  (* Create the entry *)
-	   updated, (Some (create_pos !after), Some assoc, Some (constr_level n), None)
+          (* Create the entry *)
+           updated, (Some (create_pos !after), Some assoc, Some (constr_level n), None)
         | _ ->
-	  (* The reinit flag has been updated *)
-	   updated, (Some (Extend.Level (constr_level n)), None, None, !init)
+          (* The reinit flag has been updated *)
+           updated, (Some (Extend.Level (constr_level n)), None, None, !init)
         end
       with
-	  (* Nothing has changed *)
+          (* Nothing has changed *)
           Exit ->
-	    (* Just inherit the existing associativity and name (None) *)
-	    current, (Some (Extend.Level (constr_level n)), None, None, None)
+            (* Just inherit the existing associativity and name (None) *)
+            current, (Some (Extend.Level (constr_level n)), None, None, None)
 
 let rec list_mem_assoc_triple x = function
   | [] -> false
@@ -386,7 +386,7 @@ let rec ty_eval : type s a. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> s env ->
         let constrlist, tail = List.chop (n - p) heads in
         constrlist :: env.constrlists, tail @ constrs
     in
-    ty_eval rem f { env with constrs; constrlists; } 
+    ty_eval rem f { env with constrs; constrlists; }
 
 let rec ty_erase : type s a r. (s, a, r) ty_rule -> (s, a, r) Extend.rule = function
 | TyStop -> Stop

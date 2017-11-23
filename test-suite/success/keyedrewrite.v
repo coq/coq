@@ -1,7 +1,7 @@
 Set Keyed Unification.
 
 Section foo.
-Variable f : nat -> nat. 
+Variable f : nat -> nat.
 
 Definition g := f.
 
@@ -59,4 +59,4 @@ Qed.
    Lemma test b : b && true = b.
     Fail rewrite andb_true_l.
    Admitted.
-   
+
