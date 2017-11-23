@@ -104,6 +104,11 @@ val add_global_univ : t -> Univ.Level.t -> t
   universe. Otherwise the variable is just made flexible. *)
 val make_flexible_variable : t -> algebraic:bool -> Univ.Level.t -> t
 
+(** Turn all undefined flexible algebraic variables into simply flexible
+   ones. Can be used in case the variables might appear in universe instances
+   (typically for polymorphic program obligations). *)
+val make_flexible_nonalgebraic : t -> t
+
 val is_sort_variable : t -> Sorts.t -> Univ.Level.t option
 
 val normalize_variables : t -> Univ.universe_subst * t
