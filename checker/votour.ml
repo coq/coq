@@ -10,6 +10,8 @@ open Values
 
 (** {6 Interactive visit of a vo} *)
 
+let max_string_length = 1024
+
 let rec read_num max =
   let quit () =
     Printf.printf "\nGoodbye!\n%!";
@@ -158,7 +160,8 @@ let get_string_in_tuple o =
     for i = 0 to Array.length o - 1 do
       match Repr.repr o.(i) with
       | STRING s ->
-        raise (TupleString (Printf.sprintf " [..%s..]" s))
+        let len = min max_string_length (String.length s) in
+        raise (TupleString (Printf.sprintf " [..%s..]" (String.sub s 0 len)))
       | _ -> ()
     done;
     ""
@@ -168,7 +171,8 @@ let get_string_in_tuple o =
 
 let rec get_details v o = match v, Repr.repr o with
   | (String | Any), STRING s ->
-    Printf.sprintf " [%s]" (String.escaped s)
+    let len = min max_string_length (String.length s) in
+    Printf.sprintf " [%s]" (String.escaped (String.sub s 0 len))
   |Tuple (_,v), BLOCK (_, o) -> get_string_in_tuple o
   |(Sum _|Any), BLOCK (tag, _) ->
     Printf.sprintf " [tag=%i]" tag
