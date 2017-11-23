@@ -78,6 +78,21 @@ Reserved Notation "{ x : A  |  P  & Q }" (at level 0, x at level 99).
 Reserved Notation "{ x : A  & P }" (at level 0, x at level 99).
 Reserved Notation "{ x : A  & P  & Q }" (at level 0, x at level 99).
 
+Reserved Notation "{ ' pat | P }"
+  (at level 0, pat strict pattern, format "{ ' pat  |  P  }").
+Reserved Notation "{ ' pat | P & Q }"
+  (at level 0, pat strict pattern, format "{ ' pat  |  P  & Q }").
+
+Reserved Notation "{ ' pat : A | P }"
+  (at level 0, pat strict pattern, format "{ ' pat  :  A  |  P }").
+Reserved Notation "{ ' pat : A | P & Q }"
+  (at level 0, pat strict pattern, format "{ ' pat  :  A  |  P  & Q }").
+
+Reserved Notation "{ ' pat : A & P }"
+  (at level 0, pat strict pattern, format "{ ' pat  :  A  & P }").
+Reserved Notation "{ ' pat : A & P & Q }"
+  (at level 0, pat strict pattern, format "{ ' pat  :  A  & P  & Q }").
+
 (** Support for Gonthier-Ssreflect's "if c is pat then u else v" *)
 
 Module IfNotations.

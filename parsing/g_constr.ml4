@@ -219,6 +219,8 @@ GEXTEND Gram
                 CAst.make ~loc:(!@loc) @@ CNotation("( _ )",([c],[],[],[]))
             | _ -> c)
       | "{|"; c = record_declaration; "|}" -> c
+      | "{"; c = binder_constr ; "}" ->
+          CAst.make ~loc:(!@loc) @@ CNotation(("{ _ }"),([c],[],[],[]))
       | "`{"; c = operconstr LEVEL "200"; "}" ->
 	  CAst.make ~loc:(!@loc) @@ CGeneralization (Implicit, None, c)
       | "`("; c = operconstr LEVEL "200"; ")" ->

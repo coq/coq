@@ -341,8 +341,6 @@ Check fun x => if x is n.+1 then n else 1.
 
 (* Examples with binding patterns *)
 
-Import SpecifPatternNotations.
-
 Check {'(x,y)|x+y=0}.
 
 Module D.
