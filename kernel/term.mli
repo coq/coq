@@ -16,90 +16,133 @@ open Constr
 
 *)
 
+exception DestKO
+[@@ocaml.deprecated "Alias for [Constr.DestKO]"]
+
 (** {5 Simple term case analysis. } *)
 val isRel  : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isRel]"]
 val isRelN : int -> constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isRelN]"]
 val isVar  : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isVar]"]
 val isVarId : Id.t -> constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isVarId]"]
 val isInd  : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isInd]"]
 val isEvar : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isEvar]"]
 val isMeta : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isMeta]"]
 val isEvar_or_Meta : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isEvar_or_Meta]"]
 val isSort : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isSort]"]
 val isCast : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isCast]"]
 val isApp : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isApp]"]
 val isLambda : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isLambda]"]
 val isLetIn : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isletIn]"]
 val isProd : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isProp]"]
 val isConst : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isConst]"]
 val isConstruct : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isConstruct]"]
 val isFix : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isFix]"]
 val isCoFix : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isCoFix]"]
 val isCase : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isCase]"]
 val isProj : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isProj]"]
 
 val is_Prop : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.is_Prop]"]
 val is_Set  : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.is_Set]"]
 val isprop : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.isprop]"]
 val is_Type : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.is_Type]"]
 val iskind : constr -> bool
+[@@ocaml.deprecated "Alias for [Constr.is_kind]"]
 val is_small : Sorts.t -> bool
+[@@ocaml.deprecated "Alias for [Constr.is_small]"]
 
 
 (** {5 Term destructors } *)
 (** Destructor operations are partial functions and
     @raise DestKO if the term has not the expected form. *)
 
-exception DestKO
-
 (** Destructs a de Bruijn index *)
 val destRel : constr -> int
+[@@ocaml.deprecated "Alias for [Constr.destRel]"]
 
 (** Destructs an existential variable *)
 val destMeta : constr -> metavariable
+[@@ocaml.deprecated "Alias for [Constr.destMeta]"]
 
 (** Destructs a variable *)
 val destVar : constr -> Id.t
+[@@ocaml.deprecated "Alias for [Constr.destVar]"]
 
 (** Destructs a sort. [is_Prop] recognizes the sort {% \textsf{%}Prop{% }%}, whether
    [isprop] recognizes both {% \textsf{%}Prop{% }%} and {% \textsf{%}Set{% }%}. *)
 val destSort : constr -> Sorts.t
+[@@ocaml.deprecated "Alias for [Constr.destSort]"]
 
 (** Destructs a casted term *)
 val destCast : constr -> constr * cast_kind * constr
+[@@ocaml.deprecated "Alias for [Constr.destCast]"]
 
 (** Destructs the product {% $ %}(x:t_1)t_2{% $ %} *)
 val destProd : types -> Name.t * types * types
+[@@ocaml.deprecated "Alias for [Constr.destProd]"]
 
 (** Destructs the abstraction {% $ %}[x:t_1]t_2{% $ %} *)
 val destLambda : constr -> Name.t * types * constr
+[@@ocaml.deprecated "Alias for [Constr.destLambda]"]
 
 (** Destructs the let {% $ %}[x:=b:t_1]t_2{% $ %} *)
 val destLetIn : constr -> Name.t * constr * types * constr
+[@@ocaml.deprecated "Alias for [Constr.destLetIn]"]
 
 (** Destructs an application *)
 val destApp : constr -> constr * constr array
+[@@ocaml.deprecated "Alias for [Constr.destApp]"]
 
 (** Obsolete synonym of destApp *)
 val destApplication : constr -> constr * constr array
+[@@ocaml.deprecated "Alias for [Constr.destApplication]"]
 
 (** Decompose any term as an applicative term; the list of args can be empty *)
 val decompose_app : constr -> constr * constr list
+[@@ocaml.deprecated "Alias for [Constr.decompose_app]"]
 
 (** Same as [decompose_app], but returns an array. *)
 val decompose_appvect : constr -> constr * constr array
+[@@ocaml.deprecated "Alias for [Constr.decompose_appvect]"]
 
 (** Destructs a constant *)
 val destConst : constr -> Constant.t puniverses
+[@@ocaml.deprecated "Alias for [Constr.destConst]"]
 
 (** Destructs an existential variable *)
 val destEvar : constr -> existential
+[@@ocaml.deprecated "Alias for [Constr.destEvar]"]
 
 (** Destructs a (co)inductive type *)
 val destInd : constr -> inductive puniverses
+[@@ocaml.deprecated "Alias for [Constr.destInd]"]
 
 (** Destructs a constructor *)
 val destConstruct : constr -> constructor puniverses
+[@@ocaml.deprecated "Alias for [Constr.destConstruct]"]
 
 (** Destructs a [match c as x in I args return P with ... |
 Ci(...yij...) => ti | ... end] (or [let (..y1i..) := c as x in I args
@@ -107,9 +150,11 @@ return P in t1], or [if c then t1 else t2])
 @return [(info,c,fun args x => P,[|...|fun yij => ti| ...|])]
 where [info] is pretty-printing information *)
 val destCase : constr -> case_info * constr * constr * constr array
+[@@ocaml.deprecated "Alias for [Constr.destCase]"]
 
 (** Destructs a projection *)
 val destProj : constr -> projection * constr
+[@@ocaml.deprecated "Alias for [Constr.destProj]"]
 
 (** Destructs the {% $ %}i{% $ %}th function of the block
    [Fixpoint f{_ 1} ctx{_ 1} = b{_ 1}
@@ -119,8 +164,10 @@ val destProj : constr -> projection * constr
    where the length of the {% $ %}j{% $ %}th context is {% $ %}ij{% $ %}.
 *)
 val destFix : constr -> fixpoint
+[@@ocaml.deprecated "Alias for [Constr.destFix]"]
 
 val destCoFix : constr -> cofixpoint
+[@@ocaml.deprecated "Alias for [Constr.destCoFix]"]
 
 (** {5 Derived constructors} *)
 
@@ -415,8 +462,11 @@ val map_constr_with_binders :
 [@@ocaml.deprecated "Alias for [Constr.map_with_binders]"]
 
 val map_puniverses : ('a -> 'b) -> 'a puniverses -> 'b puniverses
+[@@ocaml.deprecated "Alias for [Constr.map_puniverses]"]
 val univ_of_sort : Sorts.t -> Univ.Universe.t
+[@@ocaml.deprecated "Alias for [Sorts.univ_of_sort]"]
 val sort_of_univ : Univ.Universe.t -> Sorts.t
+[@@ocaml.deprecated "Alias for [Sorts.sort_of_univ]"]
 
 val iter_constr : (constr -> unit) -> constr -> unit
 [@@ocaml.deprecated "Alias for [Constr.iter]"]

@@ -169,6 +169,7 @@ val constr_of_global : Globnames.global_reference -> constr
 
 (** ** DEPRECATED ** synonym of [constr_of_global] *)
 val constr_of_reference : Globnames.global_reference -> constr
+[@@ocaml.deprecated "synonym of [constr_of_global]"]
 
 (** Returns the type of the global reference, by creating a fresh instance of polymorphic 
     references and computing their instantiated universe context. (side-effect on the

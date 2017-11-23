@@ -11,7 +11,7 @@ open Formula
 open Sequent
 open Rules
 open Instances
-open Term
+open Constr
 open Tacmach.New
 open Tacticals.New
 

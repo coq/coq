@@ -11,7 +11,7 @@ open Util
 open Names
 open Nameops
 open Namegen
-open Term
+open Constr
 open Termops
 open Indtypes
 open Environ
@@ -405,7 +405,7 @@ let explain_not_product env sigma c =
   let pr = pr_lconstr_env env sigma c in
   str "The type of this term is a product" ++ spc () ++
   str "while it is expected to be" ++
-  (if Term.is_Type c then str " a sort" else (brk(1,1) ++ pr)) ++ str "."
+  (if Constr.is_Type c then str " a sort" else (brk(1,1) ++ pr)) ++ str "."
 
 (* TODO: use the names *)
 (* (co)fixpoints *)

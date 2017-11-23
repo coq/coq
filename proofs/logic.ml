@@ -11,7 +11,6 @@ open CErrors
 open Util
 open Names
 open Nameops
-open Term
 open Constr
 open Vars
 open Termops

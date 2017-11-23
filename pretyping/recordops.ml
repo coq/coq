@@ -213,7 +213,7 @@ let compute_canonical_projections warn (con,ind) =
   let sign = List.map (on_snd EConstr.Unsafe.to_constr) sign in
   let t = EConstr.Unsafe.to_constr t in
   let lt = List.rev_map snd sign in
-  let args = snd (Term.decompose_app t) in
+  let args = snd (decompose_app t) in
   let { s_EXPECTEDPARAM = p; s_PROJ = lpj; s_PROJKIND = kl } =
     lookup_structure ind in
   let params, projs = List.chop p args in

@@ -54,8 +54,8 @@ let warn_overriding_logical_loadpath =
   CWarnings.create ~name:"overriding-logical-loadpath" ~category:"loadpath"
          (fun (phys_path, old_path, coq_path) ->
           str phys_path ++ strbrk " was previously bound to " ++
-            pr_dirpath old_path ++ strbrk "; it is remapped to " ++
-            pr_dirpath coq_path)
+            DirPath.print old_path ++ strbrk "; it is remapped to " ++
+            DirPath.print coq_path)
 
 let add_load_path phys_path coq_path ~implicit =
   let phys_path = CUnix.canonical_path_name phys_path in
@@ -75,7 +75,7 @@ let add_load_path phys_path coq_path ~implicit =
       else
         let () =
           (* Do not warn when overriding the default "-I ." path *)
-          if not (DirPath.equal old_path Nameops.default_root_prefix) then
+          if not (DirPath.equal old_path Libnames.default_root_prefix) then
           warn_overriding_logical_loadpath (phys_path, old_path, coq_path)
         in
         true in

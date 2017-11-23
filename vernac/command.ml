@@ -8,8 +8,8 @@
 
 open Pp
 open CErrors
+open Sorts
 open Util
-open Term
 open Constr
 open Vars
 open Termops
@@ -376,8 +376,8 @@ let rec check_anonymous_type ind =
     | _ -> false
 
 let make_conclusion_flexible evdref ty poly =
-  if poly && isArity ty then
-    let _, concl = destArity ty in
+  if poly && Term.isArity ty then
+    let _, concl = Term.destArity ty in
       match concl with
       | Type u -> 
         (match Univ.universe_level u with

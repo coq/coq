@@ -233,7 +233,6 @@ let mkMeta  n =  Meta n
 (* Constructs a Variable named id *)
 let mkVar id = Var id
 
-
 (************************************************************************)
 (*    kind_of_term = constructions as seen by the user                 *)
 (************************************************************************)
@@ -249,6 +248,168 @@ let of_kind = function
 | App (f, a) -> mkApp (f, a)
 | Cast (c, knd, t) -> mkCast (c, knd, t)
 | k -> k
+
+(**********************************************************************)
+(*          Non primitive term destructors                            *)
+(**********************************************************************)
+
+(* Destructor operations : partial functions
+   Raise [DestKO] if the const has not the expected form *)
+
+exception DestKO
+
+let isMeta c = match kind c with Meta _ -> true | _ -> false
+
+(* Destructs a type *)
+let isSort c = match kind c with
+  | Sort _ -> true
+  | _ -> false
+
+let rec isprop c = match kind c with
+  | Sort (Sorts.Prop _) -> true
+  | Cast (c,_,_) -> isprop c
+  | _ -> false
+
+let rec is_Prop c = match kind c with
+  | Sort (Sorts.Prop Sorts.Null) -> true
+  | Cast (c,_,_) -> is_Prop c
+  | _ -> false
+
+let rec is_Set c = match kind c with
+  | Sort (Sorts.Prop Sorts.Pos) -> true
+  | Cast (c,_,_) -> is_Set c
+  | _ -> false
+
+let rec is_Type c = match kind c with
+  | Sort (Sorts.Type _) -> true
+  | Cast (c,_,_) -> is_Type c
+  | _ -> false
+
+let is_small = Sorts.is_small
+let iskind c = isprop c || is_Type c
+
+(* Tests if an evar *)
+let isEvar c = match kind c with Evar _ -> true | _ -> false
+let isEvar_or_Meta c = match kind c with
+  | Evar _ | Meta _ -> true
+  | _ -> false
+
+let isCast c = match kind c with Cast _ -> true | _ -> false
+(* Tests if a de Bruijn index *)
+let isRel c = match kind c with Rel _ -> true | _ -> false
+let isRelN n c =
+  match kind c with Rel n' -> Int.equal n n' | _ -> false
+(* Tests if a variable *)
+let isVar c = match kind c with Var _ -> true | _ -> false
+let isVarId id c = match kind c with Var id' -> Id.equal id id' | _ -> false
+(* Tests if an inductive *)
+let isInd c = match kind c with Ind _ -> true | _ -> false
+let isProd c = match kind c with | Prod _ -> true | _ -> false
+let isLambda c = match kind c with | Lambda _ -> true | _ -> false
+let isLetIn c =  match kind c with LetIn _ -> true | _ -> false
+let isApp c = match kind c with App _ -> true | _ -> false
+let isConst c = match kind c with Const _ -> true | _ -> false
+let isConstruct c = match kind c with Construct _ -> true | _ -> false
+let isCase c =  match kind c with Case _ -> true | _ -> false
+let isProj c =  match kind c with Proj _ -> true | _ -> false
+let isFix c =  match kind c with Fix _ -> true | _ -> false
+let isCoFix c =  match kind c with CoFix _ -> true | _ -> false
+
+(* Destructs a de Bruijn index *)
+let destRel c = match kind c with
+  | Rel n -> n
+  | _ -> raise DestKO
+
+(* Destructs an existential variable *)
+let destMeta c = match kind c with
+  | Meta n -> n
+  | _ -> raise DestKO
+
+(* Destructs a variable *)
+let destVar c = match kind c with
+  | Var id -> id
+  | _ -> raise DestKO
+
+let destSort c = match kind c with
+  | Sort s -> s
+  | _ -> raise DestKO
+
+(* Destructs a casted term *)
+let destCast c = match kind c with
+  | Cast (t1,k,t2) -> (t1,k,t2)
+  | _ -> raise DestKO
+
+(* Destructs the product (x:t1)t2 *)
+let destProd c = match kind c with
+  | Prod (x,t1,t2) -> (x,t1,t2)
+  | _ -> raise DestKO
+
+(* Destructs the abstraction [x:t1]t2 *)
+let destLambda c = match kind c with
+  | Lambda (x,t1,t2) -> (x,t1,t2)
+  | _ -> raise DestKO
+
+(* Destructs the let [x:=b:t1]t2 *)
+let destLetIn c = match kind c with
+  | LetIn (x,b,t1,t2) -> (x,b,t1,t2)
+  | _ -> raise DestKO
+
+(* Destructs an application *)
+let destApp c = match kind c with
+  | App (f,a) -> (f, a)
+  | _ -> raise DestKO
+
+(* Destructs a constant *)
+let destConst c = match kind c with
+  | Const kn -> kn
+  | _ -> raise DestKO
+
+(* Destructs an existential variable *)
+let destEvar c = match kind c with
+  | Evar (kn, a as r) -> r
+  | _ -> raise DestKO
+
+(* Destructs a (co)inductive type named kn *)
+let destInd c = match kind c with
+  | Ind (kn, a as r) -> r
+  | _ -> raise DestKO
+
+(* Destructs a constructor *)
+let destConstruct c = match kind c with
+  | Construct (kn, a as r) -> r
+  | _ -> raise DestKO
+
+(* Destructs a term <p>Case c of lc1 | lc2 .. | lcn end *)
+let destCase c = match kind c with
+  | Case (ci,p,c,v) -> (ci,p,c,v)
+  | _ -> raise DestKO
+
+let destProj c = match kind c with
+  | Proj (p, c) -> (p, c)
+  | _ -> raise DestKO
+
+let destFix c = match kind c with
+  | Fix fix -> fix
+  | _ -> raise DestKO
+
+let destCoFix c = match kind c with
+  | CoFix cofix -> cofix
+  | _ -> raise DestKO
+
+
+(******************************************************************)
+(* Flattening and unflattening of embedded applications and casts *)
+(******************************************************************)
+
+let decompose_app c =
+  match kind c with
+    | App (f,cl) -> (f, Array.to_list cl)
+    | _ -> (c,[])
+
+let decompose_appvect c =
+  match kind c with
+    | App (f,cl) -> (f, cl)
+    | _ -> (c,[||])
 
 (****************************************************************************)
 (*              Functions to recur through subterms                         *)

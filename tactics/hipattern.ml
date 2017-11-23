@@ -160,7 +160,7 @@ let test_strict_disjunction n lc =
   let open Term in
   Array.for_all_i (fun i c ->
     match (prod_assum (snd (decompose_prod_n_assum n c))) with
-    | [LocalAssum (_,c)] -> isRel c && Int.equal (destRel c) (n - i)
+    | [LocalAssum (_,c)] -> Constr.isRel c && Int.equal (Constr.destRel c) (n - i)
     | _ -> false) 0 lc
 
 let match_with_disjunction ?(strict=false) ?(onlybinary=false) sigma t =

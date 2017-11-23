@@ -12,13 +12,13 @@
 
 open CErrors
 open Pp
-open Goptions
 open Names
-open Term
+open Sorts
 open Constr
 open Vars
-open Tacmach
 open Evd
+open Goptions
+open Tacmach
 open Util
 
 let init_size=5
@@ -437,7 +437,7 @@ and make_app l=function
 and applist_proj c l =
   match c with
   | Symb s -> applist_projection s l
-  | _ -> applistc (constr_of_term c) l
+  | _ -> Term.applistc (constr_of_term c) l
 and applist_projection c l =
   match Constr.kind c with
   | Const c when Environ.is_projection (fst c) (Global.env()) ->
@@ -447,10 +447,10 @@ and applist_projection c l =
       let ty = Typeops.type_of_constant_in (Global.env ()) c in (* FIXME constraints *)
       let pb = Environ.lookup_projection p (Global.env()) in
       let ctx,_ = Term.decompose_prod_n_assum (pb.Declarations.proj_npars + 1) ty in
-	it_mkLambda_or_LetIn (mkProj(p,mkRel 1)) ctx
+      Term.it_mkLambda_or_LetIn (mkProj(p,mkRel 1)) ctx
     | hd :: tl ->
-      applistc (mkProj (p, hd)) tl)
-  | _ -> applistc c l
+      Term.applistc (mkProj (p, hd)) tl)
+  | _ -> Term.applistc c l
 
 let rec canonize_name sigma c =
   let c = EConstr.Unsafe.to_constr c in
@@ -838,7 +838,7 @@ let complete_one_class state i=
 	let _args =
 	  List.map (fun i -> constr_of_term (term state.uf  i))
 	    pac.args in
-	let typ = prod_applist _c (List.rev _args) in
+        let typ = Term.prod_applist _c (List.rev _args) in
 	let ct = app (term state.uf i) typ pac.arity in
 	  state.uf.epsilons <- pac :: state.uf.epsilons;
 	  ignore (add_term state ct)

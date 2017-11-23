@@ -8,11 +8,12 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
+open Pp
 open Names
+open Constr
 open Tacmach
 
 open Ssrmatching_plugin.Ssrmatching
-
 open Ssrprinters
 open Ssrcommon
 open Ssrtacticals
@@ -29,10 +30,6 @@ let posetac id cl = Proofview.V82.of_tactic (settac id cl Locusops.nowhere)
 let ssrposetac ist (id, (_, t)) gl =
   let sigma, t, ucst, _ = pf_abs_ssrterm ist gl t in
   posetac id t (pf_merge_uc ucst gl)
-
-open Pp
-open Term
-open Constr
 
 let ssrsettac ist id ((_, (pat, pty)), (_, occ)) gl =
   let pat = interp_cpattern ist gl pat (Option.map snd pty) in

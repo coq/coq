@@ -179,6 +179,8 @@ struct
     | [] -> "<>"
     | sl -> String.concat "." (List.rev_map Id.to_string sl)
 
+  let print dp = str (to_string dp)
+
   let initial = [default_module_name]
 
   module Hdir = Hashcons.Hlist(Id)

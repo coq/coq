@@ -599,11 +599,16 @@ type open_constr = evar_map * constr (* Special case when before is empty *)
 type unsolvability_explanation = SeveralInstancesFound of int
 (** Failure explanation. *)
 
-(** {5 Deprecated functions} *)
-
-val create_evar_defs      : evar_map -> evar_map
-(** Create an [evar_map] with empty meta map: *)
-
 (** {5 Summary names} *)
 
+(* This stuff is internal and should not be used. Currently a hack in
+   the STM relies on it. *)
 val evar_counter_summary_name : string
+
+(** {5 Deprecated functions} *)
+val create_evar_defs : evar_map -> evar_map
+(* XXX: This is supposed to be deprecated by used by ssrmatching, what
+   should the replacement be? *)
+
+(** Create an [evar_map] with empty meta map: *)
+

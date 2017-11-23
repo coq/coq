@@ -12,7 +12,6 @@ open Util
 open Names
 open Libnames
 open Globnames
-open Nameops
 open Libobject
 open Context.Named.Declaration
 
@@ -361,8 +360,8 @@ let end_compilation_checks dir =
       | None -> anomaly (Pp.str "There should be a module name...")
       | Some m ->
 	  if not (Names.DirPath.equal m dir) then anomaly
-	    (str "The current open module has name" ++ spc () ++ pr_dirpath m ++
-             spc () ++ str "and not" ++ spc () ++ pr_dirpath m ++ str ".");
+           (str "The current open module has name" ++ spc () ++ DirPath.print m ++
+             spc () ++ str "and not" ++ spc () ++ DirPath.print m ++ str ".");
   in
   oname
 

@@ -10,7 +10,6 @@ open CErrors
 open Util
 open Names
 open Globnames
-open Term
 open Constr
 open Reduction
 open Declarations

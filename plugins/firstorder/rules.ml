@@ -235,8 +235,8 @@ let constant str = Universes.constr_of_global
   @@ Coqlib.coq_reference "User" ["Init";"Logic"] str
 
 let defined_connectives=lazy
-  [AllOccurrences,EvalConstRef (fst (Term.destConst (constant "not")));
-   AllOccurrences,EvalConstRef (fst (Term.destConst (constant "iff")))]
+  [AllOccurrences,EvalConstRef (fst (Constr.destConst (constant "not")));
+   AllOccurrences,EvalConstRef (fst (Constr.destConst (constant "iff")))]
 
 let normalize_evaluables=
   Proofview.Goal.enter begin fun gl ->

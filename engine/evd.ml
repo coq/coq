@@ -243,7 +243,7 @@ let evar_instance_array test_id info args =
     instrec filter (evar_context info) 0
 
 let make_evar_instance_array info args =
-  evar_instance_array (NamedDecl.get_id %> Term.isVarId) info args
+  evar_instance_array (NamedDecl.get_id %> isVarId) info args
 
 let instantiate_evar_array info c args =
   let inst = make_evar_instance_array info args in
@@ -707,10 +707,10 @@ let extract_all_conv_pbs evd =
   extract_conv_pbs evd (fun _ -> true)
 
 let loc_of_conv_pb evd (pbty,env,t1,t2) =
-  match kind (fst (Term.decompose_app t1)) with
+  match kind (fst (decompose_app t1)) with
   | Evar (evk1,_) -> fst (evar_source evk1 evd)
   | _ ->
-  match kind (fst (Term.decompose_app t2)) with
+  match kind (fst (decompose_app t2)) with
   | Evar (evk2,_) -> fst (evar_source evk2 evd)
   | _             -> None
 

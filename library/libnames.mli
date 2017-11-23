@@ -11,12 +11,13 @@ open Loc
 open Names
 
 (** {6 Dirpaths } *)
-(** FIXME: ought to be in Names.dir_path *)
+val dirpath_of_string : string -> DirPath.t
 
 val pr_dirpath : DirPath.t -> Pp.t
+[@@ocaml.deprecated "Alias for DirPath.print"]
 
-val dirpath_of_string : string -> DirPath.t
 val string_of_dirpath : DirPath.t -> string
+[@@ocaml.deprecated "Alias for DirPath.to_string"]
 
 (** Pop the suffix of a [DirPath.t]. Raises a [Failure] for an empty path *)
 val pop_dirpath : DirPath.t -> DirPath.t
@@ -127,7 +128,20 @@ val pr_reference : reference -> Pp.t
 val loc_of_reference : reference -> Loc.t option
 val join_reference : reference -> reference -> reference
 
-(** Deprecated synonyms *)
+(** some preset paths *)
+val default_library : DirPath.t
 
+(** This is the root of the standard library of Coq *)
+val coq_root : module_ident (** "Coq" *)
+val coq_string : string (** "Coq" *)
+
+(** This is the default root prefix for developments which doesn't
+   mention a root *)
+val default_root_prefix : DirPath.t
+
+(** Deprecated synonyms *)
 val make_short_qualid : Id.t -> qualid (** = qualid_of_ident *)
+[@@ocaml.deprecated "Alias for qualid_of_ident"]
+
 val qualid_of_sp : full_path -> qualid (** = qualid_of_path *)
+[@@ocaml.deprecated "Alias for qualid_of_sp"]

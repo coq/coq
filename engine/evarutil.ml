@@ -11,11 +11,11 @@ open Util
 open Names
 open Term
 open Constr
-open Termops
-open Namegen
 open Pre_env
 open Environ
 open Evd
+open Termops
+open Namegen
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration

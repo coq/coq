@@ -8,11 +8,12 @@
 
 open Pp
 open CErrors
+open Term
+open Sorts
 open Util
 open Names
 open Globnames
 open Nameops
-open Term
 open Constr
 open Vars
 open Environ

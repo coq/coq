@@ -56,7 +56,7 @@ let weaker_noccur_between env x nvars t =
    else None
 
 let is_constructor_head t =
-  Term.isRel(fst(Term.decompose_app t))
+  isRel(fst(decompose_app t))
 
 (************************************************************************)
 (* Various well-formedness check for inductive declarations            *)
@@ -135,7 +135,7 @@ let infos_and_sort env t =
       | Prod (name,c1,c2) ->
         let varj = infer_type env c1 in
 	let env1 = Environ.push_rel (LocalAssum (name,varj.utj_val)) env in
-	let max = Universe.sup max (Term.univ_of_sort varj.utj_type) in
+        let max = Universe.sup max (Sorts.univ_of_sort varj.utj_type) in
 	  aux env1 c2 max
     | _ when is_constructor_head t -> max
     | _ -> (* don't fail if not positive, it is tested later *) max
@@ -184,7 +184,7 @@ let cumulate_arity_large_levels env sign =
      match d with
      | LocalAssum (_,t) ->
 	let tj = infer_type env t in
-	let u = Term.univ_of_sort tj.utj_type in
+        let u = Sorts.univ_of_sort tj.utj_type in
 	  (Universe.sup u lev, push_rel d env)
      | LocalDef _ ->
 	lev, push_rel d env)
@@ -351,7 +351,7 @@ let typecheck_inductive env mie =
 	| None -> clev
       in
       let full_polymorphic () = 
-	let defu = Term.univ_of_sort def_level in
+        let defu = Sorts.univ_of_sort def_level in
 	let is_natural =
 	  type_in_type env || (UGraph.check_leq (universes env') infu defu)
 	in
@@ -555,7 +555,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
       constructor [cn] has a type of the shape [… -> c … -> P], where,
       more generally, the arrows may be dependent). *)
   let rec check_pos (env, n, ntypes, ra_env as ienv) nmr c =
-    let x,largs = Term.decompose_app (whd_all env c) in
+    let x,largs = decompose_app (whd_all env c) in
       match kind x with
 	| Prod (na,b,d) ->
 	    let () = assert (List.is_empty largs) in
@@ -663,7 +663,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
       inductive type. *)
   and check_constructors ienv check_head nmr c =
     let rec check_constr_rec (env,n,ntypes,ra_env as ienv) nmr lrec c =
-      let x,largs = Term.decompose_app (whd_all env c) in
+      let x,largs = decompose_app (whd_all env c) in
 	match kind x with
 
           | Prod (na,b,d) ->
@@ -916,11 +916,11 @@ let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr r
 	let ar = {template_param_levels = paramlevs; template_level = lev} in
 	  TemplateArity ar, all_sorts
       | RegularArity (info,ar,defs) ->
-	let s = sort_of_univ defs in
+        let s = Sorts.sort_of_univ defs in
 	let kelim = allowed_sorts info s in
 	let ar = RegularArity 
 	  { mind_user_arity = Vars.subst_univs_level_constr substunivs ar; 
-	    mind_sort = sort_of_univ (Univ.subst_univs_level_universe substunivs defs); } in
+            mind_sort = Sorts.sort_of_univ (Univ.subst_univs_level_universe substunivs defs); } in
 	  ar, kelim in
     (* Assigning VM tags to constructors *)
     let nconst, nblock = ref 0, ref 0 in

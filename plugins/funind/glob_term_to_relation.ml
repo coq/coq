@@ -1,7 +1,6 @@
 open Printer
 open Pp
 open Names
-open Term
 open Constr
 open Vars
 open Glob_term

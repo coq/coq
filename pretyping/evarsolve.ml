@@ -6,10 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Sorts
 open Util
 open CErrors
 open Names
-open Term
 open Constr
 open Environ
 open Termops

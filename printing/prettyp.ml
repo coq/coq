@@ -15,7 +15,6 @@ open CErrors
 open Util
 open Names
 open Nameops
-open Term
 open Termops
 open Declarations
 open Environ
@@ -139,7 +138,7 @@ let print_renames_list prefix l =
 
 let need_expansion impl ref =
   let typ, _ = Global.type_of_global_in_context (Global.env ()) ref in
-  let ctx = prod_assum typ in
+  let ctx = Term.prod_assum typ in
   let nprods = List.count is_local_assum ctx in
   not (List.is_empty impl) && List.length impl >= nprods &&
     let _,lastimpl = List.chop nprods impl in
@@ -366,7 +365,7 @@ let pr_located_qualid = function
 	| DirModule (dir,_) -> "Module", dir
 	| DirClosedSection dir -> "Closed Section", dir
       in
-      str s ++ spc () ++ pr_dirpath dir
+      str s ++ spc () ++ DirPath.print dir
   | ModuleType mp ->
       str "Module Type" ++ spc () ++ pr_path (Nametab.path_of_modtype mp)
   | Other (obj, info) -> info.name obj
@@ -490,7 +489,7 @@ let gallina_print_typed_value_in_env env sigma (trm,typ) =
 let print_named_def env sigma name body typ =
   let pbody = pr_lconstr_env env sigma body in
   let ptyp = pr_ltype_env env sigma typ in
-  let pbody = if isCast body then surround pbody else pbody in
+  let pbody = if Constr.isCast body then surround pbody else pbody in
   (str "*** [" ++ str name ++ str " " ++
      hov 0 (str ":=" ++ brk (1,2) ++ pbody ++ spc () ++
 	      str ":" ++ brk (1,2) ++ ptyp) ++
@@ -647,7 +646,7 @@ let gallina_print_library_entry env sigma with_values ent =
     | (oname,Lib.ClosedSection _) ->
         Some (str " >>>>>>> Closed Section " ++ pr_name oname)
     | (_,Lib.CompilingLibrary (dir,_)) ->
-	Some (str " >>>>>>> Library " ++ pr_dirpath dir)
+        Some (str " >>>>>>> Library " ++ DirPath.print dir)
     | (oname,Lib.OpenedModule _) ->
 	Some (str " >>>>>>> Module " ++ pr_name oname)
     | (oname,Lib.ClosedModule _) ->

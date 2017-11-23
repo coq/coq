@@ -159,6 +159,7 @@ sig
   val hcons : t -> t
   (** Hashconsing of directory paths. *)
 
+  val print : t -> Pp.t
 end
 
 (** {6 Names of structure elements } *)

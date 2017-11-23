@@ -167,13 +167,13 @@ let consistency_checks exists dir dirinfo =
       try Nametab.locate_dir (qualid_of_dirpath dir)
       with Not_found ->
         user_err ~hdr:"consistency_checks"
-          (pr_dirpath dir ++ str " should already exist!")
+          (DirPath.print dir ++ str " should already exist!")
     in
     assert (eq_global_dir_reference globref dirinfo)
   else
     if Nametab.exists_dir dir then
       user_err ~hdr:"consistency_checks"
-        (pr_dirpath dir ++ str " already exists")
+        (DirPath.print dir ++ str " already exists")
 
 let compute_visibility exists i =
   if exists then Nametab.Exactly i else Nametab.Until i
