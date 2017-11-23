@@ -4159,10 +4159,6 @@ sig
 
   type vernac_expr =
   | VernacLoad of verbose_flag * string
-  | VernacTime of vernac_expr Loc.located
-  | VernacRedirect of string * vernac_expr Loc.located
-  | VernacTimeout of int * vernac_expr
-  | VernacFail of vernac_expr
   | VernacSyntaxExtension of bool * (lstring * syntax_modifier list)
   | VernacOpenCloseScope of bool * scope_name
   | VernacDelimiters of scope_name * string option
@@ -4294,6 +4290,16 @@ sig
   and vernac_classification = vernac_type * vernac_when
   and one_inductive_expr =
     ident_decl * Constrexpr.local_binder_expr list * Constrexpr.constr_expr option * constructor_expr list
+
+type vernac_control =
+  | VernacExpr of vernac_expr
+   (* Control *)
+  | VernacTime of vernac_control Loc.located
+  | VernacRedirect of string * vernac_control Loc.located
+  | VernacTimeout of int * vernac_control
+  | VernacFail of vernac_control
+
+
 end
 (* XXX: end of moved from intf *)
 
@@ -5175,9 +5181,7 @@ sig
     val gallina_ext : vernac_expr Gram.entry
     val command : vernac_expr Gram.entry
     val syntax : vernac_expr Gram.entry
-    val vernac : vernac_expr Gram.entry
     val rec_definition : (fixpoint_expr * decl_notation list) Gram.entry
-    val vernac_eoi : vernac_expr Gram.entry
     val noedit_mode : vernac_expr Gram.entry
     val command_entry : vernac_expr Gram.entry
     val red_expr : raw_red_expr Gram.entry
@@ -5973,7 +5977,7 @@ end
 
 module Ppvernac :
 sig
-  val pr_vernac : Vernacexpr.vernac_expr -> Pp.t
+  val pr_vernac : Vernacexpr.vernac_control -> Pp.t
   val pr_rec_definition : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) -> Pp.t
 end
 
@@ -6221,7 +6225,7 @@ sig
   val classify_as_proofstep : Vernacexpr.vernac_classification
   val classify_as_query : Vernacexpr.vernac_classification
   val classify_as_sideeff : Vernacexpr.vernac_classification
-  val classify_vernac : Vernacexpr.vernac_expr -> Vernacexpr.vernac_classification
+  val classify_vernac : Vernacexpr.vernac_control -> Vernacexpr.vernac_classification
 end
 
 module Stm :

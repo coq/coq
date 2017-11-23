@@ -503,8 +503,7 @@ module Vernac_ =
     let gallina_ext = gec_vernac "gallina_ext"
     let command = gec_vernac "command"
     let syntax = gec_vernac "syntax_command"
-    let vernac = gec_vernac "Vernac.vernac"
-    let vernac_eoi = eoi_entry vernac
+    let vernac_control = gec_vernac "Vernac.vernac_control"
     let rec_definition = gec_vernac "Vernac.rec_definition"
     let red_expr = make_gen_entry utactic "red_expr"
     let hint_info = gec_vernac "hint_info"
@@ -517,7 +516,7 @@ module Vernac_ =
       let act_eoi = Gram.action (fun _ loc -> None) in
       let rule = [
         ([ Symbols.stoken Tok.EOI ], act_eoi);
-        ([ Symbols.snterm (Gram.Entry.obj vernac) ], act_vernac );
+        ([ Symbols.snterm (Gram.Entry.obj vernac_control) ], act_vernac );
       ] in
       uncurry (Gram.extend main_entry) (None, make_rule rule)
 

@@ -65,14 +65,17 @@ let parse_compat_version ?(allow_old = true) = let open Flags in function
       Pp.(str "Unknown compatibility version \"" ++ str s ++ str "\".")
 
 GEXTEND Gram
-  GLOBAL: vernac gallina_ext noedit_mode subprf;
-  vernac: FIRST
+  GLOBAL: vernac_control gallina_ext noedit_mode subprf;
+  vernac_control: FIRST
     [ [ IDENT "Time"; c = located_vernac -> VernacTime c
       | IDENT "Redirect"; s = ne_string; c = located_vernac -> VernacRedirect (s, c)
-      | IDENT "Timeout"; n = natural; v = vernac -> VernacTimeout(n,v)
-      | IDENT "Fail"; v = vernac -> VernacFail v
-
-      | IDENT "Local"; v = vernac_poly -> VernacLocal (true, v)
+      | IDENT "Timeout"; n = natural; v = vernac_control -> VernacTimeout(n,v)
+      | IDENT "Fail"; v = vernac_control -> VernacFail v
+      | v = vernac -> VernacExpr(v) ]
+    ]
+  ;
+  vernac:
+    [ [ IDENT "Local"; v = vernac_poly -> VernacLocal (true, v)
       | IDENT "Global"; v = vernac_poly -> VernacLocal (false, v)
 
       | v = vernac_poly -> v ]
@@ -111,7 +114,7 @@ GEXTEND Gram
   ;
 
   located_vernac:
-    [ [ v = vernac -> Loc.tag ~loc:!@loc v ] ]
+    [ [ v = vernac_control -> Loc.tag ~loc:!@loc v ] ]
   ;
 END
 

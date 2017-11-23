@@ -1380,11 +1380,13 @@ let _ =
       optread  = (fun () -> !Flags.program_mode);
       optwrite = (fun b -> Flags.program_mode:=b) }
 
+let universe_polymorphism_option_name = ["Universe"; "Polymorphism"]
+
 let _ =
   declare_bool_option
     { optdepr  = false;
       optname  = "universe polymorphism";
-      optkey   = ["Universe"; "Polymorphism"];
+      optkey   = universe_polymorphism_option_name;
       optread  = Flags.is_universe_polymorphism;
       optwrite = Flags.make_universe_polymorphism }
 
@@ -1933,18 +1935,10 @@ let vernac_load interp fname =
  * loc is the Loc.t of the vernacular command being interpreted. *)
 let interp ?proof ~atts ~st c =
   let open Vernacinterp in
-  vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac c);
+  vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
-  (* The below vernac are candidates for removal from the main type
-     and to be put into a new doc_command datatype: *)
 
   | VernacLoad _ -> assert false
-
-  (* Done later in this file *)
-  | VernacFail _ -> assert false
-  | VernacTime _ -> assert false
-  | VernacRedirect _ -> assert false
-  | VernacTimeout _ -> assert false
 
   (* The STM should handle that, but LOAD bypasses the STM... *)
   | VernacAbortAll    -> CErrors.user_err  (str "AbortAll cannot be used through the Load command")
@@ -2209,7 +2203,20 @@ let with_fail st b f =
 
 let interp ?(verbosely=true) ?proof ~st (loc,c) =
   let orig_program_mode = Flags.is_program_mode () in
-  let rec aux ?polymorphism ~atts isprogcmd = function
+  let rec control = function
+  | VernacExpr v ->
+      let atts = { loc; locality = None; polymorphic = false; } in
+      aux ~atts orig_program_mode v
+  | VernacFail v -> with_fail st true (fun () -> control v)
+  | VernacTimeout (n,v) ->
+      current_timeout := Some n;
+      control v
+  | VernacRedirect (s, (_,v)) ->
+       Topfmt.with_output_to_file s control v
+  | VernacTime (_,v) ->
+      System.with_time !Flags.time control v;
+
+  and aux ?polymorphism ~atts isprogcmd = function
 
     | VernacProgram c when not isprogcmd ->
       aux ?polymorphism ~atts true c
@@ -2229,20 +2236,7 @@ let interp ?(verbosely=true) ?proof ~st (loc,c) =
     | VernacLocal _ ->
       user_err Pp.(str "Locality specified twice")
 
-    | VernacFail v ->
-      with_fail st true (fun () -> aux ?polymorphism ~atts isprogcmd v)
-
-    | VernacTimeout (n,v) ->
-      current_timeout := Some n;
-      aux ?polymorphism ~atts isprogcmd v
-
-    | VernacRedirect (s, (_,v)) ->
-      Topfmt.with_output_to_file s (aux ?polymorphism ~atts isprogcmd) v
-
-    | VernacTime (_,v) ->
-      System.with_time !Flags.time (aux ?polymorphism ~atts isprogcmd) v;
-
-    | VernacLoad (_,fname) -> vernac_load (aux ?polymorphism ~atts false) fname
+    | VernacLoad (_,fname) -> vernac_load control fname
 
     | c ->
       check_vernac_supports_locality c atts.locality;
@@ -2272,10 +2266,9 @@ let interp ?(verbosely=true) ?proof ~st (loc,c) =
 	    ignore (Flags.use_polymorphic_flag ());
             iraise e
   in
-  let atts = { loc; locality = None; polymorphic = false; } in
   if verbosely
-  then Flags.verbosely (aux ~atts orig_program_mode) c
-  else aux ~atts orig_program_mode c
+  then Flags.verbosely control c
+  else control  c
 
 (* XXX: There is a bug here in case of an exception, see @gares
    comments on the PR *)

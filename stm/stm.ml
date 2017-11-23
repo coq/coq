@@ -20,6 +20,7 @@ let stm_prerr_debug   s = if !Flags.debug then begin stm_pr_err (s ()) end else 
 
 open Pp
 open CErrors
+open Names
 open Feedback
 open Vernacexpr
 
@@ -111,7 +112,7 @@ type aast = {
   loc : Loc.t option;
   indentation : int;
   strlen : int;
-  mutable expr : vernac_expr; (* mutable: Proof using hinted by aux file *)
+  mutable expr : vernac_control; (* mutable: Proof using hinted by aux file *)
 }
 let pr_ast { expr; indentation } = Pp.(int indentation ++ str " " ++ Ppvernac.pr_vernac expr)
 
@@ -119,14 +120,14 @@ let default_proof_mode () = Proof_global.get_default_proof_mode_name () [@ocaml.
 
 (* Commands piercing opaque *)
 let may_pierce_opaque = function
-  | { expr = VernacPrint _ } -> true
-  | { expr = VernacExtend (("Extraction",_), _) } -> true
-  | { expr = VernacExtend (("SeparateExtraction",_), _) } -> true
-  | { expr = VernacExtend (("ExtractionLibrary",_), _) } -> true
-  | { expr = VernacExtend (("RecursiveExtractionLibrary",_), _) } -> true
-  | { expr = VernacExtend (("ExtractionConstant",_), _) } -> true
-  | { expr = VernacExtend (("ExtractionInlinedConstant",_), _) } -> true
-  | { expr = VernacExtend (("ExtractionInductive",_), _) } -> true
+  | VernacPrint _
+  | VernacExtend (("Extraction",_), _)
+  | VernacExtend (("SeparateExtraction",_), _)
+  | VernacExtend (("ExtractionLibrary",_), _)
+  | VernacExtend (("RecursiveExtractionLibrary",_), _)
+  | VernacExtend (("ExtractionConstant",_), _)
+  | VernacExtend (("ExtractionInlinedConstant",_), _)
+  | VernacExtend (("ExtractionInductive",_), _) -> true
   | _ -> false
 
 let update_global_env () =
@@ -545,12 +546,10 @@ end = struct (* {{{ *)
     vcs := rewrite_merge !vcs id ~ours ~theirs:Noop ~at branch
   let reachable id = reachable !vcs id
   let mk_branch_name { expr = x } = Branch.make
-    (let rec aux x = match x with
-    | VernacDefinition (_,((_,i),_),_) -> Names.Id.to_string i
-    | VernacStartTheoremProof (_,[Some ((_,i),_),_]) -> Names.Id.to_string i
-    | VernacTime (_, e)
-    | VernacTimeout (_, e) -> aux e
-    | _ -> "branch" in aux x)
+    (match Vernacprop.under_control x with
+    | VernacDefinition (_,((_,i),_),_) -> Id.to_string i
+    | VernacStartTheoremProof (_,[Some ((_,i),_),_]) -> Id.to_string i
+    | _ -> "branch")
   let edit_branch = Branch.make "edit"
   let branch ?root ?pos name kind = vcs := branch !vcs ?root ?pos name kind
   let get_info id =
@@ -984,7 +983,7 @@ let indent_script_item ((ng1,ngl1),nl,beginend,ppl) (cmd,ng) =
   in
   (* Some special handling of bullets and { }, to get a nicer display *)
   let pred n = max 0 (n-1) in
-  let ind, nl, new_beginend = match cmd with
+  let ind, nl, new_beginend = match Vernacprop.under_control cmd with
     | VernacSubproof _ -> pred ind, nl, (pred ind)::beginend
     | VernacEndSubproof -> List.hd beginend, false, List.tl beginend
     | VernacBullet _ -> pred ind, nl, beginend
@@ -1049,25 +1048,26 @@ let stm_vernac_interp ?proof ?route id st { verbose; loc; expr } : Vernacstate.t
   (* We need to check if a command should be filtered from
    * vernac_entries, as it cannot handle it. This should go away in
    * future refactorings.
-   *)
-  let rec is_filtered_command = function
-  | VernacResetName _ | VernacResetInitial | VernacBack _
-  | VernacBackTo _ | VernacRestart | VernacUndo _ | VernacUndoTo _
-  | VernacBacktrack _ | VernacAbortAll | VernacAbort _ -> true
-  | VernacTime (_,e) | VernacTimeout (_,e) | VernacRedirect (_,(_,e)) -> is_filtered_command e
-  | _ -> false
+  *)
+  let is_filtered_command = function
+    | VernacResetName _ | VernacResetInitial | VernacBack _
+    | VernacBackTo _ | VernacRestart | VernacUndo _ | VernacUndoTo _
+    | VernacBacktrack _ | VernacAbortAll | VernacAbort _ -> true
+    | _ -> false
   in
-  let aux_interp st cmd =
-  if is_filtered_command cmd then
-    (stm_pperr_endline Pp.(fun () -> str "ignoring " ++ Ppvernac.pr_vernac expr); st)
-  else match cmd with
-  | VernacShow ShowScript -> ShowScript.show_script (); st
-  | expr ->
-    stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
-    try Vernacentries.interp ?verbosely:(Some verbose) ?proof ~st (Loc.tag ?loc expr)
-    with e ->
-      let e = CErrors.push e in
-      Exninfo.iraise Hooks.(call_process_error_once e)
+  let aux_interp st expr =
+    let cmd = Vernacprop.under_control expr in
+    if is_filtered_command cmd then
+      (stm_pperr_endline Pp.(fun () -> str "ignoring " ++ Ppvernac.pr_vernac expr); st)
+    else
+      match cmd with
+      | VernacShow ShowScript -> ShowScript.show_script (); st (** XX we are ignoring control here *)
+      | _ ->
+        stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
+        try Vernacentries.interp ?verbosely:(Some verbose) ?proof ~st (Loc.tag ?loc expr)
+        with e ->
+          let e = CErrors.push e in
+          Exninfo.iraise Hooks.(call_process_error_once e)
   in aux_interp st expr
 
 (****************************** CRUFT *****************************************)
@@ -1083,7 +1083,7 @@ module Backtrack : sig
   val branches_of : Stateid.t -> backup
 
   (* Returns the state that the command should backtract to *)
-  val undo_vernac_classifier : vernac_expr -> Stateid.t * vernac_when
+  val undo_vernac_classifier : vernac_control -> Stateid.t * vernac_when
 
 end = struct (* {{{ *)
 
@@ -1131,7 +1131,11 @@ end = struct (* {{{ *)
           match VCS.visit id with
           | { step = `Fork ((_,_,_,l),_) } -> l, false,0
           | { step = `Cmd { cids = l; ctac } } -> l, ctac,0
-          | { step = `Alias (_,{ expr = VernacUndo n}) } -> [], false, n
+          | { step = `Alias (_,{ expr }) } when not (Vernacprop.has_Fail expr) ->
+          begin match Vernacprop.under_control expr with
+                | VernacUndo n -> [], false, n
+                | _ -> [],false,0
+          end
           | _ -> [],false,0 in
         match f acc (id, vcs, ids, tactic, undo) with
         | `Stop x -> x
@@ -1149,7 +1153,7 @@ end = struct (* {{{ *)
     if VCS.is_interactive () = `No && !async_proofs_cache <> Some Force
     then undo_costly_in_batch_mode v;
     try
-      match v with
+      match Vernacprop.under_control v with
       | VernacResetInitial ->
           Stateid.initial, VtNow
       | VernacResetName (_,name) ->
@@ -1242,7 +1246,7 @@ let _ = CErrors.register_handler (function
 
 type document_node = {
   indentation : int;
-  ast : Vernacexpr.vernac_expr;
+  ast : Vernacexpr.vernac_control;
   id : Stateid.t;
 }
 
@@ -1257,7 +1261,7 @@ type static_block_detection =
 type recovery_action = {
   base_state : Stateid.t;
   goals_to_admit : Goal.goal list;
-  recovery_command : Vernacexpr.vernac_expr option;
+  recovery_command : Vernacexpr.vernac_control option;
 }
 
 type dynamic_block_error_recovery =
@@ -1494,7 +1498,7 @@ end = struct (* {{{ *)
           stm_vernac_interp stop
             ~proof:(pobject, terminator) st
             { verbose = false; loc; indentation = 0; strlen = 0;
-              expr = (VernacEndProof (Proved (Opaque,None))) }) in
+              expr = VernacExpr (VernacEndProof (Proved (Opaque,None))) }) in
         ignore(Future.join checked_proof);
       end;
       (* STATE: Restore the state XXX: handle exn *)
@@ -1642,7 +1646,7 @@ end = struct (* {{{ *)
       let st = Vernacstate.freeze_interp_state `No in
       ignore(stm_vernac_interp stop ~proof st
         { verbose = false; loc; indentation = 0; strlen = 0;
-          expr = (VernacEndProof (Proved (Opaque,None))) });
+          expr = VernacExpr (VernacEndProof (Proved (Opaque,None))) });
       `OK proof
       end
     with e ->
@@ -2107,30 +2111,43 @@ let collect_proof keep cur hd brkind id =
    | [] -> no_name
    | id :: _ -> Names.Id.to_string id in
  let loc = (snd cur).loc in
- let rec is_defined_expr = function
+ let is_defined_expr = function
    | VernacEndProof (Proved (Transparent,_)) -> true
-   | VernacTime (_, e) -> is_defined_expr e
-   | VernacRedirect (_, (_, e)) -> is_defined_expr e
-   | VernacTimeout (_, e) -> is_defined_expr e
    | _ -> false in
  let is_defined = function
-   | _, { expr = e } -> is_defined_expr e in
+   | _, { expr = e } -> is_defined_expr (Vernacprop.under_control e)
+                        && (not (Vernacprop.has_Fail e)) in
  let proof_using_ast = function
-   | Some (_, ({ expr = VernacProof(_,Some _) } as v)) -> Some v
+   | VernacProof(_,Some _) -> true
+   | _ -> false
+ in
+ let proof_using_ast = function
+   | Some (_, v) when proof_using_ast (Vernacprop.under_control v.expr)
+                      && (not (Vernacprop.has_Fail v.expr)) -> Some v
    | _ -> None in
  let has_proof_using x = proof_using_ast x <> None in
  let proof_no_using = function
-   | Some (_, ({ expr = VernacProof(t,None) } as v)) -> t,v
+   | VernacProof(t,None) -> t
+   | _ -> assert false
+ in
+ let proof_no_using = function
+   | Some (_, v) -> proof_no_using (Vernacprop.under_control v.expr), v
    | _ -> assert false in
  let has_proof_no_using = function
-   | Some (_, { expr = VernacProof(_,None) }) -> true
+   | VernacProof(_,None) -> true
+   | _ -> false
+ in
+ let has_proof_no_using = function
+   | Some (_, v) -> has_proof_no_using (Vernacprop.under_control v.expr)
+                    && (not (Vernacprop.has_Fail v.expr))
    | _ -> false in
  let too_complex_to_delegate = function
-   | { expr = (VernacDeclareModule _
-              | VernacDefineModule _
-              | VernacDeclareModuleType _
-              | VernacInclude _) } -> true
-   | { expr =  (VernacRequire _ | VernacImport _) } -> true
+   | VernacDeclareModule _
+   | VernacDefineModule _
+   | VernacDeclareModuleType _
+   | VernacInclude _
+   | VernacRequire _
+   | VernacImport _ -> true
    | ast -> may_pierce_opaque ast in
  let parent = function Some (p, _) -> p | None -> assert false in
  let is_empty = function `Async(_,[],_,_) | `MaybeASync(_,[],_,_) -> true | _ -> false in
@@ -2138,7 +2155,8 @@ let collect_proof keep cur hd brkind id =
     let view = VCS.visit id in
     match view.step with
     | (`Sideff (ReplayCommand x,_) | `Cmd { cast = x })
-      when too_complex_to_delegate x -> `Sync(no_name,`Print)
+      when too_complex_to_delegate (Vernacprop.under_control x.expr) ->
+       `Sync(no_name,`Print)
     | `Cmd { cast = x } -> collect (Some (id,x)) (id::accn) view.next
     | `Sideff (ReplayCommand x,_) -> collect (Some (id,x)) (id::accn) view.next
     (* An Alias could jump everywhere... we hope we can ignore it*)
@@ -2158,7 +2176,7 @@ let collect_proof keep cur hd brkind id =
         (try
           let name, hint = name ids, get_hint_ctx loc  in
           let t, v = proof_no_using last in
-          v.expr <- VernacProof(t, Some hint);
+          v.expr <- VernacExpr(VernacProof(t, Some hint));
           `ASync (parent last,accn,name,delegate name)
         with Not_found ->
           let name = name ids in
@@ -2177,9 +2195,13 @@ let collect_proof keep cur hd brkind id =
    | `ASync(_,_,name,_) -> `Sync (name,why) in
 
  let check_policy rc = if async_policy () then rc else make_sync `Policy rc in
+ let is_vernac_exact = function
+   | VernacExactProof _ -> true
+   | _ -> false
+ in
  match cur, (VCS.visit id).step, brkind with
- | (parent, { expr = VernacExactProof _ }), `Fork _, _
- | (parent, { expr = VernacTime (_, VernacExactProof _) }), `Fork _, _ ->
+ | (parent, x), `Fork _, _ when is_vernac_exact (Vernacprop.under_control x.expr)
+                                && (not (Vernacprop.has_Fail x.expr)) ->
      `Sync (no_name,`Immediate)
  | _, _, { VCS.kind = `Edit _ }  -> check_policy (collect (Some cur) [] id)
  | _ ->
@@ -2752,7 +2774,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
             if !async_proofs_full then `QueryQueue (ref false)
             else if VCS.is_vio_doc () &&
                     VCS.((get_branch head).kind = `Master) &&
-                    may_pierce_opaque x
+                    may_pierce_opaque (Vernacprop.under_control x.expr)
                  then `SkipQueue
             else `MainQueue in
           VCS.commit id (mkTransCmd x [] false queue);
@@ -2814,7 +2836,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
           rc
 
       (* Side effect on all branches *)
-      | VtUnknown, _ when expr = VernacToplevelControl Drop ->
+      | VtUnknown, _ when Vernacprop.under_control expr = VernacToplevelControl Drop ->
         let st = Vernacstate.freeze_interp_state `No in
         ignore(stm_vernac_interp (VCS.get_branch_pos head) st x);
         `Ok
@@ -2826,7 +2848,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
           VCS.commit id (mkTransCmd x l in_proof `MainQueue);
           (* We can't replay a Definition since universes may be differently
            * inferred.  This holds in Coq >= 8.5 *)
-	  let action = match x.expr with
+          let action = match Vernacprop.under_control x.expr with
 	    | VernacDefinition(_, _, DefineBody _) -> CherryPickEnv
 	    | _ -> ReplayCommand x in
 	  VCS.propagate_sideff ~action;
@@ -2854,7 +2876,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
                 | VernacInstance (false, _,_ , None, _) -> GuaranteesOpacity
                 | VernacLocal (_,e) -> opacity_of_produced_term e
                 | _ -> Doesn'tGuaranteeOpacity in
-              VCS.commit id (Fork (x,bname,opacity_of_produced_term x.expr,[]));
+              VCS.commit id (Fork (x,bname,opacity_of_produced_term (Vernacprop.under_control x.expr),[]));
               let proof_mode = default_proof_mode () in
               VCS.branch bname (`Proof (proof_mode, VCS.proof_nesting () + 1));
               Proof_global.activate_proof_mode proof_mode [@ocaml.warning "-3"];

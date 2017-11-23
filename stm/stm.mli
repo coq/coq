@@ -39,7 +39,7 @@ val new_doc  : stm_init_options -> doc * Stateid.t
 (* [parse_sentence sid pa] Reads a sentence from [pa] with parsing
    state [sid] Returns [End_of_input] if the stream ends *)
 val parse_sentence : doc:doc -> Stateid.t -> Pcoq.Gram.coq_parsable ->
-  Vernacexpr.vernac_expr Loc.located
+  Vernacexpr.vernac_control Loc.located
 
 (* Reminder: A parsable [pa] is constructed using
    [Pcoq.Gram.coq_parsable stream], where [stream : char Stream.t]. *)
@@ -53,7 +53,7 @@ exception End_of_input
    If [newtip] is provided, then the returned state id is guaranteed
    to be [newtip] *)
 val add : doc:doc -> ontop:Stateid.t -> ?newtip:Stateid.t ->
-  bool -> Vernacexpr.vernac_expr Loc.located ->
+  bool -> Vernacexpr.vernac_control Loc.located ->
   doc * Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
 
 (* [query at ?report_with cmd] Executes [cmd] at a given state [at],
@@ -111,7 +111,7 @@ val get_current_state : doc:doc -> Stateid.t
 val get_ldir : doc:doc -> Names.DirPath.t
 
 (* This returns the node at that position *)
-val get_ast : doc:doc -> Stateid.t -> (Vernacexpr.vernac_expr Loc.located) option
+val get_ast : doc:doc -> Stateid.t -> (Vernacexpr.vernac_control Loc.located) option
 
 (* Filename *)
 val set_compilation_hints : string -> unit
@@ -174,7 +174,7 @@ type static_block_declaration = {
 
 type document_node = {
   indentation : int;
-  ast : Vernacexpr.vernac_expr;
+  ast : Vernacexpr.vernac_control;
   id : Stateid.t;
 }
 
@@ -189,7 +189,7 @@ type static_block_detection =
 type recovery_action = {
   base_state : Stateid.t;
   goals_to_admit : Goal.goal list;
-  recovery_command : Vernacexpr.vernac_expr option;
+  recovery_command : Vernacexpr.vernac_control option;
 }
 
 type dynamic_block_error_recovery =

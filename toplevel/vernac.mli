@@ -12,7 +12,7 @@
     expected to handle and print errors in form of exceptions, however
     care is taken so the state machine is left in a consistent
     state. *)
-val process_expr : Stm.doc -> Stateid.t -> Vernacexpr.vernac_expr Loc.located -> Stm.doc * Stateid.t
+val process_expr : Stm.doc -> Stateid.t -> Vernacexpr.vernac_control Loc.located -> Stm.doc * Stateid.t
 
 (** [load_vernac echo sid file] Loads [file] on top of [sid], will
     echo the commands if [echo] is set. Callers are expected to handle
