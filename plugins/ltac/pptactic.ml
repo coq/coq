@@ -84,6 +84,14 @@ type 'a extra_genarg_printer =
     (tolerability -> Val.t -> std_ppcmds) ->
     'a -> std_ppcmds
 
+let string_of_genarg_arg (ArgumentType arg) =
+  let rec aux : type a b c. (a, b, c) genarg_type -> string = function
+  | ListArg t -> aux t ^ "_list"
+  | OptArg t -> aux t ^ "_opt"
+  | PairArg (t1, t2) -> assert false (* No parsing/printing rule for it *)
+  | ExtraArg s -> ArgT.repr s in
+  aux arg
+
   let keyword x = tag_keyword (str x)
   let primitive x = tag_primitive (str x)
 
@@ -529,15 +537,24 @@ let pr_goal_selector ~toplevel s =
 
   let pr_funvar n = spc () ++ Name.print n
 
-  let pr_let_clause k pr (id,(bl,t)) =
-    hov 0 (keyword k ++ spc () ++ pr_lident id ++ prlist pr_funvar bl ++
-             str " :=" ++ brk (1,1) ++ pr (TacArg (Loc.tag t)))
+  let pr_let_clause k pr_gen pr_arg (id,(bl,t)) =
+    let pr = function
+      | TacGeneric arg ->
+         let name = string_of_genarg_arg (genarg_tag arg) in
+         if name = "unit" || name = "int" then
+           (* Hard-wired parsing rules *)
+           pr_gen  arg
+         else
+           str name ++ str ":" ++ surround (pr_gen arg)
+      | _ -> pr_arg (TacArg (Loc.tag t)) in
+    hov 0 (keyword k ++ spc () ++ pr_located pr_id id ++ prlist pr_funvar bl ++
+             str " :=" ++ brk (1,1) ++ pr t)
 
-  let pr_let_clauses recflag pr = function
+  let pr_let_clauses recflag pr_gen pr = function
     | hd::tl ->
       hv 0
-        (pr_let_clause (if recflag then "let rec" else "let") pr hd ++
-           prlist (fun t -> spc () ++ pr_let_clause "with" pr t) tl)
+        (pr_let_clause (if recflag then "let rec" else "let") pr_gen pr hd ++
+           prlist (fun t -> spc () ++ pr_let_clause "with" pr_gen pr t) tl)
     | [] -> anomaly (Pp.str "LetIn must declare at least one binding.")
 
   let pr_seq_body pr tl =
@@ -851,7 +868,7 @@ let pr_goal_selector ~toplevel s =
               let llc = List.map (fun (id,t) -> (id,extract_binders t)) llc in
               v 0
                 (hv 0 (
-                  pr_let_clauses recflag (pr_tac ltop) llc
+                  pr_let_clauses recflag pr.pr_generic (pr_tac ltop) llc
                   ++ spc () ++ keyword "in"
                  ) ++ fnl () ++ pr_tac (llet,E) u),
               llet
@@ -996,7 +1013,7 @@ let pr_goal_selector ~toplevel s =
             | TacAtom (loc,t) ->
               pr_with_comments ?loc (hov 1 (pr_atom pr strip_prod_binders tag_atom t)), ltatom
             | TacArg(_,Tacexp e) ->
-              pr.pr_tactic (latom,E) e, latom
+              pr_tac inherited e, latom
             | TacArg(_,ConstrMayEval (ConstrTerm c)) ->
               keyword "constr:" ++ pr.pr_constr c, latom
             | TacArg(_,ConstrMayEval c) ->
@@ -1213,8 +1230,8 @@ let () =
   ;
   Genprint.register_print0
     wit_constr
-    Ppconstr.pr_constr_expr
-    (fun (c, _) -> Printer.pr_glob_constr c)
+    Ppconstr.pr_lconstr_expr
+    (fun (c, _) -> Printer.pr_lglob_constr c)
     Printer.pr_econstr
   ;
   Genprint.register_print0
