@@ -2,4 +2,4 @@
 
 # determine if a file has whitespace checking enabled in .gitattributes
 
-git check-attr whitespace -- "$1" | grep -q -v 'unspecified$'
+git check-attr whitespace -- "$1" | grep -q -v -e 'unset$' -e 'unspecified$'
