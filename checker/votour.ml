@@ -195,13 +195,13 @@ let access_children vs os pos =
   else raise Exit
 
 let access_list v o pos =
-  let rec loop o pos = match Repr.repr o with
-  | INT 0 -> []
+  let rec loop o pos accu = match Repr.repr o with
+  | INT 0 -> List.rev accu
   | BLOCK (0, [|hd; tl|]) ->
-    (v, hd, 0 :: pos) :: loop tl (1 :: pos)
+    loop tl (1 :: pos) ((v, hd, 0 :: pos) :: accu)
   | _ -> raise Exit
   in
-  Array.of_list (loop o pos)
+  Array.of_list (loop o pos [])
 
 let access_block o = match Repr.repr o with
 | BLOCK (tag, os) -> (tag, os)
