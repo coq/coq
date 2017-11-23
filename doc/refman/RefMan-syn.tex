@@ -494,20 +494,28 @@ Locate "exists _ .. _ , _".
 \\
 \\
 {\modifiers}
-  & ::= & \nelist{\ident}{,} {\tt at level} {\naturalnumber} \\
-  & $|$ & \nelist{\ident}{,} {\tt at next level} \\
-  & $|$ & {\tt at level} {\naturalnumber} \\
+  & ::= & {\tt at level} {\naturalnumber} \\
+  & $|$ & \nelist{\ident}{,} {\tt at level} {\naturalnumber} \zeroone{\binderinterp}\\
+  & $|$ & \nelist{\ident}{,} {\tt at next level} \zeroone{\binderinterp}\\
+  & $|$ & {\ident} {\binderinterp} \\
+  & $|$ & {\ident} {\tt ident} \\
+  & $|$ & {\ident} {\tt global} \\
+  & $|$ & {\ident} {\tt bigint} \\
+  & $|$ & {\ident} \zeroone{{\tt strict}} {\tt pattern} \zeroone{{\tt at level} {\naturalnumber}}\\
+  & $|$ & {\ident} {\tt binder} \\
+  & $|$ & {\ident} {\tt closed binder} \\
   & $|$ & {\tt left associativity} \\
   & $|$ & {\tt right associativity} \\
   & $|$ & {\tt no associativity} \\
-  & $|$ & {\ident} {\tt ident} \\
-  & $|$ & {\ident} {\tt binder} \\
-  & $|$ & {\ident} {\tt closed binder} \\
-  & $|$ & {\ident} {\tt global} \\
-  & $|$ & {\ident} {\tt bigint} \\
   & $|$ & {\tt only parsing} \\
   & $|$ & {\tt only printing} \\
-  & $|$ & {\tt format} {\str} 
+  & $|$ & {\tt format} {\str} \\
+\\
+\\
+{\binderinterp}
+  & ::= & {\tt as ident} \\
+  & $|$ & {\tt as pattern} \\
+  & $|$ & {\tt as strict pattern} \\
 \end{tabular}
 \end{centerframe}
 \end{small}
@@ -515,9 +523,93 @@ Locate "exists _ .. _ , _".
 \label{notation-syntax}
 \end{figure}
 
-\subsection{Notations and simple binders}
+\subsection{Notations and binders}
 
-Notations can be defined for binders as in the example:
+Notations can include binders. This section lists
+different ways to deal with binders. For further examples, see also
+Section~\ref{RecursiveNotationsWithBinders}.
+
+\subsubsection{Binders bound in the notation and parsed as identifiers}
+
+Here is the basic example of a notation using a binder:
+
+\begin{coq_example*}
+Notation "'sigma' x : A , B" := (sigT (fun x : A => B))
+  (at level 200, x ident, A at level 200, right associativity).
+\end{coq_example*}
+
+The binding variables in the right-hand side that occur as a parameter
+of the notation (here {\tt x}) dynamically bind all the occurrences
+in their respective binding scope after instantiation of the
+parameters of the notation. This means that the term bound to {\tt B} can
+refer to the variable name bound to {\tt x} as shown in the following
+application of the notation:
+
+\begin{coq_example}
+Check sigma z : nat, z = 0.
+\end{coq_example}
+
+Notice the modifier {\tt x ident} in the declaration of the
+notation. It tells to parse {\tt x} as a single identifier.
+
+\subsubsection{Binders bound in the notation and parsed as patterns}
+
+In the same way as patterns can be used as binders, as in {\tt fun
+  '(x,y) => x+y} or {\tt fun '(existT \_ x \_) => x}, notations can be
+defined so that any pattern (in the sense of the entry {\pattern} of
+Figure~\ref{term-syntax-aux}) can be used in place of the
+binder. Here is an example:
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{coq_example*}
+Notation "'subset' ' p , P " := (sig (fun p => P))
+  (at level 200, p pattern, format "'subset'  ' p ,  P").
+\end{coq_example*}
+
+\begin{coq_example}
+Check subset '(x,y), x+y=0.
+\end{coq_example}
+
+The modifier {\tt p pattern} in the declaration of the notation
+tells to parse $p$ as a pattern. Note that a single
+variable is both an identifier and a pattern, so, e.g., the following
+also works:
+
+% Note: we rely on the notation of the standard library which does not
+% print the expected output, so we hide the output.
+\begin{coq_example}
+Check subset 'x, x=0.
+\end{coq_example}
+
+If one wants to prevent such a notation to be used for printing when the
+pattern is reduced to a single identifier, one has to use instead
+the modifier {\tt p strict pattern}. For parsing, however, a {\tt
+  strict pattern} will continue to include the case of a
+variable. Here is an example showing the difference:
+
+\begin{coq_example*}
+Notation "'subset_bis' ' p , P" := (sig (fun p => P))
+  (at level 200, p strict pattern).
+Notation "'subset_bis' p , P " := (sig (fun p => P))
+  (at level 200, p ident).
+\end{coq_example*}
+
+\begin{coq_example}
+Check subset_bis 'x, x=0.
+\end{coq_example}
+
+The default level for a {\tt pattern} is 0. One can use a different level by
+using {\tt pattern at level} $n$ where the scale is the same as the one for
+terms (Figure~\ref{init-notations}).
+
+\subsubsection{Binders bound in the notation and parsed as terms}
+
+Sometimes, for the sake of factorization of rules, a binder has to be
+parsed as a term. This is typically the case for a notation such as
+the following:
 
 \begin{coq_eval}
 Set Printing Depth 50.
@@ -525,18 +617,52 @@ Set Printing Depth 50.
 (**** an incompatibility with the reserved notation ********)
 \end{coq_eval}
 \begin{coq_example*}
-Notation "{ x : A  |  P  }" := (sig (fun x : A => P)) (at level 0).
+Notation "{ x : A  |  P  }" := (sig (fun x : A => P))
+  (at level 0, x at level 99 as ident).
 \end{coq_example*}
 
-The binding variables in the left-hand side that occur as a parameter
-of the notation naturally bind all their occurrences appearing in
-their respective scope after instantiation of the parameters of the
-notation.
+This is so because the grammar also contains rules starting with
+{\tt \{} and followed by a term, such as the rule for the notation
+  {\tt \{ A \} + \{ B \}} for the constant {\tt
+    sumbool}~(see Section~\ref{sumbool}).
 
-Contrastingly, the binding variables that are not a parameter of the
-notation do not capture the variables of same name that
-could appear in their scope after instantiation of the
-notation. E.g., for the notation
+Then, in the rule, {\tt x ident} is replaced by {\tt x at level 99 as
+  ident} meaning that {\tt x} is parsed as a term at level 99 (as done
+in the notation for {\tt sumbool}), but that this term has actually to
+be an identifier.
+
+The notation {\tt \{ x | P \}} is already defined in the standard
+library with the {\tt as ident} modifier. We cannot redefine it but
+one can define an alternative notation, say {\tt \{ p such that P }\},
+using instead {\tt as pattern}.
+
+% Note, this conflicts with the default rule in the standard library, so
+% we don't show the
+\begin{coq_example*}
+Notation "{ p 'such' 'that' P }" := (sig (fun p => P))
+  (at level 0, p at level 99 as pattern).
+\end{coq_example*}
+
+Then, the following works:
+\begin{coq_example}
+Check {(x,y) such that x+y=0}.
+\end{coq_example}
+
+To enforce that the pattern should not be used for printing when it
+is just an identifier, one could have said {\tt p at level
+  99 as strict pattern}.
+
+Note also that in the absence of a {\tt as ident}, {\tt as strict
+  pattern} or {\tt as pattern} modifiers, the default is to consider
+subexpressions occurring in binding position and parsed as terms to be
+{\tt as ident}.
+
+\subsubsection{Binders not bound in the notation}
+
+We can also have binders in the right-hand side of a notation which
+are not themselves bound in the notation. In this case, the binders
+are considered up to renaming of the internal binder. E.g., for the
+notation
 
 \begin{coq_example*}
 Notation "'exists_different' n" := (exists p:nat, p<>n) (at level 200).
@@ -551,14 +677,6 @@ Set Printing Depth 50.
 \begin{coq_example}
 Fail Check (exists_different p).
 \end{coq_example}
-
-\Rem Binding variables must not necessarily be parsed using the
-{\tt ident} entry. For factorization purposes, they can be said to be
-parsed at another level (e.g. {\tt x} in \verb="{ x : A | P }"= must be
-parsed at level 99 to be factorized with the notation
-\verb="{ A } + { B }"= for which {\tt A} can be any term).  
-However, even if parsed as a term, this term must at the end be effectively 
-a single identifier.
 
 \subsection{Notations with recursive patterns}
 \label{RecursiveNotations}
@@ -622,6 +740,7 @@ notations, they can also be declared within interpretation scopes (see
 section \ref{scopes}).
 
 \subsection{Notations with recursive patterns involving binders}
+\label{RecursiveNotationsWithBinders}
 
 Recursive notations can also be used with binders. The basic example is:
 
