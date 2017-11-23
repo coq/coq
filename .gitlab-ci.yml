@@ -71,12 +71,14 @@ before_script:
     - echo 'end:coq.config'
 
     - echo 'start:coq.build'
+    - make -j ${NJOBS} byte
     - make -j ${NJOBS}
     - make test-suite/misc/universes/all_stdlib.v
     - echo 'end:coq:build'
 
     - echo 'start:coq.install'
     - make install
+    - make install-byte
     - cp bin/fake_ide _install_ci/bin/
     - echo 'end:coq.install'
 
