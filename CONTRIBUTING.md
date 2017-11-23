@@ -36,6 +36,10 @@ Here are a few tags Coq developers may add to your PR and what they mean. In gen
 - [needs: fixing](https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+fixing%22) indicates the PR needs a fix, as discussed in the comments.
 - [needs: testing](https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+testing%22) indicates the PR needs testing. This is often used when testing beyond what the test suite can handle is required. For example, performance benchmarking is currently performed with a different infrastructure. Unless some followup is specifically requested you aren't expected to do this additional testing.
 
+The release manager uses the following filter to know which PRs seem ready for merge. If you are waiting for a PR to be merged, make sure it appears in this list:
+
+- [Pull requests ready for merge](https://github.com/coq/coq/pulls?utf8=%E2%9C%93&q=is%3Apr%20is%3Aopen%20-label%3A%22needs%3A%20discussion%22%20-label%3A%22needs%3A%20testing%22%20-label%3A%22needs%3A%20fixing%22%20-label%3A%22needs%3A%20progress%22%20-label%3A%22needs%3A%20rebase%22%20-label%3A%22needs%3A%20review%22%20-label%3A%22needs%3A%20independent%20fix%22%20-label%3A%22needs%3A%20feedback%22%20-label%3A%22help%20wanted%22%20-review%3Achanges_requested%20-status%3Apending%20base%3Amaster%20sort%3Aupdated-asc%20)
+
 ## Documentation
 
 Currently the process for contributing to the documentation is the same as for changing anything else in Coq, so please submit a pull request as described above.
