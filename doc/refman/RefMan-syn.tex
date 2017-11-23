@@ -658,6 +658,7 @@ subexpressions occurring in binding position and parsed as terms to be
 {\tt as ident}.
 
 \subsubsection{Binders not bound in the notation}
+\label{NotationsWithBinders}
 
 We can also have binders in the right-hand side of a notation which
 are not themselves bound in the notation. In this case, the binders
@@ -802,6 +803,30 @@ used. Here is an example:
 Notation "'exists_non_null' x .. y  , P" :=
   (ex (fun x => x <> 0 /\ .. (ex (fun y => y <> 0 /\ P)) ..))
   (at level 200, x binder).
+\end{coq_example*}
+
+\subsection{Predefined entries}
+
+By default, sub-expressions are parsed as terms and the corresponding
+grammar entry is called {\tt constr}. However, one may sometimes want
+to restrict the syntax of terms in a notation. For instance, the
+following notation will accept to parse only global reference in
+position of {\tt x}:
+
+\begin{coq_example*}
+Notation "'apply' f a1 .. an" := (.. (f a1) .. an)
+  (at level 10, f global, a1, an at level 9).
+\end{coq_example*}
+
+In addition to {\tt global}, one can restrict the syntax of a
+sub-expression by using the entry names {\tt ident} or {\tt pattern}
+already seen in Section~\ref{NotationsWithBinders}, even when the
+corresponding expression is not used as a binder in the right-hand
+side. E.g.:
+
+\begin{coq_example*}
+Notation "'apply_id' f a1 .. an" := (.. (f a1) .. an)
+  (at level 10, f ident, a1, an at level 9).
 \end{coq_example*}
 
 \subsection{Summary}
