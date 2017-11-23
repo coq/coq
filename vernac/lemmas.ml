@@ -66,14 +66,14 @@ let adjust_guardness_conditions const = function
           match Constr.kind body with
           | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
 (*      let possible_indexes =
-	List.map2 (fun i c -> match i with Some i -> i | None ->
-	  List.interval 0 (List.length ((lam_assum c))))
-	  lemma_guard (Array.to_list fixdefs) in
+        List.map2 (fun i c -> match i with Some i -> i | None ->
+          List.interval 0 (List.length ((lam_assum c))))
+          lemma_guard (Array.to_list fixdefs) in
 *)
               let add c cb e =
                 let exists c e =
                   try ignore(Environ.lookup_constant c e); true
-                  with Not_found -> false in 
+                  with Not_found -> false in
                 if exists c e then e else Environ.add_constant c cb e in
               let env = List.fold_left (fun env { eff } ->
                 match eff with
@@ -84,7 +84,7 @@ let adjust_guardness_conditions const = function
               let indexes =
                 search_guard env
                   possible_indexes fixdecls in
-		(mkFix ((indexes,0),fixdecls), ctx), eff
+                (mkFix ((indexes,0),fixdecls), ctx), eff
           | _ -> (body, ctx), eff) }
 
 let find_mutually_recursive_statements thms =
@@ -122,23 +122,23 @@ let find_mutually_recursive_statements thms =
     (* (degenerated cartesian product since there is at most one coind ccl) *)
     let same_indccl =
       List.cartesians_filter (fun hyp oks ->
-	if List.for_all (of_same_mutind hyp) oks
-	then Some (hyp::oks) else None) [] ind_ccls in
+        if List.for_all (of_same_mutind hyp) oks
+        then Some (hyp::oks) else None) [] ind_ccls in
     let ordered_same_indccl =
       List.filter (List.for_all_i (fun i ((kn,j),_,_) -> Int.equal i j) 0) same_indccl in
     (* Check if some hypotheses are inductive in the same type *)
     let common_same_indhyp =
       List.cartesians_filter (fun hyp oks ->
-	if List.for_all (of_same_mutind hyp) oks
-	then Some (hyp::oks) else None) [] inds_hyps in
+        if List.for_all (of_same_mutind hyp) oks
+        then Some (hyp::oks) else None) [] inds_hyps in
     let ordered_inds,finite,guard =
       match ordered_same_indccl, common_same_indhyp with
       | indccl::rest, _ ->
-	  assert (List.is_empty rest);
+          assert (List.is_empty rest);
           (* One occ. of common coind ccls and no common inductive hyps *)
-	  if not (List.is_empty common_same_indhyp) then
-	    Flags.if_verbose Feedback.msg_info (str "Assuming mutual coinductive statements.");
-	  flush_all ();
+          if not (List.is_empty common_same_indhyp) then
+            Flags.if_verbose Feedback.msg_info (str "Assuming mutual coinductive statements.");
+          flush_all ();
           indccl, true, []
       | [], _::_ ->
           let () = match same_indccl with
@@ -153,10 +153,10 @@ let find_mutually_recursive_statements thms =
           | _ -> ()
           in
           let possible_guards = List.map (List.map pi3) inds_hyps in
-	  (* assume the largest indices as possible *)
-	  List.last common_same_indhyp, false, possible_guards
+          (* assume the largest indices as possible *)
+          List.last common_same_indhyp, false, possible_guards
       | _, [] ->
-	  user_err Pp.(str
+          user_err Pp.(str
             ("Cannot find common (mutual) inductive premises or coinductive" ^
              " conclusions in the statements."))
     in
@@ -215,7 +215,7 @@ let compute_proof_name locality = function
   | Some ((loc,id),pl) ->
       (* We check existence here: it's a bit late at Qed time *)
       if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
-	 locality == Global && Nametab.exists_cci (Lib.make_path_except_section id)
+         locality == Global && Nametab.exists_cci (Lib.make_path_except_section id)
       then
         user_err ?loc  (Id.print id ++ str " already exists.");
       id
@@ -232,7 +232,7 @@ let save_remaining_recthms (locality,p,kind) norm ctx binders body opaq i (id,(t
           let impl = false in (* copy values from Vernacentries *)
           let k = IsAssumption Conjectural in
           let c = SectionLocalAssum ((t_i,Univ.ContextSet.of_context ctx),p,impl) in
-	  let _ = declare_variable id (Lib.cwd(),c,k) in
+          let _ = declare_variable id (Lib.cwd(),c,k) in
           (Discharge, VarRef id,imps)
       | Local | Global ->
           let k = IsAssumption Conjectural in
@@ -259,10 +259,10 @@ let save_remaining_recthms (locality,p,kind) norm ctx binders body opaq i (id,(t
       let body_i = body_i body in
       match locality with
       | Discharge ->
-          let const = definition_entry ~types:t_i ~opaque:opaq ~poly:p 
-	    ~univs:ctx body_i in
-	  let c = SectionLocalDef const in
-	  let _ = declare_variable id (Lib.cwd(), c, k) in
+          let const = definition_entry ~types:t_i ~opaque:opaq ~poly:p
+            ~univs:ctx body_i in
+          let c = SectionLocalDef const in
+          let _ = declare_variable id (Lib.cwd(), c, k) in
           (Discharge,VarRef id,imps)
       | Local | Global ->
         let local = match locality with
@@ -271,8 +271,8 @@ let save_remaining_recthms (locality,p,kind) norm ctx binders body opaq i (id,(t
         | Discharge -> assert false
         in
         let const =
-	  Declare.definition_entry ~types:t_i ~poly:p ~univs:ctx ~opaque:opaq body_i
-	in
+          Declare.definition_entry ~types:t_i ~poly:p ~univs:ctx ~opaque:opaq body_i
+        in
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
         (locality,ConstRef kn,imps)
 
@@ -333,7 +333,7 @@ let universe_proof_terminator compute_guard hook =
         | Vernacexpr.Opaque      -> true, false
       in
       let proof = get_proof proof compute_guard
-	(hook (Some (fst proof.Proof_global.universes))) is_opaque in
+        (hook (Some (fst proof.Proof_global.universes))) is_opaque in
       begin match idopt with
       | None -> save_named ~export_seff proof
       | Some (_,id) -> save_anonymous ~export_seff proof id
@@ -348,7 +348,7 @@ let start_proof id ?pl kind sigma ?terminator ?sign c ?init_tac ?(compute_guard=
   | None -> standard_proof_terminator compute_guard hook
   | Some terminator -> terminator compute_guard hook
   in
-  let sign = 
+  let sign =
     match sign with
     | Some sign -> sign
     | None -> initialize_named_context_for_proof ()
@@ -361,7 +361,7 @@ let start_proof_univs id ?pl kind sigma ?terminator ?sign c ?init_tac ?(compute_
   | None -> universe_proof_terminator compute_guard hook
   | Some terminator -> terminator compute_guard hook
   in
-  let sign = 
+  let sign =
     match sign with
     | Some sign -> sign
     | None -> initialize_named_context_for_proof ()
@@ -376,7 +376,7 @@ let rec_tac_initializer finite guard thms snl =
     | _ -> assert false
   else
     (* nl is dummy: it will be recomputed at Qed-time *)
-    let nl = match snl with 
+    let nl = match snl with
      | None -> List.map succ (List.map List.last guard)
      | Some nl -> nl
     in match List.map2 (fun (id,(t,_)) n -> (id,n, EConstr.of_constr t)) thms nl with
@@ -392,8 +392,8 @@ let start_proof_with_initialization kind ctx decl recguard thms snl hook =
   | Some (finite,guard,init_tac) ->
       let rec_tac = rec_tac_initializer finite guard thms snl in
       Some (match init_tac with
-        | None -> 
-            if Flags.is_auto_intros () then 
+        | None ->
+            if Flags.is_auto_intros () then
               Tacticals.New.tclTHENS rec_tac (List.map intro_tac thms)
             else
               rec_tac
@@ -420,13 +420,13 @@ let start_proof_with_initialization kind ctx decl recguard thms snl hook =
             let body,opaq = retrieve_first_recthm ctx ref in
             let subst = Evd.evar_universe_context_subst ctx in
             let norm c = Universes.subst_opt_univs_constr subst c in
-	    let binders, ctx = Evd.check_univ_decl (Evd.from_ctx ctx) decl in
-	    let body = Option.map norm body in
+            let binders, ctx = Evd.check_univ_decl (Evd.from_ctx ctx) decl in
+            let body = Option.map norm body in
             List.map_i (save_remaining_recthms kind norm ctx binders body opaq) 1 other_thms in
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
-	  maybe_declare_manual_implicits false ref imps;
-	  call_hook (fun exn -> exn) hook strength ref) thms_data in
+          maybe_declare_manual_implicits false ref imps;
+          call_hook (fun exn -> exn) hook strength ref) thms_data in
       start_proof_univs id ~pl:decl kind ctx (EConstr.of_constr t) ?init_tac (fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard
 
 let start_proof_com ?inference_hook kind thms hook =
@@ -505,19 +505,19 @@ let save_proof ?proof = function
               if not !keep_admitted_vars then None
               else match Proof_global.get_used_variables(), pproofs with
               | Some _ as x, _ -> x
-              | None, (pproof, _) :: _ -> 
+              | None, (pproof, _) :: _ ->
                   let env = Global.env () in
                   let ids_typ = Environ.global_vars_set env typ in
                   let ids_def = Environ.global_vars_set env pproof in
                   Some (Environ.keep_hyps env (Id.Set.union ids_typ ids_def))
               | _ -> None in
-	    let decl = Proof_global.get_universe_decl () in
+            let decl = Proof_global.get_universe_decl () in
             let evd = Evd.from_ctx universes in
             let binders, ctx = Evd.check_univ_decl evd decl in
             let poly = pi2 k in
             let binders = if poly then Some binders else None in
             Admitted(id,k,(sec_vars, poly, (typ, ctx), None),
-		     (universes, binders))
+                     (universes, binders))
       in
       Proof_global.apply_terminator (Proof_global.get_terminator ()) pe
   | Vernacexpr.Proved (is_opaque,idopt) ->

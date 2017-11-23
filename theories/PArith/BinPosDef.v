@@ -356,16 +356,16 @@ Fixpoint gcdn (n : nat) (a b : positive) : positive :=
     | O => 1
     | S n =>
       match a,b with
-	| 1, _ => 1
-	| _, 1 => 1
-	| a~0, b~0 => (gcdn n a b)~0
-	| _  , b~0 => gcdn n a b
-	| a~0, _   => gcdn n a b
-	| a'~1, b'~1 =>
+        | 1, _ => 1
+        | _, 1 => 1
+        | a~0, b~0 => (gcdn n a b)~0
+        | _  , b~0 => gcdn n a b
+        | a~0, _   => gcdn n a b
+        | a'~1, b'~1 =>
           match a' ?= b' with
-	    | Eq => a
-	    | Lt => gcdn n (b'-a') a
-	    | Gt => gcdn n (a'-b') b
+            | Eq => a
+            | Lt => gcdn n (b'-a') a
+            | Gt => gcdn n (a'-b') b
           end
       end
   end.
@@ -381,27 +381,27 @@ Fixpoint ggcdn (n : nat) (a b : positive) : (positive*(positive*positive)) :=
     | O => (1,(a,b))
     | S n =>
       match a,b with
-	| 1, _ => (1,(1,b))
-	| _, 1 => (1,(a,1))
-	| a~0, b~0 =>
+        | 1, _ => (1,(1,b))
+        | _, 1 => (1,(a,1))
+        | a~0, b~0 =>
            let (g,p) := ggcdn n a b in
            (g~0,p)
-	| _, b~0 =>
+        | _, b~0 =>
            let '(g,(aa,bb)) := ggcdn n a b in
            (g,(aa, bb~0))
-	| a~0, _ =>
+        | a~0, _ =>
            let '(g,(aa,bb)) := ggcdn n a b in
            (g,(aa~0, bb))
-	| a'~1, b'~1 =>
+        | a'~1, b'~1 =>
            match a' ?= b' with
-	     | Eq => (a,(1,1))
-	     | Lt =>
-	        let '(g,(ba,aa)) := ggcdn n (b'-a') a in
-	        (g,(aa, aa + ba~0))
-	     | Gt =>
-		let '(g,(ab,bb)) := ggcdn n (a'-b') b in
-		(g,(bb + ab~0, bb))
-	   end
+             | Eq => (a,(1,1))
+             | Lt =>
+                let '(g,(ba,aa)) := ggcdn n (b'-a') a in
+                (g,(aa, aa + ba~0))
+             | Gt =>
+                let '(g,(ab,bb)) := ggcdn n (a'-b') b in
+                (g,(bb + ab~0, bb))
+           end
       end
   end.
 

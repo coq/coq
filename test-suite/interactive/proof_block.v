@@ -40,7 +40,7 @@ split.
   { exact I. }
 Qed.
 
-Definition banana := true + 4. 
+Definition banana := true + 4.
 
 Check banana.
 
@@ -51,7 +51,7 @@ split.
     unshelve eexists.
     + apply 3.
     + split.
-      * idtacx. trivial. 
+      * idtacx. trivial.
       * reflexivity.
   - trivial.
 Qed.

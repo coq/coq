@@ -76,11 +76,11 @@ tar --diff -a -f "$tarfile" --strip $strip --directory "$folder" | grep "Mod tim
   # Substitute ': Mod time differs' with nothing
   file=${file/: Mod time differs/}
   # Check if file exists
-  if [ -f "$folder/$file" ] ; then 
+  if [ -f "$folder/$file" ] ; then
     # Extract original file
     tar -x -a -f "$tarfile" --strip $strip --directory "$orig" "$prefix$file"
     # Compute diff
-    diff -u "$orig/$file" "$folder/$file" 
+    diff -u "$orig/$file" "$folder/$file"
   fi
 done
 

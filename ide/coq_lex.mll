@@ -54,10 +54,10 @@ and sentence initial stamp = parse
     }
   | ".." {
       (* We must have a particular rule for parsing "..", where no dot
-	 is a terminator, even if we have a blank afterwards
-	 (cf. for instance the syntax for recursive notation).
-	 This rule and the following one also allow to treat the "..."
-	 special case, where the third dot is a terminator. *)
+         is a terminator, even if we have a blank afterwards
+         (cf. for instance the syntax for recursive notation).
+         This rule and the following one also allow to treat the "..."
+         special case, where the third dot is a terminator. *)
       sentence false stamp lexbuf
     }
   | dot_sep {
@@ -67,7 +67,7 @@ and sentence initial stamp = parse
     }
   | undotted_sep {
       (* Separators like { or } and bullets * - + are only active
-	 at the start of a sentence *)
+         at the start of a sentence *)
       if initial then stamp (utf8_lexeme_start lexbuf + String.length (Lexing.lexeme lexbuf) - 1) Tags.Script.sentence;
       sentence initial stamp lexbuf
     }

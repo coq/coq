@@ -28,7 +28,7 @@ compute.
 Defined.
 
 Goal fst (pair nat nat) = nat.
-  unfold fst. 
+  unfold fst.
   match goal with
     | [ |- fst ?x = nat ] => fail 1 "compute failed"
     | [ |- nat = nat ] => idtac

@@ -124,7 +124,7 @@ let declare_command loc s c nt cl =
     [ <:str_item< do {
         CList.iteri (fun i (depr, f) -> Vernacinterp.vinterp_add depr ($se$, i) f) $funcl$;
         CList.iteri (fun i f -> Vernac_classifier.declare_vernac_classifier ($se$, i) f) $classl$;
-	CList.iteri (fun i r -> Egramml.extend_vernac_command_grammar ($se$, i) $nt$ r) $gl$;
+        CList.iteri (fun i r -> Egramml.extend_vernac_command_grammar ($se$, i) $nt$ r) $gl$;
       } >> ]
 
 open Pcaml

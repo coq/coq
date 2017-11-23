@@ -29,7 +29,7 @@ let cofix_evaluated_tag = 7
 
 (* It would be great if OCaml exported this value,
    So fixme if this happens in a new version of OCaml *)
-let last_variant_tag = 245 
+let last_variant_tag = 245
 
 type structured_constant =
   | Const_sorts of Sorts.t
@@ -99,24 +99,24 @@ type instruction =
   | Ksubcarrycint31                      (* subtraction -1, keeps the carry *)
   | Kmulint31                           (* multiplication modulo *)
   | Kmulcint31                          (* multiplication, result in two
-					   int31, for exact computation *)
+                                           int31, for exact computation *)
   | Kdiv21int31                          (* divides a double size integer
                                            (represented by an int31 in the
-					   accumulator and one on the top of
-					   the stack) by an int31. The result
-					   is a pair of the quotient and the
-					   rest.
-					   If the divisor is 0, it returns
-					   0. *)
+                                           accumulator and one on the top of
+                                           the stack) by an int31. The result
+                                           is a pair of the quotient and the
+                                           rest.
+                                           If the divisor is 0, it returns
+                                           0. *)
   | Kdivint31                           (* euclidian division (returns a pair
-					   quotient,rest) *)
+                                           quotient,rest) *)
   | Kaddmuldivint31                     (* generic operation for shifting and
-					   cycling. Takes 3 int31 i j and s,
-					   and returns x*2^s+y/(2^(31-s) *)
+                                           cycling. Takes 3 int31 i j and s,
+                                           and returns x*2^s+y/(2^(31-s) *)
   | Kcompareint31                       (* unsigned comparison of int31
-					   cf COMPAREINT31 in
-					   kernel/byterun/coq_interp.c
-					   for more info *)
+                                           cf COMPAREINT31 in
+                                           kernel/byterun/coq_interp.c
+                                           for more info *)
   | Khead0int31                         (* Give the numbers of 0 in head of a in31*)
   | Ktail0int31                         (* Give the numbers of 0 in tail of a in31
                                            ie low bits *)
@@ -230,18 +230,18 @@ let rec pp_instr i =
       str "closure " ++ pp_lbl lbl ++ str ", " ++ int n
   | Kclosurerec(fv,init,lblt,lblb) ->
       h 1 (str "closurerec " ++
-	     int fv ++ str ", " ++ int init ++
-	     str " types = " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
-	     str " bodies = " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
+             int fv ++ str ", " ++ int init ++
+             str " types = " ++
+             prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
+             str " bodies = " ++
+             prlist_with_sep spc pp_lbl (Array.to_list lblb))
   | Kclosurecofix (fv,init,lblt,lblb) ->
       h 1 (str "closurecofix " ++
-	     int fv ++ str ", " ++ int init ++
-	     str " types = " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
-	     str " bodies = " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
+             int fv ++ str ", " ++ int init ++
+             str " types = " ++
+             prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
+             str " bodies = " ++
+             prlist_with_sep spc pp_lbl (Array.to_list lblb))
   | Kgetglobal idu -> str "getglobal " ++ Constant.print idu
   | Kconst sc ->
       str "const " ++ pp_struct_const sc
@@ -250,12 +250,12 @@ let rec pp_instr i =
   | Kmakeprod -> str "makeprod"
   | Kmakeswitchblock(lblt,lbls,_,sz) ->
       str "makeswitchblock " ++ pp_lbl lblt ++ str ", " ++
-	pp_lbl lbls ++ str ", " ++ int sz
+        pp_lbl lbls ++ str ", " ++ int sz
   | Kswitch(lblc,lblb) ->
       h 1 (str "switch " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblc) ++
-	     str " | " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
+             prlist_with_sep spc pp_lbl (Array.to_list lblc) ++
+             str " | " ++
+             prlist_with_sep spc pp_lbl (Array.to_list lblb))
   | Kpushfields n -> str "pushfields " ++ int n
   | Kfield n -> str "field " ++ int n
   | Ksetfield n -> str "set field" ++ int n
@@ -295,8 +295,8 @@ and pp_bytecodes c =
   match c with
   | [] -> str ""
   | Klabel lbl :: c ->
-	str "L" ++ int lbl ++ str ":" ++ fnl () ++
-	pp_bytecodes c
+        str "L" ++ int lbl ++ str ":" ++ fnl () ++
+        pp_bytecodes c
   | Ksequence (l1, l2) :: c ->
       pp_bytecodes l1 ++ pp_bytecodes l2 ++  pp_bytecodes c
   | i :: c ->

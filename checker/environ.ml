@@ -82,12 +82,12 @@ let push_rec_types (lna,typarray,_) env =
 let map_universes f env =
   let s = env.env_stratification in
     { env with env_stratification =
-	 { s with env_universes = f s.env_universes } }
+         { s with env_universes = f s.env_universes } }
 
 let add_constraints c env =
   if c == Univ.Constraint.empty then env
   else map_universes (Univ.merge_constraints c) env
-			   
+
 let push_context ?(strict=false) ctx env =
   map_universes (Univ.merge_context strict ctx) env
 
@@ -112,7 +112,7 @@ let add_constant kn cs env =
     Cmap_env.add kn cs env.env_globals.env_constants in
   let new_globals =
     { env.env_globals with
-	env_constants = new_constants } in
+        env_constants = new_constants } in
   { env with env_globals = new_globals }
 
 type const_evaluation_result = NoBody | Opaque | IsProj
@@ -129,7 +129,7 @@ let constant_type env (kn,u) =
   let cb = lookup_constant kn env in
   match cb.const_universes with
   | Monomorphic_const _ -> cb.const_type, Univ.Constraint.empty
-  | Polymorphic_const ctx -> 
+  | Polymorphic_const ctx ->
     let csts = constraints_of cb u in
     (subst_instance_constr u cb.const_type, csts)
 
@@ -139,7 +139,7 @@ let constant_value env (kn,u) =
   let cb = lookup_constant kn env in
   if cb.const_proj = None then
     match cb.const_body with
-    | Def l_body -> 
+    | Def l_body ->
       let b = force_constr l_body in
       begin
         match cb.const_universes with
@@ -155,11 +155,11 @@ let evaluable_constant cst env =
   try let _  = constant_value env (cst, Univ.Instance.empty) in true
   with Not_found | NotEvaluableConst _ -> false
 
-let is_projection cst env = 
+let is_projection cst env =
   not (Option.is_empty (lookup_constant cst env).const_proj)
 
 let lookup_projection p env =
-  match (lookup_constant (Projection.constant p) env).const_proj with 
+  match (lookup_constant (Projection.constant p) env).const_proj with
   | Some pb -> pb
   | None -> anomaly ("lookup_projection: constant is not a projection.")
 
@@ -192,8 +192,8 @@ let add_mind kn mib env =
     KNmap.add kn1 kn2  env.env_globals.env_inductives_eq in
   let new_globals =
     { env.env_globals with
-	env_inductives = new_inds;
-	env_inductives_eq = new_inds_eq} in
+        env_inductives = new_inds;
+        env_inductives_eq = new_inds_eq} in
   { env with env_globals = new_globals }
 
 
@@ -206,7 +206,7 @@ let add_modtype ln mtb env =
   let new_modtypes = MPmap.add ln mtb env.env_globals.env_modtypes in
   let new_globals =
     { env.env_globals with
-	env_modtypes = new_modtypes } in
+        env_modtypes = new_modtypes } in
   { env with env_globals = new_globals }
 
 let shallow_add_module mp mb env =
@@ -216,7 +216,7 @@ let shallow_add_module mp mb env =
   let new_mods = MPmap.add mp mb env.env_globals.env_modules in
   let new_globals =
     { env.env_globals with
-	env_modules = new_mods } in
+        env_modules = new_mods } in
   { env with env_globals = new_globals }
 
 let shallow_remove_module mp env =
@@ -226,7 +226,7 @@ let shallow_remove_module mp env =
   let new_mods = MPmap.remove mp env.env_globals.env_modules in
   let new_globals =
     { env.env_globals with
-	env_modules = new_mods } in
+        env_modules = new_mods } in
   { env with env_globals = new_globals }
 
 let lookup_module mp env =

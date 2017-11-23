@@ -88,9 +88,9 @@ Section defs.
     forall P:Tree -> Type,
       P Tree_Leaf ->
       (forall (a:A) (T1 T2:Tree),
-	leA_Tree a T1 ->
-	leA_Tree a T2 ->
-	is_heap T1 -> P T1 -> is_heap T2 -> P T2 -> P (Tree_Node a T1 T2)) ->
+        leA_Tree a T1 ->
+        leA_Tree a T2 ->
+        is_heap T1 -> P T1 -> is_heap T2 -> P T2 -> P (Tree_Node a T1 T2)) ->
       forall T:Tree, is_heap T -> P T.
   Proof.
     simple induction T; auto with datatypes.
@@ -105,9 +105,9 @@ Section defs.
     forall P:Tree -> Set,
       P Tree_Leaf ->
       (forall (a:A) (T1 T2:Tree),
-	leA_Tree a T1 ->
-	leA_Tree a T2 ->
-	is_heap T1 -> P T1 -> is_heap T2 -> P T2 -> P (Tree_Node a T1 T2)) ->
+        leA_Tree a T1 ->
+        leA_Tree a T2 ->
+        is_heap T1 -> P T1 -> is_heap T2 -> P T2 -> P (Tree_Node a T1 T2)) ->
       forall T:Tree, is_heap T -> P T.
   Proof.
     simple induction T; auto with datatypes.
@@ -135,13 +135,13 @@ Section defs.
       (forall a, HdRel leA a l1 -> HdRel leA a l2 -> HdRel leA a l) ->
       merge_lem l1 l2.
   Require Import Morphisms.
-  
+
   Instance: Equivalence (@meq A).
   Proof. constructor; auto with datatypes. red. apply meq_trans. Defined.
 
   Instance: Proper (@meq A ++> @meq _ ++> @meq _) (@munion A).
   Proof. intros x y H x' y' H'. now apply meq_congr. Qed.
-  
+
   Lemma merge :
     forall l1:list A, Sorted leA l1 ->
     forall l2:list A, Sorted leA l2 -> merge_lem l1 l2.
@@ -150,8 +150,8 @@ Section defs.
     apply merge_exist with l2; auto with datatypes.
     rename l1 into l.
     revert l2 H0. fix 1. intros.
-    destruct l2 as [|a0 l0]. 
-    apply merge_exist with (a :: l); simpl; auto with datatypes. 
+    destruct l2 as [|a0 l0].
+    apply merge_exist with (a :: l); simpl; auto with datatypes.
     induction (leA_dec a a0) as [Hle|Hle].
 
     (* 1 (leA a a0) *)
@@ -160,17 +160,17 @@ Section defs.
     apply merge_exist with (a :: l1). clear merge merge0.
       auto using cons_sort, cons_leA with datatypes.
     simpl. rewrite H3. now rewrite munion_ass.
-    intros. apply cons_leA. 
+    intros. apply cons_leA.
     apply (@HdRel_inv _ leA) with l; trivial with datatypes.
 
     (* 2 (leA a0 a) *)
     apply Sorted_inv in H0. destruct H0.
-    destruct (merge0 l0 H0) as [l1 H2 H3 H4]. clear merge merge0.  
-    apply merge_exist with (a0 :: l1); 
+    destruct (merge0 l0 H0) as [l1 H2 H3 H4]. clear merge merge0.
+    apply merge_exist with (a0 :: l1);
       auto using cons_sort, cons_leA with datatypes.
     simpl; rewrite H3. simpl. setoid_rewrite munion_ass at 1. rewrite munion_comm.
     repeat rewrite munion_ass. setoid_rewrite munion_comm at 3. reflexivity.
-    intros. apply cons_leA. 
+    intros. apply cons_leA.
     apply (@HdRel_inv _ leA) with l0; trivial with datatypes.
   Qed.
 
@@ -186,7 +186,7 @@ Section defs.
     match t with
       | Tree_Leaf => emptyBag
       | Tree_Node a t1 t2 =>
-	munion (contents t1) (munion (contents t2) (singletonBag a))
+        munion (contents t1) (munion (contents t2) (singletonBag a))
     end.
 
 
@@ -272,11 +272,11 @@ Section defs.
     apply flat_exist with (a :: l); simpl; auto with datatypes.
     apply meq_trans with
       (munion (list_contents _ eqA_dec l1)
-	(munion (list_contents _ eqA_dec l2) (singletonBag a))).
+        (munion (list_contents _ eqA_dec l2) (singletonBag a))).
     apply meq_congr; auto with datatypes.
     apply meq_trans with
       (munion (singletonBag a)
-	(munion (list_contents _ eqA_dec l1) (list_contents _ eqA_dec l2))).
+        (munion (list_contents _ eqA_dec l1) (list_contents _ eqA_dec l2))).
     apply munion_rotate.
     apply meq_right; apply meq_sym; trivial with datatypes.
   Qed.

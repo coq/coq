@@ -47,7 +47,7 @@ let empty_env = empty_env
 let engagement env = env.env_stratification.env_engagement
 let typing_flags env = env.env_typing_flags
 
-let is_impredicative_set env = 
+let is_impredicative_set env =
   match engagement env with
   | ImpredicativeSet -> true
   | _ -> false
@@ -89,12 +89,12 @@ let fold_rel_context f env ~init =
     match env.env_rel_context with
     | [] -> init
     | rd::rc ->
-	let env =
-	  { env with
-	    env_rel_context = rc;
-	    env_rel_val = List.tl env.env_rel_val;
-	    env_nb_rel = env.env_nb_rel - 1 } in
-	f env rd (fold_right env)
+        let env =
+          { env with
+            env_rel_context = rc;
+            env_rel_val = List.tl env.env_rel_val;
+            env_nb_rel = env.env_nb_rel - 1 } in
+        f env rd (fold_right env)
   in fold_right env
 
 (* Named context *)
@@ -159,9 +159,9 @@ let fold_named_context f env ~init =
     match match_named_context_val env.env_named_context with
     | None -> init
     | Some (d, v, rem) ->
-	let env =
-	  reset_with_named_context rem env in
-	f env d (fold_right env)
+        let env =
+          reset_with_named_context rem env in
+        f env d (fold_right env)
   in fold_right env
 
 let fold_named_context_reverse f ~init env =
@@ -173,8 +173,8 @@ let fold_named_context_reverse f ~init env =
 let map_universes f env =
   let s = env.env_stratification in
     { env with env_stratification =
-	 { s with env_universes = f s.env_universes } }
-				     
+         { s with env_universes = f s.env_universes } }
+
 let add_constraints c env =
   if Univ.Constraint.is_empty c then env
   else map_universes (UGraph.merge_constraints c) env
@@ -187,19 +187,19 @@ let push_constraints_to_env (_,univs) env =
 
 let add_universes strict ctx g =
   let g = Array.fold_left
-	    (* Be lenient, module typing reintroduces universes and constraints due to includes *)
-	    (fun g v -> try UGraph.add_universe v strict g with UGraph.AlreadyDeclared -> g)
-	    g (Univ.Instance.to_array (Univ.UContext.instance ctx))
+            (* Be lenient, module typing reintroduces universes and constraints due to includes *)
+            (fun g v -> try UGraph.add_universe v strict g with UGraph.AlreadyDeclared -> g)
+            g (Univ.Instance.to_array (Univ.UContext.instance ctx))
   in
     UGraph.merge_constraints (Univ.UContext.constraints ctx) g
-			   
+
 let push_context ?(strict=false) ctx env =
   map_universes (add_universes strict ctx) env
 
 let add_universes_set strict ctx g =
   let g = Univ.LSet.fold
-	    (fun v g -> try UGraph.add_universe v strict g with UGraph.AlreadyDeclared -> g)
-	    (Univ.ContextSet.levels ctx) g
+            (fun v g -> try UGraph.add_universe v strict g with UGraph.AlreadyDeclared -> g)
+            (Univ.ContextSet.levels ctx) g
   in UGraph.merge_constraints (Univ.ContextSet.constraints ctx) g
 
 let push_context_set ?(strict=false) ctx env =
@@ -223,7 +223,7 @@ let add_constant_key kn cb linkinfo env =
     Cmap_env.add kn (cb,(ref linkinfo, ref None)) env.env_globals.env_constants in
   let new_globals =
     { env.env_globals with
-	env_constants = new_constants } in
+        env_constants = new_constants } in
   { env with env_globals = new_globals }
 
 let add_constant kn cb env =
@@ -239,7 +239,7 @@ let constant_type env (kn,u) =
   let cb = lookup_constant kn env in
   match cb.const_universes with
   | Monomorphic_const _ -> cb.const_type, Univ.Constraint.empty
-  | Polymorphic_const ctx -> 
+  | Polymorphic_const ctx ->
     let csts = constraints_of cb u in
     (subst_instance_constr u cb.const_type, csts)
 
@@ -257,13 +257,13 @@ let constant_value env (kn,u) =
   let cb = lookup_constant kn env in
     if cb.const_proj = None then
       match cb.const_body with
-      | Def l_body -> 
+      | Def l_body ->
         begin
           match cb.const_universes with
-          | Monomorphic_const _ -> 
+          | Monomorphic_const _ ->
             (Mod_subst.force_constr l_body, Univ.Constraint.empty)
           | Polymorphic_const _ ->
-	    let csts = constraints_of cb u in
+            let csts = constraints_of cb u in
             (subst_instance_constr u (Mod_subst.force_constr l_body), csts)
         end
       | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
@@ -279,20 +279,20 @@ let constant_value_and_type env (kn, u) =
     if Declareops.constant_is_polymorphic cb then
       let cst = constraints_of cb u in
       let b' = match cb.const_body with
-	| Def l_body -> Some (subst_instance_constr u (Mod_subst.force_constr l_body))
-	| OpaqueDef _ -> None
-	| Undef _ -> None
+        | Def l_body -> Some (subst_instance_constr u (Mod_subst.force_constr l_body))
+        | OpaqueDef _ -> None
+        | Undef _ -> None
       in
-	b', subst_instance_constr u cb.const_type, cst
-    else 
+        b', subst_instance_constr u cb.const_type, cst
+    else
       let b' = match cb.const_body with
-	| Def l_body -> Some (Mod_subst.force_constr l_body)
-	| OpaqueDef _ -> None
-	| Undef _ -> None
+        | Def l_body -> Some (Mod_subst.force_constr l_body)
+        | OpaqueDef _ -> None
+        | Undef _ -> None
       in b', cb.const_type, Univ.Constraint.empty
 
-(* These functions should be called under the invariant that [env] 
-   already contains the constraints corresponding to the constant 
+(* These functions should be called under the invariant that [env]
+   already contains the constraints corresponding to the constant
    application. *)
 
 (* constant_type gives the type of a constant *)
@@ -305,9 +305,9 @@ let constant_type_in env (kn,u) =
 let constant_value_in env (kn,u) =
   let cb = lookup_constant kn env in
   match cb.const_body with
-    | Def l_body -> 
+    | Def l_body ->
       let b = Mod_subst.force_constr l_body in
-	subst_instance_constr u b
+        subst_instance_constr u b
     | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
     | Undef _ -> raise (NotEvaluableConst NoBody)
 
@@ -334,12 +334,12 @@ let type_in_type_constant cst env =
   not (lookup_constant cst env).const_typing_flags.check_universes
 
 let lookup_projection cst env =
-  match (lookup_constant (Projection.constant cst) env).const_proj with 
+  match (lookup_constant (Projection.constant cst) env).const_proj with
   | Some pb -> pb
   | None -> anomaly (Pp.str "lookup_projection: constant is not a projection.")
 
 let is_projection cst env =
-  match (lookup_constant cst env).const_proj with 
+  match (lookup_constant cst env).const_proj with
   | Some _ -> true
   | None -> false
 
@@ -357,19 +357,19 @@ let type_in_type_ind (mind,i) env =
   not (lookup_mind mind env).mind_typing_flags.check_universes
 
 let template_polymorphic_ind (mind,i) env =
-  match (lookup_mind mind env).mind_packets.(i).mind_arity with 
+  match (lookup_mind mind env).mind_packets.(i).mind_arity with
   | TemplateArity _ -> true
   | RegularArity _ -> false
 
 let template_polymorphic_pind (ind,u) env =
   if not (Univ.Instance.is_empty u) then false
   else template_polymorphic_ind ind env
-  
+
 let add_mind_key kn mind_key env =
   let new_inds = Mindmap_env.add kn mind_key env.env_globals.env_inductives in
   let new_globals =
     { env.env_globals with
-	env_inductives = new_inds } in
+        env_inductives = new_inds } in
   { env with env_globals = new_globals }
 
 let add_mind kn mib env =
@@ -404,9 +404,9 @@ let global_vars_set env constr =
     let acc =
       match kind c with
       | Var _ | Const _ | Ind _ | Construct _ ->
-	  Id.Set.union (vars_of_global env c) acc
+          Id.Set.union (vars_of_global env c) acc
       | _ ->
-	  acc in
+          acc in
     Constr.fold filtrec acc c
   in
     filtrec Id.Set.empty constr
@@ -458,7 +458,7 @@ let lookup_module mp env =
     MPmap.find mp env.env_globals.env_modules
 
 
-let lookup_modtype mp env = 
+let lookup_modtype mp env =
   MPmap.find mp env.env_globals.env_modtypes
 
 (*s Judgments. *)
@@ -492,11 +492,11 @@ let apply_to_hyp ctxt id f =
   let rec aux rtail ctxt =
     match match_named_context_val ctxt with
     | Some (d, v, ctxt) ->
-	if Id.equal (get_id d) id then
+        if Id.equal (get_id d) id then
           push_named_context_val_val (f ctxt.env_named_ctx d rtail) v ctxt
-	else
-	  let ctxt' = aux (d::rtail) ctxt in
-	  push_named_context_val_val d v ctxt'
+        else
+          let ctxt' = aux (d::rtail) ctxt in
+          push_named_context_val_val d v ctxt'
     | None -> raise Hyp_not_found
   in aux [] ctxt
 
@@ -540,8 +540,8 @@ let register env field entry =
     | KInt31 (grp, Int31Type) ->
         let i31c = match kind entry with
                      | Ind i31t -> mkConstructUi (i31t, 1)
-		     | _ -> anomaly ~label:"Environ.register" (Pp.str "should be an inductive type.")
-	in
+                     | _ -> anomaly ~label:"Environ.register" (Pp.str "should be an inductive type.")
+        in
         register_one (register_one env (KInt31 (grp,Int31Constructor)) i31c) field entry
     | field -> register_one env field entry
 
@@ -561,14 +561,14 @@ let dispatch =
         2
     in
       fun ind -> fun digit_ind -> fun tag ->
-	let array_of_int i =
-	  Array.init 31 (fun n -> mkConstruct
-			   (digit_ind, nth_digit_plus_one i (30-n)))
-	in
-	(* We check that no bit above 31 is set to one. This assertion used to
-	fail in the VM, and led to conversion tests failing at Qed. *)
+        let array_of_int i =
+          Array.init 31 (fun n -> mkConstruct
+                           (digit_ind, nth_digit_plus_one i (30-n)))
+        in
+        (* We check that no bit above 31 is set to one. This assertion used to
+        fail in the VM, and led to conversion tests failing at Qed. *)
         assert (Int.equal (tag lsr 31) 0);
-	mkApp(mkConstruct(ind, 1), array_of_int tag)
+        mkApp(mkConstruct(ind, 1), array_of_int tag)
   in
 
   (* subfunction which dispatches the compiling information of an
@@ -626,39 +626,39 @@ fun rk value field ->
           native_constant_dynamic = Some Nativelambda.compile_dynamic_int31;
         }
     | KInt31 (_, Int31Plus) -> int31_binop_from_const Cbytecodes.Kaddint31
-							  CPrimitives.Int31add
+                                                          CPrimitives.Int31add
     | KInt31 (_, Int31PlusC) -> int31_binop_from_const Cbytecodes.Kaddcint31
-							   CPrimitives.Int31addc
+                                                           CPrimitives.Int31addc
     | KInt31 (_, Int31PlusCarryC) -> int31_binop_from_const Cbytecodes.Kaddcarrycint31
-								CPrimitives.Int31addcarryc
+                                                                CPrimitives.Int31addcarryc
     | KInt31 (_, Int31Minus) -> int31_binop_from_const Cbytecodes.Ksubint31
-							   CPrimitives.Int31sub
+                                                           CPrimitives.Int31sub
     | KInt31 (_, Int31MinusC) -> int31_binop_from_const Cbytecodes.Ksubcint31
-							    CPrimitives.Int31subc
+                                                            CPrimitives.Int31subc
     | KInt31 (_, Int31MinusCarryC) -> int31_binop_from_const
-	                                Cbytecodes.Ksubcarrycint31 CPrimitives.Int31subcarryc
+                                        Cbytecodes.Ksubcarrycint31 CPrimitives.Int31subcarryc
     | KInt31 (_, Int31Times) -> int31_binop_from_const Cbytecodes.Kmulint31
-							   CPrimitives.Int31mul
+                                                           CPrimitives.Int31mul
     | KInt31 (_, Int31TimesC) -> int31_binop_from_const Cbytecodes.Kmulcint31
-							   CPrimitives.Int31mulc
+                                                           CPrimitives.Int31mulc
     | KInt31 (_, Int31Div21) -> int31_op_from_const 3 Cbytecodes.Kdiv21int31
                                                            CPrimitives.Int31div21
     | KInt31 (_, Int31Diveucl) -> int31_binop_from_const Cbytecodes.Kdivint31
-							 CPrimitives.Int31diveucl
+                                                         CPrimitives.Int31diveucl
     | KInt31 (_, Int31AddMulDiv) -> int31_op_from_const 3 Cbytecodes.Kaddmuldivint31
                                                          CPrimitives.Int31addmuldiv
     | KInt31 (_, Int31Compare) -> int31_binop_from_const Cbytecodes.Kcompareint31
-							     CPrimitives.Int31compare
+                                                             CPrimitives.Int31compare
     | KInt31 (_, Int31Head0) -> int31_unop_from_const Cbytecodes.Khead0int31
-							  CPrimitives.Int31head0
+                                                          CPrimitives.Int31head0
     | KInt31 (_, Int31Tail0) -> int31_unop_from_const Cbytecodes.Ktail0int31
-							  CPrimitives.Int31tail0
+                                                          CPrimitives.Int31tail0
     | KInt31 (_, Int31Lor) -> int31_binop_from_const Cbytecodes.Klorint31
-							 CPrimitives.Int31lor
+                                                         CPrimitives.Int31lor
     | KInt31 (_, Int31Land) -> int31_binop_from_const Cbytecodes.Klandint31
-							  CPrimitives.Int31land
+                                                          CPrimitives.Int31land
     | KInt31 (_, Int31Lxor) -> int31_binop_from_const Cbytecodes.Klxorint31
-							  CPrimitives.Int31lxor
+                                                          CPrimitives.Int31lxor
     | _ -> empty_reactive_info
 
 let _ = Hook.set Retroknowledge.dispatch_hook dispatch

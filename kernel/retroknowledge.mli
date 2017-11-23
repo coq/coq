@@ -67,7 +67,7 @@ type field =
 
 
 (** This type represent an atomic action of the retroknowledge. It
-   is stored in the compiled libraries 
+   is stored in the compiled libraries
    As per now, there is only the possibility of registering things
    the possibility of unregistering or changing the flag is under study *)
 type action =
@@ -121,19 +121,19 @@ val get_vm_decompile_constant_info : retroknowledge -> entry -> int -> constr
 
 
 val get_native_compiling_info  : retroknowledge -> entry -> Nativeinstr.prefix ->
-				 Nativeinstr.lambda array -> Nativeinstr.lambda
+                                 Nativeinstr.lambda array -> Nativeinstr.lambda
 
 val get_native_constant_static_info : retroknowledge -> entry ->
                                       constr array -> Nativeinstr.lambda
 
 val get_native_constant_dynamic_info : retroknowledge -> entry ->
                                        Nativeinstr.prefix -> constructor ->
-				       Nativeinstr.lambda array ->
-				       Nativeinstr.lambda
+                                       Nativeinstr.lambda array ->
+                                       Nativeinstr.lambda
 
 val get_native_before_match_info : retroknowledge -> entry ->
-				   Nativeinstr.prefix -> constructor ->
-				   Nativeinstr.lambda -> Nativeinstr.lambda
+                                   Nativeinstr.prefix -> constructor ->
+                                   Nativeinstr.lambda -> Nativeinstr.lambda
 
 
 (** the following functions are solely used in Pre_env and Environ to implement
@@ -177,7 +177,7 @@ type reactive_info = {(*information required by the compiler of the VM *)
        Nativeinstr.lambda array -> Nativeinstr.lambda) option;
 
   native_before_match : (bool -> Nativeinstr.prefix -> constructor ->
-			 Nativeinstr.lambda -> Nativeinstr.lambda) option
+                         Nativeinstr.lambda -> Nativeinstr.lambda) option
 
 }
 

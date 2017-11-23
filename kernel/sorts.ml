@@ -94,9 +94,9 @@ module Hsorts =
       type u = Universe.t -> Universe.t
 
       let hashcons huniv = function
-        | Type u as c -> 
-	  let u' = huniv u in 
-	    if u' == u then c else Type u'
+        | Type u as c ->
+          let u' = huniv u in
+            if u' == u then c else Type u'
         | s -> s
       let eq s1 s2 = match (s1,s2) with
         | (Prop c1, Prop c2) -> c1 == c2

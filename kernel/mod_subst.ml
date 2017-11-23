@@ -106,7 +106,7 @@ let debug_pr_delta resolve =
 let debug_pr_subst sub =
   let l = list_contents sub in
   let f (s1,(s2,s3)) = hov 2 (str s1 ++ spc () ++ str "|-> " ++ str s2 ++
-			      spc () ++ str "[" ++ str s3 ++ str "]")
+                              spc () ++ str "[" ++ str s3 ++ str "]")
   in
   str "{" ++ hov 2 (prlist_with_sep pr_comma f l) ++ str "}"
 
@@ -148,8 +148,8 @@ let mp_of_delta resolve mp =
 let find_prefix resolve mp =
   let rec sub_mp = function
     | MPdot(mp,l) as mp_sup ->
-	(try Deltamap.find_mp mp_sup resolve
-	 with Not_found -> MPdot(sub_mp mp,l))
+        (try Deltamap.find_mp mp_sup resolve
+         with Not_found -> MPdot(sub_mp mp,l))
     | p -> Deltamap.find_mp p resolve
   in
   try sub_mp mp with Not_found -> mp
@@ -162,7 +162,7 @@ let solve_delta_kn resolve kn =
   try
     match Deltamap.find_kn kn resolve with
       | Equiv kn1 -> kn1
-      | Inline (lev, Some c) ->	raise (Change_equiv_to_inline (lev,c))
+      | Inline (lev, Some c) -> raise (Change_equiv_to_inline (lev,c))
       | Inline (_, None) -> raise Not_found
   with Not_found ->
     let mp,dir,l = KerName.repr kn in
@@ -199,9 +199,9 @@ let inline_of_delta inline resolver =
     | None -> []
     | Some inl_lev ->
       let extract kn hint l =
-	match hint with
-	  | Inline (lev,_) -> if lev <= inl_lev then (lev,kn)::l else l
-	  | _ -> l
+        match hint with
+          | Inline (lev,_) -> if lev <= inl_lev then (lev,kn)::l else l
+          | _ -> l
       in
       Deltamap.fold_kn extract resolver []
 
@@ -222,17 +222,17 @@ let subst_mp0 sub mp = (* 's like subst *)
   match mp with
     | MPfile sid -> Umap.find_mp mp sub
     | MPbound bid ->
-	begin
-	  try Umap.find_mbi bid sub
-	  with Not_found -> Umap.find_mp mp sub
-	end
+        begin
+          try Umap.find_mbi bid sub
+          with Not_found -> Umap.find_mp mp sub
+        end
     | MPdot (mp1,l) as mp2 ->
-	begin
-	  try Umap.find_mp mp2 sub
-	  with Not_found ->
-	    let mp1',resolve = aux mp1 in
-	    MPdot (mp1',l),resolve
-	end
+        begin
+          try Umap.find_mp mp2 sub
+          with Not_found ->
+            let mp1',resolve = aux mp1 in
+            MPdot (mp1',l),resolve
+        end
  in
  try Some (aux mp) with Not_found -> None
 
@@ -315,14 +315,14 @@ let subst_con sub cst =
 let subst_con_kn sub con =
   subst_con sub (con,Univ.Instance.empty)
 
-let subst_pcon sub (con,u as pcon) = 
-  try let con', can = subst_con0 sub pcon in 
-	con',u
+let subst_pcon sub (con,u as pcon) =
+  try let con', can = subst_con0 sub pcon in
+        con',u
   with No_subst -> pcon
 
-let subst_pcon_term sub (con,u as pcon) = 
-  try let con', can = subst_con0 sub pcon in 
-	(con',u), can
+let subst_pcon_term sub (con,u as pcon) =
+  try let con', can = subst_con0 sub pcon in
+        (con',u), can
   with No_subst -> pcon, mkConstU pcon
 
 let subst_constant sub con =
@@ -342,75 +342,75 @@ let rec map_kn f f' c =
   let func = map_kn f f' in
     match kind c with
       | Const kn -> (try snd (f' kn) with No_subst -> c)
-      | Proj (p,t) -> 
-          let p' = 
-	    try
-	      Projection.map (fun kn -> fst (f' (kn,Univ.Instance.empty))) p
-	    with No_subst -> p
-	  in
-	  let t' = func t in
-	    if p' == p && t' == t then c
-	    else mkProj (p', t')
+      | Proj (p,t) ->
+          let p' =
+            try
+              Projection.map (fun kn -> fst (f' (kn,Univ.Instance.empty))) p
+            with No_subst -> p
+          in
+          let t' = func t in
+            if p' == p && t' == t then c
+            else mkProj (p', t')
       | Ind ((kn,i),u) ->
-	  let kn' = f kn in
-	  if kn'==kn then c else mkIndU ((kn',i),u)
+          let kn' = f kn in
+          if kn'==kn then c else mkIndU ((kn',i),u)
       | Construct (((kn,i),j),u) ->
-	  let kn' = f kn in
-	  if kn'==kn then c else mkConstructU (((kn',i),j),u)
+          let kn' = f kn in
+          if kn'==kn then c else mkConstructU (((kn',i),j),u)
       | Case (ci,p,ct,l) ->
-	  let ci_ind =
+          let ci_ind =
             let (kn,i) = ci.ci_ind in
-	    let kn' = f kn in
-	    if kn'==kn then ci.ci_ind else kn',i
-	  in
-	  let p' = func p in
-	  let ct' = func ct in
-	  let l' = Array.smartmap func l in
-	    if (ci.ci_ind==ci_ind && p'==p
-		&& l'==l && ct'==ct)then c
-	    else
-	      mkCase ({ci with ci_ind = ci_ind},
-		      p',ct', l')
+            let kn' = f kn in
+            if kn'==kn then ci.ci_ind else kn',i
+          in
+          let p' = func p in
+          let ct' = func ct in
+          let l' = Array.smartmap func l in
+            if (ci.ci_ind==ci_ind && p'==p
+                && l'==l && ct'==ct)then c
+            else
+              mkCase ({ci with ci_ind = ci_ind},
+                      p',ct', l')
       | Cast (ct,k,t) ->
-	  let ct' = func ct in
-	  let t'= func t in
-	    if (t'==t && ct'==ct) then c
-	    else mkCast (ct', k, t')
+          let ct' = func ct in
+          let t'= func t in
+            if (t'==t && ct'==ct) then c
+            else mkCast (ct', k, t')
       | Prod (na,t,ct) ->
-	  let ct' = func ct in
-	  let t'= func t in
-	    if (t'==t && ct'==ct) then c
-	    else mkProd (na, t', ct')
+          let ct' = func ct in
+          let t'= func t in
+            if (t'==t && ct'==ct) then c
+            else mkProd (na, t', ct')
       | Lambda (na,t,ct) ->
-	  let ct' = func ct in
-	  let t'= func t in
-	    if (t'==t && ct'==ct) then c
-	    else mkLambda (na, t', ct')
+          let ct' = func ct in
+          let t'= func t in
+            if (t'==t && ct'==ct) then c
+            else mkLambda (na, t', ct')
       | LetIn (na,b,t,ct) ->
-	  let ct' = func ct in
-	  let t'= func t in
-	  let b'= func b in
-	    if (t'==t && ct'==ct && b==b') then c
-	    else mkLetIn (na, b', t', ct')
+          let ct' = func ct in
+          let t'= func t in
+          let b'= func b in
+            if (t'==t && ct'==ct && b==b') then c
+            else mkLetIn (na, b', t', ct')
       | App (ct,l) ->
-	  let ct' = func ct in
-	  let l' = Array.smartmap func l in
-	    if (ct'== ct && l'==l) then c
-	    else mkApp (ct',l')
+          let ct' = func ct in
+          let l' = Array.smartmap func l in
+            if (ct'== ct && l'==l) then c
+            else mkApp (ct',l')
       | Evar (e,l) ->
-	  let l' = Array.smartmap func l in
-	    if (l'==l) then c
-	    else mkEvar (e,l')
+          let l' = Array.smartmap func l in
+            if (l'==l) then c
+            else mkEvar (e,l')
       | Fix (ln,(lna,tl,bl)) ->
-	  let tl' = Array.smartmap func tl in
-	  let bl' = Array.smartmap func bl in
-	    if (bl == bl'&& tl == tl') then c
-	    else mkFix (ln,(lna,tl',bl'))
+          let tl' = Array.smartmap func tl in
+          let bl' = Array.smartmap func bl in
+            if (bl == bl'&& tl == tl') then c
+            else mkFix (ln,(lna,tl',bl'))
       | CoFix(ln,(lna,tl,bl)) ->
-	  let tl' = Array.smartmap func tl in
-	  let bl' = Array.smartmap func bl in
-	    if (bl == bl'&& tl == tl') then c
-	    else mkCoFix (ln,(lna,tl',bl'))
+          let tl' = Array.smartmap func tl in
+          let bl' = Array.smartmap func bl in
+            if (bl == bl'&& tl == tl') then c
+            else mkCoFix (ln,(lna,tl',bl'))
       | _ -> c
 
 let subst_mps sub c =
@@ -421,9 +421,9 @@ let rec replace_mp_in_mp mpfrom mpto mp =
   match mp with
     | _ when ModPath.equal mp mpfrom -> mpto
     | MPdot (mp1,l) ->
-	let mp1' = replace_mp_in_mp mpfrom mpto mp1 in
-	  if mp1 == mp1' then mp
-	  else MPdot (mp1',l)
+        let mp1' = replace_mp_in_mp mpfrom mpto mp1 in
+          if mp1 == mp1' then mp
+          else MPdot (mp1',l)
     | _ -> mp
 
 let replace_mp_in_kn mpfrom mpto kn =
@@ -446,7 +446,7 @@ let subset_prefixed_by mp resolver =
     match hint with
       | Inline _ -> rslv
       | Equiv _ ->
-	if mp_in_mp mp (KerName.modpath kn) then Deltamap.add_kn kn hint rslv else rslv
+        if mp_in_mp mp (KerName.modpath kn) then Deltamap.add_kn kn hint rslv else rslv
   in
   Deltamap.fold mp_prefix kn_prefix resolver empty_delta_resolver
 
@@ -466,7 +466,7 @@ let subst_mp_delta sub mp mkey =
       let mp1 = find_prefix resolve mp' in
       let resolve1 = subset_prefixed_by mp1 resolve in
       (subst_dom_delta_resolver
-	 (map_mp mp1 mkey empty_delta_resolver) resolve1),mp1
+         (map_mp mp1 mkey empty_delta_resolver) resolve1),mp1
 
 let gen_subst_delta_resolver dom subst resolver =
   let mp_apply_subst mkey mequ rslv =
@@ -478,8 +478,8 @@ let gen_subst_delta_resolver dom subst resolver =
     let kkey' = if dom then subst_kn subst kkey else kkey in
     let hint' = match hint with
       | Equiv kequ ->
-	  (try Equiv (subst_kn_delta subst kequ)
-	   with Change_equiv_to_inline (lev,c) -> Inline (lev,Some c))
+          (try Equiv (subst_kn_delta subst kequ)
+           with Change_equiv_to_inline (lev,c) -> Inline (lev,Some c))
       | Inline (lev,Some t) -> Inline (lev,Some (subst_mps subst t))
       | Inline (_,None) -> hint
     in
@@ -497,8 +497,8 @@ let update_delta_resolver resolver1 resolver2 =
   let kn_apply_rslv kkey hint1 rslv =
     let hint = match hint1 with
       | Equiv kequ ->
-	(try Equiv (solve_delta_kn resolver2 kequ)
-	 with Change_equiv_to_inline (lev,c) -> Inline (lev, Some c))
+        (try Equiv (solve_delta_kn resolver2 kequ)
+         with Change_equiv_to_inline (lev,c) -> Inline (lev, Some c))
       | Inline (_,Some _) -> hint1
       | Inline (_,None) ->
         (try Deltamap.find_kn kkey resolver2 with Not_found -> hint1)
@@ -528,15 +528,15 @@ let join subst1 subst2 =
   let apply_subst mpk add (mp,resolve) res =
     let mp',resolve' =
       match subst_mp0 subst2 mp with
-	| None -> mp, None
-	| Some (mp',resolve') ->  mp', Some resolve' in
+        | None -> mp, None
+        | Some (mp',resolve') ->  mp', Some resolve' in
     let resolve'' =
       match resolve' with
         | Some res ->
-	    add_delta_resolver
-	      (subst_dom_codom_delta_resolver subst2 resolve) res
-	| None ->
-	    subst_codom_delta_resolver subst2 resolve
+            add_delta_resolver
+              (subst_dom_codom_delta_resolver subst2 resolve) res
+        | None ->
+            subst_codom_delta_resolver subst2 resolve
     in
     let prefixed_subst = substition_prefixed_by mpk mp' subst2 in
     Umap.join prefixed_subst (add (mp',resolve'') res)

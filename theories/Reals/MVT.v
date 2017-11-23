@@ -712,7 +712,7 @@ Proof.
 Qed.
 
 (* A variant of MVT using absolute values. *)
-Lemma MVT_abs : 
+Lemma MVT_abs :
   forall (f f' : R -> R) (a b : R),
   (forall c : R, Rmin a b <= c <= Rmax a b ->
       derivable_pt_lim f c (f' c)) ->

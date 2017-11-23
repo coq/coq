@@ -565,10 +565,10 @@ let require_library_from_dirpath modrefl export =
     if Lib.is_module_or_modtype () then
       begin
         warn_require_in_module ();
-	add_anonymous_leaf (in_require (needed,modrefl,None));
-	Option.iter (fun exp ->
-	  add_anonymous_leaf (in_import_library (modrefl,exp)))
-	  export
+        add_anonymous_leaf (in_require (needed,modrefl,None));
+        Option.iter (fun exp ->
+          add_anonymous_leaf (in_import_library (modrefl,exp)))
+          export
       end
     else
       add_anonymous_leaf (in_require (needed,modrefl,export));
@@ -616,7 +616,7 @@ let check_coq_overwriting p id =
   let l = DirPath.repr p in
   let is_empty = match l with [] -> true | _ -> false in
   if not !Flags.boot && not is_empty && Id.equal (List.last l) coq_root then
-    user_err 
+    user_err
       (str "Cannot build module " ++ pr_dirpath p ++ str "." ++ Id.print id ++ str "." ++ spc () ++
       str "it starts with prefix \"Coq\" which is reserved for the Coq library.")
 
@@ -664,7 +664,7 @@ let current_deps () =
 let current_reexports () = !libraries_exports_list
 
 let error_recursively_dependent_library dir =
-  user_err 
+  user_err
     (strbrk "Unable to use logical name " ++ pr_dirpath dir ++
      strbrk " to save current library because" ++
      strbrk " it already depends on a library of this name.")
@@ -742,7 +742,7 @@ let save_library_to ?todo dir f otab =
     if !Flags.native_compiler then
       let fn = Filename.dirname f'^"/"^Nativecode.mod_uid_of_dirpath dir in
       if not (Nativelib.compile_library dir ast fn) then
-	user_err Pp.(str "Could not compile the library to native code.")
+        user_err Pp.(str "Could not compile the library to native code.")
    with reraise ->
     let reraise = CErrors.push reraise in
     let () = Feedback.msg_warning (str "Removed file " ++ str f') in

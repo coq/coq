@@ -34,23 +34,23 @@ let check_constant_declaration env kn cb =
       let ctx = Univ.AUContext.repr auctx in
       push_context ~strict:false ctx env
   in
-  let envty, ty = 
+  let envty, ty =
     let ty = cb.const_type in
     let ty', cu = refresh_arity ty in
     let envty = push_context_set cu env' in
     let _ = infer_type envty ty' in
     envty, ty
   in
-  let () = 
+  let () =
     match body_of_constant cb with
     | Some bd ->
-      (match cb.const_proj with 
+      (match cb.const_proj with
       | None -> let j = infer envty bd in
-		  conv_leq envty j ty
-      | Some pb -> 
-	let env' = add_constant kn cb env' in
-	let j = infer env' bd in
-	  conv_leq envty j ty)
+                  conv_leq envty j ty
+      | Some pb ->
+        let env' = add_constant kn cb env' in
+        let j = infer env' bd in
+          conv_leq envty j ty)
     | None -> ()
   in
   if constant_is_polymorphic cb then add_constant kn cb env
@@ -142,6 +142,6 @@ and check_signature env sign mp_mse res = match sign with
       MoreFunctor(arg_id,mtb,body)
   | NoFunctor struc ->
       let (_:env) = List.fold_left (fun env (lab,mb) ->
-	check_structure_field env mp_mse lab res mb) env struc
+        check_structure_field env mp_mse lab res mb) env struc
       in
       NoFunctor struc

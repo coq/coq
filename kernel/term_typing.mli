@@ -54,9 +54,9 @@ type side_effect_role =
   | Subproof
   | Schema of inductive * string
 
-type exported_side_effect = 
+type exported_side_effect =
   Constant.t * constant_body * side_effect_role
-  
+
 (* Given a constant entry containing side effects it exports them (either
  * by re-checking them or trusting them).  Returns the constant bodies to
  * be pushed in the safe_env by safe typing.  The main constant entry
@@ -72,7 +72,7 @@ val translate_recipe : env -> Constant.t -> Cooking.recipe -> constant_body
 
 (** Internal functions, mentioned here for debug purpose only *)
 
-val infer_declaration : trust:'a trust -> env -> Constant.t option -> 
+val infer_declaration : trust:'a trust -> env -> Constant.t option ->
   'a constant_entry -> Cooking.result
 
 val build_constant_declaration :

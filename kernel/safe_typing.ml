@@ -270,7 +270,7 @@ type constraints_addition =
 
 let add_constraints cst senv =
   match cst with
-  | Later fc -> 
+  | Later fc ->
     {senv with future_cst = fc :: senv.future_cst}
   | Now (poly,cst) ->
   { senv with
@@ -294,7 +294,7 @@ let join_safe_environment ?(except=Future.UUIDSet.empty) e =
        else add_constraints (Now (false, Future.join fc)) e)
     {e with future_cst = []} e.future_cst
 
-let is_joined_environment e = List.is_empty e.future_cst 
+let is_joined_environment e = List.is_empty e.future_cst
 
 (** {6 Various checks } *)
 
@@ -394,8 +394,8 @@ let push_named_def (id,de) senv =
     | Def c -> Mod_subst.force_constr c, univs
     | OpaqueDef o ->
         Opaqueproof.force_proof (Environ.opaque_tables senv.env) o,
-        Univ.ContextSet.union univs 
-	(Opaqueproof.force_constraints (Environ.opaque_tables senv.env) o)
+        Univ.ContextSet.union univs
+        (Opaqueproof.force_constraints (Environ.opaque_tables senv.env) o)
     | _ -> assert false in
   let senv' = push_context_set poly univs senv in
   let env'' = safe_push_named (LocalDef (id,c,typ)) senv'.env in
@@ -427,7 +427,7 @@ let globalize_constant_universes env cb =
   match cb.const_universes with
   | Monomorphic_const ctx ->
     let cstrs = Univ.ContextSet.of_context ctx in
-    Now (false, cstrs) ::  
+    Now (false, cstrs) ::
     (match cb.const_body with
      | (Undef _ | Def _) -> []
      | OpaqueDef lc ->
@@ -439,7 +439,7 @@ let globalize_constant_universes env cb =
              | Some c -> [Now (false, c)])
   | Polymorphic_const _ ->
     [Now (true, Univ.ContextSet.empty)]
-      
+
 let globalize_mind_universes mb =
   match mb.mind_universes with
   | Monomorphic_ind ctx ->
@@ -447,7 +447,7 @@ let globalize_mind_universes mb =
   | Polymorphic_ind _ -> [Now (true, Univ.ContextSet.empty)]
   | Cumulative_ind _ -> [Now (true, Univ.ContextSet.empty)]
 
-let constraints_of_sfb env sfb = 
+let constraints_of_sfb env sfb =
   match sfb with
   | SFBconst cb -> globalize_constant_universes env cb
   | SFBmind mib -> globalize_mind_universes mib
@@ -501,7 +501,7 @@ type global_declaration =
   | ConstantEntry : 'a effect_entry * 'a Entries.constant_entry -> global_declaration
   | GlobalRecipe of Cooking.recipe
 
-type exported_private_constant = 
+type exported_private_constant =
   Constant.t * private_constant_role
 
 let add_constant_aux no_section senv (kn, cb) =
@@ -538,7 +538,7 @@ let add_constant dir l decl senv =
   let kn = Constant.make3 senv.modpath dir l in
   let no_section = DirPath.is_empty dir in
   let senv =
-    let cb = 
+    let cb =
       match decl with
       | ConstantEntry (EffectEntry, ce) ->
         Term_typing.translate_constant (Term_typing.SideEffects senv.revstruct) senv.env kn ce
@@ -774,11 +774,11 @@ let add_include me is_module inl senv =
     | MoreFunctor(mbid,mtb,str) ->
       let cst_sub = Subtyping.check_subtypes senv.env mb mtb in
       let senv =
-	add_constraints
-	  (Now (false, Univ.ContextSet.add_constraints cst_sub Univ.ContextSet.empty))
-	  senv in
+        add_constraints
+          (Now (false, Univ.ContextSet.add_constraints cst_sub Univ.ContextSet.empty))
+          senv in
       let mpsup_delta =
-	Modops.inline_delta_resolver senv.env inl mp_sup mbid mtb mb.mod_delta
+        Modops.inline_delta_resolver senv.env inl mp_sup mbid mtb mb.mod_delta
       in
       let subst = Mod_subst.map_mbid mbid mp_sup mpsup_delta in
       let resolver = Mod_subst.subst_codom_delta_resolver subst resolver in
@@ -797,7 +797,7 @@ let add_include me is_module inl senv =
       | SFBconst _ ->
         C (Mod_subst.constant_of_delta_kn resolver (KerName.make2 mp_sup l))
       | SFBmind _ ->
-	I (Mod_subst.mind_of_delta_kn resolver (KerName.make2 mp_sup l))
+        I (Mod_subst.mind_of_delta_kn resolver (KerName.make2 mp_sup l))
       | SFBmodule _ -> M
       | SFBmodtype _ -> MT
     in
@@ -884,14 +884,14 @@ let import lib cst vodigest senv =
   let mp = MPfile lib.comp_name in
   let mb = lib.comp_mod in
   let env = Environ.push_context_set ~strict:true
-				     (Univ.ContextSet.union mb.mod_constraints cst)
-				     senv.env
+                                     (Univ.ContextSet.union mb.mod_constraints cst)
+                                     senv.env
   in
   mp,
   { senv with
     env =
       (let linkinfo =
-	 Nativecode.link_info_of_dirpath lib.comp_name
+         Nativecode.link_info_of_dirpath lib.comp_name
        in
        Modops.add_linked_module mb linkinfo env);
     modresolver = Mod_subst.add_delta_resolver mb.mod_delta senv.modresolver;

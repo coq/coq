@@ -56,7 +56,7 @@ let read_fd fd s ~off ~len =
   let rec loop () =
     try Unix.read fd s off len
     with Unix.Unix_error(Unix.EAGAIN,_,_) -> loop ()
-  in 
+  in
     loop ()
 
 let really_read_fd fd s off len =
@@ -127,10 +127,10 @@ let chat s =
   try
     match parse_request (raw_input_line party.sock) with
     | Get n ->
-        if !cur_tokens < !max_tokens then allocate n party     
+        if !cur_tokens < !max_tokens then allocate n party
         else Queue.push (n,party) queue
     | TryGet n ->
-        if !cur_tokens < !max_tokens then allocate n party     
+        if !cur_tokens < !max_tokens then allocate n party
         else answer party Noluck
     | GiveBack n -> de_allocate n party
     | Ping ->
@@ -190,7 +190,7 @@ let main () =
     let pid = Unix.fork () in
     if pid <> 0 then begin
       Printf.printf "COQWORKMGR_SOCK=%s\n%!" str;
-      exit 0 
+      exit 0
     end else begin
       ignore(Unix.setsid ());
       Unix.close Unix.stdin;

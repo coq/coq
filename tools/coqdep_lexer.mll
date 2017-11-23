@@ -236,8 +236,8 @@ and string = parse
 and load_file = parse
   | '"' [^ '"']* '"' (*'"'*)
       { let s = lexeme lexbuf in
-	parse_dot lexbuf;
-	Load (unquote_vfile_string s) }
+        parse_dot lexbuf;
+        Load (unquote_vfile_string s) }
   | coq_ident
       { let s = get_ident lexbuf in skip_to_dot lexbuf; Load s }
   | eof
@@ -315,7 +315,7 @@ and modules mllist = parse
       { comment lexbuf; modules mllist lexbuf }
   | '"' [^'"']* '"'
       { let lex = (Lexing.lexeme lexbuf) in
-	let str = String.sub lex 1 (String.length lex - 2) in
+        let str = String.sub lex 1 (String.length lex - 2) in
         modules (str :: mllist) lexbuf}
   | eof
       { syntax_error lexbuf }
@@ -330,7 +330,7 @@ and qual_id ml_module_name = parse
 
 and mllib_list = parse
   | caml_up_ident { let s = uncapitalize (Lexing.lexeme lexbuf)
-		in s :: mllib_list lexbuf }
+                in s :: mllib_list lexbuf }
   | "*predef*" { mllib_list lexbuf }
   | space+ { mllib_list lexbuf }
   | eof { [] }

@@ -42,7 +42,7 @@ let make_act loc act pil =
     | ExtNonTerminal (_, None) :: tl -> <:expr< (fun $lid:"_"$ -> $make tl$) >>
     | ExtNonTerminal (_, Some p) :: tl -> <:expr< (fun $lid:p$ -> $make tl$) >>
     | ExtTerminal _ :: tl ->
-	<:expr< (fun _ -> $make tl$) >> in
+        <:expr< (fun _ -> $make tl$) >> in
   make (List.rev pil)
 
 let make_prod_item = function

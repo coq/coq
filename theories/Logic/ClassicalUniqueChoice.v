@@ -78,7 +78,7 @@ destruct (f P).
   right.
   destruct HfP as [[_ Hfalse]| [Hna _]].
     discriminate.
-    assumption. 
+    assumption.
 Qed.
 
 Corollary not_not_classic_set :

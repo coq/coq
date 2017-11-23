@@ -82,10 +82,10 @@ h4.section {
 #main .doc { margin: 0px;
              font-family: sans-serif;
              font-size: 100%;
-	     line-height: 125%;
+             line-height: 125%;
              max-width: 40em;
              color: black;
-	     padding: 10px;
+             padding: 10px;
              background-color: #90bdff}
 
 .inlinecode {
@@ -303,7 +303,7 @@ tr.infrulemiddle hr {
 
 .booktitle { font-size : 140%  }
 .authors { font-size : 90%;
-	         line-height: 115%;  }
+                 line-height: 115%;  }
 .moreauthors { font-size : 60%  }
 
 #index #entrance {

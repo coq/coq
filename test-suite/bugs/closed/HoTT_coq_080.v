@@ -23,5 +23,5 @@ Definition sum_category (C D : category) : category :=
 Goal forall C D (x y : ob (sum_category C D)), Type.
 intros C D x y.
 hnf in x, y.
-exact (hom (sum_category _ _) x y). 
+exact (hom (sum_category _ _) x y).
 Defined.

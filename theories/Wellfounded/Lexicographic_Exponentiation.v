@@ -89,7 +89,7 @@ Section Wf_Lexicographic_Exponentiation.
   Proof.
     intro.
     apply rev_ind with
-      (P := 
+      (P :=
         fun x : List =>
         forall a b : A, Descl (b :: x ++ [a]) -> clos_refl_trans A leA a b);
      intros.
@@ -224,7 +224,7 @@ Section Wf_Lexicographic_Exponentiation.
     unfold lex_exp at 1; simpl.
     apply rev_ind with
       (A := A)
-      (P := 
+      (P :=
         fun x : List =>
         forall (x0 : List) (y : Descl x0),
           ltl x0 x -> Acc Lex_Exp << x0, y >>).
@@ -235,7 +235,7 @@ Section Wf_Lexicographic_Exponentiation.
     generalize (well_founded_ind (wf_clos_trans A leA H)).
     intros GR.
     apply GR with
-      (P := 
+      (P :=
         fun x0 : A =>
         forall l : List,
           (forall (x1 : List) (y : Descl x1),
@@ -254,7 +254,7 @@ Section Wf_Lexicographic_Exponentiation.
     rewrite H2.
     apply rev_ind with
       (A := A)
-      (P := 
+      (P :=
         fun x3 : List =>
         forall y1 : Descl (l ++ x3),
           ltl x3 [x1] -> Acc Lex_Exp << l ++ x3, y1 >>).

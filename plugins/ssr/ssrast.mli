@@ -127,12 +127,12 @@ type 'tac ssrhint = bool * 'tac option list
 type 'tac fwdbinders =
         bool * (ssrhpats * ((ssrfwdfmt * ssrterm) * 'tac ssrhint))
 
-type clause = 
+type clause =
   (ssrclear * ((ssrhyp_or_id * string) *
               Ssrmatching_plugin.Ssrmatching.cpattern option) option)
 type clauses = clause list * ssrclseq
 
-type wgen = 
+type wgen =
            (ssrclear *
             ((ssrhyp_or_id * string) *
              Ssrmatching_plugin.Ssrmatching.cpattern option)
@@ -144,6 +144,6 @@ type 'a ssrseqarg = ssrindex * ('a ssrhint * 'a option)
 (* OOP : these are general shortcuts *)
 type gist = Tacintern.glob_sign
 type ist = Tacinterp.interp_sign
-type goal = Goal.goal 
+type goal = Goal.goal
 type 'a sigma = 'a Evd.sigma
 type v82tac = Tacmach.tactic

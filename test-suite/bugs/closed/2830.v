@@ -166,7 +166,7 @@ Class Functor `(C:Category) `(D:Category) (im : C -> D) := {
   ; fmap : forall {a b}, `(a ~> b) -> im a ~> im b
   ; fmap_respects : forall a b (f f' : a ~> b), f ≈ f' -> fmap f ≈ fmap f'
   ; fmap_preserves_id : forall a, fmap (id a) ≈ id (im a)
-  ; fmap_preserves_comp : forall `(f:a~>b) `(g:b~>c), 
+  ; fmap_preserves_comp : forall `(f:a~>b) `(g:b~>c),
     fmap g ∘ fmap f ≈ fmap (g ∘ f)
 }.
 Coercion functor_im : Functor >-> Funclass.
@@ -174,13 +174,13 @@ Implicit Arguments fmap [Object Hom C Object0 Hom0 D im a b].
 
 Add Parametric Morphism `(C:Category) `(D:Category)
   (Im:C->D) (F:Functor C D Im) (a b:C) : (@fmap _ _ C _ _ D Im F a b)
-  with signature (@eqv C _ C a b ==> @eqv D _ D (Im a) (Im b)) 
+  with signature (@eqv C _ C a b ==> @eqv D _ D (Im a) (Im b))
   as parametric_morphism_fmap.
 intros. apply fmap_respects. assumption. Qed.
 
 (* HERE IS THE PROBLEMATIC INSTANCE. If we change this to a regular Definition,
    then the problem goes away. *)
-Instance functor_comp `{C:Category} `{D:Category} `{E:Category} 
+Instance functor_comp `{C:Category} `{D:Category} `{E:Category}
   {Gim} (G:Functor D E Gim) {Fim} (F:Functor C D Fim)
   : Functor C E (Basics.compose Gim Fim).
 intros. apply Build_Functor with (fmap := fun a b f => fmap G (fmap F f)).
@@ -211,7 +211,7 @@ Definition setList (A:set_cat) := list A.
 Instance list_functor : Functor set_cat set_cat setList.
 apply Build_Functor with (fmap := @map).
 intros. rewrite H. reflexivity.
-intros; simpl; apply functional_extensionality. 
+intros; simpl; apply functional_extensionality.
   induction x; [auto|simpl]. rewrite IHx. reflexivity.
 intros; simpl; apply functional_extensionality.
   induction x; [auto|simpl]. rewrite IHx. reflexivity.

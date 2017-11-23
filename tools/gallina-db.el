@@ -12,11 +12,11 @@
 ;;; real value defined below
 
 ;;; Commentary:
-;; 
+;;
 
 ;;; Code:
 
-;(require 'proof-config)			; for proof-face-specs, a macro
+;(require 'proof-config)                        ; for proof-face-specs, a macro
 ;(require 'holes)
 
 (defconst coq-syntax-db nil
@@ -90,7 +90,7 @@ For each line if FILTER returns nil, then the keyword is not added to the
 regexp.  See `coq-syntax-db' for DB structure."
   (let ((l db) (res ()))
     (while l
-      (let* ((hd (car l)) (tl (cdr l))	; hd is the first infos list
+      (let* ((hd (car l)) (tl (cdr l))  ; hd is the first infos list
              (e1 (car hd)) (tl1 (cdr hd)) ; e1 = menu entry
              (e2 (car tl1)) (tl2 (cdr tl1)) ; e2 = abbreviation
              (e3 (car tl2)) (tl3 (cdr tl2)) ; e3 = completion
@@ -111,8 +111,8 @@ See `coq-syntax-db' for DB structure."
   (let ((l db) (res 0))
     (while l
       (let ((lgth (length (car (car l)))))
-	(setq res (max lgth res))
-	(setq l (cdr l))))
+        (setq res (max lgth res))
+        (setq l (cdr l))))
     res))
 
 
@@ -124,31 +124,31 @@ of the largest line in the menu (without abbrev and shortcut specifications).
 Used by `coq-build-menu-from-db', which you should probably use instead.  See
 `coq-syntax-db' for DB structure."
   (let ((l db) (res ()) (size lgth)
-	(keybind-abbrev (substitute-command-keys " \\[expand-abbrev]")))
+        (keybind-abbrev (substitute-command-keys " \\[expand-abbrev]")))
     (while (and l (> size 0))
-      (let* ((hd (car l))(tl (cdr l))	; hd is a list of length 3 or 4
-	     (e1 (car hd)) (tl1 (cdr hd)) ; e1 = menu entry
-	     (e2 (car tl1)) (tl2 (cdr tl1)) ; e2 = abbreviation
-	     (e3 (car tl2)) (tl3 (cdr tl2)) ; e3 = completion
-	     (e4 (car-safe tl3)) (tl4 (cdr-safe tl3)) ; e4 = state changing
-	     (e5 (car-safe tl4)) (tl5 (cdr-safe tl4)) ; e5 = colorization string
-	     (e6 (car-safe tl5))	; e6 = function for smart insertion
-	     (e7 (car-safe (cdr-safe tl5))) ; e7 = if non-nil : hide in menu
-	     (entry-with (max (- menuwidth (length e1)) 0))
-	     (spaces (make-string entry-with ? ))
-	     ;;(restofmenu (coq-build-menu-from-db-internal tl (- size 1) menuwidth))
-	     )
-	(when (not e7) ;; if not hidden
-	  (let ((menu-entry
-		 (vector
-		  ;; menu entry label
-		  (concat e1 (if (not e2) "" (concat spaces "(" e2 keybind-abbrev ")")))
-		   ;;insertion function if present otherwise insert completion
-		   (if e6 e6 `(holes-insert-and-expand ,e3))
-		   t)))
-	    (setq res (nconc res (list menu-entry)))));; append *in place*
-	(setq l tl)
-	(setq size (- size 1))))
+      (let* ((hd (car l))(tl (cdr l))   ; hd is a list of length 3 or 4
+             (e1 (car hd)) (tl1 (cdr hd)) ; e1 = menu entry
+             (e2 (car tl1)) (tl2 (cdr tl1)) ; e2 = abbreviation
+             (e3 (car tl2)) (tl3 (cdr tl2)) ; e3 = completion
+             (e4 (car-safe tl3)) (tl4 (cdr-safe tl3)) ; e4 = state changing
+             (e5 (car-safe tl4)) (tl5 (cdr-safe tl4)) ; e5 = colorization string
+             (e6 (car-safe tl5))        ; e6 = function for smart insertion
+             (e7 (car-safe (cdr-safe tl5))) ; e7 = if non-nil : hide in menu
+             (entry-with (max (- menuwidth (length e1)) 0))
+             (spaces (make-string entry-with ? ))
+             ;;(restofmenu (coq-build-menu-from-db-internal tl (- size 1) menuwidth))
+             )
+        (when (not e7) ;; if not hidden
+          (let ((menu-entry
+                 (vector
+                  ;; menu entry label
+                  (concat e1 (if (not e2) "" (concat spaces "(" e2 keybind-abbrev ")")))
+                   ;;insertion function if present otherwise insert completion
+                   (if e6 e6 `(holes-insert-and-expand ,e3))
+                   t)))
+            (setq res (nconc res (list menu-entry)))));; append *in place*
+        (setq l tl)
+        (setq size (- size 1))))
     res))
 
 
@@ -158,14 +158,14 @@ Return the string made of the first and the SIZE nth first element of DB,
 separated by \"...\".  Used by `coq-build-menu-from-db'.  See `coq-syntax-db'
 for DB structure."
     (concat (car-safe (car-safe db))
-	  " ... "
-	  (car-safe (car-safe (nthcdr (- size 1) db)))))
+          " ... "
+          (car-safe (car-safe (nthcdr (- size 1) db)))))
 
 (defun coq-sort-menu-entries (menu)
-  (sort menu 
-	(lambda (x y) (string< 
-			(downcase (elt x 0)) 
-			(downcase (elt y 0))))))
+  (sort menu
+        (lambda (x y) (string<
+                        (downcase (elt x 0))
+                        (downcase (elt y 0))))))
 
 (defun coq-build-menu-from-db (db &optional size)
   "Take a keyword database DB and return a list of insertion menus for them.
@@ -173,18 +173,18 @@ Submenus contain SIZE entries (default 30).  See `coq-syntax-db' for DB
 structure."
   ;; sort is destructive for the list, so copy list before sorting
   (let* ((l (coq-sort-menu-entries (copy-list db))) (res ())
-	 (wdth (+ 2 (max-length-db db)))
-	 (sz (or size 30)) (lgth (length l)))
+         (wdth (+ 2 (max-length-db db)))
+         (sz (or size 30)) (lgth (length l)))
     (while l
       (if (<= lgth sz)
-	  (setq res ;; careful: nconc destructive!
-		(nconc res (list (cons 
-				  (coq-build-title-menu l lgth)
-				  (coq-build-menu-from-db-internal l lgth wdth)))))
-	(setq res ; careful: nconc destructive!
-	      (nconc res (list (cons 
-				(coq-build-title-menu l sz)
-				(coq-build-menu-from-db-internal l sz wdth))))))
+          (setq res ;; careful: nconc destructive!
+                (nconc res (list (cons
+                                  (coq-build-title-menu l lgth)
+                                  (coq-build-menu-from-db-internal l lgth wdth)))))
+        (setq res ; careful: nconc destructive!
+              (nconc res (list (cons
+                                (coq-build-title-menu l sz)
+                                (coq-build-menu-from-db-internal l sz wdth))))))
       (setq l (nthcdr sz l))
       (setq lgth (length l)))
     res))
@@ -194,15 +194,15 @@ structure."
 See `coq-syntax-db' for DB structure."
   (let ((l db) (res ()))
     (while l
-      (let* ((hd (car l))(tl (cdr l))	; hd is a list of length 3 or 4
-	     (e1 (car hd)) (tl1 (cdr hd)) ; e1 = menu entry
-	     (e2 (car tl1)) (tl2 (cdr tl1)) ; e2 = abbreviation
-	     (e3 (car tl2)) (tl3 (cdr tl2)) ; e3 = completion
-	     )
-	;; careful: nconc destructive!
-	(when e2 
-	  (setq res (nconc res (list `(,e2 ,e3 holes-abbrev-complete)))))
-	(setq l tl)))
+      (let* ((hd (car l))(tl (cdr l))   ; hd is a list of length 3 or 4
+             (e1 (car hd)) (tl1 (cdr hd)) ; e1 = menu entry
+             (e2 (car tl1)) (tl2 (cdr tl1)) ; e2 = abbreviation
+             (e3 (car tl2)) (tl3 (cdr tl2)) ; e3 = completion
+             )
+        ;; careful: nconc destructive!
+        (when e2
+          (setq res (nconc res (list `(,e2 ,e3 holes-abbrev-complete)))))
+        (setq l tl)))
     res))
 
 

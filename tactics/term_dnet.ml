@@ -60,8 +60,8 @@ struct
     | DFix _ -> str "fix"
     | DCoFix _ -> str "cofix"
     | DCons ((t,dopt),tl) -> f t ++ (match dopt with
-	  Some t' -> str ":=" ++ f t'
-	| None -> str "") ++ spc() ++ str "::" ++ spc() ++ f tl
+          Some t' -> str ":=" ++ f t'
+        | None -> str "") ++ spc() ++ str "::" ++ spc() ++ f tl
     | DNil -> str "[]"
 
   (*
@@ -76,9 +76,9 @@ struct
     | DApp (t,u) -> DApp (f t,f u)
     | DCase (ci,p,c,bl) -> DCase (ci, f p, f c, Array.map f bl)
     | DFix (ia,i,ta,ca) ->
-	DFix (ia,i,Array.map f ta,Array.map f ca)
+        DFix (ia,i,Array.map f ta,Array.map f ca)
     | DCoFix(i,ta,ca) ->
-	DCoFix (i,Array.map f ta,Array.map f ca)
+        DCoFix (i,Array.map f ta,Array.map f ca)
     | DCons ((t,topt),u) -> DCons ((f t,Option.map f topt), f u)
 
   let compare_ci ci1 ci2 =
@@ -140,9 +140,9 @@ struct
     | DApp (t,u) -> f (f acc t) u
     | DCase (ci,p,c,bl) -> Array.fold_left f (f (f acc p) c) bl
     | DFix (ia,i,ta,ca) ->
-	Array.fold_left f (Array.fold_left f acc ta) ca
+        Array.fold_left f (Array.fold_left f acc ta) ca
     | DCoFix(i,ta,ca) ->
-	Array.fold_left f (Array.fold_left f acc ta) ca
+        Array.fold_left f (Array.fold_left f acc ta) ca
     | DCons ((t,topt),u) -> f (Option.fold_left f (f acc t) topt) u
 
   let choose f = function
@@ -162,39 +162,39 @@ struct
     if not (Int.equal (compare dummy_cmp (head c1) (head c2)) 0)
     then invalid_arg "fold2:compare" else
       match c1,c2 with
-	| (DRel, DRel | DNil, DNil | DSort, DSort | DRef _, DRef _) -> acc
-	| (DCtx (c1,t1), DCtx (c2,t2)
-	  | DApp (c1,t1), DApp (c2,t2)
-	  | DLambda (c1,t1), DLambda (c2,t2)) -> f (f acc c1 c2) t1 t2
-	| DCase (ci,p1,c1,bl1),DCase (_,p2,c2,bl2) ->
-	    Array.fold_left2 f (f (f acc p1 p2) c1 c2) bl1 bl2
-	| DFix (ia,i,ta1,ca1), DFix (_,_,ta2,ca2) ->
-	    Array.fold_left2 f (Array.fold_left2 f acc ta1 ta2) ca1 ca2
-	| DCoFix(i,ta1,ca1), DCoFix(_,ta2,ca2) ->
-	    Array.fold_left2 f (Array.fold_left2 f acc ta1 ta2) ca1 ca2
-	| DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
-	    f (Option.fold_left2 f (f acc t1 t2) topt1 topt2) u1 u2
-	| _ -> assert false
+        | (DRel, DRel | DNil, DNil | DSort, DSort | DRef _, DRef _) -> acc
+        | (DCtx (c1,t1), DCtx (c2,t2)
+          | DApp (c1,t1), DApp (c2,t2)
+          | DLambda (c1,t1), DLambda (c2,t2)) -> f (f acc c1 c2) t1 t2
+        | DCase (ci,p1,c1,bl1),DCase (_,p2,c2,bl2) ->
+            Array.fold_left2 f (f (f acc p1 p2) c1 c2) bl1 bl2
+        | DFix (ia,i,ta1,ca1), DFix (_,_,ta2,ca2) ->
+            Array.fold_left2 f (Array.fold_left2 f acc ta1 ta2) ca1 ca2
+        | DCoFix(i,ta1,ca1), DCoFix(_,ta2,ca2) ->
+            Array.fold_left2 f (Array.fold_left2 f acc ta1 ta2) ca1 ca2
+        | DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
+            f (Option.fold_left2 f (f acc t1 t2) topt1 topt2) u1 u2
+        | _ -> assert false
 
   let map2 (f:'a -> 'b -> 'c) (c1:'a t) (c2:'b t) : 'c t =
     let head w = map (fun _ -> ()) w in
     if not (Int.equal (compare dummy_cmp (head c1) (head c2)) 0)
     then invalid_arg "map2_t:compare" else
       match c1,c2 with
-	| (DRel, DRel | DSort, DSort | DNil, DNil | DRef _, DRef _) as cc ->
-	    let (c,_) = cc in c
-	| DCtx (c1,t1), DCtx (c2,t2) -> DCtx (f c1 c2, f t1 t2)
-	| DLambda (t1,c1), DLambda (t2,c2) -> DLambda (f t1 t2, f c1 c2)
-	| DApp (t1,u1), DApp (t2,u2) -> DApp (f t1 t2,f u1 u2)
-	| DCase (ci,p1,c1,bl1), DCase (_,p2,c2,bl2) ->
-	    DCase (ci, f p1 p2, f c1 c2, Array.map2 f bl1 bl2)
-	| DFix (ia,i,ta1,ca1), DFix (_,_,ta2,ca2) ->
-	    DFix (ia,i,Array.map2 f ta1 ta2,Array.map2 f ca1 ca2)
-	| DCoFix (i,ta1,ca1), DCoFix (_,ta2,ca2) ->
-	    DCoFix (i,Array.map2 f ta1 ta2,Array.map2 f ca1 ca2)
-	| DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
-	    DCons ((f t1 t2,Option.lift2 f topt1 topt2), f u1 u2)
-	| _ -> assert false
+        | (DRel, DRel | DSort, DSort | DNil, DNil | DRef _, DRef _) as cc ->
+            let (c,_) = cc in c
+        | DCtx (c1,t1), DCtx (c2,t2) -> DCtx (f c1 c2, f t1 t2)
+        | DLambda (t1,c1), DLambda (t2,c2) -> DLambda (f t1 t2, f c1 c2)
+        | DApp (t1,u1), DApp (t2,u2) -> DApp (f t1 t2,f u1 u2)
+        | DCase (ci,p1,c1,bl1), DCase (_,p2,c2,bl2) ->
+            DCase (ci, f p1 p2, f c1 c2, Array.map2 f bl1 bl2)
+        | DFix (ia,i,ta1,ca1), DFix (_,_,ta2,ca2) ->
+            DFix (ia,i,Array.map2 f ta1 ta2,Array.map2 f ca1 ca2)
+        | DCoFix (i,ta1,ca1), DCoFix (_,ta2,ca2) ->
+            DCoFix (i,Array.map2 f ta1 ta2,Array.map2 f ca1 ca2)
+        | DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
+            DCons ((f t1 t2,Option.lift2 f topt1 topt2), f u1 u2)
+        | _ -> assert false
 
   let terminal = function
     | (DRel | DSort | DNil | DRef _) -> true
@@ -234,8 +234,8 @@ module Make =
 struct
 
   module TDnet : Dnet.S with type ident=Ident.t
-			and  type 'a structure = 'a DTerm.t
-			and  type meta = int
+                        and  type 'a structure = 'a DTerm.t
+                        and  type meta = int
     = Dnet.Make(DTerm)(Ident)(Int)
 
   type t = TDnet.t
@@ -287,7 +287,7 @@ struct
     | App (f,ca)     ->
       Array.fold_left (fun c a -> Term (DApp (c,a)))
         (pat_of_constr f) (Array.map pat_of_constr ca)
-    | Proj (p,c) -> 
+    | Proj (p,c) ->
         Term (DApp (Term (DRef (ConstRef (Projection.constant p))), pat_of_constr c))
 
     and ctx_of_constr ctx c = match Constr.kind c with
@@ -349,16 +349,16 @@ struct
     let dpat = under_prod (empty_ctx dpat) in
     TDnet.Idset.fold
       (fun id acc ->
-	 let c_id = Opt.reduce (Ident.constr_of id) in
-	 let c_id = EConstr.of_constr c_id in
-	 let (ctx,wc) =
-	   try Termops.align_prod_letin Evd.empty whole_c c_id (** FIXME *)
-	   with Invalid_argument _ -> [],c_id in
-	 let wc,whole_c = if Opt.direction then whole_c,wc else wc,whole_c in
-	 try
+         let c_id = Opt.reduce (Ident.constr_of id) in
+         let c_id = EConstr.of_constr c_id in
+         let (ctx,wc) =
+           try Termops.align_prod_letin Evd.empty whole_c c_id (** FIXME *)
+           with Invalid_argument _ -> [],c_id in
+         let wc,whole_c = if Opt.direction then whole_c,wc else wc,whole_c in
+         try
           let _ = Termops.filtering Evd.empty ctx Reduction.CUMUL wc whole_c in
           id :: acc
-	 with Termops.CannotFilter -> (* msgnl(str"recon "++Termops.print_constr_env (Global.env()) wc); *) acc
+         with Termops.CannotFilter -> (* msgnl(str"recon "++Termops.print_constr_env (Global.env()) wc); *) acc
       ) (TDnet.find_match dpat dn) []
 
   (*

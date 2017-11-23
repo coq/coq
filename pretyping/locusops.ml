@@ -56,12 +56,12 @@ let simple_clause_of enum_hyps cl =
   let hyps =
     match cl.onhyps with
     | None ->
-	List.map Option.make (enum_hyps ())
+        List.map Option.make (enum_hyps ())
     | Some l ->
-	List.map (fun ((occs,id),w) ->
-	  if occs <> AllOccurrences then error_occurrences ();
-	  if w = InHypValueOnly then error_body_selection ();
-	  Some id) l in
+        List.map (fun ((occs,id),w) ->
+          if occs <> AllOccurrences then error_occurrences ();
+          if w = InHypValueOnly then error_body_selection ();
+          Some id) l in
   if cl.concl_occs = NoOccurrences then hyps
   else
     if cl.concl_occs <> AllOccurrences then error_occurrences ()
@@ -73,10 +73,10 @@ let concrete_clause_of enum_hyps cl =
   let hyps =
     match cl.onhyps with
     | None ->
-	let f id = OnHyp (id,AllOccurrences,InHyp) in
-	List.map f (enum_hyps ())
+        let f id = OnHyp (id,AllOccurrences,InHyp) in
+        List.map f (enum_hyps ())
     | Some l ->
-	List.map (fun ((occs,id),w) -> OnHyp (id,occs,w)) l in
+        List.map (fun ((occs,id),w) -> OnHyp (id,occs,w)) l in
   if cl.concl_occs = NoOccurrences then hyps
   else
     OnConcl cl.concl_occs :: hyps

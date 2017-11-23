@@ -44,7 +44,7 @@ let glob_xI = ConstructRef path_of_xI
 let glob_xO = ConstructRef path_of_xO
 let glob_xH = ConstructRef path_of_xH
 
-let pos_of_bignat ?loc x = 
+let pos_of_bignat ?loc x =
   let ref_xI = DAst.make ?loc @@ GRef (glob_xI, None) in
   let ref_xH = DAst.make ?loc @@ GRef (glob_xH, None) in
   let ref_xO = DAst.make ?loc @@ GRef (glob_xO, None) in

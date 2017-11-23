@@ -823,7 +823,7 @@ Proof.
  intros l x e r; functional induction (bal l x e r); intros; clearf;
  inv bst; repeat apply create_bst; auto; unfold create; try constructor;
  (apply lt_tree_node || apply gt_tree_node); auto;
- (eapply lt_tree_trans || eapply gt_tree_trans); eauto. 
+ (eapply lt_tree_trans || eapply gt_tree_trans); eauto.
 Qed.
 Hint Resolve bal_bst.
 
@@ -1333,7 +1333,7 @@ Proof.
  inversion_clear H.
  destruct H7; simpl in *.
  order.
- destruct (elements_aux_mapsto r acc x e0); intuition eauto. 
+ destruct (elements_aux_mapsto r acc x e0); intuition eauto.
 Qed.
 
 Lemma elements_sort : forall s : t elt, bst s -> sort ltk (elements s).
@@ -1930,7 +1930,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Lemma Equivb_Equivb : forall cmp m m',
   Equivb cmp m m' <-> Raw.Proofs.Equivb cmp m m'.
  Proof.
- intros; unfold Equivb, Equiv, Raw.Proofs.Equivb, In. intuition. 
+ intros; unfold Equivb, Equiv, Raw.Proofs.Equivb, In. intuition.
  generalize (H0 k); do 2 rewrite In_alt; intuition.
  generalize (H0 k); do 2 rewrite In_alt; intuition.
  generalize (H0 k); do 2 rewrite <- In_alt; intuition.

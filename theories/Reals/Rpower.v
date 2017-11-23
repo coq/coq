@@ -700,14 +700,14 @@ Qed.
 
 (* added later. *)
 
-Lemma Rpower_mult_distr :  
+Lemma Rpower_mult_distr :
   forall x y z, 0 < x -> 0 < y ->
    Rpower x z * Rpower y z = Rpower (x * y) z.
 intros x y z x0 y0; unfold Rpower.
 rewrite <- exp_plus, ln_mult, Rmult_plus_distr_l; auto.
 Qed.
 
-Lemma Rle_Rpower_l a b c: 0 <= c -> 0 < a <= b -> Rpower a c <= Rpower b c. 
+Lemma Rle_Rpower_l a b c: 0 <= c -> 0 < a <= b -> Rpower a c <= Rpower b c.
 Proof.
 intros [c0 | c0];
  [ | intros; rewrite <- c0, !Rpower_O; [apply Rle_refl | |] ].
@@ -728,17 +728,17 @@ intros x; unfold sinh, arcsinh.
 assert (Rminus_eq_0 : forall r, r - r = 0) by (intros; ring).
 rewrite <- exp_0, <- (Rminus_eq_0 x); unfold Rminus.
 rewrite exp_plus.
-match goal with |- context[sqrt ?a] => 
+match goal with |- context[sqrt ?a] =>
   replace a with (((exp x + exp(-x))/2)^2) by field
 end.
 rewrite sqrt_pow2;
  [|apply Rlt_le, Rmult_lt_0_compat;[apply Rplus_lt_0_compat; apply exp_pos |
                             apply Rinv_0_lt_compat, Rlt_0_2]].
-match goal with |- context[ln ?a] => replace a with (exp x) by field end. 
+match goal with |- context[ln ?a] => replace a with (exp x) by field end.
 rewrite ln_exp; reflexivity.
 Qed.
 
-Lemma sinh_arcsinh x : sinh (arcsinh x) = x. 
+Lemma sinh_arcsinh x : sinh (arcsinh x) = x.
 unfold sinh, arcsinh.
 assert (cmp : 0 < x + sqrt (x ^ 2 + 1)).
  destruct (Rle_dec x 0).
@@ -782,7 +782,7 @@ assert (0 < x + sqrt (x ^ 2 + 1)).
 assert (0 < x ^ 2 + 1).
  apply Rplus_le_lt_0_compat;[simpl; rewrite Rmult_1_r; apply Rle_0_sqr|fourier].
 replace (/sqrt (x ^ 2 + 1)) with
- (/(x + sqrt (x ^ 2 + 1)) * 
+ (/(x + sqrt (x ^ 2 + 1)) *
     (1 + (/(2 * sqrt (x ^ 2 + 1)) * (INR 2 * x ^ 1 + 0)))).
 apply (derivable_pt_lim_comp (fun x => x + sqrt (x ^ 2 + 1)) ln).
  apply (derivable_pt_lim_plus).

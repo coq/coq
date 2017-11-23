@@ -83,10 +83,10 @@ reflexive, symmetric and transitive.
 A parametric unary function $f$ of type
 \texttt{forall ($x_1$:$T_1$) \ldots ($x_n$:$T_n$), $A_1$ -> $A_2$}
 covariantly respects two parametric relation instances $R_1$ and $R_2$ if,
-whenever $x, y$ satisfy $R_1~x~y$, their images $(f~x)$ and $(f~y)$ 
+whenever $x, y$ satisfy $R_1~x~y$, their images $(f~x)$ and $(f~y)$
 satisfy $R_2~(f~x)~(f~y)$ . An $f$ that respects its input and output relations
 will be called a unary covariant \emph{morphism}. We can also say that $f$ is
-a monotone function with respect to $R_1$ and $R_2$. 
+a monotone function with respect to $R_1$ and $R_2$.
 The sequence $x_1,\ldots x_n$ represents the parameters of the morphism.
 
 Let $R_1$ and $R_2$ be two parametric relations.
@@ -104,7 +104,7 @@ that are required to be simultaneously monotone on every argument.
 Morphisms can also be contravariant in one or more of their arguments.
 A morphism is contravariant on an argument associated to the relation instance
 $R$ if it is covariant on the same argument when the inverse relation
-$R^{-1}$ (\texttt{inverse R} in Coq) is considered. 
+$R^{-1}$ (\texttt{inverse R} in Coq) is considered.
 The special arrow \texttt{-{}->} is used in signatures
 for contravariant morphisms.
 
@@ -188,7 +188,7 @@ The identifier \textit{id} gives a unique name to the morphism and it is
 used by the command to generate fresh names for automatically provided lemmas
 used internally.
 
-Notice that the carrier and relation parameters may refer to the context 
+Notice that the carrier and relation parameters may refer to the context
 of variables introduced at the beginning of the declaration, but the
 instances need not be made only of variables.
 Also notice that \textit{A} is \emph{not} required to be a term
@@ -204,7 +204,7 @@ The proofs of reflexivity, symmetry and transitivity can be omitted if the
 relation is not an equivalence relation. The proofs must be instances of the
 corresponding relation definitions: e.g. the proof of reflexivity must
 have a type convertible to \texttt{reflexive (A $t_1$ \ldots $t_n$) (Aeq $t'_1$ \ldots
-  $t'_n$)}. Each proof may refer to the introduced variables as well. 
+  $t'_n$)}. Each proof may refer to the introduced variables as well.
 
 \begin{cscexample}[Parametric relation]
 For Leibniz equality, we may declare:
@@ -235,7 +235,7 @@ the following command.
 
 The command declares \textit{f} as a parametric morphism of signature
 \textit{sig}. The identifier \textit{id} gives a unique name to the morphism
-and it is used as the base name of the type class instance definition 
+and it is used as the base name of the type class instance definition
 and as the name of the lemma that proves the well-definedness of the morphism.
 The parameters of the morphism as well as the signature may refer to the
 context of variables.
@@ -268,7 +268,7 @@ Add Parametric Relation A : (set A) (@eq_set A)
  symmetry proved by (eq_set_sym (A:=A))
  transitivity proved by (eq_set_trans (A:=A))
  as eq_set_rel.
-Add Parametric Morphism A : (@union A) with 
+Add Parametric Morphism A : (@union A) with
 signature (@eq_set A) ==> (@eq_set A) ==> (@eq_set A) as union_mor.
 Proof. exact (@union_compat A). Qed.
 \end{coq_example*}
@@ -298,7 +298,7 @@ Axiom union_compat:
    eq_set (union x y) (union x' y').
 \end{coq_eval}
 
-\begin{coq_example*} 
+\begin{coq_example*}
 Add Parametric Relation A : (set A) eq_set
  reflexivity proved by eq_set_refl
  symmetry proved by eq_set_sym
@@ -327,7 +327,7 @@ the instances by the variables of the section (and possibly hypotheses
 used in the proofs of instance declarations) but not to export them in
 the rest of the development for proof search. One can use the
 \texttt{Existing Instance} command to do so outside the section,
-using the name of the declared morphism suffixed by \texttt{\_Morphism}, 
+using the name of the declared morphism suffixed by \texttt{\_Morphism},
 or use the \texttt{Global} modifier for the corresponding class instance
 declaration (see \S\ref{setoid:first-class}) at definition time.
 When loading a compiled file or importing a module,
@@ -440,8 +440,8 @@ possible solutions to warn the user about.
 \label{setoid:first-class}
 
 The implementation is based on a first-class representation of
-properties of relations and morphisms as type classes. That is, 
-the various combinations of properties on relations and morphisms 
+properties of relations and morphisms as type classes. That is,
+the various combinations of properties on relations and morphisms
 are represented as records and instances of theses classes are put
 in a hint database.
 For example, the declaration:
@@ -468,22 +468,22 @@ is equivalent to an instance declaration:
 
 The declaration itself amounts to the definition of an object of the
 record type \texttt{Coq.Classes.RelationClasses.Equivalence} and a
-hint added to the \texttt{typeclass\_instances} hint database. 
+hint added to the \texttt{typeclass\_instances} hint database.
 Morphism declarations are also instances of a type class defined in
 \texttt{Classes.Morphisms}.
-See the documentation on type classes \ref{typeclasses} and 
-the theories files in \texttt{Classes} for further explanations. 
+See the documentation on type classes \ref{typeclasses} and
+the theories files in \texttt{Classes} for further explanations.
 
 One can inform the rewrite tactic about morphisms and relations just by
 using the typeclass mechanism to declare them using \texttt{Instance}
 and \texttt{Context} vernacular commands.
 Any object of type \texttt{Proper} (the type of morphism declarations)
-in the local context will also be automatically used by the rewriting 
+in the local context will also be automatically used by the rewriting
 tactic to solve constraints.
 
 Other representations of first class setoids and morphisms can also
 be handled by encoding them as records. In the following example,
-the projections of the setoid relation and of the morphism function 
+the projections of the setoid relation and of the morphism function
 can be registered as parametric relations and morphisms.
 \begin{cscexample}[First class setoids]
 
@@ -514,7 +514,7 @@ Proof. intros. rewrite H. reflexivity. Qed.
 
 \subsection{Tactics enabled on user provided relations}
 \label{setoidtactics}
-The following tactics, all prefixed by \texttt{setoid\_}, 
+The following tactics, all prefixed by \texttt{setoid\_},
 deal with arbitrary
 registered relations and morphisms. Moreover, all the corresponding unprefixed
 tactics (i.e. \texttt{reflexivity}, \texttt{symmetry}, \texttt{transitivity},
@@ -616,13 +616,13 @@ command differs slightly from the old one and \texttt{rewrite}.
 \asection{Extensions}
 \subsection{Rewriting under binders}
 
-\textbf{Warning}: Due to compatibility issues, this feature is enabled only when calling 
+\textbf{Warning}: Due to compatibility issues, this feature is enabled only when calling
 the \texttt{setoid\_rewrite} tactics directly and not \texttt{rewrite}.
 
 To be able to rewrite under binding constructs, one must declare
-morphisms with respect to pointwise (setoid) equivalence of functions. 
+morphisms with respect to pointwise (setoid) equivalence of functions.
 Example of such morphisms are the standard \texttt{all} and \texttt{ex}
-combinators for universal and existential quantification respectively. 
+combinators for universal and existential quantification respectively.
 They are declared as morphisms in the \texttt{Classes.Morphisms\_Prop}
 module. For example, to declare that universal quantification is a
 morphism for logical equivalence:
@@ -634,7 +634,7 @@ Require Import Setoid Morphisms.
 \begin{coq_example}
 Instance all_iff_morphism (A : Type) :
   Proper (pointwise_relation A iff ==> iff) (@all A).
-Proof. simpl_relation. 
+Proof. simpl_relation.
 \end{coq_example}
 \begin{coq_eval}
 Admitted.
@@ -656,7 +656,7 @@ generated for the surrounding morphism \texttt{m}.
 Hence, one can add higher-order combinators as morphisms by providing
 signatures using pointwise extension for the relations on the functional
 arguments (or whatever subrelation of the pointwise extension).
-For example, one could declare the \texttt{map} combinator on lists as 
+For example, one could declare the \texttt{map} combinator on lists as
 a morphism:
 \begin{coq_eval}
 Require Import List Setoid Morphisms.
@@ -691,23 +691,23 @@ Sub-relations can be used to specify that one relation is included in
 another, so that morphisms signatures for one can be used for the other.
 If a signature mentions a relation $R$ on the left of an arrow
 \texttt{==>}, then the signature also applies for any relation $S$ that
-is smaller than $R$, and the inverse applies on the right of an arrow. 
+is smaller than $R$, and the inverse applies on the right of an arrow.
 One can then declare only a few morphisms instances that generate the complete set
 of signatures for a particular constant. By default, the only declared
 subrelation is \texttt{iff}, which is a subrelation of \texttt{impl}
 and \texttt{inverse impl} (the dual of implication). That's why we can
 declare only two morphisms for conjunction:
-\texttt{Proper (impl ==> impl ==> impl) and} and 
+\texttt{Proper (impl ==> impl ==> impl) and} and
 \texttt{Proper (iff ==> iff ==> iff) and}. This is sufficient to satisfy
 any rewriting constraints arising from a rewrite using \texttt{iff},
 \texttt{impl} or \texttt{inverse impl} through \texttt{and}.
 
-Sub-relations are implemented in \texttt{Classes.Morphisms} and are a 
+Sub-relations are implemented in \texttt{Classes.Morphisms} and are a
 prime example of a mostly user-space extension of the algorithm.
 
 \subsection{Constant unfolding}
 
-The resolution tactic is based on type classes and hence regards user-defined 
+The resolution tactic is based on type classes and hence regards user-defined
 constants as transparent by default. This may slow down the resolution
 due to a lot of unifications (all the declared \texttt{Proper}
 instances are tried at each node of the search tree).
@@ -747,7 +747,7 @@ following grammar:
 
   \strlinea{repeat}{s}{iteration (+)} \\
   \strlinea{any}{s}{iteration (*)} \\
-  
+
   \strlinea{subterm}{s}{one subterm} \\
   \strlinea{subterms}{s}{all subterms} \\
   \strlinea{innermost}{s}{innermost first} \\
@@ -799,7 +799,7 @@ subterm for which $s$ made progress. The composite strategies
 \str{innermost} and \str{outermost} perform a single innermost our outermost
 rewrite using their argument strategy. Their counterparts
 \str{bottomup} and \str{topdown} perform as many rewritings as possible,
-starting from the bottom or the top of the term. 
+starting from the bottom or the top of the term.
 
 Hint databases created for \texttt{autorewrite} can also be used by
 \texttt{rewrite\_strat} using the \str{hints} strategy that applies any
@@ -808,35 +808,35 @@ lemma names directly as arguments. The \str{eval} strategy expects a
 reduction expression (see \S\ref{Conversion-tactics}) and succeeds if it
 reduces the subterm under consideration. The \str{fold} strategy takes a
 term $c$ and tries to \emph{unify} it to the current subterm, converting
-it to $c$ on success, it is stronger than the tactic \texttt{fold}. 
+it to $c$ on success, it is stronger than the tactic \texttt{fold}.
 
 
 \subsection{Usage}
 \tacindex{rewrite\_strat}
 
-\texttt{rewrite\_strat}~\textit{s}~\zeroone{\texttt{in} \textit{ident}}: 
+\texttt{rewrite\_strat}~\textit{s}~\zeroone{\texttt{in} \textit{ident}}:
 
   Rewrite using the strategy \textit{s} in hypothesis \textit{ident}
   or the conclusion.
 
   \begin{ErrMsgs}
-  \item  \errindex{Nothing to rewrite}. If the strategy failed. 
+  \item  \errindex{Nothing to rewrite}. If the strategy failed.
   \item  \errindex{No progress made}. If the strategy succeeded but
     made no progress.
-  \item  \errindex{Unable to satisfy the rewriting constraints}. 
+  \item  \errindex{Unable to satisfy the rewriting constraints}.
     If the strategy succeeded and made progress but the corresponding
     rewriting constraints are not satisfied.
   \end{ErrMsgs}
-  
 
-The \texttt{setoid\_rewrite}~c tactic is basically equivalent to 
+
+The \texttt{setoid\_rewrite}~c tactic is basically equivalent to
 \texttt{rewrite\_strat}~(\str{outermost}~c).
 
 
 
 
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:

@@ -86,7 +86,7 @@ module MakeRefTable :
            type t
            val compare : t -> t -> int
            val encode : reference -> t
-	   val subst : substitution -> t -> t
+           val subst : substitution -> t -> t
            val printer : t -> Pp.t
            val key : option_name
            val title : string

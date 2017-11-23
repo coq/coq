@@ -73,7 +73,7 @@ appearing in their parameters or fields. A typical example is given by
 monoids:
 
 \begin{coq_example}
-Polymorphic Record Monoid := { mon_car :> Type; mon_unit : mon_car; 
+Polymorphic Record Monoid := { mon_car :> Type; mon_unit : mon_car;
   mon_op : mon_car -> mon_car -> mon_car }.
 Print Monoid.
 \end{coq_example}
@@ -82,9 +82,9 @@ The \texttt{Monoid}'s carrier universe is polymorphic, hence it is
 possible to instantiate it for example with \texttt{Monoid} itself.
 First we build the trivial unit monoid in \texttt{Set}:
 \begin{coq_example}
-Definition unit_monoid : Monoid := 
+Definition unit_monoid : Monoid :=
   {| mon_car := unit; mon_unit := tt; mon_op x y := tt |}.
-\end{coq_example} 
+\end{coq_example}
 
 From this we can build a definition for the monoid of
 \texttt{Set}-monoids (where multiplication would be given by the product
@@ -97,7 +97,7 @@ Defined.
 \end{coq_example*}
 \begin{coq_example}
 Print monoid_monoid.
-\end{coq_example} 
+\end{coq_example}
 
 As one can see from the constraints, this monoid is ``large'', it lives
 in a universe strictly higher than \texttt{Set}.
@@ -295,7 +295,7 @@ in the same section.
   \label{ConstraintCmd}}
 
 This command declares a new constraint between named universes.
-The order relation can be one of $<$, $\le$ or $=$. If consistent, 
+The order relation can be one of $<$, $\le$ or $=$. If consistent,
 the constraint is then enforced in the global environment. Like
 \texttt{Universe}, it can be used with the \texttt{Polymorphic} prefix
 in sections only to declare constraints discharged at section closing time.
@@ -356,7 +356,7 @@ the semantics that the first use declares it. In this mode, the universe
 names are not associated with the definition or proof once it has been
 defined. This is meant mainly for debugging purposes.
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:

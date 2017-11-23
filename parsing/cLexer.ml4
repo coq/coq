@@ -136,7 +136,7 @@ let set_loc_pos loc bp ep =
 (* Increase line number by 1 and update position of beginning of line *)
 let bump_loc_line loc bol_pos =
   Ploc.make_loc (Ploc.file_name loc) (Ploc.line_nb loc + 1) bol_pos
-		(Ploc.first_pos loc, Ploc.last_pos loc) (Ploc.comment loc)
+                (Ploc.first_pos loc, Ploc.last_pos loc) (Ploc.comment loc)
 
 (* Same as [bump_loc_line], but for the last line in location *)
 (* For an obscure reason, camlp5 does not give an easy way to set line_nb_stop,
@@ -146,7 +146,7 @@ let bump_loc_line loc bol_pos =
 let bump_loc_line_last loc bol_pos =
   let loc' =
     Ploc.make_loc (Ploc.file_name loc) (Ploc.line_nb_last loc + 1) bol_pos
-		  (Ploc.first_pos loc + 1, Ploc.last_pos loc + 1) (Ploc.comment loc)
+                  (Ploc.first_pos loc + 1, Ploc.last_pos loc + 1) (Ploc.comment loc)
   in
   Ploc.encl loc loc'
 
@@ -156,7 +156,7 @@ let after loc =
   let line_nb = Ploc.line_nb_last loc in
   let bol_pos = Ploc.bol_pos_last loc in
   Ploc.make_loc (Ploc.file_name loc) line_nb bol_pos
-		(Ploc.last_pos loc, Ploc.last_pos loc) (Ploc.comment loc)
+                (Ploc.last_pos loc, Ploc.last_pos loc) (Ploc.comment loc)
 
 (** Lexer conventions on tokens *)
 
@@ -201,14 +201,14 @@ let lookup_utf8_tail loc c cs =
       match Stream.npeek 3 cs with
       | [_;c2;c3] ->
           check_utf8_trailing_byte loc cs c2;
-	  check_utf8_trailing_byte loc cs c3;
+          check_utf8_trailing_byte loc cs c3;
           3, (c1 land 0x0F) lsl 12 + (Char.code c2 land 0x3F) lsl 6 +
           (Char.code c3 land 0x3F)
       | _ -> error_utf8 loc cs
       else match Stream.npeek 4 cs with
       | [_;c2;c3;c4] ->
           check_utf8_trailing_byte loc cs c2;
-	  check_utf8_trailing_byte loc cs c3;
+          check_utf8_trailing_byte loc cs c3;
           check_utf8_trailing_byte loc cs c4;
           4, (c1 land 0x07) lsl 18 + (Char.code c2 land 0x3F) lsl 12 +
           (Char.code c3 land 0x3F) lsl 6 + (Char.code c4 land 0x3F)
@@ -350,7 +350,7 @@ let rec string loc ~comm_level bp len = parser
         | [< '')'; s >] ->
             let () = match comm_level with
             | Some 0 ->
-	       warn_comment_terminator_in_string ~loc:!@loc ()
+               warn_comment_terminator_in_string ~loc:!@loc ()
             | _ -> ()
             in
             let comm_level = Option.map pred comm_level in
@@ -527,7 +527,7 @@ let process_chars loc bp c cs =
     | None ->
         let ep' = bp + utf8_char_size loc cs c in
         njunk (ep' - ep) cs;
-	let loc = set_loc_pos loc bp ep' in
+        let loc = set_loc_pos loc bp ep' in
         err loc Undefined_token
 
 (* Parse what follows a dot *)
@@ -577,8 +577,8 @@ let rec next_token loc = parser bp
       let () = match t with
       | KEYWORD ("." | "...") ->
         if not (blank_or_eof s) then
-	  err (set_loc_pos loc bp (ep+1)) Undefined_token;
-	between_commands := true;
+          err (set_loc_pos loc bp (ep+1)) Undefined_token;
+        between_commands := true;
       | _ -> ()
       in
       (t, set_loc_pos loc bp ep)
@@ -680,7 +680,7 @@ let func cs =
     Stream.from
       (fun i ->
          let (tok, loc) = next_token !cur_loc cs in
-	 cur_loc := after loc;
+         cur_loc := after loc;
          loct_add loct i loc; Some tok)
   in
   (ts, loct_func loct)

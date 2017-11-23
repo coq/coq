@@ -150,7 +150,7 @@ Module MoreInt (Import I:Int).
   Ltac i2z := match goal with
     | H : ?a = ?b |- _ =>
       generalize (f_equal i2z H);
-	try autorewrite with i2z; clear H; intro H; i2z
+        try autorewrite with i2z; clear H; intro H; i2z
     | |- ?a = ?b =>
       apply (i2z_eq a b); try autorewrite with i2z; i2z
     | H : _ |- _ => progress autorewrite with i2z in H; i2z

@@ -83,7 +83,7 @@ Notation plus := Nat.add (compat "8.4").
 Infix "+" := Nat.add : nat_scope.
 
 Definition f_equal2_plus := f_equal2 plus.
-Definition f_equal2_nat := f_equal2 (A1:=nat) (A2:=nat). 
+Definition f_equal2_nat := f_equal2 (A1:=nat) (A2:=nat).
 Hint Resolve f_equal2_nat: core.
 
 Lemma plus_n_O : forall n:nat, n = n + 0.

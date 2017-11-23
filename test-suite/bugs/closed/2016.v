@@ -1,5 +1,5 @@
 (* Coq 8.2beta4 *)
-Require Import Classical_Prop. 
+Require Import Classical_Prop.
 
 Unset Structural Injection.
 
@@ -44,7 +44,7 @@ Qed.
 
 Definition f := CoreSemantics oe_core.
 
-Lemma oe_corestep_fun: forall q q1 q2, 
+Lemma oe_corestep_fun: forall q q1 q2,
        oe_corestep q q1 -> oe_corestep q q2 -> q1 = q2.
 Proof.
 unfold oe_corestep; intros.

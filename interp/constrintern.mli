@@ -46,7 +46,7 @@ type var_internalization_type =
 type var_internalization_data =
     var_internalization_type *
       (** type of the "free" variable, for coqdoc, e.g. while typing the
-	  constructor of JMeq, "JMeq" behaves as a variable of type Inductive *)
+          constructor of JMeq, "JMeq" behaves as a variable of type Inductive *)
     Id.t list *
       (** impargs to automatically add to the variable, e.g. for "JMeq A a B b"
           in implicit mode, this is [A;B] and this adds (A:=A) and (B:=B) *)
@@ -149,7 +149,7 @@ val interp_reference : ltac_sign -> reference -> glob_constr
 
 (** Interpret binders *)
 
-val interp_binder  : env -> evar_map -> Name.t -> constr_expr -> 
+val interp_binder  : env -> evar_map -> Name.t -> constr_expr ->
   types Evd.in_evar_universe_context
 
 val interp_binder_evars : env -> evar_map ref -> Name.t -> constr_expr -> EConstr.types
@@ -165,13 +165,13 @@ val interp_context_evars :
 (*   (env -> Evarutil.type_constraint -> glob_constr -> unsafe_judgment Evd.in_evar_universe_context) -> *)
 (*   ?global_level:bool -> ?impl_env:internalization_env -> *)
 (*   env -> evar_map -> local_binder_expr list -> internalization_env * ((env * Evd.evar_universe_context * rel_context * sorts list) * Impargs.manual_implicits) *)
-  
+
 (* val interp_context : ?global_level:bool -> ?impl_env:internalization_env -> *)
 (*   env -> evar_map -> local_binder_expr list ->  *)
 (*   internalization_env *  *)
 (*   ((env * Evd.evar_universe_context * rel_context * sorts list) * Impargs.manual_implicits) *)
 
-(** Locating references of constructions, possibly via a syntactic definition 
+(** Locating references of constructions, possibly via a syntactic definition
    (these functions do not modify the glob file) *)
 
 val locate_reference :  Libnames.qualid -> Globnames.global_reference

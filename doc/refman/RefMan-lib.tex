@@ -27,7 +27,7 @@ also be browsed at \url{http://coq.inria.fr/stdlib}.
 \section[The basic library]{The basic library\label{Prelude}}
 
 This section lists the basic notions and results which are directly
-available in the standard \Coq\ system\footnote{Most 
+available in the standard \Coq\ system\footnote{Most
 of these constructions are defined in the
 {\tt Prelude} module in directory {\tt theories/Init} at the {\Coq}
 root directory; this includes the modules
@@ -36,7 +36,7 @@ root directory; this includes the modules
 {\tt Datatypes},
 {\tt Specif},
 {\tt Peano},
-{\tt Wf} and 
+{\tt Wf} and
 {\tt Tactics}.
 Module {\tt Logic\_Type} also makes it in the initial state}.
 
@@ -126,7 +126,7 @@ extension is shown on Figure~\ref{formulas-syntax}.
 % the (subclass {\form}) of the syntactic class {\term}. The syntax
 % extension \footnote{This syntax is defined in module {\tt
 %     LogicSyntax}} is shown on Figure~\ref{formulas-syntax}.
- 
+
 \Rem Implication is not defined but primitive (it is a non-dependent
 product of a proposition over another proposition).  There is also a
 primitive universal quantification (it is a dependent product over a
@@ -289,7 +289,7 @@ Hint Immediate eq_sym not_eq_sym : core.
 \ttindex{f\_equal$i$}
 
 The theorem {\tt f\_equal} is extended to functions with two to five
-arguments. The theorem are names {\tt f\_equal2}, {\tt f\_equal3}, 
+arguments. The theorem are names {\tt f\_equal2}, {\tt f\_equal3},
 {\tt f\_equal4} and {\tt f\_equal5}.
 For instance {\tt f\_equal3} is defined the following way.
 \begin{coq_example*}
@@ -312,7 +312,7 @@ Abort.
   & $|$ & {\specif} {\tt +} {\specif} & ({\tt sum})\\
   & $|$ & {\specif} {\tt + \{} {\specif} {\tt \}} & ({\tt sumor})\\
   & $|$ & {\tt \{} {\specif} {\tt \} + \{} {\specif} {\tt \}} &
-  ({\tt sumbool})\\  
+  ({\tt sumbool})\\
   & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt |} {\form} {\tt \}}
   & ({\tt sig})\\
   & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt |} {\form}  {\tt \&}
@@ -364,7 +364,7 @@ Inductive identity (A:Type) (a:A) : A -> Type :=
 Note that zero is the letter \verb:O:, and {\sl not} the numeral
 \verb:0:.
 
-The predicate {\tt identity} is logically 
+The predicate {\tt identity} is logically
 equivalent to equality but it lives in sort {\tt
   Type}. It is mainly maintained for compatibility.
 
@@ -403,7 +403,7 @@ infix notation {\tt ||}), {\tt xorb}, {\tt implb} and {\tt negb}.
 \subsection{Specification}
 
 The following notions\footnote{They are defined in module {\tt
-Specif.v}} allow to build new data-types and specifications. 
+Specif.v}} allow to build new data-types and specifications.
 They are available with the syntax shown on
 Figure~\ref{specif-syntax}.
 
@@ -428,12 +428,12 @@ provided.
 
 \begin{coq_example*}
 Inductive sig (A:Set) (P:A -> Prop) : Set := exist (x:A) (_:P x).
-Inductive sig2 (A:Set) (P Q:A -> Prop) : Set := 
+Inductive sig2 (A:Set) (P Q:A -> Prop) : Set :=
   exist2 (x:A) (_:P x) (_:Q x).
 \end{coq_example*}
 
 A ``strong (dependent) sum'' \verb+{x:A & P x}+ may be also defined,
-when the predicate \verb:P: is now defined as a 
+when the predicate \verb:P: is now defined as a
 constructor of types in \verb:Type:.
 
 \ttindex{\{x:A \& (P x)\}}
@@ -528,7 +528,7 @@ Definition error := None.
 \end{coq_example*}
 
 
-This module ends with theorems, 
+This module ends with theorems,
 relating the sorts \verb:Set: or \verb:Type: and
 \verb:Prop: in a way which is consistent with the realizability
 interpretation.
@@ -681,7 +681,7 @@ induction principle.
 
 \begin{coq_example*}
 Theorem nat_case :
- forall (n:nat) (P:nat -> Prop), 
+ forall (n:nat) (P:nat -> Prop),
  P 0 -> (forall m:nat, P (S m)) -> P n.
 \end{coq_example*}
 \begin{coq_eval}
@@ -700,7 +700,7 @@ Abort All.
 
 \subsection{Well-founded recursion}
 
-The basic library contains the basics of well-founded recursion and 
+The basic library contains the basics of well-founded recursion and
 well-founded induction\footnote{This is defined in module {\tt Wf.v}}.
 \index{Well foundedness}
 \index{Recursion}
@@ -745,7 +745,7 @@ Theorem well_founded_ind :
 \begin{coq_eval}
 Abort All.
 \end{coq_eval}
-The automatically generated scheme {\tt Acc\_rect} 
+The automatically generated scheme {\tt Acc\_rect}
 can be used to define functions by fixpoints using
 well-founded relations to  justify termination. Assuming
 extensionality of the functional used for the recursive call, the
@@ -809,7 +809,7 @@ state\footnote{This is in module {\tt Tactics.v}}. They are listed at
 
 \subsection{Survey}
 
-The rest of the standard library is structured into the following 
+The rest of the standard library is structured into the following
 subdirectories:
 
 \begin{tabular}{lp{12cm}}
@@ -827,8 +827,8 @@ subdirectories:
             etc.) \\
   {\bf FSets}   & Specification and implementations of finite sets and finite
                   maps (by lists and by AVL trees)\\
- {\bf Reals}    & Axiomatization of real numbers (classical, basic functions, 
-                  integer part, fractional part, limit, derivative, Cauchy 
+ {\bf Reals}    & Axiomatization of real numbers (classical, basic functions,
+                  integer part, fractional part, limit, derivative, Cauchy
                   series, power series and results,...)\\
  {\bf Relations} & Relations (definitions and basic results) \\
  {\bf Sorting}  & Sorted list (basic definitions and heapsort correctness) \\
@@ -841,7 +841,7 @@ subdirectories:
 These directories belong to the initial load path of the system, and
 the modules they provide are compiled at installation time. So they
 are directly accessible with the command \verb!Require! (see
-Chapter~\ref{Other-commands}). 
+Chapter~\ref{Other-commands}).
 
 The different modules of the \Coq\ standard library are described in the
 additional document \verb!Library.dvi!. They are also accessible on the WWW
@@ -989,9 +989,9 @@ In addition to the \verb|ring|, \verb|field| and \verb|fourier|
 tactics (see Chapter~\ref{Tactics}) there are:
 \begin{itemize}
 \item {\tt discrR} \tacindex{discrR}
-  
+
   Proves that a real integer constant $c_1$ is different from another
-  real integer constant $c_2$.  
+  real integer constant $c_2$.
 
 \begin{coq_example*}
 Require Import DiscrR.
@@ -1006,7 +1006,7 @@ discrR.
 Abort.
 \end{coq_eval}
 
-\item {\tt split\_Rabs} allows unfolding the {\tt Rabs} constant and splits 
+\item {\tt split\_Rabs} allows unfolding the {\tt Rabs} constant and splits
 corresponding conjunctions.
 \tacindex{split\_Rabs}
 
@@ -1025,7 +1025,7 @@ Abort.
 
 \item {\tt split\_Rmult} splits a condition that a product is
   non null into subgoals corresponding to the condition on each
-  operand of the product. 
+  operand of the product.
 \tacindex{split\_Rmult}
 
 \begin{coq_example*}
@@ -1105,7 +1105,7 @@ description, etc.) and the possibility to download them one by one.
 You will also find informations on how to submit a new
 contribution.
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:

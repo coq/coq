@@ -70,11 +70,11 @@ Proof.
   replace
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0 (fun l:nat => An (S (l + k)) * Bn (N - l)%nat) (pred (N - k)))
+        sum_f_R0 (fun l:nat => An (S (l + k)) * Bn (N - l)%nat) (pred (N - k)))
       (pred N)) with
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
+        sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
         (pred (pred (N - k)))) (pred (pred N)) +
       sum_f_R0 (fun l:nat => An (S l) * Bn (N - l)%nat) (pred N)).
   replace (sum_f_R0 (fun p:nat => An p * Bn (S N - p)%nat) N) with
@@ -87,11 +87,11 @@ Proof.
   replace
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0 (fun l:nat => An (S (l + k)) * Bn (S N - l)%nat)
+        sum_f_R0 (fun l:nat => An (S (l + k)) * Bn (S N - l)%nat)
         (pred (S N - k))) (pred N)) with
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
+        sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
         (pred (N - k))) (pred N) +
       Bn (S N) * sum_f_R0 (fun l:nat => An (S l)) (pred N)).
   rewrite (decomp_sum An N H1); rewrite Rmult_plus_distr_r;
@@ -102,17 +102,17 @@ Proof.
       (Rplus_comm (sum_f_R0 (fun i:nat => An (S i)) (pred N) * Bn (S N)))
       ;
       rewrite <-
-	(Rplus_comm (Bn (S N) * sum_f_R0 (fun i:nat => An (S i)) (pred N)))
-	; rewrite (Rmult_comm (Bn (S N))); repeat rewrite Rplus_assoc;
-	  apply Rplus_eq_compat_l.
+        (Rplus_comm (Bn (S N) * sum_f_R0 (fun i:nat => An (S i)) (pred N)))
+        ; rewrite (Rmult_comm (Bn (S N))); repeat rewrite Rplus_assoc;
+          apply Rplus_eq_compat_l.
   replace
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
+        sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
         (pred (N - k))) (pred N)) with
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
+        sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
         (pred (pred (N - k)))) (pred (pred N)) +
       An (S N) * sum_f_R0 (fun l:nat => Bn (S l)) (pred N)).
   rewrite (decomp_sum Bn N H1); rewrite Rmult_plus_distr_l.
@@ -120,29 +120,29 @@ Proof.
     (Z :=
       sum_f_R0
       (fun k:nat =>
-	sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
+        sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
         (pred (pred (N - k)))) (pred (pred N)));
     set (Z2 := sum_f_R0 (fun i:nat => Bn (S i)) (pred N));
       ring.
   rewrite
     (sum_N_predN
       (fun k:nat =>
-	sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
+        sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
         (pred (N - k))) (pred N)).
   replace
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
+        sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
         (pred (N - k))) (pred (pred N))) with
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
+        sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
         (pred (pred (N - k))) + An (S N) * Bn (S k)) (
-	  pred (pred N))).
+          pred (pred N))).
   rewrite
     (sum_plus
       (fun k:nat =>
-	sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
+        sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
         (pred (pred (N - k)))) (fun k:nat => An (S N) * Bn (S k))
       (pred (pred N))).
   repeat rewrite Rplus_assoc; apply Rplus_eq_compat_l.
@@ -169,7 +169,7 @@ Proof.
   apply sum_eq; intros;
     rewrite
       (sum_N_predN (fun l:nat => An (S (S (l + i))) * Bn (N - l)%nat)
-	(pred (N - i))).
+        (pred (N - i))).
   replace (S (S (pred (N - i) + i))) with (S N).
   replace (N - pred (N - i))%nat with (S i).
   reflexivity.
@@ -288,23 +288,23 @@ Proof.
   replace
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0 (fun l:nat => An (S (l + k)) * Bn (S N - l)%nat)
+        sum_f_R0 (fun l:nat => An (S (l + k)) * Bn (S N - l)%nat)
         (pred (S N - k))) (pred N)) with
     (sum_f_R0
       (fun k:nat =>
-	sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
+        sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
         (pred (N - k)) + An (S k) * Bn (S N)) (pred N)).
   rewrite
     (sum_plus
       (fun k:nat =>
-	sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
+        sum_f_R0 (fun l:nat => An (S (S (l + k))) * Bn (N - l)%nat)
         (pred (N - k))) (fun k:nat => An (S k) * Bn (S N))).
   apply Rplus_eq_compat_l.
   rewrite scal_sum; reflexivity.
   apply sum_eq; intros; rewrite Rplus_comm;
     rewrite
       (decomp_sum (fun l:nat => An (S (l + i)) * Bn (S N - l)%nat)
-	(pred (S N - i))).
+        (pred (S N - i))).
   replace (0 + i)%nat with i; [ idtac | ring ].
   rewrite <- minus_n_O; apply Rplus_eq_compat_l.
   replace (pred (pred (S N - i))) with (pred (N - i)).
@@ -387,7 +387,7 @@ Proof.
   rewrite
     (decomp_sum
       (fun k:nat =>
-	sum_f_R0 (fun l:nat => An (S (l + k)) * Bn (N - l)%nat) (pred (N - k)))
+        sum_f_R0 (fun l:nat => An (S (l + k)) * Bn (N - l)%nat) (pred (N - k)))
       (pred N)).
   rewrite <- minus_n_O.
   replace (sum_f_R0 (fun l:nat => An (S (l + 0)) * Bn (N - l)%nat) (pred N))

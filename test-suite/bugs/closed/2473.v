@@ -8,7 +8,7 @@ Section S1.
   Instance HR2: forall n, Symmetric (R n).  Admitted.
   Hypothesis H: forall n a, R n (andb a a) a.
   Goal forall n a b, R n b a.
-   intros. 
+   intros.
    (* rewrite <- H. *) (* Anomaly: Evar ?.. was not declared. Please report. *)
    (* idem with setoid_rewrite *)
 (*    assert (HR2' := HR2 n). *)
@@ -33,7 +33,7 @@ Section S3.
   Instance HR2': Symmetric R.  Admitted.
   Hypothesis H: forall a, R (andb a a) a.
   Goal forall a b, R b a.
-   intros. 
+   intros.
    rewrite <- H.                (* ok *)
    admit.
   Qed.

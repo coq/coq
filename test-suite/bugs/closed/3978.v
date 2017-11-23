@@ -1,7 +1,7 @@
-Require Import Structures.OrderedType.  
+Require Import Structures.OrderedType.
 Require Import Structures.OrderedTypeEx.
 
-Module Type M. Parameter X : Type.      
+Module Type M. Parameter X : Type.
 
 Declare Module Export XOrd : OrderedType
   with Definition t := X
@@ -19,7 +19,7 @@ Module Type MyOt.
   Parameter eq : t -> t -> Prop.
 End MyOt.
 
-Module Type M2. Parameter X : Type.      
+Module Type M2. Parameter X : Type.
 
 Declare Module Export XOrd : MyOt
   with Definition t := X

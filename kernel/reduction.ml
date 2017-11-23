@@ -92,8 +92,8 @@ let pure_stack lfts stk =
             | (Zshift n,(l,pstk)) -> (el_shft n l, pstk)
             | (Zapp a, (l,pstk)) ->
                 (l,zlapp (map_lift l a) pstk)
-	    | (Zproj (n,m,c), (l,pstk)) ->
-		(l, Zlproj (c,l)::pstk)
+            | (Zproj (n,m,c), (l,pstk)) ->
+                (l, Zlproj (c,l)::pstk)
             | (Zfix(fx,a),(l,pstk)) ->
                 let (lfx,pa) = pure_rec l a in
                 (l, Zlfix((lfx,fx),pa)::pstk)
@@ -187,7 +187,7 @@ type conv_pb =
 
 let is_cumul = function CUMUL -> true | CONV -> false
 
-type 'a universe_compare = 
+type 'a universe_compare =
   { (* Might raise NotConvertible *)
     compare : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
     compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
@@ -195,7 +195,7 @@ type 'a universe_compare =
       Univ.Instance.t -> int -> 'a -> 'a;
     conv_constructors : (Declarations.mutual_inductive_body * int * int) ->
       Univ.Instance.t -> int -> Univ.Instance.t -> int -> 'a -> 'a;
-  } 
+  }
 
 type 'a universe_state = 'a * 'a universe_compare
 
@@ -210,7 +210,7 @@ let sort_cmp_universes env pb s0 s1 (u, check) =
    constructors. *)
 let convert_instances ~flex u u' (s, check) =
   (check.compare_instances ~flex u u' s, check)
-  
+
 let convert_inductives cv_pb ind u1 sv1 u2 sv2 (s, check) =
   (check.conv_inductives cv_pb ind u1 sv1 u2 sv2 s, check)
 
@@ -222,9 +222,9 @@ let conv_table_key infos k1 k2 cuniv =
   match k1, k2 with
   | ConstKey (cst, u), ConstKey (cst', u') when Constant.equal cst cst' ->
     if Univ.Instance.equal u u' then cuniv
-    else 
-      let flex = evaluable_constant cst (info_env infos) 
-	&& RedFlags.red_set (info_flags infos) (RedFlags.fCONST cst)
+    else
+      let flex = evaluable_constant cst (info_env infos)
+        && RedFlags.red_set (info_flags infos) (RedFlags.fCONST cst)
       in convert_instances ~flex u u' cuniv
   | VarKey id, VarKey id' when Id.equal id id' -> cuniv
   | RelKey n, RelKey n' when Int.equal n n' -> cuniv
@@ -236,19 +236,19 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
       | (z1::s1, z2::s2) ->
           let cu1 = cmp_rec s1 s2 cuniv in
           (match (z1,z2) with
-            | (Zlapp a1,Zlapp a2) -> 
-	       Array.fold_right2 f a1 a2 cu1
-	    | (Zlproj (c1,l1),Zlproj (c2,l2)) -> 
-	      if not (Constant.equal c1 c2) then 
-		raise NotConvertible
-	      else cu1
+            | (Zlapp a1,Zlapp a2) ->
+               Array.fold_right2 f a1 a2 cu1
+            | (Zlproj (c1,l1),Zlproj (c2,l2)) ->
+              if not (Constant.equal c1 c2) then
+                raise NotConvertible
+              else cu1
             | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
                 let cu2 = f fx1 fx2 cu1 in
                 cmp_rec a1 a2 cu2
             | (Zlcase(ci1,l1,p1,br1),Zlcase(ci2,l2,p2,br2)) ->
                 if not (fmind ci1.ci_ind ci2.ci_ind) then
-		  raise NotConvertible;
-		let cu2 = f (l1,p1) (l2,p2) cu1 in
+                  raise NotConvertible;
+                let cu2 = f (l1,p1) (l2,p2) cu1 in
                 Array.fold_right2 (fun c1 c2 -> f (l1,c1) (l2,c2)) br1 br2 cu2
             | _ -> assert false)
       | _ -> cuniv in
@@ -288,8 +288,8 @@ let rec no_case_available = function
 
 let in_whnf (t,stk) =
   match fterm_of t with
-    | (FLetIn _ | FCaseT _ | FApp _ 
-	  | FCLOS _ | FLIFT _ | FCast _) -> false
+    | (FLetIn _ | FCaseT _ | FApp _
+          | FCLOS _ | FLIFT _ | FCast _) -> false
     | FLambda _ -> no_arg_available stk
     | FConstruct _ -> no_case_available stk
     | FCoFix _ -> no_case_available stk
@@ -301,10 +301,10 @@ let unfold_projection infos p c =
   let unf = Projection.unfolded p in
     if unf || RedFlags.red_set infos.i_flags (RedFlags.fCONST (Projection.constant p)) then
       (match try Some (lookup_projection p (info_env infos)) with Not_found -> None with
-      | Some pb -> 
-	let s = Zproj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, 
-		       Projection.constant p) in
-	  Some (c, s)
+      | Some pb ->
+        let s = Zproj (pb.Declarations.proj_npars, pb.Declarations.proj_arg,
+                       Projection.constant p) in
+          Some (c, s)
       | None -> None)
   else None
 
@@ -331,16 +331,16 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
   match (fterm_of hd1, fterm_of hd2) with
     (* case of leaves *)
     | (FAtom a1, FAtom a2) ->
-	(match kind a1, kind a2 with
-	   | (Sort s1, Sort s2) ->
-	       if not (is_empty_stack v1 && is_empty_stack v2) then
-		 anomaly (Pp.str "conversion was given ill-typed terms (Sort).");
-	       sort_cmp_universes (env_of_infos infos) cv_pb s1 s2 cuniv
-	   | (Meta n, Meta m) ->
+        (match kind a1, kind a2 with
+           | (Sort s1, Sort s2) ->
+               if not (is_empty_stack v1 && is_empty_stack v2) then
+                 anomaly (Pp.str "conversion was given ill-typed terms (Sort).");
+               sort_cmp_universes (env_of_infos infos) cv_pb s1 s2 cuniv
+           | (Meta n, Meta m) ->
                if Int.equal n m
                then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
                else raise NotConvertible
-	   | _ -> raise NotConvertible)
+           | _ -> raise NotConvertible)
     | (FEvar ((ev1,args1),env1), FEvar ((ev2,args2),env2)) ->
         if Evar.equal ev1 ev2 then
           let cuniv = convert_stacks l2r infos lft1 lft2 v1 v2 cuniv in
@@ -358,80 +358,80 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     (* 2 constants, 2 local defined vars or 2 defined rels *)
     | (FFlex fl1, FFlex fl2) ->
       (try
-	 let cuniv = conv_table_key infos fl1 fl2 cuniv in
+         let cuniv = conv_table_key infos fl1 fl2 cuniv in
            convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with NotConvertible | Univ.UniverseInconsistency _ ->
            (* else the oracle tells which constant is to be expanded *)
-	 let oracle = CClosure.oracle_of_infos infos in
+         let oracle = CClosure.oracle_of_infos infos in
          let (app1,app2) =
            if Conv_oracle.oracle_order Univ.out_punivs oracle l2r fl1 fl2 then
-	     match unfold_reference infos fl1 with
+             match unfold_reference infos fl1 with
              | Some def1 -> ((lft1, (def1, v1)), appr2)
              | None ->
                (match unfold_reference infos fl2 with
                | Some def2 -> (appr1, (lft2, (def2, v2)))
-	       | None -> raise NotConvertible)
+               | None -> raise NotConvertible)
            else
-	     match unfold_reference infos fl2 with
+             match unfold_reference infos fl2 with
              | Some def2 -> (appr1, (lft2, (def2, v2)))
              | None ->
                (match unfold_reference infos fl1 with
                | Some def1 -> ((lft1, (def1, v1)), appr2)
-	       | None -> raise NotConvertible) 
-	 in
+               | None -> raise NotConvertible)
+         in
            eqappr cv_pb l2r infos app1 app2 cuniv)
 
     | (FProj (p1,c1), FProj (p2, c2)) ->
       (* Projections: prefer unfolding to first-order unification,
-	 which will happen naturally if the terms c1, c2 are not in constructor
-	 form *)
+         which will happen naturally if the terms c1, c2 are not in constructor
+         form *)
       (match unfold_projection infos p1 c1 with
-      | Some (def1,s1) -> 
+      | Some (def1,s1) ->
         eqappr cv_pb l2r infos (lft1, (def1, (s1 :: v1))) appr2 cuniv
       | None ->
-	match unfold_projection infos p2 c2 with
-	| Some (def2,s2) ->
+        match unfold_projection infos p2 c2 with
+        | Some (def2,s2) ->
           eqappr cv_pb l2r infos appr1 (lft2, (def2, (s2 :: v2))) cuniv
-	| None -> 
+        | None ->
           if Constant.equal (Projection.constant p1) (Projection.constant p2)
-	     && compare_stack_shape v1 v2 then
+             && compare_stack_shape v1 v2 then
             let u1 = ccnv CONV l2r infos el1 el2 c1 c2 cuniv in
               convert_stacks l2r infos lft1 lft2 v1 v2 u1
-	  else (* Two projections in WHNF: unfold *)
-	    raise NotConvertible)
+          else (* Two projections in WHNF: unfold *)
+            raise NotConvertible)
 
     | (FProj (p1,c1), t2) ->
       (match unfold_projection infos p1 c1 with
       | Some (def1,s1) ->
          eqappr cv_pb l2r infos (lft1, (def1, (s1 :: v1))) appr2 cuniv
-      | None -> 
-	 (match t2 with 
-	  | FFlex fl2 ->
-	     (match unfold_reference infos fl2 with
+      | None ->
+         (match t2 with
+          | FFlex fl2 ->
+             (match unfold_reference infos fl2 with
               | Some def2 ->
                  eqappr cv_pb l2r infos appr1 (lft2, (def2, v2)) cuniv
               | None -> raise NotConvertible)
-	  | _ -> raise NotConvertible))
-      
+          | _ -> raise NotConvertible))
+
     | (t1, FProj (p2,c2)) ->
       (match unfold_projection infos p2 c2 with
-      | Some (def2,s2) -> 
+      | Some (def2,s2) ->
          eqappr cv_pb l2r infos appr1 (lft2, (def2, (s2 :: v2))) cuniv
-      | None -> 
-	 (match t1 with 
-	  | FFlex fl1 ->
-	     (match unfold_reference infos fl1 with
+      | None ->
+         (match t1 with
+          | FFlex fl1 ->
+             (match unfold_reference infos fl1 with
               | Some def1 ->
                  eqappr cv_pb l2r infos (lft1, (def1, v1)) appr2 cuniv
               | None -> raise NotConvertible)
-	  | _ -> raise NotConvertible))
-      
+          | _ -> raise NotConvertible))
+
     (* other constructors *)
     | (FLambda _, FLambda _) ->
         (* Inconsistency: we tolerate that v1, v2 contain shift and update but
            we throw them away *)
         if not (is_empty_stack v1 && is_empty_stack v2) then
-	  anomaly (Pp.str "conversion was given ill-typed terms (FLambda).");
+          anomaly (Pp.str "conversion was given ill-typed terms (FLambda).");
         let (_,ty1,bd1) = destFLambda mk_clos hd1 in
         let (_,ty2,bd2) = destFLambda mk_clos hd2 in
         let cuniv = ccnv CONV l2r infos el1 el2 ty1 ty2 cuniv in
@@ -439,8 +439,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 
     | (FProd (_,c1,c2), FProd (_,c'1,c'2)) ->
         if not (is_empty_stack v1 && is_empty_stack v2) then
-	  anomaly (Pp.str "conversion was given ill-typed terms (FProd).");
-	(* Luo's system *)
+          anomaly (Pp.str "conversion was given ill-typed terms (FProd).");
+        (* Luo's system *)
         let cuniv = ccnv CONV l2r infos el1 el2 c1 c'1 cuniv in
         ccnv cv_pb l2r infos (el_lift el1) (el_lift el2) c2 c'2 cuniv
 
@@ -453,45 +453,45 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         in
         let (_,_ty1,bd1) = destFLambda mk_clos hd1 in
         eqappr CONV l2r infos
-	  (el_lift lft1, (bd1, [])) (el_lift lft2, (hd2, eta_expand_stack v2)) cuniv
+          (el_lift lft1, (bd1, [])) (el_lift lft2, (hd2, eta_expand_stack v2)) cuniv
     | (_, FLambda _) ->
         let () = match v2 with
         | [] -> ()
         | _ ->
-	  anomaly (Pp.str "conversion was given unreduced term (FLambda).")
-	in
+          anomaly (Pp.str "conversion was given unreduced term (FLambda).")
+        in
         let (_,_ty2,bd2) = destFLambda mk_clos hd2 in
         eqappr CONV l2r infos
-	  (el_lift lft1, (hd1, eta_expand_stack v1)) (el_lift lft2, (bd2, [])) cuniv
-	
+          (el_lift lft1, (hd1, eta_expand_stack v1)) (el_lift lft2, (bd2, [])) cuniv
+
     (* only one constant, defined var or defined rel *)
     | (FFlex fl1, c2)      ->
        (match unfold_reference infos fl1 with
-	| Some def1 ->
+        | Some def1 ->
            eqappr cv_pb l2r infos (lft1, (def1, v1)) appr2 cuniv
-	| None -> 
-	   match c2 with
-	   | FConstruct ((ind2,j2),u2) ->
-	      (try
-	      let v2, v1 =
-		eta_expand_ind_stack (info_env infos) ind2 hd2 v2 (snd appr1)
+        | None ->
+           match c2 with
+           | FConstruct ((ind2,j2),u2) ->
+              (try
+              let v2, v1 =
+                eta_expand_ind_stack (info_env infos) ind2 hd2 v2 (snd appr1)
               in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-	      with Not_found -> raise NotConvertible)
-	   | _ -> raise NotConvertible)
-       
+              with Not_found -> raise NotConvertible)
+           | _ -> raise NotConvertible)
+
     | (c1, FFlex fl2)      ->
        (match unfold_reference infos fl2 with
         | Some def2 ->
            eqappr cv_pb l2r infos appr1 (lft2, (def2, v2)) cuniv
-        | None -> 
-	   match c1 with
-	   | FConstruct ((ind1,j1),u1) ->
- 	      (try let v1, v2 =
-	     	     eta_expand_ind_stack (info_env infos) ind1 hd1 v1 (snd appr2)
+        | None ->
+           match c1 with
+           | FConstruct ((ind1,j1),u1) ->
+              (try let v1, v2 =
+                     eta_expand_ind_stack (info_env infos) ind1 hd1 v1 (snd appr2)
                    in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-	       with Not_found -> raise NotConvertible)
-	   | _ -> raise NotConvertible)
-       
+               with Not_found -> raise NotConvertible)
+           | _ -> raise NotConvertible)
+
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
     | (FInd (ind1,u1), FInd (ind2,u2)) ->
       if eq_ind ind1 ind2 then
@@ -529,26 +529,26 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible
-	  
+
     (* Eta expansion of records *)
     | (FConstruct ((ind1,j1),u1), _) ->
       (try
-    	 let v1, v2 =
-    	   eta_expand_ind_stack (info_env infos) ind1 hd1 v1 (snd appr2)
+         let v1, v2 =
+           eta_expand_ind_stack (info_env infos) ind1 hd1 v1 (snd appr2)
          in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with Not_found -> raise NotConvertible)
 
     | (_, FConstruct ((ind2,j2),u2)) ->
       (try
-    	 let v2, v1 =
-    	   eta_expand_ind_stack (info_env infos) ind2 hd2 v2 (snd appr1)
+         let v2, v1 =
+           eta_expand_ind_stack (info_env infos) ind2 hd2 v2 (snd appr1)
          in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with Not_found -> raise NotConvertible)
 
     | (FFix (((op1, i1),(_,tys1,cl1)),e1), FFix(((op2, i2),(_,tys2,cl2)),e2)) ->
-	if Int.equal i1 i2 && Array.equal Int.equal op1 op2
-	then
-	  let n = Array.length cl1 in
+        if Int.equal i1 i2 && Array.equal Int.equal op1 op2
+        then
+          let n = Array.length cl1 in
           let fty1 = Array.map (mk_clos e1) tys1 in
           let fty2 = Array.map (mk_clos e2) tys2 in
           let fcl1 = Array.map (mk_clos (subs_liftn n e1)) cl1 in
@@ -556,14 +556,14 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
           let cuniv =
             convert_vect l2r infos
-	      (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 cuniv in
+              (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 cuniv in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
 
     | (FCoFix ((op1,(_,tys1,cl1)),e1), FCoFix((op2,(_,tys2,cl2)),e2)) ->
         if Int.equal op1 op2
         then
-	  let n = Array.length cl1 in
+          let n = Array.length cl1 in
           let fty1 = Array.map (mk_clos e1) tys1 in
           let fty2 = Array.map (mk_clos e2) tys2 in
           let fcl1 = Array.map (mk_clos (subs_liftn n e1)) cl1 in
@@ -571,7 +571,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
           let cuniv =
             convert_vect l2r infos
-	      (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 cuniv in
+              (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 cuniv in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
 
@@ -608,10 +608,10 @@ let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
   ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs
 
 
-let check_eq univs u u' = 
+let check_eq univs u u' =
   if not (UGraph.check_eq univs u u') then raise NotConvertible
 
-let check_leq univs u u' = 
+let check_leq univs u u' =
   if not (UGraph.check_leq univs u u') then raise NotConvertible
 
 let check_sort_cmp_universes env pb s0 s1 univs =
@@ -624,17 +624,17 @@ let check_sort_cmp_universes env pb s0 s1 univs =
       end
     | (Prop c1, Prop c2) -> if c1 != c2 then raise NotConvertible
     | (Prop c1, Type u) ->
-	if not (type_in_type env) then
-	let u0 = univ_of_sort s0 in
-	(match pb with
-	| CUMUL -> check_leq univs u0 u
-	| CONV -> check_eq univs u0 u)
+        if not (type_in_type env) then
+        let u0 = univ_of_sort s0 in
+        (match pb with
+        | CUMUL -> check_leq univs u0 u
+        | CONV -> check_eq univs u0 u)
     | (Type u, Prop c) -> raise NotConvertible
     | (Type u1, Type u2) ->
         if not (type_in_type env) then
-	(match pb with
-	| CUMUL -> check_leq univs u1 u2
-	| CONV -> check_eq univs u1 u2)
+        (match pb with
+        | CUMUL -> check_leq univs u1 u2
+        | CONV -> check_eq univs u1 u2)
 
 let checked_sort_cmp_universes env pb s0 s1 univs =
   check_sort_cmp_universes env pb s0 s1 univs; univs
@@ -680,7 +680,7 @@ let infer_check_conv_constructors
       infer_check_inductive_instances CONV cumi u1 u2 univs
 
 let check_inductive_instances cv_pb cumi u u' univs =
-  let length_ind_instance = 
+  let length_ind_instance =
     Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)
   in
   let ind_subtypctx = Univ.ACumulativityInfo.subtyp_context cumi in
@@ -694,8 +694,8 @@ let check_inductive_instances cv_pb cumi u u' univs =
     in
     let comp_cst =
       match cv_pb with
-        CONV -> 
-        let comp_cst' = 
+        CONV ->
+        let comp_cst' =
           let comp_subst = (Univ.Instance.append u' u) in
           Univ.AUContext.instantiate comp_subst ind_subtypctx
         in
@@ -745,27 +745,27 @@ let infer_cmp_universes env pb s0 s1 univs =
     | (Prop c1, Prop c2) -> if c1 == c2 then univs else raise NotConvertible
     | (Prop c1, Type u) ->
       let u0 = univ_of_sort s0 in
-	(match pb with
-	| CUMUL -> infer_leq univs u0 u
-	| CONV -> infer_eq univs u0 u)
+        (match pb with
+        | CUMUL -> infer_leq univs u0 u
+        | CONV -> infer_eq univs u0 u)
     | (Type u, Prop c) -> raise NotConvertible
     | (Type u1, Type u2) ->
         if not (type_in_type env) then
-	(match pb with
-	| CUMUL -> infer_leq univs u1 u2
-	| CONV -> infer_eq univs u1 u2)
+        (match pb with
+        | CUMUL -> infer_leq univs u1 u2
+        | CONV -> infer_eq univs u1 u2)
         else univs
 
 let infer_convert_instances ~flex u u' (univs,cstrs) =
   let cstrs' =
-    if flex then 
+    if flex then
       if UGraph.check_eq_instances univs u u' then cstrs
       else raise NotConvertible
     else Univ.enforce_eq_instances u u' cstrs
   in (univs, cstrs')
 
 let infer_inductive_instances cv_pb cumi u u' (univs, cstrs) =
-  let length_ind_instance = 
+  let length_ind_instance =
     Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)
   in
   let ind_subtypctx =  Univ.ACumulativityInfo.subtyp_context cumi in
@@ -779,8 +779,8 @@ let infer_inductive_instances cv_pb cumi u u' (univs, cstrs) =
     in
     let comp_cst =
       match cv_pb with
-        CONV -> 
-        let comp_cst' = 
+        CONV ->
+        let comp_cst' =
           let comp_subst = (Univ.Instance.append u' u) in
           Univ.AUContext.instantiate comp_subst ind_subtypctx
         in
@@ -801,22 +801,22 @@ let infer_conv_constructors cns u1 sv1 u2 sv2 univs =
     infer_convert_instances
     infer_inductive_instances
     cns u1 sv1 u2 sv2 univs
-    
-let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare = 
+
+let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare =
   { compare = infer_cmp_universes;
     compare_instances = infer_convert_instances;
     conv_inductives = infer_conv_inductives;
     conv_constructors = infer_conv_constructors}
 
 let gen_conv cv_pb l2r reds env evars univs t1 t2 =
-  let b = 
-    if cv_pb = CUMUL then leq_constr_univs univs t1 t2 
+  let b =
+    if cv_pb = CUMUL then leq_constr_univs univs t1 t2
     else eq_constr_univs univs t1 t2
   in
     if b then ()
-    else 
+    else
       let _ = clos_gen_conv reds cv_pb l2r evars env (univs, checked_universes) t1 t2 in
-	()
+        ()
 
 (* Profiling *)
 let gen_conv cv_pb ?(l2r=false) ?(reds=full_transparent_state) env ?(evars=(fun _->None), universes env) =
@@ -831,8 +831,8 @@ let conv = gen_conv CONV
 let conv_leq = gen_conv CUMUL
 
 let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
-  let (s, _) = 
-    clos_gen_conv reds cv_pb l2r evars env univs t1 t2 
+  let (s, _) =
+    clos_gen_conv reds cv_pb l2r evars env univs t1 t2
   in s
 
 let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
@@ -844,26 +844,26 @@ let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
     else
       let univs = ((univs, Univ.Constraint.empty), inferred_universes) in
       let ((_,cstrs), _) = clos_gen_conv reds cv_pb l2r evars env univs t1 t2 in
-	cstrs
+        cstrs
 
 (* Profiling *)
-let infer_conv_universes = 
-  if Flags.profile then 
+let infer_conv_universes =
+  if Flags.profile then
     let infer_conv_universes_key = Profile.declare_profile "infer_conv_universes" in
       Profile.profile8 infer_conv_universes_key infer_conv_universes
   else infer_conv_universes
 
 let infer_conv ?(l2r=false) ?(evars=fun _ -> None) ?(ts=full_transparent_state)
-    env univs t1 t2 = 
+    env univs t1 t2 =
   infer_conv_universes CONV l2r evars ts env univs t1 t2
 
-let infer_conv_leq ?(l2r=false) ?(evars=fun _ -> None) ?(ts=full_transparent_state) 
-    env univs t1 t2 = 
+let infer_conv_leq ?(l2r=false) ?(evars=fun _ -> None) ?(ts=full_transparent_state)
+    env univs t1 t2 =
   infer_conv_universes CUMUL l2r evars ts env univs t1 t2
 
 (* This reference avoids always having to link C code with the kernel *)
 let vm_conv = ref (fun cv_pb env ->
-		   gen_conv cv_pb env ~evars:((fun _->None), universes env))
+                   gen_conv cv_pb env ~evars:((fun _->None), universes env))
 
 let warn_bytecode_compiler_failed =
   let open Pp in
@@ -934,8 +934,8 @@ let dest_prod env =
     let t = whd_all env c in
     match kind t with
       | Prod (n,a,c0) ->
-	  let d = LocalAssum (n,a) in
-	  decrec (push_rel d env) (Context.Rel.add d m) c0
+          let d = LocalAssum (n,a) in
+          decrec (push_rel d env) (Context.Rel.add d m) c0
       | _ -> m,t
   in
   decrec env Context.Rel.empty
@@ -947,15 +947,15 @@ let dest_prod_assum env =
     match kind rty with
     | Prod (x,t,c)  ->
         let d = LocalAssum (x,t) in
-	prodec_rec (push_rel d env) (Context.Rel.add d l) c
+        prodec_rec (push_rel d env) (Context.Rel.add d l) c
     | LetIn (x,b,t,c) ->
         let d = LocalDef (x,b,t) in
-	prodec_rec (push_rel d env) (Context.Rel.add d l) c
+        prodec_rec (push_rel d env) (Context.Rel.add d l) c
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               ->
       let rty' = whd_all env rty in
-	if Constr.equal rty' rty then l, rty
-	else prodec_rec env l rty'
+        if Constr.equal rty' rty then l, rty
+        else prodec_rec env l rty'
   in
   prodec_rec env Context.Rel.empty
 
@@ -965,10 +965,10 @@ let dest_lam_assum env =
     match kind rty with
     | Lambda (x,t,c)  ->
         let d = LocalAssum (x,t) in
-	lamec_rec (push_rel d env) (Context.Rel.add d l) c
+        lamec_rec (push_rel d env) (Context.Rel.add d l) c
     | LetIn (x,b,t,c) ->
         let d = LocalDef (x,b,t) in
-	lamec_rec (push_rel d env) (Context.Rel.add d l) c
+        lamec_rec (push_rel d env) (Context.Rel.add d l) c
     | Cast (c,_,_)    -> lamec_rec env l c
     | _               -> l,rty
   in

@@ -31,7 +31,7 @@ connectors
 \verb=/\, \/, ~, ->=
 \end{quote}
 
-on atomic formulas. Atomic formulas are built from the predicates 
+on atomic formulas. Atomic formulas are built from the predicates
 
 \begin{quote}
 \verb!=, le, lt, gt, ge!
@@ -43,13 +43,13 @@ on atomic formulas. Atomic formulas are built from the predicates
 \verb!=, <, <=, >, >=!
 \end{quote}
 
- on \verb=Z=. In expressions of type \verb=nat=, {\tt omega} recognizes 
+ on \verb=Z=. In expressions of type \verb=nat=, {\tt omega} recognizes
 
 \begin{quote}
 \verb!plus, minus, mult, pred, S, O!
 \end{quote}
 
-and in expressions of type \verb=Z=, {\tt omega} recognizes 
+and in expressions of type \verb=Z=, {\tt omega} recognizes
 
 \begin{quote}
 \verb!+, -, *, Z.succ!, and constants.
@@ -77,14 +77,14 @@ is generated:
   wrong!
 
 \item \errindex{omega: Not a quantifier-free goal}
-  
+
   If your goal is universally quantified, you should first apply {\tt
     intro} as many time as needed.
 
 \item \errindex{omega: Unrecognized predicate or connective: {\sl ident}}
 
 \item \errindex{omega: Unrecognized atomic proposition: {\sl prop}}
-  
+
 \item \errindex{omega: Can't solve a goal with proposition variables}
 
 \item \errindex{omega: Unrecognized proposition}
@@ -96,7 +96,7 @@ is generated:
 \end{ErrMsgs}
 
 %% This code is currently unplugged
-%% 
+%%
 % \asubsection{Control over the output}
 % There are some flags that can be set to get more information on the procedure
 
@@ -185,7 +185,7 @@ Here is an overview, look at the original paper for more information.
 
 \item Equations and inequations are normalized by division by the GCD of their
      coefficients.
-\item Equations are eliminated, using the Banerjee test to get a coefficient 
+\item Equations are eliminated, using the Banerjee test to get a coefficient
      equal to one.
 \item Note that each inequation defines a half space in the space of real value
      of the variables.
@@ -202,7 +202,7 @@ Here is an overview, look at the original paper for more information.
 \end{itemize}
 
 It may happen that there is a real solution and no integer one. The last
-steps of the Omega procedure (dark shadow) are not implemented, so the 
+steps of the Omega procedure (dark shadow) are not implemented, so the
 decision procedure is only partial.
 
 \asection{Bugs}
@@ -217,7 +217,7 @@ decision procedure is only partial.
 
 \end{itemize}
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:

@@ -55,8 +55,8 @@ let popstop_code i =
   else
     begin
       popstop_tbl :=
-	Array.init (i+10)
-	  (fun j -> if j < len then !popstop_tbl.(j) else mkPopStopCode j);
+        Array.init (i+10)
+          (fun j -> if j < len then !popstop_tbl.(j) else mkPopStopCode j);
       !popstop_tbl.(i)
     end
 
@@ -75,7 +75,7 @@ type vprod
 type vfun
 type vfix
 type vcofix
-type vblock 
+type vblock
 type arguments
 
 type vm_env
@@ -186,8 +186,8 @@ let arg args i =
   if  0 <= i && i < (nargs args) then
     val_of_obj (Obj.field (Obj.repr args) (i+2))
   else invalid_arg
-		("Vm.arg size = "^(string_of_int (nargs args))^
-		 " acces "^(string_of_int i))
+                ("Vm.arg size = "^(string_of_int (nargs args))^
+                 " acces "^(string_of_int i))
 
 (* Apply a value to arguments contained in [vargs] *)
 let apply_arguments vf vargs =
@@ -248,11 +248,11 @@ let rec whd_accu a stk =
   | i when Int.equal i type_atom_tag ->
      begin match stk with
      | [Zapp args] ->
-	let u = ref (Obj.obj (Obj.field at 0)) in
-	for i = 0 to nargs args - 1 do
-	  u := Univ.Universe.sup !u (Univ.Universe.make (uni_lvl_val (arg args i)))
-	done;
-	Vsort (Type !u)
+        let u = ref (Obj.obj (Obj.field at 0)) in
+        for i = 0 to nargs args - 1 do
+          u := Univ.Universe.sup !u (Univ.Universe.make (uni_lvl_val (arg args i)))
+        done;
+        Vsort (Type !u)
      | _ -> assert false
      end
   | i when i <= max_atom_tag ->
@@ -263,7 +263,7 @@ let rec whd_accu a stk =
   | i when Int.equal i fix_app_tag ->
       let fa = Obj.field at 1 in
       let zfix  =
-	Zfix (Obj.obj (Obj.field fa 1), Obj.obj fa) in
+        Zfix (Obj.obj (Obj.field fa 1), Obj.obj fa) in
       whd_accu (Obj.field at 0) (zfix :: stk)
   | i when Int.equal i switch_tag ->
       let zswitch = Zswitch (Obj.obj (Obj.field at 1)) in
@@ -297,20 +297,20 @@ let whd_val : values -> whd =
     else
       let tag = Obj.tag o in
       if tag = accu_tag then
-	(
-	if Int.equal (Obj.size o) 1 then Obj.obj o (* sort *)
+        (
+        if Int.equal (Obj.size o) 1 then Obj.obj o (* sort *)
         else
-	  if is_accumulate (fun_code o) then whd_accu o []
-	  else Vprod(Obj.obj o))
+          if is_accumulate (fun_code o) then whd_accu o []
+          else Vprod(Obj.obj o))
       else
-	if tag = Obj.closure_tag || tag = Obj.infix_tag then
-	  (match kind_of_closure o with
-	   | 0 -> Vfun(Obj.obj o)
-	   | 1 -> Vfix(Obj.obj o, None)
-	   | 2 -> Vfix(Obj.obj (Obj.field o 1), Some (Obj.obj o))
-	   | 3 -> Vatom_stk(Aid(RelKey(int_tcode (fun_code o) 1)), [])
-	   | _ -> CErrors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work."))
-	else
+        if tag = Obj.closure_tag || tag = Obj.infix_tag then
+          (match kind_of_closure o with
+           | 0 -> Vfun(Obj.obj o)
+           | 1 -> Vfix(Obj.obj o, None)
+           | 2 -> Vfix(Obj.obj (Obj.field o 1), Some (Obj.obj o))
+           | 3 -> Vatom_stk(Aid(RelKey(int_tcode (fun_code o) 1)), [])
+           | _ -> CErrors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work."))
+        else
            Vconstr_block(Obj.obj o)
 
 (**********************************************)
@@ -335,7 +335,7 @@ let rec obj_of_str_const str =
       let len = Array.length args in
       let res = Obj.new_block tag len in
       for i = 0 to len - 1 do
-	Obj.set_field res i (obj_of_str_const args.(i))
+        Obj.set_field res i (obj_of_str_const args.(i))
       done;
       res
   | Const_univ_level l -> Obj.repr (Vuniv_level l)
@@ -444,11 +444,11 @@ let check_fix f1 f2 =
     if n = Obj.size (last fb2) then
       (* Checking recursive arguments *)
       try
-	for i = 0 to n - 1 do
-	  if unsafe_rec_arg fb1 i <> unsafe_rec_arg fb2 i
-	  then raise FALSE
-	done;
-	true
+        for i = 0 to n - 1 do
+          if unsafe_rec_arg fb1 i <> unsafe_rec_arg fb2 i
+          then raise FALSE
+        done;
+        true
       with FALSE -> false
     else false
   else false
@@ -473,8 +473,8 @@ let relaccu_code i =
       let nl = Array.length atom_rel in
       for j = len to nl - 1 do atom_rel.(j) <- Aid(RelKey j) done;
       relaccu_tbl :=
-	Array.init nl
-	  (fun j -> if j < len then !relaccu_tbl.(j) else mkAccuCode j);
+        Array.init nl
+          (fun j -> if j < len then !relaccu_tbl.(j) else mkAccuCode j);
       !relaccu_tbl.(i)
     end
 
@@ -571,7 +571,7 @@ let type_of_switch sw =
 let branch_arg k (tag,arity) =
   if Int.equal arity 0 then  ((Obj.magic tag):values)
   else
-    let b, ofs = 
+    let b, ofs =
       if tag < last_variant_tag then Obj.new_block tag arity, 0
       else
         let b = Obj.new_block last_variant_tag (arity+1) in
@@ -607,25 +607,25 @@ let rec apply_stack a stk v =
   | Zapp args :: stk -> apply_stack (apply_arguments a args) stk v
   | Zproj kn :: stk -> apply_stack (val_of_proj kn a) stk v
   | Zfix(f,args) :: stk ->
-      let a,stk = 
-	match stk with
-	| Zapp args' :: stk ->
-	    push_ra stop;
-	    push_arguments args';
-	    push_val a;
-	    push_arguments args;
-	    let a =
-	      interprete (fun_code f) (Obj.magic f) (Obj.magic f)
-		(nargs args+ nargs args') in
-	    a, stk
-	| _ -> 
-	    push_ra stop;
-	    push_val a;
-	    push_arguments args;
-	    let a =
-	      interprete (fun_code f) (Obj.magic f) (Obj.magic f)
-		(nargs args) in
-	    a, stk in
+      let a,stk =
+        match stk with
+        | Zapp args' :: stk ->
+            push_ra stop;
+            push_arguments args';
+            push_val a;
+            push_arguments args;
+            let a =
+              interprete (fun_code f) (Obj.magic f) (Obj.magic f)
+                (nargs args+ nargs args') in
+            a, stk
+        | _ ->
+            push_ra stop;
+            push_val a;
+            push_arguments args;
+            let a =
+              interprete (fun_code f) (Obj.magic f) (Obj.magic f)
+                (nargs args) in
+            a, stk in
       apply_stack a stk v
   | Zswitch sw :: stk ->
       apply_stack (apply_switch sw a) stk v
@@ -635,7 +635,7 @@ let apply_whd k whd =
   match whd with
   | Vsort _ | Vprod _ | Vconstr_const _ | Vconstr_block _ -> assert false
   | Vfun f -> body_of_vfun k f
-  | Vfix(f, None) -> 
+  | Vfix(f, None) ->
       push_ra stop;
       push_val v;
       interprete (fun_code f) (Obj.magic f) (Obj.magic f) 0
@@ -643,21 +643,21 @@ let apply_whd k whd =
       push_ra stop;
       push_val v;
       push_arguments args;
-      interprete (fun_code f) (Obj.magic f) (Obj.magic f) (nargs args) 
+      interprete (fun_code f) (Obj.magic f) (Obj.magic f) (nargs args)
   | Vcofix(_,to_up,_) ->
       push_ra stop;
       push_val v;
       interprete (fun_code to_up) (Obj.magic to_up) (Obj.magic to_up) 0
   | Vatom_stk(a,stk) ->
-      apply_stack (val_of_atom a) stk v 
+      apply_stack (val_of_atom a) stk v
   | Vuniv_level lvl -> assert false
 
 let rec pr_atom a =
   Pp.(match a with
   | Aid c -> str "Aid(" ++ (match c with
                             | ConstKey c -> Constant.print c
-			    | RelKey i -> str "#" ++ int i
-			    | _ -> str "...") ++ str ")"
+                            | RelKey i -> str "#" ++ int i
+                            | _ -> str "...") ++ str ")"
   | Aind (mi,i) -> str "Aind(" ++ MutInd.print mi ++ str "#" ++ int i ++ str ")"
   | Atype _ -> str "Atype(")
 and pr_whd w =

@@ -26,7 +26,7 @@ Section SCHEMES.
 Definition case0 P (p: t 0): P p :=
   match p with | F1 | FS  _ => fun devil => False_rect (@IDProp) devil (* subterm !!! *) end.
 
-Definition caseS' {n : nat} (p : t (S n)) : forall (P : t (S n) -> Type) 
+Definition caseS' {n : nat} (p : t (S n)) : forall (P : t (S n) -> Type)
   (P1 : P F1) (PS : forall (p : t n), P (FS p)), P p :=
   match p with
   | @F1 k => fun P P1 PS => P1
@@ -155,7 +155,7 @@ induction p.
 - reflexivity.
 - simpl; destruct (to_nat (L n p)); simpl in *; rewrite IHp. now destruct (to_nat p).
 Qed.
- 
+
 (** The p{^ th} element of [fin m] viewed as the p{^ th} element of
 [fin (n + m)]
 Really really ineficient !!! *)

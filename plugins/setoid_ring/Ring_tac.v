@@ -233,9 +233,9 @@ Ltac mkPolexpr C Cst CstPow rO rI radd rmul rsub ropp rpow t fv :=
     match Cst t with
     | InitialRing.NotConstant =>
         match t with
-        | rO => 
+        | rO =>
           fun _ => constr:(@PEO C)
-        | rI => 
+        | rI =>
           fun _ => constr:(@PEI C)
         | (radd ?t1 ?t2) =>
           fun _ =>
@@ -429,11 +429,11 @@ Tactic Notation "ring_simplify" constr_list(rl) "in" hyp(H):=
   set (g:= G);
   generalize H;
   ring_lookup (PackRing Ring_simplify) [] rl t;
-  (* 
+  (*
      Correction of bug 1859:
      we want to leave H at its initial position
-     this is obtained by adding a copy of H (H'), 
-     move it just after H, remove H and finally 
+     this is obtained by adding a copy of H (H'),
+     move it just after H, remove H and finally
      rename H into H'
    *)
   let H' := fresh "H" in
@@ -449,11 +449,11 @@ Tactic Notation "ring_simplify" "["constr_list(lH)"]" constr_list(rl) "in" hyp(H
   set (g:= G);
   generalize H;
   ring_lookup (PackRing Ring_simplify) [lH] rl t;
-  (* 
+  (*
      Correction of bug 1859:
      we want to leave H at its initial position
-     this is obtained by adding a copy of H (H'), 
-     move it just after H, remove H and finally 
+     this is obtained by adding a copy of H (H'),
+     move it just after H, remove H and finally
      rename H into H'
    *)
   let H' := fresh "H" in

@@ -44,8 +44,8 @@ val find_projection_nparams : global_reference -> int
 val find_projection : global_reference -> struc_typ
 
 (** {6 Canonical structures } *)
-(** A canonical structure declares "canonical" conversion hints between 
-    the effective components of a structure and the projections of the  
+(** A canonical structure declares "canonical" conversion hints between
+    the effective components of a structure and the projections of the
     structure *)
 
 (** A cs_pattern characterizes the form of a component of canonical structure *)

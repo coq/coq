@@ -499,7 +499,7 @@ Fixpoint extract_hyps (l: list NFormula) (ln : list nat) : list NFormula  :=
     | nil => nil
     | n::ln => nth n l (Pc cO, Equal) :: extract_hyps l ln
   end.
-      
+
 Lemma extract_hyps_app : forall l ln1 ln2,
   extract_hyps l (ln1 ++ ln2) = (extract_hyps l ln1) ++ (extract_hyps l ln2).
 Proof.
@@ -509,16 +509,16 @@ Proof.
   intros.
   rewrite IHln1. reflexivity.
 Qed.
-  
+
 Ltac inv H := inversion H ; try subst ; clear H.
 
 Lemma nhyps_of_psatz_correct :  forall (env : PolEnv) (e:Psatz)  (l : list NFormula)  (f: NFormula),
-  eval_Psatz l e = Some f -> 
+  eval_Psatz l e = Some f ->
   ((forall f', In f' (extract_hyps l (nhyps_of_psatz e)) -> eval_nformula env f') ->  eval_nformula env f).
 Proof.
   induction e ; intros.
   (*PsatzIn*)
-  simpl in *. 
+  simpl in *.
   apply H0. intuition congruence.
   (* PsatzSquare *)
   simpl in *.
@@ -569,11 +569,11 @@ Proof.
   rewrite <- addon.(SORrm).(morph0). now apply cltb_sound.
   intros. rewrite H1 in H. discriminate.
   (* PsatzZ *)
-  simpl in *. inv H. 
+  simpl in *. inv H.
   unfold eval_nformula. simpl.
   apply  addon.(SORrm).(morph0).
 Qed.
-  
+
 
 
 

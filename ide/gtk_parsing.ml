@@ -49,7 +49,7 @@ let find_word_start (it:GText.iter) =
     else if is_word_char it#char
     then step_to_start it
     else (it#nocopy#forward_char;
-	Minilib.log ("Word start at: "^(string_of_int it#offset));it)
+        Minilib.log ("Word start at: "^(string_of_int it#offset));it)
   in
     step_to_start it#copy
 
@@ -78,13 +78,13 @@ let rec complete_backward w (it:GText.iter) =
   match it#backward_search w with
     | None -> (Minilib.log "backward_search failed";None)
     | Some (start,stop) ->
-	Minilib.log ("complete_backward got a match:"^(string_of_int start#offset)^(string_of_int stop#offset));
-	if starts_word start then
-	  let ne = find_word_end stop in
-	    if ne#compare stop = 0
-	    then complete_backward w start
-	    else Some (start,stop,ne)
-	else complete_backward w start
+        Minilib.log ("complete_backward got a match:"^(string_of_int start#offset)^(string_of_int stop#offset));
+        if starts_word start then
+          let ne = find_word_end stop in
+            if ne#compare stop = 0
+            then complete_backward w start
+            else Some (start,stop,ne)
+        else complete_backward w start
 
 
 let rec complete_forward w (it:GText.iter) =
@@ -92,12 +92,12 @@ let rec complete_forward w (it:GText.iter) =
   match it#forward_search w with
     | None -> None
     | Some (start,stop) ->
-	if starts_word start then
-	  let ne = find_word_end stop in
-	    if ne#compare stop = 0 then
-	      complete_forward w stop
-	    else Some (stop,stop,ne)
-	else complete_forward w stop
+        if starts_word start then
+          let ne = find_word_end stop in
+            if ne#compare stop = 0 then
+              complete_forward w stop
+            else Some (stop,stop,ne)
+        else complete_forward w stop
 
 
 let find_comment_end (start:GText.iter) =

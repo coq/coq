@@ -33,7 +33,7 @@ Notation "A /\ B" := (and A B).
 \end{coq_example*}
 
 The expression \texttt{(and A B)} is the abbreviated term and the
-string \verb="A /\ B"= (called a {\em notation}) tells how it is 
+string \verb="A /\ B"= (called a {\em notation}) tells how it is
 symbolically written.
 
 A notation is always surrounded by double quotes (except when the
@@ -168,7 +168,7 @@ In the last case though, there is a conflict with the notation for
 type casts. This last notation, as shown by the command {\tt Print Grammar
 constr} is at level 100. To avoid \verb=x : A= being parsed as a type cast,
 it is necessary to put {\tt x} at a level below 100, typically 99. Hence, a
-correct definition is 
+correct definition is
 
 \begin{coq_example*}
 Notation "{ x : A  |  P }" := (sig A (fun x => P)) (at level 0, x at level 99).
@@ -244,7 +244,7 @@ Check (and True True).
 
 However, printing, especially pretty-printing, requires
 more care than parsing. We may want specific indentations,
-line breaks, alignment if on several lines, etc. 
+line breaks, alignment if on several lines, etc.
 
 The default printing of notations is very rudimentary. For printing a
 notation, a {\em formatting box} is opened in such a way that if the
@@ -291,7 +291,7 @@ the possible following elements delimited by single quotes:
   an extra indentation of the number of spaces given after the ``\verb=[=''
   is applied (4 spaces in the example)
 \item well-bracketed pairs of tokens of the form \verb='[hv   '= and \verb=']'=
-  are translated into horizontal-orelse-vertical printing boxes; 
+  are translated into horizontal-orelse-vertical printing boxes;
   if the content of the box does not fit on a single line, then every breaking
   point forces a newline and an extra  indentation of the number of spaces
   given after the ``\verb=[='' is applied at the beginning of each newline
@@ -314,10 +314,10 @@ expression is performed at definition time. Type-checking is done only
 at the time of use of the notation.
 
 \begin{coq_example}
-Check 
- (IF_then_else (IF_then_else True False True) 
+Check
+ (IF_then_else (IF_then_else True False True)
    (IF_then_else True False True)
-   (IF_then_else True False True)).   
+   (IF_then_else True False True)).
 \end{coq_example}
 
 \Rem
@@ -336,7 +336,7 @@ parsing rule. In particular, such notations do not modify the parser.
 \comindex{Infix}}
 
 The \texttt{Infix} command is a shortening for declaring notations of
-infix symbols. Its syntax is 
+infix symbols. Its syntax is
 
 \begin{quote}
 \noindent\texttt{Infix "{\symbolentry}" :=} {\qualid} {\tt (} \nelist{\em modifier}{,} {\tt )}.
@@ -395,7 +395,7 @@ Set Printing Depth 50.
 \end{coq_eval}
 
 \begin{coq_example*}
-Inductive and (A B:Prop) : Prop := conj : A -> B -> A /\ B 
+Inductive and (A B:Prop) : Prop := conj : A -> B -> A /\ B
 where "A /\ B" := (and A B).
 \end{coq_example*}
 
@@ -456,13 +456,13 @@ Locate "exists _ .. _ , _".
 \begin{small}
 \begin{centerframe}
 \begin{tabular}{lcl}
-{\sentence} & ::= & 
-   \zeroone{\tt Local} \texttt{Notation} {\str} \texttt{:=} {\term} 
+{\sentence} & ::= &
+   \zeroone{\tt Local} \texttt{Notation} {\str} \texttt{:=} {\term}
    \zeroone{\modifiers} \zeroone{:{\scope}} .\\
-  & $|$ & 
-   \zeroone{\tt Local} \texttt{Infix} {\str} \texttt{:=} {\qualid} 
+  & $|$ &
+   \zeroone{\tt Local} \texttt{Infix} {\str} \texttt{:=} {\qualid}
    \zeroone{\modifiers} \zeroone{:{\scope}} .\\
-  & $|$ & 
+  & $|$ &
    \zeroone{\tt Local} \texttt{Reserved Notation} {\str}
    \zeroone{\modifiers} .\\
   & $|$ & {\tt Inductive}
@@ -474,7 +474,7 @@ Locate "exists _ .. _ , _".
   & $|$ & {\tt CoFixpoint}
    \nelist{{\cofixpointbody} \zeroone{\declnotation}}{with} {\tt .} \\
 \\
-{\declnotation} & ::= & 
+{\declnotation} & ::= &
   \zeroone{{\tt where} \nelist{{\str} {\tt :=} {\term} \zeroone{:{\scope}}}{\tt and}}.
 \\
 \\
@@ -492,7 +492,7 @@ Locate "exists _ .. _ , _".
   & $|$ & {\ident} {\tt bigint} \\
   & $|$ & {\tt only parsing} \\
   & $|$ & {\tt only printing} \\
-  & $|$ & {\tt format} {\str} 
+  & $|$ & {\tt format} {\str}
 \end{tabular}
 \end{centerframe}
 \end{small}
@@ -526,7 +526,7 @@ notation. E.g., for the notation
 \begin{coq_example*}
 Notation "'exists_different' n" := (exists p:nat, p<>n) (at level 200).
 \end{coq_example*}
-the next command fails because {\tt p} does not bind in 
+the next command fails because {\tt p} does not bind in
 the instance of {\tt n}.
 \begin{coq_eval}
 Set Printing Depth 50.
@@ -541,8 +541,8 @@ Fail Check (exists_different p).
 {\tt ident} entry. For factorization purposes, they can be said to be
 parsed at another level (e.g. {\tt x} in \verb="{ x : A | P }"= must be
 parsed at level 99 to be factorized with the notation
-\verb="{ A } + { B }"= for which {\tt A} can be any term).  
-However, even if parsed as a term, this term must at the end be effectively 
+\verb="{ A } + { B }"= for which {\tt A} can be any term).
+However, even if parsed as a term, this term must at the end be effectively
 a single identifier.
 
 \subsection{Notations with recursive patterns}
@@ -783,7 +783,7 @@ absent when not inside a section.
 In addition to the global rules of interpretation of notations, some
 ways to change the interpretation of subterms are available.
 
-\subsubsection{Local opening of an interpretation scope 
+\subsubsection{Local opening of an interpretation scope
 \label{scopechange}
 \index{\%}
 \comindex{Delimit Scope}
@@ -801,7 +801,7 @@ interpreted in the scope stack extended with the scope bound to
 To bind a delimiting key to a scope, use the command
 
 \begin{quote}
-\texttt{Delimit Scope} {\scope} \texttt{with} {\ident} 
+\texttt{Delimit Scope} {\scope} \texttt{with} {\ident}
 \end{quote}
 
 To remove a delimiting key of a scope, use the command
@@ -831,7 +831,7 @@ Arguments plus_fct (f1 f2)%F x%R.
 \end{coq_example*}
 
 The {\tt Arguments} command accepts scopes decoration to all grouping
-parentheses. In the following example arguments {\tt A} and {\tt B} 
+parentheses. In the following example arguments {\tt A} and {\tt B}
 are marked as maximally inserted implicit arguments and are
 put into the {\tt type\_scope} scope.
 
@@ -842,7 +842,7 @@ Arguments respectful {A B}%type (R R')%signature _ _.
 When interpreting a term, if some of the arguments of {\qualid} are
 built from a notation, then this notation is interpreted in the scope
 stack extended by the scope bound (if any) to this argument. The
-effect of the scope is limited to the argument itself. It does not propagate 
+effect of the scope is limited to the argument itself. It does not propagate
 to subterms but the subterms that, after interpretation of the
 notation, turn to be themselves arguments of a reference are
 interpreted accordingly to the arguments scopes bound to this reference.
@@ -954,7 +954,7 @@ argument of a declared or defined constant.
 
 \subsection[The {\tt function\_scope} interpretation scope]{The {\tt function\_scope} interpretation scope\index{function\_scope@\texttt{function\_scope}}}
 
-The scope {\tt function\_scope} also has a special status. 
+The scope {\tt function\_scope} also has a special status.
 It is temporarily activated each time the argument of a global reference is
 recognized to be a {\tt Funclass instance}, i.e., of type {\tt forall x:A, B} or {\tt A -> B}.
 
@@ -967,7 +967,7 @@ commands {\tt Print Scopes} or {\tt Print Scope {\scope}}.
 \subsubsection{\tt type\_scope}
 
 This scope includes infix {\tt *} for product types and infix {\tt +} for
-sum types. It is delimited by key {\tt type}, and bound to the coercion class 
+sum types. It is delimited by key {\tt type}, and bound to the coercion class
 {\tt Sortclass}, as described at \ref{bindscope}.
 
 \subsubsection{\tt nat\_scope}
@@ -986,7 +986,7 @@ and comes with an interpretation for numerals as closed term of type {\tt N}.
 \subsubsection{\tt Z\_scope}
 
 This scope includes the standard arithmetical operators and relations on
-type {\tt Z} (binary integer numbers). It is delimited by key {\tt Z} 
+type {\tt Z} (binary integer numbers). It is delimited by key {\tt Z}
 and comes with an interpretation for numerals as closed term of type {\tt Z}.
 
 \subsubsection{\tt positive\_scope}
@@ -1030,7 +1030,7 @@ delimited by key {\tt list}, and bound to the type {\tt list} (see \ref{bindscop
 
 \subsubsection{\tt function\_scope}
 
-This scope is delimited by the key {\tt function}, and bound to the coercion class {\tt Funclass}, 
+This scope is delimited by the key {\tt function}, and bound to the coercion class {\tt Funclass},
 as described at \ref{bindscope}.
 
 \subsubsection{\tt core\_scope}
@@ -1121,7 +1121,7 @@ abbreviation but at the time it is used. Especially, abbreviations can
 be bound to terms with holes (i.e. with ``\_''). The general syntax
 for abbreviations is
 \begin{quote}
-\zeroone{{\tt Local}} \texttt{Notation} {\ident} \sequence{\ident} {\ident} \texttt{:=} {\term} 
+\zeroone{{\tt Local}} \texttt{Notation} {\ident} \sequence{\ident} {\ident} \texttt{:=} {\term}
  \zeroone{{\tt (only parsing)}}~\verb=.=
 \end{quote}
 
@@ -1160,7 +1160,7 @@ syntax
 \begin{tabular}{lcl}
 {\sentence} & ::= & \zeroone{\tt Local} \texttt{Tactic Notation} \zeroone{\taclevel} \sequence{\proditem}{} \\
 & & \texttt{:= {\tac} .}\\
-{\proditem} & ::= & {\str} $|$ {\tacargtype}{\tt ({\ident})} \\ 
+{\proditem} & ::= & {\str} $|$ {\tacargtype}{\tt ({\ident})} \\
 {\taclevel} & ::= & {\tt (at level} {\naturalnumber}{\tt )} \\
 {\tacargtype}\!\! & ::= &
 %{\tt preident} $|$
@@ -1194,7 +1194,7 @@ production items. It then evaluates into the tactic expression
 symbol, i.e. a {\str}, for the first production item.  The tactic
 level indicates the parsing precedence of the tactic notation. This
 information is particularly relevant for notations of tacticals.
-Levels 0 to 5 are available (default is 0). 
+Levels 0 to 5 are available (default is 0).
 To know the parsing precedences of the
 existing tacticals, use the command {\tt Print Grammar tactic.}
 
@@ -1245,7 +1245,7 @@ Tactic notations do not survive the end of sections. They survive
 modules unless the command {\tt Local Tactic Notation} is used instead
 of {\tt Tactic Notation}.
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:

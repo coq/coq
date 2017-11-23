@@ -20,15 +20,15 @@ Local Open Scope Z_scope.
 <<
  ∀n:nat, Q n == ∀n:nat, P (Z.of_nat n) ===> ∀x:Z, x <= 0 -> P x
 
-       	     /\
+             /\
              ||
              ||
 
  (Q O) ∧ (∀n:nat, Q n -> Q (S n)) <=== (P 0) ∧ (∀x:Z, P x -> P (Z.succ x))
 
-				  <=== (Z.of_nat (S n) = Z.succ (Z.of_nat n))
+                                  <=== (Z.of_nat (S n) = Z.succ (Z.of_nat n))
 
-				  <=== Z_of_nat_complete
+                                  <=== Z_of_nat_complete
 >>
   Then the  diagram will be closed and the theorem proved. *)
 

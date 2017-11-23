@@ -406,7 +406,7 @@ Proof.
 Qed.
 
 (* Convergence is preserved after shifting the indices. *)
-Lemma CV_shift : 
+Lemma CV_shift :
   forall f k l, Un_cv (fun n => f (n + k)%nat) l -> Un_cv f l.
 intros f' k l cvfk eps ep; destruct (cvfk eps ep) as [N Pn].
 exists (N + k)%nat; intros n nN; assert (tmp: (n = (n - k) + k)%nat).
@@ -414,7 +414,7 @@ exists (N + k)%nat; intros n nN; assert (tmp: (n = (n - k) + k)%nat).
 rewrite tmp; apply Pn; apply Nat.le_add_le_sub_r; assumption.
 Qed.
 
-Lemma CV_shift' : 
+Lemma CV_shift' :
   forall f k l, Un_cv f l -> Un_cv (fun n => f (n + k)%nat) l.
 intros f' k l cvf eps ep; destruct (cvf eps ep) as [N Pn].
 exists N; intros n nN; apply Pn; auto with arith.
@@ -422,7 +422,7 @@ Qed.
 
 (* Growing property is preserved after shifting the indices (one way only) *)
 
-Lemma Un_growing_shift : 
+Lemma Un_growing_shift :
    forall k un, Un_growing un -> Un_growing (fun n => un (n + k)%nat).
 Proof.
 intros k un P n; apply P.

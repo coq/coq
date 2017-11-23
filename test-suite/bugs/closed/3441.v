@@ -10,7 +10,7 @@ Axiom k : nat.
 Goal True.
 Timeout 1 let H := fresh "H" in
      let x := constr:(let n := 17 in do_n n = do_n n) in
-     let y := (eval lazy in x) in 
+     let y := (eval lazy in x) in
      pose proof y as H. (* Finished transaction in 1.102 secs (1.084u,0.016s) (successful) *)
 Timeout 1 let H := fresh "H" in
      let x := constr:(let n := 17 in do_n n = do_n n) in

@@ -35,7 +35,7 @@ Abort.
 
 Goal forall y, let x:=0 in x=y -> y=y.
 intros * H;
-(* Before the fix, this unfolded x instead of 
+(* Before the fix, this unfolded x instead of
    substituting y and erasing H *)
 subst.
 Fail clear H.

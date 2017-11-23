@@ -42,7 +42,7 @@ let print_usage_channel co command =
 \n  -load-vernac-source f  load Coq file f.v (Load f.)\
 \n  -l f                   (idem)\
 \n  -load-vernac-source-verbose f  load Coq file f.v (Load Verbose f.)\
-\n  -lv f	                 (idem)\
+\n  -lv f                        (idem)\
 \n  -load-vernac-object f  load Coq object file f.vo\
 \n  -require path          load Coq library path and import it (Require Import path.)\
 \n  -compile f.v           compile Coq file f.v (implies -batch)\

@@ -13,11 +13,11 @@
 (*              Rocquencourt                        Sophia-Antipolis        *)
 (*                                                                          *)
 (*                                 Coq V6.1                                 *)
-(*									    *)
-(*			         Gilles Kahn 				    *)
-(*				 Gerard Huet				    *)
-(*									    *)
-(*									    *)
+(*                                                                          *)
+(*                               Gilles Kahn                                *)
+(*                               Gerard Huet                                *)
+(*                                                                          *)
+(*                                                                          *)
 (*                                                                          *)
 (* Acknowledgments: This work was started in July 1993 by F. Prost. Thanks  *)
 (* to the Newton Institute for providing an exceptional work environment    *)
@@ -64,8 +64,8 @@ Section Infinite_sets.
     forall A X:Ensemble U,
       ~ Finite U A ->
       forall n:nat,
-	cardinal U X n ->
-	Included U X A ->  exists Y : _, cardinal U Y (S n) /\ Included U Y A.
+        cardinal U X n ->
+        Included U X A ->  exists Y : _, cardinal U Y (S n) /\ Included U Y A.
   Proof.
     intros A X H' n H'0; elim H'0; auto with sets.
     intro H'1.
@@ -104,9 +104,9 @@ Section Infinite_sets.
     forall A X:Ensemble U,
       ~ Finite U A ->
       forall n:nat,
-	cardinal U X n ->
-	Approximant U A X ->
-	exists Y : _, cardinal U Y (S n) /\ Approximant U A Y.
+        cardinal U X n ->
+        Approximant U A X ->
+        exists Y : _, cardinal U Y (S n) /\ Approximant U A Y.
   Proof.
     intros A X H' n H'0 H'1; try assumption.
     elim H'1.
@@ -139,7 +139,7 @@ Section Infinite_sets.
       Finite V X ->
       Included V X (Im U V A f) ->
       exists n : _,
-	(exists Y : _, (cardinal U Y n /\ Included U Y A) /\ Im U V Y f = X).
+        (exists Y : _, (cardinal U Y n /\ Included U Y A) /\ Im U V Y f = X).
   Proof.
     intros A f X H'; elim H'.
     intro H'0; exists 0.
@@ -162,7 +162,7 @@ Section Infinite_sets.
       auto with sets.
     specialize Im_inv with (U := U) (V := V) (X := A) (f := f) (y := x);
       intro H'11; lapply H'11; [ intro H'13; elim H'11; clear H'11 | clear H'11 ];
-	auto with sets.
+        auto with sets.
     intros x1 H'4; try assumption.
     apply ex_intro with (x := Add U x0 x1).
     split; [ split; [ try assumption | idtac ] | idtac ].
@@ -186,7 +186,7 @@ Section Infinite_sets.
     intros A f X H'; try assumption.
     cut
       (exists n : _,
-	(exists Y : _, (cardinal U Y n /\ Included U Y A) /\ Im U V Y f = X)).
+        (exists Y : _, (cardinal U Y n /\ Included U Y A) /\ Im U V Y f = X)).
     intro H'0; elim H'0; intros n E; elim E; clear H'0.
     intros x H'0; try assumption.
     elim H'0; intros H'1 H'2; elim H'1; intros H'3 H'4; try exact H'3;

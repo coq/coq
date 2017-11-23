@@ -46,7 +46,7 @@ let interp_univ_constraints env evd cstrs =
   in
   List.fold_left interp (evd,Univ.Constraint.empty) cstrs
 
-let interp_univ_decl env decl = 
+let interp_univ_decl env decl =
   let open Misctypes in
   let pl = decl.univdecl_instance in
   let evd = Evd.from_ctx (Evd.make_evar_universe_context env (Some pl)) in

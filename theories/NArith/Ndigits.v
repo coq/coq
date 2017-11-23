@@ -316,7 +316,7 @@ Lemma Nneg_bit0 :
    N.odd (N.lxor a a') = true -> N.odd a = negb (N.odd a').
 Proof.
   intros.
-  rewrite <- true_xorb, <- H, Nxor_bit0, xorb_assoc, 
+  rewrite <- true_xorb, <- H, Nxor_bit0, xorb_assoc,
     xorb_nilpotent, xorb_false.
   reflexivity.
 Qed.

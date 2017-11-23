@@ -21,7 +21,7 @@ Next Obligation.
   apply H. simpl. omega.
 Defined.
 
-Next Obligation. 
+Next Obligation.
   case (le_lt_dec p i) ; intros. assert(i = p) by omega. subst.
   revert H0. clear_subset_proofs. auto.
   apply H. simpl. assumption. Defined.

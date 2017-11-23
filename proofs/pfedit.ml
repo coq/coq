@@ -67,7 +67,7 @@ let get_goal_context i =
 let get_current_goal_context () =
   try get_goal_context_gen 1
   with Proof_global.NoCurrentProof -> CErrors.user_err Pp.(str "No focused proof.")
-     | NoSuchGoal -> 
+     | NoSuchGoal ->
     (* spiwack: returning empty evar_map, since if there is no goal, under focus,
         there is no accessible evar either *)
     let env = Global.env () in
@@ -90,7 +90,7 @@ let current_proof_statement () =
     | _ -> CErrors.anomaly ~label:"Pfedit.current_proof_statement" (Pp.str "more than one statement.")
 
 let solve ?with_end_tac gi info_lvl tac pr =
-  try 
+  try
     let tac = match with_end_tac with
       | None -> tac
       | Some etac -> Proofview.tclTHEN tac etac in
@@ -121,7 +121,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
 
 let by tac = Proof_global.with_current_proof (fun _ -> solve (Vernacexpr.SelectNth 1) None tac)
 
-let instantiate_nth_evar_com n com = 
+let instantiate_nth_evar_com n com =
   Proof_global.simple_with_current_proof (fun _ p -> Proof.V82.instantiate_evar n com p)
 
 
@@ -212,15 +212,15 @@ let apply_implicit_tactic tac = (); fun env sigma evk ->
   match snd (evar_source evk sigma) with
   | (Evar_kinds.ImplicitArg _ | Evar_kinds.QuestionMark _)
       when
-	Context.Named.equal Constr.equal (Environ.named_context_of_val evi.evar_hyps)
-	(Environ.named_context env) ->
+        Context.Named.equal Constr.equal (Environ.named_context_of_val evi.evar_hyps)
+        (Environ.named_context env) ->
       let tac = Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (CErrors.UserError (None,Pp.str"Proof is not complete."))) []) in
       (try
         let c = Evarutil.nf_evars_universes sigma evi.evar_concl in
         let c = EConstr.of_constr c in
         if Evarutil.has_undefined_evars sigma c then raise Exit;
         let (ans, _, ctx) =
-	  build_by_tactic env (Evd.evar_universe_context sigma) c tac in
+          build_by_tactic env (Evd.evar_universe_context sigma) c tac in
         let sigma = Evd.set_universe_context sigma ctx in
         sigma, EConstr.of_constr ans
        with e when Logic.catchable_exception e -> raise Exit)

@@ -44,7 +44,7 @@ type proof_object = {
 
 type proof_ending =
   | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry *
-		  proof_universes
+                  proof_universes
   | Proved of Vernacexpr.opacity_flag *
               Vernacexpr.lident option *
               proof_object
@@ -145,7 +145,7 @@ val copy_terminators : src:state -> tgt:state -> state
 (** Type of proof modes :
     - A name
     - A function [set] to set it *from standard mode*
-    - A function [reset] to reset the *standard mode* from it 
+    - A function [reset] to reset the *standard mode* from it
 
 *)
 type proof_mode_name = string

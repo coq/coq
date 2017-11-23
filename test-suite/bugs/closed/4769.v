@@ -70,7 +70,7 @@ Section Adjunction.
   Variables C D : PreCategory.
   Variable F : Functor C D.
   Variable G : Functor D C.
-  
+
   Record AdjunctionHom :=
     {
       mate_of : @NaturalIsomorphism

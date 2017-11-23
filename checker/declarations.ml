@@ -60,8 +60,8 @@ let mp_in_delta mp =
 let find_prefix resolve mp =
   let rec sub_mp = function
     | MPdot(mp,l) as mp_sup ->
-	(try Deltamap.find_mp mp_sup resolve
-	 with Not_found -> MPdot(sub_mp mp,l))
+        (try Deltamap.find_mp mp_sup resolve
+         with Not_found -> MPdot(sub_mp mp,l))
     | p -> Deltamap.find_mp p resolve
   in
   try sub_mp mp with Not_found -> mp
@@ -119,17 +119,17 @@ let subst_mp0 sub mp = (* 's like subst *)
   match mp with
     | MPfile sid -> Umap.find_mp mp sub
     | MPbound bid ->
-	begin
-	  try Umap.find_mbi bid sub
-	  with Not_found -> Umap.find_mp mp sub
-	end
+        begin
+          try Umap.find_mbi bid sub
+          with Not_found -> Umap.find_mp mp sub
+        end
     | MPdot (mp1,l) as mp2 ->
-	begin
-	  try Umap.find_mp mp2 sub
-	  with Not_found ->
-	    let mp1',resolve = aux mp1 in
-	    MPdot (mp1',l),resolve
-	end
+        begin
+          try Umap.find_mp mp2 sub
+          with Not_found ->
+            let mp1',resolve = aux mp1 in
+            MPdot (mp1',l),resolve
+        end
  in
  try Some (aux mp) with Not_found -> None
 
@@ -199,8 +199,8 @@ let subst_con0 sub con u =
     | Some t -> con', t
     | None ->
       let con'' = match side with
-	| User -> constant_of_delta resolve con'
-	| Canonical -> constant_of_delta2 resolve con'
+        | User -> constant_of_delta resolve con'
+        | Canonical -> constant_of_delta2 resolve con'
       in
       if con'' == con then raise No_subst else dup con''
 
@@ -208,88 +208,88 @@ let rec map_kn f f' c =
   let func = map_kn f f' in
     match c with
       | Const (kn, u) -> (try snd (f' kn u) with No_subst -> c)
-      | Proj (p,t) -> 
-          let p' = 
-	    Projection.map (fun kn ->
-			    try fst (f' kn Univ.Instance.empty)
-			    with No_subst -> kn) p
-	  in
-	  let t' = func t in
-	    if p' == p && t' == t then c
-	    else Proj (p', t')
+      | Proj (p,t) ->
+          let p' =
+            Projection.map (fun kn ->
+                            try fst (f' kn Univ.Instance.empty)
+                            with No_subst -> kn) p
+          in
+          let t' = func t in
+            if p' == p && t' == t then c
+            else Proj (p', t')
       | Ind ((kn,i),u) ->
-	  let kn' = f kn in
-	  if kn'==kn then c else Ind ((kn',i),u)
+          let kn' = f kn in
+          if kn'==kn then c else Ind ((kn',i),u)
       | Construct (((kn,i),j),u) ->
-	  let kn' = f kn in
-	  if kn'==kn then c else Construct (((kn',i),j),u)
+          let kn' = f kn in
+          if kn'==kn then c else Construct (((kn',i),j),u)
       | Case (ci,p,ct,l) ->
-	  let ci_ind =
+          let ci_ind =
             let (kn,i) = ci.ci_ind in
-	    let kn' = f kn in
-	    if kn'==kn then ci.ci_ind else kn',i
-	  in
-	  let p' = func p in
-	  let ct' = func ct in
-	  let l' = Array.smartmap func l in
-	    if (ci.ci_ind==ci_ind && p'==p
-		&& l'==l && ct'==ct)then c
-	    else
-	      Case ({ci with ci_ind = ci_ind},
-		     p',ct', l')
+            let kn' = f kn in
+            if kn'==kn then ci.ci_ind else kn',i
+          in
+          let p' = func p in
+          let ct' = func ct in
+          let l' = Array.smartmap func l in
+            if (ci.ci_ind==ci_ind && p'==p
+                && l'==l && ct'==ct)then c
+            else
+              Case ({ci with ci_ind = ci_ind},
+                     p',ct', l')
       | Cast (ct,k,t) ->
-	  let ct' = func ct in
-	  let t'= func t in
-	    if (t'==t && ct'==ct) then c
-	    else Cast (ct', k, t')
+          let ct' = func ct in
+          let t'= func t in
+            if (t'==t && ct'==ct) then c
+            else Cast (ct', k, t')
       | Prod (na,t,ct) ->
-	  let ct' = func ct in
-	  let t'= func t in
-	    if (t'==t && ct'==ct) then c
-	    else Prod (na, t', ct')
+          let ct' = func ct in
+          let t'= func t in
+            if (t'==t && ct'==ct) then c
+            else Prod (na, t', ct')
       | Lambda (na,t,ct) ->
-	  let ct' = func ct in
-	  let t'= func t in
-	    if (t'==t && ct'==ct) then c
-	    else Lambda (na, t', ct')
+          let ct' = func ct in
+          let t'= func t in
+            if (t'==t && ct'==ct) then c
+            else Lambda (na, t', ct')
       | LetIn (na,b,t,ct) ->
-	  let ct' = func ct in
-	  let t'= func t in
-	  let b'= func b in
-	    if (t'==t && ct'==ct && b==b') then c
-	    else LetIn (na, b', t', ct')
+          let ct' = func ct in
+          let t'= func t in
+          let b'= func b in
+            if (t'==t && ct'==ct && b==b') then c
+            else LetIn (na, b', t', ct')
       | App (ct,l) ->
-	  let ct' = func ct in
-	  let l' = Array.smartmap func l in
-	    if (ct'== ct && l'==l) then c
-	    else App (ct',l')
+          let ct' = func ct in
+          let l' = Array.smartmap func l in
+            if (ct'== ct && l'==l) then c
+            else App (ct',l')
       | Evar (e,l) ->
-	  let l' = Array.smartmap func l in
-	    if (l'==l) then c
-	    else Evar (e,l')
+          let l' = Array.smartmap func l in
+            if (l'==l) then c
+            else Evar (e,l')
       | Fix (ln,(lna,tl,bl)) ->
-	  let tl' = Array.smartmap func tl in
-	  let bl' = Array.smartmap func bl in
-	    if (bl == bl'&& tl == tl') then c
-	    else Fix (ln,(lna,tl',bl'))
+          let tl' = Array.smartmap func tl in
+          let bl' = Array.smartmap func bl in
+            if (bl == bl'&& tl == tl') then c
+            else Fix (ln,(lna,tl',bl'))
       | CoFix(ln,(lna,tl,bl)) ->
-	  let tl' = Array.smartmap func tl in
-	  let bl' = Array.smartmap func bl in
-	    if (bl == bl'&& tl == tl') then c
-	    else CoFix (ln,(lna,tl',bl'))
+          let tl' = Array.smartmap func tl in
+          let bl' = Array.smartmap func bl in
+            if (bl == bl'&& tl == tl') then c
+            else CoFix (ln,(lna,tl',bl'))
       | _ -> c
 
 let subst_mps sub c =
   if is_empty_subst sub then c
   else map_kn (subst_ind sub) (subst_con0 sub) c
- 
+
 let rec replace_mp_in_mp mpfrom mpto mp =
   match mp with
     | _ when ModPath.equal mp mpfrom -> mpto
     | MPdot (mp1,l) ->
-	let mp1' = replace_mp_in_mp mpfrom mpto mp1 in
-	  if mp1==mp1' then mp
-	  else MPdot (mp1',l)
+        let mp1' = replace_mp_in_mp mpfrom mpto mp1 in
+          if mp1==mp1' then mp
+          else MPdot (mp1',l)
     | _ -> mp
 
 let rec mp_in_mp mp mp1 =
@@ -306,7 +306,7 @@ let subset_prefixed_by mp resolver =
     match hint with
       | Inline _ -> rslv
       | Equiv _ ->
-	if mp_in_mp mp (KerName.modpath kn)
+        if mp_in_mp mp (KerName.modpath kn)
         then Deltamap.add_kn kn hint rslv
         else rslv
   in
@@ -328,7 +328,7 @@ let subst_mp_delta sub mp mkey =
       let mp1 = find_prefix resolve mp' in
       let resolve1 = subset_prefixed_by mp1 resolve in
       (subst_dom_delta_resolver
-	 (map_mp mp1 mkey) resolve1),mp1
+         (map_mp mp1 mkey) resolve1),mp1
 
 let gen_subst_delta_resolver dom subst resolver =
   let mp_apply_subst mkey mequ rslv =
@@ -359,8 +359,8 @@ let update_delta_resolver resolver1 resolver2 =
     if Deltamap.mem_kn kkey resolver2 then rslv
     else
       let hint' = match hint with
-	| Equiv kequ -> Equiv (solve_delta_kn resolver2 kequ)
-	| _ -> hint
+        | Equiv kequ -> Equiv (solve_delta_kn resolver2 kequ)
+        | _ -> hint
       in
       Deltamap.add_kn kkey hint' rslv
   in
@@ -389,15 +389,15 @@ let join subst1 subst2 =
   let apply_subst mpk add (mp,resolve) res =
     let mp',resolve' =
       match subst_mp0 subst2 mp with
-	| None -> mp, None
-	| Some (mp',resolve') ->  mp', Some resolve' in
+        | None -> mp, None
+        | Some (mp',resolve') ->  mp', Some resolve' in
     let resolve'' =
       match resolve' with
         | Some res ->
-	    add_delta_resolver
-	      (subst_dom_codom_delta_resolver subst2 resolve) res
-	| None ->
-	    subst_codom_delta_resolver subst2 resolve
+            add_delta_resolver
+              (subst_dom_codom_delta_resolver subst2 resolve) res
+        | None ->
+            subst_codom_delta_resolver subst2 resolve
     in
     let prefixed_subst = substition_prefixed_by mpk mp' subst2 in
     Umap.join prefixed_subst (add (mp',resolve'') res)
@@ -499,14 +499,14 @@ let eq_wf_paths = Rtree.equal eq_recarg
 *)
 
 
-let subst_decl_arity f g sub ar = 
+let subst_decl_arity f g sub ar =
   match ar with
-  | RegularArity x -> 
-    let x' = f sub x in 
+  | RegularArity x ->
+    let x' = f sub x in
       if x' == x then ar
       else RegularArity x'
-  | TemplateArity x -> 
-    let x' = g sub x in 
+  | TemplateArity x ->
+    let x' = g sub x in
       if x' == x then ar
       else TemplateArity x'
 
@@ -530,7 +530,7 @@ let subst_const_body sub cb =
 
 let subst_regular_ind_arity sub s =
   let uar' = subst_mps sub s.mind_user_arity in
-    if uar' == s.mind_user_arity then s 
+    if uar' == s.mind_user_arity then s
     else { mind_user_arity = uar'; mind_sort = s.mind_sort }
 
 let subst_template_ind_arity sub s = s

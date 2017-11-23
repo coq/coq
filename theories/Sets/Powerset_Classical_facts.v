@@ -13,11 +13,11 @@
 (*              Rocquencourt                        Sophia-Antipolis        *)
 (*                                                                          *)
 (*                                 Coq V6.1                                 *)
-(*									    *)
-(*			         Gilles Kahn 				    *)
-(*				 Gerard Huet				    *)
-(*									    *)
-(*									    *)
+(*                                                                          *)
+(*                               Gilles Kahn                                *)
+(*                               Gerard Huet                                *)
+(*                                                                          *)
+(*                                                                          *)
 (*                                                                          *)
 (* Acknowledgments: This work was started in July 1993 by F. Prost. Thanks  *)
 (* to the Newton Institute for providing an exceptional work environment    *)
@@ -222,8 +222,8 @@ Section Sets_as_an_algebra.
     forall A a:Ensemble U,
       Included U a A ->
       forall x:U,
-	In U A x ->
-	~ In U a x -> covers (Ensemble U) (Power_set_PO U A) (Add U a x) a.
+        In U A x ->
+        ~ In U a x -> covers (Ensemble U) (Power_set_PO U A) (Add U a x) a.
   Proof.
     intros A a H' x H'0 H'1; try assumption.
     apply setcover_intro; auto with sets.
@@ -291,7 +291,7 @@ Section Sets_as_an_algebra.
       Included U a A ->
       Included U a' A ->
       (covers (Ensemble U) (Power_set_PO U A) a' a <->
-	(exists x : _, a' = Add U a x /\ In U A x /\ ~ In U a x)).
+        (exists x : _, a' = Add U a x /\ In U A x /\ ~ In U a x)).
   Proof.
     intros A a a' H' H'0; split; intro K.
     apply covers_Add with (A := A); auto with sets.

@@ -35,9 +35,9 @@ let classify_rename_args = function
   | ReqLocal, _ -> Dispose
   | ReqGlobal _, _ as o -> Substitute o
 
-let subst_rename_args (subst, (_, (r, names as orig))) = 
+let subst_rename_args (subst, (_, (r, names as orig))) =
   ReqLocal,
-  let r' = fst (subst_global subst r) in 
+  let r' = fst (subst_global subst r) in
   if r==r' then orig else (r', names)
 
 let section_segment_of_reference = function
@@ -48,7 +48,7 @@ let section_segment_of_reference = function
 
 let discharge_rename_args = function
   | _, (ReqGlobal (c, names), _ as req) ->
-     (try 
+     (try
        let vars,_,_ = section_segment_of_reference c in
        let c' = pop_global_reference c in
        let var_names = List.map (fst %> NamedDecl.get_id %> Name.mk_name) vars in
@@ -70,21 +70,21 @@ let inRenameArgs = declare_object { (default_object "RENAME-ARGUMENTS" ) with
 
 let rename_arguments local r names =
   let req = if local then ReqLocal else ReqGlobal (r, names) in
-  Lib.add_anonymous_leaf (inRenameArgs (req, (r, names)))       
+  Lib.add_anonymous_leaf (inRenameArgs (req, (r, names)))
 
 let arguments_names r = Refmap.find r !name_table
 
-let rec rename_prod c = function 
+let rec rename_prod c = function
   | [] -> c
-  | (Name _ as n) :: tl -> 
+  | (Name _ as n) :: tl ->
       (match kind_of_type c with
       | ProdType (_, s, t) -> mkProd (n, s, rename_prod t tl)
       | _ -> c)
-  | _ :: tl -> 
+  | _ :: tl ->
       match kind_of_type c with
       | ProdType (n, s, t) -> mkProd (n, s, rename_prod t tl)
       | _ -> c
-        
+
 let rename_type ty ref =
   try rename_prod ty (arguments_names ref)
   with Not_found -> ty

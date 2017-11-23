@@ -18,7 +18,7 @@ Require Import ZArith_base.
 Require Import Zcomplements.
 Require Import Fourier.
 Require Import Ranalysis1.
-Require Import Rsqrt_def. 
+Require Import Rsqrt_def.
 Require Import PSeries_reg.
 
 Local Open Scope nat_scope.
@@ -172,7 +172,7 @@ Proof.
 Qed.
 
 Lemma sin_gt_cos_7_8 : sin (7 / 8) > cos (7 / 8).
-Proof. 
+Proof.
 assert (lo1 : 0 <= 7/8) by fourier.
 assert (up1 : 7/8 <= 4) by fourier.
 assert (lo : -2 <= 7/8) by fourier.
@@ -186,7 +186,7 @@ simpl sum_f_R0.
 unfold cos_term, sin_term; simpl fact; rewrite !INR_IZR_INZ.
 simpl plus; simpl mult; simpl Z_of_nat.
 field_simplify.
-match goal with 
+match goal with
   |- IZR ?a / ?b < ?c / ?d =>
   apply Rmult_lt_reg_r with d;[apply (IZR_lt 0); reflexivity |
     unfold Rdiv at 2; rewrite Rmult_assoc, Rinv_l, Rmult_1_r, Rmult_comm;
@@ -265,7 +265,7 @@ Proof.
  unfold PI; generalize cos_pi2; replace ((2 * PI2)/2) with PI2 by field; tauto.
 Qed.
 
-Lemma sin_pos_tech : forall x, 0 < x < 2 -> 0 < sin x. 
+Lemma sin_pos_tech : forall x, 0 < x < 2 -> 0 < sin x.
 intros x [int1 int2].
 assert (lo : 0 <= x) by (apply Rlt_le; assumption).
 assert (up : x <= 4) by (apply Rlt_le, Rlt_trans with (1:=int2); fourier).

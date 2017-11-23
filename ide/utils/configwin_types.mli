@@ -114,8 +114,8 @@ type configuration_structure =
 (** To indicate what button was pushed by the user when the window is closed. *)
 type return_button =
     Return_apply (** The user clicked on Apply at least once before
-	     closing the window with Cancel or the window manager. *)
+             closing the window with Cancel or the window manager. *)
   | Return_ok (** The user closed the window with the ok button. *)
   | Return_cancel (** The user closed the window with the cancel
-		     button or the window manager but never clicked
-		     on the apply button.*)
+                     button or the window manager but never clicked
+                     on the apply button.*)

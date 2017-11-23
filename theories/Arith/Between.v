@@ -163,7 +163,7 @@ Section Between.
     | nth_O : P_nth init init 0
     | nth_S :
       forall k l (n:nat),
-	P_nth init k n -> between (S k) l -> Q l -> P_nth init l (S n).
+        P_nth init k n -> between (S k) l -> Q l -> P_nth init l (S n).
 
   Lemma nth_le : forall (init:nat) l (n:nat), P_nth init l n -> init <= l.
   Proof.

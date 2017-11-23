@@ -127,10 +127,10 @@ and stack = stack_member list
 val append_stack : fconstr array -> stack -> stack
 
 val stack_args_size : stack -> int
-    
+
 val eta_expand_stack : stack -> stack
- 
-val eta_expand_ind_stack : env -> inductive -> fconstr -> stack -> 
+
+val eta_expand_ind_stack : env -> inductive -> fconstr -> stack ->
    (fconstr * stack) -> stack * stack
 
 (* To lazy reduce a constr, create a [clos_infos] with

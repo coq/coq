@@ -105,8 +105,8 @@ let interp_occs ist gl l =
   match l with
     | ArgArg x -> x
     | ArgVar (_,id as locid) ->
-	(try int_list_of_VList (Id.Map.find id ist.lfun)
-	  with Not_found | CannotCoerceTo _ -> [interp_int ist locid])
+        (try int_list_of_VList (Id.Map.find id ist.lfun)
+          with Not_found | CannotCoerceTo _ -> [interp_int ist locid])
 let interp_occs ist gl l =
   Tacmach.project gl , interp_occs ist gl l
 
@@ -297,7 +297,7 @@ ARGUMENT EXTEND test_lpar_id_colon TYPED AS unit PRINTED BY pr_lpar_id_colon
 END
 
 (* spiwack: the print functions are incomplete, but I don't know what they are
-	used for *)
+        used for *)
 let pr_r_nat_field natf =
   str "nat " ++
   match natf with

@@ -86,7 +86,7 @@ Qed.
 
 Lemma testbit_spec' a n : 0<=n -> a.[n] == (a / 2^n) mod 2.
 Proof.
- intro Hn. revert a. apply le_ind with (4:=Hn). 
+ intro Hn. revert a. apply le_ind with (4:=Hn).
    solve_proper.
  intros a. nzsimpl.
  destruct (exists_div2 a) as (a' & b & H). rewrite H at 1.

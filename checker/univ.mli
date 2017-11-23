@@ -22,7 +22,7 @@ sig
 
   val pr : t -> Pp.t
   (** Pretty-printing *)
-  
+
   val equal : t -> t -> bool
 end
 
@@ -131,7 +131,7 @@ type univ_inconsistency = constraint_type * universe * universe
 exception UniverseInconsistency of univ_inconsistency
 
 val merge_constraints : constraints -> universes -> universes
-						    
+
 val check_constraints : constraints -> universes -> bool
 
 (** {6 Support for universe polymorphism } *)
@@ -202,7 +202,7 @@ sig
   val instance : t -> Instance.t
   val constraints : t -> constraints
   val is_empty : t -> bool
-    
+
 end
 
 type universe_context = UContext.t
@@ -232,7 +232,7 @@ end
 type abstract_cumulativity_info = ACumulativityInfo.t
 
 module ContextSet :
-  sig 
+  sig
     type t
     val make : LSet.t -> constraints -> t
     val empty : t

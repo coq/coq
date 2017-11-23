@@ -62,11 +62,11 @@ let extra_arg_needed = ref true
 let parse_args () =
   let rec parse (cfiles,args) = function
     | [] ->
-	List.rev cfiles, List.rev args
+        List.rev cfiles, List.rev args
     | ("-verbose" | "--verbose") :: rem ->
-	verbose := true ; parse (cfiles,args) rem
+        verbose := true ; parse (cfiles,args) rem
     | "-image" :: f :: rem -> image := f; parse (cfiles,args) rem
-    | "-image" :: [] ->	usage ()
+    | "-image" :: [] -> usage ()
     | "-byte" :: rem -> binary := "coqtop.byte"; parse (cfiles,args) rem
     | "-opt" :: rem -> binary := "coqtop"; parse (cfiles,args) rem
 
@@ -85,7 +85,7 @@ let parse_args () =
         Envars.set_coqlib ~fail:(fun x -> x);
         Envars.print_config stdout Coq_config.all_src_dirs;
         exit 0
-      
+
     | ("-print-version" | "--print-version") :: _ ->
         Usage.machine_readable_version 0
 
@@ -100,7 +100,7 @@ let parse_args () =
       |"-async-proofs-always-delegate"|"-async-proofs-never-reopen-branch"
       |"-stm-debug"
       as o) :: rem ->
-	parse (cfiles,o::args) rem
+        parse (cfiles,o::args) rem
 
 (* Options for coqtop : b) options with 1 argument *)
 
@@ -111,11 +111,11 @@ let parse_args () =
       |"-async-proofs-j" |"-async-proofs-private-flags" |"-async-proofs" |"-w"
       |"-o"|"-profile-ltac-cutoff"
       as o) :: rem ->
-	begin
-	  match rem with
-	    | s :: rem' -> parse (cfiles,s::o::args) rem'
-	    | []        -> usage ()
-	end
+        begin
+          match rem with
+            | s :: rem' -> parse (cfiles,s::o::args) rem'
+            | []        -> usage ()
+        end
     | ("-I"|"-include" as o) :: s :: rem -> parse (cfiles,s::o::args) rem
 
 (* Options for coqtop : c) options with 1 argument and possibly more *)
@@ -129,16 +129,16 @@ let parse_args () =
         parse (cfiles, List.rev nodash @ s :: o :: args) rem
 
     | f :: rem ->
-	if Sys.file_exists f then
-	  parse (f::cfiles,args) rem
-	else
-	  let fv = f ^ ".v" in
-	  if Sys.file_exists fv then
-	    parse (fv::cfiles,args) rem
-	  else begin
-	    prerr_endline ("coqc: "^f^": no such file or directory") ;
-	    exit 1
-	  end
+        if Sys.file_exists f then
+          parse (f::cfiles,args) rem
+        else
+          let fv = f ^ ".v" in
+          if Sys.file_exists fv then
+            parse (fv::cfiles,args) rem
+          else begin
+            prerr_endline ("coqc: "^f^": no such file or directory") ;
+            exit 1
+          end
   in
   parse ([],[]) (List.tl (Array.to_list Sys.argv))
 

@@ -100,7 +100,7 @@ val glob_jmeq : global_reference
    at compile time. Therefore, we can only provide methods to build
    them at runtime. This is the purpose of the [constr delayed] and
    [constr_pattern delayed] types. Objects of this time needs to be
-   forced with [delayed_force] to get the actual constr or pattern 
+   forced with [delayed_force] to get the actual constr or pattern
    at runtime. *)
 
 type coq_bool_data = {
@@ -151,10 +151,10 @@ val build_coq_f_equal2 : global_reference delayed
 
 type coq_inversion_data = {
   inv_eq   : global_reference; (** : forall params, args -> Prop *)
-  inv_ind  : global_reference; (** : forall params P (H : P params) args, eq params args 
-			 ->  P args *)
-  inv_congr: global_reference  (** : forall params B (f:t->B) args, eq params args -> 
-			 f params = f args *)
+  inv_ind  : global_reference; (** : forall params P (H : P params) args, eq params args
+                         ->  P args *)
+  inv_congr: global_reference  (** : forall params B (f:t->B) args, eq params args ->
+                         f params = f args *)
 }
 
 val build_coq_inversion_eq_data : coq_inversion_data delayed
@@ -166,7 +166,7 @@ val build_coq_inversion_eq_true_data : coq_inversion_data delayed
 val build_coq_sumbool : global_reference delayed
 
 (** {6 ... } *)
-(** Connectives 
+(** Connectives
    The False proposition *)
 val build_coq_False : global_reference delayed
 

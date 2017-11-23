@@ -17,7 +17,7 @@ Check (fun m (x: Vector.t nat m) =>
 (* N should be a variable and not the inductiveRef *)
 Require Import NArith.
 Theorem foo : forall (n m : nat) (pf : n = m),
-                match pf in _ = N with 
+                match pf in _ = N with
                   | eq_refl => unit
                 end.
 

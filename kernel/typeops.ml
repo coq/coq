@@ -33,7 +33,7 @@ let conv_leq_vecti env v1 v2 =
     v1
     v2
 
-let check_constraints cst env = 
+let check_constraints cst env =
   if Environ.check_constraints cst env then ()
   else error_unsatisfied_constraints env cst
 
@@ -145,30 +145,30 @@ let type_of_abstraction env name var ty =
 
 (* Type of an application. *)
 
-let make_judgev c t = 
+let make_judgev c t =
   Array.map2 make_judge c t
 
 let type_of_apply env func funt argsv argstv =
   let len = Array.length argsv in
-  let rec apply_rec i typ = 
+  let rec apply_rec i typ =
     if Int.equal i len then typ
-    else 
+    else
       (match kind (whd_all env typ) with
       | Prod (_,c1,c2) ->
-	let arg = argsv.(i) and argt = argstv.(i) in
-	  (try
-	     let () = conv_leq false env argt c1 in
-	       apply_rec (i+1) (subst1 arg c2)
-	   with NotConvertible ->
-	     error_cant_apply_bad_type env
-	       (i+1,c1,argt)
-	       (make_judge func funt)
-	       (make_judgev argsv argstv))
-	    
+        let arg = argsv.(i) and argt = argstv.(i) in
+          (try
+             let () = conv_leq false env argt c1 in
+               apply_rec (i+1) (subst1 arg c2)
+           with NotConvertible ->
+             error_cant_apply_bad_type env
+               (i+1,c1,argt)
+               (make_judge func funt)
+               (make_judgev argsv argstv))
+
       | _ ->
-	error_cant_apply_not_functional env 
-	  (make_judge func funt)
-	  (make_judgev argsv argstv))
+        error_cant_apply_not_functional env
+          (make_judge func funt)
+          (make_judgev argsv argstv))
   in apply_rec 0 funt
 
 (* Type of product *)
@@ -247,7 +247,7 @@ let check_cast env c ct k expected_type =
 let type_of_inductive_knowing_parameters env (ind,u as indu) args =
   let (mib,mip) as spec = lookup_mind_specif env ind in
   check_hyps_inclusion env mkIndU indu mib.mind_hyps;
-  let t,cst = Inductive.constrained_type_of_inductive_knowing_parameters 
+  let t,cst = Inductive.constrained_type_of_inductive_knowing_parameters
     env (spec,u) args
   in
   check_constraints cst env;
@@ -302,7 +302,7 @@ let type_of_projection env p c ct =
   assert(MutInd.equal pb.proj_ind (fst ind));
   let ty = Vars.subst_instance_constr u pb.Declarations.proj_type in
   substl (c :: CList.rev args) ty
-      
+
 
 (* Fixpoints. *)
 
@@ -338,7 +338,7 @@ let rec execute env cstr =
 
     | Const c ->
       type_of_constant env c
-	
+
     | Proj (p, c) ->
         let ct = execute env c in
           type_of_projection env p c ct
@@ -346,15 +346,15 @@ let rec execute env cstr =
     (* Lambda calculus operators *)
     | App (f,args) ->
         let argst = execute_array env args in
-	let ft =
-	  match kind f with
-	  | Ind ind when Environ.template_polymorphic_pind ind env ->
-	    let args = Array.map (fun t -> lazy t) argst in
+        let ft =
+          match kind f with
+          | Ind ind when Environ.template_polymorphic_pind ind env ->
+            let args = Array.map (fun t -> lazy t) argst in
               type_of_inductive_knowing_parameters env ind args
-	  | _ ->
-	    (* No template polymorphism *)
+          | _ ->
+            (* No template polymorphism *)
             execute env f
-	in
+        in
 
           type_of_apply env f ft args argst
 
@@ -376,13 +376,13 @@ let rec execute env cstr =
       let () = check_cast env c1 c1t DEFAULTcast c2 in
       let env1 = push_rel (LocalDef (name,c1,c2)) env in
       let c3t = execute env1 c3 in
-	subst1 c1 c3t
+        subst1 c1 c3t
 
     | Cast (c,k,t) ->
       let ct = execute env c in
       let _ts = (check_type env t (execute env t)) in
       let () = check_cast env c ct k t in
-	t
+        t
 
     (* Inductive types *)
     | Ind ind ->
@@ -401,18 +401,18 @@ let rec execute env cstr =
       let (fix_ty,recdef') = execute_recdef env recdef i in
       let fix = (vni,recdef') in
         check_fix env fix; fix_ty
-	  
+
     | CoFix (i,recdef) ->
       let (fix_ty,recdef') = execute_recdef env recdef i in
       let cofix = (i,recdef') in
         check_cofix env cofix; fix_ty
-	  
+
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->
-	anomaly (Pp.str "the kernel does not support metavariables.")
+        anomaly (Pp.str "the kernel does not support metavariables.")
 
     | Evar _ ->
-	anomaly (Pp.str "the kernel does not support existential variables.")
+        anomaly (Pp.str "the kernel does not support existential variables.")
 
 and execute_is_type env constr =
   let t = execute env constr in
@@ -433,7 +433,7 @@ let infer env constr =
   let t = execute env constr in
     make_judge constr t
 
-let infer = 
+let infer =
   if Flags.profile then
     let infer_key = Profile.declare_profile "Fast_infer" in
       Profile.profile2 infer_key (fun b c -> infer b c)

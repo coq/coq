@@ -67,7 +67,7 @@ apply park_ppl with
 now intros s1 s2 (x0,(->,->)).
 intros s1 s2 (x0,(->,->)).
 now exists (f x0).
-now exists x. 
+now exists x.
 Qed.
 
 Fail Check (fun A (s : Stream A) => eq_refl : s = eta s).

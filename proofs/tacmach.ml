@@ -78,7 +78,7 @@ let pf_reduction_of_red_expr gls re c =
   redfun (pf_env gls) sigma c
 
 let pf_apply f gls = f (pf_env gls) (project gls)
-let pf_eapply f gls x = 
+let pf_eapply f gls x =
   on_sig gls (fun evm -> f (pf_env gls) evm x)
 let pf_reduce = pf_apply
 let pf_e_reduce = pf_apply

@@ -5,7 +5,7 @@ Section Counted_list.
 
   Inductive counted_list : nat -> Type :=
     | counted_nil : counted_list 0
-    | counted_cons : forall(n : nat), 
+    | counted_cons : forall(n : nat),
         A -> counted_list n -> counted_list (S n).
 
 
@@ -23,7 +23,7 @@ Section Counted_list.
     end.
 
 
-  Lemma counted_list_equal_nth_char : 
+  Lemma counted_list_equal_nth_char :
     forall(n : nat)(l1 l2 : counted_list n)(def : A),
       (forall(i : nat), counted_def_nth l1 i def = counted_def_nth l2 i def) ->
         l1 = l2.
@@ -41,7 +41,7 @@ Section Finite_nat_set.
 
   Definition fnat_subset : Type := counted_list bool set_size.
 
-  Definition fnat_member(fs : fnat_subset)(n : nat) : Prop := 
+  Definition fnat_member(fs : fnat_subset)(n : nat) : Prop :=
     is_true (counted_def_nth fs n false).
 
 

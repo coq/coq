@@ -25,7 +25,7 @@ End A.
 
 
 Module B.
-  
+
   Module A := A.
   Import A.
 

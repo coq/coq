@@ -22,14 +22,14 @@ let safe_flags = {
 
 (** {6 Arities } *)
 
-let subst_decl_arity f g sub ar = 
+let subst_decl_arity f g sub ar =
   match ar with
-  | RegularArity x -> 
-    let x' = f sub x in 
+  | RegularArity x ->
+    let x' = f sub x in
       if x' == x then ar
       else RegularArity x'
-  | TemplateArity x -> 
-    let x' = g sub x in 
+  | TemplateArity x ->
+    let x' = g sub x in
       if x' == x then ar
       else TemplateArity x'
 
@@ -125,9 +125,9 @@ let hcons_const_def = function
 
 let hcons_const_universes cbu =
   match cbu with
-  | Monomorphic_const ctx -> 
+  | Monomorphic_const ctx ->
     Monomorphic_const (Univ.hcons_universe_context ctx)
-  | Polymorphic_const ctx -> 
+  | Polymorphic_const ctx ->
     Polymorphic_const (Univ.hcons_abstract_universe_context ctx)
 
 let hcons_const_body cb =
@@ -181,7 +181,7 @@ let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
 
 let subst_regular_ind_arity sub s =
   let uar' = subst_mps sub s.mind_user_arity in
-    if uar' == s.mind_user_arity then s 
+    if uar' == s.mind_user_arity then s
     else { mind_user_arity = uar'; mind_sort = s.mind_sort }
 
 let subst_template_ind_arity sub s = s

@@ -69,7 +69,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Module E:=PositiveOrderedTypeBits.
   Module ME:=KeyOrderedType E.
 
-  Definition key := positive : Type. 
+  Definition key := positive : Type.
 
   Inductive tree (A : Type) :=
     | Leaf : tree A
@@ -269,7 +269,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       find i m = Some v -> List.In (append j i, v) (xelements m j).
     Proof.
       induction m; intros.
-       rewrite (gleaf i) in H; discriminate. 
+       rewrite (gleaf i) in H; discriminate.
        destruct o; destruct i; simpl; simpl in H.
         rewrite append_assoc_1; apply in_or_app; right; apply in_cons;
           apply IHm2; auto.

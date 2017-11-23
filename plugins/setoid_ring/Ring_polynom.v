@@ -8,7 +8,7 @@
 
 
 Set Implicit Arguments.
-Require Import Setoid Morphisms. 
+Require Import Setoid Morphisms.
 Require Import BinList BinPos BinNat BinInt.
 Require Export Ring_theory.
 Local Open Scope positive_scope.
@@ -806,9 +806,9 @@ Section MakeRingPol.
      P@l == Q@l + [c] * R@l.
  Proof.
  revert l.
- induction P as [c0 | j P IH | P1 IH1 i P2 IH2]; intros l; Esimpl. 
- - assert (H := div_th.(div_eucl_th) c0 c). 
-   destruct cdiv as (q,r). rewrite H; Esimpl. add_permut. 
+ induction P as [c0 | j P IH | P1 IH1 i P2 IH2]; intros l; Esimpl.
+ - assert (H := div_th.(div_eucl_th) c0 c).
+   destruct cdiv as (q,r). rewrite H; Esimpl. add_permut.
  - destr_factor. Esimpl.
  - destr_factor. Esimpl. add_permut.
  Qed.
@@ -817,9 +817,9 @@ Section MakeRingPol.
    let (c,M) := cM in
    let (Q,R) := MFactor P c M in
      P@l == Q@l + [c] * M@@l * R@l.
- Proof. 
+ Proof.
  destruct cM as (c,M). revert M l.
- induction P; destruct M; intros l; simpl; auto; 
+ induction P; destruct M; intros l; simpl; auto;
  try (case ceqb_spec; intro He);
   try (case Pos.compare_spec; intros He);
   rewrite ?He;
@@ -880,8 +880,8 @@ Section MakeRingPol.
  Lemma PSubstL1_ok n LM1 P1 l :
    MPcond LM1 l -> P1@l == (PSubstL1 P1 LM1 n)@l.
  Proof.
- revert P1; induction LM1 as [|(M2,P2) LM2 IH]; simpl; intros. 
- - reflexivity. 
+ revert P1; induction LM1 as [|(M2,P2) LM2 IH]; simpl; intros.
+ - reflexivity.
  - rewrite <- IH by intuition; now apply PNSubst1_ok.
  Qed.
 
@@ -908,7 +908,7 @@ Section MakeRingPol.
 
  Inductive PExpr : Type :=
   | PEO : PExpr
-  | PEI : PExpr            
+  | PEI : PExpr
   | PEc : C -> PExpr
   | PEX : positive -> PExpr
   | PEadd : PExpr -> PExpr -> PExpr
@@ -1048,7 +1048,7 @@ Section POWER.
   Proof.
    intros.
    induction pe; cbn.
-   - now rewrite (morph0 CRmorph). 
+   - now rewrite (morph0 CRmorph).
    - now rewrite (morph1 CRmorph).
    - reflexivity.
    - apply mkX_ok.

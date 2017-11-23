@@ -5,8 +5,8 @@ Class Patch (patch : Type) := {
     commute : patch -> patch -> Prop
 }.
 
-Parameter flip : forall	`{patchInstance	: Patch	patch}
-                       	 {a b : patch},
+Parameter flip : forall `{patchInstance : Patch patch}
+                         {a b : patch},
                  commute a b <-> commute b a.
 
 Lemma Foo : forall `{patchInstance : Patch patch}

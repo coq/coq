@@ -42,10 +42,10 @@ let print_evar_arguments = ref false
 let add_name na b t (nenv, env) =
   let open Context.Rel.Declaration in
   add_name na nenv, push_rel (match b with
-			      | None -> LocalAssum (na,t)
-			      | Some b -> LocalDef (na,b,t)
-			     )
-			     env
+                              | None -> LocalAssum (na,t)
+                              | Some b -> LocalDef (na,b,t)
+                             )
+                             env
 
 let add_name_opt na b t (nenv, env) =
   match t with
@@ -110,7 +110,7 @@ module PrintingCasesIf =
     let member_message s b =
       str "Cases on elements of " ++ s ++
       str
-	(if b then " are printed using a `if' form"
+        (if b then " are printed using a `if' form"
          else " are not printed using a `if' form")
   end)
 
@@ -123,7 +123,7 @@ module PrintingCasesLet =
     let member_message s b =
       str "Cases on elements of " ++ s ++
       str
-	(if b then " are printed using a `let' form"
+        (if b then " are printed using a `let' form"
          else " are not printed using a `let' form")
   end)
 
@@ -138,53 +138,53 @@ let wildcard_value = ref true
 let force_wildcard () = !wildcard_value
 
 let _ = declare_bool_option
-	  { optdepr  = false;
-	    optname  = "forced wildcard";
-	    optkey   = ["Printing";"Wildcard"];
-	    optread  = force_wildcard;
-	    optwrite = (:=) wildcard_value }
+          { optdepr  = false;
+            optname  = "forced wildcard";
+            optkey   = ["Printing";"Wildcard"];
+            optread  = force_wildcard;
+            optwrite = (:=) wildcard_value }
 
 let synth_type_value = ref true
 let synthetize_type () = !synth_type_value
 
 let _ = declare_bool_option
-	  { optdepr  = false;
-	    optname  = "pattern matching return type synthesizability";
-	    optkey   = ["Printing";"Synth"];
-	    optread  = synthetize_type;
-	    optwrite = (:=) synth_type_value }
+          { optdepr  = false;
+            optname  = "pattern matching return type synthesizability";
+            optkey   = ["Printing";"Synth"];
+            optread  = synthetize_type;
+            optwrite = (:=) synth_type_value }
 
 let reverse_matching_value = ref true
 let reverse_matching () = !reverse_matching_value
 
 let _ = declare_bool_option
-	  { optdepr  = false;
-	    optname  = "pattern-matching reversibility";
-	    optkey   = ["Printing";"Matching"];
-	    optread  = reverse_matching;
-	    optwrite = (:=) reverse_matching_value }
+          { optdepr  = false;
+            optname  = "pattern-matching reversibility";
+            optkey   = ["Printing";"Matching"];
+            optread  = reverse_matching;
+            optwrite = (:=) reverse_matching_value }
 
 let print_primproj_params_value = ref false
 let print_primproj_params () = !print_primproj_params_value
 
 let _ = declare_bool_option
-	  { optdepr  = false;
-	    optname  = "printing of primitive projection parameters";
-	    optkey   = ["Printing";"Primitive";"Projection";"Parameters"];
-	    optread  = print_primproj_params;
-	    optwrite = (:=) print_primproj_params_value }
+          { optdepr  = false;
+            optname  = "printing of primitive projection parameters";
+            optkey   = ["Printing";"Primitive";"Projection";"Parameters"];
+            optread  = print_primproj_params;
+            optwrite = (:=) print_primproj_params_value }
 
 let print_primproj_compatibility_value = ref false
 let print_primproj_compatibility () = !print_primproj_compatibility_value
 
 let _ = declare_bool_option
-	  { optdepr  = false;
-	    optname  = "backwards-compatible printing of primitive projections";
-	    optkey   = ["Printing";"Primitive";"Projection";"Compatibility"];
-	    optread  = print_primproj_compatibility;
-	    optwrite = (:=) print_primproj_compatibility_value }
+          { optdepr  = false;
+            optname  = "backwards-compatible printing of primitive projections";
+            optkey   = ["Printing";"Primitive";"Projection";"Compatibility"];
+            optread  = print_primproj_compatibility;
+            optwrite = (:=) print_primproj_compatibility_value }
 
-	  
+
 (* Auxiliary function for MutCase printing *)
 (* [computable] tries to tell if the predicate typing the result is inferable*)
 
@@ -213,13 +213,13 @@ let computable sigma p k =
 let lookup_name_as_displayed env sigma t s =
   let rec lookup avoid n c = match EConstr.kind sigma c with
     | Prod (name,_,c') ->
-	(match compute_displayed_name_in sigma RenamingForGoal avoid name c' with
+        (match compute_displayed_name_in sigma RenamingForGoal avoid name c' with
            | (Name id,avoid') -> if Id.equal id s then Some n else lookup avoid' (n+1) c'
-	   | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
+           | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
     | LetIn (name,_,_,c') ->
-	(match compute_displayed_name_in sigma RenamingForGoal avoid name c' with
+        (match compute_displayed_name_in sigma RenamingForGoal avoid name c' with
            | (Name id,avoid') -> if Id.equal id s then Some n else lookup avoid' (n+1) c'
-	   | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
+           | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
     | Cast (c,_,_) -> lookup avoid n c
     | _ -> None
   in lookup (Environ.ids_of_named_context_val (Environ.named_context_val env)) 1 t
@@ -227,26 +227,26 @@ let lookup_name_as_displayed env sigma t s =
 let lookup_index_as_renamed env sigma t n =
   let rec lookup n d c = match EConstr.kind sigma c with
     | Prod (name,_,c') ->
-	  (match compute_displayed_name_in sigma RenamingForGoal Id.Set.empty name c' with
+          (match compute_displayed_name_in sigma RenamingForGoal Id.Set.empty name c' with
                (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
-		 if Int.equal n 0 then
-		   Some (d-1)
-		 else if Int.equal n 1 then
-		   Some d
-		 else
-		   lookup (n-1) (d+1) c')
+                 if Int.equal n 0 then
+                   Some (d-1)
+                 else if Int.equal n 1 then
+                   Some d
+                 else
+                   lookup (n-1) (d+1) c')
     | LetIn (name,_,_,c') ->
-	  (match compute_displayed_name_in sigma RenamingForGoal Id.Set.empty name c' with
+          (match compute_displayed_name_in sigma RenamingForGoal Id.Set.empty name c' with
              | (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
-		 if Int.equal n 0 then
-		   Some (d-1)
-		 else if Int.equal n 1 then
-		   Some d
-		 else
-		   lookup (n-1) (d+1) c'
-	  )
+                 if Int.equal n 0 then
+                   Some (d-1)
+                 else if Int.equal n 1 then
+                   Some d
+                 else
+                   lookup (n-1) (d+1) c'
+          )
     | Cast (c,_,_) -> lookup n d c
     | _ -> if Int.equal n 0 then Some (d-1) else None
   in lookup n 1 t
@@ -268,14 +268,14 @@ let rec decomp_branch tags nal b (avoid,env as e) sigma c =
   | b::tags ->
       let na,c,f,body,t =
         match EConstr.kind sigma (strip_outer_cast sigma c), b with
-	| Lambda (na,t,c),false -> na,c,compute_displayed_let_name_in,None,Some t
-	| LetIn (na,b,t,c),true ->
+        | Lambda (na,t,c),false -> na,c,compute_displayed_let_name_in,None,Some t
+        | LetIn (na,b,t,c),true ->
             na,c,compute_displayed_name_in,Some b,Some t
-	| _, false ->
-	  Name default_dependent_ident,(applist (lift 1 c, [mkRel 1])),
-	    compute_displayed_name_in,None,None
-	| _, true ->
-	  Anonymous,lift 1 c,compute_displayed_name_in,None,None
+        | _, false ->
+          Name default_dependent_ident,(applist (lift 1 c, [mkRel 1])),
+            compute_displayed_name_in,None,None
+        | _, true ->
+          Anonymous,lift 1 c,compute_displayed_name_in,None,None
     in
     let na',avoid' = f sigma flag avoid na c in
     decomp_branch tags (na'::nal) b
@@ -296,18 +296,18 @@ and align_tree nal isgoal (e,c as rhs) sigma = match nal with
     | Case (ci,p,c,cl) when
         eq_constr sigma c (mkRel (List.index Name.equal na (fst (snd e))))
         && not (Int.equal (Array.length cl) 0)
-	&& (* don't contract if p dependent *)
-	computable sigma p (List.length ci.ci_pp_info.ind_tags) (* FIXME: can do better *) ->
-	let clauses = build_tree na isgoal e sigma ci cl in
-	List.flatten
+        && (* don't contract if p dependent *)
+        computable sigma p (List.length ci.ci_pp_info.ind_tags) (* FIXME: can do better *) ->
+        let clauses = build_tree na isgoal e sigma ci cl in
+        List.flatten
           (List.map (fun (pat,rhs) ->
-	      let lines = align_tree nal isgoal rhs sigma in
-	      List.map (fun (hd,rest) -> pat::hd,rest) lines)
-	    clauses)
+              let lines = align_tree nal isgoal rhs sigma in
+              List.map (fun (hd,rest) -> pat::hd,rest) lines)
+            clauses)
     | _ ->
-	let pat = DAst.make @@ PatVar(update_name sigma na rhs) in
-	let mat = align_tree nal isgoal rhs sigma in
-	List.map (fun (hd,rest) -> pat::hd,rest) mat
+        let pat = DAst.make @@ PatVar(update_name sigma na rhs) in
+        let mat = align_tree nal isgoal rhs sigma in
+        List.map (fun (hd,rest) -> pat::hd,rest) mat
 
 and contract_branch isgoal e sigma (cdn,can,mkpat,b) =
   let nal,rhs = decomp_branch cdn [] isgoal e sigma b in
@@ -345,15 +345,15 @@ let it_destRLambda_or_LetIn_names l c =
       | _, true::l -> (* let-expansion *) aux l (Anonymous :: nal) c
       | _, false::l ->
           (* eta-expansion *)
-	  let next l =
-	    let x = next_ident_away default_dependent_ident l in
-	    (* Not efficient but unusual and no function to get free glob_vars *)
-(* 	    if occur_glob_constr x c then next (x::l) else x in *)
-	    x
-	  in
-	  let x = next (free_glob_vars c) in
-	  let a = DAst.make @@ GVar x in
-	  aux l (Name x :: nal)
+          let next l =
+            let x = next_ident_away default_dependent_ident l in
+            (* Not efficient but unusual and no function to get free glob_vars *)
+(*          if occur_glob_constr x c then next (x::l) else x in *)
+            x
+          in
+          let x = next (free_glob_vars c) in
+          let a = DAst.make @@ GVar x in
+          aux l (Name x :: nal)
             (match DAst.get c with
               | GApp (p,l) -> DAst.make ?loc:c.CAst.loc @@ GApp (p,l@[a])
               | _ -> DAst.make @@ GApp (c,[a]))
@@ -372,12 +372,12 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
         | None -> Anonymous, None, None
         | Some p ->
             let nl,typ = it_destRLambda_or_LetIn_names k p in
-	    let n,typ = match DAst.get typ with
+            let n,typ = match DAst.get typ with
               | GLambda (x,_,t,c) -> x, c
-	      | _ -> Anonymous, typ in
-	    let aliastyp =
-	      if List.for_all (Name.equal Anonymous) nl then None
-	      else Some (Loc.tag (indsp,nl)) in
+              | _ -> Anonymous, typ in
+            let aliastyp =
+              if List.for_all (Name.equal Anonymous) nl then None
+              else Some (Loc.tag (indsp,nl)) in
             n, aliastyp, Some typ
   in
   let constructs = Array.init (Array.length bl) (fun i -> (indsp,i+1)) in
@@ -386,13 +386,13 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
       if !Flags.raw_print then
         RegularStyle
       else if st == LetPatternStyle then
-	st
+        st
       else if PrintingLet.active indsp then
-	LetStyle
+        LetStyle
       else if PrintingIf.active indsp then
-	IfStyle
+        IfStyle
       else
-	st
+        st
     with Not_found -> st
   in
   match tag, aliastyp with
@@ -403,13 +403,13 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
   | IfStyle, None ->
       let bl' = Array.map detype bl in
       let nondepbrs =
-	Array.map3 (extract_nondep_branches testdep) bl bl' constagsl in
+        Array.map3 (extract_nondep_branches testdep) bl bl' constagsl in
       if Array.for_all ((!=) None) nondepbrs then
-	GIf (tomatch,(alias,pred),
+        GIf (tomatch,(alias,pred),
              Option.get nondepbrs.(0),Option.get nondepbrs.(1))
       else
-	let eqnl = detype_eqns constructs constagsl bl in
-	GCases (tag,pred,[tomatch,(alias,aliastyp)],eqnl)
+        let eqnl = detype_eqns constructs constagsl bl in
+        GCases (tag,pred,[tomatch,(alias,aliastyp)],eqnl)
   | _ ->
       let eqnl = detype_eqns constructs constagsl bl in
       GCases (tag,pred,[tomatch,(alias,aliastyp)],eqnl)
@@ -437,7 +437,7 @@ let detype_level sigma l =
   let l = Pp.string_of_ppcmds (Termops.pr_evd_level sigma l) in
   GType (Some (Loc.tag @@ Name.mk_name (Id.of_string_soft l)))
 
-let detype_instance sigma l = 
+let detype_instance sigma l =
   let l = EInstance.kind sigma l in
   if Univ.Instance.is_empty l then None
   else Some (List.map (detype_level sigma) (Array.to_list (Univ.Instance.to_array l)))
@@ -454,94 +454,94 @@ and detype_r d flags avoid env sigma t =
   match EConstr.kind sigma (collapse_appl sigma t) with
     | Rel n ->
       (try match lookup_name_of_rel n (fst env) with
-	 | Name id   -> GVar id
-	 | Anonymous -> GVar (!detype_anonymous n)
+         | Name id   -> GVar id
+         | Anonymous -> GVar (!detype_anonymous n)
        with Not_found ->
-	 let s = "_UNBOUND_REL_"^(string_of_int n)
-	 in GVar (Id.of_string s))
+         let s = "_UNBOUND_REL_"^(string_of_int n)
+         in GVar (Id.of_string s))
     | Meta n ->
-	(* Meta in constr are not user-parsable and are mapped to Evar *)
+        (* Meta in constr are not user-parsable and are mapped to Evar *)
         if n = Constr_matching.special_meta then
           (* Using a dash to be unparsable *)
-	  GEvar (Id.of_string_soft "CONTEXT-HOLE", [])
+          GEvar (Id.of_string_soft "CONTEXT-HOLE", [])
         else
-	  GEvar (Id.of_string_soft ("M" ^ string_of_int n), [])
+          GEvar (Id.of_string_soft ("M" ^ string_of_int n), [])
     | Var id ->
-	(try let _ = Global.lookup_named id in GRef (VarRef id, None)
-	 with Not_found -> GVar id)
+        (try let _ = Global.lookup_named id in GRef (VarRef id, None)
+         with Not_found -> GVar id)
     | Sort s -> GSort (detype_sort sigma (ESorts.kind sigma s))
     | Cast (c1,REVERTcast,c2) when not !Flags.raw_print ->
         DAst.get (detype d flags avoid env sigma c1)
     | Cast (c1,k,c2) ->
         let d1 = detype d flags avoid env sigma c1 in
-	let d2 = detype d flags avoid env sigma c2 in
+        let d2 = detype d flags avoid env sigma c2 in
     let cast = match k with
     | VMcast -> CastVM d2
     | NATIVEcast -> CastNative d2
     | _ -> CastConv d2
     in
-	GCast(d1,cast)
+        GCast(d1,cast)
     | Prod (na,ty,c) -> detype_binder d flags BProd avoid env sigma na None ty c
     | Lambda (na,ty,c) -> detype_binder d flags BLambda avoid env sigma na None ty c
     | LetIn (na,b,ty,c) -> detype_binder d flags BLetIn avoid env sigma na (Some b) ty c
     | App (f,args) ->
-      let mkapp f' args' = 
- 	match DAst.get f' with
- 	| GApp (f',args'') -> 
- 	  GApp (f',args''@args')
- 	| _ -> GApp (f',args')
+      let mkapp f' args' =
+        match DAst.get f' with
+        | GApp (f',args'') ->
+          GApp (f',args''@args')
+        | _ -> GApp (f',args')
       in
       mkapp (detype d flags avoid env sigma f)
         (Array.map_to_list (detype d flags avoid env sigma) args)
     | Const (sp,u) -> GRef (ConstRef sp, detype_instance sigma u)
     | Proj (p,c) ->
-      let noparams () = 
-	let pb = Environ.lookup_projection p (snd env) in
-	let pars = pb.Declarations.proj_npars in
-	let hole = DAst.make @@ GHole(Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None) in
-	let args = List.make pars hole in
- 	  GApp (DAst.make @@ GRef (ConstRef (Projection.constant p), None),
-		(args @ [detype d flags avoid env sigma c]))
+      let noparams () =
+        let pb = Environ.lookup_projection p (snd env) in
+        let pars = pb.Declarations.proj_npars in
+        let hole = DAst.make @@ GHole(Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None) in
+        let args = List.make pars hole in
+          GApp (DAst.make @@ GRef (ConstRef (Projection.constant p), None),
+                (args @ [detype d flags avoid env sigma c]))
       in
       if fst flags || !Flags.in_debugger || !Flags.in_toplevel then
-	try noparams ()
-	with _ ->
-	    (* lax mode, used by debug printers only *) 
-	  GApp (DAst.make @@ GRef (ConstRef (Projection.constant p), None), 
-		[detype d flags avoid env sigma c])
-      else 
-	if print_primproj_compatibility () && Projection.unfolded p then
-	  (** Print the compatibility match version *)
-	  let c' = 
-	    try 
-	      let pb = Environ.lookup_projection p (snd env) in
-	      let body = pb.Declarations.proj_body in
-	      let ty = Retyping.get_type_of (snd env) sigma c in
-	      let ((ind,u), args) = Inductiveops.find_mrectype (snd env) sigma ty in
-	      let body' = strip_lam_assum body in
-	      let u = EInstance.kind sigma u in
-	      let body' = CVars.subst_instance_constr u body' in
-	      let body' = EConstr.of_constr body' in
-		substl (c :: List.rev args) body'
-	    with Retyping.RetypeError _ | Not_found -> 
-	      anomaly (str"Cannot detype an unfolded primitive projection.")
-	  in DAst.get (detype d flags avoid env sigma c')
-	else
-	  if print_primproj_params () then
-	    try
-	      let c = Retyping.expand_projection (snd env) sigma p c [] in
+        try noparams ()
+        with _ ->
+            (* lax mode, used by debug printers only *)
+          GApp (DAst.make @@ GRef (ConstRef (Projection.constant p), None),
+                [detype d flags avoid env sigma c])
+      else
+        if print_primproj_compatibility () && Projection.unfolded p then
+          (** Print the compatibility match version *)
+          let c' =
+            try
+              let pb = Environ.lookup_projection p (snd env) in
+              let body = pb.Declarations.proj_body in
+              let ty = Retyping.get_type_of (snd env) sigma c in
+              let ((ind,u), args) = Inductiveops.find_mrectype (snd env) sigma ty in
+              let body' = strip_lam_assum body in
+              let u = EInstance.kind sigma u in
+              let body' = CVars.subst_instance_constr u body' in
+              let body' = EConstr.of_constr body' in
+                substl (c :: List.rev args) body'
+            with Retyping.RetypeError _ | Not_found ->
+              anomaly (str"Cannot detype an unfolded primitive projection.")
+          in DAst.get (detype d flags avoid env sigma c')
+        else
+          if print_primproj_params () then
+            try
+              let c = Retyping.expand_projection (snd env) sigma p c [] in
               DAst.get (detype d flags avoid env sigma c)
-	    with Retyping.RetypeError _ -> noparams ()
-	  else noparams ()
+            with Retyping.RetypeError _ -> noparams ()
+          else noparams ()
 
     | Evar (evk,cl) ->
         let bound_to_itself_or_letin decl c =
           match decl with
           | LocalDef _ -> true
           | LocalAssum (id,_) ->
-	     try let n = List.index Name.equal (Name id) (fst env) in
-	         isRelN sigma n c
-	     with Not_found -> isVarId sigma id c
+             try let n = List.index Name.equal (Name id) (fst env) in
+                 isRelN sigma n c
+             with Not_found -> isVarId sigma id c
         in
       let id,l =
         try
@@ -560,17 +560,17 @@ and detype_r d flags avoid env sigma t =
         GEvar (id,
                List.map (on_snd (detype d flags avoid env sigma)) l)
     | Ind (ind_sp,u) ->
-	GRef (IndRef ind_sp, detype_instance sigma u)
+        GRef (IndRef ind_sp, detype_instance sigma u)
     | Construct (cstr_sp,u) ->
-	GRef (ConstructRef cstr_sp, detype_instance sigma u)
+        GRef (ConstructRef cstr_sp, detype_instance sigma u)
     | Case (ci,p,c,bl) ->
-	let comp = computable sigma p (List.length (ci.ci_pp_info.ind_tags)) in
-	detype_case comp (detype d flags avoid env sigma)
-	  (detype_eqns d flags avoid env sigma ci comp)
-	  (is_nondep_branch sigma) avoid
-	  (ci.ci_ind,ci.ci_pp_info.style,
-	   ci.ci_pp_info.cstr_tags,ci.ci_pp_info.ind_tags)
-	  (Some p) c bl
+        let comp = computable sigma p (List.length (ci.ci_pp_info.ind_tags)) in
+        detype_case comp (detype d flags avoid env sigma)
+          (detype_eqns d flags avoid env sigma ci comp)
+          (is_nondep_branch sigma) avoid
+          (ci.ci_ind,ci.ci_pp_info.style,
+           ci.ci_pp_info.cstr_tags,ci.ci_pp_info.ind_tags)
+          (Some p) c bl
     | Fix (nvn,recdef) -> detype_fix d flags avoid env sigma nvn recdef
     | CoFix (n,recdef) -> detype_cofix d flags avoid env sigma n recdef
 
@@ -578,8 +578,8 @@ and detype_fix d flags avoid env sigma (vn,_ as nvn) (names,tys,bodies) =
   let def_avoid, def_env, lfi =
     Array.fold_left2
       (fun (avoid, env, l) na ty ->
-	 let id = next_name_away na avoid in
-	 (Id.Set.add id avoid, add_name (Name id) None ty env, id::l))
+         let id = next_name_away na avoid in
+         (Id.Set.add id avoid, add_name (Name id) None ty env, id::l))
       (avoid, env, []) names tys in
   let n = Array.length tys in
   let v = Array.map3
@@ -594,8 +594,8 @@ and detype_cofix d flags avoid env sigma n (names,tys,bodies) =
   let def_avoid, def_env, lfi =
     Array.fold_left2
       (fun (avoid, env, l) na ty ->
-	 let id = next_name_away na avoid in
-	 (Id.Set.add id avoid, add_name (Name id) None ty env, id::l))
+         let id = next_name_away na avoid in
+         (Id.Set.add id avoid, add_name (Name id) None ty env, id::l))
       (avoid, env, []) names tys in
   let ntys = Array.length tys in
   let v = Array.map2
@@ -615,23 +615,23 @@ and share_names d flags n l avoid env sigma c t =
           | _, Name _ -> na'
           | _ -> na in
         let t' = detype d flags avoid env sigma t in
-	let id = next_name_away na avoid in
+        let id = next_name_away na avoid in
         let avoid = Id.Set.add id avoid and env = add_name (Name id) None t env in
         share_names d flags (n-1) ((Name id,Explicit,None,t')::l) avoid env sigma c c'
     (* May occur for fix built interactively *)
     | LetIn (na,b,t',c), _ when n > 0 ->
         let t'' = detype d flags avoid env sigma t' in
         let b' = detype d flags avoid env sigma b in
-	let id = next_name_away na avoid in
+        let id = next_name_away na avoid in
         let avoid = Id.Set. add id avoid and env = add_name (Name id) (Some b) t' env in
         share_names d flags n ((Name id,Explicit,Some b',t'')::l) avoid env sigma c (lift 1 t)
     (* Only if built with the f/n notation or w/o let-expansion in types *)
     | _, LetIn (_,b,_,t) when n > 0 ->
-	share_names d flags n l avoid env sigma c (subst1 b t)
+        share_names d flags n l avoid env sigma c (subst1 b t)
     (* If it is an open proof: we cheat and eta-expand *)
     | _, Prod (na',t',c') when n > 0 ->
         let t'' = detype d flags avoid env sigma t' in
-	let id = next_name_away na' avoid in
+        let id = next_name_away na' avoid in
         let avoid = Id.Set.add id avoid and env = add_name (Name id) None t' env in
         let appc = mkApp (lift 1 c,[|mkRel 1|]) in
         share_names d flags (n-1) ((Name id,Explicit,None,t'')::l) avoid env sigma appc c'
@@ -668,28 +668,28 @@ and detype_eqn d (lax,isgoal as flags) avoid env sigma constr construct_nargs br
          [DAst.make @@ PatCstr(constr, List.rev patlist,Anonymous)],
          detype d flags avoid env sigma b)
       | Lambda (x,t,b), false::l ->
-	    let pat,new_avoid,new_env,new_ids = make_pat x avoid env b None t ids in
+            let pat,new_avoid,new_env,new_ids = make_pat x avoid env b None t ids in
             buildrec new_ids (pat::patlist) new_avoid new_env l b
 
       | LetIn (x,b,t,b'), true::l ->
-	    let pat,new_avoid,new_env,new_ids = make_pat x avoid env b' (Some b) t ids in
+            let pat,new_avoid,new_env,new_ids = make_pat x avoid env b' (Some b) t ids in
             buildrec new_ids (pat::patlist) new_avoid new_env l b'
 
       | Cast (c,_,_), l ->    (* Oui, il y a parfois des cast *)
-	    buildrec ids patlist avoid env l c
+            buildrec ids patlist avoid env l c
 
       | _, true::l ->
-	    let pat = DAst.make @@ PatVar Anonymous in
+            let pat = DAst.make @@ PatVar Anonymous in
             buildrec ids (pat::patlist) avoid env l b
 
       | _, false::l ->
             (* eta-expansion : n'arrivera plus lorsque tous les
                termes seront construits à partir de la syntaxe Cases *)
             (* nommage de la nouvelle variable *)
-	    let new_b = applist (lift 1 b, [mkRel 1]) in
+            let new_b = applist (lift 1 b, [mkRel 1]) in
             let pat,new_avoid,new_env,new_ids =
-	      make_pat Anonymous avoid env new_b None mkProp ids in
-	    buildrec new_ids (pat::patlist) new_avoid new_env l new_b
+              make_pat Anonymous avoid env new_b None mkProp ids in
+            buildrec new_ids (pat::patlist) new_avoid new_env l new_b
 
   in
   buildrec Id.Set.empty [] avoid env construct_nargs branch
@@ -719,25 +719,25 @@ let detype_rel_context d ?(lax=false) where avoid env sigma sign =
       let na = get_name decl in
       let t = get_type decl in
       let na',avoid' =
-	match where with
-	| None -> na,avoid
-	| Some c ->
-	    if is_local_def decl then
-	      compute_displayed_let_name_in sigma
+        match where with
+        | None -> na,avoid
+        | Some c ->
+            if is_local_def decl then
+              compute_displayed_let_name_in sigma
                 (RenamingElsewhereFor (fst env,c)) avoid na c
-	    else
-	      compute_displayed_name_in sigma
+            else
+              compute_displayed_name_in sigma
                 (RenamingElsewhereFor (fst env,c)) avoid na c in
       let b = match decl with
-	      | LocalAssum _ -> None
-	      | LocalDef (_,b,_) -> Some b
+              | LocalAssum _ -> None
+              | LocalDef (_,b,_) -> Some b
       in
       let b' = Option.map (detype d (lax,false) avoid env sigma) b in
       let t' = detype d (lax,false) avoid env sigma t in
       (na',Explicit,b',t') :: aux avoid' (add_name na' b t env) rest
   in aux avoid env (List.rev sign)
 
-let detype_names isgoal avoid nenv env sigma t = 
+let detype_names isgoal avoid nenv env sigma t =
   detype Now (false,isgoal) avoid (nenv,env) sigma t
 let detype d ?(lax=false) isgoal avoid env sigma t =
   detype d (lax,isgoal) avoid (names_of_rel_context env, env) sigma t
@@ -813,8 +813,8 @@ let rec subst_cases_pattern subst = DAst.map (function
   | PatCstr (((kn,i),j),cpl,n) as pat ->
       let kn' = subst_mind subst kn
       and cpl' = List.smartmap (subst_cases_pattern subst) cpl in
-	if kn' == kn && cpl' == cpl then pat else
-	  PatCstr (((kn',i),j),cpl',n)
+        if kn' == kn && cpl' == cpl then pat else
+          PatCstr (((kn',i),j),cpl',n)
   )
 
 let (f_subst_genarg, subst_genarg_hook) = Hook.make ()
@@ -822,7 +822,7 @@ let (f_subst_genarg, subst_genarg_hook) = Hook.make ()
 let rec subst_glob_constr subst = DAst.map (function
   | GRef (ref,u) as raw ->
       let ref',t = subst_global subst ref in
-	if ref' == ref then raw else
+        if ref' == ref then raw else
          DAst.get (detype Now false Id.Set.empty (Global.env()) Evd.empty (EConstr.of_constr t))
 
   | GSort _
@@ -833,25 +833,25 @@ let rec subst_glob_constr subst = DAst.map (function
   | GApp (r,rl) as raw ->
       let r' = subst_glob_constr subst r
       and rl' = List.smartmap (subst_glob_constr subst) rl in
-	if r' == r && rl' == rl then raw else
-	  GApp(r',rl')
+        if r' == r && rl' == rl then raw else
+          GApp(r',rl')
 
   | GLambda (n,bk,r1,r2) as raw ->
       let r1' = subst_glob_constr subst r1 and r2' = subst_glob_constr subst r2 in
-	if r1' == r1 && r2' == r2 then raw else
-	  GLambda (n,bk,r1',r2')
+        if r1' == r1 && r2' == r2 then raw else
+          GLambda (n,bk,r1',r2')
 
   | GProd (n,bk,r1,r2) as raw ->
       let r1' = subst_glob_constr subst r1 and r2' = subst_glob_constr subst r2 in
-	if r1' == r1 && r2' == r2 then raw else
-	  GProd (n,bk,r1',r2')
+        if r1' == r1 && r2' == r2 then raw else
+          GProd (n,bk,r1',r2')
 
   | GLetIn (n,r1,t,r2) as raw ->
       let r1' = subst_glob_constr subst r1 in
       let r2' = subst_glob_constr subst r2 in
       let t' = Option.smartmap (subst_glob_constr subst) t in
-	if r1' == r1 && t == t' && r2' == r2 then raw else
-	  GLetIn (n,r1',t',r2')
+        if r1' == r1 && t == t' && r2' == r2 then raw else
+          GLetIn (n,r1',t',r2')
 
   | GCases (sty,rtno,rl,branches) as raw ->
       let rtno' = Option.smartmap (subst_glob_constr subst) rtno
@@ -864,22 +864,22 @@ let rec subst_glob_constr subst = DAst.map (function
             if sp == sp' then t else (loc,((sp',i),y))) topt in
         if a == a' && topt == topt' then y else (a',(n,topt'))) rl
       and branches' = List.smartmap
-			(fun (loc,(idl,cpl,r) as branch) ->
-			   let cpl' =
-			     List.smartmap (subst_cases_pattern subst) cpl
-			   and r' = subst_glob_constr subst r in
-			     if cpl' == cpl && r' == r then branch else
-			       (loc,(idl,cpl',r')))
-			branches
+                        (fun (loc,(idl,cpl,r) as branch) ->
+                           let cpl' =
+                             List.smartmap (subst_cases_pattern subst) cpl
+                           and r' = subst_glob_constr subst r in
+                             if cpl' == cpl && r' == r then branch else
+                               (loc,(idl,cpl',r')))
+                        branches
       in
-	if rtno' == rtno && rl' == rl && branches' == branches then raw else
-	  GCases (sty,rtno',rl',branches')
+        if rtno' == rtno && rl' == rl && branches' == branches then raw else
+          GCases (sty,rtno',rl',branches')
 
   | GLetTuple (nal,(na,po),b,c) as raw ->
       let po' = Option.smartmap (subst_glob_constr subst) po
       and b' = subst_glob_constr subst b
       and c' = subst_glob_constr subst c in
-	if po' == po && b' == b && c' == c then raw else
+        if po' == po && b' == b && c' == c then raw else
           GLetTuple (nal,(na,po'),b',c')
 
   | GIf (c,(na,po),b1,b2) as raw ->
@@ -887,7 +887,7 @@ let rec subst_glob_constr subst = DAst.map (function
       and b1' = subst_glob_constr subst b1
       and b2' = subst_glob_constr subst b2
       and c' = subst_glob_constr subst c in
-	if c' == c && po' == po && b1' == b1 && b2' == b2 then raw else
+        if c' == c && po' == po && b1' == b1 && b2' == b2 then raw else
           GIf (c',(na,po'),b1',b2')
 
   | GRec (fix,ida,bl,ra1,ra2) as raw ->
@@ -899,8 +899,8 @@ let rec subst_glob_constr subst = DAst.map (function
           let obd' = Option.smartmap (subst_glob_constr subst) obd in
           if ty'==ty && obd'==obd then dcl else (na,k,obd',ty')))
         bl in
-	if ra1' == ra1 && ra2' == ra2 && bl'==bl then raw else
-	  GRec (fix,ida,bl',ra1',ra2')
+        if ra1' == ra1 && ra2' == ra2 && bl'==bl then raw else
+          GRec (fix,ida,bl',ra1',ra2')
 
   | GHole (knd, naming, solve) as raw ->
     let nknd = match knd with

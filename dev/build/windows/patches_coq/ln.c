@@ -32,7 +32,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
     BOOL folder;
     const _TCHAR *target;
     const _TCHAR *link;
-    LPTSTR lpCmdLine; 
+    LPTSTR lpCmdLine;
     int argc;
     LPTSTR *argv;
 
@@ -42,7 +42,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
     // 2.) We want to make sure that CommandLineToArgv is used
     lpCmdLine = GetCommandLine();
     argv = CommandLineToArgv( lpCmdLine, &argc );
-    
+
     // Get target and link name
     if( argc<3 )
     {
@@ -57,7 +57,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
     // All other arguments must be -s or -f os multi letter options like -sf
     for(iarg=1; iarg<argc-2; iarg++ )
     {
-        const _TCHAR *pos = argv[iarg]; 
+        const _TCHAR *pos = argv[iarg];
         if( *pos != _T('-') )
         {
             _ftprintf( stderr, _T("Command line option expected in argument %d\n"), iarg );
@@ -71,18 +71,18 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
             {
                 case _T('s') : symbolic = TRUE; break;
                 case _T('f') : force = TRUE; break;
-                default : 
+                default :
                     _ftprintf( stderr, _T("Unknown option '%c'\n"), *pos );
                     return 1;
             }
             pos ++;
         }
     }
-    
+
     #ifdef IGNORE_SYMBOLIC
         symbolic = FALSE;
     #endif
-    
+
     // Check if link already exists - delete it if force is given or abort
     {
         if( GetFileAttributes(link) != INVALID_FILE_ATTRIBUTES )
@@ -102,10 +102,10 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
             }
         }
     }
-    
+
     // Check if target is a folder
     folder = ( (GetFileAttributes(target) & FILE_ATTRIBUTE_DIRECTORY) ) != 0;
-    
+
     // Create link
     if(symbolic)
     {
@@ -131,7 +131,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
             }
         }
     }
-    
+
     // Everything is fine
     return 0;
 }

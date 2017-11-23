@@ -1,10 +1,10 @@
-Inductive T : Type :=                                                                                        
-| Var : nat -> T                                                                                                 
-| Arr : T -> T -> T.                                                                                             
+Inductive T : Type :=
+| Var : nat -> T
+| Arr : T -> T -> T.
 
-Inductive Tele : list T -> Type :=                                                                               
-| Tnil  : @Tele nil                                                                                              
-| Tcons : forall ls, forall (t : @Tele ls) (l : T), @Tele (l :: ls). 
+Inductive Tele : list T -> Type :=
+| Tnil  : @Tele nil
+| Tcons : forall ls, forall (t : @Tele ls) (l : T), @Tele (l :: ls).
 
 Fail Fixpoint TeleD (ls : list T) (t : Tele ls) {struct t}
    : { x : Type & x -> nat -> Type } :=

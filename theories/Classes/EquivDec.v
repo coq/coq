@@ -53,7 +53,7 @@ Local Open Scope program_scope.
 
 (** Invert the branches. *)
 
-Program Definition nequiv_dec `{EqDec A} (x y : A) : { x =/= y } + { x === y } := 
+Program Definition nequiv_dec `{EqDec A} (x y : A) : { x =/= y } + { x === y } :=
           swap_sumbool (x == y).
 
 
@@ -142,5 +142,5 @@ Program Instance list_eqdec `(eqa : EqDec A eq) : ! EqDec (list A) eq :=
 
   Next Obligation. destruct y ; unfold not in *; eauto. Defined.
 
-  Solve Obligations with unfold equiv, complement in * ; 
+  Solve Obligations with unfold equiv, complement in * ;
     program_simpl ; intuition (discriminate || eauto).

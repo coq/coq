@@ -110,7 +110,7 @@ Proof.
  intros x x' Hx y y' Hy.
  assert (H1 := max_spec x y). assert (H2 := max_spec x' y').
  set (m := max x y) in *; set (m' := max x' y') in *; clearbody m m'.
- rewrite <- Hx, <- Hy in *. 
+ rewrite <- Hx, <- Hy in *.
  destruct (lt_total x y); intuition order.
 Qed.
 

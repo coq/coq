@@ -6,7 +6,7 @@ Inductive p : Prop := consp : forall (e : r) (x : type e), cond e x -> p.
 
 Goal p.
 Fail apply consp with (fun _ : bool => mk_r unit (fun x => True)) nil.
- 
+
 (* A simplification of an example from coquelicot, which was failing
    at some time after a fix #4782 was committed. *)
 
@@ -21,4 +21,4 @@ Set Typeclasses Debug.
 Goal forall (A:T) (x:dom A), pairT A A = pairT A A.
 intros.
 apply (F _ _)  with (x,x).
-  
+

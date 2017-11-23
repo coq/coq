@@ -38,7 +38,7 @@ Ltac xpsatz dom d :=
     (sos_Z Lia.zchecker) || (psatz_Z d  Lia.zchecker)
   | R =>
     (sos_R Lra.rchecker) || (psatz_R d Lra.rchecker)
-  | Q => (sos_Q Lqa.rchecker) || (psatz_Q d Lqa.rchecker) 
+  | Q => (sos_Q Lqa.rchecker) || (psatz_Q d Lqa.rchecker)
   | _ => fail "Unsupported domain"
   end in tac.
 
@@ -54,11 +54,11 @@ Ltac psatzl dom :=
   end in tac.
 
 
-Ltac lra := 
+Ltac lra :=
   first [ psatzl R | psatzl Q ].
 
-Ltac nra := 
-  first [ Lra.nra | Lqa.nra ].  
+Ltac nra :=
+  first [ Lra.nra | Lqa.nra ].
 
 
 (* Local Variables: *)

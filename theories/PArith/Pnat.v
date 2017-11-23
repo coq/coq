@@ -196,7 +196,7 @@ Theorem inj_iter :
 Proof.
  induction p using peano_ind.
  - trivial.
- - intros. rewrite inj_succ, iter_succ. 
+ - intros. rewrite inj_succ, iter_succ.
   simpl. f_equal. apply IHp.
 Qed.
 

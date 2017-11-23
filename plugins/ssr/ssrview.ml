@@ -44,7 +44,7 @@ let cache_viewhint (_, (i, lvh)) =
 let subst_viewhint ( subst, (i, lvh as ilvh)) =
   let lvh' = List.smartmap (Detyping.subst_glob_constr subst) lvh in
   if lvh' == lvh then ilvh else i, lvh'
-      
+
 let classify_viewhint x = Libobject.Substitute x
 
 let in_viewhint =
@@ -111,7 +111,7 @@ let pfa_with_view ist ?(next=ref []) (prune, view) cl c conclude clr gl =
   let env, sigma, si =
     without_ctx pf_env gl, Refiner.project gl, without_ctx sig_it gl in
   with_view
-    ist ~next si env gl c (constr_name sigma c) cl prune conclude clr (sigma, c) view 
+    ist ~next si env gl c (constr_name sigma c) cl prune conclude clr (sigma, c) view
 
 let pf_with_view_linear ist gl v cl c =
   let x,y,gl =

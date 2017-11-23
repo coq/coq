@@ -19,7 +19,7 @@ open Stdarg
 open Tacarg
 open Extraargs
 
-let (set_default_tactic, get_default_tactic, print_default_tactic) = 
+let (set_default_tactic, get_default_tactic, print_default_tactic) =
   Tactic_option.declare_tactic_option "Program tactic"
 
 let () =
@@ -68,7 +68,7 @@ GEXTEND Gram
 
   Constr.closed_binder:
     [[ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" ->
-	  let typ = mkAppC (sigref, [mkLambdaC ([id], default_binder_kind, t, c)]) in
+          let typ = mkAppC (sigref, [mkLambdaC ([id], default_binder_kind, t, c)]) in
           [CLocalAssum ([id], default_binder_kind, typ)]
     ] ];
 

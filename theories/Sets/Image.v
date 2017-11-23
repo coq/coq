@@ -13,11 +13,11 @@
 (*              Rocquencourt                        Sophia-Antipolis        *)
 (*                                                                          *)
 (*                                 Coq V6.1                                 *)
-(*									    *)
-(*			         Gilles Kahn 				    *)
-(*				 Gerard Huet				    *)
-(*									    *)
-(*									    *)
+(*                                                                          *)
+(*                               Gilles Kahn                                *)
+(*                               Gerard Huet                                *)
+(*                                                                          *)
+(*                                                                          *)
 (*                                                                          *)
 (* Acknowledgments: This work was started in July 1993 by F. Prost. Thanks  *)
 (* to the Newton Institute for providing an exceptional work environment    *)
@@ -191,8 +191,8 @@ Section Image.
     forall (A:Ensemble U) (f:U -> V) (n:nat),
       cardinal _ A n ->
       forall n':nat,
-	cardinal _ (Im A f) n' ->
-	n' < n ->  exists x : _, (exists y : _, f x = f y /\ x <> y).
+        cardinal _ (Im A f) n' ->
+        n' < n ->  exists x : _, (exists y : _, f x = f y /\ x <> y).
   Proof.
     intros; apply not_injective_elim.
     apply Pigeonhole with A n n'; trivial with sets.

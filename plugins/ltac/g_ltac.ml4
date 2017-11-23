@@ -41,7 +41,7 @@ let in_tac tac = in_gen (rawwit Tacarg.wit_ltac) tac
 let reference_to_id = function
   | Libnames.Ident (loc, id) -> (loc, id)
   | Libnames.Qualid (loc,_) ->
-      CErrors.user_err ?loc 
+      CErrors.user_err ?loc
        (str "This expression should be a simple identifier.")
 
 let tactic_mode = Gram.entry_create "vernac:tactic_command"
@@ -71,8 +71,8 @@ let test_bracket_ident =
         | KEYWORD "[" ->
             (match stream_nth 1 strm with
               | IDENT _ -> ()
-	      | _ -> raise Stream.Failure)
-	| _ -> raise Stream.Failure)
+              | _ -> raise Stream.Failure)
+        | _ -> raise Stream.Failure)
 
 (* Tactics grammar rules *)
 
@@ -114,11 +114,11 @@ GEXTEND Gram
       [ ta0 = tactic_expr; ";"; ta1 = binder_tactic -> TacThen (ta0, ta1)
       | ta0 = tactic_expr; ";"; ta1 = tactic_expr -> TacThen (ta0,ta1)
       | ta0 = tactic_expr; ";"; l = tactic_then_locality; (first,tail) = tactic_then_gen; "]" ->
-	  match l , tail with
+          match l , tail with
           | false , Some (t,last) -> TacThen (ta0,TacExtendTac (Array.of_list first, t, last))
-	  | true  , Some (t,last) -> TacThens3parts (ta0, Array.of_list first, t, last)
+          | true  , Some (t,last) -> TacThens3parts (ta0, Array.of_list first, t, last)
           | false , None -> TacThen (ta0,TacDispatch first)
-	  | true  , None -> TacThens (ta0,first) ]
+          | true  , None -> TacThens (ta0,first) ]
     | "3" RIGHTA
       [ IDENT "try"; ta = tactic_expr -> TacTry ta
       | IDENT "do"; n = int_or_var; ta = tactic_expr -> TacDo (n,ta)
@@ -137,7 +137,7 @@ GEXTEND Gram
 (*End of To do*)
     | "2" RIGHTA
       [ ta0 = tactic_expr; "+"; ta1 = binder_tactic -> TacOr (ta0,ta1)
-      | ta0 = tactic_expr; "+"; ta1 = tactic_expr -> TacOr (ta0,ta1) 
+      | ta0 = tactic_expr; "+"; ta1 = tactic_expr -> TacOr (ta0,ta1)
       | IDENT "tryif" ; ta = tactic_expr ;
               "then" ; tat = tactic_expr ;
               "else" ; tae = tactic_expr -> TacIfThenCatch(ta,tat,tae)
@@ -149,15 +149,15 @@ GEXTEND Gram
       | b = match_key; IDENT "reverse"; IDENT "goal"; "with";
         mrl = match_context_list; "end" ->
           TacMatchGoal (b,true,mrl)
-      |	b = match_key; c = tactic_expr; "with"; mrl = match_list; "end" ->
+      | b = match_key; c = tactic_expr; "with"; mrl = match_list; "end" ->
           TacMatch (b,c,mrl)
       | IDENT "first" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
-	  TacFirst l
+          TacFirst l
       | IDENT "solve" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
-	  TacSolve l
+          TacSolve l
       | IDENT "idtac"; l = LIST0 message_token -> TacId l
       | g=failkw; n = [ n = int_or_var -> n | -> fail_default_value ];
-	  l = LIST0 message_token -> TacFail (g,n,l)
+          l = LIST0 message_token -> TacFail (g,n,l)
       | st = simple_tactic -> st
       | a = tactic_arg -> TacArg(Loc.tag ~loc:!@loc a)
       | r = reference; la = LIST0 tactic_arg_compat ->
@@ -203,7 +203,7 @@ GEXTEND Gram
      verbose most of the time. *)
   fresh_id:
     [ [ s = STRING -> ArgArg s (*| id = ident -> ArgVar (!@loc,id)*)
-	| qid = qualid -> let (_pth,id) = Libnames.repr_qualid (snd qid) in ArgVar (Loc.tag ~loc:!@loc id) ] ]
+        | qid = qualid -> let (_pth,id) = Libnames.repr_qualid (snd qid) in ArgVar (Loc.tag ~loc:!@loc id) ] ]
   ;
   constr_eval:
     [ [ IDENT "eval"; rtc = red_expr; "in"; c = Constr.constr ->
@@ -254,13 +254,13 @@ GEXTEND Gram
     [ [ na = name; ":"; mp =  match_pattern -> Hyp (na, mp)
       | na = name; ":="; "["; mpv = match_pattern; "]"; ":"; mpt = match_pattern -> Def (na, mpv, mpt)
       | na = name; ":="; mpv = match_pattern ->
-	  let t, ty =
-	    match mpv with
-	    | Term t -> (match t with
-	      | { CAst.v = CCast (t, (CastConv ty | CastVM ty | CastNative ty)) } -> Term t, Some (Term ty)
-	      | _ -> mpv, None)
-	    | _ -> mpv, None
-	  in Def (na, t, Option.default (Term (CAst.make @@ CHole (None, IntroAnonymous, None))) ty)
+          let t, ty =
+            match mpv with
+            | Term t -> (match t with
+              | { CAst.v = CCast (t, (CastConv ty | CastVM ty | CastNative ty)) } -> Term t, Some (Term ty)
+              | _ -> mpv, None)
+            | _ -> mpv, None
+          in Def (na, t, Option.default (Term (CAst.make @@ CHole (None, IntroAnonymous, None))) ty)
     ] ]
   ;
   match_context_rule:
@@ -340,7 +340,7 @@ GEXTEND Gram
     [ [ g = OPT toplevel_selector; tac = G_vernac.query_command -> tac g ] ]
   ;
   command:
-    [ [ IDENT "Proof"; "with"; ta = Pltac.tactic; 
+    [ [ IDENT "Proof"; "with"; ta = Pltac.tactic;
         l = OPT [ "using"; l = G_vernac.section_subset_expr -> l ] ->
           Vernacexpr.VernacProof (Some (in_tac ta), l)
       | IDENT "Proof"; "using"; l = G_vernac.section_subset_expr;

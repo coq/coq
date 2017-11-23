@@ -166,15 +166,15 @@ Defaults to a regexp ignoring all inputs of 0, 1, or 2 letters."
 (defun coq-args-to-list (string)
   (let ((where (string-match "[ \t]" string)))
     (cond ((null where) (list string))
-	  ((not (= where 0))
-	   (cons (substring string 0 where)
-		 (coq-args-to-list (substring string (+ 1 where)
-						 (length string)))))
-	  (t (let ((pos (string-match "[^ \t]" string)))
-	       (if (null pos)
-		   nil
-		 (coq-args-to-list (substring string pos
-						 (length string)))))))))
+          ((not (= where 0))
+           (cons (substring string 0 where)
+                 (coq-args-to-list (substring string (+ 1 where)
+                                                 (length string)))))
+          (t (let ((pos (string-match "[^ \t]" string)))
+               (if (null pos)
+                   nil
+                 (coq-args-to-list (substring string pos
+                                                 (length string)))))))))
 
 ;;;###autoload
 (defun run-coq (cmd)
@@ -186,13 +186,13 @@ of `coq-program-name').  Runs the hooks `inferior-coq-mode-hook'
 \(Type \\[describe-mode] in the process buffer for a list of commands.)"
 
   (interactive (list (if current-prefix-arg
-			 (read-string "Run Coq: " coq-program-name)
-			 coq-program-name)))
+                         (read-string "Run Coq: " coq-program-name)
+                         coq-program-name)))
   (if (not (comint-check-proc "*coq*"))
       (let ((cmdlist (coq-args-to-list cmd)))
-	(set-buffer (apply 'make-comint "coq" (car cmdlist)
-			   nil (cdr cmdlist)))
-	(inferior-coq-mode)))
+        (set-buffer (apply 'make-comint "coq" (car cmdlist)
+                           nil (cdr cmdlist)))
+        (inferior-coq-mode)))
   (setq coq-program-name cmd)
   (setq coq-buffer "*coq*")
   (switch-to-buffer "*coq*"))
@@ -208,13 +208,13 @@ of `coq-program-name').  Runs the hooks `inferior-coq-mode-hook'
 \(Type \\[describe-mode] in the process buffer for a list of commands.)"
 
   (interactive (list (if current-prefix-arg
-			 (read-string "Run Coq: " coq-program-name)
-			 coq-program-name)))
+                         (read-string "Run Coq: " coq-program-name)
+                         coq-program-name)))
   (if (not (comint-check-proc "*coq*"))
       (let ((cmdlist (coq-args-to-list cmd)))
-	(set-buffer (apply 'make-comint "coq" (car cmdlist)
-			   nil (cdr cmdlist)))
-	(inferior-coq-mode)))
+        (set-buffer (apply 'make-comint "coq" (car cmdlist)
+                           nil (cdr cmdlist)))
+        (inferior-coq-mode)))
   (setq coq-program-name cmd)
   (setq coq-buffer "*coq*")
   (pop-to-buffer "*coq*"))
@@ -229,13 +229,13 @@ of `coq-program-name').  Runs the hooks `inferior-coq-mode-hook'
 \(Type \\[describe-mode] in the process buffer for a list of commands.)"
 
   (interactive (list (if current-prefix-arg
-			 (read-string "Run Coq: " coq-program-name)
-			 coq-program-name)))
+                         (read-string "Run Coq: " coq-program-name)
+                         coq-program-name)))
   (if (not (comint-check-proc "*coq*"))
       (let ((cmdlist (coq-args-to-list cmd)))
-	(set-buffer (apply 'make-comint "coq" (car cmdlist)
-			   nil (cdr cmdlist)))
-	(inferior-coq-mode)))
+        (set-buffer (apply 'make-comint "coq" (car cmdlist)
+                           nil (cdr cmdlist)))
+        (inferior-coq-mode)))
   (setq coq-program-name cmd)
   (setq coq-buffer "*coq*")
   (switch-to-buffer-other-frame "*coq*"))
@@ -248,8 +248,8 @@ With argument, position cursor at end of buffer."
       (pop-to-buffer coq-buffer)
       (error "No current process buffer.  See variable `coq-buffer'"))
   (cond (eob-p
-	 (push-mark)
-	 (goto-char (point-max)))))
+         (push-mark)
+         (goto-char (point-max)))))
 
 (defun coq-send-region (start end)
   "Send the current region to the inferior Coq process."
@@ -287,9 +287,9 @@ With argument, position cursor at end of buffer."
   "Run the commmand \"Check\" on the current region."
   (interactive "r")
   (comint-proc-query (coq-proc)
-		     (concat "Check "
-			     (buffer-substring start end)
-			     ".\n")))
+                     (concat "Check "
+                             (buffer-substring start end)
+                             ".\n")))
 
 (defun coq-send-show ()
   "Send the command \"Show.\" to the inferior Coq process."
@@ -308,17 +308,17 @@ With argument, position cursor at end of buffer."
 (defun coq-proc ()
   "Return the current coq process.  See variable `coq-buffer'."
   (let ((proc (get-buffer-process (if (eq major-mode 'inferior-coq-mode)
-				      (current-buffer)
-				      coq-buffer))))
+                                      (current-buffer)
+                                      coq-buffer))))
     (or proc
-	(error "No current process.  See variable `coq-buffer'"))))
+        (error "No current process.  See variable `coq-buffer'"))))
 
 (defcustom inferior-coq-load-hook nil
   "This hook is run when inferior-coq is loaded in.
 This is a good place to put keybindings."
   :type 'hook
   :group 'inferior-coq)
-	
+
 (run-hooks 'inferior-coq-load-hook)
 
 (provide 'inferior-coq)

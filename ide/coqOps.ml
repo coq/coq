@@ -289,7 +289,7 @@ object(self)
               List.exists (fun m ->
                 Gobject.get_oid m =
                 Gobject.get_oid (buffer#get_mark s.start)) marks in
-            try Doc.find document mem_marks 
+            try Doc.find document mem_marks
             with Not_found -> aux iter#backward_char in
         aux iter in
       let ss =
@@ -302,7 +302,7 @@ object(self)
       script#misc#set_tooltip_text ""; script#misc#set_has_tooltip true
     end;
     false
-    
+
   method destroy () =
     feedback_timer.Ideutils.kill ()
 
@@ -332,7 +332,7 @@ object(self)
 
   method private get_start_of_input =
     buffer#get_iter_at_mark (`NAME "start_of_input")
-  
+
   method private get_end_of_input =
     buffer#get_iter_at_mark (`NAME "stop_of_input")
 
@@ -710,7 +710,7 @@ object(self)
   method private find_id until =
     try
       Doc.find_id document (fun id { start;stop } -> until (Some id) start stop)
-    with Not_found -> initial_state, Doc.focused document 
+    with Not_found -> initial_state, Doc.focused document
 
   method private cleanup seg =
     if seg <> [] then begin
@@ -771,7 +771,7 @@ object(self)
                  (Doc.focused document && Doc.is_in_focus document safe_id))
     in
       undo to_id unfocus_needed)
-  
+
   method private backtrack_until ?move_insert until =
     self#backtrack_to_id ?move_insert (self#find_id until)
 
@@ -795,7 +795,7 @@ object(self)
 
   method backtrack_last_phrase =
     messages#clear;
-    try 
+    try
       let tgt = Doc.before_tip document in
       self#backtrack_to_id tgt
     with Not_found -> Coq.return (Coq.reset_coqtop _ct)

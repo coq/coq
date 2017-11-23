@@ -607,7 +607,7 @@ val get_id_for_feedback : unit -> edit_or_state_id * route_id
   for constructing compound entries still works over this scheme. Note that in
   the case of (`VERNAC`) `ARGUMENT EXTEND`, the name of the argument entry is bound
   in the parsing rules, so beware of recursive calls.
-  
+
   For example, to get `wit_constr` you must `open Constrarg` at the top of the file.
 
 - `Evarutil` was split in two parts. The new `Evardefine` file exposes functions
@@ -641,9 +641,9 @@ val get_id_for_feedback : unit -> edit_or_state_id * route_id
   let Sigma (xn, sigma, pn) = ... in
   Sigma (ans, sigma, p1 +> ... +> pn)
   ```
-  
+
   Examples of `Sigma.Unsafe.of_evar_map` include:
-  
+
   ```
   Evarutil.new_evar env (Tacmach.project goal) ty   ----> Evarutil.new_evar env (Sigma.Unsafe.of_evar_map (Tacmach.project goal)) ty
   ```
@@ -662,7 +662,7 @@ val get_id_for_feedback : unit -> edit_or_state_id * route_id
 
   Proofview.Goal.enter { enter = begin fun gl -> ... end }
   ```
-  
+
 - `Tacexpr.TacDynamic(Loc.dummy_loc, Pretyping.constr_in c)`      ---> `Tacinterp.Value.of_constr c`
 - `Vernacexpr.HintsResolveEntry(priority, poly, hnf, path, atom)` ---> `Vernacexpr.HintsResolveEntry(Vernacexpr.({hint_priority = priority; hint_pattern = None}), poly, hnf, path, atom)`
 - `Pretyping.Termops.mem_named_context`                           ---> `Engine.Termops.mem_named_context_val`
@@ -909,7 +909,7 @@ extend_dirpath -> add_dirpath_suffix
 qualid_of_sp -> qualid_of_path
 pr_sp -> pr_path
 make_short_qualid -> qualid_of_ident
-sp_of_syntactic_definition -> path_of_syntactic_definition 
+sp_of_syntactic_definition -> path_of_syntactic_definition
 sp_of_global -> path_of_global
 id_of_global -> basename_of_global
 absolute_reference -> global_of_path
@@ -1047,7 +1047,7 @@ See files in dev/syntax-v8
   The module level has no effect on constr except for the structure of
 section_path. The type of unique names for constructions (what
 section_path served) is now called a kernel name and is defined by
- 
+
 ```ocaml
 type uniq_ident = int * string * dir_path (* int may be enough *)
 type module_path =
@@ -1079,19 +1079,19 @@ type kernel_name = module_path * dir_path * label
 
    <M> and <N> are self-references, X is a bound reference and L is a
 reference to a physical module.
- 
+
   Notice that functor application is not part of a path: it must be
 named by a "module M = F(A)" declaration to be used in a kernel
 name.
- 
+
   Notice that Jacek chose a practical approach, making directories not
 modules. Another approach could have been to replace the constructor
 MPfile by a constant constructor MProot representing the root of the
 world.
- 
+
   Other relevant informations are in kernel/entries.ml (type
 module_expr) and kernel/declarations.ml (type module_body and
-module_type_body).                                                              
+module_type_body).
 
 #### Library
 
@@ -1099,17 +1099,17 @@ module_type_body).
 [Summaries] - the only change is the special treatment of the
 global environmet.
 
-2. objects 
+2. objects
 [Libobject] declares persistent objects, given with methods:
 
    * cache_function specifying how to add the object in the current
        scope;
-   * load_function, specifying what to do when the module 
-       containing the object is loaded; 
-   * open_function, specifying what to do when the module 
+   * load_function, specifying what to do when the module
+       containing the object is loaded;
+   * open_function, specifying what to do when the module
        containing the object is opened (imported);
    * classify_function, specyfying what to do with the object,
-       when the current module (containing the object) is ended. 
+       when the current module (containing the object) is ended.
    * subst_function
    * export_function, to signal end_section survival
 
@@ -1132,19 +1132,19 @@ from before the beginning of the module, and:
    To simplify consider only those who returned Substitute _ or Keep _.
 
 2. If the module is not a functor, the subst_function for each object of
-   the first group is called with the substitution 
+   the first group is called with the substitution
    [MPself "<Datatypes#1>" |-> MPfile "Coq.Init.Datatypes"].
    Then the load_function is called for substituted objects and the
-   "keep" object. 
+   "keep" object.
    (If the module is a library the substitution is done at reloading).
 
 3. The objects which returned substitute are stored in the modtab
    together with the self ident of the module, and functor argument
    names if the module was a functor.
 
-   They will be used (substituted and loaded) when a command like 
+   They will be used (substituted and loaded) when a command like
      Module M := F(N)    or
-     Module Z := N 
+     Module Z := N
    is evaluated
 
 
@@ -1157,15 +1157,15 @@ They will work after end_module (or reloading a compiled library),
 because these operations do not change section_path's
 
 They will obviously not work after Module Z:=N.
- 
+
 These would typically be grammar rules, pretty printing rules etc.
 
 
 
 2. The "substitute" objects can _only_ reference objects by
-kernel_names. They must have a valid subst_function. 
+kernel_names. They must have a valid subst_function.
 
-They will work after end_module _and_ after Module Z:=N or 
+They will work after end_module _and_ after Module Z:=N or
 Module Z:=F(M).
 
 
@@ -1184,12 +1184,12 @@ Other kinds of objects:
 #### Writing subst_thing functions
 
 The subst_thing shoud not copy the thing if it hasn't actually
-changed. There are some cool emacs macros in dev/objects.el 
+changed. There are some cool emacs macros in dev/objects.el
 to help writing subst functions this way quickly and without errors.
 Also there are *_smartmap functions in Util.
 
 The subst_thing functions are already written for many types,
-including constr (Term.subst_mps), 
+including constr (Term.subst_mps),
 global_reference (Libnames.subst_global),
 rawconstr (Rawterm.subst_raw) etc
 
@@ -1200,7 +1200,7 @@ way.
 #### Nametab
 
 Nametab has been made more uniform. For every kind of thing there is
-only one "push" function and one "locate" function. 
+only one "push" function and one "locate" function.
 
 
 #### Lib

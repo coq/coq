@@ -174,8 +174,8 @@ answers, feel free to write to us\ldots
 
 \section{Presentation}
 
-\Question{What is {\Coq}?}\label{whatiscoq} 
-The {\Coq} tool is a formal proof management system: a proof done with {\Coq} is mechanically checked by the machine. 
+\Question{What is {\Coq}?}\label{whatiscoq}
+The {\Coq} tool is a formal proof management system: a proof done with {\Coq} is mechanically checked by the machine.
 In particular, {\Coq} allows:
 \begin{itemize}
     \item the definition of mathematical objects and programming objects,
@@ -201,11 +201,11 @@ simplification, resolution, ...) but the main style for proving
 theorems is interactively by using LCF-style tactics.
 
 
-\Question{What are the other theorem provers?} 
-Many other theorem provers are available for use nowadays. 
+\Question{What are the other theorem provers?}
+Many other theorem provers are available for use nowadays.
 Isabelle, HOL, HOL Light, Lego, Nuprl, PVS are examples of provers that are fairly similar
 to {\Coq} by the way they interact with the user. Other relatives of
-{\Coq} are ACL2, Agda/Alfa, Twelf, Kiv, Mizar, NqThm, 
+{\Coq} are ACL2, Agda/Alfa, Twelf, Kiv, Mizar, NqThm,
 \begin{htmlonly}%
 Omega\ldots
 \end{htmlonly}
@@ -288,14 +288,14 @@ There are graphical user interfaces:
 \item[Pcoq] A GUI for {\Coq} with proof by pointing and pretty printing.
 \item[coqwc] A tool similar to {\tt wc} to count lines in {\Coq} files.
 \item[Proof General] A emacs mode for {\Coq} and many other proof assistants.
-\item[ProofWeb] The ProofWeb online web interface for {\Coq} (and other proof assistants), with a focus on teaching. 
-\item[ProverEditor] is an experimental Eclipse plugin with support for {\Coq}. 
+\item[ProofWeb] The ProofWeb online web interface for {\Coq} (and other proof assistants), with a focus on teaching.
+\item[ProverEditor] is an experimental Eclipse plugin with support for {\Coq}.
 \end{description}
 
 There are documentation and browsing tools:
 
 \begin{description}
-\item[coq-tex] A tool to insert {\Coq} examples within .tex files. 
+\item[coq-tex] A tool to insert {\Coq} examples within .tex files.
 \item[coqdoc] A documentation tool for \Coq.
 \item[coqgraph] A tool to generate a dependency graph from {\Coq} sources.
 \end{description}
@@ -307,8 +307,8 @@ There are front-ends for specific languages:
 \item[Krakatoa] A Java code certification tool that uses both {\Coq} and {\Why} to verify the soundness of implementations with regards to the specifications.
 \item[Caduceus] A C code certification tool that uses both {\Coq} and \Why.
 \item[Zenon] A first-order theorem prover.
-\item[Focal] The \ahref{http://focal.inria.fr}{Focal} project aims at building an environment to develop certified computer algebra libraries. 
-\item[Concoqtion] is a dependently-typed extension of Objective Caml (and of MetaOCaml) with specifications expressed and proved in Coq. 
+\item[Focal] The \ahref{http://focal.inria.fr}{Focal} project aims at building an environment to develop certified computer algebra libraries.
+\item[Concoqtion] is a dependently-typed extension of Objective Caml (and of MetaOCaml) with specifications expressed and proved in Coq.
 \item[Ynot] is an extension of Coq providing a "Hoare Type Theory" for specifying higher-order, imperative and concurrent programs.
 \item[Ott]is a tool to translate the descriptions of the syntax and semantics of programming languages to the syntax of Coq, or of other provers.
 \end{description}
@@ -362,9 +362,9 @@ todo christine compilo lustre?
 
 \section{Documentation}
 
-\Question{Where can I find documentation about {\Coq}?} 
+\Question{Where can I find documentation about {\Coq}?}
 All the documentation about \Coq, from the reference manual~\cite{Coq:manual} to
-friendly tutorials~\cite{Coq:Tutorial} and documentation of the standard library, is available 
+friendly tutorials~\cite{Coq:Tutorial} and documentation of the standard library, is available
 \ahref{http://coq.inria.fr/doc-eng.html}{online}.
 All these documents are viewable either in browsable HTML, or as
 downloadable postscripts.
@@ -378,7 +378,7 @@ This FAQ is available online at \ahref{http://coq.inria.fr/faq}{\url{http://coq.
 This FAQ is unfinished (in the sense that there are some obvious
 sections that are missing). Please send contributions to Coq-Club.
 
-\Question{Is there any mailing list about {\Coq}?} 
+\Question{Is there any mailing list about {\Coq}?}
 The main {\Coq} mailing list is \url{coq-club@inria.fr}, which
 broadcasts questions and suggestions about the implementation, the
 logical formalism or proof developments. See
@@ -406,7 +406,7 @@ students, and engineers interested in formal methods and the
 development of zero-default software.''
 \end{quote}
 
-\Question{Where can I find some {\Coq} examples?} 
+\Question{Where can I find some {\Coq} examples?}
 
 There are examples in the manual~\cite{Coq:manual} and in the
 Coq'Art~\cite{Coq:coqart} exercises \ahref{\url{http://www.labri.fr/Perso/~casteran/CoqArt/index.html}}{\url{http://www.labri.fr/Perso/~casteran/CoqArt/index.html}}.
@@ -463,7 +463,7 @@ optional module stating $A\vee\neg A$.
 \Question{Can I define non-terminating programs in \Coq?}
 
 All programs in {\Coq} are terminating. Especially, loops
-must come with an evidence of their termination. 
+must come with an evidence of their termination.
 
 Non-terminating programs can be simulated by passing around a
 bound on how long the program is allowed to run before dying.
@@ -573,7 +573,7 @@ Axiom $K$ is also equivalent to {\em Uniqueness of Reflexive Identity Proofs} \c
 Axiom UIP_refl : forall (A:Set) (x:A) (p: x=x), p = eq_refl x.
 \end{coq_example*}
 
-Axiom $K$ is also equivalent to 
+Axiom $K$ is also equivalent to
 
 \begin{coq_example*}
 Axiom
@@ -603,7 +603,7 @@ proofs of the same proposition. Identifying all proofs of the same
 proposition is called {\em proof-irrelevance}:
 $$
 \forall A:\Prop, \forall p q:A, p=q
-$$ 
+$$
 
 Proof-irrelevance (in {\Prop}) can be assumed without contradiction in
 {\Coq}. It expresses that only provability matters, whatever the exact
@@ -630,8 +630,8 @@ Set-predicative Calculus of Inductive Constructions.
 %  Axiom extensionality : (A,B:Set)(f,g:(A->B))(x:A)(f x)=(g x)->f=g.
 %\end{coq_example*}
 
-Let {\tt A}, {\tt B} be types. To deal with extensionality on 
-\verb=A->B= without relying on a general extensionality axiom, 
+Let {\tt A}, {\tt B} be types. To deal with extensionality on
+\verb=A->B= without relying on a general extensionality axiom,
 a possible approach is to define one's own extensional equality on
 \verb=A->B=.
 
@@ -716,7 +716,7 @@ the proposition {\tt le m n} (less or equal on {\tt nat}).
 %  It is an ongoing work of research to natively include proof
 %  irrelevance in {\Coq}.
 
-\Question{I have two proofs of an equality statement. Can I prove they are 
+\Question{I have two proofs of an equality statement. Can I prove they are
 equal?}
 
  Yes, if equality is decidable on the domain considered (which
@@ -787,7 +787,7 @@ it were allowed, it would be possible to encode e.g. Burali-Forti
 paradox \cite{Gir70,Coq85}.
 
 
-\Question{Is Coq's logic conservative over Coquand's Calculus of 
+\Question{Is Coq's logic conservative over Coquand's Calculus of
 Constructions?}
 
 In the {\Set}-impredicative version of the Calculus of Inductive
@@ -1119,7 +1119,7 @@ Qed.
 
 Hint Resolve toto1 toto2 toto3 : mybase.
 
-Goal 2+(1+1)=4. 
+Goal 2+(1+1)=4.
 auto with mybase.
 Qed.
 \end{coq_example}
@@ -1269,7 +1269,7 @@ backward reasoning (proving your goal using an assumption and then
 proving the assumption) use the {\cut} tactic.
 
 \begin{coq_example}
-Goal forall A B C D : Prop, (A -> B) -> (B->C) -> A -> C. 
+Goal forall A B C D : Prop, (A -> B) -> (B->C) -> A -> C.
 intros.
 assert (A->C).
 intro;apply H0;apply H;assumption.
@@ -1281,7 +1281,7 @@ Qed.
 \end{coq_example*}
 
 \begin{coq_example}
-Goal forall A B C D : Prop, (A -> B) -> (B->C) -> A -> C. 
+Goal forall A B C D : Prop, (A -> B) -> (B->C) -> A -> C.
 intros.
 cut (A->C).
 intro.
@@ -1299,7 +1299,7 @@ Qed.
 
 You can use {\cut} followed by {\intro} or you can use the following {\Ltac} command:
 \begin{verbatim}
-Ltac assert_later t := cut t;[intro|idtac]. 
+Ltac assert_later t := cut t;[intro|idtac].
 \end{verbatim}
 
 \Question{What is the difference between {\Qed} and {\Defined}?}
@@ -1333,7 +1333,7 @@ Currently there are no equivalent tactic for classical logic. You can use Gödel
 
 \Question{I want to replace some term with another in the goal, how can I do it?}
 
-If one of your hypothesis (say {\tt H}) states that the terms are equal you can use the {\rewrite} tactic. Otherwise you can use the {\replace} {\tt with} tactic. 
+If one of your hypothesis (say {\tt H}) states that the terms are equal you can use the {\rewrite} tactic. Otherwise you can use the {\replace} {\tt with} tactic.
 
 \Question{I want to replace some term with another in an hypothesis, how can I do it?}
 
@@ -1369,7 +1369,7 @@ to the new names.
 
 \Question{How can I automatize the naming?}
 
-You can use the {\tt Show Intro.} or  {\tt Show Intros.} commands to generate the names and use your editor to generate a fully named {\intro} tactic. 
+You can use the {\tt Show Intro.} or  {\tt Show Intros.} commands to generate the names and use your editor to generate a fully named {\intro} tactic.
 This can be automatized within {\tt xemacs}.
 
 \begin{coq_example}
@@ -1438,7 +1438,7 @@ You can use the {\subst} tactic. This will rewrite the equality everywhere and c
 
 \Question{What can I do if I get ``{\tt generated subgoal term has metavariables in it }''?}
 
-You should use the {\eapply} tactic, this will generate some goals containing metavariables. 
+You should use the {\eapply} tactic, this will generate some goals containing metavariables.
 
 \Question{How can I instantiate some metavariable?}
 
@@ -1476,7 +1476,7 @@ is rendered into something like
   (h0) by (H1 H2) we proved A
   by (h h0) we proved T
 \end{verbatim}
-while 
+while
 \begin{verbatim}
   (* Goal is T *)
   assert q := (H1 H2).
@@ -1601,7 +1601,7 @@ necessary to trigger the evaluation of \coqtt{+}.
 \Question{Why is dependent elimination in Prop not
 available by default?}
 
- 
+
 This is just because most of the time it is not needed. To derive a
 dependent elimination principle in {\tt Prop}, use the command {\tt Scheme} and
 apply the elimination scheme using the \verb=using= option of
@@ -1634,21 +1634,21 @@ On the contrary, a function for computing the greatest of two natural numbers
 is an algorithm  which, called on two natural numbers
 $n$ and $p$, determines whether $n\leq p$ or $p < n$.
 Such a function is a \emph{decision  procedure} for the inequality of
- \texttt{nat}.  The possibility of writing such a procedure comes 
+ \texttt{nat}.  The possibility of writing such a procedure comes
 directly from de decidability of the order $\leq$ on natural numbers.
 
 
-When you write a piece of code like 
+When you write a piece of code like
 ``~\texttt{if n <= p then \dots{} else \dots}~''
 in a
-programming language like \emph{ML} or \emph{Java}, a call to such a 
+programming language like \emph{ML} or \emph{Java}, a call to such a
 decision procedure is generated. The decision procedure is in general
 a primitive function, written in a low-level language, in the correctness
 of which you have to trust.
 
-The standard Library of the system \emph{Coq} contains a  
+The standard Library of the system \emph{Coq} contains a
 (constructive) proof of decidability of the order $\leq$ on
-\texttt{nat} : the function \texttt{le\_lt\_dec} of 
+\texttt{nat} : the function \texttt{le\_lt\_dec} of
 the module \texttt{Compare\_dec} of library \texttt{Arith}.
 
 The following code shows how to define correctly \texttt{min} and
@@ -1665,8 +1665,8 @@ Eval compute in (min 4 7).
 
 Theorem min_plus_max : forall n p, min n p + max n p  = n + p.
 Proof.
- intros n p; 
- unfold min, max; 
+ intros n p;
+ unfold min, max;
  case (le_lt_dec n p);
  simpl; auto with arith.
 Qed.
@@ -1675,7 +1675,7 @@ Theorem max_equiv : forall n p, max n p = p <-> n <= p.
 Proof.
  unfold max; intros n p; case (le_lt_dec n p);simpl; auto.
  intuition auto with arith.
- split. 
+ split.
  intro e; rewrite e; auto with arith.
  intro H; absurd (p < p); eauto with arith.
 Qed.
@@ -1701,7 +1701,7 @@ Definition my_min (n p:nat) := if my_le_lt_dec n p then n else p.
 
 
 For instance, the computation of \texttt{my\_max 567 321} is almost
-immediate, whereas one can't wait for  the result of 
+immediate, whereas one can't wait for  the result of
 \texttt{max 56 32}, using \emph{Coq's} \texttt{le\_lt\_dec}.
 
 This is normal. Your definition is a simple recursive function which
@@ -1711,7 +1711,7 @@ or $p<n$, but also of building a complete proof of the correct inequality.
 What make \texttt{le\_lt\_dec} inefficient for computing \texttt{min}
 and \texttt{max} is the building of a huge proof term.
 
-Nevertheless,  \texttt{le\_lt\_dec} is very useful. Its type 
+Nevertheless,  \texttt{le\_lt\_dec} is very useful. Its type
 is a strong specification, using the
 \texttt{sumbool} type (look at the reference manual or chapter 9 of
 \cite{coqart}). Eliminations of the form
@@ -1730,7 +1730,7 @@ You should keep in mind that \texttt{le\_lt\_dec} is useful to build
 certified programs which need to compare natural numbers, and is not
 designed to compare quickly two numbers.
 
-Nevertheless, the \emph{extraction} of \texttt{le\_lt\_dec} towards 
+Nevertheless, the \emph{extraction} of \texttt{le\_lt\_dec} towards
 \emph{OCaml} or \emph{Haskell}, is a reasonable program for comparing two
 natural numbers in Peano form in linear time.
 
@@ -1738,10 +1738,10 @@ It is also possible to keep your boolean function as a decision procedure,
 but you have to establish yourself the relationship between \texttt{my\_le\_lt\_dec} and the propositions $n\leq p$ and $p<n$:
 
 \begin{coq_example*}
-Theorem my_le_lt_dec_true : 
+Theorem my_le_lt_dec_true :
     forall n p, my_le_lt_dec n p = true <-> n <= p.
 
-Theorem  my_le_lt_dec_false : 
+Theorem  my_le_lt_dec_false :
    forall n p, my_le_lt_dec n p = false <-> p < n.
 \end{coq_example*}
 
@@ -1772,7 +1772,7 @@ would have to be made for stronger termination arguments (such
 as the termination of the evaluation of CIC programs themselves!).
 
 In spite of this, all non-pathological termination orders can be mapped
-to a structural order. Tools to do this are provided in the file 
+to a structural order. Tools to do this are provided in the file
 \vfile{\InitWf}{Wf} of the standard library of {\Coq}.
 
 \Question{How to define loops based on non structurally smaller
@@ -2036,7 +2036,7 @@ If $x_i$ are identifiers and $e_i$ and $expr$ are tactic expressions, then let r
 $expr$}.
 \end{center}
 Beware that if $expr$ is complex (i.e. features at least a sequence) parenthesis
-should be added around it. For example: 
+should be added around it. For example:
 \begin{coq_example}
 Ltac twoIntro := let x:=intro in (x;x).
 \end{coq_example}
@@ -2107,8 +2107,8 @@ todo
 
 \Question{Can you show me an example of a tactic written in OCaml?}
 
-Have a look at the skeleton ``Hello World'' tactic from the next question. 
-You also have some examples of tactics written in OCaml in the ``plugins'' directory of {\Coq} sources. 
+Have a look at the skeleton ``Hello World'' tactic from the next question.
+You also have some examples of tactics written in OCaml in the ``plugins'' directory of {\Coq} sources.
 
 \Question{Is there a skeleton of OCaml tactic I can reuse somewhere?}
 
@@ -2481,21 +2481,21 @@ Notation "$\exists$ x : t, P" := (exists x:t, P) (at level 200, x ident).
 Copy/Paste of these lines from this file will not work outside of \CoqIde.
 You need to load a file containing these lines or to enter the $\forall$
 using an input method (see \ref{inputmeth}). To try it just use \verb#Require Import utf8# from inside
-\CoqIde. 
+\CoqIde.
 To enable these notations automatically start coqide with
 \begin{verbatim}
-	coqide -l utf8
+        coqide -l utf8
 \end{verbatim}
-In the ide subdir of {\Coq} library, you will find a sample utf8.v with some 
+In the ide subdir of {\Coq} library, you will find a sample utf8.v with some
 pretty simple notations.
 
 \Question{How to define an input method for non ASCII symbols?}\label{inputmeth}
 
 \begin{itemize}
-\item First solution: type \verb#<CONTROL><SHIFT>2200# to enter a forall in the script widow. 
-	2200 is the hexadecimal code for forall in unicode charts and is encoded as 	
-	in UTF-8.
-	2203 is for exists. See \ahref{http://www.unicode.org}{\url{http://www.unicode.org}} for more codes.
+\item First solution: type \verb#<CONTROL><SHIFT>2200# to enter a forall in the script widow.
+        2200 is the hexadecimal code for forall in unicode charts and is encoded as
+        in UTF-8.
+        2203 is for exists. See \ahref{http://www.unicode.org}{\url{http://www.unicode.org}} for more codes.
 \item Second solution: rebind \verb#<AltGr>a# to forall and \verb#<AltGr>e# to exists.
 
        Under X11, one can add those lines in the file ~/.xmodmaprc :
@@ -2509,27 +2509,27 @@ keycode  26 = e E e E U2203 NoSymbol U2203 NoSymbol
 and then run xmodmap ~/.xmodmaprc.
 \end{itemize}
 
-	Alternatively, you may use an input method editor such as SCIM or iBus.
+        Alternatively, you may use an input method editor such as SCIM or iBus.
 The latter offers a \LaTeX-like input method.
 
 \Question{How to customize the shortcuts for menus?}
  Two solutions are offered:
 \begin{itemize}
 \item Edit \verb+$XDG_CONFIG_HOME/coq/coqide.keys+ (which is usually \verb+$HOME/.config/coq/coqide.keys+) by hand or
-\item If your system supports it, from \CoqIde, you may select a menu entry and press the desired 
-    shortcut. 
+\item If your system supports it, from \CoqIde, you may select a menu entry and press the desired
+    shortcut.
 \end{itemize}
 
 \Question{What encoding should I use? What is this $\backslash$x\{iiii\} in my file?}
- The encoding option is related to the way files are saved. 
- Keep it as UTF-8 until it becomes important for you to exchange files 
+ The encoding option is related to the way files are saved.
+ Keep it as UTF-8 until it becomes important for you to exchange files
  with non UTF-8 aware applications.
- If you choose something else than UTF-8, then missing characters will 
+ If you choose something else than UTF-8, then missing characters will
  be encoded by $\backslash$x\{....\} or $\backslash$x\{........\}
- where each dot is an hex. digit. 
+ where each dot is an hex. digit.
  The number between braces is the hexadecimal UNICODE index for the
   missing character.
-    
+
 \Question{How to get rid of annoying unwanted automatic templates?}
 
 Some users may experiment problems with unwanted automatic
@@ -2537,7 +2537,7 @@ templates while using Coqide. This is due to a change in the
 modifiers keys available through GTK. The straightest way to get
 rid of the problem is to edit by hand your coqiderc (either
 \verb|/home/<user>/.config/coq/coqiderc| under Linux, or \\
-\verb|C:\Documents and Settings\<user>\.config\coq\coqiderc| under Windows) 
+\verb|C:\Documents and Settings\<user>\.config\coq\coqiderc| under Windows)
 and replace any occurrence of \texttt{MOD4} by \texttt{MOD1}.
 
 
@@ -2572,16 +2572,16 @@ The goal is the statement to be proved.
 \Question{What is a meta variable?}
 
 A meta variable in {\Coq} represents a ``hole'', i.e. a part of a proof
-that is still unknown. 
+that is still unknown.
 
-\Question{What is Gallina?}  
+\Question{What is Gallina?}
 
 Gallina is the specification language of \Coq. Complete documentation
 of this language can be found in the Reference Manual.
 
-\Question{What is The Vernacular?}  
+\Question{What is The Vernacular?}
 
-It is the language of commands of Gallina i.e. definitions, lemmas, {\ldots}  
+It is the language of commands of Gallina i.e. definitions, lemmas, {\ldots}
 
 
 \Question{What is a dependent type?}
@@ -2612,7 +2612,7 @@ This is any logic which does not assume that ``A or not A''.
 See question \ref{proof-irrelevance}
 
 
-\Question{What is the difference between opaque and transparent?}{\label{opaque}}	
+\Question{What is the difference between opaque and transparent?}{\label{opaque}}
 
 Opaque definitions can not be unfolded but transparent ones can.
 
@@ -2677,7 +2677,7 @@ like {\tt pattern}).
   There is currently no satisfactory answer to the problem. However,
 the command {\tt Set Printing All} is useful for diagnosing the
 problem.
- 
+
   Due to coercions, one may even face type-checking errors. In some
 rare cases, the criterion to hide coercions is a bit too loose, which
 may result in a typing error message if the parser is not able to find
@@ -2688,7 +2688,7 @@ again the missing coercion.
 \section{Conclusion and Farewell.}
 \label{ccl}
 
-\Question{What if my question isn't answered here?} 
+\Question{What if my question isn't answered here?}
 \label{lastquestion}
 
 Don't panic \verb+:-)+. You can try the {\Coq} manual~\cite{Coq:manual} for a technical

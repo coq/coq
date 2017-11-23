@@ -63,7 +63,7 @@ sig
   module Name :
   sig
     type t = Anonymous     (** anonymous identifier *)
-	   | Name of Id.t  (** non-anonymous identifier *)
+           | Name of Id.t  (** non-anonymous identifier *)
     val mk_name : Id.t -> t
     val is_anonymous : t -> bool
     val is_name : t -> bool
@@ -1360,7 +1360,7 @@ sig
   | Cumulative_ind of Univ.abstract_cumulativity_info
 
   type record_body = (Id.t * Constant.t array * projection_body array) option
-  
+
   type mutual_inductive_body = {
         mind_packets : one_inductive_body array;
         mind_record : record_body option;

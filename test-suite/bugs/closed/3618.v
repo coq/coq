@@ -96,7 +96,7 @@ Global Instance hprop_inO {fs : Funext} {subU : ReflectiveSubuniverse} (T : Type
 Admitted.
 
 (* To avoid looping class resolution *)
-Hint Mode IsEquiv - - + : typeclass_instances. 
+Hint Mode IsEquiv - - + : typeclass_instances.
 
 Fail Definition equiv_O_rectnd {fs : Funext} {subU : ReflectiveSubuniverse}
            (P Q : Type) {Q_inO : inO_internal Q}

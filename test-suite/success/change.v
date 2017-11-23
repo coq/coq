@@ -7,8 +7,8 @@ change ((fun A:Type => A) nat) in (type of a).
 Abort.
 
 Goal forall x, 2 + S x = 1 + S x.
-intro. 
-change (?u + S x) with (S (u + x)). 
+intro.
+change (?u + S x) with (S (u + x)).
 Abort.
 
 (* Check the combination of at, with and in (see bug #2146) *)

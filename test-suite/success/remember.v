@@ -16,7 +16,7 @@ rewrite fresh.
 Abort.
 
 (* An example which was working in 8.4 but failing in 8.5 and 8.5pl1 *)
-                  
+
 Module A.
 Axiom N : nat.
 End A.
@@ -25,5 +25,5 @@ Include A.
 End B.
 Goal id A.N = B.N.
 reflexivity.
-Qed.           
-                
+Qed.
+

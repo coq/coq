@@ -63,7 +63,7 @@ val wit_by_arg_tac :
   glob_tactic_expr option,
   Geninterp.Val.t option) Genarg.genarg_type
 
-val pr_by_arg_tac : 
+val pr_by_arg_tac :
   (int * Notation_term.parenRelation -> raw_tactic_expr -> Pp.t) ->
   raw_tactic_expr option -> Pp.t
 

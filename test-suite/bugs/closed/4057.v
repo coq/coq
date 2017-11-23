@@ -65,7 +65,7 @@ Module Export ContextFreeGrammar.
                                 -> parse_of_production (str ++ strs) (pat::pats)
       with parse_of_item : String -> item -> Type :=
       | ParseNonTerminal : forall name str, parse_of str (Lookup G name)
-                                            -> parse_of_item str (NonTerminal 
+                                            -> parse_of_item str (NonTerminal
 name).
     End parse.
   End cfg.
@@ -84,9 +84,9 @@ Module Export ContextFreeGrammarProperties.
            | @ParseTail _ _ _ _ _ _ p'
              => Forall_parse_of p'
          end
-    with Forall_parse_of_production {str pat} (p : parse_of_production String G 
+    with Forall_parse_of_production {str pat} (p : parse_of_production String G
 str pat)
-         := let Forall_parse_of_item {str it} (p : parse_of_item String G str 
+         := let Forall_parse_of_item {str it} (p : parse_of_item String G str
 it)
                 := match p return Type with
                      | @ParseNonTerminal _ _ _ name str p'
@@ -94,7 +94,7 @@ it)
                    end in
             match p return Type with
               | @ParseProductionCons _ _ _ str pat strs pats p' p''
-                => (Forall_parse_of_item p' * Forall_parse_of_production 
+                => (Forall_parse_of_item p' * Forall_parse_of_production
 p'')%type
             end.
 
@@ -116,7 +116,7 @@ Module Export DependentlyTyped.
       { nonterminal_names_listT : Type;
         initial_nonterminal_names_data : nonterminal_names_listT;
         is_valid_nonterminal_name : nonterminal_names_listT -> string -> bool;
-        remove_nonterminal_name : nonterminal_names_listT -> string -> 
+        remove_nonterminal_name : nonterminal_names_listT -> string ->
 nonterminal_names_listT }.
 
   End recursive_descent_parser.
@@ -147,14 +147,14 @@ Section cfg.
                 (str : String),
            production -> Type :=
   | MinParseProductionNil : forall str0 valid,
-                              @minimal_parse_of_production str0 valid (Empty _) 
+                              @minimal_parse_of_production str0 valid (Empty _)
 nil
   | MinParseProductionCons : forall str0 valid str strs pat pats,
                                str ++ strs â‰¤s str0
                                -> @minimal_parse_of_item str0 valid str pat
-                               -> @minimal_parse_of_production str0 valid strs 
+                               -> @minimal_parse_of_production str0 valid strs
 pats
-                               -> @minimal_parse_of_production str0 valid (str 
+                               -> @minimal_parse_of_production str0 valid (str
 ++ strs) (pat::pats)
   with minimal_parse_of_item
        : forall (str0 : String) (valid : names_listT)
@@ -177,7 +177,7 @@ pats
         @minimal_parse_of str (remove_name valid name) str (Lookup G name)
         -> @minimal_parse_of_name str valid str name.
   Definition parse_of_item_name__of__minimal_parse_of_name
-  : forall {str0 valid str name} (p : @minimal_parse_of_name str0 valid str 
+  : forall {str0 valid str name} (p : @minimal_parse_of_name str0 valid str
 name),
       parse_of_item String G str (NonTerminal name).
   Proof.
@@ -197,8 +197,8 @@ Section recursive_descent_parser.
   Defined.
 
   Let mp_parse_nonterminal_name str0 valid str nonterminal_name
-    := { p' : minimal_parse_of_name String G initial_nonterminal_names_data 
-remove_nonterminal_name str0 valid str nonterminal_name & Forall_parse_of_item 
+    := { p' : minimal_parse_of_name String G initial_nonterminal_names_data
+remove_nonterminal_name str0 valid str nonterminal_name & Forall_parse_of_item
 P (parse_of_item_name__of__minimal_parse_of_name p') }.
 
   Goal False.

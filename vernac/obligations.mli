@@ -29,13 +29,13 @@ val eterm_obligations : env -> Id.t -> evar_map -> int ->
   (Id.t * types * Evar_kinds.t Loc.located *
      (bool * Evar_kinds.obligation_definition_status) * Int.Set.t *
       unit Proofview.tactic option) array
-    (* Existential key, obl. name, type as product, 
+    (* Existential key, obl. name, type as product,
        location of the original evar, associated tactic,
        status and dependencies as indexes into the array *)
   * ((existential_key * Id.t) list * ((Id.t -> constr) -> constr -> constr)) *
     constr * types
-    (* Translations from existential identifiers to obligation identifiers 
-       and for terms with existentials to closed terms, given a 
+    (* Translations from existential identifiers to obligation identifiers
+       and for terms with existentials to closed terms, given a
        translation from obligation identifiers to constrs, new term, new type *)
 
 type obligation_info =
@@ -51,7 +51,7 @@ type progress = (* Resolution status of a program *)
 
 val default_tactic : unit Proofview.tactic ref
 
-val add_definition : Names.Id.t -> ?term:constr -> types -> 
+val add_definition : Names.Id.t -> ?term:constr -> types ->
   UState.t ->
   ?univdecl:Univdecls.universe_decl -> (* Universe binders and constraints *)
   ?implicits:(Constrexpr.explicitation * (bool * bool * bool)) list ->

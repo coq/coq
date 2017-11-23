@@ -52,12 +52,12 @@ struct
     let get_value = function
       | LocalAssum _ -> None
       | LocalDef (_,v,_) -> Some v
-                                 
+
     (** Return the type of the name bound by a given declaration. *)
     let get_type = function
       | LocalAssum (_,ty)
       | LocalDef (_,_,ty) -> ty
-                               
+
     (** Set the name that is bound by a given declaration. *)
     let set_name na = function
       | LocalAssum (_,ty) -> LocalAssum (na, ty)
@@ -120,7 +120,7 @@ struct
       | LocalAssum (na, ty) as decl ->
           let ty' = f ty in
           if ty == ty' then decl else LocalAssum (na, ty')
-      | LocalDef (na, v, ty) as decl ->         
+      | LocalDef (na, v, ty) as decl ->
           let ty' = f ty in
           if ty == ty' then decl else LocalDef (na, v, ty')
 
@@ -356,7 +356,7 @@ struct
           LocalAssum (f na, t)
       | Rel.Declaration.LocalDef (na,v,t) ->
           LocalDef (f na, v, t)
-            
+
     let to_rel_decl = function
       | LocalAssum (id,t) ->
           Rel.Declaration.LocalAssum (Name id, t)

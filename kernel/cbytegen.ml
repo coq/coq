@@ -239,9 +239,9 @@ let pos_rel i r sz =
       let env = !(r.in_env) in
       try Kenvacc(r.offset + find_at db env)
       with Not_found ->
-	let pos = env.size in
-	r.in_env := push_fv db env;
-	Kenvacc(r.offset + pos)
+        let pos = env.size in
+        r.in_env := push_fv db env;
+        Kenvacc(r.offset + pos)
 
 let pos_universe_var i r sz =
   if i < r.nb_uni_stack then
@@ -376,21 +376,21 @@ let init_fun_code () = fun_code := []
 
 exception TooLargeInductive of Id.t
 
-let max_nb_const = 0x1000000 
+let max_nb_const = 0x1000000
 let max_nb_block = 0x1000000 + last_variant_tag - 1
 
-let str_max_constructors = 
-  Format.sprintf 
+let str_max_constructors =
+  Format.sprintf
     " which has more than %i constant constructors or more than %i non-constant constructors" max_nb_const max_nb_block
 
-let check_compilable ib = 
-  
-  if not (ib.mind_nb_args <= max_nb_block && ib.mind_nb_constant <= max_nb_const) then 
+let check_compilable ib =
+
+  if not (ib.mind_nb_args <= max_nb_block && ib.mind_nb_constant <= max_nb_const) then
     raise (TooLargeInductive ib.mind_typename)
 
 (* Inv: arity > 0 *)
 
-let const_bn tag args = 
+let const_bn tag args =
   if tag < last_variant_tag then Const_bn(tag, args)
   else
     Const_bn(last_variant_tag, Array.append [|Const_b0 (tag - last_variant_tag) |] args)
@@ -407,7 +407,7 @@ let nest_block tag arity cont =
   Kconst (Const_b0 (tag - last_variant_tag)) ::
     Kmakeblock(arity+1, last_variant_tag) :: cont
 
-let code_makeblock ~stack_size ~arity ~tag cont = 
+let code_makeblock ~stack_size ~arity ~tag cont =
   if tag < last_variant_tag then
     Kmakeblock(arity, tag) :: cont
   else begin
@@ -422,7 +422,7 @@ let code_construct tag nparams arity cont =
   let f_cont =
       add_pop nparams
       (if Int.equal arity 0 then
-	[Kconst (Const_b0 tag); Kreturn 0]
+        [Kconst (Const_b0 tag); Kreturn 0]
        else if tag < last_variant_tag then
          [Kacc 0; Kpop 1; Kmakeblock(arity, tag); Kreturn 0]
        else
@@ -443,15 +443,15 @@ let rec str_const c =
   | Cast(c,_,_) -> str_const c
   | App(f,args) ->
       begin
-	match kind f with
-	| Construct(((kn,j),i),u) -> 
+        match kind f with
+        | Construct(((kn,j),i),u) ->
             begin
-	    let oib = lookup_mind kn !global_env in
-	    let oip = oib.mind_packets.(j) in
-	    let () = check_compilable oip in
-	    let tag,arity = oip.mind_reloc_tbl.(i-1) in
-	    let nparams = oib.mind_nparams in
-	    if Int.equal (nparams + arity) (Array.length args) then
+            let oib = lookup_mind kn !global_env in
+            let oip = oib.mind_packets.(j) in
+            let () = check_compilable oip in
+            let tag,arity = oip.mind_reloc_tbl.(i-1) in
+            let nparams = oib.mind_nparams in
+            if Int.equal (nparams + arity) (Array.length args) then
               (* spiwack: *)
               (* 1/ tries to compile the constructor in an optimal way,
                     it is supposed to work only if the arguments are
@@ -462,12 +462,12 @@ let rec str_const c =
                         form I31 D1 D2 ... D31 to [D1D2...D31] as
                         a processor number (a caml number actually) *)
               try
-		try
-		  Bstrconst (Retroknowledge.get_vm_constant_static_info
+                try
+                  Bstrconst (Retroknowledge.get_vm_constant_static_info
                                               (!global_env).retroknowledge
                                               f args)
                 with NotClosed ->
-		  (* 2/ if the arguments are not all closed (this is
+                  (* 2/ if the arguments are not all closed (this is
                         expectingly (and it is currently the case) the only
                         reason why this exception is raised) tries to
                         give a clever, run-time behavior to the constructor.
@@ -482,37 +482,37 @@ let rec str_const c =
                             uniqueness of the representation in the vm
                             it is necessary to try and build a caml integer
                             during the execution *)
-		  let rargs = Array.sub args nparams arity in
-		  let b_args = Array.map str_const rargs in
-		  Bspecial ((Retroknowledge.get_vm_constant_dynamic_info
+                  let rargs = Array.sub args nparams arity in
+                  let b_args = Array.map str_const rargs in
+                  Bspecial ((Retroknowledge.get_vm_constant_dynamic_info
                                            (!global_env).retroknowledge
                                            f),
                            b_args)
               with Not_found ->
-		(* 3/ if no special behavior is available, then the compiler
-		      falls back to the normal behavior *)
-		if Int.equal arity 0 then Bstrconst(Const_b0 tag)
-		else
-		  let rargs = Array.sub args nparams arity in
-		  let b_args = Array.map str_const rargs in
-		  try
-		    let sc_args = Array.map get_strcst b_args in
-		    Bstrconst(const_bn tag sc_args)
-		  with Not_found ->
-		    Bmakeblock(tag,b_args)
-	    else
+                (* 3/ if no special behavior is available, then the compiler
+                      falls back to the normal behavior *)
+                if Int.equal arity 0 then Bstrconst(Const_b0 tag)
+                else
+                  let rargs = Array.sub args nparams arity in
+                  let b_args = Array.map str_const rargs in
+                  try
+                    let sc_args = Array.map get_strcst b_args in
+                    Bstrconst(const_bn tag sc_args)
+                  with Not_found ->
+                    Bmakeblock(tag,b_args)
+            else
               let b_args = Array.map str_const args in
-	     (* spiwack: tries first to apply the run-time compilation
+             (* spiwack: tries first to apply the run-time compilation
                 behavior of the constructor, as in 2/ above *)
-	      try
-		Bspecial ((Retroknowledge.get_vm_constant_dynamic_info
+              try
+                Bspecial ((Retroknowledge.get_vm_constant_dynamic_info
                                            (!global_env).retroknowledge
                                            f),
                          b_args)
-	      with Not_found ->
-	        Bconstruct_app(tag, nparams, arity, b_args)
+              with Not_found ->
+                Bconstruct_app(tag, nparams, arity, b_args)
               end
-	| _ -> Bconstr c
+        | _ -> Bconstr c
       end
   | Ind (ind,u) when Univ.Instance.is_empty u ->
     Bstrconst (Const_ind ind)
@@ -521,18 +521,18 @@ let rec str_const c =
       (* spiwack: tries first to apply the run-time compilation
            behavior of the constructor, as in 2/ above *)
       try
-	Bspecial ((Retroknowledge.get_vm_constant_dynamic_info
+        Bspecial ((Retroknowledge.get_vm_constant_dynamic_info
                                            (!global_env).retroknowledge
                                            c),
                          [| |])
       with Not_found ->
-	let oib = lookup_mind kn !global_env in
-	let oip = oib.mind_packets.(j) in
-	let () = check_compilable oip in
-	let num,arity = oip.mind_reloc_tbl.(i-1) in
-	let nparams = oib.mind_nparams in
-	if Int.equal (nparams + arity) 0 then Bstrconst(Const_b0 num)
-	else Bconstruct_app(num,nparams,arity,[||])
+        let oib = lookup_mind kn !global_env in
+        let oip = oib.mind_packets.(j) in
+        let () = check_compilable oip in
+        let num,arity = oip.mind_reloc_tbl.(i-1) in
+        let nparams = oib.mind_nparams in
+        if Int.equal (nparams + arity) 0 then Bstrconst(Const_b0 num)
+        else Bconstruct_app(num,nparams,arity,[||])
       end
   | _ -> Bconstr c
 
@@ -551,18 +551,18 @@ let comp_app comp_fun comp_arg reloc f args sz cont =
   match is_tailcall cont with
   | Some k ->
       comp_args comp_arg reloc args sz
-	(Kpush ::
-	 comp_fun reloc f (sz + nargs)
-	   (Kappterm(nargs, k + nargs) :: (discard_dead_code cont)))
+        (Kpush ::
+         comp_fun reloc f (sz + nargs)
+           (Kappterm(nargs, k + nargs) :: (discard_dead_code cont)))
   | None ->
       if nargs < 4 then
-	comp_args comp_arg reloc args sz
-	  (Kpush :: (comp_fun reloc f (sz+nargs) (Kapply nargs :: cont)))
+        comp_args comp_arg reloc args sz
+          (Kpush :: (comp_fun reloc f (sz+nargs) (Kapply nargs :: cont)))
       else
-	let lbl,cont1 = label_code cont in
-	Kpush_retaddr lbl ::
-	(comp_args comp_arg reloc args (sz + 3)
-	   (Kpush :: (comp_fun reloc f (sz+3+nargs) (Kapply nargs :: cont1))))
+        let lbl,cont1 = label_code cont in
+        Kpush_retaddr lbl ::
+        (comp_args comp_arg reloc args (sz + 3)
+           (Kpush :: (comp_fun reloc f (sz+3+nargs) (Kapply nargs :: cont1))))
 
 (* Compiling free variables *)
 
@@ -578,7 +578,7 @@ let rec compile_fv reloc l sz cont =
   | [fvn] -> set_max_stack_size (sz + 1); compile_fv_elem reloc fvn sz cont
   | fvn :: tl ->
       compile_fv_elem reloc fvn sz
-	(Kpush :: compile_fv reloc tl (sz + 1) cont)
+        (Kpush :: compile_fv reloc tl (sz + 1) cont)
 
 
 (* Compiling constants *)
@@ -590,8 +590,8 @@ let rec get_alias env kn =
     | None -> kn
     | Some tps ->
        (match Cemitcodes.force tps with
-	| BCalias kn' -> get_alias env kn'
-	| _ -> kn)
+        | BCalias kn' -> get_alias env kn'
+        | _ -> kn)
 
 (* sz is the size of the local stack *)
 let rec compile_constr reloc c sz cont =
@@ -617,10 +617,10 @@ let rec compile_constr reloc c sz cont =
       compile_str_cst reloc bcst sz cont
     else
       comp_app compile_str_cst compile_universe reloc
-	   bcst
-	   (Univ.Instance.to_array u)
-	   sz
-	   cont
+           bcst
+           (Univ.Instance.to_array u)
+           sz
+           cont
   | Sort (Sorts.Prop _) | Construct _ ->
       compile_str_cst reloc (str_const c) sz cont
   | Sort (Sorts.Type u) ->
@@ -630,33 +630,33 @@ let rec compile_constr reloc c sz cont =
      let open Univ in begin
       let levels = Universe.levels u in
       let global_levels =
-	LSet.filter (fun x -> Level.var_index x = None) levels
+        LSet.filter (fun x -> Level.var_index x = None) levels
       in
       let local_levels =
-	List.map_filter (fun x -> Level.var_index x)
-	  (LSet.elements levels)
+        List.map_filter (fun x -> Level.var_index x)
+          (LSet.elements levels)
       in
       (* We assume that [Universe.type0m] is a neutral element for [Universe.sup] *)
       let uglob =
-	LSet.fold (fun lvl u -> Universe.sup u (Universe.make lvl)) global_levels Universe.type0m
+        LSet.fold (fun lvl u -> Universe.sup u (Universe.make lvl)) global_levels Universe.type0m
       in
       if local_levels = [] then
-	compile_str_cst reloc (Bstrconst (Const_sorts (Sorts.Type uglob))) sz cont
+        compile_str_cst reloc (Bstrconst (Const_sorts (Sorts.Type uglob))) sz cont
       else
-	let compile_get_univ reloc idx sz cont =
+        let compile_get_univ reloc idx sz cont =
           set_max_stack_size sz;
-	  compile_fv_elem reloc (FVuniv_var idx) sz cont
-	in
+          compile_fv_elem reloc (FVuniv_var idx) sz cont
+        in
         comp_app compile_str_cst compile_get_univ reloc
-	  (Bstrconst (Const_type u)) (Array.of_list local_levels) sz cont
+          (Bstrconst (Const_type u)) (Array.of_list local_levels) sz cont
     end
   | LetIn(_,xb,_,body) ->
       compile_constr reloc xb sz
-	(Kpush ::
-	(compile_constr (push_local sz reloc) body (sz+1) (add_pop 1 cont)))
+        (Kpush ::
+        (compile_constr (push_local sz reloc) body (sz+1) (add_pop 1 cont)))
   | Prod(id,dom,codom) ->
       let cont1 =
-	Kpush :: compile_constr reloc dom (sz+1) (Kmakeprod :: cont) in
+        Kpush :: compile_constr reloc dom (sz+1) (Kmakeprod :: cont) in
       compile_constr reloc (mkLambda(id,dom,codom)) sz cont1
   | Lambda _ ->
       let params, body = Term.decompose_lam c in
@@ -672,10 +672,10 @@ let rec compile_constr reloc c sz cont =
 
   | App(f,args) ->
       begin
-	match kind f with
-	| Construct _ -> compile_str_cst reloc (str_const c) sz cont
+        match kind f with
+        | Construct _ -> compile_str_cst reloc (str_const c) sz cont
         | Const (kn,u) -> compile_const reloc kn u args sz cont
-	| _ -> comp_app compile_constr compile_constr reloc f args sz cont
+        | _ -> comp_app compile_constr compile_constr reloc f args sz cont
       end
   | Fix ((rec_args,init),(_,type_bodies,rec_bodies)) ->
       let ndef = Array.length type_bodies in
@@ -688,26 +688,26 @@ let rec compile_constr reloc c sz cont =
         let fcode =
           ensure_stack_capacity (compile_constr env_type type_bodies.(i) 0) [Kstop]
         in
-	let lbl,fcode = label_code fcode in
-	lbl_types.(i) <- lbl;
-	fun_code := [Ksequence(fcode,!fun_code)]
+        let lbl,fcode = label_code fcode in
+        lbl_types.(i) <- lbl;
+        fun_code := [Ksequence(fcode,!fun_code)]
       done;
       (* Compiling bodies *)
       for i = 0 to ndef - 1 do
-	let params,body = Term.decompose_lam rec_bodies.(i) in
-	let arity = List.length params in
-	let env_body = comp_env_fix ndef i arity rfv in
-	let cont1 =
-	  ensure_stack_capacity (compile_constr env_body body arity) [Kreturn arity]
+        let params,body = Term.decompose_lam rec_bodies.(i) in
+        let arity = List.length params in
+        let env_body = comp_env_fix ndef i arity rfv in
+        let cont1 =
+          ensure_stack_capacity (compile_constr env_body body arity) [Kreturn arity]
         in
-	let lbl = Label.create () in
-	lbl_bodies.(i) <- lbl;
-	let fcode =  add_grabrec rec_args.(i) arity lbl cont1 in
-	fun_code := [Ksequence(fcode,!fun_code)]
+        let lbl = Label.create () in
+        lbl_bodies.(i) <- lbl;
+        let fcode =  add_grabrec rec_args.(i) arity lbl cont1 in
+        fun_code := [Ksequence(fcode,!fun_code)]
       done;
       let fv = !rfv in
       compile_fv reloc fv.fv_rev sz
-	(Kclosurerec(fv.size,init,lbl_types,lbl_bodies) :: cont)
+        (Kclosurerec(fv.size,init,lbl_types,lbl_bodies) :: cont)
 
   | CoFix(init,(_,type_bodies,rec_bodies)) ->
       let ndef = Array.length type_bodies in
@@ -720,29 +720,29 @@ let rec compile_constr reloc c sz cont =
         let fcode =
           ensure_stack_capacity (compile_constr env_type type_bodies.(i) 0) [Kstop]
         in
-	let lbl,fcode = label_code fcode in
-	lbl_types.(i) <- lbl;
-	fun_code := [Ksequence(fcode,!fun_code)]
+        let lbl,fcode = label_code fcode in
+        lbl_types.(i) <- lbl;
+        fun_code := [Ksequence(fcode,!fun_code)]
       done;
       (* Compiling bodies *)
       for i = 0 to ndef - 1 do
-	let params,body = Term.decompose_lam rec_bodies.(i) in
-	let arity = List.length params in
-	let env_body = comp_env_cofix ndef arity rfv in
-	let lbl = Label.create () in
+        let params,body = Term.decompose_lam rec_bodies.(i) in
+        let arity = List.length params in
+        let env_body = comp_env_cofix ndef arity rfv in
+        let lbl = Label.create () in
         let comp arity =
           (* 4 stack slots are needed to update the cofix when forced *)
           set_max_stack_size (arity + 4);
           compile_constr env_body body (arity+1) (cont_cofix arity)
         in
-	let cont = ensure_stack_capacity comp arity in
-	lbl_bodies.(i) <- lbl;
-	fun_code := [Ksequence(add_grab (arity+1) lbl cont,!fun_code)];
+        let cont = ensure_stack_capacity comp arity in
+        lbl_bodies.(i) <- lbl;
+        fun_code := [Ksequence(add_grab (arity+1) lbl cont,!fun_code)];
       done;
       let fv = !rfv in
       set_max_stack_size (sz + fv.size + ndef + 2);
       compile_fv reloc fv.fv_rev sz
-	(Kclosurecofix(fv.size, init, lbl_types, lbl_bodies) :: cont)
+        (Kclosurecofix(fv.size, init, lbl_types, lbl_bodies) :: cont)
 
   | Case(ci,t,a,branchs) ->
       let ind = ci.ci_ind in
@@ -755,7 +755,7 @@ let rec compile_constr reloc c sz cont =
       let nblock = min nallblock (last_variant_tag + 1) in
       let lbl_blocks = Array.make nblock Label.no in
       let neblock = max 0 (nallblock - last_variant_tag) in
-      let lbl_eblocks = Array.make neblock Label.no in 
+      let lbl_eblocks = Array.make neblock Label.no in
       let branch1,cont = make_branch cont in
       (* Compiling return type *)
       let fcode =
@@ -766,44 +766,44 @@ let rec compile_constr reloc c sz cont =
       (* Compiling branches *)
       let lbl_sw = Label.create () in
       let sz_b,branch,is_tailcall =
-	match branch1 with
-	| Kreturn k ->
-	  assert (Int.equal k sz) ;
-	  sz, branch1, true
-	| _ -> sz+3, Kjump, false
+        match branch1 with
+        | Kreturn k ->
+          assert (Int.equal k sz) ;
+          sz, branch1, true
+        | _ -> sz+3, Kjump, false
       in
 
       let c = ref cont in
       (* Perform the extra match if needed (too many block constructors) *)
       if neblock <> 0 then begin
-        let lbl_b, code_b = 
+        let lbl_b, code_b =
           label_code (
             Kpush :: Kfield 0 :: Kswitch(lbl_eblocks, [||]) :: !c) in
         lbl_blocks.(last_variant_tag) <- lbl_b;
         c := code_b
-      end;  
-      
+      end;
+
       (* Compiling regular constructor branches *)
       for i = 0 to Array.length tbl - 1 do
-	let tag, arity = tbl.(i) in
-	if Int.equal arity 0 then
-	  let lbl_b,code_b =
-	    label_code(compile_constr reloc branchs.(i) sz_b (branch :: !c)) in
-	  lbl_consts.(tag) <- lbl_b;
-	  c := code_b
-	else
-	  let args, body = Term.decompose_lam branchs.(i) in
-	  let nargs = List.length args in
-         
-          let code_b =  
+        let tag, arity = tbl.(i) in
+        if Int.equal arity 0 then
+          let lbl_b,code_b =
+            label_code(compile_constr reloc branchs.(i) sz_b (branch :: !c)) in
+          lbl_consts.(tag) <- lbl_b;
+          c := code_b
+        else
+          let args, body = Term.decompose_lam branchs.(i) in
+          let nargs = List.length args in
+
+          let code_b =
             if Int.equal nargs arity then
-	      compile_constr (push_param arity sz_b reloc)
-		body (sz_b+arity) (add_pop arity (branch :: !c))
-	    else
-	      let sz_appterm = if is_tailcall then sz_b + arity else arity in
-	      compile_constr reloc branchs.(i) (sz_b+arity)
-		(Kappterm(arity,sz_appterm) :: !c) in
-          let code_b = 
+              compile_constr (push_param arity sz_b reloc)
+                body (sz_b+arity) (add_pop arity (branch :: !c))
+            else
+              let sz_appterm = if is_tailcall then sz_b + arity else arity in
+              compile_constr reloc branchs.(i) (sz_b+arity)
+                (Kappterm(arity,sz_appterm) :: !c) in
+          let code_b =
             if tag < last_variant_tag then begin
                 set_max_stack_size (sz_b + arity);
                 Kpushfields arity :: code_b
@@ -816,7 +816,7 @@ let rec compile_constr reloc c sz cont =
           let lbl_b,code_b = label_code code_b in
           if tag < last_variant_tag then lbl_blocks.(tag) <- lbl_b
           else lbl_eblocks.(tag - last_variant_tag) <- lbl_b;
-	  c := code_b
+          c := code_b
       done;
 
       let annot =
@@ -827,25 +827,25 @@ let rec compile_constr reloc c sz cont =
      (* Compiling branch for accumulators *)
       let lbl_accu, code_accu =
         set_max_stack_size (sz+3);
-	label_code(Kmakeswitchblock(lbl_typ,lbl_sw,annot,sz) :: branch :: !c)
+        label_code(Kmakeswitchblock(lbl_typ,lbl_sw,annot,sz) :: branch :: !c)
       in
       lbl_blocks.(0) <- lbl_accu;
 
       c := Klabel lbl_sw :: Kswitch(lbl_consts,lbl_blocks) :: code_accu;
       let code_sw =
- 	match branch1 with
+        match branch1 with
         (* spiwack : branch1 can't be a lbl anymore it's a Branch instead
-	| Klabel lbl -> Kpush_retaddr lbl ::  !c *)
+        | Klabel lbl -> Kpush_retaddr lbl ::  !c *)
         | Kbranch lbl -> Kpush_retaddr lbl ::  !c
-	| _ -> !c
+        | _ -> !c
       in
       compile_constr reloc a sz
       (try
-	let entry = mkInd ind in
-	Retroknowledge.get_vm_before_match_info (!global_env).retroknowledge
-	                                       entry code_sw
+        let entry = mkInd ind in
+        Retroknowledge.get_vm_before_match_info (!global_env).retroknowledge
+                                               entry code_sw
       with Not_found ->
-	code_sw)
+        code_sw)
 
 and compile_str_cst reloc sc sz cont =
   set_max_stack_size sz;
@@ -860,9 +860,9 @@ and compile_str_cst reloc sc sz cont =
       if Int.equal (Array.length args) 0 then
         code_construct tag nparams arity cont
       else
-	comp_app
-	  (fun _ _ _ cont -> code_construct tag nparams arity cont)
-	  compile_str_cst reloc () args sz cont
+        comp_app
+          (fun _ _ _ cont -> code_construct tag nparams arity cont)
+          compile_str_cst reloc () args sz cont
   | Bspecial (comp_fx, args) -> comp_fx reloc args sz cont
 
 
@@ -907,12 +907,12 @@ and compile_const reloc kn u args sz cont =
           | ArgConstr cst -> compile_constr reloc cst sz cont
           | ArgUniv uni -> compile_universe reloc uni sz cont
         in
-	let u = Univ.Instance.to_array u in
-	let lu = Array.length u in
-	let all =
-	  Array.init (lu + Array.length args) 
-	    (fun i -> if i < lu then ArgUniv u.(i) else ArgConstr args.(i-lu))
-	in
+        let u = Univ.Instance.to_array u in
+        let lu = Array.length u in
+        let all =
+          Array.init (lu + Array.length args)
+            (fun i -> if i < lu then ArgUniv u.(i) else ArgConstr args.(i-lu))
+        in
         comp_app (fun _ _ _ cont -> Kgetglobal kn :: cont)
           compile_arg reloc () all sz cont
 
@@ -980,10 +980,10 @@ let compile fail_on_error ?universes:(universes=0) env c =
     Some (init_code,!fun_code, Array.of_list fv)
   with TooLargeInductive tname ->
     let fn = if fail_on_error then CErrors.user_err ?loc:None ~hdr:"compile" else
-	       (fun x -> Feedback.msg_warning x) in
+               (fun x -> Feedback.msg_warning x) in
       (Pp.(fn
-	   (str "Cannot compile code for virtual machine as it uses inductive " ++
-	    Id.print tname ++ str str_max_constructors));
+           (str "Cannot compile code for virtual machine as it uses inductive " ++
+            Id.print tname ++ str str_max_constructors));
        None)
 
 let compile_constant_body fail_on_error env univs = function
@@ -996,13 +996,13 @@ let compile_constant_body fail_on_error env univs = function
         | Polymorphic_const univ -> Univ.AUContext.size univ
       in
       match kind body with
-	| Const (kn',u) when is_univ_copy instance_size u ->
-	    (* we use the canonical name of the constant*)
-	    let con= Constant.make1 (Constant.canonical kn') in
-	      Some (BCalias (get_alias env con))
-	| _ ->
-	    let res = compile fail_on_error ~universes:instance_size env body in
-	      Option.map (fun x -> BCdefined (to_memory x)) res
+        | Const (kn',u) when is_univ_copy instance_size u ->
+            (* we use the canonical name of the constant*)
+            let con= Constant.make1 (Constant.canonical kn') in
+              Some (BCalias (get_alias env con))
+        | _ ->
+            let res = compile fail_on_error ~universes:instance_size env body in
+              Option.map (fun x -> BCdefined (to_memory x)) res
 
 (* Shortcut of the previous function used during module strengthening *)
 
@@ -1037,27 +1037,27 @@ let dynamic_int31_compilation fc reloc args sz cont =
   if not fc then raise Not_found else
     let nargs = Array.length args in
       if Int.equal nargs 31 then
-	let (escape,labeled_cont) = make_branch cont in
-	let else_lbl = Label.create() in
-	  comp_args compile_str_cst reloc args sz
+        let (escape,labeled_cont) = make_branch cont in
+        let else_lbl = Label.create() in
+          comp_args compile_str_cst reloc args sz
             ( Kisconst else_lbl::Kareconst(30,else_lbl)::Kcompint31::escape::Klabel else_lbl::Kmakeblock(31, 1)::labeled_cont)
       else
-	let code_construct cont = (* spiwack: variant of the global code_construct
+        let code_construct cont = (* spiwack: variant of the global code_construct
                                      which handles dynamic compilation of
                                      integers *)
           let f_cont =
             let else_lbl = Label.create () in
-	      [Kacc 0; Kpop 1; Kisconst else_lbl; Kareconst(30,else_lbl);
+              [Kacc 0; Kpop 1; Kisconst else_lbl; Kareconst(30,else_lbl);
                Kcompint31; Kreturn 0; Klabel else_lbl; Kmakeblock(31, 1); Kreturn 0]
-	  in
-	  let lbl = Label.create() in
-	    fun_code := [Ksequence (add_grab 31 lbl f_cont,!fun_code)];
-	    Kclosure(lbl,0) :: cont
-	in
-	  if Int.equal nargs 0 then
-	    code_construct cont
-	  else
-	    comp_app (fun _ _ _ cont -> code_construct cont)
+          in
+          let lbl = Label.create() in
+            fun_code := [Ksequence (add_grab 31 lbl f_cont,!fun_code)];
+            Kclosure(lbl,0) :: cont
+        in
+          if Int.equal nargs 0 then
+            code_construct cont
+          else
+            comp_app (fun _ _ _ cont -> code_construct cont)
               compile_str_cst reloc () args sz cont
 
 (*(* template compilation for 2ary operation, it probably possible
@@ -1084,7 +1084,7 @@ let op2_compilation op =
     let (escape, labeled_cont) = make_branch cont in
     let else_lbl = Label.create () in
       comp_args compile_constr reloc args sz
-	(Kisconst else_lbl::(make_areconst 1  else_lbl
+        (Kisconst else_lbl::(make_areconst 1  else_lbl
            (*Kaddint31::escape::Klabel else_lbl::Kpush::*)
            (op::escape::Klabel else_lbl::Kpush::
            (* works as comp_app with nargs = 2 and non-tailcall cont*)
@@ -1124,7 +1124,7 @@ let op_compilation n op =
     let (escape, labeled_cont) = make_branch cont in
     let else_lbl = Label.create () in
       comp_args compile_constr reloc args sz
-	(Kisconst else_lbl::(make_areconst (n-1) else_lbl
+        (Kisconst else_lbl::(make_areconst (n-1) else_lbl
            (*Kaddint31::escape::Klabel else_lbl::Kpush::*)
            (op::escape::Klabel else_lbl::Kpush::
            (* works as comp_app with nargs = n and non-tailcall cont*)

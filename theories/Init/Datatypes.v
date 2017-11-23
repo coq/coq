@@ -188,10 +188,10 @@ Section projections.
   Context {A : Type} {B : Type}.
 
   Definition fst (p:A * B) := match p with
-				| (x, y) => x
+                                | (x, y) => x
                               end.
   Definition snd (p:A * B) := match p with
-				| (x, y) => y
+                                | (x, y) => y
                               end.
 End projections.
 

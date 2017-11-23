@@ -2,11 +2,11 @@ Require Import List.
 
 Set Implicit Arguments.
 
-Definition err : Type := unit. 
+Definition err : Type := unit.
 
 Inductive res (A: Type) : Type :=
 | OK: A -> res A
-| Error: err -> res A. 
+| Error: err -> res A.
 
 Implicit Arguments Error [A].
 
@@ -15,11 +15,11 @@ Set Printing Universes.
 Section FOO.
 
 Inductive ftyp : Type :=
-  | Funit : ftyp 
-  | Ffun : list ftyp -> ftyp 
+  | Funit : ftyp
+  | Ffun : list ftyp -> ftyp
   | Fref : area -> ftyp
-with area : Type := 
-  | Stored : ftyp -> area        
+with area : Type :=
+  | Stored : ftyp -> area
 .
 
 Print ftyp.
@@ -32,16 +32,16 @@ Inductive ftyp : Type (* Top.27429 *) :=
 Fixpoint tc_wf_type (ftype: ftyp) {struct ftype}: res unit :=
   match ftype with
     | Funit => OK tt
-    | Ffun args => 
+    | Ffun args =>
        ((fix tc_wf_types (ftypes: list ftyp){struct ftypes}: res unit :=
            match ftypes with
              | nil => OK tt
              | t::ts =>
                  match tc_wf_type t with
                    | OK tt => tc_wf_types ts
-                   | Error m => Error m 
-                 end 
-           end) args) 
+                   | Error m => Error m
+                 end
+           end) args)
      | Fref a => tc_wf_area a
    end
 with tc_wf_area (ar:area): res unit :=
@@ -61,16 +61,16 @@ Inductive ftyp : Type (* Top.27465 *) :=
 Fixpoint tc_wf_type' (ftype: ftyp) {struct ftype}: res unit :=
   match ftype with
     | Funit => OK tt
-    | Ffun args => 
+    | Ffun args =>
        ((fix tc_wf_types (ftypes: list ftyp){struct ftypes}: res unit :=
            match ftypes with
              | nil => OK tt
              | t::ts =>
                  match tc_wf_type' t with
                    | OK tt => tc_wf_types ts
-                   | Error m => Error m 
-                 end 
-           end) args) 
+                   | Error m => Error m
+                 end
+           end) args)
      | Fref a => tc_wf_area' a
    end
 with tc_wf_area' (ar:area): res unit :=

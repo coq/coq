@@ -18,7 +18,7 @@ Admitted.
 Goal forall (H0 H2 : Type) x p,
        @transport (prod H0 H2)
                   (fun GO : prod H0 H2 => x (fst GO)) = p.
-  intros. 
+  intros.
   match goal with
     | [ |- context[x (?f _)] ] => set(foo':=f)
   end.

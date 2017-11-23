@@ -23,14 +23,14 @@ type reloc_info =
 
 type patch = reloc_info * int
 
-let patch_char4 buff pos c1 c2 c3 c4 = 
+let patch_char4 buff pos c1 c2 c3 c4 =
   Bytes.unsafe_set buff pos       c1;
   Bytes.unsafe_set buff (pos + 1) c2;
   Bytes.unsafe_set buff (pos + 2) c3;
-  Bytes.unsafe_set buff (pos + 3) c4 
-  
+  Bytes.unsafe_set buff (pos + 3) c4
+
 let patch buff (pos, n) =
-  patch_char4 buff pos 
+  patch_char4 buff pos
     (Char.unsafe_chr n) (Char.unsafe_chr (n asr 8))  (Char.unsafe_chr (n asr 16))
     (Char.unsafe_chr (n asr 24))
 
@@ -67,9 +67,9 @@ let out_word b1 b2 b3 b4 =
       if len <= Sys.max_string_length / 2
       then 2 * len
       else
-	if len = Sys.max_string_length
-	then invalid_arg "String.create"  (* Pas la bonne exception .... *)
-	else Sys.max_string_length in
+        if len = Sys.max_string_length
+        then invalid_arg "String.create"  (* Pas la bonne exception .... *)
+        else Sys.max_string_length in
     let new_buffer = Bytes.create new_len in
     Bytes.blit !out_buffer 0 new_buffer 0 len;
     out_buffer := new_buffer
@@ -130,7 +130,7 @@ let out_label_with_orig orig lbl =
          thus I commented that out. If there is no problem I suggest
          removing it for next release (cur: 8.1) *)
       (*if patchlist = [] then *)
-	(!label_table).(lbl) <-
+        (!label_table).(lbl) <-
           Label_undefined((!out_position, orig) :: patchlist);
       out_int 0
 
@@ -277,9 +277,9 @@ let emit_instr = function
 (* Emission of a current list and remaining lists of instructions. Include some peephole optimization. *)
 
 let rec emit insns remaining = match insns with
-  | [] -> 
-     (match remaining with 
-       [] -> () 
+  | [] ->
+     (match remaining with
+       [] -> ()
      | (first::rest) -> emit first rest)
   (* Peephole optimizations *)
   | Kpush :: Kacc n :: c ->
@@ -392,5 +392,5 @@ let to_memory (init_code, fun_code, fv) =
     (match lbl with
       Label_defined _ -> assert true
     | Label_undefined patchlist ->
-	assert (patchlist = []))) !label_table;
+        assert (patchlist = []))) !label_table;
   (code, reloc, fv)

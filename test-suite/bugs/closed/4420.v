@@ -5,7 +5,7 @@ Module foo.
     change foo with (fun x => foo x).
     cbv beta.
     reflexivity.
-  Defined. 
+  Defined.
 End foo.
 
 Inductive foo (A : Type) : Prop := I. (*Top.1*)

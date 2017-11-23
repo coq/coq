@@ -23,13 +23,13 @@ val set_start_hook : (EConstr.types -> unit) -> unit
 val start_proof : Id.t -> ?pl:Univdecls.universe_decl -> goal_kind -> Evd.evar_map ->
   ?terminator:(Proof_global.lemma_possible_guards -> unit declaration_hook -> Proof_global.proof_terminator) ->
   ?sign:Environ.named_context_val -> EConstr.types ->
-  ?init_tac:unit Proofview.tactic -> ?compute_guard:Proof_global.lemma_possible_guards -> 
+  ?init_tac:unit Proofview.tactic -> ?compute_guard:Proof_global.lemma_possible_guards ->
    unit declaration_hook -> unit
 
 val start_proof_univs : Id.t -> ?pl:Univdecls.universe_decl -> goal_kind -> Evd.evar_map ->
   ?terminator:(Proof_global.lemma_possible_guards -> (UState.t option -> unit declaration_hook) -> Proof_global.proof_terminator) ->
   ?sign:Environ.named_context_val -> EConstr.types ->
-  ?init_tac:unit Proofview.tactic -> ?compute_guard:Proof_global.lemma_possible_guards -> 
+  ?init_tac:unit Proofview.tactic -> ?compute_guard:Proof_global.lemma_possible_guards ->
   (UState.t option -> unit declaration_hook) -> unit
 
 val start_proof_com :
@@ -37,7 +37,7 @@ val start_proof_com :
   goal_kind -> Vernacexpr.proof_expr list ->
   unit declaration_hook -> unit
 
-val start_proof_with_initialization : 
+val start_proof_with_initialization :
   goal_kind -> Evd.evar_map -> Univdecls.universe_decl ->
   (bool * Proof_global.lemma_possible_guards * unit Proofview.tactic list option) option ->
   (Id.t (* name of thm *) *

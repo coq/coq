@@ -40,9 +40,9 @@ Section Log_pos. (* Log of positive integers *)
 
   Fixpoint log_sup (p:positive) : Z :=
     match p with
-      | xH => 0	(* 1 *)
+      | xH => 0 (* 1 *)
       | xO n => Z.succ (log_sup n) (* 2n *)
-      | xI n => Z.succ (Z.succ (log_inf n))	(* 2n+1 *)
+      | xI n => Z.succ (Z.succ (log_inf n))     (* 2n+1 *)
     end.
 
   Hint Unfold log_inf log_sup.
@@ -79,19 +79,19 @@ Section Log_pos. (* Log of positive integers *)
   Proof.
     simple induction x; intros; simpl;
       [ elim H; intros Hp HR; clear H; split;
-	[ auto with zarith
-	  | rewrite two_p_S with (x := Z.succ (log_inf p)) by (apply Z.le_le_succ_r; trivial);
-	    rewrite two_p_S by trivial;
-	    rewrite two_p_S in HR by trivial; rewrite (BinInt.Pos2Z.inj_xI p);
-		omega ]
-	| elim H; intros Hp HR; clear H; split;
-	  [ auto with zarith
-	    | rewrite two_p_S with (x := Z.succ (log_inf p)) by (apply Z.le_le_succ_r; trivial);
-	      rewrite two_p_S by trivial;
-	      rewrite two_p_S in HR by trivial; rewrite (BinInt.Pos2Z.inj_xO p);
-		  omega ]
-	| unfold two_power_pos; unfold shift_pos; simpl;
-	  omega ].
+        [ auto with zarith
+          | rewrite two_p_S with (x := Z.succ (log_inf p)) by (apply Z.le_le_succ_r; trivial);
+            rewrite two_p_S by trivial;
+            rewrite two_p_S in HR by trivial; rewrite (BinInt.Pos2Z.inj_xI p);
+                omega ]
+        | elim H; intros Hp HR; clear H; split;
+          [ auto with zarith
+            | rewrite two_p_S with (x := Z.succ (log_inf p)) by (apply Z.le_le_succ_r; trivial);
+              rewrite two_p_S by trivial;
+              rewrite two_p_S in HR by trivial; rewrite (BinInt.Pos2Z.inj_xO p);
+                  omega ]
+        | unfold two_power_pos; unfold shift_pos; simpl;
+          omega ].
   Qed.
 
   Definition log_inf_correct1 (p:positive) := proj1 (log_inf_correct p).
@@ -116,19 +116,19 @@ Section Log_pos. (* Log of positive integers *)
   Proof.
     simple induction p; intros;
       [ elim H; right; simpl;
-	rewrite (two_p_S (log_inf p0) (log_inf_correct1 p0));
-	  rewrite BinInt.Pos2Z.inj_xI; unfold Z.succ; omega
-	| elim H; clear H; intro Hif;
-	  [ left; simpl;
-	    rewrite (two_p_S (log_inf p0) (log_inf_correct1 p0));
-	      rewrite (two_p_S (log_sup p0) (log_sup_correct1 p0));
-		rewrite <- (proj1 Hif); rewrite <- (proj2 Hif);
-		  auto
-	    | right; simpl;
-	      rewrite (two_p_S (log_inf p0) (log_inf_correct1 p0));
-		rewrite BinInt.Pos2Z.inj_xO; unfold Z.succ;
-		  omega ]
-	| left; auto ].
+        rewrite (two_p_S (log_inf p0) (log_inf_correct1 p0));
+          rewrite BinInt.Pos2Z.inj_xI; unfold Z.succ; omega
+        | elim H; clear H; intro Hif;
+          [ left; simpl;
+            rewrite (two_p_S (log_inf p0) (log_inf_correct1 p0));
+              rewrite (two_p_S (log_sup p0) (log_sup_correct1 p0));
+                rewrite <- (proj1 Hif); rewrite <- (proj2 Hif);
+                  auto
+            | right; simpl;
+              rewrite (two_p_S (log_inf p0) (log_inf_correct1 p0));
+                rewrite BinInt.Pos2Z.inj_xO; unfold Z.succ;
+                  omega ]
+        | left; auto ].
   Qed.
 
   Theorem log_sup_correct2 :
@@ -169,8 +169,8 @@ Section Log_pos. (* Log of positive integers *)
   Proof.
     simple induction p; simpl; intros;
       [ elim p0; auto with zarith
-	| elim p0; auto with zarith
-	| trivial with zarith ].
+        | elim p0; auto with zarith
+        | trivial with zarith ].
     intros; apply Z.le_le_succ_r.
     generalize H0; now elim p1.
     intros; apply Z.le_le_succ_r.
@@ -245,21 +245,21 @@ Section divers.
   Proof.
     split;
       [ elim p;
-	[ simpl; tauto
-	  | simpl; intros; generalize (H H0); intro H1; elim H1;
-	    intros y0 Hy0; exists (S y0); rewrite Hy0; reflexivity
-	  | intro; exists 0%nat; reflexivity ]
-	| intros; elim H; intros; rewrite H0; elim x; intros; simpl; trivial ].
+        [ simpl; tauto
+          | simpl; intros; generalize (H H0); intro H1; elim H1;
+            intros y0 Hy0; exists (S y0); rewrite Hy0; reflexivity
+          | intro; exists 0%nat; reflexivity ]
+        | intros; elim H; intros; rewrite H0; elim x; intros; simpl; trivial ].
   Qed.
 
   Lemma Is_power_or : forall p:positive, Is_power p \/ ~ Is_power p.
   Proof.
     simple induction p;
       [ intros; right; simpl; tauto
-	| intros; elim H;
-	  [ intros; left; simpl; exact H0
-	    | intros; right; simpl; exact H0 ]
-	| left; simpl; trivial ].
+        | intros; elim H;
+          [ intros; left; simpl; exact H0
+            | intros; right; simpl; exact H0 ]
+        | left; simpl; trivial ].
   Qed.
 
 End divers.

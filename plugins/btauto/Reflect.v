@@ -15,7 +15,7 @@ Inductive formula :=
 | formula_ifb : formula -> formula -> formula -> formula.
 
 Fixpoint formula_eval var f := match f with
-| formula_var x => list_nth x var false 
+| formula_var x => list_nth x var false
 | formula_btm => false
 | formula_top => true
 | formula_cnj fl fr => (formula_eval var fl) && (formula_eval var fr)
@@ -35,7 +35,7 @@ Section Translation.
 (* This is straightforward. *)
 
 Fixpoint poly_of_formula f := match f with
-| formula_var x => Poly (Cst false) x (Cst true) 
+| formula_var x => Poly (Cst false) x (Cst true)
 | formula_btm => Cst false
 | formula_top => Cst true
 | formula_cnj fl fr =>

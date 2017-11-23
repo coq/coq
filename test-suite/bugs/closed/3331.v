@@ -27,5 +27,5 @@ Section groupoid_category.
     set (foo:=_ : Contr (idpath = idpath :> (@paths (@paths X d d) idpath idpath))). (* success *)
     clear H' foo.
     Set Typeclasses Debug.
-    pose (_ : Contr (idpath = idpath :> (@paths (@paths X d d) idpath idpath))). 
-Abort. 
+    pose (_ : Contr (idpath = idpath :> (@paths (@paths X d d) idpath idpath))).
+Abort.

@@ -27,7 +27,7 @@ let conv_leq_vecti env v1 v2 =
     v1
     v2
 
-let check_constraints cst env = 
+let check_constraints cst env =
   if Environ.check_constraints cst env then ()
   else error_unsatisfied_constraints env cst
 
@@ -87,12 +87,12 @@ let judge_of_apply env (f,funj) argjv =
     | (h,hj)::restjl ->
         (match whd_all env typ with
           | Prod (_,c1,c2) ->
-	      (try conv_leq env hj c1
-	      with NotConvertible ->
-		error_cant_apply_bad_type env (n,c1, hj) (f,funj) argjv);
-	      apply_rec (n+1) (subst1 h c2) restjl
+              (try conv_leq env hj c1
+              with NotConvertible ->
+                error_cant_apply_bad_type env (n,c1, hj) (f,funj) argjv);
+              apply_rec (n+1) (subst1 h c2) restjl
           | _ ->
-	      error_cant_apply_not_functional env (f,funj) argjv)
+              error_cant_apply_not_functional env (f,funj) argjv)
   in
   apply_rec 1 funj (Array.to_list argjv)
 
@@ -253,16 +253,16 @@ let rec execute env cstr =
 
     | App (f,args) ->
         let jl = execute_array env args in
-	let j =
-	  match f with
-	    | Ind ind ->
-		judge_of_inductive_knowing_parameters env ind jl
-	    | _ ->
-		(* No template polymorphism *)
-		execute env f
-	in
+        let j =
+          match f with
+            | Ind ind ->
+                judge_of_inductive_knowing_parameters env ind jl
+            | _ ->
+                (* No template polymorphism *)
+                execute env f
+        in
         let jl = Array.map2 (fun c ty -> c,ty) args jl in
-	judge_of_apply env (f,j) jl
+        judge_of_apply env (f,j) jl
 
     | Proj (p, c) ->
         let ct = execute env c in
@@ -270,15 +270,15 @@ let rec execute env cstr =
 
     | Lambda (name,c1,c2) ->
         let _ = execute_type env c1 in
-	let env1 = push_rel (LocalAssum (name,c1)) env in
+        let env1 = push_rel (LocalAssum (name,c1)) env in
         let j' = execute env1 c2 in
         Prod(name,c1,j')
 
     | Prod (name,c1,c2) ->
         let varj = execute_type env c1 in
-	let env1 = push_rel (LocalAssum (name,c1)) env in
+        let env1 = push_rel (LocalAssum (name,c1)) env in
         let varj' = execute_type env1 c2 in
-	Sort (sort_of_product env varj varj')
+        Sort (sort_of_product env varj varj')
 
     | LetIn (name,c1,c2,c3) ->
         let j1 = execute env c1 in
@@ -295,7 +295,7 @@ let rec execute env cstr =
     | Cast (c,k,t) ->
         let cj = execute env c in
         let _ = execute_type env t in
-	judge_of_cast env (c,cj) k t;
+        judge_of_cast env (c,cj) k t;
         t
 
     (* Inductive types *)
@@ -312,20 +312,20 @@ let rec execute env cstr =
         let fix_ty = execute_recdef env recdef i in
         let fix = (vni,recdef) in
         check_fix env fix;
-	fix_ty
+        fix_ty
 
     | CoFix (i,recdef) ->
         let fix_ty = execute_recdef env recdef i in
         let cofix = (i,recdef) in
         check_cofix env cofix;
-	fix_ty
+        fix_ty
 
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->
-	anomaly (Pp.str "the kernel does not support metavariables.")
+        anomaly (Pp.str "the kernel does not support metavariables.")
 
     | Evar _ ->
-	anomaly (Pp.str "the kernel does not support existential variables.")
+        anomaly (Pp.str "the kernel does not support existential variables.")
 
 and execute_type env constr =
   let j = execute env constr in

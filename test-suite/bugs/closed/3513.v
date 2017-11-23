@@ -91,4 +91,4 @@ Debug: 2.2.1.1.1.1: apply ILFun_ILogic on (ILogic OPred)
   Set Printing All.
   (* As in 8.5, allow a shelved subgoal to remain *)
   apply reflexivity.
-  
+

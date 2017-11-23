@@ -6,7 +6,7 @@ Set Asymmetric Patterns.
 
 Module MemSig.
   Definition t: Type := list Type.
-  
+
   Definition Nth (sig: t) (n: nat) :=
     nth n sig unit.
 End MemSig.
@@ -23,7 +23,7 @@ End Mem.
 Module Ref.
   Inductive t (sig: MemSig.t) (T: Type): Type :=
   | Input: t sig T.
-  
+
   Definition Read (sig: MemSig.t) (T: Type) (ref: t sig T) (s: Mem.t sig)
     : option T :=
     match ref with
@@ -34,11 +34,11 @@ End Ref.
 Module Monad.
   Definition t (sig: MemSig.t) (A: Type) :=
     Mem.t sig -> option A * Mem.t sig.
-  
+
   Definition Return (sig: MemSig.t) (A: Type) (x: A): t sig A :=
     fun s =>
       (Some x, s).
-  
+
   Definition Bind (sig: MemSig.t) (A B: Type) (x: t sig A) (f: A -> t sig B)
     : t sig B :=
     fun s =>
@@ -49,7 +49,7 @@ Module Monad.
 
   Definition Select (T: Type) (f g: unit -> T): T :=
     f tt.
-  
+
   (** Read in a reference. *)
   Definition Read (sig: MemSig.t) (T: Type) (ref: Ref.t sig T)
     : t sig T :=

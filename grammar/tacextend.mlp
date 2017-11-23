@@ -164,7 +164,7 @@ EXTEND
         let e = parse_user_entry e "" in
         ExtNonTerminal (e, None)
       | s = STRING ->
-	let () = if s = "" then failwith "Empty terminal." in
+        let () = if s = "" then failwith "Empty terminal." in
         ExtTerminal s
     ] ]
   ;

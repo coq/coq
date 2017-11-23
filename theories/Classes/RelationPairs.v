@@ -44,7 +44,7 @@ Definition RelCompFun {A} {B : Type}(R:relation B)(f:A->B) : relation A :=
  fun a a' => R (f a) (f a').
 
 (** Instances on RelCompFun must match syntactically *)
-Typeclasses Opaque RelCompFun. 
+Typeclasses Opaque RelCompFun.
 
 Infix "@@" := RelCompFun (at level 30, right associativity) : signature_scope.
 
@@ -110,21 +110,21 @@ Section RelProd_Instances.
   : Symmetric (RA*RB).
   Proof. firstorder. Qed.
 
-  Global Instance RelProd_Transitive 
+  Global Instance RelProd_Transitive
            `(Transitive _ RA, Transitive _ RB) : Transitive (RA*RB).
   Proof. firstorder. Qed.
 
-  Global Program Instance RelProd_Equivalence 
+  Global Program Instance RelProd_Equivalence
           `(Equivalence _ RA, Equivalence _ RB) : Equivalence (RA*RB).
 
   Lemma FstRel_ProdRel :
     relation_equivalence (RA @@1) (RA*(fun _ _ : B => True)).
   Proof. firstorder. Qed.
-  
+
   Lemma SndRel_ProdRel :
     relation_equivalence (RB @@2) ((fun _ _ : A =>True) * RB).
   Proof. firstorder. Qed.
-  
+
   Global Instance FstRel_sub :
     subrelation (RA*RB) (RA @@1).
   Proof. firstorder. Qed.
@@ -132,11 +132,11 @@ Section RelProd_Instances.
   Global Instance SndRel_sub :
     subrelation (RA*RB) (RB @@2).
   Proof. firstorder. Qed.
-  
+
   Global Instance pair_compat :
     Proper (RA==>RB==> RA*RB) (@pair _ _).
   Proof. firstorder. Qed.
-  
+
   Global Instance fst_compat :
     Proper (RA*RB ==> RA) Fst.
   Proof.

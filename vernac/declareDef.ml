@@ -50,7 +50,7 @@ let declare_definition ident (local, p, k) ce pl imps hook =
     let gr = VarRef ident in
     let () = maybe_declare_manual_implicits false gr imps in
     let () = if Proof_global.there_are_pending_proofs () then
-	       warn_definition_not_visible ident
+               warn_definition_not_visible ident
     in
     gr
   | Discharge | Local | Global ->

@@ -101,9 +101,9 @@ let head_name sigma c = (* Find the head constant of a constr if any *)
     | Cast (c,_,_) | App (c,_) -> hdrec c
     | Proj (kn,_) -> Some (Label.to_id (Constant.label (Projection.constant kn)))
     | Const _ | Ind _ | Construct _ | Var _ as c ->
-	Some (basename_of_global (global_of_constr c))
+        Some (basename_of_global (global_of_constr c))
     | Fix ((_,i),(lna,_,_)) | CoFix (i,(lna,_,_)) ->
-	Some (match lna.(i) with Name id -> id | _ -> assert false)
+        Some (match lna.(i) with Name id -> id | _ -> assert false)
     | Sort _ | Rel _ | Meta _|Evar _|Case (_, _, _, _) -> None
   in
   hdrec c
@@ -137,15 +137,15 @@ let hdchar env sigma c =
     | Var id  -> lowercase_first_char id
     | Sort s -> sort_hdchar (ESorts.kind sigma s)
     | Rel n ->
-	(if n<=k then "p" (* the initial term is flexible product/function *)
-	 else
-	   try match lookup_rel (n-k) env with
-	     | LocalAssum (Name id,_)   | LocalDef (Name id,_,_) -> lowercase_first_char id
-	     | LocalAssum (Anonymous,t) | LocalDef (Anonymous,_,t) -> hdrec 0 (lift (n-k) t)
-	   with Not_found -> "y")
+        (if n<=k then "p" (* the initial term is flexible product/function *)
+         else
+           try match lookup_rel (n-k) env with
+             | LocalAssum (Name id,_)   | LocalDef (Name id,_,_) -> lowercase_first_char id
+             | LocalAssum (Anonymous,t) | LocalDef (Anonymous,_,t) -> hdrec 0 (lift (n-k) t)
+           with Not_found -> "y")
     | Fix ((_,i),(lna,_,_)) | CoFix (i,(lna,_,_)) ->
-	let id = match lna.(i) with Name id -> id | _ -> assert false in
-	lowercase_first_char id
+        let id = match lna.(i) with Name id -> id | _ -> assert false in
+        lowercase_first_char id
     | Evar _ (* We could do better... *)
     | Meta _ | Case (_, _, _, _) -> "y"
   in
@@ -176,7 +176,7 @@ let name_context env sigma hyps =
   snd
     (List.fold_left
        (fun (env,hyps) d ->
-	  let d' = name_assumption env sigma d in (push_rel d' env, d' :: hyps))
+          let d' = name_assumption env sigma d in (push_rel d' env, d' :: hyps))
        (env,[]) (List.rev hyps))
 
 let mkProd_or_LetIn_name env sigma b d = mkProd_or_LetIn (name_assumption env sigma d) b
@@ -306,8 +306,8 @@ let next_name_away_with_default_using_types default na avoid t =
   let id = match na with
     | Name id -> id
     | Anonymous -> match !reserved_type_name t with
-	| Name id -> id
-	| Anonymous -> Id.of_string default in
+        | Name id -> id
+        | Anonymous -> Id.of_string default in
   next_ident_away id avoid
 
 let next_name_away = next_name_away_with_default default_non_dependent_string
@@ -408,15 +408,15 @@ let rename_bound_vars_as_displayed sigma avoid env c =
   let rec rename avoid env c =
     match EConstr.kind sigma c with
     | Prod (na,c1,c2)  ->
-	let na',avoid' =
+        let na',avoid' =
           compute_displayed_name_in sigma
             (RenamingElsewhereFor (env,c2)) avoid na c2 in
-	mkProd (na', c1, rename avoid' (na' :: env) c2)
+        mkProd (na', c1, rename avoid' (na' :: env) c2)
     | LetIn (na,c1,t,c2) ->
-	let na',avoid' =
+        let na',avoid' =
           compute_displayed_let_name_in sigma
             (RenamingElsewhereFor (env,c2)) avoid na c2 in
-	mkLetIn (na',c1,t, rename avoid' (na' :: env) c2)
+        mkLetIn (na',c1,t, rename avoid' (na' :: env) c2)
     | Cast (c,k,t) -> mkCast (rename avoid env c, k,t)
     | _ -> c
   in
@@ -436,8 +436,8 @@ let use_h_based_elimination_names () = !h_based_elimination_names
 open Goptions
 
 let _ = declare_bool_option
-	  { optdepr  = true; (* remove in 8.8 *)
-	    optname  = "use of \"H\"-based proposition names in elimination tactics";
-	    optkey   = ["Standard";"Proposition";"Elimination";"Names"];
-	    optread  = (fun () -> !h_based_elimination_names);
-	    optwrite = (:=) h_based_elimination_names }
+          { optdepr  = true; (* remove in 8.8 *)
+            optname  = "use of \"H\"-based proposition names in elimination tactics";
+            optkey   = ["Standard";"Proposition";"Elimination";"Names"];
+            optread  = (fun () -> !h_based_elimination_names);
+            optwrite = (:=) h_based_elimination_names }

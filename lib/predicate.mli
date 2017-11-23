@@ -9,7 +9,7 @@ module type OrderedType =
     type t
     (** The type of the elements in the set.
 
-	The chosen [t] {b must be infinite}. *)
+        The chosen [t] {b must be infinite}. *)
 
     val compare : t -> t -> int
     (** A total ordering function over the set elements.

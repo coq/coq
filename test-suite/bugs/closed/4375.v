@@ -104,4 +104,4 @@ with cb@{i} (t : Type@{i}) : foo@{i} t :=
 
 Print ca.
 Print cb.
-  
+

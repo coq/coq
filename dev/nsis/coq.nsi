@@ -28,7 +28,7 @@ SetCompressor lzma
 
   ;Folder selection page
   InstallDir "C:\${MY_PRODUCT}"
-  
+
   ;Remember install folder
   InstallDirRegKey HKCU "Software\${MY_PRODUCT}" ""
 
@@ -42,17 +42,17 @@ SetCompressor lzma
   !insertmacro MUI_PAGE_DIRECTORY
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
-  
+
   !insertmacro MUI_UNPAGE_WELCOME
   !insertmacro MUI_UNPAGE_CONFIRM
   !insertmacro MUI_UNPAGE_INSTFILES
-  !insertmacro MUI_UNPAGE_FINISH  
+  !insertmacro MUI_UNPAGE_FINISH
 
 ;--------------------------------
 ;Languages
- 
+
   !insertmacro MUI_LANGUAGE "English"
-  
+
 ;--------------------------------
 ;Language Strings
 
@@ -140,13 +140,13 @@ Section "Coq" Sec1
 
   ;Store install folder
   WriteRegStr HKCU "Software\${MY_PRODUCT}" "" $INSTDIR
-  
+
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Coq" \
-	  "DisplayName" "Coq Version ${VERSION}"
+          "DisplayName" "Coq Version ${VERSION}"
   WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Coq" \
-	  "UninstallString" '"$INSTDIR\Uninstall.exe"'
+          "UninstallString" '"$INSTDIR\Uninstall.exe"'
 
   WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Coq" \
           "DisplayVersion" "${VERSION}"
@@ -162,7 +162,7 @@ Section "Coq" Sec1
 ; Start Menu Entries
 
 ; for the path in the .lnk
-  SetOutPath "$INSTDIR" 
+  SetOutPath "$INSTDIR"
 
   CreateDirectory "$SMPROGRAMS\Coq"
   CreateShortCut "$SMPROGRAMS\Coq\Coq.lnk" "$INSTDIR\bin\coqtop.exe"
@@ -191,7 +191,7 @@ SectionEnd
   !insertmacro MUI_DESCRIPTION_TEXT ${Sec1} $(DESC_1)
   !insertmacro MUI_DESCRIPTION_TEXT ${Sec2} $(DESC_2)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
- 
+
 ;--------------------------------
 ;Uninstaller Section
 
@@ -217,7 +217,7 @@ Section "Uninstall"
   Delete "$SMPROGRAMS\Coq\The Coq HomePage.url"
   Delete "$SMPROGRAMS\Coq\The Coq Standard Library.url"
   Delete "$INSTDIR\Uninstall.exe"
-  
+
   DeleteRegKey /ifempty HKCU "Software\${MY_PRODUCT}"
 
   DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Coq"

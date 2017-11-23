@@ -19,9 +19,9 @@ Require Export Field_theory.
     match Cst t with
     | InitialRing.NotConstant =>
         match t with
-        | rO => 
+        | rO =>
           fun _ => constr:(@FEO C)
-        | rI => 
+        | rI =>
           fun _ => constr:(@FEI C)
         | (radd ?t1 ?t2) =>
           fun _ =>
@@ -213,7 +213,7 @@ Ltac fold_field_cond req :=
 Ltac simpl_PCond FLD :=
   let req := get_FldEq FLD in
   let lemma := get_CondLemma FLD in
-  try (apply lemma; intros lock lock_def; vm_compute; rewrite lock_def; clear lock_def lock); 
+  try (apply lemma; intros lock lock_def; vm_compute; rewrite lock_def; clear lock_def lock);
   protect_fv "field_cond";
   fold_field_cond req;
   try exact I.

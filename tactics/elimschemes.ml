@@ -36,12 +36,12 @@ let optimize_non_type_induction_scheme kind dep sort _ ind =
     let (mib,mip) = Global.lookup_inductive ind in
     let npars =
       (* if a constructor of [ind] contains a recursive call, the scheme
-	 is generalized only wrt recursively uniform parameters *)
+         is generalized only wrt recursively uniform parameters *)
       if (Inductiveops.mis_is_recursive_subset [snd ind] mip.mind_recargs)
       then
-	mib.mind_nparams_rec
+        mib.mind_nparams_rec
       else
-	mib.mind_nparams in
+        mib.mind_nparams in
     let sigma, sort = Evd.fresh_sort_in_family env sigma sort in
     let sigma, t', c' = weaken_sort_scheme env sigma false sort npars c t in
     let sigma, nf = Evarutil.nf_evars_and_universes sigma in
@@ -57,7 +57,7 @@ let build_induction_scheme_in_type dep sort ind =
   let sigma, pind = Evd.fresh_inductive_instance env sigma ind in
   let sigma, c = build_induction_scheme env sigma pind dep sort in
     c, Evd.evar_universe_context sigma
- 
+
 let rect_scheme_kind_from_type =
   declare_individual_scheme_object "_rect_nodep"
     (fun _ x -> build_induction_scheme_in_type false InType x, Safe_typing.empty_private_constants)

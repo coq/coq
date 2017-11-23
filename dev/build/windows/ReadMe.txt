@@ -72,9 +72,9 @@ There are two main usages:
 
   This works reliably, because absolute library paths can be compiled into Coq
   and OCaml.
-  
+
   WARNING: See the "Purpose / Goal" section above for status.
-  
+
   See MakeCoq_85pl2_abs_ocaml.bat for parameters.
 
 - Create a Windows installer.
@@ -82,7 +82,7 @@ There are two main usages:
   This works well for Coq but not so well for OCaml.
 
   WARNING: See the "Purpose / Goal" section above for status.
-  
+
   See MakeCoq_85pl2_installer.bat for parameters.
 
 There is also an option to compile OCaml and Coq inside Cygwin, but this is
@@ -122,14 +122,14 @@ Default value: 64
 ===== -mode =====
 
 Set the installation mode / target folder structure.
-  
+
 Possible values:
 
 mingwinCygwin: Install coq in the default Cygwin mingw sysroot folder.
                This is %DESTCYG%\usr\%ARCH%-w64-mingw32\sys-root\mingw.
                Todo: The coq share folder should be configured to e.g. /share/coq.
                As is, coqc scans the complete share folder, which slows it down 5x for short files.
-               
+
 absoloute:     Install coq in the absolute path given with -destcoq.
                The resulting Coq will not be relocatable.
                That is the root folder must not be renamed/moved.
@@ -299,10 +299,10 @@ Possible values: 8.4pl6, 8.5pl2, 8.5pl3, 8.6
                  (download from https://coq.inria.fr/distrib/V$COQ_VERSION/files/coq-<version>.tar.gz)
                  Others versions might work, but are untested.
                  8.4 is only tested in mode=absoloute
-                 
+
                  git-v8.6, git-trunk
                  (download from https://github.com/coq/coq/archive/<version without git->.zip)
-                 
+
                  /cygdrive/....
                  Use local folder. The sources are archived as coq-local.tar.gz
 
@@ -331,7 +331,7 @@ N: Use prebuilt MinGW libraries from Cygwin
 
 Control the maximum number of make threads for modules which support parallel make.
 
-Possible values: 1..N. 
+Possible values: 1..N.
                  Should not be more than 1.5x the number of cores.
                  Should not be more than available RAM/2GB (e.g. 4 for 8GB)
 
@@ -345,7 +345,7 @@ Possible values: 1..N.
 - Finish / test mingw_in_Cygwin mode (coqide doesn't start, coqc slow cause of scanning complete share folder)
 - Possibly create/login as specific user to bash (not sure if it makes sense - nead to create additional bash login link then)
 - maybe move share/doc/menhir somehwere else (reduces coqc startup time)
-- Use original installed file list for removing files in uninstaller 
+- Use original installed file list for removing files in uninstaller
 
 ==================== Issues with relocation ====================
 

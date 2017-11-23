@@ -32,7 +32,7 @@ val extern_closed_glob : ?lax:bool -> bool -> env -> Evd.evar_map -> closed_glob
 
 (** If [b=true] in [extern_constr b env c] then the variables in the first
    level of quantification clashing with the variables in [env] are renamed.
-    ~lax is for debug printing, when the constr might not be well typed in 
+    ~lax is for debug printing, when the constr might not be well typed in
     env, sigma
 *)
 

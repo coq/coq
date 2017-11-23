@@ -22,8 +22,8 @@ Proof.
   clear.
   apply (proj2_sig (H x0)).
   Undo.
-  apply @proj2_sig. 
-  
+  apply @proj2_sig.
+
 
 (* Toplevel input, characters 21-31:
 Error: Found no subterm matching "proj1_sig ?206" in the current *)

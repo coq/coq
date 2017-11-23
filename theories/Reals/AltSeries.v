@@ -163,7 +163,7 @@ Proof.
   intros; cut (0 < eps / 2);
     [ intro
       | unfold Rdiv; apply Rmult_lt_0_compat;
-	[ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ].
+        [ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ].
   elim (H1 (eps / 2) H5); intros N2 H6.
   elim (p (eps / 2) H5); intros N1 H7.
   set (N := max (S (2 * N1)) N2).
@@ -182,7 +182,7 @@ Proof.
   rewrite Rabs_Ropp; unfold tg_alt; rewrite Rabs_mult;
     rewrite pow_1_abs; rewrite Rmult_1_l; unfold Rminus in H6;
       rewrite Ropp_0 in H6; rewrite <- (Rplus_0_r (Un (S n)));
-	apply H6.
+        apply H6.
   unfold ge; apply le_trans with n.
   apply le_trans with N; [ unfold N; apply le_max_r | assumption ].
   apply le_n_Sn.

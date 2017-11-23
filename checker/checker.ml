@@ -28,7 +28,7 @@ let parse_dir s =
     if n>=len then dirs else
     let pos =
       try
-	String.index_from s n '.'
+        String.index_from s n '.'
       with Not_found -> len
     in
     let dir = String.sub s n (pos-n) in
@@ -235,8 +235,8 @@ let explain_exn = function
       hov 0 (str "Stack overflow")
   | Match_failure(filename,pos1,pos2) ->
       hov 1 (anomaly_string () ++ str "Match failure in file " ++
-	     guill filename ++ str " at line " ++ int pos1 ++
-	     str " character " ++ int pos2 ++ report ())
+             guill filename ++ str " at line " ++ int pos1 ++
+             str " character " ++ int pos2 ++ report ())
   | Not_found ->
       hov 0 (anomaly_string () ++ str "uncaught exception Not_found" ++ report ())
   | Failure s ->
@@ -247,12 +247,12 @@ let explain_exn = function
       hov 0 (fnl () ++ str "User interrupt.")
   | Univ.UniverseInconsistency (o,u,v) ->
       let msg =
-	if !Flags.debug (*!Constrextern.print_universes*) then
-	  spc() ++ str "(cannot enforce" ++ spc() ++ Univ.pr_uni u ++ spc() ++
+        if !Flags.debug (*!Constrextern.print_universes*) then
+          spc() ++ str "(cannot enforce" ++ spc() ++ Univ.pr_uni u ++ spc() ++
           str (match o with Univ.Lt -> "<" | Univ.Le -> "<=" | Univ.Eq -> "=")
-	  ++ spc() ++ Univ.pr_uni v ++ str")"
-	else
-	  mt() in
+          ++ spc() ++ Univ.pr_uni v ++ str")"
+        else
+          mt() in
       hov 0 (str "Error: Universe inconsistency" ++ msg ++ str ".")
   | TypeError(ctx,te) ->
       hov 0 (str "Type error: " ++
@@ -302,12 +302,12 @@ let explain_exn = function
         (str "Error:" ++ spc () ++ Himsg.explain_inductive_error ctx e)*)
   | Assert_failure (s,b,e) ->
       hov 0 (anomaly_string () ++ str "assert failure" ++ spc () ++
-	       (if s = "" then mt ()
-		else
-		  (str "(file \"" ++ str s ++ str "\", line " ++ int b ++
-		   str ", characters " ++ int e ++ str "-" ++
-		   int (e+6) ++ str ")")) ++
-	       report ())
+               (if s = "" then mt ()
+                else
+                  (str "(file \"" ++ str s ++ str "\", line " ++ int b ++
+                   str ", characters " ++ int e ++ str "-" ++
+                   int (e+6) ++ str ")")) ++
+               report ())
   | e -> CErrors.print e (* for anomalies and other uncaught exceptions *)
 
 let parse_args argv =
@@ -317,8 +317,8 @@ let parse_args argv =
       set_impredicative_set (); parse rem
 
     | "-coqlib" :: s :: rem ->
-      if not (exists_dir s) then 
-	fatal_error (str "Directory '" ++ str s ++ str "' does not exist") false;
+      if not (exists_dir s) then
+        fatal_error (str "Directory '" ++ str s ++ str "' does not exist") false;
       Flags.coqlib := s;
       Flags.coqlib_spec := true;
       parse rem

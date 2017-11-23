@@ -237,13 +237,13 @@ Section power_div_with_rest.
   Definition Zdiv_rest_aux (qrd:Z * Z * Z) :=
     let '(q,r,d) := qrd in
       (match q with
-	 | Z0 => (0, r)
-	 | Zpos xH => (0, d + r)
-	 | Zpos (xI n) => (Zpos n, d + r)
-	 | Zpos (xO n) => (Zpos n, r)
-	 | Zneg xH => (-1, d + r)
-	 | Zneg (xI n) => (Zneg n - 1, d + r)
-	 | Zneg (xO n) => (Zneg n, r)
+         | Z0 => (0, r)
+         | Zpos xH => (0, d + r)
+         | Zpos (xI n) => (Zpos n, d + r)
+         | Zpos (xO n) => (Zpos n, r)
+         | Zneg xH => (-1, d + r)
+         | Zneg (xI n) => (Zneg n - 1, d + r)
+         | Zneg (xO n) => (Zneg n, r)
        end, 2 * d).
 
   Definition Zdiv_rest (x:Z) (p:positive) :=

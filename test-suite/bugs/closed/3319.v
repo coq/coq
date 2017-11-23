@@ -20,7 +20,7 @@ Section precategory.
   Lemma issig_morphism xa yb
   : { f : morphism X (projT1 xa) (projT1 yb)
     & is_structure_homomorphism _ _ _ f (projT2 xa) (projT2 yb) }
-    = morphism' xa yb. 
+    = morphism' xa yb.
   Proof.
     admit.
   Defined.

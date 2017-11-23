@@ -49,7 +49,7 @@ val e_new_evar :
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> types -> constr
 
-(** Create a new Type existential variable, as we keep track of 
+(** Create a new Type existential variable, as we keep track of
     them during type-checking and unification. *)
 val new_type_evar :
   env -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
@@ -78,7 +78,7 @@ val e_new_global : evar_map ref -> Globnames.global_reference -> constr
    of [inst] are typed in the occurrence context and their type (seen
    as a telescope) is [sign] *)
 val new_evar_instance :
- named_context_val -> evar_map -> types -> 
+ named_context_val -> evar_map -> types ->
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t -> ?candidates:constr list ->
   ?store:Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool ->

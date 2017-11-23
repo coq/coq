@@ -5,7 +5,7 @@
     <property name="block-comment-start">\(\*</property>
     <property name="block-comment-stop">\*\)</property>
   </metadata>
-  
+
   <styles>
     <style id="comment" _name="Comment" map-to="def:comment"/>
     <style id="coqdoc" _name="Coqdoc text" map-to="def:note"/>
@@ -23,7 +23,7 @@
     <style id="endtactic" _name="Tactic terminator"/>
     <style id="iterator" _name="Tactic iterator"/>
   </styles>
-  
+
   <definitions>
     <define-regex id="space">\s</define-regex>
     <define-regex id="first_ident_char">[_\p{L}]</define-regex>
@@ -46,7 +46,7 @@
       <start>"</start>
       <end>"</end>
       <include>
-	<context ref="escape-seq"/>
+        <context ref="escape-seq"/>
       </include>
     </context>
     <context id="ssr-iter" style-ref="iterator">
@@ -84,163 +84,163 @@
     <context id="coq-ssreflect" class="no-spell-check">
       <include>
         <context ref="string"/>
-	<context id="coqdoc" style-ref="coqdoc" class-disabled="no-spell-check">
-	  <start>\(\*\*(\s|\z)</start>
-	  <end>\*\)</end>
-	  <include>
-	    <context ref="comment-in-comment"/>
-	    <context ref="string"/>
-	    <context ref="escape-seq"/>
-	  </include>
-	</context>
-	<context id="comment" style-ref="comment" class="comment" class-disabled="no-spell-check">
-	  <start>\(\*</start>
-	  <end>\*\)</end>
-	  <include>
-	    <context id="comment-in-comment" style-ref="comment" class="comment" class-disabled="no-spell-check">
-	      <start>\(\*</start>
-	      <end>\*\)</end>
-	      <include>
-		<context ref="comment-in-comment"/>
-		<context ref="string"/>
-		<context ref="escape-seq"/>
-	      </include>
-	    </context>
-	    <context ref="string"/>
-	    <context ref="escape-seq"/>
-	  </include>
-	</context>
-	<context id="declaration">
-	  <start>\%{decl_head}</start>
-	  <end>\%{dot_sep}</end>
-	  <include>
-	    <context sub-pattern="id" where="start" style-ref="identifier"/>
-	    <context sub-pattern="gal" where="start" style-ref="gallina-keyword"/>
-	    <context sub-pattern="id_list" where="start" style-ref="identifier"/>
-	    <context sub-pattern="gal4list" where="start" style-ref="gallina-keyword"/>
-	    <context id="constr-keyword" style-ref="constr-keyword">
-	      <keyword>forall</keyword>
-	      <keyword>fun</keyword>
-	      <keyword>match</keyword>
-	      <keyword>fix</keyword>
-	      <keyword>cofix</keyword>
-	      <keyword>with</keyword>
-	      <keyword>for</keyword>
-	      <keyword>end</keyword>
-	      <keyword>as</keyword>
-	      <keyword>let</keyword>
-	      <keyword>in</keyword>
-	      <keyword>if</keyword>
-	      <keyword>then</keyword>
-	      <keyword>else</keyword>
-	      <keyword>return</keyword>
-	      <keyword>using</keyword>
-	    </context>
-	    <context id="constr-sort" style-ref="constr-sort">
-	      <keyword>Prop</keyword>
-	      <keyword>Set</keyword>
-	      <keyword>Type</keyword>
-	    </context>
-	    <context id="dot-nosep">
-	      <match>\.\.</match>
-	    </context>
-	    <context ref="comment"/>
-	    <context ref="string"/>
-	    <context ref="coqdoc"/>
-	  </include>
-	</context>
-	<context id="proof">
-	  <start>Proof</start>
-	  <end>\%{end_proof}\%{dot_sep}</end>
-	  <include>
-	    <context sub-pattern="0" where="start" style-ref="vernac-keyword"/>
-	    <context sub-pattern="0" where="end" style-ref="vernac-keyword"/>
-	    <context ref="command"/>
-	    <context ref="scope-command"/>
-	    <context ref="hint-command"/>
-	    <context ref="command-for-qualit"/>
-	    <context ref="declaration"/>
-	    <context ref="comment"/>
-	    <context ref="string"/>
-	    <context ref="coqdoc"/>
-	    <context ref="proof"/>
-	    <context ref="undotted-sep"/>
-	    <context id="tactic" extend-parent="false">
+        <context id="coqdoc" style-ref="coqdoc" class-disabled="no-spell-check">
+          <start>\(\*\*(\s|\z)</start>
+          <end>\*\)</end>
+          <include>
+            <context ref="comment-in-comment"/>
+            <context ref="string"/>
+            <context ref="escape-seq"/>
+          </include>
+        </context>
+        <context id="comment" style-ref="comment" class="comment" class-disabled="no-spell-check">
+          <start>\(\*</start>
+          <end>\*\)</end>
+          <include>
+            <context id="comment-in-comment" style-ref="comment" class="comment" class-disabled="no-spell-check">
+              <start>\(\*</start>
+              <end>\*\)</end>
+              <include>
+                <context ref="comment-in-comment"/>
+                <context ref="string"/>
+                <context ref="escape-seq"/>
+              </include>
+            </context>
+            <context ref="string"/>
+            <context ref="escape-seq"/>
+          </include>
+        </context>
+        <context id="declaration">
+          <start>\%{decl_head}</start>
+          <end>\%{dot_sep}</end>
+          <include>
+            <context sub-pattern="id" where="start" style-ref="identifier"/>
+            <context sub-pattern="gal" where="start" style-ref="gallina-keyword"/>
+            <context sub-pattern="id_list" where="start" style-ref="identifier"/>
+            <context sub-pattern="gal4list" where="start" style-ref="gallina-keyword"/>
+            <context id="constr-keyword" style-ref="constr-keyword">
+              <keyword>forall</keyword>
+              <keyword>fun</keyword>
+              <keyword>match</keyword>
+              <keyword>fix</keyword>
+              <keyword>cofix</keyword>
+              <keyword>with</keyword>
+              <keyword>for</keyword>
+              <keyword>end</keyword>
+              <keyword>as</keyword>
+              <keyword>let</keyword>
+              <keyword>in</keyword>
+              <keyword>if</keyword>
+              <keyword>then</keyword>
+              <keyword>else</keyword>
+              <keyword>return</keyword>
+              <keyword>using</keyword>
+            </context>
+            <context id="constr-sort" style-ref="constr-sort">
+              <keyword>Prop</keyword>
+              <keyword>Set</keyword>
+              <keyword>Type</keyword>
+            </context>
+            <context id="dot-nosep">
+              <match>\.\.</match>
+            </context>
+            <context ref="comment"/>
+            <context ref="string"/>
+            <context ref="coqdoc"/>
+          </include>
+        </context>
+        <context id="proof">
+          <start>Proof</start>
+          <end>\%{end_proof}\%{dot_sep}</end>
+          <include>
+            <context sub-pattern="0" where="start" style-ref="vernac-keyword"/>
+            <context sub-pattern="0" where="end" style-ref="vernac-keyword"/>
+            <context ref="command"/>
+            <context ref="scope-command"/>
+            <context ref="hint-command"/>
+            <context ref="command-for-qualit"/>
+            <context ref="declaration"/>
+            <context ref="comment"/>
+            <context ref="string"/>
+            <context ref="coqdoc"/>
+            <context ref="proof"/>
+            <context ref="undotted-sep"/>
+            <context id="tactic" extend-parent="false">
               <start></start>
               <end>\%{dot_sep}</end>
-	      <include>
-	        <context ref="ssr-tac"/>
-	        <context ref="ssr-endtac"/>
-	        <context ref="ssr-iter"/>
-		<context ref="dot-nosep"/>
-		<context ref="constr-keyword"/>
-		<context ref="constr-sort"/>
-	        <context ref="comment"/>
-	        <context ref="string"/>
-	      </include>
-	    </context>
-	  </include>
-	</context>
-	<context id="undotted-sep" style-ref="vernac-keyword">
-	  <match>\%{undotted_sep}</match>
-	</context>
-	<context id="command" style-ref="vernac-keyword">
-	  <keyword>Add</keyword>
-	  <keyword>Check</keyword>
-	  <keyword>Eval</keyword>
-	  <keyword>Load</keyword>
-	  <keyword>Undo</keyword>
+              <include>
+                <context ref="ssr-tac"/>
+                <context ref="ssr-endtac"/>
+                <context ref="ssr-iter"/>
+                <context ref="dot-nosep"/>
+                <context ref="constr-keyword"/>
+                <context ref="constr-sort"/>
+                <context ref="comment"/>
+                <context ref="string"/>
+              </include>
+            </context>
+          </include>
+        </context>
+        <context id="undotted-sep" style-ref="vernac-keyword">
+          <match>\%{undotted_sep}</match>
+        </context>
+        <context id="command" style-ref="vernac-keyword">
+          <keyword>Add</keyword>
+          <keyword>Check</keyword>
+          <keyword>Eval</keyword>
+          <keyword>Load</keyword>
+          <keyword>Undo</keyword>
           <keyword>Restart</keyword>
-	  <keyword>Goal</keyword>
-	  <keyword>Print</keyword>
-	  <keyword>Save</keyword>
-	  <keyword>Comments</keyword>
-	  <keyword>Solve\%{space}+Obligation</keyword>
-	  <keyword>((Uns)|(S))et(\%{space}+\%{ident})+</keyword>
-	  <keyword>(\%{locality}|((Reserved)|(Tactic))\%{space}+)?Notation</keyword>
-	  <keyword>\%{locality}Infix</keyword>
-	  <keyword>(Print)|(Reset)\%{space}+Extraction\%{space}+(Inline)|(Blacklist)</keyword>
-	</context>
-	<context id="hint-command" style-ref="vernac-keyword">
-	  <prefix>\%{locality}Hint\%{space}+</prefix>
-	  <keyword>Resolve</keyword>
-	  <keyword>Immediate</keyword>
-	  <keyword>Constructors</keyword>
-	  <keyword>unfold</keyword>
-	  <keyword>Opaque</keyword>
-	  <keyword>Transparent</keyword>
-	  <keyword>Extern</keyword>
-	</context>
-	<context id="scope-command" style-ref="vernac-keyword">
-	  <suffix>\%{space}+Scope</suffix>
-	  <keyword>\%{locality}Open</keyword>
-	  <keyword>\%{locality}Close</keyword>
-	  <keyword>Bind</keyword>
-	  <keyword>Delimit</keyword>
-	</context>
-	<context id="command-for-qualit">
-	  <suffix>\%{space}+(?'qua'\%{qualit})</suffix>
-	  <keyword>Chapter</keyword>
-	  <keyword>Combined\%{space}+Scheme</keyword>
-	  <keyword>End</keyword>
-	  <keyword>Section</keyword>
-	  <keyword>Arguments</keyword>
-	  <keyword>Implicit\%{space}+Arguments</keyword>
-	  <keyword>(Import)|(Include)</keyword>
-	  <keyword>Require(\%{space}+((Import)|(Export)))?</keyword>
-	  <keyword>(Recursive\%{space}+)?Extraction(\%{space}+(Language\%{space}+(Ocaml)|(Haskell)|(Scheme)|(Toplevel))|(Library)|((No)?Inline)|(Blacklist))?</keyword>
-	  <keyword>Extract\%{space}+(Inlined\%{space}+)?(Constant)|(Inductive)</keyword>
-	  <include>
-	    <context sub-pattern="1" style-ref="vernac-keyword"/>
-	  </include>
-	</context>
-	<context id="command-for-qualit-list" style-ref="vernac-keyword">
-	  <suffix>(?'qua_list'(\%{space}+\%{qualit})+)</suffix>
-	  <keyword>Typeclasses (Transparent)|(Opaque)</keyword>
-	  <include>
-	    <context sub-pattern="qua_list" style-ref="identifier"/>
-	  </include>
-	</context>
+          <keyword>Goal</keyword>
+          <keyword>Print</keyword>
+          <keyword>Save</keyword>
+          <keyword>Comments</keyword>
+          <keyword>Solve\%{space}+Obligation</keyword>
+          <keyword>((Uns)|(S))et(\%{space}+\%{ident})+</keyword>
+          <keyword>(\%{locality}|((Reserved)|(Tactic))\%{space}+)?Notation</keyword>
+          <keyword>\%{locality}Infix</keyword>
+          <keyword>(Print)|(Reset)\%{space}+Extraction\%{space}+(Inline)|(Blacklist)</keyword>
+        </context>
+        <context id="hint-command" style-ref="vernac-keyword">
+          <prefix>\%{locality}Hint\%{space}+</prefix>
+          <keyword>Resolve</keyword>
+          <keyword>Immediate</keyword>
+          <keyword>Constructors</keyword>
+          <keyword>unfold</keyword>
+          <keyword>Opaque</keyword>
+          <keyword>Transparent</keyword>
+          <keyword>Extern</keyword>
+        </context>
+        <context id="scope-command" style-ref="vernac-keyword">
+          <suffix>\%{space}+Scope</suffix>
+          <keyword>\%{locality}Open</keyword>
+          <keyword>\%{locality}Close</keyword>
+          <keyword>Bind</keyword>
+          <keyword>Delimit</keyword>
+        </context>
+        <context id="command-for-qualit">
+          <suffix>\%{space}+(?'qua'\%{qualit})</suffix>
+          <keyword>Chapter</keyword>
+          <keyword>Combined\%{space}+Scheme</keyword>
+          <keyword>End</keyword>
+          <keyword>Section</keyword>
+          <keyword>Arguments</keyword>
+          <keyword>Implicit\%{space}+Arguments</keyword>
+          <keyword>(Import)|(Include)</keyword>
+          <keyword>Require(\%{space}+((Import)|(Export)))?</keyword>
+          <keyword>(Recursive\%{space}+)?Extraction(\%{space}+(Language\%{space}+(Ocaml)|(Haskell)|(Scheme)|(Toplevel))|(Library)|((No)?Inline)|(Blacklist))?</keyword>
+          <keyword>Extract\%{space}+(Inlined\%{space}+)?(Constant)|(Inductive)</keyword>
+          <include>
+            <context sub-pattern="1" style-ref="vernac-keyword"/>
+          </include>
+        </context>
+        <context id="command-for-qualit-list" style-ref="vernac-keyword">
+          <suffix>(?'qua_list'(\%{space}+\%{qualit})+)</suffix>
+          <keyword>Typeclasses (Transparent)|(Opaque)</keyword>
+          <include>
+            <context sub-pattern="qua_list" style-ref="identifier"/>
+          </include>
+        </context>
       </include>
     </context>
   </definitions>

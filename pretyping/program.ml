@@ -11,7 +11,7 @@ open Util
 
 let init_reference dir s () = Coqlib.coq_reference  "Program" dir s
 
-let papp evdref r args = 
+let papp evdref r args =
   let open EConstr in
   let gr = delayed_force r in
     mkApp (Evarutil.e_new_global evdref gr, args)
@@ -53,7 +53,7 @@ let mk_coq_and sigma l =
   let sigma, and_typ = Evarutil.new_global sigma (coq_and ()) in
   sigma, unsafe_fold_right
       (fun c conj ->
-	 EConstr.mkApp (and_typ, [| c ; conj |]))
+         EConstr.mkApp (and_typ, [| c ; conj |]))
       l
 
 (* true = transparent by default, false = opaque if possible *)

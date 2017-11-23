@@ -26,7 +26,7 @@ Class Ring_ops(T:Type)
    {opp:T->T}
    {ring_eq:T->T->Prop}.
 
-Instance zero_notation(T:Type)`{Ring_ops T}:Zero T:= ring0. 
+Instance zero_notation(T:Type)`{Ring_ops T}:Zero T:= ring0.
 Instance one_notation(T:Type)`{Ring_ops T}:One T:= ring1.
 Instance add_notation(T:Type)`{Ring_ops T}:Addition T:= add.
 Instance mul_notation(T:Type)`{Ring_ops T}:@Multiplication T T:= mul.
@@ -162,7 +162,7 @@ Proof.
  (** rings are almost rings*)
  Lemma ring_mul_0_l : forall  x, 0 * x == 0.
  Proof.
-  intro x. setoid_replace (0*x) with ((0+1)*x + -x). 
+  intro x. setoid_replace (0*x) with ((0+1)*x + -x).
   rewrite ring_add_0_l. rewrite ring_mul_1_l .
   rewrite ring_opp_def . fold zero. reflexivity.
   rewrite ring_distr_l . rewrite ring_mul_1_l .
@@ -254,7 +254,7 @@ Lemma ring_opp_mul_r : forall x y, -(x * y) == x * -y.
  Lemma ring_add_0_r : forall  x, (x + 0) == x.
  Proof. intros; mrewrite. Qed.
 
- 
+
  Lemma ring_add_assoc1 : forall x y z, (x + y) + z == (y + z) + x.
  Proof.
   intros;rewrite <- (ring_add_assoc x).
@@ -277,24 +277,24 @@ End Ring.
 
 (** Some simplification tactics*)
 Ltac gen_reflexivity := reflexivity.
- 
+
 Ltac gen_rewrite :=
   repeat first
      [ reflexivity
      | progress rewrite ring_opp_zero
      | rewrite ring_add_0_l
      | rewrite ring_add_0_r
-     | rewrite ring_mul_1_l 
+     | rewrite ring_mul_1_l
      | rewrite ring_mul_1_r
-     | rewrite ring_mul_0_l 
-     | rewrite ring_mul_0_r 
-     | rewrite ring_distr_l 
-     | rewrite ring_distr_r 
-     | rewrite ring_add_assoc 
+     | rewrite ring_mul_0_l
+     | rewrite ring_mul_0_r
+     | rewrite ring_distr_l
+     | rewrite ring_distr_r
+     | rewrite ring_add_assoc
      | rewrite ring_mul_assoc
-     | progress rewrite ring_opp_add 
-     | progress rewrite ring_sub_def 
-     | progress rewrite <- ring_opp_mul_l 
+     | progress rewrite ring_opp_add
+     | progress rewrite ring_sub_def
+     | progress rewrite <- ring_opp_mul_l
      | progress rewrite <- ring_opp_mul_r ].
 
 Ltac gen_add_push x :=

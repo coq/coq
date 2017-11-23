@@ -7,9 +7,9 @@
 (************************************************************************)
 
 (*
- Tactic nsatz: proofs of polynomials equalities in an integral domain 
+ Tactic nsatz: proofs of polynomials equalities in an integral domain
 (commutative ring without zero divisor).
- 
+
 Examples: see test-suite/success/Nsatz.v
 
 Reification is done using type classes, defined in Ncring_tac.v
@@ -94,7 +94,7 @@ Definition check (lpe:list PEZ) (qe:PEZ) (certif: list (list PEZ) * list PEZ) :=
 
 (* Correction *)
 Definition PhiR : list R -> PolZ -> R :=
-  (Pphi ring0 add mul 
+  (Pphi ring0 add mul
     (InitialRing.gen_phiZ ring0 ring1 add mul opp)).
 
 Definition PEevalR : list R -> PEZ -> R :=
@@ -117,13 +117,13 @@ Qed.
 Definition Rtheory:ring_theory ring0 ring1 add mul sub opp _==_.
 apply mk_rt.
 apply ring_add_0_l.
-apply ring_add_comm.   
-apply ring_add_assoc.  
-apply ring_mul_1_l.    
+apply ring_add_comm.
+apply ring_add_assoc.
+apply ring_mul_1_l.
 apply cring_mul_comm.
 apply ring_mul_assoc.
-apply ring_distr_l.    
-apply ring_sub_def.  
+apply ring_distr_l.
+apply ring_sub_def.
 apply ring_opp_def.
 Defined.
 
@@ -138,7 +138,7 @@ Qed.
 Lemma PolZmul_correct : forall P P' l,
   PhiR l (PolZmul P P') == ((PhiR l P) * (PhiR l P')).
 Proof.
-unfold PolZmul, PhiR. intros. 
+unfold PolZmul, PhiR. intros.
  refine (Pmul_ok Rset Rext (Rth_ARth Rset Rext Rtheory)
            (gen_phiZ_morph Rset Rext Rtheory) _ _ _).
 Qed.
@@ -289,11 +289,11 @@ Ltac rev l :=
    | (cons ?x ?l) => let l' := rev l in append1 x l'
   end.
 
-Ltac nsatz_call_n info nparam p rr lp kont := 
+Ltac nsatz_call_n info nparam p rr lp kont :=
 (*  idtac "Trying power: " rr;*)
   let ll := constr:(PEc info :: PEc nparam :: PEpow p rr :: lp) in
 (*  idtac "calcul...";*)
-  nsatz_compute ll; 
+  nsatz_compute ll;
 (*  idtac "done";*)
   match goal with
   | |- (?c::PEpow _ ?r::?lq0)::?lci0 = _ -> _ =>
@@ -320,18 +320,18 @@ Ltac nsatz_call radicalmax info nparam p lp kont :=
 Ltac lterm_goal g :=
   match g with
     ?b1 == ?b2 => constr:(b1::b2::nil)
-  | ?b1 == ?b2 -> ?g => let l := lterm_goal g in constr:(b1::b2::l)     
+  | ?b1 == ?b2 -> ?g => let l := lterm_goal g in constr:(b1::b2::l)
   end.
 
 Ltac reify_goal l le lb:=
   match le with
      nil => idtac
-   | ?e::?le1 => 
+   | ?e::?le1 =>
         match lb with
          ?b::?lb1 => (* idtac "b="; idtac b;*)
            let x := fresh "B" in
            set (x:= b) at 1;
-           change x with (interpret3 e l); 
+           change x with (interpret3 e l);
            clear x;
            reify_goal l le1 lb1
         end
@@ -341,13 +341,13 @@ Ltac get_lpol g :=
   match g with
   (interpret3 ?p _) == _ => constr:(p::nil)
   | (interpret3 ?p _) == _ -> ?g =>
-       let l := get_lpol g in constr:(p::l)     
+       let l := get_lpol g in constr:(p::l)
   end.
 
 Ltac nsatz_generic radicalmax info lparam lvar :=
  let nparam := eval compute in (Z.of_nat (List.length lparam)) in
  match goal with
-  |- ?g => let lb := lterm_goal g in 
+  |- ?g => let lb := lterm_goal g in
      match (match lvar with
               |(@nil _) =>
                  match lparam with
@@ -359,19 +359,19 @@ Ltac nsatz_generic radicalmax info lparam lvar :=
                          let fv := parametres_en_tete fv lparam in
                            (* we reify a second time, with the good order
                               for variables *)
-                         let r := eval red in 
+                         let r := eval red in
                                   (list_reifyl (lterm:=lb) (lvar:=fv)) in r
                      end
                   end
-              |_ => 
+              |_ =>
                 let fv := parametres_en_tete lvar lparam in
                 let r := eval red in (list_reifyl (lterm:=lb) (lvar:=fv)) in r
             end) with
-          |(?fv, ?le) => 
+          |(?fv, ?le) =>
             reify_goal fv le lb ;
-            match goal with 
-                   |- ?g => 
-                       let lp := get_lpol g in 
+            match goal with
+                   |- ?g =>
+                       let lp := get_lpol g in
                        let lpol := eval compute in (List.rev lp) in
                        intros;
 
@@ -379,7 +379,7 @@ Ltac nsatz_generic radicalmax info lparam lvar :=
     match lpol with
     | ?p2::?lp2 => kont p2 lp2
     | _ => idtac "polynomial not in the ideal"
-    end in 
+    end in
 
   SplitPolyList ltac:(fun p lp =>
     let p21 := fresh "p21" in
@@ -387,21 +387,21 @@ Ltac nsatz_generic radicalmax info lparam lvar :=
     set (p21:=p) ;
     set (lp21:=lp);
 (*    idtac "nparam:"; idtac nparam; idtac "p:"; idtac p; idtac "lp:"; idtac lp; *)
-    nsatz_call radicalmax info nparam p lp ltac:(fun c r lq lci => 
+    nsatz_call radicalmax info nparam p lp ltac:(fun c r lq lci =>
       let q := fresh "q" in
-      set (q := PEmul c (PEpow p21 r)); 
-      let Hg := fresh "Hg" in 
-      assert (Hg:check lp21 q (lci,lq) = true); 
+      set (q := PEmul c (PEpow p21 r));
+      let Hg := fresh "Hg" in
+      assert (Hg:check lp21 q (lci,lq) = true);
       [ (vm_compute;reflexivity) || idtac "invalid nsatz certificate"
-      | let Hg2 := fresh "Hg" in 
+      | let Hg2 := fresh "Hg" in
             assert (Hg2: (interpret3 q fv) == 0);
-        [ (*simpl*) idtac; 
+        [ (*simpl*) idtac;
           generalize (@check_correct _ _ _ _ _ _ _ _ _ _ _ fv lp21 q (lci,lq) Hg);
           let cc := fresh "H" in
              (*simpl*) idtac; intro cc; apply cc; clear cc;
           (*simpl*) idtac;
           repeat (split;[assumption|idtac]); exact I
-        | (*simpl in Hg2;*) (*simpl*) idtac; 
+        | (*simpl in Hg2;*) (*simpl*) idtac;
           apply Rintegral_domain_pow with (interpret3 c fv) (N.to_nat r);
           (*simpl*) idtac;
             try apply integral_domain_one_zero;
@@ -411,11 +411,11 @@ Ltac nsatz_generic radicalmax info lparam lvar :=
             try exact integral_domain_minus_one_zero
           || (solve [simpl; unfold R2, equality, eq_notation, addition, add_notation,
                      one, one_notation, multiplication, mul_notation, zero, zero_notation;
-                     discrR || omega]) 
+                     discrR || omega])
           || ((*simpl*) idtac) || idtac "could not prove discrimination result"
         ]
       ]
-) 
+)
 )
 end end end .
 
@@ -430,8 +430,8 @@ Ltac nsatz_default:=
 Tactic Notation "nsatz" := nsatz_default.
 
 Tactic Notation "nsatz" "with"
- "radicalmax" ":=" constr(radicalmax) 
- "strategy" ":=" constr(info) 
+ "radicalmax" ":=" constr(radicalmax)
+ "strategy" ":=" constr(info)
  "parameters" ":=" constr(lparam)
  "variables" ":=" constr(lvar):=
   intros;
@@ -458,7 +458,7 @@ try (try apply Rsth;
   intros; try rewrite H; try rewrite H0; reflexivity)).
  exact Rplus_0_l. exact Rplus_comm. symmetry. apply Rplus_assoc.
  exact Rmult_1_l.  exact Rmult_1_r. symmetry. apply Rmult_assoc.
- exact Rmult_plus_distr_r. intros; apply Rmult_plus_distr_l. 
+ exact Rmult_plus_distr_r. intros; apply Rmult_plus_distr_l.
 exact Rplus_opp_r.
 Defined.
 
@@ -474,8 +474,8 @@ Qed.
 Instance Rcri: (Cring (Rr:=Rri)).
 red. exact Rmult_comm. Defined.
 
-Instance Rdi : (Integral_domain (Rcr:=Rcri)). 
-constructor. 
+Instance Rdi : (Integral_domain (Rcr:=Rcri)).
+constructor.
 exact Rmult_integral. exact R_one_zero. Defined.
 
 (* Rational numbers *)
@@ -485,14 +485,14 @@ Instance Qops: (@Ring_ops Q 0%Q 1%Q Qplus Qmult Qminus Qopp Qeq).
 
 Instance Qri : (Ring (Ro:=Qops)).
 constructor.
-try apply Q_Setoid. 
-apply Qplus_comp. 
-apply Qmult_comp. 
-apply Qminus_comp. 
+try apply Q_Setoid.
+apply Qplus_comp.
+apply Qmult_comp.
+apply Qminus_comp.
 apply Qopp_comp.
  exact Qplus_0_l. exact Qplus_comm. apply Qplus_assoc.
  exact Qmult_1_l.  exact Qmult_1_r. apply Qmult_assoc.
- apply Qmult_plus_distr_l.  intros. apply Qmult_plus_distr_r. 
+ apply Qmult_plus_distr_l.  intros. apply Qmult_plus_distr_r.
 reflexivity. exact Qplus_opp_r.
 Defined.
 
@@ -502,19 +502,19 @@ unfold Qeq. simpl. auto with *. Qed.
 Instance Qcri: (Cring (Rr:=Qri)).
 red. exact Qmult_comm. Defined.
 
-Instance Qdi : (Integral_domain (Rcr:=Qcri)). 
-constructor. 
+Instance Qdi : (Integral_domain (Rcr:=Qcri)).
+constructor.
 exact Qmult_integral. exact Q_one_zero. Defined.
 
 (* Integers *)
 Lemma Z_one_zero: 1%Z <> 0%Z.
-omega. 
+omega.
 Qed.
 
 Instance Zcri: (Cring (Rr:=Zr)).
 red. exact Z.mul_comm. Defined.
 
-Instance Zdi : (Integral_domain (Rcr:=Zcri)). 
-constructor. 
+Instance Zdi : (Integral_domain (Rcr:=Zcri)).
+constructor.
 exact Zmult_integral. exact Z_one_zero. Defined.
 

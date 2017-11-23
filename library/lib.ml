@@ -44,11 +44,11 @@ let iter_objects f i prefix =
 let load_objects i pr = iter_objects load_object i pr
 let open_objects i pr = iter_objects open_object i pr
 
-let subst_objects subst seg = 
+let subst_objects subst seg =
   let subst_one = fun (id,obj as node) ->
     let obj' = subst_object (subst,obj) in
       if obj' == obj then node else
-	(id, obj')
+        (id, obj')
   in
     List.smartmap subst_one seg
 
@@ -63,15 +63,15 @@ let classify_segment seg =
   let rec clean ((substl,keepl,anticipl) as acc) = function
     | (_,CompilingLibrary _) :: _ | [] -> acc
     | ((sp,kn),Leaf o) :: stk ->
-	let id = Names.Label.to_id (Names.KerName.label kn) in
-	  (match classify_object o with
-	     | Dispose -> clean acc stk
-	     | Keep o' ->
-		 clean (substl, (id,o')::keepl, anticipl) stk
-	     | Substitute o' ->
-		 clean ((id,o')::substl, keepl, anticipl) stk
-	     | Anticipate o' ->
-		 clean (substl, keepl, o'::anticipl) stk)
+        let id = Names.Label.to_id (Names.KerName.label kn) in
+          (match classify_object o with
+             | Dispose -> clean acc stk
+             | Keep o' ->
+                 clean (substl, (id,o')::keepl, anticipl) stk
+             | Substitute o' ->
+                 clean ((id,o')::substl, keepl, anticipl) stk
+             | Anticipate o' ->
+                 clean (substl, keepl, o'::anticipl) stk)
     | (_,ClosedSection _) :: stk -> clean acc stk
     (* LEM; TODO: Understand what this does and see if what I do is the
                   correct thing for ClosedMod(ule|type) *)
@@ -177,16 +177,16 @@ let split_lib_gen test =
   in
   let rec findeq after = function
     | hd :: before ->
-      	if test hd
-	then Some (collect after [hd] before)
-	else (match hd with
-		| (sp,ClosedModule  seg)
-		| (sp,ClosedSection seg) ->
-		    (match findeq after seg with
-		       | None -> findeq (hd::after) before
-		       | Some (sub_after,sub_equal,sub_before) ->
-			   Some (sub_after, sub_equal, (List.append sub_before before)))
-		| _ -> findeq (hd::after) before)
+        if test hd
+        then Some (collect after [hd] before)
+        else (match hd with
+                | (sp,ClosedModule  seg)
+                | (sp,ClosedSection seg) ->
+                    (match findeq after seg with
+                       | None -> findeq (hd::after) before
+                       | Some (sub_after,sub_equal,sub_before) ->
+                           Some (sub_after, sub_equal, (List.append sub_before before)))
+                | _ -> findeq (hd::after) before)
     | [] -> None
   in
     match findeq [] !lib_state.lib_stk with
@@ -296,15 +296,15 @@ let start_modtype = start_mod true None
 
 let error_still_opened string oname =
   let id = basename (fst oname) in
-  user_err 
+  user_err
     (str "The " ++ str string ++ str " " ++ Id.print id ++ str " is still opened.")
 
 let end_mod is_type =
   let oname,fs =
     try match find_entry_p is_opening_node with
       | oname,OpenedModule (ty,_,_,fs) ->
-	if ty == is_type then oname, fs
-	else error_still_opened (module_kind ty) oname
+        if ty == is_type then oname, fs
+        else error_still_opened (module_kind ty) oname
       | oname,OpenedSection _ -> error_still_opened "section" oname
       | _ -> assert false
     with Not_found -> user_err (Pp.str "No opened modules.")
@@ -352,7 +352,7 @@ let end_compilation_checks dir =
   in
   let oname =
     try match find_entry_p is_opening_lib with
-      |	(oname, CompilingLibrary prefix) -> oname
+      | (oname, CompilingLibrary prefix) -> oname
       | _ -> assert false
     with Not_found -> anomaly (Pp.str "No module declared.")
   in
@@ -360,8 +360,8 @@ let end_compilation_checks dir =
     match !lib_state.comp_name with
       | None -> anomaly (Pp.str "There should be a module name...")
       | Some m ->
-	  if not (Names.DirPath.equal m dir) then anomaly
-	    (str "The current open module has name" ++ spc () ++ pr_dirpath m ++
+          if not (Names.DirPath.equal m dir) then anomaly
+            (str "The current open module has name" ++ spc () ++ pr_dirpath m ++
              spc () ++ str "and not" ++ spc () ++ pr_dirpath m ++ str ".");
   in
   oname
@@ -413,12 +413,12 @@ type variable_info = Context.Named.Declaration.t * Decl_kinds.binding_kind
 
 type variable_context = variable_info list
 type abstr_info = variable_context * Univ.universe_level_subst * Univ.AUContext.t
-		  
+
 type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 
 type secentry =
   | Variable of (Names.Id.t * Decl_kinds.binding_kind *
-		   Decl_kinds.polymorphic * Univ.ContextSet.t)
+                   Decl_kinds.polymorphic * Univ.ContextSet.t)
   | Context of Univ.ContextSet.t
 
 let sectab =
@@ -451,7 +451,7 @@ let add_section_context ctx =
 let extract_hyps (secs,ohyps) =
   let rec aux = function
     | (Variable (id,impl,poly,ctx)::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
-      let l, r = aux (idl,hyps) in 
+      let l, r = aux (idl,hyps) in
       (decl,impl) :: l, if poly then Univ.ContextSet.union r ctx else r
     | (Variable (_,_,poly,ctx)::idl,hyps) ->
         let l, r = aux (idl,hyps) in
@@ -467,7 +467,7 @@ let instance_from_variable_context =
 
 let named_of_variable_context =
   List.map fst
-  
+
 let add_section_replacement f g poly hyps =
   match !sectab with
   | [] -> ()
@@ -479,7 +479,7 @@ let add_section_replacement f g poly hyps =
     let subst, ctx = Univ.abstract_universes ctx in
     let args = instance_from_variable_context (List.rev sechyps) in
     sectab := (vars,f (inst,args) exps,
-	      g (sechyps,subst,ctx) abs)::sl
+              g (sechyps,subst,ctx) abs)::sl
 
 let add_section_kn poly kn =
   let f x (l1,l2) = (l1,Names.Mindmap.add kn x l2) in
@@ -502,7 +502,7 @@ let variable_section_segment_of_reference = function
   | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
       pi1 (section_segment_of_mutual_inductive kn)
   | _ -> []
-                     
+
 let section_instance = function
   | VarRef id ->
      let eq = function

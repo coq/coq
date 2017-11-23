@@ -57,19 +57,19 @@ let iteri f l =
    | e::l -> f i e ; xiter (i+1) l in
   xiter 0 l
 
-let all_sym_pairs f l = 
+let all_sym_pairs f l =
   let pair_with acc e l = List.fold_left (fun acc x -> (f e x) ::acc) acc l in
 
-  let rec xpairs acc l = 
+  let rec xpairs acc l =
     match l with
       | [] -> acc
       | e::l -> xpairs (pair_with acc e l) l in
     xpairs [] l
 
-let all_pairs f l = 
+let all_pairs f l =
   let pair_with acc e l = List.fold_left (fun acc x -> (f e x) ::acc) acc l in
 
-  let rec xpairs acc l = 
+  let rec xpairs acc l =
     match l with
       | [] -> acc
       | e::lx -> xpairs (pair_with acc e l) lx in
@@ -88,8 +88,8 @@ let rec is_sublist f l1 l2 =
     | [] ,_ -> true
     | e::l1', [] -> false
     | e::l1' , e'::l2' ->
-	if f e e' then is_sublist f l1' l2'
-	else is_sublist f l1 l2'
+        if f e e' then is_sublist f l1' l2'
+        else is_sublist f l1 l2'
 
 let list_try_find f =
   let rec try_find_f = function
@@ -111,17 +111,17 @@ let interval n m =
   in
   interval_n ([],m)
 
-let extract pred l = 
-  List.fold_left (fun (fd,sys) e -> 
-		    match fd with
-		    | None -> 
-			begin
-			  match pred e with
-			  | None -> fd, e::sys
-			  | Some v -> Some(v,e) , sys
-			end
-		    |  _   -> (fd, e::sys)
-		 ) (None,[]) l
+let extract pred l =
+  List.fold_left (fun (fd,sys) e ->
+                    match fd with
+                    | None ->
+                        begin
+                          match pred e with
+                          | None -> fd, e::sys
+                          | Some v -> Some(v,e) , sys
+                        end
+                    |  _   -> (fd, e::sys)
+                 ) (None,[]) l
 
 open Num
 open Big_int
@@ -159,7 +159,7 @@ let gcd_list l =
 let rats_to_ints l =
  let c = ppcm_list unit_big_int l in
   List.map (fun x ->  (div_big_int (mult_big_int (numerator x) c)
-			(denominator x))) l
+                        (denominator x))) l
 
 (* Nasty reordering of lists - useful to trim certificate down *)
 let mapi f l =
@@ -179,7 +179,7 @@ let assoc_pos_assoc l =
   match l with
    | [] -> []
    | (x,l) ::rst -> let (l',j) = assoc_pos i l in
-		     (x,l')::(xpos j rst) in
+                     (x,l')::(xpos j rst) in
   xpos 0 l
 
 let filter_pos f l =
@@ -201,9 +201,9 @@ let  select_pos lpos l =
       match l with
        | []   -> failwith "select_pos"
        | e::l ->
-	  if Int.equal i j
-	  then e:: (xselect (i+1) rpos l)
-	  else xselect (i+1) lpos l in
+          if Int.equal i j
+          then e:: (xselect (i+1) rpos l)
+          else xselect (i+1) lpos l in
   xselect 0 lpos l
 
 (**
@@ -358,13 +358,13 @@ struct
   let rec _hash_list l h =
    match l with
     | []  -> h lxor (Hashtbl.hash [])
-    | e::l -> _hash_list l ((hash e) lxor h) 
+    | e::l -> _hash_list l ((hash e) lxor h)
   in _hash_list l 0
 
 end
 
 (**
-  * MODULE: Labels for atoms in propositional formulas. 
+  * MODULE: Labels for atoms in propositional formulas.
   * Tags are used to identify unused atoms in CNFs, and propagate them back to
   * the original formula. The translation back to Coq then ignores these
   * superfluous items, which speeds the translation up a bit.
@@ -429,26 +429,26 @@ let command exe_path args vl =
 
       finally
         (* Recover the result *)
-	(fun () ->
-	  match status with
-	    | Unix.WEXITED 0 ->
-		let inch = Unix.in_channel_of_descr stdout_read in
-		begin
+        (fun () ->
+          match status with
+            | Unix.WEXITED 0 ->
+                let inch = Unix.in_channel_of_descr stdout_read in
+                begin
                   try Marshal.from_channel inch
                   with any ->
                     failwith
                       (Printf.sprintf "command \"%s\" exited %s" exe_path
                          (Printexc.to_string any))
                 end
-	    | Unix.WEXITED i   ->
+            | Unix.WEXITED i   ->
                 failwith (Printf.sprintf "command \"%s\" exited %i" exe_path i)
-	    | Unix.WSIGNALED i ->
+            | Unix.WSIGNALED i ->
                 failwith (Printf.sprintf "command \"%s\" killed %i" exe_path i)
-	    | Unix.WSTOPPED i  ->
+            | Unix.WSTOPPED i  ->
                 failwith (Printf.sprintf "command \"%s\" stopped %i" exe_path i))
         (* Cleanup  *)
-	(fun () ->
-	  List.iter (fun x -> try Unix.close x with any -> ())
+        (fun () ->
+          List.iter (fun x -> try Unix.close x with any -> ())
             [stdin_read; stdin_write;
              stdout_read; stdout_write;
              stderr_read; stderr_write])

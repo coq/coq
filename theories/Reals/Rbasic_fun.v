@@ -36,7 +36,7 @@ Proof.
 Qed.
 
 (*********)
-Lemma Rmin_case_strong : forall r1 r2 (P:R -> Type), 
+Lemma Rmin_case_strong : forall r1 r2 (P:R -> Type),
   (r1 <= r2 -> P r1) -> (r2 <= r1 -> P r2) -> P (Rmin r1 r2).
 Proof.
   intros r1 r2 P H1 H2; unfold Rmin; destruct (Rle_dec r1 r2); auto with real.
@@ -262,7 +262,7 @@ Proof.
   intros; unfold Rmax; case (Rle_dec x y); intro; assumption.
 Qed.
 
-Lemma Rmax_Rlt : forall x y z, 
+Lemma Rmax_Rlt : forall x y z,
   Rmax x y < z <-> x < z /\ y < z.
 Proof.
 intros x y z; split.
@@ -640,7 +640,7 @@ Proof.
 intros a b c.
 unfold Rmax; destruct (Rle_dec b c); destruct (Rle_dec a b);
   destruct (Rle_dec a c); destruct (Rle_dec b c); auto with real;
-  match goal with 
+  match goal with
   | id :  ~ ?x <= ?y, id2 : ?x <= ?z |- _ =>
    case id; apply Rle_trans with z; auto with real
   | id : ~ ?x <= ?y, id2 : ~ ?z <= ?x |- _ =>
@@ -662,7 +662,7 @@ Proof.
 intros a b c.
 unfold Rmin; destruct (Rle_dec b c); destruct (Rle_dec a b);
   destruct (Rle_dec a c); destruct (Rle_dec b c); auto with real;
-  match goal with 
+  match goal with
   | id :  ~ ?x <= ?y, id2 : ?x <= ?z |- _ =>
    case id; apply Rle_trans with z; auto with real
   | id : ~ ?x <= ?y, id2 : ~ ?z <= ?x |- _ =>

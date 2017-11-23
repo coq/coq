@@ -18,7 +18,7 @@ Require Export Ncring.
 Require Export Ncring_initial.
 Require Export Ncring_tac.
 
-Class Cring {R:Type}`{Rr:Ring R} := 
+Class Cring {R:Type}`{Rr:Ring R} :=
  cring_mul_comm: forall x y:R, x * y == y * x.
 
 
@@ -26,10 +26,10 @@ Ltac reify_goal lvar lexpr lterm:=
   (*idtac lvar; idtac lexpr; idtac lterm;*)
   match lexpr with
      nil => idtac
-   | ?e1::?e2::_ =>  
+   | ?e1::?e2::_ =>
         match goal with
           |- (?op ?u1 ?u2) =>
-           change (op 
+           change (op
              (@Ring_polynom.PEeval
                _ zero one _+_ _*_ _-_ -_ Z Ncring_initial.gen_phiZ N (fun n:N => n)
                (@Ring_theory.pow_N _ 1 multiplication) lvar e1)
@@ -49,16 +49,16 @@ Defined.
 
 Lemma cring_almost_ring_theory:
    almost_ring_theory (R:=R) zero one _+_ _*_ _-_ -_ _==_.
-intros. apply mk_art ;intros. 
-rewrite ring_add_0_l; reflexivity. 
-rewrite ring_add_comm; reflexivity. 
-rewrite ring_add_assoc; reflexivity. 
-rewrite ring_mul_1_l; reflexivity. 
+intros. apply mk_art ;intros.
+rewrite ring_add_0_l; reflexivity.
+rewrite ring_add_comm; reflexivity.
+rewrite ring_add_assoc; reflexivity.
+rewrite ring_mul_1_l; reflexivity.
 apply ring_mul_0_l.
-rewrite cring_mul_comm; reflexivity. 
-rewrite ring_mul_assoc; reflexivity. 
-rewrite ring_distr_l; reflexivity. 
-rewrite ring_opp_mul_l; reflexivity. 
+rewrite cring_mul_comm; reflexivity.
+rewrite ring_mul_assoc; reflexivity.
+rewrite ring_distr_l; reflexivity.
+rewrite ring_opp_mul_l; reflexivity.
 apply ring_opp_add.
 rewrite ring_sub_def ; reflexivity. Defined.
 
@@ -74,12 +74,12 @@ rewrite Ncring_initial.gen_phiZ_mul; reflexivity.
 rewrite Ncring_initial.gen_phiZ_opp; reflexivity.
 rewrite (Zeqb_ok x y H). reflexivity. Defined.
 
-Lemma cring_power_theory : 
+Lemma cring_power_theory :
   @Ring_theory.power_theory R one _*_ _==_ N (fun n:N => n)
   (@Ring_theory.pow_N _  1 multiplication).
 intros; apply Ring_theory.mkpow_th. reflexivity. Defined.
 
-Lemma cring_div_theory: 
+Lemma cring_div_theory:
   div_theory _==_ Z.add Z.mul Ncring_initial.gen_phiZ Z.quotrem.
 intros. apply InitialRing.Ztriv_div_th. unfold Setoid_Theory.
 simpl.   apply ring_setoid. Defined.
@@ -90,13 +90,13 @@ Ltac cring_gen :=
   match goal with
     |- ?g => let lterm := lterm_goal g in
         match eval red in (list_reifyl (lterm:=lterm)) with
-          | (?fv, ?lexpr) => 
+          | (?fv, ?lexpr) =>
            (*idtac "variables:";idtac fv;
            idtac "terms:"; idtac lterm;
            idtac "reifications:"; idtac lexpr; *)
            reify_goal fv lexpr lterm;
-           match goal with 
-             |- ?g => 
+           match goal with
+             |- ?g =>
                generalize
                  (@Ring_polynom.ring_correct _ 0 1 _+_ _*_ _-_ -_ _==_
                         ring_setoid
@@ -120,7 +120,7 @@ Ltac cring_gen :=
 
 Ltac cring_compute:= vm_compute; reflexivity.
 
-Ltac cring:= 
+Ltac cring:=
   intros;
   cring_gen;
   cring_compute.
@@ -137,10 +137,10 @@ Ltac cring_simplify_aux lterm fv lexpr hyp :=
       | ?e::?le =>
         let t := constr:(@Ring_polynom.norm_subst
           Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp Zeq_bool Z.quotrem O nil e) in
-        let te := 
+        let te :=
           constr:(@Ring_polynom.Pphi_dev
-            _ 0 1 _+_ _*_ _-_ -_ 
-            
+            _ 0 1 _+_ _*_ _-_ -_
+
             Z 0%Z 1%Z Zeq_bool
             Ncring_initial.gen_phiZ
             get_signZ fv t) in
@@ -177,11 +177,11 @@ Ltac cring_simplify_aux lterm fv lexpr hyp :=
               end];
         let P:= fresh "P" in
         match hyp with
-          | 1%nat => 
+          | 1%nat =>
             rewrite eq1;
             pattern (@Ring_polynom.Pphi_dev
-            _ 0 1 _+_ _*_ _-_ -_ 
-            
+            _ 0 1 _+_ _*_ _-_ -_
+
             Z 0%Z 1%Z Zeq_bool
             Ncring_initial.gen_phiZ
             get_signZ fv t');
@@ -196,11 +196,11 @@ Ltac cring_simplify_aux lterm fv lexpr hyp :=
           | ?H =>
                rewrite eq1 in H;
                pattern (@Ring_polynom.Pphi_dev
-            _ 0 1 _+_ _*_ _-_ -_ 
-            
+            _ 0 1 _+_ _*_ _-_ -_
+
             Z 0%Z 1%Z Zeq_bool
             Ncring_initial.gen_phiZ
-            get_signZ fv t') in H; 
+            get_signZ fv t') in H;
                match type of H with
                   | (?p ?t)  => set (P:=p) in H
                end;
@@ -251,7 +251,7 @@ Ltac cring_simplify_gen a hyp :=
       set (lt:= lterm);
       let lv:=fresh "fv" in
       set (lv:= fv);
-      (* les termes de fv sont remplacés par des variables 
+      (* les termes de fv sont remplacés par des variables
          pour pouvoir utiliser simpl ensuite sans risquer
          des simplifications indésirables *)
       set_variables fv;

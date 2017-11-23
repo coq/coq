@@ -135,7 +135,7 @@ val unfocus : focus_context -> proofview -> proofview
 
 
 (** The abstract type of tactics *)
-type +'a tactic 
+type +'a tactic
 
 (** Applies a tactic to the current proofview. Returns a tuple
     [a,pv,(b,sh,gu)] where [a] is the return value of the tactic, [pv]
@@ -155,7 +155,7 @@ val apply : Environ.env -> 'a tactic -> proofview -> 'a
 
 (** Unit of the tactic monad. *)
 val tclUNIT : 'a -> 'a tactic
- 
+
 (** Bind operation of the tactic monad. *)
 val tclBIND : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
 
@@ -406,7 +406,7 @@ module Unsafe : sig
       goal. If goals have been solved in [sigma] they will still
       appear as unsolved goals. *)
   val tclEVARS : Evd.evar_map -> unit tactic
-    
+
   (** Like {!tclEVARS} but also checks whether goals have been solved. *)
   val tclEVARSADVANCE : Evd.evar_map -> unit tactic
 
@@ -560,13 +560,13 @@ module V82 : sig
      (in chronological order of insertion). *)
   val grab : proofview -> proofview
 
-  (* Returns the open goals of the proofview together with the evar_map to 
+  (* Returns the open goals of the proofview together with the evar_map to
      interpret them. *)
   val goals : proofview -> Evar.t list Evd.sigma
   [@@ocaml.deprecated "Use [Proofview.proofview]"]
 
   val top_goals : entry -> proofview -> Evar.t list Evd.sigma
-  
+
   (* returns the existential variable used to start the proof *)
   val top_evars : entry -> Evd.evar list
 

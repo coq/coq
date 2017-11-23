@@ -62,7 +62,7 @@ let parse_dir s =
     if n >= len then dirs else
     let pos =
       try
-	String.index_from s n '.'
+        String.index_from s n '.'
       with Not_found -> len
     in
     if Int.equal pos n then user_err Pp.(str @@ s ^ " is an invalid path.");
@@ -214,15 +214,15 @@ let join_reference ns r =
       let (dp1,id1) = repr_qualid q1 in
       let (dp2,id2) = repr_qualid q2 in
       Qualid (loc,
-	      make_qualid
-		(append_dirpath (append_dirpath dp1 (dirpath_of_string (Names.Id.to_string id1))) dp2)
-		id2)
+              make_qualid
+                (append_dirpath (append_dirpath dp1 (dirpath_of_string (Names.Id.to_string id1))) dp2)
+                id2)
   | Qualid (_, q1), Ident (loc, id2) ->
     let (dp1,id1) = repr_qualid q1 in
     Qualid (loc,
-	    make_qualid
-	      (append_dirpath dp1 (dirpath_of_string (Names.Id.to_string id1)))
-	      id2)
+            make_qualid
+              (append_dirpath dp1 (dirpath_of_string (Names.Id.to_string id1)))
+              id2)
   | Ident (_, id1), Qualid (loc, q2) ->
     let (dp2,id2) = repr_qualid q2 in
     Qualid (loc, make_qualid

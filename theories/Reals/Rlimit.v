@@ -328,7 +328,7 @@ Proof.
   intros; cut (eps * / 2 > 0).
   intro; generalize (H0 (eps * / 2) H2); rewrite (Rmult_comm eps (/ 2));
     rewrite <- (Rmult_assoc 2 (/ 2) eps); rewrite (Rinv_r 2).
-  elim (Rmult_ne eps); intros a b; rewrite b; clear a b; trivial. 
+  elim (Rmult_ne eps); intros a b; rewrite b; clear a b; trivial.
   apply (Rlt_dichotomy_converse 2 0); right; generalize Rlt_0_1; intro;
     unfold Rgt; generalize (Rplus_lt_compat_l 1 0 1 H3);
       intro; elim (Rplus_ne 1); intros a b; rewrite a in H4;

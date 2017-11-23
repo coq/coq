@@ -43,11 +43,11 @@ Qed.
 
 
 (* example that Congruence. can solve
-	(dependent function applied to the same argument)*)
+        (dependent function applied to the same argument)*)
 
 Theorem dep3 :
  forall (A : Set) (P : A -> Set) (f g : forall x : A, P x),
- f = g -> forall x : A, f x = g x.		intros.
+ f = g -> forall x : A, f x = g x.              intros.
  congruence.
 Qed.
 

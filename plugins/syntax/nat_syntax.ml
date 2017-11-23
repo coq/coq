@@ -40,10 +40,10 @@ let nat_of_int ?loc n =
       let ref_O = DAst.make ?loc @@ GRef (glob_O, None) in
       let ref_S = DAst.make ?loc @@ GRef (glob_S, None) in
       let rec mk_nat acc n =
-	if n <> zero then
-	  mk_nat (DAst.make ?loc @@ GApp (ref_S, [acc])) (sub_1 n)
-	else
-	  acc
+        if n <> zero then
+          mk_nat (DAst.make ?loc @@ GApp (ref_S, [acc])) (sub_1 n)
+        else
+          acc
       in
       mk_nat ref_O n
     end

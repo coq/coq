@@ -62,7 +62,7 @@ let load_structure i (_,(ind,id,kl,projs)) =
 let cache_structure o =
   load_structure 1 o
 
-let subst_structure (subst,((kn,i),id,kl,projs as obj)) = 
+let subst_structure (subst,((kn,i),id,kl,projs as obj)) =
   let kn' = subst_mind subst kn in
   let projs' =
    (* invariant: struc.s_PROJ is an evaluable reference. Thus we can take *)
@@ -115,7 +115,7 @@ let find_projection = function
   c := [x1:B1]...[xk:Bk](Build_R a1...am t1...t_n)
 
   If ti has the form (ci ui1...uir) where ci is a global reference (or
-  a sort, or a product or a reference to a parameter) and if the 
+  a sort, or a product or a reference to a parameter) and if the
   corresponding projection Li of the structure R is defined, one
   declares a "conversion" between ci and Li.
 
@@ -174,10 +174,10 @@ let keep_true_projections projs kinds =
 let cs_pattern_of_constr env t =
   match kind t with
       App (f,vargs) ->
-	begin
-	  try Const_cs (global_of_constr f) , None, Array.to_list vargs
+        begin
+          try Const_cs (global_of_constr f) , None, Array.to_list vargs
           with e when CErrors.noncritical e -> raise Not_found
-	end
+        end
     | Rel n -> Default_cs, Some n, []
     | Prod (_,a,b) when Vars.noccurn 1 b -> Prod_cs, None, [a; Vars.lift (-1) b]
     | Proj (p, c) ->
@@ -186,10 +186,10 @@ let cs_pattern_of_constr env t =
       Const_cs (ConstRef (Projection.constant p)), None, params @ [c]
     | Sort s -> Sort_cs (Sorts.family s), None, []
     | _ ->
-	begin
-	  try Const_cs (global_of_constr t) , None, []
+        begin
+          try Const_cs (global_of_constr t) , None, []
           with e when CErrors.noncritical e -> raise Not_found
-	end
+        end
 
 let warn_projection_no_head_constant =
   CWarnings.create ~name:"projection-no-head-constant" ~category:"typechecker"
@@ -223,17 +223,17 @@ let compute_canonical_projections warn (con,ind) =
   let comp =
     List.fold_left
       (fun l (spopt,t) -> (* comp=components *)
-	 match spopt with
+         match spopt with
            | Some proji_sp ->
-	       begin
-		 try
-		   let patt, n , args = cs_pattern_of_constr nenv t in
-		     ((ConstRef proji_sp, patt, t, n, args) :: l)
-		 with Not_found ->
+               begin
+                 try
+                   let patt, n , args = cs_pattern_of_constr nenv t in
+                     ((ConstRef proji_sp, patt, t, n, args) :: l)
+                 with Not_found ->
                    if warn then warn_projection_no_head_constant (sign,env,t,con,proji_sp);
                    l
-	       end
-	   | _ -> l)
+               end
+           | _ -> l)
       [] lps in
   List.map (fun (refi,c,t,inj,argj) ->
     (refi,(c,t)),

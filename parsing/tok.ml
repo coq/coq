@@ -103,5 +103,5 @@ let match_pattern =
     | "BULLET", "" ->  (function BULLET s -> s  | _ -> err ())
     | "EOI", "" -> (function EOI -> "" | _ -> err ())
     | pat ->
-	let tok = of_pattern pat in
-	function tok' -> if equal tok tok' then snd pat else err ()
+        let tok = of_pattern pat in
+        function tok' -> if equal tok tok' then snd pat else err ()

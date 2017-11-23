@@ -15,11 +15,11 @@ Definition t' := forall C A a X, ar C A a X X.
 => Error: The term "ar C A a X X" has type "atype A" which is not a (co-)inductive type.
 *)
 
-Record Ar2 C (A:AT) := 
+Record Ar2 C (A:AT) :=
 { ar2 : forall (X Y : C), A
 ; id2 : forall X, coerce _ (ar2 X X) }.
 
-Record Ar3 C (A:AT) := 
+Record Ar3 C (A:AT) :=
 { ar3 : forall (X Y : C), A
 ; id3 : forall X, ar3 X X }.
 (* The command has indeed failed with message:

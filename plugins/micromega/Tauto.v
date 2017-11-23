@@ -68,7 +68,7 @@ Set Implicit Arguments.
     eval_f env  (map_bformula fct f)  = eval_f (fun x => env (fct x)) f.
   Proof.
     induction f ; simpl ; try (rewrite IHf1 ; rewrite IHf2) ; auto.
-    rewrite <- IHf.  auto.    
+    rewrite <- IHf.  auto.
   Qed.
 
 
@@ -98,8 +98,8 @@ Set Implicit Arguments.
 
     Variable unsat : Term'  -> bool.
 
-    Variable unsat_prop : forall t, unsat t  = true ->  
-      forall env, eval' env t -> False. 
+    Variable unsat_prop : forall t, unsat t  = true ->
+      forall env, eval' env t -> False.
 
     Variable deduce : Term' -> Term' -> option Term'.
 
@@ -119,20 +119,20 @@ Set Implicit Arguments.
 
     Fixpoint add_term (t: Term') (cl : clause) : option clause :=
       match cl with
-        | nil => 
+        | nil =>
           match deduce t t with
             | None =>  Some (t ::nil)
             | Some u => if unsat u then None else Some (t::nil)
           end
-        | t'::cl => 
+        | t'::cl =>
           match deduce t t' with
-            | None => 
+            | None =>
               match add_term t cl with
                 | None => None
                 | Some cl' => Some (t' :: cl')
               end
-            | Some u => 
-              if unsat u then None else 
+            | Some u =>
+              if unsat u then None else
                 match add_term t cl with
                   | None => None
                   | Some cl' => Some (t' :: cl')
@@ -153,7 +153,7 @@ Set Implicit Arguments.
       List.map (fun x => (t++x)) f. *)
 
     Definition or_clause_cnf (t:clause) (f:cnf) : cnf :=
-      List.fold_right (fun e acc => 
+      List.fold_right (fun e acc =>
         match or_clause t e with
           | None => acc
           | Some cl => cl :: acc
@@ -187,7 +187,7 @@ Set Implicit Arguments.
 
     Definition eval_cnf (env : Env) (f:cnf) := make_conj  (eval_clause  env) f.
 
-    
+
     Lemma eval_cnf_app : forall env x y, eval_cnf env (x++y) -> eval_cnf env x /\ eval_cnf env y.
     Proof.
       unfold eval_cnf.
@@ -212,7 +212,7 @@ Set Implicit Arguments.
       intros until 0.
       case_eq (unsat t0) ; auto.
       unfold eval_clause.
-      rewrite make_conj_cons. 
+      rewrite make_conj_cons.
       intros. intro.
       apply unsat_prop with (1:= H) (env := env).
       apply deduce_prop with (3:= H0) ; tauto.
@@ -252,7 +252,7 @@ Set Implicit Arguments.
       rewrite H in IHcl.
       simpl in IHcl.
       unfold eval_clause in *.
-      repeat rewrite make_conj_cons in *.    
+      repeat rewrite make_conj_cons in *.
       tauto.
     Qed.
 
@@ -288,7 +288,7 @@ Set Implicit Arguments.
     repeat rewrite make_conj_cons in *.
     tauto.
   Qed.
-    
+
 
   Lemma or_clause_cnf_correct : forall env t f, eval_cnf env (or_clause_cnf t f) -> (eval_clause env t) \/ (eval_cnf env f).
   Proof.
@@ -307,7 +307,7 @@ Set Implicit Arguments.
     intros.
     destruct f.
     simpl in H.
-    simpl in IHf. 
+    simpl in IHf.
     unfold F in H.
     revert H.
     intros.

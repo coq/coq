@@ -926,10 +926,10 @@ let indent_script_item ((ng1,ngl1),nl,beginend,ppl) (cmd,ng) =
       (ng - ngprev + 1, ng1 - 1 :: ngl1)
     else if ng < ngprev then
       (* A subgoal have been solved. Let's compute the new current level
-	 by discarding all levels with 0 remaining goals. *)
+         by discarding all levels with 0 remaining goals. *)
       let rec loop = function
-	| (0, ng2::ngl2) -> loop (ng2,ngl2)
-	| p -> p
+        | (0, ng2::ngl2) -> loop (ng2,ngl2)
+        | p -> p
       in loop (ng1-1, ngl1)
     else
       (* Standard case, same goal number as before *)
@@ -2301,7 +2301,7 @@ let known_state ?(redefine_qed=false) ~cache id =
               let st = Vernacstate.freeze_interp_state `No in
               ignore(stm_vernac_interp id st x)
             );
-	    if eff then update_global_env ()
+            if eff then update_global_env ()
           ), (if eff then `Yes else cache), true
       | `Cmd { cast = x; ceff = eff } -> (fun () ->
           (match !Flags.async_proofs_mode with
@@ -2778,10 +2778,10 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
           VCS.commit id (mkTransCmd x l in_proof `MainQueue);
           (* We can't replay a Definition since universes may be differently
            * inferred.  This holds in Coq >= 8.5 *)
-	  let action = match x.expr with
-	    | VernacDefinition(_, _, DefineBody _) -> CherryPickEnv
-	    | _ -> ReplayCommand x in
-	  VCS.propagate_sideff ~action;
+          let action = match x.expr with
+            | VernacDefinition(_, _, DefineBody _) -> CherryPickEnv
+            | _ -> ReplayCommand x in
+          VCS.propagate_sideff ~action;
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
 

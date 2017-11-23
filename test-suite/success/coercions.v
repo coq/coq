@@ -92,7 +92,7 @@ Fail Check S true.
 
 (* Tests after the inheritance condition constraint is relaxed *)
 
-Inductive list (A : Type) : Type := 
+Inductive list (A : Type) : Type :=
   nil : list A | cons : A -> list A -> list A.
 Inductive vect (A : Type) : nat -> Type :=
   vnil : vect A 0 | vcons : forall n, A -> vect A n -> vect A (1+n).
@@ -119,7 +119,7 @@ Instance atom : coercion T1 T2 := c12.
 Instance pair A B C D (c1 : coercion A B) (c2 : coercion C D) : coercion (A * C) (B * D) :=
   fun x => (c1 (fst x), c2 (snd x)).
 
-Fixpoint l2v2 {A B} {c : coercion A B} (l : list A) : (vect B (size A l)) := 
+Fixpoint l2v2 {A B} {c : coercion A B} (l : list A) : (vect B (size A l)) :=
   match l as l return vect B (size A l) with
   | nil _ => vnil B
   | cons _ x xs => vcons _ _ (c x) (l2v2 xs) end.

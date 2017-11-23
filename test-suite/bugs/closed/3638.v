@@ -15,11 +15,11 @@ Goal forall (A B : Type) (x : O A * O B) (x0 : B),
                           (O_rectnd (fun a : A => O_unit (a, x0)) (fst x)) =
                  g x0 }.
   eexists.
-  Show Existentials. Set Printing Existential Instances. 
+  Show Existentials. Set Printing Existential Instances.
   match goal with
     | [ |- context[?e] ] => is_evar e; let e' := fresh "e'" in set (e' := e)
   end.
-  
+
 
 (* Toplevel input, characters 15-114:
 Anomaly: Bad recursive type. Please report. *)

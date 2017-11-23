@@ -4,8 +4,8 @@ This document is based on documentation originally written by CJ Bell
 for his [vscoq](https://github.com/siegebell/vscoq/) project.
 
 Here, the aim is to provide a "hands on" description of the XML
-protocol that coqtop and IDEs use to communicate. The protocol first appeared 
-with Coq 8.5, and is used by CoqIDE. It will also be used in upcoming 
+protocol that coqtop and IDEs use to communicate. The protocol first appeared
+with Coq 8.5, and is used by CoqIDE. It will also be used in upcoming
 versions of Proof General.
 
 A somewhat out-of-date description of the async state machine is
@@ -82,7 +82,7 @@ Returns information about the protocol and build dates for Coqtop.
 </value>
 ```
 The string fields are the Coq version, the protocol version, the release date, and the compile time of Coqtop.
-The protocol version is a date in YYYYMMDD format, where "20150913" corresponds to Coq 8.6. An IDE that wishes 
+The protocol version is a date in YYYYMMDD format, where "20150913" corresponds to Coq 8.6. An IDE that wishes
 to support multiple Coq versions can use the protocol version information to know how to handle output from Coqtop.
 
 ### <a name="command-add">**Add(stateId: integer, command: string, verbose: boolean)**</a>
@@ -118,7 +118,7 @@ Adds a toplevel command (e.g. vernacular, definition, tactic) to the given state
 ```
 * When closing a focused proof (in the middle of a bunch of interpreted commands),
 the `Qed` will be assigned a prior `stateId` and `nextStateId` will be the id of an already-interpreted
-state that should become the next tip. 
+state that should become the next tip.
 ```html
 <value val="good">
   <pair>
@@ -140,7 +140,7 @@ state that should become the next tip.
     <richpp>${errorMessage}</richpp>
   </value>
   ```
-  - Another kind of error, for example, Qed with a pending goal.	
+  - Another kind of error, for example, Qed with a pending goal.
   ```html
   <value val="fail"><state_id val="${stateId}"/><richpp>${errorMessage}</richpp></value>
   ```
@@ -174,7 +174,7 @@ Moves current tip to `${stateId}`, such that commands may be added to the new st
   </union>
 </value>
 ```
-* Failure: If `stateId` is in an error-state and cannot be jumped to, `errorFreeStateId` is the parent state of ``stateId` that shopuld be edited instead. 
+* Failure: If `stateId` is in an error-state and cannot be jumped to, `errorFreeStateId` is the parent state of ``stateId` that shopuld be edited instead.
 ```html
 <value val="fail" loc_s="${startOffsetOfError}" loc_e="${endOffsetOfError}">
   <state_id val="${errorFreeStateId}"/>
@@ -295,7 +295,7 @@ the STM API, `force` triggers a `Join`.
 <call val="Status"><bool val="${force}"/></call>
 ```
 #### *Returns*
-*  
+*
 ```html
 <status>
   <string>${path}</string>
@@ -386,7 +386,7 @@ the STM API, `force` triggers a `Join`.
 
 
 ### <a name="command-search">**Search([(constraintTypeN: string, constraintValueN: string, positiveConstraintN: boolean)])**</a>
-Searches for objects that satisfy a list of constraints. If `${positiveConstraint}` is `false`, then the constraint is inverted. 
+Searches for objects that satisfy a list of constraints. If `${positiveConstraint}` is `false`, then the constraint is inverted.
 ```html
 <call val="Search">
   <list>

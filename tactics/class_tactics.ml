@@ -495,7 +495,7 @@ let catchable = function
   | Refiner.FailError _ -> true
   | e -> Logic.catchable_exception e
 
-let pr_depth l = 
+let pr_depth l =
   let rec fmt elts =
     match elts with
     | [] -> []
@@ -580,12 +580,12 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
           let hints = build_subclasses ~check:false env sigma (VarRef id) empty_hint_info in
             (List.map_append
              (fun (path,info,c) ->
-	      let info =
-		{ info with Vernacexpr.hint_pattern =
-			    Option.map (Constrintern.intern_constr_pattern env)
-				       info.Vernacexpr.hint_pattern }
-	      in
-	      make_resolves env sigma ~name:(PathHints path)
+              let info =
+                { info with Vernacexpr.hint_pattern =
+                            Option.map (Constrintern.intern_constr_pattern env)
+                                       info.Vernacexpr.hint_pattern }
+              in
+              make_resolves env sigma ~name:(PathHints path)
                   (true,false,not !Flags.quiet) info false
                  (IsConstr (EConstr.of_constr c,Univ.ContextSet.empty)))
                hints)
@@ -927,7 +927,7 @@ module V85 = struct
 
   let eauto_tac strategy depth hints =
     match strategy with
-    | Bfs -> 
+    | Bfs ->
        begin match depth with
        | None -> fix_iterative (eauto_tac hints)
        | Some depth -> fix_iterative_limit depth (eauto_tac hints) end
@@ -935,7 +935,7 @@ module V85 = struct
        match depth with
        | None -> fix (eauto_tac hints)
        | Some depth -> fix_limit depth (eauto_tac hints)
-                                
+
   let real_eauto ?depth strategy unique st hints p evd =
     let res =
       run_on_evars ~st ~unique p evd hints (eauto_tac strategy depth hints)
@@ -1036,8 +1036,8 @@ module Search = struct
     List.fold_left
       (fun sigma gl ->
         let evi = Evd.find_undefined sigma gl in
-	let evi' = Typeclasses.mark_unresolvable evi in
-	Evd.add sigma gl evi')
+        let evi' = Typeclasses.mark_unresolvable evi in
+        Evd.add sigma gl evi')
       sigma goals
 
   let fail_if_nonclass info =
@@ -1175,13 +1175,13 @@ module Search = struct
               Feedback.msg_debug
                 (str"Adding shelved subgoals to the search: " ++
                  prlist_with_sep spc (pr_ev sigma) goals ++
-		 str" while shelving " ++
-		 prlist_with_sep spc (pr_ev sigma) shelved);
+                 str" while shelving " ++
+                 prlist_with_sep spc (pr_ev sigma) shelved);
             shelve_goals shelved <*>
               (if List.is_empty goals then tclUNIT ()
                else
-	         let sigma' = mark_unresolvables sigma goals in
-	         with_shelf (Unsafe.tclEVARS sigma' <*> Unsafe.tclNEWGOALS goals) >>=
+                 let sigma' = mark_unresolvables sigma goals in
+                 with_shelf (Unsafe.tclEVARS sigma' <*> Unsafe.tclNEWGOALS goals) >>=
                       fun s -> result s i (Some (Option.default 0 k + j)))
           end
         in with_shelf res >>= fun (sh, ()) ->
@@ -1198,7 +1198,7 @@ module Search = struct
              (with_shelf (tac <*> filter) >>= fun s ->
               let i = !idx in incr idx; result s i None)
              (fun e' ->
-	      if CErrors.noncritical (fst e') then
+              if CErrors.noncritical (fst e') then
                 (pr_error e'; aux (merge_exceptions e e') tl)
               else iraise e')
     and aux e = function
@@ -1409,7 +1409,7 @@ let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state)
     (fun gl ->
       try V85.eauto85 depth ~only_classes ~st ?strategy dbs gl
       with Not_found ->
-	Refiner.tclFAIL 0 (str"Proof search failed") gl)
+        Refiner.tclFAIL 0 (str"Proof search failed") gl)
   else Search.eauto_tac ~st ~only_classes ?strategy ~depth ~dep:true dbs
 
 (** We compute dependencies via a union-find algorithm.

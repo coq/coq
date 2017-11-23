@@ -98,8 +98,8 @@ Proof.
   set
     (k0 :=
       match Rcase_abs y with
-	| left _ => (1 - up (x / - y))%Z
-	| right _ => (up (x / y) - 1)%Z
+        | left _ => (1 - up (x / - y))%Z
+        | right _ => (up (x / y) - 1)%Z
       end).
   exists k0.
   exists (x - IZR k0 * y).
@@ -152,22 +152,22 @@ Proof.
     rewrite Rmult_assoc; rewrite <- Rinv_r_sym;
       [ rewrite Rmult_1_r | assumption ];
       apply Rplus_le_reg_l with (IZR (up (x / y)) - x / y);
-	rewrite Rplus_0_r; unfold Rdiv;
-	  replace
-	    (IZR (up (x * / y)) - x * / y + (x * / y + (1 - IZR (up (x * / y))))) with
-	    1; [ idtac | ring ]; elim H0; intros _ H2; unfold Rdiv in H2;
-	      exact H2.
+        rewrite Rplus_0_r; unfold Rdiv;
+          replace
+            (IZR (up (x * / y)) - x * / y + (x * / y + (1 - IZR (up (x * / y))))) with
+            1; [ idtac | ring ]; elim H0; intros _ H2; unfold Rdiv in H2;
+              exact H2.
   rewrite (Rabs_right _ Hge); apply Rmult_lt_reg_l with (/ y).
   apply Rinv_0_lt_compat; assumption.
   rewrite <- (Rinv_l_sym _ H); rewrite (Rmult_comm (/ y));
     rewrite Rmult_plus_distr_r; rewrite Rmult_assoc; rewrite <- Rinv_r_sym;
       [ rewrite Rmult_1_r | assumption ];
       apply Rplus_lt_reg_l with (IZR (up (x / y)) - 1);
-	replace (IZR (up (x / y)) - 1 + 1) with (IZR (up (x / y)));
-	  [ idtac | ring ];
-	  replace (IZR (up (x / y)) - 1 + (x * / y + (1 - IZR (up (x / y))))) with
-	    (x * / y); [ idtac | ring ]; elim H0; unfold Rdiv;
-	      intros H2 _; exact H2.
+        replace (IZR (up (x / y)) - 1 + 1) with (IZR (up (x / y)));
+          [ idtac | ring ];
+          replace (IZR (up (x / y)) - 1 + (x * / y + (1 - IZR (up (x / y))))) with
+            (x * / y); [ idtac | ring ]; elim H0; unfold Rdiv;
+              intros H2 _; exact H2.
   destruct (total_order_T 0 y) as [[Hlt|Heq]|Hgt].
   assumption.
   elim H; symmetry ; exact Heq.

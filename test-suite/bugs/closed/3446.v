@@ -47,5 +47,5 @@ Axiom path_sigma_uncurried : forall {A : Type} (P : A -> Type) (u v : sigT P) (p
 Instance isequiv_pr1_contr {A} {P : A -> Type} : IsEquiv (@pr1 A P) | 100.
 Admitted.
 
-Definition path_sigma_hprop {A : Type} {P : A -> Type} (u v : sigT P) : u.1 = v.1 -> u = v := 
+Definition path_sigma_hprop {A : Type} {P : A -> Type} (u v : sigT P) : u.1 = v.1 -> u = v :=
   path_sigma_uncurried P u v o pr1^-1.

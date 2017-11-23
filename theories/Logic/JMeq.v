@@ -31,7 +31,7 @@ Hint Resolve JMeq_refl.
 Definition JMeq_hom {A : Type} (x y : A) := JMeq x y.
 
 Lemma JMeq_sym : forall (A B:Type) (x:A) (y:B), JMeq x y -> JMeq y x.
-Proof. 
+Proof.
 intros; destruct H; trivial.
 Qed.
 
@@ -129,8 +129,8 @@ Qed.
 (** However, when the dependencies are equal, [JMeq (P p) x (P q) y]
     is as strong as [eq_dep U P p x q y] (this uses [JMeq_eq]) *)
 
-Lemma JMeq_eq_dep : 
-  forall U (P:U->Type) p q (x:P p) (y:P q), 
+Lemma JMeq_eq_dep :
+  forall U (P:U->Type) p q (x:P p) (y:P q),
   p = q -> JMeq x y -> eq_dep U P p x q y.
 Proof.
 intros.

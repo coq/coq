@@ -64,7 +64,7 @@ let subst_global subst ref = match ref with
       if ind==ind' then ref, mkInd ind else IndRef ind', mkInd ind'
   | ConstructRef ((kn,i),j as c) ->
       let c',t = subst_constructor subst c in
-	if c'==c then ref,t else ConstructRef c', t
+        if c'==c then ref,t else ConstructRef c', t
 
 let canonical_gr = function
   | ConstRef con -> ConstRef(Constant.make1 (Constant.canonical con))
@@ -192,7 +192,7 @@ module ExtRefOrdered = struct
 
 end
 
-type global_reference_or_constr = 
+type global_reference_or_constr =
   | IsGlobal of global_reference
   | IsConstr of constr
 
@@ -210,9 +210,9 @@ let decode_mind kn =
   let rec dir_of_mp = function
     | MPfile dir -> DirPath.repr dir
     | MPbound mbid ->
-	let _,_,dp = MBId.repr mbid in
-	let id = MBId.to_id mbid in
-	  id::(DirPath.repr dp)
+        let _,_,dp = MBId.repr mbid in
+        let id = MBId.to_id mbid in
+          id::(DirPath.repr dp)
     | MPdot(mp,l) -> (Label.to_id l)::(dir_of_mp mp)
   in
   let mp,sec_dir,l = MutInd.repr3 kn in

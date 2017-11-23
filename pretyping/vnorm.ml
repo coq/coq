@@ -44,7 +44,7 @@ let invert_tag cst tag reloc_tbl =
       let tagj,arity = reloc_tbl.(j) in
       let no_arity = Int.equal arity 0 in
       if Int.equal tag tagj && (cst && no_arity || not (cst || no_arity)) then
-	raise (Find_at j)
+        raise (Find_at j)
       else ()
     done;raise Not_found
   with Find_at j -> (j+1)
@@ -78,10 +78,10 @@ let construct_of_constr const env tag typ =
     if const then
       ((retroknowledge Retroknowledge.get_vm_decompile_constant_info env (mkIndU indu) tag),
        typ) (*spiwack: this may need to be changed in case there are parameters in the
-	               type which may cause a constant value to have an arity.
-	               (type_constructor seems to be all about parameters actually)
-	               but it shouldn't really matter since constant values don't use
-	               their ctyp in the rest of the code.*)
+                       type which may cause a constant value to have an arity.
+                       (type_constructor seems to be all about parameters actually)
+                       but it shouldn't really matter since constant values don't use
+                       their ctyp in the rest of the code.*)
     else
       raise Not_found (* No retroknowledge function (yet) for block decompilation *)
   with Not_found ->
@@ -118,11 +118,11 @@ let build_branches_type env sigma (mind,_ as _ind) mib mip u params dep p =
       let ndecl = List.length decl in
       let papp = mkApp(lift ndecl p,crealargs) in
       if dep then
-	let cstr = ith_constructor_of_inductive ind (i+1) in
+        let cstr = ith_constructor_of_inductive ind (i+1) in
         let relargs = Array.init carity (fun i -> mkRel (carity-i)) in
-	let params = Array.map (lift ndecl) params in
-	let dep_cstr = mkApp(mkApp(mkConstructU (cstr,u),params),relargs) in
-	mkApp(papp,[|dep_cstr|])
+        let params = Array.map (lift ndecl) params in
+        let dep_cstr = mkApp(mkApp(mkConstructU (cstr,u),params),relargs) in
+        mkApp(papp,[|dep_cstr|])
       else papp
     in
     decl, decl_with_letin, codom
@@ -163,9 +163,9 @@ and nf_whd env sigma whd typ =
       let tag = btag b in
       let (tag,ofs) =
         if tag = Cbytecodes.last_variant_tag then
-	  match whd_val (bfield b 0) with
-	  | Vconstr_const tag -> (tag+Cbytecodes.last_variant_tag, 1)
-	  | _ -> assert false
+          match whd_val (bfield b 0) with
+          | Vconstr_const tag -> (tag+Cbytecodes.last_variant_tag, 1)
+          | _ -> assert false
         else (tag, 0) in
       let capp,ctyp = construct_of_constr_block env tag typ in
       let args = nf_bargs env sigma b ofs ctyp in
@@ -191,7 +191,7 @@ and nf_univ_args ~nb_univs mk env sigma stk =
     else match stk with
     | Zapp args :: _ ->
        let inst =
-	 Array.init nb_univs (fun i -> Vm.uni_lvl_val (arg args i))
+         Array.init nb_univs (fun i -> Vm.uni_lvl_val (arg args i))
        in
        Univ.Instance.of_array inst
     | _ -> assert false
@@ -223,11 +223,11 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
   | [] -> c
   | Zapp vargs :: stk ->
       if nargs vargs >= from then
-	let t, args = nf_args ~from:from env sigma vargs t in
-	nf_stk env sigma (mkApp(c,args)) t stk
+        let t, args = nf_args ~from:from env sigma vargs t in
+        nf_stk env sigma (mkApp(c,args)) t stk
       else
-	let rest = from - nargs vargs in
-	nf_stk ~from:rest env sigma c t stk
+        let rest = from - nargs vargs in
+        nf_stk ~from:rest env sigma c t stk
   | Zfix (f,vargs) :: stk ->
       assert (from = 0) ;
       let fa, typ = nf_fix_app env sigma f vargs in
@@ -240,7 +240,7 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       let nparams = mib.mind_nparams in
       let params,realargs = Util.Array.chop nparams allargs in
       let pT =
-	hnf_prod_applist env (type_of_ind env (ind,u)) (Array.to_list params) in
+        hnf_prod_applist env (type_of_ind env (ind,u)) (Array.to_list params) in
       let pT = whd_all env pT in
       let dep, p = nf_predicate env sigma (ind,u) mip params (type_of_switch sw) pT in
       (* Calcul du type des branches *)
@@ -248,8 +248,8 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       (* calcul des branches *)
       let bsw = branch_of_switch (nb_rel env) sw in
       let mkbranch i (n,v) =
-	let decl,decl_with_letin,codom = btypes.(i) in
-	let b = nf_val (Termops.push_rels_assum decl env) sigma v codom in
+        let decl,decl_with_letin,codom = btypes.(i) in
+        let b = nf_val (Termops.push_rels_assum decl env) sigma v codom in
         Termops.it_mkLambda_or_LetIn_from_no_LetIn b decl_with_letin
       in
       let branchs = Array.mapi mkbranch bsw in
@@ -269,7 +269,7 @@ and nf_predicate env sigma ind mip params v pT =
       let vb = body_of_vfun k f in
       let name,dom,codom = decompose_prod env pT in
       let dep,body =
-	nf_predicate (push_rel (LocalAssum (name,dom)) env) sigma ind mip params vb codom in
+        nf_predicate (push_rel (LocalAssum (name,dom)) env) sigma ind mip params vb codom in
       dep, mkLambda(name,dom,body)
   | Vfun f, _ ->
       let k = nb_rel env in
@@ -289,9 +289,9 @@ and nf_args env sigma vargs ?from:(f=0) t =
   let args =
     Array.init len
       (fun i ->
-	let _,dom,codom = decompose_prod env !t in
-	let c = nf_val env sigma (arg vargs (f+i)) dom in
-	t := subst1 c codom; c) in
+        let _,dom,codom = decompose_prod env !t in
+        let c = nf_val env sigma (arg vargs (f+i)) dom in
+        t := subst1 c codom; c) in
   !t,args
 
 and nf_bargs env sigma b ofs t =
@@ -300,9 +300,9 @@ and nf_bargs env sigma b ofs t =
   let args =
     Array.init len
       (fun i ->
-	let _,dom,codom = decompose_prod env !t in
-	let c = nf_val env sigma (bfield b (i+ofs)) dom in
-	t := subst1 c codom; c) in
+        let _,dom,codom = decompose_prod env !t in
+        let c = nf_val env sigma (bfield b (i+ofs)) dom in
+        t := subst1 c codom; c) in
   args
 
 and nf_fun env sigma f typ =

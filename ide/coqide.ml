@@ -99,7 +99,7 @@ let make_coqtop_args fname =
            ~projfile_name:project_file_name#get
        with
        | None -> "", base_args
-       | Some proj -> 
+       | Some proj ->
            proj, coqtop_args_from_project (read_project_file proj) @ base_args
 ;;
 
@@ -149,7 +149,7 @@ let load_file ?(maycreate=false) f =
       | [] -> false
       | sn :: sessions ->
         match sn.fileops#filename with
-	  | Some fn when is_f fn -> notebook#goto_page i; true
+          | Some fn when is_f fn -> notebook#goto_page i; true
           | _ -> search_f (i+1) sessions
     in
     if not (search_f 0 notebook#pages) then begin
@@ -238,7 +238,7 @@ let crash_save exitcode =
     in
     try
       if try_export filename (sn.buffer#get_text ()) then
-	Minilib.log ("Saved "^filename)
+        Minilib.log ("Saved "^filename)
       else Minilib.log ("Could not save "^filename)
     with _ -> Minilib.log ("Could not save "^filename)
   in
@@ -440,9 +440,9 @@ let compile sn =
     |None -> flash_info "Active buffer has no name"
     |Some f ->
       let args = Coq.get_arguments sn.coqtop in
-      let cmd = cmd_coqc#get 
-	^ " " ^ String.concat " " args
-	^ " " ^ (Filename.quote f) ^ " 2>&1"
+      let cmd = cmd_coqc#get
+        ^ " " ^ String.concat " " args
+        ^ " " ^ (Filename.quote f) ^ " 2>&1"
       in
       let buf = Buffer.create 1024 in
       sn.messages#set (Pp.str ("Running: "^cmd));
@@ -1033,8 +1033,8 @@ let build_ui () =
     item "Preferences" ~accel:"<Ctrl>comma" ~stock:`PREFERENCES
       ~callback:(fun _ ->
         begin
-	  try Preferences.configure ~apply:refresh_notebook_pos ()
-	  with _ -> flash_info "Cannot save preferences"
+          try Preferences.configure ~apply:refresh_notebook_pos ()
+          with _ -> flash_info "Cannot save preferences"
         end;
         reset_revert_timer ());
   ];

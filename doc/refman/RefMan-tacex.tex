@@ -12,7 +12,7 @@ The tactics \depind and \depdestr are another solution for inverting
 inductive predicate instances and potentially doing induction at the
 same time. It is based on the \texttt{BasicElim} tactic of Conor McBride which
 works by abstracting each argument of an inductive instance by a variable
-and constraining it by equalities afterwards. This way, the usual 
+and constraining it by equalities afterwards. This way, the usual
 {\tt induction} and {\tt destruct} tactics can be applied to the
 abstracted instance and after simplification of the equalities we get
 the expected goals.
@@ -50,12 +50,12 @@ corresponding equality is added under the abstract instance so that no
 information is actually lost. The goal is now almost amenable to do induction
 or case analysis. One should indeed first move {\tt n} into the goal to
 strengthen it before doing induction, or {\tt n} will be fixed in
-the inductive hypotheses (this does not matter for case analysis). 
+the inductive hypotheses (this does not matter for case analysis).
 As a rule of thumb, all the variables that appear inside constructors in
 the indices of the hypothesis should be generalized. This is exactly
 what the \texttt{generalize\_eqs\_vars} variant does:
 
-\begin{coq_eval} 
+\begin{coq_eval}
 Undo 1.
 \end{coq_eval}
 \begin{coq_example}
@@ -81,14 +81,14 @@ One drawback of this approach is that in the branches one will have to
 substitute the equalities back into the instance to get the right
 assumptions. Sometimes injection of constructors will also be needed to
 recover the needed equalities. Also, some subgoals should be directly
-solved because of inconsistent contexts arising from the constraints on 
+solved because of inconsistent contexts arising from the constraints on
 indexes. The nice thing is that we can make a tactic based on
-discriminate, injection and variants of substitution to automatically 
-do such simplifications (which may involve the K axiom). 
+discriminate, injection and variants of substitution to automatically
+do such simplifications (which may involve the K axiom).
 This is what the {\tt simplify\_dep\_elim} tactic from
 {\tt Coq.Program.Equality} does. For example, we might simplify the
 previous goals considerably:
-% \begin{coq_eval} 
+% \begin{coq_eval}
 % Abort.
 % Goal forall n m:nat, Le (S n) m -> P n m.
 % intros n m H ; generalize_eqs_vars H.
@@ -132,10 +132,10 @@ still be able to invert it, contrary to {\tt dependent
 Require Import Coq.Program.Equality.
 Set Implicit Arguments.
 Variable A : Set.
-Inductive vector : nat -> Type := 
-| vnil : vector 0 
+Inductive vector : nat -> Type :=
+| vnil : vector 0
 | vcons : A -> forall n, vector n -> vector (S n).
-Goal forall n, forall v : vector (S n), 
+Goal forall n, forall v : vector (S n),
   exists v' : vector n, exists a : A, v = vcons a v'.
   intros n v.
 \end{coq_example*}
@@ -174,11 +174,11 @@ Fixpoint conc (G D : ctx) : ctx :=
 Notation " G ; D " := (conc G D) (at level 20).
 Inductive term : ctx -> type -> Type :=
 | ax : forall G tau, term (G, tau) tau
-| weak : forall G tau, 
+| weak : forall G tau,
   term G tau -> forall tau', term (G, tau') tau
-| abs : forall G tau tau', 
+| abs : forall G tau tau',
   term (G , tau) tau' -> term G (tau --> tau')
-| app : forall G tau tau', 
+| app : forall G tau tau',
   term G (tau --> tau') -> term G tau -> term G tau'.
 \end{coq_example*}
 
@@ -197,7 +197,7 @@ terms, hence the name. A term is either an application of:
 Once we have this datatype we want to do proofs on it, like weakening:
 
 \begin{coq_example*}
-Lemma weakening : forall G D tau, term (G ; D) tau -> 
+Lemma weakening : forall G D tau, term (G ; D) tau ->
   forall tau', term (G , tau' ; D) tau.
 \end{coq_example*}
 \begin{coq_eval}
@@ -208,7 +208,7 @@ The problem here is that we can't just use {\tt induction} on the typing
 derivation because it will forget about the {\tt G ; D} constraint
 appearing in the instance. A solution would be to rewrite the goal as:
 \begin{coq_example*}
-Lemma weakening' : forall G' tau, term G' tau -> 
+Lemma weakening' : forall G' tau, term G' tau ->
   forall G D, (G ; D) = G' ->
   forall tau', term (G, tau' ; D) tau.
 \end{coq_example*}
@@ -226,7 +226,7 @@ Indeed we can simply write:
 
 \begin{coq_example*}
 Require Import Coq.Program.Tactics.
-Lemma weakening : forall G D tau, term (G ; D) tau -> 
+Lemma weakening : forall G D tau, term (G ; D) tau ->
   forall tau', term (G , tau' ; D) tau.
 Proof with simpl in * ; simpl_depind ; auto.
   intros G D tau H. dependent induction H generalizing G D ; intros.
@@ -262,7 +262,7 @@ Show.
 \end{coq_example}
 
 Once the induction hypothesis has been narrowed to the right equality,
-it can be used directly. 
+it can be used directly.
 
 \begin{coq_example}
   apply weak, IHterm.
@@ -293,9 +293,9 @@ rewritings and shows how to deal with them using the optional tactic of the
 \begin{coq_example*}
 Reset Initial.
 Require Import Arith.
-Variable Ack : 
+Variable Ack :
            nat -> nat -> nat.
-Axiom Ack0 : 
+Axiom Ack0 :
         forall m:nat, Ack 0 m = S m.
 Axiom Ack1 : forall n:nat, Ack (S n) 0 = Ack n 1.
 Axiom Ack2 : forall n m:nat, Ack (S n) (S m) = Ack n (Ack (S n) m).
@@ -303,7 +303,7 @@ Axiom Ack2 : forall n m:nat, Ack (S n) (S m) = Ack n (Ack (S n) m).
 
 \begin{coq_example}
 Hint Rewrite Ack0 Ack1 Ack2 : base0.
-Lemma ResAck0 : 
+Lemma ResAck0 :
  Ack 3 2 = 29.
 autorewrite with base0 using try reflexivity.
 \end{coq_example}
@@ -317,9 +317,9 @@ Reset Initial.
 
 \begin{coq_example*}
 Require Import Omega.
-Variable g :   
+Variable g :
            nat -> nat -> nat.
-Axiom g0 : 
+Axiom g0 :
         forall m:nat, g 0 m = m.
 Axiom
   g1 :
@@ -333,7 +333,7 @@ Axiom
 
 \begin{coq_example}
 Hint Rewrite g0 g1 g2 using omega : base1.
-Lemma Resg0 : 
+Lemma Resg0 :
  g 1 110 = 100.
 autorewrite with base1 using reflexivity || simpl.
 \end{coq_example}
@@ -356,13 +356,13 @@ Reset Initial.
 
 The tactic \texttt{quote} allows using Barendregt's so-called
 2-level approach without writing any ML code. Suppose you have a
-language \texttt{L} of 
-'abstract terms' and a type \texttt{A} of 'concrete terms' 
+language \texttt{L} of
+'abstract terms' and a type \texttt{A} of 'concrete terms'
 and a function \texttt{f : L -> A}. If \texttt{L} is a simple
 inductive datatype and \texttt{f} a simple fixpoint, \texttt{quote f}
-will replace the head of current goal by a convertible term of the form 
+will replace the head of current goal by a convertible term of the form
 \texttt{(f t)}. \texttt{L} must have a constructor of type: \texttt{A
-  -> L}. 
+  -> L}.
 
 Here is an example:
 
@@ -393,7 +393,7 @@ term with right-hand sides expression of \texttt{f}. If there is a
 match, apply the corresponding left-hand side and call yourself
 recursively on sub-terms. If there is no match, we are at a leaf:
 return the corresponding constructor (here \texttt{f\_const}) applied
-to the term. 
+to the term.
 
 \begin{ErrMsgs}
 \item \errindex{quote: not a simple fixpoint} \\
@@ -403,7 +403,7 @@ to the term.
 \subsection{Introducing variables map}
 
 The normal use of \texttt{quote} is to make proofs by reflection: one
-defines a function \texttt{simplify : formula -> formula} and proves a 
+defines a function \texttt{simplify : formula -> formula} and proves a
 theorem \texttt{simplify\_ok: (f:formula)(interp\_f (simplify f)) ->
   (interp\_f f)}. Then, one can simplify formulas by doing:
 \begin{verbatim}
@@ -412,7 +412,7 @@ theorem \texttt{simplify\_ok: (f:formula)(interp\_f (simplify f)) ->
    compute.
 \end{verbatim}
 But there is a problem with leafs: in the example above one cannot
-write a function that implements, for example, the logical simplifications 
+write a function that implements, for example, the logical simplifications
 $A \land A \ra A$ or $A \land \lnot A \ra \texttt{False}$. This is
 because the \Prop{} is impredicative.
 
@@ -432,7 +432,7 @@ Inductive formula : Set :=
 
 \texttt{index} is defined in module \texttt{quote}. Equality on that
 type is decidable so we are able to simplify $A \land A$ into $A$ at
-the abstract level. 
+the abstract level.
 
 When there are variables, there are bindings, and \texttt{quote}
 provides also a type \texttt{(varmap A)} of bindings from
@@ -469,9 +469,9 @@ the case, for example, for the \texttt{ring} tactic (chapter
 \ref{ring}). Then one must provide to \texttt{quote} a list of
 \emph{constructors of constants}. For example, if the list is
 \texttt{[O S]} then closed natural numbers will be considered as
-constants and other terms as variables. 
+constants and other terms as variables.
 
-Example: 
+Example:
 
 \begin{coq_eval}
 Reset formula.
@@ -495,7 +495,7 @@ Fixpoint interp_f
   | f_const c => c
   | f_atom i => varmap_find True i vm
   end.
-Goal 
+Goal
 A /\ (A \/ True) /\ ~ B /\ (C <-> C).
 \end{coq_example*}
 
@@ -654,8 +654,8 @@ handled, in particular, we cannot make computations with them. So, a
 natural choice is to use {\Coq} data structures so that {\Coq} makes
 the computations (reductions) by {\tt eval compute in} and we can get
 the terms back by {\tt match}.
- 
-With {\tt PermutProve}, we can now prove lemmas as 
+
+With {\tt PermutProve}, we can now prove lemmas as
 % shown on Figure~\ref{permutlem}.
 follows:
 %\begin{figure}
@@ -900,12 +900,12 @@ are then compared modulo permutation of the components (this is done by {\tt
 CompareStruct}). The main tactic to be called and realizing this algorithm is
 {\tt IsoProve}.
 
-% Figure~\ref{isoslem} gives 
+% Figure~\ref{isoslem} gives
 Here are examples of what can be solved by {\tt IsoProve}.
 %\begin{figure}[ht]
 %\begin{centerframe}
 \begin{coq_example*}
-Lemma isos_ex1 : 
+Lemma isos_ex1 :
   forall A B:Set, A * unit * B = B * (unit * A).
 Proof.
 intros; IsoProve.
@@ -924,7 +924,7 @@ Qed.
 %\label{isoslem}
 %\end{figure}
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:

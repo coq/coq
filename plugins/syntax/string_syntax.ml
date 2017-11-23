@@ -50,13 +50,13 @@ let uninterp_string (AnyGlobConstr r) =
     let b = Buffer.create 16 in
     let rec aux c = match DAst.get c with
     | GApp (k,[a;s]) when is_gr k (force glob_String) ->
-	(match uninterp_ascii a with
-	  | Some c -> Buffer.add_char b (Char.chr c); aux s
-	  | _ -> raise Non_closed_string)
+        (match uninterp_ascii a with
+          | Some c -> Buffer.add_char b (Char.chr c); aux s
+          | _ -> raise Non_closed_string)
     | GRef (z,_) when eq_gr z (force glob_EmptyString) ->
-	Some (Buffer.contents b)
+        Some (Buffer.contents b)
     | _ ->
-	raise Non_closed_string
+        raise Non_closed_string
     in aux r
   with
    Non_closed_string -> None

@@ -21,7 +21,7 @@ Check ltac:(abstract (exact I)) : True.
 
 Goal forall (a b : Foo), Decidable (a=b) * Decidable (a=b).
 intros.
-split. typeclasses eauto. 
+split. typeclasses eauto.
 typeclasses eauto. Qed.
 
 Goal forall (a b : Foo), Decidable (a=b) * Decidable (a=b).

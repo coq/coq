@@ -27,7 +27,7 @@ Goal forall C D : PreCategory,
 (*                     (opposite D).(morphism) d s) =  *)
 (*                    @Build_PreCategory D (fun s d => morphism D d s)). *)
 (* opposite D). *)
-  exact (path_forall (fun F => (F^op)^op) _ (@oppositeF_involutive _ _)). 
+  exact (path_forall (fun F => (F^op)^op) _ (@oppositeF_involutive _ _)).
 Qed.
  (* Toplevel input, characters 22-101:
 Error:

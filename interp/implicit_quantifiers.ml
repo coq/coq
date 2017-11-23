@@ -33,7 +33,7 @@ let declare_generalizable_ident table (loc,id) =
       " is not declarable as generalizable identifier: it must have no trailing digits, quote, or _"));
   if Id.Pred.mem id table then
     user_err ?loc ~hdr:"declare_generalizable_ident"
-		((Id.print id++str" is already declared as a generalizable identifier"))
+                ((Id.print id++str" is already declared as a generalizable identifier"))
   else Id.Pred.add id table
 
 let add_generalizable gen table =
@@ -80,7 +80,7 @@ let is_freevar ids env x =
 
 let ungeneralizable loc id =
   user_err ?loc ~hdr:"Generalization"
-	       (str "Unbound and ungeneralizable variable " ++ Id.print id)
+               (str "Unbound and ungeneralizable variable " ++ Id.print id)
 
 let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
   let found loc id bdvars l =
@@ -104,15 +104,15 @@ let ids_of_names l =
 let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder_expr list) =
   let rec aux bdvars l c = match c with
       ((CLocalAssum (n, _, c)) :: tl) ->
-	let bound = ids_of_names n in
-	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
-	  aux (Id.Set.union (ids_of_list bound) bdvars) l' tl
+        let bound = ids_of_names n in
+        let l' = free_vars_of_constr_expr c ~bound:bdvars l in
+          aux (Id.Set.union (ids_of_list bound) bdvars) l' tl
 
     | ((CLocalDef (n, c, t)) :: tl) ->
-	let bound = match snd n with Anonymous -> [] | Name n -> [n] in
-	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
-	let l'' = Option.fold_left (fun l t -> free_vars_of_constr_expr t ~bound:bdvars l) l' t in
-	  aux (Id.Set.union (ids_of_list bound) bdvars) l'' tl
+        let bound = match snd n with Anonymous -> [] | Name n -> [n] in
+        let l' = free_vars_of_constr_expr c ~bound:bdvars l in
+        let l'' = Option.fold_left (fun l t -> free_vars_of_constr_expr t ~bound:bdvars l) l' t in
+          aux (Id.Set.union (ids_of_list bound) bdvars) l'' tl
 
     | CLocalPattern _ :: tl -> assert false
     | [] -> bdvars, l
@@ -122,16 +122,16 @@ let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.emp
   let rec vars bound vs c = match DAst.get c with
     | GVar id ->
         let loc = c.CAst.loc in
-	if is_freevar bound (Global.env ()) id then
-	  if Id.List.mem_assoc_sym id vs then vs
-	  else (Loc.tag ?loc id) :: vs
-	else vs
+        if is_freevar bound (Global.env ()) id then
+          if Id.List.mem_assoc_sym id vs then vs
+          else (Loc.tag ?loc id) :: vs
+        else vs
     | _ -> Glob_ops.fold_glob_constr_with_binders Id.Set.add vars bound vs c
-  in fun rt -> 
+  in fun rt ->
     let vars = List.rev (vars bound [] rt) in
       List.iter (fun (loc, id) ->
-	if not (Id.Set.mem id allowed || find_generalizable_ident id) then 
-	  ungeneralizable loc id) vars;
+        if not (Id.Set.mem id allowed || find_generalizable_ident id) then
+          ungeneralizable loc id) vars;
       vars
 
 let rec make_fresh ids env x =
@@ -146,15 +146,15 @@ let combine_params avoid fn applied needed =
   let named, applied =
     List.partition
       (function
-	  (t, Some (loc, ExplByName id)) ->
+          (t, Some (loc, ExplByName id)) ->
             let is_id (_, decl) = match RelDecl.get_name decl with
             | Name id' -> Id.equal id id'
             | Anonymous -> false
             in
-	    if not (List.exists is_id needed) then
-	      user_err ?loc  (str "Wrong argument name: " ++ Id.print id);
-	    true
-	| _ -> false) applied
+            if not (List.exists is_id needed) then
+              user_err ?loc  (str "Wrong argument name: " ++ Id.print id);
+            true
+        | _ -> false) applied
   in
   let named = List.map
     (fun x -> match x with (t, Some (loc, ExplByName id)) -> id, t | _ -> assert false)
@@ -167,26 +167,26 @@ let combine_params avoid fn applied needed =
   let needed = List.filter is_unset needed in
   let rec aux ids avoid app need =
     match app, need with
-	[], [] -> List.rev ids, avoid
+        [], [] -> List.rev ids, avoid
 
       | app, (_, (LocalAssum (Name id, _) | LocalDef (Name id, _, _))) :: need when Id.List.mem_assoc id named ->
-	  aux (Id.List.assoc id named :: ids) avoid app need
+          aux (Id.List.assoc id named :: ids) avoid app need
 
       | (x, None) :: app, (None, (LocalAssum (Name id, _) | LocalDef (Name id, _, _))) :: need ->
-	  aux (x :: ids) avoid app need
+          aux (x :: ids) avoid app need
 
       | _, (Some cl, _ as d) :: need ->
-	  let t', avoid' = fn avoid d in
-	    aux (t' :: ids) avoid' app need
+          let t', avoid' = fn avoid d in
+            aux (t' :: ids) avoid' app need
 
       | x :: app, (None, _) :: need -> aux (fst x :: ids) avoid app need
 
       | [], (None, _ as decl) :: need ->
-	  let t', avoid' = fn avoid decl in
-	    aux (t' :: ids) avoid' app need
+          let t', avoid' = fn avoid decl in
+            aux (t' :: ids) avoid' app need
 
       | (x,_) :: _, [] ->
-	  user_err ?loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
+          user_err ?loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
   in aux [] avoid applied needed
 
 let combine_params_freevar =
@@ -217,31 +217,31 @@ let implicit_application env ?(allow_partial=true) f ty =
       let (_, (r, _, _) as clapp) = destClassAppExpl ty in
       let (loc, qid) = qualid_of_reference r in
       let gr = Nametab.locate qid in
-	if Typeclasses.is_class gr then Some (clapp, gr) else None
+        if Typeclasses.is_class gr then Some (clapp, gr) else None
     with Not_found -> None
   in
     match is_class with
     | None -> ty, env
     | Some ((loc, (id, par, inst)), gr) ->
-	let avoid = Id.Set.union env (ids_of_list (free_vars_of_constr_expr ty ~bound:env [])) in
-	let c, avoid =
-	  let c = class_info gr in
-	  let (ci, rd) = c.cl_context in
-	  if not allow_partial then
-	    begin
+        let avoid = Id.Set.union env (ids_of_list (free_vars_of_constr_expr ty ~bound:env [])) in
+        let c, avoid =
+          let c = class_info gr in
+          let (ci, rd) = c.cl_context in
+          if not allow_partial then
+            begin
               let opt_succ x n = match x with
               | None -> succ n
               | Some _ -> n
               in
-	      let applen = List.fold_left (fun acc (x, y) -> opt_succ y acc) 0 par in
-	      let needlen = List.fold_left (fun acc x -> opt_succ x acc) 0 ci in
-		if not (Int.equal needlen applen) then
-		  Typeclasses_errors.mismatched_ctx_inst (Global.env ()) Parameters (List.map fst par) rd
-	    end;
-	  let pars = List.rev (List.combine ci rd) in
-	  let args, avoid = combine_params avoid f par pars in
-	    CAst.make ?loc @@ CAppExpl ((None, id, inst), args), avoid
-	in c, avoid
+              let applen = List.fold_left (fun acc (x, y) -> opt_succ y acc) 0 par in
+              let needlen = List.fold_left (fun acc x -> opt_succ x acc) 0 ci in
+                if not (Int.equal needlen applen) then
+                  Typeclasses_errors.mismatched_ctx_inst (Global.env ()) Parameters (List.map fst par) rd
+            end;
+          let pars = List.rev (List.combine ci rd) in
+          let args, avoid = combine_params avoid f par pars in
+            CAst.make ?loc @@ CAppExpl ((None, id, inst), args), avoid
+        in c, avoid
 
 let implicits_of_glob_constr ?(with_products=true) l =
   let add_impl i na bk l = match bk with
@@ -260,12 +260,12 @@ let implicits_of_glob_constr ?(with_products=true) l =
     in
       match DAst.get c with
       | GProd (na, bk, t, b) ->
-	  if with_products then abs na bk b
-	  else
+          if with_products then abs na bk b
+          else
             let () = match bk with
             | Implicit ->
-	       Feedback.msg_warning (strbrk "Ignoring implicit status of product binder " ++ 
-			      Name.print na ++ strbrk " and following binders")
+               Feedback.msg_warning (strbrk "Ignoring implicit status of product binder " ++
+                              Name.print na ++ strbrk " and following binders")
             | _ -> ()
             in []
       | GLambda (na, bk, t, b) -> abs na bk b

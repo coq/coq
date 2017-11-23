@@ -46,9 +46,9 @@ let rec under_binders env sigma f n c =
   if Int.equal n 0 then f env sigma (EConstr.of_constr c) else
     match Constr.kind c with
       | Lambda (x,t,c) ->
-	  mkLambda (x,t,under_binders (push_rel (LocalAssum (x,t)) env) sigma f (n-1) c)
+          mkLambda (x,t,under_binders (push_rel (LocalAssum (x,t)) env) sigma f (n-1) c)
       | LetIn (x,b,t,c) ->
-	  mkLetIn (x,b,t,under_binders (push_rel (LocalDef (x,b,t)) env) sigma f (n-1) c)
+          mkLetIn (x,b,t,under_binders (push_rel (LocalDef (x,b,t)) env) sigma f (n-1) c)
       | _ -> assert false
 
 let rec complete_conclusion a cs = CAst.map_with_loc (fun ?loc -> function
@@ -57,9 +57,9 @@ let rec complete_conclusion a cs = CAst.map_with_loc (fun ?loc -> function
   | CHole (k, _, _) ->
       let (has_no_args,name,params) = a in
       if not has_no_args then
-	user_err ?loc
-	 (strbrk"Cannot infer the non constant arguments of the conclusion of "
-	  ++ Id.print cs ++ str ".");
+        user_err ?loc
+         (strbrk"Cannot infer the non constant arguments of the conclusion of "
+          ++ Id.print cs ++ str ".");
       let args = List.map (fun id -> CAst.make ?loc @@ CRef(Ident(loc,id),None)) params in
       CAppExpl ((None,Ident(loc,name),None),List.rev args)
   | c -> c
@@ -87,7 +87,7 @@ let warn_implicits_in_term =
          (fun () ->
           strbrk "Implicit arguments declaration relies on type." ++ spc () ++
             strbrk "The term declares more implicits than the type here.")
-        
+
 let interp_definition pl bl p red_option c ctypopt =
   let env = Global.env() in
   let evd, decl = Univdecls.interp_univ_decl_opt env pl in
@@ -99,44 +99,44 @@ let interp_definition pl bl p red_option c ctypopt =
     match ctypopt with
       None ->
         let subst = evd_comb0 Evd.nf_univ_variables evdref in
-	let ctx = Context.Rel.map (Vars.subst_univs_constr subst) ctx in
-	let env_bl = push_rel_context ctx env in
-	let c, imps2 = interp_constr_evars_impls ~impls env_bl evdref c in
-	let c = EConstr.Unsafe.to_constr c in
+        let ctx = Context.Rel.map (Vars.subst_univs_constr subst) ctx in
+        let env_bl = push_rel_context ctx env in
+        let c, imps2 = interp_constr_evars_impls ~impls env_bl evdref c in
+        let c = EConstr.Unsafe.to_constr c in
         let nf,subst = Evarutil.e_nf_evars_and_universes evdref in
         let body = nf (it_mkLambda_or_LetIn c ctx) in
-	let vars = Univops.universes_of_constr body in
-	let evd = Evd.restrict_universe_context !evdref vars in
-	let pl, uctx = Evd.check_univ_decl evd decl in
- 	imps1@(Impargs.lift_implicits nb_args imps2), pl,
-	  definition_entry ~univs:uctx ~poly:p body
+        let vars = Univops.universes_of_constr body in
+        let evd = Evd.restrict_universe_context !evdref vars in
+        let pl, uctx = Evd.check_univ_decl evd decl in
+        imps1@(Impargs.lift_implicits nb_args imps2), pl,
+          definition_entry ~univs:uctx ~poly:p body
     | Some ctyp ->
-	let ty, impsty = interp_type_evars_impls ~impls env_bl evdref ctyp in
-	let subst = evd_comb0 Evd.nf_univ_variables evdref in
-	let ctx = Context.Rel.map (Vars.subst_univs_constr subst) ctx in
-	let env_bl = push_rel_context ctx env in
-	let c, imps2 = interp_casted_constr_evars_impls ~impls env_bl evdref c ty in
-	let c = EConstr.Unsafe.to_constr c in
-	let nf, subst = Evarutil.e_nf_evars_and_universes evdref in
-	let body = nf (it_mkLambda_or_LetIn c ctx) in
-	let ty = EConstr.Unsafe.to_constr ty in
-	let typ = nf (Term.it_mkProd_or_LetIn ty ctx) in
+        let ty, impsty = interp_type_evars_impls ~impls env_bl evdref ctyp in
+        let subst = evd_comb0 Evd.nf_univ_variables evdref in
+        let ctx = Context.Rel.map (Vars.subst_univs_constr subst) ctx in
+        let env_bl = push_rel_context ctx env in
+        let c, imps2 = interp_casted_constr_evars_impls ~impls env_bl evdref c ty in
+        let c = EConstr.Unsafe.to_constr c in
+        let nf, subst = Evarutil.e_nf_evars_and_universes evdref in
+        let body = nf (it_mkLambda_or_LetIn c ctx) in
+        let ty = EConstr.Unsafe.to_constr ty in
+        let typ = nf (Term.it_mkProd_or_LetIn ty ctx) in
         let beq b1 b2 = if b1 then b2 else not b2 in
         let impl_eq (x,y,z) (x',y',z') = beq x x' && beq y y' && beq z z' in
-	(* Check that all implicit arguments inferable from the term
+        (* Check that all implicit arguments inferable from the term
            are inferable from the type *)
         let chk (key,va) =
           impl_eq (List.assoc_f Pervasives.(=) key impsty) va (* FIXME *)
         in
-	if not (try List.for_all chk imps2 with Not_found -> false)
-	then warn_implicits_in_term ();
-        let vars = Univ.LSet.union (Univops.universes_of_constr body) 
+        if not (try List.for_all chk imps2 with Not_found -> false)
+        then warn_implicits_in_term ();
+        let vars = Univ.LSet.union (Univops.universes_of_constr body)
           (Univops.universes_of_constr typ) in
         let ctx = Evd.restrict_universe_context !evdref vars in
-	let pl, uctx = Evd.check_univ_decl ctx decl in
-	imps1@(Impargs.lift_implicits nb_args impsty), pl,
-	  definition_entry ~types:typ ~poly:p 
-	    ~univs:uctx body
+        let pl, uctx = Evd.check_univ_decl ctx decl in
+        imps1@(Impargs.lift_implicits nb_args impsty), pl,
+          definition_entry ~types:typ ~poly:p
+            ~univs:uctx body
   in
   red_constant_entry (Context.Rel.length ctx) ce !evdref red_option, !evdref, decl, pl, imps
 
@@ -153,13 +153,13 @@ let do_definition ident k univdecl bl red_option c ctypopt hook =
       let (c,ctx), sideff = Future.force ce.const_entry_body in
       assert(Safe_typing.empty_private_constants = sideff);
       assert(Univ.ContextSet.is_empty ctx);
-      let typ = match ce.const_entry_type with 
-	| Some t -> t
-	| None -> EConstr.to_constr evd (Retyping.get_type_of env evd (EConstr.of_constr c))
-      in 
+      let typ = match ce.const_entry_type with
+        | Some t -> t
+        | None -> EConstr.to_constr evd (Retyping.get_type_of env evd (EConstr.of_constr c))
+      in
       Obligations.check_evars env evd;
-      let obls, _, c, cty = 
-	Obligations.eterm_obligations env ident evd 0 c typ
+      let obls, _, c, cty =
+        Obligations.eterm_obligations env ident evd 0 c typ
       in
       let ctx = Evd.evar_universe_context evd in
       let hook = Lemmas.mk_hook (fun l r _ -> Lemmas.call_hook (fun exn -> exn) hook l r) in
@@ -204,8 +204,8 @@ match local with
   let () = assumption_message ident in
   let () = Typeclasses.declare_instance None false gr in
   let () = if is_coe then Class.try_add_new_coercion gr ~local p in
-  let inst = 
-    if p (* polymorphic *) then Univ.UContext.instance ctx 
+  let inst =
+    if p (* polymorphic *) then Univ.UContext.instance ctx
     else Univ.Instance.empty
   in
     (gr,inst,Lib.is_modtype_strict ())
@@ -220,7 +220,7 @@ let declare_assumptions idl is_coe k (c,ctx) pl imps impl_is_on nl =
   let refs, status, _ =
     List.fold_left (fun (refs,status,ctx) id ->
       let ref',u',status' =
-	declare_assumption is_coe k (c,ctx) pl imps impl_is_on nl id in
+        declare_assumption is_coe k (c,ctx) pl imps impl_is_on nl id in
       (ref',u')::refs, status' && status, Univ.ContextSet.empty)
       ([],true,ctx) idl
   in
@@ -230,12 +230,12 @@ let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
   let open Context.Named.Declaration in
   let env = Global.env () in
   let evdref = ref (Evd.from_env env) in
-  let l = 
+  let l =
     if poly then
       (* Separate declarations so that A B : Type puts A and B in different levels. *)
       List.fold_right (fun (is_coe,(idl,c)) acc ->
-        List.fold_right (fun id acc -> 
-	  (is_coe, ([id], c)) :: acc) idl acc)
+        List.fold_right (fun id acc ->
+          (is_coe, ([id], c)) :: acc) idl acc)
         l []
     else l
   in
@@ -247,7 +247,7 @@ let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
     let ienv = List.fold_right (fun (_,id) ienv ->
       let impls = compute_internalization_data env Variable t imps in
       Id.Map.add id impls ienv) idl ienv in
-      ((env,ienv),((is_coe,idl),t,imps))) 
+      ((env,ienv),((is_coe,idl),t,imps)))
     (env,empty_internalization_env) l
   in
   let evd = solve_remaining_evars all_and_fail_flags env !evdref Evd.empty in
@@ -259,9 +259,9 @@ let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
   pi2 (List.fold_left (fun (subst,status,ctx) ((is_coe,idl),t,imps) ->
     let t = replace_vars subst t in
     let (refs,status') = declare_assumptions idl is_coe kind (t,ctx) [] imps false nl in
-    let subst' = List.map2 
+    let subst' = List.map2
       (fun (_,id) (c,u) -> (id,Universes.constr_of_global_univ (c,u)))
-      idl refs 
+      idl refs
     in
     (subst'@subst, status' && status,
      (* The universe constraints are declared with the first declaration only. *)
@@ -299,7 +299,7 @@ let do_assumptions kind nl l = match l with
     | Some _ ->
       let loc = fst id in
       let msg =
-	Pp.str "Assumptions with bound universes can only be defined one at a time." in
+        Pp.str "Assumptions with bound universes can only be defined one at a time." in
       user_err ?loc  msg
     in
     (coe, (List.map map idl, c))
@@ -327,10 +327,10 @@ type structured_inductive_expr =
 
 let minductive_message warn = function
   | []  -> user_err Pp.(str "No inductive definition.")
-  | [x] -> (Id.print x ++ str " is defined" ++ 
-	    if warn then str " as a non-primitive record" else mt())
+  | [x] -> (Id.print x ++ str " is defined" ++
+            if warn then str " as a non-primitive record" else mt())
   | l   -> hov 0  (prlist_with_sep pr_comma Id.print l ++
-		     spc () ++ str "are defined")
+                     spc () ++ str "are defined")
 
 let check_all_names_different indl =
   let ind_names = List.map (fun ind -> ind.ind_name) indl in
@@ -360,15 +360,15 @@ let prepare_param = function
 
 (** Make the arity conclusion flexible to avoid generating an upper bound universe now,
     only if the universe does not appear anywhere else.
-    This is really a hack to stay compatible with the semantics of template polymorphic 
+    This is really a hack to stay compatible with the semantics of template polymorphic
     inductives which are recognized when a "Type" appears at the end of the conlusion in
     the source syntax. *)
-    
+
 let rec check_anonymous_type ind =
   let open Glob_term in
     match DAst.get ind with
     | GSort (GType []) -> true
-    | GProd ( _, _, _, e) 
+    | GProd ( _, _, _, e)
     | GLetIn (_, _, _, e)
     | GLambda (_, _, _, e)
     | GApp (e, _)
@@ -379,15 +379,15 @@ let make_conclusion_flexible evdref ty poly =
   if poly && isArity ty then
     let _, concl = destArity ty in
       match concl with
-      | Type u -> 
+      | Type u ->
         (match Univ.universe_level u with
-        | Some u -> 
-	  evdref := Evd.make_flexible_variable !evdref ~algebraic:true u
-	| None -> ())
+        | Some u ->
+          evdref := Evd.make_flexible_variable !evdref ~algebraic:true u
+        | None -> ())
       | _ -> ()
-  else () 
-	
-let is_impredicative env u = 
+  else ()
+
+let is_impredicative env u =
   u = Prop Null || (is_impredicative_set env && u = Prop Pos)
 
 let interp_ind_arity env evdref ind =
@@ -416,17 +416,17 @@ let sign_level env evd sign =
       match d with
       | LocalDef _ -> lev, push_rel d env
       | LocalAssum _ ->
-	let s = destSort (Reduction.whd_all env 
-			    (EConstr.Unsafe.to_constr (nf_evar evd (Retyping.get_type_of env evd (EConstr.of_constr (RelDecl.get_type d))))))
-	in
-	let u = univ_of_sort s in
-	  (Univ.sup u lev, push_rel d env))
+        let s = destSort (Reduction.whd_all env
+                            (EConstr.Unsafe.to_constr (nf_evar evd (Retyping.get_type_of env evd (EConstr.of_constr (RelDecl.get_type d))))))
+        in
+        let u = univ_of_sort s in
+          (Univ.sup u lev, push_rel d env))
     sign (Univ.type0m_univ,env))
 
 let sup_list min = List.fold_left Univ.sup min
 
-let extract_level env evd min tys = 
-  let sorts = List.map (fun ty -> 
+let extract_level env evd min tys =
+  let sorts = List.map (fun ty ->
     let ctx, concl = Reduction.dest_prod_assum env ty in
       sign_level env evd (LocalAssum (Anonymous, concl) :: ctx)) tys
   in sup_list min sorts
@@ -438,29 +438,29 @@ let is_flexible_sort evd u =
 
 let inductive_levels env evdref poly arities inds =
   let destarities = List.map (fun x -> x, Reduction.dest_arity env x) arities in
-  let levels = List.map (fun (x,(ctx,a)) -> 
+  let levels = List.map (fun (x,(ctx,a)) ->
     if a = Prop Null then None
     else Some (univ_of_sort a)) destarities
   in
-  let cstrs_levels, min_levels, sizes = 
+  let cstrs_levels, min_levels, sizes =
     CList.split3
-      (List.map2 (fun (_,tys,_) (arity,(ctx,du)) -> 
-	let len = List.length tys in
-	let minlev = Sorts.univ_of_sort du in
-	let minlev =
-	  if len > 1 && not (is_impredicative env du) then
-	    Univ.sup minlev Univ.type0_univ
-	  else minlev
-	in
-	let minlev =
-	  (** Indices contribute. *)
-	  if Indtypes.is_indices_matter () && List.length ctx > 0 then (
-	    let ilev = sign_level env !evdref ctx in
-	      Univ.sup ilev minlev)
-	  else minlev
-	in
-	let clev = extract_level env !evdref minlev tys in
-	  (clev, minlev, len)) inds destarities)
+      (List.map2 (fun (_,tys,_) (arity,(ctx,du)) ->
+        let len = List.length tys in
+        let minlev = Sorts.univ_of_sort du in
+        let minlev =
+          if len > 1 && not (is_impredicative env du) then
+            Univ.sup minlev Univ.type0_univ
+          else minlev
+        in
+        let minlev =
+          (** Indices contribute. *)
+          if Indtypes.is_indices_matter () && List.length ctx > 0 then (
+            let ilev = sign_level env !evdref ctx in
+              Univ.sup ilev minlev)
+          else minlev
+        in
+        let clev = extract_level env !evdref minlev tys in
+          (clev, minlev, len)) inds destarities)
   in
   (* Take the transitive closure of the system of constructors *)
   (* level constraints and remove the recursive dependencies *)
@@ -470,40 +470,40 @@ let inductive_levels env evdref poly arities inds =
   let evd, arities =
     CList.fold_left3 (fun (evd, arities) cu (arity,(ctx,du)) len ->
       if is_impredicative env du then
-	(** Any product is allowed here. *)
-	evd, arity :: arities
+        (** Any product is allowed here. *)
+        evd, arity :: arities
       else (** If in a predicative sort, or asked to infer the type,
-	       we take the max of:
-	       - indices (if in indices-matter mode)
-	       - constructors
-	       - Type(1) if there is more than 1 constructor
-	   *)
+               we take the max of:
+               - indices (if in indices-matter mode)
+               - constructors
+               - Type(1) if there is more than 1 constructor
+           *)
         (** Constructors contribute. *)
-	let evd = 
-	  if Sorts.is_set du then
-	    if not (Evd.check_leq evd cu Univ.type0_univ) then 
-	      raise (Indtypes.InductiveError Indtypes.LargeNonPropInductiveNotInType)
-	    else evd
-	  else evd
-	    (* Evd.set_leq_sort env evd (Type cu) du *)
-	in
-	let evd = 
-	  if len >= 2 && Univ.is_type0m_univ cu then 
-	   (** "Polymorphic" type constraint and more than one constructor, 
-	       should not land in Prop. Add constraint only if it would
-	       land in Prop directly (no informative arguments as well). *)
-	    Evd.set_leq_sort env evd (Prop Pos) du
-	  else evd
-	in
-	let duu = Sorts.univ_of_sort du in
-	let evd =
-	  if not (Univ.is_small_univ duu) && Univ.Universe.equal cu duu then
-	    if is_flexible_sort evd duu && not (Evd.check_leq evd Univ.type0_univ duu) then
-	      Evd.set_eq_sort env evd (Prop Null) du
-	    else evd
-	  else Evd.set_eq_sort env evd (Type cu) du
-	in
-	  (evd, arity :: arities))
+        let evd =
+          if Sorts.is_set du then
+            if not (Evd.check_leq evd cu Univ.type0_univ) then
+              raise (Indtypes.InductiveError Indtypes.LargeNonPropInductiveNotInType)
+            else evd
+          else evd
+            (* Evd.set_leq_sort env evd (Type cu) du *)
+        in
+        let evd =
+          if len >= 2 && Univ.is_type0m_univ cu then
+           (** "Polymorphic" type constraint and more than one constructor,
+               should not land in Prop. Add constraint only if it would
+               land in Prop directly (no informative arguments as well). *)
+            Evd.set_leq_sort env evd (Prop Pos) du
+          else evd
+        in
+        let duu = Sorts.univ_of_sort du in
+        let evd =
+          if not (Univ.is_small_univ duu) && Univ.Universe.equal cu duu then
+            if is_flexible_sort evd duu && not (Evd.check_leq evd Univ.type0_univ duu) then
+              Evd.set_eq_sort env evd (Prop Null) du
+            else evd
+          else Evd.set_eq_sort env evd (Type cu) du
+        in
+          (evd, arity :: arities))
     (!evdref,[]) (Array.to_list levels') destarities sizes
   in evdref := evd; List.rev arities
 
@@ -533,7 +533,7 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   in
   let ctx_params = List.map (fun d -> map_rel_decl EConstr.Unsafe.to_constr d) ctx_params in
   let indnames = List.map (fun ind -> ind.ind_name) indl in
-      
+
   (* Names of parameters as arguments of the inductive type (defs removed) *)
   let assums = List.filter is_local_assum ctx_params in
   let params = List.map (RelDecl.get_name %> Name.get_id) assums in
@@ -546,7 +546,7 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   let env_ar_params = push_rel_context ctx_params env_ar in
 
   (* Compute interpretation metadatas *)
-  let indimpls = List.map (fun (_, _, impls) -> userimpls @ 
+  let indimpls = List.map (fun (_, _, impls) -> userimpls @
     lift_implicits (Context.Rel.nhyps ctx_params) impls) arities in
   let arities = List.map pi1 arities and aritypoly = List.map pi2 arities in
   let impls = compute_internalization_env env0 ~impls (Inductive (params,true)) indnames fullarities indimpls in
@@ -594,8 +594,8 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   let impls =
     let len = Context.Rel.nhyps ctx_params in
       List.map2 (fun indimpls (_,_,cimpls) ->
-	indimpls, List.map (fun impls ->
-	  userimpls @ (lift_implicits len impls)) cimpls) indimpls constructors
+        indimpls, List.map (fun impls ->
+          userimpls @ (lift_implicits len impls)) cimpls) indimpls constructors
   in
   let univs =
     if poly then
@@ -634,7 +634,7 @@ let extract_params indl =
   | [] -> anomaly (Pp.str "empty list of inductive types.")
   | params::paramsl ->
       if not (List.for_all (eq_local_binders params) paramsl) then user_err Pp.(str
-	"Parameters should be syntactically the same for each inductive type.");
+        "Parameters should be syntactically the same for each inductive type.");
       params
 
 let extract_inductive indl =
@@ -681,15 +681,15 @@ let declare_mutual_inductive_with_eliminations mie pl impls =
   let (_, kn), prim = declare_mind mie in
   let mind = Global.mind_of_delta_kn kn in
   List.iteri (fun i (indimpls, constrimpls) ->
-	      let ind = (mind,i) in
-	      let gr = IndRef ind in
-	      maybe_declare_manual_implicits false gr indimpls;
-	      Universes.register_universe_binders gr pl;
-	      List.iteri
-		(fun j impls ->
-		 maybe_declare_manual_implicits false
-		    (ConstructRef (ind, succ j)) impls)
-		constrimpls)
+              let ind = (mind,i) in
+              let gr = IndRef ind in
+              maybe_declare_manual_implicits false gr indimpls;
+              Universes.register_universe_binders gr pl;
+              List.iteri
+                (fun j impls ->
+                 maybe_declare_manual_implicits false
+                    (ConstructRef (ind, succ j)) impls)
+                constrimpls)
       impls;
   let warn_prim = match mie.mind_entry_record with Some (Some _) -> not prim | _ -> false in
   Flags.if_verbose Feedback.msg_info (minductive_message warn_prim names);
@@ -734,30 +734,30 @@ let rec partial_order cmp = function
   | (x,xge)::rest ->
     let rec browse res xge' = function
     | [] ->
-	let res = List.map (function
-	  | (z, Inr zge) when List.mem_f cmp x zge ->
+        let res = List.map (function
+          | (z, Inr zge) when List.mem_f cmp x zge ->
             (z, Inr (List.union cmp zge xge'))
-	  | r -> r) res in
-	(x,Inr xge')::res
+          | r -> r) res in
+        (x,Inr xge')::res
     | y::xge ->
       let rec link y =
-	try match List.assoc_f cmp y res with
-	| Inl z -> link z
-	| Inr yge ->
-	  if List.mem_f cmp x yge then
-	    let res = List.remove_assoc_f cmp y res in
-	    let res = List.map (function
-	      | (z, Inl t) ->
-		  if cmp t y then (z, Inl x) else (z, Inl t)
-	      | (z, Inr zge) ->
-		  if List.mem_f cmp y zge then
-		    (z, Inr (List.add_set cmp x (List.remove cmp y zge)))
-		  else
-		    (z, Inr zge)) res in
-	    browse ((y,Inl x)::res) xge' (List.union cmp xge (List.remove cmp x yge))
-	  else
-	    browse res (List.add_set cmp y (List.union cmp xge' yge)) xge
-	with Not_found -> browse res (List.add_set cmp y xge') xge
+        try match List.assoc_f cmp y res with
+        | Inl z -> link z
+        | Inr yge ->
+          if List.mem_f cmp x yge then
+            let res = List.remove_assoc_f cmp y res in
+            let res = List.map (function
+              | (z, Inl t) ->
+                  if cmp t y then (z, Inl x) else (z, Inl t)
+              | (z, Inr zge) ->
+                  if List.mem_f cmp y zge then
+                    (z, Inr (List.add_set cmp x (List.remove cmp y zge)))
+                  else
+                    (z, Inr zge)) res in
+            browse ((y,Inl x)::res) xge' (List.union cmp xge (List.remove cmp x yge))
+          else
+            browse res (List.add_set cmp y (List.union cmp xge' yge)) xge
+        with Not_found -> browse res (List.add_set cmp y xge') xge
       in link y
     in browse (partial_order cmp rest) [] xge
 
@@ -838,10 +838,10 @@ let compute_possible_guardness_evidences (ctx,_,recindex) =
   | Some i -> [i]
   | None ->
       (* If recursive argument was not given by user, we try all args.
-	 An earlier approach was to look only for inductive arguments,
-	 but doing it properly involves delta-reduction, and it finally
+         An earlier approach was to look only for inductive arguments,
+         but doing it properly involves delta-reduction, and it finally
          doesn't seem to worth the effort (except for huge mutual
-	 fixpoints ?) *)
+         fixpoints ?) *)
       List.interval 0 (Context.Rel.nhyps ctx - 1)
 
 type recursive_preentry =
@@ -869,7 +869,7 @@ let well_founded = init_constant ["Init"; "Wf"] "well_founded"
 let mkSubset evdref name typ prop =
   let open EConstr in
   mkApp (Evarutil.e_new_global evdref (delayed_force build_sigma).typ,
-	 [| typ; mkLambda (name, typ, prop) |])
+         [| typ; mkLambda (name, typ, prop) |])
 let sigT = Lazy.from_fun build_sigma_type
 
 let make_qref s = Qualid (Loc.tag @@ qualid_of_string s)
@@ -883,26 +883,26 @@ let rec telescope evdref l =
   | [LocalAssum (n, t)] -> t, [LocalDef (n, mkRel 1, t)], mkRel 1
   | LocalAssum (n, t) :: tl ->
       let ty, tys, (k, constr) =
-	List.fold_left
-	  (fun (ty, tys, (k, constr)) decl ->
+        List.fold_left
+          (fun (ty, tys, (k, constr)) decl ->
             let t = RelDecl.get_type decl in
             let pred = mkLambda (RelDecl.get_name decl, t, ty) in
-	    let ty = Evarutil.e_new_global evdref (Lazy.force sigT).typ in
-	    let intro = Evarutil.e_new_global evdref (Lazy.force sigT).intro in
-	    let sigty = mkApp (ty, [|t; pred|]) in
-	    let intro = mkApp (intro, [|lift k t; lift k pred; mkRel k; constr|]) in
-	      (sigty, pred :: tys, (succ k, intro)))
-	  (t, [], (2, mkRel 1)) tl
+            let ty = Evarutil.e_new_global evdref (Lazy.force sigT).typ in
+            let intro = Evarutil.e_new_global evdref (Lazy.force sigT).intro in
+            let sigty = mkApp (ty, [|t; pred|]) in
+            let intro = mkApp (intro, [|lift k t; lift k pred; mkRel k; constr|]) in
+              (sigty, pred :: tys, (succ k, intro)))
+          (t, [], (2, mkRel 1)) tl
       in
       let (last, subst) = List.fold_right2
         (fun pred decl (prev, subst) ->
           let t = RelDecl.get_type decl in
-	  let p1 = Evarutil.e_new_global evdref (Lazy.force sigT).proj1 in
-	  let p2 = Evarutil.e_new_global evdref (Lazy.force sigT).proj2 in
-	  let proj1 = applist (p1, [t; pred; prev]) in
-	  let proj2 = applist (p2, [t; pred; prev]) in
-	    (lift 1 proj2, LocalDef (get_name decl, proj1, t) :: subst))
-	(List.rev tys) tl (mkRel 1, [])
+          let p1 = Evarutil.e_new_global evdref (Lazy.force sigT).proj1 in
+          let p2 = Evarutil.e_new_global evdref (Lazy.force sigT).proj2 in
+          let proj1 = applist (p1, [t; pred; prev]) in
+          let proj2 = applist (p2, [t; pred; prev]) in
+            (lift 1 proj2, LocalDef (get_name decl, proj1, t) :: subst))
+        (List.rev tys) tl (mkRel 1, [])
       in ty, (LocalDef (n, last, t) :: subst), constr
 
   | LocalDef (n, b, t) :: tl -> let ty, subst, term = telescope evdref tl in
@@ -935,14 +935,14 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
     let error () =
       user_err ?loc:(constr_loc r)
                ~hdr:"Command.build_wellfounded"
-		    (Printer.pr_econstr_env env !evdref rel ++ str " is not an homogeneous binary relation.")
+                    (Printer.pr_econstr_env env !evdref rel ++ str " is not an homogeneous binary relation.")
     in
       try
-	let ctx, ar = Reductionops.splay_prod_n env !evdref 2 relty in
-	  match ctx, EConstr.kind !evdref ar with
-	  | [LocalAssum (_,t); LocalAssum (_,u)], Sort s
-	      when Sorts.is_prop (ESorts.kind !evdref s) && Reductionops.is_conv env !evdref t u -> t
-	  | _, _ -> error ()
+        let ctx, ar = Reductionops.splay_prod_n env !evdref 2 relty in
+          match ctx, EConstr.kind !evdref ar with
+          | [LocalAssum (_,t); LocalAssum (_,u)], Sort s
+              when Sorts.is_prop (ESorts.kind !evdref s) && Reductionops.is_conv env !evdref t u -> t
+          | _, _ -> error ()
       with e when CErrors.noncritical e -> error ()
   in
   let relargty = EConstr.Unsafe.to_constr relargty in
@@ -957,14 +957,14 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
     let wf_rel = mkApp (comb, [| argtyp; relargty; rel; measure |]) in
     let wf_rel_fun x y =
       mkApp (rel, [| subst1 x measure_body;
- 		     subst1 y measure_body |])
+                     subst1 y measure_body |])
     in wf_rel, wf_rel_fun, measure
   in
   let wf_proof = mkApp (well_founded evdref, [| argtyp ; wf_rel |]) in
   let argid' = Id.of_string (Id.to_string argname ^ "'") in
   let wfarg len = LocalAssum (Name argid',
                               mkSubset evdref (Name argid') argtyp
-				       (wf_rel_fun (mkRel 1) (mkRel (len + 1))))
+                                       (wf_rel_fun (mkRel 1) (mkRel (len + 1))))
   in
   let intern_bl = wfarg 1 :: [arg] in
   let _intern_env = push_rel_context intern_bl env in
@@ -996,7 +996,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
     let ctx = LocalAssum (Name recname, get_type curry_fun) :: binders_rel in
     let (r, l, impls, scopes) =
       Constrintern.compute_internalization_data env
-	Constrintern.Recursive (EConstr.Unsafe.to_constr full_arity) impls 
+        Constrintern.Recursive (EConstr.Unsafe.to_constr full_arity) impls
     in
     let newimpls = Id.Map.singleton recname
       (r, l, impls @ [(Some (Id.of_string "recproof", Impargs.Manual, (true, false)))],
@@ -1008,10 +1008,10 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let prop = mkLambda (Name argname, argtyp, top_arity_let) in
   let def =
     mkApp (Evarutil.e_new_global evdref (delayed_force fix_sub_ref),
-	  [| argtyp ; wf_rel ;
-	     Evarutil.e_new_evar env evdref
-	       ~src:(Loc.tag @@ Evar_kinds.QuestionMark (Evar_kinds.Define false,Anonymous)) wf_proof;
-	     prop |])
+          [| argtyp ; wf_rel ;
+             Evarutil.e_new_evar env evdref
+               ~src:(Loc.tag @@ Evar_kinds.QuestionMark (Evar_kinds.Define false,Anonymous)) wf_proof;
+             prop |])
   in
   let def = Typing.e_solve_evars env evdref def in
   let _ = evdref := Evarutil.nf_evar_map !evdref in
@@ -1024,38 +1024,38 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let hook, recname, typ =
     if List.length binders_rel > 1 then
       let name = add_suffix recname "_func" in
-      let hook l gr _ = 
-	let body = it_mkLambda_or_LetIn (mkApp (Evarutil.e_new_global evdref gr, [|make|])) binders_rel in
-	let ty = it_mkProd_or_LetIn top_arity binders_rel in
-	let ty = EConstr.Unsafe.to_constr ty in
-	let pl, univs = Evd.universe_context ~names:pl ~extensible:plext !evdref in
-	  (*FIXME poly? *)
-	let ce = definition_entry ~poly ~types:ty ~univs (EConstr.to_constr !evdref body) in
-	(** FIXME: include locality *)
-	let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
-	let gr = ConstRef c in
-	  if Impargs.is_implicit_args () || not (List.is_empty impls) then
-	    Impargs.declare_manual_implicits false gr [impls]
+      let hook l gr _ =
+        let body = it_mkLambda_or_LetIn (mkApp (Evarutil.e_new_global evdref gr, [|make|])) binders_rel in
+        let ty = it_mkProd_or_LetIn top_arity binders_rel in
+        let ty = EConstr.Unsafe.to_constr ty in
+        let pl, univs = Evd.universe_context ~names:pl ~extensible:plext !evdref in
+          (*FIXME poly? *)
+        let ce = definition_entry ~poly ~types:ty ~univs (EConstr.to_constr !evdref body) in
+        (** FIXME: include locality *)
+        let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
+        let gr = ConstRef c in
+          if Impargs.is_implicit_args () || not (List.is_empty impls) then
+            Impargs.declare_manual_implicits false gr [impls]
       in
       let typ = it_mkProd_or_LetIn top_arity binders in
-	hook, name, typ
-    else 
+        hook, name, typ
+    else
       let typ = it_mkProd_or_LetIn top_arity binders_rel in
-      let hook l gr _ = 
-	if Impargs.is_implicit_args () || not (List.is_empty impls) then
-	  Impargs.declare_manual_implicits false gr [impls]
+      let hook l gr _ =
+        if Impargs.is_implicit_args () || not (List.is_empty impls) then
+          Impargs.declare_manual_implicits false gr [impls]
       in hook, recname, typ
   in
   let hook = Lemmas.mk_hook hook in
   let fullcoqc = EConstr.to_constr !evdref def in
   let fullctyp = EConstr.to_constr !evdref typ in
   Obligations.check_evars env !evdref;
-  let evars, _, evars_def, evars_typ = 
-    Obligations.eterm_obligations env recname !evdref 0 fullcoqc fullctyp 
+  let evars, _, evars_def, evars_typ =
+    Obligations.eterm_obligations env recname !evdref 0 fullcoqc fullctyp
   in
   let ctx = Evd.evar_universe_context !evdref in
     ignore(Obligations.add_definition recname ~term:evars_def ~univdecl:decl
-	     evars_typ ctx evars ~hook)
+             evars_typ ctx evars ~hook)
 
 let interp_recursive isfix fixl notations =
   let open Context.Named.Declaration in
@@ -1071,9 +1071,9 @@ let interp_recursive isfix fixl notations =
         | x , None -> x
         | Some ls , Some us ->
            let lsu = ls.univdecl_instance and usu = us.univdecl_instance in
-	   if not (CList.for_all2eq (fun x y -> Id.equal (snd x) (snd y)) lsu usu) then
-	     user_err Pp.(str "(co)-recursive definitions should all have the same universe binders");
-	   Some us) fixl None in
+           if not (CList.for_all2eq (fun x y -> Id.equal (snd x) (snd y)) lsu usu) then
+             user_err Pp.(str "(co)-recursive definitions should all have the same universe binders");
+           Some us) fixl None in
   let evd, decl = Univdecls.interp_univ_decl_opt env all_universes in
   let evdref = ref evd in
   let fixctxs, fiximppairs, fixannots =
@@ -1088,16 +1088,16 @@ let interp_recursive isfix fixl notations =
   let rec_sign =
     List.fold_left2
       (fun env' id t ->
- 	 if Flags.is_program_mode () then
-	   let sort = Evarutil.evd_comb1 (Typing.type_of ~refresh:true env) evdref t in
-	   let fixprot =
-	     try 
-	       let app = mkApp (fix_proto evdref, [|sort; t|]) in
-		 Typing.e_solve_evars env evdref app
-	     with e  when CErrors.noncritical e -> t
-	   in
-	     LocalAssum (id,fixprot) :: env'
-	 else LocalAssum (id,t) :: env')
+         if Flags.is_program_mode () then
+           let sort = Evarutil.evd_comb1 (Typing.type_of ~refresh:true env) evdref t in
+           let fixprot =
+             try
+               let app = mkApp (fix_proto evdref, [|sort; t|]) in
+                 Typing.e_solve_evars env evdref app
+             with e  when CErrors.noncritical e -> t
+           in
+             LocalAssum (id,fixprot) :: env'
+         else LocalAssum (id,t) :: env')
       [] fixnames fixtypes
   in
   let env_rec = push_named_context rec_sign env in
@@ -1112,8 +1112,8 @@ let interp_recursive isfix fixl notations =
     Metasyntax.with_syntax_protection (fun () ->
       List.iter (Metasyntax.set_notation_for_interpretation env_rec impls) notations;
       List.map4
-	(fun fixctximpenv -> interp_fix_body env_rec evdref (Id.Map.fold Id.Map.add fixctximpenv impls))
-	fixctximpenvs fixctxs fixl fixccls)
+        (fun fixctximpenv -> interp_fix_body env_rec evdref (Id.Map.fold Id.Map.add fixctximpenv impls))
+        fixctximpenvs fixctxs fixl fixccls)
       () in
 
   (* Instantiate evars and check all are resolved *)
@@ -1143,13 +1143,13 @@ let interp_cofixpoint l ntns =
   let (env,_,pl,evd),fix,info = interp_recursive false l ntns in
   check_recursive false env evd fix;
   (fix,pl,Evd.evar_universe_context evd,info)
-    
+
 let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) indexes ntns =
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
       List.map3 (fun id t (ctx,imps,_) -> (id,(t,(List.map RelDecl.get_name ctx,imps))))
-		fixnames fixtypes fiximps in
+                fixnames fixtypes fiximps in
     let init_tac =
       Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
         fixdefs) in
@@ -1171,7 +1171,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
     let pl, ctx = Evd.check_univ_decl evd pl in
     let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
     ignore (List.map4 (DeclareDef.declare_fix (local, poly, Fixpoint) pl ctx)
-	      fixnames fixdecls fixtypes fiximps);
+              fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     fixpoint_message (Some indexes) fixnames;
   end;
@@ -1183,7 +1183,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
     (* Some bodies to define by proof *)
     let thms =
       List.map3 (fun id t (ctx,imps,_) -> (id,(t,(List.map RelDecl.get_name ctx,imps))))
-		fixnames fixtypes fiximps in
+                fixnames fixtypes fiximps in
     let init_tac =
       Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
         fixdefs) in
@@ -1202,7 +1202,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
     let evd = Evd.restrict_universe_context evd vars in
     let pl, ctx = Evd.check_univ_decl evd pl in
     ignore (List.map4 (DeclareDef.declare_fix (local, poly, CoFixpoint) pl ctx)
-	      fixnames fixdecls fixtypes fiximps);
+              fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     cofixpoint_message fixnames
   end;
@@ -1212,7 +1212,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
 let extract_decreasing_argument limit = function
   | (na,CStructRec) -> na
   | (na,_) when not limit -> na
-  | _ -> user_err Pp.(str 
+  | _ -> user_err Pp.(str
       "Only structural decreasing is supported for a non-Program Fixpoint")
 
 let extract_fixpoint_components limit l =
@@ -1226,8 +1226,8 @@ let extract_fixpoint_components limit l =
 let extract_cofixpoint_components l =
   let fixl, ntnl = List.split l in
   List.map (fun (((_,id),pl),bl,typ,def) ->
-	    {fix_name = id; fix_annot = None; fix_univs = pl;
-	     fix_binders = bl; fix_body = def; fix_type = typ}) fixl,
+            {fix_name = id; fix_annot = None; fix_univs = pl;
+             fix_binders = bl; fix_body = def; fix_type = typ}) fixl,
   List.flatten ntnl
 
 let out_def = function
@@ -1241,8 +1241,8 @@ let collect_evars_of_term evd c ty =
 
 let do_program_recursive local p fixkind fixl ntns =
   let isfix = fixkind != Obligations.IsCoFixpoint in
-  let (env, rec_sign, pl, evd), fix, info = 
-    interp_recursive isfix fixl ntns 
+  let (env, rec_sign, pl, evd), fix, info =
+    interp_recursive isfix fixl ntns
   in
     (* Program-specific code *)
     (* Get the interesting evars, those that were not instanciated *)
@@ -1257,9 +1257,9 @@ let do_program_recursive local p fixkind fixl ntns =
       EConstr.to_constr evd (Termops.it_mkNamedProd_or_LetIn (EConstr.of_constr typ) rec_sign)
     in
     let evm = collect_evars_of_term evd def typ in
-    let evars, _, def, typ = 
+    let evars, _, def, typ =
       Obligations.eterm_obligations env id evm
-	(List.length rec_sign) def typ
+        (List.length rec_sign) def typ
     in (id, def, typ, imps, evars)
   in
   let (fixnames,fixdefs,fixtypes) = fix in
@@ -1269,10 +1269,10 @@ let do_program_recursive local p fixkind fixl ntns =
   let () = if isfix then begin
       let possible_indexes = List.map compute_possible_guardness_evidences info in
       let fixdecls = Array.of_list (List.map (fun x -> Name x) fixnames),
-	Array.of_list fixtypes,
-	Array.of_list (List.map (subst_vars (List.rev fixnames)) fixdefs)
+        Array.of_list fixtypes,
+        Array.of_list (List.map (subst_vars (List.rev fixnames)) fixdefs)
       in
-      let indexes = 
+      let indexes =
         Pretyping.search_guard (Global.env ()) possible_indexes fixdecls in
       List.iteri (fun i _ ->
           Inductive.check_fix env
@@ -1290,26 +1290,26 @@ let do_program_fixpoint local poly l =
   let g = List.map (fun ((_,wf,_,_,_),_) -> wf) l in
     match g, l with
     | [(n, CWfRec r)], [((((_,id),pl),_,bl,typ,def),ntn)] ->
-	let recarg = 
-	  match n with
-	  | Some n -> mkIdentC (snd n)
-	  | None ->
-	      user_err ~hdr:"do_program_fixpoint"
-		(str "Recursive argument required for well-founded fixpoints")
-	in build_wellfounded (id, pl, n, bl, typ, out_def def) poly r recarg ntn
-	     
+        let recarg =
+          match n with
+          | Some n -> mkIdentC (snd n)
+          | None ->
+              user_err ~hdr:"do_program_fixpoint"
+                (str "Recursive argument required for well-founded fixpoints")
+        in build_wellfounded (id, pl, n, bl, typ, out_def def) poly r recarg ntn
+
     | [(n, CMeasureRec (m, r))], [((((_,id),pl),_,bl,typ,def),ntn)] ->
-	build_wellfounded (id, pl, n, bl, typ, out_def def) poly
-	  (Option.default (CAst.make @@ CRef (lt_ref,None)) r) m ntn
-	  
+        build_wellfounded (id, pl, n, bl, typ, out_def def) poly
+          (Option.default (CAst.make @@ CRef (lt_ref,None)) r) m ntn
+
     | _, _ when List.for_all (fun (n, ro) -> ro == CStructRec) g ->
-	let fixl,ntns = extract_fixpoint_components true l in
-	let fixkind = Obligations.IsFixpoint g in
-	  do_program_recursive local poly fixkind fixl ntns
+        let fixl,ntns = extract_fixpoint_components true l in
+        let fixkind = Obligations.IsFixpoint g in
+          do_program_recursive local poly fixkind fixl ntns
 
     | _, _ ->
-	user_err ~hdr:"do_program_fixpoint"
-	  (str "Well-founded fixpoints not allowed in mutually recursive blocks")
+        user_err ~hdr:"do_program_fixpoint"
+          (str "Well-founded fixpoints not allowed in mutually recursive blocks")
 
 let check_safe () =
   let open Declarations in

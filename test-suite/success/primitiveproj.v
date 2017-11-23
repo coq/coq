@@ -51,7 +51,7 @@ Inductive Fdef := { Fa : nat ; Fb := Fa; Fc : Fdef }.
 
 Fail Scheme Fdef_rec := Induction for Fdef Sort Prop.
 
-(* 
+(*
   Rules for parsing and printing of primitive projections and their eta expansions.
   If r : R A where R is a primitive record with implicit parameter A.
   If p : forall {A} (r : R A) {A : Set}, list (A * B).
@@ -74,7 +74,7 @@ Unset Printing Projections.
 Set Printing All.
 Check (r.(p)).
 Unset Printing All.
-  
+
 (* Check (r.(p)).
    Elaborates to a primitive application, X arg implicit.
    Of type nat * ?ex
@@ -103,19 +103,19 @@ Unset Printing All.
 
 (** Explicit version of the primitive projection, under applied w.r.t implicit arguments
       can be printed only using projection notation. r.(@p) *)
-Check r.(@p _). 
+Check r.(@p _).
 Set Printing Projections.
-Check r.(@p _). 
+Check r.(@p _).
 Unset Printing Projections.
 Set Printing All.
 Check r.(@p _).
 Unset Printing All.
-  
+
 (** Explicit version of the primitive projection, applied to its implicit arguments
       can be printed using application notation r.(p), r.(@p) in fully explicit form *)
 Check r.(@p _) nat.
 Set Printing Projections.
-Check r.(@p _) nat. 
+Check r.(@p _) nat.
 Unset Printing Projections.
 Set Printing All.
 Check r.(@p _) nat.
@@ -125,12 +125,12 @@ Parameter r' : R' nat.
 
 Check (r'.(p')).
 Set Printing Projections.
-Check (r'.(p')). 
+Check (r'.(p')).
 Unset Printing Projections.
 Set Printing All.
 Check (r'.(p')).
 Unset Printing All.
-  
+
 (* Check (r'.(p')).
    Elaborates to a primitive application, X arg explicit.
    Of type forall X : Set, nat * X
@@ -151,22 +151,22 @@ Unset Printing All.
 
 (** Explicit version of the primitive projection, under applied w.r.t implicit arguments
       can be printed only using projection notation. r.(@p) *)
-Check r'.(@p' _). 
+Check r'.(@p' _).
 Set Printing Projections.
-Check r'.(@p' _). 
+Check r'.(@p' _).
 Unset Printing Projections.
 Set Printing All.
 Check r'.(@p' _).
 Unset Printing All.
-  
+
 (** Explicit version of the primitive projection, applied to its implicit arguments
       can be printed only using projection notation r.(p), r.(@p) in fully explicit form *)
-Check p' r' nat. 
+Check p' r' nat.
 Set Printing Projections.
-Check p' r' nat. 
+Check p' r' nat.
 Unset Printing Projections.
 Set Printing All.
-Check p' r' nat. 
+Check p' r' nat.
 Unset Printing All.
 
 Check (@p' nat).

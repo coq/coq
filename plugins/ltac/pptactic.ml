@@ -482,7 +482,7 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let pr_destruction_arg prc prlc (clear_flag,h) =
     pr_clear_flag clear_flag (pr_core_destruction_arg prc prlc) h
-                               
+
   let pr_inversion_kind = function
     | SimpleInversion -> primitive "simple inversion"
     | FullInversion -> primitive "inversion"

@@ -1,6 +1,6 @@
 (* File reduced by coq-bug-finder from 7411 lines to 2271 lines., then from 889 lines to 119 lines, then from 76 lines to 19 lines *)
 Set Universe Polymorphism.
-Set Implicit Arguments. 
+Set Implicit Arguments.
 Set Primitive Projections.
 Record PreCategory := { object :> Type; morphism : object -> object -> Type }.
 Record Functor (C D : PreCategory) :=

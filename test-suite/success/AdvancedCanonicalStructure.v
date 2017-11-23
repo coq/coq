@@ -52,12 +52,12 @@ Variable foo : A -> Type.
 
 Definition local0 := fun (a1 : A) (a2 : A) (a3 : A) =>
                        (eq_refl : plusA a1 (plusA zeroA a2) = ia _).
-Definition local1 := 
-  fun (a1 : A) (a2 : A) (f : A -> A) => 
+Definition local1 :=
+  fun (a1 : A) (a2 : A) (f : A -> A) =>
     (eq_refl : plusA a1 (plusA zeroA (f a2)) = ia _).
 
-Definition local2 := 
-  fun (a1 : A) (f : A -> A) => 
+Definition local2 :=
+  fun (a1 : A) (f : A -> A) =>
     (eq_refl : (f a1) = ia _).
 
 Goal forall a1 a2, eqA (plusA a1 zeroA) a2.

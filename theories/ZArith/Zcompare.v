@@ -138,9 +138,9 @@ Qed.
 Lemma Zle_compare :
   forall n m:Z,
     n <= m -> match n ?= m with
-		| Eq => True
-		| Lt => True
-		| Gt => False
+                | Eq => True
+                | Lt => True
+                | Gt => False
               end.
 Proof.
   intros. case Z.compare_spec; trivial; Z.order.
@@ -160,9 +160,9 @@ Qed.
 Lemma Zge_compare :
   forall n m:Z,
     n >= m -> match n ?= m with
-		| Eq => True
-		| Lt => False
-		| Gt => True
+                | Eq => True
+                | Lt => False
+                | Gt => True
               end.
 Proof.
   intros. now case Z.compare_spec.

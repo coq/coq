@@ -87,7 +87,7 @@ let _ =
 
 let is_eq_flag () = !eq_flag
 
-let eq_dec_flag = ref false 
+let eq_dec_flag = ref false
 let _ =
   declare_bool_option
     { optdepr  = false;
@@ -119,7 +119,7 @@ let define id internal ctx c t =
       { const_entry_body = c;
         const_entry_secctx = None;
         const_entry_type = t;
-	const_entry_universes = univs;
+        const_entry_universes = univs;
         const_entry_opaque = false;
         const_entry_inline_code = false;
         const_entry_feedback = None;
@@ -140,7 +140,7 @@ let alarm what internal msg =
   | InternalTacticRequest ->
     (if debug then
       Feedback.msg_debug
-	(hov 0 msg ++ fnl () ++ what ++ str " not defined.")); None
+        (hov 0 msg ++ fnl () ++ what ++ str " not defined.")); None
   | _ -> Some msg
 
 let try_declare_scheme what f internal names kn =
@@ -149,27 +149,27 @@ let try_declare_scheme what f internal names kn =
   let e = CErrors.push e in
   let msg = match fst e with
     | ParameterWithoutEquality cst ->
-	alarm what internal
-	  (str "Boolean equality not found for parameter " ++ Printer.pr_global cst ++
-	   str".")
+        alarm what internal
+          (str "Boolean equality not found for parameter " ++ Printer.pr_global cst ++
+           str".")
     | InductiveWithProduct ->
-	alarm what internal
-	  (str "Unable to decide equality of functional arguments.")
+        alarm what internal
+          (str "Unable to decide equality of functional arguments.")
     | InductiveWithSort ->
-	alarm what internal
-	  (str "Unable to decide equality of type arguments.")
+        alarm what internal
+          (str "Unable to decide equality of type arguments.")
     | NonSingletonProp ind ->
-	alarm what internal
-	  (str "Cannot extract computational content from proposition " ++
-	   quote (Printer.pr_inductive (Global.env()) ind) ++ str ".")
+        alarm what internal
+          (str "Cannot extract computational content from proposition " ++
+           quote (Printer.pr_inductive (Global.env()) ind) ++ str ".")
     | EqNotFound (ind',ind) ->
-	alarm what internal
-	  (str "Boolean equality on " ++
-	   quote (Printer.pr_inductive (Global.env()) ind') ++
-	   strbrk " is missing.")
+        alarm what internal
+          (str "Boolean equality on " ++
+           quote (Printer.pr_inductive (Global.env()) ind') ++
+           strbrk " is missing.")
     | UndefinedCst s ->
-	alarm what internal
-	  (strbrk "Required constant " ++ str s ++ str " undefined.")
+        alarm what internal
+          (strbrk "Required constant " ++ str s ++ str " undefined.")
     | AlreadyDeclared msg ->
         alarm what internal (msg ++ str ".")
     | DecidabilityMutualNotSupported ->
@@ -183,7 +183,7 @@ let try_declare_scheme what f internal names kn =
            (str "Scheme Equality is only for inductive types.")
     | e when CErrors.noncritical e ->
         alarm what internal
-	  (str "Unexpected error during scheme creation: " ++ CErrors.print e)
+          (str "Unexpected error during scheme creation: " ++ CErrors.print e)
     | _ -> iraise e
   in
   match msg with
@@ -370,26 +370,26 @@ requested
         let newref = Loc.tag newid in
           ((newref,isdep,ind,z)::l1),l2
       in
-	match t with
-	| CaseScheme (x,y,z) -> names "_case" "_case" x y z
-	| InductionScheme (x,y,z) -> names "_ind" "_rec" x y z
-	| EqualityScheme  x -> l1,((None,smart_global_inductive x)::l2)
-	    
+        match t with
+        | CaseScheme (x,y,z) -> names "_case" "_case" x y z
+        | InductionScheme (x,y,z) -> names "_ind" "_rec" x y z
+        | EqualityScheme  x -> l1,((None,smart_global_inductive x)::l2)
+
 
 let do_mutual_induction_scheme lnamedepindsort =
   let lrecnames = List.map (fun ((_,f),_,_,_) -> f) lnamedepindsort
   and env0 = Global.env() in
   let sigma, lrecspec, _ =
     List.fold_right
-      (fun (_,dep,ind,sort) (evd, l, inst) -> 
+      (fun (_,dep,ind,sort) (evd, l, inst) ->
        let evd, indu, inst =
-	 match inst with
-	 | None ->
-	    let _, ctx = Global.type_of_global_in_context env0 (IndRef ind) in
-	    let u, ctx = Universes.fresh_instance_from ctx None in
-	    let evd = Evd.from_ctx (Evd.evar_universe_context_of ctx) in
-	      evd, (ind,u), Some u
-	 | Some ui -> evd, (ind, ui), inst
+         match inst with
+         | None ->
+            let _, ctx = Global.type_of_global_in_context env0 (IndRef ind) in
+            let u, ctx = Universes.fresh_instance_from ctx None in
+            let evd = Evd.from_ctx (Evd.evar_universe_context_of ctx) in
+              evd, (ind,u), Some u
+         | Some ui -> evd, (ind, ui), inst
        in
           (evd, (indu,dep,sort) :: l, inst))
     lnamedepindsort (Evd.from_env env0,[],None)
@@ -410,13 +410,13 @@ let get_common_underlying_mutual_inductive = function
   | (id,(mind,i as ind))::l as all ->
       match List.filter (fun (_,(mind',_)) -> not (MutInd.equal mind mind')) l with
       | (_,ind')::_ ->
-	  raise (RecursionSchemeError (NotMutualInScheme (ind,ind')))
+          raise (RecursionSchemeError (NotMutualInScheme (ind,ind')))
       | [] ->
-	  if not (List.distinct_f Int.compare (List.map snd (List.map snd all)))
+          if not (List.distinct_f Int.compare (List.map snd (List.map snd all)))
           then user_err Pp.(str "A type occurs twice");
-	  mind,
-	  List.map_filter
-	    (function (Some id,(_,i)) -> Some (i,snd id) | (None,_) -> None) all
+          mind,
+          List.map_filter
+            (function (Some id,(_,i)) -> Some (i,snd id) | (None,_) -> None) all
 
 let do_scheme l =
   let ischeme,escheme = split_scheme l in
@@ -428,9 +428,9 @@ tried to declare different schemes at once *)
     else (
       if not (List.is_empty ischeme) then do_mutual_induction_scheme ischeme
       else
-	let mind,l = get_common_underlying_mutual_inductive escheme in
-	declare_beq_scheme_with l mind;
-	declare_eq_decidability_scheme_with l mind
+        let mind,l = get_common_underlying_mutual_inductive escheme in
+        declare_beq_scheme_with l mind;
+        declare_eq_decidability_scheme_with l mind
     )
 
 (**********************************************************************)
@@ -450,7 +450,7 @@ let fold_left' f = function
 
 let mk_coq_and sigma = Evarutil.new_global sigma (Coqlib.build_coq_and ())
 let mk_coq_conj sigma = Evarutil.new_global sigma (Coqlib.build_coq_conj ())
-             
+
 let build_combined_scheme env schemes =
   let evdref = ref (Evd.from_env env) in
   let defs = List.map (fun cst ->
@@ -460,11 +460,11 @@ let build_combined_scheme env schemes =
     let (ctx, arity) = decompose_prod ty in
     let (_, last) = List.hd ctx in
       match Constr.kind last with
-	| App (ind, args) ->
-	    let ind = destInd ind in
-	    let (_,spec) = Inductive.lookup_mind_specif env (fst ind) in
-	      ctx, ind, spec.mind_nrealargs
-	| _ -> ctx, destInd last, 0
+        | App (ind, args) ->
+            let ind = destInd ind in
+            let (_,spec) = Inductive.lookup_mind_specif env (fst ind) in
+              ctx, ind, spec.mind_nrealargs
+        | _ -> ctx, destInd last, 0
   in
   let (c, t) = List.hd defs in
   let ctx, ind, nargs = find_inductive t in
@@ -481,8 +481,8 @@ let build_combined_scheme env schemes =
   let concl_bod, concl_typ =
     fold_left'
       (fun (accb, acct) (cst, x) ->
-	mkApp (EConstr.to_constr !evdref coqconj, [| x; acct; cst; accb |]),
-	mkApp (EConstr.to_constr !evdref coqand, [| x; acct |])) concls
+        mkApp (EConstr.to_constr !evdref coqconj, [| x; acct; cst; accb |]),
+        mkApp (EConstr.to_constr !evdref coqand, [| x; acct |])) concls
   in
   let ctx, _ =
     list_split_rev_at prods
@@ -494,9 +494,9 @@ let build_combined_scheme env schemes =
 let do_combined_scheme name schemes =
   let csts =
     List.map (fun x ->
-		let refe = Ident x in
-		let qualid = qualid_of_reference refe in
-		try Nametab.locate_constant (snd qualid)
+                let refe = Ident x in
+                let qualid = qualid_of_reference refe in
+                try Nametab.locate_constant (snd qualid)
                 with Not_found -> user_err Pp.(pr_qualid (snd qualid) ++ str " is not declared."))
       schemes
   in

@@ -178,7 +178,7 @@ type template_arity = {
   template_level : Univ.universe;
 }
 
-type ('a, 'b) declaration_arity = 
+type ('a, 'b) declaration_arity =
   | RegularArity of 'a
   | TemplateArity of 'b
 
@@ -190,7 +190,7 @@ type inline = int option
 (** A constant can have no body (axiom/parameter), or a
     transparent body, or an opaque one *)
 
-(** Projections are a particular kind of constant: 
+(** Projections are a particular kind of constant:
     always transparent. *)
 
 type projection_body = {

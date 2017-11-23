@@ -44,7 +44,7 @@ Module Prim.
   Lemma Book_6_9_not_id b : Book_6_9 Bool b = negb b.
   Proof.
     unfold Book_6_9.
-    destruct (@LEM (Contr { f : Bool <~> Bool & ~(forall x, f x = x) }) _) as [[f H']|H']. 
+    destruct (@LEM (Contr { f : Bool <~> Bool & ~(forall x, f x = x) }) _) as [[f H']|H'].
     match goal with
       | [ |- equiv_fun Bool Bool f.1 b  = negb b ] => idtac
       | [ |- equiv_fun Bool Bool center.1 b = negb b ] => fail 1 "bad"

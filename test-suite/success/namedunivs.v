@@ -7,11 +7,11 @@
 Unset Strict Universe Declaration.
 
 Section lift_strict.
-Polymorphic Definition liftlt := 
+Polymorphic Definition liftlt :=
   let t := Type@{i} : Type@{k} in
   fun A : Type@{i} => A : Type@{k}.
 
-Polymorphic Definition liftle := 
+Polymorphic Definition liftle :=
   fun A : Type@{i} => A : Type@{k}.
 End lift_strict.
 
@@ -54,48 +54,48 @@ Definition testm (A : Type@{i}) : Type@{max(i,j)} := A.
 Inductive paths {A : Type@{i}} : A -> A -> Type@{i} :=
 | idpath (a : A) : paths a a.
 
-Definition Funext := 
+Definition Funext :=
   forall (A : Type) (B : A -> Type),
   forall f g : (forall a, B a), (forall x : A, paths (f x) (g x)) -> paths f g.
 
 Definition paths_lift_closed (A : Type@{i}) (x y : A) :
   paths x y -> @paths (liftle@{j Type} A) x y.
-Proof. 
+Proof.
   intros. destruct X. exact (idpath _).
 Defined.
 
 Definition paths_lift (A : Type@{i}) (x y : A) :
   paths x y -> paths@{j} x y.
-Proof. 
+Proof.
   intros. destruct X. exact (idpath _).
 Defined.
 
 Definition paths_lift_closed_strict (A : Type@{i}) (x y : A) :
   paths x y -> @paths (liftlt@{j Type} A) x y.
-Proof. 
+Proof.
   intros. destruct X. exact (idpath _).
 Defined.
 
 Definition paths_downward_closed_le (A : Type@{i}) (x y : A) :
   paths@{j} (A:=liftle@{i j} A) x y -> paths@{i} x y.
-Proof. 
+Proof.
   intros. destruct X. exact (idpath _).
 Defined.
 
 Definition paths_downward_closed_lt (A : Type@{i}) (x y : A) :
   @paths (liftlt@{j i} A) x y -> paths x y.
-Proof. 
+Proof.
   intros. destruct X. exact (idpath _).
 Defined.
 
 Definition paths_downward_closed_lt_nolift (A : Type@{i}) (x y : A) :
   paths@{j} x y -> paths x y.
-Proof. 
+Proof.
   intros. destruct X. exact (idpath _).
 Defined.
 
 Definition funext_downward_closed (F : Funext@{i' j' k'}) :
-  Funext@{i j k}. 
+  Funext@{i j k}.
 Proof.
   intros A B f g H. red in F.
   pose (F A B f g (fun x => paths_lift _ _ _ (H x))).

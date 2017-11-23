@@ -63,12 +63,12 @@ module V82 = struct
     let prev_future_goals = Evd.future_goals evars in
     let prev_principal_goal = Evd.principal_future_goal evars in
     let evi = { Evd.evar_hyps = hyps;
-		Evd.evar_concl = concl;
-		Evd.evar_filter = Evd.Filter.identity;
-		Evd.evar_body = Evd.Evar_empty;
-		Evd.evar_source = (Loc.tag Evar_kinds.GoalEvar);
-		Evd.evar_candidates = None;
-		Evd.evar_extra = extra }
+                Evd.evar_concl = concl;
+                Evd.evar_filter = Evd.Filter.identity;
+                Evd.evar_body = Evd.Evar_empty;
+                Evd.evar_source = (Loc.tag Evar_kinds.GoalEvar);
+                Evd.evar_candidates = None;
+                Evd.evar_extra = extra }
     in
     let evi = Typeclasses.mark_unresolvable evi in
     let (evars, evk) = Evarutil.new_pure_evar_full evars evi in
@@ -147,11 +147,11 @@ module V82 = struct
       try ignore (Environ.lookup_named (NamedDecl.get_id decl) genv); false
       with Not_found -> true in
     Environ.fold_named_context_reverse (fun t decl ->
-					  if is_proof_var decl then
+                                          if is_proof_var decl then
                                             let decl = Termops.map_named_decl EConstr.of_constr decl in
-					    mkNamedProd_or_LetIn decl t
-					  else
-					    t
-				       ) ~init:(concl sigma gl) env
+                                            mkNamedProd_or_LetIn decl t
+                                          else
+                                            t
+                                       ) ~init:(concl sigma gl) env
 
 end

@@ -93,7 +93,7 @@ Proof.
 Qed.
 
 (*********************************************************)
-(** ** Relating [<], [>], [<=] and [>=]  	         *)
+(** ** Relating [<], [>], [<=] and [>=]                  *)
 (*********************************************************)
 
 (*********************************************************)
@@ -820,7 +820,7 @@ Hint Resolve Rinv_involutive: real.
 Lemma Rinv_mult_distr :
   forall r1 r2, r1 <> 0 -> r2 <> 0 -> / (r1 * r2) = / r1 * / r2.
 Proof.
-  intros; field; auto.  
+  intros; field; auto.
 Qed.
 
 (*********)
@@ -2084,7 +2084,7 @@ Proof.
 Qed.
 
 Lemma Rdiv_lt_0_compat : forall a b, 0 < a -> 0 < b -> 0 < a/b.
-Proof. 
+Proof.
 intros; apply Rmult_lt_0_compat;[|apply Rinv_0_lt_compat]; assumption.
 Qed.
 

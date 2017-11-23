@@ -298,7 +298,7 @@ Hypothesis u22u1_unit   : forall (c:U2), c -> u22u1 c.
     [Prop]). The formulation is reminiscent of the monadic
     characteristic of the projection from a large type to [Prop].*)
 Hypothesis u22u1_counit : forall (F:U1->U1), u22u1 (forall A,F A) -> (forall A,F A).
-Hypothesis u22u1_coherent : forall (F:U1 -> U1) (f:forall x:U1, F x) (x:U1), 
+Hypothesis u22u1_coherent : forall (F:U1 -> U1) (f:forall x:U1, F x) (x:U1),
                               u22u1_counit _ (u22u1_unit _ f) x = f x.
 
 (** *** [U0] is a retract of [U1] *)

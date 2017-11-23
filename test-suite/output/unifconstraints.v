@@ -15,7 +15,7 @@ Goal forall n m : nat, True /\ True /\ True \/
   intros.
   refine (nat_rect _ _ _ _).
   Show.
-  clear n. 
+  clear n.
   Show.
   3:clear m.
   Show.

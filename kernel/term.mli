@@ -385,7 +385,7 @@ val eq_constr : constr -> constr -> bool
 val eq_constr_univs : constr UGraph.check_function
 [@@ocaml.deprecated "Alias for Constr.eq_constr_univs"]
 
-(** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo 
+(** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo
     alpha, casts, application grouping and the universe constraints in [u]. *)
 val leq_constr_univs : constr UGraph.check_function
 [@@ocaml.deprecated "Alias for Constr.leq_constr_univs"]

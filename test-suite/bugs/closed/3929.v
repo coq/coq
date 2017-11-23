@@ -14,7 +14,7 @@ Fail pose (lt@{i j}).
 let Zv:=eval cbv [Z] in Z in
 let Tv:=eval cbv [T] in T in
 constr_eq Zv Tv.
-exact I. 
+exact I.
 Defined.
 
 Goal True.

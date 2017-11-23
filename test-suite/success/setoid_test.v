@@ -132,7 +132,7 @@ setoid_rewrite H.
 tauto.
 Qed.
 
-(** Check proper refreshing of the lemma application for multiple 
+(** Check proper refreshing of the lemma application for multiple
    different instances in a single setoid rewrite. *)
 
 Section mult.
@@ -142,16 +142,16 @@ Section mult.
   Context (ab : forall B, A -> B).
   Context (anat : forall A, nat -> A).
 
-Goal forall x, (fold _ _ (fun x => ab A x) (add A x) = anat _ (fold _ _ (ab nat) (add _ x))). 
+Goal forall x, (fold _ _ (fun x => ab A x) (add A x) = anat _ (fold _ _ (ab nat) (add _ x))).
 Proof. intros.
-  setoid_rewrite fold_lemma. 
+  setoid_rewrite fold_lemma.
   change (fold A A (fun x0 : A => ab A x0) x = anat A (fold A nat (ab nat) x)).
 Abort.
 
 End mult.
 
-(** Current semantics for rewriting with typeclass constraints in the lemma 
-   does not fix the instance at the first unification, use [at], or simply rewrite for 
+(** Current semantics for rewriting with typeclass constraints in the lemma
+   does not fix the instance at the first unification, use [at], or simply rewrite for
    this semantics. *)
 
 Parameter beq_nat : forall x y : nat, bool.

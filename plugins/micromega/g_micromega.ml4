@@ -10,7 +10,7 @@
 (*                                                                      *)
 (* * Mappings from Coq tactics to Caml function calls                   *)
 (*                                                                      *)
-(*  Frédéric Besson (Irisa/Inria) 2006-2008			        *)
+(*  Frédéric Besson (Irisa/Inria) 2006-2008                           *)
 (*                                                                      *)
 (************************************************************************)
 
@@ -52,7 +52,7 @@ TACTIC EXTEND NQA
 END
 
 
-  
+
 TACTIC EXTEND Sos_Z
 | [ "sos_Z" tactic(t) ] -> [ (Coq_micromega.sos_Z (Tacinterp.tactic_of_value ist t)) ]
    END

@@ -10,7 +10,7 @@ Goal forall sz : nat,
     let sz' := sz in
     forall pf : sz = sz',
       let feq_refl := exist (fun x : nat => sz = x) sz' eq_refl in
-      let fpf := exist (fun x : nat => sz = x) sz' pf in feq_refl = fpf -> 
+      let fpf := exist (fun x : nat => sz = x) sz' pf in feq_refl = fpf ->
 proj2_sig feq_refl = proj2_sig fpf.
 Proof.
   intros.

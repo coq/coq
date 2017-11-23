@@ -33,10 +33,10 @@ val lambda_of_constr : env -> evars -> Constr.constr -> lambda
 val compile_static_int31 : bool -> Constr.constr array -> lambda
 
 val compile_dynamic_int31 : bool -> prefix -> constructor -> lambda array ->
-			    lambda
+                            lambda
 
 val before_match_int31 : inductive -> bool -> prefix -> constructor -> lambda ->
-			 lambda
+                         lambda
 
 val compile_prim : CPrimitives.t -> Constant.t -> bool -> prefix -> lambda array ->
-		   lambda
+                   lambda

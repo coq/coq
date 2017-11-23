@@ -8,10 +8,10 @@ Module A.
     | ?y => y
   end.
 Goal forall s : hSet, True.
-intros. 
+intros.
 let x := head_hnf_under_binders setT in pose x.
 
-set (foo := eq_refl (@setT )). generalize foo. simpl. cbn. 
+set (foo := eq_refl (@setT )). generalize foo. simpl. cbn.
 Abort.
 End A.
 
@@ -29,7 +29,7 @@ Goal forall s : @hSet nat, True.
 intros.
 let x := head_hnf_under_binders setT in pose x.
 
-set (foo := eq_refl (@setT nat)). generalize foo. simpl. cbn. 
+set (foo := eq_refl (@setT nat)). generalize foo. simpl. cbn.
 Abort.
 End A'.
 
@@ -50,4 +50,4 @@ Goal setT = setT.
 Abort.
 
 Goal forall h, setT h = setT h.
-Proof. intro. progress unfold setT. 
+Proof. intro. progress unfold setT.

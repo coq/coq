@@ -93,7 +93,7 @@ Module ZnZ.
     lor         : t -> t -> t;
     land        : t -> t -> t;
     lxor        : t -> t -> t }.
- 
+
  Section Specs.
  Context {t : Type}{ops : Ops t}.
 
@@ -140,7 +140,7 @@ Module ZnZ.
     spec_succ : forall x, [|succ x|] = ([|x|] + 1) mod wB;
     spec_add : forall x y, [|add x y|] = ([|x|] + [|y|]) mod wB;
     spec_add_carry :
-	 forall x y, [|add_carry x y|] = ([|x|] + [|y|] + 1) mod wB;
+         forall x y, [|add_carry x y|] = ([|x|] + [|y|] + 1) mod wB;
 
     spec_pred_c : forall x, [-|pred_c x|] = [|x|] - 1;
     spec_sub_c : forall x y, [-|sub_c x y|] = [|x|] - [|y|];
@@ -148,7 +148,7 @@ Module ZnZ.
     spec_pred : forall x, [|pred x|] = ([|x|] - 1) mod wB;
     spec_sub : forall x y, [|sub x y|] = ([|x|] - [|y|]) mod wB;
     spec_sub_carry :
-	 forall x y, [|sub_carry x y|] = ([|x|] - [|y|] - 1) mod wB;
+         forall x y, [|sub_carry x y|] = ([|x|] - [|y|] - 1) mod wB;
 
     spec_mul_c : forall x y, [|| mul_c x y ||] = [|x|] * [|y|];
     spec_mul : forall x y, [|mul x y|] = ([|x|] * [|y|]) mod wB;
@@ -183,7 +183,7 @@ Module ZnZ.
     (* shift operations *)
     spec_head00:  forall x, [|x|] = 0 -> [|head0 x|] = Zpos digits;
     spec_head0  : forall x,  0 < [|x|] ->
-	 wB/ 2 <= 2 ^ ([|head0 x|]) * [|x|] < wB;
+         wB/ 2 <= 2 ^ ([|head0 x|]) * [|x|] < wB;
     spec_tail00:  forall x, [|x|] = 0 -> [|tail0 x|] = Zpos digits;
     spec_tail0  : forall x, 0 < [|x|] ->
          exists y, 0 <= y /\ [|x|] = (2 * y + 1) * (2 ^ [|tail0 x|]) ;

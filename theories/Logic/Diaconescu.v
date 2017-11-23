@@ -99,7 +99,7 @@ Lemma AC_bool_subset_to_bool :
 Proof.
   destruct (guarded_rel_choice _ _
    (fun Q:bool -> Prop =>  exists y : _, Q y)
-   (fun (Q:bool -> Prop) (y:bool) => Q y)) as (R,(HRsub,HR)). 
+   (fun (Q:bool -> Prop) (y:bool) => Q y)) as (R,(HRsub,HR)).
     exact (fun _ H => H).
   exists R; intros P HP.
   destruct (HR P HP) as (y,(Hy,Huni)).
@@ -238,8 +238,8 @@ Proof.
     intros a [Ha1|Ha2]; [exists true | exists false]; auto.
   assert (guarded_rel_choice :=
           rel_choice_and_proof_irrel_imp_guarded_rel_choice
-	  rel_choice
-	  proof_irrelevance).
+          rel_choice
+          proof_irrelevance).
   destruct
     (guarded_rel_choice A bool
       (fun x => x=a1 \/ x=a2)

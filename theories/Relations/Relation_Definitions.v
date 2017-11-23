@@ -36,13 +36,13 @@ Section Relation_Definition.
 
     Record order : Prop :=
       { ord_refl : reflexive;
-	ord_trans : transitive;
-	ord_antisym : antisymmetric}.
+        ord_trans : transitive;
+        ord_antisym : antisymmetric}.
 
     Record equivalence : Prop :=
       { equiv_refl : reflexive;
-	equiv_trans : transitive;
-	equiv_sym : symmetric}.
+        equiv_trans : transitive;
+        equiv_sym : symmetric}.
 
     Record PER : Prop :=  {per_sym : symmetric; per_trans : transitive}.
 
@@ -59,7 +59,7 @@ Section Relation_Definition.
 
     Definition commut (R1 R2:relation) : Prop :=
       forall x y:A,
-	R1 y x -> forall z:A, R2 z y ->  exists2 y' : A, R2 y' x & R1 z y'.
+        R1 y x -> forall z:A, R2 z y ->  exists2 y' : A, R2 y' x & R1 z y'.
 
   End Relations_of_Relations.
 

@@ -15,10 +15,10 @@
 
 
 \coqdoc\ is a documentation tool for the proof assistant
-\Coq, similar to \javadoc\ or \ocamldoc. 
+\Coq, similar to \javadoc\ or \ocamldoc.
 The task of \coqdoc\ is
 \begin{enumerate}
-\item to produce a nice \LaTeX\ and/or HTML document from the \Coq\ 
+\item to produce a nice \LaTeX\ and/or HTML document from the \Coq\
   sources, readable for a human and not only for the proof assistant;
 \item to help the user navigating in his own (or third-party) sources.
 \end{enumerate}
@@ -28,11 +28,11 @@ The task of \coqdoc\ is
 
 \subsection{Principles}
 
-Documentation is inserted into \Coq\ files as \emph{special comments}.  
+Documentation is inserted into \Coq\ files as \emph{special comments}.
 Thus your files will compile as usual, whether you use \coqdoc\ or not.
 \coqdoc\ presupposes that the given \Coq\ files are well-formed (at
 least lexically).  Documentation starts with
-\texttt{(**}, followed by a space, and ends with the pending \texttt{*)}. 
+\texttt{(**}, followed by a space, and ends with the pending \texttt{*)}.
 The documentation format is inspired
   by Todd~A.~Coram's \emph{Almost Free Text (AFT)} tool: it is mainly
 ASCII text with some syntax-light controls, described below.
@@ -52,7 +52,7 @@ Pre-formatted vernacular is enclosed by \texttt{[[} and
 must follow a newline.
 
 \paragraph{Pretty-printing.}
-\coqdoc\ uses different faces for identifiers and keywords.  
+\coqdoc\ uses different faces for identifiers and keywords.
 The pretty-printing of \Coq\ tokens (identifiers or symbols) can be
 controlled using one of the following commands:
 \begin{alltt}
@@ -85,7 +85,7 @@ Initially, the pretty-printing table contains the following mapping:
     \verb!|-!            & $\vdash$        \\
     \verb|\/|            & $\lor$          &
     \verb|/\|            & $\land$         &
-    \verb|~|             & $\lnot$ 
+    \verb|~|             & $\lnot$
   \end{tabular}
 \end{center}
 Any of these can be overwritten or suppressed using the
@@ -96,7 +96,7 @@ automaton and thus applies the longest-match rule. For instance,
 \verb!->~! is recognized as a single token, where \Coq\ sees two
 tokens. It is the responsibility of the user to insert space between
 tokens \emph{or} to give pretty-printing rules for the possible
-combinations, e.g. 
+combinations, e.g.
 \begin{verbatim}
 (** printing ->~ %\ensuremath{\rightarrow\lnot}% *)
 \end{verbatim}
@@ -109,7 +109,7 @@ The section title is given on the remaining of the line.
 Example:
 \begin{verbatim}
     (** * Well-founded relations
-  
+
         In this section, we introduce...  *)
 \end{verbatim}
 
@@ -170,13 +170,13 @@ escape sequences:
 Note: to simply output the characters \verb+$+, \verb+%+ and \verb+#+
 and escaping their escaping role, these characters must be doubled.
 
-\paragraph{Verbatim.} 
+\paragraph{Verbatim.}
 Verbatim material is introduced by a leading \verb+<<+ and closed by
 \verb+>>+ at the beginning of a line. Example:
 \begin{verbatim}
 Here is the corresponding caml code:
 <<
-  let rec fact n = 
+  let rec fact n =
     if n <= 1 then 1 else n * fact (n-1)
 >>
 \end{verbatim}
@@ -210,7 +210,7 @@ Some parts of the source can be hidden using command line options
 (* end hide *)
 \end{alltt}
 Conversely, some parts of the source which would be hidden can be
-shown using such comments: 
+shown using such comments:
 \begin{alltt}
 (* begin show *)
 \emph{some Coq material}
@@ -231,7 +231,7 @@ be used around a whole proof.
 Any command line argument which is not an option is considered to be a
 file (even if it starts with a \verb!-!). \Coq\ files are identified
 by the suffixes \verb!.v! and \verb!.g! and \LaTeX\ files by the
-suffix \verb!.tex!. 
+suffix \verb!.tex!.
 
 \begin{description}
 \item[HTML output] ~\par
@@ -243,7 +243,7 @@ suffix \verb!.tex!.
 
 \item[\LaTeX\ output] ~\par
   A single \LaTeX\ file is created, on standard output. It can be
-  redirected to a file with option \texttt{-o}. 
+  redirected to a file with option \texttt{-o}.
   The order of files on the command line is kept in the final
   document. \LaTeX\ files given on the command line are copied `as is'
   in the final document .
@@ -266,23 +266,23 @@ suffix \verb!.tex!.
 \begin{description}
 
 \item[\texttt{\mm{}html}] ~\par
-  
+
   Select a HTML output.
 
 \item[\texttt{\mm{}latex}] ~\par
-  
+
   Select a \LaTeX\ output.
 
 \item[\texttt{\mm{}dvi}] ~\par
-  
+
   Select a DVI output.
 
 \item[\texttt{\mm{}ps}] ~\par
-  
+
   Select a PostScript output.
 
 \item[\texttt{\mm{}texmacs}] ~\par
-  
+
   Select a \texmacs\ output.
 
 \item[\texttt{\mm{}stdout}] ~\par
@@ -290,7 +290,7 @@ suffix \verb!.tex!.
   Write output to stdout.
 
 \item[\texttt{-o }\textit{file}, \texttt{\mm{}output }\textit{file}] ~\par
-  
+
   Redirect the output into the file `\textit{file}' (meaningless with
   \texttt{-html}).
 
@@ -312,7 +312,7 @@ suffix \verb!.tex!.
 
 \item[\texttt{\mm{}vernac-file }\textit{file},
       \texttt{\mm{}tex-file }\textit{file}] ~\par
-      
+
       Considers the file `\textit{file}' respectively as a \verb!.v!
       (or \verb!.g!) file or a \verb!.tex! file.
 
@@ -321,7 +321,7 @@ suffix \verb!.tex!.
   Read file names to process in file `\textit{file}' as if they were
   given on the command line. Useful for program sources split up into
   several directories.
-  
+
 \item[\texttt{-q}, \texttt{\mm{}quiet}] ~\par
 
   Be quiet. Do not print anything except errors.
@@ -344,11 +344,11 @@ Default behavior is to build an index, for the HTML output only, into
 \begin{description}
 
 \item[\texttt{\mm{}no-index}] ~\par
-  
+
   Do not output the index.
 
 \item[\texttt{\mm{}multi-index}] ~\par
-  
+
   Generate one page for each category and each letter in the index,
   together with a top page \texttt{index.html}.
 
@@ -381,22 +381,22 @@ Default behavior is to build an index, for the HTML output only, into
 \begin{description}
 
 \item[\texttt{\mm{}glob-from }\textit{file}] ~\par
-  
-  Make references using \Coq\ globalizations from file \textit{file}. 
+
+  Make references using \Coq\ globalizations from file \textit{file}.
   (Such globalizations are obtained with \Coq\ option \texttt{-dump-glob}).
 
 \item[\texttt{\mm{}no-externals}] ~\par
-  
+
   Do not insert links to the \Coq\ standard library.
 
 \item[\texttt{\mm{}external }\textit{url}~\textit{coqdir}] ~\par
-  
+
   Use given URL for linking references whose name starts with prefix
   \textit{coqdir}.
 
 \item[\texttt{\mm{}coqlib }\textit{url}] ~\par
 
-  Set base URL for the \Coq\ standard library (default is 
+  Set base URL for the \Coq\ standard library (default is
   \url{http://coq.inria.fr/library/}). This is equivalent to
   \texttt{\mm{}external }\textit{url}~\texttt{Coq}.
 
@@ -414,7 +414,7 @@ Default behavior is to build an index, for the HTML output only, into
 \paragraph{Title options}
 \begin{description}
 \item[\texttt{-s }, \texttt{\mm{}short}] ~\par
-  
+
   Do not insert titles for the files. The default behavior is to
   insert a title like ``Library Foo'' for each file.
 
@@ -438,10 +438,10 @@ Default behavior is to build an index, for the HTML output only, into
   present, the \texttt{text} is used as a subtitle for the module in
   appropriate places.
 
-\item[\texttt{-t }\textit{string}, 
+\item[\texttt{-t }\textit{string},
       \texttt{\mm{}title }\textit{string}] ~\par
-  
-  Set the document title.      
+
+  Set the document title.
 
 \end{description}
 
@@ -453,11 +453,11 @@ Default behavior is to build an index, for the HTML output only, into
   Do not print proofs.
 
 \item[\texttt{-l}, \texttt{\mm{}light}] ~\par
-  
+
   Light mode. Suppress proofs (as with \texttt{-g}) and the following commands:
   \begin{itemize}
   \item {}[\texttt{Recursive}] \texttt{Tactic Definition}
-  \item \texttt{Hint / Hints} 
+  \item \texttt{Hint / Hints}
   \item \texttt{Require}
   \item \texttt{Transparent / Opaque}
   \item \texttt{Implicit Argument / Implicits}
@@ -473,7 +473,7 @@ There are a few options to drive the parsing of comments:
 \begin{description}
 \item[\texttt{\mm{}parse-comments}] ~\par
 
-  Parses regular comments delimited by \texttt{(*} and \texttt{*)} as 
+  Parses regular comments delimited by \texttt{(*} and \texttt{*)} as
   well. They are typeset inline.
 
 \item[\texttt{\mm{}plain-comments}] ~\par
@@ -519,7 +519,7 @@ Default behavior is to assume ASCII 7 bits input files.
 \item[\texttt{\mm{}inputenc} \textit{string}] ~\par
 
   Give a \LaTeX\ input encoding, as an option to \LaTeX\ package
-  \texttt{inputenc}. 
+  \texttt{inputenc}.
 
 \item[\texttt{\mm{}charset} \textit{string}] ~\par
 
@@ -546,21 +546,21 @@ Then you may alter the rendering of the document by
 redefining some macros:
 \begin{description}
 
-\item[\texttt{coqdockw}, \texttt{coqdocid}, \ldots] ~ 
-  
+\item[\texttt{coqdockw}, \texttt{coqdocid}, \ldots] ~
+
   The one-argument macros for typesetting keywords and identifiers.
   Defaults are sans-serif for keywords and italic for identifiers.
 
   For example, if you would like a slanted font for keywords, you
-  may insert  
+  may insert
 \begin{verbatim}
      \renewcommand{\coqdockw}[1]{\textsl{#1}}
 \end{verbatim}
   anywhere between \verb|\usepackage{coqdoc}| and
-  \verb|\begin{document}|. 
+  \verb|\begin{document}|.
 
-\item[\texttt{coqdocmodule}] ~ 
-  
+\item[\texttt{coqdocmodule}] ~
+
   One-argument macro for typesetting the title of a \verb|.v| file.
   Default is
 \begin{verbatim}

@@ -45,20 +45,20 @@ Lemma paths_change (A : Type@{i}) (x y : A) : paths@{j} x y = paths@{i} x y.
 Proof. (* require Univalence *)
   apply cheat.
 Defined.
-  
+
 Lemma IsTrunc_lift (n : trunc_index) :
   forall (A : Type@{i}), IsTrunc_internal@{i} n A -> IsTrunc_internal@{j} n A.
 Proof.
-  induction n; simpl; intros. 
+  induction n; simpl; intros.
   destruct X. exists center0. intros. apply (paths_lift _ _ _  (contr0 y)).
 
-  rewrite paths_change. 
-  apply IHn, X. 
+  rewrite paths_change.
+  apply IHn, X.
 Defined.
 
 Notation IsHProp := (IsTrunc minus_one).
 (* Record hProp := hp { hproptype :> Type ; isp : IsTrunc minus_one hproptype}. *)
-(* Make the truncation proof polymorphic, i.e., available at any level greater or equal 
+(* Make the truncation proof polymorphic, i.e., available at any level greater or equal
    to the carrier type level j *)
 Record hProp := hp { hproptype :> Type@{j} ; isp : IsTrunc minus_one hproptype}.
 Axiom path_iff_hprop_uncurried : forall `{IsHProp A, IsHProp B}, (A <-> B) -> A
@@ -80,7 +80,7 @@ Proof.
 (*    Top.78 |= Top.74 < Top.78 *)
 (*                *) *)
 
- Show Universes. 
+ Show Universes.
  exact (isp _).
  split; intros. destruct X. apply bisimulation_refl.
  apply bisimulation_eq, X.

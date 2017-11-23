@@ -1,4 +1,4 @@
-(* In the following code, the (superfluous) lemma [lem] is responsible 
+(* In the following code, the (superfluous) lemma [lem] is responsible
 for the failure of congruence. *)
 
 Definition  f : nat -> Prop := fun x => True.

@@ -166,7 +166,7 @@ Definition pullback_along `{Funext} (C C' D : PreCategory) (p : Functor C C')
 : object ((C' -> D) -> (C -> D))
   := Eval hnf in compose_functor _ _ _ p.
 
-Definition IsColimit `{Funext} C D (F : Functor D C) 
+Definition IsColimit `{Funext} C D (F : Functor D C)
            (x : object
                   (@comma_category (indiscrete_category Unit)
                                    (@functor_category H (indiscrete_category Unit) C)

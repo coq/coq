@@ -410,7 +410,7 @@ Section Proof_irrelevance_WEM_CC.
 
   Local Notation NProp := NoRetractToNegativeProp.NProp.
   Local Notation El := NoRetractToNegativeProp.El.
-  
+
   Variable B : Prop.
   Variables b1 b2 : B.
 
@@ -707,7 +707,7 @@ Section Excluded_middle_entails_unrestricted_minimization.
 
   Hypothesis em : forall A, A\/~A.
 
-  Theorem excluded_middle_entails_unrestricted_minimization : 
+  Theorem excluded_middle_entails_unrestricted_minimization :
     forall P, Minimization_Property P.
   Proof.
     intros P n HPn.
@@ -728,7 +728,7 @@ Section Example_of_undecidable_predicate_with_the_minimization_property.
 
   Let P n := exists k, n<=k /\ s k = true.
 
-  Example undecidable_predicate_with_the_minimization_property : 
+  Example undecidable_predicate_with_the_minimization_property :
     Minimization_Property P.
   Proof.
     unfold Minimization_Property.

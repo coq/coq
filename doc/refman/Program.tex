@@ -8,11 +8,11 @@ We present here the \Program\ tactic commands, used to build certified
 \Coq\ programs, elaborating them from their algorithmic skeleton and a
 rich specification \cite{Sozeau06}. It can be thought of as a dual of extraction
 (see Chapter~\ref{Extraction}). The goal of \Program~is to program as in a regular
-functional programming language whilst using as rich a specification as 
+functional programming language whilst using as rich a specification as
 desired and proving that the code meets the specification using the whole \Coq{} proof
 apparatus. This is done using a technique originating from the
 ``Predicate subtyping'' mechanism of \PVS \cite{Rushby98}, which generates type-checking
-conditions while typing a term constrained to a particular type. 
+conditions while typing a term constrained to a particular type.
 Here we insert existential variables in the term, which must be filled
 with proofs to get a complete \Coq\ term. \Program\ replaces the
 \Program\ tactic by Catherine Parent \cite{Parent95b} which had a similar goal but is no longer
@@ -29,7 +29,7 @@ some proof obligations which need to be resolved to create the final term.
 \asection{Elaborating programs}
 The main difference from \Coq\ is that an object in a type $T : \Set$
 can be considered as an object of type $\{ x : T~|~P\}$ for any
-wellformed $P : \Prop$. 
+wellformed $P : \Prop$.
 If we go from $T$ to the subset of $T$ verifying property $P$, we must
 prove that the object under consideration verifies it. \Russell\ will
 generate an obligation for every such coercion. In the other direction,
@@ -41,7 +41,7 @@ operation (see Section~\ref{Caseexpr}).
 \begin{itemize}
 \item Generation of equalities. A {\tt match} expression is always
   generalized by the corresponding equality. As an example,
-  the expression: 
+  the expression:
 
 \begin{verbatim}
   match x with
@@ -93,7 +93,7 @@ To give more control over the generation of equalities, the typechecker will
 fall back directly to \Coq's usual typing of dependent pattern-matching
 if a {\tt return} or {\tt in} clause is specified. Likewise,
 the {\tt if} construct is not treated specially by \Program{} so boolean
-tests in the code are not automatically reflected in the obligations. 
+tests in the code are not automatically reflected in the obligations.
 One can use the {\tt dec} combinator to get the correct hypotheses as in:
 
 \begin{coq_eval}
@@ -106,7 +106,7 @@ Program Definition id (n : nat) : { x : nat | x = n } :=
 \end{coq_example}
 
 The let tupling construct {\tt let (x1, ..., xn) := t in b}
-does not produce an equality, contrary to the let pattern construct 
+does not produce an equality, contrary to the let pattern construct
 {\tt let '(x1, ..., xn) := t in b}.
 Also, {\tt {\term}:>} explicitly asks the system to coerce {\tt \term} to its
 support type. It can be useful in notations, for example:
@@ -116,7 +116,7 @@ Notation " x `= y " := (@eq _ (x :>) (y :>)) (only parsing).
 
 This notation denotes equality on subset types using equality on their
 support types, avoiding uses of proof-irrelevance that would come up
-when reasoning with equality on the subset types themselves. 
+when reasoning with equality on the subset types themselves.
 
 The next two commands are similar to their standard counterparts
 Definition (see Section~\ref{Basic-definitions}) and Fixpoint (see Section~\ref{Fixpoint}) in that
@@ -231,7 +231,7 @@ No such problems arise when using measures or well-founded recursion.
 
 The \Russell\ language can also be used to type statements of logical
 properties. It will generate obligations, try to solve them
-automatically and fail if some unsolved obligations remain. 
+automatically and fail if some unsolved obligations remain.
 In this case, one can first define the lemma's
 statement using {\tt Program Definition} and use it as the goal afterwards.
 Otherwise the proof will be started with the elaborated version as a goal.
@@ -266,14 +266,14 @@ tactic is replaced by the default one if not specified.
 \item {\tt Solve All Obligations [with \tacexpr]} Tries to solve
   each obligation of every program using the given tactic or the default
   one (useful for mutually recursive definitions).
-\item {\tt Admit Obligations [of \ident]}\comindex{Admit Obligations} 
+\item {\tt Admit Obligations [of \ident]}\comindex{Admit Obligations}
   Admits all obligations (does not work with structurally recursive programs).
-\item {\tt Preterm [of \ident]}\comindex{Preterm} 
+\item {\tt Preterm [of \ident]}\comindex{Preterm}
   Shows the term that will be fed to
   the kernel once the obligations are solved. Useful for debugging.
 \item {\tt Set Transparent Obligations}\optindex{Transparent Obligations}
   Control whether all obligations should be declared as transparent (the
-  default), or if the system should infer which obligations can be declared opaque. 
+  default), or if the system should infer which obligations can be declared opaque.
 \item {\tt Set Hide Obligations}\optindex{Hide Obligations}
   Control whether obligations appearing in the term should be hidden
   as implicit arguments of the special constant
@@ -286,7 +286,7 @@ tactic is replaced by the default one if not specified.
 \end{itemize}
 
 The module {\tt Coq.Program.Tactics} defines the default tactic for solving
-obligations called {\tt program\_simpl}. Importing 
+obligations called {\tt program\_simpl}. Importing
 {\tt Coq.Program.Program} also adds some useful notations, as documented in the file itself.
 
 \section{Frequently Asked Questions
@@ -297,22 +297,22 @@ obligations called {\tt program\_simpl}. Importing
   This error can happen when one tries to define a
   function by structural recursion on a subset object, which means the Coq
   function looks like:
-  
+
   \verb$Program Fixpoint f (x : A | P) := match x with A b => f b end.$
-  
+
   Supposing $b : A$, the argument at the recursive call to f is not a
   direct subterm of x as b is wrapped inside an {\tt exist} constructor to build
   an object of type \verb${x : A | P}$.  Hence the definition is rejected
   by the guardedness condition checker. However one can use
   wellfounded recursion on subset objects like this:
-  
+
 \begin{verbatim}
 Program Fixpoint f (x : A | P) { measure (size x) } :=
   match x with A b => f b end.
 \end{verbatim}
-  
+
   One will then just have to prove that the measure decreases at each recursive
-  call. There are three drawbacks though: 
+  call. There are three drawbacks though:
   \begin{enumerate}
   \item A measure function has to be defined;
   \item The reduction is a little more involved, although it works well
@@ -322,8 +322,8 @@ Program Fixpoint f (x : A | P) { measure (size x) } :=
   \end{enumerate}
 \end{itemize}
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
 %%% compile-command: "BIBINPUTS=\".\" make QUICK=1 -C ../.. doc/refman/Reference-Manual.pdf"
-%%% End: 
+%%% End:

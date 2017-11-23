@@ -108,7 +108,7 @@ Proof.
   exists x; apply Un_cv_crit_lub;
     [ unfold Un_growing; intro; rewrite tech5;
       pattern (sum_f_R0 An n) at 1; rewrite <- Rplus_0_r;
-	apply Rplus_le_compat_l; left; apply H
+        apply Rplus_le_compat_l; left; apply H
       | apply H1 ].
 Defined.
 
@@ -138,7 +138,7 @@ Proof.
     replace (sum_f_R0 Vn n - sum_f_R0 Wn n - (x - x0)) with
       (sum_f_R0 Vn n - x + - (sum_f_R0 Wn n - x0)); [ idtac | ring ];
       apply Rle_lt_trans with
-	(Rabs (sum_f_R0 Vn n - x) + Rabs (- (sum_f_R0 Wn n - x0))).
+        (Rabs (sum_f_R0 Vn n - x) + Rabs (- (sum_f_R0 Wn n - x0))).
   apply Rabs_triang.
   rewrite Rabs_Ropp; apply Rlt_le_trans with (eps / 2 + eps / 2).
   apply Rplus_lt_compat.
@@ -167,7 +167,7 @@ Proof.
   unfold R_dist; unfold Rminus; rewrite Ropp_0;
     rewrite Rplus_0_r; rewrite Rabs_Rabsolu; unfold R_dist in H11;
       unfold Rminus in H11; rewrite Ropp_0 in H11; rewrite Rplus_0_r in H11;
-	rewrite Rabs_Rabsolu in H11; rewrite Rabs_right.
+        rewrite Rabs_Rabsolu in H11; rewrite Rabs_right.
   apply Rle_lt_trans with (3 * Rabs (An (S n) / An n)).
   apply H6.
   apply Rmult_lt_reg_l with (/ 3).
@@ -242,7 +242,7 @@ Proof.
   unfold R_dist; unfold Rminus; rewrite Ropp_0;
     rewrite Rplus_0_r; rewrite Rabs_Rabsolu; unfold R_dist in H10;
       unfold Rminus in H10; rewrite Ropp_0 in H10; rewrite Rplus_0_r in H10;
-	rewrite Rabs_Rabsolu in H10; rewrite Rabs_right.
+        rewrite Rabs_Rabsolu in H10; rewrite Rabs_right.
   apply Rle_lt_trans with (3 * Rabs (An (S n) / An n)).
   apply H5.
   apply Rmult_lt_reg_l with (/ 3).
@@ -300,21 +300,21 @@ Proof.
   apply Rplus_le_reg_l with (- An n); rewrite Rplus_0_r;
     rewrite <- (Rplus_comm (An n)); rewrite <- Rplus_assoc;
       rewrite Rplus_opp_l; rewrite Rplus_0_l; rewrite <- Rabs_Ropp;
-	apply RRle_abs.
+        apply RRle_abs.
   unfold Vn; unfold Rdiv; repeat rewrite <- (Rmult_comm (/ 2));
     repeat rewrite Rmult_assoc; apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; prove_sup0.
   unfold Rminus; rewrite double;
     replace (3 * Rabs (An n)) with (Rabs (An n) + Rabs (An n) + Rabs (An n));
       [ idtac | ring ]; repeat rewrite Rplus_assoc; repeat apply Rplus_le_compat_l;
-	apply RRle_abs.
+        apply RRle_abs.
   intro; unfold Wn; unfold Rdiv; rewrite <- (Rmult_0_r (/ 2));
     rewrite <- (Rmult_comm (/ 2)); apply Rmult_lt_compat_l.
   apply Rinv_0_lt_compat; prove_sup0.
   apply Rplus_lt_reg_l with (An n); rewrite Rplus_0_r; unfold Rminus;
     rewrite (Rplus_comm (An n)); rewrite Rplus_assoc;
       rewrite Rplus_opp_l; rewrite Rplus_0_r;
-	apply Rle_lt_trans with (Rabs (An n)).
+        apply Rle_lt_trans with (Rabs (An n)).
   apply RRle_abs.
   rewrite double; pattern (Rabs (An n)) at 1; rewrite <- Rplus_0_r;
     apply Rplus_lt_compat_l; apply Rabs_pos_lt; apply H.
@@ -324,7 +324,7 @@ Proof.
   apply Rplus_lt_reg_l with (- An n); rewrite Rplus_0_r; unfold Rminus;
     rewrite (Rplus_comm (- An n)); rewrite Rplus_assoc;
       rewrite Rplus_opp_r; rewrite Rplus_0_r;
-	apply Rle_lt_trans with (Rabs (An n)).
+        apply Rle_lt_trans with (Rabs (An n)).
   rewrite <- Rabs_Ropp; apply RRle_abs.
   rewrite double; pattern (Rabs (An n)) at 1; rewrite <- Rplus_0_r;
     apply Rplus_lt_compat_l; apply Rabs_pos_lt; apply H.
@@ -347,7 +347,7 @@ Proof.
   exists x0; intros; unfold R_dist; unfold Rminus;
     rewrite Ropp_0; rewrite Rplus_0_r; rewrite Rabs_Rabsolu;
       unfold Bn;
-	replace (An (S n) * x ^ S n / (An n * x ^ n)) with (An (S n) / An n * x).
+        replace (An (S n) * x ^ S n / (An n * x ^ n)) with (An (S n) / An n * x).
   rewrite Rabs_mult; apply Rmult_lt_reg_l with (/ Rabs x).
   apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption.
   rewrite <- (Rmult_comm (Rabs x)); rewrite <- Rmult_assoc;
@@ -473,7 +473,7 @@ Proof.
   elim H3; intros; assumption.
   apply Rminus_eq_contra.
   red; intro H10.
-  elim H3; intros H11 H12. 
+  elim H3; intros H11 H12.
   rewrite H10 in H12; elim (Rlt_irrefl _ H12).
   red; intro H10.
   elim H3; intros H11 H12.
@@ -517,7 +517,7 @@ Proof.
   exists x; apply Un_cv_crit_lub;
     [ unfold Un_growing; intro; rewrite tech5;
       pattern (sum_f_R0 An n) at 1; rewrite <- Rplus_0_r;
-	apply Rplus_le_compat_l; left; apply H
+        apply Rplus_le_compat_l; left; apply H
       | apply H1].
 Qed.
 

@@ -1,4 +1,4 @@
-(* 
+(*
 The Qed at the end of this file was slow in 8.5 and 8.5pl1 because the kernel
 term comparison after evaluation was done on constants according to their user
 names. The conversion still succeeded because delta applied, but was much

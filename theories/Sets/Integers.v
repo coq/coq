@@ -13,11 +13,11 @@
 (*              Rocquencourt                        Sophia-Antipolis        *)
 (*                                                                          *)
 (*                                 Coq V6.1                                 *)
-(*									    *)
-(*			         Gilles Kahn 				    *)
-(*				 Gerard Huet				    *)
-(*									    *)
-(*									    *)
+(*                                                                          *)
+(*                               Gilles Kahn                                *)
+(*                               Gerard Huet                                *)
+(*                                                                          *)
+(*                                                                          *)
 (*                                                                          *)
 (* Acknowledgments: This work was started in July 1993 by F. Prost. Thanks  *)
 (* to the Newton Institute for providing an exceptional work environment    *)
@@ -111,8 +111,8 @@ Section Integers_sect.
     clear H'1.
     intro H'1; lapply H'1;
       [ intro H'4; elim H'4;
-	[ intro H'5; try exact H'5; clear H'4 H'1 | intro H'5; clear H'4 H'1 ]
-	| clear H'1 ].
+        [ intro H'5; try exact H'5; clear H'4 H'1 | intro H'5; clear H'4 H'1 ]
+        | clear H'1 ].
     exists x.
     apply Upper_Bound_definition. simpl. apply triv_nat.
     intros y H'1; elim H'1.

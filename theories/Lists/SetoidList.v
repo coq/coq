@@ -34,7 +34,7 @@ Hint Constructors InA.
     of the previous one. Having [InA = Exists eqA] raises too
     many compatibility issues. For now, we only state the equivalence: *)
 
-Lemma InA_altdef : forall x l, InA x l <-> Exists (eqA x) l. 
+Lemma InA_altdef : forall x l, InA x l <-> Exists (eqA x) l.
 Proof. split; induction 1; auto. Qed.
 
 Lemma InA_cons : forall x y l, InA x (y::l) <-> eqA x y \/ InA x l.
@@ -104,7 +104,7 @@ Hypothesis eqA_equiv : Equivalence eqA.
 Definition eqarefl := (@Equivalence_Reflexive _ _ eqA_equiv).
 Definition eqatrans := (@Equivalence_Transitive _ _ eqA_equiv).
 Definition eqasym := (@Equivalence_Symmetric _ _ eqA_equiv).
- 
+
 Hint Resolve eqarefl eqatrans.
 Hint Immediate eqasym.
 
@@ -497,7 +497,7 @@ Proof.
  apply Hrec; auto.
  inv; auto.
  eapply NoDupA_split; eauto.
- invlist ForallOrdPairs; auto. 
+ invlist ForallOrdPairs; auto.
  eapply equivlistA_NoDupA_split; eauto.
  transitivity (f y (fold_right f i (s1++s2))).
  apply Comp; auto. reflexivity.
@@ -661,7 +661,7 @@ End Fold2_With_Restriction.
 Variable Tra :transpose2 f.
 
 Lemma fold_right_commutes2 : forall s1 s2 i x x',
-  eqA x x' -> 
+  eqA x x' ->
   eqB (fold_right f i (s1++x::s2)) (f x' (fold_right f i (s1++s2))).
 Proof.
   induction s1;simpl;intros.
@@ -689,7 +689,7 @@ Lemma fold_right_add2 :
 Proof.
  intros.
  replace (f x (fold_right f j s)) with (fold_right f j (x::s)) by auto.
- eapply fold_right_equivlistA2;auto. 
+ eapply fold_right_equivlistA2;auto.
 Qed.
 
 End Fold2.

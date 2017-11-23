@@ -4,7 +4,7 @@ NATIVECOMP=`grep "let no_native_compiler = false" ../../../config/coq_config.ml`
 if [[ `which ocamlopt` && $NATIVECOMP ]]; then
 
 . ../template/init.sh
-	
+
 coq_makefile -f _CoqProject -o Makefile
 cat Makefile.conf
 make
