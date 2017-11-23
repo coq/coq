@@ -267,6 +267,7 @@ module Prefs = struct
   let nativecompiler = ref (not (os_type_win32 || os_type_cygwin))
   let coqwebsite = ref "http://coq.inria.fr/"
   let force_caml_version = ref false
+  let force_findlib_version = ref false
   let warn_error = ref false
 end
 
@@ -362,6 +363,8 @@ let args_options = Arg.align [
     " URL of the coq website";
   "-force-caml-version", Arg.Set Prefs.force_caml_version,
     " Force OCaml version";
+  "-force-findlib-version", Arg.Set Prefs.force_findlib_version,
+    " Force findlib version";
   "-warn-error", Arg.Set Prefs.warn_error,
     " Make OCaml warnings into errors";
   "-camldir", Arg.String (fun _ -> ()),
@@ -467,7 +470,7 @@ let browser =
 
 (** * OCaml programs *)
 
-let camlbin, caml_version, camllib =
+let camlbin, caml_version, camllib, findlib_version =
   let () = match !Prefs.ocamlfindcmd with
     | Some cmd -> reset_caml_find camlexec cmd
     | None ->
@@ -479,6 +482,7 @@ let camlbin, caml_version, camllib =
   if not (is_executable camlexec.find)
   then die ("Error: cannot find the executable '"^camlexec.find^"'.")
   else
+    let findlib_version, _ = run camlexec.find ["query"; "findlib"; "-format"; "%v"] in
     let caml_version, _ = run camlexec.find ["ocamlc";"-version"] in
     let camllib, _ = run camlexec.find ["printconf";"stdlib"] in
     let camlbin = (* TODO beurk beurk beurk *)
@@ -489,7 +493,7 @@ let camlbin, caml_version, camllib =
     let () =
       if is_executable (camlbin / "ocaml")
       then reset_caml_top camlexec (camlbin / "ocaml") in
-    camlbin, caml_version, camllib
+    camlbin, caml_version, camllib, findlib_version
 
 let camlp4compat = "-loc loc"
 
@@ -519,8 +523,27 @@ let check_caml_version () =
 
 let _ = check_caml_version ()
 
-let coq_debug_flag_opt =
-  if caml_version_nums >= [3;10] then coq_debug_flag else ""
+let findlib_version_list = numeric_prefix_list findlib_version
+
+let findlib_version_nums =
+  try
+    if List.length findlib_version_list < 2 then failwith "bad version";
+    List.map s2i findlib_version_list
+  with _ ->
+    die ("I found ocamlfind but cannot read its version number!\n" ^
+         "Is it installed properly?")
+
+let check_findlib_version () =
+  if findlib_version_nums >= [1;4;1] then
+    printf "You have OCamlfind %s. Good!\n" findlib_version
+  else
+    let () = printf "Your version of OCamlfind is %s.\n" findlib_version in
+    if !Prefs.force_findlib_version then
+      printf "*Warning* Your version of OCamlfind is outdated.\n"
+    else
+      die "You need OCamlfind 1.4.1 or later."
+
+let _ = check_findlib_version ()
 
 let camltag = match caml_version_list with
   | x::y::_ -> "OCAML"^x^y
@@ -1185,7 +1208,7 @@ let write_makefile f =
   pr "CFLAGS=%s\n\n" cflags;
   pr "# Compilation debug flags\n";
   pr "CAMLDEBUG=%s\n" coq_debug_flag;
-  pr "CAMLDEBUGOPT=%s\n\n" coq_debug_flag_opt;
+  pr "CAMLDEBUGOPT=%s\n\n" coq_debug_flag;
   pr "# Compilation profile flag\n";
   pr "CAMLTIMEPROF=%s\n\n" coq_profile_flag;
   pr "# Camlp4 : flavor, binaries, libraries ...\n";
