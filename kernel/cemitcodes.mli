@@ -9,9 +9,7 @@ type reloc_info =
 type patches
 type emitcodes
 
-val length : emitcodes -> int
-
-val patch : emitcodes -> patches -> (reloc_info -> int) -> emitcodes
+val patch : emitcodes -> patches -> (reloc_info -> int) -> Vmvalues.tcode
 
 type to_patch = emitcodes * patches * fv
 

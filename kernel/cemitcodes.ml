@@ -15,6 +15,10 @@ open Cbytecodes
 open Copcodes
 open Mod_subst
 
+type emitcodes = String.t
+
+external tcode_of_code : emitcodes -> int -> Vmvalues.tcode = "coq_tcode_of_code"
+
 (* Relocation information *)
 type reloc_info =
   | Reloc_annot of annot_switch
@@ -57,9 +61,10 @@ let patch_int buff patches =
 
 let patch buff pl f =
   let map (r, pos) = (pos, f r) in
+  (** Order seems important here? *)
   let patches = CList.map_left map pl in
   let buff = patch_int buff patches in
-  buff
+  tcode_of_code buff (String.length buff)
 
 (* Buffering of bytecode *)
 
@@ -326,10 +331,6 @@ let init () =
   out_position := 0;
   label_table := Array.make 16 (Label_undefined []);
   reloc_info := []
-
-type emitcodes = String.t
-
-let length = String.length
 
 type to_patch = emitcodes * (patch list) * fv
 

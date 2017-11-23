@@ -25,7 +25,6 @@ open Cbytegen
 module NamedDecl = Context.Named.Declaration
 module RelDecl = Context.Rel.Declaration
 
-external tcode_of_code : emitcodes -> int -> tcode = "coq_tcode_of_code"
 external eval_tcode : tcode -> values array -> values = "coq_eval_tcode"
 
 (*******************)
@@ -210,9 +209,8 @@ and eval_to_patch env (buff,pl,fv) =
     | Reloc_const sc -> slot_for_str_cst sc
     | Reloc_getglobal kn -> slot_for_getglobal env kn
   in
-  let buff = patch buff pl slots in
+  let tc = patch buff pl slots in
   let vm_env = Array.map (slot_for_fv env) fv in
-  let tc = tcode_of_code buff (length buff) in
   eval_tcode tc vm_env
 
 and val_of_constr env c =
