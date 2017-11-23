@@ -22,6 +22,7 @@ type reloc_info =
   | Reloc_getglobal of Names.Constant.t
 
 type patch = reloc_info * int
+type patches = patch list
 
 let patch_char4 buff pos c1 c2 c3 c4 = 
   Bytes.unsafe_set buff pos       c1;
@@ -53,6 +54,12 @@ let patch_int buff patches =
      Handle with care.
   *)
   Bytes.unsafe_to_string buff
+
+let patch buff pl f =
+  let map (r, pos) = (pos, f r) in
+  let patches = CList.map_left map pl in
+  let buff = patch_int buff patches in
+  buff
 
 (* Buffering of bytecode *)
 

@@ -6,18 +6,14 @@ type reloc_info =
   | Reloc_const of structured_constant
   | Reloc_getglobal of Constant.t
 
-type patch = reloc_info * int
-
-(* A virer *)
-val subst_patch : Mod_subst.substitution -> patch -> patch
-
+type patches
 type emitcodes
 
 val length : emitcodes -> int
 
-val patch_int : emitcodes -> ((*pos*)int * int) list -> emitcodes
+val patch : emitcodes -> patches -> (reloc_info -> int) -> emitcodes
 
-type to_patch = emitcodes * (patch list) * fv
+type to_patch = emitcodes * patches * fv
 
 val subst_to_patch : Mod_subst.substitution -> to_patch -> to_patch
 

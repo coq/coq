@@ -205,13 +205,12 @@ and slot_for_fv env fv =
     assert false
 
 and eval_to_patch env (buff,pl,fv) =
-  let patch = function
-    | Reloc_annot a, pos -> (pos, slot_for_annot a)
-    | Reloc_const sc, pos -> (pos, slot_for_str_cst sc)
-    | Reloc_getglobal kn, pos -> (pos, slot_for_getglobal env kn)
+  let slots = function
+    | Reloc_annot a -> slot_for_annot a
+    | Reloc_const sc -> slot_for_str_cst sc
+    | Reloc_getglobal kn -> slot_for_getglobal env kn
   in
-  let patches = List.map_left patch pl in
-  let buff = patch_int buff patches in
+  let buff = patch buff pl slots in
   let vm_env = Array.map (slot_for_fv env) fv in
   let tc = tcode_of_code buff (length buff) in
   eval_tcode tc vm_env
