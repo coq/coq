@@ -15,7 +15,7 @@
 # You won't find Makefiles in sub-directories and this is done on purpose.
 # If you are not yet convinced of the advantages of a single Makefile, please
 # read
-#    http://miller.emu.id.au/pmiller/books/rmch/
+#    http://aegis.sourceforge.net/auug97.pdf
 # before complaining.
 #
 # When you are working in a subdir, you can compile without moving to the
