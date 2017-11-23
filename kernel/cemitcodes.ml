@@ -17,7 +17,7 @@ open Mod_subst
 
 type emitcodes = String.t
 
-external tcode_of_code : emitcodes -> int -> Vmvalues.tcode = "coq_tcode_of_code"
+external tcode_of_code : Bytes.t -> int -> Vmvalues.tcode = "coq_tcode_of_code"
 
 (* Relocation information *)
 type reloc_info =
@@ -46,25 +46,14 @@ let patch_int buff patches =
      and results in wrong results. Side-effects... *)
   let buff = Bytes.of_string buff in
   let () = List.iter (fun p -> patch buff p) patches in
-  (* Note: we follow the apporach suggested by Gabriel Scherer in
-     PR#136 here, and use unsafe as we own buff.
-
-     The crux of the question that avoids defining emitcodes just as a
-     Byte.t is the call to hcons in to_memory below. Even if disabling
-     this optimization has no visible time impact, test data shows
-     that the optimization is indeed triggered quite often so we
-     choose ugliness over altering the semantics.
-
-     Handle with care.
-  *)
-  Bytes.unsafe_to_string buff
+  buff
 
 let patch buff pl f =
   let map (r, pos) = (pos, f r) in
   (** Order seems important here? *)
   let patches = CList.map_left map pl in
   let buff = patch_int buff patches in
-  tcode_of_code buff (String.length buff)
+  tcode_of_code buff (Bytes.length buff)
 
 (* Buffering of bytecode *)
 
