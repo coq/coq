@@ -389,3 +389,15 @@ Notation "'if' c 'is' p 'then' u 'else' v" :=
   (at level 200, p pattern at level 100).
 Check fun p => if p is S n then n else 0.
 Check fun p => if p is Lt then 1 else 0.
+
+(* Check that mixed binders and terms defaults to ident and not pattern *)
+Module E.
+  (* First without an indirection *)
+Notation "[ n | t ]" := (n, (fun n : nat => t)).
+Check fun S : nat => [ S | S+S ].
+Check fun N : nat => (N, (fun n => n+0)). (* another test in passing *)
+  (* Then with an indirection *)
+Notation "[[ n | p | t ]]" := (n, (fun p : nat => t)).
+Notation "[[ n | t ]]" := [[ n | n | t ]].
+Check fun S : nat => [[ S | S+S ]].
+End E.

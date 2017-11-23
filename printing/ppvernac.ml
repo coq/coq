@@ -383,7 +383,7 @@ open Decl_kinds
       prlist_with_sep sep_v2 str l ++ spc () ++ pr_at_level n
     | SetItemLevelAsBinder (l,bk,n) ->
       prlist_with_sep sep_v2 str l ++
-      spc() ++ pr_at_level n ++ spc() ++ pr_constr_as_binder_kind bk
+      spc() ++ pr_at_level_opt n ++ spc() ++ pr_constr_as_binder_kind bk
     | SetLevel n -> pr_at_level (NumLevel n)
     | SetAssoc LeftA -> keyword "left associativity"
     | SetAssoc RightA -> keyword "right associativity"

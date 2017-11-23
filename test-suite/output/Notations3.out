@@ -219,3 +219,9 @@ fun p : nat => if p is S n then n else 0
      : nat -> nat
 fun p : comparison => if p is Lt then 1 else 0
      : comparison -> nat
+fun S : nat => [S | S + S]
+     : nat -> nat * (nat -> nat)
+fun N : nat => [N | N + 0]
+     : nat -> nat * (nat -> nat)
+fun S : nat => [[S | S + S]]
+     : nat -> nat * (nat -> nat)

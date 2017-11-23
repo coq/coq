@@ -1174,7 +1174,8 @@ GEXTEND Gram
       | x = IDENT; ","; l = LIST1 [id = IDENT -> id ] SEP ","; "at";
         lev = level -> SetItemLevel (x::l,lev)
       | x = IDENT; "at"; lev = level -> SetItemLevel ([x],lev)
-      | x = IDENT; "at"; lev = level; b = constr_as_binder_kind -> SetItemLevelAsBinder ([x],b,lev)
+      | x = IDENT; "at"; lev = level; b = constr_as_binder_kind -> SetItemLevelAsBinder ([x],b,Some lev)
+      | x = IDENT; b = constr_as_binder_kind -> SetItemLevelAsBinder ([x],b,None)
       | x = IDENT; typ = syntax_extension_type -> SetEntryType (x,typ)
     ] ]
   ;

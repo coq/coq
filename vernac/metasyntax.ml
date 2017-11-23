@@ -831,7 +831,7 @@ let interp_modifiers modl = let open NotationMods in
         if Id.List.mem_assoc id acc.etyps then
           user_err ~hdr:"Metasyntax.interp_modifiers"
             (str s ++ str " is already assigned to an entry or constr level.");
-        let typ = ETConstrAsBinder (bk,Some n) in
+        let typ = ETConstrAsBinder (bk,n) in
         interp { acc with etyps = (id,typ)::acc.etyps; } (SetItemLevelAsBinder (idl,bk,n)::l)
     | SetLevel n :: l ->
         interp { acc with level = Some n; } l

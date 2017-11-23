@@ -273,8 +273,8 @@ let error_expect_binder_notation_type ?loc id =
 
 let set_var_scope ?loc id istermvar (tmp_scope,subscopes as scopes) ntnvars =
   try
-    let isonlybinding,idscopes,typ = Id.Map.find id ntnvars in
-    if istermvar then isonlybinding := false;
+    let used_as_binder,idscopes,typ = Id.Map.find id ntnvars in
+    if not istermvar then used_as_binder := true;
     let () = if istermvar then
       (* scopes have no effect on the interpretation of identifiers *)
       begin match !idscopes with
@@ -1997,7 +1997,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         | Some gen ->
           let (ltacvars, ntnvars) = lvar in
           (* Preventively declare notation variables in ltac as non-bindings *)
-          Id.Map.iter (fun x (isonlybinding,_,_) -> isonlybinding := false) ntnvars;
+          Id.Map.iter (fun x (used_as_binder,_,_) -> used_as_binder := false) ntnvars;
           let ntnvars = Id.Map.domain ntnvars in
           let extra = ltacvars.ltac_extra in
           let lvars = Id.Set.union ltacvars.ltac_bound ltacvars.ltac_vars in
@@ -2302,7 +2302,7 @@ let intern_constr_pattern env ?(as_type=false) ?(ltacvars=empty_ltac_sign) c =
 
 let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   (* [vl] is intended to remember the scope of the free variables of [a] *)
-  let vl = Id.Map.map (fun typ -> (ref true, ref None, typ)) nenv.ninterp_var_type in
+  let vl = Id.Map.map (fun typ -> (ref false, ref None, typ)) nenv.ninterp_var_type in
   let impls = Id.Map.fold (fun id _ impls -> Id.Map.remove id impls) nenv.ninterp_var_type impls in
   let c = internalize (Global.env()) {ids = extract_ids env; unb = false;
 						tmp_scope = None; scopes = []; impls = impls}
@@ -2313,8 +2313,8 @@ let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   (* binding and bound *)
   let out_scope = function None -> None,[] | Some (a,l) -> a,l in
   let unused = match reversible with NonInjective ids -> ids | _ -> [] in
-  let vars = Id.Map.mapi (fun id (isonlybinding, sc, typ) ->
-    (!isonlybinding && not (List.mem_f Id.equal id unused), out_scope !sc)) vl in
+  let vars = Id.Map.mapi (fun id (used_as_binder, sc, typ) ->
+    (!used_as_binder && not (List.mem_f Id.equal id unused), out_scope !sc)) vl in
   (* Returns [a] and the ordered list of variables with their scopes *)
   vars, a, reversible
 
