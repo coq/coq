@@ -13,8 +13,6 @@ val patch : emitcodes -> patches -> (reloc_info -> int) -> Vmvalues.tcode
 
 type to_patch = emitcodes * patches * fv
 
-val subst_to_patch : Mod_subst.substitution -> to_patch -> to_patch
-
 type body_code =
   | BCdefined of to_patch
   | BCalias of Constant.t

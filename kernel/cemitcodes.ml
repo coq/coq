@@ -25,8 +25,15 @@ type reloc_info =
   | Reloc_const of structured_constant
   | Reloc_getglobal of Names.Constant.t
 
-type patch = reloc_info * int
-type patches = patch list
+(** We use arrays for on-disk representation. On 32-bit machines, this means we
+    can only have a maximum amount of about 4.10^6 relocations, which seems
+    quite a lot, but potentially reachable if e.g. compiling big proofs. This
+    would prevent VM computing with these terms on 32-bit architectures. Maybe
+    we should use a more robust data structure? *)
+type patches = {
+  positions : int array;
+  reloc_infos : reloc_info array;
+}
 
 let patch_char4 buff pos c1 c2 c3 c4 = 
   Bytes.unsafe_set buff pos       c1;
@@ -34,25 +41,24 @@ let patch_char4 buff pos c1 c2 c3 c4 =
   Bytes.unsafe_set buff (pos + 2) c3;
   Bytes.unsafe_set buff (pos + 3) c4 
   
-let patch buff (pos, n) =
+let patch1 buff pos n =
   patch_char4 buff pos 
     (Char.unsafe_chr n) (Char.unsafe_chr (n asr 8))  (Char.unsafe_chr (n asr 16))
     (Char.unsafe_chr (n asr 24))
 
 (* val patch_int : emitcodes -> ((\*pos*\)int * int) list -> emitcodes *)
-let patch_int buff patches =
+let patch_int buff pos reloc =
   (* copy code *before* patching because of nested evaluations:
      the code we are patching might be called (and thus "concurrently" patched)
      and results in wrong results. Side-effects... *)
   let buff = Bytes.of_string buff in
-  let () = List.iter (fun p -> patch buff p) patches in
+  let () = CArray.iter2 (fun pos reloc -> patch1 buff pos reloc) pos reloc in
   buff
 
 let patch buff pl f =
-  let map (r, pos) = (pos, f r) in
   (** Order seems important here? *)
-  let patches = CList.map_left map pl in
-  let buff = patch_int buff patches in
+  let reloc = CArray.map_left f pl.reloc_infos in
+  let buff = patch_int buff pl.positions reloc in
   tcode_of_code buff (Bytes.length buff)
 
 (* Buffering of bytecode *)
@@ -316,7 +322,7 @@ let rec emit env insns remaining = match insns with
 
 (* Initialization *)
 
-type to_patch = emitcodes * (patch list) * fv
+type to_patch = emitcodes * patches * fv
 
 (* Substitution *)
 let rec subst_strcst s sc =
@@ -326,17 +332,28 @@ let rec subst_strcst s sc =
   | Const_bn(tag,args) -> Const_bn(tag,Array.map (subst_strcst s) args)
   | Const_ind ind -> let kn,i = ind in Const_ind (subst_mind s kn, i)
 
-let subst_patch s (ri,pos) =
+let subst_reloc s ri =
   match ri with
   | Reloc_annot a ->
       let (kn,i) = a.ci.ci_ind in
       let ci = {a.ci with ci_ind = (subst_mind s kn,i)} in
-      (Reloc_annot {a with ci = ci},pos)
-  | Reloc_const sc -> (Reloc_const (subst_strcst s sc), pos)
-  | Reloc_getglobal kn -> (Reloc_getglobal (subst_constant s kn), pos)
+      Reloc_annot {a with ci = ci}
+  | Reloc_const sc -> Reloc_const (subst_strcst s sc)
+  | Reloc_getglobal kn -> Reloc_getglobal (subst_constant s kn)
+
+let subst_patches subst p =
+  (** This looks suspicious, is order really relevant here? *)
+  let positions = CArray.copy p.positions in
+  let infos = CArray.map_left (fun r -> subst_reloc subst r) p.reloc_infos in
+  let () = CArray.rev positions in
+  let () = CArray.rev infos in
+  {
+    positions = positions;
+    reloc_infos = infos;
+  }
 
 let subst_to_patch s (code,pl,fv) =
-  code,List.rev_map (subst_patch s) pl,fv
+  code, subst_patches s pl, fv
 
 type body_code =
   | BCdefined of to_patch
@@ -385,6 +402,10 @@ let to_memory (init_code, fun_code, fv) =
   let code = Bytes.sub_string env.out_buffer 0 env.out_position in
   let code = CString.hcons code in
   let reloc = List.rev env.reloc_info in
+  let reloc = {
+    positions = CArray.map_of_list snd reloc;
+    reloc_infos = CArray.map_of_list fst reloc;
+  } in
   Array.iter (fun lbl ->
     (match lbl with
       Label_defined _ -> assert true
