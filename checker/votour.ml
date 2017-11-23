@@ -230,7 +230,16 @@ let rec get_children v o pos = match v with
     | BLOCK (0, [|x|]) -> [|(v, x, 0 :: pos)|]
     | _ -> raise Exit
     end
-  |String | Int -> [||]
+  | String ->
+    begin match Repr.repr o with
+    | STRING _ -> [||]
+    | _ -> raise Exit
+    end
+  | Int ->
+    begin match Repr.repr o with
+    | INT _ -> [||]
+    | _ -> raise Exit
+    end
   |Annot (s,v) -> get_children v o pos
   |Any -> raise Exit
   |Dyn ->
