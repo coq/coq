@@ -280,6 +280,18 @@ Fail Check
      end).
 \end{coq_example}
 
+The option {\tt Set Asymmetric Patterns} \optindex{Asymmetric Patterns}
+(off by default) removes parameters from constructors in patterns:
+\begin{coq_example}
+  Set Asymmetric Patterns.
+  Check (fun l:List nat =>
+    match l with
+    | nil => nil
+    | cons _ l' => l'
+    end)
+  Unset Asymmetric Patterns.
+\end{coq_example}
+
 \paragraph{Implicit arguments in patterns}
 By default, implicit arguments are omitted in patterns. So we write:
 
