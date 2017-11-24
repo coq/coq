@@ -41,9 +41,12 @@ Ltac Ss_to_add f acc :=
   | _ => constr:((acc + f)%nat)
   end.
 
+(* For internal use only *)
+Local Definition protected_to_nat := N.to_nat.
+
 Ltac natprering :=
   match goal with
-    |- context C [S ?p] =>
+  |- context C [S ?p] =>
     match p with
       O => fail 1 (* avoid replacing 1 with 1+0 ! *)
     | p => match isnatcst p with
@@ -52,9 +55,19 @@ Ltac natprering :=
                          fold v; natprering
            end
     end
-  | _ => idtac
+  | _ => change N.to_nat with protected_to_nat
+  end.
+
+Ltac natpostring :=
+  match goal with
+  | |- context [N.to_nat ?x] =>
+    let v := eval cbv in (N.to_nat x) in
+    change (N.to_nat x) with v;
+    natpostring
+  | _ => change protected_to_nat with N.to_nat
   end.
 
 Add Ring natr : natSRth
-  (morphism nat_morph_N, constants [natcst], preprocess [natprering]).
+  (morphism nat_morph_N, constants [natcst],
+   preprocess [natprering], postprocess [natpostring]).
 
