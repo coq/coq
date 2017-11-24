@@ -2144,7 +2144,7 @@ let vernac_timeout f =
   match !current_timeout, !default_timeout with
     | Some n, _ | None, Some n ->
       let f () = f (); current_timeout := None in
-      Control.timeout n f Timeout
+      Control.timeout n f () Timeout
     | None, None -> f ()
 
 let restore_timeout () = current_timeout := None
