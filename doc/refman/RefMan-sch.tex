@@ -130,6 +130,7 @@ conclusion is {\tt (n:nat)(even n)->(Q n)}.
 \optindex{Record Elimination Schemes}
 \optindex{Case Analysis Schemes}
 \optindex{Decidable Equality Schemes}
+\optindex{Rewriting Schemes}
 \label{set-nonrecursive-elimination-schemes}
 }
 
@@ -157,6 +158,9 @@ with respectively the commands {\tt Set Boolean Equality Schemes} and
 However you have to be careful with this option since
 \Coq~ may now reject well-defined inductive types because it cannot compute
 a Boolean equality for them.
+
+The {\tt Rewriting Schemes} flag governs generation of equality
+related schemes such as congruence.
 
 \subsection{\tt Combined Scheme}
 \label{CombinedScheme}
