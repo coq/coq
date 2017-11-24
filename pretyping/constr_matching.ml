@@ -371,7 +371,9 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
       |	PCoFix c1, CoFix _ when eq_constr sigma (mkCoFix (to_fix c1)) cT -> subst
       | PEvar (c1,args1), Evar (c2,args2) when Evar.equal c1 c2 ->
          Array.fold_left2 (sorec ctx env) subst args1 args2
-      | _ -> raise PatternMatchingFailure
+      | (PRef _ | PVar _ | PRel _ | PApp _ | PProj _ | PLambda _
+         | PProd _ | PLetIn _ | PSort _ | PIf _ | PCase _
+         | PFix _ | PCoFix _| PEvar _), _ -> raise PatternMatchingFailure
 
   in
   sorec [] env (Id.Map.empty, Id.Map.empty) pat c

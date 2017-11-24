@@ -59,7 +59,11 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
   fixpoint_eq f1 f2
 | PCoFix f1, PCoFix f2 ->
   cofixpoint_eq f1 f2
-| _ -> false
+| PProj (p1, t1), PProj (p2, t2) ->
+   Projection.equal p1 p2 && constr_pattern_eq t1 t2
+| (PRef _ | PVar _ | PEvar _ | PRel _ | PApp _ | PSoApp _
+   | PLambda _ | PProd _ | PLetIn _ | PSort _ | PMeta _
+   | PIf _ | PCase _ | PFix _ | PCoFix _ | PProj _), _ -> false
 (** FIXME: fixpoint and cofixpoint should be relativized to pattern *)
 
 and pattern_eq (i1, j1, p1) (i2, j2, p2) =
@@ -442,8 +446,8 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
 	 one non-trivial branch. These facts are used in [Constrextern]. *)
       PCase (info, pred, pat_of_raw metas vars c, brs)
 
-  | r -> err ?loc (Pp.str "Non supported pattern.")
-  )
+  | GPatVar _ | GIf _ | GLetTuple _ | GCases _ | GEvar _ | GRec _ ->
+      err ?loc (Pp.str "Non supported pattern."))
 
 and pats_of_glob_branches loc metas vars ind brs =
   let get_arg p = match DAst.get p with

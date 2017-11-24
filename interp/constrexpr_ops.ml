@@ -159,11 +159,8 @@ let rec constr_expr_eq e1 e2 =
       Id.equal id1 id2 && List.equal instance_eq c1 c2
     | CSort s1, CSort s2 ->
       Miscops.glob_sort_eq s1 s2
-    | CCast(a1,(CastConv b1|CastVM b1)), CCast(a2,(CastConv b2|CastVM b2)) ->
-      constr_expr_eq a1 a2 &&
-      constr_expr_eq b1 b2
-    | CCast(a1,CastCoerce), CCast(a2, CastCoerce) ->
-      constr_expr_eq a1 a2
+  | CCast(t1,c1), CCast(t2,c2) ->
+    constr_expr_eq t1 t2 && cast_expr_eq c1 c2
     | CNotation(n1, s1), CNotation(n2, s2) ->
       String.equal n1 n2 &&
       constr_notation_substitution_eq s1 s2
@@ -176,7 +173,10 @@ let rec constr_expr_eq e1 e2 =
     | CDelimiters(s1,e1), CDelimiters(s2,e2) ->
       String.equal s1 s2 &&
       constr_expr_eq e1 e2
-    | _ -> false
+  | (CRef _ | CFix _ | CCoFix _ | CProdN _ | CLambdaN _ | CLetIn _ | CAppExpl _
+     | CApp _ | CRecord _ | CCases _ | CLetTuple _ | CIf _ | CHole _
+     | CPatVar _ | CEvar _ | CSort _ | CCast _ | CNotation _ | CPrim _
+     | CGeneralization _ | CDelimiters _), _ -> false
 
 and args_eq (a1,e1) (a2,e2) =
   Option.equal (eq_located explicitation_eq) e1 e2 &&
@@ -231,6 +231,16 @@ and constr_notation_substitution_eq (e1, el1, bl1) (e2, el2, bl2) =
 
 and instance_eq (x1,c1) (x2,c2) =
   Id.equal x1 x2 && constr_expr_eq c1 c2
+
+and cast_expr_eq c1 c2 = match c1, c2 with
+| CastConv t1, CastConv t2
+| CastVM t1, CastVM t2
+| CastNative t1, CastNative t2 -> constr_expr_eq t1 t2
+| CastCoerce, CastCoerce -> true
+| CastConv _, _
+| CastVM _, _
+| CastNative _, _
+| CastCoerce, _ -> false
 
 let constr_loc c = CAst.(c.loc)
 let cases_pattern_expr_loc cp = CAst.(cp.loc)

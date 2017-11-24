@@ -573,7 +573,9 @@ let is_rigid_head sigma flags t =
   | Ind (i,u) -> true
   | Construct _ -> true
   | Fix _ | CoFix _ -> true
-  | _ -> false
+  | Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Cast (_, _, _) | Prod (_, _, _)
+    | Lambda (_, _, _) | LetIn (_, _, _, _) | App (_, _) | Case (_, _, _, _)
+    | Proj (_, _) -> false (* Why aren't Prod, Sort rigid heads ? *)
 
 let force_eqs c = 
   Universes.Constraints.fold
@@ -654,7 +656,10 @@ let rec is_neutral env sigma ts t =
     | Evar _ | Meta _ -> true
     | Case (_, p, c, cl) -> is_neutral env sigma ts c
     | Proj (p, c) -> is_neutral env sigma ts c
-    | _ -> false
+    | Lambda _ | LetIn _ | Construct _ | CoFix _ -> false
+    | Sort _ | Cast (_, _, _) | Prod (_, _, _) | Ind _ -> false (* Really? *)
+    | Fix _ -> false (* This is an approximation *)
+    | App _ -> assert false
 
 let is_eta_constructor_app env sigma ts f l1 term =
   match EConstr.kind sigma f with
@@ -1788,7 +1793,9 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
 	       with ex when precatchable_exception ex ->
 		 matchrec c)
 
-          | _ -> user_err Pp.(str "Match_subterm")))
+          | Cast (_, _, _) (* Is this expected? *)
+          | Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Const _ | Ind _
+            | Construct _ -> user_err Pp.(str "Match_subterm")))
   in
   try matchrec cl
   with ex when precatchable_exception ex ->
@@ -1854,7 +1861,11 @@ let w_unify_to_subterm_all env evd ?(flags=default_unify_flags ()) (op,cl) =
             | Lambda (_,t,c) ->
 		bind (matchrec t) (matchrec c)
 
-            | _ -> fail "Match_subterm"))
+          | Cast (_, _, _)  -> fail "Match_subterm" (* Is this expected? *)
+
+          | Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Const _ | Ind _
+            | Construct _ -> fail "Match_subterm"))
+
   in
   let res = matchrec cl [] in
   match res with
