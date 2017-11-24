@@ -136,6 +136,10 @@ EXTEND
         OPT "|"; l = LIST1 rule SEP "|";
         "END" ->
          declare_command loc s c <:expr<None>> l
+      | "VERNAC"; "COMMAND"; "FUNCTIONAL"; "EXTEND"; s = UIDENT; c = OPT classification;
+        OPT "|"; l = LIST1 fun_rule SEP "|";
+        "END" ->
+         declare_command loc s c <:expr<None>> l
       | "VERNAC"; nt = LIDENT ; "EXTEND"; s = UIDENT; c = OPT classification;
         OPT "|"; l = LIST1 rule SEP "|";
         "END" ->
@@ -162,22 +166,27 @@ EXTEND
       (which otherwise could have been another argument) is not passed
       to the VernacExtend interpreter function to discriminate between
       the clauses. *)
-
-  (* ejga: Due to the LocalityFixme abomination we cannot eta-expand
-      [e] as we'd like to, so we need to use the below mess with [fun
-      st -> st].
-
-      At some point We should solve the mess and extend
-      vernacextend.mlp with locality info. *)
   rule:
     [ [ "["; s = STRING; l = LIST0 args; "]";
         d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
       let () = if s = "" then failwith "Command name is empty." in
-      let b = <:expr< fun loc -> ( let () = $e$ in fun st -> st ) >> in
+      let b = <:expr< fun ~atts ~st -> ( let () = $e$ in st ) >> in
       { r_head = Some s; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
       | "[" ; "-" ; l = LIST1 args ; "]" ;
         d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
-      let b = <:expr< fun loc -> ( let () = $e$ in fun st -> st ) >> in
+      let b = <:expr< fun ~atts ~st -> ( let () = $e$ in st ) >> in
+      { r_head = None; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
+    ] ]
+  ;
+  fun_rule:
+    [ [ "["; s = STRING; l = LIST0 args; "]";
+        d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
+      let () = if s = "" then failwith "Command name is empty." in
+      let b = <:expr< $e$ >> in
+      { r_head = Some s; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
+      | "[" ; "-" ; l = LIST1 args ; "]" ;
+        d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
+      let b = <:expr< $e$ >> in
       { r_head = None; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
     ] ]
   ;

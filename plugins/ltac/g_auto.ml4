@@ -190,7 +190,7 @@ END
 let pr_hints_path prc prx pry c = Hints.pp_hints_path c
 let pr_pre_hints_path prc prx pry c = Hints.pp_hints_path_gen Libnames.pr_reference c
 let glob_hints_path ist = Hints.glob_hints_path
-							      
+
 ARGUMENT EXTEND hints_path
 PRINTED BY pr_hints_path
 
@@ -214,10 +214,15 @@ ARGUMENT EXTEND opthints
 | [ ] -> [ None ]
 END
 
-VERNAC COMMAND EXTEND HintCut CLASSIFIED AS SIDEFF
+VERNAC COMMAND FUNCTIONAL EXTEND HintCut CLASSIFIED AS SIDEFF
 | [ "Hint" "Cut" "[" hints_path(p) "]" opthints(dbnames) ] -> [
-  let entry = Hints.HintsCutEntry (Hints.glob_hints_path p) in
-    Hints.add_hints (Locality.make_section_locality (Locality.LocalityFixme.consume ()))
-      (match dbnames with None -> ["core"] | Some l -> l) entry ]
+    fun ~atts ~st -> begin
+        let open Vernacinterp in
+        let entry = Hints.HintsCutEntry (Hints.glob_hints_path p) in
+        Hints.add_hints (Locality.make_section_locality atts.locality)
+          (match dbnames with None -> ["core"] | Some l -> l) entry;
+        st
+      end
+ ]
 END
 

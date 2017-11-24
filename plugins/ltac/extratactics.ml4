@@ -320,24 +320,44 @@ let project_hint pri l2r r =
   let info = {Vernacexpr.hint_priority = pri; hint_pattern = None} in
     (info,false,true,Hints.PathAny, Hints.IsGlobRef (Globnames.ConstRef c))
 
-let add_hints_iff l2r lc n bl =
-  let l = Locality.LocalityFixme.consume () in
-  Hints.add_hints (Locality.make_module_locality l) bl
+let add_hints_iff ?locality l2r lc n bl =
+  Hints.add_hints (Locality.make_module_locality locality) bl
     (Hints.HintsResolveEntry (List.map (project_hint n l2r) lc))
 
-VERNAC COMMAND EXTEND HintResolveIffLR CLASSIFIED AS SIDEFF
+VERNAC COMMAND FUNCTIONAL EXTEND HintResolveIffLR CLASSIFIED AS SIDEFF
   [ "Hint" "Resolve" "->" ne_global_list(lc) natural_opt(n)
     ":" preident_list(bl) ] ->
-  [ add_hints_iff true lc n bl ]
+  [ fun ~atts ~st -> begin
+        let open Vernacinterp in
+        add_hints_iff ?locality:atts.locality true lc n bl;
+        st
+      end
+  ]
 | [ "Hint" "Resolve" "->" ne_global_list(lc) natural_opt(n) ] ->
-  [ add_hints_iff true lc n ["core"] ]
+  [ fun ~atts ~st -> begin
+        let open Vernacinterp in
+        add_hints_iff ?locality:atts.locality true lc n ["core"];
+        st
+      end
+  ]
 END
-VERNAC COMMAND EXTEND HintResolveIffRL CLASSIFIED AS SIDEFF
+
+VERNAC COMMAND FUNCTIONAL EXTEND HintResolveIffRL CLASSIFIED AS SIDEFF
   [ "Hint" "Resolve" "<-" ne_global_list(lc) natural_opt(n)
     ":" preident_list(bl) ] ->
-  [ add_hints_iff false lc n bl ]
+  [ fun ~atts ~st -> begin
+        let open Vernacinterp in
+        add_hints_iff ?locality:atts.locality false lc n bl;
+        st
+      end
+  ]
 | [ "Hint" "Resolve" "<-" ne_global_list(lc) natural_opt(n) ] ->
-  [ add_hints_iff false lc n ["core"] ]
+  [ fun ~atts ~st -> begin
+        let open Vernacinterp in
+        add_hints_iff ?locality:atts.locality false lc n ["core"];
+        st
+      end
+  ]
 END
 
 (**********************************************************************)

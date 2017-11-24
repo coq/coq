@@ -158,11 +158,14 @@ let declare_one_prenex_implicit locality f =
   | impls ->
     Impargs.declare_manual_implicits locality fref ~enriching:false [impls]
 
-VERNAC COMMAND EXTEND Ssrpreneximplicits CLASSIFIED AS SIDEFF
+VERNAC COMMAND FUNCTIONAL EXTEND Ssrpreneximplicits CLASSIFIED AS SIDEFF
   | [ "Prenex" "Implicits" ne_global_list(fl) ]
-  -> [ let locality =
-         Locality.make_section_locality (Locality.LocalityFixme.consume ()) in
-       List.iter (declare_one_prenex_implicit locality) fl ]
+  -> [ fun ~atts ~st ->
+         let open Vernacinterp in
+         let locality = Locality.make_section_locality atts.locality in
+         List.iter (declare_one_prenex_implicit locality) fl;
+         st
+     ]
 END
 
 (* Vernac grammar visibility patch *)

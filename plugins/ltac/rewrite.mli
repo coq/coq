@@ -75,7 +75,7 @@ val cl_rewrite_clause :
 val is_applied_rewrite_relation :
   env -> evar_map -> rel_context -> constr -> types option
 
-val declare_relation :
+val declare_relation : ?locality:bool ->
   ?binders:local_binder_expr list -> constr_expr -> constr_expr -> Id.t ->
   constr_expr option -> constr_expr option -> constr_expr option -> unit
 

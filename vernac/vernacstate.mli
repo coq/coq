@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-type t = { (* TODO: inline records in OCaml 4.03 *)
+type t = {
   system  : States.state;        (* summary + libstack *)
   proof   : Proof_global.state;  (* proof state *)
   shallow : bool                 (* is the state trimmed down (libstack) *)
