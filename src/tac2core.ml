@@ -987,9 +987,9 @@ let () =
   Pretyping.register_constr_interp0 wit_ltac2_quotation interp
 
 let () =
-  let pr_raw id = mt () in
-  let pr_glb id = str "$" ++ Id.print id in
-  let pr_top _ = Genprint.PrinterBasic mt in
+  let pr_raw id = Genprint.PrinterBasic mt in
+  let pr_glb id = Genprint.PrinterBasic (fun () -> str "$" ++ Id.print id) in
+  let pr_top _ = Genprint.TopPrinterBasic mt in
   Genprint.register_print0 wit_ltac2_quotation pr_raw pr_glb pr_top
 
 (** Ltac2 in Ltac1 *)
@@ -1015,9 +1015,9 @@ let () =
   Geninterp.register_interp0 wit_ltac2 interp
 
 let () =
-  let pr_raw _ = mt () in
-  let pr_glb e = Tac2print.pr_glbexpr e in
-  let pr_top _ = Genprint.PrinterBasic mt in
+  let pr_raw _ = Genprint.PrinterBasic mt in
+  let pr_glb e = Genprint.PrinterBasic (fun () -> Tac2print.pr_glbexpr e) in
+  let pr_top _ = Genprint.TopPrinterBasic mt in
   Genprint.register_print0 wit_ltac2 pr_raw pr_glb pr_top
 
 (** Built-in notation scopes *)
