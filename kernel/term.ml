@@ -352,10 +352,11 @@ let lambda_applist_assum n c l =
   let rec app n subst t l =
     if Int.equal n 0 then
       if l == [] then substl subst t
-      else anomaly (Pp.str "Not enough arguments.")
+      else anomaly (Pp.str "Too many arguments.")
     else match kind_of_term t, l with
     | Lambda(_,_,c), arg::l -> app (n-1) (arg::subst) c l
     | LetIn(_,b,_,c), _ -> app (n-1) (substl subst b::subst) c l
+    | _, [] -> anomaly (Pp.str "Not enough arguments.")
     | _ -> anomaly (Pp.str "Not enough lambda/let's.") in
   app n [] c l
 
@@ -377,10 +378,11 @@ let prod_applist_assum n c l =
   let rec app n subst t l =
     if Int.equal n 0 then
       if l == [] then substl subst t
-      else anomaly (Pp.str "Not enough arguments.")
+      else anomaly (Pp.str "Too many arguments.")
     else match kind_of_term t, l with
     | Prod(_,_,c), arg::l -> app (n-1) (arg::subst) c l
     | LetIn(_,b,_,c), _ -> app (n-1) (substl subst b::subst) c l
+    | _, [] -> anomaly (Pp.str "Not enough arguments.")
     | _ -> anomaly (Pp.str "Not enough prod/let's.") in
   app n [] c l
 

@@ -242,7 +242,7 @@ val lambda_applist : constr -> constr list -> constr
 val lambda_appvect : constr -> constr array -> constr
 
 (** In [lambda_applist_assum n c args], [c] is supposed to have the
-    form [λΓ.c] with [Γ] of length [m] and possibly with let-ins; it
+    form [λΓ.c] with [Γ] of length [n] and possibly with let-ins; it
     returns [c] with the assumptions of [Γ] instantiated by [args] and
     the local definitions of [Γ] expanded. *)
 val lambda_applist_assum : int -> constr -> constr list -> constr
@@ -255,7 +255,7 @@ val prod_appvect : constr -> constr array -> constr
 val prod_applist : constr -> constr list -> constr
 
 (** In [prod_appvect_assum n c args], [c] is supposed to have the
-    form [∀Γ.c] with [Γ] of length [m] and possibly with let-ins; it
+    form [∀Γ.c] with [Γ] of length [n] and possibly with let-ins; it
     returns [c] with the assumptions of [Γ] instantiated by [args] and
     the local definitions of [Γ] expanded. *)
 val prod_appvect_assum : int -> constr -> constr array -> constr
