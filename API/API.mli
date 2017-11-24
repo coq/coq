@@ -3267,6 +3267,7 @@ sig
 
   exception ClearDependencyError of Names.Id.t * clear_dependency_error
   val undefined_evars_of_term : Evd.evar_map -> EConstr.constr -> Evar.Set.t
+  val has_undefined_evars : Evd.evar_map -> EConstr.constr -> bool
   val e_new_evar :
       Environ.env -> Evd.evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
       ?candidates:EConstr.constr list -> ?store:Evd.Store.t ->
