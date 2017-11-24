@@ -149,6 +149,32 @@ intro; omega.
 
 % Other examples can be found in \verb+$COQLIB/theories/DEMOS/OMEGA+.
 
+\section{Options}
+
+\begin{quote}
+  \optindex{Stable Omega}
+  {\tt Unset Stable Omega}
+\end{quote}
+This deprecated option (on by default) is for compatibility with Coq
+pre 8.5. It resets internal name counters to make executions of
+{\tt omega} independent.
+
+\begin{quote}
+  \optindex{Omega UseLocalDefs}
+  {\tt Unset Omega UseLocalDefs}
+\end{quote}
+This option (on by default) allows {\tt omega} to use the bodies of
+local variables.
+
+\begin{quote}
+  \optindex{Omega System}
+  {\tt Set Omega System}
+  \optindex{Omega Action}
+  {\tt Set Omega Action}
+\end{quote}
+These two options (off by default) activate the printing of debug
+information.
+
 \asection{Technical data}
 \label{technical}
 
