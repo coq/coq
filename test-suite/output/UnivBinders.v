@@ -4,7 +4,7 @@ Unset Strict Universe Declaration.
 
 Class Wrap A := wrap : A.
 
-Instance bar@{u} : Wrap@{u} Set. Proof nat.
+Instance bar@{u} : Wrap@{u} Set. Proof. exact nat. Qed.
 Print bar.
 
 (* The universes in the binder come first, then the extra universes in

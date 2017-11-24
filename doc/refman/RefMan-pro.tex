@@ -103,20 +103,18 @@ memory overflow.
 This command is available in interactive editing proof mode to give up
 the current proof and declare the initial goal as an axiom.
 
-\subsection[\tt Proof {\term}.]{\tt Proof {\term}.\comindex{Proof}
-\label{BeginProof}}
-This command applies in proof editing mode. It is equivalent to {\tt
-  exact {\term}. Qed.} That is, you have to give the full proof in
-one gulp, as a proof term (see Section~\ref{exact}).
-
-\variant {\tt Proof.}
+\subsection[\tt Proof.]{\tt Proof.\comindex{Proof}\label{BeginProof}}
   
-  Is a noop which is useful to delimit the sequence of tactic commands
-  which start a proof, after a {\tt Theorem} command.  It is a good
-  practice to use {\tt Proof.} as an opening parenthesis, closed in
-  the script with a closing {\tt Qed.}
+This command is a noop which is useful to delimit the sequence of tactic commands
+which start a proof, after a {\tt Theorem} command.  It is a good
+practice to use {\tt Proof.} as an opening parenthesis, closed in
+the script with a closing {\tt Qed.}
 
 \SeeAlso {\tt Proof with {\tac}.} in Section~\ref{ProofWith}.
+
+\subsection[\tt Proof {\term}.]{\tt Proof {\term}.}
+This command is deprecated and will be removed in the next version of Coq.
+You should use the equivalent form {\tt Proof. exact {\term}. Qed.} instead.
 
 \subsection[{\tt Proof using} {\ident$_1$} {\ldots} {\ident$_n$}{\tt .}]
 {{\tt Proof using} {\ident$_1$} {\ldots} {\ident$_n$}{\tt .}

@@ -18,7 +18,7 @@ Local Open Scope Z_scope.
     primality. *)
 
 Lemma Zpower_pos_1_r x : Z.pow_pos x 1 = x.
-Proof (Z.pow_1_r x).
+Proof. exact (Z.pow_1_r x). Qed.
 
 Lemma Zpower_pos_1_l p : Z.pow_pos 1 p = 1.
 Proof. now apply (Z.pow_1_l (Zpos p)). Qed.

@@ -59,7 +59,7 @@ Section Between.
   Qed.
 
   Lemma exists_lt : forall k l, exists_between k l -> k < l.
-  Proof exists_le_S.
+  Proof. exact (exists_le_S). Qed.
   Hint Immediate exists_le_S exists_lt: arith.
 
   Lemma exists_S_le : forall k l, exists_between k (S l) -> k <= l.

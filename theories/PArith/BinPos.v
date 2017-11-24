@@ -2086,17 +2086,17 @@ Proof. apply Pos.eqb_eq. Qed.
 Lemma Pcompare_eq_Gt p q : (p ?= q) = Gt <-> p > q.
 Proof. reflexivity. Qed.
 Lemma Pplus_one_succ_r p : Pos.succ p = p + 1.
-Proof (eq_sym (Pos.add_1_r p)).
+Proof. exact (eq_sym (Pos.add_1_r p)). Qed.
 Lemma Pplus_one_succ_l p : Pos.succ p = 1 + p.
-Proof (eq_sym (Pos.add_1_l p)).
+Proof. exact (eq_sym (Pos.add_1_l p)). Qed.
 Lemma Pcompare_refl p : Pos.compare_cont Eq p p = Eq.
-Proof (Pos.compare_cont_refl p Eq).
+Proof. exact (Pos.compare_cont_refl p Eq). Qed.
 Lemma Pcompare_Eq_eq : forall p q, Pos.compare_cont Eq p q = Eq -> p = q.
-Proof Pos.compare_eq.
+Proof. exact (Pos.compare_eq). Qed.
 Lemma ZC4 p q : Pos.compare_cont Eq p q = CompOpp (Pos.compare_cont Eq q p).
-Proof (Pos.compare_antisym q p).
+Proof. exact (Pos.compare_antisym q p). Qed.
 Lemma Ppred_minus p : Pos.pred p = p - 1.
-Proof (eq_sym (Pos.sub_1_r p)).
+Proof. exact (eq_sym (Pos.sub_1_r p)). Qed.
 
 Lemma Pminus_mask_Gt p q :
   p > q ->

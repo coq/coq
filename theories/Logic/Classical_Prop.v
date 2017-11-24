@@ -92,7 +92,7 @@ tauto.
 Qed.
 
 Lemma proof_irrelevance : forall (P:Prop) (p1 p2:P), p1 = p2.
-Proof proof_irrelevance_cci classic.
+Proof. exact (proof_irrelevance_cci classic). Qed.
 
 (* classical_left  transforms |- A \/ B into ~B |- A *)
 (* classical_right transforms |- A \/ B into ~A |- B *)

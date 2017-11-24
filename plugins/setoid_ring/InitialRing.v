@@ -25,10 +25,10 @@ Definition NotConstant := false.
 (** Z is a ring and a setoid*)
 
 Lemma Zsth : Setoid_Theory Z (@eq Z).
-Proof (Eqsth Z).
+Proof. exact (Eqsth Z). Qed.
 
 Lemma Zeqe : ring_eq_ext Z.add Z.mul Z.opp (@eq Z).
-Proof (Eq_ext Z.add Z.mul Z.opp).
+Proof. exact (Eq_ext Z.add Z.mul Z.opp). Qed.
 
 Lemma Zth : ring_theory Z0 (Zpos xH) Z.add Z.mul Z.sub Z.opp (@eq Z).
 Proof.
@@ -230,10 +230,10 @@ End ZMORPHISM.
 
 (** N is a semi-ring and a setoid*)
 Lemma Nsth : Setoid_Theory N (@eq N).
-Proof (Eqsth N).
+Proof. exact (Eqsth N). Qed.
 
 Lemma Nseqe : sring_eq_ext N.add N.mul (@eq N).
-Proof (Eq_s_ext N.add N.mul).
+Proof. exact (Eq_s_ext N.add N.mul). Qed.
 
 Lemma Nth : semi_ring_theory 0%N 1%N N.add N.mul (@eq N).
 Proof.
@@ -246,11 +246,11 @@ Definition Nsub := SRsub N.add.
 Definition Nopp := (@SRopp N).
 
 Lemma Neqe : ring_eq_ext N.add N.mul Nopp (@eq N).
-Proof (SReqe_Reqe Nseqe).
+Proof. exact (SReqe_Reqe Nseqe). Qed.
 
 Lemma Nath :
  almost_ring_theory 0%N 1%N N.add N.mul Nsub Nopp (@eq N).
-Proof (SRth_ARth Nsth Nth).
+Proof. exact (SRth_ARth Nsth Nth). Qed.
 
 Lemma Neqb_ok : forall x y, N.eqb x y = true -> x = y.
 Proof. exact (fun x y => proj1 (N.eqb_eq x y)). Qed.

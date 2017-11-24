@@ -23,10 +23,10 @@ Local Open Scope nat_scope.
 (** * Order and successor *)
 
 Theorem gt_Sn_O n : S n > 0.
-Proof Nat.lt_0_succ _.
+Proof. exact (Nat.lt_0_succ _). Qed.
 
 Theorem gt_Sn_n n : S n > n.
-Proof Nat.lt_succ_diag_r _.
+Proof. exact (Nat.lt_succ_diag_r _). Qed.
 
 Theorem gt_n_S n m : n > m -> S n > S m.
 Proof.
@@ -51,12 +51,12 @@ Qed.
 (** * Irreflexivity *)
 
 Lemma gt_irrefl n : ~ n > n.
-Proof Nat.lt_irrefl _.
+Proof. exact (Nat.lt_irrefl _). Qed.
 
 (** * Asymmetry *)
 
 Lemma gt_asym n m : n > m -> ~ m > n.
-Proof Nat.lt_asymm _ _.
+Proof. exact (Nat.lt_asymm _ _). Qed.
 
 (** * Relating strict and large orders *)
 

@@ -1277,7 +1277,7 @@ Lemma Rmult_lt_0_compat : forall r1 r2, 0 < r1 -> 0 < r2 -> 0 < r1 * r2.
 Proof. intros; replace 0 with (0 * r2); auto with real. Qed.
 
 Lemma Rmult_gt_0_compat : forall r1 r2, r1 > 0 -> r2 > 0 -> r1 * r2 > 0.
-Proof Rmult_lt_0_compat.
+Proof. exact (Rmult_lt_0_compat). Qed.
 
 (** *** Contravariant compatibility *)
 

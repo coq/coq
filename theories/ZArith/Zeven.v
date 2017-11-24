@@ -51,10 +51,10 @@ Proof.
 Qed.
 
 Theorem Zeven_ex_iff n : Zeven n <-> exists m, n = 2*m.
-Proof (Zeven_equiv n).
+Proof. exact (Zeven_equiv n). Qed.
 
 Theorem Zodd_ex_iff n : Zodd n <-> exists m, n = 2*m + 1.
-Proof (Zodd_equiv n).
+Proof. exact (Zodd_equiv n). Qed.
 
 (** Boolean tests of parity (now in BinInt.Z) *)
 
@@ -145,7 +145,7 @@ Notation Zquot2 := Z.quot2 (compat "8.3").
 (** Properties of [Z.div2] *)
 
 Lemma Zdiv2_odd_eqn n : n = 2*(Z.div2 n) + if Z.odd n then 1 else 0.
-Proof (Z.div2_odd n).
+Proof. exact (Z.div2_odd n). Qed.
 
 Lemma Zeven_div2 n : Zeven n -> n = 2 * Z.div2 n.
 Proof.

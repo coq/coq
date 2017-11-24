@@ -1050,15 +1050,15 @@ Notation Ngt_Nlt := N.gt_lt (compat "8.3").
     (to preserve scopes for instance) *)
 
 Lemma Nplus_reg_l n m p : n + m = n + p -> m = p.
-Proof (proj1 (N.add_cancel_l m p n)).
+Proof. exact (proj1 (N.add_cancel_l m p n)). Qed.
 Lemma Nmult_Sn_m n m : N.succ n * m = m + n * m.
-Proof (eq_trans (N.mul_succ_l n m) (N.add_comm _ _)).
+Proof. exact (eq_trans (N.mul_succ_l n m) (N.add_comm _ _)). Qed.
 Lemma Nmult_plus_distr_l n m p : p * (n + m) = p * n + p * m.
-Proof (N.mul_add_distr_l p n m).
+Proof. exact (N.mul_add_distr_l p n m). Qed.
 Lemma Nmult_reg_r n m p : p <> 0 -> n * p = m * p -> n = m.
-Proof (fun H => proj1 (N.mul_cancel_r n m p H)).
+Proof. exact (fun H => proj1 (N.mul_cancel_r n m p H)). Qed.
 Lemma Ncompare_antisym n m : CompOpp (n ?= m) = (m ?= n).
-Proof (eq_sym (N.compare_antisym n m)).
+Proof. exact (eq_sym (N.compare_antisym n m)). Qed.
 
 Definition N_ind_double a P f0 f2 fS2 := N.binary_ind P f0 f2 fS2 a.
 Definition N_rec_double a P f0 f2 fS2 := N.binary_rec P f0 f2 fS2 a.

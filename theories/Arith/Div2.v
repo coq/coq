@@ -120,16 +120,16 @@ Qed.
 (** Specializations *)
 
 Lemma even_double n : even n -> n = double (div2 n).
-Proof proj1 (proj1 (even_odd_double n)).
+Proof. exact (proj1 (proj1 (even_odd_double n))). Qed.
 
 Lemma double_even n : n = double (div2 n) -> even n.
-Proof proj2 (proj1 (even_odd_double n)).
+Proof. exact (proj2 (proj1 (even_odd_double n))). Qed.
 
 Lemma odd_double n : odd n -> n = S (double (div2 n)).
-Proof proj1 (proj2 (even_odd_double n)).
+Proof. exact (proj1 (proj2 (even_odd_double n))). Qed.
 
 Lemma double_odd n : n = S (double (div2 n)) -> odd n.
-Proof proj2 (proj2 (even_odd_double n)).
+Proof. exact (proj2 (proj2 (even_odd_double n))). Qed.
 
 Hint Resolve even_double double_even odd_double double_odd: arith.
 

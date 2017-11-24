@@ -66,7 +66,7 @@ Section Dependent_Equality.
   Hint Constructors eq_dep: core.
 
   Lemma eq_dep_refl : forall (p:U) (x:P p), eq_dep p x p x.
-  Proof eq_dep_intro.
+  Proof. exact eq_dep_intro. Qed.
 
   Lemma eq_dep_sym :
     forall (p q:U) (x:P p) (y:P q), eq_dep p x q y -> eq_dep q y p x.
@@ -277,8 +277,10 @@ Section Equivalences.
   Qed.
   Lemma eq_rect_eq__eq_dep1_eq :
     Eq_rect_eq -> forall (P:U->Type) (p:U) (x y:P p), eq_dep1 p x p y -> x = y.
-  Proof (fun eq_rect_eq P p y x =>
-           @eq_rect_eq_on__eq_dep1_eq_on p P x (eq_rect_eq p P x) y).
+  Proof.
+    exact (fun eq_rect_eq P p y x =>
+             @eq_rect_eq_on__eq_dep1_eq_on p P x (eq_rect_eq p P x) y).
+  Qed.
 
   Lemma eq_rect_eq_on__eq_dep_eq_on (p : U) (P : U -> Type) (x : P p) :
     Eq_rect_eq_on p P x -> Eq_dep_eq_on P p x.
@@ -288,8 +290,10 @@ Section Equivalences.
     apply eq_dep_sym in H; apply eq_dep_dep1; trivial.
   Qed.
   Lemma eq_rect_eq__eq_dep_eq : Eq_rect_eq -> Eq_dep_eq.
-  Proof (fun eq_rect_eq P p x y =>
-           @eq_rect_eq_on__eq_dep_eq_on p P x (eq_rect_eq p P x) y).
+  Proof.
+    exact (fun eq_rect_eq P p x y =>
+             @eq_rect_eq_on__eq_dep_eq_on p P x (eq_rect_eq p P x) y).
+  Qed.
 
   (** Uniqueness of Identity Proofs (UIP) is a consequence of *)
   (** Injectivity of Dependent Equality *)
@@ -304,8 +308,10 @@ Section Equivalences.
     apply eq_dep_intro.
   Qed.
   Lemma eq_dep_eq__UIP : Eq_dep_eq -> UIP_.
-  Proof (fun eq_dep_eq x y p1 =>
-           @eq_dep_eq_on__UIP_on x y p1 (eq_dep_eq _ _ _)).
+  Proof.
+    exact (fun eq_dep_eq x y p1 =>
+             @eq_dep_eq_on__UIP_on x y p1 (eq_dep_eq _ _ _)).
+  Qed.
 
   (** Uniqueness of Reflexive Identity Proofs is a direct instance of UIP *)
 
@@ -315,8 +321,10 @@ Section Equivalences.
     intro UIP; red; intros; symmetry; apply UIP.
   Qed.
   Lemma UIP__UIP_refl : UIP_ -> UIP_refl_.
-  Proof (fun UIP x p =>
-           @UIP_on__UIP_refl_on x (UIP x x eq_refl) p).
+  Proof.
+    exact (fun UIP x p =>
+             @UIP_on__UIP_refl_on x (UIP x x eq_refl) p).
+  Qed.
 
   (** Streicher's axiom K is a direct consequence of Uniqueness of
       Reflexive Identity Proofs *)
@@ -327,8 +335,10 @@ Section Equivalences.
     intro UIP_refl; red; intros; rewrite UIP_refl; assumption.
   Qed.
   Lemma UIP_refl__Streicher_K : UIP_refl_ -> Streicher_K_.
-  Proof (fun UIP_refl x P =>
-           @UIP_refl_on__Streicher_K_on x P (UIP_refl x)).
+  Proof.
+    exact (fun UIP_refl x P =>
+             @UIP_refl_on__Streicher_K_on x P (UIP_refl x)).
+  Qed.
 
   (** We finally recover from K the Invariance by Substitution of
       Reflexive Equality Proofs *)
@@ -342,8 +352,10 @@ Section Equivalences.
     reflexivity.
   Qed.
   Lemma Streicher_K__eq_rect_eq : Streicher_K_ -> Eq_rect_eq.
-  Proof (fun Streicher_K p P x =>
-           @Streicher_K_on__eq_rect_eq_on p P x (Streicher_K p _)).
+  Proof.
+    exact (fun Streicher_K p P x =>
+             @Streicher_K_on__eq_rect_eq_on p P x (Streicher_K p _)).
+  Qed.
 
 (** Remark: It is reasonable to think that [eq_rect_eq] is strictly
     stronger than [eq_rec_eq] (which is [eq_rect_eq] restricted on [Set]):
@@ -383,8 +395,10 @@ Proof.
     destruct z. destruct (UIP _ _). reflexivity.
 Qed.
 Theorem UIP_shift : forall U, UIP_refl_ U -> forall x:U, UIP_refl_ (x = x).
-Proof (fun U UIP_refl x =>
-         @UIP_shift_on U x (UIP_refl x)).
+Proof.
+  exact (fun U UIP_refl x =>
+           @UIP_shift_on U x (UIP_refl x)).
+Qed.
 
 Section Corollaries.
 
@@ -406,8 +420,10 @@ Section Corollaries.
    assumption.
  Qed.
  Lemma eq_dep_eq__inj_pair2 : Eq_dep_eq U -> Inj_dep_pair.
- Proof (fun eq_dep_eq P p x =>
-          @eq_dep_eq_on__inj_pair2_on P p x (eq_dep_eq P p x)).
+ Proof.
+   exact (fun eq_dep_eq P p x =>
+            @eq_dep_eq_on__inj_pair2_on P p x (eq_dep_eq P p x)).
+ Qed.
 
 End Corollaries.
 
@@ -437,34 +453,34 @@ Module EqdepTheory (M:EqdepElimination).
 
 Lemma eq_rect_eq :
   forall (p:U) (Q:U -> Type) (x:Q p) (h:p = p), x = eq_rect p Q x p h.
-Proof M.eq_rect_eq U.
+Proof. exact (M.eq_rect_eq U). Qed.
 
 Lemma eq_rec_eq :
   forall (p:U) (Q:U -> Set) (x:Q p) (h:p = p), x = eq_rec p Q x p h.
-Proof (fun p Q => M.eq_rect_eq U p Q).
+Proof. exact (fun p Q => M.eq_rect_eq U p Q). Qed.
 
 (** Injectivity of Dependent Equality *)
 
 Lemma eq_dep_eq : forall (P:U->Type) (p:U) (x y:P p), eq_dep p x p y -> x = y.
-Proof (eq_rect_eq__eq_dep_eq U eq_rect_eq).
+Proof. exact (eq_rect_eq__eq_dep_eq U eq_rect_eq). Qed.
 
 (** Uniqueness of Identity Proofs (UIP) is a consequence of *)
 (** Injectivity of Dependent Equality *)
 
 Lemma UIP : forall (x y:U) (p1 p2:x = y), p1 = p2.
-Proof (eq_dep_eq__UIP U eq_dep_eq).
+Proof. exact (eq_dep_eq__UIP U eq_dep_eq). Qed.
 
 (** Uniqueness of Reflexive Identity Proofs is a direct instance of UIP *)
 
 Lemma UIP_refl : forall (x:U) (p:x = x), p = eq_refl x.
-Proof (UIP__UIP_refl U UIP).
+Proof. exact (UIP__UIP_refl U UIP). Qed.
 
 (** Streicher's axiom K is a direct consequence of Uniqueness of
     Reflexive Identity Proofs *)
 
 Lemma Streicher_K :
   forall (x:U) (P:x = x -> Prop), P (eq_refl x) -> forall p:x = x, P p.
-Proof (UIP_refl__Streicher_K U UIP_refl).
+Proof. exact (UIP_refl__Streicher_K U UIP_refl). Qed.
 
 End Axioms.
 
@@ -473,7 +489,7 @@ End Axioms.
 Lemma inj_pair2 :
  forall (U:Type) (P:U -> Type) (p:U) (x y:P p),
    existT P p x = existT P p y -> x = y.
-Proof (fun U => eq_dep_eq__inj_pair2 U (eq_dep_eq U)).
+Proof. exact (fun U => eq_dep_eq__inj_pair2 U (eq_dep_eq U)). Qed.
 
 Notation inj_pairT2 := inj_pair2.
 

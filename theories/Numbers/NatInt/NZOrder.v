@@ -559,14 +559,14 @@ Theorem order_induction_0 :
   (forall n, 0 <= n -> A n -> A (S n)) ->
   (forall n, n < 0  -> A (S n) -> A n) ->
     forall n, A n.
-Proof (order_induction 0).
+Proof. exact (order_induction 0). Qed.
 
 Theorem order_induction'_0 :
   A 0 ->
   (forall n, 0 <= n -> A n -> A (S n)) ->
   (forall n, n <= 0 -> A n -> A (P n)) ->
     forall n, A n.
-Proof (order_induction' 0).
+Proof. exact (order_induction' 0). Qed.
 
 (** Elimintation principle for < *)
 

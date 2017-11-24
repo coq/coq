@@ -48,16 +48,16 @@ Qed.
 (** See also [Nat.succ_le_mono]. *)
 
 Theorem le_n_S : forall n m, n <= m -> S n <= S m.
-Proof Peano.le_n_S.
+Proof. exact (Peano.le_n_S). Qed.
 
 Theorem le_S_n : forall n m, S n <= S m -> n <= m.
-Proof Peano.le_S_n.
+Proof. exact (Peano.le_S_n). Qed.
 
 Notation le_n_Sn := Nat.le_succ_diag_r (compat "8.4"). (* n <= S n *)
 Notation le_Sn_n := Nat.nle_succ_diag_l (compat "8.4"). (* ~ S n <= n *)
 
 Theorem le_Sn_le : forall n m, S n <= m -> n <= m.
-Proof Nat.lt_le_incl.
+Proof. exact (Nat.lt_le_incl). Qed.
 
 Hint Resolve le_0_n le_Sn_0: arith.
 Hint Resolve le_n_S le_n_Sn le_Sn_n : arith.

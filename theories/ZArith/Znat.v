@@ -939,7 +939,7 @@ Lemma inj_neq n m : neq n m -> Zne (Z.of_nat n) (Z.of_nat m).
 Proof. intros H H'. now apply H, Nat2Z.inj. Qed.
 
 Lemma Zpos_P_of_succ_nat n : Zpos (Pos.of_succ_nat n) = Z.succ (Z.of_nat n).
-Proof (Nat2Z.inj_succ n).
+Proof. exact (Nat2Z.inj_succ n). Qed.
 
 (** For these one, used in omega, a Definition is necessary *)
 
