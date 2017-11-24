@@ -74,7 +74,7 @@ val current_proof_statement :
 
 val solve : ?with_end_tac:unit Proofview.tactic ->
       Vernacexpr.goal_selector -> int option -> unit Proofview.tactic ->
-      Proof.proof -> Proof.proof*bool
+      Proof.t -> Proof.t * bool
 
 (** [by tac] applies tactic [tac] to the 1st subgoal of the current
     focused proof or raises a UserError if there is no focused proof or

@@ -25,8 +25,8 @@ let pr_bullet b =
 
 type behavior = {
   name : string;
-  put : proof -> t -> proof;
-  suggest: proof -> Pp.t
+  put : Proof.t -> t -> Proof.t;
+  suggest: Proof.t -> Pp.t
 }
 
 let behaviors = Hashtbl.create 4
@@ -110,7 +110,7 @@ module Strict = struct
   let push (b:t) pr =
     focus bullet_cond (b::get_bullets pr) 1 pr
 
-  let suggest_bullet (prf : proof): suggestion =
+  let suggest_bullet (prf : Proof.t): suggestion =
     if is_done prf then ProofFinished
     else if not (no_focused_goal prf)
     then (* No suggestion if a bullet is not mandatory, look for an unfinished bullet *)
@@ -137,7 +137,7 @@ module Strict = struct
       in
       loop prf
 
-  let rec pop_until (prf : proof) bul : proof =
+  let rec pop_until (prf : Proof.t) bul : Proof.t =
     let prf', b = pop prf in
     if bullet_eq bul b then prf'
     else pop_until prf' bul

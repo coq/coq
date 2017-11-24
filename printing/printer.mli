@@ -186,8 +186,8 @@ val pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> Evar.t
 val pr_subgoal             : int -> evar_map -> goal list -> Pp.t
 val pr_concl               : int -> evar_map -> goal -> Pp.t
 
-val pr_open_subgoals       : proof:Proof.proof -> Pp.t
-val pr_nth_open_subgoal    : proof:Proof.proof -> int -> Pp.t
+val pr_open_subgoals       : proof:Proof.t -> Pp.t
+val pr_nth_open_subgoal    : proof:Proof.t -> int -> Pp.t
 val pr_evar                : evar_map -> (Evar.t * evar_info) -> Pp.t
 val pr_evars_int           : evar_map -> int -> evar_info Evar.Map.t -> Pp.t
 val pr_evars               : evar_map -> evar_info Evar.Map.t -> Pp.t
@@ -220,7 +220,7 @@ module ContextObjectMap : CMap.ExtS
 val pr_assumptionset :
   env -> types ContextObjectMap.t -> Pp.t
 
-val pr_goal_by_id : proof:Proof.proof -> Id.t -> Pp.t
+val pr_goal_by_id : proof:Proof.t -> Id.t -> Pp.t
 
 type printer_pr = {
  pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> Evar.t list -> Goal.goal list -> int list -> goal list -> goal list -> Pp.t;

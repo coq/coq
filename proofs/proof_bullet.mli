@@ -12,8 +12,6 @@
 (*                                                        *)
 (**********************************************************)
 
-open Proof
-
 type t = Vernacexpr.bullet
 
 (** A [behavior] is the data of a put function which
@@ -22,8 +20,8 @@ type t = Vernacexpr.bullet
     with a name to identify the behavior. *)
 type behavior = {
   name : string;
-  put : proof -> t -> proof;
-  suggest: proof -> Pp.t
+  put : Proof.t -> t -> Proof.t;
+  suggest: Proof.t -> Pp.t
 }
 
 (** A registered behavior can then be accessed in Coq
@@ -39,8 +37,8 @@ val register_behavior : behavior -> unit
 
 (** Handles focusing/defocusing with bullets:
      *)
-val put : proof -> t -> proof
-val suggest : proof -> Pp.t
+val put : Proof.t -> t -> Proof.t
+val suggest : Proof.t -> Pp.t
 
 (**********************************************************)
 (*                                                        *)

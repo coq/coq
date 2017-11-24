@@ -30,7 +30,9 @@
 *)
 
 (* Type of a proof. *)
-type proof
+type t
+type proof = t
+[@@ocaml.deprecated "please use [Proof.t]"]
 
 (* Returns a stylised view of a proof for use by, for instance,
    ide-s. *)
@@ -42,7 +44,7 @@ type proof
    shelf (the list of goals on the shelf), a representation of the
    given up goals (the list of the given up goals) and the underlying
    evar_map *)
-val proof : proof ->
+val proof : t ->
   Goal.goal list
   * (Goal.goal list * Goal.goal list) list
   * Goal.goal list
@@ -61,26 +63,26 @@ type 'a pre_goals = {
   (** List of the goals that have been given up *)
 }
 
-val map_structured_proof : proof -> (Evd.evar_map -> Goal.goal -> 'a) -> ('a pre_goals)
+val map_structured_proof : t -> (Evd.evar_map -> Goal.goal -> 'a) -> ('a pre_goals)
 
 
 (*** General proof functions ***)
-val start : Evd.evar_map -> (Environ.env * EConstr.types) list -> proof
-val dependent_start : Proofview.telescope -> proof
-val initial_goals : proof -> (EConstr.constr * EConstr.types) list
-val initial_euctx : proof -> UState.t
+val start : Evd.evar_map -> (Environ.env * EConstr.types) list -> t
+val dependent_start : Proofview.telescope -> t
+val initial_goals : t -> (EConstr.constr * EConstr.types) list
+val initial_euctx : t -> UState.t
 
 (* Returns [true] if the considered proof is completed, that is if no goal remain
     to be considered (this does not require that all evars have been solved). *)
-val is_done : proof -> bool
+val is_done : t -> bool
 
 (* Like is_done, but this time it really means done (i.e. nothing left to do) *)
-val is_complete : proof -> bool
+val is_complete : t -> bool
 
 (* Returns the list of partial proofs to initial goals. *)
-val partial_proof : proof -> EConstr.constr list
+val partial_proof : t -> EConstr.constr list
 
-val compact : proof -> proof
+val compact : t -> t
 
 (* Returns the proofs (with their type) of the initial goals.
     Raises [UnfinishedProof] is some goals remain to be considered.
@@ -91,7 +93,7 @@ exception UnfinishedProof
 exception HasShelvedGoals
 exception HasGivenUpGoals
 exception HasUnresolvedEvar
-val return : proof -> Evd.evar_map
+val return : t -> Evd.evar_map
 
 (*** Focusing actions ***)
 
@@ -131,7 +133,7 @@ val done_cond : ?loose_end:bool -> 'a focus_kind -> 'a focus_condition
 (* focus command (focuses on the [i]th subgoal) *)
 (* spiwack: there could also, easily be a focus-on-a-range tactic, is there 
    a need for it? *)
-val focus : 'a focus_condition -> 'a -> int -> proof -> proof
+val focus : 'a focus_condition -> 'a -> int -> t -> t
 
 exception FullyUnfocused
 exception CannotUnfocusThisWay
@@ -147,59 +149,59 @@ exception NoSuchGoals of int * int
    Raises [FullyUnfocused] if the proof is not focused.
    Raises [CannotUnfocusThisWay] if the proof the unfocusing condition
      is not met. *)
-val unfocus : 'a focus_kind -> proof -> unit -> proof
+val unfocus : 'a focus_kind -> t -> unit -> t
 
 (* [unfocused p] returns [true] when [p] is fully unfocused. *)
-val unfocused : proof -> bool
+val unfocused : t -> bool
 
 (* [get_at_focus k] gets the information stored at the closest focus point
     of kind [k].
     Raises [NoSuchFocus] if there is no focus point of kind [k]. *)
 exception NoSuchFocus
-val get_at_focus : 'a focus_kind -> proof -> 'a
+val get_at_focus : 'a focus_kind -> t -> 'a
 
 (* [is_last_focus k] check if the most recent focus is of kind [k] *)
-val is_last_focus : 'a focus_kind -> proof -> bool
+val is_last_focus : 'a focus_kind -> t -> bool
 
 (* returns [true] if there is no goal under focus. *)
-val no_focused_goal : proof -> bool
+val no_focused_goal : t -> bool
 
 (*** Tactics ***)
 
 (* the returned boolean signal whether an unsafe tactic has been
    used. In which case it is [false]. *)
 val run_tactic : Environ.env ->
-  unit Proofview.tactic -> proof -> proof*(bool*Proofview_monad.Info.tree)
+  unit Proofview.tactic -> t -> t * (bool*Proofview_monad.Info.tree)
 
-val maximal_unfocus : 'a focus_kind -> proof -> proof
+val maximal_unfocus : 'a focus_kind -> t -> t
 
 (*** Commands ***)
 
-val in_proof : proof -> (Evd.evar_map -> 'a) -> 'a
+val in_proof : t -> (Evd.evar_map -> 'a) -> 'a
 
 (* Remove all the goals from the shelf and adds them at the end of the
    focused goals. *)
-val unshelve : proof -> proof
+val unshelve : t -> t
 
-val pr_proof : proof -> Pp.t
+val pr_proof : t -> Pp.t
 
 (*** Compatibility layer with <=v8.2 ***)
 module V82 : sig
-  val subgoals : proof -> Goal.goal list Evd.sigma
+  val subgoals : t -> Goal.goal list Evd.sigma
   [@@ocaml.deprecated "Use the first and fifth argument of [Proof.proof]"]
 
   (* All the subgoals of the proof, including those which are not focused. *)
-  val background_subgoals : proof -> Goal.goal list Evd.sigma
+  val background_subgoals : t -> Goal.goal list Evd.sigma
 
-  val top_goal : proof -> Goal.goal Evd.sigma
+  val top_goal : t -> Goal.goal Evd.sigma
 
   (* returns the existential variable used to start the proof *)
-  val top_evars : proof -> Evar.t list
+  val top_evars : t -> Evar.t list
 
   (* Turns the unresolved evars into goals.
      Raises [UnfinishedProof] if there are still unsolved goals. *)
-  val grab_evars : proof -> proof
+  val grab_evars : t -> t
 
   (* Implements the Existential command *)
-  val instantiate_evar : int -> Constrexpr.constr_expr -> proof -> proof
+  val instantiate_evar : int -> Constrexpr.constr_expr -> t -> t
 end
