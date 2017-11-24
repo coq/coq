@@ -10,7 +10,7 @@ cat > _CoqProject <<EOT
 ./src/test.mli
 EOT
 
-mkdir src
+mkdir -p src
 
 cat > src/test_plugin.mllib <<EOT
 Test
