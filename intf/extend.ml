@@ -31,24 +31,24 @@ type production_level =
 
 (** User-level types used to tell how to parse or interpret of the non-terminal *)
 
-type ('lev,'pos) constr_entry_key_gen =
+type 'a constr_entry_key_gen =
   | ETName
   | ETReference
   | ETBigint
   | ETBinder of bool  (* open list of binders if true, closed list of binders otherwise *)
-  | ETConstr of ('lev * 'pos)
-  | ETPattern of int
+  | ETConstr of 'a
+  | ETPattern of int option
   | ETOther of string * string
 
 (** Entries level (left-hand side of grammar rules) *)
 
 type constr_entry_key =
-    (production_level,production_position) constr_entry_key_gen
+    (production_level * production_position) constr_entry_key_gen
 
 (** Entries used in productions, vernac side (e.g. "x bigint" or "x ident") *)
 
 type simple_constr_prod_entry_key =
-    (production_level,unit) constr_entry_key_gen
+    production_level option constr_entry_key_gen
 
 (** Entries used in productions (in right-hand-side of grammar rules), to parse non-terminals *)
 

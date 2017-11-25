@@ -291,6 +291,7 @@ let precedence_of_entry_type from = function
       n, let (lp,rp) = prec_assoc a in if b == Left then lp else rp
   | ETConstr (NumLevel n,InternalProd) -> n, Prec n
   | ETConstr (NextLevel,_) -> from, L
+  | ETPattern n -> let n = match n with None -> 0 | Some n -> n in n, Prec n
   | _ -> 0, E (* ?? *)
 
 (* Some breaking examples *)
@@ -357,12 +358,13 @@ let check_open_binder isopen sl m =
       ++ strbrk "\" is allowed to occur.")
 
 let unparsing_metavar i from typs =
-  match List.nth typs (i-1) with
+  let x = List.nth typs (i-1) in
+  let prec = snd (precedence_of_entry_type from x) in
+  match x with
   | ETConstr _ | ETReference | ETBigint ->
-     let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
      UnpMetaVar (i,prec)
-  | ETPattern n ->
-     UnpBinderMetaVar (i,Prec n)
+  | ETPattern _ ->
+     UnpBinderMetaVar (i,prec)
   | ETName ->
      UnpBinderMetaVar (i,Prec 0)
   | ETBinder isopen ->
@@ -613,7 +615,7 @@ let prod_entry_type = function
   | ETBigint -> ETProdBigint
   | ETBinder _ -> assert false (* See check_binder_type *)
   | ETConstr p -> ETProdConstr p
-  | ETPattern n -> ETProdPattern n
+  | ETPattern n -> ETProdPattern (match n with None -> 0 | Some n -> n)
   | ETOther (s,t) -> ETProdOther (s,t)
 
 let make_production etyps symbols =
@@ -676,7 +678,7 @@ let pr_arg_level from (lev,typ) =
   | (n,L) -> str "at level below " ++ int n
   | (n,Prec m) when Int.equal m n -> str "at level " ++ int n
   | (n,_) -> str "Unknown level" in
-  Ppvernac.pr_set_entry_type typ ++
+  Ppvernac.pr_set_entry_type (fun _ -> (*TO CHECK*) mt()) typ ++
   (match typ with ETConstr _ | ETPattern _ -> spc () ++ pplev lev | _ -> mt ())
 
 let pr_level ntn (from,args,typs) =
@@ -814,7 +816,7 @@ let interp_modifiers modl = let open NotationMods in
 	if Id.List.mem_assoc id acc.etyps then
 	  user_err ~hdr:"Metasyntax.interp_modifiers"
             (str s ++ str " is already assigned to an entry or constr level.");
-	let typ = ETConstr (n,()) in
+        let typ = ETConstr (Some n) in
         interp { acc with etyps = (id,typ)::acc.etyps; } (SetItemLevel (idl,n)::l)
     | SetLevel n :: l ->
 
@@ -881,11 +883,12 @@ let get_compat_version mods =
 let set_entry_type etyps (x,typ) =
   let typ = try
     match List.assoc x etyps, typ with
-      | ETConstr (n,()), (_,BorderProd (left,_)) ->
+      | ETConstr (Some n), (_,BorderProd (left,_)) ->
           ETConstr (n,BorderProd (left,None))
-      | ETConstr (n,()), (_,InternalProd) -> ETConstr (n,InternalProd)
+      | ETConstr (Some n), (_,InternalProd) -> ETConstr (n,InternalProd)
       | (ETPattern _ | ETName | ETBigint | ETOther _ |
 	 ETReference | ETBinder _ as t), _ -> t
+      | ETConstr None, _ -> ETConstr typ
     with Not_found -> ETConstr typ
   in (x,typ)
 
@@ -1060,7 +1063,7 @@ let remove_curly_brackets l =
 
 module SynData = struct
 
-  type subentry_types = (Id.t * (production_level, production_position) constr_entry_key_gen) list
+  type subentry_types = (Id.t * (production_level * production_position) constr_entry_key_gen) list
 
   (* XXX: Document *)
   type syn_data = {

@@ -93,15 +93,27 @@ open Decl_kinds
   let sep = fun _ -> spc()
   let sep_v2 = fun _ -> str"," ++ spc()
 
-  let pr_set_entry_type = function
+  let pr_at_level = function
+    | NumLevel n -> keyword "at" ++ spc () ++ keyword "level" ++ spc () ++ int n
+    | NextLevel -> keyword "at" ++ spc () ++ keyword "next" ++ spc () ++ keyword "level"
+
+  let pr_set_entry_type pr = function
     | ETName -> str"ident"
     | ETReference -> str"global"
-    | ETPattern _ -> str"pattern"
-    | ETConstr _ -> str"constr"
+    | ETPattern None -> str"pattern"
+    | ETPattern (Some n) -> str"pattern" ++ spc () ++ pr_at_level (NumLevel n)
+    | ETConstr lev -> str"constr" ++ pr lev
     | ETOther (_,e) -> str e
     | ETBigint -> str "bigint"
     | ETBinder true -> str "binder"
     | ETBinder false -> str "closed binder"
+
+  let pr_at_level_opt = function
+    | None -> mt ()
+    | Some n -> spc () ++ pr_at_level n
+
+  let pr_set_simple_entry_type =
+    pr_set_entry_type pr_at_level_opt
 
   let pr_comment pr_c = function
     | CommentConstr c -> pr_c c
@@ -359,17 +371,13 @@ open Decl_kinds
   let pr_thm_token k = keyword (Kindops.string_of_theorem_kind k)
 
   let pr_syntax_modifier = function
-    | SetItemLevel (l,NextLevel) ->
-      prlist_with_sep sep_v2 str l ++
-        spc() ++ keyword "at next level"
-    | SetItemLevel (l,NumLevel n) ->
-      prlist_with_sep sep_v2 str l ++
-        spc() ++ keyword "at level" ++ spc() ++ int n
-    | SetLevel n -> keyword "at level" ++ spc() ++ int n
+    | SetItemLevel (l,n) ->
+      prlist_with_sep sep_v2 str l ++ spc () ++ pr_at_level n
+    | SetLevel n -> pr_at_level (NumLevel n)
     | SetAssoc LeftA -> keyword "left associativity"
     | SetAssoc RightA -> keyword "right associativity"
     | SetAssoc NonA -> keyword "no associativity"
-    | SetEntryType (x,typ) -> str x ++ spc() ++ pr_set_entry_type typ
+    | SetEntryType (x,typ) -> str x ++ spc() ++ pr_set_simple_entry_type typ
     | SetOnlyPrinting -> keyword "only printing"
     | SetOnlyParsing -> keyword "only parsing"
     | SetCompatVersion v -> keyword("compat \"" ^ Flags.pr_version v ^ "\"")

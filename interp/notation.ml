@@ -91,22 +91,25 @@ let production_position_eq pp1 pp2 = true (* pp1 = pp2 *) (* match pp1, pp2 with
 | NumLevel n1, NumLevel n2 -> Int.equal n1 n2
 | (NextLevel | NumLevel _), _ -> false *)
 
-let constr_entry_key_eq v1 v2 = match v1, v2 with
+let constr_entry_key_eq eq v1 v2 = match v1, v2 with
 | ETName, ETName -> true
 | ETReference, ETReference -> true
 | ETBigint, ETBigint -> true
 | ETBinder b1, ETBinder b2 -> b1 == b2
-| ETConstr (n1,pp1), ETConstr (n2,pp2) -> production_level_eq n1 n2 && production_position_eq pp1 pp2
-| ETPattern n1, ETPattern n2 -> Int.equal n1 n2
+| ETConstr lev1, ETConstr lev2 -> eq lev1 lev2
+| ETPattern n1, ETPattern n2 -> Option.equal Int.equal n1 n2
 | ETOther (s1,s1'), ETOther (s2,s2') -> String.equal s1 s2 && String.equal s1' s2'
 | (ETName | ETReference | ETBigint | ETBinder _ | ETConstr _ | ETPattern _ | ETOther _), _ -> false
 
-let level_eq (l1, t1, u1) (l2, t2, u2) =
-  let tolerability_eq (i1, r1) (i2, r2) =
-    Int.equal i1 i2 && parenRelation_eq r1 r2
-  in
+let level_eq_gen strict (l1, t1, u1) (l2, t2, u2) =
+  let tolerability_eq (i1, r1) (i2, r2) = Int.equal i1 i2 && parenRelation_eq r1 r2 in
+  let prod_eq (l1,pp1) (l2,pp2) =
+    if strict then production_level_eq l1 l2 && production_position_eq pp1 pp2
+    else production_level_eq l1 l2 in
   Int.equal l1 l2 && List.equal tolerability_eq t1 t2
-  && List.equal constr_entry_key_eq u1 u2
+  && List.equal (constr_entry_key_eq prod_eq) u1 u2
+
+let level_eq = level_eq_gen false
 
 let declare_scope scope =
   try let _ = String.Map.find scope !scope_map in ()
