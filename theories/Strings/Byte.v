@@ -23,7 +23,7 @@ Definition eqb (a b : byte) : bool
 
 Module Export ByteNotations.
   Export ByteSyntaxNotations.
-  Infix "=?" := eqb (at level 70) : byte_scope.
+  Infix "=?" := eqb (at level 70, no associativity) : byte_scope.
 End ByteNotations.
 
 Lemma byte_dec_lb x y : x = y -> eqb x y = true.

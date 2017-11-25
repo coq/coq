@@ -97,9 +97,9 @@ Fixpoint leb n m : bool :=
 
 Definition ltb n m := leb (S n) m.
 
-Infix "=?" := eqb (at level 70) : nat_scope.
-Infix "<=?" := leb (at level 70) : nat_scope.
-Infix "<?" := ltb (at level 70) : nat_scope.
+Infix "=?" := eqb (at level 70, no associativity) : nat_scope.
+Infix "<=?" := leb (at level 70, no associativity) : nat_scope.
+Infix "<?" := ltb (at level 70, no associativity) : nat_scope.
 
 Fixpoint compare n m : comparison :=
   match n, m with
@@ -109,7 +109,7 @@ Fixpoint compare n m : comparison :=
    | S n', S m' => compare n' m'
   end.
 
-Infix "?=" := compare (at level 70) : nat_scope.
+Infix "?=" := compare (at level 70, no associativity) : nat_scope.
 
 (** ** Minimum, maximum *)
 

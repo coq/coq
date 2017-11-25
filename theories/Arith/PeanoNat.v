@@ -1231,10 +1231,10 @@ End Nat.
 Bind Scope nat_scope with Nat.t nat.
 
 Infix "^" := Nat.pow : nat_scope.
-Infix "=?" := Nat.eqb (at level 70) : nat_scope.
-Infix "<=?" := Nat.leb (at level 70) : nat_scope.
-Infix "<?" := Nat.ltb (at level 70) : nat_scope.
-Infix "?=" := Nat.compare (at level 70) : nat_scope.
+Infix "=?" := Nat.eqb (at level 70, no associativity) : nat_scope.
+Infix "<=?" := Nat.leb (at level 70, no associativity) : nat_scope.
+Infix "<?" := Nat.ltb (at level 70, no associativity) : nat_scope.
+Infix "?=" := Nat.compare (at level 70, no associativity) : nat_scope.
 Infix "/" := Nat.div : nat_scope.
 Infix "mod" := Nat.modulo (at level 40, no associativity) : nat_scope.
 

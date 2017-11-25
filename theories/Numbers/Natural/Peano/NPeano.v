@@ -144,8 +144,8 @@ Notation lor_spec := Nat.lor_spec (only parsing).
 #[deprecated(since="8.16",note="The NPeano file is obsolete. Use Nat.lxor_spec instead.")]
 Notation lxor_spec := Nat.lxor_spec (only parsing).
 
-Infix "<=?" := Nat.leb (at level 70) : nat_scope.
-Infix "<?" := Nat.ltb (at level 70) : nat_scope.
+Infix "<=?" := Nat.leb (at level 70, no associativity) : nat_scope.
+Infix "<?" := Nat.ltb (at level 70, no associativity) : nat_scope.
 Infix "^" := Nat.pow : nat_scope.
 Infix "/" := Nat.div : nat_scope.
 Infix "mod" := Nat.modulo (at level 40, no associativity) : nat_scope.
