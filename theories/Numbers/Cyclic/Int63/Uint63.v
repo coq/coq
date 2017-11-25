@@ -50,7 +50,7 @@ Infix "+" := add : uint63_scope.
 Infix "-" := sub : uint63_scope.
 Infix "*" := mul : uint63_scope.
 Infix "/" := div : uint63_scope.
-Infix "mod" := mod (at level 40, no associativity) : uint63_scope.
+Infix "mod" := mod (at level 40, left associativity) : uint63_scope.
 Infix "=?" := eqb (at level 70, no associativity) : uint63_scope.
 Infix "<?" := ltb (at level 70, no associativity) : uint63_scope.
 Infix "<=?" := leb (at level 70, no associativity) : uint63_scope.

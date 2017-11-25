@@ -1070,7 +1070,7 @@ Infix "<=?" := N.leb (at level 70, no associativity) : N_scope.
 Infix "<?" := N.ltb (at level 70, no associativity) : N_scope.
 
 Infix "/" := N.div : N_scope.
-Infix "mod" := N.modulo (at level 40, no associativity) : N_scope.
+Infix "mod" := N.modulo (at level 40, left associativity) : N_scope.
 
 Notation "( p | q )" := (N.divide p q) (at level 0) : N_scope.
 

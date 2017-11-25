@@ -20,7 +20,7 @@ End DivMod.
 
 Module Type DivModNotation (A : Typ)(Import B : DivMod A).
  Infix "/" := div.
- Infix "mod" := modulo (at level 40, no associativity).
+ Infix "mod" := modulo (at level 40, left associativity).
 End DivModNotation.
 
 Module Type DivMod' (A : Typ) := DivMod A <+ DivModNotation A.

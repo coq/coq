@@ -93,7 +93,7 @@ End QuotRem.
 
 Module Type QuotRemNotation (A : Typ)(Import B : QuotRem A).
  Infix "÷" := quot (at level 40, left associativity).
- Infix "rem" := rem (at level 40, no associativity).
+ Infix "rem" := rem (at level 40, left associativity).
 End QuotRemNotation.
 
 Module Type QuotRem' (A : Typ) := QuotRem A <+ QuotRemNotation A.

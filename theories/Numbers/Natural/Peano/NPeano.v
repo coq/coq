@@ -148,7 +148,7 @@ Infix "<=?" := Nat.leb (at level 70, no associativity) : nat_scope.
 Infix "<?" := Nat.ltb (at level 70, no associativity) : nat_scope.
 Infix "^" := Nat.pow : nat_scope.
 Infix "/" := Nat.div : nat_scope.
-Infix "mod" := Nat.modulo (at level 40, no associativity) : nat_scope.
+Infix "mod" := Nat.modulo (at level 40, left associativity) : nat_scope.
 Notation "( x | y )" := (Nat.divide x y) (at level 0) : nat_scope.
 
 Require Import Even.

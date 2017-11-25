@@ -427,26 +427,26 @@ Nat.bit0_eqb: forall a : nat, Nat.testbit a 0 = (a mod 2 =? 1)
 Nat.Div0.div_exact: forall a b : nat, a = b * (a / b) <-> a mod b = 0
 Nat.land_ones: forall a n : nat, Nat.land a (Nat.ones n) = a mod 2 ^ n
 Nat.testbit_spec':
-  forall a n : nat, Nat.b2n (Nat.testbit a n) = (a / 2 ^ n) mod 2
+  forall a n : nat, Nat.b2n (Nat.testbit a n) = a / 2 ^ n mod 2
 Nat.pow_div_l:
   forall a b c : nat, b <> 0 -> a mod b = 0 -> (a / b) ^ c = a ^ c / b ^ c
-Nat.testbit_eqb: forall a n : nat, Nat.testbit a n = ((a / 2 ^ n) mod 2 =? 1)
+Nat.testbit_eqb: forall a n : nat, Nat.testbit a n = (a / 2 ^ n mod 2 =? 1)
 Nat.testbit_false:
-  forall a n : nat, Nat.testbit a n = false <-> (a / 2 ^ n) mod 2 = 0
+  forall a n : nat, Nat.testbit a n = false <-> a / 2 ^ n mod 2 = 0
 Nat.testbit_true:
-  forall a n : nat, Nat.testbit a n = true <-> (a / 2 ^ n) mod 2 = 1
+  forall a n : nat, Nat.testbit a n = true <-> a / 2 ^ n mod 2 = 1
 Nat.bit0_eqb: forall a : nat, Nat.testbit a 0 = (a mod 2 =? 1)
 Nat.Div0.div_exact: forall a b : nat, a = b * (a / b) <-> a mod b = 0
 Nat.land_ones: forall a n : nat, Nat.land a (Nat.ones n) = a mod 2 ^ n
 Nat.testbit_spec':
-  forall a n : nat, Nat.b2n (Nat.testbit a n) = (a / 2 ^ n) mod 2
+  forall a n : nat, Nat.b2n (Nat.testbit a n) = a / 2 ^ n mod 2
 Nat.pow_div_l:
   forall a b c : nat, b <> 0 -> a mod b = 0 -> (a / b) ^ c = a ^ c / b ^ c
-Nat.testbit_eqb: forall a n : nat, Nat.testbit a n = ((a / 2 ^ n) mod 2 =? 1)
+Nat.testbit_eqb: forall a n : nat, Nat.testbit a n = (a / 2 ^ n mod 2 =? 1)
 Nat.testbit_false:
-  forall a n : nat, Nat.testbit a n = false <-> (a / 2 ^ n) mod 2 = 0
+  forall a n : nat, Nat.testbit a n = false <-> a / 2 ^ n mod 2 = 0
 Nat.testbit_true:
-  forall a n : nat, Nat.testbit a n = true <-> (a / 2 ^ n) mod 2 = 1
+  forall a n : nat, Nat.testbit a n = true <-> a / 2 ^ n mod 2 = 1
 iff_Symmetric: Symmetric iff
 iff_Reflexive: Reflexive iff
 impl_Reflexive: Reflexive Basics.impl

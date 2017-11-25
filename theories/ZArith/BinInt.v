@@ -1334,7 +1334,7 @@ Infix "-" := Z.sub : Z_scope.
 Infix "*" := Z.mul : Z_scope.
 Infix "^" := Z.pow : Z_scope.
 Infix "/" := Z.div : Z_scope.
-Infix "mod" := Z.modulo (at level 40, no associativity) : Z_scope.
+Infix "mod" := Z.modulo (at level 40, left associativity) : Z_scope.
 Infix "÷" := Z.quot (at level 40, left associativity) : Z_scope.
 Infix "?=" := Z.compare (at level 70, no associativity) : Z_scope.
 Infix "=?" := Z.eqb (at level 70, no associativity) : Z_scope.

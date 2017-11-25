@@ -44,7 +44,7 @@ Infix "+" := PrimInt63.add : sint63_scope.
 Infix "-" := PrimInt63.sub : sint63_scope.
 Infix "*" := PrimInt63.mul : sint63_scope.
 Infix "/" := divs : sint63_scope.
-Infix "mod" := mods (at level 40, no associativity) : sint63_scope.
+Infix "mod" := mods (at level 40, left associativity) : sint63_scope.
 Infix "=?" := PrimInt63.eqb (at level 70, no associativity) : sint63_scope.
 Infix "<?" := ltsb (at level 70, no associativity) : sint63_scope.
 Infix "<=?" := lesb (at level 70, no associativity) : sint63_scope.

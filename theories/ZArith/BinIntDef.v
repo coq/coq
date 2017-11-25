@@ -438,7 +438,7 @@ Definition div (a b:Z) : Z := let (q, _) := div_eucl a b in q.
 Definition modulo (a b:Z) : Z := let (_, r) := div_eucl a b in r.
 
 Infix "/" := div : Z_scope.
-Infix "mod" := modulo (at level 40, no associativity) : Z_scope.
+Infix "mod" := modulo (at level 40, left associativity) : Z_scope.
 
 
 (** ** Trunc Division *)

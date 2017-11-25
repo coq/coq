@@ -250,7 +250,7 @@ Definition div a b := fst (div_eucl a b).
 Definition modulo a b := snd (div_eucl a b).
 
 Infix "/" := div : N_scope.
-Infix "mod" := modulo (at level 40, no associativity) : N_scope.
+Infix "mod" := modulo (at level 40, left associativity) : N_scope.
 
 (** Greatest common divisor *)
 

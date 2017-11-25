@@ -293,7 +293,7 @@ Definition modulo x y :=
   end.
 
 Infix "/" := div : nat_scope.
-Infix "mod" := modulo (at level 40, no associativity) : nat_scope.
+Infix "mod" := modulo (at level 40, left associativity) : nat_scope.
 
 
 (** ** Greatest common divisor *)
