@@ -1008,9 +1008,9 @@ let remove_sigma x (terms,termlists,binders,binderlists) =
 let remove_bindinglist_sigma x (terms,termlists,binders,binderlists) =
   (terms,termlists,binders,Id.List.remove_assoc x binderlists)
 
-let add_ldots_var metas = (ldots_var,((None,[]),NtnTypeConstr))::metas
+let add_ldots_var metas = (ldots_var,((Constrexpr.InConstrEntrySomeLevel,(None,[])),NtnTypeConstr))::metas
 
-let add_meta_bindinglist x metas = (x,((None,[]),NtnTypeBinderList))::metas
+let add_meta_bindinglist x metas = (x,((Constrexpr.InConstrEntrySomeLevel,(None,[])),NtnTypeBinderList))::metas
 
 (* This tells if letins in the middle of binders should be included in
    the sequence of binders *)
@@ -1055,7 +1055,7 @@ let match_binderlist match_fun alp metas sigma rest x y iter termin revert =
   let alp,sigma = bind_bindinglist_env alp sigma x bl in
   match_fun alp metas sigma rest termin
 
-let add_meta_term x metas = (x,((None,[]),NtnTypeConstr))::metas
+let add_meta_term x metas = (x,((Constrexpr.InConstrEntrySomeLevel,(None,[])),NtnTypeConstr))::metas (* Should reuse the scope of the partner of x! *)
 
 let match_termlist match_fun alp metas sigma rest x y iter termin revert =
   let rec aux sigma acc rest =

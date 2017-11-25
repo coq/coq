@@ -295,7 +295,7 @@ let tag_var = tag Tag.variable
       | CPatOr pl ->
         hov 0 (prlist_with_sep pr_spcbar (pr_patt mt (lpator,L)) pl), lpator
 
-      | CPatNotation ("( _ )",([p],[]),[]) ->
+      | CPatNotation ((_,"( _ )"),([p],[]),[]) ->
         pr_patt (fun()->str"(") (max_int,E) p ++ str")", latom
 
       | CPatNotation (s,(l,ll),args) ->
@@ -665,7 +665,7 @@ let tag_var = tag Tag.variable
                     | CastCoerce -> str ":>"),
           lcast
         )
-      | CNotation ("( _ )",([t],[],[],[])) ->
+      | CNotation ((_,"( _ )"),([t],[],[],[])) ->
         return (pr (fun()->str"(") (max_int,L) t ++ str")", latom)
       | CNotation (s,env) ->
         pr_notation (pr mt) pr_patt (pr_binders_gen (pr mt ltop)) s env

@@ -185,7 +185,8 @@ let type_name = function
 let prepare_entry s = function
   | Notation ->
       (* We decode the encoding done in Dumpglob.cook_notation of coqtop *)
-      (* Encoded notations have the form section:sc:x_'++'_x where:      *)
+      (* Encoded notations have the form section:entry:sc:x_'++'_x       *)
+      (* where:                                                          *)
       (* - the section, if any, ends with a "."                          *)
       (* - the scope can be empty                                        *)
       (* - tokens are separated with "_"                                 *)
@@ -202,10 +203,12 @@ let prepare_entry s = function
       let err () = eprintf "Invalid notation in globalization file\n"; exit 1 in
       let h = try String.index_from s 0 ':' with _ -> err () in
       let i = try String.index_from s (h+1) ':' with _ -> err () in
-      let sc = String.sub s (h+1) (i-h-1) in
-      let ntn = Bytes.make (String.length s - i) ' ' in
+      let m = try String.index_from s (i+1) ':' with _ -> err () in
+      let entry = String.sub s (h+1) (i-h-1) in
+      let sc = String.sub s (i+1) (m-i-1) in
+      let ntn = Bytes.make (String.length s - m) ' ' in
       let k = ref 0 in
-      let j = ref (i+1) in
+      let j = ref (m+1) in
       let quoted = ref false in
       let l = String.length s - 1 in
       while !j <= l do
@@ -227,7 +230,8 @@ let prepare_entry s = function
 	incr j
       done;
       let ntn = Bytes.sub_string ntn 0 !k in
-      if sc = "" then ntn else ntn ^ " (" ^ sc ^ ")"
+      let ntn = if sc = "" then ntn else ntn ^ " (" ^ sc ^ ")" in
+      if entry = "" then ntn else entry ^ ":" ^ ntn
   | _ ->
       s
 

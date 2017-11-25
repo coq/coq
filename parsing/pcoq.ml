@@ -560,15 +560,34 @@ let register_grammars_by_name name grams =
 let find_grammars_by_name name =
   String.Map.find name !grammar_names
 
+(** Custom entries *)
+
+let custom_entries = ref String.Map.empty
+
+let create_custom_entries s =
+  let sc = "constr:"^s in
+  let sp = "pattern:"^s in
+  let c = (Gram.entry_create sc : Constrexpr.constr_expr Gram.entry) in
+  let p = (Gram.entry_create sp : Constrexpr.cases_pattern_expr Gram.entry) in
+  register_grammars_by_name s [AnyEntry c; AnyEntry p];
+  custom_entries := String.Map.add s (c,p) !custom_entries
+
+let find_custom_entries s =
+  try String.Map.find s !custom_entries
+  with Not_found -> user_err Pp.(str "Undeclared custom entry: " ++ str s ++ str ".")
+
 (** Summary functions: the state of the lexer is included in that of the parser.
    Because the grammar affects the set of keywords when adding or removing
    grammar rules. *)
 type frozen_t =
   (int * GrammarCommand.t * GramState.t) list *
   CLexer.keyword_state *
-  any_entry list String.Map.t
+  any_entry list String.Map.t *
+  (Constrexpr.constr_expr Gram.entry * Constrexpr.cases_pattern_expr Gram.entry) Util.String.Map.t
 
-let freeze _ : frozen_t = (!grammar_stack, CLexer.get_keyword_state (), !grammar_names)
+let freeze _ : frozen_t =
+  (!grammar_stack, CLexer.get_keyword_state (),
+   !grammar_names, !custom_entries)
 
 (* We compare the current state of the grammar and the state to unfreeze,
    by computing the longest common suffixes *)
@@ -578,14 +597,15 @@ let factorize_grams l1 l2 =
 let number_of_entries gcl =
   List.fold_left (fun n (p,_,_) -> n + p) 0 gcl
 
-let unfreeze (grams, lex, names) =
+let unfreeze (grams, lex, names, custom) =
   let (undo, redo, common) = factorize_grams !grammar_stack grams in
   let n = number_of_entries undo in
   remove_grammars n;
   grammar_stack := common;
   CLexer.set_keyword_state lex;
   List.iter extend_dyn_grammar (List.rev_map pi2 redo);
-  grammar_names := names
+  grammar_names := names;
+  custom_entries := custom
 
 (** No need to provide an init function : the grammar state is
     statically available, and already empty initially, while
