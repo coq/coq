@@ -149,6 +149,11 @@ let default a = function
   | Some y -> y
   | _ -> a
 
+(** [lazy_default a x] is [y] if [x] is [Some y] and [a] otherwise. *)
+let lazy_default a = function
+  | Some y -> y
+  | _ -> Lazy.force a
+
 (** [lift f x] is the same as [map f x]. *)
 let lift = map
 
