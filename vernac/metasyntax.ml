@@ -285,14 +285,17 @@ let prec_assoc = function
   | LeftA -> (E,L)
   | NonA -> (L,L)
 
-let precedence_of_entry_type from = function
-  | ETConstr (NumLevel n,BorderProd (_,None)) -> n, Prec n
-  | ETConstr (NumLevel n,BorderProd (b,Some a)) ->
+let precedence_of_position_and_level from = function
+  | NumLevel n, BorderProd (_,None) -> n, Prec n
+  | NumLevel n, BorderProd (b,Some a) ->
       n, let (lp,rp) = prec_assoc a in if b == Left then lp else rp
-  | ETConstr (NumLevel n,InternalProd) -> n, Prec n
-  | ETConstr (NextLevel,_) -> from, L
-  | ETPattern n -> let n = match n with None -> 0 | Some n -> n in n, Prec n
-  | _ -> 0, E (* ?? *)
+  | NumLevel n, InternalProd -> n, Prec n
+  | NextLevel, _ -> from, L
+
+let precedence_of_entry_type from = function
+  | ETConstr x | ETConstrAsBinder (_,x) -> precedence_of_position_and_level from x
+  | ETPattern (_,n) -> let n = match n with None -> 0 | Some n -> n in n, Prec n
+  | _ -> 0, E (* should not matter *)
 
 (* Some breaking examples *)
 (* "x = y" : "x /1 = y" (breaks before any symbol) *)
@@ -361,7 +364,7 @@ let unparsing_metavar i from typs =
   let x = List.nth typs (i-1) in
   let prec = snd (precedence_of_entry_type from x) in
   match x with
-  | ETConstr _ | ETReference | ETBigint ->
+  | ETConstr _ | ETConstrAsBinder _ | ETReference | ETBigint ->
      UnpMetaVar (i,prec)
   | ETPattern _ ->
      UnpBinderMetaVar (i,prec)
@@ -596,7 +599,7 @@ let expand_list_rule typ tkl x n p ll =
 
 let is_constr_typ typ x etyps =
   match List.assoc x etyps with
-  | ETConstr typ' -> typ = typ'
+  | ETConstr typ' | ETConstrAsBinder (_,typ') -> typ = typ'
   | _ -> false
 
 let include_possible_similar_trailing_pattern typ etyps sl l =
@@ -614,8 +617,8 @@ let prod_entry_type = function
   | ETReference -> ETProdReference
   | ETBigint -> ETProdBigint
   | ETBinder _ -> assert false (* See check_binder_type *)
-  | ETConstr p -> ETProdConstr p
-  | ETPattern n -> ETProdPattern (match n with None -> 0 | Some n -> n)
+  | ETConstr p | ETConstrAsBinder (_,p) -> ETProdConstr p
+  | ETPattern (_,n) -> ETProdPattern (match n with None -> 0 | Some n -> n)
   | ETOther (s,t) -> ETProdOther (s,t)
 
 let make_production etyps symbols =
@@ -659,6 +662,7 @@ let rec find_symbols c_current c_next c_last = function
 
 let border = function
   | (_,ETConstr(_,BorderProd (_,a))) :: _ -> a
+  | (_,(ETConstrAsBinder(_,(_,BorderProd (_,a))))) :: _ -> a
   | _ -> None
 
 let recompute_assoc typs =
@@ -679,7 +683,9 @@ let pr_arg_level from (lev,typ) =
   | (n,Prec m) when Int.equal m n -> str "at level " ++ int n
   | (n,_) -> str "Unknown level" in
   Ppvernac.pr_set_entry_type (fun _ -> (*TO CHECK*) mt()) typ ++
-  (match typ with ETConstr _ | ETPattern _ -> spc () ++ pplev lev | _ -> mt ())
+  (match typ with
+   | ETConstr _ | ETConstrAsBinder _ | ETPattern _ -> spc () ++ pplev lev
+   | _ -> mt ())
 
 let pr_level ntn (from,args,typs) =
   str "at level " ++ int from ++ spc () ++ str "with arguments" ++ spc() ++
@@ -811,6 +817,8 @@ let interp_modifiers modl = let open NotationMods in
         interp { acc with etyps = (id,typ) :: acc.etyps; } l
     | SetItemLevel ([],n) :: l ->
         interp acc l
+    | SetItemLevelAsBinder ([],_,_) :: l ->
+        interp acc l
     | SetItemLevel (s::idl,n) :: l ->
 	let id = Id.of_string s in
 	if Id.List.mem_assoc id acc.etyps then
@@ -818,8 +826,14 @@ let interp_modifiers modl = let open NotationMods in
             (str s ++ str " is already assigned to an entry or constr level.");
         let typ = ETConstr (Some n) in
         interp { acc with etyps = (id,typ)::acc.etyps; } (SetItemLevel (idl,n)::l)
+    | SetItemLevelAsBinder (s::idl,bk,n) :: l ->
+        let id = Id.of_string s in
+        if Id.List.mem_assoc id acc.etyps then
+          user_err ~hdr:"Metasyntax.interp_modifiers"
+            (str s ++ str " is already assigned to an entry or constr level.");
+        let typ = ETConstrAsBinder (bk,Some n) in
+        interp { acc with etyps = (id,typ)::acc.etyps; } (SetItemLevelAsBinder (idl,bk,n)::l)
     | SetLevel n :: l ->
-
         interp { acc with level = Some n; } l
     | SetAssoc a :: l ->
 	if not (Option.is_empty acc.assoc) then user_err Pp.(str "An associativity is given more than once.");
@@ -886,9 +900,14 @@ let set_entry_type etyps (x,typ) =
       | ETConstr (Some n), (_,BorderProd (left,_)) ->
           ETConstr (n,BorderProd (left,None))
       | ETConstr (Some n), (_,InternalProd) -> ETConstr (n,InternalProd)
-      | (ETPattern _ | ETName | ETBigint | ETOther _ |
-	 ETReference | ETBinder _ as t), _ -> t
+      | ETConstrAsBinder (bk, Some n), (_,BorderProd (left,_)) ->
+          ETConstrAsBinder (bk, (n,BorderProd (left,None)))
+      | ETConstrAsBinder (bk, Some n), (_,InternalProd) ->
+         ETConstrAsBinder (bk, (n,InternalProd))
+      | ETPattern (b,n), _ -> ETPattern (b,n)
+      | (ETName | ETBigint | ETReference | ETBinder _ | ETOther _ as x), _ -> x
       | ETConstr None, _ -> ETConstr typ
+      | ETConstrAsBinder (bk,None), _ -> ETConstrAsBinder (bk,typ)
     with Not_found -> ETConstr typ
   in (x,typ)
 
@@ -909,7 +928,7 @@ let join_auxiliary_recursive_types recvars etyps =
 
 let internalization_type_of_entry_type = function
   | ETBinder _ -> NtnInternTypeOnlyBinder
-  | ETConstr _ | ETBigint | ETReference
+  | ETConstr _ | ETConstrAsBinder _ | ETBigint | ETReference
   | ETName | ETPattern _ | ETOther _ -> NtnInternTypeAny
 
 let set_internalization_type typs =
@@ -923,10 +942,13 @@ let make_internalization_vars recvars mainvars typs =
 let make_interpretation_type isrec isonlybinding = function
   | ETConstr _ ->
      if isrec then NtnTypeConstrList else
-     if isonlybinding then NtnTypeBinder NtnParsedAsConstr (* Parsed as constr, but interpreted as binder *)
+     if isonlybinding then
+       (* Parsed as constr, but interpreted as a binder: default is to parse it as an ident only *)
+       NtnTypeBinder (NtnBinderParsedAsConstr AsIdent)
      else NtnTypeConstr
+  | ETConstrAsBinder (bk,_) -> NtnTypeBinder (NtnBinderParsedAsConstr bk)
   | ETName -> NtnTypeBinder NtnParsedAsIdent
-  | ETPattern _ -> NtnTypeBinder NtnParsedAsPattern (* Parsed as ident/pattern, primarily interpreted as binder *)
+  | ETPattern (ppstrict,_) -> NtnTypeBinder (NtnParsedAsPattern ppstrict) (* Parsed as ident/pattern, primarily interpreted as binder; maybe strict at printing *)
   | ETBigint | ETReference | ETOther _ -> NtnTypeConstr
   | ETBinder _ ->
      if isrec then NtnTypeBinderList
@@ -982,6 +1004,7 @@ let is_not_printable onlyparse reversibility = function
      (warn_non_reversible_notation reversibility; true)
   else onlyparse
 
+
 let find_precedence lev etyps symbols onlyprint =
   let first_symbol =
     let rec aux = function
@@ -999,27 +1022,30 @@ let find_precedence lev etyps symbols onlyprint =
   match first_symbol with
   | None -> [],0
   | Some (NonTerminal x) ->
+      let test () =
+        if onlyprint then
+          if Option.is_empty lev then
+            user_err Pp.(str "Explicit level needed in only-printing mode when the level of the leftmost non-terminal is given.")
+          else [],Option.get lev
+        else
+          user_err Pp.(str "The level of the leftmost non-terminal cannot be changed.") in
       (try match List.assoc x etyps with
-        | ETConstr _ ->
-	   if onlyprint then
-	     if Option.is_empty lev then
-	       user_err Pp.(str "Explicit level needed in only-printing mode when the level of the leftmost non-terminal is given.")
-	     else [],Option.get lev
-	   else
-	     user_err Pp.(str "The level of the leftmost non-terminal cannot be changed.")
-	| ETName | ETBigint | ETReference ->
+        | ETConstr _ -> test ()
+        | ETConstrAsBinder (_,Some _) -> test ()
+        | (ETName | ETBigint | ETReference) ->
             begin match lev with
             | None ->
 	      ([Feedback.msg_info ?loc:None ,strbrk "Setting notation at level 0."],0)
             | Some 0 ->
               ([],0)
             | _ ->
-	      user_err Pp.(str "A notation starting with an atomic expression must be at level 0.")
+              user_err Pp.(str "A notation starting with an atomic expression must be at level 0.")
             end
-        | ETPattern _ | ETBinder _ | ETOther _ -> (* Give a default ? *)
-	    if Option.is_empty lev then
-	      user_err Pp.(str "Need an explicit level.")
-	    else [],Option.get lev
+        | (ETPattern _ | ETBinder _ | ETOther _ | ETConstrAsBinder _) ->
+            (* Give a default ? *)
+            if Option.is_empty lev then
+              user_err Pp.(str "Need an explicit level.")
+            else [],Option.get lev
       with Not_found ->
 	if Option.is_empty lev then
 	  user_err Pp.(str "A left-recursive notation must have an explicit level.")

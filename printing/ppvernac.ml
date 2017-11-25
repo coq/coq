@@ -97,13 +97,21 @@ open Decl_kinds
     | NumLevel n -> keyword "at" ++ spc () ++ keyword "level" ++ spc () ++ int n
     | NextLevel -> keyword "at" ++ spc () ++ keyword "next" ++ spc () ++ keyword "level"
 
+  let pr_constr_as_binder_kind = function
+    | AsIdent -> keyword "as ident"
+    | AsIdentOrPattern -> keyword "as pattern"
+    | AsStrictPattern -> keyword "as strict pattern"
+
+  let pr_strict b = if b then str "strict " else mt ()
+
   let pr_set_entry_type pr = function
     | ETName -> str"ident"
     | ETReference -> str"global"
-    | ETPattern None -> str"pattern"
-    | ETPattern (Some n) -> str"pattern" ++ spc () ++ pr_at_level (NumLevel n)
+    | ETPattern (b,None) -> pr_strict b ++ str"pattern"
+    | ETPattern (b,Some n) -> pr_strict b ++ str"pattern" ++ spc () ++ pr_at_level (NumLevel n)
     | ETConstr lev -> str"constr" ++ pr lev
     | ETOther (_,e) -> str e
+    | ETConstrAsBinder (bk,lev) -> pr lev ++ spc () ++ pr_constr_as_binder_kind bk
     | ETBigint -> str "bigint"
     | ETBinder true -> str "binder"
     | ETBinder false -> str "closed binder"
@@ -373,6 +381,9 @@ open Decl_kinds
   let pr_syntax_modifier = function
     | SetItemLevel (l,n) ->
       prlist_with_sep sep_v2 str l ++ spc () ++ pr_at_level n
+    | SetItemLevelAsBinder (l,bk,n) ->
+      prlist_with_sep sep_v2 str l ++
+      spc() ++ pr_at_level n ++ spc() ++ pr_constr_as_binder_kind bk
     | SetLevel n -> pr_at_level (NumLevel n)
     | SetAssoc LeftA -> keyword "left associativity"
     | SetAssoc RightA -> keyword "right associativity"

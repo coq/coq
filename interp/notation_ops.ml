@@ -671,12 +671,20 @@ let is_term_meta id metas =
   try match Id.List.assoc id metas with _,(NtnTypeConstr | NtnTypeConstrList) -> true | _ -> false
   with Not_found -> false
 
+let is_onlybinding_strict_meta id metas =
+  try match Id.List.assoc id metas with _,NtnTypeBinder (NtnParsedAsPattern true) -> true | _ -> false
+  with Not_found -> false
+
 let is_onlybinding_meta id metas =
   try match Id.List.assoc id metas with _,NtnTypeBinder _ -> true | _ -> false
   with Not_found -> false
 
-let is_onlybinding_pattern_like_meta id metas =
-  try match Id.List.assoc id metas with _,NtnTypeBinder (NtnParsedAsConstr | NtnParsedAsPattern) -> true | _ -> false
+let is_onlybinding_pattern_like_meta isvar id metas =
+  try match Id.List.assoc id metas with
+      | _,NtnTypeBinder (NtnBinderParsedAsConstr
+                           (Extend.AsIdentOrPattern | Extend.AsStrictPattern)) -> true
+      | _,NtnTypeBinder (NtnParsedAsPattern strict) -> not (strict && isvar)
+      | _ -> false
   with Not_found -> false
 
 let is_bindinglist_meta id metas =
@@ -962,6 +970,8 @@ let match_opt f sigma t1 t2 = match (t1,t2) with
   | _ -> raise No_match
 
 let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
+  | (na1,Name id2) when is_onlybinding_strict_meta id2 metas ->
+      raise No_match
   | (na1,Name id2) when is_onlybinding_meta id2 metas ->
       bind_binding_env alp sigma id2 [DAst.make (PatVar na1)]
   | (Name id1,Name id2) when is_term_meta id2 metas ->
@@ -977,7 +987,9 @@ let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
 
 let rec match_cases_pattern_binders allow_catchall metas (alp,sigma as acc) pat1 pat2 =
   match DAst.get pat1, DAst.get pat2 with
-  | _, PatVar (Name id2) when is_onlybinding_pattern_like_meta id2 metas ->
+  | PatVar _, PatVar (Name id2) when is_onlybinding_pattern_like_meta true id2 metas ->
+      bind_binding_env alp sigma id2 [pat1]
+  | _, PatVar (Name id2) when is_onlybinding_pattern_like_meta false id2 metas ->
       bind_binding_env alp sigma id2 [pat1]
   | PatVar na1, PatVar na2 -> match_names metas acc na1 na2
   | _, PatVar Anonymous when allow_catchall -> acc
@@ -1093,7 +1105,9 @@ let rec match_ inner u alp metas sigma a1 a2 =
   match DAst.get a1, a2 with
   (* Matching notation variable *)
   | r1, NVar id2 when is_term_meta id2 metas -> bind_term_env alp sigma id2 a1
-  | r1, NVar id2 when is_onlybinding_pattern_like_meta id2 metas -> bind_binding_as_term_env alp sigma id2 a1
+  | GVar _, NVar id2 when is_onlybinding_pattern_like_meta true id2 metas -> bind_binding_as_term_env alp sigma id2 a1
+  | r1, NVar id2 when is_onlybinding_pattern_like_meta false id2 metas -> bind_binding_as_term_env alp sigma id2 a1
+  | GVar _, NVar id2 when is_onlybinding_strict_meta id2 metas -> raise No_match
   | GVar _, NVar id2 when is_onlybinding_meta id2 metas -> bind_binding_as_term_env alp sigma id2 a1
   | r1, NVar id2 when is_bindinglist_meta id2 metas -> bind_term_env alp sigma id2 a1
 
@@ -1232,7 +1246,7 @@ and match_extended_binders ?loc isprod u alp metas na1 na2 bk t sigma b1 b2 =
      match_in u alp metas sigma b1 b2
      | _ -> assert false)
   | Name p, GCases (LetPatternStyle,None,[(e,_)],(_::_ as eqns)), Name id
-       when is_gvar p e && is_onlybinding_pattern_like_meta id metas && List.length (store (Detyping.factorize_eqns eqns)) = 1 ->
+       when is_gvar p e && is_onlybinding_pattern_like_meta false id metas && List.length (store (Detyping.factorize_eqns eqns)) = 1 ->
     (match get () with
      | [(_,(ids,disj_of_patl,b1))] ->
      let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
@@ -1276,13 +1290,13 @@ let match_notation_constr u c (metas,pat) =
     | NtnTypeConstr ->
       let term = try Id.List.assoc x terms with Not_found -> raise No_match in
        ((term, scl)::terms',termlists',binders',binderlists')
-    | NtnTypeBinder NtnParsedAsConstr ->
+    | NtnTypeBinder (NtnBinderParsedAsConstr _) ->
        (match Id.List.assoc x binders with
         | [pat] ->
           let v = glob_constr_of_cases_pattern pat in
           ((v,scl)::terms',termlists',binders',binderlists')
         | _ -> raise No_match)
-    | NtnTypeBinder (NtnParsedAsIdent | NtnParsedAsPattern) ->
+    | NtnTypeBinder (NtnParsedAsIdent | NtnParsedAsPattern _) ->
        (terms',termlists',(Id.List.assoc x binders,scl)::binders',binderlists')
     | NtnTypeConstrList ->
        (terms',(Id.List.assoc x termlists,scl)::termlists',binders',binderlists')

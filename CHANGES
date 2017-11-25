@@ -12,7 +12,9 @@ Notations
   opened rather than to the latest notations defined independently of
   whether they are in an opened scope or not.
 - Notations can now refer to the syntactic category of patterns (as in
-  "fun 'pat =>" or "match p with pat => ... end").
+  "fun 'pat =>" or "match p with pat => ... end"). Two variants are
+  available, depending on whether a single variable is considered as a
+  pattern or not.
 - Recursive notations now support ".." patterns with several
   occurrences of the recursive term or binder, possibly mixing terms
   and binders, possibly in reverse left-to-right order.

@@ -549,6 +549,18 @@ let is_var store pat =
   | PatVar na -> store na; true
   | _ -> false
 
+let out_var pat =
+  match pat.CAst.v with
+  | CPatAtom (Some (Ident (_,id))) -> Name id
+  | CPatAtom None -> Anonymous
+  | _ -> assert false
+
+let term_of_name = function
+  | Name id -> DAst.make (GVar id)
+  | Anonymous ->
+       let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
+       DAst.make (GHole (Evar_kinds.QuestionMark (st,Anonymous), Misctypes.IntroAnonymous, None))
+
 let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renaming,env) = function
  | Anonymous -> (renaming,env), None, Anonymous
  | Name id ->
@@ -564,13 +576,21 @@ let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renam
   with Not_found ->
   try
     (* Trying to associate a pattern *)
-    let pat,scopes = Id.Map.find id binders in
+    let pat,(onlyident,scopes) = Id.Map.find id binders in
     let env = set_env_scopes env scopes in
-    let env,((disjpat,ids),id),na = intern_pat ntnvars env pat in
-    let pat, na = match disjpat with
-    | [pat] when is_var store pat -> let na = get () in None, na
-    | _ -> Some ((List.map snd ids,disjpat),id), snd na in
-    (renaming,env), pat, na
+    if onlyident then
+      (* Do not try to interpret a variable as a constructor *)
+      let na = out_var pat in
+      let env = push_name_env ntnvars (Variable,[],[],[]) env (pat.CAst.loc, na) in
+      (renaming,env), None, na
+    else
+      (* Interpret as a pattern *)
+      let env,((disjpat,ids),id),na = intern_pat ntnvars env pat in
+      let pat, na =
+        match disjpat with
+        | [pat] when is_var store pat -> let na = get () in None, na
+        | _ -> Some ((List.map snd ids,disjpat),id), snd na in
+      (renaming,env), pat, na
   with Not_found ->
     (* Binders not bound in the notation do not capture variables *)
     (* outside the notation (i.e. in the substitution) *)
@@ -688,12 +708,15 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
           let gc = intern nenv c in
           (gc, Some c)
         in
-        let mk_env' (c, (tmp_scope, subscopes)) =
+        let mk_env' (c, (onlyident,(tmp_scope,subscopes))) =
           let nenv = {env with tmp_scope; scopes = subscopes @ env.scopes} in
-          let _,((disjpat,_),_),_ = intern_pat ntnvars nenv c in
-          match disjpat with
-          | [pat] -> (glob_constr_of_cases_pattern pat, None)
-          | _ -> error_cannot_coerce_disjunctive_pattern_term ?loc:c.CAst.loc ()
+          if onlyident then
+            let na = out_var c in term_of_name na, None
+          else
+            let _,((disjpat,_),_),_ = intern_pat ntnvars nenv c in
+            match disjpat with
+            | [pat] -> (glob_constr_of_cases_pattern pat, None)
+            | _ -> error_cannot_coerce_disjunctive_pattern_term ?loc:c.CAst.loc ()
         in
         let terms = Id.Map.map mk_env terms in
         let binders = Id.Map.map mk_env' binders in
@@ -744,15 +767,18 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
                 scopes = subscopes @ env.scopes} a
     with Not_found ->
     try
-      let pat,scopes = Id.Map.find id binders in
+      let pat,(onlyident,scopes) = Id.Map.find id binders in
       let env = set_env_scopes env scopes in
       (* We deactivate impls to avoid the check on hidden parameters *)
       (* and since we are only interested in the pattern as a term *)
       let env = reset_hidden_inductive_implicit_test env in
-      let env,((disjpat,ids),id),na = intern_pat ntnvars env pat in
-      match disjpat with
-      | [pat] -> glob_constr_of_cases_pattern pat
-      | _ -> user_err Pp.(str "Cannot turn a disjunctive pattern into a term.")
+      if onlyident then
+        term_of_name (out_var pat)
+      else
+        let env,((disjpat,ids),id),na = intern_pat ntnvars env pat in
+        match disjpat with
+        | [pat] -> glob_constr_of_cases_pattern pat
+        | _ -> user_err Pp.(str "Cannot turn a disjunctive pattern into a term.")
     with Not_found ->
     try
       match binderopt with
@@ -774,6 +800,10 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
    into a substitution for interpretation and based on binding/constr
    distinction *)
 
+let cases_pattern_of_name (loc,na) =
+  let atom = match na with Name id -> Some (Ident (loc,id)) | Anonymous -> None in
+  CAst.make ?loc (CPatAtom atom)
+
 let split_by_type ids subst =
   let bind id scl l s =
     match l with
@@ -785,12 +815,17 @@ let split_by_type ids subst =
     | NtnTypeConstr ->
        let terms,terms' = bind id scl terms terms' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
-    | NtnTypeBinder NtnParsedAsConstr ->
+    | NtnTypeBinder NtnBinderParsedAsConstr (Extend.AsIdentOrPattern | Extend.AsStrictPattern) ->
        let a,terms = match terms with a::terms -> a,terms | _ -> assert false in
-       let binders' = Id.Map.add id (coerce_to_cases_pattern_expr a,scl) binders' in
+       let binders' = Id.Map.add id (coerce_to_cases_pattern_expr a,(false,scl)) binders' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
-    | NtnTypeBinder (NtnParsedAsIdent | NtnParsedAsPattern) ->
-       let binders,binders' = bind id scl binders binders' in
+    | NtnTypeBinder NtnBinderParsedAsConstr Extend.AsIdent ->
+       let a,terms = match terms with a::terms -> a,terms | _ -> assert false in
+       let binders' = Id.Map.add id (cases_pattern_of_name (coerce_to_name a),(true,scl)) binders' in
+       (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
+    | NtnTypeBinder (NtnParsedAsIdent | NtnParsedAsPattern _ as x) ->
+       let onlyident = (x = NtnParsedAsIdent) in
+       let binders,binders' = bind id (onlyident,scl) binders binders' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
     | NtnTypeConstrList ->
        let termlists,termlists' = bind id scl termlists termlists' in

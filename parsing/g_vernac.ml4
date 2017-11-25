@@ -1174,6 +1174,7 @@ GEXTEND Gram
       | x = IDENT; ","; l = LIST1 [id = IDENT -> id ] SEP ","; "at";
         lev = level -> SetItemLevel (x::l,lev)
       | x = IDENT; "at"; lev = level -> SetItemLevel ([x],lev)
+      | x = IDENT; "at"; lev = level; b = constr_as_binder_kind -> SetItemLevelAsBinder ([x],b,lev)
       | x = IDENT; typ = syntax_extension_type -> SetEntryType (x,typ)
     ] ]
   ;
@@ -1181,9 +1182,20 @@ GEXTEND Gram
     [ [ IDENT "ident" -> ETName | IDENT "global" -> ETReference
       | IDENT "bigint" -> ETBigint
       | IDENT "binder" -> ETBinder true
-      | IDENT "pattern" -> ETPattern None
-      | IDENT "pattern"; "at"; IDENT "level"; n = natural -> ETPattern (Some n)
+      | IDENT "constr"; n = OPT at_level; b = constr_as_binder_kind -> ETConstrAsBinder (b,n)
+      | IDENT "pattern" -> ETPattern (false,None)
+      | IDENT "pattern"; "at"; IDENT "level"; n = natural -> ETPattern (false,Some n)
+      | IDENT "strict"; IDENT "pattern" -> ETPattern (true,None)
+      | IDENT "strict"; IDENT "pattern"; "at"; IDENT "level"; n = natural -> ETPattern (true,Some n)
       | IDENT "closed"; IDENT "binder" -> ETBinder false
     ] ]
+  ;
+  at_level:
+    [ [ "at"; n = level -> n ] ]
+  ;
+  constr_as_binder_kind:
+    [ [ "as"; IDENT "ident" -> AsIdent
+      | "as"; IDENT "pattern" -> AsIdentOrPattern
+      | "as"; IDENT "strict"; IDENT "pattern" -> AsStrictPattern ] ]
   ;
 END
