@@ -2096,6 +2096,8 @@ let interp ?proof ~atts ~st c =
       vernac_notation ~atts c infpl sc
   | VernacNotationAddFormat(n,k,v) ->
       Metasyntax.add_notation_extra_printing_rule n k v
+  | VernacDeclareCustomEntry s ->
+      Metasyntax.declare_custom_entry s
 
   (* Gallina *)
   | VernacDefinition ((discharge,kind),lid,d) ->

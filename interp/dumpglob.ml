@@ -167,7 +167,7 @@ let dump_modref ?loc mp ty =
 let dump_libref ?loc dp ty =
   dump_ref ?loc (Names.DirPath.to_string dp) "<>" "<>" ty
 
-let cook_notation df sc =
+let cook_notation (from,df) sc =
   (* We encode notations so that they are space-free and still human-readable *)
   (* - all spaces are replaced by _                                           *)
   (* - all _ denoting a non-terminal symbol are replaced by x                 *)
@@ -203,7 +203,9 @@ let cook_notation df sc =
     if !i <= l then (set ntn !j '_'; incr j; incr i)
   done;
   let df = Bytes.sub_string ntn 0 !j in
-  match sc with Some sc -> ":" ^ sc ^ ":" ^ df | _ -> "::" ^ df
+  let df_sc = match sc with Some sc -> ":" ^ sc ^ ":" ^ df | _ -> "::" ^ df in
+  let from_df_sc = match from with Constrexpr.InCustomEntry from -> ":" ^ from ^ df_sc | Constrexpr.InConstrEntry -> ":" ^ df_sc in
+  from_df_sc
 
 let dump_notation_location posl df (((path,secpath),_),sc) =
   if dump () then

@@ -20,7 +20,9 @@ type universe_decl_expr = (lident list, Glob_term.glob_constraint list) UState.g
 type ident_decl = lident * universe_decl_expr option
 type name_decl = lname * universe_decl_expr option
 
-type notation = string
+type notation_entry = InConstrEntry | InCustomEntry of string
+type notation_key = string
+type notation = notation_entry * notation_key
 
 type 'a or_by_notation_r =
   | AN of 'a

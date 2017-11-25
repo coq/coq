@@ -17,6 +17,18 @@ open Notation_term
 
 (** Notations *)
 
+val pr_notation : notation -> Pp.t
+(** Printing *)
+
+val notation_entry_eq : notation_entry -> notation_entry -> bool
+(** Equality on [notation_entry]. *)
+
+val notation_eq : notation -> notation -> bool
+(** Equality on [notation]. *)
+
+module NotationSet : Set.S with type elt = notation
+module NotationMap : CMap.ExtS with type key = notation and module Set := NotationSet
+
 (** {6 Scopes } *)
 (** A scope is a set of interpreters for symbols + optional
    interpreter and printers for integers + optional delimiters *)
@@ -24,8 +36,6 @@ open Notation_term
 type delimiters = string
 type scope
 type scopes (** = [scope_name list] *)
-
-type local_scopes = tmp_scope_name option * scope_name list
 
 val declare_scope : scope_name -> unit
 
@@ -84,11 +94,11 @@ val declare_string_interpreter : scope_name -> required_module ->
 (** Return the [term]/[cases_pattern] bound to a primitive token in a
    given scope context*)
 
-val interp_prim_token : ?loc:Loc.t -> prim_token -> local_scopes ->
+val interp_prim_token : ?loc:Loc.t -> prim_token -> subscopes ->
   glob_constr * (notation_location * scope_name option)
 (* This function returns a glob_const representing a pattern *)
 val interp_prim_token_cases_pattern_expr : ?loc:Loc.t -> (GlobRef.t -> unit) -> prim_token ->
-  local_scopes -> glob_constr * (notation_location * scope_name option)
+  subscopes -> glob_constr * (notation_location * scope_name option)
 
 (** Return the primitive token associated to a [term]/[cases_pattern];
    raise [No_match] if no such token *)
@@ -101,7 +111,7 @@ val uninterp_prim_token_ind_pattern :
  inductive -> cases_pattern list -> scope_name * prim_token
 
 val availability_of_prim_token :
-  prim_token -> scope_name -> local_scopes -> delimiters option option
+  prim_token -> scope_name -> subscopes -> delimiters option option
 
 (** {6 Declare and interpret back and forth a notation } *)
 
@@ -116,7 +126,7 @@ val declare_notation_interpretation : notation -> scope_name option ->
 val declare_uninterpretation : interp_rule -> interpretation -> unit
 
 (** Return the interpretation bound to a notation *)
-val interp_notation : ?loc:Loc.t -> notation -> local_scopes ->
+val interp_notation : ?loc:Loc.t -> notation -> subscopes ->
       interpretation * (notation_location * scope_name option)
 
 type notation_rule = interp_rule * interpretation * int option
@@ -129,13 +139,13 @@ val uninterp_ind_pattern_notations : inductive -> notation_rule list
 (** Test if a notation is available in the scopes 
    context [scopes]; if available, the result is not None; the first 
    argument is itself not None if a delimiters is needed *)
-val availability_of_notation : scope_name option * notation -> local_scopes ->
+val availability_of_notation : scope_name option * notation -> subscopes ->
   (scope_name option * delimiters option) option
 
 (** {6 Miscellaneous} *)
 
 val interp_notation_as_global_reference : ?loc:Loc.t -> (GlobRef.t -> bool) ->
-      notation -> delimiters option -> GlobRef.t
+      notation_key -> delimiters option -> GlobRef.t
 
 (** Checks for already existing notations *)
 val exists_notation_in_scope : scope_name option -> notation ->
@@ -177,8 +187,8 @@ type symbol =
 val symbol_eq : symbol -> symbol -> bool
 
 (** Make/decompose a notation of the form "_ U _" *)
-val make_notation_key : symbol list -> notation
-val decompose_notation_key : notation -> symbol list
+val make_notation_key : notation_entry -> symbol list -> notation
+val decompose_notation_key : notation -> notation_entry * symbol list
 
 (** Decompose a notation of the form "a 'U' b" *)
 val decompose_raw_notation : string -> symbol list
@@ -187,10 +197,14 @@ val decompose_raw_notation : string -> symbol list
 val pr_scope_class : scope_class -> Pp.t
 val pr_scope : (glob_constr -> Pp.t) -> scope_name -> Pp.t
 val pr_scopes : (glob_constr -> Pp.t) -> Pp.t
-val locate_notation : (glob_constr -> Pp.t) -> notation ->
+val locate_notation : (glob_constr -> Pp.t) -> notation_key ->
       scope_name option -> Pp.t
 
 val pr_visibility: (glob_constr -> Pp.t) -> scope_name option -> Pp.t
+
+type entry_coercion = notation list
+val declare_entry_coercion : notation -> notation_entry -> unit
+val availability_of_entry_coercion : notation_entry -> notation_entry -> entry_coercion option
 
 (** Rem: printing rules for primitive token are canonical *)
 

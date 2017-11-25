@@ -98,7 +98,7 @@ let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
   let rec aux bdvars l c = match CAst.(c.v) with
     | CRef (qid,_) when qualid_is_ident qid ->
       found c.CAst.loc (qualid_basename qid) bdvars l
-    | CNotation ("{ _ : _ | _ }", ({ CAst.v = CRef (qid,_) } :: _, [], [], [])) when
+    | CNotation ((InConstrEntry,"{ _ : _ | _ }"), ({ CAst.v = CRef (qid,_) } :: _, [], [], [])) when
         qualid_is_ident qid && not (Id.Set.mem (qualid_basename qid) bdvars) ->
         Constrexpr_ops.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux (Id.Set.add (qualid_basename qid) bdvars) l c
     | _ -> Constrexpr_ops.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux bdvars l c

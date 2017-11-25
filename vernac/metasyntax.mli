@@ -60,3 +60,5 @@ val pr_grammar : string -> Pp.t
 val check_infix_modifiers : syntax_modifier list -> unit
 
 val with_syntax_protection : ('a -> 'b) -> 'a -> 'b
+
+val declare_custom_entry : string -> unit

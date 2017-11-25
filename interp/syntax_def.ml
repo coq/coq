@@ -77,8 +77,8 @@ type syndef_interpretation = (Id.t * subscopes) list * notation_constr
 
 (* Coercions to the general format of notation that also supports
    variables bound to list of expressions *)
-let in_pat (ids,ac) = (List.map (fun (id,sc) -> (id,(sc,NtnTypeConstr))) ids,ac)
-let out_pat (ids,ac) = (List.map (fun (id,(sc,typ)) -> (id,sc)) ids,ac)
+let in_pat (ids,ac) = (List.map (fun (id,sc) -> (id,((Constrexpr.InConstrEntry,sc),NtnTypeConstr))) ids,ac)
+let out_pat (ids,ac) = (List.map (fun (id,((_,sc),typ)) -> (id,sc)) ids,ac)
 
 let declare_syntactic_definition local id onlyparse pat =
   let _ = add_leaf id (in_syntax_constant (local,in_pat pat,onlyparse)) in ()

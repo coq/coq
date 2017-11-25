@@ -218,8 +218,8 @@ let interp_search_notation ?loc tag okey =
          (Bytes.set s' i' '_'; loop (j + 1) (i' + 2))
       else (String.blit s i s' i' m; loop (j + 1) (i' + m + 1)) in
     loop 0 1 in
-  let trim_ntn (pntn, m) = Bytes.sub_string pntn 1 (max 0 m) in
-  let pr_ntn ntn = str "(" ++ str ntn ++ str ")" in
+  let trim_ntn (pntn, m) = (InConstrEntry,Bytes.sub_string pntn 1 (max 0 m)) in
+  let pr_ntn ntn = str "(" ++ Notation.pr_notation ntn ++ str ")" in
   let pr_and_list pr = function
     | [x] -> pr x
     | x :: lx -> pr_list pr_comma pr lx ++ pr_comma () ++ str "and " ++ pr x
@@ -294,7 +294,7 @@ let interp_search_notation ?loc tag okey =
     let scs' = List.remove (=) sc !scs in
     let w = pr_ntn ntn ++ str " is also defined " ++ pr_scs scs' in
     Feedback.msg_warning (hov 4 w)
-  else if String.string_contains ~where:ntn ~what:" .. " then
+  else if String.string_contains ~where:(snd ntn) ~what:" .. " then
     err (pr_ntn ntn ++ str " is an n-ary notation");
   let nvars = List.filter (fun (_,(_,typ)) -> typ = NtnTypeConstr) nvars in
   let rec sub () = function

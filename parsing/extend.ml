@@ -38,10 +38,9 @@ type 'a constr_entry_key_gen =
   | ETReference
   | ETBigint
   | ETBinder of bool  (* open list of binders if true, closed list of binders otherwise *)
-  | ETConstr of 'a
-  | ETConstrAsBinder of Notation_term.constr_as_binder_kind * 'a
+  | ETConstr of Constrexpr.notation_entry * 'a
+  | ETConstrAsBinder of Constrexpr.notation_entry * Notation_term.constr_as_binder_kind * 'a
   | ETPattern of bool * int option (* true = strict pattern, i.e. not a single variable *)
-  | ETOther of string * string
 
 (** Entries level (left-hand side of grammar rules) *)
 
@@ -63,9 +62,8 @@ type constr_prod_entry_key =
   | ETProdName            (* Parsed as a name (ident or _) *)
   | ETProdReference       (* Parsed as a global reference *)
   | ETProdBigint          (* Parsed as an (unbounded) integer *)
-  | ETProdConstr of (production_level * production_position) (* Parsed as constr or pattern *)
+  | ETProdConstr of Constrexpr.notation_entry * (production_level * production_position) (* Parsed as constr or pattern, or a subentry of those *)
   | ETProdPattern of int  (* Parsed as pattern as a binder (as subpart of a constr) *)
-  | ETProdOther of string * string (* Intended for embedding custom entries in constr or pattern *)
   | ETProdConstrList of (production_level * production_position) * Tok.t list (* Parsed as non-empty list of constr *)
   | ETProdBinderList of binder_entry_kind  (* Parsed as non-empty list of local binders *)
 
