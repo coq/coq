@@ -475,13 +475,17 @@ let declare_definition prg =
     (Evd.evar_universe_context_subst prg.prg_ctx) in
   let opaque = prg.prg_opaque in
   let fix_exn = Hook.get get_fix_exn () in
-  let univs = UState.check_univ_decl ~poly:(pi2 prg.prg_kind) prg.prg_ctx prg.prg_univdecl in
-  let ce = definition_entry ~fix_exn ~opaque ~types:(nf typ) ~univs (nf body) in
+  let typ = nf typ in
+  let body = nf body in
+  let uvars = Univ.LSet.union (Univops.universes_of_constr typ) (Univops.universes_of_constr body) in
+  let uctx = UState.restrict prg.prg_ctx uvars in
+  let univs = UState.check_univ_decl ~poly:(pi2 prg.prg_kind) uctx prg.prg_univdecl in
+  let ce = definition_entry ~fix_exn ~opaque ~types:typ ~univs body in
   let () = progmap_remove prg in
-  let ubinders = UState.universe_binders prg.prg_ctx in
+  let ubinders = UState.universe_binders uctx in
   DeclareDef.declare_definition prg.prg_name
     prg.prg_kind ce ubinders prg.prg_implicits
-    (Lemmas.mk_hook (fun l r -> Lemmas.call_hook fix_exn prg.prg_hook l r prg.prg_ctx; r))
+    (Lemmas.mk_hook (fun l r -> Lemmas.call_hook fix_exn prg.prg_hook l r uctx; r))
 
 let rec lam_index n t acc =
   match Constr.kind t with
