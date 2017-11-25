@@ -60,6 +60,8 @@ type tmp_scope_name = scope_name
 
 type subscopes = tmp_scope_name option * scope_name list
 
+type extended_subscopes = Constrexpr.notation_entry * subscopes
+
 (** Type of the meta-variables of an notation_constr: in a recursive pattern x..y,
     x carries the sequence of objects bound to the list x..y  *)
 
@@ -83,7 +85,7 @@ type notation_var_internalization_type =
 
 (** This characterizes to what a notation is interpreted to *)
 type interpretation =
-    (Id.t * (subscopes * notation_var_instance_type)) list *
+    (Id.t * (extended_subscopes * notation_var_instance_type)) list *
     notation_constr
 
 type reversibility_status = APrioriReversible | HasLtac | NonInjective of Id.t list
@@ -107,7 +109,8 @@ type precedence = int
 type parenRelation = L | E | Any | Prec of precedence
 type tolerability = precedence * parenRelation
 
-type level = precedence * tolerability list * Extend.constr_entry_key list
+type level = Constrexpr.notation_entry * precedence * tolerability list * Extend.constr_entry_key list
+  (* first argument is InCustomEntry s for custom entries *)
 
 (** Grammar rules for a notation *)
 

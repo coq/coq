@@ -79,7 +79,7 @@ let rec cases_pattern_expr_eq p1 p2 =
   | CPatOr a1, CPatOr a2 ->
     List.equal cases_pattern_expr_eq a1 a2
   | CPatNotation (n1, s1, l1), CPatNotation (n2, s2, l2) ->
-    String.equal n1 n2 &&
+    Notation.notation_eq n1 n2 &&
     cases_pattern_notation_substitution_eq s1 s2 &&
     List.equal cases_pattern_expr_eq l1 l2
   | CPatPrim i1, CPatPrim i2 ->
@@ -164,7 +164,7 @@ let rec constr_expr_eq e1 e2 =
   | CCast(t1,c1), CCast(t2,c2) ->
     constr_expr_eq t1 t2 && cast_expr_eq c1 c2
     | CNotation(n1, s1), CNotation(n2, s2) ->
-      String.equal n1 n2 &&
+      Notation.notation_eq n1 n2 &&
       constr_notation_substitution_eq s1 s2
     | CPrim i1, CPrim i2 ->
       prim_token_eq i1 i2

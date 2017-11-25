@@ -54,6 +54,17 @@ let default_pattern_levels =
 
 let default_constr_levels = (default_levels, default_pattern_levels)
 
+let find_levels levels = function
+  | InConstrEntry -> levels, String.Map.find "constr" levels
+  | InCustomEntry s ->
+     try levels, String.Map.find s levels
+     with Not_found ->
+     String.Map.add s ([],[]) levels, ([],[])
+
+let save_levels levels custom lev =
+  let s = match custom with InConstrEntry -> "constr" | InCustomEntry s -> s in
+  String.Map.add s lev levels
+
 (* At a same level, LeftA takes precedence over RightA and NoneA *)
 (* In case, several associativity exists for a level, we make two levels, *)
 (* first LeftA, then RightA and NoneA together *)
@@ -125,24 +136,24 @@ let rec list_mem_assoc_triple x = function
 let register_empty_levels accu forpat levels =
   let rec filter accu = function
   | [] -> ([], accu)
-  | n :: rem ->
+  | (where,n) :: rem ->
     let rem, accu = filter accu rem in
-    let (clev, plev) = accu in
+    let accu, (clev, plev) = find_levels accu where in
     let levels = if forpat then plev else clev in
     if not (list_mem_assoc_triple n levels) then
       let nlev, ans = find_position_gen levels true None (Some n) in
       let nlev = if forpat then (clev, nlev) else (nlev, plev) in
-      ans :: rem, nlev
+      (where, ans) :: rem, save_levels accu where nlev
     else rem, accu
   in
   filter accu levels
 
-let find_position accu forpat assoc level =
-  let (clev, plev) = accu in
+let find_position accu custom forpat assoc level =
+  let accu, (clev, plev) = find_levels accu custom in
   let levels = if forpat then plev else clev in
   let nlev, ans = find_position_gen levels false assoc level in
   let nlev = if forpat then (clev, nlev) else (nlev, plev) in
-  (ans, nlev)
+  (ans, save_levels accu custom nlev)
 
 (**************************************************************************)
 (*
@@ -231,7 +242,7 @@ type (_, _) entry =
 | TTName : ('self, Misctypes.lname) entry
 | TTReference : ('self, reference) entry
 | TTBigint : ('self, Constrexpr.raw_natural_number) entry
-| TTConstr : prod_info * 'r target -> ('r, 'r) entry
+| TTConstr : notation_entry * prod_info * 'r target -> ('r, 'r) entry
 | TTConstrList : prod_info * Tok.t list * 'r target -> ('r, 'r list) entry
 | TTPattern : int -> ('self, cases_pattern_expr) entry
 | TTOpenBinderList : ('self, local_binder_expr list) entry
@@ -239,17 +250,51 @@ type (_, _) entry =
 
 type _ any_entry = TTAny : ('s, 'r) entry -> 's any_entry
 
+let register_custom_grammar s =
+  let sc = "constr:"^s in
+  let sp = "pattern:"^s in
+  let wit1 = Genarg.create_arg sc in
+  let wit2 = Genarg.create_arg sp in
+  let c = (Gram.entry_create sc : constr_expr Gram.entry) in
+  let p = (Gram.entry_create sp : cases_pattern_expr Gram.entry) in
+  register_grammar wit1 c;
+  register_grammar wit2 p;
+  register_grammars_by_name s [AnyEntry c; AnyEntry p];
+  (c,p)
+
+let find_custom_grammar s =
+ match find_grammars_by_name s with
+ | [AnyEntry c;AnyEntry p] -> (Obj.magic c, Obj.magic p)
+ | _ -> assert false
+
 (* This computes the name of the level where to add a new rule *)
-let interp_constr_entry_key : type r. r target -> int -> r Gram.entry * int option =
-  fun forpat level -> match forpat with
+let interp_constr_entry_key : type r. _ -> r target -> int -> r Gram.entry * int option =
+  fun custom forpat level ->
+  match custom with
+  | InCustomEntry s ->
+     (let (entry_for_constr,entry_for_patttern) =
+       try find_custom_grammar s with Not_found -> register_custom_grammar s in
+     match forpat with
+     | ForConstr -> entry_for_constr, Some level
+     | ForPattern -> entry_for_patttern, Some level)
+  | InConstrEntry ->
+  match forpat with
   | ForConstr ->
     if level = 200 then Constr.binder_constr, None
     else Constr.operconstr, Some level
   | ForPattern -> Constr.pattern, Some level
 
-let target_entry : type s. s target -> s Gram.entry = function
-| ForConstr -> Constr.operconstr
-| ForPattern -> Constr.pattern
+let target_entry : type s. notation_entry -> s target -> s Gram.entry = function
+| InConstrEntry ->
+   (function
+   | ForConstr -> Constr.operconstr
+   | ForPattern -> Constr.pattern)
+| InCustomEntry s ->
+   let (entry_for_constr,entry_for_patttern) =
+     try find_custom_grammar s with Not_found -> register_custom_grammar s in
+   function
+   | ForConstr -> entry_for_constr
+   | ForPattern -> entry_for_patttern
 
 let is_self from e = match e with
 | (NumLevel n, BorderProd (Right, _ (* Some(NonA|LeftA) *))) -> false
@@ -273,11 +318,11 @@ let make_sep_rules = function
   let r = mkrule (List.rev tkl) in
   Arules [r]
 
-let symbol_of_target : type s. _ -> _ -> _ -> s target -> (s, s) symbol = fun p assoc from forpat ->
-  if is_binder_level from p then Aentryl (target_entry forpat, 200)
+let symbol_of_target : type s. _ -> _ -> _ -> _ -> s target -> (s, s) symbol = fun custom p assoc from forpat ->
+  if custom = InConstrEntry && is_binder_level from p then Aentryl (target_entry InConstrEntry forpat, 200)
   else if is_self from p then Aself
   else
-    let g = target_entry forpat in
+    let g = target_entry custom forpat in
     let lev = adjust_level assoc from p in
     begin match lev with
     | None -> Aentry g
@@ -286,11 +331,11 @@ let symbol_of_target : type s. _ -> _ -> _ -> s target -> (s, s) symbol = fun p 
     end
 
 let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) symbol = fun assoc from typ -> match typ with
-| TTConstr (p, forpat) -> symbol_of_target p assoc from forpat
+| TTConstr (s, p, forpat) -> symbol_of_target s p assoc from forpat
 | TTConstrList (typ', [], forpat) ->
-  Alist1 (symbol_of_target typ' assoc from forpat)
+  Alist1 (symbol_of_target InConstrEntry typ' assoc from forpat)
 | TTConstrList (typ', tkl, forpat) ->
-  Alist1sep (symbol_of_target typ' assoc from forpat, make_sep_rules tkl)
+  Alist1sep (symbol_of_target InConstrEntry typ' assoc from forpat, make_sep_rules tkl)
 | TTPattern p -> Aentryl (Constr.pattern, p)
 | TTClosedBinderList [] -> Alist1 (Aentry Constr.binder)
 | TTClosedBinderList tkl -> Alist1sep (Aentry Constr.binder, make_sep_rules tkl)
@@ -303,9 +348,8 @@ let interp_entry forpat e = match e with
 | ETProdName -> TTAny TTName
 | ETProdReference -> TTAny TTReference
 | ETProdBigint -> TTAny TTBigint
-| ETProdConstr p -> TTAny (TTConstr (p, forpat))
+| ETProdConstr (s,p) -> TTAny (TTConstr (s, p, forpat))
 | ETProdPattern p -> TTAny (TTPattern p)
-| ETProdOther _ -> assert false (** not used *)
 | ETProdConstrList (p, tkl) -> TTAny (TTConstrList (p, tkl, forpat))
 | ETProdBinderList ETBinderOpen -> TTAny TTOpenBinderList
 | ETProdBinderList (ETBinderClosed tkl) -> TTAny (TTClosedBinderList tkl)
@@ -420,20 +464,23 @@ let target_to_bool : type r. r target -> bool = function
 | ForConstr -> false
 | ForPattern -> true
 
-let prepare_empty_levels forpat (pos,p4assoc,name,reinit) =
+let prepare_empty_levels forpat (where,(pos,p4assoc,name,reinit)) =
   let empty = (pos, [(name, p4assoc, [])]) in
-  if forpat then ExtendRule (Constr.pattern, reinit, empty)
-  else ExtendRule (Constr.operconstr, reinit, empty)
+  ExtendRule (target_entry where forpat, reinit, empty)
 
-let rec pure_sublevels : type a b c. int option -> (a, b, c) rule -> int list = fun level r -> match r with
-| Stop -> []
-| Next (rem, Aentryl (_, i)) ->
-  let rem = pure_sublevels level rem in
-  begin match level with
-  | Some j when Int.equal i j -> rem
-  | _ -> i :: rem
-  end
-| Next (rem, _) -> pure_sublevels level rem
+let rec pure_sublevels' custom assoc from forpat level = function
+| [] -> []
+| GramConstrNonTerminal (e,_) :: rem ->
+   let rem = pure_sublevels' custom assoc from forpat level rem in
+   let push where p rem =
+     match symbol_of_target custom p assoc from forpat with
+     | Aentryl (_,i) when level <> Some i -> (where,i) :: rem
+     | _ -> rem in
+   (match e with
+   | ETProdPattern i -> push InConstrEntry (NumLevel i,InternalProd) rem
+   | ETProdConstr (s,p) -> push s p rem
+   | _ -> rem)
+| (GramConstrTerminal _ | GramConstrListMark _) :: rem -> pure_sublevels' custom assoc from forpat level rem
 
 let make_act : type r. r target -> _ -> r gen_eval = function
 | ForConstr -> fun notation loc env ->
@@ -444,17 +491,17 @@ let make_act : type r. r target -> _ -> r gen_eval = function
   CAst.make ~loc @@ CPatNotation (notation, env, [])
 
 let extend_constr state forpat ng =
-  let n,_,_ = ng.notgram_level in
+  let custom,n,_,_ = ng.notgram_level in
   let assoc = ng.notgram_assoc in
-  let (entry, level) = interp_constr_entry_key forpat n in
+  let (entry, level) = interp_constr_entry_key custom forpat n in
   let fold (accu, state) pt =
     let AnyTyRule r = make_ty_rule assoc n forpat pt in
     let symbs = ty_erase r in
-    let pure_sublevels = pure_sublevels level symbs in
+    let pure_sublevels = pure_sublevels' custom assoc n forpat level pt in
     let isforpat = target_to_bool forpat in
     let needed_levels, state = register_empty_levels state isforpat pure_sublevels in
-    let (pos,p4assoc,name,reinit), state = find_position state isforpat assoc level in
-    let empty_rules = List.map (prepare_empty_levels isforpat) needed_levels in
+    let (pos,p4assoc,name,reinit), state = find_position state custom isforpat assoc level in
+    let empty_rules = List.map (prepare_empty_levels forpat) needed_levels in
     let empty = { constrs = []; constrlists = []; binders = []; binderlists = [] } in
     let act = ty_eval r (make_act forpat ng.notgram_notation) empty in
     let rule = (name, p4assoc, [Rule (symbs, act)]) in
@@ -467,7 +514,7 @@ let constr_levels = GramState.field ()
 
 let extend_constr_notation ng state =
   let levels = match GramState.get state constr_levels with
-  | None -> default_constr_levels
+  | None -> String.Map.add "constr" default_constr_levels String.Map.empty
   | Some lev -> lev
   in
   (* Add the notation in constr *)

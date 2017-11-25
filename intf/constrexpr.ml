@@ -22,7 +22,9 @@ type universe_decl_expr = (lident list, glob_constraint list) gen_universe_decl
 type ident_decl = lident * universe_decl_expr option
 type name_decl = lname * universe_decl_expr option
 
-type notation = string
+type notation_entry = InConstrEntry | InCustomEntry of string
+type notation_key = string
+type notation = notation_entry * notation_key
 
 type explicitation =
   | ExplByPos of int * Id.t option (* a reference to the n-th product starting from left *)

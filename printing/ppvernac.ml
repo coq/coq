@@ -97,6 +97,10 @@ open Decl_kinds
   let sep = fun _ -> spc()
   let sep_v2 = fun _ -> str"," ++ spc()
 
+  let pr_notation_entry = function
+    | InConstrEntry -> keyword "constr"
+    | InCustomEntry s -> keyword "custom" ++ spc () ++ str s
+
   let pr_at_level = function
     | NumLevel n -> keyword "at" ++ spc () ++ keyword "level" ++ spc () ++ int n
     | NextLevel -> keyword "at" ++ spc () ++ keyword "next" ++ spc () ++ keyword "level"
@@ -113,9 +117,8 @@ open Decl_kinds
     | ETReference -> str"global"
     | ETPattern (b,None) -> pr_strict b ++ str"pattern"
     | ETPattern (b,Some n) -> pr_strict b ++ str"pattern" ++ spc () ++ pr_at_level (NumLevel n)
-    | ETConstr lev -> str"constr" ++ pr lev
-    | ETOther (_,e) -> str e
-    | ETConstrAsBinder (bk,lev) -> pr lev ++ spc () ++ pr_constr_as_binder_kind bk
+    | ETConstr (s,lev) -> pr_notation_entry s ++ pr lev
+    | ETConstrAsBinder (e,bk,lev) -> pr_notation_entry e ++ pr lev ++ spc () ++ pr_constr_as_binder_kind bk
     | ETBigint -> str "bigint"
     | ETBinder true -> str "binder"
     | ETBinder false -> str "closed binder"
@@ -389,6 +392,7 @@ open Decl_kinds
       prlist_with_sep sep_v2 str l ++
       spc() ++ pr_at_level_opt n ++ spc() ++ pr_constr_as_binder_kind bk
     | SetLevel n -> pr_at_level (NumLevel n)
+    | SetCustomEntry s -> keyword "in" ++ spc() ++ keyword "custom" ++ spc() ++ str s
     | SetAssoc LeftA -> keyword "left associativity"
     | SetAssoc RightA -> keyword "right associativity"
     | SetAssoc NonA -> keyword "no associativity"
