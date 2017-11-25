@@ -214,9 +214,9 @@ val interp_notation : ?loc:Loc.t -> notation -> subscopes ->
 type notation_rule = interp_rule * interpretation * int option
 
 (** Return the possible notations for a given term *)
-val uninterp_notations : 'a glob_constr_g -> notation_rule list
-val uninterp_cases_pattern_notations : 'a cases_pattern_g -> notation_rule list
-val uninterp_ind_pattern_notations : inductive -> notation_rule list
+val uninterp_notations : subscopes -> 'a glob_constr_g -> notation_rule list
+val uninterp_cases_pattern_notations : subscopes -> 'a cases_pattern_g -> notation_rule list
+val uninterp_ind_pattern_notations : subscopes -> inductive -> notation_rule list
 
 (** Test if a notation is available in the scopes 
    context [scopes]; if available, the result is not None; the first 

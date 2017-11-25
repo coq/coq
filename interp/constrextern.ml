@@ -388,7 +388,7 @@ let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
     try
       if !Flags.in_debugger || !Flags.raw_print || !print_no_symbol then raise No_match;
       extern_notation_pattern allscopes vars pat
-        (uninterp_cases_pattern_notations pat)
+        (uninterp_cases_pattern_notations scopes pat)
     with No_match ->
     let loc = pat.CAst.loc in
     match DAst.get pat with
@@ -530,7 +530,7 @@ let extern_ind_pattern_in_scope (custom,scopes as allscopes) vars ind args =
     try
       if !Flags.raw_print || !print_no_symbol then raise No_match;
       extern_notation_ind_pattern allscopes vars ind args
-          (uninterp_ind_pattern_notations ind)
+          (uninterp_ind_pattern_notations scopes ind)
     with No_match ->
       let c = extern_reference vars (IndRef ind) in
       let args = List.map (extern_cases_pattern_in_scope allscopes vars) args in
@@ -760,32 +760,32 @@ let extern_ref vars ref us =
 
 let extern_var ?loc id = CRef (qualid_of_ident ?loc id,None)
 
-let rec extern inctx scopes vars r =
+let rec extern inctx (custom,scopes as allscopes) vars r =
   let r' = remove_coercions inctx r in
   try
     if !Flags.raw_print || !print_no_symbol then raise No_match;
-    extern_optimal (extern_possible_prim_token scopes) r r'
+    extern_optimal (extern_possible_prim_token allscopes) r r'
   with No_match ->
   try
     let r'' = flatten_application r' in
     if !Flags.raw_print || !print_no_symbol then raise No_match;
     extern_optimal
-      (fun r -> extern_notation scopes vars r (uninterp_notations r))
+      (fun r -> extern_notation allscopes vars r (uninterp_notations scopes r))
       r r''
   with No_match ->
   let loc = r'.CAst.loc in
   match DAst.get r' with
-  | GRef (ref,us) when entry_has_global (fst scopes) -> CAst.make ?loc (extern_ref vars ref us)
+  | GRef (ref,us) when entry_has_global custom -> CAst.make ?loc (extern_ref vars ref us)
 
-  | GVar id when entry_has_ident (fst scopes) -> CAst.make ?loc (extern_var ?loc id)
+  | GVar id when entry_has_ident custom -> CAst.make ?loc (extern_var ?loc id)
 
   | c ->
 
-  match availability_of_entry_coercion (fst scopes) InConstrEntrySomeLevel with
+  match availability_of_entry_coercion custom InConstrEntrySomeLevel with
   | None -> raise No_match
   | Some coercion ->
 
-  let scopes = (InConstrEntrySomeLevel, snd scopes) in
+  let scopes = (InConstrEntrySomeLevel, scopes) in
   let c = match c with
 
   (* The remaining cases are only for the constr entry *)
@@ -797,7 +797,7 @@ let rec extern inctx scopes vars r =
   | GEvar (n,[]) when !print_meta_as_hole -> CHole (None, IntroAnonymous, None)
 
   | GEvar (n,l) ->
-      extern_evar n (List.map (on_snd (extern false scopes vars)) l)
+      extern_evar n (List.map (on_snd (extern false allscopes vars)) l)
 
   | GPatVar kind ->
       if !print_meta_as_hole then CHole (None, IntroAnonymous, None) else
