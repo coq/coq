@@ -107,8 +107,8 @@ val occur_var_constr_expr : Id.t -> constr_expr -> bool
 
 val split_at_annot : local_binder_expr list -> lident option -> local_binder_expr list * local_binder_expr list
 
-val ntn_loc : ?loc:Loc.t -> constr_notation_substitution -> string -> (int * int) list
-val patntn_loc : ?loc:Loc.t -> cases_pattern_notation_substitution -> string -> (int * int) list
+val ntn_loc : ?loc:Loc.t -> constr_notation_substitution -> notation -> (int * int) list
+val patntn_loc : ?loc:Loc.t -> cases_pattern_notation_substitution -> notation -> (int * int) list
 
 (** For cases pattern parsing errors *)
 val error_invalid_pattern_notation : ?loc:Loc.t -> unit -> 'a

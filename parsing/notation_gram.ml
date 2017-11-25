@@ -17,7 +17,8 @@ type precedence = int
 type parenRelation = L | E | Any | Prec of precedence
 type tolerability = precedence * parenRelation
 
-type level = precedence * tolerability list * constr_entry_key list
+type level = Constrexpr.notation_entry * precedence * tolerability list * constr_entry_key list
+  (* first argument is InCustomEntry s for custom entries *)
 
 type grammar_constr_prod_item =
   | GramConstrTerminal of Tok.t
