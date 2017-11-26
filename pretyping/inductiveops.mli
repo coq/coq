@@ -28,8 +28,8 @@ val arities_of_constructors : env -> pinductive -> types array
     reasoning either with only recursively uniform parameters or with all
     parameters including the recursively non-uniform ones *)
 type inductive_family
-val make_ind_family : inductive puniverses * constr list -> inductive_family
-val dest_ind_family : inductive_family -> inductive puniverses * constr list
+val make_ind_family : inductive Univ.puniverses * constr list -> inductive_family
+val dest_ind_family : inductive_family -> inductive Univ.puniverses * constr list
 val map_ind_family : (constr -> constr) -> inductive_family -> inductive_family
 val liftn_inductive_family : int -> int -> inductive_family -> inductive_family
 val lift_inductive_family  : int -> inductive_family -> inductive_family
@@ -195,7 +195,7 @@ i*)
 (********************)
 
 val type_of_inductive_knowing_conclusion :
-  env -> evar_map -> Inductive.mind_specif puniverses -> EConstr.types -> evar_map * EConstr.types
+  env -> evar_map -> Inductive.mind_specif Univ.puniverses -> EConstr.types -> evar_map * EConstr.types
 
 (********************)
 val control_only_guard : env -> types -> unit

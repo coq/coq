@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Constr
 open EConstr
 open Evd
 open Environ
@@ -49,7 +48,7 @@ val refresh_universes :
   env -> evar_map -> types -> evar_map * types
 
 val solve_refl : ?can_drop:bool -> conv_fun_bool -> env ->  evar_map ->
-  bool option -> existential_key -> constr array -> constr array -> evar_map
+  bool option -> Evar.t -> constr array -> constr array -> evar_map
 
 val solve_evar_evar : ?force:bool ->
   (env -> evar_map -> bool option -> existential -> constr -> evar_map) ->
@@ -78,10 +77,10 @@ exception IllTypedInstance of env * types * types
 
 (* May raise IllTypedInstance if types are not convertible *)
 val check_evar_instance :
-  evar_map -> existential_key -> constr -> conv_fun -> evar_map
+  evar_map -> Evar.t -> constr -> conv_fun -> evar_map
 
 val remove_instance_local_defs :
-  evar_map -> existential_key -> 'a array -> 'a list
+  evar_map -> Evar.t -> 'a array -> 'a list
 
 val get_type_of_refresh : 
   ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> evar_map * types

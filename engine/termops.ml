@@ -205,8 +205,7 @@ let pr_evar_source = function
   | Evar_kinds.MatchingVar _ -> str "matching variable"
   | Evar_kinds.VarInstance id -> str "instance of " ++ Id.print id
   | Evar_kinds.SubEvar evk ->
-      let open Evd in
-      str "subterm of " ++ str (string_of_existential evk)
+    str "subterm of " ++ Evar.print evk
 
 let pr_evar_info evi =
   let open Evd in
@@ -356,7 +355,7 @@ let pr_evar_map_gen with_univs pr_evars sigma =
 let pr_evar_list sigma l =
   let open Evd in
   let pr (ev, evi) =
-    h 0 (str (string_of_existential ev) ++
+    h 0 (Evar.print ev ++
       str "==" ++ pr_evar_info evi ++
       (if evi.evar_body == Evar_empty
        then str " {" ++ pr_existential_key sigma ev ++ str "}"

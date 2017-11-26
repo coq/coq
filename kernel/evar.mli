@@ -30,5 +30,8 @@ val compare : t -> t -> int
 val hash : t -> int
 (** Hash over existential variables. *)
 
+val print : t -> Pp.t
+(** Printing representation *)
+
 module Set : Set.S with type elt = t
 module Map : CMap.ExtS with type key = t and module Set := Set

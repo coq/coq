@@ -129,7 +129,7 @@ val decompose_appvect : constr -> constr * constr array
 [@@ocaml.deprecated "Alias for [Constr.decompose_appvect]"]
 
 (** Destructs a constant *)
-val destConst : constr -> Constant.t puniverses
+val destConst : constr -> Constant.t Univ.puniverses
 [@@ocaml.deprecated "Alias for [Constr.destConst]"]
 
 (** Destructs an existential variable *)
@@ -137,11 +137,11 @@ val destEvar : constr -> existential
 [@@ocaml.deprecated "Alias for [Constr.destEvar]"]
 
 (** Destructs a (co)inductive type *)
-val destInd : constr -> inductive puniverses
+val destInd : constr -> inductive Univ.puniverses
 [@@ocaml.deprecated "Alias for [Constr.destInd]"]
 
 (** Destructs a constructor *)
-val destConstruct : constr -> constructor puniverses
+val destConstruct : constr -> constructor Univ.puniverses
 [@@ocaml.deprecated "Alias for [Constr.destConstruct]"]
 
 (** Destructs a [match c as x in I args return P with ... |
@@ -407,11 +407,11 @@ val mkInd : inductive -> constr
 [@@ocaml.deprecated "Alias for Constr"]
 val mkConstruct : constructor -> constr
 [@@ocaml.deprecated "Alias for Constr"]
-val mkConstU : Constant.t puniverses -> constr
+val mkConstU : Constant.t Univ.puniverses -> constr
 [@@ocaml.deprecated "Alias for Constr"]
-val mkIndU : inductive puniverses -> constr
+val mkIndU : inductive Univ.puniverses -> constr
 [@@ocaml.deprecated "Alias for Constr"]
-val mkConstructU : constructor puniverses -> constr
+val mkConstructU : constructor Univ.puniverses -> constr
 [@@ocaml.deprecated "Alias for Constr"]
 val mkConstructUi : (pinductive * int) -> constr
 [@@ocaml.deprecated "Alias for Constr"]
@@ -461,7 +461,7 @@ val map_constr_with_binders :
   ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
 [@@ocaml.deprecated "Alias for [Constr.map_with_binders]"]
 
-val map_puniverses : ('a -> 'b) -> 'a puniverses -> 'b puniverses
+val map_puniverses : ('a -> 'b) -> 'a Univ.puniverses -> 'b Univ.puniverses
 [@@ocaml.deprecated "Alias for [Constr.map_puniverses]"]
 val univ_of_sort : Sorts.t -> Univ.Universe.t
 [@@ocaml.deprecated "Alias for [Sorts.univ_of_sort]"]
@@ -497,7 +497,7 @@ type sorts = Sorts.t =
 type sorts_family = Sorts.family = InProp | InSet | InType
 [@@ocaml.deprecated "Alias for Sorts.family"]
 
-type 'a puniverses = 'a Constr.puniverses
+type 'a puniverses = 'a Univ.puniverses
 [@@ocaml.deprecated "Alias for Constr.puniverses"]
 
 (** Simply type aliases *)
@@ -507,8 +507,8 @@ type pinductive = Constr.pinductive
 [@@ocaml.deprecated "Alias for Constr.pinductive"]
 type pconstructor = Constr.pconstructor
 [@@ocaml.deprecated "Alias for Constr.pconstructor"]
-type existential_key = Constr.existential_key
-[@@ocaml.deprecated "Alias for Constr.existential_key"]
+type existential_key = Evar.t
+[@@ocaml.deprecated "Alias for Evar.t"]
 type existential = Constr.existential
 [@@ocaml.deprecated "Alias for Constr.existential"]
 type metavariable = Constr.metavariable

@@ -155,7 +155,7 @@ let evar_dependencies evm oev =
       let evi = Evd.find evm ev in
       let deps' = evars_of_filtered_evar_info evi in
       if Evar.Set.mem oev deps' then
-	invalid_arg ("Ill-formed evar map: cycle detected for evar " ^ string_of_existential oev)
+        invalid_arg ("Ill-formed evar map: cycle detected for evar " ^ Pp.string_of_ppcmds @@ Evar.print oev)
       else Evar.Set.union deps' s)
       deps deps
   in
@@ -164,7 +164,7 @@ let evar_dependencies evm oev =
       if Evar.Set.equal deps deps' then deps
       else aux deps'
   in aux (Evar.Set.singleton oev)
-      
+
 let move_after (id, ev, deps as obl) l = 
   let rec aux restdeps = function
     | (id', _, _) as obl' :: tl -> 

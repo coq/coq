@@ -223,7 +223,7 @@ let interp_level_info ?loc evd : Misctypes.level_info -> _ = function
   | None -> new_univ_level_variable ?loc univ_rigid evd
   | Some (loc,s) -> interp_universe_level_name ~anon_rigidity:univ_flexible evd (Loc.tag ?loc s)
 
-type inference_hook = env -> evar_map -> evar -> evar_map * constr
+type inference_hook = env -> evar_map -> Evar.t -> evar_map * constr
 
 type inference_flags = {
   use_typeclasses : bool;

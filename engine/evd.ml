@@ -127,7 +127,7 @@ end
 
 module Store = Store.Make ()
 
-type evar = existential_key
+type evar = Evar.t
 
 let string_of_existential evk = "?X" ^ string_of_int (Evar.repr evk)
 
@@ -371,7 +371,7 @@ val key : Id.t -> t -> Evar.t
 end =
 struct
 
-type t = Id.t EvMap.t * existential_key Id.Map.t
+type t = Id.t EvMap.t * Evar.t Id.Map.t
 
 let empty = (EvMap.empty, Id.Map.empty)
 

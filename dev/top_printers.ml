@@ -18,7 +18,6 @@ open Univ
 open Environ
 open Printer
 open Constr
-open Evd
 open Goptions
 open Genarg
 open Clenv
@@ -62,7 +61,7 @@ let ppwf_paths x = pp (Rtree.pp_tree pprecarg x)
 (* term printers *)
 let envpp pp = let sigma,env = Pfedit.get_current_context () in pp env sigma
 let rawdebug = ref false
-let ppevar evk = pp (str (Evd.string_of_existential evk))
+let ppevar evk = pp (Evar.print evk)
 let ppconstr x = pp (Termops.print_constr (EConstr.of_constr x))
 let ppeconstr x = pp (Termops.print_constr x)
 let ppconstr_expr x = pp (Ppconstr.pr_constr_expr x)
@@ -263,7 +262,7 @@ let constr_display csr =
       "LetIn("^(name_display na)^","^(term_display b)^","
       ^(term_display t)^","^(term_display c)^")"
   | App (c,l) -> "App("^(term_display c)^","^(array_display l)^")\n"
-  | Evar (e,l) -> "Evar("^(string_of_existential e)^","^(array_display l)^")"
+  | Evar (e,l) -> "Evar("^(Pp.string_of_ppcmds (Evar.print e))^","^(array_display l)^")"
   | Const (c,u) -> "Const("^(Constant.to_string c)^","^(universes_display u)^")"
   | Ind ((sp,i),u) ->
       "MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^","^(universes_display u)^")"

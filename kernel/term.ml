@@ -31,7 +31,7 @@ type constr = Constr.t
 type types = Constr.t
 (** Same as [constr], for documentation purposes. *)
 
-type existential_key = Constr.existential_key
+type existential_key = Evar.t
 type existential = Constr.existential
 
 type metavariable = Constr.metavariable

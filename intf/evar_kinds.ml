@@ -32,4 +32,4 @@ type t =
   | ImpossibleCase
   | MatchingVar of matching_var_kind
   | VarInstance of Id.t
-  | SubEvar of Constr.existential_key
+  | SubEvar of Evar.t

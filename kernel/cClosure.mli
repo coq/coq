@@ -92,7 +92,7 @@ val unfold_side_red : reds
 val unfold_red : evaluable_global_reference -> reds
 
 (***********************************************************************)
-type table_key = Constant.t puniverses tableKey
+type table_key = Constant.t Univ.puniverses tableKey
 
 type 'a infos_cache
 type 'a infos = {
@@ -122,8 +122,8 @@ type fterm =
   | FAtom of constr (** Metas and Sorts *)
   | FCast of fconstr * cast_kind * fconstr
   | FFlex of table_key
-  | FInd of inductive puniverses
-  | FConstruct of constructor puniverses
+  | FInd of inductive Univ.puniverses
+  | FConstruct of constructor Univ.puniverses
   | FApp of fconstr * fconstr array
   | FProj of projection * fconstr
   | FFix of fixpoint * fconstr subs

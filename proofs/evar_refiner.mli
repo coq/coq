@@ -14,5 +14,5 @@ open Ltac_pretype
 
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
 
-val w_refine : evar * evar_info ->
+val w_refine : Evar.t * evar_info ->
   glob_constr_ltac_closure -> evar_map -> evar_map

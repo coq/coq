@@ -7,20 +7,19 @@
 (************************************************************************)
 
 open Names
-open Constr
 open Environ
 open EConstr
 open Type_errors
 
 type unification_error =
-  | OccurCheck of existential_key * constr
+  | OccurCheck of Evar.t * constr
   | NotClean of existential * env * constr (* Constr is a variable not in scope *)
   | NotSameArgSize
   | NotSameHead
   | NoCanonicalStructure
   | ConversionFailed of env * constr * constr (* Non convertible closed terms *)
-  | MetaOccurInBody of existential_key
-  | InstanceNotSameType of existential_key * env * types * types
+  | MetaOccurInBody of Evar.t
+  | InstanceNotSameType of Evar.t * env * types * types
   | UnifUnivInconsistency of Univ.univ_inconsistency
   | CannotSolveConstraint of Evd.evar_constraint * unification_error
   | ProblemBeyondCapabilities
@@ -39,8 +38,8 @@ type pretype_error =
   (* Type inference unification *)
   | ActualTypeNotCoercible of unsafe_judgment * types * unification_error
   (* Tactic unification *)
-  | UnifOccurCheck of existential_key * constr
-  | UnsolvableImplicit of existential_key * Evd.unsolvability_explanation option
+  | UnifOccurCheck of Evar.t * constr
+  | UnsolvableImplicit of Evar.t * Evd.unsolvability_explanation option
   | CannotUnify of constr * constr * unification_error option
   | CannotUnifyLocal of constr * constr * constr
   | CannotUnifyBindingType of constr * constr
@@ -57,7 +56,7 @@ type pretype_error =
   | TypingError of type_error
   | CannotUnifyOccurrences of subterm_unification_error
   | UnsatisfiableConstraints of
-    (existential_key * Evar_kinds.t) option * Evar.Set.t option
+    (Evar.t * Evar_kinds.t) option * Evar.Set.t option
 
 exception PretypeError of env * Evd.evar_map * pretype_error
 

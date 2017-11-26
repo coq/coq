@@ -491,6 +491,8 @@ sig
 
   val equal : t -> t -> bool
 
+  val print : t -> Pp.t
+
   (** a set of unique identifiers of some {i evars} *)
   module Set : Set.S with type elt = t
   module Map : CMap.ExtS with type key = t and module Set := Set
@@ -516,12 +518,16 @@ sig
   type metavariable = int
 
   type existential_key = Evar.t
-  type 'constr pexistential = existential_key * 'constr array
+  [@@ocaml.deprecated "use Evar.t"]
+
+  type 'constr pexistential = Evar.t * 'constr array
 
   type 'a puniverses = 'a Univ.puniverses
-  type pconstant = Constant.t puniverses
-  type pinductive = inductive puniverses
-  type pconstructor = constructor puniverses
+  [@@ocaml.deprecated "use Univ.puniverses"]
+
+  type pconstant = Constant.t Univ.puniverses
+  type pinductive = inductive Univ.puniverses
+  type pconstructor = constructor Univ.puniverses
 
   type ('constr, 'types) prec_declaration =
     Name.t array * 'types array * 'constr array
@@ -594,7 +600,7 @@ sig
   val mkRel : int -> t
   val mkVar : Id.t -> t
   val mkMeta : metavariable -> t
-  type existential = existential_key * constr array
+  type existential = Evar.t * constr array
   val mkEvar : existential -> t
   val mkSort : Sorts.t -> t
   val mkProp : t
@@ -605,7 +611,7 @@ sig
   val mkLambda : Name.t * types * t -> t
   val mkLetIn : Name.t * t * types * t -> t
   val mkApp : t * t array -> t
-  val map_puniverses : ('a -> 'b) -> 'a puniverses -> 'b puniverses
+  val map_puniverses : ('a -> 'b) -> 'a Univ.puniverses -> 'b Univ.puniverses
 
   type rec_declaration = Name.t array * types array * constr array
   type fixpoint = (int array * int) * rec_declaration
@@ -695,16 +701,16 @@ sig
   val decompose_appvect : constr -> constr * constr array
 
   (** Destructs a constant *)
-  val destConst : constr -> Constant.t puniverses
+  val destConst : constr -> Constant.t Univ.puniverses
 
   (** Destructs an existential variable *)
   val destEvar : constr -> existential
 
   (** Destructs a (co)inductive type *)
-  val destInd : constr -> inductive puniverses
+  val destInd : constr -> inductive Univ.puniverses
 
   (** Destructs a constructor *)
-  val destConstruct : constr -> constructor puniverses
+  val destConstruct : constr -> constructor Univ.puniverses
 
   (** Destructs a [match c as x in I args return P with ... |
       Ci(...yij...) => ti | ... end] (or [let (..y1i..) := c as x in I args
@@ -988,11 +994,11 @@ sig
 
   type 'a puniverses = 'a Univ.puniverses
   [@@ocaml.deprecated "Alias of Constr.puniverses"]
-  type pconstant = Names.Constant.t Constr.puniverses
+  type pconstant = Names.Constant.t Univ.puniverses
   [@@ocaml.deprecated "Alias of Constr.pconstant"]
-  type pinductive = Names.inductive Constr.puniverses
+  type pinductive = Names.inductive Univ.puniverses
   [@@ocaml.deprecated "Alias of Constr.pinductive"]
-  type pconstructor = Names.constructor Constr.puniverses
+  type pconstructor = Names.constructor Univ.puniverses
   [@@ocaml.deprecated "Alias of Constr.pconstructor"]
   type case_style = Constr.case_style =
     | LetStyle
@@ -1045,7 +1051,7 @@ sig
      | CoFix     of ('constr, 'types) Constr.pcofixpoint
      | Proj      of Names.Projection.t * 'constr
   [@@ocaml.deprecated "Alias of Constr.kind_of_term"]
-  type existential = Constr.existential_key * Constr.constr array
+  type existential = Evar.t * Constr.constr array
   [@@ocaml.deprecated "Alias of Constr.existential"]
   type rec_declaration = Names.Name.t array * Constr.constr array * Constr.constr array
   [@@ocaml.deprecated "Alias of Constr.rec_declaration"]
@@ -1093,7 +1099,7 @@ sig
   [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkConstruct : Names.constructor -> constr
   [@@ocaml.deprecated "Alias of similarly named Constr function"]
-  val mkConstructU : Names.constructor Constr.puniverses -> constr
+  val mkConstructU : Names.constructor Univ.puniverses -> constr
   [@@ocaml.deprecated "Alias of similarly named Constr function"]
   val mkConstructUi : (Constr.pinductive * int) -> constr
   [@@ocaml.deprecated "Alias of similarly named Constr function"]
@@ -1135,7 +1141,7 @@ sig
   [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val destRel : constr -> int
   [@@ocaml.deprecated "Alias for the function in [Constr]"]
-  val destConst : constr -> Names.Constant.t Constr.puniverses
+  val destConst : constr -> Names.Constant.t Univ.puniverses
   [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val destCast : constr -> constr * Constr.cast_kind * constr
   [@@ocaml.deprecated "Alias for the function in [Constr]"]
@@ -1208,7 +1214,7 @@ sig
   val is_prop_sort : Sorts.t -> bool
   [@@ocaml.deprecated "alias of API.Sorts.is_prop"]
 
-  type existential_key = Constr.existential_key
+  type existential_key = Evar.t
   [@@ocaml.deprecated "Alias of Constr.existential_key"]
 
   val family_of_sort : Sorts.t -> Sorts.family
@@ -1220,7 +1226,7 @@ sig
   val constr_ord : constr -> constr -> int
   [@@ocaml.deprecated "alias of Term.compare"]
 
-  val destInd : constr -> Names.inductive Constr.puniverses
+  val destInd : constr -> Names.inductive Univ.puniverses
   [@@ocaml.deprecated "Alias for the function in [Constr]"]
   val univ_of_sort : Sorts.t -> Univ.Universe.t
   [@@ocaml.deprecated "Alias for the function in [Constr]"]
@@ -2186,7 +2192,7 @@ sig
          | ImpossibleCase
          | MatchingVar of matching_var_kind
          | VarInstance of Names.Id.t
-         | SubEvar of Constr.existential_key
+         | SubEvar of Evar.t
 end
 
 module Glob_term :
@@ -2772,9 +2778,12 @@ end
 module Evd :
 sig
 
-  type evar = Constr.existential_key
+  type evar = Evar.t
+  [@@ocaml.deprecated "use Evar.t"]
 
   val string_of_existential : Evar.t -> string
+  [@@ocaml.deprecated "use Evar.print"]
+
   type evar_constraint = Reduction.conv_pb * Environ.env * Constr.t * Constr.t
 
   (* --------------------------------- *)
@@ -2851,7 +2860,7 @@ sig
     val empty : evar_map
     val from_env : Environ.env -> evar_map
     val find : evar_map -> Evar.t -> evar_info
-    val find_undefined : evar_map -> evar -> evar_info
+    val find_undefined : evar_map -> Evar.t -> evar_info
     val is_defined : evar_map -> Evar.t -> bool
     val mem : evar_map -> Evar.t -> bool
     val add : evar_map -> Evar.t -> evar_info -> evar_map
@@ -2879,7 +2888,7 @@ sig
     val fold_undefined : (Evar.t -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 
     val universe_context_set : evar_map -> Univ.ContextSet.t
-    val evar_ident : evar -> evar_map -> Names.Id.t option
+    val evar_ident : Evar.t -> evar_map -> Names.Id.t option
     val extract_all_conv_pbs : evar_map -> evar_map * evar_constraint list
     val universe_context : names:(Names.Id.t Loc.located) list -> extensible:bool -> evar_map ->
                            (Names.Id.t * Univ.Level.t) list * Univ.UContext.t
@@ -3311,7 +3320,7 @@ sig
     val catch : 'a t -> (Exninfo.iexn -> 'a t) -> 'a t
     val read_line : string t
   end
-  val proofview : proofview -> Evd.evar list * Evd.evar_map
+  val proofview : proofview -> Evar.t list * Evd.evar_map
   val cycle : int -> unit tactic
   val swap : int -> int -> unit tactic
   val revgoals : unit tactic
@@ -3338,20 +3347,20 @@ sig
   val shelve_unifiable : unit tactic
   val apply : Environ.env -> 'a tactic -> proofview -> 'a
                                                      * proofview
-                                                     * (bool * Evd.evar list * Evd.evar list)
+                                                     * (bool * Evar.t list * Evar.t list)
                                                      * Proofview_monad.Info.tree
   val numgoals : int tactic
-  val with_shelf : 'a tactic -> (Evd.evar list * 'a) tactic
+  val with_shelf : 'a tactic -> (Evar.t list * 'a) tactic
 
   module Unsafe :
   sig
     val tclEVARS : Evd.evar_map -> unit tactic
 
-    val tclGETGOALS : Evd.evar list tactic
+    val tclGETGOALS : Evar.t list tactic
 
-    val tclSETGOALS : Evd.evar list -> unit tactic
+    val tclSETGOALS : Evar.t list -> unit tactic
 
-    val tclNEWGOALS : Evd.evar list -> unit tactic
+    val tclNEWGOALS : Evar.t list -> unit tactic
   end
 
   module Goal :
@@ -3667,7 +3676,7 @@ sig
   val nconstructors : Names.inductive -> int
   val find_rectype : Environ.env -> Evd.evar_map -> EConstr.types -> inductive_type
   val get_constructors : Environ.env -> inductive_family -> constructor_summary array
-  val dest_ind_family : inductive_family -> Names.inductive Constr.puniverses * Constr.t list
+  val dest_ind_family : inductive_family -> Names.inductive Univ.puniverses * Constr.t list
   val find_inductive   : Environ.env -> Evd.evar_map -> EConstr.types -> (Names.inductive * EConstr.EInstance.t) * Constr.t list
   val type_of_inductive : Environ.env -> Constr.pinductive -> Constr.types
 end

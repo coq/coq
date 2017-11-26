@@ -25,7 +25,7 @@ type proofview
    new nearly identical function everytime. Hence the generic name. *)
 (* In this version: returns the list of focused goals together with
    the [evar_map] context. *)
-val proofview : proofview -> Evd.evar list * Evd.evar_map
+val proofview : proofview -> Evar.t list * Evd.evar_map
 
 
 (** {6 Starting and querying a proof view} *)
@@ -88,7 +88,7 @@ type focus_context
    new nearly identical function everytime. Hence the generic name. *)
 (* In this version: the goals in the context, as a "zipper" (the first
    list is in reversed order). *)
-val focus_context : focus_context -> Evd.evar list * Evd.evar list
+val focus_context : focus_context -> Evar.t list * Evar.t list
 
 (** [focus i j] focuses a proofview on the goals from index [i] to
     index [j] (inclusive, goals are indexed from [1]). I.e. goals
@@ -148,7 +148,7 @@ type +'a tactic
     {!Logic_monad.TacticFailure}*)
 val apply : Environ.env -> 'a tactic -> proofview -> 'a
                                                    * proofview
-                                                   * (bool*Evd.evar list*Evd.evar list)
+                                                   * (bool*Evar.t list*Evar.t list)
                                                    * Proofview_monad.Info.tree
 
 (** {7 Monadic primitives} *)
@@ -304,12 +304,12 @@ val shelve : unit tactic
 (** Shelves the given list of goals, which might include some that are
     under focus and some that aren't. All the goals are placed on the
     shelf for later use (or being solved by side-effects). *)
-val shelve_goals : Evd.evar list -> unit tactic
+val shelve_goals : Evar.t list -> unit tactic
 
 (** [unifiable sigma g l] checks whether [g] appears in another
     subgoal of [l]. The list [l] may contain [g], but it does not
     affect the result. Used by [shelve_unifiable]. *)
-val unifiable : Evd.evar_map -> Evd.evar -> Evd.evar list -> bool
+val unifiable : Evd.evar_map -> Evar.t -> Evar.t list -> bool
 
 (** Shelves the unifiable goals under focus, i.e. the goals which
     appear in other goals under focus (the unfocused goals are not
@@ -322,15 +322,15 @@ val guard_no_unifiable : Names.Name.t list option tactic
 
 (** [unshelve l p] adds all the goals in [l] at the end of the focused
     goals of p *)
-val unshelve : Evd.evar list -> proofview -> proofview
+val unshelve : Evar.t list -> proofview -> proofview
 
 (** [depends_on g1 g2 sigma] checks if g1 occurs in the type/ctx of g2 *)
-val depends_on : Evd.evar_map -> Evd.evar -> Evd.evar -> bool
+val depends_on : Evd.evar_map -> Evar.t -> Evar.t -> bool
 
 (** [with_shelf tac] executes [tac] and returns its result together with
     the set of goals shelved by [tac]. The current shelf is unchanged
     and the returned list contains only unsolved goals. *)
-val with_shelf : 'a tactic -> (Evd.evar list * 'a) tactic
+val with_shelf : 'a tactic -> (Evar.t list * 'a) tactic
 
 (** If [n] is positive, [cycle n] puts the [n] first goal last. If [n]
     is negative, then it puts the [n] last goals first.*)
@@ -416,14 +416,14 @@ module Unsafe : sig
   (** [tclNEWGOALS gls] adds the goals [gls] to the ones currently
       being proved, appending them to the list of focused goals. If a
       goal is already solved, it is not added. *)
-  val tclNEWGOALS : Evd.evar list -> unit tactic
+  val tclNEWGOALS : Evar.t list -> unit tactic
 
   (** [tclSETGOALS gls] sets goals [gls] as the goals being under focus. If a
       goal is already solved, it is not set. *)
-  val tclSETGOALS : Evd.evar list -> unit tactic
+  val tclSETGOALS : Evar.t list -> unit tactic
 
   (** [tclGETGOALS] returns the list of goals under focus. *)
-  val tclGETGOALS : Evd.evar list tactic
+  val tclGETGOALS : Evar.t list tactic
 
   (** Sets the evar universe context. *)
   val tclEVARUNIVCONTEXT : UState.t -> unit tactic
@@ -566,9 +566,9 @@ module V82 : sig
   [@@ocaml.deprecated "Use [Proofview.proofview]"]
 
   val top_goals : entry -> proofview -> Evar.t list Evd.sigma
-  
+
   (* returns the existential variable used to start the proof *)
-  val top_evars : entry -> Evd.evar list
+  val top_evars : entry -> Evar.t list
 
   (* Caution: this function loses quite a bit of information. It
      should be avoided as much as possible.  It should work as

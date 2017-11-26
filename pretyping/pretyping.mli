@@ -27,7 +27,7 @@ val search_guard :
 
 type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 
-type inference_hook = env -> evar_map -> evar -> evar_map * constr
+type inference_hook = env -> evar_map -> Evar.t -> evar_map * constr
 
 type inference_flags = {
   use_typeclasses : bool;

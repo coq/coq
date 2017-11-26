@@ -15,14 +15,14 @@ open Type_errors
 (** {6 The type of errors raised by the pretyper } *)
 
 type unification_error =
-  | OccurCheck of existential_key * constr
+  | OccurCheck of Evar.t * constr
   | NotClean of existential * env * constr
   | NotSameArgSize
   | NotSameHead
   | NoCanonicalStructure
   | ConversionFailed of env * constr * constr
-  | MetaOccurInBody of existential_key
-  | InstanceNotSameType of existential_key * env * types * types
+  | MetaOccurInBody of Evar.t
+  | InstanceNotSameType of Evar.t * env * types * types
   | UnifUnivInconsistency of Univ.univ_inconsistency
   | CannotSolveConstraint of Evd.evar_constraint * unification_error
   | ProblemBeyondCapabilities
@@ -41,8 +41,8 @@ type pretype_error =
   (** Type inference unification *)
   | ActualTypeNotCoercible of unsafe_judgment * types * unification_error
   (** Tactic Unification *)
-  | UnifOccurCheck of existential_key * constr
-  | UnsolvableImplicit of existential_key * Evd.unsolvability_explanation option
+  | UnifOccurCheck of Evar.t * constr
+  | UnsolvableImplicit of Evar.t * Evd.unsolvability_explanation option
   | CannotUnify of constr * constr * unification_error option
   | CannotUnifyLocal of constr * constr * constr
   | CannotUnifyBindingType of constr * constr
@@ -59,7 +59,7 @@ type pretype_error =
   | TypingError of type_error
   | CannotUnifyOccurrences of subterm_unification_error
   | UnsatisfiableConstraints of
-    (existential_key * Evar_kinds.t) option * Evar.Set.t option
+    (Evar.t * Evar_kinds.t) option * Evar.Set.t option
     (** unresolvable evar, connex component *)
 
 exception PretypeError of env * Evd.evar_map * pretype_error
@@ -112,10 +112,10 @@ val error_cannot_coerce : env -> Evd.evar_map -> constr * constr -> 'b
 
 (** {6 Implicit arguments synthesis errors } *)
 
-val error_occur_check : env -> Evd.evar_map -> existential_key -> constr -> 'b
+val error_occur_check : env -> Evd.evar_map -> Evar.t -> constr -> 'b
 
 val error_unsolvable_implicit :
-  ?loc:Loc.t -> env -> Evd.evar_map -> existential_key ->
+  ?loc:Loc.t -> env -> Evd.evar_map -> Evar.t ->
       Evd.unsolvability_explanation option -> 'b
 
 val error_cannot_unify : ?loc:Loc.t -> env -> Evd.evar_map ->
@@ -154,7 +154,7 @@ val error_var_not_found : ?loc:Loc.t -> Id.t -> 'b
 
 (** {6 Typeclass errors } *)
 
-val unsatisfiable_constraints : env -> Evd.evar_map -> Evd.evar option ->
+val unsatisfiable_constraints : env -> Evd.evar_map -> Evar.t option ->
   Evar.Set.t option -> 'a
 
 val unsatisfiable_exception : exn -> bool

@@ -28,12 +28,13 @@ open Environ
 
 (** {5 Existential variables and unification states} *)
 
-(** {6 Evars} *)
-
-type evar = existential_key
+type evar = Evar.t
+[@@ocaml.deprecated "use Evar.t"]
 (** Existential variables. *)
 
-val string_of_existential : evar -> string
+(** {6 Evars} *)
+val string_of_existential : Evar.t -> string
+[@@ocaml.deprecated "use Evar.print"]
 
 (** {6 Evar filters} *)
 
@@ -150,44 +151,44 @@ val has_undefined : evar_map -> bool
     there are uninstantiated evars in [sigma]. *)
 
 val new_evar : evar_map ->
-  ?name:Id.t -> evar_info -> evar_map * evar
+  ?name:Id.t -> evar_info -> evar_map * Evar.t
 (** Creates a fresh evar mapping to the given information. *)
 
-val add : evar_map -> evar -> evar_info -> evar_map
+val add : evar_map -> Evar.t -> evar_info -> evar_map
 (** [add sigma ev info] adds [ev] with evar info [info] in sigma.
     Precondition: ev must not preexist in [sigma]. *)
 
-val find : evar_map -> evar -> evar_info
+val find : evar_map -> Evar.t -> evar_info
 (** Recover the data associated to an evar. *)
 
-val find_undefined : evar_map -> evar -> evar_info
+val find_undefined : evar_map -> Evar.t -> evar_info
 (** Same as {!find} but restricted to undefined evars. For efficiency
     reasons. *)
 
-val remove : evar_map -> evar -> evar_map
+val remove : evar_map -> Evar.t -> evar_map
 (** Remove an evar from an evar map. Use with caution. *)
 
-val mem : evar_map -> evar -> bool
+val mem : evar_map -> Evar.t -> bool
 (** Whether an evar is present in an evarmap. *)
 
-val fold : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
+val fold : (Evar.t -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 (** Apply a function to all evars and their associated info in an evarmap. *)
 
-val fold_undefined : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
+val fold_undefined : (Evar.t -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 (** Same as {!fold}, but restricted to undefined evars. For efficiency
     reasons. *)
 
-val raw_map : (evar -> evar_info -> evar_info) -> evar_map -> evar_map
+val raw_map : (Evar.t -> evar_info -> evar_info) -> evar_map -> evar_map
 (** Apply the given function to all evars in the map. Beware: this function
     expects the argument function to preserve the kind of [evar_body], i.e. it
     must send [Evar_empty] to [Evar_empty] and [Evar_defined c] to some
     [Evar_defined c']. *)
 
-val raw_map_undefined : (evar -> evar_info -> evar_info) -> evar_map -> evar_map
+val raw_map_undefined : (Evar.t -> evar_info -> evar_info) -> evar_map -> evar_map
 (** Same as {!raw_map}, but restricted to undefined evars. For efficiency
     reasons. *)
 
-val define : evar -> constr -> evar_map -> evar_map
+val define : Evar.t-> constr -> evar_map -> evar_map
 (** Set the body of an evar to the given constr. It is expected that:
     {ul
       {- The evar is already present in the evarmap.}
@@ -198,13 +199,13 @@ val define : evar -> constr -> evar_map -> evar_map
 val cmap : (constr -> constr) -> evar_map -> evar_map
 (** Map the function on all terms in the evar map. *)
 
-val is_evar : evar_map -> evar -> bool
+val is_evar : evar_map -> Evar.t-> bool
 (** Alias for {!mem}. *)
 
-val is_defined : evar_map -> evar -> bool
+val is_defined : evar_map -> Evar.t-> bool
 (** Whether an evar is defined in an evarmap. *)
 
-val is_undefined : evar_map -> evar -> bool
+val is_undefined : evar_map -> Evar.t-> bool
 (** Whether an evar is not defined in an evarmap. *)
 
 val add_constraints : evar_map -> Univ.constraints -> evar_map
@@ -240,31 +241,31 @@ val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool ->
 
 (** {6 Misc} *)
 
-val restrict : evar -> Filter.t -> ?candidates:constr list ->
-  ?src:Evar_kinds.t located -> evar_map -> evar_map * evar
+val restrict : Evar.t-> Filter.t -> ?candidates:constr list ->
+  ?src:Evar_kinds.t located -> evar_map -> evar_map * Evar.t
 (** Restrict an undefined evar into a new evar by filtering context and
     possibly limiting the instances to a set of candidates *)
 
-val is_restricted_evar : evar_info -> evar option
+val is_restricted_evar : evar_info -> Evar.t option
 (** Tell if an evar comes from restriction of another evar, and if yes, which *)
 
-val downcast : evar -> types -> evar_map -> evar_map
+val downcast : Evar.t-> types -> evar_map -> evar_map
 (** Change the type of an undefined evar to a new type assumed to be a
     subtype of its current type; subtyping must be ensured by caller *)
 
-val evar_source : existential_key -> evar_map -> Evar_kinds.t located
+val evar_source : Evar.t -> evar_map -> Evar_kinds.t located
 (** Convenience function. Wrapper around {!find} to recover the source of an
     evar in a given evar map. *)
 
-val evar_ident : existential_key -> evar_map -> Id.t option
+val evar_ident : Evar.t -> evar_map -> Id.t option
 
-val rename : existential_key -> Id.t -> evar_map -> evar_map
+val rename : Evar.t -> Id.t -> evar_map -> evar_map
 
-val evar_key : Id.t -> evar_map -> existential_key
+val evar_key : Id.t -> evar_map -> Evar.t
 
 val evar_source_of_meta : metavariable -> evar_map -> Evar_kinds.t located
 
-val dependent_evar_ident : existential_key -> evar_map -> Id.t
+val dependent_evar_ident : Evar.t -> evar_map -> Id.t
 
 (** {5 Side-effects} *)
 

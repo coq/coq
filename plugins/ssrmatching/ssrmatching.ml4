@@ -396,7 +396,7 @@ let inv_dir = function L2R -> R2L | R2L -> L2R
 type pattern_class =
   | KpatFixed
   | KpatConst
-  | KpatEvar of existential_key
+  | KpatEvar of Evar.t
   | KpatLet
   | KpatLam
   | KpatRigid

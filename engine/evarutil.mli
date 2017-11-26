@@ -38,9 +38,9 @@ val new_pure_evar :
   named_context_val -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> types -> evar_map * evar
+  ?principal:bool -> types -> evar_map * Evar.t
 
-val new_pure_evar_full : evar_map -> evar_info -> evar_map * evar
+val new_pure_evar_full : evar_map -> evar_info -> evar_map * Evar.t
 
 (** the same with side-effects *)
 val e_new_evar :
@@ -63,8 +63,8 @@ val e_new_type_evar : env -> evar_map ref ->
 val new_Type : ?rigid:rigid -> env -> evar_map -> evar_map * constr
 val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
 
-val restrict_evar : evar_map -> existential_key -> Filter.t ->
-  ?src:Evar_kinds.t Loc.located -> constr list option -> evar_map * existential_key
+val restrict_evar : evar_map -> Evar.t -> Filter.t ->
+  ?src:Evar_kinds.t Loc.located -> constr list option -> evar_map * Evar.t
 
 (** Polymorphic constants *)
 
@@ -96,7 +96,7 @@ val non_instantiated : evar_map -> evar_info Evar.Map.t
 
 (** [head_evar c] returns the head evar of [c] if any *)
 exception NoHeadEvar
-val head_evar : evar_map -> constr -> existential_key (** may raise NoHeadEvar *)
+val head_evar : evar_map -> constr -> Evar.t (** may raise NoHeadEvar *)
 
 (* Expand head evar if any *)
 val whd_head_evar :  evar_map -> constr -> constr
@@ -116,13 +116,13 @@ val is_ground_env  :  evar_map -> env -> bool
     associating to each dependent evar [None] if it has no (partial)
     definition or [Some s] if [s] is the list of evars appearing in
     its (partial) definition. *)
-val gather_dependent_evars : evar_map -> evar list -> (Evar.Set.t option) Evar.Map.t
+val gather_dependent_evars : evar_map -> Evar.t list -> (Evar.Set.t option) Evar.Map.t
 
 (** [advance sigma g] returns [Some g'] if [g'] is undefined and is
     the current avatar of [g] (for instance [g] was changed by [clear]
     into [g']). It returns [None] if [g] has been (partially)
     solved. *)
-val advance : evar_map -> evar -> evar option
+val advance : evar_map -> Evar.t -> Evar.t option
 
 (** The following functions return the set of undefined evars
     contained in the object, the defined evars being traversed.
@@ -177,7 +177,7 @@ val e_nf_evars_and_universes : evar_map ref -> (Constr.constr -> Constr.constr) 
 val nf_evar_map_universes : evar_map -> evar_map * (Constr.constr -> Constr.constr)
 
 (** Replacing all evars, possibly raising [Uninstantiated_evar] *)
-exception Uninstantiated_evar of existential_key
+exception Uninstantiated_evar of Evar.t
 val flush_and_check_evars :  evar_map -> constr -> Constr.constr
 
 (** {6 Term manipulation up to instantiation} *)
@@ -233,7 +233,7 @@ val evd_comb0 : (evar_map -> evar_map * 'a) -> evar_map ref -> 'a
 val evd_comb1 : (evar_map -> 'b -> evar_map * 'a) -> evar_map ref -> 'b -> 'a
 val evd_comb2 : (evar_map -> 'b -> 'c -> evar_map * 'a) -> evar_map ref -> 'b -> 'c -> 'a
 
-val subterm_source : existential_key -> Evar_kinds.t Loc.located ->
+val subterm_source : Evar.t -> Evar_kinds.t Loc.located ->
   Evar_kinds.t Loc.located
 
 val meta_counter_summary_name : string

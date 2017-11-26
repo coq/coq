@@ -194,7 +194,7 @@ module V82 : sig
   val top_goal : proof -> Goal.goal Evd.sigma
 
   (* returns the existential variable used to start the proof *)
-  val top_evars : proof -> Evd.evar list
+  val top_evars : proof -> Evar.t list
 
   (* Turns the unresolved evars into goals.
      Raises [UnfinishedProof] if there are still unsolved goals. *)

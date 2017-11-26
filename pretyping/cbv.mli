@@ -33,7 +33,7 @@ type cbv_value =
   | LAM of int * (Name.t * constr) list * constr * cbv_value subs
   | FIXP of fixpoint * cbv_value subs * cbv_value array
   | COFIXP of cofixpoint * cbv_value subs * cbv_value array
-  | CONSTR of constructor puniverses * cbv_value array
+  | CONSTR of constructor Univ.puniverses * cbv_value array
 
 and cbv_stack =
   | TOP

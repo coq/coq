@@ -583,7 +583,7 @@ let default_pr_subgoal n sigma =
   in
   prrec n
 
-let pr_internal_existential_key ev = str (string_of_existential ev)
+let pr_internal_existential_key ev = Evar.print ev
 
 let print_evar_constraints gl sigma =
   let pr_env =
@@ -762,7 +762,7 @@ let default_pr_subgoals ?(pr_first=true)
 
 
 type printer_pr = {
- pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> evar list -> Goal.goal list -> int list -> goal list -> goal list -> Pp.t;
+ pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> Evar.t list -> Goal.goal list -> int list -> goal list -> goal list -> Pp.t;
  pr_subgoal             : int -> evar_map -> goal list -> Pp.t;
  pr_goal                : goal sigma -> Pp.t;
 }
