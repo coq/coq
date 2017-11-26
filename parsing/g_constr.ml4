@@ -385,7 +385,7 @@ GEXTEND Gram
           | _ -> CErrors.user_err
                  ?loc:(cases_pattern_expr_loc p) ~hdr:"compound_pattern"
                  (Pp.str "Such pattern cannot have arguments."))
-      |"@"; r = Prim.reference; lp = LIST0 NEXT ->
+      | "@"; r = Prim.reference; lp = LIST0 NEXT ->
         CAst.make ~loc:!@loc @@ CPatCstr (r, Some lp, []) ]
     | "1" LEFTA
       [ c = pattern; "%"; key=IDENT -> CAst.make ~loc:!@loc @@ CPatDelimiters (key,c) ]
