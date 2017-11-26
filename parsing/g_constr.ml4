@@ -374,7 +374,7 @@ GEXTEND Gram
     | "11" LEFTA
       [ p = pattern; "as"; id = ident ->
         CAst.make ~loc:!@loc @@ CPatAlias (p, id) ]
-    | "10" RIGHTA
+    | "10" LEFTA
       [ p = pattern; lp = LIST1 NEXT ->
         (let open CAst in match p with
 	  | { v = CPatAtom (Some r) } -> CAst.make ~loc:!@loc @@ CPatCstr (r, None, lp)

@@ -35,7 +35,7 @@ let default_levels =
    100,Extend.RightA,false;
    99,Extend.RightA,true;
    90,Extend.RightA,true;
-   10,Extend.RightA,false;
+   10,Extend.LeftA,false;
    9,Extend.RightA,false;
    8,Extend.RightA,true;
    1,Extend.LeftA,false;
@@ -47,7 +47,7 @@ let default_pattern_levels =
    99,Extend.RightA,true;
    90,Extend.RightA,true;
    11,Extend.LeftA,false;
-   10,Extend.RightA,false;
+   10,Extend.LeftA,false;
    1,Extend.LeftA,false;
    0,Extend.RightA,false]
 

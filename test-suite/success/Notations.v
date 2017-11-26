@@ -147,3 +147,9 @@ Inductive EQ {A} (x:A) : A -> Prop := REFL : x === x
 
 Fail Check {x@{u},y|x=x}.
 Fail Check {?[n],y|0=0}.
+
+(* Check that 10 is well declared left associative *)
+
+Section C.
+Notation "f $$$ x" := (id f x) (at level 10, left associativity).
+End C.
