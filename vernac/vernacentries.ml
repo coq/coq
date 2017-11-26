@@ -1787,12 +1787,12 @@ let vernac_search ~atts s gopt r =
     | Some g -> snd (Pfedit.get_goal_context g) , Some g
   in
   let get_pattern c = snd (intern_constr_pattern env c) in
-  let pr_search ref env c =
+  let pr_search ref env sigma c =
     let pr = pr_global ref in
     let pp = if !search_output_name_only
       then pr
       else begin
-        let pc = pr_lconstr_env env Evd.empty c in
+        let pc = pr_lconstr_env env sigma c in
         hov 2 (pr ++ str":" ++ spc () ++ pc)
       end
     in Feedback.msg_notice pp
