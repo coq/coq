@@ -46,7 +46,6 @@ let default_pattern_levels =
    100,Extend.RightA,false;
    99,Extend.RightA,true;
    90,Extend.RightA,true;
-   11,Extend.LeftA,false;
    10,Extend.LeftA,false;
    1,Extend.LeftA,false;
    0,Extend.RightA,false]
