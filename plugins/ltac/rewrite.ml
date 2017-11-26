@@ -2021,14 +2021,16 @@ let add_morphism glob binders m s n =
 (** Taken from original setoid_replace, to emulate the old rewrite semantics where
     lemmas are first instantiated and then rewrite proceeds. *)
 
-let check_evar_map_of_evars_defs evd =
+let check_evar_map_of_evars_defs env evd =
  let metas = Evd.meta_list evd in
  let check_freemetas_is_empty rebus =
   Evd.Metaset.iter
    (fun m ->
-     if Evd.meta_defined evd m then () else
-      raise
-	(Logic.RefinerError (Logic.UnresolvedBindings [Evd.meta_name evd m])))
+     if Evd.meta_defined evd m then ()
+     else begin
+       raise
+         (Logic.RefinerError (env, evd, Logic.UnresolvedBindings [Evd.meta_name evd m]))
+     end)
  in
   List.iter
    (fun (_,binding) ->
@@ -2063,7 +2065,7 @@ let unification_rewrite l2r c1 c2 sigma prf car rel but env =
   let c1 = if l2r then nf c' else nf c1
   and c2 = if l2r then nf c2 else nf c'
   and car = nf car and rel = nf rel in
-  check_evar_map_of_evars_defs sigma;
+  check_evar_map_of_evars_defs env sigma;
   let prf = nf prf in
   let prfty = nf (Retyping.get_type_of env sigma prf) in
   let sort = sort_of_rel env sigma but in

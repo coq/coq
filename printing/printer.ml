@@ -905,7 +905,7 @@ end
 module ContextObjectSet = Set.Make (OrderedContextObject)
 module ContextObjectMap = Map.Make (OrderedContextObject)
 
-let pr_assumptionset env s =
+let pr_assumptionset env sigma s =
   if ContextObjectMap.is_empty s &&
        engagement env = PredicativeSet then
     str "Closed under the global context"
@@ -921,7 +921,6 @@ let pr_assumptionset env s =
       with e when CErrors.noncritical e -> mt ()
     in
     let safe_pr_ltype_relctx (rctx, typ) =
-      let sigma, env = Pfedit.get_current_context () in
       let env = Environ.push_rel_context rctx env in
       try str " " ++ pr_ltype_env env sigma typ
       with e when CErrors.noncritical e -> mt ()
