@@ -973,6 +973,8 @@ let config_runtime () =
 
 let vmbyteflags = config_runtime ()
 
+let esc s = if String.contains s ' ' then "\"" ^ s ^ "\"" else s
+
 (** * Summary of the configuration *)
 
 let print_summary () =
@@ -985,16 +987,16 @@ let print_summary () =
   pr "  Other bytecode link flags   : %s\n" custom_flag;
   pr "  OS dependent libraries      : %s\n" osdeplibs;
   pr "  OCaml version               : %s\n" caml_version;
-  pr "  OCaml binaries in           : %s\n" camlbin;
-  pr "  OCaml library in            : %s\n" camllib;
+  pr "  OCaml binaries in           : %s\n" (esc camlbin);
+  pr "  OCaml library in            : %s\n" (esc camllib);
   pr "  OCaml flambda flags         : %s\n" (String.concat " " !Prefs.flambda_flags);
   pr "  %s version              : %s\n"     capitalized_camlpX camlpX_version;
-  pr "  %s binaries in          : %s\n"     capitalized_camlpX camlpXbindir;
-  pr "  %s library in           : %s\n"     capitalized_camlpX camlpXlibdir;
+  pr "  %s binaries in          : %s\n"     capitalized_camlpX (esc camlpXbindir);
+  pr "  %s library in           : %s\n"     capitalized_camlpX (esc camlpXlibdir);
   if best_compiler = "opt" then
     pr "  Native dynamic link support : %B\n" hasnatdynlink;
   if coqide <> "no" then
-    pr "  Lablgtk2 library in         : %s\n" !lablgtkdir;
+    pr "  Lablgtk2 library in         : %s\n" (esc !lablgtkdir);
   if !idearchdef = "QUARTZ" then
     pr "  Mac OS integration is on\n";
   pr "  CoqIde                      : %s\n" coqide;
@@ -1009,7 +1011,7 @@ let print_summary () =
   else
     (pr "  Paths for true installation:\n";
      List.iter
-       (fun (_,msg,dir,_) -> pr "  - %s will be copied in %s\n" msg dir)
+       (fun (_,msg,dir,_) -> pr "  - %s will be copied in %s\n" msg (esc dir))
        install_dirs);
   pr "\n";
   pr "If anything is wrong above, please restart './configure'.\n\n";
