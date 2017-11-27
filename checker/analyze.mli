@@ -8,8 +8,20 @@ type obj =
 | Struct of int * data array (* tag × data *)
 | String of string
 
-val parse_channel : in_channel -> (data * obj array)
-val parse_string : string -> (data * obj array)
+module LargeArray :
+sig
+  type 'a t
+  val empty : 'a t
+  val length : 'a t -> int
+  val make : int -> 'a -> 'a t
+  val get : 'a t -> int -> 'a
+  val set : 'a t -> int -> 'a -> unit
+end
+(** A data structure similar to arrays but allowing to overcome the 2^22 length
+    limitation on 32-bit architecture. *)
+
+val parse_channel : in_channel -> (data * obj LargeArray.t)
+val parse_string : string -> (data * obj LargeArray.t)
 
 (** {6 Functorized version} *)
 
@@ -26,7 +38,7 @@ end
 module type S =
 sig
   type input
-  val parse : input -> (data * obj array)
+  val parse : input -> (data * obj LargeArray.t)
   (** Return the entry point and the reification of the memory out of a
       marshalled structure. *)
 end

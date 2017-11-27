@@ -55,6 +55,55 @@ let magic_number = "\132\149\166\190"
 
 (** Memory reification *)
 
+module LargeArray :
+sig
+  type 'a t
+  val empty : 'a t
+  val length : 'a t -> int
+  val make : int -> 'a -> 'a t
+  val get : 'a t -> int -> 'a
+  val set : 'a t -> int -> 'a -> unit
+end =
+struct
+
+  let max_length = Sys.max_array_length
+
+  type 'a t = 'a array array * 'a array
+  (** Invariants:
+      - All subarrays of the left array have length [max_length].
+      - The right array has length < [max_length].
+  *)
+
+  let empty = [||], [||]
+
+  let length (vl, vr) =
+    (max_length * Array.length vl) + Array.length vr
+
+  let make n x =
+    let k = n / max_length in
+    let r = n mod max_length in
+    let vl = Array.init k (fun _ -> Array.make max_length x) in
+    let vr = Array.make r x in
+    (vl, vr)
+
+  let get (vl, vr) n =
+    let k = n / max_length in
+    let r = n mod max_length in
+    let len = Array.length vl in
+    if k < len then vl.(k).(r)
+    else if k == len then vr.(r)
+    else invalid_arg "index out of bounds"
+
+  let set (vl, vr) n x =
+    let k = n / max_length in
+    let r = n mod max_length in
+    let len = Array.length vl in
+    if k < len then vl.(k).(r) <- x
+    else if k == len then vr.(r) <- x
+    else invalid_arg "index out of bounds"
+
+end
+
 type repr =
 | RInt of int
 | RBlock of (int * int) (* tag × len *)
@@ -82,7 +131,7 @@ end
 module type S =
 sig
   type input
-  val parse : input -> (data * obj array)
+  val parse : input -> (data * obj LargeArray.t)
 end
 
 module Make(M : Input) =
@@ -261,7 +310,7 @@ let parse_object chan =
 let parse chan =
   let (magic, len, _, _, size) = parse_header chan in
   let () = assert (magic = magic_number) in
-  let memory = Array.make size (Struct ((-1), [||])) in
+  let memory = LargeArray.make size (Struct ((-1), [||])) in
   let current_object = ref 0 in
   let fill_obj = function
   | RPointer n ->
@@ -272,7 +321,7 @@ let parse chan =
     data, None
   | RString s ->
     let data = Ptr !current_object in
-    let () = memory.(!current_object) <- String s in
+    let () = LargeArray.set memory !current_object (String s) in
     let () = incr current_object in
     data, None
   | RBlock (tag, 0) ->
@@ -282,7 +331,7 @@ let parse chan =
   | RBlock (tag, len) ->
     let data = Ptr !current_object in
     let nblock = Array.make len (Atm (-1)) in
-    let () = memory.(!current_object) <- Struct (tag, nblock) in
+    let () = LargeArray.set memory !current_object (Struct (tag, nblock)) in
     let () = incr current_object in
     data, Some nblock
   | RCode addr ->
