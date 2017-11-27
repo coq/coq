@@ -10,6 +10,7 @@
    machine, Oct 2004 *)
 (* Extension: Arnaud Spiwack (support for native arithmetic), May 2005 *)
 
+open Names
 open Term
 open Cbytecodes
 open Copcodes
@@ -25,14 +26,34 @@ type reloc_info =
   | Reloc_const of structured_constant
   | Reloc_getglobal of Names.Constant.t
 
+let eq_reloc_info r1 r2 = match r1, r2 with
+| Reloc_annot sw1, Reloc_annot sw2 -> eq_annot_switch sw1 sw2
+| Reloc_annot _, _ -> false
+| Reloc_const c1, Reloc_const c2 -> eq_structured_constant c1 c2
+| Reloc_const _, _ -> false
+| Reloc_getglobal c1, Reloc_getglobal c2 -> Constant.equal c1 c2
+| Reloc_getglobal _, _ -> false
+
+let hash_reloc_info r =
+  let open Hashset.Combine in
+  match r with
+  | Reloc_annot sw -> combinesmall 1 (hash_annot_switch sw)
+  | Reloc_const c -> combinesmall 2 (hash_structured_constant c)
+  | Reloc_getglobal c -> combinesmall 3 (Constant.hash c)
+
+module RelocTable = Hashtbl.Make(struct
+  type t = reloc_info
+  let equal = eq_reloc_info
+  let hash = hash_reloc_info
+end)
+
 (** We use arrays for on-disk representation. On 32-bit machines, this means we
     can only have a maximum amount of about 4.10^6 relocations, which seems
     quite a lot, but potentially reachable if e.g. compiling big proofs. This
     would prevent VM computing with these terms on 32-bit architectures. Maybe
     we should use a more robust data structure? *)
 type patches = {
-  positions : int array;
-  reloc_infos : reloc_info array;
+  reloc_infos : (reloc_info * int array) array;
 }
 
 let patch_char4 buff pos c1 c2 c3 c4 = 
@@ -46,19 +67,19 @@ let patch1 buff pos n =
     (Char.unsafe_chr n) (Char.unsafe_chr (n asr 8))  (Char.unsafe_chr (n asr 16))
     (Char.unsafe_chr (n asr 24))
 
-(* val patch_int : emitcodes -> ((\*pos*\)int * int) list -> emitcodes *)
-let patch_int buff pos reloc =
+let patch_int buff reloc =
   (* copy code *before* patching because of nested evaluations:
      the code we are patching might be called (and thus "concurrently" patched)
      and results in wrong results. Side-effects... *)
   let buff = Bytes.of_string buff in
-  let () = CArray.iter2 (fun pos reloc -> patch1 buff pos reloc) pos reloc in
+  let iter (reloc, npos) = Array.iter (fun pos -> patch1 buff pos reloc) npos in
+  let () = CArray.iter iter reloc in
   buff
 
 let patch buff pl f =
   (** Order seems important here? *)
-  let reloc = CArray.map_left f pl.reloc_infos in
-  let buff = patch_int buff pl.positions reloc in
+  let reloc = CArray.map (fun (r, pos) -> (f r, pos)) pl.reloc_infos in
+  let buff = patch_int buff reloc in
   tcode_of_code buff (Bytes.length buff)
 
 (* Buffering of bytecode *)
@@ -76,7 +97,7 @@ type env = {
                                 = Label_undefined l signifie que l'on a
     pas encore rencontrer ce label, le premier entier indique ou est l'entier
     a patcher dans la string, le deuxieme son origine  *)
-  mutable reloc_info : (reloc_info * int) list;
+  reloc_info : int list RelocTable.t;
 }
 
 let out_word env b1 b2 b3 b4 =
@@ -148,7 +169,9 @@ let out_label env l = out_label_with_orig env env.out_position l
 (* Relocation information *)
 
 let enter env info =
-  env.reloc_info <- (info, env.out_position) :: env.reloc_info
+  let pos = env.out_position in
+  let old = try RelocTable.find env.reloc_info info with Not_found -> [] in
+  RelocTable.replace env.reloc_info info (pos :: old)
 
 let slot_for_const env c =
   enter env (Reloc_const c);
@@ -342,15 +365,8 @@ let subst_reloc s ri =
   | Reloc_getglobal kn -> Reloc_getglobal (subst_constant s kn)
 
 let subst_patches subst p =
-  (** This looks suspicious, is order really relevant here? *)
-  let positions = CArray.copy p.positions in
-  let infos = CArray.map_left (fun r -> subst_reloc subst r) p.reloc_infos in
-  let () = CArray.rev positions in
-  let () = CArray.rev infos in
-  {
-    positions = positions;
-    reloc_infos = infos;
-  }
+  let infos = CArray.map (fun (r, pos) -> (subst_reloc subst r, pos)) p.reloc_infos in
+  { reloc_infos = infos; }
 
 let subst_to_patch s (code,pl,fv) =
   code, subst_patches s pl, fv
@@ -394,18 +410,16 @@ let to_memory (init_code, fun_code, fv) =
     out_buffer = Bytes.create 1024;
     out_position = 0;
     label_table = Array.make 16 (Label_undefined []);
-    reloc_info = [];
+    reloc_info = RelocTable.create 91;
   } in
   emit env init_code [];
   emit env fun_code [];
   (** Later uses of this string are all purely functional *)
   let code = Bytes.sub_string env.out_buffer 0 env.out_position in
   let code = CString.hcons code in
-  let reloc = List.rev env.reloc_info in
-  let reloc = {
-    positions = CArray.map_of_list snd reloc;
-    reloc_infos = CArray.map_of_list fst reloc;
-  } in
+  let fold reloc npos accu = (reloc, Array.of_list npos) :: accu in
+  let reloc = RelocTable.fold fold env.reloc_info [] in
+  let reloc = { reloc_infos = CArray.of_list reloc } in
   Array.iter (fun lbl ->
     (match lbl with
       Label_defined _ -> assert true

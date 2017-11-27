@@ -14,7 +14,6 @@
 
 open Util
 open Names
-open Constr
 open Vmvalues
 open Cemitcodes
 open Cbytecodes
@@ -55,60 +54,11 @@ let set_global v =
 
 (* table pour les structured_constant et les annotations des switchs *)
 
-let rec eq_structured_constant c1 c2 = match c1, c2 with
-| Const_sorts s1, Const_sorts s2 -> Sorts.equal s1 s2
-| Const_sorts _, _ -> false
-| Const_ind i1, Const_ind i2 -> eq_ind i1 i2
-| Const_ind _, _ -> false
-| Const_proj p1, Const_proj p2 -> Constant.equal p1 p2
-| Const_proj _, _ -> false
-| Const_b0 t1, Const_b0 t2 -> Int.equal t1 t2
-| Const_b0 _, _ -> false
-| Const_bn (t1, a1), Const_bn (t2, a2) ->
-  Int.equal t1 t2 && Array.equal eq_structured_constant a1 a2
-| Const_bn _, _ -> false
-| Const_univ_level l1 , Const_univ_level l2 -> Univ.Level.equal l1 l2
-| Const_univ_level _ , _ -> false
-| Const_type u1, Const_type u2 -> Univ.Universe.equal u1 u2
-| Const_type _ , _ -> false
-
-let rec hash_structured_constant c =
-  let open Hashset.Combine in
-  match c with
-  | Const_sorts s -> combinesmall 1 (Sorts.hash s)
-  | Const_ind i -> combinesmall 2 (ind_hash i)
-  | Const_proj p -> combinesmall 3 (Constant.hash p)
-  | Const_b0 t -> combinesmall 4 (Int.hash t)
-  | Const_bn (t, a) ->
-    let fold h c = combine h (hash_structured_constant c) in
-    let h = Array.fold_left fold 0 a in
-    combinesmall 5 (combine (Int.hash t) h)
-  | Const_univ_level l -> combinesmall 6 (Univ.Level.hash l)
-  | Const_type u -> combinesmall 7 (Univ.Universe.hash u)
-
 module SConstTable = Hashtbl.Make (struct
   type t = structured_constant
   let equal = eq_structured_constant
   let hash = hash_structured_constant
 end)
-
-let eq_annot_switch asw1 asw2 =
-  let eq_ci ci1 ci2 =
-    eq_ind ci1.ci_ind ci2.ci_ind &&
-    Int.equal ci1.ci_npar ci2.ci_npar &&
-    Array.equal Int.equal ci1.ci_cstr_ndecls ci2.ci_cstr_ndecls
-  in
-  let eq_rlc (i1, j1) (i2, j2) = Int.equal i1 i2 && Int.equal j1 j2 in
-  eq_ci asw1.ci asw2.ci &&
-  Array.equal eq_rlc asw1.rtbl asw2.rtbl &&
-  (asw1.tailcall : bool) == asw2.tailcall
-
-let hash_annot_switch asw =
-  let open Hashset.Combine in
-  let h1 = Constr.case_info_hash asw.ci in
-  let h2 = Array.fold_left (fun h (t, i) -> combine3 h t i) 0 asw.rtbl in
-  let h3 = if asw.tailcall then 1 else 0 in
-  combine3 h1 h2 h3
 
 module AnnotTable = Hashtbl.Make (struct
   type t = annot_switch
