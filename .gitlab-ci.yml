@@ -105,7 +105,7 @@ before_script:
 
     - set +e
   variables: &warnings-variables
-    EXTRA_CONF: "-native-compiler yes -coqide opt"
+    EXTRA_CONF: "-native-compiler yes -coqide byte -byte-only"
     EXTRA_PACKAGES: "$COQIDE_PACKAGES"
     EXTRA_OPAM: "$COQIDE_OPAM"
 
