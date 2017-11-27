@@ -95,7 +95,7 @@ struct
   let print_char = fun c -> (); fun () -> print_char c
 
   let timeout = fun n t -> (); fun () ->
-    Control.timeout n t (Exception Timeout)
+    Control.timeout n t () (Exception Timeout)
 
   let make f = (); fun () ->
     try f ()

@@ -16,11 +16,6 @@ val check_for_interrupt : unit -> unit
 (** Use this function as a potential yield function. If {!interrupt} has been
     set, il will raise [Sys.Break]. *)
 
-val timeout : int -> (unit -> 'a) -> exn -> 'a
-(** [timeout n f e] tries to compute [f], and if it fails to do so before [n]
-    seconds, it raises [e] instead. *)
-
-type timeout = { timeout : 'a. int -> (unit -> 'a) -> exn -> 'a }
-
-val set_timeout : timeout -> unit
-(** Set a particular timeout function. *)
+val timeout : int -> ('a -> 'b) -> 'a -> exn -> 'b
+(** [timeout n f x e] tries to compute [f x], and if it fails to do so
+    before [n] seconds, it raises [e] instead. *)
