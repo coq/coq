@@ -61,7 +61,6 @@ module NonLogical : sig
   val print_warning : Pp.t -> unit t
   val print_notice : Pp.t -> unit t
   val print_info : Pp.t -> unit t
-  val print_error : Pp.t -> unit t
 
   (** [Pervasives.raise]. Except that exceptions are wrapped with
       {!Exception}. *)

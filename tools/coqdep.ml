@@ -539,4 +539,4 @@ let _ =
     coqdep ()
   with CErrors.UserError(s,p) ->
     let pp = (match s with | None -> p | Some s -> Pp.(str s ++ str ": " ++ p))  in
-    Feedback.msg_error pp
+    Format.eprintf "%a@\n%!" Pp.pp_with pp

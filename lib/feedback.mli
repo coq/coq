@@ -94,8 +94,9 @@ val msg_warning : ?loc:Loc.t -> Pp.t -> unit
     consequences. *)
 
 val msg_error : ?loc:Loc.t -> Pp.t -> unit
-(** Message indicating that something went really wrong, though still
-    recoverable; otherwise an exception would have been raised. *)
+[@@ocaml.deprecated "msg_error is an internal function and should not be \
+                     used unless you know what you are doing. Use \
+                     [CErrors.user_err] instead."]
 
 val msg_debug : ?loc:Loc.t -> Pp.t -> unit
 (** For debugging purposes *)
