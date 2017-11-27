@@ -70,12 +70,6 @@ let print_cmd_header ?loc com =
   Pp.pp_with !Topfmt.std_ft (pp_cmd_header ?loc com);
   Format.pp_print_flush !Topfmt.std_ft ()
 
-let pr_open_cur_subgoals () =
-  try
-    let proof = Proof_global.give_me_the_proof () in
-    Printer.pr_open_subgoals ~proof
-  with Proof_global.NoCurrentProof -> Pp.str ""
-
 (* Reenable when we get back to feedback printing *)
 (* let is_end_of_input any = match any with *)
 (*     Stm.End_of_input -> true *)
@@ -94,23 +88,8 @@ end
 let interp_vernac ~time ~check ~interactive ~state (loc,com) =
   let open State in
     try
-      (* XXX: We need to run this before add as the classification is
-         highly dynamic and depends on the structure of the
-         document. Hopefully this is fixed when VtMeta can be removed
-         and Undo etc... are just interpreted regularly. *)
-
-      (* XXX: The classifier can emit warnings so we need to guard
-         against that... *)
-      let wflags = CWarnings.get_flags () in
-      CWarnings.set_flags "none";
-      let is_proof_step = match fst (Vernac_classifier.classify_vernac com) with
-        | VtProofStep _ | VtMeta | VtStartProof _ -> true
-        | _ -> false
-      in
-      CWarnings.set_flags wflags;
-
-      (* The -time option is only supported from console-based
-         clients due to the way it prints. *)
+      (* The -time option is only supported from console-based clients
+         due to the way it prints. *)
       if time then print_cmd_header ?loc com;
       let com = if time then VernacTime(time,(CAst.make ?loc com)) else com in
       let doc, nsid, ntip = Stm.add ~doc:state.doc ~ontop:state.sid (not !Flags.quiet) (loc,com) in
@@ -123,14 +102,6 @@ let interp_vernac ~time ~check ~interactive ~state (loc,com) =
          it otherwise reveals bugs *)
       (* Stm.observe nsid; *)
       let ndoc = if check then Stm.finish ~doc else doc in
-
-      (* We could use a more refined criteria that depends on the
-         vernac. For now we imitate the old approach and rely on the
-         classification. *)
-      let print_goals = interactive && not !Flags.quiet &&
-                        is_proof_step && Proof_global.there_are_pending_proofs () in
-
-      if print_goals then Feedback.msg_notice (pr_open_cur_subgoals ());
       let new_proof = Proof_global.give_me_the_proof_opt () in
       { doc = ndoc; sid = nsid; proof = new_proof }
     with reraise ->
