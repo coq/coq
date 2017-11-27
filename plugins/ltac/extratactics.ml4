@@ -873,34 +873,12 @@ TACTIC EXTEND is_evar
     ]
 END
 
-let has_evar sigma c =
-let rec has_evar x =
-  match EConstr.kind sigma x with
-    | Evar _ -> true
-    | Rel _ | Var _ | Meta _ | Sort _ | Const _ | Ind _ | Construct _ ->
-      false
-    | Cast (t1, _, t2) | Prod (_, t1, t2) | Lambda (_, t1, t2) ->
-      has_evar t1 || has_evar t2
-    | LetIn (_, t1, t2, t3) ->
-      has_evar t1 || has_evar t2 || has_evar t3
-    | App (t1, ts) ->
-      has_evar t1 || has_evar_array ts
-    | Case (_, t1, t2, ts) ->
-      has_evar t1 || has_evar t2 || has_evar_array ts
-    | Fix ((_, tr)) | CoFix ((_, tr)) ->
-      has_evar_prec tr
-    | Proj (p, c) -> has_evar c
-and has_evar_array x =
-  Array.exists has_evar x
-and has_evar_prec (_, ts1, ts2) =
-  Array.exists has_evar ts1 || Array.exists has_evar ts2
-in
-has_evar c
-
 TACTIC EXTEND has_evar
 | [ "has_evar" constr(x) ] -> [
   Proofview.tclEVARMAP >>= fun sigma ->
-  if has_evar sigma x then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (str "No evars")
+  if Evarutil.has_undefined_evars sigma x
+  then Proofview.tclUNIT ()
+  else Tacticals.New.tclFAIL 0 (str "No evars")
 ]
 END
 
