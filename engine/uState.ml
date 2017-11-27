@@ -405,6 +405,9 @@ let make_flexible_variable ctx ~algebraic u =
   {ctx with uctx_univ_variables = uvars'; 
       uctx_univ_algebraic = avars'}
 
+let make_flexible_nonalgebraic ctx =
+  {ctx with uctx_univ_algebraic = Univ.LSet.empty}
+
 let is_sort_variable uctx s = 
   match s with 
   | Sorts.Type u -> 
