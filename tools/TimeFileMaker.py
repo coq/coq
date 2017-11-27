@@ -55,12 +55,15 @@ def get_single_file_times(file_name):
     FORMAT = 'Chars %%0%dd - %%0%dd %%s' % (longest, longest)
     return dict((FORMAT % (int(start), int(stop), name), reformat_time_string(time)) for start, stop, name, time, extra in times)
 
+def fix_sign_for_sorting(num, descending=True):
+    return -num if descending else num
+
 def make_sorting_key(times_dict, descending=True):
     def get_key(name):
         minutes, seconds = times_dict[name].replace('s', '').split('m')
-        def fix_sign(num):
-            return -num if descending else num
-        return (fix_sign(int(minutes)), fix_sign(float(seconds)), name)
+        return (fix_sign_for_sorting(int(minutes), descending=descending),
+                fix_sign_for_sorting(float(seconds), descending=descending),
+                name)
     return get_key
 
 def get_sorted_file_list_from_times_dict(times_dict, descending=True):
@@ -123,7 +126,7 @@ def make_diff_table_string(left_times_dict, right_times_dict,
                                    for name, lseconds, rseconds in prediff_times)
     # update to sort by approximate difference, first
     get_key = make_sorting_key(all_names_dict, descending=descending)
-    all_names_dict = dict((name, (abs(int(to_seconds(diff_times_dict[name]))), get_key(name)))
+    all_names_dict = dict((name, (fix_sign_for_sorting(int(abs(to_seconds(diff_times_dict[name]))), descending=descending), get_key(name)))
                           for name in all_names_dict.keys())
     names = sorted(all_names_dict.keys(), key=all_names_dict.get)
     #names = get_sorted_file_list_from_times_dict(all_names_dict, descending=descending)
