@@ -316,10 +316,6 @@ let get_open_goals () =
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) gll) +
     List.length shelf
 
-let constrain_variables init uctx =
-  let levels = Univ.Instance.levels (Univ.UContext.instance init) in
-  UState.constrain_variables levels uctx
-
 type closed_proof_output = (Constr.t * Safe_typing.private_constants) list * UState.t
 
 let close_proof ~keep_body_ucst_separate ?feedback_id ~now
@@ -329,10 +325,12 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
   let poly = pi2 strength (* Polymorphic *) in
   let initial_goals = Proof.initial_goals proof in
   let initial_euctx = Proof.initial_euctx proof in
+  let constrain_variables ctx =
+    UState.constrain_variables (fst (UState.context_set initial_euctx)) ctx
+  in
   let fpl, univs = Future.split2 fpl in
   let universes = if poly || now then Future.force univs else initial_euctx in
-  let binders, univctx = Evd.check_univ_decl (Evd.from_ctx universes) universe_decl in
-  let binders = if poly then Some binders else None in
+  let binders = if poly then Some (UState.universe_binders universes) else None in
   (* Because of dependent subgoals at the beginning of proofs, we could
      have existential variables in the initial types of goals, we need to
      normalise them for the kernel. *)
@@ -348,20 +346,25 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
 	  if not (keep_body_ucst_separate || not (Safe_typing.empty_private_constants = eff)) then
 	    nf t
 	  else t
-	in
+        in
         let used_univs_body = Univops.universes_of_constr body in
         let used_univs_typ = Univops.universes_of_constr typ in
+        (* Universes for private constants are relevant to the body *)
+        let used_univs_body =
+          List.fold_left (fun acc (us,_) -> Univ.LSet.union acc us)
+            used_univs_body (Safe_typing.universes_of_private eff)
+        in
         if keep_body_ucst_separate ||
            not (Safe_typing.empty_private_constants = eff) then
-          let initunivs = Evd.evar_context_universe_context initial_euctx in
-          let ctx = constrain_variables initunivs universes in
+          let initunivs = UState.const_univ_entry ~poly initial_euctx in
+          let ctx = constrain_variables universes in
           (* For vi2vo compilation proofs are computed now but we need to
              complement the univ constraints of the typ with the ones of
              the body.  So we keep the two sets distinct. *)
 	  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
           let ctx_body = UState.restrict ctx used_univs in
-          let _, univs = Evd.check_univ_decl (Evd.from_ctx ctx_body) universe_decl in
-          (initunivs, typ), ((body, Univ.ContextSet.of_context univs), eff)
+          let univs = UState.check_mono_univ_decl ctx_body universe_decl in
+          (initunivs, typ), ((body, univs), eff)
         else
           (* Since the proof is computed now, we can simply have 1 set of
              constraints in which we merge the ones for the body and the ones
@@ -370,30 +373,28 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
              TODO: check if restrict is really necessary now. *)
           let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
           let ctx = UState.restrict universes used_univs in
-          let _, univs = Evd.check_univ_decl (Evd.from_ctx ctx) universe_decl in
+          let univs = UState.check_univ_decl ~poly ctx universe_decl in
           (univs, typ), ((body, Univ.ContextSet.empty), eff)
       in 
        fun t p -> Future.split2 (Future.chain p (make_body t))
     else
       fun t p ->
+        (* Already checked the univ_decl for the type universes when starting the proof. *)
+        let univctx = Entries.Monomorphic_const_entry (UState.context_set universes) in
         Future.from_val (univctx, nf t),
         Future.chain p (fun (pt,eff) ->
           (* Deferred proof, we already checked the universe declaration with
              the initial universes, ensure that the final universes respect
              the declaration as well. If the declaration is non-extensible,
              this will prevent the body from adding universes and constraints. *)
-          let bodyunivs = constrain_variables univctx (Future.force univs) in
-          let _, univs = Evd.check_univ_decl (Evd.from_ctx bodyunivs) universe_decl in
-          (pt,Univ.ContextSet.of_context univs),eff)
+          let bodyunivs = constrain_variables (Future.force univs) in
+          let univs = UState.check_mono_univ_decl bodyunivs universe_decl in
+          (pt,univs),eff)
   in
   let entry_fn p (_, t) =
     let t = EConstr.Unsafe.to_constr t in
     let univstyp, body = make_body t p in
     let univs, typ = Future.force univstyp in
-    let univs =
-      if poly then Entries.Polymorphic_const_entry univs
-      else Entries.Monomorphic_const_entry univs
-    in
     {Entries.
       const_entry_body = body;
       const_entry_secctx = section_vars;

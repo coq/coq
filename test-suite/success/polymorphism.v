@@ -190,6 +190,8 @@ Module binders.
     Fail Defined.
   Abort.
 
+  Fail Lemma bar@{u v | } : let x := (fun x => x) : Type@{u} -> Type@{v} in nat.
+
   Lemma bar@{i j| i < j} : Type@{j}.
   Proof.
     exact Type@{i}.
@@ -199,6 +201,10 @@ Module binders.
   Proof.
     exact Type@{i}.
   Qed.
+
+  Monomorphic Universe M.
+  Fail Definition with_mono@{u|} : Type@{M} := Type@{u}.
+  Definition with_mono@{u|u < M} : Type@{M} := Type@{u}.
 
 End binders.
     
@@ -399,6 +405,31 @@ Module Anonymous.
 
 End Anonymous.
 
+Module Restrict.
+  (* Universes which don't appear in the term should be pruned, unless they have names *)
+  Set Universe Polymorphism.
+
+  Ltac exact0 := let x := constr:(Type) in exact 0.
+  Definition dummy_pruned@{} : nat := ltac:(exact0).
+
+  Definition named_not_pruned@{u} : nat := 0.
+  Check named_not_pruned@{_}.
+
+  Definition named_not_pruned_nonstrict : nat := ltac:(let x := constr:(Type@{u}) in exact 0).
+  Check named_not_pruned_nonstrict@{_}.
+
+  Lemma lemma_restrict_poly@{} : nat.
+  Proof. exact0. Defined.
+
+  Unset Universe Polymorphism.
+  Lemma lemma_restrict_mono_qed@{} : nat.
+  Proof. exact0. Qed.
+
+  Lemma lemma_restrict_abstract@{} : nat.
+  Proof. abstract exact0. Qed.
+
+End Restrict.
+
 Module F.
   Context {A B : Type}.
   Definition foo : Type := B.
@@ -430,3 +461,10 @@ Section test_letin_subtyping.
   Qed.
 
 End test_letin_subtyping.
+
+Module ObligationRegression.
+  (** Test for a regression encountered when fixing obligations for
+      stronger restriction of universe context. *)
+  Require Import CMorphisms.
+  Check trans_co_eq_inv_arrow_morphism@{_ _ _ _ _  _ _ _}.
+End ObligationRegression.

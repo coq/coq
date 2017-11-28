@@ -93,7 +93,7 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
         let mib = Environ.lookup_mind mi env in
 	let ulen = 
           match mib.Declarations.mind_universes with
-          | Declarations.Monomorphic_ind ctx -> Univ.UContext.size ctx
+          | Declarations.Monomorphic_ind ctx -> Univ.ContextSet.size ctx
           | Declarations.Polymorphic_ind auctx -> Univ.AUContext.size auctx
           | Declarations.Cumulative_ind cumi -> 
             Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)

@@ -1423,7 +1423,7 @@ sig
     | TemplateArity of 'b
 
   type constant_universes =
-    | Monomorphic_const of Univ.UContext.t
+    | Monomorphic_const of Univ.ContextSet.t
     | Polymorphic_const of Univ.AUContext.t
 
   type projection_body = {
@@ -1490,7 +1490,7 @@ sig
                        | MEwith of module_alg_expr * with_declaration
 
   type abstract_inductive_universes =
-  | Monomorphic_ind of Univ.UContext.t
+  | Monomorphic_ind of Univ.ContextSet.t
   | Polymorphic_ind of Univ.AUContext.t
   | Cumulative_ind of Univ.ACumulativityInfo.t
 
@@ -1557,7 +1557,7 @@ sig
     | LocalAssumEntry of constr
 
   type inductive_universes =
-    | Monomorphic_ind_entry of Univ.UContext.t
+    | Monomorphic_ind_entry of Univ.ContextSet.t
     | Polymorphic_ind_entry of Univ.UContext.t
     | Cumulative_ind_entry of Univ.CumulativityInfo.t
 
@@ -1586,8 +1586,9 @@ sig
   type 'a proof_output = Constr.t Univ.in_universe_context_set * 'a
   type 'a const_entry_body = 'a proof_output Future.computation
   type constant_universes_entry =
-    | Monomorphic_const_entry of Univ.UContext.t
+    | Monomorphic_const_entry of Univ.ContextSet.t
     | Polymorphic_const_entry of Univ.UContext.t
+  type 'a in_constant_universes_entry = 'a * constant_universes_entry
   type 'a definition_entry =
                                { const_entry_body   : 'a const_entry_body;
                                  (* List of section variables *)
@@ -1598,7 +1599,7 @@ sig
                                  const_entry_universes   : constant_universes_entry;
                                  const_entry_opaque      : bool;
                                  const_entry_inline_code : bool }
-  type parameter_entry = Context.Named.t option * bool * Constr.types Univ.in_universe_context * inline
+  type parameter_entry = Context.Named.t option * Constr.types in_constant_universes_entry * inline
 
   type projection_entry = {
     proj_entry_ind : MutInd.t;
@@ -2769,6 +2770,9 @@ sig
   val context_set : t -> Univ.ContextSet.t
   val of_context_set : Univ.ContextSet.t -> t
 
+  val const_univ_entry : poly:bool -> t -> Entries.constant_universes_entry
+  val ind_univ_entry : poly:bool -> t -> Entries.inductive_universes
+
   type rigid =
     | UnivRigid
     | UnivFlexible of bool
@@ -2878,7 +2882,7 @@ sig
     val clear_metas : evar_map -> evar_map
 
     (** Allocates a new evar that represents a {i sort}. *)
-    val new_sort_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * Sorts.t
+    val new_sort_variable : ?loc:Loc.t -> ?name:Names.Id.t -> rigid -> evar_map -> evar_map * Sorts.t
 
     val remove : evar_map -> Evar.t -> evar_map
     val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> Environ.env ->
@@ -2890,10 +2894,13 @@ sig
     val universe_context_set : evar_map -> Univ.ContextSet.t
     val evar_ident : Evar.t -> evar_map -> Names.Id.t option
     val extract_all_conv_pbs : evar_map -> evar_map * evar_constraint list
-    val universe_context : names:(Names.Id.t Loc.located) list -> extensible:bool -> evar_map ->
-                           (Names.Id.t * Univ.Level.t) list * Univ.UContext.t
+    val universe_binders : evar_map -> Universes.universe_binders
     val nf_constraints : evar_map -> evar_map
     val from_ctx : UState.t -> evar_map
+
+    val to_universe_context : evar_map -> Univ.UContext.t
+    val const_univ_entry : poly:bool -> evar_map -> Entries.constant_universes_entry
+    val ind_univ_entry : poly:bool -> evar_map -> Entries.inductive_universes
 
     val meta_list : evar_map -> (Constr.metavariable * clbinding) list
 
@@ -4677,11 +4684,11 @@ sig
 
   val declare_definition :
     ?internal:internal_flag -> ?opaque:bool -> ?kind:Decl_kinds.definition_object_kind ->
-    ?local:bool -> ?poly:Decl_kinds.polymorphic -> Names.Id.t -> ?types:Constr.t ->
-    Constr.t Univ.in_universe_context_set -> Names.Constant.t
+    ?local:bool -> Names.Id.t -> ?types:Constr.t ->
+    Constr.t Entries.in_constant_universes_entry -> Names.Constant.t
   val definition_entry : ?fix_exn:Future.fix_exn ->
     ?opaque:bool -> ?inline:bool -> ?types:Constr.types ->
-    ?poly:Decl_kinds.polymorphic -> ?univs:Univ.UContext.t ->
+    ?univs:Entries.constant_universes_entry ->
     ?eff:Safe_typing.private_constants -> Constr.t -> Safe_typing.private_constants Entries.definition_entry
   val definition_message : Names.Id.t -> unit
   val declare_variable : Names.Id.t -> variable_declaration -> Libnames.object_name

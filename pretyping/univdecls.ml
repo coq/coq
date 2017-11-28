@@ -6,9 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
-open CErrors
 open Names
+open CErrors
 
 (** Local universes and constraints declarations *)
 type universe_decl =
@@ -22,27 +21,16 @@ let default_univ_decl =
     univdecl_extensible_constraints = true }
 
 let interp_univ_constraints env evd cstrs =
-  let open Misctypes in
-  let u_of_id x =
-    match x with
-    | Misctypes.GProp -> Loc.tag Univ.Level.prop
-    | GSet  -> Loc.tag Univ.Level.set
-    | GType None | GType (Some (_, Anonymous)) ->
-       user_err ~hdr:"interp_constraint"
-                     (str "Cannot declare constraints on anonymous universes")
-    | GType (Some (loc, Name id)) ->
-       try loc, Evd.universe_of_name evd (Id.to_string id)
-       with Not_found ->
-         user_err ?loc ~hdr:"interp_constraint" (str "Undeclared universe " ++ Id.print id)
-  in
   let interp (evd,cstrs) (u, d, u') =
-    let lloc, ul = u_of_id u and rloc, u'l = u_of_id u' in
+    let ul = Pretyping.interp_known_glob_level evd u in
+    let u'l = Pretyping.interp_known_glob_level evd u' in
     let cstr = (ul,d,u'l) in
     let cstrs' = Univ.Constraint.add cstr cstrs in
     try let evd = Evd.add_constraints evd (Univ.Constraint.singleton cstr) in
         evd, cstrs'
     with Univ.UniverseInconsistency e ->
-      user_err  ~hdr:"interp_constraint" (str "Universe inconsistency" (* TODO *))
+      user_err ~hdr:"interp_constraint"
+        (Univ.explain_universe_inconsistency (Termops.pr_evd_level evd) e)
   in
   List.fold_left interp (evd,Univ.Constraint.empty) cstrs
 

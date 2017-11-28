@@ -756,10 +756,12 @@ let evar_universe_context d = d.universes
 
 let universe_context_set d = UState.context_set d.universes
 
-let universe_context ~names ~extensible evd =
-  UState.universe_context ~names ~extensible evd.universes
+let to_universe_context evd = UState.context evd.universes
 
-let check_univ_decl evd decl = UState.check_univ_decl evd.universes decl
+let const_univ_entry ~poly evd = UState.const_univ_entry ~poly evd.universes
+let ind_univ_entry ~poly evd = UState.ind_univ_entry ~poly evd.universes
+
+let check_univ_decl ~poly evd decl = UState.check_univ_decl ~poly evd.universes decl
 
 let restrict_universe_context evd vars =
   { evd with universes = UState.restrict evd.universes vars }
@@ -802,7 +804,7 @@ let make_evar_universe_context e l =
   | Some us ->
       List.fold_left
         (fun uctx (loc,id) ->
-        fst (UState.new_univ_variable ?loc univ_rigid (Some (Id.to_string id)) uctx))
+        fst (UState.new_univ_variable ?loc univ_rigid (Some id) uctx))
         uctx us
 
 (****************************************)
@@ -933,8 +935,7 @@ let nf_constraints evd =
 
 let universe_of_name evd s = UState.universe_of_name evd.universes s
 
-let add_universe_name evd s l =
-  { evd with universes = UState.add_universe_name evd.universes s l }
+let universe_binders evd = UState.universe_binders evd.universes
 
 let universes evd = UState.ugraph evd.universes
 

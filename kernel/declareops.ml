@@ -126,7 +126,7 @@ let hcons_const_def = function
 let hcons_const_universes cbu =
   match cbu with
   | Monomorphic_const ctx -> 
-    Monomorphic_const (Univ.hcons_universe_context ctx)
+    Monomorphic_const (Univ.hcons_universe_context_set ctx)
   | Polymorphic_const ctx -> 
     Polymorphic_const (Univ.hcons_abstract_universe_context ctx)
 
@@ -274,7 +274,7 @@ let hcons_mind_packet oib =
 
 let hcons_mind_universes miu =
   match miu with
-  | Monomorphic_ind ctx -> Monomorphic_ind (Univ.hcons_universe_context ctx)
+  | Monomorphic_ind ctx -> Monomorphic_ind (Univ.hcons_universe_context_set ctx)
   | Polymorphic_ind ctx -> Polymorphic_ind (Univ.hcons_abstract_universe_context ctx)
   | Cumulative_ind cui -> Cumulative_ind (Univ.hcons_abstract_cumulativity_info cui)
 

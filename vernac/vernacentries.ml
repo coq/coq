@@ -1555,8 +1555,8 @@ let vernac_check_may_eval ?loc redexp glopt rc =
   let sigma' = Evarconv.solve_unif_constraints_with_heuristics env sigma' in
   Evarconv.check_problems_are_solved env sigma';
   let sigma',nf = Evarutil.nf_evars_and_universes sigma' in
-  let pl, uctx = Evd.universe_context ~names:[] ~extensible:true sigma' in
-  let env = Environ.push_context uctx (Evarutil.nf_env_evar sigma' env) in
+  let uctx = Evd.universe_context_set sigma' in
+  let env = Environ.push_context_set uctx (Evarutil.nf_env_evar sigma' env) in
   let c = nf c in
   let j =
     if Evarutil.has_undefined_evars sigma' (EConstr.of_constr c) then
@@ -1572,7 +1572,7 @@ let vernac_check_may_eval ?loc redexp glopt rc =
         let j = { j with Environ.uj_type = Reductionops.nf_betaiota sigma' j.Environ.uj_type } in
 	Feedback.msg_notice (print_judgment env sigma' j ++
                     pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma' l ++
-                    Printer.pr_universe_ctx sigma uctx)
+                    Printer.pr_universe_ctx_set sigma uctx)
     | Some r ->
         let (sigma',r_interp) = Hook.get f_interp_redexp env sigma' r in
 	let redfun env evm c =
@@ -1609,9 +1609,10 @@ exception NoHyp
 (* Printing "About" information of a hypothesis of the current goal.
    We only print the type and a small statement to this comes from the
    goal. Precondition: there must be at least one current goal. *)
-let print_about_hyp_globs ?loc ref_or_by_not glopt =
+let print_about_hyp_globs ?loc ref_or_by_not udecl glopt =
   let open Context.Named.Declaration in
   try
+    (* FIXME error on non None udecl if we find the hyp. *)
     let glnumopt = query_command_selector ?loc glopt in
     let gl,id =
       match glnumopt,ref_or_by_not with
@@ -1634,7 +1635,7 @@ let print_about_hyp_globs ?loc ref_or_by_not glopt =
   with (* fallback to globals *)
     | NoHyp | Not_found ->
     let sigma, env = Pfedit.get_current_context () in
-    print_about env sigma ref_or_by_not
+    print_about env sigma ref_or_by_not udecl
 
 
 let vernac_print ?loc env sigma = let open Feedback in function
@@ -1651,7 +1652,7 @@ let vernac_print ?loc env sigma = let open Feedback in function
   | PrintMLLoadPath -> msg_notice (Mltop.print_ml_path ())
   | PrintMLModules -> msg_notice (Mltop.print_ml_modules ())
   | PrintDebugGC -> msg_notice (Mltop.print_gc ())
-  | PrintName qid -> dump_global qid; msg_notice (print_name env sigma qid)
+  | PrintName (qid,udecl) -> dump_global qid; msg_notice (print_name env sigma qid udecl)
   | PrintGraph -> msg_notice (Prettyp.print_graph())
   | PrintClasses -> msg_notice (Prettyp.print_classes())
   | PrintTypeClasses -> msg_notice (Prettyp.print_typeclasses())
@@ -1681,8 +1682,8 @@ let vernac_print ?loc env sigma = let open Feedback in function
       msg_notice (Notation.pr_scope (Constrextern.without_symbols (pr_lglob_constr_env env)) s)
   | PrintVisibility s ->
       msg_notice (Notation.pr_visibility (Constrextern.without_symbols (pr_lglob_constr_env env)) s)
-  | PrintAbout (ref_or_by_not,glnumopt) ->
-     msg_notice (print_about_hyp_globs ?loc ref_or_by_not glnumopt)
+  | PrintAbout (ref_or_by_not,udecl,glnumopt) ->
+     msg_notice (print_about_hyp_globs ?loc ref_or_by_not udecl glnumopt)
   | PrintImplicit qid ->
     dump_global qid; msg_notice (print_impargs qid)
   | PrintAssumptions (o,t,r) ->

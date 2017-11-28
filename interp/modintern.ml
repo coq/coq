@@ -62,7 +62,7 @@ let transl_with_decl env = function
       WithMod (fqid,lookup_module qid)
   | CWith_Definition ((_,fqid),c) ->
     let c, ectx = interp_constr env (Evd.from_env env) c in
-    let ctx = Evd.evar_context_universe_context ectx in
+    let ctx = UState.context ectx in
       WithDef (fqid,(c,ctx))
 
 let loc_of_module l = l.CAst.loc

@@ -79,18 +79,20 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
               environment, because they do not appear in the type of the
               definition. Any inconsistency will be raised at a later stage
               when joining the environment. *)
-	  let env' = Environ.push_context ~strict:true ctx env' in
-	  let c',cst = match cb.const_body with
-	    | Undef _ | OpaqueDef _ ->
-	      let j = Typeops.infer env' c in
-	      let typ = cb.const_type in
-	      let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
-						j.uj_type typ in
-	      j.uj_val, cst'
-	    | Def cs ->
-	       let c' = Mod_subst.force_constr cs in
-	         c, Reduction.infer_conv env' (Environ.universes env') c c'
-	  in c', Monomorphic_const ctx, Univ.ContextSet.add_constraints cst (Univ.ContextSet.of_context ctx)
+          let env' = Environ.push_context ~strict:true ctx env' in
+          let c',cst = match cb.const_body with
+            | Undef _ | OpaqueDef _ ->
+              let j = Typeops.infer env' c in
+              let typ = cb.const_type in
+              let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
+                  j.uj_type typ in
+              j.uj_val, cst'
+            | Def cs ->
+              let c' = Mod_subst.force_constr cs in
+              c, Reduction.infer_conv env' (Environ.universes env') c c'
+          in
+          let ctx = Univ.ContextSet.of_context ctx in
+          c', Monomorphic_const ctx, Univ.ContextSet.add_constraints cst ctx
         | Polymorphic_const uctx ->
           let subst, ctx = Univ.abstract_universes ctx in
           let c = Vars.subst_univs_level_constr subst c in

@@ -313,10 +313,10 @@ let project_hint pri l2r r =
   let id =
     Nameops.add_suffix (Nametab.basename_of_global gr) ("_proj_" ^ (if l2r then "l2r" else "r2l"))
   in
-  let ctx = Evd.universe_context_set sigma in
-  let c = EConstr.to_constr sigma c in
   let poly = Flags.use_polymorphic_flag () in
-  let c = Declare.declare_definition ~poly ~internal:Declare.InternalTacticRequest id (c,ctx) in
+  let ctx = Evd.const_univ_entry ~poly sigma in
+  let c = EConstr.to_constr sigma c in
+  let c = Declare.declare_definition ~internal:Declare.InternalTacticRequest id (c,ctx) in
   let info = {Vernacexpr.hint_priority = pri; hint_pattern = None} in
     (info,false,true,Hints.PathAny, Hints.IsGlobRef (Globnames.ConstRef c))
 

@@ -1053,6 +1053,7 @@ struct
   let constraints (univs, cst) = cst
   let levels (univs, cst) = univs
 
+  let size (univs,_) = LSet.cardinal univs
 end
 
 type universe_context_set = ContextSet.t

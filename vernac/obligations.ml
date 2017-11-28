@@ -475,20 +475,17 @@ let declare_definition prg =
     (Evd.evar_universe_context_subst prg.prg_ctx) in
   let opaque = prg.prg_opaque in
   let fix_exn = Hook.get get_fix_exn () in
-  let pl, ctx = Evd.check_univ_decl (Evd.from_ctx prg.prg_ctx) prg.prg_univdecl in
-  let ce =
-    definition_entry ~fix_exn
-     ~opaque ~types:(nf typ) ~poly:(pi2 prg.prg_kind)
-     ~univs:(Evd.evar_context_universe_context prg.prg_ctx) (nf body)
-  in
+  let typ = nf typ in
+  let body = nf body in
+  let uvars = Univ.LSet.union (Univops.universes_of_constr typ) (Univops.universes_of_constr body) in
+  let uctx = UState.restrict prg.prg_ctx uvars in
+  let univs = UState.check_univ_decl ~poly:(pi2 prg.prg_kind) uctx prg.prg_univdecl in
+  let ce = definition_entry ~fix_exn ~opaque ~types:typ ~univs body in
   let () = progmap_remove prg in
-  let cst =
-    DeclareDef.declare_definition prg.prg_name
-     prg.prg_kind ce [] prg.prg_implicits
-     (Lemmas.mk_hook (fun l r -> Lemmas.call_hook fix_exn prg.prg_hook l r prg.prg_ctx; r))
-  in
-  Universes.register_universe_binders cst pl;
-  cst
+  let ubinders = UState.universe_binders uctx in
+  DeclareDef.declare_definition prg.prg_name
+    prg.prg_kind ce ubinders prg.prg_implicits
+    (Lemmas.mk_hook (fun l r -> Lemmas.call_hook fix_exn prg.prg_hook l r uctx; r))
 
 let rec lam_index n t acc =
   match Constr.kind t with
@@ -552,9 +549,9 @@ let declare_mutual_definition l =
             mk_proof (mkCoFix (i,fixdecls))) 0 l
   in
   (* Declare the recursive definitions *)
-  let ctx = Evd.evar_context_universe_context first.prg_ctx in
+  let univs = UState.const_univ_entry ~poly first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
-  let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) [] ctx)
+  let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) Universes.empty_binders univs)
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
     List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;
@@ -636,12 +633,11 @@ let declare_obligation prg obl body ty uctx =
 	  shrink_body body ty else [], body, ty, [||]
       in
       let body = ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
-      let univs = if poly then Polymorphic_const_entry uctx else Monomorphic_const_entry uctx in
       let ce =
         { const_entry_body = Future.from_val ~fix_exn:(fun x -> x) body;
           const_entry_secctx = None;
 	  const_entry_type = ty;
-	  const_entry_universes = univs;
+          const_entry_universes = uctx;
 	  const_entry_opaque = opaque;
           const_entry_inline_code = false;
           const_entry_feedback = None;
@@ -650,13 +646,15 @@ let declare_obligation prg obl body ty uctx =
       let constant = Declare.declare_constant obl.obl_name ~local:true
 	(DefinitionEntry ce,IsProof Property)
       in
-	if not opaque then add_hint (Locality.make_section_locality None) prg constant;
-	definition_message obl.obl_name;
-	true, { obl with obl_body =
-	    if poly then
-	      Some (DefinedObl (constant, Univ.UContext.instance uctx))
-	    else
-	      Some (TermObl (it_mkLambda_or_LetIn_or_clean (mkApp (mkConst constant, args)) ctx)) }
+      if not opaque then add_hint (Locality.make_section_locality None) prg constant;
+      definition_message obl.obl_name;
+      let body = match uctx with
+        | Polymorphic_const_entry uctx ->
+          Some (DefinedObl (constant, Univ.UContext.instance uctx))
+        | Monomorphic_const_entry _ ->
+          Some (TermObl (it_mkLambda_or_LetIn_or_clean (mkApp (mkConst constant, args)) ctx))
+      in
+      true, { obl with obl_body = body }
 
 let init_prog_info ?(opaque = false) sign n udecl b t ctx deps fixkind
 		   notations obls impls kind reduce hook =
@@ -830,49 +828,63 @@ let obligation_terminator name num guard hook auto pf =
   match pf with
   | Admitted _ -> apply_terminator term pf
   | Proved (opq, id, proof) ->
-    if not !shrink_obligations then apply_terminator term pf
-    else
-      let (_, (entry, uctx, _)) = Pfedit.cook_this_proof proof in
-      let env = Global.env () in
-      let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
-      let ty = entry.Entries.const_entry_type in
-      let (body, cstr), () = Future.force entry.Entries.const_entry_body in
-      let sigma = Evd.from_ctx (fst uctx) in
-      let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma cstr in
-      Inductiveops.control_only_guard (Global.env ()) body;
-      (** Declare the obligation ourselves and drop the hook *)
-      let prg = get_info (ProgMap.find name !from_prg) in
-      (** Ensure universes are substituted properly in body and type *)
-      let body = EConstr.to_constr sigma (EConstr.of_constr body) in
-      let ty = Option.map (fun x -> EConstr.to_constr sigma (EConstr.of_constr x)) ty in
-      let ctx = Evd.evar_universe_context sigma in
-      let prg = { prg with prg_ctx = ctx } in
-      let obls, rem = prg.prg_obligations in
-      let obl = obls.(num) in
-      let status =
-        match obl.obl_status, opq with
-        | (_, Evar_kinds.Expand), Vernacexpr.Opaque -> err_not_transp ()
-        | (true, _), Vernacexpr.Opaque -> err_not_transp ()
-        | (false, _), Vernacexpr.Opaque -> Evar_kinds.Define true
-        | (_, Evar_kinds.Define true), Vernacexpr.Transparent -> Evar_kinds.Define false
-        | (_, status), Vernacexpr.Transparent -> status
-      in
-      let obl = { obl with obl_status = false, status } in
-      let uctx = Evd.evar_context_universe_context ctx in
-      let (_, obl) = declare_obligation prg obl body ty uctx in
-      let obls = Array.copy obls in
-      let _ = obls.(num) <- obl in
-      try
+    let (_, (entry, uctx, _)) = Pfedit.cook_this_proof proof in
+    let env = Global.env () in
+    let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
+    let ty = entry.Entries.const_entry_type in
+    let (body, cstr), () = Future.force entry.Entries.const_entry_body in
+    let sigma = Evd.from_ctx (fst uctx) in
+    let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma cstr in
+    Inductiveops.control_only_guard (Global.env ()) body;
+    (** Declare the obligation ourselves and drop the hook *)
+    let prg = get_info (ProgMap.find name !from_prg) in
+    (** Ensure universes are substituted properly in body and type *)
+    let body = EConstr.to_constr sigma (EConstr.of_constr body) in
+    let ty = Option.map (fun x -> EConstr.to_constr sigma (EConstr.of_constr x)) ty in
+    let ctx = Evd.evar_universe_context sigma in
+    let obls, rem = prg.prg_obligations in
+    let obl = obls.(num) in
+    let status =
+      match obl.obl_status, opq with
+      | (_, Evar_kinds.Expand), Vernacexpr.Opaque -> err_not_transp ()
+      | (true, _), Vernacexpr.Opaque -> err_not_transp ()
+      | (false, _), Vernacexpr.Opaque -> Evar_kinds.Define true
+      | (_, Evar_kinds.Define true), Vernacexpr.Transparent ->
+        Evar_kinds.Define false
+      | (_, status), Vernacexpr.Transparent -> status
+    in
+    let obl = { obl with obl_status = false, status } in
+    let ctx =
+      if pi2 prg.prg_kind then ctx
+      else UState.union prg.prg_ctx ctx
+    in
+    let uctx = UState.const_univ_entry ~poly:(pi2 prg.prg_kind) ctx in
+    let (_, obl) = declare_obligation prg obl body ty uctx in
+    let obls = Array.copy obls in
+    let _ = obls.(num) <- obl in
+    let prg_ctx =
+      if pi2 (prg.prg_kind) then (* Polymorphic *)
+        (** We merge the new universes and constraints of the
+            polymorphic obligation with the existing ones *)
+        UState.union prg.prg_ctx ctx
+      else
+        (** The first obligation declares the univs of the constant,
+            each subsequent obligation declares its own additional
+            universes and constraints if any *)
+        UState.make (Global.universes ())
+    in
+    let prg = { prg with prg_ctx } in
+    try
       ignore (update_obls prg obls (pred rem));
       if pred rem > 0 then
         begin
-	  let deps = dependencies obls num in
-	  if not (Int.Set.is_empty deps) then
-	    ignore (auto (Some name) None deps)
-	end
-      with e when CErrors.noncritical e ->
-        let e = CErrors.push e in
-        pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e))
+          let deps = dependencies obls num in
+          if not (Int.Set.is_empty deps) then
+            ignore (auto (Some name) None deps)
+        end
+    with e when CErrors.noncritical e ->
+      let e = CErrors.push e in
+      pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e))
 
 let obligation_hook prg obl num auto ctx' _ gr =
   let obls, rem = prg.prg_obligations in
@@ -893,7 +905,8 @@ in
       let ctx' = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx')) in
       Univ.Instance.empty, Evd.evar_universe_context ctx'
     else
-      let (_, uctx) = UState.universe_context ~names:[] ~extensible:true ctx' in
+      (* We get the right order somehow, but surely it could be enforced in a clearer way. *)
+      let uctx = UState.context ctx' in
       Univ.UContext.instance uctx, ctx'
   in
   let obl = { obl with obl_body = Some (DefinedObl (cst, inst)) } in
@@ -969,13 +982,16 @@ and solve_obligation_by_tac prg obls i tac =
 	    let evd = Evd.from_ctx prg.prg_ctx in
 	    let evd = Evd.update_sigma_env evd (Global.env ()) in
 	    let t, ty, ctx =
-	      solve_by_tac obl.obl_name (evar_of_obligation obl) tac
-	        (pi2 prg.prg_kind) (Evd.evar_universe_context evd)
-	    in
-	    let uctx = Evd.evar_context_universe_context ctx in
-	    let prg = {prg with prg_ctx = ctx} in
-	    let def, obl' = declare_obligation prg obl t ty uctx in
-	      obls.(i) <- obl';
+              solve_by_tac obl.obl_name (evar_of_obligation obl) tac
+                (pi2 prg.prg_kind) (Evd.evar_universe_context evd)
+            in
+            let uctx = if pi2 prg.prg_kind
+              then Polymorphic_const_entry (UState.context ctx)
+              else Monomorphic_const_entry (UState.context_set ctx)
+            in
+            let prg = {prg with prg_ctx = ctx} in
+            let def, obl' = declare_obligation prg obl t ty uctx in
+              obls.(i) <- obl';
 	      if def && not (pi2 prg.prg_kind) then (
 	        (* Declare the term constraints with the first obligation only *)
 	        let evd = Evd.from_env (Global.env ()) in
@@ -1123,9 +1139,9 @@ let admit_prog prg =
         match x.obl_body with
         | None ->
             let x = subst_deps_obl obls x in
-	    let ctx = Evd.evar_context_universe_context prg.prg_ctx in
+            let ctx = Monomorphic_const_entry (UState.context_set prg.prg_ctx) in
             let kn = Declare.declare_constant x.obl_name ~local:true
-              (ParameterEntry (None,false,(x.obl_type,ctx),None), IsAssumption Conjectural)
+              (ParameterEntry (None,(x.obl_type,ctx),None), IsAssumption Conjectural)
             in
               assumption_message x.obl_name;
               obls.(i) <- { x with obl_body = Some (DefinedObl (kn, Univ.Instance.empty)) }

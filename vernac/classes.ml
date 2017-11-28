@@ -119,14 +119,14 @@ let declare_instance_constant k info global imps ?hook id decl poly evm term ter
 				 (Univops.universes_of_constr term) in
     Evd.restrict_universe_context evm levels 
   in
-  let pl, uctx = Evd.check_univ_decl evm decl in
+  let uctx = Evd.check_univ_decl ~poly evm decl in
   let entry = 
-    Declare.definition_entry ~types:termtype ~poly ~univs:uctx term
+    Declare.definition_entry ~types:termtype ~univs:uctx term
   in
   let cdecl = (DefinitionEntry entry, kind) in
   let kn = Declare.declare_constant id cdecl in
     Declare.definition_message id;
-    Universes.register_universe_binders (ConstRef kn) pl;
+    Universes.register_universe_binders (ConstRef kn) (Evd.universe_binders evm);
     instance_hook k info global imps ?hook (ConstRef kn);
     id
 
@@ -200,16 +200,16 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 	let nf, subst = Evarutil.e_nf_evars_and_universes evars in
 	let termtype =
 	  let t = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
-	    nf t
-	in
-	Pretyping.check_evars env Evd.empty !evars (EConstr.of_constr termtype);
-	let pl, ctx = Evd.check_univ_decl !evars decl in
-	let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
-	  (ParameterEntry 
-            (None,poly,(termtype,ctx),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
-	in
-	  Universes.register_universe_binders (ConstRef cst) pl;
-	  instance_hook k pri global imps ?hook (ConstRef cst); id
+            nf t
+        in
+        Pretyping.check_evars env Evd.empty !evars (EConstr.of_constr termtype);
+        let univs = Evd.check_univ_decl ~poly !evars decl in
+        let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
+          (ParameterEntry
+            (None,(termtype,univs),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
+        in
+          Universes.register_universe_binders (ConstRef cst) (Evd.universe_binders !evars);
+          instance_hook k pri global imps ?hook (ConstRef cst); id
       end
     else (
       let props =
@@ -384,14 +384,17 @@ let context poly l =
   let uctx = ref (Evd.universe_context_set !evars) in
   let fn status (id, b, t) =
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
-      let ctx = Univ.ContextSet.to_context !uctx in
       (* Declare the universe context once *)
+      let univs = if poly
+        then Polymorphic_const_entry (Univ.ContextSet.to_context !uctx)
+        else Monomorphic_const_entry !uctx
+      in
       let () = uctx := Univ.ContextSet.empty in
       let decl = match b with
       | None ->
-        (ParameterEntry (None,poly,(t,ctx),None), IsAssumption Logical)
+        (ParameterEntry (None,(t,univs),None), IsAssumption Logical)
       | Some b ->
-        let entry = Declare.definition_entry ~poly ~univs:ctx ~types:t b in
+        let entry = Declare.definition_entry ~univs ~types:t b in
         (DefinitionEntry entry, IsAssumption Logical)
       in
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
@@ -409,16 +412,19 @@ let context poly l =
       in
       let impl = List.exists test impls in
       let decl = (Discharge, poly, Definitional) in
+      let univs = if poly
+        then Polymorphic_const_entry (Univ.ContextSet.to_context !uctx)
+        else Monomorphic_const_entry !uctx
+      in
       let nstatus = match b with
       | None ->
-        pi3 (Command.declare_assumption false decl (t, !uctx) [] [] impl
+        pi3 (Command.declare_assumption false decl (t, univs) Universes.empty_binders [] impl
           Vernacexpr.NoInline (Loc.tag id))
       | Some b ->
-        let ctx = Univ.ContextSet.to_context !uctx in
         let decl = (Discharge, poly, Definition) in
-        let entry = Declare.definition_entry ~poly ~univs:ctx ~types:t b in
+        let entry = Declare.definition_entry ~univs ~types:t b in
         let hook = Lemmas.mk_hook (fun _ gr -> gr) in
-        let _ = DeclareDef.declare_definition id decl entry [] [] hook in
+        let _ = DeclareDef.declare_definition id decl entry Universes.empty_binders [] hook in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in
 	status && nstatus

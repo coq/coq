@@ -32,6 +32,8 @@ val of_context_set : Univ.ContextSet.t -> t
 
 val of_binders : Universes.universe_binders -> t
 
+val universe_binders : t -> Universes.universe_binders
+
 (** {5 Projections} *)
 
 val context_set : t -> Univ.ContextSet.t
@@ -57,6 +59,13 @@ val constraints : t -> Univ.constraints
 val context : t -> Univ.UContext.t
 (** Shorthand for {!context_set} with {!Context_set.to_context}. *)
 
+val const_univ_entry : poly:bool -> t -> Entries.constant_universes_entry
+(** Pick from {!context} or {!context_set} based on [poly]. *)
+
+val ind_univ_entry : poly:bool -> t -> Entries.inductive_universes
+(** Pick from {!context} or {!context_set} based on [poly].
+    Cannot create cumulative entries. *)
+
 (** {5 Constraints handling} *)
 
 val add_constraints : t -> Univ.constraints -> t
@@ -71,10 +80,7 @@ val add_universe_constraints : t -> Universes.universe_constraints -> t
 
 (** {5 Names} *)
 
-val add_universe_name : t -> string -> Univ.Level.t -> t
-(** Associate a human-readable name to a local variable. *)
-
-val universe_of_name : t -> string -> Univ.Level.t
+val universe_of_name : t -> Id.t -> Univ.Level.t
 (** Retrieve the universe associated to the name. *)
 
 (** {5 Unification} *)
@@ -93,7 +99,7 @@ val merge : ?loc:Loc.t -> bool -> rigid -> t -> Univ.ContextSet.t -> t
 val merge_subst : t -> Universes.universe_opt_subst -> t
 val emit_side_effects : Safe_typing.private_constants -> t -> t
 
-val new_univ_variable : ?loc:Loc.t -> rigid -> string option -> t -> t * Univ.Level.t
+val new_univ_variable : ?loc:Loc.t -> rigid -> Id.t option -> t -> t * Univ.Level.t
 val add_global_univ : t -> Univ.Level.t -> t
 
 (** [make_flexible_variable g algebraic l]
@@ -123,24 +129,23 @@ val refresh_undefined_univ_variables : t -> t * Univ.universe_level_subst
 
 val normalize : t -> t
 
-(** [universe_context names extensible ctx]
-
-    Return a universe context containing the local universes of [ctx]
-    and their constraints. The universes corresponding to [names] come
-    first in the order defined by that list.
-
-    If [extensible] is false, check that the universes of [names] are
-    the only local universes.
-
-    Also return the association list of universe names and universes
-    (including those not in [names]). *)
-val universe_context : names:(Id.t Loc.located) list -> extensible:bool -> t ->
-  (Id.t * Univ.Level.t) list * Univ.UContext.t
-
 type universe_decl =
   (Names.Id.t Loc.located list, Univ.Constraint.t) Misctypes.gen_universe_decl
 
-val check_univ_decl : t -> universe_decl -> Universes.universe_binders * Univ.UContext.t
+(** [check_univ_decl ctx decl]
+
+   If non extensible in [decl], check that the local universes (resp.
+   universe constraints) in [ctx] are implied by [decl].
+
+   Return a [Entries.constant_universes_entry] containing the local
+   universes of [ctx] and their constraints.
+
+   When polymorphic, the universes corresponding to
+   [decl.univdecl_instance] come first in the order defined by that
+   list. *)
+val check_univ_decl : poly:bool -> t -> universe_decl -> Entries.constant_universes_entry
+
+val check_mono_univ_decl : t -> universe_decl -> Univ.ContextSet.t
 
 (** {5 TODO: Document me} *)
 

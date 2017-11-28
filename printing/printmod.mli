@@ -11,6 +11,8 @@ open Names
 (** false iff the module is an element of an open module type *)
 val printable_body : DirPath.t -> bool
 
-val pr_mutual_inductive_body : Environ.env -> MutInd.t -> Declarations.mutual_inductive_body -> Pp.t
+val pr_mutual_inductive_body : Environ.env ->
+  MutInd.t -> Declarations.mutual_inductive_body ->
+  Vernacexpr.univ_name_list option -> Pp.t
 val print_module : bool -> ModPath.t -> Pp.t
 val print_modtype : ModPath.t -> Pp.t

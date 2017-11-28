@@ -249,14 +249,14 @@ let universes_of_private eff =
               in
               match cb.const_universes with
               | Monomorphic_const ctx ->
-                (Univ.ContextSet.of_context ctx) :: acc
+                ctx :: acc
               | Polymorphic_const _ -> acc
            )
            acc l
        | Entries.SEsubproof (c, cb, e) ->
          match cb.const_universes with
               | Monomorphic_const ctx ->
-                (Univ.ContextSet.of_context ctx) :: acc
+                ctx :: acc
               | Polymorphic_const _ -> acc
     )
     [] (Term_typing.uniq_seff eff)
@@ -389,7 +389,6 @@ let push_named_def (id,de) senv =
   | Monomorphic_const_entry _ -> false
   | Polymorphic_const_entry _ -> true
   in
-  let univs = Univ.ContextSet.of_context univs in
   let c, univs = match c with
     | Def c -> Mod_subst.force_constr c, univs
     | OpaqueDef o ->
@@ -425,9 +424,8 @@ let labels_of_mib mib =
 
 let globalize_constant_universes env cb =
   match cb.const_universes with
-  | Monomorphic_const ctx ->
-    let cstrs = Univ.ContextSet.of_context ctx in
-    Now (false, cstrs) ::  
+  | Monomorphic_const cstrs ->
+    Now (false, cstrs) ::
     (match cb.const_body with
      | (Undef _ | Def _) -> []
      | OpaqueDef lc ->
@@ -443,7 +441,7 @@ let globalize_constant_universes env cb =
 let globalize_mind_universes mb =
   match mb.mind_universes with
   | Monomorphic_ind ctx ->
-    [Now (false, Univ.ContextSet.of_context ctx)]
+    [Now (false, ctx)]
   | Polymorphic_ind _ -> [Now (true, Univ.ContextSet.empty)]
   | Cumulative_ind _ -> [Now (true, Univ.ContextSet.empty)]
 

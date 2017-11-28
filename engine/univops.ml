@@ -20,21 +20,79 @@ let universes_of_constr c =
     | _ -> Constr.fold aux s c
   in aux LSet.empty c
 
-let restrict_universe_context (univs,csts) s =
-  (* Universes that are not necessary to typecheck the term.
-     E.g. univs introduced by tactics and not used in the proof term. *)
-  let diff = LSet.diff univs s in
-  let rec aux diff candid univs ness = 
-    let (diff', candid', univs', ness') = 
-      Constraint.fold
-	(fun (l, d, r as c) (diff, candid, univs, csts) ->
-	  if not (LSet.mem l diff) then
-	    (LSet.remove r diff, candid, univs, Constraint.add c csts)
-	  else if not (LSet.mem r diff) then
-	    (LSet.remove l diff, candid, univs, Constraint.add c csts)
-	  else (diff, Constraint.add c candid, univs, csts))
-	candid (diff, Constraint.empty, univs, ness)
-    in
-      if ness' == ness then (LSet.diff univs diff', ness)
-      else aux diff' candid' univs' ness'
-  in aux diff csts univs Constraint.empty
+type graphnode = {
+  mutable up : constraint_type LMap.t;
+  mutable visited : bool
+}
+
+let merge_types d d0 =
+  match d, d0 with
+  | _, Lt | Lt, _ -> Lt
+  | Le, _ | _, Le -> Le
+  | Eq, Eq -> Eq
+
+let merge_up d b up =
+  let find = try Some (LMap.find b up) with Not_found -> None in
+  match find with
+  | Some d0 ->
+    let d = merge_types d d0 in
+    if d == d0 then up else LMap.add b d up
+  | None -> LMap.add b d up
+
+let add_up a d b graph =
+  let node, graph =
+    try LMap.find a graph, graph
+    with Not_found ->
+      let node = { up = LMap.empty; visited = false } in
+      node, LMap.add a node graph
+  in
+  node.up <- merge_up d b node.up;
+  graph
+
+(* for each node transitive close until you find a non removable, discard the rest *)
+let transitive_close removable graph =
+  let rec do_node a node =
+    if not node.visited
+    then
+      let keepup =
+        LMap.fold (fun b d keepup ->
+            if not (LSet.mem b removable)
+            then merge_up d b keepup
+            else
+              begin
+                match LMap.find b graph with
+                | bnode ->
+                  do_node b bnode;
+                  LMap.fold (fun k d' keepup ->
+                    merge_up (merge_types d d') k keepup)
+                    bnode.up keepup
+                | exception Not_found -> keepup
+              end
+          )
+          node.up LMap.empty
+      in
+      node.up <- keepup;
+      node.visited <- true
+  in
+  LMap.iter do_node graph
+
+let restrict_universe_context (univs,csts) keep =
+  let removable = LSet.diff univs keep in
+  let (csts, rem) =
+    Constraint.fold (fun (a,d,b as cst) (csts, rem) ->
+        if LSet.mem a removable || LSet.mem b removable
+        then (csts, add_up a d b rem)
+        else (Constraint.add cst csts, rem))
+      csts (Constraint.empty, LMap.empty)
+  in
+  transitive_close removable rem;
+  let csts =
+    LMap.fold (fun a node csts ->
+        if LSet.mem a removable
+        then csts
+        else
+          LMap.fold (fun b d csts -> Constraint.add (a,d,b) csts)
+            node.up csts)
+      rem csts
+  in
+  (LSet.inter univs keep, csts)

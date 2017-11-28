@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 f4b00c567a972ae950b9ed10c533fda5 checker/cic.mli
+MD5 56ac4cade33eff3d26ed5cdadb580c7e checker/cic.mli
 
 *)
 
@@ -215,7 +215,7 @@ let v_projbody =
 let v_typing_flags =
   v_tuple "typing_flags" [|v_bool; v_bool|]
 
-let v_const_univs = v_sum "constant_universes" 0 [|[|v_context|]; [|v_abs_context|]|]
+let v_const_univs = v_sum "constant_universes" 0 [|[|v_context_set|]; [|v_abs_context|]|]
 
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
@@ -265,7 +265,7 @@ let v_mind_record = Annot ("mind_record",
 
 let v_ind_pack_univs = 
   v_sum "abstract_inductive_universes" 0
-    [|[|v_context|]; [|v_abs_context|]; [|v_abs_cum_info|]|]
+    [|[|v_context_set|]; [|v_abs_context|]; [|v_abs_cum_info|]|]
 
 let v_ind_pack = v_tuple "mutual_inductive_body"
   [|Array v_one_ind;

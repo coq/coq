@@ -21,10 +21,23 @@ val pr_with_global_universes : Level.t -> Pp.t
 
 (** Local universe name <-> level mapping *)
 
-type universe_binders = (Id.t * Univ.Level.t) list
+type universe_binders = Univ.Level.t Names.Id.Map.t
+
+val empty_binders : universe_binders
 
 val register_universe_binders : Globnames.global_reference -> universe_binders -> unit
 val universe_binders_of_global : Globnames.global_reference -> universe_binders
+
+type univ_name_list = Name.t Loc.located list
+
+(** [universe_binders_with_opt_names ref u l]
+
+    If [l] is [Some univs] return the universe binders naming the levels of [u] by [univs] (skipping Anonymous).
+    May error if the lengths mismatch.
+
+    Otherwise return [universe_binders_of_global ref]. *)
+val universe_binders_with_opt_names : Globnames.global_reference ->
+  Univ.Level.t list -> univ_name_list option -> universe_binders
 
 (** The global universe counter *)
 val set_remote_new_univ_level : Level.t RemoteCounter.installer

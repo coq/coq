@@ -493,6 +493,8 @@ type 'a in_evar_universe_context = 'a * UState.t
 val evar_universe_context_set : UState.t -> Univ.ContextSet.t
 val evar_universe_context_constraints : UState.t -> Univ.constraints
 val evar_context_universe_context : UState.t -> Univ.UContext.t
+[@@ocaml.deprecated "alias of UState.context"]
+
 val evar_universe_context_of : Univ.ContextSet.t -> UState.t
 val empty_evar_universe_context : UState.t
 val union_evar_universe_context : UState.t -> UState.t ->
@@ -503,14 +505,14 @@ val constrain_variables : Univ.LSet.t -> UState.t -> UState.t
 
 val evar_universe_context_of_binders :
   Universes.universe_binders -> UState.t
-							    
-val make_evar_universe_context : env -> (Id.t located) list option -> UState.t
-val restrict_universe_context : evar_map -> Univ.LSet.t -> evar_map							   
-(** Raises Not_found if not a name for a universe in this map. *)
-val universe_of_name : evar_map -> string -> Univ.Level.t
-val add_universe_name : evar_map -> string -> Univ.Level.t -> evar_map
 
-val add_constraints_context : UState.t -> 
+val make_evar_universe_context : env -> (Id.t located) list option -> UState.t
+val restrict_universe_context : evar_map -> Univ.LSet.t -> evar_map
+(** Raises Not_found if not a name for a universe in this map. *)
+val universe_of_name : evar_map -> Id.t -> Univ.Level.t
+
+val universe_binders : evar_map -> Universes.universe_binders
+val add_constraints_context : UState.t ->
   Univ.constraints -> UState.t
 
 
@@ -520,9 +522,9 @@ val normalize_evar_universe_context_variables : UState.t ->
 val normalize_evar_universe_context : UState.t -> 
   UState.t
 
-val new_univ_level_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * Univ.Level.t
-val new_univ_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * Univ.Universe.t
-val new_sort_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * Sorts.t
+val new_univ_level_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Level.t
+val new_univ_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Universe.t
+val new_sort_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Sorts.t
 
 val add_global_univ : evar_map -> Univ.Level.t -> evar_map
 
@@ -552,13 +554,20 @@ val check_leq : evar_map -> Univ.Universe.t -> Univ.Universe.t -> bool
 
 val evar_universe_context : evar_map -> UState.t
 val universe_context_set : evar_map -> Univ.ContextSet.t
-val universe_context : names:(Id.t located) list -> extensible:bool -> evar_map ->
-		       (Id.t * Univ.Level.t) list * Univ.UContext.t
 val universe_subst : evar_map -> Universes.universe_opt_subst
 val universes : evar_map -> UGraph.t
 
-val check_univ_decl : evar_map -> UState.universe_decl ->
-  Universes.universe_binders * Univ.UContext.t
+(** [to_universe_context evm] extracts the local universes and
+    constraints of [evm] and orders the universes the same as
+    [Univ.ContextSet.to_context]. *)
+val to_universe_context : evar_map -> Univ.UContext.t
+
+val const_univ_entry : poly:bool -> evar_map -> Entries.constant_universes_entry
+
+(** NB: [ind_univ_entry] cannot create cumulative entries. *)
+val ind_univ_entry : poly:bool -> evar_map -> Entries.inductive_universes
+
+val check_univ_decl : poly:bool -> evar_map -> UState.universe_decl -> Entries.constant_universes_entry
 
 val merge_universe_context : evar_map -> UState.t -> evar_map
 val set_universe_context : evar_map -> UState.t -> evar_map

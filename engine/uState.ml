@@ -11,28 +11,16 @@ open CErrors
 open Util
 open Names
 
-module StringOrd = struct type t = string let compare = String.compare end
-module UNameMap = struct
+module UNameMap = Names.Id.Map
     
-  include Map.Make(StringOrd)
-    
-  let union s t = 
-    if s == t then s
-    else
-      merge (fun k l r -> 
-        match l, r with
-        | Some _, _ -> l
-        | _, _ -> r) s t
-end
-
 type uinfo = {
-  uname : string option;
+  uname : Id.t option;
   uloc : Loc.t option;
 }
 
 (* 2nd part used to check consistency on the fly. *)
 type t =
- { uctx_names : Univ.Level.t UNameMap.t * uinfo Univ.LMap.t;
+ { uctx_names : Universes.universe_binders * uinfo Univ.LMap.t;
    uctx_local : Univ.ContextSet.t; (** The local context of variables *)
    uctx_univ_variables : Universes.universe_opt_subst;
    (** The local universes that are unification variables *)
@@ -59,12 +47,20 @@ let is_empty ctx =
   Univ.ContextSet.is_empty ctx.uctx_local && 
     Univ.LMap.is_empty ctx.uctx_univ_variables
 
+let uname_union s t =
+  if s == t then s
+  else
+    UNameMap.merge (fun k l r ->
+        match l, r with
+        | Some _, _ -> l
+        | _, _ -> r) s t
+
 let union ctx ctx' =
   if ctx == ctx' then ctx
   else if is_empty ctx' then ctx
   else
     let local = Univ.ContextSet.union ctx.uctx_local ctx'.uctx_local in
-    let names = UNameMap.union (fst ctx.uctx_names) (fst ctx'.uctx_names) in
+    let names = uname_union (fst ctx.uctx_names) (fst ctx'.uctx_names) in
     let newus = Univ.LSet.diff (Univ.ContextSet.levels ctx'.uctx_local)
                                (Univ.ContextSet.levels ctx.uctx_local) in
     let newus = Univ.LSet.diff newus (Univ.LMap.domain ctx.uctx_univ_variables) in
@@ -91,6 +87,17 @@ let constraints ctx = snd ctx.uctx_local
 
 let context ctx = Univ.ContextSet.to_context ctx.uctx_local
 
+let const_univ_entry ~poly uctx =
+  let open Entries in
+  if poly then Polymorphic_const_entry (context uctx)
+  else Monomorphic_const_entry (context_set uctx)
+
+(* does not support cumulativity since you need more info *)
+let ind_univ_entry ~poly uctx =
+  let open Entries in
+  if poly then Polymorphic_ind_entry (context uctx)
+  else Monomorphic_ind_entry (context_set uctx)
+
 let of_context_set ctx = { empty with uctx_local = ctx }
 
 let subst ctx = ctx.uctx_univ_variables
@@ -102,6 +109,9 @@ let initial_graph ctx = ctx.uctx_initial_universes
 let algebraics ctx = ctx.uctx_univ_algebraic
 
 let add_uctx_names ?loc s l (names, names_rev) =
+  if UNameMap.mem s names
+  then user_err ?loc ~hdr:"add_uctx_names"
+      Pp.(str "Universe " ++ Names.Id.print s ++ str" already bound.");
   (UNameMap.add s l names, Univ.LMap.add l { uname = Some s; uloc = loc } names_rev)
 
 let add_uctx_loc l loc (names, names_rev) =
@@ -111,10 +121,14 @@ let add_uctx_loc l loc (names, names_rev) =
 
 let of_binders b =
   let ctx = empty in
-  let names =
-    List.fold_left (fun acc (id, l) -> add_uctx_names (Id.to_string id) l acc)
-                   ctx.uctx_names b
-  in { ctx with uctx_names = names }
+  let rmap =
+    UNameMap.fold (fun id l rmap ->
+        Univ.LMap.add l { uname = Some id; uloc = None } rmap)
+      b Univ.LMap.empty
+  in
+  { ctx with uctx_names = b, rmap }
+
+let universe_binders ctx = fst ctx.uctx_names
 
 let instantiate_variable l b v =
   try v := Univ.LMap.update l (Some b) !v
@@ -253,69 +267,105 @@ let constrain_variables diff ctx =
 let pr_uctx_level uctx = 
   let map, map_rev = uctx.uctx_names in 
     fun l ->
-      try str (Option.get (Univ.LMap.find l map_rev).uname)
+      try Id.print (Option.get (Univ.LMap.find l map_rev).uname)
       with Not_found | Option.IsNone ->
         Universes.pr_with_global_universes l
 
 type universe_decl =
   (Names.Id.t Loc.located list, Univ.Constraint.t) Misctypes.gen_universe_decl
 
-let universe_context ~names ~extensible ctx =
-  let levels = Univ.ContextSet.levels ctx.uctx_local in
+let error_unbound_universes left uctx =
+  let open Univ in
+  let n = LSet.cardinal left in
+  let loc =
+    try
+      let info =
+        LMap.find (LSet.choose left) (snd uctx.uctx_names) in
+      info.uloc
+    with Not_found -> None
+  in
+  user_err ?loc ~hdr:"universe_context"
+    ((str(CString.plural n "Universe") ++ spc () ++
+      LSet.pr (pr_uctx_level uctx) left ++
+      spc () ++ str (CString.conjugate_verb_to_be n) ++
+      str" unbound."))
+
+let universe_context ~names ~extensible uctx =
+  let open Univ in
+  let levels = ContextSet.levels uctx.uctx_local in
   let newinst, left =
     List.fold_right
       (fun (loc,id) (newinst, acc) ->
          let l =
-           try UNameMap.find (Id.to_string id) (fst ctx.uctx_names)
-           with Not_found ->
-             user_err ?loc ~hdr:"universe_context"
-               (str"Universe " ++ Id.print id ++ str" is not bound anymore.")
-         in (l :: newinst, Univ.LSet.remove l acc))
+           try UNameMap.find id (fst uctx.uctx_names)
+           with Not_found -> assert false
+         in (l :: newinst, LSet.remove l acc))
       names ([], levels)
   in
-  if not extensible && not (Univ.LSet.is_empty left) then
-    let n = Univ.LSet.cardinal left in
-    let loc =
-      try
-        let info =
-          Univ.LMap.find (Univ.LSet.choose left) (snd ctx.uctx_names) in
-        info.uloc
-      with Not_found -> None
-    in
-    user_err ?loc ~hdr:"universe_context"
-      ((str(CString.plural n "Universe") ++ spc () ++
-	Univ.LSet.pr (pr_uctx_level ctx) left ++
-	spc () ++ str (CString.conjugate_verb_to_be n) ++
-        str" unbound."))
+  if not extensible && not (LSet.is_empty left)
+  then error_unbound_universes left uctx
   else
-    let left = Univ.ContextSet.sort_levels (Array.of_list (Univ.LSet.elements left)) in
+    let left = ContextSet.sort_levels (Array.of_list (LSet.elements left)) in
     let inst = Array.append (Array.of_list newinst) left in
-    let inst = Univ.Instance.of_array inst in
-    let map = List.map (fun (s,l) -> Id.of_string s, l) (UNameMap.bindings (fst ctx.uctx_names)) in
-    let ctx = Univ.UContext.make (inst,
-                                  Univ.ContextSet.constraints ctx.uctx_local) in
-    map, ctx
+    let inst = Instance.of_array inst in
+    let ctx = UContext.make (inst, ContextSet.constraints uctx.uctx_local) in
+    ctx
 
-let check_implication uctx cstrs ctx =
+let check_universe_context_set ~names ~extensible uctx =
+  if extensible then ()
+  else
+    let open Univ in
+    let left = List.fold_left (fun left (loc,id) ->
+        let l =
+          try UNameMap.find id (fst uctx.uctx_names)
+          with Not_found -> assert false
+        in LSet.remove l left)
+        (ContextSet.levels uctx.uctx_local) names
+    in
+    if not (LSet.is_empty left)
+    then error_unbound_universes left uctx
+
+let check_implication uctx cstrs cstrs' =
   let gr = initial_graph uctx in
   let grext = UGraph.merge_constraints cstrs gr in
-  let cstrs' = Univ.UContext.constraints ctx in
   if UGraph.check_constraints cstrs' grext then ()
   else CErrors.user_err ~hdr:"check_univ_decl"
       (str "Universe constraints are not implied by the ones declared.")
 
-let check_univ_decl uctx decl =
+let check_mono_univ_decl uctx decl =
   let open Misctypes in
-  let pl, ctx = universe_context
-      ~names:decl.univdecl_instance
-      ~extensible:decl.univdecl_extensible_instance
-      uctx
+  let () =
+    let names = decl.univdecl_instance in
+    let extensible = decl.univdecl_extensible_instance in
+    check_universe_context_set ~names ~extensible uctx
   in
   if not decl.univdecl_extensible_constraints then
-    check_implication uctx decl.univdecl_constraints ctx;
-  pl, ctx
+    check_implication uctx
+      decl.univdecl_constraints
+      (Univ.ContextSet.constraints uctx.uctx_local);
+  uctx.uctx_local
+
+let check_univ_decl ~poly uctx decl =
+  let open Misctypes in
+  let ctx =
+    let names = decl.univdecl_instance in
+    let extensible = decl.univdecl_extensible_instance in
+    if poly
+    then Entries.Polymorphic_const_entry (universe_context ~names ~extensible uctx)
+    else
+      let () = check_universe_context_set ~names ~extensible uctx in
+      Entries.Monomorphic_const_entry uctx.uctx_local
+  in
+  if not decl.univdecl_extensible_constraints then
+    check_implication uctx
+      decl.univdecl_constraints
+      (Univ.ContextSet.constraints uctx.uctx_local);
+  ctx
 
 let restrict ctx vars =
+  let vars = Names.Id.Map.fold (fun na l vars -> Univ.LSet.add l vars)
+      (fst ctx.uctx_names) vars
+  in
   let uctx' = Univops.restrict_universe_context ctx.uctx_local vars in
   { ctx with uctx_local = uctx' }
 
@@ -525,10 +575,6 @@ let normalize uctx =
 
 let universe_of_name uctx s = 
   UNameMap.find s (fst uctx.uctx_names)
-
-let add_universe_name uctx s l =
-  let names' = add_uctx_names s l uctx.uctx_names in
-  { uctx with uctx_names = names' }
 
 let update_sigma_env uctx env =
   let univs = Environ.universes env in

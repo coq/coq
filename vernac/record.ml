@@ -95,7 +95,7 @@ let binder_of_decl = function
 
 let binders_of_decls = List.map binder_of_decl
 
-let typecheck_params_and_fields finite def id pl t ps nots fs =
+let typecheck_params_and_fields finite def id poly pl t ps nots fs =
   let env0 = Global.env () in
   let evd, decl = Univdecls.interp_univ_decl_opt env0 pl in
   let evars = ref evd in
@@ -167,10 +167,11 @@ let typecheck_params_and_fields finite def id pl t ps nots fs =
   let newps = List.map (EConstr.to_rel_decl evars) newps in
   let typ = EConstr.to_constr evars typ in
   let ce t = Pretyping.check_evars env0 Evd.empty evars (EConstr.of_constr t) in
-  let univs = Evd.check_univ_decl evars decl in
+  let univs = Evd.check_univ_decl ~poly evars decl in
+  let ubinders = Evd.universe_binders evars in
     List.iter (iter_constr ce) (List.rev newps);
     List.iter (iter_constr ce) (List.rev newfs);
-    univs, typ, template, imps, newps, impls, newfs
+    ubinders, univs, typ, template, imps, newps, impls, newfs
 
 let degenerate_decl decl =
   let id = match RelDecl.get_name decl with
@@ -265,12 +266,14 @@ let warn_non_primitive_record =
                     strbrk" could not be defined as a primitive record")))
 
 (* We build projections *)
-let declare_projections indsp ?(kind=StructureComponent) binder_name coers fieldimpls fields =
+let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers ubinders fieldimpls fields =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
   let poly = Declareops.inductive_is_polymorphic mib in
-  let ctx = Univ.AUContext.repr (Declareops.inductive_polymorphic_context mib) in
-  let u = Univ.UContext.instance ctx in
+  let u = match ctx with
+    | Polymorphic_const_entry ctx -> Univ.UContext.instance ctx
+    | Monomorphic_const_entry ctx -> Univ.Instance.empty
+  in
   let paramdecls = Inductive.inductive_paramdecls (mib, u) in
   let indu = indsp, u in
   let r = mkIndU (indsp,u) in
@@ -304,9 +307,11 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
 	    let kn, term = 
 	      if is_local_assum decl && primitive then
 		(** Already defined in the kernel silently *)
-		let kn = destConstRef (Nametab.locate (Libnames.qualid_of_ident fid)) in
-		  Declare.definition_message fid;
-		  kn, mkProj (Projection.make kn false,mkRel 1)
+                let gr = Nametab.locate (Libnames.qualid_of_ident fid) in
+                let kn = destConstRef gr in
+                Declare.definition_message fid;
+                Universes.register_universe_binders gr ubinders;
+                kn, mkProj (Projection.make kn false,mkRel 1)
 	      else
 		let ccl = subst_projection fid subst ti in
 		let body = match decl with
@@ -325,16 +330,12 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
 		let projtyp =
                   it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
 	        try
-                  let univs =
-                    if poly then Polymorphic_const_entry ctx
-                    else Monomorphic_const_entry ctx
-                  in
 		  let entry = {
 		    const_entry_body =
 		      Future.from_val (Safe_typing.mk_pure_proof proj);
 		    const_entry_secctx = None;
 		    const_entry_type = Some projtyp;
-		    const_entry_universes = univs;
+                    const_entry_universes = ctx;
 		    const_entry_opaque = false;
 		    const_entry_inline_code = false;
 		    const_entry_feedback = None } in
@@ -343,8 +344,9 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
 		  let constr_fip =
 		    let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
 		      applist (mkConstU (kn,u),proj_args) 
-		  in
-		    Declare.definition_message fid;
+                  in
+                  Declare.definition_message fid;
+                  Universes.register_universe_binders (ConstRef kn) ubinders;
 		    kn, constr_fip
                 with Type_errors.TypeError (ctx,te) ->
                   raise (NotDefinable (BadTypedProj (fid,ctx,te))) 
@@ -382,17 +384,20 @@ let structure_signature ctx =
 
 open Typeclasses
 
-let declare_structure finite univs id idbuild paramimpls params arity template 
+let declare_structure finite ubinders univs id idbuild paramimpls params arity template
     fieldimpls fields ?(kind=StructureComponent) ?name is_coe coers sign =
   let nparams = List.length params and nfields = List.length fields in
   let args = Context.Rel.to_extended_list mkRel nfields params in
   let ind = applist (mkRel (1+nparams+nfields), args) in
   let type_constructor = it_mkProd_or_LetIn ind fields in
-  let poly, ctx =
+  let template, ctx =
     match univs with
-    | Monomorphic_ind_entry ctx -> false, ctx
-    | Polymorphic_ind_entry ctx -> true, ctx
-    | Cumulative_ind_entry cumi -> true, (Univ.CumulativityInfo.univ_context cumi)
+    | Monomorphic_ind_entry ctx ->
+      template, Monomorphic_const_entry Univ.ContextSet.empty
+    | Polymorphic_ind_entry ctx ->
+      false, Polymorphic_const_entry ctx
+    | Cumulative_ind_entry cumi ->
+      false, Polymorphic_const_entry (Univ.CumulativityInfo.univ_context cumi)
   in
   let binder_name = 
     match name with
@@ -402,7 +407,7 @@ let declare_structure finite univs id idbuild paramimpls params arity template
   let mie_ind =
     { mind_entry_typename = id;
       mind_entry_arity = arity;
-      mind_entry_template = not poly && template;
+      mind_entry_template = template;
       mind_entry_consnames = [idbuild];
       mind_entry_lc = [type_constructor] }
   in
@@ -416,27 +421,21 @@ let declare_structure finite univs id idbuild paramimpls params arity template
     }
   in
   let mie =
-    if poly then
-      begin
+    match ctx with
+    | Polymorphic_const_entry ctx ->
         let env = Global.env () in
         let env' = Environ.push_context ctx env in
         let evd = Evd.from_env env' in
         Inductiveops.infer_inductive_subtyping env' evd mie
-      end
-    else
+    | Monomorphic_const_entry _ ->
        mie
   in
-  let kn = Command.declare_mutual_inductive_with_eliminations mie [] [(paramimpls,[])] in
+  let kn = Command.declare_mutual_inductive_with_eliminations mie ubinders [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
   let cstr = (rsp,1) in
-  let fields =
-    if poly then
-      let subst, _ = Univ.abstract_universes ctx in
-      Context.Rel.map (fun c -> Vars.subst_univs_level_constr subst c) fields
-    else fields
-  in
-  let kinds,sp_projs = declare_projections rsp ~kind binder_name coers fieldimpls fields in
+  let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name coers ubinders fieldimpls fields in
   let build = ConstructRef cstr in
+  let poly = match ctx with | Polymorphic_const_entry _ -> true | Monomorphic_const_entry _ -> false in
   let () = if is_coe then Class.try_add_new_coercion build ~local:false poly in
   Recordops.declare_structure(rsp,cstr,List.rev kinds,List.rev sp_projs);
   rsp
@@ -450,7 +449,7 @@ let implicits_of_context ctx =
     in ExplByPos (i, explname), (true, true, true))
     1 (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
-let declare_class finite def cum poly ctx id idbuild paramimpls params arity 
+let declare_class finite def cum ubinders univs id idbuild paramimpls params arity
     template fieldimpls fields ?(kind=StructureComponent) is_coe coers priorities sign =
   let fieldimpls =
     (* Make the class implicit in the projections, and the params if applicable. *)
@@ -465,27 +464,29 @@ let declare_class finite def cum poly ctx id idbuild paramimpls params arity
       let class_body = it_mkLambda_or_LetIn field params in
       let class_type = it_mkProd_or_LetIn arity params in
       let class_entry = 
-	Declare.definition_entry ~types:class_type ~poly ~univs:ctx class_body in
+        Declare.definition_entry ~types:class_type ~univs class_body in
       let cst = Declare.declare_constant (snd id)
 	(DefinitionEntry class_entry, IsDefinition Definition)
       in
-      let cstu = (cst, if poly then Univ.UContext.instance ctx else Univ.Instance.empty) in
+      let cstu = (cst, match univs with
+        | Polymorphic_const_entry univs -> Univ.UContext.instance univs
+        | Monomorphic_const_entry _ -> Univ.Instance.empty)
+      in
       let inst_type = appvectc (mkConstU cstu)
 			       (Termops.rel_vect 0 (List.length params)) in
       let proj_type =
 	it_mkProd_or_LetIn (mkProd(Name binder_name, inst_type, lift 1 field)) params in
       let proj_body =
 	it_mkLambda_or_LetIn (mkLambda (Name binder_name, inst_type, mkRel 1)) params in
-      let proj_entry =
-	Declare.definition_entry ~types:proj_type ~poly
-	    ~univs:(if poly then ctx else Univ.UContext.empty) proj_body
-      in
+      let proj_entry = Declare.definition_entry ~types:proj_type ~univs proj_body in
       let proj_cst = Declare.declare_constant proj_name
         (DefinitionEntry proj_entry, IsDefinition Definition)
       in
       let cref = ConstRef cst in
       Impargs.declare_manual_implicits false cref [paramimpls];
+      Universes.register_universe_binders cref ubinders;
       Impargs.declare_manual_implicits false (ConstRef proj_cst) [List.hd fieldimpls];
+      Universes.register_universe_binders (ConstRef proj_cst) ubinders;
       Classes.set_typeclass_transparency (EvalConstRef cst) false false;
       let sub = match List.hd coers with
 	| Some b -> Some ((if b then Backward else Forward), List.hd priorities) 
@@ -494,15 +495,16 @@ let declare_class finite def cum poly ctx id idbuild paramimpls params arity
       cref, [Name proj_name, sub, Some proj_cst]
     | _ ->
        let univs =
-         if poly then
+         match univs with
+         | Polymorphic_const_entry univs ->
            if cum then
-             Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context ctx)
+             Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context univs)
            else
-             Polymorphic_ind_entry ctx
-         else
-           Monomorphic_ind_entry ctx
+             Polymorphic_ind_entry univs
+         | Monomorphic_const_entry univs ->
+           Monomorphic_ind_entry univs
        in
-       let ind = declare_structure BiFinite univs (snd id) idbuild paramimpls
+       let ind = declare_structure BiFinite ubinders univs (snd id) idbuild paramimpls
 	  params arity template fieldimpls fields
 	  ~kind:Method ~name:binder_name false (List.map (fun _ -> false) fields) sign
        in
@@ -523,13 +525,15 @@ let declare_class finite def cum poly ctx id idbuild paramimpls params arity
       params, params
   in
   let univs, ctx_context, fields =
-    if poly then
-      let usubst, auctx = Univ.abstract_universes ctx in
+    match univs with
+    | Polymorphic_const_entry univs ->
+      let usubst, auctx = Univ.abstract_universes univs in
       let map c = Vars.subst_univs_level_constr usubst c in
       let fields = Context.Rel.map map fields in
       let ctx_context = on_snd (fun d -> Context.Rel.map map d) ctx_context in
       auctx, ctx_context, fields
-    else Univ.AUContext.empty, ctx_context, fields
+    | Monomorphic_const_entry _ ->
+      Univ.AUContext.empty, ctx_context, fields
   in
   let k =
     { cl_univs = univs;
@@ -605,14 +609,14 @@ let definition_structure (kind,cum,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cf
   if isnot_class && List.exists (fun opt -> not (Option.is_empty opt)) priorities then
     user_err Pp.(str "Priorities only allowed for type class substructures");
   (* Now, younger decl in params and fields is on top *)
-  let (pl, ctx), arity, template, implpars, params, implfs, fields =
+  let pl, univs, arity, template, implpars, params, implfs, fields =
     States.with_state_protection (fun () ->
-      typecheck_params_and_fields finite (kind = Class true) idstruc pl s ps notations fs) () in
+      typecheck_params_and_fields finite (kind = Class true) idstruc poly pl s ps notations fs) () in
   let sign = structure_signature (fields@params) in
-  let gr = match kind with
+  match kind with
   | Class def ->
      let priorities = List.map (fun id -> {hint_priority = id; hint_pattern = None}) priorities in
-     let gr = declare_class finite def cum poly ctx (loc,idstruc) idbuild
+     let gr = declare_class finite def cum pl univs (loc,idstruc) idbuild
 	  implpars params arity template implfs fields is_coe coers priorities sign in
 	gr
     | _ ->
@@ -621,18 +625,16 @@ let definition_structure (kind,cum,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cf
 	           (succ (List.length params)) impls) implfs 
       in
       let univs =
-        if poly then
+        match univs with
+        | Polymorphic_const_entry univs ->
           if cum then
-            Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context ctx)
+            Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context univs)
           else
-            Polymorphic_ind_entry ctx
-        else
-          Monomorphic_ind_entry ctx
+            Polymorphic_ind_entry univs
+        | Monomorphic_const_entry univs ->
+          Monomorphic_ind_entry univs
       in
-      let ind = declare_structure finite univs idstruc
+      let ind = declare_structure finite pl univs idstruc
 	  idbuild implpars params arity template implfs 
 	  fields is_coe (List.map (fun coe -> not (Option.is_empty coe)) coers) sign in
 	IndRef ind
-  in
-  Universes.register_universe_binders gr pl;
-  gr

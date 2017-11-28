@@ -29,7 +29,7 @@ let check_constant_declaration env kn cb =
   (** [env'] contains De Bruijn universe variables *)
   let env' =
     match cb.const_universes with
-    | Monomorphic_const ctx -> push_context ~strict:true ctx env
+    | Monomorphic_const ctx -> push_context_set ~strict:true ctx env
     | Polymorphic_const auctx ->
       let ctx = Univ.AUContext.repr auctx in
       push_context ~strict:false ctx env

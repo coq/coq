@@ -232,12 +232,15 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let invProof = it_mkNamedLambda_or_LetIn c !ownSign in
   let invProof = EConstr.Unsafe.to_constr invProof in
   let p = Evarutil.nf_evars_universes sigma invProof in
-    p, Evd.universe_context ~names:[] ~extensible:true sigma
+    p, sigma
 
 let add_inversion_lemma name env sigma t sort dep inv_op =
-  let invProof, ctx = inversion_scheme env sigma t sort dep inv_op in
-  let entry = definition_entry ~poly:(Flags.use_polymorphic_flag ())
-			       ~univs:(snd ctx) invProof in
+  let invProof, sigma = inversion_scheme env sigma t sort dep inv_op in
+  let univs =
+    let poly = Flags.use_polymorphic_flag () in
+    Evd.const_univ_entry ~poly sigma
+  in
+  let entry = definition_entry ~univs invProof in
   let _ = declare_constant name (DefinitionEntry entry, IsProof Lemma) in
   ()
 

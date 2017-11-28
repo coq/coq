@@ -88,7 +88,7 @@ let warn_implicits_in_term =
           strbrk "Implicit arguments declaration relies on type." ++ spc () ++
             strbrk "The term declares more implicits than the type here.")
         
-let interp_definition pl bl p red_option c ctypopt =
+let interp_definition pl bl poly red_option c ctypopt =
   let env = Global.env() in
   let evd, decl = Univdecls.interp_univ_decl_opt env pl in
   let evdref = ref evd in
@@ -105,14 +105,15 @@ let interp_definition pl bl p red_option c ctypopt =
 	let c = EConstr.Unsafe.to_constr c in
         let nf,subst = Evarutil.e_nf_evars_and_universes evdref in
         let body = nf (it_mkLambda_or_LetIn c ctx) in
-	let vars = Univops.universes_of_constr body in
-	let evd = Evd.restrict_universe_context !evdref vars in
-	let pl, uctx = Evd.check_univ_decl evd decl in
- 	imps1@(Impargs.lift_implicits nb_args imps2), pl,
-	  definition_entry ~univs:uctx ~poly:p body
+        let vars = Univops.universes_of_constr body in
+        let evd = Evd.restrict_universe_context !evdref vars in
+        let uctx = Evd.check_univ_decl ~poly evd decl in
+        let binders = Evd.universe_binders evd in
+        imps1@(Impargs.lift_implicits nb_args imps2), binders,
+          definition_entry ~univs:uctx body
     | Some ctyp ->
-	let ty, impsty = interp_type_evars_impls ~impls env_bl evdref ctyp in
-	let subst = evd_comb0 Evd.nf_univ_variables evdref in
+        let ty, impsty = interp_type_evars_impls ~impls env_bl evdref ctyp in
+        let subst = evd_comb0 Evd.nf_univ_variables evdref in
 	let ctx = Context.Rel.map (Vars.subst_univs_constr subst) ctx in
 	let env_bl = push_rel_context ctx env in
 	let c, imps2 = interp_casted_constr_evars_impls ~impls env_bl evdref c ty in
@@ -133,9 +134,10 @@ let interp_definition pl bl p red_option c ctypopt =
         let vars = Univ.LSet.union (Univops.universes_of_constr body) 
           (Univops.universes_of_constr typ) in
         let ctx = Evd.restrict_universe_context !evdref vars in
-	let pl, uctx = Evd.check_univ_decl ctx decl in
-	imps1@(Impargs.lift_implicits nb_args impsty), pl,
-	  definition_entry ~types:typ ~poly:p 
+        let uctx = Evd.check_univ_decl ~poly ctx decl in
+        let binders = Evd.universe_binders evd in
+        imps1@(Impargs.lift_implicits nb_args impsty), binders,
+          definition_entry ~types:typ
 	    ~univs:uctx body
   in
   red_constant_entry (Context.Rel.length ctx) ce !evdref red_option, !evdref, decl, pl, imps
@@ -175,6 +177,10 @@ let do_definition ident k univdecl bl red_option c ctypopt hook =
 let declare_assumption is_coe (local,p,kind) (c,ctx) pl imps impl nl (_,ident) =
 match local with
 | Discharge when Lib.sections_are_opened () ->
+  let ctx = match ctx with
+    | Monomorphic_const_entry ctx -> ctx
+    | Polymorphic_const_entry ctx -> Univ.ContextSet.of_context ctx
+  in
   let decl = (Lib.cwd(), SectionLocalAssum ((c,ctx),p,impl), IsAssumption kind) in
   let _ = declare_variable ident decl in
   let () = assumption_message ident in
@@ -195,8 +201,7 @@ match local with
     | DefaultInline -> Some (Flags.get_inline_level())
     | InlineAt i -> Some i
   in
-  let ctx = Univ.ContextSet.to_context ctx in
-  let decl = (ParameterEntry (None,p,(c,ctx),inl), IsAssumption kind) in
+  let decl = (ParameterEntry (None,(c,ctx),inl), IsAssumption kind) in
   let kn = declare_constant ident ~local decl in
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
@@ -204,9 +209,9 @@ match local with
   let () = assumption_message ident in
   let () = Typeclasses.declare_instance None false gr in
   let () = if is_coe then Class.try_add_new_coercion gr ~local p in
-  let inst = 
-    if p (* polymorphic *) then Univ.UContext.instance ctx 
-    else Univ.Instance.empty
+  let inst = match ctx with
+    | Polymorphic_const_entry ctx -> Univ.UContext.instance ctx
+    | Monomorphic_const_entry _ -> Univ.Instance.empty
   in
     (gr,inst,Lib.is_modtype_strict ())
 
@@ -216,26 +221,63 @@ let interp_assumption evdref env impls bl c =
   let ty = EConstr.Unsafe.to_constr ty in
   (ty, impls)
 
-let declare_assumptions idl is_coe k (c,ctx) pl imps impl_is_on nl =
+(* When monomorphic the universe constraints are declared with the first declaration only. *)
+let next_uctx =
+  let empty_uctx = Monomorphic_const_entry Univ.ContextSet.empty in
+  function
+  | Polymorphic_const_entry _ as uctx -> uctx
+  | Monomorphic_const_entry _ -> empty_uctx
+
+let declare_assumptions idl is_coe k (c,uctx) pl imps nl =
   let refs, status, _ =
-    List.fold_left (fun (refs,status,ctx) id ->
+    List.fold_left (fun (refs,status,uctx) id ->
       let ref',u',status' =
-	declare_assumption is_coe k (c,ctx) pl imps impl_is_on nl id in
-      (ref',u')::refs, status' && status, Univ.ContextSet.empty)
-      ([],true,ctx) idl
+        declare_assumption is_coe k (c,uctx) pl imps false nl id in
+      (ref',u')::refs, status' && status, next_uctx uctx)
+      ([],true,uctx) idl
   in
   List.rev refs, status
 
-let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
+
+let maybe_error_many_udecls = function
+  | ((loc,id), Some _) ->
+    user_err ?loc ~hdr:"many_universe_declarations"
+      Pp.(str "When declaring multiple axioms in one command, " ++
+          str "only the first is allowed a universe binder " ++
+          str "(which will be shared by the whole block).")
+  | (_, None) -> ()
+
+let process_assumptions_udecls kind l =
+  let udecl, first_id = match l with
+    | (coe, ((id, udecl)::rest, c))::rest' ->
+      List.iter maybe_error_many_udecls rest;
+      List.iter (fun (coe, (idl, c)) -> List.iter maybe_error_many_udecls idl) rest';
+      udecl, id
+    | (_, ([], _))::_ | [] -> assert false
+  in
+  let () = match kind, udecl with
+    | (Discharge, _, _), Some _ when Lib.sections_are_opened () ->
+      let loc = fst first_id in
+      let msg = Pp.str "Section variables cannot be polymorphic." in
+      user_err ?loc  msg
+    | _ -> ()
+  in
+  udecl, List.map (fun (coe, (idl, c)) -> coe, (List.map fst idl, c)) l
+
+let do_assumptions kind nl l =
   let open Context.Named.Declaration in
   let env = Global.env () in
-  let evdref = ref (Evd.from_env env) in
-  let l = 
-    if poly then
+  let udecl, l = process_assumptions_udecls kind l in
+  let evdref, udecl =
+    let evd, udecl = Univdecls.interp_univ_decl_opt env udecl in
+    ref evd, udecl
+  in
+  let l =
+    if pi2 kind (* poly *) then
       (* Separate declarations so that A B : Type puts A and B in different levels. *)
       List.fold_right (fun (is_coe,(idl,c)) acc ->
-        List.fold_right (fun id acc -> 
-	  (is_coe, ([id], c)) :: acc) idl acc)
+        List.fold_right (fun id acc ->
+          (is_coe, ([id], c)) :: acc) idl acc)
         l []
     else l
   in
@@ -247,65 +289,31 @@ let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
     let ienv = List.fold_right (fun (_,id) ienv ->
       let impls = compute_internalization_data env Variable t imps in
       Id.Map.add id impls ienv) idl ienv in
-      ((env,ienv),((is_coe,idl),t,imps))) 
+      ((env,ienv),((is_coe,idl),t,imps)))
     (env,empty_internalization_env) l
   in
   let evd = solve_remaining_evars all_and_fail_flags env !evdref Evd.empty in
   (* The universe constraints come from the whole telescope. *)
   let evd = Evd.nf_constraints evd in
-  let ctx = Evd.universe_context_set evd in
-  let nf_evar c = EConstr.Unsafe.to_constr (nf_evar evd (EConstr.of_constr c)) in
-  let l = List.map (on_pi2 nf_evar) l in
-  pi2 (List.fold_left (fun (subst,status,ctx) ((is_coe,idl),t,imps) ->
-    let t = replace_vars subst t in
-    let (refs,status') = declare_assumptions idl is_coe kind (t,ctx) [] imps false nl in
-    let subst' = List.map2 
-      (fun (_,id) (c,u) -> (id,Universes.constr_of_global_univ (c,u)))
-      idl refs 
-    in
-    (subst'@subst, status' && status,
-     (* The universe constraints are declared with the first declaration only. *)
-     Univ.ContextSet.empty)) ([],true,ctx) l)
-
-let do_assumptions_bound_univs coe kind nl id pl c =
-  let env = Global.env () in
-  let evd, decl = Univdecls.interp_univ_decl_opt env pl in
-  let evdref = ref evd in
-  let ty, impls = interp_type_evars_impls env evdref c in
-  let nf, subst = Evarutil.e_nf_evars_and_universes evdref in
-  let ty = EConstr.Unsafe.to_constr ty in
-  let ty = nf ty in
-  let vars = Univops.universes_of_constr ty in
-  let evd = Evd.restrict_universe_context !evdref vars in
-  let pl, uctx = Evd.check_univ_decl evd decl in
-  let uctx = Univ.ContextSet.of_context uctx in
-  let (_, _, st) = declare_assumption coe kind (ty, uctx) pl impls false nl id in
-  st
-
-let do_assumptions kind nl l = match l with
-| [coe, ([id, Some pl], c)] ->
-  let () = match kind with
-  | (Discharge, _, _) when Lib.sections_are_opened () ->
-    let loc = fst id in
-    let msg = Pp.str "Section variables cannot be polymorphic." in
-    user_err ?loc  msg
-  | _ -> ()
+  let nf_evar c = EConstr.to_constr evd (EConstr.of_constr c) in
+  let uvars, l = List.fold_left_map (fun uvars (coe,t,imps) ->
+      let t = nf_evar t in
+      let uvars = Univ.LSet.union uvars (Univops.universes_of_constr t) in
+      uvars, (coe,t,imps))
+      Univ.LSet.empty l
   in
-  do_assumptions_bound_univs coe kind nl id (Some pl) c
-| _ ->
-  let map (coe, (idl, c)) =
-    let map (id, univs) = match univs with
-    | None -> id
-    | Some _ ->
-      let loc = fst id in
-      let msg =
-	Pp.str "Assumptions with bound universes can only be defined one at a time." in
-      user_err ?loc  msg
-    in
-    (coe, (List.map map idl, c))
-  in
-  let l = List.map map l in
-  do_assumptions_unbound_univs kind nl l
+  let evd = Evd.restrict_universe_context evd uvars in
+  let uctx = Evd.check_univ_decl ~poly:(pi2 kind) evd udecl in
+  let ubinders = Evd.universe_binders evd in
+  pi2 (List.fold_left (fun (subst,status,uctx) ((is_coe,idl),t,imps) ->
+      let t = replace_vars subst t in
+      let refs, status' = declare_assumptions idl is_coe kind (t,uctx) ubinders imps nl in
+      let subst' = List.map2
+          (fun (_,id) (c,u) -> (id, Universes.constr_of_global_univ (c,u)))
+          idl refs
+      in
+      subst'@subst, status' && status, next_uctx uctx)
+    ([], true, uctx) l)
 
 (* 3a| Elimination schemes for mutual inductive definitions *)
 
@@ -576,7 +584,7 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf' cl,impsl)) constructors in
   let ctx_params = Context.Rel.map nf ctx_params in
   let evd = !evdref in
-  let pl, uctx = Evd.check_univ_decl evd decl in
+  let uctx = Evd.check_univ_decl ~poly evd decl in
   List.iter (fun c -> check_evars env_params Evd.empty evd (EConstr.of_constr c)) arities;
   Context.Rel.iter (fun c -> check_evars env0 Evd.empty evd (EConstr.of_constr c)) ctx_params;
   List.iter (fun (_,ctyps,_) ->
@@ -598,11 +606,12 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
 	  userimpls @ (lift_implicits len impls)) cimpls) indimpls constructors
   in
   let univs =
-    if poly then
+    match uctx with
+    | Polymorphic_const_entry uctx ->
       if cum then
         Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context uctx)
       else Polymorphic_ind_entry uctx
-    else
+    | Monomorphic_const_entry uctx ->
       Monomorphic_ind_entry uctx
   in
   (* Build the mutual inductive entry *)
@@ -617,7 +626,7 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   in
   (if poly && cum then
       Inductiveops.infer_inductive_subtyping env_ar evd mind_ent
-   else mind_ent), pl, impls
+   else mind_ent), Evd.universe_binders evd, impls
 
 (* Very syntactical equality *)
 let eq_local_binders bl1 bl2 =
@@ -1019,23 +1028,22 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let binders_rel = nf_evar_context !evdref binders_rel in
   let binders = nf_evar_context !evdref binders in
   let top_arity = Evarutil.nf_evar !evdref top_arity in
-  let pl, plext = Option.cata
-      (fun d -> d.univdecl_instance, d.univdecl_extensible_instance) ([],true) pl in
   let hook, recname, typ =
     if List.length binders_rel > 1 then
       let name = add_suffix recname "_func" in
       let hook l gr _ = 
-	let body = it_mkLambda_or_LetIn (mkApp (Evarutil.e_new_global evdref gr, [|make|])) binders_rel in
-	let ty = it_mkProd_or_LetIn top_arity binders_rel in
-	let ty = EConstr.Unsafe.to_constr ty in
-	let pl, univs = Evd.universe_context ~names:pl ~extensible:plext !evdref in
-	  (*FIXME poly? *)
-	let ce = definition_entry ~poly ~types:ty ~univs (EConstr.to_constr !evdref body) in
-	(** FIXME: include locality *)
-	let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
-	let gr = ConstRef c in
-	  if Impargs.is_implicit_args () || not (List.is_empty impls) then
-	    Impargs.declare_manual_implicits false gr [impls]
+        let body = it_mkLambda_or_LetIn (mkApp (Evarutil.e_new_global evdref gr, [|make|])) binders_rel in
+        let ty = it_mkProd_or_LetIn top_arity binders_rel in
+        let ty = EConstr.Unsafe.to_constr ty in
+        let univs = Evd.check_univ_decl ~poly !evdref decl in
+        (*FIXME poly? *)
+        let ce = definition_entry ~types:ty ~univs (EConstr.to_constr !evdref body) in
+        (** FIXME: include locality *)
+        let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
+        let gr = ConstRef c in
+        let () = Universes.register_universe_binders gr (Evd.universe_binders !evdref) in
+        if Impargs.is_implicit_args () || not (List.is_empty impls) then
+          Impargs.declare_manual_implicits false gr [impls]
       in
       let typ = it_mkProd_or_LetIn top_arity binders in
 	hook, name, typ
@@ -1168,7 +1176,8 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
       List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
     let evd = Evd.from_ctx ctx in
     let evd = Evd.restrict_universe_context evd vars in
-    let pl, ctx = Evd.check_univ_decl evd pl in
+    let ctx = Evd.check_univ_decl ~poly evd pl in
+    let pl = Evd.universe_binders evd in
     let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
     ignore (List.map4 (DeclareDef.declare_fix (local, poly, Fixpoint) pl ctx)
 	      fixnames fixdecls fixtypes fiximps);
@@ -1200,7 +1209,8 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
     let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
     let evd = Evd.from_ctx ctx in
     let evd = Evd.restrict_universe_context evd vars in
-    let pl, ctx = Evd.check_univ_decl evd pl in
+    let ctx = Evd.check_univ_decl ~poly evd pl in
+    let pl = Evd.universe_binders evd in
     ignore (List.map4 (DeclareDef.declare_fix (local, poly, CoFixpoint) pl ctx)
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)

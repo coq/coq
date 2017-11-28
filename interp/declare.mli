@@ -42,7 +42,7 @@ type internal_flag =
 (* Defaut definition entries, transparent with no secctx or proj information *)
 val definition_entry : ?fix_exn:Future.fix_exn ->
   ?opaque:bool -> ?inline:bool -> ?types:types ->
-  ?poly:polymorphic -> ?univs:Univ.UContext.t ->
+  ?univs:Entries.constant_universes_entry ->
   ?eff:Safe_typing.private_constants -> constr -> Safe_typing.private_constants definition_entry
 
 (** [declare_constant id cd] declares a global declaration
@@ -56,8 +56,8 @@ val declare_constant :
 
 val declare_definition : 
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->
-  ?local:bool -> ?poly:polymorphic -> Id.t -> ?types:constr -> 
-  constr Univ.in_universe_context_set -> Constant.t
+  ?local:bool -> Id.t -> ?types:constr ->
+  constr Entries.in_constant_universes_entry -> Constant.t
 
 (** Since transparent constants' side effects are globally declared, we
  *  need that *)

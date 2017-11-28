@@ -203,12 +203,9 @@ let declare_constant_common id cst =
   update_tables c;
   c
 
+let default_univ_entry = Monomorphic_const_entry Univ.ContextSet.empty
 let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
-    ?(poly=false) ?(univs=Univ.UContext.empty) ?(eff=Safe_typing.empty_private_constants) body =
-  let univs =
-    if poly then Polymorphic_const_entry univs
-    else Monomorphic_const_entry univs
-  in
+    ?(univs=default_univ_entry) ?(eff=Safe_typing.empty_private_constants) body =
   { const_entry_body = Future.from_val ?fix_exn ((body,Univ.ContextSet.empty), eff);
     const_entry_secctx = None;
     const_entry_type = types;
@@ -261,9 +258,9 @@ let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(e
 
 let declare_definition ?(internal=UserIndividualRequest)
   ?(opaque=false) ?(kind=Decl_kinds.Definition) ?(local = false)
-  ?(poly=false) id ?types (body,ctx) =
+  id ?types (body,univs) =
   let cb =
-    definition_entry ?types ~poly ~univs:(Univ.ContextSet.to_context ctx) ~opaque body
+    definition_entry ?types ~univs ~opaque body
   in
     declare_constant ~internal ~local id
       (Entries.DefinitionEntry cb, Decl_kinds.IsDefinition kind)
@@ -340,7 +337,7 @@ let dummy_inductive_entry (_,m) = ([],{
   mind_entry_record = None;
   mind_entry_finite = Decl_kinds.BiFinite;
   mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds;
-  mind_entry_universes = Monomorphic_ind_entry Univ.UContext.empty;
+  mind_entry_universes = Monomorphic_ind_entry Univ.ContextSet.empty;
   mind_entry_private = None;
 })
 
@@ -457,16 +454,16 @@ let declare_universe_context poly ctx =
   Lib.add_anonymous_leaf (input_universe_context (poly, ctx))
 
 (* Discharged or not *)
-type universe_decl = polymorphic * (Id.t * Univ.Level.t) list
+type universe_decl = polymorphic * Universes.universe_binders
 
 let cache_universes (p, l) =
   let glob = Global.global_universe_names () in
   let glob', ctx =
-    List.fold_left (fun ((idl,lid),ctx) (id, lev) ->
+    Id.Map.fold (fun id lev ((idl,lid),ctx) ->
         ((Id.Map.add id (p, lev) idl,
           Univ.LMap.add lev id lid),
          Univ.ContextSet.add_universe lev ctx))
-      (glob, Univ.ContextSet.empty) l
+      l (glob, Univ.ContextSet.empty)
   in
   cache_universe_context (p, ctx);
   Global.set_global_universe_names glob'
@@ -487,9 +484,9 @@ let do_universe poly l =
                    (str"Cannot declare polymorphic universes outside sections")
   in
   let l =
-    List.map (fun (l, id) ->
+    List.fold_left (fun acc (l, id) ->
 	      let lev = Universes.new_univ_level (Global.current_dirpath ()) in
-	      (id, lev)) l
+              Id.Map.add id lev acc) Id.Map.empty l
   in
     Lib.add_anonymous_leaf (input_universes (poly, l))
 

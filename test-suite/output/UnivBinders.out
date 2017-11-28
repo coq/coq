@@ -1,12 +1,155 @@
+NonCumulative Inductive Empty@{u} : Type@{u} :=  
+NonCumulative Record PWrap (A : Type@{u}) : Type@{u} := pwrap { punwrap : A }
+
+PWrap has primitive projections with eta conversion.
+For PWrap: Argument scope is [type_scope]
+For pwrap: Argument scopes are [type_scope _]
+punwrap@{u} = 
+fun (A : Type@{u}) (p : PWrap@{u} A) => punwrap _ p
+     : forall A : Type@{u}, PWrap@{u} A -> A
+(* u |=  *)
+
+punwrap is universe polymorphic
+Argument scopes are [type_scope _]
+NonCumulative Record RWrap (A : Type@{u}) : Type@{u} := rwrap { runwrap : A }
+
+For RWrap: Argument scope is [type_scope]
+For rwrap: Argument scopes are [type_scope _]
+runwrap@{u} = 
+fun (A : Type@{u}) (r : RWrap@{u} A) => let (runwrap) := r in runwrap
+     : forall A : Type@{u}, RWrap@{u} A -> A
+(* u |=  *)
+
+runwrap is universe polymorphic
+Argument scopes are [type_scope _]
+Wrap@{u} = fun A : Type@{u} => A
+     : Type@{u} -> Type@{u}
+(* u |=  *)
+
+Wrap is universe polymorphic
+Argument scope is [type_scope]
+wrap@{u} = 
+fun (A : Type@{u}) (Wrap : Wrap@{u} A) => Wrap
+     : forall A : Type@{u}, Wrap@{u} A -> A
+(* u |=  *)
+
+wrap is universe polymorphic
+Arguments A, Wrap are implicit and maximally inserted
+Argument scopes are [type_scope _]
 bar@{u} = nat
      : Wrap@{u} Set
 (* u |= Set < u
          *)
 
 bar is universe polymorphic
-foo@{u Top.8 v} = 
-Type@{Top.8} -> Type@{v} -> Type@{u}
-     : Type@{max(u+1, Top.8+1, v+1)}
-(* u Top.8 v |=  *)
+foo@{u Top.17 v} = 
+Type@{Top.17} -> Type@{v} -> Type@{u}
+     : Type@{max(u+1, Top.17+1, v+1)}
+(* u Top.17 v |=  *)
 
 foo is universe polymorphic
+Monomorphic mono = Type@{u}
+     : Type@{u+1}
+(* {u} |=  *)
+
+mono is not universe polymorphic
+The command has indeed failed with message:
+Universe u already bound.
+foo@{E M N} = 
+Type@{M} -> Type@{N} -> Type@{E}
+     : Type@{max(E+1, M+1, N+1)}
+(* E M N |=  *)
+
+foo is universe polymorphic
+foo@{Top.16 Top.17 Top.18} = 
+Type@{Top.17} -> Type@{Top.18} -> Type@{Top.16}
+     : Type@{max(Top.16+1, Top.17+1, Top.18+1)}
+(* Top.16 Top.17 Top.18 |=  *)
+
+foo is universe polymorphic
+NonCumulative Inductive Empty@{E} : Type@{E} :=  
+NonCumulative Record PWrap (A : Type@{E}) : Type@{E} := pwrap { punwrap : A }
+
+PWrap has primitive projections with eta conversion.
+For PWrap: Argument scope is [type_scope]
+For pwrap: Argument scopes are [type_scope _]
+punwrap@{K} : forall A : Type@{K}, PWrap@{K} A -> A
+(* K |=  *)
+
+punwrap is universe polymorphic
+Argument scopes are [type_scope _]
+punwrap is transparent
+Expands to: Constant Top.punwrap
+The command has indeed failed with message:
+Universe instance should have length 3
+The command has indeed failed with message:
+Universe instance should have length 0
+The command has indeed failed with message:
+This object does not support universe names.
+The command has indeed failed with message:
+Cannot enforce v < u because u < gU < gV < v
+Monomorphic bind_univs.mono = Type@{u}
+     : Type@{u+1}
+(* {u} |=  *)
+
+bind_univs.mono is not universe polymorphic
+bind_univs.poly@{u} = Type@{u}
+     : Type@{u+1}
+(* u |=  *)
+
+bind_univs.poly is universe polymorphic
+insec@{v} = Type@{u} -> Type@{v}
+     : Type@{max(u+1, v+1)}
+(* v |=  *)
+
+insec is universe polymorphic
+insec@{u v} = Type@{u} -> Type@{v}
+     : Type@{max(u+1, v+1)}
+(* u v |=  *)
+
+insec is universe polymorphic
+inmod@{u} = Type@{u}
+     : Type@{u+1}
+(* u |=  *)
+
+inmod is universe polymorphic
+SomeMod.inmod@{u} = Type@{u}
+     : Type@{u+1}
+(* u |=  *)
+
+SomeMod.inmod is universe polymorphic
+inmod@{u} = Type@{u}
+     : Type@{u+1}
+(* u |=  *)
+
+inmod is universe polymorphic
+Applied.infunct@{u v} = 
+inmod@{u} -> Type@{v}
+     : Type@{max(u+1, v+1)}
+(* u v |=  *)
+
+Applied.infunct is universe polymorphic
+axfoo@{i Top.33 Top.34} : Type@{Top.33} -> Type@{i}
+(* i Top.33 Top.34 |=  *)
+
+axfoo is universe polymorphic
+Argument scope is [type_scope]
+Expands to: Constant Top.axfoo
+axbar@{i Top.33 Top.34} : Type@{Top.34} -> Type@{i}
+(* i Top.33 Top.34 |=  *)
+
+axbar is universe polymorphic
+Argument scope is [type_scope]
+Expands to: Constant Top.axbar
+axfoo' : Type@{Top.36} -> Type@{i}
+
+axfoo' is not universe polymorphic
+Argument scope is [type_scope]
+Expands to: Constant Top.axfoo'
+axbar' : Type@{Top.36} -> Type@{i}
+
+axbar' is not universe polymorphic
+Argument scope is [type_scope]
+Expands to: Constant Top.axbar'
+The command has indeed failed with message:
+When declaring multiple axioms in one command, only the first is allowed a universe binder (which will be shared by the whole block).
