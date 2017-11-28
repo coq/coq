@@ -13,20 +13,22 @@ open Names
 
 (** {6 Value under universe substitution } *)
 type 'a puniverses = 'a Univ.puniverses
+[@@ocaml.deprecated "use Univ.puniverses"]
 
 (** {6 Simply type aliases } *)
-type pconstant = Constant.t puniverses
-type pinductive = inductive puniverses
-type pconstructor = constructor puniverses
+type pconstant = Constant.t Univ.puniverses
+type pinductive = inductive Univ.puniverses
+type pconstructor = constructor Univ.puniverses
 
 (** {6 Existential variables } *)
 type existential_key = Evar.t
+[@@ocaml.deprecated "use Evar.t"]
 
 (** {6 Existential variables } *)
 type metavariable = int
 
 (** {6 Case annotation } *)
-type case_style = LetStyle | IfStyle | LetPatternStyle | MatchStyle 
+type case_style = LetStyle | IfStyle | LetPatternStyle | MatchStyle
   | RegularStyle (** infer printing form from number of constructor *)
 type case_printing =
   { ind_tags : bool list; (** tell whether letin or lambda in the arity of the inductive type *)
@@ -80,7 +82,7 @@ val mkVar : Id.t -> constr
 val mkMeta : metavariable -> constr
 
 (** Constructs an existential variable *)
-type existential = existential_key * constr array
+type existential = Evar.t * constr array
 val mkEvar : existential -> constr
 
 (** Construct a sort *)
@@ -111,7 +113,7 @@ val mkLetIn : Name.t * constr * types * constr -> constr
     {%latex:$(f~t_1\dots f_n)$%}. *)
 val mkApp : constr * constr array -> constr
 
-val map_puniverses : ('a -> 'b) -> 'a puniverses -> 'b puniverses
+val map_puniverses : ('a -> 'b) -> 'a Univ.puniverses -> 'b Univ.puniverses
 
 (** Constructs a Constant.t *)
 val mkConst : Constant.t -> constr
@@ -180,7 +182,7 @@ val mkCoFix : cofixpoint -> constr
 
 (** [constr array] is an instance matching definitional [named_context] in
    the same order (i.e. last argument first) *)
-type 'constr pexistential = existential_key * 'constr array
+type 'constr pexistential = Evar.t * 'constr array
 type ('constr, 'types) prec_declaration =
     Name.t array * 'types array * 'constr array
 type ('constr, 'types) pfixpoint =
@@ -295,16 +297,16 @@ val decompose_app : constr -> constr * constr list
 val decompose_appvect : constr -> constr * constr array
 
 (** Destructs a constant *)
-val destConst : constr -> Constant.t puniverses
+val destConst : constr -> Constant.t Univ.puniverses
 
 (** Destructs an existential variable *)
 val destEvar : constr -> existential
 
 (** Destructs a (co)inductive type *)
-val destInd : constr -> inductive puniverses
+val destInd : constr -> inductive Univ.puniverses
 
 (** Destructs a constructor *)
-val destConstruct : constr -> constructor puniverses
+val destConstruct : constr -> constructor Univ.puniverses
 
 (** Destructs a [match c as x in I args return P with ... |
 Ci(...yij...) => ti | ... end] (or [let (..y1i..) := c as x in I args

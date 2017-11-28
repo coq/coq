@@ -521,7 +521,7 @@ let mark_unresolvable evi = mark_resolvability false evi
 let mark_resolvable evi = mark_resolvability true evi
 
 open Evar_kinds
-type evar_filter = existential_key -> Evar_kinds.t -> bool
+type evar_filter = Evar.t -> Evar_kinds.t -> bool
 
 let all_evars _ _ = true
 let all_goals _ = function VarInstance _ | GoalEvar -> true | _ -> false

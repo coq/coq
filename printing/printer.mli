@@ -129,7 +129,7 @@ val pr_global_env          : Id.Set.t -> global_reference -> Pp.t
 val pr_global              : global_reference -> Pp.t
 
 val pr_constant            : env -> Constant.t -> Pp.t
-val pr_existential_key     : evar_map -> existential_key -> Pp.t
+val pr_existential_key     : evar_map -> Evar.t -> Pp.t
 val pr_existential         : env -> evar_map -> existential -> Pp.t
 val pr_constructor         : env -> constructor -> Pp.t
 val pr_inductive           : env -> inductive -> Pp.t
@@ -178,7 +178,7 @@ val pr_goal                : goal sigma -> Pp.t
    focused goals unless the conrresponding option
    [enable_unfocused_goal_printing] is set. [seeds] is for printing
    dependent evars (mainly for emacs proof tree mode). *)
-val pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> evar list -> Goal.goal list -> int list
+val pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> Evar.t list -> Goal.goal list -> int list
                              -> goal list -> goal list -> Pp.t
 
 val pr_subgoal             : int -> evar_map -> goal list -> Pp.t
@@ -186,7 +186,7 @@ val pr_concl               : int -> evar_map -> goal -> Pp.t
 
 val pr_open_subgoals       : proof:Proof.proof -> Pp.t
 val pr_nth_open_subgoal    : proof:Proof.proof -> int -> Pp.t
-val pr_evar                : evar_map -> (evar * evar_info) -> Pp.t
+val pr_evar                : evar_map -> (Evar.t * evar_info) -> Pp.t
 val pr_evars_int           : evar_map -> int -> evar_info Evar.Map.t -> Pp.t
 val pr_evars               : evar_map -> evar_info Evar.Map.t -> Pp.t
 val pr_ne_evar_set         : Pp.t -> Pp.t -> evar_map ->
@@ -221,7 +221,7 @@ val pr_assumptionset :
 val pr_goal_by_id : proof:Proof.proof -> Id.t -> Pp.t
 
 type printer_pr = {
- pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> evar list -> Goal.goal list -> int list -> goal list -> goal list -> Pp.t;
+ pr_subgoals            : ?pr_first:bool -> Pp.t option -> evar_map -> Evar.t list -> Goal.goal list -> int list -> goal list -> goal list -> Pp.t;
  pr_subgoal             : int -> evar_map -> goal list -> Pp.t;
  pr_goal                : goal sigma -> Pp.t;
 }

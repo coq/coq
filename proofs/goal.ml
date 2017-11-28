@@ -16,7 +16,7 @@ module NamedDecl = Context.Named.Declaration
    evar is defined in the current evar_map, should not be accessed. *)
 
 (* type of the goals *)
-type goal = Evd.evar
+type goal = Evar.t
 
 let pr_goal e = str "GOAL:" ++ Pp.int (Evar.repr e)
 

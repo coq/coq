@@ -54,7 +54,7 @@ let new_global evd x =
 
 (* flush_and_check_evars fails if an existential is undefined *)
 
-exception Uninstantiated_evar of existential_key
+exception Uninstantiated_evar of Evar.t
 
 let rec flush_and_check_evars sigma c =
   match kind c with

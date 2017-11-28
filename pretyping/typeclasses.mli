@@ -68,7 +68,7 @@ val class_info : global_reference -> typeclass (** raises a UserError if not a c
 val dest_class_app : env -> evar_map -> EConstr.constr -> (typeclass * EConstr.EInstance.t) * constr list
 
 (** Get the instantiated typeclass structure for a given universe instance. *)
-val typeclass_univ_instance : typeclass puniverses -> typeclass
+val typeclass_univ_instance : typeclass Univ.puniverses -> typeclass
 
 (** Just return None if not a class *)
 val class_of_constr : evar_map -> EConstr.constr -> (EConstr.rel_context * ((typeclass * EConstr.EInstance.t) * constr list)) option
@@ -83,11 +83,11 @@ val is_instance : global_reference -> bool
 (** Returns the term and type for the given instance of the parameters and fields
    of the type class. *)
 
-val instance_constructor : typeclass puniverses -> constr list -> 
+val instance_constructor : typeclass Univ.puniverses -> constr list ->
   constr option * types
 
 (** Filter which evars to consider for resolution. *)
-type evar_filter = existential_key -> Evar_kinds.t -> bool
+type evar_filter = Evar.t -> Evar_kinds.t -> bool
 val all_evars : evar_filter
 val all_goals : evar_filter
 val no_goals : evar_filter

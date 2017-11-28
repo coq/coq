@@ -32,7 +32,7 @@ val eterm_obligations : env -> Id.t -> evar_map -> int ->
     (* Existential key, obl. name, type as product, 
        location of the original evar, associated tactic,
        status and dependencies as indexes into the array *)
-  * ((existential_key * Id.t) list * ((Id.t -> constr) -> constr -> constr)) *
+  * ((Evar.t * Id.t) list * ((Id.t -> constr) -> constr -> constr)) *
     constr * types
     (* Translations from existential identifiers to obligation identifiers 
        and for terms with existentials to closed terms, given a 

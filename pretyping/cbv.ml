@@ -45,7 +45,7 @@ type cbv_value =
   | LAM of int * (Name.t * constr) list * constr * cbv_value subs
   | FIXP of fixpoint * cbv_value subs * cbv_value array
   | COFIXP of cofixpoint * cbv_value subs * cbv_value array
-  | CONSTR of constructor puniverses * cbv_value array
+  | CONSTR of constructor Univ.puniverses * cbv_value array
 
 (* type of terms with a hole. This hole can appear only under App or Case.
  *   TOP means the term is considered without context

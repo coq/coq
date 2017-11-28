@@ -91,7 +91,7 @@ exception Occur
 val occur_meta : Evd.evar_map -> constr -> bool
 val occur_existential : Evd.evar_map -> constr -> bool
 val occur_meta_or_existential : Evd.evar_map -> constr -> bool
-val occur_evar : Evd.evar_map -> existential_key -> constr -> bool
+val occur_evar : Evd.evar_map -> Evar.t -> constr -> bool
 val occur_var : env -> Evd.evar_map -> Id.t -> constr -> bool
 val occur_var_in_decl :
   env -> Evd.evar_map ->
@@ -281,9 +281,9 @@ val on_judgment_type  : ('t -> 't) -> ('c, 't) punsafe_judgment -> ('c, 't) puns
 
 open Evd
 
-val pr_existential_key : evar_map -> evar -> Pp.t
+val pr_existential_key : evar_map -> Evar.t -> Pp.t
 
-val pr_evar_suggested_name : existential_key -> evar_map -> Id.t
+val pr_evar_suggested_name : Evar.t -> evar_map -> Id.t
 
 val pr_evar_info : evar_info -> Pp.t
 val pr_evar_constraints : evar_map -> evar_constraint list -> Pp.t

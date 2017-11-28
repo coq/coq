@@ -7,8 +7,8 @@
 (************************************************************************)
 
 open Names
-open Univ
 open Constr
+open Univ
 open Environ
 open Entries
 
