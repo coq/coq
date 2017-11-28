@@ -45,3 +45,6 @@ end
 
 module Make (M : Input) : S with type input = M.t
 (** Functorized version of the previous code. *)
+
+val instantiate : data * obj LargeArray.t -> Obj.t
+(** Create the OCaml object out of the reified representation. *)

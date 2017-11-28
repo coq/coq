@@ -392,3 +392,32 @@ module PString = Make(IString)
 
 let parse_channel = PChannel.parse
 let parse_string s = PString.parse (s, ref 0)
+
+let instantiate (p, mem) =
+  let len = LargeArray.length mem in
+  let ans = LargeArray.make len (Obj.repr 0) in
+  (** First pass: initialize the subobjects *)
+  for i = 0 to len - 1 do
+    let obj = match LargeArray.get mem i with
+    | Struct (tag, blk) -> Obj.new_block tag (Array.length blk)
+    | String str -> Obj.repr str
+    in
+    LargeArray.set ans i obj
+  done;
+  let get_data = function
+  | Int n -> Obj.repr n
+  | Ptr p -> LargeArray.get ans p
+  | Atm tag -> Obj.new_block tag 0
+  | Fun _ -> assert false (** We shouldn't serialize closures *)
+  in
+  (** Second pass: set the pointers *)
+  for i = 0 to len - 1 do
+    match LargeArray.get mem i with
+    | Struct (_, blk) ->
+      let obj = LargeArray.get ans i in
+      for k = 0 to Array.length blk - 1 do
+        Obj.set_field obj k (get_data blk.(k))
+      done
+    | String _ -> ()
+  done;
+  get_data p
