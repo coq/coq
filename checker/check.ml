@@ -412,9 +412,3 @@ let recheck_library ~norec ~admit ~check =
     (fun (dir,_) -> pr_dirpath dir ++ fnl()) needed));
   List.iter (check_one_lib nochk) needed;
   Flags.if_verbose Feedback.msg_notice (str"Modules were successfully checked")
-
-open Printf
-
-let mem s =
-  let m = try_find_library s in
-  h 0 (str (sprintf "%dk" (CObj.size_kb m)))
