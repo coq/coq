@@ -436,11 +436,11 @@ let stop_profiler m_pid =
   match profiler_platform() with
     "Unix (Linux)" -> stop_profiler_linux m_pid
   | _ -> ()
-     
+
 let native_norm env sigma c ty =
   let c = EConstr.Unsafe.to_constr c in
   let ty = EConstr.Unsafe.to_constr ty in
-  if Coq_config.no_native_compiler then
+  if not Coq_config.native_compiler then
     user_err Pp.(str "Native_compute reduction has been disabled at configure time.")
   else
   let penv = Environ.pre_env env in

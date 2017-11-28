@@ -170,7 +170,7 @@ let register_loaded_library m =
     let prefix = Nativecode.mod_uid_of_dirpath libname ^ "." in
     let f = prefix ^ "cmo" in
     let f = Dynlink.adapt_filename f in
-    if not Coq_config.no_native_compiler then
+    if Coq_config.native_compiler then
       Nativelib.link_library ~prefix ~dirname ~basename:f
   in
   let rec aux = function
@@ -738,7 +738,7 @@ let save_library_to ?todo dir f otab =
     System.marshal_out_segment f' ch (opaque_table : seg_proofs);
     close_out ch;
     (* Writing native code files *)
-    if !Flags.native_compiler then
+    if !Flags.output_native_objects then
       let fn = Filename.dirname f'^"/"^Nativecode.mod_uid_of_dirpath dir in
       if not (Nativelib.compile_library dir ast fn) then
 	user_err Pp.(str "Could not compile the library to native code.")

@@ -858,7 +858,7 @@ let export ?except senv dir =
     }
   in
   let ast, symbols =
-    if !Flags.native_compiler then
+    if !Flags.output_native_objects then
       Nativelibrary.dump_library mp dir senv.env str
     else [], Nativecode.empty_symbols
   in
