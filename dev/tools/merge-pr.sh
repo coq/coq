@@ -15,12 +15,12 @@ API=https://api.github.com/repos/coq/coq
 
 BASE_BRANCH=`curl -s $API/pulls/$PR | jq -r '.base.label'`
 
-COMMIT=`git rev-parse $REMOTE/pr/$PR`
+COMMIT=`git rev-parse FETCH_HEAD`
 STATUS=`curl -s $API/commits/$COMMIT/status | jq -r '.state'`
 
 if [ $BASE_BRANCH != "coq:$CURRENT_LOCAL_BRANCH" ]; then
   echo "Wrong base branch"
-  read -p "Bypass? [y/n] " -n 1 -r
+  read -p "Bypass? [y/N] " -n 1 -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]
   then
@@ -30,7 +30,7 @@ fi;
 
 if [ $STATUS != "success" ]; then
   echo "CI status is \"$STATUS\""
-  read -p "Bypass? [y/n] " -n 1 -r
+  read -p "Bypass? [y/N] " -n 1 -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]
   then
@@ -38,7 +38,7 @@ if [ $STATUS != "success" ]; then
   fi
 fi;
 
-git merge -S --no-ff $REMOTE/pr/$PR -m "Merge PR #$PR: `curl -s $API/pulls/$PR | jq -r '.title'`" -e
+git merge -S --no-ff FETCH_HEAD -m "Merge PR #$PR: `curl -s $API/pulls/$PR | jq -r '.title'`" -e
 
 # TODO: improve this check
 if [[ `git diff $REMOTE/$CURRENT_LOCAL_BRANCH dev/ci` ]]; then
