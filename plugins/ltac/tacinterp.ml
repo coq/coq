@@ -1380,13 +1380,38 @@ and tactic_of_value ist vle =
         extra = TacStore.set ist.extra f_trace []; } in
       let tac = name_if_glob appl (eval_tactic ist t) in
       Profile_ltac.do_profile "tactic_of_value" trace (catch_error_tac trace tac)
-  | VFun (_, _, _,vars,_) ->
-    let numargs = List.length vars in
-    Tacticals.New.tclZEROMSG
-      (str "A fully applied tactic is expected:" ++ spc() ++ Pp.str "missing " ++
-       Pp.str (String.plural numargs "argument") ++ Pp.str " for " ++
-       Pp.str (String.plural numargs "variable") ++ Pp.str " " ++
-       pr_enum Name.print vars ++ Pp.str ".")
+  | VFun (appl,_,vmap,vars,_) ->
+     let tactic_nm =
+       match appl with
+         UnnamedAppl -> "An unnamed user-defined tactic"
+       | GlbAppl apps ->
+          let nms = List.map (fun (kn,_) -> Names.KerName.to_string kn) apps in
+          match nms with
+            []    -> assert false
+          | kn::_ -> "The user-defined tactic \"" ^ kn ^ "\"" (* TODO: when do we not have a singleton? *)
+     in
+     let numargs = List.length vars in
+     let givenargs =
+       List.map (fun (arg,_) -> Names.Id.to_string arg) (Names.Id.Map.bindings vmap) in
+     let numgiven = List.length givenargs in
+     Tacticals.New.tclZEROMSG
+       (Pp.str tactic_nm ++ Pp.str " was not fully applied:" ++ spc() ++
+          (match numargs with
+            0 -> assert false
+          | 1 ->
+             Pp.str "There is a missing argument for variable " ++
+               (Name.print (List.hd vars))
+          | _ -> Pp.str "There are missing arguments for variables " ++
+             pr_enum Name.print vars) ++ Pp.pr_comma () ++
+          match numgiven with
+            0 ->
+              Pp.str "no arguments at all were provided."
+          | 1 ->
+             Pp.str "an argument was provided for variable " ++
+               Pp.str (List.hd givenargs) ++ Pp.str "."
+          | _ ->
+             Pp.str "arguments were provided for variables " ++
+               pr_enum Pp.str givenargs ++ Pp.str ".")
   | VRec _ -> Tacticals.New.tclZEROMSG (str "A fully applied tactic is expected.")
   else if has_type vle (topwit wit_tactic) then
     let tac = out_gen (topwit wit_tactic) vle in
