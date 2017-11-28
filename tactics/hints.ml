@@ -24,7 +24,6 @@ open Smartlocate
 open Misctypes
 open Termops
 open Inductiveops
-open Typing
 open Decl_kinds
 open Pattern
 open Patternops
@@ -954,7 +953,8 @@ let make_mode ref m =
 let make_trivial env sigma poly ?(name=PathAny) r =
   let c,ctx = fresh_global_or_constr env sigma poly r in
   let sigma = Evd.merge_context_set univ_flexible sigma ctx in
-  let t = hnf_constr env sigma (unsafe_type_of env sigma c) in
+  let sigma, t = Typing.type_of env sigma c in
+  let t = hnf_constr env sigma t in
   let hd = head_constr sigma t in
   let ce = mk_clenv_from_env env sigma None (c,t) in
   (Some hd, { pri=1;

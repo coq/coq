@@ -467,24 +467,24 @@ let rec decompose_app_rel env evd t =
   match EConstr.kind evd t with
   | App (f, [||]) -> assert false
   | App (f, [|arg|]) ->
-    let (f', argl, argr) = decompose_app_rel env evd arg in
-    let ty = Typing.unsafe_type_of env evd argl in
+    let (evd, f', argl, argr) = decompose_app_rel env evd arg in
+    let evd, ty = Typing.type_of env evd argl in
     let f'' = mkLambda (Name default_dependent_ident, ty,
       mkLambda (Name (Id.of_string "y"), lift 1 ty,
         mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
-    in (f'', argl, argr)
+    in (evd, f'', argl, argr)
   | App (f, args) ->
     let len = Array.length args in
     let fargs = Array.sub args 0 (Array.length args - 2) in
     let rel = mkApp (f, fargs) in
-    rel, args.(len - 2), args.(len - 1)
+    evd, rel, args.(len - 2), args.(len - 1)
   | _ -> error_no_relation ()
 
 let decompose_app_rel env evd t =
-  let (rel, t1, t2) = decompose_app_rel env evd t in
+  let (evd, rel, t1, t2) = decompose_app_rel env evd t in
   let ty = Retyping.get_type_of env evd rel in
   let () = if not (Reductionops.is_arity env evd ty) then error_no_relation () in
-  (rel, t1, t2)
+  (evd, rel, t1, t2)
 
 let decompose_applied_relation env sigma (c,l) =
   let open Context.Rel.Declaration in
@@ -493,7 +493,7 @@ let decompose_applied_relation env sigma (c,l) =
     let sigma, cl = Clenv.make_evar_clause env sigma ty in
     let sigma = Clenv.solve_evar_clause env sigma true cl l in
     let { Clenv.cl_holes = holes; Clenv.cl_concl = t } = cl in
-    let (equiv, c1, c2) = decompose_app_rel env sigma t in
+    let (sigma, equiv, c1, c2) = decompose_app_rel env sigma t in
     let ty1 = Retyping.get_type_of env sigma c1 in
     let ty2 = Retyping.get_type_of env sigma c2 in
     match evd_convertible env sigma ty1 ty2 with
@@ -777,7 +777,8 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
     let morphargs, morphobjs = Array.chop first args in
     let morphargs', morphobjs' = Array.chop first args' in
     let appm = mkApp(m, morphargs) in
-    let appmtype = Typing.unsafe_type_of env (goalevars evars) appm in
+    let sigma, appmtype = Typing.type_of env (goalevars evars) appm in
+    let evars = (sigma, cstrevars evars) in
     let cstrs = List.map 
       (Option.map (fun r -> r.rew_car, get_opt_rew_rel r.rew_prf)) 
       (Array.to_list morphobjs') 
@@ -1897,7 +1898,7 @@ let build_morphism_signature env sigma m =
   let m,ctx = Constrintern.interp_constr env sigma m in
   let m = EConstr.of_constr m in
   let sigma = Evd.from_ctx ctx in
-  let t = Typing.unsafe_type_of env sigma m in
+  let sigma, t = Typing.type_of env sigma m in
   let cstrs =
     let rec aux t =
       match EConstr.kind sigma t with
@@ -1927,7 +1928,7 @@ let build_morphism_signature env sigma m =
 let default_morphism sign m =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let t = Typing.unsafe_type_of env sigma m in
+  let sigma, t = Typing.type_of env sigma m in
   let evars, _, sign, cstrs =
     PropGlobal.build_signature (sigma, Evar.Set.empty) env t (fst sign) (snd sign)
   in
@@ -2130,7 +2131,7 @@ let setoid_proof ty fn fallback =
     Proofview.tclORELSE
       begin
         try
-          let rel, _, _ = decompose_app_rel env sigma concl in
+          let sigma, rel, _, _ = decompose_app_rel env sigma concl in
           let (sigma, t) = Typing.type_of env sigma rel in
           let car = snd (List.hd (fst (Reductionops.splay_prod env sigma t))) in
 	    (try init_relation_classes () with _ -> raise Not_found);
@@ -2145,7 +2146,7 @@ let setoid_proof ty fn fallback =
                 | Hipattern.NoEquationFound ->
 	            begin match e with
 	            | (Not_found, _) ->
-	                let rel, _, _ = decompose_app_rel env sigma concl in
+	                let sigma, rel, _, _ = decompose_app_rel env sigma concl in
 		        not_declared env sigma ty rel
 	            | (e, info) -> Proofview.tclZERO ~info e
                     end
@@ -2193,8 +2194,7 @@ let setoid_transitivity c =
 let setoid_symmetry_in id =
   let open Tacmach.New in
   Proofview.Goal.enter begin fun gl ->
-  let sigma = project gl in
-  let ctype = pf_unsafe_type_of gl (mkVar id) in
+  let sigma, ctype = pf_type_of gl (mkVar id) in
   let binders,concl = decompose_prod_assum sigma ctype in
   let (equiv, args) = decompose_app sigma concl in
   let rec split_last_two = function

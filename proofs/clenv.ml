@@ -129,7 +129,11 @@ let mk_clenv_from_n gls n (c,cty) =
 
 let mk_clenv_from gls = mk_clenv_from_n gls None
 
-let mk_clenv_type_of gls t = mk_clenv_from gls (t,Tacmach.New.pf_unsafe_type_of gls t)
+let mk_clenv_type_of gls c =
+  let env = Proofview.Goal.env gls in
+  let sigma = Tacmach.New.project gls in
+  let sigma, t = Typing.type_of env sigma c in
+  mk_clenv_from_env env sigma None (c, t)
 
 (******************************************************************)
 
