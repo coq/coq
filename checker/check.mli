@@ -14,6 +14,10 @@ type section_path = {
   basename : string;
 }
 
+type object_file =
+| PhysicalFile of physical_path
+| LogicalFile of section_path
+
 type logical_path = DirPath.t
 
 val default_root_prefix : DirPath.t
@@ -21,6 +25,6 @@ val default_root_prefix : DirPath.t
 val add_load_path : physical_path * logical_path -> unit
 
 val recheck_library :
-  norec:section_path list ->
-  admit:section_path list ->
-  check:section_path list -> unit
+  norec:object_file list ->
+  admit:object_file list ->
+  check:object_file list -> unit
