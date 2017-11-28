@@ -175,6 +175,7 @@ let do_definition ident k pl bl red_option c ctypopt hook =
 let declare_assumption is_coe (local,p,kind) (c,ctx) pl imps impl nl (_,ident) =
 match local with
 | Discharge when Lib.sections_are_opened () ->
+  let ctx = Univ.ContextSet.of_context ctx in
   let decl = (Lib.cwd(), SectionLocalAssum ((c,ctx),p,impl), IsAssumption kind) in
   let _ = declare_variable ident decl in
   let () = assumption_message ident in
@@ -195,7 +196,6 @@ match local with
     | DefaultInline -> Some (Flags.get_inline_level())
     | InlineAt i -> Some i
   in
-  let ctx = Univ.ContextSet.to_context ctx in
   let decl = (ParameterEntry (None,p,(c,ctx),inl), IsAssumption kind) in
   let kn = declare_constant ident ~local decl in
   let gr = ConstRef kn in
@@ -216,26 +216,56 @@ let interp_assumption evdref env impls bl c =
   let ty = EConstr.Unsafe.to_constr ty in
   (ty, impls)
 
-let declare_assumptions idl is_coe k (c,ctx) pl imps impl_is_on nl =
+(* When monomorphic the universe constraints are declared with the first declaration only. *)
+let next_uctx poly uctx = if poly then uctx else Univ.UContext.empty
+
+let declare_assumptions idl is_coe k (c,uctx) pl imps nl =
   let refs, status, _ =
-    List.fold_left (fun (refs,status,ctx) id ->
+    List.fold_left (fun (refs,status,uctx) id ->
       let ref',u',status' =
-	declare_assumption is_coe k (c,ctx) pl imps impl_is_on nl id in
-      (ref',u')::refs, status' && status, Univ.ContextSet.empty)
-      ([],true,ctx) idl
+        declare_assumption is_coe k (c,uctx) pl imps false nl id in
+      (ref',u')::refs, status' && status, next_uctx (pi2 k) uctx)
+      ([],true,uctx) idl
   in
   List.rev refs, status
 
-let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
+
+let maybe_error_many_udecls = function
+  | ((loc,id), Some _) ->
+    user_err ?loc ~hdr:"many_universe_declarations"
+      Pp.(str "When declaring multiple axioms in one command, " ++
+          str "only the first is allowed a universe binder " ++
+          str "(which will be shared by the whole block).")
+  | (_, None) -> ()
+
+let process_assumptions_udecls kind l =
+  let udecl, first_id = match l with
+    | (coe, ((id, udecl)::rest, c))::rest' ->
+      List.iter maybe_error_many_udecls rest;
+      List.iter (fun (coe, (idl, c)) -> List.iter maybe_error_many_udecls idl) rest';
+      udecl, id
+    | (_, ([], _))::_ | [] -> assert false
+  in
+  let () = match kind, udecl with
+    | (Discharge, _, _), Some _ when Lib.sections_are_opened () ->
+      let loc = fst first_id in
+      let msg = Pp.str "Section variables cannot be polymorphic." in
+      user_err ?loc  msg
+    | _ -> ()
+  in
+  udecl, List.map (fun (coe, (idl, c)) -> coe, (List.map fst idl, c)) l
+
+let do_assumptions kind nl l =
   let open Context.Named.Declaration in
   let env = Global.env () in
-  let evdref = ref (Evd.from_env env) in
-  let l = 
-    if poly then
+  let udecl, l = process_assumptions_udecls kind l in
+  let evdref = ref (Evd.from_ctx (Evd.make_evar_universe_context env udecl)) in
+  let l =
+    if pi2 kind (* poly *) then
       (* Separate declarations so that A B : Type puts A and B in different levels. *)
       List.fold_right (fun (is_coe,(idl,c)) acc ->
-        List.fold_right (fun id acc -> 
-	  (is_coe, ([id], c)) :: acc) idl acc)
+        List.fold_right (fun id acc ->
+          (is_coe, ([id], c)) :: acc) idl acc)
         l []
     else l
   in
@@ -247,65 +277,30 @@ let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
     let ienv = List.fold_right (fun (_,id) ienv ->
       let impls = compute_internalization_data env Variable t imps in
       Id.Map.add id impls ienv) idl ienv in
-      ((env,ienv),((is_coe,idl),t,imps))) 
+      ((env,ienv),((is_coe,idl),t,imps)))
     (env,empty_internalization_env) l
   in
   let evd = solve_remaining_evars all_and_fail_flags env !evdref Evd.empty in
   (* The universe constraints come from the whole telescope. *)
   let evd = Evd.nf_constraints evd in
-  let ctx = Evd.universe_context_set evd in
-  let nf_evar c = EConstr.Unsafe.to_constr (nf_evar evd (EConstr.of_constr c)) in
-  let l = List.map (on_pi2 nf_evar) l in
-  pi2 (List.fold_left (fun (subst,status,ctx) ((is_coe,idl),t,imps) ->
-    let t = replace_vars subst t in
-    let (refs,status') = declare_assumptions idl is_coe kind (t,ctx) [] imps false nl in
-    let subst' = List.map2 
-      (fun (_,id) (c,u) -> (id,Universes.constr_of_global_univ (c,u)))
-      idl refs 
-    in
-    (subst'@subst, status' && status,
-     (* The universe constraints are declared with the first declaration only. *)
-     Univ.ContextSet.empty)) ([],true,ctx) l)
-
-let do_assumptions_bound_univs coe kind nl id pl c =
-  let env = Global.env () in
-  let ctx = Evd.make_evar_universe_context env pl in
-  let evdref = ref (Evd.from_ctx ctx) in
-  let ty, impls = interp_type_evars_impls env evdref c in
-  let nf, subst = Evarutil.e_nf_evars_and_universes evdref in
-  let ty = EConstr.Unsafe.to_constr ty in
-  let ty = nf ty in
-  let vars = Univops.universes_of_constr ty in
-  let evd = Evd.restrict_universe_context !evdref vars in
-  let pl, uctx = Evd.universe_context ?names:pl evd in
-  let uctx = Univ.ContextSet.of_context uctx in
-  let (_, _, st) = declare_assumption coe kind (ty, uctx) pl impls false nl id in
-  st
-
-let do_assumptions kind nl l = match l with
-| [coe, ([id, Some pl], c)] ->
-  let () = match kind with
-  | (Discharge, _, _) when Lib.sections_are_opened () ->
-    let loc = fst id in
-    let msg = Pp.str "Section variables cannot be polymorphic." in
-    user_err ?loc  msg
-  | _ -> ()
+  let nf_evar c = EConstr.to_constr evd (EConstr.of_constr c) in
+  let uvars, l = List.fold_map (fun uvars (coe,t,imps) ->
+      let t = nf_evar t in
+      let uvars = Univ.LSet.union uvars (Univops.universes_of_constr t) in
+      uvars, (coe,t,imps))
+      Univ.LSet.empty l
   in
-  do_assumptions_bound_univs coe kind nl id (Some pl) c
-| _ ->
-  let map (coe, (idl, c)) =
-    let map (id, univs) = match univs with
-    | None -> id
-    | Some _ ->
-      let loc = fst id in
-      let msg =
-	Pp.str "Assumptions with bound universes can only be defined one at a time." in
-      user_err ?loc  msg
-    in
-    (coe, (List.map map idl, c))
-  in
-  let l = List.map map l in
-  do_assumptions_unbound_univs kind nl l
+  let evd = Evd.restrict_universe_context evd uvars in
+  let ubinders, uctx = Evd.universe_context ?names:udecl evd in
+  pi2 (List.fold_left (fun (subst,status,uctx) ((is_coe,idl),t,imps) ->
+      let t = replace_vars subst t in
+      let refs, status' = declare_assumptions idl is_coe kind (t,uctx) ubinders imps nl in
+      let subst' = List.map2
+          (fun (_,id) (c,u) -> (id, Universes.constr_of_global_univ (c,u)))
+          idl refs
+      in
+      subst'@subst, status' && status, next_uctx (pi2 kind) uctx)
+    ([], true, uctx) l)
 
 (* 3a| Elimination schemes for mutual inductive definitions *)
 

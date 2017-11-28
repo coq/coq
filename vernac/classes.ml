@@ -382,8 +382,8 @@ let context poly l =
   in
   let uctx = ref (Evd.universe_context_set !evars) in
   let fn status (id, b, t) =
+    let ctx = Univ.ContextSet.to_context !uctx in
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
-      let ctx = Univ.ContextSet.to_context !uctx in
       (* Declare the universe context once *)
       let () = uctx := Univ.ContextSet.empty in
       let decl = match b with
@@ -410,10 +410,9 @@ let context poly l =
       let decl = (Discharge, poly, Definitional) in
       let nstatus = match b with
       | None ->
-        pi3 (Command.declare_assumption false decl (t, !uctx) [] [] impl
+        pi3 (Command.declare_assumption false decl (t, ctx) [] [] impl
           Vernacexpr.NoInline (Loc.tag id))
       | Some b ->
-        let ctx = Univ.ContextSet.to_context !uctx in
         let decl = (Discharge, poly, Definition) in
         let entry = Declare.definition_entry ~poly ~univs:ctx ~types:t b in
         let hook = Lemmas.mk_hook (fun _ gr -> gr) in
