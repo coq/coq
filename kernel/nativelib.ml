@@ -87,7 +87,7 @@ let call_compiler ?profile:(profile=false) ml_filename =
       []
   in
   let flambda_args =
-    if Coq_config.caml_version_nums >= [4;3;0] then
+    if Coq_config.caml_version_nums >= [4;3;0] && Dynlink.is_native then
       (* We play safe for now, and use the native compiler
          with -Oclassic, however it is likely that `native_compute`
          users can benefit from tweaking here.
