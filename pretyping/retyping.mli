@@ -31,8 +31,11 @@ val get_type_of :
 val get_sort_of :
   ?polyprop:bool -> env -> evar_map -> types -> Sorts.t
 
+(* When [truncation_style] is [true], tells if the type has been explicitly
+   truncated to Prop or (impredicative) Set; in particular, singleton type and
+   small inductive types, which have all eliminations to Type, are in Type *)
 val get_sort_family_of :
-  ?polyprop:bool -> env -> evar_map -> types -> Sorts.family
+  ?truncation_style:bool -> ?polyprop:bool -> env -> evar_map -> types -> Sorts.family
 
 (** Makes an unsafe judgment from a constr *)
 val get_judgment_of : env -> evar_map -> constr -> unsafe_judgment

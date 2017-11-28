@@ -3696,7 +3696,7 @@ end
 module Retyping :  (* reconstruct the type of a term knowing that it was already typechecked *)
 sig
   val get_type_of : ?polyprop:bool -> ?lax:bool -> Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.types
-  val get_sort_family_of : ?polyprop:bool -> Environ.env -> Evd.evar_map -> EConstr.types -> Sorts.family
+  val get_sort_family_of : ?truncation_style:bool -> ?polyprop:bool -> Environ.env -> Evd.evar_map -> EConstr.types -> Sorts.family
   val expand_projection : Environ.env -> Evd.evar_map -> Names.Projection.t -> EConstr.constr -> EConstr.constr list -> EConstr.constr
   val get_sort_of :
     ?polyprop:bool -> Environ.env -> Evd.evar_map -> EConstr.types -> Sorts.t

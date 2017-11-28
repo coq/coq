@@ -183,7 +183,7 @@ let retype ?(polyprop=true) sigma =
 
   in type_of, sort_of, type_of_global_reference_knowing_parameters
 
-let get_sort_family_of ~polyprop env sigma t =
+let get_sort_family_of ?(truncation_style=false) ?(polyprop=true) env sigma t =
   let type_of,_,type_of_global_reference_knowing_parameters = retype ~polyprop sigma in
   let rec sort_family_of env t =
     match EConstr.kind sigma t with
@@ -194,11 +194,13 @@ let get_sort_family_of ~polyprop env sigma t =
 	if not (is_impredicative_set env) &&
 	   s2 == InSet && sort_family_of env t == InType then InType else s2
     | App(f,args) when is_template_polymorphic env sigma f ->
+        if truncation_style then InType else
 	let t = type_of_global_reference_knowing_parameters env f args in
         Sorts.family (sort_of_atomic_type env sigma t args)
     | App(f,args) ->
 	Sorts.family (sort_of_atomic_type env sigma (type_of env f) args)
     | Lambda _ | Fix _ | Construct _ -> retype_error NotAType
+    | Ind _ when truncation_style && is_template_polymorphic env sigma t -> InType
     | _ -> 
       Sorts.family (decomp_sort env sigma (type_of env t))
   in sort_family_of env t
