@@ -410,7 +410,7 @@ let context poly l =
       let decl = (Discharge, poly, Definitional) in
       let nstatus = match b with
       | None ->
-        pi3 (Command.declare_assumption false decl (t, ctx) [] [] impl
+        pi3 (Command.declare_assumption false decl (t, !uctx) [] [] impl
           Vernacexpr.NoInline (Loc.tag id))
       | Some b ->
         let decl = (Discharge, poly, Definition) in
