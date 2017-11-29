@@ -129,8 +129,6 @@ type logical_path = DirPath.t
 
 let load_paths = ref ([],[] : CUnix.physical_path list * logical_path list)
 
-let get_load_paths () = fst !load_paths
-
 (* Hints to partially detects if two paths refer to the same repertory *)
 let rec remove_path_dot p =
   let curdir = Filename.concat Filename.current_dir_name "" in (* Unix: "./" *)
@@ -227,13 +225,8 @@ let locate_absolute_library dir =
 
 let locate_qualified_library qid =
   try
-    let loadpath =
-      (* Search library in loadpath *)
-      if qid.dirpath=[] then get_load_paths ()
-      else
-        (* we assume qid is an absolute dirpath *)
-        load_paths_of_dir_path (dir_of_path qid)
-    in
+    (* we assume qid is an absolute dirpath *)
+    let loadpath = load_paths_of_dir_path (dir_of_path qid) in
     if loadpath = [] then raise LibUnmappedDir;
     let name =  qid.basename^".vo" in
     let path, file = System.where_in_path loadpath name in
