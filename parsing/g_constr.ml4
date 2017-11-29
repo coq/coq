@@ -377,11 +377,10 @@ GEXTEND Gram
       [ p = pattern; "|"; pl = LIST1 pattern SEP "|" -> CAst.make ~loc:!@loc @@ CPatOr (p::pl) ]
     | "99" RIGHTA [ ]
     | "90" RIGHTA [ ]
-    | "11" LEFTA
+    | "10" LEFTA
       [ p = pattern; "as"; id = ident ->
-        CAst.make ~loc:!@loc @@ CPatAlias (p, id) ]
-    | "10" RIGHTA
-      [ p = pattern; lp = LIST1 NEXT ->
+        CAst.make ~loc:!@loc @@ CPatAlias (p, id)
+      | p = pattern; lp = LIST1 NEXT ->
         (let open CAst in match p with
 	  | { v = CPatAtom (Some r) } -> CAst.make ~loc:!@loc @@ CPatCstr (r, None, lp)
 	  | { v = CPatCstr (r, None, l2); loc } ->
@@ -392,7 +391,7 @@ GEXTEND Gram
           | _ -> CErrors.user_err
                  ?loc:(cases_pattern_expr_loc p) ~hdr:"compound_pattern"
                  (Pp.str "Such pattern cannot have arguments."))
-      |"@"; r = Prim.reference; lp = LIST0 NEXT ->
+      | "@"; r = Prim.reference; lp = LIST0 NEXT ->
         CAst.make ~loc:!@loc @@ CPatCstr (r, Some lp, []) ]
     | "1" LEFTA
       [ c = pattern; "%"; key=IDENT -> CAst.make ~loc:!@loc @@ CPatDelimiters (key,c) ]
