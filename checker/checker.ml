@@ -174,7 +174,9 @@ let print_usage_channel co command =
   output_string co command;
   output_string co "coqchk options are:\n";
   output_string co
-"  -R dir coqdir          map physical dir to logical coqdir\
+"  -Q dir coqdir          map physical dir to logical coqdir\
+\n  -R dir coqdir          synonymous for -Q\
+\n\
 \n\
 \n  -admit module          load module and dependencies without checking\
 \n  -norec module          check module but admit dependencies without checking\
