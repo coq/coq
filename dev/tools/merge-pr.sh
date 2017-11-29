@@ -1,4 +1,6 @@
-#!/bin/sh -e
+#!/usr/bin/env bash
+
+set -e
 
 # This script depends (at least) on git and jq.
 # It should be used like this: dev/tools/merge-pr.sh /PR number/
