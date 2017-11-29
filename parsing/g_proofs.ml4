@@ -66,7 +66,7 @@ GEXTEND Gram
       | IDENT "Guarded" -> VernacCheckGuard
       (* Hints for Auto and EAuto *)
       | IDENT "Create"; IDENT "HintDb" ;
-	  id = IDENT ; b = [ "discriminated" -> true | -> false ] ->
+	  id = IDENT ; b = [ IDENT "discriminated" -> true | -> false ] ->
 	    VernacCreateHintDb (id, b)
       | IDENT "Remove"; IDENT "Hints"; ids = LIST1 global; dbnames = opt_hintbases ->
 	  VernacRemoveHints (dbnames, ids)
