@@ -13,19 +13,15 @@ type deprecation = bool
 type atts = {
   loc : Loc.t option;
   locality : bool option;
+  polymorphic : bool;
 }
 
-type vernac_command =
-  Genarg.raw_generic_argument list ->
-  atts:atts -> st:Vernacstate.t ->
-  Vernacstate.t
+type 'a vernac_command = 'a -> atts:atts -> st:Vernacstate.t -> Vernacstate.t
 
-val vinterp_add : deprecation -> Vernacexpr.extend_name -> vernac_command -> unit
-
-val overwriting_vinterp_add : Vernacexpr.extend_name -> vernac_command -> unit
+type plugin_args = Genarg.raw_generic_argument list
 
 val vinterp_init : unit -> unit
+val vinterp_add : deprecation -> Vernacexpr.extend_name -> plugin_args vernac_command -> unit
+val overwriting_vinterp_add : Vernacexpr.extend_name -> plugin_args vernac_command -> unit
 
-val call : ?locality:bool -> ?loc:Loc.t ->
-  Vernacexpr.extend_name * Genarg.raw_generic_argument list ->
-  st:Vernacstate.t -> Vernacstate.t
+val call : Vernacexpr.extend_name -> plugin_args -> atts:atts -> st:Vernacstate.t -> Vernacstate.t

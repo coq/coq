@@ -15,17 +15,17 @@ type deprecation = bool
 type atts = {
   loc : Loc.t option;
   locality : bool option;
+  polymorphic : bool;
 }
 
-type vernac_command =
-  Genarg.raw_generic_argument list ->
-  atts:atts -> st:Vernacstate.t ->
-  Vernacstate.t
+type 'a vernac_command = 'a -> atts:atts -> st:Vernacstate.t -> Vernacstate.t
+
+type plugin_args = Genarg.raw_generic_argument list
 
 (* Table of vernac entries *)
 let vernac_tab =
   (Hashtbl.create 211 :
-    (Vernacexpr.extend_name, deprecation * vernac_command) Hashtbl.t)
+    (Vernacexpr.extend_name, deprecation * plugin_args vernac_command) Hashtbl.t)
 
 let vinterp_add depr s f =
   try
@@ -58,7 +58,7 @@ let warn_deprecated_command =
 
 (* Interpretation of a vernac command *)
 
-let call ?locality ?loc (opn,converted_args) =
+let call opn converted_args ~atts ~st =
   let phase = ref "Looking up command" in
   try
     let depr, callback = vinterp_map opn in
@@ -74,8 +74,7 @@ let call ?locality ?loc (opn,converted_args) =
     phase := "Checking arguments";
     let hunk = callback converted_args in
     phase := "Executing command";
-    let atts = { loc; locality } in
-    hunk ~atts
+    hunk ~atts ~st
   with
     | Drop -> raise Drop
     | reraise ->

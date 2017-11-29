@@ -1023,7 +1023,7 @@ let stm_vernac_interp ?proof ?route id st { verbose; loc; expr } : Vernacstate.t
   | VernacShow ShowScript -> ShowScript.show_script (); st
   | expr ->
     stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
-    try Vernacentries.interp ?verbosely:(Some verbose) ?proof st (Loc.tag ?loc expr)
+    try Vernacentries.interp ?verbosely:(Some verbose) ?proof ~st (Loc.tag ?loc expr)
     with e ->
       let e = CErrors.push e in
       Exninfo.iraise Hooks.(call_process_error_once e)
