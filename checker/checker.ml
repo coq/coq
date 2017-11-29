@@ -96,17 +96,13 @@ let add_rec_path ~unix_path ~coq_root =
 
 (* By the option -include -I or -R of the command line *)
 let includes = ref []
-let push_include (s, alias) = includes := (s,alias,false) :: !includes
-let push_rec_include (s, alias) = includes := (s,alias,true) :: !includes
+let push_include (s, alias) = includes := (s,alias) :: !includes
 
 let set_default_include d =
   push_include (d, Check.default_root_prefix)
 let set_include d p =
   let p = dirpath_of_string p in
   push_include (d,p)
-let set_rec_include d p =
-  let p = dirpath_of_string p in
-  push_rec_include(d,p)
 
 (* Initializes the LoadPath *)
 let init_load_path () =
@@ -132,8 +128,7 @@ let init_load_path () =
   add_path ~unix_path:"." ~coq_root:Check.default_root_prefix;
   (* additional loadpath, given with -I -include -R options *)
   List.iter
-    (fun (unix_path, coq_root, reci) ->
-      if reci then add_rec_path ~unix_path ~coq_root else add_path ~unix_path ~coq_root)
+    (fun (unix_path, coq_root) -> add_rec_path ~unix_path ~coq_root)
     (List.rev !includes);
   includes := []
 
@@ -311,6 +306,9 @@ let explain_exn = function
 	       report ())
   | e -> CErrors.print e (* for anomalies and other uncaught exceptions *)
 
+let deprecated flag =
+  Feedback.msg_warning (str "Deprecated flag " ++ quote (str flag))
+
 let parse_args argv =
   let rec parse = function
     | [] -> ()
@@ -324,15 +322,15 @@ let parse_args argv =
       Flags.coqlib_spec := true;
       parse rem
 
-    | ("-I"|"-include") :: d :: "-as" :: p :: rem -> set_include d p; parse rem
+    | ("-I"|"-include") :: d :: "-as" :: p :: rem -> deprecated "-I"; set_include d p; parse rem
     | ("-I"|"-include") :: d :: "-as" :: [] -> usage ()
-    | ("-I"|"-include") :: d :: rem -> set_default_include d; parse rem
+    | ("-I"|"-include") :: d :: rem -> deprecated "-I"; set_default_include d; parse rem
     | ("-I"|"-include") :: []       -> usage ()
 
-    | "-Q" :: d :: p :: rem -> set_rec_include d p;parse rem
+    | "-Q" :: d :: p :: rem -> set_include d p;parse rem
     | "-Q" :: ([] | [_]) -> usage ()
 
-    | "-R" :: d :: p :: rem -> set_rec_include d p;parse rem
+    | "-R" :: d :: p :: rem -> set_include d p;parse rem
     | "-R" :: ([] | [_]) -> usage ()
 
     | "-debug" :: rem -> set_debug (); parse rem
