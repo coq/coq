@@ -299,8 +299,9 @@ The following command-line options are recognized by the commands {\tt
 
 \section{Compiled libraries checker ({\tt coqchk})}
 
-The {\tt coqchk} command takes a list of library paths as argument.
-The corresponding compiled libraries (.vo files) are searched in the
+The {\tt coqchk} command takes a list of library paths as argument, described
+either by their logical name or by their physical filename, which must end in
+{\tt .vo}. The corresponding compiled libraries (.vo files) are searched in the
 path, recursively processing the libraries they depend on. The content
 of all these libraries is then type-checked. The effect of {\tt
   coqchk} is only to return with normal exit code in case of success,

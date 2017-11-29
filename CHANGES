@@ -21,6 +21,10 @@ Tactics
 - Tactic "decide equality" now able to manage constructors which
   contain proofs.
 
+Checker
+
+- The checker now accepts filenames in addition to logical paths.
+
 Changes from 8.7+beta2 to 8.7.0
 ===============================
 
