@@ -107,6 +107,11 @@ Proof.
  intros. symmetry. now apply Nat.lt_succ_pred with m.
 Qed.
 
+Lemma S_pred_pos n: O < n -> n = S (pred n).
+Proof.
+ apply S_pred.
+Qed.
+
 Lemma lt_pred n m : S n < m -> n < pred m.
 Proof.
  apply Nat.lt_succ_lt_pred.
