@@ -53,6 +53,7 @@ val dump : unit -> (int * string) list
 module Easy : sig
 
   (* To create a dynamic type on the fly *)
+  val make_dyn_tag : string -> ('a -> t) * (t -> 'a) * 'a tag
   val make_dyn : string -> ('a -> t) * (t -> 'a)
 
   (* For types declared with the [create] function above *)

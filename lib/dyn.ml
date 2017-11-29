@@ -55,6 +55,8 @@ sig
   include PreS
 
   module Easy : sig
+
+    val make_dyn_tag : string -> ('a -> t) * (t -> 'a) * 'a tag
     val make_dyn : string -> ('a -> t) * (t -> 'a)
     val inj : 'a -> 'a tag -> t
     val prj : t -> 'a tag -> 'a option
@@ -129,8 +131,9 @@ end
 include Self
 
 module Easy = struct
+
 (* now tags are opaque, we can do the trick *)
-let make_dyn (s : string) =
+let make_dyn_tag (s : string) =
  (fun (type a) (tag : a tag) ->
   let infun : (a -> t) = fun x -> Dyn (tag, x) in
   let outfun : (t -> a) = fun (Dyn (t, x)) ->
@@ -138,8 +141,11 @@ let make_dyn (s : string) =
     | None -> assert false
     | Some CSig.Refl -> x
   in
-  (infun, outfun))
+  infun, outfun, tag)
  (create s)
+
+let make_dyn (s : string) =
+  let inf, outf, _ = make_dyn_tag s in inf, outf
 
 let inj x tag = Dyn(tag,x)
 let prj : type a. t -> a tag -> a option =
