@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# Copy to .git/hooks/ to use.
+
+set -e
+
+# NB: even though we use --cached it seems to exit code 1 with
+# unstaged whitespace errors. That just means they get fixed though.
+if git diff-index --check --cached HEAD --quiet;
+then
+    :
+else
+    1>&2 echo "Auto fixing whitespace issues..."
+
+    TEMP=$(mktemp)
+    # We fix whitespace in the index and in the working tree
+    # separately to preserve non-added changes.
+    git diff-index -p --cached HEAD > "$TEMP"
+    git apply --cached -R "$TEMP"
+    git apply --cached --whitespace=fix "$TEMP"
+
+    git diff-index -p HEAD > "$TEMP"
+    git apply -R "$TEMP"
+    git apply --whitespace=fix "$TEMP"
+    rm "$TEMP"
+
+    # Check that we did fix whitespace
+    if ! git diff-index --check --cached HEAD;
+    then
+        1>&2 echo "Auto-fixing whitespace failed: errors remain."
+        1>&2 echo "This may fix itself if you try again."
+        1>&2 echo "(Consider whether the number of errors decreases after each run.)"
+        exit 1
+    fi
+    1>&2 echo "Whitespace issues fixed!"
+fi
