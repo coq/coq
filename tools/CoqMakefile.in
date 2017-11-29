@@ -244,6 +244,7 @@ strip_dotslash = $(patsubst ./%,%,$(1))
 VO = vo
 
 VOFILES = $(VFILES:.v=.$(VO))
+VDFILES = $(addsuffix .d,$(VFILES))
 GLOBFILES = $(VFILES:.v=.glob)
 GFILES = $(VFILES:.v=.g)
 HTMLFILES = $(VFILES:.v=.html)
@@ -535,6 +536,7 @@ clean::
 	$(HIDE)rm -f $(CMOFILES:.cmo=.o)
 	$(HIDE)rm -f $(CMXAFILES:.cmxa=.a)
 	$(HIDE)rm -f $(ALLDFILES)
+	$(HIDE)rm -f .vdfiles
 	$(HIDE)rm -f $(ALLNATIVEFILES)
 	$(HIDE)find . -name .coq-native -type d -empty -delete
 	$(HIDE)rm -f $(VOFILES)
@@ -712,9 +714,13 @@ $(addsuffix .d,$(MLPACKFILES)): %.mlpack.d: %.mlpack
 	$(SHOW)'COQDEP $<'
 	$(HIDE)$(COQDEP) $(OCAMLLIBS) -c "$<" $(redir_if_ok)
 
-$(addsuffix .d,$(VFILES)): %.v.d: %.v
-	$(SHOW)'COQDEP $<'
-	$(HIDE)$(COQDEP) $(COQLIBS) -dyndep var -c "$<" $(redir_if_ok)
+# timestamp .vdfiles indicates .v.d files already built
+
+.vdfiles : $(VFILES)
+	$(SHOW)'COQDEP $(VFILES)'
+	$(HIDE)$(COQDEP) $(COQLIBS) -dyndep var -c -with-file-output $(VFILES) && touch .vdfiles
+
+$(VDFILES) : .vdfiles
 
 # Misc ########################################################################
 

@@ -47,7 +47,7 @@ val file_name : string -> string option -> string
 val escape : string -> string
 val canonize : string -> string
 val mL_dependencies : unit -> unit
-val coq_dependencies : unit -> unit
+val coq_dependencies : bool -> unit
 val suffixes : 'a list -> 'a list list
 val add_known : bool -> string -> string list -> string -> unit
 val add_coqlib_known : bool -> string -> string list -> string -> unit
