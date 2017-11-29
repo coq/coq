@@ -158,9 +158,10 @@ let mkTransCmd cast cids ceff cqueue =
   Cmd { ctac = false; cast; cblock = None; cqueue; cids; ceff }
 
 (* Parts of the system state that are morally part of the proof state *)
-let summary_pstate = [ Evarutil.meta_counter_summary_name;
-                       Evd.evar_counter_summary_name;
-                       "program-tcc-table" ]
+let summary_pstate = Evarutil.meta_counter_summary_tag,
+                     Evd.evar_counter_summary_tag,
+                     Obligations.program_tcc_summary_tag
+
 type cached_state =
   | Empty
   | Error of Exninfo.iexn
@@ -762,15 +763,21 @@ end = struct (* {{{ *)
   let fix_exn_ref = ref (fun x -> x)
 
   type proof_part =
-    Proof_global.t * Summary.frozen_bits (* only meta counters *)
+    Proof_global.t *
+    int *                                   (* Evarutil.meta_counter_summary_tag *)
+    int *                                   (* Evd.evar_counter_summary_tag *)
+    Obligations.program_info Names.Id.Map.t (* Obligations.program_tcc_summary_tag *)
 
   type partial_state =
     [ `Full of Vernacstate.t
     | `ProofOnly of Stateid.t * proof_part ]
 
   let proof_part_of_frozen { Vernacstate.proof; system } =
+    let st = States.summary_of_state system in
     proof,
-    Summary.project_summary (States.summary_of_state system) summary_pstate
+    Summary.project_from_summary st Util.(pi1 summary_pstate),
+    Summary.project_from_summary st Util.(pi2 summary_pstate),
+    Summary.project_from_summary st Util.(pi3 summary_pstate)
 
   let freeze marshallable id =
     VCS.set_state id (Valid (Vernacstate.freeze_interp_state marshallable))
@@ -830,16 +837,21 @@ end = struct (* {{{ *)
             else s
            with VCS.Expired -> s in
          VCS.set_state id (Valid s)
-    | `ProofOnly(ontop,(pstate,counters)) ->
+    | `ProofOnly(ontop,(pstate,c1,c2,c3)) ->
          if is_cached_and_valid ontop then
            let s = get_cached ontop in
            let s = { s with proof =
              Proof_global.copy_terminators ~src:s.proof ~tgt:pstate } in
            let s = { s with system =
              States.replace_summary s.system
-               (Summary.surgery_summary
-                 (States.summary_of_state s.system)
-               counters) } in
+               begin
+                 let st = States.summary_of_state s.system in
+                 let st = Summary.modify_summary st Util.(pi1 summary_pstate) c1 in
+                 let st = Summary.modify_summary st Util.(pi2 summary_pstate) c2 in
+                 let st = Summary.modify_summary st Util.(pi3 summary_pstate) c3 in
+                 st
+               end
+                } in
            VCS.set_state id (Valid s)
     with VCS.Expired -> ()
 
@@ -854,10 +866,10 @@ end = struct (* {{{ *)
 
   let same_env { Vernacstate.system = s1 } { Vernacstate.system = s2 } =
     let s1 = States.summary_of_state s1 in
-    let e1 = Summary.project_summary s1 [Global.global_env_summary_name] in
+    let e1 = Summary.project_from_summary s1 Global.global_env_summary_tag in
     let s2 = States.summary_of_state s2 in
-    let e2 = Summary.project_summary s2 [Global.global_env_summary_name] in
-    Summary.pointer_equal e1 e2
+    let e2 = Summary.project_from_summary s2 Global.global_env_summary_tag in
+    e1 == e2
 
   let define ?safe_id ?(redefine=false) ?(cache=`No) ?(feedback_processed=true)
         f id
@@ -2040,8 +2052,6 @@ and Reach : sig
 
 end = struct (* {{{ *)
 
-let pstate = summary_pstate
-
 let async_policy () =
   let open Flags in
   if is_universe_polymorphism () then false
@@ -2254,10 +2264,14 @@ let known_state ?(redefine_qed=false) ~cache id =
   (* ugly functions to process nested lemmas, i.e. hard to reproduce
    * side effects *)
   let cherry_pick_non_pstate () =
-    Summary.freeze_summary ~marshallable:`No ~complement:true pstate,
-    Lib.freeze ~marshallable:`No in
+    let st = Summary.freeze_summaries ~marshallable:`No in
+    let st = Summary.remove_from_summary st Util.(pi1 summary_pstate) in
+    let st = Summary.remove_from_summary st Util.(pi2 summary_pstate) in
+    let st = Summary.remove_from_summary st Util.(pi3 summary_pstate) in
+    st, Lib.freeze ~marshallable:`No in
+
   let inject_non_pstate (s,l) =
-    Summary.unfreeze_summary s; Lib.unfreeze l; update_global_env ()
+    Summary.unfreeze_summaries ~partial:true s; Lib.unfreeze l; update_global_env ()
   in
   let rec pure_cherry_pick_non_pstate safe_id id =
     stm_purify (fun id ->

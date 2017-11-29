@@ -159,4 +159,4 @@ val current_dirpath : unit -> DirPath.t
 
 val with_global : (Environ.env -> DirPath.t -> 'a Univ.in_universe_context_set) -> 'a
 
-val global_env_summary_name : string
+val global_env_summary_tag : Safe_typing.safe_environment Summary.Dyn.tag

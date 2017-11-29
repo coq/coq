@@ -104,3 +104,6 @@ exception NoObligations of Names.Id.t option
 val explain_no_obligations : Names.Id.t option -> Pp.t
 
 val set_program_mode : bool -> unit
+
+type program_info
+val program_tcc_summary_tag : program_info Id.Map.t Summary.Dyn.tag

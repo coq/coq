@@ -429,8 +429,8 @@ let map_replace k v m = ProgMap.add k (CEphemeron.create v) (ProgMap.remove k m)
 
 let map_keys m = ProgMap.fold (fun k _ l -> k :: l) m []
 
-let from_prg : program_info ProgMap.t ref =
-  Summary.ref ProgMap.empty ~name:"program-tcc-table"
+let from_prg, program_tcc_summary_tag =
+  Summary.ref_tag ProgMap.empty ~name:"program-tcc-table"
 
 let close sec =
   if not (ProgMap.is_empty !from_prg) then

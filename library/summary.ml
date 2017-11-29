@@ -87,7 +87,7 @@ let unfreeze_single name state =
       Pp.(seq [str "Error unfreezing summary "; str name; fnl (); CErrors.iprint e]);
     iraise e
 
-let unfreeze_summaries { summaries; ml_module } =
+let unfreeze_summaries ?(partial=false) { summaries; ml_module } =
   (* The unfreezing of [ml_modules_summary] has to be anticipated since it
    * may modify the content of [summaries] by loading new ML modules *)
   begin match !sum_mod with
@@ -98,8 +98,10 @@ let unfreeze_summaries { summaries; ml_module } =
   let ufz name decl =
     try decl.unfreeze_function String.Map.(find name summaries)
     with Not_found ->
-      Feedback.msg_warning Pp.(str "Summary was captured out of module scope for entry " ++ str name);
-      decl.init_function ()
+      if not partial then begin
+        Feedback.msg_warning Pp.(str "Summary was captured out of module scope for entry " ++ str name);
+        decl.init_function ()
+      end;
   in
   (* String.Map.iter unfreeze_single !sum_map *)
   String.Map.iter ufz !sum_map

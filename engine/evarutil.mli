@@ -236,7 +236,7 @@ val evd_comb2 : (evar_map -> 'b -> 'c -> evar_map * 'a) -> evar_map ref -> 'b ->
 val subterm_source : Evar.t -> Evar_kinds.t Loc.located ->
   Evar_kinds.t Loc.located
 
-val meta_counter_summary_name : string
+val meta_counter_summary_tag : int Summary.Dyn.tag
 
 (** Deprecated *)
 type type_constraint = types option

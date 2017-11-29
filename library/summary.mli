@@ -80,7 +80,7 @@ type frozen
 
 val empty_frozen : frozen
 val freeze_summaries : marshallable:marshallable -> frozen
-val unfreeze_summaries : frozen -> unit
+val unfreeze_summaries : ?partial:bool -> frozen -> unit
 val init_summaries : unit -> unit
 
 (** Typed projection of the summary. Experimental API, use with CARE *)
