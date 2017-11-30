@@ -33,7 +33,7 @@ CHECKERDEPS := $(addsuffix .d, $(CHECKMLDFILE) $(CHECKMLLIBFILE))
 -include $(CHECKERDEPS)
 
 ifeq ($(BEST),opt)
-$(CHICKEN): checker/check.cmxa checker/main.ml
+$(CHICKEN): checker/check.cmxa checker/main.mli checker/main.ml
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) -linkpkg $(SYSMOD) $(CHKLIBS) $(OPTFLAGS) $(LINKMETADATA) -o $@ $^
 	$(STRIP) $@
@@ -43,7 +43,7 @@ $(CHICKEN): $(CHICKENBYTE)
 	cp $< $@
 endif
 
-$(CHICKENBYTE): checker/check.cma checker/main.ml
+$(CHICKENBYTE): checker/check.cma checker/main.mli checker/main.ml
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) -linkpkg $(SYSMOD) $(CHKLIBS) $(BYTEFLAGS) $(CUSTOM) -o $@ $^
 

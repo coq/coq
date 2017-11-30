@@ -210,7 +210,6 @@ let access_list v o pos =
 let access_block o = match Repr.repr o with
 | BLOCK (tag, os) -> (tag, os)
 | _ -> raise Exit
-let access_int o = match Repr.repr o with INT i -> i | _ -> raise Exit
 
 (** raises Exit if the object has not the expected structure *)
 exception Forbidden
@@ -249,8 +248,7 @@ let rec get_children v o pos = match v with
   |Dyn ->
     begin match Repr.repr o with
     | BLOCK (0, [|id; o|]) ->
-      let n = access_int id in
-      let tpe = find_dyn n in
+      let tpe = Any in
       [|(Int, id, 0 :: pos); (tpe, o, 1 :: pos)|]
     | _ -> raise Exit
     end
@@ -395,7 +393,7 @@ let visit_vo f =
     | None -> ()
   done
 
-let main =
+let () =
   if not !Sys.interactive then
     Arg.parse [] visit_vo
       ("votour: guided tour of a Coq .vo or .vi file\n"^
