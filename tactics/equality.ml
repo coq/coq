@@ -739,7 +739,7 @@ let keep_proof_equalities = function
 let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
   let project env sorts posn t1 t2 =
     let ty1 = get_type_of env sigma t1 in
-    let s = get_sort_family_of env sigma ty1 in
+    let s = get_sort_family_of ~truncation_style:true env sigma ty1 in
     if Sorts.List.mem s sorts
     then [(List.rev posn,t1,t2)] else []
   in

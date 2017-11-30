@@ -166,23 +166,6 @@ let retype ?(polyprop=true) sigma =
     | Lambda _ | Fix _ | Construct _ -> retype_error NotAType
     | _ -> decomp_sort env sigma (type_of env t)
 
-  and sort_family_of env t =
-    match EConstr.kind sigma t with
-    | Cast (c,_, s) when isSort sigma s -> Sorts.family (destSort sigma s)
-    | Sort _ -> InType
-    | Prod (name,t,c2) ->
-	let s2 = sort_family_of (push_rel (LocalAssum (name,t)) env) c2 in
-	if not (is_impredicative_set env) &&
-	   s2 == InSet && sort_family_of env t == InType then InType else s2
-    | App(f,args) when is_template_polymorphic env sigma f ->
-	let t = type_of_global_reference_knowing_parameters env f args in
-        Sorts.family (sort_of_atomic_type env sigma t args)
-    | App(f,args) ->
-	Sorts.family (sort_of_atomic_type env sigma (type_of env f) args)
-    | Lambda _ | Fix _ | Construct _ -> retype_error NotAType
-    | _ -> 
-      Sorts.family (decomp_sort env sigma (type_of env t))
-
   and type_of_global_reference_knowing_parameters env c args =
     let argtyps =
       Array.map (fun c -> lazy (EConstr.to_constr sigma (type_of env c))) args in
@@ -198,15 +181,34 @@ let retype ?(polyprop=true) sigma =
       EConstr.of_constr (type_of_constructor env (cstr, u))
     | _ -> assert false
 
-  in type_of, sort_of, sort_family_of,
-     type_of_global_reference_knowing_parameters
+  in type_of, sort_of, type_of_global_reference_knowing_parameters
+
+let get_sort_family_of ?(truncation_style=false) ?(polyprop=true) env sigma t =
+  let type_of,_,type_of_global_reference_knowing_parameters = retype ~polyprop sigma in
+  let rec sort_family_of env t =
+    match EConstr.kind sigma t with
+    | Cast (c,_, s) when isSort sigma s -> Sorts.family (destSort sigma s)
+    | Sort _ -> InType
+    | Prod (name,t,c2) ->
+	let s2 = sort_family_of (push_rel (LocalAssum (name,t)) env) c2 in
+	if not (is_impredicative_set env) &&
+	   s2 == InSet && sort_family_of env t == InType then InType else s2
+    | App(f,args) when is_template_polymorphic env sigma f ->
+        if truncation_style then InType else
+	let t = type_of_global_reference_knowing_parameters env f args in
+        Sorts.family (sort_of_atomic_type env sigma t args)
+    | App(f,args) ->
+	Sorts.family (sort_of_atomic_type env sigma (type_of env f) args)
+    | Lambda _ | Fix _ | Construct _ -> retype_error NotAType
+    | Ind _ when truncation_style && is_template_polymorphic env sigma t -> InType
+    | _ -> 
+      Sorts.family (decomp_sort env sigma (type_of env t))
+  in sort_family_of env t
 
 let get_sort_of ?(polyprop=true) env sigma t =
-  let _,f,_,_ = retype ~polyprop sigma in anomaly_on_error (f env) t
-let get_sort_family_of ?(polyprop=true) env sigma c =
-  let _,_,f,_ = retype ~polyprop sigma in anomaly_on_error (f env) c
+  let _,f,_ = retype ~polyprop sigma in anomaly_on_error (f env) t
 let type_of_global_reference_knowing_parameters env sigma c args =
-  let _,_,_,f = retype sigma in anomaly_on_error (f env c) args
+  let _,_,f = retype sigma in anomaly_on_error (f env c) args
 
 let type_of_global_reference_knowing_conclusion env sigma c conclty =
   match EConstr.kind sigma c with
@@ -232,7 +234,7 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
 (*   get_type_of polyprop lax env sigma c *)
 
 let get_type_of ?(polyprop=true) ?(lax=false) env sigma c =
-  let f,_,_,_ = retype ~polyprop sigma in
+  let f,_,_ = retype ~polyprop sigma in
     if lax then f env c else anomaly_on_error (f env) c
 
 (* Makes an unsafe judgment from a constr *)
