@@ -240,3 +240,20 @@ Module IterativeDeepening.
   Qed.
 
 End IterativeDeepening.
+
+Module AxiomsAreInstances.
+  Set Typeclasses Axioms Are Instances.
+  Class TestClass1 := {}.
+  Axiom testax1 : TestClass1.
+  Definition testdef1 : TestClass1 := _.
+
+  Unset Typeclasses Axioms Are Instances.
+  Class TestClass2 := {}.
+  Axiom testax2 : TestClass2.
+  Fail Definition testdef2 : TestClass2 := _.
+
+  (* we didn't break typeclasses *)
+  Existing Instance testax2.
+  Definition testdef2 : TestClass2 := _.
+
+End AxiomsAreInstances.

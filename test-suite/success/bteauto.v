@@ -55,6 +55,7 @@ Module Backtracking.
     Axiom A : Type.
     Existing Class A.
     Axioms a b c d e: A.
+    Existing Instances a b c d e.
     
     Ltac get_value H := eval cbv delta [H] in H.
     
