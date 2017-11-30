@@ -175,7 +175,6 @@ let do_definition ident k pl bl red_option c ctypopt hook =
 let declare_assumption is_coe (local,p,kind) (c,ctx) pl imps impl nl (_,ident) =
 match local with
 | Discharge when Lib.sections_are_opened () ->
-  let ctx = Univ.ContextSet.of_context ctx in
   let decl = (Lib.cwd(), SectionLocalAssum ((c,ctx),p,impl), IsAssumption kind) in
   let _ = declare_variable ident decl in
   let () = assumption_message ident in
@@ -196,6 +195,7 @@ match local with
     | DefaultInline -> Some (Flags.get_inline_level())
     | InlineAt i -> Some i
   in
+  let ctx = Univ.ContextSet.to_context ctx in
   let decl = (ParameterEntry (None,p,(c,ctx),inl), IsAssumption kind) in
   let kn = declare_constant ident ~local decl in
   let gr = ConstRef kn in
@@ -217,7 +217,7 @@ let interp_assumption evdref env impls bl c =
   (ty, impls)
 
 (* When monomorphic the universe constraints are declared with the first declaration only. *)
-let next_uctx poly uctx = if poly then uctx else Univ.UContext.empty
+let next_uctx poly uctx = if poly then uctx else Univ.ContextSet.empty
 
 let declare_assumptions idl is_coe k (c,uctx) pl imps nl =
   let refs, status, _ =
@@ -300,7 +300,7 @@ let do_assumptions kind nl l =
           idl refs
       in
       subst'@subst, status' && status, next_uctx (pi2 kind) uctx)
-    ([], true, uctx) l)
+    ([], true, Univ.ContextSet.of_context uctx) l)
 
 (* 3a| Elimination schemes for mutual inductive definitions *)
 
