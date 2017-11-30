@@ -21,6 +21,10 @@ Tactics
 - Tactic "decide equality" now able to manage constructors which
   contain proofs.
 
+Vernacular Commands
+- The deprecated Coercion Local, Open Local Scope, Notation Local syntax
+  was removed. Use Local as a prefix instead.
+
 Changes from 8.7+beta2 to 8.7.0
 ===============================
 

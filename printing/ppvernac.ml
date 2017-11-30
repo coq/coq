@@ -324,23 +324,18 @@ open Decl_kinds
     | SortClass -> keyword "Sortclass"
     | RefClass qid -> pr_smart_global qid
 
-  let pr_assumption_token many (l,a) =
-    let l = match l with Some x -> x | None -> Decl_kinds.Global in
-    match l, a with
-      | (Discharge,Logical) ->
-        keyword (if many then "Hypotheses" else "Hypothesis")
-      | (Discharge,Definitional) ->
-        keyword (if many then "Variables" else "Variable")
-      | (Global,Logical) ->
+  let pr_assumption_token many discharge kind =
+    match discharge, kind with
+      | (NoDischarge,Logical) ->
         keyword (if many then "Axioms" else "Axiom")
-      | (Global,Definitional) ->
+      | (NoDischarge,Definitional) ->
         keyword (if many then "Parameters" else "Parameter")
-      | (Local, Logical) ->
-        keyword (if many then "Local Axioms" else "Local Axiom")
-      | (Local,Definitional) ->
-        keyword (if many then "Local Parameters" else "Local Parameter")
-      | (Global,Conjectural) -> str"Conjecture"
-      | ((Discharge | Local),Conjectural) ->
+      | (NoDischarge,Conjectural) -> str"Conjecture"
+      | (DoDischarge,Logical) ->
+        keyword (if many then "Hypotheses" else "Hypothesis")
+      | (DoDischarge,Definitional) ->
+        keyword (if many then "Variables" else "Variable")
+      | (DoDischarge,Conjectural) ->
         anomaly (Pp.str "Don't know how to beautify a local conjecture.")
 
   let pr_params pr_c (xl,(c,t)) =
@@ -631,7 +626,7 @@ open Decl_kinds
         return (keyword "Fail" ++ spc() ++ pr_vernac_body v)
 
     (* Syntax *)
-      | VernacOpenCloseScope (_,(opening,sc)) ->
+      | VernacOpenCloseScope (opening,sc) ->
         return (
           keyword (if opening then "Open " else "Close ") ++
             keyword "Scope" ++ spc() ++ str sc
@@ -660,7 +655,7 @@ open Decl_kinds
           ++ spc() ++ pr_smart_global q
           ++ spc() ++ str"[" ++ prlist_with_sep sep pr_opt_scope scl ++ str"]"
         )
-      | VernacInfix (_,((_,s),mv),q,sn) -> (* A Verifier *)
+      | VernacInfix (((_,s),mv),q,sn) -> (* A Verifier *)
         return (
           hov 0 (hov 0 (keyword "Infix "
                         ++ qs s ++ str " :=" ++ pr_constrarg q) ++
@@ -669,7 +664,7 @@ open Decl_kinds
                      | None -> mt()
                      | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
         )
-      | VernacNotation (_,c,((_,s),l),opt) ->
+      | VernacNotation (c,((_,s),l),opt) ->
         return (
           hov 2 (keyword "Notation" ++ spc() ++ qs s ++
                    str " :=" ++ Flags.without_option Flags.beautify pr_constrarg c ++ pr_syntax_modifiers l ++
@@ -677,7 +672,7 @@ open Decl_kinds
                      | None -> mt()
                      | Some sc -> str" :" ++ spc() ++ str sc))
         )
-      | VernacSyntaxExtension (_, _,(s,l)) ->
+      | VernacSyntaxExtension (_, (s, l)) ->
         return (
           keyword "Reserved Notation" ++ spc() ++ pr_located qs s ++
             pr_syntax_modifiers l
@@ -688,10 +683,9 @@ open Decl_kinds
         )
 
       (* Gallina *)
-      | VernacDefinition (d,id,b) -> (* A verifier... *)
-        let pr_def_token (l,dk) =
-          let l = match l with Some x -> x | None -> Decl_kinds.Global in
-          keyword (Kindops.string_of_definition_kind (l,false,dk))
+      | VernacDefinition ((discharge,kind),id,b) -> (* A verifier... *)
+        let pr_def_token dk =
+          keyword (Kindops.string_of_definition_object_kind dk)
         in
         let pr_reduce = function
           | None -> mt()
@@ -712,7 +706,7 @@ open Decl_kinds
         let (binds,typ,c) = pr_def_body b in
         return (
           hov 2 (
-            pr_def_token d ++ spc()
+            pr_def_token kind ++ spc()
             ++ pr_ident_decl id ++ binds ++ typ
             ++ (match c with
               | None -> mt()
@@ -737,13 +731,13 @@ open Decl_kinds
       )
       | VernacExactProof c ->
         return (hov 2 (keyword "Proof" ++ pr_lconstrarg c))
-      | VernacAssumption (stre,t,l) ->
+      | VernacAssumption ((discharge,kind),t,l) ->
         let n = List.length (List.flatten (List.map fst (List.map snd l))) in
         let pr_params (c, (xl, t)) =
           hov 2 (prlist_with_sep sep pr_ident_decl xl ++ spc() ++
             (if c then str":>" else str":" ++ spc() ++ pr_lconstr_expr t)) in
         let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
-        return (hov 2 (pr_assumption_token (n > 1) stre ++
+        return (hov 2 (pr_assumption_token (n > 1) discharge kind ++
                        pr_non_empty_arg pr_assumption_inline t ++ spc() ++ assumptions))
       | VernacInductive (cum, p,f,l) ->
         let pr_constructor (coe,(id,c)) =
@@ -793,9 +787,8 @@ open Decl_kinds
 
       | VernacFixpoint (local, recs) ->
         let local = match local with
-          | Some Discharge -> "Let "
-          | Some Local -> "Local "
-          | None | Some Global -> ""
+          | DoDischarge -> "Let "
+          | NoDischarge -> ""
         in
         return (
           hov 0 (str local ++ keyword "Fixpoint" ++ spc () ++
@@ -805,9 +798,8 @@ open Decl_kinds
 
       | VernacCoFixpoint (local, corecs) ->
         let local = match local with
-          | Some Discharge -> keyword "Let" ++ spc ()
-          | Some Local -> keyword "Local" ++ spc ()
-          | None | Some Global -> str ""
+          | DoDischarge -> keyword "Let" ++ spc ()
+          | NoDischarge -> str ""
         in
         let pr_onecorec ((iddecl,bl,c,def),ntn) =
           pr_ident_decl iddecl ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
@@ -868,14 +860,14 @@ open Decl_kinds
         return (
           keyword "Canonical Structure" ++ spc() ++ pr_smart_global q
         )
-      | VernacCoercion (_,id,c1,c2) ->
+      | VernacCoercion (id,c1,c2) ->
         return (
           hov 1 (
             keyword "Coercion" ++ spc() ++
               pr_smart_global id ++ spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++
               spc() ++ str">->" ++ spc() ++ pr_class_rawexpr c2)
         )
-      | VernacIdentityCoercion (_,id,c1,c2) ->
+      | VernacIdentityCoercion (id,c1,c2) ->
         return (
           hov 1 (
             keyword "Identity Coercion" ++ spc() ++ pr_lident id ++
@@ -999,9 +991,9 @@ open Decl_kinds
                    prlist_with_sep spc (fun r -> pr_id (coerce_reference_to_id r)) ids ++
                    pr_opt_hintbases dbnames)
         )
-      | VernacHints (_, dbnames,h) ->
+      | VernacHints (dbnames,h) ->
         return (pr_hints dbnames h pr_constr pr_constr_pattern_expr)
-      | VernacSyntacticDefinition (id,(ids,c),_,compat) ->
+      | VernacSyntacticDefinition (id,(ids,c),compat) ->
         return (
           hov 2
             (keyword "Notation" ++ spc () ++ pr_lident id ++ spc () ++

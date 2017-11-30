@@ -23,45 +23,13 @@ let string_of_theorem_kind = function
   | Proposition -> "Proposition"
   | Corollary -> "Corollary"
 
-let string_of_definition_kind def =
-  let (locality, poly, kind) = def in
-  let error () = CErrors.anomaly (Pp.str "Internal definition kind.") in
-  match kind with
-  | Definition ->
-    begin match locality with
-    | Discharge -> "Let"
-    | Local -> "Local Definition"
-    | Global -> "Definition"
-    end
-  | Example ->
-    begin match locality with
-    | Discharge -> error ()
-    | Local -> "Local Example"
-    | Global -> "Example"
-    end
-  | Coercion ->
-    begin match locality with
-    | Discharge -> error ()
-    | Local -> "Local Coercion"
-    | Global -> "Coercion"
-    end
-  | SubClass ->
-    begin match locality with
-    | Discharge -> error ()
-    | Local -> "Local SubClass"
-    | Global -> "SubClass"
-    end
-  | CanonicalStructure ->
-    begin match locality with
-    | Discharge -> error ()
-    | Local -> error ()
-    | Global -> "Canonical Structure"
-    end
-  | Instance ->
-    begin match locality with
-    | Discharge -> error ()
-    | Local -> "Instance"
-    | Global -> "Global Instance"
-    end
+let string_of_definition_object_kind = function
+  | Definition -> "Definition"
+  | Example -> "Example"
+  | Coercion -> "Coercion"
+  | SubClass -> "SubClass"
+  | CanonicalStructure -> "Canonical Structure"
+  | Instance -> "Instance"
+  | Let -> "Let"
   | (StructureComponent|Scheme|CoFixpoint|Fixpoint|IdentityCoercion|Method) ->
     CErrors.anomaly (Pp.str "Internal definition kind.")

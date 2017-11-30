@@ -8,10 +8,6 @@
 
 (** * Managing locality *)
 
-(** Commands which supported an inlined Local flag *)
-
-val enforce_locality_full : bool option -> bool -> bool option
-
 (** * Positioning locality for commands supporting discharging and export
     outside of modules *)
 
@@ -22,16 +18,15 @@ val enforce_locality_full : bool option -> bool -> bool option
 
 val make_locality : bool option -> bool
 val make_non_locality : bool option -> bool
-val enforce_locality : bool option -> bool -> bool
-val enforce_locality_exp :
-  bool option -> Decl_kinds.locality option -> Decl_kinds.locality
+val enforce_locality_exp : bool option -> Decl_kinds.discharge -> Decl_kinds.locality
+val enforce_locality : bool option -> bool
 
 (** For commands whose default is to not discharge but to export:
     Global in sections forces discharge, Global not in section is the default;
     Local in sections is the default, Local not in section forces non-export *)
 
 val make_section_locality : bool option -> bool
-val enforce_section_locality : bool option -> bool -> bool
+val enforce_section_locality : bool option -> bool
 
 (** * Positioning locality for commands supporting export but not discharge *)
 
@@ -40,4 +35,4 @@ val enforce_section_locality : bool option -> bool -> bool
     Local in sections is the default, Local not in section forces non-export *)
 
 val make_module_locality : bool option -> bool
-val enforce_module_locality : bool option -> bool -> bool
+val enforce_module_locality : bool option -> bool

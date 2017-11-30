@@ -409,8 +409,8 @@ let dump_global r =
 (**********)
 (* Syntax *)
 
-let vernac_syntax_extension atts local infix l =
-  let local = enforce_module_locality atts.locality local in
+let vernac_syntax_extension atts infix l =
+  let local = enforce_module_locality atts.locality in
   if infix then Metasyntax.check_infix_modifiers (snd l);
   Metasyntax.add_syntax_extension local l
 
@@ -421,20 +421,20 @@ let vernac_delimiters sc = function
 let vernac_bind_scope sc cll =
   Metasyntax.add_class_scope sc (List.map scope_class_of_qualid cll)
 
-let vernac_open_close_scope ~atts local (b,s) =
-  let local = enforce_section_locality atts.locality local in
+let vernac_open_close_scope ~atts (b,s) =
+  let local = enforce_section_locality atts.locality in
   Notation.open_close_scope (local,b,s)
 
 let vernac_arguments_scope ~atts r scl =
   let local = make_section_locality atts.locality in
   Notation.declare_arguments_scope local (smart_global r) scl
 
-let vernac_infix ~atts local =
-  let local = enforce_module_locality atts.locality local in
+let vernac_infix ~atts =
+  let local = enforce_module_locality atts.locality in
   Metasyntax.add_infix local (Global.env())
 
-let vernac_notation ~atts local =
-  let local = enforce_module_locality atts.locality local in
+let vernac_notation ~atts =
+  let local = enforce_module_locality atts.locality in
   Metasyntax.add_notation local (Global.env())
 
 (***********)
@@ -472,16 +472,16 @@ let vernac_definition_hook p = function
 | SubClass -> Class.add_subclass_hook p
 | _ -> no_hook
 
-let vernac_definition ~atts (local,k) ((loc,id as lid),pl) def =
-  let local = enforce_locality_exp atts.locality local in
-  let hook = vernac_definition_hook atts.polymorphic k in
+let vernac_definition ~atts discharge kind ((loc,id as lid),pl) def =
+  let local = enforce_locality_exp atts.locality discharge in
+  let hook = vernac_definition_hook atts.polymorphic kind in
   let () = match local with
   | Discharge -> Dumpglob.dump_definition lid true "var"
   | Local | Global -> Dumpglob.dump_definition lid false "def"
   in
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
-          start_proof_and_print (local, atts.polymorphic, DefinitionBody k)
+          start_proof_and_print (local, atts.polymorphic, DefinitionBody kind)
 	    [Some (lid,pl), (bl,t)] hook
     | DefineBody (bl,red_option,c,typ_opt) ->
  	let red_option = match red_option with
@@ -489,10 +489,10 @@ let vernac_definition ~atts (local,k) ((loc,id as lid),pl) def =
           | Some r ->
             let sigma, env = Pfedit.get_current_context () in
             Some (snd (Hook.get f_interp_redexp env sigma r)) in
-        do_definition id (local, atts.polymorphic,k) pl bl red_option c typ_opt hook)
+        do_definition id (local, atts.polymorphic, kind) pl bl red_option c typ_opt hook)
 
 let vernac_start_proof ~atts kind l =
-  let local = enforce_locality_exp atts.locality None in
+  let local = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun (id, _) ->
       match id with
@@ -511,8 +511,8 @@ let vernac_exact_proof c =
   save_proof (Vernacexpr.(Proved(Opaque,None)));
   if not status then Feedback.feedback Feedback.AddedAxiom
 
-let vernac_assumption ~atts (local, kind) l nl =
-  let local = enforce_locality_exp atts.locality local in
+let vernac_assumption ~atts discharge kind l nl =
+  let local = enforce_locality_exp atts.locality discharge in
   let global = local == Global in
   let kind = local, atts.polymorphic, kind in
   List.iter (fun (is_coe,(idl,c)) ->
@@ -594,14 +594,14 @@ let vernac_inductive ~atts cum lo finite indl =
     let indl = List.map unpack indl in
     do_mutual_inductive indl is_cumulative atts.polymorphic lo finite
 
-let vernac_fixpoint ~atts local l =
-  let local = enforce_locality_exp atts.locality local in
+let vernac_fixpoint ~atts discharge l =
+  let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   do_fixpoint local atts.polymorphic l
 
-let vernac_cofixpoint ~atts local l =
-  let local = enforce_locality_exp atts.locality local in
+let vernac_cofixpoint ~atts discharge l =
+  let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   do_cofixpoint local atts.polymorphic l
@@ -812,16 +812,16 @@ let vernac_require from import qidl =
 let vernac_canonical r =
   Recordops.declare_canonical_structure (smart_global r)
 
-let vernac_coercion ~atts local ref qids qidt =
-  let local = enforce_locality atts.locality local in
+let vernac_coercion ~atts ref qids qidt =
+  let local = enforce_locality atts.locality in
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
   let ref' = smart_global ref in
   Class.try_add_new_coercion_with_target ref' ~local atts.polymorphic ~source ~target;
   Flags.if_verbose Feedback.msg_info (pr_global ref' ++ str " is now a coercion")
 
-let vernac_identity_coercion ~atts local id qids qidt =
-  let local = enforce_locality atts.locality local in
+let vernac_identity_coercion ~atts id qids qidt =
+  let local = enforce_locality atts.locality in
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
   Class.try_add_new_identity_coercion id ~local atts.polymorphic ~source ~target
@@ -947,13 +947,13 @@ let vernac_remove_hints ~atts dbs ids =
   let local = make_module_locality atts.locality in
   Hints.remove_hints local dbs (List.map Smartlocate.global_with_alias ids)
 
-let vernac_hints ~atts local lb h =
-  let local = enforce_module_locality atts.locality local in
+let vernac_hints ~atts lb h =
+  let local = enforce_module_locality atts.locality in
   Hints.add_hints local lb (Hints.interp_hints atts.polymorphic h)
 
-let vernac_syntactic_definition ~atts lid x local y =
+let vernac_syntactic_definition ~atts lid x y =
   Dumpglob.dump_definition lid false "syndef";
-  let local = enforce_module_locality atts.locality local in
+  let local = enforce_module_locality atts.locality in
   Metasyntax.add_syntactic_definition (Global.env()) (snd lid) x local y
 
 let vernac_declare_implicits ~atts r l =
@@ -1958,27 +1958,29 @@ let interp ?proof ~atts ~st c =
   | VernacLocal _ -> assert false
 
   (* Syntax *)
-  | VernacSyntaxExtension (infix, local,sl) ->
-      vernac_syntax_extension atts local infix sl
+  | VernacSyntaxExtension (infix, sl) ->
+      vernac_syntax_extension atts infix sl
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
   | VernacBindScope (sc,rl) -> vernac_bind_scope sc rl
-  | VernacOpenCloseScope (local, s) -> vernac_open_close_scope ~atts local s
+  | VernacOpenCloseScope (b, s) -> vernac_open_close_scope ~atts (b,s)
   | VernacArgumentsScope (qid,scl) -> vernac_arguments_scope ~atts qid scl
-  | VernacInfix (local,mv,qid,sc) -> vernac_infix ~atts local mv qid sc
-  | VernacNotation (local,c,infpl,sc) ->
-      vernac_notation ~atts local c infpl sc
+  | VernacInfix (mv,qid,sc) -> vernac_infix ~atts mv qid sc
+  | VernacNotation (c,infpl,sc) ->
+      vernac_notation ~atts c infpl sc
   | VernacNotationAddFormat(n,k,v) ->
       Metasyntax.add_notation_extra_printing_rule n k v
 
   (* Gallina *)
-  | VernacDefinition (k,lid,d) -> vernac_definition ~atts k lid d
+  | VernacDefinition ((discharge,kind),lid,d) ->
+      vernac_definition ~atts discharge kind lid d
   | VernacStartTheoremProof (k,l) -> vernac_start_proof ~atts k l
   | VernacEndProof e -> vernac_end_proof ?proof e
   | VernacExactProof c -> vernac_exact_proof c
-  | VernacAssumption (stre,nl,l) -> vernac_assumption ~atts stre l nl
+  | VernacAssumption ((discharge,kind),nl,l) ->
+      vernac_assumption ~atts discharge kind l nl
   | VernacInductive (cum, priv,finite,l) -> vernac_inductive ~atts cum priv finite l
-  | VernacFixpoint (local, l) -> vernac_fixpoint ~atts local l
-  | VernacCoFixpoint (local, l) -> vernac_cofixpoint ~atts local l
+  | VernacFixpoint (discharge, l) -> vernac_fixpoint ~atts discharge l
+  | VernacCoFixpoint (discharge, l) -> vernac_cofixpoint ~atts discharge l
   | VernacScheme l -> vernac_scheme l
   | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
   | VernacUniverse l -> vernac_universe ~atts l
@@ -2003,9 +2005,9 @@ let interp ?proof ~atts ~st c =
   | VernacRequire (from, export, qidl) -> vernac_require from export qidl
   | VernacImport (export,qidl) -> vernac_import export qidl
   | VernacCanonical qid -> vernac_canonical qid
-  | VernacCoercion (local,r,s,t) -> vernac_coercion ~atts local r s t
-  | VernacIdentityCoercion (local,(_,id),s,t) ->
-      vernac_identity_coercion ~atts local id s t
+  | VernacCoercion (r,s,t) -> vernac_coercion ~atts r s t
+  | VernacIdentityCoercion ((_,id),s,t) ->
+      vernac_identity_coercion ~atts id s t
 
   (* Type classes *)
   | VernacInstance (abst, sup, inst, props, info) ->
@@ -2031,10 +2033,10 @@ let interp ?proof ~atts ~st c =
   (* Commands *)
   | VernacCreateHintDb (dbname,b) -> vernac_create_hintdb ~atts dbname b
   | VernacRemoveHints (dbnames,ids) -> vernac_remove_hints ~atts dbnames ids
-  | VernacHints (local,dbnames,hints) ->
-      vernac_hints ~atts local dbnames hints
-  | VernacSyntacticDefinition (id,c,local,b) ->
-      vernac_syntactic_definition ~atts id c local b
+  | VernacHints (dbnames,hints) ->
+      vernac_hints ~atts dbnames hints
+  | VernacSyntacticDefinition (id,c,b) ->
+      vernac_syntactic_definition ~atts id c b
   | VernacDeclareImplicits (qid,l) ->
       vernac_declare_implicits ~atts qid l
   | VernacArguments (qid, args, more_implicits, nargs, flags) ->

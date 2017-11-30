@@ -1302,6 +1302,10 @@ sig
     | CoFinite
     | BiFinite
 
+  type discharge =
+    | DoDischarge
+    | NoDischarge
+
   type locality =
     | Discharge
     | Local
@@ -1320,6 +1324,7 @@ sig
     | IdentityCoercion
     | Instance
     | Method
+    | Let
   type theorem_kind =
     | Theorem
     | Lemma
@@ -4032,8 +4037,6 @@ sig
 
   type verbose_flag = bool
 
-  type obsolete_locality = bool
-
   type universe_decl_expr = (lident list, Misctypes.glob_constraint list) gen_universe_decl
 
   type ident_decl = lident * universe_decl_expr option
@@ -4148,29 +4151,27 @@ sig
   | VernacRedirect of string * vernac_expr Loc.located
   | VernacTimeout of int * vernac_expr
   | VernacFail of vernac_expr
-  | VernacSyntaxExtension of
-      bool * obsolete_locality * (lstring * syntax_modifier list)
-  | VernacOpenCloseScope of obsolete_locality * (bool * scope_name)
+  | VernacSyntaxExtension of bool * (lstring * syntax_modifier list)
+  | VernacOpenCloseScope of bool * scope_name
   | VernacDelimiters of scope_name * string option
   | VernacBindScope of scope_name * class_rawexpr list
-  | VernacInfix of obsolete_locality * (lstring * syntax_modifier list) *
+  | VernacInfix of (lstring * syntax_modifier list) *
       Constrexpr.constr_expr * scope_name option
   | VernacNotation of
-      obsolete_locality * Constrexpr.constr_expr * (lstring * syntax_modifier list) *
+      Constrexpr.constr_expr * (lstring * syntax_modifier list) *
       scope_name option
   | VernacNotationAddFormat of string * string * string
-  | VernacDefinition of
-      (Decl_kinds.locality option * Decl_kinds.definition_object_kind) * ident_decl * definition_expr
+  | VernacDefinition of (Decl_kinds.discharge * Decl_kinds.definition_object_kind) * ident_decl * definition_expr
   | VernacStartTheoremProof of Decl_kinds.theorem_kind * proof_expr list
   | VernacEndProof of proof_end
   | VernacExactProof of Constrexpr.constr_expr
-  | VernacAssumption of (Decl_kinds.locality option * Decl_kinds.assumption_object_kind) *
+  | VernacAssumption of (Decl_kinds.discharge * Decl_kinds.assumption_object_kind) *
       inline * (ident_decl list * Constrexpr.constr_expr) with_coercion list
   | VernacInductive of cumulative_inductive_parsing_flag * Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of
-      Decl_kinds.locality option * (fixpoint_expr * decl_notation list) list
+      Decl_kinds.discharge * (fixpoint_expr * decl_notation list) list
   | VernacCoFixpoint of
-      Decl_kinds.locality option * (cofixpoint_expr * decl_notation list) list
+      Decl_kinds.discharge * (cofixpoint_expr * decl_notation list) list
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
@@ -4181,9 +4182,9 @@ sig
       Libnames.reference option * bool option * Libnames.reference list
   | VernacImport of bool * Libnames.reference list
   | VernacCanonical of Libnames.reference Misctypes.or_by_notation
-  | VernacCoercion of obsolete_locality * Libnames.reference Misctypes.or_by_notation *
+  | VernacCoercion of Libnames.reference Misctypes.or_by_notation *
       class_rawexpr * class_rawexpr
-  | VernacIdentityCoercion of obsolete_locality * lident *
+  | VernacIdentityCoercion of lident *
       class_rawexpr * class_rawexpr
   | VernacNameSectionHypSet of lident * section_subset_expr
   | VernacInstance of
@@ -4217,9 +4218,9 @@ sig
   | VernacBackTo of int
   | VernacCreateHintDb of string * bool
   | VernacRemoveHints of string list * Libnames.reference list
-  | VernacHints of obsolete_locality * string list * hints_expr
+  | VernacHints of string list * hints_expr
   | VernacSyntacticDefinition of Names.Id.t Loc.located * (Names.Id.t list * Constrexpr.constr_expr) *
-      obsolete_locality * onlyparsing_flag
+      onlyparsing_flag
   | VernacDeclareImplicits of Libnames.reference Misctypes.or_by_notation *
                                 (Constrexpr.explicitation * bool * bool) list list
   | VernacArguments of Libnames.reference Misctypes.or_by_notation *
