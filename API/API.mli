@@ -2077,7 +2077,11 @@ sig
   val basename : full_path -> Names.Id.t
 
   type object_name = full_path * Names.KerName.t
-  type object_prefix = Names.DirPath.t * (Names.ModPath.t * Names.DirPath.t)
+  type object_prefix = {
+    obj_dir : DirPath.t;
+    obj_mp  : ModPath.t;
+    obj_sec : DirPath.t;
+  }
 
   module Dirset : Set.S with type elt = DirPath.t
   module Dirmap : Map.ExtS with type key = DirPath.t and module Set := Dirset

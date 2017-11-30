@@ -186,8 +186,8 @@ let print_module r =
   try
     let globdir = Nametab.locate_dir qid in
       match globdir with
-	  DirModule (dirpath,(mp,_)) ->
-	    Feedback.msg_notice (Printmod.print_module (Printmod.printable_body dirpath) mp)
+          DirModule { obj_dir; obj_mp; _ } ->
+            Feedback.msg_notice (Printmod.print_module (Printmod.printable_body obj_dir) obj_mp)
 	| _ -> raise Not_found
   with
       Not_found -> Feedback.msg_error (str"Unknown Module " ++ pr_qualid qid)

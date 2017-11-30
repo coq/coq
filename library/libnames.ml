@@ -156,10 +156,15 @@ let qualid_of_dirpath dir =
 
 type object_name = full_path * KerName.t
 
-type object_prefix = DirPath.t * (ModPath.t * DirPath.t)
+type object_prefix = {
+  obj_dir : DirPath.t;
+  obj_mp  : ModPath.t;
+  obj_sec : DirPath.t;
+}
 
-let make_oname (dirpath,(mp,dir)) id =
-  make_path dirpath id, KerName.make mp dir (Label.of_id id)
+(* let make_oname (dirpath,(mp,dir)) id = *)
+let make_oname { obj_dir; obj_mp; obj_sec } id =
+  make_path obj_dir id, KerName.make obj_mp obj_sec (Label.of_id id)
 
 (* to this type are mapped DirPath.t's in the nametab *)
 type global_dir_reference =
@@ -170,10 +175,10 @@ type global_dir_reference =
   | DirClosedSection of DirPath.t
       (* this won't last long I hope! *)
 
-let eq_op (d1, (mp1, p1)) (d2, (mp2, p2)) =
-  DirPath.equal d1 d2 &&
-  DirPath.equal p1 p2 &&
-  ModPath.equal mp1 mp2
+let eq_op op1 op2 =
+  DirPath.equal op1.obj_dir op2.obj_dir &&
+  DirPath.equal op1.obj_sec op2.obj_sec &&
+  ModPath.equal op1.obj_mp  op2.obj_mp
 
 let eq_global_dir_reference r1 r2 = match r1, r2 with
 | DirOpenModule op1, DirOpenModule op2 -> eq_op op1 op2

@@ -93,12 +93,16 @@ let segment_of_objects prefix =
    sections, but on the contrary there are many constructions of section
    paths based on the library path. *)
 
-let initial_prefix = default_library,(Names.ModPath.initial,Names.DirPath.empty)
+let initial_prefix = {
+  obj_dir = default_library;
+  obj_mp  = ModPath.initial;
+  obj_sec = DirPath.empty;
+}
 
 type lib_state = {
-  comp_name   : Names.DirPath.t option;
+  comp_name   : DirPath.t option;
   lib_stk     : library_segment;
-  path_prefix : Names.DirPath.t * (Names.ModPath.t * Names.DirPath.t);
+  path_prefix : object_prefix;
 }
 
 let initial_lib_state = {
@@ -115,10 +119,9 @@ let library_dp () =
 (* [path_prefix] is a pair of absolute dirpath and a pair of current
    module path and relative section path *)
 
-let cwd () = fst !lib_state.path_prefix
-let current_prefix () = snd !lib_state.path_prefix
-let current_mp () = fst (snd !lib_state.path_prefix)
-let current_sections () = snd (snd !lib_state.path_prefix)
+let cwd () = !lib_state.path_prefix.obj_dir
+let current_mp () = !lib_state.path_prefix.obj_mp
+let current_sections () = !lib_state.path_prefix.obj_sec
 
 let sections_depth () = List.length (Names.DirPath.repr (current_sections ()))
 let sections_are_opened () = not (Names.DirPath.is_empty (current_sections ()))
@@ -136,7 +139,7 @@ let make_path_except_section id =
   Libnames.make_path (cwd_except_section ()) id
 
 let make_kn id =
-  let mp,dir = current_prefix () in
+  let mp, dir = current_mp (), current_sections () in
   Names.KerName.make mp dir (Names.Label.of_id id)
 
 let make_oname id = Libnames.make_oname !lib_state.path_prefix id
@@ -152,8 +155,11 @@ let recalc_path_prefix () =
   lib_state := { !lib_state with path_prefix = recalc !lib_state.lib_stk }
 
 let pop_path_prefix () =
-  let dir,(mp,sec) = !lib_state.path_prefix in
-  lib_state := { !lib_state with path_prefix = pop_dirpath dir, (mp, pop_dirpath sec)}
+  let op = !lib_state.path_prefix in
+  lib_state := { !lib_state
+                 with path_prefix = { op with obj_dir = pop_dirpath op.obj_dir;
+                                              obj_sec = pop_dirpath op.obj_sec;
+                                    } }
 
 let find_entry_p p =
   let rec find = function
@@ -226,7 +232,7 @@ let add_anonymous_entry node =
   add_entry (make_oname (anonymous_id ())) node
 
 let add_leaf id obj =
-  if Names.ModPath.equal (current_mp ()) Names.ModPath.initial then
+  if ModPath.equal (current_mp ()) ModPath.initial then
     user_err Pp.(str "No session module started (use -top dir)");
   let oname = make_oname id in
   cache_object (oname,obj);
@@ -278,8 +284,8 @@ let current_mod_id () =
 
 
 let start_mod is_type export id mp fs =
-  let dir = add_dirpath_suffix (cwd ()) id in
-  let prefix = dir,(mp,Names.DirPath.empty) in
+  let dir = add_dirpath_suffix (!lib_state.path_prefix.obj_dir) id in
+  let prefix = { obj_dir = dir; obj_mp = mp; obj_sec = Names.DirPath.empty } in
   let exists =
     if is_type then Nametab.exists_cci (make_path id)
     else Nametab.exists_module dir
@@ -328,10 +334,10 @@ let contents_after sp = let (after,_,_) = split_lib sp in after
 let start_compilation s mp =
   if !lib_state.comp_name != None then
     user_err Pp.(str "compilation unit is already started");
-  if not (Names.DirPath.is_empty (current_sections ())) then
+  if not (Names.DirPath.is_empty (!lib_state.path_prefix.obj_sec)) then
     user_err Pp.(str "some sections are already opened");
-  let prefix = s, (mp, Names.DirPath.empty) in
-  let () = add_anonymous_entry (CompilingLibrary prefix) in
+  let prefix = Libnames.{ obj_dir = s; obj_mp = mp; obj_sec = DirPath.empty } in
+  add_anonymous_entry (CompilingLibrary prefix);
   lib_state := { !lib_state with comp_name = Some s;
                                  path_prefix = prefix }
 
@@ -522,15 +528,15 @@ let is_in_section ref =
 (*************)
 (* Sections. *)
 let open_section id =
-  let olddir,(mp,oldsec) = !lib_state.path_prefix in
-  let dir = add_dirpath_suffix olddir id in
-  let prefix = dir, (mp, add_dirpath_suffix oldsec id) in
-  if Nametab.exists_section dir then
+  let opp = !lib_state.path_prefix in
+  let obj_dir = add_dirpath_suffix opp.obj_dir id in
+  let prefix = { obj_dir; obj_mp = opp.obj_mp; obj_sec = add_dirpath_suffix opp.obj_sec id } in
+  if Nametab.exists_section obj_dir then
     user_err ~hdr:"open_section" (Id.print id ++ str " already exists.");
   let fs = Summary.freeze_summaries ~marshallable:`No in
   add_entry (make_oname id) (OpenedSection (prefix, fs));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
-  Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
+  Nametab.push_dir (Nametab.Until 1) obj_dir (DirOpenSection prefix);
   lib_state := { !lib_state with path_prefix = prefix };
   add_section ()
 
@@ -556,7 +562,7 @@ let close_section () =
   in
   let (secdecls,mark,before) = split_lib_at_opening oname in
   lib_state := { !lib_state with lib_stk = before };
-  let full_olddir = fst !lib_state.path_prefix in
+  let full_olddir = !lib_state.path_prefix.obj_dir in
   pop_path_prefix ();
   add_entry oname (ClosedSection (List.rev (mark::secdecls)));
   let newdecls = List.map discharge_item secdecls in
@@ -596,10 +602,10 @@ let init () =
 (* Misc *)
 
 let mp_of_global = function
-  |VarRef id -> current_mp ()
-  |ConstRef cst -> Names.Constant.modpath cst
-  |IndRef ind -> Names.ind_modpath ind
-  |ConstructRef constr -> Names.constr_modpath constr
+  | VarRef id -> !lib_state.path_prefix.obj_mp
+  | ConstRef cst -> Names.Constant.modpath cst
+  | IndRef ind -> Names.ind_modpath ind
+  | ConstructRef constr -> Names.constr_modpath constr
 
 let rec dp_of_mp = function
   |Names.MPfile dp -> dp
