@@ -56,7 +56,7 @@ val standard_proof_terminator :
 (** {6 ... } *)
 
 (** A hook the next three functions pass to cook_proof *)
-val set_save_hook : (Proof.proof -> unit) -> unit
+val set_save_hook : (Proof.t -> unit) -> unit
 
 val save_proof : ?proof:Proof_global.closed_proof -> Vernacexpr.proof_end -> unit
 

@@ -4800,24 +4800,26 @@ end
 
 module Proof :
 sig
-  type proof
-  type 'a focus_kind
+  type t
+  type proof = t
+  [@@ocaml.deprecated "please use [Proof.t]"]
 
-  val proof : proof ->
+  type 'a focus_kind
+  val proof : t ->
     Goal.goal list * (Goal.goal list * Goal.goal list) list *
     Goal.goal list * Goal.goal list * Evd.evar_map
 
   val run_tactic : Environ.env ->
-                   unit Proofview.tactic -> proof -> proof * (bool * Proofview_monad.Info.tree)
-  val unshelve : proof -> proof
-  val maximal_unfocus : 'a focus_kind -> proof -> proof
-  val pr_proof : proof -> Pp.t
+                   unit Proofview.tactic -> t -> t * (bool * Proofview_monad.Info.tree)
+  val unshelve : t -> t
+  val maximal_unfocus : 'a focus_kind -> t -> t
+  val pr_proof : t -> Pp.t
 
   module V82 :
   sig
-    val grab_evars : proof -> proof
+    val grab_evars : t -> t
 
-    val subgoals : proof -> Goal.goal list Evd.sigma
+    val subgoals : t -> Goal.goal list Evd.sigma
     [@@ocaml.deprecated "Use the first and fifth argument of [Proof.proof]"]
 
   end
@@ -4831,7 +4833,9 @@ end
 module Proof_global :
 sig
 
-  type state
+  type t
+  type state = t
+  [@@ocaml.deprecated "please use [Proof_global.t]"]
 
   type proof_mode = {
       name : string;
@@ -4862,14 +4866,14 @@ sig
     Names.Id.t -> ?pl:Univdecls.universe_decl -> Decl_kinds.goal_kind ->
     Proofview.telescope -> proof_terminator -> unit
   val with_current_proof :
-    (unit Proofview.tactic -> Proof.proof -> Proof.proof * 'a) -> 'a
+    (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> 'a
   val simple_with_current_proof :
-    (unit Proofview.tactic -> Proof.proof -> Proof.proof) -> unit
+    (unit Proofview.tactic -> Proof.t -> Proof.t) -> unit
   val compact_the_proof : unit -> unit
   val register_proof_mode : proof_mode -> unit
 
   exception NoCurrentProof
-  val give_me_the_proof : unit -> Proof.proof
+  val give_me_the_proof : unit -> Proof.t
   (** @raise NoCurrentProof when outside proof mode. *)
 
   val discard_all : unit -> unit
@@ -5000,7 +5004,7 @@ sig
   val by : unit Proofview.tactic -> bool
   val solve : ?with_end_tac:unit Proofview.tactic ->
       Vernacexpr.goal_selector -> int option -> unit Proofview.tactic ->
-      Proof.proof -> Proof.proof * bool
+      Proof.t -> Proof.t * bool
   val cook_proof :
     unit -> (Names.Id.t * (Safe_typing.private_constants Entries.definition_entry * Proof_global.proof_universes * Decl_kinds.goal_kind))
 
@@ -6113,9 +6117,9 @@ end
 module Vernacstate :
 sig
 
-  type t = { (* TODO: inline records in OCaml 4.03 *)
+  type t = {
     system  : States.state;        (* summary + libstack *)
-    proof   : Proof_global.state;  (* proof state *)
+    proof   : Proof_global.t;      (* proof state *)
     shallow : bool                 (* is the state trimmed down (libstack) *)
   }
 

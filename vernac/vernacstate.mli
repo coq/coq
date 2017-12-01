@@ -8,7 +8,7 @@
 
 type t = {
   system  : States.state;        (* summary + libstack *)
-  proof   : Proof_global.state;  (* proof state *)
+  proof   : Proof_global.t;      (* proof state *)
   shallow : bool                 (* is the state trimmed down (libstack) *)
 }
 

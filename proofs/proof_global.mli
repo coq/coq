@@ -10,6 +10,10 @@
      toplevel. In particular it defines the global proof
      environment. *)
 
+type t
+type state = t
+[@@ocaml.deprecated "please use [Proof_global.t]"]
+
 val there_are_pending_proofs : unit -> bool
 val check_no_pending_proof : unit -> unit
 
@@ -21,7 +25,7 @@ val discard_current : unit -> unit
 val discard_all : unit -> unit
 
 exception NoCurrentProof
-val give_me_the_proof : unit -> Proof.proof
+val give_me_the_proof : unit -> Proof.t
 (** @raise NoCurrentProof when outside proof mode. *)
 
 val compact_the_proof : unit -> unit
@@ -107,9 +111,9 @@ val get_open_goals : unit -> int
     no current proof.
     The return boolean is set to [false] if an unsafe tactic has been used. *)
 val with_current_proof :
-  (unit Proofview.tactic -> Proof.proof -> Proof.proof*'a) -> 'a
+  (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> 'a
 val simple_with_current_proof :
-  (unit Proofview.tactic -> Proof.proof -> Proof.proof) -> unit
+  (unit Proofview.tactic -> Proof.t -> Proof.t) -> unit
 
 (** Sets the tactic to be used when a tactic line is closed with [...] *)
 val set_endline_tactic : Genarg.glob_generic_argument -> unit
@@ -129,11 +133,10 @@ module V82 : sig
   Decl_kinds.goal_kind)
 end
 
-type state
-val freeze : marshallable:[`Yes | `No | `Shallow] -> state
-val unfreeze : state -> unit
-val proof_of_state : state -> Proof.proof
-val copy_terminators : src:state -> tgt:state -> state
+val freeze : marshallable:[`Yes | `No | `Shallow] -> t
+val unfreeze : t -> unit
+val proof_of_state : t -> Proof.t
+val copy_terminators : src:t -> tgt:t -> t
 
 
 (**********************************************************)

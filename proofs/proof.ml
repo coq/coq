@@ -98,7 +98,7 @@ let done_cond ?(loose_end=false) k = CondDone (loose_end,k)
 
 (* Subpart of the type of proofs. It contains the parts of the proof which
    are under control of the undo mechanism *)
-type proof = {
+type t = {
   (* Current focused proofview *)
   proofview: Proofview.proofview;
   (* Entry for the proofview *)
@@ -114,6 +114,8 @@ type proof = {
   (* The initial universe context (for the statement) *)
   initial_euctx : UState.t
 }
+
+type proof = t
 
 (*** General proof functions ***)
 

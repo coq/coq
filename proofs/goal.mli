@@ -58,7 +58,7 @@ module V82 : sig
 
   (* Principal part of the progress tactical *)
   val progress : goal list Evd.sigma -> goal Evd.sigma -> bool
-    
+
  (* Principal part of tclNOTSAMEGOAL *)
   val same_goal : Evd.evar_map -> goal -> Evd.evar_map -> goal -> bool
 

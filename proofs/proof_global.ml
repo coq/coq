@@ -90,11 +90,14 @@ type pstate = {
   terminator : proof_terminator CEphemeron.key;
   endline_tactic : Genarg.glob_generic_argument option;
   section_vars : Context.Named.t option;
-  proof : Proof.proof;
+  proof : Proof.t;
   strength : Decl_kinds.goal_kind;
   mode : proof_mode CEphemeron.key;
   universe_decl: Univdecls.universe_decl;
 }
+
+type t = pstate list
+type state = t
 
 let make_terminator f = f
 let apply_terminator f = f
@@ -467,8 +470,6 @@ module V82 = struct
     pid, (goals, strength)
 end
 
-type state = pstate list
-        
 let freeze ~marshallable =
   match marshallable with
   | `Yes ->

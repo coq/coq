@@ -484,7 +484,7 @@ let vernac_definition ~atts discharge kind ((loc,id as lid),pl) def =
           start_proof_and_print (local, atts.polymorphic, DefinitionBody kind)
 	    [Some (lid,pl), (bl,t)] hook
     | DefineBody (bl,red_option,c,typ_opt) ->
- 	let red_option = match red_option with
+      let red_option = match red_option with
           | None -> None
           | Some r ->
             let sigma, env = Pfedit.get_current_context () in

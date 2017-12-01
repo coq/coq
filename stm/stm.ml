@@ -762,7 +762,7 @@ end = struct (* {{{ *)
   let fix_exn_ref = ref (fun x -> x)
 
   type proof_part =
-    Proof_global.state * Summary.frozen_bits (* only meta counters *)
+    Proof_global.t * Summary.frozen_bits (* only meta counters *)
 
   type partial_state =
     [ `Full of Vernacstate.t
