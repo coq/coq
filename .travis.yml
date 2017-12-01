@@ -39,6 +39,7 @@ env:
   - LABLGTK_BE="lablgtk.2.18.6 lablgtk-extras.1.6"
   - NATIVE_COMP="yes"
   - COQ_DEST="-local"
+  - MAIN_TARGET="world"
   # Main test suites
   matrix:
   - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
@@ -139,8 +140,8 @@ matrix:
 
     # Ocaml warnings with two compilers
     - env:
-      - TEST_TARGET="coqocaml"
-      - EXTRA_CONF="-coqide opt -warn-error"
+      - MAIN_TARGET="coqocaml"
+      - EXTRA_CONF="-byte-only -coqide byte -warn-error"
       - EXTRA_OPAM="hevea ${LABLGTK}"
       # dummy target
       - BUILD_TARGET="clean"
@@ -155,11 +156,11 @@ matrix:
           - libgtksourceview2.0-dev
 
     - env:
-      - TEST_TARGET="coqocaml"
+      - MAIN_TARGET="coqocaml"
       - COMPILER="${COMPILER_BE}"
       - FINDLIB_VER="${FINDLIB_VER_BE}"
       - CAMLP5_VER="${CAMLP5_VER_BE}"
-      - EXTRA_CONF="-coqide opt -warn-error"
+      - EXTRA_CONF="-byte-only -coqide byte -warn-error"
       - EXTRA_OPAM="num hevea ${LABLGTK_BE}"
       # dummy target
       - BUILD_TARGET="clean"
@@ -224,11 +225,11 @@ script:
 - echo -en 'travis_fold:end:coq.config\\r'
 
 - echo 'Building Coq...' && echo -en 'travis_fold:start:coq.build\\r'
-- make -j ${NJOBS}
+- make -j ${NJOBS} ${MAIN_TARGET}
 - echo -en 'travis_fold:end:coq.build\\r'
 
 - echo 'Running tests...' && echo -en 'travis_fold:start:coq.test\\r'
-- ${TW} make -j ${NJOBS} ${TEST_TARGET}
+- if [ -n "${TEST_TARGET}" ]; then ${TW} make -j ${NJOBS} ${TEST_TARGET}; fi
 - echo -en 'travis_fold:end:coq.test\\r'
 - set +e
 
