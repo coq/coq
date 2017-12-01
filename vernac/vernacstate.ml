@@ -12,18 +12,30 @@ type t = {
   shallow : bool                 (* is the state trimmed down (libstack) *)
 }
 
-let s_cache = ref (States.freeze ~marshallable:`No)
-let s_proof = ref (Proof_global.freeze ~marshallable:`No)
+let s_cache = ref None
+let s_proof = ref None
 
 let invalidate_cache () =
-  s_cache := Obj.magic 0;
-  s_proof := Obj.magic 0
+  s_cache := None;
+  s_proof := None
+
+let update_cache rf v =
+  rf := Some v; v
+
+let do_if_not_cached rf f v =
+  match !rf with
+  | None ->
+    rf := Some v; f v
+  | Some vc when vc != v ->
+    rf := Some v; f v
+  | Some _ ->
+    ()
 
 let freeze_interp_state marshallable =
-  { system = (s_cache := States.freeze ~marshallable; !s_cache);
-    proof  = (s_proof := Proof_global.freeze ~marshallable; !s_proof);
+  { system = update_cache s_cache (States.freeze ~marshallable);
+    proof  = update_cache s_proof (Proof_global.freeze ~marshallable);
     shallow = marshallable = `Shallow }
 
 let unfreeze_interp_state { system; proof } =
-  if (!s_cache != system) then (s_cache := system; States.unfreeze system);
-  if (!s_proof != proof)  then (s_proof := proof;  Proof_global.unfreeze proof)
+  do_if_not_cached s_cache States.unfreeze system;
+  do_if_not_cached s_proof Proof_global.unfreeze proof
