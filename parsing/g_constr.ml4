@@ -155,9 +155,15 @@ GEXTEND Gram
       | "Type" -> Sorts.InType
       ] ]
   ;
+  universe_expr:
+    [ [ id = global; "+"; n = natural -> Some (id,n)
+      | id = global -> Some (id,0)
+      | "_" -> None
+    ] ]
+  ;
   universe:
-    [ [ IDENT "max"; "("; ids = LIST1 name SEP ","; ")" -> ids
-      | id = name -> [id]
+    [ [ IDENT "max"; "("; ids = LIST1 universe_expr SEP ","; ")" -> ids
+      | u = universe_expr -> [u]
       ] ]
   ;
   lconstr:
@@ -307,8 +313,9 @@ GEXTEND Gram
   universe_level:
     [ [ "Set" -> GSet
       | "Prop" -> GProp
-      | "Type" -> GType None
-      | id = name -> GType (Some id)
+      | "Type" -> GType UUnknown
+      | "_" -> GType UAnonymous
+      | id = global -> GType (UNamed id)
       ] ]
   ;
   fix_constr:

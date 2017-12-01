@@ -18,6 +18,13 @@ val is_set_minimization : unit -> bool
 (** Universes *)
 
 val pr_with_global_universes : Level.t -> Pp.t
+val reference_of_level : Level.t -> Libnames.reference
+
+(** Global universe information outside the kernel, to handle
+    polymorphic universes in sections that have to be discharged. *)
+val add_global_universe : Level.t -> Decl_kinds.polymorphic -> unit
+
+val is_polymorphic : Level.t -> bool
 
 (** Local universe name <-> level mapping *)
 
@@ -40,14 +47,17 @@ val universe_binders_with_opt_names : Globnames.global_reference ->
   Univ.Level.t list -> univ_name_list option -> universe_binders
 
 (** The global universe counter *)
-val set_remote_new_univ_level : Level.t RemoteCounter.installer
+type universe_id = DirPath.t * int
+
+val set_remote_new_univ_id : universe_id RemoteCounter.installer
 
 (** Side-effecting functions creating new universe levels. *)
 
-val new_univ_level : DirPath.t -> Level.t
-val new_univ : DirPath.t -> Universe.t
-val new_Type : DirPath.t -> types
-val new_Type_sort : DirPath.t -> Sorts.t
+val new_univ_id : unit -> universe_id
+val new_univ_level : unit -> Level.t
+val new_univ : unit -> Universe.t
+val new_Type : unit -> types
+val new_Type_sort : unit -> Sorts.t
 
 val new_global_univ : unit -> Universe.t in_universe_context_set
 val new_sort_in_family : Sorts.family -> Sorts.t

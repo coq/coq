@@ -288,6 +288,7 @@ let has_no_evar sigma =
   with Exit -> false
 
 let pr_evd_level evd = UState.pr_uctx_level (Evd.evar_universe_context evd)
+let reference_of_level evd l = UState.reference_of_level (Evd.evar_universe_context evd) l
 
 let pr_evar_universe_context ctx =
   let open UState in

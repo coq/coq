@@ -87,6 +87,5 @@ val exists_name : Id.t -> bool
 val declare_universe_context : polymorphic -> Univ.ContextSet.t -> unit
 
 val do_universe : polymorphic -> Id.t Loc.located list -> unit
-val do_constraint : polymorphic ->
-  (Misctypes.glob_level * Univ.constraint_type * Misctypes.glob_level) list ->
-  unit
+val do_constraint : polymorphic -> (Misctypes.glob_level * Univ.constraint_type * Misctypes.glob_level) list ->
+                    unit

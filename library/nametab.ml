@@ -302,6 +302,16 @@ module DirTab = Make(DirPath')(GlobDir)
 type dirtab = DirTab.t
 let the_dirtab = ref (DirTab.empty : dirtab)
 
+type universe_id = DirPath.t * int
+
+module UnivIdEqual =
+struct
+  type t = universe_id
+  let equal (d, i) (d', i') = DirPath.equal d d' && Int.equal i i'
+end
+module UnivTab = Make(FullPath)(UnivIdEqual)
+type univtab = UnivTab.t
+let the_univtab = ref (UnivTab.empty : univtab)
 
 (* Reversed name tables ***************************************************)
 
@@ -317,6 +327,21 @@ let the_modrevtab = ref (MPmap.empty : mprevtab)
 
 type mptrevtab = full_path MPmap.t
 let the_modtyperevtab = ref (MPmap.empty : mptrevtab)
+
+module UnivIdOrdered =
+struct
+  type t = universe_id
+  let hash (d, i) = i + DirPath.hash d
+  let compare (d, i) (d', i') =
+    let c = Int.compare i i' in
+    if Int.equal c 0 then DirPath.compare d d'
+    else c
+end
+
+module UnivIdMap = HMap.Make(UnivIdOrdered)
+
+type univrevtab = full_path UnivIdMap.t
+let the_univrevtab = ref (UnivIdMap.empty : univrevtab)
 
 (* Push functions *********************************************************)
 
@@ -362,6 +387,11 @@ let push_dir vis dir dir_ref =
   | DirModule { obj_mp; _ } -> the_modrevtab := MPmap.add obj_mp dir !the_modrevtab
   | _ -> ()
 
+(* This is for global universe names *)
+
+let push_universe vis sp univ =
+  the_univtab := UnivTab.push vis sp univ !the_univtab;
+  the_univrevtab := UnivIdMap.add univ sp !the_univrevtab
 
 (* Locate functions *******************************************************)
 
@@ -381,6 +411,8 @@ let locate_syndef qid = match locate_extended qid with
 
 let locate_modtype qid = MPTab.locate qid !the_modtypetab
 let full_name_modtype qid = MPTab.user_name qid !the_modtypetab
+
+let locate_universe qid = UnivTab.locate qid !the_univtab
 
 let locate_dir qid = DirTab.locate qid !the_dirtab
 
@@ -447,6 +479,8 @@ let exists_module = exists_dir
 
 let exists_modtype sp = MPTab.exists sp !the_modtypetab
 
+let exists_universe kn = UnivTab.exists kn !the_univtab
+
 (* Reverse locate functions ***********************************************)
 
 let path_of_global ref =
@@ -469,6 +503,9 @@ let dirpath_of_module mp =
 let path_of_modtype mp =
   MPmap.find mp !the_modtyperevtab
 
+let path_of_universe mp =
+  UnivIdMap.find mp !the_univrevtab
+
 (* Shortest qualid functions **********************************************)
 
 let shortest_qualid_of_global ctx ref =
@@ -490,6 +527,10 @@ let shortest_qualid_of_modtype kn =
   let sp = MPmap.find kn !the_modtyperevtab in
     MPTab.shortest_qualid Id.Set.empty sp !the_modtypetab
 
+let shortest_qualid_of_universe kn =
+  let sp = UnivIdMap.find kn !the_univrevtab in
+    UnivTab.shortest_qualid Id.Set.empty sp !the_univtab
+
 let pr_global_env env ref =
   try pr_qualid (shortest_qualid_of_global env ref)
   with Not_found as e ->
@@ -508,24 +549,28 @@ let global_inductive r =
 (********************************************************************)
 (* Registration of tables as a global table and rollback            *)
 
-type frozen = ccitab * dirtab * mptab
-    * globrevtab * mprevtab * mptrevtab
+type frozen = ccitab * dirtab * mptab * univtab
+    * globrevtab * mprevtab * mptrevtab * univrevtab
 
 let freeze _ : frozen =
   !the_ccitab,
   !the_dirtab,
   !the_modtypetab,
+  !the_univtab,
   !the_globrevtab,
   !the_modrevtab,
-  !the_modtyperevtab
+  !the_modtyperevtab,
+  !the_univrevtab
 
-let unfreeze (ccit,dirt,mtyt,globr,modr,mtyr) =
+let unfreeze (ccit,dirt,mtyt,univt,globr,modr,mtyr,univr) =
   the_ccitab := ccit;
   the_dirtab := dirt;
   the_modtypetab := mtyt;
+  the_univtab := univt;
   the_globrevtab := globr;
   the_modrevtab := modr;
-  the_modtyperevtab := mtyr
+  the_modtyperevtab := mtyr;
+  the_univrevtab := univr
 
 let _ =
   Summary.declare_summary "names"
