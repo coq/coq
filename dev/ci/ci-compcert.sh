@@ -8,6 +8,4 @@ CompCert_CI_DIR=${CI_BUILD_DIR}/CompCert
 opam install -j ${NJOBS} -y menhir
 git_checkout ${CompCert_CI_BRANCH} ${CompCert_CI_GITURL} ${CompCert_CI_DIR}
 
-# Patch to avoid the upper version limit
-( cd ${CompCert_CI_DIR} && ./configure -ignore-coq-version x86_32-linux && make )
-
+( cd ${CompCert_CI_DIR} && ./configure -ignore-coq-version x86_32-linux && make && make check-proof )
