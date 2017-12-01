@@ -392,7 +392,7 @@ checkproofs:
 .PHONY: checkproofs
 
 validate: $(VOFILES)
-	$(TIMER) $(COQCHK) $(COQCHKFLAGS) $(notdir $(^:.vo=))
+	$(TIMER) $(COQCHK) $(COQCHKFLAGS) $^
 .PHONY: validate
 
 only: $(TGTS)

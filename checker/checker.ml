@@ -40,9 +40,10 @@ let dirpath_of_string s =
       [] -> Check.default_root_prefix
     | dir -> DirPath.make (List.map Id.of_string dir)
 let path_of_string s =
-  match parse_dir s with
+  if Filename.check_suffix s ".vo" then PhysicalFile s
+  else match parse_dir s with
       [] -> invalid_arg "path_of_string"
-    | l::dir -> {dirpath=dir; basename=l}
+    | l::dir -> LogicalFile {dirpath=dir; basename=l}
 
 let ( / ) = Filename.concat
 
@@ -144,15 +145,15 @@ let set_impredicative_set () = impredicative_set := Cic.ImpredicativeSet
 let engage () = Safe_typing.set_engagement (!impredicative_set)
 
 
-let admit_list = ref ([] : section_path list)
+let admit_list = ref ([] : object_file list)
 let add_admit s =
   admit_list := path_of_string s :: !admit_list
 
-let norec_list = ref ([] : section_path list)
+let norec_list = ref ([] : object_file list)
 let add_norec s =
   norec_list := path_of_string s :: !norec_list
 
-let compile_list = ref ([] : section_path list)
+let compile_list = ref ([] : object_file list)
 let add_compile s =
   compile_list := path_of_string s :: !compile_list
 

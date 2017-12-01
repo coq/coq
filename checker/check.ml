@@ -22,6 +22,11 @@ let extend_dirpath p id = DirPath.make (id :: DirPath.repr p)
 type section_path = {
   dirpath : string list ;
   basename : string }
+
+type object_file =
+| PhysicalFile of CUnix.physical_path
+| LogicalFile of section_path
+
 let dir_of_path p =
   DirPath.make (List.map Id.of_string p.dirpath)
 let path_of_dirpath dir =
@@ -68,11 +73,6 @@ let libraries_table = ref LibraryMap.empty
 
 let find_library dir =
   LibraryMap.find dir !libraries_table
-
-let try_find_library dir =
-  try find_library dir
-  with Not_found ->
-    user_err Pp.(str ("Unknown library " ^ (DirPath.to_string dir)))
 
 let library_full_filename dir = (find_library dir).library_filename
 
@@ -263,7 +263,17 @@ let try_locate_absolute_library dir =
     | LibUnmappedDir -> error_unmapped_dir (path_of_dirpath dir)
     | LibNotFound -> error_lib_not_found (path_of_dirpath dir)
 
-let try_locate_qualified_library qid =
+let try_locate_qualified_library lib = match lib with
+| PhysicalFile f ->
+  let () =
+    if not (System.file_exists_respecting_case "" f) then
+      error_lib_not_found { dirpath = []; basename = f; }
+  in
+  let dir = Filename.dirname f in
+  let base = Filename.chop_extension (Filename.basename f) in
+  let dir = extend_dirpath (find_logical_path dir) (Id.of_string base) in
+  (dir, f)
+| LogicalFile qid ->
   try
     locate_qualified_library qid
   with
@@ -412,9 +422,3 @@ let recheck_library ~norec ~admit ~check =
     (fun (dir,_) -> pr_dirpath dir ++ fnl()) needed));
   List.iter (check_one_lib nochk) needed;
   Flags.if_verbose Feedback.msg_notice (str"Modules were successfully checked")
-
-open Printf
-
-let mem s =
-  let m = try_find_library s in
-  h 0 (str (sprintf "%dk" (CObj.size_kb m)))

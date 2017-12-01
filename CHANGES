@@ -25,6 +25,9 @@ Vernacular Commands
 - The deprecated Coercion Local, Open Local Scope, Notation Local syntax
   was removed. Use Local as a prefix instead.
 
+Checker
+- The checker now accepts filenames in addition to logical paths.
+
 Changes from 8.7+beta2 to 8.7.0
 ===============================
 
