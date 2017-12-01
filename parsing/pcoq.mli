@@ -313,3 +313,6 @@ val with_grammar_rule_protection : ('a -> 'b) -> 'a -> 'b
 (** Location Utils  *)
 val to_coqloc : Ploc.t -> Loc.t
 val (!@) : Ploc.t -> Loc.t
+
+type frozen_t
+val parser_summary_tag : frozen_t Summary.Dyn.tag

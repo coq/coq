@@ -378,7 +378,7 @@ let unfreeze_ml_modules x =
     (fun (name,path) -> trigger_ml_object false false false ?path name) x
 
 let _ =
-  Summary.declare_summary Summary.ml_modules
+  Summary.declare_ml_modules_summary
     { Summary.freeze_function = (fun _ -> get_loaded_modules ());
       Summary.unfreeze_function = unfreeze_ml_modules;
       Summary.init_function = reset_loaded_modules }
