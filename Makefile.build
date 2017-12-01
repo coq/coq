@@ -766,6 +766,17 @@ $(VDFILE).d: $(D_DEPEND_BEFORE_SRC) $(VFILES) $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT
 	$(HIDE)$(COQDEPBOOT) -boot $(DYNDEP) $(VFILES) $(TOTARGET)
 
 ###########################################################################
+# Bisect Coverage
+###########################################################################
+.PHONY: coverage_report
+
+BISECT_FILES=bisect*.out
+coverage_report: test-suite
+	ocveralls $(BISECT_FILES) --send
+# To be enabled in the future.
+#	bisect-ppx-report -html coverage/ $(BISECT_FILES)
+
+###########################################################################
 
 # To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
 

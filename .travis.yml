@@ -52,6 +52,7 @@ env:
   # Main test suites
   matrix:
   - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
+  - TEST_TARGET="coverage_report" EXTRA_OPAM="bisect_ppx ocveralls" COMPILER="$COMPILER_BE" CAMLP5_VER="$CAMLP5_VER_BE" FINDLIB_VER="$FINDLIB_VER_BE" EXTRA_CONF="-camloptflags '-package bisect_ppx'"
   - TEST_TARGET="validate"                           TW="travis_wait"
   - TEST_TARGET="validate"   COMPILER="4.02.3+32bit" TW="travis_wait"
   - TEST_TARGET="validate"   COMPILER="${COMPILER_BE}+flambda" CAMLP5_VER="${CAMLP5_VER_BE}" NATIVE_COMP="no" EXTRA_CONF="-camloptflags '-O3 -unbox-closures'" EXTRA_OPAM="num" FINDLIB_VER="${FINDLIB_VER_BE}"

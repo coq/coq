@@ -1,3 +1,13 @@
+## Changes between Coq 8.8 and Coq 8.9
+
+### Development tools
+
+Coverage support:
+
+  - Coverage support is available for Travis builds. You can get
+    coverage support for your own builds / Coq by passing the
+    `-camloptflags '-package bisect_ppx'` option to Coq's configure.
+
 ## Changes between Coq 8.7 and Coq 8.8
 
 ### Bug tracker
