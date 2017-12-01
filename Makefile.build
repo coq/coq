@@ -302,7 +302,7 @@ kernel/byterun/coq_jumptbl.h : kernel/byterun/coq_instruct.h
                -e '/^}/q' $< $(TOTARGET)
 
 kernel/copcodes.ml: kernel/byterun/coq_instruct.h
-	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' $< | \
+	tr -d "\r" < $< | sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' | \
 	awk -f kernel/make-opcodes $(TOTARGET)
 
 %.o: %.c
