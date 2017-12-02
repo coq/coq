@@ -84,3 +84,9 @@ a≡
      : Set
 .α
      : Set
+# a : .α =>
+# b : .α =>
+let res := 0 in
+for i from 0 to a updating (res)
+{{for j from 0 to b updating (res) {{S res}};; res}};; res
+     : .α -> .α -> .α
