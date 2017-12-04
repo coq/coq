@@ -895,7 +895,8 @@ let () =
   let intern self ist c =
     let env = ist.Genintern.genv in
     let sigma = Evd.from_env env in
-    let _, pat = Constrintern.intern_constr_pattern env sigma ~as_type:false c in
+    let warn = if !Ltac_plugin.Tacintern.strict_check then fun x -> x else Constrintern.for_grammar in
+    let _, pat = warn (fun () ->Constrintern.intern_constr_pattern env sigma ~as_type:false c) () in
     GlbVal pat, gtypref t_pattern
   in
   let print env pat = str "pattern:(" ++ Printer.pr_lconstr_pattern_env env Evd.empty pat ++ str ")" in
