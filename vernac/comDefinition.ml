@@ -88,8 +88,8 @@ let interp_definition pl bl poly red_option c ctypopt =
   let evd = Evd.minimize_universes evd in
   (* Substitute evars and universes, and add parameters.
      Note: in program mode some evars may remain. *)
-  let ctx = List.map (EConstr.to_rel_decl evd) ctx in
-  let c = Term.it_mkLambda_or_LetIn (EConstr.to_constr evd c) ctx in
+  let ctx = List.map Termops.(map_rel_decl (to_constr ~abort_on_undefined_evars:false evd)) ctx in
+  let c = Term.it_mkLambda_or_LetIn (EConstr.to_constr ~abort_on_undefined_evars:false evd c) ctx in
   let tyopt = Option.map (fun ty -> Term.it_mkProd_or_LetIn (EConstr.to_constr evd ty) ctx) tyopt in
   (* Keep only useful universes. *)
   let uvars_fold uvars c =

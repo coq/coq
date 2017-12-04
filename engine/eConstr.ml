@@ -40,7 +40,7 @@ val kind_of_type : Evd.evar_map -> t -> (t, t) Term.kind_of_type
 val whd_evar : Evd.evar_map -> t -> t
 val of_kind : (t, t, ESorts.t, EInstance.t) Constr.kind_of_term -> t
 val of_constr : Constr.t -> t
-val to_constr : evar_map -> t -> Constr.t
+val to_constr : ?abort_on_undefined_evars:bool -> evar_map -> t -> Constr.t
 val unsafe_to_constr : t -> Constr.t
 val unsafe_eq : (t, Constr.t) eq
 val of_named_decl : (Constr.t, Constr.types) Context.Named.Declaration.pt -> (t, t) Context.Named.Declaration.pt
@@ -110,11 +110,16 @@ let of_constr c = c
 let unsafe_to_constr c = c
 let unsafe_eq = Refl
 
-let rec to_constr sigma c = match Constr.kind c with
+let to_constr ?(abort_on_undefined_evars=true) sigma c =
+let rec to_constr c = match Constr.kind c with
 | Evar ev ->
   begin match safe_evar_value sigma ev with
-  | Some c -> to_constr sigma c
-  | None -> Constr.map (fun c -> to_constr sigma c) c
+  | Some c -> to_constr c
+  | None ->
+    if abort_on_undefined_evars then
+      anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term")
+    else
+      Constr.map (fun c -> to_constr c) c
   end
 | Sort (Sorts.Type u) ->
   let u' = Evd.normalize_universe sigma u in
@@ -128,7 +133,8 @@ let rec to_constr sigma c = match Constr.kind c with
 | Construct (co, u) when not (Univ.Instance.is_empty u) ->
   let u' = Evd.normalize_universe_instance sigma u in
   if u' == u then c else mkConstructU (co, u')
-| _ -> Constr.map (fun c -> to_constr sigma c) c
+| _ -> Constr.map (fun c -> to_constr c) c
+in to_constr c
 
 let of_named_decl d = d
 let unsafe_to_named_decl d = d

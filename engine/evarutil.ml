@@ -72,9 +72,9 @@ let flush_and_check_evars sigma c =
 (** Term exploration up to instantiation. *)
 let kind_of_term_upto = EConstr.kind_upto
 
-let nf_evar0 sigma t = EConstr.to_constr sigma (EConstr.of_constr t)
+let nf_evar0 sigma t = EConstr.to_constr ~abort_on_undefined_evars:false sigma (EConstr.of_constr t)
 let whd_evar = EConstr.whd_evar
-let nf_evar sigma c = EConstr.of_constr (EConstr.to_constr sigma c)
+let nf_evar sigma c = EConstr.of_constr (EConstr.to_constr ~abort_on_undefined_evars:false sigma c)
 
 let j_nf_evar sigma j =
   { uj_val = nf_evar sigma j.uj_val;

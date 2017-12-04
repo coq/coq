@@ -90,7 +90,7 @@ let rec decompose_term env sigma t=
 	decompose_term env sigma c
     | _ ->
        let t = Termops.strip_outer_cast sigma t in
-       if closed0 sigma t then Symb (EConstr.to_constr sigma t) else raise Not_found
+       if closed0 sigma t then Symb (EConstr.to_constr ~abort_on_undefined_evars:false sigma t) else raise Not_found
 
 (* decompose equality in members and type *)
 open Termops

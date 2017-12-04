@@ -792,7 +792,7 @@ let make_exact_entry env sigma info poly ?(name=PathAny) (c, cty, ctx) =
     match EConstr.kind sigma cty with
     | Prod _ -> failwith "make_exact_entry"
     | _ ->
-	let pat = Patternops.pattern_of_constr env sigma (EConstr.to_constr sigma cty) in
+        let pat = Patternops.pattern_of_constr env sigma (EConstr.to_constr ~abort_on_undefined_evars:false sigma cty) in
 	let hd =
 	  try head_pattern_bound pat
 	  with BoundPattern -> failwith "make_exact_entry"
@@ -814,7 +814,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) info poly ?(name=PathAny) (c
         let sigma' = Evd.merge_context_set univ_flexible sigma ctx in
         let ce = mk_clenv_from_env env sigma' None (c,cty) in
 	let c' = clenv_type (* ~reduce:false *) ce in
-	let pat = Patternops.pattern_of_constr env ce.evd (EConstr.to_constr sigma c') in
+        let pat = Patternops.pattern_of_constr env ce.evd (EConstr.to_constr ~abort_on_undefined_evars:false sigma c') in
         let hd =
 	  try head_pattern_bound pat
           with BoundPattern -> failwith "make_apply_entry" in

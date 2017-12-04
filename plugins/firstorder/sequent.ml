@@ -77,14 +77,14 @@ module CM=Map.Make(Constr)
 module History=Set.Make(Hitem)
 
 let cm_add sigma typ nam cm=
-  let typ = EConstr.to_constr sigma typ in
+  let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma typ in
   try
     let l=CM.find typ cm in CM.add typ (nam::l) cm
   with
       Not_found->CM.add typ [nam] cm
 
 let cm_remove sigma typ nam cm=
-  let typ = EConstr.to_constr sigma typ in
+  let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma typ in
   try
     let l=CM.find typ cm in
     let l0=List.filter (fun id-> not (Globnames.eq_gr id nam)) l in
@@ -152,7 +152,7 @@ let re_add_formula_list sigma lf seq=
      redexes=List.fold_right HP.add lf seq.redexes;
      context=List.fold_right do_one lf seq.context}
 
-let find_left sigma t seq=List.hd (CM.find (EConstr.to_constr sigma t) seq.context)
+let find_left sigma t seq=List.hd (CM.find (EConstr.to_constr ~abort_on_undefined_evars:false sigma t) seq.context)
 
 (*let rev_left seq=
   try

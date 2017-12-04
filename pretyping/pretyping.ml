@@ -117,7 +117,7 @@ open ExtraEnv
 exception Found of int array
 
 let nf_fix sigma (nas, cs, ts) =
-  let inj c = EConstr.to_constr sigma c in
+  let inj c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
   (nas, Array.map inj cs, Array.map inj ts)
 
 let search_guard ?loc env possible_indexes fixdefs =
@@ -1150,7 +1150,7 @@ and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar c = match D
            (* Correction of bug #5315 : we need to define an evar for *all* holes *)
            let evkt = e_new_evar env evdref ~src:(loc, knd) ~naming (mkSort s) in
            let ev,_ = destEvar !evdref evkt in
-           evdref := Evd.define ev (to_constr !evdref v) !evdref;
+           evdref := Evd.define ev (to_constr ~abort_on_undefined_evars:false !evdref v) !evdref;
            (* End of correction of bug #5315 *)
            { utj_val = v;
 	     utj_type = s }

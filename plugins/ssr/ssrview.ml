@@ -254,7 +254,7 @@ let finalize_view s0 ?(simple_types=true) p =
 Goal.enter_one ~__LOC__ begin fun g ->
   let env = Goal.env g in
   let sigma = Goal.sigma g in
-  let evars_of_p = Evd.evars_of_term (EConstr.to_constr sigma p) in
+  let evars_of_p = Evd.evars_of_term (EConstr.to_constr ~abort_on_undefined_evars:false sigma p) in
   let filter x _ = Evar.Set.mem x evars_of_p in
   let sigma = Typeclasses.resolve_typeclasses ~fail:false ~filter env sigma in
   let p = Reductionops.nf_evar sigma p in

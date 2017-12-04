@@ -410,7 +410,7 @@ let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
   Goal.enter_one begin fun g ->
   let pat = Ssrmatching.interp_cpattern sigma0 t None in
   let cl0, env, sigma, hyps = Goal.(concl g, env g, sigma g, hyps g) in
-  let cl = EConstr.to_constr sigma cl0 in
+  let cl = EConstr.to_constr ~abort_on_undefined_evars:false sigma cl0 in
   let (c, ucst), cl =
     try Ssrmatching.fill_occ_pattern ~raise_NoMatch:true env sigma cl pat occ 1
     with Ssrmatching.NoMatch -> Ssrmatching.redex_of_pattern env pat, cl in

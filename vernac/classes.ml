@@ -293,7 +293,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
       (* Check that the type is free of evars now. *)
       Pretyping.check_evars env Evd.empty sigma termtype;
       let termtype = to_constr sigma termtype in
-      let term = Option.map (to_constr sigma) term in
+      let term = Option.map (to_constr ~abort_on_undefined_evars:false sigma) term in
         if not (Evd.has_undefined sigma) && not (Option.is_empty term) then
 	  declare_instance_constant k pri global imps ?hook id decl
             poly sigma (Option.get term) termtype

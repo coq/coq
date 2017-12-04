@@ -68,11 +68,14 @@ val kind : Evd.evar_map -> t -> (t, t, ESorts.t, EInstance.t) Constr.kind_of_ter
 
 val kind_upto : Evd.evar_map -> Constr.t -> (Constr.t, Constr.t, Sorts.t, Univ.Instance.t) Constr.kind_of_term
 
-val to_constr : Evd.evar_map -> t -> Constr.t
-(** Returns the evar-normal form of the argument, and cast it as a theoretically
-    evar-free term. In practice this function does not check that the result
-    is actually evar-free, it is currently the duty of the caller to do so.
-    This might change in the future. *)
+val to_constr : ?abort_on_undefined_evars:bool -> Evd.evar_map -> t -> Constr.t
+(** Returns the evar-normal form of the argument. Note that this
+   function is supposed to be called when the original term has not
+   more free-evars anymore. If you need compatibility with the old
+   semantics, set [abort_on_undefined_evars] to [false].
+
+    For getting the evar-normal form of a term with evars see
+   {!Evarutil.nf_evar}. *)
 
 val kind_of_type : Evd.evar_map -> t -> (t, t) Term.kind_of_type
 
