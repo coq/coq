@@ -45,6 +45,7 @@ stdenv.mkDerivation rec {
   ] else []) ++ (if doCheck then [
 
     # Test-suite dependencies
+    ncurses
     python
     rsync
     which
