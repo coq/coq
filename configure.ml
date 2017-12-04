@@ -837,9 +837,16 @@ let strip =
 (** * md5sum command *)
 
 let md5sum =
-  if List.mem arch ["Darwin"; "FreeBSD"; "OpenBSD"]
-  then "md5 -q" else "md5sum"
-
+  let rec loop = function
+    | [] -> die "Don’t know how to compute MD5 checksums…"
+    | (p, ma, a) :: tl ->
+      if fst (tryrun p (ma @ a)) <> ""
+      then List.fold_left (Printf.sprintf "%s %s") p ma
+      else loop tl
+  in loop [
+    "md5sum", [], [ "--version" ];
+    "md5", ["-q"], [ "-s" ; "''" ];
+  ]
 
 (** * Documentation : do we have latex, hevea, ... *)
 
