@@ -635,6 +635,6 @@ Recursive Extraction Everything.
 
 Require Import ZArith.
 
-Extraction Language Ocaml.
+Extraction Language OCaml.
 Recursive Extraction Z_modulo_2 Zdiv_eucl_exist.
 Extraction TestCompile Z_modulo_2 Zdiv_eucl_exist.
