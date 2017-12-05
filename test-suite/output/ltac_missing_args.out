@@ -1,20 +1,40 @@
 The command has indeed failed with message:
-A fully applied tactic is expected: missing argument for variable x.
+The user-defined tactic "Top.foo" was not fully applied:
+There is a missing argument for variable x,
+no arguments at all were provided.
 The command has indeed failed with message:
-A fully applied tactic is expected: missing argument for variable x.
+The user-defined tactic "Top.bar" was not fully applied:
+There is a missing argument for variable x,
+no arguments at all were provided.
 The command has indeed failed with message:
-A fully applied tactic is expected: missing arguments for variables y and _.
+The user-defined tactic "Top.bar" was not fully applied:
+There are missing arguments for variables y and _,
+an argument was provided for variable x.
 The command has indeed failed with message:
-A fully applied tactic is expected: missing argument for variable x.
+The user-defined tactic "Top.baz" was not fully applied:
+There is a missing argument for variable x,
+no arguments at all were provided.
 The command has indeed failed with message:
-A fully applied tactic is expected: missing argument for variable x.
+The user-defined tactic "Top.qux" was not fully applied:
+There is a missing argument for variable x,
+no arguments at all were provided.
 The command has indeed failed with message:
-A fully applied tactic is expected: missing argument for variable _.
+The user-defined tactic "Top.mydo" was not fully applied:
+There is a missing argument for variable _,
+no arguments at all were provided.
 The command has indeed failed with message:
-A fully applied tactic is expected: missing argument for variable _.
+An unnamed user-defined tactic was not fully applied:
+There is a missing argument for variable _,
+no arguments at all were provided.
 The command has indeed failed with message:
-A fully applied tactic is expected: missing argument for variable _.
+An unnamed user-defined tactic was not fully applied:
+There is a missing argument for variable _,
+no arguments at all were provided.
 The command has indeed failed with message:
-A fully applied tactic is expected: missing argument for variable x.
+The user-defined tactic "Top.rec" was not fully applied:
+There is a missing argument for variable x,
+no arguments at all were provided.
 The command has indeed failed with message:
-A fully applied tactic is expected: missing argument for variable x.
+An unnamed user-defined tactic was not fully applied:
+There is a missing argument for variable x,
+an argument was provided for variable tac.
