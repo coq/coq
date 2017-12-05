@@ -26,7 +26,7 @@ sig
   include CSig.MapS
   module Set : CSig.SetS with type elt = key
   val get : key -> 'a t -> 'a
-  val update : key -> 'a -> 'a t -> 'a t
+  val set : key -> 'a -> 'a t -> 'a t
   val modify : key -> (key -> 'a -> 'a) -> 'a t -> 'a t
   val domain : 'a t -> Set.t
   val bind : (key -> 'a) -> Set.t -> 'a t
@@ -50,7 +50,7 @@ end
 module MapExt (M : Map.OrderedType) :
 sig
   type 'a map = 'a Map.Make(M).t
-  val update : M.t -> 'a -> 'a map -> 'a map
+  val set : M.t -> 'a -> 'a map -> 'a map
   val modify : M.t -> (M.t -> 'a -> 'a) -> 'a map -> 'a map
   val domain : 'a map -> Set.Make(M).t
   val bind : (M.t -> 'a) -> Set.Make(M).t -> 'a map
@@ -93,19 +93,19 @@ struct
   let set_prj : set -> _set = Obj.magic
   let set_inj : _set -> set = Obj.magic
 
-  let rec update k v (s : 'a map) : 'a map = match map_prj s with
+  let rec set k v (s : 'a map) : 'a map = match map_prj s with
   | MEmpty -> raise Not_found
   | MNode (l, k', v', r, h) ->
     let c = M.compare k k' in
     if c < 0 then
-      let l' = update k v l in
+      let l' = set k v l in
       if l == l' then s
       else map_inj (MNode (l', k', v', r, h))
     else if c = 0 then
       if v' == v then s
       else map_inj (MNode (l, k', v, r, h))
     else
-      let r' = update k v r in
+      let r' = set k v r in
       if r == r' then s
       else map_inj (MNode (l, k', v', r', h))
 

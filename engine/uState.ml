@@ -131,7 +131,7 @@ let of_binders b =
 let universe_binders ctx = fst ctx.uctx_names
 
 let instantiate_variable l b v =
-  try v := Univ.LMap.update l (Some b) !v
+  try v := Univ.LMap.set l (Some b) !v
   with Not_found -> assert false
 
 exception UniversesDiffer

@@ -47,7 +47,7 @@ struct
     try
       let m = Int.Map.find h s in
       let m = Set.add x m in
-      Int.Map.update h m s
+      Int.Map.set h m s
     with Not_found ->
       let m = Set.singleton x in
       Int.Map.add h m s
@@ -65,7 +65,7 @@ struct
       if Set.is_empty m then
         Int.Map.remove h s
       else
-        Int.Map.update h m s
+        Int.Map.set h m s
     with Not_found -> s
 
   let height s = Int.Map.height s
@@ -135,7 +135,7 @@ struct
         let s' = Int.Map.find h accu in
         let si = Set.filter (fun e -> not (Set.mem e s)) s' in
         if Set.is_empty si then Int.Map.remove h accu
-        else Int.Map.update h si accu
+        else Int.Map.set h si accu
      with Not_found -> accu
     in
     Int.Map.fold fold s2 s1
@@ -242,10 +242,18 @@ struct
     try
       let m = Int.Map.find h s in
       let m = Map.add k x m in
-      Int.Map.update h m s
+      Int.Map.set h m s
     with Not_found ->
       let m = Map.singleton k x in
       Int.Map.add h m s
+
+  (* when Coq requires OCaml 4.06 or later, the module type
+     CSig.MapS may include the signature of OCaml's "update",
+     requiring an implementation here, which could be just:
+
+       let update k f s = assert false (* not implemented *)
+
+  *)
 
   let singleton k x =
     let h = M.hash k in
@@ -259,7 +267,7 @@ struct
       if Map.is_empty m then
         Int.Map.remove h s
       else
-        Int.Map.update h m s
+        Int.Map.set h m s
     with Not_found -> s
 
   let merge f s1 s2 =
@@ -359,7 +367,7 @@ struct
     let h = M.hash k in
     let m = Int.Map.find h s in
     let m = Map.modify k f m in
-    Int.Map.update h m s
+    Int.Map.set h m s
 
   let bind f s =
     let fb m = Map.bind f m in
@@ -367,11 +375,11 @@ struct
 
   let domain s = Int.Map.map Map.domain s
 
-  let update k x s =
+  let set k x s =
     let h = M.hash k in
     let m = Int.Map.find h s in
-    let m = Map.update k x m in
-    Int.Map.update h m s
+    let m = Map.set k x m in
+    Int.Map.set h m s
 
   let smartmap f s =
     let fs m = Map.smartmap f m in

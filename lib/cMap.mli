@@ -34,7 +34,7 @@ sig
   val get : key -> 'a t -> 'a
   (** Same as {!find} but fails an assertion instead of raising [Not_found] *)
 
-  val update : key -> 'a -> 'a t -> 'a t
+  val set : key -> 'a -> 'a t -> 'a t
   (** Same as [add], but expects the key to be present, and thus faster.
       @raise Not_found when the key is unbound in the map. *)
 

@@ -401,7 +401,7 @@ let rename evk id (evtoid, idtoev) =
   | None -> (EvMap.add evk id evtoid, Id.Map.add id evk idtoev)
   | Some id' ->
     if Id.Map.mem id idtoev then anomaly (str "Evar name already in use.");
-    (EvMap.update evk id evtoid (* overwrite old name *), Id.Map.add id evk (Id.Map.remove id' idtoev))
+    (EvMap.set evk id evtoid (* overwrite old name *), Id.Map.add id evk (Id.Map.remove id' idtoev))
 
 let reassign_name_defined evk evk' (evtoid, idtoev as names) =
   let id = try Some (EvMap.find evk evtoid) with Not_found -> None in
