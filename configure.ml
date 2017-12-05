@@ -686,7 +686,7 @@ let operating_system, osdeplibs =
 
 let check_for_numlib () =
   if caml_version_nums >= [4;6;0] then
-    let numlib,_ = tryrun "ocamlfind" ["query";"num"] in
+    let numlib,_ = tryrun camlexec.find ["query";"num"] in
     match numlib with
     | ""  ->
        die "Num library not installed, required for OCaml 4.06 or later"
@@ -727,11 +727,11 @@ let get_lablgtkdir () =
     else "", msg
   | None ->
     let msg = OCamlFind in
-    let d1,_ = tryrun "ocamlfind" ["query";"lablgtk2.sourceview2"] in
+    let d1,_ = tryrun camlexec.find ["query";"lablgtk2.sourceview2"] in
     if d1 <> "" && check_lablgtkdir msg d1 then d1, msg
     else
       (* In debian wheezy, ocamlfind knows only of lablgtk2 *)
-      let d2,_ = tryrun "ocamlfind" ["query";"lablgtk2"] in
+      let d2,_ = tryrun camlexec.find ["query";"lablgtk2"] in
       if d2 <> "" && d2 <> d1 && check_lablgtkdir msg d2 then d2, msg
       else
         let msg = Stdlib in
@@ -757,7 +757,7 @@ let check_lablgtk_version src dir = match src with
   if ans then printf "Warning: could not check the version of lablgtk2.\n";
   (ans, "an unknown version")
 | OCamlFind ->
-  let v, _ = tryrun "ocamlfind" ["query"; "-format"; "%v"; "lablgtk2"] in
+  let v, _ = tryrun camlexec.find ["query"; "-format"; "%v"; "lablgtk2"] in
   try
     let vi = List.map s2i (numeric_prefix_list v) in
     ([2; 16] <= vi, v)
@@ -814,7 +814,7 @@ let coqide_flags () =
   if !lablgtkdir <> "" then lablgtkincludes := sprintf "-I %S" !lablgtkdir;
   match coqide, arch with
     | "opt", "Darwin" when !Prefs.macintegration ->
-      let osxdir,_ = tryrun "ocamlfind" ["query";"lablgtkosx"] in
+      let osxdir,_ = tryrun camlexec.find ["query";"lablgtkosx"] in
       if osxdir <> "" then begin
         lablgtkincludes := sprintf "%s -I %S" !lablgtkincludes osxdir;
         idearchflags := "lablgtkosx.cma";
