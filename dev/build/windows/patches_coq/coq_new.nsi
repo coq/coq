@@ -188,7 +188,7 @@ SectionEnd
 Section "Uninstall"
   ; Files and folders
   RMDir /r "$INSTDIR\bin"
-  RMDir /r "$INSTDIR\dev"
+  RMDir /r "$INSTDIR\doc"
   RMDir /r "$INSTDIR\etc"
   RMDir /r "$INSTDIR\lib"
   RMDir /r "$INSTDIR\libocaml"
