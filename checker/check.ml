@@ -308,18 +308,27 @@ let name_clash_message dir mdir f =
 (* Dependency graph *)
 let depgraph = ref LibraryMap.empty
 
+let marshal_in_segment f ch =
+  try
+    let stop = input_binary_int ch in
+    let v = Analyze.instantiate (Analyze.parse_channel ch) in
+    let digest = Digest.input ch in
+    Obj.obj v, stop, digest
+  with _ ->
+    user_err (str "Corrupted file " ++ quote (str f))
+
 let intern_from_file (dir, f) =
   Flags.if_verbose chk_pp (str"[intern "++str f++str" ...");
   let (sd,md,table,opaque_csts,digest) =
     try
       let ch = System.with_magic_number_check raw_intern_library f in
-      let (sd:Cic.summary_disk), _, digest = System.marshal_in_segment f ch in
-      let (md:Cic.library_disk), _, digest = System.marshal_in_segment f ch in
-      let (opaque_csts:'a option), _, udg = System.marshal_in_segment f ch in
-      let (discharging:'a option), _, _ = System.marshal_in_segment f ch in
-      let (tasks:'a option), _, _ = System.marshal_in_segment f ch in
+      let (sd:Cic.summary_disk), _, digest = marshal_in_segment f ch in
+      let (md:Cic.library_disk), _, digest = marshal_in_segment f ch in
+      let (opaque_csts:'a option), _, udg = marshal_in_segment f ch in
+      let (discharging:'a option), _, _ = marshal_in_segment f ch in
+      let (tasks:'a option), _, _ = marshal_in_segment f ch in
       let (table:Cic.opaque_table), pos, checksum =
-        System.marshal_in_segment f ch in
+        marshal_in_segment f ch in
       (* Verification of the final checksum *)
       let () = close_in ch in
       let ch = open_in_bin f in

@@ -77,8 +77,8 @@ struct
 
   type obj = data
 
-  let memory = ref [||]
-  let sizes = ref [||]
+  let memory = ref LargeArray.empty
+  let sizes = ref LargeArray.empty
   (** size, in words *)
 
   let ws = Sys.word_size / 8
@@ -86,10 +86,10 @@ struct
   let rec init_size seen k = function
   | Int _ | Atm _ | Fun _ -> k 0
   | Ptr p ->
-    if seen.(p) then k 0
+    if LargeArray.get seen p then k 0
     else
-      let () = seen.(p) <- true in
-      match (!memory).(p) with
+      let () = LargeArray.set seen p true in
+      match LargeArray.get !memory p with
       | Struct (tag, os) ->
         let len = Array.length os in
         let rec fold i accu k =
@@ -97,30 +97,30 @@ struct
           else
             init_size seen (fun n -> fold (succ i) (accu + 1 + n) k) os.(i)
         in
-        fold 0 1 (fun size -> let () = (!sizes).(p) <- size in k size)
+        fold 0 1 (fun size -> let () = LargeArray.set !sizes p size in k size)
       | String s ->
         let size = 2 + (String.length s / ws) in
-        let () = (!sizes).(p) <- size in
+        let () = LargeArray.set !sizes p size in
         k size
 
   let size = function
   | Int _ | Atm _ | Fun _ -> 0
-  | Ptr p -> (!sizes).(p)
+  | Ptr p -> LargeArray.get !sizes p
 
   let repr = function
   | Int i -> INT i
   | Atm t -> BLOCK (t, [||])
   | Fun _ -> OTHER
   | Ptr p ->
-    match (!memory).(p) with
+    match LargeArray.get !memory p with
     | Struct (tag, os) -> BLOCK (tag, os)
     | String s -> STRING s
 
   let input ch =
     let obj, mem = parse_channel ch in
     let () = memory := mem in
-    let () = sizes := Array.make (Array.length mem) (-1) in
-    let seen = Array.make (Array.length mem) false in
+    let () = sizes := LargeArray.make (LargeArray.length mem) (-1) in
+    let seen = LargeArray.make (LargeArray.length mem) false in
     let () = init_size seen ignore obj in
     obj
 
