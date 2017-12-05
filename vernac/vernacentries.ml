@@ -2268,5 +2268,10 @@ let interp ?(verbosely=true) ?proof ~st (loc,c) =
    comments on the PR *)
 let interp ?verbosely ?proof ~st cmd =
   Vernacstate.unfreeze_interp_state st;
-  interp ?verbosely ?proof ~st cmd;
-  Vernacstate.freeze_interp_state `No
+  try
+    interp ?verbosely ?proof ~st cmd;
+    Vernacstate.freeze_interp_state `No
+  with exn ->
+    let exn = CErrors.push exn in
+    Vernacstate.invalidate_cache ();
+    iraise exn
