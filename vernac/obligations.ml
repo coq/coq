@@ -477,7 +477,10 @@ let declare_definition prg =
   let fix_exn = Hook.get get_fix_exn () in
   let typ = nf typ in
   let body = nf body in
-  let uvars = Univ.LSet.union (Univops.universes_of_constr typ) (Univops.universes_of_constr body) in
+  let env = Global.env () in
+  let uvars = Univ.LSet.union
+      (Univops.universes_of_constr env typ)
+      (Univops.universes_of_constr env body) in
   let uctx = UState.restrict prg.prg_ctx uvars in
   let univs = UState.check_univ_decl ~poly:(pi2 prg.prg_kind) uctx prg.prg_univdecl in
   let ce = definition_entry ~fix_exn ~opaque ~types:typ ~univs body in

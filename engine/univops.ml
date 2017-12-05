@@ -9,12 +9,25 @@
 open Univ
 open Constr
 
-let universes_of_constr c =
+let universes_of_constr env c =
+  let open Declarations in
   let rec aux s c = 
     match kind c with
-    | Const (_, u) | Ind (_, u) | Construct (_, u) ->
-      LSet.fold LSet.add (Instance.levels u) s
-    | Sort u when not (Sorts.is_small u) -> 
+    | Const (c, u) ->
+      begin match (Environ.lookup_constant c env).const_universes with
+        | Polymorphic_const _ ->
+          LSet.fold LSet.add (Instance.levels u) s
+        | Monomorphic_const (univs, _) ->
+          LSet.union s univs
+      end
+    | Ind ((mind,_), u) | Construct (((mind,_),_), u) ->
+      begin match (Environ.lookup_mind mind env).mind_universes with
+        | Cumulative_ind _ | Polymorphic_ind _ ->
+          LSet.fold LSet.add (Instance.levels u) s
+        | Monomorphic_ind (univs,_) ->
+          LSet.union s univs
+      end
+    | Sort u when not (Sorts.is_small u) ->
       let u = Sorts.univ_of_sort u in
       LSet.fold LSet.add (Universe.levels u) s
     | _ -> Constr.fold aux s c

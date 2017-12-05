@@ -22,6 +22,7 @@ type uinfo = {
 type t =
  { uctx_names : Universes.universe_binders * uinfo Univ.LMap.t;
    uctx_local : Univ.ContextSet.t; (** The local context of variables *)
+   uctx_seff_univs : Univ.LSet.t; (** Local universes used through private constants *)
    uctx_univ_variables : Universes.universe_opt_subst;
    (** The local universes that are unification variables *)
    uctx_univ_algebraic : Univ.LSet.t; 
@@ -34,6 +35,7 @@ type t =
 let empty =
   { uctx_names = UNameMap.empty, Univ.LMap.empty;
     uctx_local = Univ.ContextSet.empty;
+    uctx_seff_univs = Univ.LSet.empty;
     uctx_univ_variables = Univ.LMap.empty;
     uctx_univ_algebraic = Univ.LSet.empty;
     uctx_universes = UGraph.initial_universes;
@@ -60,6 +62,7 @@ let union ctx ctx' =
   else if is_empty ctx' then ctx
   else
     let local = Univ.ContextSet.union ctx.uctx_local ctx'.uctx_local in
+    let seff = Univ.LSet.union ctx.uctx_seff_univs ctx'.uctx_seff_univs in
     let names = uname_union (fst ctx.uctx_names) (fst ctx'.uctx_names) in
     let newus = Univ.LSet.diff (Univ.ContextSet.levels ctx'.uctx_local)
                                (Univ.ContextSet.levels ctx.uctx_local) in
@@ -70,6 +73,7 @@ let union ctx ctx' =
     let names_rev = Univ.LMap.union (snd ctx.uctx_names) (snd ctx'.uctx_names) in
       { uctx_names = (names, names_rev);
         uctx_local = local;
+        uctx_seff_univs = seff;
         uctx_univ_variables = 
           Univ.LMap.subst_union ctx.uctx_univ_variables ctx'.uctx_univ_variables;
         uctx_univ_algebraic = 
@@ -365,11 +369,20 @@ let check_univ_decl ~poly uctx decl =
   ctx
 
 let restrict ctx vars =
+  let vars = Univ.LSet.union vars ctx.uctx_seff_univs in
   let vars = Names.Id.Map.fold (fun na l vars -> Univ.LSet.add l vars)
       (fst ctx.uctx_names) vars
   in
   let uctx' = Univops.restrict_universe_context ctx.uctx_local vars in
   { ctx with uctx_local = uctx' }
+
+let demote_seff_univs entry uctx =
+  let open Entries in
+  match entry.const_entry_universes with
+  | Polymorphic_const_entry _ -> uctx
+  | Monomorphic_const_entry (univs, _) ->
+    let seff = Univ.LSet.union uctx.uctx_seff_univs univs in
+    { uctx with uctx_seff_univs = seff }
 
 type rigid = 
   | UnivRigid
@@ -552,7 +565,8 @@ let refresh_undefined_univ_variables uctx =
   let initial = declare uctx.uctx_initial_universes in
   let univs = declare UGraph.initial_universes in
   let uctx' = {uctx_names = uctx.uctx_names;
-               uctx_local = ctx'; 
+               uctx_local = ctx';
+               uctx_seff_univs = uctx.uctx_seff_univs;
                uctx_univ_variables = vars; uctx_univ_algebraic = alg;
                uctx_universes = univs;
                uctx_initial_universes = initial } in
@@ -569,7 +583,8 @@ let normalize uctx =
       Universes.refresh_constraints uctx.uctx_initial_universes us'
     in
       { uctx_names = uctx.uctx_names;
-        uctx_local = us'; 
+        uctx_local = us';
+        uctx_seff_univs = uctx.uctx_seff_univs; (* not sure about this *)
         uctx_univ_variables = vars'; 
         uctx_univ_algebraic = algs';
         uctx_universes = universes;
