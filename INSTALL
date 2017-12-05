@@ -43,7 +43,7 @@ WHAT DO YOU NEED ?
    - a C compiler
 
    - for Coqide, the Lablgtk development files, and the GTK libraries
-     incuding gtksourceview, see INSTALL.ide for more details
+     including gtksourceview, see INSTALL.ide for more details
 
    Opam (https://opam.ocaml.org/) is recommended to install ocaml and
    the corresponding packages.
