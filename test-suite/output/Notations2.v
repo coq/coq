@@ -145,3 +145,24 @@ Check .a≡.
 Notation ".α" := nat.
 Check nat.
 Check .α.
+
+(* A test for #6304 *)
+
+Module M6304.
+Notation "'for' m 'from' 0 'to' N 'updating' ( s1 )  {{ b }} ;; rest" :=
+  (let s1 :=
+    (fix rec(n: nat) := match n with
+     | 0 => s1
+     | S m => let s1 := rec m in b
+     end) N
+  in rest)
+  (at level 20).
+
+Check fun (a b : nat) =>
+  let res := 0 in
+  for i from 0 to a updating (res) {{
+    for j from 0 to b updating (res) {{ S res }};;
+    res
+  }};; res.
+
+End M6304.
