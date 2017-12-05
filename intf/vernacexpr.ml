@@ -204,7 +204,7 @@ type inductive_expr =
 type one_inductive_expr =
   ident_decl * local_binder_expr list * constr_expr option * constructor_expr list
 
-type typeclass_constraint = (Name.t Loc.located * universe_decl_expr option) * binding_kind * constr_expr
+type typeclass_constraint = (Name.t Loc.located * universe_decl_expr option) * binding_kind option * constr_expr
 
 and typeclass_context = typeclass_constraint list
 

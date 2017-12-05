@@ -130,10 +130,23 @@ let declare_instance_constant k info global imps ?hook id decl poly evm term ter
     instance_hook k info global imps ?hook (ConstRef kn);
     id
 
+let get_default_generalize_instance =
+  let ref = ref true in
+  let open Goptions in
+  let _ = declare_bool_option
+           { optdepr  = false;
+             optname  = "generalize variables in the type of an Instance";
+             optkey   = ["Typeclasses";"Default";"Generalize";"Instance";"Variables"];
+             optread  = (fun () -> !ref);
+             optwrite = (fun b -> ref := b); }
+  in
+  fun () -> if !ref then Explicit else Implicit
+
 let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
   poly ctx (instid, bk, cl) props ?(generalize=true)
   ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
+  let bk = Option.default (get_default_generalize_instance ()) bk in
   let ((loc, instid), pl) = instid in
   let evd, decl = Univdecls.interp_univ_decl_opt env pl in
   let evars = ref evd in

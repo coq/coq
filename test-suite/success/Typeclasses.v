@@ -257,3 +257,20 @@ Module AxiomsAreInstances.
   Definition testdef2 : TestClass2 := _.
 
 End AxiomsAreInstances.
+
+Module GeneralizeVariables.
+  Class Foo := {}.
+  Class Bar (A:Foo) := {}.
+
+  Generalizable All Variables.
+
+  Instance bar1 : `Bar A := {}.
+  Fail Instance bar2 : !Bar A := {}.
+
+  Unset Typeclasses Default Generalize Instance Variables.
+  Fail Instance bar2 : Bar A := {}.
+
+  Set Typeclasses Default Generalize Instance Variables.
+  Instance bar2 : Bar A := {}.
+
+End GeneralizeVariables.
