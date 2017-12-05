@@ -100,11 +100,41 @@ let pp_global k r = str (str_global k r)
 
 let pp_modname mp = str (Common.pp_module mp)
 
+(* grammar from OCaml 4.06 manual, "Prefix and infix symbols" *)
+
+let infix_symbols =
+  ['=' ; '<' ; '>' ; '@' ; '^' ; ';' ; '&' ; '+' ; '-' ; '*' ; '/' ; '$' ; '%' ]
+let operator_chars =
+  [ '!' ; '$' ; '%' ; '&' ; '*' ; '+' ; '-' ; '.' ; '/' ; ':' ; '<' ; '=' ; '>' ; '?' ; '@' ; '^' ; '|' ; '~' ]
+
+(* infix ops in OCaml, but disallowed by preceding grammar *)
+
+let builtin_infixes =
+  [ "::" ; "," ]
+
+let substring_all_opchars s start stop =
+  let rec check_char i =
+    if i >= stop then true
+    else
+      List.mem s.[i] operator_chars && check_char (i+1)
+  in
+  check_char start
+
 let is_infix r =
   is_inline_custom r &&
   (let s = find_custom r in
-   let l = String.length s in
-   l >= 2 && s.[0] == '(' && s.[l-1] == ')')
+   let len = String.length s in
+   len >= 3 &&
+   (* parenthesized *)
+   (s.[0] == '(' && s.[len-1] == ')' &&
+      let inparens = String.trim (String.sub s 1 (len - 2)) in
+      let inparens_len = String.length inparens in
+      (* either, begins with infix symbol, any remainder is all operator chars *)
+      (List.mem inparens.[0] infix_symbols && substring_all_opchars inparens 1 inparens_len) ||
+      (* or, starts with #, at least one more char, all are operator chars *)
+      (inparens.[0] == '#' && inparens_len >= 2 && substring_all_opchars inparens 1 inparens_len) ||
+      (* or, is an OCaml built-in infix *)
+      (List.mem inparens builtin_infixes)))
 
 let get_infix r =
   let s = find_custom r in
