@@ -390,7 +390,9 @@ let rec pr_valexpr env sigma v t = match kind t with
         let knc = change_kn_label kn id in
         let args = pr_constrargs env sigma params args tpe in
         hv 2 (pr_constructor knc ++ spc () ++ str "(" ++ args ++ str ")")
-    | GTydRec rcd -> str "{ TODO }"
+    | GTydRec rcd ->
+      let (_, args) = Tac2ffi.to_block v in
+      pr_record env sigma params args rcd
     | GTydOpn ->
       begin match Tac2ffi.to_open v with
       | (knc, [||]) -> pr_constructor knc
@@ -416,6 +418,17 @@ and pr_constrargs env sigma params args tpe =
   let args = Array.to_list args in
   let args = List.combine args tpe in
   prlist_with_sep pr_comma (fun (v, t) -> pr_valexpr env sigma v t) args
+
+and pr_record env sigma params args rcd =
+  let subst = Array.of_list params in
+  let map (id, _, tpe) = (id, subst_type subst tpe) in
+  let rcd = List.map map rcd in
+  let args = Array.to_list args in
+  let fields = List.combine rcd args in
+  let pr_field ((id, t), arg) =
+    Id.print id ++ spc () ++ str ":=" ++ spc () ++ pr_valexpr env sigma arg t
+  in
+  str "{" ++ spc () ++ prlist_with_sep pr_semicolon pr_field fields ++ spc () ++ str "}"
 
 and pr_val_list env sigma args tpe =
   let pr v = pr_valexpr env sigma v tpe in
