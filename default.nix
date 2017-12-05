@@ -42,10 +42,13 @@ stdenv.mkDerivation rec {
     # CoqIDE dependencies
     ocamlPackages.lablgtk
 
-  ] else []) ++ (if doCheck then [
+  ] else []) ++ (if doCheck then
 
     # Test-suite dependencies
-    ncurses
+    let inherit (stdenv.lib) versionAtLeast optional; in
+    /* ncurses is required to build an OCaml REPL */
+    optional (!versionAtLeast ocaml.version "4.07") ncurses
+    ++ [
     python
     rsync
     which
