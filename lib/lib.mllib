@@ -9,7 +9,7 @@ System
 CThread
 Spawn
 Trie
-Profile
+CProfile
 Explore
 Predicate
 Rtree

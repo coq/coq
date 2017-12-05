@@ -833,8 +833,8 @@ let gen_conv cv_pb l2r reds env evars univs t1 t2 =
 let gen_conv cv_pb ?(l2r=false) ?(reds=full_transparent_state) env ?(evars=(fun _->None), universes env) =
   let evars, univs = evars in
   if Flags.profile then
-    let fconv_universes_key = Profile.declare_profile "trans_fconv_universes" in
-      Profile.profile8 fconv_universes_key gen_conv cv_pb l2r reds env evars univs
+    let fconv_universes_key = CProfile.declare_profile "trans_fconv_universes" in
+      CProfile.profile8 fconv_universes_key gen_conv cv_pb l2r reds env evars univs
   else gen_conv cv_pb l2r reds env evars univs
 
 let conv = gen_conv CONV
@@ -860,8 +860,8 @@ let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
 (* Profiling *)
 let infer_conv_universes = 
   if Flags.profile then 
-    let infer_conv_universes_key = Profile.declare_profile "infer_conv_universes" in
-      Profile.profile8 infer_conv_universes_key infer_conv_universes
+    let infer_conv_universes_key = CProfile.declare_profile "infer_conv_universes" in
+      CProfile.profile8 infer_conv_universes_key infer_conv_universes
   else infer_conv_universes
 
 let infer_conv ?(l2r=false) ?(evars=fun _ -> None) ?(ts=full_transparent_state)
@@ -895,13 +895,13 @@ let default_conv cv_pb ?(l2r=false) env t1 t2 =
 
 let default_conv_leq = default_conv CUMUL
 (*
-let convleqkey = Profile.declare_profile "Kernel_reduction.conv_leq";;
+let convleqkey = CProfile.declare_profile "Kernel_reduction.conv_leq";;
 let conv_leq env t1 t2 =
-  Profile.profile4 convleqkey conv_leq env t1 t2;;
+  CProfile.profile4 convleqkey conv_leq env t1 t2;;
 
-let convkey = Profile.declare_profile "Kernel_reduction.conv";;
+let convkey = CProfile.declare_profile "Kernel_reduction.conv";;
 let conv env t1 t2 =
-  Profile.profile4 convleqkey conv env t1 t2;;
+  CProfile.profile4 convleqkey conv env t1 t2;;
 *)
 
 (* Application with on-the-fly reduction *)

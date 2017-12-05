@@ -250,7 +250,7 @@ let cook_constant ~hcons env { from = cb; info } =
     cook_context = Some const_hyps;
   }
 
-(* let cook_constant_key = Profile.declare_profile "cook_constant" *)
-(* let cook_constant = Profile.profile2 cook_constant_key cook_constant *)
+(* let cook_constant_key = CProfile.declare_profile "cook_constant" *)
+(* let cook_constant = CProfile.profile2 cook_constant_key cook_constant *)
 
 let expmod_constr modlist c = expmod_constr (RefTable.create 13) modlist c

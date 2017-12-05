@@ -227,8 +227,8 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
 (*   let f,_,_,_ = retype ~polyprop sigma in *)
 (*     if lax then f env c else anomaly_on_error (f env) c  *)
 
-(* let get_type_of_key = Profile.declare_profile "get_type_of" *)
-(* let get_type_of = Profile.profile5 get_type_of_key get_type_of *)
+(* let get_type_of_key = CProfile.declare_profile "get_type_of" *)
+(* let get_type_of = CProfile.profile5 get_type_of_key get_type_of *)
 
 (* let get_type_of ?(polyprop=true) ?(lax=false) env sigma c = *)
 (*   get_type_of polyprop lax env sigma c *)

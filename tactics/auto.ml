@@ -514,8 +514,8 @@ let delta_auto debug mod_delta n lems dbnames =
 
 let delta_auto = 
   if Flags.profile then
-    let key = Profile.declare_profile "delta_auto" in
-      Profile.profile5 key delta_auto
+    let key = CProfile.declare_profile "delta_auto" in
+      CProfile.profile5 key delta_auto
   else delta_auto
 
 let auto ?(debug=Off) n = delta_auto debug false n

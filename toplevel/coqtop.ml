@@ -756,7 +756,7 @@ let init_toplevel arglist =
   (* Coq's init process, phase 1:
      - OCaml parameters, and basic structures and IO
    *)
-  Profile.init_profile ();
+  CProfile.init_profile ();
   init_gc ();
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
   let init_feeder = Feedback.add_feeder coqtop_init_feed in
@@ -846,7 +846,7 @@ let start () =
       let sigma, env = Pfedit.get_current_context () in
       Feedback.msg_notice (Flags.(with_option raw_print (Prettyp.print_full_pure_context env) sigma) ++ fnl ())
     end;
-    Profile.print_profile ();
+    CProfile.print_profile ();
     exit 0
 
 (* [Coqtop.start] will be called by the code produced by coqmktop *)

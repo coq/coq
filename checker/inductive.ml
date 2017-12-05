@@ -1070,8 +1070,8 @@ let check_fix env ((nvect,_),(names,_,bodies as _recdef) as fix) =
   done
 
 (*
-let cfkey = Profile.declare_profile "check_fix";;
-let check_fix env fix = Profile.profile3 cfkey check_fix env fix;;
+let cfkey = CProfile.declare_profile "check_fix";;
+let check_fix env fix = CProfile.profile3 cfkey check_fix env fix;;
 *)
 
 (************************************************************************)
