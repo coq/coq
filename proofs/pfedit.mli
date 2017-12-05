@@ -35,11 +35,11 @@ val start_proof :
 val cook_this_proof :
     Proof_global.proof_object ->
   (Id.t *
-    (Safe_typing.private_constants Entries.definition_entry * Proof_global.proof_universes * goal_kind))
+    (Safe_typing.private_constants Entries.definition_entry * UState.t * goal_kind))
 
 val cook_proof : unit ->
   (Id.t *
-    (Safe_typing.private_constants Entries.definition_entry * Proof_global.proof_universes * goal_kind))
+    (Safe_typing.private_constants Entries.definition_entry * UState.t * goal_kind))
 
 (** {6 ... } *)
 (** [get_goal_context n] returns the context of the [n]th subgoal of

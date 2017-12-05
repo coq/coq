@@ -613,7 +613,7 @@ let definition_structure (kind,cum,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cf
     States.with_state_protection (fun () ->
       typecheck_params_and_fields finite (kind = Class true) idstruc poly pl s ps notations fs) () in
   let sign = structure_signature (fields@params) in
-  match kind with
+  let gr = match kind with
   | Class def ->
      let priorities = List.map (fun id -> {hint_priority = id; hint_pattern = None}) priorities in
      let gr = declare_class finite def cum pl univs (loc,idstruc) idbuild
@@ -638,3 +638,6 @@ let definition_structure (kind,cum,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cf
 	  idbuild implpars params arity template implfs 
 	  fields is_coe (List.map (fun coe -> not (Option.is_empty coe)) coers) sign in
 	IndRef ind
+  in
+  Declare.declare_univ_binders gr pl;
+  gr

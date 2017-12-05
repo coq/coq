@@ -8,7 +8,6 @@
 
 open Names
 open Environ
-open Decl_kinds
 
 (** We introduce here the global environment of the system,
     and we declare it as a synchronized table. *)
@@ -231,18 +230,7 @@ let universes_of_global env r =
 let universes_of_global gr = 
   universes_of_global (env ()) gr
 
-(** Global universe names *)
-type universe_names = 
-  (polymorphic * Univ.Level.t) Id.Map.t * Id.t Univ.LMap.t
-
-let global_universes =
-  Summary.ref ~name:"Global universe names"
-  ((Id.Map.empty, Univ.LMap.empty) : universe_names)
-
-let global_universe_names () = !global_universes
-let set_global_universe_names s = global_universes := s
-
-let is_polymorphic r = 
+let is_polymorphic r =
   let env = env() in 
   match r with
   | VarRef id -> false

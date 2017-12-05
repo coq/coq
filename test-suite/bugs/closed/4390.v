@@ -8,16 +8,16 @@ Universe i.
 End foo.
 End M.
 
-Check Type@{i}.
+Check Type@{M.i}.
 (* Succeeds *)
 
 Fail Check Type@{j}.
 (* Error: Undeclared universe: j *)
 
-Definition foo@{j} : Type@{i} := Type@{j}.
+Definition foo@{j} : Type@{M.i} := Type@{j}.
 (* ok *)
 End A.
-
+Import A. Import M.
 Set Universe Polymorphism.
 Fail Universes j.
 Monomorphic Universe j.

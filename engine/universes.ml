@@ -14,10 +14,37 @@ open Constr
 open Environ
 open Univ
 open Globnames
+open Nametab
 
-let pr_with_global_universes l =
-  try Id.print (LMap.find l (snd (Global.global_universe_names ())))
-  with Not_found -> Level.pr l
+let reference_of_level l =
+  match Level.name l with
+  | Some (d, n as na)  ->
+     let qid =
+       try Nametab.shortest_qualid_of_universe na
+       with Not_found ->
+         let name = Id.of_string_soft (string_of_int n) in
+         Libnames.make_qualid d name
+     in Libnames.Qualid (Loc.tag @@ qid)
+  | None -> Libnames.Ident (Loc.tag @@ Id.of_string_soft (Level.to_string l))
+
+let pr_with_global_universes l = Libnames.pr_reference (reference_of_level l)
+
+(** Global universe information outside the kernel, to handle
+    polymorphic universe names in sections that have to be discharged. *)
+
+let universe_map = (Summary.ref UnivIdMap.empty ~name:"global universe info" : bool Nametab.UnivIdMap.t ref)
+
+let add_global_universe u p =
+  match Level.name u with
+  | Some n -> universe_map := Nametab.UnivIdMap.add n p !universe_map
+  | None -> ()
+
+let is_polymorphic l =
+  match Level.name l with
+  | Some n ->
+     (try Nametab.UnivIdMap.find n !universe_map
+      with Not_found -> false)
+  | None -> false
 
 (** Local universe names of polymorphic references *)
 
@@ -53,12 +80,14 @@ let ubinder_obj : Globnames.global_reference * universe_binders -> Libobject.obj
     rebuild_function = (fun x -> x); }
 
 let register_universe_binders ref ubinders =
-  (* Add the polymorphic (section) universes *)
   let open Names in
-  let ubinders = Id.Map.fold (fun id (poly,lvl) ubinders ->
-      if poly then Id.Map.add id lvl ubinders
-      else ubinders)
-      (fst (Global.global_universe_names ())) ubinders
+  (* Add the polymorphic (section) universes *)
+  let ubinders = UnivIdMap.fold (fun lvl poly ubinders ->
+    let qid = Nametab.shortest_qualid_of_universe lvl in
+    let level = Level.make (fst lvl) (snd lvl) in
+    if poly then Id.Map.add (snd (Libnames.repr_qualid qid)) level ubinders
+    else ubinders)
+    !universe_map ubinders
   in
   if not (Id.Map.is_empty ubinders)
   then Lib.add_anonymous_leaf (ubinder_obj (ref,ubinders))
@@ -236,14 +265,17 @@ let eq_constr_universes_proj env m n =
     res, !cstrs
 
 (* Generator of levels *)
-let new_univ_level, set_remote_new_univ_level =
+type universe_id = DirPath.t * int
+
+let new_univ_id, set_remote_new_univ_id =
   RemoteCounter.new_counter ~name:"Universes" 0 ~incr:((+) 1)
-    ~build:(fun n -> Univ.Level.make (Global.current_dirpath ()) n)
+    ~build:(fun n -> Global.current_dirpath (), n)
 
-let new_univ_level _ = new_univ_level ()
-  (* Univ.Level.make db (new_univ_level ()) *)
+let new_univ_level () =
+  let dp, id = new_univ_id () in
+  Univ.Level.make dp id
 
-let fresh_level () = new_univ_level (Global.current_dirpath ())
+let fresh_level () = new_univ_level ()
 
 (* TODO: remove *)
 let new_univ dp = Univ.Universe.make (new_univ_level dp)
@@ -251,7 +283,7 @@ let new_Type dp = mkType (new_univ dp)
 let new_Type_sort dp = Type (new_univ dp)
 
 let fresh_universe_instance ctx =
-  let init _ = new_univ_level (Global.current_dirpath ()) in
+  let init _ = new_univ_level () in
   Instance.of_array (Array.init (AUContext.size ctx) init)
 
 let fresh_instance_from_context ctx =
@@ -262,7 +294,7 @@ let fresh_instance_from_context ctx =
 let fresh_instance ctx =
   let ctx' = ref LSet.empty in
   let init _ =
-    let u = new_univ_level (Global.current_dirpath ()) in
+    let u = new_univ_level () in
     ctx' := LSet.add u !ctx'; u
   in
   let inst = Instance.of_array (Array.init (AUContext.size ctx) init)

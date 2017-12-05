@@ -192,6 +192,10 @@ module Level = struct
 
   let make m n = make (Level (n, Names.DirPath.hcons m))
 
+  let name u =
+    match data u with
+    | Level (n, d) -> Some (d, n)
+    | _ -> None
 end
 
 (** Level maps *)
@@ -337,19 +341,16 @@ struct
        returning [SuperSame] if they refer to the same level at potentially different
        increments or [SuperDiff] if they are different. The booleans indicate if the
        left expression is "smaller" than the right one in both cases. *)
-    let super (u,n as x) (v,n' as y) =
+    let super (u,n) (v,n') =
       let cmp = Level.compare u v in
 	if Int.equal cmp 0 then SuperSame (n < n')
 	else
-	  match x, y with
-	  | (l,0), (l',0) ->
-	     let open RawLevel in
-	     (match Level.data l, Level.data l' with
-	      | Prop, Prop -> SuperSame false
-	      | Prop, _ -> SuperSame true
-	      | _, Prop -> SuperSame false
-	      | _, _ -> SuperDiff cmp)
-	  | _, _ -> SuperDiff cmp
+          let open RawLevel in
+          match Level.data u, n, Level.data v, n' with
+          | Prop, _, Prop, _ -> SuperSame (n < n')
+          | Prop, 0, _, _ -> SuperSame true
+          | _, _, Prop, 0 -> SuperSame false
+          | _, _, _, _ -> SuperDiff cmp
 
     let to_string (v, n) =
       if Int.equal n 0 then Level.to_string v
@@ -499,6 +500,7 @@ struct
 
   let smartmap = List.smartmap
 
+  let map = List.map
 end
 
 type universe = Universe.t

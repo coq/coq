@@ -45,6 +45,8 @@ sig
   val var : int -> t
 
   val var_index : t -> int option
+
+  val name : t -> (Names.DirPath.t * int) option
 end
 
 type universe_level = Level.t
@@ -121,6 +123,8 @@ sig
 
   val exists : (Level.t * int -> bool) -> t -> bool
   val for_all : (Level.t * int -> bool) -> t -> bool
+
+  val map : (Level.t * int -> 'a) -> t -> 'a list
 end
 
 type universe = Universe.t

@@ -78,6 +78,12 @@ val push_modtype : visibility -> full_path -> ModPath.t -> unit
 val push_dir : visibility -> DirPath.t -> global_dir_reference -> unit
 val push_syndef : visibility -> full_path -> syndef_name -> unit
 
+type universe_id = DirPath.t * int
+
+module UnivIdMap : CMap.ExtS with type key = universe_id
+
+val push_universe : visibility -> full_path -> universe_id -> unit
+
 (** {6 The following functions perform globalization of qualified names } *)
 
 (** These functions globalize a (partially) qualified name or fail with
@@ -91,6 +97,7 @@ val locate_modtype : qualid -> ModPath.t
 val locate_dir : qualid -> global_dir_reference
 val locate_module : qualid -> ModPath.t
 val locate_section : qualid -> DirPath.t
+val locate_universe : qualid -> universe_id
 
 (** These functions globalize user-level references into global
    references, like [locate] and co, but raise a nice error message
@@ -119,6 +126,7 @@ val exists_modtype : full_path -> bool
 val exists_dir : DirPath.t -> bool
 val exists_section : DirPath.t -> bool (** deprecated synonym of [exists_dir] *)
 val exists_module : DirPath.t -> bool (** deprecated synonym of [exists_dir] *)
+val exists_universe : full_path -> bool
 
 (** {6 These functions locate qualids into full user names } *)
 
@@ -137,6 +145,10 @@ val path_of_syndef : syndef_name -> full_path
 val path_of_global : global_reference -> full_path
 val dirpath_of_module : ModPath.t -> DirPath.t
 val path_of_modtype : ModPath.t -> full_path
+
+(** A universe_id might not be registered with a corresponding user name.
+    @raise Not_found if the universe was not introduced by the user. *)
+val path_of_universe : universe_id -> full_path
 
 (** Returns in particular the dirpath or the basename of the full path
    associated to global reference *)
@@ -158,6 +170,7 @@ val shortest_qualid_of_global : Id.Set.t -> global_reference -> qualid
 val shortest_qualid_of_syndef : Id.Set.t -> syndef_name -> qualid
 val shortest_qualid_of_modtype : ModPath.t -> qualid
 val shortest_qualid_of_module : ModPath.t -> qualid
+val shortest_qualid_of_universe : universe_id -> qualid
 
 (** Deprecated synonyms *)
 

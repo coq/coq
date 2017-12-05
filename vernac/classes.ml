@@ -126,7 +126,7 @@ let declare_instance_constant k info global imps ?hook id decl poly evm term ter
   let cdecl = (DefinitionEntry entry, kind) in
   let kn = Declare.declare_constant id cdecl in
     Declare.definition_message id;
-    Universes.register_universe_binders (ConstRef kn) (Evd.universe_binders evm);
+    Declare.declare_univ_binders (ConstRef kn) (Evd.universe_binders evm);
     instance_hook k info global imps ?hook (ConstRef kn);
     id
 
@@ -208,7 +208,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
           (ParameterEntry
             (None,(termtype,univs),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
         in
-          Universes.register_universe_binders (ConstRef cst) (Evd.universe_binders !evars);
+          Declare.declare_univ_binders (ConstRef cst) (Evd.universe_binders !evars);
           instance_hook k pri global imps ?hook (ConstRef cst); id
       end
     else (

@@ -95,7 +95,7 @@ let interp_definition pl bl poly red_option c ctypopt =
   let impls, ((env_bl, ctx), imps1) = interp_context_evars env evdref bl in
   let ctx = List.map (fun d -> map_rel_decl EConstr.Unsafe.to_constr d) ctx in
   let nb_args = Context.Rel.nhyps ctx in
-  let imps,pl,ce =
+  let imps,ce =
     match ctypopt with
       None ->
         let subst = evd_comb0 Evd.nf_univ_variables evdref in
@@ -105,11 +105,10 @@ let interp_definition pl bl poly red_option c ctypopt =
 	let c = EConstr.Unsafe.to_constr c in
         let nf,subst = Evarutil.e_nf_evars_and_universes evdref in
         let body = nf (it_mkLambda_or_LetIn c ctx) in
-        let vars = Univops.universes_of_constr body in
-        let evd = Evd.restrict_universe_context !evdref vars in
-        let uctx = Evd.check_univ_decl ~poly evd decl in
-        let binders = Evd.universe_binders evd in
-        imps1@(Impargs.lift_implicits nb_args imps2), binders,
+        let vars = EConstr.universes_of_constr !evdref (EConstr.of_constr body) in
+        let () = evdref := Evd.restrict_universe_context !evdref vars in
+        let uctx = Evd.check_univ_decl ~poly !evdref decl in
+        imps1@(Impargs.lift_implicits nb_args imps2),
           definition_entry ~univs:uctx body
     | Some ctyp ->
         let ty, impsty = interp_type_evars_impls ~impls env_bl evdref ctyp in
@@ -131,23 +130,22 @@ let interp_definition pl bl poly red_option c ctypopt =
         in
 	if not (try List.for_all chk imps2 with Not_found -> false)
 	then warn_implicits_in_term ();
-        let vars = Univ.LSet.union (Univops.universes_of_constr body) 
-          (Univops.universes_of_constr typ) in
-        let ctx = Evd.restrict_universe_context !evdref vars in
-        let uctx = Evd.check_univ_decl ~poly ctx decl in
-        let binders = Evd.universe_binders evd in
-        imps1@(Impargs.lift_implicits nb_args impsty), binders,
-          definition_entry ~types:typ
-	    ~univs:uctx body
+        let bodyvars = EConstr.universes_of_constr !evdref (EConstr.of_constr body) in
+        let tyvars = EConstr.universes_of_constr !evdref (EConstr.of_constr ty) in
+        let vars = Univ.LSet.union bodyvars tyvars in
+        let () = evdref := Evd.restrict_universe_context !evdref vars in
+        let uctx = Evd.check_univ_decl ~poly !evdref decl in
+        imps1@(Impargs.lift_implicits nb_args impsty),
+          definition_entry ~types:typ ~univs:uctx body
   in
-  red_constant_entry (Context.Rel.length ctx) ce !evdref red_option, !evdref, decl, pl, imps
+  (red_constant_entry (Context.Rel.length ctx) ce !evdref red_option, !evdref, decl, imps)
 
-let check_definition (ce, evd, _, _, imps) =
+let check_definition (ce, evd, _, imps) =
   check_evars_are_solved (Global.env ()) evd Evd.empty;
   ce
 
 let do_definition ident k univdecl bl red_option c ctypopt hook =
-  let (ce, evd, univdecl, pl', imps as def) =
+  let (ce, evd, univdecl, imps as def) =
     interp_definition univdecl bl (pi2 k) red_option c ctypopt
   in
     if Flags.is_program_mode () then
@@ -168,7 +166,7 @@ let do_definition ident k univdecl bl red_option c ctypopt hook =
       ignore(Obligations.add_definition
           ident ~term:c cty ctx ~univdecl ~implicits:imps ~kind:k ~hook obls)
     else let ce = check_definition def in
-      ignore(DeclareDef.declare_definition ident k ce pl' imps
+      ignore(DeclareDef.declare_definition ident k ce (Evd.universe_binders evd) imps
         (Lemmas.mk_hook
           (fun l r -> Lemmas.call_hook (fun exn -> exn) hook l r;r)))
 
@@ -224,7 +222,7 @@ match local with
   let kn = declare_constant ident ~local decl in
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
-  let () = Universes.register_universe_binders gr pl in
+  let () = Declare.declare_univ_binders gr pl in
   let () = assumption_message ident in
   let () = if do_instance then Typeclasses.declare_instance None false gr in
   let () = if is_coe then Class.try_add_new_coercion gr ~local p in
@@ -712,7 +710,7 @@ let declare_mutual_inductive_with_eliminations mie pl impls =
 	      let ind = (mind,i) in
 	      let gr = IndRef ind in
 	      maybe_declare_manual_implicits false gr indimpls;
-	      Universes.register_universe_binders gr pl;
+              Declare.declare_univ_binders gr pl;
 	      List.iteri
 		(fun j impls ->
 		 maybe_declare_manual_implicits false
@@ -1268,7 +1266,7 @@ let collect_evars_of_term evd c ty =
   Evar.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evd ev))
   evars (Evd.from_ctx (Evd.evar_universe_context evd))
 
-let do_program_recursive local p fixkind fixl ntns =
+let do_program_recursive local poly fixkind fixl ntns =
   let isfix = fixkind != Obligations.IsCoFixpoint in
   let (env, rec_sign, pl, evd), fix, info = 
     interp_recursive isfix fixl ntns 
@@ -1310,8 +1308,8 @@ let do_program_recursive local p fixkind fixl ntns =
   end in
   let ctx = Evd.evar_universe_context evd in
   let kind = match fixkind with
-  | Obligations.IsFixpoint _ -> (local, p, Fixpoint)
-  | Obligations.IsCoFixpoint -> (local, p, CoFixpoint)
+  | Obligations.IsFixpoint _ -> (local, poly, Fixpoint)
+  | Obligations.IsCoFixpoint -> (local, poly, CoFixpoint)
   in
   Obligations.add_mutual_definitions defs ~kind ~univdecl:pl ctx ntns fixkind
 

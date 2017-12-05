@@ -1,6 +1,6 @@
 Set Universe Polymorphism.
 Set Printing Universes.
-Unset Strict Universe Declaration.
+(* Unset Strict Universe Declaration. *)
 
 (* universe binders on inductive types and record projections *)
 Inductive Empty@{u} : Type@{u} := .
@@ -25,14 +25,59 @@ Print wrap.
 Instance bar@{u} : Wrap@{u} Set. Proof. exact nat. Qed.
 Print bar.
 
+Unset Strict Universe Declaration.
 (* The universes in the binder come first, then the extra universes in
    order of appearance. *)
 Definition foo@{u +} := Type -> Type@{v} -> Type@{u}.
 Print foo.
+Set Strict Universe Declaration.
 
 (* Binders even work with monomorphic definitions! *)
 Monomorphic Definition mono@{u} := Type@{u}.
 Print mono.
+Check mono.
+Check Type@{mono.u}.
+
+Module mono.
+  Fail Monomorphic Universe u.
+  Monomorphic Universe MONOU.
+
+  Monomorphic Definition monomono := Type@{MONOU}.
+  Check monomono.
+End mono.
+Check mono.monomono. (* qualified MONOU *)
+Import mono.
+Check monomono. (* unqualified MONOU *)
+Check mono. (* still qualified mono.u *)
+
+Monomorphic Constraint Set < Top.mono.u.
+
+Module mono2.
+  Monomorphic Universe u.
+End mono2.
+
+Fail Monomorphic Definition mono2@{u} := Type@{u}.
+
+Module SecLet.
+  Unset Universe Polymorphism.
+  Section foo.
+    (* Fail Let foo@{} := Type@{u}. (* doesn't parse: Let foo@{...} doesn't exist *) *)
+    Unset Strict Universe Declaration.
+    Let tt : Type@{u} := Type@{v}. (* names disappear in the ether *)
+    Let ff : Type@{u}. Proof. exact Type@{v}. Qed. (* if Set Universe Polymorphism: universes are named ff.u and ff.v. Otherwise names disappear into space *)
+    Definition bobmorane := tt -> ff.
+  End foo.
+  Print bobmorane. (*
+                     bobmorane@{Top.15 Top.16 ff.u ff.v} =
+                     let tt := Type@{Top.16} in let ff := Type@{ff.v} in tt -> ff
+                     : Type@{max(Top.15,ff.u)}
+                     (* Top.15 Top.16 ff.u ff.v |= Top.16 < Top.15
+                     ff.v < ff.u
+                    *)
+
+                    bobmorane is universe polymorphic
+                    *)
+End SecLet.
 
 (* fun x x => foo is nonsense with local binders *)
 Fail Definition fo@{u u} := Type@{u}.
@@ -61,7 +106,7 @@ Monomorphic Universes gU gV. Monomorphic Constraint gU < gV.
 Fail Lemma foo@{u v|u < gU, gV < v, v < u} : nat.
 
 (* Universe binders survive through compilation, sections and modules. *)
-Require bind_univs.
+Require TestSuite.bind_univs.
 Print bind_univs.mono.
 Print bind_univs.poly.
 

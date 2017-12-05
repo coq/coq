@@ -36,7 +36,7 @@ let declare_global_definition ident ce local k pl imps =
   let kn = declare_constant ident ~local (DefinitionEntry ce, IsDefinition k) in
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
-  let () = Universes.register_universe_binders gr pl in
+  let () = Declare.declare_univ_binders gr pl in
   let () = definition_message ident in
   gr
 
@@ -49,6 +49,7 @@ let declare_definition ident (local, p, k) ce pl imps hook =
     let () = definition_message ident in
     let gr = VarRef ident in
     let () = maybe_declare_manual_implicits false gr imps in
+    let () = Declare.declare_univ_binders gr pl in
     let () = if Proof_global.there_are_pending_proofs () then
 	       warn_definition_not_visible ident
     in

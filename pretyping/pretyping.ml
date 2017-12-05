@@ -177,61 +177,77 @@ let _ =
 	    optwrite = (:=) Universes.set_minimization })
 
 (** Miscellaneous interpretation functions *)
-let interp_known_universe_level evd id =
-  try
-    let level = Evd.universe_of_name evd id in
-    level
-  with Not_found ->
-    let names, _ = Global.global_universe_names () in
-    snd (Id.Map.find id names)
 
-let interp_universe_level_name ~anon_rigidity evd (loc, s) =
-  match s with
-  | Anonymous ->
-     new_univ_level_variable ?loc anon_rigidity evd
-  | Name id ->
-     let s = Id.to_string id in
-     if CString.string_contains ~where:s ~what:"." then
-       match List.rev (CString.split '.' s) with
-       | [] -> anomaly (str"Invalid universe name " ++ str s ++ str".")
-       | n :: dp ->
-	  let num = int_of_string n in
-	  let dp = DirPath.make (List.map Id.of_string dp) in
-	  let level = Univ.Level.make dp num in
-	  let evd =
-	    try Evd.add_global_univ evd level
-	    with UGraph.AlreadyDeclared -> evd
-	  in evd, level
-     else
-       try evd, interp_known_universe_level evd id
-       with Not_found ->
-         if not (is_strict_universe_declarations ()) then
-           new_univ_level_variable ?loc ~name:id univ_rigid evd
-         else user_err ?loc ~hdr:"interp_universe_level_name"
-             (Pp.(str "Undeclared universe: " ++ str s))
+let interp_known_universe_level evd r =
+  let loc, qid = Libnames.qualid_of_reference r in
+  try
+    match r with
+    | Libnames.Ident (loc, id) -> Evd.universe_of_name evd id
+    | Libnames.Qualid _ -> raise Not_found
+  with Not_found ->
+    let univ, k = Nametab.locate_universe qid in
+    Univ.Level.make univ k
+
+let interp_universe_level_name ~anon_rigidity evd r =
+  try evd, interp_known_universe_level evd r
+  with Not_found ->
+    match r with (* Qualified generated name *)
+    | Libnames.Qualid (loc, qid) ->
+       let dp, i = Libnames.repr_qualid qid in
+       let num =
+         try int_of_string (Id.to_string i)
+         with Failure _ ->
+           user_err ?loc ~hdr:"interp_universe_level_name"
+                    (Pp.(str "Undeclared global universe: " ++ Libnames.pr_reference r))
+       in
+       let level = Univ.Level.make dp num in
+       let evd =
+         try Evd.add_global_univ evd level
+         with UGraph.AlreadyDeclared -> evd
+       in evd, level
+    | Libnames.Ident (loc, id) -> (* Undeclared *)
+        if not (is_strict_universe_declarations ()) then
+          new_univ_level_variable ?loc ~name:id univ_rigid evd
+        else user_err ?loc ~hdr:"interp_universe_level_name"
+                      (Pp.(str "Undeclared universe: " ++ Id.print id))
 
 let interp_universe ?loc evd = function
   | [] -> let evd, l = new_univ_level_variable ?loc univ_rigid evd in
 	    evd, Univ.Universe.make l
   | l ->
-    List.fold_left (fun (evd, u) l -> 
-        (* [univ_flexible_alg] can produce algebraic universes in terms *)
-        let evd', l = interp_universe_level_name ~anon_rigidity:univ_flexible evd l in
-	(evd', Univ.sup u (Univ.Universe.make l)))
+    List.fold_left (fun (evd, u) l ->
+      let evd', u' =
+        match l with
+        | Some (l,n) ->
+           (* [univ_flexible_alg] can produce algebraic universes in terms *)
+           let anon_rigidity = univ_flexible in
+           let evd', l = interp_universe_level_name ~anon_rigidity evd l in
+           let u' = Univ.Universe.make l in
+           (match n with
+            | 0 -> evd', u'
+            | 1 -> evd', Univ.Universe.super u'
+            | _ ->
+               user_err ?loc ~hdr:"interp_universe"
+                        (Pp.(str "Cannot interpret universe increment +" ++ int n)))
+        | None ->
+           let evd, l = new_univ_level_variable ?loc univ_flexible evd in
+           evd, Univ.Universe.make l
+      in (evd', Univ.sup u u'))
     (evd, Univ.Universe.type0m) l
 
 let interp_known_level_info ?loc evd = function
-  | None | Some (_, Anonymous) ->
+  | UUnknown | UAnonymous ->
     user_err ?loc ~hdr:"interp_known_level_info"
       (str "Anonymous universes not allowed here.")
-  | Some (loc, Name id) ->
-    try interp_known_universe_level evd id
+  | UNamed ref ->
+    try interp_known_universe_level evd ref
     with Not_found ->
-      user_err ?loc ~hdr:"interp_known_level_info" (str "Undeclared universe " ++ Id.print id)
+      user_err ?loc ~hdr:"interp_known_level_info" (str "Undeclared universe " ++ Libnames.pr_reference ref)
 
 let interp_level_info ?loc evd : Misctypes.level_info -> _ = function
-  | None -> new_univ_level_variable ?loc univ_rigid evd
-  | Some (loc,s) -> interp_universe_level_name ~anon_rigidity:univ_flexible evd (Loc.tag ?loc s)
+  | UUnknown -> new_univ_level_variable ?loc univ_rigid evd
+  | UAnonymous -> new_univ_level_variable ?loc univ_flexible evd
+  | UNamed s -> interp_universe_level_name ~anon_rigidity:univ_flexible evd s
 
 type inference_hook = env -> evar_map -> Evar.t -> evar_map * constr
 

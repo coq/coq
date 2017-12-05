@@ -414,15 +414,17 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
       let eqnl = detype_eqns constructs constagsl bl in
       GCases (tag,pred,[tomatch,(alias,aliastyp)],eqnl)
 
+let detype_universe sigma u =
+  let fn (l, n) = Some (Termops.reference_of_level sigma l, n) in
+  Univ.Universe.map fn u
+
 let detype_sort sigma = function
   | Prop Null -> GProp
   | Prop Pos -> GSet
   | Type u ->
     GType
       (if !print_universes
-       then
-         let u = Pp.string_of_ppcmds (Univ.Universe.pr_with (Termops.pr_evd_level sigma) u) in
-         [Loc.tag @@ Name.mk_name (Id.of_string_soft u)]
+       then detype_universe sigma u
        else [])
 
 type binder_kind = BProd | BLambda | BLetIn
@@ -434,8 +436,8 @@ let detype_anonymous = ref (fun ?loc n -> anomaly ~label:"detype" (Pp.str "index
 let set_detype_anonymous f = detype_anonymous := f
 
 let detype_level sigma l =
-  let l = Pp.string_of_ppcmds (Termops.pr_evd_level sigma l) in
-  GType (Some (Loc.tag @@ Name.mk_name (Id.of_string_soft l)))
+  let l = Termops.reference_of_level sigma l in
+  GType (UNamed l)
 
 let detype_instance sigma l = 
   let l = EInstance.kind sigma l in

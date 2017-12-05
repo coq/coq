@@ -37,18 +37,17 @@ val compact_the_proof : unit -> unit
     (i.e. an proof ending command) and registers the appropriate
     values. *)
 type lemma_possible_guards = int list list
-type proof_universes = UState.t * Universes.universe_binders option
 
 type proof_object = {
   id : Names.Id.t;
   entries : Safe_typing.private_constants Entries.definition_entry list;
   persistence : Decl_kinds.goal_kind;
-  universes: proof_universes;
+  universes: UState.t;
 }
 
 type proof_ending =
   | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry *
-		  proof_universes
+                UState.t
   | Proved of Vernacexpr.opacity_flag *
               Vernacexpr.lident option *
               proof_object

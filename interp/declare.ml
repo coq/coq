@@ -453,28 +453,95 @@ let input_universe_context : universe_context_decl -> Libobject.obj =
 let declare_universe_context poly ctx =
   Lib.add_anonymous_leaf (input_universe_context (poly, ctx))
 
-(* Discharged or not *)
-type universe_decl = polymorphic * Universes.universe_binders
+(** Global universes are not substitutive objects but global objects
+   bound at the *library* or *module* level. The polymorphic flag is
+   used to distinguish universes declared in polymorphic sections, which
+   are discharged and do not remain in scope. *)
 
-let cache_universes (p, l) =
-  let glob = Global.global_universe_names () in
-  let glob', ctx =
-    Id.Map.fold (fun id lev ((idl,lid),ctx) ->
-        ((Id.Map.add id (p, lev) idl,
-          Univ.LMap.add lev id lid),
-         Univ.ContextSet.add_universe lev ctx))
-      l (glob, Univ.ContextSet.empty)
+type universe_source =
+  | BoundUniv (* polymorphic universe, bound in a function (this will go away someday) *)
+  | QualifiedUniv of Id.t (* global universe introduced by some global value *)
+  | UnqualifiedUniv (* other global universe *)
+
+type universe_decl = universe_source * Nametab.universe_id
+
+let add_universe src (dp, i) =
+  let level = Univ.Level.make dp i in
+  let optpoly = match src with
+    | BoundUniv -> Some true
+    | UnqualifiedUniv -> Some false
+    | QualifiedUniv _ -> None
   in
-  cache_universe_context (p, ctx);
-  Global.set_global_universe_names glob'
+  Option.iter (fun poly ->
+      let ctx = Univ.ContextSet.add_universe level Univ.ContextSet.empty in
+      Global.push_context_set poly ctx;
+      Universes.add_global_universe level poly;
+      if poly then Lib.add_section_context ctx)
+    optpoly
 
-let input_universes : universe_decl -> Libobject.obj =
+let check_exists sp =
+  let depth = sections_depth () in
+  let sp = Libnames.make_path (pop_dirpath_n depth (dirpath sp)) (basename sp) in
+  if Nametab.exists_universe sp then
+    alreadydeclared (str "Universe " ++ Id.print (basename sp) ++ str " already exists")
+  else ()
+
+let qualify_univ src (sp,i as orig) =
+  match src with
+  | BoundUniv | UnqualifiedUniv -> orig
+  | QualifiedUniv l ->
+    let sp0, id = Libnames.repr_path sp in
+    let sp0 = DirPath.repr sp0 in
+    Libnames.make_path (DirPath.make (l::sp0)) id, i+1
+
+let cache_universe ((sp, _), (src, id)) =
+  let sp, i = qualify_univ src (sp,1) in
+  let () = check_exists sp in
+  let () = Nametab.push_universe (Nametab.Until i) sp id in
+    add_universe src id
+
+let load_universe i ((sp, _), (src, id)) =
+  let sp, i = qualify_univ src (sp,i) in
+  let () = Nametab.push_universe (Nametab.Until i) sp id in
+  add_universe src id
+
+let open_universe i ((sp, _), (src, id)) =
+  let sp, i = qualify_univ src (sp,i) in
+  let () = Nametab.push_universe (Nametab.Exactly i) sp id in
+  ()
+
+let discharge_universe = function
+  | _, (BoundUniv, _) -> None
+  | _, ((QualifiedUniv _ | UnqualifiedUniv), _ as x) -> Some x
+
+let input_universe : universe_decl -> Libobject.obj =
   declare_object
     { (default_object "Global universe name state") with
-      cache_function = (fun (na, pi) -> cache_universes pi);
-      load_function = (fun _ (_, pi) -> cache_universes pi);
-      discharge_function = (fun (_, (p, _ as x)) -> if p then None else Some x);
-      classify_function = (fun a -> Keep a) }
+      cache_function = cache_universe;
+      load_function = load_universe;
+      open_function = open_universe;
+      discharge_function = discharge_universe;
+      subst_function = (fun (subst, a) -> (** Actually the name is generated once and for all. *) a);
+      classify_function = (fun a -> Substitute a) }
+
+let declare_univ_binders gr pl =
+  if Global.is_polymorphic gr then
+    Universes.register_universe_binders gr pl
+  else
+    let l = match gr with
+      | ConstRef c -> Label.to_id @@ Constant.label c
+      | IndRef (c, _) -> Label.to_id @@ MutInd.label c
+      | VarRef id -> id
+      | ConstructRef _ ->
+        anomaly ~label:"declare_univ_binders"
+          Pp.(str "declare_univ_binders on an constructor reference")
+    in
+    Id.Map.iter (fun id lvl ->
+        match Univ.Level.name lvl with
+        | None -> ()
+        | Some na ->
+          ignore (Lib.add_leaf id (input_universe (QualifiedUniv l, na))))
+      pl
 
 let do_universe poly l =
   let in_section = Lib.sections_are_opened () in
@@ -484,11 +551,14 @@ let do_universe poly l =
                    (str"Cannot declare polymorphic universes outside sections")
   in
   let l =
-    List.fold_left (fun acc (l, id) ->
-	      let lev = Universes.new_univ_level (Global.current_dirpath ()) in
-              Id.Map.add id lev acc) Id.Map.empty l
+    List.map (fun (l, id) ->
+      let lev = Universes.new_univ_id () in
+      (id, lev)) l
   in
-    Lib.add_anonymous_leaf (input_universes (poly, l))
+  let src = if poly then BoundUniv else UnqualifiedUniv in
+  List.iter (fun (id,lev) ->
+      ignore(Lib.add_leaf id (input_universe (src, lev))))
+    l
 
 type constraint_decl = polymorphic * Univ.constraints
 
@@ -510,20 +580,15 @@ let input_constraints : constraint_decl -> Libobject.obj =
       discharge_function = discharge_constraints;
       classify_function = (fun a -> Keep a) }
 
+let loc_of_glob_level = function
+  | Misctypes.GType (Misctypes.UNamed n) -> Libnames.loc_of_reference n
+  | _ -> None
+
 let do_constraint poly l =
-  let open Misctypes in
   let u_of_id x =
-    match x with
-    | GProp -> Loc.tag (false, Univ.Level.prop)
-    | GSet  -> Loc.tag (false, Univ.Level.set)
-    | GType None | GType (Some (_, Anonymous)) ->
-       user_err ~hdr:"Constraint"
-                     (str "Cannot declare constraints on anonymous universes")
-    | GType (Some (loc, Name id)) ->
-       let names, _ = Global.global_universe_names () in
-       try loc, Id.Map.find id names
-       with Not_found ->
-         user_err ?loc ~hdr:"Constraint" (str "Undeclared universe " ++ Id.print id)
+    let level = Pretyping.interp_known_glob_level (Evd.from_env (Global.env ())) x in
+    let loc = loc_of_glob_level x in
+    loc, Universes.is_polymorphic level, level
   in
   let in_section = Lib.sections_are_opened () in
   let () =
@@ -541,7 +606,7 @@ let do_constraint poly l =
                     ++ str "Polymorphic Constraint instead")
   in
   let constraints = List.fold_left (fun acc (l, d, r) ->
-     let ploc, (p, lu) = u_of_id l and rloc, (p', ru) = u_of_id r in
+     let ploc, p, lu = u_of_id l and rloc, p', ru = u_of_id r in
      check_poly ?loc:ploc p rloc p';
      Univ.Constraint.add (lu, d, ru) acc)
     Univ.Constraint.empty l
