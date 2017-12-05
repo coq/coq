@@ -49,6 +49,8 @@ stdenv.mkDerivation rec {
     rsync
     which
 
+  ] else []) ++ (if lib.inNixShell then [
+    ocamlPackages.merlin
   ] else []);
 
   src =
