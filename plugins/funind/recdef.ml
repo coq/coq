@@ -141,7 +141,7 @@ let def_id = Id.of_string "def"
 let p_id = Id.of_string "p"
 let rec_res_id = Id.of_string "rec_res";;
 let lt = function () -> (coq_init_constant "lt")
-let le = function () -> (coq_init_constant "le")
+let le = function () -> (Coqlib.gen_reference_in_modules "RecursiveDefinition" Coqlib.init_modules "le")
 let ex = function () -> (coq_init_constant "ex")
 let nat = function () -> (coq_init_constant "nat")
 let iter_ref () =  
@@ -857,9 +857,13 @@ let rec prove_le g =
     Proofview.V82.of_tactic (apply (delayed_force le_n));
     begin
       try
-	let matching_fun = 
-	  pf_is_matching g
-	    (Pattern.PApp(Pattern.PRef (Globnames.global_of_constr (EConstr.Unsafe.to_constr (le ()))),[|Pattern.PVar (destVar sigma x);Pattern.PMeta None|])) in
+        let matching_fun c = match EConstr.kind sigma c with
+        | App (c, [| x0 ; _ |]) ->
+          EConstr.isVar sigma x0 &&
+          Id.equal (destVar sigma x0) (destVar sigma x) &&
+          is_global sigma (le ()) c
+        | _ -> false
+        in
 	let (h,t) = List.find (fun (_,t) -> matching_fun t) (pf_hyps_types g)
 	in 
 	let y = 
