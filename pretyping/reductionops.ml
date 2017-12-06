@@ -284,7 +284,6 @@ sig
   | Proj of int * int * projection * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Cst of cst_member * int * int list * 'a t * Cst_stack.t
-  | Shift of int
   | Update of 'a
   and 'a t = 'a member list
 
@@ -343,7 +342,6 @@ struct
   | Proj of int * int * projection * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Cst of cst_member * int * int list * 'a t * Cst_stack.t
-  | Shift of int
   | Update of 'a
   and 'a t = 'a member list
 
@@ -367,7 +365,6 @@ struct
       ++ pr_comma () ++
 	prlist_with_sep pr_semicolon int remains ++
 	pr_comma () ++ pr pr_c params ++ str ")"
-    | Shift i -> str "ZShift(" ++ int i ++ str ")"
     | Update t -> str "ZUpdate(" ++ pr_c t ++ str ")"
   and pr pr_c l =
     let open Pp in
@@ -415,8 +412,6 @@ struct
       match sk1,sk2 with
       | [],[] -> Some (lft1,lft2)
       | (Update _ :: _, _ | _, Update _ :: _) -> assert false
-      | Shift k :: s1, _ -> equal_rec  s1  (lft1+k)  sk2 lft2
-      | _, Shift k :: s2 -> equal_rec sk1 lft1 s2 (lft2+k)
       | App a1 :: s1, App a2 :: s2 ->
 	let t1,s1' = decomp_node_last a1 s1 in
 	let t2,s2' = decomp_node_last a2 s2 in
@@ -449,8 +444,8 @@ struct
     let rec compare_rec bal stk1 stk2 =
       match (stk1,stk2) with
 	([],[]) -> Int.equal bal 0
-      | ((Update _|Shift _)::s1, _) -> compare_rec bal s1 stk2
-      | (_, (Update _|Shift _)::s2) -> compare_rec bal stk1 s2
+      | ((Update _)::s1, _) -> compare_rec bal s1 stk2
+      | (_, (Update _)::s2) -> compare_rec bal stk1 s2
       | (App (i,_,j)::s1, _) -> compare_rec (bal + j + 1 - i) s1 stk2
       | (_, App (i,_,j)::s2) -> compare_rec (bal - j - 1 + i) stk1 s2
       | (Case(c1,_,_,_)::s1, Case(c2,_,_,_)::s2) ->
@@ -472,8 +467,6 @@ struct
       in
       match sk1,sk2 with
       | [], [] -> o,lft1,lft2
-      | Shift n :: q1, _ -> aux o (lft1+n) q1 lft2 sk2
-      | _, Shift n :: q2 -> aux o lft1 sk1 (lft2+n) q2
       | App n1 :: q1, App n2 :: q2 ->
 	 let t1,l1 = decomp_node_last n1 q1 in
 	 let t2,l2 = decomp_node_last n2 q2 in
@@ -499,7 +492,7 @@ struct
 
   let rec map f x = List.map (function
 			       | Update _ -> assert false
-			       | (Proj (_,_,_,_) | Shift _) as e -> e
+                               | (Proj (_,_,_,_)) as e -> e
 			       | App (i,a,j) ->
 				  let le = j - i + 1 in
 				  App (0,Array.map f (Array.sub a i le), le-1)
@@ -516,18 +509,16 @@ struct
 
   let rec args_size = function
     | App (i,_,j)::s -> j + 1 - i + args_size s
-    | Shift(_)::s -> args_size s
     | Update(_)::s -> args_size s
     | (Case _|Fix _|Proj _|Cst _)::_ | [] -> 0
 
   let strip_app s =
     let rec aux out = function
-      | ( App _ | Shift _ as e) :: s -> aux (e :: out) s
+      | ( App _ as e) :: s -> aux (e :: out) s
       | s -> List.rev out,s
     in aux [] s
   let strip_n_app n s =
     let rec aux n out = function
-      | Shift k as e :: s -> aux n (e :: out) s
       | App (i,a,j) as e :: s ->
 	 let nb = j  - i + 1 in
 	 if n >= nb then
@@ -555,8 +546,6 @@ struct
 	 let (k,(args',s')) = aux s in
 	 let a' = Array.map (Vars.lift k) (Array.sub a i (j - i + 1)) in
 	 k,(Array.fold_right (fun x y -> x::y) a' args', s')
-      | Shift n :: s ->
-	 let (k,(args',s')) = aux s in (k+n,(args', s'))
       | s -> (0,([],s)) in
     let (lft,(out,s')) = aux s in
     let init = match s' with [] when Int.equal lft 0 -> true | _ -> false in
@@ -568,20 +557,18 @@ struct
     | None -> assert false
 
   let tail n0 s0 =
-    let rec aux lft n s =
-      let out s = if Int.equal lft 0 then s else Shift lft :: s in
-      if Int.equal n 0 then out s else
+    let rec aux n s =
+      if Int.equal n 0 then s else
 	match s with
       | App (i,a,j) :: s ->
 	 let nb = j  - i + 1 in
 	 if n >= nb then
-	   aux lft (n - nb) s
+           aux (n - nb) s
 	 else
 	   let p = i+n in
 	   if j >= p then App(p,a,j)::s else s
-	| Shift k :: s' -> aux (lft+k) n s'
 	| _ -> raise (Invalid_argument "Reductionops.Stack.tail")
-    in aux 0 n0 s0
+    in aux n0 s0
 
   let nth s p =
     match strip_n_app p s with
@@ -627,7 +614,6 @@ struct
     zip (best_state sigma (constr_of_cst_member cst (params @ (append_app [|f|] s))) cst_l)
   | f, (Cst (cst,_,_,params,_)::s) ->
     zip (constr_of_cst_member cst (params @ (append_app [|f|] s)))
-  | f, (Shift n::s) -> zip (lift n f, s)
   | f, (Proj (n,m,p,cst_l)::s) when refold ->
     zip (best_state sigma (mkProj (p,f),s) cst_l)
   | f, (Proj (n,m,p,_)::s) -> zip (mkProj (p,f),s)
@@ -1074,7 +1060,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
 		(arg,
 		 Stack.Cst (const,next,remains',s' @ (Stack.append_app [|x'|] bef),cst_l) :: s''')
 	  end
-	|_, (Stack.App _|Stack.Update _|Stack.Shift _)::_ -> assert false
+        |_, (Stack.App _|Stack.Update _)::_ -> assert false
 	|_, _ -> fold ()
       else fold ()
 
@@ -1155,7 +1141,7 @@ let local_whd_state_gen flags sigma =
 	|args, (Stack.Fix (f,s',cst)::s'') when use_fix ->
 	  let x' = Stack.zip sigma (x,args) in
 	  whrec (contract_fix sigma f, s' @ (Stack.append_app [|x'|] s''))
-	|_, (Stack.App _|Stack.Update _|Stack.Shift _|Stack.Cst _)::_ -> assert false
+        |_, (Stack.App _|Stack.Update _|Stack.Cst _)::_ -> assert false
 	|_, _ -> s
       else s
 
@@ -1685,7 +1671,7 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma csts s =
 	if isConstruct sigma t_o then
 	  whrec Cst_stack.empty (Stack.nth stack_o (n+m), stack'')
 	else s,csts'
-      |_, ((Stack.App _| Stack.Shift _|Stack.Update _|Stack.Cst _) :: _|[]) -> s,csts'
+      |_, ((Stack.App _|Stack.Update _|Stack.Cst _) :: _|[]) -> s,csts'
   in whrec csts s
 
 let find_conclusion env sigma =

@@ -82,7 +82,6 @@ module Stack : sig
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Cst of cst_member * int (** current foccussed arg *) * int list (** remaining args *)
     * 'a t * Cst_stack.t
-  | Shift of int
   | Update of 'a
   and 'a t = 'a member list
 
@@ -107,7 +106,7 @@ module Stack : sig
   val append_app_list : 'a list -> 'a t -> 'a t
 
   (** if [strip_app s] = [(a,b)], then [s = a @ b] and [b] does not
-      start by App or Shift *)
+      start by App *)
   val strip_app : 'a t -> 'a t * 'a t
   (** @return (the nth first elements, the (n+1)th element, the remaining stack)  *)
   val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
