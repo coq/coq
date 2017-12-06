@@ -32,6 +32,8 @@ If your pull request fixes a bug, please consider adding a regression test as we
 
 Don't be alarmed if the pull request process takes some time. It can take a few days to get feedback, approval on the final changes, and then a merge. Coq doesn't release new versions very frequently so it can take a few months for your change to land in a released version. That said, you can start using the latest Coq `master` branch to take advantage of all the new features, improvements, and fixes.
 
+Whitespace discipline (do not indent using tabs, no trailing spaces) is checked by Travis (using `git diff --check`). You can ensure that your commits do not introduce errors by adding the [`dev/tools/pre-commit`](/dev/tools/pre-commit) script to your `.git/hooks/` directory. Travis also enforces that text files end in newlines, but the script does not help with this.
+
 Here are a few tags Coq developers may add to your PR and what they mean. In general feedback and requests for you as the pull request author will be in the comments and tags are only used to organize pull requests.
 
 - [needs: rebase](https://github.com/coq/coq/pulls?utf8=%E2%9C%93&q=is%3Aopen%20is%3Apr%20label%3A%22needs%3A%20rebase%22%20) indicates the PR should be rebased on top of the latest `master` branch. See the [GitHub documentation](https://help.github.com/articles/about-git-rebase/) for a brief introduction to using `git rebase`.
