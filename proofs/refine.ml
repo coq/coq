@@ -78,8 +78,7 @@ let generic_refine ~typecheck f gl =
   let state = Proofview.Goal.state gl in
   (** Save the [future_goals] state to restore them after the
       refinement. *)
-  let prev_future_goals = Evd.future_goals sigma in
-  let prev_principal_goal = Evd.principal_future_goal sigma in
+  let prev_future_goals = Evd.save_future_goals sigma in
   (** Create the refinement term *)
   Proofview.Unsafe.tclEVARS (Evd.reset_future_goals sigma) >>= fun () ->
   f >>= fun (v, c) ->
@@ -119,7 +118,7 @@ let generic_refine ~typecheck f gl =
         | Some id -> Evd.rename evk id sigma
   in
   (** Restore the [future goals] state. *)
-  let sigma = Evd.restore_future_goals sigma (prev_future_goals,prev_principal_goal) in
+  let sigma = Evd.restore_future_goals sigma prev_future_goals in
   (** Select the goals *)
   let comb = CList.map_filter (Proofview.Unsafe.advance sigma) (CList.rev evs) in
   let sigma = CList.fold_left Proofview.Unsafe.mark_as_goal sigma comb in
