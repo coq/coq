@@ -82,7 +82,6 @@ module Stack : sig
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Cst of cst_member * int (** current foccussed arg *) * int list (** remaining args *)
     * 'a t * Cst_stack.t
-  | Update of 'a
   and 'a t = 'a member list
 
   val pr : ('a -> Pp.t) -> 'a t -> Pp.t

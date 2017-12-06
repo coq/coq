@@ -310,7 +310,6 @@ let ise_stack2 no_app env evd f sk1 sk2 =
         | Success i' -> ise_stack2 true i' q1 q2
         | UnifFailure _ as x -> fail x
       else fail (UnifFailure (i,NotSameHead))
-    | Stack.Update _ :: _, _ | _, Stack.Update _ :: _ -> assert false
     | Stack.App _ :: _, Stack.App _ :: _ ->
        if no_app && deep then fail ((*dummy*)UnifFailure(i,NotSameHead)) else
 	 begin match ise_app_stack2 env f i sk1 sk2 with
@@ -343,7 +342,6 @@ let exact_ise_stack2 env evd f sk1 sk2 =
        if Constant.equal (Projection.constant p1) (Projection.constant p2)
        then ise_stack2 i q1 q2
        else (UnifFailure (i, NotSameHead))
-    | Stack.Update _ :: _, _ | _, Stack.Update _ :: _-> assert false
     | Stack.App _ :: _, Stack.App _ :: _ ->
 	 begin match ise_app_stack2 env f i sk1 sk2 with
 	       |_,(UnifFailure _ as x) -> x
