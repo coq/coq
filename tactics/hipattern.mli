@@ -144,9 +144,6 @@ val is_matching_sigma : Environ.env -> evar_map -> constr -> bool
    [t,u,T] and a boolean telling if equality is on the left side *)
 val match_eqdec : Environ.env -> evar_map -> constr -> bool * Globnames.global_reference * constr * constr * constr
 
-(** Match an equality up to conversion; returns [(eq,t1,t2)] in normal form *)
-val dest_nf_eq : 'a Proofview.Goal.t -> constr -> (constr * constr * constr)
-
 (** Match a negation *)
 val is_matching_not : Environ.env -> evar_map -> constr -> bool
 val is_matching_imp_False : Environ.env -> evar_map -> constr -> bool
