@@ -946,7 +946,7 @@ let principal_future_goal evd = evd.principal_future_goal
 let reset_future_goals evd =
   { evd with future_goals = [] ; principal_future_goal=None }
 
-let restore_future_goals evd gls pgl =
+let restore_future_goals evd (gls,pgl) =
   { evd with future_goals = gls ; principal_future_goal = pgl }
 
 (**********************************************************)

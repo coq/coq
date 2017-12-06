@@ -303,7 +303,7 @@ val reset_future_goals : evar_map -> evar_map
 (** Clears the list of future goals (as well as the principal future
     goal). Used by the [refine] primitive of the tactic engine. *)
 
-val restore_future_goals : evar_map -> Evar.t list -> Evar.t option -> evar_map
+val restore_future_goals : evar_map -> Evar.t list * Evar.t option -> evar_map
 (** Sets the future goals (including the principal future goal) to a
     previous value. Intended to be used after a local list of future
     goals has been consumed. Used by the [refine] primitive of the

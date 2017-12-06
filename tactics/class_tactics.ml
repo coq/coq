@@ -983,7 +983,7 @@ module Search = struct
                           (str "leaking evar " ++ int (Evar.repr ev) ++
                              spc () ++ pr_ev evm' ev);
                       acc && okev) evm' true);
-           let evm' = Evd.restore_future_goals evm' (shelved @ fgoals) pgoal in
+           let evm' = Evd.restore_future_goals evm' (shelved @ fgoals, pgoal) in
            let evm' = evars_reset_evd ~with_conv_pbs:true ~with_univs:false evm' evm in
            Some evm'
          else raise Not_found
