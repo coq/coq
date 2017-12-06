@@ -84,15 +84,14 @@ let generic_refine ~typecheck f gl =
   f >>= fun (v, c) ->
   Proofview.tclEVARMAP >>= fun sigma ->
   Proofview.V82.wrap_exceptions begin fun () ->
-  let evs = Evd.future_goals sigma in
-  let evkmain = Evd.principal_future_goal sigma in
+  let evs = Evd.save_future_goals sigma in
   (** Redo the effects in sigma in the monad's env *)
   let privates_csts = Evd.eval_side_effects sigma in
   let sideff = Safe_typing.side_effects_of_private_constants privates_csts in
   let env = add_side_effects env sideff in
   (** Check that the introduced evars are well-typed *)
   let fold accu ev = typecheck_evar ev env accu in
-  let sigma = if typecheck then CList.fold_left fold sigma evs else sigma in
+  let sigma = if typecheck then Evd.fold_future_goals fold sigma evs else sigma in
   (** Check that the refined term is typesafe *)
   let sigma = if typecheck then typecheck_proof c concl env sigma else sigma in
   (** Check that the goal itself does not appear in the refined term *)
@@ -101,6 +100,11 @@ let generic_refine ~typecheck f gl =
     if not (Evarutil.occur_evar_upto sigma self c) then ()
     else Pretype_errors.error_occur_check env sigma self c
   in
+  (** Restore the [future goals] state. *)
+  let sigma = Evd.restore_future_goals sigma prev_future_goals in
+  (** Select the goals *)
+  let evs = Evd.map_filter_future_goals (Proofview.Unsafe.advance sigma) evs in
+  let comb,shelf,given_up,evkmain = Evd.dispatch_future_goals evs in
   (** Proceed to the refinement *)
   let c = EConstr.Unsafe.to_constr c in
   let sigma = match Proofview.Unsafe.advance sigma self with
@@ -117,10 +121,7 @@ let generic_refine ~typecheck f gl =
         | None -> sigma
         | Some id -> Evd.rename evk id sigma
   in
-  (** Restore the [future goals] state. *)
-  let sigma = Evd.restore_future_goals sigma prev_future_goals in
-  (** Select the goals *)
-  let comb = CList.map_filter (Proofview.Unsafe.advance sigma) (CList.rev evs) in
+  (** Mark goals *)
   let sigma = CList.fold_left Proofview.Unsafe.mark_as_goal sigma comb in
   let comb = CList.map (fun x -> Proofview.goal_with_state x state) comb in
   let trace () = Pp.(hov 2 (str"simple refine"++spc()++ Hook.get pr_constrv env sigma c)) in
@@ -128,6 +129,8 @@ let generic_refine ~typecheck f gl =
   Proofview.Unsafe.tclSETENV (Environ.reset_context env) <*>
   Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.Unsafe.tclSETGOALS comb <*>
+  Proofview.Unsafe.tclPUTSHELF shelf <*>
+  Proofview.Unsafe.tclPUTGIVENUP given_up <*>
   Proofview.tclUNIT v
   end
 
