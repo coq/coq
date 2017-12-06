@@ -299,6 +299,10 @@ val principal_future_goal : evar_map -> Evar.t option
 (** Retrieves the name of the principal existential variable if there
     is one. Used by the [refine] primitive of the tactic engine. *)
 
+val save_future_goals : evar_map -> Evar.t list * Evar.t option
+(** Retrieves the list of future goals including the principal future
+    goal. Used by the [refine] primitive of the tactic engine. *)
+
 val reset_future_goals : evar_map -> evar_map
 (** Clears the list of future goals (as well as the principal future
     goal). Used by the [refine] primitive of the tactic engine. *)

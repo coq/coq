@@ -943,6 +943,8 @@ let future_goals evd = evd.future_goals
 
 let principal_future_goal evd = evd.principal_future_goal
 
+let save_future_goals evd = (evd.future_goals, evd.principal_future_goal)
+
 let reset_future_goals evd =
   { evd with future_goals = [] ; principal_future_goal=None }
 
