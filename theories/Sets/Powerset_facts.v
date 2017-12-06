@@ -40,6 +40,11 @@ Section Sets_as_an_algebra.
     auto 6 with sets.
   Qed.
 
+  Theorem Empty_set_zero_right : forall X:Ensemble U, Union U X (Empty_set U) = X.
+  Proof.
+    auto 6 with sets.
+  Qed.
+
   Theorem Empty_set_zero' : forall x:U, Add U (Empty_set U) x = Singleton U x.
   Proof.
     unfold Add at 1; auto using Empty_set_zero with sets.
@@ -129,6 +134,17 @@ Section Sets_as_an_algebra.
     intros x0 H'0 H'1; generalize H'0.
     elim H'1; auto with sets.
     elim H'; intros x0 H'0; elim H'0; auto with sets.
+  Qed.
+
+  Lemma Distributivity_l
+       : forall (A B C : Ensemble U),
+         Intersection U (Union U A B) C =
+         Union U (Intersection U A C) (Intersection U B C).
+  Proof.
+     intros  A B C.
+     rewrite Intersection_commutative.
+     rewrite Distributivity.
+     f_equal; apply Intersection_commutative.
   Qed.
 
   Theorem Distributivity' :
@@ -249,6 +265,81 @@ Section Sets_as_an_algebra.
       covers (Ensemble U) (Power_set_PO U A) y x.
   Proof.
     intros; apply Definition_of_covers; auto with sets.
+  Qed.
+
+  Lemma Disjoint_Intersection:
+    forall A s1 s2, Disjoint A s1 s2 -> Intersection A s1 s2 = Empty_set A.
+  Proof.
+    intros. apply Extensionality_Ensembles. split.
+    * destruct H.
+      intros x H1. unfold In in *. exfalso. intuition. apply (H _ H1).
+    * intuition.
+  Qed.
+
+  Lemma Intersection_Empty_set_l:
+    forall A s, Intersection A (Empty_set A) s = Empty_set A.
+  Proof.
+    intros. auto with sets.
+  Qed.
+
+  Lemma Intersection_Empty_set_r:
+    forall A s, Intersection A s (Empty_set A) = Empty_set A.
+  Proof.
+    intros. auto with sets.
+  Qed.
+
+  Lemma Seminus_Empty_set_l:
+    forall A s, Setminus A (Empty_set A) s = Empty_set A.
+  Proof.
+    intros. apply Extensionality_Ensembles. split.
+    * intros x H1. destruct H1. unfold In in *. assumption.
+    * intuition.
+  Qed.
+
+  Lemma Seminus_Empty_set_r:
+    forall A s, Setminus A s (Empty_set A) = s.
+  Proof.
+    intros. apply Extensionality_Ensembles. split.
+    * intros x H1. destruct H1. unfold In in *. assumption.
+    * intuition.
+  Qed.
+
+  Lemma Setminus_Union_l:
+    forall A s1 s2 s3,
+    Setminus A (Union A s1 s2) s3 = Union A (Setminus A s1 s3)  (Setminus A s2 s3).
+  Proof.
+    intros. apply Extensionality_Ensembles. split.
+    * intros x H. inversion H. inversion H0; intuition.
+    * intros x H. constructor; inversion H; inversion H0; intuition.
+  Qed.
+
+  Lemma Setminus_Union_r:
+    forall A s1 s2 s3,
+    Setminus A s1 (Union A s2 s3) = Setminus A (Setminus A s1 s2) s3.
+  Proof.
+    intros. apply Extensionality_Ensembles. split.
+    * intros x H. inversion H. constructor. intuition. contradict H1. intuition.
+    * intros x H. inversion H. inversion H0. constructor; intuition. inversion H4; intuition.
+  Qed.
+
+ Lemma Setminus_Disjoint_noop:
+    forall A s1 s2,
+    Intersection A s1 s2 = Empty_set A -> Setminus A s1 s2 = s1.
+  Proof.
+    intros. apply Extensionality_Ensembles. split.
+    * intros x H1. inversion_clear H1. intuition.
+    * intros x H1. constructor; intuition. contradict H.
+      apply Inhabited_not_empty.
+      exists x. intuition.
+  Qed.
+
+  Lemma Setminus_Included_empty:
+    forall A s1 s2,
+    Included A s1 s2 -> Setminus A s1 s2 = Empty_set A.
+  Proof.
+    intros. apply Extensionality_Ensembles. split.
+      * intros x H1. inversion_clear H1. contradiction H2. intuition.
+      * intuition.
   Qed.
 
 End Sets_as_an_algebra.
