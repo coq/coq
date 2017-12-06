@@ -11,6 +11,13 @@ CODE=0
 
 if [ "(" "-n" "${TRAVIS_PULL_REQUEST}" ")" "-a" "(" "${TRAVIS_PULL_REQUEST}" "!=" "false" ")" ];
 then
+    # skip PRs from before the linter existed
+    if [ -z "$(git ls-tree --name-only "${TRAVIS_PULL_REQUEST_SHA}" dev/lint-commits.sh)" ];
+    then
+        2>&1 echo "Linting skipped: pull request older than the linter."
+        exit 0
+    fi
+
     # Some problems are too widespread to fix in one commit, but we
     # can still check that they don't worsen.
     CUR_HEAD=${TRAVIS_COMMIT_RANGE%%...*}
