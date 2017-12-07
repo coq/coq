@@ -115,7 +115,8 @@
 ########################################################################
 # CoLoR
 ########################################################################
-: ${Color_CI_SVNURL:=https://scm.gforge.inria.fr/anonscm/svn/color/trunk/color}
+: ${CoLoR_CI_BRANCH:=master}
+: ${CoLoR_CI_GITURL:=https://github.com/fblanqui/color.git}
 
 ########################################################################
 # SF
