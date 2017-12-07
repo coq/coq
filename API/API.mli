@@ -4964,8 +4964,6 @@ sig
 
   val pf_conv_x : Goal.goal Evd.sigma -> EConstr.constr -> EConstr.constr -> bool
 
-  val pf_is_matching : Goal.goal Evd.sigma -> Pattern.constr_pattern -> EConstr.constr -> bool
-
   val pf_hyps_types : Goal.goal Evd.sigma -> (Names.Id.t * EConstr.types) list
 
   val pr_gls    : Goal.goal Evd.sigma -> Pp.t

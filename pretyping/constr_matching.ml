@@ -13,7 +13,6 @@ open Util
 open Names
 open Globnames
 open Termops
-open Reductionops
 open Term
 open EConstr
 open Vars
@@ -207,7 +206,7 @@ let merge_binding sigma allow_bound_rels ctx n cT subst =
   in
   constrain sigma n c subst
       
-let matches_core env sigma convert allow_partial_app allow_bound_rels
+let matches_core env sigma allow_partial_app allow_bound_rels
     (binding_vars,pat) c =
   let open EConstr in
   let convref ref c = 
@@ -216,11 +215,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
     | ConstRef c, Const (c',_) -> Constant.equal c c'
     | IndRef i, Ind (i', _) -> Names.eq_ind i i'
     | ConstructRef c, Construct (c',u) -> Names.eq_constructor c c'
-    | _, _ -> 
-      (if convert then 
-	  let sigma,c' = Evd.fresh_global env sigma ref in
-	    is_conv env sigma (EConstr.of_constr c') c
-       else false)
+    | _, _ -> false
   in
   let rec sorec ctx env subst p t =
     let cT = strip_outer_cast sigma t in
@@ -378,14 +373,14 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
   in
   sorec [] env (Id.Map.empty, Id.Map.empty) pat c
 
-let matches_core_closed env sigma convert allow_partial_app pat c =
-  let names, subst = matches_core env sigma convert allow_partial_app false pat c in
+let matches_core_closed env sigma allow_partial_app pat c =
+  let names, subst = matches_core env sigma allow_partial_app false pat c in
   (names, Id.Map.map snd subst)
 
-let extended_matches env sigma = matches_core env sigma false true true
+let extended_matches env sigma = matches_core env sigma true true
 
 let matches env sigma pat c =
-  snd (matches_core_closed env sigma false true (Id.Set.empty,pat) c)
+  snd (matches_core_closed env sigma true (Id.Set.empty,pat) c)
 
 let special_meta = (-1)
 
@@ -412,7 +407,7 @@ let matches_head env sigma pat c =
 (* Tells if it is an authorized occurrence and if the instance is closed *)
 let authorized_occ env sigma partial_app closed pat c mk_ctx =
   try
-    let subst = matches_core_closed env sigma false partial_app pat c in
+    let subst = matches_core_closed env sigma partial_app pat c in
     if closed && Id.Map.exists (fun _ c -> not (closed0 sigma c)) (snd subst)
     then (fun next -> next ())
     else (fun next -> mkresult subst (mk_ctx (mkMeta special_meta)) next)
@@ -552,10 +547,3 @@ let is_matching_appsubterm ?(closed=true) env sigma pat c =
   let pat = (Id.Set.empty,pat) in
   let results = sub_match ~partial_app:true ~closed env sigma pat c in
   not (IStream.is_empty results)
-
-let matches_conv env sigma p c =
-  snd (matches_core_closed env sigma true false (Id.Set.empty,p) c)
-
-let is_matching_conv env sigma pat n =
-  try let _ = matches_conv env sigma pat n in true
-  with PatternMatchingFailure -> false
