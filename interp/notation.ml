@@ -526,15 +526,38 @@ let interp_notation ?loc ntn local_scopes =
     user_err ?loc 
     (str "Unknown interpretation for notation \"" ++ str ntn ++ str "\".")
 
-let uninterp_notations c =
-  List.map_append (fun key -> keymap_find key !notations_key_table)
-    (glob_constr_keys c)
+let sort_notations scopes l =
+  let extract_scope l = function
+    | Scope sc -> List.partitioni (fun _i x ->
+                      match x with
+                      | NotationRule (Some sc',_),_,_ -> String.equal sc sc'
+                      | _ -> false) l
+    | SingleNotation ntn -> List.partitioni (fun _i x ->
+                      match x with
+                      | NotationRule (None,ntn'),_,_ -> String.equal ntn ntn'
+                      | _ -> false) l in
+  let rec aux l scopes =
+    if l == [] then [] (* shortcut *) else
+    match scopes with
+    | sc :: scopes -> let ntn_in_sc,l = extract_scope l sc in ntn_in_sc @ aux l scopes
+    | [] -> l in
+  aux l scopes
 
-let uninterp_cases_pattern_notations c =
-  keymap_find (cases_pattern_key c) !notations_key_table
+let uninterp_notations scopes c =
+  let scopes = make_current_scopes scopes in
+  let keys = glob_constr_keys c in
+  let maps = List.map_append (fun key -> keymap_find key !notations_key_table) keys in
+  sort_notations scopes maps
 
-let uninterp_ind_pattern_notations ind =
-  keymap_find (RefKey (canonical_gr (IndRef ind))) !notations_key_table
+let uninterp_cases_pattern_notations scopes c =
+  let scopes = make_current_scopes scopes in
+  let maps = keymap_find (cases_pattern_key c) !notations_key_table in
+  sort_notations scopes maps
+
+let uninterp_ind_pattern_notations scopes ind =
+  let scopes = make_current_scopes scopes in
+  let maps = keymap_find (RefKey (canonical_gr (IndRef ind))) !notations_key_table in
+  sort_notations scopes maps
 
 let availability_of_notation (ntn_scope,ntn) scopes =
   let f scope =

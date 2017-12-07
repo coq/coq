@@ -7,6 +7,10 @@ Notations
   right (e.g. "( x ; .. ; y ; z )") now supported.
 - Notations with a specific level for the leftmost nonterminal,
   when printing-only, are supported.
+- When several notations are available for the same expression,
+  priority is given to latest notations defined in the scopes being
+  opened rather than to the latest notations defined independently of
+  whether they are in an opened scope or not.
 
 Tactics
 

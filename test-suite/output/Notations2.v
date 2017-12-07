@@ -70,6 +70,7 @@ Check let' f x y (a:=0) z (b:bool) := x+y+z+1 in f 0 1 2.
 (* Note: does not work for pattern *)
 Module A.
 Notation "f ( x )" := (f x) (at level 10, format "f ( x )").
+Open Scope nat_scope.
 Check fun f x => f x + S x.
 
 Open Scope list_scope.

@@ -64,7 +64,7 @@ The command has indeed failed with message:
 Cannot find where the recursive pattern starts.
 The command has indeed failed with message:
 Both ends of the recursive pattern are the same.
-SUM (nat * nat) nat
+(nat * nat + nat)%type
      : Set
 FST (0; 1)
      : Z
@@ -72,7 +72,7 @@ Nil
      : forall A : Type, list A
 NIL : list nat
      : list nat
-(false && I 3)%bool /\ I 6
+(false && I 3)%bool /\ (I 6)%bool
      : Prop
 [|1, 2, 3; 4, 5, 6|]
      : Z * Z * Z * (Z * Z * Z)
