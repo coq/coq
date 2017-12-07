@@ -7,6 +7,10 @@ math_classes_CI_DIR=${CI_BUILD_DIR}/math-classes
 
 Corn_CI_DIR=${CI_BUILD_DIR}/corn
 
+# Setup Bignums
+
+source ${ci_dir}/ci-bignums.sh
+
 # Setup Math-Classes
 
 git_checkout ${math_classes_CI_BRANCH} ${math_classes_CI_GITURL} ${math_classes_CI_DIR}
