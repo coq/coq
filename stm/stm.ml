@@ -1106,7 +1106,7 @@ end = struct (* {{{ *)
           VtStm (VtBack oid, true), VtLater
       | VernacBacktrack (id,_,_)
       | VernacBackTo id ->
-          VtStm (VtBack (Stateid.of_int id), not !Flags.batch_mode), VtNow
+          VtStm (VtBack (Stateid.of_int id), !Flags.batch_mode), VtNow
       | _ -> VtUnknown, VtNow
     with
     | Not_found ->
