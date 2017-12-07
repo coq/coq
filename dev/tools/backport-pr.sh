@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Usage: git-backport <PR number>
+# Usage: dev/tools/backport-pr.sh <PR number>
 
 set -e
 
