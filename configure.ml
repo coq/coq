@@ -183,14 +183,14 @@ let program_in_path prog =
     Chooses the first one whose execution outputs a non-empty (first) line.
     Dies with message [msg] if none is found. *)
 
-let select_command msg canditates =
+let select_command msg candidates =
   let rec search = function
     | [] -> die msg
     | (p, x, y) :: tl ->
       if fst (tryrun p (x @ y)) <> ""
       then List.fold_left (Printf.sprintf "%s %s") p x
       else search tl
-  in search canditates
+  in search candidates
 
 (** As per bug #4828, ocamlfind on Windows/Cygwin barfs if you pass it
     a quoted path to camlpXo via -pp.  So we only quote camlpXo on not
