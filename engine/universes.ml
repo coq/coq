@@ -491,7 +491,7 @@ module LevelUnionFind = Unionfind.Make (Univ.LSet) (Univ.LMap)
 let add_list_map u t map =
   try
     let l = LMap.find u map in
-    LMap.update u (t :: l) map
+    LMap.set u (t :: l) map
   with Not_found ->
     LMap.add u [t] map
 
@@ -584,7 +584,7 @@ let normalize_univ_variable_subst subst =
   let find l = Univ.LMap.find l !subst in
   let update l b =
     assert (match Universe.level b with Some l' -> not (Level.equal l l') | None -> true);
-    try subst := Univ.LMap.update l b !subst; b with Not_found -> assert false in
+    try subst := Univ.LMap.set l b !subst; b with Not_found -> assert false in
     normalize_univ_variable ~find ~update
 
 let normalize_universe_opt_subst subst =
