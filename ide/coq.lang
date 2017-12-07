@@ -182,7 +182,6 @@
           <keyword>Add</keyword>
           <keyword>Load</keyword>
           <keyword>(Print|Reset)\%{space}+Extraction\%{space}+(Inline|Blacklist)</keyword>
-          <keyword>Comments</keyword>
           <keyword>Solve\%{space}Obligation</keyword>
           <keyword>(Uns|S)et(\%{space}\%{ident})+</keyword>
           <keyword>(\%{locality}|(Reserved|Tactic)\%{space})?Notation</keyword>
