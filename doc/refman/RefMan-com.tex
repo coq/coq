@@ -331,9 +331,12 @@ code, it cannot be guaranteed that the produced compiled libraries are
 correct. {\tt coqchk} is a standalone verifier, and thus it cannot be
 tainted by such malicious code.
 
-Command-line options {\tt -I}, {\tt -R}, {\tt -where} and
+Command-line options {\tt -Q}, {\tt -R}, {\tt -where} and
 {\tt -impredicative-set} are supported by {\tt coqchk} and have the
-same meaning as for {\tt coqtop}. Extra options are:
+same meaning as for {\tt coqtop}. As there is no notion of relative paths in
+object files {\tt -Q} and {\tt -R} have exactly the same meaning.
+
+Extra options are:
 \begin{description}
 \item[{\tt -norec} {\em module}]\ %
 
