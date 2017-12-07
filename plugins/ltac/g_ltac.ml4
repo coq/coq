@@ -242,12 +242,11 @@ GEXTEND Gram
   match_pattern:
     [ [ IDENT "context";  oid = OPT Constr.ident;
           "["; pc = Constr.lconstr_pattern; "]" ->
-        let mode = not (!Flags.tactic_context_compat) in
-        Subterm (mode, oid, pc)
+        Subterm (oid, pc)
       | IDENT "appcontext";  oid = OPT Constr.ident;
           "["; pc = Constr.lconstr_pattern; "]" ->
         warn_deprecated_appcontext ~loc:!@loc ();
-        Subterm (true,oid, pc)
+        Subterm (oid, pc)
       | pc = Constr.lconstr_pattern -> Term pc ] ]
   ;
   match_hyps:

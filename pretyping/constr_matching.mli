@@ -61,18 +61,10 @@ type matching_result =
     { m_sub : bound_ident_map * patvar_map;
       m_ctx : EConstr.t }
 
-(** [match_subterm n pat c] returns the substitution and the context
-   corresponding to each **closed** subterm of [c] matching [pat]. *)
-val match_subterm : env -> Evd.evar_map -> constr_pattern -> constr -> matching_result IStream.t
-
-(** [match_appsubterm pat c] returns the substitution and the context
+(** [match_subterm pat c] returns the substitution and the context
    corresponding to each **closed** subterm of [c] matching [pat],
    considering application contexts as well. *)
-val match_appsubterm : env -> Evd.evar_map -> constr_pattern -> constr -> matching_result IStream.t
-
-(** [match_subterm_gen] calls either [match_subterm] or [match_appsubterm] *)
-val match_subterm_gen : env -> Evd.evar_map ->
-  bool (** true = with app context *) ->
+val match_subterm : env -> Evd.evar_map ->
   binding_bound_vars * constr_pattern -> constr ->
   matching_result IStream.t
 

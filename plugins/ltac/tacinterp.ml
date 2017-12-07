@@ -1040,7 +1040,7 @@ let eval_pattern lfun ist env sigma (bvars,(glob,_),pat as c) =
     (bvars,instantiate_pattern env sigma lfun pat)
 
 let read_pattern lfun ist env sigma = function
-  | Subterm (b,ido,c) -> Subterm (b,ido,eval_pattern lfun ist env sigma c)
+  | Subterm (ido,c) -> Subterm (ido,eval_pattern lfun ist env sigma c)
   | Term c -> Term (eval_pattern lfun ist env sigma c)
 
 (* Reads the hypotheses of a Match Context rule *)

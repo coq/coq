@@ -428,9 +428,9 @@ let intern_hyp_location ist ((occs,id),hl) =
 
 (* Reads a pattern *)
 let intern_pattern ist ?(as_type=false) ltacvars = function
-  | Subterm (b,ido,pc) ->
+  | Subterm (ido,pc) ->
       let (metas,pc) = intern_constr_pattern ist ~as_type:false ~ltacvars pc in
-      ido, metas, Subterm (b,ido,pc)
+      ido, metas, Subterm (ido,pc)
   | Term pc ->
       let (metas,pc) = intern_constr_pattern ist ~as_type ~ltacvars pc in
       None, metas, Term pc

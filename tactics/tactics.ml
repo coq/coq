@@ -59,14 +59,6 @@ let typ_of env sigma c =
 
 open Goptions
 
-let _ =
-  declare_bool_option
-    { optdepr  = true; (* remove in 8.8 *)
-      optname  = "trigger bugged context matching compatibility";
-      optkey   = ["Tactic";"Compat";"Context"];
-      optread  = (fun () -> !Flags.tactic_context_compat) ;
-      optwrite = (fun b -> Flags.tactic_context_compat := b) }
-
 let apply_solve_class_goals = ref false
 
 let _ =
