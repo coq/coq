@@ -191,6 +191,7 @@ module New : sig
   val tclTHENS3PARTS     : unit tactic -> unit tactic array -> unit tactic -> unit tactic array -> unit tactic
   val tclTHENSFIRSTn : unit tactic -> unit tactic array -> unit tactic -> unit tactic
   val tclTHENFIRSTn : unit tactic -> unit tactic array -> unit tactic
+  val tclTHENSLASTn    : unit tactic -> unit tactic -> unit tactic array -> unit tactic
   (** [tclTHENFIRST tac1 tac2 gls] applies the tactic [tac1] to [gls]
       and [tac2] to the first resulting subgoal *)
   val tclTHENFIRST : unit tactic -> unit tactic -> unit tactic

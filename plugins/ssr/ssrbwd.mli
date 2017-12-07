@@ -9,7 +9,7 @@
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
 
-val apply_top_tac : Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+val apply_top_tac : unit Proofview.tactic
 
 val inner_ssrapplytac :
   Ssrast.ssrterm list ->
@@ -18,4 +18,4 @@ val inner_ssrapplytac :
     list list ->
   Ssrast.ssrhyps ->
   Ssrast.ist ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  unit Proofview.tactic

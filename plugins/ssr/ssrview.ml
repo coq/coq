@@ -15,7 +15,7 @@ open Ltac_plugin
 open Tacinterp
 open Glob_term
 open Tacmach
-open Tacticals
+open Tacticals.New
 
 open Ssrcommon
 

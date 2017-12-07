@@ -16,21 +16,21 @@ val tclSEQAT :
   int Misctypes.or_var *
     (('a * Ltac_plugin.Tacinterp.Value.t option list) *
        Ltac_plugin.Tacinterp.Value.t option) ->
-  Tacmach.tactic
+  unit Proofview.tactic
 
 val tclCLAUSES :
   Ltac_plugin.Tacinterp.interp_sign ->
-  Proofview.V82.tac ->
+  unit Proofview.tactic ->
   (Ssrast.ssrhyps *
      ((Ssrast.ssrhyp_or_id * string) *
         Ssrmatching_plugin.Ssrmatching.cpattern option)
        option)
     list * Ssrast.ssrclseq ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  unit Proofview.tactic
 
 val hinttac :
            Tacinterp.interp_sign ->
-           bool -> bool * Tacinterp.Value.t option list -> Ssrast.v82tac
+           bool -> bool * Tacinterp.Value.t option list -> unit Proofview.tactic
 
 val ssrdotac :
   Ltac_plugin.Tacinterp.interp_sign ->
@@ -41,5 +41,5 @@ val ssrdotac :
            Ssrmatching_plugin.Ssrmatching.cpattern option)
           option)
        list * Ssrast.ssrclseq) ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  unit Proofview.tactic
 

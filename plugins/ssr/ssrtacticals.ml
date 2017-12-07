@@ -28,11 +28,13 @@ let get_index = function ArgArg i -> i | _ ->
 
 (** The "first" and "last" tacticals. *)
 
-let tclPERM perm tac gls =
-  let subgls = tac gls in
+let tclPERM perm tac =
+  Proofview.V82.tactic begin fun gls ->
+  let subgls = Proofview.V82.of_tactic tac gls in
   let sigma, subgll = Refiner.unpackage subgls in
   let subgll' = perm subgll in
   Refiner.repackage sigma subgll'
+  end
 
 let rot_hyps dir i hyps =
   let n = List.length hyps in
@@ -48,14 +50,14 @@ let tclSEQAT ist atac1 dir (ivar, ((_, atacs2), atac3)) =
   let evtac = ssrevaltac ist in
   let tac1 = evtac atac1 in
   if atacs2 = [] && atac3 <> None then tclPERM (rot_hyps dir i) tac1  else
-  let evotac = function Some atac -> evtac atac | _ -> Tacticals.tclIDTAC in
+  let evotac = function Some atac -> evtac atac | _ -> Tacticals.New.tclIDTAC in
   let tac3 = evotac atac3 in
   let rec mk_pad n = if n > 0 then tac3 :: mk_pad (n - 1) else [] in
   match dir, mk_pad (i - 1), List.map evotac atacs2 with
-  | L2R, [], [tac2] when atac3 = None -> Tacticals.tclTHENFIRST tac1 tac2
-  | L2R, [], [tac2] when atac3 = None -> Tacticals.tclTHENLAST tac1 tac2
-  | L2R, pad, tacs2 -> Tacticals.tclTHENSFIRSTn tac1 (Array.of_list (pad @ tacs2)) tac3
-  | R2L, pad, tacs2 -> Tacticals.tclTHENSLASTn tac1 tac3 (Array.of_list (tacs2 @ pad))
+  | L2R, [], [tac2] when atac3 = None -> Tacticals.New.tclTHENFIRST tac1 tac2
+  | L2R, [], [tac2] when atac3 = None -> Tacticals.New.tclTHENLAST tac1 tac2
+  | L2R, pad, tacs2 -> Tacticals.New.tclTHENSFIRSTn tac1 (Array.of_list (pad @ tacs2)) tac3
+  | R2L, pad, tacs2 -> Tacticals.New.tclTHENSLASTn tac1 tac3 (Array.of_list (tacs2 @ pad))
 
 (** The "in" pseudo-tactical {{{ **********************************************)
 
@@ -124,10 +126,12 @@ let endclausestac id_map clseq gl_id cl0 gl =
 
 let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type x xs)
 
-let tclCLAUSES ist tac (gens, clseq) gl =
+let tclCLAUSES ist tac (gens, clseq) =
+  let tac = Proofview.V82.of_tactic tac in
+  Proofview.V82.tactic begin fun gl ->
   if clseq = InGoal || clseq = InSeqGoal then tac gl else
   let clr_gens = pf_clauseids gl gens clseq in
-  let clear = Tacticals.tclTHENLIST (List.rev(List.fold_right clr_of_wgen clr_gens [])) in
+  let clear = Tacticals.New.tclTHENLIST (List.rev(List.fold_right clr_of_wgen clr_gens [])) in
   let gl_id = mk_anon_id hidden_goal_tag gl in
   let cl0 = pf_concl gl in
   let dtac gl =
@@ -140,19 +144,20 @@ let tclCLAUSES ist tac (gens, clseq) gl =
       | _, Some ((x,_),_) -> let id = hoi_id x in Some (mk_discharged_id id, id)
       | _, None -> None) gens in
     endclausestac id_map clseq gl_id cl0 in
-  Tacticals.tclTHENLIST (hidetacs clseq gl_id cl0 @ [dtac; clear; tac; endtac]) gl
+  Tacticals.tclTHENLIST (hidetacs clseq gl_id cl0 @ [dtac; Proofview.V82.of_tactic clear; tac; endtac]) gl
+  end
 
 (** The "do" tactical. ********************************************************)
 
 let hinttac ist is_by (is_or, atacs) =
-  let dtac = if is_by then donetac ~-1 else Tacticals.tclIDTAC in
+  let dtac = if is_by then donetac ~-1 else Tacticals.New.tclIDTAC in
   let mktac = function
-  | Some atac -> Tacticals.tclTHEN (ssrevaltac ist atac) dtac
+  | Some atac -> Tacticals.New.tclTHEN (ssrevaltac ist atac) dtac
   | _ -> dtac in
   match List.map mktac atacs with
-  | [] -> if is_or then dtac else Tacticals.tclIDTAC
+  | [] -> if is_or then dtac else Tacticals.New.tclIDTAC
   | [tac] -> tac
-  | tacs -> Tacticals.tclFIRST tacs
+  | tacs -> Tacticals.New.tclFIRST tacs
 
 let ssrdotac ist (((n, m), tac), clauses) =
   let mul = get_index n, m in
