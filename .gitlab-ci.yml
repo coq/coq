@@ -331,6 +331,9 @@ ci-math-classes:
 ci-math-comp:
   <<: *ci-template
 
+ci-paramcoq:
+  <<: *ci-template
+
 ci-sf:
   <<: *ci-template
   variables:

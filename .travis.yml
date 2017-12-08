@@ -62,6 +62,7 @@ env:
   - TEST_TARGET="ci-ltac2 TIMED=1"
   - TEST_TARGET="ci-math-classes TIMED=1"
   - TEST_TARGET="ci-math-comp TIMED=1"
+  - TEST_TARGET="ci-paramcoq TIMED=1"
   - TEST_TARGET="ci-sf TIMED=1"
   - TEST_TARGET="ci-unimath TIMED=1"
   - TEST_TARGET="ci-vst TIMED=1"

@@ -17,8 +17,6 @@ open Glob_term
 open Ltac_pretype
 
 (** These are the entry points for printing terms, context, tac, ... *)
-
-
 val enable_unfocused_goal_printing: bool ref
 val enable_goal_tags_printing      : bool ref
 val enable_goal_names_printing     : bool ref
