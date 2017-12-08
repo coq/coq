@@ -46,6 +46,8 @@ WHAT DO YOU NEED ?
 
      - Camlp5 (version <= 4.08, or 5.* transitional)
 
+     - The num library if with Objective Caml version 4.06.0 or later
+
      - GNU Make version 3.81 or later
        (
 	available at http://www.gnu.org/software/make/, but also a

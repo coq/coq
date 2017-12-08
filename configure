@@ -110,6 +110,7 @@ coq_debug_flag=
 coq_debug_flag_opt=
 coq_profile_flag=
 coq_annotate_flag=
+coq_safe_string_flag=
 best_compiler=opt
 cflags="-Wall -Wno-unused"
 natdynlink=yes
@@ -453,8 +454,17 @@ case $CAMLVERSION in
 	    echo "          Configuration script failed!"
 	    exit 1
 	fi;;
-    3.11.2|3.12*|4.*)
+    4.02.0)
 	CAMLP4COMPAT="-loc loc" 
+        echo "Warning: OCaml 4.02.0 suffers from a bug inducing"
+        echo "very slow compilation times"
+        break;;
+    3.11.2|3.12*|4.0[012345]*)
+	CAMLP4COMPAT="-loc loc" 
+	echo "You have Objective-Caml $CAMLVERSION. Good!";;
+    4.*)
+	CAMLP4COMPAT="-loc loc" 
+        coq_safe_string_flag=-unsafe-string
 	echo "You have Objective-Caml $CAMLVERSION. Good!";;
     *)
 	echo "I found the Objective-Caml compiler but cannot find its version number!"
@@ -1223,7 +1233,7 @@ CAMLOPTLINK="$nativecamlc"
 CAMLMKTOP="$ocamlmktopexec"
 
 # Caml flags
-CAMLFLAGS=-rectypes $coq_annotate_flag
+CAMLFLAGS=-rectypes $coq_annotate_flag $coq_safe_string_flag
 
 # Compilation debug flags
 CAMLDEBUG=$coq_debug_flag
