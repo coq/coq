@@ -41,6 +41,8 @@ WHAT DO YOU NEED ?
      is then needed or a patched version of 4.01.0 as e.g. version
      4.01.0-4 in Debian Jessie)
 
+   - From Objective Caml version 4.06.0, the Num library
+
    - GNU Make version 3.81 or later
 
    - a C compiler
