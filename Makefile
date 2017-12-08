@@ -139,19 +139,10 @@ endif
 # This should help preventing weird compilation failures caused by leftover
 # compiled files after deleting or moving some source files.
 
-ifeq (,$(findstring clean,$(MAKECMDGOALS))) # Skip this for 'make clean' and alii
-ifndef ACCEPT_ALIEN_VO
 EXISTINGVO:=$(call find, '*.vo')
 KNOWNVO:=$(patsubst %.v,%.vo,$(call find, '*.v'))
 ALIENVO:=$(filter-out $(KNOWNVO),$(EXISTINGVO))
-ifdef ALIENVO
-$(error Leftover compiled Coq files without known sources: $(ALIENVO); \
-remove them first, for instance via 'make voclean' \
-(or skip this check via 'make ACCEPT_ALIEN_VO=1'))
-endif
-endif
 
-ifndef ACCEPT_ALIEN_OBJ
 EXISTINGOBJS:=$(call find, '*.cm[oxia]' -o -name '*.cmxa')
 KNOWNML:=$(EXISTINGML) $(GENMLFILES) $(GENML4FILES) $(MLPACKFILES:.mlpack=.ml) \
  $(patsubst %.mlp,%.ml,$(wildcard grammar/*.mlp))
@@ -159,9 +150,20 @@ KNOWNOBJS:=$(KNOWNML:.ml=.cmo) $(KNOWNML:.ml=.cmx) $(KNOWNML:.ml=.cmi) \
  $(MLIFILES:.mli=.cmi) \
  $(MLLIBFILES:.mllib=.cma) $(MLLIBFILES:.mllib=.cmxa) grammar/grammar.cma
 ALIENOBJS:=$(filter-out $(KNOWNOBJS),$(EXISTINGOBJS))
+
+ifeq (,$(findstring clean,$(MAKECMDGOALS))) # Skip this for 'make clean' and alii
+ifndef ACCEPT_ALIEN_VO
+ifdef ALIENVO
+$(error Leftover compiled Coq files without known sources: $(ALIENVO); \
+remove them first, for instance via 'make voclean' or 'make alienclean' \
+(or skip this check via 'make ACCEPT_ALIEN_VO=1'))
+endif
+endif
+
+ifndef ACCEPT_ALIEN_OBJ
 ifdef ALIENOBJS
 $(error Leftover compiled OCaml files without known sources: $(ALIENOBJS); \
-remove them first, for instance via 'make clean' \
+remove them first, for instance via 'make clean' or 'make alienclean' \
 (or skip this check via 'make ACCEPT_ALIEN_OBJ=1'))
 endif
 endif
@@ -196,7 +198,7 @@ Makefile $(wildcard Makefile.*) config/Makefile : ;
 # Cleaning
 ###########################################################################
 
-.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide ml4clean depclean cleanconfig distclean voclean timingclean devdocclean
+.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide ml4clean depclean cleanconfig distclean voclean timingclean devdocclean alienclean
 
 clean: objclean cruftclean depclean docclean devdocclean
 
@@ -281,6 +283,9 @@ devdocclean:
 	rm -f $(OCAMLDOCDIR)/*.log $(OCAMLDOCDIR)/*.aux $(OCAMLDOCDIR)/*.toc
 	rm -f $(OCAMLDOCDIR)/ocamldoc.sty $(OCAMLDOCDIR)/coq.tex
 	rm -f $(OCAMLDOCDIR)/html/*.html
+
+alienclean:
+	rm -f $(ALIENOBJS) $(ALIENVO)
 
 ###########################################################################
 # Continuous Intregration Tests
