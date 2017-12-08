@@ -10,19 +10,25 @@
 
 open Genarg
 
-type printer_with_level =
+type 'a with_level =
   { default_already_surrounded : Notation_term.tolerability;
     default_ensure_surrounded : Notation_term.tolerability;
-    printer : Environ.env -> Evd.evar_map -> Notation_term.tolerability -> Pp.t }
+    printer : 'a }
 
 type printer_result =
 | PrinterBasic of (unit -> Pp.t)
-| PrinterNeedsContext of (Environ.env -> Evd.evar_map -> Pp.t)
-| PrinterNeedsContextAndLevel of printer_with_level
+| PrinterNeedsLevel of (Notation_term.tolerability -> Pp.t) with_level
 
-type 'a printer = 'a -> Pp.t
+type printer_fun_with_level = Environ.env -> Evd.evar_map -> Notation_term.tolerability -> Pp.t
 
-type 'a top_printer = 'a -> printer_result
+type top_printer_result =
+| TopPrinterBasic of (unit -> Pp.t)
+| TopPrinterNeedsContext of (Environ.env -> Evd.evar_map -> Pp.t)
+| TopPrinterNeedsContextAndLevel of printer_fun_with_level with_level
+
+type 'a printer = 'a -> printer_result
+
+type 'a top_printer = 'a -> top_printer_result
 
 val raw_print : ('raw, 'glb, 'top) genarg_type -> 'raw printer
 (** Printer for raw level generic arguments. *)
@@ -34,7 +40,7 @@ val top_print : ('raw, 'glb, 'top) genarg_type -> 'top top_printer
 (** Printer for top level generic arguments. *)
 
 val register_print0 : ('raw, 'glb, 'top) genarg_type ->
-  'raw printer -> 'glb printer -> ('top -> printer_result) -> unit
+  'raw printer -> 'glb printer -> 'top top_printer -> unit
 val register_val_print0 : 'top Geninterp.Val.typ ->
   'top top_printer -> unit
 val register_vernac_print0 : ('raw, 'glb, 'top) genarg_type ->

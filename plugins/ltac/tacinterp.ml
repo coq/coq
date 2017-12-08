@@ -128,7 +128,7 @@ let (wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type) =
   let wit = Genarg.create_arg "tacvalue" in
   let () = register_val0 wit None in
   let () = Genprint.register_val_print0 (base_val_typ wit)
-             (fun _ -> Genprint.PrinterBasic (fun () -> str "<tactic closure>")) in
+             (fun _ -> Genprint.TopPrinterBasic (fun () -> str "<tactic closure>")) in
   wit
 
 let of_tacvalue v = in_gen (topwit wit_tacvalue) v
@@ -242,9 +242,9 @@ let pr_value env v =
     | None -> str "a value of type" ++ spc () ++ pr_argument_type v in
   let open Genprint in
   match generic_val_print v with
-  | PrinterBasic pr -> pr ()
-  | PrinterNeedsContext pr -> pr_with_env pr
-  | PrinterNeedsContextAndLevel { default_already_surrounded; printer } ->
+  | TopPrinterBasic pr -> pr ()
+  | TopPrinterNeedsContext pr -> pr_with_env pr
+  | TopPrinterNeedsContextAndLevel { default_already_surrounded; printer } ->
      pr_with_env (fun env sigma -> printer env sigma default_already_surrounded)
 
 let pr_closure env ist body =
@@ -821,9 +821,9 @@ let message_of_value v =
     Ftactic.enter begin fun gl -> Ftactic.return (pr (pf_env gl) (project gl)) end in
   let open Genprint in
   match generic_val_print v with
-  | PrinterBasic pr -> Ftactic.return (pr ())
-  | PrinterNeedsContext pr -> pr_with_env pr
-  | PrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
+  | TopPrinterBasic pr -> Ftactic.return (pr ())
+  | TopPrinterNeedsContext pr -> pr_with_env pr
+  | TopPrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
      pr_with_env (fun env sigma -> printer env sigma default_ensure_surrounded)
 
 let interp_message_token ist = function
@@ -1353,8 +1353,8 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
         begin
           let open Genprint in
           match generic_val_print v with
-          | PrinterBasic _ -> call_debug None
-          | PrinterNeedsContext _ | PrinterNeedsContextAndLevel _ ->
+          | TopPrinterBasic _ -> call_debug None
+          | TopPrinterNeedsContext _ | TopPrinterNeedsContextAndLevel _ ->
              Proofview.Goal.enter (fun gl -> call_debug (Some (pf_env gl,project gl)))
         end <*>
         if List.is_empty lval then Ftactic.return v else interp_app loc ist v lval

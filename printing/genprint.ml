@@ -16,21 +16,27 @@ open Geninterp
 
 (* Printing generic values *)
 
-type printer_with_level =
+type 'a with_level =
   { default_already_surrounded : Notation_term.tolerability;
     default_ensure_surrounded : Notation_term.tolerability;
-    printer : Environ.env -> Evd.evar_map -> Notation_term.tolerability -> Pp.t }
+    printer : 'a }
 
 type printer_result =
 | PrinterBasic of (unit -> Pp.t)
-| PrinterNeedsContext of (Environ.env -> Evd.evar_map -> Pp.t)
-| PrinterNeedsContextAndLevel of printer_with_level
+| PrinterNeedsLevel of (Notation_term.tolerability -> Pp.t) with_level
 
-type 'a printer = 'a -> Pp.t
+type printer_fun_with_level = Environ.env -> Evd.evar_map -> Notation_term.tolerability -> Pp.t
 
-type 'a top_printer = 'a -> printer_result
+type top_printer_result =
+| TopPrinterBasic of (unit -> Pp.t)
+| TopPrinterNeedsContext of (Environ.env -> Evd.evar_map -> Pp.t)
+| TopPrinterNeedsContextAndLevel of printer_fun_with_level with_level
 
-module ValMap = ValTMap (struct type 'a t = 'a -> printer_result end)
+type 'a printer = 'a -> printer_result
+
+type 'a top_printer = 'a -> top_printer_result
+
+module ValMap = ValTMap (struct type 'a t = 'a -> top_printer_result end)
 
 let print0_val_map = ref ValMap.empty
 
@@ -48,32 +54,32 @@ let register_val_print0 s pr =
   print0_val_map := ValMap.add s pr !print0_val_map
 
 let combine_dont_needs pr_pair pr1 = function
-  | PrinterBasic pr2 ->
-     PrinterBasic (fun () -> pr_pair (pr1 ()) (pr2 ()))
-  | PrinterNeedsContext pr2 ->
-     PrinterNeedsContext (fun env sigma ->
+  | TopPrinterBasic pr2 ->
+     TopPrinterBasic (fun () -> pr_pair (pr1 ()) (pr2 ()))
+  | TopPrinterNeedsContext pr2 ->
+     TopPrinterNeedsContext (fun env sigma ->
          pr_pair (pr1 ()) (pr2 env sigma))
-  | PrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
-     PrinterNeedsContext (fun env sigma ->
+  | TopPrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
+     TopPrinterNeedsContext (fun env sigma ->
          pr_pair (pr1 ()) (printer env sigma default_ensure_surrounded))
 
 let combine_needs pr_pair pr1 = function
-  | PrinterBasic pr2 ->
-     PrinterNeedsContext (fun env sigma -> pr_pair (pr1 env sigma) (pr2 ()))
-  | PrinterNeedsContext pr2 ->
-     PrinterNeedsContext (fun env sigma ->
+  | TopPrinterBasic pr2 ->
+     TopPrinterNeedsContext (fun env sigma -> pr_pair (pr1 env sigma) (pr2 ()))
+  | TopPrinterNeedsContext pr2 ->
+     TopPrinterNeedsContext (fun env sigma ->
          pr_pair (pr1 env sigma) (pr2 env sigma))
-  | PrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
-     PrinterNeedsContext (fun env sigma ->
+  | TopPrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
+     TopPrinterNeedsContext (fun env sigma ->
          pr_pair (pr1 env sigma) (printer env sigma default_ensure_surrounded))
 
 let combine pr_pair pr1 v2 =
   match pr1 with
-  | PrinterBasic pr1 ->
+  | TopPrinterBasic pr1 ->
      combine_dont_needs pr_pair pr1 (generic_val_print v2)
-  | PrinterNeedsContext pr1 ->
+  | TopPrinterNeedsContext pr1 ->
      combine_needs pr_pair pr1 (generic_val_print v2)
-  | PrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
+  | TopPrinterNeedsContextAndLevel { default_ensure_surrounded; printer } ->
      combine_needs pr_pair (fun env sigma -> printer env sigma default_ensure_surrounded)
        (generic_val_print v2)
 
@@ -81,14 +87,14 @@ let _ =
   let pr_cons a b = Pp.(a ++ spc () ++ b) in
   register_val_print0 Val.typ_list
     (function
-     | [] -> PrinterBasic mt
+     | [] -> TopPrinterBasic mt
      | a::l ->
         List.fold_left (combine pr_cons) (generic_val_print a) l)
 
 let _ =
   register_val_print0 Val.typ_opt
     (function
-     | None -> PrinterBasic Pp.mt
+     | None -> TopPrinterBasic Pp.mt
      | Some v -> generic_val_print v)
 
 let _ =
@@ -99,9 +105,9 @@ let _ =
 (* Printing generic arguments *)
 
 type ('raw, 'glb, 'top) genprinter = {
-  raw : 'raw printer;
-  glb : 'glb printer;
-  top : 'top -> printer_result;
+  raw : 'raw -> printer_result;
+  glb : 'glb -> printer_result;
+  top : 'top -> top_printer_result;
 }
 
 module PrintObj =
@@ -112,9 +118,9 @@ struct
   | ExtraArg tag ->
     let name = ArgT.repr tag in
     let printer = {
-      raw = (fun _ -> str "<genarg:" ++ str name ++ str ">");
-      glb = (fun _ -> str "<genarg:" ++ str name ++ str ">");
-      top = (fun _ -> PrinterBasic (fun () -> str "<genarg:" ++ str name ++ str ">"));
+      raw = (fun _ -> PrinterBasic (fun () -> str "<genarg:" ++ str name ++ str ">"));
+      glb = (fun _ -> PrinterBasic (fun () -> str "<genarg:" ++ str name ++ str ">"));
+      top = (fun _ -> TopPrinterBasic (fun () -> str "<genarg:" ++ str name ++ str ">"));
     } in
     Some printer
   | _ -> assert false
