@@ -1,0 +1,143 @@
+defaults:
+  params:
+    # Following parameters are used in Coq CircleCI Job (using yaml
+    # reference syntax)
+    working_directory: &workdir ~/coq
+    base_image: &base ocaml/opam:ubuntu-16.04_ocaml-4.05.0_flambda
+
+  # Job configuration
+  config: &coq
+    working_directory: *workdir
+    docker:
+      - image: *base
+    environment:
+      # required by some of the targets, e.g. compcert, passed for
+      # instance to opam to configure the number of parallel jobs
+      # allowed
+      - NJOBS: 2
+
+version: 2
+
+# Defines individual jobs, see the workflows section below for job orchestration
+jobs:
+  # TODO: linter
+
+  # Build and prepare test environment
+  build:
+    <<: *coq
+    steps:
+      - checkout
+      # Restore last version of the dependencies in cache When a new
+      # major version of caches has to be generated, please use
+      # vYYMMDD format to avoid collision.
+      - restore_cache:
+          key: coq-opam-cache-{{ arch }}-v171208-
+      - run:
+          name: Build opam dependencies
+          command: |
+            # workaround, ought to be fixed in recent opams. See
+            # https://github.com/ocaml/opam/issues/2978
+            export TERM=xterm
+            opam install -y camlp5 ocamlfind
+      - save_cache:
+          key: coq-opam-cache-{{ arch }}-v171208-static-deps
+          paths:
+            - ~/.opam
+      - run:
+          name: Configure
+          command: |
+            # XXX: all this .profile stuff is a shortcoming of the
+            # docker image. To be improved.
+            . ~/.profile
+            ./configure -local -native-compiler no
+      - run:
+          name: Build
+          command: |
+            . ~/.profile
+            make -j2
+      - run:
+          name: Validate
+          command: |
+            . ~/.profile
+            make -j2 validate
+      - persist_to_workspace:
+          root: &workspace ~/
+          paths:
+            - .opam
+            - coq/
+
+  bignums:
+    <<: *coq
+    steps:
+      # Restore workspace
+      - checkout
+      - attach_workspace:
+          at: *workspace
+      - run:
+          name: System dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y python
+      - run:
+          name: Build
+          command: |
+            . ~/.profile
+            make -j2 ci-bignums
+      # bignums is a dependency
+      - persist_to_workspace:
+          root: &workspace ~/
+          paths:
+            - coq/
+
+  color:
+    <<: *coq
+    steps:
+      # Restore workspace
+      - checkout
+      - attach_workspace:
+          at: *workspace
+      - run:
+          name: System dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y python
+      - run:
+          name: Build
+          command: |
+            . ~/.profile
+            make -j2 ci-color
+
+  compcert:
+    <<: *coq
+    steps:
+      # Restore workspace
+      - checkout
+      - attach_workspace:
+          at: *workspace
+      - run:
+          name: System dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y python
+      - run:
+          name: Build
+          command: |
+            . ~/.profile
+            make -j2 ci-compcert
+
+workflows:
+  version: 2
+  # Run on each push
+  ci:
+    jobs:
+      - build
+      - bignums:
+          requires:
+            - build
+      - color:
+          requires:
+            - build
+            - bignums
+      - compcert:
+          requires:
+            - build
