@@ -35,6 +35,8 @@ WHAT DO YOU NEED ?
    - Camlp5 (version >= 6.02) (Coq compiles with Camlp4 but might be less
      well supported)
 
+   - From Objective Caml version 4.06.0, the Num library
+
    - GNU Make version 3.81 or later
 
    - a C compiler
