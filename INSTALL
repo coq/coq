@@ -47,6 +47,7 @@ WHAT DO YOU NEED ?
        For Ocaml version >= 3.10.0, you also need to install camlp5
        (version <= 4.08, or >= 5.01 transitional)
   
+     - The num library if with Objective Caml version 4.06.0 or later
 
      - GNU Make version 3.81 or later
        (
