@@ -49,6 +49,7 @@ WHAT DO YOU NEED ?
        with the corresponding version of Objective Caml, however
        avoiding version 5.00)
   
+     - The num library if with Objective Caml version 4.06.0 or later
 
      - GNU Make version 3.81 or later
        (
