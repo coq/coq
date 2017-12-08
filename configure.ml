@@ -392,7 +392,7 @@ let coq_debug_flag = if !Prefs.debug then "-g" else ""
 let coq_profile_flag = if !Prefs.profile then "-p" else ""
 let coq_annotate_flag =
   if !Prefs.annotate
-  then if program_in_path "ocamlmerlin" then "-bin-annot" else "-dtypes"
+  then if program_in_path "ocamlmerlin" then " -bin-annot" else " -dtypes"
   else ""
 
 let cflags = "-Wall -Wno-unused -g -O2"
@@ -526,7 +526,10 @@ let camltag = match caml_version_list with
   | _ -> assert false
 
 let coq_warn_flag =
-  if caml_version_nums > [4;2;3] then "-w -3-52-56" else ""
+  if caml_version_nums > [4;2;3] then " -w -3-52-56" else ""
+
+let coq_safe_string =
+  if caml_version_nums >= [4;6;0] then " -unsafe-string" else ""
 
 (** * CamlpX configuration *)
 
@@ -823,7 +826,6 @@ let coqide_flags () =
     | _ -> ()
 
 let _ = coqide_flags ()
-
 
 (** * strip command *)
 
@@ -1158,7 +1160,7 @@ let write_makefile f =
   pr "CAMLLINK=%S\n" camlexec.byte;
   pr "CAMLOPTLINK=%S\n\n" camlexec.opt;
   pr "# Caml flags\n";
-  pr "CAMLFLAGS=-rectypes %s %s\n" coq_annotate_flag coq_warn_flag;
+  pr "CAMLFLAGS=-rectypes%s%s%s\n" coq_annotate_flag coq_warn_flag coq_safe_string;
   pr "# User compilation flag\n";
   pr "USERFLAGS=\n\n";
   pr "# Flags for GCC\n";
