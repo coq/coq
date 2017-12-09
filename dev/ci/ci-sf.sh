@@ -3,13 +3,10 @@
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
-# XXX: Needs fixing to properly set the build directory.
-wget ${sf_lf_CI_TARURL}
-wget ${sf_plf_CI_TARURL}
-wget ${sf_vfa_CI_TARURL}
-tar xvfz lf.tgz
-tar xvfz plf.tgz
-tar xvfz vfa.tgz
+mkdir -p ${CI_BUILD_DIR} && cd ${CI_BUILD_DIR}
+wget -qO- ${sf_lf_CI_TARURL}  | tar xvz
+wget -qO- ${sf_plf_CI_TARURL} | tar xvz
+wget -qO- ${sf_vfa_CI_TARURL} | tar xvz
 
 sed -i.bak '1i From Coq Require Extraction.' lf/Extraction.v
 sed -i.bak '1i From Coq Require Extraction.' vfa/Extract.v
