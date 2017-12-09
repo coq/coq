@@ -560,7 +560,7 @@ let do_universe poly l =
       ignore(Lib.add_leaf id (input_universe (src, lev))))
     l
 
-type constraint_decl = polymorphic * Univ.constraints
+type constraint_decl = polymorphic * Univ.Constraint.t
 
 let cache_constraints (na, (p, c)) =
   let ctx =

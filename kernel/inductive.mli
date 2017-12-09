@@ -37,7 +37,7 @@ val ind_subst : MutInd.t -> mutual_inductive_body -> Instance.t -> constr list
 val inductive_paramdecls : mutual_inductive_body puniverses -> Context.Rel.t
 
 val instantiate_inductive_constraints :
-  mutual_inductive_body -> Instance.t -> constraints
+  mutual_inductive_body -> Instance.t -> Constraint.t
 
 val constrained_type_of_inductive : env -> mind_specif puniverses -> types constrained
 val constrained_type_of_inductive_knowing_parameters :

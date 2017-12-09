@@ -53,7 +53,7 @@ val algebraics : t -> Univ.LSet.t
 (** The subset of unification variables that can be instantiated with algebraic
     universes as they appear in inferred types only. *)
 
-val constraints : t -> Univ.constraints
+val constraints : t -> Univ.Constraint.t
 (** Shorthand for {!context_set} composed with {!ContextSet.constraints}. *)
 
 val context : t -> Univ.UContext.t
@@ -68,12 +68,12 @@ val ind_univ_entry : poly:bool -> t -> Entries.inductive_universes
 
 (** {5 Constraints handling} *)
 
-val add_constraints : t -> Univ.constraints -> t
+val add_constraints : t -> Univ.Constraint.t -> t
 (**
   @raise UniversesDiffer when universes differ
 *)
 
-val add_universe_constraints : t -> Universes.universe_constraints -> t
+val add_universe_constraints : t -> Universes.Constraints.t -> t
 (**
   @raise UniversesDiffer when universes differ
 *)

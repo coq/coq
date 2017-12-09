@@ -59,7 +59,7 @@ type ('constr, 'types) ptype_error =
   | IllFormedRecBody of 'constr pguard_error * Name.t array * int * env * ('constr, 'types) punsafe_judgment array
   | IllTypedRecBody of
       int * Name.t array * ('constr, 'types) punsafe_judgment array * 'types array
-  | UnsatisfiedConstraints of Univ.constraints
+  | UnsatisfiedConstraints of Univ.Constraint.t
 
 type type_error = (constr, types) ptype_error
 

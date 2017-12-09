@@ -35,10 +35,10 @@ val check_eq_instances : Instance.t check_function
   constraints are not satisfiable. *)
 
 val enforce_constraint : univ_constraint -> t -> t
-val merge_constraints : constraints -> t -> t
+val merge_constraints : Constraint.t -> t -> t
 
 val check_constraint  : t -> univ_constraint -> bool
-val check_constraints : constraints -> t -> bool
+val check_constraints : Constraint.t -> t -> bool
 
 (** Adds a universe to the graph, ensuring it is >= or > Set.
    @raises AlreadyDeclared if the level is already declared in the graph. *)
@@ -57,7 +57,7 @@ val empty_universes : t
 
 val sort_universes : t -> t
 
-val constraints_of_universes : t -> constraints
+val constraints_of_universes : t -> Constraint.t
 
 val check_subtype : AUContext.t check_function
 (** [check_subtype univ ctx1 ctx2] checks whether [ctx2] is an instance of
