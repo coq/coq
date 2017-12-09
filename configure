@@ -530,10 +530,11 @@ if [ "$best_compiler" = "opt" ] ; then
       CAMLOPTVERSION=`"$nativecamlc" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
       if [ "`uname -s`" = "Darwin" -a "$ARCH" = "i386" ]; then
 	  case $CAMLOPTVERSION in
-	      3.09.3|3.1?*) ;;
-	      *) echo "Native compilation on MacOS X Pentium requires Objective-Caml >= 3.09.3,"
+              1.*|2.*|3.0[0-8]*|3.09.[12])
+	         echo "Native compilation on MacOS X Pentium requires Objective-Caml >= 3.09.3,"
 		 best_compiler=byte
-		 echo "only the bytecode version of Coq will be available."
+		 echo "only the bytecode version of Coq will be available.";;
+	      *) ;;
 	  esac
       elif [ ! -f $FULLCAMLP4LIB/gramlib.cmxa ]; then
 	  best_compiler=byte
