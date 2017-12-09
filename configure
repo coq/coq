@@ -436,6 +436,10 @@ case $CAMLVERSION in
 	    echo "          Configuration script failed!"
 	    exit 1
 	fi;;
+    4.02.0)
+	CAMLP4COMPAT="-loc loc"
+	echo "Warning: OCaml 4.02.0 suffers from a bug inducing"
+	echo "very slow compilation times";;
     ?*)
 	CAMLP4COMPAT="-loc loc" 
 	echo "You have Objective-Caml $CAMLVERSION. Good!";;
