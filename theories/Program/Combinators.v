@@ -22,15 +22,13 @@ Open Scope program_scope.
 Lemma compose_id_left : forall A B (f : A -> B), id ∘ f = f.
 Proof.
   intros.
-  unfold id, compose.
-  symmetry. apply eta_expansion.
+  reflexivity.
 Qed.
 
 Lemma compose_id_right : forall A B (f : A -> B), f ∘ id = f.
 Proof.
   intros.
-  unfold id, compose.
-  symmetry ; apply eta_expansion.
+  reflexivity.
 Qed.
 
 Lemma compose_assoc : forall A B C D (f : A -> B) (g : B -> C) (h : C -> D),
@@ -47,9 +45,7 @@ Hint Rewrite <- @compose_assoc : core.
 
 Lemma flip_flip : forall A B C, @flip A B C ∘ flip = id.
 Proof.
-  unfold flip, compose.
   intros.
-  extensionality x ; extensionality y ; extensionality z.
   reflexivity.
 Qed.
 
@@ -57,9 +53,7 @@ Qed.
 
 Lemma prod_uncurry_curry : forall A B C, @prod_uncurry A B C ∘ prod_curry = id.
 Proof.
-  simpl ; intros.
-  unfold prod_uncurry, prod_curry, compose.
-  extensionality x ; extensionality y ; extensionality z.
+  intros.
   reflexivity.
 Qed.
 
