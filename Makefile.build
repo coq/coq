@@ -386,12 +386,12 @@ $(COQTOP_BYTE_MLTOP): toplevel/coqtop_byte_bin.ml
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -package compiler-libs.toplevel -c $<
 
 ifeq ($(BEST),opt)
-$(COQTOPEXE): tools/tolink.cmx $(LINKCMX) $(LIBCOQRUN) $(TOPLOOPCMA:.cma=.cmxs) $(COQTOP_OPT_MLTOP)
+$(COQTOPEXE): $(LINKCMX) $(LIBCOQRUN) $(TOPLOOPCMA:.cma=.cmxs) $(COQTOP_OPT_MLTOP)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(OCAMLOPT) -linkall -linkpkg -I vernac -I toplevel -I tools \
+	$(HIDE)$(OCAMLOPT) -linkall -linkpkg -I toplevel \
 	                   -I kernel/byterun/ -cclib -lcoqrun \
                            $(SYSMOD) -package camlp5.gramlib \
-	                   tools/tolink.cmx $(LINKCMX) $(OPTFLAGS) $(LINKMETADATA) \
+	                   $(LINKCMX) $(OPTFLAGS) $(LINKMETADATA) \
 	                   $(COQTOP_OPT_MLTOP) toplevel/coqtop_bin.ml -o $@
 	$(STRIP) $@
 	$(CODESIGN) $@
@@ -401,19 +401,13 @@ $(COQTOPEXE): $(COQTOPBYTE)
 endif
 
 # Are "-cclib lcoqrun -dllib -lcoqrun" necessary?
-$(COQTOPBYTE): tools/tolink.cmo $(LINKCMO) $(LIBCOQRUN) $(TOPLOOPCMA) $(COQTOP_BYTE_MLTOP)
+$(COQTOPBYTE): $(LINKCMO) $(LIBCOQRUN) $(TOPLOOPCMA) $(COQTOP_BYTE_MLTOP)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(OCAMLC) -linkall -linkpkg -I vernac -I toplevel -I tools \
+	$(HIDE)$(OCAMLC) -linkall -linkpkg -I toplevel \
 	                 -I kernel/byterun -dllpath $(abspath kernel/byterun) -cclib -lcoqrun -dllib -lcoqrun \
                          $(SYSMOD) -package camlp5.gramlib,compiler-libs.toplevel \
-	                 tools/tolink.cmo $(LINKCMO) $(BYTEFLAGS) \
+	                 $(LINKCMO) $(BYTEFLAGS) \
 	                 $(COQTOP_BYTE_MLTOP) toplevel/coqtop_bin.ml -o $@
-
-tools/tolink.ml: Makefile.build Makefile.common
-	$(SHOW)"ECHO... >" $@
-	$(HIDE)echo "let static_modules = \""$(STATICPLUGINS)"\"" > $@
-	$(HIDE)echo "let core_libs = \""$(LINKCMO)"\"" >> $@
-	$(HIDE)echo "let core_objs = \""$(OBJSMOD)"\"" >> $@
 
 # coqc
 

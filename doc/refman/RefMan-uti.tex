@@ -12,19 +12,16 @@ linking. Nowadays, the preferred method is to use \texttt{ocamlfind}.
 
 The most basic custom toplevel is built using:
 \begin{quotation}
-\texttt{\% make tools/tolink.cmx}
 \texttt{\% ocamlfind ocamlopt -thread -rectypes -linkall -linkpkg
-  -package coq.toplevel -I tools tolink.cmx toplevel/coqtop\_bin.ml -o my\_toplevel.native}
+  -package coq.toplevel toplevel/coqtop\_bin.ml -o my\_toplevel.native}
 \end{quotation}
 
-For example, to statically link LTAC, you can add it to \texttt{tools/tolink.ml} and use:
+For example, to statically link LTAC, you can just do:
 \begin{quotation}
-\texttt{\% make tools/tolink.cmx}
 \texttt{\% ocamlfind ocamlopt -thread -rectypes -linkall -linkpkg
-  -package coq.toplevel -package coq.ltac -I tools tolink.cmx toplevel/coqtop\_bin.ml -o my\_toplevel.native}
+  -package coq.toplevel -package coq.ltac toplevel/coqtop\_bin.ml -o my\_toplevel.native}
 \end{quotation}
-
-We will remove the need for the \texttt{tolink} file in the future.
+and similarly for other plugins.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
