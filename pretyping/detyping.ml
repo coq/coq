@@ -367,10 +367,9 @@ let rec decomp_branch tags nal b (avoid,env as e) sigma c =
 let rec build_tree na isgoal e sigma ci cl =
   let mkpat n rhs pl = DAst.make @@ PatCstr((ci.ci_ind,n+1),pl,update_name sigma na rhs) in
   let cnl = ci.ci_pp_info.cstr_tags in
-  let cna = ci.ci_cstr_nargs in
   List.flatten
     (List.init (Array.length cl)
-      (fun i -> contract_branch isgoal e sigma (cnl.(i),cna.(i),mkpat i,cl.(i))))
+      (fun i -> contract_branch isgoal e sigma (cnl.(i),mkpat i,cl.(i))))
 
 and align_tree nal isgoal (e,c as rhs) sigma = match nal with
   | [] -> [Id.Set.empty,[],rhs]
@@ -390,10 +389,10 @@ and align_tree nal isgoal (e,c as rhs) sigma = match nal with
     | _ ->
         let na = update_name sigma na rhs in
         let pat = DAst.make @@ PatVar na in
-	let mat = align_tree nal isgoal rhs sigma in
+        let mat = align_tree nal isgoal rhs sigma in
         List.map (fun (ids,hd,rest) -> Nameops.Name.fold_right Id.Set.add na ids,pat::hd,rest) mat
 
-and contract_branch isgoal e sigma (cdn,can,mkpat,rhs) =
+and contract_branch isgoal e sigma (cdn,mkpat,rhs) =
   let nal,rhs = decomp_branch cdn [] isgoal e sigma rhs in
   let mat = align_tree nal isgoal rhs sigma in
   List.map (fun (ids,hd,rhs) -> ids,mkpat rhs hd,rhs) mat
