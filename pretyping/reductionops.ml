@@ -294,12 +294,12 @@ sig
   val append_app : 'a array -> 'a t -> 'a t
   val decomp : 'a t -> ('a * 'a t) option
   val decomp_node_last : 'a app_node -> 'a t -> ('a * 'a t)
-  val equal : ('a * int -> 'a * int -> bool) -> (('a, 'a) pfixpoint * int -> ('a, 'a) pfixpoint * int -> bool)
-    -> 'a t -> 'a t -> (int * int) option
+  val equal : ('a -> 'a -> bool) -> (('a, 'a) pfixpoint -> ('a, 'a) pfixpoint -> bool)
+    -> 'a t -> 'a t -> bool
   val compare_shape : 'a t -> 'a t -> bool
   val map : ('a -> 'a) -> 'a t -> 'a t
   val fold2 : ('a -> constr -> constr -> 'a) -> 'a ->
-    constr t -> constr t -> 'a * int * int
+    constr t -> constr t -> 'a
   val append_app_list : 'a list -> 'a t -> 'a t
   val strip_app : 'a t -> 'a t * 'a t
   val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
@@ -397,44 +397,37 @@ struct
     else (l.(j), sk)
 
   let equal f f_fix sk1 sk2 =
-    let equal_cst_member x lft1 y lft2 =
+    let equal_cst_member x y =
       match x, y with
       | Cst_const (c1,u1), Cst_const (c2, u2) ->
-	Constant.equal c1 c2 && Univ.Instance.equal u1 u2
+        Constant.equal c1 c2 && Univ.Instance.equal u1 u2
       | Cst_proj p1, Cst_proj p2 ->
-	Constant.equal (Projection.constant p1) (Projection.constant p2)
+        Constant.equal (Projection.constant p1) (Projection.constant p2)
       | _, _ -> false
     in
-    let rec equal_rec sk1 lft1 sk2 lft2  =
+    let rec equal_rec sk1 sk2 =
       match sk1,sk2 with
-      | [],[] -> Some (lft1,lft2)
+      | [],[] -> true
       | App a1 :: s1, App a2 :: s2 ->
-	let t1,s1' = decomp_node_last a1 s1 in
-	let t2,s2' = decomp_node_last a2 s2 in
-	if f (t1,lft1) (t2,lft2) then equal_rec s1' lft1 s2' lft2 else None
+        let t1,s1' = decomp_node_last a1 s1 in
+        let t2,s2' = decomp_node_last a2 s2 in
+        (f t1 t2) && (equal_rec s1' s2')
       | Case (_,t1,a1,_) :: s1, Case (_,t2,a2,_) :: s2 ->
-	if f (t1,lft1) (t2,lft2) && CArray.equal (fun x y -> f (x,lft1) (y,lft2)) a1 a2
-	then equal_rec s1 lft1 s2 lft2
-	else None
+        f t1 t2 && CArray.equal (fun x y -> f x y) a1 a2 && equal_rec s1 s2
       | (Proj (n1,m1,p,_)::s1, Proj(n2,m2,p2,_)::s2) ->
-	if Int.equal n1 n2 && Int.equal m1 m2
-	  && Constant.equal (Projection.constant p) (Projection.constant p2)
-	then equal_rec s1 lft1 s2 lft2
-	else None
+         Int.equal n1 n2 && Int.equal m1 m2
+           && Constant.equal (Projection.constant p) (Projection.constant p2)
+           && equal_rec s1 s2
       | Fix (f1,s1,_) :: s1', Fix (f2,s2,_) :: s2' ->
-	if f_fix (f1,lft1) (f2,lft2) then
-	  match equal_rec (List.rev s1) lft1 (List.rev s2) lft2 with
-	  | None -> None
-	  | Some (lft1',lft2') -> equal_rec s1' lft1' s2' lft2'
-	else None
+        f_fix f1 f2
+          && equal_rec (List.rev s1) (List.rev s2)
+          && equal_rec s1' s2'
       | Cst (c1,curr1,remains1,params1,_)::s1', Cst (c2,curr2,remains2,params2,_)::s2' ->
-	if equal_cst_member c1 lft1 c2 lft2 then
-	  match equal_rec (List.rev params1) lft1 (List.rev params2) lft2 with
-	  | Some (lft1',lft2') -> equal_rec s1' lft1' s2' lft2'
-	  | None -> None
-	else None
-      | ((App _|Case _|Proj _|Fix _|Cst _)::_|[]), _ -> None
-    in equal_rec (List.rev sk1) 0 (List.rev sk2) 0
+        equal_cst_member c1 c2
+          && equal_rec (List.rev params1) (List.rev params2)
+          && equal_rec s1' s2'
+      | ((App _|Case _|Proj _|Fix _|Cst _)::_|[]), _ -> false
+    in equal_rec (List.rev sk1) (List.rev sk2)
 
   let compare_shape stk1 stk2 =
     let rec compare_rec bal stk1 stk2 =
@@ -455,34 +448,26 @@ struct
 
   exception IncompatibleFold2
   let fold2 f o sk1 sk2 =
-    let rec aux o lft1 sk1 lft2 sk2 =
-      let fold_array =
-	Array.fold_left2 (fun a x y -> f a (Vars.lift lft1 x) (Vars.lift lft2 y))
-      in
+    let rec aux o sk1 sk2 =
       match sk1,sk2 with
-      | [], [] -> o,lft1,lft2
+      | [], [] -> o
       | App n1 :: q1, App n2 :: q2 ->
-	 let t1,l1 = decomp_node_last n1 q1 in
-	 let t2,l2 = decomp_node_last n2 q2 in
-	 aux (f o (Vars.lift lft1 t1) (Vars.lift lft2 t2))
-	     lft1 l1 lft2 l2
+        let t1,l1 = decomp_node_last n1 q1 in
+        let t2,l2 = decomp_node_last n2 q2 in
+        aux (f o t1 t2) l1 l2
       | Case (_,t1,a1,_) :: q1, Case (_,t2,a2,_) :: q2 ->
-	aux (fold_array
-	       (f o (Vars.lift lft1 t1) (Vars.lift lft2 t2))
-	       a1 a2) lft1 q1 lft2 q2
+        aux (Array.fold_left2 f (f o t1 t2) a1 a2) q1 q2
       | Proj (n1,m1,p1,_) :: q1, Proj (n2,m2,p2,_) :: q2 ->
-	aux o lft1 q1 lft2 q2
+        aux o q1 q2
       | Fix ((_,(_,a1,b1)),s1,_) :: q1, Fix ((_,(_,a2,b2)),s2,_) :: q2 ->
-	let (o',lft1',lft2') = aux (fold_array (fold_array o b1 b2) a1 a2)
-	  lft1 (List.rev s1) lft2 (List.rev s2) in
-	aux o' lft1' q1 lft2' q2
+        let o' = aux (Array.fold_left2 f (Array.fold_left2 f o b1 b2) a1 a2) (List.rev s1) (List.rev s2) in
+        aux o' q1 q2
       | Cst (cst1,_,_,params1,_) :: q1, Cst (cst2,_,_,params2,_) :: q2 ->
-	let (o',lft1',lft2') =
-	  aux o lft1 (List.rev params1) lft2 (List.rev params2)
-	in aux o' lft1' q1 lft2' q2
+        let o' = aux o (List.rev params1) (List.rev params2) in
+        aux o' q1 q2
       | (((App _|Case _|Proj _|Fix _| Cst _) :: _|[]), _) ->
-	raise IncompatibleFold2
-    in aux o 0 (List.rev sk1) 0 (List.rev sk2)
+              raise IncompatibleFold2
+    in aux o (List.rev sk1) (List.rev sk2)
 
   let rec map f x = List.map (function
                                | (Proj (_,_,_,_)) as e -> e
@@ -535,12 +520,12 @@ struct
   let list_of_app_stack s =
     let rec aux = function
       | App (i,a,j) :: s ->
-	 let (k,(args',s')) = aux s in
-	 let a' = Array.map (Vars.lift k) (Array.sub a i (j - i + 1)) in
-	 k,(Array.fold_right (fun x y -> x::y) a' args', s')
-      | s -> (0,([],s)) in
-    let (lft,(out,s')) = aux s in
-    let init = match s' with [] when Int.equal lft 0 -> true | _ -> false in
+        let (args',s') = aux s in
+        let a' = Array.sub a i (j - i + 1) in
+        (Array.fold_right (fun x y -> x::y) a' args', s')
+      | s -> ([],s) in
+    let (out,s') = aux s in
+    let init = match s' with [] -> true | _ -> false in
     Option.init init out
 
   let assign s p c =
@@ -845,11 +830,9 @@ let _ = Goptions.declare_bool_option {
 }
 
 let equal_stacks sigma (x, l) (y, l') =
-  let f_equal (x,lft1) (y,lft2) = eq_constr sigma (Vars.lift lft1 x) (Vars.lift lft2 y) in
-  let eq_fix (a,b) (c,d) = f_equal (mkFix a, b) (mkFix c, d) in
-    match Stack.equal f_equal eq_fix l l' with
-    | None -> false
-    | Some (lft1,lft2) -> f_equal (x, lft1) (y, lft2) 
+  let f_equal x y = eq_constr sigma x y in
+  let eq_fix a b = f_equal (mkFix a) (mkFix b) in
+  Stack.equal f_equal eq_fix l l' && f_equal x y
 
 let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
   let open Context.Named.Declaration in
