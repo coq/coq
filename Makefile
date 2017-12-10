@@ -100,7 +100,9 @@ export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES)
 export MLSTATICFILES := $(filter-out $(GENMLFILES) $(GENML4FILES), $(EXISTINGML))
 export MLIFILES := $(sort $(GENMLIFILES) $(EXISTINGMLI))
 
-include Makefile.common
+COQMKDIR:=dev/build/makefile
+export COQMKDIR
+include $(COQMKDIR)/Makefile.common
 
 ###########################################################################
 # Starting rules
@@ -185,14 +187,14 @@ endif
 MAKE_OPTS := --warn-undefined-variable --no-builtin-rules
 
 submake:
-	$(MAKE) $(MAKE_OPTS) -f Makefile.build $(MAKECMDGOALS)
+	$(MAKE) $(MAKE_OPTS) -f $(COQMKDIR)/Makefile.build $(MAKECMDGOALS)
 
 noconfig:
 	@echo "Please run ./configure first" >&2; exit 1
 
 # To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
 
-Makefile $(wildcard Makefile.*) config/Makefile : ;
+Makefile $(wildcard $(COQMKDIR)/Makefile.*) config/Makefile : ;
 
 ###########################################################################
 # Cleaning
@@ -290,7 +292,7 @@ alienclean:
 ###########################################################################
 # Continuous Intregration Tests
 ###########################################################################
-include Makefile.ci
+include $(COQMKDIR)/Makefile.ci
 
 ###########################################################################
 # Emacs tags
