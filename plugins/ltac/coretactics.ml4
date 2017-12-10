@@ -346,7 +346,7 @@ let () = register_list_tactical "solve" Tacticals.New.tclSOLVE
 
 let initial_tacticals () =
   let idn n = Id.of_string (Printf.sprintf "_%i" n) in
-  let varn n = Reference (ArgVar (None, idn n)) in
+  let varn n = Reference (ArgVar (CAst.make (idn n))) in
   let iter (s, t) = Tacenv.register_ltac false false (Id.of_string s) t in
   List.iter iter [
     "first", TacFun ([Name (idn 0)], TacML (None, (initial_entry "first", [varn 0])));

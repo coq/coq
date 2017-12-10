@@ -161,7 +161,7 @@ let string_of_genarg_arg (ArgumentType arg) =
         (keyword "eval" ++ brk (1,1) ++
            pr_red_expr (prc,prlc,pr2,pr3) r ++ spc () ++
            keyword "in" ++ spc() ++ prc c)
-    | ConstrContext ((_,id),c) ->
+    | ConstrContext ({CAst.v=id},c) ->
       hov 0
         (keyword "context" ++ spc () ++ pr_id id ++ spc () ++
            str "[ " ++ prlc c ++ str " ]")
@@ -364,7 +364,7 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let pr_ltac_or_var pr = function
     | ArgArg x -> pr x
-    | ArgVar (loc,id) -> pr_with_comments ?loc (pr_id id)
+    | ArgVar {CAst.loc;v=id} -> pr_with_comments ?loc (pr_id id)
 
   let pr_ltac_constant kn =
     if !Flags.in_debugger then KerName.print kn
@@ -404,7 +404,7 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let pr_as_name = function
     | Anonymous -> mt ()
-    | Name id -> spc () ++ keyword "as" ++ spc () ++ pr_lident (Loc.tag id)
+    | Name id -> spc () ++ keyword "as" ++ spc () ++ pr_lident (CAst.make id)
 
   let pr_pose_as_style prc na c =
     spc() ++ prc c ++ pr_as_name na
@@ -496,12 +496,12 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let pr_core_destruction_arg prc prlc = function
     | ElimOnConstr c -> pr_with_bindings prc prlc c
-    | ElimOnIdent (loc,id) -> pr_with_comments ?loc (pr_id id)
+    | ElimOnIdent {CAst.loc;v=id} -> pr_with_comments ?loc (pr_id id)
     | ElimOnAnonHyp n -> int n
 
   let pr_destruction_arg prc prlc (clear_flag,h) =
     pr_clear_flag clear_flag (pr_core_destruction_arg prc prlc) h
-                               
+
   let pr_inversion_kind = function
     | SimpleInversion -> primitive "simple inversion"
     | FullInversion -> primitive "inversion"
@@ -684,7 +684,7 @@ let pr_goal_selector ~toplevel s =
         (*  match t with
             | CHole _ -> spc() ++ prlist_with_sep spc (pr_lname) nal
             | _ ->*)
-        let s = prlist_with_sep spc pr_lname nal ++ str ":" ++ pr.pr_lconstr t in
+        let s = prlist_with_sep spc Ppconstr.pr_lname nal ++ str ":" ++ pr.pr_lconstr t in
         spc() ++ hov 1 (str"(" ++ s ++ str")") in
 
       let pr_fix_tac (id,n,c) =
@@ -692,10 +692,10 @@ let pr_goal_selector ~toplevel s =
         (nal,ty)::bll ->
           if n <= List.length nal then
             match List.chop (n-1) nal with
-                _, (_,Name id) :: _ -> id, (nal,ty)::bll
-              | bef, (loc,Anonymous) :: aft ->
+                _, {CAst.v=Name id} :: _ -> id, (nal,ty)::bll
+              | bef, {CAst.loc;v=Anonymous} :: aft ->
                 let id = next_ident_away (Id.of_string"y") avoid in
-                id, ((bef@(loc,Name id)::aft, ty)::bll)
+                id, ((bef@(CAst.make ?loc @@ Name id)::aft, ty)::bll)
               | _ -> assert false
           else
             let (id,bll') = set_nth_name avoid (n-List.length nal) bll in
@@ -705,7 +705,7 @@ let pr_goal_selector ~toplevel s =
         let names =
           List.fold_left
             (fun ln (nal,_) -> List.fold_left
-              (fun ln na -> match na with (_,Name id) -> Id.Set.add id ln | _ -> ln)
+              (fun ln na -> match na with { CAst.v=Name id } -> Id.Set.add id ln | _ -> ln)
               ln nal)
             Id.Set.empty bll in
         let idarg,bll = set_nth_name names n bll in
@@ -1087,7 +1087,7 @@ let pr_goal_selector ~toplevel s =
       if Int.equal n 0 then (List.rev acc, (ty,None)) else
         match DAst.get ty with
             Glob_term.GProd(na,Explicit,a,b) ->
-              strip_ty (([Loc.tag na],(a,None))::acc) (n-1) b
+              strip_ty (([CAst.make na],(a,None))::acc) (n-1) b
           | _ -> user_err Pp.(str "Cannot translate fix tactic: not enough products") in
     strip_ty [] n ty
 
@@ -1158,7 +1158,7 @@ let pr_goal_selector ~toplevel s =
       if n=0 then (List.rev acc, EConstr.of_constr ty) else
         match Constr.kind ty with
         | Constr.Prod(na,a,b) ->
-          strip_ty (([Loc.tag na],EConstr.of_constr a)::acc) (n-1) b
+          strip_ty (([CAst.make na],EConstr.of_constr a)::acc) (n-1) b
         | _ -> user_err Pp.(str "Cannot translate fix tactic: not enough products") in
     strip_ty [] n ty
 
@@ -1318,7 +1318,7 @@ let () =
   register_basic_print0 wit_ref
     pr_reference (pr_or_var (pr_located pr_global)) pr_global;
   register_basic_print0 wit_ident pr_id pr_id pr_id;
-  register_basic_print0 wit_var (pr_located pr_id) (pr_located pr_id) pr_id;
+  register_basic_print0 wit_var pr_lident pr_lident pr_id;
   register_print0
     wit_intro_pattern
     (lift (Miscprint.pr_intro_pattern pr_constr_expr))
@@ -1328,7 +1328,7 @@ let () =
     wit_clause_dft_concl
     (lift (pr_clauses (Some true) pr_lident))
     (lift (pr_clauses (Some true) pr_lident))
-    (fun c -> Genprint.TopPrinterBasic (fun () -> pr_clauses (Some true) (fun id -> pr_lident (Loc.tag id)) c))
+    (fun c -> Genprint.TopPrinterBasic (fun () -> pr_clauses (Some true) (fun id -> pr_lident (CAst.make id)) c))
   ;
   Genprint.register_print0
     wit_constr

@@ -62,7 +62,7 @@ let _ =
 
 let interp_fields_evars env sigma impls_env nots l =
   List.fold_left2
-    (fun (env, sigma, uimpls, params, impls) no ((loc, i), b, t) ->
+    (fun (env, sigma, uimpls, params, impls) no ({CAst.loc;v=i}, b, t) ->
       let sigma, (t', impl) = interp_type_evars_impls env sigma ~impls t in
       let sigma, b' =
         Option.cata (fun x -> on_snd (fun x -> Some (fst x)) @@
@@ -92,8 +92,9 @@ let compute_constructor_level evars env l =
 
 let binder_of_decl = function
   | Vernacexpr.AssumExpr(n,t) -> (n,None,t)
-  | Vernacexpr.DefExpr(n,c,t) -> (n,Some c, match t with Some c -> c
-                                                       | None   -> CAst.make ?loc:(fst n) @@ CHole (None, Misctypes.IntroAnonymous, None))
+  | Vernacexpr.DefExpr(n,c,t) ->
+    (n,Some c, match t with Some c -> c
+                          | None   -> CAst.make ?loc:n.CAst.loc @@ CHole (None, Misctypes.IntroAnonymous, None))
 
 let binders_of_decls = List.map binder_of_decl
 
@@ -101,7 +102,7 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
   let env0 = Global.env () in
   let sigma, decl = Univdecls.interp_univ_decl_opt env0 pl in
   let _ =
-    let error bk (loc, name) =
+    let error bk {CAst.loc; v=name} =
       match bk, name with
       | Default _, Anonymous ->
         user_err ?loc ~hdr:"record" (str "Record parameters must be named")
@@ -110,7 +111,7 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
       List.iter 
 	(function CLocalDef (b, _, _) -> error default_binder_kind b
 	   | CLocalAssum (ls, bk, ce) -> List.iter (error bk) ls
-           | CLocalPattern (loc,(_,_)) ->
+           | CLocalPattern {CAst.loc} ->
               Loc.raise ?loc (Stream.Error "pattern with quote not allowed in record parameters.")) ps
   in 
   let sigma, (impls_env, ((env1,newps), imps)) = interp_context_evars env0 sigma ps in
@@ -571,13 +572,13 @@ open Vernacexpr
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a
    list telling if the corresponding fields must me declared as coercions 
    or subinstances. *)
-let definition_structure (kind,cum,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cfs,idbuild,s) =
+let definition_structure (kind,cum,poly,finite,(is_coe,({CAst.loc;v=idstruc},pl)),ps,cfs,idbuild,s) =
   let cfs,notations = List.split cfs in
   let cfs,priorities = List.split cfs in
   let coers,fs = List.split cfs in
   let extract_name acc = function
-      Vernacexpr.AssumExpr((_,Name id),_) -> id::acc
-    | Vernacexpr.DefExpr ((_,Name id),_,_) -> id::acc
+      Vernacexpr.AssumExpr({CAst.v=Name id},_) -> id::acc
+    | Vernacexpr.DefExpr ({CAst.v=Name id},_,_) -> id::acc
     | _ -> acc in
   let allnames =  idstruc::(List.fold_left extract_name [] fs) in
   let () = match List.duplicates Id.equal allnames with

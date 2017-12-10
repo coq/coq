@@ -130,7 +130,7 @@ let pr_ssrhyp _ _ _ = pr_hyp
 let wit_ssrhyprep = add_genarg "ssrhyprep" pr_hyp
 
 let intern_hyp ist (SsrHyp (loc, id) as hyp) =
-  let _ = Tacintern.intern_genarg ist (in_gen (rawwit wit_var) (loc, id)) in
+  let _ = Tacintern.intern_genarg ist (in_gen (rawwit wit_var) CAst.(make ?loc id)) in
   if not_section_id id then hyp else
   hyp_err ?loc "Can't clear section hypothesis " id
 
@@ -316,7 +316,7 @@ END
 
 
 let pr_index = function
-  | Misctypes.ArgVar (_, id) -> pr_id id
+  | Misctypes.ArgVar {CAst.v=id} -> pr_id id
   | Misctypes.ArgArg n when n > 0 -> int n
   | _ -> mt ()
 let pr_ssrindex _ _ _ = pr_index
@@ -330,13 +330,13 @@ let mk_index ?loc = function
   | iv -> iv
 
 let interp_index ist gl idx =
-  Tacmach.project gl, 
+  Tacmach.project gl,
   match idx with
   | Misctypes.ArgArg _ -> idx
-  | Misctypes.ArgVar (loc, id) ->
+  | Misctypes.ArgVar id ->
     let i =
       try
-        let v = Id.Map.find id ist.Tacinterp.lfun in
+        let v = Id.Map.find id.CAst.v ist.Tacinterp.lfun in
         begin match Tacinterp.Value.to_int v with
         | Some i -> i
         | None ->
@@ -350,8 +350,8 @@ let interp_index ist gl idx =
           end
         | None -> raise Not_found
         end end
-    with _ -> CErrors.user_err ?loc (str"Index not a number") in
-    Misctypes.ArgArg (check_index ?loc i)
+    with _ -> CErrors.user_err ?loc:id.CAst.loc (str"Index not a number") in
+    Misctypes.ArgArg (check_index ?loc:id.CAst.loc i)
 
 open Pltac
 
@@ -1014,22 +1014,22 @@ let rec mkBstruct i = function
   | [] -> []
 
 let rec format_local_binders h0 bl0 = match h0, bl0 with
-  | BFvar :: h, CLocalAssum ([_, x], _,  _) :: bl ->
+  | BFvar :: h, CLocalAssum ([{CAst.v=x}], _,  _) :: bl ->
     Bvar x :: format_local_binders h bl
   | BFdecl _ :: h, CLocalAssum (lxs, _, t) :: bl ->
-    Bdecl (List.map snd lxs, t) :: format_local_binders h bl
-  | BFdef :: h, CLocalDef ((_, x), v, oty) :: bl ->
+    Bdecl (List.map (fun x -> x.CAst.v) lxs, t) :: format_local_binders h bl
+  | BFdef :: h, CLocalDef ({CAst.v=x}, v, oty) :: bl ->
     Bdef (x, oty, v) :: format_local_binders h bl
   | _ -> []
   
 let rec format_constr_expr h0 c0 = let open CAst in match h0, c0 with
-  | BFvar :: h, { v = CLambdaN ([CLocalAssum([_, x], _, _)], c) } ->
+  | BFvar :: h, { v = CLambdaN ([CLocalAssum([{CAst.v=x}], _, _)], c) } ->
     let bs, c' = format_constr_expr h c in
     Bvar x :: bs, c'
   | BFdecl _:: h, { v = CLambdaN ([CLocalAssum(lxs, _, t)], c) } ->
     let bs, c' = format_constr_expr h c in
-    Bdecl (List.map snd lxs, t) :: bs, c'
-  | BFdef :: h, { v = CLetIn((_, x), v, oty, c) } ->
+    Bdecl (List.map (fun x -> x.CAst.v) lxs, t) :: bs, c'
+  | BFdef :: h, { v = CLetIn({CAst.v=x}, v, oty, c) } ->
     let bs, c' = format_constr_expr h c in
     Bdef (x, oty, v) :: bs, c'
   | [BFcast], { v = CCast (c, CastConv t) } ->
@@ -1037,7 +1037,7 @@ let rec format_constr_expr h0 c0 = let open CAst in match h0, c0 with
   | BFrec (has_str, has_cast) :: h, 
     { v = CFix ( _, [_, (Some locn, CStructRec), bl, t, c]) } ->
     let bs = format_local_binders h bl in
-    let bstr = if has_str then [Bstruct (Name (snd locn))] else [] in
+    let bstr = if has_str then [Bstruct (Name locn.CAst.v)] else [] in
     bs @ bstr @ (if has_cast then [Bcast t] else []), c 
   | BFrec (_, has_cast) :: h, { v = CCoFix ( _, [_, bl, t, c]) } ->
     format_local_binders h bl @ (if has_cast then [Bcast t] else []), c
@@ -1156,18 +1156,18 @@ ARGUMENT EXTEND ssrbvar TYPED AS constr PRINTED BY pr_ssrbvar
 END
 
 let bvar_lname = let open CAst in function
-  | { v = CRef (Ident (loc, id), _) } -> Loc.tag ?loc @@ Name id
-  | { loc = loc } -> Loc.tag ?loc Anonymous
+  | { v = CRef (Ident (loc, id), _) } -> CAst.make ?loc @@ Name id
+  | { loc = loc } -> CAst.make ?loc Anonymous
 
 let pr_ssrbinder prc _ _ (_, c) = prc c
 
 ARGUMENT EXTEND ssrbinder TYPED AS ssrfwdfmt * constr PRINTED BY pr_ssrbinder
  | [ ssrbvar(bv) ] ->
-   [ let xloc, _ as x = bvar_lname bv in
+   [ let { CAst.loc=xloc } as x = bvar_lname bv in
      (FwdPose, [BFvar]),
      CAst.make ~loc @@ CLambdaN ([CLocalAssum([x],Default Explicit,mkCHole xloc)],mkCHole (Some loc)) ]
  | [ "(" ssrbvar(bv) ")" ] ->
-   [ let xloc, _ as x = bvar_lname bv in
+   [ let { CAst.loc=xloc } as x = bvar_lname bv in
      (FwdPose, [BFvar]),
      CAst.make ~loc @@ CLambdaN ([CLocalAssum([x],Default Explicit,mkCHole xloc)],mkCHole (Some loc)) ]
  | [ "(" ssrbvar(bv) ":" lconstr(t) ")" ] ->
@@ -1191,7 +1191,7 @@ GEXTEND Gram
   [  ["of" | "&"]; c = operconstr LEVEL "99" ->
      let loc = !@loc in
      (FwdPose, [BFvar]),
-     CAst.make ~loc @@ CLambdaN ([CLocalAssum ([Loc.tag ~loc Anonymous],Default Explicit,c)],mkCHole (Some loc)) ]
+     CAst.make ~loc @@ CLambdaN ([CLocalAssum ([CAst.make ~loc Anonymous],Default Explicit,c)],mkCHole (Some loc)) ]
   ];
 END
 
@@ -1250,13 +1250,13 @@ END
 let pr_ssrfixfwd _ _ _ (id, fwd) = str " fix " ++ pr_id id ++ pr_fwd fwd
 
 let bvar_locid = function
-  | { CAst.v = CRef (Ident (loc, id), _) } -> loc, id
+  | { CAst.v = CRef (Ident (loc, id), _) } -> CAst.make ?loc id
   | _ -> CErrors.user_err (Pp.str "Missing identifier after \"(co)fix\"")
 
 
 ARGUMENT EXTEND ssrfixfwd TYPED AS ident * ssrfwd PRINTED BY pr_ssrfixfwd
   | [ "fix" ssrbvar(bv) ssrbinder_list(bs) ssrstruct(sid) ssrfwd(fwd) ] ->
-    [ let (_, id) as lid = bvar_locid bv in
+    [ let { CAst.v=id } as lid = bvar_locid bv in
       let (fk, h), (ck, (rc, oc)) = fwd in
       let c = Option.get oc in
       let has_cast, t', c' = match format_constr_expr h c with
@@ -1265,8 +1265,10 @@ ARGUMENT EXTEND ssrfixfwd TYPED AS ident * ssrfwd PRINTED BY pr_ssrfixfwd
       let lb = fix_binders bs in
       let has_struct, i =
         let rec loop = function
-          (l', Name id') :: _ when Option.equal Id.equal sid (Some id') -> true, (l', id')
-          | [l', Name id'] when sid = None -> false, (l', id')
+          | {CAst.loc=l'; v=Name id'} :: _ when Option.equal Id.equal sid (Some id') ->
+            true, CAst.make ?loc:l' id'
+          | [{CAst.loc=l';v=Name id'}] when sid = None ->
+            false, CAst.make ?loc:l' id'
           | _ :: bn -> loop bn
           | [] -> CErrors.user_err (Pp.str "Bad structural argument") in
         loop (names_of_local_assums lb) in
@@ -1282,7 +1284,7 @@ let pr_ssrcofixfwd _ _ _ (id, fwd) = str " cofix " ++ pr_id id ++ pr_fwd fwd
 
 ARGUMENT EXTEND ssrcofixfwd TYPED AS ssrfixfwd PRINTED BY pr_ssrcofixfwd
   | [ "cofix" ssrbvar(bv) ssrbinder_list(bs) ssrfwd(fwd) ] ->
-    [ let _, id as lid = bvar_locid bv in
+    [ let { CAst.v=id } as lid = bvar_locid bv in
       let (fk, h), (ck, (rc, oc)) = fwd in
       let c = Option.get oc in
       let has_cast, t', c' = match format_constr_expr h c with
@@ -1323,7 +1325,7 @@ END
 
 let intro_id_to_binder = List.map (function 
   | IPatId id ->
-      let xloc, _ as x = bvar_lname (mkCVar id) in
+      let { CAst.loc=xloc } as x = bvar_lname (mkCVar id) in
       (FwdPose, [BFvar]),
         CAst.make @@ CLambdaN ([CLocalAssum([x], Default Explicit, mkCHole xloc)],
           mkCHole None)
@@ -1332,9 +1334,9 @@ let intro_id_to_binder = List.map (function
 let binder_to_intro_id = CAst.(List.map (function
   | (FwdPose, [BFvar]), { v = CLambdaN ([CLocalAssum(ids,_,_)],_) }
   | (FwdPose, [BFdecl _]), { v = CLambdaN ([CLocalAssum(ids,_,_)],_) } ->
-      List.map (function (_, Name id) -> IPatId id | _ -> IPatAnon One) ids
-  | (FwdPose, [BFdef]), { v = CLetIn ((_,Name id),_,_,_) } -> [IPatId id]
-  | (FwdPose, [BFdef]), { v = CLetIn ((_,Anonymous),_,_,_) } -> [IPatAnon One]
+      List.map (function {v=Name id} -> IPatId id | _ -> IPatAnon One) ids
+  | (FwdPose, [BFdef]), { v = CLetIn ({v=Name id},_,_,_) } -> [IPatId id]
+  | (FwdPose, [BFdef]), { v = CLetIn ({v=Anonymous},_,_,_) } -> [IPatAnon One]
   | _ -> anomaly "ssrbinder is not a binder"))
 
 let pr_ssrhavefwdwbinders _ _ prt (tr,((hpats, (fwd, hint)))) =
@@ -1405,7 +1407,7 @@ let ssrorelse = Gram.entry_create "ssrorelse"
 GEXTEND Gram
   GLOBAL: ssrorelse ssrseqarg;
   ssrseqidx: [
-    [ test_ssrseqvar; id = Prim.ident -> ArgVar (Loc.tag ~loc:!@loc id)
+    [ test_ssrseqvar; id = Prim.ident -> ArgVar (CAst.make ~loc:!@loc id)
     | n = Prim.natural -> ArgArg (check_index ~loc:!@loc n)
     ] ];
   ssrswap: [[ IDENT "first" -> !@loc, true | IDENT "last" -> !@loc, false ]];

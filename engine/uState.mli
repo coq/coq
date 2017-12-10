@@ -132,7 +132,7 @@ val refresh_undefined_univ_variables : t -> t * Univ.universe_level_subst
 val normalize : t -> t
 
 type universe_decl =
-  (Names.Id.t Loc.located list, Univ.Constraint.t) Misctypes.gen_universe_decl
+  (Misctypes.lident list, Univ.Constraint.t) Misctypes.gen_universe_decl
 
 (** [check_univ_decl ctx decl]
 

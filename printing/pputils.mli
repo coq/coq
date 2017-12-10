@@ -12,6 +12,7 @@ open Locus
 open Genredexpr
 
 val pr_located : ('a -> Pp.t) -> 'a Loc.located -> Pp.t
+val pr_ast : ('a -> Pp.t) -> 'a CAst.t -> Pp.t
 (** Prints an object surrounded by its commented location *)
 
 val pr_or_var : ('a -> Pp.t) -> 'a or_var -> Pp.t

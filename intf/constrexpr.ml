@@ -46,7 +46,7 @@ type prim_token =
 type instance_expr = Misctypes.glob_level list
 
 type cases_pattern_expr_r =
-  | CPatAlias of cases_pattern_expr * Name.t Loc.located
+  | CPatAlias of cases_pattern_expr * lname
   | CPatCstr  of reference
     * cases_pattern_expr list option * cases_pattern_expr list
   (** [CPatCstr (_, c, Some l1, l2)] represents (@c l1) l2 *)
@@ -68,14 +68,14 @@ and cases_pattern_notation_substitution =
 
 and constr_expr_r =
   | CRef     of reference * instance_expr option
-  | CFix     of Id.t Loc.located * fix_expr list
-  | CCoFix   of Id.t Loc.located * cofix_expr list
+  | CFix     of lident * fix_expr list
+  | CCoFix   of lident * cofix_expr list
   | CProdN   of local_binder_expr list * constr_expr
   | CLambdaN of local_binder_expr list * constr_expr
-  | CLetIn   of Name.t Loc.located * constr_expr * constr_expr option * constr_expr
+  | CLetIn   of lname * constr_expr * constr_expr option * constr_expr
   | CAppExpl of (proj_flag * reference * instance_expr option) * constr_expr list
   | CApp     of (proj_flag * constr_expr) *
-                (constr_expr * explicitation Loc.located option) list
+                (constr_expr * explicitation CAst.t option) list
   | CRecord  of (reference * constr_expr) list
 
   (* representation of the "let" and "match" constructs *)
@@ -84,9 +84,9 @@ and constr_expr_r =
             * case_expr list
             * branch_expr list    (* branches *)
 
-  | CLetTuple of Name.t Loc.located list * (Name.t Loc.located option * constr_expr option) *
+  | CLetTuple of lname list * (lname option * constr_expr option) *
                  constr_expr * constr_expr
-  | CIf of constr_expr * (Name.t Loc.located option * constr_expr option)
+  | CIf of constr_expr * (lname option * constr_expr option)
          * constr_expr * constr_expr
   | CHole   of Evar_kinds.t option * intro_pattern_naming_expr * Genarg.raw_generic_argument option
   | CPatVar of patvar
@@ -101,18 +101,18 @@ and constr_expr_r =
 and constr_expr = constr_expr_r CAst.t
 
 and case_expr = constr_expr                 (* expression that is being matched *)
-	      * Name.t Loc.located option   (* as-clause *)
+              * lname option                (* as-clause *)
 	      * cases_pattern_expr option   (* in-clause *)
 
 and branch_expr =
-  (cases_pattern_expr list list * constr_expr) Loc.located
+  (cases_pattern_expr list list * constr_expr) CAst.t
 
 and fix_expr =
-    Id.t Loc.located * (Id.t Loc.located option * recursion_order_expr) *
+    lident * (lident option * recursion_order_expr) *
       local_binder_expr list * constr_expr * constr_expr
 
 and cofix_expr =
-    Id.t Loc.located * local_binder_expr list * constr_expr * constr_expr
+    lident * local_binder_expr list * constr_expr * constr_expr
 
 and recursion_order_expr =
   | CStructRec
@@ -121,9 +121,9 @@ and recursion_order_expr =
 
 (** Anonymous defs allowed ?? *)
 and local_binder_expr =
-  | CLocalAssum   of Name.t Loc.located list * binder_kind * constr_expr
-  | CLocalDef     of Name.t Loc.located * constr_expr * constr_expr option
-  | CLocalPattern of (cases_pattern_expr * constr_expr option) Loc.located
+  | CLocalAssum   of lname list * binder_kind * constr_expr
+  | CLocalDef     of lname * constr_expr * constr_expr option
+  | CLocalPattern of (cases_pattern_expr * constr_expr option) CAst.t
 
 and constr_notation_substitution =
     constr_expr list *      (** for constr subterms *)

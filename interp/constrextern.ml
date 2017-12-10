@@ -257,7 +257,7 @@ let insert_pat_delimiters ?loc p = function
 
 let insert_pat_alias ?loc p = function
   | Anonymous -> p
-  | Name _ as na -> CAst.make ?loc @@ CPatAlias (p,(loc,na))
+  | Name _ as na -> CAst.make ?loc @@ CPatAlias (p,(CAst.make ?loc na))
 
 (**********************************************************************)
 (* conversion of references                                           *)
@@ -574,7 +574,7 @@ let explicitize inctx impl (cf,f) args =
 	   is_significant_implicit (Lazy.force a))
 	in
         if visible then
-	  (Lazy.force a,Some (Loc.tag @@ ExplByName (name_of_implicit imp))) :: tail
+          (Lazy.force a,Some (make @@ ExplByName (name_of_implicit imp))) :: tail
 	else
 	  tail
     | a::args, _::impl -> (Lazy.force a,None) :: exprec (q+1) (args,impl)
@@ -816,7 +816,7 @@ let rec extern inctx scopes vars r =
              (List.map (fun c -> lazy (sub_extern true scopes vars c)) args))
 
   | GLetIn (na,b,t,c) ->
-      CLetIn ((loc,na),sub_extern false scopes vars b,
+      CLetIn (make ?loc na,sub_extern false scopes vars b,
               Option.map (extern_typ scopes vars) t,
               extern inctx scopes (add_vname vars na) c)
 
@@ -840,12 +840,12 @@ let rec extern inctx scopes vars r =
                             | None -> None
                             | Some ntn ->
                                if occur_glob_constr id ntn then
-                                 Some (Loc.tag Anonymous)
+                                 Some (CAst.make Anonymous)
                                else None
                       end
                    | Anonymous, _ -> None
                    | Name id, GVar id' when Id.equal id id' -> None
-                   | Name _, _ -> Some (Loc.tag na) in
+                   | Name _, _ -> Some (CAst.make na) in
                  (sub_extern false scopes vars tm,
                   na',
                   Option.map (fun (loc,(ind,nal)) ->
@@ -859,15 +859,15 @@ let rec extern inctx scopes vars r =
     CCases (sty,rtntypopt',tml,eqns)
 
   | GLetTuple (nal,(na,typopt),tm,b) ->
-      CLetTuple (List.map (fun na -> (Loc.tag na)) nal,
-        (Option.map (fun _ -> (Loc.tag na)) typopt,
+    CLetTuple (List.map CAst.make nal,
+        (Option.map (fun _ -> (make na)) typopt,
          Option.map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars tm,
         extern inctx scopes (List.fold_left add_vname vars nal) b)
 
   | GIf (c,(na,typopt),b1,b2) ->
       CIf (sub_extern false scopes vars c,
-        (Option.map (fun _ -> (Loc.tag na)) typopt,
+        (Option.map (fun _ -> (CAst.make na)) typopt,
          Option.map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern inctx scopes vars b1, sub_extern inctx scopes vars b2)
 
@@ -885,13 +885,13 @@ let rec extern inctx scopes vars r =
 		 let n =
 		   match fst nv.(i) with
 		     | None -> None
-		     | Some x -> Some (Loc.tag @@ Name.get_id (List.nth assums x))
+                     | Some x -> Some (CAst.make @@ Name.get_id (List.nth assums x))
 		 in
 		 let ro = extern_recursion_order scopes vars (snd nv.(i)) in
-		 ((Loc.tag fi), (n, ro), bl, extern_typ scopes vars0 ty,
+                 ((CAst.make fi), (n, ro), bl, extern_typ scopes vars0 ty,
                   extern false scopes vars1 def)) idv
 	     in
-	     CFix ((loc,idv.(n)),Array.to_list listdecl)
+             CFix (CAst.(make ?loc idv.(n)), Array.to_list listdecl)
 	 | GCoFix n ->
 	     let listdecl =
                Array.mapi (fun i fi ->
@@ -899,10 +899,10 @@ let rec extern inctx scopes vars r =
                  let (_,ids,bl) = extern_local_binder scopes vars bl in
                  let vars0 = List.fold_right (Name.fold_right Id.Set.add) ids vars in
                  let vars1 = List.fold_right (Name.fold_right Id.Set.add) ids vars' in
-		 ((Loc.tag fi),bl,extern_typ scopes vars0 tyv.(i),
+                 ((CAst.make fi),bl,extern_typ scopes vars0 tyv.(i),
                   sub_extern false scopes vars1 bv.(i))) idv
 	     in
-	     CCoFix ((loc,idv.(n)),Array.to_list listdecl))
+             CCoFix (CAst.(make ?loc idv.(n)),Array.to_list listdecl))
 
   | GSort s -> CSort (extern_glob_sort s)
 
@@ -932,7 +932,7 @@ and factorize_prod scopes vars na bk aty c =
       let disjpat = if occur_glob_constr id b then List.map (set_pat_alias id) disjpat else disjpat in
       let b = extern_typ scopes vars b in
       let p = mkCPatOr (List.map (extern_cases_pattern_in_scope scopes vars) disjpat) in
-      let binder = CLocalPattern (c.loc,(p,None)) in
+      let binder = CLocalPattern (make ?loc:c.loc (p,None)) in
       (match b.v with
       | CProdN (bl,b) -> CProdN (binder::bl,b)
       | _ -> CProdN ([binder],b))
@@ -943,11 +943,11 @@ and factorize_prod scopes vars na bk aty c =
       | Name id, CProdN (CLocalAssum(nal,Default bk',ty)::bl,b)
            when binding_kind_eq bk bk' && constr_expr_eq aty ty
                 && not (occur_var_constr_expr id ty) (* avoid na in ty escapes scope *) ->
-         CProdN (CLocalAssum(Loc.tag na::nal,Default bk,aty)::bl,b)
+         CProdN (CLocalAssum(make na::nal,Default bk,aty)::bl,b)
       | _, CProdN (bl,b) ->
-         CProdN (CLocalAssum([Loc.tag na],Default bk,aty)::bl,b)
+         CProdN (CLocalAssum([make na],Default bk,aty)::bl,b)
       | _, _ ->
-         CProdN ([CLocalAssum([Loc.tag na],Default bk,aty)],c)
+         CProdN ([CLocalAssum([make na],Default bk,aty)],c)
 
 and factorize_lambda inctx scopes vars na bk aty c =
   let store, get = set_temporary_memory () in
@@ -960,7 +960,7 @@ and factorize_lambda inctx scopes vars na bk aty c =
       let disjpat = if occur_glob_constr id b then List.map (set_pat_alias id) disjpat else disjpat in
       let b = sub_extern inctx scopes vars b in
       let p = mkCPatOr (List.map (extern_cases_pattern_in_scope scopes vars) disjpat) in
-      let binder = CLocalPattern (c.loc,(p,None)) in
+      let binder = CLocalPattern (make ?loc:c.loc (p,None)) in
       (match b.v with
       | CLambdaN (bl,b) -> CLambdaN (binder::bl,b)
       | _ -> CLambdaN ([binder],b))
@@ -971,11 +971,11 @@ and factorize_lambda inctx scopes vars na bk aty c =
       | CLambdaN (CLocalAssum(nal,Default bk',ty)::bl,b)
            when binding_kind_eq bk bk' && constr_expr_eq aty ty
                 && not (occur_name na ty) (* avoid na in ty escapes scope *) ->
-         CLambdaN (CLocalAssum(Loc.tag na::nal,Default bk,aty)::bl,b)
+         CLambdaN (CLocalAssum(make na::nal,Default bk,aty)::bl,b)
       | CLambdaN (bl,b) ->
-         CLambdaN (CLocalAssum([Loc.tag na],Default bk,aty)::bl,b)
+         CLambdaN (CLocalAssum([make na],Default bk,aty)::bl,b)
       | _ ->
-         CLambdaN ([CLocalAssum([Loc.tag na],Default bk,aty)],c)
+         CLambdaN ([CLocalAssum([make na],Default bk,aty)],c)
 
 and extern_local_binder scopes vars = function
     [] -> ([],[],[])
@@ -985,7 +985,7 @@ and extern_local_binder scopes vars = function
       let (assums,ids,l) =
         extern_local_binder scopes (Name.fold_right Id.Set.add na vars) l in
       (assums,na::ids,
-       CLocalDef((Loc.tag na), extern false scopes vars bd,
+       CLocalDef(CAst.make na, extern false scopes vars bd,
                    Option.map (extern false scopes vars) ty) :: l)
 
     | GLocalAssum (na,bk,ty) ->
@@ -996,21 +996,21 @@ and extern_local_binder scopes vars = function
               match na with Name id -> not (occur_var_constr_expr id ty')
                 | _ -> true ->
               (na::assums,na::ids,
-               CLocalAssum((Loc.tag na)::nal,k,ty')::l)
+               CLocalAssum(CAst.make na::nal,k,ty')::l)
         | (assums,ids,l) ->
             (na::assums,na::ids,
-             CLocalAssum([(Loc.tag na)],Default bk,ty) :: l))
+             CLocalAssum([CAst.make na],Default bk,ty) :: l))
 
     | GLocalPattern ((p,_),_,bk,ty) ->
       let ty =
         if !Flags.raw_print then Some (extern_typ scopes vars ty) else None in
       let p = mkCPatOr (List.map (extern_cases_pattern vars) p) in
       let (assums,ids,l) = extern_local_binder scopes vars l in
-      (assums,ids, CLocalPattern(Loc.tag @@ (p,ty)) :: l)
+      (assums,ids, CLocalPattern(CAst.make @@ (p,ty)) :: l)
 
 and extern_eqn inctx scopes vars (loc,(ids,pll,c)) =
   let pll = List.map (List.map (extern_cases_pattern_in_scope scopes vars)) pll in
-  Loc.tag ?loc (pll,extern inctx scopes vars c)
+  make ?loc (pll,extern inctx scopes vars c)
 
 and extern_notation (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match

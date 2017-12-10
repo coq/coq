@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Loc
 open Names
 open Constrexpr
 
@@ -15,7 +14,7 @@ val asymmetric_patterns : bool ref
 [@@ocaml.deprecated "use Constrexpr_ops.asymmetric_patterns"]
 
 (** Utilities on constr_expr *)
-val split_at_annot : local_binder_expr list -> Id.t located option -> local_binder_expr list * local_binder_expr list
+val split_at_annot : local_binder_expr list -> Misctypes.lident option -> local_binder_expr list * local_binder_expr list
 [@@ocaml.deprecated "use Constrexpr_ops.split_at_annot"]
 
 val ntn_loc : ?loc:Loc.t -> constr_notation_substitution -> string -> (int * int) list

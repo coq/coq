@@ -89,7 +89,7 @@ let pr_grammar = function
 (* Parse a format (every terminal starting with a letter or a single
    quote (except a single quote alone) must be quoted) *)
 
-let parse_format ((loc, str) : lstring) =
+let parse_format ({CAst.loc;v=str} : Misctypes.lstring) =
   let len = String.length str in
   (* TODO: update the line of the location when the string contains newlines *)
   let make_loc i j = Option.map (Loc.shift_loc (i+1) (j-len)) loc in
@@ -789,7 +789,7 @@ type notation_modifier = {
   only_parsing  : bool;
   only_printing : bool;
   compat        : Flags.compat_version option;
-  format        : string Loc.located option;
+  format        : Misctypes.lstring option;
   extra         : (string * string) list;
 }
 
@@ -847,7 +847,7 @@ let interp_modifiers modl = let open NotationMods in
     | SetFormat ("text",s) :: l ->
 	if not (Option.is_empty acc.format) then user_err Pp.(str "A format is given more than once.");
         interp { acc with format = Some s; } l
-    | SetFormat (k,(_,s)) :: l ->
+    | SetFormat (k,{CAst.v=s}) :: l ->
         interp { acc with extra = (k,s)::acc.extra; } l
   in interp default modl
 
@@ -1101,7 +1101,7 @@ module SynData = struct
     only_parsing  : bool;
     only_printing : bool;
     compat        : Flags.compat_version option;
-    format        : string Loc.located option;
+    format        : Misctypes.lstring option;
     extra         : (string * string) list;
 
     (* XXX: Callback to printing, must remove *)
@@ -1400,7 +1400,7 @@ let add_notation_interpretation_core local df env ?(impls=empty_internalization_
 
 (* Notations without interpretation (Reserved Notation) *)
 
-let add_syntax_extension local ((loc,df),mods) = let open SynData in
+let add_syntax_extension local ({CAst.loc;v=df},mods) = let open SynData in
   let psd = compute_pure_syntax_data df mods in
   let sy_rules = make_syntax_rules {psd with compat = None} in
   Flags.if_verbose (List.iter (fun (f,x) -> f x)) psd.msgs;
@@ -1408,11 +1408,11 @@ let add_syntax_extension local ((loc,df),mods) = let open SynData in
 
 (* Notations with only interpretation *)
 
-let add_notation_interpretation env ((loc,df),c,sc) =
+let add_notation_interpretation env ({CAst.loc;v=df},c,sc) =
   let df' = add_notation_interpretation_core false df env c sc false false None in
   Dumpglob.dump_notation (loc,df') sc true
 
-let set_notation_for_interpretation env impls ((_,df),c,sc) =
+let set_notation_for_interpretation env impls ({CAst.v=df},c,sc) =
   (try ignore
     (Flags.silently (fun () -> add_notation_interpretation_core false df env ~impls c sc false false None) ());
   with NoSyntaxRule ->
@@ -1421,7 +1421,7 @@ let set_notation_for_interpretation env impls ((_,df),c,sc) =
 
 (* Main entry point *)
 
-let add_notation local env c ((loc,df),modifiers) sc =
+let add_notation local env c ({CAst.loc;v=df},modifiers) sc =
   let df' =
    if no_syntax_modifiers modifiers then
     (* No syntax data: try to rely on a previously declared rule *)
@@ -1448,13 +1448,13 @@ let add_notation_extra_printing_rule df k v =
 
 let inject_var x = CAst.make @@ CRef (Ident (Loc.tag @@ Id.of_string x),None)
 
-let add_infix local env ((loc,inf),modifiers) pr sc =
+let add_infix local env ({CAst.loc;v=inf},modifiers) pr sc =
   check_infix_modifiers modifiers;
   (* check the precedence *)
   let metas = [inject_var "x"; inject_var "y"] in
   let c = mkAppC (pr,metas) in
-  let df = "x "^(quote_notation_token inf)^" y" in
-  add_notation local env c ((loc,df),modifiers) sc
+  let df = CAst.make ?loc @@ "x "^(quote_notation_token inf)^" y" in
+  add_notation local env c (df,modifiers) sc
 
 (**********************************************************************)
 (* Delimiters and classes bound to scopes                             *)

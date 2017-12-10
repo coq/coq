@@ -87,7 +87,7 @@ val intern_gen : typing_constraint -> env ->
   constr_expr -> glob_constr
 
 val intern_pattern : env -> cases_pattern_expr ->
-  Id.t Loc.located list * (Id.t Id.Map.t * cases_pattern) list
+  lident list * (Id.t Id.Map.t * cases_pattern) list
 
 val intern_context : bool -> env -> internalization_env -> local_binder_expr list -> internalization_env * glob_decl list
 

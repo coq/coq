@@ -37,10 +37,10 @@ let genarg_of_uconstr c = in_gen (rawwit Stdarg.wit_uconstr) c
 let in_tac tac = in_gen (rawwit Tacarg.wit_ltac) tac
 
 let reference_to_id = function
-  | Libnames.Ident (loc, id) -> (loc, id)
+  | Libnames.Ident (loc, id) -> CAst.make ?loc id
   | Libnames.Qualid (loc,_) ->
-      CErrors.user_err ?loc 
-       (str "This expression should be a simple identifier.")
+    CErrors.user_err ?loc
+      (str "This expression should be a simple identifier.")
 
 let tactic_mode = Gram.entry_create "vernac:tactic_command"
 
@@ -196,7 +196,7 @@ GEXTEND Gram
      verbose most of the time. *)
   fresh_id:
     [ [ s = STRING -> ArgArg s (*| id = ident -> ArgVar (!@loc,id)*)
-	| qid = qualid -> let (_pth,id) = Libnames.repr_qualid (snd qid) in ArgVar (Loc.tag ~loc:!@loc id) ] ]
+        | qid = qualid -> let (_pth,id) = Libnames.repr_qualid (snd qid) in ArgVar (CAst.make ~loc:!@loc id) ] ]
   ;
   constr_eval:
     [ [ IDENT "eval"; rtc = red_expr; "in"; c = Constr.constr ->
@@ -225,12 +225,12 @@ GEXTEND Gram
       | l = ident -> Name.Name l ] ]
   ;
   let_clause:
-    [ [ (l,id) = identref; ":="; te = tactic_expr ->
-         ((l,Name id), arg_of_expr te)
-      | na = ["_" -> (Some !@loc,Anonymous)]; ":="; te = tactic_expr ->
+    [ [ idr = identref; ":="; te = tactic_expr ->
+         (CAst.map (fun id -> Name id) idr, arg_of_expr te)
+      | na = ["_" -> CAst.make ~loc:!@loc Anonymous]; ":="; te = tactic_expr ->
          (na, arg_of_expr te)
-      | (l,id) = identref; args = LIST1 input_fun; ":="; te = tactic_expr ->
-         ((l,Name id), arg_of_expr (TacFun(args,te))) ] ]
+      | idr = identref; args = LIST1 input_fun; ":="; te = tactic_expr ->
+         (CAst.map (fun id -> Name id) idr, arg_of_expr (TacFun(args,te))) ] ]
   ;
   match_pattern:
     [ [ IDENT "context";  oid = OPT Constr.ident;
@@ -483,7 +483,7 @@ let pr_ltac_ref = Libnames.pr_reference
 let pr_tacdef_body tacdef_body =
   let id, redef, body =
     match tacdef_body with
-    | TacticDefinition ((_,id), body) -> Id.print id, false, body
+    | TacticDefinition ({CAst.v=id}, body) -> Id.print id, false, body
     | TacticRedefinition (id, body) -> pr_ltac_ref id, true, body
   in
   let idl, body =
@@ -504,7 +504,7 @@ END
 VERNAC COMMAND FUNCTIONAL EXTEND VernacDeclareTacticDefinition
 | [ "Ltac" ne_ltac_tacdef_body_list_sep(l, "with") ] => [
     VtSideff (List.map (function
-      | TacticDefinition ((_,r),_) -> r
+      | TacticDefinition ({CAst.v=r},_) -> r
       | TacticRedefinition (Ident (_,r),_) -> r
       | TacticRedefinition (Qualid (_,q),_) -> snd(repr_qualid q)) l), VtLater
   ] -> [ fun ~atts ~st -> let open Vernacinterp in

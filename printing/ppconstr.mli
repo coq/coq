@@ -10,7 +10,6 @@
     objects and their subcomponents. *)
 
 (** The default pretty-printers produce pretty-printing commands ({!Pp.t}). *)
-open Loc
 open Libnames
 open Constrexpr
 open Names
@@ -23,8 +22,8 @@ val pr_tight_coma : unit -> Pp.t
 
 val pr_or_var : ('a -> Pp.t) -> 'a or_var -> Pp.t
 
-val pr_lident : Id.t located -> Pp.t
-val pr_lname : Name.t located -> Pp.t
+val pr_lident : lident -> Pp.t
+val pr_lname : lname -> Pp.t
 
 val pr_with_comments : ?loc:Loc.t -> Pp.t -> Pp.t
 val pr_com_at : int -> Pp.t
@@ -44,7 +43,7 @@ val pr_glob_level : glob_level -> Pp.t
 val pr_glob_sort : glob_sort -> Pp.t
 val pr_guard_annot : (constr_expr -> Pp.t) ->
   local_binder_expr list ->
-  ('a * Names.Id.t) option * recursion_order_expr ->
+  lident option * recursion_order_expr ->
   Pp.t
 
 val pr_record_body : (reference * constr_expr) list -> Pp.t

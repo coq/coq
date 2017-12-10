@@ -170,7 +170,7 @@ let rec interp_vernac ~time ~check ~interactive ~state (loc,com) =
       (* The -time option is only supported from console-based
          clients due to the way it prints. *)
       if time then print_cmd_header ?loc com;
-      let com = if time then VernacTime(time,(loc,com)) else com in
+      let com = if time then VernacTime(time, CAst.make ?loc com) else com in
       interp com
     with reraise ->
       (* XXX: In non-interactive mode edit_at seems to do very weird

@@ -33,10 +33,10 @@ val print_eval :
     Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t
 
 val print_name : env -> Evd.evar_map -> reference or_by_notation ->
-  Vernacexpr.univ_name_list option -> Pp.t
+  Universes.univ_name_list option -> Pp.t
 val print_opaque_name : env -> Evd.evar_map -> reference -> Pp.t
 val print_about : env -> Evd.evar_map -> reference or_by_notation ->
-  Vernacexpr.univ_name_list option -> Pp.t
+  Universes.univ_name_list option -> Pp.t
 val print_impargs : reference or_by_notation -> Pp.t
 
 (** Pretty-printing functions for classes and coercions *)

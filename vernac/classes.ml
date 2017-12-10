@@ -132,7 +132,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
   ~program_mode poly ctx (instid, bk, cl) props ?(generalize=true)
   ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
-  let ((loc, instid), pl) = instid in
+  let ({CAst.loc;v=instid}, pl) = instid in
   let sigma, decl = Univdecls.interp_univ_decl_opt env pl in
   let tclass, ids =
     match bk with
@@ -410,7 +410,7 @@ let context poly l =
       let nstatus = match b with
       | None ->
         pi3 (ComAssumption.declare_assumption false decl (t, univs) Universes.empty_binders [] impl
-          Vernacexpr.NoInline (Loc.tag id))
+          Vernacexpr.NoInline (CAst.make id))
       | Some b ->
         let decl = (Discharge, poly, Definition) in
         let entry = Declare.definition_entry ~univs ~types:t b in

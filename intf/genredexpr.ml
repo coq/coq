@@ -8,8 +8,6 @@
 
 (** Reduction expressions *)
 
-open Names
-
 (** The parsing produces initially a list of [red_atom] *)
 
 type 'a red_atom =
@@ -52,7 +50,7 @@ type ('a,'b,'c) red_expr_gen =
 type ('a,'b,'c) may_eval =
   | ConstrTerm of 'a
   | ConstrEval of ('a,'b,'c) red_expr_gen * 'a
-  | ConstrContext of Id.t Loc.located * 'a
+  | ConstrContext of Misctypes.lident * 'a
   | ConstrTypeOf of 'a
 
 open Libnames

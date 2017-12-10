@@ -214,7 +214,7 @@ let fresh_name_for_anonymous_theorem () =
   let avoid = Id.Set.of_list (Proof_global.get_all_proof_names ()) in
   next_global_ident_away default_thm_id avoid
 
-let check_name_freshness locality (loc,id) : unit =
+let check_name_freshness locality {CAst.loc;v=id} : unit =
   (* We check existence here: it's a bit late at Qed time *)
   if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
      locality == Global && Nametab.exists_cci (Lib.make_path_except_section id)
@@ -339,7 +339,7 @@ let universe_proof_terminator compute_guard hook =
         (hook (Some (proof.Proof_global.universes))) is_opaque in
       begin match idopt with
       | None -> save_named ~export_seff proof
-      | Some (_,id) -> save_anonymous ~export_seff proof id
+      | Some { CAst.v = id } -> save_anonymous ~export_seff proof id
       end
   end
 
@@ -444,7 +444,7 @@ let start_proof_com ?inference_hook kind thms hook =
     let ids = List.map RelDecl.get_name ctx in
     check_name_freshness (pi1 kind) id;
     (* XXX: The nf_evar is critical !! *)
-    evd, (snd id,
+    evd, (id.CAst.v,
           (Evarutil.nf_evar evd (EConstr.it_mkProd_or_LetIn t' ctx),
            (ids, imps @ lift_implicits (Context.Rel.nhyps ctx) imps'))))
       evd thms in

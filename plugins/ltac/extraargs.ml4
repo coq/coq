@@ -81,7 +81,7 @@ let pr_int_list_full _prc _prlc _prt l = pr_int_list l
 let pr_occurrences _prc _prlc _prt l =
   match l with
     | ArgArg x -> pr_int_list x
-    | ArgVar (loc, id) -> Id.print id
+    | ArgVar { CAst.loc = loc; v=id } -> Id.print id
 
 let occurrences_of = function
   | [] -> NoOccurrences
@@ -102,7 +102,7 @@ let int_list_of_VList v = match Value.to_list v with
 let interp_occs ist gl l =
   match l with
     | ArgArg x -> x
-    | ArgVar (_,id as locid) ->
+    | ArgVar ({ CAst.v = id } as locid) ->
 	(try int_list_of_VList (Id.Map.find id ist.lfun)
 	  with Not_found | CannotCoerceTo _ -> [interp_int ist locid])
 let interp_occs ist gl l =
@@ -188,7 +188,7 @@ END
 
 type 'id gen_place= ('id * hyp_location_flag,unit) location
 
-type loc_place = Id.t Loc.located gen_place
+type loc_place = lident gen_place
 type place = Id.t gen_place
 
 let pr_gen_place pr_id = function
@@ -199,7 +199,7 @@ let pr_gen_place pr_id = function
   | HypLocation (id,InHypValueOnly) ->
       str "in (Value of " ++ pr_id id ++ str ")"
 
-let pr_loc_place _ _ _ = pr_gen_place (fun (_,id) -> Id.print id)
+let pr_loc_place _ _ _ = pr_gen_place (fun { CAst.v = id } -> Id.print id)
 let pr_place _ _ _ = pr_gen_place Id.print
 let pr_hloc = pr_loc_place () () ()
 
@@ -228,11 +228,11 @@ ARGUMENT EXTEND hloc
   |  [ "in" "|-" "*" ] ->
     [ ConclLocation () ]
 | [ "in" ident(id) ] ->
-    [ HypLocation ((Loc.tag id),InHyp) ]
+    [ HypLocation ((CAst.make id),InHyp) ]
 | [ "in" "(" "Type" "of" ident(id) ")" ] ->
-    [ HypLocation ((Loc.tag id),InHypTypeOnly) ]
+    [ HypLocation ((CAst.make id),InHypTypeOnly) ]
 | [ "in" "(" "Value" "of" ident(id) ")" ] ->
-    [ HypLocation ((Loc.tag id),InHypValueOnly) ]
+    [ HypLocation ((CAst.make id),InHypValueOnly) ]
 
  END
 

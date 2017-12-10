@@ -11,6 +11,8 @@ open Names
 
 open CErrors
 open Util
+open CAst
+
 open Extend
 open Vernacexpr
 open Pputils
@@ -59,7 +61,7 @@ open Decl_kinds
 
   let pr_ident_decl (lid, l) =
     pr_lident lid ++ pr_universe_decl l
-    
+
   let string_of_fqid fqid =
     String.concat "." (List.map Id.to_string fqid)
 
@@ -236,7 +238,7 @@ open Decl_kinds
       keyword "Module" ++ spc() ++ pr_lfqid id ++ str" := " ++
         pr_located pr_qualid qid
 
-  let rec pr_module_ast leading_space pr_c = let open CAst in function
+  let rec pr_module_ast leading_space pr_c = function
     | { loc ; v = CMident qid } ->
       if leading_space then
         spc () ++ pr_located pr_qualid (loc, qid)
@@ -287,10 +289,10 @@ open Decl_kinds
     prlist_strict (pr_module_vardecls pr_c) l
 
   let pr_type_option pr_c = function
-    | { CAst.v = CHole (k, Misctypes.IntroAnonymous, _) } -> mt()
+    | { v = CHole (k, Misctypes.IntroAnonymous, _) } -> mt()
     | _ as c -> brk(0,2) ++ str" :" ++ pr_c c
 
-  let pr_decl_notation prc ((loc,ntn),c,scopt) =
+  let pr_decl_notation prc ({loc; v=ntn},c,scopt) =
     fnl () ++ keyword "where " ++ qs ntn ++ str " := "
     ++ Flags.without_option Flags.beautify prc c ++
       pr_opt (fun sc -> str ": " ++ str sc) scopt
@@ -329,7 +331,7 @@ open Decl_kinds
 
   let begin_of_inductive = function
     | [] -> 0
-    | (_,((loc,_),_))::_ -> Option.cata (fun loc -> fst (Loc.unloc loc)) 0 loc
+    | (_,({loc},_))::_ -> Option.cata (fun loc -> fst (Loc.unloc loc)) 0 loc
 
   let pr_class_rawexpr = function
     | FunClass -> keyword "Funclass"
@@ -392,8 +394,8 @@ open Decl_kinds
     | SetOnlyPrinting -> keyword "only printing"
     | SetOnlyParsing -> keyword "only parsing"
     | SetCompatVersion v -> keyword("compat \"" ^ Flags.pr_version v ^ "\"")
-    | SetFormat("text",s) -> keyword "format " ++ pr_located qs s
-    | SetFormat(k,s) -> keyword "format " ++ qs k ++ spc() ++ pr_located qs s
+    | SetFormat("text",s) -> keyword "format " ++ pr_ast qs s
+    | SetFormat(k,s) -> keyword "format " ++ qs k ++ spc() ++ pr_ast qs s
 
   let pr_syntax_modifiers = function
     | [] -> mt()
@@ -537,7 +539,7 @@ open Decl_kinds
     let rec aux = function
       | SsEmpty -> "()"
       | SsType -> "(Type)"
-      | SsSingl (_,id) -> "("^Id.to_string id^")"
+      | SsSingl { v=id } -> "("^Id.to_string id^")"
       | SsCompl e -> "-" ^ aux e^""
       | SsUnion(e1,e2) -> "("^aux e1 ^" + "^ aux e2^")"
       | SsSubstr(e1,e2) -> "("^aux e1 ^" - "^ aux e2^")"
@@ -661,7 +663,7 @@ open Decl_kinds
           ++ spc() ++ pr_smart_global q
           ++ spc() ++ str"[" ++ prlist_with_sep sep pr_opt_scope scl ++ str"]"
         )
-      | VernacInfix (((_,s),mv),q,sn) -> (* A Verifier *)
+      | VernacInfix (({v=s},mv),q,sn) -> (* A Verifier *)
         return (
           hov 0 (hov 0 (keyword "Infix "
                         ++ qs s ++ str " :=" ++ pr_constrarg q) ++
@@ -670,7 +672,7 @@ open Decl_kinds
                      | None -> mt()
                      | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
         )
-      | VernacNotation (c,((_,s),l),opt) ->
+      | VernacNotation (c,({v=s},l),opt) ->
         return (
           hov 2 (keyword "Notation" ++ spc() ++ qs s ++
                    str " :=" ++ Flags.without_option Flags.beautify pr_constrarg c ++ pr_syntax_modifiers l ++
@@ -680,7 +682,7 @@ open Decl_kinds
         )
       | VernacSyntaxExtension (_, (s, l)) ->
         return (
-          keyword "Reserved Notation" ++ spc() ++ pr_located qs s ++
+          keyword "Reserved Notation" ++ spc() ++ pr_ast qs s ++
             pr_syntax_modifiers l
         )
       | VernacNotationAddFormat(s,k,v) ->
@@ -692,7 +694,7 @@ open Decl_kinds
       | VernacDefinition ((discharge,kind),id,b) -> (* A verifier... *)
         let pr_def_token dk =
           keyword (
-            if Name.is_anonymous (snd (fst id))
+            if Name.is_anonymous (fst id).v
             then "Goal"
             else Kindops.string_of_definition_object_kind dk)
         in
@@ -711,7 +713,7 @@ open Decl_kinds
             in
             (pr_binders_arg bl,ty,Some (pr_reduce red ++ pr_lconstr body))
           | ProveBody (bl,t) ->
-            let typ u = if snd (fst id) = Anonymous then (assert (bl = []); u) else (str" :" ++ u) in
+            let typ u = if (fst id).v = Anonymous then (assert (bl = []); u) else (str" :" ++ u) in
             (pr_binders_arg bl, typ (pr_spc_lconstr t), None) in
         let (binds,typ,c) = pr_def_body b in
         return (
@@ -889,16 +891,16 @@ open Decl_kinds
         return (
           hov 1 (
             (if abst then keyword "Declare" ++ spc () else mt ()) ++
-              keyword "Instance" ++
-              (match instid with
-      	 | (loc, Name id), l -> spc () ++ pr_ident_decl ((loc, id),l) ++ spc ()
-               | (_, Anonymous), _ -> mt ()) ++
-              pr_and_type_binders_arg sup ++
+            keyword "Instance" ++
+            (match instid with
+             | {loc; v = Name id}, l -> spc () ++ pr_ident_decl (CAst.(make ?loc id),l) ++ spc ()
+             | { v = Anonymous }, _ -> mt ()) ++
+            pr_and_type_binders_arg sup ++
               str":" ++ spc () ++
               (match bk with Implicit -> str "! " | Explicit -> mt ()) ++
               pr_constr cl ++ pr_hint_info pr_constr_pattern_expr info ++
               (match props with
-                | Some (true, { CAst.v = CRecord l}) -> spc () ++ str":=" ++ spc () ++ str"{" ++ pr_record_body l ++ str "}"
+                | Some (true, { v = CRecord l}) -> spc () ++ str":=" ++ spc () ++ str"{" ++ pr_record_body l ++ str "}"
                 | Some (true,_) -> assert false
                 | Some (false,p) -> spc () ++ str":=" ++ spc () ++ pr_constr p
                 | None -> mt()))
@@ -1031,7 +1033,7 @@ open Decl_kinds
           hov 2 (
             keyword "Arguments" ++ spc() ++
               pr_smart_global q ++
-              let pr_s = function None -> str"" | Some (_,s) -> str "%" ++ str s in
+              let pr_s = function None -> str"" | Some {v=s} -> str "%" ++ str s in
               let pr_if b x = if b then x else str "" in
               let pr_br imp x = match imp with
                 | Vernacexpr.Implicit -> str "[" ++ x ++ str "]"
@@ -1237,9 +1239,9 @@ let pr_vernac_flag =
         (fun f a -> pr_vernac_flag f ++ spc() ++ a)
         f
         (pr_vernac_expr v' ++ sep_end v')
-    | VernacTime (_,(_,v)) ->
+    | VernacTime (_,{v}) ->
       return (keyword "Time" ++ spc() ++ pr_vernac_control v)
-    | VernacRedirect (s, (_,v)) ->
+    | VernacRedirect (s, {v}) ->
       return (keyword "Redirect" ++ spc() ++ qs s ++ spc() ++ pr_vernac_control v)
     | VernacTimeout(n,v) ->
       return (keyword "Timeout " ++ int n ++ spc() ++ pr_vernac_control v)

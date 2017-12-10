@@ -8,7 +8,7 @@
 
 (** Local universe and constraint declarations. *)
 type universe_decl =
-  (Names.Id.t Loc.located list, Univ.Constraint.t) Misctypes.gen_universe_decl
+  (Misctypes.lident list, Univ.Constraint.t) Misctypes.gen_universe_decl
 
 val default_univ_decl : universe_decl
 

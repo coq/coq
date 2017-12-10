@@ -25,7 +25,7 @@ val continue : unit -> unit
 val add_glob : ?loc:Loc.t -> Globnames.global_reference -> unit
 val add_glob_kn : ?loc:Loc.t -> Names.KerName.t -> unit
 
-val dump_definition : Names.Id.t Loc.located -> bool -> string -> unit
+val dump_definition : Misctypes.lident -> bool -> string -> unit
 val dump_moddef : ?loc:Loc.t -> Names.ModPath.t -> string -> unit
 val dump_modref  : ?loc:Loc.t -> Names.ModPath.t -> string -> unit
 val dump_reference  : ?loc:Loc.t -> string -> string -> string -> unit

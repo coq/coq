@@ -84,7 +84,7 @@ let in_reserved : Id.t * notation_constr -> obj =
   declare_object {(default_object "RESERVED-TYPE") with
     cache_function = cache_reserved_type }
 
-let declare_reserved_type_binding (loc,id) t =
+let declare_reserved_type_binding {CAst.loc;v=id} t =
   if not (Id.equal id (root_of_id id)) then
     user_err ?loc ~hdr:"declare_reserved_type"
       ((Id.print id ++ str

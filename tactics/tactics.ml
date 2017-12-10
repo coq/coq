@@ -1190,7 +1190,7 @@ let onOpenInductionArg env sigma tac = function
              let sigma = Tacmach.New.project gl in
              tac clear_flag (sigma,(c,NoBindings))
              end))
-  | clear_flag,ElimOnIdent (_,id) ->
+  | clear_flag,ElimOnIdent {CAst.v=id} ->
       (* A quantified hypothesis *)
       Tacticals.New.tclTHEN
         (try_intros_until_id_check id)
@@ -1206,7 +1206,7 @@ let onInductionArg tac = function
       Tacticals.New.tclTHEN
         (intros_until_n n)
         (Tacticals.New.onLastHyp (fun c -> tac clear_flag (c,NoBindings)))
-  | clear_flag,ElimOnIdent (_,id) ->
+  | clear_flag,ElimOnIdent {CAst.v=id} ->
       (* A quantified hypothesis *)
       Tacticals.New.tclTHEN
         (try_intros_until_id_check id)

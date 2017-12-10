@@ -43,13 +43,13 @@ GEXTEND Gram
     [ [ LEFTQMARK; id = ident -> id ] ]
   ;
   pattern_identref:
-    [ [ id = pattern_ident -> Loc.tag ~loc:!@loc id ] ]
+    [ [ id = pattern_ident -> CAst.make ~loc:!@loc id ] ]
   ;
   var: (* as identref, but interpret as a term identifier in ltac *)
-    [ [ id = ident -> Loc.tag ~loc:!@loc id ] ]
+    [ [ id = ident -> CAst.make ~loc:!@loc id ] ]
   ;
   identref:
-    [ [ id = ident -> Loc.tag ~loc:!@loc id ] ]
+    [ [ id = ident -> CAst.make ~loc:!@loc id ] ]
   ;
   field:
     [ [ s = FIELD -> Id.of_string s ] ]
@@ -70,8 +70,8 @@ GEXTEND Gram
       ] ]
   ;
   name:
-    [ [ IDENT "_"  -> Loc.tag ~loc:!@loc Anonymous
-      | id = ident -> Loc.tag ~loc:!@loc @@ Name id ] ]
+    [ [ IDENT "_"  -> CAst.make ~loc:!@loc Anonymous
+      | id = ident -> CAst.make ~loc:!@loc @@ Name id ] ]
   ;
   reference:
     [ [ id = ident; (l,id') = fields ->
@@ -95,7 +95,7 @@ GEXTEND Gram
     ] ]
   ;
   ne_lstring:
-    [ [ s = ne_string -> Loc.tag ~loc:!@loc s ] ]
+    [ [ s = ne_string -> CAst.make ~loc:!@loc s ] ]
   ;
   dirpath:
     [ [ id = ident; l = LIST0 field ->
@@ -105,7 +105,7 @@ GEXTEND Gram
     [ [ s = STRING -> s ] ]
   ;
   lstring:
-    [ [ s = string -> (Loc.tag ~loc:!@loc s) ] ]
+    [ [ s = string -> (CAst.make ~loc:!@loc s) ] ]
   ;
   integer:
     [ [ i = INT      -> my_int_of_string (!@loc) i

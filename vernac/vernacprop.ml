@@ -13,15 +13,15 @@ open Vernacexpr
 
 let rec under_control = function
   | VernacExpr (_, c) -> c
-  | VernacRedirect (_,(_,c))
-  | VernacTime (_,(_,c))
+  | VernacRedirect (_,{CAst.v=c})
+  | VernacTime (_,{CAst.v=c})
   | VernacFail c
   | VernacTimeout (_,c) -> under_control c
 
 let rec has_Fail = function
   | VernacExpr _ -> false
-  | VernacRedirect (_,(_,c))
-  | VernacTime (_,(_,c))
+  | VernacRedirect (_,{CAst.v=c})
+  | VernacTime (_,{CAst.v=c})
   | VernacTimeout (_,c) -> has_Fail c
   | VernacFail _ -> true
 
@@ -38,8 +38,8 @@ let is_navigation_vernac c =
   is_navigation_vernac_expr (under_control c)
 
 let rec is_deep_navigation_vernac = function
-  | VernacTime (_,(_,c)) -> is_deep_navigation_vernac c
-  | VernacRedirect (_, (_,c))
+  | VernacTime (_,{CAst.v=c}) -> is_deep_navigation_vernac c
+  | VernacRedirect (_, {CAst.v=c})
   | VernacTimeout (_,c) | VernacFail c -> is_navigation_vernac c
   | VernacExpr _ -> false
 

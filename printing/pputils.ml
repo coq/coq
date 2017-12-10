@@ -24,9 +24,11 @@ let pr_located pr (loc, x) =
     before ++ x ++ after
   | _ -> pr x
 
+let pr_ast pr { CAst.loc; v } = pr_located pr (loc, v)
+
 let pr_or_var pr = function
   | ArgArg x -> pr x
-  | ArgVar (_,s) -> Names.Id.print s
+  | ArgVar {CAst.v=s} -> Names.Id.print s
 
 let pr_with_occurrences pr keyword (occs,c) =
   match occs with

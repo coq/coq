@@ -249,12 +249,12 @@ let dump_def ?loc ty secpath id = Option.iter (fun loc ->
     dump_string (Printf.sprintf "%s %d:%d %s %s\n" ty bl el secpath id)
   ) loc
 
-let dump_definition (loc, id) sec s =
+let dump_definition {CAst.loc;v=id} sec s =
   dump_def ?loc s (Names.DirPath.to_string (Lib.current_dirpath sec)) (Names.Id.to_string id)
 
-let dump_constraint (((loc, n),_), _, _) sec ty =
+let dump_constraint (({ CAst.loc; v = n },_), _, _) sec ty =
   match n with
-    | Names.Name id -> dump_definition (loc, id) sec ty
+    | Names.Name id -> dump_definition CAst.(make ?loc id) sec ty
     | Names.Anonymous -> ()
 
 let dump_moddef ?loc mp ty =

@@ -295,10 +295,10 @@ type obligation =
 type obligations = (obligation array * int)
 
 type fixpoint_kind =
-  | IsFixpoint of (Id.t Loc.located option * Constrexpr.recursion_order_expr) list
+  | IsFixpoint of (Misctypes.lident option * Constrexpr.recursion_order_expr) list
   | IsCoFixpoint
 
-type notations = (Vernacexpr.lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
+type notations = (Misctypes.lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
 
 type program_info_aux = {
   prg_name: Id.t;
@@ -500,7 +500,7 @@ let rec lam_index n t acc =
 
 let compute_possible_guardness_evidences (n,_) fixbody fixtype =
   match n with
-  | Some (loc, n) -> [lam_index n fixbody 0]
+  | Some { CAst.loc; v = n } -> [lam_index n fixbody 0]
   | None ->
       (* If recursive argument was not given by user, we try all args.
 	 An earlier approach was to look only for inductive arguments,

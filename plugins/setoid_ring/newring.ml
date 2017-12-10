@@ -166,12 +166,12 @@ let ltac_call tac (args:glob_tactic_arg list) =
 
 (* Calling a locally bound tactic *)
 let ltac_lcall tac args =
-  TacArg(Loc.tag @@ TacCall (Loc.tag (ArgVar(Loc.tag @@ Id.of_string tac),args)))
+  TacArg(Loc.tag @@ TacCall (Loc.tag (ArgVar CAst.(make @@ Id.of_string tac),args)))
 
 let ltac_apply (f : Value.t) (args: Tacinterp.Value.t list) =
   let fold arg (i, vars, lfun) =
     let id = Id.of_string ("x" ^ string_of_int i) in
-    let x = Reference (ArgVar (Loc.tag id)) in
+    let x = Reference (ArgVar CAst.(make id)) in
     (succ i, x :: vars, Id.Map.add id arg lfun)
   in
   let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in
@@ -206,7 +206,7 @@ let get_res =
 let exec_tactic env evd n f args =
   let fold arg (i, vars, lfun) =
     let id = Id.of_string ("x" ^ string_of_int i) in
-    let x = Reference (ArgVar (Loc.tag id)) in
+    let x = Reference (ArgVar CAst.(make id)) in
     (succ i, x :: vars, Id.Map.add id (Value.of_constr arg) lfun)
   in
   let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in

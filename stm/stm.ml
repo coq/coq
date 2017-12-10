@@ -565,8 +565,8 @@ end = struct (* {{{ *)
   let reachable id = reachable !vcs id
   let mk_branch_name { expr = x } = Branch.make
     (match Vernacprop.under_control x with
-    | VernacDefinition (_,((_, Name i),_),_) -> Id.to_string i
-    | VernacStartTheoremProof (_,[((_,i),_),_]) -> Id.to_string i
+    | VernacDefinition (_,({CAst.v=Name i},_),_) -> Id.to_string i
+    | VernacStartTheoremProof (_,[({CAst.v=i},_),_]) -> Id.to_string i
     | _ -> "branch")
   let edit_branch = Branch.make "edit"
   let branch ?root ?pos name kind = vcs := branch !vcs ?root ?pos name kind
@@ -1174,7 +1174,7 @@ end = struct (* {{{ *)
       match Vernacprop.under_control v with
       | VernacResetInitial ->
           Stateid.initial, VtNow
-      | VernacResetName (_,name) ->
+      | VernacResetName {CAst.v=name} ->
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
           (try
             let oid =
@@ -1236,7 +1236,7 @@ let set_compilation_hints file =
 let get_hint_ctx loc =
   let s = Aux_file.get ?loc !hints "context_used" in
   let ids = List.map Names.Id.of_string (Str.split (Str.regexp " ") s) in
-  let ids = List.map (fun id -> Loc.tag id) ids in
+  let ids = List.map (fun id -> CAst.make id) ids in
   match ids with
   | [] -> SsEmpty
   | x :: xs ->
@@ -1956,8 +1956,8 @@ end = struct (* {{{ *)
   =
     let e, time, batch, fail =
       let rec find ~time ~batch ~fail = function
-        | VernacTime (batch,(_,e)) -> find ~time:true ~batch ~fail e
-        | VernacRedirect (_,(_,e)) -> find ~time ~batch ~fail e
+        | VernacTime (batch,{CAst.v=e}) -> find ~time:true ~batch ~fail e
+        | VernacRedirect (_,{CAst.v=e}) -> find ~time ~batch ~fail e
         | VernacFail e -> find ~time ~batch ~fail:true e
         | e -> e, time, batch, fail in
       find ~time:false ~batch:false ~fail:false e in
