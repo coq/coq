@@ -550,6 +550,60 @@ the same way as the {\Coq} kernel handles them.
 This tells if the printing matching mode is on or off. The default is
 on.
 
+\subsubsection{Factorization of clauses with same right-hand side}
+\label{SetPrintingFactorizableMatchPatterns}
+\optindex{Printing Factorizable Match Patterns}
+
+When several patterns share the same right-hand side, it is
+additionally possible to share the clauses using disjunctive patterns.
+Assuming that the printing matching mode is on, whether {\Coq}'s
+printer shall try to do this kind of factorization is governed by the
+following commands:
+
+\begin{quote}
+{\tt Set Printing Factorizable Match Patterns.}
+\end{quote}
+This tells {\Coq}'s printer to try to use disjunctive patterns. This is the default
+behavior.
+
+\begin{quote}
+{\tt Unset Printing Factorizable Match Patterns.}
+\end{quote}
+This tells {\Coq}'s printer not to try to use disjunctive patterns.
+
+\begin{quote}
+{\tt Test Printing Factorizable Match Patterns.}
+\end{quote}
+This tells if the factorization of clauses with same right-hand side is
+on or off.
+
+\subsubsection{Use of a default clause}
+\label{SetPrintingAllowDefaultClause}
+\optindex{Printing Allow Default Clause}
+
+When several patterns share the same right-hand side which do not
+depend on the arguments of the patterns, yet an extra factorization is
+possible: the disjunction of patterns can be replaced with a ``{\tt
+  \_}'' default clause. Assuming that the printing matching mode and
+the factorization mode are on, whether {\Coq}'s printer shall try to
+use a default clause is governed by the following commands:
+
+\begin{quote}
+{\tt Set Printing Allow Default Clause.}
+\end{quote}
+This tells {\Coq}'s printer to use a default clause when relevant. This is the default
+behavior.
+
+\begin{quote}
+{\tt Unset Printing Allow Default Clause.}
+\end{quote}
+This tells {\Coq}'s printer not to use a default clause.
+
+\begin{quote}
+{\tt Test Printing Allow Default Clause.}
+\end{quote}
+This tells if the use of a default clause is allowed.
+
 \subsubsection{Printing of wildcard pattern
 \optindex{Printing Wildcard}}
 
