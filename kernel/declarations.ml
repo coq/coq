@@ -172,13 +172,18 @@ type abstract_inductive_universes =
   | Polymorphic_ind of Univ.AUContext.t
   | Cumulative_ind of Univ.ACumulativityInfo.t
 
+type recursivity_kind =
+  | Finite (** = inductive *)
+  | CoFinite (** = coinductive *)
+  | BiFinite (** = non-recursive, like in "Record" definitions *)
+
 type mutual_inductive_body = {
 
     mind_packets : one_inductive_body array;  (** The component of the mutual inductive block *)
 
     mind_record : record_body option; (** The record information *)
 
-    mind_finite : Decl_kinds.recursivity_kind;  (** Whether the type is inductive or coinductive *)
+    mind_finite : recursivity_kind;  (** Whether the type is inductive or coinductive *)
 
     mind_ntypes : int;  (** Number of types in the block *)
 

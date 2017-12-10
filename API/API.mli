@@ -1293,65 +1293,6 @@ sig
   type to_patch_substituted
 end
 
-module Decl_kinds :
-sig
-  type polymorphic = bool
-  type cumulative_inductive_flag = bool
-  type recursivity_kind =
-    | Finite
-    | CoFinite
-    | BiFinite
-
-  type discharge =
-    | DoDischarge
-    | NoDischarge
-
-  type locality =
-    | Discharge
-    | Local
-    | Global
-
-  type definition_object_kind =
-    | Definition
-    | Coercion
-    | SubClass
-    | CanonicalStructure
-    | Example
-    | Fixpoint
-    | CoFixpoint
-    | Scheme
-    | StructureComponent
-    | IdentityCoercion
-    | Instance
-    | Method
-    | Let
-  type theorem_kind =
-    | Theorem
-    | Lemma
-    | Fact
-    | Remark
-    | Property
-    | Proposition
-    | Corollary
-  type goal_object_kind =
-    | DefinitionBody of definition_object_kind
-    | Proof of theorem_kind
-  type goal_kind = locality * polymorphic * goal_object_kind
-  type assumption_object_kind =
-    | Definitional
-    | Logical
-    | Conjectural
-  type logical_kind =
-    | IsAssumption of assumption_object_kind
-    | IsDefinition of definition_object_kind
-    | IsProof of theorem_kind
-  type binding_kind =
-    | Explicit
-    | Implicit
-  type private_flag = bool
-  type definition_kind = locality * polymorphic * definition_object_kind
-end
-
 module Retroknowledge :
 sig
   type action
@@ -1501,10 +1442,15 @@ sig
 
   type record_body = (Id.t * Constant.t array * projection_body array) option
 
+  type recursivity_kind =
+    | Finite
+    | CoFinite
+    | BiFinite
+
   type mutual_inductive_body = {
         mind_packets : one_inductive_body array;
         mind_record : record_body option;
-        mind_finite : Decl_kinds.recursivity_kind;
+        mind_finite : recursivity_kind;
         mind_ntypes : int;
         mind_hyps : Context.Named.t;
         mind_nparams : int;
@@ -1578,7 +1524,7 @@ sig
     (** Some (Some id): primitive record with id the binder name of the record
         in projections.
         Some None: non-primitive record *)
-    mind_entry_finite : Decl_kinds.recursivity_kind;
+    mind_entry_finite : Declarations.recursivity_kind;
     mind_entry_params : (Id.t * local_entry) list;
     mind_entry_inds : one_inductive_entry list;
     mind_entry_universes : inductive_universes;
@@ -2208,6 +2154,66 @@ sig
          | MatchingVar of matching_var_kind
          | VarInstance of Names.Id.t
          | SubEvar of Evar.t
+end
+
+module Decl_kinds :
+sig
+  type polymorphic = bool
+  type cumulative_inductive_flag = bool
+  type recursivity_kind = Declarations.recursivity_kind =
+    | Finite
+    | CoFinite
+    | BiFinite
+  [@@ocaml.deprecated "Please use [Declarations.recursivity_kind"]
+
+  type discharge =
+    | DoDischarge
+    | NoDischarge
+
+  type locality =
+    | Discharge
+    | Local
+    | Global
+
+  type definition_object_kind =
+    | Definition
+    | Coercion
+    | SubClass
+    | CanonicalStructure
+    | Example
+    | Fixpoint
+    | CoFixpoint
+    | Scheme
+    | StructureComponent
+    | IdentityCoercion
+    | Instance
+    | Method
+    | Let
+  type theorem_kind =
+    | Theorem
+    | Lemma
+    | Fact
+    | Remark
+    | Property
+    | Proposition
+    | Corollary
+  type goal_object_kind =
+    | DefinitionBody of definition_object_kind
+    | Proof of theorem_kind
+  type goal_kind = locality * polymorphic * goal_object_kind
+  type assumption_object_kind =
+    | Definitional
+    | Logical
+    | Conjectural
+  type logical_kind =
+    | IsAssumption of assumption_object_kind
+    | IsDefinition of definition_object_kind
+    | IsProof of theorem_kind
+  type binding_kind =
+    | Explicit
+    | Implicit
+  type private_flag = bool
+  type definition_kind = locality * polymorphic * definition_object_kind
 end
 
 module Glob_term :
@@ -3999,7 +4005,7 @@ sig
 
   type instance_flag  = bool option
   type coercion_flag = bool
-  type inductive_flag = Decl_kinds.recursivity_kind
+  type inductive_flag = Declarations.recursivity_kind
   type lname = Names.Name.t Loc.located
   type lident = Names.Id.t Loc.located
   type opacity_flag =
@@ -6070,7 +6076,7 @@ sig
 
   val do_mutual_inductive :
     (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list -> Decl_kinds.cumulative_inductive_flag -> Decl_kinds.polymorphic ->
-    Decl_kinds.private_flag -> Decl_kinds.recursivity_kind -> unit
+    Decl_kinds.private_flag -> Declarations.recursivity_kind -> unit
 
   val do_definition : Names.Id.t -> Decl_kinds.definition_kind -> Vernacexpr.universe_decl_expr option ->
     Constrexpr.local_binder_expr list -> Redexpr.red_expr option -> Constrexpr.constr_expr ->
@@ -6096,7 +6102,7 @@ sig
     structured_inductive_expr -> Vernacexpr.decl_notation list ->
     Decl_kinds.cumulative_inductive_flag ->
     Decl_kinds.polymorphic ->
-    Decl_kinds.private_flag -> Decl_kinds.recursivity_kind ->
+    Decl_kinds.private_flag -> Declarations.recursivity_kind ->
     Entries.mutual_inductive_entry * Universes.universe_binders * one_inductive_impls list
 
   val declare_mutual_inductive_with_eliminations :
