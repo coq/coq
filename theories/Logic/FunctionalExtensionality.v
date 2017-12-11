@@ -221,13 +221,12 @@ Tactic Notation "extensionality" "in" hyp(H) :=
   (* If we [subst H], things break if we already have another equation of the form [_ = H] *)
   destruct Heq; rename H_out into H.
 
-(** Eta expansion follows from extensionality. *)
+(** Eta expansion is built into Coq. *)
 
 Lemma eta_expansion_dep {A} {B : A -> Type} (f : forall x : A, B x) :
   f = fun x => f x.
 Proof.
   intros.
-  extensionality x.
   reflexivity.
 Qed.
 
