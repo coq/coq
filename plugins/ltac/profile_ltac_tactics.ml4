@@ -13,7 +13,7 @@
 open Profile_ltac
 open Stdarg
 
-DECLARE PLUGIN "profile_ltac_plugin"
+DECLARE PLUGIN "ltac_plugin"
 
 let tclSET_PROFILING b =
    Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> set_profiling b))
@@ -22,7 +22,7 @@ TACTIC EXTEND start_ltac_profiling
 | [ "start" "ltac" "profiling" ] -> [ tclSET_PROFILING true ]
 END
 
-TACTIC EXTEND stop_profiling
+TACTIC EXTEND stop_ltac_profiling
 | [ "stop" "ltac" "profiling" ] -> [ tclSET_PROFILING false ]
 END
 
