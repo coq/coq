@@ -2003,7 +2003,7 @@ end
 
 module Univops :
 sig
-  val universes_of_constr : Constr.constr -> Univ.LSet.t
+  val universes_of_constr : Environ.env -> Constr.constr -> Univ.LSet.t
   val restrict_universe_context : Univ.ContextSet.t -> Univ.LSet.t -> Univ.ContextSet.t
 end
 

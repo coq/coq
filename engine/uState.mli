@@ -87,6 +87,8 @@ val universe_of_name : t -> Id.t -> Univ.Level.t
 
 val restrict : t -> Univ.LSet.t -> t
 
+val demote_seff_univs : Safe_typing.private_constants Entries.definition_entry -> t -> t
+
 type rigid = 
   | UnivRigid
   | UnivFlexible of bool (** Is substitution by an algebraic ok? *)

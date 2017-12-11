@@ -152,7 +152,8 @@ let ic_unsafe c = (*FIXME remove *)
 
 let decl_constant na univs c =
   let open Constr in
-  let vars = Univops.universes_of_constr c in
+  let env = Global.env () in
+  let vars = Univops.universes_of_constr env c in
   let univs = Univops.restrict_universe_context univs vars in
   let univs = Monomorphic_const_entry univs in
   mkConst(declare_constant (Id.of_string na) 

@@ -140,6 +140,7 @@ let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theo
     let status = by tac in
     let _,(const,univs,_) = cook_proof () in
     Proof_global.discard_current ();
+    let univs = UState.demote_seff_univs const univs in
     const, status, univs
   with reraise ->
     let reraise = CErrors.push reraise in

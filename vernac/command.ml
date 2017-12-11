@@ -105,7 +105,7 @@ let interp_definition pl bl poly red_option c ctypopt =
 	let c = EConstr.Unsafe.to_constr c in
         let nf,subst = Evarutil.e_nf_evars_and_universes evdref in
         let body = nf (it_mkLambda_or_LetIn c ctx) in
-        let vars = EConstr.universes_of_constr !evdref (EConstr.of_constr body) in
+        let vars = EConstr.universes_of_constr env !evdref (EConstr.of_constr body) in
         let () = evdref := Evd.restrict_universe_context !evdref vars in
         let uctx = Evd.check_univ_decl ~poly !evdref decl in
         imps1@(Impargs.lift_implicits nb_args imps2),
@@ -130,8 +130,8 @@ let interp_definition pl bl poly red_option c ctypopt =
         in
 	if not (try List.for_all chk imps2 with Not_found -> false)
 	then warn_implicits_in_term ();
-        let bodyvars = EConstr.universes_of_constr !evdref (EConstr.of_constr body) in
-        let tyvars = EConstr.universes_of_constr !evdref (EConstr.of_constr ty) in
+        let bodyvars = EConstr.universes_of_constr env !evdref (EConstr.of_constr body) in
+        let tyvars = EConstr.universes_of_constr env !evdref (EConstr.of_constr ty) in
         let vars = Univ.LSet.union bodyvars tyvars in
         let () = evdref := Evd.restrict_universe_context !evdref vars in
         let uctx = Evd.check_univ_decl ~poly !evdref decl in
@@ -315,7 +315,7 @@ let do_assumptions kind nl l =
   let nf_evar c = EConstr.to_constr evd (EConstr.of_constr c) in
   let uvars, l = List.fold_left_map (fun uvars (coe,t,imps) ->
       let t = nf_evar t in
-      let uvars = Univ.LSet.union uvars (Univops.universes_of_constr t) in
+      let uvars = Univ.LSet.union uvars (Univops.universes_of_constr env t) in
       uvars, (coe,t,imps))
       Univ.LSet.empty l
   in
@@ -1188,7 +1188,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
     let env = Global.env() in
     let indexes = search_guard env indexes fixdecls in
     let fiximps = List.map (fun (n,r,p) -> r) fiximps in
-    let vars = Univops.universes_of_constr (mkFix ((indexes,0),fixdecls)) in
+    let vars = Univops.universes_of_constr env (mkFix ((indexes,0),fixdecls)) in
     let fixdecls =
       List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
     let evd = Evd.from_ctx ctx in
@@ -1221,7 +1221,8 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
     let fixdefs = List.map Option.get fixdefs in
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
     let fixdecls = List.map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 fixnames in
-    let vars = Univops.universes_of_constr (List.hd fixdecls) in
+    let env = Global.env () in
+    let vars = Univops.universes_of_constr env (List.hd fixdecls) in
     let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
     let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
     let evd = Evd.from_ctx ctx in
