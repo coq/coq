@@ -178,6 +178,20 @@ let which prog =
 let program_in_path prog =
   try let _ = which prog in true with Not_found -> false
 
+(** Choose a command among a list of candidates
+    (command name, mandatory arguments, arguments for this test).
+    Chooses the first one whose execution outputs a non-empty (first) line.
+    Dies with message [msg] if none is found. *)
+
+let select_command msg candidates =
+  let rec search = function
+    | [] -> die msg
+    | (p, x, y) :: tl ->
+      if fst (tryrun p (x @ y)) <> ""
+      then List.fold_left (Printf.sprintf "%s %s") p x
+      else search tl
+  in search candidates
+
 (** As per bug #4828, ocamlfind on Windows/Cygwin barfs if you pass it
     a quoted path to camlpXo via -pp.  So we only quote camlpXo on not
     Windows, and warn on Windows if the path contains spaces *)
@@ -853,9 +867,10 @@ let strip =
 (** * md5sum command *)
 
 let md5sum =
-  if List.mem arch ["Darwin"; "FreeBSD"; "OpenBSD"]
-  then "md5 -q" else "md5sum"
-
+  select_command "Don’t know how to compute MD5 checksums…" [
+    "md5sum", [], [ "--version" ];
+    "md5", ["-q"], [ "-s" ; "''" ];
+  ]
 
 (** * Documentation : do we have latex, hevea, ... *)
 
