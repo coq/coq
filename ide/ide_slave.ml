@@ -377,15 +377,8 @@ let init =
      match file with
      | None -> init_sid
      | Some file ->
-         let dir = Filename.dirname file in
-         let open Loadpath in let open CUnix in
          let doc, initial_id, _ =
-           let doc = get_doc () in
-           if not (is_in_load_paths (physical_path_of_string dir)) then begin
-             let pa = Pcoq.Gram.parsable (Stream.of_string (Printf.sprintf "Add LoadPath \"%s\". " dir)) in
-             let loc_ast = Stm.parse_sentence ~doc init_sid pa in
-             Stm.add false ~doc ~ontop:init_sid loc_ast
-           end else doc, init_sid, `NewTip in
+           get_doc (), init_sid, `NewTip in
          if Filename.check_suffix file ".v" then
            Stm.set_compilation_hints file;
          set_doc (Stm.finish ~doc);
