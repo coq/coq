@@ -1926,6 +1926,8 @@ exception End_of_input
    without a considerable amount of refactoring.
  *)
 let vernac_load interp fname =
+  if Proof_global.there_are_pending_proofs () then
+    CErrors.user_err Pp.(str "Load is not supported inside proofs.");
   let interp x =
     let proof_mode = Proof_global.get_default_proof_mode_name () [@ocaml.warning "-3"] in
     Proof_global.activate_proof_mode proof_mode [@ocaml.warning "-3"];
@@ -1942,8 +1944,13 @@ let vernac_load interp fname =
     let longfname = Loadpath.locate_file fname in
     let in_chan = open_utf8_file_in longfname in
     Pcoq.Gram.parsable ~file:(Loc.InFile longfname) (Stream.of_channel in_chan) in
-  try while true do interp (snd (parse_sentence input)) done
-  with End_of_input -> ()
+  begin
+    try while true do interp (snd (parse_sentence input)) done
+    with End_of_input -> ()
+  end;
+  (* If Load left a proof open, we fail too. *)
+  if Proof_global.there_are_pending_proofs () then
+    CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.")
 
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
@@ -1954,6 +1961,7 @@ let interp ?proof ~atts ~st c =
   vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
 
+  (* Loading a file requires access to the control interpreter *)
   | VernacLoad _ -> assert false
 
   (* The STM should handle that, but LOAD bypasses the STM... *)

@@ -120,16 +120,9 @@ module State = struct
 
 end
 
-let rec interp_vernac ~time ~check ~interactive ~state (loc,com) =
+let interp_vernac ~time ~check ~interactive ~state (loc,com) =
   let open State in
-  let interp v =
-    match under_control v with
-    | VernacLoad (verbosely, fname) ->
-        let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
-        let fname = CUnix.make_suffix fname ".v" in
-        let f = Loadpath.locate_file fname in
-        load_vernac ~time ~verbosely ~check ~interactive ~state f
-    | _ ->
+    try
       (* XXX: We need to run this before add as the classification is
          highly dynamic and depends on the structure of the
          document. Hopefully this is fixed when VtMeta can be removed
@@ -139,13 +132,17 @@ let rec interp_vernac ~time ~check ~interactive ~state (loc,com) =
          against that... *)
       let wflags = CWarnings.get_flags () in
       CWarnings.set_flags "none";
-      let is_proof_step = match fst (Vernac_classifier.classify_vernac v) with
+      let is_proof_step = match fst (Vernac_classifier.classify_vernac com) with
         | VtProofStep _ | VtMeta | VtStartProof _ -> true
         | _ -> false
       in
       CWarnings.set_flags wflags;
 
-      let doc, nsid, ntip = Stm.add ~doc:state.doc ~ontop:state.sid (not !Flags.quiet) (loc,v) in
+      (* The -time option is only supported from console-based
+         clients due to the way it prints. *)
+      if time then print_cmd_header ?loc com;
+      let com = if time then VernacTime(time,(CAst.make ?loc com)) else com in
+      let doc, nsid, ntip = Stm.add ~doc:state.doc ~ontop:state.sid (not !Flags.quiet) (loc,com) in
 
       (* Main STM interaction *)
       if ntip <> `NewTip then
@@ -165,13 +162,6 @@ let rec interp_vernac ~time ~check ~interactive ~state (loc,com) =
       if print_goals then Feedback.msg_notice (pr_open_cur_subgoals ());
       let new_proof = Proof_global.give_me_the_proof_opt () in
       { doc = ndoc; sid = nsid; proof = new_proof }
-  in
-    try
-      (* The -time option is only supported from console-based
-         clients due to the way it prints. *)
-      if time then print_cmd_header ?loc com;
-      let com = if time then VernacTime(time, CAst.make ?loc com) else com in
-      interp com
     with reraise ->
       (* XXX: In non-interactive mode edit_at seems to do very weird
          things, so we better avoid it while we investigate *)
@@ -184,7 +174,7 @@ let rec interp_vernac ~time ~check ~interactive ~state (loc,com) =
       end in iraise (reraise, info)
 
 (* Load a vernac file. CErrors are annotated with file and location *)
-and load_vernac ~time ~verbosely ~check ~interactive ~state file =
+let load_vernac ~time ~verbosely ~check ~interactive ~state file =
   let ft_beautify, close_beautify =
     if !Flags.beautify_file then
       let chan_beautify = open_out (file^beautify_suffix) in
