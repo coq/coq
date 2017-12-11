@@ -314,6 +314,15 @@ type cumulative_inductive_parsing_flag =
 
 (** {6 The type of vernacular expressions} *)
 
+type vernac_implicit_status = Implicit | MaximallyImplicit | NotImplicit
+
+type vernac_argument_status = {
+  name : Name.t;
+  recarg_like : bool;
+  notation_scope : string Loc.located option;
+  implicit_status : vernac_implicit_status;
+}
+
 type vernac_expr =
 
   | VernacLoad of verbose_flag * string
@@ -467,15 +476,6 @@ type vernac_expr =
   | VernacProgram of vernac_expr
   | VernacPolymorphic of bool * vernac_expr
   | VernacLocal of bool * vernac_expr
-
-and vernac_implicit_status = Implicit | MaximallyImplicit | NotImplicit
-
-and vernac_argument_status = {
-  name : Name.t;
-  recarg_like : bool;
-  notation_scope : string Loc.located option;
-  implicit_status : vernac_implicit_status;
-}
 
 type vernac_control =
   | VernacExpr of vernac_expr
