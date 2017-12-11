@@ -185,12 +185,12 @@ let rec classify_vernac e =
     (* These commands alter the parser *)
     | VernacOpenCloseScope _ | VernacDelimiters _ | VernacBindScope _
     | VernacInfix _ | VernacNotation _ | VernacNotationAddFormat _
-    | VernacSyntaxExtension _ 
+    | VernacSyntaxExtension _
     | VernacSyntacticDefinition _
     | VernacRequire _ | VernacImport _ | VernacInclude _
     | VernacDeclareMLModule _
     | VernacContext _ (* TASSI: unsure *)
-    | VernacProofMode _ 
+    | VernacProofMode _ -> VtSideff [], VtNow
     (* These are ambiguous *)
     | VernacInstance _ -> VtUnknown, VtNow
     (* Stm will install a new classifier to handle these *)
@@ -201,7 +201,7 @@ let rec classify_vernac e =
     (* What are these? *)
     | VernacToplevelControl _
     | VernacRestoreState _
-    | VernacWriteState _ -> VtUnknown, VtNow
+    | VernacWriteState _ -> VtSideff [], VtNow
     (* Plugins should classify their commands *)
     | VernacExtend (s,l) ->
         try List.assoc s !classifiers l ()

@@ -471,7 +471,7 @@ END
 
 VERNAC COMMAND FUNCTIONAL EXTEND VernacTacticNotation
 | [ "Tactic" "Notation" ltac_tactic_level_opt(n) ne_ltac_production_item_list(r) ":=" tactic(e) ] =>
-  [ VtUnknown, VtNow ] ->
+  [ VtSideff [], VtNow ] ->
   [ fun ~atts ~st -> let open Vernacinterp in
       let n = Option.default 0 n in
       Tacentries.add_tactic_notation (Locality.make_module_locality atts.locality) n r e;
