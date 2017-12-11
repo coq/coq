@@ -51,7 +51,7 @@ type mutual_inductive_entry = {
   (** Some (Some id): primitive record with id the binder name of the record
       in projections.
       Some None: non-primitive record *)
-  mind_entry_finite : Decl_kinds.recursivity_kind;
+  mind_entry_finite : Declarations.recursivity_kind;
   mind_entry_params : (Id.t * local_entry) list;
   mind_entry_inds : one_inductive_entry list;
   mind_entry_universes : inductive_universes;

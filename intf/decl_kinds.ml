@@ -75,7 +75,8 @@ type logical_kind =
 
 (** Recursive power of type declarations *)
 
-type recursivity_kind =
+type recursivity_kind = Declarations.recursivity_kind =
   | Finite (** = inductive *)
   | CoFinite (** = coinductive *)
   | BiFinite (** = non-recursive, like in "Record" definitions *)
+[@@ocaml.deprecated "Please use [Declarations.recursivity_kind"]

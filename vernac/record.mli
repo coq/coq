@@ -15,7 +15,7 @@ val primitive_flag : bool ref
 
 val definition_structure :
   inductive_kind * Decl_kinds.cumulative_inductive_flag * Decl_kinds.polymorphic *
-  Decl_kinds.recursivity_kind * ident_decl with_coercion * local_binder_expr list *
+  Declarations.recursivity_kind * ident_decl with_coercion * local_binder_expr list *
   (local_decl_expr with_instance with_priority with_notation) list *
   Id.t * constr_expr option -> global_reference
 

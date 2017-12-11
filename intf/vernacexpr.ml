@@ -145,7 +145,7 @@ type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
 type instance_flag  = bool option
   (* Some true = Backward instance; Some false = Forward instance, None = NoInstance *)
 type export_flag    = bool (* true = Export;        false = Import         *)
-type inductive_flag = Decl_kinds.recursivity_kind
+type inductive_flag = Declarations.recursivity_kind
 type onlyparsing_flag = Flags.compat_version option
  (* Some v = Parse only;  None = Print also.
     If v<>Current, it contains the name of the coq version
