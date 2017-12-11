@@ -55,12 +55,6 @@ val is_matching : env -> Evd.evar_map -> constr_pattern -> constr -> bool
     prefix of it matches against [pat] *)
 val is_matching_head : env -> Evd.evar_map -> constr_pattern -> constr -> bool
 
-(** [matches_conv env sigma] matches up to conversion in environment
-   [(env,sigma)] when constants in pattern are concerned; it raises
-   [PatternMatchingFailure] if not matchable; bindings are given in
-   increasing order based on the numbers given in the pattern *)
-val matches_conv : env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
-
 (** The type of subterm matching results: a substitution + a context
    (whose hole is denoted here with [special_meta]) *)
 type matching_result =
@@ -85,8 +79,3 @@ val match_subterm_gen : env -> Evd.evar_map ->
 (** [is_matching_appsubterm pat c] tells if a subterm of [c] matches
    against [pat] taking partial subterms into consideration *)
 val is_matching_appsubterm : ?closed:bool -> env -> Evd.evar_map -> constr_pattern -> constr -> bool
-
-(** [is_matching_conv env sigma pat c] tells if [c] matches against [pat]
-   up to conversion for constants in patterns *)
-val is_matching_conv :
-  env -> Evd.evar_map -> constr_pattern -> constr -> bool

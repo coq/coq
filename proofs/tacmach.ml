@@ -102,9 +102,6 @@ let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
 
 let pf_hnf_type_of gls          = pf_get_type_of gls %> pf_whd_all gls
 
-let pf_is_matching gl p c       = pf_apply Constr_matching.is_matching_conv gl p c
-let pf_matches gl p c           = pf_apply Constr_matching.matches_conv gl p c
-
 (********************************************)
 (* Definition of the most primitive tactics *)
 (********************************************)
@@ -222,8 +219,6 @@ module New = struct
   let pf_hnf_constr gl t = pf_apply hnf_constr gl t
   let pf_hnf_type_of gl t =
     pf_whd_all gl (pf_get_type_of gl t)
-
-  let pf_matches gl pat t = pf_apply Constr_matching.matches_conv gl pat t
 
   let pf_whd_all gl t = pf_apply whd_all gl t
   let pf_compute gl t = pf_apply compute gl t

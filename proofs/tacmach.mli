@@ -12,9 +12,7 @@ open Environ
 open EConstr
 open Proof_type
 open Redexpr
-open Pattern
 open Locus
-open Ltac_pretype
 
 (** Operations for handling terms under a local typing context. *)
 
@@ -79,10 +77,6 @@ val pf_const_value : goal sigma -> pconstant -> constr
 val pf_conv_x      : goal sigma -> constr -> constr -> bool
 val pf_conv_x_leq  : goal sigma -> constr -> constr -> bool
 
-val pf_matches     : goal sigma -> constr_pattern -> constr -> patvar_map
-val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
-
-
 (** {6 The most primitive tactics. } *)
 
 val refiner                   : rule -> tactic
@@ -137,8 +131,6 @@ module New : sig
 
   val pf_whd_all : 'a Proofview.Goal.t -> constr -> constr
   val pf_compute : 'a Proofview.Goal.t -> constr -> constr
-
-  val pf_matches : 'a Proofview.Goal.t -> constr_pattern -> constr -> patvar_map
 
   val pf_nf_evar : 'a Proofview.Goal.t -> constr -> constr
 

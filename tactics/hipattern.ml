@@ -39,7 +39,6 @@ type testing_function  = Evd.evar_map -> EConstr.constr -> bool
 let mkmeta n = Nameops.make_ident "X" (Some n)
 let meta1 = mkmeta 1
 let meta2 = mkmeta 2
-let meta3 = mkmeta 3
 
 let op2bool = function Some _ -> true | None -> false
 
@@ -459,22 +458,6 @@ let find_this_eq_data_decompose gl eqn =
     with PatternMatchingFailure ->
       user_err Pp.(str "Don't know what to do with JMeq on arguments not of same type.") in
   (lbeq,u,eq_args)
-
-let match_eq_nf gls eqn (ref, hetero) =
-  let n = if hetero then 4 else 3 in
-  let args = List.init n (fun i -> mkGPatVar ("X" ^ string_of_int (i + 1))) in
-  let pat = mkPattern (mkGAppRef ref args) in
-  match Id.Map.bindings (pf_matches gls pat eqn) with
-    | [(m1,t);(m2,x);(m3,y)] ->
-        assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);
-	(t,pf_whd_all gls x,pf_whd_all gls y)
-    | _ -> anomaly ~label:"match_eq" (Pp.str "an eq pattern should match 3 terms.")
-
-let dest_nf_eq gls eqn =
-  try
-    snd (first_match (match_eq_nf gls eqn) equalities)
-  with PatternMatchingFailure ->
-    user_err Pp.(str "Not an equality.")
 
 (*** Sigma-types *)
 

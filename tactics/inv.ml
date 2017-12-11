@@ -334,6 +334,16 @@ let remember_first_eq id x = if !x == MoveLast then x := MoveAfter id
    If it can discriminate then the goal is proved, if not tries to use it as
    a rewrite rule. It erases the clause which is given as input *)
 
+let dest_nf_eq env sigma t = match EConstr.kind sigma t with
+| App (r, [| t; x; y |]) ->
+  let open Reductionops in
+  let lazy eq = Coqlib.coq_eq_ref in
+  if EConstr.is_global sigma eq r then
+    (t, whd_all env sigma x, whd_all env sigma y)
+  else user_err Pp.(str "Not an equality.")
+| _ ->
+  user_err Pp.(str "Not an equality.")
+
 let projectAndApply as_mode thin avoid id eqname names depids =
   let subst_hyp l2r id =
     tclTHEN (tclTRY(rewriteInConcl l2r (EConstr.mkVar id)))
@@ -344,7 +354,7 @@ let projectAndApply as_mode thin avoid id eqname names depids =
     let sigma = project gl in
     (** We only look at the type of hypothesis "id" *)
     let hyp = pf_nf_evar gl (pf_get_hyp_typ id (Proofview.Goal.assume gl)) in
-    let (t,t1,t2) = Hipattern.dest_nf_eq gl hyp in
+    let (t,t1,t2) = dest_nf_eq (pf_env gl) sigma hyp in
     match (EConstr.kind sigma t1, EConstr.kind sigma t2) with
     | Var id1, _ -> generalizeRewriteIntros as_mode (subst_hyp true id) depids id1
     | _, Var id2 -> generalizeRewriteIntros as_mode (subst_hyp false id) depids id2
