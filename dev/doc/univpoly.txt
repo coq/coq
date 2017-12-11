@@ -12,7 +12,7 @@ type pinductive = inductive puniverses
 type pconstructor = constructor puniverses
 
 type constr = ...
-  | Const of puniversess
+  | Const of puniverses
   | Ind of pinductive
   | Constr of pconstructor
   | Proj of constant * constr

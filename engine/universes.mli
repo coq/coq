@@ -74,21 +74,23 @@ type universe_constraint_type = ULe | UEq | ULub
 type universe_constraint = Universe.t * universe_constraint_type * Universe.t
 module Constraints : sig
   include Set.S with type elt = universe_constraint
-		       
+
   val pr : t -> Pp.t
 end
 
 type universe_constraints = Constraints.t
-type 'a constraint_accumulator = universe_constraints -> 'a -> 'a option
-type 'a universe_constrained = 'a * universe_constraints
-type 'a universe_constraint_function = 'a -> 'a -> universe_constraints -> universe_constraints
+[@@ocaml.deprecated "Use Constraints.t"]
+
+type 'a constraint_accumulator = Constraints.t -> 'a -> 'a option
+type 'a universe_constrained = 'a * Constraints.t
+type 'a universe_constraint_function = 'a -> 'a -> Constraints.t -> Constraints.t
 
 val subst_univs_universe_constraints : universe_subst_fn -> 
-  universe_constraints -> universe_constraints
+  Constraints.t -> Constraints.t
 
 val enforce_eq_instances_univs : bool -> Instance.t universe_constraint_function
 
-val to_constraints : UGraph.t -> universe_constraints -> constraints
+val to_constraints : UGraph.t -> Constraints.t -> Constraint.t
 
 (** [eq_constr_univs_infer_With kind1 kind2 univs m n] is a variant of
     {!eq_constr_univs_infer} taking kind-of-term functions, to expose

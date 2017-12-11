@@ -208,7 +208,7 @@ val is_defined : evar_map -> Evar.t-> bool
 val is_undefined : evar_map -> Evar.t-> bool
 (** Whether an evar is not defined in an evarmap. *)
 
-val add_constraints : evar_map -> Univ.constraints -> evar_map
+val add_constraints : evar_map -> Univ.Constraint.t -> evar_map
 (** Add universe constraints in an evar map. *)
 
 val undefined_map : evar_map -> evar_info Evar.Map.t
@@ -316,7 +316,7 @@ val whd_sort_variable : evar_map -> constr -> constr
 
 exception UniversesDiffer
 
-val add_universe_constraints : evar_map -> Universes.universe_constraints -> evar_map
+val add_universe_constraints : evar_map -> Universes.Constraints.t -> evar_map
 (** Add the given universe unification constraints to the evar map.
     @raises UniversesDiffer in case a first-order unification fails.
     @raises UniverseInconsistency
@@ -491,7 +491,7 @@ val univ_flexible_alg : rigid
 type 'a in_evar_universe_context = 'a * UState.t
 
 val evar_universe_context_set : UState.t -> Univ.ContextSet.t
-val evar_universe_context_constraints : UState.t -> Univ.constraints
+val evar_universe_context_constraints : UState.t -> Univ.Constraint.t
 val evar_context_universe_context : UState.t -> Univ.UContext.t
 [@@ocaml.deprecated "alias of UState.context"]
 
@@ -513,7 +513,7 @@ val universe_of_name : evar_map -> Id.t -> Univ.Level.t
 
 val universe_binders : evar_map -> Universes.universe_binders
 val add_constraints_context : UState.t ->
-  Univ.constraints -> UState.t
+  Univ.Constraint.t -> UState.t
 
 
 val normalize_evar_universe_context_variables : UState.t -> 

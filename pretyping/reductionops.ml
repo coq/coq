@@ -1283,7 +1283,7 @@ let is_transparent e k =
 
 (* Conversion utility functions *)
 
-type conversion_test = constraints -> constraints
+type conversion_test = Constraint.t -> Constraint.t
 
 let pb_is_equal pb = pb == Reduction.CONV
 

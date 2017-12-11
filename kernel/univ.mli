@@ -169,20 +169,20 @@ module Constraint : sig
 end
 
 type constraints = Constraint.t
+[@@ocaml.deprecated "Use Constraint.t"]
 
-val empty_constraint : constraints
-val union_constraint : constraints -> constraints -> constraints
-val eq_constraint : constraints -> constraints -> bool
+val empty_constraint : Constraint.t
+val union_constraint : Constraint.t -> Constraint.t -> Constraint.t
+val eq_constraint : Constraint.t -> Constraint.t -> bool
 
-(** A value with universe constraints. *)
-type 'a constrained = 'a * constraints
+(** A value with universe Constraint.t. *)
+type 'a constrained = 'a * Constraint.t
 
 (** Constrained *)
-val constraints_of : 'a constrained -> constraints
+val constraints_of : 'a constrained -> Constraint.t
 
-(** Enforcing constraints. *)
-
-type 'a constraint_function = 'a -> 'a -> constraints -> constraints
+(** Enforcing Constraint.t. *)
+type 'a constraint_function = 'a -> 'a -> Constraint.t -> Constraint.t
 
 val enforce_eq : Universe.t constraint_function
 val enforce_leq : Universe.t constraint_function
@@ -199,7 +199,7 @@ val enforce_leq_level : Level.t constraint_function
   universes in the path are canonical. Note that each step does not
   necessarily correspond to an actual constraint, but reflect how the
   system stores the graph and may result from combination of several
-  constraints...
+  Constraint.t...
 *)
 type explanation = (constraint_type * Universe.t) list
 type univ_inconsistency = constraint_type * Universe.t * Universe.t * explanation option
@@ -294,8 +294,8 @@ val in_punivs : 'a -> 'a puniverses
 
 val eq_puniverses : ('a -> 'a -> bool) -> 'a puniverses -> 'a puniverses -> bool
 
-(** A vector of universe levels with universe constraints,
-    representiong local universe variables and associated constraints *)
+(** A vector of universe levels with universe Constraint.t,
+    representiong local universe variables and associated Constraint.t *)
 
 module UContext :
 sig
@@ -307,9 +307,9 @@ sig
   val is_empty : t -> bool
 
   val instance : t -> Instance.t
-  val constraints : t -> constraints
+  val constraints : t -> Constraint.t
 
-  val dest : t -> Instance.t * constraints
+  val dest : t -> Instance.t * Constraint.t
 
   (** Keeps the order of the instances *)
   val union : t -> t -> t
@@ -328,7 +328,7 @@ sig
 
   val repr : t -> UContext.t
   (** [repr ctx] is [(Var(0), ... Var(n-1) |= cstr] where [n] is the length of
-      the context and [cstr] the abstracted constraints. *)
+      the context and [cstr] the abstracted Constraint.t. *)
 
   val empty : t
   val is_empty : t -> bool
@@ -342,7 +342,7 @@ sig
   val union : t -> t -> t
 
   val instantiate : Instance.t -> t -> Constraint.t
-  (** Generate the set of instantiated constraints **)
+  (** Generate the set of instantiated Constraint.t **)
 
 end
 
@@ -350,14 +350,14 @@ type abstract_universe_context = AUContext.t
 [@@ocaml.deprecated "Use AUContext.t"]
 
 (** Universe info for inductive types: A context of universe levels
-    with universe constraints, representing local universe variables
-    and constraints, together with a context of universe levels with
-    universe constraints, representing conditions for subtyping used
+    with universe Constraint.t, representing local universe variables
+    and Constraint.t, together with a context of universe levels with
+    universe Constraint.t, representing conditions for subtyping used
     for inductive types.
 
     This data structure maintains the invariant that the context for
-    subtyping constraints is exactly twice as big as the context for
-    universe constraints. *)
+    subtyping Constraint.t is exactly twice as big as the context for
+    universe Constraint.t. *)
 module CumulativityInfo :
 sig
   type t
@@ -370,7 +370,7 @@ sig
   val univ_context : t -> UContext.t
   val subtyp_context : t -> UContext.t
 
-  (** This function takes a universe context representing constraints
+  (** This function takes a universe context representing Constraint.t
       of an inductive and a Instance.t of fresh universe names for the
       subtyping (with the same length as the context in the given
       universe context) and produces a UInfoInd.t that with the
@@ -417,7 +417,7 @@ sig
 
   val diff : t -> t -> t
   val add_universe : Level.t -> t -> t
-  val add_constraints : constraints -> t -> t
+  val add_constraints : Constraint.t -> t -> t
   val add_instance : Instance.t -> t -> t
 
   (** Arbitrary choice of linear order of the variables *)
@@ -425,14 +425,14 @@ sig
   val to_context : t -> UContext.t
   val of_context : UContext.t -> t
 
-  val constraints : t -> constraints
+  val constraints : t -> Constraint.t
   val levels : t -> LSet.t
 
   (** the number of universes in the context *)
   val size : t -> int
 end
 
-(** A set of universes with universe constraints.
+(** A set of universes with universe Constraint.t.
     We linearize the set to a list after typechecking.
     Beware, representation could change.
 *)
@@ -449,7 +449,7 @@ val is_empty_level_subst : universe_level_subst -> bool
 (** Substitution of universes. *)
 val subst_univs_level_level : universe_level_subst -> Level.t -> Level.t
 val subst_univs_level_universe : universe_level_subst -> Universe.t -> Universe.t
-val subst_univs_level_constraints : universe_level_subst -> constraints -> constraints
+val subst_univs_level_constraints : universe_level_subst -> Constraint.t -> Constraint.t
 val subst_univs_level_abstract_universe_context :
   universe_level_subst -> AUContext.t -> AUContext.t
 val subst_univs_level_instance : universe_level_subst -> Instance.t -> Instance.t
@@ -461,7 +461,7 @@ val is_empty_subst : universe_subst -> bool
 val make_subst : universe_subst -> universe_subst_fn
 
 val subst_univs_universe : universe_subst_fn -> Universe.t -> Universe.t
-val subst_univs_constraints : universe_subst_fn -> constraints -> constraints
+val subst_univs_constraints : universe_subst_fn -> Constraint.t -> Constraint.t
 
 (** Substitution of instances *)
 val subst_instance_instance : Instance.t -> Instance.t -> Instance.t
@@ -479,7 +479,7 @@ val make_abstract_instance : AUContext.t -> Instance.t
 (** {6 Pretty-printing of universes. } *)
 
 val pr_constraint_type : constraint_type -> Pp.t
-val pr_constraints : (Level.t -> Pp.t) -> constraints -> Pp.t
+val pr_constraints : (Level.t -> Pp.t) -> Constraint.t -> Pp.t
 val pr_universe_context : (Level.t -> Pp.t) -> UContext.t -> Pp.t
 val pr_cumulativity_info : (Level.t -> Pp.t) -> CumulativityInfo.t -> Pp.t
 val pr_abstract_universe_context : (Level.t -> Pp.t) -> AUContext.t -> Pp.t
@@ -494,7 +494,7 @@ val pr_universe_subst : universe_subst -> Pp.t
 (** {6 Hash-consing } *)
 
 val hcons_univ : Universe.t -> Universe.t
-val hcons_constraints : constraints -> constraints
+val hcons_constraints : Constraint.t -> Constraint.t
 val hcons_universe_set : LSet.t -> LSet.t
 val hcons_universe_context : UContext.t -> UContext.t
 val hcons_abstract_universe_context : AUContext.t -> AUContext.t
@@ -515,6 +515,6 @@ val eq_levels : Level.t -> Level.t -> bool
 val equal_universes : Universe.t -> Universe.t -> bool
 [@@ocaml.deprecated "Use Universe.equal"]
 
-(** Universes of constraints *)
-val universes_of_constraints : constraints -> LSet.t
+(** Universes of Constraint.t *)
+val universes_of_constraints : Constraint.t -> LSet.t
 [@@ocaml.deprecated "Use Constraint.universes_of"]

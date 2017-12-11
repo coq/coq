@@ -260,7 +260,7 @@ val is_transparent : Environ.env -> Constant.t tableKey -> bool
 
 (** {6 Conversion Functions (uses closures, lazy strategy) } *)
 
-type conversion_test = constraints -> constraints
+type conversion_test = Constraint.t -> Constraint.t
 
 val pb_is_equal : conv_pb -> bool
 val pb_equal : conv_pb -> conv_pb

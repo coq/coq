@@ -44,7 +44,7 @@ val add_mind :
   DirPath.t -> Id.t -> Entries.mutual_inductive_entry -> MutInd.t
 
 (** Extra universe constraints *)
-val add_constraints : Univ.constraints -> unit
+val add_constraints : Univ.Constraint.t -> unit
 
 val push_context : bool -> Univ.UContext.t -> unit
 val push_context_set : bool -> Univ.ContextSet.t -> unit

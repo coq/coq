@@ -187,9 +187,9 @@ val whd_evar : Evd.evar_map -> constr -> constr
 
 val eq_constr : Evd.evar_map -> t -> t -> bool
 val eq_constr_nounivs : Evd.evar_map -> t -> t -> bool
-val eq_constr_universes : Evd.evar_map -> t -> t -> Universes.universe_constraints option
-val leq_constr_universes : Evd.evar_map -> t -> t -> Universes.universe_constraints option
-val eq_constr_universes_proj : Environ.env -> Evd.evar_map -> t -> t -> Universes.universe_constraints option
+val eq_constr_universes : Evd.evar_map -> t -> t -> Universes.Constraints.t option
+val leq_constr_universes : Evd.evar_map -> t -> t -> Universes.Constraints.t option
+val eq_constr_universes_proj : Environ.env -> Evd.evar_map -> t -> t -> Universes.Constraints.t option
 val compare_constr : Evd.evar_map -> (t -> t -> bool) -> t -> t -> bool
 
 (** {6 Iterators} *)

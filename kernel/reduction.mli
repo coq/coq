@@ -49,7 +49,7 @@ type 'a universe_state = 'a * 'a universe_compare
 
 type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
 
-type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.constraints
+type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.Constraint.t
 
 val sort_cmp_universes : env -> conv_pb -> Sorts.t -> Sorts.t ->
   'a * 'a universe_compare -> 'a * 'a universe_compare
