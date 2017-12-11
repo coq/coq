@@ -30,7 +30,7 @@ package "lib" (
 
   directory   = "lib"
 
-  requires         = "coq.config"
+  requires         = "str, unix, threads, coq.config"
 
   archive(byte)    = "clib.cma"
   archive(byte)   += "lib.cma"
@@ -65,7 +65,7 @@ package "kernel" (
 
   directory   = "kernel"
 
-  requires    = "coq.lib, coq.vm"
+  requires    = "dynlink, coq.lib, coq.vm"
 
   archive(byte)    = "kernel.cma"
   archive(native)  = "kernel.cmxa"
@@ -168,7 +168,7 @@ package "parsing" (
   description = "Coq Parsing Engine"
   version     = "8.7"
 
-  requires    = "coq.proofs"
+  requires    = "camlp5.gramlib, coq.proofs"
   directory   = "parsing"
 
   archive(byte)    = "parsing.cma"
