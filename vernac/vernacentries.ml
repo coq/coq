@@ -1943,6 +1943,7 @@ let interp ?proof ~atts ~st c =
   vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
 
+  (* Loading a file requires access to the control interpreter *)
   | VernacLoad _ -> assert false
 
   (* The STM should handle that, but LOAD bypasses the STM... *)
