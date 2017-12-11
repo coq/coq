@@ -268,7 +268,7 @@ ci-color:
   <<: *ci-template
   variables:
     <<: *ci-template-vars
-    EXTRA_PACKAGES: "$TIMING_PACKAGES subversion"
+    EXTRA_PACKAGES: "$TIMING_PACKAGES"
 
 ci-compcert:
   <<: *ci-template
