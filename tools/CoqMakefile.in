@@ -455,6 +455,11 @@ all.pdf: $(VFILES)
 	$(HIDE)$(COQDOC) \
 		-toc $(COQDOCFLAGS) -pdf $(GAL) $(COQDOCLIBS) \
 		-o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`
+all.tex: $(VFILES)
+	$(SHOW)'COQDOC -latex $(GAL)'
+	$(HIDE)$(COQDOC) \
+		-toc $(COQDOCFLAGS) -latex $(GAL) $(COQDOCLIBS) \
+		-o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`
 
 # FIXME: not quite right, since the output name is different
 gallinahtml: GAL=-g
@@ -465,6 +470,9 @@ all-gal.ps: all.ps
 
 all-gal.pdf: GAL=-g
 all-gal.pdf: all.pdf
+
+all-gal.tex: GAL=-g
+all-gal.tex: all.tex
 
 # ?
 beautify: $(BEAUTYFILES)
