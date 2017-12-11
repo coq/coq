@@ -77,23 +77,23 @@ REFMANPNGFILES:=$(REFMANEPSFILES:.eps=.png)
 ######################################################################
 
 .PHONY: doc doc-html doc-pdf doc-ps refman refman-quick tutorial
-.PHONY: stdlib full-stdlib faq rectutorial refman-html-dir
+.PHONY: stdlib full-stdlib rectutorial refman-html-dir
 
 INDEXURLS:=doc/refman/html/index_urls.txt
 
-doc: refman faq tutorial rectutorial stdlib $(INDEXURLS)
+doc: refman tutorial rectutorial stdlib $(INDEXURLS)
 
 doc-html:\
   doc/tutorial/Tutorial.v.html doc/refman/html/index.html \
-  doc/faq/html/index.html doc/stdlib/html/index.html doc/RecTutorial/RecTutorial.html
+  doc/stdlib/html/index.html doc/RecTutorial/RecTutorial.html
 
 doc-pdf:\
   doc/tutorial/Tutorial.v.pdf doc/refman/Reference-Manual.pdf \
-  doc/faq/FAQ.v.pdf doc/stdlib/Library.pdf doc/RecTutorial/RecTutorial.pdf
+  doc/stdlib/Library.pdf doc/RecTutorial/RecTutorial.pdf
 
 doc-ps:\
   doc/tutorial/Tutorial.v.ps doc/refman/Reference-Manual.ps \
-  doc/faq/FAQ.v.ps doc/stdlib/Library.ps doc/RecTutorial/RecTutorial.ps
+  doc/stdlib/Library.ps doc/RecTutorial/RecTutorial.ps
 
 refman: \
   doc/refman/html/index.html doc/refman/Reference-Manual.ps doc/refman/Reference-Manual.pdf
@@ -106,8 +106,6 @@ stdlib: \
 
 full-stdlib: \
   doc/stdlib/html/index.html doc/stdlib/FullLibrary.ps doc/stdlib/FullLibrary.pdf
-
-faq: doc/faq/html/index.html doc/faq/FAQ.v.ps doc/faq/FAQ.v.pdf
 
 rectutorial: doc/RecTutorial/RecTutorial.html \
   doc/RecTutorial/RecTutorial.ps doc/RecTutorial/RecTutorial.pdf
@@ -147,9 +145,6 @@ endif
 
 HIDEBIBTEXINFO=| grep -v "^A level-1 auxiliary file"
 SHOWMAKEINDEXERROR=egrep '^!! Input index error|^\*\* Input style error|^   --'
-
-# Empty subsection levels in faq are on purpose
-HEVEAFAQFILTER=2>&1 | grep -v "^Warning: List with no item"
 
 ######################################################################
 # Common
@@ -252,33 +247,6 @@ doc/tutorial/Tutorial.v.pdf: $(DOCCOMMON) doc/tutorial/Tutorial.v.tex
 
 doc/tutorial/Tutorial.v.html: $(DOCCOMMON) doc/tutorial/Tutorial.v.tex
 	(cd doc/tutorial; $(HEVEA) $(HEVEAOPTS) Tutorial.v)
-
-
-######################################################################
-# FAQ
-######################################################################
-
-doc/faq/FAQ.v.dvi: doc/common/version.tex doc/common/title.tex doc/faq/FAQ.v.tex doc/faq/axioms.eps
-	(cd doc/faq;\
-	$(LATEX) -interaction=batchmode FAQ.v;\
-	$(BIBTEX) -terse FAQ.v;\
-	$(LATEX) -interaction=batchmode FAQ.v > /dev/null;\
-	$(LATEX) -interaction=batchmode FAQ.v > /dev/null;\
-	../tools/show_latex_messages FAQ.v.log)
-
-doc/faq/FAQ.v.pdf: doc/common/version.tex doc/common/title.tex doc/faq/FAQ.v.dvi doc/faq/axioms.pdf
-	(cd doc/faq;\
-        $(PDFLATEX) -interaction=batchmode FAQ.v.tex;\
-	../tools/show_latex_messages FAQ.v.log)
-
-doc/faq/FAQ.v.html: doc/faq/FAQ.v.dvi doc/faq/axioms.png # to ensure FAQ.v.bbl
-	(cd doc/faq; ($(HEVEA) $(HEVEAOPTS) FAQ.v.tex $(HEVEAFAQFILTER)))
-
-doc/faq/html/index.html: doc/faq/FAQ.v.html
-	- rm -rf doc/faq/html
-	$(MKDIR) doc/faq/html
-	$(INSTALLLIB) doc/faq/interval_discr.v doc/faq/axioms.png doc/faq/html
-	$(INSTALLLIB) doc/faq/FAQ.v.html doc/faq/html/index.html
 
 ######################################################################
 # Standard library
@@ -386,14 +354,13 @@ install-doc-meta:
 	$(INSTALLLIB) doc/LICENSE $(FULLDOCDIR)/LICENSE.doc
 
 install-doc-html: 
-	$(MKDIR) $(addprefix $(FULLDOCDIR)/html/, refman stdlib faq)
+	$(MKDIR) $(addprefix $(FULLDOCDIR)/html/, refman stdlib)
 	(for f in `cd doc/refman/html; find . -type f`; do \
 		$(MKDIR) $$(dirname $(FULLDOCDIR)/html/refman/$$f);\
 		$(INSTALLLIB) doc/refman/html/$$f $(FULLDOCDIR)/html/refman/$$f;\
 	done)
 	$(INSTALLLIB) doc/stdlib/html/* $(FULLDOCDIR)/html/stdlib
 	$(INSTALLLIB) doc/RecTutorial/RecTutorial.html $(FULLDOCDIR)/html/RecTutorial.html
-	$(INSTALLLIB) doc/faq/html/* $(FULLDOCDIR)/html/faq
 	$(INSTALLLIB) doc/tutorial/Tutorial.v.html $(FULLDOCDIR)/html/Tutorial.html
 
 install-doc-printable: 
@@ -404,10 +371,8 @@ install-doc-printable:
 		doc/stdlib/Library.ps $(FULLDOCDIR)/ps
 	$(INSTALLLIB) doc/tutorial/Tutorial.v.pdf $(FULLDOCDIR)/pdf/Tutorial.pdf
 	$(INSTALLLIB) doc/RecTutorial/RecTutorial.pdf $(FULLDOCDIR)/pdf/RecTutorial.pdf
-	$(INSTALLLIB) doc/faq/FAQ.v.pdf $(FULLDOCDIR)/pdf/FAQ.pdf
 	$(INSTALLLIB) doc/tutorial/Tutorial.v.ps $(FULLDOCDIR)/ps/Tutorial.ps
 	$(INSTALLLIB) doc/RecTutorial/RecTutorial.ps $(FULLDOCDIR)/ps/RecTutorial.ps
-	$(INSTALLLIB) doc/faq/FAQ.v.ps $(FULLDOCDIR)/ps/FAQ.ps
 
 install-doc-index-urls:
 	$(MKDIR) $(FULLDATADIR)
