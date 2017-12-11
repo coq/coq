@@ -397,6 +397,27 @@ let reset_profile () =
   reset_profile_tmp ();
   data := SM.empty
 
+(* ****************************** Named timers ****************************** *)
+
+let timer_data = ref M.empty
+
+let timer_name = function
+  | Some v -> v
+  | None -> ""
+
+let restart_timer name =
+  timer_data := M.add (timer_name name) (System.get_time ()) !timer_data
+
+let get_timer name =
+  try M.find (timer_name name) !timer_data
+  with Not_found -> System.get_time ()
+
+let finish_timing ~prefix name =
+  let tend = System.get_time () in
+  let tstart = get_timer name in
+  Feedback.msg_info(str prefix ++ pr_opt str name ++ str " ran for " ++
+                    System.fmt_time_difference tstart tend)
+
 (* ******************** *)
 
 let print_results_filter ~cutoff ~filter =

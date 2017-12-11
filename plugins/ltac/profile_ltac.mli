@@ -22,6 +22,10 @@ val print_results_tactic : string -> unit
 
 val reset_profile : unit -> unit
 
+val restart_timer : string option -> unit
+
+val finish_timing : prefix:string -> string option -> unit
+
 val do_print_results_at_close : unit -> unit
 
 (* The collected statistics for a tactic. The timing data is collected over all
@@ -46,4 +50,3 @@ type treenode = {
 (* Returns the profiling results known by the current process *)
 val get_local_profiling_results : unit -> treenode
 val feedback_results : treenode -> unit
-
