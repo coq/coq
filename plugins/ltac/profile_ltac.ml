@@ -408,7 +408,7 @@ let print_results_filter ~cutoff ~filter =
   let results =
     SM.fold (fun _ -> merge_roots ~disjoint:true) !data (empty_treenode root) in
   let results = merge_roots results Local.(CList.last !stack) in
-  Feedback.msg_notice (to_string ~cutoff ~filter results)
+  Feedback.msg_info (to_string ~cutoff ~filter results)
 ;;
 
 let print_results ~cutoff =
