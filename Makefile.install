@@ -101,12 +101,16 @@ INSTALLCMI = $(sort \
 	$(foreach lib,$(CORECMA), $(addsuffix .cmi,$($(lib:.cma=_MLLIB_DEPENDENCIES))))) \
 	$(PLUGINS:.cmo=.cmi)
 
+INSTALLCMX = $(sort $(filter-out checker/% ide/% tools/% dev/% configure.cmx, $(MLFILES:.ml=.cmx)))
+
 install-devfiles:
 	$(MKDIR) $(FULLBINDIR)
 	$(INSTALLBIN) $(COQMKTOP) $(FULLBINDIR)
 	$(MKDIR) $(FULLCOQLIB)
 	$(INSTALLSH)  $(FULLCOQLIB) $(GRAMMARCMA)
 	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMI)
+	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMX)
+	$(INSTALLSH)  $(FULLCOQLIB) $(PLUGINSCMO:.cmo=.o)
 	$(INSTALLSH)  $(FULLCOQLIB) $(TOOLS_HELPERS)
 ifeq ($(BEST),opt)
 	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMX) $(CORECMA:.cma=.a) $(STATICPLUGINS:.cma=.a)
