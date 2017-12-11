@@ -288,7 +288,6 @@ let init_terminal_output ~color =
  *)
 let emacs_logger = gen_logger Emacs.quote_info Emacs.quote_warning
 
-
 (* This is specific to the toplevel *)
 let pr_loc loc =
     let fname = loc.Loc.fname in
@@ -311,17 +310,23 @@ let print_err_exn ?extra any =
   std_logger ~pre_hdr Feedback.Error msg
 
 let with_output_to_file fname func input =
-  (* XXX FIXME: redirect std_ft  *)
-  (* let old_logger = !logger in *)
   let channel = open_out (String.concat "." [fname; "out"]) in
-  (* logger := ft_logger old_logger (Format.formatter_of_out_channel channel); *)
+  let old_fmt = !std_ft, !err_ft, !deep_ft in
+  let new_ft = Format.formatter_of_out_channel channel in
+  std_ft := new_ft;
+  err_ft := new_ft;
+  deep_ft := new_ft;
   try
     let output = func input in
-    (* logger := old_logger; *)
+    std_ft := Util.pi1 old_fmt;
+    err_ft := Util.pi2 old_fmt;
+    deep_ft := Util.pi3 old_fmt;
     close_out channel;
     output
   with reraise ->
     let reraise = Backtrace.add_backtrace reraise in
-    (* logger := old_logger; *)
+    std_ft := Util.pi1 old_fmt;
+    err_ft := Util.pi2 old_fmt;
+    deep_ft := Util.pi3 old_fmt;
     close_out channel;
     Exninfo.iraise reraise
