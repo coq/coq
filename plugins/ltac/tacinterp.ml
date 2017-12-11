@@ -890,7 +890,7 @@ let interp_intro_pattern_naming_option ist env sigma = function
 let interp_or_and_intro_pattern_option ist env sigma = function
   | None -> sigma, None
   | Some (ArgVar (loc,id)) ->
-      (match coerce_to_intro_pattern env sigma (Id.Map.find id ist.lfun) with
+      (match interp_intro_pattern_var loc ist env sigma id with
       | IntroAction (IntroOrAndPattern l) -> sigma, Some (loc,l)
       | _ ->
         user_err ?loc (str "Cannot coerce to a disjunctive/conjunctive pattern."))
