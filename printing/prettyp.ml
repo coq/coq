@@ -98,7 +98,8 @@ let print_ref reduce ref udecl =
       (Array.to_list (Univ.Instance.to_array inst)) udecl in
   let sigma = Evd.from_ctx (UState.of_binders bl) in
   let inst =
-    if Global.is_polymorphic ref then Printer.pr_universe_instance sigma univs
+    if Global.is_polymorphic ref
+    then Printer.pr_universe_instance sigma (Univ.UContext.instance univs)
     else mt ()
   in
   hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_letype_env env sigma typ ++ 
@@ -552,8 +553,7 @@ let print_instance sigma cb =
   if Declareops.constant_is_polymorphic cb then
     let univs = Declareops.constant_polymorphic_context cb in
     let inst = Univ.AUContext.instance univs in
-    let univs = Univ.UContext.make (inst, Univ.AUContext.instantiate inst univs) in
-    pr_universe_instance sigma univs
+    pr_universe_instance sigma inst
   else mt()
 				
 let print_constant with_values sep sp udecl =

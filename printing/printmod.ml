@@ -103,9 +103,7 @@ let print_one_inductive env sigma mib ((_,i) as ind) =
   let envpar = push_rel_context params env in
   let inst =
     if Declareops.inductive_is_polymorphic mib then
-      let ctx = Declareops.inductive_polymorphic_context mib in
-      let ctx = Univ.UContext.make (u, Univ.AUContext.instantiate u ctx) in
-      Printer.pr_universe_instance sigma ctx
+      Printer.pr_universe_instance sigma u
     else mt ()
   in
   hov 0 (

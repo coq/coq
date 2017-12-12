@@ -194,12 +194,6 @@ let rec pr_disjunction pr = function
   | a::l -> pr a ++ str "," ++ spc () ++ pr_disjunction pr l
   | [] -> assert false
 
-let pr_puniverses f env (c,u) = 
-  f env c ++ 
-  (if Flags.is_universe_polymorphism () && not (Univ.Instance.is_empty u) then
-    str"(*" ++ Univ.Instance.pr UnivNames.pr_with_global_universes u ++ str"*)"
-  else mt())
-
 let explain_elim_arity env sigma ind sorts c pj okinds =
   let open EConstr in
   let env = make_all_name_different env sigma in
@@ -262,7 +256,7 @@ let explain_ill_formed_branch env sigma c ci actty expty =
   let pa, pe = pr_explicit env sigma (simp actty) (simp expty) in
   strbrk "In pattern-matching on term" ++ brk(1,1) ++ pc ++
   spc () ++ strbrk "the branch for constructor" ++ spc () ++
-  quote (pr_puniverses pr_constructor env ci) ++
+  quote (pr_pconstructor env sigma ci) ++
   spc () ++ str "has type" ++ brk(1,1) ++ pa ++ spc () ++
   str "which should be" ++ brk(1,1) ++ pe ++ str "."
 
