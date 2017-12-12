@@ -971,7 +971,6 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
 	  | _, _ -> error ()
       with e when CErrors.noncritical e -> error ()
   in
-  let relargty = EConstr.Unsafe.to_constr relargty in
   let measure = interp_casted_constr_evars binders_env evdref measure relargty in
   let wf_rel, wf_rel_fun, measure_fn =
     let measure_body, measure =
@@ -979,7 +978,6 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
       it_mkLambda_or_LetIn measure binders
     in
     let comb = Evarutil.e_new_global evdref (delayed_force measure_on_R_ref) in
-    let relargty = EConstr.of_constr relargty in
     let wf_rel = mkApp (comb, [| argtyp; relargty; rel; measure |]) in
     let wf_rel_fun x y =
       mkApp (rel, [| subst1 x measure_body;
@@ -1028,7 +1026,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
       (r, l, impls @ [(Some (Id.of_string "recproof", Impargs.Manual, (true, false)))],
        scopes @ [None]) in
       interp_casted_constr_evars (push_rel_context ctx env) evdref
-        ~impls:newimpls body (EConstr.Unsafe.to_constr (lift 1 top_arity))
+        ~impls:newimpls body (lift 1 top_arity)
   in
   let intern_body_lam = it_mkLambda_or_LetIn intern_body (curry_fun :: lift_lets @ fun_bl) in
   let prop = mkLambda (Name argname, argtyp, top_arity_let) in
@@ -1129,7 +1127,6 @@ let interp_recursive isfix fixl notations =
 
   (* Get interpretation metadatas *)
   let fixtypes = List.map EConstr.Unsafe.to_constr fixtypes in
-  let fixccls = List.map EConstr.Unsafe.to_constr fixccls in
   let impls = compute_internalization_env env Recursive fixnames fixtypes fiximps in
 
   (* Interp bodies with rollback because temp use of notations/implicit *)

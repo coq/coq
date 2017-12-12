@@ -115,8 +115,9 @@ val interp_open_constr : env -> evar_map -> constr_expr -> evar_map * EConstr.co
 val interp_constr_evars : env -> evar_map ref ->
   ?impls:internalization_env -> constr_expr -> EConstr.constr
 
+
 val interp_casted_constr_evars : env -> evar_map ref ->
-  ?impls:internalization_env -> constr_expr -> types -> EConstr.constr
+  ?impls:internalization_env -> constr_expr -> EConstr.types -> EConstr.constr
 
 val interp_type_evars : env -> evar_map ref ->
   ?impls:internalization_env -> constr_expr -> EConstr.types

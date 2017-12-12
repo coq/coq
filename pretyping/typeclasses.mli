@@ -83,8 +83,8 @@ val is_instance : global_reference -> bool
 (** Returns the term and type for the given instance of the parameters and fields
    of the type class. *)
 
-val instance_constructor : typeclass Univ.puniverses -> constr list ->
-  constr option * types
+val instance_constructor : typeclass EConstr.puniverses -> EConstr.t list ->
+  EConstr.t option * EConstr.t
 
 (** Filter which evars to consider for resolution. *)
 type evar_filter = Evar.t -> Evar_kinds.t -> bool
