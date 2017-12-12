@@ -551,9 +551,9 @@ GEXTEND Gram
       | IDENT "Canonical"; qid = Constr.global;
           d = G_vernac.def_body ->
           let s = coerce_reference_to_id qid in
-    Vernacexpr.VernacLocal(false,Vernacexpr.VernacDefinition
+    Vernacexpr.VernacDefinition
       ((Decl_kinds.NoDischarge,Decl_kinds.CanonicalStructure),
-          ((Loc.tag s),None),(d  )))
+          ((Loc.tag s),None), d)
   ]];
 END
 

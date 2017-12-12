@@ -323,7 +323,7 @@ type vernac_argument_status = {
   implicit_status : vernac_implicit_status;
 }
 
-type vernac_expr =
+type nonrec vernac_expr =
 
   | VernacLoad of verbose_flag * string
   (* Syntax *)
@@ -472,13 +472,13 @@ type vernac_expr =
   (* For extension *)
   | VernacExtend of extend_name * Genarg.raw_generic_argument list
 
-  (* Flags *)
-  | VernacProgram of vernac_expr
-  | VernacPolymorphic of bool * vernac_expr
-  | VernacLocal of bool * vernac_expr
+type nonrec vernac_flag =
+  | VernacProgram
+  | VernacPolymorphic of bool
+  | VernacLocal of bool
 
 type vernac_control =
-  | VernacExpr of vernac_expr
+  | VernacExpr of vernac_flag list * vernac_expr
   (* boolean is true when the `-time` batch-mode command line flag was set.
      the flag is used to print differently in `-time` vs `Time foo` *)
   | VernacTime of bool * vernac_control located

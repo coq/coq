@@ -49,17 +49,13 @@ let declare_vernac_classifier
   classifiers := !classifiers @ [s,f]
 
 let classify_vernac e =
-  let rec static_classifier ~poly e = match e with
+  let static_classifier ~poly e = match e with
     (* Univ poly compatibility: we run it now, so that we can just
      * look at Flags in stm.ml.  Would be nicer to have the stm
      * look at the entire dag to detect this option. *)
     | ( VernacSetOption (l,_) | VernacUnsetOption l)
       when CList.equal String.equal l Vernacentries.universe_polymorphism_option_name ->
        VtSideff [], VtNow
-    (* Nested vernac exprs *)
-    | VernacProgram e -> static_classifier ~poly e
-    | VernacLocal (_,e) -> static_classifier ~poly e
-    | VernacPolymorphic (b, e) -> static_classifier ~poly:b e
     (* Qed *)
     | VernacAbort _ -> VtQed VtDrop, VtLater
     | VernacEndProof Admitted -> VtQed VtKeepAsAxiom, VtLater
@@ -193,7 +189,13 @@ let classify_vernac e =
         with Not_found -> anomaly(str"No classifier for"++spc()++str (fst s)++str".")
   in
   let rec static_control_classifier ~poly = function
-    | VernacExpr e -> static_classifier ~poly e
+    | VernacExpr (f, e) ->
+      let poly = List.fold_left (fun poly f ->
+          match f with
+          | VernacPolymorphic b -> b
+          | (VernacProgram | VernacLocal _) -> poly
+        ) poly f in
+      static_classifier ~poly e
     | VernacTimeout (_,e) -> static_control_classifier ~poly e
     | VernacTime (_,(_,e)) | VernacRedirect (_, (_,e)) ->
        static_control_classifier ~poly e

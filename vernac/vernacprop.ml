@@ -12,14 +12,14 @@
 open Vernacexpr
 
 let rec under_control = function
-  | VernacExpr c -> c
+  | VernacExpr (_, c) -> c
   | VernacRedirect (_,(_,c))
   | VernacTime (_,(_,c))
   | VernacFail c
   | VernacTimeout (_,c) -> under_control c
 
 let rec has_Fail = function
-  | VernacExpr c -> false
+  | VernacExpr _ -> false
   | VernacRedirect (_,(_,c))
   | VernacTime (_,(_,c))
   | VernacTimeout (_,c) -> has_Fail c
@@ -45,8 +45,8 @@ let rec is_deep_navigation_vernac = function
 
 (* NB: Reset is now allowed again as asked by A. Chlipala *)
 let is_reset = function
-  | VernacExpr VernacResetInitial
-  | VernacExpr (VernacResetName _) -> true
+  | VernacExpr ( _, VernacResetInitial)
+  | VernacExpr (_, VernacResetName _) -> true
   | _ -> false
 
 let is_debug cmd = match under_control cmd with

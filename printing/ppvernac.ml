@@ -535,17 +535,25 @@ open Decl_kinds
       | SsFwdClose e -> "("^aux e^")*"
     in Pp.str (aux e)
 
-  let rec pr_vernac_expr v =
+  let pr_extend s cl =
+    let pr_arg a =
+      try pr_gen a
+      with Failure _ -> str "<error in " ++ str (fst s) ++ str ">" in
+    try
+      let rl = Egramml.get_extend_vernac_rule s in
+      let rec aux rl cl =
+        match rl, cl with
+        | Egramml.GramNonTerminal _ :: rl, arg :: cl -> pr_arg arg :: aux rl cl
+        | Egramml.GramTerminal s :: rl, cl -> str s :: aux rl cl
+        | [], [] -> []
+        | _ -> assert false in
+      hov 1 (pr_sequence identity (aux rl cl))
+    with Not_found ->
+      hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep pr_arg cl ++ str ")")
+
+  let pr_vernac_expr v =
     let return = tag_vernac v in
     match v with
-      | VernacPolymorphic (poly, v) ->
-        let s = if poly then keyword "Polymorphic" else keyword "Monomorphic" in
-        return (s ++ spc () ++ pr_vernac_expr v)
-      | VernacProgram v ->
-        return (keyword "Program" ++ spc() ++ pr_vernac_expr v)
-      | VernacLocal (local, v) ->
-        return (pr_locality local ++ spc() ++ pr_vernac_expr v)
-
       | VernacLoad (f,s) ->
         return (
           keyword "Load"
@@ -1203,26 +1211,21 @@ open Decl_kinds
       | VernacEndSubproof ->
         return (str "}")
 
-  and pr_extend s cl =
-    let pr_arg a =
-      try pr_gen a
-      with Failure _ -> str "<error in " ++ str (fst s) ++ str ">" in
-    try
-      let rl = Egramml.get_extend_vernac_rule s in
-      let rec aux rl cl =
-        match rl, cl with
-        | Egramml.GramNonTerminal _ :: rl, arg :: cl -> pr_arg arg :: aux rl cl
-        | Egramml.GramTerminal s :: rl, cl -> str s :: aux rl cl
-        | [], [] -> []
-        | _ -> assert false in
-      hov 1 (pr_sequence identity (aux rl cl))
-    with Not_found ->
-      hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep pr_arg cl ++ str ")")
+let pr_vernac_flag =
+  function
+  | VernacPolymorphic true -> keyword "Polymorphic"
+  | VernacPolymorphic false -> keyword "Monomorphic"
+  | VernacProgram -> keyword "Program"
+  | VernacLocal local -> pr_locality local
 
   let rec pr_vernac_control v =
     let return = tag_vernac v in
     match v with
-    | VernacExpr v' -> pr_vernac_expr v' ++ sep_end v'
+    | VernacExpr (f, v') ->
+      List.fold_right
+        (fun f a -> pr_vernac_flag f ++ spc() ++ a)
+        f
+        (pr_vernac_expr v' ++ sep_end v')
     | VernacTime (_,(_,v)) ->
       return (keyword "Time" ++ spc() ++ pr_vernac_control v)
     | VernacRedirect (s, (_,v)) ->
