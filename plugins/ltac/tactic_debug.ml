@@ -391,13 +391,10 @@ let explain_ltac_call_trace last trace loc =
 
 let skip_extensions trace =
   let rec aux = function
-  | (_,Tacexpr.LtacNameCall f as tac) :: _
-       when Tacenv.is_ltac_for_ml_tactic f -> [tac]
-  | (_,Tacexpr.LtacNotationCall _ as tac) :: (_,Tacexpr.LtacMLCall _) :: _ ->
+  | (_,Tacexpr.LtacNotationCall _ as tac) :: (_,Tacexpr.LtacMLCall _) :: tail ->
      (* Case of an ML defined tactic with entry of the form <<"foo" args>> *)
      (* see tacextend.mlp *)
-     [tac]
-  | (_,Tacexpr.LtacMLCall _ as tac) :: _ -> [tac]
+     tac :: aux tail
   | t :: tail -> t :: aux tail
   | [] -> [] in
   List.rev (aux (List.rev trace))

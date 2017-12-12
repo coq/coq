@@ -1,4 +1,4 @@
 The command has indeed failed with message:
-In nested Ltac calls to "c", "abs", "abstract b ltac:(())", 
+In nested Ltac calls to "c", "abs", "transparent_abstract (tactic3)", 
 "b", "a", "pose (I : I)" and "(I : I)", last term evaluation failed.
 The term "I" has type "True" which should be Set, Prop or Type.
