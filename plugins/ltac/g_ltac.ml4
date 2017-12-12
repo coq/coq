@@ -125,9 +125,9 @@ GEXTEND Gram
       | IDENT "exactly_once"; ta = tactic_expr -> TacExactlyOnce ta
       | IDENT "infoH"; ta = tactic_expr -> TacShowHyps ta
 (*To do: put Abstract in Refiner*)
-      | IDENT "abstract"; tc = NEXT -> TacAbstract (tc,None)
+      | IDENT "abstract"; tc = NEXT -> TacAbstract (Loc.tag ~loc:!@loc (tc,None))
       | IDENT "abstract"; tc = NEXT; "using";  s = ident ->
-          TacAbstract (tc,Some s)
+          TacAbstract (Loc.tag ~loc:!@loc (tc,Some s))
       | sel = selector; ta = tactic_expr -> TacSelect (sel, ta) ]
 (*End of To do*)
     | "2" RIGHTA
@@ -401,12 +401,12 @@ VERNAC ARGUMENT EXTEND ltac_use_default PRINTED BY pr_ltac_use_default
 END
 
 let is_anonymous_abstract = function
-  | TacAbstract (_,None) -> true
-  | TacSolve [TacAbstract (_,None)] -> true
+  | TacAbstract (_,(_,None)) -> true
+  | TacSolve [TacAbstract (_,(_,None))] -> true
   | _ -> false
 let rm_abstract = function
-  | TacAbstract (t,_) -> t
-  | TacSolve [TacAbstract (t,_)] -> TacSolve [t]
+  | TacAbstract (_,(t,_)) -> t
+  | TacSolve [TacAbstract (_,(t,_))] -> TacSolve [t]
   | x -> x
 let is_explicit_terminator = function TacSolve _ -> true | _ -> false
 

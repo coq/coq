@@ -584,8 +584,8 @@ and intern_tactic_seq onlytac ist = function
       ist.ltacvars, TacFail (g,intern_int_or_var ist n,intern_message ist l)
   | TacProgress tac -> ist.ltacvars, TacProgress (intern_pure_tactic ist tac)
   | TacShowHyps tac -> ist.ltacvars, TacShowHyps (intern_pure_tactic ist tac)
-  | TacAbstract (tac,s) ->
-      ist.ltacvars, TacAbstract (intern_pure_tactic ist tac,s)
+  | TacAbstract (loc,(tac,s)) ->
+      ist.ltacvars, TacAbstract (loc,(intern_pure_tactic ist tac,s))
   | TacThen (t1,t2) ->
       let lfun', t1 = intern_tactic_seq onlytac ist t1 in
       let lfun'', t2 = intern_tactic_seq onlytac { ist with ltacvars = lfun' } t2 in

@@ -881,9 +881,9 @@ let pr_goal_selector ~toplevel s =
         let rec pr_tac inherited tac =
           let return (doc, l) = (tag tac doc, l) in
           let (strm, prec) = return (match tac with
-            | TacAbstract (t,None) ->
+            | TacAbstract (_,(t,None)) ->
               keyword "abstract " ++ pr_tac (labstract,L) t, labstract
-            | TacAbstract (t,Some s) ->
+            | TacAbstract (_,(t,Some s)) ->
               hov 0 (
                 keyword "abstract"
                 ++ str" (" ++ pr_tac (labstract,L) t ++ str")" ++ spc ()
