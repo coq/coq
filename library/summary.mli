@@ -36,6 +36,12 @@ type 'a summary_declaration = {
 
 val declare_summary : string -> 'a summary_declaration -> unit
 
+(** We provide safe projection from the summary to the types stored in
+   it.*)
+module Dyn : Dyn.S
+
+val declare_summary_tag : string -> 'a summary_declaration -> 'a Dyn.tag
+
 (** All-in-one reference declaration + summary registration.
     It behaves just as OCaml's standard [ref] function, except
     that a [declare_summary] is done, with [name] as string.
@@ -43,6 +49,7 @@ val declare_summary : string -> 'a summary_declaration -> unit
     The [freeze_function] can be overridden *)
 
 val ref : ?freeze:(marshallable -> 'a -> 'a) -> name:string -> 'a -> 'a ref
+val ref_tag : ?freeze:(marshallable -> 'a -> 'a) -> name:string -> 'a -> 'a ref * 'a Dyn.tag
 
 (* As [ref] but the value is local to a process, i.e. not sent to, say, proof
  * workers.  It is useful to implement a local cache for example. *)
@@ -55,10 +62,11 @@ module Local : sig
 
 end
 
-(** Special name for the summary of ML modules.  This summary entry is
-    special because its unfreeze may load ML code and hence add summary
-    entries.  Thus is has to be recognizable, and handled appropriately *)
-val ml_modules : string
+(** Special summary for ML modules.  This summary entry is special
+    because its unfreeze may load ML code and hence add summary
+    entries.  Thus is has to be recognizable, and handled properly.
+   *)
+val declare_ml_modules_summary : 'a summary_declaration -> unit
 
 (** For global tables registered statically before the end of coqtop
     launch, the following empty [init_function] could be used. *)
@@ -72,19 +80,34 @@ type frozen
 
 val empty_frozen : frozen
 val freeze_summaries : marshallable:marshallable -> frozen
-val unfreeze_summaries : frozen -> unit
+val unfreeze_summaries : ?partial:bool -> frozen -> unit
 val init_summaries : unit -> unit
 
-(** The type [frozen_bits] is a snapshot of some of the registered tables *)
-type frozen_bits
+(** Typed projection of the summary. Experimental API, use with CARE *)
 
-val freeze_summary :
-  marshallable:marshallable -> ?complement:bool -> string list -> frozen_bits
+val modify_summary : frozen -> 'a Dyn.tag -> 'a -> frozen
+val project_from_summary : frozen -> 'a Dyn.tag -> 'a
+val remove_from_summary : frozen -> 'a Dyn.tag -> frozen
+
+(** The type [frozen_bits] is a snapshot of some of the registered
+    tables. It is DEPRECATED in favor of the typed projection
+    version. *)
+
+type frozen_bits
+[@@ocaml.deprecated "Please use the typed version of summary projection"]
+
+[@@@ocaml.warning "-3"]
+val freeze_summary : marshallable:marshallable -> ?complement:bool -> string list -> frozen_bits
+[@@ocaml.deprecated "Please use the typed version of summary projection"]
 val unfreeze_summary : frozen_bits -> unit
+[@@ocaml.deprecated "Please use the typed version of summary projection"]
 val surgery_summary : frozen -> frozen_bits -> frozen
+[@@ocaml.deprecated "Please use the typed version of summary projection"]
 val project_summary : frozen -> ?complement:bool -> string list -> frozen_bits
+[@@ocaml.deprecated "Please use the typed version of summary projection"]
 val pointer_equal : frozen_bits -> frozen_bits -> bool
+[@@ocaml.deprecated "Please use the typed version of summary projection"]
+[@@@ocaml.warning "+3"]
 
 (** {6 Debug} *)
-
 val dump : unit -> (int * string) list

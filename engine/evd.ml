@@ -466,9 +466,8 @@ let add d e i = add_with_name d e i
 let evar_counter_summary_name = "evar counter"
 
 (* Generator of existential names *)
-let new_untyped_evar =
-  let evar_ctr = Summary.ref 0 ~name:evar_counter_summary_name in
-  fun () -> incr evar_ctr; Evar.unsafe_of_int !evar_ctr
+let evar_ctr, evar_counter_summary_tag = Summary.ref_tag 0 ~name:evar_counter_summary_name
+let new_untyped_evar () = incr evar_ctr; Evar.unsafe_of_int !evar_ctr
 
 let new_evar evd ?name evi =
   let evk = new_untyped_evar () in

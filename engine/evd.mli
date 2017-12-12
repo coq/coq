@@ -613,7 +613,7 @@ type unsolvability_explanation = SeveralInstancesFound of int
 
 (* This stuff is internal and should not be used. Currently a hack in
    the STM relies on it. *)
-val evar_counter_summary_name : string
+val evar_counter_summary_tag : int Summary.Dyn.tag
 
 (** {5 Deprecated functions} *)
 val create_evar_defs : evar_map -> evar_map

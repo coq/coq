@@ -611,8 +611,8 @@ let unfreeze (grams, lex) =
     the lexer state should not be resetted, since it contains
     keywords declared in g_*.ml4 *)
 
-let _ =
-  Summary.declare_summary "GRAMMAR_LEXER"
+let parser_summary_tag =
+  Summary.declare_summary_tag "GRAMMAR_LEXER"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = Summary.nop }

@@ -199,9 +199,10 @@ let whd_head_evar sigma c =
 let meta_counter_summary_name = "meta counter"
 
 (* Generator of metavariables *)
-let new_meta =
-  let meta_ctr = Summary.ref 0 ~name:meta_counter_summary_name in
-  fun () -> incr meta_ctr; !meta_ctr
+let meta_ctr, meta_counter_summary_tag =
+  Summary.ref_tag 0 ~name:meta_counter_summary_name
+
+let new_meta () = incr meta_ctr; !meta_ctr
 
 let mk_new_meta () = EConstr.mkMeta(new_meta())
 
