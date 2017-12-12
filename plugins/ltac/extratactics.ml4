@@ -25,6 +25,7 @@ open Termops
 open Equality
 open Misctypes
 open Proofview.Notations
+open Vernacinterp
 
 DECLARE PLUGIN "ltac_plugin"
 
@@ -249,11 +250,10 @@ TACTIC EXTEND rewrite_star
 (**********************************************************************)
 (* Hint Rewrite                                                       *)
 
-let add_rewrite_hint bases ort t lcsr =
+let add_rewrite_hint ~poly bases ort t lcsr =
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  let poly = Flags.use_polymorphic_flag () in
-  let f ce = 
+  let f ce =
     let c, ctx = Constrintern.interp_constr env sigma ce in
     let ctx =
       let ctx = UState.context_set ctx in
@@ -270,16 +270,16 @@ let add_rewrite_hint bases ort t lcsr =
 
 let classify_hint _ = Vernacexpr.VtSideff [], Vernacexpr.VtLater
 
-VERNAC COMMAND EXTEND HintRewrite CLASSIFIED BY classify_hint
+VERNAC COMMAND FUNCTIONAL EXTEND HintRewrite CLASSIFIED BY classify_hint
   [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
-  [ add_rewrite_hint bl o None l ]
+  [ fun ~atts ~st -> add_rewrite_hint ~poly:atts.polymorphic bl o None l; st ]
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
     ":" preident_list(bl) ] ->
-  [ add_rewrite_hint bl o (Some t) l ]
+  [ fun ~atts ~st -> add_rewrite_hint ~poly:atts.polymorphic bl o (Some t) l; st ]
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
-  [ add_rewrite_hint ["core"] o None l ]
+  [ fun ~atts ~st -> add_rewrite_hint ~poly:atts.polymorphic ["core"] o None l; st ]
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
-  [ add_rewrite_hint ["core"] o (Some t) l ]
+  [ fun ~atts ~st -> add_rewrite_hint ~poly:atts.polymorphic ["core"] o (Some t) l; st ]
 END
 
 (**********************************************************************)
@@ -290,7 +290,7 @@ open EConstr
 open Vars
 open Coqlib
 
-let project_hint pri l2r r =
+let project_hint ~poly pri l2r r =
   let gr = Smartlocate.global_with_alias r in
   let env = Global.env() in
   let sigma = Evd.from_env env in
@@ -313,30 +313,28 @@ let project_hint pri l2r r =
   let id =
     Nameops.add_suffix (Nametab.basename_of_global gr) ("_proj_" ^ (if l2r then "l2r" else "r2l"))
   in
-  let poly = Flags.use_polymorphic_flag () in
   let ctx = Evd.const_univ_entry ~poly sigma in
   let c = EConstr.to_constr sigma c in
   let c = Declare.declare_definition ~internal:Declare.InternalTacticRequest id (c,ctx) in
   let info = {Vernacexpr.hint_priority = pri; hint_pattern = None} in
     (info,false,true,Hints.PathAny, Hints.IsGlobRef (Globnames.ConstRef c))
 
-let add_hints_iff ?locality l2r lc n bl =
-  Hints.add_hints (Locality.make_module_locality locality) bl
-    (Hints.HintsResolveEntry (List.map (project_hint n l2r) lc))
+let add_hints_iff ~atts l2r lc n bl =
+  let open Vernacinterp in
+  Hints.add_hints (Locality.make_module_locality atts.locality) bl
+    (Hints.HintsResolveEntry (List.map (project_hint ~poly:atts.polymorphic n l2r) lc))
 
 VERNAC COMMAND FUNCTIONAL EXTEND HintResolveIffLR CLASSIFIED AS SIDEFF
   [ "Hint" "Resolve" "->" ne_global_list(lc) natural_opt(n)
     ":" preident_list(bl) ] ->
   [ fun ~atts ~st -> begin
-        let open Vernacinterp in
-        add_hints_iff ?locality:atts.locality true lc n bl;
+        add_hints_iff ~atts true lc n bl;
         st
       end
   ]
 | [ "Hint" "Resolve" "->" ne_global_list(lc) natural_opt(n) ] ->
   [ fun ~atts ~st -> begin
-        let open Vernacinterp in
-        add_hints_iff ?locality:atts.locality true lc n ["core"];
+        add_hints_iff ~atts true lc n ["core"];
         st
       end
   ]
@@ -346,15 +344,13 @@ VERNAC COMMAND FUNCTIONAL EXTEND HintResolveIffRL CLASSIFIED AS SIDEFF
   [ "Hint" "Resolve" "<-" ne_global_list(lc) natural_opt(n)
     ":" preident_list(bl) ] ->
   [ fun ~atts ~st -> begin
-        let open Vernacinterp in
-        add_hints_iff ?locality:atts.locality false lc n bl;
+        add_hints_iff ~atts false lc n bl;
         st
       end
   ]
 | [ "Hint" "Resolve" "<-" ne_global_list(lc) natural_opt(n) ] ->
   [ fun ~atts ~st -> begin
-        let open Vernacinterp in
-        add_hints_iff ?locality:atts.locality false lc n ["core"];
+        add_hints_iff ~atts false lc n ["core"];
         st
       end
   ]
@@ -430,34 +426,46 @@ let seff id = Vernacexpr.VtSideff [id], Vernacexpr.VtLater
 | [ "Type" ] -> [ InType ]
 END*)
 
-VERNAC COMMAND EXTEND DeriveInversionClear
+VERNAC COMMAND FUNCTIONAL EXTEND DeriveInversionClear
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
-  -> [ add_inversion_lemma_exn na c s false inv_clear_tac ]
+  -> [ fun ~atts ~st ->
+      let open Vernacinterp in
+      add_inversion_lemma_exn ~poly:atts.polymorphic na c s false inv_clear_tac; st ]
 
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ] => [ seff na ]
-  -> [ add_inversion_lemma_exn na c Sorts.InProp false inv_clear_tac ]
+  -> [ fun ~atts ~st ->
+      let open Vernacinterp in
+      add_inversion_lemma_exn ~poly:atts.polymorphic na c Sorts.InProp false inv_clear_tac; st ]
 END
 
-VERNAC COMMAND EXTEND DeriveInversion
+VERNAC COMMAND FUNCTIONAL EXTEND DeriveInversion
 | [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
-  -> [ add_inversion_lemma_exn na c s false inv_tac ]
+  -> [ fun ~atts ~st ->
+      let open Vernacinterp in
+      add_inversion_lemma_exn ~poly:atts.polymorphic na c s false inv_tac; st ]
 
 | [ "Derive" "Inversion" ident(na) "with" constr(c) ] => [ seff na ]
-  -> [ add_inversion_lemma_exn na c Sorts.InProp false inv_tac ]
+  -> [ fun ~atts ~st ->
+      let open Vernacinterp in
+      add_inversion_lemma_exn ~poly:atts.polymorphic na c Sorts.InProp false inv_tac; st ]
 END
 
-VERNAC COMMAND EXTEND DeriveDependentInversion
+VERNAC COMMAND FUNCTIONAL EXTEND DeriveDependentInversion
 | [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
-  -> [ add_inversion_lemma_exn na c s true dinv_tac ]
+  -> [  fun ~atts ~st ->
+      let open Vernacinterp in
+      add_inversion_lemma_exn ~poly:atts.polymorphic na c s true dinv_tac; st ]
 END
 
-VERNAC COMMAND EXTEND DeriveDependentInversionClear
+VERNAC COMMAND FUNCTIONAL EXTEND DeriveDependentInversionClear
 | [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => [ seff na ]
-  -> [ add_inversion_lemma_exn na c s true dinv_clear_tac ]
+  -> [  fun ~atts ~st ->
+      let open Vernacinterp in
+      add_inversion_lemma_exn ~poly:atts.polymorphic na c s true dinv_clear_tac; st ]
 END
 
 (**********************************************************************)

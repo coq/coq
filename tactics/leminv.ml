@@ -234,10 +234,9 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let p = Evarutil.nf_evars_universes sigma invProof in
     p, sigma
 
-let add_inversion_lemma name env sigma t sort dep inv_op =
+let add_inversion_lemma ~poly name env sigma t sort dep inv_op =
   let invProof, sigma = inversion_scheme env sigma t sort dep inv_op in
   let univs =
-    let poly = Flags.use_polymorphic_flag () in
     Evd.const_univ_entry ~poly sigma
   in
   let entry = definition_entry ~univs invProof in
@@ -247,13 +246,13 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
 (* inv_op = Inv (derives de complete inv. lemma)
  * inv_op = InvNoThining (derives de semi inversion lemma) *)
 
-let add_inversion_lemma_exn na com comsort bool tac =
+let add_inversion_lemma_exn ~poly na com comsort bool tac =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let sigma, c = Constrintern.interp_type_evars env sigma com in
   let sigma, sort = Evd.fresh_sort_in_family ~rigid:univ_rigid env sigma comsort in
   try
-    add_inversion_lemma na env sigma c sort bool tac
+    add_inversion_lemma ~poly na env sigma c sort bool tac
   with
     |   UserError (Some "Case analysis",s) -> (* Reference to Indrec *)
 	  user_err ~hdr:"Inv needs Nodep Prop Set" s

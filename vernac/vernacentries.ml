@@ -2132,10 +2132,6 @@ let check_vernac_supports_polymorphism c p =
     | VernacExtend _ | VernacUniverse _ | VernacConstraint _) -> ()
   | Some _, _ -> user_err Pp.(str "This command does not support Polymorphism")
 
-let enforce_polymorphism = function
-  | None   -> Flags.is_universe_polymorphism ()
-  | Some b -> Flags.make_polymorphic_flag b; b
-
 (** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
 
@@ -2202,6 +2198,7 @@ let with_fail st b f =
   end
 
 let interp ?(verbosely=true) ?proof ~st (loc,c) =
+  let orig_univ_poly = Flags.is_universe_polymorphism () in
   let orig_program_mode = Flags.is_program_mode () in
   let rec control = function
   | VernacExpr v ->
@@ -2241,7 +2238,8 @@ let interp ?(verbosely=true) ?proof ~st (loc,c) =
     | c ->
       check_vernac_supports_locality c atts.locality;
       check_vernac_supports_polymorphism c polymorphism;
-      let polymorphic = enforce_polymorphism polymorphism in
+      let polymorphic = Option.default (Flags.is_universe_polymorphism ()) polymorphism in
+      Flags.make_universe_polymorphism polymorphic;
       Obligations.set_program_mode isprogcmd;
       try
         vernac_timeout begin fun () ->
@@ -2249,9 +2247,12 @@ let interp ?(verbosely=true) ?proof ~st (loc,c) =
           if verbosely
           then Flags.verbosely (interp ?proof ~atts ~st) c
           else Flags.silently  (interp ?proof ~atts ~st) c;
+          (* If the command is `(Un)Set Program Mode` or `(Un)Set Universe Polymorphism`,
+             we should not restore the previous state of the flag... *)
           if orig_program_mode || not !Flags.program_mode || isprogcmd then
             Flags.program_mode := orig_program_mode;
-          ignore (Flags.use_polymorphic_flag ())
+          if (Flags.is_universe_polymorphism() = polymorphic) then
+            Flags.make_universe_polymorphism orig_univ_poly;
           end
         with
         | reraise when
@@ -2262,8 +2263,8 @@ let interp ?(verbosely=true) ?proof ~st (loc,c) =
             let e = CErrors.push reraise in
             let e = locate_if_not_already ?loc e in
             let () = restore_timeout () in
+            Flags.make_universe_polymorphism orig_univ_poly;
             Flags.program_mode := orig_program_mode;
-	    ignore (Flags.use_polymorphic_flag ());
             iraise e
   in
   if verbosely

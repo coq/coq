@@ -110,14 +110,6 @@ let universe_polymorphism = ref false
 let make_universe_polymorphism b = universe_polymorphism := b
 let is_universe_polymorphism () = !universe_polymorphism
 
-let local_polymorphic_flag = ref None
-let use_polymorphic_flag () = 
-  match !local_polymorphic_flag with 
-  | Some p -> local_polymorphic_flag := None; p
-  | None -> is_universe_polymorphism ()
-let make_polymorphic_flag b =
-  local_polymorphic_flag := Some b
-
 let polymorphic_inductive_cumulativity = ref false
 let make_polymorphic_inductive_cumulativity b = polymorphic_inductive_cumulativity := b
 let is_polymorphic_inductive_cumulativity () = !polymorphic_inductive_cumulativity
