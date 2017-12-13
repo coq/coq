@@ -96,6 +96,8 @@ sig
   val fold_right_map : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
   val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b list -> 'c list -> 'a * 'd list
   val fold_right2_map : ('b -> 'c -> 'a -> 'd * 'a) -> 'b list -> 'c list -> 'a -> 'd list * 'a
+  val fold_left3_map : ('a -> 'b -> 'c -> 'd -> 'a * 'e) -> 'a -> 'b list -> 'c list -> 'd list -> 'a * 'e list
+  val fold_left4_map : ('a -> 'b -> 'c -> 'd -> 'e -> 'a * 'r) -> 'a -> 'b list -> 'c list -> 'd list -> 'e list -> 'a * 'r list
   val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
   val fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
   val map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
@@ -446,6 +448,12 @@ let rec fold_left3 f accu l1 l2 l3 =
   | (a1::l1, a2::l2, a3::l3) -> fold_left3 f (f accu a1 a2 a3) l1 l2 l3
   | (_, _, _) -> invalid_arg "List.fold_left3"
 
+let rec fold_left4 f accu l1 l2 l3 l4 =
+  match (l1, l2, l3, l4) with
+    ([], [], [], []) -> accu
+  | (a1::l1, a2::l2, a3::l3, a4::l4) -> fold_left4 f (f accu a1 a2 a3 a4) l1 l2 l3 l4
+  | (_,_, _, _) -> invalid_arg "List.fold_left4"
+
 (* [fold_right_and_left f [a1;...;an] hd =
    f (f (... (f (f hd
                    an
@@ -765,12 +773,13 @@ let share_tails l1 l2 =
   in
   shr_rev [] (List.rev l1, List.rev l2)
 
+(* Poor man's monadic map *)
 let rec fold_left_map f e = function
-  |  []  -> (e,[])
-  |  h::t ->
-       let e',h' = f e h in
-       let e'',t' = fold_left_map f e' t in
-         e'',h'::t'
+  | []  -> (e,[])
+  | h::t ->
+    let e',h' = f e h in
+    let e'',t' = fold_left_map f e' t in
+    e'',h'::t'
 
 let fold_map = fold_left_map
 
@@ -790,11 +799,25 @@ let fold_right_map f l e =
 
 let fold_map' = fold_right_map
 
+let on_snd f (x,y) = (x,f y)
+
 let fold_left2_map f e l l' =
-  List.fold_left2 (fun (e,l) x x' -> let (e,y) = f e x x' in (e,y::l)) (e,[]) l l'
+  on_snd List.rev @@
+  List.fold_left2 (fun (e,l) x x' ->
+      let (e,y) = f e x x' in
+      (e, y::l)
+    ) (e, []) l l'
 
 let fold_right2_map f l l' e =
   List.fold_right2 (fun x x' (l,e) -> let (y,e) = f x x' e in (y::l,e)) l l' ([],e)
+
+let fold_left3_map f e l l' l'' =
+  on_snd List.rev @@
+  fold_left3 (fun (e,l) x x' x'' -> let (e,y) = f e x x' x'' in (e,y::l)) (e,[]) l l' l''
+
+let fold_left4_map f e l1 l2 l3 l4 =
+  on_snd List.rev @@
+  fold_left4 (fun (e,l) x1 x2 x3 x4 -> let (e,y) = f e x1 x2 x3 x4 in (e,y::l)) (e,[]) l1 l2 l3 l4
 
 let map_assoc f = List.map (fun (x,a) -> (x,f a))
 
