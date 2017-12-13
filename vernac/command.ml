@@ -91,33 +91,32 @@ let warn_implicits_in_term =
 let interp_definition pl bl poly red_option c ctypopt =
   let env = Global.env() in
   let evd, decl = Univdecls.interp_univ_decl_opt env pl in
-  let evdref = ref evd in
-  let impls, ((env_bl, ctx), imps1) = interp_context_evars env evdref bl in
+  let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars env evd bl in
   let ctx = List.map (fun d -> map_rel_decl EConstr.Unsafe.to_constr d) ctx in
   let nb_args = Context.Rel.nhyps ctx in
-  let imps,ce =
+  let evd,imps,ce =
     match ctypopt with
       None ->
-        let subst = evd_comb0 Evd.nf_univ_variables evdref in
+        let evd, subst = Evd.nf_univ_variables evd in
 	let ctx = Context.Rel.map (Vars.subst_univs_constr subst) ctx in
 	let env_bl = push_rel_context ctx env in
-	let c, imps2 = interp_constr_evars_impls ~impls env_bl evdref c in
+        let evd, (c, imps2) = interp_constr_evars_impls ~impls env_bl evd c in
 	let c = EConstr.Unsafe.to_constr c in
-        let nf,subst = Evarutil.e_nf_evars_and_universes evdref in
+        let evd,nf = Evarutil.nf_evars_and_universes evd in
         let body = nf (it_mkLambda_or_LetIn c ctx) in
-        let vars = EConstr.universes_of_constr env !evdref (EConstr.of_constr body) in
-        let () = evdref := Evd.restrict_universe_context !evdref vars in
-        let uctx = Evd.check_univ_decl ~poly !evdref decl in
-        imps1@(Impargs.lift_implicits nb_args imps2),
+        let vars = EConstr.universes_of_constr env evd (EConstr.of_constr body) in
+        let evd = Evd.restrict_universe_context evd vars in
+        let uctx = Evd.check_univ_decl ~poly evd decl in
+        evd, imps1@(Impargs.lift_implicits nb_args imps2),
           definition_entry ~univs:uctx body
     | Some ctyp ->
-        let ty, impsty = interp_type_evars_impls ~impls env_bl evdref ctyp in
-        let subst = evd_comb0 Evd.nf_univ_variables evdref in
+        let evd, (ty, impsty) = interp_type_evars_impls ~impls env_bl evd ctyp in
+        let evd, subst = Evd.nf_univ_variables evd in
 	let ctx = Context.Rel.map (Vars.subst_univs_constr subst) ctx in
 	let env_bl = push_rel_context ctx env in
-	let c, imps2 = interp_casted_constr_evars_impls ~impls env_bl evdref c ty in
+        let evd, (c, imps2) = interp_casted_constr_evars_impls ~impls env_bl evd c ty in
 	let c = EConstr.Unsafe.to_constr c in
-	let nf, subst = Evarutil.e_nf_evars_and_universes evdref in
+        let evd, nf = Evarutil.nf_evars_and_universes evd in
 	let body = nf (it_mkLambda_or_LetIn c ctx) in
 	let ty = EConstr.Unsafe.to_constr ty in
 	let typ = nf (Term.it_mkProd_or_LetIn ty ctx) in
@@ -130,15 +129,15 @@ let interp_definition pl bl poly red_option c ctypopt =
         in
 	if not (try List.for_all chk imps2 with Not_found -> false)
 	then warn_implicits_in_term ();
-        let bodyvars = EConstr.universes_of_constr env !evdref (EConstr.of_constr body) in
-        let tyvars = EConstr.universes_of_constr env !evdref (EConstr.of_constr ty) in
+        let bodyvars = EConstr.universes_of_constr env evd (EConstr.of_constr body) in
+        let tyvars = EConstr.universes_of_constr env evd (EConstr.of_constr ty) in
         let vars = Univ.LSet.union bodyvars tyvars in
-        let () = evdref := Evd.restrict_universe_context !evdref vars in
-        let uctx = Evd.check_univ_decl ~poly !evdref decl in
-        imps1@(Impargs.lift_implicits nb_args impsty),
+        let evd = Evd.restrict_universe_context evd vars in
+        let uctx = Evd.check_univ_decl ~poly evd decl in
+        evd, imps1@(Impargs.lift_implicits nb_args impsty),
           definition_entry ~types:typ ~univs:uctx body
   in
-  (red_constant_entry (Context.Rel.length ctx) ce !evdref red_option, !evdref, decl, imps)
+  (red_constant_entry (Context.Rel.length ctx) ce evd red_option, evd, decl, imps)
 
 let check_definition (ce, evd, _, imps) =
   check_evars_are_solved (Global.env ()) evd Evd.empty;
@@ -232,11 +231,11 @@ match local with
   in
     (gr,inst,Lib.is_modtype_strict ())
 
-let interp_assumption evdref env impls bl c =
+let interp_assumption sigma env impls bl c =
   let c = mkCProdN ?loc:(local_binders_loc bl) bl c in
-  let ty, impls = interp_type_evars_impls env evdref ~impls c in
+  let sigma, (ty, impls) = interp_type_evars_impls env sigma ~impls c in
   let ty = EConstr.Unsafe.to_constr ty in
-  (ty, impls)
+  sigma, (ty, impls)
 
 (* When monomorphic the universe constraints are declared with the first declaration only. *)
 let next_uctx =
@@ -285,10 +284,7 @@ let do_assumptions kind nl l =
   let open Context.Named.Declaration in
   let env = Global.env () in
   let udecl, l = process_assumptions_udecls kind l in
-  let evdref, udecl =
-    let evd, udecl = Univdecls.interp_univ_decl_opt env udecl in
-    ref evd, udecl
-  in
+  let sigma, udecl = Univdecls.interp_univ_decl_opt env udecl in
   let l =
     if pi2 kind (* poly *) then
       (* Separate declarations so that A B : Type puts A and B in different levels. *)
@@ -299,29 +295,29 @@ let do_assumptions kind nl l =
     else l
   in
   (* We intepret all declarations in the same evar_map, i.e. as a telescope. *)
-  let _,l = List.fold_left_map (fun (env,ienv) (is_coe,(idl,c)) ->
-    let t,imps = interp_assumption evdref env ienv [] c in
+  let (sigma,_,_),l = List.fold_left_map (fun (sigma,env,ienv) (is_coe,(idl,c)) ->
+    let sigma,(t,imps) = interp_assumption sigma env ienv [] c in
     let env =
       push_named_context (List.map (fun (_,id) -> LocalAssum (id,t)) idl) env in
     let ienv = List.fold_right (fun (_,id) ienv ->
       let impls = compute_internalization_data env Variable t imps in
       Id.Map.add id impls ienv) idl ienv in
-      ((env,ienv),((is_coe,idl),t,imps)))
-    (env,empty_internalization_env) l
+      ((sigma,env,ienv),((is_coe,idl),t,imps)))
+    (sigma,env,empty_internalization_env) l
   in
-  let evd = solve_remaining_evars all_and_fail_flags env !evdref Evd.empty in
+  let sigma = solve_remaining_evars all_and_fail_flags env sigma Evd.empty in
   (* The universe constraints come from the whole telescope. *)
-  let evd = Evd.nf_constraints evd in
-  let nf_evar c = EConstr.to_constr evd (EConstr.of_constr c) in
+  let sigma = Evd.nf_constraints sigma in
+  let nf_evar c = EConstr.to_constr sigma (EConstr.of_constr c) in
   let uvars, l = List.fold_left_map (fun uvars (coe,t,imps) ->
       let t = nf_evar t in
       let uvars = Univ.LSet.union uvars (Univops.universes_of_constr env t) in
       uvars, (coe,t,imps))
       Univ.LSet.empty l
   in
-  let evd = Evd.restrict_universe_context evd uvars in
-  let uctx = Evd.check_univ_decl ~poly:(pi2 kind) evd udecl in
-  let ubinders = Evd.universe_binders evd in
+  let sigma = Evd.restrict_universe_context sigma uvars in
+  let uctx = Evd.check_univ_decl ~poly:(pi2 kind) sigma udecl in
+  let ubinders = Evd.universe_binders sigma in
   pi2 (List.fold_left (fun (subst,status,uctx) ((is_coe,idl),t,imps) ->
       let t = replace_vars subst t in
       let refs, status' = declare_assumptions idl is_coe kind (t,uctx) ubinders imps nl in
@@ -375,8 +371,8 @@ let check_all_names_different indl =
   | [] -> ()
   | _ -> raise (InductiveError (SameNamesOverlap l))
 
-let mk_mltype_data evdref env assums arity indname =
-  let is_ml_type = is_sort env !evdref (EConstr.of_constr arity) in
+let mk_mltype_data sigma env assums arity indname =
+  let is_ml_type = is_sort env sigma (EConstr.of_constr arity) in
   (is_ml_type,indname,assums)
 
 let prepare_param = function
@@ -400,40 +396,43 @@ let rec check_anonymous_type ind =
     | GCast (e, _) -> check_anonymous_type e
     | _ -> false
 
-let make_conclusion_flexible evdref ty poly =
+let make_conclusion_flexible sigma ty poly =
   if poly && Term.isArity ty then
     let _, concl = Term.destArity ty in
       match concl with
       | Type u -> 
         (match Univ.universe_level u with
         | Some u -> 
-	  evdref := Evd.make_flexible_variable !evdref ~algebraic:true u
-	| None -> ())
-      | _ -> ()
-  else () 
-	
-let is_impredicative env u = 
+          Evd.make_flexible_variable sigma ~algebraic:true u
+        | None -> sigma)
+      | _ -> sigma
+  else sigma
+
+let is_impredicative env u =
   u = Prop Null || (is_impredicative_set env && u = Prop Pos)
 
-let interp_ind_arity env evdref ind =
+let interp_ind_arity env sigma ind =
   let c = intern_gen IsType env ind.ind_arity in
   let impls = Implicit_quantifiers.implicits_of_glob_constr ~with_products:true c in
-  let (evd,t) = understand_tcc env !evdref ~expected_type:IsType c in
-  evdref := evd;
+  let sigma,t = understand_tcc env sigma ~expected_type:IsType c in
   let pseudo_poly = check_anonymous_type c in
-  let () = if not (Reductionops.is_arity env !evdref t) then
+  let () = if not (Reductionops.is_arity env sigma t) then
     user_err ?loc:(constr_loc ind.ind_arity) (str "Not an arity")
   in
   let t = EConstr.Unsafe.to_constr t in
-    t, pseudo_poly, impls
+  sigma, (t, pseudo_poly, impls)
 
-let interp_cstrs evdref env impls mldata arity ind =
+let interp_cstrs env sigma impls mldata arity ind =
   let cnames,ctyps = List.split ind.ind_lc in
   (* Complete conclusions of constructor types if given in ML-style syntax *)
   let ctyps' = List.map2 (complete_conclusion mldata) cnames ctyps in
   (* Interpret the constructor types *)
-  let ctyps'', cimpls = List.split (List.map (interp_type_evars_impls evdref env ~impls %> on_fst EConstr.Unsafe.to_constr) ctyps') in
-    (cnames, ctyps'', cimpls)
+  let sigma, (ctyps'', cimpls) =
+    on_snd List.split @@
+    List.fold_left_map (fun sigma l ->
+        on_snd (on_fst EConstr.Unsafe.to_constr) @@
+        interp_type_evars_impls env sigma ~impls l) sigma ctyps' in
+  sigma, (cnames, ctyps'', cimpls)
 
 let sign_level env evd sign =
   fst (List.fold_right
@@ -461,7 +460,7 @@ let is_flexible_sort evd u =
   | Some l -> Evd.is_flexible_level evd l
   | None -> false
 
-let inductive_levels env evdref poly arities inds =
+let inductive_levels env evd poly arities inds =
   let destarities = List.map (fun x -> x, Reduction.dest_arity env x) arities in
   let levels = List.map (fun (x,(ctx,a)) -> 
     if a = Prop Null then None
@@ -480,11 +479,11 @@ let inductive_levels env evdref poly arities inds =
 	let minlev =
 	  (** Indices contribute. *)
 	  if Indtypes.is_indices_matter () && List.length ctx > 0 then (
-	    let ilev = sign_level env !evdref ctx in
+            let ilev = sign_level env evd ctx in
 	      Univ.sup ilev minlev)
 	  else minlev
 	in
-	let clev = extract_level env !evdref minlev tys in
+        let clev = extract_level env evd minlev tys in
 	  (clev, minlev, len)) inds destarities)
   in
   (* Take the transitive closure of the system of constructors *)
@@ -529,8 +528,8 @@ let inductive_levels env evdref poly arities inds =
 	  else Evd.set_eq_sort env evd (Type cu) du
 	in
 	  (evd, arity :: arities))
-    (!evdref,[]) (Array.to_list levels') destarities sizes
-  in evdref := evd; List.rev arities
+    (evd,[]) (Array.to_list levels') destarities sizes
+  in evd, List.rev arities
 
 let check_named (loc, na) = match na with
 | Name _ -> ()
@@ -551,20 +550,19 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   List.iter check_param paramsl;
   let env0 = Global.env() in
   let pl = (List.hd indl).ind_univs in
-  let evd, decl = Univdecls.interp_univ_decl_opt env0 pl in
-  let evdref = ref evd in
-  let impls, ((env_params, ctx_params), userimpls) =
-    interp_context_evars env0 evdref paramsl
+  let sigma, decl = Univdecls.interp_univ_decl_opt env0 pl in
+  let sigma, (impls, ((env_params, ctx_params), userimpls)) =
+    interp_context_evars env0 sigma paramsl
   in
   let ctx_params = List.map (fun d -> map_rel_decl EConstr.Unsafe.to_constr d) ctx_params in
   let indnames = List.map (fun ind -> ind.ind_name) indl in
-      
+
   (* Names of parameters as arguments of the inductive type (defs removed) *)
   let assums = List.filter is_local_assum ctx_params in
   let params = List.map (RelDecl.get_name %> Name.get_id) assums in
 
   (* Interpret the arities *)
-  let arities = List.map (interp_ind_arity env_params evdref) indl in
+  let sigma, arities = List.fold_left_map (fun sigma -> interp_ind_arity env_params sigma) sigma indl in
 
   let fullarities = List.map (fun (c, _, _) -> Term.it_mkProd_or_LetIn c ctx_params) arities in
   let env_ar = push_types env0 indnames fullarities in
@@ -576,36 +574,34 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   let arities = List.map pi1 arities and aritypoly = List.map pi2 arities in
   let impls = compute_internalization_env env0 ~impls (Inductive (params,true)) indnames fullarities indimpls in
   let ntn_impls = compute_internalization_env env0 (Inductive (params,true)) indnames fullarities indimpls in
-  let mldatas = List.map2 (mk_mltype_data evdref env_params params) arities indnames in
+  let mldatas = List.map2 (mk_mltype_data sigma env_params params) arities indnames in
 
-  let constructors =
+  let sigma, constructors =
     Metasyntax.with_syntax_protection (fun () ->
      (* Temporary declaration of notations and scopes *)
      List.iter (Metasyntax.set_notation_for_interpretation env_params ntn_impls) notations;
      (* Interpret the constructor types *)
-     List.map3 (interp_cstrs env_ar_params evdref impls) mldatas arities indl)
+     List.fold_left3_map (fun sigma -> interp_cstrs env_ar_params sigma impls) sigma mldatas arities indl)
      () in
 
   (* Try further to solve evars, and instantiate them *)
-  let sigma = solve_remaining_evars all_and_fail_flags env_params !evdref Evd.empty in
-  evdref := sigma;
+  let sigma = solve_remaining_evars all_and_fail_flags env_params sigma Evd.empty in
   (* Compute renewed arities *)
-  let nf,_ = e_nf_evars_and_universes evdref in
+  let sigma, nf = nf_evars_and_universes sigma in
   let arities = List.map nf arities in
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf cl,impsl)) constructors in
-  let _ = List.iter2 (fun ty poly -> make_conclusion_flexible evdref ty poly) arities aritypoly in
-  let arities = inductive_levels env_ar_params evdref poly arities constructors in
-  let nf',_ = e_nf_evars_and_universes evdref in
+  let sigma = List.fold_left2 (fun sigma ty poly -> make_conclusion_flexible sigma ty poly) sigma arities aritypoly in
+  let sigma, arities = inductive_levels env_ar_params sigma poly arities constructors in
+  let sigma, nf' = nf_evars_and_universes sigma in
   let nf x = nf' (nf x) in
   let arities = List.map nf' arities in
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf' cl,impsl)) constructors in
   let ctx_params = Context.Rel.map nf ctx_params in
-  let evd = !evdref in
-  let uctx = Evd.check_univ_decl ~poly evd decl in
-  List.iter (fun c -> check_evars env_params Evd.empty evd (EConstr.of_constr c)) arities;
-  Context.Rel.iter (fun c -> check_evars env0 Evd.empty evd (EConstr.of_constr c)) ctx_params;
+  let uctx = Evd.check_univ_decl ~poly sigma decl in
+  List.iter (fun c -> check_evars env_params Evd.empty sigma (EConstr.of_constr c)) arities;
+  Context.Rel.iter (fun c -> check_evars env0 Evd.empty sigma (EConstr.of_constr c)) ctx_params;
   List.iter (fun (_,ctyps,_) ->
-    List.iter (fun c -> check_evars env_ar_params Evd.empty evd (EConstr.of_constr c)) ctyps)
+    List.iter (fun c -> check_evars env_ar_params Evd.empty sigma (EConstr.of_constr c)) ctyps)
     constructors;
 
   (* Build the inductive entries *)
@@ -642,8 +638,8 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
     }
   in
   (if poly && cum then
-      Inductiveops.infer_inductive_subtyping env_ar evd mind_ent
-   else mind_ent), Evd.universe_binders evd, impls
+      Inductiveops.infer_inductive_subtyping env_ar sigma mind_ent
+   else mind_ent), Evd.universe_binders sigma, impls
 
 (* Very syntactical equality *)
 let eq_local_binders bl1 bl2 =
@@ -830,23 +826,22 @@ type structured_fixpoint_expr = {
   fix_type : constr_expr
 }
 
-let interp_fix_context env evdref isfix fix =
+let interp_fix_context env sigma isfix fix =
   let before, after = if isfix then split_at_annot fix.fix_binders fix.fix_annot else [], fix.fix_binders in
-  let impl_env, ((env', ctx), imps) = interp_context_evars env evdref before in
-  let impl_env', ((env'', ctx'), imps') = interp_context_evars ~impl_env ~shift:(Context.Rel.nhyps ctx) env' evdref after in
+  let sigma, (impl_env, ((env', ctx), imps)) = interp_context_evars env sigma before in
+  let sigma, (impl_env', ((env'', ctx'), imps')) = interp_context_evars ~impl_env ~shift:(Context.Rel.nhyps ctx) env' sigma after in
   let annot = Option.map (fun _ -> List.length (assums_of_rel_context ctx)) fix.fix_annot in
-    ((env'', ctx' @ ctx), (impl_env',imps @ imps'), annot)
+  sigma, ((env'', ctx' @ ctx), (impl_env',imps @ imps'), annot)
 
-let interp_fix_ccl evdref impls (env,_) fix =
-  let (c, impl) = interp_type_evars_impls ~impls env evdref fix.fix_type in
-  (c, impl)
+let interp_fix_ccl sigma impls (env,_) fix =
+  interp_type_evars_impls ~impls env sigma fix.fix_type
 
-let interp_fix_body env_rec evdref impls (_,ctx) fix ccl =
+let interp_fix_body env_rec sigma impls (_,ctx) fix ccl =
   let open EConstr in
-  Option.map (fun body ->
+  Option.cata (fun body ->
     let env = push_rel_context ctx env_rec in
-    let body = interp_casted_constr_evars env evdref ~impls body ccl in
-    it_mkLambda_or_LetIn body ctx) fix.fix_body
+    let sigma, body = interp_casted_constr_evars env sigma ~impls body ccl in
+    sigma, Some (it_mkLambda_or_LetIn body ctx)) (sigma, None) fix.fix_body
 
 let build_fix_type (_,ctx) ccl = EConstr.it_mkProd_or_LetIn ccl ctx
 
@@ -883,56 +878,58 @@ let fixsub_module = subtac_dir @ ["Wf"]
 let tactics_module = subtac_dir @ ["Tactics"]
 
 let init_reference dir s () = Coqlib.coq_reference "Command" dir s
-let init_constant  dir s evdref =
-  let (sigma, c) = Evarutil.new_global !evdref (Coqlib.coq_reference "Command" dir s)
-  in evdref := sigma; c
+let init_constant dir s sigma =
+  Evarutil.new_global sigma (Coqlib.coq_reference "Command" dir s)
 
 let make_ref l s = init_reference l s
 let fix_proto = init_constant tactics_module "fix_proto"
 let fix_sub_ref = make_ref fixsub_module "Fix_sub"
 let measure_on_R_ref = make_ref fixsub_module "MR"
 let well_founded = init_constant ["Init"; "Wf"] "well_founded"
-let mkSubset evdref name typ prop =
+let mkSubset sigma name typ prop =
   let open EConstr in
-  mkApp (Evarutil.e_new_global evdref (delayed_force build_sigma).typ,
-	 [| typ; mkLambda (name, typ, prop) |])
+  let sigma, h_term = Evarutil.new_global sigma (delayed_force build_sigma).typ in
+  sigma, mkApp (h_term, [| typ; mkLambda (name, typ, prop) |])
+
 let sigT = Lazy.from_fun build_sigma_type
 
 let make_qref s = Qualid (Loc.tag @@ qualid_of_string s)
 let lt_ref = make_qref "Init.Peano.lt"
 
-let rec telescope evdref l =
+let rec telescope sigma l =
   let open EConstr in
   let open Vars in
   match l with
   | [] -> assert false
-  | [LocalAssum (n, t)] -> t, [LocalDef (n, mkRel 1, t)], mkRel 1
+  | [LocalAssum (n, t)] ->
+    sigma, t, [LocalDef (n, mkRel 1, t)], mkRel 1
   | LocalAssum (n, t) :: tl ->
-      let ty, tys, (k, constr) =
+      let sigma, ty, tys, (k, constr) =
 	List.fold_left
-	  (fun (ty, tys, (k, constr)) decl ->
+          (fun (sigma, ty, tys, (k, constr)) decl ->
             let t = RelDecl.get_type decl in
             let pred = mkLambda (RelDecl.get_name decl, t, ty) in
-	    let ty = Evarutil.e_new_global evdref (Lazy.force sigT).typ in
-	    let intro = Evarutil.e_new_global evdref (Lazy.force sigT).intro in
+            let sigma, ty = Evarutil.new_global sigma (Lazy.force sigT).typ in
+            let sigma, intro = Evarutil.new_global sigma (Lazy.force sigT).intro in
 	    let sigty = mkApp (ty, [|t; pred|]) in
 	    let intro = mkApp (intro, [|lift k t; lift k pred; mkRel k; constr|]) in
-	      (sigty, pred :: tys, (succ k, intro)))
-	  (t, [], (2, mkRel 1)) tl
+              (sigma, sigty, pred :: tys, (succ k, intro)))
+          (sigma, t, [], (2, mkRel 1)) tl
       in
-      let (last, subst) = List.fold_right2
-        (fun pred decl (prev, subst) ->
+      let sigma, last, subst = List.fold_right2
+        (fun pred decl (sigma, prev, subst) ->
           let t = RelDecl.get_type decl in
-	  let p1 = Evarutil.e_new_global evdref (Lazy.force sigT).proj1 in
-	  let p2 = Evarutil.e_new_global evdref (Lazy.force sigT).proj2 in
+          let sigma, p1 = Evarutil.new_global sigma (Lazy.force sigT).proj1 in
+          let sigma, p2 = Evarutil.new_global sigma (Lazy.force sigT).proj2 in
 	  let proj1 = applist (p1, [t; pred; prev]) in
 	  let proj2 = applist (p2, [t; pred; prev]) in
-	    (lift 1 proj2, LocalDef (get_name decl, proj1, t) :: subst))
-	(List.rev tys) tl (mkRel 1, [])
-      in ty, (LocalDef (n, last, t) :: subst), constr
+            (sigma, lift 1 proj2, LocalDef (get_name decl, proj1, t) :: subst))
+        (List.rev tys) tl (sigma, mkRel 1, [])
+      in sigma, ty, (LocalDef (n, last, t) :: subst), constr
 
-  | LocalDef (n, b, t) :: tl -> let ty, subst, term = telescope evdref tl in
-      ty, (LocalDef (n, b, t) :: subst), lift 1 term
+  | LocalDef (n, b, t) :: tl ->
+    let sigma, ty, subst, term = telescope sigma tl in
+    sigma, ty, (LocalDef (n, b, t) :: subst), lift 1 term
 
 let nf_evar_context sigma ctx =
   List.map (map_constr (fun c -> Evarutil.nf_evar sigma c)) ctx
@@ -943,56 +940,59 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let lift_rel_context n l = Termops.map_rel_context_with_binders (liftn n) l in
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
   let env = Global.env() in
-  let evd, decl = Univdecls.interp_univ_decl_opt env pl in
-  let evdref = ref evd in
-  let _, ((env', binders_rel), impls) = interp_context_evars env evdref bl in
+  let sigma, decl = Univdecls.interp_univ_decl_opt env pl in
+  let sigma, (_, ((env', binders_rel), impls)) = interp_context_evars env sigma bl in
   let len = List.length binders_rel in
   let top_env = push_rel_context binders_rel env in
-  let top_arity = interp_type_evars top_env evdref arityc in
+  let sigma, top_arity = interp_type_evars top_env sigma arityc in
   let full_arity = it_mkProd_or_LetIn top_arity binders_rel in
-  let argtyp, letbinders, make = telescope evdref binders_rel in
+  let sigma, argtyp, letbinders, make = telescope sigma binders_rel in
   let argname = Id.of_string "recarg" in
   let arg = LocalAssum (Name argname, argtyp) in
   let binders = letbinders @ [arg] in
   let binders_env = push_rel_context binders_rel env in
-  let rel, _ = interp_constr_evars_impls env evdref r in
-  let relty = Typing.unsafe_type_of env !evdref rel in
+  let sigma, (rel, _) = interp_constr_evars_impls env sigma r in
+  let relty = Typing.unsafe_type_of env sigma rel in
   let relargty =
     let error () =
       user_err ?loc:(constr_loc r)
                ~hdr:"Command.build_wellfounded"
-		    (Printer.pr_econstr_env env !evdref rel ++ str " is not an homogeneous binary relation.")
+                    (Printer.pr_econstr_env env sigma rel ++ str " is not an homogeneous binary relation.")
     in
       try
-	let ctx, ar = Reductionops.splay_prod_n env !evdref 2 relty in
-	  match ctx, EConstr.kind !evdref ar with
+        let ctx, ar = Reductionops.splay_prod_n env sigma 2 relty in
+          match ctx, EConstr.kind sigma ar with
 	  | [LocalAssum (_,t); LocalAssum (_,u)], Sort s
-	      when Sorts.is_prop (ESorts.kind !evdref s) && Reductionops.is_conv env !evdref t u -> t
+              when Sorts.is_prop (ESorts.kind sigma s) && Reductionops.is_conv env sigma t u -> t
 	  | _, _ -> error ()
       with e when CErrors.noncritical e -> error ()
   in
-  let measure = interp_casted_constr_evars binders_env evdref measure relargty in
-  let wf_rel, wf_rel_fun, measure_fn =
+  let sigma, measure = interp_casted_constr_evars binders_env sigma measure relargty in
+  let sigma, wf_rel, wf_rel_fun, measure_fn =
     let measure_body, measure =
       it_mkLambda_or_LetIn measure letbinders,
       it_mkLambda_or_LetIn measure binders
     in
-    let comb = Evarutil.e_new_global evdref (delayed_force measure_on_R_ref) in
+    let sigma, comb = Evarutil.new_global sigma (delayed_force measure_on_R_ref) in
     let wf_rel = mkApp (comb, [| argtyp; relargty; rel; measure |]) in
     let wf_rel_fun x y =
       mkApp (rel, [| subst1 x measure_body;
  		     subst1 y measure_body |])
-    in wf_rel, wf_rel_fun, measure
+    in sigma, wf_rel, wf_rel_fun, measure
   in
-  let wf_proof = mkApp (well_founded evdref, [| argtyp ; wf_rel |]) in
+  let sigma, wf_term = well_founded sigma in
+  let wf_proof = mkApp (wf_term, [| argtyp ; wf_rel |]) in
   let argid' = Id.of_string (Id.to_string argname ^ "'") in
-  let wfarg len = LocalAssum (Name argid',
-                              mkSubset evdref (Name argid') argtyp
-				       (wf_rel_fun (mkRel 1) (mkRel (len + 1))))
+  let wfarg sigma len =
+    let sigma, ss_term = mkSubset sigma (Name argid') argtyp (wf_rel_fun (mkRel 1) (mkRel (len + 1))) in
+    sigma, LocalAssum (Name argid', ss_term)
   in
-  let intern_bl = wfarg 1 :: [arg] in
+  let sigma, intern_bl =
+    let sigma, wfa = wfarg sigma 1 in
+    sigma, wfa :: [arg]
+  in
   let _intern_env = push_rel_context intern_bl env in
-  let proj = Evarutil.e_new_global evdref (delayed_force build_sigma).Coqlib.proj1 in
+  let sigma, proj = Evarutil.new_global sigma (delayed_force build_sigma).Coqlib.proj1 in
   let wfargpred = mkLambda (Name argid', argtyp, wf_rel_fun (mkRel 1) (mkRel 3)) in
   let projection = (* in wfarg :: arg :: before *)
     mkApp (proj, [| argtyp ; wfargpred ; mkRel 1 |])
@@ -1001,82 +1001,90 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let intern_arity = substl [projection] top_arity_let in
   (* substitute the projection of wfarg for something,
      now intern_arity is in wfarg :: arg *)
-  let intern_fun_arity_prod = it_mkProd_or_LetIn intern_arity [wfarg 1] in
+  let sigma, wfa = wfarg sigma 1 in
+  let intern_fun_arity_prod = it_mkProd_or_LetIn intern_arity [wfa] in
   let intern_fun_binder = LocalAssum (Name (add_suffix recname "'"), intern_fun_arity_prod) in
-  let curry_fun =
+  let sigma, curry_fun =
     let wfpred = mkLambda (Name argid', argtyp, wf_rel_fun (mkRel 1) (mkRel (2 * len + 4))) in
-    let intro = Evarutil.e_new_global evdref (delayed_force build_sigma).Coqlib.intro in
+    let sigma, intro = Evarutil.new_global sigma (delayed_force build_sigma).Coqlib.intro in
     let arg = mkApp (intro, [| argtyp; wfpred; lift 1 make; mkRel 1 |]) in
     let app = mkApp (mkRel (2 * len + 2 (* recproof + orig binders + current binders *)), [| arg |]) in
     let rcurry = mkApp (rel, [| measure; lift len measure |]) in
     let lam = LocalAssum (Name (Id.of_string "recproof"), rcurry) in
     let body = it_mkLambda_or_LetIn app (lam :: binders_rel) in
     let ty = it_mkProd_or_LetIn (lift 1 top_arity) (lam :: binders_rel) in
-      LocalDef (Name recname, body, ty)
+    sigma, LocalDef (Name recname, body, ty)
   in
   let fun_bl = intern_fun_binder :: [arg] in
   let lift_lets = lift_rel_context 1 letbinders in
-  let intern_body =
+  let sigma, intern_body =
     let ctx = LocalAssum (Name recname, get_type curry_fun) :: binders_rel in
     let (r, l, impls, scopes) =
       Constrintern.compute_internalization_data env
 	Constrintern.Recursive (EConstr.Unsafe.to_constr full_arity) impls 
     in
     let newimpls = Id.Map.singleton recname
-      (r, l, impls @ [(Some (Id.of_string "recproof", Impargs.Manual, (true, false)))],
-       scopes @ [None]) in
-      interp_casted_constr_evars (push_rel_context ctx env) evdref
-        ~impls:newimpls body (lift 1 top_arity)
+        (r, l, impls @ [(Some (Id.of_string "recproof", Impargs.Manual, (true, false)))],
+         scopes @ [None]) in
+    interp_casted_constr_evars (push_rel_context ctx env) sigma
+      ~impls:newimpls body (lift 1 top_arity)
   in
   let intern_body_lam = it_mkLambda_or_LetIn intern_body (curry_fun :: lift_lets @ fun_bl) in
   let prop = mkLambda (Name argname, argtyp, top_arity_let) in
-  let def =
-    mkApp (Evarutil.e_new_global evdref (delayed_force fix_sub_ref),
-	  [| argtyp ; wf_rel ;
-	     Evarutil.e_new_evar env evdref
-	       ~src:(Loc.tag @@ Evar_kinds.QuestionMark (Evar_kinds.Define false,Anonymous)) wf_proof;
-	     prop |])
+  (* XXX: Previous code did parallel evdref update, so possible old
+     weak ordering semantics may bite here. *)
+  let sigma, def =
+    let sigma, h_a_term = Evarutil.new_global sigma (delayed_force fix_sub_ref) in
+    let sigma, h_e_term = Evarutil.new_evar env sigma
+        ~src:(Loc.tag @@ Evar_kinds.QuestionMark (Evar_kinds.Define false,Anonymous)) wf_proof in
+    sigma, mkApp (h_a_term, [| argtyp ; wf_rel ; h_e_term; prop |])
   in
-  let def = Typing.e_solve_evars env evdref def in
-  let _ = evdref := Evarutil.nf_evar_map !evdref in
+  let _evd = ref sigma in
+  let def = Typing.e_solve_evars env _evd def in
+  let sigma = !_evd in
+  let sigma = Evarutil.nf_evar_map sigma in
   let def = mkApp (def, [|intern_body_lam|]) in
-  let binders_rel = nf_evar_context !evdref binders_rel in
-  let binders = nf_evar_context !evdref binders in
-  let top_arity = Evarutil.nf_evar !evdref top_arity in
+  let binders_rel = nf_evar_context sigma binders_rel in
+  let binders = nf_evar_context sigma binders in
+  let top_arity = Evarutil.nf_evar sigma top_arity in
   let hook, recname, typ =
     if List.length binders_rel > 1 then
       let name = add_suffix recname "_func" in
-      let hook l gr _ = 
-        let body = it_mkLambda_or_LetIn (mkApp (Evarutil.e_new_global evdref gr, [|make|])) binders_rel in
+      (* XXX: Mutating the evar_map in the hook! *)
+      (* XXX: Likely the sigma is out of date when the hook is called .... *)
+      let hook sigma l gr _ =
+        let sigma, h_body = Evarutil.new_global sigma gr in
+        let body = it_mkLambda_or_LetIn (mkApp (h_body, [|make|])) binders_rel in
         let ty = it_mkProd_or_LetIn top_arity binders_rel in
         let ty = EConstr.Unsafe.to_constr ty in
-        let univs = Evd.check_univ_decl ~poly !evdref decl in
+        let univs = Evd.check_univ_decl ~poly sigma decl in
         (*FIXME poly? *)
-        let ce = definition_entry ~types:ty ~univs (EConstr.to_constr !evdref body) in
+        let ce = definition_entry ~types:ty ~univs (EConstr.to_constr sigma body) in
         (** FIXME: include locality *)
         let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
         let gr = ConstRef c in
-        let () = Universes.register_universe_binders gr (Evd.universe_binders !evdref) in
+        let () = Universes.register_universe_binders gr (Evd.universe_binders sigma) in
         if Impargs.is_implicit_args () || not (List.is_empty impls) then
           Impargs.declare_manual_implicits false gr [impls]
       in
       let typ = it_mkProd_or_LetIn top_arity binders in
-	hook, name, typ
-    else 
+      hook, name, typ
+    else
       let typ = it_mkProd_or_LetIn top_arity binders_rel in
-      let hook l gr _ = 
+      let hook sigma l gr _ =
 	if Impargs.is_implicit_args () || not (List.is_empty impls) then
 	  Impargs.declare_manual_implicits false gr [impls]
       in hook, recname, typ
   in
-  let hook = Lemmas.mk_hook hook in
-  let fullcoqc = EConstr.to_constr !evdref def in
-  let fullctyp = EConstr.to_constr !evdref typ in
-  Obligations.check_evars env !evdref;
-  let evars, _, evars_def, evars_typ = 
-    Obligations.eterm_obligations env recname !evdref 0 fullcoqc fullctyp 
+  (* XXX: Capturing sigma here... bad bad *)
+  let hook = Lemmas.mk_hook (hook sigma) in
+  let fullcoqc = EConstr.to_constr sigma def in
+  let fullctyp = EConstr.to_constr sigma typ in
+  Obligations.check_evars env sigma;
+  let evars, _, evars_def, evars_typ =
+    Obligations.eterm_obligations env recname sigma 0 fullcoqc fullctyp
   in
-  let ctx = Evd.evar_universe_context !evdref in
+  let ctx = Evd.evar_universe_context sigma in
     ignore(Obligations.add_definition recname ~term:evars_def ~univdecl:decl
 	     evars_typ ctx evars ~hook)
 
@@ -1097,31 +1105,36 @@ let interp_recursive isfix fixl notations =
 	   if not (CList.for_all2eq (fun x y -> Id.equal (snd x) (snd y)) lsu usu) then
 	     user_err Pp.(str "(co)-recursive definitions should all have the same universe binders");
 	   Some us) fixl None in
-  let evd, decl = Univdecls.interp_univ_decl_opt env all_universes in
-  let evdref = ref evd in
-  let fixctxs, fiximppairs, fixannots =
-    List.split3 (List.map (interp_fix_context env evdref isfix) fixl) in
+  let sigma, decl = Univdecls.interp_univ_decl_opt env all_universes in
+  let sigma, (fixctxs, fiximppairs, fixannots) =
+    on_snd List.split3 @@
+      List.fold_left_map (fun sigma -> interp_fix_context env sigma isfix) sigma fixl in
   let fixctximpenvs, fixctximps = List.split fiximppairs in
-  let fixccls,fixcclimps = List.split (List.map3 (interp_fix_ccl evdref) fixctximpenvs fixctxs fixl) in
+  let sigma, (fixccls,fixcclimps) =
+    on_snd List.split @@
+      List.fold_left3_map interp_fix_ccl sigma fixctximpenvs fixctxs fixl in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
-  let fixtypes = List.map (fun c -> nf_evar !evdref c) fixtypes in
+  let fixtypes = List.map (fun c -> nf_evar sigma c) fixtypes in
   let fiximps = List.map3
     (fun ctximps cclimps (_,ctx) -> ctximps@(Impargs.lift_implicits (Context.Rel.nhyps ctx) cclimps))
     fixctximps fixcclimps fixctxs in
-  let rec_sign =
+  let sigma, rec_sign =
     List.fold_left2
-      (fun env' id t ->
- 	 if Flags.is_program_mode () then
-	   let sort = Evarutil.evd_comb1 (Typing.type_of ~refresh:true env) evdref t in
-	   let fixprot =
-	     try 
-	       let app = mkApp (fix_proto evdref, [|sort; t|]) in
-		 Typing.e_solve_evars env evdref app
-	     with e  when CErrors.noncritical e -> t
-	   in
-	     LocalAssum (id,fixprot) :: env'
-	 else LocalAssum (id,t) :: env')
-      [] fixnames fixtypes
+      (fun (sigma, env') id t ->
+         if Flags.is_program_mode () then
+           let sigma, sort = Typing.type_of ~refresh:true env sigma t in
+           let sigma, fixprot =
+             try
+               let sigma, h_term = fix_proto sigma in
+               let app = mkApp (h_term, [|sort; t|]) in
+               let _evd = ref sigma in
+               let res = Typing.e_solve_evars env _evd app in
+               !_evd, res
+             with e when CErrors.noncritical e -> sigma, t
+           in
+           sigma, LocalAssum (id,fixprot) :: env'
+         else sigma, LocalAssum (id,t) :: env')
+      (sigma,[]) fixnames fixtypes
   in
   let env_rec = push_named_context rec_sign env in
 
@@ -1130,24 +1143,24 @@ let interp_recursive isfix fixl notations =
   let impls = compute_internalization_env env Recursive fixnames fixtypes fiximps in
 
   (* Interp bodies with rollback because temp use of notations/implicit *)
-  let fixdefs =
+  let sigma, fixdefs =
     Metasyntax.with_syntax_protection (fun () ->
       List.iter (Metasyntax.set_notation_for_interpretation env_rec impls) notations;
-      List.map4
-	(fun fixctximpenv -> interp_fix_body env_rec evdref (Id.Map.fold Id.Map.add fixctximpenv impls))
-	fixctximpenvs fixctxs fixl fixccls)
+      List.fold_left4_map
+        (fun sigma fixctximpenv -> interp_fix_body env_rec sigma (Id.Map.fold Id.Map.add fixctximpenv impls))
+        sigma fixctximpenvs fixctxs fixl fixccls)
       () in
 
   (* Instantiate evars and check all are resolved *)
-  let evd = solve_unif_constraints_with_heuristics env_rec !evdref in
-  let evd, nf = nf_evars_and_universes evd in
+  let sigma = solve_unif_constraints_with_heuristics env_rec sigma in
+  let sigma, nf = nf_evars_and_universes sigma in
   let fixdefs = List.map (fun c -> Option.map EConstr.Unsafe.to_constr c) fixdefs in
   let fixdefs = List.map (Option.map nf) fixdefs in
   let fixtypes = List.map nf fixtypes in
   let fixctxs = List.map (fun (_,ctx) -> ctx) fixctxs in
 
   (* Build the fix declaration block *)
-  (env,rec_sign,decl,evd), (fixnames,fixdefs,fixtypes), List.combine3 fixctxs fiximps fixannots
+  (env,rec_sign,decl,sigma), (fixnames,fixdefs,fixtypes), List.combine3 fixctxs fiximps fixannots
 
 let check_recursive isfix env evd (fixnames,fixdefs,_) =
   check_evars_are_solved env evd Evd.empty;

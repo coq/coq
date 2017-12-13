@@ -92,7 +92,7 @@ let find_mutually_recursive_statements sigma thms =
       let (hyps,ccl) = EConstr.decompose_prod_assum sigma t in
       let x = (id,(t,impls)) in
       let whnf_hyp_hds = EConstr.map_rel_context_in_env
-        (fun env c -> fst (Reductionops.whd_all_stack env Evd.empty c))
+        (fun env c -> fst (Reductionops.whd_all_stack env sigma c))
         (Global.env()) hyps in
       let ind_hyps =
         List.flatten (List.map_i (fun i decl ->
@@ -441,10 +441,8 @@ let start_proof_com ?inference_hook kind thms hook =
     | Some decl ->
       Univdecls.interp_univ_decl_opt env0 (snd decl) in
   let evd, thms = List.fold_left_map (fun evd (sopt,(bl,t)) ->
-    let _evdref = ref evd in
-    let impls, ((env, ctx), imps) = interp_context_evars env0 _evdref bl in
-    let t', imps' = interp_type_evars_impls ~impls env _evdref t in
-    let evd = !_evdref in
+    let evd, (impls, ((env, ctx), imps)) = interp_context_evars env0 evd bl in
+    let evd, (t', imps') = interp_type_evars_impls ~impls env evd t in
     let flags = all_and_fail_flags in
     let flags = { flags with use_hook = inference_hook } in
     let evd = solve_remaining_evars flags env evd Evd.empty in
