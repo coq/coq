@@ -13,6 +13,7 @@ defaults:
     NJOBS: 2
     COMPILER: "system"
     CAMLP5_VER: "6.14"
+    NATIVE_COMP: "yes"
 
     # some useful values
     COMPILER_32BIT: &compiler-32bit "4.02.3+32bit"
@@ -70,7 +71,7 @@ before_script: &before_script
           source ~/.profile
 
           echo 'start:coq.config'
-          ./configure -local -native-compiler no ${EXTRA_CONF}
+          ./configure -local -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
           echo 'end:coq.config'
     - run: &build-build
         name: Build
@@ -151,7 +152,7 @@ before_script: &before_script
         name: Configure
         command: |
           source ~/.profile
-          ./configure -local ${EXTRA_CONF}
+          ./configure -local -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
 
     - run:
         name: Build
@@ -160,7 +161,7 @@ before_script: &before_script
           make -j ${NJOBS} coqocaml
   environment: &warnings-variables
     <<: *envvars
-    EXTRA_CONF: "-native-compiler yes -coqide byte -byte-only"
+    EXTRA_CONF: "-coqide byte -byte-only"
     EXTRA_PACKAGES: *coqide-packages
     EXTRA_OPAM: *coqide-opam
 
