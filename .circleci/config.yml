@@ -33,59 +33,80 @@ defaults:
 version: 2
 
 before_script: &before_script
-  name: before_script
+  name: Install system packages
   command: |
+    echo export TERM=xterm >> ~/.profile
     source ~/.profile
-    export TERM=xterm
-    ls # figure out if artifacts are around
     printenv
     #if [ "$COMPILER" = "$COMPILER_32BIT" ]; then sudo dpkg --add-architecture i386; fi
     if [ -n "${EXTRA_PACKAGES}" ]; then sudo apt-get update -yq && sudo apt-get install -yq --no-install-recommends ${EXTRA_PACKAGES}; fi
 
-    # the default repo in this docker image is a local directory
-    # at the time of 4aaeb8abf it lagged behind the official
-    # repository such that camlp5 7.01 was not available
-    opam repository set-url default https://opam.ocaml.org
-    opam update
+opam-switch: &opam-switch
+  name: Select opam switch
+  command: |
+    source ~/.profile
     opam switch ${COMPILER}
-    eval $(opam config env)
     opam config list
-    opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind ${EXTRA_OPAM}
-    rm -rf ~/.opam/log/
     opam list
+
+.opam-boot-template: &opam-boot-template
+  <<: *params
+  steps:
+    - checkout
+    - run: *before_script
+    - restore_cache:
+        keys:
+          - coq-opam-cache-v1-{{ arch }}-{{ .Environment.COMPILER }}-{{ checksum ".circleci/config.yml" }}-
+          - coq-opam-cache-v1-{{ arch }}-{{ .Environment.COMPILER }}- # this grabs old cache if checksum doesn't match
+    - run:
+        name: Update opam lists
+        command: |
+          source ~/.profile
+          opam repository set-url default https://opam.ocaml.org
+          opam update
+    - run:
+        name: Install opam packages
+        command: |
+          source ~/.profile
+          opam switch -j ${NJOBS} ${COMPILER}
+          opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind ${COQIDE_OPAM} ${COQDOC_OPAM} ${EXTRA_OPAM}
+    - run:
+        name: Clean cache
+        command: |
+          source ~/.profile
+          rm -rf ~/.opam/log/
+    - save_cache:
+        key: coq-opam-cache-v1-{{ arch }}-{{ .Environment.COMPILER }}-{{ checksum ".circleci/config.yml" }}-
+        paths:
+          - ~/.opam
+    - persist_to_workspace:
+        root: &workspace ~/
+        paths:
+          - .opam/
 
 .build-template: &build-template
   <<: *params
   steps:
     - checkout
-    - restore_cache:
-        keys:
-          - coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
-          - coq-opam-cache-v1-{{ arch }}- # this grabs old cache if checksum doesn't match
     - run: *before_script
-    - save_cache:
-        key: coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
-        paths:
-          - ~/.opam
+    - attach_workspace: &attach_workspace
+        at: *workspace
+    - run: *opam-switch
     - run: &build-configure
         name: Configure
         command: |
           source ~/.profile
 
-          echo 'start:coq.config'
           ./configure -local -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
-          echo 'end:coq.config'
     - run: &build-build
         name: Build
         command: |
           source ~/.profile
-          echo 'start:coq.build'
           make -j ${NJOBS} byte
           make -j ${NJOBS}
           make test-suite/misc/universes/all_stdlib.v
-          echo 'end:coq:build'
     - persist_to_workspace:
-        root: &workspace ~/
+        root: *workspace
         paths:
           - coq/
 
@@ -93,23 +114,12 @@ before_script: &before_script
     <<: *envvars
     EXTRA_CONF: "-coqide opt"
     EXTRA_PACKAGES: *coqide-packages
-    EXTRA_OPAM: *coqide-opam
 
 .validate-template: &validate-template
   <<: *params
   steps:
-    - checkout
-    - attach_workspace:
-        at: *workspace
-    - restore_cache:
-        keys:
-          - coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
-          - coq-opam-cache-v1-{{ arch }}- # this grabs old cache if checksum doesn't match
     - run: *before_script
-    - save_cache:
-        key: coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
-        paths:
-          - ~/.opam
+    - attach_workspace: *attach_workspace
     - run:
         name: Validate
         command: |
@@ -120,18 +130,8 @@ before_script: &before_script
 .documentation-template: &documentation-template
   <<: *params
   steps:
-    - checkout
-    - attach_workspace:
-        at: *workspace
-    - restore_cache:
-        keys:
-          - coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
-          - coq-opam-cache-v1-{{ arch }}- # this grabs old cache if checksum doesn't match
     - run: *before_script
-    - save_cache:
-        key: coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
-        paths:
-          - ~/.opam
+    - attach_workspace: *attach_workspace
     - run:
         name: Documentation
         command: |
@@ -140,23 +140,12 @@ before_script: &before_script
   environment: &documentation-variables
     <<: *envvars
     EXTRA_PACKAGES: *coqdoc-packages
-    EXTRA_OPAM: *coqdoc-opam
 
 .test-suite-template: &test-suite-template
   <<: *params
   steps:
-    - checkout
-    - attach_workspace:
-        at: *workspace
-    - restore_cache:
-        keys:
-          - coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
-          - coq-opam-cache-v1-{{ arch }}- # this grabs old cache if checksum doesn't match
     - run: *before_script
-    - save_cache:
-        key: coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
-        paths:
-          - ~/.opam
+    - attach_workspace: *attach_workspace
     - run:
         name: Test
         command: |
@@ -171,36 +160,49 @@ before_script: &before_script
 .ci-template: &ci-template
   <<: *params
   steps:
-    - checkout
-    - attach_workspace:
-        at: *workspace
-    - restore_cache:
-        keys:
-          - coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
-          - coq-opam-cache-v1-{{ arch }}- # this grabs old cache if checksum doesn't match
     - run: *before_script
-    - save_cache:
-        key: coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
-        paths:
-          - ~/.opam
+    - attach_workspace: *attach_workspace
     - run:
         name: Test
         command: |
           source ~/.profile
-          echo 'start:coq.test'
           make -f Makefile.ci -j ${NJOBS} TIMED=1 ${CIRCLE_JOB}
-          echo 'end:coq.test'
     - persist_to_workspace:
-        root: &workspace ~/
+        root: *workspace
         paths:
           - coq/
-environment: &ci-template-vars
+  environment: &ci-template-vars
     <<: *envvars
     EXTRA_PACKAGES: *timing-packages
 
 # Defines individual jobs, see the workflows section below for job orchestration
 jobs:
   # TODO: linter
+
+  opam-boot:
+    <<: *opam-boot-template
+    environment:
+      <<: *envvars
+      EXTRA_PACKAGES: *coqide-packages
+      EXTRA_OPAM: "ocamlgraph"
+
+  opam-boot-32bit:
+    <<: *opam-boot-template
+    environment:
+      <<: *envvars
+      EXTRA_PACKAGES: "gcc-multilib"
+      COMPILER: *compiler-32bit
+      COQIDE_OPAM: ""
+      COQDOC_OPAM: ""
+
+  opam-boot-be:
+    <<: *opam-boot-template
+    environment:
+      <<: *envvars
+      EXTRA_PACKAGES: *coqide-packages
+      COMPILER: *compiler-be
+      CAMLP5_VER: *camlp5-ver-be
+      COQIDE_OPAM: *coqide-opam-be
 
   # Build and prepare test environment
   build: *build-template
@@ -217,8 +219,6 @@ jobs:
     environment:
       <<: *build-variables
       COMPILER: *compiler-be
-      CAMLP5_VER: *camlp5-ver-be
-      EXTRA_OPAM: *coqide-opam-be
 
   validate: *validate-template
 
@@ -253,7 +253,6 @@ jobs:
     environment:
       <<: *test-suite-variables
       COMPILER: *compiler-be
-      CAMLP5_VER: *camlp5-ver-be
       EXTRA_PACKAGES: *timing-packages
 
   ci-bignums:
@@ -272,7 +271,6 @@ jobs:
     <<: *ci-template
     environment:
       <<: *ci-template-vars
-      EXTRA_OPAM: "ocamlgraph"
       EXTRA_PACKAGES: "time python autoconf automake"
 
   ci-coquelicot:
@@ -337,7 +335,13 @@ workflows:
   # Run on each push
   main:
     jobs:
-      - build
+      - opam-boot
+      - opam-boot-32bit
+      - opam-boot-be
+
+      - build:
+          requires:
+            - opam-boot
       - validate: &req-main
           requires:
             - build
@@ -375,13 +379,17 @@ workflows:
       - ci-unimath: *req-main
       - ci-vst: *req-main
 
-      - build-32bit
+      - build-32bit:
+          requires:
+            - opam-boot-32bit
       - validate-32bit: &req-32bit
           requires:
             - build-32bit
       - test-suite-32bit: *req-32bit
 
-      - build-be
+      - build-be:
+          requires:
+            - opam-boot-be
       - test-suite-be: &req-be
           requires:
             - build-be
