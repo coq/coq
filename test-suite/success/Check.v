@@ -12,3 +12,5 @@
 Check 0.
 Check S.
 Check nat.
+
+Type Type : Type.
