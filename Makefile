@@ -262,6 +262,7 @@ ml4clean:
 
 depclean:
 	find . $(FIND_SKIP_DIRS) '(' -name '*.d' ')' -print | xargs rm -f
+	rm -f .vdfiles
 
 cacheclean:
 	find theories plugins test-suite -name '.*.aux' -delete
