@@ -146,7 +146,11 @@ val isFix : Evd.evar_map -> t -> bool
 val isCoFix : Evd.evar_map -> t -> bool
 val isCase : Evd.evar_map -> t -> bool
 val isProj : Evd.evar_map -> t -> bool
+
+type arity = rel_context * ESorts.t
+val destArity : Evd.evar_map -> types -> arity
 val isArity : Evd.evar_map -> t -> bool
+
 val isVarId  : Evd.evar_map -> Id.t -> t -> bool
 val isRelN : Evd.evar_map -> int -> t -> bool
 
@@ -261,6 +265,9 @@ val named_context_of_val : named_context_val -> named_context
 val lookup_rel : int -> env -> rel_declaration
 val lookup_named : variable -> env -> named_declaration
 val lookup_named_val : variable -> named_context_val -> named_declaration
+
+val map_rel_context_in_env :
+  (env -> constr -> constr) -> env -> rel_context -> rel_context
 
 (* XXX Missing Sigma proxy *)
 val fresh_global :

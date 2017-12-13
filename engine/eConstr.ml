@@ -770,6 +770,20 @@ let rec isArity sigma c =
   | Sort _          -> true
   | _               -> false
 
+type arity = rel_context * ESorts.t
+
+let destArity sigma =
+  let open Context.Rel.Declaration in
+  let rec prodec_rec l c =
+    match kind sigma c with
+    | Prod (x,t,c)    -> prodec_rec (LocalAssum (x,t) :: l) c
+    | LetIn (x,b,t,c) -> prodec_rec (LocalDef (x,b,t) :: l) c
+    | Cast (c,_,_)      -> prodec_rec l c
+    | Sort s          -> l,s
+    | _               -> anomaly ~label:"destArity" (Pp.str "not an arity.")
+  in
+  prodec_rec []
+
 let mkProd_or_LetIn decl c =
   let open Context.Rel.Declaration in
   match decl with
@@ -816,6 +830,15 @@ let named_context_of_val e = cast_named_context (sym unsafe_eq) (named_context_o
 let lookup_rel i e = cast_rel_decl (sym unsafe_eq) (lookup_rel i e)
 let lookup_named n e = cast_named_decl (sym unsafe_eq) (lookup_named n e)
 let lookup_named_val n e = cast_named_decl (sym unsafe_eq) (lookup_named_val n e)
+
+let map_rel_context_in_env f env sign =
+  let rec aux env acc = function
+    | d::sign ->
+        aux (push_rel d env) (Context.Rel.Declaration.map_constr (f env) d :: acc) sign
+    | [] ->
+        acc
+  in
+  aux env [] (List.rev sign)
 
 let fresh_global ?loc ?rigid ?names env sigma reference =
   let (evd,t) = Evd.fresh_global ?loc ?rigid ?names env sigma reference in
