@@ -58,13 +58,15 @@ before_script: &before_script
   <<: *params
   steps:
     - checkout
-    # - restore_cache:
-    #     key: coq-opam-cache-{{ arch }}-v171208-
+    - restore_cache:
+        keys:
+          - coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
+          - coq-opam-cache-v1-{{ arch }}- # this grabs old cache if checksum doesn't match
     - run: *before_script
-    # - save_cache:
-    #     key: coq-opam-cache-{{ arch }}-v171208-static-deps
-    #     paths:
-    #       - ~/.opam
+    - save_cache:
+        key: coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
+        paths:
+          - ~/.opam
     - run: &build-configure
         name: Configure
         command: |
@@ -85,7 +87,6 @@ before_script: &before_script
     - persist_to_workspace:
         root: &workspace ~/
         paths:
-          - .opam
           - coq/
 
   environment: &build-variables
@@ -100,7 +101,15 @@ before_script: &before_script
     - checkout
     - attach_workspace:
         at: *workspace
+    - restore_cache:
+        keys:
+          - coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
+          - coq-opam-cache-v1-{{ arch }}- # this grabs old cache if checksum doesn't match
     - run: *before_script
+    - save_cache:
+        key: coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
+        paths:
+          - ~/.opam
     - run:
         name: Validate
         command: |
@@ -114,7 +123,15 @@ before_script: &before_script
     - checkout
     - attach_workspace:
         at: *workspace
+    - restore_cache:
+        keys:
+          - coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
+          - coq-opam-cache-v1-{{ arch }}- # this grabs old cache if checksum doesn't match
     - run: *before_script
+    - save_cache:
+        key: coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
+        paths:
+          - ~/.opam
     - run:
         name: Documentation
         command: |
@@ -131,7 +148,15 @@ before_script: &before_script
     - checkout
     - attach_workspace:
         at: *workspace
+    - restore_cache:
+        keys:
+          - coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
+          - coq-opam-cache-v1-{{ arch }}- # this grabs old cache if checksum doesn't match
     - run: *before_script
+    - save_cache:
+        key: coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
+        paths:
+          - ~/.opam
     - run:
         name: Test
         command: |
@@ -147,7 +172,15 @@ before_script: &before_script
   <<: *params
   steps:
     - checkout
+    - restore_cache:
+        keys:
+          - coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
+          - coq-opam-cache-v1-{{ arch }}- # this grabs old cache if checksum doesn't match
     - run: *before_script
+    - save_cache:
+        key: coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
+        paths:
+          - ~/.opam
     - run:
         name: Configure
         command: |
@@ -171,7 +204,15 @@ before_script: &before_script
     - checkout
     - attach_workspace:
         at: *workspace
+    - restore_cache:
+        keys:
+          - coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
+          - coq-opam-cache-v1-{{ arch }}- # this grabs old cache if checksum doesn't match
     - run: *before_script
+    - save_cache:
+        key: coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
+        paths:
+          - ~/.opam
     - run:
         name: Test
         command: |
