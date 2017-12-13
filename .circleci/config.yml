@@ -220,7 +220,11 @@ before_script: &before_script
           echo 'start:coq.test'
           make -f Makefile.ci -j ${NJOBS} TIMED=1 ${CIRCLE_JOB}
           echo 'end:coq.test'
-  environment: &ci-template-vars
+    - persist_to_workspace:
+        root: &workspace ~/
+        paths:
+          - coq/
+environment: &ci-template-vars
     <<: *envvars
     EXTRA_PACKAGES: *timing-packages
 
@@ -338,6 +342,12 @@ jobs:
       <<: *ci-template-vars
       EXTRA_PACKAGES: "time python autoconf automake"
 
+  ci-math-classes:
+    <<: *ci-template
+
+  ci-corn:
+    <<: *ci-template
+
   ci-formal-topology:
     <<: *ci-template
 
@@ -382,7 +392,10 @@ workflows:
       - documentation: *req-main
 
       - ci-bignums: *req-main
-      - ci-color: *req-main
+      - ci-color:
+          requires:
+            - build
+            - ci-bignums
       - ci-compcert: *req-main
       - ci-coq-dpdgraph: *req-main
       - ci-coquelicot: *req-main
@@ -391,7 +404,18 @@ workflows:
       - ci-fiat-crypto: *req-main
       - ci-fiat-parsers: *req-main
       - ci-flocq: *req-main
-      - ci-formal-topology: *req-main
+      - ci-math-classes:
+          requires:
+            - build
+            - ci-bignums
+      - ci-corn:
+          requires:
+            - build
+            - ci-math-classes
+      - ci-formal-topology:
+          requires:
+            - build
+            - ci-corn
       - ci-hott: *req-main
       - ci-iris-lambda-rust: *req-main
       - ci-ltac2: *req-main
