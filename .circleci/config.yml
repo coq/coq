@@ -168,36 +168,6 @@ before_script: &before_script
     <<: *envvars
     EXTRA_PACKAGES: *timing-packages
 
-.warnings-template: &warnings-template
-  <<: *params
-  steps:
-    - checkout
-    - restore_cache:
-        keys:
-          - coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
-          - coq-opam-cache-v1-{{ arch }}- # this grabs old cache if checksum doesn't match
-    - run: *before_script
-    - save_cache:
-        key: coq-opam-cache-v1-{{ arch }}-{{ checksum ".circleci/config.yml" }}-
-        paths:
-          - ~/.opam
-    - run:
-        name: Configure
-        command: |
-          source ~/.profile
-          ./configure -local -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
-
-    - run:
-        name: Build
-        command: |
-          source ~/.profile
-          make -j ${NJOBS} coqocaml
-  environment: &warnings-variables
-    <<: *envvars
-    EXTRA_CONF: "-coqide byte -byte-only"
-    EXTRA_PACKAGES: *coqide-packages
-    EXTRA_OPAM: *coqide-opam
-
 .ci-template: &ci-template
   <<: *params
   steps:
@@ -258,16 +228,6 @@ jobs:
       <<: *envvars
       COMPILER: *compiler-32bit
       EXTRA_PACKAGES: "gcc-multilib"
-
-  warnings: *warnings-template
-
-  warnings-be:
-    <<: *warnings-template
-    environment:
-      <<: *warnings-variables
-      COMPILER: *compiler-be
-      CAMLP5_VER: *camlp5-ver-be
-      EXTRA_OPAM: *coqide-opam-be
 
   documentation: *documentation-template
 
@@ -378,7 +338,6 @@ workflows:
   main:
     jobs:
       - build
-      - warnings
       - validate: &req-main
           requires:
             - build
@@ -416,18 +375,13 @@ workflows:
       - ci-unimath: *req-main
       - ci-vst: *req-main
 
-  # 32bit:
-  #   jobs:
       - build-32bit
       - validate-32bit: &req-32bit
           requires:
             - build-32bit
       - test-suite-32bit: *req-32bit
 
-  # bleeding-edge:
-  #   jobs:
       - build-be
-      - warnings-be
       - test-suite-be: &req-be
           requires:
             - build-be
