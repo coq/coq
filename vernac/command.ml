@@ -1170,7 +1170,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
-      List.map3 (fun id t (ctx,imps,_) -> (id,(t,(List.map RelDecl.get_name ctx,imps))))
+      List.map3 (fun id t (ctx,imps,_) -> (id,(EConstr.of_constr t,(List.map RelDecl.get_name ctx,imps))))
 		fixnames fixtypes fiximps in
     let init_tac =
       Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
@@ -1205,7 +1205,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
-      List.map3 (fun id t (ctx,imps,_) -> (id,(t,(List.map RelDecl.get_name ctx,imps))))
+      List.map3 (fun id t (ctx,imps,_) -> (id,(EConstr.of_constr t,(List.map RelDecl.get_name ctx,imps))))
 		fixnames fixtypes fiximps in
     let init_tac =
       Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)

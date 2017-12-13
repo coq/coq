@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Constr
 open Decl_kinds
 
 type 'a declaration_hook
@@ -37,11 +36,11 @@ val start_proof_com :
   goal_kind -> Vernacexpr.proof_expr list ->
   unit declaration_hook -> unit
 
-val start_proof_with_initialization : 
+val start_proof_with_initialization :
   goal_kind -> Evd.evar_map -> Univdecls.universe_decl ->
   (bool * Proof_global.lemma_possible_guards * unit Proofview.tactic list option) option ->
   (Id.t (* name of thm *) *
-     (types (* type of thm *) * (Name.t list (* names to pre-introduce *) * Impargs.manual_explicitation list))) list
+     (EConstr.types (* type of thm *) * (Name.t list (* names to pre-introduce *) * Impargs.manual_explicitation list))) list
   -> int list option -> unit declaration_hook -> unit
 
 val universe_proof_terminator :
