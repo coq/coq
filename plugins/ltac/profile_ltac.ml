@@ -289,7 +289,7 @@ let rec find_in_stack what acc = function
   | { name } as x :: rest when String.equal name what -> Some(acc, x, rest)
   | { name } as x :: rest -> find_in_stack what (x :: acc) rest
 
-let exit_tactic start_time c =
+let exit_tactic ~count_call start_time c =
   let diff = time () -. start_time in
   match Local.(!stack) with
   | [] | [_] ->
@@ -304,7 +304,7 @@ let exit_tactic start_time c =
     let node = { node with
       total = node.total +. diff;
       local = node.local +. diff;
-      ncalls = node.ncalls + 1;
+      ncalls = node.ncalls + (if count_call then 1 else 0);
       max_total = max node.max_total diff;
     } in
     (* updating the stack *)
@@ -341,7 +341,7 @@ let tclFINALLY tac (finally : unit Proofview.tactic) =
     (fun v -> finally <*> Proofview.tclUNIT v)
     (fun (exn, info) -> finally <*> Proofview.tclZERO ~info exn)
 
-let do_profile s call_trace tac =
+let do_profile s call_trace ?(count_call=true) tac =
   let open Proofview.Notations in
   Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
   if !is_profiling then
@@ -359,7 +359,7 @@ let do_profile s call_trace tac =
       tac
       (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
         (match call_trace with
-        | (_, c) :: _ -> exit_tactic start_time c
+        | (_, c) :: _ -> exit_tactic ~count_call start_time c
         | [] -> ()))))
   | None -> tac
 

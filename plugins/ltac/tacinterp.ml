@@ -1272,7 +1272,8 @@ and interp_ltac_reference ?loc' mustbetac ist r : Val.t Ftactic.t =
       let extra = TacStore.set extra f_trace trace in
       let ist = { lfun = Id.Map.empty; extra = extra; } in
       let appl = GlbAppl[r,[]] in
-      val_interp ~appl ist (Tacenv.interp_ltac r)
+      Profile_ltac.do_profile "interp_ltac_reference" trace ~count_call:false
+        (val_interp ~appl ist (Tacenv.interp_ltac r))
 
 and interp_tacarg ist arg : Val.t Ftactic.t =
   match arg with
@@ -1338,7 +1339,8 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
               let ist = {
                 lfun = newlfun;
                 extra = TacStore.set ist.extra f_trace []; } in
-              catch_error_tac trace (val_interp ist body) >>= fun v ->
+              Profile_ltac.do_profile "interp_app" trace ~count_call:false
+                (catch_error_tac trace (val_interp ist body)) >>= fun v ->
               Ftactic.return (name_vfun (push_appl appl largs) v)
             end
 	    begin fun (e, info) ->
