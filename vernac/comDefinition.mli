@@ -14,7 +14,8 @@ open Constrexpr
 
 (** {6 Definitions/Let} *)
 
-val do_definition : Id.t -> definition_kind -> Vernacexpr.universe_decl_expr option ->
+val do_definition : program_mode:bool ->
+  Id.t -> definition_kind -> Vernacexpr.universe_decl_expr option ->
   local_binder_expr list -> red_expr option -> constr_expr ->
   constr_expr option -> unit Lemmas.declaration_hook -> unit
 

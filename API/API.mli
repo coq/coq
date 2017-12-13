@@ -6052,7 +6052,9 @@ end
 
 module ComDefinition :
 sig
-  val do_definition : Names.Id.t -> Decl_kinds.definition_kind -> Vernacexpr.universe_decl_expr option ->
+  val do_definition :
+    program_mode:bool ->
+    Names.Id.t -> Decl_kinds.definition_kind -> Vernacexpr.universe_decl_expr option ->
     Constrexpr.local_binder_expr list -> Redexpr.red_expr option -> Constrexpr.constr_expr ->
     Constrexpr.constr_expr option -> unit Lemmas.declaration_hook -> unit
 end
@@ -6134,6 +6136,7 @@ sig
     ?abstract:bool ->
     ?global:bool ->
     ?refine:bool ->
+    program_mode:bool ->
     Decl_kinds.polymorphic ->
     Constrexpr.local_binder_expr list ->
     Vernacexpr.typeclass_constraint ->

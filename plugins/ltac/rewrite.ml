@@ -1781,7 +1781,9 @@ let declare_an_instance n s args =
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
 let anew_instance global binders instance fields =
-  new_instance (Flags.is_universe_polymorphism ()) 
+  let program_mode = Flags.is_program_mode () in
+  let poly = Flags.is_universe_polymorphism () in
+  new_instance ~program_mode poly
     binders instance (Some (true, CAst.make @@ CRecord (fields)))
     ~global ~generalize:false ~refine:false Hints.empty_hint_info
 
@@ -2012,9 +2014,10 @@ let add_morphism glob binders m s n =
 	     [cHole; s; m]))
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
-    ignore(new_instance ~global:glob poly binders instance 
-	     (Some (true, CAst.make @@ CRecord []))
-	      ~generalize:false ~tac ~hook:(declare_projection n instance_id) Hints.empty_hint_info)
+  let program_mode = Flags.is_program_mode () in
+  ignore(new_instance ~program_mode ~global:glob poly binders instance
+           (Some (true, CAst.make @@ CRecord []))
+    ~generalize:false ~tac ~hook:(declare_projection n instance_id) Hints.empty_hint_info)
 
 (** Bind to "rewrite" too *)
 

@@ -104,11 +104,11 @@ let check_definition (ce, evd, _, imps) =
   check_evars_are_solved (Global.env ()) evd Evd.empty;
   ce
 
-let do_definition ident k univdecl bl red_option c ctypopt hook =
+let do_definition ~program_mode ident k univdecl bl red_option c ctypopt hook =
   let (ce, evd, univdecl, imps as def) =
     interp_definition univdecl bl (pi2 k) red_option c ctypopt
   in
-    if Flags.is_program_mode () then
+    if program_mode then
       let env = Global.env () in
       let (c,ctx), sideff = Future.force ce.const_entry_body in
       assert(Safe_typing.empty_private_constants = sideff);

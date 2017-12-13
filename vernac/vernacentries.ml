@@ -478,6 +478,7 @@ let vernac_definition ~atts discharge kind ((loc,id as lid),pl) def =
   | Discharge -> Dumpglob.dump_definition lid true "var"
   | Local | Global -> Dumpglob.dump_definition lid false "def"
   in
+  let program_mode = Flags.is_program_mode () in
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
           start_proof_and_print (local, atts.polymorphic, DefinitionBody kind)
@@ -488,7 +489,7 @@ let vernac_definition ~atts discharge kind ((loc,id as lid),pl) def =
           | Some r ->
             let sigma, env = Pfedit.get_current_context () in
             Some (snd (Hook.get f_interp_redexp env sigma r)) in
-        ComDefinition.do_definition id (local, atts.polymorphic, kind) pl bl red_option c typ_opt hook)
+        ComDefinition.do_definition ~program_mode id (local, atts.polymorphic, kind) pl bl red_option c typ_opt hook)
 
 let vernac_start_proof ~atts kind l =
   let local = enforce_locality_exp atts.locality NoDischarge in
@@ -841,7 +842,8 @@ let vernac_identity_coercion ~atts id qids qidt =
 let vernac_instance ~atts abst sup inst props pri =
   let global = not (make_section_locality atts.locality) in
   Dumpglob.dump_constraint inst false "inst";
-  ignore(Classes.new_instance ~abstract:abst ~global atts.polymorphic sup inst props pri)
+  let program_mode = Flags.is_program_mode () in
+  ignore(Classes.new_instance ~program_mode ~abstract:abst ~global atts.polymorphic sup inst props pri)
 
 let vernac_context ~atts l =
   if not (Classes.context atts.polymorphic l) then Feedback.feedback Feedback.AddedAxiom

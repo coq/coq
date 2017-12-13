@@ -130,7 +130,7 @@ let declare_instance_constant k info global imps ?hook id decl poly sigma term t
     id
 
 let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
-  poly ctx (instid, bk, cl) props ?(generalize=true)
+  ~program_mode poly ctx (instid, bk, cl) props ?(generalize=true)
   ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
   let ((loc, instid), pl) = instid in
@@ -215,7 +215,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 	    Some (Inl fs)
 	| Some (_, t) -> Some (Inr t)
 	| None -> 
-	    if Flags.is_program_mode () then Some (Inl [])
+            if program_mode then Some (Inl [])
 	    else None
       in
       let subst, sigma =
@@ -297,9 +297,9 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
         if not (Evd.has_undefined sigma) && not (Option.is_empty term) then
 	  declare_instance_constant k pri global imps ?hook id decl
             poly sigma (Option.get term) termtype
-	else if Flags.is_program_mode () || refine || Option.is_empty term then begin
+        else if program_mode || refine || Option.is_empty term then begin
 	  let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
-	    if Flags.is_program_mode () then
+            if program_mode then
 	      let hook vis gr _ =
 		let cst = match gr with ConstRef kn -> kn | _ -> assert false in
 		  Impargs.declare_manual_implicits false gr ~enriching:false [imps];
