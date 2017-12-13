@@ -13,7 +13,8 @@ function travis_fold {
     fi
 }
 
-CI_SCRIPT="$1"
+CI_NAME="$1"
+CI_SCRIPT="ci-${CI_NAME}.sh"
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # assume this script is in dev/ci/, cd to the root Coq directory
 cd "${DIR}/../.."
@@ -22,3 +23,5 @@ cd "${DIR}/../.."
 travis_fold 'start' 'coq.test.timing' && echo 'Aggregating timing log...'
 python ./tools/make-one-time-file.py time-of-build.log
 travis_fold 'end' 'coq.test.timing'
+
+touch "_build_ci/.ci-${CI_NAME}.done"
