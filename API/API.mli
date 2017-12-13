@@ -6050,20 +6050,50 @@ sig
   val show_term : Names.Id.t option -> Pp.t
 end
 
-module Command :
+module ComDefinition :
 sig
+  val do_definition : Names.Id.t -> Decl_kinds.definition_kind -> Vernacexpr.universe_decl_expr option ->
+    Constrexpr.local_binder_expr list -> Redexpr.red_expr option -> Constrexpr.constr_expr ->
+    Constrexpr.constr_expr option -> unit Lemmas.declaration_hook -> unit
+end
+
+module ComFixpoint :
+sig
+
   open Names
   open Constrexpr
-  open Vernacexpr
 
   type structured_fixpoint_expr = {
     fix_name : Id.t;
-    fix_univs : universe_decl_expr option;
+    fix_univs : Vernacexpr.universe_decl_expr option;
     fix_annot : Id.t Loc.located option;
     fix_binders : local_binder_expr list;
     fix_body : constr_expr option;
     fix_type : constr_expr
   }
+
+  type recursive_preentry = Names.Id.t list * Constr.t option list * Constr.types list
+
+  val interp_fixpoint :
+    cofix:bool ->
+    structured_fixpoint_expr list -> Vernacexpr.decl_notation list ->
+    recursive_preentry * Univdecls.universe_decl * UState.t *
+    (EConstr.rel_context * Impargs.manual_implicits * int option) list
+
+  val extract_fixpoint_components : bool ->
+    (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list ->
+    structured_fixpoint_expr list * Vernacexpr.decl_notation list
+
+  val do_fixpoint :
+    Decl_kinds.locality -> Decl_kinds.polymorphic -> (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list -> unit
+
+end
+
+module ComInductive :
+sig
+  open Names
+  open Constrexpr
+  open Vernacexpr
 
   type structured_one_inductive_expr = {
     ind_name : Id.t;
@@ -6075,29 +6105,11 @@ sig
   type structured_inductive_expr =
     local_binder_expr list * structured_one_inductive_expr list
 
-  type recursive_preentry = Names.Id.t list * Constr.t option list * Constr.types list
-
   type one_inductive_impls
 
   val do_mutual_inductive :
     (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list -> Decl_kinds.cumulative_inductive_flag -> Decl_kinds.polymorphic ->
     Decl_kinds.private_flag -> Declarations.recursivity_kind -> unit
-
-  val do_definition : Names.Id.t -> Decl_kinds.definition_kind -> Vernacexpr.universe_decl_expr option ->
-    Constrexpr.local_binder_expr list -> Redexpr.red_expr option -> Constrexpr.constr_expr ->
-    Constrexpr.constr_expr option -> unit Lemmas.declaration_hook -> unit
-
-  val do_fixpoint :
-    Decl_kinds.locality -> Decl_kinds.polymorphic -> (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list -> unit
-
-  val extract_fixpoint_components : bool ->
-    (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list ->
-    structured_fixpoint_expr list * Vernacexpr.decl_notation list
-
-  val interp_fixpoint :
-    structured_fixpoint_expr list -> Vernacexpr.decl_notation list ->
-    recursive_preentry * Univdecls.universe_decl * UState.t *
-      (EConstr.rel_context * Impargs.manual_implicits * int option) list
 
   val extract_mutual_inductive_declaration_components :
     (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list ->

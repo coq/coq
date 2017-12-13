@@ -11,7 +11,11 @@ Search
 Indschemes
 DeclareDef
 Obligations
-Command
+ComDefinition
+ComAssumption
+ComInductive
+ComFixpoint
+ComProgramFixpoint
 Classes
 Record
 Assumptions

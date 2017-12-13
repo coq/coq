@@ -1497,7 +1497,7 @@ let do_build_inductive
   let _time2 = System.get_time () in
   try
     with_full_print
-      (Flags.silently (Command.do_mutual_inductive rel_inds (Flags.is_universe_polymorphism ()) false false))
+      (Flags.silently (ComInductive.do_mutual_inductive rel_inds (Flags.is_universe_polymorphism ()) false false))
       Decl_kinds.Finite
   with
     | UserError(s,msg) as e ->
