@@ -55,10 +55,11 @@ let pf_nth_hyp_id gls n = List.nth (pf_hyps gls) (n-1) |> NamedDecl.get_id
 let pf_last_hyp gl = List.hd (pf_hyps gl)
 
 let pf_get_hyp gls id =
+  let env, sigma = pf_env gls, project gls in
   try
     Context.Named.lookup id (pf_hyps gls)
   with Not_found ->
-    raise (RefinerError (NoSuchHyp id))
+    raise (RefinerError (env, sigma, NoSuchHyp id))
 
 let pf_get_hyp_typ gls id =
   id |> pf_get_hyp gls |> NamedDecl.get_type
@@ -182,9 +183,10 @@ module New = struct
 
   let pf_get_hyp id gl =
     let hyps = Proofview.Goal.env gl in
+    let sigma = project gl in
     let sign =
       try EConstr.lookup_named id hyps
-      with Not_found -> raise (RefinerError (NoSuchHyp id))
+      with Not_found -> raise (RefinerError (hyps, sigma, NoSuchHyp id))
     in
     sign
 

@@ -50,16 +50,16 @@ type refiner_error =
   | DoesNotOccurIn of constr * Id.t
   | NoSuchHyp of Id.t
 
-exception RefinerError of refiner_error
+exception RefinerError of Environ.env * evar_map * refiner_error
 
-val error_no_such_hypothesis : Id.t -> 'a
+val error_no_such_hypothesis : Environ.env -> evar_map -> Id.t -> 'a
 
 val catchable_exception : exn -> bool
 
 val convert_hyp : bool -> Environ.named_context_val -> evar_map ->
   EConstr.named_declaration -> Environ.named_context_val
 
-val move_hyp_in_named_context : Evd.evar_map -> Id.t -> Id.t Misctypes.move_location ->
+val move_hyp_in_named_context : Environ.env -> Evd.evar_map -> Id.t -> Id.t Misctypes.move_location ->
   Environ.named_context_val -> Environ.named_context_val
 
 val insert_decl_in_named_context : Evd.evar_map ->

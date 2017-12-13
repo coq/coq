@@ -217,8 +217,7 @@ module ContextObjectSet : Set.S with type elt = context_object
 module ContextObjectMap : CMap.ExtS
   with type key = context_object and module Set := ContextObjectSet
 
-val pr_assumptionset :
-  env -> types ContextObjectMap.t -> Pp.t
+val pr_assumptionset : env -> evar_map -> types ContextObjectMap.t -> Pp.t
 
 val pr_goal_by_id : proof:Proof.t -> Id.t -> Pp.t
 

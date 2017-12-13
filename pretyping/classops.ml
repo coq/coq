@@ -322,16 +322,16 @@ let coercion_value { coe_value = c; coe_type = t; coe_context = ctx;
 (* pretty-print functions are now in Pretty *)
 (* rajouter une coercion dans le graphe *)
 
-let path_printer = ref (fun _ -> str "<a class path>"
-                        : (Bijint.Index.t * Bijint.Index.t) * inheritance_path -> Pp.t)
+let path_printer : (env -> Evd.evar_map -> (Bijint.Index.t * Bijint.Index.t) * inheritance_path -> Pp.t) ref =
+  ref (fun _ _ _ -> str "<a class path>")
 
 let install_path_printer f = path_printer := f
 
-let print_path x = !path_printer x
+let print_path env sigma x = !path_printer env sigma x
 
-let message_ambig l =
-  (str"Ambiguous paths:" ++ spc () ++
-   prlist_with_sep fnl (fun ijp -> print_path ijp) l)
+let message_ambig env sigma l =
+  str"Ambiguous paths:" ++ spc () ++
+  prlist_with_sep fnl (fun ijp -> print_path env sigma ijp) l
 
 (* add_coercion_in_graph : coe_index * cl_index * cl_index -> unit
                          coercion,source,target *)
@@ -344,8 +344,8 @@ let different_class_params i =
       | CL_IND i -> Global.is_polymorphic (IndRef i)
       | CL_CONST c -> Global.is_polymorphic (ConstRef c)
       | _ -> false
-	
-let add_coercion_in_graph (ic,source,target) =
+
+let add_coercion_in_graph env sigma (ic,source,target) =
   let old_inheritance_graph = !inheritance_graph in
   let ambig_paths =
     (ref [] : ((cl_index * cl_index) * inheritance_path) list ref) in
@@ -387,7 +387,7 @@ let add_coercion_in_graph (ic,source,target) =
   end;
   let is_ambig = match !ambig_paths with [] -> false | _ -> true in
   if is_ambig && not !Flags.quiet then
-    Feedback.msg_info (message_ambig !ambig_paths)
+    Feedback.msg_info (message_ambig env sigma !ambig_paths)
 
 type coercion = {
   coercion_type   : coe_typ;
@@ -433,13 +433,13 @@ let _ =
       optread  = (fun () -> !automatically_import_coercions);
       optwrite = (:=) automatically_import_coercions }
 
-let cache_coercion (_, c) =
+let cache_coercion env sigma (_, c) =
   let () = add_class c.coercion_source in
   let () = add_class c.coercion_target in
   let is, _ = class_info c.coercion_source in
   let it, _ = class_info c.coercion_target in
-  let value, ctx = Universes.fresh_global_instance (Global.env()) c.coercion_type in
-  let typ = Retyping.get_type_of (Global.env ()) Evd.empty (EConstr.of_constr value) in
+  let value, ctx = Universes.fresh_global_instance env c.coercion_type in
+  let typ = Retyping.get_type_of env sigma (EConstr.of_constr value) in
   let typ = EConstr.Unsafe.to_constr typ in
   let xf =
     { coe_value = value;
@@ -450,15 +450,15 @@ let cache_coercion (_, c) =
       coe_is_projection = c.coercion_is_proj;
       coe_param = c.coercion_params } in
   let () = add_new_coercion c.coercion_type xf in
-  add_coercion_in_graph (xf,is,it)
+  add_coercion_in_graph env sigma (xf,is,it)
 
 let load_coercion _ o =
   if !automatically_import_coercions then
-    cache_coercion o
+    cache_coercion (Global.env ()) Evd.empty o
 
 let open_coercion i o =
   if Int.equal i 1 && not !automatically_import_coercions then
-    cache_coercion o
+    cache_coercion (Global.env ()) Evd.empty o
 
 let subst_coercion (subst, c) =
   let coe = subst_coe_typ subst c.coercion_type in
@@ -497,7 +497,9 @@ let inCoercion : coercion -> obj =
   declare_object {(default_object "COERCION") with
     open_function = open_coercion;
     load_function = load_coercion;
-    cache_function = cache_coercion;
+    cache_function = (fun objn ->
+        let env = Global.env () in cache_coercion env Evd.empty objn
+      );
     subst_function = subst_coercion;
     classify_function = classify_coercion;
     discharge_function = discharge_coercion }

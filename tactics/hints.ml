@@ -1400,15 +1400,10 @@ let pr_hint env sigma h = match h.obj with
   | Give_exact (c, _) -> (str"exact " ++ pr_hint_elt env sigma c)
   | Res_pf_THEN_trivial_fail (c, _) ->
       (str"simple apply " ++ pr_hint_elt env sigma c ++ str" ; trivial")
-  | Unfold_nth c -> (str"unfold " ++  pr_evaluable_reference c)
+  | Unfold_nth c ->
+    str"unfold " ++  pr_evaluable_reference c
   | Extern tac ->
-      let env =
-        try
-          let (_, env) = Pfedit.get_current_goal_context () in
-          env
-        with e when CErrors.noncritical e -> Global.env ()
-      in
-      (str "(*external*) " ++ Pputils.pr_glb_generic env tac)
+    str "(*external*) " ++ Pputils.pr_glb_generic env tac
 
 let pr_id_hint env sigma (id, v) =
   let pr_pat p = str", pattern " ++ pr_lconstr_pattern_env env sigma p in
@@ -1507,6 +1502,7 @@ let pr_hint_db_env env sigma db =
   hov 2 (str"Cut: " ++ pp_hints_path (Hint_db.cut db)) ++ fnl () ++
   content
 
+(* Deprecated in the mli *)
 let pr_hint_db db =
   let sigma, env = Pfedit.get_current_context () in
   pr_hint_db_env env sigma db

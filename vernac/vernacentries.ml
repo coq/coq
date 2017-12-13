@@ -1656,13 +1656,13 @@ let vernac_print ~atts env sigma =
   | PrintMLModules -> msg_notice (Mltop.print_ml_modules ())
   | PrintDebugGC -> msg_notice (Mltop.print_gc ())
   | PrintName (qid,udecl) -> dump_global qid; msg_notice (print_name env sigma qid udecl)
-  | PrintGraph -> msg_notice (Prettyp.print_graph())
+  | PrintGraph -> msg_notice (Prettyp.print_graph env sigma)
   | PrintClasses -> msg_notice (Prettyp.print_classes())
   | PrintTypeClasses -> msg_notice (Prettyp.print_typeclasses())
   | PrintInstances c -> msg_notice (Prettyp.print_instances (smart_global c))
   | PrintCoercions -> msg_notice (Prettyp.print_coercions env sigma)
   | PrintCoercionPaths (cls,clt) ->
-      msg_notice (Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt))
+      msg_notice (Prettyp.print_path_between env sigma (cl_of_qualid cls) (cl_of_qualid clt))
   | PrintCanonicalConversions -> msg_notice (Prettyp.print_canonical_projections env sigma)
   | PrintUniverses (b, dst) ->
      let univ = Global.universes () in
@@ -1696,7 +1696,7 @@ let vernac_print ~atts env sigma =
       let st = Conv_oracle.get_transp_state (Environ.oracle (Global.env())) in
       let nassums =
 	Assumptions.assumptions st ~add_opaque:o ~add_transparent:t gr cstr in
-      msg_notice (Printer.pr_assumptionset (Global.env ()) nassums)
+      msg_notice (Printer.pr_assumptionset env sigma nassums)
   | PrintStrategy r -> print_strategy r
 
 let global_module r =

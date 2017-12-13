@@ -187,7 +187,7 @@ let introduction ?(check=true) id =
     match EConstr.kind sigma concl with
     | Prod (_, t, b) -> unsafe_intro env store (LocalAssum (id, t)) b
     | LetIn (_, c, t, b) -> unsafe_intro env store (LocalDef (id, c, t)) b
-    | _ -> raise (RefinerError IntroNeedsProduct)
+    | _ -> raise (RefinerError (env, sigma, IntroNeedsProduct))
   end
 
 let refine          = Tacmach.refine
@@ -319,7 +319,7 @@ let move_hyp id dest =
     let ty = Proofview.Goal.concl gl in
     let store = Proofview.Goal.extra gl in
     let sign = named_context_val env in
-    let sign' = move_hyp_in_named_context sigma id dest sign in
+    let sign' = move_hyp_in_named_context env sigma id dest sign in
     let env = reset_with_named_context sign' env in
     Refine.refine ~typecheck:false begin fun sigma ->
       Evarutil.new_evar env sigma ~principal:true ~store ty
@@ -348,13 +348,15 @@ let rename_hyp repl =
       let hyps = Proofview.Goal.hyps gl in
       let concl = Proofview.Goal.concl gl in
       let store = Proofview.Goal.extra gl in
+      let env = Proofview.Goal.env gl in
+      let sigma = Proofview.Goal.sigma gl in
       (** Check that we do not mess variables *)
       let fold accu decl = Id.Set.add (NamedDecl.get_id decl) accu in
       let vars = List.fold_left fold Id.Set.empty hyps in
       let () =
         if not (Id.Set.subset src vars) then
           let hyp = Id.Set.choose (Id.Set.diff src vars) in
-          raise (RefinerError (NoSuchHyp hyp))
+          raise (RefinerError (env, sigma, NoSuchHyp hyp))
       in
       let mods = Id.Set.diff vars src in
       let () =
@@ -442,9 +444,9 @@ let find_name mayrepl decl naming gl = match naming with
 (*   Computing position of hypotheses for replacing           *)
 (**************************************************************)
 
-let get_next_hyp_position id =
+let get_next_hyp_position env sigma id =
   let rec aux = function
-  | [] -> error_no_such_hypothesis id
+  | [] -> error_no_such_hypothesis env sigma id
   | decl :: right ->
     if Id.equal (NamedDecl.get_id decl) id then
       match right with decl::_ -> MoveBefore (NamedDecl.get_id decl) | [] -> MoveFirst
@@ -453,9 +455,9 @@ let get_next_hyp_position id =
   in
   aux
 
-let get_previous_hyp_position id =
+let get_previous_hyp_position env sigma id =
   let rec aux dest = function
-  | [] -> error_no_such_hypothesis id
+  | [] -> error_no_such_hypothesis env sigma id
   | decl :: right ->
       let hyp = NamedDecl.get_id decl in
       if Id.equal hyp id then dest else aux (MoveAfter hyp) right
@@ -483,7 +485,7 @@ let internal_cut_gen ?(check=true) dir replace id t =
     let sign = named_context_val env in
     let sign',t,concl,sigma =
       if replace then
-        let nexthyp = get_next_hyp_position id (named_context_of_val sign) in
+        let nexthyp = get_next_hyp_position env sigma id (named_context_of_val sign) in
         let sign',t,concl,sigma = clear_hyps2 env sigma (Id.Set.singleton id) sign t concl in
         let sign' = insert_decl_in_named_context sigma (LocalAssum (id,t)) nexthyp sign' in
         sign',t,concl,sigma
@@ -1000,6 +1002,7 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
   let open Context.Rel.Declaration in
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
+    let env = Tacmach.New.pf_env gl in
     let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
     match EConstr.kind sigma concl with
     | Prod (name,t,u) when not dep_flag || not (noccurn sigma 1 u) ->
@@ -1009,7 +1012,7 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
         let name = find_name false (LocalDef (name,b,t)) name_flag gl in
 	build_intro_tac name move_flag tac
     | _ ->
-	begin if not force_flag then Proofview.tclZERO (RefinerError IntroNeedsProduct)
+        begin if not force_flag then Proofview.tclZERO (RefinerError (env, sigma, IntroNeedsProduct))
             (* Note: red_in_concl includes betaiotazeta and this was like *)
             (* this since at least V6.3 (a pity *)
             (* that intro do betaiotazeta only when reduction is needed; and *)
@@ -1020,7 +1023,7 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
 	  (Tacticals.New.tclTHEN hnf_in_concl
 	     (intro_then_gen name_flag move_flag false dep_flag tac))
           begin function (e, info) -> match e with
-            | RefinerError IntroNeedsProduct ->
+            | RefinerError (env, sigma, IntroNeedsProduct) ->
                 Tacticals.New.tclZEROMSG (str "No product even after head-reduction.")
             | e -> Proofview.tclZERO ~info e
           end
@@ -1059,7 +1062,7 @@ let intro_forthcoming_then_gen name_flag move_flag dep_flag n bound tac =
          (fun id -> aux (n+1) (id::ids))
       end
       begin function (e, info) -> match e with
-      | RefinerError IntroNeedsProduct ->
+      | RefinerError (env, sigma, IntroNeedsProduct) ->
           tac ids
       | e -> Proofview.tclZERO ~info e
       end
@@ -1070,8 +1073,9 @@ let intro_forthcoming_then_gen name_flag move_flag dep_flag n bound tac =
 
 let intro_replacing id =
   Proofview.Goal.enter begin fun gl ->
+  let env, sigma = Proofview.Goal.(env gl, sigma gl) in
   let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-  let next_hyp = get_next_hyp_position id hyps in
+  let next_hyp = get_next_hyp_position env sigma id hyps in
   Tacticals.New.tclTHENLIST [
     clear_for_replacing [id];
     introduction id;
@@ -1090,8 +1094,9 @@ let intro_replacing id =
 let intros_possibly_replacing ids =
   let suboptimal = true in
   Proofview.Goal.enter begin fun gl ->
+    let env, sigma = Proofview.Goal.(env gl, sigma gl) in
     let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-    let posl = List.map (fun id -> (id, get_next_hyp_position id hyps)) ids in
+    let posl = List.map (fun id -> (id, get_next_hyp_position env sigma id hyps)) ids in
     Tacticals.New.tclTHEN
       (Tacticals.New.tclMAP (fun id -> 
 	Tacticals.New.tclTRY (clear_for_replacing [id]))
@@ -1105,7 +1110,8 @@ let intros_possibly_replacing ids =
 let intros_replacing ids =
   Proofview.Goal.enter begin fun gl ->
     let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-    let posl = List.map (fun id -> (id, get_next_hyp_position id hyps)) ids in
+    let env, sigma = Proofview.Goal.(env gl, sigma gl) in
+    let posl = List.map (fun id -> (id, get_next_hyp_position env sigma id hyps)) ids in
     Tacticals.New.tclTHEN
       (clear_for_replacing ids)
       (Tacticals.New.tclMAP (fun (id,pos) -> intro_move (Some id) pos) posl)
@@ -2633,8 +2639,10 @@ let general_apply_in sidecond_first with_delta with_destruct with_evars
   Proofview.Goal.enter begin fun gl ->
   let destopt =
     if with_evars then MoveLast (* evars would depend on the whole context *)
-    else
-      get_previous_hyp_position id (Proofview.Goal.hyps (Proofview.Goal.assume gl)) in
+    else (
+      let env, sigma = Proofview.Goal.(env gl, sigma gl) in
+      get_previous_hyp_position env sigma id (Proofview.Goal.hyps (Proofview.Goal.assume gl))
+    ) in
   let naming,ipat_tac =
     prepare_intros_opt with_evars (IntroIdentifier id) destopt ipat in
   let lemmas_target, last_lemma_target =
@@ -4448,8 +4456,11 @@ let check_enough_applied env sigma elim =
           check_expected_type env sigma elimc elimt
 
 let guard_no_unifiable = Proofview.guard_no_unifiable >>= function
-| None -> Proofview.tclUNIT ()
-| Some l -> Proofview.tclZERO (RefinerError (UnresolvedBindings l))
+  | None -> Proofview.tclUNIT ()
+  | Some l ->
+    Proofview.tclENV     >>= function env ->
+    Proofview.tclEVARMAP >>= function sigma ->
+    Proofview.tclZERO (RefinerError (env, sigma, UnresolvedBindings l))
 
 let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
      id ((pending,(c0,lbind)),(eqname,names)) t0 inhyps cls tac =
@@ -4648,7 +4659,7 @@ let induction_destruct isrec with_evars (lc,elim) =
         (Tacticals.New.tclMAP (fun (a,b,cl) ->
           Proofview.Goal.enter begin fun gl ->
           let env = Proofview.Goal.env gl in
-          let sigma = Tacmach.New.project gl in      
+          let sigma = Tacmach.New.project gl in
           onOpenInductionArg env sigma (fun clear_flag a ->
             induction_gen clear_flag false with_evars None (a,b) cl) a
           end) l)
@@ -4673,7 +4684,7 @@ let induction_destruct isrec with_evars (lc,elim) =
     end
 
 let induction ev clr c l e =
-  induction_gen clr true ev e 
+  induction_gen clr true ev e
     ((Evd.empty,(c,NoBindings)),(None,l)) None
 
 let destruct ev clr c l e =

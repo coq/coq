@@ -1436,8 +1436,9 @@ let injEqThen keep_proofs tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
 	(tac (clenv_value eq_clause))
 
 let get_previous_hyp_position id gl =
+  let env, sigma = Proofview.Goal.(env gl, sigma gl) in
   let rec aux dest = function
-  | [] -> raise (RefinerError (NoSuchHyp id))
+  | [] -> raise (RefinerError (env, sigma, NoSuchHyp id))
   | d :: right ->
     let hyp = Context.Named.Declaration.get_id d in
     if Id.equal hyp id then dest else aux (MoveAfter hyp) right

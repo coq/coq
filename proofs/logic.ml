@@ -40,7 +40,7 @@ type refiner_error =
   | DoesNotOccurIn of constr * Id.t
   | NoSuchHyp of Id.t
 
-exception RefinerError of refiner_error
+exception RefinerError of Environ.env * Evd.evar_map * refiner_error
 
 open Pretype_errors
 
@@ -69,7 +69,7 @@ let catchable_exception = function
   | PretypeError(_,_, e) -> is_unification_error e || is_typing_error e 
   | _ -> false
 
-let error_no_such_hypothesis id = raise (RefinerError (NoSuchHyp id))
+let error_no_such_hypothesis env sigma id = raise (RefinerError (env, sigma, NoSuchHyp id))
 
 (* Tells if the refiner should check that the submitted rules do not
    produce invalid subgoals *)
@@ -78,10 +78,10 @@ let with_check = Flags.with_option check
 
 (* [apply_to_hyp sign id f] splits [sign] into [tail::[id,_,_]::head] and
    returns [tail::(f head (id,_,_) (rev tail))] *)
-let apply_to_hyp check sign id f =
+let apply_to_hyp env sigma check sign id f =
   try apply_to_hyp sign id f
   with Hyp_not_found ->
-    if check then error_no_such_hypothesis id
+    if check then error_no_such_hypothesis env sigma id
     else sign
 
 let check_typability env sigma c =
@@ -147,7 +147,7 @@ let reorder_context env sigma sign ord =
           step ord' expected ctxt_head mh (d::ctxt_tail)
       | _ ->
           (match ctxt_head with
-            | [] -> error_no_such_hypothesis (List.hd ord)
+            | [] -> error_no_such_hypothesis env sigma (List.hd ord)
             | d :: ctxt ->
                 let x = NamedDecl.get_id d in
                 if Id.Set.mem x expected then
@@ -190,9 +190,9 @@ let move_location_eq m1 m2 = match m1, m2 with
 | MoveFirst, MoveFirst -> true
 | _ -> false
 
-let split_sign hfrom hto l =
+let split_sign env sigma hfrom hto l =
   let rec splitrec left toleft = function
-    | [] -> error_no_such_hypothesis hfrom
+    | [] -> error_no_such_hypothesis env sigma hfrom
     | d :: right ->
         let hyp = NamedDecl.get_id d in
       	if Id.equal hyp hfrom then
@@ -222,7 +222,7 @@ let move_hyp sigma toleft (left,declfrom,right) hto =
   let rec moverec first middle = function
     | [] ->
 	if match hto with MoveFirst | MoveLast -> false | _ -> true then
-	  error_no_such_hypothesis (hyp_of_move_location hto);
+          error_no_such_hypothesis env sigma (hyp_of_move_location hto);
 	List.rev first @ List.rev middle
     | d :: _ as right when move_location_eq hto (MoveBefore (NamedDecl.get_id d)) ->
 	List.rev first @ List.rev middle @ right
@@ -258,10 +258,10 @@ let move_hyp sigma toleft (left,declfrom,right) hto =
     List.fold_left (fun sign d -> push_named_context_val d sign)
       right left
 
-let move_hyp_in_named_context sigma hfrom hto sign =
+let move_hyp_in_named_context env sigma hfrom hto sign =
   let open EConstr in
   let (left,right,declfrom,toleft) =
-    split_sign hfrom hto (named_context_of_val sign) in
+    split_sign env sigma hfrom hto (named_context_of_val sign) in
   move_hyp sigma toleft (left,declfrom,right) hto
 
 let insert_decl_in_named_context sigma decl hto sign =
@@ -293,15 +293,15 @@ let collect_meta_variables c =
   in
   List.rev (collrec false [] c)
 
-let check_meta_variables c =
+let check_meta_variables env sigma c =
   if not (List.distinct_f Int.compare (collect_meta_variables c)) then
-    raise (RefinerError (NonLinearProof c))
+    raise (RefinerError (env, sigma, NonLinearProof c))
 
 let check_conv_leq_goal env sigma arg ty conclty =
   if !check then
     let evm, b = Reductionops.infer_conv env sigma (EConstr.of_constr ty) (EConstr.of_constr conclty) in
       if b then evm 
-      else raise (RefinerError (BadType (arg,ty,conclty)))
+      else raise (RefinerError (env, sigma, BadType (arg,ty,conclty)))
   else sigma
 
 exception Stop of EConstr.t list
@@ -336,7 +336,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
       | Meta _ ->
 	let conclty = nf_betaiota sigma (EConstr.of_constr conclty) in
 	  if !check && occur_meta sigma conclty then
-	    raise (RefinerError (MetaInType conclty));
+            raise (RefinerError (env, sigma, MetaInType conclty));
 	  let (gl,ev,sigma) = mk_goal hyps conclty in
 	  let ev = EConstr.Unsafe.to_constr ev in
 	  let conclty = EConstr.Unsafe.to_constr conclty in
@@ -477,7 +477,9 @@ and mk_arggoals sigma goal goalacc funty allargs =
     | Prod (_, c1, b) ->
       let (acc, hargty, sigma, arg) = mk_refgoals sigma goal goalacc c1 harg in
       (acc, subst1 harg b, sigma), arg
-    | _ -> raise (RefinerError (CannotApply (t, harg)))
+    | _ ->
+      let env = Goal.V82.env sigma goal in
+      raise (RefinerError (env,sigma,CannotApply (t, harg)))
   in
   Array.smartfoldmap foldmap (goalacc, funty, sigma) allargs
 
@@ -497,10 +499,10 @@ and mk_casegoals sigma goal goalacc p c =
 let convert_hyp check sign sigma d =
   let id = NamedDecl.get_id d in
   let b = NamedDecl.get_value d in
-  let env = Global.env() in
+  let env = Global.env () in
   let reorder = ref [] in
   let sign' =
-    apply_to_hyp check sign id
+    apply_to_hyp env sigma check sign id
       (fun _ d' _ ->
         let c = Option.map EConstr.of_constr (NamedDecl.get_value d') in
         let env = Global.env_of_context sign in
@@ -514,19 +516,18 @@ let convert_hyp check sign sigma d =
        map_named_decl EConstr.Unsafe.to_constr d) in
   reorder_val_context env sigma sign' !reorder
 
-
-
 (************************************************************************)
 (************************************************************************)
 (* Primitive tactics are handled here *)
 
 let prim_refiner r sigma goal =
+  let env = Goal.V82.env sigma goal in
   let cl = Goal.V82.concl sigma goal in
   match r with
     (* Logical rules *)
     | Refine c ->
         let cl = EConstr.Unsafe.to_constr cl in
-	check_meta_variables c;
+        check_meta_variables env sigma c;
 	let (sgl,cl',sigma,oterm) = mk_refgoals sigma goal [] cl c in
 	let sgl = List.rev sgl in
 	let sigma = Goal.V82.partial_solution sigma goal (EConstr.of_constr oterm) in

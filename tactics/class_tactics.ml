@@ -376,7 +376,7 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
     Proofview.Goal.enter
     begin fun gl ->
     let tacs = e_trivial_resolve db_list local_db secvars only_classes
-                                 (project gl) (pf_concl gl) in
+                                 (pf_env gl) (project gl) (pf_concl gl) in
       tclFIRST (List.map (fun (x,_,_,_,_) -> x) tacs)
     end
   in
@@ -386,7 +386,7 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
   in
   tclFIRST (List.map tclCOMPLETE tacl)
 
-and e_my_find_search db_list local_db secvars hdc complete only_classes sigma concl =
+and e_my_find_search db_list local_db secvars hdc complete only_classes env sigma concl =
   let open Proofview.Notations in
   let prods, concl = EConstr.decompose_prod_assum sigma concl in
   let nprods = List.length prods in
@@ -464,7 +464,6 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes sigma co
       in
       let tac = run_hint t tac in
       let tac = if complete then Tacticals.New.tclCOMPLETE tac else tac in
-      let _, env = Pfedit.get_current_context () in
       let pp =
         match p with
         | Some pat when get_typeclasses_filtered_unification () ->
@@ -476,16 +475,16 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes sigma co
         | _ -> (tac, b, false, name, lazy (pr_hint env sigma t ++ pp))
   in List.map tac_of_hint hintl
 
-and e_trivial_resolve db_list local_db secvars only_classes sigma concl =
+and e_trivial_resolve db_list local_db secvars only_classes env sigma concl =
   let hd = try Some (decompose_app_bound sigma concl) with Bound -> None in
   try
-    e_my_find_search db_list local_db secvars hd true only_classes sigma concl
+    e_my_find_search db_list local_db secvars hd true only_classes env sigma concl
   with Not_found -> []
 
-let e_possible_resolve db_list local_db secvars only_classes sigma concl =
+let e_possible_resolve db_list local_db secvars only_classes env sigma concl =
   let hd = try Some (decompose_app_bound sigma concl) with Bound -> None in
   try
-    e_my_find_search db_list local_db secvars hd false only_classes sigma concl
+    e_my_find_search db_list local_db secvars hd false only_classes env sigma concl
   with Not_found -> []
 
 let cut_of_hints h =
@@ -719,7 +718,7 @@ module V85 = struct
     let concl = Goal.V82.concl s gl in
     let tacgl = {it = gl; sigma = s;} in
     let secvars = secvars_of_hyps (Environ.named_context_of_val (Goal.V82.hyps s gl)) in
-    let poss = e_possible_resolve hints info.hints secvars info.only_classes s concl in
+    let poss = e_possible_resolve hints info.hints secvars info.only_classes env s concl in
     let unique = is_unique env s concl in
     let rec aux i foundone = function
       | (tac, _, extern, name, pp) :: tl ->
@@ -1072,7 +1071,7 @@ module Search = struct
             else str" without backtracking"));
     let secvars = compute_secvars gl in
     let poss =
-      e_possible_resolve hints info.search_hints secvars info.search_only_classes sigma concl in
+      e_possible_resolve hints info.search_hints secvars info.search_only_classes env sigma concl in
     (* If no goal depends on the solution of this one or the
        instances are irrelevant/assumed to be unique, then
        we don't need to backtrack, as long as no evar appears in the goal

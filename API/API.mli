@@ -4801,7 +4801,7 @@ sig
   | IntroNeedsProduct
   | DoesNotOccurIn of Constr.t * Names.Id.t
   | NoSuchHyp of Names.Id.t
-  exception RefinerError of refiner_error
+  exception RefinerError of Environ.env * Evd.evar_map * refiner_error
   val catchable_exception : exn -> bool
 end
 

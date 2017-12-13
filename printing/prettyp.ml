@@ -903,18 +903,16 @@ let print_class i =
   let cl,_ = class_info_from_index i in
   pr_class cl
 
-let print_path ((i,j),p) =
-  let sigma, env = Pfedit.get_current_context () in
+let print_path env sigma ((i,j),p) =
   hov 2 (
     str"[" ++ hov 0 (prlist_with_sep pr_semicolon (print_coercion_value env sigma) p) ++
     str"] : ") ++
   print_class i ++ str" >-> " ++ print_class j
 
-(* XXX: This is suspicious!!! *)
 let _ = Classops.install_path_printer print_path
 
-let print_graph () =
-  prlist_with_sep fnl print_path (inheritance_graph())
+let print_graph env sigma =
+  prlist_with_sep fnl (print_path env sigma) (inheritance_graph())
 
 let print_classes () =
   pr_sequence pr_class (classes())
@@ -929,7 +927,7 @@ let index_of_class cl =
     user_err ~hdr:"index_of_class"
       (pr_class cl ++ spc() ++ str "not a defined class.")
 
-let print_path_between cls clt =
+let print_path_between env sigma cls clt =
   let i = index_of_class cls in
   let j = index_of_class clt in
   let p =
@@ -940,7 +938,7 @@ let print_path_between cls clt =
         (str"No path between " ++ pr_class cls ++ str" and " ++ pr_class clt
 	 ++ str ".")
   in
-  print_path ((i,j),p)
+  print_path env sigma ((i,j),p)
 
 let print_canonical_projections env sigma =
   prlist_with_sep fnl
