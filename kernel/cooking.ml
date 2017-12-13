@@ -168,13 +168,14 @@ let on_body ml hy f = function
                  { Opaqueproof.modlist = ml; abstract = hy } o)
 
 let expmod_constr_subst cache modlist subst c =
+  let subst = Univ.make_instance_subst subst in
   let c = expmod_constr cache modlist c in
     Vars.subst_univs_level_constr subst c
 
-let cook_constr { Opaqueproof.modlist ; abstract } c =
+let cook_constr { Opaqueproof.modlist ; abstract = (vars, subst, _) } c =
   let cache = RefTable.create 13 in
-  let expmod = expmod_constr_subst cache modlist (pi2 abstract) in
-  let hyps = Context.Named.map expmod (pi1 abstract) in
+  let expmod = expmod_constr_subst cache modlist subst in
+  let hyps = Context.Named.map expmod vars in
   abstract_constant_body (expmod c) hyps
 
 let lift_univs cb subst auctx0 =
@@ -183,18 +184,13 @@ let lift_univs cb subst auctx0 =
     assert (AUContext.is_empty auctx0);
     subst, (Monomorphic_const ctx)
   | Polymorphic_const auctx ->
-    if (Univ.LMap.is_empty subst) then
+    if (Univ.Instance.is_empty subst) then
+      (** Still need to take the union for the constraints between globals *)
       subst, (Polymorphic_const (AUContext.union auctx0 auctx))
     else
-      let len = Univ.LMap.cardinal subst in
-      let rec gen_subst i acc =
-        if i < 0 then acc
-        else
-          let acc = Univ.LMap.add (Level.var i) (Level.var (i + len)) acc in
-          gen_subst (pred i) acc
-      in
-      let subst = gen_subst (Univ.AUContext.size auctx - 1) subst in
-      let auctx' = Univ.subst_univs_level_abstract_universe_context subst auctx in
+      let ainst = Univ.make_abstract_instance auctx in
+      let subst = Instance.append subst ainst in
+      let auctx' = Univ.subst_univs_level_abstract_universe_context (Univ.make_instance_subst subst) auctx in
       subst, (Polymorphic_const (AUContext.union auctx0 auctx'))
 
 let cook_constant ~hcons env { from = cb; info } =

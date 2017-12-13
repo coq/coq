@@ -419,7 +419,7 @@ type variable_info = Context.Named.Declaration.t * Decl_kinds.binding_kind
 type variable_context = variable_info list
 type abstr_info = {
   abstr_ctx : variable_context;
-  abstr_subst : Univ.universe_level_subst;
+  abstr_subst : Univ.Instance.t;
   abstr_uctx : Univ.AUContext.t;
 }
 type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
@@ -511,7 +511,7 @@ let section_segment_of_mutual_inductive kn =
 
 let empty_segment = {
   abstr_ctx = [];
-  abstr_subst = Univ.LMap.empty;
+  abstr_subst = Univ.Instance.empty;
   abstr_uctx = Univ.AUContext.empty;
 }
 
@@ -672,13 +672,8 @@ let discharge_inductive (kn,i) =
 
 let discharge_abstract_universe_context { abstr_subst = subst; abstr_uctx = abs_ctx } auctx =
   let open Univ in
-  let len = LMap.cardinal subst in
-  let rec gen_subst i acc =
-    if i < 0 then acc
-    else
-      let acc = LMap.add (Level.var i) (Level.var (i + len)) acc in
-      gen_subst (pred i) acc
-  in
-  let subst = gen_subst (AUContext.size auctx - 1) subst in
+  let ainst = make_abstract_instance auctx in
+  let subst = Instance.append subst ainst in
+  let subst = make_instance_subst subst in
   let auctx = Univ.subst_univs_level_abstract_universe_context subst auctx in
   subst, AUContext.union abs_ctx auctx

@@ -1168,7 +1168,7 @@ let abstract_universes ctx =
       (UContext.constraints ctx)
   in
   let ctx = UContext.make (instance, cstrs) in
-  subst, ctx
+  instance, ctx
 
 let abstract_cumulativity_info (univcst, substcst) = 
   let instance, univcst = abstract_universes univcst in

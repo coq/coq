@@ -470,9 +470,9 @@ val subst_instance_universe : Instance.t -> Universe.t -> Universe.t
 val make_instance_subst : Instance.t -> universe_level_subst
 val make_inverse_instance_subst : Instance.t -> universe_level_subst
 
-val abstract_universes : UContext.t -> universe_level_subst * AUContext.t
+val abstract_universes : UContext.t -> Instance.t * AUContext.t
 
-val abstract_cumulativity_info : CumulativityInfo.t -> universe_level_subst * ACumulativityInfo.t
+val abstract_cumulativity_info : CumulativityInfo.t -> Instance.t * ACumulativityInfo.t
 
 val make_abstract_instance : AUContext.t -> Instance.t
 

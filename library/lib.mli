@@ -156,8 +156,8 @@ type variable_context = variable_info list
 type abstr_info = private {
   abstr_ctx : variable_context;
   (** Section variables of this prefix *)
-  abstr_subst : Univ.universe_level_subst;
-  (** Abstract substitution: named universes are mapped to De Bruijn indices *)
+  abstr_subst : Univ.Instance.t;
+  (** Actual names of the abstracted variables *)
   abstr_uctx : Univ.AUContext.t;
   (** Universe quantification, same length as the substitution *)
 }

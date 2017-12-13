@@ -232,6 +232,7 @@ let abstract_constant_universes = function
     Univ.empty_level_subst, Monomorphic_const uctx
   | Polymorphic_const_entry uctx ->
     let sbst, auctx = Univ.abstract_universes uctx in
+    let sbst = Univ.make_instance_subst sbst in
     sbst, Polymorphic_const auctx
 
 let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
