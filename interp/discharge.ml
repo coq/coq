@@ -78,8 +78,8 @@ let refresh_polymorphic_type_of_inductive (_,mip) =
     let ctx = List.rev mip.mind_arity_ctxt in
       mkArity (List.rev ctx, Type ar.template_level), true
 
-let process_inductive (section_decls,_,_ as info) modlist mib =
-  let section_decls = Lib.named_of_variable_context section_decls in
+let process_inductive info modlist mib =
+  let section_decls = Lib.named_of_variable_context info.Lib.abstr_ctx in
   let nparamdecls = Context.Rel.length mib.mind_params_ctxt in
   let subst, ind_univs =
     match mib.mind_universes with

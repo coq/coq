@@ -104,7 +104,7 @@ let discharge_constant ((sp, kn), obj) =
   let con = Constant.make1 kn in
   let from = Global.lookup_constant con in
   let modlist = replacement_context () in
-  let hyps,subst,uctx = section_segment_of_constant con in
+  let { abstr_ctx = hyps; abstr_subst = subst; abstr_uctx = uctx } = section_segment_of_constant con in
   let new_hyps = (discharged_hyps kn hyps) @ obj.cst_hyps in
   let abstract = (named_of_variable_context hyps, subst, uctx) in
   let new_decl = GlobalRecipe{ from; info = { Opaqueproof.modlist; abstract}} in
@@ -333,7 +333,8 @@ let discharge_inductive ((sp,kn),(dhyps,mie)) =
   let mind = Global.mind_of_delta_kn kn in
   let mie = Global.lookup_mind mind in
   let repl = replacement_context () in
-  let sechyps, _, _ as info = section_segment_of_mutual_inductive mind in
+  let info = section_segment_of_mutual_inductive mind in
+  let sechyps = info.Lib.abstr_ctx in
   Some (discharged_hyps kn sechyps,
         Discharge.process_inductive info repl mie)
 
