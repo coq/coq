@@ -516,7 +516,7 @@ let is_sort_variable uctx s =
   | _ -> None
 
 let subst_univs_context_with_def def usubst (ctx, cst) =
-  (Univ.LSet.diff ctx def, Univ.subst_univs_constraints usubst cst)
+  (Univ.LSet.diff ctx def, Universes.subst_univs_constraints usubst cst)
 
 let normalize_variables uctx =
   let normalized_variables, undef, def, subst = 

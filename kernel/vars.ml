@@ -235,49 +235,6 @@ let subst_vars subst c = substn_vars 1 subst c
 (** Universe substitutions *)
 open Constr
 
-let subst_univs_fn_puniverses fn =
-  let f = Univ.Instance.subst_fn fn in
-    fun ((c, u) as x) -> let u' = f u in if u' == u then x else (c, u')
-
-let subst_univs_fn_constr f c =
-  let changed = ref false in
-  let fu = Univ.subst_univs_universe f in
-  let fi = Univ.Instance.subst_fn (Univ.level_subst_of f) in
-  let rec aux t = 
-    match kind t with
-    | Sort (Sorts.Type u) -> 
-      let u' = fu u in
-	if u' == u then t else 
-	  (changed := true; mkSort (Sorts.sort_of_univ u'))
-    | Const (c, u) -> 
-      let u' = fi u in 
-	if u' == u then t
-	else (changed := true; mkConstU (c, u'))
-    | Ind (i, u) ->
-      let u' = fi u in 
-	if u' == u then t
-	else (changed := true; mkIndU (i, u'))
-    | Construct (c, u) ->
-      let u' = fi u in 
-	if u' == u then t
-	else (changed := true; mkConstructU (c, u'))
-    | _ -> map aux t
-  in 
-  let c' = aux c in
-    if !changed then c' else c
-
-let subst_univs_constr subst c =
-  if Univ.is_empty_subst subst then c
-  else 
-    let f = Univ.make_subst subst in
-      subst_univs_fn_constr f c
-
-let subst_univs_constr = 
-  if Flags.profile then
-    let subst_univs_constr_key = CProfile.declare_profile "subst_univs_constr" in
-      CProfile.profile2 subst_univs_constr_key subst_univs_constr
-  else subst_univs_constr
-
 let subst_univs_level_constr subst c =
   if Univ.is_empty_level_subst subst then c
   else 

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-module CVars = Vars
-
 open CErrors
 open Pp
 open Util
@@ -1527,7 +1525,7 @@ let indirectly_dependent sigma c d decls =
 let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sigma (pending,c) =
   let sigma = Pretyping.solve_remaining_evars flags env current_sigma pending in
   let sigma, subst = nf_univ_variables sigma in
-  (sigma, EConstr.of_constr (CVars.subst_univs_constr subst (EConstr.Unsafe.to_constr (nf_evar sigma c))))
+  (sigma, EConstr.of_constr (Universes.subst_univs_constr subst (EConstr.Unsafe.to_constr (nf_evar sigma c))))
 
 let default_matching_core_flags sigma =
   let ts = Names.full_transparent_state in {
@@ -1617,7 +1615,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
   | Some (sigma,_,l) ->
      let c = applist (nf_evar sigma (local_strong whd_meta sigma c), l) in
      let univs, subst = nf_univ_variables sigma in
-     Some (sigma,EConstr.of_constr (CVars.subst_univs_constr subst (EConstr.Unsafe.to_constr c))))
+     Some (sigma,EConstr.of_constr (Universes.subst_univs_constr subst (EConstr.Unsafe.to_constr c))))
 
 let make_eq_test env evd c =
   let out cstr =

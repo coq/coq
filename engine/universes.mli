@@ -154,6 +154,11 @@ val extend_context : 'a in_universe_context_set -> ContextSet.t ->
 
 module UF : Unionfind.PartitionSig with type elt = Level.t
 
+val level_subst_of : universe_subst_fn -> universe_level_subst_fn
+val subst_univs_constraints : universe_subst_fn -> Constraint.t -> Constraint.t
+
+val subst_univs_constr : universe_subst -> constr -> constr
+
 type universe_opt_subst = Universe.t option universe_map
 
 val make_opt_subst : universe_opt_subst -> universe_subst_fn
