@@ -12,15 +12,12 @@ let interrupt = ref false
 
 let steps = ref 0
 
-let are_we_threading = lazy (
-  match !Flags.async_proofs_mode with
-  | Flags.APon -> true
-  | _ -> false)
+let enable_thread_delay = ref false
 
 let check_for_interrupt () =
   if !interrupt then begin interrupt := false; raise Sys.Break end;
   incr steps;
-  if !steps = 1000 && Lazy.force are_we_threading then begin
+  if !enable_thread_delay && !steps = 1000 then begin
     Thread.delay 0.001;
     steps := 0;
   end

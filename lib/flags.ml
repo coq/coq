@@ -35,36 +35,10 @@ let record_aux_file = ref false
 
 let test_mode = ref false
 
-type async_proofs = APoff | APonLazy | APon
-let async_proofs_mode = ref APoff
-type cache = Force
-let async_proofs_cache = ref None
-let async_proofs_n_workers = ref 1
-let async_proofs_n_tacworkers = ref 2
-let async_proofs_private_flags = ref None
-let async_proofs_full = ref false
-let async_proofs_never_reopen_branch = ref false
-let async_proofs_flags_for_workers = ref []
 let async_proofs_worker_id = ref "master"
-type priority = Low | High
-let async_proofs_worker_priority = ref Low
-let string_of_priority = function Low -> "low" | High -> "high"
-let priority_of_string = function
-  | "low" -> Low
-  | "high" -> High
-  | _ -> raise (Invalid_argument "priority_of_string")
-type tac_error_filter = [ `None | `Only of string list | `All ]
-let async_proofs_tac_error_resilience = ref (`Only [ "curly" ])
-let async_proofs_cmd_error_resilience = ref true
-
-let async_proofs_is_worker () =
-  !async_proofs_worker_id <> "master"
-let async_proofs_is_master () =
-  !async_proofs_mode = APon && !async_proofs_worker_id = "master"
-let async_proofs_delegation_threshold = ref 0.03
+let async_proofs_is_worker () = !async_proofs_worker_id <> "master"
 
 let debug = ref false
-let stm_debug = ref false
 
 let in_debugger = ref false
 let in_toplevel = ref false

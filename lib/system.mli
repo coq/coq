@@ -105,6 +105,3 @@ val time_difference : time -> time -> float (** in seconds *)
 val fmt_time_difference : time -> time -> Pp.t
 
 val with_time : bool -> ('a -> 'b) -> 'a -> 'b
-
-(** {6 Name of current process.} *)
-val process_id : unit -> string

@@ -6,4 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Default priority *)
+val async_proofs_worker_priority : CoqworkmgrApi.priority ref
+
 val loop : (unit -> unit) -> string list -> string list

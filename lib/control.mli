@@ -8,6 +8,9 @@
 
 (** Global control of Coq. *)
 
+(** Will periodically call [Thread.delay] if set to true *)
+val enable_thread_delay : bool ref
+
 val interrupt : bool ref
 (** Coq interruption: set the following boolean reference to interrupt Coq
     (it eventually raises [Break], simulating a Ctrl-C) *)

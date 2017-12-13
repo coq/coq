@@ -493,7 +493,7 @@ $(COQDOC): $(call bestobj, $(COQDOCCMO))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,str unix)
 
-$(COQWORKMGR): $(call bestobj, lib/clib.cma stm/coqworkmgrApi.cmo tools/coqworkmgr.cmo)
+$(COQWORKMGR): $(call bestobj, lib/clib.cma lib/lib.cma stm/spawned.cmo stm/coqworkmgrApi.cmo tools/coqworkmgr.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,, $(SYSMOD))
 

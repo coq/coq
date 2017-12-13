@@ -309,9 +309,3 @@ let with_time time f x =
     let msg2 = if time then "" else " (failure)" in
     Feedback.msg_info (str msg ++ fmt_time_difference tstart tend ++ str msg2);
     raise e
-
-let process_id () =
-  Printf.sprintf "%d:%s:%d" (Unix.getpid ())
-    (if Flags.async_proofs_is_worker () then !Flags.async_proofs_worker_id
-     else "master")
-    (Thread.id (Thread.self ()))

@@ -8,8 +8,15 @@
 
 let debug = false
 
+type priority = Low | High
+let string_of_priority = function Low -> "low" | High -> "high"
+let priority_of_string = function
+  | "low" -> Low
+  | "high" -> High
+  | _ -> raise (Invalid_argument "priority_of_string")
+
 type request =
-  | Hello of Flags.priority
+  | Hello of priority
   | Get of int
   | TryGet of int
   | GiveBack of int
@@ -36,8 +43,8 @@ let positive_int_of_string n =
 let parse_request s =
   if debug then Printf.eprintf "parsing '%s'\n" s;
   match Str.split (Str.regexp " ") (strip_r s) with
-  | [ "HELLO"; "LOW" ] -> Hello Flags.Low
-  | [ "HELLO"; "HIGH" ] -> Hello Flags.High
+  | [ "HELLO"; "LOW" ] -> Hello Low
+  | [ "HELLO"; "HIGH" ] -> Hello High
   | [ "GET"; n ] -> Get (positive_int_of_string n)
   | [ "TRYGET"; n ] -> TryGet (positive_int_of_string n)
   | [ "GIVEBACK"; n ] -> GiveBack (positive_int_of_string n)
@@ -57,8 +64,8 @@ let parse_response s =
   | _ -> raise ParseError
        
 let print_request = function
-  | Hello Flags.Low -> "HELLO LOW\n"
-  | Hello Flags.High -> "HELLO HIGH\n"
+  | Hello Low -> "HELLO LOW\n"
+  | Hello High -> "HELLO HIGH\n"
   | Get n -> Printf.sprintf "GET %d\n" n
   | TryGet n -> Printf.sprintf "TRYGET %d\n" n
   | GiveBack n -> Printf.sprintf "GIVEBACK %d\n" n
@@ -106,8 +113,7 @@ let with_manager f g =
 
 let get n =
   with_manager
-  (fun () ->
-    min n (min !Flags.async_proofs_n_workers !Flags.async_proofs_n_tacworkers))
+  (fun () -> n)
   (fun cin cout ->
     output_string cout (print_request (Get n));
     flush cout;
@@ -118,10 +124,7 @@ let get n =
 
 let tryget n =
   with_manager
-  (fun () ->
-    Some
-     (min n
-       (min !Flags.async_proofs_n_workers !Flags.async_proofs_n_tacworkers)))
+  (fun () -> Some n)
   (fun cin cout ->
     output_string cout (print_request (TryGet n));
     flush cout;
