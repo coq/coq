@@ -233,7 +233,7 @@ package "API" (
   description = "Coq API"
   version     = "8.7"
 
-  requires    = "coq.stm"
+  requires    = "coq.intf, coq.stm"
   directory   = "API"
 
   archive(byte)    = "API.cma"
