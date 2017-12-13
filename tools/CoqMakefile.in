@@ -87,7 +87,6 @@ COQCHK   ?= "$(COQBIN)coqchk"
 COQDEP   ?= "$(COQBIN)coqdep"
 GALLINA  ?= "$(COQBIN)gallina"
 COQDOC   ?= "$(COQBIN)coqdoc"
-COQMKTOP ?= "$(COQBIN)coqmktop"
 COQMKFILE ?= "$(COQBIN)coq_makefile"
 
 # Timing scripts

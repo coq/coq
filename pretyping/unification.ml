@@ -2015,8 +2015,8 @@ let w_unify env evd cv_pb flags ty1 ty2 =
 
 let w_unify = 
   if Flags.profile then
-    let wunifkey = Profile.declare_profile "w_unify" in
-      Profile.profile6 wunifkey w_unify
+    let wunifkey = CProfile.declare_profile "w_unify" in
+      CProfile.profile6 wunifkey w_unify
   else w_unify
 
 let w_unify env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =

@@ -87,7 +87,7 @@ EXISTINGMLI := $(call find, '*.mli')
 ## Files that will be generated
 
 GENML4FILES:= $(ML4FILES:.ml4=.ml)
-export GENMLFILES:=$(LEXFILES:.mll=.ml) tools/tolink.ml kernel/copcodes.ml
+export GENMLFILES:=$(LEXFILES:.mll=.ml) kernel/copcodes.ml
 export GENHFILES:=kernel/byterun/coq_jumptbl.h
 export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES)
 
@@ -246,7 +246,7 @@ archclean: clean-ide optclean voclean
 	rm -f $(ALLSTDLIB).*
 
 optclean:
-	rm -f $(COQTOPEXE) $(COQMKTOP) $(CHICKEN)
+	rm -f $(COQTOPEXE) $(CHICKEN)
 	rm -f $(TOOLS) $(PRIVATEBINARIES) $(CSDPCERT)
 	find . -name '*.cmx' -o -name '*.cmx[as]' -o -name '*.[soa]' -o -name '*.so' | xargs rm -f
 

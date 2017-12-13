@@ -133,8 +133,8 @@ let substn_many lamv n c =
     substrec n c
 
 (*
-let substkey = Profile.declare_profile "substn_many";;
-let substn_many lamv n c = Profile.profile3 substkey substn_many lamv n c;;
+let substkey = CProfile.declare_profile "substn_many";;
+let substn_many lamv n c = CProfile.profile3 substkey substn_many lamv n c;;
 *)
 
 let make_subst = function
@@ -274,8 +274,8 @@ let subst_univs_constr subst c =
 
 let subst_univs_constr = 
   if Flags.profile then
-    let subst_univs_constr_key = Profile.declare_profile "subst_univs_constr" in
-      Profile.profile2 subst_univs_constr_key subst_univs_constr
+    let subst_univs_constr_key = CProfile.declare_profile "subst_univs_constr" in
+      CProfile.profile2 subst_univs_constr_key subst_univs_constr
   else subst_univs_constr
 
 let subst_univs_level_constr subst c =
@@ -347,8 +347,8 @@ let subst_instance_constr subst c =
     in
     aux c
 
-(* let substkey = Profile.declare_profile "subst_instance_constr";; *)
-(* let subst_instance_constr inst c = Profile.profile2 substkey subst_instance_constr inst c;; *)
+(* let substkey = CProfile.declare_profile "subst_instance_constr";; *)
+(* let subst_instance_constr inst c = CProfile.profile2 substkey subst_instance_constr inst c;; *)
 
 let subst_instance_context s ctx = 
   if Univ.Instance.is_empty s then ctx

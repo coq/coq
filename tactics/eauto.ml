@@ -404,8 +404,8 @@ let e_search_auto debug (in_depth,p) lems db_list gl =
     pr_info_nop d;
     user_err Pp.(str "eauto: search failed")
 
-(* let e_search_auto_key = Profile.declare_profile "e_search_auto" *)
-(* let e_search_auto = Profile.profile5 e_search_auto_key e_search_auto *)
+(* let e_search_auto_key = CProfile.declare_profile "e_search_auto" *)
+(* let e_search_auto = CProfile.profile5 e_search_auto_key e_search_auto *)
 
 let eauto_with_bases ?(debug=Off) np lems db_list =
   tclTRY (e_search_auto debug np lems db_list)

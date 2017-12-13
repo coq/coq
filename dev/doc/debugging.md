@@ -73,8 +73,8 @@ Per function profiling
    To profile function foo in file bar.ml, add the following lines, just
    after the definition of the function:
 
-     let fookey = Profile.declare_profile "foo";;
-     let foo a b c = Profile.profile3 fookey foo a b c;;
+     let fookey = CProfile.declare_profile "foo";;
+     let foo a b c = CProfile.profile3 fookey foo a b c;;
 
    where foo is assumed to have three arguments (adapt using
    Profile.profile1, Profile. profile2, etc).

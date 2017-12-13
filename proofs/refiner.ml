@@ -30,8 +30,8 @@ let refiner pr goal_sigma =
 (* Profiling refiner *)
 let refiner = 
   if Flags.profile then
-    let refiner_key = Profile.declare_profile "refiner" in
-      Profile.profile2 refiner_key refiner
+    let refiner_key = CProfile.declare_profile "refiner" in
+      CProfile.profile2 refiner_key refiner
   else refiner
 
 (*********************)

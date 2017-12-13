@@ -946,8 +946,8 @@ let normalize_context_set ctx us algs =
   let us = normalize_opt_subst us in
     (us, algs), (ctx', Constraint.union noneqs eqs)
 
-(* let normalize_conkey = Profile.declare_profile "normalize_context_set" *)
-(* let normalize_context_set a b c = Profile.profile3 normalize_conkey normalize_context_set a b c *)
+(* let normalize_conkey = CProfile.declare_profile "normalize_context_set" *)
+(* let normalize_context_set a b c = CProfile.profile3 normalize_conkey normalize_context_set a b c *)
 
 let is_trivial_leq (l,d,r) =
   Univ.Level.is_prop l && (d == Univ.Le || (d == Univ.Lt && Univ.Level.is_set r))

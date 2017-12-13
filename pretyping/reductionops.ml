@@ -1269,11 +1269,11 @@ let nf_all env sigma =
 (*                         Conversion                               *)
 (********************************************************************)
 (*
-let fkey = Profile.declare_profile "fhnf";;
-let fhnf info v = Profile.profile2 fkey fhnf info v;;
+let fkey = CProfile.declare_profile "fhnf";;
+let fhnf info v = CProfile.profile2 fkey fhnf info v;;
 
-let fakey = Profile.declare_profile "fhnf_apply";;
-let fhnf_apply info k h a = Profile.profile4 fakey fhnf_apply info k h a;;
+let fakey = CProfile.declare_profile "fhnf_apply";;
+let fhnf_apply info k h a = CProfile.profile4 fakey fhnf_apply info k h a;;
 *)
 
 let is_transparent e k =

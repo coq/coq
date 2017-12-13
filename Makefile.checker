@@ -29,7 +29,7 @@ CHKLIBS:= -I config -I lib -I checker
 ifeq ($(BEST),opt)
 $(CHICKEN): checker/check.cmxa checker/main.ml
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(SYSCMXA) $(CHKLIBS) $(OPTFLAGS) $(LINKMETADATA) -o $@ $^
+	$(HIDE)$(OCAMLOPT) -linkpkg $(SYSMOD) $(CHKLIBS) $(OPTFLAGS) $(LINKMETADATA) -o $@ $^
 	$(STRIP) $@
 	$(CODESIGN) $@
 else
@@ -39,7 +39,7 @@ endif
 
 $(CHICKENBYTE): checker/check.cma checker/main.ml
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(SYSCMA) $(CHKLIBS) $(BYTEFLAGS) $(CUSTOM) -o $@ $^
+	$(HIDE)$(OCAMLC) -linkpkg $(SYSMOD) $(CHKLIBS) $(BYTEFLAGS) $(CUSTOM) -o $@ $^
 
 checker/check.cma: checker/check.mllib | md5chk
 	$(SHOW)'OCAMLC -a -o $@'

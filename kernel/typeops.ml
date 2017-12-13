@@ -435,8 +435,8 @@ let infer env constr =
 
 let infer = 
   if Flags.profile then
-    let infer_key = Profile.declare_profile "Fast_infer" in
-      Profile.profile2 infer_key (fun b c -> infer b c)
+    let infer_key = CProfile.declare_profile "Fast_infer" in
+      CProfile.profile2 infer_key (fun b c -> infer b c)
   else (fun b c -> infer b c)
 
 let assumption_of_judgment env {uj_val=c; uj_type=t} =

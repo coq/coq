@@ -240,8 +240,8 @@ let add_constraints ctx cstrs =
       uctx_univ_variables = vars;
       uctx_universes = UGraph.merge_constraints local' ctx.uctx_universes }
 
-(* let addconstrkey = Profile.declare_profile "add_constraints_context";; *)
-(* let add_constraints_context = Profile.profile2 addconstrkey add_constraints_context;; *)
+(* let addconstrkey = CProfile.declare_profile "add_constraints_context";; *)
+(* let add_constraints_context = CProfile.profile2 addconstrkey add_constraints_context;; *)
 
 let add_universe_constraints ctx cstrs =
   let univs, local = ctx.uctx_local in
