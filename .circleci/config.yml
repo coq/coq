@@ -218,7 +218,7 @@ before_script: &before_script
         command: |
           source ~/.profile
           echo 'start:coq.test'
-          make -f Makefile.ci -j ${NJOBS} ${CIRCLE_JOB}
+          make -f Makefile.ci -j ${NJOBS} TIMED=1 ${CIRCLE_JOB}
           echo 'end:coq.test'
   environment: &ci-template-vars
     <<: *envvars
