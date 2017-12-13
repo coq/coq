@@ -86,12 +86,12 @@ byte: coqbyte coqide-byte pluginsbyte printers
 # to avoid exhausting the variable env in Win32
 MLFILES := $(MLSTATICFILES) $(GENMLFILES) $(ML4FILES:.ml4=.ml)
 
-include Makefile.common
-include Makefile.doc      ## provides the 'documentation' rule
-include Makefile.checker
-include Makefile.ide      ## provides the 'coqide' rule
-include Makefile.install
-include Makefile.dev      ## provides the 'printers' and 'revision' rules
+include $(COQMKDIR)/Makefile.common
+include $(COQMKDIR)/Makefile.doc      ## provides the 'documentation' rule
+include $(COQMKDIR)/Makefile.checker
+include $(COQMKDIR)/Makefile.ide      ## provides the 'coqide' rule
+include $(COQMKDIR)/Makefile.install
+include $(COQMKDIR)/Makefile.dev      ## provides the 'printers' and 'revision' rules
 
 ###########################################################################
 # Timing targets
@@ -402,7 +402,7 @@ $(COQMKTOP): $(call bestobj, $(COQMKTOPCMO))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, $(OSDEPLIBS), $(SYSMOD))
 
-tools/tolink.ml: Makefile.build Makefile.common
+tools/tolink.ml: $(COQMKDIR)/Makefile.build $(COQMKDIR)/Makefile.common
 	$(SHOW)"ECHO... >" $@
 	$(HIDE)echo "let copts = \"-cclib -lcoqrun\"" > $@
 	$(HIDE)echo "let core_libs = \""$(LINKCMO)"\"" >> $@
@@ -764,7 +764,7 @@ endif
 
 # To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
 
-Makefile $(wildcard Makefile.*) config/Makefile : ;
+Makefile $(wildcard $(COQMKDIR)/Makefile.*) config/Makefile : ;
 
 # Final catch-all rule.
 # Usually, 'make' would display such an error itself.

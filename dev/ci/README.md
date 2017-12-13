@@ -53,7 +53,7 @@ Add a new `ci-mydev.sh` script to [`dev/ci`](/dev/ci) (have a look at
 [`ci-fiat-parsers.sh`](/dev/ci/ci-fiat-parsers.sh) for simple examples);
 set the corresponding variables in
 [`ci-basic-overlay.sh`](/dev/ci/ci-basic-overlay.sh); add the corresponding
-target to [`Makefile.ci`](/Makefile.ci); add new jobs to
+target to [`Makefile.ci`](/dev/build/makefile/Makefile.ci); add new jobs to
 [`.travis.yml`](/.travis.yml) and [`.gitlab-ci.yml`](/.gitlab-ci.yml) so that
 this new target is run. **Do not hesitate to submit an incomplete pull request
 if you need help to finish it.**
