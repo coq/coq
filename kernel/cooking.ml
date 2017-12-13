@@ -177,12 +177,14 @@ let cook_constr { Opaqueproof.modlist ; abstract } c =
   let hyps = Context.Named.map expmod (pi1 abstract) in
   abstract_constant_body (expmod c) hyps
 
-let lift_univs cb subst =
+let lift_univs cb subst auctx0 =
   match cb.const_universes with
-  | Monomorphic_const ctx -> subst, (Monomorphic_const ctx)
-  | Polymorphic_const auctx ->  
+  | Monomorphic_const ctx ->
+    assert (AUContext.is_empty auctx0);
+    subst, (Monomorphic_const ctx)
+  | Polymorphic_const auctx ->
     if (Univ.LMap.is_empty subst) then
-      subst, (Polymorphic_const auctx)
+      subst, (Polymorphic_const (AUContext.union auctx0 auctx))
     else
       let len = Univ.LMap.cardinal subst in
       let rec gen_subst i acc =
@@ -193,13 +195,13 @@ let lift_univs cb subst =
       in
       let subst = gen_subst (Univ.AUContext.size auctx - 1) subst in
       let auctx' = Univ.subst_univs_level_abstract_universe_context subst auctx in
-      subst, (Polymorphic_const auctx')
+      subst, (Polymorphic_const (AUContext.union auctx0 auctx'))
 
 let cook_constant ~hcons env { from = cb; info } =
   let { Opaqueproof.modlist; abstract } = info in
   let cache = RefTable.create 13 in
   let abstract, usubst, abs_ctx = abstract in
-  let usubst, univs = lift_univs cb usubst in
+  let usubst, univs = lift_univs cb usubst abs_ctx in
   let expmod = expmod_constr_subst cache modlist usubst in
   let hyps = Context.Named.map expmod abstract in
   let map c =
@@ -233,13 +235,6 @@ let cook_constant ~hcons env { from = cb; info } =
       { proj_ind = mind; proj_npars = pb.proj_npars + n'; proj_arg = pb.proj_arg;
 	proj_eta = etab, etat;
 	proj_type = ty'; proj_body = c' }
-  in
-  let univs =
-    match univs with
-    | Monomorphic_const ctx -> 
-      assert (AUContext.is_empty abs_ctx); univs
-    | Polymorphic_const auctx -> 
-      Polymorphic_const (AUContext.union abs_ctx auctx)
   in
   {
     cook_body = body;
