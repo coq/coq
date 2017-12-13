@@ -434,7 +434,7 @@ all.pdf: $(VFILES)
 		-o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`
 
 # FIXME: not quite right, since the output name is different
-gallinahtml: GAL=g
+gallinahtml: GAL=-g
 gallinahtml: html
 
 all-gal.ps: GAL=-g
