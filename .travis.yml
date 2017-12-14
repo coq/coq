@@ -170,6 +170,7 @@ matrix:
 
     - if: NOT (type = pull_request)
       os: osx
+      osx_image: xcode7.3
       env:
       - TEST_TARGET=""
       - COMPILER="4.02.3"
