@@ -1077,13 +1077,13 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       in
       try
       let opt' = {opt with with_types = false} in
-      let (substn,_,_) = Reductionops.Stack.fold2
+      let substn = Reductionops.Stack.fold2
 			   (fun s u1 u -> unirec_rec curenvnb pb opt' s u1 (substl ks u))
 			   (evd,ms,es) us2 us in
-      let (substn,_,_) = Reductionops.Stack.fold2
+      let substn = Reductionops.Stack.fold2
 			   (fun s u1 u -> unirec_rec curenvnb pb opt' s u1 (substl ks u))
 			   substn params1 params in
-      let (substn,_,_) = Reductionops.Stack.fold2 (fun s u1 u2 -> unirec_rec curenvnb pb opt' s u1 u2) substn ts ts1 in
+      let substn = Reductionops.Stack.fold2 (fun s u1 u2 -> unirec_rec curenvnb pb opt' s u1 u2) substn ts ts1 in
       let app = mkApp (c, Array.rev_of_list ks) in
       (* let substn = unirec_rec curenvnb pb b false substn t cN in *)
 	unirec_rec curenvnb pb opt' substn c1 app

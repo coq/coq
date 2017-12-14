@@ -100,7 +100,7 @@ module Stack : sig
       @return the result and the lifts to apply on the terms
       @raise IncompatibleFold2 when [sk1] and [sk2] have incompatible shapes *)
   val fold2 : ('a -> constr -> constr -> 'a) -> 'a ->
-    constr t -> constr t -> 'a * int * int
+    constr t -> constr t -> 'a
   val map : ('a -> 'a) -> 'a t -> 'a t
   val append_app_list : 'a list -> 'a t -> 'a t
 
