@@ -1358,6 +1358,21 @@ The following two tactics behave like {\tt idtac} but enable and disable the pro
 {\tt stop ltac profiling}.
 \end{quote}
 
+\tacindex{reset ltac profile}\tacindex{show ltac profile}
+The following tactics behave like the corresponding vernacular commands and allow displaying and resetting the profile from tactic scripts for benchmarking purposes.
+
+\begin{quote}
+{\tt reset ltac profile}.
+\end{quote}
+
+\begin{quote}
+{\tt show ltac profile}.
+\end{quote}
+
+\begin{quote}
+{\tt show ltac profile} {\qstring}.
+\end{quote}
+
 You can also pass the {\tt -profile-ltac} command line option to {\tt coqc}, which performs a {\tt Set Ltac Profiling} at the beginning of each document, and a {\tt Show Ltac Profile} at the end.
 
 Note that the profiler currently does not handle backtracking into multi-success tactics, and issues a warning to this effect in many cases when such backtracking occurs.
