@@ -1216,7 +1216,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
     let sigma,pat= mk_tpattern ?hack env sigma0 (sigma,p) ok L2R (fs sigma t) in
     sigma, [pat] in
   match pattern with
-  | None -> do_subst env0 concl0 concl0 1
+  | None -> do_subst env0 concl0 concl0 1, Evd.empty_evar_universe_context
   | Some (sigma, (T rp | In_T rp)) -> 
     let rp = fs sigma rp in
     let ise = create_evar_defs sigma in
@@ -1224,8 +1224,8 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
     let rp = mk_upat_for env0 sigma0 (ise, rp) all_ok in
     let find_T, end_T = mk_tpattern_matcher ?raise_NoMatch sigma0 occ rp in
     let concl = find_T env0 concl0 1 ~k:do_subst in
-    let _ = end_T () in
-    concl
+    let _, _, (_, us, _) = end_T () in
+    concl, us
   | Some (sigma, (X_In_T (hole, p) | In_X_In_T (hole, p))) ->
     let p = fs sigma p in
     let occ = match pattern with Some (_, X_In_T _) -> occ | _ -> noindex in
@@ -1240,8 +1240,8 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
       let sigma, e_body = pop_evar p_sigma ex p in
       fs p_sigma (find_X env (fs sigma p) h 
         ~k:(fun env _ -> do_subst env e_body))) in
-    let _ = end_X () in let _ = end_T () in 
-    concl
+    let _ = end_X () in let _, _, (_, us, _) = end_T () in
+    concl, us
   | Some (sigma, E_In_X_In_T (e, hole, p)) ->
     let p, e = fs sigma p, fs sigma e in
     let ex = ex_value hole in
@@ -1256,8 +1256,9 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
       let sigma, e_body = pop_evar p_sigma ex p in
       fs p_sigma (find_X env (fs sigma p) h ~k:(fun env c _ h ->
         find_E env e_body h ~k:do_subst))) in
-    let _ = end_E () in let _ = end_X () in let _ = end_T () in
-    concl
+    let _,_,(_,us,_) = end_E () in
+    let _ = end_X () in let _ = end_T () in
+    concl, us
   | Some (sigma, E_As_X_In_T (e, hole, p)) ->
     let p, e = fs sigma p, fs sigma e in
     let ex = ex_value hole in
@@ -1275,8 +1276,8 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
         let e_sigma = unify_HO env sigma (EConstr.of_constr e_body) (EConstr.of_constr e) in
         let e_body = fs e_sigma e in
         do_subst env e_body e_body h))) in
-    let _ = end_X () in let _ = end_TE () in
-    concl
+    let _ = end_X () in let _,_,(_,us,_) = end_TE () in
+    concl, us
 ;;
 
 let redex_of_pattern ?(resolve_typeclasses=false) env (sigma, p) =
@@ -1294,17 +1295,23 @@ let fill_occ_pattern ?raise_NoMatch env sigma cl pat occ h =
   let find_R, conclude =
     let r = ref None in
     (fun env c _ h' ->
-       do_once r (fun () -> c, Evd.empty_evar_universe_context);
+       do_once r (fun () -> c);
        if do_make_rel then mkRel (h'+h-1) else c),
-    (fun _ -> if !r = None then redex_of_pattern env pat else assert_done r) in
-  let cl = eval_pattern ?raise_NoMatch env sigma cl (Some pat) occ find_R in
+    (fun _ -> if !r = None then fst(redex_of_pattern env pat)
+                           else assert_done r) in
+  let cl, us =
+    eval_pattern ?raise_NoMatch env sigma cl (Some pat) occ find_R in
   let e = conclude cl in
-  e, cl
+  (e, us), cl
 ;;
 
 (* clenup interface for external use *)
 let mk_tpattern ?p_origin env sigma0 sigma_t f dir c = 
   mk_tpattern ?p_origin env sigma0 sigma_t f dir c
+;;
+
+let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
+  fst (eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst)
 ;;
 
 let pf_fill_occ env concl occ sigma0 p (sigma, t) ok h =
