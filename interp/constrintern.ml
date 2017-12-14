@@ -958,8 +958,11 @@ let rec has_duplicate = function
   | [] -> None
   | x::l -> if Id.List.mem x l then (Some x) else has_duplicate l
 
+let loc_of_multiple_pattern pl =
+ Loc.merge_opt (cases_pattern_expr_loc (List.hd pl)) (cases_pattern_expr_loc (List.last pl))
+
 let loc_of_lhs lhs =
- Loc.merge_opt (fst (List.hd lhs)) (fst (List.last lhs))
+ Loc.merge_opt (loc_of_multiple_pattern (List.hd lhs)) (loc_of_multiple_pattern (List.last lhs))
 
 let check_linearity lhs ids =
   match has_duplicate ids with
@@ -1873,8 +1876,9 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     intern_local_binder_aux intern ntnvars env bind
 
   (* Expands a multiple pattern into a disjunction of multiple patterns *)
-  and intern_multiple_pattern env n (loc,pl) =
+  and intern_multiple_pattern env n pl =
     let idsl_pll = List.map (intern_cases_pattern globalenv (None,env.scopes) empty_alias) pl in
+    let loc = loc_of_multiple_pattern pl in
     check_number_of_pattern loc n pl;
     product_of_cases_patterns empty_alias idsl_pll
 

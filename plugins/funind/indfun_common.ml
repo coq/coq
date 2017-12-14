@@ -183,7 +183,9 @@ let with_full_print f a =
   and old_contextual_implicit_args = Impargs.is_contextual_implicit_args () in
   let old_rawprint = !Flags.raw_print in
   let old_printuniverses = !Constrextern.print_universes in
+  let old_printallowmatchdefaultclause = !Detyping.print_allow_match_default_clause in
   Constrextern.print_universes := true;
+  Detyping.print_allow_match_default_clause := false;
   Flags.raw_print := true;
   Impargs.make_implicit_args false;
   Impargs.make_strict_implicit_args false;
@@ -197,6 +199,7 @@ let with_full_print f a =
     Impargs.make_contextual_implicit_args old_contextual_implicit_args;
     Flags.raw_print := old_rawprint;
     Constrextern.print_universes := old_printuniverses;
+    Detyping.print_allow_match_default_clause := old_printallowmatchdefaultclause;
     Dumpglob.continue ();
     res
   with
@@ -206,6 +209,7 @@ let with_full_print f a =
 	Impargs.make_contextual_implicit_args old_contextual_implicit_args;
 	Flags.raw_print := old_rawprint;
 	Constrextern.print_universes := old_printuniverses;
+        Detyping.print_allow_match_default_clause := old_printallowmatchdefaultclause;
 	Dumpglob.continue ();
 	raise reraise
 

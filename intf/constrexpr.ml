@@ -104,7 +104,7 @@ and case_expr = constr_expr                 (* expression that is being matched 
 	      * cases_pattern_expr option   (* in-clause *)
 
 and branch_expr =
-  (cases_pattern_expr list Loc.located list * constr_expr) Loc.located
+  (cases_pattern_expr list list * constr_expr) Loc.located
 
 and binder_expr =
   Name.t Loc.located list * binder_kind * constr_expr

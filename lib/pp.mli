@@ -120,6 +120,9 @@ val pr_semicolon : unit -> t
 val pr_bar : unit -> t
 (** Well-spaced pipe bar. *)
 
+val pr_spcbar : unit -> t
+(** Pipe bar with space before and after. *)
+
 val pr_arg : ('a -> t) -> 'a -> t
 (** Adds a space in front of its argument. *)
 

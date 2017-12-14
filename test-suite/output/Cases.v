@@ -1,5 +1,7 @@
 (* Cases with let-in in constructors types *)
 
+Unset Printing Allow Match Default Clause.
+
 Inductive t : Set :=
     k : let x := t in x -> x.
 
@@ -184,3 +186,33 @@ let p := fresh "p" in
   |- eq_refl ?p = _ => pose (match eq_refl p in _ = z return p=p /\ z=z with eq_refl => conj eq_refl eq_refl end)
   end.
 Show.
+
+Set Printing Allow Match Default Clause.
+
+(***************************************************)
+(* Testing strategy for factorizing cases branches *)
+
+(* Factorization + default clause *)
+Check fun x => match x with Eq => 1 | _ => 0 end.
+
+(* No factorization *)
+Unset Printing Factorizable Match Patterns.
+Check fun x => match x with Eq => 1 | _ => 0 end.
+Set Printing Factorizable Match Patterns.
+
+(* Factorization but no default clause *)
+Unset Printing Allow Match Default Clause.
+Check fun x => match x with Eq => 1 | _ => 0 end.
+Set Printing Allow Match Default Clause.
+
+(* No factorization in printing all mode *)
+Set Printing All.
+Check fun x => match x with Eq => 1 | _ => 0 end.
+Unset Printing All.
+
+(* Several clauses *)
+Inductive K := a1|a2|a3|a4|a5|a6.
+Check fun x => match x with a3 | a4 => 3 | _ => 2 end.
+Check fun x => match x with a3 => 3 | a2 | a1 => 4 | _ => 2 end.
+Check fun x => match x with a4 => 3 | a2 | a1 => 4 | _ => 2 end.
+Check fun x => match x with a3 | a4 | a1 => 3 | _ => 2 end.

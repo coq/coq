@@ -252,6 +252,89 @@ let lookup_index_as_renamed env sigma t n =
   in lookup n 1 t
 
 (**********************************************************************)
+(* Factorization of match patterns *)
+
+let print_factorize_match_patterns = ref true
+
+let _ =
+  let open Goptions in
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "factorization of \"match\" patterns in printing";
+      optkey   = ["Printing";"Factorizable";"Match";"Patterns"];
+      optread  = (fun () -> !print_factorize_match_patterns);
+      optwrite = (fun b -> print_factorize_match_patterns := b) }
+
+let print_allow_match_default_clause = ref true
+
+let _ =
+  let open Goptions in
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "possible use of \"match\" default pattern in printing";
+      optkey   = ["Printing";"Allow";"Match";"Default";"Clause"];
+      optread  = (fun () -> !print_allow_match_default_clause);
+      optwrite = (fun b -> print_allow_match_default_clause := b) }
+
+let rec join_eqns (ids,rhs as x) patll = function
+  | (loc,(ids',patl',rhs') as eqn')::rest ->
+     if not !Flags.raw_print && !print_factorize_match_patterns &&
+        List.eq_set Id.equal ids ids' && glob_constr_eq rhs rhs'
+     then
+       join_eqns x (patl'::patll) rest
+     else
+       let eqn,rest = join_eqns x patll rest in
+       eqn, eqn'::rest
+  | [] ->
+     patll, []
+
+let number_of_patterns (_gloc,(_ids,patll,_rhs)) = List.length patll
+
+let is_default_candidate (_gloc,(ids,_patll,_rhs) ) = ids = []
+
+let rec move_more_factorized_default_candidate_to_end eqn n = function
+  | eqn' :: eqns ->
+     let set,get = set_temporary_memory () in
+     if is_default_candidate eqn' && set (number_of_patterns eqn') >= n then
+       let isbest, dft, eqns = move_more_factorized_default_candidate_to_end eqn' (get ()) eqns in
+       if isbest then false, dft, eqns else false, dft, eqn' :: eqns
+     else
+       let isbest, dft, eqns = move_more_factorized_default_candidate_to_end eqn n eqns in
+       isbest, dft, eqn' :: eqns
+  | [] -> true, Some eqn, []
+
+let rec select_default_clause = function
+  | eqn :: eqns ->
+     let set,get = set_temporary_memory () in
+     if is_default_candidate eqn && set (number_of_patterns eqn) > 1 then
+       let isbest, dft, eqns = move_more_factorized_default_candidate_to_end eqn (get ()) eqns in
+       if isbest then dft, eqns else dft, eqn :: eqns
+     else
+       let dft, eqns = select_default_clause eqns in dft, eqn :: eqns
+  | [] -> None, []
+
+let factorize_eqns eqns =
+  let rec aux found = function
+  | (loc,(ids,patl,rhs))::rest ->
+     let patll,rest = join_eqns (ids,rhs) [patl] rest in
+     aux ((loc,(ids,patll,rhs))::found) rest
+  | [] ->
+     found in
+  let eqns = aux [] (List.rev eqns) in
+  let mk_anon patl = List.map (fun _ -> DAst.make @@ PatVar Anonymous) patl in
+  if not !Flags.raw_print && !print_allow_match_default_clause && eqns <> [] then
+    match select_default_clause eqns with
+    (* At least two clauses and the last one is disjunctive with no variables *)
+    | Some (gloc,([],patl::_::_,rhs)), (_::_ as eqns) -> eqns@[gloc,([],[mk_anon patl],rhs)]
+    (* Only one clause which is disjunctive with no variables: we keep at least one constructor *)
+    (* so that it is not interpreted as a dummy "match" *)
+    | Some (gloc,([],patl::patl'::_,rhs)), [] -> [gloc,([],[patl;mk_anon patl'],rhs)]
+    | Some (_,((_::_,_,_ | _,([]|[_]),_))), _ -> assert false
+    | None, eqns -> eqns
+  else
+    eqns
+
+(**********************************************************************)
 (* Fragile algorithm to reverse pattern-matching compilation          *)
 
 let update_name sigma na ((_,(e,_)),c) =
@@ -284,13 +367,12 @@ let rec decomp_branch tags nal b (avoid,env as e) sigma c =
 let rec build_tree na isgoal e sigma ci cl =
   let mkpat n rhs pl = DAst.make @@ PatCstr((ci.ci_ind,n+1),pl,update_name sigma na rhs) in
   let cnl = ci.ci_pp_info.cstr_tags in
-  let cna = ci.ci_cstr_nargs in
   List.flatten
     (List.init (Array.length cl)
-      (fun i -> contract_branch isgoal e sigma (cnl.(i),cna.(i),mkpat i,cl.(i))))
+      (fun i -> contract_branch isgoal e sigma (cnl.(i),mkpat i,cl.(i))))
 
 and align_tree nal isgoal (e,c as rhs) sigma = match nal with
-  | [] -> [[],rhs]
+  | [] -> [Id.Set.empty,[],rhs]
   | na::nal ->
     match EConstr.kind sigma c with
     | Case (ci,p,c,cl) when
@@ -300,19 +382,20 @@ and align_tree nal isgoal (e,c as rhs) sigma = match nal with
 	computable sigma p (List.length ci.ci_pp_info.ind_tags) (* FIXME: can do better *) ->
 	let clauses = build_tree na isgoal e sigma ci cl in
 	List.flatten
-          (List.map (fun (pat,rhs) ->
+          (List.map (fun (ids,pat,rhs) ->
 	      let lines = align_tree nal isgoal rhs sigma in
-	      List.map (fun (hd,rest) -> pat::hd,rest) lines)
+              List.map (fun (ids',hd,rest) -> Id.Set.fold Id.Set.add ids ids',pat::hd,rest) lines)
 	    clauses)
     | _ ->
-	let pat = DAst.make @@ PatVar(update_name sigma na rhs) in
-	let mat = align_tree nal isgoal rhs sigma in
-	List.map (fun (hd,rest) -> pat::hd,rest) mat
+        let na = update_name sigma na rhs in
+        let pat = DAst.make @@ PatVar na in
+        let mat = align_tree nal isgoal rhs sigma in
+        List.map (fun (ids,hd,rest) -> Nameops.Name.fold_right Id.Set.add na ids,pat::hd,rest) mat
 
-and contract_branch isgoal e sigma (cdn,can,mkpat,b) =
-  let nal,rhs = decomp_branch cdn [] isgoal e sigma b in
+and contract_branch isgoal e sigma (cdn,mkpat,rhs) =
+  let nal,rhs = decomp_branch cdn [] isgoal e sigma rhs in
   let mat = align_tree nal isgoal rhs sigma in
-  List.map (fun (hd,rhs) -> (mkpat rhs hd,rhs)) mat
+  List.map (fun (ids,hd,rhs) -> ids,mkpat rhs hd,rhs) mat
 
 (**********************************************************************)
 (* Transform internal representation of pattern-matching into list of *)
@@ -648,7 +731,7 @@ and detype_eqns d flags avoid env sigma ci computable constructs consnargsl bl =
   try
     if !Flags.raw_print || not (reverse_matching ()) then raise Exit;
     let mat = build_tree Anonymous (snd flags) (avoid,env) sigma ci bl in
-    List.map (fun (pat,((avoid,env),c)) -> Loc.tag ([],[pat],detype d flags avoid env sigma c))
+    List.map (fun (ids,pat,((avoid,env),c)) -> Loc.tag (Id.Set.elements ids,[pat],detype d flags avoid env sigma c))
       mat
   with e when CErrors.noncritical e ->
     Array.to_list

@@ -37,6 +37,17 @@ let' f (x y : nat) (a := 0) (z : nat) (_ : bool) := x + y + z + 1 in f 0 1 2
 λ (f : nat -> nat) (x : nat), f(x) + S(x)
      : (nat -> nat) -> nat -> nat
 Notation plus2 n := (S(S(n)))
+λ n : list(nat), match n with
+                 | 1 :: nil => 0
+                 | _ => 2
+                 end
+     : list(nat) -> nat
+λ n : list(nat),
+match n with
+| 1 :: nil => 0
+| nil | 0 :: _ | 1 :: _ :: _ | plus2 _ :: _ => 2
+end
+     : list(nat) -> nat
 λ n : list(nat),
 match n with
 | nil => 2

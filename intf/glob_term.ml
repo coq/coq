@@ -93,6 +93,14 @@ type fix_recursion_order = [ `any ] fix_recursion_order_g
 
 type any_glob_constr = AnyGlobConstr : 'r glob_constr_g -> any_glob_constr
 
+type 'a disjunctive_cases_clause_g = (Id.t list * 'a cases_pattern_g list list * 'a glob_constr_g) Loc.located
+type 'a disjunctive_cases_clauses_g = 'a disjunctive_cases_clause_g list
+type 'a cases_pattern_disjunction_g = 'a cases_pattern_g list
+
+type disjunctive_cases_clause = [ `any ] disjunctive_cases_clause_g
+type disjunctive_cases_clauses = [ `any ] disjunctive_cases_clauses_g
+type cases_pattern_disjunction = [ `any ] cases_pattern_disjunction_g
+
 type 'a extended_glob_local_binder_r =
   | GLocalAssum   of Name.t * binding_kind * 'a glob_constr_g
   | GLocalDef     of Name.t * binding_kind * 'a glob_constr_g * 'a glob_constr_g option

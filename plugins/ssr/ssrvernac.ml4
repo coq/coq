@@ -74,7 +74,7 @@ let frozen_lexer = CLexer.get_keyword_state () ;;
 
 let no_ct = None, None and no_rt = None in 
 let aliasvar = function
-  | [_, [{ CAst.v = CPatAlias (_, id); loc }]] -> Some (loc,Name id)
+  | [[{ CAst.v = CPatAlias (_, id); loc }]] -> Some (loc,Name id)
   | _ -> None in
 let mk_cnotype mp = aliasvar mp, None in
 let mk_ctype mp t = aliasvar mp, Some t in
@@ -86,14 +86,14 @@ let mk_pat c (na, t) = (c, na, t) in
 GEXTEND Gram
   GLOBAL: binder_constr;
   ssr_rtype: [[ "return"; t = operconstr LEVEL "100" -> mk_rtype t ]];
-  ssr_mpat: [[ p = pattern -> [Loc.tag ~loc:!@loc [p]] ]];
+  ssr_mpat: [[ p = pattern -> [[p]] ]];
   ssr_dpat: [
     [ mp = ssr_mpat; "in"; t = pattern; rt = ssr_rtype -> mp, mk_ctype mp t, rt
     | mp = ssr_mpat; rt = ssr_rtype -> mp, mk_cnotype mp, rt
     | mp = ssr_mpat -> mp, no_ct, no_rt
   ] ];
   ssr_dthen: [[ dp = ssr_dpat; "then"; c = lconstr -> mk_dthen ~loc:!@loc dp c ]];
-  ssr_elsepat: [[ "else" -> [Loc.tag ~loc:!@loc [CAst.make ~loc:!@loc @@ CPatAtom None]] ]];
+  ssr_elsepat: [[ "else" -> [[CAst.make ~loc:!@loc @@ CPatAtom None]] ]];
   ssr_else: [[ mp = ssr_elsepat; c = lconstr -> Loc.tag ~loc:!@loc (mp, c) ]];
   binder_constr: [
     [ "if"; c = operconstr LEVEL "200"; "is"; db1 = ssr_dthen; b2 = ssr_else ->

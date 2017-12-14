@@ -852,7 +852,7 @@ let rec extern inctx scopes vars r =
                              ) x))
                 tml
     in
-    let eqns = List.map (extern_eqn inctx scopes vars) eqns in
+    let eqns = List.map (extern_eqn inctx scopes vars) (factorize_eqns eqns) in
     CCases (sty,rtntypopt',tml,eqns)
 
   | GLetTuple (nal,(na,typopt),tm,b) ->
@@ -966,9 +966,9 @@ and extern_local_binder scopes vars = function
       let (assums,ids,l) = extern_local_binder scopes vars l in
       (assums,ids, CLocalPattern(Loc.tag @@ (p,ty)) :: l)
 
-and extern_eqn inctx scopes vars (loc,(ids,pl,c)) =
-  Loc.tag ?loc ([loc,List.map (extern_cases_pattern_in_scope scopes vars) pl],
-   extern inctx scopes vars c)
+and extern_eqn inctx scopes vars (loc,(ids,pll,c)) =
+  let pll = List.map (List.map (extern_cases_pattern_in_scope scopes vars)) pll in
+  Loc.tag ?loc (pll,extern inctx scopes vars c)
 
 and extern_notation (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
