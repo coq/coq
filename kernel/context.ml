@@ -144,8 +144,8 @@ struct
     (** Reduce all terms in a given declaration to a single value. *)
     let fold_constr f decl acc =
       match decl with
-      | LocalAssum (n,ty) -> f ty acc
-      | LocalDef (n,v,ty) -> f ty (f v acc)
+      | LocalAssum (_n,ty) -> f ty acc
+      | LocalDef (_n,v,ty) -> f ty (f v acc)
 
     let to_tuple = function
       | LocalAssum (na, ty) -> na, None, ty

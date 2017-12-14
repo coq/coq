@@ -280,7 +280,7 @@ let insert_decl_in_named_context sigma decl hto sign =
 (* Will only be used on terms given to the Refine rule which have meta
 variables only in Application and Case *)
 
-let error_unsupported_deep_meta c =
+let error_unsupported_deep_meta _c =
   user_err  (strbrk "Application of lemmas whose beta-iota normal " ++
     strbrk "form contains metavariables deep inside the term is not " ++
     strbrk "supported; try \"refine\" instead.")
@@ -363,7 +363,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	  if is_template_polymorphic env sigma (EConstr.of_constr f) then
 	    let ty = 
 	      (* Template polymorphism of definitions and inductive types *)
-	      let firstmeta = Array.findi (fun i x -> occur_meta sigma (EConstr.of_constr x)) l in
+	      let firstmeta = Array.findi (fun _i x -> occur_meta sigma (EConstr.of_constr x)) l in
 	      let args, _ = Option.cata (fun i -> CArray.chop i l) (l, [||]) firstmeta in
 	        type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) (Array.map EConstr.of_constr args)
 	    in
@@ -378,7 +378,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
         (acc'',conclty',sigma, ans)
 
       | Proj (p,c) ->
-	let (acc',cty,sigma,c') = mk_hdgoals sigma goal goalacc c in
+	let (acc',_cty,sigma,c') = mk_hdgoals sigma goal goalacc c in
 	let c = mkProj (p, c') in
 	let ty = get_type_of env sigma (EConstr.of_constr c) in
 	let ty = EConstr.Unsafe.to_constr ty in
@@ -454,7 +454,7 @@ and mk_hdgoals sigma goal goalacc trm =
 	(acc'',conclty',sigma, ans)
 
     | Proj (p,c) ->
-         let (acc',cty,sigma,c') = mk_hdgoals sigma goal goalacc c in
+         let (acc',_cty,sigma,c') = mk_hdgoals sigma goal goalacc c in
 	 let c = mkProj (p, c') in
          let ty = get_type_of env sigma (EConstr.of_constr c) in
          let ty = EConstr.Unsafe.to_constr ty in
@@ -477,7 +477,7 @@ and mk_arggoals sigma goal goalacc funty allargs =
     let t = collapse t in
     match kind t with
     | Prod (_, c1, b) ->
-      let (acc, hargty, sigma, arg) = mk_refgoals sigma goal goalacc c1 harg in
+      let (acc, _hargty, sigma, arg) = mk_refgoals sigma goal goalacc c1 harg in
       (acc, subst1 harg b, sigma), arg
     | _ ->
       let env = Goal.V82.env sigma goal in
@@ -489,7 +489,7 @@ and mk_casegoals sigma goal goalacc p c =
   let env = Goal.V82.env sigma goal in
   let (acc',ct,sigma,c') = mk_hdgoals sigma goal goalacc c in
   let ct = EConstr.of_constr ct in
-  let (acc'',pt,sigma,p') = mk_hdgoals sigma goal acc' p in
+  let (acc'',_pt,sigma,p') = mk_hdgoals sigma goal acc' p in
   let ((ind, u), spec) =
     try Tacred.find_hnf_rectype env sigma ct
     with Not_found -> anomaly (Pp.str "mk_casegoals.") in

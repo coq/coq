@@ -187,7 +187,7 @@ let subst_regular_ind_arity sub s =
     if uar' == s.mind_user_arity then s 
     else { mind_user_arity = uar'; mind_sort = s.mind_sort }
 
-let subst_template_ind_arity sub s = s
+let subst_template_ind_arity _sub s = s
 
 (* FIXME records *)
 let subst_ind_arity =
@@ -240,14 +240,14 @@ let inductive_polymorphic_context mib =
 let inductive_is_polymorphic mib =
   match mib.mind_universes with
   | Monomorphic_ind _ -> false
-  | Polymorphic_ind ctx -> true
-  | Cumulative_ind cumi -> true
+  | Polymorphic_ind _ctx -> true
+  | Cumulative_ind _cumi -> true
 
 let inductive_is_cumulative mib =
   match mib.mind_universes with
   | Monomorphic_ind _ -> false
-  | Polymorphic_ind ctx -> false
-  | Cumulative_ind cumi -> true
+  | Polymorphic_ind _ctx -> false
+  | Cumulative_ind _cumi -> true
 
 (** {6 Hash-consing of inductive declarations } *)
 

@@ -267,7 +267,7 @@ let lowercase_unicode =
 
 let lowercase_first_char s =
   assert (s <> "");
-  let j, n = next_utf8 s 0 in
+  let _j, n = next_utf8 s 0 in
   utf8_of_unicode (lowercase_unicode n)
 
 let split_at_first_letter s =

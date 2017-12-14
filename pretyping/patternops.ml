@@ -89,9 +89,9 @@ let rec occur_meta_pattern = function
   | PApp (f,args) ->
       (occur_meta_pattern f) || (Array.exists occur_meta_pattern args)
   | PProj (_,arg) -> occur_meta_pattern arg
-  | PLambda (na,t,c)  -> (occur_meta_pattern t) || (occur_meta_pattern c)
-  | PProd (na,t,c)  -> (occur_meta_pattern t) || (occur_meta_pattern c)
-  | PLetIn (na,b,t,c)  ->
+  | PLambda (_na,t,c)  -> (occur_meta_pattern t) || (occur_meta_pattern c)
+  | PProd (_na,t,c)  -> (occur_meta_pattern t) || (occur_meta_pattern c)
+  | PLetIn (_na,b,t,c)  ->
      Option.fold_left (fun b t -> b || occur_meta_pattern t) (occur_meta_pattern b) t || (occur_meta_pattern c)
   | PIf (c,c1,c2)  ->
       (occur_meta_pattern c) ||
@@ -108,9 +108,9 @@ let rec occurn_pattern n = function
   | PApp (f,args) ->
       (occurn_pattern n f) || (Array.exists (occurn_pattern n) args)
   | PProj (_,arg) -> occurn_pattern n arg
-  | PLambda (na,t,c)  -> (occurn_pattern n t) || (occurn_pattern (n+1) c)
-  | PProd (na,t,c)  -> (occurn_pattern n t) || (occurn_pattern (n+1) c)
-  | PLetIn (na,b,t,c)  ->
+  | PLambda (_na,t,c)  -> (occurn_pattern n t) || (occurn_pattern (n+1) c)
+  | PProd (_na,t,c)  -> (occurn_pattern n t) || (occurn_pattern (n+1) c)
+  | PLetIn (_na,b,t,c)  ->
      Option.fold_left (fun b t -> b || occurn_pattern n t) (occurn_pattern n b) t ||
      (occurn_pattern (n+1) c)
   | PIf (c,c1,c2)  ->
@@ -134,12 +134,13 @@ let rec head_pattern_bound t =
   match t with
     | PProd (_,_,b)  -> head_pattern_bound b
     | PLetIn (_,_,_,b) -> head_pattern_bound b
-    | PApp (c,args)  -> head_pattern_bound c
+    | PApp (c,_args)  -> head_pattern_bound c
     | PIf (c,_,_)  -> head_pattern_bound c
-    | PCase (_,p,c,br) -> head_pattern_bound c
+    | PCase (_,_p,c,_br) -> head_pattern_bound c
     | PRef r         -> r
     | PVar id        -> VarRef id
-    | PEvar _ | PRel _ | PMeta _ | PSoApp _  | PSort _ | PFix _ | PProj _
+    | PProj (p,_c)    -> ConstRef (Projection.constant p)
+    | PEvar _ | PRel _ | PMeta _ | PSoApp _  | PSort _ | PFix _
 	-> raise BoundPattern
     (* Perhaps they were arguments, but we don't beta-reduce *)
     | PLambda _ -> raise BoundPattern
@@ -172,7 +173,7 @@ let pattern_of_constr env sigma t =
     | App (f,a) ->
         (match
           match kind f with
-          | Evar (evk,args) ->
+          | Evar (evk,_args) ->
             (match snd (Evd.evar_source evk sigma) with
               Evar_kinds.MatchingVar (Evar_kinds.SecondOrderPatVar id) -> Some id
             | _ -> None)
@@ -180,9 +181,9 @@ let pattern_of_constr env sigma t =
          with
          | Some n -> PSoApp (n,Array.to_list (Array.map (pattern_of_constr env) a))
          | None -> PApp (pattern_of_constr env f,Array.map (pattern_of_constr env) a))
-    | Const (sp,u)  -> PRef (ConstRef (Constant.make1 (Constant.canonical sp)))
-    | Ind (sp,u)    -> PRef (canonical_gr (IndRef sp))
-    | Construct (sp,u) -> PRef (canonical_gr (ConstructRef sp))
+    | Const (sp,_u)  -> PRef (ConstRef (Constant.make1 (Constant.canonical sp)))
+    | Ind (sp,_u)    -> PRef (canonical_gr (IndRef sp))
+    | Construct (sp,_u) -> PRef (canonical_gr (ConstructRef sp))
     | Proj (p, c) -> 
       pattern_of_constr env (EConstr.Unsafe.to_constr (Retyping.expand_projection env sigma p (EConstr.of_constr c) []))
     | Evar (evk,ctxt as ev) ->
@@ -194,7 +195,7 @@ let pattern_of_constr env sigma t =
         (* see Proofview.mark_in_evm *)
          if Evd.is_defined sigma evk then pattern_of_constr env (Evd.existential_value sigma ev)
          else PEvar (evk,Array.map (pattern_of_constr env) ctxt)
-      | Evar_kinds.MatchingVar (Evar_kinds.SecondOrderPatVar ido) -> assert false
+      | Evar_kinds.MatchingVar (Evar_kinds.SecondOrderPatVar _ido) -> assert false
       | _ -> 
 	 PMeta None)
     | Case (ci,p,a,br) ->
@@ -374,11 +375,11 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
       PApp (pat_of_raw metas vars c,
 	    Array.of_list (List.map (pat_of_raw metas vars) cl))
     end
-  | GLambda (na,bk,c1,c2) ->
+  | GLambda (na,_bk,c1,c2) ->
       Name.iter (fun n -> metas := n::!metas) na;
       PLambda (na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
-  | GProd (na,bk,c1,c2) ->
+  | GProd (na,_bk,c1,c2) ->
       Name.iter (fun n -> metas := n::!metas) na;
       PProd (na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
@@ -419,8 +420,8 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
         | {CAst.v=(_,[p],_)}::_ -> get_ind p
 	| _ -> None
       in
-      let ind_tags,ind = match indnames with
-        | Some {CAst.v=(ind,nal)} -> Some (List.length nal), Some ind
+      let _cind_tags,ind = match indnames with
+	| Some (_,(ind,nal)) -> Some (List.length nal), Some ind
 	| None -> None, get_ind brs
       in
       let ext,brs = pats_of_glob_branches loc metas vars ind brs

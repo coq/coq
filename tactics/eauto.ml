@@ -131,7 +131,7 @@ let hintmap_of sigma secvars hdc concl =
      else (fun db -> Hint_db.map_auto sigma ~secvars hdc concl db)
    (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)
 
-let e_exact poly flags (c,clenv) =
+let e_exact poly _flags (c,clenv) =
   Proofview.Goal.enter begin fun gl ->
     let clenv', c = connect_hint_clenv poly c clenv gl in
     Tacticals.New.tclTHEN
@@ -434,7 +434,7 @@ let make_dimension n = function
 
 let cons a l = a :: l
 
-let autounfolds db occs cls gl =
+let autounfolds db _occs cls gl =
   let unfolds = List.concat (List.map (fun dbname -> 
     let db = try searchtable_map dbname 
       with Not_found -> user_err ~hdr:"autounfold" (str "Unknown database " ++ str dbname)
@@ -480,11 +480,11 @@ let unfold_head env sigma (ids, csts) c =
 	| true, f' -> true, Reductionops.whd_betaiota sigma (mkApp (f', args))
 	| false, _ -> 
 	    let done_, args' = 
-	      Array.fold_left_i (fun i (done_, acc) arg -> 
+	      Array.fold_left_i (fun _i (done_, acc) arg -> 
 		if done_ then done_, arg :: acc 
 		else match aux arg with
 		| true, arg' -> true, arg' :: acc
-		| false, arg' -> false, arg :: acc)
+		| false, _arg' -> false, arg :: acc)
 		(false, []) args
 	    in 
 	      if done_ then true, mkApp (f, Array.of_list (List.rev args'))

@@ -101,9 +101,9 @@ let rename_typing env c =
   let j = Typeops.infer env c in
   let j' =
     match kind c with
-    | Const (c,u) -> { j with uj_type = rename_type j.uj_type (ConstRef c) }
-    | Ind (i,u) -> { j with uj_type = rename_type j.uj_type (IndRef i) }
-    | Construct (k,u) -> { j with uj_type = rename_type j.uj_type (ConstructRef k) }
+    | Const (c,_u) -> { j with uj_type = rename_type j.uj_type (ConstRef c) }
+    | Ind (i,_u) -> { j with uj_type = rename_type j.uj_type (IndRef i) }
+    | Construct (k,_u) -> { j with uj_type = rename_type j.uj_type (ConstructRef k) }
     | _ -> j
   in j'
 

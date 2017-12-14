@@ -100,7 +100,7 @@ let connect_hint_clenv poly (c, _, ctx) clenv gl =
 
 let unify_resolve poly flags ((c : raw_hint), clenv) =
   Proofview.Goal.enter begin fun gl ->
-  let clenv, c = connect_hint_clenv poly c clenv gl in
+  let clenv, _c = connect_hint_clenv poly c clenv gl in
   let clenv = clenv_unique_resolver ~flags clenv gl in
   Clenvtac.clenv_refine false clenv
   end
@@ -376,7 +376,7 @@ and my_find_search_delta sigma db_list local_db secvars hdc concl =
 and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=dbname})) =
   let tactic = function
     | Res_pf (c,cl) -> unify_resolve_gen poly flags (c,cl)
-    | ERes_pf _ -> Proofview.Goal.enter (fun gl -> Tacticals.New.tclZEROMSG (str "eres_pf"))
+    | ERes_pf _ -> Proofview.Goal.enter (fun _gl -> Tacticals.New.tclZEROMSG (str "eres_pf"))
     | Give_exact (c, cl)  -> exact poly (c, cl)
     | Res_pf_THEN_trivial_fail (c,cl) ->
       Tacticals.New.tclTHEN

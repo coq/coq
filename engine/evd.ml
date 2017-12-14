@@ -364,7 +364,7 @@ type t = Id.t EvMap.t * Evar.t Id.Map.t
 
 let empty = (EvMap.empty, Id.Map.empty)
 
-let add_name_newly_undefined id evk evi (evtoid, idtoev as names) =
+let add_name_newly_undefined id evk _evi (evtoid, idtoev as names) =
   match id with
   | None -> names
   | Some id ->
@@ -372,7 +372,7 @@ let add_name_newly_undefined id evk evi (evtoid, idtoev as names) =
       user_err  (str "Already an existential evar of name " ++ Id.print id);
     (EvMap.add evk id evtoid, Id.Map.add id evk idtoev)
 
-let add_name_undefined naming evk evi (evtoid,idtoev as evar_names) =
+let add_name_undefined naming evk evi (evtoid,_idtoev as evar_names) =
   if EvMap.mem evk evtoid then
     evar_names
   else
@@ -699,7 +699,7 @@ let extract_changed_conv_pbs evd p =
 let extract_all_conv_pbs evd =
   extract_conv_pbs evd (fun _ -> true)
 
-let loc_of_conv_pb evd (pbty,env,t1,t2) =
+let loc_of_conv_pb evd (_pbty,_env,t1,t2) =
   match kind (fst (decompose_app t1)) with
   | Evar (evk1,_) -> fst (evar_source evk1 evd)
   | _ ->
@@ -809,7 +809,7 @@ let fresh_constructor_instance ?loc env evd c =
 let fresh_global ?loc ?(rigid=univ_flexible) ?names env evd gr =
   with_context_set ?loc rigid evd (Universes.fresh_global_instance ?names env gr)
 
-let whd_sort_variable evd t = t
+let whd_sort_variable _evd t = t
 
 let is_sort_variable evd s = UState.is_sort_variable evd.universes s
 
@@ -900,9 +900,9 @@ let nf_univ_variables evd =
   let evd' = {evd with universes = uctx'} in
     evd', subst
 
-let minimize_universes evd =
-  let subst, uctx' = UState.normalize_variables evd.universes in
-  let uctx' = UState.minimize uctx' in
+let nf_constraints evd =
+  let _subst, uctx' = normalize_evar_universe_context_variables evd.universes in
+  let uctx' = normalize_evar_universe_context uctx' in
     {evd with universes = uctx'}
 
 let universe_of_name evd s = UState.universe_of_name evd.universes s
@@ -1020,8 +1020,8 @@ let meta_list evd = metamap_to_list evd.metas
 
 let undefined_metas evd =
   let filter = function
-    | (n,Clval(_,_,typ)) -> None
-    | (n,Cltyp (_,typ))  -> Some n
+    | (_n,Clval(_,_,_typ)) -> None
+    | (n,Cltyp (_,_typ))  -> Some n
   in
   let m = List.map_filter filter (meta_list evd) in
   List.sort Int.compare m

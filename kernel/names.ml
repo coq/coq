@@ -207,7 +207,7 @@ struct
 
   let repr mbid = mbid
 
-  let to_string (i, s, p) =
+  let to_string (_i, s, p) =
     DirPath.to_string p ^ "." ^ s
 
   let debug_to_string (i, s, p) =
@@ -328,7 +328,7 @@ module ModPath = struct
   let rec dp = function
   | MPfile sl -> sl
   | MPbound (_,_,dp) -> dp
-  | MPdot (mp,l) -> dp mp
+  | MPdot (mp,_l) -> dp mp
 
   module Self_Hashcons = struct
     type t = module_path
@@ -626,8 +626,8 @@ let constr_modpath (ind,_) = ind_modpath ind
 
 let ith_mutual_inductive (mind, _) i = (mind, i)
 let ith_constructor_of_inductive ind i = (ind, i)
-let inductive_of_constructor (ind, i) = ind
-let index_of_constructor (ind, i) = i
+let inductive_of_constructor (ind, _i) = ind
+let index_of_constructor (_ind, i) = i
 
 let eq_ind (m1, i1) (m2, i2) = Int.equal i1 i2 && MutInd.equal m1 m2
 let eq_user_ind (m1, i1) (m2, i2) =

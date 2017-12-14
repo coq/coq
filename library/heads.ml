@@ -172,9 +172,9 @@ let subst_head (subst,(ref,k)) =
 let discharge_head (_,(ref,k)) =
   match ref with
   | EvalConstRef cst -> Some (EvalConstRef (pop_con cst), k)
-  | EvalVarRef id -> None
+  | EvalVarRef _id -> None
 
-let rebuild_head (ref,k) =
+let rebuild_head (ref,_k) =
   (ref, compute_head ref)
 
 type head_obj = evaluable_global_reference * head_approximation

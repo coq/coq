@@ -162,7 +162,7 @@ let is_ground_env = memo is_ground_env
 
 exception NoHeadEvar
 
-let head_evar sigma c =
+let head_evar _sigma c =
   (** FIXME: this breaks if using evar-insensitive code *)
   let c = EConstr.Unsafe.to_constr c in
   let rec hrec c = match kind c with
@@ -170,7 +170,7 @@ let head_evar sigma c =
     | Case (_,_,c,_) -> hrec c
     | App (c,_)      -> hrec c
     | Cast (c,_,_)   -> hrec c
-    | Proj (p, c)    -> hrec c
+    | Proj (_p, c)    -> hrec c
     | _              -> raise NoHeadEvar
   in
   hrec c
@@ -489,12 +489,12 @@ let e_new_type_evar env evdref ?src ?filter ?naming ?principal rigid =
     evdref := evd;
     c
 
-let new_Type ?(rigid=Evd.univ_flexible) env evd = 
+let new_Type ?(rigid=Evd.univ_flexible) _env evd = 
   let open EConstr in
   let (evd, s) = new_sort_variable rigid evd in
   (evd, mkSort s)
 
-let e_new_Type ?(rigid=Evd.univ_flexible) env evdref =
+let e_new_Type ?(rigid=Evd.univ_flexible) _env evdref =
   let evd', s = new_sort_variable rigid !evdref in
     evdref := evd'; EConstr.mkSort s
 
@@ -702,7 +702,7 @@ let rec advance sigma evk =
   let evi = Evd.find sigma evk in
   match evi.evar_body with
   | Evar_empty -> Some evk
-  | Evar_defined v ->
+  | Evar_defined _v ->
       match is_restricted_evar evi with
       | Some evk -> advance sigma evk
       | None -> None

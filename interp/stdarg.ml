@@ -31,6 +31,10 @@ let wit_string : string uniform_genarg_type =
 let wit_pre_ident : string uniform_genarg_type =
   make0 "preident"
 
+let loc_of_or_by_notation f = function
+  | AN c -> f c
+  | ByNotation (loc,(_s,_)) -> loc
+
 let wit_int_or_var =
   make0 ~dyn:(val_tag (topwit wit_int)) "int_or_var"
 

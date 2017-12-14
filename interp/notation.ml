@@ -165,7 +165,7 @@ let scope_is_open sc = scope_is_open_in_scopes sc (!scope_stack)
 (* TODO: push nat_scope, z_scope, ... in scopes summary *)
 
 (* Exportation of scopes *)
-let open_scope i (_,(local,op,sc)) =
+let open_scope i (_,(_local,op,sc)) =
   if Int.equal i 1 then
     scope_stack :=
       if op then sc :: !scope_stack
@@ -174,7 +174,7 @@ let open_scope i (_,(local,op,sc)) =
 let cache_scope o =
   open_scope 1 o
 
-let subst_scope (subst,sc) = sc
+let subst_scope (_subst,sc) = sc
 
 open Libobject
 
@@ -341,7 +341,7 @@ let add_prim_token_interpreter sc interp =
     let cont = Hashtbl.find prim_token_interpreter_tab sc in
     Hashtbl.replace prim_token_interpreter_tab sc (interp cont)
   with Not_found ->
-    let cont = (fun ?loc _p -> raise Not_found) in
+    let cont = (fun ?loc _p -> ignore(loc); raise Not_found) in
     Hashtbl.add prim_token_interpreter_tab sc (interp cont)
 
 let declare_prim_token_interpreter sc interp (patl,uninterp,b) =
@@ -468,7 +468,7 @@ let declare_notation_interpretation ntn scopt pat df ~onlyprint =
   | Some _ -> ()
   end
 
-let declare_uninterpretation rule (metas,c as pat) =
+let declare_uninterpretation rule (_metas,c as pat) =
   let (key,n) = notation_constr_key c in
   notations_key_table := keymap_add key (rule,pat,n) !notations_key_table
 
@@ -722,7 +722,7 @@ type arguments_scope_discharge_request =
   | ArgsScopeManual
   | ArgsScopeNoDischarge
 
-let load_arguments_scope _ (_,(_,r,n,scl,cls)) =
+let load_arguments_scope _ (_,(_,r,_n,scl,cls)) =
   List.iter (Option.iter check_scope) scl;
   let initial_stamp = ScopeClassMap.empty in
   arguments_scope := Refmap.add r (scl,cls,initial_stamp) !arguments_scope
@@ -733,7 +733,7 @@ let cache_arguments_scope o =
 let subst_scope_class subst cs =
   try Some (subst_cl_typ subst cs) with Not_found -> None
 
-let subst_arguments_scope (subst,(req,r,n,scl,cls)) =
+let subst_arguments_scope (subst,(_req,r,n,scl,cls)) =
   let r' = fst (subst_global subst r) in
   let subst_cl ocl = match ocl with
     | None -> ocl
@@ -744,7 +744,7 @@ let subst_arguments_scope (subst,(req,r,n,scl,cls)) =
   let cls' = List.smartmap subst_cl cls in
   (ArgsScopeNoDischarge,r',n,scl,cls')
 
-let discharge_arguments_scope (_,(req,r,n,l,_)) =
+let discharge_arguments_scope (_,(req,r,_n,l,_)) =
   if req == ArgsScopeNoDischarge || (isVarRef r && Lib.is_in_section r) then None
   else
     let n =
@@ -816,10 +816,9 @@ let find_arguments_scope r =
       scl'
   with Not_found -> []
 
-let declare_ref_arguments_scope sigma ref =
-  let env = Global.env () in (* FIXME? *)
-  let typ = EConstr.of_constr @@ fst @@ Global.type_of_global_in_context env ref in
-  let (scs,cls as o) = compute_arguments_scope_full sigma typ in
+let declare_ref_arguments_scope ref =
+  let t, _ = Global.type_of_global_in_context (Global.env ()) ref in
+  let (scs,_cls as o) = compute_arguments_scope_full t in
   declare_arguments_scope_gen ArgsScopeAuto ref (List.length scs) o
 
 (********************************)
@@ -902,7 +901,7 @@ let pr_named_scope prglob scope sc =
   ++ fnl ()
   ++ pr_scope_classes scope
   ++ String.Map.fold
-       (fun ntn { not_interp  = (_, r); not_location = (_, df) } strm ->
+       (fun _ntn { not_interp  = (_, r); not_location = (_, df) } strm ->
 	 pr_notation_info prglob df r ++ fnl () ++ strm)
        sc.notations (mt ())
 
@@ -1033,7 +1032,7 @@ let interp_notation_as_global_reference ?loc test ntn sc =
   | [_,_,ref] -> ref
   | [] -> error_notation_not_reference ?loc ntn
   | refs ->
-      let f (ntn,sc,ref) =
+      let f (ntn,sc,_ref) =
         let def = find_default ntn !scope_stack in
         match def with
         | None -> false

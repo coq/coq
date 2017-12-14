@@ -398,9 +398,126 @@ let code_makeblock ~stack_size ~arity ~tag cont =
     Kpush :: nest_block tag arity cont
   end
 
-let compile_structured_constant reloc sc sz cont =
-  set_max_stack_size sz;
-  Kconst sc :: cont
+(* [code_construct] compiles an abstracted constructor dropping parameters and
+   updates [fun_code] *)
+(* Inv : nparam + arity > 0 *)
+let code_construct tag nparams arity cont =
+  let f_cont =
+      add_pop nparams
+      (if Int.equal arity 0 then
+	[Kconst (Const_b0 tag); Kreturn 0]
+       else if tag < last_variant_tag then
+         [Kacc 0; Kpop 1; Kmakeblock(arity, tag); Kreturn 0]
+       else
+         nest_block tag arity [Kreturn 0])
+    in
+    let lbl = Label.create() in
+    (* No need to grow the stack here, as the function does not push stuff. *)
+    fun_code := [Ksequence (add_grab (nparams+arity) lbl f_cont,!fun_code)];
+    Kclosure(lbl,0) :: cont
+
+let get_strcst = function
+  | Bstrconst sc -> sc
+  | _ -> raise Not_found
+
+let rec str_const c =
+  match kind c with
+  | Sort s -> Bstrconst (Const_sorts s)
+  | Cast(c,_,_) -> str_const c
+  | App(f,args) ->
+      begin
+	match kind f with
+	| Construct(((kn,j),i),_u) -> 
+            begin
+	    let oib = lookup_mind kn !global_env in
+	    let oip = oib.mind_packets.(j) in
+	    let () = check_compilable oip in
+	    let tag,arity = oip.mind_reloc_tbl.(i-1) in
+	    let nparams = oib.mind_nparams in
+	    if Int.equal (nparams + arity) (Array.length args) then
+              (* spiwack: *)
+              (* 1/ tries to compile the constructor in an optimal way,
+                    it is supposed to work only if the arguments are
+                    all fully constructed, fails with Cbytecodes.NotClosed.
+                    it can also raise Not_found when there is no special
+                    treatment for this constructor
+                    for instance: tries to to compile an integer of the
+                        form I31 D1 D2 ... D31 to [D1D2...D31] as
+                        a processor number (a caml number actually) *)
+              try
+		try
+		  Bstrconst (Retroknowledge.get_vm_constant_static_info
+                                              (!global_env).retroknowledge
+                                              f args)
+                with NotClosed ->
+		  (* 2/ if the arguments are not all closed (this is
+                        expectingly (and it is currently the case) the only
+                        reason why this exception is raised) tries to
+                        give a clever, run-time behavior to the constructor.
+                        Raises Not_found if there is no special treatment
+                        for this integer.
+                        this is done in a lazy fashion, using the constructor
+                        Bspecial because it needs to know the continuation
+                        and such, which can't be done at this time.
+                        for instance, for int31: if one of the digit is
+                            not closed, it's not impossible that the number
+                            gets fully instanciated at run-time, thus to ensure
+                            uniqueness of the representation in the vm
+                            it is necessary to try and build a caml integer
+                            during the execution *)
+		  let rargs = Array.sub args nparams arity in
+		  let b_args = Array.map str_const rargs in
+		  Bspecial ((Retroknowledge.get_vm_constant_dynamic_info
+                                           (!global_env).retroknowledge
+                                           f),
+                           b_args)
+              with Not_found ->
+		(* 3/ if no special behavior is available, then the compiler
+		      falls back to the normal behavior *)
+		if Int.equal arity 0 then Bstrconst(Const_b0 tag)
+		else
+		  let rargs = Array.sub args nparams arity in
+		  let b_args = Array.map str_const rargs in
+		  try
+		    let sc_args = Array.map get_strcst b_args in
+		    Bstrconst(const_bn tag sc_args)
+		  with Not_found ->
+		    Bmakeblock(tag,b_args)
+	    else
+              let b_args = Array.map str_const args in
+	     (* spiwack: tries first to apply the run-time compilation
+                behavior of the constructor, as in 2/ above *)
+	      try
+		Bspecial ((Retroknowledge.get_vm_constant_dynamic_info
+                                           (!global_env).retroknowledge
+                                           f),
+                         b_args)
+	      with Not_found ->
+	        Bconstruct_app(tag, nparams, arity, b_args)
+              end
+	| _ -> Bconstr c
+      end
+  | Ind (ind,u) when Univ.Instance.is_empty u ->
+    Bstrconst (Const_ind ind)
+  | Construct (((kn,j),i),_) ->
+      begin
+      (* spiwack: tries first to apply the run-time compilation
+           behavior of the constructor, as in 2/ above *)
+      try
+	Bspecial ((Retroknowledge.get_vm_constant_dynamic_info
+                                           (!global_env).retroknowledge
+                                           c),
+                         [| |])
+      with Not_found ->
+	let oib = lookup_mind kn !global_env in
+	let oip = oib.mind_packets.(j) in
+	let () = check_compilable oip in
+	let num,arity = oip.mind_reloc_tbl.(i-1) in
+	let nparams = oib.mind_nparams in
+	if Int.equal (nparams + arity) 0 then Bstrconst(Const_b0 num)
+	else Bconstruct_app(num,nparams,arity,[||])
+      end
+  | _ -> Bconstr c
 
 (* compiling application *)
 let comp_args comp_expr reloc args sz cont =

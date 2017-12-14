@@ -151,7 +151,7 @@ let open_md i ((sp, kn), (local, id, b, t)) = match id with
   add kn b t
 | Some kn0 -> replace kn0 kn t
 
-let cache_md ((sp, kn), (local, id ,b, t)) = match id with
+let cache_md ((sp, kn), (_local, id ,b, t)) = match id with
 | None ->
   let () = push_tactic (Until 1) sp kn in
   add kn b t
@@ -164,7 +164,7 @@ let subst_kind subst id = match id with
 let subst_md (subst, (local, id, b, t)) =
   (local, subst_kind subst id, b, Tacsubst.subst_tactic subst t)
 
-let classify_md (local, _, _, _ as o) = Substitute o
+let classify_md (_local, _, _, _ as o) = Substitute o
 
 let inMD : bool * ltac_constant option * bool * glob_tactic_expr -> obj =
   declare_object {(default_object "TAC-DEFINITION") with

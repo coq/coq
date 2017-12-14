@@ -50,7 +50,7 @@ let absurd c = absurd c
 let filter_hyp f tac =
   let rec seek = function
     | [] -> Proofview.tclZERO Not_found
-    | d::rest when f (NamedDecl.get_type d) -> tac (NamedDecl.get_id d)
+    | d::_rest when f (NamedDecl.get_type d) -> tac (NamedDecl.get_id d)
     | _::rest -> seek rest in
   Proofview.Goal.enter begin fun gl ->
     let hyps = Proofview.Goal.hyps gl in
@@ -70,8 +70,10 @@ let contradiction_context =
 	  if is_empty_type sigma typ then
 	    simplest_elim (mkVar id)
 	  else match EConstr.kind sigma typ with
-	  | Prod (na,t,u) when is_empty_type sigma u ->
-             let is_unit_or_eq = match_with_unit_or_eq_type sigma t in
+	  | Prod (_na,t,u) when is_empty_type sigma u ->
+             let is_unit_or_eq =
+               if use_negated_unit_or_eq_type () then match_with_unit_or_eq_type sigma t
+               else None in
 	     Tacticals.New.tclORELSE
                (match is_unit_or_eq with
                | Some _ ->
@@ -102,7 +104,7 @@ let contradiction_context =
 
 let is_negation_of env sigma typ t =
   match EConstr.kind sigma (whd_all env sigma t) with
-    | Prod (na,t,u) ->
+    | Prod (_na,t,u) ->
       is_empty_type sigma u && is_conv_leq env sigma typ t
     | _ -> false
 

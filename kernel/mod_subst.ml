@@ -222,7 +222,7 @@ let search_delta_inline resolve kn1 kn2 =
 let subst_mp0 sub mp = (* 's like subst *)
  let rec aux mp =
   match mp with
-    | MPfile sid -> Umap.find_mp mp sub
+    | MPfile _sid -> Umap.find_mp mp sub
     | MPbound bid ->
 	begin
 	  try Umap.find_mbi bid sub
@@ -317,12 +317,12 @@ let subst_con sub cst =
 let subst_con_kn sub con =
   subst_con sub (con,Univ.Instance.empty)
 
-let subst_pcon sub (con,u as pcon) = 
-  try let con', can = subst_con0 sub pcon in 
+let subst_pcon sub (_con,u as pcon) = 
+  try let con', _can = subst_con0 sub pcon in 
 	con',u
   with No_subst -> pcon
 
-let subst_pcon_term sub (con,u as pcon) = 
+let subst_pcon_term sub (_con,u as pcon) = 
   try let con', can = subst_con0 sub pcon in 
 	(con',u), can
   with No_subst -> pcon, mkConstU pcon
@@ -437,7 +437,7 @@ let replace_mp_in_kn mpfrom mpto kn =
 let rec mp_in_mp mp mp1 =
   match mp1 with
     | _ when ModPath.equal mp1 mp -> true
-    | MPdot (mp2,l) -> mp_in_mp mp mp2
+    | MPdot (mp2,_l) -> mp_in_mp mp mp2
     | _ -> false
 
 let subset_prefixed_by mp resolver =
@@ -522,7 +522,7 @@ let substition_prefixed_by k mp subst =
       Umap.add_mp new_key (mp_to,reso) sub
     else sub
   in
-  let mbi_prefixmp mbi _ sub = sub
+  let mbi_prefixmp _mbi _ sub = sub
   in
   Umap.fold mp_prefixmp mbi_prefixmp subst empty_subst
 

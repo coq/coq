@@ -80,7 +80,7 @@ struct
   let empty : t = Nodes (Tmap.empty, Mmap.empty)
 
   (* the head of a data is of type unit structure *)
-  let head w = T.map (fun c -> ()) w
+  let head w = T.map (fun _c -> ()) w
 
   (* given a node of the net and a word, returns the subnet with the
      same head as the word (with the rest of the nodes) *)

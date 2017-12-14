@@ -94,7 +94,7 @@ let equal_instances env sigma (ctx',c') (ctx,c) =
     equal according to {!equal_instances}. *)
 exception Not_coherent_metas
 let verify_metas_coherence env sigma (ln1,lcm) (ln,lm) =
-  let merge id oc1 oc2 = match oc1, oc2 with
+  let merge _id oc1 oc2 = match oc1, oc2 with
     | None, None -> None
     | None, Some c | Some c, None -> Some c
     | Some c1, Some c2 ->
@@ -229,7 +229,7 @@ module PatternMatching (E:StaticEnvironment) = struct
   (** [pattern_match_term refresh pat term lhs] returns the possible
       matchings of [term] with the pattern [pat => lhs]. If refresh is
       true, refreshes the universes of [term]. *)
-  let pattern_match_term refresh pat term lhs = 
+  let pattern_match_term _refresh pat term lhs = 
 (*     let term = if refresh then Termops.refresh_universes_strict term else term in *)
     match pat with
     | Term p ->
@@ -301,7 +301,7 @@ module PatternMatching (E:StaticEnvironment) = struct
           pattern_match_term true typepat hyp () <*>
           put_terms (id_map_try_add_name hypname (EConstr.mkVar id) empty_term_subst) <*>
           return id
-      | LocalAssum (id,hyp) -> fail
+      | LocalAssum (_id,_hyp) -> fail
 
   (** [hyp_match pat hyps] dispatches to
       {!hyp_match_type} or {!hyp_match_body_and_type} depending on whether

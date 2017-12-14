@@ -309,7 +309,7 @@ let decompose_lam_n_assum sigma n c =
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) n c
       | Cast (c,_,_)      -> lamdec_rec l n c
-      | c -> user_err Pp.(str "decompose_lam_n_assum: not enough abstractions")
+      | _c -> user_err Pp.(str "decompose_lam_n_assum: not enough abstractions")
   in
   lamdec_rec Context.Rel.empty n c
 
@@ -324,13 +324,13 @@ let decompose_lam_n_decls sigma n =
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
       | Cast (c,_,_)      -> lamdec_rec l n c
-      | c -> user_err Pp.(str "decompose_lam_n_decls: not enough abstractions")
+      | _c -> user_err Pp.(str "decompose_lam_n_decls: not enough abstractions")
   in
   lamdec_rec Context.Rel.empty n
 
 let lamn n env b =
   let rec lamrec = function
-    | (0, env, b)        -> b
+    | (0, _env, b)        -> b
     | (n, ((v,t)::l), b) -> lamrec (n-1,  l, mkLambda (v,t,b))
     | _ -> assert false
   in
@@ -377,7 +377,7 @@ let decompose_prod_n_assum sigma n c =
       | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> prodec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
       | Cast (c,_,_)      -> prodec_rec l n c
-      | c -> user_err Pp.(str "decompose_prod_n_assum: not enough assumptions")
+      | _c -> user_err Pp.(str "decompose_prod_n_assum: not enough assumptions")
   in
   prodec_rec Context.Rel.empty n c
 
@@ -501,7 +501,7 @@ let iter sigma f c = match kind sigma c with
   | Lambda (_,t,c) -> f t; f c
   | LetIn (_,b,t,c) -> f b; f t; f c
   | App (c,l) -> f c; Array.iter f l
-  | Proj (p,c) -> f c
+  | Proj (_p,c) -> f c
   | Evar (_,l) -> Array.iter f l
   | Case (_,p,c,bl) -> f p; f c; Array.iter f bl
   | Fix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
@@ -519,7 +519,7 @@ let iter_with_full_binders sigma g f n c =
   | App (c,l) -> f n c; CArray.Fun1.iter f n l
   | Evar (_,l) -> CArray.Fun1.iter f n l
   | Case (_,p,c,bl) -> f n p; f n c; CArray.Fun1.iter f n bl
-  | Proj (p,c) -> f n c
+  | Proj (_p,c) -> f n c
   | Fix (_,(lna,tl,bl)) ->
     Array.iter (f n) tl;
     let n' = Array.fold_left2 (fun n na t -> g (LocalAssum (na,t)) n) n lna tl in
@@ -540,12 +540,12 @@ let fold sigma f acc c = match kind sigma c with
   | Lambda (_,t,c) -> f (f acc t) c
   | LetIn (_,b,t,c) -> f (f (f acc b) t) c
   | App (c,l) -> Array.fold_left f (f acc c) l
-  | Proj (p,c) -> f acc c
+  | Proj (_p,c) -> f acc c
   | Evar (_,l) -> Array.fold_left f acc l
   | Case (_,p,c,bl) -> Array.fold_left f (f (f acc p) c) bl
-  | Fix (_,(lna,tl,bl)) ->
+  | Fix (_,(_lna,tl,bl)) ->
     Array.fold_left2 (fun acc t b -> f (f acc t) b) acc tl bl
-  | CoFix (_,(lna,tl,bl)) ->
+  | CoFix (_,(_lna,tl,bl)) ->
     Array.fold_left2 (fun acc t b -> f (f acc t) b) acc tl bl
 
 let compare_gen k eq_inst eq_sort eq_constr nargs c1 c2 =
@@ -688,7 +688,7 @@ let compare_head_gen_proj env sigma equ eqs eqc' nargs m n =
   | Proj (p, c), App (f, args)
   | App (f, args), Proj (p, c) -> 
       (match kind_upto sigma f with
-      | Const (p', u) when Constant.equal (Projection.constant p) p' -> 
+      | Const (p', _u) when Constant.equal (Projection.constant p) p' -> 
           let pb = Environ.lookup_projection p env in
           let npars = pb.Declarations.proj_npars in
 	  if Array.length args == npars + 1 then
@@ -741,7 +741,7 @@ let universes_of_constr env sigma c =
        else
          let u = Sorts.univ_of_sort sort in
          LSet.fold LSet.add (Universe.levels u) s
-    | Evar (k, args) ->
+    | Evar (k, _args) ->
        let concl = Evd.evar_concl (Evd.find sigma k) in
        fold sigma aux (aux s (of_constr concl)) c
     | _ -> fold sigma aux s c

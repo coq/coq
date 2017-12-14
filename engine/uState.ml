@@ -58,7 +58,7 @@ let is_empty ctx =
 let uname_union s t =
   if s == t then s
   else
-    UNameMap.merge (fun k l r ->
+    UNameMap.merge (fun _k l r ->
         match l, r with
         | Some _, _ -> l
         | _, _ -> r) s t
@@ -294,7 +294,7 @@ let constrain_variables diff ctx =
   { ctx with uctx_local = (univs, local); uctx_univ_variables = vars }
   
 let reference_of_level uctx =
-  let map, map_rev = uctx.uctx_names in 
+  let _map, map_rev = uctx.uctx_names in 
     fun l ->
       try CAst.make @@ Libnames.Ident (Option.get (Univ.LMap.find l map_rev).uname)
       with Not_found | Option.IsNone ->
@@ -327,7 +327,7 @@ let universe_context ~names ~extensible uctx =
   let levels = ContextSet.levels uctx.uctx_local in
   let newinst, left =
     List.fold_right
-      (fun { CAst.loc; v = id } (newinst, acc) ->
+      (fun (_loc,id) (newinst, acc) ->
          let l =
            try UNameMap.find id (fst uctx.uctx_names)
            with Not_found -> assert false
@@ -347,7 +347,7 @@ let check_universe_context_set ~names ~extensible uctx =
   if extensible then ()
   else
     let open Univ in
-    let left = List.fold_left (fun left { CAst.loc; v = id } ->
+    let left = List.fold_left (fun left (_loc,id) ->
         let l =
           try UNameMap.find id (fst uctx.uctx_names)
           with Not_found -> assert false
@@ -396,7 +396,7 @@ let check_univ_decl ~poly uctx decl =
 
 let restrict ctx vars =
   let vars = Univ.LSet.union vars ctx.uctx_seff_univs in
-  let vars = Names.Id.Map.fold (fun na l vars -> Univ.LSet.add l vars)
+  let vars = Names.Id.Map.fold (fun _na l vars -> Univ.LSet.add l vars)
       (fst ctx.uctx_names) vars
   in
   let uctx' = Univops.restrict_universe_context ctx.uctx_local vars in
@@ -473,7 +473,7 @@ let new_univ_variable ?loc rigid name
   ({ uctx_local = ctx; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} as uctx) =
   let u = Universes.new_univ_level () in
   let ctx' = Univ.ContextSet.add_universe u ctx in
-  let uctx', pred =
+  let uctx', _pred =
     match rigid with
     | UnivRigid -> uctx, true
     | UnivFlexible b -> 
@@ -525,7 +525,7 @@ let make_flexible_variable ctx ~algebraic u =
       in
       let has_upper_constraint () =
         Univ.Constraint.exists
-          (fun (l,d,r) -> d == Univ.Lt && Univ.Level.equal l u)
+          (fun (l,d,_r) -> d == Univ.Lt && Univ.Level.equal l u)
           (Univ.ContextSet.constraints cstrs)
       in
         if not (Univ.LMap.exists substu_not_alg uvars || has_upper_constraint ())
@@ -552,7 +552,7 @@ let subst_univs_context_with_def def usubst (ctx, cst) =
   (Univ.LSet.diff ctx def, Universes.subst_univs_constraints usubst cst)
 
 let normalize_variables uctx =
-  let normalized_variables, undef, def, subst = 
+  let normalized_variables, _undef, def, subst = 
     Universes.normalize_univ_variables uctx.uctx_univ_variables 
   in
   let ctx_local = subst_univs_context_with_def def (Univ.make_subst subst) uctx.uctx_local in

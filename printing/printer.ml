@@ -163,10 +163,10 @@ let pr_glob_constr_env env c =
   pr_constr_expr (extern_glob_constr (Termops.vars_of_env env) c)
 
 let pr_lglob_constr c =
-  let (sigma, env) = Pfedit.get_current_context () in
+  let (_sigma, env) = Pfedit.get_current_context () in
   pr_lglob_constr_env env c
 let pr_glob_constr c =
-  let (sigma, env) = Pfedit.get_current_context () in
+  let (_sigma, env) = Pfedit.get_current_context () in
   pr_glob_constr_env env c
 
 let pr_closed_glob_n_env env sigma n c =
@@ -421,7 +421,7 @@ let should_compact env sigma typ =
 let rec bld_sign_env env sigma ctxt pps =
   match ctxt with
   | [] -> pps
-  | CompactedDecl.LocalAssum (ids,typ)::ctxt' when should_compact env sigma typ ->
+  | CompactedDecl.LocalAssum (_ids,typ)::_ctxt' when should_compact env sigma typ ->
     let pps',ctxt' = bld_sign_env_id env sigma ctxt (mt ()) true in
     (* putting simple hyps in a more horizontal flavor *)
     bld_sign_env env sigma ctxt' (pps ++ brk (0,0) ++ hov 0 pps')
@@ -432,7 +432,7 @@ let rec bld_sign_env env sigma ctxt pps =
 and bld_sign_env_id env sigma ctxt pps is_start =
   match ctxt with
   | [] -> pps,ctxt
- | CompactedDecl.LocalAssum(ids,typ) as d :: ctxt' when should_compact env sigma typ ->
+ | CompactedDecl.LocalAssum(_ids,typ) as d :: ctxt' when should_compact env sigma typ ->
     let pidt = pr_var_list_decl env sigma d in
     let pps' = pps ++ (if not is_start then brk (3,0) else (mt ())) ++ pidt in
     bld_sign_env_id env sigma ctxt' pps' false
@@ -534,7 +534,7 @@ let pr_evgl_sign sigma evi =
   let ps = pr_named_context_of env sigma in
   let _, l = match Filter.repr (evar_filter evi) with
   | None -> [], []
-  | Some f -> List.filter2 (fun b c -> not b) f (evar_context evi)
+  | Some f -> List.filter2 (fun b _c -> not b) f (evar_context evi)
   in
   let ids = List.rev_map NamedDecl.get_id l in
   let warn =
@@ -563,22 +563,12 @@ let pr_evar sigma (evk, evi) =
 let rec pr_evars_int_hd pr sigma i = function
   | [] -> mt ()
   | (evk,evi)::rest ->
-      (hov 0 (pr i evk evi)) ++
-      (match rest with [] -> mt () | _ -> fnl () ++ pr_evars_int_hd pr sigma (i+1) rest)
+      (hov 0 (head i ++ pr_evar sigma (evk,evi))) ++
+      (match rest with [] -> mt () | _ -> fnl () ++ pr_evars_int_hd head sigma (i+1) rest)
 
-let pr_evars_int sigma ~shelf ~givenup i evs =
-  let pr_status i =
-    if List.mem i shelf then str " (shelved)"
-    else if List.mem i givenup then str " (given up)"
-    else mt () in
-  pr_evars_int_hd
-    (fun i evk evi ->
-      str "Existential " ++ int i ++ str " =" ++
-      spc () ++ pr_evar sigma (evk,evi) ++ pr_status evk)
-    sigma i (Evar.Map.bindings evs)
+let pr_evars_int sigma i evs = pr_evars_int_hd (fun i -> str "Existential " ++ int i ++ str " =" ++ spc ()) sigma i (Evar.Map.bindings evs)
 
-let pr_evars sigma evs =
-  pr_evars_int_hd (fun i evk evi -> pr_evar sigma (evk,evi)) sigma 1 (Evar.Map.bindings evs)
+let pr_evars sigma evs = pr_evars_int_hd (fun _i -> mt ()) sigma 1 (Evar.Map.bindings evs)
 
 (* Display a list of evars given by their name, with a prefix *)
 let pr_ne_evar_set hd tl sigma l =

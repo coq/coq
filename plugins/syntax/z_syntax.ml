@@ -54,7 +54,7 @@ let pos_of_bignat ?loc x =
     match div2_with_rest x with
       | (q,false) -> DAst.make ?loc @@ GApp (ref_xO,[pos_of q])
       | (q,true) when not (Bigint.equal q zero) -> DAst.make ?loc @@ GApp (ref_xI,[pos_of q])
-      | (q,true) -> ref_xH
+      | (_q,true) -> ref_xH
   in
   pos_of x
 
@@ -113,7 +113,7 @@ let glob_Npos = ConstructRef path_of_Npos
 
 let n_path = make_path binnums "N"
 
-let n_of_binnat ?loc pos_or_neg n = DAst.make ?loc @@
+let n_of_binnat ?loc _pos_or_neg n = DAst.make ?loc @@
   if not (Bigint.equal n zero) then
     GApp(DAst.make @@ GRef (glob_Npos,None), [pos_of_bignat ?loc n])
   else

@@ -78,7 +78,7 @@ let make segments =
     (** We start from leaves: the last level of the tree is initialized
 	with the given segments... *)
     list_iteri 
-      (fun i ((start, stop), value) ->
+      (fun i ((start, stop), _value) ->
 	 let k = leaves_offset + i in
 	 let i = Interval (start, stop) in
 	   tree.(k) <- (i, Some i))
@@ -106,7 +106,7 @@ let make segments =
 
     (** Finally, annotation are replaced with the image related to each leaf. *)
     let final_tree = 
-      Array.mapi (fun i (segment, value) -> (segment, None)) tree
+      Array.mapi (fun _i (segment, _value) -> (segment, None)) tree
     in
       list_iteri 
 	(fun i ((start, stop), value) -> 

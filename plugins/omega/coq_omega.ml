@@ -39,14 +39,14 @@ open OmegaSolver
 (* Added by JCF, 09/03/98 *)
 
 let elim_id id =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _gl ->
     simplest_elim (mkVar id)
   end
-let resolve_id id = Proofview.Goal.enter begin fun gl ->
+let resolve_id id = Proofview.Goal.enter begin fun _gl ->
   apply (mkVar id)
 end
 
-let timing timer_name f arg = f arg
+let timing _timer_name f arg = f arg
 
 let display_time_flag = ref false
 let display_system_flag = ref false
@@ -370,7 +370,7 @@ let coq_True = lazy (init_constant "True")
 
 (* For unfold *)
 let evaluable_ref_of_constr s c = match EConstr.kind Evd.empty (Lazy.force c) with
-  | Const (kn,u) when Tacred.is_evaluable (Global.env()) (EvalConstRef kn) ->
+  | Const (kn,_u) when Tacred.is_evaluable (Global.env()) (EvalConstRef kn) ->
       EvalConstRef kn
   | _ -> anomaly ~label:"Coq_omega" (Pp.str (s^" is not an evaluable constant."))
 
@@ -568,17 +568,17 @@ let occurrence sigma path (t : constr) =
   let rec loop p0 t = match (p0,EConstr.kind sigma t) with
     | (p, Cast (c,_,_)) -> loop p c
     | ([], _) -> t
-    | ((P_APP n :: p),  App (f,v)) -> loop p v.(pred n)
+    | ((P_APP n :: p),  App (_f,v)) -> loop p v.(pred n)
     | ((P_BRANCH n :: p), Case (_,_,_,v)) -> loop p v.(n)
     | ((P_ARITY :: p),  App (f,_)) -> loop p f
-    | ((P_ARG :: p),  App (f,v)) -> loop p v.(0)
+    | ((P_ARG :: p),  App (_f,v)) -> loop p v.(0)
     | (p, Fix((_,n) ,(_,_,v))) -> loop p v.(n)
-    | ((P_BODY :: p), Prod (n,t,c)) -> loop p c
-    | ((P_BODY :: p), Lambda (n,t,c)) -> loop p c
-    | ((P_BODY :: p), LetIn (n,b,t,c)) -> loop p c
-    | ((P_TYPE :: p), Prod (n,term,c)) -> loop p term
-    | ((P_TYPE :: p), Lambda (n,term,c)) -> loop p term
-    | ((P_TYPE :: p), LetIn (n,b,term,c)) -> loop p term
+    | ((P_BODY :: p), Prod (_n,_t,c)) -> loop p c
+    | ((P_BODY :: p), Lambda (_n,_t,c)) -> loop p c
+    | ((P_BODY :: p), LetIn (_n,_b,_t,c)) -> loop p c
+    | ((P_TYPE :: p), Prod (_n,term,_c)) -> loop p term
+    | ((P_TYPE :: p), Lambda (_n,term,_c)) -> loop p term
+    | ((P_TYPE :: p), LetIn (_n,_b,term,_c)) -> loop p term
     | (p, _) ->
 	failwith ("occurrence " ^ string_of_int(List.length p))
   in
@@ -592,7 +592,7 @@ let abstract_path sigma typ path t =
 let focused_simpl path =
   let open Tacmach.New in
   Proofview.Goal.nf_enter begin fun gl ->
-  let newc = context (project gl) (fun i t -> pf_nf gl t) (List.rev path) (pf_concl gl) in
+  let newc = context (project gl) (fun _i t -> pf_nf gl t) (List.rev path) (pf_concl gl) in
   convert_concl_no_check newc DEFAULTcast
   end
 
@@ -616,7 +616,7 @@ let rec oprint = function
       oprint t2; print_string ")"
   | Oatom s -> print_string (Id.to_string s)
   | Oz i -> print_string (string_of_bigint i)
-  | Oufo f -> print_string "?"
+  | Oufo _f -> print_string "?"
 
 let rec weight = function
   | Oatom c -> intern_id c
@@ -833,7 +833,7 @@ let shuffle_mult p_init k1 e1 k2 e2 =
                             [P_APP 2; P_APP 2]]
             (Lazy.force coq_fast_OMEGA12) ::
           loop (P_APP 2 :: p) (l1',l2)
-    | ({c=c1;v=v1}::l1), [] ->
+    | ({c=_c1;v=_v1}::l1), [] ->
         clever_rewrite p [[P_APP 1; P_APP 1; P_APP 1; P_APP 1];
                           [P_APP 1; P_APP 1; P_APP 1; P_APP 2];
                           [P_APP 1; P_APP 1; P_APP 2];
@@ -841,7 +841,7 @@ let shuffle_mult p_init k1 e1 k2 e2 =
                           [P_APP 1; P_APP 2]]
           (Lazy.force coq_fast_OMEGA11) ::
         loop (P_APP 2 :: p) (l1,[])
-    | [],({c=c2;v=v2}::l2) ->
+    | [],({c=_c2;v=_v2}::l2) ->
         clever_rewrite p  [[P_APP 2; P_APP 1; P_APP 1; P_APP 1];
                            [P_APP 2; P_APP 1; P_APP 1; P_APP 2];
                            [P_APP 1];
@@ -887,11 +887,11 @@ let shuffle_mult_right p_init e1 k2 e2 =
                             [P_APP 2; P_APP 2]]
             (Lazy.force coq_fast_OMEGA12) ::
           loop (P_APP 2 :: p) (l1',l2)
-    | ({c=c1;v=v1}::l1), [] ->
+    | ({c=_c1;v=_v1}::l1), [] ->
         clever_rewrite p [[P_APP 1;P_APP 1]; [P_APP 1; P_APP 2];[P_APP 2]]
           (Lazy.force coq_fast_Zplus_assoc_reverse) ::
         loop (P_APP 2 :: p) (l1,[])
-    | [],({c=c2;v=v2}::l2) ->
+    | [],({c=_c2;v=_v2}::l2) ->
         clever_rewrite p [[P_APP 2; P_APP 1; P_APP 1; P_APP 1];
                           [P_APP 2; P_APP 1; P_APP 1; P_APP 2];
                           [P_APP 1];
@@ -933,7 +933,7 @@ let rec scalar p n = function
          (Lazy.force coq_fast_Zmult_assoc_reverse);
        focused_simpl (P_APP 2 :: p)],
       Otimes(t1,Oz (n*x))
-  | Otimes(t1,t2) -> CErrors.user_err Pp.(str "Omega: Can't solve a goal with non-linear products")
+  | Otimes(_t1,_t2) -> CErrors.user_err Pp.(str "Omega: Can't solve a goal with non-linear products")
   | (Oatom _ as t) -> [], Otimes(t,Oz n)
   | Oz i -> [focused_simpl p],Oz(n*i)
   | Oufo c -> [], Oufo (mkApp (Lazy.force coq_Zmult, [| mk_integer n; c |]))
@@ -985,7 +985,7 @@ let rec negate p = function
       [clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 1;P_APP 2]]
          (Lazy.force coq_fast_Zopp_mult_distr_r);
        focused_simpl (P_APP 2 :: p)], Otimes(t1,Oz (neg x))
-  | Otimes(t1,t2) -> CErrors.user_err Pp.(str "Omega: Can't solve a goal with non-linear products")
+  | Otimes(_t1,_t2) -> CErrors.user_err Pp.(str "Omega: Can't solve a goal with non-linear products")
   | (Oatom _ as t) ->
       let r = Otimes(t,Oz(negone)) in
       [clever_rewrite p [[P_APP 1]] (Lazy.force coq_fast_Zopp_eq_mult_neg_1)], r
@@ -1056,11 +1056,11 @@ let shrink_pair p f1 f2 =
 	let r = Otimes(Oatom v,Oplus(c2,Oz one)) in
 	clever_rewrite p [[P_APP 1];[P_APP 2;P_APP 2]]
 	  (Lazy.force coq_fast_Zred_factor2), r
-    | Otimes (v1,c1),Oatom v ->
+    | Otimes (_v1,c1),Oatom v ->
 	let r = Otimes(Oatom v,Oplus(c1,Oz one)) in
 	clever_rewrite p [[P_APP 2];[P_APP 1;P_APP 2]]
           (Lazy.force coq_fast_Zred_factor3), r
-    | Otimes (Oatom v,c1),Otimes (v2,c2) ->
+    | Otimes (Oatom v,c1),Otimes (_v2,c2) ->
 	let r = Otimes(Oatom v,Oplus(c1,c2)) in
 	clever_rewrite p
           [[P_APP 1;P_APP 1];[P_APP 1;P_APP 2];[P_APP 2;P_APP 2]]
@@ -1075,7 +1075,7 @@ let reduce_factor p = function
   | Oatom v ->
       let r = Otimes(Oatom v,Oz one) in
       [clever_rewrite p [[]] (Lazy.force coq_fast_Zred_factor0)],r
-  | Otimes(Oatom v,Oz n) as f -> [],f
+  | Otimes(Oatom _v,Oz _n) as f -> [],f
   | Otimes(Oatom v,c) ->
       let rec compute = function
         | Oz n -> n
@@ -1120,7 +1120,7 @@ let rec condense p = function
       tac @ [tac'], final
 
 let rec clear_zero p = function
-  | Oplus(Otimes(Oatom v,Oz n),r) when n =? zero ->
+  | Oplus(Otimes(Oatom _v,Oz n),r) when n =? zero ->
       let tac =
 	clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 2]]
 	  (Lazy.force coq_fast_Zred_factor5) in
@@ -1144,7 +1144,7 @@ let replay_history tactic_normalisation =
 		(Id.List.assoc (hyp_of_tag e.id) tactic_normalisation)
 		(loop l)
 	    with Not_found -> loop l end
-      | NEGATE_CONTRADICT (e2,e1,b) :: l ->
+      | NEGATE_CONTRADICT (e2,e1,b) :: _l ->
 	  let eq1 = decompile e1
 	  and eq2 = decompile e2 in
 	  let id1 = hyp_of_tag e1.id
@@ -1164,7 +1164,7 @@ let replay_history tactic_normalisation =
 	    resolve_id aux;
             reflexivity
           ]
-      | CONTRADICTION (e1,e2) :: l ->
+      | CONTRADICTION (e1,e2) :: _l ->
 	  let eq1 = decompile e1
 	  and eq2 = decompile e2 in
 	  let p_initial = [P_APP 2;P_TYPE] in
@@ -1229,7 +1229,7 @@ let replay_history tactic_normalisation =
                 ];
 	      tclTHEN (mk_then tac) reflexivity ]
 
-      | NOT_EXACT_DIVIDE (e1,k) :: l ->
+      | NOT_EXACT_DIVIDE (e1,k) :: _l ->
 	  let c = floor_div e1.constant k in
 	  let d = Bigint.sub e1.constant (Bigint.mult c k) in
 	  let e2 =  {id=e1.id; kind=EQUA;constant = c;
@@ -1359,7 +1359,7 @@ let replay_history tactic_normalisation =
 	      (intros_using [id]);
 	      (loop l) ];
             tclTHEN (exists_tac eq1) reflexivity ]
-      | SPLIT_INEQ(e,(e1,act1),(e2,act2)) :: l ->
+      | SPLIT_INEQ(e,(e1,act1),(e2,act2)) :: _l ->
 	  let id1 = new_identifier ()
 	  and id2 = new_identifier () in
 	  tag_hypothesis id1 e1; tag_hypothesis id2 e2;
@@ -1423,11 +1423,11 @@ let replay_history tactic_normalisation =
 		unfold sp_Zgt;
                 simpl_in_concl;
 		reflexivity ] ]
-      | CONSTANT_NOT_NUL(e,k) :: l ->
+      | CONSTANT_NOT_NUL(e,_k) :: _l ->
 	  tclTHEN ((generalize_tac [mkVar (hyp_of_tag e)])) Equality.discrConcl
-      | CONSTANT_NUL(e) :: l ->
+      | CONSTANT_NUL(e) :: _l ->
 	  tclTHEN (resolve_id (hyp_of_tag e)) reflexivity
-      | CONSTANT_NEG(e,k) :: l ->
+      | CONSTANT_NEG(e,_k) :: _l ->
 	  tclTHENLIST [
 	    (generalize_tac [mkVar (hyp_of_tag e)]);
             unfold sp_Zle;
@@ -1807,7 +1807,7 @@ let destructure_hyps =
        Proofview.tclEVARMAP >>= fun sigma ->
 	  begin try match destructurate_prop sigma (NamedDecl.get_type decl) with
 	  | Kapp(False,[]) -> elim_id i
-          | Kapp((Zle|Zge|Zgt|Zlt|Zne),[t1;t2]) -> loop lit
+          | Kapp((Zle|Zge|Zgt|Zlt|Zne),[_t1;_t2]) -> loop lit
           | Kapp(Or,[t1;t2]) ->
               (tclTHENS
                  (elim_id i)
@@ -1948,11 +1948,11 @@ let destructure_goal =
       let prop () = Proofview.tclUNIT (destructurate_prop sigma t) in
       Proofview.V82.wrap_exceptions prop >>= fun prop ->
       match prop with
-      | Kapp(Not,[t]) ->
+      | Kapp(Not,[_t]) ->
           (tclTHEN
 	     (tclTHEN (unfold sp_not) intro)
 	     destructure_hyps)
-      | Kimp(a,b) -> (tclTHEN intro (loop b))
+      | Kimp(_a,b) -> (tclTHEN intro (loop b))
       | Kapp(False,[]) -> destructure_hyps
       | _ ->
 	  let goal_tac =

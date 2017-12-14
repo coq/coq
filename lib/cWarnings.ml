@@ -95,7 +95,7 @@ let split_flags s =
     "all" flag, and reverses the list. *)
 let rec cut_before_all_rev acc = function
   | [] -> acc
-  | (status,name as w) :: warnings ->
+  | (_status,name as w) :: warnings ->
     let acc =
       if is_all_keyword name then [w]
       else if is_none_keyword name then [(Disabled,"all")]
@@ -124,6 +124,7 @@ let uniquize_flags_rev flags =
 (** [normalize_flags] removes redundant warnings. Unknown warnings are kept
     because they may be declared in a plugin that will be linked later. *)
 let normalize_flags ~silent warnings =
+  ignore(silent);
   let warnings = cut_before_all_rev warnings in
   uniquize_flags_rev warnings
 

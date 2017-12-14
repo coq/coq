@@ -176,7 +176,7 @@ let left_instance_tac (inst,id) continue seq=
 
 let right_instance_tac inst continue seq=
   let open EConstr in
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _gl ->
   match inst with
       Phantom dom ->
 	tclTHENS (cut dom)
@@ -191,7 +191,7 @@ let right_instance_tac inst continue seq=
     | Real ((0,t),_) ->
 	(tclTHEN (split (ImplicitBindings [t]))
 	   (tclSOLVE [wrap 0 true continue (deepen seq)]))
-    | Real ((m,t),_) ->
+    | Real ((_m,_t),_) ->
 	tclFAIL 0 (Pp.str "not implemented ... yet")
   end
 

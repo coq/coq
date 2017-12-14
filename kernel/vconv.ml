@@ -14,7 +14,7 @@ let val_of_constr env c =
 let compare_zipper z1 z2 =
   match z1, z2 with
   | Zapp args1, Zapp args2 -> Int.equal (nargs args1) (nargs args2)
-  | Zfix(f1,args1), Zfix(f2,args2) ->  Int.equal (nargs args1) (nargs args2)
+  | Zfix(_f1,args1), Zfix(_f2,args2) ->  Int.equal (nargs args1) (nargs args2)
   | Zswitch _, Zswitch _ | Zproj _, Zproj _ -> true
   | Zapp _ , _ | Zfix _, _ | Zswitch _, _ | Zproj _, _ -> false
 
@@ -84,10 +84,10 @@ and conv_whd env pb k whd1 whd2 cu =
   | Vconstr_block _, _ | Vatom_stk _, _ -> raise NotConvertible
 
 
-and conv_atom env pb k a1 stk1 a2 stk2 cu =
+and conv_atom env _pb k a1 stk1 a2 stk2 cu =
 (*  Pp.(msg_debug (str "conv_atom(" ++ pr_atom a1 ++ str ", " ++ pr_atom a2 ++ str ")")) ; *)
   match a1, a2 with
-  | Aind ((mi,i) as ind1) , Aind ind2 ->
+  | Aind ((mi,_i) as ind1) , Aind ind2 ->
     if eq_ind ind1 ind2 && compare_stack stk1 stk2 then
       if Environ.polymorphic_ind ind1 env then
         let mib = Environ.lookup_mind mi env in

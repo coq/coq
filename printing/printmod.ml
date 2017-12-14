@@ -360,7 +360,7 @@ let print_body is_impl env mp (l,body) =
 let print_struct is_impl env mp struc =
   prlist_with_sep spc (print_body is_impl env mp) struc
 
-let print_structure is_type env mp locals struc =
+let print_structure is_type env mp _locals struc =
   let env' = Option.map
     (Modops.add_structure mp struc Mod_subst.empty_delta_resolver) env in
   nametab_register_module_body mp struc;
@@ -397,7 +397,7 @@ let rec print_typ_expr env mp locals mty =
              keyword "Module"++ spc() ++ str s ++ spc() ++ str ":="++ spc()
              ++ print_modpath locals mp')
 
-let print_mod_expr env mp locals = function
+let print_mod_expr _env _mp locals = function
   | MEident mp -> print_modpath locals mp
   | MEapply _ as me ->
       let lapp = flatten_app me [] in

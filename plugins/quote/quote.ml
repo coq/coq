@@ -229,12 +229,12 @@ let compute_ivs f cs gl =
   let body = Environ.constant_value_in (Global.env()) (cst, u) in
   let body = EConstr.of_constr body in
   match decomp_term sigma body with
-    | Fix(([| len |], 0), ([| name |], [| typ |], [| body2 |])) ->
+    | Fix(([| _len |], 0), ([| _name |], [| _typ |], [| body2 |])) ->
         let (args3, body3) = decompose_lam sigma body2 in
         let nargs3 = List.length args3 in
         let is_conv = Reductionops.is_conv env sigma in
           begin match decomp_term sigma body3 with
-          | Case(_,p,c,lci) -> (* <p> Case c of c1 ... cn end *)
+          | Case(_,p,_c,lci) -> (* <p> Case c of c1 ... cn end *)
               let n_lhs_rhs = ref []
               and v_lhs = ref (None : constr option)
               and c_lhs = ref (None : constr option) in
@@ -365,7 +365,7 @@ let path_of_int n =
 let rec subterm gl (t : constr) (t' : constr) =
   (pf_conv_x gl t t') ||
   (match EConstr.kind (project gl) t with
-     | App (f,args) -> Array.exists (fun t -> subterm gl t t') args
+     | App (_f,args) -> Array.exists (fun t -> subterm gl t t') args
      | Cast(t,_,_) -> (subterm gl t t')
      | _ -> false)
 
@@ -376,7 +376,7 @@ let rec sort_subterm gl l =
   let sigma = project gl in
   let rec insert c = function
     | [] -> [c]
-    | (h::t as l) when EConstr.eq_constr sigma c h -> l (* Avoid doing the same work twice *)
+    | (h::_t as l) when EConstr.eq_constr sigma c h -> l (* Avoid doing the same work twice *)
     | h::t -> if subterm gl c h then c::h::t else h::(insert c t)
   in
   match l with

@@ -108,6 +108,7 @@ module Tag = struct
 end
 
 let msgnl_with ?pre_hdr fmt strm =
+  ignore(pre_hdr);
   pp_with fmt (strm ++ fnl ());
   Format.pp_print_flush fmt ()
 

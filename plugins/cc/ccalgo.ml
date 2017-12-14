@@ -149,8 +149,8 @@ let rec term_equal t1 t2 =
     | Product (s1, t1), Product (s2, t2) -> family_eq s1 s2 && family_eq t1 t2
     | Eps i1, Eps i2 -> Id.equal i1 i2
     | Appli (t1, u1), Appli (t2, u2) -> term_equal t1 t2 && term_equal u1 u2
-    | Constructor {ci_constr=(c1,u1); ci_arity=i1; ci_nhyps=j1},
-      Constructor {ci_constr=(c2,u2); ci_arity=i2; ci_nhyps=j2} ->
+    | Constructor {ci_constr=(c1,_u1); ci_arity=i1; ci_nhyps=j1},
+      Constructor {ci_constr=(c2,_u2); ci_arity=i2; ci_nhyps=j2} ->
       Int.equal i1 i2 && Int.equal j1 j2 && eq_constructor c1 c2 (* FIXME check eq? *)
     | _ -> false
 
@@ -161,7 +161,7 @@ let rec hash_term = function
   | Product (s1, s2) -> combine3 2 (Sorts.hash s1) (Sorts.hash s2)
   | Eps i -> combine 3 (Id.hash i)
   | Appli (t1, t2) -> combine3 4 (hash_term t1) (hash_term t2)
-  | Constructor {ci_constr=(c,u); ci_arity=i; ci_nhyps=j} -> combine4 5 (constructor_hash c) i j
+  | Constructor {ci_constr=(c,_u); ci_arity=i; ci_nhyps=j} -> combine4 5 (constructor_hash c) i j
 
 type ccpattern =
     PApp of term * ccpattern list (* arguments are reversed *)
@@ -525,7 +525,7 @@ let rec add_term state t=
 		     constructors=PacMap.empty;
 		     vertex= Leaf;
 		     term= t}
-	      | Eps id ->
+	      | Eps _id ->
 		  {clas= Rep (new_representative typ);
 		   cpath= -1;
 		   constructors=PacMap.empty;
@@ -647,7 +647,7 @@ let eq_pair (i1, j1) (i2, j2) = Int.equal i1 i2 && Int.equal j1 j2
 let rec min_path=function
     ([],l2)->([],l2)
   | (l1,[])->(l1,[])
-  | (((c1,t1)::q1),((c2,t2)::q2)) when eq_pair c1 c2 -> min_path (q1,q2)
+  | (((c1,_t1)::q1),((c2,_t2)::q2)) when eq_pair c1 c2 -> min_path (q1,q2)
   | cpl -> cpl
 
 let join_path uf i j=
@@ -710,8 +710,8 @@ let merge eq state = (* merge and no-merge *)
 let update t state = (* update 1 and 2 *)
   debug
     (fun () -> str "Updating term " ++ pr_idx_term state.uf t ++ str ".");
-  let (i,j) as sign = signature state.uf t in
-  let (u,v) = subterms state.uf t in
+  let (i,_j) as sign = signature state.uf t in
+  let (_u,v) = subterms state.uf t in
   let rep = get_representative state.uf i in
     begin
       match rep.inductive_status with

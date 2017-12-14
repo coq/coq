@@ -40,11 +40,11 @@ module HintIdent =
 struct
   type t = int * rew_rule
 
-  let compare (i, t) (j, t') = i - j
+  let compare (i, _t) (j, _t') = i - j
 
   let subst s (i,t) = (i,subst_hint s t)
 
-  let constr_of (i,t) = t.rew_pat
+  let constr_of (_i,t) = t.rew_pat
 end
 
 module HintOpt =
@@ -237,7 +237,7 @@ let decompose_applied_relation metas env sigma c ctype left2right =
     in
       try
 	let others,(c1,c2) = split_last_two args in
-	let ty1, ty2 =
+	let ty1, _ty2 =
 	  Typing.unsafe_type_of env eqclause.evd (EConstr.of_constr c1), Typing.unsafe_type_of env eqclause.evd (EConstr.of_constr c2)
 	in
 	let ty = EConstr.Unsafe.to_constr ty in

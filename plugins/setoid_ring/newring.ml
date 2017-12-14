@@ -47,7 +47,7 @@ let tag_arg tag_rec map subs i c =
     | Rec -> if Int.equal i (-1) then mk_clos subs c else tag_rec c
 
 let global_head_of_constr sigma c = 
-  let f, args = decompose_app sigma c in
+  let f, _args = decompose_app sigma c in
     try fst (Termops.global_of_constr sigma f)
     with Not_found -> CErrors.anomaly (str "global_head_of_constr.")
 
@@ -511,18 +511,18 @@ let ring_equality env evd (r,add,mul,opp,req) =
     | _ ->
 	let setoid = setoid_of_relation (Global.env ()) evd r req in
 	let signature = [Some (r,Some req);Some (r,Some req)],Some(r,Some req) in
-	let add_m, add_m_lem =
+	let _add_m, add_m_lem =
 	  try Rewrite.default_morphism signature add
           with Not_found ->
             error "ring addition should be declared as a morphism" in
-	let mul_m, mul_m_lem =
+	let _mul_m, mul_m_lem =
           try Rewrite.default_morphism signature mul
           with Not_found ->
             error "ring multiplication should be declared as a morphism" in
         let op_morph =
           match opp with
             | Some opp ->
-		(let opp_m,opp_m_lem =
+		(let _opp_m,opp_m_lem =
 		  try Rewrite.default_morphism ([Some(r,Some req)],Some(r,Some req)) opp
 		  with Not_found ->
                     error "ring opposite should be declared as a morphism" in
@@ -573,7 +573,7 @@ let reflect_coeff rkind =
     | Computational c -> lapp coq_comp [|c|]
     | Morphism m -> lapp coq_morph [|m|]
 
-let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
+let interp_cst_tac _env _sigma _rk _kind (_zero,_one,_add,_mul,_opp) cst_tac =
   match cst_tac with
       Some (CstTac t) -> Tacintern.glob_tactic t
     | Some (Closed lc) ->
@@ -633,7 +633,7 @@ let interp_div env evd div =
 let add_theory0 name (sigma, rth) eqth morphth cst_tac (pre,post) power sign div =
   check_required_library (cdir@["Ring_base"]);
   let env = Global.env() in
-  let (kind,r,zero,one,add,mul,sub,opp,req) = dest_ring env sigma rth in
+  let (kind,r,zero,one,add,mul,_sub,opp,req) = dest_ring env sigma rth in
   let evd = ref sigma in
   let (sth,ext) = build_setoid_params env evd r add mul opp req eqth in
   let (pow_tac, pspec) = interp_power env evd power in
@@ -923,7 +923,7 @@ let field_equality evd r inv req =
     | _ ->
 	let _setoid = setoid_of_relation (Global.env ()) evd r req in
 	let signature = [Some (r,Some req)],Some(r,Some req) in
-	let inv_m, inv_m_lem =
+	let _inv_m, inv_m_lem =
 	  try Rewrite.default_morphism signature inv
           with Not_found ->
             error "field inverse should be declared as a morphism" in
@@ -935,7 +935,7 @@ let add_field_theory0 name fth eqth morphth cst_tac inj (pre,post) power sign od
   let (sigma,fth) = ic fth in
   let env = Global.env() in
   let evd = ref sigma in
-  let (kind,r,zero,one,add,mul,sub,opp,div,inv,req,rth) =
+  let (kind,r,zero,one,add,mul,_sub,opp,_div,inv,req,rth) =
     dest_field env evd fth in
   let (sth,ext) = build_setoid_params env evd r add mul opp req eqth in
   let eqth = Some(sth,ext) in

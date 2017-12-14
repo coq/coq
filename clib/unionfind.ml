@@ -115,7 +115,7 @@ module Make (S:SetS)(M:MapS with type key = S.elt) = struct
     if x = y then ()
     else
       let xcan, ycan = if x < y then xcan, ycan else ycan, xcan in
-      let x,xnode = xcan and y,ynode = ycan in
+      let x,xnode = xcan and _y,ynode = ycan in
       match !xnode, !ynode with
 	| Canon lx, Canon ly ->
 	  xnode := Canon (S.union lx ly);
@@ -130,7 +130,7 @@ module Make (S:SetS)(M:MapS with type key = S.elt) = struct
 
   let partition p =
     List.rev (M.fold
-		(fun x node acc -> match !node with
+		(fun _x node acc -> match !node with
 		  | Equiv _ -> acc
 		  | Canon lx -> lx::acc)
 		!p [])

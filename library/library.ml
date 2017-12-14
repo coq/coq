@@ -167,7 +167,7 @@ let opened_libraries () = !libraries_imports_list
 
 let register_loaded_library m =
   let libname = m.libsum_name in
-  let link m =
+  let link _m =
     let dirname = Filename.dirname (library_full_filename libname) in
     let prefix = Nativecode.mod_uid_of_dirpath libname ^ "." in
     let f = prefix ^ "cmo" in
@@ -296,7 +296,7 @@ let locate_absolute_library dir =
   | [vo;vi] when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
     warn_several_object_files (vi, vo);
     vi
-  | [vo;vi] -> vo
+  | [vo;_vi] -> vo
   | _ -> assert false
 
 let locate_qualified_library ?root ?(warn = true) qid =
@@ -315,7 +315,7 @@ let locate_qualified_library ?root ?(warn = true) qid =
     match find ".vo" @ find ".vio" with
     | [] -> raise LibNotFound
     | [lpath, file] -> lpath, file
-    | [lpath_vo, vo; lpath_vi, vi]
+    | [_lpath_vo, vo; lpath_vi, vi]
       when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
       warn_several_object_files (vi, vo);
        lpath_vi, vi
@@ -431,7 +431,7 @@ let mk_summary m = {
 
 let intern_from_file f =
   let ch = raw_intern_library f in
-  let (lsd : seg_sum), _, digest_lsd = System.marshal_in_segment f ch in
+  let (lsd : seg_sum), _, _digest_lsd = System.marshal_in_segment f ch in
   let ((lmd : seg_lib delayed), digest_lmd) = in_delayed f ch in
   let (univs : seg_univ option), _, digest_u = System.marshal_in_segment f ch in
   let _ = System.skip_in_segment f ch in
@@ -489,7 +489,7 @@ let rec_intern_library libs (dir, f) =
 
 let native_name_from_filename f =
   let ch = raw_intern_library f in
-  let (lmd : seg_sum), pos, digest_lmd = System.marshal_in_segment f ch in
+  let (lmd : seg_sum), _pos, _digest_lmd = System.marshal_in_segment f ch in
   Nativecode.mod_uid_of_dirpath lmd.md_name
 
 (**********************************************************************)
@@ -523,10 +523,10 @@ let register_library m =
    - called at module or module type closing when a Require occurs in
      the module or module type
    - not called from a library (i.e. a module identified with a file) *)
-let load_require _ (_,(needed,modl,_)) =
+let load_require _ (_,(needed,_modl,_)) =
   List.iter register_library needed
 
-let open_require i (_,(_,modl,export)) =
+let open_require _i (_,(_,modl,export)) =
   Option.iter (fun exp -> open_libraries exp (List.map find_library modl))
     export
 

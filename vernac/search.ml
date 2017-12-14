@@ -64,7 +64,7 @@ let iter_named_context_name_type f =
 let iter_hypothesis glnum (fn : global_reference -> env -> constr -> unit) =
   let env = Global.env () in
   let iter_hyp idh typ = fn (VarRef idh) env typ in
-  let evmap,e = Pfedit.get_goal_context glnum in
+  let _evmap,e = Pfedit.get_goal_context glnum in
   let pfctxt = named_context e in
   iter_named_context_name_type iter_hyp pfctxt
 
@@ -199,12 +199,12 @@ let full_name_of_reference ref =
 (** Whether a reference is blacklisted *)
 let blacklist_filter_aux () =
   let l = SearchBlacklist.elements () in
-  fun ref env typ ->
+  fun ref _env _typ ->
   let name = full_name_of_reference ref in
   let is_not_bl str = not (String.string_contains ~where:name ~what:str) in
   List.for_all is_not_bl l
 
-let module_filter (mods, outside) ref env typ =
+let module_filter (mods, outside) ref _env _typ =
   let sp = path_of_global ref in
   let sl = dirpath sp in
   let is_outside md = not (is_dirpath_prefix_of md sl) in
@@ -347,7 +347,7 @@ let interface_search =
     (blacklist || blacklist_filter ref env constr)
   in
   let ans = ref [] in
-  let print_function ref env constr =
+  let print_function ref _env constr =
     let fullpath = DirPath.repr (Nametab.dirpath_of_global ref) in
     let qualid = Nametab.shortest_qualid_of_global Id.Set.empty ref in
     let (shortpath, basename) = Libnames.repr_qualid qualid in

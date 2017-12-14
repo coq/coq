@@ -54,7 +54,7 @@ let schedule_vio_checking j fs =
         let rec aux last acc = function
           | [] -> [last,acc]
           | ((f',id),_,_) :: tl when last = f' -> aux last (id::acc) tl
-          | ((f',id),_,_) :: _ as l -> (last,acc) :: aux f' [] l in
+          | ((f',_id),_,_) :: _ as l -> (last,acc) :: aux f' [] l in
         aux f [] l in
   let prog = Sys.argv.(0) in  
   let stdargs = filter_argv false (List.tl (Array.to_list Sys.argv)) in
@@ -125,7 +125,7 @@ let schedule_vio_compilation j fs =
   let prog = Sys.argv.(0) in  
   let stdargs = filter_argv false (List.tl (Array.to_list Sys.argv)) in
   let make_job () =
-    let f, t = List.hd !jobs in
+    let f, _t = List.hd !jobs in
     jobs := List.tl !jobs;
     [ "-vio2vo"; f ] in
   let rc = ref 0 in

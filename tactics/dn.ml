@@ -17,8 +17,8 @@ struct
 	    if Int.equal m 0 then
 	      n-n'
 	    else m
-	| Some(l,n),None -> 1
-	| None, Some(l,n) -> -1
+	| Some(_l,_n),None -> 1
+	| None, Some(_l,_n) -> -1
   end
   module ZSet = Set.Make(Z)
   module X_tries =
@@ -87,7 +87,7 @@ prefix ordering, [dna] is the function returning the main node of a pattern *)
 		 (tm_of tm (Some(lbl,List.length v))) v)
 	| Everything -> skip_arg 1 tm
     in
-    List.flatten (List.map (fun (tm,b) -> ZSet.elements (Trie.get tm)) (lookrec t tm))
+    List.flatten (List.map (fun (tm,_b) -> ZSet.elements (Trie.get tm)) (lookrec t tm))
 
   let add tm dna (pat,inf) =
     let p = path_of dna pat in Trie.add p (ZSet.singleton inf) tm

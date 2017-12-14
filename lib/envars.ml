@@ -74,7 +74,7 @@ let expand_path_macros ~warn s =
 	  in
 	  let s = v^(String.sub s n (l-n)) in
 	  expand_macros s (String.length v)
-	| c -> expand_macros s (i+1)
+	| _ -> expand_macros s (i+1)
   in expand_macros s 0
 
 (** {1 Paths} *)

@@ -157,9 +157,9 @@ let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
   const, Safe_typing.add_private
      (Safe_typing.private_con_of_scheme ~kind (Global.safe_env()) [ind,const]) eff
 
-let define_individual_scheme kind mode names (mind,i as ind) =
+let define_individual_scheme kind mode names (_mind,_i as ind) =
   match Hashtbl.find scheme_object_table kind with
-  | _,MutualSchemeFunction f -> assert false
+  | _,MutualSchemeFunction _f -> assert false
   | s,IndividualSchemeFunction f ->
       define_individual_scheme_base kind s f mode names ind
 

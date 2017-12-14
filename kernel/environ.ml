@@ -165,7 +165,7 @@ let fold_named_context f env ~init =
   let rec fold_right env =
     match match_named_context_val env.env_named_context with
     | None -> init
-    | Some (d, v, rem) ->
+    | Some (d, _v, rem) ->
 	let env =
 	  reset_with_named_context rem env in
 	f env d (fold_right env)
@@ -246,7 +246,7 @@ let constant_type env (kn,u) =
   let cb = lookup_constant kn env in
   match cb.const_universes with
   | Monomorphic_const _ -> cb.const_type, Univ.Constraint.empty
-  | Polymorphic_const ctx -> 
+  | Polymorphic_const _ctx -> 
     let csts = constraints_of cb u in
     (subst_instance_constr u cb.const_type, csts)
 
@@ -332,14 +332,14 @@ let is_projection cst env =
 (* Mutual Inductives *)
 let lookup_mind = lookup_mind
 
-let polymorphic_ind (mind,i) env =
+let polymorphic_ind (mind,_i) env =
   Declareops.inductive_is_polymorphic (lookup_mind mind env)
 
 let polymorphic_pind (ind,u) env =
   if Univ.Instance.is_empty u then false
   else polymorphic_ind ind env
 
-let type_in_type_ind (mind,i) env =
+let type_in_type_ind (mind,_i) env =
   not (lookup_mind mind env).mind_typing_flags.check_universes
 
 let template_polymorphic_ind (mind,i) env =
@@ -367,7 +367,7 @@ let lookup_constant_variables c env =
   let cmap = lookup_constant c env in
   Context.Named.to_vars cmap.const_hyps
 
-let lookup_inductive_variables (kn,i) env =
+let lookup_inductive_variables (kn,_i) env =
   let mis = lookup_mind kn env in
   Context.Named.to_vars mis.mind_hyps
 
@@ -577,7 +577,7 @@ fun rk value field ->
   let int31_binop_from_const op prim = int31_op_from_const 2 op prim in
   let int31_unop_from_const op prim = int31_op_from_const 1 op prim in
   match field with
-    | KInt31 (grp, Int31Type) ->
+    | KInt31 (_grp, Int31Type) ->
         let int31bit =
           (* invariant : the type of bits is registered, otherwise the function
              would raise Not_found. The invariant is enforced in safe_typing.ml *)

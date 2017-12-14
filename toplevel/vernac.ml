@@ -164,10 +164,24 @@ let load_vernac_core ~echo ~check ~interactive ~state file =
     let (e, info) = CErrors.push any in
     input_cleanup ();
     match e with
-    | Stm.End_of_input -> !rstate, !rids, Pcoq.Gram.comment_state in_pa
-    | reraise -> iraise (e, info)
+      | Stm.End_of_input ->
+          (* Is this called so comments at EOF are printed? *)
+          if !Flags.beautify then
+            pr_new_syntax ~loc:(Loc.make_loc (max_int,max_int)) in_pa ft_beautify None;
+          if !Flags.beautify_file then close_beautify ();
+          !rdoc, !rsid
+      | _reraise ->
+         if !Flags.beautify_file then close_beautify ();
+	 iraise (disable_drop e, info)
 
-let process_expr ~state loc_ast =
+(** [eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> unit]
+   It executes one vernacular command. By default the command is
+   considered as non-state-preserving, in which case we add it to the
+   Backtrack stack (triggering a save of a frozen state and the generation
+   of a new state label). An example of state-preserving command is one coming
+   from the query panel of Coqide. *)
+
+let process_expr doc sid loc_ast =
   checknav_deep loc_ast;
   interp_vernac ~interactive:true ~check:true ~state loc_ast
 

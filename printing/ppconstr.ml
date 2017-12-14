@@ -43,7 +43,7 @@ let tag_keyword     = tag Tag.keyword
 let tag_evar        = tag Tag.evar
 let tag_type        = tag Tag.univ
 let tag_unparsing   = function
-| UnpTerminal s -> tag Tag.notation
+| UnpTerminal _s -> tag Tag.notation
 | _ -> do_not_tag ()
 let tag_constr_expr = do_not_tag
 let tag_path = tag Tag.path
@@ -142,7 +142,7 @@ let tag_var = tag Tag.variable
   let pr_delimiters key strm =
     strm ++ str ("%"^key)
 
-  let pr_generalization bk ak c =
+  let pr_generalization bk _ak c =
     let hd, tl =
       match bk with
         | Implicit -> "{", "}"
@@ -223,7 +223,7 @@ let tag_var = tag Tag.variable
   let pr_expl_args pr (a,expl) =
     match expl with
       | None -> pr (lapp,L) a
-      | Some {v=ExplByPos (n,_id)} ->
+      | Some (_,ExplByPos (_n,_id)) ->
         anomaly (Pp.str "Explicitation by position not implemented.")
       | Some {v=ExplByName id} ->
         str "(" ++ pr_id id ++ str ":=" ++ pr ltop a ++ str ")"
@@ -353,7 +353,7 @@ let tag_var = tag Tag.variable
       | Generalized (b, b', t') ->
         assert (match b with Implicit -> true | _ -> false);
         begin match nal with
-          |[{loc; v=Anonymous}] ->
+          |[_loc,Anonymous] ->
             hov 1 (str"`" ++ (surround_impl b'
                                 ((if t' then str "!" else mt ()) ++ pr t)))
           |[{loc; v=Name id}] ->
@@ -378,7 +378,7 @@ let tag_var = tag Tag.variable
       surround (pr_lname na ++
                 pr_opt_no_spc (fun t -> str " :" ++ ws 1 ++ pr_c t) topt ++
                 str" :=" ++ spc() ++ pr_c c)
-    | CLocalPattern {CAst.loc; v = p,tyo} ->
+    | CLocalPattern (_loc,(p,tyo)) ->
       let p = pr_patt lsimplepatt p in
       match tyo with
         | None ->
@@ -402,6 +402,68 @@ let tag_var = tag Tag.variable
     if is_open then pr_delimited_binders pr_com_at sep pr_c
     else pr_undelimited_binders sep pr_c
 
+  let rec extract_prod_binders = let open CAst in function
+  (*  | CLetIn (loc,na,b,c) as x ->
+      let bl,c = extract_prod_binders c in
+      if bl = [] then [], x else CLocalDef (na,b) :: bl, c*)
+    | { v = CProdN ([],c) } ->
+      extract_prod_binders c
+    | { loc; v = CProdN ([[_,Name id],_bk,_t],
+              { v = CCases (LetPatternStyle,None, [{ v = CRef (Ident (_,id'),None)},None,None],[(_,([_,[p]],b))])} ) }
+         when Id.equal id id' && not (Id.Set.mem id (free_vars_of_constr_expr b)) ->
+      let bl,c = extract_prod_binders b in
+      CLocalPattern (loc, (p,None)) :: bl, c
+    | { loc; v = CProdN ((nal,bk,t)::bl,c) } ->
+      let bl,c = extract_prod_binders (CAst.make ?loc @@ CProdN(bl,c)) in
+      CLocalAssum (nal,bk,t) :: bl, c
+    | c -> [], c
+
+  let rec extract_lam_binders ce = let open CAst in match ce.v with
+  (*  | CLetIn (loc,na,b,c) as x ->
+      let bl,c = extract_lam_binders c in
+      if bl = [] then [], x else CLocalDef (na,b) :: bl, c*)
+    | CLambdaN ([],c) ->
+      extract_lam_binders c
+    | CLambdaN ([[_,Name id],_bk,_t],
+                { v = CCases (LetPatternStyle,None, [{ v = CRef (Ident (_,id'),None)},None,None],[(_,([_,[p]],b))])} )
+         when Id.equal id id' && not (Id.Set.mem id (free_vars_of_constr_expr b)) ->
+      let bl,c = extract_lam_binders b in
+      CLocalPattern (ce.loc,(p,None)) :: bl, c
+    | CLambdaN ((nal,bk,t)::bl,c) ->
+      let bl,c = extract_lam_binders (CAst.make ?loc:ce.loc @@ CLambdaN(bl,c)) in
+      CLocalAssum (nal,bk,t) :: bl, c
+    | _ -> [], ce
+
+  let split_lambda = CAst.with_loc_val (fun ?loc -> function
+    | CLambdaN ([[na],_bk,t],c) -> (na,t,c)
+    | CLambdaN (([na],_bk,t)::bl,c) -> (na,t, CAst.make ?loc @@ CLambdaN(bl,c))
+    | CLambdaN ((na::nal,bk,t)::bl,c) -> (na,t, CAst.make ?loc @@ CLambdaN((nal,bk,t)::bl,c))
+    | _ -> anomaly (Pp.str "ill-formed fixpoint body.")
+    )
+
+  let rename na na' t c =
+    match (na,na') with
+      | (_,Name id), (_,Name id') ->
+        (na',t,replace_vars_constr_expr (Id.Map.singleton id id') c)
+      | (_,Name _id), (_,Anonymous) -> (na,t,c)
+      | _ -> (na',t,c)
+
+  let split_product na' = CAst.with_loc_val (fun ?loc -> function
+    | CProdN ([[na],_bk,t],c) -> rename na na' t c
+    | CProdN (([na],_bk,t)::bl,c) -> rename na na' t (CAst.make ?loc @@ CProdN(bl,c))
+    | CProdN ((na::nal,bk,t)::bl,c) ->
+      rename na na' t (CAst.make ?loc @@ CProdN((nal,bk,t)::bl,c))
+    | _ -> anomaly (Pp.str "ill-formed fixpoint body.")
+    )
+
+  let rec split_fix n typ def =
+    if Int.equal n 0 then ([],typ,def)
+    else
+      let (na,_,def) = split_lambda def in
+      let (na,t,typ) = split_product na typ in
+      let (bl,typ,def) = split_fix (n-1) typ def in
+      (CLocalAssum ([na],default_binder_kind,t)::bl,typ,def)
+
   let pr_recursive_decl pr pr_dangling dangling_with_for id bl annot t c =
     let pr_body =
       if dangling_with_for then pr_dangling else pr in
@@ -413,7 +475,7 @@ let tag_var = tag Tag.variable
   let pr_guard_annot pr_aux bl (n,ro) =
     match n with
       | None -> mt ()
-      | Some {loc; v = id} ->
+      | Some (_loc, id) ->
         match (ro : Constrexpr.recursion_order_expr) with
           | CStructRec ->
             let names_of_binder = function
@@ -445,7 +507,7 @@ let tag_var = tag Tag.variable
         (pr_decl true) dl ++
         fnl() ++ keyword "for" ++ spc () ++ pr_id id
 
-  let pr_asin pr na indnalopt =
+  let pr_asin _pr na indnalopt =
     (match na with (* Decision of printing "_" or not moved to constrextern.ml *)
       | Some na -> spc () ++ keyword "as" ++ spc () ++  pr_lname na
       | None -> mt ()) ++
@@ -536,8 +598,8 @@ let tag_var = tag Tag.variable
               pr_fun_sep ++ pr spc ltop a),
           llambda
         )
-      | CLetIn ({v=Name x}, ({ v = CFix({v=x'},[_])}
-                          |  { v = CCoFix({v=x'},[_]) } as fx), t, b)
+      | CLetIn ((_,Name x), ({ CAst.v = CFix((_,x'),[_])}
+                          |  { CAst.v = CCoFix((_,x'),[_]) } as fx), _t, b)
           when Id.equal x x' ->
         return (
           hv 0 (
@@ -565,8 +627,8 @@ let tag_var = tag Tag.variable
           return (p ++ prlist (pr spc (lapp,L)) l2, lapp)
         else
           return (p, lproj)
-      | CAppExpl ((None,{v=Ident var},us),[t])
-      | CApp ((_, {v = CRef({v=Ident var},us)}),[t,None])
+      | CAppExpl ((None,Ident (_,var),_us),[t])
+      | CApp ((_, {CAst.v = CRef(Ident(_,var),_us)}),[t,None])
           when Id.equal var Notation_ops.ldots_var ->
         return (
           hov 0 (str ".." ++ pr spc (latom,E) t ++ spc () ++ str ".."),
@@ -593,7 +655,7 @@ let tag_var = tag Tag.variable
           hv 0 (str"{|" ++ pr_record_body_gen (pr spc) l ++ str" |}"),
           latom
         )
-      | CCases (LetPatternStyle,rtntypopt,[c,as_clause,in_clause],[{v=([[p]],b)}]) ->
+      | CCases (LetPatternStyle,rtntypopt,[c,as_clause,in_clause],[(_,([(_loc,[p])],b))]) ->
         return (
           hv 0 (
             keyword "let" ++ spc () ++ str"'" ++

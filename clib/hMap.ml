@@ -213,7 +213,7 @@ struct
     let (_, m) = Int.Map.choose s in
     Set.choose m
 
-  let split s x = assert false (** Cannot be implemented efficiently *)
+  let split _s _x = assert false (** Cannot be implemented efficiently *)
 
 end
 
@@ -273,7 +273,7 @@ struct
     with Not_found -> s
 
   let merge f s1 s2 =
-    let fm h m1 m2 = match m1, m2 with
+    let fm _h m1 m2 = match m1, m2 with
     | None, None -> None
     | Some m, None ->
       let m = Map.merge f m Map.empty in
@@ -355,7 +355,7 @@ struct
 
   let get k s = try find k s with Not_found -> assert false
 
-  let split k s = assert false (** Cannot be implemented efficiently *)
+  let split _k _s = assert false (** Cannot be implemented efficiently *)
 
   let map f s =
     let fs m = Map.map f m in

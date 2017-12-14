@@ -21,6 +21,7 @@ open Pcoq
 open Pcoq.Prim
 open Pcoq.Constr
 
+
 (* TODO: avoid this redefinition without an extra dep to Notation_ops *)
 let ldots_var = Id.of_string ".."
 
@@ -45,14 +46,14 @@ let binder_of_name expl { CAst.loc = loc; v = na } =
 let binders_of_names l =
   List.map (binder_of_name Explicit) l
 
-let mk_fixb (id,bl,ann,body,(loc,tyc)) : fix_expr =
+let mk_fixb (id,bl,ann,body,(_loc,tyc)) =
   let ty = match tyc with
       Some ty -> ty
     | None    -> CAst.make @@ CHole (None, IntroAnonymous, None) in
   (id,ann,bl,ty,body)
 
-let mk_cofixb (id,bl,ann,body,(loc,tyc)) : cofix_expr =
-  let _ = Option.map (fun { CAst.loc = aloc } ->
+let mk_cofixb (id,bl,ann,body,(_loc,tyc)) =
+  let _ = Option.map (fun (aloc,_) ->
     CErrors.user_err ?loc:aloc
       ~hdr:"Constr:mk_cofixb"
       (Pp.str"Annotation forbidden in cofix expression.")) (fst ann) in

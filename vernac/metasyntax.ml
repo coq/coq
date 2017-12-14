@@ -102,7 +102,7 @@ let parse_format ({CAst.loc;v=str} : Misctypes.lstring) =
     if Int.equal n 0 then l else push_token (make_loc i (i+n)) (UnpTerminal (String.make n ' ')) l in
   let close_box start stop b = function
     | (_,a)::(_::_ as l) -> push_token (make_loc start stop) (UnpBox (b,a)) l
-    | [a] -> user_err ?loc:(make_loc start stop) Pp.(str "Non terminated box in format.")
+    | [_a] -> user_err ?loc:(make_loc start stop) Pp.(str "Non terminated box in format.")
     | [] -> assert false in
   let close_quotation start i =
     if i < len && str.[i] == '\'' then
@@ -158,7 +158,7 @@ let parse_format ({CAst.loc;v=str} : Misctypes.lstring) =
       | ']' ->
 	  ((i,[]) :: parse_token 1 (close_quotation i (i+1)))
       (* Parse a non formatting token *)
-      | c ->
+      | _c ->
 	  let n = nonspaces true 0 i in
 	  push_token (make_loc i (i+n-1)) (UnpTerminal (String.sub str (i-1) (n+2)))
 	    (parse_token 1 (close_quotation i (i+n))))
@@ -208,7 +208,7 @@ let rec find_pattern nt xl = function
       find_pattern nt (x::xl) (l,l')
   | [], NonTerminal x' :: l' ->
       (out_nt nt,x',List.rev xl),l'
-  | _, Break s :: _ | Break s :: _, _ ->
+  | _, Break _s :: _ | Break _s :: _, _ ->
       user_err Pp.(str ("A break occurs on one side of \"..\" but not on the other side."))
   | _, Terminal s :: _ | Terminal s :: _, _ ->
       user_err ~hdr:"Metasyntax.find_pattern"
@@ -353,7 +353,7 @@ let add_break_if_none n b = function
 let check_open_binder isopen sl m =
   let pr_token = function
   | Terminal s -> str s
-  | Break n -> str "␣"
+  | Break _n -> str "␣"
   | _ -> assert false
   in
   if isopen && not (List.is_empty sl) then
@@ -494,16 +494,16 @@ let skip_var_in_recursive_format = function
   | (loc,_) :: _ -> error_not_same ?loc ()
   | [] -> assert false
 
-let read_recursive_format sl fmt =
+let read_recursive_format _sl fmt =
   let get_head fmt =
     let sl = skip_var_in_recursive_format fmt in
     try split_format_at_ldots [] sl with Exit -> error_not_same ?loc:(fst (List.last (if sl = [] then fmt else sl))) () in
   let rec get_tail = function
-    | (loc,a) :: sepfmt, (_,b) :: fmt when Pervasives.(=) a b -> get_tail (sepfmt, fmt) (* FIXME *)
+    | (_loc,a) :: sepfmt, (_,b) :: fmt when Pervasives.(=) a b -> get_tail (sepfmt, fmt) (* FIXME *)
     | [], tail -> skip_var_in_recursive_format tail
     | (loc,_) :: _, ([] | (_,UnpTerminal _) :: _)-> error_not_same ?loc ()
     | _, (loc,_)::_ -> error_not_same ?loc () in
-  let loc, slfmt, fmt = get_head fmt in
+  let _loc, slfmt, fmt = get_head fmt in
   slfmt, get_tail (slfmt, fmt)
 
 let hunks_of_format (from,(vars,typs)) symfmt =
@@ -657,8 +657,8 @@ let rec find_symbols c_current c_next c_last = function
   | NonTerminal id :: sl ->
       let prec = if not (List.is_empty sl) then c_current else c_last in
       (id, prec) :: (find_symbols c_next c_next c_last sl)
-  | Terminal s :: sl -> find_symbols c_next c_next c_last sl
-  | Break n :: sl -> find_symbols c_current c_next c_last sl
+  | Terminal _s :: sl -> find_symbols c_next c_next c_last sl
+  | Break _n :: sl -> find_symbols c_current c_next c_last sl
   | SProdList (x,_) :: sl' ->
       (x,c_next)::(find_symbols c_next c_next c_last sl')
 
@@ -683,13 +683,14 @@ let pr_arg_level from (lev,typ) =
   | (n,E) -> str "at level " ++ int n
   | (n,L) -> str "at level below " ++ int n
   | (n,Prec m) when Int.equal m n -> str "at level " ++ int n
-  | (n,_) -> str "Unknown level" in
-  Ppvernac.pr_set_entry_type (fun _ -> (*TO CHECK*) mt()) typ ++
-  (match typ with
-   | ETConstr _ | ETConstrAsBinder _ | ETPattern _ -> spc () ++ pplev lev
-   | _ -> mt ())
+  | (_n,_) -> str "Unknown level" in
+  let pptyp = match typ with
+  | NtnInternTypeConstr -> mt ()
+  | NtnInternTypeBinder -> str " " ++ surround (str "binder")
+  | NtnInternTypeIdent -> str " " ++ surround (str "ident") in
+  pplev ++ pptyp
 
-let pr_level ntn (from,args,typs) =
+let pr_level _ntn (from,args,typs) =
   str "at level " ++ int from ++ spc () ++ str "with arguments" ++ spc() ++
   prlist_with_sep pr_comma (pr_arg_level from) (List.combine args typs)
 
@@ -754,9 +755,9 @@ let cache_one_syntax_extension se =
 let cache_syntax_extension (_, (_, sy)) =
   cache_one_syntax_extension sy
 
-let subst_parsing_rule subst x = x
+let subst_parsing_rule _subst x = x
 
-let subst_printing_rule subst x = x
+let subst_printing_rule _subst x = x
 
 let subst_syntax_extension (subst, (local, sy)) =
   (local, { sy with
@@ -817,7 +818,7 @@ let interp_modifiers modl = let open NotationMods in
 	  user_err ~hdr:"Metasyntax.interp_modifiers"
             (str s ++ str " is already assigned to an entry or constr level.");
         interp { acc with etyps = (id,typ) :: acc.etyps; } l
-    | SetItemLevel ([],n) :: l ->
+    | SetItemLevel ([],_n) :: l ->
         interp acc l
     | SetItemLevelAsBinder ([],_,_) :: l ->
         interp acc l
@@ -860,7 +861,7 @@ let check_infix_modifiers modifiers =
 
 let check_useless_entry_types recvars mainvars etyps =
   let vars = let (l1,l2) = List.split recvars in l1@l2@mainvars in
-  match List.filter (fun (x,etyp) -> not (List.mem x vars)) etyps with
+  match List.filter (fun (x,_etyp) -> not (List.mem x vars)) etyps with
   | (x,_)::_ -> user_err ~hdr:"Metasyntax.check_useless_entry_types"
                   (Id.print x ++ str " is unbound in the notation.")
   | _ -> ()
@@ -922,7 +923,7 @@ let join_auxiliary_recursive_types recvars etyps =
     | Some _, None -> typs
     | None, Some ytyp -> (x,ytyp)::typs
     | Some xtyp, Some ytyp when Pervasives.(=) xtyp ytyp -> typs (* FIXME *)
-    | Some xtyp, Some ytyp ->
+    | Some _xtyp, Some _ytyp ->
 	user_err 
 	  (strbrk "In " ++ Id.print x ++ str " .. " ++ Id.print y ++
 	   strbrk ", both ends have incompatible types."))
@@ -1011,7 +1012,7 @@ let find_precedence lev etyps symbols onlyprint =
   let first_symbol =
     let rec aux = function
       | Break _ :: t -> aux t
-      | h :: t -> Some h
+      | h :: _t -> Some h
       | [] -> None in
     aux symbols in
   let last_is_terminal () =
@@ -1402,7 +1403,7 @@ let add_notation_interpretation_core local df env ?(impls=empty_internalization_
 
 (* Notations without interpretation (Reserved Notation) *)
 
-let add_syntax_extension local ({CAst.loc;v=df},mods) = let open SynData in
+let add_syntax_extension local ((_loc,df),mods) = let open SynData in
   let psd = compute_pure_syntax_data df mods in
   let sy_rules = make_syntax_rules {psd with compat = None} in
   Flags.if_verbose (List.iter (fun (f,x) -> f x)) psd.msgs;
@@ -1466,7 +1467,7 @@ type scope_command =
   | ScopeClasses of scope_class list
   | ScopeRemove
 
-let load_scope_command _ (_,(scope,dlm)) =
+let load_scope_command _ (_,(scope,_dlm)) =
   Notation.declare_scope scope
 
 let open_scope_command i (_,(scope,o)) =

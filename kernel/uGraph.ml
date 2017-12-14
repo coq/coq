@@ -194,7 +194,7 @@ let check_universes_invariants g =
   UMap.iter (fun l u ->
     match u with
     | Canonical u ->
-      UMap.iter (fun v strict ->
+      UMap.iter (fun v _strict ->
           incr n_edges;
           let v = repr g v in
           assert (topo_compare u v = -1);
@@ -435,7 +435,7 @@ let reorder g u v =
     | n0::q0 ->
       (* Computing new root. *)
       let root, rank_rest =
-        List.fold_left (fun ((best, rank_rest) as acc) n ->
+        List.fold_left (fun ((best, _rank_rest) as acc) n ->
           if n.rank >= best.rank then n, best.rank else acc)
           (n0, min_int) q0
       in
@@ -760,7 +760,7 @@ let normalize_universes g =
   in
   UMap.fold (fun _ u g ->
     match u with
-    | Equiv u -> g
+    | Equiv _u -> g
     | Canonical u ->
       let _, u, g = get_ltle g u in
       let _, _, g = get_gtge g u in

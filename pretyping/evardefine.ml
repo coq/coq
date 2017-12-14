@@ -162,7 +162,7 @@ let rec evar_absorb_arguments env evd (evk,args as ev) = function
 
 (* Refining an evar to a sort *)
 
-let define_evar_as_sort env evd (ev,args) =
+let define_evar_as_sort env evd (ev,_args) =
   let evd, u = new_univ_variable univ_rigid evd in
   let evi = Evd.find_undefined evd ev in 
   let s = Type u in

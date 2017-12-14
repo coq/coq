@@ -48,7 +48,7 @@ exception Bound
 let head_constr_bound sigma t =
   let t = strip_outer_cast sigma t in
   let _,ccl = decompose_prod_assum sigma t in
-  let hd,args = decompose_app sigma ccl in
+  let hd,_args = decompose_app sigma ccl in
   match EConstr.kind sigma hd with
   | Const (c, _) -> ConstRef c
   | Ind (i, _) -> IndRef i
@@ -67,9 +67,9 @@ let decompose_app_bound sigma t =
   let _,ccl = decompose_prod_assum sigma t in
   let hd,args = decompose_app_vect sigma ccl in
   match EConstr.kind sigma hd with
-    | Const (c,u) -> ConstRef c, args
-    | Ind (i,u) -> IndRef i, args
-    | Construct (c,u) -> ConstructRef c, args
+    | Const (c,_u) -> ConstRef c, args
+    | Ind (i,_u) -> IndRef i, args
+    | Construct (c,_u) -> ConstructRef c, args
     | Var id -> VarRef id, args
     | Proj (p, c) -> ConstRef (Projection.constant p), Array.cons c args
     | _ -> raise Bound
@@ -338,7 +338,7 @@ let path_matches hp hints =
       aux hp hints k || aux hp' hints k
     | PathEmpty, _ -> false
     | PathEpsilon, hints -> k hints
-  in aux hp hints (fun hints' -> true)
+  in aux hp hints (fun _hints' -> true)
 
 let rec matches_epsilon = function
   | PathAtom _ -> false
@@ -367,7 +367,7 @@ let rec path_derivate hp hint =
     match hints, hints' with
     | gr :: grs, gr' :: grs' when eq_gr gr gr' -> derivate_atoms grs grs'
     | [], [] -> PathEpsilon
-    | [], hints -> PathEmpty
+    | [], _hints -> PathEmpty
     | grs, [] -> PathAtom (PathHints grs)
     | _, _ -> PathEmpty
   in
@@ -375,7 +375,7 @@ let rec path_derivate hp hint =
   | PathAtom PathAny -> PathEpsilon
   | PathAtom (PathHints grs) -> 
      (match grs, hint with
-      | h :: _, PathAny -> PathEmpty
+      | _h :: _, PathAny -> PathEmpty
       | hints, PathHints hints' -> derivate_atoms hints hints'
       | _, _ -> assert false)
   | PathStar p -> if path_matches p [hint] then hp else PathEpsilon
@@ -531,7 +531,7 @@ struct
     try Constr_map.find key db.hintdb_map
     with Not_found -> empty_se
  
-  let realize_tac secvars (id,tac) =
+  let realize_tac secvars (_id,tac) =
     if Id.Pred.subset tac.secvars secvars then Some tac
     else
       (** Warn about no longer typable hint? *)
@@ -543,7 +543,7 @@ struct
       | Case (_,_,c,_) -> hrec c
       | App (c,_)      -> hrec c
       | Cast (c,_,_)   -> hrec c
-      | Proj (p, c)    -> hrec c
+      | Proj (_p, c)    -> hrec c
       | _              -> raise Evarutil.NoHeadEvar
     in
     hrec c
@@ -578,13 +578,13 @@ struct
     merge_entry secvars db se.sentry_nopat se.sentry_pat
 	
   (** Precondition: concl has no existentials *)
-  let map_auto sigma ~secvars (k,args) concl db =
+  let map_auto sigma ~secvars (k,_args) concl db =
     let se = find k db in
     let st = if db.use_dn then  (Some db.hintdb_state) else None in
     let pat = lookup_tacs sigma concl st se in
     merge_entry secvars db [] pat
 
-  let map_existential sigma ~secvars (k,args) concl db =
+  let map_existential sigma ~secvars (k,args) _concl db =
     let se = find k db in
       if matches_modes sigma args se.sentry_mode then
         merge_entry secvars db se.sentry_nopat se.sentry_pat
@@ -666,7 +666,7 @@ struct
     let filter (_, h) =
       match h.name with PathHints [gr] -> not (List.mem_f eq_gr gr grs) | _ -> true in
     let hintmap = Constr_map.map (remove_he db.hintdb_state filter) db.hintdb_map in
-    let hintnopat = List.smartfilter (fun (ge, sd) -> filter sd) db.hintdb_nopat in
+    let hintnopat = List.smartfilter (fun (_ge, sd) -> filter sd) db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
 
   let remove_one gr db = remove_list [gr] db
@@ -846,7 +846,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) info poly ?(name=PathAny) (c
    c is a constr
    cty is the type of constr *)
 
-let pr_hint_term env sigma ctx = function
+let pr_hint_term env sigma _ctx = function
   | IsGlobRef gr -> pr_global gr
   | IsConstr (c, ctx) ->
      let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
@@ -944,7 +944,7 @@ let make_extern pri pat tacast =
 let make_mode ref m = 
   let open Term in
   let ty, _ = Global.type_of_global_in_context (Global.env ()) ref in
-  let ctx, t = decompose_prod ty in
+  let ctx, _t = decompose_prod ty in
   let n = List.length ctx in
   let m' = Array.of_list m in
     if not (n == Array.length m') then
@@ -1035,7 +1035,7 @@ type hint_obj = {
   hint_action : hint_action;
 }
 
-let load_autohint _ (kn, h) =
+let load_autohint _ (_kn, h) =
   let name = h.hint_name in
   match h.hint_action with
   | CreateDB (b, st) -> searchtable_add (name, Hint_db.empty ~name st b)
@@ -1045,7 +1045,7 @@ let load_autohint _ (kn, h) =
   | AddCut path -> add_cut name path
   | AddMode (l, m) -> add_mode name l m
 
-let open_autohint i (kn, h) =
+let open_autohint i (_kn, h) =
   if Int.equal i 1 then match h.hint_action with
   | AddHints hints ->
     let add (_, hint) = statustable := KNmap.add hint.code.uid true !statustable in
@@ -1244,7 +1244,7 @@ let prepare_hint check (poly,local) env init (sigma,c) =
   let vars = ref (collect_vars sigma c) in
   let subst = ref [] in
   let rec find_next_evar c = match EConstr.kind sigma c with
-    | Evar (evk,args as ev) ->
+    | Evar (_evk,_args as ev) ->
       (* We skip the test whether args is the identity or not *)
       let t = Evarutil.nf_evar sigma (existential_type sigma ev) in
       let t = List.fold_right (fun (e,id) c -> replace_term sigma e id c) !subst t in
@@ -1413,7 +1413,7 @@ let pr_id_hint env sigma (id, v) =
 let pr_hint_list env sigma hintlist =
   (str "  " ++ hov 0 (prlist (pr_id_hint env sigma) hintlist) ++ fnl ())
 
-let pr_hints_db env sigma (name,db,hintlist) =
+let pr_hints_db env sigma (name,_db,hintlist) =
   (str "In the database " ++ str name ++ str ":" ++
      if List.is_empty hintlist then (str " nothing" ++ fnl ())
      else (fnl () ++ pr_hint_list env sigma hintlist))

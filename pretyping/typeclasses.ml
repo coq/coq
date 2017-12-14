@@ -146,7 +146,7 @@ let class_of_constr sigma c =
   with e when CErrors.noncritical e -> None
 
 let is_class_constr sigma c = 
-  try let gr, u = Termops.global_of_constr sigma c in
+  try let gr, _u = Termops.global_of_constr sigma c in
 	Refmap.mem gr !classes
   with Not_found -> false
 
@@ -261,7 +261,7 @@ let add_class cl =
 
 let check_instance env sigma c =
   try 
-    let (evd, c) = resolve_one_typeclass env sigma
+    let (evd, _c) = resolve_one_typeclass env sigma
       (Retyping.get_type_of env sigma c) in
       not (Evd.has_undefined evd)
   with e when CErrors.noncritical e -> false
@@ -290,7 +290,7 @@ let build_subclasses ~check env sigma glob { hint_priority = pri } =
 	let instapp = EConstr.Unsafe.to_constr instapp in
 	let projargs = Array.of_list (args @ [instapp]) in
 	let projs = List.map_filter 
-	  (fun (n, b, proj) ->
+	  (fun (_n, b, proj) ->
 	   match b with 
 	   | None -> None
 	   | Some (Backward, _) -> None
@@ -419,14 +419,14 @@ let declare_instance info local glob =
   let ty, _ = Global.type_of_global_in_context (Global.env ()) glob in
   let info = Option.default {hint_priority = None; hint_pattern = None} info in
     match class_of_constr Evd.empty (EConstr.of_constr ty) with
-    | Some (rels, ((tc,_), args) as _cl) ->
+    | Some (_rels, ((tc,_), _args) as _cl) ->
       assert (not (isVarRef glob) || local);
       add_instance (new_instance tc info (not local) glob)
     | None -> ()
 
 let add_class cl =
   add_class cl;
-  List.iter (fun (n, inst, body) ->
+  List.iter (fun (_n, inst, body) ->
 	     match inst with
 	     | Some (Backward, info) ->
 	       (match body with
@@ -461,14 +461,14 @@ let instance_constructor (cl,u) args =
 
 let typeclasses () = Refmap.fold (fun _ l c -> l :: c) !classes []
 
-let cmap_elements c = Refmap.fold (fun k v acc -> v :: acc) c []
+let cmap_elements c = Refmap.fold (fun _k v acc -> v :: acc) c []
 
 let instances_of c =
   try cmap_elements (Refmap.find c.cl_impl !instances) with Not_found -> []
 
 let all_instances () = 
-  Refmap.fold (fun k v acc ->
-    Refmap.fold (fun k v acc -> v :: acc) v acc)
+  Refmap.fold (fun _k v acc ->
+    Refmap.fold (fun _k v acc -> v :: acc) v acc)
     !instances []
 
 let instances r = 

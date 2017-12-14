@@ -49,8 +49,8 @@ let match_with_non_recursive_type sigma t =
     | App _ ->
         let (hdapp,args) = decompose_app sigma t in
         (match EConstr.kind sigma hdapp with
-           | Ind (ind,u) ->
-               if (Global.lookup_mind (fst ind)).mind_finite == CoFinite then
+           | Ind (ind,_u) ->
+               if (Global.lookup_mind (fst ind)).mind_finite == Decl_kinds.CoFinite then
 		 Some (hdapp,args)
 	       else
 		 None
@@ -132,8 +132,8 @@ let match_with_one_constructor sigma style onlybinary allow_rec t =
 	None
   | _ -> None in
   match res with
-  | Some (hdapp, args) when not onlybinary -> res
-  | Some (hdapp, [_; _]) -> res
+  | Some (_hdapp, _args) when not onlybinary -> res
+  | Some (_hdapp, [_; _]) -> res
   | _ -> None
 
 let match_with_conjunction ?(strict=false) ?(onlybinary=false) sigma t =
@@ -175,7 +175,7 @@ let test_strict_disjunction n lc =
 let match_with_disjunction ?(strict=false) ?(onlybinary=false) sigma t =
   let (hdapp,args) = decompose_app sigma t in
   let res = match EConstr.kind sigma hdapp with
-  | Ind (ind,u)  ->
+  | Ind (ind,_u)  ->
       let car = constructors_nrealargs ind in
       let (mib,mip) = Global.lookup_inductive ind in
       if Array.for_all (fun ar -> Int.equal ar 1) car
@@ -196,8 +196,8 @@ let match_with_disjunction ?(strict=false) ?(onlybinary=false) sigma t =
 	None
   | _ -> None in
   match res with
-  | Some (hdapp,args) when not onlybinary -> res
-  | Some (hdapp,[_; _]) -> res
+  | Some (_hdapp,_args) when not onlybinary -> res
+  | Some (_hdapp,[_; _]) -> res
   | _ -> None
 
 let is_disjunction ?(strict=false) ?(onlybinary=false) sigma t =
@@ -207,10 +207,10 @@ let is_disjunction ?(strict=false) ?(onlybinary=false) sigma t =
    constructors *)
 
 let match_with_empty_type sigma t =
-  let (hdapp,args) = decompose_app sigma t in
+  let (hdapp,_args) = decompose_app sigma t in
   match EConstr.kind sigma hdapp with
     | Ind (ind, _) ->
-        let (mib,mip) = Global.lookup_inductive ind in
+        let (_mib,mip) = Global.lookup_inductive ind in
         let nconstr = Array.length mip.mind_consnames in
 	if Int.equal nconstr 0 then Some hdapp else None
     | _ ->  None
@@ -221,7 +221,7 @@ let is_empty_type sigma t = op2bool (match_with_empty_type sigma t)
    Parameters and indices are allowed *)
 
 let match_with_unit_or_eq_type sigma t =
-  let (hdapp,args) = decompose_app sigma t in
+  let (hdapp,_args) = decompose_app sigma t in
   match EConstr.kind sigma hdapp with
     | Ind (ind , _) ->
         let (mib,mip) = Global.lookup_inductive ind in
@@ -293,7 +293,7 @@ let match_with_equation env sigma t =
   if not (isApp sigma t) then raise NoEquationFound;
   let (hdapp,args) = destApp sigma t in
   match EConstr.kind sigma hdapp with
-  | Ind (ind,u) ->
+  | Ind (ind,_u) ->
       if eq_gr (IndRef ind) glob_eq then
 	Some (build_coq_eq_data()),hdapp,
 	PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
@@ -304,7 +304,7 @@ let match_with_equation env sigma t =
 	Some (build_coq_jmeq_data()),hdapp,
 	HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
       else
-        let (mib,mip) = Global.lookup_inductive ind in
+        let (_mib,mip) = Global.lookup_inductive ind in
         let constr_types = mip.mind_nf_lc in
         let nconstr = Array.length mip.mind_consnames in
 	if Int.equal nconstr 1 then
@@ -324,7 +324,7 @@ let match_with_equation env sigma t =
    in particular, True/unit are provable by "reflexivity" *)
 
 let is_inductive_equality ind =
-  let (mib,mip) = Global.lookup_inductive ind in
+  let (_mib,mip) = Global.lookup_inductive ind in
   let nconstr = Array.length mip.mind_consnames in
   Int.equal nconstr 1 && Int.equal (constructor_nrealargs (ind,1)) 0
 
@@ -445,7 +445,7 @@ let equalities =
 
 let find_eq_data sigma eqn = (* fails with PatternMatchingFailure *)
   let d,k = first_match (match_eq sigma eqn) equalities in
-  let hd,u = destInd sigma (fst (destApp sigma eqn)) in
+  let _hd,u = destInd sigma (fst (destApp sigma eqn)) in
     d,u,k
 
 let extract_eq_args gl = function
@@ -474,7 +474,7 @@ let find_this_eq_data_decompose gl eqn =
 
 (*** Sigma-types *)
 
-let match_sigma env sigma ex =
+let match_sigma _env sigma ex =
   match EConstr.kind sigma ex with
   | App (f, [| a; p; car; cdr |]) when Termops.is_global sigma (Lazy.force coq_exist_ref) f -> 
       build_sigma (), (snd (destConstruct sigma f), a, p, car, cdr)

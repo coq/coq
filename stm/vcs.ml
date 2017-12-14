@@ -182,7 +182,7 @@ let reachable vcs i = closure Dag.NodeSet.empty vcs.dag i
 
 let gc vcs =
   let alive =
-    BranchMap.fold (fun b { pos } s -> closure s vcs.dag pos)
+    BranchMap.fold (fun _b { pos } s -> closure s vcs.dag pos)
       vcs.heads Dag.NodeSet.empty in
   let dead = Dag.NodeSet.diff (Dag.all_nodes vcs.dag) alive in
   { vcs with dag = Dag.del_nodes vcs.dag dead }, dead

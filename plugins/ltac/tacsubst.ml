@@ -48,9 +48,9 @@ let subst_glob_with_bindings subst (c,bl) =
 let subst_glob_with_bindings_arg subst (clear,c) =
   (clear,subst_glob_with_bindings subst c)
 
-let rec subst_intro_pattern subst = CAst.map (function
-  | IntroAction p -> IntroAction (subst_intro_pattern_action subst p)
-  | IntroNaming _ | IntroForthcoming _ as x -> x)
+let rec subst_intro_pattern subst = function
+  | loc,IntroAction p -> loc, IntroAction (subst_intro_pattern_action subst p)
+  | _loc, IntroNaming _ | _loc, IntroForthcoming _ as x -> x
 
 and subst_intro_pattern_action subst = let open CAst in function
   | IntroApplyOn ({loc;v=t},pat) ->
@@ -68,10 +68,10 @@ and subst_intro_or_and_pattern subst = function
 
 let subst_destruction_arg subst = function
   | clear,ElimOnConstr c -> clear,ElimOnConstr (subst_glob_with_bindings subst c)
-  | clear,ElimOnAnonHyp n as x -> x
-  | clear,ElimOnIdent id as x -> x
+  | _clear,ElimOnAnonHyp _n as x -> x
+  | _clear,ElimOnIdent _id as x -> x
 
-let subst_and_short_name f (c,n) =
+let subst_and_short_name f (c,_n) =
 (*  assert (n=None); *)(* since tacdef are strictly globalized *)
   (f c,None)
 
@@ -284,7 +284,7 @@ and subst_genarg subst (GenArg (Glbwit wit, x)) =
     let p = out_gen (glbwit wit1) (subst_genarg subst (in_gen (glbwit wit1) p)) in
     let q = out_gen (glbwit wit2) (subst_genarg subst (in_gen (glbwit wit2) q)) in
     in_gen (glbwit (wit_pair wit1 wit2)) (p, q)
-  | ExtraArg s ->
+  | ExtraArg _s ->
       Genintern.generic_substitute subst (in_gen (glbwit wit) x)
 
 (** Registering *)

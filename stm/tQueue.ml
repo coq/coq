@@ -31,13 +31,13 @@ end = struct
     let rec aux acc = function
       | [] -> raise Queue.Empty
       | (_,x) :: xs when picky x -> t := (List.rev acc @ xs, rel); x
-      | (_,x) as hd :: xs -> aux (hd :: acc) xs in
+      | (_,_x) as hd :: xs -> aux (hd :: acc) xs in
     aux [] l
   let push ({ contents = (xs, rel) } as t) x =
     incr age;
     (* re-roting the whole list is not the most efficient way... *)
     t := (List.sort rel (xs @ [!age,x]), rel)
-  let clear ({ contents = (l, rel) } as t) = t := ([], rel)
+  let clear ({ contents = (_l, rel) } as t) = t := ([], rel)
   let set_rel rel ({ contents = (xs, _) } as t) =
     let rel (_,x) (_,y) = rel x y in
     t := (List.sort rel xs, rel)
@@ -102,12 +102,12 @@ let length { queue = q; lock = m } =
   Mutex.unlock m;
   n
 
-let clear { queue = q; lock = m; cond = c } =
+let clear { queue = q; lock = m; cond = _c } =
   Mutex.lock m;
   PriorityQueue.clear q;
   Mutex.unlock m
 
-let clear_saving { queue = q; lock = m; cond = c } f =
+let clear_saving { queue = q; lock = m; cond = _c } f =
   Mutex.lock m;
   let saved = ref [] in
   while not (PriorityQueue.is_empty q) do

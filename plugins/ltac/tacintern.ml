@@ -114,7 +114,7 @@ let intern_constr_reference strict ist = function
   | {v=Ident id} as r when find_var id ist ->
       (DAst.make @@ GVar id), if strict then None else Some (make @@ CRef (r,None))
   | r ->
-      let {loc} as lqid = qualid_of_reference r in
+      let _loc,_ as lqid = qualid_of_reference r in
       DAst.make @@ GRef (locate_global_with_alias lqid,None), 
         if strict then None else Some (make @@ CRef (r,None))
 
@@ -180,13 +180,13 @@ let intern_message_token ist = function
 
 let intern_message ist = List.map (intern_message_token ist)
 
-let intern_quantified_hypothesis ist = function
+let intern_quantified_hypothesis _ist = function
   | AnonHyp n -> AnonHyp n
   | NamedHyp id ->
       (* Uncomment to disallow "intros until n" in ltac when n is not bound *)
       NamedHyp ((*snd (intern_hyp ist (dloc,*)id(* ))*))
 
-let intern_binding_name ist x =
+let intern_binding_name _ist x =
   (* We use identifier both for variables and binding names *)
   (* Todo: consider the body of the lemma to which the binding refer
      and if a term w/o ltac vars, check the name is indeed quantified *)
@@ -223,12 +223,12 @@ let intern_constr_with_bindings ist (c,bl) =
 let intern_constr_with_bindings_arg ist (clear,c) =
   (clear,intern_constr_with_bindings ist c)
 
-let rec intern_intro_pattern lf ist = map (function
-  | IntroNaming pat ->
-    IntroNaming (intern_intro_pattern_naming lf ist pat)
-  | IntroAction pat ->
-    IntroAction (intern_intro_pattern_action lf ist pat)
-  | IntroForthcoming _ as x -> x)
+let rec intern_intro_pattern lf ist = function
+  | loc, IntroNaming pat ->
+      loc, IntroNaming (intern_intro_pattern_naming lf ist pat)
+  | loc, IntroAction pat ->
+      loc, IntroAction (intern_intro_pattern_action lf ist pat)
+  | _loc, IntroForthcoming _ as x -> x
 
 and intern_intro_pattern_naming lf ist = function
   | IntroIdentifier id ->
@@ -264,8 +264,8 @@ let intern_intro_pattern_naming_loc lf ist = map (fun pat ->
   (* TODO: catch ltac vars *)
 let intern_destruction_arg ist = function
   | clear,ElimOnConstr c -> clear,ElimOnConstr (intern_constr_with_bindings ist c)
-  | clear,ElimOnAnonHyp n as x -> x
-  | clear,ElimOnIdent {loc;v=id} ->
+  | _clear,ElimOnAnonHyp _n as x -> x
+  | clear,ElimOnIdent (loc,id) ->
       if !strict_check then
 	(* If in a defined tactic, no intros-until *)
         let c, p = intern_constr ist (make @@ CRef (make @@ Ident id, None)) in
@@ -284,8 +284,8 @@ let intern_evaluable_global_reference ist r =
   try evaluable_of_global_reference ist.genv (locate_global_with_alias ~head:true lqid)
   with Not_found ->
   match r with
-  | {loc;v=Ident id} when not !strict_check -> EvalVarRef id
-  | _ -> error_global_not_found lqid
+  | Ident (_loc,id) when not !strict_check -> EvalVarRef id
+  | _ -> error_global_not_found (snd lqid)
 
 let intern_evaluable_reference_or_by_notation ist = function
   | {v=AN r} -> intern_evaluable_global_reference ist r
@@ -668,7 +668,7 @@ and intern_tactic_fun ist (var,body) =
 and intern_tacarg strict onlytac ist = function
   | Reference r -> intern_non_tactic_reference strict ist r
   | ConstrMayEval c -> ConstrMayEval (intern_constr_may_eval ist c)
-  | TacCall (loc,(f,[])) -> intern_isolated_tactic_reference strict ist f
+  | TacCall (_loc,(f,[])) -> intern_isolated_tactic_reference strict ist f
   | TacCall (loc,(f,l)) ->
       TacCall (Loc.tag ?loc (
         intern_applied_tactic_reference ist f,
@@ -686,7 +686,7 @@ and intern_match_rule onlytac ist ?(as_type=false) = function
   | (All tc)::tl ->
       All (intern_tactic onlytac ist tc) :: (intern_match_rule onlytac ist ~as_type tl)
   | (Pat (rl,mp,tc))::tl ->
-      let {ltacvars=lfun; genv=env} = ist in
+      let {ltacvars=lfun; genv=_env} = ist in
       let lfun',metas1,hyps = intern_match_goal_hyps ist ~as_type lfun rl in
       let ido,metas2,pat = intern_pattern ist ~as_type lfun mp in
       let fold accu x = Id.Set.add x accu in
@@ -717,7 +717,7 @@ and intern_genarg ist (GenArg (Rawwit wit, x)) =
       let p = out_gen (glbwit wit1) (intern_genarg ist (in_gen (rawwit wit1) p)) in
       let q = out_gen (glbwit wit2) (intern_genarg ist (in_gen (rawwit wit2) q)) in
       in_gen (glbwit (wit_pair wit1 wit2)) (p, q)
-  | ExtraArg s ->
+  | ExtraArg _s ->
       snd (Genintern.generic_intern ist (in_gen (rawwit wit) x))
 
 (** Other entry points *)

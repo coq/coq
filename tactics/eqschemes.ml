@@ -67,7 +67,7 @@ module RelDecl = Context.Rel.Declaration
 let hid = Id.of_string "H"
 let xid = Id.of_string "X"
 let default_id_of_sort = function InProp | InSet -> hid | InType -> xid
-let fresh env id = next_global_ident_away id Id.Set.empty
+let fresh _env id = next_global_ident_away id Id.Set.empty
 let with_context_set ctx (b, ctx') = 
   (b, Univ.ContextSet.union ctx ctx')
 
@@ -192,7 +192,7 @@ let get_non_sym_eq_data env (ind,u) =
 (**********************************************************************)
 
 let build_sym_scheme env ind =
-  let (ind,u as indu), ctx = Universes.fresh_inductive_instance env ind in
+  let (ind,_u as indu), ctx = Universes.fresh_inductive_instance env ind in
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env indu in
   let cstr n =
@@ -238,14 +238,14 @@ let sym_scheme_kind =
 (*                                                                    *)
 (**********************************************************************)
 
-let const_of_scheme kind env ind ctx = 
+let const_of_scheme kind _env ind ctx = 
   let sym_scheme, eff = (find_scheme kind ind) in
   let sym, ctx = with_context_set ctx 
     (Universes.fresh_constant_instance (Global.env()) sym_scheme) in
     mkConstU sym, ctx, eff
 
 let build_sym_involutive_scheme env ind =
-  let (ind,u as indu), ctx = Universes.fresh_inductive_instance env ind in
+  let (ind,_u as indu), ctx = Universes.fresh_inductive_instance env ind in
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env indu in
   let eq,eqrefl,ctx = get_coq_eq ctx in
@@ -353,12 +353,12 @@ let sym_involutive_scheme_kind =
 (**********************************************************************)
 
 let build_l2r_rew_scheme dep env ind kind =
-  let (ind,u as indu), ctx = Universes.fresh_inductive_instance env ind in
-  let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
+  let (ind,_u as indu), ctx = Universes.fresh_inductive_instance env ind in
+  let (_mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env indu in
   let sym, ctx, eff = const_of_scheme sym_scheme_kind env ind ctx in
   let sym_involutive, ctx, eff' = const_of_scheme sym_involutive_scheme_kind env ind ctx in
-  let eq,eqrefl,ctx = get_coq_eq ctx in
+  let eq,_eqrefl,ctx = get_coq_eq ctx in
   let cstr n p =
     mkApp (mkConstructUi(indu,1),
       Array.concat [Context.Rel.to_extended_vect mkRel n paramsctxt1;
@@ -469,8 +469,8 @@ let build_l2r_rew_scheme dep env ind kind =
 (**********************************************************************)
 
 let build_l2r_forward_rew_scheme dep env ind kind =
-  let (ind,u as indu), ctx = Universes.fresh_inductive_instance env ind in
-  let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
+  let (ind,_u as indu), ctx = Universes.fresh_inductive_instance env ind in
+  let (_mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env indu in
   let cstr n p =
     mkApp (mkConstructUi(indu,1),
@@ -561,7 +561,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
 (**********************************************************************)
 
 let build_r2l_forward_rew_scheme dep env ind kind = 
-  let (ind,u as indu), ctx = Universes.fresh_inductive_instance env ind in
+  let (ind,_u as indu), ctx = Universes.fresh_inductive_instance env ind in
   let ((mib,mip as specif),constrargs,realsign,paramsctxt,nrealargs) =
     get_non_sym_eq_data env indu in
   let cstr n =

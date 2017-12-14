@@ -357,7 +357,7 @@ let make n v = addn n v []
 
 let assign l n e =
   let rec assrec stk l i = match l, i with
-    | ((h::t), 0) -> List.rev_append stk (e :: t)
+    | ((_h::t), 0) -> List.rev_append stk (e :: t)
     | ((h::t), n) -> assrec (h :: stk) t (pred n)
     | ([], _) -> failwith "List.assign"
   in
@@ -604,7 +604,7 @@ let distinct l =
 let distinct_f cmp l =
   let rec loop = function
     | a::b::_ when Int.equal (cmp a b) 0 -> false
-    | a::l -> loop l
+    | _a::l -> loop l
     | [] -> true
   in loop (List.sort cmp l)
 
@@ -884,7 +884,7 @@ let cartesians_filter op init ll =
 
 let rec drop_last = function
   | [] -> assert false
-  | hd :: [] -> []
+  | _hd :: [] -> []
   | hd :: tl -> hd :: drop_last tl
 
 (* Factorize lists of pairs according to the left argument *)

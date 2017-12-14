@@ -34,12 +34,12 @@ module RelDecl = Context.Rel.Declaration
 
 let quick_chop n l =
   let rec kick_last = function
-    | t::[] -> []
+    | _t::[] -> []
     | t::q -> t::(kick_last q)
     | [] -> failwith "kick_last"
 and aux = function
     | (0,l') -> l'
-    | (n,h::t) -> aux (n-1,t)
+    | (n,_h::t) -> aux (n-1,t)
     | _ -> failwith "quick_chop"
   in
   if n > (List.length l) then failwith "quick_chop args"
@@ -108,7 +108,7 @@ let mkFullInd (ind,u) n =
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
   (* params context divided *)
-  let lnonparrec,lnamesparrec =
+  let _lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   if nparrec > 0
     then mkApp (mkIndU (ind,u),
@@ -133,7 +133,7 @@ let build_beq_scheme mode kn =
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
   (* params context divided *)
-  let lnonparrec,lnamesparrec =
+  let _lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   (* predef coq's boolean type *)
   (* rec name *)
@@ -184,7 +184,7 @@ let build_beq_scheme mode kn =
         eqA   = the de Bruijn index of the first eq param
         ndx   = how much to translate due to the 2nd Case
     *)
-    let compute_A_equality rel_list nlist eqA ndx t =
+    let compute_A_equality _rel_list nlist eqA ndx t =
       let lifti = ndx in
       let sigma = Evd.empty (** FIXME *) in
       let rec aux c =
@@ -200,7 +200,7 @@ let build_beq_scheme mode kn =
           mkVar eid, Safe_typing.empty_private_constants
         | Cast (x,_,_) -> aux (EConstr.applist (x,a))
         | App _ -> assert false
-        | Ind ((kn',i as ind'),u) (*FIXME: universes *) -> 
+        | Ind ((kn',i as ind'),_u) (*FIXME: universes *) -> 
             if MutInd.equal kn kn' then mkRel(eqA-nlist-i+nb_ind-1), Safe_typing.empty_private_constants
             else begin
               try
@@ -239,7 +239,7 @@ let build_beq_scheme mode kn =
       aux t
   in
   (* construct the predicate for the Case part*)
-  let do_predicate rel_list n =
+  let do_predicate _rel_list n =
      List.fold_left (fun a b -> mkLambda(Anonymous,b,a))
       (mkLambda (Anonymous,
                  mkFullInd ind (n+3+(List.length rettyp_l)+nb_ind-1),
@@ -412,7 +412,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
   end
 
 (* used in the bool -> leib side *)
-let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
+let do_replace_bl _mode bl_scheme_key (ind,_u as indu) aavoid narg lft rgt =
   let open EConstr in
   let avoid = Array.of_list aavoid in
   let do_arg sigma v offset =
@@ -558,13 +558,13 @@ let compute_bl_goal ind lnamesparrec nparrec =
                ( mkApp(Lazy.force eq,[|mkVar s;mkVar x;mkVar y|]))
           ))
         ) list_id in
-      let bl_input = List.fold_left2 ( fun a (s,_,sbl,_) b ->
+      let bl_input = List.fold_left2 ( fun a (_s,_,sbl,_) b ->
         mkNamedProd sbl b a
       ) c (List.rev list_id) (List.rev bl_typ) in
       let eqs_typ = List.map (fun (s,_,_,_) ->
           mkProd(Anonymous,mkVar s,mkProd(Anonymous,mkVar s,(Lazy.force bb)))
           ) list_id in
-      let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
+      let eq_input = List.fold_left2 ( fun a (_s,seq,_,_) b ->
         mkNamedProd seq b a
       ) bl_input (List.rev list_id) (List.rev eqs_typ) in
       List.fold_left (fun a decl -> mkNamedProd
@@ -634,7 +634,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                         match EConstr.kind sigma concl with
                         | App (c,ca) -> (
                           match EConstr.kind sigma c with
-                          | Ind (indeq, u) ->
+                          | Ind (indeq, _u) ->
                               if eq_gr (IndRef indeq) Coqlib.glob_eq
                               then
                                 Tacticals.New.tclTHEN
@@ -668,7 +668,7 @@ let make_bl_scheme mode mind =
   let ind = (mind,0) in
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
-  let lnonparrec,lnamesparrec = (* TODO subst *)
+  let _lnonparrec,lnamesparrec = (* TODO subst *)
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let bl_goal, eff = compute_bl_goal ind lnamesparrec nparrec in
   let ctx = UState.make (Global.universes ()) in
@@ -702,13 +702,13 @@ let compute_lb_goal ind lnamesparrec nparrec =
                ( mkApp(eq,[|bb;mkApp(mkVar seq,[|mkVar x;mkVar y|]);tt|]))
           ))
         ) list_id in
-      let lb_input = List.fold_left2 ( fun a (s,_,_,slb) b ->
+      let lb_input = List.fold_left2 ( fun a (_s,_,_,slb) b ->
         mkNamedProd slb b a
       ) c (List.rev list_id) (List.rev lb_typ) in
       let eqs_typ = List.map (fun (s,_,_,_) ->
           mkProd(Anonymous,mkVar s,mkProd(Anonymous,mkVar s,bb))
           ) list_id in
-      let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
+      let eq_input = List.fold_left2 ( fun a (_s,seq,_,_) b ->
         mkNamedProd seq b a
       ) lb_input (List.rev list_id) (List.rev eqs_typ) in
       List.fold_left (fun a decl -> mkNamedProd
@@ -726,7 +726,7 @@ let compute_lb_goal ind lnamesparrec nparrec =
               (mkApp(eq,[|bb;mkApp(eqI,[|mkVar n;mkVar m|]);tt|]))
         ))), eff
 
-let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
+let compute_lb_tact mode lb_scheme_key _ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
     let avoid = ref [] in
       let first_intros =
@@ -766,8 +766,8 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
                         let sigma = Tacmach.New.project gl in
                         (* assume the goal to be eq (eq_type ...) = true *)
                         match EConstr.kind sigma concl with
-                        | App(c,ca) -> (match (EConstr.kind sigma ca.(1)) with
-                          | App(c',ca') ->
+                        | App(_c,ca) -> (match (EConstr.kind sigma ca.(1)) with
+                          | App(_c',ca') ->
                               let n = Array.length ca' in
                               do_replace_lb mode lb_scheme_key
 				(!avoid)
@@ -792,7 +792,7 @@ let make_lb_scheme mode mind =
   let ind = (mind,0) in
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
-  let lnonparrec,lnamesparrec =
+  let _lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let lb_goal, eff = compute_lb_goal ind lnamesparrec nparrec in
   let ctx = UState.make (Global.universes ()) in
@@ -840,17 +840,17 @@ let compute_dec_goal ind lnamesparrec nparrec =
           ))
         ) list_id in
 
-      let lb_input = List.fold_left2 ( fun a (s,_,_,slb) b ->
+      let lb_input = List.fold_left2 ( fun a (_s,_,_,slb) b ->
         mkNamedProd slb b a
       ) c (List.rev list_id) (List.rev lb_typ) in
-      let bl_input = List.fold_left2 ( fun a (s,_,sbl,_) b ->
+      let bl_input = List.fold_left2 ( fun a (_s,_,sbl,_) b ->
         mkNamedProd sbl b a
       ) lb_input (List.rev list_id) (List.rev bl_typ) in
 
       let eqs_typ = List.map (fun (s,_,_,_) ->
           mkProd(Anonymous,mkVar s,mkProd(Anonymous,mkVar s,bb))
           ) list_id in
-      let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
+      let eq_input = List.fold_left2 ( fun a (_s,seq,_,_) b ->
         mkNamedProd seq b a
       ) bl_input (List.rev list_id) (List.rev eqs_typ) in
       List.fold_left (fun a decl -> mkNamedProd
@@ -965,8 +965,8 @@ let make_eq_decidability mode mind =
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
   let u = Univ.Instance.empty in
-  let ctx = UState.make (Global.universes ()) in
-  let lnonparrec,lnamesparrec =
+  let ctx = Evd.make_evar_universe_context (Global.env ()) None in
+  let _lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let side_eff = side_effect_of_mode mode in
   let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff (Global.env()) ctx

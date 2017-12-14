@@ -57,9 +57,9 @@ let ltl q = match q.face with
 | [] ->
   begin match q.rear with
   | [] -> raise Empty
-  | t :: _ -> empty
+  | _t :: _ -> empty
   end
-| t :: r -> balance { q with lenf = pred q.lenf; face = r }
+| _t :: r -> balance { q with lenf = pred q.lenf; face = r }
 
 let rcons x q =
   balance { q with lenr = succ q.lenr; rear = x :: q.rear }
@@ -68,7 +68,7 @@ let rhd q = match q.rear with
 | [] ->
   begin match q.face with
   | [] -> raise Empty
-  | t :: r -> t
+  | t :: _r -> t
   end
 | t :: _ -> t
 
@@ -76,9 +76,9 @@ let rtl q = match q.rear with
 | [] ->
   begin match q.face with
   | [] -> raise Empty
-  | t :: r -> empty
+  | _t :: _r -> empty
   end
-| t :: r ->
+| _t :: r ->
   balance { q with lenr = pred q.lenr; rear = r }
 
 let rev q = {

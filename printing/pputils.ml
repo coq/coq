@@ -69,7 +69,7 @@ let pr_short_red_flag pr r =
 
 let pr_red_flag pr r =
   try pr_short_red_flag pr r
-  with complexRedFlags ->
+  with _complexRedFlags ->
     (if r.rBeta then pr_arg str "beta" else mt ()) ++
       (if r.rMatch && r.rFix && r.rCofix then pr_arg str "iota" else
           (if r.rMatch then pr_arg str "match" else mt ()) ++
@@ -87,7 +87,7 @@ let pr_union pr1 pr2 = function
   | Inl a -> pr1 a
   | Inr b -> pr2 b
 
-let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) keyword = function
+let pr_red_expr (pr_constr,_pr_lconstr,pr_ref,pr_pattern) keyword = function
   | Red false -> keyword "red"
   | Hnf -> keyword "hnf"
   | Simpl (f,o) -> keyword "simpl" ++ (pr_short_red_flag pr_ref f)
@@ -145,7 +145,7 @@ let rec pr_raw_generic env (GenArg (Rawwit wit, x)) =
       let p = in_gen (rawwit wit1) p in
       let q = in_gen (rawwit wit2) q in
       hov_if_not_empty 0 (pr_sequence (pr_raw_generic env) [p; q])
-    | ExtraArg s ->
+    | ExtraArg _s ->
        let open Genprint in
        match generic_raw_print (in_gen (rawwit wit) x) with
        | PrinterBasic pp -> pp ()
@@ -170,7 +170,7 @@ let rec pr_glb_generic env (GenArg (Glbwit wit, x)) =
       let q = in_gen (glbwit wit2) q in
       let ans = pr_sequence (pr_glb_generic env) [p; q] in
       hov_if_not_empty 0 ans
-    | ExtraArg s ->
+    | ExtraArg _s ->
        let open Genprint in
        match generic_glb_print (in_gen (glbwit wit) x) with
        | PrinterBasic pp -> pp ()

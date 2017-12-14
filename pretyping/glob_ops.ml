@@ -34,8 +34,8 @@ let set_pat_alias id = DAst.map (function
 
 let cases_predicate_names tml =
   List.flatten (List.map (function
-    | (tm,(na,None)) -> [na]
-    | (tm,(na,Some {v=(_,nal)})) -> na::nal) tml)
+    | (_tm,(na,None)) -> [na]
+    | (_tm,(na,Some (_,(_,nal)))) -> na::nal) tml)
 
 let mkGApp ?loc p t = DAst.make ?loc @@
   match DAst.get p with
@@ -101,7 +101,7 @@ let fix_recursion_order_eq f o1 o2 = match o1, o2 with
   | (GStructRec | GWfRec _ | GMeasureRec _), _ -> false
 
 let fix_kind_eq f k1 k2 = match k1, k2 with
-  | GFix (a1, i1), GFix (a2, i2) ->
+  | GFix (a1, i1), GFix (_a2, i2) ->
     let eq (i1, o1) (i2, o2) =
       Option.equal Int.equal i1 i2 && fix_recursion_order_eq f o1 o2
     in
@@ -141,7 +141,7 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
     Array.equal (fun l1 l2 -> List.equal (glob_decl_eq f) l1 l2) decl1 decl2 &&
     Array.equal f c1 c2 && Array.equal f t1 t2
   | GSort s1, GSort s2 -> Miscops.glob_sort_eq s1 s2
-  | GHole (kn1, nam1, gn1), GHole (kn2, nam2, gn2) ->
+  | GHole (_kn1, nam1, gn1), GHole (_kn2, nam2, gn2) ->
     Option.equal (==) gn1 gn2 (** Only thing sensible *) &&
     Miscops.intro_pattern_naming_eq nam1 nam2
   | GCast (c1, t1), GCast (c2, t2) ->
@@ -202,7 +202,7 @@ let map_glob_constr_left_to_right f = DAst.map (function
 
 let map_glob_constr = map_glob_constr_left_to_right
 
-let fold_return_type f acc (na,tyopt) = Option.fold_left f acc tyopt
+let fold_return_type f acc (_na,tyopt) = Option.fold_left f acc tyopt
 
 let fold_glob_constr f acc = DAst.with_val (function
   | GVar _ -> acc
@@ -212,7 +212,7 @@ let fold_glob_constr f acc = DAst.with_val (function
   | GLetIn (_,b,t,c) ->
     f (Option.fold_left f (f acc b) t) c
   | GCases (_,rtntypopt,tml,pl) ->
-    let fold_pattern acc {CAst.v=(idl,p,c)} = f acc c in
+    let fold_pattern acc (_,(_idl,_p,c)) = f acc c in
     List.fold_left fold_pattern
       (List.fold_left f (Option.fold_left f acc rtntypopt) (List.map fst tml))
       pl
@@ -222,7 +222,7 @@ let fold_glob_constr f acc = DAst.with_val (function
     f (f (f (fold_return_type f acc rtntyp) c) b1) b2
   | GRec (_,_,bl,tyl,bv) ->
     let acc = Array.fold_left
-      (List.fold_left (fun acc (na,k,bbd,bty) ->
+      (List.fold_left (fun acc (_na,_k,bbd,bty) ->
 	f (Option.fold_left f acc bbd) bty)) acc bl in
     Array.fold_left f (Array.fold_left f acc tyl) bv
   | GCast (c,k) ->
@@ -245,7 +245,7 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
   | GLetIn (na,b,t,c) ->
     f (Name.fold_right g na v) (Option.fold_left (f v) (f v acc b) t) c
   | GCases (_,rtntypopt,tml,pl) ->
-    let fold_pattern acc {v=(idl,p,c)} = f (List.fold_right g idl v) acc c in
+    let fold_pattern acc (_,(idl,_p,c)) = f (List.fold_right g idl v) acc c in
     let fold_tomatch (v',acc) (tm,(na,onal)) =
       (Option.fold_left (fun v'' {v=(_,nal)} -> List.fold_right (Name.fold_right g) nal v'')
                         (Name.fold_right g na v') onal,
@@ -259,10 +259,10 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
   | GIf (c,rtntyp,b1,b2) ->
     f v (f v (f v (fold_return_type_with_binders f g v acc rtntyp) c) b1) b2
   | GRec (_,idl,bll,tyl,bv) ->
-    let f' i acc fid =
+    let f' i acc _fid =
       let v,acc =
 	List.fold_left
-	  (fun (v,acc) (na,k,bbd,bty) ->
+	  (fun (v,acc) (na,_k,bbd,bty) ->
             (Name.fold_right g na v, f v (Option.fold_left (f v) acc bbd) bty))
           (v,acc)
           bll.(i) in
@@ -419,7 +419,7 @@ let rename_var l id =
 
 let force c = DAst.make ?loc:c.CAst.loc (DAst.get c)
 
-let rec rename_glob_vars l c = force @@ DAst.map_with_loc (fun ?loc -> function
+let rec rename_glob_vars l c = force @@ DAst.map (function
   | GVar id as r ->
       let id' = rename_var l id in
       if id == id' then r else GVar id'
@@ -427,7 +427,7 @@ let rec rename_glob_vars l c = force @@ DAst.map_with_loc (fun ?loc -> function
       if List.exists (fun (_,id') -> Id.equal id id') l then raise UnsoundRenaming
       else r
   | GProd (na,bk,t,c) ->
-      let na',l' = update_subst na l in
+      let _na',l' = update_subst na l in
       GProd (na,bk,rename_glob_vars l t,rename_glob_vars l' c)
   | GLambda (na,bk,t,c) ->
       let na',l' = update_subst na l in

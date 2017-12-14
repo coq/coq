@@ -70,7 +70,7 @@ let apply_subdir f path name =
     | Unix.S_REG -> f (FileRegular name)
     | _ -> ()
 
-let readdir dir = try Sys.readdir dir with any -> [||]
+let readdir dir = try Sys.readdir dir with _any -> [||]
 
 let process_directory f path =
   Array.iter (apply_subdir f path) (readdir path)

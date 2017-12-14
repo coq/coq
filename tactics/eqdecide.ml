@@ -82,7 +82,7 @@ let generalize_right mk typ c1 c2 =
   end
   end
 
-let mkBranches (eqonleft,mk,c1,c2,typ) =
+let mkBranches (_eqonleft,mk,c1,c2,typ) =
   tclTHENLIST
     [generalize_right mk typ c1 c2;
      Simple.elim c1;
@@ -98,7 +98,7 @@ let inj_flags = Some {
   }
 
 let discrHyp id =
-  let c env sigma = (sigma, (mkVar id, NoBindings)) in
+  let c _env sigma = (sigma, (mkVar id, NoBindings)) in
   let tac c = Equality.discr_tac false (Some (None, ElimOnConstr c)) in
   Tacticals.New.tclDELAYEDWITHHOLES false c tac
 
@@ -143,7 +143,7 @@ let eqCase tac =
   tclTHEN intro (onLastHypId tac)
 
 let injHyp id =
-  let c env sigma = (sigma, (mkVar id, NoBindings)) in
+  let c _env sigma = (sigma, (mkVar id, NoBindings)) in
   let tac c = Equality.injClause inj_flags None false (Some (None, ElimOnConstr c)) in
   Tacticals.New.tclDELAYEDWITHHOLES false c tac
 
@@ -213,7 +213,7 @@ let solveEqBranch rectype =
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
         match_eqdec env sigma concl >>= fun (eqonleft,mk,lhs,rhs,_) ->
-          let (mib,mip) = Global.lookup_inductive rectype in
+          let (mib,_mip) = Global.lookup_inductive rectype in
           let nparams   = mib.mind_nparams in
           let getargs l = List.skipn nparams (snd (decompose_app sigma l)) in
           let rargs   = getargs rhs
@@ -240,7 +240,7 @@ let decideGralEquality =
         let concl = pf_concl gl in
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
-        match_eqdec env sigma concl >>= fun (eqonleft,mk,c1,c2,typ as data) ->
+        match_eqdec env sigma concl >>= fun (eqonleft,_mk,_c1,_c2,typ as data) ->
         let headtyp = hd_app sigma (pf_compute gl typ) in
         begin match EConstr.kind sigma headtyp with
         | Ind (mi,_) -> Proofview.tclUNIT mi

@@ -109,14 +109,14 @@ let string_of_genarg_arg (ArgumentType arg) =
   let rec aux : type a b c. (a, b, c) genarg_type -> string = function
   | ListArg t -> aux t ^ "_list"
   | OptArg t -> aux t ^ "_opt"
-  | PairArg (t1, t2) -> assert false (* No parsing/printing rule for it *)
+  | PairArg (_t1, _t2) -> assert false (* No parsing/printing rule for it *)
   | ExtraArg s -> ArgT.repr s in
   aux arg
 
   let keyword x = tag_keyword (str x)
   let primitive x = tag_primitive (str x)
 
-  let has_type (Val.Dyn (tag, x)) t = match Val.eq tag t with
+  let has_type (Val.Dyn (tag, _x)) t = match Val.eq tag t with
   | None -> false
   | Some _ -> true
 
@@ -186,7 +186,7 @@ let string_of_genarg_arg (ArgumentType arg) =
     | AN v -> f v
     | ByNotation (s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc)
 
-  let pr_located pr (loc,x) = pr x
+  let pr_located pr (_loc,x) = pr x
 
   let pr_evaluable_reference = function
     | EvalVarRef id -> pr_id id
@@ -238,7 +238,7 @@ let string_of_genarg_arg (ArgumentType arg) =
     in
     pr_sequence (fun x -> x) l
 
-  let pr_extend_gen pr_gen lev { mltac_name = s; mltac_index = i } l =
+  let pr_extend_gen pr_gen _lev { mltac_name = s; mltac_index = i } l =
       let name =
         str s.mltac_plugin ++ str "::" ++ str s.mltac_tactic ++
         str "@" ++ int i
@@ -258,7 +258,7 @@ let string_of_genarg_arg (ArgumentType arg) =
   | Extend.Uentry tag ->
     let ArgT.Any tag = tag in
     ArgT.repr tag
-  | Extend.Uentryl (tkn, lvl) -> "tactic" ^ string_of_int lvl
+  | Extend.Uentryl (_tkn, lvl) -> "tactic" ^ string_of_int lvl
 
   let pr_alias_key key =
     try
@@ -286,7 +286,7 @@ let string_of_genarg_arg (ArgumentType arg) =
       let p = pr_tacarg_using_rule pr_gen prods in
       if pp.pptac_level > lev then surround p else p
     with Not_found ->
-      let pr arg = str "_" in
+      let pr _arg = str "_" in
       KerName.print key ++ spc() ++ pr_sequence pr l ++ str" (* Generic printer *)"
 
   let pr_farg prtac arg = prtac (1, Any) (TacArg (Loc.tag arg))
@@ -339,14 +339,14 @@ let string_of_genarg_arg (ArgumentType arg) =
       pr_any_arg pr symb arg
     | _ -> str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
 
-  let pr_raw_extend_rec prc prlc prtac prpat =
+  let pr_raw_extend_rec _prc _prlc prtac _prpat =
     pr_extend_gen (pr_farg prtac)
-  let pr_glob_extend_rec prc prlc prtac prpat =
+  let pr_glob_extend_rec _prc _prlc prtac _prpat =
     pr_extend_gen (pr_farg prtac)
 
-  let pr_raw_alias prc prlc prtac prpat lev key args =
+  let pr_raw_alias _prc _prlc prtac _prpat lev key args =
     pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.tag a)))) lev key args
-  let pr_glob_alias prc prlc prtac prpat lev key args =
+  let pr_glob_alias _prc _prlc prtac _prpat lev key args =
     pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.tag a)))) lev key args
 
   (**********************************************************************)
@@ -383,7 +383,7 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let pr_as_disjunctive_ipat prc ipatl =
     keyword "as" ++ spc () ++
-      pr_or_var (fun {CAst.loc;v=p} -> Miscprint.pr_or_and_intro_pattern prc p) ipatl
+      pr_or_var (fun (_loc,p) -> Miscprint.pr_or_and_intro_pattern prc p) ipatl
 
   let pr_eqn_ipat {CAst.v=ipat} = keyword "eqn:" ++ Miscprint.pr_intro_pattern_naming ipat
 
@@ -530,9 +530,11 @@ let pr_goal_selector ~toplevel s =
 
   let pr_match_pattern pr_pat = function
     | Term a -> pr_pat a
-    | Subterm (None,a) ->
+    | Subterm (_b,None,a) ->
+    (** ppedrot: we don't make difference between [appcontext] and [context]
+        anymore, and the interpretation is governed by a flag instead. *)
       keyword "context" ++ str" [ " ++ pr_pat a ++ str " ]"
-    | Subterm (Some id,a) ->
+    | Subterm (_b,Some id,a) ->
       keyword "context" ++ spc () ++ pr_id id ++ str "[ " ++ pr_pat a ++ str " ]"
 
   let pr_match_hyps pr_pat = function
@@ -740,7 +742,7 @@ let pr_goal_selector ~toplevel s =
       (* Main tactic printer *)
       and pr_atom1 a = tag_atom a (match a with
         (* Basic tactics *)
-        | TacIntroPattern (ev,[]) as t ->
+        | TacIntroPattern (_ev,[]) as t ->
           pr_atom0 t
         | TacIntroPattern (ev,(_::_ as p)) ->
            hov 1 (primitive (if ev then "eintros" else "intros") ++
@@ -1051,7 +1053,7 @@ let pr_goal_selector ~toplevel s =
               primitive "fresh" ++ pr_fresh_ids l, latom
             | TacArg(_,TacGeneric arg) ->
               pr.pr_generic arg, latom
-            | TacArg(_,TacCall(loc,(f,[]))) ->
+            | TacArg(_,TacCall(_loc,(f,[]))) ->
               pr.pr_reference f, latom
             | TacArg(_,TacCall(loc,(f,l))) ->
               pr_with_comments ?loc (hov 1 (
@@ -1166,7 +1168,7 @@ let pr_goal_selector ~toplevel s =
     strip_ty [] n ty
 
   let pr_atomic_tactic_level env sigma n t =
-    let prtac n (t:atomic_tactic_expr) =
+    let prtac _n (t:atomic_tactic_expr) =
       let pr = {
         pr_tactic = (fun _ _ -> str "<tactic>");
         pr_constr = (fun c -> pr_econstr_env env sigma c);
@@ -1191,7 +1193,7 @@ let pr_goal_selector ~toplevel s =
 
   let pr_glb_generic = Pputils.pr_glb_generic
 
-  let pr_raw_extend env = pr_raw_extend_rec
+  let pr_raw_extend _env = pr_raw_extend_rec
     pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr
 
   let pr_glob_extend env = pr_glob_extend_rec
@@ -1211,7 +1213,7 @@ let declare_extra_genarg_pprule wit
   (g : 'b glob_extra_genarg_printer)
   (h : 'c extra_genarg_printer) =
   begin match wit with
-    | ExtraArg s -> ()
+    | ExtraArg _s -> ()
     | _          -> user_err Pp.(str "Can declare a pretty-printing rule only for extra argument types.")
   end;
   let f x =
@@ -1233,7 +1235,7 @@ let declare_extra_genarg_pprule_with_level wit
   (g : 'b glob_extra_genarg_printer_with_level)
   (h : 'c extra_genarg_printer_with_level) default_surrounded default_non_surrounded =
   begin match wit with
-    | ExtraArg s -> ()
+    | ExtraArg _s -> ()
     | _          -> user_err Pp.(str "Can declare a pretty-printing rule only for extra argument types.")
   end;
   let open Genprint in
@@ -1287,8 +1289,8 @@ let pr_with_bindings_env bl = Genprint.TopPrinterNeedsContext (fun env sigma ->
 let pr_destruction_arg_env c = Genprint.TopPrinterNeedsContext (fun env sigma ->
   let sigma, c = match c with
   | clear_flag,ElimOnConstr g -> let sigma,c = g env sigma in sigma,(clear_flag,ElimOnConstr c)
-  | clear_flag,ElimOnAnonHyp n as x -> sigma, x
-  | clear_flag,ElimOnIdent id as x -> sigma, x in
+  | _clear_flag,ElimOnAnonHyp _n as x -> sigma, x
+  | _clear_flag,ElimOnIdent _id as x -> sigma, x in
   pr_destruction_arg
     (pr_econstr_env env sigma) (pr_leconstr_env env sigma) c)
 

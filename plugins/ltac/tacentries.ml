@@ -222,7 +222,7 @@ let interp_prod_item = function
       | None -> user_err Pp.(str ("Unknown entry "^s^"."))
       | Some arg -> arg
       end
-    | Some n ->
+    | Some _n ->
       (** FIXME: do better someday *)
       assert (String.equal s "tactic");
       begin match Tacarg.wit_tactic with
@@ -343,10 +343,10 @@ let extend_atomic_tactic name entries =
     | _ -> assert false (** Not handled by the ML extension syntax *)
     in
     let empty_value = function
-    | TacTerm s -> raise NonEmptyArgument
+    | TacTerm _s -> raise NonEmptyArgument
     | TacNonTerm (_, (symb, _)) ->
       let EntryName (typ, e) = prod_item_of_symbol 0 symb in
-      let Genarg.Rawwit wit = typ in
+      let Genarg.Rawwit _wit = typ in
       let inj x = TacArg (Loc.tag @@ TacGeneric (Genarg.in_gen typ x)) in
       let default = epsilon_value inj e in
       match default with
@@ -371,7 +371,7 @@ let add_ml_tactic_notation name ~level prods =
   let iter i prods =
     let open Tacexpr in
     let get_id = function
-    | TacTerm s -> None
+    | TacTerm _s -> None
     | TacNonTerm (_, (_, ido)) -> ido
     in
     let ids = List.map_filter get_id prods in
@@ -509,7 +509,7 @@ let print_ltacs () =
   in
   let entries = List.map_filter map entries in
   let pr_entry (qid, body) =
-    let (l, t) = match body with
+    let (l, _t) = match body with
     | Tacexpr.TacFun (l, t) -> (l, t)
     | _ -> ([], body)
     in

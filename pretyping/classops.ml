@@ -211,7 +211,7 @@ let subst_cl_typ subst ct = match ct with
   | CL_FUN
   | CL_SECVAR _ -> ct
   | CL_PROJ c ->
-    let c',t = subst_con_kn subst c in
+    let c',_t = subst_con_kn subst c in
       if c' == c then ct else CL_PROJ c'
   | CL_CONST c ->
       let c',t = subst_con_kn subst c in
@@ -228,7 +228,7 @@ let subst_coe_typ subst t = subst_global_reference subst t
 (* class_of : Term.constr -> int *)
 
 let class_of env sigma t =
-  let (t, n1, i, u, args) =
+  let (t, n1, i, _u, args) =
     try
       let (cl, u, args) = find_class_type sigma t in
       let (i, { cl_param = n1 } ) = class_info cl in
@@ -243,7 +243,7 @@ let class_of env sigma t =
 
 let inductive_class_of ind = fst (class_info (CL_IND ind))
 
-let class_args_of env sigma c = pi3 (find_class_type sigma c)
+let class_args_of _env sigma c = pi3 (find_class_type sigma c)
 
 let string_of_class = function
   | CL_FUN -> "Funclass"
@@ -272,14 +272,14 @@ let lookup_path_to_sort_from_class s =
 
 let apply_on_class_of env sigma t cont =
   try
-    let (cl,u,args) = find_class_type sigma t in
+    let (cl,_u,args) = find_class_type sigma t in
     let (i, { cl_param = n1 } ) = class_info cl in
     if not (Int.equal (List.length args) n1) then raise Not_found;
     t, cont i
   with Not_found ->
     (* Is it worth to be more incremental on the delta steps? *)
     let t = Tacred.hnf_constr env sigma t in
-    let (cl, u, args) = find_class_type sigma t in
+    let (cl, _u, args) = find_class_type sigma t in
     let (i, { cl_param = n1 } ) = class_info cl in
     if not (Int.equal (List.length args) n1) then raise Not_found;
     t, cont i
@@ -302,7 +302,7 @@ let get_coercion_constructor env coe =
     Reductionops.whd_all_stack env Evd.empty (EConstr.of_constr coe.coe_value)
   in
   match EConstr.kind Evd.empty (** FIXME *) c with
-  | Construct (cstr,u) ->
+  | Construct (cstr,_u) ->
       (cstr, Inductiveops.constructor_nrealargs cstr -1)
   | _ ->
       raise Not_found

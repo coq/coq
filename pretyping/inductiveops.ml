@@ -38,12 +38,12 @@ let type_of_constructor env (cstr,u) =
  Inductive.type_of_constructor (cstr,u) specif
 
 (* Return constructor types in user form *)
-let type_of_constructors env (ind,u as indu) =
+let type_of_constructors env (ind,_u as indu) =
  let specif = Inductive.lookup_mind_specif env ind in
   Inductive.type_of_constructors indu specif
 
 (* Return constructor types in normal form *)
-let arities_of_constructors env (ind,u as indu) =
+let arities_of_constructors env (ind,_u as indu) =
  let specif = Inductive.lookup_mind_specif env ind in
   Inductive.arities_of_constructors indu specif
 
@@ -91,7 +91,7 @@ let mis_is_recursive_subset listind rarg =
   in
   Array.exists one_is_rec (dest_subterms rarg)
 
-let mis_is_recursive (ind,mib,mip) =
+let mis_is_recursive (_ind,mib,mip) =
   mis_is_recursive_subset (List.interval 0 (mib.mind_ntypes - 1))
     mip.mind_recargs
 
@@ -208,21 +208,21 @@ let inductive_nallargs_env env ind =
 (* Length of arity (w/o local defs) *)
 
 let inductive_nparams ind =
-  let (mib,mip) = Global.lookup_inductive ind in
+  let (mib,_mip) = Global.lookup_inductive ind in
   mib.mind_nparams
 
 let inductive_nparams_env env ind =
-  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  let (mib,_mip) = Inductive.lookup_mind_specif env ind in
   mib.mind_nparams
 
 (* Length of arity (with local defs) *)
 
 let inductive_nparamdecls ind =
-  let (mib,mip) = Global.lookup_inductive ind in
+  let (mib,_mip) = Global.lookup_inductive ind in
   Context.Rel.length mib.mind_params_ctxt
 
 let inductive_nparamdecls_env env ind =
-  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  let (mib,_mip) = Inductive.lookup_mind_specif env ind in
   Context.Rel.length mib.mind_params_ctxt
 
 (* Full length of arity (with local defs) *)
@@ -238,19 +238,19 @@ let inductive_nalldecls_env env ind =
 (* Others *)
 
 let inductive_paramdecls (ind,u) =
-  let (mib,mip) = Global.lookup_inductive ind in
+  let (mib,_mip) = Global.lookup_inductive ind in
     Inductive.inductive_paramdecls (mib,u)
 
 let inductive_paramdecls_env env (ind,u) =
-  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  let (mib,_mip) = Inductive.lookup_mind_specif env ind in
     Inductive.inductive_paramdecls (mib,u)
 
 let inductive_alldecls (ind,u) =
-  let (mib,mip) = Global.lookup_inductive ind in
+  let (_mib,mip) = Global.lookup_inductive ind in
     Vars.subst_instance_context u mip.mind_arity_ctxt
 
 let inductive_alldecls_env env (ind,u) =
-  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  let (_mib,mip) = Inductive.lookup_mind_specif env ind in
     Vars.subst_instance_context u mip.mind_arity_ctxt
 
 let constructor_has_local_defs (indsp,j) =
@@ -265,8 +265,8 @@ let inductive_has_local_defs ind =
   let l2 = mib.mind_nparams + mip.mind_nrealargs in
   not (Int.equal l1 l2)
 
-let allowed_sorts env (kn,i as ind) =
-  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+let allowed_sorts env (_kn,_i as ind) =
+  let (_mib,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_kelim
 
 let projection_nparams_env env p = 
@@ -343,10 +343,10 @@ let get_constructors env (ind,params) =
   Array.init (Array.length mip.mind_consnames)
     (fun j -> get_constructor (ind,mib,mip,params) (j+1))
 
-let get_projections env (ind,params) =
-  let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
+let get_projections env (ind,_params) =
+  let (mib,_mip) = Inductive.lookup_mind_specif env (fst ind) in
     match mib.mind_record with
-    | Some (Some (id, projs, pbs)) -> Some projs
+    | Some (Some (_id, projs, _pbs)) -> Some projs
     | _ -> None
 
 let make_case_or_project env sigma indf ci pred c branches =
@@ -368,15 +368,15 @@ let make_case_or_project env sigma indf ci pred c branches =
      in
      let branch = branches.(0) in
      let ctx, br = decompose_lam_n_assum sigma (Array.length ps) branch in
-     let n, subst =
+     let _n, subst =
        List.fold_right
          (fun decl (i, subst) ->
-          match decl with
-          | LocalAssum (na, t) ->
-             let t = mkProj (Projection.make ps.(i) true, c) in
-             (i + 1, t :: subst)
-          | LocalDef (na, b, t) -> (i, Vars.substl subst b :: subst))
-         ctx (0, [])
+	  match decl with
+	  | LocalAssum (_na, _t) ->
+	     let t = mkProj (Projection.make ps.(i) true, c) in
+	     (i + 1, t :: subst)
+	  | LocalDef (_na, b, _t) -> (i, Vars.substl subst b :: subst))
+	 ctx (0, [])
      in Vars.substl subst br
 
 (* substitution in a signature *)
@@ -475,7 +475,7 @@ let find_rectype env sigma c =
   let (t, l) = decompose_app sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
     | Ind (ind,u) ->
-        let (mib,mip) = Inductive.lookup_mind_specif env ind in
+        let (mib,_mip) = Inductive.lookup_mind_specif env ind in
         if mib.mind_nparams > List.length l then raise Not_found;
         let l = List.map EConstr.Unsafe.to_constr l in
         let (par,rargs) = List.chop mib.mind_nparams l in
@@ -513,8 +513,8 @@ let is_predicate_explicitly_dep env sigma pred arsign =
     let pv' = whd_all env sigma pval in
     match EConstr.kind sigma pv', arsign with
       | Lambda (na,t,b), (LocalAssum _)::arsign ->
-          srec (push_rel_assum (na, t) env) b arsign
-      | Lambda (na,_,t), _ ->
+	  srec (push_rel_assum (na, t) env) b arsign
+      | Lambda (na,_,_t), _ ->
 
        (* The following code has an impact on the introduction names
           given by the tactics "case" and "inversion": when the
@@ -616,7 +616,7 @@ let rec instantiate_universes env evdref scl is = function
   | sign, [] -> sign (* Uniform parameters are exhausted *)
   | [], _ -> assert false
 
-let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
+let type_of_inductive_knowing_conclusion env sigma ((_mib,mip),u) conclty =
   match mip.mind_arity with
   | RegularArity s -> sigma, EConstr.of_constr (subst_instance_constr u s.mind_user_arity)
   | TemplateArity ar ->
@@ -631,7 +631,7 @@ let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
 
 let type_of_projection_knowing_arg env sigma p c ty =
   let c = EConstr.Unsafe.to_constr c in
-  let IndType(pars,realargs) =
+  let IndType(pars,_realargs) =
     try find_rectype env sigma ty
     with Not_found ->
       raise (Invalid_argument "type_of_projection_knowing_arg_type: not an inductive type")

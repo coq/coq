@@ -45,10 +45,10 @@ let add_generalizable gen table =
   | Some l -> List.fold_left (fun table lid -> declare_generalizable_ident table lid)
       table l
 
-let cache_generalizable_type (_,(local,cmd)) =
+let cache_generalizable_type (_,(_local,cmd)) =
   generalizable_table := add_generalizable cmd !generalizable_table
 
-let load_generalizable_type _ (_,(local,cmd)) =
+let load_generalizable_type _ (_,(_local,cmd)) =
   generalizable_table := add_generalizable cmd !generalizable_table
 
 let in_generalizable : bool * Misctypes.lident list option -> obj =
@@ -116,7 +116,7 @@ let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder_expr li
 	let l'' = Option.fold_left (fun l t -> free_vars_of_constr_expr t ~bound:bdvars l) l' t in
 	  aux (Id.Set.union (ids_of_list bound) bdvars) l'' tl
 
-    | CLocalPattern _ :: tl -> assert false
+    | CLocalPattern _ :: _tl -> assert false
     | [] -> bdvars, l
   in aux bound l binders
 
@@ -148,7 +148,7 @@ let combine_params avoid fn applied needed =
   let named, applied =
     List.partition
       (function
-          (t, Some {CAst.loc;v=ExplByName id}) ->
+	  (_t, Some (loc, ExplByName id)) ->
             let is_id (_, decl) = match RelDecl.get_name decl with
             | Name id' -> Id.equal id id'
             | Anonymous -> false
@@ -159,7 +159,7 @@ let combine_params avoid fn applied needed =
 	| _ -> false) applied
   in
   let named = List.map
-    (fun x -> match x with (t, Some {CAst.loc;v=ExplByName id}) -> id, t | _ -> assert false)
+    (fun x -> match x with (t, Some (_loc, ExplByName id)) -> id, t | _ -> assert false)
     named
   in
   let is_unset (_, decl) = match decl with
@@ -174,10 +174,10 @@ let combine_params avoid fn applied needed =
       | app, (_, (LocalAssum (Name id, _) | LocalDef (Name id, _, _))) :: need when Id.List.mem_assoc id named ->
 	  aux (Id.List.assoc id named :: ids) avoid app need
 
-      | (x, None) :: app, (None, (LocalAssum (Name id, _) | LocalDef (Name id, _, _))) :: need ->
+      | (x, None) :: app, (None, (LocalAssum (Name _id, _) | LocalDef (Name _id, _, _))) :: need ->
 	  aux (x :: ids) avoid app need
 
-      | _, (Some cl, _ as d) :: need ->
+      | _, (Some _cl, _ as d) :: need ->
 	  let t', avoid' = fn avoid d in
 	    aux (t' :: ids) avoid' app need
 
@@ -216,9 +216,9 @@ let destClassAppExpl cl =
 let implicit_application env ?(allow_partial=true) f ty =
   let is_class =
     try
-      let ({CAst.v=(r, _, _)} as clapp) = destClassAppExpl ty in
-      let qid = qualid_of_reference r in
-      let gr = Nametab.locate qid.CAst.v in
+      let (_, (r, _, _) as clapp) = destClassAppExpl ty in
+      let (_loc, qid) = qualid_of_reference r in
+      let gr = Nametab.locate qid in
 	if Typeclasses.is_class gr then Some (clapp, gr) else None
     with Not_found -> None
   in
@@ -235,7 +235,7 @@ let implicit_application env ?(allow_partial=true) f ty =
               | None -> succ n
               | Some _ -> n
               in
-	      let applen = List.fold_left (fun acc (x, y) -> opt_succ y acc) 0 par in
+	      let applen = List.fold_left (fun acc (_x, y) -> opt_succ y acc) 0 par in
 	      let needlen = List.fold_left (fun acc x -> opt_succ x acc) 0 ci in
 		if not (Int.equal needlen applen) then
 		  Typeclasses_errors.mismatched_ctx_inst (Global.env ()) Parameters (List.map fst par) rd
@@ -261,7 +261,7 @@ let implicits_of_glob_constr ?(with_products=true) l =
       add_impl i na bk (aux (succ i) b)
     in
       match DAst.get c with
-      | GProd (na, bk, t, b) ->
+      | GProd (na, bk, _t, b) ->
 	  if with_products then abs na bk b
 	  else
             let () = match bk with
@@ -270,9 +270,9 @@ let implicits_of_glob_constr ?(with_products=true) l =
 			      Name.print na ++ strbrk " and following binders")
             | _ -> ()
             in []
-      | GLambda (na, bk, t, b) -> abs na bk b
-      | GLetIn (na, b, t, c) -> aux i b
-      | GRec (fix_kind, nas, args, tys, bds) ->
+      | GLambda (na, bk, _t, b) -> abs na bk b
+      | GLetIn (_na, b, _t, _c) -> aux i b
+      | GRec (fix_kind, _nas, args, _tys, bds) ->
        let nb = match fix_kind with |GFix (_, n) -> n | GCoFix n -> n in
        List.fold_left_i (fun i l (na,bk,_,_) -> add_impl i na bk l) i (aux (List.length args.(nb) + i) bds.(nb)) args.(nb)
       | _ -> []

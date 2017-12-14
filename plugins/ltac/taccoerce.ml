@@ -163,7 +163,7 @@ let coerce_var_to_ident fresh env sigma v =
 (* Interprets, if possible, a constr to an identifier which may not
    be fresh but suitable to be given to the fresh tactic. Works for
    vars, constants, inductive, constructors and sorts. *)
-let coerce_to_ident_not_fresh env sigma v =
+let coerce_to_ident_not_fresh _env sigma v =
 let g = sigma in
 let id_of_name = function
   | Name.Anonymous -> Id.of_string "x"
@@ -205,7 +205,8 @@ let id_of_name = function
        | _ -> fail()
 
 
-let coerce_to_intro_pattern env sigma v =
+let coerce_to_intro_pattern _env sigma v =
+  let v = Value.normalize v in
   if has_type v (topwit wit_intro_pattern) then
     (out_gen (topwit wit_intro_pattern) v).CAst.v
   else if has_type v (topwit wit_var) then
@@ -252,7 +253,8 @@ let coerce_to_constr env v =
     (try [], constr_of_id env id with Not_found -> fail ())
   else fail ()
 
-let coerce_to_uconstr env v =
+let coerce_to_uconstr _env v =
+  let v = Value.normalize v in
   if has_type v (topwit wit_uconstr) then
     out_gen (topwit wit_uconstr) v
   else
@@ -325,7 +327,8 @@ let coerce_to_hyp_list env sigma v =
   | None -> raise (CannotCoerceTo "a variable list")
 
 (* Interprets a qualified name *)
-let coerce_to_reference env sigma v =
+let coerce_to_reference _env sigma v =
+  let v = Value.normalize v in
   match Value.to_constr v with
   | Some c ->
     begin
@@ -353,7 +356,8 @@ let coerce_to_quantified_hypothesis sigma v =
 
 (* Quantified named or numbered hypothesis or hypothesis in context *)
 (* (as in Inversion) *)
-let coerce_to_decl_or_quant_hyp env sigma v =
+let coerce_to_decl_or_quant_hyp _env sigma v =
+  let v = Value.normalize v in
   if has_type v (topwit wit_int) then
     AnonHyp (out_gen (topwit wit_int) v)
   else

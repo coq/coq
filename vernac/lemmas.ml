@@ -52,7 +52,7 @@ let retrieve_first_recthm uctx = function
       (* we get the right order somehow but surely it could be enforced in a better way *)
       let uctx = UState.context uctx in
       let inst = Univ.UContext.instance uctx in
-      let map (c, ctx) = Vars.subst_instance_constr inst c in
+      let map (c, _ctx) = Vars.subst_instance_constr inst c in
       (Option.map map (Global.body_of_constant_body cb), is_opaque cb)
   | _ -> assert false
 
@@ -65,7 +65,7 @@ let adjust_guardness_conditions const = function
         Future.chain const.const_entry_body
         (fun ((body, ctx), eff) ->
           match Constr.kind body with
-          | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
+          | Fix ((_nv,0),(_,_,_fixdefs as fixdecls)) ->
 (*      let possible_indexes =
 	List.map2 (fun i c -> match i with Some i -> i | None ->
 	  List.interval 0 (List.length ((lam_assum c))))
@@ -99,18 +99,18 @@ let find_mutually_recursive_statements sigma thms =
       let ind_hyps =
         List.flatten (List.map_i (fun i decl ->
           let t = RelDecl.get_type decl in
-          match EConstr.kind sigma t with
-          | Ind ((kn,_ as ind),u) when
+          match Constr.kind t with
+          | Ind ((kn,_ as ind),_u) when
                 let mind = Global.lookup_mind kn in
                 mind.mind_finite <> Declarations.CoFinite ->
               [ind,x,i]
           | _ ->
               []) 0 (List.rev (List.filter Context.Rel.Declaration.is_local_assum whnf_hyp_hds))) in
       let ind_ccl =
-        let cclenv = EConstr.push_rel_context hyps (Global.env()) in
-        let whnf_ccl,_ = whd_all_stack cclenv Evd.empty ccl in
-        match EConstr.kind sigma whnf_ccl with
-        | Ind ((kn,_ as ind),u) when
+        let cclenv = push_rel_context hyps (Global.env()) in
+        let whnf_ccl,_ = whd_all_stack cclenv Evd.empty (EConstr.of_constr ccl) in
+        match Constr.kind (EConstr.Unsafe.to_constr whnf_ccl) with
+        | Ind ((kn,_ as ind),_u) when
               let mind = Global.lookup_mind kn in
               Int.equal mind.mind_ntypes n && mind.mind_finite == Declarations.CoFinite ->
             [ind,x,0]
@@ -126,7 +126,7 @@ let find_mutually_recursive_statements sigma thms =
 	if List.for_all (of_same_mutind hyp) oks
 	then Some (hyp::oks) else None) [] ind_ccls in
     let ordered_same_indccl =
-      List.filter (List.for_all_i (fun i ((kn,j),_,_) -> Int.equal i j) 0) same_indccl in
+      List.filter (List.for_all_i (fun i ((_kn,j),_,_) -> Int.equal i j) 0) same_indccl in
     (* Check if some hypotheses are inductive in the same type *)
     let common_same_indhyp =
       List.cartesians_filter (fun hyp oks ->
@@ -177,7 +177,7 @@ let look_for_possibly_mutual_statements sigma = function
 
 (* Saving a goal *)
 
-let save ?export_seff id const uctx do_guard (locality,poly,kind) hook =
+let save ?export_seff id const uctx do_guard (locality,_poly,kind) hook =
   let fix_exn = Future.fix_exn_of const.Entries.const_entry_body in
   try
     let const = adjust_guardness_conditions const do_guard in
@@ -212,16 +212,17 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook =
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 
-let fresh_name_for_anonymous_theorem () =
-  let avoid = Id.Set.of_list (Proof_global.get_all_proof_names ()) in
-  next_global_ident_away default_thm_id avoid
-
-let check_name_freshness locality {CAst.loc;v=id} : unit =
-  (* We check existence here: it's a bit late at Qed time *)
-  if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
-     locality == Global && Nametab.exists_cci (Lib.make_path_except_section id)
-  then
-    user_err ?loc  (Id.print id ++ str " already exists.")
+let compute_proof_name locality = function
+  | Some ((loc,id),_pl) ->
+      (* We check existence here: it's a bit late at Qed time *)
+      if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
+	 locality == Global && Nametab.exists_cci (Lib.make_path_except_section id)
+      then
+        user_err ?loc  (Id.print id ++ str " already exists.");
+      id
+  | None ->
+    let avoid = Id.Set.of_list (Proof_global.get_all_proof_names ()) in
+      next_global_ident_away default_thm_id avoid
 
 let save_remaining_recthms (locality,p,kind) norm univs body opaq i (id,(t_i,(_,imps))) =
   let t_i = norm t_i in
@@ -288,7 +289,7 @@ let save_named ?export_seff proof =
   let id,const,uctx,do_guard,persistence,hook = proof in
   save ?export_seff id const uctx do_guard persistence hook
 
-let check_anonymity id save_ident =
+let check_anonymity id _save_ident =
   if not (String.equal (atompart_of_id id) (Id.to_string (default_thm_id))) then
     user_err Pp.(str "This command can only be used for unnamed theorem.")
 

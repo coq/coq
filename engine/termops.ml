@@ -81,7 +81,7 @@ let rec pr_constr c = match kind c with
   | Construct (((sp,i),j),u) ->
       str"Constr(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"
   | Proj (p,c) -> str"Proj(" ++ pr_con (Projection.constant p) ++ str"," ++ bool (Projection.unfolded p) ++ pr_constr c ++ str")"
-  | Case (ci,p,c,bl) -> v 0
+  | Case (_ci,p,c,bl) -> v 0
       (hv 0 (str"<"++pr_constr p++str">"++ cut() ++ str"Case " ++
              pr_constr c ++ str"of") ++ cut() ++
        prlist_with_sep (fun _ -> brk(1,2)) pr_constr (Array.to_list bl) ++
@@ -109,7 +109,7 @@ let pr_evar_suggested_name evk sigma =
   match evar_ident evk' sigma with
   | Some id -> id
   | None -> match evi.evar_source with
-  | _,Evar_kinds.ImplicitArg (c,(n,Some id),b) -> id
+  | _,Evar_kinds.ImplicitArg (_c,(_n,Some id),_b) -> id
   | _,Evar_kinds.VarInstance id -> id
   | _,Evar_kinds.QuestionMark (_,Name id) -> id
   | _,Evar_kinds.GoalEvar -> Id.of_string "Goal"
@@ -192,7 +192,7 @@ let pr_evar_source = function
       str "subterm of pattern-matching return predicate"
   | Evar_kinds.BinderType (Name id) -> str "type of " ++ Id.print id
   | Evar_kinds.BinderType Anonymous -> str "type of anonymous binder"
-  | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
+  | Evar_kinds.ImplicitArg (c,(_n,ido),_b) ->
       let open Globnames in
       let print_constr = print_kconstr in
       let id = Option.get ido in
@@ -586,7 +586,7 @@ let rec drop_extra_implicit_args sigma c = match EConstr.kind sigma c with
 
 (* Get the last arg of an application *)
 let last_arg sigma c = match EConstr.kind sigma c with
-  | App (f,cl) -> Array.last cl
+  | App (_f,cl) -> Array.last cl
   | _ -> anomaly (Pp.str "last_arg.")
 
 (* Get the last arg of an application *)
@@ -672,7 +672,7 @@ let map_constr_with_binders_left_to_right sigma g f l c =
       let b' = f (g (LocalDef (na,bo,t)) l) b in
 	if bo' == bo && t' == t && b' == b then c
 	else mkLetIn (na, bo', t', b')	    
-  | App (c,[||]) -> assert false
+  | App (_c,[||]) -> assert false
   | App (t,al) ->
       (*Special treatment to be able to recognize partially applied subterms*)
       let a = al.(Array.length al - 1) in
@@ -784,7 +784,7 @@ let fold_constr_with_full_binders sigma g f n acc c =
   | Lambda (na,t,c) -> f (g (LocalAssum (na, inj t)) n) (f n acc t) c
   | LetIn (na,b,t,c) -> f (g (LocalDef (na, inj b, inj t)) n) (f n (f n acc b) t) c
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
-  | Proj (p,c) -> f n acc c
+  | Proj (_p,c) -> f n acc c
   | Evar (_,l) -> Array.fold_left (f n) acc l
   | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
   | Fix (_,(lna,tl,bl)) ->
@@ -814,7 +814,7 @@ let iter_constr_with_full_binders sigma g f l c =
   | Lambda (na,t,c) -> f l t; f (g (LocalAssum (na,t)) l) c
   | LetIn (na,b,t,c) -> f l b; f l t; f (g (LocalDef (na,b,t)) l) c
   | App (c,args) -> f l c; Array.iter (f l) args
-  | Proj (p,c) -> f l c
+  | Proj (_p,c) -> f l c
   | Evar (_,args) -> Array.iter (f l) args
   | Case (_,p,c,bl) -> f l p; f l c; Array.iter (f l) bl
   | Fix (_,(lna,tl,bl)) ->
@@ -928,7 +928,7 @@ let dependent_main noevar sigma m t =
       raise Occur
     else
       match EConstr.kind sigma m, EConstr.kind sigma t with
-	| App (fm,lm), App (ft,lt) when Array.length lm < Array.length lt ->
+	| App (_fm,lm), App (ft,lt) when Array.length lm < Array.length lt ->
 	    deprec m (mkApp (ft,Array.sub lt 0 (Array.length lm)));
 	    CArray.Fun1.iter deprec m
 	      (Array.sub lt
@@ -956,7 +956,7 @@ let count_occurrences sigma m t =
       incr n
     else
       match EConstr.kind sigma m, EConstr.kind sigma t with
-	| App (fm,lm), App (ft,lt) when Array.length lm < Array.length lt ->
+	| App (_fm,lm), App (ft,lt) when Array.length lm < Array.length lt ->
 	    countrec m (mkApp (ft,Array.sub lt 0 (Array.length lm)));
 	    Array.iter (countrec m)
 	      (Array.sub lt
@@ -1012,7 +1012,7 @@ let prefix_application sigma eq_fun (k,c) t =
   let open EConstr in
   let c' = collapse_appl sigma c and t' = collapse_appl sigma t in
   match EConstr.kind sigma c', EConstr.kind sigma t' with
-    | App (f1,cl1), App (f2,cl2) ->
+    | App (_f1,cl1), App (f2,cl2) ->
 	let l1 = Array.length cl1
 	and l2 = Array.length cl2 in
 	if l1 <= l2
@@ -1026,7 +1026,7 @@ let my_prefix_application sigma eq_fun (k,c) by_c t =
   let open EConstr in
   let c' = collapse_appl sigma c and t' = collapse_appl sigma t in
   match EConstr.kind sigma c', EConstr.kind sigma t' with
-    | App (f1,cl1), App (f2,cl2) ->
+    | App (_f1,cl1), App (f2,cl2) ->
 	let l1 = Array.length cl1
 	and l2 = Array.length cl2 in
 	if l1 <= l2
@@ -1154,8 +1154,8 @@ let is_template_polymorphic env sigma f =
 let base_sort_cmp pb s0 s1 =
   match (s0,s1) with
     | (Prop c1, Prop c2) -> c1 == Null || c2 == Pos  (* Prop <= Set *)
-    | (Prop c1, Type u)  -> pb == Reduction.CUMUL
-    | (Type u1, Type u2) -> true
+    | (Prop _c1, Type _u)  -> pb == Reduction.CUMUL
+    | (Type _u1, Type _u2) -> true
     | _ -> false
 
 let rec is_Prop sigma c = match EConstr.kind sigma c with
@@ -1192,7 +1192,7 @@ let compare_constr_univ sigma f cv_pb t1 t2 =
       Sort s1, Sort s2 -> base_sort_cmp cv_pb (ESorts.kind sigma s1) (ESorts.kind sigma s2)
     | Prod (_,t1,c1), Prod (_,t2,c2) ->
 	f Reduction.CONV t1 t2 && f cv_pb c1 c2
-    | Const (c, u), Const (c', u') -> Constant.equal c c'
+    | Const (c, _u), Const (c', _u') -> Constant.equal c c'
     | Ind (i, _), Ind (i', _) -> eq_ind i i'
     | Construct (i, _), Construct (i', _) -> eq_constructor i i'
     | _ -> EConstr.compare_constr sigma (fun t1 t2 -> f Reduction.CONV t1 t2) t1 t2
@@ -1304,7 +1304,7 @@ let rec eta_reduce_head sigma c =
   let open EConstr in
   let open Vars in
   match EConstr.kind sigma c with
-    | Lambda (_,c1,c') ->
+    | Lambda (_,_c1,c') ->
 	(match EConstr.kind sigma (eta_reduce_head sigma c') with
            | App (f,cl) ->
                let lastn = (Array.length cl) - 1 in
@@ -1408,7 +1408,7 @@ let compact_named_context sign =
 let clear_named_body id env =
   let open NamedDecl in
   let aux _ = function
-  | LocalDef (id',c,t) when Id.equal id id' -> push_named (LocalAssum (id,t))
+  | LocalDef (id',_c,t) when Id.equal id id' -> push_named (LocalAssum (id,t))
   | d -> push_named d in
   fold_named_context aux env ~init:(reset_context env)
 

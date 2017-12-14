@@ -368,17 +368,17 @@ let destConst c = match kind c with
 
 (* Destructs an existential variable *)
 let destEvar c = match kind c with
-  | Evar (kn, a as r) -> r
+  | Evar (_kn, _a as r) -> r
   | _ -> raise DestKO
 
 (* Destructs a (co)inductive type named kn *)
 let destInd c = match kind c with
-  | Ind (kn, a as r) -> r
+  | Ind (_kn, _a as r) -> r
   | _ -> raise DestKO
 
 (* Destructs a constructor *)
 let destConstruct c = match kind c with
-  | Construct (kn, a as r) -> r
+  | Construct (_kn, _a as r) -> r
   | _ -> raise DestKO
 
 (* Destructs a term <p>Case c of lc1 | lc2 .. | lcn end *)
@@ -429,12 +429,12 @@ let fold f acc c = match kind c with
   | Lambda (_,t,c) -> f (f acc t) c
   | LetIn (_,b,t,c) -> f (f (f acc b) t) c
   | App (c,l) -> Array.fold_left f (f acc c) l
-  | Proj (p,c) -> f acc c
+  | Proj (_p,c) -> f acc c
   | Evar (_,l) -> Array.fold_left f acc l
   | Case (_,p,c,bl) -> Array.fold_left f (f (f acc p) c) bl
-  | Fix (_,(lna,tl,bl)) ->
+  | Fix (_,(_lna,tl,bl)) ->
     Array.fold_left2 (fun acc t b -> f (f acc t) b) acc tl bl
-  | CoFix (_,(lna,tl,bl)) ->
+  | CoFix (_,(_lna,tl,bl)) ->
     Array.fold_left2 (fun acc t b -> f (f acc t) b) acc tl bl
 
 (* [iter f c] iters [f] on the immediate subterms of [c]; it is
@@ -449,7 +449,7 @@ let iter f c = match kind c with
   | Lambda (_,t,c) -> f t; f c
   | LetIn (_,b,t,c) -> f b; f t; f c
   | App (c,l) -> f c; Array.iter f l
-  | Proj (p,c) -> f c
+  | Proj (_p,c) -> f c
   | Evar (_,l) -> Array.iter f l
   | Case (_,p,c,bl) -> f p; f c; Array.iter f bl
   | Fix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
@@ -471,7 +471,7 @@ let iter_with_binders g f n c = match kind c with
   | App (c,l) -> f n c; CArray.Fun1.iter f n l
   | Evar (_,l) -> CArray.Fun1.iter f n l
   | Case (_,p,c,bl) -> f n p; f n c; CArray.Fun1.iter f n bl
-  | Proj (p,c) -> f n c
+  | Proj (_p,c) -> f n c
   | Fix (_,(_,tl,bl)) ->
       CArray.Fun1.iter f n tl;
       CArray.Fun1.iter f (iterate g (Array.length tl) n) bl
@@ -773,7 +773,7 @@ let eq_constr_univs_infer univs m n =
   if m == n then true, Constraint.empty
   else 
     let cstrs = ref Constraint.empty in
-    let eq_universes _ _ = UGraph.check_eq_instances univs in
+    let eq_universes _strict = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else
@@ -793,7 +793,7 @@ let leq_constr_univs_infer univs m n =
   if m == n then true, Constraint.empty
   else 
     let cstrs = ref Constraint.empty in
-    let eq_universes _ _ l l' = UGraph.check_eq_instances univs l l' in
+    let eq_universes _strict l l' = UGraph.check_eq_instances univs l l' in
     let eq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else
@@ -860,11 +860,11 @@ let constr_ord_int f t1 t2 =
     | LetIn _, _ -> -1 | _, LetIn _ -> 1
     | App (c1,l1), App (c2,l2) -> (f =? (Array.compare f)) c1 c2 l1 l2
     | App _, _ -> -1 | _, App _ -> 1
-    | Const (c1,u1), Const (c2,u2) -> Constant.CanOrd.compare c1 c2
+    | Const (c1,_u1), Const (c2,_u2) -> Constant.CanOrd.compare c1 c2
     | Const _, _ -> -1 | _, Const _ -> 1
-    | Ind (ind1, u1), Ind (ind2, u2) -> ind_ord ind1 ind2
+    | Ind (ind1, _u1), Ind (ind2, _u2) -> ind_ord ind1 ind2
     | Ind _, _ -> -1 | _, Ind _ -> 1
-    | Construct (ct1,u1), Construct (ct2,u2) -> constructor_ord ct1 ct2
+    | Construct (ct1,_u1), Construct (ct2,_u2) -> constructor_ord ct1 ct2
     | Construct _, _ -> -1 | _, Construct _ -> 1
     | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
         ((f =? f) ==? (Array.compare f)) p1 p2 c1 c2 bl1 bl2
@@ -1123,9 +1123,9 @@ let rec hash t =
       combinesmall 11 (combine (constructor_hash c) (Instance.hash u))
     | Case (_ , p, c, bl) ->
       combinesmall 12 (combine3 (hash c) (hash p) (hash_term_array bl))
-    | Fix (ln ,(_, tl, bl)) ->
+    | Fix (_ln ,(_, tl, bl)) ->
       combinesmall 13 (combine (hash_term_array bl) (hash_term_array tl))
-    | CoFix(ln, (_, tl, bl)) ->
+    | CoFix(_ln, (_, tl, bl)) ->
        combinesmall 14 (combine (hash_term_array bl) (hash_term_array tl))
     | Meta n -> combinesmall 15 n
     | Rel n -> combinesmall 16 n

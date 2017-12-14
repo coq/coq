@@ -105,7 +105,7 @@ let head_in indl t gl =
 let decompose_these c l =
   Proofview.Goal.enter begin fun gl ->
   let indl = List.map (fun x -> x, Univ.Instance.empty) l in
-  general_decompose (fun sigma (_,t) -> head_in indl t gl) c
+  general_decompose (fun _sigma (_,t) -> head_in indl t gl) c
   end
 
 let decompose_and c =

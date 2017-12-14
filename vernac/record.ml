@@ -64,11 +64,9 @@ let _ =
 
 let interp_fields_evars env sigma impls_env nots l =
   List.fold_left2
-    (fun (env, sigma, uimpls, params, impls) no ({CAst.loc;v=i}, b, t) ->
-      let sigma, (t', impl) = interp_type_evars_impls env sigma ~impls t in
-      let sigma, b' =
-        Option.cata (fun x -> on_snd (fun x -> Some (fst x)) @@
-                      interp_casted_constr_evars_impls env sigma ~impls x t') (sigma,None) b in
+    (fun (env, uimpls, params, impls) no ((_loc, i), b, t) ->
+      let t', impl = interp_type_evars_impls env evars ~impls t in
+      let b' = Option.map (fun x -> fst (interp_casted_constr_evars_impls env evars ~impls x t')) b in
       let impls =
 	match i with
 	| Anonymous -> impls
@@ -112,12 +110,12 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
     in
       List.iter 
 	(function CLocalDef (b, _, _) -> error default_binder_kind b
-	   | CLocalAssum (ls, bk, ce) -> List.iter (error bk) ls
-           | CLocalPattern {CAst.loc} ->
+	   | CLocalAssum (ls, bk, _ce) -> List.iter (error bk) ls
+           | CLocalPattern (loc,(_,_)) ->
               Loc.raise ?loc (Stream.Error "pattern with quote not allowed in record parameters.")) ps
   in 
-  let sigma, (impls_env, ((env1,newps), imps)) = interp_context_evars env0 sigma ps in
-  let sigma, typ, sort, template = match t with
+  let impls_env, ((_env1,newps), imps) = interp_context_evars env0 evars ps in
+  let typ, sort, template = match t with
     | Some t -> 
        let env = EConstr.push_rel_context newps env0 in
        let poly =
@@ -146,10 +144,10 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
   let env_ar = EConstr.push_rel_context newps (EConstr.push_rel (LocalAssum (Name id,arity)) env0) in
   let assums = List.filter is_local_assum newps in
   let params = List.map (RelDecl.get_name %> Name.get_id) assums in
-  let ty = Inductive (params,(finite != Declarations.BiFinite)) in
-  let impls_env = compute_internalization_env env0 sigma ~impls:impls_env ty [id] [arity] [imps] in
-  let env2,sigma,impls,newfs,data =
-    interp_fields_evars env_ar sigma impls_env nots (binders_of_decls fs)
+  let ty = Inductive (params,(finite != BiFinite)) in
+  let impls_env = compute_internalization_env env0 ~impls:impls_env ty [id] [EConstr.to_constr !evars arity] [imps] in
+  let _env2,impls,newfs,_data =
+    interp_fields_evars env_ar evars impls_env nots (binders_of_decls fs)
   in
   let sigma =
     Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma Evd.empty in
@@ -168,13 +166,13 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
           EConstr.mkSort (Sorts.sort_of_univ univ)
         else sigma, typ
   in
-  let sigma, _ = Evarutil.nf_evars_and_universes sigma in
-  let newfs = List.map (EConstr.to_rel_decl sigma) newfs in
-  let newps = List.map (EConstr.to_rel_decl sigma) newps in
-  let typ = EConstr.to_constr sigma typ in
-  let ce t = Pretyping.check_evars env0 Evd.empty sigma (EConstr.of_constr t) in
-  let univs = Evd.check_univ_decl ~poly sigma decl in
-  let ubinders = Evd.universe_binders sigma in
+  let evars, _nf = Evarutil.nf_evars_and_universes evars in
+  let newfs = List.map (EConstr.to_rel_decl evars) newfs in
+  let newps = List.map (EConstr.to_rel_decl evars) newps in
+  let typ = EConstr.to_constr evars typ in
+  let ce t = Pretyping.check_evars env0 Evd.empty evars (EConstr.of_constr t) in
+  let univs = Evd.check_univ_decl ~poly evars decl in
+  let ubinders = Evd.universe_binders evars in
     List.iter (iter_constr ce) (List.rev newps);
     List.iter (iter_constr ce) (List.rev newfs);
     ubinders, univs, typ, template, imps, newps, impls, newfs
@@ -206,7 +204,7 @@ let warning_or_error coe indsp err =
 	   strbrk" cannot be defined because the projection" ++ str s ++ spc () ++
            prlist_with_sep pr_comma Id.print projs ++ spc () ++ str have ++
 	   strbrk " not defined.")
-    | BadTypedProj (fi,ctx,te) ->
+    | BadTypedProj (fi,_ctx,te) ->
 	match te with
 	  | ElimArity (_,_,_,_,Some (_,_,NonInformativeToInformative)) ->
               (Id.print fi ++
@@ -274,11 +272,11 @@ let warn_non_primitive_record =
 (* We build projections *)
 let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers ubinders fieldimpls fields =
   let env = Global.env() in
-  let (mib,mip) = Global.lookup_inductive indsp in
+  let (mib,_mip) = Global.lookup_inductive indsp in
   let poly = Declareops.inductive_is_polymorphic mib in
   let u = match ctx with
     | Polymorphic_const_entry ctx -> Univ.UContext.instance ctx
-    | Monomorphic_const_entry ctx -> Univ.Instance.empty
+    | Monomorphic_const_entry _ctx -> Univ.Instance.empty
   in
   let paramdecls = Inductive.inductive_paramdecls (mib, u) in
   let indu = indsp, u in
@@ -375,14 +373,14 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
 open Typeclasses
 
 let declare_structure finite ubinders univs id idbuild paramimpls params arity template
-    fieldimpls fields ?(kind=StructureComponent) ?name is_coe coers =
+    fieldimpls fields ?(kind=StructureComponent) ?name is_coe coers _sign =
   let nparams = List.length params and nfields = List.length fields in
   let args = Context.Rel.to_extended_list mkRel nfields params in
   let ind = applist (mkRel (1+nparams+nfields), args) in
   let type_constructor = it_mkProd_or_LetIn ind fields in
   let template, ctx =
     match univs with
-    | Monomorphic_ind_entry ctx ->
+    | Monomorphic_ind_entry _ctx ->
       template, Monomorphic_const_entry Univ.ContextSet.empty
     | Polymorphic_ind_entry ctx ->
       false, Polymorphic_const_entry ctx
@@ -430,8 +428,9 @@ let implicits_of_context ctx =
     in ExplByPos (i, explname), (true, true, true))
     1 (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
-let declare_class finite def cum ubinders univs id idbuild paramimpls params arity
-    template fieldimpls fields ?(kind=StructureComponent) is_coe coers priorities =
+let declare_class _finite def cum ubinders univs id idbuild paramimpls params arity
+    template fieldimpls fields ?(kind=StructureComponent) _is_coe coers priorities sign =
+  ignore(kind);
   let fieldimpls =
     (* Make the class implicit in the projections, and the params if applicable. *)
     let len = List.length params in

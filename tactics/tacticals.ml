@@ -225,7 +225,7 @@ let compute_induction_names_gen check_and branchletsigns = function
 let compute_induction_names = compute_induction_names_gen true
 
 (* Compute the let-in signature of case analysis or standard induction scheme *)
-let compute_constructor_signatures isrec ((_,k as ity),u) =
+let compute_constructor_signatures isrec ((_,k as ity),_u) =
   let rec analrec c recargs =
     match Constr.kind c, recargs with
     | Prod (_,_,c), recarg::rest ->
@@ -404,7 +404,7 @@ module New = struct
     tclINDEPENDENT begin
       Proofview.tclIFCATCH t1
         (fun () -> t2)
-        (fun (e, info) -> Proofview.tclORELSE t3 (fun e' -> tclZERO ~info e))
+        (fun (e, info) -> Proofview.tclORELSE t3 (fun _e' -> tclZERO ~info e))
     end
   let tclIFTHENSVELSE t1 a t3 =
     Proofview.tclIFCATCH t1
@@ -480,14 +480,14 @@ module New = struct
       match Evd.evar_body evi with
       | Evd.Evar_empty -> Some (evk,evi)
       | Evd.Evar_defined c -> match Constr.kind c with
-        | Term.Evar (evk,l) -> is_undefined_up_to_restriction sigma evk
+        | Term.Evar (evk,_l) -> is_undefined_up_to_restriction sigma evk
         | _ -> 
           (* We make the assumption that there is no way to refine an
             evar remaining after typing from the initial term given to
             apply/elim and co tactics, is it correct? *)
           None in
     let rest =
-      Evd.fold_undefined (fun evk evi acc ->
+      Evd.fold_undefined (fun evk _evi acc ->
         match is_undefined_up_to_restriction sigma evk with
         | Some (evk',evi) -> (evk',evi)::acc
         | _ -> acc)

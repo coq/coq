@@ -21,7 +21,7 @@ let default_univ_decl =
     univdecl_constraints = Univ.Constraint.empty;
     univdecl_extensible_constraints = true }
 
-let interp_univ_constraints env evd cstrs =
+let interp_univ_constraints _env evd cstrs =
   let interp (evd,cstrs) (u, d, u') =
     let ul = Pretyping.interp_known_glob_level evd u in
     let u'l = Pretyping.interp_known_glob_level evd u' in

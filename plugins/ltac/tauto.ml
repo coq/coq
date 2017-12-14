@@ -112,10 +112,10 @@ let is_unit_or_eq _ ist =
 
 let bugged_is_binary sigma t =
   isApp sigma t &&
-  let (hdapp,args) = decompose_app sigma t in
+  let (hdapp,_args) = decompose_app sigma t in
     match EConstr.kind sigma hdapp with
-    | Ind (ind,u)  ->
-        let (mib,mip) = Global.lookup_inductive ind in
+    | Ind (ind,_u)  ->
+        let (mib,_mip) = Global.lookup_inductive ind in
          Int.equal mib.Declarations.mind_nparams 2
     | _ -> false
 
@@ -203,7 +203,7 @@ let coq_nnpp_path =
   let dir = List.map Id.of_string ["Classical_Prop";"Logic";"Coq"] in
   Libnames.make_path (DirPath.make dir) (Id.of_string "NNPP")
 
-let apply_nnpp _ ist =
+let apply_nnpp _ _ist =
   Proofview.tclBIND
     (Proofview.tclUNIT ())
     begin fun () -> try

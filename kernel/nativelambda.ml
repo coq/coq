@@ -201,7 +201,7 @@ let can_subst lam =
 
 let can_merge_if bt bf =
   match bt, bf with
-  | Llam(idst,_), Llam(idsf,_) -> true
+  | Llam(_idst,_), Llam(_idsf,_) -> true
   | _ -> false
 
 let merge_if t bt bf =
@@ -433,7 +433,7 @@ module Renv =
 (* What about pattern matching ?*)
 let is_lazy prefix t =
   match kind t with
-  | App (f,args) ->
+  | App (f,_args) ->
      begin match kind f with
      | Construct (c,_) ->
 	let entry = mkInd (fst c) in
@@ -484,7 +484,7 @@ let rec lambda_of_constr env sigma c =
 
   | Sort s -> Lsort s
 
-  | Ind (ind,u as pind) ->
+  | Ind (ind,_u as pind) ->
       let prefix = get_mind_prefix !global_env (fst ind) in
       Lind (prefix, pind)
 
@@ -578,7 +578,7 @@ let rec lambda_of_constr env sigma c =
 
 and lambda_of_app env sigma f args =
   match kind f with
-  | Const (kn,u as c) ->
+  | Const (_kn,_u as c) ->
       let kn,u = get_alias !global_env c in
       let cb = lookup_constant kn !global_env in
       (try

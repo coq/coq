@@ -278,7 +278,7 @@ let rec pprint ch = function
   | Por (_,t1,t2) -> Printf.fprintf ch "(%a or %a)" pprint t1 pprint t2
   | Pand(_,t1,t2) -> Printf.fprintf ch "(%a and %a)" pprint t1 pprint t2
   | Pimp(_,t1,t2) -> Printf.fprintf ch "(%a => %a)" pprint t1 pprint t2
-  | Pprop c -> Printf.fprintf ch "Prop"
+  | Pprop _c -> Printf.fprintf ch "Prop"
 
 (* \subsection{Omega vers Oformula} *)
 
@@ -442,7 +442,7 @@ let rec normalize = function
 
 (* From normalized formulas to omega representations *)
 
-let omega_of_nformula env kind nf =
+let omega_of_nformula _env kind nf =
   { id = new_omega_eq ();
     kind;
     constant=nf.cst;
@@ -611,7 +611,7 @@ and destruct_neg_hyp eqns = function
 
 let rec destructurate_hyps = function
   | [] -> [[]]
-  | (i,_,t) :: l ->
+  | (_i,_,t) :: l ->
      let l_syst1 = destruct_pos_hyp [] t in
      let l_syst2 = destructurate_hyps l in
      List.cartesian (@) l_syst1 l_syst2
@@ -896,7 +896,7 @@ let rec reify_trace env env_hyp =
      mkApp (Lazy.force coq_s_split_ineq,
             [| hyp_idx env_hyp e.id; r1 ; r2 |])
   | (FORGET_C _ | FORGET _ | FORGET_I _) :: l -> reify_trace env env_hyp l
-  | WEAKEN  _ :: l -> failwith "not_treated"
+  | WEAKEN  _ :: _l -> failwith "not_treated"
   | _ -> failwith "bad history"
 
 let rec decompose_tree env ctxt = function

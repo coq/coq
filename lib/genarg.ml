@@ -133,7 +133,7 @@ let out_gen (type a) (type l) (t : (a, l) abstract_argument_type) (o : l generic
   | None -> failwith "out_gen"
   | Some Refl -> v
 
-let has_type (GenArg (t, v)) u = match abstract_argument_type_eq t u with
+let has_type (GenArg (t, _v)) u = match abstract_argument_type_eq t u with
 | None -> false
 | Some _ -> true
 

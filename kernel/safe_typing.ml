@@ -242,7 +242,7 @@ let universes_of_private eff =
   List.fold_left
     (fun acc { Entries.eff } ->
        match eff with
-       | Entries.SEscheme (l,s) ->
+       | Entries.SEscheme (l,_s) ->
          List.fold_left
            (fun acc (_,_,cb,c) ->
               let acc = match c with
@@ -255,7 +255,7 @@ let universes_of_private eff =
               | Polymorphic_const _ -> acc
            )
            acc l
-       | Entries.SEsubproof (c, cb, e) ->
+       | Entries.SEsubproof (_c, cb, _e) ->
          match cb.const_universes with
               | Monomorphic_const ctx ->
                 ctx :: acc
@@ -900,7 +900,7 @@ let typing senv = Typeops.infer (env_of_senv senv)
 let retroknowledge f senv =
   Environ.retroknowledge f (env_of_senv senv)
 
-let register field value by_clause senv =
+let register field value _by_clause senv =
   (* todo : value closed, by_clause safe, by_clause of the proper type*)
   (* spiwack : updates the safe_env with the information that the register
      action has to be performed (again) when the environment is imported *)
