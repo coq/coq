@@ -1,0 +1,16 @@
+The command has indeed failed with message:
+Cannot coerce to a disjunctive/conjunctive pattern.
+The command has indeed failed with message:
+Disjunctive/conjunctive introduction pattern expected.
+The command has indeed failed with message:
+Cannot coerce to a disjunctive/conjunctive pattern.
+The command has indeed failed with message:
+Cannot coerce to a disjunctive/conjunctive pattern.
+The command has indeed failed with message:
+Ltac variable H is bound to <tactic closure> which cannot be coerced to
+an introduction pattern.
+The command has indeed failed with message:
+Disjunctive/conjunctive introduction pattern expected.
+The command has indeed failed with message:
+Ltac variable H' is bound to <tactic closure> which cannot be coerced to
+an introduction pattern.
