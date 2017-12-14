@@ -277,6 +277,7 @@ module Prefs = struct
   let debug = ref true
   let profile = ref false
   let annotate = ref false
+  let bytecodecompiler = ref true
   let nativecompiler = ref (not (os_type_win32 || os_type_cygwin))
   let coqwebsite = ref "http://coq.inria.fr/"
   let force_caml_version = ref false
@@ -343,6 +344,8 @@ let args_options = Arg.align [
     " Add profiling information in the Coq executables";
   "-annotate", Arg.Set Prefs.annotate,
     " Dumps ml annotation files while compiling Coq";
+  "-bytecode-compiler", arg_bool Prefs.bytecodecompiler,
+    "(yes|no) Enable Coq's bytecode reduction machine (VM)";
   "-native-compiler", arg_bool Prefs.nativecompiler,
     "(yes|no) Compilation to native code for conversion and normalization";
   "-coqwebsite", Arg.Set_string Prefs.coqwebsite,
@@ -1031,9 +1034,9 @@ let print_summary () =
   pr "  Documentation               : %s\n"
     (if withdoc then "All" else "None");
   pr "  Web browser                 : %s\n" browser;
-  pr "  Coq web site                : %s\n\n" !Prefs.coqwebsite;
-  if not !Prefs.nativecompiler then
-    pr "  Native compiler for conversion and normalization disabled\n\n";
+  pr "  Coq web site                : %s\n" !Prefs.coqwebsite;
+  pr "  Bytecode VM enabled         : %B\n" !Prefs.bytecodecompiler;
+  pr "  Native Compiler enabled     : %B\n\n" !Prefs.nativecompiler;
   if !Prefs.local then
     pr "  Local build, no installation...\n"
   else
@@ -1128,7 +1131,8 @@ let write_configml f =
   pr_s "wwwrefman" (!Prefs.coqwebsite ^ "distrib/" ^ coq_version ^ "/refman/");
   pr_s "wwwstdlib" (!Prefs.coqwebsite ^ "distrib/" ^ coq_version ^ "/stdlib/");
   pr_s "localwwwrefman"  ("file:/" ^ docdir ^ "/html/refman");
-  pr_b "no_native_compiler" (not !Prefs.nativecompiler);
+  pr_b "bytecode_compiler" !Prefs.bytecodecompiler;
+  pr_b "native_compiler" !Prefs.nativecompiler;
 
   let core_src_dirs = [ "config"; "dev"; "kernel"; "library";
                         "engine"; "pretyping"; "interp"; "parsing"; "proofs";

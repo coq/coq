@@ -127,8 +127,8 @@ val set_inline_level : int -> unit
 val get_inline_level : unit -> int
 val default_inline_level : int
 
-(** Native code compilation for conversion and normalization *)
-val native_compiler : bool ref
+(** When producing vo objects, also compile the native-code version *)
+val output_native_objects : bool ref
 
 (** Print the mod uid associated to a vo file by the native compiler *)
 val print_mod_uid : bool ref

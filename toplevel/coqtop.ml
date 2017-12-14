@@ -727,9 +727,9 @@ let parse_args arglist =
     |"-noinit"|"-nois" -> load_init := false
     |"-no-glob"|"-noglob" -> Dumpglob.noglob (); glob_opt := true
     |"-native-compiler" ->
-      if Coq_config.no_native_compiler then
+      if not Coq_config.native_compiler then
         warning "Native compilation was disabled at configure time."
-      else Flags.native_compiler := true
+      else Flags.output_native_objects := true
     |"-output-context" -> output_context := true
     |"-profile-ltac" -> Flags.profile_ltac := true
     |"-q" -> Coqinit.no_load_rc ()

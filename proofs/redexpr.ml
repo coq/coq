@@ -25,8 +25,11 @@ open Misctypes
 
 (* call by value normalisation function using the virtual machine *)
 let cbv_vm env sigma c =
-  let ctyp = Retyping.get_type_of env sigma c in
-  Vnorm.cbv_vm env sigma c ctyp
+  if Coq_config.bytecode_compiler then
+    let ctyp = Retyping.get_type_of env sigma c in
+    Vnorm.cbv_vm env sigma c ctyp
+  else
+    compute env sigma c
 
 let warn_native_compute_disabled =
   CWarnings.create ~name:"native-compute-disabled" ~category:"native-compiler"
@@ -34,12 +37,12 @@ let warn_native_compute_disabled =
    strbrk "native_compute disabled at configure time; falling back to vm_compute.")
 
 let cbv_native env sigma c =
-  if Coq_config.no_native_compiler then
-    (warn_native_compute_disabled ();
-     cbv_vm env sigma c)
-  else
+  if Coq_config.native_compiler then
     let ctyp = Retyping.get_type_of env sigma c in
     Nativenorm.native_norm env sigma c ctyp
+  else
+    (warn_native_compute_disabled ();
+     cbv_vm env sigma c)
 
 let whd_cbn flags env sigma t =
   let (state,_) =

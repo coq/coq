@@ -154,7 +154,7 @@ let warn_no_native_compiler =
 
 (* Wrapper for [native_conv] above *)
 let native_conv cv_pb sigma env t1 t2 =
-  if Coq_config.no_native_compiler then begin
+  if not Coq_config.native_compiler then begin
     warn_no_native_compiler ();
     vm_conv cv_pb env t1 t2
   end
