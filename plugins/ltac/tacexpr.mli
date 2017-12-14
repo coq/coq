@@ -249,7 +249,7 @@ and 'a gen_tactic_expr =
   | TacProgress of 'a gen_tactic_expr
   | TacShowHyps of 'a gen_tactic_expr
   | TacAbstract of
-      ('a gen_tactic_expr * Id.t option) Loc.located
+      'a gen_tactic_expr * Id.t option
   | TacId of 'n message_token list
   | TacFail of global_flag * int or_var * 'n message_token list
   | TacInfo of 'a gen_tactic_expr

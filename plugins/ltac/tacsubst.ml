@@ -192,7 +192,7 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacId _ | TacFail _ as x -> x
   | TacProgress tac -> TacProgress (subst_tactic subst tac:glob_tactic_expr)
   | TacShowHyps tac -> TacShowHyps (subst_tactic subst tac:glob_tactic_expr)
-  | TacAbstract (loc,(tac,s)) -> TacAbstract (loc,(subst_tactic subst tac,s))
+  | TacAbstract (tac,s) -> TacAbstract (subst_tactic subst tac,s)
   | TacThen (t1,t2) ->
       TacThen (subst_tactic subst t1, subst_tactic subst t2)
   | TacDispatch tl -> TacDispatch (List.map (subst_tactic subst) tl)
