@@ -1159,6 +1159,7 @@ let pf_interp_gen_aux ist gl to_ind ((oclr, occ), t) =
   let (c, ucst), cl = 
     try fill_occ_pattern ~raise_NoMatch:true env sigma (EConstr.Unsafe.to_constr cl) pat occ 1
     with NoMatch -> redex_of_pattern env pat, (EConstr.Unsafe.to_constr cl) in
+  let gl = pf_merge_uc ucst gl in
   let c = EConstr.of_constr c in
   let cl = EConstr.of_constr cl in
   let clr = interp_clr sigma (oclr, (tag_of_cpattern t, c)) in
