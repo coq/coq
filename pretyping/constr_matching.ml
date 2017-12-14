@@ -206,7 +206,7 @@ let merge_binding sigma allow_bound_rels ctx n cT subst =
   in
   constrain sigma n c subst
       
-let matches_core env sigma allow_partial_app allow_bound_rels
+let matches_core env sigma allow_bound_rels
     (binding_vars,pat) c =
   let open EConstr in
   let convref ref c = 
@@ -260,7 +260,7 @@ let matches_core env sigma allow_partial_app allow_bound_rels
       | PApp (PApp (h, a1), a2), _ ->
           sorec ctx env subst (PApp(h,Array.append a1 a2)) t
 
-      | PApp (PMeta meta,args1), App (c2,args2) when allow_partial_app ->
+      | PApp (PMeta meta,args1), App (c2,args2) ->
          (let diff = Array.length args2 - Array.length args1 in
           if diff >= 0 then
             let args21, args22 = Array.chop diff args2 in
@@ -373,14 +373,14 @@ let matches_core env sigma allow_partial_app allow_bound_rels
   in
   sorec [] env (Id.Map.empty, Id.Map.empty) pat c
 
-let matches_core_closed env sigma allow_partial_app pat c =
-  let names, subst = matches_core env sigma allow_partial_app false pat c in
+let matches_core_closed env sigma pat c =
+  let names, subst = matches_core env sigma false pat c in
   (names, Id.Map.map snd subst)
 
-let extended_matches env sigma = matches_core env sigma true true
+let extended_matches env sigma = matches_core env sigma true
 
 let matches env sigma pat c =
-  snd (matches_core_closed env sigma true (Id.Set.empty,pat) c)
+  snd (matches_core_closed env sigma (Id.Set.empty,pat) c)
 
 let special_meta = (-1)
 
@@ -405,9 +405,9 @@ let matches_head env sigma pat c =
   matches env sigma pat head
 
 (* Tells if it is an authorized occurrence and if the instance is closed *)
-let authorized_occ env sigma partial_app closed pat c mk_ctx =
+let authorized_occ env sigma closed pat c mk_ctx =
   try
-    let subst = matches_core_closed env sigma partial_app pat c in
+    let subst = matches_core_closed env sigma pat c in
     if closed && Id.Map.exists (fun _ c -> not (closed0 sigma c)) (snd subst)
     then (fun next -> next ())
     else (fun next -> mkresult subst (mk_ctx (mkMeta special_meta)) next)
@@ -416,10 +416,10 @@ let authorized_occ env sigma partial_app closed pat c mk_ctx =
 let subargs env v = Array.map_to_list (fun c -> (env, c)) v
 
 (* Tries to match a subterm of [c] with [pat] *)
-let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
+let sub_match ?(closed=true) env sigma pat c =
   let open EConstr in
   let rec aux env c mk_ctx next =
-  let here = authorized_occ env sigma partial_app closed pat c mk_ctx in
+  let here = authorized_occ env sigma closed pat c mk_ctx in
   let next () = match EConstr.kind sigma c with
   | Cast (c1,k,c2) ->
       let next_mk_ctx = function
@@ -449,34 +449,12 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
       let env' = EConstr.push_rel (LocalDef (x,c1,t)) env in
       try_aux [(env, c1); (env', c2)] next_mk_ctx next
   | App (c1,lc) ->
-        let topdown = true in
-        if partial_app then
-          if topdown then
-            let lc1 = Array.sub lc 0 (Array.length lc - 1) in
-            let app = mkApp (c1,lc1) in
-            let mk_ctx = function
-              | [app';c] -> mk_ctx (mkApp (app',[|c|]))
-              | _ -> assert false in
-            try_aux [(env, app); (env, Array.last lc)] mk_ctx next
-          else
-            let rec aux2 app args next =
-              match args with
-              | [] ->
-                  let mk_ctx le =
-                    mk_ctx (mkApp (List.hd le, Array.of_list (List.tl le))) in
-                  let sub = (env, c1) :: subargs env lc in
-                  try_aux sub mk_ctx next
-              | arg :: args ->
-                  let app = mkApp (app,[|arg|]) in
-                  let next () = aux2 app args next in
-                  let mk_ctx ce = mk_ctx (mkApp (ce, Array.of_list args)) in
-                  aux env app mk_ctx next in
-            aux2 c1 (Array.to_list lc) next
-        else
-          let mk_ctx le =
-            mk_ctx (mkApp (List.hd le, Array.of_list (List.tl le))) in
-          let sub = (env, c1) :: subargs env lc in
-          try_aux sub mk_ctx next
+     let lc1 = Array.sub lc 0 (Array.length lc - 1) in
+     let app = mkApp (c1,lc1) in
+     let mk_ctx = function
+       | [app';c] -> mk_ctx (mkApp (app',[|c|]))
+       | _ -> assert false in
+     try_aux [(env, app); (env, Array.last lc)] mk_ctx next
   | Case (ci,hd,c1,lc) ->
       let next_mk_ctx = function
       | c1 :: hd :: lc -> mk_ctx (mkCase (ci,hd,c1,Array.of_list lc))
@@ -499,14 +477,11 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
     let sub = subargs env types @ subargs env bodies in
     try_aux sub next_mk_ctx next
   | Proj (p,c') ->
-    let next_mk_ctx le = mk_ctx (mkProj (p,List.hd le)) in
-      if partial_app then
-	try 
-	  let term = Retyping.expand_projection env sigma p c' [] in
-	    aux env term mk_ctx next
-	with Retyping.RetypeError _ -> next ()
-      else
-      try_aux [env, c'] next_mk_ctx next
+    begin try
+      let term = Retyping.expand_projection env sigma p c' [] in
+      aux env term mk_ctx next
+    with Retyping.RetypeError _ -> next ()
+    end
   | Construct _| Ind _|Evar _|Const _ | Rel _|Meta _|Var _|Sort _ ->
     next ()
   in
@@ -527,13 +502,7 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
   let result () = aux env c (fun x -> x) lempty in
   IStream.thunk result
 
-let match_subterm env sigma pat c = sub_match env sigma (Id.Set.empty,pat) c
-
-let match_appsubterm env sigma pat c = 
-  sub_match ~partial_app:true env sigma (Id.Set.empty,pat) c
-
-let match_subterm_gen env sigma app pat c = 
-  sub_match ~partial_app:app env sigma pat c
+let match_subterm env sigma pat c = sub_match env sigma pat c
 
 let is_matching env sigma pat c =
   try let _ = matches env sigma pat c in true
@@ -545,5 +514,5 @@ let is_matching_head env sigma pat c =
 
 let is_matching_appsubterm ?(closed=true) env sigma pat c =
   let pat = (Id.Set.empty,pat) in
-  let results = sub_match ~partial_app:true ~closed env sigma pat c in
+  let results = sub_match ~closed env sigma pat c in
   not (IStream.is_empty results)

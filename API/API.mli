@@ -3853,10 +3853,9 @@ sig
   type matching_result =
     { m_sub : bound_ident_map * Ltac_pretype.patvar_map;
       m_ctx : EConstr.constr }
-  val match_subterm_gen : Environ.env -> Evd.evar_map ->
-                          bool ->
-                          binding_bound_vars * Pattern.constr_pattern -> EConstr.constr ->
-                          matching_result IStream.t
+  val match_subterm : Environ.env -> Evd.evar_map ->
+                      binding_bound_vars * Pattern.constr_pattern -> EConstr.constr ->
+                      matching_result IStream.t
   val matches : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> EConstr.constr -> Ltac_pretype.patvar_map
 end
 

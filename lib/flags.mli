@@ -133,10 +133,6 @@ val native_compiler : bool ref
 (** Print the mod uid associated to a vo file by the native compiler *)
 val print_mod_uid : bool ref
 
-val tactic_context_compat : bool ref
-(** Set to [true] to trigger the compatibility bugged context matching (old
-    context vs. appcontext) is set. *)
-
 val profile_ltac : bool ref
 val profile_ltac_cutoff : float ref
 

@@ -121,7 +121,7 @@ let subst_raw_may_eval subst = function
   | ConstrTerm c -> ConstrTerm (subst_glob_constr subst c)
 
 let subst_match_pattern subst = function
-  | Subterm (b,ido,pc) -> Subterm (b,ido,(subst_glob_constr_or_pattern subst pc))
+  | Subterm (ido,pc) -> Subterm (ido,(subst_glob_constr_or_pattern subst pc))
   | Term pc -> Term (subst_glob_constr_or_pattern subst pc)
 
 let rec subst_match_goal_hyps subst = function
