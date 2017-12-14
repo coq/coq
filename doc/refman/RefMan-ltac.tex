@@ -709,6 +709,55 @@ runs is displayed. Time is in seconds and is machine-dependent. The
 {\qstring} argument is optional. When provided, it is used to identify
 this particular occurrence of {\tt time}.
 
+\subsubsection{Timing a tactic that evaluates to a term\tacindex{time\_constr}\tacindex{restart\_timer}\tacindex{finish\_timing}
+\index{Tacticals!time\_constr@{\tt time\_constr}}}
+\index{Tacticals!restart\_timer@{\tt restart\_timer}}
+\index{Tacticals!finish\_timing@{\tt finish\_timing}}
+
+Tactic expressions that produce terms can be timed with the experimental tactic
+\begin{quote}
+ {\tt time\_constr} {\tacexpr}
+\end{quote}
+which evaluates {\tacexpr\tt{ ()}}
+and displays the time the tactic expression evaluated, assuming successful evaluation.
+Time is in seconds and is machine-dependent.
+
+This tactic currently does not support nesting, and will report times based on the innermost execution.
+This is due to the fact that it is implemented using the tactics
+\begin{quote}
+ {\tt restart\_timer} {\qstring}
+\end{quote}
+and
+\begin{quote}
+ {\tt finish\_timing} ({\qstring}) {\qstring}
+\end{quote}
+which (re)set and display an optionally named timer, respectively.
+The parenthsized {\qstring} argument to {\tt finish\_timing} is also
+optional, and determines the label associated with the timer for
+printing.
+
+By copying the definition of {\tt time\_constr} from the standard
+library, users can achive support for a fixed pattern of nesting by
+passing different {\qstring} parameters to {\tt restart\_timer} and
+{\tt finish\_timing} at each level of nesting.  For example:
+
+\begin{coq_example}
+Ltac time_constr1 tac :=
+  let eval_early := match goal with _ => restart_timer "(depth 1)" end in
+  let ret := tac () in
+  let eval_early := match goal with _ => finish_timing ( "Tactic evaluation" ) "(depth 1)" end in
+  ret.
+
+Goal True.
+  let v := time_constr
+             ltac:(fun _ =>
+                     let x := time_constr1 ltac:(fun _ => constr:(10 * 10)) in
+                     let y := time_constr1 ltac:(fun _ => eval compute in x) in
+                     y) in
+  pose v.
+Abort.
+\end{coq_example}
+
 \subsubsection[Local definitions]{Local definitions\index{Ltac!let@\texttt{let}}
 \index{Ltac!let rec@\texttt{let rec}}
 \index{let@\texttt{let}!in Ltac}

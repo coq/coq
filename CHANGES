@@ -35,6 +35,8 @@ Tactics
 - Tactic "decide equality" now able to manage constructors which
   contain proofs.
 - Added tactics reset ltac profile, show ltac profile (and variants)
+- Added tactics restart_timer, finish_timing, and time_constr as an
+  experimental way of timing Ltac's evaluation phase
 
 Vernacular Commands
 
