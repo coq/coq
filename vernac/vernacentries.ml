@@ -1573,13 +1573,14 @@ let vernac_declare_reduction locality s r =
 let vernac_global_check c =
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  let c,ctx = interp_constr env sigma c in
+  let c,uctx = interp_constr env sigma c in
   let senv = Global.safe_env() in
-  let cstrs = snd (UState.context_set ctx) in
-  let senv = Safe_typing.add_constraints cstrs senv in
+  let uctx = UState.context_set uctx in
+  let senv = Safe_typing.push_context_set false uctx senv in
   let j = Safe_typing.typing senv c in
   let env = Safe_typing.env_of_safe_env senv in
-    Feedback.msg_notice (print_safe_judgment env sigma j)
+  Feedback.msg_notice (print_safe_judgment env sigma j ++
+                       pr_universe_ctx_set sigma uctx)
 
 
 let get_nth_goal n =
