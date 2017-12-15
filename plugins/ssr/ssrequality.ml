@@ -143,14 +143,14 @@ let newssrcongrtac arg ist gl =
 
 (** Coq rewrite compatibility flag *)
 
-let ssr_strict_match = ref false
 
 let _ =
-  Goptions.declare_bool_option 
+  let ssr_strict_match = ref false in
+  Goptions.declare_bool_option
     { Goptions.optname  = "strict redex matching";
       Goptions.optkey   = ["Match"; "Strict"];
       Goptions.optread  = (fun () -> !ssr_strict_match);
-      Goptions.optdepr  = false;
+      Goptions.optdepr  = true; (* noop *)
       Goptions.optwrite = (fun b -> ssr_strict_match := b) }
 
 (** Rewrite rules *)

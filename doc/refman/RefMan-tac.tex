@@ -3334,6 +3334,14 @@ evaluating purely computational expressions (i.e. with little dead code).
 
 \end{Variants}
 
+\Rem The following option makes {\tt cbv} (and its derivative {\tt
+  compute}) print information about the constants it encounters and
+the unfolding decisions it makes.
+\begin{quote}
+  \optindex{Debug Cbv}
+  {\tt Set Debug Cbv}
+\end{quote}
+
 % Obsolete? Anyway not very important message
 %\begin{ErrMsgs}
 %\item \errindex{Delta must be specified before}
@@ -3506,6 +3514,13 @@ This option (off by default) controls the use of the refolding strategy
 of {\tt cbn} while doing reductions in unification, type inference and
 tactic applications. It can result in expensive unifications, as
 refolding currently uses a potentially exponential heuristic.
+
+\begin{quote}
+  \optindex{Debug RAKAM}
+  {\tt Set Debug RAKAM}
+\end{quote}
+This option makes {\tt cbn} print various debugging information.
+{\tt RAKAM} is the Refolding Algebraic Krivine Abstract Machine.
 
 \subsection{\tt unfold \qualid}
 \tacindex{unfold}
@@ -3703,6 +3718,9 @@ hints of the database named {\tt core}.
   This variant is very useful for getting a better understanding of automation,
   or to know what lemmas/assumptions were used.
 
+\item {\tt debug auto} Behaves like {\tt auto} but shows the tactics
+  it tries to solve the goal, including failing paths.
+
 \item {\tt \zeroone{info\_}auto \zeroone{\num}} \zeroone{{\tt using} \nterm{lemma}$_1$
   {\tt ,} {\ldots} {\tt ,} \nterm{lemma}$_n$} \zeroone{{\tt with}
   \ident$_1$ {\ldots} \ident$_n$}
@@ -3723,6 +3741,8 @@ hints of the database named {\tt core}.
 
 \item {\tt info\_trivial}
 
+\item {\tt debug trivial}
+
 \item {\tt \zeroone{info\_}trivial} \zeroone{{\tt using} \nterm{lemma}$_1$
   {\tt ,} {\ldots} {\tt ,} \nterm{lemma}$_n$} \zeroone{{\tt with}
   \ident$_1$ {\ldots} \ident$_n$}
@@ -3731,6 +3751,19 @@ hints of the database named {\tt core}.
 
 \Rem {\tt auto} either solves completely the goal or else leaves it
 intact. \texttt{auto} and \texttt{trivial} never fail.
+
+\Rem The following options enable printing of informative or debug
+information for the {\tt auto} and {\tt trivial} tactics:
+\begin{quote}
+  \optindex{Info Auto}
+  {\tt Set Info Auto}
+  \optindex{Debug Auto}
+  {\tt Set Debug Auto}
+  \optindex{Info Trivial}
+  {\tt Set Info Trivial}
+  \optindex{Debug Trivial}
+  {\tt Set Debug Trivial}
+\end{quote}
 
 \SeeAlso Section~\ref{Hints-databases}
 
@@ -3767,6 +3800,14 @@ Note that {\tt ex\_intro} should be declared as a hint.
   The various options for eauto are the same as for auto.
 
 \end{Variants}
+
+\Rem {\tt eauto} obeys the following options:
+\begin{quote}
+  \optindex{Info Eauto}
+  {\tt Set Info Eauto}
+  \optindex{Debug Eauto}
+  {\tt Set Debug Eauto}
+\end{quote}
 
 \SeeAlso Section~\ref{Hints-databases}
 
@@ -4710,6 +4751,13 @@ congruence.
     described above.
 \end{ErrMsgs}
 
+\noindent {\bf Remark: } {\tt congruence} can be made to print debug
+information by setting the following option:
+
+\begin{quote}
+\optindex{Congruence Verbose}
+{\tt Set Congruence Verbose}
+\end{quote}
 
 \section{Checking properties of terms}
 
