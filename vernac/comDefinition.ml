@@ -11,7 +11,6 @@ open Util
 open Constr
 open Environ
 open Entries
-open Termops
 open Redexpr
 open Declare
 open Constrintern
@@ -53,34 +52,32 @@ let interp_definition pl bl poly red_option c ctypopt =
   let env = Global.env() in
   let evd, decl = Univdecls.interp_univ_decl_opt env pl in
   let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars env evd bl in
-  let ctx = List.map (fun d -> map_rel_decl EConstr.Unsafe.to_constr d) ctx in
   let nb_args = Context.Rel.nhyps ctx in
   let evd,imps,ce =
     match ctypopt with
       None ->
-        let evd, subst = Evd.nf_univ_variables evd in
-        let ctx = Context.Rel.map (Vars.subst_univs_constr subst) ctx in
-        let env_bl = push_rel_context ctx env in
+        (* Closing a definition, first build the term, this is straightforward *)
+        let env_bl = EConstr.push_rel_context ctx env in
         let evd, (c, imps2) = interp_constr_evars_impls ~impls env_bl evd c in
-        let c = EConstr.Unsafe.to_constr c in
-        let evd,nf = Evarutil.nf_evars_and_universes evd in
-        let body = nf (it_mkLambda_or_LetIn c ctx) in
-        let vars = EConstr.universes_of_constr env evd (EConstr.of_constr body) in
+        let body = EConstr.(it_mkLambda_or_LetIn c ctx) in
+        (* Second, we need to prepare the universes, including minimization. Not fun *)
+        let evd,_ = Evarutil.nf_evars_and_universes evd in
+        let vars = EConstr.universes_of_constr env evd body in
         let evd = Evd.restrict_universe_context evd vars in
         let uctx = Evd.check_univ_decl ~poly evd decl in
+        (* Third, we substitute all the evars to store in the kernel. *)
+        let body = EConstr.to_constr evd body in
+        (* Fourth, store *)
         evd, imps1@(Impargs.lift_implicits nb_args imps2),
           definition_entry ~univs:uctx body
     | Some ctyp ->
+        (* 1 *)
         let evd, (ty, impsty) = interp_type_evars_impls ~impls env_bl evd ctyp in
-        let evd, subst = Evd.nf_univ_variables evd in
-        let ctx = Context.Rel.map (Vars.subst_univs_constr subst) ctx in
-        let env_bl = push_rel_context ctx env in
+        let env_bl = EConstr.push_rel_context ctx env in
         let evd, (c, imps2) = interp_casted_constr_evars_impls ~impls env_bl evd c ty in
-        let c = EConstr.Unsafe.to_constr c in
-        let evd, nf = Evarutil.nf_evars_and_universes evd in
-        let body = nf (it_mkLambda_or_LetIn c ctx) in
-        let ty = EConstr.Unsafe.to_constr ty in
-        let typ = nf (Term.it_mkProd_or_LetIn ty ctx) in
+        let body = EConstr.(it_mkLambda_or_LetIn c ctx) in
+        let typ = EConstr.(it_mkProd_or_LetIn ty ctx) in
+        (* 2 *)
         let beq b1 b2 = if b1 then b2 else not b2 in
         let impl_eq (x,y,z) (x',y',z') = beq x x' && beq y y' && beq z z' in
         (* Check that all implicit arguments inferable from the term
@@ -90,11 +87,15 @@ let interp_definition pl bl poly red_option c ctypopt =
         in
         if not (try List.for_all chk imps2 with Not_found -> false)
         then warn_implicits_in_term ();
-        let bodyvars = EConstr.universes_of_constr env evd (EConstr.of_constr body) in
-        let tyvars = EConstr.universes_of_constr env evd (EConstr.of_constr ty) in
+        (* 3 *)
+        let evd, _ = Evarutil.nf_evars_and_universes evd in
+        let bodyvars = EConstr.universes_of_constr env evd body in
+        let tyvars = EConstr.universes_of_constr env evd ty in
         let vars = Univ.LSet.union bodyvars tyvars in
         let evd = Evd.restrict_universe_context evd vars in
         let uctx = Evd.check_univ_decl ~poly evd decl in
+        (* 4 *)
+        let body,typ = EConstr.(to_constr evd body, to_constr evd typ) in
         evd, imps1@(Impargs.lift_implicits nb_args impsty),
           definition_entry ~types:typ ~univs:uctx body
   in
