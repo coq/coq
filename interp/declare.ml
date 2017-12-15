@@ -31,64 +31,6 @@ type internal_flag =
   | InternalTacticRequest  (* kernel action, no message is displayed *)
   | UserIndividualRequest   (* user action, a message is displayed *)
 
-(** Declaration of section variables and local definitions *)
-
-type section_variable_entry =
-  | SectionLocalDef of Safe_typing.private_constants definition_entry
-  | SectionLocalAssum of types Univ.in_universe_context_set * polymorphic * bool (** Implicit status *)
-
-type variable_declaration = DirPath.t * section_variable_entry * logical_kind
-
-let cache_variable ((sp,_),o) =
-  match o with
-  | Inl ctx -> Global.push_context_set false ctx
-  | Inr (id,(p,d,mk)) ->
-  (* Constr raisonne sur les noms courts *)
-  if variable_exists id then
-    alreadydeclared (Id.print id ++ str " already exists");
-
-  let impl,opaq,poly,ctx = match d with (* Fails if not well-typed *)
-    | SectionLocalAssum ((ty,ctx),poly,impl) ->
-      let () = Global.push_named_assum ((id,ty,poly),ctx) in
-      let impl = if impl then Implicit else Explicit in
-	impl, true, poly, ctx
-    | SectionLocalDef (de) ->
-      let univs = Global.push_named_def (id,de) in
-      let poly = match de.const_entry_universes with
-      | Monomorphic_const_entry _ -> false
-      | Polymorphic_const_entry _ -> true
-      in
-      Explicit, de.const_entry_opaque,
-      poly, univs in
-  Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
-  add_section_variable id impl poly ctx;
-  Dischargedhypsmap.set_discharged_hyps sp [];
-  add_variable_data id (p,opaq,ctx,poly,mk)
-
-let discharge_variable (_,o) = match o with
-  | Inr (id,_) ->
-    if variable_polymorphic id then None
-    else Some (Inl (variable_context id))
-  | Inl _ -> Some o
-
-type variable_obj =
-    (Univ.ContextSet.t, Id.t * variable_declaration) union
-
-let inVariable : variable_obj -> obj =
-  declare_object { (default_object "VARIABLE") with
-    cache_function = cache_variable;
-    discharge_function = discharge_variable;
-    classify_function = (fun _ -> Dispose) }
-
-(* for initial declaration *)
-let declare_variable id obj =
-  let oname = add_leaf id (inVariable (Inr (id,obj))) in
-  declare_var_implicits id;
-  Notation.declare_ref_arguments_scope (VarRef id);
-  Heads.declare_head (EvalVarRef id);
-  oname
-
-
 (** Declaration of constants and parameters *)
 
 type constant_obj = {
@@ -195,6 +137,20 @@ let update_tables c =
   Heads.declare_head (EvalConstRef c);
   Notation.declare_ref_arguments_scope (ConstRef c)
 
+let register_side_effect (c, role) =
+  let o = inConstant {
+    cst_decl = None;
+    cst_hyps = [] ;
+    cst_kind = IsProof Theorem;
+    cst_locl = false;
+  } in
+  let id = Label.to_id (pi3 (Constant.repr3 c)) in
+  ignore(add_leaf id o);
+  update_tables c;
+  match role with
+  | Safe_typing.Subproof -> ()
+  | Safe_typing.Schema (ind, kind) -> !declare_scheme kind [|ind,c|]
+
 let declare_constant_common id cst =
   let o = inConstant cst in
   let _, kn as oname = add_leaf id o in
@@ -229,25 +185,11 @@ let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(e
       (** This globally defines the side-effects in the environment. We mark
           exported constants as being side-effect not to redeclare them at
           caching time. *)
-      let cd, export = Global.export_private_constants ~in_section cd in
-      export, ConstantEntry (PureEntry, cd)
+      let de, export = Global.export_private_constants ~in_section de in
+      export, ConstantEntry (PureEntry, DefinitionEntry de)
     | _ -> [], ConstantEntry (EffectEntry, cd)
   in
-  let iter_eff (c, role) =
-    let o = inConstant {
-      cst_decl = None;
-      cst_hyps = [] ;
-      cst_kind = IsProof Theorem;
-      cst_locl = false;
-    } in
-    let id = Label.to_id (pi3 (Constant.repr3 c)) in
-    ignore(add_leaf id o);
-    update_tables c;
-    match role with
-    | Safe_typing.Subproof -> ()
-    | Safe_typing.Schema (ind, kind) -> !declare_scheme kind [|ind,c|]
-  in
-  let () = List.iter iter_eff export in
+  let () = List.iter register_side_effect export in
   let cst = {
     cst_decl = Some decl;
     cst_hyps = [] ;
@@ -264,6 +206,65 @@ let declare_definition ?(internal=UserIndividualRequest)
   in
     declare_constant ~internal ~local id
       (Entries.DefinitionEntry cb, Decl_kinds.IsDefinition kind)
+
+(** Declaration of section variables and local definitions *)
+
+type section_variable_entry =
+  | SectionLocalDef of Safe_typing.private_constants definition_entry
+  | SectionLocalAssum of types Univ.in_universe_context_set * polymorphic * bool (** Implicit status *)
+
+type variable_declaration = DirPath.t * section_variable_entry * logical_kind
+
+let cache_variable ((sp,_),o) =
+  match o with
+  | Inl ctx -> Global.push_context_set false ctx
+  | Inr (id,(p,d,mk)) ->
+  (* Constr raisonne sur les noms courts *)
+  if variable_exists id then
+    alreadydeclared (Id.print id ++ str " already exists");
+
+  let impl,opaq,poly,ctx = match d with (* Fails if not well-typed *)
+    | SectionLocalAssum ((ty,ctx),poly,impl) ->
+      let () = Global.push_named_assum ((id,ty,poly),ctx) in
+      let impl = if impl then Implicit else Explicit in
+        impl, true, poly, ctx
+    | SectionLocalDef (de) ->
+      let (de, eff) = Global.export_private_constants ~in_section:true de in
+      let () = List.iter register_side_effect eff in
+      let univs = Global.push_named_def (id,de) in
+      let poly = match de.const_entry_universes with
+      | Monomorphic_const_entry _ -> false
+      | Polymorphic_const_entry _ -> true
+      in
+      Explicit, de.const_entry_opaque,
+      poly, univs in
+  Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
+  add_section_variable id impl poly ctx;
+  Dischargedhypsmap.set_discharged_hyps sp [];
+  add_variable_data id (p,opaq,ctx,poly,mk)
+
+let discharge_variable (_,o) = match o with
+  | Inr (id,_) ->
+    if variable_polymorphic id then None
+    else Some (Inl (variable_context id))
+  | Inl _ -> Some o
+
+type variable_obj =
+    (Univ.ContextSet.t, Id.t * variable_declaration) union
+
+let inVariable : variable_obj -> obj =
+  declare_object { (default_object "VARIABLE") with
+    cache_function = cache_variable;
+    discharge_function = discharge_variable;
+    classify_function = (fun _ -> Dispose) }
+
+(* for initial declaration *)
+let declare_variable id obj =
+  let oname = add_leaf id (inVariable (Inr (id,obj))) in
+  declare_var_implicits id;
+  Notation.declare_ref_arguments_scope (VarRef id);
+  Heads.declare_head (EvalVarRef id);
+  oname
 
 (** Declaration of inductive blocks *)
 
