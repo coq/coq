@@ -385,10 +385,10 @@ let process_inference_flags flags env initial_sigma (sigma,c,cty) =
 
 let adjust_evar_source evdref na c =
   match na, kind !evdref c with
-  | Name id, Evar (evk,args) ->
+  | Name.Name id, Evar (evk,args) ->
      let evi = Evd.find !evdref evk in
      begin match evi.evar_source with
-     | loc, Evar_kinds.QuestionMark (b,Anonymous) ->
+     | loc, Evar_kinds.QuestionMark (b,Name.Anonymous) ->
         let src = (loc,Evar_kinds.QuestionMark (b,na)) in
         let (evd, evk') = restrict_evar !evdref evk (evar_filter evi) ~src None in
         evdref := evd;
@@ -415,7 +415,7 @@ let check_instance loc subst = function
    is named, hence possibly dependent *)
 
 let orelse_name name name' = match name with
-  | Anonymous -> name'
+  | Name.Anonymous -> name'
   | _ -> name
 
 let ltac_interp_name_env k0 lvar env sigma =
@@ -671,7 +671,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     let lara = Array.map (fun a -> a.utj_val) larj in
     let ftys = Array.map2 (fun e a -> it_mkProd_or_LetIn a e) ctxtv lara in
     let nbfix = Array.length lar in
-    let names = Array.map (fun id -> Name id) names in
+    let names = Array.map (fun id -> Name.Name id) names in
     let _ = 
       match tycon with
       | Some t -> 
@@ -850,10 +850,10 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
        the substitution must also be applied on variables before they are
        looked up in the rel context. *)
     let j' = match name with
-      | Anonymous ->
+      | Name.Anonymous ->
         let j = pretype_type empty_valcon env evdref lvar c2 in
           { j with utj_val = lift 1 j.utj_val }
-      | Name _ ->
+      | Name.Name _ ->
         let var = LocalAssum (name, j.utj_val) in
         let env' = push_rel !evdref var env in
           pretype_type empty_valcon env' evdref lvar c2
@@ -940,7 +940,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       (* Make dependencies from arity signature impossible *)
     let arsgn =
       let arsgn,_ = get_arity env.ExtraEnv.env indf in
-      List.map (set_name Anonymous) arsgn
+      List.map (set_name Name.Anonymous) arsgn
     in
       let indt = build_dependent_inductive env.ExtraEnv.env indf in
       let psign = LocalAssum (na, indt) :: arsgn in (* For locating names in [po] *)
@@ -1002,7 +1002,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       let arsgn =
 	let arsgn,_ = get_arity env.ExtraEnv.env indf in
         (* Make dependencies from arity signature impossible *)
-        List.map (set_name Anonymous) arsgn
+        List.map (set_name Name.Anonymous) arsgn
       in
       let nar = List.length arsgn in
       let indt = build_dependent_inductive env.ExtraEnv.env indf in
@@ -1040,7 +1040,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
           then Context.Rel.map (whd_betaiota !evdref) cs_args
           else cs_args (* beta-iota-normalization regression in 8.5 and 8.6 *) in
 	let csgn =
-          List.map (set_name Anonymous) cs_args
+          List.map (set_name Name.Anonymous) cs_args
         in
 	let env_c = push_rel_context !evdref csgn env in
 	let bj = pretype (mk_tycon pi) env_c evdref lvar b in

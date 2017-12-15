@@ -257,8 +257,8 @@ let db_pattern_rule debug num r =
 
 (* Prints the hypothesis pattern identifier if it exists *)
 let hyp_bound = function
-  | Anonymous -> str " (unbound)"
-  | Name id -> str " (bound to " ++ Id.print id ++ str ")"
+  | Name.Anonymous -> str " (unbound)"
+  | Name.Name id -> str " (bound to " ++ Id.print id ++ str ")"
 
 (* Prints a matched hypothesis *)
 let db_matched_hyp debug env sigma (id,_,c) ido =

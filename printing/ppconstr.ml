@@ -236,7 +236,7 @@ let tag_var = tag Tag.variable
                   pr_located pr_id @@ Loc.tag ~loc:(Loc.make_loc (b,b + String.length (Id.to_string id))) id
 
   let pr_lname = function
-    | (loc,Name id) -> pr_lident (loc,id)
+    | (loc,Name.Name id) -> pr_lident (loc,id)
     | lna -> pr_located Name.print lna
 
   let pr_or_var pr = function
@@ -350,10 +350,10 @@ let tag_var = tag Tag.variable
       | Generalized (b, b', t') ->
         assert (match b with Implicit -> true | _ -> false);
         begin match nal with
-          |[loc,Anonymous] ->
+          |[loc,Name.Anonymous] ->
             hov 1 (str"`" ++ (surround_impl b'
                                 ((if t' then str "!" else mt ()) ++ pr t)))
-          |[loc,Name id] ->
+          |[loc,Name.Name id] ->
             hov 1 (str "`" ++ (surround_impl b'
                                  (pr_lident (loc,id) ++ str " : " ++
                                     (if t' then str "!" else mt()) ++ pr t)))
@@ -461,7 +461,7 @@ let tag_var = tag Tag.variable
 
   let pr_simple_return_type pr na po =
     (match na with
-      | Some (_,Name id) ->
+      | Some (_,Name.Name id) ->
         spc () ++ keyword "as" ++ spc () ++ pr_id id
       | _ -> mt ()) ++
       pr_case_type pr po
@@ -533,7 +533,7 @@ let tag_var = tag Tag.variable
               pr_fun_sep ++ pr spc ltop a),
           llambda
         )
-      | CLetIn ((_,Name x), ({ CAst.v = CFix((_,x'),[_])}
+      | CLetIn ((_,Name.Name x), ({ CAst.v = CFix((_,x'),[_])}
                           |  { CAst.v = CCoFix((_,x'),[_]) } as fx), t, b)
           when Id.equal x x' ->
         return (

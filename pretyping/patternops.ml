@@ -247,7 +247,7 @@ let instantiate_pattern env sigma lvar c =
 	try
 	  let inst =
 	    List.map
-              (fun id -> mkRel (List.index Name.equal (Name id) vars))
+              (fun id -> mkRel (List.index Name.equal Name.(Name id) vars))
               ctx
           in
 	  let c = substl inst c in
@@ -256,7 +256,7 @@ let instantiate_pattern env sigma lvar c =
 	  pattern_of_constr env sigma (EConstr.Unsafe.to_constr c)
 	with Not_found (* List.index failed *) ->
 	  let vars =
-	    List.map_filter (function Name id -> Some id | _ -> None) vars in
+            List.map_filter (function Name.Name id -> Some id | _ -> None) vars in
 	  error_instantiate_pattern id (List.subtract Id.equal ctx vars)
        with Not_found (* Map.find failed *) ->
 	 x)
@@ -357,7 +357,7 @@ let warn_cast_in_pattern =
 
 let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
   | GVar id ->
-      (try PRel (List.index Name.equal (Name id) vars)
+      (try PRel (List.index Name.equal Name.(Name id) vars)
        with Not_found -> PVar id)
   | GPatVar (Evar_kinds.FirstOrderPatVar n) ->
       metas := n::!metas; PMeta (Some n)
@@ -462,7 +462,7 @@ and pats_of_glob_branches loc metas vars ind brs =
     | [] -> false, []
     | (loc',(_,[p], br)) :: brs ->
       begin match DAst.get p, DAst.get br, brs with
-      | PatVar Anonymous, GHole _, [] ->
+      | PatVar Name.Anonymous, GHole _, [] ->
         true, [] (* ends with _ => _ *)
       | PatCstr((indsp,j),lv,_), _, _ ->
         let () = match ind with

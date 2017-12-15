@@ -462,8 +462,8 @@ let destructurate_prop sigma t =
     | Ind (isp,_), args ->
 	Kapp (Other (string_of_path (path_of_global (IndRef isp))),args)
     | Var id,[] -> Kvar id
-    | Prod (Anonymous,typ,body), [] -> Kimp(typ,body)
-    | Prod (Name _,_,_),[] -> CErrors.user_err Pp.(str "Omega: Not a quantifier-free goal")
+    | Prod (Name.Anonymous,typ,body), [] -> Kimp(typ,body)
+    | Prod (Name.Name _,_,_),[] -> CErrors.user_err Pp.(str "Omega: Not a quantifier-free goal")
     | _ -> Kufo
 
 let nf = Tacred.simpl
@@ -585,7 +585,7 @@ let occurrence sigma path (t : constr) =
 let abstract_path sigma typ path t =
   let term_occur = ref (mkRel 0) in
   let abstract = context sigma (fun i t -> term_occur:= t; mkRel i) path t in
-  mkLambda (Name (Id.of_string "x"), typ, abstract), !term_occur
+  mkLambda (Name.Name (Id.of_string "x"), typ, abstract), !term_occur
 
 let focused_simpl path =
   let open Tacmach.New in
@@ -665,10 +665,10 @@ let clever_rewrite_base_poly typ p result theorem =
   let t =
     applist
       (mkLambda
-	 (Name (Id.of_string "P"),
+         (Name.Name (Id.of_string "P"),
 	  mkArrow typ mkProp,
           mkLambda
-	    (Name (Id.of_string "H"),
+            (Name.Name (Id.of_string "H"),
 	     applist (mkRel 1,[result]),
 	     mkApp (Lazy.force coq_eq_ind_r,
 		       [| typ; result; mkRel 2; mkRel 1; occ; theorem |]))),
@@ -1331,7 +1331,7 @@ let replay_history tactic_normalisation =
             mkApp (Lazy.force coq_ex, [|
 		      Lazy.force coq_Z;
 		      mkLambda
-			(Name vid,
+                        (Name.Name vid,
 			 Lazy.force coq_Z,
 			 mk_eq (mkRel 1) eq1) |])
 	  in
@@ -1795,7 +1795,7 @@ let destructure_hyps =
               let hid = fresh_id Id.Set.empty (add_suffix i "_eqn") gl in
               let hty = mk_gen_eq typ (mkVar i) body in
               tclTHEN
-                (assert_by (Name hid) hty reflexivity)
+                (assert_by Name.(Name hid) hty reflexivity)
                 (loop (LocalAssum (hid, hty) :: lit))
            | _ -> loop lit
          with e when catchable_exception e -> loop lit

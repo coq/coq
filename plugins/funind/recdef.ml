@@ -195,7 +195,7 @@ let (value_f: Constr.t list -> global_reference -> Constr.t) =
       )
     in
     let context = List.map
-      (fun (x, c) -> LocalAssum (Name x, c)) (List.combine rev_x_id_l (List.rev al))
+      (fun (x, c) -> LocalAssum (Name.Name x, c)) (List.combine rev_x_id_l (List.rev al))
     in
     let env = Environ.push_rel_context context (Global.env ()) in
     let glob_body =
@@ -203,10 +203,10 @@ let (value_f: Constr.t list -> global_reference -> Constr.t) =
        GCases
 	(RegularStyle,None,
 	 [DAst.make @@ GApp(DAst.make @@ GRef(fterm,None), List.rev_map (fun x_id -> DAst.make @@ GVar x_id) rev_x_id_l),
-	  (Anonymous,None)],
+          (Name.Anonymous,None)],
 	 [Loc.tag ([v_id], [DAst.make @@ PatCstr ((destIndRef (delayed_force coq_sig_ref),1),
-			   [DAst.make @@ PatVar(Name v_id); DAst.make @@ PatVar Anonymous],
-                           Anonymous)],
+                           [DAst.make @@ PatVar(Name.Name v_id); DAst.make @@ PatVar Name.Anonymous],
+                           Name.Anonymous)],
 	    DAst.make @@ GVar v_id)])
     in
     let body = fst (understand env (Evd.from_env env) glob_body)(*FIXME*) in
@@ -402,8 +402,8 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos : tactic =
     let ids = List.fold_left (fun acc (na,_) -> 	
       let pre_id = 
 	match na with 
-	  | Name x -> x 
-	  | Anonymous -> ano_id 
+          | Name.Name x -> x
+          | Name.Anonymous -> ano_id
       in
       pre_id::acc
     ) [] rev_context in 
@@ -669,8 +669,8 @@ let terminate_letin (na,b,t,e) expr_info continuation_tac info g =
     if forbid 
     then 
       match na with
-	| Anonymous -> info.forbidden_ids
-	| Name id -> id::info.forbidden_ids
+        | Name.Anonymous -> info.forbidden_ids
+        | Name.Name id -> id::info.forbidden_ids
     else info.forbidden_ids 
   in
   continuation_tac {info with info = new_e; forbidden_ids = new_forbidden} g
@@ -1065,20 +1065,20 @@ let compute_terminate_type nb_args func =
   let right = mkRel 5 in
   let delayed_force c = EConstr.Unsafe.to_constr (delayed_force c) in
   let equality = mkApp(delayed_force eq, [|lift 5 b; left; right|]) in
-  let result = (mkProd ((Name def_id) , lift 4 a_arrow_b, equality)) in
+  let result = (mkProd (Name.(Name def_id) , lift 4 a_arrow_b, equality)) in
   let cond = mkApp(delayed_force lt, [|(mkRel 2); (mkRel 1)|]) in
   let nb_iter =
     mkApp(delayed_force ex,
 	  [|delayed_force nat;
 	    (mkLambda
-	       (Name
+               (Name.Name
 		  p_id,
 		  delayed_force nat,
-		  (mkProd (Name k_id, delayed_force nat,
+                  (mkProd (Name.Name k_id, delayed_force nat,
 			   mkArrow cond result))))|])in
   let value = mkApp(constr_of_global (Util.delayed_force coq_sig_ref),
 		    [|b;
-		      (mkLambda (Name v_id, b, nb_iter))|]) in
+                      (mkLambda (Name.Name v_id, b, nb_iter))|]) in
   compose_prod rev_args value
 
 
@@ -1115,7 +1115,7 @@ let termination_proof_header is_mes input_type ids args_id relation
 	   (observe_tac
 	      (str "first assert")
 	      (Proofview.V82.of_tactic (assert_before
-		 (Name wf_rec_arg)
+                 Name.(Name wf_rec_arg)
 		 (mkApp (delayed_force acc_rel,
 			 [|input_type;relation;mkVar rec_arg_id|])
 		 )
@@ -1127,7 +1127,7 @@ let termination_proof_header is_mes input_type ids args_id relation
 	       (observe_tac
 		  (str "second assert")
 		  (Proofview.V82.of_tactic (assert_before
-		     (Name wf_thm)
+                     Name.(Name wf_thm)
 		     (mkApp (delayed_force well_founded,[|input_type;relation|]))
 		  ))
 	       )
@@ -1177,15 +1177,15 @@ let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_a
       let (f_name, _, body1) = destLambda sigma func_body in
       let f_id =
 	match f_name with
-	  | Name f_id -> next_ident_away_in_goal f_id ids
-	  | Anonymous -> anomaly (Pp.str "Anonymous function.")
+          | Name.Name f_id -> next_ident_away_in_goal f_id ids
+          | Name.Anonymous -> anomaly (Pp.str "Anonymous function.")
       in
       let n_names_types,_ = decompose_lam_n sigma nb_args body1 in
       let n_ids,ids =
 	List.fold_left
 	  (fun (n_ids,ids) (n_name,_) ->
 	     match n_name with
-	       | Name id ->
+               | Name.Name id ->
 		   let n_id = next_ident_away_in_goal id ids in
 		   n_id::n_ids,n_id::ids
 	       | _ -> anomaly (Pp.str "anonymous argument.")
@@ -1281,7 +1281,7 @@ let is_rec_res id =
 let clear_goals sigma =
   let rec clear_goal t =
     match EConstr.kind sigma t with
-      | Prod(Name id as na,t',b) ->
+      | Prod(Name.Name id as na,t',b) ->
 	  let b' = clear_goal b in
 	  if noccurn sigma 1 b' && (is_rec_res id)
 	  then Vars.lift (-1) b'
@@ -1550,7 +1550,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
 (*     Pp.msgnl (str "eq' := " ++ str (string_of_int rec_arg_num)); *)
     match Constr.kind eq' with
       | App(e,[|_;_;eq_fix|]) ->
-	  mkLambda (Name function_name,function_type,subst_var function_name (compose_lam res_vars  eq_fix))
+          mkLambda (Name.Name function_name,function_type,subst_var function_name (compose_lam res_vars  eq_fix))
       | _ -> failwith "Recursive Definition (res not eq)"
   in
   let pre_rec_args,function_type_before_rec_arg = decompose_prod_n (rec_arg_num - 1) function_type in

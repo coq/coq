@@ -25,8 +25,8 @@ let alias_of_pat pat = DAst.with_val (function
   ) pat
 
 let set_pat_alias id = DAst.map (function
-  | PatVar Anonymous -> PatVar (Name id)
-  | PatCstr (cstr,patl,Anonymous) -> PatCstr (cstr,patl,Name id)
+  | PatVar Name.Anonymous -> PatVar (Name.Name id)
+  | PatCstr (cstr,patl,Name.Anonymous) -> PatCstr (cstr,patl,Name.Name id)
   | pat -> assert false)
 
 let cases_predicate_names tml =
@@ -398,7 +398,7 @@ let update_subst na l =
     (fun id _ ->
      if in_range id l' then
        let id' = Namegen.next_ident_away_from id (fun id' -> in_range id' l') in
-       Name id', (id,id')::l
+       Name.Name id', (id,id')::l
      else na,l)
     na (na,l)
 
@@ -469,20 +469,20 @@ let is_gvar id c = match DAst.get c with
 let rec cases_pattern_of_glob_constr na = DAst.map (function
   | GVar id ->
     begin match na with
-    | Name _ ->
+    | Name.Name _ ->
       (* Unable to manage the presence of both an alias and a variable *)
       raise Not_found
-    | Anonymous -> PatVar (Name id)
+    | Name.Anonymous -> PatVar Name.(Name id)
     end
   | GHole (_,_,_) -> PatVar na
   | GRef (ConstructRef cstr,_) -> PatCstr (cstr,[],na)
   | GApp (c, l) ->
     begin match DAst.get c with
     | GRef (ConstructRef cstr,_) ->
-      PatCstr (cstr,List.map (cases_pattern_of_glob_constr Anonymous) l,na)
+      PatCstr (cstr,List.map (cases_pattern_of_glob_constr Name.Anonymous) l,na)
     | _ -> raise Not_found
     end
-  | GLetIn (Name id as na',b,None,e) when is_gvar id e && na = Anonymous ->
+  | GLetIn (Name.Name id as na',b,None,e) when is_gvar id e && na = Name.Anonymous ->
      (* A canonical encoding of aliases *)
      DAst.get (cases_pattern_of_glob_constr na' b)
   | _ -> raise Not_found
@@ -501,7 +501,7 @@ let drop_local_defs typi args =
       | Rel.Declaration.LocalDef _ :: decls, pat :: args ->
          begin
            match DAst.get pat with
-           | PatVar Anonymous -> aux decls args
+           | PatVar Name.Anonymous -> aux decls args
            | _ -> raise Not_found (* The pattern is used, one cannot drop it *)
          end
       | Rel.Declaration.LocalAssum _ :: decls, a :: args -> a :: aux decls args
@@ -518,12 +518,12 @@ let add_patterns_for_params_remove_local_defs (ind,j) l =
       let typi = mip.mind_nf_lc.(j-1) in
       let (_,typi) = decompose_prod_n_assum (Rel.length mib.mind_params_ctxt) typi in
       drop_local_defs typi l in
-  Util.List.addn nparams (DAst.make @@ PatVar Anonymous) l
+  Util.List.addn nparams (DAst.make @@ PatVar Name.Anonymous) l
 
 let add_alias ?loc na c =
   match na with
-  | Anonymous -> c
-  | Name id -> GLetIn (na,DAst.make ?loc c,None,DAst.make ?loc (GVar id))
+  | Name.Anonymous -> c
+  | Name.Name id -> GLetIn (na,DAst.make ?loc c,None,DAst.make ?loc (GVar id))
 
 (* Turn a closed cases pattern into a glob_constr *)
 let rec glob_constr_of_cases_pattern_aux isclosed x = DAst.map_with_loc (fun ?loc -> function
@@ -532,17 +532,17 @@ let rec glob_constr_of_cases_pattern_aux isclosed x = DAst.map_with_loc (fun ?lo
       let ref = DAst.make ?loc @@ GRef (ConstructRef cstr,None) in
       let l = add_patterns_for_params_remove_local_defs cstr l in
       add_alias ?loc na (GApp (ref, List.map (glob_constr_of_cases_pattern_aux isclosed) l))
-  | PatVar (Name id) when not isclosed ->
+  | PatVar (Name.Name id) when not isclosed ->
       GVar id
-  | PatVar Anonymous when not isclosed ->
-      GHole (Evar_kinds.QuestionMark (Define false,Anonymous),Misctypes.IntroAnonymous,None)
+  | PatVar Name.Anonymous when not isclosed ->
+      GHole (Evar_kinds.QuestionMark (Define false,Name.Anonymous),Misctypes.IntroAnonymous,None)
   | _ -> raise Not_found
   ) x
 
 let glob_constr_of_closed_cases_pattern p = match DAst.get p with
   | PatCstr (cstr,l,na) ->
       let loc = p.CAst.loc in
-      na,glob_constr_of_cases_pattern_aux true (DAst.make ?loc @@ PatCstr (cstr,l,Anonymous))
+      na,glob_constr_of_cases_pattern_aux true (DAst.make ?loc @@ PatCstr (cstr,l,Name.Anonymous))
   | _ ->
       raise Not_found
 
@@ -555,9 +555,9 @@ open Pp
 open CErrors
 
 let ltac_interp_name { ltac_idents ; ltac_genargs } = function
-  | Anonymous -> Anonymous
-  | Name id as n ->
-      try Name (Id.Map.find id ltac_idents)
+  | Name.Anonymous -> Name.Anonymous
+  | Name.Name id as n ->
+      try Name.Name (Id.Map.find id ltac_idents)
       with Not_found ->
         if Id.Map.mem id ltac_genargs then
           user_err (str"Ltac variable"++spc()++ Id.print id ++

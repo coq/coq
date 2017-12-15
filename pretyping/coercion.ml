@@ -77,8 +77,8 @@ let apply_pattern_coercion ?loc pat p =
   List.fold_left
     (fun pat (co,n) ->
        let f i =
-         if i<n then (DAst.make ?loc @@ Glob_term.PatVar Anonymous) else pat in
-        DAst.make ?loc @@ Glob_term.PatCstr (co, List.init (n+1) f, Anonymous))
+         if i<n then (DAst.make ?loc @@ Glob_term.PatVar Name.Anonymous) else pat in
+        DAst.make ?loc @@ Glob_term.PatCstr (co, List.init (n+1) f, Name.Anonymous))
     pat p
 
 (* raise Not_found if no coercion found *)
@@ -205,7 +205,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 	| _ -> subco ())
       | Prod (name, a, b), Prod (name', a', b') ->
 	  let name' = 
-	    Name (Namegen.next_ident_away Namegen.default_dependent_ident (Termops.vars_of_env env))
+            Name.Name (Namegen.next_ident_away Namegen.default_dependent_ident (Termops.vars_of_env env))
 	  in
 	  let env' = push_rel (LocalAssum (name', a')) env in
 	  let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in
@@ -255,7 +255,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 		       | _ -> raise NoSubtacCoercion
 		     in
 		     let (pb, b), (pb', b') = remove_head a pb, remove_head a' pb' in
-		     let env' = push_rel (LocalAssum (Name Namegen.default_dependent_ident, a)) env in
+                     let env' = push_rel (LocalAssum (Name.Name Namegen.default_dependent_ident, a)) env in
 		     let c2 = coerce_unify env' b b' in
 		       match c1, c2 with
 		       | None, None -> None
@@ -324,7 +324,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 	    Some
 	      (fun x ->
 		 let cx = app_opt env evdref c x in
-		 let evar = make_existential ?loc Anonymous env evdref (mkApp (p, [| cx |]))
+                 let evar = make_existential ?loc Name.Anonymous env evdref (mkApp (p, [| cx |]))
 		 in
 		   (papp evdref sig_intro [| u; p; cx; evar |]))
 	| None ->
@@ -481,7 +481,7 @@ let rec inh_conv_coerce_to_fail ?loc env evd rigidonly v t c1 =
           (* Note: we retype the term because template polymorphism may have *)
           (* weakened its type *)
 	  let name = match name with
-	    | Anonymous -> Name Namegen.default_dependent_ident
+            | Name.Anonymous -> Name.Name Namegen.default_dependent_ident
 	    | _ -> name in
 	  let open Context.Rel.Declaration in
 	  let env1 = push_rel (LocalAssum (name,u1)) env in

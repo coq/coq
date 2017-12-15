@@ -546,7 +546,7 @@ GEXTEND Gram
       | IDENT "pose"; b = constr; na = as_name ->
 	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,na,b,Locusops.nowhere,true,None))
       | IDENT "epose"; (id,b) = bindings_with_parameters ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,Names.Name id,b,Locusops.nowhere,true,None))
+          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,Names.Name.Name id,b,Locusops.nowhere,true,None))
       | IDENT "epose"; b = constr; na = as_name ->
 	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,na,b,Locusops.nowhere,true,None))
       | IDENT "set"; (id,c) = bindings_with_parameters; p = clause_dft_concl ->
@@ -554,7 +554,7 @@ GEXTEND Gram
       | IDENT "set"; c = constr; na = as_name; p = clause_dft_concl ->
           TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,na,c,p,true,None))
       | IDENT "eset"; (id,c) = bindings_with_parameters; p = clause_dft_concl ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,Names.Name id,c,p,true,None))
+          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,Names.Name.Name id,c,p,true,None))
       | IDENT "eset"; c = constr; na = as_name; p = clause_dft_concl ->
           TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,na,c,p,true,None))
       | IDENT "remember"; c = constr; na = as_name; e = eqn_ipat;

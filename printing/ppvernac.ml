@@ -711,7 +711,7 @@ open Decl_kinds
             in
             (pr_binders_arg bl,ty,Some (pr_reduce red ++ pr_lconstr body))
           | ProveBody (bl,t) ->
-            let typ u = if snd (fst id) = Anonymous then (assert (bl = []); u) else (str" :" ++ u) in
+            let typ u = if snd (fst id) = Name.Anonymous then (assert (bl = []); u) else (str" :" ++ u) in
             (pr_binders_arg bl, typ (pr_spc_lconstr t), None) in
         let (binds,typ,c) = pr_def_body b in
         return (
@@ -891,8 +891,8 @@ open Decl_kinds
             (if abst then keyword "Declare" ++ spc () else mt ()) ++
               keyword "Instance" ++
               (match instid with
-      	 | (loc, Name id), l -> spc () ++ pr_ident_decl ((loc, id),l) ++ spc ()
-               | (_, Anonymous), _ -> mt ()) ++
+         | (loc, Name.Name id), l -> spc () ++ pr_ident_decl ((loc, id),l) ++ spc ()
+               | (_, Name.Anonymous), _ -> mt ()) ++
               pr_and_type_binders_arg sup ++
               str":" ++ spc () ++
               (match bk with Implicit -> str "! " | Explicit -> mt ()) ++

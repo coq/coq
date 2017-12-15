@@ -40,7 +40,7 @@ let destructurate t =
   | Ind (isp,_), args ->
      Kapp (string_of_global (Globnames.IndRef isp), args)
   | Var id, [] -> Kvar(Names.Id.to_string id)
-  | Prod (Anonymous,typ,body), [] -> Kimp(typ,body)
+  | Prod (Name.Anonymous,typ,body), [] -> Kimp(typ,body)
   | _ -> Kufo
 
 exception DestConstApp

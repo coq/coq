@@ -174,12 +174,12 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
   in
   let id =
     match instid with
-	Name id ->
+        Name.Name id ->
 	  let sp = Lib.make_path id in
 	    if Nametab.exists_cci sp then
 	      user_err ~hdr:"new_instance" (Id.print id ++ Pp.str " already exists.");
 	    id
-      | Anonymous ->
+      | Name.Anonymous ->
 	  let i = Nameops.add_suffix (id_of_class k) "_instance_0" in
 	    Namegen.next_global_ident_away i (Termops.vars_of_env env)
   in
@@ -236,8 +236,8 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 		  if is_local_assum decl then
 		    try
 		      let is_id (id', _) = match RelDecl.get_name decl, get_id id' with
-			| Name id, (_, id') -> Id.equal id id'
-			| Anonymous, _ -> false
+                        | Name.Name id, (_, id') -> Id.equal id id'
+                        | Name.Anonymous, _ -> false
                       in
 		       let (loc_mid, c) =
 			 List.find is_id rest 
@@ -247,7 +247,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 		       in
 		       let (loc, mid) = get_id loc_mid in
 			 List.iter (fun (n, _, x) -> 
-				      if Name.equal n (Name mid) then
+                                      if Name.equal n Name.(Name mid) then
 					Option.iter (fun x -> Dumpglob.add_glob ?loc (ConstRef x)) x)
 			   k.cl_projs;
 			 c :: props, rest'
@@ -351,7 +351,7 @@ let named_of_rel_context l =
   let acc, ctx =
     List.fold_right
       (fun decl (subst, ctx) ->
-        let id = match RelDecl.get_name decl with Anonymous -> invalid_arg "named_of_rel_context" | Name id -> id in
+        let id = match RelDecl.get_name decl with Name.Anonymous -> invalid_arg "named_of_rel_context" | Name.Name id -> id in
 	let d = match decl with
 	  | LocalAssum (_,t) -> id, None, substl subst t
 	  | LocalDef (_,b,t) -> id, Some (substl subst b), substl subst t in

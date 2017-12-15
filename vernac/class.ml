@@ -185,14 +185,14 @@ let build_id_coercion idf_opt source poly =
   let lams,t = decompose_lam_assum c in
   let val_f =
     it_mkLambda_or_LetIn
-      (mkLambda (Name Namegen.default_dependent_ident,
+      (mkLambda (Name.Name Namegen.default_dependent_ident,
 		 applistc vs (Context.Rel.to_extended_list mkRel 0 lams),
 		 mkRel 1))
        lams
   in
   let typ_f =
     List.fold_left (fun d c -> Term.mkProd_wo_LetIn c d)
-      (mkProd (Anonymous, applistc vs (Context.Rel.to_extended_list mkRel 0 lams), lift 1 t))
+      (mkProd (Name.Anonymous, applistc vs (Context.Rel.to_extended_list mkRel 0 lams), lift 1 t))
       lams
   in
   (* juste pour verification *)

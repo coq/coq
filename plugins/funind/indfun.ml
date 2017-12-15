@@ -468,7 +468,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 	if Int.equal (List.length names) 1 then 1
 	else error "Recursive argument must be specified"
       | Some wf_arg ->
-	  List.index Name.equal (Name wf_arg) names
+          List.index Name.equal Name.(Name wf_arg) names
   in
   let unbounded_eq =
     let f_app_args =
@@ -476,8 +476,8 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 	 (None,(Ident (Loc.tag fname)),None) ,
 	 (List.map
 	    (function
-	       | _,Anonymous -> assert false
-	       | _,Name e -> (Constrexpr_ops.mkIdentC e)
+               | _,Name.Anonymous -> assert false
+               | _,Name.Name e -> (Constrexpr_ops.mkIdentC e)
 	    )
 	    (Constrexpr_ops.names_of_local_assums args)
 	 )
@@ -515,7 +515,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
       | None ->
 	  begin
 	    match args with
-	      | [Constrexpr.CLocalAssum ([(_,Name x)],k,t)] -> t,x
+              | [Constrexpr.CLocalAssum ([(_,Name.Name x)],k,t)] -> t,x
 	      | _ -> error "Recursive argument must be specified"
 	  end
       | Some wf_args ->
@@ -525,7 +525,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 		(function
 		   | Constrexpr.CLocalAssum(l,k,t) ->
 		       List.exists
-			 (function (_,Name id) -> Id.equal id wf_args | _ -> false)
+                         (function (_,Name.Name id) -> Id.equal id wf_args | _ -> false)
 			 l
 		   | _ -> false
 		)
@@ -546,7 +546,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 	  let fun_from_mes =
 	    let applied_mes =
 	      Constrexpr_ops.mkAppC(wf_mes_expr,[Constrexpr_ops.mkIdentC wf_arg])    in
-	    Constrexpr_ops.mkLambdaC ([(Loc.tag @@ Name wf_arg)],Constrexpr_ops.default_binder_kind,wf_arg_type,applied_mes)
+            Constrexpr_ops.mkLambdaC ([(Loc.tag @@ Name.Name wf_arg)],Constrexpr_ops.default_binder_kind,wf_arg_type,applied_mes)
 	  in
 	  let wf_rel_from_mes =
 	    Constrexpr_ops.mkAppC(Constrexpr_ops.mkRefC  ltof,[wf_arg_type;fun_from_mes])
@@ -557,7 +557,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 	    let a = Names.Id.of_string "___a" in 
 	    let b = Names.Id.of_string "___b" in 
 	    Constrexpr_ops.mkLambdaC(
-	      [Loc.tag @@ Name a;Loc.tag @@ Name b],
+              [Loc.tag @@ Name.Name a;Loc.tag @@ Name.Name b],
 	      Constrexpr.Default Explicit,
 	      wf_arg_type,
 	      Constrexpr_ops.mkAppC(wf_rel_expr,

@@ -120,7 +120,7 @@ let revert_reserved_type t =
       with No_match -> false
     in
     let (id, _) = ReservedSet.find filter reserved in
-    Name id
-  with Not_found | Failure _ -> Anonymous
+    Name.Name id
+  with Not_found | Failure _ -> Name.Anonymous
 
 let _ = Namegen.set_reserved_typed_name revert_reserved_type

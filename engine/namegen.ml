@@ -103,7 +103,7 @@ let head_name sigma c = (* Find the head constant of a constr if any *)
     | Const _ | Ind _ | Construct _ | Var _ as c ->
 	Some (basename_of_global (global_of_constr c))
     | Fix ((_,i),(lna,_,_)) | CoFix (i,(lna,_,_)) ->
-	Some (match lna.(i) with Name id -> id | _ -> assert false)
+        Some (match lna.(i) with Name.Name id -> id | _ -> assert false)
     | Sort _ | Rel _ | Meta _|Evar _|Case (_, _, _, _) -> None
   in
   hdrec c
@@ -140,11 +140,11 @@ let hdchar env sigma c =
 	(if n<=k then "p" (* the initial term is flexible product/function *)
 	 else
 	   try match lookup_rel (n-k) env with
-	     | LocalAssum (Name id,_)   | LocalDef (Name id,_,_) -> lowercase_first_char id
-	     | LocalAssum (Anonymous,t) | LocalDef (Anonymous,_,t) -> hdrec 0 (lift (n-k) t)
+             | LocalAssum (Name.Name id,_)   | LocalDef (Name.Name id,_,_) -> lowercase_first_char id
+             | LocalAssum (Name.Anonymous,t) | LocalDef (Name.Anonymous,_,t) -> hdrec 0 (lift (n-k) t)
 	   with Not_found -> "y")
     | Fix ((_,i),(lna,_,_)) | CoFix (i,(lna,_,_)) ->
-	let id = match lna.(i) with Name id -> id | _ -> assert false in
+        let id = match lna.(i) with Name.Name id -> id | _ -> assert false in
 	lowercase_first_char id
     | Evar _ (* We could do better... *)
     | Meta _ | Case (_, _, _, _) -> "y"
@@ -152,11 +152,11 @@ let hdchar env sigma c =
   hdrec 0 c
 
 let id_of_name_using_hdchar env sigma a = function
-  | Anonymous -> Id.of_string (hdchar env sigma a)
-  | Name id   -> id
+  | Name.Anonymous -> Id.of_string (hdchar env sigma a)
+  | Name.Name id   -> id
 
 let named_hd env sigma a = function
-  | Anonymous -> Name (Id.of_string (hdchar env sigma a))
+  | Name.Anonymous -> Name.Name (Id.of_string (hdchar env sigma a))
   | x         -> x
 
 let mkProd_name   env sigma (n,a,b) = mkProd (named_hd env sigma a n, a, b)
@@ -165,8 +165,8 @@ let mkLambda_name env sigma (n,a,b) = mkLambda (named_hd env sigma a n, a, b)
 let lambda_name = mkLambda_name
 let prod_name = mkProd_name
 
-let prod_create   env sigma (a,b) = mkProd (named_hd env sigma a Anonymous, a, b)
-let lambda_create env sigma (a,b) =  mkLambda (named_hd env sigma a Anonymous, a, b)
+let prod_create   env sigma (a,b) = mkProd (named_hd env sigma a Name.Anonymous, a, b)
+let lambda_create env sigma (a,b) =  mkLambda (named_hd env sigma a Name.Anonymous, a, b)
 
 let name_assumption env sigma = function
     | LocalAssum (na,t) -> LocalAssum (named_hd env sigma t na, t)
@@ -234,7 +234,7 @@ let visible_ids sigma (nenv, c) =
           None
       in
       let ids = match name with
-      | Some (Name id) -> Id.Set.add id ids
+      | Some (Name.Name id) -> Id.Set.add id ids
       | _ -> ids
       in
       accu := (gseen, vseen, ids)
@@ -249,7 +249,7 @@ let visible_ids sigma (nenv, c) =
 (* 1- Looks for a fresh name for printing in cases pattern *)
 
 let next_name_away_in_cases_pattern sigma env_t na avoid =
-  let id = match na with Name id -> id | Anonymous -> default_dependent_ident in
+  let id = match na with Name.Name id -> id | Name.Anonymous -> default_dependent_ident in
   let visible = visible_ids sigma env_t in
   let bad id = Id.Set.mem id avoid || is_constructor id
                                     || Id.Set.mem id visible in
@@ -271,8 +271,8 @@ let next_ident_away_in_goal id avoid =
 
 let next_name_away_in_goal na avoid =
   let id = match na with
-    | Name id -> id
-    | Anonymous -> default_non_dependent_ident in
+    | Name.Name id -> id
+    | Name.Anonymous -> default_non_dependent_ident in
   next_ident_away_in_goal id avoid
 
 (* 3- Looks for next fresh name outside a list that is moreover valid
@@ -296,18 +296,18 @@ let next_ident_away id avoid =
   else id
 
 let next_name_away_with_default default na avoid =
-  let id = match na with Name id -> id | Anonymous -> Id.of_string default in
+  let id = match na with Name.Name id -> id | Name.Anonymous -> Id.of_string default in
   next_ident_away id avoid
 
-let reserved_type_name = ref (fun t -> Anonymous)
+let reserved_type_name = ref (fun t -> Name.Anonymous)
 let set_reserved_typed_name f = reserved_type_name := f
 
 let next_name_away_with_default_using_types default na avoid t =
   let id = match na with
-    | Name id -> id
-    | Anonymous -> match !reserved_type_name t with
-	| Name id -> id
-	| Anonymous -> Id.of_string default in
+    | Name.Name id -> id
+    | Name.Anonymous -> match !reserved_type_name t with
+        | Name.Name id -> id
+        | Name.Anonymous -> Id.of_string default in
   next_ident_away id avoid
 
 let next_name_away = next_name_away_with_default default_non_dependent_string
@@ -323,7 +323,7 @@ let make_all_name_different env sigma =
        let na = named_hd newenv sigma (RelDecl.get_type decl) (RelDecl.get_name decl) in
        let id = next_name_away na !avoid in
        avoid := Id.Set.add id !avoid;
-       push_rel (RelDecl.set_name (Name id) decl) newenv)
+       push_rel (RelDecl.set_name (Name.Name id) decl) newenv)
     rels ~init:env0
 
 (* 5- Looks for next fresh name outside a list; avoids also to use names that
@@ -338,8 +338,8 @@ let next_ident_away_for_default_printing sigma env_t id avoid =
 
 let next_name_away_for_default_printing sigma env_t na avoid =
   let id = match na with
-  | Name id   -> id
-  | Anonymous ->
+  | Name.Name id   -> id
+  | Name.Anonymous ->
       (* In principle, an anonymous name is not dependent and will not be *)
       (* taken into account by the function compute_displayed_name_in; *)
       (* just in case, invent a valid name *)
@@ -375,14 +375,14 @@ let next_name_for_display sigma flags =
   | RenamingForGoal -> next_name_away_in_goal
   | RenamingElsewhereFor env_t -> next_name_away_for_default_printing sigma env_t
 
-(* Remark: Anonymous var may be dependent in Evar's contexts *)
+(* Remark: Name.Anonymous var may be dependent in Evar's contexts *)
 let compute_displayed_name_in_gen_poly noccurn_fun sigma flags avoid na c =
   match na with
-  | Anonymous when noccurn_fun sigma 1 c ->
-    (Anonymous,avoid)
+  | Name.Anonymous when noccurn_fun sigma 1 c ->
+    (Name.Anonymous,avoid)
   | _ ->
     let fresh_id = next_name_for_display sigma flags na avoid in
-    let idopt = if noccurn_fun sigma 1 c then Anonymous else Name fresh_id in
+    let idopt = if noccurn_fun sigma 1 c then Name.Anonymous else Name.Name fresh_id in
     (idopt, Id.Set.add fresh_id avoid)
 
 let compute_displayed_name_in = compute_displayed_name_in_gen_poly noccurn
@@ -394,15 +394,15 @@ let compute_displayed_name_in_gen f sigma =
 
 let compute_and_force_displayed_name_in sigma flags avoid na c =
   match na with
-  | Anonymous when noccurn sigma 1 c ->
-    (Anonymous,avoid)
+  | Name.Anonymous when noccurn sigma 1 c ->
+    (Name.Anonymous,avoid)
   | _ ->
     let fresh_id = next_name_for_display sigma flags na avoid in
-    (Name fresh_id, Id.Set.add fresh_id avoid)
+    (Name.Name fresh_id, Id.Set.add fresh_id avoid)
 
 let compute_displayed_let_name_in sigma flags avoid na c =
   let fresh_id = next_name_for_display sigma flags na avoid in
-  (Name fresh_id, Id.Set.add fresh_id avoid)
+  (Name.Name fresh_id, Id.Set.add fresh_id avoid)
 
 let rename_bound_vars_as_displayed sigma avoid env c =
   let rec rename avoid env c =

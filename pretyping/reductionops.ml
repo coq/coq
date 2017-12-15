@@ -1406,7 +1406,7 @@ let plain_instance sigma s c =
 	    match EConstr.kind sigma g with
             | App _ ->
                 let l' = CArray.Fun1.smartmap lift 1 l' in
-                mkLetIn (Name default_plain_instance_ident,g,t,mkApp(mkRel 1, l'))
+                mkLetIn (Name.Name default_plain_instance_ident,g,t,mkApp(mkRel 1, l'))
             | _ -> mkApp (g,l')
 	    with Not_found -> mkApp (f,l'))
         | _ -> mkApp (irec n f,l'))

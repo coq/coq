@@ -21,8 +21,8 @@ module NamedDecl = Context.Named.Declaration
 
 let mk_absurd_proof coq_not t =
   let id = Namegen.default_dependent_ident in
-  mkLambda (Names.Name id,mkApp(coq_not,[|t|]),
-    mkLambda (Names.Name id,t,mkApp (mkRel 2,[|mkRel 1|])))
+  mkLambda (Names.Name.Name id,mkApp(coq_not,[|t|]),
+    mkLambda (Names.Name.Name id,t,mkApp (mkRel 2,[|mkRel 1|])))
 
 let absurd c =
   Proofview.Goal.enter begin fun gl ->

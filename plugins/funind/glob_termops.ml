@@ -17,7 +17,7 @@ let mkGLambda(n,t,b)    = DAst.make @@ GLambda(n,Explicit,t,b)
 let mkGProd(n,t,b)      = DAst.make @@ GProd(n,Explicit,t,b)
 let mkGLetIn(n,b,t,c)   = DAst.make @@ GLetIn(n,b,t,c)
 let mkGCases(rto,l,brl) = DAst.make @@ GCases(Term.RegularStyle,rto,l,brl)
-let mkGHole ()          = DAst.make @@ GHole(Evar_kinds.BinderType Anonymous,Misctypes.IntroAnonymous,None)
+let mkGHole ()          = DAst.make @@ GHole(Evar_kinds.BinderType Name.Anonymous,Misctypes.IntroAnonymous,None)
 
 (*
   Some basic functions to decompose glob_constrs
@@ -46,8 +46,8 @@ let glob_make_neq t1 t2 =
 
 let remove_name_from_mapping mapping na =
   match na with
-    | Anonymous -> mapping
-    | Name id -> Id.Map.remove id mapping
+    | Name.Anonymous -> mapping
+    | Name.Name id -> Id.Map.remove id mapping
 
 let change_vars =
   let rec change_vars mapping rt =
@@ -124,22 +124,22 @@ let change_vars =
 let rec alpha_pat excluded pat =
   let loc = pat.CAst.loc in
   match DAst.get pat with
-    | PatVar Anonymous ->
+    | PatVar Name.Anonymous ->
 	let new_id = Indfun_common.fresh_id excluded "_x" in
-	(DAst.make ?loc @@ PatVar(Name new_id)),(new_id::excluded),Id.Map.empty
-    | PatVar(Name id) ->
+        (DAst.make ?loc @@ PatVar(Name.Name new_id)),(new_id::excluded),Id.Map.empty
+    | PatVar(Name.Name id) ->
 	if Id.List.mem id excluded
 	then
 	  let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
-	  (DAst.make ?loc @@ PatVar(Name new_id)),(new_id::excluded),
+          (DAst.make ?loc @@ PatVar(Name.Name new_id)),(new_id::excluded),
 	(Id.Map.add id new_id Id.Map.empty)
 	else pat, excluded,Id.Map.empty
     | PatCstr(constr,patl,na) ->
 	let new_na,new_excluded,map =
 	  match na with
-	    | Name id when Id.List.mem id excluded ->
+            | Name.Name id when Id.List.mem id excluded ->
 		let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
-		Name new_id,new_id::excluded, Id.Map.add id new_id Id.Map.empty
+                Name.Name new_id,new_id::excluded, Id.Map.add id new_id Id.Map.empty
 	    | _ -> na,excluded,Id.Map.empty
 	in
 	let new_patl,new_excluded,new_map =
@@ -171,8 +171,8 @@ let alpha_patl excluded patl  =
 let raw_get_pattern_id pat acc =
   let rec get_pattern_id pat =
     match DAst.get pat with
-      | PatVar(Anonymous) -> assert false
-      | PatVar(Name id) ->
+      | PatVar(Name.Anonymous) -> assert false
+      | PatVar(Name.Name id) ->
 	  [id]
       | PatCstr(constr,patternl,_) ->
 	  List.fold_right
@@ -192,22 +192,22 @@ let rec alpha_rt excluded rt =
   let new_rt = DAst.make ?loc @@
     match DAst.get rt with
       | GRef _ | GVar _ | GEvar _ | GPatVar _ as rt -> rt
-      | GLambda(Anonymous,k,t,b) ->
+      | GLambda(Name.Anonymous,k,t,b) ->
 	  let new_id = Namegen.next_ident_away (Id.of_string "_x") (Id.Set.of_list excluded) in
 	  let new_excluded = new_id :: excluded in
 	  let new_t = alpha_rt new_excluded t in
 	  let new_b = alpha_rt new_excluded b in
-	  GLambda(Name new_id,k,new_t,new_b)
-      | GProd(Anonymous,k,t,b) ->
+          GLambda(Name.Name new_id,k,new_t,new_b)
+      | GProd(Name.Anonymous,k,t,b) ->
 	let new_t = alpha_rt excluded t in
 	let new_b = alpha_rt excluded b in
-	GProd(Anonymous,k,new_t,new_b)
-    | GLetIn(Anonymous,b,t,c) ->
+        GProd(Name.Anonymous,k,new_t,new_b)
+    | GLetIn(Name.Anonymous,b,t,c) ->
 	let new_b = alpha_rt excluded b in
 	let new_t = Option.map (alpha_rt excluded) t in
 	let new_c = alpha_rt excluded c in
-	GLetIn(Anonymous,new_b,new_t,new_c)
-    | GLambda(Name id,k,t,b) ->
+        GLetIn(Name.Anonymous,new_b,new_t,new_c)
+    | GLambda(Name.Name id,k,t,b) ->
 	let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
 	let t,b =
 	  if Id.equal new_id id
@@ -219,8 +219,8 @@ let rec alpha_rt excluded rt =
 	let new_excluded = new_id::excluded in
 	let new_t = alpha_rt new_excluded t in
 	let new_b = alpha_rt new_excluded b in
-	GLambda(Name new_id,k,new_t,new_b)
-    | GProd(Name id,k,t,b) ->
+        GLambda(Name.Name new_id,k,new_t,new_b)
+    | GProd(Name.Name id,k,t,b) ->
 	let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
 	let new_excluded = new_id::excluded in
 	let t,b =
@@ -232,8 +232,8 @@ let rec alpha_rt excluded rt =
 	in
 	let new_t = alpha_rt new_excluded t in
 	let new_b = alpha_rt new_excluded b in
-	GProd(Name new_id,k,new_t,new_b)
-    | GLetIn(Name id,b,t,c) ->
+        GProd(Name.Name new_id,k,new_t,new_b)
+    | GLetIn(Name.Name id,b,t,c) ->
 	let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
 	let c =
 	  if Id.equal new_id id then c
@@ -243,21 +243,21 @@ let rec alpha_rt excluded rt =
 	let new_b = alpha_rt new_excluded b in
 	let new_t = Option.map (alpha_rt new_excluded) t in
 	let new_c = alpha_rt new_excluded c in
-	GLetIn(Name new_id,new_b,new_t,new_c)
+        GLetIn(Name.Name new_id,new_b,new_t,new_c)
 
     | GLetTuple(nal,(na,rto),t,b) ->
 	let rev_new_nal,new_excluded,mapping =
 	  List.fold_left
 	    (fun (nal,excluded,mapping) na ->
 	       match na with
-		 | Anonymous -> (na::nal,excluded,mapping)
-		 | Name id ->
+                 | Name.Anonymous -> (na::nal,excluded,mapping)
+                 | Name.Name id ->
 		     let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
 		     if Id.equal new_id id
 		     then
 		       na::nal,id::excluded,mapping
 		     else
-		       (Name new_id)::nal,id::excluded,(Id.Map.add id new_id mapping)
+                       Name.(Name new_id)::nal,id::excluded,(Id.Map.add id new_id mapping)
 	    )
 	    ([],excluded,Id.Map.empty)
 	    nal
@@ -319,14 +319,14 @@ let is_free_in id =
     | GLambda(n,_,t,b) | GProd(n,_,t,b) ->
 	let check_in_b =
 	  match n with
-	    | Name id' -> not (Id.equal id' id)
+            | Name.Name id' -> not (Id.equal id' id)
 	    | _ -> true
 	in
 	is_free_in t || (check_in_b && is_free_in b)
     | GLetIn(n,b,t,c) ->
 	let check_in_c =
 	  match n with
-	    | Name id' -> not (Id.equal id' id)
+            | Name.Name id' -> not (Id.equal id' id)
 	    | _ -> true
 	in
 	is_free_in b || Option.cata is_free_in true t || (check_in_c && is_free_in c)
@@ -335,7 +335,7 @@ let is_free_in id =
 	  List.exists is_free_in_br brl
     | GLetTuple(nal,_,b,t) ->
 	let check_in_nal =
-	  not (List.exists (function Name id' -> Id.equal id' id | _ -> false) nal)
+          not (List.exists (function Name.Name id' -> Id.equal id' id | _ -> false) nal)
 	in
 	is_free_in t  || (check_in_nal && is_free_in b)
 
@@ -356,8 +356,8 @@ let is_free_in id =
 
 
 let rec pattern_to_term pt = DAst.with_val (function
-  | PatVar Anonymous -> assert false
-  | PatVar(Name id) ->
+  | PatVar Name.Anonymous -> assert false
+  | PatVar (Name.Name id) ->
 	mkGVar id
   | PatCstr(constr,patternl,_) ->
       let cst_narg =
@@ -392,21 +392,21 @@ let replace_var_by_term x_id term =
 	  GApp(replace_var_by_pattern rt',
 	       List.map replace_var_by_pattern rtl
 	      )
-      | GLambda(Name id,_,_,_) as rt when Id.compare id x_id == 0 -> rt
+      | GLambda(Name.Name id,_,_,_) as rt when Id.compare id x_id == 0 -> rt
       | GLambda(name,k,t,b) ->
 	  GLambda(name,
 		  k,
 		  replace_var_by_pattern t,
 		  replace_var_by_pattern b
 		 )
-      | GProd(Name id,_,_,_) as rt when Id.compare id x_id == 0 -> rt
+      | GProd(Name.Name id,_,_,_) as rt when Id.compare id x_id == 0 -> rt
       | GProd(name,k,t,b) ->
 	  GProd(  name,
 	          k,
 		  replace_var_by_pattern t,
 		  replace_var_by_pattern b
 		 )
-      | GLetIn(Name id,_,_,_) as rt when Id.compare id x_id == 0 -> rt
+      | GLetIn(Name.Name id,_,_,_) as rt when Id.compare id x_id == 0 -> rt
       | GLetIn(name,def,typ,b) ->
 	  GLetIn(name,
 		 replace_var_by_pattern def,
@@ -414,7 +414,7 @@ let replace_var_by_term x_id term =
 		 replace_var_by_pattern b
 		)
       | GLetTuple(nal,_,_,_) as rt
-	  when List.exists (function Name id -> Id.equal id x_id | _ -> false) nal  ->
+          when List.exists (function Name.Name id -> Id.equal id x_id | _ -> false) nal  ->
 	  rt
       | GLetTuple(nal,(na,rto),def,b) ->
 	  GLetTuple(nal,
@@ -504,8 +504,8 @@ let eq_cases_pattern pat1 pat2 =
 
 let ids_of_pat =
   let rec ids_of_pat ids = DAst.with_val (function
-    | PatVar Anonymous -> ids
-    | PatVar(Name id) -> Id.Set.add id ids
+    | PatVar Name.Anonymous -> ids
+    | PatVar (Name.Name id) -> Id.Set.add id ids
     | PatCstr(_,patl,_) -> List.fold_left ids_of_pat ids patl
     )
   in
@@ -516,7 +516,7 @@ let expand_as =
   let rec add_as map rt =
     match DAst.get rt with
       | PatVar _ -> map
-      | PatCstr(_,patl,Name id) ->
+      | PatCstr(_,patl,Name.Name id) ->
 	  Id.Map.add id (pattern_to_term rt) (List.fold_left add_as map patl)
       | PatCstr(_,patl,_) -> List.fold_left add_as map patl
   in

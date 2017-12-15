@@ -183,7 +183,7 @@ let change_hyp_with_using msg hyp_id t tac : tactic =
   fun g ->
     let prov_id = pf_get_new_id hyp_id g in
     tclTHENS
-      ((* observe_tac msg *) Proofview.V82.of_tactic (assert_by (Name prov_id) t (Proofview.V82.tactic (tclCOMPLETE tac))))
+      ((* observe_tac msg *) Proofview.V82.of_tactic (assert_by Name.(Name prov_id) t (Proofview.V82.tactic (tclCOMPLETE tac))))
       [tclTHENLIST
       [
 	(* observe_tac "change_hyp_with_using thin" *) (thin [hyp_id]);
@@ -305,7 +305,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
     in
     let old_context_length = List.length context + 1 in
     let witness_fun =
-      mkLetIn(Anonymous,make_refl_eq constructor t1_typ (fst t1),t,
+      mkLetIn(Name.Anonymous,make_refl_eq constructor t1_typ (fst t1),t,
 	       mkApp(mkVar hyp_id,Array.init old_context_length (fun i -> mkRel (old_context_length - i)))
 	      )
     in
@@ -457,7 +457,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 		     in
 (* 		     observe_tac "rec hyp " *)
 		       (tclTHENS
-		       (Proofview.V82.of_tactic (assert_before (Name rec_pte_id) t_x))
+                       (Proofview.V82.of_tactic (assert_before Name.(Name rec_pte_id) t_x))
 		       [
 			 (* observe_tac "prove rec hyp" *) (prove_rec_hyp eq_hyps);
 (* 			observe_tac "prove rec hyp" *)
@@ -613,7 +613,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 		   anomaly (Pp.str "cannot compute new term value.")
 	   in
 	 let fun_body =
-	   mkLambda(Anonymous,
+           mkLambda(Name.Anonymous,
 		    pf_unsafe_type_of g' term,
 		    Termops.replace_term (project g') term (mkRel 1) dyn_infos.info
 		   )
@@ -649,7 +649,7 @@ let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
 	  let evm, _ = pf_apply Typing.type_of g c in
 	  tclTHENLIST[
             Refiner.tclEVARS evm;
-	    Proofview.V82.of_tactic (pose_proof (Name prov_hid) c);
+            Proofview.V82.of_tactic (pose_proof Name.(Name prov_hid) c);
 	    thin [hid];
 	    Proofview.V82.of_tactic (rename_hyp [prov_hid,hid])
 	  ] g
@@ -826,7 +826,7 @@ let build_proof
 		      build_proof new_finalize {dyn_infos  with info = f } g
 	      end
 	  | Fix _ | CoFix _ ->
-	      user_err Pp.(str ( "Anonymous local (co)fixpoints are not handled yet"))
+              user_err Pp.(str ( "Name.Anonymous local (co)fixpoints are not handled yet"))
 
 
 	  | Proj _ -> user_err Pp.(str "Prod")
@@ -1080,11 +1080,11 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
       (fun na ->
 	 let new_id =
 	   match na with
-	       Name id -> fresh_id !avoid (Id.to_string id)
-	     | Anonymous -> fresh_id !avoid "H"
+               Name.Name id -> fresh_id !avoid (Id.to_string id)
+             | Name.Anonymous -> fresh_id !avoid "H"
 	 in
 	 avoid := new_id :: !avoid;
-	 (Name new_id)
+         Name.(Name new_id)
       )
     in
     let fresh_decl = RelDecl.map_name fresh_id in
@@ -1530,11 +1530,11 @@ let prove_principle_for_gen
     fun na ->
       let new_id =
 	  match na with
-	    | Name id -> fresh_id !avoid (Id.to_string id)
-	    | Anonymous -> fresh_id !avoid "H"
+            | Name.Name id -> fresh_id !avoid (Id.to_string id)
+            | Name.Anonymous -> fresh_id !avoid "H"
       in
       avoid := new_id :: !avoid;
-      Name new_id
+      Name.Name new_id
   in
   let fresh_decl = map_name fresh_id in
   let princ_info : elim_scheme =
@@ -1566,26 +1566,26 @@ let prove_principle_for_gen
   in
   let rec_arg_id =
     match List.rev post_rec_arg with
-      | (LocalAssum (Name id,_) | LocalDef (Name id,_,_)) :: _ -> id
+      | (LocalAssum (Name.Name id,_) | LocalDef (Name.Name id,_,_)) :: _ -> id
       | _ -> assert false
   in
 (*   observe (str "rec_arg_id := " ++ pr_lconstr (mkVar rec_arg_id)); *)
   let subst_constrs = List.map (get_name %> Nameops.Name.get_id %> mkVar) (pre_rec_arg@princ_info.params) in
   let relation = substl subst_constrs relation in
   let input_type = substl subst_constrs rec_arg_type in
-  let wf_thm_id = Nameops.Name.get_id (fresh_id (Name (Id.of_string "wf_R"))) in
+  let wf_thm_id = Nameops.Name.get_id (fresh_id Name.(Name (Id.of_string "wf_R"))) in
   let acc_rec_arg_id =
-    Nameops.Name.get_id (fresh_id (Name (Id.of_string ("Acc_"^(Id.to_string rec_arg_id)))))
+    Nameops.Name.get_id (fresh_id Name.(Name (Id.of_string ("Acc_"^(Id.to_string rec_arg_id)))))
   in
   let revert l =
     tclTHEN (Proofview.V82.of_tactic (Tactics.generalize (List.map mkVar l))) (Proofview.V82.of_tactic (clear l))
   in
-  let fix_id = Nameops.Name.get_id (fresh_id (Name hrec_id)) in
+  let fix_id = Nameops.Name.get_id (fresh_id Name.(Name hrec_id)) in
   let prove_rec_arg_acc g =
       ((* observe_tac "prove_rec_arg_acc"  *)
 	 (tclCOMPLETE
 	    (tclTHEN
-	       (Proofview.V82.of_tactic (assert_by (Name wf_thm_id)
+               (Proofview.V82.of_tactic (assert_by Name.(Name wf_thm_id)
 		  (mkApp (delayed_force well_founded,[|input_type;relation|]))
 		  (Proofview.V82.tactic (fun g -> (* observe_tac "prove wf" *) (tclCOMPLETE (wf_tac is_mes)) g))))
 	       (
@@ -1650,7 +1650,7 @@ let prove_principle_for_gen
 	   (princ_info.args@princ_info.branches@princ_info.predicates@princ_info.params)
 	);
       (* observe_tac "" *) Proofview.V82.of_tactic (assert_by
-	 (Name acc_rec_arg_id)
+         Name.(Name acc_rec_arg_id)
  	 (mkApp (delayed_force acc_rel,[|input_type;relation;mkVar rec_arg_id|]))
 	 (Proofview.V82.tactic prove_rec_arg_acc)
       );

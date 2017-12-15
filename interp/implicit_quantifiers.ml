@@ -99,7 +99,7 @@ let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
   in aux bound l c
 
 let ids_of_names l =
-  List.fold_left (fun acc x -> match snd x with Name na -> na :: acc | Anonymous -> acc) [] l
+  List.fold_left (fun acc x -> match snd x with Name.Name na -> na :: acc | Name.Anonymous -> acc) [] l
 
 let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder_expr list) =
   let rec aux bdvars l c = match c with
@@ -109,7 +109,7 @@ let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder_expr li
 	  aux (Id.Set.union (ids_of_list bound) bdvars) l' tl
 
     | ((CLocalDef (n, c, t)) :: tl) ->
-	let bound = match snd n with Anonymous -> [] | Name n -> [n] in
+        let bound = match snd n with Name.Anonymous -> [] | Name.Name n -> [n] in
 	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
 	let l'' = Option.fold_left (fun l t -> free_vars_of_constr_expr t ~bound:bdvars l) l' t in
 	  aux (Id.Set.union (ids_of_list bound) bdvars) l'' tl
@@ -139,8 +139,8 @@ let rec make_fresh ids env x =
 
 let next_name_away_from na avoid =
   match na with
-  | Anonymous -> make_fresh avoid (Global.env ()) (Id.of_string "anon")
-  | Name id -> make_fresh avoid (Global.env ()) id
+  | Name.Anonymous -> make_fresh avoid (Global.env ()) (Id.of_string "anon")
+  | Name.Name id -> make_fresh avoid (Global.env ()) id
 
 let combine_params avoid fn applied needed =
   let named, applied =
@@ -148,8 +148,8 @@ let combine_params avoid fn applied needed =
       (function
 	  (t, Some (loc, ExplByName id)) ->
             let is_id (_, decl) = match RelDecl.get_name decl with
-            | Name id' -> Id.equal id id'
-            | Anonymous -> false
+            | Name.Name id' -> Id.equal id id'
+            | Name.Anonymous -> false
             in
 	    if not (List.exists is_id needed) then
 	      user_err ?loc  (str "Wrong argument name: " ++ Id.print id);
@@ -169,10 +169,10 @@ let combine_params avoid fn applied needed =
     match app, need with
 	[], [] -> List.rev ids, avoid
 
-      | app, (_, (LocalAssum (Name id, _) | LocalDef (Name id, _, _))) :: need when Id.List.mem_assoc id named ->
+      | app, (_, (LocalAssum (Name.Name id, _) | LocalDef (Name.Name id, _, _))) :: need when Id.List.mem_assoc id named ->
 	  aux (Id.List.assoc id named :: ids) avoid app need
 
-      | (x, None) :: app, (None, (LocalAssum (Name id, _) | LocalDef (Name id, _, _))) :: need ->
+      | (x, None) :: app, (None, (LocalAssum (Name.Name id, _) | LocalDef (Name.Name id, _, _))) :: need ->
 	  aux (x :: ids) avoid app need
 
       | _, (Some cl, _ as d) :: need ->
@@ -248,8 +248,8 @@ let implicits_of_glob_constr ?(with_products=true) l =
   | Implicit ->
     let name =
       match na with
-      | Name id -> Some id
-      | Anonymous -> None
+      | Name.Name id -> Some id
+      | Name.Anonymous -> None
     in
     (ExplByPos (i, name), (true, true, true)) :: l
   | _ -> l

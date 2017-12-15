@@ -1034,7 +1034,7 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
     let pf_ty = mkArrow eqn absurd_term in
     let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
     let pf = Clenvtac.clenv_value_cast_meta absurd_clause in
-    tclTHENS (assert_after Anonymous absurd_term)
+    tclTHENS (assert_after Name.Anonymous absurd_term)
       [onLastHypId gen_absurdity; (Proofview.V82.tactic (Tacmach.refine pf))]
 
 let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =

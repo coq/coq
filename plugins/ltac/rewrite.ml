@@ -242,7 +242,7 @@ end) = struct
   let unfold_impl sigma t =
     match EConstr.kind sigma t with
     | App (arrow, [| a; b |])(*  when eq_constr arrow (Lazy.force impl) *) ->
-      mkProd (Anonymous, a, lift 1 b)
+      mkProd (Name.Anonymous, a, lift 1 b)
     | _ -> assert false
 
   let unfold_all sigma t =
@@ -268,7 +268,7 @@ end) = struct
 	(app_poly env evd arrow [| a; b |]), unfold_impl
 	(* (evd, mkProd (Anonymous, a, b)), (fun x -> x) *)
       else if bp then (* Dummy forall *)
-	(app_poly env evd coq_all [| a; mkLambda (Anonymous, a, lift 1 b) |]), unfold_forall
+        (app_poly env evd coq_all [| a; mkLambda (Name.Anonymous, a, lift 1 b) |]), unfold_forall
       else (* None in Prop, use arrow *)
 	(app_poly env evd arrow [| a; b |]), unfold_impl
 
@@ -469,8 +469,8 @@ let rec decompose_app_rel env evd t =
   | App (f, [|arg|]) ->
     let (f', argl, argr) = decompose_app_rel env evd arg in
     let ty = Typing.unsafe_type_of env evd argl in
-    let f'' = mkLambda (Name default_dependent_ident, ty,
-      mkLambda (Name (Id.of_string "y"), lift 1 ty,
+    let f'' = mkLambda (Name.Name default_dependent_ident, ty,
+      mkLambda (Name.Name (Id.of_string "y"), lift 1 ty,
         mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
     in (f'', argl, argr)
   | App (f, args) ->
@@ -900,7 +900,7 @@ let make_leibniz_proof env c ty r =
 	let prf =
 	  e_app_poly env evars coq_f_equal
 		[| r.rew_car; ty;
-		   mkLambda (Anonymous, r.rew_car, c);
+                   mkLambda (Name.Anonymous, r.rew_car, c);
 		   r.rew_from; r.rew_to; prf |]
 	in RewPrf (rel, prf)
     | RewCast k -> r.rew_prf
@@ -1509,7 +1509,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
 	    | Some (t, ty) ->
               let t = Reductionops.nf_evar evars' t in
               let ty = Reductionops.nf_evar evars' ty in
-		mkApp (mkLambda (Name (Id.of_string "lemma"), ty, p), [| t |])
+                mkApp (mkLambda (Name.Name (Id.of_string "lemma"), ty, p), [| t |])
 	  in
 	  let proof = match is_hyp with
             | None -> term
@@ -1773,7 +1773,7 @@ let rec strategy_of_ast = function
 let mkappc s l = CAst.make @@ CAppExpl ((None,(Libnames.Ident (Loc.tag @@ Id.of_string s)),None),l)
 
 let declare_an_instance n s args =
-  (((Loc.tag @@ Name n),None), Explicit,
+  (((Loc.tag @@ Name.Name n),None), Explicit,
   CAst.make @@ CAppExpl ((None, Qualid (Loc.tag @@  qualid_of_string s),None),
 	   args))
 
@@ -2006,7 +2006,7 @@ let add_morphism glob binders m s n =
   let poly = Flags.is_universe_polymorphism () in
   let instance_id = add_suffix n "_Proper" in
   let instance =
-    (((Loc.tag @@ Name instance_id),None), Explicit,
+    (((Loc.tag @@ Name.Name instance_id),None), Explicit,
     CAst.make @@ CAppExpl (
 	     (None, Qualid (Loc.tag @@ Libnames.qualid_of_string "Coq.Classes.Morphisms.Proper"),None),
 	     [cHole; s; m]))

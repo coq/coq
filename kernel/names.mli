@@ -109,7 +109,11 @@ end
 
 (** {6 Type aliases} *)
 
-type name = Name.t = Anonymous | Name of Id.t
+type name = Name.t =
+  | Anonymous
+      [@ocaml.deprecated "Use Name.Anonymous"]
+  | Name of Id.t
+      [@ocaml.deprecated "Use Name.Name"]
 [@@ocaml.deprecated "Use Name.t"]
 
 type variable = Id.t

@@ -323,8 +323,8 @@ let positions_of_implicits (_,impls) =
 
 let rec prepare_implicits f = function
   | [] -> []
-  | (Anonymous, Some _)::_ -> anomaly (Pp.str "Unnamed implicit.")
-  | (Name id, Some imp)::imps ->
+  | (Name.Anonymous, Some _)::_ -> anomaly (Pp.str "Unnamed implicit.")
+  | (Name.Name id, Some imp)::imps ->
       let imps' = prepare_implicits f imps in
       Some (id,imp,(set_maximality imps' f.maximal,true)) :: imps'
   | _::imps -> None :: prepare_implicits f imps
@@ -366,7 +366,7 @@ let set_manual_implicits env flags enriching autoimps l =
     user_err Pp.(str "Some parameters are referred more than once.");
   (* Compare with automatic implicits to recover printing data and names *)
   let rec merge k l = function
-  | (Name id,imp)::imps ->
+  | (Name.Name id,imp)::imps ->
       let l',imp,m =
 	try
           let eq = explicitation_eq in
@@ -388,7 +388,7 @@ let set_manual_implicits env flags enriching autoimps l =
 	(* match imp with Some Manual -> (b,f) *)
 	(* | _ ->  *)set_maximality imps' b, f) m in
       Option.map (set_implicit id imp) m :: imps'
-  | (Anonymous,imp)::imps ->
+  | (Name.Anonymous,imp)::imps ->
       let l', forced = try_forced k l in
 	forced :: merge (k+1) l' imps
   | [] when begin match l with [] -> true | _ -> false end -> []
@@ -431,7 +431,7 @@ let compute_mib_implicits flags manual kn =
         (fun i mip ->
 	  (** No need to care about constraints here *)
 	  let ty, _ = Global.type_of_global_in_context env (IndRef (kn,i)) in
-	  Context.Rel.Declaration.LocalAssum (Name mip.mind_typename, ty))
+          Context.Rel.Declaration.LocalAssum (Name.Name mip.mind_typename, ty))
         mib.mind_packets) in
   let env_ar = push_rel_context ar env in
   let imps_one_inductive i mip =
@@ -497,7 +497,7 @@ let implicits_of_global ref =
       let rec rename implicits names = match implicits, names with
         | [], _ -> []
         | _, [] -> implicits
-        | Some (_, x,y) :: implicits, Name id :: names ->
+        | Some (_, x,y) :: implicits, Name.Name id :: names ->
            Some (id, x,y) :: rename implicits names
         | imp :: implicits, _ :: names -> imp :: rename implicits names
       in

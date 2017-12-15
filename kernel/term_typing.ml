@@ -116,7 +116,7 @@ let inline_side_effects env body ctx side_eff =
       let name = Constant.to_string c in
       let map c = if c == '.' || c == '#' then '_' else c in
       let name = String.map map name in
-      Name (Id.of_string name)
+      Name.Name (Id.of_string name)
     in
     let fold (subst, var, ctx, args) (c, cb, b) =
       let (b, opaque) = match cb.const_body, b with

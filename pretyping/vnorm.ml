@@ -31,8 +31,8 @@ let crazy_type =  mkSet
 let decompose_prod env t =
   let (name,dom,codom as res) = destProd (whd_all env t) in
   match name with
-  | Anonymous -> (Name (Id.of_string "x"), dom, codom)
-  | Name _ -> res
+  | Name.Anonymous -> (Name.Name (Id.of_string "x"), dom, codom)
+  | Name.Name _ -> res
 
 exception Find_at of int
 
@@ -144,7 +144,7 @@ and nf_whd env sigma whd typ =
   | Vsort s -> mkSort s
   | Vprod p ->
       let dom = nf_vtype env sigma (dom p) in
-      let name = Name (Id.of_string "x") in
+      let name = Name.Name (Id.of_string "x") in
       let vc = reduce_fun (nb_rel env) (codom p) in
       let codom = nf_vtype (push_rel (LocalAssum (name,dom)) env) sigma vc  in
       mkProd(name,dom,codom)
@@ -276,7 +276,7 @@ and nf_predicate env sigma ind mip params v pT =
   | Vfun f, _ ->
       let k = nb_rel env in
       let vb = reduce_fun k f in
-      let name = Name (Id.of_string "c") in
+      let name = Name.Name (Id.of_string "c") in
       let n = mip.mind_nrealargs in
       let rargs = Array.init n (fun i -> mkRel (n-i)) in
       let params = if Int.equal n 0 then params else Array.map (lift n) params in
@@ -327,7 +327,7 @@ and nf_fix env sigma f =
   let vb, vt = reduce_fix k f in
   let ndef = Array.length vt in
   let ft = Array.map (fun v -> nf_val env sigma v crazy_type) vt in
-  let name = Array.init ndef (fun _ -> (Name (Id.of_string "Ffix"))) in
+  let name = Array.init ndef (fun _ -> Name.(Name (Id.of_string "Ffix"))) in
   (* Third argument of the tuple is ignored by push_rec_types *)
   let env = push_rec_types (name,ft,ft) env in
   (* We lift here because the types of arguments (in tt) will be evaluated
@@ -349,7 +349,7 @@ and nf_cofix env sigma cf =
   let vb,vt = reduce_cofix k cf in
   let ndef = Array.length vt in
   let cft = Array.map (fun v -> nf_val env sigma v crazy_type) vt in
-  let name = Array.init ndef (fun _ -> (Name (Id.of_string "Fcofix"))) in
+  let name = Array.init ndef (fun _ -> Name.(Name (Id.of_string "Fcofix"))) in
   let env = push_rec_types (name,cft,cft) env in
   let cfb = Util.Array.map2 (fun v t -> nf_val env sigma v t) vb cft in
   mkCoFix (init,(name,cft,cfb))

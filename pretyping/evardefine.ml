@@ -95,7 +95,7 @@ let define_pure_evar_as_product evd evk =
 	let evd3 = Evd.set_leq_sort evenv evd3 (Type prods) (ESorts.kind evd1 s) in
 	  evd3, rng
   in
-  let prod = mkProd (Name id, dom, subst_var id rng) in
+  let prod = mkProd (Name.Name id, dom, subst_var id rng) in
   let evd3 = Evd.define evk (EConstr.Unsafe.to_constr prod) evd2 in
     evd3,prod
 
@@ -135,7 +135,7 @@ let define_pure_evar_as_lambda env evd evk =
   let filter = Filter.extend 1 (evar_filter evi) in
   let src = evar_source evk evd1 in
   let evd2,body = new_evar newenv evd1 ~src (subst1 (mkVar id) rng) ~filter in
-  let lam = mkLambda (Name id, dom, subst_var id body) in
+  let lam = mkLambda (Name.Name id, dom, subst_var id body) in
   Evd.define evk (EConstr.Unsafe.to_constr lam) evd2, lam
 
 let define_evar_as_lambda env evd (evk,args) =
@@ -179,14 +179,14 @@ let split_tycon ?loc env evd tycon =
 	| Evar ev (* ev is undefined because of whd_all *) ->
 	    let (evd',prod) = define_evar_as_product evd ev in
 	    let (_,dom,rng) = destProd evd prod in
-	      evd',(Anonymous, dom, rng)
+              evd',(Name.Anonymous, dom, rng)
 	| App (c,args) when isEvar evd c ->
 	    let (evd',lam) = define_evar_as_lambda env evd (destEvar evd c) in
 	    real_split evd' (mkApp (lam,args))
 	| _ -> error_not_product ?loc env evd c
   in
     match tycon with
-      | None -> evd,(Anonymous,None,None)
+      | None -> evd,(Name.Anonymous,None,None)
       | Some c ->
 	  let evd', (n, dom, rng) = real_split evd c in
 	    evd', (n, mk_tycon dom, mk_tycon rng)

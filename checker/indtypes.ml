@@ -167,7 +167,7 @@ let typecheck_arity env params inds =
 	   full_arity is used as argument or subject to cast, an
 	   upper universe will be generated *)
 	let id = ind.mind_typename in
-	let env_ar' = push_rel (LocalAssum (Name id, arity)) env_ar in
+        let env_ar' = push_rel (LocalAssum (Name.Name id, arity)) env_ar in
         env_ar')
       env
       inds in
@@ -348,7 +348,7 @@ let check_rec_par (env,n,_,_) hyps nrecp largs =
   in find (n-1) (lpar,List.rev hyps)
 
 let lambda_implicit_lift n a =
-  let lambda_implicit a = Lambda(Anonymous,Evar(0,[||]),a) in
+  let lambda_implicit a = Lambda(Name.Anonymous,Evar(0,[||]),a) in
   iterate lambda_implicit n (lift n a)
 
 (* This removes global parameters of the inductive types in lc (for
@@ -376,7 +376,7 @@ let ienv_push_inductive (env, n, ntypes, ra_env) ((mi,u),lpar) =
   let auxntyp = 1 in
   let specif = lookup_mind_specif env mi in
   let env' =
-    let decl = LocalAssum (Anonymous,
+    let decl = LocalAssum (Name.Anonymous,
                            hnf_prod_applist env (type_of_inductive env (specif,u)) lpar) in
     push_rel decl env in
   let ra_env' =

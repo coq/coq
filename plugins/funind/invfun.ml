@@ -119,8 +119,8 @@ let generate_type evd g_to_f f graph i =
   in
   (*i We need to name the vars [res] and [fv] i*)
   let filter = fun decl -> match RelDecl.get_name decl with
-			   | Name id -> Some id
-			   | Anonymous -> None
+                           | Name.Name id -> Some id
+                           | Name.Anonymous -> None
   in
   let named_ctxt = Id.Set.of_list (List.map_filter filter fun_ctxt) in
   let res_id = Namegen.next_ident_away_in_goal (Id.of_string "_res") named_ctxt in
@@ -147,12 +147,12 @@ let generate_type evd g_to_f f graph i =
     \[\forall (x_1:t_1)\ldots(x_n:t_n), let fv := f x_1\ldots x_n in, forall res,  \]
     i*)
   let pre_ctxt =
-    LocalAssum (Name res_id, lift 1 res_type) :: LocalDef (Name fv_id, mkApp (f,args_as_rels), res_type) :: fun_ctxt
+    LocalAssum (Name.Name res_id, lift 1 res_type) :: LocalDef (Name.Name fv_id, mkApp (f,args_as_rels), res_type) :: fun_ctxt
   in
   (*i and we can return the solution depending on which lemma type we are defining i*)
   if g_to_f
-  then LocalAssum (Anonymous,graph_applied)::pre_ctxt,(lift 1 res_eq_f_of_args),graph
-  else LocalAssum (Anonymous,res_eq_f_of_args)::pre_ctxt,(lift 1 graph_applied),graph
+  then LocalAssum (Name.Anonymous,graph_applied)::pre_ctxt,(lift 1 res_eq_f_of_args),graph
+  else LocalAssum (Name.Anonymous,res_eq_f_of_args)::pre_ctxt,(lift 1 graph_applied),graph
 
 
 (*
@@ -407,7 +407,7 @@ let prove_fun_correct evd funs_constr graphs_constr schemes lemmas_types_infos i
     tclTHENLIST
       [ 
 	observe_tac "principle" (Proofview.V82.of_tactic (assert_by
-	  (Name principle_id)
+          Name.(Name principle_id)
 	  princ_type
 	  (exact_check f_principle)));
 	observe_tac "intro args_names" (tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id)) args_names);

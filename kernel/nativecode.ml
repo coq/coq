@@ -30,7 +30,7 @@ type lname = { lname : Name.t; luid : int }
 let eq_lname ln1 ln2 =
   Int.equal ln1.luid ln2.luid
 
-let dummy_lname = { lname = Anonymous; luid = -1 }
+let dummy_lname = { lname = Name.Anonymous; luid = -1 }
 
 module LNord = 
   struct 
@@ -770,12 +770,12 @@ let get_rel env id i =
 let get_var env id =
   try Id.List.assoc id !(env.env_named)
   with Not_found ->
-    let local = MLlocal (fresh_lname (Name id)) in
+    let local = MLlocal (fresh_lname (Name.Name id)) in
     env.env_named := (id, local)::!(env.env_named);
     local
 
 let fresh_univ () =
-  fresh_lname (Name (Id.of_string "univ"))
+  fresh_lname (Name.Name (Id.of_string "univ"))
 
 (*s Traduction of lambda to mllambda *)
 
@@ -942,7 +942,7 @@ let extract_prim ml_of l =
 	PAprim(prefix,kn,p,args)
     | Lrel _ | Lvar _ | Luint _ | Lval _ | Lconst _ -> PAml (ml_of l)
     | _ -> 
-	let x = fresh_lname Anonymous in
+        let x = fresh_lname Name.Anonymous in
 	decl := (x,ml_of l)::!decl;
 	PAml (MLlocal x) in
   let res = aux l in
@@ -1040,11 +1040,11 @@ let ml_of_instance instance u =
   | Lrel(id ,i) -> get_rel env id i
   | Lvar id -> get_var env id
   | Lmeta(mv,ty) ->
-     let tyn = fresh_lname Anonymous in
+     let tyn = fresh_lname Name.Anonymous in
      let i = push_symbol (SymbMeta mv) in
      MLapp(MLprimitive Mk_meta, [|get_meta_code i; MLlocal tyn|])
   | Levar(evk,ty,args) ->
-     let tyn = fresh_lname Anonymous in
+     let tyn = fresh_lname Name.Anonymous in
      let i = push_symbol (SymbEvar evk) in
      let args = MLarray(Array.map (ml_of_lam env l) args) in
      MLlet(tyn, ml_of_lam env l ty,
@@ -1091,7 +1091,7 @@ let ml_of_instance instance u =
       let pn = push_global_let pn mlp in
       (* Compilation of the case *)
       let env_c = empty_env env.env_univ () in
-      let a_uid = fresh_lname Anonymous in
+      let a_uid = fresh_lname Name.Anonymous in
       let la_uid = MLlocal a_uid in
       (* compilation of branches *)
       let ml_br (c,params, body) = 
@@ -1238,14 +1238,14 @@ let ml_of_instance instance u =
       (* Compilation of fix *)
       let fv_args = fv_args env fvn fvr in      
       let mk_norm = MLapp(MLglobal norm, fv_args) in
-      let lnorm = fresh_lname Anonymous in
-      let ltype = fresh_lname Anonymous in
+      let lnorm = fresh_lname Name.Anonymous in
+      let ltype = fresh_lname Name.Anonymous in
       let lf, env = push_rels env ids in
       let lf_args = Array.map (fun id -> MLlocal id) lf in
       let upd i lname cont =
 	let paramsi = t_params.(i) in
 	let pargsi = Array.map (fun id -> MLlocal id) paramsi in
-	let uniti = fresh_lname Anonymous in
+        let uniti = fresh_lname Name.Anonymous in
 	let body =
 	  MLlam(Array.append paramsi [|uniti|],
 		MLapp(MLglobal t_norm_f.(i),
@@ -1263,7 +1263,7 @@ let ml_of_instance instance u =
       let mkrec i lname = 
 	let paramsi = t_params.(i) in
 	let pargsi = Array.map (fun id -> MLlocal id) paramsi in
-	let uniti = fresh_lname Anonymous in
+        let uniti = fresh_lname Name.Anonymous in
 	let body = 
 	  MLapp( MLprimitive(Mk_cofix i),
 		 [|mk_type;mk_norm; 
@@ -1508,8 +1508,8 @@ let link_info_of_dirpath dir =
 
 let string_of_name x =
   match x with
-    | Anonymous -> "anonymous" (* assert false *)
-    | Name id -> string_of_id id
+    | Name.Anonymous -> "anonymous" (* assert false *)
+    | Name.Name id -> string_of_id id
 
 let string_of_label_def l =
   match l with
@@ -1830,7 +1830,7 @@ and apply_fv env sigma univ (fv_named,fv_rel) auxdefs ml =
   let lvl = Context.Rel.length env.env_rel_context.env_rel_ctx in
   let fv_rel = List.map (fun (n,_) -> MLglobal (Grel (lvl-n))) fv_rel in
   let fv_named = List.map (fun (id,_) -> MLglobal (Gnamed id)) fv_named in
-  let aux_name = fresh_lname Anonymous in
+  let aux_name = fresh_lname Name.Anonymous in
   auxdefs, MLlet(aux_name, ml, mkMLapp (MLlocal aux_name) (Array.of_list (fv_rel@fv_named)))
 
 and compile_rel env sigma univ auxdefs n =
@@ -1915,10 +1915,10 @@ let compile_constant env sigma prefix ~interactive con cb =
 		 ci_pp_info = { ind_tags = []; cstr_tags = [||] (*FIXME*); style = RegularStyle } } in
       let asw = { asw_ind = ind; asw_prefix = prefix; asw_ci = ci;
 		  asw_reloc = tbl; asw_finite = true } in
-      let c_uid = fresh_lname Anonymous in
-      let cf_uid = fresh_lname Anonymous in
+      let c_uid = fresh_lname Name.Anonymous in
+      let cf_uid = fresh_lname Name.Anonymous in
       let _, arity = tbl.(0) in
-      let ci_uid = fresh_lname Anonymous in
+      let ci_uid = fresh_lname Name.Anonymous in
       let cargs = Array.init arity
         (fun i -> if Int.equal i pb.proj_arg then Some ci_uid else None)
       in
@@ -1928,7 +1928,7 @@ let compile_constant env sigma prefix ~interactive con cb =
       let code = MLmatch(asw,MLlocal cf_uid,accu_br,[|[((ind,1),cargs)],MLlocal ci_uid|]) in
       let code = MLlet(cf_uid, MLapp (MLprimitive Force_cofix, [|MLlocal c_uid|]), code) in
       let gn = Gproj ("",con) in
-      let fargs = Array.init (pb.proj_npars + 1) (fun _ -> fresh_lname Anonymous) in
+      let fargs = Array.init (pb.proj_npars + 1) (fun _ -> fresh_lname Name.Anonymous) in
       let arg = fargs.(pb.proj_npars) in
         Glet(Gconstant ("", con), mkMLlam fargs (MLapp (MLglobal gn, [|MLlocal
           arg|])))::
@@ -1954,8 +1954,8 @@ let is_code_loaded ~interactive name =
       if is_loaded_native_file s then true
       else (name := NotLinked; false)
 
-let param_name = Name (Id.of_string "params")
-let arg_name = Name (Id.of_string "arg")
+let param_name = Name.Name (Id.of_string "params")
+let arg_name = Name.Name (Id.of_string "arg")
 
 let compile_mind prefix ~interactive mb mind stack =
   let u = Declareops.inductive_polymorphic_context mb in

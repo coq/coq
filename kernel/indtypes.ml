@@ -323,7 +323,7 @@ let typecheck_inductive env mie =
 	 let full_arity = it_mkProd_or_LetIn arity paramsctxt in
 	 let id = ind.mind_entry_typename in
 	 let env_ar' =
-           push_rel (LocalAssum (Name id, full_arity)) env_ar in
+           push_rel (LocalAssum (Name.Name id, full_arity)) env_ar in
              (* (add_constraints cst2 env_ar) in *)
 	   (env_ar', (id,full_arity,sign @ paramsctxt,expltype,deflev,inflev)::l))
       (env',[])
@@ -524,7 +524,7 @@ let ienv_push_inductive (env, n, ntypes, ra_env) ((mi,u),lrecparams) =
   let specif = (lookup_mind_specif env mi, u) in
   let ty = type_of_inductive env specif in
   let env' =
-    let decl = LocalAssum (Anonymous, hnf_prod_applist env ty lrecparams) in
+    let decl = LocalAssum (Name.Anonymous, hnf_prod_applist env ty lrecparams) in
     push_rel decl env in
   let ra_env' =
     (Imbr mi,(Rtree.mk_rec_calls 1).(0)) ::
@@ -824,7 +824,7 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
 	ci_pp_info = print_info }
   in
   let len = List.length ctx in
-  let x = Name x in
+  let x = Name.Name x in
   let compat_body ccl i = 
     (* [ccl] is defined in context [params;x:indty] *)
     (* [ccl'] is defined in context [params;x:indty;x:indty] *)
@@ -856,7 +856,7 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
         (i, j+1, kns, pbs, subst, letsubst)
     | LocalAssum (na,t) ->
       match na with
-      | Name id ->
+      | Name.Name id ->
 	let kn = Constant.make1 (KerName.make mp dp (Label.of_id id)) in
         (* from [params, field1,..,fieldj |- t(params,field1,..,fieldj)]
            to [params, x:I, field1,..,fieldj |- t(params,field1,..,fieldj] *)
@@ -877,7 +877,7 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
 		     proj_body = compat } in
 	  (i + 1, j + 1, kn :: kns, body :: pbs,
 	   fterm :: subst, fterm :: letsubst)
-      | Anonymous -> raise UndefinableExpansion
+      | Name.Anonymous -> raise UndefinableExpansion
   in
   let (_, _, kns, pbs, subst, letsubst) =
     List.fold_right projections ctx (0, 1, [], [], [], paramsletsubst)

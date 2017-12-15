@@ -307,8 +307,8 @@ let constr_display csr =
         then (" "^i) else "")) (Instance.to_array l) ""
 
   and name_display = function
-    | Name id -> "Name("^(Id.to_string id)^")"
-    | Anonymous -> "Anonymous"
+    | Name.Name id -> "Name("^(Id.to_string id)^")"
+    | Name.Anonymous -> "Anonymous"
 
   in
   pp (str (term_display csr) ++fnl ())
@@ -324,13 +324,13 @@ let print_pure_constr csr =
   | Cast (c,_, t) -> open_hovbox 1;
       print_string "("; (term_display c); print_cut();
       print_string "::"; (term_display t); print_string ")"; close_box()
-  | Prod (Name(id),t,c) ->
+  | Prod (Name.Name(id),t,c) ->
       open_hovbox 1;
       print_string"("; print_string (Id.to_string id);
       print_string ":"; box_display t;
       print_string ")"; print_cut();
       box_display c; close_box()
-  | Prod (Anonymous,t,c) ->
+  | Prod (Name.Anonymous,t,c) ->
       print_string"("; box_display t; print_cut(); print_string "->";
       box_display c; print_string ")";
   | Lambda (na,t,c) ->
@@ -423,8 +423,8 @@ let print_pure_constr csr =
 	print_string "Type("; pp (pr_uni u); print_string ")"; close_box()
 
   and name_display = function
-    | Name id -> print_string (Id.to_string id)
-    | Anonymous -> print_string "_"
+    | Name.Name id -> print_string (Id.to_string id)
+    | Name.Anonymous -> print_string "_"
 (* Remove the top names for library and Scratch to avoid long names *)
   and sp_display sp =
 (*    let dir,l = decode_kn sp in

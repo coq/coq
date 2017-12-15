@@ -189,7 +189,7 @@ let mkRltacVar id = DAst.make @@ GVar (id)
 let mkRCast rc rt =  DAst.make @@ GCast (rc, CastConv rt)
 let mkRType =  DAst.make @@ GSort (GType [])
 let mkRProp =  DAst.make @@ GSort (GProp)
-let mkRArrow rt1 rt2 = DAst.make @@ GProd (Anonymous, Explicit, rt1, rt2)
+let mkRArrow rt1 rt2 = DAst.make @@ GProd (Name.Anonymous, Explicit, rt1, rt2)
 let mkRConstruct c = DAst.make @@ GRef (ConstructRef c,None)
 let mkRInd mind = DAst.make @@ GRef (IndRef mind,None)
 let mkRLambda n s t = DAst.make @@ GLambda (n, Explicit, s, t)
@@ -312,7 +312,7 @@ let mk_tmp_id i =
   Id.of_string (Printf.sprintf "%s%s%s" tmp_tag (CString.ordinal i) tmp_post)
 let new_tmp_id ctx =
   let id = mk_tmp_id (1 + List.length ctx.tmp_ids) in
-  let orig = ref Anonymous in
+  let orig = ref Name.Anonymous in
   (id, orig), { ctx with tmp_ids = (id, orig) :: ctx.tmp_ids }
 ;;
 
@@ -335,7 +335,7 @@ let is_tagged t s =
 
 let evar_tag = "_evar_"
 let _ = add_internal_name (is_tagged evar_tag)
-let mk_evar_name n = Name (mk_tagged_id evar_tag n)
+let mk_evar_name n = Name.Name (mk_tagged_id evar_tag n)
 
 let ssr_anon_hyp = "Hyp"
 
@@ -412,7 +412,7 @@ let rename_hd_prod orig_name_ref gl =
 
 let inc_safe n = if n = 0 then n else n + 1
 let rec safe_depth s c = match EConstr.kind s c with
-| LetIn (Name x, _, _, c') when is_discharged_id x -> safe_depth s c' + 1
+| LetIn (Name.Name x, _, _, c') when is_discharged_id x -> safe_depth s c' + 1
 | LetIn (_, _, _, c') | Prod (_, _, c') -> inc_safe (safe_depth s c')
 | _ -> 0 
 
@@ -602,7 +602,7 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
   let rec loopP evlist c i = function
   | (_, (n, t, _)) :: evl ->
     let t = get evlist (i - 1) t in
-    let n = Name (Id.of_string (ssr_anon_hyp ^ string_of_int n)) in 
+    let n = Name.Name (Id.of_string (ssr_anon_hyp ^ string_of_int n)) in
     loopP evlist (mkProd (n, t, c)) (i - 1) evl
   | [] -> c in
   let rec loop c i = function
@@ -625,7 +625,7 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
 (* standard names for the abstracted holes.                                 *)
 
 let nb_evar_deps = function
-  | Name id ->
+  | Name.Name id ->
     let s = Id.to_string id in
     if not (is_tagged evar_tag s) then 0 else
     let m = String.length evar_tag in
@@ -672,7 +672,7 @@ let pf_abs_cterm gl n c0 =
       let na' = List.length dl in
       eva.(i) <- Array.of_list (na - na' :: dl);
       let x' =
-        if na' = 0 then Name (pf_type_id gl (EConstr.of_constr t2)) else mk_evar_name na' in
+        if na' = 0 then Name.Name (pf_type_id gl (EConstr.of_constr t2)) else mk_evar_name na' in
       mkLambda (x', t2, strip_evars (i + 1) c1)
 (*      if noccurn 1 c2 then lift (-1) c2 else
       mkLambda (Name (pf_type_id gl t2), t2, c2) *)
@@ -689,16 +689,16 @@ let pf_merge_uc_of sigma gl =
 
 
 let rec constr_name sigma c = match EConstr.kind sigma c with
-  | Var id -> Name id
+  | Var id -> Name.Name id
   | Cast (c', _, _) -> constr_name sigma c'
-  | Const (cn,_) -> Name (Label.to_id (Constant.label cn))
+  | Const (cn,_) -> Name.Name (Label.to_id (Constant.label cn))
   | App (c', _) -> constr_name sigma c'
-  | _ -> Anonymous
+  | _ -> Name.Anonymous
 
 let pf_mkprod gl c ?(name=constr_name (project gl) c) cl =
   let gl, t = pfe_type_of gl c in
-  if name <> Anonymous || EConstr.Vars.noccurn (project gl) 1 cl then gl, EConstr.mkProd (name, t, cl) else
-  gl, EConstr.mkProd (Name (pf_type_id gl t), t, cl)
+  if name <> Name.Anonymous || EConstr.Vars.noccurn (project gl) 1 cl then gl, EConstr.mkProd (name, t, cl) else
+  gl, EConstr.mkProd (Name.Name (pf_type_id gl t), t, cl)
 
 let pf_abs_prod name gl c cl = pf_mkprod gl c ~name (Termops.subst_term (project gl) c cl)
 
@@ -745,11 +745,11 @@ let discharge_hyp (id', (id, mode)) gl =
   let cl' = Vars.subst_var id (pf_concl gl) in
   match pf_get_hyp gl id, mode with
   | NamedDecl.LocalAssum (_, t), _ | NamedDecl.LocalDef (_, _, t), "(" ->
-     Proofview.V82.of_tactic (Tactics.apply_type ~typecheck:false (EConstr.of_constr (mkProd (Name id', t, cl')))
+     Proofview.V82.of_tactic (Tactics.apply_type ~typecheck:false (EConstr.of_constr (mkProd (Name.Name id', t, cl')))
        [EConstr.of_constr (mkVar id)]) gl
   | NamedDecl.LocalDef (_, v, t), _ ->
      Proofview.V82.of_tactic
-       (convert_concl (EConstr.of_constr (mkLetIn (Name id', v, t, cl')))) gl
+       (convert_concl (EConstr.of_constr (mkLetIn (Name.Name id', v, t, cl')))) gl
 
 (* wildcard names *)
 let clear_wilds wilds gl =
@@ -837,7 +837,7 @@ let mkCHole loc = CAst.make ?loc @@ CHole (None, IntroAnonymous, None)
 let mkCLambda ?loc name ty t =  CAst.make ?loc @@
    CLambdaN ([CLocalAssum([loc, name], Default Explicit, ty)], t)
 let mkCArrow ?loc ty t = CAst.make ?loc @@
-   CProdN ([CLocalAssum([Loc.tag Anonymous], Default Explicit, ty)], t)
+   CProdN ([CLocalAssum([Loc.tag Name.Anonymous], Default Explicit, ty)], t)
 let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, CastConv ty)
 
 let rec isCHoles = function { CAst.v = CHole _ } :: cl -> isCHoles cl | cl -> cl = []
@@ -1068,7 +1068,7 @@ let rec fst_prod red tac = Proofview.Goal.nf_enter begin fun gl ->
          else Tacticals.New.tclTHEN Tactics.hnf_in_concl (fst_prod true tac)
 end
 
-let introid ?(orig=ref Anonymous) name = tclTHEN (fun gl ->
+let introid ?(orig=ref Name.Anonymous) name = tclTHEN (fun gl ->
    let g, env = Tacmach.pf_concl gl, pf_env gl in
    let sigma = project gl in
    match EConstr.kind sigma g with
@@ -1081,7 +1081,7 @@ let introid ?(orig=ref Anonymous) name = tclTHEN (fun gl ->
 
 let anontac decl gl =
   let id =  match RelDecl.get_name decl with
-  | Name id ->
+  | Name.Name id ->
     if is_discharged_id id then id else mk_anon_id (Id.to_string id) gl
   | _ -> mk_anon_id ssr_anon_hyp gl in
   introid id gl
@@ -1169,7 +1169,7 @@ let pf_interp_gen_aux ist gl to_ind ((oclr, occ), t) =
 	errorstrm (str "@ can be used with variables only")
       else match Tacmach.pf_get_hyp gl (EConstr.destVar sigma c) with
       | NamedDecl.LocalAssum _ -> errorstrm (str "@ can be used with let-ins only")
-      | NamedDecl.LocalDef (name, b, ty) -> true, pat, EConstr.mkLetIn (Name name,b,ty,cl),c,clr,ucst,gl
+      | NamedDecl.LocalDef (name, b, ty) -> true, pat, EConstr.mkLetIn (Name.Name name,b,ty,cl),c,clr,ucst,gl
     else let gl, ccl =  pf_mkprod gl c cl in false, pat, ccl, c, clr,ucst,gl
   else if to_ind && occ = None then
     let nv, p, _, ucst' = pf_abs_evars gl (fst pat, c) in
@@ -1260,11 +1260,11 @@ let abs_wgen keep_let ist f gen (gl,args,c) =
      let decl = Tacmach.pf_get_hyp gl x in
      gl,
      (if NamedDecl.is_local_def decl then args else EConstr.mkVar x :: args),
-     EConstr.mkProd_or_LetIn (decl |> NamedDecl.to_rel_decl |> RelDecl.set_name (Name (f x)))
+     EConstr.mkProd_or_LetIn (decl |> NamedDecl.to_rel_decl |> RelDecl.set_name Name.(Name (f x)))
                      (EConstr.Vars.subst_var x c)
   | _, Some ((x, _), None) ->
      let x = hoi_id x in
-     gl, EConstr.mkVar x :: args, EConstr.mkProd (Name (f x),Tacmach.pf_get_hyp_typ gl x, EConstr.Vars.subst_var x c)
+     gl, EConstr.mkVar x :: args, EConstr.mkProd (Name.Name (f x),Tacmach.pf_get_hyp_typ gl x, EConstr.Vars.subst_var x c)
   | _, Some ((x, "@"), Some p) -> 
      let x = hoi_id x in
      let cp = interp_cpattern ist gl p None in
@@ -1276,7 +1276,7 @@ let abs_wgen keep_let ist f gen (gl,args,c) =
      evar_closed t p;
      let ut = red_product_skip_id env sigma t in
      let gl, ty = pfe_type_of gl t in
-     pf_merge_uc ucst gl, args, EConstr.mkLetIn(Name (f x), ut, ty, c)
+     pf_merge_uc ucst gl, args, EConstr.mkLetIn(Name.Name (f x), ut, ty, c)
   | _, Some ((x, _), Some p) ->
      let x = hoi_id x in
      let cp = interp_cpattern ist gl p None in
@@ -1287,7 +1287,7 @@ let abs_wgen keep_let ist f gen (gl,args,c) =
      let t = EConstr.of_constr t in
      evar_closed t p;
      let gl, ty = pfe_type_of gl t in
-     pf_merge_uc ucst gl, t :: args, EConstr.mkProd(Name (f x), ty, c)
+     pf_merge_uc ucst gl, t :: args, EConstr.mkProd(Name.Name (f x), ty, c)
   | _ -> gl, args, c
 
 let clr_of_wgen gen clrs = match gen with

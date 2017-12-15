@@ -100,8 +100,8 @@ let universe_binders_with_opt_names ref levels = function
     if Int.equal(List.length levels) (List.length udecl)
     then
       List.fold_left2 (fun acc (_,na) lvl -> match na with
-          | Anonymous -> acc
-          | Name na -> Names.Id.Map.add na lvl acc)
+          | Name.Anonymous -> acc
+          | Name.Name na -> Names.Id.Map.add na lvl acc)
         empty_binders udecl levels
     else
       CErrors.user_err ~hdr:"universe_binders_with_opt_names"

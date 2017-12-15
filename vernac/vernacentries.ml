@@ -476,8 +476,8 @@ let vernac_definition ~atts discharge kind ((loc, id), pl) def =
   let hook = vernac_definition_hook atts.polymorphic kind in
   let () =
     match id with
-    | Anonymous -> ()
-    | Name n -> let lid = (loc, n) in
+    | Name.Anonymous -> ()
+    | Name.Name n -> let lid = (loc, n) in
       match local with
       | Discharge -> Dumpglob.dump_definition lid true "var"
       | Local | Global -> Dumpglob.dump_definition lid false "def"
@@ -485,8 +485,8 @@ let vernac_definition ~atts discharge kind ((loc, id), pl) def =
   let program_mode = Flags.is_program_mode () in
   let name =
     match id with
-    | Anonymous -> fresh_name_for_anonymous_theorem ()
-    | Name n -> n
+    | Name.Anonymous -> fresh_name_for_anonymous_theorem ()
+    | Name.Name n -> n
   in
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
@@ -553,7 +553,7 @@ let vernac_record cum k poly finite struc binders sort nameopt cfs =
       Dumpglob.dump_definition (fst (snd struc)) false "rec";
       List.iter (fun (((_, x), _), _) ->
 	match x with
-	| Vernacexpr.AssumExpr ((loc, Name id), _) -> Dumpglob.dump_definition (loc,id) false "proj"
+        | Vernacexpr.AssumExpr ((loc, Name.Name id), _) -> Dumpglob.dump_definition (loc,id) false "proj"
 	| _ -> ()) cfs);
     ignore(Record.definition_structure (k,is_cumulative,poly,finite,struc,binders,cfs,const,sort))
 
@@ -584,7 +584,7 @@ let vernac_inductive ~atts cum lo finite indl =
       let f =
 	let (coe, ((loc, id), ce)) = l in
 	let coe' = if coe then Some true else None in
-  	  (((coe', AssumExpr ((loc, Name id), ce)), None), [])
+          (((coe', AssumExpr ((loc, Name.Name id), ce)), None), [])
       in vernac_record cum (Class true) atts.polymorphic finite id bl c None [f]
   | [ ( _ , _, _, Class _, Constructors _), [] ] ->
       user_err Pp.(str "Inductive classes not supported")
@@ -1051,7 +1051,7 @@ let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
     match extra_args with
     | [] -> ()
     | { notation_scope = None } :: _ -> err_extra_args (names_of extra_args)
-    | { name = Anonymous; notation_scope = Some _ } :: args ->
+    | { name = Name.Anonymous; notation_scope = Some _ } :: args ->
        check_extra_args args
     | _ ->
        user_err Pp.(str "Extra notation scopes can be set on anonymous and explicit arguments only.")
@@ -1082,7 +1082,7 @@ let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
   let example_renaming = ref None in
   let save_example_renaming renaming =
     rename_flag_required := !rename_flag_required
-                            || not (Name.equal (fst renaming) Anonymous);
+                            || not (Name.equal (fst renaming) Name.Anonymous);
     if Option.is_empty !example_renaming then
       example_renaming := Some renaming
   in
@@ -1092,8 +1092,8 @@ let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
     | [], [] -> []
     | _ :: _, [] -> names1
     | [], _ :: _ -> names2
-    | (Name _ as name) :: names1, Anonymous :: names2
-    | Anonymous :: names1, (Name _ as name) :: names2 ->
+    | (Name.Name _ as name) :: names1, Name.Anonymous :: names2
+    | Name.Anonymous :: names1, (Name.Name _ as name) :: names2 ->
        name :: names_union names1 names2
     | name1 :: names1, name2 :: names2 ->
        if Name.equal name1 name2 then
@@ -1112,9 +1112,9 @@ let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
             renamed ones. *)
        err_missing_args (List.lastn (List.length prev_names) inf_names)
     | _ :: _, [] -> prev_names
-    | prev :: prev_names, Anonymous :: names ->
+    | prev :: prev_names, Name.Anonymous :: names ->
        prev :: rename prev_names names
-    | prev :: prev_names, (Name id as name) :: names ->
+    | prev :: prev_names, (Name.Name id as name) :: names ->
        if not (Name.equal prev name) then save_example_renaming (prev,name);
        name :: rename prev_names names
   in
@@ -1133,7 +1133,7 @@ let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
             str " renamed to " ++ Name.print n ++ str ".");
 
   let duplicate_names =
-    List.duplicates Name.equal (List.filter ((!=) Anonymous) names)
+    List.duplicates Name.equal (List.filter ((!=) Name.Anonymous) names)
   in
   if not (List.is_empty duplicate_names) then begin
     let duplicates = prlist_with_sep pr_comma Name.print duplicate_names in
@@ -1163,12 +1163,12 @@ let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
 
     (* With the current impargs API, it is impossible to make an originally
        anonymous argument implicit *)
-    | Anonymous :: _, (name, _) :: _ ->
+    | Name.Anonymous :: _, (name, _) :: _ ->
        user_err ~hdr:"vernac_declare_arguments"
                     (strbrk"Argument "++ Name.print name ++ 
                        strbrk " cannot be declared implicit.")
 
-    | Name id :: inf_names, (name, impl) :: implicits ->
+    | Name.Name id :: inf_names, (name, impl) :: implicits ->
        let max = impl = MaximallyImplicit in
        (ExplByName id,max,false) :: build_implicits inf_names implicits
     

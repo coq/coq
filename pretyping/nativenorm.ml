@@ -89,7 +89,7 @@ let invert_tag cst tag reloc_tbl =
 let decompose_prod env t =
   let (name,dom,codom as res) = destProd (whd_all env t) in
   match name with
-  | Anonymous -> (Name (Id.of_string "x"),dom,codom)
+  | Name.Anonymous -> (Name.Name (Id.of_string "x"),dom,codom)
   | _ -> res
 
 let app_type env c =
@@ -321,7 +321,7 @@ and nf_atom_type env sigma atom =
       mkCase(ci, p, a, branchs), tcase 
   | Afix(tt,ft,rp,s) ->
       let tt = Array.map (fun t -> nf_type env sigma t) tt in
-      let name = Array.map (fun _ -> (Name (Id.of_string "Ffix"))) tt in
+      let name = Array.map (fun _ -> Name.(Name (Id.of_string "Ffix"))) tt in
       let lvl = nb_rel env in
       let nbfix = Array.length ft in
       let fargs = mk_rels_accu lvl (Array.length ft) in
@@ -334,7 +334,7 @@ and nf_atom_type env sigma atom =
       mkFix((rp,s),(name,tt,ft)), tt.(s)
   | Acofix(tt,ft,s,_) | Acofixe(tt,ft,s,_) ->
       let tt = Array.map (nf_type env sigma) tt in
-      let name = Array.map (fun _ -> (Name (Id.of_string "Fcofix"))) tt in
+      let name = Array.map (fun _ -> Name.(Name (Id.of_string "Fcofix"))) tt in
       let lvl = nb_rel env in
       let fargs = mk_rels_accu lvl (Array.length ft) in
       let env = push_rec_types (name,tt,[||]) env in
@@ -376,7 +376,7 @@ and  nf_predicate env sigma ind mip params v pT =
   | Vfun f, _ -> 
       let k = nb_rel env in
       let vb = f (mk_rel_accu k) in
-      let name = Name (Id.of_string "c") in
+      let name = Name.Name (Id.of_string "c") in
       let n = mip.mind_nrealargs in
       let rargs = Array.init n (fun i -> mkRel (n-i)) in
       let params = if Int.equal n 0 then params else Array.map (lift n) params in

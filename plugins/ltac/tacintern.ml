@@ -65,8 +65,8 @@ let intern_ident s ist id =
   id
 
 let intern_name l ist = function
-  | Anonymous -> Anonymous
-  | Name id -> Name (intern_ident l ist id)
+  | Name.Anonymous -> Name.Anonymous
+  | Name.Name id -> Name.Name (intern_ident l ist id)
 
 let strict_check = ref false
 
@@ -443,8 +443,8 @@ let intern_constr_may_eval ist = function
   | ConstrTerm c -> ConstrTerm (intern_constr ist c)
 
 let name_cons accu = function
-| Anonymous -> accu
-| Name id -> Id.Set.add id accu
+| Name.Anonymous -> accu
+| Name.Name id -> Id.Set.add id accu
 
 let opt_cons accu = function
 | None -> accu
@@ -813,7 +813,7 @@ let notation_subst bindings tac =
   let fold id c accu =
     let loc = Glob_ops.loc_of_glob_constr (fst c) in
     let c = ConstrMayEval (ConstrTerm c) in
-    ((loc, Name id), c) :: accu
+    ((loc, Name.Name id), c) :: accu
   in
   let bindings = Id.Map.fold fold bindings [] in
   (** This is theoretically not correct due to potential variable capture, but

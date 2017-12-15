@@ -349,8 +349,8 @@ let initial_tacticals () =
   let varn n = Reference (ArgVar (None, idn n)) in
   let iter (s, t) = Tacenv.register_ltac false false (Id.of_string s) t in
   List.iter iter [
-    "first", TacFun ([Name (idn 0)], TacML (None, (initial_entry "first", [varn 0])));
-    "solve", TacFun ([Name (idn 0)], TacML (None, (initial_entry "solve", [varn 0])));
+    "first", TacFun ([Name.Name (idn 0)], TacML (None, (initial_entry "first", [varn 0])));
+    "solve", TacFun ([Name.Name (idn 0)], TacML (None, (initial_entry "solve", [varn 0])));
   ]
 
 let () = Mltop.declare_cache_obj initial_tacticals "ltac_plugin"

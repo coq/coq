@@ -119,7 +119,7 @@ let make_inv_predicate env evd indf realargs id status concl =
 	let eq = Evarutil.evd_comb1 (Evd.fresh_global env) evd eq_term in
         let eq = EConstr.of_constr eq in
         let eqn = applist (eq,[eqnty;lhs;rhs]) in
-        let eqns = (Anonymous, lift n eqn) :: eqns in
+        let eqns = (Name.Anonymous, lift n eqn) :: eqns in
         let refl_term = eqdata.Coqlib.refl in
 	let refl_term = Evarutil.evd_comb1 (Evd.fresh_global env) evd refl_term in
 	let refl_term = EConstr.of_constr refl_term in
@@ -476,7 +476,7 @@ let raw_inversion inv_kind id status names =
     let as_mode = names != None in
     tclTHEN (Proofview.Unsafe.tclEVARS sigma)
       (tclTHENS
-        (assert_before Anonymous cut_concl)
+        (assert_before Name.Anonymous cut_concl)
         [case_tac names
             (introCaseAssumsThen false (* ApplyOn not supported by inversion *)
                (rewrite_equations_tac as_mode inv_kind id neqns))

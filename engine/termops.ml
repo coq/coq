@@ -55,10 +55,10 @@ let rec pr_constr c = match kind c with
   | Cast (c,_, t) -> hov 1
       (str"(" ++ pr_constr c ++ cut() ++
        str":" ++ pr_constr t ++ str")")
-  | Prod (Name(id),t,c) -> hov 1
+  | Prod (Name.Name(id),t,c) -> hov 1
       (str"forall " ++ Id.print id ++ str":" ++ pr_constr t ++ str"," ++
        spc() ++ pr_constr c)
-  | Prod (Anonymous,t,c) -> hov 0
+  | Prod (Name.Anonymous,t,c) -> hov 0
       (str"(" ++ pr_constr t ++ str " ->" ++ spc() ++
        pr_constr c ++ str")")
   | Lambda (na,t,c) -> hov 1
@@ -109,11 +109,11 @@ let pr_evar_suggested_name evk sigma =
   | None -> match evi.evar_source with
   | _,Evar_kinds.ImplicitArg (c,(n,Some id),b) -> id
   | _,Evar_kinds.VarInstance id -> id
-  | _,Evar_kinds.QuestionMark (_,Name id) -> id
+  | _,Evar_kinds.QuestionMark (_,Name.Name id) -> id
   | _,Evar_kinds.GoalEvar -> Id.of_string "Goal"
   | _ ->
       let env = reset_with_named_context evi.evar_hyps (Global.env()) in
-      Namegen.id_of_name_using_hdchar env sigma (EConstr.of_constr evi.evar_concl) Anonymous
+      Namegen.id_of_name_using_hdchar env sigma (EConstr.of_constr evi.evar_concl) Name.Anonymous
   in
   let names = EvMap.mapi base_id (undefined_map sigma) in
   let id = EvMap.find evk names in
@@ -158,7 +158,7 @@ let pr_meta_map evd =
   let open Evd in
   let print_constr = print_kconstr in
   let pr_name = function
-      Name id -> str"[" ++ Id.print id ++ str"]"
+      Name.Name id -> str"[" ++ Id.print id ++ str"]"
     | _ -> mt() in
   let pr_meta_binding = function
     | (mv,Cltyp (na,b)) ->
@@ -188,8 +188,8 @@ let pr_evar_source = function
   | Evar_kinds.CasesType false -> str "pattern-matching return predicate"
   | Evar_kinds.CasesType true ->
       str "subterm of pattern-matching return predicate"
-  | Evar_kinds.BinderType (Name id) -> str "type of " ++ Id.print id
-  | Evar_kinds.BinderType Anonymous -> str "type of anonymous binder"
+  | Evar_kinds.BinderType (Name.Name id) -> str "type of " ++ Id.print id
+  | Evar_kinds.BinderType Name.Anonymous -> str "type of anonymous binder"
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
       let open Globnames in
       let print_constr = print_kconstr in
@@ -448,8 +448,8 @@ let pr_rel_decl env decl =
 	  (str":=" ++ spc () ++ pb ++ spc ()) in
   let ptyp = print_constr_env env Evd.empty (EConstr.of_constr (get_type decl)) in
     match get_name decl with
-      | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
-      | Name id -> hov 0 (Id.print id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+      | Name.Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+      | Name.Name id -> hov 0 (Id.print id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
 
 let print_named_context env =
   hv 0 (fold_named_context
@@ -503,8 +503,8 @@ let push_named_rec_types (lna,typarray,_) env =
     Array.map2_i
       (fun i na t ->
 	 match na with
-	   | Name id -> LocalAssum (id, lift i t)
-	   | Anonymous -> anomaly (Pp.str "Fix declarations must be named."))
+           | Name.Name id -> LocalAssum (id, lift i t)
+           | Name.Anonymous -> anomaly (Pp.str "Fix declarations must be named."))
       lna typarray in
   Array.fold_left
     (fun e assum -> push_named assum e) env ctxt
@@ -514,11 +514,11 @@ let lookup_rel_id id sign =
   let rec lookrec n = function
     | [] ->
         raise Not_found
-    | (LocalAssum (Anonymous, _) | LocalDef (Anonymous,_,_)) :: l ->
+    | (LocalAssum (Name.Anonymous, _) | LocalDef (Name.Anonymous,_,_)) :: l ->
         lookrec (n + 1) l
-    | LocalAssum (Name id', t) :: l  ->
+    | LocalAssum (Name.Name id', t) :: l  ->
         if Names.Id.equal id' id then (n,None,t)  else lookrec (n + 1) l
-    | LocalDef (Name id', b, t) :: l  ->
+    | LocalDef (Name.Name id', b, t) :: l  ->
         if Names.Id.equal id' id then (n,Some b,t) else lookrec (n + 1) l
   in
   lookrec 1 sign
@@ -1076,11 +1076,11 @@ let vars_of_env env =
   if List.is_empty (Environ.rel_context env) then s
   else
   Context.Rel.fold_outside
-    (fun decl s -> match RelDecl.get_name decl with Name id -> Id.Set.add id s | _ -> s)
+    (fun decl s -> match RelDecl.get_name decl with Name.Name id -> Id.Set.add id s | _ -> s)
     (rel_context env) ~init:s
 
 let add_vname vars = function
-    Name id -> Id.Set.add id vars
+    Name.Name id -> Id.Set.add id vars
   | _ -> vars
 
 (*************************)
@@ -1093,8 +1093,8 @@ let lookup_name_of_rel p names =
   with Invalid_argument _ | Failure _ -> raise Not_found
 let lookup_rel_of_name id names =
   let rec lookrec n = function
-    | Anonymous :: l  -> lookrec (n+1) l
-    | (Name id') :: l -> if Id.equal id' id then n else lookrec (n+1) l
+    | Name.Anonymous :: l  -> lookrec (n+1) l
+    | (Name.Name id') :: l -> if Id.equal id' id then n else lookrec (n+1) l
     | []            -> raise Not_found
   in
   lookrec 1 names
@@ -1102,7 +1102,7 @@ let empty_names_context = []
 
 let ids_of_rel_context sign =
   Context.Rel.fold_outside
-    (fun decl l -> match RelDecl.get_name decl with Name id -> id::l | Anonymous -> l)
+    (fun decl l -> match RelDecl.get_name decl with Name.Name id -> id::l | Name.Anonymous -> l)
     sign ~init:[]
 
 let ids_of_named_context sign =

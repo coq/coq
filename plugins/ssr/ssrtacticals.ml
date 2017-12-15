@@ -81,7 +81,7 @@ let pf_clauseids gl gens clseq =
 
 let hidden_clseq = function InHyps | InHypsSeq | InAllHyps -> true | _ -> false
 
-let settac id c = Tactics.letin_tac None (Name id) c None
+let settac id c = Tactics.letin_tac None Name.(Name id) c None
 let posetac id cl = Proofview.V82.of_tactic (settac id cl nowhere)
 
 let hidetacs clseq idhide cl0 =
@@ -96,16 +96,16 @@ let endclausestac id_map clseq gl_id cl0 gl =
   let hide_goal = hidden_clseq clseq in
   let c_hidden = hide_goal && EConstr.eq_constr (project gl) c (EConstr.mkVar gl_id) in
   let rec fits forced = function
-  | (id, _) :: ids, decl :: dc' when RelDecl.get_name decl = Name id ->
+  | (id, _) :: ids, decl :: dc' when RelDecl.get_name decl = Name.Name id ->
     fits true (ids, dc')
   | ids, dc' ->
     forced && ids = [] && (not hide_goal || dc' = [] && c_hidden) in
   let rec unmark c = match EConstr.kind (project gl) c with
   | Term.Var id when hidden_clseq clseq && id = gl_id -> cl0
-  | Term.Prod (Name id, t, c') when List.mem_assoc id id_map ->
-    EConstr.mkProd (Name (orig_id id), unmark t, unmark c')
-  | Term.LetIn (Name id, v, t, c') when List.mem_assoc id id_map ->
-    EConstr.mkLetIn (Name (orig_id id), unmark v, unmark t, unmark c')
+  | Term.Prod (Name.Name id, t, c') when List.mem_assoc id id_map ->
+    EConstr.mkProd (Name.Name (orig_id id), unmark t, unmark c')
+  | Term.LetIn (Name.Name id, v, t, c') when List.mem_assoc id id_map ->
+    EConstr.mkLetIn (Name.Name (orig_id id), unmark v, unmark t, unmark c')
   | _ -> EConstr.map (project gl) unmark c in
   let utac hyp =
     Proofview.V82.of_tactic 

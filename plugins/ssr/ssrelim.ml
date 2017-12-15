@@ -390,7 +390,7 @@ let injecteq_id = mk_internal_id "injection equation"
 let revtoptac n0 gl =
   let n = pf_nb_prod gl - n0 in
   let dc, cl = EConstr.decompose_prod_n_assum (project gl) n (pf_concl gl) in
-  let dc' = dc @ [Context.Rel.Declaration.LocalAssum(Name rev_id, EConstr.it_mkProd_or_LetIn cl (List.rev dc))] in
+  let dc' = dc @ [Context.Rel.Declaration.LocalAssum(Name.Name rev_id, EConstr.it_mkProd_or_LetIn cl (List.rev dc))] in
   let f = EConstr.it_mkLambda_or_LetIn (mkEtaApp (EConstr.mkRel (n + 1)) (-n) 1) dc' in
   refine (EConstr.mkApp (f, [|Evarutil.mk_new_meta ()|])) gl
 
@@ -413,7 +413,7 @@ let injectl2rtac sigma c = match EConstr.kind sigma c with
 | Var id -> injectidl2rtac id (EConstr.mkVar id, NoBindings)
 | _ ->
   let id = injecteq_id in
-  let xhavetac id c = Proofview.V82.of_tactic (Tactics.pose_proof (Name id) c) in
+  let xhavetac id c = Proofview.V82.of_tactic (Tactics.pose_proof Name.(Name id) c) in
   Tacticals.tclTHENLIST [xhavetac id c; injectidl2rtac id (EConstr.mkVar id, NoBindings); Proofview.V82.of_tactic (Tactics.clear [id])]
 
 let is_injection_case c gl =
@@ -430,7 +430,7 @@ let perform_injection c gl =
     CErrors.user_err (Pp.str "can't decompose a quantified equality") else
   let cl = pf_concl gl in let n = List.length dc in
   let c_eq = mkEtaApp c n 2 in
-  let cl1 = EConstr.mkLambda EConstr.(Anonymous, mkArrow eqt cl, mkApp (mkRel 1, [|c_eq|])) in
+  let cl1 = EConstr.mkLambda EConstr.(Name.Anonymous, mkArrow eqt cl, mkApp (mkRel 1, [|c_eq|])) in
   let id = injecteq_id in
   let id_with_ebind = (EConstr.mkVar id, NoBindings) in
   let injtac = Tacticals.tclTHEN (introid id) (injectidl2rtac id id_with_ebind) in 

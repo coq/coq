@@ -140,7 +140,7 @@ let make_typvar n vl =
   let id' =
     let s = Id.to_string id in
     if not (String.contains s '\'') && Unicode.is_basic_ascii s then id
-    else id_of_name Anonymous
+    else id_of_name Name.Anonymous
   in
   let vl = Id.Set.of_list vl in
   next_ident_away id' vl
@@ -460,9 +460,9 @@ and extract_really_ind env kn mib =
 	  | [],[] -> []
 	  | _::l, typ::typs when isTdummy (expand env typ) ->
 	      select_fields l typs
-	  | Anonymous::l, typ::typs ->
+          | Name.Anonymous::l, typ::typs ->
 	      None :: (select_fields l typs)
-	  | Name id::l, typ::typs ->
+          | Name.Name id::l, typ::typs ->
 	      let knp = Constant.make2 mp (Label.of_id id) in
 	      (* Is it safe to use [id] for projections [foo.id] ? *)
 	      if List.for_all ((==) Keep) (type2signature env typ)
@@ -573,10 +573,10 @@ let rec extract_term env mle mlt c args =
 	(match args with
 	   | a :: l ->
 	       (* We make as many [LetIn] as possible. *)
- 	       let d' = mkLetIn (Name id,a,t,applistc d (List.map (lift 1) l))
+               let d' = mkLetIn (Name.Name id,a,t,applistc d (List.map (lift 1) l))
 	       in extract_term env mle mlt d' []
 	   | [] ->
-	       let env' = push_rel_assum (Name id, t) env in
+               let env' = push_rel_assum (Name.Name id, t) env in
 	       let id, a =
 		 try check_default env t; Id id, new_meta()
 		 with NotDefault d -> Dummy, Tdummy d
@@ -588,7 +588,7 @@ let rec extract_term env mle mlt c args =
 	       put_magic_if magic (MLlam (id, d')))
     | LetIn (n, c1, t1, c2) ->
 	let id = id_of_name n in
-	let env' = push_rel (LocalDef (Name id, c1, t1)) env in
+        let env' = push_rel (LocalDef (Name.Name id, c1, t1)) env in
 	(* We directly push the args inside the [LetIn].
            TODO: the opt_let_app flag is supposed to prevent that *)
 	let args' = List.map (lift 1) args in

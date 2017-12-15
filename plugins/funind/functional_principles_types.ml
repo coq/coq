@@ -40,11 +40,11 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
     | [] -> []
     | decl :: predicates ->
        (match Context.Rel.Declaration.get_name decl with
-	| Name x ->
+        | Name.Name x ->
 	   let id = Namegen.next_ident_away x (Id.Set.of_list avoid) in
 	   Hashtbl.add tbl id x;
-	   RelDecl.set_name (Name id) decl :: change_predicates_names (id::avoid) predicates
-	| Anonymous -> anomaly (Pp.str "Anonymous property binder."))
+           RelDecl.set_name Name.(Name id) decl :: change_predicates_names (id::avoid) predicates
+        | Name.Anonymous -> anomaly (Pp.str "Anonymous property binder."))
   in
   let avoid = (Termops.ids_of_context env_with_params ) in
   let princ_type_info =
@@ -240,8 +240,8 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   in
   it_mkProd_or_LetIn
     (it_mkProd_or_LetIn
-       pre_res (List.map (function Context.Named.Declaration.LocalAssum (id,b)   -> LocalAssum (Name (Hashtbl.find tbl id), b)
-                                 | Context.Named.Declaration.LocalDef (id,t,b) -> LocalDef (Name (Hashtbl.find tbl id), t, b))
+       pre_res (List.map (function Context.Named.Declaration.LocalAssum (id,b)   -> LocalAssum (Name.Name (Hashtbl.find tbl id), b)
+                                 | Context.Named.Declaration.LocalDef (id,t,b) -> LocalDef (Name.Name (Hashtbl.find tbl id), t, b))
           	      new_predicates)
     )
     (List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) princ_type_info.params)
@@ -401,10 +401,10 @@ let get_funs_constant mp dp =
 	  Array.mapi
 	    (fun i na ->
 	       match na with
-		 | Name id ->
+                 | Name.Name id ->
 		     let const = Constant.make3 mp dp (Label.of_id id) in
 		     const,i
-		 | Anonymous ->
+                 | Name.Anonymous ->
 		     anomaly (Pp.str "Anonymous fix.")
 	    )
 	    na

@@ -492,7 +492,7 @@ let declare_definition prg =
 
 let rec lam_index n t acc =
   match Constr.kind t with
-    | Lambda (Name n', _, _) when Id.equal n n' ->
+    | Lambda (Name.Name n', _, _) when Id.equal n n' ->
       acc
     | Lambda (_, _, b) ->
 	lam_index n b (succ acc)
@@ -529,7 +529,7 @@ let declare_mutual_definition l =
 (*   let fixdefs = List.map reduce_fix fixdefs in *)
   let fixkind = Option.get first.prg_fixkind in
   let arrrec, recvec = Array.of_list fixtypes, Array.of_list fixdefs in
-  let fixdecls = (Array.of_list (List.map (fun x -> Name x.prg_name) l), arrrec, recvec) in
+  let fixdecls = (Array.of_list (List.map (fun x -> Name.Name x.prg_name) l), arrrec, recvec) in
   let (local,poly,kind) = first.prg_kind in
   let fixnames = first.prg_deps in
   let opaque = first.prg_opaque in

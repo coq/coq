@@ -565,7 +565,7 @@ end = struct (* {{{ *)
   let reachable id = reachable !vcs id
   let mk_branch_name { expr = x } = Branch.make
     (match Vernacprop.under_control x with
-    | VernacDefinition (_,((_, Name i),_),_) -> Id.to_string i
+    | VernacDefinition (_,((_, Name.Name i),_),_) -> Id.to_string i
     | VernacStartTheoremProof (_,[((_,i),_),_]) -> Id.to_string i
     | _ -> "branch")
   let edit_branch = Branch.make "edit"

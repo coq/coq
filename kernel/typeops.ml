@@ -460,10 +460,10 @@ let infer_v env cv =
 let infer_local_decl env id = function
   | Entries.LocalDefEntry c ->
       let t = execute env c in
-      RelDecl.LocalDef (Name id, c, t)
+      RelDecl.LocalDef (Name.Name id, c, t)
   | Entries.LocalAssumEntry c ->
       let t = execute env c in
-      RelDecl.LocalAssum (Name id, check_assumption env c t)
+      RelDecl.LocalAssum (Name.Name id, check_assumption env c t)
 
 let infer_local_decls env decls =
   let rec inferec env = function

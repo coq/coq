@@ -70,8 +70,8 @@ GEXTEND Gram
       ] ]
   ;
   name:
-    [ [ IDENT "_"  -> Loc.tag ~loc:!@loc Anonymous
-      | id = ident -> Loc.tag ~loc:!@loc @@ Name id ] ]
+    [ [ IDENT "_"  -> Loc.tag ~loc:!@loc Name.Anonymous
+      | id = ident -> Loc.tag ~loc:!@loc @@ Name.Name id ] ]
   ;
   reference:
     [ [ id = ident; (l,id') = fields ->

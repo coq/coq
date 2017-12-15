@@ -99,7 +99,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let full_arity = it_mkProd_or_LetIn top_arity binders_rel in
   let sigma, argtyp, letbinders, make = telescope sigma binders_rel in
   let argname = Id.of_string "recarg" in
-  let arg = LocalAssum (Name argname, argtyp) in
+  let arg = LocalAssum (Name.Name argname, argtyp) in
   let binders = letbinders @ [arg] in
   let binders_env = push_rel_context binders_rel env in
   let sigma, (rel, _) = interp_constr_evars_impls env sigma r in
@@ -135,8 +135,8 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let wf_proof = mkApp (wf_term, [| argtyp ; wf_rel |]) in
   let argid' = Id.of_string (Id.to_string argname ^ "'") in
   let wfarg sigma len =
-    let sigma, ss_term = mkSubset sigma (Name argid') argtyp (wf_rel_fun (mkRel 1) (mkRel (len + 1))) in
-    sigma, LocalAssum (Name argid', ss_term)
+    let sigma, ss_term = mkSubset sigma Name.(Name argid') argtyp (wf_rel_fun (mkRel 1) (mkRel (len + 1))) in
+    sigma, LocalAssum (Name.Name argid', ss_term)
   in
   let sigma, intern_bl =
     let sigma, wfa = wfarg sigma 1 in
@@ -144,7 +144,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   in
   let _intern_env = push_rel_context intern_bl env in
   let sigma, proj = Evarutil.new_global sigma (delayed_force build_sigma).Coqlib.proj1 in
-  let wfargpred = mkLambda (Name argid', argtyp, wf_rel_fun (mkRel 1) (mkRel 3)) in
+  let wfargpred = mkLambda (Name.Name argid', argtyp, wf_rel_fun (mkRel 1) (mkRel 3)) in
   let projection = (* in wfarg :: arg :: before *)
     mkApp (proj, [| argtyp ; wfargpred ; mkRel 1 |])
   in
@@ -154,22 +154,22 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
      now intern_arity is in wfarg :: arg *)
   let sigma, wfa = wfarg sigma 1 in
   let intern_fun_arity_prod = it_mkProd_or_LetIn intern_arity [wfa] in
-  let intern_fun_binder = LocalAssum (Name (add_suffix recname "'"), intern_fun_arity_prod) in
+  let intern_fun_binder = LocalAssum (Name.Name (add_suffix recname "'"), intern_fun_arity_prod) in
   let sigma, curry_fun =
-    let wfpred = mkLambda (Name argid', argtyp, wf_rel_fun (mkRel 1) (mkRel (2 * len + 4))) in
+    let wfpred = mkLambda (Name.Name argid', argtyp, wf_rel_fun (mkRel 1) (mkRel (2 * len + 4))) in
     let sigma, intro = Evarutil.new_global sigma (delayed_force build_sigma).Coqlib.intro in
     let arg = mkApp (intro, [| argtyp; wfpred; lift 1 make; mkRel 1 |]) in
     let app = mkApp (mkRel (2 * len + 2 (* recproof + orig binders + current binders *)), [| arg |]) in
     let rcurry = mkApp (rel, [| measure; lift len measure |]) in
-    let lam = LocalAssum (Name (Id.of_string "recproof"), rcurry) in
+    let lam = LocalAssum (Name.Name (Id.of_string "recproof"), rcurry) in
     let body = it_mkLambda_or_LetIn app (lam :: binders_rel) in
     let ty = it_mkProd_or_LetIn (lift 1 top_arity) (lam :: binders_rel) in
-    sigma, LocalDef (Name recname, body, ty)
+    sigma, LocalDef (Name.Name recname, body, ty)
   in
   let fun_bl = intern_fun_binder :: [arg] in
   let lift_lets = lift_rel_context 1 letbinders in
   let sigma, intern_body =
-    let ctx = LocalAssum (Name recname, get_type curry_fun) :: binders_rel in
+    let ctx = LocalAssum (Name.Name recname, get_type curry_fun) :: binders_rel in
     let (r, l, impls, scopes) =
       Constrintern.compute_internalization_data env
         Constrintern.Recursive (EConstr.Unsafe.to_constr full_arity) impls
@@ -181,13 +181,13 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
       ~impls:newimpls body (lift 1 top_arity)
   in
   let intern_body_lam = it_mkLambda_or_LetIn intern_body (curry_fun :: lift_lets @ fun_bl) in
-  let prop = mkLambda (Name argname, argtyp, top_arity_let) in
+  let prop = mkLambda (Name.Name argname, argtyp, top_arity_let) in
   (* XXX: Previous code did parallel evdref update, so possible old
      weak ordering semantics may bite here. *)
   let sigma, def =
     let sigma, h_a_term = Evarutil.new_global sigma (delayed_force fix_sub_ref) in
     let sigma, h_e_term = Evarutil.new_evar env sigma
-        ~src:(Loc.tag @@ Evar_kinds.QuestionMark (Evar_kinds.Define false,Anonymous)) wf_proof in
+        ~src:(Loc.tag @@ Evar_kinds.QuestionMark (Evar_kinds.Define false,Name.Anonymous)) wf_proof in
     sigma, mkApp (h_a_term, [| argtyp ; wf_rel ; h_e_term; prop |])
   in
   let _evd = ref sigma in
@@ -277,7 +277,7 @@ let do_program_recursive local poly fixkind fixl ntns =
   let defs = List.map4 collect_evars fixnames fixdefs fixtypes fiximps in
   let () = if not cofix then begin
       let possible_indexes = List.map ComFixpoint.compute_possible_guardness_evidences info in
-      let fixdecls = Array.of_list (List.map (fun x -> Name x) fixnames),
+      let fixdecls = Array.of_list (List.map (fun x -> Name.Name x) fixnames),
         Array.of_list fixtypes,
         Array.of_list (List.map (subst_vars (List.rev fixnames)) fixdefs)
       in

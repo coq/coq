@@ -24,7 +24,7 @@ module RelDecl = Context.Rel.Declaration
 (** Defined identifier *)
 
 
-let settac id c = Tactics.letin_tac None (Name id) c None
+let settac id c = Tactics.letin_tac None Name.(Name id) c None
 let posetac id cl = Proofview.V82.of_tactic (settac id cl Locusops.nowhere)
 
 let ssrposetac ist (id, (_, t)) gl =
@@ -46,7 +46,7 @@ let ssrsettac ist id ((_, (pat, pty)), (_, occ)) gl =
   let c, (gl, cty) =  match EConstr.kind sigma c with
   | Cast(t, DEFAULTcast, ty) -> t, (gl, ty)
   | _ -> c, pfe_type_of gl c in
-  let cl' = EConstr.mkLetIn (Name id, c, cty, cl) in
+  let cl' = EConstr.mkLetIn (Name.Name id, c, cty, cl) in
   let gl = pf_merge_uc ucst gl in
   Tacticals.tclTHEN (Proofview.V82.of_tactic (convert_concl cl')) (introid id) gl
 
@@ -355,10 +355,10 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
     let fake_gl = {Evd.it = k; Evd.sigma = sigma} in
     let _, ct, _, uc = pf_interp_ty ist fake_gl ct in
     let rec var2rel c g s = match EConstr.kind sigma c, g with
-      | Prod(Anonymous,_,c), [] -> EConstr.mkProd(Anonymous, EConstr.Vars.subst_vars s ct, c)
+      | Prod(Name.Anonymous,_,c), [] -> EConstr.mkProd(Name.Anonymous, EConstr.Vars.subst_vars s ct, c)
       | Sort _, [] -> EConstr.Vars.subst_vars s ct
-      | LetIn(Name id as n,b,ty,c), _::g -> EConstr.mkLetIn (n,b,ty,var2rel c g (id::s))
-      | Prod(Name id as n,ty,c), _::g -> EConstr.mkProd (n,ty,var2rel c g (id::s))
+      | LetIn(Name.Name id as n,b,ty,c), _::g -> EConstr.mkLetIn (n,b,ty,var2rel c g (id::s))
+      | Prod(Name.Name id as n,ty,c), _::g -> EConstr.mkProd (n,ty,var2rel c g (id::s))
       | _ -> CErrors.anomaly(str"SSR: wlog: var2rel: " ++ pr_econstr_env env sigma c) in
     let c = var2rel c gens [] in
     let rec pired c = function

@@ -263,7 +263,7 @@ let with_flags flags _ ist =
 
 let register_tauto_tactic tac name0 args =
   let ids = List.map (fun id -> Id.of_string id) args in
-  let ids = List.map (fun id -> Name id) ids in
+  let ids = List.map (fun id -> Name.Name id) ids in
   let name = { mltac_plugin = tauto_plugin; mltac_tactic = name0; } in
   let entry = { mltac_name = name; mltac_index = 0 } in
   let () = Tacenv.register_ml_tactic name [| tac |] in

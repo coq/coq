@@ -377,8 +377,8 @@ let interp_ident ist env sigma id =
 
 (* Interprets an optional identifier, bound or fresh *)
 let interp_name ist env sigma = function
-  | Anonymous -> Anonymous
-  | Name id -> Name (interp_ident ist env sigma id)
+  | Name.Anonymous -> Name.Anonymous
+  | Name.Name id -> Name.Name (interp_ident ist env sigma id)
 
 let interp_intro_pattern_var loc ist env sigma id =
   try try_interp_ltac_var (coerce_to_intro_pattern env sigma) ist (Some (env,sigma)) (loc,id)
@@ -719,8 +719,8 @@ let interp_closed_typed_pattern_with_occurrences ist env sigma (occs, a) =
 
 let interp_constr_with_occurrences_and_name_as_list =
   interp_constr_in_compound_list
-    (fun c -> ((AllOccurrences,c),Anonymous))
-    (function ((occs,c),Anonymous) when occs == AllOccurrences -> c
+    (fun c -> ((AllOccurrences,c),Name.Anonymous))
+    (function ((occs,c),Name.Anonymous) when occs == AllOccurrences -> c
       | _ -> raise Not_found)
     (fun ist env sigma (occ_c,na) ->
       let (sigma,c_interp) = interp_constr_with_occurrences ist env sigma occ_c in
@@ -1010,8 +1010,8 @@ let head_with_value (lvar,lval) =
     | ([],[]) -> (lacc,[],[])
     | (vr::tvr,ve::tve) ->
       (match vr with
-      |	Anonymous -> head_with_value_rec lacc (tvr,tve)
-      | Name v -> head_with_value_rec ((v,ve)::lacc) (tvr,tve))
+      |	Name.Anonymous -> head_with_value_rec lacc (tvr,tve)
+      | Name.Name v -> head_with_value_rec ((v,ve)::lacc) (tvr,tve))
     | (vr,[]) -> (lacc,vr,[])
     | ([],ve) -> (lacc,[],ve)
   in
@@ -2096,8 +2096,8 @@ let lift_constr_tac_to_ml_tac vars tac =
     let env = Proofview.Goal.env gl in
     let sigma = project gl in
     let map = function
-    | Anonymous -> None
-    | Name id ->
+    | Name.Anonymous -> None
+    | Name.Name id ->
       let c = Id.Map.find id ist.lfun in
       try Some (coerce_to_closed_constr env c)
       with CannotCoerceTo ty ->

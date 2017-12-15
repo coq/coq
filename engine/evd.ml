@@ -1045,7 +1045,7 @@ let meta_ftype evd mv =
 
 let meta_type evd mv = (meta_ftype evd mv).rebus
 
-let meta_declare mv v ?(name=Anonymous) evd =
+let meta_declare mv v ?(name=Name.Anonymous) evd =
   let metas = Metamap.add mv (Cltyp(name,mk_freelisted v)) evd.metas in
   set_metas evd metas
 
@@ -1067,7 +1067,7 @@ let meta_reassign mv (v, pb) evd =
 
 (* If the meta is defined then forget its name *)
 let meta_name evd mv =
-  try fst (clb_name (Metamap.find mv evd.metas)) with Not_found -> Anonymous
+  try fst (clb_name (Metamap.find mv evd.metas)) with Not_found -> Name.Anonymous
 
 let clear_metas evd = {evd with metas = Metamap.empty}
 
@@ -1094,8 +1094,8 @@ let retract_coercible_metas evd =
 
 let evar_source_of_meta mv evd =
   match meta_name evd mv with
-  | Anonymous -> Loc.tag Evar_kinds.GoalEvar
-  | Name id   -> Loc.tag @@ Evar_kinds.VarInstance id
+  | Name.Anonymous -> Loc.tag Evar_kinds.GoalEvar
+  | Name.Name id   -> Loc.tag @@ Evar_kinds.VarInstance id
 
 let dependent_evar_ident ev evd =
   let evi = find evd ev in

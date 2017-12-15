@@ -51,7 +51,7 @@ let rec complete_conclusion a cs = CAst.map_with_loc (fun ?loc -> function
   )
 
 let push_types env idl tl =
-  List.fold_left2 (fun env id t -> Environ.push_rel (LocalAssum (Name id,t)) env)
+  List.fold_left2 (fun env id t -> Environ.push_rel (LocalAssum (Name.Name id,t)) env)
     env idl tl
 
 type structured_one_inductive_expr = {
@@ -170,7 +170,7 @@ let sup_list min = List.fold_left Univ.sup min
 let extract_level env evd min tys =
   let sorts = List.map (fun ty ->
     let ctx, concl = Reduction.dest_prod_assum env ty in
-      sign_level env evd (LocalAssum (Anonymous, concl) :: ctx)) tys
+      sign_level env evd (LocalAssum (Name.Anonymous, concl) :: ctx)) tys
   in sup_list min sorts
 
 let is_flexible_sort evd u =
@@ -250,8 +250,8 @@ let inductive_levels env evd poly arities inds =
   in evd, List.rev arities
 
 let check_named (loc, na) = match na with
-| Name _ -> ()
-| Anonymous ->
+| Name.Name _ -> ()
+| Name.Anonymous ->
   let msg = str "Parameters must be named." in
   user_err ?loc  msg
 
