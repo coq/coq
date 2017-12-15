@@ -218,6 +218,8 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
   let t' = EConstr.of_constr t' in
   let t' = subst_univs_level_constr subst t' in
   let bs' = List.map (EConstr.of_constr %> subst_univs_level_constr subst) bs in
+  let params = List.map (fun c -> subst_univs_level_constr subst c) params in
+  let us = List.map (fun c -> subst_univs_level_constr subst c) us in
   let h, _ = decompose_app_vect sigma t' in
     ctx',(h, t2),c',bs',(Stack.append_app_list params Stack.empty,params1),
     (Stack.append_app_list us Stack.empty,us2),(extra_args1,extra_args2),c1,
