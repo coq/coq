@@ -2127,7 +2127,7 @@ let interp_constr_evars env evdref ?(impls=empty_internalization_env) c =
   interp_constr_evars_gen env evdref WithoutTypeConstraint ~impls c
 
 let interp_casted_constr_evars env evdref ?(impls=empty_internalization_env) c typ =
-  interp_constr_evars_gen env evdref ~impls (OfType (EConstr.of_constr typ)) c
+  interp_constr_evars_gen env evdref ~impls (OfType typ) c
 
 let interp_type_evars env evdref ?(impls=empty_internalization_env) c =
   interp_constr_evars_gen env evdref IsType ~impls c

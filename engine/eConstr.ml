@@ -150,6 +150,8 @@ type rel_declaration = (constr, types) Context.Rel.Declaration.pt
 type named_context = (constr, types) Context.Named.pt
 type rel_context = (constr, types) Context.Rel.pt
 
+type 'a puniverses = 'a * EInstance.t
+
 let in_punivs a = (a, EInstance.empty)
 
 let mkProp = of_kind (Sort (ESorts.make Sorts.prop))

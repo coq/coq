@@ -8,10 +8,7 @@
 
 (*i*)
 open Names
-open Term
-open Constr
-open Vars
-open Environ
+open EConstr
 open Nametab
 open CErrors
 open Util
@@ -70,7 +67,7 @@ let existing_instance glob g info =
   let c = global g in
   let info = Option.default Hints.empty_hint_info info in
   let instance, _ = Global.type_of_global_in_context (Global.env ()) c in
-  let _, r = decompose_prod_assum instance in
+  let _, r = Term.decompose_prod_assum instance in
     match class_of_constr Evd.empty (EConstr.of_constr r) with
       | Some (_, ((tc,u), _)) -> add_instance (new_instance tc info glob
   (*FIXME*) (Flags.use_polymorphic_flag ()) c)
@@ -83,13 +80,14 @@ let mismatched_props env n m = mismatched_ctx_inst env Properties n m
 
 (* Declare everything in the parameters as implicit, and the class instance as well *)
 
-let type_ctx_instance evars env ctx inst subst =
+let type_ctx_instance env sigma ctx inst subst =
+  let open Vars in
   let rec aux (subst, instctx) l = function
     decl :: ctx ->
       let t' = substl subst (RelDecl.get_type decl) in
       let c', l =
 	match decl with
-	| LocalAssum _ -> EConstr.Unsafe.to_constr (interp_casted_constr_evars env evars (List.hd l) t'), List.tl l
+        | LocalAssum _ -> interp_casted_constr_evars env sigma (List.hd l) t', List.tl l
 	| LocalDef (_,b,_) -> substl subst b, l
       in
       let d = RelDecl.get_name decl, Some c', t' in
@@ -112,22 +110,22 @@ let instance_hook k info global imps ?hook cst =
   Typeclasses.declare_instance (Some info) (not global) cst;
   (match hook with Some h -> h cst | None -> ())
 
-let declare_instance_constant k info global imps ?hook id decl poly evm term termtype =
+let declare_instance_constant k info global imps ?hook id decl poly sigma term termtype =
   let kind = IsDefinition Instance in
-  let evm =
+  let sigma =
     let env = Global.env () in
     let levels = Univ.LSet.union (Univops.universes_of_constr env termtype)
                                  (Univops.universes_of_constr env term) in
-    Evd.restrict_universe_context evm levels 
+    Evd.restrict_universe_context sigma levels
   in
-  let uctx = Evd.check_univ_decl ~poly evm decl in
+  let uctx = Evd.check_univ_decl ~poly sigma decl in
   let entry = 
     Declare.definition_entry ~types:termtype ~univs:uctx term
   in
   let cdecl = (DefinitionEntry entry, kind) in
   let kn = Declare.declare_constant id cdecl in
     Declare.definition_message id;
-    Declare.declare_univ_binders (ConstRef kn) (Evd.universe_binders evm);
+    Declare.declare_univ_binders (ConstRef kn) (Evd.universe_binders sigma);
     instance_hook k info global imps ?hook (ConstRef kn);
     id
 
@@ -136,8 +134,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
   ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
   let ((loc, instid), pl) = instid in
-  let evd, decl = Univdecls.interp_univ_decl_opt env pl in
-  let evars = ref evd in
+  let sigma, decl = Univdecls.interp_univ_decl_opt env pl in
   let tclass, ids =
     match bk with
     | Decl_kinds.Implicit ->
@@ -155,26 +152,28 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
     if generalize then CAst.make @@ CGeneralization (Implicit, Some AbsPi, tclass) 
     else tclass 
   in
-  let k, u, cty, ctx', ctx, len, imps, subst =
-    let impls, ((env', ctx), imps) = interp_context_evars env evars ctx in
-    let ctx = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) ctx in
-    let c', imps' = interp_type_evars_impls ~impls env' evars tclass in
-    let c' = EConstr.Unsafe.to_constr c' in
+  let sigma, k, u, cty, ctx', ctx, len, imps, subst =
+    let _evd = ref sigma in
+    let impls, ((env', ctx), imps) = interp_context_evars env _evd ctx in
+    let c', imps' = interp_type_evars_impls ~impls env' _evd tclass in
+    let sigma = !_evd in
     let len = List.length ctx in
     let imps = imps @ Impargs.lift_implicits len imps' in
-    let ctx', c = decompose_prod_assum c' in
+    let ctx', c = decompose_prod_assum sigma c' in
     let ctx'' = ctx' @ ctx in
-    let (k, u), args = Typeclasses.dest_class_app (push_rel_context ctx'' env) !evars (EConstr.of_constr c) in
-    let u = EConstr.EInstance.kind !evars u in
-    let cl = Typeclasses.typeclass_univ_instance (k, u) in
-    let _, args = 
+    let (k, u), args = Typeclasses.dest_class_app (push_rel_context ctx'' env) sigma c in
+    let u_s = EInstance.kind sigma u in
+    let cl = Typeclasses.typeclass_univ_instance (k, u_s) in
+    let args = List.map of_constr args in
+    let cl_context = List.map (Termops.map_rel_decl of_constr) (snd cl.cl_context) in
+    let _, args =
       List.fold_right (fun decl (args, args') ->
 	match decl with
 	| LocalAssum _ -> (List.tl args, List.hd args :: args')
-	| LocalDef (_,b,_) -> (args, substl args' b :: args'))
-	(snd cl.cl_context) (args, [])
+        | LocalDef (_,b,_) -> (args, Vars.substl args' b :: args'))
+        cl_context (args, [])
     in
-      cl, u, c', ctx', ctx, len, imps, args
+      sigma, cl, u, c', ctx', ctx, len, imps, args
   in
   let id =
     match instid with
@@ -188,9 +187,8 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 	    Namegen.next_global_ident_away i (Termops.vars_of_env env)
   in
   let env' = push_rel_context ctx env in
-  evars := Evarutil.nf_evar_map !evars;
-  evars := resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:true env !evars;
-  let subst = List.map (fun c -> EConstr.Unsafe.to_constr (Evarutil.nf_evar !evars (EConstr.of_constr c))) subst in
+  let sigma = Evarutil.nf_evar_map sigma in
+  let sigma = resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:true env sigma in
     if abstract then
       begin
 	let subst = List.fold_left2
@@ -198,18 +196,16 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 	  [] subst (snd k.cl_context)
 	in
 	let (_, ty_constr) = instance_constructor (k,u) subst in
-	let nf, subst = Evarutil.e_nf_evars_and_universes evars in
-	let termtype =
-	  let t = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
-            nf t
-        in
-        Pretyping.check_evars env Evd.empty !evars (EConstr.of_constr termtype);
-        let univs = Evd.check_univ_decl ~poly !evars decl in
+        let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
+        let sigma,_ = Evarutil.nf_evars_and_universes sigma in
+        Pretyping.check_evars env Evd.empty sigma termtype;
+        let univs = Evd.check_univ_decl ~poly sigma decl in
+        let termtype = to_constr sigma termtype in
         let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
           (ParameterEntry
             (None,(termtype,univs),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
         in
-          Declare.declare_univ_binders (ConstRef cst) (Evd.universe_binders !evars);
+          Declare.declare_univ_binders (ConstRef cst) (Evd.universe_binders sigma);
           instance_hook k pri global imps ?hook (ConstRef cst); id
       end
     else (
@@ -224,13 +220,14 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 	    if Flags.is_program_mode () then Some (Inl [])
 	    else None
       in
-      let subst =
+      let subst, sigma =
 	match props with
-	| None -> if List.is_empty k.cl_props then Some (Inl subst) else None
+        | None ->
+          (if List.is_empty k.cl_props then Some (Inl subst) else None), sigma
 	| Some (Inr term) ->
-	    let c = interp_casted_constr_evars env' evars term cty in
-	    let c = EConstr.Unsafe.to_constr c in
-	      Some (Inr (c, subst))
+            let _evd = ref sigma in
+            let c = interp_casted_constr_evars env' _evd term cty in
+            Some (Inr (c, subst)), !_evd
 	| Some (Inl props) ->
 	    let get_id =
 	      function
@@ -267,9 +264,11 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
               | (n, _) :: _ ->
 		unbound_method env' k.cl_impl (get_id n)
               | _ ->
-		Some (Inl (type_ctx_instance evars (push_rel_context ctx' env') 
-			     k.cl_props props subst))
-      in	  
+                let kcl_props = List.map (Termops.map_rel_decl of_constr) k.cl_props in
+                let _evd = ref sigma in
+                let r_term = type_ctx_instance (push_rel_context ctx' env') _evd kcl_props props subst in
+                Some (Inl r_term), !_evd
+      in
       let term, termtype =
 	match subst with
 	| None -> let termtype = it_mkProd_or_LetIn cty ctx in
@@ -281,31 +280,27 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 	  in
 	  let (app, ty_constr) = instance_constructor (k,u) subst in
 	  let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
-	  let term = Termops.it_mkLambda_or_LetIn (Option.get app) (ctx' @ ctx) in
+          let term = it_mkLambda_or_LetIn (Option.get app) (ctx' @ ctx) in
 	    Some term, termtype
 	| Some (Inr (def, subst)) ->
 	  let termtype = it_mkProd_or_LetIn cty ctx in
-	  let term = Termops.it_mkLambda_or_LetIn def ctx in
+          let term = it_mkLambda_or_LetIn def ctx in
 	    Some term, termtype
       in
-      let _ = 
-	evars := Evarutil.nf_evar_map !evars;
-	evars := Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals_or_obligations ~fail:true
-          env !evars;
-	(* Try resolving fields that are typeclasses automatically. *)
-	evars := Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:false
-	  env !evars
-      in
-      let _ = evars := Evarutil.nf_evar_map_undefined !evars in
-      let evm, nf = Evarutil.nf_evar_map_universes !evars in
-      let termtype = nf termtype in
-      let _ = (* Check that the type is free of evars now. *)
-	Pretyping.check_evars env Evd.empty evm (EConstr.of_constr termtype)
-      in
-      let term = Option.map nf term in
-	if not (Evd.has_undefined evm) && not (Option.is_empty term) then
+      let sigma = Evarutil.nf_evar_map sigma in
+      let sigma = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals_or_obligations ~fail:true env sigma in
+      (* Try resolving fields that are typeclasses automatically. *)
+      let sigma = Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:false env sigma in
+      let sigma = Evarutil.nf_evar_map_undefined sigma in
+      (* Beware of this step, it is required as to minimize universes. *)
+      let sigma, _nf = Evarutil.nf_evar_map_universes sigma in
+      (* Check that the type is free of evars now. *)
+      Pretyping.check_evars env Evd.empty sigma termtype;
+      let termtype = to_constr sigma termtype in
+      let term = Option.map (to_constr sigma) term in
+        if not (Evd.has_undefined sigma) && not (Option.is_empty term) then
 	  declare_instance_constant k pri global imps ?hook id decl
-            poly evm (Option.get term) termtype
+            poly sigma (Option.get term) termtype
 	else if Flags.is_program_mode () || refine || Option.is_empty term then begin
 	  let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	    if Flags.is_program_mode () then
@@ -318,12 +313,12 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 		match term with 
 		| Some t -> 
 		  let obls, _, constr, typ = 
-		    Obligations.eterm_obligations env id evm 0 t termtype
+                    Obligations.eterm_obligations env id sigma 0 t termtype
 		  in obls, Some constr, typ
 		| None -> [||], None, termtype
 	      in
               let hook = Lemmas.mk_hook hook in
-	      let ctx = Evd.evar_universe_context evm in
+              let ctx = Evd.evar_universe_context sigma in
 		ignore (Obligations.add_definition id ?term:constr
  			~univdecl:decl typ ctx ~kind:(Global,poly,Instance) ~hook obls);
 		id
@@ -334,16 +329,16 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
                      the pretyping after the proof has opened. As a
                      consequence, we use the low-level primitives to code
                      the refinement manually.*)
-		let gls = List.rev (Evd.future_goals evm) in
-                let evm = Evd.reset_future_goals evm in
-                Lemmas.start_proof id ~pl:decl kind evm (EConstr.of_constr termtype)
+                let gls = List.rev (Evd.future_goals sigma) in
+                let sigma = Evd.reset_future_goals sigma in
+                Lemmas.start_proof id ~pl:decl kind sigma (EConstr.of_constr termtype)
 		(Lemmas.mk_hook
                   (fun _ -> instance_hook k pri global imps ?hook));
                  (* spiwack: I don't know what to do with the status here. *)
 		if not (Option.is_empty term) then
                   let init_refine =
                     Tacticals.New.tclTHENLIST [
-                      Refine.refine ~typecheck:false (fun evm -> (evm,EConstr.of_constr (Option.get term)));
+                      Refine.refine ~typecheck:false (fun sigma -> (sigma,EConstr.of_constr (Option.get term)));
                       Proofview.Unsafe.tclNEWGOALS gls;
                       Tactics.New.reduce_after_refine;
                     ]
@@ -357,6 +352,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
       else CErrors.user_err Pp.(str "Unsolved obligations remaining."))
 	
 let named_of_rel_context l =
+  let open Vars in
   let acc, ctx =
     List.fold_right
       (fun decl (subst, ctx) ->
@@ -370,20 +366,22 @@ let named_of_rel_context l =
 
 let context poly l =
   let env = Global.env() in
-  let evars = ref (Evd.from_env env) in
-  let _, ((env', fullctx), impls) = interp_context_evars env evars l in
-  let fullctx = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) fullctx in
-  let subst = Evarutil.evd_comb0 Evarutil.nf_evars_and_universes evars in
-  let fullctx = Context.Rel.map subst fullctx in
-  let ce t = Pretyping.check_evars env Evd.empty !evars (EConstr.of_constr t) in
+  let sigma = Evd.from_env env in
+  let _evd = ref sigma in
+  let _, ((env', fullctx), impls) = interp_context_evars env _evd l in
+  let sigma = !_evd in
+  (* Note, we must use the normalized evar from now on! *)
+  let sigma,_ = Evarutil.nf_evars_and_universes sigma in
+  let ce t = Pretyping.check_evars env Evd.empty sigma t in
   let () = List.iter (fun decl -> Context.Rel.Declaration.iter_constr ce decl) fullctx in
   let ctx =
     try named_of_rel_context fullctx
     with e when CErrors.noncritical e ->
       user_err Pp.(str "Anonymous variables not allowed in contexts.")
   in
-  let uctx = ref (Evd.universe_context_set !evars) in
+  let uctx = ref (Evd.universe_context_set sigma) in
   let fn status (id, b, t) =
+    let b, t = Option.map (to_constr sigma) b, to_constr sigma t in
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
       (* Declare the universe context once *)
       let univs = if poly
@@ -399,7 +397,7 @@ let context poly l =
         (DefinitionEntry entry, IsAssumption Logical)
       in
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
-	match class_of_constr !evars (EConstr.of_constr t) with
+        match class_of_constr sigma (of_constr t) with
 	| Some (rels, ((tc,_), args) as _cl) ->
 	    add_instance (Typeclasses.new_instance tc Hints.empty_hint_info false (*FIXME*)
 			    poly (ConstRef cst));

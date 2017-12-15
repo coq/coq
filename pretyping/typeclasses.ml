@@ -442,19 +442,20 @@ let add_class cl =
 
 let instance_constructor (cl,u) args =
   let lenpars = List.count is_local_assum (snd cl.cl_context) in
+  let open EConstr in
   let pars = fst (List.chop lenpars args) in
     match cl.cl_impl with
       | IndRef ind -> 
         let ind = ind, u in
-          (Some (applistc (mkConstructUi (ind, 1)) args),
-	   applistc (mkIndU ind) pars)
+          (Some (applist (mkConstructUi (ind, 1), args)),
+           applist (mkIndU ind, pars))
       | ConstRef cst -> 
         let cst = cst, u in
 	let term = match args with
 	  | [] -> None
 	  | _ -> Some (List.last args)
 	in
-	  (term, applistc (mkConstU cst) pars)
+          (term, applist (mkConstU cst, pars))
       | _ -> assert false
 
 let typeclasses () = Refmap.fold (fun _ l c -> l :: c) !classes []

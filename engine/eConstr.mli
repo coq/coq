@@ -56,6 +56,8 @@ sig
   val is_empty : t -> bool
 end
 
+type 'a puniverses = 'a * EInstance.t
+
 (** {5 Destructors} *)
 
 val kind : Evd.evar_map -> t -> (t, t, ESorts.t, EInstance.t) Constr.kind_of_term
