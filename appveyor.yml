@@ -10,11 +10,10 @@ image:
 environment:
   CYGMIRROR: http://ftp.inf.tu-dresden.de/software/windows/cygwin32
   matrix:
-#  - USEOPAM: true
-#    ARCH: 64
-# Comment out until issue #5998 is fixed.
-#  - USEOPAM: false
-#    ARCH: 32
+  - USEOPAM: true
+    ARCH: 64
+  - USEOPAM: false
+    ARCH: 32
   - USEOPAM: false
     ARCH: 64
 
@@ -23,11 +22,10 @@ build_script:
 
 test: off
 
-# Comment out until issue #5998 is fixed.
-#artifacts:
-#  - path: 'dev\nsis\*.exe'
-#    name: installer
+artifacts:
+  - path: 'dev\nsis\*.exe'
+    name: installer
 
-#  - path: 'coq-opensource-archive-*.zip'
-#    name: opensource-archive
+  - path: 'coq-opensource-archive-*.zip'
+    name: opensource-archive
 
