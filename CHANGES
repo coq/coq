@@ -1,3 +1,11 @@
+Changes from 8.7.0 to 8.7.1
+===========================
+
+Compatibility with OCaml 4.06.0.
+
+Many bug fixes, documentation improvements, and user message improvements (for
+details see the 8.7.1 milestone at https://github.com/coq/coq/milestone/10?closed=1).
+
 Changes from 8.7+beta2 to 8.7.0
 ===============================
 
