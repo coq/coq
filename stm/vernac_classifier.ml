@@ -195,7 +195,7 @@ let classify_vernac e =
   let rec static_control_classifier ~poly = function
     | VernacExpr e -> static_classifier ~poly e
     | VernacTimeout (_,e) -> static_control_classifier ~poly e
-    | VernacTime (_,e) | VernacRedirect (_, (_,e)) ->
+    | VernacTime (_,(_,e)) | VernacRedirect (_, (_,e)) ->
        static_control_classifier ~poly e
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match static_control_classifier ~poly e with

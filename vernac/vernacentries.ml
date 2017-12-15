@@ -2213,8 +2213,8 @@ let interp ?(verbosely=true) ?proof ~st (loc,c) =
       control v
   | VernacRedirect (s, (_,v)) ->
        Topfmt.with_output_to_file s control v
-  | VernacTime (_,v) ->
-      System.with_time !Flags.time control v;
+  | VernacTime (batch, (_loc,v)) ->
+      System.with_time ~batch control v;
 
   and aux ?polymorphism ~atts isprogcmd = function
 

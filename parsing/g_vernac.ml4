@@ -67,7 +67,7 @@ let parse_compat_version ?(allow_old = true) = let open Flags in function
 GEXTEND Gram
   GLOBAL: vernac_control gallina_ext noedit_mode subprf;
   vernac_control: FIRST
-    [ [ IDENT "Time"; c = located_vernac -> VernacTime c
+    [ [ IDENT "Time"; c = located_vernac -> VernacTime (false,c)
       | IDENT "Redirect"; s = ne_string; c = located_vernac -> VernacRedirect (s, c)
       | IDENT "Timeout"; n = natural; v = vernac_control -> VernacTimeout(n,v)
       | IDENT "Fail"; v = vernac_control -> VernacFail v

@@ -1223,7 +1223,7 @@ open Decl_kinds
     let return = tag_vernac v in
     match v with
     | VernacExpr v' -> pr_vernac_expr v' ++ sep_end v'
-    | VernacTime (_,v) ->
+    | VernacTime (_,(_,v)) ->
       return (keyword "Time" ++ spc() ++ pr_vernac_control v)
     | VernacRedirect (s, (_,v)) ->
       return (keyword "Redirect" ++ spc() ++ qs s ++ spc() ++ pr_vernac_control v)

@@ -80,6 +80,7 @@ let toploop_init = ref begin fun x ->
    bogus. For now we just print to the console too *)
 let coqtop_init_feed = Coqloop.coqloop_feed
 let drop_last_doc = ref None
+let measure_time = ref false
 
 (* Default toplevel loop *)
 let console_toploop_run doc =
@@ -89,7 +90,7 @@ let console_toploop_run doc =
     Flags.if_verbose warning "Dumpglob cannot be used in interactive mode.";
     Dumpglob.noglob ()
   end;
-  let doc = Coqloop.loop doc in
+  let doc = Coqloop.loop ~time:!measure_time doc in
   (* Initialise and launch the Ocaml toplevel *)
   drop_last_doc := Some doc;
   Coqinit.init_ocaml_path();
@@ -180,19 +181,19 @@ let load_vernacular_list = ref ([] : (string * bool) list)
 let add_load_vernacular verb s =
   load_vernacular_list := ((CUnix.make_suffix s ".v"),verb) :: !load_vernacular_list
 
-let load_vernacular doc sid =
+let load_vernacular ~time doc sid =
   List.fold_left
     (fun (doc,sid) (f_in, verbosely) ->
       let s = Loadpath.locate_file f_in in
       if !Flags.beautify then
-        Flags.with_option Flags.beautify_file (Vernac.load_vernac ~verbosely ~interactive:false ~check:true doc sid) f_in
+        Flags.with_option Flags.beautify_file (Vernac.load_vernac ~time ~verbosely ~interactive:false ~check:true doc sid) f_in
       else
-        Vernac.load_vernac ~verbosely ~interactive:false ~check:true doc sid s)
+        Vernac.load_vernac ~time ~verbosely ~interactive:false ~check:true doc sid s)
     (doc, sid) (List.rev !load_vernacular_list)
 
-let load_init_vernaculars doc sid =
-  let doc, sid = Coqinit.load_rcfile doc sid in
-  load_vernacular doc sid
+let load_init_vernaculars ~time doc sid =
+  let doc, sid = Coqinit.load_rcfile ~time doc sid in
+  load_vernacular ~time doc sid
 
 (******************************************************************************)
 (* Required Modules                                                           *)
@@ -291,7 +292,7 @@ let ensure_exists f =
     compile_error (hov 0 (str "Can't find file" ++ spc () ++ str f))
 
 (* Compile a vernac file *)
-let compile ~verbosely ~f_in ~f_out =
+let compile ~time ~verbosely ~f_in ~f_out =
   let check_pending_proofs () =
     let pfs = Proof_global.get_all_proof_names () in
     if not (CList.is_empty pfs) then
@@ -316,7 +317,7 @@ let compile ~verbosely ~f_in ~f_out =
             require_libs = require_libs ()
           }) in
 
-      let doc, sid = load_init_vernaculars doc sid in
+      let doc, sid = load_init_vernaculars ~time doc sid in
       let ldir = Stm.get_ldir ~doc in
       Aux_file.(start_aux_file
         ~aux_file:(aux_file_name_for long_f_dot_vo)
@@ -324,7 +325,7 @@ let compile ~verbosely ~f_in ~f_out =
       Dumpglob.start_dump_glob ~vfile:long_f_dot_v ~vofile:long_f_dot_vo;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
       let wall_clock1 = Unix.gettimeofday () in
-      let doc, _ = Vernac.load_vernac ~verbosely ~check:true ~interactive:false doc (Stm.get_current_state ~doc) long_f_dot_v in
+      let doc, _ = Vernac.load_vernac ~time ~verbosely ~check:true ~interactive:false doc (Stm.get_current_state ~doc) long_f_dot_v in
       let _doc = Stm.join ~doc in
       let wall_clock2 = Unix.gettimeofday () in
       check_pending_proofs ();
@@ -351,10 +352,10 @@ let compile ~verbosely ~f_in ~f_out =
             require_libs = require_libs ()
           }) in
 
-      let doc, sid = load_init_vernaculars doc sid in
+      let doc, sid = load_init_vernaculars ~time doc sid in
 
       let ldir = Stm.get_ldir ~doc in
-      let doc, _ = Vernac.load_vernac ~verbosely ~check:false ~interactive:false doc (Stm.get_current_state ~doc) long_f_dot_v in
+      let doc, _ = Vernac.load_vernac ~time ~verbosely ~check:false ~interactive:false doc (Stm.get_current_state ~doc) long_f_dot_v in
       let doc = Stm.finish ~doc in
       check_pending_proofs ();
       let _doc = Stm.snapshot_vio ~doc ldir long_f_dot_vio in
@@ -369,9 +370,9 @@ let compile ~verbosely ~f_in ~f_out =
       let univs, proofs = Stm.finish_tasks lfdv univs disch proofs tasks in
       Library.save_library_raw lfdv sum lib univs proofs
 
-let compile ~verbosely ~f_in ~f_out =
+let compile ~time ~verbosely ~f_in ~f_out =
   ignore(CoqworkmgrApi.get 1);
-  compile ~verbosely ~f_in ~f_out;
+  compile ~time ~verbosely ~f_in ~f_out;
   CoqworkmgrApi.giveback 1
 
 let compile_file (verbosely,f_in) =
@@ -381,9 +382,9 @@ let compile_file (verbosely,f_in) =
   else
     compile ~verbosely ~f_in ~f_out:None
 
-let compile_files doc =
+let compile_files ~time =
   if !compile_list == [] then ()
-  else List.iter compile_file (List.rev !compile_list)
+  else List.iter (compile_file ~time) (List.rev !compile_list)
 
 (******************************************************************************)
 (* VIO Dispatching                                                            *)
@@ -736,7 +737,7 @@ let parse_args arglist =
     |"-quiet"|"-silent" -> Flags.quiet := true; Flags.make_warn false
     |"-quick" -> compilation_mode := BuildVio
     |"-list-tags" -> print_tags := true
-    |"-time" -> Flags.time := true
+    |"-time" -> measure_time := true
     |"-type-in-type" -> set_type_in_type ()
     |"-unicode" -> add_require ("Utf8_core", None, Some false)
     |"-v"|"--version" -> Usage.version (exitcode ())
@@ -812,12 +813,12 @@ let init_toplevel arglist =
                                 { doc_type = Interactive !toplevel_name;
                                   require_libs = require_libs ()
                                 }) in
-          Some (load_init_vernaculars doc sid)
+          Some (load_init_vernaculars ~time:!measure_time doc sid)
         with any -> flush_all(); fatal_error any
       (* Non interactive *)
       end else begin
         try
-          compile_files ();
+          compile_files ~time:!measure_time;
           schedule_vio_checking ();
           schedule_vio_compilation ();
           check_vio_tasks ();

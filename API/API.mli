@@ -4294,7 +4294,7 @@ sig
 type vernac_control =
   | VernacExpr of vernac_expr
    (* Control *)
-  | VernacTime of vernac_control Loc.located
+  | VernacTime of bool * vernac_control Loc.located
   | VernacRedirect of string * vernac_control Loc.located
   | VernacTimeout of int * vernac_control
   | VernacFail of vernac_control

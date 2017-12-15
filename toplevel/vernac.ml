@@ -110,16 +110,15 @@ let pr_open_cur_subgoals () =
 (*     Stm.End_of_input -> true *)
 (*   | _ -> false *)
 
-let rec interp_vernac ~check ~interactive doc sid (loc,com) =
+let rec interp_vernac ~time ~check ~interactive doc sid (loc,com) =
   let interp v =
     match under_control v with
     | VernacLoad (verbosely, fname) ->
         let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
         let fname = CUnix.make_suffix fname ".v" in
         let f = Loadpath.locate_file fname in
-        load_vernac ~verbosely ~check ~interactive doc sid f
+        load_vernac ~time ~verbosely ~check ~interactive doc sid f
     | _ ->
-
       (* XXX: We need to run this before add as the classification is
          highly dynamic and depends on the structure of the
          document. Hopefully this is fixed when VtMeta can be removed
@@ -158,8 +157,8 @@ let rec interp_vernac ~check ~interactive doc sid (loc,com) =
     try
       (* The -time option is only supported from console-based
          clients due to the way it prints. *)
-      if !Flags.time then print_cmd_header ?loc com;
-      let com = if !Flags.time then VernacTime (loc,com) else com in
+      if time then print_cmd_header ?loc com;
+      let com = if time then VernacTime(time,(loc,com)) else com in
       interp com
     with reraise ->
       (* XXX: In non-interactive mode edit_at seems to do very weird
@@ -173,7 +172,7 @@ let rec interp_vernac ~check ~interactive doc sid (loc,com) =
       end in iraise (reraise, info)
 
 (* Load a vernac file. CErrors are annotated with file and location *)
-and load_vernac ~verbosely ~check ~interactive doc sid file =
+and load_vernac ~time ~verbosely ~check ~interactive doc sid file =
   let ft_beautify, close_beautify =
     if !Flags.beautify_file then
       let chan_beautify = open_out (file^beautify_suffix) in
@@ -215,7 +214,7 @@ and load_vernac ~verbosely ~check ~interactive doc sid file =
       Option.iter (vernac_echo ?loc) in_echo;
 
       checknav_simple (loc, ast);
-      let ndoc, nsid = Flags.silently (interp_vernac ~check ~interactive !rdoc !rsid) (loc, ast) in
+      let ndoc, nsid = Flags.silently (interp_vernac ~time ~check ~interactive !rdoc !rsid) (loc, ast) in
       rsid := nsid;
       rdoc := ndoc
     done;
@@ -242,6 +241,6 @@ and load_vernac ~verbosely ~check ~interactive doc sid file =
    of a new state label). An example of state-preserving command is one coming
    from the query panel of Coqide. *)
 
-let process_expr doc sid loc_ast =
+let process_expr ~time doc sid loc_ast =
   checknav_deep loc_ast;
-  interp_vernac ~interactive:true ~check:true doc sid loc_ast
+  interp_vernac ~time ~interactive:true ~check:true doc sid loc_ast
