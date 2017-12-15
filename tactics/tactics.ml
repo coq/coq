@@ -1492,7 +1492,7 @@ let simplest_ecase c = general_case_analysis true None (c,NoBindings)
 
 exception IsNonrec
 
-let is_nonrec mind = (Global.lookup_mind (fst mind)).mind_finite == Decl_kinds.BiFinite
+let is_nonrec mind = (Global.lookup_mind (fst mind)).mind_finite == Declarations.BiFinite
 
 let find_ind_eliminator ind s gl =
   let gr = lookup_eliminator ind s in

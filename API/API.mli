@@ -1443,9 +1443,9 @@ sig
   type record_body = (Id.t * Constant.t array * projection_body array) option
 
   type recursivity_kind =
-    | Finite
-    | CoFinite
-    | BiFinite
+    | Finite (** = inductive *)
+    | CoFinite (** = coinductive *)
+    | BiFinite (** = non-recursive, like in "Record" definitions *)
 
   type mutual_inductive_body = {
         mind_packets : one_inductive_body array;
@@ -2160,10 +2160,14 @@ module Decl_kinds :
 sig
   type polymorphic = bool
   type cumulative_inductive_flag = bool
+
   type recursivity_kind = Declarations.recursivity_kind =
-    | Finite
-    | CoFinite
-    | BiFinite
+    | Finite (** = inductive *)
+        [@ocaml.deprecated "Please use [Declarations.Finite"]
+    | CoFinite (** = coinductive *)
+        [@ocaml.deprecated "Please use [Declarations.CoFinite"]
+    | BiFinite (** = non-recursive, like in "Record" definitions *)
+        [@ocaml.deprecated "Please use [Declarations.BiFinite"]
   [@@ocaml.deprecated "Please use [Declarations.recursivity_kind"]
 
   type discharge =

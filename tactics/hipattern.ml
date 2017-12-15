@@ -48,7 +48,7 @@ let match_with_non_recursive_type sigma t =
         let (hdapp,args) = decompose_app sigma t in
         (match EConstr.kind sigma hdapp with
            | Ind (ind,u) ->
-               if (Global.lookup_mind (fst ind)).mind_finite == Decl_kinds.CoFinite then
+               if (Global.lookup_mind (fst ind)).mind_finite == CoFinite then
 		 Some (hdapp,args)
 	       else
 		 None

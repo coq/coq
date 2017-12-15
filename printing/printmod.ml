@@ -125,7 +125,7 @@ let print_mutual_inductive env mind mib udecl =
   let inds = List.init (Array.length mib.mind_packets) (fun x -> (mind, x))
   in
   let keyword =
-    let open Decl_kinds in
+    let open Declarations in
     match mib.mind_finite with
     | Finite -> "Inductive"
     | BiFinite -> "Variant"
@@ -184,7 +184,7 @@ let print_record env mind mib udecl =
       (Array.to_list (Univ.Instance.to_array u)) udecl in
   let sigma = Evd.from_ctx (Evd.evar_universe_context_of_binders bl) in
   let keyword =
-    let open Decl_kinds in
+    let open Declarations in
     match mib.mind_finite with
     | BiFinite -> "Record"
     | Finite -> "Inductive"
@@ -346,7 +346,7 @@ let print_body is_impl env mp (l,body) =
         pr_mutual_inductive_body env (MutInd.make2 mp l) mib None
       with e when CErrors.noncritical e ->
         let keyword =
-          let open Decl_kinds in
+          let open Declarations in
           match mib.mind_finite with
           | Finite -> def "Inductive"
           | BiFinite -> def "Variant"

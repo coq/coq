@@ -275,7 +275,7 @@ let projection_nparams p = projection_nparams_env (Global.env ()) p
 
 let has_dependent_elim mib =
   match mib.mind_record with
-  | Some (Some _) -> mib.mind_finite == Decl_kinds.BiFinite
+  | Some (Some _) -> mib.mind_finite == BiFinite
   | _ -> true
 
 (* Annotation for cases *)
@@ -486,7 +486,7 @@ let find_inductive env sigma c =
   let (t, l) = decompose_app sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
     | Ind ind
-        when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite <> Decl_kinds.CoFinite ->
+        when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite <> CoFinite ->
         let l = List.map EConstr.Unsafe.to_constr l in
         (ind, l)
     | _ -> raise Not_found
@@ -496,7 +496,7 @@ let find_coinductive env sigma c =
   let (t, l) = decompose_app sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
     | Ind ind
-        when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite == Decl_kinds.CoFinite ->
+        when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite == CoFinite ->
         let l = List.map EConstr.Unsafe.to_constr l in
         (ind, l)
     | _ -> raise Not_found

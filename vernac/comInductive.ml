@@ -25,7 +25,6 @@ open Nametab
 open Impargs
 open Reductionops
 open Indtypes
-open Decl_kinds
 open Pretyping
 open Evarutil
 open Indschemes
@@ -411,7 +410,7 @@ let declare_mutual_inductive_with_eliminations mie pl impls =
   (* spiwack: raises an error if the structure is supposed to be non-recursive,
         but isn't *)
   begin match mie.mind_entry_finite with
-  | BiFinite when is_recursive mie ->
+  | Declarations.BiFinite when is_recursive mie ->
       if Option.has_some mie.mind_entry_record then
         user_err Pp.(str "Records declared with the keywords Record or Structure cannot be recursive. You can, however, define recursive records using the Inductive or CoInductive command.")
       else

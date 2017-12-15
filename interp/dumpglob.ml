@@ -68,6 +68,7 @@ let pause () = previous_state := !glob_output; glob_output := NoGlob
 let continue () = glob_output := !previous_state
 
 open Decl_kinds
+open Declarations
 
 let type_of_logical_kind = function
   | IsDefinition def ->
@@ -111,14 +112,12 @@ let type_of_global_ref gr =
     | Globnames.IndRef ind ->
 	let (mib,oib) = Inductive.lookup_mind_specif (Global.env ()) ind in
 	  if mib.Declarations.mind_record <> None then
-            let open Decl_kinds in
             begin match mib.Declarations.mind_finite with
             | Finite -> "indrec"
             | BiFinite -> "rec"
 	    | CoFinite -> "corec"
             end
 	  else
-            let open Decl_kinds in
             begin match mib.Declarations.mind_finite with
             | Finite -> "ind"
             | BiFinite -> "variant"

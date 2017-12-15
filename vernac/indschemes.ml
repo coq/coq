@@ -258,7 +258,7 @@ let declare_one_induction_scheme ind =
 
 let declare_induction_schemes kn =
   let mib = Global.lookup_mind kn in
-  if mib.mind_finite <> Decl_kinds.CoFinite then begin
+  if mib.mind_finite <> Declarations.CoFinite then begin
     for i = 0 to Array.length mib.mind_packets - 1 do
       declare_one_induction_scheme (kn,i);
     done;
@@ -268,7 +268,7 @@ let declare_induction_schemes kn =
 
 let declare_eq_decidability_gen internal names kn =
   let mib = Global.lookup_mind kn in
-  if mib.mind_finite <> Decl_kinds.CoFinite then
+  if mib.mind_finite <> Declarations.CoFinite then
     ignore (define_mutual_scheme eq_dec_scheme_kind internal names kn)
 
 let eq_dec_scheme_msg ind = (* TODO: mutual inductive case *)
@@ -512,7 +512,7 @@ let map_inductive_block f kn n = for i=0 to n-1 do f (kn,i) done
 let declare_default_schemes kn =
   let mib = Global.lookup_mind kn in
   let n = Array.length mib.mind_packets in
-  if !elim_flag && (mib.mind_finite <> BiFinite || !bifinite_elim_flag)
+  if !elim_flag && (mib.mind_finite <> Declarations.BiFinite || !bifinite_elim_flag)
      && mib.mind_typing_flags.check_guarded then
     declare_induction_schemes kn;
   if !case_flag then map_inductive_block declare_one_case_analysis_scheme kn n;

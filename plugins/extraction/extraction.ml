@@ -431,7 +431,7 @@ and extract_really_ind env kn mib =
 	let ip = (kn, 0) in
 	let r = IndRef ip in
 	if is_custom r then raise (I Standard);
-	if mib.mind_finite == Decl_kinds.CoFinite then raise (I Coinductive);
+        if mib.mind_finite == CoFinite then raise (I Coinductive);
 	if not (Int.equal mib.mind_ntypes 1) then raise (I Standard);
 	let p,u = packets.(0) in
 	if p.ip_logical then raise (I Standard);
