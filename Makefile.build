@@ -148,7 +148,7 @@ endif
 # coqdep_boot (for the .v.d files) or grammar.cma (for .ml4 -> .ml -> .ml.d).
 
 DEPENDENCIES := \
- $(addsuffix .d, $(MLFILES) $(MLIFILES) $(MLLIBFILES) $(MLPACKFILES) $(CFILES) $(VFILES))
+ $(addsuffix .d, $(MLFILES) $(MLIFILES) $(MLLIBFILES) $(MLPACKFILES) $(CFILES) $(VFILES) $(PLUGINSOPT))
 
 -include $(DEPENDENCIES)
 
@@ -646,9 +646,26 @@ plugins/%.cmx: plugins/%.ml
 	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) -c $<
 
+# On Linux, as long as the executable loads the plugins in the correct order,
+# the plugins can resolve symbols from each other without having to explicitly
+# link against each other. This is because all the symbols are put into the
+# same namespace when the RTLD_GLOBAL flag is passed to dlopen.
+#
+# Android does not support the RTLD_GLOBAL flag (see
+# https://github.com/android-ndk/ndk/issues/201). So instead the plugins need
+# to explicitly link against each other.
+ifeq ($(ARCH),Android)
+# The .cmxs.d files listed the prerequisites for the plugins. Now the .cmxs
+# files just need to be pull back out of the prequisites list ($^), and
+# converted into options to link against them.
+LINK_PLUGINS?=$(foreach dep,$(filter %.cmxs,$^),-cclib "$(dep)")
+else
+LINK_PLUGINS?=
+endif
+
 %.cmxs: %.cmx
 	$(SHOW)'OCAMLOPT -shared -o $@'
-	$(HIDE)$(OCAMLOPT) -shared -o $@ $<
+	$(HIDE)$(OCAMLOPT) -shared -o $@ $(LINK_PLUGINS) $<
 
 %.cmxs: %.cmxa
 	$(SHOW)'OCAMLOPT -shared -o $@'
@@ -686,6 +703,76 @@ OCAMLDEP = $(OCAMLFIND) ocamldep -slash -ml-synonym .ml4 -ml-synonym .mlpack
 %.mlpack.d: $(D_DEPEND_BEFORE_SRC) %.mlpack $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
 	$(SHOW)'OCAMLLIBDEP  $<'
 	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) "$<" $(TOTARGET)
+
+MLPACKFILES_D_LOADED := $(addsuffix .d_LOADED, $(MLPACKFILES))
+
+$(MLPACKFILES_D_LOADED): %_LOADED: %
+# If the _MLPACK_DEPENDENCIES variable corresponding to this target (e.g.
+# plugins/ltac/tauto_plugin_MLPACK_DEPENDENCIES) is defined, do nothing and let
+# this rule succeed. If it is not defined, run false, which causes this
+# rule to fail. The rule will get reevaluated later when the .d file is
+# actually loaded.
+#
+# The targets defined by this rule should be used as order-only prerequisites
+# by other rules. That lets the _LOADED rule get reevaluated on each make
+# invocation, but without causing the target to get rebuilt each time.
+	$(if $(findstring undefined, \
+	    $(flavor $(@:.mlpack.d_LOADED=_MLPACK_DEPENDENCIES))),\
+	    $(HIDE)false, )
+
+# Declare the _LOADED targets as phony, to force them to get rerun on each make
+# invocation, even if a file is somehow created with the same name as the
+# target.
+.PHONY: $(MLPACKFILES_D_LOADED)
+
+%.cmxs.d: $(D_DEPEND_BEFORE_SRC) %.mlpack $(D_DEPEND_AFTER_SRC) $(addsuffix .d, $(MLFILES)) $(OCAMLLIBDEP) $(GENFILES) %.mlpack.d_LOADED
+	$(SHOW)'writing $@'
+	$(HIDE) \
+	# Loop through the .ml.d file names for each .ml file that's going \
+	# into this .cmxs. Parse the .ml.d files (which have makefile syntax) \
+	# to find all the _plugin.cmx dependencies. Remove the duplicates, \
+	# then list the corresponding _plugin.cmxs files in the \
+	# _PLUGIN_DEPENDENCIES variable. That variable is written out to the \
+	# .cmxs.d file in makefile syntax. \
+	( echo -n "$(@:.cmxs.d=.cmxs) : "; \
+	for mld in $(addsuffix .ml.d,$($(@:.cmxs.d=_MLPACK_DEPENDENCIES))); do \
+	  sed <"$$mld" \
+	    -e '# define a sed label.' \
+	    -e ':again' \
+	    -e '# If the current pattern buffer (initialized with a line read' \
+	    -e '# from the file) ends with a backslash (which ocamldep ' \
+	    -e '# inserts when it decides the line is too long), execute the ' \
+	    -e '# commands in the braces.' \
+	    -e '/\\ *$$/ {' \
+	      -e '# Read the next line from the file and append it to the' \
+	      -e '# pattern buffer.' \
+	      -e 'N' \
+	      -e '# Join the lines by remove the backslash between the lines' \
+	      -e '# and the newline.' \
+	      -e 's/\\ *\n//' \
+	      -e '# Go back to the again label to see if the pattern buffer ' \
+	      -e '# still ends with a backslash.' \
+	      -e 'b again' \
+	    -e '}' \
+	    -e '# The file has a .cmx and .cmo rule. To reduce the ' \
+	    -e '# duplication, remove all the lines that do not define a .cmx' \
+	    -e '# target.' \
+	    -e '/\.cmx *:/!d' \
+	    -e '# Now strip out the target from the make file rule, so that' \
+	    -e '# just the rule prerequisites remain.' \
+	    -e 's/.* ://' \
+	    -e '# Trim whitespace from the beginning and end of the line.' \
+	    -e 's/^ \{1,\}//; s/ \{1,\}$$//' \
+	    -e '# Replace the spaces between the prereqs with newlines.' \
+	    -e 's/ \{1,\}/\n/g'; \
+	done | \
+	  # Keep only the prereqs that end with _plugin.cmx \
+	  grep '_plugin.cmx$$' | \
+	  sed -e 's/\.cmx/.cmxs/' | \
+	  # Remove duplicate dependencies \
+	  sort | uniq | \
+	  # Switch the newlines back to spaces \
+	  sed -e :a -e 'N;s/\n/ /;ba'; echo ) $(TOTARGET)
 
 ###########################################################################
 # Compilation of .v files

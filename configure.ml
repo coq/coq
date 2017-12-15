@@ -426,7 +426,11 @@ let arch = match !Prefs.arch with
     let arch,_ = tryrun "uname" ["-s"] in
     if starts_with arch "CYGWIN" then "win32"
     else if starts_with arch "MINGW32" then "win32"
-    else if arch <> "" then arch
+    else if arch = "Linux" then (
+      let os,_ = tryrun "uname" ["-o"] in
+      if os = "Android" then os
+      else arch
+    ) else if arch <> "" then arch
     else try_archs arch_progs
 
 (** NB: [arch_is_win32] is broader than [os_type_win32], cf. cygwin *)

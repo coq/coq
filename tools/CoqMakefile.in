@@ -304,8 +304,10 @@ BYTEFILESTOINSTALL = \
 ifeq '$(HASNATDYNLINK)' 'true'
 DO_NATDYNLINK = yes
 FILESTOINSTALL += $(CMXSFILES) $(CMXAFILES) $(CMOFILESTOINSTALL:.cmo=.cmx)
+LINK_PLUGINS?=-ccopt -Wl,--as-needed $(shell for plugin in $(COQLIB)plugins/*/*.cmxs; do echo -cclib "$$plugin"; done)
 else
 DO_NATDYNLINK =
+LINK_PLUGINS?=
 endif
 
 ALLDFILES = $(addsuffix .d,$(ALLSRCFILES))
@@ -631,7 +633,7 @@ $(MLPACKFILES:.mlpack=.cmx): %.cmx: | %.mlpack
 $(filter-out $(MLLIBFILES:.mllib=.cmxs) $(MLPACKFILES:.mlpack=.cmxs) $(addsuffix .cmxs,$(PACKEDFILES)) $(addsuffix .cmxs,$(LIBEDFILES)),$(MLFILES:.ml=.cmxs) $(ML4FILES:.ml4=.cmxs)): %.cmxs: %.cmx
 	$(SHOW)'[deprecated,use-mllib-or-mlpack] CAMLOPT -shared -o $@'
 	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) \
-		-shared -o $@ $<
+		-shared -o $@ $< $(LINK_PLUGINS)
 
 ifneq (,$(TIMING))
 TIMING_EXTRA = > $<.$(TIMING_EXT)

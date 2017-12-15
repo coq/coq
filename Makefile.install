@@ -126,6 +126,18 @@ endif
 ifeq ($(BEST),opt)
 	$(INSTALLLIB) $(LIBCOQRUN) $(FULLCOQLIB)/kernel/byterun
 	$(INSTALLSH) $(FULLCOQLIB) $(PLUGINSOPT)
+ifeq ($(ARCH),Android)
+# Android does not support RPATH, so the library paths that were used during
+# the build process have to be switched to absolute paths in the final
+# installation directory.
+	for plugin in $(PLUGINSOPT); do \
+	  patchelf \
+	    $(foreach p, \
+	      $(PLUGINSOPT), \
+	      --replace-needed $(p) $(FULLCOQLIB)/$(p)) \
+	    "$(FULLCOQLIB)/$$plugin"; \
+	done
+endif
 endif
 # csdpcert is not meant to be directly called by the user; we install
 # it with libraries
