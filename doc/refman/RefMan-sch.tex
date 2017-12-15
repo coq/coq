@@ -127,8 +127,10 @@ conclusion is {\tt (n:nat)(even n)->(Q n)}.
 \optindex{Boolean Equality Schemes}
 \optindex{Elimination Schemes}
 \optindex{Nonrecursive Elimination Schemes}
+\optindex{Record Elimination Schemes}
 \optindex{Case Analysis Schemes}
 \optindex{Decidable Equality Schemes}
+\optindex{Rewriting Schemes}
 \label{set-nonrecursive-elimination-schemes}
 }
 
@@ -142,6 +144,7 @@ and {\tt Record} (see~\ref{Record}) do not have an automatic
 declaration of the induction principles. It can be activated with the
 command {\tt Set Nonrecursive Elimination Schemes}. It can be
 deactivated again with {\tt Unset Nonrecursive Elimination Schemes}.
+{\tt Record Elimination Schemes} is a deprecated alias of {\tt Nonrecursive Elimination Schemes}.
 
 In addition, the {\tt Case Analysis Schemes} flag governs the generation of
 case analysis lemmas for inductive types, i.e. corresponding to the
@@ -155,6 +158,9 @@ with respectively the commands {\tt Set Boolean Equality Schemes} and
 However you have to be careful with this option since
 \Coq~ may now reject well-defined inductive types because it cannot compute
 a Boolean equality for them.
+
+The {\tt Rewriting Schemes} flag governs generation of equality
+related schemes such as congruence.
 
 \subsection{\tt Combined Scheme}
 \label{CombinedScheme}
