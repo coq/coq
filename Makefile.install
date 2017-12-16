@@ -107,9 +107,10 @@ install-devfiles:
 	$(MKDIR) $(FULLBINDIR)
 	$(MKDIR) $(FULLCOQLIB)
 	$(INSTALLSH)  $(FULLCOQLIB) $(GRAMMARCMA)
-	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMI)
-	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMX)
-	$(INSTALLSH)  $(FULLCOQLIB) $(PLUGINSCMO:.cmo=.o)
+	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMI)           # Regular CMI files
+	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMX)           # To avoid warning 58 "-opaque"
+	$(INSTALLSH)  $(FULLCOQLIB) $(PLUGINSCMO:.cmo=.cmx) # For static linking of plugins
+	$(INSTALLSH)  $(FULLCOQLIB) $(PLUGINSCMO:.cmo=.o)   # For static linking of plugins
 	$(INSTALLSH)  $(FULLCOQLIB) $(TOOLS_HELPERS)
 ifeq ($(BEST),opt)
 	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMX) $(CORECMA:.cma=.a) $(STATICPLUGINS:.cma=.a)
