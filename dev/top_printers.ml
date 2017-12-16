@@ -50,13 +50,13 @@ let ppqualid qid = pp(pr_qualid qid)
 let ppclindex cl = pp(Classops.pr_cl_index cl)
 let ppscheme k = pp (Ind_tables.pr_scheme_kind k)
 
-let pprecarg = function
+let prrecarg = function
   | Declarations.Norec -> str "Norec"
   | Declarations.Mrec (mind,i) ->
      str "Mrec[" ++ MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
   | Declarations.Imbr (mind,i) ->
      str "Imbr[" ++ MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
-let ppwf_paths x = pp (Rtree.pp_tree pprecarg x)
+let ppwf_paths x = pp (Rtree.pp_tree prrecarg x)
 
 (* term printers *)
 let envpp pp = let sigma,env = Pfedit.get_current_context () in pp env sigma
@@ -65,8 +65,6 @@ let ppevar evk = pp (Evar.print evk)
 let ppconstr x = pp (Termops.print_constr (EConstr.of_constr x))
 let ppeconstr x = pp (Termops.print_constr x)
 let ppconstr_expr x = pp (Ppconstr.pr_constr_expr x)
-let ppconstrdb x = pp(Flags.with_option rawdebug Termops.print_constr (EConstr.of_constr x))
-let ppterm = ppconstr
 let ppsconstr x = ppconstr (Mod_subst.force_constr x)
 let ppconstr_univ x = Constrextern.with_universes ppconstr x
 let ppglob_constr = (fun x -> pp(pr_lglob_constr_env (Global.env()) x))
@@ -111,7 +109,7 @@ let prconstrunderbindersidmap = pridmap (fun _ (l,c) ->
 let ppconstrunderbindersidmap l = pp (prconstrunderbindersidmap l)
 
 let ppunbound_ltac_var_map l = ppidmap (fun _ arg ->
-  str"<genarg:" ++ pr_argument_type(genarg_tag arg) ++ str">")
+  str"<genarg:" ++ pr_argument_type(genarg_tag arg) ++ str">") l
 
 open Ltac_pretype
 let rec pr_closure {idents=idents;typed=typed;untyped=untyped} =
@@ -149,8 +147,8 @@ let genppj f j = let (c,t) = f j in (c ++ str " : " ++ t)
 
 let ppj j = pp (genppj (envpp pr_ljudge_env) j)
 
-let prsubst s = pp (Mod_subst.debug_pr_subst s)
-let prdelta s = pp (Mod_subst.debug_pr_delta s)
+let ppsubst s = pp (Mod_subst.debug_pr_subst s)
+let ppdelta s = pp (Mod_subst.debug_pr_delta s)
 
 let pp_idpred s = pp (pr_idpred s)
 let pp_cpred s = pp (pr_cpred s)
@@ -200,9 +198,8 @@ let pppftreestate p = pp(print_pftreestate p)
 
 let pproof p = pp(Proof.pr_proof p)
 
-let ppuni u = pp(pr_uni u)
+let ppuni u = pp(Universe.pr u)
 let ppuni_level u = pp (Level.pr u)
-let ppuniverse u = pp (str"[" ++ Universe.pr u ++ str"]")
 
 let prlev = Universes.pr_with_global_universes
 let ppuniverse_set l = pp (LSet.pr prlev l)

@@ -595,11 +595,14 @@ API/API.cmi : API/API.mli
 	$(SHOW)'OCAMLOPT -pack -o $@'
 	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -pack -o $@ $(filter-out %.mlpack, $^)
 
+COND_IDEFLAGS=$(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide,)
+COND_PRINTERFLAGS=$(if $(filter dev/%,$<), -I dev,)
+
 COND_BYTEFLAGS= \
- $(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide,) $(MLINCLUDES) $(BYTEFLAGS)
+ $(COND_IDEFLAGS) $(COND_PRINTERFLAGS) $(MLINCLUDES) $(BYTEFLAGS)
 
 COND_OPTFLAGS= \
- $(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide,) $(MLINCLUDES) $(OPTFLAGS)
+ $(COND_IDEFLAGS) $(MLINCLUDES) $(OPTFLAGS)
 
 %.cmi: %.mli
 	$(SHOW)'OCAMLC    $<'

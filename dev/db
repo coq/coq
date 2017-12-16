@@ -42,7 +42,6 @@ install_printer Top_printers.ppuniverse_level_subst
 install_printer Top_printers.ppevar_universe_context
 install_printer Top_printers.ppcumulativity_info
 install_printer Top_printers.ppabstract_cumulativity_info
-install_printer Top_printers.pptype
 install_printer Top_printers.ppj
 install_printer Top_printers.ppenv
 install_printer Top_printers.ppnamedcontextval
@@ -59,8 +58,8 @@ install_printer Top_printers.pphintdb
 install_printer Top_printers.pptac
 install_printer Top_printers.ppobj
 install_printer Top_printers.pploc
-install_printer Top_printers.prsubst
-install_printer Top_printers.prdelta
+install_printer Top_printers.ppsubst
+install_printer Top_printers.ppdelta
 install_printer Top_printers.ppfconstr
 install_printer Top_printers.ppgenarginfo
 install_printer Top_printers.ppgenargargt
