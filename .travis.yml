@@ -212,7 +212,7 @@ before_install:
 - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then echo "Tested commit (followed by parent commits):"; git log -1; for commit in `git log -1 --format="%P"`; do echo; git log -1 $commit; done; fi
 
 install:
-- opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
+- opam init -j ${NJOBS} --comp=${COMPILER} -n -y
 - eval $(opam config env)
 - opam config list
 - opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind.${FINDLIB_VER} ${EXTRA_OPAM}
