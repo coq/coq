@@ -1,4 +1,4 @@
-\achapter{Extraction of programs in Objective Caml and Haskell}
+\achapter{Extraction of programs in OCaml and Haskell}
 %HEVEA\cutname{extraction.html}
 \label{Extraction}
 \aauthor{Jean-Christophe Filliâtre and Pierre Letouzey}
@@ -95,12 +95,12 @@ one monolithic file or one file per \Coq\ library.
 \begin{description}
 \item {\tt Extraction TestCompile} \qualid$_1$ \dots\ \qualid$_n$. ~\par
   All the globals (or modules) \qualid$_1$ \dots\ \qualid$_n$ and all
-  their dependencies are extracted to a temporary Ocaml file, just as in
+  their dependencies are extracted to a temporary {\ocaml} file, just as in
   {\tt Extraction "{\em file}"}. Then this temporary file and its
-  signature are compiled with the same Ocaml compiler used to built
-  \Coq. This command succeeds only if the extraction and the Ocaml
+  signature are compiled with the same {\ocaml} compiler used to built
+  \Coq. This command succeeds only if the extraction and the {\ocaml}
   compilation succeed (and it fails if the current target language
-  of the extraction is not Ocaml).
+  of the extraction is not {\ocaml}).
 \end{description}
 
 \asection{Extraction options}
@@ -109,26 +109,26 @@ one monolithic file or one file per \Coq\ library.
 \comindex{Extraction Language}
 
 The ability to fix target language is the first and more important
-of the extraction options. Default is Ocaml.
+of the extraction options. Default is {\ocaml}.
 \begin{description}
-\item {\tt Extraction Language Ocaml}.
+\item {\tt Extraction Language OCaml}.
 \item {\tt Extraction Language Haskell}.
 \item {\tt Extraction Language Scheme}.
 \end{description}
 
 \asubsection{Inlining and optimizations}
 
-Since Objective Caml is a strict language, the extracted code has to
+Since {\ocaml} is a strict language, the extracted code has to
 be optimized in order to be efficient (for instance, when using
 induction principles we do not want to compute all the recursive calls
 but only the needed ones). So the extraction mechanism provides an
 automatic optimization routine that will be called each time the user
-want to generate Ocaml programs. The optimizations can be split in two
+want to generate {\ocaml} programs. The optimizations can be split in two
 groups: the type-preserving ones -- essentially constant inlining and
 reductions -- and the non type-preserving ones -- some function
 abstractions of dummy types are removed when it is deemed safe in order
 to have more elegant types. Therefore some constants may not appear in the
-resulting monolithic Ocaml program. In the case of modular extraction,
+resulting monolithic {\ocaml} program. In the case of modular extraction,
 even if some inlining is done, the inlined constant are nevertheless
 printed, to ensure session-independent programs.
 
@@ -367,15 +367,15 @@ As for {\tt Extract Inductive}, this command should be used with care:
 \item Extracting an inductive type to a pre-existing ML inductive type
 is quite sound. But extracting to a general type (by providing an
 ad-hoc pattern-matching) will often \emph{not} be fully rigorously
-correct.  For instance, when extracting {\tt nat} to Ocaml's {\tt
+correct.  For instance, when extracting {\tt nat} to {\ocaml}'s {\tt
 int}, it is theoretically possible to build {\tt nat} values that are
-larger than Ocaml's {\tt max\_int}. It is the user's responsibility to
+larger than {\ocaml}'s {\tt max\_int}. It is the user's responsibility to
 be sure that no overflow or other bad events occur in practice.
 
 \item Translating an inductive type to an ML type does \emph{not}
 magically improve the asymptotic complexity of functions, even if the
 ML type is an efficient representation. For instance, when extracting
-{\tt nat} to Ocaml's {\tt int}, the function {\tt mult} stays
+{\tt nat} to {\ocaml}'s {\tt int}, the function {\tt mult} stays
 quadratic. It might be interesting to associate this translation with
 some specific {\tt Extract Constant} when primitive counterparts exist.
 \end{itemize}
@@ -402,7 +402,7 @@ Extract Inductive prod => "(*)"  [ "(,)" ].
 \end{coq_example}
 
 \noindent As an example of translation to a non-inductive datatype, let's turn
-{\tt nat} into Ocaml's {\tt int} (see caveat above):
+{\tt nat} into {\ocaml}'s {\tt int} (see caveat above):
 \begin{coq_example}
 Extract Inductive nat => int [ "0" "succ" ]
  "(fun fO fS n -> if n=0 then fO () else fS (n-1))".
@@ -417,7 +417,7 @@ directly depends from the names of the \Coq\ files. It may happen that
 these filenames are in conflict with already existing files, 
 either in the standard library of the target language or in other
 code that is meant to be linked with the extracted code. 
-For instance the module {\tt List} exists both in \Coq\ and in Ocaml.
+For instance the module {\tt List} exists both in \Coq\ and in {\ocaml}.
 It is possible to instruct the extraction not to use particular filenames.
 
 \begin{description}
@@ -430,7 +430,7 @@ It is possible to instruct the extraction not to use particular filenames.
   Allow the extraction to use any filename.
 \end{description}
 
-\noindent For Ocaml, a typical use of these commands is
+\noindent For {\ocaml}, a typical use of these commands is
 {\tt Extraction Blacklist String List}.
 
 \asection{Differences between \Coq\ and ML type systems}
@@ -438,7 +438,7 @@ It is possible to instruct the extraction not to use particular filenames.
 
 Due to differences between \Coq\ and ML type systems, 
 some extracted programs are not directly typable in ML. 
-We now solve this problem (at least in Ocaml) by adding 
+We now solve this problem (at least in {\ocaml}) by adding
 when needed some unsafe casting {\tt Obj.magic}, which give
 a generic type {\tt 'a} to any term.
 
@@ -455,7 +455,7 @@ Definition dp :=
  fun (A B:Set)(x:A)(y:B)(f:forall C:Set, C->C) => (f A x, f B y).
 \end{verbatim}
 
-In Ocaml, for instance, the direct extracted term would be
+In {\ocaml}, for instance, the direct extracted term would be
 \begin{verbatim}
 let dp x y f = Pair((f () x),(f () y))
 \end{verbatim}
@@ -480,13 +480,13 @@ Inductive anything : Type := dummy : forall A:Set, A -> anything.
 \end{verbatim}
 
 which corresponds to the definition of an ML dynamic type.
-In Ocaml, we must cast any argument of the constructor dummy.
+In {\ocaml}, we must cast any argument of the constructor dummy.
 
 \end{itemize}
 
 \noindent Even with those unsafe castings, you should never get error like
 ``segmentation fault''. In fact even if your program may seem
-ill-typed to the Ocaml type-checker, it can't go wrong: it comes 
+ill-typed to the {\ocaml} type-checker, it can't go wrong: it comes
 from a Coq well-typed terms, so for example inductives will always 
 have the correct number of arguments, etc. 
 

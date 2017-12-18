@@ -42,14 +42,20 @@ ARGUMENT EXTEND int_or_id
 END
 
 let pr_language = function
-  | Ocaml -> str "Ocaml"
+  | Ocaml -> str "OCaml"
   | Haskell -> str "Haskell"
   | Scheme -> str "Scheme"
   | JSON -> str "JSON"
 
+let warn_deprecated_ocaml_spelling =
+  CWarnings.create ~name:"deprecated-ocaml-spelling" ~category:"deprecated"
+    (fun () ->
+      strbrk ("The spelling \"OCaml\" should be used instead of \"Ocaml\"."))
+
 VERNAC ARGUMENT EXTEND language
 PRINTED BY pr_language
-| [ "Ocaml" ] -> [ Ocaml ]
+| [ "Ocaml" ] -> [ let _ = warn_deprecated_ocaml_spelling () in Ocaml ]
+| [ "OCaml" ] -> [ Ocaml ]
 | [ "Haskell" ] -> [ Haskell ]
 | [ "Scheme" ] -> [ Scheme ]
 | [ "JSON" ] -> [ JSON ]
