@@ -4620,6 +4620,9 @@ end
 
 module Constrintern :
 sig
+
+  open Evd
+
   type ltac_sign = {
     ltac_vars : Names.Id.Set.t;
     ltac_bound : Names.Id.Set.t;
@@ -4635,11 +4638,11 @@ sig
     | Variable
   type internalization_env = var_internalization_data Names.Id.Map.t
 
-  val interp_constr_evars : Environ.env -> Evd.evar_map ref ->
-                            ?impls:internalization_env -> Constrexpr.constr_expr -> EConstr.constr
+  val interp_constr_evars : Environ.env -> evar_map ->
+                            ?impls:internalization_env -> Constrexpr.constr_expr -> evar_map * EConstr.constr
 
-  val interp_type_evars : Environ.env -> Evd.evar_map ref ->
-                          ?impls:internalization_env -> Constrexpr.constr_expr -> EConstr.types
+  val interp_type_evars : Environ.env -> Evd.evar_map ->
+                          ?impls:internalization_env -> Constrexpr.constr_expr -> evar_map * EConstr.types
 
   val empty_ltac_sign : ltac_sign
   val intern_gen : Pretyping.typing_constraint -> Environ.env ->
@@ -4657,10 +4660,12 @@ sig
   val locate_reference :  Libnames.qualid -> Globnames.global_reference
   val interp_type : Environ.env -> Evd.evar_map -> ?impls:internalization_env ->
                     Constrexpr.constr_expr -> Constr.types Evd.in_evar_universe_context
+
   val interp_context_evars :
     ?global_level:bool -> ?impl_env:internalization_env -> ?shift:int ->
-    Environ.env -> Evd.evar_map ref -> Constrexpr.local_binder_expr list ->
-    internalization_env * ((Environ.env * EConstr.rel_context) * Impargs.manual_implicits)
+    Environ.env -> Evd.evar_map -> Constrexpr.local_binder_expr list ->
+    evar_map * (internalization_env * ((Environ.env * EConstr.rel_context) * Impargs.manual_implicits))
+
   val compute_internalization_data : Environ.env -> var_internalization_type ->
                                      Constr.types -> Impargs.manual_explicitation list -> var_internalization_data
   val empty_internalization_env : internalization_env

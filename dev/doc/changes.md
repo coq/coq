@@ -46,6 +46,11 @@ We changed the type of the following functions:
 
 - `Global.body_of_constant`: same as above.
 
+- `Constrinterp.*` generally, many functions that used to take an
+  `evar_map ref` have been now switched to functions that will work in
+  a functional way. The old style of passing `evar_map`s as references
+  is not supported anymore.
+
 We have changed the representation of the following types:
 
 - `Lib.object_prefix` is now a record instead of a nested tuple.

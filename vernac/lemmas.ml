@@ -13,12 +13,10 @@ open CErrors
 open Util
 open Pp
 open Names
-open Term
 open Constr
 open Declarations
 open Declareops
 open Entries
-open Environ
 open Nameops
 open Globnames
 open Decls
@@ -88,28 +86,28 @@ let adjust_guardness_conditions const = function
 		(mkFix ((indexes,0),fixdecls), ctx), eff
           | _ -> (body, ctx), eff) }
 
-let find_mutually_recursive_statements thms =
+let find_mutually_recursive_statements sigma thms =
     let n = List.length thms in
     let inds = List.map (fun (id,(t,impls)) ->
-      let (hyps,ccl) = decompose_prod_assum t in
+      let (hyps,ccl) = EConstr.decompose_prod_assum sigma t in
       let x = (id,(t,impls)) in
-      let whnf_hyp_hds = map_rel_context_in_env
-        (fun env c -> EConstr.Unsafe.to_constr (fst (whd_all_stack env Evd.empty (EConstr.of_constr c))))
+      let whnf_hyp_hds = EConstr.map_rel_context_in_env
+        (fun env c -> fst (Reductionops.whd_all_stack env sigma c))
         (Global.env()) hyps in
       let ind_hyps =
         List.flatten (List.map_i (fun i decl ->
           let t = RelDecl.get_type decl in
-          match Constr.kind t with
+          match EConstr.kind sigma t with
           | Ind ((kn,_ as ind),u) when
                 let mind = Global.lookup_mind kn in
                 mind.mind_finite <> Decl_kinds.CoFinite ->
               [ind,x,i]
           | _ ->
-              []) 0 (List.rev (List.filter RelDecl.is_local_assum whnf_hyp_hds))) in
+              []) 0 (List.rev (List.filter Context.Rel.Declaration.is_local_assum whnf_hyp_hds))) in
       let ind_ccl =
-        let cclenv = push_rel_context hyps (Global.env()) in
-        let whnf_ccl,_ = whd_all_stack cclenv Evd.empty (EConstr.of_constr ccl) in
-        match Constr.kind (EConstr.Unsafe.to_constr whnf_ccl) with
+        let cclenv = EConstr.push_rel_context hyps (Global.env()) in
+        let whnf_ccl,_ = whd_all_stack cclenv Evd.empty ccl in
+        match EConstr.kind sigma whnf_ccl with
         | Ind ((kn,_ as ind),u) when
               let mind = Global.lookup_mind kn in
               Int.equal mind.mind_ntypes n && mind.mind_finite == Decl_kinds.CoFinite ->
@@ -163,14 +161,14 @@ let find_mutually_recursive_statements thms =
     in
     (finite,guard,None), ordered_inds
 
-let look_for_possibly_mutual_statements = function
+let look_for_possibly_mutual_statements sigma = function
   | [id,(t,impls)] ->
       (* One non recursively proved theorem *)
       None,[id,(t,impls)],None
   | _::_ as thms ->
     (* More than one statement and/or an explicit decreasing mark: *)
     (* we look for a common inductive hyp or a common coinductive conclusion *)
-    let recguard,ordered_inds = find_mutually_recursive_statements thms in
+    let recguard,ordered_inds = find_mutually_recursive_statements sigma thms in
     let thms = List.map pi2 ordered_inds in
     Some recguard,thms, Some (List.map (fun (_,_,i) -> succ i) ordered_inds)
   | [] -> anomaly (Pp.str "Empty list of theorems.")
@@ -377,7 +375,7 @@ let start_proof_univs id ?pl kind sigma ?terminator ?sign c ?init_tac ?(compute_
 
 let rec_tac_initializer finite guard thms snl =
   if finite then
-    match List.map (fun (id,(t,_)) -> (id,EConstr.of_constr t)) thms with
+    match List.map (fun (id,(t,_)) -> (id,t)) thms with
     | (id,_)::l -> Tactics.mutual_cofix id l 0
     | _ -> assert false
   else
@@ -385,11 +383,11 @@ let rec_tac_initializer finite guard thms snl =
     let nl = match snl with 
      | None -> List.map succ (List.map List.last guard)
      | Some nl -> nl
-    in match List.map2 (fun (id,(t,_)) n -> (id,n, EConstr.of_constr t)) thms nl with
+    in match List.map2 (fun (id,(t,_)) n -> (id,n, t)) thms nl with
        | (id,n,_)::l -> Tactics.mutual_fix id n l 0
        | _ -> assert false
 
-let start_proof_with_initialization kind ctx decl recguard thms snl hook =
+let start_proof_with_initialization kind sigma decl recguard thms snl hook =
   let intro_tac (_, (_, (ids, _))) =
     Tacticals.New.tclMAP (function
     | Name id -> Tactics.intro_mustbe_force id
@@ -424,16 +422,15 @@ let start_proof_with_initialization kind ctx decl recguard thms snl hook =
           if List.is_empty other_thms then [] else
             (* there are several theorems defined mutually *)
             let body,opaq = retrieve_first_recthm ctx ref in
-            let subst = Evd.evar_universe_context_subst ctx in
-            let norm c = Universes.subst_opt_univs_constr subst c in
-            let body = Option.map norm body in
+            let norm c = EConstr.to_constr (Evd.from_ctx ctx) c in
+            let body = Option.map EConstr.of_constr body in
             let uctx = UState.check_univ_decl ~poly:(pi2 kind) ctx decl in
             List.map_i (save_remaining_recthms kind norm uctx body opaq) 1 other_thms in
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
 	  call_hook (fun exn -> exn) hook strength ref) thms_data in
-      start_proof_univs id ~pl:decl kind ctx (EConstr.of_constr t) ?init_tac (fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard
+      start_proof_univs id ~pl:decl kind sigma t ?init_tac (fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard
 
 let start_proof_com ?inference_hook kind thms hook =
   let env0 = Global.env () in
@@ -442,22 +439,24 @@ let start_proof_com ?inference_hook kind thms hook =
     match decl with
     | None -> Evd.from_env env0, Univdecls.default_univ_decl
     | Some decl ->
-       Univdecls.interp_univ_decl_opt env0 (snd decl) in
-  let evdref = ref evd in
-  let thms = List.map (fun (sopt,(bl,t)) ->
-    let impls, ((env, ctx), imps) = interp_context_evars env0 evdref bl in
-    let t', imps' = interp_type_evars_impls ~impls env evdref t in
+      Univdecls.interp_univ_decl_opt env0 (snd decl) in
+  let evd, thms = List.fold_left_map (fun evd (sopt,(bl,t)) ->
+    let evd, (impls, ((env, ctx), imps)) = interp_context_evars env0 evd bl in
+    let evd, (t', imps') = interp_type_evars_impls ~impls env evd t in
     let flags = all_and_fail_flags in
     let flags = { flags with use_hook = inference_hook } in
-    evdref := solve_remaining_evars flags env !evdref Evd.empty;
+    let evd = solve_remaining_evars flags env evd Evd.empty in
     let ids = List.map RelDecl.get_name ctx in
-      (compute_proof_name (pi1 kind) sopt,
-      (EConstr.Unsafe.to_constr (nf_evar !evdref (EConstr.it_mkProd_or_LetIn t' ctx)),
-       (ids, imps @ lift_implicits (Context.Rel.nhyps ctx) imps'))))
-    thms in
-  let recguard,thms,snl = look_for_possibly_mutual_statements thms in
-  let evd, nf = Evarutil.nf_evars_and_universes !evdref in
-  let thms = List.map (fun (n, (t, info)) -> (n, (nf t, info))) thms in
+    (* XXX: The nf_evar is critical !! *)
+    evd, (compute_proof_name (pi1 kind) sopt,
+          (Evarutil.nf_evar evd (EConstr.it_mkProd_or_LetIn t' ctx),
+           (ids, imps @ lift_implicits (Context.Rel.nhyps ctx) imps'))))
+      evd thms in
+  let recguard,thms,snl = look_for_possibly_mutual_statements evd thms in
+  let evd, _nf = Evarutil.nf_evars_and_universes evd in
+  (* XXX: This nf_evar is critical too!! We are normalizing twice if
+     you look at the previous lines... *)
+  let thms = List.map (fun (n, (t, info)) -> (n, (nf_evar evd t, info))) thms in
   let () =
     let open Misctypes in
     if not (decl.univdecl_extensible_instance && decl.univdecl_extensible_constraints) then
@@ -469,7 +468,6 @@ let start_proof_com ?inference_hook kind thms hook =
       Evd.fix_undefined_variables evd
   in
     start_proof_with_initialization kind evd decl recguard thms snl hook
-
 
 (* Saving a proof *)
 

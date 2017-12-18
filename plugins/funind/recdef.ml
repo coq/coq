@@ -1427,7 +1427,7 @@ let com_terminate
     nb_args ctx
     hook =
   let start_proof ctx (tac_start:tactic) (tac_end:tactic) =
-    let evmap, env = Pfedit.get_current_context () in
+    let evd, env = Pfedit.get_current_context () in
     Lemmas.start_proof thm_name
       (Global, false (* FIXME *), Proof Lemma) ~sign:(Environ.named_context_val env)
       ctx (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref)) hook;
@@ -1479,13 +1479,13 @@ let (com_eqn : int -> Id.t ->
 	| ConstRef c -> is_opaque_constant c
 	| _ -> anomaly ~label:"terminate_lemma" (Pp.str "not a constant.")
     in
-    let evmap, env = Pfedit.get_current_context () in
-    let evmap = Evd.from_ctx (Evd.evar_universe_context evmap) in
+    let evd, env = Pfedit.get_current_context () in
+    let evd = Evd.from_ctx (Evd.evar_universe_context evd) in
     let f_constr = constr_of_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
     (Lemmas.start_proof eq_name (Global, false, Proof Lemma)
        ~sign:(Environ.named_context_val env)
-       evmap
+       evd
        (EConstr.of_constr equation_lemma_type)
        (Lemmas.mk_hook (fun _ _ -> ()));
      ignore (by
@@ -1528,14 +1528,14 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let open Constr in
   let open CVars in
   let env = Global.env() in
-  let evd = ref (Evd.from_env env) in
-  let function_type = interp_type_evars env evd type_of_f in
+  let evd = Evd.from_env env in
+  let evd, function_type = interp_type_evars env evd type_of_f in
   let function_type = EConstr.Unsafe.to_constr function_type in
   let env = push_named (Context.Named.Declaration.LocalAssum (function_name,function_type)) env in
   (* Pp.msgnl (str "function type := " ++ Printer.pr_lconstr function_type);  *)
-  let ty = interp_type_evars env evd ~impls:rec_impls eq in
+  let evd, ty = interp_type_evars env evd ~impls:rec_impls eq in
   let ty = EConstr.Unsafe.to_constr ty in
-  let evm, nf = Evarutil.nf_evars_and_universes !evd in
+  let evd, nf = Evarutil.nf_evars_and_universes evd in
   let equation_lemma_type = nf_betaiotazeta (EConstr.of_constr (nf ty)) in
   let function_type = nf function_type in
   let equation_lemma_type = EConstr.Unsafe.to_constr equation_lemma_type in
@@ -1560,16 +1560,16 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let functional_id =  add_suffix function_name "_F" in
   let term_id = add_suffix function_name "_terminate" in
   let functional_ref =
-    let univs = Entries.Monomorphic_const_entry (Evd.universe_context_set evm) in
+    let univs = Entries.Monomorphic_const_entry (Evd.universe_context_set evd) in
     declare_fun functional_id (IsDefinition Decl_kinds.Definition) ~univs res
   in
   (* Refresh the global universes, now including those of _F *)
-  let evm = Evd.from_env (Global.env ()) in
+  let evd = Evd.from_env (Global.env ()) in
   let env_with_pre_rec_args = push_rel_context(List.map (function (x,t) -> LocalAssum (x,t)) pre_rec_args) env in
   let relation, evuctx =
-    interp_constr env_with_pre_rec_args evm r
+    interp_constr env_with_pre_rec_args evd r
   in
-  let evm = Evd.from_ctx evuctx in
+  let evd = Evd.from_ctx evuctx in
   let tcc_lemma_name = add_suffix function_name "_tcc" in
   let tcc_lemma_constr = ref Undefined in
   (* let _ = Pp.msgnl (str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in *)
@@ -1599,7 +1599,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       and functional_ref = destConst (constr_of_global functional_ref)
       and eq_ref = destConst (constr_of_global eq_ref) in
       generate_induction_principle f_ref tcc_lemma_constr
-	functional_ref eq_ref rec_arg_num (EConstr.of_constr rec_arg_type) (nb_prod evm (EConstr.of_constr res)) (EConstr.of_constr relation);
+        functional_ref eq_ref rec_arg_num (EConstr.of_constr rec_arg_type) (nb_prod evd (EConstr.of_constr res)) (EConstr.of_constr relation);
       Flags.if_verbose
         msgnl (h 1 (Ppconstr.pr_id function_name ++
 			 spc () ++ str"is defined" )++ fnl () ++
@@ -1618,5 +1618,5 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       term_id
       using_lemmas
       (List.length res_vars)
-      evm (Lemmas.mk_hook hook))
+      evd (Lemmas.mk_hook hook))
     ()

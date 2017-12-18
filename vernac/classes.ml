@@ -82,18 +82,18 @@ let mismatched_props env n m = mismatched_ctx_inst env Properties n m
 
 let type_ctx_instance env sigma ctx inst subst =
   let open Vars in
-  let rec aux (subst, instctx) l = function
+  let rec aux (sigma, subst, instctx) l = function
     decl :: ctx ->
       let t' = substl subst (RelDecl.get_type decl) in
-      let c', l =
+      let (sigma, c'), l =
 	match decl with
         | LocalAssum _ -> interp_casted_constr_evars env sigma (List.hd l) t', List.tl l
-	| LocalDef (_,b,_) -> substl subst b, l
+        | LocalDef (_,b,_) -> (sigma, substl subst b), l
       in
       let d = RelDecl.get_name decl, Some c', t' in
-	aux (c' :: subst, d :: instctx) l ctx
-    | [] -> subst
-  in aux (subst, []) inst (List.rev ctx)
+        aux (sigma, c' :: subst, d :: instctx) l ctx
+    | [] -> sigma, subst
+  in aux (sigma, subst, []) inst (List.rev ctx)
 
 let id_of_class cl =
   match cl.cl_impl with
@@ -153,10 +153,8 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
     else tclass 
   in
   let sigma, k, u, cty, ctx', ctx, len, imps, subst =
-    let _evd = ref sigma in
-    let impls, ((env', ctx), imps) = interp_context_evars env _evd ctx in
-    let c', imps' = interp_type_evars_impls ~impls env' _evd tclass in
-    let sigma = !_evd in
+    let sigma, (impls, ((env', ctx), imps)) = interp_context_evars env sigma ctx in
+    let sigma, (c', imps') = interp_type_evars_impls ~impls env' sigma tclass in
     let len = List.length ctx in
     let imps = imps @ Impargs.lift_implicits len imps' in
     let ctx', c = decompose_prod_assum sigma c' in
@@ -225,9 +223,8 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
         | None ->
           (if List.is_empty k.cl_props then Some (Inl subst) else None), sigma
 	| Some (Inr term) ->
-            let _evd = ref sigma in
-            let c = interp_casted_constr_evars env' _evd term cty in
-            Some (Inr (c, subst)), !_evd
+            let sigma, c = interp_casted_constr_evars env' sigma term cty in
+            Some (Inr (c, subst)), sigma
 	| Some (Inl props) ->
 	    let get_id =
 	      function
@@ -265,9 +262,8 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 		unbound_method env' k.cl_impl (get_id n)
               | _ ->
                 let kcl_props = List.map (Termops.map_rel_decl of_constr) k.cl_props in
-                let _evd = ref sigma in
-                let r_term = type_ctx_instance (push_rel_context ctx' env') _evd kcl_props props subst in
-                Some (Inl r_term), !_evd
+                let sigma, res = type_ctx_instance (push_rel_context ctx' env') sigma kcl_props props subst in
+                Some (Inl res), sigma
       in
       let term, termtype =
 	match subst with
@@ -367,9 +363,7 @@ let named_of_rel_context l =
 let context poly l =
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  let _evd = ref sigma in
-  let _, ((env', fullctx), impls) = interp_context_evars env _evd l in
-  let sigma = !_evd in
+  let sigma, (_, ((env', fullctx), impls)) = interp_context_evars env sigma l in
   (* Note, we must use the normalized evar from now on! *)
   let sigma,_ = Evarutil.nf_evars_and_universes sigma in
   let ce t = Pretyping.check_evars env Evd.empty sigma t in

@@ -211,7 +211,14 @@ sig
   val fold_right2_map : ('b -> 'c -> 'a -> 'd * 'a) -> 'b list -> 'c list -> 'a -> 'd list * 'a
   (** Same with two lists, folding on the right *)
 
+  val fold_left3_map : ('a -> 'b -> 'c -> 'd -> 'a * 'e) -> 'a -> 'b list -> 'c list -> 'd list -> 'a * 'e list
+  (** Same with three lists, folding on the left *)
+
+  val fold_left4_map : ('a -> 'b -> 'c -> 'd -> 'e -> 'a * 'r) -> 'a -> 'b list -> 'c list -> 'd list -> 'e list -> 'a * 'r list
+  (** Same with four lists, folding on the left *)
+
   val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
+  (* [@@ocaml.deprecated "Same as [fold_left_map]"] *)
   (** @deprecated Same as [fold_left_map] *)
 
   val fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a

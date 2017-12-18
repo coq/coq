@@ -112,29 +112,28 @@ val interp_open_constr : env -> evar_map -> constr_expr -> evar_map * EConstr.co
 
 (** Accepting unresolved evars *)
 
-val interp_constr_evars : env -> evar_map ref ->
-  ?impls:internalization_env -> constr_expr -> EConstr.constr
+val interp_constr_evars : env -> evar_map ->
+  ?impls:internalization_env -> constr_expr -> evar_map * EConstr.constr
 
+val interp_casted_constr_evars : env -> evar_map ->
+  ?impls:internalization_env -> constr_expr -> EConstr.types -> evar_map * EConstr.constr
 
-val interp_casted_constr_evars : env -> evar_map ref ->
-  ?impls:internalization_env -> constr_expr -> EConstr.types -> EConstr.constr
-
-val interp_type_evars : env -> evar_map ref ->
-  ?impls:internalization_env -> constr_expr -> EConstr.types
+val interp_type_evars : env -> evar_map ->
+  ?impls:internalization_env -> constr_expr -> evar_map * EConstr.types
 
 (** Accepting unresolved evars and giving back the manual implicit arguments *)
 
-val interp_constr_evars_impls : env -> evar_map ref ->
+val interp_constr_evars_impls : env -> evar_map ->
   ?impls:internalization_env -> constr_expr ->
-  EConstr.constr * Impargs.manual_implicits
+  evar_map * (EConstr.constr * Impargs.manual_implicits)
 
-val interp_casted_constr_evars_impls : env -> evar_map ref ->
+val interp_casted_constr_evars_impls : env -> evar_map ->
   ?impls:internalization_env -> constr_expr -> EConstr.types ->
-  EConstr.constr * Impargs.manual_implicits
+  evar_map * (EConstr.constr * Impargs.manual_implicits)
 
-val interp_type_evars_impls : env -> evar_map ref ->
+val interp_type_evars_impls : env -> evar_map ->
   ?impls:internalization_env -> constr_expr ->
-  EConstr.types * Impargs.manual_implicits
+  evar_map * (EConstr.types * Impargs.manual_implicits)
 
 (** Interprets constr patterns *)
 
@@ -159,8 +158,8 @@ val interp_binder_evars : env -> evar_map ref -> Name.t -> constr_expr -> EConst
 
 val interp_context_evars :
   ?global_level:bool -> ?impl_env:internalization_env -> ?shift:int ->
-  env -> evar_map ref -> local_binder_expr list ->
-  internalization_env * ((env * EConstr.rel_context) * Impargs.manual_implicits)
+  env -> evar_map -> local_binder_expr list ->
+  evar_map * (internalization_env * ((env * EConstr.rel_context) * Impargs.manual_implicits))
 
 (* val interp_context_gen : (env -> glob_constr -> unsafe_type_judgment Evd.in_evar_universe_context) -> *)
 (*   (env -> Evarutil.type_constraint -> glob_constr -> unsafe_judgment Evd.in_evar_universe_context) -> *)

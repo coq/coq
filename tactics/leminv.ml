@@ -249,11 +249,11 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
 
 let add_inversion_lemma_exn na com comsort bool tac =
   let env = Global.env () in
-  let evd = ref (Evd.from_env env) in
-  let c = Constrintern.interp_type_evars env evd com in
-  let evd, sort = Evd.fresh_sort_in_family ~rigid:univ_rigid env !evd comsort in
+  let sigma = Evd.from_env env in
+  let sigma, c = Constrintern.interp_type_evars env sigma com in
+  let sigma, sort = Evd.fresh_sort_in_family ~rigid:univ_rigid env sigma comsort in
   try
-    add_inversion_lemma na env evd c sort bool tac
+    add_inversion_lemma na env sigma c sort bool tac
   with
     |   UserError (Some "Case analysis",s) -> (* Reference to Indrec *)
 	  user_err ~hdr:"Inv needs Nodep Prop Set" s

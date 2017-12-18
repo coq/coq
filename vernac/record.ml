@@ -60,23 +60,25 @@ let _ =
       optread  = (fun () -> !typeclasses_unique);
       optwrite = (fun b -> typeclasses_unique := b); }
 
-let interp_fields_evars env evars impls_env nots l =
+let interp_fields_evars env sigma impls_env nots l =
   List.fold_left2
-    (fun (env, uimpls, params, impls) no ((loc, i), b, t) ->
-      let t', impl = interp_type_evars_impls env evars ~impls t in
-      let b' = Option.map (fun x -> fst (interp_casted_constr_evars_impls env evars ~impls x t')) b in
+    (fun (env, sigma, uimpls, params, impls) no ((loc, i), b, t) ->
+      let sigma, (t', impl) = interp_type_evars_impls env sigma ~impls t in
+      let sigma, b' =
+        Option.cata (fun x -> on_snd (fun x -> Some (fst x)) @@
+                      interp_casted_constr_evars_impls env sigma ~impls x t') (sigma,None) b in
       let impls =
 	match i with
 	| Anonymous -> impls
-	| Name id -> Id.Map.add id (compute_internalization_data env Constrintern.Method (EConstr.to_constr !evars t') impl) impls
+        | Name id -> Id.Map.add id (compute_internalization_data env Constrintern.Method (EConstr.to_constr sigma t') impl) impls
       in
       let d = match b' with
 	      | None -> LocalAssum (i,t')
 	      | Some b' -> LocalDef (i,b',t')
       in
       List.iter (Metasyntax.set_notation_for_interpretation env impls) no;
-      (EConstr.push_rel d env, impl :: uimpls, d::params, impls))
-    (env, [], [], impls_env) nots l
+      (EConstr.push_rel d env, sigma, impl :: uimpls, d::params, impls))
+    (env, sigma, [], [], impls_env) nots l
 
 let compute_constructor_level evars env l =
   List.fold_right (fun d (env, univ) ->
@@ -97,10 +99,9 @@ let binders_of_decls = List.map binder_of_decl
 
 let typecheck_params_and_fields finite def id poly pl t ps nots fs =
   let env0 = Global.env () in
-  let evd, decl = Univdecls.interp_univ_decl_opt env0 pl in
-  let evars = ref evd in
-  let _ = 
-    let error bk (loc, name) = 
+  let sigma, decl = Univdecls.interp_univ_decl_opt env0 pl in
+  let _ =
+    let error bk (loc, name) =
       match bk, name with
       | Default _, Anonymous ->
         user_err ?loc ~hdr:"record" (str "Record parameters must be named")
@@ -112,63 +113,65 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
            | CLocalPattern (loc,(_,_)) ->
               Loc.raise ?loc (Stream.Error "pattern with quote not allowed in record parameters.")) ps
   in 
-  let impls_env, ((env1,newps), imps) = interp_context_evars env0 evars ps in
-  let typ, sort, template = match t with
+  let sigma, (impls_env, ((env1,newps), imps)) = interp_context_evars env0 sigma ps in
+  let sigma, typ, sort, template = match t with
     | Some t -> 
        let env = EConstr.push_rel_context newps env0 in
        let poly =
          match t with
          | { CAst.v = CSort (Misctypes.GType []) } -> true | _ -> false in
-       let s = interp_type_evars env evars ~impls:empty_internalization_env t in
-       let sred = Reductionops.whd_all env !evars s in
-	 (match EConstr.kind !evars sred with
+       let sigma, s = interp_type_evars env sigma ~impls:empty_internalization_env t in
+       let sred = Reductionops.whd_all env sigma s in
+         (match EConstr.kind sigma sred with
 	 | Sort s' ->
-            let s' = EConstr.ESorts.kind !evars s' in
+            let s' = EConstr.ESorts.kind sigma s' in
 	    (if poly then
-               match Evd.is_sort_variable !evars s' with
-	       | Some l -> evars := Evd.make_flexible_variable !evars ~algebraic:true l; 
-	                  s, s', true
-	       | None -> s, s', false
-             else s, s', false)
+               match Evd.is_sort_variable sigma s' with
+               | Some l ->
+                 let sigma = Evd.make_flexible_variable sigma ~algebraic:true l in
+                 sigma, s, s', true
+               | None ->
+                 sigma, s, s', false
+             else sigma, s, s', false)
 	 | _ -> user_err ?loc:(constr_loc t) (str"Sort expected."))
     | None -> 
       let uvarkind = Evd.univ_flexible_alg in
-      let s = Evarutil.evd_comb0 (Evd.new_sort_variable uvarkind) evars in
-      EConstr.mkSort s, s, true
+      let sigma, s = Evd.new_sort_variable uvarkind sigma in
+      sigma, EConstr.mkSort s, s, true
   in
   let arity = EConstr.it_mkProd_or_LetIn typ newps in
   let env_ar = EConstr.push_rel_context newps (EConstr.push_rel (LocalAssum (Name id,arity)) env0) in
   let assums = List.filter is_local_assum newps in
   let params = List.map (RelDecl.get_name %> Name.get_id) assums in
   let ty = Inductive (params,(finite != BiFinite)) in
-  let impls_env = compute_internalization_env env0 ~impls:impls_env ty [id] [EConstr.to_constr !evars arity] [imps] in
-  let env2,impls,newfs,data =
-    interp_fields_evars env_ar evars impls_env nots (binders_of_decls fs)
+  let impls_env = compute_internalization_env env0 ~impls:impls_env ty [id] [EConstr.to_constr sigma arity] [imps] in
+  let env2,sigma,impls,newfs,data =
+    interp_fields_evars env_ar sigma impls_env nots (binders_of_decls fs)
   in
-  let evars =
-    Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar !evars Evd.empty in
-  let typ, evars =
-    let _, univ = compute_constructor_level evars env_ar newfs in
+  let sigma =
+    Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma Evd.empty in
+  let sigma, typ =
+    let _, univ = compute_constructor_level sigma env_ar newfs in
       if not def && (Sorts.is_prop sort ||
 	(Sorts.is_set sort && is_impredicative_set env0)) then
-	typ, evars
+        sigma, typ
       else
-	let evars = Evd.set_leq_sort env_ar evars (Type univ) sort in
+        let sigma = Evd.set_leq_sort env_ar sigma (Type univ) sort in
 	if Univ.is_small_univ univ &&
-	   Option.cata (Evd.is_flexible_level evars) false (Evd.is_sort_variable evars sort) then
+           Option.cata (Evd.is_flexible_level sigma) false (Evd.is_sort_variable sigma sort) then
 	   (* We can assume that the level in aritysort is not constrained
 	       and clear it, if it is flexible *)
-	  EConstr.mkSort (Sorts.sort_of_univ univ),
-	  Evd.set_eq_sort env_ar evars (Prop Pos) sort
-	else typ, evars
+          Evd.set_eq_sort env_ar sigma (Prop Pos) sort,
+          EConstr.mkSort (Sorts.sort_of_univ univ)
+        else sigma, typ
   in
-  let evars, nf = Evarutil.nf_evars_and_universes evars in
-  let newfs = List.map (EConstr.to_rel_decl evars) newfs in
-  let newps = List.map (EConstr.to_rel_decl evars) newps in
-  let typ = EConstr.to_constr evars typ in
-  let ce t = Pretyping.check_evars env0 Evd.empty evars (EConstr.of_constr t) in
-  let univs = Evd.check_univ_decl ~poly evars decl in
-  let ubinders = Evd.universe_binders evars in
+  let sigma, _ = Evarutil.nf_evars_and_universes sigma in
+  let newfs = List.map (EConstr.to_rel_decl sigma) newfs in
+  let newps = List.map (EConstr.to_rel_decl sigma) newps in
+  let typ = EConstr.to_constr sigma typ in
+  let ce t = Pretyping.check_evars env0 Evd.empty sigma (EConstr.of_constr t) in
+  let univs = Evd.check_univ_decl ~poly sigma decl in
+  let ubinders = Evd.universe_binders sigma in
     List.iter (iter_constr ce) (List.rev newps);
     List.iter (iter_constr ce) (List.rev newfs);
     ubinders, univs, typ, template, imps, newps, impls, newfs
