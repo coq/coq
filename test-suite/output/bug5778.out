@@ -1,0 +1,4 @@
+The command has indeed failed with message:
+In nested Ltac calls to "c", "abs" and "abstract b ltac:(())", last call
+failed.
+The term "I" has type "True" which should be Set, Prop or Type.

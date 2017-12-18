@@ -1158,10 +1158,14 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
          Proofview.V82.tactic begin
            tclSHOWHYPS (Proofview.V82.of_tactic (interp_tactic ist tac))
          end
-  | TacAbstract (tac,ido) ->
+  | TacAbstract (t,ido) ->
+      let call = LtacMLCall tac in
+      push_trace(None,call) ist >>= fun trace ->
+      Profile_ltac.do_profile "eval_tactic:TacAbstract" trace
+        (catch_error_tac trace begin
       Proofview.Goal.enter begin fun gl -> Tactics.tclABSTRACT
-        (Option.map (interp_ident ist (pf_env gl) (project gl)) ido) (interp_tactic ist tac)
-      end
+        (Option.map (interp_ident ist (pf_env gl) (project gl)) ido) (interp_tactic ist t)
+      end end)
   | TacThen (t1,t) ->
       Tacticals.New.tclTHEN (interp_tactic ist t1) (interp_tactic ist t)
   | TacDispatch tl ->
