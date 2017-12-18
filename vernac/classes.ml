@@ -372,16 +372,34 @@ let context poly l =
     with e when CErrors.noncritical e ->
       user_err Pp.(str "Anonymous variables not allowed in contexts.")
   in
-  let uctx = ref (Evd.universe_context_set sigma) in
+  let univs =
+    let uctx = Evd.universe_context_set sigma in
+    match ctx with
+    | [] -> assert false
+    | [_] ->
+      if poly
+      then Polymorphic_const_entry (Univ.ContextSet.to_context uctx)
+      else Monomorphic_const_entry uctx
+    | _::_::_ ->
+      if Lib.sections_are_opened ()
+      then
+        begin
+          Declare.declare_universe_context poly uctx;
+          if poly then Polymorphic_const_entry Univ.UContext.empty
+          else Monomorphic_const_entry Univ.ContextSet.empty
+        end
+      else if poly
+      then Polymorphic_const_entry (Univ.ContextSet.to_context uctx)
+      else
+        begin
+          Declare.declare_universe_context poly uctx;
+          Monomorphic_const_entry Univ.ContextSet.empty
+        end
+  in
   let fn status (id, b, t) =
     let b, t = Option.map (to_constr sigma) b, to_constr sigma t in
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
       (* Declare the universe context once *)
-      let univs = if poly
-        then Polymorphic_const_entry (Univ.ContextSet.to_context !uctx)
-        else Monomorphic_const_entry !uctx
-      in
-      let () = uctx := Univ.ContextSet.empty in
       let decl = match b with
       | None ->
         (ParameterEntry (None,(t,univs),None), IsAssumption Logical)
@@ -403,10 +421,6 @@ let context poly l =
       in
       let impl = List.exists test impls in
       let decl = (Discharge, poly, Definitional) in
-      let univs = if poly
-        then Polymorphic_const_entry (Univ.ContextSet.to_context !uctx)
-        else Monomorphic_const_entry !uctx
-      in
       let nstatus = match b with
       | None ->
         pi3 (ComAssumption.declare_assumption false decl (t, univs) Universes.empty_binders [] impl
@@ -420,6 +434,4 @@ let context poly l =
       in
 	status && nstatus
   in 
-  if Lib.sections_are_opened () then
-    Declare.declare_universe_context poly !uctx;
   List.fold_left fn true (List.rev ctx)
