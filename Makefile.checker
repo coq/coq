@@ -26,6 +26,12 @@ CHKLIBS:= -I config -I lib -I checker
 
 # The rules
 
+CHECKMLDFILE := checker/.mlfiles
+CHECKMLLIBFILE := checker/.mllibfiles
+
+CHECKERDEPS := $(addsuffix .d, $(CHECKMLDFILE) $(CHECKMLLIBFILE))
+-include $(CHECKERDEPS)
+
 ifeq ($(BEST),opt)
 $(CHICKEN): checker/check.cmxa checker/main.ml
 	$(SHOW)'OCAMLOPT -o $@'
@@ -49,17 +55,13 @@ checker/check.cmxa: checker/check.mllib | md5chk
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) -a -o $@ $(filter-out %.mllib, $^)
 
-checker/%.ml.d: checker/%.ml
-	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLFIND) ocamldep -slash $(CHKLIBS) "$<" $(TOTARGET)
+$(CHECKMLDFILE).d: $(filter checker/%, $(MLFILES) $(MLIFILES))
+	$(SHOW)'OCAMLDEP  checker/MLFILES checker/MLIFILES'
+	$(HIDE)$(OCAMLFIND) ocamldep -slash $(CHKLIBS) $(filter checker/%, $(MLFILES) $(MLIFILES)) $(TOTARGET)
 
-checker/%.mli.d: checker/%.mli
-	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLFIND) ocamldep -slash $(CHKLIBS) "$<" $(TOTARGET)
-
-checker/%.mllib.d: checker/%.mllib | $(OCAMLLIBDEP)
-	$(SHOW)'OCAMLLIBDEP  $<'
-	$(HIDE)$(OCAMLLIBDEP) $(CHKLIBS) "$<" $(TOTARGET)
+$(CHECKMLLIBFILE).d: $(filter checker/%, $(MLLIBFILES) $(MLPACKFILES)) | $(OCAMLLIBDEP)
+	$(SHOW)'OCAMLLIBDEP  checker/MLLIBFILES checker/MLPACKFILES'
+	$(HIDE)$(OCAMLLIBDEP) $(CHKLIBS) $(filter checker/%, $(MLLIBFILES) $(MLPACKFILES)) $(TOTARGET)
 
 checker/%.cmi: checker/%.mli
 	$(SHOW)'OCAMLC    $<'

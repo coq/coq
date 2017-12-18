@@ -1,7 +1,6 @@
 Makefile:69: warning: undefined variable '*'
 Makefile:204: warning: undefined variable 'DSTROOT'
-COQDEP Fast.v
-COQDEP Slow.v
+COQDEP VFILES
 Makefile:69: warning: undefined variable '*'
 Makefile:204: warning: undefined variable 'DSTROOT'
 Makefile:69: warning: undefined variable '*'

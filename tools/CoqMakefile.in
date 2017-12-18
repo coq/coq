@@ -227,8 +227,9 @@ COQTOPINSTALL = $(call concat_path,$(DESTDIR),$(COQLIB)toploop)
 # We here define a bunch of variables about the files being part of the
 # Coq project in order to ease the writing of build target and build rules
 
+VDFILE := .coqdeps
+
 ALLSRCFILES := \
-	$(VFILES) \
 	$(ML4FILES) \
 	$(MLFILES) \
 	$(MLPACKFILES) \
@@ -308,7 +309,7 @@ else
 DO_NATDYNLINK =
 endif
 
-ALLDFILES = $(addsuffix .d,$(ALLSRCFILES))
+ALLDFILES = $(addsuffix .d,$(ALLSRCFILES) $(VDFILE))
 
 # Compilation targets #########################################################
 
@@ -713,9 +714,9 @@ $(addsuffix .d,$(MLPACKFILES)): %.mlpack.d: %.mlpack
 	$(SHOW)'COQDEP $<'
 	$(HIDE)$(COQDEP) $(OCAMLLIBS) -c "$<" $(redir_if_ok)
 
-$(addsuffix .d,$(VFILES)): %.v.d: %.v
-	$(SHOW)'COQDEP $<'
-	$(HIDE)$(COQDEP) $(COQLIBS) -dyndep var -c "$<" $(redir_if_ok)
+$(VDFILE).d: $(VFILES)
+	$(SHOW)'COQDEP VFILES'
+	$(HIDE)$(COQDEP) $(COQLIBS) -dyndep var -c $(VFILES) $(redir_if_ok)
 
 # Misc ########################################################################
 
