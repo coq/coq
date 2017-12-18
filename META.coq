@@ -47,13 +47,17 @@ package "vm" (
 
   directory        = "kernel/byterun"
 
-# We should generate this file at configure time for local byte builds
-# to work properly.
-
-# Enable this setting for local byte builds, disabling the one below.
+# We could generate this file at configure time for the share byte
+# build path to work properly.
+#
+# Enable this setting for local byte builds if you want dynamic linking:
+#
 #  linkopts(byte)   = "-dllpath path_to_coq/kernel/byterun/ -dllib -lcoqrun"
 
-  linkopts(byte)   = "-dllib -lcoqrun"
+# We currently prefer static linking of the VM.
+  archive(byte)    = "libcoqrun.a"
+  linkopts(byte)   = "-custom"
+
   linkopts(native) = "-cclib -lcoqrun"
 
 )
