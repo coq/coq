@@ -27,6 +27,12 @@ let tclSHOW_PROFILE ~cutoff =
 let tclSHOW_PROFILE_TACTIC s =
    Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> print_results_tactic s))
 
+let tclRESTART_TIMER s =
+   Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> restart_timer s))
+
+let tclFINISH_TIMING ?(prefix="Timer") (s : string option) =
+   Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> finish_timing ~prefix s))
+
 TACTIC EXTEND start_ltac_profiling
 | [ "start" "ltac" "profiling" ] -> [ tclSET_PROFILING true ]
 END
@@ -43,6 +49,15 @@ TACTIC EXTEND show_ltac_profile
 | [ "show" "ltac" "profile" ] -> [ tclSHOW_PROFILE ~cutoff:!Flags.profile_ltac_cutoff ]
 | [ "show" "ltac" "profile" "cutoff" int(n) ] -> [ tclSHOW_PROFILE ~cutoff:(float_of_int n) ]
 | [ "show" "ltac" "profile" string(s) ] -> [ tclSHOW_PROFILE_TACTIC s ]
+END
+
+TACTIC EXTEND restart_timer
+| [ "restart_timer" string_opt(s) ] -> [ tclRESTART_TIMER s ]
+END
+
+TACTIC EXTEND finish_timing
+| [ "finish_timing" string_opt(s) ] -> [ tclFINISH_TIMING ~prefix:"Timer" s ]
+| [ "finish_timing" "(" string(prefix) ")" string_opt(s) ] -> [ tclFINISH_TIMING ~prefix s ]
 END
 
 VERNAC COMMAND EXTEND ResetLtacProfiling CLASSIFIED AS SIDEFF

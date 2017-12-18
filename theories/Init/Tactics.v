@@ -306,3 +306,10 @@ Ltac inversion_sigma_step :=
     => induction_sigma_in_using H @eq_sigT2_rect
   end.
 Ltac inversion_sigma := repeat inversion_sigma_step.
+
+(** A version of [time] that works for constrs *)
+Ltac time_constr tac :=
+  let eval_early := match goal with _ => restart_timer end in
+  let ret := tac () in
+  let eval_early := match goal with _ => finish_timing ( "Tactic evaluation" ) end in
+  ret.
