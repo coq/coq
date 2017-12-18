@@ -136,7 +136,6 @@ before_script:
   stage: test
   script:
     - INSTALLDIR=$(readlink -f _install_ci)
-    - ./configure -prefix "$INSTALLDIR" ${EXTRA_CONF}
     - cp "$INSTALLDIR/lib/coq/tools/coqdoc/coqdoc.sty" .
 
     - LIB="$INSTALLDIR/lib/coq"
