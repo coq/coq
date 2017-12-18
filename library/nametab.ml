@@ -81,8 +81,9 @@ struct
      Module F (X : S). Module X.
      The argument X of the functor F is masked by the inner module X.
    *)
-  let masking_absolute n =
-    Flags.if_verbose Feedback.msg_info (str ("Trying to mask the absolute name \"" ^ U.to_string n ^ "\"!"))
+  let warn_masking_absolute =
+    CWarnings.create ~name:"masking-absolute-name" ~category:"deprecated"
+      (fun n -> str ("Trying to mask the absolute name \"" ^ U.to_string n ^ "\"!"))
 
   type user_name = U.t
 
@@ -121,7 +122,7 @@ struct
 	      | Absolute (n,_) ->
 		  (* This is an absolute name, we must keep it
 		     otherwise it may become unaccessible forever *)
-                masking_absolute n; tree.path
+                warn_masking_absolute n; tree.path
 	      | Nothing
 	      | Relative _ -> Relative (uname,o)
           else tree.path
@@ -154,7 +155,7 @@ let rec push_exactly uname o level tree = function
         | Absolute (n,_) ->
             (* This is an absolute name, we must keep it
                 otherwise it may become unaccessible forever *)
-            masking_absolute n; tree.path
+            warn_masking_absolute n; tree.path
         | Nothing
         | Relative _ -> Relative (uname,o)
     in
