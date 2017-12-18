@@ -9,9 +9,39 @@
 
 (** Ltac profiling primitives *)
 
+(* Note(JasonGross): Ltac semantics are a bit insane.  There isn't
+   really a good notion of how many times a tactic has been "called",
+   because tactics can be partially evaluated, and it's unclear
+   whether the number of "calls" should be the number of times the
+   body is fetched and unfolded, or the number of times the code is
+   executed to a value, etc.  The logic in [Tacinterp.eval_tactic]
+   gives a decent approximation, which I believe roughly corresponds
+   to the number of times that the engine runs the tactic value which
+   results from evaluating the tactic expression bound to the name
+   we're considering.  However, this is a poor approximation of the
+   time spent in the tactic; we want to consider time spent evaluating
+   a tactic expression to a tactic value to be time spent in the
+   expression, not just time spent in the caller of the expression.
+   So we need to wrap some nodes in additional profiling calls which
+   don't count towards to total call count.  Whether or not a call
+   "counts" is indicated by the [count_call] boolean argument.
+
+   Unfortunately, at present, we can get very strange call graphs when
+   a named tactic expression never runs as a tactic value: if we have
+   [Ltac t0 := t.] and [Ltac t1 := t0.], then [t1] is considered to
+   run 0(!) times.  It evaluates to [t] during tactic expression
+   evaluation, and although the call trace records the fact that it
+   was called by [t0] which was called by [t1], the tactic running
+   phase never sees this.  Thus we get one call tree (from expression
+   evaluation) that has [t1] calls [t0] calls [t], and another call
+   tree which says that the caller of [t1] calls [t] directly; the
+   expression evaluation time goes in the first tree, and the call
+   count and tactic running time goes in the second tree.  Alas, I
+   suspect that fixing this requires a redesign of how the profiler
+   hooks into the tactic engine. *)
 val do_profile :
   string -> ('a * Tacexpr.ltac_call_kind) list ->
-    'b Proofview.tactic -> 'b Proofview.tactic
+    ?count_call:bool -> 'b Proofview.tactic -> 'b Proofview.tactic
 
 val set_profiling : bool -> unit
 
@@ -46,4 +76,3 @@ type treenode = {
 (* Returns the profiling results known by the current process *)
 val get_local_profiling_results : unit -> treenode
 val feedback_results : treenode -> unit
-
