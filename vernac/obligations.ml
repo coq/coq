@@ -1185,7 +1185,6 @@ let init_program () =
   Coqlib.check_required_library ["Coq";"Init";"Specif"];
   Coqlib.check_required_library ["Coq";"Program";"Tactics"]
 
-
 let set_program_mode c =
   if c then
     if !Flags.program_mode then ()

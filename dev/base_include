@@ -170,7 +170,7 @@ open Eqschemes
 
 open ExplainErr
 open Class
-open Command
+open ComDefinition
 open Indschemes
 open Ind_tables
 open Auto_ind_decl

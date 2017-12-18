@@ -267,7 +267,9 @@ module Metasyntax = Metasyntax
 module Search = Search
 (* module Indschemes *)
 module Obligations = Obligations
-module Command = Command
+module ComDefinition = ComDefinition
+module ComInductive = ComInductive
+module ComFixpoint = ComFixpoint
 module Classes = Classes
 (* module Record *)
 (* module Assumptions *)

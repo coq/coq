@@ -18,7 +18,6 @@ open Tacmach
 open Constrintern
 open Prettyp
 open Printer
-open Command
 open Goptions
 open Libnames
 open Globnames
@@ -479,6 +478,7 @@ let vernac_definition ~atts discharge kind ((loc,id as lid),pl) def =
   | Discharge -> Dumpglob.dump_definition lid true "var"
   | Local | Global -> Dumpglob.dump_definition lid false "def"
   in
+  let program_mode = Flags.is_program_mode () in
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
           start_proof_and_print (local, atts.polymorphic, DefinitionBody kind)
@@ -489,7 +489,7 @@ let vernac_definition ~atts discharge kind ((loc,id as lid),pl) def =
           | Some r ->
             let sigma, env = Pfedit.get_current_context () in
             Some (snd (Hook.get f_interp_redexp env sigma r)) in
-        do_definition id (local, atts.polymorphic, kind) pl bl red_option c typ_opt hook)
+        ComDefinition.do_definition ~program_mode id (local, atts.polymorphic, kind) pl bl red_option c typ_opt hook)
 
 let vernac_start_proof ~atts kind l =
   let local = enforce_locality_exp atts.locality NoDischarge in
@@ -520,7 +520,7 @@ let vernac_assumption ~atts discharge kind l nl =
       List.iter (fun (lid, _) ->
 	if global then Dumpglob.dump_definition lid false "ax"
 	else Dumpglob.dump_definition lid true "var") idl) l;
-  let status = do_assumptions kind nl l in
+  let status = ComAssumption.do_assumptions kind nl l in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let should_treat_as_cumulative cum poly =
@@ -592,18 +592,29 @@ let vernac_inductive ~atts cum lo finite indl =
       | _ -> user_err Pp.(str "Cannot handle mutually (co)inductive records.")
     in
     let indl = List.map unpack indl in
-    do_mutual_inductive indl is_cumulative atts.polymorphic lo finite
+    ComInductive.do_mutual_inductive indl is_cumulative atts.polymorphic lo finite
 
 let vernac_fixpoint ~atts discharge l =
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
+  (* XXX: Switch to the attribute system and match on ~atts *)
+  let do_fixpoint = if Flags.is_program_mode () then
+      ComProgramFixpoint.do_fixpoint
+    else
+      ComFixpoint.do_fixpoint
+  in
   do_fixpoint local atts.polymorphic l
 
 let vernac_cofixpoint ~atts discharge l =
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
+  let do_cofixpoint = if Flags.is_program_mode () then
+      ComProgramFixpoint.do_cofixpoint
+    else
+      ComFixpoint.do_cofixpoint
+  in
   do_cofixpoint local atts.polymorphic l
 
 let vernac_scheme l =
@@ -627,14 +638,14 @@ let vernac_universe ~atts l =
     user_err ?loc:atts.loc ~hdr:"vernac_universe"
 		 (str"Polymorphic universes can only be declared inside sections, " ++
 		  str "use Monomorphic Universe instead");
-  do_universe atts.polymorphic l
+  Declare.do_universe atts.polymorphic l
 
 let vernac_constraint ~atts l =
   if atts.polymorphic && not (Lib.sections_are_opened ()) then
     user_err ?loc:atts.loc ~hdr:"vernac_constraint"
 		 (str"Polymorphic universe constraints can only be declared"
 		  ++ str " inside sections, use Monomorphic Constraint instead");
-  do_constraint atts.polymorphic l
+  Declare.do_constraint atts.polymorphic l
 
 (**********************)
 (* Modules            *)
@@ -831,7 +842,8 @@ let vernac_identity_coercion ~atts id qids qidt =
 let vernac_instance ~atts abst sup inst props pri =
   let global = not (make_section_locality atts.locality) in
   Dumpglob.dump_constraint inst false "inst";
-  ignore(Classes.new_instance ~abstract:abst ~global atts.polymorphic sup inst props pri)
+  let program_mode = Flags.is_program_mode () in
+  ignore(Classes.new_instance ~program_mode ~abstract:abst ~global atts.polymorphic sup inst props pri)
 
 let vernac_context ~atts l =
   if not (Classes.context atts.polymorphic l) then Feedback.feedback Feedback.AddedAxiom
