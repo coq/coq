@@ -3096,10 +3096,10 @@ the tactic \ssrC{rewrite (=~ multi1)} is equivalent to
 \end{lstlisting}
 except that the constants \ssrC{eqba, eqab, mult1_rev} have not been created.
 
-Rewriting with multirules
-is useful to implement simplification or transformation
-procedures, to be applied on terms of small to medium size. For
-instance the library \ssrL{ssrnat} provides two implementations for
+Rewriting with multirules is useful to implement simplification or
+transformation procedures, to be applied on terms of small to medium
+size. For instance, the library \ssrL{ssrnat} --- available in the
+external math-comp library --- provides two implementations for
 arithmetic operations on natural numbers: an elementary one and a tail
 recursive version, less inefficient but also less convenient for
 reasoning purposes. The library also provides one lemma per such
