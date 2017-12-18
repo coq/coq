@@ -34,6 +34,7 @@ Tactics
 - The tactic "romega" is also aware now of the bodies of context variables.
 - Tactic "decide equality" now able to manage constructors which
   contain proofs.
+- Added tactics reset ltac profile, show ltac profile (and variants)
 
 Vernacular Commands
 
@@ -288,7 +289,7 @@ Changes from 8.6 to 8.6.1
 - Fix bug 5550: "typeclasses eauto with" does not work with section variables.
 - Bug 5546, qualify datatype constructors when needed in Show Match
 - Bug #5535, test for Show with -emacs
-- Fix bug #5486, don't reverse ids in tuples 
+- Fix bug #5486, don't reverse ids in tuples
 - Fixing #5522 (anomaly with free vars of pat)
 - Fix bug #5526, don't check for nonlinearity in notation if printing only
 - Fix bug #5255
@@ -310,7 +311,7 @@ Changes from 8.6 to 8.6.1
 - show unused intro pattern warning
 - [future] Be eager when "chaining" already resolved future values.
 - Opaque side effects
-- Fix #5132: coq_makefile generates incorrect install goal 
+- Fix #5132: coq_makefile generates incorrect install goal
 - Run non-tactic comands without resilient_command
 - Univs: fix bug #5365, generation of u+k <= v constraints
 - make `emit' tail recursive

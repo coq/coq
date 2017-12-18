@@ -18,6 +18,15 @@ DECLARE PLUGIN "ltac_plugin"
 let tclSET_PROFILING b =
    Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> set_profiling b))
 
+let tclRESET_PROFILE =
+   Proofview.tclLIFT (Proofview.NonLogical.make reset_profile)
+
+let tclSHOW_PROFILE ~cutoff =
+   Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> print_results ~cutoff))
+
+let tclSHOW_PROFILE_TACTIC s =
+   Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> print_results_tactic s))
+
 TACTIC EXTEND start_ltac_profiling
 | [ "start" "ltac" "profiling" ] -> [ tclSET_PROFILING true ]
 END
@@ -26,8 +35,18 @@ TACTIC EXTEND stop_ltac_profiling
 | [ "stop" "ltac" "profiling" ] -> [ tclSET_PROFILING false ]
 END
 
+TACTIC EXTEND reset_ltac_profile
+| [ "reset" "ltac" "profile" ] -> [ tclRESET_PROFILE ]
+END
+
+TACTIC EXTEND show_ltac_profile
+| [ "show" "ltac" "profile" ] -> [ tclSHOW_PROFILE ~cutoff:!Flags.profile_ltac_cutoff ]
+| [ "show" "ltac" "profile" "cutoff" int(n) ] -> [ tclSHOW_PROFILE ~cutoff:(float_of_int n) ]
+| [ "show" "ltac" "profile" string(s) ] -> [ tclSHOW_PROFILE_TACTIC s ]
+END
+
 VERNAC COMMAND EXTEND ResetLtacProfiling CLASSIFIED AS SIDEFF
-  [ "Reset" "Ltac" "Profile" ] -> [ reset_profile() ]
+  [ "Reset" "Ltac" "Profile" ] -> [ reset_profile () ]
 END
 
 VERNAC COMMAND EXTEND ShowLtacProfile CLASSIFIED AS QUERY
