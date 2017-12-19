@@ -165,13 +165,13 @@ End Backport_WSets.
 (** * From new Sets to new ones *)
 
 Module Backport_Sets
- (E:OrderedType.OrderedType)
- (M:MSetInterface.Sets with Definition E.t := E.t
-                       with Definition E.eq := E.eq
-                       with Definition E.lt := E.lt)
- <: FSetInterface.S with Module E:=E.
+ (O:OrderedType.OrderedType)
+ (M:MSetInterface.Sets with Definition E.t := O.t
+                       with Definition E.eq := O.eq
+                       with Definition E.lt := O.lt)
+ <: FSetInterface.S with Module E:=O.
 
-  Include Backport_WSets E M.
+  Include Backport_WSets O M.
 
   Implicit Type s : t.
   Implicit Type x y : elt.
@@ -182,21 +182,21 @@ Module Backport_Sets
   Definition min_elt_1 : forall s x, min_elt s = Some x -> In x s
    := M.min_elt_spec1.
   Definition min_elt_2 : forall s x y,
-   min_elt s = Some x -> In y s -> ~ E.lt y x
+   min_elt s = Some x -> In y s -> ~ O.lt y x
    := M.min_elt_spec2.
   Definition min_elt_3 : forall s, min_elt s = None -> Empty s
    := M.min_elt_spec3.
   Definition max_elt_1 : forall s x, max_elt s = Some x -> In x s
    := M.max_elt_spec1.
   Definition max_elt_2 : forall s x y,
-   max_elt s = Some x -> In y s -> ~ E.lt x y
+   max_elt s = Some x -> In y s -> ~ O.lt x y
    := M.max_elt_spec2.
   Definition max_elt_3 : forall s, max_elt s = None -> Empty s
    := M.max_elt_spec3.
-  Definition elements_3 : forall s, sort E.lt (elements s)
+  Definition elements_3 : forall s, sort O.lt (elements s)
    := M.elements_spec2.
   Definition choose_3 : forall s s' x y,
-   choose s = Some x -> choose s' = Some y -> Equal s s' -> E.eq x y
+   choose s = Some x -> choose s' = Some y -> Equal s s' -> O.eq x y
    := M.choose_spec3.
   Definition lt_trans : forall s s' s'', lt s s' -> lt s' s'' -> lt s s''
    := @StrictOrder_Transitive _ _ M.lt_strorder.
@@ -211,7 +211,7 @@ Module Backport_Sets
     [ apply EQ | apply LT | apply GT ]; auto.
   Defined.
 
-  Module E := E.
+  Module E := O.
 
 End Backport_Sets.
 
@@ -342,13 +342,13 @@ End Update_WSets.
 (** * From old Sets to new ones. *)
 
 Module Update_Sets
- (E:Orders.OrderedType)
- (M:FSetInterface.S with Definition E.t := E.t
-                    with Definition E.eq := E.eq
-                    with Definition E.lt := E.lt)
- <: MSetInterface.Sets with Module E:=E.
+ (O:Orders.OrderedType)
+ (M:FSetInterface.S with Definition E.t := O.t
+                    with Definition E.eq := O.eq
+                    with Definition E.lt := O.lt)
+ <: MSetInterface.Sets with Module E:=O.
 
-  Include Update_WSets E M.
+  Include Update_WSets O M.
 
   Implicit Type s : t.
   Implicit Type x y : elt.
@@ -359,21 +359,21 @@ Module Update_Sets
   Definition min_elt_spec1 : forall s x, min_elt s = Some x -> In x s
    := M.min_elt_1.
   Definition min_elt_spec2 : forall s x y,
-   min_elt s = Some x -> In y s -> ~ E.lt y x
+   min_elt s = Some x -> In y s -> ~ O.lt y x
    := M.min_elt_2.
   Definition min_elt_spec3 : forall s, min_elt s = None -> Empty s
    := M.min_elt_3.
   Definition max_elt_spec1 : forall s x, max_elt s = Some x -> In x s
    := M.max_elt_1.
   Definition max_elt_spec2 : forall s x y,
-   max_elt s = Some x -> In y s -> ~ E.lt x y
+   max_elt s = Some x -> In y s -> ~ O.lt x y
    := M.max_elt_2.
   Definition max_elt_spec3 : forall s, max_elt s = None -> Empty s
    := M.max_elt_3.
-  Definition elements_spec2 : forall s, sort E.lt (elements s)
+  Definition elements_spec2 : forall s, sort O.lt (elements s)
    := M.elements_3.
   Definition choose_spec3 : forall s s' x y,
-   choose s = Some x -> choose s' = Some y -> Equal s s' -> E.eq x y
+   choose s = Some x -> choose s' = Some y -> Equal s s' -> O.eq x y
    := M.choose_3.
 
   Instance lt_strorder : StrictOrder lt.
@@ -407,6 +407,6 @@ Module Update_Sets
   Lemma compare_spec : forall s s', CompSpec eq lt s s' (compare s s').
   Proof. intros; unfold compare; destruct M.compare; auto. Qed.
 
-  Module E := E.
+  Module E := O.
 
 End Update_Sets.
