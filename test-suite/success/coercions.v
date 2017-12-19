@@ -131,3 +131,28 @@ Local Coercion l2v2 : list >-> vect.
 Fail Check (fun l : list (T1 * T1) => (l : vect _ _)).
 Check (fun l : list (T1 * T1) => (l2v2 l : vect _ _)).
 Section what_we_could_do.
+
+
+(** Unit test for Prop as source class *)
+
+Module TestPropAsSourceCoercion.
+
+  Parameter heap : Prop.
+
+  Parameter heap_empty : heap.
+
+  Definition hprop := heap -> Prop.
+
+  Coercion hpure (P:Prop) : hprop := fun h => h = heap_empty /\ P.
+
+  Parameter heap_single : nat -> nat -> hprop.
+
+  Parameter hstar : hprop -> hprop -> hprop.
+
+  Notation "H1 \* H2" := (hstar H1 H2) (at level 69).
+
+  Definition test := heap_single 4 5 \* (5 <> 4) \* heap_single 2 4 \* (True).
+
+  (* Print test. -- reveals [hpure] coercions *)
+
+End TestPropAsSourceCoercion.
