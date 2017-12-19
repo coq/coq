@@ -203,7 +203,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Cast      of 'constr * cast_kind * 'types
   | Prod      of Name.t * 'types * 'types             (** Concrete syntax ["forall A:B,C"] is represented as [Prod (A,B,C)]. *)
   | Lambda    of Name.t * 'types * 'constr            (** Concrete syntax ["fun A:B => C"] is represented as [Lambda (A,B,C)].  *)
-  | LetIn     of Name.t * 'constr * 'types * 'constr  (** Concrete syntax ["let A:B := C in D"] is represented as [LetIn (A,B,C,D)]. *)
+  | LetIn     of Name.t * 'constr * 'types * 'constr  (** Concrete syntax ["let A:C := B in D"] is represented as [LetIn (A,B,C,D)]. *)
   | App       of 'constr * 'constr array              (** Concrete syntax ["(F P1 P2 ...  Pn)"] is represented as [App (F, [|P1; P2; ...; Pn|])].
 
                                                           The {!mkApp} constructor also enforces the following invariant:
