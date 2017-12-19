@@ -227,17 +227,14 @@ let feedback_completion_typecheck =
   Option.iter (fun state_id ->
       feedback ~id:state_id Feedback.Complete)
 
-let abstract_constant_universes abstract = function
+let abstract_constant_universes = function
   | Monomorphic_const_entry uctx ->
     Univ.empty_level_subst, Monomorphic_const uctx
   | Polymorphic_const_entry uctx ->
-    if not abstract then
-      Univ.empty_level_subst, Monomorphic_const (Univ.ContextSet.of_context uctx)
-    else
-      let sbst, auctx = Univ.abstract_universes uctx in
-      sbst, Polymorphic_const auctx
+    let sbst, auctx = Univ.abstract_universes uctx in
+    sbst, Polymorphic_const auctx
 
-let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry) =
+let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
   match dcl with
     | ParameterEntry (ctx,(t,uctx),nl) ->
       let env = match uctx with
@@ -245,10 +242,7 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
         | Polymorphic_const_entry uctx -> push_context ~strict:false uctx env
       in
       let j = infer env t in
-      let abstract = not (Option.is_empty kn) in
-      let usubst, univs = 
-        abstract_constant_universes abstract uctx
-      in
+      let usubst, univs = abstract_constant_universes uctx in
       let c = Typeops.assumption_of_judgment env j in
       let t = Constr.hcons (Vars.subst_univs_level_constr usubst c) in
       {
@@ -316,12 +310,11 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
       | SideEffects _ -> inline_side_effects env body ctx side_eff
       in
       let env = push_context_set ~strict:(not poly) ctx env in
-      let abstract = not (Option.is_empty kn) in
       let ctx = if poly
         then Polymorphic_const_entry (Univ.ContextSet.to_context ctx)
         else Monomorphic_const_entry ctx
       in
-      let usubst, univs = abstract_constant_universes abstract ctx in
+      let usubst, univs = abstract_constant_universes ctx in
       let j = infer env body in
       let typ = match typ with
         | None ->
@@ -493,7 +486,7 @@ let build_constant_declaration kn env result =
 
 let translate_constant mb env kn ce =
   build_constant_declaration kn env
-    (infer_declaration ~trust:mb env (Some kn) ce)
+    (infer_declaration ~trust:mb env ce)
 
 let constant_entry_of_side_effect cb u =
   let univs =
@@ -607,17 +600,17 @@ let translate_recipe env kn r =
 
 let translate_local_def env id centry =
   let open Cooking in
-  let body = Future.chain centry.secdef_body (fun body -> body, ()) in
+  let body = Future.from_val ((centry.secdef_body, Univ.ContextSet.empty), ()) in
   let centry = {
     const_entry_body = body;
     const_entry_secctx = centry.secdef_secctx;
     const_entry_feedback = centry.secdef_feedback;
     const_entry_type = centry.secdef_type;
-    const_entry_universes = centry.secdef_universes;
+    const_entry_universes = Monomorphic_const_entry Univ.ContextSet.empty;
     const_entry_opaque = false;
     const_entry_inline_code = false;
   } in
-  let decl = infer_declaration ~trust:Pure env None (DefinitionEntry centry) in
+  let decl = infer_declaration ~trust:Pure env (DefinitionEntry centry) in
   let typ = decl.cook_type in
   if Option.is_empty decl.cook_context && !Flags.record_aux_file then begin
     match decl.cook_body with
@@ -629,11 +622,22 @@ let translate_local_def env id centry =
          (Opaqueproof.force_proof (opaque_tables env) lc) in
        record_aux env ids_typ ids_def
   end;
-  let univs = match decl.cook_universes with
-  | Monomorphic_const ctx -> ctx
+  let () = match decl.cook_universes with
+  | Monomorphic_const ctx -> assert (Univ.ContextSet.is_empty ctx)
   | Polymorphic_const _ -> assert false
   in
-  decl.cook_body, typ, univs
+  let c = match decl.cook_body with
+  | Def c -> Mod_subst.force_constr c
+  | OpaqueDef o ->
+    let p = Opaqueproof.force_proof (Environ.opaque_tables env) o in
+    let cst = Opaqueproof.force_constraints (Environ.opaque_tables env) o in
+    (** Let definitions are ensured to have no extra constraints coming from
+        the body by virtue of the typing of [Entries.section_def_entry]. *)
+    let () = assert (Univ.ContextSet.is_empty cst) in
+    p
+  | Undef _ -> assert false
+  in
+  c, typ
 
 (* Insertion of inductive types. *)
 

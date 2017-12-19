@@ -231,19 +231,24 @@ let cache_variable ((sp,_),o) =
     | SectionLocalDef (de) ->
       let (de, eff) = Global.export_private_constants ~in_section:true de in
       let () = List.iter register_side_effect eff in
-      let body = Future.chain de.const_entry_body (fun (body, ()) -> body) in
+      (** The body should already have been forced upstream because it is a
+          section-local definition, but it's not enforced by typing *)
+      let (body, uctx), () = Future.force de.const_entry_body in
+      let poly, univs = match de.const_entry_universes with
+      | Monomorphic_const_entry uctx -> false, uctx
+      | Polymorphic_const_entry uctx -> true, Univ.ContextSet.of_context uctx
+      in
+      let univs = Univ.ContextSet.union uctx univs in
+      (** We must declare the universe constraints before type-checking the
+          term. *)
+      let () = Global.push_context_set (not poly) univs in
       let se = {
         secdef_body = body;
         secdef_secctx = de.const_entry_secctx;
-        secdef_universes = de.const_entry_universes;
         secdef_feedback = de.const_entry_feedback;
         secdef_type = de.const_entry_type;
       } in
-      let univs = Global.push_named_def (id, se) in
-      let poly = match de.const_entry_universes with
-      | Monomorphic_const_entry _ -> false
-      | Polymorphic_const_entry _ -> true
-      in
+      let () = Global.push_named_def (id, se) in
       Explicit, de.const_entry_opaque,
       poly, univs in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);

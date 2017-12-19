@@ -90,7 +90,7 @@ val push_named_assum :
 (** Returns the full universe context necessary to typecheck the definition
   (futures are forced) *)
 val push_named_def :
-  Id.t * Entries.section_def_entry -> Univ.ContextSet.t safe_transformer
+  Id.t * Entries.section_def_entry -> safe_transformer0
 
 (** Insertion of global axioms or definitions *)
 
