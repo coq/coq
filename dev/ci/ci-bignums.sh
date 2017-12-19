@@ -13,4 +13,4 @@ bignums_CI_DIR=${CI_BUILD_DIR}/Bignums
 
 git_checkout ${bignums_CI_BRANCH} ${bignums_CI_GITURL} ${bignums_CI_DIR}
 
-( cd ${bignums_CI_DIR} && make -j ${NJOBS} && make install)
+( cd ${bignums_CI_DIR} && make && make install)
