@@ -44,6 +44,7 @@ val start_library : CUnix.physical_path -> DirPath.t
 
 (** End the compilation of a library and save it to a ".vo" file *)
 val save_library_to :
+  ?light:bool ->
   ?todo:(((Future.UUID.t,'document) Stateid.request * bool) list * 'counters) ->
   DirPath.t -> string -> Opaqueproof.opaquetab -> unit
 

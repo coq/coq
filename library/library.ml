@@ -644,10 +644,9 @@ let load_library_todo f =
   let tasks, _, _ = System.marshal_in_segment f ch in
   let (s5 : seg_proofs), _, _ = System.marshal_in_segment f ch in
   close_in ch;
-  if tasks = None then user_err ~hdr:"restart" (str"not a .vio file");
-  if s2 = None then user_err ~hdr:"restart" (str"not a .vio file");
-  if s3 = None then user_err ~hdr:"restart" (str"not a .vio file");
-  if pi3 (Option.get s2) then user_err ~hdr:"restart" (str"not a .vio file");
+  let err = str "not a compilable file" in
+  if tasks = None || s2 = None || s3 = None then user_err ~hdr:"restart" err;
+  if pi3 (Option.get s2) then user_err ~hdr:"restart" err;
   longf, s0, s1, Option.get s2, Option.get s3, Option.get tasks, s5
 
 (************************************************************************)
@@ -679,7 +678,7 @@ let error_recursively_dependent_library dir =
 (* Security weakness: file might have been changed on disk between
    writing the content and computing the checksum... *)
 
-let save_library_to ?todo dir f otab =
+let save_library_to ?(light = false) ?todo dir f otab =
   let except = match todo with
     | None ->
         (* XXX *)
@@ -693,7 +692,8 @@ let save_library_to ?todo dir f otab =
   let cenv, seg, ast = Declaremods.end_library ~except dir in
   let opaque_table, univ_table, disch_table, f2t_map = Opaqueproof.dump otab in
   let tasks, utab, dtab =
-    match todo with
+    if light then None, None, None
+    else match todo with
     | None -> None, None, None
     | Some (tasks, rcbackup) ->
         let tasks =

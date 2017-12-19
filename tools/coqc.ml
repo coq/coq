@@ -96,7 +96,7 @@ let parse_args () =
       |"-q"|"-profile"|"-echo" |"-quiet"
       |"-silent"|"-m"|"-beautify"|"-strict-implicit"
       |"-impredicative-set"|"-vm"|"-native-compiler"
-      |"-indices-matter"|"-quick"|"-type-in-type"
+      |"-indices-matter"|"-quick"|"-quick-light"|"-type-in-type"
       |"-async-proofs-always-delegate"|"-async-proofs-never-reopen-branch"
       |"-stm-debug"
       as o) :: rem ->

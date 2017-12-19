@@ -2680,11 +2680,11 @@ let handle_failure (e, info) vcs =
       VCS.print ();
       Exninfo.iraise (e, info)
 
-let snapshot_vio ~doc ldir long_f_dot_vo =
+let snapshot_vio ~light ~doc ldir long_f_dot_vo =
   let doc = finish ~doc in
   if List.length (VCS.branches ()) > 1 then
     CErrors.user_err ~hdr:"stm" (str"Cannot dump a vio with open proofs");
-  Library.save_library_to ~todo:(dump_snapshot ()) ldir long_f_dot_vo
+  Library.save_library_to ~light ~todo:(dump_snapshot ()) ldir long_f_dot_vo
     (Global.opaque_tables ());
   doc
 

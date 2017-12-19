@@ -49,6 +49,7 @@ let print_usage_channel co command =
 \n  -compile-verbose f.v   verbosely compile Coq file f.v (implies -batch)\
 \n  -o f.vo                use f.vo as the output file name\
 \n  -quick                 quickly compile .v files to .vio files (skip proofs)\
+\n  -quick-light           same as -quick but does not store proof tasks\
 \n  -schedule-vio2vo j f1..fn   run up to j instances of Coq to turn each fi.vio\
 \n                         into fi.vo\
 \n  -schedule-vio-checking j f1..fn   run up to j instances of Coq to check all\
