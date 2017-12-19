@@ -25,9 +25,6 @@ CI_TARGETS=ci-all \
 
 .PHONY: $(CI_TARGETS)
 
-_build_ci/.ci-%.done:
-	+./dev/ci/ci-wrapper.sh $*
-
 ci-color: ci-bignums
 
 ci-math-classes: ci-bignums
@@ -37,7 +34,8 @@ ci-corn: ci-math-classes
 ci-formal-topology: ci-corn
 
 # Generic rule, we use make to ease travis integration with mixed rules
-$(CI_TARGETS): ci-%: _build_ci/.ci-%.done
+$(CI_TARGETS): ci-%:
+	+./dev/ci/ci-wrapper.sh $*
 
 # For emacs:
 # Local Variables:

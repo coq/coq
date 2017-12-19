@@ -53,6 +53,18 @@ checkout_mathcomp()
   git_checkout ${mathcomp_CI_BRANCH} ${mathcomp_CI_GITURL} ${1}
 }
 
+make()
+{
+    # +x: add x only if defined
+    if [ -z "${MAKEFLAGS+x}" ] && [ -n "${NJOBS}" ];
+    then
+        # Not submake and parallel make requested
+        command make -j "$NJOBS" "$@"
+    else
+        command make "$@"
+    fi
+}
+
 # this installs just the ssreflect library of math-comp
 install_ssreflect()
 {

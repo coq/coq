@@ -166,7 +166,7 @@ opam-switch: &opam-switch
         name: Test
         command: |
           source ~/.profile
-          make -f Makefile.ci -j ${NJOBS} TIMED=1 ${CIRCLE_JOB}
+          dev/ci/ci-wrapper.sh ${CIRCLE_JOB}
     - persist_to_workspace:
         root: *workspace
         paths:
@@ -255,85 +255,85 @@ jobs:
       COMPILER: *compiler-be
       EXTRA_PACKAGES: *timing-packages
 
-  ci-bignums:
+  bignums:
     <<: *ci-template
 
-  ci-color:
-    <<: *ci-template
-    environment:
-      <<: *ci-template-vars
-      EXTRA_PACKAGES: *timing-packages
-
-  ci-compcert:
-    <<: *ci-template
-
-  ci-coq-dpdgraph:
-    <<: *ci-template
-    environment:
-      <<: *ci-template-vars
-      EXTRA_PACKAGES: "time python autoconf automake"
-
-  ci-coquelicot:
-    <<: *ci-template
-    environment:
-      <<: *ci-template-vars
-      EXTRA_PACKAGES: "time python autoconf automake"
-
-  ci-equations:
-    <<: *ci-template
-
-  ci-geocoq:
-    <<: *ci-template
-
-  ci-fiat-crypto:
-    <<: *ci-template
-
-  ci-fiat-parsers:
+  color:
     <<: *ci-template
     environment:
       <<: *ci-template-vars
       EXTRA_PACKAGES: *timing-packages
 
-  ci-flocq:
+  compcert:
+    <<: *ci-template
+
+  coq-dpdgraph:
     <<: *ci-template
     environment:
       <<: *ci-template-vars
       EXTRA_PACKAGES: "time python autoconf automake"
 
-  ci-math-classes:
-    <<: *ci-template
-
-  ci-corn:
-    <<: *ci-template
-
-  ci-formal-topology:
-    <<: *ci-template
-
-  ci-hott:
+  coquelicot:
     <<: *ci-template
     environment:
       <<: *ci-template-vars
       EXTRA_PACKAGES: "time python autoconf automake"
 
-  ci-iris-lambda-rust:
+  equations:
     <<: *ci-template
 
-  ci-ltac2:
+  geocoq:
     <<: *ci-template
 
-  ci-math-comp:
+  fiat-crypto:
     <<: *ci-template
 
-  ci-sf:
+  fiat-parsers:
+    <<: *ci-template
+    environment:
+      <<: *ci-template-vars
+      EXTRA_PACKAGES: *timing-packages
+
+  flocq:
+    <<: *ci-template
+    environment:
+      <<: *ci-template-vars
+      EXTRA_PACKAGES: "time python autoconf automake"
+
+  math-classes:
+    <<: *ci-template
+
+  corn:
+    <<: *ci-template
+
+  formal-topology:
+    <<: *ci-template
+
+  hott:
+    <<: *ci-template
+    environment:
+      <<: *ci-template-vars
+      EXTRA_PACKAGES: "time python autoconf automake"
+
+  iris-lambda-rust:
+    <<: *ci-template
+
+  ltac2:
+    <<: *ci-template
+
+  math-comp:
+    <<: *ci-template
+
+  sf:
     <<: *ci-template
     environment:
       <<: *ci-template-vars
       EXTRA_PACKAGES: "time python wget"
 
-  ci-unimath:
+  unimath:
     <<: *ci-template
 
-  ci-vst:
+  vst:
     <<: *ci-template
 
 workflows:
@@ -354,38 +354,38 @@ workflows:
       - test-suite: *req-main
       - documentation: *req-main
 
-      - ci-bignums: *req-main
-      - ci-color:
+      - bignums: *req-main
+      - color:
           requires:
             - build
-            - ci-bignums
-      - ci-compcert: *req-main
-      - ci-coq-dpdgraph: *req-main
-      - ci-coquelicot: *req-main
-      - ci-equations: *req-main
-      - ci-geocoq: *req-main
-      - ci-fiat-crypto: *req-main
-      - ci-fiat-parsers: *req-main
-      - ci-flocq: *req-main
-      - ci-math-classes:
+            - bignums
+      - compcert: *req-main
+      - coq-dpdgraph: *req-main
+      - coquelicot: *req-main
+      - equations: *req-main
+      - geocoq: *req-main
+      - fiat-crypto: *req-main
+      - fiat-parsers: *req-main
+      - flocq: *req-main
+      - math-classes:
           requires:
             - build
-            - ci-bignums
-      - ci-corn:
+            - bignums
+      - corn:
           requires:
             - build
-            - ci-math-classes
-      - ci-formal-topology:
+            - math-classes
+      - formal-topology:
           requires:
             - build
-            - ci-corn
-      - ci-hott: *req-main
-      - ci-iris-lambda-rust: *req-main
-      - ci-ltac2: *req-main
-      - ci-math-comp: *req-main
-      - ci-sf: *req-main
-      - ci-unimath: *req-main
-      - ci-vst: *req-main
+            - corn
+      - hott: *req-main
+      - iris-lambda-rust: *req-main
+      - ltac2: *req-main
+      - math-comp: *req-main
+      - sf: *req-main
+      - unimath: *req-main
+      - vst: *req-main
 
       - build-32bit:
           requires:
