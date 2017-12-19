@@ -57,6 +57,12 @@ Checker
 
 - The checker now accepts filenames in addition to logical paths.
 
+Documentation
+
+- The Coq FAQ, formerly located at https://coq.inria.fr/faq, has been
+  moved to the GitHub wiki section of this repository; the main entry
+  page is https://github.com/coq/coq/wiki/The-Coq-FAQ.
+
 Changes from 8.7.0 to 8.7.1
 ===========================
 

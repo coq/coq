@@ -233,8 +233,7 @@ docclean:
 	  doc/stdlib/*Library.coqdoc.tex doc/stdlib/library.files \
 	  doc/stdlib/library.files.ls doc/stdlib/FullLibrary.tex
 	rm -f doc/*/*.ps doc/*/*.pdf doc/*/*.eps doc/*/*.pdf_t doc/*/*.eps_t
-	rm -f doc/faq/axioms.png
-	rm -rf doc/refman/html doc/stdlib/html doc/faq/html doc/tutorial/tutorial.v.html
+	rm -rf doc/refman/html doc/stdlib/html doc/tutorial/tutorial.v.html
 	rm -f doc/refman/euclid.ml doc/refman/euclid.mli
 	rm -f doc/refman/heapsort.ml doc/refman/heapsort.mli
 	rm -f doc/common/version.tex
