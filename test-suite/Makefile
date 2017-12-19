@@ -312,6 +312,13 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	  rm $$tmpoutput; \
 	} > "$@"
 
+# the expected output for the MExtraction test is
+# /plugins/micromega/micromega.ml except with additional newline
+output/MExtraction.out: ../plugins/micromega/micromega.ml
+	$(SHOW) GEN $@
+	$(HIDE) cp $< $@
+	$(HIDE) echo >> $@
+
 $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
