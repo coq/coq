@@ -32,7 +32,7 @@ val set_typing_flags : Declarations.typing_flags -> unit
 (** Variables, Local definitions, constants, inductive types *)
 
 val push_named_assum : (Id.t * Constr.types * bool) Univ.in_universe_context_set -> unit
-val push_named_def   : (Id.t * unit Entries.definition_entry) -> Univ.ContextSet.t
+val push_named_def   : (Id.t * Entries.section_def_entry) -> Univ.ContextSet.t
 
 val export_private_constants : in_section:bool ->
   Safe_typing.private_constants Entries.definition_entry ->

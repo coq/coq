@@ -81,6 +81,14 @@ type 'a definition_entry = {
   const_entry_opaque      : bool;
   const_entry_inline_code : bool }
 
+type section_def_entry = {
+  secdef_body : constr Univ.in_universe_context_set Future.computation;
+  secdef_secctx : Context.Named.t option;
+  secdef_feedback : Stateid.t option;
+  secdef_type : types option;
+  secdef_universes : constant_universes_entry;
+}
+
 type inline = int option (* inlining level, None for no inlining *)
 
 type parameter_entry = 

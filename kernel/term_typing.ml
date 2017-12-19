@@ -607,6 +607,16 @@ let translate_recipe env kn r =
 
 let translate_local_def env id centry =
   let open Cooking in
+  let body = Future.chain centry.secdef_body (fun body -> body, ()) in
+  let centry = {
+    const_entry_body = body;
+    const_entry_secctx = centry.secdef_secctx;
+    const_entry_feedback = centry.secdef_feedback;
+    const_entry_type = centry.secdef_type;
+    const_entry_universes = centry.secdef_universes;
+    const_entry_opaque = false;
+    const_entry_inline_code = false;
+  } in
   let decl = infer_declaration ~trust:Pure env None (DefinitionEntry centry) in
   let typ = decl.cook_type in
   if Option.is_empty decl.cook_context && !Flags.record_aux_file then begin

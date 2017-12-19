@@ -18,7 +18,7 @@ type _ trust =
 | Pure : unit trust
 | SideEffects : structure_body -> side_effects trust
 
-val translate_local_def : env -> Id.t -> unit definition_entry ->
+val translate_local_def : env -> Id.t -> section_def_entry ->
   constant_def * types * Univ.ContextSet.t
 
 val translate_local_assum : env -> types -> types

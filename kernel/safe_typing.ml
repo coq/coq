@@ -384,7 +384,7 @@ let safe_push_named d env =
 let push_named_def (id,de) senv =
   let open Entries in
   let c,typ,univs = Term_typing.translate_local_def senv.env id de in
-  let poly = match de.Entries.const_entry_universes with
+  let poly = match de.Entries.secdef_universes with
   | Monomorphic_const_entry _ -> false
   | Polymorphic_const_entry _ -> true
   in

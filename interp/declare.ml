@@ -231,7 +231,15 @@ let cache_variable ((sp,_),o) =
     | SectionLocalDef (de) ->
       let (de, eff) = Global.export_private_constants ~in_section:true de in
       let () = List.iter register_side_effect eff in
-      let univs = Global.push_named_def (id,de) in
+      let body = Future.chain de.const_entry_body (fun (body, ()) -> body) in
+      let se = {
+        secdef_body = body;
+        secdef_secctx = de.const_entry_secctx;
+        secdef_universes = de.const_entry_universes;
+        secdef_feedback = de.const_entry_feedback;
+        secdef_type = de.const_entry_type;
+      } in
+      let univs = Global.push_named_def (id, se) in
       let poly = match de.const_entry_universes with
       | Monomorphic_const_entry _ -> false
       | Polymorphic_const_entry _ -> true
