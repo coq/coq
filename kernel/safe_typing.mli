@@ -90,7 +90,7 @@ val push_named_assum :
 (** Returns the full universe context necessary to typecheck the definition
   (futures are forced) *)
 val push_named_def :
-  Id.t * private_constants Entries.definition_entry -> Univ.ContextSet.t safe_transformer
+  Id.t * unit Entries.definition_entry -> Univ.ContextSet.t safe_transformer
 
 (** Insertion of global axioms or definitions *)
 
@@ -106,8 +106,8 @@ type exported_private_constant =
   Constant.t * private_constant_role
 
 val export_private_constants : in_section:bool ->
-  private_constants Entries.constant_entry ->
-  (unit Entries.constant_entry * exported_private_constant list) safe_transformer
+  private_constants Entries.definition_entry ->
+  (unit Entries.definition_entry * exported_private_constant list) safe_transformer
 
 (** returns the main constant plus a list of auxiliary constants (empty
     unless one requires the side effects to be exported) *)

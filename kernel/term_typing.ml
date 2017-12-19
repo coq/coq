@@ -533,14 +533,10 @@ type side_effect_role =
 type exported_side_effect = 
   Constant.t * constant_body * side_effect_role
 
-let export_side_effects mb env ce =
-  match ce with
-  | ParameterEntry e -> [], ParameterEntry e
-  | ProjectionEntry e -> [], ProjectionEntry e
-  | DefinitionEntry c ->
+let export_side_effects mb env c =
       let { const_entry_body = body } = c in
       let _, eff = Future.force body in
-      let ce = DefinitionEntry { c with
+      let ce = { c with
         const_entry_body = Future.chain body
           (fun (b_ctx, _) -> b_ctx, ()) } in
       let not_exists (c,_,_,_) =
@@ -609,9 +605,9 @@ let translate_recipe env kn r =
   let hcons = DirPath.is_empty dir in
   build_constant_declaration kn env (Cooking.cook_constant ~hcons env r)
 
-let translate_local_def mb env id centry =
+let translate_local_def env id centry =
   let open Cooking in
-  let decl = infer_declaration ~trust:mb env None (DefinitionEntry centry) in
+  let decl = infer_declaration ~trust:Pure env None (DefinitionEntry centry) in
   let typ = decl.cook_type in
   if Option.is_empty decl.cook_context && !Flags.record_aux_file then begin
     match decl.cook_body with

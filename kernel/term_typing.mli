@@ -18,7 +18,7 @@ type _ trust =
 | Pure : unit trust
 | SideEffects : structure_body -> side_effects trust
 
-val translate_local_def : 'a trust -> env -> Id.t -> 'a definition_entry ->
+val translate_local_def : env -> Id.t -> unit definition_entry ->
   constant_def * types * Univ.ContextSet.t
 
 val translate_local_assum : env -> types -> types
@@ -62,8 +62,8 @@ type exported_side_effect =
  * be pushed in the safe_env by safe typing.  The main constant entry
  * needs to be translated as usual after this step. *)
 val export_side_effects :
-  structure_body -> env -> side_effects constant_entry ->
-    exported_side_effect list * unit constant_entry
+  structure_body -> env -> side_effects definition_entry ->
+    exported_side_effect list * unit definition_entry
 
 val translate_mind :
   env -> MutInd.t -> mutual_inductive_entry -> mutual_inductive_body
