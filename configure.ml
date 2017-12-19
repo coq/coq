@@ -870,6 +870,8 @@ let strip =
 let md5sum =
   select_command "Don’t know how to compute MD5 checksums…" [
     "md5sum", [], [ "--version" ];
+    (* Alpine Linux md5sum is really limited... *)
+    "md5sum", [], [ "Makefile" ];
     "md5", ["-q"], [ "-s" ; "''" ];
   ]
 
