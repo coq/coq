@@ -61,16 +61,16 @@ let is_non_recursive_type sigma t = op2bool (match_with_non_recursive_type sigma
 
 (* NB: we consider also the let-in case in the following function,
    since they may appear in types of inductive constructors (see #2629) *)
-
+let noccur_after sigma n t = n >= 0 || Vars.noccur_between sigma 1 (-n) (Reductionops.whd_beta sigma t)
 let rec has_nodep_prod_after n sigma c =
   match EConstr.kind sigma c with
   | Prod (_,t,c) ->
-     (n>=0 || Vars.noccur_between sigma 1 (-n) t)
-     && (has_nodep_prod_after (n-1) sigma c)
+     noccur_after sigma n t
+     && has_nodep_prod_after (n-1) sigma c
   | LetIn (_,b,t,c) ->
-     (n>=0 || (Vars.noccur_between sigma 1 (-n) b && Vars.noccur_between sigma 1 (-n) t))
-     && (has_nodep_prod_after (n-1) sigma c)
-  | _ -> n>=0 || Vars.noccur_between sigma 1 (-n) c
+     noccur_after sigma n b && noccur_after sigma n t
+     && has_nodep_prod_after (n-1) sigma c
+  | _ -> noccur_after sigma n c
 
 let has_nodep_prod sigma c = has_nodep_prod_after 0 sigma c
 
