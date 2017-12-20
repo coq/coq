@@ -195,11 +195,11 @@ let process_cmd_line orig_dir proj args =
  (******************************* API ************************************)
 
 let cmdline_args_to_project ~curdir args =
-  process_cmd_line curdir (mk_project None None None true false) args
+  process_cmd_line curdir (mk_project None None None true true) args
 
 let read_project_file f =
   process_cmd_line (Filename.dirname f)
-    (mk_project (Some f) None (Some NoInstall) true false) (parse f)
+    (mk_project (Some f) None (Some NoInstall) true true) (parse f)
 
 let rec find_project_file ~from ~projfile_name =
   let fname = Filename.concat from projfile_name in
