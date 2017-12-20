@@ -45,8 +45,8 @@ IDEDEPS:=clib/clib.cma lib/lib.cma
 IDECMA:=ide/ide.cma
 IDETOPLOOPCMA=ide/coqidetop.cma
 
-LINKIDE:=$(IDEDEPS) $(IDECDEPS) $(IDECMA) ide/coqide_main.ml
-LINKIDEOPT:=$(IDEOPTCDEPS) $(patsubst %.cma,%.cmxa,$(IDEDEPS:.cmo=.cmx)) $(IDECMA:.cma=.cmxa) ide/coqide_main.ml
+LINKIDE:=$(IDEDEPS) $(IDECDEPS) $(IDECMA) ide/coqide_main.mli ide/coqide_main.ml
+LINKIDEOPT:=$(IDEOPTCDEPS) $(patsubst %.cma,%.cmxa,$(IDEDEPS:.cmo=.cmx)) $(IDECMA:.cma=.cmxa) ide/coqide_main.mli ide/coqide_main.ml
 
 IDEFILES=$(wildcard ide/*.lang) ide/coq_style.xml ide/coq.png ide/MacOS/default_accel_map
 
