@@ -406,17 +406,16 @@ $(COQTOPEXE): $(COQTOPBYTE)
 	cp $< $@
 endif
 
-# Are "-cclib lcoqrun -dllib -lcoqrun" necessary?
+# VMBYTEFLAGS will either contain -custom of the right -dllpath for the VM
 $(COQTOPBYTE): $(LINKCMO) $(LIBCOQRUN) $(TOPLOOPCMA) $(COQTOP_BYTE_MLTOP)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(OCAMLC) -linkall -linkpkg -I toplevel \
-	                 -I kernel/byterun -dllpath $(abspath kernel/byterun) -cclib -lcoqrun -dllib -lcoqrun \
+	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
                          $(SYSMOD) -package camlp5.gramlib,compiler-libs.toplevel \
 	                 $(LINKCMO) $(BYTEFLAGS) \
 	                 $(COQTOP_BYTE_MLTOP) toplevel/coqtop_bin.ml -o $@
 
-# coqc
-
+# For coqc
 COQCCMO:=clib/clib.cma lib/lib.cma toplevel/usage.cmo tools/coqc.cmo
 
 $(COQC): $(call bestobj, $(COQCCMO))
