@@ -48,6 +48,8 @@ Our issue tracker includes a flag to mark bugs related to documentation. You can
 
 The sources for the [Coq reference manual](https://coq.inria.fr/distrib/current/refman/) are at [`doc/refman`](/doc/refman). These are written in LaTeX and compiled to HTML with [HeVeA](http://hevea.inria.fr/).
 
+You may also contribute to the informal documentation available in [Cocorico](https://github.com/coq/coq/wiki) (the Coq wiki), and the [Coq FAQ](https://github.com/coq/coq/wiki/The-Coq-FAQ). Both of these are editable by anyone with a GitHub account.
+
 ## Contributing outside this repository
 
 There are many useful ways to contribute to the Coq ecosystem that don't involve the Coq repository.
