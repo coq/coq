@@ -888,13 +888,6 @@ let strip =
     if strip = "" then "strip" else strip
     end
 
-(** * md5sum command *)
-
-let md5sum =
-  select_command "Don’t know how to compute MD5 checksums…" [
-    "md5sum", [], [ "--version" ];
-    "md5", ["-q"], [ "-s" ; "''" ];
-  ]
 
 (** * Documentation : do we have latex, hevea, ... *)
 
@@ -1263,8 +1256,6 @@ let write_makefile f =
   pr "# Unix systems and profiling: true\n";
   pr "# Unix systems and no profiling: strip\n";
   pr "STRIP=%s\n\n" strip;
-  pr "#the command md5sum\n";
-  pr "MD5SUM=%s\n\n" md5sum;
   pr "# LablGTK\n";
   pr "COQIDEINCLUDES=%s\n\n" !lablgtkincludes;
   pr "# CoqIde (no/byte/opt)\n";

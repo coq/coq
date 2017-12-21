@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 67309b04a86b247431fd3e580ecbb50d  checker/cic.mli
+MD5 67309b04a86b247431fd3e580ecbb50d checker/cic.mli
 
 *)
 
