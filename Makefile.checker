@@ -77,7 +77,7 @@ checker/%.cmx: checker/%.ml
 
 md5chk:
 	$(SHOW)'MD5SUM cic.mli'
-	$(HIDE)if grep -q `$(OCAML) tools/md5sum.ml checker/cic.mli` checker/values.ml; \
+	$(HIDE)if grep -q "^MD5 `$(OCAML) tools/md5sum.ml checker/cic.mli`$$" checker/values.ml; \
 	       then true; else echo "Error: outdated checker/values.ml"; false; fi
 
 .PHONY: md5chk
