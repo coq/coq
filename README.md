@@ -15,9 +15,13 @@ read the [help page](https://coq.inria.fr/opam/www/using.html) on how to install
 or refer to the [`INSTALL` file](/INSTALL) for the procedure to install from source.
 
 ## Documentation
-The documentation is part of the archive in directory doc. The
+
+The sources of the documentation can be found in directory [`doc`](/doc). The
 documentation of the last released version is available on the Coq
 web site at [coq.inria.fr/documentation](http://coq.inria.fr/documentation).
+See also [Cocorico](https://github.com/coq/coq/wiki) (the Coq wiki),
+and the [Coq FAQ](https://github.com/coq/coq/wiki/The-Coq-FAQ),
+for additional user-contributed documentation.
 
 ## Changes
 There is a file named [`CHANGES`](/CHANGES) that explains the differences and the
