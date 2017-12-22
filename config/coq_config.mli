@@ -52,7 +52,6 @@ val vo_magic_number : int
 val state_magic_number : int
 
 val core_src_dirs : string list
-val api_dirs : string list
 val plugins_dirs : string list
 val all_src_dirs : string list
 

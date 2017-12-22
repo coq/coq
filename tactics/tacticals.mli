@@ -23,7 +23,7 @@ val tclORELSE0       : tactic -> tactic -> tactic
 val tclORELSE        : tactic -> tactic -> tactic
 val tclTHEN          : tactic -> tactic -> tactic
 val tclTHENSEQ       : tactic list -> tactic
-[@@ocaml.deprecated "alias of API.Tacticals.tclTHENLIST"]
+[@@ocaml.deprecated "alias of Tacticals.tclTHENLIST"]
 val tclTHENLIST      : tactic list -> tactic
 val tclTHEN_i        : tactic -> (int -> tactic) -> tactic
 val tclTHENFIRST     : tactic -> tactic -> tactic

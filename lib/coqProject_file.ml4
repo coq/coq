@@ -11,7 +11,6 @@ type project = {
   makefile : string option;
   install_kind  : install option;
   use_ocamlopt : bool;
-  bypass_API : bool;
 
   v_files : string list;
   mli_files : string list;
@@ -43,12 +42,11 @@ and install =
   | UserInstall
 
 (* TODO generate with PPX *)
-let mk_project project_file makefile install_kind use_ocamlopt bypass_API = {
+let mk_project project_file makefile install_kind use_ocamlopt = {
   project_file;
   makefile;
   install_kind;
   use_ocamlopt;
-  bypass_API;
 
   v_files = [];
   mli_files = [];
@@ -181,8 +179,6 @@ let process_cmd_line orig_dir proj args =
     aux { proj with defs = proj.defs @ [v,def] } r
   | "-arg" :: a :: r ->
     aux { proj with extra_args = proj.extra_args @ [a] } r
-  | "-bypass-API" :: r ->
-    aux { proj with bypass_API = true } r
   | f :: r ->
       let f = CUnix.correct_path f orig_dir in
       let proj =
@@ -202,11 +198,11 @@ let process_cmd_line orig_dir proj args =
  (******************************* API ************************************)
 
 let cmdline_args_to_project ~curdir args =
-  process_cmd_line curdir (mk_project None None None true false) args
+  process_cmd_line curdir (mk_project None None None true) args
 
 let read_project_file f =
   process_cmd_line (Filename.dirname f)
-    (mk_project (Some f) None (Some NoInstall) true false) (parse f)
+    (mk_project (Some f) None (Some NoInstall) true) (parse f)
 
 let rec find_project_file ~from ~projfile_name =
   let fname = Filename.concat from projfile_name in

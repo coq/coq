@@ -13,7 +13,6 @@ type project = {
   makefile : string option;
   install_kind  : install option;
   use_ocamlopt : bool;
-  bypass_API : bool;
 
   v_files : string list;
   mli_files : string list;

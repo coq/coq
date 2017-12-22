@@ -195,7 +195,7 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 COQOPTS=$(NATIVECOMPUTE)
 BOOTCOQC=$(TIMER) $(COQTOPBEST) -boot $(COQOPTS) -compile
 
-LOCALINCLUDES=$(if $(filter plugins/%,$@),-I clib -I lib -I API -open API $(addprefix -I plugins/,$(PLUGINDIRS)),$(addprefix -I ,$(SRCDIRS)))
+LOCALINCLUDES=$(addprefix -I ,$(SRCDIRS))
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
 OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
@@ -575,12 +575,6 @@ test-suite: world byte $(ALLSTDLIB).v
 kernel/kernel.cma: kernel/kernel.mllib
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(VMBYTEFLAGS) -a -o $@ $(filter-out %.mllib, $^)
-
-# Specific rule for API/API.cmi
-# Make sure that API/API.mli cannot leak types from the Coq codebase.
-API/API.cmi : API/API.mli
-	$(SHOW)'OCAMLC    $<'
-	$(HIDE)$(OCAMLC) -I clib -I lib -I $(MYCAMLP4LIB) -c $<
 
 %.cma: %.mllib
 	$(SHOW)'OCAMLC -a -o $@'

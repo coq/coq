@@ -240,25 +240,12 @@ package "stm" (
 
 )
 
-package "API" (
-
-  description = "Coq API"
-  version     = "8.7"
-
-  requires    = "coq.intf, coq.stm"
-  directory   = "API"
-
-  archive(byte)    = "API.cma"
-  archive(native)  = "API.cmxa"
-
-)
-
 package "ltac" (
 
   description = "Coq LTAC Plugin"
   version     = "8.7"
 
-  requires    = "coq.API"
+  requires    = "coq.stm"
   directory   = "plugins/ltac"
 
   archive(byte)    = "ltac_plugin.cmo"

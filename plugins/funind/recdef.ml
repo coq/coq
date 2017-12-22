@@ -861,7 +861,7 @@ let rec prove_le g =
         | App (c, [| x0 ; _ |]) ->
           EConstr.isVar sigma x0 &&
           Id.equal (destVar sigma x0) (destVar sigma x) &&
-          is_global sigma (le ()) c
+          EConstr.is_global sigma (le ()) c
         | _ -> false
         in
 	let (h,t) = List.find (fun (_,t) -> matching_fun t) (pf_hyps_types g)

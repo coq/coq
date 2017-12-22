@@ -176,7 +176,7 @@ COQMAKEFILE_VERSION:=@COQ_VERSION@
 
 COQSRCLIBS?= $(foreach d,$(COQ_SRC_SUBDIRS), -I "$(COQLIB)$(d)")
 
-CAMLFLAGS+=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB) $(OCAML_API_FLAGS)
+CAMLFLAGS+=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)
 
 # ocamldoc fails with unknown argument otherwise
 CAMLDOCFLAGS=$(filter-out -annot, $(filter-out -bin-annot, $(CAMLFLAGS)))
