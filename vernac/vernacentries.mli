@@ -18,7 +18,7 @@ val vernac_require :
 val interp :
   ?verbosely:bool ->
   ?proof:Proof_global.closed_proof ->
-  st:Vernacstate.t -> Vernacexpr.vernac_expr Loc.located -> Vernacstate.t
+  st:Vernacstate.t -> Vernacexpr.vernac_control Loc.located -> Vernacstate.t
 
 (** Prepare a "match" template for a given inductive type.
     For each branch of the match, we list the constructor name
@@ -36,3 +36,5 @@ val command_focus : unit Proof.focus_kind
 
 val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr ->
   Evd.evar_map * Redexpr.red_expr) Hook.t
+
+val universe_polymorphism_option_name : string list

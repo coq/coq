@@ -1509,7 +1509,7 @@ let do_build_inductive
 	in
 	let msg =
 	  str "while trying to define"++ spc () ++
-	    Ppvernac.pr_vernac (Vernacexpr.VernacInductive(Vernacexpr.GlobalNonCumulativity,false,Decl_kinds.Finite,repacked_rel_inds))
+            Ppvernac.pr_vernac Vernacexpr.(VernacExpr(VernacInductive(GlobalNonCumulativity,false,Decl_kinds.Finite,repacked_rel_inds)))
 	    ++ fnl () ++
 	    msg
 	in
@@ -1524,7 +1524,7 @@ let do_build_inductive
 	in
 	let msg =
 	  str "while trying to define"++ spc () ++
-	    Ppvernac.pr_vernac (Vernacexpr.VernacInductive(Vernacexpr.GlobalNonCumulativity,false,Decl_kinds.Finite,repacked_rel_inds))
+            Ppvernac.pr_vernac Vernacexpr.(VernacExpr(VernacInductive(GlobalNonCumulativity,false,Decl_kinds.Finite,repacked_rel_inds)))
 	    ++ fnl () ++
 	    CErrors.print reraise
 	in

@@ -111,13 +111,14 @@ let pr_open_cur_subgoals () =
 (*   | _ -> false *)
 
 let rec interp_vernac ~check ~interactive doc sid (loc,com) =
-  let interp = function
+  let interp v =
+    match under_control v with
     | VernacLoad (verbosely, fname) ->
-	let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
+        let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
         let fname = CUnix.make_suffix fname ".v" in
         let f = Loadpath.locate_file fname in
         load_vernac ~verbosely ~check ~interactive doc sid f
-    | v ->
+    | _ ->
 
       (* XXX: We need to run this before add as the classification is
          highly dynamic and depends on the structure of the

@@ -193,7 +193,7 @@ let qid = Libnames.qualid_of_string;;
 (* parsing of terms *)
 
 let parse_constr = Pcoq.parse_string Pcoq.Constr.constr;;
-let parse_vernac = Pcoq.parse_string Pcoq.Vernac_.vernac;;
+let parse_vernac = Pcoq.parse_string Pcoq.Vernac_.vernac_control;;
 let parse_tac    = API.Pcoq.parse_string Ltac_plugin.Pltac.tactic;;
 
 (* build a term of type glob_constr without type-checking or resolution of 

@@ -315,13 +315,8 @@ type cumulative_inductive_parsing_flag =
 (** {6 The type of vernacular expressions} *)
 
 type vernac_expr =
-  (* Control *)
-  | VernacLoad of verbose_flag * string
-  | VernacTime of vernac_expr located
-  | VernacRedirect of string * vernac_expr located
-  | VernacTimeout of int * vernac_expr
-  | VernacFail of vernac_expr
 
+  | VernacLoad of verbose_flag * string
   (* Syntax *)
   | VernacSyntaxExtension of bool * (lstring * syntax_modifier list)
   | VernacOpenCloseScope of bool * scope_name
@@ -481,6 +476,14 @@ and vernac_argument_status = {
   notation_scope : string Loc.located option;
   implicit_status : vernac_implicit_status;
 }
+
+type vernac_control =
+  | VernacExpr of vernac_expr
+   (* Control *)
+  | VernacTime of vernac_control located
+  | VernacRedirect of string * vernac_control located
+  | VernacTimeout of int * vernac_control
+  | VernacFail of vernac_control
 
 (* A vernac classifier provides information about the exectuion of a
    command:

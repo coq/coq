@@ -80,8 +80,8 @@ let pr_grammar = function
   | "pattern" ->
       pr_entry Pcoq.Constr.pattern
   | "vernac" ->
-      str "Entry vernac is" ++ fnl () ++
-      pr_entry Pcoq.Vernac_.vernac ++
+      str "Entry vernac_control is" ++ fnl () ++
+      pr_entry Pcoq.Vernac_.vernac_control ++
       str "Entry command is" ++ fnl () ++
       pr_entry Pcoq.Vernac_.command ++
       str "Entry syntax is" ++ fnl () ++

@@ -23,8 +23,8 @@ val crawl :
 val unit_val : Stm.DynBlockData.t
 val of_bullet_val : Vernacexpr.bullet -> Stm.DynBlockData.t
 val to_bullet_val : Stm.DynBlockData.t -> Vernacexpr.bullet
-val of_vernac_expr_val : Vernacexpr.vernac_expr -> Stm.DynBlockData.t
-val to_vernac_expr_val : Stm.DynBlockData.t -> Vernacexpr.vernac_expr
+val of_vernac_control_val : Vernacexpr.vernac_control -> Stm.DynBlockData.t
+val to_vernac_control_val : Stm.DynBlockData.t -> Vernacexpr.vernac_control
 
 end = struct
 
@@ -32,7 +32,7 @@ let unit_tag = DynBlockData.create "unit"
 let unit_val = DynBlockData.Easy.inj () unit_tag
 
 let of_bullet_val, to_bullet_val = DynBlockData.Easy.make_dyn "bullet"
-let of_vernac_expr_val, to_vernac_expr_val = DynBlockData.Easy.make_dyn "vernac_expr"
+let of_vernac_control_val, to_vernac_control_val = DynBlockData.Easy.make_dyn "vernac_control"
 
 let simple_goal sigma g gs =
   let open Evar in
@@ -74,14 +74,16 @@ include Util
 (* ****************** - foo - bar - baz *********************************** *)
 
 let static_bullet ({ entry_point; prev_node } as view) =
-  match entry_point.ast with
+  assert (not (Vernacprop.has_Fail entry_point.ast));
+  match Vernacprop.under_control entry_point.ast with
   | Vernacexpr.VernacBullet b ->
       let base = entry_point.indentation in
       let last_tac = prev_node entry_point in
       crawl view ~init:last_tac (fun prev node ->
         if node.indentation < base then `Stop else
         if node.indentation > base then `Cont node else
-        match node.ast with
+        if Vernacprop.has_Fail node.ast then `Stop
+        else match Vernacprop.under_control node.ast with
         | Vernacexpr.VernacBullet b' when b = b' ->
           `Found { block_stop = entry_point.id; block_start = prev.id;
                    dynamic_switch = node.id; carry_on_data = of_bullet_val b }
@@ -94,7 +96,7 @@ let dynamic_bullet doc { dynamic_switch = id; carry_on_data = b } =
       `ValidBlock {
          base_state = id;
          goals_to_admit = focused;
-         recovery_command = Some (Vernacexpr.VernacBullet (to_bullet_val b))
+         recovery_command = Some (Vernacexpr.VernacExpr(Vernacexpr.VernacBullet (to_bullet_val b)))
       }
   | `Not -> `Leaks
 
@@ -104,9 +106,10 @@ let () = register_proof_block_delimiter
 (* ******************** { block } ***************************************** *)
   
 let static_curly_brace ({ entry_point; prev_node } as view) =
-  assert(entry_point.ast = Vernacexpr.VernacEndSubproof);
+  assert(Vernacprop.under_control entry_point.ast = Vernacexpr.VernacEndSubproof);
   crawl view (fun (nesting,prev) node ->
-    match node.ast with
+    if Vernacprop.has_Fail node.ast then `Cont (nesting,node)
+    else match Vernacprop.under_control node.ast with
     | Vernacexpr.VernacSubproof _ when nesting = 0 ->
       `Found { block_stop = entry_point.id; block_start = prev.id;
                dynamic_switch = node.id; carry_on_data = unit_val }
@@ -122,7 +125,7 @@ let dynamic_curly_brace doc { dynamic_switch = id } =
       `ValidBlock {
          base_state = id;
          goals_to_admit = focused;
-         recovery_command = Some Vernacexpr.VernacEndSubproof
+         recovery_command = Some (Vernacexpr.VernacExpr Vernacexpr.VernacEndSubproof)
       }
   | `Not -> `Leaks
 
@@ -164,7 +167,7 @@ let static_indent ({ entry_point; prev_node } as view) =
         else 
           `Found { block_stop = entry_point.id; block_start = node.id;
                    dynamic_switch = node.id;
-                   carry_on_data = of_vernac_expr_val entry_point.ast }
+                   carry_on_data = of_vernac_control_val entry_point.ast }
         ) last_tac
 
 let dynamic_indent doc { dynamic_switch = id; carry_on_data = e } =
@@ -176,7 +179,7 @@ let dynamic_indent doc { dynamic_switch = id; carry_on_data = e } =
       `ValidBlock {
          base_state = id;
          goals_to_admit = but_last;
-         recovery_command = Some (to_vernac_expr_val e);
+         recovery_command = Some (to_vernac_control_val e);
       }
   | `Not -> `Leaks
 

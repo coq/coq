@@ -251,9 +251,8 @@ module Vernac_ :
     val gallina_ext : vernac_expr Gram.entry
     val command : vernac_expr Gram.entry
     val syntax : vernac_expr Gram.entry
-    val vernac : vernac_expr Gram.entry
+    val vernac_control : vernac_control Gram.entry
     val rec_definition : (fixpoint_expr * decl_notation list) Gram.entry
-    val vernac_eoi : vernac_expr Gram.entry
     val noedit_mode : vernac_expr Gram.entry
     val command_entry : vernac_expr Gram.entry
     val red_expr : raw_red_expr Gram.entry
@@ -261,7 +260,7 @@ module Vernac_ :
   end
 
 (** The main entry: reads an optional vernac command *)
-val main_entry : (Loc.t * vernac_expr) option Gram.entry
+val main_entry : (Loc.t * vernac_control) option Gram.entry
 
 (** Handling of the proof mode entry *)
 val get_command_entry : unit -> vernac_expr Gram.entry

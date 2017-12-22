@@ -12,7 +12,7 @@ open Genarg
 val string_of_vernac_classification : vernac_classification -> string
 
 (** What does a vernacular do *)
-val classify_vernac : vernac_expr -> vernac_classification
+val classify_vernac : vernac_control -> vernac_classification
 
 (** Install a vernacular classifier for VernacExtend *)
 val declare_vernac_classifier :

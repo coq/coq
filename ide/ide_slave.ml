@@ -54,7 +54,7 @@ let coqide_known_option table = List.mem table [
   ["Printing";"Universes"];
   ["Printing";"Unfocused"]]
 
-let is_known_option cmd = match cmd with
+let is_known_option cmd = match Vernacprop.under_control cmd with
   | VernacSetOption (o,BoolValue true)
   | VernacUnsetOption o -> coqide_known_option o
   | _ -> false

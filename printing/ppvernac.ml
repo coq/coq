@@ -535,16 +535,25 @@ open Decl_kinds
       | SsFwdClose e -> "("^aux e^")*"
     in Pp.str (aux e)
 
-  let rec pr_vernac_body v =
+  let rec pr_vernac_expr v =
     let return = tag_vernac v in
     match v with
       | VernacPolymorphic (poly, v) ->
         let s = if poly then keyword "Polymorphic" else keyword "Monomorphic" in
-        return (s ++ spc () ++ pr_vernac_body v)
+        return (s ++ spc () ++ pr_vernac_expr v)
       | VernacProgram v ->
-        return (keyword "Program" ++ spc() ++ pr_vernac_body v)
+        return (keyword "Program" ++ spc() ++ pr_vernac_expr v)
       | VernacLocal (local, v) ->
-        return (pr_locality local ++ spc() ++ pr_vernac_body v)
+        return (pr_locality local ++ spc() ++ pr_vernac_expr v)
+
+      | VernacLoad (f,s) ->
+        return (
+          keyword "Load"
+          ++ if f then
+              (spc() ++ keyword "Verbose" ++ spc())
+            else
+              spc() ++ qs s
+        )
 
       (* Proof management *)
       | VernacAbortAll ->
@@ -606,24 +615,6 @@ open Decl_kinds
         return (keyword "Write State" ++ spc () ++ qs s)
       | VernacRestoreState s ->
         return  (keyword "Restore State" ++ spc() ++ qs s)
-
-    (* Control *)
-      | VernacLoad (f,s) ->
-        return (
-          keyword "Load"
-          ++ if f then
-              (spc() ++ keyword "Verbose" ++ spc())
-            else
-              spc() ++ qs s
-        )
-      | VernacTime (_,v) ->
-        return (keyword "Time" ++ spc() ++ pr_vernac_body v)
-      | VernacRedirect (s, (_,v)) ->
-        return (keyword "Redirect" ++ spc() ++ qs s ++ spc() ++ pr_vernac_body v)
-      | VernacTimeout(n,v) ->
-        return (keyword "Timeout " ++ int n ++ spc() ++ pr_vernac_body v)
-      | VernacFail v ->
-        return (keyword "Fail" ++ spc() ++ pr_vernac_body v)
 
     (* Syntax *)
       | VernacOpenCloseScope (opening,sc) ->
@@ -1228,6 +1219,19 @@ open Decl_kinds
     with Not_found ->
       hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep pr_arg cl ++ str ")")
 
-  let pr_vernac v =
-    try pr_vernac_body v ++ sep_end v
-    with e -> CErrors.print e
+  let rec pr_vernac_control v =
+    let return = tag_vernac v in
+    match v with
+    | VernacExpr v' -> pr_vernac_expr v' ++ sep_end v'
+    | VernacTime (_,v) ->
+      return (keyword "Time" ++ spc() ++ pr_vernac_control v)
+    | VernacRedirect (s, (_,v)) ->
+      return (keyword "Redirect" ++ spc() ++ qs s ++ spc() ++ pr_vernac_control v)
+    | VernacTimeout(n,v) ->
+      return (keyword "Timeout " ++ int n ++ spc() ++ pr_vernac_control v)
+    | VernacFail v ->
+      return (keyword "Fail" ++ spc() ++ pr_vernac_control v)
+
+    let pr_vernac v =
+      try pr_vernac_control v
+      with e -> CErrors.print e
