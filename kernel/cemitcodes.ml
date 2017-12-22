@@ -184,8 +184,6 @@ let emit_instr = function
                else (out opAPPTERM; out_int n; out_int sz)
   | Kreturn n ->
       out opRETURN; out_int n
-  | Kjump ->
-      out opRETURN; out_int 0
   | Krestart ->
       out opRESTART
   | Kgrab n ->
@@ -305,8 +303,6 @@ let rec emit insns remaining = match insns with
   | Kpush :: Kconst const :: c ->
       out opPUSHGETGLOBAL; slot_for_const const;
       emit c remaining
-  | Kpop n :: Kjump :: c ->
-      out opRETURN; out_int n; emit c remaining
   | Ksequence(c1,c2)::c ->
       emit c1 (c2::c::remaining)
   (* Default case *)

@@ -768,9 +768,9 @@ let rec compile_constr reloc c sz cont =
       let sz_b,branch,is_tailcall =
 	match branch1 with
 	| Kreturn k ->
-	  assert (Int.equal k sz) ;
 	  sz, branch1, true
-	| _ -> sz+3, Kjump, false
+	| Kbranch _ -> sz+3, Kreturn 0, false
+        | _ -> assert false
       in
 
       let c = ref cont in

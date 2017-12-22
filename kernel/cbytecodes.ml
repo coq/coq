@@ -66,7 +66,6 @@ type instruction =
   | Kapply of int
   | Kappterm of int * int
   | Kreturn of int
-  | Kjump
   | Krestart
   | Kgrab of int
   | Kgrabrec of int
@@ -222,7 +221,6 @@ let rec pp_instr i =
   | Kappterm(n, m) ->
       str "appterm " ++ int n ++ str ", " ++ int m
   | Kreturn n -> str "return " ++ int n
-  | Kjump -> str "jump"
   | Krestart -> str "restart"
   | Kgrab n -> str "grab " ++ int n
   | Kgrabrec n -> str "grabrec " ++ int n

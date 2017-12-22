@@ -60,7 +60,6 @@ type instruction =
   | Kapply of int                       (** number of arguments (arguments on top of stack) *)
   | Kappterm of int * int               (** number of arguments, slot size *)
   | Kreturn of int                      (** slot size *)
-  | Kjump
   | Krestart
   | Kgrab of int                        (** number of arguments *)
   | Kgrabrec of int                     (** rec arg *)
