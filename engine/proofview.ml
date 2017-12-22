@@ -634,32 +634,42 @@ let shelve_goals l =
   InfoL.leaf (Info.Tactic (fun () -> Pp.str"shelve_goals")) >>
   Shelf.modify (fun gls -> gls @ l)
 
-(** [contained_in_info e evi] checks whether the evar [e] appears in
-    the hypotheses, the conclusion or the body of the evar_info
-    [evi]. Note: since we want to use it on goals, the body is actually
-    supposed to be empty. *)
-let contained_in_info sigma e evi =
-  Evar.Set.mem e (Evd.evars_of_filtered_evar_info (Evarutil.nf_evar_info sigma evi))
-
 (** [depends_on sigma src tgt] checks whether the goal [src] appears
     as an existential variable in the definition of the goal [tgt] in
     [sigma]. *)
 let depends_on sigma src tgt =
   let evi = Evd.find sigma tgt in
-  contained_in_info sigma src evi
+  Evar.Set.mem src (Evd.evars_of_filtered_evar_info (Evarutil.nf_evar_info sigma evi))
+
+let unifiable_delayed g l =
+  CList.exists (fun (tgt, lazy evs) -> not (Evar.equal g tgt) && Evar.Set.mem g evs) l
+
+let free_evars sigma l =
+  let cache = Evarutil.create_undefined_evars_cache () in
+  let map ev =
+  (** Computes the set of evars appearing in the hypotheses, the conclusion or
+      the body of the evar_info [evi]. Note: since we want to use it on goals,
+      the body is actually supposed to be empty. *)
+    let evi = Evd.find sigma ev in
+    let fevs = lazy (Evarutil.filtered_undefined_evars_of_evar_info ~cache sigma evi) in
+    (ev, fevs)
+  in
+  List.map map l
 
 (** [unifiable sigma g l] checks whether [g] appears in another
     subgoal of [l]. The list [l] may contain [g], but it does not
     affect the result. *)
 let unifiable sigma g l =
-  CList.exists (fun tgt -> not (Evar.equal g tgt) && depends_on sigma g tgt) l
+  let l = free_evars sigma l in
+  unifiable_delayed g l
 
 (** [partition_unifiable sigma l] partitions [l] into a pair [(u,n)]
     where [u] is composed of the unifiable goals, i.e. the goals on
     whose definition other goals of [l] depend, and [n] are the
     non-unifiable goals. *)
 let partition_unifiable sigma l =
-  CList.partition (fun g -> unifiable sigma g l) l
+  let fevs = free_evars sigma l in
+  CList.partition (fun g -> unifiable_delayed g fevs) l
 
 (** Shelves the unifiable goals under focus, i.e. the goals which
     appear in other goals under focus (the unfocused goals are not

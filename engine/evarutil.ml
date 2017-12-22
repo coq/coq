@@ -692,6 +692,55 @@ let undefined_evars_of_evar_info evd evi =
        (undefined_evars_of_named_context evd
 	  (named_context_of_val evi.evar_hyps)))
 
+type undefined_evars_cache = {
+  mutable cache : (EConstr.named_declaration * Evar.Set.t) ref Id.Map.t;
+}
+
+let create_undefined_evars_cache () = { cache = Id.Map.empty; }
+
+let cached_evar_of_hyp cache sigma decl accu = match cache with
+| None ->
+  let fold c acc =
+    let evs = undefined_evars_of_term sigma c in
+    Evar.Set.union evs acc
+  in
+  NamedDecl.fold_constr fold decl accu
+| Some cache ->
+  let id = NamedDecl.get_id decl in
+  let r =
+    try Id.Map.find id cache.cache
+    with Not_found ->
+      (** Dummy value *)
+      let r = ref (NamedDecl.LocalAssum (id, EConstr.mkProp), Evar.Set.empty) in
+      let () = cache.cache <- Id.Map.add id r cache.cache in
+      r
+  in
+  let (decl', evs) = !r in
+  let evs =
+    if NamedDecl.equal (==) decl decl' then snd !r
+    else
+      let fold c acc =
+        let evs = undefined_evars_of_term sigma c in
+        Evar.Set.union evs acc
+      in
+      let evs = NamedDecl.fold_constr fold decl Evar.Set.empty in
+      let () = r := (decl, evs) in
+      evs
+  in
+  Evar.Set.fold Evar.Set.add evs accu
+
+let filtered_undefined_evars_of_evar_info ?cache sigma evi =
+  let evars_of_named_context cache accu nc =
+    let fold decl accu = cached_evar_of_hyp cache sigma (EConstr.of_named_decl decl) accu in
+    Context.Named.fold_outside fold nc ~init:accu
+  in
+  let accu = match evi.evar_body with
+  | Evar_empty -> Evar.Set.empty
+  | Evar_defined b -> evars_of_term b
+  in
+  let accu = Evar.Set.union (undefined_evars_of_term sigma (EConstr.of_constr evi.evar_concl)) accu in
+  evars_of_named_context cache accu (evar_filtered_context evi)
+
 (* spiwack: this is a more complete version of
    {!Termops.occur_evar}. The latter does not look recursively into an
    [evar_map]. If unification only need to check superficially, tactics
