@@ -21,6 +21,6 @@ val has_Fail : vernac_control -> bool
 val is_navigation_vernac : vernac_control -> bool
 val is_deep_navigation_vernac : vernac_control -> bool
 val is_reset : vernac_control -> bool
-val is_query : vernac_control -> bool
 val is_debug : vernac_control -> bool
 val is_undo : vernac_control -> bool
+

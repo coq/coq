@@ -69,9 +69,7 @@ let ide_cmd_checks ~id (loc,ast) =
   if is_known_option ast then
     warn "Set this option from the IDE menu instead";
   if is_navigation_vernac ast || is_undo ast then
-    warn "Use IDE navigation instead";
-  if is_query ast then
-    warn "Query commands should not be inserted in scripts"
+    warn "Use IDE navigation instead"
 
 (** Interpretation (cf. [Ide_intf.interp]) *)
 
