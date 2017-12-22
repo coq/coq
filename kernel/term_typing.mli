@@ -18,8 +18,8 @@ type _ trust =
 | Pure : unit trust
 | SideEffects : structure_body -> side_effects trust
 
-val translate_local_def : env -> Id.t -> unit definition_entry ->
-  constant_def * types * Univ.ContextSet.t
+val translate_local_def : env -> Id.t -> section_def_entry ->
+  constr * types
 
 val translate_local_assum : env -> types -> types
 
@@ -72,7 +72,7 @@ val translate_recipe : env -> Constant.t -> Cooking.recipe -> constant_body
 
 (** Internal functions, mentioned here for debug purpose only *)
 
-val infer_declaration : trust:'a trust -> env -> Constant.t option -> 
+val infer_declaration : trust:'a trust -> env ->
   'a constant_entry -> Cooking.result
 
 val build_constant_declaration :
