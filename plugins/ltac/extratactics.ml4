@@ -594,10 +594,16 @@ let inImplicitTactic : glob_tactic_expr option -> obj =
        subst_function = subst_implicit_tactic;
        classify_function = (fun o -> Dispose)}
 
+let warn_deprecated_implicit_tactic =
+  CWarnings.create ~name:"deprecated-implicit-tactic" ~category:"deprecated"
+    (fun () -> strbrk "Implicit tactics are deprecated")
+
 let declare_implicit_tactic tac =
+  let () = warn_deprecated_implicit_tactic () in
   Lib.add_anonymous_leaf (inImplicitTactic (Some (Tacintern.glob_tactic tac)))
 
 let clear_implicit_tactic () =
+  let () = warn_deprecated_implicit_tactic () in
   Lib.add_anonymous_leaf (inImplicitTactic None)
 
 VERNAC COMMAND EXTEND ImplicitTactic CLASSIFIED AS SIDEFF

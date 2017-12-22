@@ -234,8 +234,6 @@ Qed.
 (** An alternative more concise proof can be done by directly using
     the guarded relational choice *)
 
-Declare Implicit Tactic auto.
-
 Lemma proof_irrel_rel_choice_imp_eq_dec' : a1=a2 \/ ~a1=a2.
 Proof.
   assert (decide: forall x:A, x=a1 \/ x=a2 ->
