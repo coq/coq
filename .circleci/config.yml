@@ -1,0 +1,396 @@
+defaults:
+  params: &params
+    # Following parameters are used in Coq CircleCI Job (using yaml
+    # reference syntax)
+    working_directory: ~/coq
+    docker:
+      - image: ocaml/opam:ubuntu
+
+  environment: &envvars
+    # required by some of the targets, e.g. compcert, passed for
+    # instance to opam to configure the number of parallel jobs
+    # allowed
+    NJOBS: 2
+    COMPILER: "system"
+    CAMLP5_VER: "6.14"
+    NATIVE_COMP: "yes"
+
+    # some useful values
+    COMPILER_32BIT: &compiler-32bit "4.02.3+32bit"
+
+    COMPILER_BLEEDING_EDGE: &compiler-be "4.06.0"
+    CAMLP5_VER_BLEEDING_EDGE: &camlp5-ver-be "7.03"
+
+    TIMING_PACKAGES: &timing-packages "time python"
+
+    COQIDE_PACKAGES: &coqide-packages "libgtk2.0-dev libgtksourceview2.0-dev"
+    #COQIDE_PACKAGES_32BIT: "libgtk2.0-dev:i386 libgtksourceview2.0-dev:i386"
+    COQIDE_OPAM: &coqide-opam "lablgtk-extras"
+    COQIDE_OPAM_BE: &coqide-opam-be "num lablgtk.2.18.6 lablgtk-extras.1.6"
+    COQDOC_PACKAGES: &coqdoc-packages "texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-math-extra texlive-fonts-recommended texlive-fonts-extra latex-xcolor ghostscript transfig imagemagick tipa"
+    COQDOC_OPAM: &coqdoc-opam "hevea"
+
+version: 2
+
+before_script: &before_script
+  name: Install system packages
+  command: |
+    echo export TERM=xterm >> ~/.profile
+    source ~/.profile
+    printenv
+    #if [ "$COMPILER" = "$COMPILER_32BIT" ]; then sudo dpkg --add-architecture i386; fi
+    if [ -n "${EXTRA_PACKAGES}" ]; then sudo apt-get update -yq && sudo apt-get install -yq --no-install-recommends ${EXTRA_PACKAGES}; fi
+
+opam-switch: &opam-switch
+  name: Select opam switch
+  command: |
+    source ~/.profile
+    opam switch ${COMPILER}
+    opam config list
+    opam list
+
+.opam-boot-template: &opam-boot-template
+  <<: *params
+  steps:
+    - checkout
+    - run: *before_script
+    - restore_cache:
+        keys:
+          - coq-opam-cache-v1-{{ arch }}-{{ .Environment.COMPILER }}-{{ checksum ".circleci/config.yml" }}-
+          - coq-opam-cache-v1-{{ arch }}-{{ .Environment.COMPILER }}- # this grabs old cache if checksum doesn't match
+    - run:
+        name: Update opam lists
+        command: |
+          source ~/.profile
+          opam repository set-url default https://opam.ocaml.org
+          opam update
+    - run:
+        name: Install opam packages
+        command: |
+          source ~/.profile
+          opam switch -j ${NJOBS} ${COMPILER}
+          opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind ${COQIDE_OPAM} ${COQDOC_OPAM} ${EXTRA_OPAM}
+    - run:
+        name: Clean cache
+        command: |
+          source ~/.profile
+          rm -rf ~/.opam/log/
+    - save_cache:
+        key: coq-opam-cache-v1-{{ arch }}-{{ .Environment.COMPILER }}-{{ checksum ".circleci/config.yml" }}-
+        paths:
+          - ~/.opam
+    - persist_to_workspace:
+        root: &workspace ~/
+        paths:
+          - .opam/
+
+.build-template: &build-template
+  <<: *params
+  steps:
+    - checkout
+    - run: *before_script
+    - attach_workspace: &attach_workspace
+        at: *workspace
+    - run: *opam-switch
+    - run: &build-configure
+        name: Configure
+        command: |
+          source ~/.profile
+
+          ./configure -local -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
+    - run: &build-build
+        name: Build
+        command: |
+          source ~/.profile
+          make -j ${NJOBS} byte
+          make -j ${NJOBS}
+          make test-suite/misc/universes/all_stdlib.v
+    - persist_to_workspace:
+        root: *workspace
+        paths:
+          - coq/
+
+  environment: &build-variables
+    <<: *envvars
+    EXTRA_CONF: "-coqide opt"
+    EXTRA_PACKAGES: *coqide-packages
+
+.validate-template: &validate-template
+  <<: *params
+  steps:
+    - run: *before_script
+    - attach_workspace: *attach_workspace
+    - run:
+        name: Validate
+        command: |
+          source ~/.profile
+          make validate
+  environment: *envvars
+
+.documentation-template: &documentation-template
+  <<: *params
+  steps:
+    - run: *before_script
+    - attach_workspace: *attach_workspace
+    - run:
+        name: Documentation
+        command: |
+          source ~/.profile
+          make -j ${NJOBS} doc
+  environment: &documentation-variables
+    <<: *envvars
+    EXTRA_PACKAGES: *coqdoc-packages
+
+.test-suite-template: &test-suite-template
+  <<: *params
+  steps:
+    - run: *before_script
+    - attach_workspace: *attach_workspace
+    - run:
+        name: Test
+        command: |
+          source ~/.profile
+          cd test-suite
+          make clean
+          make -j ${NJOBS} all
+  environment: &test-suite-variables
+    <<: *envvars
+    EXTRA_PACKAGES: *timing-packages
+
+.ci-template: &ci-template
+  <<: *params
+  steps:
+    - run: *before_script
+    - attach_workspace: *attach_workspace
+    - run:
+        name: Test
+        command: |
+          source ~/.profile
+          make -f Makefile.ci -j ${NJOBS} TIMED=1 ${CIRCLE_JOB}
+    - persist_to_workspace:
+        root: *workspace
+        paths:
+          - coq/
+  environment: &ci-template-vars
+    <<: *envvars
+    EXTRA_PACKAGES: *timing-packages
+
+# Defines individual jobs, see the workflows section below for job orchestration
+jobs:
+  # TODO: linter
+
+  opam-boot:
+    <<: *opam-boot-template
+    environment:
+      <<: *envvars
+      EXTRA_PACKAGES: *coqide-packages
+      EXTRA_OPAM: "ocamlgraph"
+
+  opam-boot-32bit:
+    <<: *opam-boot-template
+    environment:
+      <<: *envvars
+      EXTRA_PACKAGES: "gcc-multilib"
+      COMPILER: *compiler-32bit
+      COQIDE_OPAM: ""
+      COQDOC_OPAM: ""
+
+  opam-boot-be:
+    <<: *opam-boot-template
+    environment:
+      <<: *envvars
+      EXTRA_PACKAGES: *coqide-packages
+      COMPILER: *compiler-be
+      CAMLP5_VER: *camlp5-ver-be
+      COQIDE_OPAM: *coqide-opam-be
+
+  # Build and prepare test environment
+  build: *build-template
+
+  build-32bit:
+    <<: *build-template
+    environment:
+      <<: *envvars # no coqide for 32bit
+      EXTRA_PACKAGES: "gcc-multilib"
+      COMPILER: *compiler-32bit
+
+  build-be:
+    <<: *build-template
+    environment:
+      <<: *build-variables
+      COMPILER: *compiler-be
+
+  validate: *validate-template
+
+  validate-32bit:
+    <<: *validate-template
+    environment:
+      <<: *envvars
+      COMPILER: *compiler-32bit
+      EXTRA_PACKAGES: "gcc-multilib"
+
+  documentation: *documentation-template
+
+  documentation-be:
+    <<: *documentation-template
+    environment:
+      <<: *documentation-variables
+      COMPILER: *compiler-be
+      CAMLP5_VER: *camlp5-ver-be
+
+  test-suite:
+    <<: *test-suite-template
+
+  test-suite-32bit:
+    <<: *test-suite-template
+    environment:
+      <<: *test-suite-variables
+      COMPILER: *compiler-32bit
+      EXTRA_PACKAGES: "gcc-multilib time python"
+
+  test-suite-be:
+    <<: *test-suite-template
+    environment:
+      <<: *test-suite-variables
+      COMPILER: *compiler-be
+      EXTRA_PACKAGES: *timing-packages
+
+  ci-bignums:
+    <<: *ci-template
+
+  ci-color:
+    <<: *ci-template
+    environment:
+      <<: *ci-template-vars
+      EXTRA_PACKAGES: *timing-packages
+
+  ci-compcert:
+    <<: *ci-template
+
+  ci-coq-dpdgraph:
+    <<: *ci-template
+    environment:
+      <<: *ci-template-vars
+      EXTRA_PACKAGES: "time python autoconf automake"
+
+  ci-coquelicot:
+    <<: *ci-template
+    environment:
+      <<: *ci-template-vars
+      EXTRA_PACKAGES: "time python autoconf automake"
+
+  ci-geocoq:
+    <<: *ci-template
+
+  ci-fiat-crypto:
+    <<: *ci-template
+
+  ci-fiat-parsers:
+    <<: *ci-template
+    environment:
+      <<: *ci-template-vars
+      EXTRA_PACKAGES: *timing-packages
+
+  ci-flocq:
+    <<: *ci-template
+    environment:
+      <<: *ci-template-vars
+      EXTRA_PACKAGES: "time python autoconf automake"
+
+  ci-math-classes:
+    <<: *ci-template
+
+  ci-corn:
+    <<: *ci-template
+
+  ci-formal-topology:
+    <<: *ci-template
+
+  ci-hott:
+    <<: *ci-template
+    environment:
+      <<: *ci-template-vars
+      EXTRA_PACKAGES: "time python autoconf automake"
+
+  ci-iris-lambda-rust:
+    <<: *ci-template
+
+  ci-math-comp:
+    <<: *ci-template
+
+  ci-sf:
+    <<: *ci-template
+    environment:
+      <<: *ci-template-vars
+      EXTRA_PACKAGES: "time python wget"
+
+  ci-unimath:
+    <<: *ci-template
+
+  ci-vst:
+    <<: *ci-template
+
+workflows:
+  version: 2
+  # Run on each push
+  main:
+    jobs:
+      - opam-boot
+      - opam-boot-32bit
+      - opam-boot-be
+
+      - build:
+          requires:
+            - opam-boot
+      - validate: &req-main
+          requires:
+            - build
+      - test-suite: *req-main
+      - documentation: *req-main
+
+      - ci-bignums: *req-main
+      - ci-color:
+          requires:
+            - build
+            - ci-bignums
+      - ci-compcert: *req-main
+      - ci-coq-dpdgraph: *req-main
+      - ci-coquelicot: *req-main
+      - ci-geocoq: *req-main
+      - ci-fiat-crypto: *req-main
+      - ci-fiat-parsers: *req-main
+      - ci-flocq: *req-main
+      - ci-math-classes:
+          requires:
+            - build
+            - ci-bignums
+      - ci-corn:
+          requires:
+            - build
+            - ci-math-classes
+      - ci-formal-topology:
+          requires:
+            - build
+            - ci-corn
+      - ci-hott: *req-main
+      - ci-iris-lambda-rust: *req-main
+      - ci-math-comp: *req-main
+      - ci-sf: *req-main
+      - ci-unimath: *req-main
+      - ci-vst: *req-main
+
+      - build-32bit:
+          requires:
+            - opam-boot-32bit
+      - validate-32bit: &req-32bit
+          requires:
+            - build-32bit
+      - test-suite-32bit: *req-32bit
+
+      - build-be:
+          requires:
+            - opam-boot-be
+      - test-suite-be: &req-be
+          requires:
+            - build-be
+      - documentation-be: *req-be
