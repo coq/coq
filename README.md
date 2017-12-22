@@ -1,9 +1,8 @@
 # Coq
 
-- [![Travis](https://travis-ci.org/coq/coq.svg?branch=master)](https://travis-ci.org/coq/coq/builds) Travis CI
-- [![Appveyor](https://ci.appveyor.com/api/projects/status/eln43k05pa2vm908/branch/master?svg=true)](https://ci.appveyor.com/project/coq/coq/branch/master) Appveyor CI (Windows)
-- [![Circle CI](https://circleci.com/gh/SkySkimmer/coq/tree/circle-ci.svg?style=shield&circle-token=70b9a75b750778d8b252afe18a81de7c4cd0299b)](https://circleci.com/gh/SkySkimmer/workflows/coq) Circle CI
-
+[![Travis](https://travis-ci.org/coq/coq.svg?branch=master)](https://travis-ci.org/coq/coq/builds)
+[![Appveyor](https://ci.appveyor.com/api/projects/status/eln43k05pa2vm908/branch/master?svg=true)](https://ci.appveyor.com/project/coq/coq/branch/master)
+[![Circle CI](https://circleci.com/gh/coq/coq/tree/master.svg?style=shield)](https://circleci.com/gh/coq/workflows/coq/tree/master)
 [![Gitter](https://badges.gitter.im/coq/coq.svg)](https://gitter.im/coq/coq)
 
 Coq is a formal proof management system. It provides a formal language to write
