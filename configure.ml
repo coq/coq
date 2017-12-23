@@ -1082,7 +1082,7 @@ let _ = print_summary ()
 
 let write_dbg_wrapper f =
   safe_remove f;
-  let o = open_out f in
+  let o = open_out_bin f in  (* _bin to avoid adding \r on Cygwin/Windows *)
   let pr s = fprintf o s in
   pr "#!/bin/sh\n\n";
   pr "###### ocamldebug-coq : a wrapper around ocamldebug for Coq ######\n\n";
