@@ -1,6 +1,5 @@
 -R theories/ Ltac2
 -I src/
--bypass-API
 
 src/tac2dyn.ml
 src/tac2dyn.mli

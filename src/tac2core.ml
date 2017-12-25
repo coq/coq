@@ -945,8 +945,7 @@ let () =
     let ist = { env_ist = Id.Map.empty } in
     let lfun = Tac2interp.set_env ist Id.Map.empty in
     let ist = Ltac_plugin.Tacinterp.default_ist () in
-    (** FUCK YOU API *)
-    let ist = { ist with API.Geninterp.lfun = (Obj.magic lfun) } in
+    let ist = { ist with Geninterp.lfun = lfun } in
     let tac = (Obj.magic Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic) in
     let wrap (e, info) = set_bt info >>= fun info -> Proofview.tclZERO ~info e in
     Proofview.tclOR tac wrap >>= fun () ->
@@ -995,8 +994,7 @@ let () =
 (** Ltac2 in Ltac1 *)
 
 let () =
-  (** FUCK YOU API *)
-  let e = (Obj.magic Tac2entries.Pltac.tac2expr : _ API.Pcoq.Gram.entry) in
+  let e = Tac2entries.Pltac.tac2expr in
   let inject (loc, v) = Tacexpr.TacGeneric (in_gen (rawwit wit_ltac2) v) in
   Ltac_plugin.Tacentries.create_ltac_quotation "ltac2" inject (e, None)
 
@@ -1004,8 +1002,6 @@ let () =
   let open Ltac_plugin in
   let open Tacinterp in
   let idtac = Value.of_closure (default_ist ()) (Tacexpr.TacId []) in
-  (** FUCK YOU API *)
-  let idtac = (Obj.magic idtac : Geninterp.Val.t) in
   let interp ist tac =
 (*     let ist = Tac2interp.get_env ist.Geninterp.lfun in *)
     let ist = { env_ist = Id.Map.empty } in
