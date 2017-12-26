@@ -68,6 +68,13 @@ Declaration of printers for arguments used only in vernac command
   happen. An alternative is to register the corresponding argument as
   a value, using "Geninterp.register_val0 wit None".
 
+### XML IDE Protocol
+
+- Before 8.8, `Query` only executed the first command present in the
+ `query` string; starting with 8.8, the caller may include several
+ statements. This is useful for instance for temporarily setting an
+ option and then executing a command.
+
 ## Changes between Coq 8.6 and Coq 8.7
 
 ### Ocaml

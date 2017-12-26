@@ -330,6 +330,12 @@ the STM API, `force` triggers a `Join`.
   <string>${message}</string>
 </value>
 ```
+
+Before 8.8, `Query` only executed the first command present in the
+`query` string; starting with 8.8, the caller may include several
+statements. This is useful for instance for temporarily setting an
+option and then executing a command.
+
 -------------------------------
 
 
