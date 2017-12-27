@@ -136,7 +136,6 @@ let to_tacvalue v = out_gen (topwit wit_tacvalue) v
 
 (** More naming applications *)
 let name_vfun appl vle =
-  let vle = Value.normalize vle in
   if has_type vle (topwit wit_tacvalue) then
     match to_tacvalue vle with
     | VFun (appl0,trace,lfun,vars,t) -> of_tacvalue (VFun (combine_appl appl0 appl,trace,lfun,vars,t))
@@ -235,7 +234,6 @@ let curr_debug ist = match TacStore.get ist.extra f_debug with
 
 (* Displays a value *)
 let pr_value env v =
-  let v = Value.normalize v in
   let pr_with_env pr =
     match env with
     | Some (env,sigma) -> pr env sigma
@@ -285,7 +283,6 @@ let push_trace call ist = match TacStore.get ist.extra f_trace with
 | Some trace -> Proofview.tclUNIT (call :: trace)
 
 let propagate_trace ist loc id v =
-  let v = Value.normalize v in
   if has_type v (topwit wit_tacvalue) then
     let tacv = to_tacvalue v in
     match tacv with
@@ -298,7 +295,6 @@ let propagate_trace ist loc id v =
   else Proofview.tclUNIT v
 
 let append_trace trace v =
-  let v = Value.normalize v in
   if has_type v (topwit wit_tacvalue) then
     match to_tacvalue v with
     | VFun (appl,trace',lfun,it,b) -> of_tacvalue (VFun (appl,trace'@trace,lfun,it,b))
@@ -307,11 +303,9 @@ let append_trace trace v =
 
 (* Dynamically check that an argument is a tactic *)
 let coerce_to_tactic loc id v =
-  let v = Value.normalize v in
   let fail () = user_err ?loc 
     (str "Variable " ++ Id.print id ++ str " should be bound to a tactic.")
   in
-  let v = Value.normalize v in
   if has_type v (topwit wit_tacvalue) then
     let tacv = to_tacvalue v in
     match tacv with
@@ -514,7 +508,6 @@ let rec intropattern_ids accu (loc,pat) = match pat with
 
 let extract_ids ids lfun accu =
   let fold id v accu =
-    let v = Value.normalize v in
     if has_type v (topwit wit_intro_pattern) then
       let (_, ipat) = out_gen (topwit wit_intro_pattern) v in
       if Id.List.mem id ids then accu
@@ -816,7 +809,6 @@ let interp_constr_may_eval ist env sigma c =
 
 (** TODO: should use dedicated printers *)
 let message_of_value v =
-  let v = Value.normalize v in
   let pr_with_env pr =
     Ftactic.enter begin fun gl -> Ftactic.return (pr (pf_env gl) (project gl)) end in
   let open Genprint in
@@ -986,7 +978,6 @@ let interp_destruction_arg ist gl arg =
       try
         (** FIXME: should be moved to taccoerce *)
         let v = Id.Map.find id ist.lfun in
-        let v = Value.normalize v in
         if has_type v (topwit wit_intro_pattern) then
           let v = out_gen (topwit wit_intro_pattern) v in
           match v with
@@ -1248,7 +1239,6 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       Ftactic.run args tac
 
 and force_vrec ist v : Val.t Ftactic.t =
-  let v = Value.normalize v in
   if has_type v (topwit wit_tacvalue) then
     let v = to_tacvalue v in
     match v with
@@ -1324,7 +1314,6 @@ and interp_tacarg ist arg : Val.t Ftactic.t =
 and interp_app loc ist fv largs : Val.t Ftactic.t =
   let (>>=) = Ftactic.bind in
   let fail = Tacticals.New.tclZEROMSG (str "Illegal tactic application.") in
-  let fv = Value.normalize fv in
   if has_type fv (topwit wit_tacvalue) then
   match to_tacvalue fv with
      (* if var=[] and body has been delayed by val_interp, then body
@@ -1377,7 +1366,6 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
 
 (* Gives the tactic corresponding to the tactic value *)
 and tactic_of_value ist vle =
-  let vle = Value.normalize vle in
   if has_type vle (topwit wit_tacvalue) then
   match to_tacvalue vle with
   | VFun (appl,trace,lfun,[],t) ->
@@ -1604,7 +1592,6 @@ and interp_ltac_constr ist e : EConstr.t Ftactic.t =
   Ftactic.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = project gl in
-  let result = Value.normalize result in
   try
     let cresult = coerce_to_closed_constr env result in
     Proofview.tclLIFT begin

@@ -61,12 +61,9 @@ struct
 
 type t = Val.t
 
-let normalize v = v
-
 let of_constr c = in_gen (topwit wit_constr) c
 
 let to_constr v =
-  let v = normalize v in
   if has_type v (topwit wit_constr) then
     let c = out_gen (topwit wit_constr) v in
     Some c
@@ -78,7 +75,6 @@ let to_constr v =
 let of_uconstr c = in_gen (topwit wit_uconstr) c
 
 let to_uconstr v =
-  let v = normalize v in
   if has_type v (topwit wit_uconstr) then
     Some (out_gen (topwit wit_uconstr) v)
   else None
@@ -86,7 +82,6 @@ let to_uconstr v =
 let of_int i = in_gen (topwit wit_int) i
 
 let to_int v =
-  let v = normalize v in
   if has_type v (topwit wit_int) then
     Some (out_gen (topwit wit_int) v)
   else None
@@ -108,14 +103,12 @@ let constr_of_id env id =
 
 (* Gives the constr corresponding to a Constr_context tactic_arg *)
 let coerce_to_constr_context v =
-  let v = Value.normalize v in
   if has_type v (topwit wit_constr_context) then
     out_gen (topwit wit_constr_context) v
   else raise (CannotCoerceTo "a term context")
 
 (* Interprets an identifier which must be fresh *)
 let coerce_var_to_ident fresh env sigma v =
-  let v = Value.normalize v in
   let fail () = raise (CannotCoerceTo "a fresh identifier") in
   if has_type v (topwit wit_intro_pattern) then
     match out_gen (topwit wit_intro_pattern) v with
@@ -140,7 +133,6 @@ let g = sigma in
 let id_of_name = function
   | Name.Anonymous -> Id.of_string "x"
   | Name.Name x -> x in
-  let v = Value.normalize v in
   let fail () = raise (CannotCoerceTo "an identifier") in
   if has_type v (topwit wit_intro_pattern) then
     match out_gen (topwit wit_intro_pattern) v with
@@ -179,7 +171,6 @@ let id_of_name = function
 
 
 let coerce_to_intro_pattern env sigma v =
-  let v = Value.normalize v in
   if has_type v (topwit wit_intro_pattern) then
     snd (out_gen (topwit wit_intro_pattern) v)
   else if has_type v (topwit wit_var) then
@@ -198,7 +189,6 @@ let coerce_to_intro_pattern_naming env sigma v =
   | _ -> raise (CannotCoerceTo "a naming introduction pattern")
 
 let coerce_to_hint_base v =
-  let v = Value.normalize v in
   if has_type v (topwit wit_intro_pattern) then
     match out_gen (topwit wit_intro_pattern) v with
     | _, IntroNaming (IntroIdentifier id) -> Id.to_string id
@@ -206,13 +196,11 @@ let coerce_to_hint_base v =
   else raise (CannotCoerceTo "a hint base name")
 
 let coerce_to_int v =
-  let v = Value.normalize v in
   if has_type v (topwit wit_int) then
     out_gen (topwit wit_int) v
   else raise (CannotCoerceTo "an integer")
 
 let coerce_to_constr env v =
-  let v = Value.normalize v in
   let fail () = raise (CannotCoerceTo "a term") in
   if has_type v (topwit wit_intro_pattern) then
     match out_gen (topwit wit_intro_pattern) v with
@@ -230,7 +218,6 @@ let coerce_to_constr env v =
   else fail ()
 
 let coerce_to_uconstr env v =
-  let v = Value.normalize v in
   if has_type v (topwit wit_uconstr) then
     out_gen (topwit wit_uconstr) v
   else
@@ -243,7 +230,6 @@ let coerce_to_closed_constr env v =
 
 let coerce_to_evaluable_ref env sigma v =
   let fail () = raise (CannotCoerceTo "an evaluable reference") in
-  let v = Value.normalize v in
   let ev =
   if has_type v (topwit wit_intro_pattern) then
     match out_gen (topwit wit_intro_pattern) v with
@@ -284,7 +270,6 @@ let coerce_to_intro_pattern_list ?loc env sigma v =
 
 let coerce_to_hyp env sigma v =
   let fail () = raise (CannotCoerceTo "a variable") in
-  let v = Value.normalize v in
   if has_type v (topwit wit_intro_pattern) then
     match out_gen (topwit wit_intro_pattern) v with
     | _, IntroNaming (IntroIdentifier id) when is_variable env id -> id
@@ -306,7 +291,6 @@ let coerce_to_hyp_list env sigma v =
 
 (* Interprets a qualified name *)
 let coerce_to_reference env sigma v =
-  let v = Value.normalize v in
   match Value.to_constr v with
   | Some c ->
     begin
@@ -318,7 +302,6 @@ let coerce_to_reference env sigma v =
 (* Quantified named or numbered hypothesis or hypothesis in context *)
 (* (as in Inversion) *)
 let coerce_to_quantified_hypothesis sigma v =
-  let v = Value.normalize v in
   if has_type v (topwit wit_intro_pattern) then
     let v = out_gen (topwit wit_intro_pattern) v in
     match v with
@@ -336,7 +319,6 @@ let coerce_to_quantified_hypothesis sigma v =
 (* Quantified named or numbered hypothesis or hypothesis in context *)
 (* (as in Inversion) *)
 let coerce_to_decl_or_quant_hyp env sigma v =
-  let v = Value.normalize v in
   if has_type v (topwit wit_int) then
     AnonHyp (out_gen (topwit wit_int) v)
   else

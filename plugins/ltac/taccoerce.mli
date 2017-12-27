@@ -31,9 +31,6 @@ module Value :
 sig
   type t = Val.t
 
-  val normalize : t -> t
-  (** Eliminated the leading dynamic type casts. *)
-
   val of_constr : constr -> t
   val to_constr : t -> constr option
   val of_uconstr : Ltac_pretype.closed_glob_constr -> t
