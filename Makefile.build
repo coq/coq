@@ -195,7 +195,7 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 COQOPTS=$(NATIVECOMPUTE)
 BOOTCOQC=$(TIMER) $(COQTOPBEST) -boot $(COQOPTS) -compile
 
-LOCALINCLUDES=$(if $(filter plugins/%,$@),-I lib -I API -open API $(addprefix -I plugins/,$(PLUGINDIRS)),$(addprefix -I ,$(SRCDIRS)))
+LOCALINCLUDES=$(if $(filter plugins/%,$@),-I clib -I lib -I API -open API $(addprefix -I plugins/,$(PLUGINDIRS)),$(addprefix -I ,$(SRCDIRS)))
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
 OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
@@ -417,7 +417,7 @@ $(COQTOPBYTE): $(LINKCMO) $(LIBCOQRUN) $(TOPLOOPCMA) $(COQTOP_BYTE_MLTOP)
 
 # coqc
 
-COQCCMO:=lib/clib.cma lib/cErrors.cmo toplevel/usage.cmo tools/coqc.cmo
+COQCCMO:=clib/clib.cma lib/lib.cma toplevel/usage.cmo tools/coqc.cmo
 
 $(COQC): $(call bestobj, $(COQCCMO))
 	$(SHOW)'OCAMLBEST -o $@'
@@ -438,21 +438,21 @@ tools: $(TOOLS) $(OCAMLLIBDEP) $(COQDEPBOOT)
 # Remember to update the dependencies below when you add files!
 
 COQDEPBOOTSRC := \
- lib/segmenttree.cmo lib/unicodetable.cmo lib/unicode.cmo lib/minisys.cmo \
+ clib/segmenttree.cmo clib/unicodetable.cmo clib/unicode.cmo clib/minisys.cmo \
  tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep_boot.cmo
 
-lib/segmenttree.cmo : lib/segmenttree.cmi
-lib/segmenttree.cmx : lib/segmenttree.cmi
-lib/unicodetable.cmo : lib/segmenttree.cmo
-lib/unicodetable.cmx : lib/segmenttree.cmx
-lib/unicode.cmo : lib/unicodetable.cmo lib/unicode.cmi
-lib/unicode.cmx : lib/unicodetable.cmx lib/unicode.cmi
-lib/minisys.cmo : lib/unicode.cmo
-lib/minisys.cmx : lib/unicode.cmx
-tools/coqdep_lexer.cmo : lib/unicode.cmi tools/coqdep_lexer.cmi
-tools/coqdep_lexer.cmx : lib/unicode.cmx tools/coqdep_lexer.cmi
-tools/coqdep_common.cmo : lib/minisys.cmo tools/coqdep_lexer.cmi tools/coqdep_common.cmi
-tools/coqdep_common.cmx : lib/minisys.cmx tools/coqdep_lexer.cmx tools/coqdep_common.cmi
+clib/segmenttree.cmo : clib/segmenttree.cmi
+clib/segmenttree.cmx : clib/segmenttree.cmi
+clib/unicodetable.cmo : clib/segmenttree.cmo
+clib/unicodetable.cmx : clib/segmenttree.cmx
+clib/unicode.cmo : clib/unicodetable.cmo clib/unicode.cmi
+clib/unicode.cmx : clib/unicodetable.cmx clib/unicode.cmi
+clib/minisys.cmo : clib/unicode.cmo
+clib/minisys.cmx : clib/unicode.cmx
+tools/coqdep_lexer.cmo : clib/unicode.cmi tools/coqdep_lexer.cmi
+tools/coqdep_lexer.cmx : clib/unicode.cmx tools/coqdep_lexer.cmi
+tools/coqdep_common.cmo : clib/minisys.cmo tools/coqdep_lexer.cmi tools/coqdep_common.cmi
+tools/coqdep_common.cmx : clib/minisys.cmx tools/coqdep_lexer.cmx tools/coqdep_common.cmi
 tools/coqdep_boot.cmo : tools/coqdep_common.cmi
 tools/coqdep_boot.cmx : tools/coqdep_common.cmx
 
@@ -466,10 +466,8 @@ $(OCAMLLIBDEP): $(call bestobj, tools/ocamllibdep.cmo)
 
 # The full coqdep (unused by this build, but distributed by make install)
 
-COQDEPCMO:=lib/clib.cma lib/cErrors.cmo lib/cWarnings.cmo \
-  lib/segmenttree.cmo lib/unicodetable.cmo lib/unicode.cmo lib/minisys.cmo \
-  lib/system.cmo tools/coqdep_lexer.cmo tools/coqdep_common.cmo \
-  tools/coqdep.cmo
+COQDEPCMO:=clib/clib.cma lib/lib.cma tools/coqdep_lexer.cmo	\
+  tools/coqdep_common.cmo tools/coqdep.cmo
 
 $(COQDEP): $(call bestobj, $(COQDEPCMO))
 	$(SHOW)'OCAMLBEST -o $@'
@@ -479,7 +477,7 @@ $(GALLINA): $(call bestobj, tools/gallina_lexer.cmo tools/gallina.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,)
 
-COQMAKEFILECMO:=lib/clib.cma tools/coq_makefile.cmo
+COQMAKEFILECMO:=clib/clib.cma lib/lib.cma tools/coq_makefile.cmo
 
 $(COQMAKEFILE): $(call bestobj,$(COQMAKEFILECMO))
 	$(SHOW)'OCAMLBEST -o $@'
@@ -493,23 +491,24 @@ $(COQWC): $(call bestobj, tools/coqwc.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -package str)
 
-COQDOCCMO:=lib/clib.cma $(addprefix tools/coqdoc/, \
+COQDOCCMO:=clib/clib.cma lib/lib.cma $(addprefix tools/coqdoc/, \
   cdglobals.cmo alpha.cmo index.cmo tokens.cmo output.cmo cpretty.cmo main.cmo )
 
 $(COQDOC): $(call bestobj, $(COQDOCCMO))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -package str,unix)
 
-$(COQWORKMGR): $(call bestobj, lib/clib.cma lib/lib.cma stm/spawned.cmo stm/coqworkmgrApi.cmo tools/coqworkmgr.cmo)
+$(COQWORKMGR): $(call bestobj, clib/clib.cma lib/lib.cma stm/spawned.cmo stm/coqworkmgrApi.cmo tools/coqworkmgr.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, $(SYSMOD))
 
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
 # a connection to coqtop -ideslave
 
-FAKEIDECMO:= lib/clib.cma lib/cErrors.cmo lib/spawn.cmo	ide/document.cmo \
- ide/serialize.cmo ide/xml_lexer.cmo ide/xml_parser.cmo ide/xml_printer.cmo \
- ide/richpp.cmo ide/xmlprotocol.cmo tools/fake_ide.cmo
+FAKEIDECMO:=clib/clib.cma lib/lib.cma ide/document.cmo	\
+ ide/serialize.cmo ide/xml_lexer.cmo ide/xml_parser.cmo	\
+ ide/xml_printer.cmo ide/richpp.cmo ide/xmlprotocol.cmo	\
+ tools/fake_ide.cmo
 
 $(FAKEIDE): $(call bestobj, $(FAKEIDECMO)) | $(IDETOPLOOPCMA:.cma=$(BESTDYN))
 	$(SHOW)'OCAMLBEST -o $@'
@@ -517,7 +516,7 @@ $(FAKEIDE): $(call bestobj, $(FAKEIDECMO)) | $(IDETOPLOOPCMA:.cma=$(BESTDYN))
 
 # votour: a small vo explorer (based on the checker)
 
-bin/votour: $(call bestobj, lib/cObj.cmo checker/analyze.cmo checker/values.cmo checker/votour.cmo)
+bin/votour: $(call bestobj, clib/cObj.cmo checker/analyze.cmo checker/values.cmo checker/votour.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -I checker)
 
@@ -525,7 +524,7 @@ bin/votour: $(call bestobj, lib/cObj.cmo checker/analyze.cmo checker/values.cmo 
 # Csdp to micromega special targets
 ###########################################################################
 
-CSDPCERTCMO:=lib/clib.cma $(addprefix plugins/micromega/, \
+CSDPCERTCMO:=clib/clib.cma $(addprefix plugins/micromega/, \
   mutils.cmo 	micromega.cmo \
   sos_types.cmo sos_lib.cmo sos.cmo 	csdpcert.cmo )
 
@@ -581,7 +580,7 @@ kernel/kernel.cma: kernel/kernel.mllib
 # Make sure that API/API.mli cannot leak types from the Coq codebase.
 API/API.cmi : API/API.mli
 	$(SHOW)'OCAMLC    $<'
-	$(HIDE)$(OCAMLC) -I lib -I $(MYCAMLP4LIB) -c $<
+	$(HIDE)$(OCAMLC) -I clib -I lib -I $(MYCAMLP4LIB) -c $<
 
 %.cma: %.mllib
 	$(SHOW)'OCAMLC -a -o $@'

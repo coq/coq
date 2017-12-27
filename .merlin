@@ -1,17 +1,17 @@
 FLG -rectypes -thread -safe-string -w +a-4-9-27-41-42-44-45-48-50
 
+S clib
+B clib
 S config
 B config
-S ide
-B ide
 S lib
 B lib
-S intf
-B intf
 S kernel
 B kernel
 S kernel/byterun
 B kernel/byterun
+S intf
+B intf
 S library
 B library
 S engine
@@ -30,14 +30,16 @@ S parsing
 B parsing
 S stm
 B stm
-S toplevel
-B toplevel
 S vernac
 B vernac
+S toplevel
+B toplevel
 S plugins/ltac
 B plugins/ltac
 S API
 B API
+S ide
+B ide
 
 S tools
 B tools

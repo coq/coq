@@ -20,7 +20,7 @@ CHICKEN:=bin/coqchk$(EXE)
 
 # The sources
 
-CHKLIBS:= -I config -I lib -I checker
+CHKLIBS:= -I config -I clib -I lib -I checker
 
 ## NB: currently, both $(OPTFLAGS) and $(BYTEFLAGS) contain -thread
 

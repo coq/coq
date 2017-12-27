@@ -1143,7 +1143,7 @@ let write_configml f =
                                     core_src_dirs in
 
   pr "\nlet core_src_dirs = [\n%s]\n" core_src_dirs;
-  pr "\nlet api_dirs = [\"API\"; \"lib\"]\n";
+  pr "\nlet api_dirs = [\"API\"; \"clib\"; \"lib\"]\n";
   pr "\nlet plugins_dirs = [\n";
 
   let plugins = Sys.readdir "plugins" in

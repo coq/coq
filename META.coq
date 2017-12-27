@@ -23,19 +23,27 @@ package "config" (
 
 )
 
+package "clib" (
+  description = "Base General Coq Library"
+  version     = "8.7"
+
+  directory   = "clib"
+  requires    = "str, unix, threads"
+
+  archive(byte)    = "clib.cma"
+  archive(native)  = "clib.cmxa"
+)
+
 package "lib" (
 
-  description = "Base Coq Library"
+  description = "Base Coq-Specific Library"
   version     = "8.7"
 
   directory   = "lib"
 
-  requires         = "str, unix, threads, coq.config"
+  requires    = "coq.clib, coq.config"
 
-  archive(byte)    = "clib.cma"
   archive(byte)   += "lib.cma"
-
-  archive(native)  = "clib.cmxa"
   archive(native) += "lib.cmxa"
 
 )
