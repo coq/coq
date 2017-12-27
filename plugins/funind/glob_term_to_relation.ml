@@ -1498,7 +1498,7 @@ let do_build_inductive
   try
     with_full_print
       (Flags.silently (ComInductive.do_mutual_inductive rel_inds (Flags.is_universe_polymorphism ()) false false))
-      Decl_kinds.Finite
+      Declarations.Finite
   with
     | UserError(s,msg) as e ->
 	let _time3 = System.get_time () in
@@ -1509,7 +1509,7 @@ let do_build_inductive
 	in
 	let msg =
 	  str "while trying to define"++ spc () ++
-            Ppvernac.pr_vernac Vernacexpr.(VernacExpr(VernacInductive(GlobalNonCumulativity,false,Decl_kinds.Finite,repacked_rel_inds)))
+            Ppvernac.pr_vernac Vernacexpr.(VernacExpr(VernacInductive(GlobalNonCumulativity,false,Declarations.Finite,repacked_rel_inds)))
 	    ++ fnl () ++
 	    msg
 	in
@@ -1524,7 +1524,7 @@ let do_build_inductive
 	in
 	let msg =
 	  str "while trying to define"++ spc () ++
-            Ppvernac.pr_vernac Vernacexpr.(VernacExpr(VernacInductive(GlobalNonCumulativity,false,Decl_kinds.Finite,repacked_rel_inds)))
+            Ppvernac.pr_vernac Vernacexpr.(VernacExpr(VernacInductive(GlobalNonCumulativity,false,Declarations.Finite,repacked_rel_inds)))
 	    ++ fnl () ++
 	    CErrors.print reraise
 	in

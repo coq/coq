@@ -317,7 +317,7 @@ let build_beq_scheme mode kn =
       let kelim = Inductive.elim_sorts (mib,mib.mind_packets.(i)) in
 	if not (Sorts.List.mem InSet kelim) then
 	  raise (NonSingletonProp (kn,i));
-        if mib.mind_finite = Decl_kinds.CoFinite then
+        if mib.mind_finite = CoFinite then
 	  raise NoDecidabilityCoInductive;
         let fix = mkFix (((Array.make nb_ind 0),i),(names,types,cores)) in
         create_input fix),

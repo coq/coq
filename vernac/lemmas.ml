@@ -100,7 +100,7 @@ let find_mutually_recursive_statements sigma thms =
           match EConstr.kind sigma t with
           | Ind ((kn,_ as ind),u) when
                 let mind = Global.lookup_mind kn in
-                mind.mind_finite <> Decl_kinds.CoFinite ->
+                mind.mind_finite <> Declarations.CoFinite ->
               [ind,x,i]
           | _ ->
               []) 0 (List.rev (List.filter Context.Rel.Declaration.is_local_assum whnf_hyp_hds))) in
@@ -110,7 +110,7 @@ let find_mutually_recursive_statements sigma thms =
         match EConstr.kind sigma whnf_ccl with
         | Ind ((kn,_ as ind),u) when
               let mind = Global.lookup_mind kn in
-              Int.equal mind.mind_ntypes n && mind.mind_finite == Decl_kinds.CoFinite ->
+              Int.equal mind.mind_ntypes n && mind.mind_finite == Declarations.CoFinite ->
             [ind,x,0]
         | _ ->
             [] in

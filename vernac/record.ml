@@ -143,7 +143,7 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
   let env_ar = EConstr.push_rel_context newps (EConstr.push_rel (LocalAssum (Name id,arity)) env0) in
   let assums = List.filter is_local_assum newps in
   let params = List.map (RelDecl.get_name %> Name.get_id) assums in
-  let ty = Inductive (params,(finite != BiFinite)) in
+  let ty = Inductive (params,(finite != Declarations.BiFinite)) in
   let impls_env = compute_internalization_env env0 ~impls:impls_env ty [id] [EConstr.to_constr sigma arity] [imps] in
   let env2,sigma,impls,newfs,data =
     interp_fields_evars env_ar sigma impls_env nots (binders_of_decls fs)
@@ -507,7 +507,7 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
          | Monomorphic_const_entry univs ->
            Monomorphic_ind_entry univs
        in
-       let ind = declare_structure BiFinite ubinders univs (snd id) idbuild paramimpls
+       let ind = declare_structure Declarations.BiFinite ubinders univs (snd id) idbuild paramimpls
 	  params arity template fieldimpls fields
 	  ~kind:Method ~name:binder_name false (List.map (fun _ -> false) fields) sign
        in

@@ -15,6 +15,7 @@ open Constrexpr_ops
 open Extend
 open Vernacexpr
 open Decl_kinds
+open Declarations
 open Misctypes
 open Tok (* necessary for camlp4 *)
 

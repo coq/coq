@@ -77,6 +77,9 @@ type logical_kind =
 
 type recursivity_kind = Declarations.recursivity_kind =
   | Finite (** = inductive *)
+      [@ocaml.deprecated "Please use [Declarations.Finite"]
   | CoFinite (** = coinductive *)
+      [@ocaml.deprecated "Please use [Declarations.CoFinite"]
   | BiFinite (** = non-recursive, like in "Record" definitions *)
+      [@ocaml.deprecated "Please use [Declarations.BiFinite"]
 [@@ocaml.deprecated "Please use [Declarations.recursivity_kind"]

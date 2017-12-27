@@ -515,7 +515,7 @@ let rec lambda_of_constr env sigma c =
 	    { asw_ind = ind;
           asw_ci = ci;
           asw_reloc = tbl; 
-          asw_finite = mib.mind_finite <> Decl_kinds.CoFinite;
+          asw_finite = mib.mind_finite <> CoFinite;
           asw_prefix = prefix}
       in
       (* translation of the argument *)

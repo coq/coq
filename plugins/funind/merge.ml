@@ -20,10 +20,10 @@ open Names
 open Term
 open Constr
 open Vars
-open Declarations
 open Glob_term
 open Glob_termops
 open Decl_kinds
+open Declarations
 open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
@@ -353,8 +353,8 @@ let ind2name = Id.of_string "__ind2"
     be co-inductive, and for the moment they must not be mutual
     either. *)
 let verify_inds mib1 mib2 =
-  if mib1.mind_finite == Decl_kinds.CoFinite then error "First argument is coinductive";
-  if mib2.mind_finite == Decl_kinds.CoFinite then error "Second argument is coinductive";
+  if mib1.mind_finite == CoFinite then error "First argument is coinductive";
+  if mib2.mind_finite == CoFinite then error "Second argument is coinductive";
   if not (Int.equal mib1.mind_ntypes 1) then error "First argument is mutual";
   if not (Int.equal mib2.mind_ntypes 1) then error "Second argument is mutual";
   ()
@@ -891,7 +891,7 @@ let merge_inductive (ind1: inductive) (ind2: inductive)
   (* Declare inductive *)
   let indl,_,_ = ComInductive.extract_mutual_inductive_declaration_components [(indexpr,[])] in
   let mie,pl,impls = ComInductive.interp_mutual_inductive indl []
-          false (* non-cumulative *) false (*FIXMEnon-poly *) false (* means not private *) Decl_kinds.Finite (* means: not coinductive *) in
+          false (* non-cumulative *) false (*FIXMEnon-poly *) false (* means not private *) Finite (* means: not coinductive *) in
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (ComInductive.declare_mutual_inductive_with_eliminations mie pl impls)
 
