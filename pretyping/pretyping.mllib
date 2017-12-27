@@ -1,5 +1,5 @@
 Geninterp
-Ltac_pretype
+Locus
 Locusops
 Pretype_errors
 Reductionops
@@ -16,12 +16,19 @@ Evarsolve
 Recordops
 Evarconv
 Typing
+Constrexpr
+Genredexpr
 Miscops
+Glob_term
+Ltac_pretype
 Glob_ops
 Redops
+Pattern
 Patternops
 Constr_matching
 Tacred
+Extend
+Vernacexpr
 Typeclasses_errors
 Typeclasses
 Classops

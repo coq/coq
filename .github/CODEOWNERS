@@ -86,11 +86,6 @@
 /interp/          @herbelin
 # Secondary maintainer @ejgallego
 
-########## Interfaces ##########
-
-/intf/            @letouzey
-# Secondary maintainer @ppedrot
-
 ########## Kernel ##########
 
 /kernel/          @maximedenes

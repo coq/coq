@@ -2,6 +2,7 @@ Universes
 Univops
 UState
 Nameops
+Evar_kinds
 Evd
 EConstr
 Namegen

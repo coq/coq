@@ -1212,7 +1212,7 @@ let write_configml f =
 
   let core_src_dirs = [ "config"; "dev"; "lib"; "clib"; "kernel"; "library";
                         "engine"; "pretyping"; "interp"; "parsing"; "proofs";
-                        "tactics"; "toplevel"; "printing"; "intf";
+                        "tactics"; "toplevel"; "printing";
                         "grammar"; "ide"; "stm"; "vernac" ] in
   let core_src_dirs = List.fold_left (fun acc core_src_subdir -> acc ^ "  \"" ^ core_src_subdir ^ "\";\n")
                                     ""
