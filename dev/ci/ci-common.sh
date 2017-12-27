@@ -5,8 +5,17 @@ set -xe
 if [ -n "${GITLAB_CI}" ];
 then
     export COQBIN=`pwd`/_install_ci/bin
-    export TRAVIS_BRANCH="$CI_COMMIT_REF_NAME"
+    export CI_BRANCH="$CI_COMMIT_REF_NAME"
 else
+    if [ -n "${TRAVIS}" ];
+    then
+        export CI_PULL_REQUEST="$TRAVIS_PULL_REQUEST"
+        export CI_BRANCH="$TRAVIS_BRANCH"
+    elif [ -n "${CIRCLECI}" ];
+    then
+        export CI_PULL_REQUEST="$CIRCLE_PR_NUMBER"
+        export CI_BRANCH="$CIRCLE_BRANCH"
+    fi
     export COQBIN=`pwd`/bin
 fi
 export PATH="$COQBIN:$PATH"
