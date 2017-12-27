@@ -171,8 +171,8 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let sigma, intern_body =
     let ctx = LocalAssum (Name recname, get_type curry_fun) :: binders_rel in
     let (r, l, impls, scopes) =
-      Constrintern.compute_internalization_data env
-        Constrintern.Recursive (EConstr.Unsafe.to_constr full_arity) impls
+      Constrintern.compute_internalization_data env sigma
+        Constrintern.Recursive full_arity impls
     in
     let newimpls = Id.Map.singleton recname
         (r, l, impls @ [(Some (Id.of_string "recproof", Impargs.Manual, (true, false)))],

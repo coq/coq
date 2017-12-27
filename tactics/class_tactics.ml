@@ -581,7 +581,7 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
              (fun (path,info,c) ->
 	      let info =
 		{ info with Vernacexpr.hint_pattern =
-			    Option.map (Constrintern.intern_constr_pattern env)
+                            Option.map (Constrintern.intern_constr_pattern env sigma)
 				       info.Vernacexpr.hint_pattern }
 	      in
 	      make_resolves env sigma ~name:(PathHints path)

@@ -52,7 +52,7 @@ let _ =
        let open Vernacexpr in
        { info with hint_pattern =
 		   Option.map
-		     (Constrintern.intern_constr_pattern (Global.env()))
+                     (Constrintern.intern_constr_pattern (Global.env()) Evd.(from_env Global.(env())))
 		     info.hint_pattern } in
      Flags.silently (fun () ->
 	Hints.add_hints local [typeclasses_db]

@@ -1205,8 +1205,7 @@ let all_no_fail_flags = default_inference_flags false
 
 let ise_pretype_gen_ctx flags env sigma lvar kind c =
   let evd, c, _ = ise_pretype_gen flags env sigma lvar kind c in
-  let evd, f = Evarutil.nf_evars_and_universes evd in
-    f (EConstr.Unsafe.to_constr c), Evd.evar_universe_context evd
+  c, Evd.evar_universe_context evd
 
 (** Entry points of the high-level type synthesis algorithm *)
 

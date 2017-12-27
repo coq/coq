@@ -335,7 +335,8 @@ let push_rels_assum l e =
   push_rels_assum l e
 
 let coerce_search_pattern_to_sort hpat =
-  let env = Global.env () and sigma = Evd.empty in
+  let env = Global.env () in
+  let sigma = Evd.(from_env env) in
   let mkPApp fp n_imps args =
     let args' = Array.append (Array.make n_imps (Pattern.PMeta None)) args in
     Pattern.PApp (fp, args') in
@@ -393,8 +394,9 @@ let interp_search_arg arg =
       interp_search_notation ~loc s key
   | RGlobSearchSubPattern p ->
       try
-        let intern = Constrintern.intern_constr_pattern in 
-        Search.GlobSearchSubPattern (snd (intern (Global.env()) p))
+        let env = Global.env () in
+        let _, p = Constrintern.intern_constr_pattern env (Evd.from_env env) p in
+        Search.GlobSearchSubPattern p
       with e -> let e = CErrors.push e in iraise (ExplainErr.process_vernac_interp_error e)) arg in
   let hpat, a1 = match arg with
   | (_, Search.GlobSearchSubPattern (Pattern.PMeta _)) :: a' -> all_true, a'

@@ -141,8 +141,7 @@ let rec abstract_glob_constr c = function
   | Constrexpr.CLocalPattern _::bl -> assert false
 
 let interp_casted_constr_with_implicits env sigma impls c  =
-  Constrintern.intern_gen Pretyping.WithoutTypeConstraint env ~impls
-    c
+  Constrintern.intern_gen Pretyping.WithoutTypeConstraint env sigma ~impls c
 
 (*
    Construct a fixpoint as a Glob_term
@@ -160,9 +159,9 @@ let build_newrecursive
         let arity,ctx = Constrintern.interp_type env0 sigma arityc in
         let evd = Evd.from_env env0 in
         let evd, (_, (_, impls')) = Constrintern.interp_context_evars env evd bl in
-	let impl = Constrintern.compute_internalization_data env0 Constrintern.Recursive arity impls' in
+        let impl = Constrintern.compute_internalization_data env0 evd Constrintern.Recursive arity impls' in
         let open Context.Named.Declaration in
-        (Environ.push_named (LocalAssum (recname,arity)) env, Id.Map.add recname impl impls))
+        (EConstr.push_named (LocalAssum (recname,arity)) env, Id.Map.add recname impl impls))
       (env0,Constrintern.empty_internalization_env) lnameargsardef in
   let recdef =
     (* Declare local notations *)

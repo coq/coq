@@ -196,7 +196,10 @@ let parse_tac    = Pcoq.parse_string Ltac_plugin.Pltac.tactic;;
 (* build a term of type glob_constr without type-checking or resolution of 
    implicit syntax *)
 
-let e s = Constrintern.intern_constr (Global.env()) (parse_constr s);;
+let e s =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  Constrintern.intern_constr env sigma (parse_constr s);;
 
 (* build a term of type constr with type-checking and resolution of 
    implicit syntax *)

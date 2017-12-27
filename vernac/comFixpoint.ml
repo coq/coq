@@ -212,8 +212,7 @@ let interp_recursive ~program_mode ~cofix fixl notations =
   let env_rec = push_named_context rec_sign env in
 
   (* Get interpretation metadatas *)
-  let fixtypes = List.map EConstr.Unsafe.to_constr fixtypes in
-  let impls = compute_internalization_env env Recursive fixnames fixtypes fiximps in
+  let impls = compute_internalization_env env sigma Recursive fixnames fixtypes fiximps in
 
   (* Interp bodies with rollback because temp use of notations/implicit *)
   let sigma, fixdefs =
@@ -226,10 +225,9 @@ let interp_recursive ~program_mode ~cofix fixl notations =
 
   (* Instantiate evars and check all are resolved *)
   let sigma = solve_unif_constraints_with_heuristics env_rec sigma in
-  let sigma, nf = nf_evars_and_universes sigma in
-  let fixdefs = List.map (fun c -> Option.map EConstr.Unsafe.to_constr c) fixdefs in
-  let fixdefs = List.map (Option.map nf) fixdefs in
-  let fixtypes = List.map nf fixtypes in
+  let sigma, _ = nf_evars_and_universes sigma in
+  let fixdefs = List.map (fun c -> Option.map EConstr.(to_constr sigma) c) fixdefs in
+  let fixtypes = List.map EConstr.(to_constr sigma) fixtypes in
   let fixctxs = List.map (fun (_,ctx) -> ctx) fixctxs in
 
   (* Build the fix declaration block *)

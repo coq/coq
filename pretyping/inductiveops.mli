@@ -198,4 +198,4 @@ val type_of_inductive_knowing_conclusion :
   env -> evar_map -> Inductive.mind_specif Univ.puniverses -> EConstr.types -> evar_map * EConstr.types
 
 (********************)
-val control_only_guard : env -> types -> unit
+val control_only_guard : env -> Evd.evar_map -> EConstr.types -> unit

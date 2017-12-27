@@ -1025,7 +1025,9 @@ let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
   let sr = smart_global reference in
   let inf_names =
     let ty, _ = Global.type_of_global_in_context (Global.env ()) sr in
-    Impargs.compute_implicits_names (Global.env ()) ty
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    Impargs.compute_implicits_names env sigma (EConstr.of_constr ty)
   in
   let prev_names =
     try Arguments_renaming.arguments_names sr with Not_found -> inf_names
@@ -1253,7 +1255,7 @@ let vernac_reserve bl =
     let env = Global.env() in
     let sigma = Evd.from_env env in
     let t,ctx = Constrintern.interp_type env sigma c in
-    let t = Detyping.detype Detyping.Now false Id.Set.empty env (Evd.from_ctx ctx) (EConstr.of_constr t) in
+    let t = Detyping.detype Detyping.Now false Id.Set.empty env (Evd.from_ctx ctx) t in
     let t,_ = Notation_ops.notation_constr_of_glob_constr (default_env ()) t in
     Reserve.declare_reserved_type idl t)
   in List.iter sb_decl bl
@@ -1627,6 +1629,7 @@ let vernac_global_check c =
   let senv = Global.safe_env() in
   let uctx = UState.context_set uctx in
   let senv = Safe_typing.push_context_set false uctx senv in
+  let c = EConstr.to_constr sigma c in
   let j = Safe_typing.typing senv c in
   let env = Safe_typing.env_of_safe_env senv in
   print_safe_judgment env sigma j ++
@@ -1747,10 +1750,10 @@ let interp_search_restriction = function
 
 open Search
 
-let interp_search_about_item env =
+let interp_search_about_item env sigma =
   function
   | SearchSubPattern pat ->
-      let _,pat = intern_constr_pattern env pat in
+      let _,pat = intern_constr_pattern env sigma pat in
       GlobSearchSubPattern pat
   | SearchString (s,None) when Id.is_valid s ->
       GlobSearchString s
@@ -1796,13 +1799,13 @@ let vernac_search ~atts s gopt r =
     (* if goal selector is given and wrong, then let exceptions be raised. *)
     | Some g -> snd (Pfedit.get_goal_context g) , Some g
   in
-  let get_pattern c = snd (intern_constr_pattern env c) in
+  let get_pattern c = snd (intern_constr_pattern env Evd.(from_env env) c) in
   let pr_search ref env c =
     let pr = pr_global ref in
     let pp = if !search_output_name_only
       then pr
       else begin
-        let pc = pr_lconstr_env env Evd.empty c in
+        let pc = pr_lconstr_env env Evd.(from_env env) c in
         hov 2 (pr ++ str":" ++ spc () ++ pc)
       end
     in Feedback.msg_notice pp
@@ -1815,7 +1818,8 @@ let vernac_search ~atts s gopt r =
   | SearchHead c ->
       (Search.search_by_head gopt (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchAbout sl ->
-      (Search.search_about gopt (List.map (on_snd (interp_search_about_item env)) sl) r |> Search.prioritize_search) pr_search
+      (Search.search_about gopt (List.map (on_snd (interp_search_about_item env Evd.(from_env env))) sl) r |>
+       Search.prioritize_search) pr_search
 
 let vernac_locate = function
   | LocateAny (AN qid)  -> print_located_qualid qid
@@ -1910,8 +1914,7 @@ let vernac_check_guard () =
   let message =
     try
       let { Evd.it=gl ; sigma=sigma } = Proof.V82.top_goal pts in
-      Inductiveops.control_only_guard (Goal.V82.env sigma gl)
-	(EConstr.Unsafe.to_constr pfterm);
+      Inductiveops.control_only_guard (Goal.V82.env sigma gl) sigma pfterm;
       (str "The condition holds up to here")
     with UserError(_,s) ->
       (str ("Condition violated: ") ++s)
