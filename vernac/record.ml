@@ -523,7 +523,7 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
   let ctx_context =
     List.map (fun decl ->
       match Typeclasses.class_of_constr Evd.empty (EConstr.of_constr (RelDecl.get_type decl)) with
-      | Some (_, ((cl,_), _)) -> Some (cl.cl_impl, true)
+      | Some (_, ((cl,_), _)) -> Some cl.cl_impl
       | None -> None)
       params, params
   in

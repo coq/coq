@@ -141,7 +141,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance)
 	Implicit_quantifiers.implicit_application Id.Set.empty ~allow_partial:false
 	  (fun avoid (clname, _) ->
 	    match clname with
-	    | Some (cl, b) ->
+            | Some cl ->
 		let t = CAst.make @@ CHole (None, Misctypes.IntroAnonymous, None) in
 		  t, avoid
 	    | None -> failwith ("new instance: under-applied typeclass"))

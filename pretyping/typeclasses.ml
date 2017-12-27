@@ -65,7 +65,7 @@ type typeclass = {
   cl_impl : global_reference;
 
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. *)
-  cl_context : (global_reference * bool) option list * Context.Rel.t;
+  cl_context : global_reference option list * Context.Rel.t;
 
   (* Context of definitions and properties on defs, will not be shared *)
   cl_props : Context.Rel.t;
@@ -175,7 +175,7 @@ let subst_class (subst,cl) =
   and do_subst_gr gr = fst (subst_global subst gr) in
   let do_subst_ctx = List.smartmap (RelDecl.map_constr do_subst) in
   let do_subst_context (grs,ctx) =
-    List.smartmap (Option.smartmap (fun (gr,b) -> do_subst_gr gr, b)) grs,
+    List.smartmap (Option.smartmap do_subst_gr) grs,
     do_subst_ctx ctx in
   let do_subst_projs projs = List.smartmap (fun (x, y, z) -> 
     (x, y, Option.smartmap do_subst_con z)) projs in
@@ -213,10 +213,10 @@ let discharge_class (_,cl) =
       let newgrs = List.map (fun decl ->
 			     match decl |> RelDecl.get_type |> EConstr.of_constr |> class_of_constr Evd.empty with
 			     | None -> None
-			     | Some (_, ((tc,_), _)) -> Some (tc.cl_impl, true))
+                             | Some (_, ((tc,_), _)) -> Some tc.cl_impl)
 			    ctx'
       in
-      List.smartmap (Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b)) grs
+      List.smartmap (Option.smartmap Lib.discharge_global) grs
       @ newgrs
     in grs', discharge_rel_context subst 1 ctx @ ctx' in
   let cl_impl' = Lib.discharge_global cl.cl_impl in

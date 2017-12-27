@@ -38,10 +38,10 @@ val make_fresh : Id.Set.t -> Environ.env -> Id.t -> Id.t
 val implicits_of_glob_constr : ?with_products:bool -> Glob_term.glob_constr -> Impargs.manual_implicits
 
 val combine_params_freevar :
-  Id.Set.t -> (global_reference * bool) option * Context.Rel.Declaration.t ->
+  Id.Set.t -> global_reference option * Context.Rel.Declaration.t ->
   Constrexpr.constr_expr * Id.Set.t
 
 val implicit_application : Id.Set.t -> ?allow_partial:bool ->
-  (Id.Set.t -> (global_reference * bool) option * Context.Rel.Declaration.t ->
+  (Id.Set.t -> global_reference option * Context.Rel.Declaration.t ->
     Constrexpr.constr_expr * Id.Set.t) ->
   constr_expr -> constr_expr * Id.Set.t

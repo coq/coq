@@ -4308,7 +4308,7 @@ sig
   type typeclass = {
     cl_univs : Univ.AUContext.t;
     cl_impl : Globnames.global_reference;
-    cl_context : (Globnames.global_reference * bool) option list * Context.Rel.t;
+    cl_context : Globnames.global_reference option list * Context.Rel.t;
     cl_props : Context.Rel.t;
     cl_projs : (Names.Name.t * (direction * Vernacexpr.hint_info_expr) option
                 * Names.Constant.t option) list;
