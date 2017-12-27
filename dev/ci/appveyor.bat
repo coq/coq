@@ -37,5 +37,5 @@ if %USEOPAM% == true (
 GOTO :EOF
 
 :ErrorExit
-  ECHO ERROR MakeCoq_MinGW.bat failed
+  ECHO ERROR %0 failed
   EXIT /b 1

@@ -1087,7 +1087,7 @@ function copy_coq_license {
     install -D README                         "$PREFIXCOQ/license_readme/coq/ReadMe.txt" || true
     install -D README.md                      "$PREFIXCOQ/license_readme/coq/ReadMe.md" || true
     install -D README.win                     "$PREFIXCOQ/license_readme/coq/ReadMeWindows.txt" || true
-    install -D README.doc                     "$PREFIXCOQ/license_readme/coq/ReadMeDoc.txt"
+    install -D README.doc                     "$PREFIXCOQ/license_readme/coq/ReadMeDoc.txt" || true
     install -D CHANGES                        "$PREFIXCOQ/license_readme/coq/Changes.txt"
     install -D INSTALL                        "$PREFIXCOQ/license_readme/coq/Install.txt"
     install -D INSTALL.doc                    "$PREFIXCOQ/license_readme/coq/InstallDoc.txt"
@@ -1174,7 +1174,7 @@ function make_mingw_make {
   if build_prep http://ftp.gnu.org/gnu/make make-4.2 tar.bz2 ; then
     # The config.h.win32 file is fine - don't edit it
     # We need to copy the mingw gcc here as "gcc" - then the batch file will use it
-    cp /usr/bin/${ARCH}-w64-mingw32-gcc-5.4.0.exe ./gcc.exe
+    cp /usr/bin/${ARCH}-w64-mingw32-gcc-6.4.0.exe ./gcc.exe
     # By some magic cygwin bash can run batch files
     logn build ./build_w32.bat gcc
     # Copy make to Coq folder
