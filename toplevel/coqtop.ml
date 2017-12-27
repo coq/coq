@@ -228,7 +228,7 @@ let glob_opt = ref false
 
 let compile_list = ref ([] : (bool * string) list)
 
-type compilation_mode = BuildVo | BuildVio | Vio2Vo
+type compilation_mode = BuildVo | BuildVio of bool | Vio2Vo
 let compilation_mode = ref BuildVo
 let compilation_output_name = ref None
 
@@ -334,7 +334,7 @@ let compile ~verbosely ~f_in ~f_out =
       Aux_file.stop_aux_file ();
       Dumpglob.end_dump_glob ()
 
-  | BuildVio ->
+  | BuildVio light ->
       Flags.record_aux_file := false;
       Dumpglob.noglob ();
 
@@ -357,7 +357,7 @@ let compile ~verbosely ~f_in ~f_out =
       let doc, _ = Vernac.load_vernac ~verbosely ~check:false ~interactive:false doc (Stm.get_current_state ~doc) long_f_dot_v in
       let doc = Stm.finish ~doc in
       check_pending_proofs ();
-      let _doc = Stm.snapshot_vio ~doc ldir long_f_dot_vio in
+      let _doc = Stm.snapshot_vio ~light ~doc ldir long_f_dot_vio in
       Stm.reset_task_queue ()
 
   | Vio2Vo ->
@@ -734,7 +734,8 @@ let parse_args arglist =
     |"-profile-ltac" -> Flags.profile_ltac := true
     |"-q" -> Coqinit.no_load_rc ()
     |"-quiet"|"-silent" -> Flags.quiet := true; Flags.make_warn false
-    |"-quick" -> compilation_mode := BuildVio
+    |"-quick" -> compilation_mode := BuildVio false
+    |"-quick-light" -> compilation_mode := BuildVio true
     |"-list-tags" -> print_tags := true
     |"-time" -> Flags.time := true
     |"-type-in-type" -> set_type_in_type ()

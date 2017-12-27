@@ -150,6 +150,11 @@ when using a \texttt{Makefile} produced by \texttt{coq\_makefile}, the
 \texttt{quick} target can be used to compile all files using the
 \texttt{-quick} flag.
 
+A variant \texttt{-quick-light} flag is also available. It behaves as the
+\texttt{-quick} flag, except that proof data is not stored on disk. This
+produces a \texttt{.vio} file that is substantially smaller, but that cannot
+be compiled into a \texttt{.vo} file nor checked (see below).
+
 A \texttt{.vio} file can be loaded using \texttt{Require} exactly as a
 \texttt{.vo} file but proofs will not be available (the \texttt{Print}
 command produces an error). Moreover, some universe constraints might be

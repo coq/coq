@@ -380,8 +380,13 @@ optfiles: $(if $(DO_NATDYNLINK),$(CMXSFILES))
 .PHONY: optfiles
 
 # FIXME, see Ralph's bugreport
+quick: COQQUICK := -quick
 quick: $(VOFILES:.vo=.vio)
 .PHONY: quick
+
+quick-light: COQQUICK := -quick-light
+quick-light: $(VOFILES:.vo=.vio)
+.PHONY: quick-light
 
 vio2vo:
 	$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) \
@@ -649,8 +654,8 @@ $(GLOBFILES): %.glob: %.v
 	$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $<
 
 $(VFILES:.v=.vio): %.vio: %.v
-	$(SHOW)COQC -quick $<
-	$(HIDE)$(TIMER) $(COQC) -quick $(COQDEBUG) $(COQFLAGS) $<
+	$(SHOW)COQC $(COQQUICK) $<
+	$(HIDE)$(TIMER) $(COQC) $(COQQUICK) $(COQDEBUG) $(COQFLAGS) $<
 
 $(addsuffix .timing.diff,$(VFILES)): %.timing.diff : %.before-timing %.after-timing
 	$(SHOW)PYTHON TIMING-DIFF $<
