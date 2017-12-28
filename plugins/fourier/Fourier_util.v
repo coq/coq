@@ -7,7 +7,7 @@
 (************************************************************************)
 
 Require Export Rbase.
-Comments "Lemmas used by the tactic Fourier".
+(** Lemmas used by the tactic Fourier *)
 
 Open Scope R_scope.
 

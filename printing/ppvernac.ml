@@ -111,11 +111,6 @@ open Decl_kinds
     | ETBinder false -> str "closed binder"
     | ETBinderList _ | ETConstrList _ -> failwith "Internal entry type"
 
-  let pr_comment pr_c = function
-    | CommentConstr c -> pr_c c
-    | CommentString s -> qs s
-    | CommentInt n -> int n
-
   let pr_in_out_modules = function
     | SearchInside l -> spc() ++ keyword "inside" ++ spc() ++ prlist_with_sep sep pr_module l
     | SearchOutside [] -> mt()
@@ -1160,12 +1155,6 @@ open Decl_kinds
         return (
           hov 2
             (keyword "Register Inline" ++ spc() ++ pr_lident id)
-        )
-      | VernacComments l ->
-        return (
-          hov 2
-            (keyword "Comments" ++ spc()
-             ++ prlist_with_sep sep (pr_comment pr_constr) l)
         )
 
       (* Toplevel control *)

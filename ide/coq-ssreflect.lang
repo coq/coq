@@ -194,7 +194,6 @@
 	  <keyword>Goal</keyword>
 	  <keyword>Print</keyword>
 	  <keyword>Save</keyword>
-	  <keyword>Comments</keyword>
 	  <keyword>Solve\%{space}+Obligation</keyword>
 	  <keyword>((Uns)|(S))et(\%{space}+\%{ident})+</keyword>
 	  <keyword>(\%{locality}|((Reserved)|(Tactic))\%{space}+)?Notation</keyword>

@@ -448,9 +448,6 @@ rule coq_bol = parse
 	let eol = doc_bol lexbuf in
 	  Output.end_doc (); Output.start_coq ();
 	  if eol then coq_bol lexbuf else coq lexbuf }
-  | space* "Comments" space_nl
-      { Output.end_coq (); Output.start_doc (); comments lexbuf; Output.end_doc ();
-	Output.start_coq (); coq lexbuf }
   | space* begin_hide
       { skip_hide lexbuf; coq_bol lexbuf }
   | space* begin_show
@@ -953,24 +950,6 @@ and escaped_coq = parse
   | _ 
       { Output.sublexer_in_doc (lexeme_char lexbuf 0);
         escaped_coq lexbuf }
-
-(*s Coq "Comments" command. *)
-
-and comments = parse
-  | space_nl+
-      { Output.char ' '; comments lexbuf }
-  | '"' [^ '"']* '"'
-      { let s = lexeme lexbuf in
-	let s = String.sub s 1 (String.length s - 2) in
-	ignore (doc None (from_string s)); comments lexbuf }
-  | ([^ '.' '"'] | '.' [^ ' ' '\t' '\n'])+
-      { escaped_coq (from_string (lexeme lexbuf)); comments lexbuf }
-  | "." (space_nl | eof)
-      { () }
-  | eof
-      { () }
-  | _
-      { Output.char (lexeme_char lexbuf 0); comments lexbuf }
 
 and skipped_comment = parse
   | "(*"

@@ -105,11 +105,6 @@ type showable =
   | ShowIntros of bool
   | ShowMatch of reference
 
-type comment =
-  | CommentConstr of constr_expr
-  | CommentString of string
-  | CommentInt of int
-
 type reference_or_constr = 
   | HintsReference of reference
   | HintsConstr of constr_expr
@@ -437,7 +432,6 @@ type vernac_expr =
   | VernacSearch of searchable * goal_selector option * search_restriction
   | VernacLocate of locatable
   | VernacRegister of lident * register_kind
-  | VernacComments of comment list
 
   (* Proof management *)
   | VernacGoal of constr_expr

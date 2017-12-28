@@ -439,7 +439,6 @@
      ("Check" nil "Check" nil "Check")
      ("Close Local Scope" "cllsc" "Close Local Scope #" t "Close\\s-+Local\\s-+Scope")
      ("Close Scope" "clsc" "Close Scope #" t "Close\\s-+Scope")
-     ("Comments" nil "Comments #." nil "Comments")
      ("Delimit Scope" "delsc" "Delimit Scope @{scope} with @{id}." t "Delimit\\s-+Scope" )
      ("Eval" nil "Eval #." nil "Eval")
      ("Export" nil "Export #." t "Export")

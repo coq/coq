@@ -2068,7 +2068,6 @@ let interp ?proof ~atts ~st c =
   | VernacSearch (s,g,r) -> vernac_search ~atts s g r
   | VernacLocate l -> vernac_locate l
   | VernacRegister (id, r) -> vernac_register id r
-  | VernacComments l -> Flags.if_verbose Feedback.msg_info (str "Comments ok\n")
 
   (* Proof management *)
   | VernacGoal t -> vernac_start_proof ~atts Theorem [None,([],t)]

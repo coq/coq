@@ -821,10 +821,9 @@ GEXTEND Gram
   GLOBAL: command query_command class_rawexpr;
 
   command:
-    [ [ IDENT "Comments"; l = LIST0 comment -> VernacComments l
-
+    [ [
       (* Hack! Should be in grammar_ext, but camlp4 factorize badly *)
-      | IDENT "Declare"; IDENT "Instance"; namesup = instance_name; ":";
+        IDENT "Declare"; IDENT "Instance"; namesup = instance_name; ":";
 	 expl = [ "!" -> Decl_kinds.Implicit | -> Decl_kinds.Explicit ] ; t = operconstr LEVEL "200";
 	 info = hint_info ->
 	   VernacInstance (true, snd namesup, (fst namesup, expl, t), None, info)
@@ -1026,11 +1025,6 @@ GEXTEND Gram
   in_or_out_modules:
     [ [ m = ne_in_or_out_modules -> m
       | -> SearchOutside [] ] ]
-  ;
-  comment:
-    [ [ c = constr -> CommentConstr c
-      | s = STRING -> CommentString s
-      | n = natural -> CommentInt n ] ]
   ;
   positive_search_mark:
     [ [ "-" -> false | -> true ] ]

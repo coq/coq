@@ -4119,7 +4119,6 @@ sig
   type option_value
   type showable
   type bullet
-  type comment
   type register_kind
   type locatable
   type search_restriction
@@ -4263,7 +4262,6 @@ sig
   | VernacSearch of searchable * goal_selector option * search_restriction
   | VernacLocate of locatable
   | VernacRegister of lident * register_kind
-  | VernacComments of comment list
   | VernacGoal of Constrexpr.constr_expr
   | VernacAbort of lident option
   | VernacAbortAll
