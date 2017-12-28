@@ -4088,7 +4088,7 @@ sig
 
   type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
 
-  type typeclass_constraint = (Names.Name.t Loc.located * universe_decl_expr option) * Decl_kinds.binding_kind * constr_expr
+  type typeclass_constraint = (Names.Name.t Loc.located * universe_decl_expr option) * Decl_kinds.binding_kind option * constr_expr
 
   type definition_expr =
     | ProveBody of local_binder_expr list * constr_expr

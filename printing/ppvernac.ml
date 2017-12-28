@@ -876,7 +876,10 @@ open Decl_kinds
                | (_, Anonymous), _ -> mt ()) ++
               pr_and_type_binders_arg sup ++
               str":" ++ spc () ++
-              (match bk with Implicit -> str "! " | Explicit -> mt ()) ++
+              (match bk with
+                | Some Implicit -> str "! "
+                | Some Explicit -> str "`"
+                | None -> mt ()) ++
               pr_constr cl ++ pr_hint_info pr_constr_pattern_expr info ++
               (match props with
                 | Some (true, { CAst.v = CRecord l}) -> spc () ++ str":=" ++ spc () ++ str"{" ++ pr_record_body l ++ str "}"

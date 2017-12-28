@@ -25,7 +25,7 @@ open Pcoq.Constr
 open Pcoq.Vernac_
 open Pcoq.Module
 
-let vernac_kw = [ ";"; ","; ">->"; ":<"; "<:"; "where"; "at" ]
+let vernac_kw = [ ";"; ","; ">->"; ":<"; "<:"; "where"; "at"; "!"; "`" ]
 let _ = List.iter CLexer.add_keyword vernac_kw
 
 (* Rem: do not join the different GEXTEND into one, it breaks native *)
@@ -645,7 +645,7 @@ GEXTEND Gram
 	  VernacContext c
 
       | IDENT "Instance"; namesup = instance_name; ":";
-	 expl = [ "!" -> Decl_kinds.Implicit | -> Decl_kinds.Explicit ] ; t = operconstr LEVEL "200";
+         expl = OPT [ "!" -> Decl_kinds.Implicit | "`" -> Decl_kinds.Explicit ] ; t = operconstr LEVEL "200";
 	 info = hint_info ;
 	 props = [ ":="; "{"; r = record_declaration; "}" -> Some (true,r) |
 	     ":="; c = lconstr -> Some (false,c) | -> None ] ->
@@ -825,7 +825,8 @@ GEXTEND Gram
 
       (* Hack! Should be in grammar_ext, but camlp4 factorize badly *)
       | IDENT "Declare"; IDENT "Instance"; namesup = instance_name; ":";
-	 expl = [ "!" -> Decl_kinds.Implicit | -> Decl_kinds.Explicit ] ; t = operconstr LEVEL "200";
+        expl = OPT [ "!" -> Decl_kinds.Implicit | "`" -> Decl_kinds.Explicit ] ;
+        t = operconstr LEVEL "200";
 	 info = hint_info ->
 	   VernacInstance (true, snd namesup, (fst namesup, expl, t), None, info)
 
