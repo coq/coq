@@ -12,7 +12,6 @@ open Names
 open Pp
 open Term
 open Tactics
-open Tacticals
 open Tacmach
 open Coqlib
 open Util
@@ -43,11 +42,9 @@ module RelDecl = Context.Rel.Declaration
 
 let apply_type x xs = Proofview.V82.of_tactic (apply_type x xs)
 
-let new_tac = Proofview.V82.of_tactic
-
 let with_top tac gl =
   tac_ctx
-    (tclTHENLIST [ introid top_id; tac (EConstr.mkVar top_id); new_tac (clear [top_id])])
+    (Tacticals.New.tclTHENLIST [ introid top_id; tac (EConstr.mkVar top_id); clear [top_id]])
     gl
 
 let tclTHENS_nonstrict tac tacl taclname gl =
@@ -70,7 +67,8 @@ let ssr_abstract_id = Summary.ref ~name:"SSR:abstractid" 0
 
 let mk_abstract_id () = incr ssr_abstract_id; nat_of_n !ssr_abstract_id
 
-let ssrmkabs id gl =
+let ssrmkabs id =
+  Proofview.V82.tactic begin fun gl ->
   let env, concl = pf_env gl, Tacmach.pf_concl gl in
   let step = begin fun sigma ->
     let (sigma, (abstract_proof, abstract_ty)) =
@@ -96,8 +94,10 @@ let ssrmkabs id gl =
     (Proofview.tclTHEN
       (Tactics.New.refine ~typecheck:false step)
       (Proofview.tclFOCUS 1 3 Proofview.shelve)) gl
+  end
 
 let ssrmkabstac ids =
+  let open Tacticals.New in
   List.fold_right (fun id tac -> tclTHENFIRST (ssrmkabs id) tac) ids tclIDTAC
 
 (* introstac: for "move" and "clear", tclEQINTROS: for "case" and "elim" *)
@@ -120,22 +120,26 @@ let delayed_clear force rest clr gl =
         x', (x, x')) clr) in
     let ctx = { ctx with delayed_clears = ren_clr @ ctx.delayed_clears } in
     let gl = push_ctx ctx gl in
-    tac_ctx (Proofview.V82.of_tactic (rename_hyp ren)) gl 
+    tac_ctx (rename_hyp ren) gl 
   else
     let ctx = { ctx with delayed_clears = hyps_ids clr @ ctx.delayed_clears } in
     let gl = push_ctx ctx gl in
-    tac_ctx tclIDTAC gl
+    tac_ctx Tacticals.New.tclIDTAC gl
       
 (* Common code to handle generalization lists along with the defective case *)
 
-let with_defective maintac deps clr ist gl =
+let with_defective maintac deps clr ist =
+  let open Tacticals.New in
+  let open Tacmach.New in
+  Proofview.Goal.enter begin fun gl ->
   let top_id =
     match EConstr.kind_of_type (project gl) (pf_concl gl) with
     | ProdType (Name id, _, _)
       when has_discharged_tag (Id.to_string id) -> id
     | _ -> top_id in
   let top_gen = mkclr clr, cpattern_of_id top_id in
-  tclTHEN (introid top_id) (maintac deps top_gen ist) gl
+  tclTHEN (introid top_id) (maintac deps top_gen ist)
+  end
 
 let with_defective_a maintac deps clr ist gl =
   let sigma = sig_sig gl in
@@ -150,8 +154,8 @@ let with_defective_a maintac deps clr ist gl =
 let with_dgens (gensl, clr) maintac ist = match gensl with
   | [deps; []] -> with_defective maintac deps clr ist
   | [deps; gen :: gens] ->
-    tclTHEN (genstac (gens, clr) ist) (maintac deps gen ist)
-  | [gen :: gens] -> tclTHEN (genstac (gens, clr) ist) (maintac [] gen ist)
+    Tacticals.New.tclTHEN (genstac (gens, clr) ist) (maintac deps gen ist)
+  | [gen :: gens] -> Tacticals.New.tclTHEN (genstac (gens, clr) ist) (maintac [] gen ist)
   | _ -> with_defective maintac [] clr ist
 
 let viewmovetac_aux ?(next=ref []) clear name_ref (_, vl as v) _ gen ist gl =
@@ -174,10 +178,10 @@ let move_top_with_view ~next c r v =
 
 type block_names = (int * EConstr.types array) option
 
-let (introstac : ?ist:Tacinterp.interp_sign -> ssripats -> Tacmach.tactic),
+let (introstac : ?ist:Tacinterp.interp_sign -> ssripats -> unit Proofview.tactic),
     (tclEQINTROS : ?ind:block_names ref -> ?ist:Tacinterp.interp_sign ->
-                     Tacmach.tactic -> Tacmach.tactic -> ssripats ->
-                      Tacmach.tactic)
+                     unit Proofview.tactic -> unit Proofview.tactic -> ssripats ->
+                      unit Proofview.tactic)
 =
 
   let rec ipattac ?ist ~next p : tac_ctx tac_a = fun gl ->
@@ -205,7 +209,7 @@ let (introstac : ?ist:Tacinterp.interp_sign -> ssripats -> Tacmach.tactic),
     | IPatClear clr ->
         delayed_clear false !next clr gl
     | IPatAnon One -> tac_ctx intro_anon gl
-    | IPatNoop -> tac_ctx tclIDTAC gl
+    | IPatNoop -> tac_ctx Tacticals.New.tclIDTAC gl
     | IPatView v ->
         let ist =
           match ist with Some x -> x | _ -> anomaly "ipat: view with no ist" in
@@ -218,7 +222,7 @@ let (introstac : ?ist:Tacinterp.interp_sign -> ssripats -> Tacmach.tactic),
              let hyps = without_ctx pf_hyps gl in
              if not next_keeps && test_hypname_exists hyps !top_id then
                delayed_clear true !next [SsrHyp (Loc.tag !top_id)] gl
-             else tac_ctx tclIDTAC gl)]
+             else tac_ctx Tacticals.New.tclIDTAC gl)]
         gl
 
   and tclIORPAT ?ist tac = function
@@ -228,7 +232,7 @@ let (introstac : ?ist:Tacinterp.interp_sign -> ssripats -> Tacmach.tactic),
   and ipatstac ?ist ipats gl =
     let rec aux ipats gl =
       match ipats with
-      | [] -> tac_ctx tclIDTAC gl
+      | [] -> tac_ctx Tacticals.New.tclIDTAC gl
       | p :: ps ->
           let next = ref ps in
           let gl = ipattac ?ist ~next p gl in
@@ -251,25 +255,28 @@ let (introstac : ?ist:Tacinterp.interp_sign -> ssripats -> Tacmach.tactic),
     tclTHENLIST_a [ tac1; eqtac; tac2 ] gl in
  
   (* Exported code *) 
-  let introstac ?ist ipats gl =
+  let introstac ?ist ipats =
     with_fresh_ctx (tclTHENLIST_a [
       ipatstac ?ist ipats;
       gen_tmp_ids ?ist;
       clear_wilds_and_tmp_and_delayed_ids
-    ]) gl in
-  
-  let tclEQINTROS ?(ind=ref None) ?ist tac eqtac ipats gl =
+    ])
+  in
+
+  let tclEQINTROS ?(ind=ref None) ?ist tac eqtac ipats =
     with_fresh_ctx (tclTHENLIST_a [
       combine_tacs (tac_ctx tac) (tac_ctx eqtac) ipats ?ist ~ind;
       gen_tmp_ids ?ist;
       clear_wilds_and_tmp_and_delayed_ids;
-    ]) gl in
+    ])
+  in
 
   introstac, tclEQINTROS
 ;;
 
 (* Intro patterns processing for elim tactic*)
-let elim_intro_tac ipats ?ist what eqid ssrelim is_rec clr gl =
+let elim_intro_tac ipats ?ist what eqid ssrelim is_rec clr =
+  Proofview.V82.tactic begin fun gl ->
   (* Utils of local interest only *)
   let iD s ?t gl = let t = match t with None -> pf_concl gl | Some x -> x in
                    ppdebug(lazy Pp.(str s ++ pr_econstr_env (pf_env gl) (project gl) t)); Tacticals.tclIDTAC gl in
@@ -284,8 +291,8 @@ let elim_intro_tac ipats ?ist what eqid ssrelim is_rec clr gl =
          | ProdType (_, src, tgt) -> 
             (match EConstr.kind_of_type (project gl) src with
              | AtomicType (hd, _) when EConstr.eq_constr (project gl) hd protectC -> 
-                Tacticals.tclTHENLIST [unprotecttac; introid ipat] gl
-             | _ -> Tacticals.tclTHENLIST [ iD "IA"; Ssrcommon.intro_anon; intro_eq] gl)
+                Proofview.V82.of_tactic (Tacticals.New.tclTHENLIST [unprotecttac; introid ipat]) gl
+             | _ -> Tacticals.tclTHENLIST [ iD "IA"; Proofview.V82.of_tactic Ssrcommon.intro_anon; intro_eq] gl)
          |_ -> errorstrm (Pp.str "Too many names in intro pattern") in
        intro_eq
     | Some (IPatId ipat) -> 
@@ -295,8 +302,8 @@ let elim_intro_tac ipats ?ist what eqid ssrelim is_rec clr gl =
            | [SsrHyp(_, x)], _ -> x
            | _, `EConstr(_,_,t) when EConstr.isVar (project gl) t -> EConstr.destVar (project gl) t
            | _ -> name gl in
-         if is_name_in_ipats elim_name ipats then introid (name gl) gl
-         else introid elim_name gl
+         if is_name_in_ipats elim_name ipats then Proofview.V82.of_tactic (introid (name gl)) gl
+         else Proofview.V82.of_tactic (introid elim_name) gl
        in
        let rec gen_eq_tac gl =
          let concl = pf_concl gl in
@@ -305,7 +312,7 @@ let elim_intro_tac ipats ?ist what eqid ssrelim is_rec clr gl =
            | AtomicType (hd, args) -> assert(EConstr.eq_constr (project gl) hd protectC); args
            | _ -> assert false in
          let case = args.(Array.length args-1) in
-         if not(EConstr.Vars.closed0 (project gl) case) then Tacticals.tclTHEN Ssrcommon.intro_anon gen_eq_tac gl
+         if not(EConstr.Vars.closed0 (project gl) case) then Tacticals.tclTHEN (Proofview.V82.of_tactic Ssrcommon.intro_anon) gen_eq_tac gl
          else
            let gl, case_ty = pfe_type_of gl case in 
            let refl = EConstr.mkApp (eq, [|EConstr.Vars.lift 1 case_ty; EConstr.mkRel 1; EConstr.Vars.lift 1 case|]) in
@@ -314,22 +321,22 @@ let elim_intro_tac ipats ?ist what eqid ssrelim is_rec clr gl =
            let erefl, gl = mkRefl case_ty case gl in
            let erefl = fire_subst gl erefl in
            apply_type new_concl [case;erefl] gl in
-       Tacticals.tclTHENLIST [gen_eq_tac; intro_lhs; introid ipat]
+       Tacticals.tclTHENLIST [gen_eq_tac; intro_lhs; Proofview.V82.of_tactic (introid ipat)]
     | _ -> Tacticals.tclIDTAC in
-  let unprot = if eqid <> None && is_rec then unprotecttac else Tacticals.tclIDTAC in
-  tclEQINTROS ?ist ssrelim (Tacticals.tclTHENLIST [intro_eq; unprot]) ipats gl
+  let unprot = if eqid <> None && is_rec then unprotecttac else Tacticals.New.tclIDTAC in
+  Proofview.V82.of_tactic (tclEQINTROS ?ist ssrelim (Tacticals.New.tclTHENLIST [Proofview.V82.tactic intro_eq; unprot]) ipats) gl
+  end
 
 (* General case *)
-let tclINTROS ist t ip = tclEQINTROS ~ist (t ist) tclIDTAC ip
+let tclINTROS ist t ip = tclEQINTROS ~ist (t ist) Tacticals.New.tclIDTAC ip
 
 (* }}} *)
 
-let viewmovetac ?next v deps gen ist gl = 
+let viewmovetac ?next v deps gen ist =
  with_fresh_ctx
    (tclTHEN_a
      (viewmovetac_aux ?next true (ref top_id) v deps gen ist)
       clear_wilds_and_tmp_and_delayed_ids)
-     gl
 
 let mkCoqEq gl =
   let sigma = project gl in
@@ -350,23 +357,32 @@ let pushmoveeqtac cl c gl =
   let cl2, eqc, gl = mkEq R2L cl1 c t 1 gl in
   apply_type (mkProd (x, t, cl2)) [c; eqc] gl
 
-let eqmovetac _ gen ist gl =
+let eqmovetac _ gen ist =
+  Proofview.V82.tactic begin fun gl ->
   let cl, c, _, gl = pf_interp_gen ist gl false gen in pushmoveeqtac cl c gl
+  end
 
-let movehnftac gl = match EConstr.kind (project gl) (pf_concl gl) with
-  | Prod _ | LetIn _ -> tclIDTAC gl
-  | _ -> new_tac hnf_in_concl gl
+let movehnftac =
+  let open Tacmach.New in
+  let open Tacticals.New in
+  Proofview.Goal.enter begin fun gl ->
+  match EConstr.kind (project gl) (pf_concl gl) with
+  | Prod _ | LetIn _ -> tclIDTAC
+  | _ -> hnf_in_concl
+  end
 
 let rec eqmoveipats eqpat = function
   | (IPatSimpl _ | IPatClear _ as ipat) :: ipats -> ipat :: eqmoveipats eqpat ipats
   | (IPatAnon All :: _ | []) as ipats -> IPatAnon One :: eqpat :: ipats
    | ipat :: ipats -> ipat :: eqpat :: ipats
 
-let ssrmovetac ist = function
+let ssrmovetac ist =
+  let open Tacticals.New in
+  function
   | _::_ as view, (_, (dgens, ipats)) ->
     let next = ref ipats in
     let dgentac = with_dgens dgens (viewmovetac ~next (true, view)) ist in
-    tclTHEN dgentac (fun gl -> introstac ~ist !next gl)
+    tclTHEN dgentac (Proofview.Goal.enter (fun _ -> introstac ~ist !next))
   | _, (Some pat, (dgens, ipats)) ->
     let dgentac = with_dgens dgens eqmovetac ist in
     tclTHEN dgentac (introstac ~ist (eqmoveipats pat ipats))
@@ -377,19 +393,21 @@ let ssrmovetac ist = function
     tclTHENLIST [movehnftac; cleartac clr; introstac ~ist ipats]
 
 let ssrcasetac ist (view, (eqid, (dgens, ipats))) =
-  let ndefectcasetac view eqid ipats deps ((_, occ), _ as gen) ist gl =
+  let ndefectcasetac view eqid ipats deps ((_, occ), _ as gen) ist =
+    Proofview.V82.tactic begin fun gl ->
     let simple = (eqid = None && deps = [] && occ = None) in
     let cl, c, clr, gl = pf_interp_gen ist gl true gen in
     let _,vc, gl =
       if view = [] then c,c, gl else pf_with_view_linear ist gl (false, view) cl c in
     if simple && is_injection_case vc gl then
-      tclTHENLIST [perform_injection vc; cleartac clr; introstac ~ist ipats] gl
+      Proofview.V82.of_tactic (Tacticals.New.tclTHENLIST [perform_injection vc; cleartac clr; introstac ~ist ipats]) gl
     else 
       (* macro for "case/v E: x" ---> "case E: x / (v x)" *)
       let deps, clr, occ = 
         if view <> [] && eqid <> None && deps = [] then [gen], [], None
         else deps, clr, occ in
-      ssrelim ~is_case:true ~ist deps (`EConstr (clr,occ, vc)) eqid (elim_intro_tac ipats) gl
+      Proofview.V82.of_tactic (ssrelim ~is_case:true ~ist deps (`EConstr (clr,occ, vc)) eqid (elim_intro_tac ipats)) gl
+    end
   in
   with_dgens dgens (ndefectcasetac view eqid ipats) ist
 

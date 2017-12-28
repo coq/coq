@@ -14,9 +14,9 @@ open Ltac_plugin
 
 open Ssrast
 
-val ssrsettac : ist ->  Id.t -> ((ssrfwdfmt * (Ssrmatching_plugin.Ssrmatching.cpattern * ssrterm option)) * ssrdocc) -> v82tac
+val ssrsettac : ist ->  Id.t -> ((ssrfwdfmt * (Ssrmatching_plugin.Ssrmatching.cpattern * ssrterm option)) * ssrdocc) -> unit Proofview.tactic
 
-val ssrposetac : ist -> (Id.t * (ssrfwdfmt * ssrterm)) -> v82tac
+val ssrposetac : ist -> (Id.t * (ssrfwdfmt * ssrterm)) -> unit Proofview.tactic
 
 val havetac :
            Ssrast.ist ->
@@ -27,15 +27,15 @@ val havetac :
               ('b * (Glob_term.glob_constr * Constrexpr.constr_expr option))) *
              (bool * Tacinterp.Value.t option list))) ->
            bool ->
-           bool -> v82tac
+           bool -> unit Proofview.tactic
 val ssrabstract :
            Tacinterp.interp_sign ->
            (Ssrast.ssrdocc * Ssrmatching_plugin.Ssrmatching.cpattern) list
-           list * Ssrast.ssrclear -> v82tac
+           list * Ssrast.ssrclear -> unit Proofview.tactic
 
 val basecuttac :
            string ->
-           EConstr.t -> Goal.goal Evd.sigma -> Evar.t list Evd.sigma
+           EConstr.t -> unit Proofview.tactic
 
 val wlogtac :
   Ltac_plugin.Tacinterp.interp_sign ->
@@ -51,7 +51,7 @@ val wlogtac :
   Ltac_plugin.Tacinterp.Value.t Ssrast.ssrhint ->
   bool ->
   [< `Gen of Names.Id.t option option | `NoGen > `NoGen ] ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  unit Proofview.tactic
 
 val sufftac :
   Ssrast.ist ->
@@ -61,5 +61,5 @@ val sufftac :
         (Ssrast.ssrtermkind *
            (Glob_term.glob_constr * Constrexpr.constr_expr option))) *
        (bool * Tacinterp.Value.t option list)) ->
-  Tacmach.tactic
+  unit Proofview.tactic
 

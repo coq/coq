@@ -8,7 +8,6 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
-open Tacmach
 open Names
 open Environ
 open Evd
@@ -65,12 +64,12 @@ type tac_ctx = {
 val new_ctx : unit -> tac_ctx (* REMOVE *)
 val pull_ctxs : ('a * tac_ctx) list  sigma -> 'a list sigma * tac_ctx list (* REMOVE *)
 
-val with_fresh_ctx : tac_ctx tac_a -> tactic
+val with_fresh_ctx : tac_ctx tac_a -> unit Proofview.tactic
 
 val pull_ctx : ('a * tac_ctx) sigma -> 'a sigma * tac_ctx
 val push_ctx : tac_ctx -> 'a sigma -> ('a * tac_ctx) sigma
 val push_ctxs : tac_ctx -> 'a list sigma -> ('a * tac_ctx) list sigma
-val tac_ctx : tactic -> tac_ctx tac_a
+val tac_ctx : unit Proofview.tactic -> tac_ctx tac_a
 val with_ctx :
   (tac_ctx -> 'b * tac_ctx) -> ('a * tac_ctx) sigma -> 'b * ('a * tac_ctx) sigma
 val without_ctx : ('a sigma -> 'b) -> ('a * tac_ctx) sigma -> 'b
@@ -239,7 +238,7 @@ val gen_tmp_ids :
            (Goal.goal * tac_ctx) Evd.sigma ->
            (Goal.goal * tac_ctx) list Evd.sigma
 
-val ssrevaltac : Tacinterp.interp_sign -> Tacinterp.Value.t -> Proofview.V82.tac
+val ssrevaltac : Tacinterp.interp_sign -> Tacinterp.Value.t -> unit Proofview.tactic
 
 val convert_concl_no_check : EConstr.t -> unit Proofview.tactic
 val convert_concl : EConstr.t -> unit Proofview.tactic
@@ -295,15 +294,15 @@ val pf_interp_ty :
            (Glob_term.glob_constr * Constrexpr.constr_expr option) ->
            int * EConstr.t * EConstr.t * UState.t
 
-val ssr_n_tac : string -> int -> v82tac
-val donetac : int -> v82tac
+val ssr_n_tac : string -> int -> unit Proofview.tactic
+val donetac : int -> unit Proofview.tactic
 
 val applyn :
            with_evars:bool ->
            ?beta:bool ->
            ?with_shelve:bool ->
            int ->
-           EConstr.t -> v82tac
+           EConstr.t -> unit Proofview.tactic
 exception NotEnoughProducts
 val pf_saturate :
            ?beta:bool ->
@@ -327,23 +326,23 @@ val refine_with :
            ?first_goes_last:bool ->
            ?beta:bool ->
            ?with_evars:bool ->
-           evar_map * EConstr.t -> v82tac
+           evar_map * EConstr.t -> unit Proofview.tactic
 (*********************** Wrapped Coq  tactics *****************************)
 
-val rewritetac : ssrdir -> EConstr.t -> tactic
+val rewritetac : ssrdir -> EConstr.t -> unit Proofview.tactic
 
 type name_hint = (int * EConstr.types array) option ref
 
 val gentac : 
   (Geninterp.interp_sign ->
    (Ssrast.ssrdocc) *
-     Ssrmatching_plugin.Ssrmatching.cpattern -> Tacmach.tactic)
+     Ssrmatching_plugin.Ssrmatching.cpattern -> unit Proofview.tactic)
 
 val genstac :
   ((Ssrast.ssrhyp list option * Ssrmatching_plugin.Ssrmatching.occ) *
      Ssrmatching_plugin.Ssrmatching.cpattern)
     list * Ssrast.ssrhyp list ->
-  Tacinterp.interp_sign -> Tacmach.tactic
+  Tacinterp.interp_sign -> unit Proofview.tactic
 
 val pf_interp_gen :
   Tacinterp.interp_sign ->
@@ -376,21 +375,21 @@ val mk_profiler : string -> profiler
 
 (** Basic tactics *)
 
-val introid : ?orig:Name.t ref -> Id.t -> v82tac
-val intro_anon : v82tac
-val intro_all : v82tac
+val introid : ?orig:Name.t ref -> Id.t -> unit Proofview.tactic
+val intro_anon : unit Proofview.tactic
+val intro_all : unit Proofview.tactic
 
 val interp_clr :
   evar_map -> ssrhyps option * (ssrtermkind * EConstr.t) -> ssrhyps
 
 val genclrtac :
   EConstr.constr ->
-  EConstr.constr list -> Ssrast.ssrhyp list -> Tacmach.tactic
-val cleartac : ssrhyps -> v82tac
+  EConstr.constr list -> Ssrast.ssrhyp list -> unit Proofview.tactic
+val cleartac : ssrhyps -> unit Proofview.tactic
 
-val tclMULT : int * ssrmmod -> Tacmach.tactic -> Tacmach.tactic
+val tclMULT : int * ssrmmod -> unit Proofview.tactic -> unit Proofview.tactic
 
-val unprotecttac : Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+val unprotecttac : unit Proofview.tactic
 
 val abs_wgen :
   bool ->
@@ -405,6 +404,6 @@ val abs_wgen :
 
 val clr_of_wgen :
   ssrhyps * ((ssrhyp_or_id * 'a) * 'b option) option ->
-  Proofview.V82.tac list -> Proofview.V82.tac list
+  unit Proofview.tactic list -> unit Proofview.tactic list
 
 

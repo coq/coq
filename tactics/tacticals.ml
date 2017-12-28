@@ -367,6 +367,8 @@ module New = struct
     tclTHENSFIRSTn t1 l (tclUNIT())
   let tclTHENFIRST t1 t2 =
     tclTHENFIRSTn t1 [|t2|]
+  let tclTHENSLASTn tac1 tac taci =
+    tclTHENS3PARTS tac1 [||] tac taci
   let tclTHENLASTn t1 l =
     tclTHENS3PARTS t1 [||] (tclUNIT()) l
   let tclTHENLAST t1 t2 = tclTHENLASTn t1 [|t2|]

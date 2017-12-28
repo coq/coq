@@ -5459,6 +5459,7 @@ sig
     val tclREPEAT : unit tactic -> unit tactic
     val tclTRY : unit tactic -> unit tactic
     val tclTHENFIRST : unit tactic -> unit tactic -> unit tactic
+    val tclTHENSFIRSTn   : unit tactic -> unit tactic array -> unit tactic -> unit tactic
     val tclPROGRESS :  unit Proofview.tactic -> unit Proofview.tactic
     val tclTHENS3PARTS : unit tactic -> unit tactic array -> unit tactic -> unit tactic array -> unit tactic
     val tclDO : int -> unit tactic -> unit tactic
@@ -5478,6 +5479,7 @@ sig
     val tclDELAYEDWITHHOLES : bool -> 'a Tactypes.delayed_open -> ('a -> unit tactic) -> unit tactic
     val tclTHENLIST : unit tactic list -> unit tactic
     val tclTHENLAST  : unit tactic -> unit tactic -> unit tactic
+    val tclTHENSLASTn    : unit tactic -> unit tactic -> unit tactic array -> unit tactic
     val tclMAP : ('a -> unit tactic) -> 'a list -> unit tactic
     val tclIDTAC : unit tactic
     val tclIFTHENELSE : unit tactic -> unit tactic -> unit tactic -> unit tactic

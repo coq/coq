@@ -31,23 +31,23 @@ val ssrelim :
   (?ist:Ltac_plugin.Tacinterp.interp_sign ->
    'a ->
    Ssrast.ssripat option ->
-   (Goal.goal Evd.sigma -> Goal.goal list Evd.sigma) ->
-   bool -> Ssrast.ssrhyp list -> Tacmach.tactic) ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+   unit Proofview.tactic ->
+   bool -> Ssrast.ssrhyp list -> unit Proofview.tactic) ->
+  unit Proofview.tactic
 
 val elimtac :
   EConstr.constr ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  unit Proofview.tactic
 val casetac :
   EConstr.constr ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  unit Proofview.tactic
 
 val is_injection_case : EConstr.t -> Goal.goal Evd.sigma -> bool
 val perform_injection :
   EConstr.constr ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  unit Proofview.tactic
 
 val ssrscasetac :
   bool ->
   EConstr.constr ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  unit Proofview.tactic

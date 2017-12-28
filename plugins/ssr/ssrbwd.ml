@@ -66,7 +66,8 @@ let interp_agens ist gl gagens =
 
 let pf_match = pf_apply (fun e s c t -> understand_tcc e s ~expected_type:t c)
 
-let apply_rconstr ?ist t gl =
+let apply_rconstr ?ist t =
+  Proofview.V82.tactic begin fun gl ->
 (* ppdebug(lazy(str"sigma@apply_rconstr=" ++ pr_evar_map None (project gl))); *)
   let n = match ist, DAst.get t with
     | None, (GVar id | GRef (VarRef id,_)) -> pf_nbargs gl (EConstr.mkVar id)
@@ -78,7 +79,8 @@ let apply_rconstr ?ist t gl =
     if i > n then
       errorstrm Pp.(str"Cannot apply lemma "++pf_pr_glob_constr gl t)
     else try pf_match gl (mkRlemma i) (OfType cl) with _ -> loop (i + 1) in
-  refine_with (loop 0) gl
+  Proofview.V82.of_tactic (refine_with (loop 0)) gl
+  end
 
 let mkRAppView ist gl rv gv =
   let nb_view_imps = interp_view_nbimps ist gl rv in
@@ -94,21 +96,24 @@ let refine_interp_apply_view i ist gl gv =
     interp_refine ist gl (mkRApp hint (v :: mkRHoles i)) in
   let interp_with x = prof_apply_interp_with.profile interp_with x in
   let rec loop = function
-  | [] -> (try apply_rconstr ~ist rv gl with _ -> view_error "apply" gv)
-  | h :: hs -> (try refine_with (snd (interp_with h)) gl with _ -> loop hs) in
+  | [] -> (try Proofview.V82.of_tactic (apply_rconstr ~ist rv) gl with _ -> view_error "apply" gv)
+  | h :: hs -> (try Proofview.V82.of_tactic (refine_with (snd (interp_with h))) gl with _ -> loop hs) in
   loop (pair i Ssrview.viewtab.(i) @
         if i = 2 then pair 1 Ssrview.viewtab.(1) else [])
 
-let apply_top_tac gl =
-  Tacticals.tclTHENLIST [introid top_id; apply_rconstr (mkRVar top_id); Proofview.V82.of_tactic (Tactics.clear [top_id])] gl
+let apply_top_tac =
+  Proofview.Goal.enter begin fun _ ->
+  Tacticals.New.tclTHENLIST [introid top_id; apply_rconstr (mkRVar top_id); Tactics.clear [top_id]]
+  end
 
-let inner_ssrapplytac gviews ggenl gclr ist gl =
+let inner_ssrapplytac gviews ggenl gclr ist =
+ Proofview.V82.tactic begin fun gl ->
  let _, clr = interp_hyps ist gl gclr in
  let vtac gv i gl' = refine_interp_apply_view i ist gl' gv in
  let ggenl, tclGENTAC =
    if gviews <> [] && ggenl <> [] then
      let ggenl= List.map (fun (x,g) -> x, cpattern_of_term g) (List.hd ggenl) in
-     [], Tacticals.tclTHEN (genstac (ggenl,[]) ist)
+     [], Tacticals.tclTHEN (Proofview.V82.of_tactic (genstac (ggenl,[]) ist))
    else ggenl, Tacticals.tclTHEN Tacticals.tclIDTAC in
  tclGENTAC (fun gl ->
   match gviews, ggenl with
@@ -116,10 +121,10 @@ let inner_ssrapplytac gviews ggenl gclr ist gl =
     let dbl = if List.length tl = 1 then 2 else 1 in
     Tacticals.tclTHEN
       (List.fold_left (fun acc v -> Tacticals.tclTHENLAST acc (vtac v dbl)) (vtac v 1) tl)
-      (cleartac clr) gl
+      (Proofview.V82.of_tactic (cleartac clr)) gl
   | [], [agens] ->
     let clr', (sigma, lemma) = interp_agens ist gl agens in
     let gl = pf_merge_uc_of sigma gl in
-    Tacticals.tclTHENLIST [cleartac clr; refine_with ~beta:true lemma; cleartac clr'] gl
-  | _, _ -> Tacticals.tclTHEN apply_top_tac (cleartac clr) gl) gl
-
+    Tacticals.tclTHENLIST [Proofview.V82.of_tactic (cleartac clr); Proofview.V82.of_tactic (refine_with ~beta:true lemma); Proofview.V82.of_tactic (cleartac clr')] gl
+  | _, _ -> Tacticals.tclTHEN (Proofview.V82.of_tactic apply_top_tac) (Proofview.V82.of_tactic (cleartac clr)) gl) gl
+  end

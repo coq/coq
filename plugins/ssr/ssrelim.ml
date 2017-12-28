@@ -97,7 +97,8 @@ let subgoals_tys sigma (relctx, concl) =
  *    generalize the equality in case eqid is not None
  * 4. build the tactic handle intructions and clears as required in ipats and
  *    by eqid *)
-let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intro_tac gl =
+let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intro_tac =
+  Proofview.V82.tactic begin fun gl ->
   (* some sanity checks *)
   let oc, orig_clr, occ, c_gen, gl = match what with
   | `EConstr(_,_,t) when EConstr.isEvar (project gl) t ->
@@ -373,9 +374,13 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
   in
   (* the elim tactic, with the eliminator and the predicated we computed *)
   let elim = project gl, elim in 
-  let elim_tac gl =
-    Tacticals.tclTHENLIST [refine_with ~with_evars:false elim; cleartac clr] gl in
-  Tacticals.tclTHENLIST [gen_eq_tac; elim_intro_tac ?ist what eqid elim_tac is_rec clr] orig_gl
+  let elim_tac =
+    Proofview.V82.tactic begin fun gl ->
+    Tacticals.tclTHENLIST [Proofview.V82.of_tactic (refine_with ~with_evars:false elim); Proofview.V82.of_tactic (cleartac clr)] gl
+    end
+  in
+  Tacticals.tclTHENLIST [gen_eq_tac; Proofview.V82.of_tactic (elim_intro_tac ?ist what eqid elim_tac is_rec clr)] orig_gl
+  end
 
 let no_intro ?ist what eqid elim_tac is_rec clr = elim_tac
 
@@ -406,26 +411,29 @@ let equality_inj l b id c gl =
     Feedback.msg_warning (Pp.str !msg);
     discharge_hyp (id, (id, "")) gl
 
-let injectidl2rtac id c gl =
+let injectidl2rtac id c =
+  Proofview.V82.tactic begin fun gl ->
   Tacticals.tclTHEN (equality_inj None true id c) (revtoptac (pf_nb_prod gl)) gl
+  end
 
 let injectl2rtac sigma c = match EConstr.kind sigma c with
 | Var id -> injectidl2rtac id (EConstr.mkVar id, NoBindings)
 | _ ->
   let id = injecteq_id in
-  let xhavetac id c = Proofview.V82.of_tactic (Tactics.pose_proof (Name id) c) in
-  Tacticals.tclTHENLIST [xhavetac id c; injectidl2rtac id (EConstr.mkVar id, NoBindings); Proofview.V82.of_tactic (Tactics.clear [id])]
+  let xhavetac id c = Tactics.pose_proof (Name id) c in
+  Tacticals.New.tclTHENLIST [xhavetac id c; injectidl2rtac id (EConstr.mkVar id, NoBindings); Tactics.clear [id]]
 
 let is_injection_case c gl =
   let gl, cty = pfe_type_of gl c in
   let (mind,_), _ = pf_reduce_to_quantified_ind gl cty in
   eq_gr (IndRef mind) (Coqlib.build_coq_eq ())
 
-let perform_injection c gl =
+let perform_injection c =
+  Proofview.V82.tactic begin fun gl ->
   let gl, cty = pfe_type_of gl c in
   let mind, t = pf_reduce_to_quantified_ind gl cty in
   let dc, eqt = EConstr.decompose_prod (project gl) t in
-  if dc = [] then injectl2rtac (project gl) c gl else
+  if dc = [] then Proofview.V82.of_tactic (injectl2rtac (project gl) c) gl else
   if not (EConstr.Vars.closed0 (project gl) eqt) then
     CErrors.user_err (Pp.str "can't decompose a quantified equality") else
   let cl = pf_concl gl in let n = List.length dc in
@@ -433,9 +441,12 @@ let perform_injection c gl =
   let cl1 = EConstr.mkLambda EConstr.(Anonymous, mkArrow eqt cl, mkApp (mkRel 1, [|c_eq|])) in
   let id = injecteq_id in
   let id_with_ebind = (EConstr.mkVar id, NoBindings) in
-  let injtac = Tacticals.tclTHEN (introid id) (injectidl2rtac id id_with_ebind) in 
-  Tacticals.tclTHENLAST (Proofview.V82.of_tactic (Tactics.apply (EConstr.compose_lam dc cl1))) injtac gl
+  let injtac = Tacticals.New.tclTHEN (introid id) (injectidl2rtac id id_with_ebind) in 
+  Proofview.V82.of_tactic (Tacticals.New.tclTHENLAST (Tactics.apply (EConstr.compose_lam dc cl1)) injtac) gl
+  end
 
-let ssrscasetac force_inj c gl =
-  if force_inj || is_injection_case c gl then perform_injection c gl
-  else casetac c gl
+let ssrscasetac force_inj c =
+  Proofview.V82.tactic begin fun gl ->
+  if force_inj || is_injection_case c gl then Proofview.V82.of_tactic (perform_injection c) gl
+  else Proofview.V82.of_tactic (casetac c) gl
+  end
