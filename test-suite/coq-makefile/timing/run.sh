@@ -31,9 +31,9 @@ coq_makefile -f _CoqProject -o Makefile
 make cleanall
 make make-pretty-timed-after TGTS="all" -j1 || exit $?
 rm -f time-of-build-before.log
-make print-pretty-timed-diff TIME_OF_BUILD_BEFORE_FILE=../before/time-of-build-before.log
+make print-pretty-timed-diff TIMING_SORT_BY=diff TIME_OF_BUILD_BEFORE_FILE=../before/time-of-build-before.log
 cp ../before/time-of-build-before.log ./
-make print-pretty-timed-diff || exit $?
+make print-pretty-timed-diff TIMING_SORT_BY=diff || exit $?
 
 INFINITY="∞"
 INFINITY_REPLACEMENT="+.%" # assume that if the before time is zero, we expected the time to increase

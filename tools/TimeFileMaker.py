@@ -10,6 +10,20 @@ STRIP_REG = re.compile('^(coq/|contrib/|)(?:theories/|src/)?')
 STRIP_REP = r'\1'
 INFINITY  = '\xe2\x88\x9e'
 
+def parse_args(argv, USAGE, HELP_STRING):
+    sort_by = 'auto'
+    if any(arg.startswith('--sort-by=') for arg in argv[1:]):
+        sort_by = [arg for arg in argv[1:] if arg.startswith('--sort-by=')][-1][len('--sort-by='):]
+    args = [arg for arg in argv if not arg.startswith('--sort-by=')]
+    if len(args) < 3 or '--help' in args[1:] or '-h' in args[1:] or sort_by not in ('auto', 'absolute', 'diff'):
+        print(USAGE)
+        if '--help' in args[1:] or '-h' in args[1:]:
+            print(HELP_STRING)
+            if len(args) == 2: sys.exit(0)
+        sys.exit(1)
+    return sort_by, args
+
+
 def reformat_time_string(time):
     seconds, milliseconds = time.split('.')
     seconds = int(seconds)
@@ -108,6 +122,7 @@ def format_percentage(num, signed=True):
     return sign + '%d.%02d%%' % (whole_part, frac_part)
 
 def make_diff_table_string(left_times_dict, right_times_dict,
+                           sort_by='auto',
                            descending=True,
                            left_tag="After", tag="File Name", right_tag="Before", with_percent=True,
                            change_tag="Change", percent_change_tag="% Change"):
@@ -125,10 +140,15 @@ def make_diff_table_string(left_times_dict, right_times_dict,
                                            if rseconds != 0 else (INFINITY if lseconds > 0 else 'N/A')))
                                    for name, lseconds, rseconds in prediff_times)
     # update to sort by approximate difference, first
-    get_key = make_sorting_key(all_names_dict, descending=descending)
-    all_names_dict = dict((name, (fix_sign_for_sorting(int(abs(to_seconds(diff_times_dict[name]))), descending=descending), get_key(name)))
-                          for name in all_names_dict.keys())
-    names = sorted(all_names_dict.keys(), key=all_names_dict.get)
+    get_key_abs = make_sorting_key(all_names_dict, descending=descending)
+    get_key_diff = (lambda name: fix_sign_for_sorting(int(abs(to_seconds(diff_times_dict[name]))), descending=descending))
+    if sort_by == 'absolute':
+        get_key = get_key_abs
+    elif sort_by == 'diff':
+        get_key = get_key_diff
+    else: # sort_by == 'auto'
+        get_key = (lambda name: (get_key_diff(name), get_key_abs(name)))
+    names = sorted(all_names_dict.keys(), key=get_key)
     #names = get_sorted_file_list_from_times_dict(all_names_dict, descending=descending)
     # set the widths of each of the columns by the longest thing to go in that column
     left_sum = sum_times(left_times_dict.values())
