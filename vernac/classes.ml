@@ -69,8 +69,7 @@ let existing_instance glob g info =
   let instance, _ = Global.type_of_global_in_context (Global.env ()) c in
   let _, r = Term.decompose_prod_assum instance in
     match class_of_constr Evd.empty (EConstr.of_constr r) with
-      | Some (_, ((tc,u), _)) -> add_instance (new_instance tc info glob
-  (*FIXME*) (Flags.use_polymorphic_flag ()) c)
+      | Some (_, ((tc,u), _)) -> add_instance (new_instance tc info glob c)
       | None -> user_err ?loc:(loc_of_reference g)
                          ~hdr:"declare_instance"
                          (Pp.str "Constant does not build instances of a declared type class.")
@@ -393,8 +392,7 @@ let context poly l =
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
         match class_of_constr sigma (of_constr t) with
 	| Some (rels, ((tc,_), args) as _cl) ->
-	    add_instance (Typeclasses.new_instance tc Hints.empty_hint_info false (*FIXME*)
-			    poly (ConstRef cst));
+            add_instance (Typeclasses.new_instance tc Hints.empty_hint_info false (ConstRef cst));
             status
 	    (* declare_subclasses (ConstRef cst) cl *)
 	| None -> status

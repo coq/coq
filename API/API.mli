@@ -4331,7 +4331,7 @@ sig
   val class_info : Globnames.global_reference -> typeclass
   val mark_resolvables : ?filter:evar_filter -> Evd.evar_map -> Evd.evar_map
   val add_instance : instance -> unit
-  val new_instance : typeclass -> Vernacexpr.hint_info_expr -> bool -> Decl_kinds.polymorphic ->
+  val new_instance : typeclass -> Vernacexpr.hint_info_expr -> bool ->
                      Globnames.global_reference -> instance
 end
 
@@ -5798,7 +5798,7 @@ sig
   val lemInv_clause :
     Misctypes.quantified_hypothesis -> EConstr.constr -> Names.Id.t list -> unit Proofview.tactic
   val add_inversion_lemma_exn :
-    Names.Id.t -> Constrexpr.constr_expr -> Sorts.family -> bool -> (Names.Id.t -> unit Proofview.tactic) ->
+    poly:bool -> Names.Id.t -> Constrexpr.constr_expr -> Sorts.family -> bool -> (Names.Id.t -> unit Proofview.tactic) ->
     unit
 end
 

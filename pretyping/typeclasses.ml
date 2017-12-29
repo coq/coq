@@ -87,7 +87,6 @@ type instance = {
   (* Sections where the instance should be redeclared,
      None for discard, Some 0 for none. *)
   is_global: int option;
-  is_poly: bool;
   is_impl: global_reference;
 }
 
@@ -97,7 +96,7 @@ let instance_impl is = is.is_impl
 
 let hint_priority is = is.is_info.Vernacexpr.hint_priority
 
-let new_instance cl info glob poly impl =
+let new_instance cl info glob impl =
   let global =
     if glob then Some (Lib.sections_depth ())
     else None
@@ -107,7 +106,6 @@ let new_instance cl info glob poly impl =
     { is_class = cl.cl_impl;
       is_info = info ;
       is_global = global ;
-      is_poly = poly;
       is_impl = impl }
 
 (*
@@ -420,7 +418,7 @@ let declare_instance info local glob =
     match class_of_constr Evd.empty (EConstr.of_constr ty) with
     | Some (rels, ((tc,_), args) as _cl) ->
       assert (not (isVarRef glob) || local);
-      add_instance (new_instance tc info (not local) (Flags.use_polymorphic_flag ()) glob)
+      add_instance (new_instance tc info (not local) glob)
     | None -> ()
 
 let add_class cl =

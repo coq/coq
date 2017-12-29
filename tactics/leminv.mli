@@ -14,6 +14,6 @@ open Misctypes
 val lemInv_clause :
   quantified_hypothesis -> constr -> Id.t list -> unit Proofview.tactic
 
-val add_inversion_lemma_exn :
+val add_inversion_lemma_exn : poly:bool ->
   Id.t -> constr_expr -> Sorts.family -> bool -> (Id.t -> unit Proofview.tactic) ->
     unit

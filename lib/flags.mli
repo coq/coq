@@ -74,10 +74,6 @@ val is_program_mode : unit -> bool
 val make_universe_polymorphism : bool -> unit
 val is_universe_polymorphism : unit -> bool
 
-(** Local universe polymorphism flag. *)
-val make_polymorphic_flag : bool -> unit
-val use_polymorphic_flag : unit -> bool
-
 (** Global polymorphic inductive cumulativity flag. *)
 val make_polymorphic_inductive_cumulativity : bool -> unit
 val is_polymorphic_inductive_cumulativity : unit -> bool

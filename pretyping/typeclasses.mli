@@ -53,7 +53,7 @@ val all_instances : unit -> instance list
 
 val add_class : typeclass -> unit
 
-val new_instance : typeclass -> Vernacexpr.hint_info_expr -> bool -> Decl_kinds.polymorphic ->
+val new_instance : typeclass -> Vernacexpr.hint_info_expr -> bool ->
   global_reference -> instance
 val add_instance : instance -> unit
 val remove_instance : instance -> unit

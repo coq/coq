@@ -1981,8 +1981,7 @@ let add_morphism_infer glob m n =
 				 Decl_kinds.IsAssumption Decl_kinds.Logical)
       in
 	add_instance (Typeclasses.new_instance 
-			(Lazy.force PropGlobal.proper_class) Hints.empty_hint_info glob
-			poly (ConstRef cst));
+                        (Lazy.force PropGlobal.proper_class) Hints.empty_hint_info glob (ConstRef cst));
 	declare_projection n instance_id (ConstRef cst)
     else
       let kind = Decl_kinds.Global, poly, 
@@ -1993,7 +1992,7 @@ let add_morphism_infer glob m n =
 	| Globnames.ConstRef cst ->
 	  add_instance (Typeclasses.new_instance 
 			  (Lazy.force PropGlobal.proper_class) Hints.empty_hint_info
-			  glob poly (ConstRef cst));
+                          glob (ConstRef cst));
 	  declare_projection n instance_id (ConstRef cst)
 	| _ -> assert false
       in
