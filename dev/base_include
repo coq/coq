@@ -18,12 +18,10 @@
 #directory "intf";;
 #directory "stm";;
 #directory "vernac";;
-#directory "../API";;
 
 #directory "+camlp4";; (* lazy solution: add both of camlp4/5 so that *)
 #directory "+camlp5";; (* Gramext is found in top_printers.ml *)
 
-#load "API.cma";;
 #use "top_printers.ml";;
 #use "vm_printers.ml";;
 
@@ -194,7 +192,7 @@ let qid = Libnames.qualid_of_string;;
 
 let parse_constr = Pcoq.parse_string Pcoq.Constr.constr;;
 let parse_vernac = Pcoq.parse_string Pcoq.Vernac_.vernac_control;;
-let parse_tac    = API.Pcoq.parse_string Ltac_plugin.Pltac.tactic;;
+let parse_tac    = Pcoq.parse_string Ltac_plugin.Pltac.tactic;;
 
 (* build a term of type glob_constr without type-checking or resolution of 
    implicit syntax *)

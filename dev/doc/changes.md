@@ -12,16 +12,6 @@ All the bugs with a number below 1154 had to be renumbered, you can find
 a correspondence table [here](/dev/bugzilla2github_stripped.csv).
 All the other bugs kept their number.
 
-### Plugin API
-
-Coq 8.8 offers a new module overlay containing a proposed plugin API
-in `API/API.ml`; this overlay is enabled by adding the `-open API`
-flag to the OCaml compiler; this happens automatically for
-developments in the `plugin` folder and `coq_makefile`.
-
-However, `coq_makefile` can be instructed not to enable this flag by
-passing `-bypass-API`.
-
 ### ML API
 
 General deprecation

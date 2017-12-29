@@ -57,7 +57,6 @@ let usage_common () =
 \n[-install opt]: where opt is \"user\" to force install into user directory,\
 \n  \"none\" to build a makefile with no install target or\
 \n  \"global\" to force install in $COQLIB directory\
-\n[-bypass-API]: when compiling plugins, bypass Coq API\
 \n"
 
 let usage_coq_project () =
@@ -210,16 +209,10 @@ let windrive s =
   else s
 ;;
 
-let generate_conf_coq_config oc args bypass_API =
+let generate_conf_coq_config oc args =
   section oc "Coq configuration.";
-  let src_dirs = if bypass_API
-                 then Coq_config.all_src_dirs
-                 else Coq_config.api_dirs @ Coq_config.plugins_dirs in
+  let src_dirs = Coq_config.all_src_dirs in
   Envars.print_config ~prefix_var_name:"COQMF_" oc src_dirs;
-  if bypass_API then
-    Printf.fprintf oc "OCAML_API_FLAGS=\n"
-  else
-    Printf.fprintf oc "OCAML_API_FLAGS=-open API\n";
   fprintf oc "COQMF_WINDRIVE=%s\n" (windrive Coq_config.coqlib)
 ;;
 
@@ -278,7 +271,7 @@ let generate_conf oc project args  =
   fprintf oc "# %s\n\n" (String.concat " " (List.map quote args));
   generate_conf_files oc project;
   generate_conf_includes oc project;
-  generate_conf_coq_config oc args project.bypass_API;
+  generate_conf_coq_config oc args;
   generate_conf_defs oc project;
   generate_conf_doc oc project;
   generate_conf_extra_target oc project.extra_targets;

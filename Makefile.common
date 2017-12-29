@@ -75,7 +75,7 @@ MKDIR:=install -d
 CORESRCDIRS:=\
   config 	clib 		lib		kernel	intf	kernel/byterun	library \
   engine 	pretyping	interp	proofs	parsing 	printing \
-  tactics 	vernac		stm		toplevel 	API
+  tactics 	vernac		stm		toplevel
 
 PLUGINDIRS:=\
   omega		romega 		micromega 	quote \
@@ -103,7 +103,7 @@ BYTERUN:=$(addprefix kernel/byterun/, \
 CORECMA:=clib/clib.cma lib/lib.cma kernel/kernel.cma intf/intf.cma library/library.cma \
         engine/engine.cma pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma printing/printing.cma tactics/tactics.cma vernac/vernac.cma \
-	stm/stm.cma toplevel/toplevel.cma API/API.cma
+	stm/stm.cma toplevel/toplevel.cma
 
 TOPLOOPCMA:=stm/proofworkertop.cma stm/tacworkertop.cma stm/queryworkertop.cma
 

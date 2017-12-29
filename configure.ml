@@ -1134,7 +1134,7 @@ let write_configml f =
   pr_b "bytecode_compiler" !Prefs.bytecodecompiler;
   pr_b "native_compiler" !Prefs.nativecompiler;
 
-  let core_src_dirs = [ "config"; "dev"; "kernel"; "library";
+  let core_src_dirs = [ "config"; "dev"; "lib"; "clib"; "kernel"; "library";
                         "engine"; "pretyping"; "interp"; "parsing"; "proofs";
                         "tactics"; "toplevel"; "printing"; "intf";
                         "grammar"; "ide"; "stm"; "vernac" ] in
@@ -1143,7 +1143,6 @@ let write_configml f =
                                     core_src_dirs in
 
   pr "\nlet core_src_dirs = [\n%s]\n" core_src_dirs;
-  pr "\nlet api_dirs = [\"API\"; \"clib\"; \"lib\"]\n";
   pr "\nlet plugins_dirs = [\n";
 
   let plugins = Sys.readdir "plugins" in
@@ -1155,7 +1154,7 @@ let write_configml f =
     plugins;
   pr "]\n";
 
-  pr "\nlet all_src_dirs = core_src_dirs @ api_dirs @ plugins_dirs\n";
+  pr "\nlet all_src_dirs = core_src_dirs @ plugins_dirs\n";
 
   close_out o;
   Unix.chmod f 0o444

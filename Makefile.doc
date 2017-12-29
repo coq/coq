@@ -387,7 +387,7 @@ OCAMLDOCDIR=dev/ocamldoc
 
 DOCMLIS=$(wildcard ./lib/*.mli ./intf/*.mli ./kernel/*.mli ./library/*.mli \
 	./engine/*.mli ./pretyping/*.mli ./interp/*.mli printing/*.mli \
-	./parsing/*.mli ./proofs/*.mli API/API.mli \
+	./parsing/*.mli ./proofs/*.mli \
 	./tactics/*.mli ./stm/*.mli ./toplevel/*.mli ./ltac/*.mli)
 
 # Defining options to generate dependencies graphs
