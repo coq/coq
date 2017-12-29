@@ -53,17 +53,6 @@ let is_debug cmd = match under_control cmd with
   | VernacSetOption (["Ltac";"Debug"], _) -> true
   | _ -> false
 
-let is_query cmd = match under_control cmd with
-  | VernacChdir None
-  | VernacMemOption _
-  | VernacPrintOption _
-  | VernacCheckMayEval _
-  | VernacGlobalCheck _
-  | VernacPrint _
-  | VernacSearch _
-  | VernacLocate _ -> true
-  | _ -> false
-
 let is_undo cmd = match under_control cmd with
   | VernacUndo _ | VernacUndoTo _ -> true
   | _ -> false
