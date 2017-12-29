@@ -192,7 +192,7 @@ let pr_constr_pattern t =
 
 let pr_sort sigma s = pr_glob_sort (extern_sort sigma s)
 
-let _ = Termops.set_print_constr 
+let _ = Termops.Internal.set_print_constr
   (fun env sigma t -> pr_lconstr_expr (extern_constr ~lax:true false env sigma t))
 
 let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"

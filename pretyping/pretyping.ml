@@ -976,9 +976,9 @@ and pretype_instance k0 resolve_tc env evdref loc hyps evk update =
              pr_existential_key !evdref evk ++
              strbrk " in current context: binding for " ++ Id.print id ++
              strbrk " is not convertible to its expected definition (cannot unify " ++
-             quote (print_constr_env !!env !evdref b) ++
+             quote (Termops.Internal.print_constr_env !!env !evdref b) ++
              strbrk " and " ++
-             quote (print_constr_env !!env !evdref c) ++
+             quote (Termops.Internal.print_constr_env !!env !evdref c) ++
              str ").")
       | Some b, None ->
            user_err ?loc  (str "Cannot interpret " ++

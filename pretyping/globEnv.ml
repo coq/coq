@@ -140,7 +140,7 @@ let protected_get_type_of env sigma c =
   try Retyping.get_type_of ~lax:true env sigma c
   with Retyping.RetypeError _ ->
     user_err
-      (str "Cannot reinterpret " ++ quote (print_constr c) ++
+      (str "Cannot reinterpret " ++ quote (Termops.Internal.print_constr_env env sigma c) ++
        str " in the current environment.")
 
 let invert_ltac_bound_name env id0 id =

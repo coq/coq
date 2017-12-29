@@ -655,7 +655,7 @@ module New = struct
       | _ ->
 	  let name_elim =
 	    match EConstr.kind sigma elim with
-            | Const _ | Var _ -> str " " ++ print_constr_env (pf_env gl) sigma elim
+            | Const _ | Var _ -> str " " ++ Printer.pr_econstr_env (pf_env gl) sigma elim
             | _ -> mt ()
 	  in
 	  user_err ~hdr:"Tacticals.general_elim_then_using"

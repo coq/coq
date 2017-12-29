@@ -684,8 +684,10 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
     and cN = Evarutil.whd_head_evar sigma curn in
     let () = 
       if !debug_unification then
-	Feedback.msg_debug (print_constr_env curenv sigma cM ++ str" ~= " ++ print_constr_env curenv sigma cN)
-    in 
+        Feedback.msg_debug (
+          Termops.Internal.print_constr_env curenv sigma cM ++ str" ~= " ++
+          Termops.Internal.print_constr_env curenv sigma cN)
+    in
       match (EConstr.kind sigma cM, EConstr.kind sigma cN) with
 	| Meta k1, Meta k2 ->
             if Int.equal k1 k2 then substn else

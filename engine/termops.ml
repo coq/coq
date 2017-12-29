@@ -22,6 +22,8 @@ module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 module CompactedDecl = Context.Compacted.Declaration
 
+module Internal = struct
+
 (* Sorts and sort family *)
 
 let print_sort = function
@@ -98,12 +100,16 @@ let rec pr_constr c = match kind c with
            cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
          str"}")
 
-let term_printer = ref (fun _env _sigma c -> pr_constr (EConstr.Unsafe.to_constr c))
+let debug_print_constr c = pr_constr EConstr.Unsafe.(to_constr c)
+let debug_print_constr_env env sigma c = pr_constr EConstr.(to_constr sigma c)
+let term_printer = ref debug_print_constr_env
+
 let print_constr_env env sigma t = !term_printer env sigma t
 let print_constr t =
   let env = Global.env () in
   let evd = Evd.from_env env in
   !term_printer env evd t
+
 let set_print_constr f = term_printer := f
 
 module EvMap = Evar.Map
@@ -1537,3 +1543,6 @@ let env_rel_context_chop k env =
   let ctx1,ctx2 = List.chop k rels in
   push_rel_context ctx2 (reset_with_named_context (named_context_val env) env),
   ctx1
+end
+
+include Internal

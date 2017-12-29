@@ -311,18 +311,40 @@ val pr_metaset : Metaset.t -> Pp.t
 val pr_evar_universe_context : UState.t -> Pp.t
 val pr_evd_level : evar_map -> Univ.Level.t -> Pp.t
 
-(** Internal hook to register user-level printer *)
+module Internal : sig
 
-val set_print_constr : (env -> Evd.evar_map -> constr -> Pp.t) -> unit
+(** NOTE: to print terms you always want to use functions in
+   Printer, not these ones which are for very special cases. *)
 
-(** User-level printers *)
+(** debug printers: print raw form for terms, both with
+   evar-substitution and without.  *)
+val debug_print_constr : constr -> Pp.t
+val debug_print_constr_env : env -> evar_map -> constr -> Pp.t
 
-val print_constr     : constr -> Pp.t
+(** Pretty-printer hook: [print_constr_env env sigma c] will pretty
+   print c if the pretty printing layer has been linked into the Coq
+   binary. *)
 val print_constr_env : env -> Evd.evar_map -> constr -> Pp.t
 
-(** debug printer: do not use to display terms to the casual user... *)
+(** [set_print_constr f] sets f to be the pretty printer *)
+val set_print_constr : (env -> Evd.evar_map -> constr -> Pp.t) -> unit
 
+(** Printers for contexts *)
 val print_named_context : env -> Pp.t
 val pr_rel_decl : env -> Constr.rel_declaration -> Pp.t
 val print_rel_context : env -> Pp.t
 val print_env : env -> Pp.t
+
+val print_constr : constr -> Pp.t
+[@@deprecated "use print_constr_env"]
+
+end
+
+val print_constr : constr -> Pp.t
+[@@deprecated "use Internal.print_constr_env"]
+
+val print_constr_env : env -> Evd.evar_map -> constr -> Pp.t
+[@@deprecated "use Internal.print_constr_env"]
+
+val print_rel_context : env -> Pp.t
+[@@deprecated "use Internal.print_rel_context"]
