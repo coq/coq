@@ -90,7 +90,9 @@ Lemma plus_n_O : forall n:nat, n = n + 0.
 Proof.
   induction n; simpl; auto.
 Qed.
-Hint Resolve plus_n_O: core.
+
+Remove Hints eq_refl : core.
+Hint Resolve plus_n_O eq_refl: core.  (* We want eq_refl to have higher priority than plus_n_O *)
 
 Lemma plus_O_n : forall n:nat, 0 + n = n.
 Proof.
