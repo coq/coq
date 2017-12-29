@@ -93,6 +93,11 @@ Parsing
 - Manual uses of the Pcoq.Gram module have been deprecated. Wrapper modules
   Pcoq.Entry and Pcoq.Parsable were introduced to replace it.
 
+Termops
+
+- Internal printing functions have been placed under the
+  `Termops.Internal` namespace.
+
 ### Unit testing
 
   The test suite now allows writing unit tests against OCaml code in the Coq

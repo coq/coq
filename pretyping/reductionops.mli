@@ -60,7 +60,7 @@ module Cst_stack : sig
   val best_cst : t -> (constr * constr list) option
   val best_replace : Evd.evar_map -> constr -> t -> constr -> constr
   val reference : Evd.evar_map -> t -> Constant.t option
-  val pr : t -> Pp.t
+  val pr : env -> Evd.evar_map -> t -> Pp.t
 end
 
 module Stack : sig
@@ -140,7 +140,7 @@ type contextual_state_reduction_function =
 type state_reduction_function = contextual_state_reduction_function
 type local_state_reduction_function = evar_map -> state -> state
 
-val pr_state : state -> Pp.t
+val pr_state : env -> evar_map -> state -> Pp.t
 
 (** {6 Reduction Function Operators } *)
 

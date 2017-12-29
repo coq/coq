@@ -693,8 +693,9 @@ module Search = struct
           let msg =
             match fst ie with
             | Pretype_errors.PretypeError (env, evd, Pretype_errors.CannotUnify (x,y,_)) ->
-               str"Cannot unify " ++ print_constr_env env evd x ++ str" and " ++
-                                           print_constr_env env evd y
+              str"Cannot unify " ++
+              Printer.pr_econstr_env env evd x ++ str" and " ++
+              Printer.pr_econstr_env env evd y
             | ReachedLimitEx -> str "Proof-search reached its limit."
             | NoApplicableEx -> str "Proof-search failed."
             | e -> CErrors.iprint ie

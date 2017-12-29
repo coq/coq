@@ -127,8 +127,8 @@ open Pp
 
 let db_pr_goal sigma g =
   let env = Goal.V82.env sigma g in
-  let penv = print_named_context env in
-  let pc = print_constr_env env sigma (Goal.V82.concl sigma g) in
+  let penv = Termops.Internal.print_named_context env in
+  let pc = Termops.Internal.print_constr_env env sigma (Goal.V82.concl sigma g) in
   str"  " ++ hv 0 (penv ++ fnl () ++
                    str "============================" ++ fnl ()  ++
                    str" "  ++ pc) ++ fnl ()
