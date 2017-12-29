@@ -48,8 +48,6 @@ let profile = false
 let ide_slave = ref false
 let ideslave_coqtop_flags = ref None
 
-let time = ref false
-
 let raw_print = ref false
 
 let univ_print = ref false

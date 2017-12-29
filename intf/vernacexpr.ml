@@ -479,8 +479,9 @@ and vernac_argument_status = {
 
 type vernac_control =
   | VernacExpr of vernac_expr
-   (* Control *)
-  | VernacTime of vernac_control located
+  (* boolean is true when the `-time` batch-mode command line flag was set.
+     the flag is used to print differently in `-time` vs `Time foo` *)
+  | VernacTime of bool * vernac_control located
   | VernacRedirect of string * vernac_control located
   | VernacTimeout of int * vernac_control
   | VernacFail of vernac_control

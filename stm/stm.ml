@@ -1935,15 +1935,16 @@ end = struct (* {{{ *)
   let vernac_interp ~solve ~abstract ~cancel_switch nworkers safe_id id
     { indentation; verbose; loc; expr = e; strlen }
   =
-    let e, time, fail =
-      let rec find ~time ~fail = function
-        | VernacTime (_,e) -> find ~time:true ~fail e
-        | VernacRedirect (_,(_,e)) -> find ~time ~fail e
-        | VernacFail e -> find ~time ~fail:true e
-        | e -> e, time, fail in find ~time:false ~fail:false e in
+    let e, time, batch, fail =
+      let rec find ~time ~batch ~fail = function
+        | VernacTime (batch,(_,e)) -> find ~time:true ~batch ~fail e
+        | VernacRedirect (_,(_,e)) -> find ~time ~batch ~fail e
+        | VernacFail e -> find ~time ~batch ~fail:true e
+        | e -> e, time, batch, fail in
+      find ~time:false ~batch:false ~fail:false e in
     let st = Vernacstate.freeze_interp_state `No in
     Vernacentries.with_fail st fail (fun () ->
-    (if time then System.with_time !Flags.time else (fun x -> x)) (fun () ->
+    (if time then System.with_time ~batch else (fun x -> x)) (fun () ->
     ignore(TaskQueue.with_n_workers nworkers (fun queue ->
     Proof_global.with_current_proof (fun _ p ->
       let goals, _, _, _, _ = Proof.proof p in

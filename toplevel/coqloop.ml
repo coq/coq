@@ -300,13 +300,13 @@ let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
     is caught and handled (i.e. not re-raised).
 *)
 
-let do_vernac doc sid =
+let do_vernac ~time doc sid =
   top_stderr (fnl());
   if !print_emacs then top_stderr (str (top_buffer.prompt doc));
   resynch_buffer top_buffer;
   try
     let input = (top_buffer.tokens, None) in
-    Vernac.process_expr doc sid (read_sentence ~doc sid (fst input))
+    Vernac.process_expr ~time doc sid (read_sentence ~doc sid (fst input))
   with
     | Stm.End_of_input | CErrors.Quit ->
         top_stderr (fnl ()); raise CErrors.Quit
@@ -337,13 +337,13 @@ let loop_flush_all () =
   Format.pp_print_flush !Topfmt.std_ft ();
   Format.pp_print_flush !Topfmt.err_ft ()
 
-let rec loop doc =
+let rec loop ~time doc =
   Sys.catch_break true;
   try
     reset_input_buffer doc stdin top_buffer;
     (* Be careful to keep this loop tail-recursive *)
     let rec vernac_loop doc sid =
-      let ndoc, nsid = do_vernac doc sid in
+      let ndoc, nsid = do_vernac ~time doc sid in
       loop_flush_all ();
       vernac_loop ndoc nsid
     (* We recover the current stateid, threading from the caller is
@@ -358,4 +358,4 @@ let rec loop doc =
                   fnl() ++
                   str"Please report" ++
                   strbrk" at " ++ str Coq_config.wwwbugtracker ++ str ".");
-      loop doc
+      loop ~time doc
