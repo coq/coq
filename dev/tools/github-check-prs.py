@@ -4,13 +4,27 @@
 # debian package: python3-github
 # nix: nix-shell -p python3 python3Packages.PyGithub --run ./github-check-rebase.py
 from github import Github
+import argparse
 
 REPO = "coq/coq"
 REBASE_LABEL="needs: rebase"
 
-token = input("Github access token: ")
+parser = argparse.ArgumentParser()
+parser.add_argument("--token-file", type=argparse.FileType('r'))
+args = parser.parse_args()
 
-g = Github(token)
+if args.token_file is None:
+    token = input("Github access token: ")
+else:
+    token = args.token_file.read().rstrip("\n")
+    args.token_file.close()
+
+if token == "":
+    print ("Warning: using the GitHub API without a token")
+    print ("We may run into rate limit issues")
+    g = Github()
+else:
+    g = Github(token)
 
 repo = g.get_repo(REPO)
 
