@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
-# Requires PyGithub https://pypi.python.org/pypi/PyGithub
+# Requires PyGithub https://pypi.python.org/pypi/PyGithub, for instance
+# debian package: python3-github
+# nix: nix-shell -p python3 python3Packages.PyGithub --run ./github-check-rebase.py
 from github import Github
 
 REPO = "coq/coq"
