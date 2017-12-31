@@ -184,6 +184,17 @@ let lift_univs cb subst auctx0 =
     assert (AUContext.is_empty auctx0);
     subst, (Monomorphic_const ctx)
   | Polymorphic_const auctx ->
+    (** Given a named instance [subst := u₀ ... uₙ₋₁] together with an abstract
+        context [auctx0 := 0 ... n - 1 |= C{0, ..., n - 1}] of the same length,
+        and another abstract context relative to the former context
+        [auctx := 0 ... m - 1 |= C'{u₀, ..., uₙ₋₁, 0, ..., m - 1}],
+        construct the lifted abstract universe context
+        [0 ... n - 1 n ... n + m - 1 |=
+          C{0, ... n - 1} ∪
+          C'{0, ..., n - 1, n, ..., n + m - 1} ]
+        together with the instance
+        [u₀ ... uₙ₋₁ Var(0) ... Var (m - 1)].
+    *)
     if (Univ.Instance.is_empty subst) then
       (** Still need to take the union for the constraints between globals *)
       subst, (Polymorphic_const (AUContext.union auctx0 auctx))
