@@ -20,8 +20,8 @@ BASE_COMMIT="$1"
 HEAD_COMMIT="$2"
 
 # git diff --check
-# uses .gitattributes to know what to check
-if git diff --check "$BASE_COMMIT" "$HEAD_COMMIT";
+# uses .gitattributes to know what to check 
+if git diff --check --ignore-space-at-eol "$BASE_COMMIT" "$HEAD_COMMIT";
 then
     :
 else
