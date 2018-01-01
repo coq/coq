@@ -84,7 +84,7 @@ val names_of_local_assums : local_binder_expr list -> Name.t located list
 (** Same as [names_of_local_binder_exprs], but does not take the [let] bindings into
     account. *)
 
-(** { 6 Folds and maps } *)
+(** {6 Folds and maps} *)
 
 (** Used in typeclasses *)
 val fold_constr_expr_with_binders : (Id.t -> 'a -> 'a) ->

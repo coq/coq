@@ -71,7 +71,7 @@ module type Task = sig
   (** Extra arguments of the task kind, for -toploop *)
   val extra_env : unit -> string array
 
-  (** {5} Master API, it is run by the master, on a thread *)
+  (** {5 Master API, it is run by the master, on a thread} *)
 
   (** [request_of_task status t] takes the [status] of the worker
       and a task [t] and creates the corresponding [Some request] to be
@@ -116,8 +116,8 @@ module type Task = sig
   (** [forward_feedback fb] sends fb to all the workers. *)
   val forward_feedback : Feedback.feedback -> unit
 
-  (** {5} Worker API, it is run by worker, on a different fresh
-      process *)
+  (** {5 Worker API, it is run by worker, on a different fresh
+      process} *)
 
   (** [perform in] synchronously processes a request [in] *)
   val perform : request -> response
