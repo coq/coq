@@ -26,6 +26,8 @@ Documentation for getting started with the Coq sources is located in various fil
 
 Please make pull requests against the `master` branch.
 
+If it's your first significant contribution to Coq (significant means: more than fixing a typo), your pull request should include a commit adding your name to the [`CREDITS`](/CREDITS) file (possibly with the name of your institution / employer if relevant to your contribution, an ORCID if you have one —you may log into https://orcid.org/ using your institutional account to get one—, and the year of your contribution).
+
 It's helpful to run the Coq test suite with `make test-suite` before submitting your change. Travis CI runs this test suite and a much larger one including external Coq developments on every pull request, but these results take significantly longer to come back (on the order of a few hours). Running the test suite locally will take somewhere around 10-15 minutes. Refer to [`dev/ci/README.md`](/dev/ci/README.md#information-for-developers) for more information on Travis CI tests.
 
 If your pull request fixes a bug, please consider adding a regression test as well. See [`test-suite/README.md`](/test-suite/README.md) for how to do so.
