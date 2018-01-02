@@ -1,6 +1,6 @@
 The "Coq proof assistant" was jointly developed by
-- INRIA Formel, Coq, LogiCal, ProVal, TypiCal, Marelle, pi.r2 projects
-  (starting 1985),
+- INRIA Formel, Coq, LogiCal, ProVal, TypiCal, Marelle,
+  pi.r2, Ascola, Galinette projects (starting 1985),
 - Laboratoire de l'Informatique du Parallelisme (LIP)
   associated to CNRS and ENS Lyon (Sep. 1989 to Aug. 1997),
 - Laboratoire de Recherche en Informatique (LRI)
@@ -8,7 +8,7 @@ The "Coq proof assistant" was jointly developed by
 - Laboratoire d'Informatique de l'Ecole Polytechnique (LIX)
   associated to CNRS and Ecole Polytechnique (since Jan. 2003).
 - Laboratoire PPS associated to CNRS and University Paris Diderot
-  (Jan. 2009 - Dec. 2015).
+  (Jan. 2009 - Dec. 2015 when it was merged into IRIF).
 - Institut de Recherche en Informatique Fondamentale (IRIF),
   associated to CNRS and University Paris Diderot (since Jan. 2016).
 
@@ -43,10 +43,15 @@ plugins/funind
   developed by Pierre Courtieu (INRIA-Lemme, 2003-2004, CNAM, 2006-now),
   Julien Forest (INRIA-Everest, 2006, CNAM, 2007-2008, ENSIIE, 2008-now)
   and Yves Bertot (INRIA-Marelle, 2005-2006)
-plugins/omega
-  developed by Pierre Crégut (France Telecom R&D, 1996)
+plugins/micromega
+  developed by Frédéric Besson (IRISA/INRIA, 2006-now), with some
+  extensions by Evgeny Makarov (INRIA, 2007); sum-of-squares solver and
+  interface to the csdp solver uses code from John Harrison (University
+  of Cambridge, 1998)
 plugins/nsatz
   developed by Loïc Pottier (INRIA-Marelle, 2009-2011)
+plugins/omega
+  developed by Pierre Crégut (France Telecom R&D, 1996)
 plugins/quote
   developed by Patrick Loiseleur (LRI, 1997-1999)
 plugins/romega
@@ -57,16 +62,14 @@ plugins/setoid_ring
   developed by Benjamin Grégoire (INRIA-Everest, 2005-2006),
   Assia Mahboubi, Laurent Théry (INRIA-Marelle, 2006)
   and Bruno Barras (INRIA LogiCal, 2005-2006),
+plugins/ssreflect
+  developed by Georges Gonthier (Microsoft Research - Inria Joint Centre, 2007-2011),
+  Assia Mahboubi and Enrico Tassi (Inria, 2011-now).
 plugins/ssrmatching
   developed by Georges Gonthier (Microsoft Research - Inria Joint Centre, 2007-2011),
   and Enrico Tassi (Inria-Marelle, 2011-now)
 plugins/subtac
   developed by Matthieu Sozeau (LRI, 2005-2008)
-plugins/micromega
-  developed by Frédéric Besson (IRISA/INRIA, 2006-now), with some
-  extensions by Evgeny Makarov (INRIA, 2007); sum-of-squares solver and
-  interface to the csdp solver uses code from John Harrison (University
-  of Cambridge, 1998)
 theories/ZArith
   started by Pierre Crégut (France Telecom R&D, 1996)
 theories/Strings
@@ -114,7 +117,7 @@ of the Coq Proof assistant during the indicated time:
   Amy Felty (INRIA, 1993)
   Jean-Christophe Filliâtre (ENS Lyon, 1994-1997, LRI, 1997-2008)
   Emilio Jesús Gallego Arias (MINES ParisTech 2015-now)
-  Gaetan Gilbert (INRIA-CoqHoTT 2016-now)
+  Gaetan Gilbert (INRIA-Galinette, 2016-now)
   Eduardo Giménez (ENS Lyon, 1993-1996, INRIA, 1997-1998)
   Stéphane Glondu (INRIA-PPS, 2007-2013)
   Benjamin Grégoire (INRIA, 2003-2011)
@@ -123,12 +126,13 @@ of the Coq Proof assistant during the indicated time:
   Sébastien Hinderer (INRIA, 2014)
   Gérard Huet (INRIA, 1985-1997)
   Matej Košík (INRIA, 2015-2017)
-  Pierre Letouzey (LRI, 2000-2004, PPS, 2005-2008, INRIA-PPS, 2009-now)
+  Pierre Letouzey (LRI, 2000-2004, PPS, 2005-2008,
+                   INRIA-PPS then IRIF, 2009-now)
   Patrick Loiseleur (Paris Sud, 1997-1999)
   Evgeny Makarov (INRIA, 2007)
   Gregory Malecha (Harvard University 2013-2015,
                    University of California, San Diego 2016)
-  Cyprien Mangin (INRIA-IRIF, 2015-now)
+  Cyprien Mangin (INRIA-PPS then IRIF, 2015-now)
   Pascal Manoury (INRIA, 1993)
   Claude Marché (INRIA, 2003-2004 & LRI, 2004)
   Micaela Mayero (INRIA, 1997-2002)
@@ -141,10 +145,11 @@ of the Coq Proof assistant during the indicated time:
   Catherine Parent-Vigouroux (ENS Lyon, 1992-1995)
   Christine Paulin-Mohring (INRIA, 1985-1989, ENS Lyon, 1989-1997,
                             LRI, 1997-2006)
-  Pierre-Marie Pédrot (INRIA-PPS, 2011-2015, INRIA-CoqHoTT 2015-2016,
-                       University of Ljubljana 2016-2017)
+  Pierre-Marie Pédrot (INRIA-PPS, 2011-2015, INRIA-Ascola, 2015-2016,
+                       University of Ljubljana, 2016-2017,
+                       MPI-SWS, 2017-2018)
   Matthias Puech (INRIA-Bologna, 2008-2011)
-  Yann Régis-Gianas (INRIA-PPS, 2009-now)
+  Yann Régis-Gianas (INRIA-PPS then IRIF, 2009-now)
   Clément Renard (INRIA, 2001-2004)
   Claudio Sacerdoti Coen (INRIA, 2004-2005)
   Amokrane Saïbi (INRIA, 1993-1998)
@@ -154,12 +159,13 @@ of the Coq Proof assistant during the indicated time:
   Arnaud Spiwack (INRIA-LIX-Chalmers University, 2006-2010,
                   INRIA, 2011-2014, MINES ParisTech 2014-2015,
                   Tweag/IO 2015-now)
-  Paul Steckler (MIT 2016-now)
+  Paul Steckler (MIT 2016-2018)
   Enrico Tassi (INRIA, 2011-now)
   Amin Timany (Katholieke Universiteit Leuven, 2017)
   Benjamin Werner (INRIA, 1989-1994)
   Nickolai Zeldovich (MIT 2014-2016)
-  Théo Zimmermann (INRIA-IRIF, 2015-now)
+  Théo Zimmermann (ORCID: https://orcid.org/0000-0002-3580-8806,
+                   INRIA-PPS then IRIF, 2015-now)
 
 ***************************************************************************
 INRIA refers to:
