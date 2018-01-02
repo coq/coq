@@ -39,7 +39,7 @@ COMPILATION REQUIREMENTS
   install GTK+ 2.x, should you need to force it for one reason
   or another.)
 - The OCaml bindings for GTK+ 2.x, lablgtk2 with support for gtksourceview2.
-  You need at least version 2.16.
+  You need at least version 2.18.3.
 
   Your distribution may contain precompiled packages. For example, for
   Debian, run
@@ -57,7 +57,7 @@ COMPILATION REQUIREMENTS
         ./configure && make world && make install
 
    You must have write access to the OCaml standard library path.
-   If this fails, read lablgtk-2.14.2/README.
+   If this fails, read the README.
 
 
 INSTALLATION

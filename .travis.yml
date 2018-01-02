@@ -35,7 +35,7 @@ env:
   - CAMLP5_VER_BE="7.03"
   - FINDLIB_VER="1.4.1"
   - FINDLIB_VER_BE="1.7.3"
-  - LABLGTK="lablgtk.2.16.0 lablgtk-extras.1.5"
+  - LABLGTK="lablgtk.2.18.3 lablgtk-extras.1.6"
   - LABLGTK_BE="lablgtk.2.18.6 lablgtk-extras.1.6"
   - NATIVE_COMP="yes"
   - COQ_DEST="-local"
