@@ -555,12 +555,12 @@ used to force Coq to optimize some of its internal data structures.
 This command forces Coq to shrink the data structure used to represent
 the ongoing proof.
 
-\subsection[\tt Optimize Heap.]{\tt Optimize Heap.}
+\subsection[\tt Optimize Heap.]{\tt Optimize Heap.\label{vernac-optimizeheap}}
 
 This command forces the OCaml runtime to perform a heap compaction.
-This is in general an expensive operation.  See:
-  \url{http://caml.inria.fr/pub/docs/manual-ocaml/libref/Gc.html#VALcompact}
-
+This is in general an expensive operation.  See: \\
+\ \url{http://caml.inria.fr/pub/docs/manual-ocaml/libref/Gc.html#VALcompact} \\
+There is also an analogous tactic {\tt optimize\_heap} (see~\ref{tactic-optimizeheap}).
 
 %%% Local Variables: 
 %%% mode: latex

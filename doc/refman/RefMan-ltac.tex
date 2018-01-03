@@ -1426,6 +1426,16 @@ You can also pass the {\tt -profile-ltac} command line option to {\tt coqc}, whi
 
 Note that the profiler currently does not handle backtracking into multi-success tactics, and issues a warning to this effect in many cases when such backtracking occurs.
 
+\subsection[Run-time optimization tactic]{Run-time optimization tactic\label{tactic-optimizeheap}}.
+
+The following tactic behaves like {\tt idtac}, and running it compacts the heap in the
+OCaml run-time system. It is analogous to the Vernacular command {\tt Optimize Heap} (see~\ref{vernac-optimizeheap}).
+
+\tacindex{optimize\_heap}
+\begin{quote}
+{\tt optimize\_heap}.
+\end{quote}
+
 \endinput
 
 \subsection{Permutation on closed lists}
