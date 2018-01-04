@@ -266,6 +266,10 @@ let next_name_away na avoid =
   let id = match na with Name id -> id | Anonymous -> default_non_dependent_ident in
   next_ident_away_from id avoid
 
+type subst_val =
+| SRel of int
+| SVar of Id.t
+
 type csubst = {
   csubst_len : int;
   (** Cardinal of [csubst_rel] *)
@@ -274,9 +278,11 @@ type csubst = {
       [Constr.t] to share allocations, but all values are of shape [Var _]. *)
   csubst_rel : Constr.t Int.Map.t;
   (** A contiguous mapping of integers to variables. Same remark for values. *)
+  csubst_rev : subst_val Id.Map.t;
+  (** Reverse mapping of the substitution *)
 }
 (** This type represent a name substitution for the named and De Bruijn parts of
-    a environment.
+    a environment. For efficiency we also store the reverse substitution.
     Invariant: all identifiers in the codomain of [csubst_var] and [csubst_rel]
     must be pairwise distinct. *)
 
@@ -284,6 +290,7 @@ let empty_csubst = {
   csubst_len = 0;
   csubst_rel = Int.Map.empty;
   csubst_var = Id.Map.empty;
+  csubst_rev = Id.Map.empty;
 }
 
 let csubst_subst { csubst_len = k; csubst_var = v; csubst_rel = s } c =
@@ -304,27 +311,32 @@ let csubst_subst { csubst_len = k; csubst_var = v; csubst_rel = s } c =
 type ext_named_context =
   csubst * Id.Set.t * EConstr.named_context
 
-let push_var id { csubst_len = n; csubst_var = v; csubst_rel = s } =
+let push_var id { csubst_len = n; csubst_var = v; csubst_rel = s; csubst_rev = r } =
   let s = Int.Map.add n (Constr.mkVar id) s in
-  { csubst_len = succ n; csubst_var = v; csubst_rel = s }
+  let r = Id.Map.add id (SRel n) r in
+  { csubst_len = succ n; csubst_var = v; csubst_rel = s; csubst_rev = r }
 
 (** Post-compose the substitution with the generator [src ↦ tgt] *)
-let update_var src tgt { csubst_len = n; csubst_var = v; csubst_rel = s } =
-  let tgt = Constr.mkVar tgt in
-  let changed = ref false in
-  let map c = match Constr.kind c with
-  | Var id -> if Id.equal id src then let () = changed := true in tgt else c
-  | _ -> assert false
+let update_var src tgt subst =
+  let cur =
+    try Some (Id.Map.find src subst.csubst_rev)
+    with Not_found -> None
   in
-  (** First look for identifier in the codomain of vars. Typically the map will
-      be small because most names are unchanged *)
-  let var = Id.Map.smartmap map v in
-  (** If not found, look in the codomain of rels. *)
-  let rel = if !changed then s else Int.Map.smartmap map s in
-  (** If still not found, it means the substitution was acting as the identity
-      on this particular identifier, so we need to add a key *)
-  let var = if !changed then var else Id.Map.add src tgt var in
-  { csubst_len = n; csubst_var = var; csubst_rel = rel }
+  match cur with
+  | None ->
+    (** Missing keys stand for identity substitution [src ↦ src] *)
+    let csubst_var = Id.Map.add src (Constr.mkVar tgt) subst.csubst_var in
+    let csubst_rev = Id.Map.add tgt (SVar src) subst.csubst_rev in
+    { subst with csubst_var; csubst_rev }
+  | Some bnd ->
+    let csubst_rev = Id.Map.add tgt bnd (Id.Map.remove src subst.csubst_rev) in
+    match bnd with
+    | SRel m ->
+      let csubst_rel = Int.Map.add m (Constr.mkVar tgt) subst.csubst_rel in
+      { subst with csubst_rel; csubst_rev }
+    | SVar id ->
+      let csubst_var = Id.Map.add id (Constr.mkVar tgt) subst.csubst_var in
+      { subst with csubst_var; csubst_rev }
 
 let push_rel_decl_to_named_context sigma decl (subst, avoid, nc) =
   let open EConstr in
