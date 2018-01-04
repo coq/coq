@@ -269,8 +269,9 @@ let convert_constructors_gen cmp_instances cmp_cumul (mind, ind, cns) nargs u1 u
     if not (Int.equal num_cnstr_args nargs) then
       cmp_instances u1 u2 s
     else
-      let csts = get_cumulativity_constraints CONV cumi u1 u2 in
-      cmp_cumul csts s
+      (** By invariant, both constructors have a common supertype,
+          so they are convertible _at that type_. *)
+      s
 
 let convert_constructors ctor nargs u1 u2 (s, check) =
   convert_constructors_gen (check.compare_instances ~flex:false) check.compare_cumul_instances
