@@ -58,30 +58,12 @@ behave as expected.
 A note about rlwrap
 -------------------
 
-Running "coqtop" under "rlwrap" is possible, but (on Debian) there is a catch. If you try:
-
-  cd ~/git/coq
-  rlwrap bin/coqtop
-
-you will get an error:
+When using "rlwrap coqtop" make sure the version of rlwrap is at least
+0.42, otherwise you will get
 
   rlwrap: error: Couldn't read completions from /usr/share/rlwrap/completions/coqtop: No such file or directory
 
-This is a known issue:
-
-  https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=779692
-
-It was fixed upstream in version 0.42, and in a Debian package that, at the time of writing, is not part of Debian stable/testing/sid archives but only of Debian experimental.
-
-  https://packages.debian.org/experimental/rlwrap
-
-The quick solution is to grab it from there, since it installs fine on Debian stable (jessie).
-
-  cd /tmp
-  wget  http://ftp.us.debian.org/debian/pool/main/r/rlwrap/rlwrap_0.42-1_amd64.deb
-  sudo dpkg -i rlwrap_0.42-1_amd64.deb
-
-After that, "rlwrap" works fine with "coqtop".
+If this happens either update or use an alternate readline wrapper like "ledit".
 
 
 How to install and configure Merlin (for Emacs)
