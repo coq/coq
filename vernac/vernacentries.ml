@@ -1846,11 +1846,8 @@ let vernac_unfocused () =
     user_err Pp.(str "The proof is not fully unfocused.")
 
 
-(* BeginSubproof / EndSubproof. 
-    BeginSubproof (vernac_subproof) focuses on the first goal, or the goal
-    given as argument.
-    EndSubproof (vernac_end_subproof) unfocuses from a BeginSubproof, provided
-    that the proof of the goal has been completed.
+(* "{" focuses on the first goal, "n: {" focuses on the n-th goal
+    "}" unfocuses, provided that the proof of the goal has been completed.
 *)
 let subproof_kind = Proof.new_focus_kind ()
 let subproof_cond = Proof.done_cond subproof_kind
@@ -1859,7 +1856,9 @@ let vernac_subproof gln =
   Proof_global.simple_with_current_proof (fun _ p ->
     match gln with
     | None -> Proof.focus subproof_cond () 1 p
-    | Some n -> Proof.focus subproof_cond () n p)
+    | Some (SelectNth n) -> Proof.focus subproof_cond () n p
+    | _ -> user_err ~hdr:"bracket_selector"
+             (str "Brackets only support the single numbered goal selector."))
 
 let vernac_end_subproof () =
   Proof_global.simple_with_current_proof (fun _ p ->

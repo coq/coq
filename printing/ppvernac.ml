@@ -91,7 +91,7 @@ open Decl_kinds
 
   let sep_end = function
     | VernacBullet _
-    | VernacSubproof None
+    | VernacSubproof _
     | VernacEndSubproof -> str""
     | _ -> str"."
 
@@ -1199,7 +1199,7 @@ open Decl_kinds
       | VernacSubproof None ->
         return (str "{")
       | VernacSubproof (Some i) ->
-        return (keyword "BeginSubproof" ++ spc () ++ int i)
+        return (Proof_bullet.pr_goal_selector i ++ str ":" ++ spc () ++ str "{")
       | VernacEndSubproof ->
         return (str "}")
 
