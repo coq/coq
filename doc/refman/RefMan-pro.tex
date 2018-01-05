@@ -320,10 +320,19 @@ Note that when a focused goal is proved a message is displayed
 together with a suggestion about the right bullet or {\tt \}} to
 unfocus it or focus the next one.
 
+\begin{Variants}
+
+\item {\tt {\num}: \{}\\
+This focuses on the $\num^{th}$ subgoal to prove.
+
+\end{Variants}
+
 \begin{ErrMsgs}
 \item \errindex{This proof is focused, but cannot be unfocused
     this way} You are trying to use {\tt \}} but the current subproof
   has not been fully solved.
+\item \errindex{No such goal}
+\item \errindex{Brackets only support the single numbered goal selector}
 \item see also error message about bullets below.
 \end{ErrMsgs}
 

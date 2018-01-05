@@ -38,6 +38,12 @@ Tactics
 - Added tactics restart_timer, finish_timing, and time_constr as an
   experimental way of timing Ltac's evaluation phase
 
+Focusing
+
+- Focusing bracket `{` now supports single-numbered goal selector,
+  e.g. `2: {` will focus on the second sub-goal. As usual, unfocus
+  with `}` once the sub-goal is fully solved.
+
 Vernacular Commands
 
 - The deprecated Coercion Local, Open Local Scope, Notation Local syntax
