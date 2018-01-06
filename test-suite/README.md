@@ -3,6 +3,7 @@
 The test suite can be run from the root directory by `make test-suite`.
 
 From this directory, `make aaa/bbb/ccc.v.log` runs one test (if not already run), storing the output in the named `.log` file.
+`make -B` can be used to rerun the test (`-B` meaning always remake).
 See [`test-suite/Makefile`](/test-suite/Makefile) for more information.
 
 ## Adding a test
