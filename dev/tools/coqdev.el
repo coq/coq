@@ -1,0 +1,69 @@
+;;; coqdev.el --- Emacs helpers for Coq development  -*- lexical-binding:t -*-
+
+;; Copyright (C) 2018 The Coq Development Team
+
+;; Maintainer: coqdev@inria.fr
+
+;;; Commentary:
+
+;; Helpers to set compilation commands, proof general variables, etc
+;; for Coq development
+
+;; You can disable individual features without editing this file by
+;; using `remove-hook', for instance
+;; (remove-hook 'hack-local-variables-hook #'coqdev-setup-compile-command)
+
+;;; Code:
+
+(require 'subr-x)
+
+(defun coqdev-default-directory ()
+  "Return the Coq repository containing `default-directory'."
+  (when-let ((dir (locate-dominating-file default-directory "META.coq")))
+    (expand-file-name dir)))
+
+(defun coqdev-setup-compile-command ()
+  "Setup `compilate-command' for Coq development."
+  (when-let ((dir (coqdev-default-directory)))
+      (setq-local compile-command (concat "make -C " dir))))
+(add-hook 'hack-local-variables-hook #'coqdev-setup-compile-command)
+
+(defvar camldebug-command-name) ; from camldebug.el (caml package)
+(defvar ocamldebug-command-name) ; from ocamldebug.el (tuareg package)
+(defun coqdev-setup-camldebug ()
+  "Setup ocamldebug for Coq development.
+
+Specifically `camldebug-command-name' and `ocamldebug-command-name'."
+  (when-let ((dir (coqdev-default-directory)))
+    (setq-local camldebug-command-name (concat dir "dev/ocamldebug-coq"))
+    (setq-local ocamldebug-command-name (concat dir "dev/ocamldebug-coq"))))
+(add-hook 'hack-local-variables-hook #'coqdev-setup-camldebug)
+
+(defun coqdev-setup-tags ()
+  "Setup `tags-file-name' for Coq development."
+  (when-let ((dir (coqdev-default-directory)))
+      (setq-local tags-file-name (concat dir "TAGS"))))
+(add-hook 'hack-local-variables-hook #'coqdev-setup-tags)
+
+(defvar coq-prog-args)
+(defvar coq-prog-name)
+
+;; Lets us detect whether there are file local variables
+;; even though PG sets it with `setq' when there's a _Coqproject.
+;; Also makes sense generally, so might make it into PG someday.
+(make-variable-buffer-local 'coq-prog-args)
+(setq-default coq-prog-args nil)
+
+(defun coqdev-setup-proofgeneral ()
+  "Setup Proofgeneral variables for Coq development.
+
+Note that this function is executed before _Coqproject is read if it exists."
+  (when-let ((dir (coqdev-default-directory)))
+    (unless coq-prog-args ; In case there are file-local variables
+      (setq coq-prog-args `("-coqlib" ,dir
+                            "-R" ,(concat dir "plugins") "Coq"
+                            "-R" ,(concat dir "theories") "Coq")))
+    (setq-local coq-prog-name (concat dir "bin/coqtop"))))
+(add-hook 'hack-local-variables-hook #'coqdev-setup-proofgeneral)
+
+(provide 'coqdev)

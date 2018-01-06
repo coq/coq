@@ -40,7 +40,11 @@ Documentation of ML interfaces using ocamldoc (directory ocamldoc/html)
 Other development tools (directory tools)
 -----------------------
 
+coqdev.el: helper customizations for everyday Coq development, eg
+  making `compile' work in subdirectories
+
 objects.el: various development utilities at emacs level
+
 anomaly-traces-parser.el: a .emacs-ready elisp snippet to parse
   location of Anomaly backtraces and jump to them conveniently from
   the Emacs *compilation* output.
