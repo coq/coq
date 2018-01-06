@@ -111,7 +111,8 @@ let match_with_one_constructor sigma style onlybinary allow_rec t =
 	    Some (hdapp,args)
 	  else None
 	else
-	  let ctyp = Termops.prod_applist sigma (EConstr.of_constr mip.mind_nf_lc.(0)) args in
+          let ctyp = Termops.prod_applist_assum sigma (Context.Rel.length mib.mind_params_ctxt)
+                       (EConstr.of_constr mip.mind_nf_lc.(0)) args in
 	  let cargs = List.map RelDecl.get_type (prod_assum sigma ctyp) in
 	  if not (is_lax_conjunction style) || has_nodep_prod sigma ctyp then
 	    (* Record or non strict conjunction *)
@@ -364,36 +365,39 @@ let is_forall_term sigma c = op2bool (match_with_forall_term sigma c)
 
 let match_with_nodep_ind sigma t =
   let (hdapp,args) = decompose_app sigma t in
-    match EConstr.kind sigma hdapp with
-      | Ind (ind, _)  ->
-          let (mib,mip) = Global.lookup_inductive ind in
-	    if Array.length (mib.mind_packets)>1 then None else
-	      let nodep_constr c = has_nodep_prod_after mib.mind_nparams sigma (EConstr.of_constr c) in
-		if Array.for_all nodep_constr mip.mind_nf_lc then
-		  let params=
-		    if Int.equal mip.mind_nrealargs 0 then args else
-		      fst (List.chop mib.mind_nparams args) in
-		    Some (hdapp,params,mip.mind_nrealargs)
-		else
-		  None
-      | _ -> None
+  match EConstr.kind sigma hdapp with
+  | Ind (ind, _)  ->
+     let (mib,mip) = Global.lookup_inductive ind in
+     if Array.length (mib.mind_packets)>1 then None else
+       let nodep_constr c =
+         has_nodep_prod_after (Context.Rel.length mib.mind_params_ctxt) sigma (EConstr.of_constr c) in
+       if Array.for_all nodep_constr mip.mind_nf_lc then
+         let params=
+           if Int.equal mip.mind_nrealargs 0 then args else
+             fst (List.chop mib.mind_nparams args) in
+         Some (hdapp,params,mip.mind_nrealargs)
+       else
+         None
+  | _ -> None
 
 let is_nodep_ind sigma t = op2bool (match_with_nodep_ind sigma t)
 
 let match_with_sigma_type sigma t =
   let (hdapp,args) = decompose_app sigma t in
   match EConstr.kind sigma hdapp with
-    | Ind (ind, _) ->
-        let (mib,mip) = Global.lookup_inductive ind in
-          if Int.equal (Array.length (mib.mind_packets)) 1 &&
-	    (Int.equal mip.mind_nrealargs 0) &&
-	    (Int.equal (Array.length mip.mind_consnames)1) &&
-	    has_nodep_prod_after (mib.mind_nparams+1) sigma (EConstr.of_constr mip.mind_nf_lc.(0)) then
-	      (*allowing only 1 existential*)
-	      Some (hdapp,args)
-	  else
-	    None
-    | _ -> None
+  | Ind (ind, _) ->
+     let (mib,mip) = Global.lookup_inductive ind in
+     if Int.equal (Array.length (mib.mind_packets)) 1
+        && (Int.equal mip.mind_nrealargs 0)
+        && (Int.equal (Array.length mip.mind_consnames)1)
+        && has_nodep_prod_after (Context.Rel.length mib.mind_params_ctxt + 1) sigma
+             (EConstr.of_constr mip.mind_nf_lc.(0))
+     then
+       (*allowing only 1 existential*)
+       Some (hdapp,args)
+     else
+       None
+  | _ -> None
 
 let is_sigma_type sigma t = op2bool (match_with_sigma_type sigma t)
 
