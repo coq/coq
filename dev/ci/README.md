@@ -103,6 +103,8 @@ The process to merge your PR is then to submit PRs to the external
 development repositories, merge the latter first (if the fixes are
 backward-compatible), drop the overlay commit and merge the PR on Coq then.
 
+See also [`test-suite/README.md`](/test-suite/README.md) for information about adding new tests to the test-suite.
+
 
 Travis specific information
 ---------------------------
