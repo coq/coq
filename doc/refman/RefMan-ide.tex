@@ -44,9 +44,10 @@ bottom is the status bar.
 In the script window, you may open arbitrarily many buffers to
 edit. The \emph{File} menu allows you to open files or create some,
 save them, print or export them into various formats. Among all these
-buffers, there is always one which is the current \emph{running
-  buffer}, whose name is displayed on a green background, which is the
-one where Coq commands are currently executed. 
+buffers, there is always one which is the current
+\emph{running buffer}, whose name is displayed on a background in the
+\emph{processed} color (green by default), which is the one where Coq commands
+are currently executed.
 
 Buffers may be edited as in any text editor, and classical basic
 editing commands (Copy/Paste, \ldots) are available in the \emph{Edit}
@@ -58,12 +59,13 @@ menu.
 \section{Interactive navigation into \Coq{} scripts}
 
 The running buffer is the one where navigation takes place. The
-toolbar proposes five basic commands for this. The first one,
+toolbar offers five basic navigation commands. The first one,
 represented by a down arrow icon, is for going forward executing one
 command. If that command is successful, the part of the script that
-has been executed is displayed on a green background. If that command
-fails, the error message is displayed in the message window, and the
-location of the error is emphasized by a red underline.
+has been executed is displayed on a background with the
+processed color. If that command fails, the error message is
+displayed in the message window, and the location of the error is
+emphasized by an underline in the error foreground color (red by default).
 
 On Figure~\ref{fig:coqide}, the running buffer is \verb|Fermat.v|, all
 commands until the \verb|Theorem| have been already executed, and the
@@ -71,23 +73,41 @@ user tried to go forward executing \verb|Induction n|. That command
 failed because no such tactic exist (tactics are now in
 lowercase\ldots), and the wrong word is underlined. 
 
-Notice that the green part of the running buffer is not editable. If
+Notice that the processed part of the running buffer is not editable. If
 you ever want to modify something you have to go backward using the up
 arrow tool, or even better, put the cursor where you want to go back
 and use the \textsf{goto} button. Unlike with \verb|coqtop|, you
 should never use \verb|Undo| to go backward.
 
-Two additional tool buttons exist, one to go directly to the end and
-one to go back to the beginning. If you try to go to the end, or in
-general to run several commands using the \textsf{goto} button, the
-  execution will stop whenever an error is found.
+There are two additional buttons for navigation within the running buffer.
+The ``down'' button with a line goes directly to the end; the ``up'' button
+with a line goes back to the beginning. The handling of errors when using the
+go-to-the-end button depends on whether \Coq{} is running in asynchronous mode or not
+(see Chapter~\ref{Asyncprocessing}). If it is not running in that mode, execution stops
+as soon as an error is found. Otherwise, execution continues, and the
+error is marked with an underline in the error foreground color, with a background in
+the error background color (pink by default). The same characterization of
+error-handling applies when running several commands using the \textsf{goto} button.
 
 If you ever try to execute a command which happens to run during a
 long time, and would like to abort it before its
 termination, you may use the interrupt button (the white cross on a red circle).
  
-Finally, notice that these navigation buttons are also available in
-the menu, where their keyboard shortcuts are given.
+There are other buttons on the \CoqIDE{} toolbar: a button to save the running
+buffer; a button to close the current buffer (an ``X''); buttons to switch among
+buffers (left and right arrows); an ``information'' button; and a ``gears'' button.
+
+The ``information'' button is described in Section~\ref{sec:trytactics}.
+
+The ``gears'' button submits proof terms to the \Coq{} kernel for type-checking.
+When \Coq{} uses asynchronous processing (see Chapter~\ref{Asyncprocessing}), proofs may
+have been completed without kernel-checking of generated proof terms. The presence of
+unchecked proof terms is indicated by \texttt{Qed} statements
+that have a subdued \emph{being-processed} color (light blue by default),
+rather than the processed color, though their preceding proofs have the processed color.
+
+Notice that for all these buttons, except for the ``gears'' button, their operations
+are also available in the menu, where their keyboard shortcuts are given.
 
 \section[Try tactics automatically]{Try tactics automatically\label{sec:trytactics}}
 
@@ -96,8 +116,8 @@ trying to solve the current goal using simple tactics. If such a
 tactic succeeds in solving the goal, then its text is automatically
 inserted into the script. There is finally a combination of these
 tactics, called the \emph{proof wizard} which will try each of them in
-turn. This wizard is also available as a tool button (the light
-bulb).  The set of tactics tried by the wizard is customizable in
+turn. This wizard is also available as a tool button (the ``information''
+button).  The set of tactics tried by the wizard is customizable in
 the preferences.
 
 These tactics are general ones, in particular they do not refer to
@@ -132,7 +152,7 @@ arguments.
 
 \begin{figure}[t]
 \begin{center}
-%HEVEA\imgsrc[alt="coqide query window"]{coqide-queries.png}
+%HEVEA\imgsrc[alt="coqide query"]{coqide-queries.png}
 %BEGIN LATEX
 \ifpdf  % si on est en pdflatex
 \includegraphics[width=1.0\textwidth]{coqide-queries.png}
@@ -141,27 +161,21 @@ arguments.
 \fi
 %END LATEX
 \end{center}
-\caption{\CoqIDE{}: the query window}
-\label{fig:querywindow}
+\caption{\CoqIDE{}: a Print query on a selected phrase}
+\label{fig:queryselected}
 \end{figure}
 
-
-We call \emph{query} any vernacular command that do not change the
-current state, such as \verb|Check|, \verb|Search|, etc. Those
-commands are of course useless during compilation of a file, hence
-should not be included in scripts. To run such commands without
-writing them in the script, \CoqIDE{} offers another input window
-called the \emph{query window}. This window can be displayed on
-demand, either by using the \texttt{Window} menu, or directly using
-shortcuts given in the \texttt{Queries} menu. Indeed, with \CoqIDE{}
-the simplest way to perform a \texttt{Search} on some identifier
-is to select it using the mouse, and pressing \verb|F2|. This will
-both make appear the query window and run the \texttt{Search} in
-it, displaying the result. Shortcuts \verb|F3| and \verb|F4| are for
-\verb|Check| and \verb|Print| respectively.
-Figure~\ref{fig:querywindow} displays the query window after selection
-of the word ``mult'' in the script windows, and pressing \verb|F4| to
-print its definition.
+We call \emph{query} any vernacular command that does not change the
+current state, such as \verb|Check|, \verb|Search|, etc.
+To run such commands interactively, without writing them in scripts,
+\CoqIDE{} offers a \emph{query pane}.
+The query pane can be displayed on demand by using the \texttt{View} menu,
+or using the shortcut \verb|F1|. Queries can also be performed by
+selecting a particular phrase, then choosing an item from the
+\texttt{Queries} menu. The response then appears in the message window.
+Figure~\ref{fig:queryselected} shows the result after selecting
+of the phrase \verb|Nat.mul| in the script window, and choosing \verb|Print|
+from the \texttt{Queries} menu.
 
 \section{Compilation}
 
