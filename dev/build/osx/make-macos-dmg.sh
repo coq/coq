@@ -25,4 +25,4 @@ mkdir -p _build
 # Temporary countermeasure to hdiutil error 5341
 # head -c9703424 /dev/urandom > $DMGDIR/.padding
 
-hdiutil create -imagekey zlib-level=9 -volname CoqIDE_$VERSION -srcfolder $DMGDIR -ov -format UDZO _build/CoqIDE_$VERSION.dmg
+hdiutil create -imagekey zlib-level=9 -volname coq-$VERSION-installer-macos -srcfolder $DMGDIR -ov -format UDZO _build/coq-$VERSION-installer-macos.dmg
