@@ -16,6 +16,8 @@ Implicit Types k l p q r : nat.
 Section Between.
   Variables P Q : nat -> Prop.
 
+  (** The [between] type expresses the concept
+      [forall i: nat, k <= i < l -> P i.]. *)
   Inductive between k : nat -> Prop :=
     | bet_emp : between k k
     | bet_S : forall l, between k l -> P l -> between k (S l).
@@ -47,6 +49,8 @@ Section Between.
     induction 1; auto with arith.
   Qed.
 
+  (** The [exists_between] type expresses the concept
+      [exists i: nat, k <= i < l /\ Q i]. *)
   Inductive exists_between k : nat -> Prop :=
     | exists_S : forall l, exists_between k l -> exists_between k (S l)
     | exists_le : forall l, k <= l -> Q l -> exists_between k (S l).
