@@ -14,7 +14,7 @@ parser.add_argument("--token-file", type=argparse.FileType('r'))
 args = parser.parse_args()
 
 if args.token_file is None:
-    token = input("Github access token: ")
+    token = input("Github access token: ").strip()
 else:
     token = args.token_file.read().rstrip("\n")
     args.token_file.close()
