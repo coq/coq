@@ -758,24 +758,20 @@ let get_lablgtkdir () =
 
 let check_lablgtk_version src dir = match src with
 | Manual | Stdlib ->
-  let test accu f =
-    if accu then
-      let test = sprintf "grep -q -w %s %S/glib.mli" f dir in
-      Sys.command test = 0
-    else false
-  in
-  let heuristics = [
-    "convert_with_fallback";
-    "wrap_poll_func"; (** Introduced in lablgtk 2.16 *)
-  ] in
-  let ans = List.fold_left test true heuristics in
-  if ans then printf "Warning: could not check the version of lablgtk2.\n";
-  (ans, "an unknown version")
+  printf "Warning: could not check the version of lablgtk2.\nMake sure your version is at least 2.18.3.\n";
+  (true, "an unknown version")
 | OCamlFind ->
   let v, _ = tryrun camlexec.find ["query"; "-format"; "%v"; "lablgtk2"] in
   try
     let vi = List.map s2i (numeric_prefix_list v) in
-    ([2; 16] <= vi, v)
+    if vi = [2; 18; 0] then
+      begin
+        (* Version 2.18.3 is known to report incorrectly as 2.18.0 *)
+        printf "Warning: could not check the version of lablgtk2.\nMake sure your version is at least 2.18.3.\n";
+        (true, "an unknown version")
+      end
+    else
+      ([2; 18; 3] <= vi, v)
   with _ -> (false, v)
 
 let pr_ide = function No -> "no" | Byte -> "only bytecode" | Opt -> "native"
@@ -802,7 +798,7 @@ let check_coqide () =
   if dir = "" then set_ide No "LablGtk2 not found";
   let (ok, version) = check_lablgtk_version via dir in
   let found = sprintf "LablGtk2 found (%s, %s)" (get_source via) version in
-  if not ok then set_ide No (found^", but too old (required >= 2.16, found " ^ version ^ ")");
+  if not ok then set_ide No (found^", but too old (required >= 2.18.3, found " ^ version ^ ")");
   (* We're now sure to produce at least one kind of coqide *)
   lablgtkdir := shorten_camllib dir;
   if !Prefs.coqide = Some Byte then set_ide Byte (found^", bytecode requested");
