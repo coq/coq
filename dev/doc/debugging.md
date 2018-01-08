@@ -22,8 +22,8 @@ Debugging from Coq toplevel using Caml trace mechanism
   printers too.
 
 
-Debugging from Caml debugger
-============================
+Debugging with ocamldebug from Emacs
+====================================
 
    Requires [Tuareg mode](https://github.com/ocaml/tuareg) in Emacs.\
    Coq must be configured with `-local` (`./configure -local`) and the
@@ -58,6 +58,29 @@ Debugging from Caml debugger
      OCAMLRUNPARAM environment variable set, Coq may hang on startup when run 
      from the debugger. If this happens, unset the variable, re-start Emacs, and 
      run the debugger again.
+
+Debugging with ocamldebug from the command line
+===============================================
+
+In the `coq` directory:
+1. (on Cygwin/Windows) Pass the `-no-custom` option to the `configure` script before building Coq.
+2. Run `make` (to compile the .v files)
+3. Run `make byte`
+4. (on Cygwin/Windows) Add the full pathname of the directory `.../kernel/byterun` to your bash PATH.
+   Alternatively, copy the file `kernel/byterun/dllcoqrun.dll` to a directory that is in the PATH.  (The
+   CAML_LD_LIBRARY_PATH mechanism described at the end of INSTALL isn't working.)
+5. Run `dev/ocamldebug-coq bin/coqtop.byte`  (on Cygwin/Windows, use `... bin/coqtop.byte.exe`)
+6. Enter `source db` to load printers
+7. Enter `set arguments -coqlib .` so Coq can find plugins, theories, etc.
+8. See the ocamldebug manual for more information.  A few points:
+   - use `break @ Printer 501` to set a breakpoint on line 501 in the Printer module (printer.ml).
+     `break` can be abbreviated as `b`.
+   - `backtrace` or `bt` to see the call stack
+   - `step` or `s` goes into called functions; `next` or `n` skips over them
+   - `list` or `li` shows the code just before and after the current stack frame
+   - `print <var>` or `p <var>` to see the value of a variable
+Note that `make byte` doesn't recompile .v files.  `make` recompiles all of them if there
+are changes in any .ml file--safer but much slower.
 
 Global gprof-based profiling
 ============================
