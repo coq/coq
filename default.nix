@@ -36,6 +36,7 @@ stdenv.mkDerivation rec {
     ocaml
     findlib
     camlp5_strict
+    num
 
   ]) ++ (if buildIde then [
 
