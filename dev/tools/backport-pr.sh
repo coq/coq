@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
-# Usage: dev/tools/backport-pr.sh <PR number>
+# Usage: dev/tools/backport-pr.sh <PR number> [--stop-before-merging]
 
 set -e
 
 PRNUM=$1
+OPTION=$2
 
 if ! git log master --grep "Merge PR #${PRNUM}" | grep "." > /dev/null; then
     echo "PR #${PRNUM} does not exist."
@@ -47,6 +48,10 @@ else
         exit 1
     fi
 
+fi
+
+if [[ "${OPTION}" == "--stop-before-merging" ]]; then
+    exit 0
 fi
 
 git merge -S --no-ff ${BRANCH} -m "${MESSAGE}"
