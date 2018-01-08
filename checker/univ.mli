@@ -150,8 +150,6 @@ type universe_level_subst_fn = universe_level -> universe_level
 type universe_subst = universe universe_map
 type universe_level_subst = universe_level universe_map
 
-val level_subst_of : universe_subst_fn -> universe_level_subst_fn
-
 (** {6 Universe instances} *)
 
 module Instance :

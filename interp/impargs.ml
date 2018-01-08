@@ -548,7 +548,7 @@ let discharge_implicits (_,(req,l)) =
   | ImplConstant (con,flags) ->
     (try
       let con' = pop_con con in
-      let vars,_,_ = section_segment_of_constant con in
+      let vars = variable_section_segment_of_reference (ConstRef con) in
       let extra_impls = impls_of_context vars in
       let newimpls = List.map (add_section_impls vars extra_impls) (snd (List.hd l)) in
       let l' = [ConstRef con',newimpls] in

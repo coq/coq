@@ -219,7 +219,8 @@ let discharge_class (_,cl) =
     in grs', discharge_rel_context subst 1 ctx @ ctx' in
   let cl_impl' = Lib.discharge_global cl.cl_impl in
   if cl_impl' == cl.cl_impl then cl else
-    let ctx, _, _ as info = abs_context cl in
+    let info = abs_context cl in
+    let ctx = info.Lib.abstr_ctx in
     let ctx, subst = rel_of_variable_context ctx in
     let usubst, cl_univs' = Lib.discharge_abstract_universe_context info cl.cl_univs in
     let context = discharge_context ctx (subst, usubst) cl.cl_context in

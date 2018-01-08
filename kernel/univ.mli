@@ -238,8 +238,6 @@ type universe_level_subst_fn = Level.t -> Level.t
 type universe_subst = Universe.t universe_map
 type universe_level_subst = Level.t universe_map
 
-val level_subst_of : universe_subst_fn -> universe_level_subst_fn
-
 (** {6 Universe instances} *)
 
 module Instance :
@@ -461,18 +459,21 @@ val is_empty_subst : universe_subst -> bool
 val make_subst : universe_subst -> universe_subst_fn
 
 val subst_univs_universe : universe_subst_fn -> Universe.t -> Universe.t
-val subst_univs_constraints : universe_subst_fn -> Constraint.t -> Constraint.t
+(** Only user in the kernel is template polymorphism. Ideally we get rid of
+    this code if it goes away. *)
 
 (** Substitution of instances *)
 val subst_instance_instance : Instance.t -> Instance.t -> Instance.t
 val subst_instance_universe : Instance.t -> Universe.t -> Universe.t
 
 val make_instance_subst : Instance.t -> universe_level_subst
+(** Creates [u(0) ↦ 0; ...; u(n-1) ↦ n - 1] out of [u(0); ...; u(n - 1)] *)
+
 val make_inverse_instance_subst : Instance.t -> universe_level_subst
 
-val abstract_universes : UContext.t -> universe_level_subst * AUContext.t
-
-val abstract_cumulativity_info : CumulativityInfo.t -> universe_level_subst * ACumulativityInfo.t
+val abstract_universes : UContext.t -> Instance.t * AUContext.t
+val abstract_cumulativity_info : CumulativityInfo.t -> Instance.t * ACumulativityInfo.t
+(** TODO: move universe abstraction out of the kernel *)
 
 val make_abstract_instance : AUContext.t -> Instance.t
 

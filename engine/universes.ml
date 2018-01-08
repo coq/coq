@@ -181,6 +181,30 @@ let enforce_eq_instances_univs strict x y c =
       (fun x y -> Constraints.add (Universe.make x, d, Universe.make y))
       ax ay c
 
+let enforce_univ_constraint (u,d,v) =
+  match d with
+  | Eq -> enforce_eq u v
+  | Le -> enforce_leq u v
+  | Lt -> enforce_leq (super u) v
+
+let subst_univs_level fn l =
+  try Some (fn l)
+  with Not_found -> None
+
+let subst_univs_constraint fn (u,d,v as c) cstrs =
+  let u' = subst_univs_level fn u in
+  let v' = subst_univs_level fn v in
+  match u', v' with
+  | None, None -> Constraint.add c cstrs
+  | Some u, None -> enforce_univ_constraint (u,d,Universe.make v) cstrs
+  | None, Some v -> enforce_univ_constraint (Universe.make u,d,v) cstrs
+  | Some u, Some v -> enforce_univ_constraint (u,d,v) cstrs
+
+let subst_univs_constraints subst csts =
+  Constraint.fold
+    (fun c cstrs -> subst_univs_constraint subst c cstrs)
+    csts Constraint.empty
+
 let subst_univs_universe_constraint fn (u,d,v) =
   let u' = subst_univs_universe fn u and v' = subst_univs_universe fn v in
     if Universe.equal u' v' then None
@@ -519,13 +543,60 @@ let choose_canonical ctx flexible algs s =
 	      let canon = LSet.choose algs in
 		canon, (global, rigid, LSet.remove canon flexible)
 
+let level_subst_of f =
+  fun l ->
+    try let u = f l in
+          match Universe.level u with
+          | None -> l
+          | Some l -> l
+    with Not_found -> l
+
+let subst_univs_fn_constr f c =
+  let changed = ref false in
+  let fu = Univ.subst_univs_universe f in
+  let fi = Univ.Instance.subst_fn (level_subst_of f) in
+  let rec aux t =
+    match kind t with
+    | Sort (Sorts.Type u) ->
+      let u' = fu u in
+        if u' == u then t else
+          (changed := true; mkSort (Sorts.sort_of_univ u'))
+    | Const (c, u) ->
+      let u' = fi u in
+        if u' == u then t
+        else (changed := true; mkConstU (c, u'))
+    | Ind (i, u) ->
+      let u' = fi u in
+        if u' == u then t
+        else (changed := true; mkIndU (i, u'))
+    | Construct (c, u) ->
+      let u' = fi u in
+        if u' == u then t
+        else (changed := true; mkConstructU (c, u'))
+    | _ -> map aux t
+  in
+  let c' = aux c in
+    if !changed then c' else c
+
+let subst_univs_constr subst c =
+  if Univ.is_empty_subst subst then c
+  else
+    let f = Univ.make_subst subst in
+      subst_univs_fn_constr f c
+
+let subst_univs_constr =
+  if Flags.profile then
+    let subst_univs_constr_key = CProfile.declare_profile "subst_univs_constr" in
+      CProfile.profile2 subst_univs_constr_key subst_univs_constr
+  else subst_univs_constr
+
 let subst_univs_fn_puniverses lsubst (c, u as cu) =
   let u' = Instance.subst_fn lsubst u in
     if u' == u then cu else (c, u')
 
 let nf_evars_and_universes_opt_subst f subst =
   let subst = fun l -> match LMap.find l subst with None -> raise Not_found | Some l' -> l' in
-  let lsubst = Univ.level_subst_of subst in
+  let lsubst = level_subst_of subst in
   let rec aux c =
     match kind c with
     | Evar (evk, args) ->
@@ -605,7 +676,7 @@ let normalize_opt_subst ctx =
   in !ectx
 
 type universe_opt_subst = Universe.t option universe_map
-	  
+
 let make_opt_subst s = 
   fun x -> 
     (match Univ.LMap.find x s with
@@ -614,8 +685,7 @@ let make_opt_subst s =
 
 let subst_opt_univs_constr s = 
   let f = make_opt_subst s in
-    Vars.subst_univs_fn_constr f
-
+  subst_univs_fn_constr f
 
 let normalize_univ_variables ctx = 
   let ctx = normalize_opt_subst ctx in

@@ -879,9 +879,13 @@ let abstract_inductive_universes iu =
   match iu with
   | Monomorphic_ind_entry ctx -> (Univ.empty_level_subst, Monomorphic_ind ctx)
   | Polymorphic_ind_entry ctx -> 
-    let (inst, auctx) = Univ.abstract_universes ctx in (inst, Polymorphic_ind auctx)
+    let (inst, auctx) = Univ.abstract_universes ctx in
+    let inst = Univ.make_instance_subst inst in
+    (inst, Polymorphic_ind auctx)
   | Cumulative_ind_entry cumi -> 
-    let (inst, acumi) = Univ.abstract_cumulativity_info cumi in (inst, Cumulative_ind acumi)
+    let (inst, acumi) = Univ.abstract_cumulativity_info cumi in
+    let inst = Univ.make_instance_subst inst in
+    (inst, Cumulative_ind acumi)
 
 let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr recargs =
   let ntypes = Array.length inds in

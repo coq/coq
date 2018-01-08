@@ -855,7 +855,7 @@ let normalize_universe evd =
 
 let normalize_universe_instance evd l =
   let vars = ref (UState.subst evd.universes) in
-  let normalize = Univ.level_subst_of (Universes.normalize_univ_variable_opt_subst vars) in
+  let normalize = Universes.level_subst_of (Universes.normalize_univ_variable_opt_subst vars) in
     Univ.Instance.subst_fn normalize l
 
 let normalize_sort evars s =

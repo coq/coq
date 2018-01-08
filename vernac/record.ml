@@ -531,6 +531,7 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
     match univs with
     | Polymorphic_const_entry univs ->
       let usubst, auctx = Univ.abstract_universes univs in
+      let usubst = Univ.make_instance_subst usubst in
       let map c = Vars.subst_univs_level_constr usubst c in
       let fields = Context.Rel.map map fields in
       let ctx_context = on_snd (fun d -> Context.Rel.map map d) ctx_context in

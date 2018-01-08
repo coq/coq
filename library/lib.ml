@@ -417,8 +417,11 @@ let find_opening_node id =
 type variable_info = Context.Named.Declaration.t * Decl_kinds.binding_kind
 
 type variable_context = variable_info list
-type abstr_info = variable_context * Univ.universe_level_subst * Univ.AUContext.t
-		  
+type abstr_info = {
+  abstr_ctx : variable_context;
+  abstr_subst : Univ.Instance.t;
+  abstr_uctx : Univ.AUContext.t;
+}
 type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 
 type secentry =
@@ -483,8 +486,12 @@ let add_section_replacement f g poly hyps =
     let inst = Univ.UContext.instance ctx in
     let subst, ctx = Univ.abstract_universes ctx in
     let args = instance_from_variable_context (List.rev sechyps) in
-    sectab := (vars,f (inst,args) exps,
-	      g (sechyps,subst,ctx) abs)::sl
+    let info = {
+      abstr_ctx = sechyps;
+      abstr_subst = subst;
+      abstr_uctx = ctx;
+    } in
+    sectab := (vars,f (inst,args) exps, g info abs) :: sl
 
 let add_section_kn poly kn =
   let f x (l1,l2) = (l1,Names.Mindmap.add kn x l2) in
@@ -502,12 +509,21 @@ let section_segment_of_constant con =
 let section_segment_of_mutual_inductive kn =
   Names.Mindmap.find kn (snd (pi3 (List.hd !sectab)))
 
-let variable_section_segment_of_reference = function
-  | ConstRef con -> pi1 (section_segment_of_constant con)
-  | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
-      pi1 (section_segment_of_mutual_inductive kn)
-  | _ -> []
-                     
+let empty_segment = {
+  abstr_ctx = [];
+  abstr_subst = Univ.Instance.empty;
+  abstr_uctx = Univ.AUContext.empty;
+}
+
+let section_segment_of_reference = function
+| ConstRef c -> section_segment_of_constant c
+| IndRef (kn,_) | ConstructRef ((kn,_),_) ->
+  section_segment_of_mutual_inductive kn
+| VarRef _ -> empty_segment
+
+let variable_section_segment_of_reference gr =
+  (section_segment_of_reference gr).abstr_ctx
+
 let section_instance = function
   | VarRef id ->
      let eq = function
@@ -654,15 +670,10 @@ let discharge_con cst =
 let discharge_inductive (kn,i) =
   (discharge_kn kn,i)
 
-let discharge_abstract_universe_context (_, subst, abs_ctx) auctx =
+let discharge_abstract_universe_context { abstr_subst = subst; abstr_uctx = abs_ctx } auctx =
   let open Univ in
-  let len = LMap.cardinal subst in
-  let rec gen_subst i acc =
-    if i < 0 then acc
-    else
-      let acc = LMap.add (Level.var i) (Level.var (i + len)) acc in
-      gen_subst (pred i) acc
-  in
-  let subst = gen_subst (AUContext.size auctx - 1) subst in
+  let ainst = make_abstract_instance auctx in
+  let subst = Instance.append subst ainst in
+  let subst = make_instance_subst subst in
   let auctx = Univ.subst_univs_level_abstract_universe_context subst auctx in
   subst, AUContext.union abs_ctx auctx

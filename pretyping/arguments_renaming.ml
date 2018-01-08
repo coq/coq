@@ -40,16 +40,10 @@ let subst_rename_args (subst, (_, (r, names as orig))) =
   let r' = fst (subst_global subst r) in 
   if r==r' then orig else (r', names)
 
-let section_segment_of_reference = function
-  | ConstRef con -> Lib.section_segment_of_constant con
-  | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
-      Lib.section_segment_of_mutual_inductive kn
-  | _ -> [], Univ.LMap.empty, Univ.AUContext.empty
-
 let discharge_rename_args = function
   | _, (ReqGlobal (c, names), _ as req) ->
      (try 
-       let vars,_,_ = section_segment_of_reference c in
+       let vars = Lib.variable_section_segment_of_reference c in
        let c' = pop_global_reference c in
        let var_names = List.map (fst %> NamedDecl.get_id %> Name.mk_name) vars in
        let names' = var_names @ names in

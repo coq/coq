@@ -881,14 +881,6 @@ type universe_level_subst = universe_level universe_map
 (** A full substitution might involve algebraic universes *)
 type universe_subst = universe universe_map
 
-let level_subst_of f = 
-  fun l -> 
-    try let u = f l in 
-	  match Universe.level u with
-	  | None -> l
-	  | Some l -> l
-    with Not_found -> l
-     
 module Instance : sig 
     type t = Level.t array
 

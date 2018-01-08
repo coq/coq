@@ -121,10 +121,10 @@ module ReductionBehaviour = struct
     let r' = fst (subst_global subst r) in if r==r' then orig else (r',o)
 
   let discharge = function
-    | _,(ReqGlobal (ConstRef c, req), (_, b)) ->
+    | _,(ReqGlobal (ConstRef c as gr, req), (_, b)) ->
       let b =
-        if Lib.is_in_section (ConstRef c) then
-          let vars, _, _ = Lib.section_segment_of_constant c in
+        if Lib.is_in_section gr then
+          let vars = Lib.variable_section_segment_of_reference gr in
           let extra = List.length vars in
           let nargs' =
              if b.b_nargs = max_int then max_int

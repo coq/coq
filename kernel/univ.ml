@@ -686,12 +686,6 @@ let enforce_leq u v c =
 let enforce_leq_level u v c =
   if Level.equal u v then c else Constraint.add (u,Le,v) c
 
-let enforce_univ_constraint (u,d,v) =
-  match d with
-  | Eq -> enforce_eq u v
-  | Le -> enforce_leq u v
-  | Lt -> enforce_leq (super u) v
-
 (* Miscellaneous functions to remove or test local univ assumed to
    occur in a universe *)
 
@@ -718,14 +712,6 @@ type universe_level_subst = universe_level universe_map
 (** A full substitution might involve algebraic universes *)
 type universe_subst = universe universe_map
 
-let level_subst_of f = 
-  fun l -> 
-    try let u = f l in 
-	  match Universe.level u with
-	  | None -> l
-	  | Some l -> l
-    with Not_found -> l
-     
 module Instance : sig 
     type t = Level.t array
 
@@ -1128,24 +1114,6 @@ let subst_univs_universe fn ul =
 	List.fold_left (fun acc u -> Universe.merge_univs acc (Universe.tip u))
 	  substs nosubst
 
-let subst_univs_level fn l = 
-  try Some (fn l)
-  with Not_found -> None
-
-let subst_univs_constraint fn (u,d,v as c) cstrs =
-  let u' = subst_univs_level fn u in
-  let v' = subst_univs_level fn v in
-  match u', v' with
-  | None, None -> Constraint.add c cstrs
-  | Some u, None -> enforce_univ_constraint (u,d,make v) cstrs
-  | None, Some v -> enforce_univ_constraint (make u,d,v) cstrs
-  | Some u, Some v -> enforce_univ_constraint (u,d,v) cstrs
-
-let subst_univs_constraints subst csts =
-  Constraint.fold 
-    (fun c cstrs -> subst_univs_constraint subst c cstrs)
-    csts Constraint.empty 
-
 let make_instance_subst i = 
   let arr = Instance.to_array i in
     Array.fold_left_i (fun i acc l ->
@@ -1168,7 +1136,7 @@ let abstract_universes ctx =
       (UContext.constraints ctx)
   in
   let ctx = UContext.make (instance, cstrs) in
-  subst, ctx
+  instance, ctx
 
 let abstract_cumulativity_info (univcst, substcst) = 
   let instance, univcst = abstract_universes univcst in
