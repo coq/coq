@@ -85,6 +85,7 @@ test-suite/coq-makefile/merlin1/.merlin
 test-suite/coqdoc/Coqdoc.*
 test-suite/coqdoc/index.html
 test-suite/coqdoc/coqdoc.css
+test-suite/output/MExtraction.out
 
 # documentation
 
