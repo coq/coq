@@ -50,6 +50,15 @@ else
 
 fi
 
+if ! git diff --exit-code HEAD ${BRANCH} -- "*.mli"; then
+    echo
+    read -p "Some mli files are modified. Bypass? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+fi
+
 if [[ "${OPTION}" == "--stop-before-merging" ]]; then
     exit 0
 fi
