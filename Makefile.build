@@ -600,9 +600,25 @@ COND_BYTEFLAGS= \
 COND_OPTFLAGS= \
  $(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide,) $(MLINCLUDES) $(OPTFLAGS)
 
+plugins/micromega/%.cmi: plugins/micromega/%.mli
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -package unix,num -c $<
+
+plugins/nsatz/%.cmi: plugins/nsatz/%.mli
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -package unix,num -c $<
+
 %.cmi: %.mli
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -c $<
+
+plugins/micromega/%.cmo: plugins/micromega/%.ml
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -package unix,num -c $<
+
+plugins/nsatz/%.cmo: plugins/nsatz/%.ml
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -package unix,num -c $<
 
 %.cmo: %.ml
 	$(SHOW)'OCAMLC    $<'
@@ -636,6 +652,14 @@ plugins/micromega/sos_lib_FORPACK:=
 plugins/micromega/sos_FORPACK:=
 plugins/micromega/sos_print_FORPACK:=
 plugins/micromega/csdpcert_FORPACK:=
+
+plugins/micromega/%.cmx: plugins/micromega/%.ml
+	$(SHOW)'OCAMLOPT  $<'
+	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) $($(@:.cmx=_FORPACK)) -package unix,num -c $<
+
+plugins/nsatz/%.cmx: plugins/nsatz/%.ml
+	$(SHOW)'OCAMLOPT  $<'
+	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) $($(@:.cmx=_FORPACK)) -package unix,num -c $<
 
 plugins/%.cmx: plugins/%.ml
 	$(SHOW)'OCAMLOPT  $<'
