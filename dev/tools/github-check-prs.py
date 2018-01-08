@@ -38,8 +38,10 @@ for pull in repo.get_pulls():
             labelled = True
     if labelled and not dirty:
         print ("PR #" + str(pull.number) + " is not dirty but is labelled")
+        print ("("+ pull.html_url +")")
     elif dirty and not labelled:
         print ("PR #" + str(pull.number) + " is dirty and not labelled")
+        print ("("+ pull.html_url +")")
     else:
         # give some feedback so the user can see we didn't crash
         print ("PR #" + str(pull.number) + " OK")
