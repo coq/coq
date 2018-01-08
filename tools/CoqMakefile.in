@@ -119,6 +119,8 @@ CAMLPKGS ?=
 
 # Option for making timing files
 TIMING?=
+# Option for changing sorting of timing output file
+TIMING_SORT_BY ?= auto
 # Output file names for timed builds
 TIME_OF_BUILD_FILE               ?= time-of-build.log
 TIME_OF_BUILD_BEFORE_FILE        ?= time-of-build-before.log
@@ -334,7 +336,7 @@ make-pretty-timed make-pretty-timed-before make-pretty-timed-after::
 print-pretty-timed::
 	$(HIDE)$(COQMAKE_ONE_TIME_FILE) $(TIME_OF_BUILD_FILE) $(TIME_OF_PRETTY_BUILD_FILE) $(TIME_OF_PRETTY_BUILD_EXTRA_FILES)
 print-pretty-timed-diff::
-	$(HIDE)$(COQMAKE_BOTH_TIME_FILES) $(TIME_OF_BUILD_BEFORE_FILE) $(TIME_OF_BUILD_AFTER_FILE) $(TIME_OF_PRETTY_BOTH_BUILD_FILE) $(TIME_OF_PRETTY_BUILD_EXTRA_FILES)
+	$(HIDE)$(COQMAKE_BOTH_TIME_FILES) --sort-by=$(TIMING_SORT_BY) $(TIME_OF_BUILD_BEFORE_FILE) $(TIME_OF_BUILD_AFTER_FILE) $(TIME_OF_PRETTY_BOTH_BUILD_FILE) $(TIME_OF_PRETTY_BUILD_EXTRA_FILES)
 ifeq (,$(BEFORE))
 print-pretty-single-time-diff::
 	@echo 'Error: Usage: $(MAKE) print-pretty-single-time-diff BEFORE=path/to/file.v.before-timing AFTER=path/to/file.v.after-timing'
@@ -346,7 +348,7 @@ print-pretty-single-time-diff::
 	$(HIDE)false
 else
 print-pretty-single-time-diff::
-	$(HIDE)$(COQMAKE_BOTH_SINGLE_TIMING_FILES) $(BEFORE) $(AFTER) $(TIME_OF_PRETTY_BUILD_FILE) $(TIME_OF_PRETTY_BUILD_EXTRA_FILES)
+	$(HIDE)$(COQMAKE_BOTH_SINGLE_TIMING_FILES) --sort-by=$(TIMING_SORT_BY) $(BEFORE) $(AFTER) $(TIME_OF_PRETTY_BUILD_FILE) $(TIME_OF_PRETTY_BUILD_EXTRA_FILES)
 endif
 endif
 pretty-timed:
