@@ -1125,3 +1125,12 @@ VERNAC COMMAND EXTEND OptimizeProof
 | [ "Optimize" "Heap" ] => [ Vernac_classifier.classify_as_proofstep ] ->
   [ Gc.compact () ]
 END
+
+(** tactic analogous to "OPTIMIZE HEAP" *)
+
+let tclOPTIMIZE_HEAP =
+  Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> Gc.compact ()))
+
+TACTIC EXTEND optimize_heap
+| [ "optimize_heap" ] -> [ tclOPTIMIZE_HEAP ]
+END
