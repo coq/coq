@@ -28,8 +28,7 @@ fi
 
 # Check that the files with 'whitespace' gitattribute end in a newline.
 # xargs exit status is 123 if any file failed the test
-find . "(" -path ./.git -prune ")" -type f \
--o "(" -exec dev/tools/should-check-whitespace.sh '{}' ';' ")" \
--print0 | xargs -0 -L 1 dev/tools/check-eof-newline.sh || CODE=1
+find . "(" -path ./.git -prune ")" -o -type f -print0 |
+    xargs -0 dev/tools/check-eof-newline.sh || CODE=1
 
 exit $CODE
