@@ -43,7 +43,7 @@ fi;
 git merge -S --no-ff FETCH_HEAD -m "Merge PR #$PR: $(curl -s "$API/pulls/$PR" | jq -r '.title')" -e
 
 # TODO: improve this check
-if [[ $(git diff "$REMOTE/$CURRENT_LOCAL_BRANCH" dev/ci) ]]; then
+if ! git diff --quiet "$REMOTE/$CURRENT_LOCAL_BRANCH" -- dev/ci; then
   echo "******************************************"
   echo "** WARNING: does this PR have overlays? **"
   echo "******************************************"
