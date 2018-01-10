@@ -43,8 +43,8 @@ package "lib" (
 
   requires    = "coq.clib, coq.config"
 
-  archive(byte)   += "lib.cma"
-  archive(native) += "lib.cmxa"
+  archive(byte)   = "lib.cma"
+  archive(native) = "lib.cmxa"
 
 )
 
