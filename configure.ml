@@ -276,7 +276,8 @@ module Prefs = struct
   let flambda_flags = ref []
   let debug = ref true
   let profile = ref false
-  let annotate = ref false
+  let bin_annot = ref false
+  let annot = ref false
   let bytecodecompiler = ref true
   let nativecompiler = ref (not (os_type_win32 || os_type_cygwin))
   let coqwebsite = ref "http://coq.inria.fr/"
@@ -342,8 +343,12 @@ let args_options = Arg.align [
     " Do not add debugging information in the Coq executables";
   "-profile", Arg.Set Prefs.profile,
     " Add profiling information in the Coq executables";
-  "-annotate", Arg.Set Prefs.annotate,
-    " Dumps ml annotation files while compiling Coq";
+  "-annotate", Arg.Unit (fun () -> printf "*Warning* -annotate is deprecated. Please use -annot or -bin-annot instead.\n"),
+    " Deprecated. Please use -annot or -bin-annot instead";
+  "-annot", Arg.Set Prefs.annot,
+    " Dumps ml text annotation files while compiling Coq (e.g. for Tuareg)";
+  "-bin-annot", Arg.Set Prefs.bin_annot,
+    " Dumps ml binary annotation files while compiling Coq (e.g. for Merlin)";
   "-bytecode-compiler", arg_bool Prefs.bytecodecompiler,
     "(yes|no) Enable Coq's bytecode reduction machine (VM)";
   "-native-compiler", arg_bool Prefs.nativecompiler,
@@ -388,10 +393,8 @@ let reset_caml_find c o = c.find <- o
 
 let coq_debug_flag = if !Prefs.debug then "-g" else ""
 let coq_profile_flag = if !Prefs.profile then "-p" else ""
-let coq_annotate_flag =
-  if !Prefs.annotate
-  then if program_in_path "ocamlmerlin" then "-bin-annot" else "-annot"
-  else ""
+let coq_annot_flag = if !Prefs.annot then "-annot" else ""
+let coq_bin_annot_flag = if !Prefs.bin_annot then "-bin-annot" else ""
 
 (* This variable can be overriden only for debug purposes, use with
    care. *)
@@ -561,7 +564,7 @@ let coq_warn_error =
 
 (* Flags used to compile Coq and plugins (via coq_makefile) *)
 let caml_flags =
-  Printf.sprintf "-thread -rectypes %s %s %s" coq_warnings coq_annotate_flag coq_safe_string
+  Printf.sprintf "-thread -rectypes %s %s %s %s" coq_warnings coq_annot_flag coq_bin_annot_flag coq_safe_string
 
 (* Flags used to compile Coq but _not_ plugins (via coq_makefile) *)
 let coq_caml_flags =
