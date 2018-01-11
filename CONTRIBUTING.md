@@ -28,6 +28,8 @@ Please make pull requests against the `master` branch.
 
 It's helpful to run the Coq test suite with `make test-suite` before submitting your change. Travis CI runs this test suite and a much larger one including external Coq developments on every pull request, but these results take significantly longer to come back (on the order of a few hours). Running the test suite locally will take somewhere around 10-15 minutes. Refer to [`dev/ci/README.md`](/dev/ci/README.md#information-for-developers) for more information on Travis CI tests.
 
+If your pull request fixes a bug, please consider adding a regression test as well. See [`test-suite/README.md`](/test-suite/README.md) for how to do so.
+
 Don't be alarmed if the pull request process takes some time. It can take a few days to get feedback, approval on the final changes, and then a merge. Coq doesn't release new versions very frequently so it can take a few months for your change to land in a released version. That said, you can start using the latest Coq `master` branch to take advantage of all the new features, improvements, and fixes.
 
 Here are a few tags Coq developers may add to your PR and what they mean. In general feedback and requests for you as the pull request author will be in the comments and tags are only used to organize pull requests.
