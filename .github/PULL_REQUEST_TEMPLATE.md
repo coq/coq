@@ -13,4 +13,4 @@ Fixes / closes #????
 <!-- If this is a feature pull request / breaks compatibility: -->
 <!-- (Otherwise, remove these lines.) -->
 - [ ] Corresponding documentation was added / updated.
-- [ ] Entry added in [CHANGES](/CHANGES).
+- [ ] Entry added in CHANGES.
