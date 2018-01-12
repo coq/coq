@@ -17,4 +17,4 @@ intros m n P e p.
 abstract (rewrite e in p; exact p).
 Defined.
 
-Check bar_subproof@{Set Set Set}.
+Check bar_subproof@{Set Set}.

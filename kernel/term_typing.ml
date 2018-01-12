@@ -301,21 +301,29 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       let { const_entry_type = typ; const_entry_opaque = opaque } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let (body, ctx), side_eff = Future.join body in
-      let poly, univsctx = match c.const_entry_universes with
-      | Monomorphic_const_entry univs -> false, univs
-      | Polymorphic_const_entry univs -> true, Univ.ContextSet.of_context univs
-      in
-      let ctx = Univ.ContextSet.union univsctx ctx in
       let body, ctx, _ = match trust with
       | Pure -> body, ctx, []
       | SideEffects _ -> inline_side_effects env body ctx side_eff
       in
-      let env = push_context_set ~strict:(not poly) ctx env in
-      let ctx = if poly
-        then Polymorphic_const_entry (Univ.ContextSet.to_context ctx)
-        else Monomorphic_const_entry ctx
+      let env, usubst, univs = match c.const_entry_universes with
+      | Monomorphic_const_entry univs ->
+        let ctx = Univ.ContextSet.union univs ctx in
+        let env = push_context_set ~strict:true ctx env in
+        env, Univ.empty_level_subst, Monomorphic_const ctx
+      | Polymorphic_const_entry uctx ->
+        (** Ensure not to generate internal constraints in polymorphic mode.
+            The only way for this to happen would be that either the body
+            contained deferred universes, or that it contains monomorphic
+            side-effects. The first property is ruled out by upper layers,
+            and the second one is ensured by the fact we currently
+            unconditionally export side-effects from polymorphic definitions,
+            i.e. [trust] is always [Pure]. *)
+        let () = assert (Univ.ContextSet.is_empty ctx) in
+        let env = push_context ~strict:false uctx env in
+        let sbst, auctx = Univ.abstract_universes uctx in
+        let sbst = Univ.make_instance_subst sbst in
+        env, sbst, Polymorphic_const auctx
       in
-      let usubst, univs = abstract_constant_universes ctx in
       let j = infer env body in
       let typ = match typ with
         | None ->
