@@ -55,6 +55,8 @@ let os_specific_init () = ()
 
 (** Win32 *)
 
+IFDEF WIN32 THEN
+
 (* On win32, we add the directory of coqide to the PATH at launch-time
    (this used to be done in a .bat script). *)
 
@@ -86,7 +88,6 @@ let reroute_stdout_stderr () =
 
 (* We also provide specific kill and interrupt functions. *)
 
-IFDEF WIN32 THEN
 external win32_kill : int -> unit = "win32_kill"
 external win32_interrupt : int -> unit = "win32_interrupt"
 let () =

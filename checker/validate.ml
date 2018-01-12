@@ -49,8 +49,6 @@ let (/) (ctx:error_context) s : error_context = s::ctx
 exception ValidObjError of string * error_context * Obj.t
 let fail ctx o s = raise (ValidObjError(s,ctx,o))
 
-type func = error_context -> Obj.t -> unit
-
 (* Check that object o is a block with tag t *)
 let val_tag t ctx o =
   if Obj.is_block o && Obj.tag o = t then ()

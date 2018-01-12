@@ -372,22 +372,3 @@ let v_lib =
 let v_opaques = Array (v_computation v_constr)
 let v_univopaques =
   Opt (Tuple ("univopaques",[|Array (v_computation v_context_set);v_context_set;v_bool|]))
-
-(** Registering dynamic values *)
-
-module IntOrd =
-struct
-  type t = int
-  let compare (x : t) (y : t) = compare x y
-end
-
-module IntMap = Map.Make(IntOrd)
-
-let dyn_table : value IntMap.t ref = ref IntMap.empty
-
-let register_dyn name t =
-  dyn_table := IntMap.add name t !dyn_table
-
-let find_dyn name =
-  try IntMap.find name !dyn_table
-  with Not_found -> Any
