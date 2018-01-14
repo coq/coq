@@ -53,7 +53,6 @@ type env = {
     env_nb_rel        : int;
     env_stratification : stratification;
     env_typing_flags  : typing_flags;
-    env_conv_oracle   : Conv_oracle.oracle;
     retroknowledge : Retroknowledge.retroknowledge;
     indirect_pterms : Opaqueproof.opaquetab;
 }

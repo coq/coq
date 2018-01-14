@@ -170,6 +170,17 @@ type set_predicativity = ImpredicativeSet | PredicativeSet
 
 type engagement = set_predicativity
 
+(** {6 Conversion oracle} *)
+
+type level = Expand | Level of int | Opaque
+
+type oracle = {
+  var_opacity : level Id.Map.t;
+  cst_opacity : level Cmap.t;
+  var_trstate : Id.Pred.t;
+  cst_trstate : Cpred.t;
+}
+
 (** {6 Representation of constants (Definition/Axiom) } *)
 
 
@@ -219,6 +230,7 @@ type typing_flags = {
   check_guarded : bool; (** If [false] then fixed points and co-fixed
                             points are assumed to be total. *)
   check_universes : bool; (** If [false] universe constraints are not checked *)
+  conv_oracle : oracle; (** Unfolding strategies for conversion *)
 }
 
 type constant_body = {

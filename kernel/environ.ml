@@ -37,8 +37,10 @@ type env = Pre_env.env
 
 let pre_env env = env
 let env_of_pre_env env = env
-let oracle env = env.env_conv_oracle
-let set_oracle env o = { env with env_conv_oracle = o }
+let oracle env = env.env_typing_flags.conv_oracle
+let set_oracle env o =
+  let env_typing_flags = { env.env_typing_flags with conv_oracle = o } in
+  { env with env_typing_flags }
 
 let empty_named_context_val = empty_named_context_val
 

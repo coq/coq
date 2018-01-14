@@ -15,9 +15,10 @@ module RelDecl = Context.Rel.Declaration
 (** Operations concernings types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
 
-let safe_flags = {
+let safe_flags oracle = {
   check_guarded = true;
   check_universes = true;
+  conv_oracle = oracle;
 }
 
 (** {6 Arities } *)
