@@ -147,6 +147,8 @@ type clos_infos
 val create_clos_infos : reds -> env -> clos_infos
 val infos_env : clos_infos -> env
 val infos_flags : clos_infos -> reds
+val oracle_of_infos : clos_infos -> oracle
+
 
 (* Reduction function *)
 

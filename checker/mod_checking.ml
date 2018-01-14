@@ -26,6 +26,9 @@ let refresh_arity ar =
 
 let check_constant_declaration env kn cb =
   Flags.if_verbose Feedback.msg_notice (str "  checking cst:" ++ prcon kn);
+  (** Locally set the oracle for further typechecking *)
+  let oracle = env.env_conv_oracle in
+  let env = Environ.set_oracle env cb.const_typing_flags.conv_oracle in
   (** [env'] contains De Bruijn universe variables *)
   let env' =
     match cb.const_universes with
@@ -53,8 +56,12 @@ let check_constant_declaration env kn cb =
 	  conv_leq envty j ty)
     | None -> ()
   in
-  if constant_is_polymorphic cb then add_constant kn cb env
-  else add_constant kn cb env'
+  let env =
+    if constant_is_polymorphic cb then add_constant kn cb env
+    else add_constant kn cb env'
+  in
+  (** Reset the value of the oracle *)
+  Environ.set_oracle env oracle
 
 (** {6 Checking modules } *)
 

@@ -21,7 +21,15 @@ type env = {
     env_globals       : globals;
     env_rel_context   : rel_context;
     env_stratification : stratification;
-    env_imports : Cic.vodigest MPmap.t }
+    env_imports : Cic.vodigest MPmap.t;
+    env_conv_oracle : oracle; }
+
+let empty_oracle = {
+  var_opacity = Id.Map.empty;
+  cst_opacity = Cmap.empty;
+  var_trstate = Id.Pred.empty;
+  cst_trstate = Cpred.empty;
+}
 
 let empty_env = {
   env_globals =
@@ -34,7 +42,8 @@ let empty_env = {
   env_stratification =
   { env_universes = Univ.initial_universes;
     env_engagement = PredicativeSet };
-  env_imports = MPmap.empty }
+  env_imports = MPmap.empty;
+  env_conv_oracle = empty_oracle }
 
 let engagement env = env.env_stratification.env_engagement
 let universes env = env.env_stratification.env_universes
@@ -50,6 +59,8 @@ let set_engagement (impr_set as c) env =
   end;
   { env with env_stratification =
       { env.env_stratification with env_engagement = c } }
+
+let set_oracle env oracle = { env with env_conv_oracle = oracle }
 
 (* Digests *)
 
