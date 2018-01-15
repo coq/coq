@@ -3,6 +3,7 @@ open Names
 open Environ
 open Reduction
 open Vm
+open Vmvalues
 open Csymtable
 
 let val_of_constr env c =

@@ -3,7 +3,7 @@ open Term
 open Names
 open Cbytecodes
 open Cemitcodes
-open Vm
+open Vmvalues
 
 let ppripos (ri,pos) =
   (match ri with

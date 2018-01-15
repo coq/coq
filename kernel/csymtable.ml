@@ -15,7 +15,7 @@
 open Util
 open Names
 open Constr
-open Vm
+open Vmvalues
 open Cemitcodes
 open Cbytecodes
 open Declarations

@@ -572,8 +572,8 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Proj      of projection * 'constr
 [@@ocaml.deprecated "Alias for Constr.kind_of_term"]
 
-type values = Constr.values
-[@@ocaml.deprecated "Alias for Constr.values"]
+type values = Vmvalues.values
+[@@ocaml.deprecated "Alias for Vmvalues.values"]
 
 val hash_constr : Constr.constr -> int
 [@@ocaml.deprecated "Alias for Constr.hash"]

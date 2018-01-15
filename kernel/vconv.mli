@@ -19,4 +19,4 @@ val vm_conv : conv_pb -> types kernel_conversion_function
 val vm_conv_gen : conv_pb -> (types, 'a) generic_conversion_function
 
 (** Precompute a VM value from a constr *)
-val val_of_constr : env -> constr -> values
+val val_of_constr : env -> constr -> Vmvalues.values

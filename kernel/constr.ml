@@ -1178,8 +1178,3 @@ let hcons =
      Id.hcons)
 
 (* let hcons_types = hcons_constr *)
-
-(*******)
-(* Type of abstract machine values *)
-(** FIXME: nothing to do there *)
-type values
