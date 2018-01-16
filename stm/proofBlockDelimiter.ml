@@ -96,7 +96,7 @@ let dynamic_bullet doc { dynamic_switch = id; carry_on_data = b } =
       `ValidBlock {
          base_state = id;
          goals_to_admit = focused;
-         recovery_command = Some (Vernacexpr.VernacExpr(Vernacexpr.VernacBullet (to_bullet_val b)))
+         recovery_command = Some (Vernacexpr.VernacExpr([], Vernacexpr.VernacBullet (to_bullet_val b)))
       }
   | `Not -> `Leaks
 
@@ -125,7 +125,7 @@ let dynamic_curly_brace doc { dynamic_switch = id } =
       `ValidBlock {
          base_state = id;
          goals_to_admit = focused;
-         recovery_command = Some (Vernacexpr.VernacExpr Vernacexpr.VernacEndSubproof)
+         recovery_command = Some (Vernacexpr.VernacExpr ([], Vernacexpr.VernacEndSubproof))
       }
   | `Not -> `Leaks
 

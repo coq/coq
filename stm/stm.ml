@@ -1498,7 +1498,7 @@ end = struct (* {{{ *)
           stm_vernac_interp stop
             ~proof:(pobject, terminator) st
             { verbose = false; loc; indentation = 0; strlen = 0;
-              expr = VernacExpr (VernacEndProof (Proved (Opaque,None))) }) in
+              expr = VernacExpr ([], VernacEndProof (Proved (Opaque,None))) }) in
         ignore(Future.join checked_proof);
       end;
       (* STATE: Restore the state XXX: handle exn *)
@@ -1646,7 +1646,7 @@ end = struct (* {{{ *)
       let st = Vernacstate.freeze_interp_state `No in
       ignore(stm_vernac_interp stop ~proof st
         { verbose = false; loc; indentation = 0; strlen = 0;
-          expr = VernacExpr (VernacEndProof (Proved (Opaque,None))) });
+          expr = VernacExpr ([], VernacEndProof (Proved (Opaque,None))) });
       `OK proof
       end
     with e ->
@@ -2177,7 +2177,7 @@ let collect_proof keep cur hd brkind id =
         (try
           let name, hint = name ids, get_hint_ctx loc  in
           let t, v = proof_no_using last in
-          v.expr <- VernacExpr(VernacProof(t, Some hint));
+          v.expr <- VernacExpr([], VernacProof(t, Some hint));
           `ASync (parent last,accn,name,delegate name)
         with Not_found ->
           let name = name ids in
@@ -2872,10 +2872,9 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
             if not in_proof && Proof_global.there_are_pending_proofs () then
             begin
               let bname = VCS.mk_branch_name x in
-              let rec opacity_of_produced_term = function
+              let opacity_of_produced_term = function
                 (* This AST is ambiguous, hence we check it dynamically *)
                 | VernacInstance (false, _,_ , None, _) -> GuaranteesOpacity
-                | VernacLocal (_,e) -> opacity_of_produced_term e
                 | _ -> Doesn'tGuaranteeOpacity in
               VCS.commit id (Fork (x,bname,opacity_of_produced_term (Vernacprop.under_control x.expr),[]));
               let proof_mode = default_proof_mode () in

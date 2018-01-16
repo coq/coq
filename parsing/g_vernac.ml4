@@ -72,36 +72,36 @@ GEXTEND Gram
       | IDENT "Redirect"; s = ne_string; c = located_vernac -> VernacRedirect (s, c)
       | IDENT "Timeout"; n = natural; v = vernac_control -> VernacTimeout(n,v)
       | IDENT "Fail"; v = vernac_control -> VernacFail v
-      | v = vernac -> VernacExpr(v) ]
+      | (f, v) = vernac -> VernacExpr(f, v) ]
     ]
   ;
   vernac:
-    [ [ IDENT "Local"; v = vernac_poly -> VernacLocal (true, v)
-      | IDENT "Global"; v = vernac_poly -> VernacLocal (false, v)
+    [ [ IDENT "Local"; (f, v) = vernac_poly -> (VernacLocal true :: f, v)
+      | IDENT "Global"; (f, v) = vernac_poly -> (VernacLocal false :: f, v)
 
       | v = vernac_poly -> v ]
     ]
   ;
   vernac_poly:
-    [ [ IDENT "Polymorphic"; v = vernac_aux -> VernacPolymorphic (true, v)
-      | IDENT "Monomorphic"; v = vernac_aux -> VernacPolymorphic (false, v)
+    [ [ IDENT "Polymorphic"; (f, v) = vernac_aux -> (VernacPolymorphic true :: f, v)
+      | IDENT "Monomorphic"; (f, v) = vernac_aux -> (VernacPolymorphic false :: f, v)
       | v = vernac_aux -> v ]
     ]
   ;
   vernac_aux:
     (* Better to parse "." here: in case of failure (e.g. in coerce_to_var), *)
     (* "." is still in the stream and discard_to_dot works correctly         *)
-    [ [ IDENT "Program"; g = gallina; "." -> VernacProgram g
-      | IDENT "Program"; g = gallina_ext; "." -> VernacProgram g
-      | g = gallina; "." -> g
-      | g = gallina_ext; "." -> g
-      | c = command; "." -> c
-      | c = syntax; "." -> c
-      | c = subprf -> c
+    [ [ IDENT "Program"; g = gallina; "." -> ([VernacProgram], g)
+      | IDENT "Program"; g = gallina_ext; "." -> ([VernacProgram], g)
+      | g = gallina; "." -> ([], g)
+      | g = gallina_ext; "." -> ([], g)
+      | c = command; "." -> ([], c)
+      | c = syntax; "." -> ([], c)
+      | c = subprf -> ([], c)
     ] ]
   ;
   vernac_aux: LAST
-    [ [ prfcom = command_entry -> prfcom ] ]
+    [ [ prfcom = command_entry -> ([], prfcom) ] ]
   ;
   noedit_mode:
     [ [ c = query_command -> c None] ]
@@ -621,11 +621,9 @@ GEXTEND Gram
 	  VernacCanonical (AN qid)
       | IDENT "Canonical"; IDENT "Structure"; ntn = by_notation ->
 	  VernacCanonical (ByNotation ntn)
-      | IDENT "Canonical"; IDENT "Structure"; qid = global;
-          d = def_body ->
+      | IDENT "Canonical"; IDENT "Structure"; qid = global; d = def_body ->
           let s = coerce_reference_to_id qid in
-          VernacLocal(false,
-          VernacDefinition ((NoDischarge,CanonicalStructure),((Loc.tag s),None),d))
+          VernacDefinition ((NoDischarge,CanonicalStructure),((Loc.tag s),None),d)
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
