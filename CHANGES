@@ -41,6 +41,12 @@ Tactics
   Heap, which performs a major garbage collection and heap compaction
   in the OCaml run-time system.
 
+Focusing
+
+- Focusing bracket `{` now supports single-numbered goal selector,
+  e.g. `2: {` will focus on the second sub-goal. As usual, unfocus
+  with `}` once the sub-goal is fully solved.
+
 Vernacular Commands
 
 - The deprecated Coercion Local, Open Local Scope, Notation Local syntax

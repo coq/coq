@@ -451,7 +451,7 @@ type vernac_expr =
   | VernacUnfocus
   | VernacUnfocused
   | VernacBullet of bullet
-  | VernacSubproof of int option
+  | VernacSubproof of goal_selector option
   | VernacEndSubproof
   | VernacShow of showable
   | VernacCheckGuard

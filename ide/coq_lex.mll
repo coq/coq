@@ -17,7 +17,9 @@
 
 let space = [' ' '\n' '\r' '\t' '\012'] (* '\012' is form-feed *)
 
-let undotted_sep = '{' | '}' | '-'+ | '+'+ | '*'+
+let number = [ '0'-'9' ]+
+
+let undotted_sep = (number space* ':' space*)? '{' | '}' | '-'+ | '+'+ | '*'+
 
 let dot_sep = '.' (space | eof)
 
