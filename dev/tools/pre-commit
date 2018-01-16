@@ -5,6 +5,17 @@
 
 set -e
 
+CODE=0
+git diff --cached --name-only -z | xargs -0 dev/tools/check-eof-newline.sh --fix || CODE=1
+
+if [ $CODE -ne 0 ]
+then
+    1>&2 echo "Some files had newline errors; they have been fixed in the working tree."
+    1>&2 echo "Make sure to add them before committing."
+    1>&2 echo "This may fix itself if you were using git commit -a, and you try again."
+    exit 1
+fi
+
 if git diff-index --check --cached HEAD >/dev/null 2>&1 ;
 then
     :
