@@ -10,6 +10,7 @@
 
 (** Any compatibility changes to make future versions of Coq behave like Coq 8.6
     are likely needed to make them behave like Coq 8.5. *)
+Local Set Warnings Append "-masking-absolute-name".
 Require Export Coq.Compat.Coq86.
 
 (** We use some deprecated options in this file, so we disable the
