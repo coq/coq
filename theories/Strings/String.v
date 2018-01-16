@@ -29,7 +29,7 @@ Local Open Scope string_scope.
 (** Equality is decidable *)
 
 Scheme Equality for string.
-Notation string_dec := string_eq_dec.
+Notation string_dec := string_eq_dec (compat "8.7").
 Notation string_dec_bl := internal_string_dec_bl.
 Notation string_dec_lb := internal_string_dec_lb.
 

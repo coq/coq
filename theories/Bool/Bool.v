@@ -28,7 +28,7 @@ Definition Is_true (b:bool) :=
 
 Scheme Equality for bool.
 
-Notation bool_dec := bool_eq_dec.
+Notation bool_dec := bool_eq_dec (compat "8.7").
 
 (*********************)
 (** * Discrimination *)
@@ -94,11 +94,9 @@ Qed.
 (** * Equality *)
 (*************)
 
-Notation eqb := bool_beq.
+Notation eqb := bool_beq (compat "8.7").
 Notation bool_dec_bl := internal_bool_dec_bl.
 Notation bool_dec_lb := internal_bool_dec_lb.
-Notation eqb_bl := internal_bool_dec_bl.
-Notation eqb_lb := internal_bool_dec_lb.
 
 Lemma eqb_subst :
   forall (P:bool -> Prop) (b1 b2:bool), eqb b1 b2 = true -> P b1 -> P b2.

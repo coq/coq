@@ -36,7 +36,7 @@ Definition shift (c : bool) (a : ascii) :=
 Scheme Equality for ascii.
 Notation ascii_dec_bl := internal_ascii_dec_bl.
 Notation ascii_dec_lb := internal_ascii_dec_lb.
-Notation ascii_dec := ascii_eq_dec.
+Notation ascii_dec := ascii_eq_dec (compat "8.7").
 
 (** * Conversion between natural numbers modulo 256 and ascii characters *)
 
