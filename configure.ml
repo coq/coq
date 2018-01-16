@@ -768,7 +768,13 @@ let check_lablgtk_version src dir = match src with
       begin
         (* Version 2.18.3 is known to report incorrectly as 2.18.0 *)
         printf "Warning: could not check the version of lablgtk2.\nMake sure your version is at least 2.18.3.\n";
-        (true, "an unknown version")
+        (true, "an unknown version claiming to be 2.18.0")
+      end
+    else if arch = "Linux" && vi = [2; 16; 0] then
+      begin
+        (* Launchpad packages report as version 2.16.0 due to a misconfigured META file; see https://bugs.launchpad.net/ubuntu/+source/lablgtk2/+bug/1577236 *)
+        printf "Warning: could not check the version of lablgtk2.\nMake sure your version is at least 2.18.3.\nSee https://bugs.launchpad.net/ubuntu/+source/lablgtk2/+bug/1577236 for more details.";
+        (true, "an unknown version claiming to be 2.16.0")
       end
     else
       ([2; 18; 3] <= vi, v)
