@@ -4,9 +4,7 @@
 
 set -e
 
-# NB: even though we use --cached it seems to exit code 1 with
-# unstaged whitespace errors. That just means they get fixed though.
-if git diff-index --check --cached HEAD --quiet;
+if git diff-index --check --cached HEAD >/dev/null 2>&1 ;
 then
     :
 else
