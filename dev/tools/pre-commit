@@ -1,6 +1,7 @@
 #!/bin/sh
 
-# Copy to .git/hooks/ to use.
+# configure automatically sets up a wrapper at .git/hooks/pre-commit
+# which calls this script (if it exists).
 
 set -e
 
