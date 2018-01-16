@@ -240,19 +240,6 @@ package "stm" (
 
 )
 
-package "ltac" (
-
-  description = "Coq LTAC Plugin"
-  version     = "8.7"
-
-  requires    = "coq.stm"
-  directory   = "plugins/ltac"
-
-  archive(byte)    = "ltac_plugin.cmo"
-  archive(native)  = "ltac_plugin.cmx"
-
-)
-
 package "toplevel" (
 
   description = "Coq Toplevel"
@@ -299,15 +286,27 @@ package "plugins" (
   description = "Coq built-in plugins"
   version     = "8.7"
 
-  requires    = ""
   directory   = "plugins"
+
+  package "ltac" (
+
+    description = "Coq LTAC Plugin"
+    version     = "8.7"
+
+    requires    = "coq.stm"
+    directory   = "ltac"
+
+    archive(byte)    = "ltac_plugin.cmo"
+    archive(native)  = "ltac_plugin.cmx"
+
+  )
 
   package "tauto" (
 
     description = "Coq tauto plugin"
     version     = "8.7"
 
-    requires    = "coq.ltac"
+    requires    = "coq.plugins.ltac"
     directory   = "ltac"
 
     archive(byte)    = "tauto_plugin.cmo"
@@ -319,7 +318,7 @@ package "plugins" (
     description = "Coq omega plugin"
     version     = "8.7"
 
-    requires    = "coq.ltac"
+    requires    = "coq.plugins.ltac"
     directory   = "omega"
 
     archive(byte)    = "omega_plugin.cmo"
@@ -343,7 +342,7 @@ package "plugins" (
     description = "Coq micromega plugin"
     version     = "8.7"
 
-    requires    = "num,coq.ltac"
+    requires    = "num,coq.plugins.ltac"
     directory   = "micromega"
 
     archive(byte)    = "micromega_plugin.cmo"
@@ -355,7 +354,7 @@ package "plugins" (
     description = "Coq quote plugin"
     version     = "8.7"
 
-    requires    = "coq.ltac"
+    requires    = "coq.plugins.ltac"
     directory   = "quote"
 
     archive(byte)    = "quote_plugin.cmo"
@@ -379,7 +378,7 @@ package "plugins" (
     description = "Coq fourier plugin"
     version     = "8.7"
 
-    requires    = "coq.ltac"
+    requires    = "coq.plugins.ltac"
     directory   = "fourier"
 
     archive(byte)    = "fourier_plugin.cmo"
@@ -391,7 +390,7 @@ package "plugins" (
     description = "Coq extraction plugin"
     version     = "8.7"
 
-    requires    = "coq.ltac"
+    requires    = "coq.plugins.ltac"
     directory   = "extraction"
 
     archive(byte)    = "extraction_plugin.cmo"
@@ -403,7 +402,7 @@ package "plugins" (
     description = "Coq cc plugin"
     version     = "8.7"
 
-    requires    = "coq.ltac"
+    requires    = "coq.plugins.ltac"
     directory   = "cc"
 
     archive(byte)    = "cc_plugin.cmo"
@@ -415,7 +414,7 @@ package "plugins" (
     description = "Coq ground plugin"
     version     = "8.7"
 
-    requires    = "coq.ltac"
+    requires    = "coq.plugins.ltac"
     directory   = "firstorder"
 
     archive(byte)    = "ground_plugin.cmo"
@@ -427,7 +426,7 @@ package "plugins" (
     description = "Coq rtauto plugin"
     version     = "8.7"
 
-    requires    = "coq.ltac"
+    requires    = "coq.plugins.ltac"
     directory   = "rtauto"
 
     archive(byte)    = "rtauto_plugin.cmo"
@@ -439,7 +438,7 @@ package "plugins" (
     description = "Coq btauto plugin"
     version     = "8.7"
 
-    requires    = "coq.ltac"
+    requires    = "coq.plugins.ltac"
     directory   = "btauto"
 
     archive(byte)    = "btauto_plugin.cmo"
@@ -463,7 +462,7 @@ package "plugins" (
     description = "Coq nsatz plugin"
     version     = "8.7"
 
-    requires    = "num,coq.ltac"
+    requires    = "num,coq.plugins.ltac"
     directory   = "nsatz"
 
     archive(byte)    = "nsatz_plugin.cmo"
@@ -559,7 +558,7 @@ package "plugins" (
     description = "Coq ssrmatching plugin"
     version     = "8.7"
 
-    requires    = "coq.ltac"
+    requires    = "coq.plugins.ltac"
     directory   = "ssrmatching"
 
     archive(byte)    = "ssrmatching_plugin.cmo"
