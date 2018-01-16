@@ -33,10 +33,10 @@ Definition shift (c : bool) (a : ascii) :=
 
 (** Definition of a decidable function that is effective *)
 
-Definition ascii_dec : forall a b : ascii, {a = b} + {a <> b}.
-Proof.
-  decide equality; apply bool_dec.
-Defined.
+Scheme Equality for ascii.
+Notation ascii_dec_bl := internal_ascii_dec_bl.
+Notation ascii_dec_lb := internal_ascii_dec_lb.
+Notation ascii_dec := ascii_eq_dec.
 
 (** * Conversion between natural numbers modulo 256 and ascii characters *)
 

@@ -26,10 +26,9 @@ Definition Is_true (b:bool) :=
 (** * Decidability *)
 (*******************)
 
-Lemma bool_dec : forall b1 b2 : bool, {b1 = b2} + {b1 <> b2}.
-Proof.
-  decide equality.
-Defined.
+Scheme Equality for bool.
+
+Notation bool_dec := bool_eq_dec.
 
 (*********************)
 (** * Discrimination *)
@@ -95,13 +94,11 @@ Qed.
 (** * Equality *)
 (*************)
 
-Definition eqb (b1 b2:bool) : bool :=
-  match b1, b2 with
-    | true, true => true
-    | true, false => false
-    | false, true => false
-    | false, false => true
-  end.
+Notation eqb := bool_beq.
+Notation bool_dec_bl := internal_bool_dec_bl.
+Notation bool_dec_lb := internal_bool_dec_lb.
+Notation eqb_bl := internal_bool_dec_bl.
+Notation eqb_lb := internal_bool_dec_lb.
 
 Lemma eqb_subst :
   forall (P:bool -> Prop) (b1 b2:bool), eqb b1 b2 = true -> P b1 -> P b2.
