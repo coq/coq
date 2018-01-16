@@ -17,7 +17,7 @@ export CAML_LD_LIBRARY_PATH=$COQTOP/kernel/byterun:$CAML_LD_LIBRARY_PATH
 exec $OCAMLDEBUG \
 	-I $CAMLP4LIB -I +threads \
 	-I $COQTOP \
-	-I $COQTOP/config -I $COQTOP/printing -I $COQTOP/grammar \
+	-I $COQTOP/config -I $COQTOP/printing -I $COQTOP/grammar -I $COQTOP/clib \
 	-I $COQTOP/lib -I $COQTOP/intf -I $COQTOP/kernel -I $COQTOP/kernel/byterun \
 	-I $COQTOP/library -I $COQTOP/engine \
 	-I $COQTOP/pretyping -I $COQTOP/parsing -I $COQTOP/vernac \
