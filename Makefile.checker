@@ -75,9 +75,8 @@ checker/%.cmx: checker/%.ml
 
 md5chk:
 	$(SHOW)'MD5SUM cic.mli'
-	$(HIDE)v=`tr -d "\r" < checker/cic.mli | $(MD5SUM) | sed -n -e 's/ .*//' -e '/^/p'`; \
-	       if grep -q "$$v" checker/values.ml; \
-	       then true; else echo "Error: outdated checker/values.ml: $$v" >&2; false; fi
+	$(HIDE)if grep -q "^MD5 $$($(OCAML) tools/md5sum.ml checker/cic.mli)$$" checker/values.ml; \
+	       then true; else echo "Error: outdated checker/values.ml" >&2; false; fi
 
 .PHONY: md5chk
 
