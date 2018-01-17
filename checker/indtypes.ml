@@ -586,6 +586,8 @@ let check_inductive env kn mib =
       Univ.AUContext.repr (Univ.ACumulativityInfo.univ_context cumi)
   in
   let env = Environ.push_context ind_ctx env in
+  (** Locally set the oracle for further typechecking *)
+  let env0 = Environ.set_oracle env mib.mind_typing_flags.conv_oracle in
   (* check mind_record : TODO ? check #constructor = 1 ? *)
   (* check mind_finite : always OK *)
   (* check mind_ntypes *)
@@ -593,13 +595,13 @@ let check_inductive env kn mib =
     user_err Pp.(str "not the right number of packets");
   (* check mind_params_ctxt *)
   let params = mib.mind_params_ctxt in
-  let _ = check_ctxt env params in
+  let _ = check_ctxt env0 params in
   (* check mind_nparams *)
   if rel_context_nhyps params <> mib.mind_nparams then
     user_err Pp.(str "number the right number of parameters");
   (* mind_packets *)
   (*  - check arities *)
-  let env_ar = typecheck_arity env params mib.mind_packets in
+  let env_ar = typecheck_arity env0 params mib.mind_packets in
   (*  - check constructor types *)
   Array.iter (typecheck_one_inductive env_ar params mib) mib.mind_packets;
   (* check the inferred subtyping relation *)

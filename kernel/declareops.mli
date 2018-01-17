@@ -67,7 +67,7 @@ val inductive_is_cumulative : mutual_inductive_body -> bool
 (** {6 Kernel flags} *)
 
 (** A default, safe set of flags for kernel type-checking *)
-val safe_flags : typing_flags
+val safe_flags : Conv_oracle.oracle -> typing_flags
 
 (** {6 Hash-consing} *)
 

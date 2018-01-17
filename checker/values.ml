@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 56ac4cade33eff3d26ed5cdadb580c7e checker/cic.mli
+MD5 483493b20fe91cc1bea4350a2db2f82d checker/cic.mli
 
 *)
 
@@ -69,6 +69,8 @@ let v_map vk vd =
 
 let v_hset v = v_map Int (v_set v)
 let v_hmap vk vd = v_map Int (v_map vk vd)
+
+let v_pred v = v_pair v_bool (v_set v)
 
 (* lib/future *)
 let v_computation f =
@@ -199,6 +201,17 @@ let v_lazy_constr =
 let v_impredicative_set = v_enum "impr-set" 2
 let v_engagement = v_impredicative_set
 
+let v_conv_level =
+  v_sum "conv_level" 2 [|[|Int|]|]
+
+let v_oracle =
+  v_tuple "oracle" [|
+    v_map v_id v_conv_level;
+    v_hmap v_cst v_conv_level;
+    v_pred v_id;
+    v_pred v_cst;
+  |]
+
 let v_pol_arity =
   v_tuple "polymorphic_arity" [|List(Opt v_level);v_univ|]
 
@@ -213,7 +226,7 @@ let v_projbody =
 	    v_constr|]
 
 let v_typing_flags =
-  v_tuple "typing_flags" [|v_bool; v_bool|]
+  v_tuple "typing_flags" [|v_bool; v_bool; v_oracle|]
 
 let v_const_univs = v_sum "constant_universes" 0 [|[|v_context_set|]; [|v_abs_context|]|]
 

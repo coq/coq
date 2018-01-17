@@ -18,12 +18,17 @@ type env = {
   env_rel_context : rel_context;
   env_stratification : stratification;
   env_imports : Cic.vodigest MPmap.t;
+  env_conv_oracle : Cic.oracle;
 }
 val empty_env : env
 
 (* Engagement *)
 val engagement : env -> Cic.engagement
 val set_engagement : Cic.engagement -> env -> env
+
+(** Oracle *)
+
+val set_oracle : env -> Cic.oracle -> env
 
 (* Digests *)
 val add_digest : env -> DirPath.t -> Cic.vodigest -> env

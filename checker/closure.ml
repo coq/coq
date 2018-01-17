@@ -822,6 +822,7 @@ type clos_infos = fconstr infos
 
 let infos_env x = x.i_env
 let infos_flags x = x.i_flags
+let oracle_of_infos x = x.i_env.env_conv_oracle
 
 let create_clos_infos flgs env =
   create (fun _ -> inject) flgs env

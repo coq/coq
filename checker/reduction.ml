@@ -276,11 +276,29 @@ let in_whnf (t,stk) =
     | (FFlex _ | FProd _ | FEvar _ | FInd _ | FAtom _ | FRel _ | FProj _) -> true
     | FLOCKED -> assert false
 
-let oracle_order fl1 fl2 =
-  match fl1,fl2 with
-      ConstKey c1, ConstKey c2 -> (*height c1 > height c2*)false
-    | _, ConstKey _ -> true
-    | _ -> false
+let default_level = Level 0
+
+let get_strategy { var_opacity; cst_opacity } = function
+  | VarKey id ->
+      (try Names.Id.Map.find id var_opacity
+      with Not_found -> default_level)
+  | ConstKey (c, _) ->
+      (try Names.Cmap.find c cst_opacity
+      with Not_found -> default_level)
+  | RelKey _ -> Expand
+
+let oracle_order infos l2r k1 k2 =
+  let o = Closure.oracle_of_infos infos in
+  match get_strategy o k1, get_strategy o k2 with
+  | Expand, Expand -> l2r
+  | Expand, (Opaque | Level _) -> true
+  | (Opaque | Level _), Expand -> false
+  | Opaque, Opaque -> l2r
+  | Level _, Opaque -> true
+  | Opaque, Level _ -> false
+  | Level n1, Level n2 ->
+     if Int.equal n1 n2 then l2r
+     else n1 < n2
 
 let unfold_projection infos p c =
   let pb = lookup_projection p (infos_env infos) in
@@ -339,7 +357,7 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
         with NotConvertible ->
           (* else the oracle tells which constant is to be expanded *)
           let (app1,app2) =
-            if oracle_order fl1 fl2 then
+            if oracle_order infos false fl1 fl2 then
               match unfold_reference infos fl1 with
               | Some def1 -> ((lft1, whd_stack infos def1 v1), appr2)
               | None ->
