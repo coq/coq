@@ -201,14 +201,18 @@ let process_universe_constraints ctx cstrs =
               | None -> user_err Pp.(str "Algebraic universe on the right")
               | Some r' ->
                 if Univ.Level.is_small r' then
-                  let levels = Univ.Universe.levels l in
-                  let fold l' local =
-                    let l = Univ.Universe.make l' in
-                    if Univ.Level.is_small l' || is_local l' then
-                      equalize_variables false l l' r r' local
-                    else raise (Univ.UniverseInconsistency (Univ.Le, l, r, None))
-                  in
-                  Univ.LSet.fold fold levels local
+                  if not (Univ.Universe.is_levels l)
+                  then
+                    raise (Univ.UniverseInconsistency (Univ.Le, l, r, None))
+                  else
+                    let levels = Univ.Universe.levels l in
+                    let fold l' local =
+                      let l = Univ.Universe.make l' in
+                      if Univ.Level.is_small l' || is_local l' then
+                        equalize_variables false l l' r r' local
+                      else raise (Univ.UniverseInconsistency (Univ.Le, l, r, None))
+                    in
+                    Univ.LSet.fold fold levels local
                 else
                   Univ.enforce_leq l r local
               end
