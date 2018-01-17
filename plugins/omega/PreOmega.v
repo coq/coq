@@ -26,7 +26,7 @@ Local Open Scope Z_scope.
      - on Z: Z.min, Z.max, Z.abs, Z.sgn are translated in term of <= < =
      - on nat: + * - S O pred min max Pos.to_nat N.to_nat Z.abs_nat
      - on positive: Zneg Zpos xI xO xH + * - Pos.succ Pos.pred Pos.min Pos.max Pos.of_succ_nat
-     - on N: N0 Npos + * - N.succ N.min N.max N.of_nat Z.abs_N
+     - on N: N0 Npos + * - N.pred N.succ N.min N.max N.of_nat Z.abs_N
 *)
 
 
@@ -390,6 +390,10 @@ Ltac zify_N_op :=
   (* N.sub -> Z.max 0 (Z.sub ... ...) *)
   | H : context [ Z.of_N (N.sub ?a ?b) ] |- _ => rewrite (N2Z.inj_sub_max a b) in H
   | |- context [ Z.of_N (N.sub ?a ?b) ] => rewrite (N2Z.inj_sub_max a b)
+
+  (* pred -> minus ... -1 -> Z.max (Z.sub ... -1) 0 *)
+  | H : context [ Z.of_N (N.pred ?a) ] |- _ => rewrite (N.pred_sub a) in H
+  | |- context [ Z.of_N (N.pred ?a) ] => rewrite (N.pred_sub a)
 
   (* N.succ -> Z.succ *)
   | H : context [ Z.of_N (N.succ ?a) ] |- _ => rewrite (N2Z.inj_succ a) in H
