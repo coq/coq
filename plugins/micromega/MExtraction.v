@@ -49,16 +49,13 @@ Extract Constant Rmult => "( * )".
 Extract Constant Ropp  => "fun x -> - x".
 Extract Constant Rinv   => "fun x -> 1 / x".
 
-(** We now extract to stdout, see comment in Makefile.build *)
-
-(*Extraction "plugins/micromega/micromega.ml" *)
-Recursive Extraction
-  List.map simpl_cone (*map_cone  indexes*)
-  denorm Qpower vm_add
-  n_of_Z N.of_nat ZTautoChecker ZWeakChecker QTautoChecker RTautoChecker find.
-
-
-
+(** In order to avoid annoying build dependencies the actual
+    extraction is only performed as a test in the test suite. *)
+(* Extraction "plugins/micromega/micromega.ml" *)
+(* Recursive Extraction *)
+(*   List.map simpl_cone (*map_cone  indexes*) *)
+(*   denorm Qpower vm_add *)
+(*   n_of_Z N.of_nat ZTautoChecker ZWeakChecker QTautoChecker RTautoChecker find. *)
 
 (* Local Variables: *)
 (* coding: utf-8 *)
