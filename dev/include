@@ -36,7 +36,6 @@
 #install_printer  (* constraints *)  ppconstraints;;
 #install_printer  (* univ constraints *)  ppuniverseconstraints;;
 #install_printer  (* universe *)  ppuni;;
-#install_printer  (* universes *)  ppuniverse;;
 #install_printer  (* universes *)  ppuniverses;;
 #install_printer  (* univ level *) ppuni_level;;
 #install_printer  (* univ context *) ppuniverse_context;;
