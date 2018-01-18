@@ -1463,6 +1463,18 @@ let prod_applist sigma c l =
     | _ -> anomaly (Pp.str "Not enough prod's.") in
   app [] c l
 
+let prod_applist_assum sigma n c l =
+  let open EConstr in
+  let rec app n subst c l =
+    if Int.equal n 0 then
+      if l == [] then Vars.substl subst c
+      else anomaly (Pp.str "Not enough arguments.")
+    else match EConstr.kind sigma c, l with
+    | Prod(_,_,c), arg::l -> app (n-1) (arg::subst) c l
+    | LetIn(_,b,_,c), _ -> app (n-1) (Vars.substl subst b::subst) c l
+    | _ -> anomaly (Pp.str "Not enough prod/let's.") in
+  app n [] c l
+
 (* Combinators on judgments *)
 
 let on_judgment f j = { uj_val = f j.uj_val; uj_type = f j.uj_type }

@@ -40,6 +40,8 @@ Tactics
 - Added tactic optimize_heap, analogous to the Vernacular Optimize
   Heap, which performs a major garbage collection and heap compaction
   in the OCaml run-time system.
+- The tactics "dtauto", "dintuition", "firstorder" now handle inductive types
+  with let bindings in the parameters.
 
 Focusing
 
