@@ -84,8 +84,10 @@ class finder name (view : GText.view) =
     method private backward_search starti =
       let text = view#buffer#start_iter#get_text ~stop:starti in
       let regexp = self#regex in
-      try
-        let i = Str.search_backward regexp text (String.length text - 1) in
+      let offs = (String.length text - 1) in
+      if offs < 0 then None
+      else try
+        let i = Str.search_backward regexp text offs in
         let j = Str.match_end () in
         Some(view#buffer#start_iter#forward_chars (b2c text i),
              view#buffer#start_iter#forward_chars (b2c text j))
@@ -101,24 +103,33 @@ class finder name (view : GText.view) =
       with Not_found -> None
 
     method replace_all () =
-      let rec replace_at (iter : GText.iter) =
+      let rec replace_at (iter : GText.iter) ct tot =
         let found = self#forward_search iter in
         match found with
-        | None -> ()
+        | None ->
+           let tot_str = if Int.equal ct tot then "" else " of " ^ string_of_int tot in
+           let occ_str = CString.plural tot "occurrence" in
+           let _ = Ideutils.flash_info ("Replaced " ^ string_of_int ct ^ tot_str ^ " " ^ occ_str) in
+           ()
         | Some (start, stop) ->
           let text = iter#get_text ~stop:view#buffer#end_iter in
           let start_mark = view#buffer#create_mark start in
           let stop_mark = view#buffer#create_mark ~left_gravity:false stop in
+          let mod_save = view#buffer#modified in
+          let _ = view#buffer#set_modified false in
           let _ = view#buffer#delete_interactive ~start ~stop () in
           let iter = view#buffer#get_iter_at_mark (`MARK start_mark) in
-          let _ = view#buffer#insert_interactive ~iter (self#replacement text)in
+          let _ = view#buffer#insert_interactive ~iter (self#replacement text) in
+          let edited = view#buffer#modified in
+          let _ = view#buffer#set_modified (edited || mod_save) in
           let next = view#buffer#get_iter_at_mark (`MARK stop_mark) in
           let () = view#buffer#delete_mark (`MARK start_mark) in
           let () = view#buffer#delete_mark (`MARK stop_mark) in
-          replace_at next
+          let next_ct = if edited then ct + 1 else ct in
+          replace_at next next_ct (tot + 1)
       in
       let () = view#buffer#begin_user_action () in
-      let () = replace_at view#buffer#start_iter in
+      let () = replace_at view#buffer#start_iter 0 0 in
       view#buffer#end_user_action ()
 
     method private set_not_found () =
@@ -130,22 +141,52 @@ class finder name (view : GText.view) =
     method private set_normal () =
       find_entry#misc#modify_base [`NORMAL, `NAME "white"]
 
-    method private find_from backward (starti : GText.iter) =
+    method private find_from backward ?(wrapped=false) (starti : GText.iter) =
       let found =
         if backward then self#backward_search starti
         else self#forward_search starti in
       match found with
       | None ->
         if not backward && not (starti#equal view#buffer#start_iter) then
-          self#find_from backward view#buffer#start_iter
+          self#find_from backward ~wrapped:true view#buffer#start_iter
         else if backward && not (starti#equal view#buffer#end_iter) then
-          self#find_from backward view#buffer#end_iter
+          self#find_from backward ~wrapped:true view#buffer#end_iter
         else
+          let _ = Ideutils.flash_info "String not found" in
           self#set_not_found ()
       | Some (start, stop) ->
+        let text = view#buffer#start_iter#get_text ~stop:view#buffer#end_iter in
+        let rec find_all offs accum =
+          if offs > String.length text then
+            List.rev accum
+          else try
+            let i = Str.search_forward self#regex text offs in
+            let j = Str.match_end () in
+            find_all (j + 1) (i :: accum)
+          with Not_found -> List.rev accum
+        in
+        let occurs = find_all 0 [] in
+        let num_occurs = List.length occurs in
+        (* assoc table of offset, occurrence index pairs *)
+        let occur_tbl = List.mapi (fun ndx occ -> (occ,ndx+1)) occurs in
         let _ = view#buffer#select_range start stop in
         let scroll = `MARK (view#buffer#create_mark stop) in
         let _ = view#scroll_to_mark ~use_align:false scroll in
+        let _ =
+          try
+            let occ_ndx = List.assoc start#offset occur_tbl in
+            let occ_str = CString.plural num_occurs "occurrence" in
+            let wrap_str = if wrapped then
+                             if backward then " (wrapped backwards)"
+                             else " (wrapped)"
+                           else ""
+            in
+            Ideutils.flash_info
+              (string_of_int occ_ndx ^ " of " ^ string_of_int num_occurs ^
+                 " " ^ occ_str ^ wrap_str)
+          with Not_found ->
+            CErrors.anomaly (Pp.str "Occurrence of Find string not in table")
+        in
         self#set_found ()
 
     method find_forward () =
