@@ -462,19 +462,21 @@ let sub_match ?(closed=true) env sigma pat c =
       in
       let sub = (env, c1) :: (env, hd) :: subargs env lc in
       try_aux sub next_mk_ctx next
-  | Fix (indx,(names,types,bodies)) ->
+  | Fix (indx,(names,types,bodies as recdefs)) ->
     let nb_fix = Array.length types in
     let next_mk_ctx le =
       let (ntypes,nbodies) = CList.chop nb_fix le in
       mk_ctx (mkFix (indx,(names, Array.of_list ntypes, Array.of_list nbodies))) in
-    let sub = subargs env types @ subargs env bodies in
+    let env' = push_rec_types recdefs env in
+    let sub = subargs env types @ subargs env' bodies in
     try_aux sub next_mk_ctx next
-  | CoFix (i,(names,types,bodies)) ->
+  | CoFix (i,(names,types,bodies as recdefs)) ->
     let nb_fix = Array.length types in
     let next_mk_ctx le =
       let (ntypes,nbodies) = CList.chop nb_fix le in
       mk_ctx (mkCoFix (i,(names, Array.of_list ntypes, Array.of_list nbodies))) in
-    let sub = subargs env types @ subargs env bodies in
+    let env' = push_rec_types recdefs env in
+    let sub = subargs env types @ subargs env' bodies in
     try_aux sub next_mk_ctx next
   | Proj (p,c') ->
     begin try
