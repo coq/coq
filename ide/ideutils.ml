@@ -69,6 +69,12 @@ let insert_xml ?(mark = `INSERT) ?(tags = []) (buf : #GText.buffer_skel) msg =
 
 let set_location = ref  (function s -> failwith "not ready")
 
+let display_location ins =
+  let line = ins#line + 1 in
+  let off = ins#line_offset + 1 in
+  let msg = Printf.sprintf "Line: %5d Char: %3d" line off in
+  !set_location msg
+
 (** A utf8 char is either a single byte (ascii char, 0xxxxxxx)
     or multi-byte (with a leading byte 11xxxxxx and extra bytes 10xxxxxx) *)
 
@@ -465,4 +471,3 @@ let browse_keyword prerr text =
     let u = Lazy.force url_for_keyword text in
     browse prerr (doc_url() ^ u)
   with Not_found -> prerr ("No documentation found for \""^text^"\".\n")
-
