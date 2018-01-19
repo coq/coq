@@ -791,14 +791,16 @@ let check_lablgtk_version src dir = match src with
   let v, _ = tryrun camlexec.find ["query"; "-format"; "%v"; "lablgtk2"] in
   try
     let vi = List.map s2i (numeric_prefix_list v) in
-    if vi = [2; 18; 0] then
+    if vi < [2; 16; 0] then
+      (false, v)
+    else if vi < [2; 18; 3] then
       begin
-        (* Version 2.18.3 is known to report incorrectly as 2.18.0 *)
-        printf "Warning: could not check the version of lablgtk2.\nMake sure your version is at least 2.18.3.\n";
+        (* Version 2.18.3 is known to report incorrectly as 2.18.0, and Launchpad packages report as version 2.16.0 due to a misconfigured META file; see https://bugs.launchpad.net/ubuntu/+source/lablgtk2/+bug/1577236 *)
+        printf "Warning: Your installed lablgtk reports as %s.\n It is possible that the installed version is actually more recent\n but reports an incorrect version. If the installed version is\n actually more recent than 2.18.3, that's fine; if it is not,\n CoqIDE will compile but may be very unstable.\n" v;
         (true, "an unknown version")
       end
     else
-      ([2; 18; 3] <= vi, v)
+      (true, v)
   with _ -> (false, v)
 
 let pr_ide = function No -> "no" | Byte -> "only bytecode" | Opt -> "native"
