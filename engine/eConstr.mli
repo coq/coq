@@ -251,6 +251,7 @@ end
 
 val push_rel : rel_declaration -> env -> env
 val push_rel_context : rel_context -> env -> env
+val push_rec_types : (t, t) Constr.prec_declaration -> env -> env
 
 val push_named : named_declaration -> env -> env
 val push_named_context : named_context -> env -> env
