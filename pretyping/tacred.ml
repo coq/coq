@@ -60,9 +60,7 @@ let value_of_evaluable_ref env evref u =
   match evref with
   | EvalConstRef con -> 
     let u = Unsafe.to_instance u in
-    EConstr.of_constr (try constant_value_in env (con,u)
-    with NotEvaluableConst IsProj -> 
-      raise (Invalid_argument "value_of_evaluable_ref"))
+    EConstr.of_constr (constant_value_in env (con, u))
   | EvalVarRef id -> env |> lookup_named id |> NamedDecl.get_value |> Option.get
 
 let evaluable_of_global_reference env = function

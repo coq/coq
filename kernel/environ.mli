@@ -146,13 +146,11 @@ val type_in_type_constant : Constant.t -> env -> bool
    body and [NotEvaluableConst IsProj] if [c] is a projection 
    and [Not_found] if it does not exist in [env] *)
 
-type const_evaluation_result = NoBody | Opaque | IsProj
+type const_evaluation_result = NoBody | Opaque
 exception NotEvaluableConst of const_evaluation_result
 
-val constant_value : env -> Constant.t puniverses -> constr constrained
 val constant_type : env -> Constant.t puniverses -> types constrained
 
-val constant_opt_value : env -> Constant.t puniverses -> (constr * Univ.Constraint.t) option
 val constant_value_and_type : env -> Constant.t puniverses -> 
   constr option * types * Univ.Constraint.t
 (** The universe context associated to the constant, empty if not 

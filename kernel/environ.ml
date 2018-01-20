@@ -251,30 +251,9 @@ let constant_context env kn =
   | Monomorphic_const _ -> Univ.AUContext.empty
   | Polymorphic_const ctx -> ctx
 
-type const_evaluation_result = NoBody | Opaque | IsProj
+type const_evaluation_result = NoBody | Opaque
 
 exception NotEvaluableConst of const_evaluation_result
-
-let constant_value env (kn,u) =
-  let cb = lookup_constant kn env in
-    if cb.const_proj = None then
-      match cb.const_body with
-      | Def l_body -> 
-        begin
-          match cb.const_universes with
-          | Monomorphic_const _ -> 
-            (Mod_subst.force_constr l_body, Univ.Constraint.empty)
-          | Polymorphic_const _ ->
-	    let csts = constraints_of cb u in
-            (subst_instance_constr u (Mod_subst.force_constr l_body), csts)
-        end
-      | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
-      | Undef _ -> raise (NotEvaluableConst NoBody)
-    else raise (NotEvaluableConst IsProj)
-
-let constant_opt_value env cst =
-  try Some (constant_value env cst)
-  with NotEvaluableConst _ -> None
 
 let constant_value_and_type env (kn, u) =
   let cb = lookup_constant kn env in
