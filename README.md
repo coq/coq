@@ -4,6 +4,7 @@
 [![Appveyor](https://ci.appveyor.com/api/projects/status/eln43k05pa2vm908/branch/master?svg=true)](https://ci.appveyor.com/project/coq/coq/branch/master)
 [![Circle CI](https://circleci.com/gh/coq/coq/tree/master.svg?style=shield)](https://circleci.com/gh/coq/workflows/coq/tree/master)
 [![Gitter](https://badges.gitter.im/coq/coq.svg)](https://gitter.im/coq/coq)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1003420.svg)](https://doi.org/10.5281/zenodo.1003420)
 
 Coq is a formal proof management system. It provides a formal language to write
 mathematical definitions, executable algorithms and theorems together with an
