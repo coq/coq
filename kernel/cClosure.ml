@@ -258,7 +258,7 @@ type 'a infos_cache = {
   i_repr : 'a infos -> constr -> 'a;
   i_env : env;
   i_sigma : existential -> constr option;
-  i_rels : constr option array;
+  i_rels : (Context.Rel.Declaration.t * Pre_env.lazy_val) Range.t;
   i_tab : 'a KeyTable.t }
 
 and 'a infos = {
@@ -282,13 +282,16 @@ let ref_value_cache ({i_cache = cache} as infos)  ref =
     let body =
       match ref with
 	| RelKey n ->
-            let len = Array.length cache.i_rels in
-            let i = n - 1 in
-            let () = if i < 0 || len <= i then raise Not_found in
-            begin match Array.unsafe_get cache.i_rels i with
-            | None -> raise Not_found
-            | Some t -> lift n t
-            end
+          let open Context.Rel.Declaration in
+          let i = n - 1 in
+          let (d, _) =
+            try Range.get cache.i_rels i
+            with Invalid_argument _ -> raise Not_found
+          in
+          begin match d with
+          | LocalAssum _ -> raise Not_found
+          | LocalDef (_, t, _) -> lift n t
+          end
 	| VarKey id -> assoc_defined id cache.i_env
 	| ConstKey cst -> constant_value_in cache.i_env cst
     in
@@ -303,26 +306,13 @@ let ref_value_cache ({i_cache = cache} as infos)  ref =
 let evar_value cache ev =
   cache.i_sigma ev
 
-let defined_rels flags env =
-(*  if red_local_const (snd flags) then*)
-  let ctx = rel_context env in
-  let len = List.length ctx in
-  let ans = Array.make len None in
-  let open Context.Rel.Declaration in
-  let iter i = function
-    | LocalAssum _ -> ()
-    | LocalDef (_,b,_) -> Array.unsafe_set ans i (Some b)
-  in
-  let () = List.iteri iter ctx in
-  ans
-(*  else (0,[])*)
-
 let create mk_cl flgs env evars =
+  let open Pre_env in
   let cache =
     { i_repr = mk_cl;
       i_env = env;
       i_sigma = evars;
-      i_rels = defined_rels flgs env;
+      i_rels = (Environ.pre_env env).env_rel_context.env_rel_map;
       i_tab = KeyTable.create 17 }
   in { i_flags = flgs; i_cache = cache }
 

@@ -639,7 +639,7 @@ let optimize lam =
 let lambda_of_constr env sigma c =
   set_global_env env;
   let env = Renv.make () in
-  let ids = List.rev_map RelDecl.get_name !global_env.env_rel_context in
+  let ids = List.rev_map RelDecl.get_name !global_env.env_rel_context.env_rel_ctx in
   Renv.push_rels env (Array.of_list ids);
   let lam = lambda_of_constr env sigma c in
 (*  if Flags.vm_draw_opt () then begin

@@ -60,18 +60,17 @@ let deactivated_guard env = not (typing_flags env).check_guarded
 let universes env = env.env_stratification.env_universes
 let named_context env = env.env_named_context.env_named_ctx
 let named_context_val env = env.env_named_context
-let rel_context env = env.env_rel_context
+let rel_context env = env.env_rel_context.env_rel_ctx
 let opaque_tables env = env.indirect_pterms
 let set_opaque_tables env indirect_pterms = { env with indirect_pterms }
 
 let empty_context env =
-  match env.env_rel_context, env.env_named_context.env_named_ctx with
+  match env.env_rel_context.env_rel_ctx, env.env_named_context.env_named_ctx with
   | [], [] -> true
   | _ -> false
 
 (* Rel context *)
-let lookup_rel n env =
-  Context.Rel.lookup n env.env_rel_context
+let lookup_rel = lookup_rel
 
 let evaluable_rel n env =
   is_local_def (lookup_rel n env)
@@ -88,13 +87,12 @@ let push_rec_types (lna,typarray,_) env =
 
 let fold_rel_context f env ~init =
   let rec fold_right env =
-    match env.env_rel_context with
-    | [] -> init
-    | rd::rc ->
+    match match_rel_context_val env.env_rel_context with
+    | None -> init
+    | Some (rd, _, rc) ->
 	let env =
 	  { env with
 	    env_rel_context = rc;
-	    env_rel_val = List.tl env.env_rel_val;
 	    env_nb_rel = env.env_nb_rel - 1 } in
 	f env rd (fold_right env)
   in fold_right env
@@ -144,16 +142,21 @@ let evaluable_named id env =
 let reset_with_named_context ctxt env =
   { env with
     env_named_context = ctxt;
-    env_rel_context = Context.Rel.empty;
-    env_rel_val = [];
+    env_rel_context = empty_rel_context_val;
     env_nb_rel = 0 }
 
 let reset_context = reset_with_named_context empty_named_context_val
 
 let pop_rel_context n env =
+  let rec skip n ctx =
+    if Int.equal n 0 then ctx
+    else match match_rel_context_val ctx with
+    | None -> invalid_arg "List.skipn"
+    | Some (_, _, ctx) -> skip (pred n) ctx
+  in
   let ctxt = env.env_rel_context in
   { env with
-    env_rel_context = List.skipn n ctxt;
+    env_rel_context = skip n ctxt;
     env_nb_rel = env.env_nb_rel - n }
 
 let fold_named_context f env ~init =

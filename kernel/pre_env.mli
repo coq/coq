@@ -45,11 +45,15 @@ type named_context_val = private {
   env_named_map : (Context.Named.Declaration.t * lazy_val) Id.Map.t;
 }
 
+type rel_context_val = private {
+  env_rel_ctx : Context.Rel.t;
+  env_rel_map : (Context.Rel.Declaration.t * lazy_val) Range.t;
+}
+
 type env = {
     env_globals       : globals;
     env_named_context : named_context_val;
-    env_rel_context   : Context.Rel.t;
-    env_rel_val       : lazy_val list;
+    env_rel_context   : rel_context_val;
     env_nb_rel        : int;
     env_stratification : stratification;
     env_typing_flags  : typing_flags;
@@ -63,8 +67,15 @@ val empty_env : env
 
 (** Rel context *)
 
+val empty_rel_context_val : rel_context_val
+val push_rel_context_val :
+  Context.Rel.Declaration.t -> rel_context_val -> rel_context_val
+val match_rel_context_val  :
+  rel_context_val -> (Context.Rel.Declaration.t * lazy_val * rel_context_val) option
+
 val nb_rel         : env -> int
 val push_rel       : Context.Rel.Declaration.t -> env -> env
+val lookup_rel     : int -> env -> Context.Rel.Declaration.t
 val lookup_rel_val : int -> env -> lazy_val
 val env_of_rel     : int -> env -> env
 

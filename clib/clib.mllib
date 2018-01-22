@@ -12,6 +12,7 @@ CString
 CStack
 
 Int
+Range
 HMap
 Bigint
 

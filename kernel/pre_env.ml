@@ -67,11 +67,15 @@ type named_context_val = {
   env_named_map : (Context.Named.Declaration.t * lazy_val) Id.Map.t;
 }
 
+type rel_context_val = {
+  env_rel_ctx : Context.Rel.t;
+  env_rel_map : (Context.Rel.Declaration.t * lazy_val) Range.t;
+}
+
 type env = {
   env_globals       : globals;           (* globals = constants + inductive types + modules + module-types *)
   env_named_context : named_context_val; (* section variables *)
-  env_rel_context   : Context.Rel.t;
-  env_rel_val       : lazy_val list;
+  env_rel_context   : rel_context_val;
   env_nb_rel        : int;
   env_stratification : stratification;
   env_typing_flags  : typing_flags;
@@ -84,6 +88,11 @@ let empty_named_context_val = {
   env_named_map = Id.Map.empty;
 }
 
+let empty_rel_context_val = {
+  env_rel_ctx = [];
+  env_rel_map = Range.empty;
+}
+
 let empty_env = {
   env_globals = {
     env_constants = Cmap_env.empty;
@@ -91,8 +100,7 @@ let empty_env = {
     env_modules = MPmap.empty;
     env_modtypes = MPmap.empty};
   env_named_context = empty_named_context_val;
-  env_rel_context = Context.Rel.empty;
-  env_rel_val = [];
+  env_rel_context = empty_rel_context_val;
   env_nb_rel = 0;
   env_stratification = {
     env_universes = UGraph.initial_universes;
@@ -106,21 +114,39 @@ let empty_env = {
 
 let nb_rel env = env.env_nb_rel
 
+let push_rel_context_val d ctx = {
+  env_rel_ctx = Context.Rel.add d ctx.env_rel_ctx;
+  env_rel_map = Range.cons (d, ref VKnone) ctx.env_rel_map;
+}
+
+let match_rel_context_val ctx = match ctx.env_rel_ctx with
+| [] -> None
+| decl :: rem ->
+  let (_, lval) = Range.hd ctx.env_rel_map in
+  let ctx = { env_rel_ctx = rem; env_rel_map = Range.tl ctx.env_rel_map } in
+  Some (decl, lval, ctx)
+
 let push_rel d env =
-  let rval = ref VKnone in
     { env with
-      env_rel_context = Context.Rel.add d env.env_rel_context;
-      env_rel_val = rval :: env.env_rel_val;
+      env_rel_context = push_rel_context_val d env.env_rel_context;
       env_nb_rel = env.env_nb_rel + 1 }
 
+let lookup_rel n env =
+  try fst (Range.get env.env_rel_context.env_rel_map (n - 1))
+  with Invalid_argument _ -> raise Not_found
+
 let lookup_rel_val n env =
-  try List.nth env.env_rel_val (n - 1)
-  with Failure _ -> raise Not_found
+  try snd (Range.get env.env_rel_context.env_rel_map (n - 1))
+  with Invalid_argument _ -> raise Not_found
+
+let rel_skipn n ctx = {
+  env_rel_ctx = Util.List.skipn n ctx.env_rel_ctx;
+  env_rel_map = Range.skipn n ctx.env_rel_map;
+}
 
 let env_of_rel n env =
   { env with
-    env_rel_context = Util.List.skipn n env.env_rel_context;
-    env_rel_val = Util.List.skipn n env.env_rel_val;
+    env_rel_context = rel_skipn n env.env_rel_context;
     env_nb_rel = env.env_nb_rel - n
   }
 
