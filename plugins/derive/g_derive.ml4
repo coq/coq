@@ -8,8 +8,6 @@
 
 open Stdarg
 
-(*i camlp4deps: "grammar/grammar.cma"  i*)
-
 DECLARE PLUGIN "derive_plugin"
 
 let classify_derive_command _ = Vernacexpr.(VtStartProof ("Classic",Doesn'tGuaranteeOpacity,[]),VtLater)

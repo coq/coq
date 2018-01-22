@@ -17,7 +17,7 @@ open Vernacexpr
 open Decl_kinds
 open Declarations
 open Misctypes
-open Tok (* necessary for camlp4 *)
+open Tok (* necessary for camlp5 *)
 
 open Pcoq
 open Pcoq.Prim
@@ -827,7 +827,7 @@ GEXTEND Gram
   command:
     [ [ IDENT "Comments"; l = LIST0 comment -> VernacComments l
 
-      (* Hack! Should be in grammar_ext, but camlp4 factorize badly *)
+      (* Hack! Should be in grammar_ext, but camlp5 factorizes badly *)
       | IDENT "Declare"; IDENT "Instance"; namesup = instance_name; ":";
 	 expl = [ "!" -> Decl_kinds.Implicit | -> Decl_kinds.Explicit ] ; t = operconstr LEVEL "200";
 	 info = hint_info ->

@@ -6,11 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4deps: "grammar/grammar.cma" i*)
-
 (*
   Syntax for the subtac terms and types.
-  Elaborated from correctness/psyntax.ml4 by Jean-Christophe Filli‚tre *)
+  Elaborated from correctness/psyntax.ml4 by Jean-Christophe Filli√¢tre *)
 
 open Libnames
 open Constrexpr

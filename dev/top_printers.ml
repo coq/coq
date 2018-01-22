@@ -485,7 +485,7 @@ let in_current_context f c =
   let (evmap,sign) = Pfedit.get_current_context () in
   f (fst (Constrintern.interp_constr sign evmap c))(*FIXME*)
 
-(* We expand the result of preprocessing to be independent of camlp4
+(* We expand the result of preprocessing to be independent of camlp5
 
 VERNAC COMMAND EXTEND PrintPureConstr
 | [ "PrintPureConstr" constr(c) ] -> [ in_current_context print_pure_constr c ]

@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(*i camlp4deps: "grammar/grammar.cma" i*)
-
 
 DECLARE PLUGIN "omega_plugin"
 

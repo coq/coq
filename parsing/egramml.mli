@@ -8,7 +8,7 @@
 
 open Vernacexpr
 
-(** Mapping of grammar productions to camlp4 actions. *)
+(** Mapping of grammar productions to camlp5 actions. *)
 
 (** This is the part specific to vernac extensions.
     For the Coq-level Notation and Tactic Notation, see Egramcoq. *)

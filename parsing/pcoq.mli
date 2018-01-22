@@ -124,7 +124,7 @@ end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e
         |
         | Egrammar.make_constr_prod_item
         V
-      Gramext.g_symbol list which is sent to camlp4
+      Gramext.g_symbol list which is sent to camlp5
 
     For user level tactic notations, dynamic addition of new rules is
     also done in several steps:
@@ -161,9 +161,9 @@ end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e
 
 *)
 
-(** Temporarily activate camlp4 verbosity *)
+(** Temporarily activate camlp5 verbosity *)
 
-val camlp4_verbosity : bool -> ('a -> unit) -> 'a -> unit
+val camlp5_verbosity : bool -> ('a -> unit) -> 'a -> unit
 
 (** Parse a string *)
 

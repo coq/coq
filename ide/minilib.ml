@@ -20,7 +20,7 @@ type level = [
   | `FATAL ]
 
 (** Some excerpt of Util and similar files to avoid loading the whole
-    module and its dependencies (and hence Compat and Camlp4) *)
+    module and its dependencies (and hence Compat and Camlp5) *)
 
 let debug = ref false
 

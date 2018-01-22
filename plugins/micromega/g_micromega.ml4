@@ -14,8 +14,6 @@
 (*                                                                      *)
 (************************************************************************)
 
-(*i camlp4deps: "grammar/grammar.cma" i*)
-
 open Ltac_plugin
 open Stdarg
 open Tacarg

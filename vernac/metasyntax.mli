@@ -51,7 +51,7 @@ val add_syntax_extension :
 val add_syntactic_definition : env -> Id.t -> Id.t list * constr_expr ->
   bool -> Flags.compat_version option -> unit
 
-(** Print the Camlp4 state of a grammar *)
+(** Print the Camlp5 state of a grammar *)
 
 val pr_grammar : string -> Pp.t
 

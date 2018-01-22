@@ -106,9 +106,9 @@ $(COQIDEBYTE): $(LINKIDE)
 	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma \
 	        lablgtksourceview2.cma str.cma $(IDEFLAGS) $(IDECDEPSFLAGS) $^
 
-ide/coqide_main.ml: ide/coqide_main.ml4 config/Makefile # no camlp4deps here
-	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) -I $(MYCAMLP4LIB) $(PR_O) $(CAMLP4USE) -D$(IDEINT) -impl $< -o $@
+ide/coqide_main.ml: ide/coqide_main.ml4 config/Makefile # no camlp5deps here
+	$(SHOW)'CAMLP5O   $<'
+	$(HIDE)$(CAMLP5O) -I $(MYCAMLP5LIB) $(PR_O) $(CAMLP5USE) -D$(IDEINT) -impl $< -o $@
 
 
 ide/%.cmi: ide/%.mli

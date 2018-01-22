@@ -19,7 +19,6 @@
 #directory "stm";;
 #directory "vernac";;
 
-#directory "+camlp4";; (* lazy solution: add both of camlp4/5 so that *)
 #directory "+camlp5";; (* Gramext is found in top_printers.ml *)
 
 #use "top_printers.ml";;

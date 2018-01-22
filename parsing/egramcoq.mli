@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Mapping of grammar productions to camlp4 actions *)
+(** Mapping of grammar productions to camlp5 actions *)
 
 (** This is the part specific to Coq-level Notation and Tactic Notation.
     For the ML-level tactic and vernac extensions, see Egramml. *)

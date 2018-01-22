@@ -196,7 +196,7 @@ COQOPTS=$(NATIVECOMPUTE)
 BOOTCOQC=$(TIMER) $(COQTOPBEST) -boot $(COQOPTS) -compile
 
 LOCALINCLUDES=$(addprefix -I ,$(SRCDIRS))
-MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
+MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP5LIB)
 
 OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
 OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
@@ -240,8 +240,8 @@ endef
 
 # Camlp5 settings
 
-CAMLP4DEPS:=grammar/grammar.cma
-CAMLP4USE=pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
+CAMLP5DEPS:=grammar/grammar.cma
+CAMLP5USE=pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
 
 PR_O := $(if $(READABLE_ML4),pr_o.cmo,pr_dump.cmo)
 
@@ -345,14 +345,14 @@ grammar/vernacextend.cmo : $(GRAMBASEDEPS) grammar/tacextend.cmo \
 ## Ocaml compiler with the right options and -I for grammar
 
 GRAMC := $(OCAMLFIND) ocamlc $(CAMLFLAGS) $(CAMLDEBUG) $(USERFLAGS) \
- -I $(MYCAMLP4LIB) -I grammar
+ -I $(MYCAMLP5LIB) -I grammar
 
 ## Specific rules for grammar.cma
 
 grammar/grammar.cma : $(GRAMCMO)
 	$(SHOW)'Testing $@'
 	@touch grammar/test.mlp
-	$(HIDE)$(GRAMC) -pp '$(CAMLP4O) -I $(MYCAMLP4LIB) $^ -impl' -impl grammar/test.mlp -o grammar/test
+	$(HIDE)$(GRAMC) -pp '$(CAMLP5O) -I $(MYCAMLP5LIB) $^ -impl' -impl grammar/test.mlp -o grammar/test
 	@rm -f grammar/test.* grammar/test
 	$(SHOW)'OCAMLC -a $@'
 	$(HIDE)$(GRAMC) $^ -linkall -a -o $@
@@ -361,7 +361,7 @@ grammar/grammar.cma : $(GRAMCMO)
 
 COMPATCMO:=
 GRAMP4USE:=$(COMPATCMO) pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
-GRAMPP:=$(CAMLP4O) -I $(MYCAMLP4LIB) $(GRAMP4USE) $(CAMLP4COMPAT) -impl
+GRAMPP:=$(CAMLP5O) -I $(MYCAMLP5LIB) $(GRAMP4USE) $(CAMLP5COMPAT) -impl
 
 ## Rules for standard .mlp and .mli files in grammar/
 
@@ -684,10 +684,10 @@ plugins/%.cmx: plugins/%.ml
 	$(SHOW)'OCAMLLEX  $<'
 	$(HIDE)$(OCAMLLEX) -o $@ "$*.mll"
 
-%.ml: %.ml4 $(CAMLP4DEPS)
+%.ml: %.ml4 $(CAMLP5DEPS)
 	$(SHOW)'CAMLP5O   $<'
-	$(HIDE)$(CAMLP4O) -I $(MYCAMLP4LIB) $(PR_O) \
-	  $(CAMLP4DEPS) $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< -o $@
+	$(HIDE)$(CAMLP5O) -I $(MYCAMLP5LIB) $(PR_O) \
+	  $(CAMLP5DEPS) $(CAMLP5USE) $(CAMLP5COMPAT) -impl $< -o $@
 
 
 ###########################################################################
