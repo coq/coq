@@ -1,3 +1,6 @@
+Note: this file isn't used anymore. Incompatibilities are documented
+as part of CHANGES.
+
 Potential sources of incompatibilities between Coq V8.6 and V8.7
 ----------------------------------------------------------------
 
