@@ -72,7 +72,15 @@ val return : proofview -> Evd.evar_map
 val partial_proof : entry -> proofview -> constr list
 val initial_goals : entry -> (constr * types) list
 
+(** goal <-> goal_with_state *)
 
+val with_empty_state :
+  Proofview_monad.goal ->  Proofview_monad.goal_with_state
+val drop_state :
+  Proofview_monad.goal_with_state -> Proofview_monad.goal
+val goal_with_state :
+  Proofview_monad.goal -> Proofview_monad.StateStore.t ->
+    Proofview_monad.goal_with_state
 
 (** {6 Focusing commands} *)
 
@@ -416,14 +424,14 @@ module Unsafe : sig
   (** [tclNEWGOALS gls] adds the goals [gls] to the ones currently
       being proved, appending them to the list of focused goals. If a
       goal is already solved, it is not added. *)
-  val tclNEWGOALS : Evar.t list -> unit tactic
+  val tclNEWGOALS : Proofview_monad.goal_with_state list -> unit tactic
 
   (** [tclSETGOALS gls] sets goals [gls] as the goals being under focus. If a
       goal is already solved, it is not set. *)
-  val tclSETGOALS : Evar.t list -> unit tactic
+  val tclSETGOALS : Proofview_monad.goal_with_state list -> unit tactic
 
   (** [tclGETGOALS] returns the list of goals under focus. *)
-  val tclGETGOALS : Evar.t list tactic
+  val tclGETGOALS : Proofview_monad.goal_with_state list tactic
 
   (** Sets the evar universe context. *)
   val tclEVARUNIVCONTEXT : UState.t -> unit tactic
@@ -480,6 +488,7 @@ module Goal : sig
   val env : t -> Environ.env
   val sigma : t -> Evd.evar_map
   val extra : t -> Evd.Store.t
+  val state : t -> Proofview_monad.StateStore.t
 
   (** [nf_enter t] applies the goal-dependent tactic [t] in each goal
       independently, in the manner of {!tclINDEPENDENT} except that

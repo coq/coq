@@ -973,6 +973,7 @@ TACTIC EXTEND unshelve
 | [ "unshelve" tactic1(t) ] ->
     [
       Proofview.with_shelf (Tacinterp.tactic_of_value ist t) >>= fun (gls, ()) ->
+      let gls = List.map Proofview.with_empty_state gls in
       Proofview.Unsafe.tclGETGOALS >>= fun ogls ->
       Proofview.Unsafe.tclSETGOALS (gls @ ogls)
     ]
