@@ -276,11 +276,6 @@ let rec ise_app_stack2 env f evd sk1 sk2 =
      end
   | _, _ -> (sk1,sk2), Success evd
 
-let push_rec_types pfix env =
-  let (i, c, t) = pfix in
-  let inj c = EConstr.Unsafe.to_constr c in
-  push_rec_types (i, Array.map inj c, Array.map inj t) env
-
 (* This function tries to unify 2 stacks element by element. It works
    from the end to the beginning. If it unifies a non empty suffix of
    stacks but not the entire stacks, the first part of the answer is
