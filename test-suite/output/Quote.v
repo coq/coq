@@ -10,6 +10,7 @@ Inductive formula : Type :=
   | f_atom : index -> formula
   | f_const : Prop -> formula.
 
+Unset Fixpoints Lift Arguments.
 Fixpoint interp_f (vm:
                     varmap Prop) (f:formula) {struct f} : Prop :=
   match f with
