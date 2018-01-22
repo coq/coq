@@ -209,10 +209,7 @@ let set_buffer_handlers
   let mark_set_cb it m =
     debug_edit_zone ();
     let ins = get_insert () in
-    let line = ins#line + 1 in
-    let off = ins#line_offset + 1 in
-    let msg = Printf.sprintf "Line: %5d Char: %3d" line off in
-    let () = !Ideutils.set_location msg in
+    let () = Ideutils.display_location ins in
     match GtkText.Mark.get_name m with
     | Some "insert" -> ()
     | Some s -> Minilib.log (s^" moved")
