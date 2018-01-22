@@ -42,6 +42,8 @@ Tactics
   in the OCaml run-time system.
 - The tactics "dtauto", "dintuition", "firstorder" now handle inductive types
   with let bindings in the parameters.
+- The tactic "dtauto" now handles some inductives such as
+  "@sigT A (fun _ => B)" as non-dependent conjunctions.
 
 Focusing
 

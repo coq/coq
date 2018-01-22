@@ -88,6 +88,12 @@ let is_lax_conjunction = function
 
 let prod_assum sigma t = fst (decompose_prod_assum sigma t)
 
+(* whd_beta normalize the types of arguments in a product *)
+let rec whd_beta_prod sigma c = match EConstr.kind sigma c with
+  | Prod (n,t,c) -> mkProd (n,Reductionops.whd_beta sigma t,whd_beta_prod sigma c)
+  | LetIn (n,d,t,c) -> mkLetIn (n,d,t,whd_beta_prod sigma c)
+  | _ -> c
+
 let match_with_one_constructor sigma style onlybinary allow_rec t =
   let (hdapp,args) = decompose_app sigma t in
   let res = match EConstr.kind sigma hdapp with
@@ -111,8 +117,9 @@ let match_with_one_constructor sigma style onlybinary allow_rec t =
 	    Some (hdapp,args)
 	  else None
 	else
-          let ctyp = Termops.prod_applist_assum sigma (Context.Rel.length mib.mind_params_ctxt)
-                       (EConstr.of_constr mip.mind_nf_lc.(0)) args in
+          let ctyp = whd_beta_prod sigma
+            (Termops.prod_applist_assum sigma (Context.Rel.length mib.mind_params_ctxt)
+                       (EConstr.of_constr mip.mind_nf_lc.(0)) args) in
 	  let cargs = List.map RelDecl.get_type (prod_assum sigma ctyp) in
 	  if not (is_lax_conjunction style) || has_nodep_prod sigma ctyp then
 	    (* Record or non strict conjunction *)
