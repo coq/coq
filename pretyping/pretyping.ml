@@ -120,11 +120,11 @@ let nf_fix sigma (nas, cs, ts) =
   (nas, Array.map inj cs, Array.map inj ts)
 
 let search_guard ?loc env possible_indexes fixdefs =
-  (* Standard situation with only one possibility for each fix. *)
-  (* We treat it separately in order to get proper error msg. *)
-  let is_singleton = function [_] -> true | _ -> false in
-  if List.for_all is_singleton possible_indexes then
-    let indexes = Array.of_list (List.map List.hd possible_indexes) in
+  match CList.is_singleton_opt possible_indexes with
+  | Some indexes ->
+    (* Standard situation with only one possibility for each fix. *)
+    (* We treat it separately in order to get proper error msg. *)
+    let indexes = Array.of_list indexes in
     let fix = ((indexes, 0),fixdefs) in
     (try check_fix env fix
      with reraise ->
@@ -132,7 +132,7 @@ let search_guard ?loc env possible_indexes fixdefs =
        let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
        iraise (e, info));
     indexes
-  else
+  | None ->
     (* we now search recursively among all combinations *)
     (try
        List.iter

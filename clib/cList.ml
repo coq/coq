@@ -111,6 +111,7 @@ sig
   val cartesians_filter :
     ('a -> 'b -> 'b option) -> 'b -> 'a list list -> 'b list
   val factorize_left : 'a eq -> ('a * 'b) list -> ('a * 'b list) list
+  val is_singleton_opt : 'a list list -> 'a list option
 
   module type MonoS = sig
     type elt
@@ -877,6 +878,14 @@ let rec factorize_left cmp = function
       let al,l' = partition (fun (a',_) -> cmp a a') l in
       (a,(b::List.map snd al)) :: factorize_left cmp l'
   | [] -> []
+
+let is_singleton_opt l =
+  let rec fold acc = function
+    | [] -> Some (rev acc)
+    | [x] :: rest -> fold (x::acc) rest
+    | _ :: _ -> None
+  in
+  fold [] l
 
 module type MonoS = sig
   type elt

@@ -249,6 +249,8 @@ sig
 
   val factorize_left : 'a eq -> ('a * 'b) list -> ('a * 'b list) list
 
+  val is_singleton_opt : 'a list list -> 'a list option
+
   module type MonoS = sig
     type elt
     val equal : elt list -> elt list -> bool
