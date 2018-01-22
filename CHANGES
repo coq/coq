@@ -68,6 +68,11 @@ Checker
 
 - The checker now accepts filenames in addition to logical paths.
 
+CoqIDE
+
+- Find and Replace All report the number of occurrences found; Find indicates
+  when it wraps.
+
 Documentation
 
 - The Coq FAQ, formerly located at https://coq.inria.fr/faq, has been
