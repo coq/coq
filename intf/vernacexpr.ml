@@ -167,6 +167,7 @@ type option_ref_value =
 type universe_decl_expr = (Id.t Loc.located list, glob_constraint list) gen_universe_decl
 
 type ident_decl = lident * universe_decl_expr option
+type name_decl = lname * universe_decl_expr option
 
 type sort_expr = Sorts.family
 
@@ -204,7 +205,7 @@ type inductive_expr =
 type one_inductive_expr =
   ident_decl * local_binder_expr list * constr_expr option * constructor_expr list
 
-type typeclass_constraint = (Name.t Loc.located * universe_decl_expr option) * binding_kind * constr_expr
+type typeclass_constraint = name_decl * binding_kind * constr_expr
 
 and typeclass_context = typeclass_constraint list
 
@@ -339,7 +340,7 @@ type nonrec vernac_expr =
   | VernacNotationAddFormat of string * string * string
 
   (* Gallina *)
-  | VernacDefinition of (discharge * definition_object_kind) * ident_decl * definition_expr
+  | VernacDefinition of (discharge * definition_object_kind) * name_decl * definition_expr
   | VernacStartTheoremProof of theorem_kind * proof_expr list
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
@@ -449,7 +450,6 @@ type nonrec vernac_expr =
   | VernacComments of comment list
 
   (* Proof management *)
-  | VernacGoal of constr_expr
   | VernacAbort of lident option
   | VernacAbortAll
   | VernacRestart

@@ -71,6 +71,9 @@ open Decl_kinds
     | Some loc -> let (b,_) = Loc.unloc loc in
                   pr_located pr_fqid @@ Loc.tag ~loc:(Loc.make_loc (b,b + String.length (string_of_fqid fqid))) fqid
 
+  let pr_lname_decl (n, u) =
+    pr_lname n ++ pr_universe_decl u
+
   let pr_smart_global = Pputils.pr_or_by_notation pr_reference
 
   let pr_ltac_ref = Libnames.pr_reference
@@ -562,8 +565,6 @@ open Decl_kinds
         return (keyword "Unfocus")
       | VernacUnfocused ->
         return (keyword "Unfocused")
-      | VernacGoal c ->
-        return (keyword "Goal" ++ pr_lconstrarg c)
       | VernacAbort id ->
         return (keyword "Abort" ++ pr_opt pr_lident id)
       | VernacUndo i ->
@@ -674,7 +675,10 @@ open Decl_kinds
       (* Gallina *)
       | VernacDefinition ((discharge,kind),id,b) -> (* A verifier... *)
         let pr_def_token dk =
-          keyword (Kindops.string_of_definition_object_kind dk)
+          keyword (
+            if Name.is_anonymous (snd (fst id))
+            then "Goal"
+            else Kindops.string_of_definition_object_kind dk)
         in
         let pr_reduce = function
           | None -> mt()
@@ -691,12 +695,13 @@ open Decl_kinds
             in
             (pr_binders_arg bl,ty,Some (pr_reduce red ++ pr_lconstr body))
           | ProveBody (bl,t) ->
-            (pr_binders_arg bl, str" :" ++ pr_spc_lconstr t, None) in
+            let typ u = if snd (fst id) = Anonymous then (assert (bl = []); u) else (str" :" ++ u) in
+            (pr_binders_arg bl, typ (pr_spc_lconstr t), None) in
         let (binds,typ,c) = pr_def_body b in
         return (
           hov 2 (
             pr_def_token kind ++ spc()
-            ++ pr_ident_decl id ++ binds ++ typ
+            ++ pr_lname_decl id ++ binds ++ typ
             ++ (match c with
               | None -> mt()
               | Some cc -> str" :=" ++ spc() ++ cc))

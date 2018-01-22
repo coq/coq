@@ -48,6 +48,11 @@ let declare_vernac_classifier
 =
   classifiers := !classifiers @ [s,f]
 
+let idents_of_name : Names.Name.t -> Names.Id.t list =
+  function
+  | Names.Anonymous -> []
+  | Names.Name n -> [n]
+
 let classify_vernac e =
   let static_classifier ~poly e = match e with
     (* Univ poly compatibility: we run it now, so that we can just
@@ -83,18 +88,15 @@ let classify_vernac e =
     | VernacSetOption (["Default";"Proof";"Using"],_) -> VtSideff [], VtNow
     (* StartProof *)
     | VernacDefinition ((Decl_kinds.DoDischarge,_),((_,i),_),ProveBody _) ->
-        VtStartProof(default_proof_mode (),Doesn'tGuaranteeOpacity,[i]), VtLater
+        VtStartProof(default_proof_mode (),Doesn'tGuaranteeOpacity, idents_of_name i), VtLater
     | VernacDefinition (_,((_,i),_),ProveBody _) ->
        let guarantee = if poly then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
-        VtStartProof(default_proof_mode (),guarantee,[i]), VtLater
+        VtStartProof(default_proof_mode (),guarantee, idents_of_name i), VtLater
     | VernacStartTheoremProof (_,l) ->
         let ids = 
           CList.map_filter (function (Some ((_,i),pl), _) -> Some i | _ -> None) l in
        let guarantee = if poly then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
         VtStartProof (default_proof_mode (),guarantee,ids), VtLater
-    | VernacGoal _ ->
-       let guarantee = if poly then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
-       VtStartProof (default_proof_mode (),guarantee,[]), VtLater
     | VernacFixpoint (discharge,l) ->
        let guarantee =
          if discharge = Decl_kinds.DoDischarge || poly then Doesn'tGuaranteeOpacity
@@ -121,7 +123,7 @@ let classify_vernac e =
     | VernacAssumption (_,_,l) ->
         let ids = List.flatten (List.map (fun (_,(l,_)) -> List.map (fun (id, _) -> snd id) l) l) in
         VtSideff ids, VtLater    
-    | VernacDefinition (_,((_,id),_),DefineBody _) -> VtSideff [id], VtLater
+    | VernacDefinition (_,((_,id),_),DefineBody _) -> VtSideff (idents_of_name id), VtLater
     | VernacInductive (_, _,_,l) ->
         let ids = List.map (fun (((_,((_,id),_)),_,_,_,cl),_) -> id :: match cl with
         | Constructors l -> List.map (fun (_,((_,id),_)) -> id) l

@@ -471,25 +471,34 @@ let vernac_definition_hook p = function
 | SubClass -> Class.add_subclass_hook p
 | _ -> no_hook
 
-let vernac_definition ~atts discharge kind ((loc,id as lid),pl) def =
+let vernac_definition ~atts discharge kind ((loc, id), pl) def =
   let local = enforce_locality_exp atts.locality discharge in
   let hook = vernac_definition_hook atts.polymorphic kind in
-  let () = match local with
-  | Discharge -> Dumpglob.dump_definition lid true "var"
-  | Local | Global -> Dumpglob.dump_definition lid false "def"
+  let () =
+    match id with
+    | Anonymous -> ()
+    | Name n -> let lid = (loc, n) in
+      match local with
+      | Discharge -> Dumpglob.dump_definition lid true "var"
+      | Local | Global -> Dumpglob.dump_definition lid false "def"
   in
   let program_mode = Flags.is_program_mode () in
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
           start_proof_and_print (local, atts.polymorphic, DefinitionBody kind)
-	    [Some (lid,pl), (bl,t)] hook
+            [(match id with
+                | Anonymous -> None
+                | Name n -> Some ((loc, n), pl)
+              ), (bl, t)] hook
     | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
           | None -> None
           | Some r ->
             let sigma, env = Pfedit.get_current_context () in
             Some (snd (Hook.get f_interp_redexp env sigma r)) in
-        ComDefinition.do_definition ~program_mode id (local, atts.polymorphic, kind) pl bl red_option c typ_opt hook)
+      ComDefinition.do_definition ~program_mode
+        (match id with Name n -> n | Anonymous -> assert false)
+        (local, atts.polymorphic, kind) pl bl red_option c typ_opt hook)
 
 let vernac_start_proof ~atts kind l =
   let local = enforce_locality_exp atts.locality NoDischarge in
@@ -2068,7 +2077,6 @@ let interp ?proof ~atts ~st c =
   | VernacComments l -> Flags.if_verbose Feedback.msg_info (str "Comments ok\n")
 
   (* Proof management *)
-  | VernacGoal t -> vernac_start_proof ~atts Theorem [None,([],t)]
   | VernacFocus n -> vernac_focus n
   | VernacUnfocus -> vernac_unfocus ()
   | VernacUnfocused -> vernac_unfocused ()
