@@ -51,6 +51,9 @@ Focusing
 
 Vernacular Commands
 
+- Proofs ending in "Qed exporting ident, .., ident" are not supported
+  anymore. Constants generated during `abstract` are kept private to the
+  local environment.
 - The deprecated Coercion Local, Open Local Scope, Notation Local syntax
   was removed. Use Local as a prefix instead.
 - For the Extraction Language command, "OCaml" is spelled correctly.

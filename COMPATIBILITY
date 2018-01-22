@@ -5,10 +5,6 @@ Potential sources of incompatibilities between Coq V8.6 and V8.7
   error rather than a warning when the superfluous name is already in
   use. The easy fix is to remove the superfluous name.
 
-- Proofs ending in "Qed exporting ident, .., ident" are not supported
-  anymore. Constants generated during `abstract` are kept private to the
-  local environment.
-
 Potential sources of incompatibilities between Coq V8.5 and V8.6
 ----------------------------------------------------------------
 
