@@ -5,34 +5,42 @@
 
 set -e
 
-CODE=0
-git diff --cached --name-only -z | xargs -0 dev/tools/check-eof-newline.sh --fix || CODE=1
-
-if [ $CODE -ne 0 ]
+if ! git diff --cached --name-only -z | xargs -0 dev/tools/check-eof-newline.sh ||
+        ! git diff-index --check --cached HEAD >/dev/null 2>&1 ;
 then
-    1>&2 echo "Some files had newline errors; they have been fixed in the working tree."
-    1>&2 echo "Make sure to add them before committing."
-    1>&2 echo "This may fix itself if you were using git commit -a, and you try again."
-    exit 1
-fi
-
-if git diff-index --check --cached HEAD >/dev/null 2>&1 ;
-then
-    :
-else
     1>&2 echo "Auto fixing whitespace issues..."
 
-    TEMP=$(mktemp)
     # We fix whitespace in the index and in the working tree
     # separately to preserve non-added changes.
-    git diff-index -p --cached HEAD > "$TEMP"
-    git apply --cached -R "$TEMP"
-    git apply --cached --whitespace=fix "$TEMP"
+    index=$(mktemp "git-fix-ws-index.XXXXX")
+    fixed_index=$(mktemp "git-fix-ws-index-fixed.XXXXX")
+    tree=$(mktemp "git-fix-ws-tree.XXXXX")
+    1>&2 echo "Patches are saved in '$index', '$fixed_index' and '$tree'."
+    1>&2 echo "If an error destroys your changes you can recover using them."
+    1>&2 echo "(The files are cleaned up on success.)"
 
-    git diff-index -p HEAD > "$TEMP"
-    git apply -R "$TEMP"
-    git apply --whitespace=fix "$TEMP"
-    rm "$TEMP"
+    git diff-index -p --cached HEAD > "$index"
+    git diff-index -p HEAD > "$tree"
+
+    # reset work tree and index
+    # NB: untracked files which were not added are untouched
+    git apply --cached -R "$index"
+    git apply -R "$tree"
+
+    # Fix index
+    # For end of file newlines we must go through the worktree
+    git apply --cached --whitespace=fix "$index"
+    git apply --whitespace=fix "$index"
+    git diff --cached --name-only -z | xargs -0 dev/tools/check-eof-newline.sh --fix
+    git add -u
+
+    # reset work tree
+    git diff-index -p --cached HEAD > "$fixed_index"
+    git apply -R "$fixed_index"
+
+    # Fix worktree
+    git apply --whitespace=fix "$tree"
+    git diff --name-only -z | xargs -0 dev/tools/check-eof-newline.sh --fix
 
     # Check that we did fix whitespace
     if ! git diff-index --check --cached HEAD;
@@ -43,4 +51,7 @@ else
         exit 1
     fi
     1>&2 echo "Whitespace issues fixed!"
+
+    # clean up temporary files
+    rm "$index" "$tree" "$fixed_index"
 fi

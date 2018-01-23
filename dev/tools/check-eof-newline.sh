@@ -4,8 +4,9 @@
 # Detect missing end of file newlines for FILES.
 # Files are skipped if untracked by git and depending on gitattributes.
 # With --fix, automatically append a newline.
-# Exit status: 1 if any file had a missing newline, 0 otherwise
-# (regardless of --fix).
+# Exit status:
+# Without --fix: 1 if any file had a missing newline, 0 otherwise.
+# With --fix: 1 if any non writable file had a missing newline, 0 otherwise.
 
 FIX=
 if [ "$1" = --fix ];
@@ -22,12 +23,18 @@ for f in "$@"; do
     then
         if [ -n "$FIX" ];
         then
-            echo >> "$f"
-            echo "Newline appended to file $f!"
+            if [ -w "$f" ];
+            then
+                echo >> "$f"
+                echo "Newline appended to file $f!"
+            else
+                echo "File $f is missing a newline and not writable!"
+                CODE=1
+            fi
         else
             echo "No newline at end of file $f!"
+            CODE=1
         fi
-        CODE=1
     fi
 done
 
