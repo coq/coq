@@ -741,12 +741,26 @@ let mkRefl t c gl =
   let (sigma, refl) = EConstr.fresh_global (pf_env gl) sigma Coqlib.((build_coq_eq_data()).refl) in
   EConstr.mkApp (refl, [|t; c|]), { gl with sigma }
 
+let safe_apply_type newcl args =
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let store = Proofview.Goal.extra gl in
+    Refine.refine ~typecheck:true begin fun sigma ->
+      let newcl = Reductionops.nf_betaiota sigma newcl (* As in former Logic.refine *) in
+      let (sigma, ev) =
+        Evarutil.new_evar env sigma ~principal:true ~store newcl in
+      (sigma, EConstr.applist (ev, args))
+    end
+  end
+
+let safe_apply_type x xs = Proofview.V82.of_tactic (safe_apply_type x xs)
+
 let discharge_hyp (id', (id, mode)) gl =
   let cl' = Vars.subst_var id (pf_concl gl) in
   match pf_get_hyp gl id, mode with
   | NamedDecl.LocalAssum (_, t), _ | NamedDecl.LocalDef (_, _, t), "(" ->
-     Proofview.V82.of_tactic (Tactics.apply_type (EConstr.of_constr (mkProd (Name id', t, cl')))
-       [EConstr.of_constr (mkVar id)]) gl
+     safe_apply_type (EConstr.of_constr (mkProd (Name id', t, cl')))
+       [EConstr.of_constr (mkVar id)] gl
   | NamedDecl.LocalDef (_, v, t), _ ->
      Proofview.V82.of_tactic
        (convert_concl (EConstr.of_constr (mkLetIn (Name id', v, t, cl')))) gl
@@ -1179,8 +1193,6 @@ let pf_interp_gen_aux ist gl to_ind ((oclr, occ), t) =
     false, pat, EConstr.mkProd (constr_name (project gl) c, pty, Tacmach.pf_concl gl), p, clr,ucst,gl
   else CErrors.user_err ?loc:(loc_of_cpattern t) (str "generalized term didn't match")
 
-let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type x xs)
-
 let genclrtac cl cs clr =
   let tclmyORELSE tac1 tac2 gl =
     try tac1 gl
@@ -1191,7 +1203,7 @@ let genclrtac cl cs clr =
    * "The term H has type T x but is expected to have type T x0". *)
   tclTHEN
     (tclmyORELSE
-      (apply_type cl cs)
+      (safe_apply_type cl cs)
       (fun type_err gl ->
          tclTHEN
            (tclTHEN (Proofview.V82.of_tactic (Tactics.elim_type (EConstr.of_constr

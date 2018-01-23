@@ -28,8 +28,6 @@ module RelDecl = Context.Rel.Declaration
 
 (** The "case" and "elim" tactic *)
 
-let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type x xs)
-
 (* TASSI: given the type of an elimination principle, it finds the higher order
  * argument (index), it computes it's arity and the arity of the eliminator and
  * checks if the eliminator is recursive or not *)
@@ -328,7 +326,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) ?ist deps what ?elim eqid elim_intr
           let new_concl = fire_subst gl new_concl in
           let erefl, gl = mkRefl t c gl in
           let erefl = fire_subst gl erefl in
-          apply_type new_concl [erefl], gl in
+          safe_apply_type new_concl [erefl], gl in
         let rel = k + if c_is_head_p then 1 else 0 in
         let src, gl = mkProt EConstr.mkProp EConstr.(mkApp (eq,[|t; c; mkRel rel|])) gl in
         let concl = EConstr.mkArrow src (EConstr.Vars.lift 1 concl) in

@@ -313,7 +313,7 @@ let elim_intro_tac ipats ?ist what eqid ssrelim is_rec clr gl =
                                       EConstr.(mkProd (Name (name gl), case_ty, mkArrow refl (Vars.lift 2 concl))) in 
            let erefl, gl = mkRefl case_ty case gl in
            let erefl = fire_subst gl erefl in
-           apply_type new_concl [case;erefl] gl in
+           safe_apply_type new_concl [case;erefl] gl in
        Tacticals.tclTHENLIST [gen_eq_tac; intro_lhs; introid ipat]
     | _ -> Tacticals.tclIDTAC in
   let unprot = if eqid <> None && is_rec then unprotecttac else Tacticals.tclIDTAC in
@@ -348,7 +348,7 @@ let pushmoveeqtac cl c gl =
   let open EConstr in
   let x, t, cl1 = destProd (project gl) cl in
   let cl2, eqc, gl = mkEq R2L cl1 c t 1 gl in
-  apply_type (mkProd (x, t, cl2)) [c; eqc] gl
+  safe_apply_type (mkProd (x, t, cl2)) [c; eqc] gl
 
 let eqmovetac _ gen ist gl =
   let cl, c, _, gl = pf_interp_gen ist gl false gen in pushmoveeqtac cl c gl

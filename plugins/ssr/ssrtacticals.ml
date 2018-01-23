@@ -122,8 +122,6 @@ let endclausestac id_map clseq gl_id cl0 gl =
   if List.for_all not_hyp' all_ids && not c_hidden then mktac [] gl else
   CErrors.user_err (Pp.str "tampering with discharged assumptions of \"in\" tactical")
 
-let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type x xs)
-
 let tclCLAUSES ist tac (gens, clseq) gl =
   if clseq = InGoal || clseq = InSeqGoal then tac gl else
   let clr_gens = pf_clauseids gl gens clseq in
@@ -134,7 +132,7 @@ let tclCLAUSES ist tac (gens, clseq) gl =
     let c = pf_concl gl in
     let gl, args, c =
       List.fold_right (abs_wgen true ist mk_discharged_id) gens (gl,[], c) in
-    apply_type c args gl in
+    safe_apply_type c args gl in
   let endtac =
     let id_map = CList.map_filter (function
       | _, Some ((x,_),_) -> let id = hoi_id x in Some (mk_discharged_id id, id)
