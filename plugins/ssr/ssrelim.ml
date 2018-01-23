@@ -28,7 +28,7 @@ module RelDecl = Context.Rel.Declaration
 
 (** The "case" and "elim" tactic *)
 
-let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type x xs)
+let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type ~typecheck:false x xs)
 
 (* TASSI: given the type of an elimination principle, it finds the higher order
  * argument (index), it computes it's arity and the arity of the eliminator and

@@ -41,7 +41,7 @@ module RelDecl = Context.Rel.Declaration
 (* They require guessing the view hints and the number of      *)
 (* implicits, respectively, which we do by brute force.        *)
 
-let apply_type x xs = Proofview.V82.of_tactic (apply_type x xs)
+let apply_type x xs = Proofview.V82.of_tactic (apply_type ~typecheck:false x xs)
 
 let new_tac = Proofview.V82.of_tactic
 

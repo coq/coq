@@ -122,7 +122,7 @@ let endclausestac id_map clseq gl_id cl0 gl =
   if List.for_all not_hyp' all_ids && not c_hidden then mktac [] gl else
   CErrors.user_err (Pp.str "tampering with discharged assumptions of \"in\" tactical")
 
-let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type x xs)
+let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type ~typecheck:false x xs)
 
 let tclCLAUSES ist tac (gens, clseq) gl =
   if clseq = InGoal || clseq = InSeqGoal then tac gl else

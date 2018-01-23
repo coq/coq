@@ -185,7 +185,7 @@ val revert        : Id.t list -> unit Proofview.tactic
 
 (** {6 Resolution tactics. } *)
 
-val apply_type : constr -> constr list -> unit Proofview.tactic
+val apply_type : typecheck:bool -> constr -> constr list -> unit Proofview.tactic
 val bring_hyps : named_context -> unit Proofview.tactic
 
 val apply                 : constr -> unit Proofview.tactic
