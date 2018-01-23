@@ -31,12 +31,6 @@ open Decl_kinds
   let pr_lconstr = pr_lconstr_expr
   let pr_spc_lconstr = pr_sep_com spc pr_lconstr_expr
 
-  let pr_lident (loc,id) =
-    match loc with
-    | None     -> pr_id id
-    | Some loc -> let (b,_) = Loc.unloc loc in
-                  pr_located pr_id @@ Loc.tag ~loc:(Loc.make_loc (b,b + String.length (Id.to_string id))) id
-
   let pr_uconstraint (l, d, r) =
     pr_glob_level l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
       pr_glob_level r
@@ -76,10 +70,6 @@ open Decl_kinds
     | None     -> pr_fqid fqid
     | Some loc -> let (b,_) = Loc.unloc loc in
                   pr_located pr_fqid @@ Loc.tag ~loc:(Loc.make_loc (b,b + String.length (string_of_fqid fqid))) fqid
-
-  let pr_lname = function
-    | (loc,Name id) -> pr_lident (loc,id)
-    | lna -> pr_located Name.print lna
 
   let pr_smart_global = Pputils.pr_or_by_notation pr_reference
 
