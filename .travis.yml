@@ -20,10 +20,6 @@ addons:
   apt:
     sources:
     - avsm
-    packages:
-    - opam
-    - aspcud
-    - gcc-multilib
 
 env:
   global:
