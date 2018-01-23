@@ -115,7 +115,7 @@ let add_constant kn cs env =
 	env_constants = new_constants } in
   { env with env_globals = new_globals }
 
-type const_evaluation_result = NoBody | Opaque | IsProj
+type const_evaluation_result = NoBody | Opaque
 
 (* Constant types *)
 
@@ -143,18 +143,16 @@ exception NotEvaluableConst of const_evaluation_result
 
 let constant_value env (kn,u) =
   let cb = lookup_constant kn env in
-  if cb.const_proj = None then
-    match cb.const_body with
-    | Def l_body -> 
-      let b = force_constr l_body in
-      begin
-        match cb.const_universes with
-        | Monomorphic_const _ -> b
-        | Polymorphic_const _ -> subst_instance_constr u (force_constr l_body)
-      end
-    | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
-    | Undef _ -> raise (NotEvaluableConst NoBody)
-  else raise (NotEvaluableConst IsProj)
+  match cb.const_body with
+  | Def l_body ->
+    let b = force_constr l_body in
+    begin
+      match cb.const_universes with
+      | Monomorphic_const _ -> b
+      | Polymorphic_const _ -> subst_instance_constr u (force_constr l_body)
+    end
+  | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
+  | Undef _ -> raise (NotEvaluableConst NoBody)
 
 (* A global const is evaluable if it is defined and not opaque *)
 let evaluable_constant cst env =
