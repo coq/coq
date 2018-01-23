@@ -56,6 +56,7 @@ val insert_xml : ?mark:GText.mark -> ?tags:GText.tag list ->
   #GText.buffer_skel -> Richpp.richpp -> unit
 
 val set_location : (string -> unit) ref
+val display_location : GText.iter -> unit
 
 (* In win32, when a command-line is to be executed via cmd.exe
    (i.e. Sys.command, Unix.open_process, ...), it cannot contain several
@@ -95,4 +96,3 @@ val io_read_all : Glib.Io.channel -> string
 
 val run_command :
   (string -> unit) -> (Unix.process_status -> unit) -> string -> unit
-

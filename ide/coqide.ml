@@ -1221,9 +1221,14 @@ let build_ui () =
   (* Emacs/PG mode *)
   NanoPG.init w notebook all_menus;
 
-  (* Reset on tab switch *)
-  let _ = notebook#connect#switch_page ~callback:(fun _ ->
-    if reset_on_tab_switch#get then Nav.restart ())
+  (* On tab switch, reset, update location *)
+  let _ = notebook#connect#switch_page ~callback:(fun n ->
+    let _ = if reset_on_tab_switch#get then Nav.restart () in
+    try
+      let session = notebook#get_nth_term n in
+      let ins = session.buffer#get_iter_at_mark `INSERT in
+      Ideutils.display_location ins
+    with _ -> ())
   in
 
   (* Vertical Separator between Scripts and Goals *)
