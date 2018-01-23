@@ -23,11 +23,6 @@ open Arguments_renaming
 open Pretype_errors
 open Context.Rel.Declaration
 
-let push_rec_types pfix env =
-  let (i, c, t) = pfix in
-  let inj c = EConstr.Unsafe.to_constr c in
-  push_rec_types (i, Array.map inj c, Array.map inj t) env
-
 let meta_type evd mv =
   let ty =
     try Evd.meta_ftype evd mv

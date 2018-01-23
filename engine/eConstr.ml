@@ -657,6 +657,10 @@ let cast_rel_context :
   type a b. (a,b) eq -> (a, a) Rel.pt -> (b, b) Rel.pt =
   fun Refl x -> x
 
+let cast_rec_decl :
+  type a b. (a,b) eq -> (a, a) Constr.prec_declaration -> (b, b) Constr.prec_declaration =
+  fun Refl x -> x
+
 let cast_named_decl :
   type a b. (a,b) eq -> (a, a) Named.Declaration.pt -> (b, b) Named.Declaration.pt =
   fun Refl x -> x
@@ -765,6 +769,7 @@ let it_mkLambda_or_LetIn t ctx = List.fold_left (fun c d -> mkLambda_or_LetIn d 
 
 let push_rel d e = push_rel (cast_rel_decl unsafe_eq d) e
 let push_rel_context d e = push_rel_context (cast_rel_context unsafe_eq d) e
+let push_rec_types d e = push_rec_types (cast_rec_decl unsafe_eq d) e
 let push_named d e = push_named (cast_named_decl unsafe_eq d) e
 let push_named_context d e = push_named_context (cast_named_context unsafe_eq d) e
 let push_named_context_val d e = push_named_context_val (cast_named_decl unsafe_eq d) e
