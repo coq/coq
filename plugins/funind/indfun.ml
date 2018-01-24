@@ -215,6 +215,7 @@ let is_rec names =
     | GCases(_,_,el,brl) ->
 	List.exists (fun (e,_) -> lookup names e) el ||
 	  List.exists (lookup_br names) brl
+    | GProj(_,c) -> lookup names c
   and lookup_br names (_,(idl,_,rt)) =
     let new_names = List.fold_right Id.Set.remove idl names in
     lookup new_names rt
@@ -779,6 +780,7 @@ let rec add_args id new_args = CAst.map (function
   | CNotation _ -> anomaly ~label:"add_args " (Pp.str "CNotation.")
   | CGeneralization _ -> anomaly ~label:"add_args " (Pp.str "CGeneralization.")
   | CDelimiters _ -> anomaly ~label:"add_args " (Pp.str "CDelimiters.")
+  | CProj _ -> user_err Pp.(str "Funind does not support primitive projections")
   )
 exception Stop of  Constrexpr.constr_expr
 

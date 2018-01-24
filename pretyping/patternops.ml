@@ -137,8 +137,7 @@ let rec head_pattern_bound t =
     | PCase (_,p,c,br) -> head_pattern_bound c
     | PRef r         -> r
     | PVar id        -> VarRef id
-    | PProj (p,c)    -> ConstRef (Projection.constant p)
-    | PEvar _ | PRel _ | PMeta _ | PSoApp _  | PSort _ | PFix _
+    | PEvar _ | PRel _ | PMeta _ | PSoApp _  | PSort _ | PFix _ | PProj _
 	-> raise BoundPattern
     (* Perhaps they were arguments, but we don't beta-reduce *)
     | PLambda _ -> raise BoundPattern
@@ -445,6 +444,9 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
 	 the inductive type is known. Same when we have at least
 	 one non-trivial branch. These facts are used in [Constrextern]. *)
       PCase (info, pred, pat_of_raw metas vars c, brs)
+
+  | GProj(p,c) ->
+    PProj(p, pat_of_raw metas vars c)
 
   | GPatVar _ | GIf _ | GLetTuple _ | GCases _ | GEvar _ | GRec _ ->
       err ?loc (Pp.str "Non supported pattern."))

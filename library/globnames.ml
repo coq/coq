@@ -30,7 +30,7 @@ let eq_gr gr1 gr2 =
     | IndRef kn1, IndRef kn2 -> eq_ind kn1 kn2
     | ConstructRef kn1, ConstructRef kn2 -> eq_constructor kn1 kn2
     | VarRef v1, VarRef v2 -> Id.equal v1 v2
-    | _ -> false
+    | (ConstRef _ | IndRef _ | ConstructRef _ | VarRef _), _ -> false
 
 let destVarRef = function VarRef ind -> ind | _ -> failwith "destVarRef"
 let destConstRef = function ConstRef ind -> ind | _ -> failwith "destConstRef"

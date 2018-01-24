@@ -5,7 +5,7 @@ PWrap has primitive projections with eta conversion.
 For PWrap: Argument scope is [type_scope]
 For pwrap: Argument scopes are [type_scope _]
 punwrap@{u} = 
-fun (A : Type@{u}) (p : PWrap@{u} A) => punwrap _ p
+fun (A : Type@{u}) (p : PWrap@{u} A) => p.(punwrap)
      : forall A : Type@{u}, PWrap@{u} A -> A
 (* u |=  *)
 

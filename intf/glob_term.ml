@@ -55,6 +55,7 @@ type 'a glob_constr_r =
   | GSort of glob_sort
   | GHole of Evar_kinds.t * intro_pattern_naming_expr * Genarg.glob_generic_argument option
   | GCast of 'a glob_constr_g * 'a glob_constr_g cast_type
+  | GProj of Projection.t * 'a glob_constr_g
 and 'a glob_constr_g = ('a glob_constr_r, 'a) DAst.t
 
 and 'a glob_decl_g = Name.t * binding_kind * 'a glob_constr_g option * 'a glob_constr_g
