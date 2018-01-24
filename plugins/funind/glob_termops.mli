@@ -1,6 +1,5 @@
 open Names
 open Glob_term
-open Misctypes
 
 (* [get_pattern_id pat] returns a list of all the variable appearing in [pat] *)
 val get_pattern_id : cases_pattern -> Id.t list
@@ -21,22 +20,11 @@ val mkGLambda : Name.t * glob_constr * glob_constr -> glob_constr
 val mkGProd : Name.t * glob_constr * glob_constr -> glob_constr
 val mkGLetIn : Name.t * glob_constr * glob_constr option * glob_constr -> glob_constr
 val mkGCases : glob_constr option * tomatch_tuples * cases_clauses -> glob_constr
-val mkGSort : glob_sort -> glob_constr
 val mkGHole : unit -> glob_constr (* we only build Evd.BinderType Anonymous holes *)
-val mkGCast : glob_constr* glob_constr -> glob_constr
 (*
   Some basic functions to decompose glob_constrs
   These are analogous to the ones constrs
 *)
-val glob_decompose_prod : glob_constr -> (Name.t*glob_constr) list * glob_constr
-val glob_decompose_prod_or_letin :
-  glob_constr -> (Name.t*glob_constr option*glob_constr option) list * glob_constr
-val glob_decompose_prod_n : int -> glob_constr -> (Name.t*glob_constr) list * glob_constr
-val glob_decompose_prod_or_letin_n : int -> glob_constr ->
-  (Name.t*glob_constr option*glob_constr option) list * glob_constr
-val glob_compose_prod : glob_constr -> (Name.t*glob_constr) list  ->  glob_constr
-val glob_compose_prod_or_letin: glob_constr ->
-  (Name.t*glob_constr option*glob_constr option) list  ->  glob_constr
 val glob_decompose_app : glob_constr -> glob_constr*(glob_constr list)
 
 
@@ -44,14 +32,6 @@ val glob_decompose_app : glob_constr -> glob_constr*(glob_constr list)
 val  glob_make_eq : ?typ:glob_constr -> glob_constr -> glob_constr -> glob_constr
 (* [glob_make_neq t1 t2] build the glob_constr corresponding to [t1 <> t2] *)
 val  glob_make_neq : glob_constr -> glob_constr -> glob_constr
-(* [glob_make_or P1 P2] build the glob_constr corresponding to [P1 \/ P2] *)
-val  glob_make_or : glob_constr -> glob_constr -> glob_constr
-
-(* [glob_make_or_list [P1;...;Pn]] build the glob_constr corresponding
-   to [P1 \/ ( .... \/ Pn)]
-*)
-val  glob_make_or_list : glob_constr list -> glob_constr
-
 
 (* alpha_conversion functions *)
 
@@ -109,17 +89,7 @@ val eq_cases_pattern : cases_pattern -> cases_pattern -> bool
 *)
 val   ids_of_pat : cases_pattern -> Id.Set.t
 
-(* TODO: finish this function (Fix not treated) *)
-val ids_of_glob_constr: glob_constr -> Id.Set.t
-
-(*
-   removing let_in construction in a glob_constr
-*)
-val zeta_normalize : Glob_term.glob_constr -> Glob_term.glob_constr
-
-
 val expand_as : glob_constr -> glob_constr
-
 
 (* [resolve_and_replace_implicits ?expected_type env sigma rt] solves implicits of [rt] w.r.t. [env] and [sigma] and then replace them by their solution 
  *)

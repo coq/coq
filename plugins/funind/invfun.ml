@@ -56,12 +56,6 @@ let do_observe_tac s tac g =
 	     CErrors.iprint e ++ str " on goal" ++ fnl() ++ goal ));
     iraise reraise;;
 
-
-let observe_tac_strm s tac g =
-  if do_observe ()
-  then do_observe_tac s tac g
-  else tac g
-
 let observe_tac s tac g =
   if do_observe ()
   then do_observe_tac (str s) tac g
@@ -87,10 +81,6 @@ let make_eq () =
   try
     EConstr.of_constr (Universes.constr_of_global (Coqlib.build_coq_eq ()))
   with _ -> assert false 
-let make_eq_refl () =
-  try
-    EConstr.of_constr (Universes.constr_of_global (Coqlib.build_coq_eq_refl ()))
-  with _ -> assert false
 
 	  
 (* [generate_type g_to_f f graph i] build the completeness (resp. correctness) lemma type if [g_to_f = true]
@@ -194,10 +184,9 @@ let rec generate_fresh_id x avoid i =
     id::(generate_fresh_id x (id::avoid) (pred i))
 
 
-(* [prove_fun_correct functional_induction funs_constr graphs_constr schemes lemmas_types_infos i ]
+(* [prove_fun_correct funs_constr graphs_constr schemes lemmas_types_infos i ]
    is the tactic used to prove correctness lemma.
 
-   [functional_induction] is the tactic defined in [indfun] (dependency problem)
    [funs_constr], [graphs_constr] [schemes] [lemmas_types_infos] are the mutually recursive functions
    (resp. graphs of the functions and principles and correctness lemma types) to prove correct.
 
@@ -218,7 +207,7 @@ let rec generate_fresh_id x avoid i =
    \end{enumerate}
 
 *)
-let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes lemmas_types_infos i : Tacmach.tactic =
+let prove_fun_correct evd funs_constr graphs_constr schemes lemmas_types_infos i : Tacmach.tactic =
   fun g ->
     (* first of all we recreate the lemmas types to be used as predicates of the induction principle
        that is~:
@@ -752,14 +741,13 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : Tacmach.tacti
       g
 
 
-(* [derive_correctness make_scheme functional_induction funs graphs] create correctness and completeness
+(* [derive_correctness make_scheme funs graphs] create correctness and completeness
    lemmas for each function in [funs] w.r.t. [graphs]
 
    [make_scheme] is Functional_principle_types.make_scheme (dependency pb) and
-   [functional_induction] is Indfun.functional_induction (same pb)
 *)
 
-let derive_correctness make_scheme functional_induction (funs: pconstant list) (graphs:inductive list) =
+let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list) =
   assert (funs <> []);
   assert (graphs <> []);
   let funs = Array.of_list funs and graphs = Array.of_list graphs in
@@ -809,7 +797,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	)
     in
     let proving_tac =
-      prove_fun_correct !evd functional_induction funs_constr graphs_constr schemes lemmas_types_infos
+      prove_fun_correct !evd funs_constr graphs_constr schemes lemmas_types_infos
     in
     Array.iteri
       (fun i f_as_constant ->

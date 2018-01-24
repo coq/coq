@@ -29,10 +29,6 @@ val generate_functional_principle :
   (EConstr.constr array -> int -> Tacmach.tactic) ->
   unit
 
-val compute_new_princ_type_from_rel : constr array -> Sorts.t array ->
-  types -> types
-
-
 exception No_graph_found
 
 val make_scheme :   Evd.evar_map ref ->

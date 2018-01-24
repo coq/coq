@@ -282,7 +282,6 @@ let derive_inversion fix_names =
       in
       Invfun.derive_correctness
 	Functional_principles_types.make_scheme
-	functional_induction
 	fix_names_as_constant
 	lind;
       with e when CErrors.noncritical e ->
