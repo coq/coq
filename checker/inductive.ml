@@ -435,12 +435,6 @@ type subterm_spec =
   | Dead_code
   | Not_subterm
 
-let eq_recarg r1 r2 = match r1, r2 with
-| Norec, Norec -> true
-| Mrec i1, Mrec i2 -> Names.eq_ind i1 i2
-| Imbr i1, Imbr i2 -> Names.eq_ind i1 i2
-| _ -> false
-
 let eq_wf_paths = Rtree.equal eq_recarg
 
 let inter_recarg r1 r2 = match r1, r2 with
