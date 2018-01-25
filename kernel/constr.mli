@@ -367,8 +367,7 @@ val compare : constr -> constr -> int
 val fold : ('a -> constr -> 'a) -> 'a -> constr -> 'a
 
 (** [fold g f n acc c] folds [f n] on the immediate subterms of [c]
-   starting from [acc] and proceeding from left to right according to
-   the usual representation of the constructions; it carries an extra
+   starting from [acc]; it carries an extra
    data [n] (typically a lift index) which is processed by [g] (which
    typically add 1 to [n]) at each binder traversal; it is not
    recursive *)

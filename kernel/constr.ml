@@ -445,7 +445,7 @@ let fold_with_binders g f n acc c = match kind c with
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
   | Proj (p,c) -> f n acc c
   | Evar (_,l) -> Array.fold_left (f n) acc l
-  | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
+  | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc c) p) bl
   | Fix (_,(lna,tl,bl)) ->
     let n' = iterate g (Array.length tl) n in
     Array.fold_left2 (fun acc t b -> f n' (f n acc t) b) acc tl bl
