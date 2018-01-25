@@ -502,10 +502,19 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp (_,i as ind) indlc
       indlc
   in mk_paths (Mrec ind) irecargs
 
+let prrecarg = function
+  | Norec -> str "Norec"
+  | Mrec (mind,i) ->
+     str "Mrec[" ++ MutInd.debug_print mind ++ pr_comma () ++ int i ++ str "]"
+  | Imbr (mind,i) ->
+     str "Imbr[" ++ MutInd.debug_print mind ++ pr_comma () ++ int i ++ str "]"
+
 let check_subtree t1 t2 =
   let cmp_labels l1 l2 = l1 == Norec || eq_recarg l1 l2 in
   if not (Rtree.equiv eq_recarg cmp_labels t1 t2)
-  then failwith "bad recursive trees"
+  then user_err Pp.(str "Bad recursive tree: found " ++ fnl ()
+    ++ Rtree.pp_tree prrecarg t1 ++ fnl () ++ str " when expected " ++ fnl ()
+    ++ Rtree.pp_tree prrecarg t2)
 (* if t1=t2 then () else msg_warning (str"TODO: check recursive positions")*)
 
 let check_positivity env_ar mind params nrecp inds =
