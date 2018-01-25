@@ -650,8 +650,11 @@ end
 
 let _ =
   let hook n =
-    let prf = give_me_the_proof () in
-    (Bullet.suggest prf) in
+    try
+      let prf = give_me_the_proof () in
+      (Bullet.suggest prf)
+    with NoCurrentProof -> mt ()
+  in
   Proofview.set_nosuchgoals_hook hook
 
 
