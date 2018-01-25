@@ -208,8 +208,7 @@ let usage () =
 open Type_errors
 
 let anomaly_string () = str "Anomaly: "
-let report () = (str "." ++ spc () ++ str "Please report" ++
-                 strbrk "at " ++ str Coq_config.wwwbugtracker ++ str ".")
+let report () = strbrk (". Please report at " ^ Coq_config.wwwbugtracker ^ ".")
 
 let guill s = str "\"" ++ str s ++ str "\""
 
