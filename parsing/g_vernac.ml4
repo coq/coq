@@ -149,8 +149,8 @@ GEXTEND Gram
     [ [ thm = thm_token; id = ident_decl; bl = binders; ":"; c = lconstr;
         l = LIST0
           [ "with"; id = ident_decl; bl = binders; ":"; c = lconstr ->
-          (Some id,(bl,c)) ] ->
-          VernacStartTheoremProof (thm, (Some id,(bl,c))::l)
+          (id,(bl,c)) ] ->
+          VernacStartTheoremProof (thm, (id,(bl,c))::l)
       | stre = assumption_token; nl = inline; bl = assum_list ->
 	  VernacAssumption (stre, nl, bl)
       | (kwd,stre) = assumptions_token; nl = inline; bl = assum_list ->

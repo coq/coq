@@ -483,30 +483,28 @@ let vernac_definition ~atts discharge kind ((loc, id), pl) def =
       | Local | Global -> Dumpglob.dump_definition lid false "def"
   in
   let program_mode = Flags.is_program_mode () in
+  let name =
+    match id with
+    | Anonymous -> fresh_name_for_anonymous_theorem ()
+    | Name n -> n
+  in
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
-          start_proof_and_print (local, atts.polymorphic, DefinitionBody kind)
-            [(match id with
-                | Anonymous -> None
-                | Name n -> Some ((loc, n), pl)
-              ), (bl, t)] hook
+      start_proof_and_print (local, atts.polymorphic, DefinitionBody kind)
+        [((loc, name), pl), (bl, t)] hook
     | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
           | None -> None
           | Some r ->
             let sigma, env = Pfedit.get_current_context () in
             Some (snd (Hook.get f_interp_redexp env sigma r)) in
-      ComDefinition.do_definition ~program_mode
-        (match id with Name n -> n | Anonymous -> assert false)
+      ComDefinition.do_definition ~program_mode name
         (local, atts.polymorphic, kind) pl bl red_option c typ_opt hook)
 
 let vernac_start_proof ~atts kind l =
   let local = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
-    List.iter (fun (id, _) ->
-      match id with
-	| Some (lid,_) -> Dumpglob.dump_definition lid false "prf"
-	| None -> ()) l;
+    List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
   start_proof_and_print (local, atts.polymorphic, Proof kind) l no_hook
 
 let vernac_end_proof ?proof = function

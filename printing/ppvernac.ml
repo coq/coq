@@ -391,8 +391,6 @@ open Decl_kinds
     ++ prlist (pr_decl_notation pr_constr) ntn
 
   let pr_statement head (idpl,(bl,c)) =
-    assert (not (Option.is_empty idpl));
-    let idpl = Option.get idpl in
     hov 2
       (head ++ spc() ++ pr_ident_decl idpl ++ spc() ++
          (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++

@@ -52,6 +52,8 @@ val standard_proof_terminator :
   Proof_global.lemma_possible_guards -> unit declaration_hook ->
     Proof_global.proof_terminator
 
+val fresh_name_for_anonymous_theorem : unit -> Id.t
+
 (** {6 ... } *)
 
 (** A hook the next three functions pass to cook_proof *)

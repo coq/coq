@@ -210,7 +210,7 @@ type typeclass_constraint = name_decl * binding_kind * constr_expr
 and typeclass_context = typeclass_constraint list
 
 type proof_expr =
-  ident_decl option * (local_binder_expr list * constr_expr)
+  ident_decl * (local_binder_expr list * constr_expr)
 
 type syntax_modifier =
   | SetItemLevel of string list * Extend.production_level
