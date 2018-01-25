@@ -381,7 +381,7 @@ let type_case_branches env (pind,largs) (p,pj) c =
 let check_case_info env indsp ci =
   let (mib,mip) = lookup_mind_specif env indsp in
   if
-    not (eq_ind indsp ci.ci_ind) ||
+    not (eq_ind_chk indsp ci.ci_ind) ||
     (mib.mind_nparams <> ci.ci_npar) ||
     (mip.mind_consnrealdecls <> ci.ci_cstr_ndecls) ||
     (mip.mind_consnrealargs <> ci.ci_cstr_nargs)
@@ -441,8 +441,8 @@ let inter_recarg r1 r2 = match r1, r2 with
 | Norec, Norec -> Some r1
 | Mrec i1, Mrec i2
 | Imbr i1, Imbr i2
-| Mrec i1, Imbr i2 -> if Names.eq_ind i1 i2 then Some r1 else None
-| Imbr i1, Mrec i2 -> if Names.eq_ind i1 i2 then Some r2 else None
+| Mrec i1, Imbr i2 -> if Names.eq_ind_chk i1 i2 then Some r1 else None
+| Imbr i1, Mrec i2 -> if Names.eq_ind_chk i1 i2 then Some r2 else None
 | _ -> None
 
 let inter_wf_paths = Rtree.inter eq_recarg inter_recarg Norec
@@ -538,7 +538,7 @@ let lookup_subterms env ind =
 
 let match_inductive ind ra =
   match ra with
-    | (Mrec i | Imbr i) -> eq_ind ind i
+    | (Mrec i | Imbr i) -> eq_ind_chk ind i
     | Norec -> false
 
 (* In {match c as z in ci y_s return P with |C_i x_s => t end}
@@ -639,7 +639,7 @@ let get_recargs_approx env tree ind args =
        (* When the inferred tree allows it, we consider that we have a potential
        nested inductive type *)
        begin match dest_recarg tree with
-	     | Imbr kn' | Mrec kn' when eq_ind (fst ind_kn) kn' ->
+             | Imbr kn' | Mrec kn' when eq_ind_chk (fst ind_kn) kn' ->
 			   build_recargs_nested ienv tree (ind_kn, largs)
 	     | _ -> mk_norec
        end
