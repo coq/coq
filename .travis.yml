@@ -20,6 +20,19 @@ addons:
   apt:
     sources:
     - avsm
+## Due to issues like
+## https://github.com/travis-ci/travis-ci/issues/8507 ,
+## https://github.com/travis-ci/travis-ci/issues/9000 ,
+## https://github.com/travis-ci/travis-ci/issues/9081 , and
+## https://github.com/travis-ci/travis-ci/issues/9126 , we get frequent
+## failures with using `packages`.  Therefore, for most targets, we
+## instead invoke `apt-get update` manually with `travis_retry` before
+## invoking `apt-get install`, manually, below in the `install:`
+## target.
+#    packages:
+#    - opam
+#    - aspcud
+#    - gcc-multilib
 
 env:
   global:
