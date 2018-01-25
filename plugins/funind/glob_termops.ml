@@ -17,69 +17,12 @@ let mkGLambda(n,t,b)    = DAst.make @@ GLambda(n,Explicit,t,b)
 let mkGProd(n,t,b)      = DAst.make @@ GProd(n,Explicit,t,b)
 let mkGLetIn(n,b,t,c)   = DAst.make @@ GLetIn(n,b,t,c)
 let mkGCases(rto,l,brl) = DAst.make @@ GCases(Term.RegularStyle,rto,l,brl)
-let mkGSort s           = DAst.make @@ GSort(s)
 let mkGHole ()          = DAst.make @@ GHole(Evar_kinds.BinderType Anonymous,Misctypes.IntroAnonymous,None)
-let mkGCast(b,t)        = DAst.make @@ GCast(b,CastConv t)
 
 (*
   Some basic functions to decompose glob_constrs
   These are analogous to the ones constrs
 *)
-let glob_decompose_prod =
-  let rec glob_decompose_prod args c = match DAst.get c with
-  | GProd(n,k,t,b) ->
-      glob_decompose_prod ((n,t)::args) b
-  | _ -> args,c
-  in
-  glob_decompose_prod []
-
-let glob_decompose_prod_or_letin =
-  let rec glob_decompose_prod args rt = match DAst.get rt with
-  | GProd(n,k,t,b) ->
-      glob_decompose_prod ((n,None,Some t)::args) b
-  | GLetIn(n,b,t,c) ->
-      glob_decompose_prod ((n,Some b,t)::args) c
-  | _ -> args,rt
-  in
-  glob_decompose_prod []
-
-let glob_compose_prod =
-  List.fold_left (fun b (n,t) -> mkGProd(n,t,b))
-
-let glob_compose_prod_or_letin =
-  List.fold_left (
-      fun concl decl ->
-	match decl with
-	  | (n,None,Some t) -> mkGProd(n,t,concl)
-	  | (n,Some bdy,t) -> mkGLetIn(n,bdy,t,concl)
-	  | _ -> assert false)
-
-let glob_decompose_prod_n n =
-  let rec glob_decompose_prod i args c =
-    if i<=0 then args,c
-    else
-      match DAst.get c with
-	| GProd(n,_,t,b) ->
-	    glob_decompose_prod (i-1) ((n,t)::args) b
-	| _ -> args,c
-  in
-  glob_decompose_prod n []
-
-
-let glob_decompose_prod_or_letin_n n =
-  let rec glob_decompose_prod i args c =
-    if i<=0 then args,c
-    else
-      match DAst.get c with
-	| GProd(n,_,t,b) ->
-	    glob_decompose_prod (i-1) ((n,None,Some t)::args) b
-	| GLetIn(n,b,t,c) ->
-	    glob_decompose_prod (i-1) ((n,Some b,t)::args) c
-	| _ -> args,c
-  in
-  glob_decompose_prod n []
-
-
 let glob_decompose_app =
   let rec decompose_rapp acc rt =
 (*     msgnl (str "glob_decompose_app on : "++ Printer.pr_glob_constr rt); *)
@@ -100,18 +43,6 @@ let glob_make_eq ?(typ= mkGHole ()) t1 t2  =
 (* [glob_make_neq t1 t2] build the glob_constr corresponding to [t1 <> t2] *)
 let glob_make_neq t1 t2 =
   mkGApp(mkGRef (Lazy.force Coqlib.coq_not_ref),[glob_make_eq t1 t2])
-
-(* [glob_make_or P1 P2] build the glob_constr corresponding to [P1 \/ P2] *)
-let glob_make_or t1 t2 = mkGApp (mkGRef(Lazy.force Coqlib.coq_or_ref),[t1;t2])
-
-(* [glob_make_or_list [P1;...;Pn]] build the glob_constr corresponding
-   to [P1 \/ ( .... \/ Pn)]
-*)
-let rec glob_make_or_list = function
-  | [] -> invalid_arg "mk_or"
-  | [e] -> e
-  | e::l -> glob_make_or e (glob_make_or_list l)
-
 
 let remove_name_from_mapping mapping na =
   match na with
@@ -574,97 +505,6 @@ let ids_of_pat =
     )
   in
   ids_of_pat Id.Set.empty
-
-let id_of_name = function
-  | Anonymous -> Id.of_string "x"
-  | Name x -> x
-
-(* TODO: finish Rec caes *)
-let ids_of_glob_constr c =
-  let rec ids_of_glob_constr acc c =
-    let idof = id_of_name in
-    match DAst.get c with
-      | GVar id -> id::acc
-      | GApp (g,args) ->
-          ids_of_glob_constr [] g @ List.flatten (List.map (ids_of_glob_constr []) args) @ acc
-      | GLambda (na,k,ty,c) -> idof na :: ids_of_glob_constr [] ty @ ids_of_glob_constr [] c @ acc
-      | GProd (na,k,ty,c) -> idof na :: ids_of_glob_constr [] ty @ ids_of_glob_constr [] c @ acc
-      | GLetIn (na,b,t,c) -> idof na :: ids_of_glob_constr [] b @ Option.cata (ids_of_glob_constr []) [] t @ ids_of_glob_constr [] c @ acc
-      | GCast (c,(CastConv t|CastVM t|CastNative t)) -> ids_of_glob_constr [] c @ ids_of_glob_constr [] t @ acc
-      | GCast (c,CastCoerce) -> ids_of_glob_constr [] c @ acc
-      | GIf (c,(na,po),b1,b2) -> ids_of_glob_constr [] c @ ids_of_glob_constr [] b1 @ ids_of_glob_constr [] b2 @ acc
-      | GLetTuple (nal,(na,po),b,c) ->
-          List.map idof nal @ ids_of_glob_constr [] b @ ids_of_glob_constr [] c @ acc
-      | GCases (sty,rtntypopt,tml,brchl) ->
-	  List.flatten (List.map (fun (_,(idl,patl,c)) -> idl @ ids_of_glob_constr [] c) brchl)
-      | GRec _ -> failwith "Fix inside a constructor branch"
-      | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> []
-  in
-  (* build the set *)
-  List.fold_left (fun acc x -> Id.Set.add x acc) Id.Set.empty (ids_of_glob_constr [] c)
-
-
-
-
-
-let zeta_normalize =
-  let rec zeta_normalize_term x = DAst.map (function
-      | GRef _
-      | GVar _
-      | GEvar _
-      | GPatVar _ as rt -> rt
-      | GApp(rt',rtl) ->
-	  GApp(zeta_normalize_term rt',
-	       List.map zeta_normalize_term rtl
-	      )
-      | GLambda(name,k,t,b) ->
-	  GLambda(name,
-		  k,
-		  zeta_normalize_term t,
-		  zeta_normalize_term b
-		 )
-      | GProd(name,k,t,b) ->
-	  GProd(name,
-	        k,
-		zeta_normalize_term t,
-		zeta_normalize_term b
-		 )
-      | GLetIn(Name id,def,typ,b) ->
-	  DAst.get (zeta_normalize_term (replace_var_by_term id def b))
-      | GLetIn(Anonymous,def,typ,b) ->
-          DAst.get (zeta_normalize_term b)
-      | GLetTuple(nal,(na,rto),def,b) ->
-	  GLetTuple(nal,
-		    (na,Option.map zeta_normalize_term rto),
-		    zeta_normalize_term def,
-		    zeta_normalize_term b
-		   )
-      | GCases(sty,infos,el,brl) ->
-	  GCases(sty,
-		 infos,
-		 List.map (fun (e,x) -> (zeta_normalize_term e,x)) el,
-		 List.map zeta_normalize_br brl
-		)
-      | GIf(b,(na,e_option),lhs,rhs) ->
-	  GIf(zeta_normalize_term b,
-	      (na,Option.map zeta_normalize_term e_option),
-	      zeta_normalize_term lhs,
-	      zeta_normalize_term rhs
-	     )
-      | GRec _ -> raise (UserError(None,str "Not handled GRec"))
-      | GSort _
-      | GHole _ as rt -> rt
-      | GCast(b,c) ->
-	  GCast(zeta_normalize_term b,
-                Miscops.map_cast_type zeta_normalize_term c)
-    ) x
-  and zeta_normalize_br (loc,(idl,patl,res)) =
-    (loc,(idl,patl,zeta_normalize_term res))
-  in
-  zeta_normalize_term
-
-
-
 
 let expand_as =
 
