@@ -382,8 +382,6 @@ let is_construct_ref sigma c r =
   EConstr.isConstruct sigma c && eq_gr (ConstructRef (fst(EConstr.destConstruct sigma c))) r
 let is_ind_ref sigma c r = EConstr.isInd sigma c && eq_gr (IndRef (fst(EConstr.destInd sigma c))) r
 
-let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type x xs)
-
 let rwcltac cl rdx dir sr gl =
   let n, r_n,_, ucst = pf_abs_evars gl sr in
   let r_n' = pf_abs_cterm gl n r_n in
@@ -417,7 +415,7 @@ let rwcltac cl rdx dir sr gl =
       let itacs = [introid pattern_id; introid rule_id] in
       let cltac = Proofview.V82.of_tactic (Tactics.clear [pattern_id; rule_id]) in
       let rwtacs = [rewritetac dir (EConstr.mkVar rule_id); cltac] in
-      apply_type cl'' [rdx; EConstr.it_mkLambda_or_LetIn r3 dc], tclTHENLIST (itacs @ rwtacs), gl
+      safe_apply_type cl'' [rdx; EConstr.it_mkLambda_or_LetIn r3 dc], tclTHENLIST (itacs @ rwtacs), gl
   in
   let cvtac' _ =
     try cvtac gl with

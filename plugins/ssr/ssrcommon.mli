@@ -407,4 +407,5 @@ val clr_of_wgen :
   ssrhyps * ((ssrhyp_or_id * 'a) * 'b option) option ->
   Proofview.V82.tac list -> Proofview.V82.tac list
 
+val safe_apply_type : EConstr.t -> EConstr.t list -> v82tac
 
