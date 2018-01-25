@@ -499,7 +499,7 @@ module Goal : sig
 
   (** Like {!enter}, but assumes exactly one goal under focus, raising *)
   (** a fatal error otherwise. *)
-  val enter_one : ([ `LZ ] t -> 'a tactic) -> 'a tactic
+  val enter_one : ?__LOC__:string -> ([ `LZ ] t -> 'a tactic) -> 'a tactic
 
   (** Recover the list of current goals under focus, without evar-normalization.
       FIXME: encapsulate the level in an existential type. *)

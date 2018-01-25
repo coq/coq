@@ -1086,7 +1086,7 @@ module Goal = struct
     end
     end
 
-  let enter_one f =
+  let enter_one ?(__LOC__=__LOC__) f =
     let open Proof in
     Comb.get >>= function
     | [goal] -> begin
@@ -1097,7 +1097,8 @@ module Goal = struct
          let (e, info) = CErrors.push e in
          tclZERO ~info e
       end
-    | _ -> assert false (* unsatisfied not-exactly-one-goal precondition *)
+    | _ ->
+       CErrors.anomaly Pp.(str __LOC__ ++ str " enter_one")
 
   let goals =
     Pv.get >>= fun step ->
