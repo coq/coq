@@ -485,7 +485,10 @@ let update_global_env () =
 (* XXX: Bullet hook, should be really moved elsewhere *)
 let _ =
   let hook n =
-    let prf = give_me_the_proof () in
-    (Proof_bullet.suggest prf) in
+    try
+      let prf = give_me_the_proof () in
+      (Proof_bullet.suggest prf)
+    with NoCurrentProof -> mt ()
+  in
   Proofview.set_nosuchgoals_hook hook
 
