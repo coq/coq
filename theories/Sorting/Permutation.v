@@ -80,10 +80,10 @@ Local Hint Resolve Permutation_sym Permutation_trans.
 (* This provides reflexivity, symmetry and transitivity and rewriting
    on morphims to come *)
 
-Instance Permutation_Equivalence A : Equivalence (@Permutation A) | 10 := {
+Instance Permutation_Equivalence A : Equivalence (@Permutation A) | 10 := {|
   Equivalence_Reflexive := @Permutation_refl A ;
   Equivalence_Symmetric := @Permutation_sym A ;
-  Equivalence_Transitive := @Permutation_trans A }.
+  Equivalence_Transitive := @Permutation_trans A |}.
 
 Instance Permutation_cons A :
  Proper (Logic.eq ==> @Permutation A ==> @Permutation A) (@cons A) | 10.

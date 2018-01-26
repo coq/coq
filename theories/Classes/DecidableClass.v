@@ -63,30 +63,30 @@ Tactic Notation "decide" constr(P) :=
 
 Require Import Bool Arith ZArith.
 
-Program Instance Decidable_eq_bool : forall (x y : bool), Decidable (eq x y) := {
+Program Instance Decidable_eq_bool (x y : bool) : Decidable (eq x y) := {|
   Decidable_witness := Bool.eqb x y
-}.
+|}.
 Next Obligation.
  apply eqb_true_iff.
 Qed.
 
-Program Instance Decidable_eq_nat : forall (x y : nat), Decidable (eq x y) := {
+Program Instance Decidable_eq_nat (x y : nat) : Decidable (eq x y) := {|
   Decidable_witness := Nat.eqb x y
-}.
+|}.
 Next Obligation.
  apply Nat.eqb_eq.
 Qed.
 
-Program Instance Decidable_le_nat : forall (x y : nat), Decidable (x <= y) := {
+Program Instance Decidable_le_nat (x y : nat) : Decidable (x <= y) := {|
   Decidable_witness := Nat.leb x y
-}.
+|}.
 Next Obligation.
  apply Nat.leb_le.
 Qed.
 
-Program Instance Decidable_eq_Z : forall (x y : Z), Decidable (eq x y) := {
+Program Instance Decidable_eq_Z (x y : Z) : Decidable (eq x y) := {|
   Decidable_witness := Z.eqb x y
-}.
+|}.
 Next Obligation.
  apply Z.eqb_eq.
 Qed.

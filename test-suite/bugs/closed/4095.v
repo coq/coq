@@ -30,7 +30,7 @@ Instance ILogicOps_Prop : ILogicOps Prop | 2 := {| lentails P Q := (P : Prop) ->
                                                    lor      P Q := P \/ Q |}.
 Axiom Action : Set.
 Definition Actions := list Action.
-Instance ActionsEquiv : Equiv Actions := { equiv a1 a2 := a1 = a2 }.
+Instance ActionsEquiv : Equiv Actions := fun a1 a2 => a1 = a2.
 Definition OPred := ILFunFrm Actions Prop.
 Local Existing Instance ILFun_Ops.
 Local Existing Instance ILFun_ILogic.

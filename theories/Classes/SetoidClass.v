@@ -55,7 +55,7 @@ Existing Instance setoid_trans.
 (*   equiv := eq ; setoid_equiv := eq_equivalence. *)
 
 Program Instance iff_setoid : Setoid Prop :=
-  { equiv := iff ; setoid_equiv := iff_equivalence }.
+  {| equiv := iff ; setoid_equiv := iff_equivalence |}.
 
 (** Overloaded notations for setoid equivalence and inequivalence. Not to be confused with [eq] and [=]. *)
 

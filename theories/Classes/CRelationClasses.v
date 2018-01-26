@@ -97,8 +97,8 @@ Section Defs.
   (** An Equivalence is a PER plus reflexivity. *)
   
   Global Instance Equivalence_PER {R} `(Equivalence R) : PER R | 10 :=
-    { PER_Symmetric := Equivalence_Symmetric ;
-      PER_Transitive := Equivalence_Transitive }.
+    {| PER_Symmetric := Equivalence_Symmetric ;
+       PER_Transitive := Equivalence_Transitive |}.
 
   (** We can now define antisymmetry w.r.t. an equivalence crelation on the carrier. *)
   

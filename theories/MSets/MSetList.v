@@ -238,7 +238,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Hint Resolve ok.
   Hint Unfold Ok.
 
-  Instance Sort_Ok s `(Hs : Sort s) : Ok s := { ok := Hs }.
+  Instance Sort_Ok s `(Hs : Sort s) : Ok s := Hs.
 
   Lemma inf_iff : forall x l, Inf x l <-> inf x l = true.
   Proof.

@@ -1117,61 +1117,61 @@ Section Basics.
 End Basics.
 
 Instance int31_ops : ZnZ.Ops int31 :=
-{
- digits      := 31%positive; (* number of digits *)
- zdigits     := 31; (* number of digits *)
- to_Z        := phi; (* conversion to Z *)
- of_pos      := positive_to_int31; (* positive -> N*int31 :  p => N,i
+{|
+ ZnZ.digits      := 31%positive; (* number of digits *)
+ ZnZ.zdigits     := 31; (* number of digits *)
+ ZnZ.to_Z        := phi; (* conversion to Z *)
+ ZnZ.of_pos      := positive_to_int31; (* positive -> N*int31 :  p => N,i
                                       where p = N*2^31+phi i *)
- head0       := head031;  (* number of head 0 *)
- tail0       := tail031;  (* number of tail 0 *)
- zero        := 0;
- one         := 1;
- minus_one   := Tn; (* 2^31 - 1 *)
- compare     := compare31;
- eq0         := fun i => match i ?= 0 with Eq => true | _ => false end;
- opp_c       := fun i => 0 -c i;
- opp         := opp31;
- opp_carry   := fun i => 0-i-1;
- succ_c      := fun i => i +c 1;
- add_c       := add31c;
- add_carry_c := add31carryc;
- succ        := fun i => i + 1;
- add         := add31;
- add_carry   := fun i j => i + j + 1;
- pred_c      := fun i => i -c 1;
- sub_c       := sub31c;
- sub_carry_c := sub31carryc;
- pred        := fun i => i - 1;
- sub         := sub31;
- sub_carry   := fun i j => i - j - 1;
- mul_c       := mul31c;
- mul         := mul31;
- square_c    := fun x => x *c x;
- div21       := div3121;
- div_gt      := div31; (* this is supposed to be the special case of
+ ZnZ.head0       := head031;  (* number of head 0 *)
+ ZnZ.tail0       := tail031;  (* number of tail 0 *)
+ ZnZ.zero        := 0;
+ ZnZ.one         := 1;
+ ZnZ.minus_one   := Tn; (* 2^31 - 1 *)
+ ZnZ.compare     := compare31;
+ ZnZ.eq0         := fun i => match i ?= 0 with Eq => true | _ => false end;
+ ZnZ.opp_c       := fun i => 0 -c i;
+ ZnZ.opp         := opp31;
+ ZnZ.opp_carry   := fun i => 0-i-1;
+ ZnZ.succ_c      := fun i => i +c 1;
+ ZnZ.add_c       := add31c;
+ ZnZ.add_carry_c := add31carryc;
+ ZnZ.succ        := fun i => i + 1;
+ ZnZ.add         := add31;
+ ZnZ.add_carry   := fun i j => i + j + 1;
+ ZnZ.pred_c      := fun i => i -c 1;
+ ZnZ.sub_c       := sub31c;
+ ZnZ.sub_carry_c := sub31carryc;
+ ZnZ.pred        := fun i => i - 1;
+ ZnZ.sub         := sub31;
+ ZnZ.sub_carry   := fun i j => i - j - 1;
+ ZnZ.mul_c       := mul31c;
+ ZnZ.mul         := mul31;
+ ZnZ.square_c    := fun x => x *c x;
+ ZnZ.div21       := div3121;
+ ZnZ.div_gt      := div31; (* this is supposed to be the special case of
                          division a/b where a > b *)
- div         := div31;
- modulo_gt   := fun i j => let (_,r) := i/j in r;
- modulo      := fun i j => let (_,r) := i/j in r;
- gcd_gt      := gcd31;
- gcd         := gcd31;
- add_mul_div := addmuldiv31;
- pos_mod     := (* modulo 2^p *)
+ ZnZ.div         := div31;
+ ZnZ.modulo_gt   := fun i j => let (_,r) := i/j in r;
+ ZnZ.modulo      := fun i j => let (_,r) := i/j in r;
+ ZnZ.gcd_gt      := gcd31;
+ ZnZ.gcd         := gcd31;
+ ZnZ.add_mul_div := addmuldiv31;
+ ZnZ.pos_mod     := (* modulo 2^p *)
   fun p i =>
   match p ?= 31 with
     | Lt => addmuldiv31 p 0 (addmuldiv31 (31-p) i 0)
     | _ => i
   end;
- is_even      :=
+ ZnZ.is_even      :=
   fun i => let (_,r) := i/2 in
   match r ?= 0 with Eq => true | _ => false end;
- sqrt2       := sqrt312;
- sqrt        := sqrt31;
- lor         := lor31;
- land        := land31;
- lxor        := lxor31
-}.
+ ZnZ.sqrt2       := sqrt312;
+ ZnZ.sqrt        := sqrt31;
+ ZnZ.lor         := lor31;
+ ZnZ.land        := land31;
+ ZnZ.lxor        := lxor31
+|}.
 
 Section Int31_Specs.
 
@@ -2483,53 +2483,53 @@ Qed.
    apply Z.max_lub_lt; apply log2_phi_bounded.
  Qed.
 
- Global Instance int31_specs : ZnZ.Specs int31_ops := {
-    spec_to_Z   := phi_bounded;
-    spec_of_pos := positive_to_int31_spec;
-    spec_zdigits := spec_zdigits;
-    spec_more_than_1_digit := spec_more_than_1_digit;
-    spec_0   := spec_0;
-    spec_1   := spec_1;
-    spec_m1  := spec_m1;
-    spec_compare := spec_compare;
-    spec_eq0 := spec_eq0;
-    spec_opp_c := spec_opp_c;
-    spec_opp := spec_opp;
-    spec_opp_carry := spec_opp_carry;
-    spec_succ_c := spec_succ_c;
-    spec_add_c := spec_add_c;
-    spec_add_carry_c := spec_add_carry_c;
-    spec_succ := spec_succ;
-    spec_add := spec_add;
-    spec_add_carry := spec_add_carry;
-    spec_pred_c := spec_pred_c;
-    spec_sub_c := spec_sub_c;
-    spec_sub_carry_c := spec_sub_carry_c;
-    spec_pred := spec_pred;
-    spec_sub := spec_sub;
-    spec_sub_carry := spec_sub_carry;
-    spec_mul_c := spec_mul_c;
-    spec_mul := spec_mul;
-    spec_square_c := spec_square_c;
-    spec_div21 := spec_div21;
-    spec_div_gt := fun a b _ => spec_div a b;
-    spec_div := spec_div;
-    spec_modulo_gt := fun a b _ => spec_mod a b;
-    spec_modulo := spec_mod;
-    spec_gcd_gt := fun a b _ => spec_gcd a b;
-    spec_gcd := spec_gcd;
-    spec_head00 := spec_head00;
-    spec_head0 := spec_head0;
-    spec_tail00 := spec_tail00;
-    spec_tail0 := spec_tail0;
-    spec_add_mul_div := spec_add_mul_div;
-    spec_pos_mod := spec_pos_mod;
-    spec_is_even := spec_is_even;
-    spec_sqrt2 := spec_sqrt2;
-    spec_sqrt := spec_sqrt;
-    spec_lor := spec_lor;
-    spec_land := spec_land;
-    spec_lxor := spec_lxor }.
+ Global Instance int31_specs : ZnZ.Specs int31_ops := {|
+    ZnZ.spec_to_Z   := phi_bounded;
+    ZnZ.spec_of_pos := positive_to_int31_spec;
+    ZnZ.spec_zdigits := spec_zdigits;
+    ZnZ.spec_more_than_1_digit := spec_more_than_1_digit;
+    ZnZ.spec_0   := spec_0;
+    ZnZ.spec_1   := spec_1;
+    ZnZ.spec_m1  := spec_m1;
+    ZnZ.spec_compare := spec_compare;
+    ZnZ.spec_eq0 := spec_eq0;
+    ZnZ.spec_opp_c := spec_opp_c;
+    ZnZ.spec_opp := spec_opp;
+    ZnZ.spec_opp_carry := spec_opp_carry;
+    ZnZ.spec_succ_c := spec_succ_c;
+    ZnZ.spec_add_c := spec_add_c;
+    ZnZ.spec_add_carry_c := spec_add_carry_c;
+    ZnZ.spec_succ := spec_succ;
+    ZnZ.spec_add := spec_add;
+    ZnZ.spec_add_carry := spec_add_carry;
+    ZnZ.spec_pred_c := spec_pred_c;
+    ZnZ.spec_sub_c := spec_sub_c;
+    ZnZ.spec_sub_carry_c := spec_sub_carry_c;
+    ZnZ.spec_pred := spec_pred;
+    ZnZ.spec_sub := spec_sub;
+    ZnZ.spec_sub_carry := spec_sub_carry;
+    ZnZ.spec_mul_c := spec_mul_c;
+    ZnZ.spec_mul := spec_mul;
+    ZnZ.spec_square_c := spec_square_c;
+    ZnZ.spec_div21 := spec_div21;
+    ZnZ.spec_div_gt := fun a b _ => spec_div a b;
+    ZnZ.spec_div := spec_div;
+    ZnZ.spec_modulo_gt := fun a b _ => spec_mod a b;
+    ZnZ.spec_modulo := spec_mod;
+    ZnZ.spec_gcd_gt := fun a b _ => spec_gcd a b;
+    ZnZ.spec_gcd := spec_gcd;
+    ZnZ.spec_head00 := spec_head00;
+    ZnZ.spec_head0 := spec_head0;
+    ZnZ.spec_tail00 := spec_tail00;
+    ZnZ.spec_tail0 := spec_tail0;
+    ZnZ.spec_add_mul_div := spec_add_mul_div;
+    ZnZ.spec_pos_mod := spec_pos_mod;
+    ZnZ.spec_is_even := spec_is_even;
+    ZnZ.spec_sqrt2 := spec_sqrt2;
+    ZnZ.spec_sqrt := spec_sqrt;
+    ZnZ.spec_lor := spec_lor;
+    ZnZ.spec_land := spec_land;
+    ZnZ.spec_lxor := spec_lxor |}.
 
 End Int31_Specs.
 

@@ -302,7 +302,7 @@ Definition IsOk := bst.
 
 Class Ok (s:tree) : Prop := ok : bst s.
 
-Instance bst_Ok s (Hs : bst s) : Ok s := { ok := Hs }.
+Instance bst_Ok s (Hs : bst s) : Ok s := Hs.
 
 Fixpoint ltb_tree x s :=
  match s with

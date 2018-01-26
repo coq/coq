@@ -79,7 +79,7 @@ Require Import Coq.Arith.Arith.
   it by specifying which setoid we're talking about. *)
 
 Program Instance eq_setoid A : Setoid A | 10 :=
-  { equiv := eq ; setoid_equiv := eq_equivalence }.
+  {| equiv := eq ; setoid_equiv := eq_equivalence |}.
 
 Program Instance nat_eq_eqdec : EqDec (eq_setoid nat) :=
   eq_nat_dec.

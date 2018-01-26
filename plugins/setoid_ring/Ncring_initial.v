@@ -207,4 +207,4 @@ reflexivity.
 End ZMORPHISM.
 
 Instance multiplication_phi_ring{R:Type}`{Ring R} : Multiplication  :=
-  {multiplication x y := (gen_phiZ x) * y}.
+  fun x y => (gen_phiZ x) * y.

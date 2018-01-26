@@ -46,7 +46,7 @@ Notation "x =? y" := (equalityb x y) (at level 70, no associativity).
 Variable Ceqb_eq: forall x y:C, Ceqb x y = true -> (x == y).
 
 Instance equalityb_coef : Equalityb C :=
-  {equalityb x y := Ceqb x y}.
+  {| equalityb x y := Ceqb x y |}.
 
  Fixpoint Peq (P P' : Pol) {struct P'} : bool :=
   match P, P' with
@@ -60,7 +60,7 @@ Instance equalityb_coef : Equalityb C :=
   end.
 
 Instance equalityb_pol : Equalityb Pol :=
-  {equalityb x y := Peq x y}.
+  {| equalityb x y := Peq x y |}.
 
 (* Q a ses variables de queue < i *)
  Definition mkPX P i n Q :=

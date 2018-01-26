@@ -362,9 +362,9 @@ Defined.
 Section FunEq.
   Context A `{eT: type A}.
 
-  Global Instance FunEquiv {T} : Equiv (T -> A) := {
-                                                    equiv P Q := forall a, P a === Q a
-                                                  }.
+  Global Instance FunEquiv {T} : Equiv (T -> A) :=
+                                                    fun P Q => forall a, P a === Q a
+                                                  .
 End FunEq.
 
 Section SepAlgSect.
@@ -403,13 +403,13 @@ Section BISepAlg.
   Context {A} `{sa : SepAlg A}.
   Context {B} `{IL: ILogic B}.
 
-  Program Instance SABIOps: BILOperators (ILFunFrm A B) := {
+  Program Instance SABIOps: BILOperators (ILFunFrm A B) := {|
                                                             empSP := mkILFunFrm e (fun x => sa_unit === x /\\ ltrue) _;
                                                             sepSP P Q := mkILFunFrm e (fun x => Exists x1, Exists x2, sa_mul x1 x2 x /\\
                                                                                                                              P x1 //\\ Q x2) _;
                                                             wandSP P Q := mkILFunFrm e (fun x => Forall x1, Forall x2, sa_mul x x1 x2 ->>
                                                                                                                               P x1 -->> Q x2) _
-                                                          }.
+                                                          |}.
   Next Obligation.
     admit.
   Defined.
@@ -433,9 +433,9 @@ Inductive Action :=
 
 Definition Actions := list Action.
 
-Instance ActionsEquiv : Equiv Actions := {
-                                          equiv a1 a2 := a1 = a2
-                                        }.
+Instance ActionsEquiv : Equiv Actions :=
+                                          fun a1 a2 => a1 = a2
+                                        .
 
 Definition OPred := ILFunFrm Actions Prop.
 Definition mkOPred (P : Actions -> Prop) : OPred.

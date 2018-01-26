@@ -87,7 +87,7 @@ Definition ZN(x:Z):=
 end.
 
 Instance power_ring {R:Type}`{Ring R} : Power:=
-  {power x y := pow_N x (ZN y)}.
+  fun x y => pow_N x (ZN y).
 
 (** Interpretation morphisms definition*)
 

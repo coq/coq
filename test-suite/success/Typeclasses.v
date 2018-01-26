@@ -30,7 +30,7 @@ Module shelve_non_class_subgoals.
   Variable foo : Foo.
   Hint Extern 0 Foo => exact foo : typeclass_instances.
   Class Bar := {}.
-  Instance bar1 (f:Foo) : Bar := {}.
+  Instance bar1 (f:Foo) : Bar.
 
   Typeclasses eauto := debug.
   Set Typeclasses Debug Verbosity 2.
@@ -43,8 +43,8 @@ End shelve_non_class_subgoals.
 Module RefineVsNoTceauto.
 
   Class Foo (A : Type) := foo : A.
-  Instance: Foo nat := { foo := 0 }.
-  Instance: Foo nat := { foo := 42 }.
+  Instance: Foo nat := 0.
+  Instance: Foo nat := 42.
   Hint Extern 0 (_ = _) => refine eq_refl : typeclass_instances.
   Goal exists (f : Foo nat), @foo _ f = 0.
   Proof.
@@ -183,8 +183,8 @@ End sec.
 Module UniqueSolutions.
   Set Typeclasses Unique Solutions.
   Class Eq (A : Type) : Set.
-    Instance eqa : Eq nat := {}.
-    Instance eqb : Eq nat := {}.
+    Instance eqa : Eq nat.
+    Instance eqb : Eq nat.
 
     Goal Eq nat.
       try apply _.
@@ -199,9 +199,9 @@ Module UniqueInstances.
   Set Typeclasses Unique Instances.
   Class Eq (A : Type) : Set.
     Instance eqa : Eq nat := _. constructor. Qed.
-    Instance eqb : Eq nat := {}.
+    Instance eqb : Eq nat.
     Class Foo (A : Type) (e : Eq A) : Set.
-    Instance fooa : Foo _ eqa := {}.
+    Instance fooa : Foo _ eqa.
 
     Tactic Notation "refineu" open_constr(c) := unshelve refine c.
 

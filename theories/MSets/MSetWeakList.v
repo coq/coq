@@ -131,7 +131,7 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   Hint Unfold Ok.
   Hint Resolve ok.
 
-  Instance NoDup_Ok s (nd : NoDup s) : Ok s := { ok := nd }.
+  Instance NoDup_Ok s (nd : NoDup s) : Ok s := nd.
 
   Ltac inv_ok := match goal with
    | H:Ok (_ :: _) |- _ => inversion_clear H; inv_ok
