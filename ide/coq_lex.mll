@@ -17,7 +17,13 @@
 
 let space = [' ' '\n' '\r' '\t' '\012'] (* '\012' is form-feed *)
 
+let number = [ '0'-'9' ]+
+
+let string = "\"" _+ "\""
+
 let undotted_sep = '{' | '}' | '-'+ | '+'+ | '*'+
+
+let vernac_control = "Fail" | "Time" | "Redirect" space+ string | "Timeout" space+ number
 
 let dot_sep = '.' (space | eof)
 
@@ -65,7 +71,7 @@ and sentence initial stamp = parse
       stamp (utf8_lexeme_start lexbuf) Tags.Script.sentence;
       sentence true stamp lexbuf
     }
-  | undotted_sep {
+  | (vernac_control space+)* undotted_sep {
       (* Separators like { or } and bullets * - + are only active
 	 at the start of a sentence *)
       if initial then stamp (utf8_lexeme_start lexbuf + String.length (Lexing.lexeme lexbuf) - 1) Tags.Script.sentence;
