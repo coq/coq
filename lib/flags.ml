@@ -6,17 +6,27 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-let with_modified_ref r nf f x =
+(* If [restore] is false, whenever [f] modifies the ref, we will
+   preserve the modification. *)
+let with_modified_ref ?(restore=true) r nf f x =
   let old_ref = !r in r := nf !r;
-  try let res = f x in r := old_ref; res
+  try
+    let pre = !r in
+    let res = f x in
+    (* If r was modified don't restore its old value *)
+    if restore || pre == !r then r := old_ref;
+    res
   with reraise ->
     let reraise = Backtrace.add_backtrace reraise in
     r := old_ref;
     Exninfo.iraise reraise
 
-let with_option o f x = with_modified_ref o (fun _ -> true) f x
-let without_option o f x = with_modified_ref o (fun _ -> false) f x
+let with_option o f x = with_modified_ref ~restore:false o (fun _ -> true) f x
+let without_option o f x = with_modified_ref ~restore:false o (fun _ -> false) f x
 let with_extra_values o l f x = with_modified_ref o (fun ol -> ol@l) f x
+
+(* hide the [restore] option as internal *)
+let with_modified_ref r nf f x = with_modified_ref r nf f x
 
 let with_options ol f x =
   let vl = List.map (!) ol in
