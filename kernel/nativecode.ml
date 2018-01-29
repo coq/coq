@@ -1919,15 +1919,17 @@ let compile_constant env sigma prefix ~interactive con cb =
       let asw = { asw_ind = ind; asw_prefix = prefix; asw_ci = ci;
 		  asw_reloc = tbl; asw_finite = true } in
       let c_uid = fresh_lname Anonymous in
+      let cf_uid = fresh_lname Anonymous in
       let _, arity = tbl.(0) in
       let ci_uid = fresh_lname Anonymous in
       let cargs = Array.init arity
         (fun i -> if Int.equal i pb.proj_arg then Some ci_uid else None)
       in
       let i = push_symbol (SymbConst con) in
-      let accu = MLapp (MLprimitive Cast_accu, [|MLlocal c_uid|]) in
+      let accu = MLapp (MLprimitive Cast_accu, [|MLlocal cf_uid|]) in
       let accu_br = MLapp (MLprimitive Mk_proj, [|get_const_code i;accu|]) in
-      let code = MLmatch(asw,MLlocal c_uid,accu_br,[|[((ind,1),cargs)],MLlocal ci_uid|]) in
+      let code = MLmatch(asw,MLlocal cf_uid,accu_br,[|[((ind,1),cargs)],MLlocal ci_uid|]) in
+      let code = MLlet(cf_uid, MLapp (MLprimitive Force_cofix, [|MLlocal c_uid|]), code) in
       let gn = Gproj ("",con) in
       let fargs = Array.init (pb.proj_npars + 1) (fun _ -> fresh_lname Anonymous) in
       let arg = fargs.(pb.proj_npars) in
