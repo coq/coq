@@ -1067,6 +1067,9 @@ module Goal = struct
   }
 
   let assume (gl : t) = (gl : t)
+
+  let print { sigma; self } = { Evd.it = self; sigma }
+
   let state { state=state } = state
 
   let env {env} = env
