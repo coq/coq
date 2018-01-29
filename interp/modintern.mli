@@ -28,4 +28,4 @@ exception ModuleInternalizationError of module_internalization_error
    isn't ModAny. *)
 
 val interp_module_ast :
-  env -> module_kind -> module_ast -> module_struct_entry * module_kind
+  env -> module_kind -> module_ast -> module_struct_entry * module_kind * Univ.ContextSet.t

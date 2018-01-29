@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 483493b20fe91cc1bea4350a2db2f82d checker/cic.mli
+MD5 79ed7b5c069b1994bf1a8d2cec22bdce checker/cic.mli
 
 *)
 
@@ -295,16 +295,11 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     Opt v_bool;
     v_typing_flags|]
 
-let v_with =
-  Sum ("with_declaration_body",0,
-       [|[|List v_id;v_mp|];
-         [|List v_id;v_tuple "with_def" [|v_constr;v_context|]|]|])
-
 let rec v_mae =
   Sum ("module_alg_expr",0,
   [|[|v_mp|];         (* SEBident *)
     [|v_mae;v_mp|];   (* SEBapply *)
-    [|v_mae;v_with|]  (* SEBwith *)
+    [|v_mae; Any|]  (* SEBwith *)
   |])
 
 let rec v_sfb =

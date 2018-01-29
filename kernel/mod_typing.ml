@@ -73,13 +73,8 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
          any implementations of parameters and opaques terms,
 	 as long as they have the right type *)
       let c', univs, ctx' =
-        match cb.const_universes with
-        | Monomorphic_const _ ->
-          (** We do not add the deferred constraints of the body in the
-              environment, because they do not appear in the type of the
-              definition. Any inconsistency will be raised at a later stage
-              when joining the environment. *)
-          let env' = Environ.push_context ~strict:true ctx env' in
+        match cb.const_universes, ctx with
+        | Monomorphic_const _, None ->
           let c',cst = match cb.const_body with
             | Undef _ | OpaqueDef _ ->
               let j = Typeops.infer env' c in
@@ -91,11 +86,8 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
               let c' = Mod_subst.force_constr cs in
               c, Reduction.infer_conv env' (Environ.universes env') c c'
           in
-          let ctx = Univ.ContextSet.of_context ctx in
-          c', Monomorphic_const ctx, Univ.ContextSet.add_constraints cst ctx
-        | Polymorphic_const uctx ->
-          let inst, ctx = Univ.abstract_universes ctx in
-          let c = Vars.subst_univs_level_constr (Univ.make_instance_subst inst) c in
+          c', Monomorphic_const Univ.ContextSet.empty, cst
+        | Polymorphic_const uctx, Some ctx ->
           let () =
             if not (UGraph.check_subtype (Environ.universes env) uctx ctx) then
               error_incorrect_with_constraint lab
@@ -116,7 +108,8 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
 	  in
 	    if not (Univ.Constraint.is_empty cst) then
 	      error_incorrect_with_constraint lab;
-            c, Polymorphic_const ctx, Univ.ContextSet.empty
+            c, Polymorphic_const ctx, Univ.Constraint.empty
+        | _ -> error_incorrect_with_constraint lab
       in
       let def = Def (Mod_subst.from_val c') in
 (*      let ctx' = Univ.UContext.make (newus, cst) in *)
@@ -225,11 +218,11 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
   | Reduction.NotConvertible -> error_incorrect_with_constraint lab
 
 let check_with env mp (sign,alg,reso,cst) = function
-  |WithDef(idl,c) ->
+  |WithDef(idl, (c, ctx)) ->
     let struc = destr_nofunctor sign in
-    let struc',c',cst' = check_with_def env struc (idl,c) mp reso in
-    let wd' = WithDef (idl,(c',Univ.ContextSet.to_context cst')) in
-    NoFunctor struc', MEwith (alg,wd'), reso, cst+++cst'
+    let struc', c', cst' = check_with_def env struc (idl, (c, ctx)) mp reso in
+    let wd' = WithDef (idl, (c', ctx)) in
+    NoFunctor struc', MEwith (alg,wd'), reso, Univ.ContextSet.add_constraints cst' cst
   |WithMod(idl,mp1) as wd ->
     let struc = destr_nofunctor sign in
     let struc',reso',cst' = check_with_mod env struc (idl,mp1) mp reso in

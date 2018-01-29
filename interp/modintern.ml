@@ -59,33 +59,42 @@ let lookup_module lqid = fst (lookup_module_or_modtype Module lqid)
 
 let transl_with_decl env = function
   | CWith_Module ((_,fqid),qid) ->
-      WithMod (fqid,lookup_module qid)
+      WithMod (fqid,lookup_module qid), Univ.ContextSet.empty
   | CWith_Definition ((_,fqid),c) ->
     let c, ectx = interp_constr env (Evd.from_env env) c in
-    let ctx = UState.context ectx in
-      WithDef (fqid,(c,ctx))
+    if Flags.is_universe_polymorphism () then
+      let ctx = UState.context ectx in
+      let inst, ctx = Univ.abstract_universes ctx in
+      let c = Vars.subst_univs_level_constr (Univ.make_instance_subst inst) c in
+      WithDef (fqid,(c, Some ctx)), Univ.ContextSet.empty
+    else
+      WithDef (fqid,(c, None)), UState.context_set ectx
 
 let loc_of_module l = l.CAst.loc
 
 (* Invariant : the returned kind is never ModAny, and it is
    equal to the input kind when this one isn't ModAny. *)
 
-let rec interp_module_ast env kind m = match m.CAst.v with
+let rec interp_module_ast env kind m cst = match m.CAst.v with
   | CMident qid ->
       let (mp,kind) = lookup_module_or_modtype kind (m.CAst.loc,qid) in
-      (MEident mp, kind)
+      (MEident mp, kind, cst)
   | CMapply (me1,me2) ->
-      let me1',kind1 = interp_module_ast env kind me1 in
-      let me2',kind2 = interp_module_ast env ModAny me2 in
+      let me1',kind1, cst = interp_module_ast env kind me1 cst in
+      let me2',kind2, cst = interp_module_ast env ModAny me2 cst in
       let mp2 = match me2' with
         | MEident mp -> mp
         | _ -> error_application_to_not_path (loc_of_module me2) me2'
       in
       if kind2 == ModType then
         error_application_to_module_type (loc_of_module me2);
-      (MEapply (me1',mp2), kind1)
+      (MEapply (me1',mp2), kind1, cst)
   | CMwith (me,decl) ->
-      let me,kind = interp_module_ast env kind me in
+      let me,kind,cst = interp_module_ast env kind me cst in
       if kind == Module then error_incorrect_with_in_module m.CAst.loc;
-      let decl = transl_with_decl env decl in
-      (MEwith(me,decl), kind)
+      let decl, cst' = transl_with_decl env decl in
+      let cst = Univ.ContextSet.union cst cst' in
+      (MEwith(me,decl), kind, cst)
+
+let interp_module_ast env kind m =
+  interp_module_ast env kind m Univ.ContextSet.empty
