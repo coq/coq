@@ -19,7 +19,5 @@ val push_include : string -> Names.DirPath.t -> bool -> unit
 (** [push_include phys_path log_path implicit] *)
 
 val push_ml_include : string -> unit
-
-val init_load_path : load_init:bool -> unit
-
+val init_load_path : load_init:bool -> Mltop.coq_path list
 val init_ocaml_path : unit -> unit

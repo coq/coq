@@ -489,11 +489,11 @@ exception NoCoqLib
 
 let usage batch =
   begin
-  try
-  Envars.set_coqlib ~fail:(fun x -> raise NoCoqLib);
-  Coqinit.init_load_path ~load_init:!load_init;
-  with NoCoqLib -> usage_no_coqlib ()
+    try Envars.set_coqlib ~fail:(fun x -> raise NoCoqLib)
+    with NoCoqLib -> usage_no_coqlib ()
   end;
+  let lp = Coqinit.init_load_path ~load_init:!load_init in
+  List.iter Mltop.add_coq_path lp;
   if batch then Usage.print_usage_coqc ()
   else begin
     Mltop.load_ml_objects_raw_rex
@@ -776,7 +776,8 @@ let init_toplevel arglist =
       if !print_config then (Envars.print_config stdout Coq_config.all_src_dirs; exit (exitcode ()));
       if !print_tags then (print_style_tags (); exit (exitcode ()));
       if !filter_opts then (print_string (String.concat "\n" extras); exit 0);
-      Coqinit.init_load_path ~load_init:!load_init;
+      let lp = Coqinit.init_load_path ~load_init:!load_init in
+      List.iter Mltop.add_coq_path lp;
       Option.iter Mltop.load_ml_object_raw !toploop;
       let extras = !toploop_init extras in
       if not (CList.is_empty extras) then begin

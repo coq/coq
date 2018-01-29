@@ -184,10 +184,28 @@ let warn_cannot_open_path =
 
 type add_ml = AddNoML | AddTopML | AddRecML
 
-let add_rec_path add_ml ~unix_path ~coq_root ~implicit =
+type vo_path_spec = {
+  unix_path : string;
+  coq_path  : Names.DirPath.t;
+  implicit  : bool;
+  has_ml    : add_ml;
+}
+
+type coq_path_spec =
+  | VoPath of vo_path_spec
+  | MlPath of string
+
+type coq_path = {
+  path_spec: coq_path_spec;
+  recursive: bool;
+}
+
+let add_vo_path ~recursive lp =
+  let unix_path = lp.unix_path in
+  let implicit = lp.implicit in
   if exists_dir unix_path then
-    let dirs = all_subdirs ~unix_path in
-    let prefix = Names.DirPath.repr coq_root in
+    let dirs = if recursive then all_subdirs ~unix_path else [] in
+    let prefix = Names.DirPath.repr lp.coq_path in
     let convert_dirs (lp, cp) =
       try
         let path = List.rev_map convert_string cp @ prefix in
@@ -195,16 +213,22 @@ let add_rec_path add_ml ~unix_path ~coq_root ~implicit =
       with Exit -> None
     in
     let dirs = List.map_filter convert_dirs dirs in
-    let () = match add_ml with
+    let () = match lp.has_ml with
       | AddNoML -> ()
       | AddTopML -> add_ml_dir unix_path
       | AddRecML -> List.iter (fun (lp,_) -> add_ml_dir lp) dirs in
     let add (path, dir) =
       Loadpath.add_load_path path ~implicit dir in
     let () = List.iter add dirs in
-    Loadpath.add_load_path unix_path ~implicit coq_root
+    Loadpath.add_load_path unix_path ~implicit lp.coq_path
   else
     warn_cannot_open_path unix_path
+
+let add_coq_path { recursive; path_spec } = match path_spec with
+  | VoPath lp ->
+    add_vo_path ~recursive lp
+  | MlPath dir ->
+    if recursive then add_rec_ml_dir dir else add_ml_dir dir
 
 (* convertit un nom quelconque en nom de fichier ou de module *)
 let mod_of_name name =
