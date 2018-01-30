@@ -84,7 +84,7 @@ val napply : t -> t array -> t
 
 val dummy_value : unit -> t
 val atom_of_accu : accumulator -> atom
-val args_of_accu : accumulator -> t list
+val args_of_accu : accumulator -> t array
 val accu_nargs : accumulator -> int
 
 val cast_accu : t -> accumulator

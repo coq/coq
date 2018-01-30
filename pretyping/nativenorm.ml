@@ -246,7 +246,7 @@ and nf_args env sigma accu t =
     let c = nf_val env sigma arg dom in
     (subst1 c codom, c::l)
   in
-  let t,l = List.fold_right aux (args_of_accu accu) (t,[]) in
+  let t,l = Array.fold_right aux (args_of_accu accu) (t,[]) in
   t, List.rev l
 
 and nf_bargs env sigma b t =
