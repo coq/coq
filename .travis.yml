@@ -20,10 +20,19 @@ addons:
   apt:
     sources:
     - avsm
-    packages:
-    - opam
-    - aspcud
-    - gcc-multilib
+## Due to issues like
+## https://github.com/travis-ci/travis-ci/issues/8507 ,
+## https://github.com/travis-ci/travis-ci/issues/9000 ,
+## https://github.com/travis-ci/travis-ci/issues/9081 , and
+## https://github.com/travis-ci/travis-ci/issues/9126 , we get frequent
+## failures with using `packages`.  Therefore, for most targets, we
+## instead invoke `apt-get update` manually with `travis_retry` before
+## invoking `apt-get install`, manually, below in the `install:`
+## target.
+#    packages:
+#    - opam
+#    - aspcud
+#    - gcc-multilib
 
 env:
   global:
@@ -212,6 +221,8 @@ before_install:
 - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then echo "Tested commit (followed by parent commits):"; git log -1; for commit in `git log -1 --format="%P"`; do echo; git log -1 $commit; done; fi
 
 install:
+- if [ "${TRAVIS_OS_NAME}" == "linux" ]; then travis_retry ./dev/tools/sudo-apt-get-update.sh -q; fi
+- if [ "${TRAVIS_OS_NAME}" == "linux" ]; then sudo apt-get install -y opam aspcud gcc-multilib; fi
 - opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
 - eval $(opam config env)
 - opam config list
