@@ -92,7 +92,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | CoFix     of ('constr, 'types) pcofixpoint
   | Proj      of projection * 'constr
 
-type values = Constr.values
+type values = Vmvalues.values
 
 (**********************************************************************)
 (**         Redeclaration of functions from module Constr             *)

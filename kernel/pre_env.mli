@@ -36,9 +36,9 @@ type stratification = {
 
 type lazy_val
 
-val force_lazy_val : lazy_val -> (values * Id.Set.t) option
+val force_lazy_val : lazy_val -> (Vmvalues.values * Id.Set.t) option
 val dummy_lazy_val : unit -> lazy_val
-val build_lazy_val : lazy_val -> (values * Id.Set.t) -> unit
+val build_lazy_val : lazy_val -> (Vmvalues.values * Id.Set.t) -> unit
 
 type named_context_val = private {
   env_named_ctx : Context.Named.t;

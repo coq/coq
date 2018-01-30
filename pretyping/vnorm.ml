@@ -15,6 +15,7 @@ open Vars
 open Environ
 open Inductive
 open Reduction
+open Vmvalues
 open Vm
 open Context.Rel.Declaration
 
@@ -134,7 +135,7 @@ let build_case_type dep p realargs c =
 
 (* La fonction de normalisation *)
 
-let rec nf_val env sigma v t = nf_whd env sigma (whd_val v) t
+let rec nf_val env sigma v t = nf_whd env sigma (Vmvalues.whd_val v) t
 
 and nf_vtype env sigma v =  nf_val env sigma v crazy_type
 
@@ -144,7 +145,7 @@ and nf_whd env sigma whd typ =
   | Vprod p ->
       let dom = nf_vtype env sigma (dom p) in
       let name = Name (Id.of_string "x") in
-      let vc = body_of_vfun (nb_rel env) (codom p) in
+      let vc = reduce_fun (nb_rel env) (codom p) in
       let codom = nf_vtype (push_rel (LocalAssum (name,dom)) env) sigma vc  in
       mkProd(name,dom,codom)
   | Vfun f -> nf_fun env sigma f typ
@@ -191,7 +192,7 @@ and nf_univ_args ~nb_univs mk env sigma stk =
     else match stk with
     | Zapp args :: _ ->
        let inst =
-	 Array.init nb_univs (fun i -> Vm.uni_lvl_val (arg args i))
+         Array.init nb_univs (fun i -> uni_lvl_val (arg args i))
        in
        Univ.Instance.of_array inst
     | _ -> assert false
@@ -254,7 +255,7 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       in
       let branchs = Array.mapi mkbranch bsw in
       let tcase = build_case_type dep p realargs c in
-      let ci = case_info sw in
+      let ci = sw.sw_annot.Cbytecodes.ci in
       nf_stk env sigma (mkCase(ci, p, c, branchs)) tcase stk
   | Zproj p :: stk ->
      assert (from = 0) ;
@@ -266,14 +267,14 @@ and nf_predicate env sigma ind mip params v pT =
   match whd_val v, kind pT with
   | Vfun f, Prod _ ->
       let k = nb_rel env in
-      let vb = body_of_vfun k f in
+      let vb = reduce_fun k f in
       let name,dom,codom = decompose_prod env pT in
       let dep,body =
 	nf_predicate (push_rel (LocalAssum (name,dom)) env) sigma ind mip params vb codom in
       dep, mkLambda(name,dom,body)
   | Vfun f, _ ->
       let k = nb_rel env in
-      let vb = body_of_vfun k f in
+      let vb = reduce_fun k f in
       let name = Name (Id.of_string "c") in
       let n = mip.mind_nrealargs in
       let rargs = Array.init n (fun i -> mkRel (n-i)) in
@@ -307,7 +308,7 @@ and nf_bargs env sigma b ofs t =
 
 and nf_fun env sigma f typ =
   let k = nb_rel env in
-  let vb = body_of_vfun k f in
+  let vb = reduce_fun k f in
   let name,dom,codom =
     try decompose_prod env typ
     with DestKO ->

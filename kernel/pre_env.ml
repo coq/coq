@@ -15,7 +15,6 @@
 
 open Util
 open Names
-open Constr
 open Declarations
 
 module NamedDecl = Context.Named.Declaration
@@ -50,7 +49,7 @@ type stratification = {
 }
 
 type val_kind =
-    | VKvalue of (values * Id.Set.t) CEphemeron.key
+    | VKvalue of (Vmvalues.values * Id.Set.t) CEphemeron.key
     | VKnone
 
 type lazy_val = val_kind ref
