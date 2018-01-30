@@ -171,7 +171,7 @@ let fixp_reducible flgs ((reci,i),_) stk =
 let cofixp_reducible flgs _ stk =
   if red_set flgs fCOFIX then
     match stk with
-      | (CASE _ | APP(_,CASE _)) -> true
+      | (CASE _ | PROJ _ | APP(_,CASE _) | APP(_,PROJ _)) -> true
       | _ -> false
   else
     false
