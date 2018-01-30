@@ -55,33 +55,68 @@ env:
   - TEST_TARGET="validate"                           TW="travis_wait"
   - TEST_TARGET="validate"   COMPILER="4.02.3+32bit" TW="travis_wait"
   - TEST_TARGET="validate"   COMPILER="${COMPILER_BE}+flambda" CAMLP5_VER="${CAMLP5_VER_BE}" NATIVE_COMP="no" EXTRA_CONF="-flambda-opts -O3" EXTRA_OPAM="num" FINDLIB_VER="${FINDLIB_VER_BE}"
-  - TEST_TARGET="ci-bignums"
-  - TEST_TARGET="ci-color"
-  - TEST_TARGET="ci-compcert"
-  - TEST_TARGET="ci-coq-dpdgraph" EXTRA_OPAM="ocamlgraph"
-  - TEST_TARGET="ci-coquelicot"
-  - TEST_TARGET="ci-equations"
-  - TEST_TARGET="ci-geocoq"
-  - TEST_TARGET="ci-fiat-crypto"
-  - TEST_TARGET="ci-fiat-parsers"
-  - TEST_TARGET="ci-flocq"
-  - TEST_TARGET="ci-formal-topology"
-  - TEST_TARGET="ci-hott"
-  - TEST_TARGET="ci-iris-lambda-rust"
-  - TEST_TARGET="ci-ltac2"
-  - TEST_TARGET="ci-math-classes"
-  - TEST_TARGET="ci-math-comp"
-  - TEST_TARGET="ci-sf"
-  - TEST_TARGET="ci-unimath"
-  - TEST_TARGET="ci-vst"
-  # Not ready yet for 8.7
-  # - TEST_TARGET="ci-cpdt"
-  # - TEST_TARGET="ci-metacoq"
-  # - TEST_TARGET="ci-tlc"
 
 matrix:
 
   include:
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-bignums"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-color"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-compcert"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-coq-dpdgraph" EXTRA_OPAM="ocamlgraph"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-coquelicot"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-equations"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-geocoq"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-fiat-crypto"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-fiat-parsers"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-flocq"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-formal-topology"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-hott"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-iris-lambda-rust"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-ltac2"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-math-classes"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-math-comp"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-sf"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-unimath"
+    - if: NOT (type = pull_request)
+      env:
+      - TEST_TARGET="ci-vst"
+
     - env:
       - TEST_TARGET="lint"
       install: []
