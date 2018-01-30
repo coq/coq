@@ -190,7 +190,6 @@ let with_full_print f a =
   Impargs.make_implicit_args false;
   Impargs.make_strict_implicit_args false;
   Impargs.make_contextual_implicit_args false;
-  Impargs.make_contextual_implicit_args false;
   Dumpglob.pause ();
   try
     let res = f a in
