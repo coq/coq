@@ -23,7 +23,7 @@ and lambda =
   | Lrel          of Name.t * int 
   | Lvar          of Id.t
   | Lmeta         of metavariable * lambda (* type *)
-  | Levar         of existential * lambda (* type *)
+  | Levar         of Evar.t * lambda (* type *) * lambda array (* arguments *)
   | Lprod         of lambda * lambda 
   | Llam          of Name.t array * lambda  
   | Llet          of Name.t * lambda * lambda

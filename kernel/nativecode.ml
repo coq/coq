@@ -148,7 +148,7 @@ type symbol =
   | SymbMatch of annot_sw
   | SymbInd of inductive
   | SymbMeta of metavariable
-  | SymbEvar of existential
+  | SymbEvar of Evar.t
   | SymbLevel of Univ.Level.t
 
 let dummy_symb = SymbValue (dummy_value ())
@@ -162,8 +162,7 @@ let eq_symbol sy1 sy2 =
   | SymbMatch sw1, SymbMatch sw2 -> eq_annot_sw sw1 sw2
   | SymbInd ind1, SymbInd ind2 -> eq_ind ind1 ind2
   | SymbMeta m1, SymbMeta m2 -> Int.equal m1 m2
-  | SymbEvar (evk1,args1), SymbEvar (evk2,args2) ->
-     Evar.equal evk1 evk2 && Array.for_all2 Constr.equal args1 args2
+  | SymbEvar evk1, SymbEvar evk2 -> Evar.equal evk1 evk2
   | SymbLevel l1, SymbLevel l2 -> Univ.Level.equal l1 l2
   | _, _ -> false
 
@@ -176,10 +175,7 @@ let hash_symbol symb =
   | SymbMatch sw -> combinesmall 5 (hash_annot_sw sw)
   | SymbInd ind -> combinesmall 6 (ind_hash ind)
   | SymbMeta m -> combinesmall 7 m
-  | SymbEvar (evk,args) ->
-     let evh = Evar.hash evk in
-     let hl = Array.fold_left (fun h t -> combine h (Constr.hash t)) evh args in
-     combinesmall 8 hl
+  | SymbEvar evk -> combinesmall 8 (Evar.hash evk)
   | SymbLevel l -> combinesmall 9 (Univ.Level.hash l)
 
 module HashedTypeSymbol = struct
@@ -1047,11 +1043,12 @@ let ml_of_instance instance u =
      let tyn = fresh_lname Anonymous in
      let i = push_symbol (SymbMeta mv) in
      MLapp(MLprimitive Mk_meta, [|get_meta_code i; MLlocal tyn|])
-  | Levar(ev,ty) ->
+  | Levar(evk,ty,args) ->
      let tyn = fresh_lname Anonymous in
-     let i = push_symbol (SymbEvar ev) in
+     let i = push_symbol (SymbEvar evk) in
+     let args = MLarray(Array.map (ml_of_lam env l) args) in
      MLlet(tyn, ml_of_lam env l ty,
-       MLapp(MLprimitive Mk_evar, [|get_evar_code i;MLlocal tyn|]))
+       MLapp(MLprimitive Mk_evar, [|get_evar_code i;MLlocal tyn; args|]))
   | Lprod(dom,codom) ->
       let dom = ml_of_lam env l dom in
       let codom = ml_of_lam env l codom in

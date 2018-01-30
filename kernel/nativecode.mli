@@ -44,7 +44,7 @@ val get_ind : symbols -> int -> inductive
 
 val get_meta : symbols -> int -> metavariable
 
-val get_evar : symbols -> int -> existential
+val get_evar : symbols -> int -> Evar.t
 
 val get_level : symbols -> int -> Univ.Level.t
 

@@ -61,7 +61,7 @@ type atom =
   | Acofixe of t array * t array * int * t
   | Aprod of Name.t * t * (t -> t)
   | Ameta of metavariable * t
-  | Aevar of existential * t
+  | Aevar of Evar.t * t * t array
   | Aproj of Constant.t * accumulator
 
 let accumulate_tag = 0
@@ -132,8 +132,8 @@ let mk_prod_accu s dom codom =
 let mk_meta_accu mv ty =
   mk_accu (Ameta (mv,ty))
 
-let mk_evar_accu ev ty =
-  mk_accu (Aevar (ev,ty))
+let mk_evar_accu ev ty args =
+  mk_accu (Aevar (ev,ty,args))
 
 let mk_proj_accu kn c = 
   mk_accu (Aproj (kn,c))

@@ -224,7 +224,7 @@ and nf_accu env sigma accu =
   if Int.equal (accu_nargs accu) 0 then nf_atom env sigma atom
   else
     let a,typ = nf_atom_type env sigma atom in
-    let _, args = nf_args env sigma accu typ in
+    let _, args = nf_args env sigma (args_of_accu accu) typ in
     mkApp(a,Array.of_list args)
 
 and nf_accu_type env sigma accu =
@@ -232,10 +232,10 @@ and nf_accu_type env sigma accu =
   if Int.equal (accu_nargs accu) 0 then nf_atom_type env sigma atom
   else
     let a,typ = nf_atom_type env sigma atom in
-    let t, args = nf_args env sigma accu typ in
+    let t, args = nf_args env sigma (args_of_accu accu) typ in
     mkApp(a,Array.of_list args), t
 
-and nf_args env sigma accu t =
+and nf_args env sigma args t =
   let aux arg (t,l) = 
     let _,dom,codom =
       try decompose_prod env t with
@@ -246,7 +246,7 @@ and nf_args env sigma accu t =
     let c = nf_val env sigma arg dom in
     (subst1 c codom, c::l)
   in
-  let t,l = Array.fold_right aux (args_of_accu accu) (t,[]) in
+  let t,l = Array.fold_right aux args (t,[]) in
   t, List.rev l
 
 and nf_bargs env sigma b t =
@@ -277,7 +277,6 @@ and nf_atom env sigma atom =
       let codom = nf_type env sigma (codom vn) in
       mkProd(n,dom,codom)
   | Ameta (mv,_) -> mkMeta mv
-  | Aevar (ev,_) -> mkEvar ev
   | Aproj(p,c) ->
       let c = nf_accu env sigma c in
 	mkProj(Projection.make p true,c)
@@ -347,9 +346,9 @@ and nf_atom_type env sigma atom =
       let env = push_rel (LocalAssum (n,dom)) env in
       let codom,s2 = nf_type_sort env sigma (codom vn) in
       mkProd(n,dom,codom), Typeops.type_of_product env n s1 s2
-  | Aevar(ev,ty) ->
-     let ty = nf_type env sigma ty in
-     mkEvar ev, ty
+  | Aevar(evk,ty,args) ->
+    let ty = nf_type env sigma ty in
+    nf_evar env sigma evk ty args
   | Ameta(mv,ty) ->
      let ty = nf_type env sigma ty in
      mkMeta mv, ty
@@ -385,6 +384,19 @@ and  nf_predicate env sigma ind mip params v pT =
       let body = nf_type (push_rel (LocalAssum (name,dom)) env) sigma vb in
       true, mkLambda(name,dom,body)
   | _, _ -> false, nf_type env sigma v
+
+and nf_evar env sigma evk ty args =
+  let evi = try Evd.find sigma evk with Not_found -> assert false in
+  let hyps = Environ.named_context_of_val (Evd.evar_filtered_hyps evi) in
+  if List.is_empty hyps then begin
+    assert (Int.equal (Array.length args) 0);
+    mkEvar (evk, [||]), ty
+  end
+  else
+    let fold accu d = Term.mkNamedProd_or_LetIn d accu in
+    let t = List.fold_left fold ty hyps in
+    let ty, args = nf_args env sigma args t in
+    mkEvar (evk, Array.of_list args), ty
 
 let evars_of_evar_map sigma =
   { Nativelambda.evars_val = Evd.existential_opt_value sigma;
