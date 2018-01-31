@@ -20,21 +20,15 @@ let set_debug () =
   does not exist. *)
 
 let rcdefaultname = "coqrc"
-let rcfile = ref ""
-let rcfile_specified = ref false
-let set_rcfile s = rcfile := s; rcfile_specified := true
 
-let load_rc = ref true
-let no_load_rc () = load_rc := false
-
-let load_rcfile ~time doc sid =
-  if !load_rc then
+let load_rcfile ~rcfile ~time doc sid =
     try
-      if !rcfile_specified then
-        if CUnix.file_readable_p !rcfile then
-          Vernac.load_vernac ~time ~verbosely:false ~interactive:false ~check:true doc sid !rcfile
-        else raise (Sys_error ("Cannot read rcfile: "^ !rcfile))
-      else
+      match rcfile with
+      | Some rcfile ->
+        if CUnix.file_readable_p rcfile then
+          Vernac.load_vernac ~time ~verbosely:false ~interactive:false ~check:true doc sid rcfile
+        else raise (Sys_error ("Cannot read rcfile: "^ rcfile))
+      | None ->
 	try
 	  let warn x = Feedback.msg_warning (str x) in
 	  let inferedrc = List.find CUnix.file_readable_p [
@@ -54,9 +48,6 @@ let load_rcfile ~time doc sid =
       let reraise = CErrors.push reraise in
       let () = Feedback.msg_info (str"Load of rcfile failed.") in
       iraise reraise
-  else
-    (Flags.if_verbose Feedback.msg_info (str"Skipping rcfile loading.");
-     doc, sid)
 
 (* Recursively puts dir in the LoadPath if -nois was not passed *)
 let build_stdlib_path ~load_init ~unix_path ~coq_path ~with_ml =
@@ -76,13 +67,6 @@ let build_userlib_path ~unix_path =
         implicit = false;
       }
   }
-
-(* Options -I, -I-as, and -R of the command line *)
-let includes = ref []
-let push_include s alias implicit =
-  includes := (s, alias, implicit) :: !includes
-let ml_includes = ref []
-let push_ml_include s = ml_includes := s :: !ml_includes
 
 let ml_path_if c p =
   let open Mltop in
@@ -128,17 +112,7 @@ let libs_init_load_path ~load_init =
                            coq_path = Libnames.default_root_prefix;
                            implicit = false;
                            has_ml = AddTopML }
-    } ] @
-
-  (* additional loadpaths, given with options -Q and -R *)
-  List.map
-    (fun (unix_path, coq_path, implicit) ->
-       { recursive = true;
-         path_spec = VoPath { unix_path; coq_path; has_ml = Mltop.AddNoML; implicit } })
-      (List.rev !includes) @
-
-  (* additional ml directories, given with option -I *)
-  List.map (fun s -> {recursive = false; path_spec = MlPath s}) (List.rev !ml_includes)
+    } ]
 
 (* Initialises the Ocaml toplevel before launching it, so that it can
    find the "include" file in the *source* directory *)

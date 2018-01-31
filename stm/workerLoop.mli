@@ -9,4 +9,4 @@
 (* Default priority *)
 val async_proofs_worker_priority : CoqworkmgrApi.priority ref
 
-val loop : (unit -> unit) -> string list -> string list
+val loop : (unit -> unit) -> Coqargs.coq_cmdopts -> string list -> string list

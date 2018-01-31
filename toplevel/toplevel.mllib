@@ -2,4 +2,5 @@ Vernac
 Usage
 Coqloop
 Coqinit
+Coqargs
 Coqtop

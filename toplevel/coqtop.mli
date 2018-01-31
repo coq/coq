@@ -11,7 +11,7 @@
    state, load the files given on the command line, load the resource file,
    produce the output state if any, and finally will launch [Coqloop.loop]. *)
 
-val init_toplevel : string list -> (Stm.doc * Stateid.t) option
+val init_toplevel : string list -> (Stm.doc * Stateid.t) option * Coqargs.coq_cmdopts
 
 val start : unit -> unit
 
@@ -19,6 +19,6 @@ val start : unit -> unit
 val drop_last_doc : Stm.doc option ref
 
 (* For other toploops *)
-val toploop_init : (string list -> string list) ref
-val toploop_run : (Stm.doc -> unit) ref
+val toploop_init : (Coqargs.coq_cmdopts -> string list -> string list) ref
+val toploop_run : (Coqargs.coq_cmdopts -> Stm.doc -> unit) ref
 
