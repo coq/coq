@@ -34,8 +34,8 @@ git_checkout ${stdpp_CI_BRANCH} ${stdpp_URL_PARTS[0]} ${stdpp_CI_DIR} ${stdpp_UR
 # Build std++
 ( cd ${stdpp_CI_DIR} && make && make install )
 
-# Build iris
-( cd ${Iris_CI_DIR} && make && make install )
+# Build and validate (except on Travis, i.e., skip if TRAVIS is non-empty) Iris
+( cd ${Iris_CI_DIR} && make && (test -n "${TRAVIS}" || make validate) && make install )
 
 # Build lambdaRust
 ( cd ${lambdaRust_CI_DIR} && make && make install )
