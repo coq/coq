@@ -257,22 +257,6 @@ let make_pure_subst evi args =
  *   we have the property that u and phi(t) are convertible in env.
  *)
 
-let csubst_subst (k, s) c =
-  (** Safe because this is a substitution *)
-  let c = EConstr.Unsafe.to_constr c in
-  let rec subst n c = match Constr.kind c with
-  | Rel m ->
-    if m <= n then c
-    else if m - n <= k then EConstr.Unsafe.to_constr (Int.Map.find (k - m + n) s)
-    else mkRel (m - k)
-  | _ -> Constr.map_with_binders succ subst n c
-  in
-  let c = if k = 0 then c else subst 0 c in
-  EConstr.of_constr c
-
-let subst2 subst vsubst c =
-  csubst_subst subst (EConstr.Vars.replace_vars vsubst c)
-
 let next_ident_away id avoid =
   let avoid id = Id.Set.mem id avoid in
   next_ident_away_from id avoid
@@ -282,19 +266,79 @@ let next_name_away na avoid =
   let id = match na with Name id -> id | Anonymous -> default_non_dependent_ident in
   next_ident_away_from id avoid
 
-type csubst = int * EConstr.t Int.Map.t
+type subst_val =
+| SRel of int
+| SVar of Id.t
 
-let empty_csubst = (0, Int.Map.empty)
+type csubst = {
+  csubst_len : int;
+  (** Cardinal of [csubst_rel] *)
+  csubst_var : Constr.t Id.Map.t;
+  (** A mapping of variables to variables. We use the more general
+      [Constr.t] to share allocations, but all values are of shape [Var _]. *)
+  csubst_rel : Constr.t Int.Map.t;
+  (** A contiguous mapping of integers to variables. Same remark for values. *)
+  csubst_rev : subst_val Id.Map.t;
+  (** Reverse mapping of the substitution *)
+}
+(** This type represent a name substitution for the named and De Bruijn parts of
+    a environment. For efficiency we also store the reverse substitution.
+    Invariant: all identifiers in the codomain of [csubst_var] and [csubst_rel]
+    must be pairwise distinct. *)
+
+let empty_csubst = {
+  csubst_len = 0;
+  csubst_rel = Int.Map.empty;
+  csubst_var = Id.Map.empty;
+  csubst_rev = Id.Map.empty;
+}
+
+let csubst_subst { csubst_len = k; csubst_var = v; csubst_rel = s } c =
+  (** Safe because this is a substitution *)
+  let c = EConstr.Unsafe.to_constr c in
+  let rec subst n c = match Constr.kind c with
+  | Rel m ->
+    if m <= n then c
+    else if m - n <= k then Int.Map.find (k - m + n) s
+    else mkRel (m - k)
+  | Var id ->
+    begin try Id.Map.find id v with Not_found -> c end
+  | _ -> Constr.map_with_binders succ subst n c
+  in
+  let c = if k = 0 && Id.Map.is_empty v then c else subst 0 c in
+  EConstr.of_constr c
 
 type ext_named_context =
-  csubst * (Id.t * EConstr.constr) list *
-  Id.Set.t * EConstr.named_context
+  csubst * Id.Set.t * EConstr.named_context
 
-let push_var id (n, s) =
-  let s = Int.Map.add n (EConstr.mkVar id) s in
-  (succ n, s)
+let push_var id { csubst_len = n; csubst_var = v; csubst_rel = s; csubst_rev = r } =
+  let s = Int.Map.add n (Constr.mkVar id) s in
+  let r = Id.Map.add id (SRel n) r in
+  { csubst_len = succ n; csubst_var = v; csubst_rel = s; csubst_rev = r }
 
-let push_rel_decl_to_named_context sigma decl (subst, vsubst, avoid, nc) =
+(** Post-compose the substitution with the generator [src ↦ tgt] *)
+let update_var src tgt subst =
+  let cur =
+    try Some (Id.Map.find src subst.csubst_rev)
+    with Not_found -> None
+  in
+  match cur with
+  | None ->
+    (** Missing keys stand for identity substitution [src ↦ src] *)
+    let csubst_var = Id.Map.add src (Constr.mkVar tgt) subst.csubst_var in
+    let csubst_rev = Id.Map.add tgt (SVar src) subst.csubst_rev in
+    { subst with csubst_var; csubst_rev }
+  | Some bnd ->
+    let csubst_rev = Id.Map.add tgt bnd (Id.Map.remove src subst.csubst_rev) in
+    match bnd with
+    | SRel m ->
+      let csubst_rel = Int.Map.add m (Constr.mkVar tgt) subst.csubst_rel in
+      { subst with csubst_rel; csubst_rev }
+    | SVar id ->
+      let csubst_var = Id.Map.add id (Constr.mkVar tgt) subst.csubst_var in
+      { subst with csubst_var; csubst_rev }
+
+let push_rel_decl_to_named_context sigma decl (subst, avoid, nc) =
   let open EConstr in
   let open Vars in
   let map_decl f d =
@@ -330,18 +374,17 @@ let push_rel_decl_to_named_context sigma decl (subst, vsubst, avoid, nc) =
           binding named [id], we will keep [id0] (the name given
           by the user) and rename [id0] into [id] in the named
           context. Unless [id] is a section variable. *)
-      let subst = (fst subst, Int.Map.map (replace_vars [id0,mkVar id]) (snd subst)) in
-      let vsubst = (id0,mkVar id)::vsubst in
-      let d = decl |> NamedDecl.of_rel_decl (fun _ -> id0) |> map_decl (subst2 subst vsubst) in
+      let subst = update_var id0 id subst in
+      let d = decl |> NamedDecl.of_rel_decl (fun _ -> id0) |> map_decl (csubst_subst subst) in
       let nc = List.map (replace_var_named_declaration id0 id) nc in
-      (push_var id0 subst, vsubst, Id.Set.add id avoid, d :: nc)
+      (push_var id0 subst, Id.Set.add id avoid, d :: nc)
   | _ ->
       (* spiwack: if [id0] is a section variable renaming it is
           incorrect. We revert to a less robust behaviour where
           the new binder has name [id]. Which amounts to the same
           behaviour than when [id=id0]. *)
-      let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> map_decl (subst2 subst vsubst) in
-      (push_var id subst, vsubst, Id.Set.add id avoid, d :: nc)
+      let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> map_decl (csubst_subst subst) in
+      (push_var id subst, Id.Set.add id avoid, d :: nc)
 
 let push_rel_context_to_named_context env sigma typ =
   (* compute the instances relative to the named context and rel_context *)
@@ -350,17 +393,17 @@ let push_rel_context_to_named_context env sigma typ =
   let ids = List.map get_id (named_context env) in
   let inst_vars = List.map mkVar ids in
   if List.is_empty (Environ.rel_context env) then
-    (named_context_val env, typ, inst_vars, empty_csubst, [])
+    (named_context_val env, typ, inst_vars, empty_csubst)
   else
     let avoid = List.fold_right Id.Set.add ids Id.Set.empty in
     let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
     (* move the rel context to a named context and extend the named instance *)
     (* with vars of the rel context *)
     (* We do keep the instances corresponding to local definition (see above) *)
-    let (subst, vsubst, _, env) =
+    let (subst, _, env) =
       Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context sigma d acc)
-        (rel_context env) ~init:(empty_csubst, [], avoid, named_context env) in
-    (val_of_named_context env, subst2 subst vsubst typ, inst_rels@inst_vars, subst, vsubst)
+        (rel_context env) ~init:(empty_csubst, avoid, named_context env) in
+    (val_of_named_context env, csubst_subst subst typ, inst_rels@inst_vars, subst)
 
 (*------------------------------------*
  * Entry points to define new evars   *
@@ -425,8 +468,8 @@ let new_evar_from_context sign evd ?src ?filter ?candidates ?store ?naming ?prin
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
 let new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
-  let sign,typ',instance,subst,vsubst = push_rel_context_to_named_context env evd typ in
-  let map c = subst2 subst vsubst c in
+  let sign,typ',instance,subst = push_rel_context_to_named_context env evd typ in
+  let map c = csubst_subst subst c in
   let candidates = Option.map (fun l -> List.map map l) candidates in
   let instance =
     match filter with

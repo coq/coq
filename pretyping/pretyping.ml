@@ -70,7 +70,7 @@ let get_extra env sigma =
   let ids = List.map get_id (named_context env) in
   let avoid = List.fold_right Id.Set.add ids Id.Set.empty in
   Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context sigma d acc)
-    (rel_context env) ~init:(empty_csubst, [], avoid, named_context env)
+    (rel_context env) ~init:(empty_csubst, avoid, named_context env)
 
 let make_env env sigma = { env = env; extra = lazy (get_extra env sigma) }
 let rel_context env = rel_context env.env
@@ -90,12 +90,11 @@ let push_rel_context sigma ctx env = {
 let lookup_named id env = lookup_named id env.env
 
 let e_new_evar env evdref ?src ?naming typ =
-  let subst2 subst vsubst c = csubst_subst subst (replace_vars vsubst c) in
   let open Context.Named.Declaration in
   let inst_vars = List.map (get_id %> mkVar) (named_context env.env) in
   let inst_rels = List.rev (rel_list 0 (nb_rel env.env)) in
-  let (subst, vsubst, _, nc) = Lazy.force env.extra in
-  let typ' = subst2 subst vsubst typ in
+  let (subst, _, nc) = Lazy.force env.extra in
+  let typ' = csubst_subst subst typ in
   let instance = inst_rels @ inst_vars in
   let sign = val_of_named_context nc in
   let sigma = !evdref in
