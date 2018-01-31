@@ -2,6 +2,10 @@
 
 set -xe
 
+# default value for NJOBS
+: "${NJOBS:=1}"
+export NJOBS
+
 if [ -n "${GITLAB_CI}" ];
 then
     export COQBIN="$PWD/_install_ci/bin"
