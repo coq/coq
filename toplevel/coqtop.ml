@@ -291,6 +291,8 @@ let ensure_exists f =
   if not (Sys.file_exists f) then
     compile_error (hov 0 (str "Can't find file" ++ spc () ++ str f))
 
+let top_stm_options = ref Stm.AsyncOpts.default_opts
+
 (* Compile a vernac file *)
 let compile ~time ~verbosely ~f_in ~f_out =
   let check_pending_proofs () =
@@ -314,7 +316,8 @@ let compile ~time ~verbosely ~f_in ~f_out =
 
       let doc, sid = Stm.(new_doc
           { doc_type = VoDoc long_f_dot_vo;
-            require_libs = require_libs ()
+            require_libs = require_libs ();
+            stm_options = !top_stm_options;
           }) in
 
       let doc, sid = load_init_vernaculars ~time doc sid in
@@ -349,7 +352,8 @@ let compile ~time ~verbosely ~f_in ~f_out =
 
       let doc, sid = Stm.(new_doc
           { doc_type = VioDoc long_f_dot_vio;
-            require_libs = require_libs ()
+            require_libs = require_libs ();
+            stm_options = !top_stm_options;
           }) in
 
       let doc, sid = load_init_vernaculars ~time doc sid in
@@ -650,23 +654,47 @@ let parse_args arglist =
     (* Options with one arg *)
     |"-coqlib" -> Flags.coqlib_spec:=true; Flags.coqlib:=(next ())
     |"-async-proofs" ->
-        Stm.AsyncOpts.async_proofs_mode := get_async_proofs_mode opt (next())
+      top_stm_options :=
+        { !top_stm_options with
+          Stm.AsyncOpts.async_proofs_mode = get_async_proofs_mode opt (next())
+        }
     |"-async-proofs-j" ->
-        Stm.AsyncOpts.async_proofs_n_workers := (get_int opt (next ()))
+      top_stm_options :=
+        { !top_stm_options with
+          Stm.AsyncOpts.async_proofs_n_workers = (get_int opt (next ()))
+        }
     |"-async-proofs-cache" ->
-        Stm.AsyncOpts.async_proofs_cache := get_cache opt (next ())
+      top_stm_options :=
+        { !top_stm_options with
+          Stm.AsyncOpts.async_proofs_cache = get_cache opt (next ())
+        }
     |"-async-proofs-tac-j" ->
-        Stm.AsyncOpts.async_proofs_n_tacworkers := (get_int opt (next ()))
+      top_stm_options :=
+        { !top_stm_options with
+          Stm.AsyncOpts.async_proofs_n_tacworkers = (get_int opt (next ()))
+        }
     |"-async-proofs-worker-priority" ->
         WorkerLoop.async_proofs_worker_priority := get_priority opt (next ())
     |"-async-proofs-private-flags" ->
-        Stm.AsyncOpts.async_proofs_private_flags := Some (next ());
+      top_stm_options :=
+        { !top_stm_options with
+          Stm.AsyncOpts.async_proofs_private_flags = Some (next ());
+        }
     |"-async-proofs-tactic-error-resilience" ->
-        Stm.AsyncOpts.async_proofs_tac_error_resilience := get_error_resilience opt (next ())
+      top_stm_options :=
+        { !top_stm_options with
+          Stm.AsyncOpts.async_proofs_tac_error_resilience = get_error_resilience opt (next ());
+        }
     |"-async-proofs-command-error-resilience" ->
-        Stm.AsyncOpts.async_proofs_cmd_error_resilience := get_bool opt (next ())
+      top_stm_options :=
+        { !top_stm_options with
+          Stm.AsyncOpts.async_proofs_cmd_error_resilience = get_bool opt (next ())
+        }
     |"-async-proofs-delegation-threshold" ->
-        Stm.AsyncOpts.async_proofs_delegation_threshold:= get_float opt (next ())
+      top_stm_options :=
+        { !top_stm_options with
+          Stm.AsyncOpts.async_proofs_delegation_threshold = get_float opt (next ())
+        }
     |"-worker-id" -> set_worker_id opt (next ())
     |"-compat" ->
         let v = G_vernac.parse_compat_version ~allow_old:false (next ()) in
@@ -706,9 +734,15 @@ let parse_args arglist =
     |"-async-queries-always-delegate"
     |"-async-proofs-always-delegate"
     |"-async-proofs-full" ->
-        Stm.AsyncOpts.async_proofs_full := true;
+      top_stm_options :=
+        { !top_stm_options with
+          Stm.AsyncOpts.async_proofs_full = true;
+        }
     |"-async-proofs-never-reopen-branch" ->
-        Stm.AsyncOpts.async_proofs_never_reopen_branch := true;
+      top_stm_options :=
+        { !top_stm_options with
+          Stm.AsyncOpts.async_proofs_never_reopen_branch = true;
+        }
     |"-batch" -> set_batch_mode ()
     |"-test-mode" -> Flags.test_mode := true
     |"-beautify" -> Flags.beautify := true
@@ -812,7 +846,8 @@ let init_toplevel arglist =
         try
           let doc, sid = Stm.(new_doc
                                 { doc_type = Interactive !toplevel_name;
-                                  require_libs = require_libs ()
+                                  require_libs = require_libs ();
+                                  stm_options = !top_stm_options;
                                 }) in
           Some (load_init_vernaculars ~time:!measure_time doc sid)
         with any -> flush_all(); fatal_error any

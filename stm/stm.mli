@@ -10,6 +10,33 @@ open Names
 
 (** state-transaction-machine interface *)
 
+(* Flags *)
+module AsyncOpts : sig
+
+  type cache = Force
+  type async_proofs = APoff | APonLazy | APon
+  type tac_error_filter = [ `None | `Only of string list | `All ]
+
+  type stm_opt = {
+    async_proofs_n_workers : int;
+    async_proofs_n_tacworkers : int;
+
+    async_proofs_cache : cache option;
+    async_proofs_mode : async_proofs;
+
+    async_proofs_private_flags : string option;
+    async_proofs_full : bool;
+    async_proofs_never_reopen_branch : bool;
+
+    async_proofs_tac_error_resilience : tac_error_filter;
+    async_proofs_cmd_error_resilience : bool;
+    async_proofs_delegation_threshold : float;
+  }
+
+  val default_opts : stm_opt
+
+end
+
 (** The STM doc type determines some properties such as what
     uncompleted proofs are allowed and recording of aux files. *)
 type stm_doc_type =
@@ -21,6 +48,7 @@ type stm_doc_type =
 type stm_init_options = {
   doc_type     : stm_doc_type;
   require_libs : (string * string option * bool option) list;
+  stm_options  : AsyncOpts.stm_opt;
 (*
   fb_handler   : Feedback.feedback -> unit;
   iload_path   : (string list * string * bool) list;
@@ -228,27 +256,3 @@ val get_all_proof_names : doc:doc -> Id.t list
 
 (** Enable STM debugging *)
 val stm_debug : bool ref
-
-(* Flags *)
-module AsyncOpts : sig
-
-  (* Defaults for worker creation *)
-  val async_proofs_n_workers : int ref
-  val async_proofs_n_tacworkers : int ref
-
-  type async_proofs = APoff | APonLazy | APon
-  val async_proofs_mode : async_proofs ref
-
-  type cache = Force
-  val async_proofs_cache : cache option ref
-
-  val async_proofs_private_flags : string option ref
-  val async_proofs_full : bool ref
-  val async_proofs_never_reopen_branch : bool ref
-
-  type tac_error_filter = [ `None | `Only of string list | `All ]
-  val async_proofs_tac_error_resilience : tac_error_filter ref
-  val async_proofs_cmd_error_resilience : bool ref
-  val async_proofs_delegation_threshold : float ref
-
-end

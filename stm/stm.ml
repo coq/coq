@@ -26,31 +26,50 @@ open Vernacexpr
 
 module AsyncOpts = struct
 
-  let async_proofs_n_workers = ref 1
-  let async_proofs_n_tacworkers = ref 2
-
   type cache = Force
-  let async_proofs_cache : cache option ref = ref None
-
   type async_proofs = APoff | APonLazy | APon
-  let async_proofs_mode = ref APoff
-
-  let async_proofs_private_flags = ref None
-  let async_proofs_full = ref false
-  let async_proofs_never_reopen_branch = ref false
-
   type tac_error_filter = [ `None | `Only of string list | `All ]
-  let async_proofs_tac_error_resilience = ref (`Only [ "curly" ])
-  let async_proofs_cmd_error_resilience = ref true
 
-  let async_proofs_delegation_threshold = ref 0.03
+  type stm_opt = {
+    async_proofs_n_workers : int;
+    async_proofs_n_tacworkers : int;
 
+    async_proofs_cache : cache option;
+    async_proofs_mode : async_proofs;
+
+    async_proofs_private_flags : string option;
+    async_proofs_full : bool;
+    async_proofs_never_reopen_branch : bool;
+
+    async_proofs_tac_error_resilience : tac_error_filter;
+    async_proofs_cmd_error_resilience : bool;
+    async_proofs_delegation_threshold : float;
+  }
+
+  let default_opts = {
+    async_proofs_n_workers = 1;
+    async_proofs_n_tacworkers = 2;
+
+    async_proofs_cache = None;
+
+    async_proofs_mode = APoff;
+
+    async_proofs_private_flags = None;
+    async_proofs_full = false;
+    async_proofs_never_reopen_branch = false;
+
+    async_proofs_tac_error_resilience = `Only [ "curly" ];
+    async_proofs_cmd_error_resilience = true;
+    async_proofs_delegation_threshold = 0.03;
+  }
+
+  let cur_opt = ref default_opts
 end
 
 open AsyncOpts
 
-let async_proofs_is_master () =
-  !async_proofs_mode = APon &&
+let async_proofs_is_master opt =
+  opt.async_proofs_mode = APon &&
   !Flags.async_proofs_worker_id = "master"
 
 (* Protect against state changes *)
@@ -558,7 +577,7 @@ end = struct (* {{{ *)
     | None -> raise Vcs_aux.Expired
   let set_state id s =
     (get_info id).state <- s;
-    if async_proofs_is_master () then Hooks.(call state_ready id)
+    if async_proofs_is_master !cur_opt then Hooks.(call state_ready id)
   let get_state id = (get_info id).state
   let reached id =
     let info = get_info id in
@@ -1150,7 +1169,7 @@ end = struct (* {{{ *)
              " the \"-async-proofs-cache force\" option to Coq."))
 
   let undo_vernac_classifier v =
-    if VCS.is_interactive () = `No && !async_proofs_cache <> Some Force
+    if VCS.is_interactive () = `No && !cur_opt.async_proofs_cache <> Some Force
     then undo_costly_in_batch_mode v;
     try
       match Vernacprop.under_control v with
@@ -1286,7 +1305,7 @@ let prev_node { id } =
 let cur_node id = mk_doc_node id (VCS.visit id)
 
 let is_block_name_enabled name =
-  match !async_proofs_tac_error_resilience with
+  match !cur_opt.async_proofs_tac_error_resilience with
   | `None -> false
   | `All -> true
   | `Only l -> List.mem name l
@@ -1294,7 +1313,7 @@ let is_block_name_enabled name =
 let detect_proof_block id name =
   let name = match name with None -> "indent" | Some x -> x in
   if is_block_name_enabled name &&
-     (async_proofs_is_master () || Flags.async_proofs_is_worker ())
+     (async_proofs_is_master !cur_opt || Flags.async_proofs_is_worker ())
   then (
   match cur_node id with
   | None -> ()
@@ -1396,7 +1415,7 @@ end = struct (* {{{ *)
   let task_match age t =
     match age, t with
     | Fresh, BuildProof { t_states } ->
-        not !async_proofs_full ||
+        not !cur_opt.async_proofs_full ||
         List.exists (fun x -> CList.mem_f Stateid.equal x !perspective) t_states
     | Old my_states, States l ->
         List.for_all (fun x -> CList.mem_f Stateid.equal x my_states) l
@@ -1433,7 +1452,7 @@ end = struct (* {{{ *)
         feedback (InProgress ~-1);
         t_assign (`Val pl);
         record_pb_time ?loc:t_loc t_name time;
-        if !async_proofs_full || t_drop
+        if !cur_opt.async_proofs_full || t_drop
         then `Stay(t_states,[States t_states])
         else `End
     | Fresh, BuildProof { t_assign; t_loc; t_name; t_states },
@@ -1607,8 +1626,8 @@ end = struct (* {{{ *)
 
   let queue = ref None
   let init () =
-    if async_proofs_is_master () then
-      queue := Some (TaskQueue.create !async_proofs_n_workers)
+    if async_proofs_is_master !cur_opt then
+      queue := Some (TaskQueue.create !cur_opt.async_proofs_n_workers)
     else
       queue := Some (TaskQueue.create 0)
 
@@ -2074,7 +2093,7 @@ end = struct (* {{{ *)
       QueryTask.({ t_where = prev; t_for = id; t_what = q }) ~cancel_switch
 
   let init () = queue := Some (TaskQueue.create
-    (if !async_proofs_full then 1 else 0))
+    (if !cur_opt.async_proofs_full then 1 else 0))
 
 end (* }}} *)
 
@@ -2090,14 +2109,14 @@ let async_policy () =
   let open Flags in
   if is_universe_polymorphism () then false
   else if VCS.is_interactive () = `Yes then
-    (async_proofs_is_master () || !async_proofs_mode = APonLazy)
+    (async_proofs_is_master !cur_opt || !cur_opt.async_proofs_mode = APonLazy)
   else
-    (VCS.is_vio_doc () || !async_proofs_mode <> APoff)
+    (VCS.is_vio_doc () || !cur_opt.async_proofs_mode <> APoff)
 
 let delegate name =
-     get_hint_bp_time name >= !async_proofs_delegation_threshold
+     get_hint_bp_time name >= !cur_opt.async_proofs_delegation_threshold
   || VCS.is_vio_doc ()
-  || !async_proofs_full
+  || !cur_opt.async_proofs_full
 
 let warn_deprecated_nested_proofs =
   CWarnings.create ~name:"deprecated-nested-proofs" ~category:"deprecated"
@@ -2212,7 +2231,7 @@ let collect_proof keep cur hd brkind id =
        let rc = collect (Some cur) [] id in
        if is_empty rc then make_sync `AlreadyEvaluated rc
        else if (keep == VtKeep || keep == VtKeepAsAxiom) &&
-          (not(State.is_cached_and_valid id) || !async_proofs_full)
+          (not(State.is_cached_and_valid id) || !cur_opt.async_proofs_full)
        then check_policy rc
        else make_sync `AlreadyEvaluated rc
 
@@ -2294,9 +2313,9 @@ let known_state ?(redefine_qed=false) ~cache id =
 
   (* Absorb tactic errors from f () *)
   let resilient_tactic id blockname f =
-    if !async_proofs_tac_error_resilience = `None ||
-       (async_proofs_is_master () &&
-        !async_proofs_mode = APoff)
+    if !cur_opt.async_proofs_tac_error_resilience = `None ||
+       (async_proofs_is_master !cur_opt &&
+        !cur_opt.async_proofs_mode = APoff)
     then f ()
     else
       try f ()
@@ -2305,9 +2324,9 @@ let known_state ?(redefine_qed=false) ~cache id =
         error_absorbing_tactic id blockname ie in
   (* Absorb errors from f x *)
   let resilient_command f x =
-    if not !async_proofs_cmd_error_resilience ||
-       (async_proofs_is_master () &&
-        !async_proofs_mode = APoff)
+    if not !cur_opt.async_proofs_cmd_error_resilience ||
+       (async_proofs_is_master !cur_opt &&
+        !cur_opt.async_proofs_mode = APoff)
     then f x
     else
       try f x
@@ -2353,10 +2372,10 @@ let known_state ?(redefine_qed=false) ~cache id =
             resilient_tactic id cblock (fun () ->
               reach ~cache:`Shallow view.next;
               Partac.vernac_interp ~solve ~abstract ~cancel_switch
-                !async_proofs_n_tacworkers view.next id x)
+                !cur_opt.async_proofs_n_tacworkers view.next id x)
           ), cache, true
       | `Cmd { cast = x; cqueue = `QueryQueue cancel_switch }
-        when async_proofs_is_master () -> (fun () ->
+        when async_proofs_is_master !cur_opt -> (fun () ->
             reach view.next;
             Query.vernac_interp ~cancel_switch view.next id x
           ), cache, false
@@ -2370,7 +2389,7 @@ let known_state ?(redefine_qed=false) ~cache id =
 	    if eff then update_global_env ()
           ), (if eff then `Yes else cache), true
       | `Cmd { cast = x; ceff = eff } -> (fun () ->
-          (match !async_proofs_mode with
+          (match !cur_opt.async_proofs_mode with
            | APon | APonLazy ->
              resilient_command reach view.next
            | APoff -> reach view.next);
@@ -2500,7 +2519,7 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), cache, true
     in
     let cache_step =
-      if !async_proofs_cache = Some Force then `Yes
+      if !cur_opt.async_proofs_cache = Some Force then `Yes
       else cache_step in
     State.define ?safe_id
       ~cache:cache_step ~redefine:redefine_qed ~feedback_processed step id;
@@ -2516,6 +2535,7 @@ end (* }}} *)
 type stm_init_options = {
   doc_type     : stm_doc_type;
   require_libs : (string * string option * bool option) list;
+  stm_options  : AsyncOpts.stm_opt;
 (*
   fb_handler   : Feedback.feedback -> unit;
   iload_path   : (string list * string * bool) list;
@@ -2531,10 +2551,11 @@ let doc_type_module_name (std : stm_doc_type) =
 *)
 
 let init_core () =
-  if !async_proofs_mode = APon then Control.enable_thread_delay := true;
+  if !cur_opt.async_proofs_mode = APon then Control.enable_thread_delay := true;
   State.register_root_state ()
 
-let new_doc { doc_type ; require_libs } =
+let new_doc { doc_type ; stm_options; require_libs } =
+
   let load_objs libs =
     let rq_file (dir, from, exp) =
       let mp = Libnames.(Qualid (Loc.tag @@ qualid_of_string dir)) in
@@ -2542,6 +2563,9 @@ let new_doc { doc_type ; require_libs } =
       Flags.silently (Vernacentries.vernac_require mfrom exp) [mp] in
     List.(iter rq_file (rev libs))
   in
+
+  (* Set the options from the new documents *)
+  AsyncOpts.cur_opt := stm_options;
 
   (* We must reset the whole state before creating a document! *)
   State.restore_root_state ();
@@ -2570,10 +2594,10 @@ let new_doc { doc_type ; require_libs } =
   State.define ~cache:`Yes ~redefine:true (fun () -> ()) Stateid.initial;
   Backtrack.record ();
   Slaves.init ();
-  if async_proofs_is_master () then begin
+  if async_proofs_is_master !cur_opt then begin
     stm_prerr_endline (fun () -> "Initializing workers");
     Query.init ();
-    let opts = match !async_proofs_private_flags with
+    let opts = match !cur_opt.async_proofs_private_flags with
       | None -> []
       | Some s -> Str.split_delim (Str.regexp ",") s in
     begin try
@@ -2772,7 +2796,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
       | VtQuery (true, route), w ->
           let id = VCS.new_node ~id:newtip () in
           let queue =
-            if !async_proofs_full then `QueryQueue (ref false)
+            if !cur_opt.async_proofs_full then `QueryQueue (ref false)
             else if VCS.is_vio_doc () &&
                     VCS.((get_branch head).kind = `Master) &&
                     may_pierce_opaque (Vernacprop.under_control x.expr)
@@ -3104,7 +3128,7 @@ let edit_at ~doc id =
     VCS.delete_boxes_of id;
     VCS.gc ();
     VCS.print ();
-    if not !async_proofs_full then
+    if not !cur_opt.async_proofs_full then
       Reach.known_state ~cache:(VCS.is_interactive ()) id;
     VCS.checkout_shallowest_proof_branch ();
     `NewTip in
@@ -3120,7 +3144,7 @@ let edit_at ~doc id =
       | _, Some _, None -> assert false
       | false, Some { qed = qed_id ; lemma = start }, Some(mode,bn) ->
           let tip = VCS.cur_tip () in
-          if has_failed qed_id && is_pure qed_id && not !async_proofs_never_reopen_branch
+          if has_failed qed_id && is_pure qed_id && not !cur_opt.async_proofs_never_reopen_branch
           then reopen_branch start id mode qed_id tip bn
           else backto id (Some bn)
       | true, Some { qed = qed_id }, Some(mode,bn) ->
