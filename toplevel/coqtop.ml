@@ -304,6 +304,9 @@ let compile ~time ~verbosely ~f_in ~f_out =
                         |> prlist_with_sep pr_comma Names.Id.print)
                     ++ str ".")
   in
+  let iload_path = Coqinit.libs_init_load_path ~load_init:!load_init in
+  let require_libs = require_libs () in
+  let stm_options = !top_stm_options in
   match !compilation_mode with
   | BuildVo ->
       Flags.record_aux_file := true;
@@ -316,8 +319,9 @@ let compile ~time ~verbosely ~f_in ~f_out =
 
       let doc, sid = Stm.(new_doc
           { doc_type = VoDoc long_f_dot_vo;
-            require_libs = require_libs ();
-            stm_options = !top_stm_options;
+            iload_path;
+            require_libs;
+            stm_options;
           }) in
 
       let doc, sid = load_init_vernaculars ~time doc sid in
@@ -352,8 +356,9 @@ let compile ~time ~verbosely ~f_in ~f_out =
 
       let doc, sid = Stm.(new_doc
           { doc_type = VioDoc long_f_dot_vio;
-            require_libs = require_libs ();
-            stm_options = !top_stm_options;
+            iload_path;
+            require_libs;
+            stm_options;
           }) in
 
       let doc, sid = load_init_vernaculars ~time doc sid in
@@ -424,7 +429,12 @@ let set_vio_checking_j opt j =
     prerr_endline "setting the J variable like in 'make vio2vo J=3'";
     exit 1
 
-let schedule_vio opts =
+let schedule_vio () =
+  (* We must add update the loadpath here as the scheduling process
+     happens outside of the STM *)
+  let iload_path = Coqinit.libs_init_load_path ~load_init:!load_init in
+  List.iter Mltop.add_coq_path iload_path;
+
   if !vio_checking then
     Vio_checking.schedule_vio_checking !vio_files_j !vio_files
   else
@@ -494,7 +504,8 @@ let usage batch =
     try Envars.set_coqlib ~fail:(fun x -> raise NoCoqLib)
     with NoCoqLib -> usage_no_coqlib ()
   end;
-  let lp = Coqinit.init_load_path ~load_init:!load_init in
+  let lp = Coqinit.toplevel_init_load_path () in
+  (* Necessary for finding the toplevels below *)
   List.iter Mltop.add_coq_path lp;
   if batch then Usage.print_usage_coqc ()
   else begin
@@ -808,8 +819,8 @@ let init_toplevel arglist =
       if !print_config then (Envars.print_config stdout Coq_config.all_src_dirs; exit (exitcode ()));
       if !print_tags then (print_style_tags (); exit (exitcode ()));
       if !filter_opts then (print_string (String.concat "\n" extras); exit 0);
-      let lp = Coqinit.init_load_path ~load_init:!load_init in
-      List.iter Mltop.add_coq_path lp;
+      let top_lp = Coqinit.toplevel_init_load_path () in
+      List.iter Mltop.add_coq_path top_lp;
       Option.iter Mltop.load_ml_object_raw !toploop;
       let extras = !toploop_init extras in
       if not (CList.is_empty extras) then begin
@@ -845,11 +856,15 @@ let init_toplevel arglist =
           || CList.(is_empty !compile_list && is_empty !vio_files && is_empty !vio_tasks))
       (* Interactive *)
       then begin
+        let iload_path = Coqinit.libs_init_load_path ~load_init:!load_init in
+        let require_libs = require_libs () in
+        let stm_options = !top_stm_options in
         try
           let doc, sid = Stm.(new_doc
                                 { doc_type = Interactive !toplevel_name;
-                                  require_libs = require_libs ();
-                                  stm_options = !top_stm_options;
+                                  iload_path;
+                                  require_libs;
+                                  stm_options;
                                 }) in
           Some (load_init_vernaculars ~time:!measure_time doc sid)
         with any -> flush_all(); fatal_error any

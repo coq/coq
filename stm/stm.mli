@@ -46,15 +46,26 @@ type stm_doc_type =
 
 (* Main initalization routine *)
 type stm_init_options = {
+  (* The STM will set some internal flags differently depending on the
+     specified [doc_type]. This distinction should dissappear at some
+     some point. *)
   doc_type     : stm_doc_type;
+
+  (* Initial load path in scope for the document. Usually extracted
+     from -R options / _CoqProject *)
+  iload_path   : Mltop.coq_path list;
+
+  (* Require [require_libs] before the initial state is
+     ready. Parameters follow [Library], that is to say,
+     [lib,prefix,import_export] means require library [lib] from
+     optional [prefix] and [import_export] if [Some false/Some true]
+     is used.  *)
   require_libs : (string * string option * bool option) list;
+
+  (* STM options that apply to the current document. *)
   stm_options  : AsyncOpts.stm_opt;
-(*
-  fb_handler   : Feedback.feedback -> unit;
-  iload_path   : (string list * string * bool) list;
-  implicit_std : bool;
-*)
 }
+(* fb_handler   : Feedback.feedback -> unit; *)
 
 (** The type of a STM document *)
 type doc
