@@ -59,13 +59,23 @@ let load_rcfile ~time doc sid =
      doc, sid)
 
 (* Recursively puts dir in the LoadPath if -nois was not passed *)
-let add_stdlib_path ~load_init ~unix_path ~coq_root ~with_ml =
-  let add_ml = if with_ml then Mltop.AddRecML else Mltop.AddNoML in
-  Mltop.add_rec_path add_ml ~unix_path ~coq_root ~implicit:load_init
+let build_stdlib_path ~load_init ~unix_path ~coq_path ~with_ml =
+  let open Mltop in
+  let add_ml = if with_ml then AddRecML else AddNoML in
+  { recursive = true;
+    path_spec = VoPath { unix_path; coq_path ; has_ml = add_ml; implicit = load_init }
+  }
 
-let add_userlib_path ~unix_path =
-  Mltop.add_rec_path Mltop.AddRecML ~unix_path
-    ~coq_root:Libnames.default_root_prefix ~implicit:false
+let build_userlib_path ~unix_path =
+  let open Mltop in
+  { recursive = true;
+    path_spec = VoPath {
+        unix_path;
+        coq_path = Libnames.default_root_prefix;
+        has_ml = Mltop.AddRecML;
+        implicit = false;
+      }
+  }
 
 (* Options -I, -I-as, and -R of the command line *)
 let includes = ref []
@@ -74,51 +84,65 @@ let push_include s alias implicit =
 let ml_includes = ref []
 let push_ml_include s = ml_includes := s :: !ml_includes
 
+let ml_path_if c p =
+  let open Mltop in
+  let f x = { recursive = false; path_spec = MlPath x } in
+  if c then List.map f p else []
+
 (* Initializes the LoadPath *)
 let init_load_path ~load_init =
+  let open Mltop in
   let coqlib = Envars.coqlib () in
   let user_contrib = coqlib/"user-contrib" in
   let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)) in
   let coqpath = Envars.coqpath in
-  let coq_root = Names.DirPath.make [Libnames.coq_root] in
-    (* NOTE: These directories are searched from last to first *)
-    (* first, developer specific directory to open *)
-    if Coq_config.local then
-      Mltop.add_ml_dir (coqlib/"dev");
-    (* main loops *)
-    if Coq_config.local || !Flags.boot then begin
-      Mltop.add_ml_dir (coqlib/"stm");
-      Mltop.add_ml_dir (coqlib/"ide")
-    end;
-    if System.exists_dir (coqlib/"toploop") then
-      Mltop.add_ml_dir (coqlib/"toploop");
-    (* then standard library *)
-    add_stdlib_path ~load_init ~unix_path:(coqlib/"theories") ~coq_root ~with_ml:false;
-    (* then plugins *)
-    add_stdlib_path ~load_init ~unix_path:(coqlib/"plugins") ~coq_root ~with_ml:true;
-    (* then user-contrib *)
-    if Sys.file_exists user_contrib then
-      add_userlib_path ~unix_path:user_contrib;
-    (* then directories in XDG_DATA_DIRS and XDG_DATA_HOME *)
-    List.iter (fun s -> add_userlib_path ~unix_path:s) xdg_dirs;
-    (* then directories in COQPATH *)
-    List.iter (fun s -> add_userlib_path ~unix_path:s) coqpath;
-    (* then current directory (not recursively!) *)
-    Mltop.add_ml_dir ".";
-    Loadpath.add_load_path "." Libnames.default_root_prefix ~implicit:false;
-    (* additional loadpath, given with options -Q and -R *)
-    List.iter
-      (fun (unix_path, coq_root, implicit) ->
-        Mltop.add_rec_path Mltop.AddNoML ~unix_path ~coq_root ~implicit)
-      (List.rev !includes);
-    (* additional ml directories, given with option -I *)
-    List.iter Mltop.add_ml_dir (List.rev !ml_includes)
+  let coq_path = Names.DirPath.make [Libnames.coq_root] in
+
+  (* NOTE: These directories are searched from last to first *)
+  (* first, developer specific directory to open *)
+  ml_path_if Coq_config.local [coqlib/"dev"] @
+
+  (* main loops *)
+  ml_path_if (Coq_config.local || !Flags.boot) [coqlib/"stm"; coqlib/"ide"] @
+  ml_path_if (System.exists_dir (coqlib/"toploop")) [coqlib/"toploop"] @
+
+  (* then standard library and plugins *)
+  [build_stdlib_path ~load_init ~unix_path:(coqlib/"theories") ~coq_path ~with_ml:false;
+   build_stdlib_path ~load_init ~unix_path:(coqlib/"plugins")  ~coq_path ~with_ml:true ] @
+
+  (* then user-contrib *)
+  (if Sys.file_exists user_contrib then
+     [build_userlib_path ~unix_path:user_contrib] else []
+  ) @
+
+  (* then directories in XDG_DATA_DIRS and XDG_DATA_HOME and COQPATH *)
+  List.map (fun s -> build_userlib_path ~unix_path:s) (xdg_dirs @ coqpath) @
+
+  (* then current directory (not recursively!) *)
+  [ { recursive = false;
+      path_spec = VoPath { unix_path = ".";
+                           coq_path = Libnames.default_root_prefix;
+                           implicit = false;
+                           has_ml = AddTopML }
+    } ] @
+
+  (* additional loadpaths, given with options -Q and -R *)
+  List.map
+    (fun (unix_path, coq_path, implicit) ->
+       { recursive = true;
+         path_spec = VoPath { unix_path; coq_path; has_ml = Mltop.AddNoML; implicit } })
+      (List.rev !includes) @
+
+  (* additional ml directories, given with option -I *)
+  List.map (fun s -> {recursive = false; path_spec = MlPath s}) (List.rev !ml_includes)
 
 (* Initialises the Ocaml toplevel before launching it, so that it can
    find the "include" file in the *source* directory *)
 let init_ocaml_path () =
+  let open Mltop in
+  let lp s = { recursive = false; path_spec = MlPath s } in
   let add_subdir dl =
-    Mltop.add_ml_dir (List.fold_left (/) Envars.coqroot [dl])
+    Mltop.add_coq_path (lp (List.fold_left (/) Envars.coqroot [dl]))
   in
-    Mltop.add_ml_dir (Envars.coqlib ());
+    Mltop.add_coq_path (lp (Envars.coqlib ()));
     List.iter add_subdir Coq_config.all_src_dirs

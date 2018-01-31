@@ -905,9 +905,11 @@ let expand filename =
   Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) filename
 
 let vernac_add_loadpath implicit pdir ldiropt =
+  let open Mltop in
   let pdir = expand pdir in
   let alias = Option.default Libnames.default_root_prefix ldiropt in
-  Mltop.add_rec_path Mltop.AddTopML ~unix_path:pdir ~coq_root:alias ~implicit
+  add_coq_path { recursive = true;
+                 path_spec = VoPath { unix_path = pdir; coq_path = alias; has_ml = AddTopML; implicit } }
 
 let vernac_remove_loadpath path =
   Loadpath.remove_load_path (expand path)
@@ -915,7 +917,8 @@ let vernac_remove_loadpath path =
   (* Coq syntax for ML or system commands *)
 
 let vernac_add_ml_path isrec path =
-  (if isrec then Mltop.add_rec_ml_dir else Mltop.add_ml_dir) (expand path)
+  let open Mltop in
+  add_coq_path { recursive = isrec; path_spec = MlPath (expand path) }
 
 let vernac_declare_ml_module ~atts l =
   let local = make_locality atts.locality in
