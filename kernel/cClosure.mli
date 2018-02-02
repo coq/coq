@@ -163,6 +163,7 @@ val stack_tail : int -> stack -> stack
 val stack_nth : stack -> int -> fconstr
 val zip_term : (fconstr -> constr) -> constr -> stack -> constr
 val eta_expand_stack : stack -> stack
+val unfold_projection : 'a infos -> Projection.t -> stack_member option
 
 (** To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
