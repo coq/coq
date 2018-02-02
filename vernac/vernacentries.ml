@@ -1587,7 +1587,7 @@ let vernac_check_may_eval ~atts redexp glopt rc =
     | None ->
         let evars_of_term c = Evarutil.undefined_evars_of_term sigma' c in
         let l = Evar.Set.union (evars_of_term j.Environ.uj_val) (evars_of_term j.Environ.uj_type) in
-        let j = { j with Environ.uj_type = Reductionops.nf_betaiota sigma' j.Environ.uj_type } in
+        let j = { j with Environ.uj_type = Reductionops.nf_betaiota env sigma' j.Environ.uj_type } in
 	Feedback.msg_notice (print_judgment env sigma' j ++
                     pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma' l ++
                     Printer.pr_universe_ctx_set sigma uctx)

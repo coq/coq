@@ -1276,7 +1276,7 @@ let build_branch initial current realargs deps (realnames,curname) pb arsign eqn
   (* This is a bit too strong I think, in the sense that what we would *)
   (* really like is to have beta-iota reduction only at the positions where *)
   (* parameters are substituted *)
-  let typs = List.map (map_type (nf_betaiota !(pb.evdref))) typs in
+  let typs = List.map (map_type (nf_betaiota pb.env !(pb.evdref))) typs in
 
   (* We build the matrix obtained by expanding the matching on *)
   (* "C x1..xn as x" followed by a residual matching on eqn into *)
@@ -1426,7 +1426,7 @@ and match_current pb (initial,tomatch) =
 	    find_predicate pb.caseloc pb.env pb.evdref
 	      pred current indt (names,dep) tomatch in
 	  let ci = make_case_info pb.env (fst mind) pb.casestyle in
-	  let pred = nf_betaiota !(pb.evdref) pred in
+          let pred = nf_betaiota pb.env !(pb.evdref) pred in
 	  let case =
 	    make_case_or_project pb.env !(pb.evdref) indf ci pred current brvals
 	  in
@@ -1663,7 +1663,7 @@ let rec list_assoc_in_triple x = function
 *)
 
 let abstract_tycon ?loc env evdref subst tycon extenv t =
-  let t = nf_betaiota !evdref t in (* it helps in some cases to remove K-redex*)
+  let t = nf_betaiota env !evdref t in (* it helps in some cases to remove K-redex*)
   let src = match EConstr.kind !evdref t with
     | Evar (evk,_) -> (Loc.tag ?loc @@ Evar_kinds.SubEvar evk)
     | _ -> (Loc.tag ?loc @@ Evar_kinds.CasesType true) in

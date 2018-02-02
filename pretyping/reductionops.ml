@@ -1241,9 +1241,9 @@ let clos_whd_flags flgs env sigma t =
       (CClosure.inject (EConstr.Unsafe.to_constr t)))
   with e when is_anomaly e -> user_err Pp.(str "Tried to normalize ill-typed term")
 
-let nf_beta = clos_norm_flags CClosure.beta (Global.env ())
-let nf_betaiota = clos_norm_flags CClosure.betaiota (Global.env ())
-let nf_betaiotazeta = clos_norm_flags CClosure.betaiotazeta (Global.env ())
+let nf_beta = clos_norm_flags CClosure.beta
+let nf_betaiota = clos_norm_flags CClosure.betaiota
+let nf_betaiotazeta = clos_norm_flags CClosure.betaiotazeta
 let nf_all env sigma =
   clos_norm_flags CClosure.all env sigma
 

@@ -28,8 +28,8 @@ let env_nf_evar sigma env =
 
 let env_nf_betaiotaevar sigma env =
   process_rel_context
-    (fun d e ->
-      push_rel (RelDecl.map_constr (fun c -> Reductionops.nf_betaiota sigma c) d) e) env
+    (fun d env ->
+      push_rel (RelDecl.map_constr (fun c -> Reductionops.nf_betaiota env sigma c) d) env) env
 
 (****************************************)
 (* Operations on value/type constraints *)

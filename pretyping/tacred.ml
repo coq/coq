@@ -474,7 +474,7 @@ let contract_fix_use_function env sigma f
   let nbodies = Array.length recindices in
   let make_Fi j = (mkFix((recindices,j),typedbodies), f j) in
   let lbodies = List.init nbodies make_Fi in
-  substl_checking_arity env (List.rev lbodies) sigma (nf_beta sigma bodies.(bodynum))
+  substl_checking_arity env (List.rev lbodies) sigma (nf_beta env sigma bodies.(bodynum))
 
 let reduce_fix_use_function env sigma f whfun fix stack =
   match fix_recarg fix (Stack.append_app_list stack Stack.empty) with
@@ -498,7 +498,7 @@ let contract_cofix_use_function env sigma f
   let make_Fi j = (mkCoFix(j,typedbodies), f j) in
   let subbodies = List.init nbodies make_Fi in
   substl_checking_arity env (List.rev subbodies)
-    sigma (nf_beta sigma bodies.(bodynum))
+    sigma (nf_beta env sigma bodies.(bodynum))
 
 let reduce_mind_case_use_function func env sigma mia =
   match EConstr.kind sigma mia.mconstr with
@@ -695,7 +695,7 @@ let rec red_elim_const env sigma ref u largs =
 	let whfun = whd_construct_stack env sigma in
 	(match reduce_fix_use_function env sigma f whfun (destFix sigma d) lrest with
 	   | NotReducible -> raise Redelimination
-           | Reduced (c,rest) -> (nf_beta sigma c, rest), nocase)
+           | Reduced (c,rest) -> (nf_beta env sigma c, rest), nocase)
     | EliminationMutualFix (min,refgoal,refinfos) when nargs >= min ->
 	let rec descend (ref,u) args =
 	  let c = reference_value env sigma ref u in
@@ -710,7 +710,7 @@ let rec red_elim_const env sigma ref u largs =
 	let whfun = whd_construct_stack env sigma in
 	(match reduce_fix_use_function env sigma f whfun (destFix sigma d) lrest with
 	   | NotReducible -> raise Redelimination
-	   | Reduced (c,rest) -> (nf_beta sigma c, rest), nocase)
+           | Reduced (c,rest) -> (nf_beta env sigma c, rest), nocase)
     | NotAnElimination when unfold_nonelim ->
          let c = reference_value env sigma ref u in
            (whd_betaiotazeta sigma (applist (c, largs)), []), nocase
@@ -1101,7 +1101,7 @@ let unfoldoccs env sigma (occs,name) c =
     | [] -> ()
     | _ -> error_invalid_occurrence rest
     in
-    nf_betaiotazeta sigma uc
+    nf_betaiotazeta env sigma uc
   in
   match occs with
     | NoOccurrences -> c
@@ -1282,7 +1282,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
 	    else raise Not_found
 	  with Not_found ->
           try
-	    let t' = nf_betaiota sigma (one_step_reduce env sigma t) in
+            let t' = nf_betaiota env sigma (one_step_reduce env sigma t) in
             elimrec env t' l
           with NotStepReducible -> error_cannot_recognize ref
   in

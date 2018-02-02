@@ -1583,7 +1583,7 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
   let body = mkApp (lambda_create env sigma (typ,pred_body),[|dep_pair1|]) in
   let expected_goal = beta_applist sigma (abst_B,List.map fst e2_list) in
   (* Simulate now the normalisation treatment made by Logic.mk_refgoals *)
-  let expected_goal = nf_betaiota sigma expected_goal in
+  let expected_goal = nf_betaiota env sigma expected_goal in
   (* Retype to get universes right *)
   let sigma, expected_goal_ty = Typing.type_of env sigma expected_goal in
   let sigma, _ = Typing.type_of env sigma body in

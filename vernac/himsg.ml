@@ -83,12 +83,12 @@ let rec contract3' env sigma a b c = function
 
 (** Ad-hoc reductions *)
 
-let j_nf_betaiotaevar sigma j =
+let j_nf_betaiotaevar env sigma j =
   { uj_val = j.uj_val;
-    uj_type = Reductionops.nf_betaiota sigma j.uj_type }
+    uj_type = Reductionops.nf_betaiota env sigma j.uj_type }
 
-let jv_nf_betaiotaevar sigma jl =
-  Array.map (fun j -> j_nf_betaiotaevar sigma j) jl
+let jv_nf_betaiotaevar env sigma jl =
+  Array.map (fun j -> j_nf_betaiotaevar env sigma j) jl
 
 (** Printers *)
 
@@ -258,7 +258,7 @@ let explain_number_branches env sigma cj expn =
   str "expects " ++  int expn ++ str " branches."
 
 let explain_ill_formed_branch env sigma c ci actty expty =
-  let simp t = Reductionops.nf_betaiota sigma t in
+  let simp t = Reductionops.nf_betaiota env sigma t in
   let env = make_all_name_different env sigma in
   let pc = pr_leconstr_env env sigma c in
   let pa, pe = pr_explicit env sigma (simp actty) (simp expty) in
@@ -295,8 +295,8 @@ let explain_unification_error env sigma p1 p2 = function
      | NotSameArgSize | NotSameHead | NoCanonicalStructure ->
         (* Error speaks from itself *) []
      | ConversionFailed (env,t1,t2) ->
-        let t1 = Reductionops.nf_betaiota sigma t1 in
-        let t2 = Reductionops.nf_betaiota sigma t2 in
+        let t1 = Reductionops.nf_betaiota env sigma t1 in
+        let t2 = Reductionops.nf_betaiota env sigma t2 in
         if EConstr.eq_constr sigma t1 p1 && EConstr.eq_constr sigma t2 p2 then [] else
         let env = make_all_name_different env sigma in
         if not (EConstr.eq_constr sigma t1 p1) || not (EConstr.eq_constr sigma t2 p2) then
@@ -336,8 +336,8 @@ let explain_unification_error env sigma p1 p2 = function
 
 let explain_actual_type env sigma j t reason =
   let env = make_all_name_different env sigma in
-  let j = j_nf_betaiotaevar sigma j in
-  let t = Reductionops.nf_betaiota sigma t in
+  let j = j_nf_betaiotaevar env sigma j in
+  let t = Reductionops.nf_betaiota env sigma t in
   (** Actually print *)
   let pe = pr_ne_context_of (str "In environment") env sigma in
   let pc = pr_leconstr_env env sigma (Environ.j_val j) in
@@ -351,8 +351,8 @@ let explain_actual_type env sigma j t reason =
   ppreason ++ str ".")
 
 let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
-  let randl = jv_nf_betaiotaevar sigma randl in
-  let actualtyp = Reductionops.nf_betaiota sigma actualtyp in
+  let randl = jv_nf_betaiotaevar env sigma randl in
+  let actualtyp = Reductionops.nf_betaiota env sigma actualtyp in
   let env = make_all_name_different env sigma in
   let actualtyp, exptyp = pr_explicit env sigma actualtyp exptyp in
   let nargs = Array.length randl in

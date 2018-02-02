@@ -471,7 +471,7 @@ let internal_cut_gen ?(check=true) dir replace id t =
         (if check && mem_named_context_val id sign then
 	   user_err (str "Variable " ++ Id.print id ++ str " is already declared.");
          push_named_context_val (LocalAssum (id,t)) sign,t,concl,sigma) in
-    let nf_t = nf_betaiota sigma t in
+    let nf_t = nf_betaiota env sigma t in
     Proofview.tclTHEN
       (Proofview.Unsafe.tclEVARS sigma)
       (Refine.refine ~typecheck:false begin fun sigma ->
@@ -1728,7 +1728,7 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind :
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
 
-    let thm_ty0 = nf_betaiota sigma (Retyping.get_type_of env sigma c) in
+    let thm_ty0 = nf_betaiota env sigma (Retyping.get_type_of env sigma c) in
     let try_apply thm_ty nprod =
       try
         let n = nb_prod_modulo_zeta sigma thm_ty - nprod in
@@ -1864,7 +1864,7 @@ let explain_unable_to_apply_lemma ?loc env sigma thm innerclause =
      str "."))
 
 let apply_in_once_main flags innerclause env sigma (loc,d,lbind) =
-  let thm = nf_betaiota sigma (Retyping.get_type_of env sigma d) in
+  let thm = nf_betaiota env sigma (Retyping.get_type_of env sigma d) in
   let rec aux clause =
     try progress_with_clause flags innerclause clause
     with e when CErrors.noncritical e ->
@@ -2162,7 +2162,7 @@ let apply_type newcl args =
     let env = Proofview.Goal.env gl in
     let store = Proofview.Goal.extra gl in
     Refine.refine ~typecheck:false begin fun sigma ->
-      let newcl = nf_betaiota sigma newcl (* As in former Logic.refine *) in
+      let newcl = nf_betaiota env sigma newcl (* As in former Logic.refine *) in
       let (sigma, ev) =
         Evarutil.new_evar env sigma ~principal:true ~store newcl in
       (sigma, applist (ev, args))
