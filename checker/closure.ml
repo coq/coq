@@ -673,6 +673,9 @@ let contract_fix_vect fix =
   in
   (subs_cons(Array.init nfix make_body, env), thisbody)
 
+let unfold_projection env p =
+  let pb = lookup_projection p env in
+  Zproj (pb.proj_npars, pb.proj_arg, p)
 
 (*********************************************************************)
 (* A machine that inspects the head of a term until it finds an
@@ -694,9 +697,8 @@ let rec knh info m stk =
 
     | FProj (p,c) ->
       if red_set info.i_flags fDELTA then
-        (let pb = lookup_projection p (info.i_env) in
-	   knh info c (Zproj (pb.proj_npars, pb.proj_arg, p)
-		       :: zupdate m stk))
+        let s = unfold_projection info.i_env p in
+        knh info c (s :: zupdate m stk)
       else (m,stk)
 
 (* cases where knh stops *)

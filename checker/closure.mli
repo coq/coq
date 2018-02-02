@@ -121,6 +121,8 @@ val eta_expand_stack : stack -> stack
 val eta_expand_ind_stack : env -> inductive -> fconstr -> stack -> 
    (fconstr * stack) -> stack * stack
 
+val unfold_projection : env -> Projection.t -> stack_member
+
 (* To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
    a reduction function *)
