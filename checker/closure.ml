@@ -49,13 +49,6 @@ let with_stats c =
   end else
     Lazy.force c
 
-type transparent_state = Id.Pred.t * Cpred.t
-let all_opaque = (Id.Pred.empty, Cpred.empty)
-let all_transparent = (Id.Pred.full, Cpred.full)
-
-let is_transparent_variable (ids, _) id = Id.Pred.mem id ids
-let is_transparent_constant (_, csts) cst = Cpred.mem cst csts
-
 module type RedFlagsSig = sig
   type reds
   type red_kind
@@ -63,8 +56,6 @@ module type RedFlagsSig = sig
   val fDELTA : red_kind
   val fIOTA : red_kind
   val fZETA : red_kind
-  val fCONST : Constant.t -> red_kind
-  val fVAR : Id.t -> red_kind
   val no_red : reds
   val red_add : reds -> red_kind -> reds
   val mkflags : red_kind list -> reds
@@ -80,51 +71,33 @@ module RedFlags = (struct
   type reds = {
     r_beta : bool;
     r_delta : bool;
-    r_const : transparent_state;
     r_zeta : bool;
     r_evar : bool;
     r_iota : bool }
 
   type red_kind = BETA | DELTA | IOTA | ZETA
-	      | CONST of Constant.t | VAR of Id.t
+
   let fBETA = BETA
   let fDELTA = DELTA
   let fIOTA = IOTA
   let fZETA = ZETA
-  let fCONST kn  = CONST kn
-  let fVAR id  = VAR id
   let no_red = {
     r_beta = false;
     r_delta = false;
-    r_const = all_opaque;
     r_zeta = false;
     r_evar = false;
     r_iota = false }
 
   let red_add red = function
     | BETA -> { red with r_beta = true }
-    | DELTA -> { red with r_delta = true; r_const = all_transparent }
-    | CONST kn ->
-	let (l1,l2) = red.r_const in
-	{ red with r_const = l1, Cpred.add kn l2 }
+    | DELTA -> { red with r_delta = true}
     | IOTA -> { red with r_iota = true }
     | ZETA -> { red with r_zeta = true }
-    | VAR id ->
-	let (l1,l2) = red.r_const in
-	{ red with r_const = Id.Pred.add id l1, l2 }
 
   let mkflags = List.fold_left red_add no_red
 
   let red_set red = function
     | BETA -> incr_cnt red.r_beta beta
-    | CONST kn ->
-	let (_,l) = red.r_const in
-	let c = Cpred.mem kn l in
-	incr_cnt c delta
-    | VAR id -> (* En attendant d'avoir des kn pour les Var *)
-	let (l,_) = red.r_const in
-	let c = Id.Pred.mem id l in
-	incr_cnt c delta
     | ZETA -> incr_cnt red.r_zeta zeta
     | IOTA -> incr_cnt red.r_iota iota
     | DELTA -> (* Used for Rel/Var defined in context *)
@@ -720,7 +693,7 @@ let rec knh info m stk =
     | FCast(t,_,_) -> knh info t stk
 
     | FProj (p,c) ->
-      if red_set info.i_flags (fCONST (Projection.constant p)) then
+      if red_set info.i_flags fDELTA then
         (let pb = lookup_projection p (info.i_env) in
 	   knh info c (Zproj (pb.proj_npars, pb.proj_arg, p)
 		       :: zupdate m stk))
@@ -755,11 +728,11 @@ let rec knr info m stk =
       (match get_args n tys f e stk with
           Inl e', s -> knit info e' f s
         | Inr lam, s -> (lam,s))
-  | FFlex(ConstKey kn) when red_set info.i_flags (fCONST (fst kn)) ->
+  | FFlex(ConstKey kn) when red_set info.i_flags fDELTA ->
       (match ref_value_cache info (ConstKey kn) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
-  | FFlex(VarKey id) when red_set info.i_flags (fVAR id) ->
+  | FFlex(VarKey id) when red_set info.i_flags fDELTA ->
       (match ref_value_cache info (VarKey id) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
