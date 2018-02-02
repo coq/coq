@@ -851,12 +851,8 @@ let unfold_projection info p =
   if red_projection info.i_flags p
   then
     let open Declarations in
-    try
-      let pb = lookup_projection p (info_env info) in
-      Some (Zproj (pb.proj_npars, pb.proj_arg, Projection.constant p))
-    with Not_found ->
-      (* This is possible because sometimes for beta reduction we use a dummy env *)
-      None
+    let pb = lookup_projection p (info_env info) in
+    Some (Zproj (pb.proj_npars, pb.proj_arg, Projection.constant p))
   else None
 
 (*********************************************************************)
