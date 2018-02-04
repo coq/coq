@@ -35,11 +35,11 @@ record syntax of \Coq:
 \end{center}
 \begin{center}
 \[\begin{array}{l}
-\kw{Instance}~\ident~:~\classid{Id}~\term_1 \cdots \term_n := \{\\
+\kw{Instance}~\ident~:~\classid{Id}~\term_1 \cdots \term_n := \{|\\
 \begin{array}{p{0em}lcl}
   & \cst{f}_1 & := & \term_{f_1} ; \\
   & \vdots & &  \\
-  & \cst{f}_m & := & \term_{f_m} \}.
+  & \cst{f}_m & := & \term_{f_m} |\}.
 \end{array}\end{array}\]
 \end{center}
 \begin{coq_eval}
@@ -66,9 +66,9 @@ Leibniz equality on some type. An example implementation is:
 
 \begin{coq_example*}
 Instance unit_EqDec : EqDec unit :=
-{ eqb x y := true ;
+{| eqb x y := true ;
   eqb_leibniz x y H := 
-    match x, y return x = y with tt, tt => eq_refl tt end }.
+    match x, y return x = y with tt, tt => eq_refl tt end |}.
 \end{coq_example*}
 
 If one does not give all the members in the \texttt{Instance}
@@ -77,7 +77,7 @@ inhabitants of the remaining fields, e.g.:
 
 \begin{coq_example*}
 Instance eq_bool : EqDec bool :=
-{ eqb x y := if x then y else negb y }.
+{| eqb (x y: bool) := if x then y else negb y |}.
 \end{coq_example*}
 \begin{coq_example}
 Proof. intros x y H.
@@ -147,9 +147,9 @@ the constraints as a binding context before the instance, e.g.:
 
 \begin{coq_example}
 Instance prod_eqb `(EA : EqDec A, EB : EqDec B) : EqDec (A * B) :=
-{ eqb x y := match x, y with
+{| eqb x y := match x, y with
   | (la, ra), (lb, rb) => andb (eqb la lb) (eqb ra rb)
-  end }.
+  end |}.
 \end{coq_example}
 \begin{coq_eval}
 Admitted.
@@ -173,11 +173,11 @@ Section EqDec_defs.
 
 \begin{coq_example*}
   Global Instance option_eqb : EqDec (option A) :=
-  { eqb x y := match x, y with
+  {| eqb x y := match x, y with
     | Some x, Some y => eqb x y
     | None, None => true
     | _, _ => false
-    end }.
+    end |}.
 \end{coq_example*}
 \begin{coq_eval}
 Proof.
@@ -310,7 +310,7 @@ parameters {\binder$_1$} to {\binder$_n$} and fields {\tt field$_1$} to
 
 \subsection{\tt Instance {\ident} {\binder$_1$ \ldots \binder$_n$} :
   {Class} {t$_1$ \ldots t$_n$} [| \textit{priority}]
-  := \{ field$_1$ := b$_1$ ; \ldots ; field$_i$ := b$_i$ \}}
+  := \{| field$_1$ := b$_1$ ; \ldots ; field$_i$ := b$_i$ |\}}
 \comindex{Instance}
 \label{Instance}
 

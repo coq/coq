@@ -60,6 +60,9 @@ Vernacular Commands
   was removed. Use Local as a prefix instead.
 - For the Extraction Language command, "OCaml" is spelled correctly.
   The older "Ocaml" is still accepted, but deprecated.
+- To define instances, prefer record-like syntax {| … |} and deprecate the
+  lone brace syntax { … }. Bidirectional type-inference can be enabled using
+  Program.
 
 Universes
 

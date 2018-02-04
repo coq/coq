@@ -603,6 +603,10 @@ let warn_deprecated_implicit_arguments =
   CWarnings.create ~name:"deprecated-implicit-arguments" ~category:"deprecated"
          (fun () -> strbrk "Implicit Arguments is deprecated; use Arguments instead")
 
+let warn_deprecated_lone_braces =
+  CWarnings.create ~name:"deprecated-lone-braces" ~category:"deprecated"
+         (fun () -> strbrk "Lone braces syntax { … } is deprecated: use record notation {| … |} instead.")
+
 (* Extensions: implicits, coercions, etc. *)
 GEXTEND Gram
   GLOBAL: gallina_ext instance_name hint_info;
@@ -645,7 +649,9 @@ GEXTEND Gram
       | IDENT "Instance"; namesup = instance_name; ":";
 	 expl = [ "!" -> Decl_kinds.Implicit | -> Decl_kinds.Explicit ] ; t = operconstr LEVEL "200";
 	 info = hint_info ;
-	 props = [ ":="; "{"; r = record_declaration; "}" -> Some (true,r) |
+        props = [ ":="; "{"; r = record_declaration; "}" ->
+          warn_deprecated_lone_braces ~loc:!@loc ();
+          Some (true,r) |
 	     ":="; c = lconstr -> Some (false,c) | -> None ] ->
 	   VernacInstance (false,snd namesup,(fst namesup,expl,t),props,info)
 
