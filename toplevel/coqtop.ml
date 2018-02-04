@@ -424,12 +424,10 @@ let set_vio_checking_j opt j =
     prerr_endline "setting the J variable like in 'make vio2vo J=3'";
     exit 1
 
-let schedule_vio_checking () =
-  if !vio_files <> [] && !vio_checking then
+let schedule_vio opts =
+  if !vio_checking then
     Vio_checking.schedule_vio_checking !vio_files_j !vio_files
-
-let schedule_vio_compilation () =
-  if !vio_files <> [] && not !vio_checking then
+  else
     Vio_checking.schedule_vio_compilation !vio_files_j !vio_files
 
 (******************************************************************************)
@@ -840,7 +838,11 @@ let init_toplevel arglist =
          We split the codepath here depending whether coqtop is called
          in interactive mode or not.  *)
 
-      if (not !batch_mode || CList.is_empty !compile_list)
+      (* The condition for starting the interactive mode is a bit
+         convoluted, we should really refactor batch/compilation_mode
+         more. *)
+      if (not !batch_mode
+          || CList.(is_empty !compile_list && is_empty !vio_files && is_empty !vio_tasks))
       (* Interactive *)
       then begin
         try
@@ -855,8 +857,9 @@ let init_toplevel arglist =
       end else begin
         try
           compile_files ~time:!measure_time;
-          schedule_vio_checking ();
-          schedule_vio_compilation ();
+          (* Vio compile pass *)
+          if !vio_files <> [] then schedule_vio ();
+          (* Vio task pass *)
           check_vio_tasks ();
           (* Allow the user to output an arbitrary state *)
           outputstate ();
