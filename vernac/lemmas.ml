@@ -210,17 +210,16 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook =
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 
-let compute_proof_name locality = function
-  | Some ((loc,id),pl) ->
-      (* We check existence here: it's a bit late at Qed time *)
-      if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
-	 locality == Global && Nametab.exists_cci (Lib.make_path_except_section id)
-      then
-        user_err ?loc  (Id.print id ++ str " already exists.");
-      id
-  | None ->
-    let avoid = Id.Set.of_list (Proof_global.get_all_proof_names ()) in
-      next_global_ident_away default_thm_id avoid
+let fresh_name_for_anonymous_theorem () =
+  let avoid = Id.Set.of_list (Proof_global.get_all_proof_names ()) in
+  next_global_ident_away default_thm_id avoid
+
+let check_name_freshness locality (loc,id) : unit =
+  (* We check existence here: it's a bit late at Qed time *)
+  if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
+     locality == Global && Nametab.exists_cci (Lib.make_path_except_section id)
+  then
+    user_err ?loc  (Id.print id ++ str " already exists.")
 
 let save_remaining_recthms (locality,p,kind) norm univs body opaq i (id,(t_i,(_,imps))) =
   let t_i = norm t_i in
@@ -435,20 +434,17 @@ let start_proof_with_initialization kind sigma decl recguard thms snl hook =
 let start_proof_com ?inference_hook kind thms hook =
   let env0 = Global.env () in
   let decl = fst (List.hd thms) in
-  let evd, decl =
-    match decl with
-    | None -> Evd.from_env env0, Univdecls.default_univ_decl
-    | Some decl ->
-      Univdecls.interp_univ_decl_opt env0 (snd decl) in
-  let evd, thms = List.fold_left_map (fun evd (sopt,(bl,t)) ->
+  let evd, decl = Univdecls.interp_univ_decl_opt env0 (snd decl) in
+  let evd, thms = List.fold_left_map (fun evd ((id, _), (bl, t)) ->
     let evd, (impls, ((env, ctx), imps)) = interp_context_evars env0 evd bl in
     let evd, (t', imps') = interp_type_evars_impls ~impls env evd t in
     let flags = all_and_fail_flags in
     let flags = { flags with use_hook = inference_hook } in
     let evd = solve_remaining_evars flags env evd Evd.empty in
     let ids = List.map RelDecl.get_name ctx in
+    check_name_freshness (pi1 kind) id;
     (* XXX: The nf_evar is critical !! *)
-    evd, (compute_proof_name (pi1 kind) sopt,
+    evd, (snd id,
           (Evarutil.nf_evar evd (EConstr.it_mkProd_or_LetIn t' ctx),
            (ids, imps @ lift_implicits (Context.Rel.nhyps ctx) imps'))))
       evd thms in

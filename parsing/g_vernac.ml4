@@ -133,6 +133,12 @@ let test_plural_form_types loc kwd = function
      warn_plural_command ~loc:!@loc kwd
   | _ -> ()
 
+let lname_of_lident : lident -> lname =
+  Loc.map (fun s -> Name s)
+
+let name_of_ident_decl : ident_decl -> name_decl =
+  on_fst lname_of_lident
+
 (* Gallina declarations *)
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion
@@ -143,17 +149,17 @@ GEXTEND Gram
     [ [ thm = thm_token; id = ident_decl; bl = binders; ":"; c = lconstr;
         l = LIST0
           [ "with"; id = ident_decl; bl = binders; ":"; c = lconstr ->
-          (Some id,(bl,c)) ] ->
-          VernacStartTheoremProof (thm, (Some id,(bl,c))::l)
+          (id,(bl,c)) ] ->
+          VernacStartTheoremProof (thm, (id,(bl,c))::l)
       | stre = assumption_token; nl = inline; bl = assum_list ->
 	  VernacAssumption (stre, nl, bl)
       | (kwd,stre) = assumptions_token; nl = inline; bl = assum_list ->
 	  test_plural_form loc kwd bl;
 	  VernacAssumption (stre, nl, bl)
       | d = def_token; id = ident_decl; b = def_body ->
-          VernacDefinition (d, id, b)
+          VernacDefinition (d, name_of_ident_decl id, b)
       | IDENT "Let"; id = identref; b = def_body ->
-          VernacDefinition ((DoDischarge, Let), (id, None), b)
+          VernacDefinition ((DoDischarge, Let), (lname_of_lident id, None), b)
       (* Gallina inductive declarations *)
       | cum = cumulativity_token; priv = private_token; f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
@@ -623,12 +629,12 @@ GEXTEND Gram
 	  VernacCanonical (ByNotation ntn)
       | IDENT "Canonical"; IDENT "Structure"; qid = global; d = def_body ->
           let s = coerce_reference_to_id qid in
-          VernacDefinition ((NoDischarge,CanonicalStructure),((Loc.tag s),None),d)
+          VernacDefinition ((NoDischarge,CanonicalStructure),((Loc.tag (Name s)),None),d)
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
           let s = coerce_reference_to_id qid in
-          VernacDefinition ((NoDischarge,Coercion),((Loc.tag s),None),d)
+          VernacDefinition ((NoDischarge,Coercion),((Loc.tag (Name s)),None),d)
       | IDENT "Identity"; IDENT "Coercion"; f = identref; ":";
          s = class_rawexpr; ">->"; t = class_rawexpr ->
            VernacIdentityCoercion (f, s, t)

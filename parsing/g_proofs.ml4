@@ -28,7 +28,8 @@ GEXTEND Gram
     | ":"; l = LIST1 [id = IDENT -> id ] -> l ] ]
   ;
   command:
-    [ [ IDENT "Goal"; c = lconstr -> VernacGoal c
+    [ [ IDENT "Goal"; c = lconstr ->
+        VernacDefinition (Decl_kinds.(NoDischarge, Definition), ((Loc.tag ~loc:!@loc Names.Anonymous), None), ProveBody ([], c))
       | IDENT "Proof" -> VernacProof (None,None)
       | IDENT "Proof" ; IDENT "Mode" ; mn = string -> VernacProofMode mn
       | IDENT "Proof"; c = lconstr -> VernacExactProof c
