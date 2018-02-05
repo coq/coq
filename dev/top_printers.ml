@@ -158,7 +158,7 @@ let pp_cst_stack_t n = pp (Reductionops.Cst_stack.pr n)
 let pp_state_t n = pp (Reductionops.pr_state n)
 
 (* proof printers *)
-let pr_evar ev = Pp.int (Evar.repr ev)
+let pr_evar ev = Pp.int (Evar.Internal.repr ev)
 let ppmetas metas = pp(Termops.pr_metaset metas)
 let ppevm evd = pp(Termops.pr_evar_map ~with_univs:!Flags.univ_print (Some 2) evd)
 let ppevmall evd = pp(Termops.pr_evar_map ~with_univs:!Flags.univ_print None evd)
@@ -347,7 +347,7 @@ let print_pure_constr csr =
       box_display c;
       Array.iter (fun x -> print_space (); box_display x) l;
       print_string ")"
-  | Evar (e,l) -> print_string "Evar#"; print_int (Evar.repr e); print_string "{";
+  | Evar (e,l) -> print_string "Evar#"; print_int (Evar.Internal.repr e); print_string "{";
       Array.iter (fun x -> print_space (); box_display x) l;
       print_string"}"
   | Const (c,u) -> print_string "Cons(";

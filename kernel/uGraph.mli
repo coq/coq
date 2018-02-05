@@ -57,6 +57,8 @@ val empty_universes : t
 
 val sort_universes : t -> t
 
+module Internal : sig
+
 val constraints_of_universes : t -> Constraint.t
 
 val check_subtype : AUContext.t check_function
@@ -70,3 +72,5 @@ val dump_universes :
 
 (** {6 Debugging} *)
 val check_universes_invariants : t -> unit
+
+end

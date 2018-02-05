@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+module Internal = struct
 type t = int
 
 let repr x = x
@@ -17,3 +18,7 @@ let print x = Pp.(str "?X" ++ int x)
 
 module Set = Int.Set
 module Map = Int.Map
+end
+
+module Public = Internal
+include Public

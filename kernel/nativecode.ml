@@ -177,7 +177,7 @@ let hash_symbol symb =
   | SymbInd ind -> combinesmall 6 (ind_hash ind)
   | SymbMeta m -> combinesmall 7 m
   | SymbEvar (evk,args) ->
-     let evh = Evar.hash evk in
+     let evh = Evar.Internal.hash evk in
      let hl = Array.fold_left (fun h t -> combine h (Constr.hash t)) evh args in
      combinesmall 8 hl
   | SymbLevel l -> combinesmall 9 (Univ.Level.hash l)

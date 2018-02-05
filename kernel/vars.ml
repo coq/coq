@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Esubst
+open Esubst.Internal
 
 module RelDecl = Context.Rel.Declaration
 

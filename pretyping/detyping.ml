@@ -639,7 +639,7 @@ and detype_r d flags avoid env sigma t =
           let l = Evd.evar_instance_array (fun d c -> not !print_evar_arguments && (bound_to_itself_or_letin d c && not (isRel sigma c && Int.Set.mem (destRel sigma c) rels || isVar sigma c && (Id.Set.mem (destVar sigma c) fvs)))) (Evd.find sigma evk) cl in
           id,l
         with Not_found ->
-          Id.of_string ("X" ^ string_of_int (Evar.repr evk)),
+          Id.of_string ("X" ^ string_of_int (Evar.Internal.repr evk)),
           (Array.map_to_list (fun c -> (Id.of_string "__",c)) cl)
       in
         GEvar (id,

@@ -18,9 +18,9 @@ module NamedDecl = Context.Named.Declaration
 (* type of the goals *)
 type goal = Evar.t
 
-let pr_goal e = str "GOAL:" ++ Pp.int (Evar.repr e)
+let pr_goal e = str "GOAL:" ++ Pp.int (Evar.Internal.repr e)
 
-let uid e = string_of_int (Evar.repr e)
+let uid e = string_of_int (Evar.Internal.repr e)
 
 (* Layer to implement v8.2 tactic engine ontop of the new architecture.
    Types are different from what they used to be due to a change of the
