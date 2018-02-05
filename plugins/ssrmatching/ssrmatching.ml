@@ -905,7 +905,7 @@ let wit_rpatternty = add_genarg "rpatternty" pr_pattern
 let glob_ssrterm gs = function
   | k, (_, Some c), None ->
       let x = Tacintern.intern_constr gs c in
-      k, (fst x, Some c), None
+      k, (fst x, None), None
   | ct -> ct
 
 (* This piece of code asserts the following notations are reserved *)
@@ -931,6 +931,8 @@ let glob_cpattern gs p =
      match t.CAst.v with
      | CNotation((InConstrEntrySomeLevel,"( _ in _ )"), ([t1; t2], [], [], [])) ->
          (try match glob t1, glob t2 with
+         | (r1, None), (r2, None) when isCVar t1 ->
+             encode k "In" [r1; r2; bind_in t1 t2]
          | (r1, None), (r2, None) -> encode k "In" [r1;r2]
          | (r1, Some _), (r2, Some _) when isCVar t1 ->
              encode k "In" [r1; r2; bind_in t1 t2]
@@ -1141,7 +1143,9 @@ let interp_pattern ?wit_ssrpatternarg gl red redty =
     | None -> red
     | Some (ty, ist) -> let ty = ' ', ty, Some ist in
   match red with
-  | T t -> T (combineCG t ty (mkCCast ?loc:(loc_ofCG t)) mkRCast)
+  | T t ->
+      let ty = mkG (pf_intern_term gl ty) (ist_of ty) in
+      T (combineCG t ty (mkCCast ?loc:(loc_ofCG t)) mkRCast)
   | X_In_T (x,t) ->
       let gty = pf_intern_term gl ty in
       E_As_X_In_T (mkG (mkRCast mkRHole gty) (ist_of ty), x, t)
