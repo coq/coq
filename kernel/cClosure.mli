@@ -10,6 +10,7 @@ open Names
 open Constr
 open Environ
 open Esubst
+open Esubst.Internal
 
 (** Flags for profiling reductions. *)
 val stats : bool ref

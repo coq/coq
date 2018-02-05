@@ -11,7 +11,7 @@
 open CErrors
 open Util
 open Names
-open Esubst
+open Esubst.Internal
 
 open Cic
 

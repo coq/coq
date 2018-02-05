@@ -27,6 +27,7 @@ open Constr
 open Vars
 open Environ
 open Esubst
+open Esubst.Internal
 
 let stats = ref false
 let share = ref true

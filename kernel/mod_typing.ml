@@ -97,7 +97,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
           let inst, ctx = Univ.abstract_universes ctx in
           let c = Vars.subst_univs_level_constr (Univ.make_instance_subst inst) c in
           let () =
-            if not (UGraph.check_subtype (Environ.universes env) uctx ctx) then
+            if not (UGraph.Internal.check_subtype (Environ.universes env) uctx ctx) then
               error_incorrect_with_constraint lab
           in
           (** Terms are compared in a context with De Bruijn universe indices *)
