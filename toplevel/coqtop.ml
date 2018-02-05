@@ -135,6 +135,25 @@ let build_load_path opts =
   cmdline_load_path opts
 
 (******************************************************************************)
+(* Fatal Errors                                                               *)
+(******************************************************************************)
+
+(** Prints info which is either an error or an anomaly and then exits
+    with the appropriate error code *)
+let fatal_error msg =
+  Topfmt.std_logger Feedback.Error msg;
+  flush_all ();
+  exit 1
+
+let fatal_error_exn ?extra exn =
+  Topfmt.print_err_exn ?extra exn;
+  flush_all ();
+  let exit_code =
+    if CErrors.(is_anomaly exn || not (handled exn)) then 129 else 1
+  in
+  exit exit_code
+
+(******************************************************************************)
 (* File Compilation                                                           *)
 (******************************************************************************)
 let warn_file_no_extension =
@@ -154,16 +173,11 @@ let ensure_ext ext f =
 let chop_extension f =
   try Filename.chop_extension f with _ -> f
 
-let compile_error msg =
-  Topfmt.std_logger Feedback.Error msg;
-  flush_all ();
-  exit 1
-
 let ensure_bname src tgt =
   let src, tgt = Filename.basename src, Filename.basename tgt in
   let src, tgt = chop_extension src, chop_extension tgt in
   if src <> tgt then
-    compile_error (str "Source and target file names must coincide, directories can differ" ++ fnl () ++
+    fatal_error (str "Source and target file names must coincide, directories can differ" ++ fnl () ++
                    str "Source: " ++ str src                                                ++ fnl () ++
                    str "Target: " ++ str tgt)
 
@@ -175,14 +189,14 @@ let ensure_vio v vio = ensure ".vio" v vio
 
 let ensure_exists f =
   if not (Sys.file_exists f) then
-    compile_error (hov 0 (str "Can't find file" ++ spc () ++ str f))
+    fatal_error (hov 0 (str "Can't find file" ++ spc () ++ str f))
 
 (* Compile a vernac file *)
 let compile opts ~verbosely ~f_in ~f_out =
   let check_pending_proofs () =
     let pfs = Proof_global.get_all_proof_names () in
     if not (CList.is_empty pfs) then
-      compile_error (str "There are pending proofs: "
+      fatal_error (str "There are pending proofs: "
                     ++ (pfs
                         |> List.rev
                         |> prlist_with_sep pr_comma Names.Id.print)
@@ -293,7 +307,7 @@ let check_vio_tasks opts =
   let rc =
     List.fold_left (fun acc t -> Vio_checking.check_vio t && acc)
       true (List.rev opts.vio_tasks) in
-  if not rc then exit 1
+  if not rc then fatal_error Pp.(str "VIO Task Check failed")
 
 (* vio files *)
 let schedule_vio opts =
@@ -386,13 +400,6 @@ let init_gc () =
              Gc.minor_heap_size = 33554432; (** 4M *)
              Gc.space_overhead = 120}
 
-(** Prints info which is either an error or an anomaly and then exits
-    with the appropriate error code *)
-let fatal_error ?extra exn =
-  Topfmt.print_err_exn ?extra exn;
-  let exit_code = if CErrors.(is_anomaly exn || not (handled exn)) then 129 else 1 in
-  exit exit_code
-
 (** Main init routine *)
 let init_toplevel arglist =
   (* Coq's init process, phase 1:
@@ -464,7 +471,7 @@ let init_toplevel arglist =
                        iload_path; require_libs; stm_options;
                      }) in
           Some (load_init_vernaculars opts doc sid), opts
-        with any -> flush_all(); fatal_error any
+        with any -> flush_all(); fatal_error_exn any
       (* Non interactive: we perform a sequence of compilation steps *)
       end else begin
         try
@@ -476,12 +483,12 @@ let init_toplevel arglist =
           (* Allow the user to output an arbitrary state *)
           outputstate opts;
           None, opts
-        with any -> flush_all(); fatal_error any
+        with any -> flush_all(); fatal_error_exn any
       end;
     with any ->
       flush_all();
       let extra = Some (str "Error during initialization: ") in
-      fatal_error ?extra any
+      fatal_error_exn ?extra any
   end in
   Feedback.del_feeder init_feeder;
   res
