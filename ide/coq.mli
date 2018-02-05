@@ -171,3 +171,6 @@ val check_connection : string list -> unit
 
 val interrupter : (int -> unit) ref
 val save_all : (unit -> unit) ref
+
+(* Flags to be used for ideslave *)
+val ideslave_coqtop_flags : string option ref

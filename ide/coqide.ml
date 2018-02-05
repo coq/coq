@@ -1360,7 +1360,7 @@ let read_coqide_args argv =
       Backtrace.record_backtrace true;
       filter_coqtop coqtop project_files ("-debug"::out) args
     |"-coqtop-flags" :: flags :: args->
-      Flags.ideslave_coqtop_flags := Some flags;
+      Coq.ideslave_coqtop_flags := Some flags;
       filter_coqtop coqtop project_files out args
     |arg::args when out = [] && Minilib.is_prefix_of "-psn_" arg ->
       (* argument added by MacOS during .app launch *)

@@ -9,6 +9,8 @@
 open Ideutils
 open Preferences
 
+let ideslave_coqtop_flags = ref None
+
 (** * Version and date *)
 
 let get_version_date () =
@@ -375,7 +377,7 @@ let spawn_handle args respawner feedback_processor =
   in
   let args = Array.of_list ("--xml_format=Ppcmds" :: "-async-proofs" :: async_default :: "-ideslave" :: args) in
   let env =
-    match !Flags.ideslave_coqtop_flags with
+    match !ideslave_coqtop_flags with
     | None -> None
     | Some s ->
       let open Str in
