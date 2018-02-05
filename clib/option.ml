@@ -47,6 +47,11 @@ let get = function
   | Some y -> y
   | _ -> raise IsNone
 
+let assert_get o msg =
+  match o with
+  | None -> CErrors.anomaly msg
+  | Some x -> x
+
 (** [make x] returns [Some x]. *)
 let make x = Some x
 

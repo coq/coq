@@ -38,6 +38,10 @@ val hash : ('a -> int) -> 'a option -> int
     @raise IsNone if [x] equals [None]. *)
 val get : 'a option -> 'a
 
+(** [assert_get x msg] is like [get x] but raises an
+    anomaly with the given [msg] if [x] is [None]. *)
+val assert_get : 'a option -> Pp.t -> 'a
+
 (** [make x] returns [Some x]. *)
 val make : 'a -> 'a option
 
