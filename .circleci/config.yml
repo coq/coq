@@ -54,10 +54,17 @@ opam-switch: &opam-switch
   steps:
     - checkout
     - run: *before_script
+    - run:
+        name: Cache selection
+        command: |
+          source ~/.profile
+          # We can't use environment variables in cache names
+          # So put it in a file and use the checksum
+          echo "$COMPILER" > COMPILER
     - restore_cache:
         keys:
-          - coq-opam-cache-v1-{{ arch }}-{{ .Environment.COMPILER }}-{{ checksum ".circleci/config.yml" }}-
-          - coq-opam-cache-v1-{{ arch }}-{{ .Environment.COMPILER }}- # this grabs old cache if checksum doesn't match
+          - coq-opam-cache-v1-{{ arch }}-{{ checksum "COMPILER" }}-{{ checksum ".circleci/config.yml" }}-
+          - coq-opam-cache-v1-{{ arch }}-{{ checksum "COMPILER" }}- # this grabs old cache if checksum doesn't match
     - run:
         name: Update opam lists
         command: |
@@ -76,7 +83,7 @@ opam-switch: &opam-switch
           source ~/.profile
           rm -rf ~/.opam/log/
     - save_cache:
-        key: coq-opam-cache-v1-{{ arch }}-{{ .Environment.COMPILER }}-{{ checksum ".circleci/config.yml" }}-
+        key: coq-opam-cache-v1-{{ arch }}-{{ checksum "COMPILER" }}-{{ checksum ".circleci/config.yml" }}-
         paths:
           - ~/.opam
     - persist_to_workspace:
