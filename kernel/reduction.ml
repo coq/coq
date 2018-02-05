@@ -483,6 +483,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
               Conversion check to rigid terms eventually implies full weak-head
               reduction, so instead of repeatedly performing small-step
               unfoldings, we perform reduction with all flags on. *)
+            let all = RedFlags.red_add_transparent all (RedFlags.red_transparent (info_flags infos)) in
             let r1 = whd_stack (infos_with_reds infos all) def1 v1 in
             eqappr cv_pb l2r infos (lft1, r1) appr2 cuniv
 	| None -> 
@@ -499,6 +500,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
        (match unfold_reference infos fl2 with
         | Some def2 ->
           (** Symmetrical case of above. *)
+          let all = RedFlags.red_add_transparent all (RedFlags.red_transparent (info_flags infos)) in
           let r2 = whd_stack (infos_with_reds infos all) def2 v2 in
           eqappr cv_pb l2r infos appr1 (lft2, r2) cuniv
         | None -> 

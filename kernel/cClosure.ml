@@ -91,6 +91,7 @@ module type RedFlagsSig = sig
   val red_add : reds -> red_kind -> reds
   val red_sub : reds -> red_kind -> reds
   val red_add_transparent : reds -> transparent_state -> reds
+  val red_transparent : reds -> transparent_state
   val mkflags : red_kind list -> reds
   val red_set : reds -> red_kind -> bool
   val red_projection : reds -> projection -> bool
@@ -163,6 +164,8 @@ module RedFlags = (struct
     | VAR id ->
 	let (l1,l2) = red.r_const in
 	{ red with r_const = Id.Pred.remove id l1, l2 }
+
+  let red_transparent red = red.r_const
 
   let red_add_transparent red tr =
     { red with r_const = tr }
