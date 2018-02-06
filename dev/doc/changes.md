@@ -58,6 +58,17 @@ Declaration of printers for arguments used only in vernac command
   happen. An alternative is to register the corresponding argument as
   a value, using "Geninterp.register_val0 wit None".
 
+### STM API
+
+The STM API has seen a general overhaul. The main change is the
+introduction of a "Coq document" type, which all operations now take
+as a parameter. This effectively functionalize the STM API and will
+allow in the future to handle several documents simultaneously.
+
+The main remarkable point is that key implicit global parameters such
+as load-paths and required modules are now arguments to the document
+creation function. This helps enforcing some key invariants.
+
 ### XML IDE Protocol
 
 - Before 8.8, `Query` only executed the first command present in the

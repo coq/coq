@@ -2532,16 +2532,28 @@ end (* }}} *)
 (********************************* STM API ************************************)
 (******************************************************************************)
 
+(* Main initalization routine *)
 type stm_init_options = {
+  (* The STM will set some internal flags differently depending on the
+     specified [doc_type]. This distinction should dissappear at some
+     some point. *)
   doc_type     : stm_doc_type;
+
+  (* Initial load path in scope for the document. Usually extracted
+     from -R options / _CoqProject *)
+  iload_path   : Mltop.coq_path list;
+
+  (* Require [require_libs] before the initial state is
+     ready. Parameters follow [Library], that is to say,
+     [lib,prefix,import_export] means require library [lib] from
+     optional [prefix] and [import_export] if [Some false/Some true]
+     is used.  *)
   require_libs : (string * string option * bool option) list;
+
+  (* STM options that apply to the current document. *)
   stm_options  : AsyncOpts.stm_opt;
-(*
-  fb_handler   : Feedback.feedback -> unit;
-  iload_path   : (string list * string * bool) list;
-  implicit_std : bool;
-*)
 }
+(* fb_handler   : Feedback.feedback -> unit; *)
 
 (*
 let doc_type_module_name (std : stm_doc_type) =
@@ -2554,7 +2566,7 @@ let init_core () =
   if !cur_opt.async_proofs_mode = APon then Control.enable_thread_delay := true;
   State.register_root_state ()
 
-let new_doc { doc_type ; stm_options; require_libs } =
+let new_doc { doc_type ; iload_path; require_libs; stm_options } =
 
   let load_objs libs =
     let rq_file (dir, from, exp) =
@@ -2572,6 +2584,11 @@ let new_doc { doc_type ; stm_options; require_libs } =
 
   let doc = VCS.init doc_type Stateid.initial in
 
+  (* Set load path; important, this has to happen before we declare
+     the library below as [Declaremods/Library] will infer the module
+     name by looking at the load path! *)
+  List.iter Mltop.add_coq_path iload_path;
+
   begin match doc_type with
   | Interactive ln ->
     Safe_typing.allow_delayed_constants := true;
@@ -2588,9 +2605,11 @@ let new_doc { doc_type ; stm_options; require_libs } =
     VCS.set_ldir ldir;
     set_compilation_hints ln
   end;
+
+  (* Import initial libraries. *)
   load_objs require_libs;
 
-  (* We record the state here! *)
+  (* We record the state at this point! *)
   State.define ~cache:`Yes ~redefine:true (fun () -> ()) Stateid.initial;
   Backtrack.record ();
   Slaves.init ();

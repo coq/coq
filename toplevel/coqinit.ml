@@ -89,22 +89,26 @@ let ml_path_if c p =
   let f x = { recursive = false; path_spec = MlPath x } in
   if c then List.map f p else []
 
-(* Initializes the LoadPath *)
-let init_load_path ~load_init =
-  let open Mltop in
+(* LoadPath for toploop toplevels *)
+let toplevel_init_load_path () =
   let coqlib = Envars.coqlib () in
-  let user_contrib = coqlib/"user-contrib" in
-  let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)) in
-  let coqpath = Envars.coqpath in
-  let coq_path = Names.DirPath.make [Libnames.coq_root] in
-
   (* NOTE: These directories are searched from last to first *)
   (* first, developer specific directory to open *)
   ml_path_if Coq_config.local [coqlib/"dev"] @
 
   (* main loops *)
   ml_path_if (Coq_config.local || !Flags.boot) [coqlib/"stm"; coqlib/"ide"] @
-  ml_path_if (System.exists_dir (coqlib/"toploop")) [coqlib/"toploop"] @
+  ml_path_if (System.exists_dir (coqlib/"toploop")) [coqlib/"toploop"]
+
+(* LoadPath for Coq user libraries *)
+let libs_init_load_path ~load_init =
+
+  let open Mltop in
+  let coqlib = Envars.coqlib () in
+  let user_contrib = coqlib/"user-contrib" in
+  let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)) in
+  let coqpath = Envars.coqpath in
+  let coq_path = Names.DirPath.make [Libnames.coq_root] in
 
   (* then standard library and plugins *)
   [build_stdlib_path ~load_init ~unix_path:(coqlib/"theories") ~coq_path ~with_ml:false;
