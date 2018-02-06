@@ -298,29 +298,40 @@ let add_canonical_structure x = Lib.add_anonymous_leaf (inCanonStruc x)
 
 (*s High-level declaration of a canonical structure *)
 
-let error_not_structure ref =
+let error_not_structure ref description =
   user_err ~hdr:"object_declare"
-    (Id.print (basename_of_global ref) ++ str" is not a structure object.")
+    (str"Could not declare a canonical structure " ++
+       (Id.print (basename_of_global ref) ++ str"." ++ spc() ++
+          str(description)))
 
 let check_and_decompose_canonical_structure ref =
-  let sp = match ref with ConstRef sp -> sp | _ -> error_not_structure ref in
+  let sp =
+    match ref with
+      ConstRef sp -> sp
+    |  _ -> error_not_structure ref "Expected an instance of a record or structure."
+  in
   let env = Global.env () in
   let u = Univ.make_abstract_instance (Environ.constant_context env sp) in
   let vc = match Environ.constant_opt_value_in env (sp, u) with
     | Some vc -> vc
-    | None -> error_not_structure ref in
+    | None -> error_not_structure ref "Could not find its value in the global environment." in
   let body = snd (splay_lam (Global.env()) Evd.empty (EConstr.of_constr vc)) (** FIXME *) in
   let body = EConstr.Unsafe.to_constr body in
   let f,args = match kind body with
     | App (f,args) -> f,args
-    | _ -> error_not_structure ref in
+    | _ ->
+       error_not_structure ref "Expected a record or structure constructor applied to arguments." in
   let indsp = match kind f with
     | Construct ((indsp,1),u) -> indsp
-    | _ -> error_not_structure ref in
-  let s = try lookup_structure indsp with Not_found -> error_not_structure ref in
+    | _ -> error_not_structure ref "Expected an instance of a record or structure." in
+  let s =
+    try lookup_structure indsp
+    with Not_found ->
+      error_not_structure ref
+        ("Could not find the record or structure " ^ (MutInd.to_string (fst indsp))) in
   let ntrue_projs = List.count snd s.s_PROJKIND in
   if s.s_EXPECTEDPARAM + ntrue_projs > Array.length args then
-    error_not_structure ref;
+    error_not_structure ref "Got too few arguments to the record or structure constructor.";
   (sp,indsp)
 
 let declare_canonical_structure ref =

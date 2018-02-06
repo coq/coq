@@ -1,0 +1,5 @@
+File "stdin", line 3, characters 0-24:
+Error:
+Could not declare a canonical structure Foo.
+Expected an instance of a record or structure.
+
