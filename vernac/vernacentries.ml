@@ -2279,8 +2279,7 @@ let interp ?(verbosely=true) ?proof ~st (loc,c) =
   then Flags.verbosely control c
   else control  c
 
-(* XXX: There is a bug here in case of an exception, see @gares
-   comments on the PR *)
+(* Be careful with the cache here in case of an exception. *)
 let interp ?verbosely ?proof ~st cmd =
   Vernacstate.unfreeze_interp_state st;
   try
