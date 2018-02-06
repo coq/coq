@@ -514,9 +514,9 @@ let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
       let (sigma, (evt, _)) = Evarutil.new_type_evar nenv sigma Evd.univ_flexible in
       let (sigma, evk) = Evarutil.new_pure_evar (Environ.named_context_val nenv) sigma evt in
       Proofview.Unsafe.tclEVARS sigma >>= fun () ->
-      Proofview.Unsafe.tclSETGOALS [evk] >>= fun () ->
+      Proofview.Unsafe.tclSETGOALS [Proofview.with_empty_state evk] >>= fun () ->
       thaw c >>= fun _ ->
-      Proofview.Unsafe.tclSETGOALS [Proofview.Goal.goal (Proofview.Goal.assume gl)] >>= fun () ->
+      Proofview.Unsafe.tclSETGOALS [Proofview.with_empty_state (Proofview.Goal.goal (Proofview.Goal.assume gl))] >>= fun () ->
       let args = List.map (fun d -> EConstr.mkVar (get_id d)) (EConstr.named_context env) in
       let args = Array.of_list (EConstr.mkRel 1 :: args) in
       let ans = EConstr.mkEvar (evk, args) in
@@ -700,7 +700,7 @@ let () = define1 "new_goal" int begin fun ev ->
   let ev = Evar.unsafe_of_int ev in
   Proofview.tclEVARMAP >>= fun sigma ->
   if Evd.mem sigma ev then
-    Proofview.Unsafe.tclNEWGOALS [ev] <*> Proofview.tclUNIT v_unit
+    Proofview.Unsafe.tclNEWGOALS [Proofview.with_empty_state ev] <*> Proofview.tclUNIT v_unit
   else throw err_notfound
 end
 
