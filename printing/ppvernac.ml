@@ -993,6 +993,24 @@ open Decl_kinds
       | VernacChdir s ->
         return (keyword "Cd" ++ pr_opt qs s)
 
+      (* Printing categories *)
+      | VernacSetPrintingAll ->
+         return (
+             keyword "Set Printing All"
+           )
+      | VernacSetPrintingSugared ->
+         return (
+             keyword "Set Printing Sugared"
+           )
+      | VernacSetPrintingDefaults ->
+         return (
+             keyword "Set Printing Defaults"
+           )
+      | VernacUnsetPrintingAll ->
+         return (
+             keyword "Unset Printing All"
+           )
+
       (* Commands *)
       | VernacCreateHintDb (dbname,b) ->
         return (

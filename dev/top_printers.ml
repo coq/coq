@@ -20,13 +20,12 @@ open Univ
 open Environ
 open Printer
 open Constr
-open Goptions
 open Genarg
 open Clenv
 
-let _ = Detyping.print_evar_arguments := true
-let _ = Detyping.print_universes := true
-let _ = set_bool_option_value ["Printing";"Matching"] false
+let _ = Printoptions.set_printing_existential_instances true
+let _ = Printoptions.set_printing_universes true
+let _ = Printoptions.set_printing_matching false
 let _ = Detyping.set_detype_anonymous (fun ?loc _ -> raise Not_found)
 
 (* std_ppcmds *)
@@ -162,8 +161,8 @@ let pp_state_t n = pp (Reductionops.pr_state n)
 (* proof printers *)
 let pr_evar ev = Pp.int (Evar.repr ev)
 let ppmetas metas = pp(Termops.pr_metaset metas)
-let ppevm evd = pp(Termops.pr_evar_map ~with_univs:!Flags.univ_print (Some 2) evd)
-let ppevmall evd = pp(Termops.pr_evar_map ~with_univs:!Flags.univ_print None evd)
+let ppevm evd = pp(Termops.pr_evar_map ~with_univs:(Printoptions.printing_universes ()) (Some 2) evd)
+let ppevmall evd = pp(Termops.pr_evar_map ~with_univs:(Printoptions.printing_universes ()) None evd)
 let pr_existentialset evars =
   prlist_with_sep spc pr_evar (Evar.Set.elements evars)
 let ppexistentialset evars =

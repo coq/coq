@@ -59,8 +59,9 @@ let profile = false
 
 let ide_slave = ref false
 
-let raw_print = ref false
-let univ_print = ref false
+let univ_print_explanations = ref true
+let get_univ_print_explanations () = !univ_print_explanations
+let set_univ_print_explanations b = univ_print_explanations := b
 
 let we_are_parsing = ref false
 

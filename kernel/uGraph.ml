@@ -557,8 +557,10 @@ let get_explanation strict u v g =
   else match traverse strict u with Some exp -> exp | None -> assert false
 
 let get_explanation strict u v g =
-  if !Flags.univ_print then Some (get_explanation strict u v g)
-  else None
+  if Flags.get_univ_print_explanations () then
+    Some (get_explanation strict u v g)
+  else
+    None
 
 (* To compare two nodes, we simply do a forward search.
    We implement two improvements:

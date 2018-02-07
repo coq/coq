@@ -1342,56 +1342,63 @@ let _ =
     { optdepr  = false;
       optname  = "coercion printing";
       optkey   = ["Printing";"Coercions"];
-      optread  = (fun () -> !Constrextern.print_coercions);
-      optwrite = (fun b ->  Constrextern.print_coercions := b) }
+      optread  = Printoptions.printing_coercions;
+      optwrite = Printoptions.set_printing_coercions;
+    }
 
 let _ =
   declare_bool_option
     { optdepr  = false;
       optname  = "printing of existential variable instances";
       optkey   = ["Printing";"Existential";"Instances"];
-      optread  = (fun () -> !Detyping.print_evar_arguments);
-      optwrite = (:=) Detyping.print_evar_arguments }
+      optread  = Printoptions.printing_existential_instances;
+      optwrite = Printoptions.set_printing_existential_instances;
+    }
 
 let _ =
   declare_bool_option
     { optdepr  = false;
       optname  = "implicit arguments printing";
       optkey   = ["Printing";"Implicit"];
-      optread  = (fun () -> !Constrextern.print_implicits);
-      optwrite = (fun b ->  Constrextern.print_implicits := b) }
+      optread  = Printoptions.printing_implicit;
+      optwrite = Printoptions.set_printing_implicit;
+    }
 
 let _ =
   declare_bool_option
     { optdepr  = false;
       optname  = "implicit arguments defensive printing";
       optkey   = ["Printing";"Implicit";"Defensive"];
-      optread  = (fun () -> !Constrextern.print_implicits_defensive);
-      optwrite = (fun b ->  Constrextern.print_implicits_defensive := b) }
+      optread  = Printoptions.printing_implicit_defensive;
+      optwrite = Printoptions.set_printing_implicit_defensive;
+    }
 
 let _ =
   declare_bool_option
     { optdepr  = false;
       optname  = "projection printing using dot notation";
       optkey   = ["Printing";"Projections"];
-      optread  = (fun () -> !Constrextern.print_projections);
-      optwrite = (fun b ->  Constrextern.print_projections := b) }
+      optread  = Printoptions.printing_projections;
+      optwrite = Printoptions.set_printing_projections;
+    }
 
 let _ =
   declare_bool_option
     { optdepr  = false;
       optname  = "notations printing";
       optkey   = ["Printing";"Notations"];
-      optread  = (fun () -> not !Constrextern.print_no_symbol);
-      optwrite = (fun b ->  Constrextern.print_no_symbol := not b) }
+      optread  = Printoptions.printing_notations;
+      optwrite = Printoptions.set_printing_notations;
+    }
 
 let _ =
   declare_bool_option
     { optdepr  = false;
-      optname  = "raw printing";
-      optkey   = ["Printing";"All"];
-      optread  = (fun () -> !Flags.raw_print);
-      optwrite = (fun b -> Flags.raw_print := b) }
+      optname  = "universe explanation printing";
+      optkey   = ["Printing";"Universe";"Explanations"];
+      optread  = Flags.get_univ_print_explanations;
+      optwrite = Flags.set_univ_print_explanations;
+    }
 
 let _ =
   declare_bool_option
@@ -1466,9 +1473,10 @@ let _ =
     { optdepr  = false;
       optname  = "printing of universes";
       optkey   = ["Printing";"Universes"];
-      optread  = (fun () -> !Constrextern.print_universes);
-      optwrite = (fun b -> Constrextern.print_universes:=b) }
-     
+      optread  = Printoptions.printing_universes;
+      optwrite = Printoptions.set_printing_universes;
+    }
+
 let _ =
   declare_bool_option
     { optdepr  = false;
@@ -1991,6 +1999,10 @@ let vernac_load interp fname =
   if Proof_global.there_are_pending_proofs () then
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.")
 
+let unset_printing_all_deprecated =
+  CWarnings.create ~name:"unset-printing-all" ~category:"deprecated"
+    (fun () -> strbrk ("Unset Printing All has no effect."))
+
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
@@ -2090,6 +2102,12 @@ let interp ?proof ~atts ~st c =
   | VernacAddMLPath (isrec,s) -> vernac_add_ml_path isrec s
   | VernacDeclareMLModule l -> vernac_declare_ml_module ~atts l
   | VernacChdir s -> vernac_chdir s
+
+  (* Printing categories *)
+  | VernacSetPrintingAll -> Printoptions.set_printing_all ()
+  | VernacSetPrintingSugared -> Printoptions.set_printing_sugared ()
+  | VernacSetPrintingDefaults -> Printoptions.set_printing_defaults ()
+  | VernacUnsetPrintingAll -> unset_printing_all_deprecated ()
 
   (* State management *)
   | VernacWriteState s -> vernac_write_state s

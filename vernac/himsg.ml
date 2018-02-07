@@ -116,13 +116,13 @@ let canonize_constr sigma c =
   canonize_binders c
 
 (** Tries to realize when the two terms, albeit different are printed the same. *)
-let display_eq ~flags env sigma t1 t2 =
+let display_eq ~pr_opts env sigma t1 t2 =
   (* terms are canonized, then their externalisation is compared syntactically *)
   let open Constrextern in
   let t1 = canonize_constr sigma t1 in
   let t2 = canonize_constr sigma t2 in
-  let ct1 = Flags.with_options flags (fun () -> extern_constr false env sigma t1) () in
-  let ct2 = Flags.with_options flags (fun () -> extern_constr false env sigma t2) () in
+  let ct1 = Printoptions.with_printing_option pr_opts (fun () -> extern_constr false env sigma t1) () in
+  let ct2 = Printoptions.with_printing_option pr_opts (fun () -> extern_constr false env sigma t2) () in
   Constrexpr_ops.constr_expr_eq ct1 ct2
 
 (** This function adds some explicit printing flags if the two arguments are
@@ -131,27 +131,32 @@ let rec pr_explicit_aux env sigma t1 t2 = function
 | [] ->
   (** no specified flags: default. *)
   (quote (Printer.pr_leconstr_env env sigma t1), quote (Printer.pr_leconstr_env env sigma t2))
-| flags :: rem ->
-  let equal = display_eq ~flags env sigma t1 t2 in
+| pr_opts :: rem ->
+  let equal = display_eq ~pr_opts env sigma t1 t2 in
   if equal then
     (** The two terms are the same from the user point of view *)
     pr_explicit_aux env sigma t1 t2 rem
   else
     let open Constrextern in
-    let ct1 = Flags.with_options flags (fun () -> extern_constr false env sigma t1) ()
-    in
-    let ct2 = Flags.with_options flags (fun () -> extern_constr false env sigma t2) ()
-    in
+    let open Printoptions in
+    let ct1 = with_printing_option pr_opts (fun () -> extern_constr false env sigma t1) () in
+    let ct2 = with_printing_option pr_opts (fun () -> extern_constr false env sigma t2) () in
     quote (Ppconstr.pr_lconstr_expr ct1), quote (Ppconstr.pr_lconstr_expr ct2)
 
 let explicit_flags =
-  let open Constrextern in
-  [ []; (** First, try with the current flags *)
-    [print_implicits]; (** Then with implicit *)
-    [print_universes]; (** Then with universes *)
-    [print_universes; print_implicits]; (** With universes AND implicits *)
-    [print_implicits; print_coercions; print_no_symbol]; (** Then more! *)
-    [print_universes; print_implicits; print_coercions; print_no_symbol] (** and more! *) ]
+  let open Printoptions in
+  let print_id opts = opts in
+  let print_implicits opts = { opts with printing_implicit = true } in
+  let print_universes opts = { opts with printing_universes = true } in
+  let print_coercions opts = { opts with printing_coercions = true } in
+  let print_no_symbol opts = { opts with printing_notations = false } in
+  let (<<) f g x = f (g x) in
+  [ print_id; (** First, try with the current printing options *)
+    print_implicits; (** Then with implicits *)
+    print_universes; (** Then with universes *)
+    print_universes << print_implicits; (** With universes AND implicits *)
+    print_implicits << print_coercions << print_no_symbol; (** Then more! *)
+    print_universes << print_implicits << print_coercions << print_no_symbol (** and more! *) ]
 
 let pr_explicit env sigma t1 t2 =
   pr_explicit_aux env sigma t1 t2 explicit_flags
@@ -316,7 +321,7 @@ let explain_unification_error env sigma p1 p2 = function
         strbrk ": cannot ensure that " ++
         t ++ strbrk " is a subtype of " ++ u]
      | UnifUnivInconsistency p ->
-        if !Constrextern.print_universes then
+        if Printoptions.printing_universes () then
 	  [str "universe inconsistency: " ++
           Univ.explain_universe_inconsistency Universes.pr_with_global_universes p]
 	else

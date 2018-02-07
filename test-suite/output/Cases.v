@@ -205,10 +205,9 @@ Unset Printing Allow Match Default Clause.
 Check fun x => match x with Eq => 1 | _ => 0 end.
 Set Printing Allow Match Default Clause.
 
-(* No factorization in printing all mode *)
 Set Printing All.
 Check fun x => match x with Eq => 1 | _ => 0 end.
-Unset Printing All.
+Set Printing Defaults.
 
 (* Several clauses *)
 Inductive K := a1|a2|a3|a4|a5|a6.
