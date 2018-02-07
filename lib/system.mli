@@ -101,6 +101,7 @@ val skip_in_segment : string -> in_channel -> int * Digest.t
 type time
 
 val get_time : unit -> time
+(** arguments are "time before" and "time after", in this order *)
 val time_difference : time -> time -> float (** in seconds *)
 val fmt_time_difference : time -> time -> Pp.t
 

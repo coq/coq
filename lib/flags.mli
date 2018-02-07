@@ -30,6 +30,7 @@ val in_debugger : bool ref
 val in_toplevel : bool ref
 
 val profile : bool
+val measure_time_in_aux : bool ref
 
 (* -ide_slave: printing will be more verbose, will affect stm caching *)
 val ide_slave : bool ref

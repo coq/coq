@@ -781,6 +781,7 @@ let parse_args arglist =
     |"-quick" -> compilation_mode := BuildVio
     |"-list-tags" -> print_tags := true
     |"-time" -> measure_time := true
+    |"-time-log" -> Flags.measure_time_in_aux := true
     |"-type-in-type" -> set_type_in_type ()
     |"-unicode" -> add_require ("Utf8_core", None, Some false)
     |"-v"|"--version" -> Usage.version (exitcode ())
