@@ -333,6 +333,9 @@ let compile verbosely f =
         | Some f -> ensure_vio long_f_dot_v f in
       let ldir = Flags.verbosely Library.start_library long_f_dot_vio in
       Dumpglob.noglob ();
+      (* c.f. #6707 *)
+      Flags.async_proofs_cmd_error_resilience := false;
+      Flags.async_proofs_tac_error_resilience := `None;
       Stm.set_compilation_hints long_f_dot_vio;
       let _ = load_vernac verbosely (Stm.get_current_state ()) long_f_dot_v in
       Stm.finish ();
