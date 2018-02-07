@@ -632,27 +632,17 @@ let rec compile_constr reloc c sz cont =
         of the structured constant, while the later (if any) will be applied as
         arguments. *)
      let open Univ in begin
-      let levels = Universe.levels u in
-      let global_levels =
-	LSet.filter (fun x -> Level.var_index x = None) levels
-      in
-      let local_levels =
-	List.map_filter (fun x -> Level.var_index x)
-	  (LSet.elements levels)
-      in
+      let u,s = Universe.compact u in
       (* We assume that [Universe.type0m] is a neutral element for [Universe.sup] *)
-      let uglob =
-	LSet.fold (fun lvl u -> Universe.sup u (Universe.make lvl)) global_levels Universe.type0m
-      in
-      if local_levels = [] then
-	compile_str_cst reloc (Bstrconst (Const_sorts (Type uglob))) sz cont
+      if List.is_empty s then
+        compile_str_cst reloc (Bstrconst (Const_sorts (Sorts.Type u))) sz cont
       else
 	let compile_get_univ reloc idx sz cont =
           set_max_stack_size sz;
 	  compile_fv_elem reloc (FVuniv_var idx) sz cont
 	in
         comp_app compile_str_cst compile_get_univ reloc
-	  (Bstrconst (Const_type u)) (Array.of_list local_levels) sz cont
+          (Bstrconst (Const_type u)) (Array.of_list s) sz cont
     end
   | LetIn(_,xb,_,body) ->
       compile_constr reloc xb sz

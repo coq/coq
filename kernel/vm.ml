@@ -9,6 +9,7 @@
 open Names
 open Term
 open Cbytecodes
+open Univ
 
 external set_drawinstr : unit -> unit = "coq_set_drawinstr"
 
@@ -247,11 +248,11 @@ let rec whd_accu a stk =
   | i when Int.equal i type_atom_tag ->
      begin match stk with
      | [Zapp args] ->
-	let u = ref (Obj.obj (Obj.field at 0)) in
-	for i = 0 to nargs args - 1 do
-	  u := Univ.Universe.sup !u (Univ.Universe.make (uni_lvl_val (arg args i)))
-	done;
-	Vsort (Type !u)
+        let args = Array.init (nargs args) (arg args) in
+        let u = Obj.obj (Obj.field at 0) in
+        let inst = Instance.of_array (Array.map uni_lvl_val args) in
+        let u = Univ.subst_instance_universe inst u in
+        Vsort (Type u)
      | _ -> assert false
      end
   | i when i <= max_atom_tag ->
