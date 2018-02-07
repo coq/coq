@@ -354,6 +354,17 @@ let compile ~time ~verbosely ~f_in ~f_out =
         | None -> long_f_dot_v ^ "io"
         | Some f -> ensure_vio long_f_dot_v f in
 
+      (* We need to disable error resiliency, otherwise some errors
+         will be ignored in batch mode. c.f. #6707
+
+         This is not necessary in the vo case as it fully checks the
+         document anyways. *)
+      let stm_options = let open Stm.AsyncOpts in
+        { stm_options with
+          async_proofs_cmd_error_resilience = false;
+          async_proofs_tac_error_resilience = `None;
+        } in
+
       let doc, sid = Stm.(new_doc
           { doc_type = VioDoc long_f_dot_vio;
             iload_path;
