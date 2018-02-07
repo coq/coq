@@ -6,31 +6,32 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
-
 open Ssrast
-open Ssrcommon
 
-val viewtab : Glob_term.glob_constr list array
-val add_view_hints : Glob_term.glob_constr list -> int -> unit
-val glob_view_hints : Constrexpr.constr_expr list -> Glob_term.glob_constr list
+(* Adaptor DB (Hint View) *)
+module AdaptorDb : sig
 
-val pfa_with_view :
-           ist ->
-           ?next:ssripats ref ->
-           bool * ssrterm list ->
-           EConstr.t ->
-           EConstr.t ->
-           (EConstr.t -> EConstr.t -> tac_ctx tac_a) ->
-           ssrhyps ->
-   (goal * tac_ctx) sigma -> EConstr.types * EConstr.t * (goal * tac_ctx) list sigma
+  type kind = Forward | Backward | Equivalence
 
-val pf_with_view_linear :
-           ist ->
-           goal sigma ->
-           bool * ssrterm list ->
-           EConstr.t ->
-           EConstr.t ->
-           EConstr.types * EConstr.t * goal sigma
+  val get : kind -> Glob_term.glob_constr list
+  val declare : kind -> Glob_term.glob_constr list -> unit
 
+end
 
+(* Apply views to the top of the stack (intro pattern) *)
+val tclIPAT_VIEWS :
+    views:ast_closure_term list ->
+    conclusion:(to_clear:Names.Id.t list -> unit Proofview.tactic) ->
+  unit Proofview.tactic
+
+(* Apply views to a given subject (as if was the top of the stack), then
+   call conclusion on the obtained term (something like [v2 (v1 subject)]).
+   The term being passed to conclusion is abstracted over non-resolved evars:
+   if [simple_types] then all unnecessary dependencies among the abstracted
+   evars are pruned *)
+val tclWITH_FWD_VIEWS :
+  simple_types:bool ->
+    subject:EConstr.t ->
+    views:ast_closure_term list ->
+    conclusion:(EConstr.t -> unit Proofview.tactic) ->
+  unit Proofview.tactic

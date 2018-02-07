@@ -501,21 +501,19 @@ END
 (* View purpose *)
 
 let pr_viewpos = function
-  | 0 -> str " for move/"
-  | 1 -> str " for apply/"
-  | 2 -> str " for apply//"
-  | _ -> mt ()
+  | Some Ssrview.AdaptorDb.Forward -> str " for move/"
+  | Some Ssrview.AdaptorDb.Backward -> str " for apply/"
+  | Some Ssrview.AdaptorDb.Equivalence -> str " for apply//"
+  | None -> mt ()
 
 let pr_ssrviewpos _ _ _ = pr_viewpos
 
-let mapviewpos f n k = if n < 3 then f n else for i = 0 to k - 1 do f i done
-
-ARGUMENT EXTEND ssrviewpos TYPED AS int PRINTED BY pr_ssrviewpos
-  | [ "for" "move" "/" ] -> [ 0 ]
-  | [ "for" "apply" "/" ] -> [ 1 ]
-  | [ "for" "apply" "/" "/" ] -> [ 2 ]
-  | [ "for" "apply" "//" ] -> [ 2 ]
-  | [ ] -> [ 3 ]
+ARGUMENT EXTEND ssrviewpos PRINTED BY pr_ssrviewpos
+  | [ "for" "move" "/" ] -> [ Some Ssrview.AdaptorDb.Forward ]
+  | [ "for" "apply" "/" ] -> [ Some Ssrview.AdaptorDb.Backward ]
+  | [ "for" "apply" "/" "/" ] -> [ Some Ssrview.AdaptorDb.Equivalence ]
+  | [ "for" "apply" "//" ] -> [ Some Ssrview.AdaptorDb.Equivalence ]
+  | [ ] -> [ None ]
 END
 
 let pr_ssrviewposspc _ _ _ i = pr_viewpos i ++ spc ()
@@ -524,19 +522,35 @@ ARGUMENT EXTEND ssrviewposspc TYPED AS ssrviewpos PRINTED BY pr_ssrviewposspc
   | [ ssrviewpos(i) ] -> [ i ]
 END
 
-let print_view_hints i =
-  let pp_viewname = str "Hint View" ++ pr_viewpos i ++ str " " in
-  let pp_hints = pr_list spc pr_rawhintref Ssrview.viewtab.(i) in
+let print_view_hints kind l =
+  let pp_viewname = str "Hint View" ++ pr_viewpos (Some kind) ++ str " " in
+  let pp_hints = pr_list spc pr_rawhintref l in
   Feedback.msg_info  (pp_viewname ++ hov 0 pp_hints ++ Pp.cut ())
 
 VERNAC COMMAND EXTEND PrintView CLASSIFIED AS QUERY
-| [ "Print" "Hint" "View" ssrviewpos(i) ] -> [ mapviewpos print_view_hints i 3 ]
+| [ "Print" "Hint" "View" ssrviewpos(i) ] ->
+  [ match i with
+    | Some k -> print_view_hints k (Ssrview.AdaptorDb.get k)
+    | None ->
+        List.iter (fun k -> print_view_hints k (Ssrview.AdaptorDb.get k))
+          [ Ssrview.AdaptorDb.Forward;
+            Ssrview.AdaptorDb.Backward;
+            Ssrview.AdaptorDb.Equivalence ]
+  ]
 END
 
+let glob_view_hints lvh =
+  List.map (Constrintern.intern_constr (Global.env ()) (Evd.from_env (Global.env ()))) lvh
 
 VERNAC COMMAND EXTEND HintView CLASSIFIED AS SIDEFF
   |  [ "Hint" "View" ssrviewposspc(n) ne_ssrhintref_list(lvh) ] ->
-     [ mapviewpos (Ssrview.add_view_hints (Ssrview.glob_view_hints lvh)) n 2 ]
+     [ let hints = glob_view_hints lvh in
+       match n with
+       | None ->
+          Ssrview.AdaptorDb.declare Ssrview.AdaptorDb.Forward hints;
+          Ssrview.AdaptorDb.declare Ssrview.AdaptorDb.Backward hints
+       | Some k ->
+          Ssrview.AdaptorDb.declare k hints ]
 END
 
 (* }}} *)

@@ -27,11 +27,23 @@ val xWithAt : ssrtermkind
 val xNoFlag : ssrtermkind
 val xCpattern : ssrtermkind
 
+val pr_clear : (unit -> Pp.t) -> ssrclear -> Pp.t
+val pr_clear_ne : ssrclear -> Pp.t
+val pr_dir : ssrdir -> Pp.t
+val pr_simpl : ssrsimpl -> Pp.t
+
 val pr_term :
   ssrtermkind * (Glob_term.glob_constr * Constrexpr.constr_expr option) ->
   Pp.t
 
+val pr_ast_closure_term : ast_closure_term -> Pp.t
+val pr_view2 : ast_closure_term list -> Pp.t
+val pr_ipat : ssripat -> Pp.t
+val pr_ipats : ssripats -> Pp.t
+val pr_iorpat : ssripatss -> Pp.t
+
 val pr_hyp : ssrhyp -> Pp.t
+val pr_hyps : ssrhyps -> Pp.t
 
 val prl_constr_expr : Constrexpr.constr_expr -> Pp.t
 val prl_glob_constr : Glob_term.glob_constr -> Pp.t

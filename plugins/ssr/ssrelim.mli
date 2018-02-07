@@ -13,7 +13,6 @@ open Ssrmatching_plugin
 val ssrelim :
   ?ind:(int * EConstr.types array) option ref ->
   ?is_case:bool ->
-  ?ist:Ltac_plugin.Tacinterp.interp_sign ->
   ((Ssrast.ssrhyps option * Ssrast.ssrocc) *
      Ssrmatching.cpattern)
     list ->
@@ -28,16 +27,14 @@ val ssrelim :
    as 'a) ->
   ?elim:EConstr.constr ->
   Ssrast.ssripat option ->
-  (?ist:Ltac_plugin.Tacinterp.interp_sign ->
-   'a ->
+  ( 'a ->
    Ssrast.ssripat option ->
    (Goal.goal Evd.sigma -> Goal.goal list Evd.sigma) ->
    bool -> Ssrast.ssrhyp list -> Tacmach.tactic) ->
   Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
-val elimtac :
-  EConstr.constr ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+val elimtac : EConstr.constr -> unit Proofview.tactic
+
 val casetac :
   EConstr.constr ->
   Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
@@ -50,4 +47,4 @@ val perform_injection :
 val ssrscasetac :
   bool ->
   EConstr.constr ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  unit Proofview.tactic

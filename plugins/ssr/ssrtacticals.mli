@@ -19,14 +19,13 @@ val tclSEQAT :
   Tacmach.tactic
 
 val tclCLAUSES :
-  Ltac_plugin.Tacinterp.interp_sign ->
-  Proofview.V82.tac ->
+  unit Proofview.tactic ->
   (Ssrast.ssrhyps *
      ((Ssrast.ssrhyp_or_id * string) *
         Ssrmatching_plugin.Ssrmatching.cpattern option)
        option)
     list * Ssrast.ssrclseq ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  unit Proofview.tactic
 
 val hinttac :
            Tacinterp.interp_sign ->

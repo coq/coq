@@ -64,11 +64,54 @@ let pr_glob_constr_and_expr = function
 let pr_term (k, c) = pr_guarded (guard_term k) pr_glob_constr_and_expr c
 
 let pr_hyp (SsrHyp (_, id)) = Id.print id
+let pr_hyps = pr_list pr_spc pr_hyp
 
 let pr_occ = function
   | Some (true, occ) -> str "{-" ++ pr_list pr_spc int occ ++ str "}"
   | Some (false, occ) -> str "{+" ++ pr_list pr_spc int occ ++ str "}"
   | None -> str "{}"
+
+let pr_clear_ne clr = str "{" ++ pr_hyps clr ++ str "}"
+let pr_clear sep clr = if clr = [] then mt () else sep () ++ pr_clear_ne clr
+
+let pr_dir = function L2R -> str "->" | R2L -> str "<-"
+
+let pr_simpl = function
+  | Simpl -1 -> str "/="
+  | Cut -1 -> str "//"
+  | Simpl n -> str "/" ++ int n ++ str "="
+  | Cut n -> str "/" ++ int n ++ str"/"
+  | SimplCut (-1,-1) -> str "//="
+  | SimplCut (n,-1) -> str "/" ++ int n ++ str "/="
+  | SimplCut (-1,n) -> str "//" ++ int n ++ str "="
+  | SimplCut (n,m) -> str "/" ++ int n ++ str "/" ++ int m ++ str "="
+  | Nop -> mt ()
+
+(* New terms *)
+
+let pr_ast_closure_term { body } = Ppconstr.pr_constr_expr body
+
+let pr_view2 = pr_list mt (fun c -> str "/" ++ pr_ast_closure_term c)
+
+let rec pr_ipat p =
+  match p with
+  | IPatId id -> Id.print id
+  | IPatSimpl sim -> pr_simpl sim
+  | IPatClear clr -> pr_clear mt clr
+  | IPatCase iorpat -> hov 1 (str "[" ++ pr_iorpat iorpat ++ str "]")
+  | IPatDispatch iorpat -> hov 1 (str "/[" ++ pr_iorpat iorpat ++ str "]")
+  | IPatInj iorpat -> hov 1 (str "[=" ++ pr_iorpat iorpat ++ str "]")
+  | IPatRewrite (occ, dir) -> pr_occ occ ++ pr_dir dir
+  | IPatAnon All -> str "*"
+  | IPatAnon Drop -> str "_"
+  | IPatAnon One -> str "?"
+  | IPatView v -> pr_view2 v
+  | IPatNoop -> str "-"
+  | IPatAbstractVars l -> str "[:" ++ pr_list spc Id.print l ++ str "]"
+  | IPatTac _ -> str "<tac>"
+(* TODO  | IPatAnon Temporary -> str "+" *)
+and pr_ipats ipats = pr_list spc pr_ipat ipats
+and pr_iorpat iorpat = pr_list pr_bar pr_ipats iorpat
 
 (* 0 cost pp function. Active only if Debug Ssreflect is Set *)
 let ppdebug_ref = ref (fun _ -> ())
