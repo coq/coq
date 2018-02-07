@@ -121,6 +121,13 @@ sig
 
   val exists : (Level.t * int -> bool) -> t -> bool
   val for_all : (Level.t * int -> bool) -> t -> bool
+
+  val compact : t -> t * int list
+  (** [compact u] remaps local variables in [u] such that their indices become
+       consecutive. It returns the new universe and the mapping.
+       Example: compact [(Var 0, i); (Prop, 0); (Var 2; j))] =
+         [(Var 0,i); (Prop, 0); (Var 1; j)], [0; 2]
+  *)
 end
 
 type universe = Universe.t

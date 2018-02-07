@@ -639,6 +639,39 @@ struct
     in 
       fold (fun a acc -> aux a acc) u nil
 	
+  (** [max_var_pred p u] returns the maximum variable level in [u] satisfying
+      [p], -1 if not found *)
+  let rec max_var_pred p u =
+    let open Level in
+    match u with
+    | Nil -> -1
+    | Cons ((v, _), _, u) ->
+      match var_index v with
+      | Some i when p i -> max i (max_var_pred p u)
+      | _ -> max_var_pred p u
+
+  let rec remap_var u i j =
+    let open Level in
+    match u with
+    | Nil -> Huniv.nil
+    | Cons ((v, incr), _, u) when var_index v = Some i ->
+      cons (Level.var j, incr) (remap_var u i j)
+    | Cons (_, _, u) -> remap_var u i j
+
+  let rec compact u max_var i =
+    if i >= max_var then (u,[]) else
+    let j = max_var_pred (fun j -> j < i) u in
+    if Int.equal i (j+1) then
+      let (u,s) = compact u max_var (i+1) in
+      (u, i :: s)
+    else
+      let (u,s) = compact (remap_var u i j) max_var (i+1) in
+      (u, j+1 :: s)
+
+  let compact u =
+    let max_var = max_var_pred (fun _ -> true) u in
+    compact u max_var 0
+
   (* Returns the formal universe that is greater than the universes u and v.
      Used to type the products. *)
   let sup x y = merge_univs x y
