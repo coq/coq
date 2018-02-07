@@ -61,6 +61,9 @@ module type RedFlagsSig = sig
   (** Adds a reduction kind to a set *)
   val red_add_transparent : reds -> transparent_state -> reds
 
+  (** Retrieve the transparent state of the reduction flags *)
+  val red_transparent : reds -> transparent_state
+
   (** Build a reduction set from scratch = iter [red_add] on [no_red] *)
   val mkflags : red_kind list -> reds
 
