@@ -912,6 +912,15 @@ This command turns off the use of a default timeout.
 
 This command displays whether some default timeout has be set or not.
 
+\subsection[\tt Fail \textrm{\textsl{command-or-tactic}}.]{\tt Fail \textrm{\textsl{command-or-tactic}}.\comindex{Fail}\label{Fail}}
+
+For debugging {\Coq} scripts, sometimes it is desirable to know
+whether a command or a tactic fails. If the given command or tactic
+fails, the {\tt Fail} statement succeeds, without changing the proof
+state, and {\Coq} prints a message confirming the failure. If the
+command or tactic succeeds, the statement is an error, and {\Coq}
+prints a message indicating that the failure did not occur.
+
 \section{Controlling display}
 
 \subsection[\tt Set Silent.]{\tt Set Silent.\optindex{Silent}
