@@ -61,7 +61,7 @@ type atom =
   | Acofixe of t array * t array * int * t
   | Aprod of Name.t * t * (t -> t)
   | Ameta of metavariable * t
-  | Aevar of existential * t
+  | Aevar of Evar.t * t * t array
   | Aproj of Constant.t * accumulator
 
 let accumulate_tag = 0
@@ -132,8 +132,8 @@ let mk_prod_accu s dom codom =
 let mk_meta_accu mv ty =
   mk_accu (Ameta (mv,ty))
 
-let mk_evar_accu ev ty =
-  mk_accu (Aevar (ev,ty))
+let mk_evar_accu ev ty args =
+  mk_accu (Aevar (ev,ty,args))
 
 let mk_proj_accu kn c = 
   mk_accu (Aproj (kn,c))
@@ -153,8 +153,7 @@ let accu_nargs (k:accumulator) =
 let args_of_accu (k:accumulator) =
   let nargs = accu_nargs k in
   let f i = (Obj.magic (Obj.field (Obj.magic k) (nargs-i+2)) : t) in
-  let t = Array.init nargs f in
-  Array.to_list t
+  Array.init nargs f
 
 let is_accu x =
   let o = Obj.repr x in
@@ -179,11 +178,10 @@ let force_cofix (cofix : t) =
     let atom = atom_of_accu accu in
     match atom with
     | Acofix(typ,norm,pos,f) ->
-	let f = ref f in
-    let args = List.rev (args_of_accu accu) in
-    List.iter (fun x -> f := !f x) args;
-	let v = !f (Obj.magic ()) in
-	set_atom_of_accu accu (Acofixe(typ,norm,pos,v));
+      let args = args_of_accu accu in
+      let f = Array.fold_right (fun arg f -> f arg) args f in
+      let v = f (Obj.magic ()) in
+      set_atom_of_accu accu (Acofixe(typ,norm,pos,v));
 	v
     | Acofixe(_,_,_,v) -> v 
     | _ -> cofix

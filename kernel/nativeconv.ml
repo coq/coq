@@ -54,13 +54,18 @@ and conv_accu env pb lvl k1 k2 cu =
     conv_atom env pb lvl (atom_of_accu k1) (atom_of_accu k2) cu
   else
     let cu = conv_atom env pb lvl (atom_of_accu k1) (atom_of_accu k2) cu in
-    List.fold_right2 (conv_val env CONV lvl) (args_of_accu k1) (args_of_accu k2) cu
+    Array.fold_right2 (conv_val env CONV lvl) (args_of_accu k1) (args_of_accu k2) cu
 
 and conv_atom env pb lvl a1 a2 cu =
   if a1 == a2 then cu
   else
     match a1, a2 with
-    | Ameta _, _ | _, Ameta _ | Aevar _, _ | _, Aevar _ -> assert false
+    | Ameta (m1,_), Ameta (m2,_) ->
+      if Int.equal m1 m2 then cu else raise NotConvertible
+    | Aevar (ev1,_,args1), Aevar (ev2,_,args2) ->
+      if Evar.equal ev1 ev2 then
+        Array.fold_right2 (conv_val env CONV lvl) args1 args2 cu
+      else raise NotConvertible
     | Arel i1, Arel i2 -> 
 	if Int.equal i1 i2 then cu else raise NotConvertible
     | Aind (ind1,u1), Aind (ind2,u2) ->
@@ -112,7 +117,7 @@ and conv_atom env pb lvl a1 a2 cu =
        else conv_accu env CONV lvl ac1 ac2 cu
     | Arel _, _ | Aind _, _ | Aconstant _, _ | Asort _, _ | Avar _, _
     | Acase _, _ | Afix _, _ | Acofix _, _ | Acofixe _, _ | Aprod _, _
-    | Aproj _, _ -> raise NotConvertible
+    | Aproj _, _ | Ameta _, _ | Aevar _, _ -> raise NotConvertible
 
 (* Precondition length t1 = length f1 = length f2 = length t2 *)
 and conv_fix env lvl t1 f1 t2 f2 cu =

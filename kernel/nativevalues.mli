@@ -51,7 +51,7 @@ type atom =
   | Acofixe of t array * t array * int * t
   | Aprod of Name.t * t * (t -> t)
   | Ameta of metavariable * t
-  | Aevar of existential * t
+  | Aevar of Evar.t * t (* type *) * t array (* arguments *)
   | Aproj of Constant.t * accumulator
 
 (* Constructors *)
@@ -68,7 +68,7 @@ val mk_prod_accu : Name.t -> t -> t -> t
 val mk_fix_accu : rec_pos  -> int -> t array -> t array -> t
 val mk_cofix_accu : int -> t array -> t array -> t
 val mk_meta_accu : metavariable -> t
-val mk_evar_accu : existential -> t -> t
+val mk_evar_accu : Evar.t -> t -> t array -> t
 val mk_proj_accu : Constant.t -> accumulator -> t
 val upd_cofix : t -> t -> unit
 val force_cofix : t -> t 
@@ -84,7 +84,7 @@ val napply : t -> t array -> t
 
 val dummy_value : unit -> t
 val atom_of_accu : accumulator -> atom
-val args_of_accu : accumulator -> t list
+val args_of_accu : accumulator -> t array
 val accu_nargs : accumulator -> int
 
 val cast_accu : t -> accumulator

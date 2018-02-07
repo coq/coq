@@ -453,11 +453,12 @@ let rec lambda_of_constr env sigma c =
      let ty = meta_type sigma mv in
      Lmeta (mv, lambda_of_constr env sigma ty)
 
-  | Evar ev ->
+  | Evar (evk,args as ev) ->
      (match evar_value sigma ev with
      | None ->
 	let ty = evar_type sigma ev in
-	Levar(ev, lambda_of_constr env sigma ty)
+        let args = Array.map (lambda_of_constr env sigma) args in
+        Levar(evk, lambda_of_constr env sigma ty, args)
      | Some t -> lambda_of_constr env sigma t)
 
   | Cast (c, _, _) -> lambda_of_constr env sigma c
