@@ -534,31 +534,51 @@ struct
 
   (* Boolean options *)
 
-  let implicit = ["Printing"; "Implicit"]
-  let coercions = ["Printing"; "Coercions"]
-  let raw_matching = ["Printing"; "Matching"]
-  let notations = ["Printing"; "Notations"]
-  let all_basic = ["Printing"; "All"]
-  let existential = ["Printing"; "Existential"; "Instances"]
-  let universes = ["Printing"; "Universes"]
-  let unfocused = ["Printing"; "Unfocused"]
+  let default_clause = ["Printing";"Allow";"Match";"Default";"Clause"]
+  let coercions = ["Printing";"Coercions"]
+  let compact_contexts = ["Printing";"Compact";"Contexts"]
+  let existential = ["Printing";"Existential";"Instances"]
+  let factorizable = ["Printing";"Factorizable";"Match";"Patterns"]
+  let implicit = ["Printing";"Implicit"]
+  let implicit_defensive = ["Printing";"Implicit";"Defensive"]
+  let notations = ["Printing";"Notations"]
+  let proj_compat = ["Printing";"Primitive";"Projection";"Compatibility"]
+  let proj_parms =  ["Printing";"Primitive";"Projection";"Parameters"]
+  let projections =  ["Printing";"Projections"]
+  let raw_matching = ["Printing";"Matching"]
+  let records =  ["Printing";"Records"]
+  let synth =  ["Printing";"Synth"]
+  let universes = ["Printing";"Universes"]
+  let wildcard = ["Printing";"Wildcard"]
+  let unfocused = ["Printing";"Unfocused"]
 
   type bool_descr = { opts : t list; init : bool; label : string }
 
+  (* the order of the following array must match that of the corresponding View menu items in coqide_ui.ml
+
+     the "init" values here should be the same as in the default printing option record in
+     library/printoptions.ml
+   *)
+
   let bool_items = [
     { opts = [implicit]; init = false; label = "Display _implicit arguments" };
+    { opts = [implicit_defensive]; init = true; label = "Display non_strict implicit arguments" };
     { opts = [coercions]; init = false; label = "Display _coercions" };
-    { opts = [raw_matching]; init = true;
-      label = "Display raw _matching expressions" };
+    { opts = [compact_contexts]; init = false; label = "Display compact conte_xts" };
+    { opts = [raw_matching]; init = true; label = "Display raw _matching expressions" };
+    { opts = [default_clause]; init = true; label = "Display match default c_lauses" };
+    { opts = [factorizable]; init = true; label = "Display _factorizable match patterns" };
+    { opts = [projections]; init = false; label = "Display _projections" };
+    { opts = [proj_compat]; init = false; label = "Display primiti_ve projection compatibility" };
+    { opts = [proj_parms]; init = false; label = "Display primitive pro_jection parameters" };
     { opts = [notations]; init = true; label = "Display _notations" };
-    { opts = [all_basic]; init = false;
-      label = "Display _all basic low-level contents" };
-    { opts = [existential]; init = false;
-      label = "Display _existential variable instances" };
+    { opts = [records]; init = true; label = "Display _records" };
+    { opts = [existential]; init = false; label = "Display _existential variable instances" };
     { opts = [universes]; init = false; label = "Display _universe levels" };
-    { opts = [all_basic;existential;universes]; init = false;
-      label = "Display all _low-level contents" };
-    { opts = [unfocused]; init = false; label = "Display _unfocused goals" }
+    { opts = [wildcard]; init = true; label = "Display _wildcards in patterns" };
+    { opts = [synth]; init = true; label = "Do not display synthesi_zable return types" };
+    (* in goals, not terms *)
+    { opts = [unfocused]; init = false; label = "Display unfocused _goals" }
   ]
 
   (** The current status of the boolean options *)

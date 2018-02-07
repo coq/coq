@@ -124,6 +124,7 @@ CoqIDE
 
 - Find and Replace All report the number of occurrences found; Find indicates
   when it wraps.
+- More term-printing options have been added to the View menu.
 
 coqdep
 

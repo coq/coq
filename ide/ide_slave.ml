@@ -45,16 +45,23 @@ let pr_debug_answer q r =
 (** Categories of commands *)
 
 let coqide_known_option table = List.mem table [
-  ["Printing";"Implicit"];
+  ["Printing";"Allow";"Match";"Default";"Clause"];
   ["Printing";"Coercions"];
-  ["Printing";"Matching"];
-  ["Printing";"Synth"];
-  ["Printing";"Notations"];
-  ["Printing";"All"];
-  ["Printing";"Records"];
+  ["Printing";"Compact";"Contexts"];
   ["Printing";"Existential";"Instances"];
+  ["Printing";"Factorizable";"Match";"Patterns"];
+  ["Printing";"Implicit"];
+  ["Printing";"Implicit";"Defensive"];
+  ["Printing";"Matching"];
+  ["Printing";"Notations"];
+  ["Printing";"Primitive";"Projection";"Compatibility"];
+  ["Printing";"Primitive";"Projection";"Parameters"];
+  ["Printing";"Projections"];
+  ["Printing";"Records"];
+  ["Printing";"Synth"];
+  ["Printing";"Unfocused"];
   ["Printing";"Universes"];
-  ["Printing";"Unfocused"]]
+  ["Printing";"Wildcard"]]
 
 let is_known_option cmd = match Vernacprop.under_control cmd with
   | VernacSetOption (_, o, BoolValue true)
