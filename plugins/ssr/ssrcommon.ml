@@ -563,7 +563,7 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
   | _ -> Constr.fold put evlist c in
   let evlist = put [] c0 in
   if evlist = [] then 0, c0 else
-  let pr_constr t = Printer.pr_econstr_env (pf_env gl) sigma (Reductionops.nf_beta (project gl) (EConstr.of_constr t)) in
+  let pr_constr t = Printer.pr_econstr_env (pf_env gl) sigma (Reductionops.nf_beta (pf_env gl) (project gl) (EConstr.of_constr t)) in
   pp(lazy(str"evlist=" ++ pr_list (fun () -> str";")
     (fun (k,_) -> Evar.print k) evlist));
   let evplist = 
@@ -894,7 +894,7 @@ let saturate ?(beta=false) ?(bi_types=false) env sigma c ?(ty=Retyping.get_type_
       let sigma = create_evar_defs sigma in
       let (sigma, x) =
         Evarutil.new_evar env sigma
-          (if bi_types then Reductionops.nf_betaiota sigma src else src) in
+          (if bi_types then Reductionops.nf_betaiota env sigma src else src) in
       loop (EConstr.Vars.subst1 x tgt) ((m - n,x) :: args) sigma (n-1)
   | CastType (t, _) -> loop t args sigma n 
   | LetInType (_, v, _, t) -> loop (EConstr.Vars.subst1 v t) args sigma n

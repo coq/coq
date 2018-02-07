@@ -210,9 +210,9 @@ end) = struct
       let t = Reductionops.whd_all env (goalevars evars) ty in
 	match EConstr.kind (goalevars evars) t, l with
 	| Prod (na, ty, b), obj :: cstrs ->
-          let b = Reductionops.nf_betaiota (goalevars evars) b in
+          let b = Reductionops.nf_betaiota env (goalevars evars) b in
 	  if noccurn (goalevars evars) 1 b (* non-dependent product *) then
-	    let ty = Reductionops.nf_betaiota (goalevars evars) ty in
+            let ty = Reductionops.nf_betaiota env (goalevars evars) ty in
 	    let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
 	    let evars, relty = mk_relty evars env ty obj in
 	    let evars, newarg = app_poly env evars respectful [| ty ; b' ; relty ; arg |] in
@@ -221,7 +221,7 @@ end) = struct
 	    let (evars, b, arg, cstrs) =
 	      aux (push_rel (LocalAssum (na, ty)) env) evars b cstrs
 	    in
-	    let ty = Reductionops.nf_betaiota (goalevars evars) ty in
+            let ty = Reductionops.nf_betaiota env (goalevars evars) ty in
 	    let pred = mkLambda (na, ty, b) in
 	    let liftarg = mkLambda (na, ty, arg) in
 	    let evars, arg' = app_poly env evars forall_relation [| ty ; pred ; liftarg |] in
@@ -231,7 +231,7 @@ end) = struct
 	| _, [] ->
 	  (match finalcstr with
 	  | None | Some (_, None) ->
-	    let t = Reductionops.nf_betaiota (fst evars) ty in
+            let t = Reductionops.nf_betaiota env (fst evars) ty in
 	    let evars, rel = mk_relty evars env t None in
 	      evars, t, rel, [t, Some rel]
 	  | Some (t, Some rel) -> evars, t, rel, [t, Some rel])
@@ -1557,9 +1557,8 @@ let newfail n s =
 let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   let open Proofview.Notations in
   (** For compatibility *)
-  let beta_red _ sigma c = Reductionops.nf_betaiota sigma c in
-  let beta = Tactics.reduct_in_concl (beta_red, DEFAULTcast) in
-  let beta_hyp id = Tactics.reduct_in_hyp beta_red (id, InHyp) in
+  let beta = Tactics.reduct_in_concl (Reductionops.nf_betaiota, DEFAULTcast) in
+  let beta_hyp id = Tactics.reduct_in_hyp Reductionops.nf_betaiota (id, InHyp) in
   let treat sigma res = 
     match res with
     | None -> newfail 0 (str "Nothing to rewrite")

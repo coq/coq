@@ -308,17 +308,6 @@ let in_whnf (t,stk) =
     | (FFlex _ | FProd _ | FEvar _ | FInd _ | FAtom _ | FRel _ | FProj _) -> true
     | FLOCKED -> assert false
 
-let unfold_projection infos p c =
-  let unf = Projection.unfolded p in
-    if unf || RedFlags.red_set infos.i_flags (RedFlags.fCONST (Projection.constant p)) then
-      (match try Some (lookup_projection p (info_env infos)) with Not_found -> None with
-      | Some pb -> 
-	let s = Zproj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, 
-		       Projection.constant p) in
-	  Some (c, s)
-      | None -> None)
-  else None
-
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
   eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
@@ -396,13 +385,13 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       (* Projections: prefer unfolding to first-order unification,
 	 which will happen naturally if the terms c1, c2 are not in constructor
 	 form *)
-      (match unfold_projection infos p1 c1 with
-      | Some (def1,s1) -> 
-        eqappr cv_pb l2r infos (lft1, (def1, (s1 :: v1))) appr2 cuniv
+      (match unfold_projection infos p1 with
+      | Some s1 ->
+        eqappr cv_pb l2r infos (lft1, (c1, (s1 :: v1))) appr2 cuniv
       | None ->
-	match unfold_projection infos p2 c2 with
-	| Some (def2,s2) ->
-          eqappr cv_pb l2r infos appr1 (lft2, (def2, (s2 :: v2))) cuniv
+        match unfold_projection infos p2 with
+        | Some s2 ->
+          eqappr cv_pb l2r infos appr1 (lft2, (c2, (s2 :: v2))) cuniv
 	| None -> 
           if Constant.equal (Projection.constant p1) (Projection.constant p2)
 	     && compare_stack_shape v1 v2 then
@@ -412,9 +401,9 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	    raise NotConvertible)
 
     | (FProj (p1,c1), t2) ->
-      (match unfold_projection infos p1 c1 with
-      | Some (def1,s1) ->
-         eqappr cv_pb l2r infos (lft1, (def1, (s1 :: v1))) appr2 cuniv
+      (match unfold_projection infos p1 with
+      | Some s1 ->
+         eqappr cv_pb l2r infos (lft1, (c1, (s1 :: v1))) appr2 cuniv
       | None -> 
 	 (match t2 with 
 	  | FFlex fl2 ->
@@ -425,9 +414,9 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	  | _ -> raise NotConvertible))
       
     | (t1, FProj (p2,c2)) ->
-      (match unfold_projection infos p2 c2 with
-      | Some (def2,s2) -> 
-         eqappr cv_pb l2r infos appr1 (lft2, (def2, (s2 :: v2))) cuniv
+      (match unfold_projection infos p2 with
+      | Some s2 ->
+         eqappr cv_pb l2r infos appr1 (lft2, (c2, (s2 :: v2))) cuniv
       | None -> 
 	 (match t1 with 
 	  | FFlex fl1 ->

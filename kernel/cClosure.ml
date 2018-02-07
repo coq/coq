@@ -847,6 +847,14 @@ let contract_fix_vect fix =
   in
   (subs_cons(Array.init nfix make_body, env), thisbody)
 
+let unfold_projection info p =
+  if red_projection info.i_flags p
+  then
+    let open Declarations in
+    let pb = lookup_projection p (info_env info) in
+    Some (Zproj (pb.proj_npars, pb.proj_arg, Projection.constant p))
+  else None
+
 (*********************************************************************)
 (* A machine that inspects the head of a term until it finds an
    atom or a subterm that may produce a redex (abstraction,
@@ -865,15 +873,9 @@ let rec knh info m stk =
            | (None, stk') -> (m,stk'))
     | FCast(t,_,_) -> knh info t stk
     | FProj (p,c) ->
-      let unf = Projection.unfolded p in
-        if unf || red_set info.i_flags (fCONST (Projection.constant p)) then
-          (match try Some (lookup_projection p (info_env info)) with Not_found -> None with
-	  | None -> (m, stk)
-	  | Some pb ->
-	     knh info c (Zproj (pb.Declarations.proj_npars, pb.Declarations.proj_arg,
-				Projection.constant p)
-			 :: zupdate m stk))
-	else (m,stk)
+      (match unfold_projection info p with
+       | None -> (m, stk)
+       | Some s -> knh info c (s :: zupdate m stk))
 
 (* cases where knh stops *)
     | (FFlex _|FLetIn _|FConstruct _|FEvar _|

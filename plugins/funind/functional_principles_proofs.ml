@@ -324,7 +324,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
 	context
     in
     let new_type_of_hyp =
-      Reductionops.nf_betaiota sigma new_type_of_hyp in
+      Reductionops.nf_betaiota env sigma new_type_of_hyp in
     let new_ctxt,new_end_of_type =
       decompose_prod_n_assum sigma ctxt_size new_type_of_hyp
     in
@@ -698,6 +698,7 @@ let build_proof
     : tactic =
   let rec build_proof_aux do_finalize dyn_infos : tactic =
     fun g ->
+        let env = pf_env g in
         let sigma = project g in
 (*      observe (str "proving on " ++ Printer.pr_lconstr_env (pf_env g) term);*)
 	match EConstr.kind sigma dyn_infos.info with
@@ -794,7 +795,7 @@ let build_proof
 		      do_finalize dyn_infos  g
 		  | Lambda _ ->
 		      let new_term =
-                        Reductionops.nf_beta sigma dyn_infos.info in
+                        Reductionops.nf_beta env sigma dyn_infos.info in
 		      build_proof do_finalize {dyn_infos with info = new_term}
 			g
 		  | LetIn _ ->
@@ -1153,7 +1154,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	    let bodies_with_all_params =
 	      Array.map
 		(fun body ->
-		   Reductionops.nf_betaiota (project g)
+                   Reductionops.nf_betaiota (pf_env g) (project g)
 		     (applist(substl (List.rev (Array.to_list all_funs_with_full_params)) body,
 			      List.rev_map var_of_decl princ_params))
 		)
@@ -1191,12 +1192,12 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		   let body_with_param,num =
 		     let body = get_body fnames.(i) in
 		     let body_with_full_params =
-		       Reductionops.nf_betaiota (project g) (
+                       Reductionops.nf_betaiota (pf_env g) (project g) (
 			 applist(body,List.rev_map var_of_decl full_params))
 		     in
 		     match EConstr.kind (project g) body_with_full_params with
 		       | Fix((_,num),(_,_,bs)) ->
-			       Reductionops.nf_betaiota (project g)
+                               Reductionops.nf_betaiota (pf_env g) (project g)
 				 (
 				   (applist
 				      (substl
@@ -1279,7 +1280,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		     nb_rec_hyps = -100;
 		     rec_hyps = [];
 		     info =
-		       Reductionops.nf_betaiota (project g)
+                       Reductionops.nf_betaiota (pf_env g) (project g)
 			 (applist(fix_body,List.rev_map mkVar args_id));
 		     eq_hyps = []
 		   }
@@ -1339,7 +1340,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		     nb_rec_hyps = -100;
 		     rec_hyps = [];
 		     info =
-		       Reductionops.nf_betaiota Evd.empty
+                       Reductionops.nf_betaiota (pf_env g) Evd.empty
 			 (applist(fbody_with_full_params,
 				  (List.rev_map var_of_decl princ_params)@
 				    (List.rev_map mkVar args_id)

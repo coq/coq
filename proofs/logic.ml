@@ -334,7 +334,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
     else
       match kind trm with
       | Meta _ ->
-	let conclty = nf_betaiota sigma (EConstr.of_constr conclty) in
+        let conclty = nf_betaiota env sigma (EConstr.of_constr conclty) in
 	  if !check && occur_meta sigma conclty then
             raise (RefinerError (env, sigma, MetaInType conclty));
 	  let (gl,ev,sigma) = mk_goal hyps conclty in
@@ -416,7 +416,7 @@ and mk_hdgoals sigma goal goalacc trm =
   match kind trm with
     | Cast (c,_, ty) when isMeta c ->
 	check_typability env sigma ty;
-	let (gl,ev,sigma) = mk_goal hyps (nf_betaiota sigma (EConstr.of_constr ty)) in
+        let (gl,ev,sigma) = mk_goal hyps (nf_betaiota env sigma (EConstr.of_constr ty)) in
 	let ev = EConstr.Unsafe.to_constr ev in
 	gl::goalacc,ty,sigma,ev
 

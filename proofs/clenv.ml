@@ -498,7 +498,7 @@ let clenv_unify_binding_type clenv c t u =
 
 let clenv_assign_binding clenv k c =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
-  let c_typ = nf_betaiota clenv.evd (clenv_get_type_of clenv c) in
+  let c_typ = nf_betaiota clenv.env clenv.evd (clenv_get_type_of clenv c) in
   let status,clenv',c = clenv_unify_binding_type clenv c c_typ k_typ in
   let c = EConstr.Unsafe.to_constr c in
   { clenv' with evd = meta_assign k (c,(Conv,status)) clenv'.evd }

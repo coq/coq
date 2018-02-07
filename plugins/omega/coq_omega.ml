@@ -652,7 +652,7 @@ let decompile af =
 
 (** Backward compat to emulate the old Refine: normalize the goal conclusion *)
 let new_hole env sigma c =
-  let c = Reductionops.nf_betaiota sigma c in
+  let c = Reductionops.nf_betaiota env sigma c in
   Evarutil.new_evar env sigma c
 
 let clever_rewrite_base_poly typ p result theorem =

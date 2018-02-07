@@ -24,14 +24,6 @@ val with_stats: 'a Lazy.t -> 'a
   Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of
   a LetIn expression is Letin reduction *)
 
-type transparent_state = Id.Pred.t * Cpred.t
-
-val all_opaque      : transparent_state
-val all_transparent : transparent_state
-
-val is_transparent_variable : transparent_state -> variable -> bool
-val is_transparent_constant : transparent_state -> Constant.t -> bool
-
 (* Sets of reduction kinds. *)
 module type RedFlagsSig = sig
   type reds
@@ -42,8 +34,6 @@ module type RedFlagsSig = sig
   val fDELTA : red_kind
   val fIOTA : red_kind
   val fZETA : red_kind
-  val fCONST : Constant.t -> red_kind
-  val fVAR : Id.t -> red_kind
 
   (* No reduction at all *)
   val no_red : reds
@@ -130,6 +120,8 @@ val eta_expand_stack : stack -> stack
  
 val eta_expand_ind_stack : env -> inductive -> fconstr -> stack -> 
    (fconstr * stack) -> stack * stack
+
+val unfold_projection : env -> Projection.t -> stack_member
 
 (* To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use

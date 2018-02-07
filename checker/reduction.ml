@@ -300,11 +300,6 @@ let oracle_order infos l2r k1 k2 =
      if Int.equal n1 n2 then l2r
      else n1 < n2
 
-let unfold_projection infos p c =
-  let pb = lookup_projection p (infos_env infos) in
-  let s = Zproj (pb.proj_npars, pb.proj_arg, p) in
-    (c, s)
-
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv univ cv_pb infos lft1 lft2 term1 term2 =
   eqappr univ cv_pb infos (lft1, (term1,[])) (lft2, (term2,[]))
@@ -374,12 +369,12 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
             eqappr univ cv_pb infos app1 app2)
 	  
     | (FProj (p1,c1), _) ->
-      let (def1, s1) = unfold_projection infos p1 c1 in
-        eqappr univ cv_pb infos (lft1, whd_stack infos def1 (s1 :: v1)) appr2
+      let s1 = unfold_projection (infos_env infos) p1 in
+        eqappr univ cv_pb infos (lft1, whd_stack infos c1 (s1 :: v1)) appr2
 	  
     | (_, FProj (p2,c2)) ->
-      let (def2, s2) = unfold_projection infos p2 c2 in
-        eqappr univ cv_pb infos appr1 (lft2, whd_stack infos def2 (s2 :: v2))
+      let s2 = unfold_projection (infos_env infos) p2 in
+        eqappr univ cv_pb infos appr1 (lft2, whd_stack infos c2 (s2 :: v2))
 
     (* other constructors *)
     | (FLambda _, FLambda _) ->
