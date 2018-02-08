@@ -136,13 +136,19 @@ module PrintOpt :
 sig
   type t (** Representation of an option *)
 
-  type bool_descr = { opts : t list; init : bool; label : string }
+  type bool_descr = { opts : t; init : bool; label : string }
 
-  val bool_items : bool_descr list
+  val default_bool_items : bool_descr list
 
   val set : t -> bool -> unit
+  val get : t -> bool
 
-  val printing_unfocused: unit -> bool
+  val printing_unfocused : unit -> bool
+
+  val label_options_tbl : (string,t) Hashtbl.t
+  val default_opts : (t,unit) Hashtbl.t
+  val all_opts : (t,unit) Hashtbl.t
+  val sugared_opts : (t,unit) Hashtbl.t
 
   (** [enforce] transmits to coq the current option values.
       It is also called by [goals] and [evars] above. *)

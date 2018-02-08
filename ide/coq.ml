@@ -552,44 +552,81 @@ struct
   let wildcard = ["Printing";"Wildcard"]
   let unfocused = ["Printing";"Unfocused"]
 
-  type bool_descr = { opts : t list; init : bool; label : string }
+  type all_defaults = { all : bool; defaults : bool }
+
+  type bool_descr_spec = { opts0 : t; init0 : all_defaults; label0 : string }
 
   (* the order of the following array must match that of the corresponding View menu items in coqide_ui.ml
-
-     the "init" values here should be the same as in the default printing option record in
-     library/printoptions.ml
+     the init0 field is a pair of booleans, according to the "All" and "Default" printing options;
+     the "Sugared" options are just the negation of the "All" options, don't need to specify that
    *)
+  let items_specs = [
+      { opts0 = coercions; init0 = { all = true; defaults = false }; label0 = "Display _coercions" };
+      { opts0 = compact_contexts; init0 = { all = true; defaults = false }; label0 = "Display compact conte_xts" };
+      { opts0 = existential; init0 = { all = true; defaults = false }; label0 = "Display _existential variable instances" };
+      { opts0 = factorizable; init0 = { all = false; defaults = true }; label0 = "Display _factorizable match patterns" };
+      { opts0 = implicit; init0 = { all = true; defaults = false }; label0 = "Display _implicit arguments" };
+      { opts0 = default_clause; init0 = { all = false; defaults = true }; label0 = "Display match _default clauses" };
+      { opts0 = implicit_defensive; init0 = { all = true; defaults = true }; label0 = "Display non_strict implicit arguments" };
+      { opts0 = notations; init0 = { all = false; defaults = true }; label0 = "Display _notations" };
+      { opts0 = proj_compat; init0 = { all = true; defaults = false }; label0 = "Display primiti_ve projection compatibility" };
+      { opts0 = proj_parms; init0 = { all = true; defaults = false }; label0 = "Display primitive pro_jection parameters" };
+      { opts0 = projections; init0 = { all = false; defaults = false }; label0 = "Display _projections" };
+      { opts0 = raw_matching; init0 = { all = false; defaults = true }; label0 = "Display raw _matching expressions" };
+      { opts0 = records; init0 = { all = false; defaults = true }; label0 = "Display _records" };
+      { opts0 = synth; init0 = { all = false; defaults = true }; label0 = "Do not display synthesi_zable return types" };
+      { opts0 = unfocused; init0 = { all = false; defaults = false }; label0 = "Display unfocused _goals" };
+      { opts0 = universes; init0 = { all = true; defaults = false }; label0 = "Display _universe levels" };
+      { opts0 = wildcard; init0 = { all = false; defaults = true }; label0 = "Display _wildcards in patterns" };
+    ]
 
-  let bool_items = [
-    { opts = [implicit]; init = false; label = "Display _implicit arguments" };
-    { opts = [implicit_defensive]; init = true; label = "Display non_strict implicit arguments" };
-    { opts = [coercions]; init = false; label = "Display _coercions" };
-    { opts = [compact_contexts]; init = false; label = "Display compact conte_xts" };
-    { opts = [raw_matching]; init = true; label = "Display raw _matching expressions" };
-    { opts = [default_clause]; init = true; label = "Display match default c_lauses" };
-    { opts = [factorizable]; init = true; label = "Display _factorizable match patterns" };
-    { opts = [projections]; init = false; label = "Display _projections" };
-    { opts = [proj_compat]; init = false; label = "Display primiti_ve projection compatibility" };
-    { opts = [proj_parms]; init = false; label = "Display primitive pro_jection parameters" };
-    { opts = [notations]; init = true; label = "Display _notations" };
-    { opts = [records]; init = true; label = "Display _records" };
-    { opts = [existential]; init = false; label = "Display _existential variable instances" };
-    { opts = [universes]; init = false; label = "Display _universe levels" };
-    { opts = [wildcard]; init = true; label = "Display _wildcards in patterns" };
-    { opts = [synth]; init = true; label = "Do not display synthesi_zable return types" };
-    (* in goals, not terms *)
-    { opts = [unfocused]; init = false; label = "Display unfocused _goals" }
-  ]
+  type bool_descr = { opts : t; init : bool; label : string }
+
+  let default_bool_items = List.map
+                             (fun { opts0; init0; label0 } ->
+                               { opts = opts0; init = init0.defaults; label = label0 })
+                             items_specs
+
+  (* map from labels to option names *)
+  let label_options_tbl = Hashtbl.create 29
+  let _ = List.iter
+            (fun spec -> Hashtbl.add label_options_tbl spec.label0 spec.opts0)
+            items_specs
+
+  (* sets of options to set "on" for Printing Defaults/All/Sugared *)
+  let default_opts = Hashtbl.create 13
+  let _ = List.iter
+            (fun spec ->
+              if spec.init0.defaults then Hashtbl.add default_opts spec.opts0 ())
+            items_specs
+
+  let all_opts = Hashtbl.create 13
+  let _ = List.iter
+            (fun spec ->
+              if spec.init0.all then Hashtbl.add all_opts spec.opts0 ())
+            items_specs
+
+  let sugared_opts = Hashtbl.create 13
+  let _ = List.iter
+            (fun spec ->
+              if not spec.init0.all then Hashtbl.add sugared_opts spec.opts0 ())
+            items_specs
 
   (** The current status of the boolean options *)
 
   let current_state = Hashtbl.create 11
 
   let set opt v = Hashtbl.replace current_state opt v
+  let get opt =
+    try
+      Hashtbl.find current_state opt
+    with Not_found ->
+      CErrors.anomaly
+        (Pp.str ("Could not find current state for option: " ^ (String.concat " " opt)))
 
   let reset () =
-    let init_descr d = List.iter (fun o -> set o d.init) d.opts in
-    List.iter init_descr bool_items
+    let init_descr d = set d.opts d.init  in
+    List.iter init_descr default_bool_items
 
   let _ = reset ()
 

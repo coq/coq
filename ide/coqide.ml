@@ -594,9 +594,9 @@ end
 let tactic_wizard_callback l _ =
   send_to_coq (fun sn -> sn.coqops#tactic_wizard l)
 
-let printopts_callback opts v =
+let printopts_callback opt v =
   let b = v#get_active in
-  let () = List.iter (fun o -> Coq.PrintOpt.set o b) opts in
+  let _ = Coq.PrintOpt.set opt b in
   send_to_coq (fun sn -> sn.coqops#show_goals)
 
 (** Templates menu *)
@@ -1016,6 +1016,24 @@ let build_ui () =
         reset_revert_timer ());
   ];
 
+  (** Callbacks for menu items corresponding to Printing All/Sugared/Defaults *)
+  let mk_cb opt_tbl menu _ =
+    let actions = menu#list_actions in
+    List.iter
+      (fun act ->
+        try
+          (* find option corresponding to menu label *)
+          let opt = Hashtbl.find Opt.label_options_tbl act#label in
+          (* toggle option if current value doesn't match Printing All *)
+          if Hashtbl.mem opt_tbl opt <> Opt.get opt then act#activate ()
+        with Not_found -> ())
+      actions
+  in
+
+  let defaults_cb = mk_cb Opt.default_opts in
+  let all_cb = mk_cb Opt.all_opts in
+  let sugared_cb = mk_cb Opt.sugared_opts in
+
   menu view_menu [
     item "View" ~label:"_View";
     item "Previous tab" ~label:"_Previous tab" ~accel:"<Alt>Left"
@@ -1043,9 +1061,15 @@ let build_ui () =
       ~callback:(fun _ -> show_toolbar#set (not show_toolbar#get));
     item "Query Pane" ~label:"_Query Pane"
       ~accel:"F1"
-      ~callback:(cb_on_current_term MiscMenu.show_hide_query_pane)
+      ~callback:(cb_on_current_term MiscMenu.show_hide_query_pane);
+    item "Display all low-level contents" ~label:"Display all _low-level contents"
+      ~callback:(cb_on_current_term (all_cb view_menu));
+    item "Display no low-level contents" ~label:"Display n_o low-level contents"
+      ~callback:(cb_on_current_term (sugared_cb view_menu));
+    item "Display default low-level contents" ~label:"Display defaul_t low-level contents"
+      ~callback:(cb_on_current_term (defaults_cb view_menu));
   ];
-  toggle_items view_menu Coq.PrintOpt.bool_items;
+  toggle_items view_menu Opt.default_bool_items;
 
   let navitem (text, label, stock, callback, tooltip, accel) =
     let accel = modifier_for_navigation#get ^ accel in
