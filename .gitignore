@@ -47,6 +47,7 @@ revision
 TAGS
 .DS_Store
 .pc
+.dir-locals.el
 bin/
 _build_ci
 _build
