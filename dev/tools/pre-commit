@@ -18,6 +18,7 @@ then
     1>&2 echo "Patches are saved in '$index', '$fixed_index' and '$tree'."
     1>&2 echo "If an error destroys your changes you can recover using them."
     1>&2 echo "(The files are cleaned up on success.)"
+    1>&2 echo #newline
 
     git diff-index -p --cached HEAD > "$index"
     git diff-index -p HEAD > "$tree"
@@ -29,10 +30,12 @@ then
 
     # Fix index
     # For end of file newlines we must go through the worktree
+    1>&2 echo "Fixing staged changes..."
     git apply --cached --whitespace=fix "$index"
-    git apply --whitespace=fix "$index"
+    git apply --whitespace=fix "$index" 2>/dev/null # no need to repeat yourself
     git diff --cached --name-only -z | xargs -0 dev/tools/check-eof-newline.sh --fix
     git add -u
+    1>&2 echo #newline
 
     # reset work tree
     git diff-index -p --cached HEAD > "$fixed_index"
@@ -44,8 +47,10 @@ then
     fi
 
     # Fix worktree
+    1>&2 echo "Fixing unstaged changes..."
     git apply --whitespace=fix "$tree"
     git diff --name-only -z | xargs -0 dev/tools/check-eof-newline.sh --fix
+    1>&2 echo #newline
 
     if ! [ -s "$fixed_index" ]
     then
