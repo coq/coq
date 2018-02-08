@@ -36,11 +36,22 @@ then
 
     # reset work tree
     git diff-index -p --cached HEAD > "$fixed_index"
-    git apply -R "$fixed_index"
+    # If all changes were bad whitespace changes the patch is empty
+    # making git fail. Don't fail now: we fix the worktree first.
+    if [ -s "$fixed_index" ]
+    then
+        git apply -R "$fixed_index"
+    fi
 
     # Fix worktree
     git apply --whitespace=fix "$tree"
     git diff --name-only -z | xargs -0 dev/tools/check-eof-newline.sh --fix
+
+    if ! [ -s "$fixed_index" ]
+    then
+        1>&2 echo "No changes after fixing whitespace issues!"
+        exit 1
+    fi
 
     # Check that we did fix whitespace
     if ! git diff-index --check --cached HEAD;
