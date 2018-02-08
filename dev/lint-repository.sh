@@ -14,7 +14,7 @@ then
     # skip PRs from before the linter existed
     if [ -z "$(git ls-tree --name-only "${TRAVIS_PULL_REQUEST_SHA}" dev/lint-commits.sh)" ];
     then
-        2>&1 echo "Linting skipped: pull request older than the linter."
+        1>&2 echo "Linting skipped: pull request older than the linter."
         exit 0
     fi
 
