@@ -322,10 +322,6 @@ let pr_pattern t = pr_pattern_env (Global.env()) empty_names_context t*)
 
 (* Flag for compact display of goals *)
 
-let get_compact_context,set_compact_context =
-  let compact_context = ref false in
-  (fun () -> !compact_context),(fun b  -> compact_context := b)
-
 let pr_compacted_decl env sigma decl =
   let ids, pbody, typ = match decl with
     | CompactedDecl.LocalAssum (ids, typ) ->
@@ -410,7 +406,7 @@ let pr_ne_context_of header env sigma =
 (* Heuristic for horizontalizing hypothesis that the user probably
    considers as "variables": An hypothesis H:T where T:S and S<>Prop. *)
 let should_compact env sigma typ =
-  get_compact_context() &&
+  Printoptions.printing_compact_contexts () &&
     let type_of_typ = Retyping.get_type_of env sigma (EConstr.of_constr typ) in
     not (is_Prop (EConstr.to_constr sigma type_of_typ))
 

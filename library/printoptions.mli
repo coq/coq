@@ -29,9 +29,9 @@ val get_current_options : unit -> t
 val set_current_options : t -> unit
 
 (** getter/setters for Printing options *)
-val set_printing_all : unit -> unit
-val set_printing_sugared : unit -> unit
-val set_printing_defaults : unit -> unit
+val set_printing_all : local:bool -> unit
+val set_printing_sugared : local:bool -> unit
+val set_printing_defaults : local:bool -> unit
 
 (** getters for print options *)
 val printing_allow_match_default_clause : unit -> bool

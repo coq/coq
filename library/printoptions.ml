@@ -82,9 +82,67 @@ let current_options = Summary.ref ~name:"printing options" default_options
 let get_current_options () = !current_options
 let set_current_options opts = current_options := opts
 
-let set_printing_all () = current_options := all_options
-let set_printing_sugared () = current_options := sugared_options
-let set_printing_defaults () = current_options := default_options
+(* given a print options record, get list of option names and their values,
+   used when setting options locally
+   somewhat redundant with the option declarations, so a bit fragile
+ *)
+let options_by_name_value opts =
+  [ (["Printing";"Allow";"Match";"Default";"Clause"],opts.printing_allow_match_default_clause);
+    (["Printing";"Coercions"],opts.printing_coercions);
+    (["Printing";"Compact";"Contexts"],opts.printing_compact_contexts);
+    (["Printing";"Existential";"Instances"],opts.printing_existential_instances);
+    (["Printing";"Factorizable";"Match";"Patterns"],opts.printing_factorizable_match_patterns);
+    (["Printing";"Implicit"],opts.printing_implicit);
+    (["Printing";"Implicit";"Defensive"],opts.printing_implicit_defensive);
+    (["Printing";"Matching"],opts.printing_matching);
+    (["Printing";"Notations"],opts.printing_notations);
+    (["Printing";"Primitive";"Projection";"Compatibility"],opts.printing_primitive_projection_compatibility);
+    (["Printing";"Primitive";"Projection";"Parameters"],opts.printing_primitive_projection_parameters);
+    (["Printing";"Projections"],opts.printing_projections);
+    (["Printing";"Records"],opts.printing_records);
+    (["Printing";"Synth"],opts.printing_synth);
+    (["Printing";"Universes"],opts.printing_universes);
+    (["Printing";"Wildcard"],opts.printing_wildcard);
+  ]
+
+let all_names_values = options_by_name_value all_options
+let sugared_names_values = options_by_name_value sugared_options
+let default_names_values = options_by_name_value default_options
+
+let mk_printing_local opts_vals =
+  List.iter
+    (fun (opt,b) ->
+      Goptions.set_bool_option_value_gen
+        (Some true) (* local *)
+        opt b)
+    opts_vals
+
+let set_printing_all_global () = current_options := all_options
+let set_printing_all_local () = mk_printing_local all_names_values
+
+let set_printing_all ~local =
+  if local then
+    set_printing_all_local ()
+  else
+    set_printing_all_global ()
+
+let set_printing_sugared_global () = current_options := sugared_options
+let set_printing_sugared_local () = mk_printing_local sugared_names_values
+
+let set_printing_sugared ~local =
+  if local then
+    set_printing_sugared_local ()
+  else
+    set_printing_sugared_global ()
+
+let set_printing_defaults_global () = current_options := default_options
+let set_printing_defaults_local () = mk_printing_local default_names_values
+
+let set_printing_defaults ~local =
+  if local then
+    set_printing_defaults_local ()
+  else
+    set_printing_defaults_global ()
 
 let printing_all () = (!current_options = all_options)
 

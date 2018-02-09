@@ -1,0 +1,132 @@
+foo = @id Set nat
+     : Set
+foo = id nat
+     : Set
+The possible use of "match" default pattern in printing mode is on
+The coercion printing mode is off
+The display compact goal contexts mode is off
+The printing of existential variable instances mode is off
+The factorization of "match" patterns in printing mode is on
+The implicit arguments printing mode is off
+The implicit arguments defensive printing mode is on
+The pattern-matching reversibility mode is on
+The notations printing mode is on
+The backwards-compatible printing of primitive projections mode is off
+The printing of primitive projection parameters mode is off
+The projection printing using dot notation mode is off
+The record printing mode is on
+The pattern matching return type synthesizability mode is on
+The printing of universes mode is off
+The forced wildcard mode is on
+The possible use of "match" default pattern in printing mode is off
+The coercion printing mode is on
+The display compact goal contexts mode is on
+The printing of existential variable instances mode is on
+The factorization of "match" patterns in printing mode is off
+The implicit arguments printing mode is on
+The implicit arguments defensive printing mode is on
+The pattern-matching reversibility mode is off
+The notations printing mode is off
+The backwards-compatible printing of primitive projections mode is on
+The printing of primitive projection parameters mode is on
+The projection printing using dot notation mode is off
+The record printing mode is off
+The pattern matching return type synthesizability mode is off
+The printing of universes mode is on
+The forced wildcard mode is off
+The possible use of "match" default pattern in printing mode is on
+The coercion printing mode is off
+The display compact goal contexts mode is off
+The printing of existential variable instances mode is off
+The factorization of "match" patterns in printing mode is on
+The implicit arguments printing mode is off
+The implicit arguments defensive printing mode is on
+The pattern-matching reversibility mode is on
+The notations printing mode is on
+The backwards-compatible printing of primitive projections mode is off
+The printing of primitive projection parameters mode is off
+The projection printing using dot notation mode is off
+The record printing mode is on
+The pattern matching return type synthesizability mode is on
+The printing of universes mode is off
+The forced wildcard mode is on
+The possible use of "match" default pattern in printing mode is on
+The coercion printing mode is off
+The display compact goal contexts mode is off
+The printing of existential variable instances mode is off
+The factorization of "match" patterns in printing mode is on
+The implicit arguments printing mode is off
+The implicit arguments defensive printing mode is off
+The pattern-matching reversibility mode is on
+The notations printing mode is on
+The backwards-compatible printing of primitive projections mode is off
+The printing of primitive projection parameters mode is off
+The projection printing using dot notation mode is on
+The record printing mode is on
+The pattern matching return type synthesizability mode is on
+The printing of universes mode is off
+The forced wildcard mode is on
+The possible use of "match" default pattern in printing mode is on
+The coercion printing mode is off
+The display compact goal contexts mode is off
+The printing of existential variable instances mode is off
+The factorization of "match" patterns in printing mode is on
+The implicit arguments printing mode is off
+The implicit arguments defensive printing mode is on
+The pattern-matching reversibility mode is on
+The notations printing mode is on
+The backwards-compatible printing of primitive projections mode is off
+The printing of primitive projection parameters mode is off
+The projection printing using dot notation mode is off
+The record printing mode is on
+The pattern matching return type synthesizability mode is on
+The printing of universes mode is off
+The forced wildcard mode is on
+The possible use of "match" default pattern in printing mode is off
+The coercion printing mode is on
+The display compact goal contexts mode is on
+The printing of existential variable instances mode is on
+The factorization of "match" patterns in printing mode is off
+The implicit arguments printing mode is on
+The implicit arguments defensive printing mode is on
+The pattern-matching reversibility mode is off
+The notations printing mode is off
+The backwards-compatible printing of primitive projections mode is on
+The printing of primitive projection parameters mode is on
+The projection printing using dot notation mode is off
+The record printing mode is off
+The pattern matching return type synthesizability mode is off
+The printing of universes mode is on
+The forced wildcard mode is off
+The possible use of "match" default pattern in printing mode is on
+The coercion printing mode is off
+The display compact goal contexts mode is off
+The printing of existential variable instances mode is off
+The factorization of "match" patterns in printing mode is on
+The implicit arguments printing mode is off
+The implicit arguments defensive printing mode is on
+The pattern-matching reversibility mode is on
+The notations printing mode is on
+The backwards-compatible printing of primitive projections mode is off
+The printing of primitive projection parameters mode is off
+The projection printing using dot notation mode is off
+The record printing mode is on
+The pattern matching return type synthesizability mode is on
+The printing of universes mode is off
+The forced wildcard mode is on
+The possible use of "match" default pattern in printing mode is off
+The coercion printing mode is on
+The display compact goal contexts mode is on
+The printing of existential variable instances mode is on
+The factorization of "match" patterns in printing mode is off
+The implicit arguments printing mode is on
+The implicit arguments defensive printing mode is on
+The pattern-matching reversibility mode is off
+The notations printing mode is off
+The backwards-compatible printing of primitive projections mode is on
+The printing of primitive projection parameters mode is on
+The projection printing using dot notation mode is off
+The record printing mode is off
+The pattern matching return type synthesizability mode is off
+The printing of universes mode is on
+The forced wildcard mode is off

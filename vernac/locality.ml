@@ -11,7 +11,6 @@
 open Decl_kinds
 
 (** * Managing locality *)
-
 let local_of_bool = function
   | true -> Local
   | false -> Global

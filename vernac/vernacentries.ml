@@ -1449,8 +1449,9 @@ let _ =
     { optdepr  = false;
       optname  = "display compact goal contexts";
       optkey   = ["Printing";"Compact";"Contexts"];
-      optread  = (fun () -> Printer.get_compact_context());
-      optwrite = (fun b -> Printer.set_compact_context b) }
+      optread  = Printoptions.printing_compact_contexts;
+      optwrite = Printoptions.set_printing_compact_contexts;
+    }
 
 let _ =
   declare_int_option
@@ -2104,9 +2105,12 @@ let interp ?proof ~atts ~st c =
   | VernacChdir s -> vernac_chdir s
 
   (* Printing categories *)
-  | VernacSetPrintingAll -> Printoptions.set_printing_all ()
-  | VernacSetPrintingSugared -> Printoptions.set_printing_sugared ()
-  | VernacSetPrintingDefaults -> Printoptions.set_printing_defaults ()
+  | VernacSetPrintingAll ->
+     Printoptions.set_printing_all ~local:(Locality.make_locality atts.locality)
+  | VernacSetPrintingSugared ->
+     Printoptions.set_printing_sugared ~local:(Locality.make_locality atts.locality)
+  | VernacSetPrintingDefaults ->
+     Printoptions.set_printing_defaults ~local:(Locality.make_locality atts.locality)
   | VernacUnsetPrintingAll -> unset_printing_all_deprecated ()
 
   (* State management *)
@@ -2195,7 +2199,8 @@ let check_vernac_supports_locality c l =
     | VernacSetOption _ | VernacUnsetOption _
     | VernacDeclareReduction _
     | VernacExtend _ 
-    | VernacInductive _) -> ()
+    | VernacInductive _
+    | VernacSetPrintingAll | VernacSetPrintingSugared | VernacSetPrintingDefaults ) -> ()
   | Some _, _ -> user_err Pp.(str "This command does not support Locality")
 
 (* Vernaculars that take a polymorphism flag *)
