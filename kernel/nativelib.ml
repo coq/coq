@@ -150,9 +150,8 @@ let call_linker ?(fatal=true) prefix f upds =
     register_native_file prefix
    with Dynlink.Error e as exn ->
      let exn = CErrors.push exn in
-     let msg = "Dynlink error, " ^ Dynlink.error_message e in
-     if fatal then (Feedback.msg_error (Pp.str msg); iraise exn)
-     else if !Flags.debug then Feedback.msg_debug (Pp.str msg));
+     if fatal then iraise exn
+     else if !Flags.debug then Feedback.msg_debug CErrors.(iprint exn));
   match upds with Some upds -> update_locations upds | _ -> ()
 
 let link_library ~prefix ~dirname ~basename =
