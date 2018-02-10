@@ -267,63 +267,17 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
     cmp_rec (pure_stack lft1 stk1) (pure_stack lft2 stk2) cuniv
   else raise NotConvertible
 
-let rec no_arg_available = function
-  | [] -> true
-  | Zupdate _ :: stk -> no_arg_available stk
-  | Zshift _ :: stk -> no_arg_available stk
-  | Zapp v :: stk -> Int.equal (Array.length v) 0 && no_arg_available stk
-  | Zproj _ :: _ -> true
-  | ZcaseT _ :: _ -> true
-  | Zfix _ :: _ -> true
-
-let rec no_nth_arg_available n = function
-  | [] -> true
-  | Zupdate _ :: stk -> no_nth_arg_available n stk
-  | Zshift _ :: stk -> no_nth_arg_available n stk
-  | Zapp v :: stk ->
-      let k = Array.length v in
-      if n >= k then no_nth_arg_available (n-k) stk
-      else false
-  | Zproj _ :: _ -> true
-  | ZcaseT _ :: _ -> true
-  | Zfix _ :: _ -> true
-
-let rec no_case_available = function
-  | [] -> true
-  | Zupdate _ :: stk -> no_case_available stk
-  | Zshift _ :: stk -> no_case_available stk
-  | Zapp _ :: stk -> no_case_available stk
-  | Zproj (_,_,p) :: _ -> false
-  | ZcaseT _ :: _ -> false
-  | Zfix _ :: _ -> true
-
-let in_whnf (t,stk) =
-  match fterm_of t with
-    | (FLetIn _ | FCaseT _ | FApp _ 
-	  | FCLOS _ | FLIFT _ | FCast _) -> false
-    | FLambda _ -> no_arg_available stk
-    | FConstruct _ -> no_case_available stk
-    | FCoFix _ -> no_case_available stk
-    | FFix(((ri,n),(_,_,_)),_) -> no_nth_arg_available ri.(n) stk
-    | (FFlex _ | FProd _ | FEvar _ | FInd _ | FAtom _ | FRel _ | FProj _) -> true
-    | FLOCKED -> assert false
-
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
   eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
 
 (* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
-and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
+and eqappr cv_pb l2r infos (lft1,(hd1,v1)) (lft2,(hd2,v2)) cuniv =
   Control.check_for_interrupt ();
   (* First head reduce both terms *)
   let whd = whd_stack (infos_with_reds infos betaiotazeta) in
-  let rec whd_both (t1,stk1) (t2,stk2) =
-    let st1' = whd t1 stk1 in
-    let st2' = whd t2 stk2 in
-    (* Now, whd_stack on term2 might have modified st1 (due to sharing),
-       and st1 might not be in whnf anymore. If so, we iterate ccnv. *)
-    if in_whnf st1' then (st1',st2') else whd_both st1' st2' in
-  let ((hd1,v1),(hd2,v2)) = whd_both st1 st2 in
+  let hd1, v1 = whd hd1 v1 in
+  let hd2, v2 = whd hd2 v2 in
   let appr1 = (lft1,(hd1,v1)) and appr2 = (lft2,(hd2,v2)) in
   (* compute the lifts that apply to the head of the term (hd1 and hd2) *)
   let el1 = el_stack lft1 v1 in
