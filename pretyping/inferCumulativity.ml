@@ -184,6 +184,8 @@ let infer_arity_constructor env variances arcn is_arity params =
   let arcn' = Term.it_mkProd_or_LetIn arcn params in
   let typs, codom = Reduction.dest_prod env arcn' in
   let env, variances = Context.Rel.fold_outside infer_typ typs ~init:(env, variances) in
+  (* If we have Inductive foo@{i j} : ... -> Type@{i} := C : ... -> foo Type@{j}
+     i is irrelevant, j is invariant. *)
   if not is_arity then basic_check env variances codom else variances
 
 let infer_inductive env mie =
