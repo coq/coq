@@ -983,7 +983,7 @@ let check_one_fix renv recpos trees def =
         | (Ind _ | Construct _) ->
             List.iter (check_rec_call renv []) l
 
-	| Proj (p, c) ->
+        | Proj (p, _, c) ->
             List.iter (check_rec_call renv []) l;
             check_rec_call renv [] c
 

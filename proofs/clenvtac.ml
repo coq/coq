@@ -29,7 +29,7 @@ let clenv_cast_meta clenv =
     match EConstr.kind clenv.evd u with
       | App _ | Case _ -> crec_hd u
       | Cast (c,_,_) when isMeta clenv.evd c -> u
-      | Proj (p, c) -> mkProj (p, crec_hd c)
+      | Proj (p, unf, c) -> mkProj (p, unf, crec_hd c)
       | _  -> EConstr.map clenv.evd crec u
 
   and crec_hd u =
@@ -44,7 +44,7 @@ let clenv_cast_meta clenv =
       | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
       | Case(ci,p,c,br) ->
 	  mkCase (ci, crec_hd p, crec_hd c, Array.map crec br)
-      | Proj (p, c) -> mkProj (p, crec_hd c)
+      | Proj (p, unf, c) -> mkProj (p, unf, crec_hd c)
       | _ -> u
   in
   crec

@@ -101,7 +101,7 @@ let print_pure_constr csr =
 	  print_cut();
         done
       in print_string"{"; print_fix (); print_string"}"
-  | Proj (p, c) ->
+  | Proj (p, _, c) ->
     print_string "Proj("; sp_con_display (Projection.constant p); print_string ","; 
     box_display c; print_string ")"
 

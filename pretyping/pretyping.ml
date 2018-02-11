@@ -737,10 +737,10 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     let j = pretype_sort ?loc evdref s in
       inh_conv_coerce_to_tycon ?loc env evdref j tycon
 
-  | GProj (p, c) ->
+  | GProj (p, unf, c) ->
     (* TODO: once GProj is used as an input syntax, use bidirectional typing here *)
     let cj = pretype empty_tycon env evdref lvar c in
-    judge_of_projection env.ExtraEnv.env !evdref p cj
+    judge_of_projection env.ExtraEnv.env !evdref p unf cj
 
   | GApp (f,args) ->
     let fj = pretype empty_tycon env evdref lvar f in
@@ -769,11 +769,11 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     let app_f = 
       match EConstr.kind !evdref fj.uj_val with
       | Const (p, u) when Environ.is_projection p env.ExtraEnv.env ->
-	let p = Projection.make p false in
+        let p = Projection.make p in
 	let pb = Environ.lookup_projection p env.ExtraEnv.env in
 	let npars = pb.Declarations.proj_npars in
 	  fun n -> 
-	    if n == npars + 1 then fun _ v -> mkProj (p, v)
+            if n == npars + 1 then fun _ v -> mkProj (p, false, v)
 	    else fun f v -> applist (f, [v])
       | _ -> fun _ f v -> applist (f, [v])
     in
@@ -915,8 +915,8 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	  match names, l with
 	  | na :: names, (LocalAssum (_,t) :: l) ->
             let t = EConstr.of_constr t in
-	    let proj = Projection.make ps.(cs.cs_nargs - k) true in
-	    LocalDef (na, lift (cs.cs_nargs - n) (mkProj (proj, cj.uj_val)), t)
+            let proj = Projection.make ps.(cs.cs_nargs - k) in
+            LocalDef (na, lift (cs.cs_nargs - n) (mkProj (proj, true, cj.uj_val)), t)
 	    :: aux (n+1) (k + 1) names l
 	  | na :: names, (decl :: l) ->
 	    set_name na decl :: aux (n+1) k names l

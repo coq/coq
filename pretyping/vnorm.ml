@@ -260,9 +260,9 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       nf_stk env sigma (mkCase(ci, p, c, branchs)) tcase stk
   | Zproj p :: stk ->
      assert (from = 0) ;
-     let p' = Projection.make p true in
+     let p' = Projection.make p in
      let ty = Inductiveops.type_of_projection_knowing_arg env sigma p' (EConstr.of_constr c) (EConstr.of_constr t) in
-     nf_stk env sigma (mkProj(p',c)) ty stk
+     nf_stk env sigma (mkProj(p',true,c)) ty stk
 
 and nf_predicate env sigma ind mip params v pT =
   match whd_val v, kind pT with

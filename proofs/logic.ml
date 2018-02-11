@@ -288,7 +288,7 @@ let collect_meta_variables c =
     | Meta mv -> if deep then error_unsupported_deep_meta () else mv::acc
     | Cast(c,_,_) -> collrec deep acc c
     | (App _| Case _) -> Constr.fold (collrec deep) acc c
-    | Proj (_, c) -> collrec deep acc c
+    | Proj (_, _, c) -> collrec deep acc c
     | _ -> Constr.fold (collrec true) acc c
   in
   List.rev (collrec false [] c)
@@ -375,9 +375,9 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
         let ans = if applicand == f && args == l then trm else mkApp (applicand, args) in
         (acc'',conclty',sigma, ans)
 
-      | Proj (p,c) ->
+      | Proj (p,unf,c) ->
 	let (acc',cty,sigma,c') = mk_hdgoals sigma goal goalacc c in
-	let c = mkProj (p, c') in
+        let c = mkProj (p, unf, c') in
 	let ty = get_type_of env sigma (EConstr.of_constr c) in
 	let ty = EConstr.Unsafe.to_constr ty in
 	  (acc',ty,sigma,c)
@@ -451,9 +451,9 @@ and mk_hdgoals sigma goal goalacc trm =
 	in
 	(acc'',conclty',sigma, ans)
 
-    | Proj (p,c) ->
+    | Proj (p,unf,c) ->
          let (acc',cty,sigma,c') = mk_hdgoals sigma goal goalacc c in
-	 let c = mkProj (p, c') in
+         let c = mkProj (p, unf, c') in
          let ty = get_type_of env sigma (EConstr.of_constr c) in
          let ty = EConstr.Unsafe.to_constr ty in
 	   (acc',ty,sigma,c)

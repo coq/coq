@@ -273,7 +273,7 @@ let compute_consteval_direct env sigma ref =
 	  with Elimconst -> NotAnElimination)
       | Case (_,_,d,_) when isRel sigma d && not onlyproj -> EliminationCases n
       | Case (_,_,d,_) -> srec env n labs true d
-      | Proj (p, d) when isRel sigma d -> EliminationProj n
+      | Proj (p, _, d) when isRel sigma d -> EliminationProj n
       | _ -> NotAnElimination
   in
   match unsafe_reference_opt_value env sigma ref with
@@ -555,11 +555,11 @@ let match_eval_ref_value env sigma constr stack =
       Some (EConstr.of_constr (constant_value_in env (sp, u)))
     else
       None
-  | Proj (p, c) when not (Projection.unfolded p) ->
+  | Proj (p, unf, c) when not unf ->
      reduction_effect_hook env sigma (EConstr.to_constr sigma constr)
         (lazy (EConstr.to_constr sigma (applist (constr,stack))));
      if is_evaluable env (EvalConstRef (Projection.constant p)) then
-       Some (mkProj (Projection.unfold p, c))
+       Some (mkProj (p, true, c))
      else None
   | Var id when is_evaluable env (EvalVarRef id) -> 
      env |> lookup_named id |> NamedDecl.get_value
@@ -606,7 +606,7 @@ let reduce_projection env sigma pb (recarg'hd,stack') stack =
 let reduce_proj env sigma whfun whfun' c =
   let rec redrec s =
     match EConstr.kind sigma s with
-    | Proj (proj, c) -> 
+    | Proj (proj, unf, c) ->
       let c' = try redrec c with Redelimination -> c in
       let constr, cargs = whfun c' in
 	(match EConstr.kind sigma constr with
@@ -759,10 +759,9 @@ and whd_simpl_stack env sigma =
 	    | NotReducible -> s'
 	  with Redelimination -> s')
 
-      | Proj (p, c) ->
+      | Proj (p, unf, c) ->
         (try 
-	   let unf = Projection.unfolded p in
-	     if unf || is_evaluable env (EvalConstRef (Projection.constant p)) then
+             if unf || is_evaluable env (EvalConstRef (Projection.constant p)) then
 	       let pb = lookup_projection p env in
  		 (match unf, ReductionBehaviour.get (ConstRef (Projection.constant p)) with
  		 | false, Some (l, n, f) when List.mem `ReductionNeverUnfold f -> 
@@ -844,7 +843,7 @@ let try_red_product env sigma c =
 	  mkProd (x, a, redrec (push_rel (LocalAssum (x, a)) env) b)
       | LetIn (x,a,b,t) -> redrec env (Vars.subst1 a t)
       | Case (ci,p,d,lf) -> simpfun (mkCase (ci,p,redrec env d,lf))
-      | Proj (p, c) -> 
+      | Proj (p, unf, c) ->
 	let c' = 
 	  match EConstr.kind sigma c with
 	  | Construct _ -> c
@@ -940,7 +939,7 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
     | Some c ->
       (match EConstr.kind sigma (snd (decompose_lam sigma c)) with
       | CoFix _ | Fix _ -> s'
-      | Proj (p,t) when
+      | Proj (p,unf,t) when
 	  (match EConstr.kind sigma constr with
 	  | Const (c', _) -> Constant.equal (Projection.constant p) c'
 	  | _ -> false) ->
@@ -969,7 +968,7 @@ let simpl env sigma c = strong whd_simpl env sigma c
 let matches_head env sigma c t =
   match EConstr.kind sigma t with
     | App (f,_) -> Constr_matching.matches env sigma c f
-    | Proj (p, _) -> Constr_matching.matches env sigma c (mkConstU (Projection.constant p, EInstance.empty))
+    | Proj (p, _, _) -> Constr_matching.matches env sigma c (mkConstU (Projection.constant p, EInstance.empty))
     | _ -> raise Constr_matching.PatternMatchingFailure
 
 (** FIXME: Specific function to handle projections: it ignores what happens on the
@@ -978,7 +977,7 @@ let matches_head env sigma c t =
 *)
 let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c = 
   match EConstr.kind sigma c with
-  | Proj (p, r) -> (* Treat specially for partial applications *)
+  | Proj (p, unf, r) -> (* Treat specially for partial applications *)
     let t = Retyping.expand_projection env sigma p r [] in
     let hdf, al = destApp sigma t in
     let a = al.(Array.length al - 1) in
@@ -988,7 +987,7 @@ let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c =
       (match EConstr.kind sigma app' with
       | App (hdf', al') when hdf' == hdf ->
         (* Still the same projection, we ignore the change in parameters *)
-	mkProj (p, a')
+        mkProj (p, unf, a')
       | _ -> mkApp (app', [| a' |]))
   | _ -> map_constr_with_binders_left_to_right sigma g f acc c
 
@@ -1027,7 +1026,7 @@ let e_contextually byhead (occs,c) f = begin fun env sigma t ->
        application with same head *)
     match EConstr.kind !evd t with
     | App (f,l) when byhead -> mkApp (f, Array.map_left (traverse nested envc) l)
-    | Proj (p,c) when byhead -> mkProj (p,traverse nested envc c)
+    | Proj (p,unf,c) when byhead -> mkProj (p,unf,traverse nested envc c)
     | _ ->
         change_map_constr_with_binders_left_to_right
           (fun d (env,c) -> (push_rel d env,lift_pattern 1 c))

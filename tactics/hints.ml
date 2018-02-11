@@ -52,7 +52,7 @@ let head_constr_bound sigma t =
   | Ind (i, _) -> IndRef i
   | Construct (c, _) -> ConstructRef c
   | Var id -> VarRef id
-  | Proj (p, _) -> ConstRef (Projection.constant p)
+  | Proj (p, _, _) -> ConstRef (Projection.constant p)
   | _ -> raise Bound
 
 let head_constr sigma c =
@@ -69,7 +69,7 @@ let decompose_app_bound sigma t =
     | Ind (i,u) -> IndRef i, args
     | Construct (c,u) -> ConstructRef c, args
     | Var id -> VarRef id, args
-    | Proj (p, c) -> ConstRef (Projection.constant p), Array.cons c args
+    | Proj (p, _, c) -> ConstRef (Projection.constant p), Array.cons c args
     | _ -> raise Bound
 
 (** Compute the set of section variables that remain in the named context.
@@ -279,7 +279,7 @@ let strip_params env sigma c =
 	| Some pb -> 
 	  let n = pb.Declarations.proj_npars in
 	    if Array.length args > n then
-	      mkApp (mkProj (Projection.make p false, args.(n)), 
+              mkApp (mkProj (Projection.make p, false, args.(n)),
 		     Array.sub args (n+1) (Array.length args - (n + 1)))
 	    else c
 	| None -> c)
@@ -541,7 +541,7 @@ struct
       | Case (_,_,c,_) -> hrec c
       | App (c,_)      -> hrec c
       | Cast (c,_,_)   -> hrec c
-      | Proj (p, c)    -> hrec c
+      | Proj (p, _, c)    -> hrec c
       | _              -> raise Evarutil.NoHeadEvar
     in
     hrec c

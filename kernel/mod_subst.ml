@@ -342,7 +342,7 @@ let rec map_kn f f' c =
   let func = map_kn f f' in
     match kind c with
       | Const kn -> (try snd (f' kn) with No_subst -> c)
-      | Proj (p,t) -> 
+      | Proj (p,unf,t) ->
           let p' = 
 	    try
 	      Projection.map (fun kn -> fst (f' (kn,Univ.Instance.empty))) p
@@ -350,7 +350,7 @@ let rec map_kn f f' c =
 	  in
 	  let t' = func t in
 	    if p' == p && t' == t then c
-	    else mkProj (p', t')
+            else mkProj (p', unf, t')
       | Ind ((kn,i),u) ->
 	  let kn' = f kn in
 	  if kn'==kn then c else mkIndU ((kn',i),u)

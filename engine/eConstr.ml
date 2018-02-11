@@ -177,7 +177,7 @@ let mkConstructUi ((ind,u),i) = of_kind (Construct ((ind,i),u))
 let mkCase (ci, c, r, p) = of_kind (Case (ci, c, r, p))
 let mkFix f = of_kind (Fix f)
 let mkCoFix f = of_kind (CoFix f)
-let mkProj (p, c) = of_kind (Proj (p, c))
+let mkProj (p, unf, c) = of_kind (Proj (p, unf, c))
 let mkArrow t1 t2 = of_kind (Prod (Anonymous, t1, t2))
 
 let applist (f, arg) = mkApp (f, Array.of_list arg)
@@ -269,7 +269,7 @@ let destCase sigma c = match kind sigma c with
 | _ -> raise DestKO
 
 let destProj sigma c = match kind sigma c with
-| Proj (p, c) -> (p, c)
+| Proj (p, unf, c) -> (p, unf, c)
 | _ -> raise DestKO
 
 let decompose_app sigma c =
@@ -411,10 +411,10 @@ let map sigma f c = match kind sigma c with
       let l' = Array.smartmap f l in
       if b'==b && l'==l then c
       else mkApp (b', l')
-  | Proj (p,t) ->
+  | Proj (p,unf,t) ->
       let t' = f t in
       if t' == t then c
-      else mkProj (p, t')
+      else mkProj (p, unf, t')
   | Evar (e,l) ->
       let l' = Array.smartmap f l in
       if l'==l then c
@@ -465,10 +465,10 @@ let map_with_binders sigma g f l c0 = match kind sigma c0 with
     let al' = CArray.Fun1.smartmap f l al in
     if c' == c && al' == al then c0
     else mkApp (c', al')
-  | Proj (p, t) ->
+  | Proj (p, unf, t) ->
     let t' = f l t in
     if t' == t then c0
-    else mkProj (p, t')
+    else mkProj (p, unf, t')
   | Evar (e, al) ->
     let al' = CArray.Fun1.smartmap f l al in
     if al' == al then c0
@@ -499,7 +499,7 @@ let iter sigma f c = match kind sigma c with
   | Lambda (_,t,c) -> f t; f c
   | LetIn (_,b,t,c) -> f b; f t; f c
   | App (c,l) -> f c; Array.iter f l
-  | Proj (p,c) -> f c
+  | Proj (p,_,c) -> f c
   | Evar (_,l) -> Array.iter f l
   | Case (_,p,c,bl) -> f p; f c; Array.iter f bl
   | Fix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
@@ -517,7 +517,7 @@ let iter_with_full_binders sigma g f n c =
   | App (c,l) -> f n c; CArray.Fun1.iter f n l
   | Evar (_,l) -> CArray.Fun1.iter f n l
   | Case (_,p,c,bl) -> f n p; f n c; CArray.Fun1.iter f n bl
-  | Proj (p,c) -> f n c
+  | Proj (p,_,c) -> f n c
   | Fix (_,(lna,tl,bl)) ->
     Array.iter (f n) tl;
     let n' = Array.fold_left2 (fun n na t -> g (LocalAssum (na,t)) n) n lna tl in
@@ -538,7 +538,7 @@ let fold sigma f acc c = match kind sigma c with
   | Lambda (_,t,c) -> f (f acc t) c
   | LetIn (_,b,t,c) -> f (f (f acc b) t) c
   | App (c,l) -> Array.fold_left f (f acc c) l
-  | Proj (p,c) -> f acc c
+  | Proj (p,_,c) -> f acc c
   | Evar (_,l) -> Array.fold_left f acc l
   | Case (_,p,c,bl) -> Array.fold_left f (f (f acc p) c) bl
   | Fix (_,(lna,tl,bl)) ->
@@ -615,8 +615,8 @@ let leq_constr_universes sigma m n =
 let compare_head_gen_proj env sigma equ eqs eqc' m n =
   let kind c = kind_upto sigma c in
   match kind_upto sigma m, kind_upto sigma n with
-  | Proj (p, c), App (f, args)
-  | App (f, args), Proj (p, c) -> 
+  | Proj (p, _, c), App (f, args)
+  | App (f, args), Proj (p, _, c) ->
       (match kind_upto sigma f with
       | Const (p', u) when Constant.equal (Projection.constant p) p' -> 
           let pb = Environ.lookup_projection p env in

@@ -99,7 +99,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
   | FFlex fl ->
     let variances = infer_table_key infos variances fl in
     infer_stack infos variances stk
-  | FProj (_,c) ->
+  | FProj (_,_,c) ->
     let variances = infer_fterm CONV infos variances c [] in
     infer_stack infos variances stk
   | FLambda _ ->

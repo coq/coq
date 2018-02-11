@@ -98,7 +98,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
-  | Proj      of projection * 'constr
+  | Proj      of projection * bool * 'constr
 (* constr is the fixpoint of the previous type. Requires option
    -rectypes of the Caml compiler to be set *)
 type t = (t, t, Sorts.t, Instance.t) kind_of_term
@@ -173,7 +173,7 @@ let mkConst c = Const (in_punivs c)
 let mkConstU c = Const c
 
 (* Constructs an applied projection *)
-let mkProj (p,c) = Proj (p,c)
+let mkProj (p,unf,c) = Proj (p,unf,c)
 
 (* Constructs an existential variable *)
 let mkEvar e = Evar e
@@ -385,7 +385,7 @@ let destCase c = match kind c with
   | _ -> raise DestKO
 
 let destProj c = match kind c with
-  | Proj (p, c) -> (p, c)
+  | Proj (p, unf, c) -> (p, unf, c)
   | _ -> raise DestKO
 
 let destFix c = match kind c with
@@ -427,7 +427,7 @@ let fold f acc c = match kind c with
   | Lambda (_,t,c) -> f (f acc t) c
   | LetIn (_,b,t,c) -> f (f (f acc b) t) c
   | App (c,l) -> Array.fold_left f (f acc c) l
-  | Proj (p,c) -> f acc c
+  | Proj (p,_,c) -> f acc c
   | Evar (_,l) -> Array.fold_left f acc l
   | Case (_,p,c,bl) -> Array.fold_left f (f (f acc p) c) bl
   | Fix (_,(lna,tl,bl)) ->
@@ -447,7 +447,7 @@ let iter f c = match kind c with
   | Lambda (_,t,c) -> f t; f c
   | LetIn (_,b,t,c) -> f b; f t; f c
   | App (c,l) -> f c; Array.iter f l
-  | Proj (p,c) -> f c
+  | Proj (p,_,c) -> f c
   | Evar (_,l) -> Array.iter f l
   | Case (_,p,c,bl) -> f p; f c; Array.iter f bl
   | Fix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
@@ -469,7 +469,7 @@ let iter_with_binders g f n c = match kind c with
   | App (c,l) -> f n c; CArray.Fun1.iter f n l
   | Evar (_,l) -> CArray.Fun1.iter f n l
   | Case (_,p,c,bl) -> f n p; f n c; CArray.Fun1.iter f n bl
-  | Proj (p,c) -> f n c
+  | Proj (p,_,c) -> f n c
   | Fix (_,(_,tl,bl)) ->
       CArray.Fun1.iter f n tl;
       CArray.Fun1.iter f (iterate g (Array.length tl) n) bl
@@ -510,10 +510,10 @@ let map f c = match kind c with
       let l' = Array.smartmap f l in
       if b'==b && l'==l then c
       else mkApp (b', l')
-  | Proj (p,t) ->
+  | Proj (p,unf,t) ->
       let t' = f t in
       if t' == t then c
-      else mkProj (p, t')
+      else mkProj (p, unf, t')
   | Evar (e,l) ->
       let l' = Array.smartmap f l in
       if l'==l then c
@@ -566,10 +566,10 @@ let fold_map f accu c = match kind c with
       let accu, l' = Array.smartfoldmap f accu l in
       if b'==b && l'==l then accu, c
       else accu, mkApp (b', l')
-  | Proj (p,t) ->
+  | Proj (p,unf,t) ->
       let accu, t' = f accu t in
       if t' == t then accu, c
-      else accu, mkProj (p, t')
+      else accu, mkProj (p, unf, t')
   | Evar (e,l) ->
       let accu, l' = Array.smartfoldmap f accu l in
       if l'==l then accu, c
@@ -626,10 +626,10 @@ let map_with_binders g f l c0 = match kind c0 with
     let al' = CArray.Fun1.smartmap f l al in
     if c' == c && al' == al then c0
     else mkApp (c', al')
-  | Proj (p, t) ->
+  | Proj (p, unf, t) ->
     let t' = f l t in
     if t' == t then c0
-    else mkProj (p, t')
+    else mkProj (p, unf, t')
   | Evar (e, al) ->
     let al' = CArray.Fun1.smartmap f l al in
     if al' == al then c0
@@ -680,7 +680,7 @@ let compare_head_gen_leq_with kind1 kind2 eq_universes leq_sorts eq leq t1 t2 =
   | App (c1,l1), App (c2,l2) ->
       Int.equal (Array.length l1) (Array.length l2) &&
         eq c1 c2 && Array.equal_norefl eq l1 l2
-  | Proj (p1,c1), Proj (p2,c2) -> Projection.equal p1 p2 && eq c1 c2
+  | Proj (p1,unf1,c1), Proj (p2,unf2,c2) -> Projection.equal p1 p2 && unf1 == unf2 && eq c1 c2
   | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && Array.equal eq l1 l2
   | Const (c1,u1), Const (c2,u2) -> Constant.equal c1 c2 && eq_universes true u1 u2
   | Ind (c1,u1), Ind (c2,u2) -> eq_ind c1 c2 && eq_universes false u1 u2
@@ -868,7 +868,9 @@ let constr_ord_int f t1 t2 =
         ((Int.compare =? (Array.compare f)) ==? (Array.compare f))
         ln1 ln2 tl1 tl2 bl1 bl2
     | CoFix _, _ -> -1 | _, CoFix _ -> 1
-    | Proj (p1,c1), Proj (p2,c2) -> (Projection.compare =? f) p1 p2 c1 c2
+    | Proj (p1,unf1,c1), Proj (p2,unf2,c2) ->
+      if unf1 == unf2 then if unf1 then 1 else -1
+      else (Projection.compare =? f) p1 p2 c1 c2
 
 let rec compare m n=
   constr_ord_int compare m n
@@ -934,7 +936,7 @@ let hasheq t1 t2 =
     | LetIn (n1,b1,t1,c1), LetIn (n2,b2,t2,c2) ->
       n1 == n2 && b1 == b2 && t1 == t2 && c1 == c2
     | App (c1,l1), App (c2,l2) -> c1 == c2 && array_eqeq l1 l2
-    | Proj (p1,c1), Proj(p2,c2) -> p1 == p2 && c1 == c2
+    | Proj (p1,unf1,c1), Proj(p2,unf2,c2) -> p1 == p2 && unf1 == unf2 && c1 == c2
     | Evar (e1,l1), Evar (e2,l2) -> e1 == e2 && array_eqeq l1 l2
     | Const (c1,u1), Const (c2,u2) -> c1 == c2 && u1 == u2
     | Ind (ind1,u1), Ind (ind2,u2) -> ind1 == ind2 && u1 == u2
@@ -1015,10 +1017,12 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       | Evar (e,l) ->
 	let l, hl = hash_term_array l in
 	(Evar (e,l), combinesmall 8 (combine (Evar.hash e) hl))
-      | Proj (p,c) ->
+      | Proj (p,unf,c) ->
         let c, hc = sh_rec c in
 	let p' = Projection.hcons p in
-	  (Proj (p', c), combinesmall 17 (combine (Projection.SyntacticOrd.hash p') hc))
+        (Proj (p', unf, c),
+         combinesmall 17
+           (combine ((if unf then 0 else 1) + Projection.SyntacticOrd.hash p') hc))
       | Const (c,u) ->
 	let c' = sh_con c in
 	let u', hu = sh_instance u in
@@ -1102,8 +1106,8 @@ let rec hash t =
     | App (Cast(c, _, _),l) -> hash (mkApp (c,l))
     | App (c,l) ->
       combinesmall 7 (combine (hash_term_array l) (hash c))
-    | Proj (p,c) ->
-      combinesmall 17 (combine (Projection.hash p) (hash c))
+    | Proj (p,unf,c) ->
+      combinesmall 17 (combine ((if unf then 0 else 1) + Projection.hash p) (hash c))
     | Evar (e,l) ->
       combinesmall 8 (combine (Evar.hash e) (hash_term_array l))
     | Const (c,u) ->

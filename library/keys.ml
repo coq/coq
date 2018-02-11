@@ -124,7 +124,7 @@ let constr_key kind c =
       | Construct (c,u) -> KGlob (ConstructRef c)
       | Var id -> KGlob (VarRef id)
       | App (f, _) -> aux f
-      | Proj (p, _) -> KGlob (ConstRef (Names.Projection.constant p))
+      | Proj (p, _, _) -> KGlob (ConstRef (Names.Projection.constant p))
       | Cast (p, _, _) -> aux p
       | Lambda _ -> KLam 
       | Prod _ -> KProd

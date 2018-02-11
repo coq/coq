@@ -58,7 +58,7 @@ val judge_of_constant : env -> pconstant -> unsafe_judgment
 
 (** {6 type of an applied projection } *)
 
-val judge_of_projection : env -> Names.projection -> unsafe_judgment -> unsafe_judgment
+val judge_of_projection : env -> Names.projection -> bool -> unsafe_judgment -> unsafe_judgment
 
 (** {6 Type of application. } *)
 val judge_of_apply :

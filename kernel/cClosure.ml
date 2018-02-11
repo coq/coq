@@ -94,7 +94,7 @@ module type RedFlagsSig = sig
   val red_transparent : reds -> transparent_state
   val mkflags : red_kind list -> reds
   val red_set : reds -> red_kind -> bool
-  val red_projection : reds -> projection -> bool
+  val red_projection : reds -> projection -> bool -> bool
 end
 
 module RedFlags = (struct
@@ -190,9 +190,8 @@ module RedFlags = (struct
     | DELTA -> (* Used for Rel/Var defined in context *)
 	incr_cnt red.r_delta delta
 
-  let red_projection red p =
-    if Projection.unfolded p then true
-    else red_set red (fCONST (Projection.constant p))
+  let red_projection red p unf =
+    unf || red_set red (fCONST (Projection.constant p))
 
 end : RedFlagsSig)
 
@@ -360,7 +359,7 @@ and fterm =
   | FInd of pinductive
   | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
-  | FProj of projection * fconstr
+  | FProj of projection * bool * fconstr
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
   | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)
@@ -559,9 +558,9 @@ let mk_clos_deep clos_fun env t =
     | App (f,v) ->
         { norm = Red;
 	  term = FApp (clos_fun env f, CArray.Fun1.map clos_fun env v) }
-    | Proj (p,c) ->
+    | Proj (p,unf,c) ->
 	{ norm = Red;
-	  term = FProj (p, clos_fun env c) }
+          term = FProj (p, unf, clos_fun env c) }
     | Case (ci,p,c,v) ->
         { norm = Red;
 	  term = FCaseT (ci, p, clos_fun env c, v, env) }
@@ -616,8 +615,8 @@ let rec to_constr constr_fun lfts v =
     | FApp (f,ve) ->
 	mkApp (constr_fun lfts f,
 	       CArray.Fun1.map constr_fun lfts ve)
-    | FProj (p,c) ->
-        mkProj (p,constr_fun lfts c)
+    | FProj (p,unf,c) ->
+        mkProj (p,unf,constr_fun lfts c)
 
     | FLambda _ ->
         let (na,ty,bd) = destFLambda mk_clos2 v in
@@ -672,7 +671,7 @@ let rec zip m stk =
         let t = FCaseT(ci, p, m, br, e) in
         zip {norm=neutr m.norm; term=t} s
     | Zproj (i,j,cst) :: s ->
-        zip {norm=neutr m.norm; term=FProj(Projection.make cst true,m)} s
+        zip {norm=neutr m.norm; term=FProj(Projection.make cst, true,m)} s
     | Zfix(fx,par)::s ->
         zip fx (par @ append_stack [|m|] s)
     | Zshift(n)::s ->
@@ -812,7 +811,7 @@ let eta_expand_ind_stack env ind m s (f, s') =
       (** Try to drop the params, might fail on partially applied constructors. *)
       let argss = try_drop_parameters depth pars args in
       let hstack = Array.map (fun p -> { norm = Red; (* right can't be a constructor though *)
-					 term = FProj (Projection.make p true, right) }) projs in
+                                         term = FProj (Projection.make p, true, right) }) projs in
 	argss, [Zapp hstack]
     | _ -> raise Not_found (* disallow eta-exp for non-primitive records *)
 
@@ -850,8 +849,8 @@ let contract_fix_vect fix =
   in
   (subs_cons(Array.init nfix make_body, env), thisbody)
 
-let unfold_projection info p =
-  if red_projection info.i_flags p
+let unfold_projection info p unf =
+  if red_projection info.i_flags p unf
   then
     let open Declarations in
     let pb = lookup_projection p (info_env info) in
@@ -875,8 +874,8 @@ let rec knh info m stk =
              (Some(pars,arg),stk') -> knh info arg (Zfix(m,pars)::stk')
            | (None, stk') -> (m,stk'))
     | FCast(t,_,_) -> knh info t stk
-    | FProj (p,c) ->
-      (match unfold_projection info p with
+    | FProj (p,unf,c) ->
+      (match unfold_projection info p unf with
        | None -> (m, stk)
        | Some s -> knh info c (s :: zupdate m stk))
 
@@ -895,7 +894,7 @@ and knht info e t stk =
     | Fix _ -> knh info (mk_clos2 e t) stk
     | Cast(a,_,_) -> knht info e a stk
     | Rel n -> knh info (clos_rel e n) stk
-    | Proj (p,c) -> knh info (mk_clos2 e t) stk
+    | Proj (p,_,c) -> knh info (mk_clos2 e t) stk
     | (Lambda _|Prod _|Construct _|CoFix _|Ind _|
        LetIn _|Const _|Var _|Evar _|Meta _|Sort _) ->
         (mk_clos2 e t, stk)
@@ -981,7 +980,7 @@ let rec zip_term zfun m stk =
 		       Array.map (fun b -> zfun (mk_clos e b)) br) in
         zip_term zfun t s
     | Zproj(_,_,p)::s ->
-        let t = mkProj (Projection.make p true, m) in
+        let t = mkProj (Projection.make p, true, m) in
 	zip_term zfun t s
     | Zfix(fx,par)::s ->
         let h = mkApp(zip_term zfun (zfun fx) par,[|m|]) in
@@ -1031,8 +1030,8 @@ and norm_head info m =
           mkFix(n,(na, CArray.Fun1.map kl info ftys, CArray.Fun1.map kl info fbds))
       | FEvar((i,args),env) ->
           mkEvar(i, Array.map (fun a -> kl info (mk_clos env a)) args)
-      | FProj (p,c) ->
-          mkProj (p, kl info c)
+      | FProj (p,unf,c) ->
+          mkProj (p, unf, kl info c)
       | FLOCKED | FRel _ | FAtom _ | FCast _ | FFlex _ | FInd _ | FConstruct _
         | FApp _ | FCaseT _ | FLIFT _ | FCLOS _ -> term_of_fconstr m
 

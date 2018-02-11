@@ -200,7 +200,7 @@ let add_free_rels_until strict strongly_strict revpat bound env m pos acc =
     | App (f,_) when rig && is_flexible_reference env bound depth f ->
 	if strict then () else
           iter_constr_with_full_binders push_lift (frec false) ed c
-    | Proj (p,c) when rig ->
+    | Proj (p,_,c) when rig ->
       if strict then () else
         iter_constr_with_full_binders push_lift (frec false) ed c	  
     | Case _ when rig ->
@@ -217,7 +217,7 @@ let rec is_rigid_head t = match kind t with
   | Rel _ | Evar _ -> false
   | Ind _ | Const _ | Var _ | Sort _ -> true
   | Case (_,_,f,_) -> is_rigid_head f
-  | Proj (p,c) -> true
+  | Proj (p,_,c) -> true
   | App (f,args) ->
       (match kind f with
 	| Fix ((fi,i),_) -> is_rigid_head (args.(fi.(i)))

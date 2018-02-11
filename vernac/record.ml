@@ -314,7 +314,7 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
                 let kn = destConstRef gr in
                 Declare.definition_message fid;
                 Universes.register_universe_binders gr ubinders;
-                kn, mkProj (Projection.make kn false,mkRel 1)
+                kn, mkProj (Projection.make kn, false,mkRel 1)
 	      else
 		let ccl = subst_projection fid subst ti in
 		let body = match decl with

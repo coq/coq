@@ -249,7 +249,7 @@ and fterm =
   | FInd of pinductive
   | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
-  | FProj of projection * fconstr
+  | FProj of projection * bool * fconstr
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
   | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)
@@ -279,7 +279,7 @@ let update v1 (no,t) =
 type stack_member =
   | Zapp of fconstr array
   | ZcaseT of case_info * constr * constr array * fconstr subs
-  | Zproj of int * int * projection
+  | Zproj of int * int * projection * bool
   | Zfix of fconstr * stack
   | Zshift of int
   | Zupdate of fconstr
@@ -392,9 +392,9 @@ let mk_clos_deep clos_fun env t =
     | App (f,v) ->
         { norm = Red;
 	  term = FApp (clos_fun env f, Array.map (clos_fun env) v) }
-    | Proj (p,c) ->
+    | Proj (p,unf,c) ->
 	{ norm = Red;
-	  term = FProj (p, clos_fun env c) }
+          term = FProj (p, unf, clos_fun env c) }
     | Case (ci,p,c,v) ->
         { norm = Red; term = FCaseT (ci, p, clos_fun env c, v, env) }
     | Fix fx ->
@@ -448,8 +448,8 @@ let rec to_constr constr_fun lfts v =
     | FApp (f,ve) ->
 	App (constr_fun lfts f,
 	       Array.map (constr_fun lfts) ve)
-    | FProj (p,c) ->
-        Proj (p,constr_fun lfts c)
+    | FProj (p,unf,c) ->
+        Proj (p,unf,constr_fun lfts c)
     | FLambda _ ->
         let (na,ty,bd) = destFLambda mk_clos2 v in
 	Lambda (na, constr_fun lfts ty,
@@ -503,8 +503,8 @@ let rec zip m stk =
     | ZcaseT(ci,p,br,e)::s ->
         let t = FCaseT(ci, p, m, br, e) in
         zip {norm=neutr m.norm; term=t} s
-    | Zproj (i,j,cst) :: s -> 
-        zip {norm=neutr m.norm; term=FProj (cst,m)} s
+    | Zproj (i,j,cst,unf) :: s ->
+        zip {norm=neutr m.norm; term=FProj (cst,unf,m)} s
     | Zfix(fx,par)::s ->
         zip fx (par @ append_stack [|m|] s)
     | Zshift(n)::s ->
@@ -635,7 +635,7 @@ let eta_expand_ind_stack env ind m s (f, s') =
       let argss = try_drop_parameters depth pars args in
 	let hstack =
 	  Array.map (fun p -> { norm = Red; (* right can't be a constructor though *)
-			     term = FProj (Projection.make p false, right) }) projs in
+                             term = FProj (Projection.make p, false, right) }) projs in
 	argss, [Zapp hstack]	
     | _ -> raise Not_found (* disallow eta-exp for non-primitive records *)
 
@@ -673,9 +673,9 @@ let contract_fix_vect fix =
   in
   (subs_cons(Array.init nfix make_body, env), thisbody)
 
-let unfold_projection env p =
+let unfold_projection env p unf =
   let pb = lookup_projection p env in
-  Zproj (pb.proj_npars, pb.proj_arg, p)
+  Zproj (pb.proj_npars, pb.proj_arg, p, unf)
 
 (*********************************************************************)
 (* A machine that inspects the head of a term until it finds an
@@ -695,9 +695,9 @@ let rec knh info m stk =
            | (None, stk') -> (m,stk'))
     | FCast(t,_,_) -> knh info t stk
 
-    | FProj (p,c) ->
+    | FProj (p,unf,c) ->
       if red_set info.i_flags fDELTA then
-        let s = unfold_projection info.i_env p in
+        let s = unfold_projection info.i_env p unf in
         knh info c (s :: zupdate m stk)
       else (m,stk)
 
@@ -715,7 +715,7 @@ and knht info e t stk =
     | Fix _ -> knh info (mk_clos2 e t) stk (* laziness *)
     | Cast(a,_,_) -> knht info  e a stk
     | Rel n -> knh info (clos_rel e n) stk
-    | Proj (p,c) -> knh info (mk_clos2 e t) stk (* laziness *)
+    | Proj (p,unf,c) -> knh info (mk_clos2 e t) stk (* laziness *)
     | (Lambda _|Prod _|Construct _|CoFix _|Ind _|
        LetIn _|Const _|Var _|Evar _|Meta _|Sort _) ->
         (mk_clos2 e t, stk)
@@ -753,7 +753,7 @@ let rec knr info m stk =
             let stk' = par @ append_stack [|rarg|] s in
             let (fxe,fxbd) = contract_fix_vect fx.term in
             knit info fxe fxbd stk'
-       | (depth, args, Zproj (n, m, cst)::s) ->
+       | (depth, args, Zproj (n, m, cst, unf)::s) ->
 	    let rargs = drop_parameters depth n args in
 	    let rarg = project_nth_arg m rargs in
 	    kni info rarg s

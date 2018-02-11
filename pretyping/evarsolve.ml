@@ -240,7 +240,7 @@ let noccur_evar env evd evk c =
        (match decl with
         | LocalAssum _ -> ()
         | LocalDef (_,b,_) -> cache := Int.Set.add (i-k) !cache; occur_rec false acc (lift i (EConstr.of_constr b)))
-  | Proj (p,c) -> occur_rec true acc c
+  | Proj (p,_,c) -> occur_rec true acc c
   | _ -> iter_with_full_binders evd (fun rd (k,env) -> (succ k, push_rel rd env))
     (occur_rec check_types) acc c
   in

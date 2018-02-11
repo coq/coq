@@ -196,7 +196,7 @@ let find_class_type sigma t =
   match EConstr.kind sigma t' with
     | Var id -> CL_SECVAR id, EInstance.empty, args
     | Const (sp,u) -> CL_CONST sp, u, args
-    | Proj (p, c) when not (Projection.unfolded p) ->
+    | Proj (p, unf, c) when not unf ->
       CL_PROJ (Projection.constant p), EInstance.empty, (c :: args)
     | Ind (ind_sp,u) -> CL_IND ind_sp, u, args
     | Prod (_,_,_) -> CL_FUN, EInstance.empty, []
@@ -407,7 +407,7 @@ let reference_arity_length ref =
 
 let projection_arity_length p =
   let len = reference_arity_length (ConstRef p) in
-  let pb = Environ.lookup_projection (Projection.make p false) (Global.env ()) in 
+  let pb = Environ.lookup_projection (Projection.make p) (Global.env ()) in
     len - pb.Declarations.proj_npars
 
 let class_params = function
