@@ -13,6 +13,22 @@
 ;; using `remove-hook', for instance
 ;; (remove-hook 'hack-local-variables-hook #'coqdev-setup-compile-command)
 
+;;; Installation:
+
+;; To use this, with coqdev.el located at /path/to/coqdev.el, add the
+;; following to your init:
+
+;; (add-to-list 'load-path "/path/to/coqdev/")
+;; (require 'coqdev)
+
+;; If you load this file from a git repository, checking out an old
+;; commit will make it disappear and cause errors for your Emacs
+;; startup. To ignore those errors use (require 'coqdev nil t). If you
+;; check out a malicious commit Emacs startup would allow it to run
+;; arbitrary code, to avoid this you can copy coqdev.el to any
+;; location and adjust the load path accordingly (of course if you run
+;; ./configure to compile Coq it is already too late).
+
 ;;; Code:
 
 (require 'subr-x)
@@ -67,3 +83,4 @@ Note that this function is executed before _Coqproject is read if it exists."
 (add-hook 'hack-local-variables-hook #'coqdev-setup-proofgeneral)
 
 (provide 'coqdev)
+;;; coqdev ends here
