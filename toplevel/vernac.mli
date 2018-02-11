@@ -26,5 +26,5 @@ val process_expr : time:bool -> state:State.t -> Vernacexpr.vernac_control Loc.l
 (** [load_vernac echo sid file] Loads [file] on top of [sid], will
     echo the commands if [echo] is set. Callers are expected to handle
     and print errors in form of exceptions. *)
-val load_vernac : time:bool -> verbosely:bool -> check:bool -> interactive:bool ->
+val load_vernac : time:bool -> echo:bool -> check:bool -> interactive:bool ->
   state:State.t -> string -> State.t
