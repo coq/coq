@@ -82,5 +82,21 @@ Note that this function is executed before _Coqproject is read if it exists."
     (setq-local coq-prog-name (concat dir "bin/coqtop"))))
 (add-hook 'hack-local-variables-hook #'coqdev-setup-proofgeneral)
 
+;; This Elisp snippet adds a regexp parser for the format of Anomaly
+;; backtraces (coqc -bt ...), to the error parser of the Compilation
+;; mode (C-c C-c: "Compile command: ..."). File locations in traces
+;; are recognized and can be jumped from easily in the *compilation*
+;; buffer.
+(defvar compilation-error-regexp-alist-alist)
+(defvar compilation-error-regexp-alist)
+(add-to-list
+ 'compilation-error-regexp-alist-alist
+ '(coq-backtrace
+   "^ *\\(?:raise\\|frame\\) @ file \\(\"?\\)\\([^,\" \n\t<>]+\\)\\1,\
+      lines? \\([0-9]+\\)-?\\([0-9]+\\)?\\(?:$\\|,\
+      \\(?: characters? \\([0-9]+\\)-?\\([0-9]+\\)?:?\\)?\\)"
+   2 (3 . 4) (5 . 6)))
+(add-to-list 'compilation-error-regexp-alist 'coq-backtrace)
+
 (provide 'coqdev)
 ;;; coqdev ends here
