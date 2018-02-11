@@ -40,37 +40,6 @@ let vernac_echo ?loc in_chan = let open Loc in
       Feedback.msg_notice @@ str @@ really_input_string in_chan len
     ) loc
 
-(* vernac parses the given stream, executes interpfun on the syntax tree it
- * parses, and is verbose on "primitives" commands if verbosely is true *)
-
-let beautify_suffix = ".beautified"
-
-let set_formatter_translator ch =
-  let out s b e = output_substring ch s b e in
-  let ft = Format.make_formatter out (fun () -> flush ch) in
-  Format.pp_set_max_boxes ft max_int;
-  ft
-
-let pr_new_syntax_in_context ?loc ft_beautify ocom =
-  let loc = Option.cata Loc.unloc (0,0) loc in
-  let fs = States.freeze ~marshallable:`No in
-  (* Side-effect: order matters *)
-  let before = comment (CLexer.extract_comments (fst loc)) in
-  let com = match ocom with
-    | Some com -> Ppvernac.pr_vernac com
-    | None -> mt() in
-  let after = comment (CLexer.extract_comments (snd loc)) in
-  if !Flags.beautify_file then
-    (Pp.pp_with ft_beautify (hov 0 (before ++ com ++ after));
-     Format.pp_print_flush ft_beautify ())
-  else
-    Feedback.msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
-  States.unfreeze fs
-
-let pr_new_syntax ?loc po ft_beautify ocom =
-  (* Reinstall the context of parsing which includes the bindings of comments to locations *)
-  Pcoq.Gram.with_parsable po (pr_new_syntax_in_context ?loc ft_beautify) ocom
-
 (* For coqtop -time, we display the position in the file,
    and a glimpse of the executed command *)
 
@@ -174,18 +143,16 @@ let interp_vernac ~time ~check ~interactive ~state (loc,com) =
       end in iraise (reraise, info)
 
 (* Load a vernac file. CErrors are annotated with file and location *)
-let load_vernac ~time ~verbosely ~check ~interactive ~state file =
-  let ft_beautify, close_beautify =
-    if !Flags.beautify_file then
-      let chan_beautify = open_out (file^beautify_suffix) in
-      set_formatter_translator chan_beautify, fun () -> close_out chan_beautify;
-    else
-      !Topfmt.std_ft, fun () -> ()
-  in
+let load_vernac_core ~time ~echo ~check ~interactive ~state file =
+  (* Keep in sync *)
   let in_chan = open_utf8_file_in file in
-  let in_echo = if verbosely then Some (open_utf8_file_in file) else None in
+  let in_echo = if echo then Some (open_utf8_file_in file) else None in
+  let input_cleanup () = close_in in_chan; Option.iter close_in in_echo in
+
   let in_pa   = Pcoq.Gram.parsable ~file:(Loc.InFile file) (Stream.of_channel in_chan) in
   let rstate  = ref state in
+  (* For beautify, list of parsed sids *)
+  let rids    = ref [] in
   let open State in
   try
     (* we go out of the following infinite loop when a End_of_input is
@@ -212,36 +179,78 @@ let load_vernac ~time ~verbosely ~check ~interactive ~state file =
        *)
       in
       (* Printing of vernacs *)
-      if !Flags.beautify then pr_new_syntax ?loc in_pa ft_beautify (Some ast);
       Option.iter (vernac_echo ?loc) in_echo;
 
       checknav_simple (loc, ast);
       let state = Flags.silently (interp_vernac ~time ~check ~interactive ~state:!rstate) (loc, ast) in
+      rids := state.sid :: !rids;
       rstate := state;
     done;
-    !rstate
+    input_cleanup ();
+    !rstate, !rids, Pcoq.Gram.comment_state in_pa
   with any ->   (* whatever the exception *)
     let (e, info) = CErrors.push any in
-    close_in in_chan;
-    Option.iter close_in in_echo;
+    input_cleanup ();
     match e with
-      | Stm.End_of_input ->
-          (* Is this called so comments at EOF are printed? *)
-          if !Flags.beautify then
-            pr_new_syntax ~loc:(Loc.make_loc (max_int,max_int)) in_pa ft_beautify None;
-          if !Flags.beautify_file then close_beautify ();
-          !rstate
-      | reraise ->
-         if !Flags.beautify_file then close_beautify ();
-	 iraise (disable_drop e, info)
-
-(** [eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> unit]
-   It executes one vernacular command. By default the command is
-   considered as non-state-preserving, in which case we add it to the
-   Backtrack stack (triggering a save of a frozen state and the generation
-   of a new state label). An example of state-preserving command is one coming
-   from the query panel of Coqide. *)
+    | Stm.End_of_input -> !rstate, !rids, Pcoq.Gram.comment_state in_pa
+    | reraise -> iraise (disable_drop e, info)
 
 let process_expr ~time ~state loc_ast =
   checknav_deep loc_ast;
   interp_vernac ~time ~interactive:true ~check:true ~state loc_ast
+
+(******************************************************************************)
+(* Beautify-specific code                                                     *)
+(******************************************************************************)
+
+(* vernac parses the given stream, executes interpfun on the syntax tree it
+ * parses, and is verbose on "primitives" commands if verbosely is true *)
+let beautify_suffix = ".beautified"
+
+let set_formatter_translator ch =
+  let out s b e = output_substring ch s b e in
+  let ft = Format.make_formatter out (fun () -> flush ch) in
+  Format.pp_set_max_boxes ft max_int;
+  ft
+
+let pr_new_syntax ?loc ft_beautify ocom =
+  let loc = Option.cata Loc.unloc (0,0) loc in
+  let before = comment (Pputils.extract_comments (fst loc)) in
+  let com = Option.cata Ppvernac.pr_vernac (mt ()) ocom in
+  let after = comment (Pputils.extract_comments (snd loc)) in
+  if !Flags.beautify_file then
+    (Pp.pp_with ft_beautify (hov 0 (before ++ com ++ after));
+     Format.pp_print_flush ft_beautify ())
+  else
+    Feedback.msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)))
+
+(* load_vernac with beautify *)
+let beautify_pass ~doc ~comments ~ids ~filename =
+  let ft_beautify, close_beautify =
+    if !Flags.beautify_file then
+      let chan_beautify = open_out (filename^beautify_suffix) in
+      set_formatter_translator chan_beautify, fun () -> close_out chan_beautify;
+    else
+      !Topfmt.std_ft, fun () -> ()
+  in
+  (* The interface to the comment printer is imperative, so we first
+     set the comments, then we call print. This has to be done for
+     each file. *)
+  Pputils.beautify_comments := comments;
+  List.iter (fun id ->
+      Option.iter (fun (loc,ast) ->
+          pr_new_syntax ?loc ft_beautify (Some ast))
+        (Stm.get_ast ~doc id)) ids;
+
+  (* Is this called so comments at EOF are printed? *)
+  pr_new_syntax ~loc:(Loc.make_loc (max_int,max_int)) ft_beautify None;
+  close_beautify ()
+
+(* Main driver for file loading. For now, we only do one beautify
+   pass. *)
+let load_vernac ~time ~echo ~check ~interactive ~state filename =
+  let ostate, ids, comments = load_vernac_core ~time ~echo ~check ~interactive ~state filename in
+  (* Pass for beautify *)
+  if !Flags.beautify then beautify_pass ~doc:ostate.State.doc ~comments ~ids:List.(rev ids) ~filename;
+  (* End pass *)
+  ostate

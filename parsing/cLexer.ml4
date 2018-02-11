@@ -384,16 +384,6 @@ let comments = ref []
 let current_comment = Buffer.create 8192
 let between_commands = ref true
 
-let rec split_comments comacc acc pos = function
-    [] -> comments := List.rev acc; comacc
-  | ((b,e),c as com)::coms ->
-      (* Take all comments that terminates before pos, or begin exactly
-         at pos (used to print comments attached after an expression) *)
-      if e<=pos || pos=b then split_comments (c::comacc) acc pos coms
-      else split_comments comacc (com::acc) pos coms
-
-let extract_comments pos = split_comments [] [] pos !comments
-
 (* The state of the lexer visible from outside *)
 type lexer_state = int option * string * bool * ((int * int) * string) list * Loc.source
 
@@ -409,6 +399,8 @@ let get_lexer_state () =
 let release_lexer_state = get_lexer_state
 let drop_lexer_state () =
     set_lexer_state (init_lexer_state Loc.ToplevelInput)
+
+let get_comment_state (_,_,_,c,_) = c
 
 let real_push_char c = Buffer.add_char current_comment c
 
