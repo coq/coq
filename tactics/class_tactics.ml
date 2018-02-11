@@ -996,7 +996,7 @@ module Search = struct
              Hint_db.transparent_state cached_hints == st
     then cached_hints
     else
-      let hints = make_hints {it = Goal.goal (Proofview.Goal.assume g); sigma = project g}
+      let hints = make_hints {it = Goal.goal g; sigma = project g}
                              st only_classes sign
       in
       autogoal_cache := (cwd, only_classes, sign, hints); hints
@@ -1041,7 +1041,6 @@ module Search = struct
 
   let fail_if_nonclass info =
     Proofview.Goal.enter begin fun gl ->
-      let gl = Proofview.Goal.assume gl in
       let sigma = Proofview.Goal.sigma gl in
       if is_class_type sigma (Proofview.Goal.concl gl) then
         Proofview.tclUNIT ()
@@ -1089,7 +1088,7 @@ module Search = struct
             pr_depth (idx :: info.search_depth) ++ str": " ++
               Lazy.force pp ++
               (if !foundone != true then
-                 str" on" ++ spc () ++ pr_ev sigma (Proofview.Goal.goal (Proofview.Goal.assume gl))
+                 str" on" ++ spc () ++ pr_ev sigma (Proofview.Goal.goal gl)
                else mt ())
           in
           let msg =
@@ -1110,7 +1109,7 @@ module Search = struct
         if !typeclasses_debug > 0 then
           Feedback.msg_debug
             (pr_depth (succ j :: i :: info.search_depth) ++ str" : " ++
-               pr_ev sigma' (Proofview.Goal.goal (Proofview.Goal.assume gl')));
+               pr_ev sigma' (Proofview.Goal.goal gl'));
         let eq c1 c2 = EConstr.eq_constr sigma' c1 c2 in
         let hints' =
           if b && not (Context.Named.equal eq (Goal.hyps gl') (Goal.hyps gl))
@@ -1119,7 +1118,7 @@ module Search = struct
             make_autogoal_hints info.search_only_classes ~st gl'
           else info.search_hints
         in
-        let dep' = info.search_dep || Proofview.unifiable sigma' (Goal.goal (Proofview.Goal.assume gl')) gls in
+        let dep' = info.search_dep || Proofview.unifiable sigma' (Goal.goal gl') gls in
         let info' =
           { search_depth = succ j :: i :: info.search_depth;
             last_tac = pp;
@@ -1136,7 +1135,7 @@ module Search = struct
         (if !typeclasses_debug > 0 then
            Feedback.msg_debug
              (pr_depth (i :: info.search_depth) ++ str": " ++ Lazy.force pp
-              ++ str" on" ++ spc () ++ pr_ev sigma (Proofview.Goal.goal (Proofview.Goal.assume gl))
+              ++ str" on" ++ spc () ++ pr_ev sigma (Proofview.Goal.goal gl)
               ++ str", " ++ int j ++ str" subgoal(s)" ++
                 (Option.cata (fun k -> str " in addition to the first " ++ int k)
                              (mt()) k)));
@@ -1261,7 +1260,7 @@ module Search = struct
     if false (* In 8.6, still allow non-class goals only_classes && not (is_class_type sigma (Goal.concl gl)) *) then
       Tacticals.New.tclZEROMSG (str"Not a subgoal for a class")
     else
-      let dep = dep || Proofview.unifiable sigma (Goal.goal (Proofview.Goal.assume gl)) gls in
+      let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
       let info = make_autogoal ?st only_classes dep (cut_of_hints hints) i gl in
       search_tac hints depth 1 info
 

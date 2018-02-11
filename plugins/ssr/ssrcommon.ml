@@ -1061,7 +1061,7 @@ let () = CLexer.set_keyword_state frozen_lexer ;;
 (** Basic tactics *)
 
 let rec fst_prod red tac = Proofview.Goal.nf_enter begin fun gl ->
-  let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
+  let concl = Proofview.Goal.concl gl in
   match EConstr.kind (Proofview.Goal.sigma gl) concl with
   | Prod (id,_,tgt) | LetIn(id,_,_,tgt) -> tac id
   | _ -> if red then Tacticals.New.tclZEROMSG (str"No product even after head-reduction.")

@@ -138,7 +138,6 @@ let declare_tactic_argument loc s (typ, f, g, h) cl =
       <:expr<
         let f = $lid:f$ in
         fun ist v -> Ftactic.enter (fun gl ->
-          let gl = Proofview.Goal.assume gl in
           let (sigma, v) = Tacmach.New.of_old (fun gl -> f ist gl v) gl in
           let v = Geninterp.Val.inject (Geninterp.val_tag $make_topwit loc typ$) v in
           Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Ftactic.return v)

@@ -187,7 +187,7 @@ let make_prb gls depth additionnal_terms =
   let open Tacmach.New in
   let env=pf_env gls in
   let sigma=project gls in
-  let state = empty depth {it = Proofview.Goal.goal (Proofview.Goal.assume gls); sigma } in
+  let state = empty depth {it = Proofview.Goal.goal gls; sigma } in
   let pos_hyps = ref [] in
   let neg_hyps =ref [] in
     List.iter

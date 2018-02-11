@@ -461,56 +461,49 @@ end
 
 module Goal : sig
 
-  (** Type of goals.
-
-      The first parameter type is a phantom argument indicating whether the data
-      contained in the goal has been normalized w.r.t. the current sigma. If it
-      is the case, it is flagged [ `NF ]. You may still access the un-normalized
-      data using {!assume} if you known you do not rely on the assumption of
-      being normalized, at your own risk.
-
-  *)
-  type 'a t
+  (** Type of goals. *)
+  type t
 
   (** Assume that you do not need the goal to be normalized. *)
-  val assume : 'a t -> [ `NF ] t
+  val assume : t -> t
+  [@@ocaml.deprecated "Normalization is enforced by EConstr, [assume] is not needed anymore"]
 
   (** Normalises the argument goal. *)
-  val normalize : 'a t -> [ `NF ] t tactic
+  val normalize : t -> t tactic
 
   (** [concl], [hyps], [env] and [sigma] given a goal [gl] return
       respectively the conclusion of [gl], the hypotheses of [gl], the
       environment of [gl] (i.e. the global environment and the
       hypotheses) and the current evar map. *)
-  val concl : 'a t -> constr
-  val hyps : 'a t -> named_context
-  val env : 'a t -> Environ.env
-  val sigma : 'a t -> Evd.evar_map
-  val extra : 'a t -> Evd.Store.t
+  val concl : t -> constr
+  val hyps : t -> named_context
+  val env : t -> Environ.env
+  val sigma : t -> Evd.evar_map
+  val extra : t -> Evd.Store.t
 
   (** [nf_enter t] applies the goal-dependent tactic [t] in each goal
       independently, in the manner of {!tclINDEPENDENT} except that
       the current goal is also given as an argument to [t]. The goal
       is normalised with respect to evars. *)
-  val nf_enter : ([ `NF ] t -> unit tactic) -> unit tactic
+  val nf_enter : (t -> unit tactic) -> unit tactic
 
   (** Like {!nf_enter}, but does not normalize the goal beforehand. *)
-  val enter : ([ `LZ ] t -> unit tactic) -> unit tactic
+  val enter : (t -> unit tactic) -> unit tactic
 
   (** Like {!enter}, but assumes exactly one goal under focus, raising *)
   (** a fatal error otherwise. *)
-  val enter_one : ?__LOC__:string -> ([ `LZ ] t -> 'a tactic) -> 'a tactic
+  val enter_one : ?__LOC__:string -> (t -> 'a tactic) -> 'a tactic
 
   (** Recover the list of current goals under focus, without evar-normalization.
       FIXME: encapsulate the level in an existential type. *)
-  val goals : [ `LZ ] t tactic list tactic
+  val goals : t tactic list tactic
 
   (** [unsolved g] is [true] if [g] is still unsolved in the current
       proof state. *)
-  val unsolved : 'a t -> bool tactic
+  val unsolved : t -> bool tactic
 
   (** Compatibility: avoid if possible *)
-  val goal : [ `NF ] t -> Evar.t
+  val goal : t -> Evar.t
 
 end
 

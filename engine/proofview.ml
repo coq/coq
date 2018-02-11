@@ -1023,14 +1023,14 @@ let catchable_exception = function
 
 module Goal = struct
 
-  type 'a t = {
+  type t = {
     env : Environ.env;
     sigma : Evd.evar_map;
     concl : EConstr.constr ;
     self : Evar.t ; (* for compatibility with old-style definitions *)
   }
 
-  let assume (gl : 'a t) = (gl :> [ `NF ] t)
+  let assume (gl : t) = (gl : t)
 
   let env {env} = env
   let sigma {sigma} = sigma

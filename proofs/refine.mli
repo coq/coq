@@ -33,7 +33,7 @@ val refine_one : typecheck:bool -> (Evd.evar_map -> Evd.evar_map * ('a * EConstr
 (** A variant of [refine] which assumes exactly one goal under focus *)
 
 val generic_refine : typecheck:bool -> ('a * EConstr.t) tactic ->
-  [ `NF ] Proofview.Goal.t -> 'a tactic
+  Proofview.Goal.t -> 'a tactic
 (** The general version of refine. *)
 
 (** {7 Helper functions} *)

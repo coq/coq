@@ -16,14 +16,14 @@ open Decl_kinds
 open Hints
 open Tactypes
 
-val compute_secvars : 'a Proofview.Goal.t -> Id.Pred.t
+val compute_secvars : Proofview.Goal.t -> Id.Pred.t
 
 val default_search_depth : int ref
 
 val auto_flags_of_state : transparent_state -> Unification.unify_flags
 
 val connect_hint_clenv : polymorphic -> raw_hint -> clausenv ->
-  'a Proofview.Goal.t -> clausenv * constr
+  Proofview.Goal.t -> clausenv * constr
 
 (** Try unification with the precompiled clause, then use registered Apply *)
 val unify_resolve : polymorphic -> Unification.unify_flags -> (raw_hint * clausenv) -> unit Proofview.tactic

@@ -151,7 +151,6 @@ let unsafe_intro env store decl b =
 
 let introduction ?(check=true) id =
   Proofview.Goal.enter begin fun gl ->
-    let gl = Proofview.Goal.assume gl in
     let concl = Proofview.Goal.concl gl in
     let sigma = Tacmach.New.project gl in
     let hyps = named_context_val (Proofview.Goal.env gl) in
@@ -258,7 +257,6 @@ let clear_gen fail = function
   Proofview.Goal.enter begin fun gl ->
     let ids = List.fold_right Id.Set.add ids Id.Set.empty in
     (** clear_hyps_in_evi does not require nf terms *)
-    let gl = Proofview.Goal.assume gl in
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let concl = Proofview.Goal.concl gl in
@@ -322,7 +320,6 @@ let rename_hyp repl =
   | None -> Tacticals.New.tclZEROMSG (str "Not a one-to-one name mapping")
   | Some (src, dst) ->
     Proofview.Goal.enter begin fun gl ->
-      let gl = Proofview.Goal.assume gl in
       let hyps = Proofview.Goal.hyps gl in
       let concl = Proofview.Goal.concl gl in
       let store = Proofview.Goal.extra gl in
@@ -814,7 +811,7 @@ let e_pf_change_decl (redfun : bool -> e_reduction_function) where decl env sigm
 let e_change_in_hyp redfun (id,where) =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
-    let hyp = Tacmach.New.pf_get_hyp id (Proofview.Goal.assume gl) in
+    let hyp = Tacmach.New.pf_get_hyp id gl in
     let (sigma, c) = e_pf_change_decl redfun where hyp (Proofview.Goal.env gl) sigma in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (convert_hyp c)
@@ -981,7 +978,7 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
     let env = Tacmach.New.pf_env gl in
-    let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
+    let concl = Proofview.Goal.concl gl in
     match EConstr.kind sigma concl with
     | Prod (name,t,u) when not dep_flag || not (noccurn sigma 1 u) ->
         let name = find_name false (LocalAssum (name,t)) name_flag gl in
@@ -1052,7 +1049,7 @@ let intro_forthcoming_then_gen name_flag move_flag dep_flag n bound tac =
 let intro_replacing id =
   Proofview.Goal.enter begin fun gl ->
   let env, sigma = Proofview.Goal.(env gl, sigma gl) in
-  let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+  let hyps = Proofview.Goal.hyps gl in
   let next_hyp = get_next_hyp_position env sigma id hyps in
   Tacticals.New.tclTHENLIST [
     clear_for_replacing [id];
@@ -1073,7 +1070,7 @@ let intros_possibly_replacing ids =
   let suboptimal = true in
   Proofview.Goal.enter begin fun gl ->
     let env, sigma = Proofview.Goal.(env gl, sigma gl) in
-    let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+    let hyps = Proofview.Goal.hyps gl in
     let posl = List.map (fun id -> (id, get_next_hyp_position env sigma id hyps)) ids in
     Tacticals.New.tclTHEN
       (Tacticals.New.tclMAP (fun id -> 
@@ -1087,7 +1084,7 @@ let intros_possibly_replacing ids =
 (* This version assumes that replacement is actually possible *)
 let intros_replacing ids =
   Proofview.Goal.enter begin fun gl ->
-    let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+    let hyps = Proofview.Goal.hyps gl in
     let env, sigma = Proofview.Goal.(env gl, sigma gl) in
     let posl = List.map (fun id -> (id, get_next_hyp_position env sigma id hyps)) ids in
     Tacticals.New.tclTHEN
@@ -1150,7 +1147,7 @@ let intros_until_n = intros_until_n_gen true
 
 let tclCHECKVAR id =
   Proofview.Goal.enter begin fun gl ->
-    let _ = Tacmach.New.pf_get_hyp id (Proofview.Goal.assume gl) in
+    let _ = Tacmach.New.pf_get_hyp id gl in
     Proofview.tclUNIT ()
   end
 
@@ -1973,7 +1970,7 @@ let exact_check c =
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   (** We do not need to normalize the goal because we just check convertibility *)
-  let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
+  let concl = Proofview.Goal.concl gl in
   let env = Proofview.Goal.env gl in
   let sigma, ct = Typing.type_of env sigma c in
   Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
@@ -1982,7 +1979,7 @@ let exact_check c =
 
 let cast_no_check cast c =
   Proofview.Goal.enter begin fun gl ->
-    let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
+    let concl = Proofview.Goal.concl gl in
     exact_no_check (mkCast (c, cast, concl))
   end
 
@@ -2066,7 +2063,7 @@ let clear_body ids =
   let open Context.Named.Declaration in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
+    let concl = Proofview.Goal.concl gl in
     let sigma = Tacmach.New.project gl in
     let ctx = named_context env in
     let map = function
@@ -2191,7 +2188,6 @@ let bring_hyps hyps =
 
 let revert hyps = 
   Proofview.Goal.enter begin fun gl ->
-    let gl = Proofview.Goal.assume gl in
     let ctx = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) hyps in
       (bring_hyps ctx) <*> (clear hyps)
   end
@@ -2619,7 +2615,7 @@ let general_apply_in sidecond_first with_delta with_destruct with_evars
     if with_evars then MoveLast (* evars would depend on the whole context *)
     else (
       let env, sigma = Proofview.Goal.(env gl, sigma gl) in
-      get_previous_hyp_position env sigma id (Proofview.Goal.hyps (Proofview.Goal.assume gl))
+      get_previous_hyp_position env sigma id (Proofview.Goal.hyps gl)
     ) in
   let naming,ipat_tac =
     prepare_intros_opt with_evars (IntroIdentifier id) destopt ipat in
@@ -2913,7 +2909,6 @@ end
 let new_generalize_gen_let lconstr =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
-    let gl = Proofview.Goal.assume gl in
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let ids = Tacmach.New.pf_ids_of_hyps gl in
@@ -3063,7 +3058,7 @@ let unfold_body x =
   let open Context.Named.Declaration in
   Proofview.Goal.enter begin fun gl ->
   (** We normalize the given hypothesis immediately. *)
-  let env = Proofview.Goal.env (Proofview.Goal.assume gl) in
+  let env = Proofview.Goal.env gl in
   let xval = match Environ.lookup_named x env with
   | LocalAssum _ -> user_err ~hdr:"unfold_body"
     (Id.print x ++ str" is not a defined hypothesis.")
@@ -3274,7 +3269,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
-  let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 (Proofview.Goal.assume gl) in
+  let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let reduce_to_quantified_ref = Tacmach.New.pf_apply reduce_to_quantified_ref gl in
   let typ0 = reduce_to_quantified_ref indref tmptyp0 in
   let prods, indtyp = decompose_prod_assum sigma typ0 in
@@ -4272,7 +4267,7 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
     let deps_cstr =
       List.fold_left
         (fun a decl -> if NamedDecl.is_local_assum decl then (mkVar (NamedDecl.get_id decl))::a else a) [] deps in
-    let (sigma, isrec, elim, indsign) = get_eliminator elim dep s (Proofview.Goal.assume gl) in
+    let (sigma, isrec, elim, indsign) = get_eliminator elim dep s gl in
     let branchletsigns =
       let f (_,is_not_let,_,_) = is_not_let in
       Array.map (fun (_,l) -> List.map f l) indsign in
@@ -4297,7 +4292,7 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
 
 let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps =
   Proofview.Goal.enter begin fun gl ->
-  let elim_info = find_induction_type isrec elim hyp0 (Proofview.Goal.assume gl) in
+  let elim_info = find_induction_type isrec elim hyp0 gl in
   atomize_param_of_ind_then elim_info hyp0 (fun indvars ->
     apply_induction_in_context with_evars (Some hyp0) inhyps (pi3 elim_info) indvars names
       (fun elim -> induction_tac with_evars [] [hyp0] elim))

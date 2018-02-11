@@ -32,7 +32,7 @@ open Hints
 let priority l = List.filter (fun (_, hint) -> Int.equal hint.pri 0) l
 
 let compute_secvars gl =
-  let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+  let hyps = Proofview.Goal.hyps gl in
   secvars_of_hyps hyps
 
 (* tell auto not to reuse already instantiated metas in unification (for
@@ -316,7 +316,7 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
           let sigma = Tacmach.New.project gl in
           let env = Proofview.Goal.env gl in
           let nf c = Evarutil.nf_evar sigma c in
-          let decl = Tacmach.New.pf_last_hyp (Proofview.Goal.assume gl) in
+          let decl = Tacmach.New.pf_last_hyp gl in
           let hyp = Context.Named.Declaration.map_constr nf decl in
 	  let hintl = make_resolve_hyp env sigma hyp
 	  in trivial_fail_db dbg mod_delta db_list
