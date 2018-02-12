@@ -117,7 +117,7 @@ ide/%.cmo: ide/%.ml
 
 ide/%.cmx: ide/%.ml
 	$(SHOW)'OCAMLOPT  $<'
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) $(HACKMLI) -c $<
 
 # We need to compile this file without -safe-string due mess with
 # lablgtk API. Other option is to require lablgtk >= 2.8.16

@@ -71,7 +71,7 @@ checker/%.cmo: checker/%.ml
 
 checker/%.cmx: checker/%.ml
 	$(SHOW)'OCAMLOPT  $<'
-	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) -c $<
+	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) $(HACKMLI) -c $<
 
 md5chk:
 	$(SHOW)'MD5SUM cic.mli'
