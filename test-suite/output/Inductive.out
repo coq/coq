@@ -1,3 +1,7 @@
 The command has indeed failed with message:
 Last occurrence of "list'" must have "A" as 1st argument in
  "A -> list' A -> list' (A * A)%type".
+Inductive foo (A : Type) (x : A) (y : A := x) : Prop :=  Foo : foo A x
+
+For foo: Argument scopes are [type_scope _]
+For Foo: Argument scopes are [type_scope _]
