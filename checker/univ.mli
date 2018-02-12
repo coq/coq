@@ -225,7 +225,7 @@ sig
      case because [forall x : A, B <= forall x : A', B'] requires [A =
      A'] as opposed to [A' <= A]. *)
   type t = Irrelevant | Covariant | Invariant
-
+  val check_subtype : t -> t -> bool
   val leq_constraints : t array -> Instance.t constraint_function
   val eq_constraints : t array -> Instance.t constraint_function
 end

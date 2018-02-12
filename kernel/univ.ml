@@ -759,6 +759,13 @@ struct
     | Invariant, _ | _, Invariant -> Invariant
     | Covariant, Covariant -> Covariant
 
+  let check_subtype x y = match x, y with
+  | (Irrelevant | Covariant | Invariant), Irrelevant -> true
+  | Irrelevant, Covariant -> false
+  | (Covariant | Invariant), Covariant -> true
+  | (Irrelevant | Covariant), Invariant -> false
+  | Invariant, Invariant -> true
+
   let pr = function
     | Irrelevant -> str "*"
     | Covariant -> str "+"

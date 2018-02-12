@@ -108,6 +108,14 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
       let env = check_polymorphic_instance error env auctx auctx' in
       env, Univ.make_abstract_instance auctx'
     | Cumulative_ind cumi, Cumulative_ind cumi' ->
+      (** Currently there is no way to control variance of inductive types, but
+          just in case we require that they are in a subtyping relation. *)
+      let () =
+        let v = Univ.ACumulativityInfo.variance cumi in
+        let v' = Univ.ACumulativityInfo.variance cumi' in
+        if not (Array.for_all2 Univ.Variance.check_subtype v' v) then
+          CErrors.anomaly Pp.(str "Variance mismatch for " ++ MutInd.print kn)
+      in
       let auctx = Univ.ACumulativityInfo.univ_context cumi in
       let auctx' = Univ.ACumulativityInfo.univ_context cumi' in
       let env = check_polymorphic_instance error env auctx auctx' in
