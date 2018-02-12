@@ -158,24 +158,17 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 =
 let convert_inductive_instances cv_pb cumi u u' univs =
   let len_instance =
       Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi) in
-  let ind_subtypctx =  Univ.ACumulativityInfo.subtyp_context cumi in
   if not ((len_instance = Univ.Instance.length u) &&
           (len_instance = Univ.Instance.length u')) then
     anomaly (Pp.str "Invalid inductive subtyping encountered!")
   else
-    let comp_cst =
-      let comp_subst = (Univ.Instance.append u u') in
-      Univ.AUContext.instantiate comp_subst ind_subtypctx
-    in
+    let variance = Univ.ACumulativityInfo.variance cumi in
     let comp_cst =
       match cv_pb with
-        CONV ->
-        let comp_cst' =
-          let comp_subst = (Univ.Instance.append u' u) in
-          Univ.AUContext.instantiate comp_subst ind_subtypctx
-        in
-        Univ.Constraint.union comp_cst comp_cst'
-      | CUMUL -> comp_cst
+      | CONV ->
+        Univ.Variance.eq_constraints variance u u' Univ.Constraint.empty
+      | CUMUL ->
+        Univ.Variance.leq_constraints variance u u' Univ.Constraint.empty
     in
     if (Univ.check_constraints comp_cst univs) then () else raise NotConvertible
 

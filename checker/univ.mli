@@ -218,12 +218,25 @@ end
 
 type abstract_universe_context = AUContext.t
 
+module Variance :
+sig
+  (** A universe position in the instance given to a cumulative
+     inductive can be the following. Note there is no Contravariant
+     case because [forall x : A, B <= forall x : A', B'] requires [A =
+     A'] as opposed to [A' <= A]. *)
+  type t = Irrelevant | Covariant | Invariant
+
+  val leq_constraints : t array -> Instance.t constraint_function
+  val eq_constraints : t array -> Instance.t constraint_function
+end
+
+
 module ACumulativityInfo :
 sig
   type t
 
   val univ_context : t -> abstract_universe_context
-  val subtyp_context : t -> abstract_universe_context
+  val variance : t -> Variance.t array
 
 end
 

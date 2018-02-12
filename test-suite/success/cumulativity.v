@@ -45,6 +45,15 @@ Section TpLift.
 
 End TpLift.
 
+Record Tp' := { tp' : Tp }.
+
+Definition CTp := Tp.
+(* here we have to reduce a constant to infer the correct subtyping. *)
+Record Tp'' := { tp'' : CTp }.
+
+Definition LiftTp'@{i j|i < j} : Tp'@{i} -> Tp'@{j} := fun x => x.
+Definition LiftTp''@{i j|i < j} : Tp''@{i} -> Tp''@{j} := fun x => x.
+
 Lemma LiftC_Lem (t : Tp) : LiftTp t = t.
 Proof. reflexivity. Qed.
 
@@ -98,3 +107,20 @@ Section down.
     intros H f g Hfg. exact (H f g Hfg).
   Defined.
 End down.
+
+Record Arrow@{i j} := { arrow : Type@{i} -> Type@{j} }.
+
+Fail Definition arrow_lift@{i i' j j' | i' < i, j < j'}
+  : Arrow@{i j} -> Arrow@{i' j'}
+  := fun x => x.
+
+Definition arrow_lift@{i i' j j' | i' = i, j < j'}
+  : Arrow@{i j} -> Arrow@{i' j'}
+  := fun x => x.
+
+Inductive Mut1 A :=
+| Base1 : Type -> Mut1 A
+| Node1 : (A -> Mut2 A) -> Mut1 A
+with Mut2 A :=
+     | Base2 : Type -> Mut2 A
+     | Node2 : Mut1 A -> Mut2 A.

@@ -120,7 +120,8 @@ val pr_sort                : evar_map -> Sorts.t -> Pp.t
 val pr_polymorphic         : bool -> Pp.t
 val pr_cumulative          : bool -> bool -> Pp.t
 val pr_universe_instance   : evar_map -> Univ.UContext.t -> Pp.t
-val pr_universe_ctx        : evar_map -> Univ.UContext.t -> Pp.t
+val pr_universe_ctx        : evar_map -> ?variance:Univ.Variance.t array ->
+  Univ.UContext.t -> Pp.t
 val pr_universe_ctx_set    : evar_map -> Univ.ContextSet.t -> Pp.t
 val pr_constant_universes  : evar_map -> Entries.constant_universes_entry -> Pp.t
 val pr_cumulativity_info   : evar_map -> Univ.CumulativityInfo.t -> Pp.t

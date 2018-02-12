@@ -35,21 +35,23 @@ type 'a extended_conversion_function =
 
 type conv_pb = CONV | CUMUL
 
-type 'a universe_compare = 
+type 'a universe_compare =
   { (* Might raise NotConvertible *)
-    compare : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
+    compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
     compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
-    conv_inductives : conv_pb -> (Declarations.mutual_inductive_body * int) -> Univ.Instance.t -> int ->
-      Univ.Instance.t -> int -> 'a -> 'a;
-    conv_constructors : (Declarations.mutual_inductive_body * int * int) ->
-      Univ.Instance.t -> int -> Univ.Instance.t -> int -> 'a -> 'a;
-  } 
+    compare_cumul_instances : Univ.Constraint.t -> 'a -> 'a }
 
 type 'a universe_state = 'a * 'a universe_compare
 
 type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
 
 type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.Constraint.t
+
+val get_cumulativity_constraints : conv_pb -> Univ.ACumulativityInfo.t ->
+  Univ.Instance.t -> Univ.Instance.t -> Univ.Constraint.t
+
+val inductive_cumulativity_arguments : (Declarations.mutual_inductive_body * int) -> int
+val constructor_cumulativity_arguments : (Declarations.mutual_inductive_body * int * int) -> int
 
 val sort_cmp_universes : env -> conv_pb -> Sorts.t -> Sorts.t ->
   'a * 'a universe_compare -> 'a * 'a universe_compare

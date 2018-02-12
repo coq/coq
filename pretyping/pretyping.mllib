@@ -4,6 +4,7 @@ Locusops
 Pretype_errors
 Reductionops
 Inductiveops
+InferCumulativity
 Vnorm
 Arguments_renaming
 Nativenorm

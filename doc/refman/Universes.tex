@@ -68,6 +68,13 @@ is only valid as long as \texttt{Top.4} is strictly smaller than
 monomorphic (not universe polymorphic), so the two universes
 (in this case \texttt{Top.3} and \texttt{Top.4}) are actually global levels.
 
+When printing \texttt{pidentity}, we can see the universes it binds in
+the annotation \texttt{@\{Top.2\}}. Additionally, when \texttt{Set
+  Printing Universes} is on we print the ``universe context'' of
+\texttt{pidentity} consisting of the bound universes and the
+constraints they must verify (for \texttt{pidentity} there are no
+constraints).
+
 Inductive types can also be declared universes polymorphic on universes
 appearing in their parameters or fields. A typical example is given by
 monoids:
@@ -138,7 +145,7 @@ producing global universe constraints, one can use the
 \optindex{Polymorphic Inductive Cumulativity}
 
 Polymorphic inductive types, coinductive types, variants and records can be
-declared cumulative using the \texttt{Cumulative}. Alternatively,
+declared cumulative using the \texttt{Cumulative} prefix. Alternatively,
 there is an option \texttt{Set Polymorphic Inductive Cumulativity} which when set,
 makes all subsequent \emph{polymorphic} inductive definitions cumulative.  When set,
 inductive types and the like can be enforced to be
@@ -151,15 +158,22 @@ Polymorphic Cumulative Inductive list {A : Type} :=
 \begin{coq_example}
 Print list.
 \end{coq_example}
-When printing \texttt{list}, the part of the output of the form
-\texttt{$\mathtt{\sim}$@\{i\} <= $\mathtt{\sim}$@\{j\} iff }
-indicates the universe constraints in order to have the subtyping
-$\WTEGLECONV{\mathtt{list@\{i\}} A}{\mathtt{list@\{j\}} B}$
-(for fully applied instances of \texttt{list}) whenever $\WTEGCONV{A}{B}$.
-In the case of \texttt{list} there is no constraint!
-This also means that any two instances of \texttt{list} are convertible:
-$\WTEGCONV{\mathtt{list@\{i\}} A}{\mathtt{list@\{j\}} B}$ whenever $\WTEGCONV{A}{B}$ and
-furthermore their corresponding (when fully applied to convertible arguments) constructors.
+When printing \texttt{list}, the universe context indicates the
+subtyping constraints by prefixing the level names with symbols.
+
+Because inductive subtypings are only produced by comparing inductives
+to themselves with universes changed, they amount to variance
+information: each universe is either invariant, covariant or
+irrelevant (there are no contravariant subtypings in Coq),
+respectively represented by the symbols \texttt{=}, \texttt{+} and
+\texttt{*}.
+
+Here we see that \texttt{list} binds an irrelevant universe, so any
+two instances of \texttt{list} are convertible:
+$\WTEGCONV{\mathtt{list@\{i\}} A}{\mathtt{list@\{j\}} B}$ whenever
+$\WTEGCONV{A}{B}$ and furthermore their corresponding (when fully
+applied to convertible arguments) constructors.
+
 See Chapter~\ref{Cic} for more details on convertibility and subtyping.
 The following is an example of a record with non-trivial subtyping relation:
 \begin{coq_example*}
@@ -168,8 +182,9 @@ Polymorphic Cumulative Record packType := {pk : Type}.
 \begin{coq_example}
 Print packType.
 \end{coq_example}
-Notice that as expected, \texttt{packType@\{i\}} and \texttt{packType@\{j\}} are
-convertible if and only if \texttt{i $=$ j}.
+\texttt{packType} binds a covariant universe, i.e.
+$\WTEGCONV{\mathtt{packType@\{i\}}}{\mathtt{packType@\{j\}}}$ whenever
+\texttt{i $\leq$ j}.
 
 Cumulative inductive types, coninductive types, variants and records
 only make sense when they are universe polymorphic. Therefore, an

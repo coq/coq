@@ -263,10 +263,10 @@ let pr_universe_ctx_set sigma c =
   else
     mt()
 
-let pr_universe_ctx sigma c =
+let pr_universe_ctx sigma ?variance c =
   if !Detyping.print_universes && not (Univ.UContext.is_empty c) then
     fnl()++pr_in_comment (fun c -> v 0 
-      (Univ.pr_universe_context (Termops.pr_evd_level sigma) c)) c
+      (Univ.pr_universe_context (Termops.pr_evd_level sigma) ?variance c)) c
   else
     mt()
 

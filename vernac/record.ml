@@ -423,16 +423,7 @@ let declare_structure finite ubinders univs id idbuild paramimpls params arity t
       mind_entry_universes = univs;
     }
   in
-  let mie =
-    match ctx with
-    | Polymorphic_const_entry ctx ->
-        let env = Global.env () in
-        let env' = Environ.push_context ctx env in
-        let evd = Evd.from_env env' in
-        Inductiveops.infer_inductive_subtyping env' evd mie
-    | Monomorphic_const_entry _ ->
-       mie
-  in
+  let mie = InferCumulativity.infer_inductive (Global.env ()) mie in
   let kn = ComInductive.declare_mutual_inductive_with_eliminations mie ubinders [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
   let cstr = (rsp,1) in
@@ -501,7 +492,7 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
          match univs with
          | Polymorphic_const_entry univs ->
            if cum then
-             Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context univs)
+             Cumulative_ind_entry (Univ.CumulativityInfo.from_universe_context univs)
            else
              Polymorphic_ind_entry univs
          | Monomorphic_const_entry univs ->
@@ -632,7 +623,7 @@ let definition_structure (kind,cum,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cf
         match univs with
         | Polymorphic_const_entry univs ->
           if cum then
-            Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context univs)
+            Cumulative_ind_entry (Univ.CumulativityInfo.from_universe_context univs)
           else
             Polymorphic_ind_entry univs
         | Monomorphic_const_entry univs ->

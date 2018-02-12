@@ -113,13 +113,12 @@ let print_one_inductive env sigma mib ((_,i) as ind) =
 let instantiate_cumulativity_info cumi =
   let open Univ in
   let univs = ACumulativityInfo.univ_context cumi in
-  let subtyp = ACumulativityInfo.subtyp_context cumi in
   let expose ctx =
     let inst = AUContext.instance ctx in
     let cst = AUContext.instantiate inst ctx in
     UContext.make (inst, cst)
   in
-  CumulativityInfo.make (expose univs, expose subtyp)
+  CumulativityInfo.make (expose univs, ACumulativityInfo.variance cumi)
 
 let print_mutual_inductive env mind mib udecl =
   let inds = List.init (Array.length mib.mind_packets) (fun x -> (mind, x))

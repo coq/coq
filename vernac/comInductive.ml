@@ -340,7 +340,7 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
     match uctx with
     | Polymorphic_const_entry uctx ->
       if cum then
-        Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context uctx)
+        Cumulative_ind_entry (Univ.CumulativityInfo.from_universe_context uctx)
       else Polymorphic_ind_entry uctx
     | Monomorphic_const_entry uctx ->
       Monomorphic_ind_entry uctx
@@ -356,7 +356,7 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
     }
   in
   (if poly && cum then
-      Inductiveops.infer_inductive_subtyping env_ar sigma mind_ent
+      InferCumulativity.infer_inductive env_ar mind_ent
    else mind_ent), Evd.universe_binders sigma, impls
 
 (* Very syntactical equality *)
