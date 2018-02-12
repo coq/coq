@@ -163,6 +163,18 @@ intros n0 H; apply Rec; simpl; auto.
 apply Le.le_S_n; auto.
 Qed.
 
+(** *** Concatenating lists of strings *)
+
+(** [concat sep sl] concatenates the list of strings [sl], inserting
+    the separator string [sep] between each. *)
+
+Fixpoint concat (sep : string) (ls : list string) :=
+  match ls with
+  | nil => EmptyString
+  | cons x nil => x
+  | cons x xs => x ++ sep ++ concat sep xs
+  end.
+
 (** *** Test functions *)
 
 (** Test if [s1] is a prefix of [s2] *)
