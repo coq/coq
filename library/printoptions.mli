@@ -30,6 +30,7 @@ val set_current_options : t -> unit
 
 (** getter/setters for Printing options *)
 val set_printing_all : local:bool -> unit
+val unset_printing_all : unit -> unit
 val set_printing_sugared : local:bool -> unit
 val set_printing_defaults : local:bool -> unit
 

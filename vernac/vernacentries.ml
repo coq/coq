@@ -2000,10 +2000,6 @@ let vernac_load interp fname =
   if Proof_global.there_are_pending_proofs () then
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.")
 
-let unset_printing_all_deprecated =
-  CWarnings.create ~name:"unset-printing-all" ~category:"deprecated"
-    (fun () -> strbrk ("Unset Printing All has no effect."))
-
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
@@ -2111,7 +2107,7 @@ let interp ?proof ~atts ~st c =
      Printoptions.set_printing_sugared ~local:(Locality.make_locality atts.locality)
   | VernacSetPrintingDefaults ->
      Printoptions.set_printing_defaults ~local:(Locality.make_locality atts.locality)
-  | VernacUnsetPrintingAll -> unset_printing_all_deprecated ()
+  | VernacUnsetPrintingAll -> Printoptions.unset_printing_all ()
 
   (* State management *)
   | VernacWriteState s -> vernac_write_state s

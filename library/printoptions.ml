@@ -82,6 +82,11 @@ let current_options = Summary.ref ~name:"printing options" default_options
 let get_current_options () = !current_options
 let set_current_options opts = current_options := opts
 
+let saved_options = ref None
+
+let get_saved_options () = !saved_options
+let set_saved_options opts = saved_options := opts
+
 (* given a print options record, get list of option names and their values,
    used when setting options locally
    somewhat redundant with the option declarations, so a bit fragile
@@ -117,16 +122,28 @@ let mk_printing_local opts_vals =
         opt b)
     opts_vals
 
-let set_printing_all_global () = current_options := all_options
+let set_printing_all_global () = set_current_options all_options
 let set_printing_all_local () = mk_printing_local all_names_values
 
 let set_printing_all ~local =
+  set_saved_options (Some (get_current_options ()));
   if local then
     set_printing_all_local ()
   else
     set_printing_all_global ()
 
-let set_printing_sugared_global () = current_options := sugared_options
+let noop_unset_printing_all_warning =
+  CWarnings.create ~name:"noop-unset-printing-all" ~category:"vernacular"
+    (fun () -> Pp.str("Unset Printing All here has no effect."))
+
+let unset_printing_all () =
+  match get_saved_options () with
+  | Some opts ->
+     set_current_options opts;
+     set_saved_options None
+  | None -> noop_unset_printing_all_warning ()
+
+let set_printing_sugared_global () = set_current_options sugared_options
 let set_printing_sugared_local () = mk_printing_local sugared_names_values
 
 let set_printing_sugared ~local =
@@ -135,7 +152,7 @@ let set_printing_sugared ~local =
   else
     set_printing_sugared_global ()
 
-let set_printing_defaults_global () = current_options := default_options
+let set_printing_defaults_global () = set_current_options default_options
 let set_printing_defaults_local () = mk_printing_local default_names_values
 
 let set_printing_defaults ~local =
