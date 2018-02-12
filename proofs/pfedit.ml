@@ -169,6 +169,9 @@ let refine_by_tactic env sigma ty tac =
       ones created during the tactic invocation easily. *)
   let eff = Evd.eval_side_effects sigma in
   let sigma = Evd.drop_side_effects sigma in
+  (** Save the existing goals *)
+  let prev_future_goals = future_goals sigma in
+  let prev_principal_goal = principal_future_goal sigma in
   (** Start a proof *)
   let prf = Proof.start sigma [env, ty] in
   let (prf, _) =
@@ -179,7 +182,7 @@ let refine_by_tactic env sigma ty tac =
       iraise (e, info)
   in
   (** Plug back the retrieved sigma *)
-  let sigma = Proof.in_proof prf (fun sigma -> sigma) in
+  let (goals,_stack,_shelf,_given_up,sigma) = Proof.proof prf in
   let ans = match Proof.initial_goals prf with
   | [c, _] -> c
   | _ -> assert false
@@ -191,6 +194,12 @@ let refine_by_tactic env sigma ty tac =
   (** Reset the old side-effects *)
   let sigma = Evd.drop_side_effects sigma in
   let sigma = Evd.emit_side_effects eff sigma in
+  (** Restore former goals *)
+  let sigma = restore_future_goals sigma prev_future_goals prev_principal_goal in
+  (** Push remaining goals as future_goals which is the only way we
+      have to inform the caller that there are goals to collect while
+      not being encapsulated in the monad *)
+  let sigma = List.fold_right Evd.declare_future_goal goals sigma in
   (** Get rid of the fresh side-effects by internalizing them in the term
       itself. Note that this is unsound, because the tactic may have solved
       other goals that were already present during its invocation, so that
