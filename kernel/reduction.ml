@@ -325,9 +325,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     if in_whnf st1' then (st1',st2') else whd_both st1' st2' in
   let ((hd1,v1),(hd2,v2)) = whd_both st1 st2 in
   let appr1 = (lft1,(hd1,v1)) and appr2 = (lft2,(hd2,v2)) in
-  (* compute the lifts that apply to the head of the term (hd1 and hd2) *)
-  let el1 = el_stack lft1 v1 in
-  let el2 = el_stack lft2 v2 in
+  (** We delay the computation of the lifts that apply to the head of the term
+      with [el_stack] inside the branches where they are actually used. *)
   match (fterm_of hd1, fterm_of hd2) with
     (* case of leaves *)
     | (FAtom a1, FAtom a2) ->
@@ -343,6 +342,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	   | _ -> raise NotConvertible)
     | (FEvar ((ev1,args1),env1), FEvar ((ev2,args2),env2)) ->
         if Evar.equal ev1 ev2 then
+          let el1 = el_stack lft1 v1 in
+          let el2 = el_stack lft2 v2 in
           let cuniv = convert_stacks l2r infos lft1 lft2 v1 v2 cuniv in
           convert_vect l2r infos el1 el2
             (Array.map (mk_clos env1) args1)
@@ -351,6 +352,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 
     (* 2 index known to be bound to no constant *)
     | (FRel n, FRel m) ->
+        let el1 = el_stack lft1 v1 in
+        let el2 = el_stack lft2 v2 in
         if Int.equal (reloc_rel n el1) (reloc_rel m el2)
         then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
@@ -395,6 +398,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	| None -> 
           if Constant.equal (Projection.constant p1) (Projection.constant p2)
 	     && compare_stack_shape v1 v2 then
+            let el1 = el_stack lft1 v1 in
+            let el2 = el_stack lft2 v2 in
             let u1 = ccnv CONV l2r infos el1 el2 c1 c2 cuniv in
               convert_stacks l2r infos lft1 lft2 v1 v2 u1
 	  else (* Two projections in WHNF: unfold *)
@@ -434,6 +439,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	  anomaly (Pp.str "conversion was given ill-typed terms (FLambda).");
         let (_,ty1,bd1) = destFLambda mk_clos hd1 in
         let (_,ty2,bd2) = destFLambda mk_clos hd2 in
+        let el1 = el_stack lft1 v1 in
+        let el2 = el_stack lft2 v2 in
         let cuniv = ccnv CONV l2r infos el1 el2 ty1 ty2 cuniv in
         ccnv CONV l2r infos (el_lift el1) (el_lift el2) bd1 bd2 cuniv
 
@@ -441,6 +448,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         if not (is_empty_stack v1 && is_empty_stack v2) then
 	  anomaly (Pp.str "conversion was given ill-typed terms (FProd).");
 	(* Luo's system *)
+        let el1 = el_stack lft1 v1 in
+        let el2 = el_stack lft2 v2 in
         let cuniv = ccnv CONV l2r infos el1 el2 c1 c'1 cuniv in
         ccnv cv_pb l2r infos (el_lift el1) (el_lift el2) c2 c'2 cuniv
 
@@ -562,6 +571,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           let fty2 = Array.map (mk_clos e2) tys2 in
           let fcl1 = Array.map (mk_clos (subs_liftn n e1)) cl1 in
           let fcl2 = Array.map (mk_clos (subs_liftn n e2)) cl2 in
+          let el1 = el_stack lft1 v1 in
+          let el2 = el_stack lft2 v2 in
           let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
           let cuniv =
             convert_vect l2r infos
@@ -577,6 +588,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           let fty2 = Array.map (mk_clos e2) tys2 in
           let fcl1 = Array.map (mk_clos (subs_liftn n e1)) cl1 in
           let fcl2 = Array.map (mk_clos (subs_liftn n e2)) cl2 in
+          let el1 = el_stack lft1 v1 in
+          let el2 = el_stack lft2 v2 in
           let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
           let cuniv =
             convert_vect l2r infos
