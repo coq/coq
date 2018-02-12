@@ -223,6 +223,7 @@ Standard Library
   lemmas such as INR_IZR_INZ should be used instead.
 - Real constants are now represented using IZR rather than R0 and R1;
   this might cause rewriting rules to fail to apply to constants.
+- Added new notation {x & P} for sigT (without a type for x)
 
 Plugins
 
