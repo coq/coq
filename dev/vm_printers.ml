@@ -61,7 +61,7 @@ and ppstack s =
 and ppatom a =
   match a with
   | Aid idk -> print_idkey idk
-  | Atype (u,l) -> print_string "Type(...)"
+  | Atype u -> print_string "Type(...)"
   | Aind(sp,i) ->  print_string "Ind(";
       print_string (string_of_mind sp);
       print_string ","; print_int i;
