@@ -25,8 +25,7 @@ open Vernacexpr
 open Vernac_classifier
 
 let execution_error ?loc state_id msg =
-    feedback ~id:state_id
-      (Message (Error, loc, msg))
+    feedback ~id:state_id (Message (Error, loc, msg))
 
 module Hooks = struct
 
@@ -1455,12 +1454,13 @@ end = struct (* {{{ *)
     | ReqStates sl -> RespStates (perform_states sl)
 
   let on_marshal_error s = function
-    | States _ -> msg_error(Pp.strbrk("Marshalling error: "^s^". "^
-        "The system state could not be sent to the master process."))
+    | States _ ->
+      msg_warning Pp.(strbrk("Marshalling error: "^s^". "^
+                             "The system state could not be sent to the master process."))
     | BuildProof { t_exn_info; t_stop; t_assign; t_loc; t_drop = drop_pt } ->
-      msg_error(Pp.strbrk("Marshalling error: "^s^". "^
-        "The system state could not be sent to the worker process. "^
-        "Falling back to local, lazy, evaluation."));
+      msg_warning Pp.(strbrk("Marshalling error: "^s^". "^
+                             "The system state could not be sent to the worker process. "^
+                             "Falling back to local, lazy, evaluation."));
       t_assign(`Comp(build_proof_here ?loc:t_loc ~drop_pt t_exn_info t_stop));
       feedback (InProgress ~-1)
 
@@ -1542,7 +1542,7 @@ end = struct (* {{{ *)
       let (e, info) = CErrors.push e in
       (try match Stateid.get info with
       | None ->
-          msg_error Pp.(
+        msg_warning Pp.(
             str"File " ++ str name ++ str ": proof of " ++ str r_name ++
             spc () ++ iprint (e, info))
       | Some (_, cur) ->
@@ -1552,17 +1552,17 @@ end = struct (* {{{ *)
           | { step = `Qed ( { qast = { loc } }, _) } 
           | { step = `Sideff (ReplayCommand { loc }, _) } ->
               let start, stop = Option.cata Loc.unloc (0,0) loc in
-              msg_error Pp.(
+              msg_warning Pp.(
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
                 str ": chars " ++ int start ++ str "-" ++ int stop ++
                 spc () ++ iprint (e, info))
           | _ ->
-              msg_error Pp.(
+              msg_warning Pp.(
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
                 spc () ++ iprint (e, info))
     with e ->
-      msg_error Pp.(str"unable to print error message: " ++
-                    str (Printexc.to_string e)));
+      msg_warning Pp.(str"unable to print error message: " ++
+                      str (Printexc.to_string e)));
       if drop then `ERROR_ADMITTED else `ERROR
 
   let finish_task name (u,cst,_) d p l i =
@@ -2242,7 +2242,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                 | { VCS.kind = `Edit (_,_,_, okeep, _) }, Some (ofp, cancel) ->
                     assert(redefine_qed = true);
                     if okeep != keep then
-                      msg_error(strbrk("The command closing the proof changed. "
+                      msg_warning(strbrk("The command closing the proof changed. "
                         ^"The kernel cannot take this into account and will "
                         ^(if keep == VtKeep then "not check " else "reject ")
                         ^"the "^(if keep == VtKeep then "new" else "incomplete")
@@ -2427,7 +2427,7 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
     (u,a,true), p
   with e ->
     let e = CErrors.push e in
-    msg_error (str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
+    msg_warning (str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
     exit 1
 
 let merge_proof_branch ~valid ?id qast keep brname =
