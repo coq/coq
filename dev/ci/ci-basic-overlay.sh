@@ -62,7 +62,7 @@
 # Flocq
 ########################################################################
 : ${Flocq_CI_BRANCH:=master}
-: ${Flocq_CI_GITURL:=https://scm.gforge.inria.fr/anonscm/git/flocq/flocq.git}
+: ${Flocq_CI_GITURL:=https://gitlab.inria.fr/flocq/flocq.git}
 
 ########################################################################
 # Coquelicot
