@@ -108,7 +108,7 @@ let incl_all_subdirs dir opts =
 
 (** OCaml + CamlpX libraries *)
 
-let ocaml_libs = ["str.cma";"unix.cma";"nums.cma";"dynlink.cma";"threads.cma"]
+let ocaml_libs = ["str.cma";"dynlink.cma"]
 let camlp4_libs = ["gramlib.cma"]
 let libobjs = ocaml_libs @ camlp4_libs
 
@@ -289,6 +289,7 @@ let main () =
       List.filter ((<>) "") (split_on_char ' ' Coq_config.caml_flags) in
     let args =
       coq_camlflags @ "-linkall" :: "-w" :: "-31" :: flags @ copts @ options @
+      ["-linkpkg"; "-package"; "num"] @
       (std_includes basedir) @ tolink @ [ main_file ] @ topstart
     in
     if !echo then begin

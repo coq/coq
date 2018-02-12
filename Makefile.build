@@ -530,7 +530,7 @@ CSDPCERTCMO:=lib/clib.cma $(addprefix plugins/micromega/, \
 
 $(CSDPCERT): $(call bestobj, $(CSDPCERTCMO))
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,,nums unix)
+	$(HIDE)$(call bestocaml,-linkpkg -package num -package unix,)
 
 ###########################################################################
 # tests
