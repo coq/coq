@@ -30,7 +30,8 @@ Extract Constant one => "'\001'".
 Extract Constant shift =>
  "fun b c -> Char.chr (((Char.code c) lsl 1) land 255 + if b then 1 else 0)".
 
-Extract Inlined Constant ascii_dec => "(=)".
+Extract Inlined Constant ascii_eq_dec => "(=)".
+Extract Inlined Constant ascii_beq => "(=)".
 
 Extract Inductive string => "char list" [ "[]" "(::)" ].
 

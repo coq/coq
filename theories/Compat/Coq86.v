@@ -7,6 +7,7 @@
 (************************************************************************)
 
 (** Compatibility file for making Coq act similar to Coq v8.6 *)
+Local Set Warnings Append "-masking-absolute-name".
 Require Export Coq.Compat.Coq87.
 
 Require Export Coq.extraction.Extraction.
