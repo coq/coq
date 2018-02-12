@@ -54,6 +54,7 @@ let in_debugger = ref false
 let in_toplevel = ref false
 
 let profile = false
+let measure_time_in_aux = ref false
 
 let ide_slave = ref false
 let ideslave_coqtop_flags = ref None

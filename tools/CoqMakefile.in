@@ -210,7 +210,7 @@ TIMING_EXT=timing
 endif
 endif
 else
-TIMING_ARG=
+TIMING_ARG ?=
 endif
 
 # Retro compatibility (DESTDIR is standard on Unix, DSTROOT is not)

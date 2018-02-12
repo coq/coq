@@ -2248,6 +2248,10 @@ let interp ?(verbosely=true) ?proof ~st (loc,c) =
       Flags.make_universe_polymorphism polymorphic;
       Obligations.set_program_mode atts.program;
       try
+        let time_begin =
+          if !Flags.measure_time_in_aux
+          then Some (System.get_time ())
+          else None in
         vernac_timeout begin fun () ->
           let atts = { atts with polymorphic } in
           if verbosely
@@ -2259,7 +2263,12 @@ let interp ?(verbosely=true) ?proof ~st (loc,c) =
             Flags.program_mode := orig_program_mode;
           if (Flags.is_universe_polymorphism() = polymorphic) then
             Flags.make_universe_polymorphism orig_univ_poly;
-          end
+        end;
+        if !Flags.measure_time_in_aux then
+          let time_end = System.get_time () in
+          let time = System.time_difference (Option.get time_begin) time_end in
+          Aux_file.record_in_aux_at
+            ?loc "time_interp" Printf.(sprintf "%f" time)
         with
         | reraise when
               (match reraise with
