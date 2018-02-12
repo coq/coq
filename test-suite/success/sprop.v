@@ -9,10 +9,16 @@ Definition iUnit : SProp := forall A : SProp, A -> A.
 
 Definition itt : iUnit := fun A a => a.
 
+Definition iUnit_irr (P : iUnit -> Type) (x y : iUnit) : P x -> P y
+  := fun v => v.
+
 Definition iSquash (A:Type) : SProp
   := forall P : SProp, (A -> P) -> P.
 Definition isquash A : A -> iSquash A
   := fun a P f => f a.
+Definition iSquash_rect A (P : iSquash A -> SProp) (H : forall x : A, P (isquash A x))
+  : forall x : iSquash A, P x
+  := fun x => x (P x) (H : A -> P x).
 
 Fail Check (fun A : SProp => A : Type).
 
@@ -26,6 +32,13 @@ Inductive sBox (A:SProp) : Prop
   := sbox : A -> sBox A.
 
 Definition uBox := sBox iUnit.
+
+Definition sBox_irr A (x y : sBox A) : x = y.
+Proof.
+  Fail reflexivity.
+  destruct x as [x], y as [y].
+  reflexivity.
+Defined.
 
 (* Primitive record with all fields in SProp has the eta property of SProp so must be SProp. *)
 Fail Record rBox (A:SProp) : Prop := rmkbox { runbox : A }.
@@ -98,7 +111,18 @@ Inductive Istrue : bool -> SProp := istrue : Istrue true.
 Definition Istrue_sym (b:bool) := if b then sUnit else sEmpty.
 Definition Istrue_to_sym b (i:Istrue b) : Istrue_sym b := match i with istrue => stt end.
 
+Definition Istrue_rec (P:forall b, Istrue b -> Set) (H:P true istrue) b (i:Istrue b) : P b i.
+Proof.
+  destruct b.
+  - exact_no_check H.
+  - apply sEmpty_rec. apply Istrue_to_sym in i. exact i.
+Defined.
+
+Check (fun P v (e:Istrue true) => eq_refl : Istrue_rec P v _ e = v).
+
 Record Truepack := truepack { trueval :> bool; trueprop : Istrue trueval }.
+
+Definition Truepack_eta (x : Truepack) (i : Istrue x) : x = truepack x i := @eq_refl Truepack x.
 
 Class emptyclass : SProp := emptyinstance : forall A:SProp, A.
 

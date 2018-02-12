@@ -1194,12 +1194,12 @@ and norm_head info tab m =
   if is_val m then (incr prune; term_of_fconstr m) else
     match m.term with
       | FLambda(_n,tys,f,e) ->
-          let (e',rvtys) =
-            List.fold_left (fun (e,ctxt) (na,ty) ->
-              (subs_lift e, (na,kl info tab (mk_clos e ty))::ctxt))
-              (e,[]) tys in
-          let bd = kl info tab (mk_clos e' f) in
-          List.fold_left (fun b (na,ty) -> mkLambda(na,ty,b)) bd rvtys
+        let (e',info,rvtys) =
+          List.fold_left (fun (e,info,ctxt) (na,ty) ->
+              (subs_lift e, info, (na,kl info tab (mk_clos e ty))::ctxt))
+            (e,info,[]) tys in
+        let bd = kl info tab (mk_clos e' f) in
+        List.fold_left (fun b (na,ty) -> mkLambda(na,ty,b)) bd rvtys
       | FLetIn(na,a,b,f,e) ->
           let c = mk_clos (subs_lift e) f in
           mkLetIn(na, kl info tab a, kl info tab b, kl info tab c)
