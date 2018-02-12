@@ -68,6 +68,8 @@ Universes
   module and library boundaries. Global universe names introduced in an
   inductive / constant / Let declaration get qualified with the name of
   the declaration.
+- Fix #5726: Notations that start with `Type` now support universe instances
+  with `@{u}`.
 
 Checker
 
