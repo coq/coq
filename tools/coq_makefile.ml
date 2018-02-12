@@ -123,7 +123,7 @@ let read_whole_file s =
     close_in ic;
     Buffer.contents b
 
-let quote s = if String.contains s ' ' then "'" ^ s ^ "'" else s
+let quote s = if String.contains s ' ' || CString.is_empty s then "'" ^ s ^ "'" else s
 
 let generate_makefile oc conf_file local_file args project =
   let makefile_template =
