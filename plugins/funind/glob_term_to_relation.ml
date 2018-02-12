@@ -1540,7 +1540,7 @@ let build_inductive evd funconstants funsargs returned_types rtl =
   let open Printoptions in
   let opts = get_current_options () in
   try
-    set_current_options { opts with printing_universes = true };
+    set_printing_universes true;
     do_build_inductive evd funconstants funsargs returned_types rtl;
     set_current_options opts
   with e when CErrors.noncritical e ->
