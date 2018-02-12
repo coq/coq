@@ -32,6 +32,7 @@ let explain_exn_default = function
   | Sys_error msg -> hov 0 (str "System error: " ++ guill msg)
   | Out_of_memory -> hov 0 (str "Out of memory.")
   | Stack_overflow -> hov 0 (str "Stack overflow.")
+  | Dynlink.Error e -> hov 0 (str "Dynlink error: " ++ str Dynlink.(error_message e))
   | Timeout -> hov 0 (str "Timeout!")
   | Sys.Break -> hov 0 (fnl () ++ str "User interrupt.")
   (* Exceptions with pre-evaluated error messages *)
