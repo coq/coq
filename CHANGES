@@ -68,6 +68,9 @@ Universes
   module and library boundaries. Global universe names introduced in an
   inductive / constant / Let declaration get qualified with the name of
   the declaration.
+- Universe cumulativity for inductive types is now specified as a
+  variance for each polymorphic universe. See the reference manual for
+  more information.
 
 Checker
 
