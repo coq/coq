@@ -18,7 +18,7 @@ let () = at_exit flush_all
 let chk_pp = Pp.pp_with Format.std_formatter
 
 let fatal_error info anomaly =
-  flush_all (); Feedback.msg_error info; flush_all ();
+  flush_all (); Format.eprintf "@[Fatal Error: @[%a@]@]%!@\n" Pp.pp_with info; flush_all ();
   exit (if anomaly then 129 else 1)
 
 let coq_root = Id.of_string "Coq"

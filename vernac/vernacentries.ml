@@ -189,7 +189,7 @@ let print_module r =
             Feedback.msg_notice (Printmod.print_module (Printmod.printable_body obj_dir) obj_mp)
 	| _ -> raise Not_found
   with
-      Not_found -> Feedback.msg_error (str"Unknown Module " ++ pr_qualid qid)
+      Not_found -> user_err (str"Unknown Module " ++ pr_qualid qid)
 
 let print_modtype r =
   let (loc,qid) = qualid_of_reference r in
@@ -202,7 +202,7 @@ let print_modtype r =
       let mp = Nametab.locate_module qid in
       Feedback.msg_notice (Printmod.print_module false mp)
     with Not_found ->
-      Feedback.msg_error (str"Unknown Module Type or Module " ++ pr_qualid qid)
+      user_err (str"Unknown Module Type or Module " ++ pr_qualid qid)
 
 let print_namespace ns =
   let ns = List.rev (Names.DirPath.repr ns) in

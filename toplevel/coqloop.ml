@@ -312,7 +312,7 @@ let do_vernac ~time doc sid =
         top_stderr (fnl ()); raise CErrors.Quit
     | CErrors.Drop ->  (* Last chance *)
         if Mltop.is_ocaml_top() then raise CErrors.Drop
-        else (Feedback.msg_error (str "There is no ML toplevel."); doc, sid)
+        else (Feedback.msg_warning (str "There is no ML toplevel."); doc, sid)
     (* Exception printing should be done by the feedback listener,
        however this is not yet ready so we rely on the exception for
        now. *)
@@ -353,7 +353,7 @@ let rec loop ~time doc =
     | CErrors.Drop -> doc
     | CErrors.Quit -> exit 0
     | any ->
-      Feedback.msg_error (str "Anomaly: main loop exited with exception: " ++
+      top_stderr (str "Anomaly: main loop exited with exception: " ++
                   str (Printexc.to_string any) ++
                   fnl() ++
                   str"Please report" ++
