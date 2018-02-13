@@ -92,14 +92,15 @@ Note that this function is executed before _Coqproject is read if it exists."
 ;; buffer.
 (defvar compilation-error-regexp-alist-alist)
 (defvar compilation-error-regexp-alist)
-(add-to-list
- 'compilation-error-regexp-alist-alist
- '(coq-backtrace
-   "^ *\\(?:raise\\|frame\\) @ file \\(\"?\\)\\([^,\" \n\t<>]+\\)\\1,\
+(with-eval-after-load 'compile
+  (add-to-list
+   'compilation-error-regexp-alist-alist
+   '(coq-backtrace
+     "^ *\\(?:raise\\|frame\\) @ file \\(\"?\\)\\([^,\" \n\t<>]+\\)\\1,\
       lines? \\([0-9]+\\)-?\\([0-9]+\\)?\\(?:$\\|,\
       \\(?: characters? \\([0-9]+\\)-?\\([0-9]+\\)?:?\\)?\\)"
-   2 (3 . 4) (5 . 6)))
-(add-to-list 'compilation-error-regexp-alist 'coq-backtrace)
+     2 (3 . 4) (5 . 6)))
+  (add-to-list 'compilation-error-regexp-alist 'coq-backtrace))
 
 (provide 'coqdev)
 ;;; coqdev ends here
