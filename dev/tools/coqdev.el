@@ -37,7 +37,7 @@
     (when dir (expand-file-name dir))))
 
 (defun coqdev-setup-compile-command ()
-  "Setup `compilate-command' for Coq development."
+  "Setup `compile-command' for Coq development."
   (let ((dir (coqdev-default-directory)))
     (when dir (setq-local compile-command (concat "make -C " (shell-quote-argument dir))))))
 (add-hook 'hack-local-variables-hook #'coqdev-setup-compile-command)
