@@ -38,16 +38,6 @@ module NamedDecl = Context.Named.Declaration
 (* Translation from glob_constr to front constr *)
 
 (**********************************************************************)
-(* Parametrization                                                    *)
-
-(* This governs printing of implicit arguments.  When
-   [print_implicits] is on then [print_implicits_explicit_args] tells
-   how implicit args are printed. If on, implicit args are printed
-   with the form (id:=arg) otherwise arguments are printed normally and
-   the function is prefixed by "@" *)
-let print_implicits_explicit_args = ref false
-
-(**********************************************************************)
 (* Turning notations and scopes on and off for printing *)
 module IRuleSet = Set.Make(struct
     type t = interp_rule
@@ -547,7 +537,6 @@ let explicitize inctx impl (cf,f) args =
     | a::args, imp::impl when is_status_implicit imp ->
         let tail = exprec (q+1) (args,impl) in
         let visible =
-          (Printoptions.printing_implicit () && !print_implicits_explicit_args) ||
           (is_needed_for_correct_partial_application tail imp) ||
           (Printoptions.printing_implicit_defensive () &&
 	   (not (is_inferable_implicit inctx n imp) || !Flags.beautify) &&
@@ -604,7 +593,7 @@ let extern_app inctx impl (cf,f) us args =
     CAppExpl ((None, f, us), [])
   else
     if not !Constrintern.parsing_explicit &&
-    ((Printoptions.printing_implicit () && not !print_implicits_explicit_args) &&
+       (Printoptions.printing_implicit () &&
        List.exists is_status_implicit impl)
   then
     let args = List.map Lazy.force args in
