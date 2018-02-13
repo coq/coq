@@ -74,7 +74,7 @@ echo
 
 for ext in "" .desired; do
     for file in A.v.timing.diff; do
-        cat ${file}${ext} | sed s"/${INFINITY}/${INFINITY_REPLACEMENT}/g" | sed s":|\s*N/A\s*$:| ${INFINITY_REPLACEMENT}:g" | sed s'/[0-9]*\.[0-9]*//g' | sed s'/0//g' | sed s'/  */ /g' | sed s'/ *$//g' | sed s'/+/-/g' | sort > ${file}${ext}.processed
+        cat ${file}${ext} | sed s"/${INFINITY}/${INFINITY_REPLACEMENT}/g" | sed s":|\s*N/A\s*$:| ${INFINITY_REPLACEMENT}:g" | sed s'/[0-9]*\.[0-9]*//g' | sed s'/0//g' | sed s'/^-*$/------/g' | sed s'/  */ /g' | sed s'/ *$//g' | sed s'/+/-/g' | sort > ${file}${ext}.processed
     done
 done
 for file in A.v.timing.diff; do
