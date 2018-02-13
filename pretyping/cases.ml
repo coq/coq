@@ -1425,7 +1425,7 @@ and match_current pb (initial,tomatch) =
 	  let ci = make_case_info pb.env (fst mind) pb.casestyle in
           let pred = nf_betaiota pb.env !(pb.evdref) pred in
 	  let case =
-	    make_case_or_project pb.env !(pb.evdref) indf ci pred current brvals
+            make_case_or_project pb.env !(pb.evdref) indf ci pred current brvals
 	  in
           let _ = Evarutil.evd_comb1 (Typing.type_of pb.env) pb.evdref pred in
 	  Typing.check_allowed_sort pb.env !(pb.evdref) mind current pred;

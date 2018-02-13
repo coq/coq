@@ -356,8 +356,8 @@ let make_case_or_project env sigma indf ci pred c branches =
   | None -> (mkCase (ci, pred, c, branches))
   | Some ps ->
      assert(Array.length branches == 1);
+     let na, ty, t = destLambda sigma pred in
      let () =
-       let _, _, t = destLambda sigma pred in
        let (ind, _), _ = dest_ind_family indf in
        let mib, _ = Inductive.lookup_mind_specif env ind in
        if (* dependent *) not (Vars.noccurn sigma 1 t) &&
@@ -368,16 +368,18 @@ let make_case_or_project env sigma indf ci pred c branches =
      in
      let branch = branches.(0) in
      let ctx, br = decompose_lam_n_assum sigma (Array.length ps) branch in
-     let n, subst =
+     let n, len, ctx =
        List.fold_right
-         (fun decl (i, subst) ->
+         (fun decl (i, j, ctx) ->
           match decl with
-          | LocalAssum (na, t) ->
-             let t = mkProj (Projection.make ps.(i) true, c) in
-             (i + 1, t :: subst)
-          | LocalDef (na, b, t) -> (i, Vars.substl subst b :: subst))
-         ctx (0, [])
-     in Vars.substl subst br
+          | LocalAssum (na, ty) ->
+             let t = mkProj (Projection.make ps.(i) true, mkRel j) in
+             (i + 1, j + 1, LocalDef (na, t, Vars.liftn 1 j ty) :: ctx)
+          | LocalDef (na, b, ty) ->
+             (i, j + 1, LocalDef (na, Vars.liftn 1 j b, Vars.liftn 1 j ty) :: ctx))
+         ctx (0, 1, [])
+     in
+     mkLetIn (na, c, ty, it_mkLambda_or_LetIn (Vars.liftn 1 (Array.length ps + 1) br) ctx)
 
 (* substitution in a signature *)
 
