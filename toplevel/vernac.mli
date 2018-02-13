@@ -7,14 +7,24 @@
 (************************************************************************)
 
 (** Parsing of vernacular. *)
+module State : sig
+
+  type t = {
+    doc : Stm.doc;
+    sid : Stateid.t;
+    proof : Proof.t option;
+  }
+
+end
 
 (** [process_expr sid cmd] Executes vernac command [cmd]. Callers are
     expected to handle and print errors in form of exceptions, however
     care is taken so the state machine is left in a consistent
     state. *)
-val process_expr : time:bool -> Stm.doc -> Stateid.t -> Vernacexpr.vernac_control Loc.located -> Stm.doc * Stateid.t
+val process_expr : time:bool -> state:State.t -> Vernacexpr.vernac_control Loc.located -> State.t
 
 (** [load_vernac echo sid file] Loads [file] on top of [sid], will
     echo the commands if [echo] is set. Callers are expected to handle
     and print errors in form of exceptions. *)
-val load_vernac : time:bool -> verbosely:bool -> check:bool -> interactive:bool -> Stm.doc -> Stateid.t -> string -> Stm.doc * Stateid.t
+val load_vernac : time:bool -> verbosely:bool -> check:bool -> interactive:bool ->
+  state:State.t -> string -> State.t

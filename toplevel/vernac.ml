@@ -110,14 +110,25 @@ let pr_open_cur_subgoals () =
 (*     Stm.End_of_input -> true *)
 (*   | _ -> false *)
 
-let rec interp_vernac ~time ~check ~interactive doc sid (loc,com) =
+module State = struct
+
+  type t = {
+    doc : Stm.doc;
+    sid : Stateid.t;
+    proof : Proof.t option;
+  }
+
+end
+
+let rec interp_vernac ~time ~check ~interactive ~state (loc,com) =
+  let open State in
   let interp v =
     match under_control v with
     | VernacLoad (verbosely, fname) ->
         let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
         let fname = CUnix.make_suffix fname ".v" in
         let f = Loadpath.locate_file fname in
-        load_vernac ~time ~verbosely ~check ~interactive doc sid f
+        load_vernac ~time ~verbosely ~check ~interactive ~state f
     | _ ->
       (* XXX: We need to run this before add as the classification is
          highly dynamic and depends on the structure of the
@@ -134,7 +145,7 @@ let rec interp_vernac ~time ~check ~interactive doc sid (loc,com) =
       in
       CWarnings.set_flags wflags;
 
-      let doc, nsid, ntip = Stm.add ~doc ~ontop:sid (not !Flags.quiet) (loc,v) in
+      let doc, nsid, ntip = Stm.add ~doc:state.doc ~ontop:state.sid (not !Flags.quiet) (loc,v) in
 
       (* Main STM interaction *)
       if ntip <> `NewTip then
@@ -152,7 +163,8 @@ let rec interp_vernac ~time ~check ~interactive doc sid (loc,com) =
                         is_proof_step && Proof_global.there_are_pending_proofs () in
 
       if print_goals then Feedback.msg_notice (pr_open_cur_subgoals ());
-      ndoc, nsid
+      let new_proof = Proof_global.give_me_the_proof_opt () in
+      { doc = ndoc; sid = nsid; proof = new_proof }
   in
     try
       (* The -time option is only supported from console-based
@@ -163,7 +175,7 @@ let rec interp_vernac ~time ~check ~interactive doc sid (loc,com) =
     with reraise ->
       (* XXX: In non-interactive mode edit_at seems to do very weird
          things, so we better avoid it while we investigate *)
-      if interactive then ignore(Stm.edit_at ~doc sid);
+      if interactive then ignore(Stm.edit_at ~doc:state.doc state.sid);
       let (reraise, info) = CErrors.push reraise in
       let info = begin
         match Loc.get_loc info with
@@ -172,7 +184,7 @@ let rec interp_vernac ~time ~check ~interactive doc sid (loc,com) =
       end in iraise (reraise, info)
 
 (* Load a vernac file. CErrors are annotated with file and location *)
-and load_vernac ~time ~verbosely ~check ~interactive doc sid file =
+and load_vernac ~time ~verbosely ~check ~interactive ~state file =
   let ft_beautify, close_beautify =
     if !Flags.beautify_file then
       let chan_beautify = open_out (file^beautify_suffix) in
@@ -183,14 +195,14 @@ and load_vernac ~time ~verbosely ~check ~interactive doc sid file =
   let in_chan = open_utf8_file_in file in
   let in_echo = if verbosely then Some (open_utf8_file_in file) else None in
   let in_pa   = Pcoq.Gram.parsable ~file:(Loc.InFile file) (Stream.of_channel in_chan) in
-  let rsid = ref sid in
-  let rdoc = ref doc in
+  let rstate  = ref state in
+  let open State in
   try
     (* we go out of the following infinite loop when a End_of_input is
      * raised, which means that we raised the end of the file being loaded *)
     while true do
       let loc, ast =
-          Stm.parse_sentence ~doc:!rdoc !rsid in_pa
+          Stm.parse_sentence ~doc:!rstate.doc !rstate.sid in_pa
         (* If an error in parsing occurs, we propagate the exception
            so the caller of load_vernac will take care of it. However,
            in the future it could be possible that we want to handle
@@ -214,11 +226,10 @@ and load_vernac ~time ~verbosely ~check ~interactive doc sid file =
       Option.iter (vernac_echo ?loc) in_echo;
 
       checknav_simple (loc, ast);
-      let ndoc, nsid = Flags.silently (interp_vernac ~time ~check ~interactive !rdoc !rsid) (loc, ast) in
-      rsid := nsid;
-      rdoc := ndoc
+      let state = Flags.silently (interp_vernac ~time ~check ~interactive ~state:!rstate) (loc, ast) in
+      rstate := state;
     done;
-    !rdoc, !rsid
+    !rstate
   with any ->   (* whatever the exception *)
     let (e, info) = CErrors.push any in
     close_in in_chan;
@@ -229,7 +240,7 @@ and load_vernac ~time ~verbosely ~check ~interactive doc sid file =
           if !Flags.beautify then
             pr_new_syntax ~loc:(Loc.make_loc (max_int,max_int)) in_pa ft_beautify None;
           if !Flags.beautify_file then close_beautify ();
-          !rdoc, !rsid
+          !rstate
       | reraise ->
          if !Flags.beautify_file then close_beautify ();
 	 iraise (disable_drop e, info)
@@ -241,6 +252,6 @@ and load_vernac ~time ~verbosely ~check ~interactive doc sid file =
    of a new state label). An example of state-preserving command is one coming
    from the query panel of Coqide. *)
 
-let process_expr ~time doc sid loc_ast =
+let process_expr ~time ~state loc_ast =
   checknav_deep loc_ast;
-  interp_vernac ~time ~interactive:true ~check:true doc sid loc_ast
+  interp_vernac ~time ~interactive:true ~check:true ~state loc_ast

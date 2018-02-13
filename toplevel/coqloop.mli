@@ -31,9 +31,7 @@ val set_prompt : (unit -> string) -> unit
 val coqloop_feed : Feedback.feedback -> unit
 
 (** Parse and execute one vernac command. *)
-
-val do_vernac : time:bool -> Stm.doc -> Stateid.t -> Stm.doc * Stateid.t
+val do_vernac : time:bool -> state:Vernac.State.t -> Vernac.State.t
 
 (** Main entry point of Coq: read and execute vernac commands. *)
-
-val loop : time:bool -> Stm.doc -> Stm.doc
+val loop : time:bool -> state:Vernac.State.t -> Vernac.State.t

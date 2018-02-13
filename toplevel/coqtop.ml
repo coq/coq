@@ -37,16 +37,16 @@ let coqtop_init_feed = Coqloop.coqloop_feed
 let drop_last_doc = ref None
 
 (* Default toplevel loop *)
-let console_toploop_run opts doc =
+let console_toploop_run opts ~state =
   (* We initialize the console only if we run the toploop_run *)
   let tl_feed = Feedback.add_feeder Coqloop.coqloop_feed in
   if Dumpglob.dump () then begin
     Flags.if_verbose warning "Dumpglob cannot be used in interactive mode.";
     Dumpglob.noglob ()
   end;
-  let doc = Coqloop.loop ~time:opts.time doc in
+  let state = Coqloop.loop ~time:opts.time ~state in
   (* Initialise and launch the Ocaml toplevel *)
-  drop_last_doc := Some doc;
+  drop_last_doc := Some state;
   Coqinit.init_ocaml_path();
   Mltop.ocaml_toploop();
   (* We let the feeder in place for users of Drop *)
@@ -90,24 +90,26 @@ let outputstate opts =
 (******************************************************************************)
 (* Interactive Load File Simulation                                           *)
 (******************************************************************************)
-let load_vernacular opts doc sid =
+let load_vernacular opts ~state =
   List.fold_left
-    (fun (doc,sid) (f_in, verbosely) ->
+    (fun state (f_in, verbosely) ->
       let s = Loadpath.locate_file f_in in
-      if !Flags.beautify then
-        Flags.with_option Flags.beautify_file (Vernac.load_vernac ~time:opts.time ~verbosely ~interactive:false ~check:true doc sid) f_in
-      else
-        Vernac.load_vernac ~time:opts.time ~verbosely ~interactive:false ~check:true doc sid s)
-    (doc, sid) (List.rev opts.load_vernacular_list)
+      (* Should make the beautify logic clearer *)
+      let load_vernac f = Vernac.load_vernac ~time:opts.time ~verbosely ~interactive:false ~check:true ~state f in
+      if !Flags.beautify
+      then Flags.with_option Flags.beautify_file load_vernac f_in
+      else load_vernac s
+    ) state (List.rev opts.load_vernacular_list)
 
-let load_init_vernaculars opts doc sid =
-  let doc, sid = if opts.load_rcfile then
-      Coqinit.load_rcfile ~rcfile:opts.rcfile ~time:opts.time doc sid
+let load_init_vernaculars opts ~state =
+  let state = if opts.load_rcfile then
+      Coqinit.load_rcfile ~rcfile:opts.rcfile ~time:opts.time ~state
     else begin
       Flags.if_verbose Feedback.msg_info (str"Skipping rcfile loading.");
-      doc,sid
+      state
     end in
-  load_vernacular opts doc sid
+
+  load_vernacular opts ~state
 
 (******************************************************************************)
 (* Startup LoadPath and Modules                                               *)
@@ -193,6 +195,7 @@ let ensure_exists f =
 
 (* Compile a vernac file *)
 let compile opts ~verbosely ~f_in ~f_out =
+  let open Vernac.State in
   let check_pending_proofs () =
     let pfs = Proof_global.get_all_proof_names () in
     if not (CList.is_empty pfs) then
@@ -220,16 +223,17 @@ let compile opts ~verbosely ~f_in ~f_out =
             iload_path; require_libs; stm_options;
           }) in
 
-      let doc, sid = load_init_vernaculars opts doc sid in
-      let ldir = Stm.get_ldir ~doc in
+      let state = { doc; sid; proof = None } in
+      let state = load_init_vernaculars opts ~state in
+      let ldir = Stm.get_ldir ~doc:state.doc in
       Aux_file.(start_aux_file
         ~aux_file:(aux_file_name_for long_f_dot_vo)
         ~v_file:long_f_dot_v);
       Dumpglob.start_dump_glob ~vfile:long_f_dot_v ~vofile:long_f_dot_vo;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
       let wall_clock1 = Unix.gettimeofday () in
-      let doc, _ = Vernac.load_vernac ~time:opts.time ~verbosely ~check:true ~interactive:false doc (Stm.get_current_state ~doc) long_f_dot_v in
-      let _doc = Stm.join ~doc in
+      let state = Vernac.load_vernac ~time:opts.time ~verbosely ~check:true ~interactive:false ~state long_f_dot_v in
+      let _doc = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
       check_pending_proofs ();
       Library.save_library_to ldir long_f_dot_vo (Global.opaque_tables ());
@@ -266,11 +270,11 @@ let compile opts ~verbosely ~f_in ~f_out =
             iload_path; require_libs; stm_options;
           }) in
 
-      let doc, sid = load_init_vernaculars opts doc sid in
-
-      let ldir = Stm.get_ldir ~doc in
-      let doc, _ = Vernac.load_vernac ~time:opts.time ~verbosely ~check:false ~interactive:false doc (Stm.get_current_state ~doc) long_f_dot_v in
-      let doc = Stm.finish ~doc in
+      let state = { doc; sid; proof = None } in
+      let state = load_init_vernaculars opts ~state in
+      let ldir = Stm.get_ldir ~doc:state.doc in
+      let state = Vernac.load_vernac ~time:opts.time ~verbosely ~check:false ~interactive:false ~state long_f_dot_v in
+      let doc = Stm.finish ~doc:state.doc in
       check_pending_proofs ();
       let _doc = Stm.snapshot_vio ~doc ldir long_f_dot_vio in
       Stm.reset_task_queue ()
@@ -465,12 +469,15 @@ let init_toplevel arglist =
         let iload_path = build_load_path opts in
         let require_libs = require_libs opts in
         let stm_options = opts.stm_flags in
-        try let doc, sid =
-              Stm.(new_doc
-                     { doc_type = Interactive opts.toplevel_name;
-                       iload_path; require_libs; stm_options;
-                     }) in
-          Some (load_init_vernaculars opts doc sid), opts
+        try
+          let open Vernac.State in
+          let doc, sid =
+            Stm.(new_doc
+                   { doc_type = Interactive opts.toplevel_name;
+                     iload_path; require_libs; stm_options;
+                   }) in
+          let state = { doc; sid; proof = None } in
+          Some (load_init_vernaculars opts ~state), opts
         with any -> flush_all(); fatal_error_exn any
       (* Non interactive: we perform a sequence of compilation steps *)
       end else begin
@@ -496,8 +503,8 @@ let init_toplevel arglist =
 let start () =
   match init_toplevel (List.tl (Array.to_list Sys.argv)) with
   (* Batch mode *)
-  | Some (doc, sid), opts when not opts.batch_mode ->
-    !toploop_run opts doc;
+  | Some state, opts when not opts.batch_mode ->
+    !toploop_run opts ~state;
     exit 1
   | _ , opts ->
     flush_all();

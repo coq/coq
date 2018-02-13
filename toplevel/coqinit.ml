@@ -21,12 +21,12 @@ let set_debug () =
 
 let rcdefaultname = "coqrc"
 
-let load_rcfile ~rcfile ~time doc sid =
+let load_rcfile ~rcfile ~time ~state =
     try
       match rcfile with
       | Some rcfile ->
         if CUnix.file_readable_p rcfile then
-          Vernac.load_vernac ~time ~verbosely:false ~interactive:false ~check:true doc sid rcfile
+          Vernac.load_vernac ~time ~verbosely:false ~interactive:false ~check:true ~state rcfile
         else raise (Sys_error ("Cannot read rcfile: "^ rcfile))
       | None ->
 	try
@@ -37,8 +37,8 @@ let load_rcfile ~rcfile ~time doc sid =
 	    Envars.home ~warn / "."^rcdefaultname^"."^Coq_config.version;
 	    Envars.home ~warn / "."^rcdefaultname
 	  ] in
-          Vernac.load_vernac ~time ~verbosely:false ~interactive:false ~check:true doc sid inferedrc
-	with Not_found -> doc, sid
+          Vernac.load_vernac ~time ~verbosely:false ~interactive:false ~check:true ~state inferedrc
+        with Not_found -> state
 	(*
 	Flags.if_verbose
 	  mSGNL (str ("No coqrc or coqrc."^Coq_config.version^
