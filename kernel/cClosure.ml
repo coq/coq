@@ -257,12 +257,14 @@ module KeyTable = Hashtbl.Make(IdKeyHash)
 
 let eq_table_key = IdKeyHash.equal
 
+type 'a infos_tab = 'a KeyTable.t
+
 type 'a infos_cache = {
-  i_repr : 'a infos -> constr -> 'a;
+  i_repr : 'a infos -> 'a infos_tab -> constr -> 'a;
   i_env : env;
   i_sigma : existential -> constr option;
   i_rels : (Context.Rel.Declaration.t * Pre_env.lazy_val) Range.t;
-  i_tab : 'a KeyTable.t }
+}
 
 and 'a infos = {
   i_flags : reds;
@@ -277,9 +279,9 @@ let assoc_defined id env = match Environ.lookup_named id env with
 | LocalDef (_, c, _) -> c
 | _ -> raise Not_found
 
-let ref_value_cache ({i_cache = cache} as infos)  ref =
+let ref_value_cache ({i_cache = cache} as infos) tab ref =
   try
-    Some (KeyTable.find cache.i_tab ref)
+    Some (KeyTable.find tab ref)
   with Not_found ->
   try
     let body =
@@ -298,8 +300,8 @@ let ref_value_cache ({i_cache = cache} as infos)  ref =
 	| VarKey id -> assoc_defined id cache.i_env
 	| ConstKey cst -> constant_value_in cache.i_env cst
     in
-    let v = cache.i_repr infos body in
-    KeyTable.add cache.i_tab ref v;
+    let v = cache.i_repr infos tab body in
+    KeyTable.add tab ref v;
     Some v
   with
     | Not_found (* List.assoc *)
@@ -316,7 +318,7 @@ let create mk_cl flgs env evars =
       i_env = env;
       i_sigma = evars;
       i_rels = (Environ.pre_env env).env_rel_context.env_rel_map;
-      i_tab = KeyTable.create 17 }
+    }
   in { i_flags = flgs; i_cache = cache }
 
 
@@ -904,23 +906,23 @@ and knht info e t stk =
 (************************************************************************)
 
 (* Computes a weak head normal form from the result of knh. *)
-let rec knr info m stk =
+let rec knr info tab m stk =
   match m.term with
   | FLambda(n,tys,f,e) when red_set info.i_flags fBETA ->
       (match get_args n tys f e stk with
-          Inl e', s -> knit info e' f s
+          Inl e', s -> knit info tab e' f s
         | Inr lam, s -> (lam,s))
   | FFlex(ConstKey (kn,_ as c)) when red_set info.i_flags (fCONST kn) ->
-      (match ref_value_cache info (ConstKey c) with
-          Some v -> kni info v stk
+      (match ref_value_cache info tab (ConstKey c) with
+          Some v -> kni info tab v stk
         | None -> (set_norm m; (m,stk)))
   | FFlex(VarKey id) when red_set info.i_flags (fVAR id) ->
-      (match ref_value_cache info (VarKey id) with
-          Some v -> kni info v stk
+      (match ref_value_cache info tab (VarKey id) with
+          Some v -> kni info tab v stk
         | None -> (set_norm m; (m,stk)))
   | FFlex(RelKey k) when red_set info.i_flags fDELTA ->
-      (match ref_value_cache info (RelKey k) with
-          Some v -> kni info v stk
+      (match ref_value_cache info tab (RelKey k) with
+          Some v -> kni info tab v stk
         | None -> (set_norm m; (m,stk)))
   | FConstruct((ind,c),u) ->
      let use_match = red_set info.i_flags fMATCH in
@@ -930,29 +932,29 @@ let rec knr info m stk =
         | (depth, args, ZcaseT(ci,_,br,e)::s) when use_match ->
             assert (ci.ci_npar>=0);
             let rargs = drop_parameters depth ci.ci_npar args in
-            knit info e br.(c-1) (rargs@s)
+            knit info tab e br.(c-1) (rargs@s)
         | (_, cargs, Zfix(fx,par)::s) when use_fix ->
             let rarg = fapp_stack(m,cargs) in
             let stk' = par @ append_stack [|rarg|] s in
             let (fxe,fxbd) = contract_fix_vect fx.term in
-            knit info fxe fxbd stk'
+            knit info tab fxe fxbd stk'
 	| (depth, args, Zproj (n, m, cst)::s) when use_match ->
 	    let rargs = drop_parameters depth n args in
 	    let rarg = project_nth_arg m rargs in
-	      kni info rarg s
+            kni info tab rarg s
         | (_,args,s) -> (m,args@s))
      else (m,stk)
   | FCoFix _ when red_set info.i_flags fCOFIX ->
       (match strip_update_shift_app m stk with
           (_, args, (((ZcaseT _|Zproj _)::_) as stk')) ->
             let (fxe,fxbd) = contract_fix_vect m.term in
-            knit info fxe fxbd (args@stk')
+            knit info tab fxe fxbd (args@stk')
         | (_,args,s) -> (m,args@s))
   | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
-      knit info (subs_cons([|v|],e)) bd stk
+      knit info tab (subs_cons([|v|],e)) bd stk
   | FEvar(ev,env) ->
       (match evar_value info.i_cache ev with
-          Some c -> knit info env c stk
+          Some c -> knit info tab env c stk
         | None -> (m,stk))
   | FLOCKED | FRel _ | FAtom _ | FCast _ | FFlex _ | FInd _ | FApp _ | FProj _
     | FFix _ | FCoFix _ | FCaseT _ | FLambda _ | FProd _ | FLetIn _ | FLIFT _
@@ -960,14 +962,14 @@ let rec knr info m stk =
 
 
 (* Computes the weak head normal form of a term *)
-and kni info m stk =
+and kni info tab m stk =
   let (hm,s) = knh info m stk in
-  knr info hm s
-and knit info e t stk =
+  knr info tab hm s
+and knit info tab e t stk =
   let (ht,s) = knht info e t stk in
-  knr info ht s
+  knr info tab ht s
 
-let kh info v stk = fapp_stack(kni info v stk)
+let kh info tab v stk = fapp_stack(kni info tab v stk)
 
 (************************************************************************)
 
@@ -995,61 +997,61 @@ let rec zip_term zfun m stk =
    1- Calls kni
    2- tries to rebuild the term. If a closure still has to be computed,
       calls itself recursively. *)
-let rec kl info m =
+let rec kl info tab m =
   if is_val m then (incr prune; term_of_fconstr m)
   else
-    let (nm,s) = kni info m [] in
+    let (nm,s) = kni info tab m [] in
     let () = if !share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
-    zip_term (kl info) (norm_head info nm) s
+    zip_term (kl info tab) (norm_head info tab nm) s
 
 (* no redex: go up for atoms and already normalized terms, go down
    otherwise. *)
-and norm_head info m =
+and norm_head info tab m =
   if is_val m then (incr prune; term_of_fconstr m) else
     match m.term with
       | FLambda(n,tys,f,e) ->
           let (e',rvtys) =
             List.fold_left (fun (e,ctxt) (na,ty) ->
-              (subs_lift e, (na,kl info (mk_clos e ty))::ctxt))
+              (subs_lift e, (na,kl info tab (mk_clos e ty))::ctxt))
               (e,[]) tys in
-          let bd = kl info (mk_clos e' f) in
+          let bd = kl info tab (mk_clos e' f) in
           List.fold_left (fun b (na,ty) -> mkLambda(na,ty,b)) bd rvtys
       | FLetIn(na,a,b,f,e) ->
           let c = mk_clos (subs_lift e) f in
-          mkLetIn(na, kl info a, kl info b, kl info c)
+          mkLetIn(na, kl info tab a, kl info tab b, kl info tab c)
       | FProd(na,dom,rng) ->
-          mkProd(na, kl info dom, kl info rng)
+          mkProd(na, kl info tab dom, kl info tab rng)
       | FCoFix((n,(na,tys,bds)),e) ->
           let ftys = CArray.Fun1.map mk_clos e tys in
           let fbds =
             CArray.Fun1.map mk_clos (subs_liftn (Array.length na) e) bds in
-          mkCoFix(n,(na, CArray.Fun1.map kl info ftys, CArray.Fun1.map kl info fbds))
+          mkCoFix(n,(na, CArray.map (kl info tab) ftys, CArray.map (kl info tab) fbds))
       | FFix((n,(na,tys,bds)),e) ->
           let ftys = CArray.Fun1.map mk_clos e tys in
           let fbds =
             CArray.Fun1.map mk_clos (subs_liftn (Array.length na) e) bds in
-          mkFix(n,(na, CArray.Fun1.map kl info ftys, CArray.Fun1.map kl info fbds))
+          mkFix(n,(na, CArray.map (kl info tab) ftys, CArray.map (kl info tab) fbds))
       | FEvar((i,args),env) ->
-          mkEvar(i, Array.map (fun a -> kl info (mk_clos env a)) args)
+          mkEvar(i, Array.map (fun a -> kl info tab (mk_clos env a)) args)
       | FProj (p,c) ->
-          mkProj (p, kl info c)
+          mkProj (p, kl info tab c)
       | FLOCKED | FRel _ | FAtom _ | FCast _ | FFlex _ | FInd _ | FConstruct _
         | FApp _ | FCaseT _ | FLIFT _ | FCLOS _ -> term_of_fconstr m
 
 (* Initialization and then normalization *)
 
 (* weak reduction *)
-let whd_val info v =
-  with_stats (lazy (term_of_fconstr (kh info v [])))
+let whd_val info tab v =
+  with_stats (lazy (term_of_fconstr (kh info tab v [])))
 
 (* strong reduction *)
-let norm_val info v =
-  with_stats (lazy (kl info v))
+let norm_val info tab v =
+  with_stats (lazy (kl info tab v))
 
 let inject c = mk_clos (subs_id 0) c
 
-let whd_stack infos m stk =
-  let k = kni infos m stk in
+let whd_stack infos tab m stk =
+  let k = kni infos tab m stk in
   let () = if !share then ignore (fapp_stack k) in (* to unlock Zupdates! *)
   k
 
@@ -1057,7 +1059,10 @@ let whd_stack infos m stk =
 type clos_infos = fconstr infos
 
 let create_clos_infos ?(evars=fun _ -> None) flgs env =
-  create (fun _ -> inject) flgs env evars
+  create (fun _ _ c -> inject c) flgs env evars
+
+let create_tab () = KeyTable.create 17
+
 let oracle_of_infos infos = Environ.oracle infos.i_cache.i_env
 
 let env_of_infos infos = infos.i_cache.i_env
@@ -1065,14 +1070,14 @@ let env_of_infos infos = infos.i_cache.i_env
 let infos_with_reds infos reds =
   { infos with i_flags = reds }
 
-let unfold_reference info key =
+let unfold_reference info tab key =
   match key with
   | ConstKey (kn,_) ->
     if red_set info.i_flags (fCONST kn) then
-      ref_value_cache info key
+      ref_value_cache info tab key
     else None
   | VarKey i ->
     if red_set info.i_flags (fVAR i) then
-      ref_value_cache info key
+      ref_value_cache info tab key
     else None
-  | _ -> ref_value_cache info key
+  | _ -> ref_value_cache info tab key

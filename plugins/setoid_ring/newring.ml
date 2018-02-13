@@ -88,7 +88,7 @@ let lookup_map map =
 let protect_red map env sigma c0 =
   let evars ev = Evarutil.safe_evar_value sigma ev in
   let c = EConstr.Unsafe.to_constr c0 in
-  EConstr.of_constr (kl (create_clos_infos ~evars all env)
+  EConstr.of_constr (kl (create_clos_infos ~evars all env) (create_tab ())
     (mk_clos_but (lookup_map map sigma c0) (Esubst.subs_id 0) c));;
 
 let protect_tac map =

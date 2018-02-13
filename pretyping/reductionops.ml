@@ -1230,6 +1230,7 @@ let clos_norm_flags flgs env sigma t =
     let evars ev = safe_evar_value sigma ev in
     EConstr.of_constr (CClosure.norm_val
       (CClosure.create_clos_infos ~evars flgs env)
+      (CClosure.create_tab ())
       (CClosure.inject (EConstr.Unsafe.to_constr t)))
   with e when is_anomaly e -> user_err Pp.(str "Tried to normalize ill-typed term")
 
@@ -1238,6 +1239,7 @@ let clos_whd_flags flgs env sigma t =
     let evars ev = safe_evar_value sigma ev in
     EConstr.of_constr (CClosure.whd_val
       (CClosure.create_clos_infos ~evars flgs env)
+      (CClosure.create_tab ())
       (CClosure.inject (EConstr.Unsafe.to_constr t)))
   with e when is_anomaly e -> user_err Pp.(str "Tried to normalize ill-typed term")
 
