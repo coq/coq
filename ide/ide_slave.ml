@@ -454,9 +454,11 @@ let slave_feeder fmt xml_oc msg =
 let msg_format = ref (fun () ->
     let margin = Option.default 72 (Topfmt.get_margin ()) in
     Xmlprotocol.Richpp margin
-)
+  )
 
-let loop doc =
+(* The loop ignores the command line arguments as the current model delegates
+   its handing to the toplevel container. *)
+let loop _args doc =
   set_doc doc;
   init_signal_handler ();
   catch_break := false;
@@ -504,8 +506,8 @@ let rec parse = function
   | x :: rest -> x :: parse rest
   | [] -> []
 
-let () = Coqtop.toploop_init := (fun args ->
-        let args = parse args in
+let () = Coqtop.toploop_init := (fun coq_args extra_args ->
+        let args = parse extra_args in
         Flags.quiet := true;
         CoqworkmgrApi.(init High);
         args)
