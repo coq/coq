@@ -163,7 +163,7 @@ Require Import ssreflect.
 (*     rev_right_loop inv op <-> op, inv obey the inverse loop reverse right  *)
 (*                              axiom: (x op y) op (inv y) = x for all x, y.  *)
 (*   Note that familiar "cancellation" identities like x + y - y = x or       *)
-(* x - y + x = x are respectively instances of right_loop and rev_right_loop  *)
+(* x - y + y = x are respectively instances of right_loop and rev_right_loop  *)
 (* The corresponding lemmas will use the K and NK/VK suffixes, respectively.  *)
 (*                                                                            *)
 (* - Morphisms for functions and relations:                                   *)
