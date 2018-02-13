@@ -117,9 +117,7 @@ let default_names_values = options_by_name_value default_options
 let mk_printing_local opts_vals =
   List.iter
     (fun (opt,b) ->
-      Goptions.set_bool_option_value_gen
-        (Some true) (* local *)
-        opt b)
+      Goptions.set_bool_option_value_gen ~locality:Goptions.OptLocal opt b)
     opts_vals
 
 let set_printing_all_global () = set_current_options all_options
@@ -160,8 +158,6 @@ let set_printing_defaults ~local =
     set_printing_defaults_local ()
   else
     set_printing_defaults_global ()
-
-let printing_all () = (!current_options = all_options)
 
 (* getters/setters for Printing options, grouped by system component *)
 

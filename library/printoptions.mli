@@ -88,8 +88,5 @@ val set_printing_compact_contexts : bool -> unit
 val printing_universes : unit -> bool
 val set_printing_universes : bool -> unit
 
-(** predicate to see if Printing All in effect *)
-val printing_all : unit -> bool
-
 (** run function in context of temporary printing option *)
 val with_printing_option : (t -> t) -> ('a -> 'b) -> 'a -> 'b

@@ -969,8 +969,11 @@ and extern_local_binder scopes vars = function
              CLocalAssum([CAst.make na],Default bk,ty) :: l))
 
     | GLocalPattern ((p,_),_,bk,ty) ->
-      let ty =
-        if Printoptions.printing_all () then Some (extern_typ scopes vars ty) else None in
+       (* TODO: when Set Printing All set raw_print ref, had:
+            let ty = if !raw_print then Some (extern_typ scopes vars ty) else None
+          is there a new option to be created?
+        *)
+      let ty = None in
       let p = mkCPatOr (List.map (extern_cases_pattern vars) p) in
       let (assums,ids,l) = extern_local_binder scopes vars l in
       (assums,ids, CLocalPattern(CAst.make @@ (p,ty)) :: l)

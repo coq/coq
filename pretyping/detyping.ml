@@ -543,17 +543,23 @@ and detype_r d flags avoid env sigma t =
 	(try let _ = Global.lookup_named id in GRef (VarRef id, None)
 	 with Not_found -> GVar id)
     | Sort s -> GSort (detype_sort sigma (ESorts.kind sigma s))
-    | Cast (c1,REVERTcast,c2) when not (Printoptions.printing_all ()) ->
+    (* TODO: when Set Printing All used raw_print ref, the following
+             case used:
+              when not !raw_print
+             as a guard. Is there a different guard, that can be used?
+             Is a new option needed?
+    *)
+    | Cast (c1,REVERTcast,c2) ->
         DAst.get (detype d flags avoid env sigma c1)
     | Cast (c1,k,c2) ->
-        let d1 = detype d flags avoid env sigma c1 in
-	let d2 = detype d flags avoid env sigma c2 in
-    let cast = match k with
-    | VMcast -> CastVM d2
-    | NATIVEcast -> CastNative d2
-    | _ -> CastConv d2
-    in
-	GCast(d1,cast)
+       let d1 = detype d flags avoid env sigma c1 in
+       let d2 = detype d flags avoid env sigma c2 in
+       let cast = match k with
+         | VMcast -> CastVM d2
+         | NATIVEcast -> CastNative d2
+         | _ -> CastConv d2
+       in
+       GCast(d1,cast)
     | Prod (na,ty,c) -> detype_binder d flags BProd avoid env sigma na None ty c
     | Lambda (na,ty,c) -> detype_binder d flags BLambda avoid env sigma na None ty c
     | LetIn (na,b,ty,c) -> detype_binder d flags BLetIn avoid env sigma na (Some b) ty c
@@ -777,7 +783,7 @@ and detype_binder d (lax,isgoal as flags) bk avoid env sigma na body ty c =
       let c = detype d (lax,false) avoid env sigma (Option.get body) in
       (* Heuristic: we display the type if in Prop *)
       let s = try Retyping.get_sort_family_of (snd env) sigma ty with _ when !Flags.in_debugger || !Flags.in_toplevel -> InType (* Can fail because of sigma missing in debugger *) in
-      let t = if s != InProp && not (Printoptions.printing_all ()) then None else Some (detype d (lax,false) avoid env sigma ty) in
+      let t = if s != InProp then None else Some (detype d (lax,false) avoid env sigma ty) in
       GLetIn (na', c, t, r)
 
 let detype_rel_context d ?(lax=false) where avoid env sigma sign =
