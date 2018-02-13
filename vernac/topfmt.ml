@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Feedback
 open Pp
 
 (** Pp control also belongs here as the terminal is private to the toplevel *)
@@ -138,7 +137,7 @@ let make_body quoter info ?pre_hdr s =
 (* The empty quoter *)
 let noq x = x
 (* Generic logger *)
-let gen_logger dbg warn ?pre_hdr level msg = match level with
+let gen_logger dbg warn ?pre_hdr level msg = let open Feedback in match level with
   | Debug   -> msgnl_with !std_ft (make_body dbg  dbg_hdr ?pre_hdr msg)
   | Info    -> msgnl_with !std_ft (make_body dbg info_hdr ?pre_hdr msg)
   | Notice  -> msgnl_with !std_ft (make_body noq info_hdr ?pre_hdr msg)

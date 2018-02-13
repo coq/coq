@@ -223,9 +223,8 @@ let rec unzip ctx j =
       unzip ctx { j with uj_val = mkApp (mkLambda (n,ty,j.uj_val),arg) }
 
 let feedback_completion_typecheck =
-  let open Feedback in
   Option.iter (fun state_id ->
-      feedback ~id:state_id Feedback.Complete)
+      Feedback.feedback ~id:state_id Feedback.Complete)
 
 let abstract_constant_universes = function
   | Monomorphic_const_entry uctx ->

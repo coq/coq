@@ -58,20 +58,20 @@ let show_proof () =
   let p = Proof_global.give_me_the_proof () in
   let sigma, env = Pfedit.get_current_context () in
   let pprf = Proof.partial_proof p in
-  Feedback.msg_notice (Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf)
+  Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf
 
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
   let pfts = Proof_global.give_me_the_proof () in
   let gls,_,_,_,sigma = Proof.proof pfts in
-  Feedback.msg_notice (pr_evars_int sigma 1 (Evd.undefined_map sigma))
+  pr_evars_int sigma 1 (Evd.undefined_map sigma)
 
 let show_universes () =
   let pfts = Proof_global.give_me_the_proof () in
   let gls,_,_,_,sigma = Proof.proof pfts in
   let ctx = Evd.universe_context_set (Evd.nf_constraints sigma) in
-    Feedback.msg_notice (Termops.pr_evar_universe_context (Evd.evar_universe_context sigma));
-    Feedback.msg_notice (str"Normalized constraints: " ++ Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx)
+  Termops.pr_evar_universe_context (Evd.evar_universe_context sigma) ++ fnl () ++
+  str "Normalized constraints: " ++ Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx
 
 (* Simulate the Intro(s) tactic *)
 let show_intro all =
@@ -83,11 +83,12 @@ let show_intro all =
     let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma (pf_concl gl)) in
     if all then
       let lid = Tactics.find_intro_names l gl in
-      Feedback.msg_notice (hov 0 (prlist_with_sep  spc Id.print lid))
+      hov 0 (prlist_with_sep  spc Id.print lid)
     else if not (List.is_empty l) then
       let n = List.last l in
-      Feedback.msg_notice (Id.print (List.hd (Tactics.find_intro_names [n] gl)))
-  end
+      Id.print (List.hd (Tactics.find_intro_names [n] gl))
+    else mt ()
+  end else mt ()
 
 (** Prepare a "match" template for a given inductive type.
     For each branch of the match, we list the constructor name
@@ -146,8 +147,8 @@ let show_match id =
   let pr_branch l =
     str "| " ++ hov 1 (prlist_with_sep spc str l) ++ str " =>"
   in
-  Feedback.msg_notice (v 1 (str "match # with" ++ fnl () ++
-	    prlist_with_sep fnl pr_branch patterns ++ fnl () ++ str "end" ++ fnl ()))
+  v 1 (str "match # with" ++ fnl () ++
+       prlist_with_sep fnl pr_branch patterns ++ fnl () ++ str "end" ++ fnl ())
 
 (* "Print" commands *)
 
@@ -186,21 +187,21 @@ let print_module r =
     let globdir = Nametab.locate_dir qid in
       match globdir with
           DirModule { obj_dir; obj_mp; _ } ->
-            Feedback.msg_notice (Printmod.print_module (Printmod.printable_body obj_dir) obj_mp)
+          Printmod.print_module (Printmod.printable_body obj_dir) obj_mp
 	| _ -> raise Not_found
   with
-      Not_found -> user_err (str"Unknown Module " ++ pr_qualid qid)
+    Not_found -> user_err (str"Unknown Module " ++ pr_qualid qid)
 
 let print_modtype r =
   let (loc,qid) = qualid_of_reference r in
   try
     let kn = Nametab.locate_modtype qid in
-    Feedback.msg_notice (Printmod.print_modtype kn)
+    Printmod.print_modtype kn
   with Not_found ->
     (* Is there a module of this name ? If yes we display its type *)
     try
       let mp = Nametab.locate_module qid in
-      Feedback.msg_notice (Printmod.print_module false mp)
+      Printmod.print_module false mp
     with Not_found ->
       user_err (str"Unknown Module Type or Module " ++ pr_qualid qid)
 
@@ -272,7 +273,7 @@ let print_namespace ns =
         acc
     ) constants (str"")
   in
-  Feedback.msg_notice ((print_list Id.print ns)++str":"++fnl()++constants_in_namespace)
+  (print_list Id.print ns)++str":"++fnl()++constants_in_namespace
 
 let print_strategy r =
   let open Conv_oracle in
@@ -302,7 +303,7 @@ let print_strategy r =
       else str "Constant strategies" ++ fnl () ++
         hov 0 (prlist_with_sep fnl pr_strategy cst_lvl)
     in
-    Feedback.msg_notice (var_msg ++ cst_msg)
+    var_msg ++ cst_msg
   | Some r ->
     let r = Smartlocate.smart_global r in
     let key = match r with
@@ -311,7 +312,7 @@ let print_strategy r =
     | IndRef _ | ConstructRef _ -> user_err Pp.(str "The reference is not unfoldable")
     in
     let lvl = get_strategy oracle key in
-    Feedback.msg_notice (pr_strategy (r, lvl))
+    pr_strategy (r, lvl)
 
 let dump_universes_gen g s =
   let output = open_out s in
@@ -345,7 +346,7 @@ let dump_universes_gen g s =
   try
     UGraph.dump_universes output_constraint g;
     close ();
-    Feedback.msg_info (str "Universes written to file \"" ++ str s ++ str "\".")
+    str "Universes written to file \"" ++ str s ++ str "\"."
   with reraise ->
     let reraise = CErrors.push reraise in
     close ();
@@ -360,12 +361,9 @@ let locate_file f =
 
 let msg_found_library = function
   | Library.LibLoaded, fulldir, file ->
-      Feedback.msg_info (hov 0
-       (DirPath.print fulldir ++ strbrk " has been loaded from file " ++
-	 str file))
+    hov 0 (DirPath.print fulldir ++ strbrk " has been loaded from file " ++ str file)
   | Library.LibInPath, fulldir, file ->
-      Feedback.msg_info (hov 0
-       (DirPath.print fulldir ++ strbrk " is bound to file " ++ str file))
+    hov 0 (DirPath.print fulldir ++ strbrk " is bound to file " ++ str file)
 
 let err_unmapped_library ?loc ?from qid =
   let dir = fst (repr_qualid qid) in
@@ -943,7 +941,6 @@ let vernac_chdir = function
 	  user_err Pp.(str ("Cd failed: " ^ err))
       end;
       Flags.if_verbose Feedback.msg_info (str (Sys.getcwd()))
-
 
 (********************)
 (* State management *)
@@ -1595,9 +1592,9 @@ let vernac_check_may_eval ~atts redexp glopt rc =
         let evars_of_term c = Evarutil.undefined_evars_of_term sigma' c in
         let l = Evar.Set.union (evars_of_term j.Environ.uj_val) (evars_of_term j.Environ.uj_type) in
         let j = { j with Environ.uj_type = Reductionops.nf_betaiota env sigma' j.Environ.uj_type } in
-	Feedback.msg_notice (print_judgment env sigma' j ++
-                    pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma' l ++
-                    Printer.pr_universe_ctx_set sigma uctx)
+        print_judgment env sigma' j ++
+        pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma' l ++
+        Printer.pr_universe_ctx_set sigma uctx
     | Some r ->
         let (sigma',r_interp) = Hook.get f_interp_redexp env sigma' r in
 	let redfun env evm c =
@@ -1605,7 +1602,7 @@ let vernac_check_may_eval ~atts redexp glopt rc =
           let (_, c) = redfun env evm c in
           c
         in
-	Feedback.msg_notice (print_eval redfun env sigma' rc j)
+        print_eval redfun env sigma' rc j
 
 let vernac_declare_reduction ~atts s r =
   let local = make_locality atts.locality in
@@ -1621,8 +1618,8 @@ let vernac_global_check c =
   let senv = Safe_typing.push_context_set false uctx senv in
   let j = Safe_typing.typing senv c in
   let env = Safe_typing.env_of_safe_env senv in
-  Feedback.msg_notice (print_safe_judgment env sigma j ++
-                       pr_universe_ctx_set sigma uctx)
+  print_safe_judgment env sigma j ++
+  pr_universe_ctx_set sigma uctx
 
 
 let get_nth_goal n =
@@ -1630,7 +1627,7 @@ let get_nth_goal n =
   let gls,_,_,_,sigma = Proof.proof pf in
   let gl = {Evd.it=List.nth gls (n-1) ; sigma = sigma; } in
   gl
-  
+
 exception NoHyp
 (* Printing "About" information of a hypothesis of the current goal.
    We only print the type and a small statement to this comes from the
@@ -1664,31 +1661,32 @@ let print_about_hyp_globs ?loc ref_or_by_not udecl glopt =
     print_about env sigma ref_or_by_not udecl
 
 let vernac_print ~atts env sigma =
-  let open Feedback in
   let loc = atts.loc in
   function
-  | PrintTables -> msg_notice (print_tables ())
-  | PrintFullContext-> msg_notice (print_full_context_typ env sigma)
-  | PrintSectionContext qid -> msg_notice (print_sec_context_typ env sigma qid)
-  | PrintInspect n -> msg_notice (inspect env sigma n)
-  | PrintGrammar ent -> msg_notice (Metasyntax.pr_grammar ent)
-  | PrintLoadPath dir -> (* For compatibility ? *) msg_notice (print_loadpath dir)
-  | PrintModules -> msg_notice (print_modules ())
+  | PrintTables -> print_tables ()
+  | PrintFullContext-> print_full_context_typ env sigma
+  | PrintSectionContext qid -> print_sec_context_typ env sigma qid
+  | PrintInspect n -> inspect env sigma n
+  | PrintGrammar ent -> Metasyntax.pr_grammar ent
+  | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
+  | PrintModules -> print_modules ()
   | PrintModule qid -> print_module qid
   | PrintModuleType qid -> print_modtype qid
   | PrintNamespace ns -> print_namespace ns
-  | PrintMLLoadPath -> msg_notice (Mltop.print_ml_path ())
-  | PrintMLModules -> msg_notice (Mltop.print_ml_modules ())
-  | PrintDebugGC -> msg_notice (Mltop.print_gc ())
-  | PrintName (qid,udecl) -> dump_global qid; msg_notice (print_name env sigma qid udecl)
-  | PrintGraph -> msg_notice (Prettyp.print_graph env sigma)
-  | PrintClasses -> msg_notice (Prettyp.print_classes())
-  | PrintTypeClasses -> msg_notice (Prettyp.print_typeclasses())
-  | PrintInstances c -> msg_notice (Prettyp.print_instances (smart_global c))
-  | PrintCoercions -> msg_notice (Prettyp.print_coercions env sigma)
+  | PrintMLLoadPath -> Mltop.print_ml_path ()
+  | PrintMLModules -> Mltop.print_ml_modules ()
+  | PrintDebugGC -> Mltop.print_gc ()
+  | PrintName (qid,udecl) ->
+    dump_global qid;
+    print_name env sigma qid udecl
+  | PrintGraph -> Prettyp.print_graph env sigma
+  | PrintClasses -> Prettyp.print_classes()
+  | PrintTypeClasses -> Prettyp.print_typeclasses()
+  | PrintInstances c -> Prettyp.print_instances (smart_global c)
+  | PrintCoercions -> Prettyp.print_coercions env sigma
   | PrintCoercionPaths (cls,clt) ->
-      msg_notice (Prettyp.print_path_between env sigma (cl_of_qualid cls) (cl_of_qualid clt))
-  | PrintCanonicalConversions -> msg_notice (Prettyp.print_canonical_projections env sigma)
+    Prettyp.print_path_between env sigma (cl_of_qualid cls) (cl_of_qualid clt)
+  | PrintCanonicalConversions -> Prettyp.print_canonical_projections env sigma
   | PrintUniverses (b, dst) ->
      let univ = Global.universes () in
      let univ = if b then UGraph.sort_universes univ else univ in
@@ -1697,23 +1695,24 @@ let vernac_print ~atts env sigma =
        else str"There may remain asynchronous universe constraints"
      in
      begin match dst with
-     | None -> msg_notice (UGraph.pr_universes Universes.pr_with_global_universes univ ++ pr_remaining)
+     | None -> UGraph.pr_universes Universes.pr_with_global_universes univ ++ pr_remaining
      | Some s -> dump_universes_gen univ s
      end
-  | PrintHint r -> msg_notice (Hints.pr_hint_ref env sigma (smart_global r))
-  | PrintHintGoal -> msg_notice (Hints.pr_applicable_hint ())
-  | PrintHintDbName s -> msg_notice (Hints.pr_hint_db_by_name env sigma s)
-  | PrintHintDb -> msg_notice (Hints.pr_searchtable env sigma)
+  | PrintHint r -> Hints.pr_hint_ref env sigma (smart_global r)
+  | PrintHintGoal -> Hints.pr_applicable_hint ()
+  | PrintHintDbName s -> Hints.pr_hint_db_by_name env sigma s
+  | PrintHintDb -> Hints.pr_searchtable env sigma
   | PrintScopes ->
-      msg_notice (Notation.pr_scopes (Constrextern.without_symbols (pr_lglob_constr_env env)))
+    Notation.pr_scopes (Constrextern.without_symbols (pr_lglob_constr_env env))
   | PrintScope s ->
-      msg_notice (Notation.pr_scope (Constrextern.without_symbols (pr_lglob_constr_env env)) s)
+    Notation.pr_scope (Constrextern.without_symbols (pr_lglob_constr_env env)) s
   | PrintVisibility s ->
-      msg_notice (Notation.pr_visibility (Constrextern.without_symbols (pr_lglob_constr_env env)) s)
+    Notation.pr_visibility (Constrextern.without_symbols (pr_lglob_constr_env env)) s
   | PrintAbout (ref_or_by_not,udecl,glnumopt) ->
-     msg_notice (print_about_hyp_globs ?loc ref_or_by_not udecl glnumopt)
+    print_about_hyp_globs ?loc ref_or_by_not udecl glnumopt
   | PrintImplicit qid ->
-    dump_global qid; msg_notice (print_impargs qid)
+    dump_global qid;
+    print_impargs qid
   | PrintAssumptions (o,t,r) ->
       (* Prints all the axioms and section variables used by a term *)
       let gr = smart_global r in
@@ -1721,7 +1720,7 @@ let vernac_print ~atts env sigma =
       let st = Conv_oracle.get_transp_state (Environ.oracle (Global.env())) in
       let nassums =
 	Assumptions.assumptions st ~add_opaque:o ~add_transparent:t gr cstr in
-      msg_notice (Printer.pr_assumptionset env sigma nassums)
+      Printer.pr_assumptionset env sigma nassums
   | PrintStrategy r -> print_strategy r
 
 let global_module r =
@@ -1807,19 +1806,18 @@ let vernac_search ~atts s gopt r =
   | SearchAbout sl ->
       (Search.search_about gopt (List.map (on_snd (interp_search_about_item env)) sl) r |> Search.prioritize_search) pr_search
 
-let vernac_locate = let open Feedback in function
-  | LocateAny (AN qid)  -> msg_notice (print_located_qualid qid)
-  | LocateTerm (AN qid) -> msg_notice (print_located_term qid)
+let vernac_locate = function
+  | LocateAny (AN qid)  -> print_located_qualid qid
+  | LocateTerm (AN qid) -> print_located_term qid
   | LocateAny (ByNotation (_, (ntn, sc))) (** TODO : handle Ltac notations *)
   | LocateTerm (ByNotation (_, (ntn, sc))) ->
     let _, env = Pfedit.get_current_context () in
-    msg_notice
-      (Notation.locate_notation
-         (Constrextern.without_symbols (pr_lglob_constr_env env)) ntn sc)
+    Notation.locate_notation
+      (Constrextern.without_symbols (pr_lglob_constr_env env)) ntn sc
   | LocateLibrary qid -> print_located_library qid
-  | LocateModule qid -> msg_notice (print_located_module qid)
-  | LocateOther (s, qid) -> msg_notice (print_located_other s qid)
-  | LocateFile f -> msg_notice (locate_file f)
+  | LocateModule qid -> print_located_module qid
+  | LocateOther (s, qid) -> print_located_other s qid
+  | LocateFile f -> locate_file f
 
 let vernac_register id r =
  if Proof_global.there_are_pending_proofs () then
@@ -1851,7 +1849,7 @@ let vernac_unfocus () =
 let vernac_unfocused () =
   let p = Proof_global.give_me_the_proof () in
   if Proof.unfocused p then
-    Feedback.msg_notice (str"The proof is indeed fully unfocused.")
+    str"The proof is indeed fully unfocused."
   else
     user_err Pp.(str "The proof is not fully unfocused.")
 
@@ -1878,21 +1876,20 @@ let vernac_bullet (bullet : Proof_bullet.t) =
   Proof_global.simple_with_current_proof (fun _ p ->
     Proof_bullet.put p bullet)
 
-let vernac_show = let open Feedback in function
+let vernac_show = function
   | ShowScript -> assert false  (* Only the stm knows the script *)
   | ShowGoal goalref ->
     let proof = Proof_global.give_me_the_proof () in
-    let info = match goalref with
-      | OpenSubgoals -> pr_open_subgoals ~proof
-      | NthGoal n -> pr_nth_open_subgoal ~proof n
-      | GoalId id -> pr_goal_by_id ~proof id
-    in
-    msg_notice info
+    begin match goalref with
+    | OpenSubgoals -> pr_open_subgoals ~proof
+    | NthGoal n -> pr_nth_open_subgoal ~proof n
+    | GoalId id -> pr_goal_by_id ~proof id
+    end
   | ShowProof -> show_proof ()
   | ShowExistentials -> show_top_evars ()
   | ShowUniverses -> show_universes ()
   | ShowProofNames ->
-      msg_notice (pr_sequence Id.print (Proof_global.get_all_proof_names()))
+    pr_sequence Id.print (Proof_global.get_all_proof_names())
   | ShowIntros all -> show_intro all
   | ShowMatch id -> show_match id
 
@@ -1907,8 +1904,7 @@ let vernac_check_guard () =
       (str "The condition holds up to here")
     with UserError(_,s) ->
       (str ("Condition violated: ") ++s)
-  in
-  Feedback.msg_notice message
+  in message
 
 exception End_of_input
 
@@ -2063,26 +2059,32 @@ let interp ?proof ~atts ~st c =
   | VernacAddOption (key,v) -> vernac_add_option key v
   | VernacMemOption (key,v) -> vernac_mem_option key v
   | VernacPrintOption key -> vernac_print_option key
-  | VernacCheckMayEval (r,g,c) -> vernac_check_may_eval ~atts r g c
+  | VernacCheckMayEval (r,g,c) ->
+    Feedback.msg_notice @@ vernac_check_may_eval ~atts r g c
   | VernacDeclareReduction (s,r) -> vernac_declare_reduction ~atts s r
-  | VernacGlobalCheck c -> vernac_global_check c
+  | VernacGlobalCheck c ->
+    Feedback.msg_notice @@ vernac_global_check c
   | VernacPrint p ->
     let sigma, env = Pfedit.get_current_context () in
-    vernac_print ~atts env sigma p
+    Feedback.msg_notice @@ vernac_print ~atts env sigma p
   | VernacSearch (s,g,r) -> vernac_search ~atts s g r
-  | VernacLocate l -> vernac_locate l
+  | VernacLocate l ->
+    Feedback.msg_notice @@ vernac_locate l
   | VernacRegister (id, r) -> vernac_register id r
   | VernacComments l -> Flags.if_verbose Feedback.msg_info (str "Comments ok\n")
 
   (* Proof management *)
   | VernacFocus n -> vernac_focus n
   | VernacUnfocus -> vernac_unfocus ()
-  | VernacUnfocused -> vernac_unfocused ()
+  | VernacUnfocused ->
+    Feedback.msg_notice @@ vernac_unfocused ()
   | VernacBullet b -> vernac_bullet b
   | VernacSubproof n -> vernac_subproof n
   | VernacEndSubproof -> vernac_end_subproof ()
-  | VernacShow s -> vernac_show s
-  | VernacCheckGuard -> vernac_check_guard ()
+  | VernacShow s ->
+    Feedback.msg_notice @@ vernac_show s
+  | VernacCheckGuard ->
+    Feedback.msg_notice @@ vernac_check_guard ()
   | VernacProof (tac, using) ->
     let using = Option.append using (Proof_using.get_default_proof_using ()) in
     let tacs = if Option.is_empty tac then "tac:no" else "tac:yes" in
@@ -2277,8 +2279,7 @@ let interp ?(verbosely=true) ?proof ~st (loc,c) =
   then Flags.verbosely control c
   else control  c
 
-(* XXX: There is a bug here in case of an exception, see @gares
-   comments on the PR *)
+(* Be careful with the cache here in case of an exception. *)
 let interp ?verbosely ?proof ~st cmd =
   Vernacstate.unfreeze_interp_state st;
   try
