@@ -169,7 +169,8 @@ endif
 
 COQFLAGS?=-q $(OPT) $(COQLIBS) $(OTHERFLAGS)
 COQCHKFLAGS?=-silent -o $(COQLIBS)
-COQDOCFLAGS?=-interpolate -utf8 $(COQLIBS_NOML)
+COQDOCFLAGS?=-interpolate -utf8
+COQDOCLIBS?=$(COQLIBS_NOML)
 
 # The version of Coq being run and the version of coq_makefile that
 # generated this makefile
