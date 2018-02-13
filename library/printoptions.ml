@@ -163,55 +163,75 @@ let set_printing_defaults ~local =
 
 let printing_all () = (!current_options = all_options)
 
-let printing_allow_match_default_clause () = !current_options.printing_allow_match_default_clause
-let printing_coercions () = !current_options.printing_coercions
-let printing_compact_contexts () = !current_options.printing_compact_contexts
-let printing_existential_instances () = !current_options.printing_existential_instances
-let printing_factorizable_match_patterns () = !current_options.printing_factorizable_match_patterns
-let printing_implicit () = !current_options.printing_implicit
-let printing_implicit_defensive () = !current_options.printing_implicit_defensive
-let printing_matching () = !current_options.printing_matching
-let printing_notations () = !current_options.printing_notations
-let printing_primitive_projection_compatibility () = !current_options.printing_primitive_projection_compatibility
-let printing_primitive_projection_parameters () = !current_options.printing_primitive_projection_parameters
-let printing_projections () = !current_options.printing_projections
-let printing_records () = !current_options.printing_records
-let printing_synth () = !current_options.printing_synth
-let printing_universes () = !current_options.printing_universes
-let printing_wildcard () = !current_options.printing_wildcard
+(* getters/setters for Printing options, grouped by system component *)
 
-let set_printing_allow_match_default_clause b =
-  current_options := { !current_options with printing_allow_match_default_clause = b }
+(* getters/setters used in Constrextern *)
+let printing_coercions () = !current_options.printing_coercions
 let set_printing_coercions b =
   current_options := { !current_options with printing_coercions = b }
-let set_printing_compact_contexts b =
-  current_options := { !current_options with printing_compact_contexts = b }
-let set_printing_existential_instances b =
-  current_options := { !current_options with printing_existential_instances = b }
-let set_printing_factorizable_match_patterns b =
-  current_options := { !current_options with printing_factorizable_match_patterns = b }
-let set_printing_implicit b =
-  current_options := { !current_options with printing_implicit = b }
-let set_printing_implicit_defensive b =
-  current_options := { !current_options with printing_implicit_defensive = b }
-let set_printing_matching b =
-  current_options := { !current_options with printing_matching = b }
+
+let printing_notations () = !current_options.printing_notations
 let set_printing_notations b =
   current_options := { !current_options with printing_notations = b }
-let set_printing_primitive_projection_compatibility b =
-  current_options := { !current_options with printing_primitive_projection_compatibility = b }
-let set_printing_primitive_projection_parameters b =
-  current_options := { !current_options with printing_primitive_projection_parameters = b }
-let set_printing_projections b =
-  current_options := { !current_options with printing_projections = b }
+
+let printing_records () = !current_options.printing_records
 let set_printing_records b =
   current_options := { !current_options with printing_records = b }
+
+let printing_implicit () = !current_options.printing_implicit
+let set_printing_implicit b =
+  current_options := { !current_options with printing_implicit = b }
+
+let printing_implicit_defensive () = !current_options.printing_implicit_defensive
+let set_printing_implicit_defensive b =
+  current_options := { !current_options with printing_implicit_defensive = b }
+
+let printing_projections () = !current_options.printing_projections
+let set_printing_projections b =
+  current_options := { !current_options with printing_projections = b }
+
+(* getters/setters used in Detyping *)
+let printing_allow_match_default_clause () = !current_options.printing_allow_match_default_clause
+let set_printing_allow_match_default_clause b =
+  current_options := { !current_options with printing_allow_match_default_clause = b }
+
+let printing_existential_instances () = !current_options.printing_existential_instances
+let set_printing_existential_instances b =
+  current_options := { !current_options with printing_existential_instances = b }
+
+let printing_factorizable_match_patterns () = !current_options.printing_factorizable_match_patterns
+let set_printing_factorizable_match_patterns b =
+  current_options := { !current_options with printing_factorizable_match_patterns = b }
+
+let printing_matching () = !current_options.printing_matching
+let set_printing_matching b =
+  current_options := { !current_options with printing_matching = b }
+
+let printing_primitive_projection_compatibility () = !current_options.printing_primitive_projection_compatibility
+let set_printing_primitive_projection_compatibility b =
+  current_options := { !current_options with printing_primitive_projection_compatibility = b }
+
+let printing_primitive_projection_parameters () = !current_options.printing_primitive_projection_parameters
+let set_printing_primitive_projection_parameters b =
+  current_options := { !current_options with printing_primitive_projection_parameters = b }
+
+let printing_synth () = !current_options.printing_synth
 let set_printing_synth b =
   current_options := { !current_options with printing_synth = b }
-let set_printing_universes b =
-  current_options := { !current_options with printing_universes = b }
+
+let printing_wildcard () = !current_options.printing_wildcard
 let set_printing_wildcard b =
   current_options := { !current_options with printing_wildcard = b }
+
+(* getters/setters used in Printer *)
+let printing_compact_contexts () = !current_options.printing_compact_contexts
+let set_printing_compact_contexts b =
+  current_options := { !current_options with printing_compact_contexts = b }
+
+(* getters/setters used in Constrextern/Detyping/Printer (+ Funind plugin) *)
+let printing_universes () = !current_options.printing_universes
+let set_printing_universes b =
+  current_options := { !current_options with printing_universes = b }
 
 (* set printing option, run `f x`, restore options *)
 (* can't use Flags.with_option, individual printing options are not references *)

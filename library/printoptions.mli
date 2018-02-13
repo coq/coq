@@ -34,41 +34,59 @@ val unset_printing_all : unit -> unit
 val set_printing_sugared : local:bool -> unit
 val set_printing_defaults : local:bool -> unit
 
-(** getters for print options *)
-val printing_allow_match_default_clause : unit -> bool
-val printing_coercions : unit -> bool
-val printing_compact_contexts : unit -> bool
-val printing_existential_instances : unit -> bool
-val printing_factorizable_match_patterns : unit -> bool
-val printing_implicit : unit -> bool
-val printing_implicit_defensive : unit -> bool
-val printing_matching : unit -> bool
-val printing_notations : unit -> bool
-val printing_primitive_projection_compatibility : unit -> bool
-val printing_primitive_projection_parameters : unit -> bool
-val printing_projections : unit -> bool
-val printing_records : unit -> bool
-val printing_synth : unit -> bool
-val printing_universes : unit -> bool
-val printing_wildcard : unit -> bool
+(** getters/setters for Printing options, grouped by system component *)
 
-(** setters for print options *)
-val set_printing_allow_match_default_clause : bool -> unit
+(** getters/setters used in Constrextern *)
+val printing_coercions : unit -> bool
 val set_printing_coercions : bool -> unit
-val set_printing_compact_contexts : bool -> unit
-val set_printing_existential_instances : bool -> unit
-val set_printing_factorizable_match_patterns : bool -> unit
-val set_printing_implicit : bool -> unit
-val set_printing_implicit_defensive : bool -> unit
-val set_printing_matching : bool -> unit
+
+val printing_notations : unit -> bool
 val set_printing_notations : bool -> unit
-val set_printing_primitive_projection_compatibility : bool -> unit
-val set_printing_primitive_projection_parameters : bool -> unit
-val set_printing_projections : bool -> unit
+
+val printing_records : unit -> bool
 val set_printing_records : bool -> unit
+
+val printing_implicit : unit -> bool
+val set_printing_implicit : bool -> unit
+
+val printing_implicit_defensive : unit -> bool
+val set_printing_implicit_defensive : bool -> unit
+
+val printing_projections : unit -> bool
+val set_printing_projections : bool -> unit
+
+(** getters/setters used in Detyping *)
+val printing_allow_match_default_clause : unit -> bool
+val set_printing_allow_match_default_clause : bool -> unit
+
+val printing_existential_instances : unit -> bool
+val set_printing_existential_instances : bool -> unit
+
+val printing_factorizable_match_patterns : unit -> bool
+val set_printing_factorizable_match_patterns : bool -> unit
+
+val printing_matching : unit -> bool
+val set_printing_matching : bool -> unit
+
+val printing_primitive_projection_compatibility : unit -> bool
+val set_printing_primitive_projection_compatibility : bool -> unit
+
+val printing_primitive_projection_parameters : unit -> bool
+val set_printing_primitive_projection_parameters : bool -> unit
+
+val printing_synth : unit -> bool
 val set_printing_synth : bool -> unit
-val set_printing_universes : bool -> unit
+
+val printing_wildcard : unit -> bool
 val set_printing_wildcard : bool -> unit
+
+(** getters/setters used in Printer *)
+val printing_compact_contexts : unit -> bool
+val set_printing_compact_contexts : bool -> unit
+
+(** getters/setters used in Constrextern/Detyping/Printer (+ Funind plugin) *)
+val printing_universes : unit -> bool
+val set_printing_universes : bool -> unit
 
 (** predicate to see if Printing All in effect *)
 val printing_all : unit -> bool
