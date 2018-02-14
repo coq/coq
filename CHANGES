@@ -71,6 +71,8 @@ Universes
 - Universe cumulativity for inductive types is now specified as a
   variance for each polymorphic universe. See the reference manual for
   more information.
+- Fix #5726: Notations that start with `Type` now support universe instances
+  with `@{u}`.
 
 Checker
 
