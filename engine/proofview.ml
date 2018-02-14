@@ -1202,7 +1202,7 @@ let tclCHECKINTERRUPT =
 module V82 = struct
   type tac = Evar.t Evd.sigma -> Evar.t list Evd.sigma
 
-  let tactic tac =
+  let tactic ?(nf_evars=true) tac =
     (* spiwack: we ignore the dependencies between goals here,
        expectingly preserving the semantics of <= 8.2 tactics *)
     (* spiwack: convenience notations, waiting for ocaml 3.12 *)
@@ -1221,7 +1221,7 @@ module V82 = struct
       let (initgoals_w_state, initevd) =
         Evd.Monad.List.map (fun g_w_s s ->
           let g, w = drop_state g_w_s, get_state g_w_s in
-          let g, s = goal_nf_evar s g in
+          let g, s = if nf_evars then goal_nf_evar s g else g, s in
           goal_with_state g w, s) ps.comb ps.solution
       in
       let (goalss,evd) = Evd.Monad.List.map tac initgoals_w_state initevd in
