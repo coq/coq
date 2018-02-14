@@ -45,6 +45,9 @@ val perform_injection :
   Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
 val ssrscasetac :
-  bool ->
+  EConstr.constr ->
+  unit Proofview.tactic
+
+val ssrscase_or_inj_tac :
   EConstr.constr ->
   unit Proofview.tactic

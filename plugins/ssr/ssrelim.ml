@@ -377,7 +377,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) deps what ?elim eqid elim_intro_tac
 let no_intro ?ist what eqid elim_tac is_rec clr = elim_tac
 
 let elimtac x =
-  Proofview.V82.tactic
+  Proofview.V82.tactic ~nf_evars:false
     (ssrelim ~is_case:false [] (`EConstr ([],None,x)) None no_intro)
 let casetac x = ssrelim ~is_case:true [] (`EConstr ([],None,x)) None no_intro
 
@@ -435,6 +435,9 @@ let perform_injection c gl =
   let injtac = Tacticals.tclTHEN (introid id) (injectidl2rtac id id_with_ebind) in 
   Tacticals.tclTHENLAST (Proofview.V82.of_tactic (Tactics.apply (EConstr.compose_lam dc cl1))) injtac gl
 
-let ssrscasetac force_inj c = Proofview.V82.tactic (fun gl ->
-  if force_inj || is_injection_case c gl then perform_injection c gl
+let ssrscase_or_inj_tac c = Proofview.V82.tactic ~nf_evars:false (fun gl ->
+  if is_injection_case c gl then perform_injection c gl
   else casetac c gl)
+
+let ssrscasetac c =
+  Proofview.V82.tactic ~nf_evars:false (fun gl -> casetac c gl)
