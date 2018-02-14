@@ -93,7 +93,7 @@ let intern_string_or_var = intern_or_var (fun (s : string) -> s)
 
 let intern_global_reference ist = function
   | Ident (loc,id) when find_var id ist ->
-    ArgVar CAst.(make ?loc id)
+    ArgVar (make ?loc id)
   | r ->
       let loc,_ as lqid = qualid_of_reference r in
       try ArgArg (loc,locate_global_with_alias lqid)
@@ -103,20 +103,20 @@ let intern_ltac_variable ist = function
   | Ident (loc,id) ->
       if find_var id ist then
 	(* A local variable of any type *)
-        ArgVar CAst.(make ?loc id)
+        ArgVar (make ?loc id)
       else raise Not_found
   | _ ->
       raise Not_found
 
 let intern_constr_reference strict ist = function
   | Ident (_,id) as r when not strict && find_hyp id ist ->
-      (DAst.make @@ GVar id), Some (CAst.make @@ CRef (r,None))
+      (DAst.make @@ GVar id), Some (make @@ CRef (r,None))
   | Ident (_,id) as r when find_var id ist ->
-      (DAst.make @@ GVar id), if strict then None else Some (CAst.make @@ CRef (r,None))
+      (DAst.make @@ GVar id), if strict then None else Some (make @@ CRef (r,None))
   | r ->
       let loc,_ as lqid = qualid_of_reference r in
       DAst.make @@ GRef (locate_global_with_alias lqid,None), 
-	if strict then None else Some (CAst.make @@ CRef (r,None))
+        if strict then None else Some (make @@ CRef (r,None))
 
 (* Internalize an isolated reference in position of tactic *)
 
@@ -168,7 +168,7 @@ let intern_non_tactic_reference strict ist r =
   (* By convention, use IntroIdentifier for unbound ident, when not in a def *)
   match r with
   | Ident (loc,id) when not strict ->
-    let ipat = in_gen (glbwit wit_intro_pattern) (loc, IntroNaming (IntroIdentifier id)) in
+    let ipat = in_gen (glbwit wit_intro_pattern) (make ?loc @@ IntroNaming (IntroIdentifier id)) in
     TacGeneric ipat
   | _ ->
   (* Reference not found *)
@@ -209,8 +209,8 @@ let intern_constr = intern_constr_gen false false
 let intern_type = intern_constr_gen false true
 
 (* Globalize bindings *)
-let intern_binding ist (loc,(b,c)) =
-  (loc,(intern_binding_name ist b,intern_constr ist c))
+let intern_binding ist = map (fun (b,c) ->
+    intern_binding_name ist b,intern_constr ist c)
 
 let intern_bindings ist = function
   | NoBindings -> NoBindings
@@ -223,12 +223,12 @@ let intern_constr_with_bindings ist (c,bl) =
 let intern_constr_with_bindings_arg ist (clear,c) =
   (clear,intern_constr_with_bindings ist c)
 
-let rec intern_intro_pattern lf ist = function
-  | loc, IntroNaming pat ->
-      loc, IntroNaming (intern_intro_pattern_naming lf ist pat)
-  | loc, IntroAction pat ->
-      loc, IntroAction (intern_intro_pattern_action lf ist pat)
-  | loc, IntroForthcoming _ as x -> x
+let rec intern_intro_pattern lf ist = map (function
+  | IntroNaming pat ->
+    IntroNaming (intern_intro_pattern_naming lf ist pat)
+  | IntroAction pat ->
+    IntroAction (intern_intro_pattern_action lf ist pat)
+  | IntroForthcoming _ as x -> x)
 
 and intern_intro_pattern_naming lf ist = function
   | IntroIdentifier id ->
@@ -239,12 +239,12 @@ and intern_intro_pattern_naming lf ist = function
 
 and intern_intro_pattern_action lf ist = function
   | IntroOrAndPattern l ->
-      IntroOrAndPattern (intern_or_and_intro_pattern lf ist l)
+    IntroOrAndPattern (intern_or_and_intro_pattern lf ist l)
   | IntroInjection l ->
-      IntroInjection (List.map (intern_intro_pattern lf ist) l)
+    IntroInjection (List.map (intern_intro_pattern lf ist) l)
   | IntroWildcard | IntroRewrite _ as x -> x
-  | IntroApplyOn ((loc,c),pat) ->
-      IntroApplyOn ((loc,intern_constr ist c), intern_intro_pattern lf ist pat)
+  | IntroApplyOn ({loc;v=c},pat) ->
+    IntroApplyOn (make ?loc @@ intern_constr ist c, intern_intro_pattern lf ist pat)
 
 and intern_or_and_intro_pattern lf ist = function
    | IntroAndPattern l ->
@@ -256,10 +256,10 @@ let intern_or_and_intro_pattern_loc lf ist = function
   | ArgVar {v=id} as x ->
       if find_var id ist then x
       else user_err Pp.(str "Disjunctive/conjunctive introduction pattern expected.")
-  | ArgArg (loc,l) -> ArgArg (loc,intern_or_and_intro_pattern lf ist l)
+  | ArgArg ll -> ArgArg (map (fun l -> intern_or_and_intro_pattern lf ist l) ll)
 
-let intern_intro_pattern_naming_loc lf ist (loc,pat) =
-  (loc,intern_intro_pattern_naming lf ist pat)
+let intern_intro_pattern_naming_loc lf ist = map (fun pat ->
+    intern_intro_pattern_naming lf ist pat)
 
   (* TODO: catch ltac vars *)
 let intern_destruction_arg ist = function
@@ -268,15 +268,15 @@ let intern_destruction_arg ist = function
   | clear,ElimOnIdent {loc;v=id} ->
       if !strict_check then
 	(* If in a defined tactic, no intros-until *)
-	let c, p = intern_constr ist (CAst.make @@ CRef (Ident (Loc.tag id), None)) in
+        let c, p = intern_constr ist (make @@ CRef (Ident (Loc.tag id), None)) in
 	match DAst.get c with
-        | GVar id -> clear,ElimOnIdent CAst.(make ?loc:c.loc id)
+        | GVar id -> clear,ElimOnIdent (make ?loc:c.loc id)
 	| _ -> clear,ElimOnConstr ((c, p), NoBindings)
       else
-        clear,ElimOnIdent CAst.(make ?loc id)
+        clear,ElimOnIdent (make ?loc id)
 
 let short_name = function
-  | AN (Ident (loc,id)) when not !strict_check -> Some CAst.(make ?loc id)
+  | AN (Ident (loc,id)) when not !strict_check -> Some (make ?loc id)
   | _ -> None
 
 let intern_evaluable_global_reference ist r =
@@ -289,16 +289,16 @@ let intern_evaluable_global_reference ist r =
 
 let intern_evaluable_reference_or_by_notation ist = function
   | AN r -> intern_evaluable_global_reference ist r
-  | ByNotation (loc,(ntn,sc)) ->
+  | ByNotation {loc;v=(ntn,sc)} ->
       evaluable_of_global_reference ist.genv
       (Notation.interp_notation_as_global_reference ?loc
         (function ConstRef _ | VarRef _ -> true | _ -> false) ntn sc)
 
 (* Globalize a reduction expression *)
 let intern_evaluable ist = function
-  | AN (Ident (loc,id)) when find_var id ist -> ArgVar CAst.(make ?loc id)
+  | AN (Ident (loc,id)) when find_var id ist -> ArgVar (make ?loc id)
   | AN (Ident (loc,id)) when not !strict_check && find_hyp id ist ->
-      ArgArg (EvalVarRef id, Some CAst.(make ?loc id))
+      ArgArg (EvalVarRef id, Some (make ?loc id))
   | r ->
       let e = intern_evaluable_reference_or_by_notation ist r in
       let na = short_name r in
@@ -817,7 +817,7 @@ let notation_subst bindings tac =
   let fold id c accu =
     let loc = Glob_ops.loc_of_glob_constr (fst c) in
     let c = ConstrMayEval (ConstrTerm c) in
-    (CAst.make ?loc @@ Name id, c) :: accu
+    (make ?loc @@ Name id, c) :: accu
   in
   let bindings = Id.Map.fold fold bindings [] in
   (** This is theoretically not correct due to potential variable capture, but

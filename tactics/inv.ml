@@ -282,16 +282,17 @@ let generalizeRewriteIntros as_mode tac depids id =
   end
 
 let error_too_many_names pats =
-  let loc = Loc.merge_opt (fst (List.hd pats)) (fst (List.last pats)) in
+  let loc = Loc.merge_opt (List.hd pats).CAst.loc (List.last pats).CAst.loc in
   Proofview.tclENV >>= fun env ->
   Proofview.tclEVARMAP >>= fun sigma ->
   tclZEROMSG ?loc (
     str "Unexpected " ++
     str (String.plural (List.length pats) "introduction pattern") ++
-    str ": " ++ pr_enum (Miscprint.pr_intro_pattern (fun c -> Printer.pr_constr_env env sigma (EConstr.Unsafe.to_constr (snd (c env Evd.empty))))) pats ++
+    str ": " ++ pr_enum (Miscprint.pr_intro_pattern
+                           (fun c -> Printer.pr_constr_env env sigma (EConstr.Unsafe.to_constr (snd (c env Evd.empty))))) pats ++
     str ".")
 
-let get_names (allow_conj,issimple) (loc, pat as x) = match pat with
+let get_names (allow_conj,issimple) ({CAst.loc;v=pat} as x) = match pat with
   | IntroNaming IntroAnonymous | IntroForthcoming _ ->
       user_err Pp.(str "Anonymous pattern not allowed for inversion equations.")
   | IntroNaming (IntroFresh _) ->
@@ -301,7 +302,8 @@ let get_names (allow_conj,issimple) (loc, pat as x) = match pat with
   | IntroAction (IntroRewrite _) ->
       user_err Pp.(str "Rewriting pattern not allowed for inversion equations.")
   | IntroAction (IntroOrAndPattern (IntroAndPattern [])) when allow_conj -> (None, [])
-  | IntroAction (IntroOrAndPattern (IntroAndPattern ((_,IntroNaming (IntroIdentifier id)) :: _ as l) | IntroOrPattern [(_,IntroNaming (IntroIdentifier id)) :: _ as l ]))
+  | IntroAction (IntroOrAndPattern (IntroAndPattern ({CAst.v=IntroNaming (IntroIdentifier id)} :: _ as l)
+                                   | IntroOrPattern [{CAst.v=IntroNaming (IntroIdentifier id)} :: _ as l]))
       when allow_conj -> (Some id,l)
   | IntroAction (IntroOrAndPattern (IntroAndPattern _)) ->
       if issimple then

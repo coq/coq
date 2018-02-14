@@ -13,7 +13,7 @@ open Misctypes
 (** Printing of [intro_pattern] *)
 
 val pr_intro_pattern :
-  ('a -> Pp.t) -> 'a intro_pattern_expr Loc.located -> Pp.t
+  ('a -> Pp.t) -> 'a intro_pattern_expr CAst.t -> Pp.t
 
 val pr_or_and_intro_pattern :
   ('a -> Pp.t) -> 'a or_and_intro_pattern_expr -> Pp.t

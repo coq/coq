@@ -10,7 +10,6 @@
 
 (** Ltac parsing entries *)
 
-open Loc
 open Pcoq
 open Libnames
 open Constrexpr
@@ -29,7 +28,7 @@ val quantified_hypothesis : quantified_hypothesis Gram.entry
 val destruction_arg : constr_expr with_bindings destruction_arg Gram.entry
 val int_or_var : int or_var Gram.entry
 val simple_tactic : raw_tactic_expr Gram.entry
-val simple_intropattern : constr_expr intro_pattern_expr located Gram.entry
+val simple_intropattern : constr_expr intro_pattern_expr CAst.t Gram.entry
 val in_clause : lident Locus.clause_expr Gram.entry
 val clause_dft_concl : lident Locus.clause_expr Gram.entry
 val tactic_arg : raw_tactic_arg Gram.entry

@@ -35,12 +35,12 @@ and intro_pattern_naming_expr =
 and 'constr intro_pattern_action_expr =
   | IntroWildcard
   | IntroOrAndPattern of 'constr or_and_intro_pattern_expr
-  | IntroInjection of ('constr intro_pattern_expr) Loc.located list
-  | IntroApplyOn of 'constr Loc.located * 'constr intro_pattern_expr Loc.located
+  | IntroInjection of ('constr intro_pattern_expr) CAst.t list
+  | IntroApplyOn of 'constr CAst.t * 'constr intro_pattern_expr CAst.t
   | IntroRewrite of bool
 and 'constr or_and_intro_pattern_expr =
-  | IntroOrPattern of ('constr intro_pattern_expr) Loc.located list list
-  | IntroAndPattern of ('constr intro_pattern_expr) Loc.located list
+  | IntroOrPattern of ('constr intro_pattern_expr) CAst.t list list
+  | IntroAndPattern of ('constr intro_pattern_expr) CAst.t list
 
 (** Move destination for hypothesis *)
 
@@ -95,7 +95,7 @@ type 'a cast_type =
 
 type quantified_hypothesis = AnonHyp of int | NamedHyp of Id.t
 
-type 'a explicit_bindings = (quantified_hypothesis * 'a) Loc.located list
+type 'a explicit_bindings = (quantified_hypothesis * 'a) CAst.t list
 
 type 'a bindings =
   | ImplicitBindings of 'a list
@@ -115,7 +115,7 @@ type 'a and_short_name = 'a * lident option
 
 type 'a or_by_notation =
   | AN of 'a
-  | ByNotation of (string * string option) Loc.located
+  | ByNotation of (string * string option) CAst.t
 
 (* NB: the last string in [ByNotation] is actually a [Notation.delimiters],
    but this formulation avoids a useless dependency. *)

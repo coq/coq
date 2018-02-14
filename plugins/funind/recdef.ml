@@ -206,7 +206,7 @@ let (value_f: Constr.t list -> global_reference -> Constr.t) =
 	(RegularStyle,None,
 	 [DAst.make @@ GApp(DAst.make @@ GRef(fterm,None), List.rev_map (fun x_id -> DAst.make @@ GVar x_id) rev_x_id_l),
 	  (Anonymous,None)],
-	 [Loc.tag ([v_id], [DAst.make @@ PatCstr ((destIndRef (delayed_force coq_sig_ref),1),
+         [CAst.make ([v_id], [DAst.make @@ PatCstr ((destIndRef (delayed_force coq_sig_ref),1),
 			   [DAst.make @@ PatVar(Name v_id); DAst.make @@ PatVar Anonymous],
                            Anonymous)],
 	    DAst.make @@ GVar v_id)])
@@ -899,8 +899,8 @@ let rec make_rewrite_list expr_info max = function
 	  Proofview.V82.of_tactic (general_rewrite_bindings false Locus.AllOccurrences
 	    true (* dep proofs also: *) true 
 	    (mkVar hp,
-	     ExplicitBindings[Loc.tag @@ (NamedHyp def, expr_info.f_constr);
-                              Loc.tag @@ (NamedHyp k, f_S max)]) false) g) )
+             ExplicitBindings[CAst.make @@ (NamedHyp def, expr_info.f_constr);
+                              CAst.make @@ (NamedHyp k, f_S max)]) false) g) )
       )
       [make_rewrite_list expr_info max l;
        observe_tclTHENLIST (str "make_rewrite_list")[ (* x < S max proof *)
@@ -926,8 +926,8 @@ let make_rewrite expr_info l hp max =
 	   (Proofview.V82.of_tactic (general_rewrite_bindings false Locus.AllOccurrences
 	    true (* dep proofs also: *) true 
 	    (mkVar hp,
-	     ExplicitBindings[Loc.tag @@ (NamedHyp def, expr_info.f_constr);
-                              Loc.tag @@ (NamedHyp k, f_S (f_S max))]) false)) g)
+             ExplicitBindings[CAst.make @@ (NamedHyp def, expr_info.f_constr);
+                              CAst.make @@ (NamedHyp k, f_S (f_S max))]) false)) g)
        [observe_tac(str "make_rewrite finalize") (
 	 (* tclORELSE( h_reflexivity) *)
 	 (observe_tclTHENLIST (str "make_rewrite")[

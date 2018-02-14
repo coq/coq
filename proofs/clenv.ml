@@ -416,7 +416,7 @@ let qhyp_eq h1 h2 = match h1, h2 with
 | _ -> false
 
 let check_bindings bl =
-  match List.duplicates qhyp_eq (List.map (fun x -> fst (snd x)) bl) with
+  match List.duplicates qhyp_eq (List.map (fun {CAst.v=x} -> fst x) bl) with
     | NamedHyp s :: _ ->
 	user_err 
 	  (str "The variable " ++ Id.print s ++
@@ -512,7 +512,7 @@ let clenv_match_args bl clenv =
     let mvs = clenv_independent clenv in
     check_bindings bl;
     List.fold_left
-      (fun clenv (loc,(b,c)) ->
+      (fun clenv {CAst.loc;v=(b,c)} ->
 	let k = meta_of_binder clenv loc mvs b in
         if meta_defined clenv.evd k then
           if EConstr.eq_constr clenv.evd (EConstr.of_constr (fst (meta_fvalue clenv.evd k)).rebus) c then clenv
@@ -710,7 +710,7 @@ let solve_evar_clause env sigma hyp_only clause = function
     error_not_right_number_missing_arguments len
 | ExplicitBindings lbind ->
   let () = check_bindings lbind in
-  let fold sigma (_, (binder, c)) =
+  let fold sigma {CAst.v=(binder, c)} =
     let ev = evar_of_binder clause.cl_holes binder in
     define_with_type sigma env ev c
   in

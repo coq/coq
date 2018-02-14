@@ -45,7 +45,7 @@ let error_application_to_module_type loc =
     or both are searched. The returned kind is never ModAny, and
     it is equal to the input kind when this one isn't ModAny. *)
 
-let lookup_module_or_modtype kind (loc,qid) =
+let lookup_module_or_modtype kind {CAst.loc;v=qid} =
   try
     if kind == ModType then raise Not_found;
     let mp = Nametab.locate_module qid in
@@ -60,9 +60,9 @@ let lookup_module_or_modtype kind (loc,qid) =
 let lookup_module lqid = fst (lookup_module_or_modtype Module lqid)
 
 let transl_with_decl env = function
-  | CWith_Module ((_,fqid),qid) ->
+  | CWith_Module ({CAst.v=fqid},qid) ->
       WithMod (fqid,lookup_module qid), Univ.ContextSet.empty
-  | CWith_Definition ((_,fqid),udecl,c) ->
+  | CWith_Definition ({CAst.v=fqid},udecl,c) ->
     let sigma, udecl = Univdecls.interp_univ_decl_opt env udecl in
     let c, ectx = interp_constr env sigma c in
     begin match UState.check_univ_decl ~poly:(Flags.is_universe_polymorphism()) ectx udecl with
@@ -81,11 +81,11 @@ let loc_of_module l = l.CAst.loc
 (* Invariant : the returned kind is never ModAny, and it is
    equal to the input kind when this one isn't ModAny. *)
 
-let rec interp_module_ast env kind m cst = match m.CAst.v with
-  | CMident qid ->
-      let (mp,kind) = lookup_module_or_modtype kind (m.CAst.loc,qid) in
+let rec interp_module_ast env kind m cst = match m with
+  | {CAst.loc;v=CMident qid} ->
+      let (mp,kind) = lookup_module_or_modtype kind CAst.(make ?loc qid) in
       (MEident mp, kind, cst)
-  | CMapply (me1,me2) ->
+  | {CAst.loc;v=CMapply (me1,me2)} ->
       let me1',kind1, cst = interp_module_ast env kind me1 cst in
       let me2',kind2, cst = interp_module_ast env ModAny me2 cst in
       let mp2 = match me2' with
@@ -95,7 +95,7 @@ let rec interp_module_ast env kind m cst = match m.CAst.v with
       if kind2 == ModType then
         error_application_to_module_type (loc_of_module me2);
       (MEapply (me1',mp2), kind1, cst)
-  | CMwith (me,decl) ->
+  | {CAst.loc;v=CMwith (me,decl)} ->
       let me,kind,cst = interp_module_ast env kind me cst in
       if kind == Module then error_incorrect_with_in_module m.CAst.loc;
       let decl, cst' = transl_with_decl env decl in

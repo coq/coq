@@ -72,14 +72,14 @@ and 'a fix_kind_g =
   | GCoFix of int
 
 and 'a predicate_pattern_g =
-    Name.t * (inductive * Name.t list) Loc.located option
+    Name.t * (inductive * Name.t list) CAst.t option
       (** [(na,id)] = "as 'na' in 'id'" where if [id] is [Some(l,I,k,args)]. *)
 
 and 'a tomatch_tuple_g = ('a glob_constr_g * 'a predicate_pattern_g)
 
 and 'a tomatch_tuples_g = 'a tomatch_tuple_g list
 
-and 'a cases_clause_g = (Id.t list * 'a cases_pattern_g list * 'a glob_constr_g) Loc.located
+and 'a cases_clause_g = (Id.t list * 'a cases_pattern_g list * 'a glob_constr_g) CAst.t
 (** [(p,il,cl,t)] = "|'cl' => 't'". Precondition: the free variables
     of [t] are members of [il]. *)
 and 'a cases_clauses_g = 'a cases_clause_g list
@@ -96,7 +96,7 @@ type fix_recursion_order = [ `any ] fix_recursion_order_g
 
 type any_glob_constr = AnyGlobConstr : 'r glob_constr_g -> any_glob_constr
 
-type 'a disjunctive_cases_clause_g = (Id.t list * 'a cases_pattern_g list list * 'a glob_constr_g) Loc.located
+type 'a disjunctive_cases_clause_g = (Id.t list * 'a cases_pattern_g list list * 'a glob_constr_g) CAst.t
 type 'a disjunctive_cases_clauses_g = 'a disjunctive_cases_clause_g list
 type 'a cases_pattern_disjunction_g = 'a cases_pattern_g list
 

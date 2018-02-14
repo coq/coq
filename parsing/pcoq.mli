@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Loc
 open Names
 open Extend
 open Vernacexpr
@@ -208,10 +207,10 @@ module Prim :
     val integer : int Gram.entry
     val string : string Gram.entry
     val lstring : lstring Gram.entry
-    val qualid : qualid located Gram.entry
-    val fullyqualid : Id.t list located Gram.entry
+    val qualid : qualid CAst.t Gram.entry
+    val fullyqualid : Id.t list CAst.t Gram.entry
     val reference : reference Gram.entry
-    val by_notation : (string * string option) Loc.located Gram.entry
+    val by_notation : (string * string option) CAst.t Gram.entry
     val smart_global : reference or_by_notation Gram.entry
     val dirpath : DirPath.t Gram.entry
     val ne_string : string Gram.entry

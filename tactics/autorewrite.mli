@@ -14,7 +14,7 @@ open Constr
 open Equality
 
 (** Rewriting rules before tactic interpretation *)
-type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option) Loc.located
+type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option) CAst.t
 
 (** To add rewriting rules to a base *)
 val add_rew_rules : string -> raw_rew_rule list -> unit

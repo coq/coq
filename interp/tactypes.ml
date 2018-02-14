@@ -12,7 +12,6 @@
     lower API. It's not clear whether this is a temporary API or if this is
     meant to stay. *)
 
-open Loc
 open Names
 open Constrexpr
 open Pattern
@@ -29,7 +28,7 @@ type 'a delayed_open = Environ.env -> Evd.evar_map -> Evd.evar_map * 'a
 type delayed_open_constr = EConstr.constr delayed_open
 type delayed_open_constr_with_bindings = EConstr.constr with_bindings delayed_open
 
-type intro_pattern = delayed_open_constr intro_pattern_expr located
-type intro_patterns = delayed_open_constr intro_pattern_expr located list
-type or_and_intro_pattern = delayed_open_constr or_and_intro_pattern_expr located
-type intro_pattern_naming = intro_pattern_naming_expr located
+type intro_pattern = delayed_open_constr intro_pattern_expr CAst.t
+type intro_patterns = delayed_open_constr intro_pattern_expr CAst.t list
+type or_and_intro_pattern = delayed_open_constr or_and_intro_pattern_expr CAst.t
+type intro_pattern_naming = intro_pattern_naming_expr CAst.t

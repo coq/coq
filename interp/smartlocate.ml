@@ -68,16 +68,16 @@ let global_with_alias ?head r =
 let smart_global ?head = function
   | AN r ->
       global_with_alias ?head r
-  | ByNotation (loc,(ntn,sc)) ->
+  | ByNotation {CAst.loc;v=(ntn,sc)} ->
       Notation.interp_notation_as_global_reference ?loc (fun _ -> true) ntn sc
 
 let smart_global_inductive = function
   | AN r ->
       global_inductive_with_alias r
-  | ByNotation (loc,(ntn,sc)) ->
+  | ByNotation {CAst.loc;v=(ntn,sc)} ->
       destIndRef
         (Notation.interp_notation_as_global_reference ?loc isIndRef ntn sc)
 
 let loc_of_smart_reference = function
   | AN r -> loc_of_reference r
-  | ByNotation (loc,(_,_)) -> loc
+  | ByNotation {CAst.loc;v=(_,_)} -> loc

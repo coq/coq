@@ -156,7 +156,7 @@ let protect g e na =
 
 let apply_cases_pattern ?loc ((ids,disjpat),id) c =
   let tm = DAst.make ?loc (GVar id) in
-  let eqns = List.map (fun pat -> (loc,(ids,[pat],c))) disjpat in
+  let eqns = List.map (fun pat -> (CAst.make ?loc (ids,[pat],c))) disjpat in
   DAst.make ?loc @@ GCases (LetPatternStyle, None, [tm,(Anonymous,None)], eqns)
 
 let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
@@ -192,7 +192,7 @@ let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
 	  let e',nal' = List.fold_right (fun na (e',nal) ->
               let e',na' = protect g e' na in
               e',na'::nal) nal (e',[]) in
-          e',Some (Loc.tag ?loc (ind,nal')) in
+          e',Some (CAst.make ?loc (ind,nal')) in
         let e',na' = protect g e' na in
         (e',(f e tm,(na',t'))::tml')) tml (e,[]) in
       let fold (idl,e) na = let (e,disjpat,na) = g e na in ((Name.cons na idl,e),disjpat,na) in
@@ -200,7 +200,7 @@ let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
         let ((idl,e),patl) =
           List.fold_left_map (cases_pattern_fold_map ?loc fold) ([],e) patl in
         let disjpatl = product_of_cases_patterns patl in
-        List.map (fun patl -> Loc.tag (idl,patl,f e rhs)) disjpatl) eqnl in
+        List.map (fun patl -> CAst.make (idl,patl,f e rhs)) disjpatl) eqnl in
       GCases (sty,Option.map (f e') rtntypopt,tml',List.flatten eqnl')
   | NLetTuple (nal,(na,po),b,c) ->
       let e',nal = List.fold_left_map (protect g) e nal in
@@ -411,13 +411,13 @@ let notation_constr_and_vars_of_glob_constr recvars a =
   | GProd (na,bk,ty,c) -> add_name found na; NProd (na,aux ty,aux c)
   | GLetIn (na,b,t,c) -> add_name found na; NLetIn (na,aux b,Option.map aux t, aux c)
   | GCases (sty,rtntypopt,tml,eqnl) ->
-      let f (_,(idl,pat,rhs)) = List.iter (add_id found) idl; (pat,aux rhs) in
+      let f {CAst.v=(idl,pat,rhs)} = List.iter (add_id found) idl; (pat,aux rhs) in
       NCases (sty,Option.map aux rtntypopt,
         List.map (fun (tm,(na,x)) ->
 	  add_name found na;
 	  Option.iter
-	    (fun (_,(_,nl)) -> List.iter (add_name found) nl) x;
-          (aux tm,(na,Option.map (fun (_,(ind,nal)) -> (ind,nal)) x))) tml,
+            (fun {CAst.v=(_,nl)} -> List.iter (add_name found) nl) x;
+          (aux tm,(na,Option.map (fun {CAst.v=(ind,nal)} -> (ind,nal)) x))) tml,
         List.map f eqnl)
   | GLetTuple (nal,(na,po),b,c) ->
       add_name found na;
@@ -661,7 +661,7 @@ let abstract_return_type_context pi mklam tml rtno =
     rtno
 
 let abstract_return_type_context_glob_constr tml rtn =
-  abstract_return_type_context (fun (_,(_,nal)) -> nal)
+  abstract_return_type_context (fun {CAst.v=(_,nal)} -> nal)
     (fun na c -> DAst.make @@
       GLambda(na,Explicit,DAst.make @@ GHole(Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None),c)) tml rtn
 
@@ -1241,7 +1241,7 @@ and match_extended_binders ?loc isprod u alp metas na1 na2 bk t sigma b1 b2 =
   | Name p, GCases (LetPatternStyle,None,[(e,_)],(_::_ as eqns)), Name id
        when is_gvar p e && is_bindinglist_meta id metas && List.length (store (Detyping.factorize_eqns eqns)) = 1 ->
     (match get () with
-     | [(_,(ids,disj_of_patl,b1))] ->
+     | [{CAst.v=(ids,disj_of_patl,b1)}] ->
      let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
      let disjpat = if occur_glob_constr p b1 then List.map (set_pat_alias p) disjpat else disjpat in
      let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalPattern ((disjpat,ids),p,bk,t)] in
@@ -1250,7 +1250,7 @@ and match_extended_binders ?loc isprod u alp metas na1 na2 bk t sigma b1 b2 =
   | Name p, GCases (LetPatternStyle,None,[(e,_)],(_::_ as eqns)), Name id
        when is_gvar p e && is_onlybinding_pattern_like_meta false id metas && List.length (store (Detyping.factorize_eqns eqns)) = 1 ->
     (match get () with
-     | [(_,(ids,disj_of_patl,b1))] ->
+     | [{CAst.v=(ids,disj_of_patl,b1)}] ->
      let disjpat = List.map (function [pat] -> pat | _ -> assert false) disj_of_patl in
      let disjpat = if occur_glob_constr p b1 then List.map (set_pat_alias p) disjpat else disjpat in
      let alp,sigma = bind_binding_env alp sigma id disjpat in
@@ -1263,7 +1263,7 @@ and match_extended_binders ?loc isprod u alp metas na1 na2 bk t sigma b1 b2 =
      let (alp,sigma) = match_names metas (alp,sigma) na1 na2 in
      match_in u alp metas sigma b1 b2
 
-and match_equations u alp metas sigma (_,(ids,patl1,rhs1)) (patl2,rhs2) rest1 rest2 =
+and match_equations u alp metas sigma {CAst.v=(ids,patl1,rhs1)} (patl2,rhs2) rest1 rest2 =
   (* patl1 and patl2 have the same length because they respectively
      correspond to some tml1 and tml2 that have the same length *)
   let allow_catchall = (rest2 = [] && ids = []) in
@@ -1272,7 +1272,7 @@ and match_equations u alp metas sigma (_,(ids,patl1,rhs1)) (patl2,rhs2) rest1 re
       (alp,sigma) patl1 patl2 in
   match_in u alp metas sigma rhs1 rhs2
 
-and match_disjunctive_equations u alp metas sigma (_,(ids,disjpatl1,rhs1)) (disjpatl2,rhs2) _ _ =
+and match_disjunctive_equations u alp metas sigma {CAst.v=(ids,disjpatl1,rhs1)} (disjpatl2,rhs2) _ _ =
   (* patl1 and patl2 have the same length because they respectively
      correspond to some tml1 and tml2 that have the same length *)
   let (alp,sigma) =

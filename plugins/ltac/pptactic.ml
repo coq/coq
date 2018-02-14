@@ -183,7 +183,7 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let pr_or_by_notation f = function
     | AN v -> f v
-    | ByNotation (_,(s,sc)) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
+    | ByNotation {CAst.v=(s,sc)} -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
 
   let pr_located pr (loc,x) = pr x
 
@@ -382,9 +382,9 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let pr_as_disjunctive_ipat prc ipatl =
     keyword "as" ++ spc () ++
-      pr_or_var (fun (loc,p) -> Miscprint.pr_or_and_intro_pattern prc p) ipatl
+      pr_or_var (fun {CAst.loc;v=p} -> Miscprint.pr_or_and_intro_pattern prc p) ipatl
 
-  let pr_eqn_ipat (_,ipat) = keyword "eqn:" ++ Miscprint.pr_intro_pattern_naming ipat
+  let pr_eqn_ipat {CAst.v=ipat} = keyword "eqn:" ++ Miscprint.pr_intro_pattern_naming ipat
 
   let pr_with_induction_names prc = function
     | None, None -> mt ()
@@ -426,7 +426,7 @@ let string_of_genarg_arg (ArgumentType arg) =
   let pr_assumption prc prdc prlc ipat c = match ipat with
     (* Use this "optimisation" or use only the general case ?*)
     (* it seems that this "optimisation" is somehow more natural *)
-    | Some (_,IntroNaming (IntroIdentifier id)) ->
+    | Some {CAst.v=IntroNaming (IntroIdentifier id)} ->
       spc() ++ surround (pr_id id ++ str " :" ++ spc() ++ prlc c)
     | ipat ->
       spc() ++ prc c ++ pr_as_ipat prdc ipat
@@ -744,7 +744,7 @@ let pr_goal_selector ~toplevel s =
         | TacIntroPattern (ev,(_::_ as p)) ->
            hov 1 (primitive (if ev then "eintros" else "intros") ++
                     (match p with
-                    | [_,Misctypes.IntroForthcoming false] -> mt ()
+                    | [{CAst.v=Misctypes.IntroForthcoming false}] -> mt ()
                     | _ -> spc () ++ prlist_with_sep spc (Miscprint.pr_intro_pattern pr.pr_dconstr) p))
         | TacApply (a,ev,cb,inhyp) ->
           hov 1 (

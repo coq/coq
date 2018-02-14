@@ -68,9 +68,9 @@ let pr_intro_as_pat _prc _ _ pat =
         str"<simple_intropattern>"
     | None -> mt ()
 
-let out_disjunctive = function
-  | loc, IntroAction (IntroOrAndPattern l) -> (loc,l)
-  | _ -> CErrors.user_err Pp.(str "Disjunctive or conjunctive intro pattern expected.")
+let out_disjunctive = CAst.map (function
+  | IntroAction (IntroOrAndPattern l) -> l
+  | _ -> CErrors.user_err Pp.(str "Disjunctive or conjunctive intro pattern expected."))
 
 ARGUMENT EXTEND with_names TYPED AS intropattern_opt PRINTED BY pr_intro_as_pat
 |   [ "as"  simple_intropattern(ipat) ] -> [ Some ipat ]

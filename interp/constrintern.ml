@@ -524,7 +524,7 @@ let rec expand_binders ?loc mk bl c =
      | GLocalPattern ((disjpat,ids), id, bk, ty) ->
         let tm = DAst.make ?loc (GVar id) in
         (* Distribute the disjunctive patterns over the shared right-hand side *)
-        let eqnl = List.map (fun pat -> (loc,(ids,[pat],c))) disjpat in
+        let eqnl = List.map (fun pat -> CAst.make ?loc (ids,[pat],c)) disjpat in
         let c = DAst.make ?loc @@ GCases (Misctypes.LetPatternStyle, None, [tm,(Anonymous,None)], eqnl) in
         expand_binders ?loc mk bl (mk ?loc (Name id,Explicit,ty) c)
 
@@ -1954,14 +1954,14 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
              let thevars, thepats = List.split l in
              let sub_rtn = (* Some (GSort (Loc.ghost,GType None)) *) None in
              let sub_tms = List.map (fun id -> (DAst.make @@ GVar id),(Name id,None)) thevars (* "match v1,..,vn" *) in
-             let main_sub_eqn = Loc.tag @@
+             let main_sub_eqn = CAst.make @@
                ([],thepats, (* "|p1,..,pn" *)
 		Option.cata (intern_type env')
                   (DAst.make ?loc @@ GHole(Evar_kinds.CasesType false,Misctypes.IntroAnonymous,None))
                   rtnpo) (* "=> P" if there were a return predicate P, and "=> _" otherwise *) in
              let catch_all_sub_eqn =
                if List.for_all (irrefutable globalenv) thepats then [] else
-                  [Loc.tag @@ ([],List.make (List.length thepats) (DAst.make @@ PatVar Anonymous), (* "|_,..,_" *)
+                  [CAst.make @@ ([],List.make (List.length thepats) (DAst.make @@ PatVar Anonymous), (* "|_,..,_" *)
                    DAst.make @@ GHole(Evar_kinds.ImpossibleCase,Misctypes.IntroAnonymous,None))]   (* "=> _" *) in
              Some (DAst.make @@ GCases(Term.RegularStyle,sub_rtn,sub_tms,main_sub_eqn::catch_all_sub_eqn))
 	in
@@ -2077,7 +2077,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     List.map (fun (asubst,pl) ->
       let rhs = replace_vars_constr_expr asubst rhs in
       let rhs' = intern {env with ids = env_ids} rhs in
-      (loc,(eqn_ids,pl,rhs'))) pll
+      CAst.make ?loc (eqn_ids,pl,rhs')) pll
 
   and intern_case_item env forbidden_names_for_gen (tm,na,t) =
     (* the "match" part *)
@@ -2110,7 +2110,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 	    match case_rel_ctxt,arg_pats with
 	      (* LetIn in the rel_context *)
 	      | LocalDef _ :: t, l when not with_letin ->
-		canonize_args t l forbidden_names match_acc ((Loc.tag Anonymous)::var_acc)
+                canonize_args t l forbidden_names match_acc ((CAst.make Anonymous)::var_acc)
 	      | [],[] ->
 		(add_name match_acc na, var_acc)
 	      | (LocalAssum (cano_name,ty) | LocalDef (cano_name,_,ty)) :: t, c::tt ->
@@ -2118,21 +2118,21 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                 | PatVar x ->
                   let loc = c.CAst.loc in
                   canonize_args t tt forbidden_names
-                    (add_name match_acc CAst.(make ?loc x)) ((loc,x)::var_acc)
+                    (add_name match_acc CAst.(make ?loc x)) (CAst.make ?loc x::var_acc)
                 | _ ->
                   let fresh =
                     Namegen.next_name_away_with_default_using_types "iV" cano_name forbidden_names (EConstr.of_constr ty) in
                   canonize_args t tt (Id.Set.add fresh forbidden_names)
-                    ((fresh,c)::match_acc) ((cases_pattern_loc c,Name fresh)::var_acc)
+                    ((fresh,c)::match_acc) ((CAst.make ?loc:(cases_pattern_loc c) @@ Name fresh)::var_acc)
                 end
 	      | _ -> assert false in
 	  let _,args_rel =
 	    List.chop nparams (List.rev mip.Declarations.mind_arity_ctxt) in
 	  canonize_args args_rel l forbidden_names_for_gen [] [] in
-	match_to_do, Some (cases_pattern_expr_loc t,(ind,List.rev_map snd nal))
+        match_to_do, Some (CAst.make ?loc:(cases_pattern_expr_loc t) (ind,List.rev_map (fun x -> x.v) nal))
     | None ->
       [], None in
-    (tm',(na.CAst.v,typ)), extra_id, match_td
+    (tm',(na.CAst.v, typ)), extra_id, match_td
 
   and intern_impargs c env l subscopes args =
     let eargs, rargs = extract_explicit_arg l args in
@@ -2164,7 +2164,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
       | (imp::impl', []) ->
 	  if not (Id.Map.is_empty eargs) then
 	    (let (id,(loc,_)) = Id.Map.choose eargs in
-	       user_err ?loc  (str "Not enough non implicit \
+               user_err ?loc (str "Not enough non implicit \
 	    arguments to accept the argument bound to " ++
 		 Id.print id ++ str"."));
 	  []

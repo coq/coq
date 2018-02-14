@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Loc
-open Names
 open EConstr
 open Environ
 open Constrexpr
@@ -19,14 +17,14 @@ type contexts = Parameters | Properties
 
 type typeclass_error =
   | NotAClass of constr
-  | UnboundMethod of global_reference * Id.t located (** Class name, method *)
+  | UnboundMethod of global_reference * Misctypes.lident (** Class name, method *)
   | MismatchedContextInstance of contexts * constr_expr list * Context.Rel.t (** found, expected *)
 
 exception TypeClassError of env * typeclass_error
 
 val not_a_class : env -> constr -> 'a
 
-val unbound_method : env -> global_reference -> Id.t located -> 'a
+val unbound_method : env -> global_reference -> Misctypes.lident -> 'a
 
 val mismatched_ctx_inst : env -> contexts -> constr_expr list -> Context.Rel.t -> 'a
 

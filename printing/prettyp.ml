@@ -838,7 +838,7 @@ let print_any_name env sigma na udecl =
 
 let print_name env sigma na udecl =
   match na with
-  | ByNotation (loc,(ntn,sc)) ->
+  | ByNotation {CAst.loc;v=(ntn,sc)} ->
       print_any_name env sigma
         (Term (Notation.interp_notation_as_global_reference ?loc (fun _ -> true)
                ntn sc))
@@ -891,7 +891,7 @@ let print_about_any ?loc env sigma k udecl =
 
 let print_about env sigma na udecl =
   match na with
-  | ByNotation (loc,(ntn,sc)) ->
+  | ByNotation {CAst.loc;v=(ntn,sc)} ->
       print_about_any ?loc env sigma
         (Term (Notation.interp_notation_as_global_reference ?loc (fun _ -> true)
                ntn sc)) udecl

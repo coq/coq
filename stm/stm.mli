@@ -80,7 +80,7 @@ val new_doc  : stm_init_options -> doc * Stateid.t
 (* [parse_sentence sid pa] Reads a sentence from [pa] with parsing
    state [sid] Returns [End_of_input] if the stream ends *)
 val parse_sentence : doc:doc -> Stateid.t -> Pcoq.Gram.coq_parsable ->
-  Vernacexpr.vernac_control Loc.located
+  Vernacexpr.vernac_control CAst.t
 
 (* Reminder: A parsable [pa] is constructed using
    [Pcoq.Gram.coq_parsable stream], where [stream : char Stream.t]. *)
@@ -94,7 +94,7 @@ exception End_of_input
    If [newtip] is provided, then the returned state id is guaranteed
    to be [newtip] *)
 val add : doc:doc -> ontop:Stateid.t -> ?newtip:Stateid.t ->
-  bool -> Vernacexpr.vernac_control Loc.located ->
+  bool -> Vernacexpr.vernac_control CAst.t ->
   doc * Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
 
 (* [query at ?report_with cmd] Executes [cmd] at a given state [at],

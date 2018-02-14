@@ -33,8 +33,9 @@ let subst_glob_constr_and_expr subst (c, e) =
 
 let subst_glob_constr = subst_glob_constr_and_expr (* shortening *)
 
-let subst_binding subst (loc,(b,c)) =
-  (loc,(subst_quantified_hypothesis subst b,subst_glob_constr subst c))
+let subst_binding subst =
+  CAst.map (fun (b,c) ->
+      subst_quantified_hypothesis subst b,subst_glob_constr subst c)
 
 let subst_bindings subst = function
   | NoBindings -> NoBindings
@@ -47,13 +48,13 @@ let subst_glob_with_bindings subst (c,bl) =
 let subst_glob_with_bindings_arg subst (clear,c) =
   (clear,subst_glob_with_bindings subst c)
 
-let rec subst_intro_pattern subst = function
-  | loc,IntroAction p -> loc, IntroAction (subst_intro_pattern_action subst p)
-  | loc, IntroNaming _ | loc, IntroForthcoming _ as x -> x
+let rec subst_intro_pattern subst = CAst.map (function
+  | IntroAction p -> IntroAction (subst_intro_pattern_action subst p)
+  | IntroNaming _ | IntroForthcoming _ as x -> x)
 
-and subst_intro_pattern_action subst = function
-  | IntroApplyOn ((loc,t),pat) ->
-      IntroApplyOn ((loc,subst_glob_constr subst t),subst_intro_pattern subst pat)
+and subst_intro_pattern_action subst = let open CAst in function
+  | IntroApplyOn ({loc;v=t},pat) ->
+    IntroApplyOn (make ?loc @@ subst_glob_constr subst t,subst_intro_pattern subst pat)
   | IntroOrAndPattern l ->
       IntroOrAndPattern (subst_intro_or_and_pattern subst l)
   | IntroInjection l -> IntroInjection (List.map (subst_intro_pattern subst) l)

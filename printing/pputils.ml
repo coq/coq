@@ -124,7 +124,7 @@ let pr_red_expr_env env sigma (pr_constr,pr_lconstr,pr_ref,pr_pattern) =
 
 let pr_or_by_notation f = function
   | AN v -> f v
-  | ByNotation (_,(s,sc)) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
+  | ByNotation {CAst.v=(s,sc)} -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
 
 let hov_if_not_empty n p = if Pp.ismt p then p else hov n p
 

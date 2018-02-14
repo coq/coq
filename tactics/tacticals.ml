@@ -185,8 +185,8 @@ let check_or_and_pattern_size ?loc check_and names branchsigns =
   match names with
   | IntroAndPattern l ->
       if not (Int.equal n 1) then errn n;
-      let l' = List.filter (function _,IntroForthcoming _ -> true | _,IntroNaming _ | _,IntroAction _ -> false) l in
-      if l' != [] then errforthcoming ?loc:(fst (List.hd l'));
+      let l' = List.filter CAst.(function {v=IntroForthcoming _} -> true | {v=IntroNaming _} | {v=IntroAction _} -> false) l in
+      if l' != [] then errforthcoming ?loc:(List.hd l').CAst.loc;
       if check_and then
         let p1 = List.count (fun x -> x) branchsigns.(0) in
         let p2 = List.length branchsigns.(0) in
@@ -194,7 +194,7 @@ let check_or_and_pattern_size ?loc check_and names branchsigns =
         if not (Int.equal p p1 || Int.equal p p2) then err1 p1 p2;
         if Int.equal p p1 then
           IntroAndPattern
-            (List.extend branchsigns.(0) (Loc.tag @@ IntroNaming IntroAnonymous) l)
+            (List.extend branchsigns.(0) (CAst.make @@ IntroNaming IntroAnonymous) l)
         else
           names
       else
@@ -218,7 +218,7 @@ let get_and_check_or_and_pattern ?loc = get_and_check_or_and_pattern_gen ?loc tr
 let compute_induction_names_gen check_and branchletsigns = function
   | None ->
       Array.make (Array.length branchletsigns) []
-  | Some (loc,names) ->
+  | Some {CAst.loc;v=names} ->
       let names = fix_empty_or_and_pattern (Array.length branchletsigns) names in
       get_and_check_or_and_pattern_gen check_and ?loc names branchletsigns
 

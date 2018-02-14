@@ -20,7 +20,7 @@ val vernac_require :
 val interp :
   ?verbosely:bool ->
   ?proof:Proof_global.closed_proof ->
-  st:Vernacstate.t -> Vernacexpr.vernac_control Loc.located -> Vernacstate.t
+  st:Vernacstate.t -> Vernacexpr.vernac_control CAst.t -> Vernacstate.t
 
 (** Prepare a "match" template for a given inductive type.
     For each branch of the match, we list the constructor name

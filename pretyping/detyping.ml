@@ -279,7 +279,7 @@ let _ =
       optwrite = (fun b -> print_allow_match_default_clause := b) }
 
 let rec join_eqns (ids,rhs as x) patll = function
-  | (loc,(ids',patl',rhs') as eqn')::rest ->
+  | ({CAst.loc; v=(ids',patl',rhs')} as eqn')::rest ->
      if not !Flags.raw_print && !print_factorize_match_patterns &&
         List.eq_set Id.equal ids ids' && glob_constr_eq rhs rhs'
      then
@@ -290,9 +290,9 @@ let rec join_eqns (ids,rhs as x) patll = function
   | [] ->
      patll, []
 
-let number_of_patterns (_gloc,(_ids,patll,_rhs)) = List.length patll
+let number_of_patterns {CAst.v=(_ids,patll,_rhs)} = List.length patll
 
-let is_default_candidate (_gloc,(ids,_patll,_rhs) ) = ids = []
+let is_default_candidate {CAst.v=(ids,_patll,_rhs)} = ids = []
 
 let rec move_more_factorized_default_candidate_to_end eqn n = function
   | eqn' :: eqns ->
@@ -316,22 +316,26 @@ let rec select_default_clause = function
   | [] -> None, []
 
 let factorize_eqns eqns =
+  let open CAst in
   let rec aux found = function
-  | (loc,(ids,patl,rhs))::rest ->
+  | {loc;v=(ids,patl,rhs)}::rest ->
      let patll,rest = join_eqns (ids,rhs) [patl] rest in
-     aux ((loc,(ids,patll,rhs))::found) rest
+     aux (CAst.make ?loc (ids,patll,rhs)::found) rest
   | [] ->
      found in
   let eqns = aux [] (List.rev eqns) in
   let mk_anon patl = List.map (fun _ -> DAst.make @@ PatVar Anonymous) patl in
+  let open CAst in
   if not !Flags.raw_print && !print_allow_match_default_clause && eqns <> [] then
     match select_default_clause eqns with
     (* At least two clauses and the last one is disjunctive with no variables *)
-    | Some (gloc,([],patl::_::_,rhs)), (_::_ as eqns) -> eqns@[gloc,([],[mk_anon patl],rhs)]
+    | Some {loc=gloc;v=([],patl::_::_,rhs)}, (_::_ as eqns) ->
+      eqns@[CAst.make ?loc:gloc ([],[mk_anon patl],rhs)]
     (* Only one clause which is disjunctive with no variables: we keep at least one constructor *)
     (* so that it is not interpreted as a dummy "match" *)
-    | Some (gloc,([],patl::patl'::_,rhs)), [] -> [gloc,([],[patl;mk_anon patl'],rhs)]
-    | Some (_,((_::_,_,_ | _,([]|[_]),_))), _ -> assert false
+    | Some {loc=gloc;v=([],patl::patl'::_,rhs)}, [] ->
+      [CAst.make ?loc:gloc ([],[patl;mk_anon patl'],rhs)]
+    | Some {v=((_::_,_,_ | _,([]|[_]),_))}, _ -> assert false
     | None, eqns -> eqns
   else
     eqns
@@ -460,7 +464,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
         | _ -> Anonymous, typ in
       let aliastyp =
         if List.for_all (Name.equal Anonymous) nl then None
-        else Some (Loc.tag (indsp,nl)) in
+        else Some (CAst.make (indsp,nl)) in
       n, aliastyp, Some typ
   in
   let constructs = Array.init (Array.length bl) (fun i -> (indsp,i+1)) in
@@ -726,7 +730,8 @@ and detype_eqns d flags avoid env sigma ci computable constructs consnargsl bl =
   try
     if !Flags.raw_print || not (reverse_matching ()) then raise Exit;
     let mat = build_tree Anonymous (snd flags) (avoid,env) sigma ci bl in
-    List.map (fun (ids,pat,((avoid,env),c)) -> Loc.tag (Id.Set.elements ids,[pat],detype d flags avoid env sigma c))
+    List.map (fun (ids,pat,((avoid,env),c)) ->
+        CAst.make (Id.Set.elements ids,[pat],detype d flags avoid env sigma c))
       mat
   with e when CErrors.noncritical e ->
     Array.to_list
@@ -743,7 +748,7 @@ and detype_eqn d (lax,isgoal as flags) avoid env sigma constr construct_nargs br
   in
   let rec buildrec ids patlist avoid env l b =
     match EConstr.kind sigma b, l with
-      | _, [] -> Loc.tag @@
+      | _, [] -> CAst.make @@
         (Id.Set.elements ids,
          [DAst.make @@ PatCstr(constr, List.rev patlist,Anonymous)],
          detype d flags avoid env sigma b)
@@ -934,22 +939,23 @@ let rec subst_glob_constr subst = DAst.map (function
 	  GLetIn (n,r1',t',r2')
 
   | GCases (sty,rtno,rl,branches) as raw ->
+    let open CAst in
       let rtno' = Option.smartmap (subst_glob_constr subst) rtno
       and rl' = List.smartmap (fun (a,x as y) ->
         let a' = subst_glob_constr subst a in
         let (n,topt) = x in
         let topt' = Option.smartmap
-          (fun ((loc,((sp,i),y) as t)) ->
+          (fun ({loc;v=((sp,i),y)} as t) ->
             let sp' = subst_mind subst sp in
-            if sp == sp' then t else (loc,((sp',i),y))) topt in
+            if sp == sp' then t else CAst.(make ?loc ((sp',i),y))) topt in
         if a == a' && topt == topt' then y else (a',(n,topt'))) rl
       and branches' = List.smartmap
-			(fun (loc,(idl,cpl,r) as branch) ->
+                        (fun ({loc;v=(idl,cpl,r)} as branch) ->
 			   let cpl' =
 			     List.smartmap (subst_cases_pattern subst) cpl
 			   and r' = subst_glob_constr subst r in
 			     if cpl' == cpl && r' == r then branch else
-			       (loc,(idl,cpl',r')))
+                               CAst.(make ?loc (idl,cpl',r')))
 			branches
       in
 	if rtno' == rtno && rl' == rl && branches' == branches then raw else
@@ -1014,9 +1020,9 @@ let simple_cases_matrix_of_branches ind brs =
       let mkPatVar na = DAst.make @@ PatVar na in
       let p = DAst.make @@ PatCstr ((ind,i+1),List.map mkPatVar nal,Anonymous) in
       let ids = List.map_filter Nameops.Name.to_option nal in
-      Loc.tag @@ (ids,[p],c))
+      CAst.make @@ (ids,[p],c))
     brs
 
 let return_type_of_predicate ind nrealargs_tags pred =
   let nal,p = it_destRLambda_or_LetIn_names (nrealargs_tags@[false]) pred in
-  (List.hd nal, Some (Loc.tag (ind, List.tl nal))), Some p
+  (List.hd nal, Some (CAst.make (ind, List.tl nal))), Some p

@@ -20,14 +20,13 @@ open Vernacprop
    Use the module Coqtoplevel, which catches these exceptions
    (the exceptions are explained only at the toplevel). *)
 
-let checknav_simple (loc, cmd) =
+let checknav_simple {CAst.loc;v=cmd} =
   if is_navigation_vernac cmd && not (is_reset cmd) then
     CErrors.user_err ?loc (str "Navigation commands forbidden in files.")
 
-let checknav_deep (loc, ast) =
+let checknav_deep {CAst.loc;v=ast} =
   if is_deep_navigation_vernac ast then
     CErrors.user_err ?loc (str "Navigation commands forbidden in nested commands.")
-
 
 let disable_drop = function
   | Drop -> CErrors.user_err Pp.(str "Drop is forbidden.")
@@ -45,7 +44,7 @@ let vernac_echo ?loc in_chan = let open Loc in
 (* For coqtop -time, we display the position in the file,
    and a glimpse of the executed command *)
 
-let pp_cmd_header ?loc com =
+let pp_cmd_header {CAst.loc;v=com} =
   let shorten s =
     if Unicode.utf8_length s > 33 then (Unicode.utf8_sub s 0 30) ^ "..." else s
   in
@@ -66,8 +65,8 @@ let pp_cmd_header ?loc com =
 (* This is a special case where we assume we are in console batch mode
    and take control of the console.
  *)
-let print_cmd_header ?loc com =
-  Pp.pp_with !Topfmt.std_ft (pp_cmd_header ?loc com);
+let print_cmd_header com =
+  Pp.pp_with !Topfmt.std_ft (pp_cmd_header com);
   Format.pp_print_flush !Topfmt.std_ft ()
 
 (* Reenable when we get back to feedback printing *)
@@ -85,14 +84,14 @@ module State = struct
 
 end
 
-let interp_vernac ~time ~check ~interactive ~state (loc,com) =
+let interp_vernac ~time ~check ~interactive ~state ({CAst.loc;_} as com) =
   let open State in
     try
       (* The -time option is only supported from console-based clients
          due to the way it prints. *)
-      if time then print_cmd_header ?loc com;
-      let com = if time then VernacTime(time,(CAst.make ?loc com)) else com in
-      let doc, nsid, ntip = Stm.add ~doc:state.doc ~ontop:state.sid (not !Flags.quiet) (loc,com) in
+      if time then print_cmd_header com;
+      let com = if time then CAst.make ?loc @@ VernacTime(time,com) else com in
+      let doc, nsid, ntip = Stm.add ~doc:state.doc ~ontop:state.sid (not !Flags.quiet) com in
 
       (* Main STM interaction *)
       if ntip <> `NewTip then
@@ -131,7 +130,7 @@ let load_vernac_core ~time ~echo ~check ~interactive ~state file =
     (* we go out of the following infinite loop when a End_of_input is
      * raised, which means that we raised the end of the file being loaded *)
     while true do
-      let loc, ast =
+      let { CAst.loc; _ } as ast =
           Stm.parse_sentence ~doc:!rstate.doc !rstate.sid in_pa
         (* If an error in parsing occurs, we propagate the exception
            so the caller of load_vernac will take care of it. However,
@@ -154,8 +153,8 @@ let load_vernac_core ~time ~echo ~check ~interactive ~state file =
       (* Printing of vernacs *)
       Option.iter (vernac_echo ?loc) in_echo;
 
-      checknav_simple (loc, ast);
-      let state = Flags.silently (interp_vernac ~time ~check ~interactive ~state:!rstate) (loc, ast) in
+      checknav_simple ast;
+      let state = Flags.silently (interp_vernac ~time ~check ~interactive ~state:!rstate) ast in
       rids := state.sid :: !rids;
       rstate := state;
     done;

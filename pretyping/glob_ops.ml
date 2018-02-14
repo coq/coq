@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Util
+open CAst
 open Names
 open Nameops
 open Globnames
@@ -34,7 +35,7 @@ let set_pat_alias id = DAst.map (function
 let cases_predicate_names tml =
   List.flatten (List.map (function
     | (tm,(na,None)) -> [na]
-    | (tm,(na,Some (_,(_,nal)))) -> na::nal) tml)
+    | (tm,(na,Some {v=(_,nal)})) -> na::nal) tml)
 
 let mkGApp ?loc p t = DAst.make ?loc @@
   match DAst.get p with
@@ -79,13 +80,13 @@ let matching_var_kind_eq k1 k2 = match k1, k2 with
 | (FirstOrderPatVar _ | SecondOrderPatVar _), _ -> false
 
 let tomatch_tuple_eq f (c1, p1) (c2, p2) =
-  let eqp (_, (i1, na1)) (_, (i2, na2)) =
+  let eqp {CAst.v=(i1, na1)} {CAst.v=(i2, na2)} =
     eq_ind i1 i2 && List.equal Name.equal na1 na2
   in
   let eq_pred (n1, o1) (n2, o2) = Name.equal n1 n2 && Option.equal eqp o1 o2 in
   f c1 c2 && eq_pred p1 p2
 
-and cases_clause_eq f (_, (id1, p1, c1)) (_, (id2, p2, c2)) =
+and cases_clause_eq f {CAst.v=(id1, p1, c1)} {CAst.v=(id2, p2, c2)} =
   List.equal Id.equal id1 id2 && List.equal cases_pattern_eq p1 p2 && f c1 c2
 
 let glob_decl_eq f (na1, bk1, c1, t1) (na2, bk2, c2, t2) =
@@ -173,7 +174,7 @@ let map_glob_constr_left_to_right f = DAst.map (function
   | GCases (sty,rtntypopt,tml,pl) ->
       let comp1 = Option.map f rtntypopt in
       let comp2 = Util.List.map_left (fun (tm,x) -> (f tm,x)) tml in
-      let comp3 = Util.List.map_left (fun (loc,(idl,p,c)) -> (loc,(idl,p,f c))) pl in
+      let comp3 = Util.List.map_left (CAst.map (fun (idl,p,c) -> (idl,p,f c))) pl in
       GCases (sty,comp1,comp2,comp3)
   | GLetTuple (nal,(na,po),b,c) ->
       let comp1 = Option.map f po in
@@ -211,7 +212,7 @@ let fold_glob_constr f acc = DAst.with_val (function
   | GLetIn (_,b,t,c) ->
     f (Option.fold_left f (f acc b) t) c
   | GCases (_,rtntypopt,tml,pl) ->
-    let fold_pattern acc (_,(idl,p,c)) = f acc c in
+    let fold_pattern acc {CAst.v=(idl,p,c)} = f acc c in
     List.fold_left fold_pattern
       (List.fold_left f (Option.fold_left f acc rtntypopt) (List.map fst tml))
       pl
@@ -244,9 +245,9 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
   | GLetIn (na,b,t,c) ->
     f (Name.fold_right g na v) (Option.fold_left (f v) (f v acc b) t) c
   | GCases (_,rtntypopt,tml,pl) ->
-    let fold_pattern acc (_,(idl,p,c)) = f (List.fold_right g idl v) acc c in
+    let fold_pattern acc {v=(idl,p,c)} = f (List.fold_right g idl v) acc c in
     let fold_tomatch (v',acc) (tm,(na,onal)) =
-      (Option.fold_left (fun v'' (_,(_,nal)) -> List.fold_right (Name.fold_right g) nal v'')
+      (Option.fold_left (fun v'' {v=(_,nal)} -> List.fold_right (Name.fold_right g) nal v'')
                         (Name.fold_right g na v') onal,
        f v acc tm) in
     let (v',acc) = List.fold_left fold_tomatch (v,acc) tml in
@@ -336,10 +337,10 @@ let bound_glob_vars =
    probably be no significant penalty in doing reallocation as
    pattern-matching expressions are usually rather small. *)
 
-let map_inpattern_binders f ((loc,(id,nal)) as x) =
+let map_inpattern_binders f ({loc;v=(id,nal)} as x) =
   let r = CList.smartmap f nal in
   if r == nal then x
-  else loc,(id,r)
+  else CAst.make ?loc (id,r)
 
 let map_tomatch_binders f ((c,(na,inp)) as x) : tomatch_tuple =
   let r = Option.smartmap (fun p -> map_inpattern_binders f p) inp in
@@ -360,14 +361,14 @@ let rec map_case_pattern_binders f = DAst.map (function
       else PatCstr(c,rps,rna)
   )
 
-let map_cases_branch_binders f ((loc,(il,cll,rhs)) as x) : cases_clause =
+let map_cases_branch_binders f ({CAst.loc;v=(il,cll,rhs)} as x) : cases_clause =
   (* spiwack: not sure if I must do something with the list of idents.
      It is intended to be a superset of the free variable of the
      right-hand side, if I understand correctly. But I'm not sure when
      or how they are used. *)
   let r = List.smartmap (fun cl -> map_case_pattern_binders f cl) cll in
   if r == cll then x
-  else loc,(il,r,rhs)
+  else CAst.make ?loc (il,r,rhs)
 
 let map_pattern_binders f tomatch branches =
   CList.smartmap (fun tm -> map_tomatch_binders f tm) tomatch,
@@ -377,8 +378,8 @@ let map_pattern_binders f tomatch branches =
 
 let map_tomatch f (c,pp) : tomatch_tuple = f c , pp
 
-let map_cases_branch f (loc,(il,cll,rhs)) : cases_clause =
-  loc , (il , cll , f rhs)
+let map_cases_branch f =
+  CAst.map (fun (il,cll,rhs) -> (il , cll , f rhs))
 
 let map_pattern f tomatch branches =
   List.map (fun tm -> map_tomatch f tm) tomatch,
@@ -437,11 +438,11 @@ let rec rename_glob_vars l c = force @@ DAst.map_with_loc (fun ?loc -> function
   (* Lazy strategy: we fail if a collision with renaming occurs, rather than renaming further *)
   | GCases (ci,po,tomatchl,cls) ->
       let test_pred_pat (na,ino) =
-        test_na l na; Option.iter (fun (_,(_,nal)) -> List.iter (test_na l) nal) ino in
+        test_na l na; Option.iter (fun {v=(_,nal)} -> List.iter (test_na l) nal) ino in
       let test_clause idl = List.iter (test_id l) idl in
       let po = Option.map (rename_glob_vars l) po in
       let tomatchl = Util.List.map_left (fun (tm,x) -> test_pred_pat x; (rename_glob_vars l tm,x)) tomatchl in
-      let cls = Util.List.map_left (fun (loc,(idl,p,c)) -> test_clause idl; (loc,(idl,p,rename_glob_vars l c))) cls in
+      let cls = Util.List.map_left (CAst.map (fun (idl,p,c) -> test_clause idl; (idl,p,rename_glob_vars l c))) cls in
       GCases (ci,po,tomatchl,cls)
   | GLetTuple (nal,(na,po),c,b) ->
      List.iter (test_na l) (na::nal);

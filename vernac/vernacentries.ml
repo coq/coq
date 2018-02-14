@@ -907,7 +907,7 @@ let vernac_set_used_variables e =
         (str "Unknown variable: " ++ Id.print id))
     l;
   let _, to_clear = Proof_global.set_used_variables l in
-  let to_clear = List.map snd to_clear in
+  let to_clear = List.map (fun x -> x.CAst.v) to_clear in
   Proof_global.with_current_proof begin fun _ p ->
     if List.is_empty to_clear then (p, ())
     else
@@ -1860,8 +1860,8 @@ let vernac_search ~atts s gopt r =
 let vernac_locate = function
   | LocateAny (AN qid)  -> print_located_qualid qid
   | LocateTerm (AN qid) -> print_located_term qid
-  | LocateAny (ByNotation (_, (ntn, sc))) (** TODO : handle Ltac notations *)
-  | LocateTerm (ByNotation (_, (ntn, sc))) ->
+  | LocateAny (ByNotation { CAst.v=(ntn, sc)}) (** TODO : handle Ltac notations *)
+  | LocateTerm (ByNotation { CAst.v=(ntn, sc)}) ->
     let _, env = Pfedit.get_current_context () in
     Notation.locate_notation
       (Constrextern.without_symbols (pr_lglob_constr_env env)) ntn sc
@@ -2259,7 +2259,7 @@ let with_fail st b f =
       | _ -> assert false
   end
 
-let interp ?(verbosely=true) ?proof ~st (loc,c) =
+let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
   let orig_univ_poly = Flags.is_universe_polymorphism () in
   let orig_program_mode = Flags.is_program_mode () in
   let flags f atts =

@@ -85,7 +85,7 @@ let print_rewrite_hintdb env sigma bas =
 	       Pputils.pr_glb_generic (Global.env()) tac) (mt ()) h.rew_tac)
 	   (find_rewrites bas))
 
-type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option) Loc.located
+type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option) CAst.t
 
 (* Applies all the rules of one base *)
 let one_base general_rewrite_maybe_in tac_main bas =
@@ -275,7 +275,7 @@ let add_rew_rules base lrul =
   let intern tac = snd (Genintern.generic_intern ist tac) in
   let lrul =
     List.fold_left
-      (fun dn (loc,((c,ctx),b,t)) ->
+      (fun dn {CAst.loc;v=((c,ctx),b,t)} ->
 	let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
 	let info = find_applied_relation ?loc false env sigma c b in
 	let pat = if b then info.hyp_left else info.hyp_right in

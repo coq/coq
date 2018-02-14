@@ -264,7 +264,7 @@ let add_rewrite_hint ~poly bases ort t lcsr =
 	  (Declare.declare_universe_context false ctx;
            Univ.ContextSet.empty)
     in
-      Loc.tag ?loc:(Constrexpr_ops.constr_loc ce) ((c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t) in
+      CAst.make ?loc:(Constrexpr_ops.constr_loc ce) ((c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t) in
   let eqs = List.map f lcsr in
   let add_hints base = add_rew_rules base eqs in
   List.iter add_hints bases
