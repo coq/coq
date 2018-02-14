@@ -425,7 +425,7 @@ let of_goal_matching (loc, gm) =
     let map (_, _, pat, knd) = of_tuple [knd; of_pattern pat] in
     let concl = of_tuple [concl_knd; of_pattern concl_pat] in
     let r = of_tuple [of_list ?loc map hyps_pats; concl] in
-    let hyps = List.map (fun ((_, na), _, _, _) -> na) hyps_pats in
+    let hyps = List.map (fun ({CAst.v=na}, _, _, _) -> na) hyps_pats in
     let map (_, na, _, _) = na in
     let hctx = List.map map hyps_pats in
     (** Order of elements is crucial here! *)
