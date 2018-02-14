@@ -378,10 +378,10 @@ let check_evars_are_solved env current_sigma init_sigma =
   let frozen = frozen_and_pending_holes (init_sigma, current_sigma) in
   check_evars_are_solved env current_sigma frozen
 
-let process_inference_flags flags env initial_sigma (sigma,c) =
+let process_inference_flags flags env initial_sigma (sigma,c,cty) =
   let sigma = solve_remaining_evars flags env sigma initial_sigma in
   let c = if flags.expand_evars then nf_evar sigma c else c in
-  sigma,c
+  sigma,c,cty
 
 let adjust_evar_source evdref na c =
   match na, kind !evdref c with
@@ -1168,15 +1168,18 @@ let ise_pretype_gen flags env sigma lvar kind c =
   let env = make_env env sigma in
   let evdref = ref sigma in
   let k0 = Context.Rel.length (rel_context env) in
-  let c' = match kind with
+  let c', c'_ty = match kind with
     | WithoutTypeConstraint ->
-        (pretype k0 flags.use_typeclasses empty_tycon env evdref lvar c).uj_val
+        let j = pretype k0 flags.use_typeclasses empty_tycon env evdref lvar c in
+        j.uj_val, j.uj_type
     | OfType exptyp ->
-	(pretype k0 flags.use_typeclasses (mk_tycon exptyp) env evdref lvar c).uj_val
+        let j = pretype k0 flags.use_typeclasses (mk_tycon exptyp) env evdref lvar c in
+        j.uj_val, j.uj_type
     | IsType ->
-	(pretype_type k0 flags.use_typeclasses empty_valcon env evdref lvar c).utj_val 
+        let tj = pretype_type k0 flags.use_typeclasses empty_valcon env evdref lvar c in
+        tj.utj_val, mkSort tj.utj_type
   in
-  process_inference_flags flags env.ExtraEnv.env sigma (!evdref,c')
+  process_inference_flags flags env.ExtraEnv.env sigma (!evdref,c',c'_ty)
 
 let default_inference_flags fail = {
   use_typeclasses = true;
@@ -1196,7 +1199,7 @@ let all_and_fail_flags = default_inference_flags true
 let all_no_fail_flags = default_inference_flags false
 
 let ise_pretype_gen_ctx flags env sigma lvar kind c =
-  let evd, c = ise_pretype_gen flags env sigma lvar kind c in
+  let evd, c, _ = ise_pretype_gen flags env sigma lvar kind c in
   let evd, f = Evarutil.nf_evars_and_universes evd in
     f (EConstr.Unsafe.to_constr c), Evd.evar_universe_context evd
 
@@ -1208,12 +1211,15 @@ let understand
     env sigma c =
   ise_pretype_gen_ctx flags env sigma empty_lvar expected_type c
 
-let understand_tcc ?(flags=all_no_fail_flags) env sigma ?(expected_type=WithoutTypeConstraint) c =
-  let (sigma, c) = ise_pretype_gen flags env sigma empty_lvar expected_type c in
-  (sigma, c)
+let understand_tcc_ty ?(flags=all_no_fail_flags) env sigma ?(expected_type=WithoutTypeConstraint) c =
+  ise_pretype_gen flags env sigma empty_lvar expected_type c
+
+let understand_tcc ?flags env sigma ?expected_type c =
+  let sigma, c, _ = understand_tcc_ty ?flags env sigma ?expected_type c in
+  sigma, c
 
 let understand_ltac flags env sigma lvar kind c =
-  let (sigma, c) = ise_pretype_gen flags env sigma lvar kind c in
+  let (sigma, c, _) = ise_pretype_gen flags env sigma lvar kind c in
   (sigma, c)
 
 let pretype k0 resolve_tc typcon env evdref lvar t =
