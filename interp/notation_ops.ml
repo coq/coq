@@ -988,10 +988,18 @@ let add_ldots_var metas = (ldots_var,((None,[]),NtnTypeConstr))::metas
 
 let add_meta_bindinglist x metas = (x,((None,[]),NtnTypeBinderList))::metas
 
-let glue_letin_with_decls = true
+(* This tells if letins in the middle of binders should be included in
+   the sequence of binders *)
+let glue_inner_letin_with_decls = true
+
+(* This tells if trailing letins (with no further proper binders)
+   should be included in sequence of binders *)
+let glue_trailing_letin_with_decls = false
+
+exception OnlyTrailingLetIns
 
 let match_binderlist match_fun alp metas sigma rest x y iter termin revert =
-  let rec aux sigma bl rest =
+  let rec aux trailing_letins sigma bl rest =
     try
       let metas = add_ldots_var (add_meta_bindinglist y metas) in
       let (terms,_,_,binderlists as sigma) = match_fun alp metas sigma rest iter in
@@ -1002,14 +1010,23 @@ let match_binderlist match_fun alp metas sigma rest x y iter termin revert =
       let sigma = remove_bindinglist_sigma y (remove_sigma ldots_var sigma) in
       (* In case y is bound not only to a binder but also to a term *)
       let sigma = remove_sigma y sigma in
-      aux sigma (b::bl) rest
+      aux false sigma (b::bl) rest
     with No_match ->
     match DAst.get rest with
-    | GLetIn (na,c,t,rest) when glue_letin_with_decls ->
+    | GLetIn (na,c,t,rest') when glue_inner_letin_with_decls ->
        let b = DAst.make ?loc:rest.CAst.loc @@ GLocalDef (na,Explicit (*?*), c,t) in
-       aux sigma (b::bl) rest
-    | _ -> if not (List.is_empty bl) then bl, rest, sigma else raise No_match in
-  let bl,rest,sigma = aux sigma [] rest in
+       (* collect let-in *)
+       (try aux true sigma (b::bl) rest'
+        with OnlyTrailingLetIns
+             when not (trailing_letins && not glue_trailing_letin_with_decls) ->
+         (* renounce to take into account trailing let-ins *)
+         if not (List.is_empty bl) then bl, rest, sigma else raise No_match)
+    | _ ->
+       if trailing_letins && not glue_trailing_letin_with_decls then
+         (* Backtrack to when we tried to glue letins *)
+         raise OnlyTrailingLetIns;
+       if not (List.is_empty bl) then bl, rest, sigma else raise No_match in
+  let bl,rest,sigma = aux false sigma [] rest in
   let bl = if revert then List.rev bl else bl in
   let alp,sigma = bind_bindinglist_env alp sigma x bl in
   match_fun alp metas sigma rest termin
