@@ -221,7 +221,7 @@ let pattern_vars pat =
     let () = check_pattern_id ?loc:pat.CAst.loc id in
     Id.Set.add id accu
   | _ ->
-    Topconstr.fold_constr_expr_with_binders (fun _ () -> ()) aux () accu pat
+    Constrexpr_ops.fold_constr_expr_with_binders (fun _ () -> ()) aux () accu pat
   in
   aux () Id.Set.empty pat
 

@@ -165,7 +165,7 @@ val val_constant : Constant.t Val.tag
 val val_constructor : constructor Val.tag
 val val_projection : Projection.t Val.tag
 val val_case : Constr.case_info Val.tag
-val val_univ : Univ.universe_level Val.tag
+val val_univ : Univ.Level.t Val.tag
 val val_free : Id.Set.t Val.tag
 
 val val_exn : Exninfo.iexn Tac2dyn.Val.tag

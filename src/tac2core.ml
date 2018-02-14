@@ -894,7 +894,9 @@ let () =
 
 let () =
   let intern self ist c =
-    let _, pat = Constrintern.intern_constr_pattern ist.Genintern.genv ~as_type:false c in
+    let env = ist.Genintern.genv in
+    let sigma = Evd.from_env env in
+    let _, pat = Constrintern.intern_constr_pattern env sigma ~as_type:false c in
     GlbVal pat, gtypref t_pattern
   in
   let print env pat = str "pattern:(" ++ Printer.pr_lconstr_pattern_env env Evd.empty pat ++ str ")" in
