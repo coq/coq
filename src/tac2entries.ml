@@ -344,7 +344,7 @@ let register_ltac ?(local = false) ?(mut = false) isrec tactics =
     in
     let () =
       if exists then
-        user_err ?loc (str "Tactic " ++ Nameops.pr_id id ++ str " already exists")
+        user_err ?loc (str "Tactic " ++ Names.Id.print id ++ str " already exists")
     in
     (id, e, t)
   in
@@ -539,7 +539,7 @@ let parse_scope = function
   if Id.Map.mem id !scope_table then
     Id.Map.find id !scope_table toks
   else
-    CErrors.user_err ?loc (str "Unknown scope" ++ spc () ++ Nameops.pr_id id)
+    CErrors.user_err ?loc (str "Unknown scope" ++ spc () ++ Names.Id.print id)
 | SexprStr (_, str) ->
   let v_unit = Loc.tag @@ CTacCst (AbsKn (Tuple 0)) in
   ScopeRule (Extend.Atoken (Tok.IDENT str), (fun _ -> v_unit))
