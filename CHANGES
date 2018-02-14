@@ -1,3 +1,10 @@
+Changes since V8.5pl3
+=====================
+
+Critical bugfix
+
+- #6677: Critical bug with VM and universes.
+
 Changes from V8.5pl2 to V8.5pl3
 ===============================
 
