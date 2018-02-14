@@ -5,6 +5,7 @@ CI_TARGETS=ci-bignums \
     ci-coquelicot \
     ci-corn \
     ci-cpdt \
+    ci-elpi \
     ci-equations \
     ci-fiat-crypto \
     ci-fiat-parsers \

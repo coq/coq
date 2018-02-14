@@ -285,6 +285,12 @@ ci-coquelicot:
     <<: *ci-template-vars
     EXTRA_PACKAGES: "$TIMING_PACKAGES autoconf"
 
+ci-elpi:
+  <<: *ci-template
+  variables:
+    <<: *ci-template-vars
+    EXTRA_OPAM: "ppx_tools_versioned ppx_deriving ocaml-migrate-parsetree"
+
 ci-equations:
   <<: *ci-template
 

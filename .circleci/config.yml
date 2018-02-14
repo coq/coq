@@ -191,7 +191,7 @@ jobs:
     environment:
       <<: *envvars
       EXTRA_PACKAGES: *coqide-packages
-      EXTRA_OPAM: "ocamlgraph"
+      EXTRA_OPAM: "ocamlgraph ppx_tools_versioned ppx_deriving ocaml-migrate-parsetree"
 
   opam-boot-32bit:
     <<: *opam-boot-template
@@ -286,6 +286,9 @@ jobs:
       <<: *ci-template-vars
       EXTRA_PACKAGES: "time python autoconf automake"
 
+  elpi:
+    <<: *ci-template
+
   equations:
     <<: *ci-template
 
@@ -369,6 +372,7 @@ workflows:
       - compcert: *req-main
       - coq-dpdgraph: *req-main
       - coquelicot: *req-main
+      - elpi: *req-main
       - equations: *req-main
       - geocoq: *req-main
       - fiat-crypto: *req-main
