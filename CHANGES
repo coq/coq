@@ -1,3 +1,15 @@
+Changes from 8.7.1 to 8.7.2
+===========================
+
+Fixed a critical bug in the VM handling of universes (#6677). This bug
+affected all releases since 8.5.
+
+Improved support for building with OCaml 4.06.0 and external num package.
+
+Many other bug fixes, documentation improvements, and user
+message improvements (for details, see the 8.7.2 milestone at
+https://github.com/coq/coq/milestone/11?closed=1).
+
 Changes from 8.7.0 to 8.7.1
 ===========================
 
