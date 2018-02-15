@@ -1376,6 +1376,24 @@ let _ =
 let _ =
   declare_bool_option
     { optdepr  = false;
+      optname  = "printing low-level details in records and inductives";
+      optkey   = ["Printing";"Records";"Desugared"];
+      optread  = Printoptions.printing_records_desugared;
+      optwrite = Printoptions.set_printing_records_desugared;
+    }
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "printing types of let-in binders";
+      optkey   = ["Printing";"Let";"Binder";"Types"];
+      optread  = Printoptions.printing_let_binder_types;
+      optwrite = Printoptions.set_printing_let_binder_types;
+    }
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
       optname  = "projection printing using dot notation";
       optkey   = ["Printing";"Projections"];
       optread  = Printoptions.printing_projections;

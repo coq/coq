@@ -541,12 +541,14 @@ struct
   let factorizable = ["Printing";"Factorizable";"Match";"Patterns"]
   let implicit = ["Printing";"Implicit"]
   let implicit_defensive = ["Printing";"Implicit";"Defensive"]
+  let let_binder_types =  ["Printing";"Let";"Binder";"Types"]
   let notations = ["Printing";"Notations"]
   let proj_compat = ["Printing";"Primitive";"Projection";"Compatibility"]
   let proj_parms =  ["Printing";"Primitive";"Projection";"Parameters"]
   let projections =  ["Printing";"Projections"]
   let raw_matching = ["Printing";"Matching"]
   let records =  ["Printing";"Records"]
+  let records_desugared =  ["Printing";"Records";"Desugared"]
   let synth =  ["Printing";"Synth"]
   let universes = ["Printing";"Universes"]
   let wildcard = ["Printing";"Wildcard"]
@@ -566,6 +568,7 @@ struct
       { opts0 = existential; init0 = { all = true; defaults = false }; label0 = "Display _existential variable instances" };
       { opts0 = factorizable; init0 = { all = false; defaults = true }; label0 = "Display _factorizable match patterns" };
       { opts0 = implicit; init0 = { all = true; defaults = false }; label0 = "Display _implicit arguments" };
+      { opts0 = let_binder_types; init0 = { all = true; defaults = false }; label0 = "Display let binder t_ypes" };
       { opts0 = default_clause; init0 = { all = false; defaults = true }; label0 = "Display match _default clauses" };
       { opts0 = implicit_defensive; init0 = { all = true; defaults = true }; label0 = "Display non_strict implicit arguments" };
       { opts0 = notations; init0 = { all = false; defaults = true }; label0 = "Display _notations" };
@@ -573,7 +576,8 @@ struct
       { opts0 = proj_parms; init0 = { all = true; defaults = false }; label0 = "Display primitive pro_jection parameters" };
       { opts0 = projections; init0 = { all = false; defaults = false }; label0 = "Display _projections" };
       { opts0 = raw_matching; init0 = { all = false; defaults = true }; label0 = "Display raw _matching expressions" };
-      { opts0 = records; init0 = { all = false; defaults = true }; label0 = "Display _records" };
+      { opts0 = records_desugared; init0 = { all = true; defaults = false }; label0 = "Display record/inductive _low-level details" };
+      { opts0 = records; init0 = { all = true; defaults = true }; label0 = "Display _records" };
       { opts0 = synth; init0 = { all = false; defaults = true }; label0 = "Do not display synthesi_zable return types" };
       { opts0 = unfocused; init0 = { all = false; defaults = false }; label0 = "Display unfocused _goals" };
       { opts0 = universes; init0 = { all = true; defaults = false }; label0 = "Display _universe levels" };

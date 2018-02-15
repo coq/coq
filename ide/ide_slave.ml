@@ -52,12 +52,14 @@ let coqide_known_option table = List.mem table [
   ["Printing";"Factorizable";"Match";"Patterns"];
   ["Printing";"Implicit"];
   ["Printing";"Implicit";"Defensive"];
+  ["Printing";"Let";"Binder";"Types"];
   ["Printing";"Matching"];
   ["Printing";"Notations"];
   ["Printing";"Primitive";"Projection";"Compatibility"];
   ["Printing";"Primitive";"Projection";"Parameters"];
   ["Printing";"Projections"];
   ["Printing";"Records"];
+  ["Printing";"Records";"Desugared"];
   ["Printing";"Synth"];
   ["Printing";"Unfocused"];
   ["Printing";"Universes"];

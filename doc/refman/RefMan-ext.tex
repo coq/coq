@@ -1745,6 +1745,34 @@ Conversely, to force the display of non strict arguments, use command
 
 \SeeAlso {\tt Set Printing All} in Section~\ref{SetPrintingAll}.
 
+\subsection{Printing details of records and inductives}
+\optindex{Printing Records Desugared}
+
+By default, only the high-level details of records and inductives are
+printed. The command
+\begin{quote}
+{\tt Set Printing Records Desugared.}
+\end{quote}
+shows more details when records and inductives are printed. The default
+behavior may be enabled with
+\begin{quote}
+{\tt Unset Printing Records Desugared.}
+\end{quote}
+
+\subsection{Printing the types of let-in binders}
+\optindex{Printing Let Binder Types}
+
+By default, when printing {\tt let-in} expressions, the types
+of binders are elided. The command
+\begin{quote}
+{\tt Set Printing Let Binder Types}.
+\end{quote}
+allows printing such types. Running
+\begin{quote}
+{\tt Unset Printing Let Binder Types}.
+\end{quote}
+enables the default behavior.
+
 \subsection{Interaction with subtyping}
 
 When an implicit argument can be inferred from the type of more than
@@ -2007,15 +2035,17 @@ same effect as running:
 \item {\tt Set Printing Existential Instances.}
 \item {\tt Set Printing Implicit.}
 \item {\tt Set Printing Implicit Defensive.}
+\item {\tt Set Printing Let Binder Types.}
 \item {\tt Set Printing Primitive Projection Compatibility.}
 \item {\tt Set Printing Primitive Projection Parameters.}
+\item {\tt Set Printing Records.}
+\item {\tt Set Printing Records Desugared.}
 \item {\tt Set Printing Universes.}
 \item {\tt Unset Printing Allow Default Clause.}
 \item {\tt Unset Printing Factorizable Match Patterns.}
 \item {\tt Unset Printing Matching.}
 \item {\tt Unset Printing Notations.}
 \item {\tt Unset Printing Projections.}
-\item {\tt Unset Printing Records.}
 \item {\tt Unset Printing Synth.}
 \item {\tt Unset Printing Wildcard.}
 \end{itemize}

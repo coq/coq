@@ -76,6 +76,13 @@ Vernacular Commands
 - The command Set Printing Universes no longer affects the printing
   of universe inconsistency explanations. Instead, there is a new command
   Set Printing Universe Explanations.
+- The command Set Printing Records Desugar prints records and inductives with
+  low-level detail, disabled by default, the same behavior as before.
+  Unset Printing Records Desugared shows more detail, and is the behavior that
+  had been enabled by Set Printing All.
+- The command Set Printing Let Binder Types prints the types of binders
+  for let-in expressions, disabled by default. Such printing had been
+  enabled by Set Printing All.
 - Proofs ending in "Qed exporting ident, .., ident" are not supported
   anymore. Constants generated during `abstract` are kept private to the
   local environment.

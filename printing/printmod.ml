@@ -217,7 +217,7 @@ let print_record env mind mib udecl =
   )
 
 let pr_mutual_inductive_body env mind mib udecl =
-  if mib.mind_record <> None then
+  if not (Printoptions.printing_records_desugared ()) && mib.mind_record <> None then
     print_record env mind mib udecl
   else
     print_mutual_inductive env mind mib udecl

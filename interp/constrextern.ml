@@ -365,6 +365,10 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 	  let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
 	  let p =
 	    try
+              (* TODO: used to have here:
+                   if !raw_print then raise Exit
+                 should there be an option for that behavior?
+               *)
 	      let projs = Recordops.lookup_projections (fst cstrsp) in
 	      let rec ip projs args acc =
 		match projs, args with
@@ -734,6 +738,10 @@ let rec extern inctx scopes vars r =
 	     let args = fill_arg_scopes args subscopes (snd scopes) in
 	     begin
 	       try
+                 (* used to have here:
+                      if !Flags.raw_print then raise Exit;
+                    should there be an option for this behavior?
+                  *)
 		 let cstrsp = match ref with ConstructRef c -> c | _ -> raise Not_found in
 		 let struc = Recordops.lookup_structure (fst cstrsp) in
                  if PrintingRecord.active (fst cstrsp) then
@@ -969,9 +977,9 @@ and extern_local_binder scopes vars = function
              CLocalAssum([CAst.make na],Default bk,ty) :: l))
 
     | GLocalPattern ((p,_),_,bk,ty) ->
-       (* TODO: when Set Printing All set raw_print ref, had:
+       (* TODO: when Set Printing All set raw_print, had:
             let ty = if !raw_print then Some (extern_typ scopes vars ty) else None
-          is there a new option to be created?
+          is there a new option to be created here?
         *)
       let ty = None in
       let p = mkCPatOr (List.map (extern_cases_pattern vars) p) in

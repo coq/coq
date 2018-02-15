@@ -10,12 +10,14 @@ type t = {
   printing_factorizable_match_patterns : bool;
   printing_implicit : bool;
   printing_implicit_defensive : bool;
+  printing_let_binder_types : bool;
   printing_matching : bool;
   printing_notations : bool;
   printing_primitive_projection_compatibility : bool;
   printing_primitive_projection_parameters : bool;
   printing_projections : bool;
   printing_records : bool;
+  printing_records_desugared : bool;
   printing_synth : bool;
   printing_universes : bool;
   printing_wildcard : bool;
@@ -65,6 +67,9 @@ val set_printing_existential_instances : bool -> unit
 val printing_factorizable_match_patterns : unit -> bool
 val set_printing_factorizable_match_patterns : bool -> unit
 
+val printing_let_binder_types : unit -> bool
+val set_printing_let_binder_types : bool -> unit
+
 val printing_matching : unit -> bool
 val set_printing_matching : bool -> unit
 
@@ -80,9 +85,12 @@ val set_printing_synth : bool -> unit
 val printing_wildcard : unit -> bool
 val set_printing_wildcard : bool -> unit
 
-(** getters/setters used in Printer *)
+(** getters/setters used in Printing *)
 val printing_compact_contexts : unit -> bool
 val set_printing_compact_contexts : bool -> unit
+
+val printing_records_desugared : unit -> bool
+val set_printing_records_desugared : bool -> unit
 
 (** getters/setters used in Constrextern/Detyping/Printer (+ Funind plugin) *)
 val printing_universes : unit -> bool

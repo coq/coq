@@ -8,12 +8,14 @@ type t = {
     printing_factorizable_match_patterns : bool;
     printing_implicit: bool;
     printing_implicit_defensive : bool;
+    printing_let_binder_types : bool;
     printing_matching : bool;
     printing_notations : bool;
     printing_primitive_projection_compatibility : bool;
     printing_primitive_projection_parameters : bool;
     printing_projections : bool;
     printing_records : bool;
+    printing_records_desugared : bool;
     printing_synth : bool;
     printing_universes : bool;
     printing_wildcard : bool;
@@ -27,12 +29,14 @@ let default_options : t = {
     printing_factorizable_match_patterns = true;
     printing_implicit = false;
     printing_implicit_defensive = true;
+    printing_let_binder_types = false;
     printing_matching = true;
     printing_notations = true;
     printing_primitive_projection_compatibility = false;
     printing_primitive_projection_parameters = false;
     printing_projections = false;
     printing_records = true;
+    printing_records_desugared = false;
     printing_synth = true;
     printing_universes = false;
     printing_wildcard = true;
@@ -46,12 +50,14 @@ let all_options : t = {
     printing_factorizable_match_patterns = false;
     printing_implicit = true;
     printing_implicit_defensive = true;
+    printing_let_binder_types = true;
     printing_matching = false;
     printing_notations = false;
     printing_primitive_projection_compatibility = true;
     printing_primitive_projection_parameters = true;
     printing_projections = false;
-    printing_records = false;
+    printing_records = true;
+    printing_records_desugared = true;
     printing_synth = false;
     printing_universes = true;
     printing_wildcard = false;
@@ -66,12 +72,14 @@ let sugared_options : t = {
     printing_factorizable_match_patterns = not all_options.printing_factorizable_match_patterns;
     printing_implicit = not all_options.printing_implicit;
     printing_implicit_defensive = not all_options.printing_implicit_defensive;
+    printing_let_binder_types = not all_options.printing_let_binder_types;
     printing_matching = not all_options.printing_matching;
     printing_notations = not all_options.printing_notations;
     printing_primitive_projection_compatibility = not all_options.printing_primitive_projection_compatibility;
     printing_primitive_projection_parameters = not all_options.printing_primitive_projection_parameters;
     printing_projections = not all_options.printing_projections;
     printing_records = not all_options.printing_records;
+    printing_records_desugared = not all_options.printing_records_desugared;
     printing_synth = not all_options.printing_synth;
     printing_universes = not all_options.printing_universes;
     printing_wildcard = not all_options.printing_wildcard;
@@ -99,12 +107,14 @@ let options_by_name_value opts =
     (["Printing";"Factorizable";"Match";"Patterns"],opts.printing_factorizable_match_patterns);
     (["Printing";"Implicit"],opts.printing_implicit);
     (["Printing";"Implicit";"Defensive"],opts.printing_implicit_defensive);
+    (["Printing";"Let";"Binder";"Types"],opts.printing_let_binder_types);
     (["Printing";"Matching"],opts.printing_matching);
     (["Printing";"Notations"],opts.printing_notations);
     (["Printing";"Primitive";"Projection";"Compatibility"],opts.printing_primitive_projection_compatibility);
     (["Printing";"Primitive";"Projection";"Parameters"],opts.printing_primitive_projection_parameters);
     (["Printing";"Projections"],opts.printing_projections);
     (["Printing";"Records"],opts.printing_records);
+    (["Printing";"Records"; "Desugared"],opts.printing_records_desugared);
     (["Printing";"Synth"],opts.printing_synth);
     (["Printing";"Universes"],opts.printing_universes);
     (["Printing";"Wildcard"],opts.printing_wildcard);
@@ -199,6 +209,10 @@ let printing_factorizable_match_patterns () = !current_options.printing_factoriz
 let set_printing_factorizable_match_patterns b =
   current_options := { !current_options with printing_factorizable_match_patterns = b }
 
+let printing_let_binder_types () = !current_options.printing_let_binder_types
+let set_printing_let_binder_types b =
+  current_options := { !current_options with printing_let_binder_types = b }
+
 let printing_matching () = !current_options.printing_matching
 let set_printing_matching b =
   current_options := { !current_options with printing_matching = b }
@@ -219,10 +233,14 @@ let printing_wildcard () = !current_options.printing_wildcard
 let set_printing_wildcard b =
   current_options := { !current_options with printing_wildcard = b }
 
-(* getters/setters used in Printer *)
+(* getters/setters used in Printing *)
 let printing_compact_contexts () = !current_options.printing_compact_contexts
 let set_printing_compact_contexts b =
   current_options := { !current_options with printing_compact_contexts = b }
+
+let printing_records_desugared () = !current_options.printing_records_desugared
+let set_printing_records_desugared b =
+  current_options := { !current_options with printing_records_desugared = b }
 
 (* getters/setters used in Constrextern/Detyping/Printer (+ Funind plugin) *)
 let printing_universes () = !current_options.printing_universes

@@ -454,7 +454,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
          else ...
 
          Which Printing option(s) was raw_print meant to
-         represent here?
+         represent here? Do we need a new one?
       *)
       if st == LetPatternStyle then
 	st
@@ -584,7 +584,7 @@ and detype_r d flags avoid env sigma t =
 	  GApp (DAst.make @@ GRef (ConstRef (Projection.constant p), None), 
 		[detype d flags avoid env sigma c])
       else 
- 	if Printoptions.printing_primitive_projection_compatibility () && Projection.unfolded p then
+        if Printoptions.printing_primitive_projection_compatibility () && Projection.unfolded p then
 	  (** Print the compatibility match version *)
 	  let c' = 
 	    try 
@@ -601,7 +601,7 @@ and detype_r d flags avoid env sigma t =
 	      anomaly (str"Cannot detype an unfolded primitive projection.")
 	  in DAst.get (detype d flags avoid env sigma c')
 	else
-	  if Printoptions.printing_primitive_projection_parameters () then
+          if Printoptions.printing_primitive_projection_parameters () then
 	    try
 	      let c = Retyping.expand_projection (snd env) sigma p c [] in
               DAst.get (detype d flags avoid env sigma c)
@@ -783,7 +783,7 @@ and detype_binder d (lax,isgoal as flags) bk avoid env sigma na body ty c =
       let c = detype d (lax,false) avoid env sigma (Option.get body) in
       (* Heuristic: we display the type if in Prop *)
       let s = try Retyping.get_sort_family_of (snd env) sigma ty with _ when !Flags.in_debugger || !Flags.in_toplevel -> InType (* Can fail because of sigma missing in debugger *) in
-      let t = if s != InProp then None else Some (detype d (lax,false) avoid env sigma ty) in
+      let t = if s != InProp && not (Printoptions.printing_let_binder_types ()) then None else Some (detype d (lax,false) avoid env sigma ty) in
       GLetIn (na', c, t, r)
 
 let detype_rel_context d ?(lax=false) where avoid env sigma sign =

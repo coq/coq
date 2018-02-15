@@ -17,12 +17,14 @@ Test Printing Existential Instances.
 Test Printing Factorizable Match Patterns.
 Test Printing Implicit.
 Test Printing Implicit Defensive.
+Test Printing Let Binder Types.
 Test Printing Matching.
 Test Printing Notations.
 Test Printing Primitive Projection Compatibility.
 Test Printing Primitive Projection Parameters.
 Test Printing Projections.
 Test Printing Records.
+Test Printing Records Desugared.
 Test Printing Synth.
 Test Printing Universes.
 Test Printing Wildcard.
@@ -36,12 +38,14 @@ Section AllSection.
   Test Printing Factorizable Match Patterns.
   Test Printing Implicit.
   Test Printing Implicit Defensive.
+  Test Printing Let Binder Types.
   Test Printing Matching.
   Test Printing Notations.
   Test Printing Primitive Projection Compatibility.
   Test Printing Primitive Projection Parameters.
   Test Printing Projections.
   Test Printing Records.
+  Test Printing Records Desugared.
   Test Printing Synth.
   Test Printing Universes.
   Test Printing Wildcard.
@@ -55,12 +59,14 @@ Test Printing Existential Instances.
 Test Printing Factorizable Match Patterns.
 Test Printing Implicit.
 Test Printing Implicit Defensive.
+Test Printing Let Binder Types.
 Test Printing Matching.
 Test Printing Notations.
 Test Printing Primitive Projection Compatibility.
 Test Printing Primitive Projection Parameters.
 Test Printing Projections.
 Test Printing Records.
+Test Printing Records Desugared.
 Test Printing Synth.
 Test Printing Universes.
 Test Printing Wildcard.
@@ -74,12 +80,14 @@ Section SugaredSection.
   Test Printing Factorizable Match Patterns.
   Test Printing Implicit.
   Test Printing Implicit Defensive.
+  Test Printing Let Binder Types.
   Test Printing Matching.
   Test Printing Notations.
   Test Printing Primitive Projection Compatibility.
   Test Printing Primitive Projection Parameters.
   Test Printing Projections.
   Test Printing Records.
+  Test Printing Records Desugared.
   Test Printing Synth.
   Test Printing Universes.
   Test Printing Wildcard.
@@ -93,12 +101,14 @@ Test Printing Existential Instances.
 Test Printing Factorizable Match Patterns.
 Test Printing Implicit.
 Test Printing Implicit Defensive.
+Test Printing Let Binder Types.
 Test Printing Matching.
 Test Printing Notations.
 Test Printing Primitive Projection Compatibility.
 Test Printing Primitive Projection Parameters.
 Test Printing Projections.
 Test Printing Records.
+Test Printing Records Desugared.
 Test Printing Synth.
 Test Printing Universes.
 Test Printing Wildcard.
@@ -112,12 +122,14 @@ Test Printing Existential Instances.
 Test Printing Factorizable Match Patterns.
 Test Printing Implicit.
 Test Printing Implicit Defensive.
+Test Printing Let Binder Types.
 Test Printing Matching.
 Test Printing Notations.
 Test Printing Primitive Projection Compatibility.
 Test Printing Primitive Projection Parameters.
 Test Printing Projections.
 Test Printing Records.
+Test Printing Records Desugared.
 Test Printing Synth.
 Test Printing Universes.
 Test Printing Wildcard.
@@ -131,12 +143,14 @@ Section DefaultsSection.
   Test Printing Factorizable Match Patterns.
   Test Printing Implicit.
   Test Printing Implicit Defensive.
+  Test Printing Let Binder Types.
   Test Printing Matching.
   Test Printing Notations.
   Test Printing Primitive Projection Compatibility.
   Test Printing Primitive Projection Parameters.
   Test Printing Projections.
   Test Printing Records.
+  Test Printing Records Desugared.
   Test Printing Synth.
   Test Printing Universes.
   Test Printing Wildcard.
@@ -150,12 +164,14 @@ Test Printing Existential Instances.
 Test Printing Factorizable Match Patterns.
 Test Printing Implicit.
 Test Printing Implicit Defensive.
+Test Printing Let Binder Types.
 Test Printing Matching.
 Test Printing Notations.
 Test Printing Primitive Projection Compatibility.
 Test Printing Primitive Projection Parameters.
 Test Printing Projections.
 Test Printing Records.
+Test Printing Records Desugared.
 Test Printing Synth.
 Test Printing Universes.
 Test Printing Wildcard.
