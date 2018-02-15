@@ -59,7 +59,7 @@ val understand_tcc : ?flags:inference_flags -> env -> evar_map ->
   ?expected_type:typing_constraint -> glob_constr -> evar_map * constr
 
 (** As [understand_tcc] but also returns the type of the elaborated term.
-    the [expand] evars flag is not applied to the type (only to the term). *)
+    The [expand_evars] flag is not applied to the type (only to the term). *)
 val understand_tcc_ty : ?flags:inference_flags -> env -> evar_map ->
   ?expected_type:typing_constraint -> glob_constr -> evar_map * constr * types
 
