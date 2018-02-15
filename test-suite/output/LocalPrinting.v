@@ -24,7 +24,6 @@ Test Printing Primitive Projection Compatibility.
 Test Printing Primitive Projection Parameters.
 Test Printing Projections.
 Test Printing Records.
-Test Printing Records Desugared.
 Test Printing Synth.
 Test Printing Universes.
 Test Printing Wildcard.
@@ -45,7 +44,6 @@ Section AllSection.
   Test Printing Primitive Projection Parameters.
   Test Printing Projections.
   Test Printing Records.
-  Test Printing Records Desugared.
   Test Printing Synth.
   Test Printing Universes.
   Test Printing Wildcard.
@@ -66,7 +64,6 @@ Test Printing Primitive Projection Compatibility.
 Test Printing Primitive Projection Parameters.
 Test Printing Projections.
 Test Printing Records.
-Test Printing Records Desugared.
 Test Printing Synth.
 Test Printing Universes.
 Test Printing Wildcard.
@@ -87,7 +84,6 @@ Section SugaredSection.
   Test Printing Primitive Projection Parameters.
   Test Printing Projections.
   Test Printing Records.
-  Test Printing Records Desugared.
   Test Printing Synth.
   Test Printing Universes.
   Test Printing Wildcard.
@@ -108,7 +104,6 @@ Test Printing Primitive Projection Compatibility.
 Test Printing Primitive Projection Parameters.
 Test Printing Projections.
 Test Printing Records.
-Test Printing Records Desugared.
 Test Printing Synth.
 Test Printing Universes.
 Test Printing Wildcard.
@@ -129,7 +124,6 @@ Test Printing Primitive Projection Compatibility.
 Test Printing Primitive Projection Parameters.
 Test Printing Projections.
 Test Printing Records.
-Test Printing Records Desugared.
 Test Printing Synth.
 Test Printing Universes.
 Test Printing Wildcard.
@@ -150,7 +144,6 @@ Section DefaultsSection.
   Test Printing Primitive Projection Parameters.
   Test Printing Projections.
   Test Printing Records.
-  Test Printing Records Desugared.
   Test Printing Synth.
   Test Printing Universes.
   Test Printing Wildcard.
@@ -171,7 +164,6 @@ Test Printing Primitive Projection Compatibility.
 Test Printing Primitive Projection Parameters.
 Test Printing Projections.
 Test Printing Records.
-Test Printing Records Desugared.
 Test Printing Synth.
 Test Printing Universes.
 Test Printing Wildcard.

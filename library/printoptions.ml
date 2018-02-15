@@ -15,7 +15,6 @@ type t = {
     printing_primitive_projection_parameters : bool;
     printing_projections : bool;
     printing_records : bool;
-    printing_records_desugared : bool;
     printing_synth : bool;
     printing_universes : bool;
     printing_wildcard : bool;
@@ -36,7 +35,6 @@ let default_options : t = {
     printing_primitive_projection_parameters = false;
     printing_projections = false;
     printing_records = true;
-    printing_records_desugared = false;
     printing_synth = true;
     printing_universes = false;
     printing_wildcard = true;
@@ -57,7 +55,6 @@ let all_options : t = {
     printing_primitive_projection_parameters = true;
     printing_projections = false;
     printing_records = true;
-    printing_records_desugared = true;
     printing_synth = false;
     printing_universes = true;
     printing_wildcard = false;
@@ -79,7 +76,6 @@ let sugared_options : t = {
     printing_primitive_projection_parameters = not all_options.printing_primitive_projection_parameters;
     printing_projections = not all_options.printing_projections;
     printing_records = not all_options.printing_records;
-    printing_records_desugared = not all_options.printing_records_desugared;
     printing_synth = not all_options.printing_synth;
     printing_universes = not all_options.printing_universes;
     printing_wildcard = not all_options.printing_wildcard;
@@ -114,7 +110,6 @@ let options_by_name_value opts =
     (["Printing";"Primitive";"Projection";"Parameters"],opts.printing_primitive_projection_parameters);
     (["Printing";"Projections"],opts.printing_projections);
     (["Printing";"Records"],opts.printing_records);
-    (["Printing";"Records"; "Desugared"],opts.printing_records_desugared);
     (["Printing";"Synth"],opts.printing_synth);
     (["Printing";"Universes"],opts.printing_universes);
     (["Printing";"Wildcard"],opts.printing_wildcard);
@@ -237,10 +232,6 @@ let set_printing_wildcard b =
 let printing_compact_contexts () = !current_options.printing_compact_contexts
 let set_printing_compact_contexts b =
   current_options := { !current_options with printing_compact_contexts = b }
-
-let printing_records_desugared () = !current_options.printing_records_desugared
-let set_printing_records_desugared b =
-  current_options := { !current_options with printing_records_desugared = b }
 
 (* getters/setters used in Constrextern/Detyping/Printer (+ Funind plugin) *)
 let printing_universes () = !current_options.printing_universes

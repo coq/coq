@@ -17,7 +17,6 @@ type t = {
   printing_primitive_projection_parameters : bool;
   printing_projections : bool;
   printing_records : bool;
-  printing_records_desugared : bool;
   printing_synth : bool;
   printing_universes : bool;
   printing_wildcard : bool;
@@ -88,9 +87,6 @@ val set_printing_wildcard : bool -> unit
 (** getters/setters used in Printing *)
 val printing_compact_contexts : unit -> bool
 val set_printing_compact_contexts : bool -> unit
-
-val printing_records_desugared : unit -> bool
-val set_printing_records_desugared : bool -> unit
 
 (** getters/setters used in Constrextern/Detyping/Printer (+ Funind plugin) *)
 val printing_universes : unit -> bool

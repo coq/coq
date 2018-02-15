@@ -94,7 +94,6 @@ let init () =
 \n    <menuitem action='Display primitive projection parameters' />\
 \n    <menuitem action='Display projections' />\
 \n    <menuitem action='Display raw matching expressions' />\
-\n    <menuitem action='Display record/inductive low-level details' />\
 \n    <menuitem action='Display records' />\
 \n    <menuitem action='Do not display synthesizable return types' />\
 \n    <menuitem action='Display unfocused goals' />\
