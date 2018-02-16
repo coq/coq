@@ -568,10 +568,10 @@ let force_eqs c =
 	Universes.Constraints.add c' acc) 
     c Universes.Constraints.empty
 
-let constr_cmp pb sigma flags t u =
+let constr_cmp pb env sigma flags t u =
   let cstrs =
-    if pb == Reduction.CONV then EConstr.eq_constr_universes sigma t u
-    else EConstr.leq_constr_universes sigma t u
+    if pb == Reduction.CONV then EConstr.eq_constr_universes env sigma t u
+    else EConstr.leq_constr_universes env sigma t u
   in 
   match cstrs with
   | Some cstrs ->
@@ -736,7 +736,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	| Evar (evk,_ as ev), Evar (evk',_)
             when not (Evar.Set.mem evk flags.frozen_evars)
               && Evar.equal evk evk' ->
-            let sigma',b = constr_cmp cv_pb sigma flags cM cN in
+            let sigma',b = constr_cmp cv_pb env sigma flags cM cN in
             if b then
 	      sigma',metasubst,evarsubst
             else
@@ -918,7 +918,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
   and unify_not_same_head curenvnb pb opt (sigma, metas, evars as substn : subst0) cM cN =
     try canonical_projections curenvnb pb opt cM cN substn
     with ex when precatchable_exception ex ->
-    let sigma', b = constr_cmp cv_pb sigma flags cM cN in
+    let sigma', b = constr_cmp cv_pb env sigma flags cM cN in
       if b then (sigma', metas, evars)
       else
 	try reduce curenvnb pb opt substn cM cN
@@ -1087,7 +1087,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
     else 
       let sigma, b = match flags.modulo_conv_on_closed_terms with
 	| Some convflags -> infer_conv ~pb:cv_pb ~ts:convflags env sigma m n
-	| _ -> constr_cmp cv_pb sigma flags m n in
+        | _ -> constr_cmp cv_pb env sigma flags m n in
 	if b then Some sigma
 	else if (match flags.modulo_conv_on_closed_terms, flags.modulo_delta with
         | Some (cv_id, cv_k), (dl_id, dl_k) ->

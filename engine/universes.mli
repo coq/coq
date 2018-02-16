@@ -102,10 +102,6 @@ val eq_constr_univs_infer_with :
   (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
   UGraph.t -> 'a constraint_accumulator -> constr -> constr -> 'a -> 'a option
 
-(** [eq_constr_universes a b] [true, c] if [a] equals [b] modulo alpha, casts,
-    application grouping and the universe constraints in [c]. *)
-val eq_constr_universes_proj : env -> constr -> constr -> bool universe_constrained
-
 (** Build a fresh instance for a given context, its associated substitution and 
     the instantiated constraints. *)
 

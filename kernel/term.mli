@@ -477,7 +477,7 @@ val iter_constr_with_binders :
   ('a -> 'a) -> ('a -> constr -> unit) -> 'a -> constr -> unit
 [@@ocaml.deprecated "Alias for [Constr.iter_with_binders]"]
 
-val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
+val compare_constr : (int -> constr -> constr -> bool) -> int -> constr -> constr -> bool
 [@@ocaml.deprecated "Alias for [Constr.compare_head]"]
 
 type constr = Constr.constr

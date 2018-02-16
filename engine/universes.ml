@@ -242,7 +242,7 @@ let eq_constr_univs_infer_with kind1 kind2 univs fold m n accu =
      [kind1,kind2], because [kind1] and [kind2] may be different,
      typically evaluating [m] and [n] in different evar maps. *)
   let cstrs = ref accu in
-  let eq_universes strict = UGraph.check_eq_instances univs in
+  let eq_universes _ _ = UGraph.check_eq_instances univs in
   let eq_sorts s1 s2 = 
     if Sorts.equal s1 s2 then true
     else
@@ -251,44 +251,11 @@ let eq_constr_univs_infer_with kind1 kind2 univs fold m n accu =
       | None -> false
       | Some accu -> cstrs := accu; true
   in
-  let rec eq_constr' m n = 
-    Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' m n
+  let rec eq_constr' nargs m n =
+    Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' nargs m n
   in
-  let res = Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' m n in
+  let res = Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' 0 m n in
   if res then Some !cstrs else None
-
-let compare_head_gen_proj env equ eqs eqc' m n =
-  match kind m, kind n with
-  | Proj (p, c), App (f, args)
-  | App (f, args), Proj (p, c) -> 
-      (match kind f with
-      | Const (p', u) when Constant.equal (Projection.constant p) p' -> 
-          let pb = Environ.lookup_projection p env in
-          let npars = pb.Declarations.proj_npars in
-	  if Array.length args == npars + 1 then
-	    eqc' c args.(npars)
-	  else false
-      | _ -> false)
-  | _ -> Constr.compare_head_gen equ eqs eqc' m n
-      
-let eq_constr_universes_proj env m n =
-  if m == n then true, Constraints.empty
-  else 
-    let cstrs = ref Constraints.empty in
-    let eq_universes strict l l' = 
-      cstrs := enforce_eq_instances_univs strict l l' !cstrs; true in
-    let eq_sorts s1 s2 = 
-      if Sorts.equal s1 s2 then true
-      else
-	(cstrs := Constraints.add 
-	   (Sorts.univ_of_sort s1, UEq, Sorts.univ_of_sort s2) !cstrs;
-	 true)
-    in
-    let rec eq_constr' m n = 
-      m == n ||	compare_head_gen_proj env eq_universes eq_sorts eq_constr' m n
-    in
-    let res = eq_constr' m n in
-    res, !cstrs
 
 (* Generator of levels *)
 type universe_id = DirPath.t * int
