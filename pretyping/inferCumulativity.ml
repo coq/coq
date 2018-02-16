@@ -159,8 +159,7 @@ and infer_vect infos variances v =
 
 let infer_term cv_pb env variances c =
   let open CClosure in
-  let reds = RedFlags.red_add_transparent betaiotazeta Names.full_transparent_state in
-  let infos = create_clos_infos reds env in
+  let infos = create_clos_infos all env in
   infer_fterm cv_pb infos variances (CClosure.inject c) []
 
 let infer_arity_constructor env variances arcn is_arity params =
