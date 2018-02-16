@@ -34,7 +34,7 @@ let inductive_type_knowing_parameters env sigma (ind,u) jl =
   let u = Unsafe.to_instance u in
   let mspec = lookup_mind_specif env ind in
   let paramstyp = Array.map (fun j -> lazy (EConstr.to_constr sigma j.uj_type)) jl in
-  EConstr.of_constr (Inductive.type_of_inductive_knowing_parameters env (mspec,u) paramstyp)
+  Inductive.type_of_inductive_knowing_parameters env (mspec,u) paramstyp
 
 let e_type_judgment env evdref j =
   match EConstr.kind !evdref (whd_all env !evdref j.uj_type) with
@@ -48,6 +48,30 @@ let e_assumption_of_judgment env evdref j =
   try (e_type_judgment env evdref j).utj_val
   with Type_errors.TypeError _ | PretypeError _ ->
     error_assumption env !evdref j
+
+let e_judge_of_applied_inductive_knowing_parameters env evdref funj ind argjv =
+  let rec apply_rec n typ = function
+  | [] ->
+      { uj_val  = mkApp (j_val funj, Array.map j_val argjv);
+        uj_type =
+          let ar = inductive_type_knowing_parameters env !evdref ind argjv in
+          hnf_prod_appvect env !evdref (EConstr.of_constr ar) (Array.map j_val argjv) }
+  | hj::restjl ->
+      match EConstr.kind !evdref (whd_all env !evdref typ) with
+      | Prod (_,c1,c2) ->
+         if Evarconv.e_cumul env evdref hj.uj_type c1 then
+           apply_rec (n+1) (subst1 hj.uj_val c2) restjl
+         else
+           error_cant_apply_bad_type env !evdref (n, c1, hj.uj_type) funj argjv
+      | Evar ev ->
+          let (evd',t) = Evardefine.define_evar_as_product !evdref ev in
+          evdref := evd';
+          let (_,_,c2) = destProd evd' t in
+          apply_rec (n+1) (subst1 hj.uj_val c2) restjl
+      | _ ->
+          error_cant_apply_not_functional env !evdref funj argjv
+  in
+  apply_rec 1 funj.uj_type (Array.to_list argjv)
 
 let e_judge_of_apply env evdref funj argjv =
   let rec apply_rec n typ = function
@@ -300,16 +324,14 @@ let rec execute env evdref cstr =
 
     | App (f,args) ->
         let jl = execute_array env evdref args in
-	let j =
-	  match EConstr.kind !evdref f with
-	    | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
-		make_judge f
-		  (inductive_type_knowing_parameters env !evdref (ind, u) jl)
-	    | _ ->
-                (* No template polymorphism *)
-		execute env evdref f
-	in
-	e_judge_of_apply env evdref j jl
+        (match EConstr.kind !evdref f with
+            | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
+               let fj = execute env evdref f in
+               e_judge_of_applied_inductive_knowing_parameters env evdref fj (ind, u) jl
+            | _ ->
+               (* No template polymorphism *)
+               let fj = execute env evdref f in
+               e_judge_of_apply env evdref fj jl)
 
     | Lambda (name,c1,c2) ->
         let j = execute env evdref c1 in
