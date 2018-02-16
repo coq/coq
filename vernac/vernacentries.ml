@@ -2032,21 +2032,31 @@ let vernac_locate = function
 
 let vernac_register qid r =
   let gr = Smartlocate.global_with_alias qid in
- if Proof_global.there_are_pending_proofs () then
+  if Proof_global.there_are_pending_proofs () then
     user_err Pp.(str "Cannot register a primitive while in proof editing mode.");
   match r with
   | RegisterInline ->
-    if not (isConstRef gr) then
-      user_err Pp.(str "Register inline: a constant is expected");
-    Global.register_inline (destConstRef gr)
+    begin match gr with
+    | ConstRef c -> Global.register_inline c
+    | _ -> CErrors.user_err (Pp.str "Register Inline: expecting a constant")
+    end
   | RegisterCoqlib n ->
-    let path, id = Libnames.repr_qualid n in
-    if DirPath.equal path Retroknowledge.int31_path
-    then
-      let f = Retroknowledge.(KInt31 (int31_field_of_string (Id.to_string id))) in
-      Global.register f gr
-    else
-      Coqlib.register_ref (Libnames.string_of_qualid n) gr
+    let ns, id = Libnames.repr_qualid n in
+    if DirPath.equal (dirpath_of_string "kernel") ns then begin
+      if Lib.sections_are_opened () then
+        user_err Pp.(str "Registering a kernel type is not allowed in sections");
+      let pind = match Id.to_string id with
+        | "ind_bool" -> CPrimitives.PIT_bool
+        | "ind_carry" -> CPrimitives.PIT_carry
+        | "ind_pair" -> CPrimitives.PIT_pair
+        | "ind_cmp" -> CPrimitives.PIT_cmp
+        | k -> CErrors.user_err Pp.(str "Register: unknown identifier “" ++ str k ++ str "” in the “kernel” namespace")
+      in
+      match gr with
+      | IndRef ind -> Global.register_inductive ind pind
+      | _ -> CErrors.user_err (Pp.str "Register in kernel: expecting an inductive type")
+    end
+    else Coqlib.register_ref (Libnames.string_of_qualid n) gr
 
 (********************)
 (* Proof management *)
@@ -2316,6 +2326,7 @@ let interp ?proof ~atts ~st c =
   | VernacLocate l -> unsupported_attributes atts;
     Feedback.msg_notice @@ vernac_locate l
   | VernacRegister (qid, r) -> unsupported_attributes atts; vernac_register qid r
+  | VernacPrimitive (id, prim, typopt) -> unsupported_attributes atts; ComAssumption.do_primitive id prim typopt
   | VernacComments l -> unsupported_attributes atts;
     Flags.if_verbose Feedback.msg_info (str "Comments ok\n")
 

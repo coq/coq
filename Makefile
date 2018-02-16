@@ -100,7 +100,7 @@ GENMLGFILES:= $(MLGFILES:.mlg=.ml)
 export GRAMFILES=$(addprefix gramlib/.pack/gramlib__,Ploc Plexing Gramext Grammar)
 export GRAMMLFILES := $(addsuffix .ml, $(GRAMFILES)) $(addsuffix .mli, $(GRAMFILES))
 export GENGRAMFILES := $(GRAMMLFILES) gramlib/.pack/gramlib.ml
-export GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) $(GENMLGFILES)  ide/coqide_os_specific.ml kernel/copcodes.ml
+export GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) $(GENMLGFILES)  ide/coqide_os_specific.ml kernel/copcodes.ml kernel/uint63.ml
 export GENHFILES:=kernel/byterun/coq_jumptbl.h
 export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES)
 

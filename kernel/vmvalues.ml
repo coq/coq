@@ -57,6 +57,7 @@ type structured_constant =
   | Const_b0 of tag
   | Const_univ_level of Univ.Level.t
   | Const_val of structured_values
+  | Const_uint of Uint63.t
 
 type reloc_table = (tag * int) array
 
@@ -73,7 +74,9 @@ let rec eq_structured_values v1 v2 =
     let t2 = Obj.tag o2 in
     if Int.equal t1 t2 &&
        Int.equal (Obj.size o1) (Obj.size o2)
-    then begin
+    then if Int.equal t1 Obj.custom_tag
+      then Int64.equal (Obj.magic v1 : int64) (Obj.magic v2 : int64)
+    else begin
       assert (t1 <= Obj.last_non_constant_constructor_tag &&
               t2 <= Obj.last_non_constant_constructor_tag);
       let i = ref 0 in
@@ -100,7 +103,9 @@ let eq_structured_constant c1 c2 = match c1, c2 with
 | Const_univ_level l1 , Const_univ_level l2 -> Univ.Level.equal l1 l2
 | Const_univ_level _ , _ -> false
 | Const_val v1, Const_val v2 -> eq_structured_values v1 v2
-| Const_val _v1, _ -> false
+| Const_val _, _ -> false
+| Const_uint i1, Const_uint i2 -> Uint63.equal i1 i2
+| Const_uint _, _ -> false
 
 let hash_structured_constant c =
   let open Hashset.Combine in
@@ -110,6 +115,7 @@ let hash_structured_constant c =
   | Const_b0 t -> combinesmall 3 (Int.hash t)
   | Const_univ_level l -> combinesmall 4 (Univ.Level.hash l)
   | Const_val v -> combinesmall 5 (hash_structured_values v)
+  | Const_uint i -> combinesmall 6 (Uint63.hash i)
 
 let eq_annot_switch asw1 asw2 =
   let eq_ci ci1 ci2 =
@@ -142,6 +148,7 @@ let pp_struct_const = function
   | Const_b0 i -> Pp.int i
   | Const_univ_level l -> Univ.Level.pr l
   | Const_val _ -> Pp.str "(value)"
+  | Const_uint i -> Pp.str (Uint63.to_string i)
 
 (* Abstract data *)
 type vprod
@@ -276,6 +283,7 @@ type whd =
   | Vcofix of vcofix * to_update * arguments option
   | Vconstr_const of int
   | Vconstr_block of vblock
+  | Vint64 of int64
   | Vatom_stk of atom * stack
   | Vuniv_level of Univ.Level.t
 
@@ -306,8 +314,9 @@ let uni_lvl_val (v : values) : Univ.Level.t =
         | Vcofix _ -> str "Vcofix"
         | Vconstr_const _i -> str "Vconstr_const"
         | Vconstr_block _b -> str "Vconstr_block"
+        | Vint64 _ -> str "Vint64"
         | Vatom_stk (_a,_stk) -> str "Vatom_stk"
-        | _ -> assert false
+        | Vuniv_level _ -> assert false
       in
       CErrors.anomaly
         Pp.(   strbrk "Parsing virtual machine value expected universe level, got "
@@ -363,6 +372,8 @@ let rec whd_accu a stk =
       | [Zapp args] -> Vcofix(vcofix, res, Some args)
       | _           -> assert false
       end
+  | i when Int.equal i Obj.custom_tag ->
+    Vint64 (Obj.magic i)
   | tg ->
     CErrors.anomaly
       Pp.(strbrk "Failed to parse VM value. Tag = " ++ int tg ++ str ".")
@@ -391,6 +402,7 @@ let whd_val : values -> whd =
            | 2 -> Vfix(Obj.obj (Obj.field o 1), Some (Obj.obj o))
            | 3 -> Vatom_stk(Aid(RelKey(int_tcode (fun_code o) 1)), [])
            | _ -> CErrors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work."))
+        else if Int.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
         else
            Vconstr_block(Obj.obj o)
 
@@ -413,6 +425,7 @@ let obj_of_str_const str =
   | Const_b0 tag -> Obj.repr tag
   | Const_univ_level l -> Obj.repr (Vuniv_level l)
   | Const_val v -> Obj.repr v
+  | Const_uint i -> Obj.repr i
 
 let val_of_block tag (args : structured_values array) =
   let nargs = Array.length args in
@@ -429,6 +442,8 @@ let val_of_str_const str = val_of_obj (obj_of_str_const str)
 let val_of_atom a = val_of_obj (obj_of_atom a)
 
 let val_of_int i = (Obj.magic i : values)
+
+let val_of_uint i = (Obj.magic i : values)
 
 let atom_of_proj kn v =
   let r = Obj.new_block proj_tag 2 in
@@ -659,6 +674,7 @@ and pr_whd w =
   | Vcofix _ -> str "Vcofix"
   | Vconstr_const i -> str "Vconstr_const(" ++ int i ++ str ")"
   | Vconstr_block _b -> str "Vconstr_block"
+  | Vint64 i -> i |> Format.sprintf "Vint64(%LiL)" |> str
   | Vatom_stk (a,stk) -> str "Vatom_stk(" ++ pr_atom a ++ str ", " ++ pr_stack stk ++ str ")"
   | Vuniv_level _ -> assert false)
 and pr_stack stk =

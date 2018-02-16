@@ -147,6 +147,7 @@ plugins/ssr/ssrvernac.ml
 
 kernel/byterun/coq_jumptbl.h
 kernel/copcodes.ml
+kernel/uint63.ml
 ide/index_urls.txt
 .lia.cache
 .nia.cache

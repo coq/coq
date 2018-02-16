@@ -66,7 +66,8 @@ let rec eq_ml_type t1 t2 = match t1, t2 with
 | Tdummy k1, Tdummy k2 -> k1 == k2
 | Tunknown, Tunknown -> true
 | Taxiom, Taxiom -> true
-| _ -> false
+| (Tarr _ | Tglob _ | Tvar _ | Tvar' _ | Tmeta _ | Tdummy _ | Tunknown | Taxiom), _
+  -> false
 
 and eq_ml_meta m1 m2 =
  Int.equal m1.id m2.id && Option.equal eq_ml_type m1.contents m2.contents
@@ -107,7 +108,7 @@ let rec type_occurs alpha t =
   | Tmeta {contents=Some u} -> type_occurs alpha u
   | Tarr (t1, t2) -> type_occurs alpha t1 || type_occurs alpha t2
   | Tglob (r,l) -> List.exists (type_occurs alpha) l
-  | _ -> false
+  | (Tdummy _ | Tvar _ | Tvar' _ | Taxiom | Tunknown) -> false
 
 (*s Most General Unificator *)
 
@@ -310,7 +311,7 @@ let isMLdummy = function MLdummy _ -> true | _ -> false
 
 let sign_of_id = function
   | Dummy -> Kill Kprop
-  | _ -> Keep
+  | (Id _ | Tmp _) -> Keep
 
 (* Classification of signatures *)
 
@@ -370,7 +371,10 @@ let eq_ml_ident i1 i2 = match i1, i2 with
 | Dummy, Dummy -> true
 | Id id1, Id id2 -> Id.equal id1 id2
 | Tmp id1, Tmp id2 -> Id.equal id1 id2
-| _ -> false
+| Dummy, (Id _ | Tmp _)
+| Id _, (Dummy | Tmp _)
+| Tmp _, (Dummy | Id _)
+  -> false
 
 let rec eq_ml_ast t1 t2 = match t1, t2 with
 | MLrel i1, MLrel i2 ->
@@ -394,7 +398,8 @@ let rec eq_ml_ast t1 t2 = match t1, t2 with
 | MLdummy k1, MLdummy k2 -> k1 == k2
 | MLaxiom, MLaxiom -> true
 | MLmagic t1, MLmagic t2 -> eq_ml_ast t1 t2
-| _ -> false
+| MLuint i1, MLuint i2 -> Uint63.equal i1 i2
+| _, _ -> false
 
 and eq_ml_pattern p1 p2 = match p1, p2 with
 | Pcons (gr1, p1), Pcons (gr2, p2) ->
@@ -426,7 +431,7 @@ let ast_iter_rel f =
     | MLapp (a,l) -> iter n a; List.iter (iter n) l
     | MLcons (_,_,l) | MLtuple l ->  List.iter (iter n) l
     | MLmagic a -> iter n a
-    | MLglob _ | MLexn _ | MLdummy _ | MLaxiom -> ()
+    | MLglob _ | MLexn _ | MLdummy _ | MLaxiom | MLuint _ -> ()
   in iter 0
 
 (*s Map over asts. *)
@@ -445,7 +450,7 @@ let ast_map f = function
   | MLcons (typ,c,l) -> MLcons (typ,c, List.map f l)
   | MLtuple l -> MLtuple (List.map f l)
   | MLmagic a -> MLmagic (f a)
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy _ | MLaxiom as a -> a
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy _ | MLaxiom | MLuint _ as a -> a
 
 (*s Map over asts, with binding depth as parameter. *)
 
@@ -463,7 +468,7 @@ let ast_map_lift f n = function
   | MLcons (typ,c,l) -> MLcons (typ,c, List.map (f n) l)
   | MLtuple l -> MLtuple (List.map (f n) l)
   | MLmagic a -> MLmagic (f n a)
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy _ | MLaxiom as a -> a
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy _ | MLaxiom | MLuint _ as a -> a
 
 (*s Iter over asts. *)
 
@@ -477,7 +482,7 @@ let ast_iter f = function
   | MLapp (a,l) -> f a; List.iter f l
   | MLcons (_,_,l) | MLtuple l -> List.iter f l
   | MLmagic a -> f a
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy _ | MLaxiom  -> ()
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy _ | MLaxiom | MLuint _ -> ()
 
 (*S Operations concerning De Bruijn indices. *)
 
@@ -513,7 +518,7 @@ let nb_occur_match =
     | MLapp (a,l) -> List.fold_left (fun r a -> r+(nb k a)) (nb k a) l
     | MLcons (_,_,l) | MLtuple l -> List.fold_left (fun r a -> r+(nb k a)) 0 l
     | MLmagic a -> nb k a
-    | MLglob _ | MLexn _ | MLdummy _ | MLaxiom -> 0
+    | MLglob _ | MLexn _ | MLdummy _ | MLaxiom | MLuint _ -> 0
   in nb 1
 
 (* Replace unused variables by _ *)
@@ -565,7 +570,7 @@ let dump_unused_vars a =
        let b' = ren env b in
        if b' == b then a else MLmagic b'
 
-    | MLglob _ | MLexn _ | MLdummy _ | MLaxiom -> a
+    | MLglob _ | MLexn _ | MLdummy _ | MLaxiom | MLuint _ -> a
 
     and ren_branch env ((ids,p,b) as tr) =
       let occs = List.map (fun _ -> ref false) ids in
@@ -1398,7 +1403,7 @@ let rec ml_size = function
   | MLfix(_,_,f) -> ml_size_array f
   | MLletin (_,_,t) -> ml_size t
   | MLmagic t -> ml_size t
-  | MLglob _ | MLrel _ | MLexn _ | MLdummy _ | MLaxiom -> 0
+  | MLglob _ | MLrel _ | MLexn _ | MLdummy _ | MLaxiom | MLuint _ -> 0
 
 and ml_size_list l = List.fold_left (fun a t -> a + ml_size t) 0 l
 

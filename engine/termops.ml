@@ -600,7 +600,7 @@ let map_constr_with_binders_left_to_right sigma g f l c =
   let open EConstr in
   match EConstr.kind sigma c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> c
+    | Construct _ | Int _) -> c
   | Cast (b,k,t) -> 
     let b' = f l b in 
     let t' = f l t in
@@ -681,7 +681,7 @@ let map_constr_with_full_binders_gen userview sigma g f l cstr =
   let open EConstr in
   match EConstr.kind sigma cstr with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> cstr
+    | Construct _ | Int _) -> cstr
   | Cast (c,k, t) ->
       let c' = f l c in
       let t' = f l t in

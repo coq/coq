@@ -12,6 +12,7 @@
 
 open Names
 open Vmvalues
+open Constr
 
 module Label :
   sig
@@ -57,47 +58,14 @@ type instruction =
   | Kproj of Projection.Repr.t
   | Kensurestackcapacity of int
 
-(** spiwack: instructions concerning integers *)
   | Kbranch of Label.t                  (** jump to label, is it needed ? *)
-  | Kaddint31                           (** adds the int31 in the accu
-                                           and the one ontop of the stack *)
-  | Kaddcint31                          (** makes the sum and keeps the carry *)
-  | Kaddcarrycint31                     (** sum +1, keeps the carry *)
-  | Ksubint31                           (** subtraction modulo *)
-  | Ksubcint31                          (** subtraction, keeps the carry *)
-  | Ksubcarrycint31                     (** subtraction -1, keeps the carry *)
-  | Kmulint31                           (** multiplication modulo *)
-  | Kmulcint31                          (** multiplication, result in two
-					   int31, for exact computation *)
-  | Kdiv21int31                         (** divides a double size integer
-                                           (represented by an int31 in the
-					   accumulator and one on the top of
-					   the stack) by an int31. The result
-					   is a pair of the quotient and the
-					   rest.
-					   If the divisor is 0, it returns
-					   0. *)
-  | Kdivint31                           (** euclidian division (returns a pair
-					   quotient,rest) *)
-  | Kaddmuldivint31                     (** generic operation for shifting and
-					   cycling. Takes 3 int31 i j and s,
-					   and returns x*2^s+y/(2^(31-s) *)
-  | Kcompareint31                        (** unsigned comparison of int31
-					   cf COMPAREINT31 in
-					   kernel/byterun/coq_interp.c
-					   for more info *)
-  | Khead0int31                         (** Give the numbers of 0 in head of a in31*)
-  | Ktail0int31                         (** Give the numbers of 0 in tail of a in31
-                                           ie low bits *)
-  | Kisconst of Label.t                 (** conditional jump *)
-  | Kareconst of int*Label.t            (** conditional jump *)
-  | Kcompint31                          (** dynamic compilation of int31 *)
-  | Kdecompint31                        (** dynamix decompilation of int31 *)
-  | Klorint31                           (** bitwise operations: or and xor *)
-  | Klandint31
-  | Klxorint31
+  | Kprim of CPrimitives.t * pconstant option
+
+  | Kareint of int
 
 and bytecodes = instruction list
+
+val pp_bytecodes : bytecodes -> Pp.t
 
 type fv_elem =
   FVnamed of Id.t
@@ -107,34 +75,4 @@ type fv_elem =
 
 type fv = fv_elem array
 
-
-(** spiwack: this exception is expected to be raised by function expecting
-            closed terms. *)
-exception NotClosed
-
-module FvMap : Map.S with type key = fv_elem
-
-(*spiwack: both type have been moved from Cbytegen because I needed them
-  for the retroknowledge *)
-type vm_env = {
-    size : int;              (** length of the list [n] *)
-    fv_rev : fv_elem list;   (** [fvn; ... ;fv1] *)
-    fv_fwd : int FvMap.t;    (** reverse mapping *)
-  }
-
-
-type comp_env = {
-    arity : int;                 (* arity of the current function, 0 if none *)
-    nb_uni_stack : int ;         (** number of universes on the stack       *)
-    nb_stack : int;              (** number of variables on the stack       *)
-    in_stack : int list;         (** position in the stack                  *)
-    nb_rec : int;                (** number of mutually recursive functions *)
-                                 (** (= nbr)                                *)
-    pos_rec  : instruction list; (** instruction d'acces pour les variables *)
-                                 (**  de point fix ou de cofix              *)
-    offset : int;
-    in_env : vm_env ref          (** the variables that are accessed        *)
-  }
-
-val pp_bytecodes : bytecodes -> Pp.t
 val pp_fv_elem : fv_elem -> Pp.t

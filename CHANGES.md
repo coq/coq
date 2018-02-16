@@ -44,6 +44,10 @@ Specification language, type inference
   solved by writing an explicit `return` clause, sometimes even simply
   an explicit `return _` clause.
 
+Kernel
+
+- Added primitive integers
+
 Notations
 
 - New command `Declare Scope` to explicitly declare a scope name
@@ -154,6 +158,8 @@ Standard Library
 
 - Added `Coq.Structures.OrderedTypeEx.String_as_OT` to make strings an
   ordered type (using lexical order).
+
+- The `Coq.Numbers.Cyclic.Int31` library is deprecated.
 
 Universes
 

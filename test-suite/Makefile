@@ -95,7 +95,7 @@ INTERACTIVE := interactive
 UNIT_TESTS := unit-tests
 VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
   output-modulo-time $(INTERACTIVE) micromega $(COMPLEXITY) modules stm \
-  coqdoc ssr
+  coqdoc ssr arithmetic
 
 # All subsystems
 SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coqwc coq-makefile tools $(UNIT_TESTS)
@@ -176,6 +176,7 @@ summary:
 	  $(call summary_dir, "Coqdoc tests", coqdoc); \
 	  $(call summary_dir, "tools/ tests", tools); \
 	  $(call summary_dir, "Unit tests", unit-tests); \
+	  $(call summary_dir, "Machine arithmetic tests", arithmetic); \
 	  nb_success=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_success) | wc -l`; \
 	  nb_failure=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_failure) | wc -l`; \
 	  nb_tests=`expr $$nb_success + $$nb_failure`; \
@@ -308,7 +309,7 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	$(HIDE)$(coqchk) -norec TestSuite.$(shell basename $< .v) > $(shell dirname $<)/$(shell basename $< .v).chk.log 2>&1
 
 ssr: $(wildcard ssr/*.v:%.v=%.v.log)
-$(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v)): %.v.log: %.v $(PREREQUISITELOG)
+$(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v arithmetic/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  opts="$(if $(findstring modules/,$<),-R modules Mods)"; \

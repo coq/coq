@@ -12,249 +12,30 @@
 (* Addition of native Head (nb of heading 0) and Tail (nb of trailing 0) by
    Benjamin Grégoire, Jun 2007 *)
 
-(* This file defines the knowledge that the kernel is able to optimize
-   for evaluation in the bytecode virtual machine *)
+(* This file defines the knowledge that the kernel is able to optimize. *)
 
 open Names
-open Constr
 
-(* The retroknowledge defines a bijective correspondance between some
-   [entry]-s (which are, in fact, merely names) and [field]-s which
-   are roles assigned to these entries. *)
-
-type int31_field =
-  | Int31Bits
-  | Int31Type
-  | Int31Constructor
-  | Int31Twice
-  | Int31TwicePlusOne
-  | Int31Phi
-  | Int31PhiInv
-  | Int31Plus
-  | Int31PlusC
-  | Int31PlusCarryC
-  | Int31Minus
-  | Int31MinusC
-  | Int31MinusCarryC
-  | Int31Times
-  | Int31TimesC
-  | Int31Div21
-  | Int31Div
-  | Int31Diveucl
-  | Int31AddMulDiv
-  | Int31Compare
-  | Int31Head0
-  | Int31Tail0
-  | Int31Lor
-  | Int31Land
-  | Int31Lxor
-
-type field =
-  | KInt31 of int31_field
-
-let int31_field_of_string =
-  function
-  | "bits" -> Int31Bits
-  | "type" -> Int31Type
-  | "twice" -> Int31Twice
-  | "twice_plus_one" -> Int31TwicePlusOne
-  | "phi" -> Int31Phi
-  | "phi_inv" -> Int31PhiInv
-  | "plus" -> Int31Plus
-  | "plusc" -> Int31PlusC
-  | "pluscarryc" -> Int31PlusCarryC
-  | "minus" -> Int31Minus
-  | "minusc" -> Int31MinusC
-  | "minuscarryc" -> Int31MinusCarryC
-  | "times" -> Int31Times
-  | "timesc" -> Int31TimesC
-  | "div21" -> Int31Div21
-  | "div" -> Int31Div
-  | "diveucl" -> Int31Diveucl
-  | "addmuldiv" -> Int31AddMulDiv
-  | "compare" -> Int31Compare
-  | "head0" -> Int31Head0
-  | "tail0" -> Int31Tail0
-  | "lor" -> Int31Lor
-  | "land" -> Int31Land
-  | "lxor" -> Int31Lxor
-  | s -> CErrors.user_err Pp.(str "Registering unknown int31 operator " ++ str s)
-
-let int31_path = DirPath.make [ Id.of_string "int31" ]
-
-(* record representing all the flags of the internal state of the kernel *)
-type flags = {fastcomputation : bool}
-
-
-
-
-
-(* The [proactive] knowledge contains the mapping [field->entry]. *)
-
-module Proactive =
-  Map.Make (struct type t = field let compare = Pervasives.compare end)
-
-type proactive = GlobRef.t Proactive.t
-
-(* The [reactive] knowledge contains the mapping
-   [entry->field]. Fields are later to be interpreted as a
-   [reactive_info]. *)
-
-module Reactive = GlobRef.Map
-
-type reactive_info = {(*information required by the compiler of the VM *)
-  vm_compiling :
-      (*fastcomputation flag -> continuation -> result *)
-      (bool -> Cinstr.lambda array -> Cinstr.lambda)
-      option;
-  vm_constant_static :
-      (*fastcomputation flag -> constructor -> args -> result*)
-      (bool -> constr array -> Cinstr.lambda)
-      option;
-  vm_constant_dynamic :
-      (*fastcomputation flag -> constructor -> reloc -> args -> sz -> cont -> result *)
-      (bool -> Cinstr.lambda array -> Cinstr.lambda)
-      option;
-  (* fastcomputation flag -> cont -> result *)
-  vm_before_match : (bool -> Cinstr.lambda -> Cinstr.lambda) option;
-  (* tag (= compiled int for instance) -> result *)
-  vm_decompile_const : (int -> constr) option;
-
-  native_compiling :
-      (bool -> Nativeinstr.prefix -> Nativeinstr.lambda array ->
-       Nativeinstr.lambda) option;
-
-  native_constant_static :
-      (bool -> constr array -> Nativeinstr.lambda) option;
-
-  native_constant_dynamic :
-      (bool -> Nativeinstr.prefix -> constructor ->
-       Nativeinstr.lambda array -> Nativeinstr.lambda) option;
-
-  native_before_match : (bool -> Nativeinstr.prefix -> constructor ->
-			 Nativeinstr.lambda -> Nativeinstr.lambda) option
-
+type retroknowledge = {
+    retro_int63 : Constant.t option;
+    retro_bool : (constructor * constructor) option; (* true, false *)
+    retro_carry : (constructor * constructor) option; (* C0, C1 *)
+    retro_pair : constructor option;
+    retro_cmp : (constructor * constructor * constructor) option;
+                    (* Eq, Lt, Gt *)
+    retro_refl : constructor option;
 }
 
+let empty = {
+    retro_int63 = None;
+    retro_bool = None;
+    retro_carry = None;
+    retro_pair = None;
+    retro_cmp = None;
+    retro_refl = None;
+}
 
-
-and reactive = field Reactive.t
-
-and retroknowledge = {flags : flags; proactive : proactive; reactive : reactive}
-
-(* This type represent an atomic action of the retroknowledge. It
-   is stored in the compiled libraries *)
-(* As per now, there is only the possibility of registering things
-   the possibility of unregistering or changing the flag is under study *)
 type action =
-    | RKRegister of field * GlobRef.t
-
-
-(*initialisation*)
-let initial_flags =
-      {fastcomputation = true;}
-
-let initial_proactive =
-  (Proactive.empty:proactive)
-
-let initial_reactive =
-  (Reactive.empty:reactive)
-
-let initial_retroknowledge =
-  {flags = initial_flags;
-   proactive = initial_proactive;
-   reactive = initial_reactive }
-
-let empty_reactive_info =
-  { vm_compiling = None ;
-    vm_constant_static = None;
-    vm_constant_dynamic = None;
-    vm_before_match = None;
-    vm_decompile_const = None;
-    native_compiling = None;
-    native_constant_static = None;
-    native_constant_dynamic = None;
-    native_before_match = None;
-  }
-
-
-
-(* adds a binding [entry<->field]. *)
-let add_field knowledge field entry =
-  {knowledge with
-    proactive = Proactive.add field entry knowledge.proactive;
-    reactive = Reactive.add entry field knowledge.reactive}
-
-(* acces functions for proactive retroknowledge *)
-let mem knowledge field =
-  Proactive.mem field knowledge.proactive
-
-let find knowledge field =
-  Proactive.find field knowledge.proactive
-
-
-let (dispatch,dispatch_hook) = Hook.make ()
-
-let dispatch_reactive entry retroknowledge =
-  Hook.get dispatch retroknowledge entry (Reactive.find entry retroknowledge.reactive)
-
-(*access functions for reactive retroknowledge*)
-
-(* used for compiling of functions (add, mult, etc..) *)
-let get_vm_compiling_info knowledge key =
-  match (dispatch_reactive key knowledge).vm_compiling
-  with
-    | None -> raise Not_found
-    | Some f -> f knowledge.flags.fastcomputation
-
-(* used for compilation of fully applied constructors *)
-let get_vm_constant_static_info knowledge key =
-  match (dispatch_reactive key knowledge).vm_constant_static
-  with
-    | None -> raise Not_found
-    | Some f -> f knowledge.flags.fastcomputation
-
-(* used for compilation of partially applied constructors *)
-let get_vm_constant_dynamic_info knowledge key =
-  match (dispatch_reactive key knowledge).vm_constant_dynamic
-  with
-    | None -> raise Not_found
-    | Some f -> f knowledge.flags.fastcomputation
-
-let get_vm_before_match_info knowledge key =
-  match (dispatch_reactive key knowledge).vm_before_match
-  with
-    | None -> raise Not_found
-    | Some f -> f knowledge.flags.fastcomputation
-
-let get_vm_decompile_constant_info knowledge key =
-  match (dispatch_reactive key knowledge).vm_decompile_const
-  with
-    | None -> raise Not_found
-    | Some f -> f
-
-let get_native_compiling_info knowledge key =
-  match (dispatch_reactive key knowledge).native_compiling
-  with
-    | None -> raise Not_found
-    | Some f -> f knowledge.flags.fastcomputation
-
-(* used for compilation of fully applied constructors *)
-let get_native_constant_static_info knowledge key =
-  match (dispatch_reactive key knowledge).native_constant_static
-  with
-    | None -> raise Not_found
-    | Some f -> f knowledge.flags.fastcomputation
-
-(* used for compilation of partially applied constructors *)
-let get_native_constant_dynamic_info knowledge key =
-  match (dispatch_reactive key knowledge).native_constant_dynamic
-  with
-    | None -> raise Not_found
-    | Some f -> f knowledge.flags.fastcomputation
-
-let get_native_before_match_info knowledge key =
-  match (dispatch_reactive key knowledge).native_before_match
-  with
-    | None -> raise Not_found
-    | Some f -> f knowledge.flags.fastcomputation
+  | Register_ind of CPrimitives.prim_ind * inductive
+  | Register_type of CPrimitives.prim_type * Constant.t
+  | Register_inline of Constant.t

@@ -257,10 +257,10 @@ let check_constant cst env l info1 cb2 spec2 subst1 subst2 =
            anything of the right type can implement it, even if bodies differ.
       *)
       (match cb2.const_body with
-	| Undef _ | OpaqueDef _ -> cst
+        | Primitive _ | Undef _ | OpaqueDef _ -> cst
 	| Def lc2 ->
 	  (match cb1.const_body with
-	    | Undef _ | OpaqueDef _ -> error NotConvertibleBodyField
+            | Primitive _ | Undef _ | OpaqueDef _ -> error NotConvertibleBodyField
 	    | Def lc1 ->
 	      (* NB: cb1 might have been strengthened and appear as transparent.
 		 Anyway [check_conv] will handle that afterwards. *)

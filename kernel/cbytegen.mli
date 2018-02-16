@@ -20,7 +20,8 @@ val compile : fail_on_error:bool ->
 (** init, fun, fv *)
 
 val compile_constant_body : fail_on_error:bool ->
-			    env -> constant_universes -> constant_def -> body_code option
+  env -> constant_universes -> Constr.t Mod_subst.substituted constant_def ->
+  body_code option
 
 (** Shortcut of the previous function used during module strengthening *)
 

@@ -219,11 +219,50 @@ GRAMMAR EXTEND Gram
           { VernacRegister(g, RegisterCoqlib quid) }
       | IDENT "Register"; IDENT "Inline"; g = global ->
           { VernacRegister(g, RegisterInline) }
+      | IDENT "Primitive"; id = identref; typopt = OPT [ ":"; typ = lconstr -> { typ } ]; ":="; r = register_token ->
+          { VernacPrimitive(id, r, typopt) }
       | IDENT "Universe"; l = LIST1 identref -> { VernacUniverse l }
       | IDENT "Universes"; l = LIST1 identref -> { VernacUniverse l }
       | IDENT "Constraint"; l = LIST1 univ_constraint SEP "," -> { VernacConstraint l }
   ] ]
   ;
+
+   register_token:
+     [ [ r = register_prim_token -> { CPrimitives.OT_op r }
+       | r = register_type_token -> { CPrimitives.OT_type r } ] ]
+   ;
+
+   register_type_token:
+     [ [ "#int63_type" -> { CPrimitives.PT_int63 } ] ]
+   ;
+
+   register_prim_token:
+     [ [ "#int63_head0" -> { CPrimitives.Int63head0 }
+       | "#int63_tail0" -> { CPrimitives.Int63tail0 }
+       | "#int63_add" -> { CPrimitives.Int63add }
+       | "#int63_sub" -> { CPrimitives.Int63sub }
+       | "#int63_mul" -> { CPrimitives.Int63mul }
+       | "#int63_div" -> { CPrimitives.Int63div }
+       | "#int63_mod" -> { CPrimitives.Int63mod }
+       | "#int63_lsr" -> { CPrimitives.Int63lsr }
+       | "#int63_lsl" -> { CPrimitives.Int63lsl }
+       | "#int63_land" -> { CPrimitives.Int63land }
+       | "#int63_lor" -> { CPrimitives.Int63lor }
+       | "#int63_lxor" -> { CPrimitives.Int63lxor }
+       | "#int63_addc" -> { CPrimitives.Int63addc }
+       | "#int63_subc" -> { CPrimitives.Int63subc }
+       | "#int63_addcarryc" -> { CPrimitives.Int63addCarryC }
+       | "#int63_subcarryc" -> { CPrimitives.Int63subCarryC }
+       | "#int63_mulc" -> { CPrimitives.Int63mulc }
+       | "#int63_diveucl" -> { CPrimitives.Int63diveucl }
+       | "#int63_div21" -> { CPrimitives.Int63div21 }
+       | "#int63_addmuldiv" -> { CPrimitives.Int63addMulDiv }
+       | "#int63_eq" -> { CPrimitives.Int63eq }
+       | "#int63_lt" -> { CPrimitives.Int63lt }
+       | "#int63_le" -> { CPrimitives.Int63le }
+       | "#int63_compare" -> { CPrimitives.Int63compare }
+       ] ]
+    ;
 
   thm_token:
     [ [ "Theorem" -> { Theorem }

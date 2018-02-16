@@ -1,6 +1,7 @@
 Names
 TransparentState
-Uint31
+Uint63
+CPrimitives
 Univ
 UGraph
 Esubst
@@ -19,11 +20,11 @@ Opaqueproof
 Declarations
 Entries
 Nativevalues
-CPrimitives
 Declareops
 Retroknowledge
 Conv_oracle
 Environ
+Primred
 CClosure
 Reduction
 Clambda

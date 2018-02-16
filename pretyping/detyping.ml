@@ -766,6 +766,7 @@ and detype_r d flags avoid env sigma t =
           p c bl
     | Fix (nvn,recdef) -> detype_fix (detype d flags) avoid env sigma nvn recdef
     | CoFix (n,recdef) -> detype_cofix (detype d flags) avoid env sigma n recdef
+    | Int i -> GInt i
 
 and detype_eqns d flags avoid env sigma ci computable constructs consnargsl bl =
   try
@@ -959,6 +960,7 @@ let rec subst_glob_constr subst = DAst.map (function
   | GSort _
   | GVar _
   | GEvar _
+  | GInt _
   | GPatVar _ as raw -> raw
 
   | GApp (r,rl) as raw ->

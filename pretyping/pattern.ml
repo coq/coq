@@ -39,6 +39,7 @@ type constr_pattern =
       (int * bool list * constr_pattern) list (** index of constructor, nb of args *)
   | PFix of (int array * int) * (Name.t array * constr_pattern array * constr_pattern array)
   | PCoFix of int * (Name.t array * constr_pattern array * constr_pattern array)
+  | PInt of Uint63.t
 
 (** Nota : in a [PCase], the array of branches might be shorter than
     expected, denoting the use of a final "_ => _" branch *)

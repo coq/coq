@@ -59,10 +59,10 @@
    etc.
 *)
 
-open CErrors
 open Util
 open Names
 open Declarations
+open Constr
 open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
@@ -227,6 +227,7 @@ let check_engagement env expected_impredicative_set =
 let get_opaque_body env cbo =
   match cbo.const_body with
   | Undef _ -> assert false
+  | Primitive _ -> assert false
   | Def _ -> `Nothing
   | OpaqueDef opaque ->
       `Opaque
@@ -467,7 +468,7 @@ let globalize_constant_universes env cb =
   | Monomorphic_const cstrs ->
     Now (false, cstrs) ::
     (match cb.const_body with
-     | (Undef _ | Def _) -> []
+     | (Undef _ | Def _ | Primitive _) -> []
      | OpaqueDef lc ->
        match Opaqueproof.get_constraints (Environ.opaque_tables env) lc with
        | None -> []
@@ -491,6 +492,11 @@ let constraints_of_sfb env sfb =
   | SFBmind mib -> globalize_mind_universes mib
   | SFBmodtype mtb -> [Now (false, mtb.mod_constraints)]
   | SFBmodule mb -> [Now (false, mb.mod_constraints)]
+
+let add_retroknowledge pttc senv =
+  { senv with
+    env = Primred.add_retroknowledge senv.env pttc;
+    local_retroknowledge = pttc::senv.local_retroknowledge }
 
 (** A generic function for adding a new field in a same environment.
     It also performs the corresponding [add_constraints]. *)
@@ -809,6 +815,13 @@ let add_constant ~in_section l decl senv =
         let cb = Term_typing.translate_recipe ~hcons:(not in_section) senv.env kn r in
         if in_section then cb else Declareops.hcons_const_body cb in
     add_constant_aux ~in_section senv (kn, cb) in
+  let senv =
+    match decl with
+    | ConstantEntry (_,(Entries.PrimitiveEntry { Entries.prim_entry_content = CPrimitives.OT_type t; _ })) ->
+      if in_section then CErrors.anomaly (Pp.str "Primitive type not allowed in sections");
+      add_retroknowledge (Retroknowledge.Register_type(t,kn)) senv
+    | _ -> senv
+  in
   kn, senv
 
 (** Insertion of inductive types *)
@@ -1173,18 +1186,6 @@ let typing senv = Typeops.infer (env_of_senv senv)
 
 (** {6 Retroknowledge / native compiler } *)
 
-let register field value senv =
-  (* todo : value closed *)
-  (* spiwack : updates the safe_env with the information that the register
-     action has to be performed (again) when the environment is imported *)
-  { senv with
-    env = Environ.register senv.env field value;
-    local_retroknowledge =
-      Retroknowledge.RKRegister (field,value)::senv.local_retroknowledge
-  }
-
-(* This function serves only for inlining constants in native compiler for now,
-but it is meant to become a replacement for environ.register *)
 let register_inline kn senv =
   let open Environ in
   if not (evaluable_constant kn senv.env) then
@@ -1193,6 +1194,80 @@ let register_inline kn senv =
   let cb = lookup_constant kn env in
   let cb = {cb with const_inline_code = true} in
   let env = add_constant kn cb env in { senv with env}
+
+let check_register_ind (mind,i) r env =
+  let mb = Environ.lookup_mind mind env in
+  let check_if b s =
+    if not b then
+      CErrors.user_err ~hdr:"check_register_ind" (Pp.str s) in
+  check_if (Int.equal (Array.length mb.mind_packets) 1) "A non mutual inductive is expected";
+  let ob = mb.mind_packets.(i) in
+  let check_nconstr n =
+    check_if (Int.equal (Array.length ob.mind_consnames) n)
+      ("an inductive type with "^(string_of_int n)^" constructors is expected")
+  in
+  let check_name pos s =
+    check_if (Id.equal ob.mind_consnames.(pos) (Id.of_string s))
+      ("the "^(string_of_int (pos + 1))^
+       "th constructor does not have the expected name: " ^ s) in
+  let check_type pos t =
+    check_if (Constr.equal t ob.mind_user_lc.(pos))
+      ("the "^(string_of_int (pos + 1))^
+       "th constructor does not have the expected type") in
+  let check_type_cte pos = check_type pos (Constr.mkRel 1) in
+  match r with
+  | CPrimitives.PIT_bool ->
+    check_nconstr 2;
+    check_name 0 "true";
+    check_type_cte 0;
+    check_name 1 "false";
+    check_type_cte 1
+  | CPrimitives.PIT_carry ->
+    check_nconstr 2;
+    let test_type pos =
+      let c = ob.mind_user_lc.(pos) in
+      let s = "the "^(string_of_int (pos + 1))^
+              "th constructor does not have the expected type" in
+      check_if (Constr.isProd c) s;
+      let (_,d,cd) = Constr.destProd c in
+      check_if (Constr.is_Type d) s;
+      check_if
+        (Constr.equal
+                (mkProd (Anonymous,mkRel 1, mkApp (mkRel 3,[|mkRel 2|])))
+                cd)
+        s in
+    check_name 0 "C0";
+    test_type 0;
+    check_name 1 "C1";
+    test_type 1;
+  | CPrimitives.PIT_pair ->
+    check_nconstr 1;
+    check_name 0 "pair";
+    let c = ob.mind_user_lc.(0) in
+    let s =  "the "^(string_of_int 1)^
+             "th constructor does not have the expected type" in
+    begin match Term.decompose_prod c with
+      | ([_,b;_,a;_,_B;_,_A], codom) ->
+        check_if (is_Type _A) s;
+        check_if (is_Type _B) s;
+        check_if (Constr.equal a (mkRel 2)) s;
+        check_if (Constr.equal b (mkRel 2)) s;
+        check_if (Constr.equal codom (mkApp (mkRel 5,[|mkRel 4; mkRel 3|]))) s
+      | _ -> check_if false s
+    end
+  | CPrimitives.PIT_cmp ->
+    check_nconstr 3;
+    check_name 0 "Eq";
+    check_type_cte 0;
+    check_name 1 "Lt";
+    check_type_cte 1;
+    check_name 2 "Gt";
+    check_type_cte 2
+
+let register_inductive ind prim senv =
+  check_register_ind ind prim senv.env;
+  let action = Retroknowledge.Register_ind(prim,ind) in
+  add_retroknowledge action senv
 
 let add_constraints c =
   add_constraints
@@ -1222,125 +1297,3 @@ Would this be correct with respect to undo's and stuff ?
 let set_strategy k l e = { e with env =
    (Environ.set_oracle e.env
       (Conv_oracle.set_strategy (Environ.oracle e.env) k l)) }
-
-(** Register retroknowledge hooks *)
-
-open Retroknowledge
-
-(* the Environ.register function synchronizes the proactive and reactive
-   retroknowledge. *)
-let dispatch =
-
-  (* subfunction used for static decompilation of int31 (after a vm_compute,
-     see pretyping/vnorm.ml for more information) *)
-  let constr_of_int31 =
-    let nth_digit_plus_one i n = (* calculates the nth (starting with 0)
-                                    digit of i and adds 1 to it
-                                    (nth_digit_plus_one 1 3 = 2) *)
-      if Int.equal (i land (1 lsl n)) 0 then
-        1
-      else
-        2
-    in
-      fun ind -> fun digit_ind -> fun tag ->
-        let array_of_int i =
-          Array.init 31 (fun n -> Constr.mkConstruct
-                           (digit_ind, nth_digit_plus_one i (30-n)))
-        in
-        (* We check that no bit above 31 is set to one. This assertion used to
-        fail in the VM, and led to conversion tests failing at Qed. *)
-        assert (Int.equal (tag lsr 31) 0);
-        Constr.mkApp(Constr.mkConstruct(ind, 1), array_of_int tag)
-  in
-
-  (* subfunction which dispatches the compiling information of an
-     int31 operation which has a specific vm instruction (associates
-     it to the name of the coq definition in the reactive retroknowledge) *)
-  let int31_op n op prim kn =
-    { empty_reactive_info with
-      vm_compiling = Some (Clambda.compile_prim n op (kn, Univ.Instance.empty)); (*XXX: FIXME universes? *)
-      native_compiling = Some (Nativelambda.compile_prim prim kn);
-    }
-  in
-
-fun rk value field ->
-  (* subfunction which shortens the (very common) dispatch of operations *)
-  let int31_op_from_const n op prim =
-    match value with
-      | GlobRef.ConstRef kn -> int31_op n op prim kn
-      | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant.")
-  in
-  let int31_binop_from_const op prim = int31_op_from_const 2 op prim in
-  let int31_unop_from_const op prim = int31_op_from_const 1 op prim in
-  match field with
-    | KInt31 Int31Type ->
-        let int31bit =
-          (* invariant : the type of bits is registered, otherwise the function
-             would raise Not_found. The invariant is enforced in safe_typing.ml *)
-          match field with
-          | KInt31 Int31Type -> Retroknowledge.find rk (KInt31 Int31Bits)
-          | _ -> anomaly ~label:"Environ.register"
-              (Pp.str "add_int31_decompilation_from_type called with an abnormal field.")
-        in
-        let i31bit_type =
-          match int31bit with
-          | GlobRef.IndRef i31bit_type -> i31bit_type
-          |  _ -> anomaly ~label:"Environ.register"
-              (Pp.str "Int31Bits should be an inductive type.")
-        in
-        let int31_decompilation =
-          match value with
-          | GlobRef.IndRef i31t ->
-              constr_of_int31 i31t i31bit_type
-          | _ -> anomaly ~label:"Environ.register"
-              (Pp.str "should be an inductive type.")
-        in
-        { empty_reactive_info with
-          vm_decompile_const = Some int31_decompilation;
-          vm_before_match = Some Clambda.int31_escape_before_match;
-          native_before_match = Some (Nativelambda.before_match_int31 i31bit_type);
-        }
-    | KInt31 Int31Constructor ->
-        { empty_reactive_info with
-          vm_constant_static = Some Clambda.compile_structured_int31;
-          vm_constant_dynamic = Some Clambda.dynamic_int31_compilation;
-          native_constant_static = Some Nativelambda.compile_static_int31;
-          native_constant_dynamic = Some Nativelambda.compile_dynamic_int31;
-        }
-    | KInt31 Int31Plus -> int31_binop_from_const Cbytecodes.Kaddint31
-                                                          CPrimitives.Int31add
-    | KInt31 Int31PlusC -> int31_binop_from_const Cbytecodes.Kaddcint31
-                                                           CPrimitives.Int31addc
-    | KInt31 Int31PlusCarryC -> int31_binop_from_const Cbytecodes.Kaddcarrycint31
-                                                                CPrimitives.Int31addcarryc
-    | KInt31 Int31Minus -> int31_binop_from_const Cbytecodes.Ksubint31
-                                                           CPrimitives.Int31sub
-    | KInt31 Int31MinusC -> int31_binop_from_const Cbytecodes.Ksubcint31
-                                                            CPrimitives.Int31subc
-    | KInt31 Int31MinusCarryC -> int31_binop_from_const
-                                        Cbytecodes.Ksubcarrycint31 CPrimitives.Int31subcarryc
-    | KInt31 Int31Times -> int31_binop_from_const Cbytecodes.Kmulint31
-                                                           CPrimitives.Int31mul
-    | KInt31 Int31TimesC -> int31_binop_from_const Cbytecodes.Kmulcint31
-                                                           CPrimitives.Int31mulc
-    | KInt31 Int31Div21 -> int31_op_from_const 3 Cbytecodes.Kdiv21int31
-                                                           CPrimitives.Int31div21
-    | KInt31 Int31Diveucl -> int31_binop_from_const Cbytecodes.Kdivint31
-                                                         CPrimitives.Int31diveucl
-    | KInt31 Int31AddMulDiv -> int31_op_from_const 3 Cbytecodes.Kaddmuldivint31
-                                                         CPrimitives.Int31addmuldiv
-    | KInt31 Int31Compare -> int31_binop_from_const Cbytecodes.Kcompareint31
-                                                             CPrimitives.Int31compare
-    | KInt31 Int31Head0 -> int31_unop_from_const Cbytecodes.Khead0int31
-                                                          CPrimitives.Int31head0
-    | KInt31 Int31Tail0 -> int31_unop_from_const Cbytecodes.Ktail0int31
-                                                          CPrimitives.Int31tail0
-    | KInt31 Int31Lor -> int31_binop_from_const Cbytecodes.Klorint31
-                                                         CPrimitives.Int31lor
-    | KInt31 Int31Land -> int31_binop_from_const Cbytecodes.Klandint31
-                                                          CPrimitives.Int31land
-    | KInt31 Int31Lxor -> int31_binop_from_const Cbytecodes.Klxorint31
-                                                          CPrimitives.Int31lxor
-    | _ -> empty_reactive_info
-
-let _ = Hook.set Retroknowledge.dispatch_hook dispatch

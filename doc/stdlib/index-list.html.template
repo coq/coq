@@ -259,7 +259,7 @@ through the <tt>Require Import</tt> command.</p>
     </dd>
 
     <dt> <b>&nbsp;&nbsp;Cyclic</b>:
-       Abstract and 31-bits-based cyclic arithmetic
+       Abstract and 63-bits-based cyclic arithmetic
     </dt>
     <dd>
     theories/Numbers/Cyclic/Abstract/CyclicAxioms.v
@@ -268,11 +268,14 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Cyclic/Int31/Cyclic31.v
     theories/Numbers/Cyclic/Int31/Ring31.v
     theories/Numbers/Cyclic/Int31/Int31.v
+    theories/Numbers/Cyclic/Int63/Cyclic63.v
+    theories/Numbers/Cyclic/Int63/Int63.v
+    theories/Numbers/Cyclic/Int63/Ring63.v
     theories/Numbers/Cyclic/ZModulo/ZModulo.v
     </dd>
 
     <dt> <b>&nbsp;&nbsp;Natural</b>:
-       Abstract and 31-bits-words-based natural arithmetic
+       Abstract and 63-bits-words-based natural arithmetic
     </dt>
     <dd>
     theories/Numbers/Natural/Abstract/NAdd.v
@@ -300,7 +303,7 @@ through the <tt>Require Import</tt> command.</p>
     </dd>
 
     <dt> <b>&nbsp;&nbsp;Integer</b>:
-       Abstract and concrete (especially 31-bits-words-based) integer
+       Abstract and concrete (especially 63-bits-words-based) integer
        arithmetic
     </dt>
     <dd>

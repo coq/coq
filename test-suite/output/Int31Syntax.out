@@ -12,3 +12,5 @@ I31
      : int31
      = 710436486
      : int31
+The command has indeed failed with message:
+Cannot interpret this number as a value of type int31

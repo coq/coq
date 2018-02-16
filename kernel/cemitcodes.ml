@@ -18,6 +18,7 @@ open Vmvalues
 open Cbytecodes
 open Copcodes
 open Mod_subst
+open CPrimitives
 
 type emitcodes = String.t
 
@@ -129,6 +130,8 @@ let out_word env b1 b2 b3 b4 =
 let out env opcode =
   out_word env opcode 0 0 0
 
+let is_immed i = Uint63.le (Uint63.of_int i) Uint63.maxuint31
+
 let out_int env n =
   out_word env n (n asr 8) (n asr 16) (n asr 24)
 
@@ -198,6 +201,39 @@ let slot_for_proj_name env p =
 
 (* Emission of one instruction *)
 
+let nocheck_prim_op = function
+  | Int63add -> opADDINT63
+  | Int63sub -> opSUBINT63
+  | Int63lt  -> opLTINT63
+  | Int63le  -> opLEINT63
+  | _ -> assert false
+
+
+let check_prim_op = function
+  | Int63head0     -> opCHECKHEAD0INT63
+  | Int63tail0     -> opCHECKTAIL0INT63
+  | Int63add       -> opCHECKADDINT63
+  | Int63sub       -> opCHECKSUBINT63
+  | Int63mul       -> opCHECKMULINT63
+  | Int63div       -> opCHECKDIVINT63
+  | Int63mod       -> opCHECKMODINT63
+  | Int63lsr       -> opCHECKLSRINT63
+  | Int63lsl       -> opCHECKLSLINT63
+  | Int63land      -> opCHECKLANDINT63
+  | Int63lor       -> opCHECKLORINT63
+  | Int63lxor      -> opCHECKLXORINT63
+  | Int63addc      -> opCHECKADDCINT63
+  | Int63subc      -> opCHECKSUBCINT63
+  | Int63addCarryC -> opCHECKADDCARRYCINT63
+  | Int63subCarryC -> opCHECKSUBCARRYCINT63
+  | Int63mulc      -> opCHECKMULCINT63
+  | Int63diveucl   -> opCHECKDIVEUCLINT63
+  | Int63div21     -> opCHECKDIV21INT63
+  | Int63addMulDiv -> opCHECKADDMULDIVINT63
+  | Int63eq        -> opCHECKEQINT63
+  | Int63lt        -> opCHECKLTINT63
+  | Int63le        -> opCHECKLEINT63
+  | Int63compare   -> opCHECKCOMPAREINT63
 
 let emit_instr env = function
   | Klabel lbl -> define_label env lbl
@@ -218,7 +254,7 @@ let emit_instr env = function
   | Kpush_retaddr lbl ->
       out env opPUSH_RETADDR; out_label env lbl
   | Kapply n ->
-      if n < 4 then out env(opAPPLY1 + n - 1) else (out env opAPPLY; out_int env n)
+      if n <= 4 then out env(opAPPLY1 + n - 1) else (out env opAPPLY; out_int env n)
   | Kappterm(n, sz) ->
       if n < 4 then (out env(opAPPTERM1 + n - 1); out_int env sz)
                else (out env opAPPTERM; out_int env n; out_int env sz)
@@ -250,7 +286,7 @@ let emit_instr env = function
       Array.iter (out_label_with_orig env org) lbl_bodies
   | Kgetglobal q ->
       out env opGETGLOBAL; slot_for_getglobal env q
-  | Kconst (Const_b0 i) ->
+  | Kconst (Const_b0 i) when is_immed i ->
       if i >= 0 && i <= 3
           then out env (opCONST0 + i)
           else (out env opCONSTINT; out_int env i)
@@ -287,32 +323,20 @@ let emit_instr env = function
   | Ksequence _ -> invalid_arg "Cemitcodes.emit_instr"
   | Kproj p -> out env opPROJ; out_int env (Projection.Repr.arg p); slot_for_proj_name env p
   | Kensurestackcapacity size -> out env opENSURESTACKCAPACITY; out_int env size
-  (* spiwack *)
   | Kbranch lbl -> out env opBRANCH; out_label env lbl
-  | Kaddint31 -> out env opADDINT31
-  | Kaddcint31 -> out env opADDCINT31
-  | Kaddcarrycint31 -> out env opADDCARRYCINT31
-  | Ksubint31 -> out env opSUBINT31
-  | Ksubcint31 -> out env opSUBCINT31
-  | Ksubcarrycint31 -> out env opSUBCARRYCINT31
-  | Kmulint31 -> out env opMULINT31
-  | Kmulcint31 -> out env opMULCINT31
-  | Kdiv21int31 -> out env opDIV21INT31
-  | Kdivint31 -> out env opDIVINT31
-  | Kaddmuldivint31 -> out env opADDMULDIVINT31
-  | Kcompareint31 -> out env opCOMPAREINT31
-  | Khead0int31 -> out env opHEAD0INT31
-  | Ktail0int31 -> out env opTAIL0INT31
-  | Kisconst lbl -> out env opISCONST; out_label env lbl
-  | Kareconst(n,lbl) -> out env opARECONST; out_int env n; out_label env lbl
-  | Kcompint31 -> out env opCOMPINT31
-  | Kdecompint31 -> out env opDECOMPINT31
-  | Klorint31 -> out env opORINT31
-  | Klandint31 -> out env opANDINT31
-  | Klxorint31 -> out env opXORINT31
-  (*/spiwack *)
-  | Kstop ->
-      out env opSTOP
+  | Kprim (op,None) ->
+      out env (nocheck_prim_op op)
+
+  | Kprim(op,Some (q,_u)) ->
+      out env (check_prim_op op);
+      slot_for_getglobal env q
+
+  | Kareint 1 -> out env opISINT
+  | Kareint 2 -> out env opAREINT2;
+
+  | Kstop -> out env opSTOP
+
+  | Kareint _ -> assert false
 
 (* Emission of a current list and remaining lists of instructions. Include some peephole optimization. *)
 
@@ -337,7 +361,7 @@ let rec emit env insns remaining = match insns with
       emit env c remaining
   | Kpush :: Kgetglobal id :: c ->
       out env opPUSHGETGLOBAL; slot_for_getglobal env id; emit env c remaining
-  | Kpush :: Kconst (Const_b0 i) :: c ->
+  | Kpush :: Kconst (Const_b0 i) :: c when is_immed i ->
       if i >= 0 && i <= 3
       then out env (opPUSHCONST0 + i)
       else (out env opPUSHCONSTINT; out_int env i);
@@ -360,7 +384,7 @@ type to_patch = emitcodes * patches * fv
 (* Substitution *)
 let subst_strcst s sc =
   match sc with
-  | Const_sort _ | Const_b0 _ | Const_univ_level _ | Const_val _ -> sc
+  | Const_sort _ | Const_b0 _ | Const_univ_level _ | Const_val _ | Const_uint _ -> sc
   | Const_ind ind -> let kn,i = ind in Const_ind (subst_mind s kn, i)
 
 let subst_reloc s ri =

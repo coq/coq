@@ -178,3 +178,29 @@ let do_assumptions kind nl l =
       in
       subst'@subst, status' && status, next_uctx uctx)
     ([], true, uctx) l)
+
+let do_primitive id prim typopt =
+  if Lib.sections_are_opened () then
+    CErrors.user_err Pp.(str "Declaring a primitive is not allowed in sections.");
+  if Dumpglob.dump () then Dumpglob.dump_definition id false "ax";
+  let env = Global.env () in
+  let evd = Evd.from_env env in
+  let evd, typopt = Option.fold_left_map
+      (interp_type_evars_impls ~impls:empty_internalization_env env)
+      evd typopt
+  in
+  let evd = Evd.minimize_universes evd in
+  let uvars, impls, typopt = match typopt with
+    | None -> Univ.LSet.empty, [], None
+    | Some (ty,impls) ->
+      EConstr.universes_of_constr evd ty, impls, Some (EConstr.to_constr evd ty)
+  in
+  let evd = Evd.restrict_universe_context evd uvars in
+  let uctx = UState.check_mono_univ_decl (Evd.evar_universe_context evd) UState.default_univ_decl in
+  let entry = { prim_entry_type = typopt;
+                prim_entry_univs = uctx;
+                prim_entry_content = prim;
+              }
+  in
+  let _kn = declare_constant id.CAst.v (PrimitiveEntry entry,IsPrimitive) in
+  register_message id.CAst.v

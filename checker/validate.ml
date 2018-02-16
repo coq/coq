@@ -86,6 +86,7 @@ let rec val_gen v ctx o = match v with
   | Annot (s,v) -> val_gen v (ctx/CtxAnnot s) o
   | Dyn -> val_dyn ctx o
   | Proxy { contents = v } -> val_gen v ctx o
+  | Uint63 -> val_uint63 ctx o
 
 (* Check that an object is a tuple (or a record). vs is an array of
    value representation for each field. Its size corresponds to the
@@ -132,6 +133,10 @@ and val_array v ctx o =
   for i = 0 to Obj.size o - 1 do
     val_gen v ctx (Obj.field o i)
   done
+
+and val_uint63 ctx o =
+  if not (Uint63.is_uint63 o) then
+    fail ctx o "not a 63-bit unsigned integer"
 
 let print_frame = function
 | CtxType t -> t

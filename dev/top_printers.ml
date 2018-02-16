@@ -292,6 +292,8 @@ let constr_display csr =
       ^(Array.fold_right (fun x i -> (name_display x)^(if not(i="")
         then (";"^i) else "")) lna "")^","
       ^(array_display bl)^")"
+  | Int i ->
+      "Int("^(Uint63.to_string i)^")"
 
   and array_display v =
     "[|"^
@@ -421,6 +423,8 @@ let print_pure_constr csr =
 	  print_cut();
         done
       in print_string"{"; print_fix (); print_string"}"
+  | Int i ->
+     print_string ("Int("^(Uint63.to_string i)^")")
 
   and box_display c = open_hovbox 1; term_display c; close_box()
 

@@ -107,7 +107,7 @@ let flex_kind_of_term ts env evd c sk =
       Option.cata (fun x -> MaybeFlexible x) Rigid (eval_flexible_term ts env evd c)
     | Lambda _ when not (Option.is_empty (Stack.decomp sk)) -> MaybeFlexible c
     | Evar ev -> Flexible ev
-    | Lambda _ | Prod _ | Sort _ | Ind _ | Construct _ | CoFix _ -> Rigid
+    | Lambda _ | Prod _ | Sort _ | Ind _ | Construct _ | CoFix _ | Int _ -> Rigid
     | Meta _ -> Rigid
     | Fix _ -> Rigid (* happens when the fixpoint is partially applied *)
     | Cast _ | App _ | Case _ -> assert false
@@ -127,7 +127,7 @@ let occur_rigidly (evk,_ as ev) evd t =
   let rec aux t =
     match EConstr.kind evd t with
     | App (f, c) -> if aux f then Array.exists aux c else false
-    | Construct _ | Ind _ | Sort _ | Meta _ | Fix _ | CoFix _ -> true
+    | Construct _ | Ind _ | Sort _ | Meta _ | Fix _ | CoFix _ | Int _ -> true
     | Proj (p, c) -> not (aux c)
     | Evar (evk',_) -> if Evar.equal evk evk' then raise Occur else false
     | Cast (p, _, _) -> aux p
@@ -769,7 +769,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
              only if necessary) or the second argument is potentially
              usable as a canonical projection or canonical value *)
           let rec is_unnamed (hd, args) = match EConstr.kind i hd with
-            | (Var _|Construct _|Ind _|Const _|Prod _|Sort _) ->
+            | (Var _|Construct _|Ind _|Const _|Prod _|Sort _|Int _) ->
 	      Stack.not_purely_applicative args
             | (CoFix _|Meta _|Rel _)-> true
             | Evar _ -> Stack.not_purely_applicative args
@@ -887,8 +887,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 
 	| Const _, Const _
 	| Ind _, Ind _ 
-	| Construct _, Construct _ ->
-	  rigids env evd sk1 term1 sk2 term2
+        | Construct _, Construct _
+        | Int _, Int _ ->
+          rigids env evd sk1 term1 sk2 term2
 
 	| Construct u, _ ->
 	  eta_constructor ts env evd sk1 u sk2 term2
@@ -923,9 +924,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	  |Some (sk1',sk2'), Success i' -> evar_conv_x ts env i' CONV (Stack.zip i' (term1,sk1')) (Stack.zip i' (term2,sk2'))
 	  end
 
-	| (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _), _ ->
-	  UnifFailure (evd,NotSameHead)
-	| _, (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _) ->
+        | (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _ | Int _), _ ->
 	  UnifFailure (evd,NotSameHead)
 
 	| (App _ | Cast _ | Case _ | Proj _), _ -> assert false

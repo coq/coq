@@ -967,6 +967,8 @@ let rec extern inctx (custom,scopes as allscopes) vars r =
   | GCast (c, c') ->
       CCast (sub_extern true scopes vars c,
              map_cast_type (extern_typ scopes vars) c')
+  | GInt i ->
+     CPrim(Numeral (Uint63.to_string i,true))
 
   in insert_coercion coercion (CAst.make ?loc c)
 
@@ -1312,6 +1314,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
           Array.map (fun (_,_,ty) -> ty) v,
           Array.map (fun (_,bd,_) -> bd) v)
   | PSort s -> GSort s
+  | PInt i -> GInt i
 
 let extern_constr_pattern env sigma pat =
   extern true (InConstrEntrySomeLevel,(None,[])) Id.Set.empty (glob_of_pat Id.Set.empty env sigma pat)

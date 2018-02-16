@@ -106,6 +106,7 @@ end
 
 type repr =
 | RInt of int
+| RInt63 of Uint63.t
 | RBlock of (int * int) (* tag × len *)
 | RString of string
 | RPointer of int
@@ -119,6 +120,7 @@ type data =
 
 type obj =
 | Struct of int * data array (* tag × data *)
+| Int63 of Uint63.t (* Primitive integer *)
 | String of string
 
 module type Input =
@@ -255,6 +257,28 @@ let input_header64 chan =
   in
   (tag, len)
 
+let input_cstring chan : string =
+  let buff = Buffer.create 17 in
+  let rec loop () =
+    match input_char chan with
+    | '\o000' -> Buffer.contents buff
+    | c -> Buffer.add_char buff c |> loop
+  in loop ()
+
+let input_intL chan : int64 =
+  let i = input_byte chan in
+  let j = input_byte chan in
+  let k = input_byte chan in
+  let l = input_byte chan in
+  let m = input_byte chan in
+  let n = input_byte chan in
+  let o = input_byte chan in
+  let p = input_byte chan in
+  let ( lsl ) x y = Int64.(shift_left (of_int x) y) in
+  let ( lor ) = Int64.logor in
+  (i lsl 56) lor (j lsl 48) lor (k lsl 40) lor (l lsl 32) lor
+  (m lsl 24) lor (n lsl 16) lor (o lsl 8) lor (Int64.of_int p)
+
 let parse_object chan =
   let data = input_byte chan in
   if prefix_small_block <= data then
@@ -297,6 +321,11 @@ let parse_object chan =
     let addr = input_int32u chan in
     for _i = 0 to 15 do ignore (input_byte chan); done;
     RCode addr
+  | CODE_CUSTOM ->
+    begin match input_cstring chan with
+    | "_j" -> RInt63 (Uint63.of_int64 (input_intL chan))
+    | s -> Printf.eprintf "Unhandled custom code: %s" s; assert false
+    end
   | CODE_DOUBLE_ARRAY32_LITTLE
   | CODE_DOUBLE_BIG
   | CODE_DOUBLE_LITTLE
@@ -304,8 +333,7 @@ let parse_object chan =
   | CODE_DOUBLE_ARRAY8_LITTLE
   | CODE_DOUBLE_ARRAY32_BIG
   | CODE_INFIXPOINTER
-  | CODE_CUSTOM ->
-    Printf.eprintf "Unhandled code %04x\n%!" data; assert false
+    -> Printf.eprintf "Unhandled code %04x\n%!" data; assert false
 
 let parse chan =
   let (magic, len, _, _, size) = parse_header chan in
@@ -336,6 +364,11 @@ let parse chan =
     data, Some nblock
   | RCode addr ->
     let data = Fun addr in
+    data, None
+  | RInt63 i ->
+    let data = Ptr !current_object in
+    let () = LargeArray.set memory !current_object (Int63 i) in
+    let () = incr current_object in
     data, None
   in
 
@@ -400,6 +433,7 @@ let instantiate (p, mem) =
   for i = 0 to len - 1 do
     let obj = match LargeArray.get mem i with
     | Struct (tag, blk) -> Obj.new_block tag (Array.length blk)
+    | Int63 i -> Obj.repr i
     | String str -> Obj.repr str
     in
     LargeArray.set ans i obj
@@ -418,6 +452,7 @@ let instantiate (p, mem) =
       for k = 0 to Array.length blk - 1 do
         Obj.set_field obj k (get_data blk.(k))
       done
+    | Int63 _
     | String _ -> ()
   done;
   get_data p

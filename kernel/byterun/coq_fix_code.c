@@ -36,20 +36,15 @@ void init_arity () {
     arity[PUSHACC6]=arity[PUSHACC7]=arity[ENVACC1]=arity[ENVACC2]=
     arity[ENVACC3]=arity[ENVACC4]=arity[PUSHENVACC1]=arity[PUSHENVACC2]=
     arity[PUSHENVACC3]=arity[PUSHENVACC4]=arity[APPLY1]=arity[APPLY2]=
-    arity[APPLY3]=arity[RESTART]=arity[OFFSETCLOSUREM2]=
+    arity[APPLY3]=arity[APPLY4]=arity[RESTART]=arity[OFFSETCLOSUREM2]=
     arity[OFFSETCLOSURE0]=arity[OFFSETCLOSURE2]=arity[PUSHOFFSETCLOSUREM2]=
     arity[PUSHOFFSETCLOSURE0]=arity[PUSHOFFSETCLOSURE2]=
     arity[GETFIELD0]=arity[GETFIELD1]=arity[SETFIELD0]=arity[SETFIELD1]=
     arity[CONST0]=arity[CONST1]=arity[CONST2]=arity[CONST3]=
     arity[PUSHCONST0]=arity[PUSHCONST1]=arity[PUSHCONST2]=arity[PUSHCONST3]=
     arity[ACCUMULATE]=arity[STOP]=arity[MAKEPROD]= 
-    arity[ADDINT31]=arity[ADDCINT31]=arity[ADDCARRYCINT31]=
-    arity[SUBINT31]=arity[SUBCINT31]=arity[SUBCARRYCINT31]=
-    arity[MULCINT31]=arity[MULINT31]=arity[COMPAREINT31]=
-    arity[DIV21INT31]=arity[DIVINT31]=arity[ADDMULDIVINT31]=
-    arity[HEAD0INT31]=arity[TAIL0INT31]=
-    arity[COMPINT31]=arity[DECOMPINT31]=
-    arity[ORINT31]=arity[ANDINT31]=arity[XORINT31]=0;
+    arity[ADDINT63]=arity[SUBINT63]=arity[LTINT63]=arity[LEINT63]=
+    arity[ISINT]=arity[AREINT2]=0;
   /* instruction with one operand */
   arity[ACC]=arity[PUSHACC]=arity[POP]=arity[ENVACC]=arity[PUSHENVACC]=
     arity[PUSH_RETADDR]=arity[APPLY]=arity[APPTERM1]=arity[APPTERM2]=
@@ -58,10 +53,20 @@ void init_arity () {
     arity[MAKEBLOCK1]=arity[MAKEBLOCK2]=arity[MAKEBLOCK3]=arity[MAKEBLOCK4]=
     arity[MAKEACCU]=arity[CONSTINT]=arity[PUSHCONSTINT]=arity[GRABREC]=
     arity[PUSHFIELDS]=arity[GETFIELD]=arity[SETFIELD]=
-    arity[BRANCH]=arity[ISCONST]=arity[ENSURESTACKCAPACITY]=1;
+    arity[BRANCH]=arity[ENSURESTACKCAPACITY]=
+    arity[CHECKADDINT63]=arity[CHECKADDCINT63]=arity[CHECKADDCARRYCINT63]=
+    arity[CHECKSUBINT63]=arity[CHECKSUBCINT63]=arity[CHECKSUBCARRYCINT63]=
+    arity[CHECKMULINT63]=arity[CHECKMULCINT63]=
+    arity[CHECKDIVINT63]=arity[CHECKMODINT63]=arity[CHECKDIVEUCLINT63]=
+    arity[CHECKDIV21INT63]=
+    arity[CHECKLXORINT63]=arity[CHECKLORINT63]=arity[CHECKLANDINT63]=
+    arity[CHECKLSLINT63]=arity[CHECKLSRINT63]=arity[CHECKADDMULDIVINT63]=
+    arity[CHECKLSLINT63CONST1]=arity[CHECKLSRINT63CONST1]=
+    arity[CHECKEQINT63]=arity[CHECKLTINT63]=arity[CHECKLEINT63]=
+    arity[CHECKCOMPAREINT63]=arity[CHECKHEAD0INT63]=arity[CHECKTAIL0INT63]=1;
   /* instruction with two operands */
   arity[APPTERM]=arity[MAKEBLOCK]=arity[CLOSURE]=
-  arity[ARECONST]=arity[PROJ]=2;
+  arity[PROJ]=2;
   /* instruction with four operands */ 
   arity[MAKESWITCHBLOCK]=4;
   /* instruction with arbitrary operands */

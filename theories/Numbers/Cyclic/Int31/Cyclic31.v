@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(** This library has been deprecated since Coq version 8.10. *)
+
 (** * Int31 numbers defines indeed a cyclic structure : Z/(2^31)Z *)
 
 (**
@@ -1274,7 +1276,7 @@ Section Int31_Specs.
  Qed.
 
  Lemma spec_add_carry :
-	 forall x y, [|x+y+1|] = ([|x|] + [|y|] + 1) mod wB.
+         forall x y, [|x+y+1|] = ([|x|] + [|y|] + 1) mod wB.
  Proof.
  unfold add31; intros.
  repeat rewrite phi_phi_inv.
@@ -1776,7 +1778,7 @@ Section Int31_Specs.
  Qed.
 
  Lemma spec_head0  : forall x,  0 < [|x|] ->
-	 wB/ 2 <= 2 ^ ([|head031 x|]) * [|x|] < wB.
+         wB/ 2 <= 2 ^ ([|head031 x|]) * [|x|] < wB.
  Proof.
  intros.
  rewrite head031_equiv.

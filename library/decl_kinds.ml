@@ -70,6 +70,7 @@ type goal_kind = locality * polymorphic * goal_object_kind
 (** Kinds used in library *)
 
 type logical_kind =
+  | IsPrimitive
   | IsAssumption of assumption_object_kind
   | IsDefinition of definition_object_kind
   | IsProof of theorem_kind

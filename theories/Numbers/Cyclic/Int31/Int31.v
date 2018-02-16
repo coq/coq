@@ -10,6 +10,8 @@
 (*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
 (************************************************************************)
 
+(** This library has been deprecated since Coq version 8.10. *)
+
 Require Import NaryFunctions.
 Require Import Wf_nat.
 Require Export ZArith.
@@ -44,18 +46,11 @@ Definition digits31 t := Eval compute in nfun digits size t.
 
 Inductive int31 : Type := I31 : digits31 int31.
 
-(* spiwack: Registration of the type of integers, so that the matchs in
-   the functions below perform dynamic decompilation (otherwise some segfault
-   occur when they are applied to one non-closed term and one closed term). *)
-Register digits as int31.bits.
-Register int31 as int31.type.
-
 Scheme int31_ind := Induction for int31 Sort Prop.
 Scheme int31_rec := Induction for int31 Sort Set.
 Scheme int31_rect := Induction for int31 Sort Type.
 
 Declare Scope int31_scope.
-Declare ML Module "int31_syntax_plugin".
 Delimit Scope int31_scope with int31.
 Bind Scope int31_scope with int31.
 Local Open Scope int31_scope.
@@ -208,6 +203,13 @@ Definition phi_inv : Z -> int31 := fun n =>
  | Zneg p => incr (complement_negative p)
  end.
 
+(** [phi_inv_nonneg] returns [None] if the [Z] is negative; this matches the old behavior of parsing int31 numerals *)
+Definition phi_inv_nonneg : Z -> option int31 := fun n =>
+ match n with
+ | Zneg _ => None
+ | _ => Some (phi_inv n)
+ end.
+
 (** [phi_inv2] is similar to [phi_inv] but returns a double word
     [zn2z int31] *)
 
@@ -351,22 +353,6 @@ Definition lor31 n m := phi_inv (Z.lor (phi n) (phi m)).
 Definition land31 n m := phi_inv (Z.land (phi n) (phi m)).
 Definition lxor31 n m := phi_inv (Z.lxor (phi n) (phi m)).
 
-Register add31 as int31.plus.
-Register add31c as int31.plusc.
-Register add31carryc as int31.pluscarryc.
-Register sub31 as int31.minus.
-Register sub31c as int31.minusc.
-Register sub31carryc as int31.minuscarryc.
-Register mul31 as int31.times.
-Register mul31c as int31.timesc.
-Register div3121 as int31.div21.
-Register div31 as int31.diveucl.
-Register compare31 as int31.compare.
-Register addmuldiv31 as int31.addmuldiv.
-Register lor31 as int31.lor.
-Register land31 as int31.land.
-Register lxor31 as int31.lxor.
-
 Definition lnot31 n := lxor31 Tn n.
 Definition ldiff31 n m := land31 n (lnot31 m).
 
@@ -491,5 +477,4 @@ Definition tail031 (i:int31) :=
     end)
    i On.
 
-Register head031 as int31.head0.
-Register tail031 as int31.tail0.
+Numeral Notation int31 phi_inv_nonneg phi : int31_scope.

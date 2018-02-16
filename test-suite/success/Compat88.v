@@ -4,7 +4,7 @@
 Require Coq.Strings.Ascii Coq.Strings.String.
 Require Coq.ZArith.BinIntDef Coq.PArith.BinPosDef Coq.NArith.BinNatDef.
 Require Coq.Reals.Rdefinitions.
-Require Coq.Numbers.Cyclic.Int31.Cyclic31.
+Require Coq.Numbers.Cyclic.Int63.Cyclic63.
 
 Require Import Coq.Compat.Coq88. (* XXX FIXME Should not need [Require], see https://github.com/coq/coq/issues/8311 *)
 
@@ -15,4 +15,4 @@ Check BinNat.N.eqb 1 1.
 Check BinInt.Z.eqb 1 1.
 Check BinPos.Pos.eqb 1 1.
 Check Rdefinitions.Rplus 1 1.
-Check Int31.iszero 1.
+Check Int63.is_zero 1.

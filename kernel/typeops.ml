@@ -12,7 +12,7 @@ open CErrors
 open Util
 open Names
 open Univ
-open Sorts
+open Term
 open Constr
 open Vars
 open Declarations
@@ -186,6 +186,74 @@ let type_of_apply env func funt argsv argstv =
           (make_judgev argsv argstv)
   in
   apply_rec 0 (inject funt)
+
+(* Type of primitive constructs *)
+let type_of_prim_type _env = function
+  | CPrimitives.PT_int63 -> Constr.mkSet
+
+let type_of_int env =
+  match env.retroknowledge.Retroknowledge.retro_int63 with
+  | Some c -> mkConst c
+  | None -> CErrors.user_err Pp.(str"The type int must be registered before this construction can be typechecked.")
+
+let type_of_prim env t =
+  let int_ty = type_of_int env in
+  let bool_ty () =
+    match env.retroknowledge.Retroknowledge.retro_bool with
+    | Some ((ind,_),_) -> Constr.mkInd ind
+    | None -> CErrors.user_err Pp.(str"The type bool must be registered before this primitive.")
+  in
+  let compare_ty () =
+    match env.retroknowledge.Retroknowledge.retro_cmp with
+    | Some ((ind,_),_,_) -> Constr.mkInd ind
+    | None -> CErrors.user_err Pp.(str"The type compare must be registered before this primitive.")
+  in
+  let pair_ty fst_ty snd_ty =
+    match env.retroknowledge.Retroknowledge.retro_pair with
+    | Some (ind,_) -> Constr.mkApp(Constr.mkInd ind, [|fst_ty;snd_ty|])
+    | None -> CErrors.user_err Pp.(str"The type pair must be registered before this primitive.")
+  in
+  let carry_ty int_ty =
+    match env.retroknowledge.Retroknowledge.retro_carry with
+    | Some ((ind,_),_) -> Constr.mkApp(Constr.mkInd ind, [|int_ty|])
+    | None -> CErrors.user_err Pp.(str"The type carry must be registered before this primitive.")
+  in
+  let rec nary_int63_op arity ty =
+    if Int.equal arity 0 then ty
+      else Constr.mkProd(Name (Id.of_string "x"), int_ty, nary_int63_op (arity-1) ty)
+  in
+  let return_ty =
+    let open CPrimitives in
+    match t with
+    | Int63head0
+    | Int63tail0
+    | Int63add
+    | Int63sub
+    | Int63mul
+    | Int63div
+    | Int63mod
+    | Int63lsr
+    | Int63lsl
+    | Int63land
+    | Int63lor
+    | Int63lxor
+    | Int63addMulDiv -> int_ty
+    | Int63eq
+    | Int63lt
+    | Int63le -> bool_ty ()
+    | Int63mulc
+    | Int63div21
+    | Int63diveucl -> pair_ty int_ty int_ty
+    | Int63addc
+    | Int63subc
+    | Int63addCarryC
+    | Int63subCarryC -> carry_ty int_ty
+    | Int63compare -> compare_ty ()
+  in
+  nary_int63_op (CPrimitives.arity t) return_ty
+
+let judge_of_int env i =
+  make_judge (Constr.mkInt i) (type_of_int env)
 
 (* Type of product *)
 
@@ -468,6 +536,9 @@ let rec execute env cstr =
       let (fix_ty,recdef') = execute_recdef env recdef i in
       let cofix = (i,recdef') in
         check_cofix env cofix; fix_ty
+
+    (* Primitive types *)
+    | Int _ -> type_of_int env
 	  
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->
@@ -590,3 +661,20 @@ let judge_of_case env ci pj cj lfj =
   let lf, lft = dest_judgev lfj in
   make_judge (mkCase (ci, (*nf_betaiota*) pj.uj_val, cj.uj_val, lft))
              (type_of_case env ci pj.uj_val pj.uj_type cj.uj_val cj.uj_type lf lft)
+
+(* Building type of primitive operators and type *)
+
+open CPrimitives
+
+let check_primitive_type env op_t t =
+  match op_t with
+  | OT_type PT_int63 ->
+    (try
+      default_conv ~l2r:false CUMUL env mkSet t
+    with NotConvertible ->
+      CErrors.user_err Pp.(str"Was expecting the sort of this primitive type to be Set"))
+  | OT_op p ->
+    (try
+      default_conv ~l2r:false CUMUL env (type_of_prim env p) t
+    with NotConvertible ->
+      CErrors.user_err Pp.(str"Not the expected type for this primitive"))

@@ -1,0 +1,24 @@
+     = 0
+     : uint
+     = 1
+     : uint
+     = 9223372036854775807
+     : uint
+let v := 0 in v : uint
+     : uint
+let v := 1 in v : uint
+     : uint
+let v := 9223372036854775807 in v : uint
+     : uint
+     = 0
+     : sint
+     = 1
+     : sint
+     = -1
+     : sint
+let v := 0 in v : sint
+     : sint
+let v := 1 in v : sint
+     : sint
+let v := -1 in v : sint
+     : sint

@@ -312,7 +312,8 @@ let iter_constr_LR f c = match kind c with
   | Fix (_, (_, t, b)) | CoFix (_, (_, t, b)) ->
     for i = 0 to Array.length t - 1 do f t.(i); f b.(i) done
   | Proj(_,a) -> f a
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _) -> ()
+  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _
+     | Int _) -> ()
 
 (* The comparison used to determine which subterms matches is KEYED        *)
 (* CONVERSION. This looks for convertible terms that either have the same  *)
