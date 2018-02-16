@@ -132,3 +132,8 @@ val profile_ltac_cutoff : float ref
 val dump_bytecode : bool ref
 val set_dump_bytecode : bool -> unit
 val get_dump_bytecode : unit -> bool
+
+(** Dump the VM lambda code after compilation (for debugging purposes) *)
+val dump_lambda : bool ref
+val set_dump_lambda : bool -> unit
+val get_dump_lambda : unit -> bool

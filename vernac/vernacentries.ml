@@ -1466,6 +1466,14 @@ let _ =
 let _ =
   declare_bool_option
     { optdepr  = false;
+      optname  = "dumping VM lambda code after compilation";
+      optkey   = ["Dump";"Lambda"];
+      optread  = Flags.get_dump_lambda;
+      optwrite = Flags.set_dump_lambda }
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
       optname  = "explicitly parsing implicit arguments";
       optkey   = ["Parsing";"Explicit"];
       optread  = (fun () -> !Constrintern.parsing_explicit);

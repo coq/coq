@@ -468,7 +468,7 @@ type unsafe_type_judgment = types punsafe_type_judgment
 
 (*s Compilation of global declaration *)
 
-let compile_constant_body = Cbytegen.compile_constant_body false
+let compile_constant_body = Cbytegen.compile_constant_body ~fail_on_error:false
 
 exception Hyp_not_found
 
@@ -560,7 +560,7 @@ let dispatch =
      it to the name of the coq definition in the reactive retroknowledge) *)
   let int31_op n op prim kn =
     { empty_reactive_info with
-      vm_compiling = Some (Cbytegen.op_compilation n op kn);
+      vm_compiling = Some (Clambda.compile_prim n op kn);
       native_compiling = Some (Nativelambda.compile_prim prim (Univ.out_punivs kn));
     }
   in
@@ -599,13 +599,13 @@ fun rk value field ->
         in
         { empty_reactive_info with
           vm_decompile_const = Some int31_decompilation;
-          vm_before_match = Some Cbytegen.int31_escape_before_match;
+          vm_before_match = Some Clambda.int31_escape_before_match;
           native_before_match = Some (Nativelambda.before_match_int31 i31bit_type);
         }
     | KInt31 (_, Int31Constructor) ->
         { empty_reactive_info with
-          vm_constant_static = Some Cbytegen.compile_structured_int31;
-          vm_constant_dynamic = Some Cbytegen.dynamic_int31_compilation;
+          vm_constant_static = Some Clambda.compile_structured_int31;
+          vm_constant_dynamic = Some Clambda.dynamic_int31_compilation;
           native_constant_static = Some Nativelambda.compile_static_int31;
           native_constant_dynamic = Some Nativelambda.compile_dynamic_int31;
         }

@@ -82,9 +82,8 @@ val initial_retroknowledge : retroknowledge
    and the continuation cont of the bytecode compilation
    returns the compilation of id in cont if it has a specific treatment
    or raises Not_found if id should be compiled as usual *)
-val get_vm_compiling_info  : retroknowledge -> entry -> Cbytecodes.comp_env ->
-                             constr array ->
-                             int -> Cbytecodes.bytecodes-> Cbytecodes.bytecodes
+val get_vm_compiling_info  : retroknowledge -> entry ->
+                             Cinstr.lambda array -> Cinstr.lambda
 (*Given an identifier id (usually Construct _)
    and its argument array, returns a function that tries an ad-hoc optimisated
    compilation (in the case of the 31-bit integers it means compiling them
@@ -93,8 +92,7 @@ val get_vm_compiling_info  : retroknowledge -> entry -> Cbytecodes.comp_env ->
    CBytecodes.NotClosed if the term is not a closed constructor pattern
    (a constant for the compiler) *)
 val get_vm_constant_static_info : retroknowledge -> entry ->
-                                   constr array ->
-                                   Cbytecodes.structured_constant
+                                   constr array -> Cinstr.lambda
 
 (*Given an identifier id (usually Construct _ )
    its argument array and a continuation, returns the compiled version
@@ -102,16 +100,14 @@ val get_vm_constant_static_info : retroknowledge -> entry ->
    31-bit integers, that would be the dynamic compilation into integers)
    or raises Not_found if id should be compiled as usual *)
 val get_vm_constant_dynamic_info : retroknowledge -> entry ->
-                                Cbytecodes.comp_env ->
-                                Cbytecodes.block array ->
-                                int -> Cbytecodes.bytecodes -> Cbytecodes.bytecodes
+                                   Cinstr.lambda array -> Cinstr.lambda
 
 (** Given a type identifier, this function is used before compiling a match
    over this type. In the case of 31-bit integers for instance, it is used
    to add the instruction sequence which would perform a dynamic decompilation
    in case the argument of the match is not in coq representation *)
-val get_vm_before_match_info : retroknowledge -> entry -> Cbytecodes.bytecodes
-                                                       -> Cbytecodes.bytecodes
+val get_vm_before_match_info : retroknowledge -> entry -> Cinstr.lambda
+                                                       -> Cinstr.lambda
 
 (** Given a type identifier, this function is used by pretyping/vnorm.ml to
    recover the elements of that type from their compiled form if it's non
@@ -148,20 +144,18 @@ val find : retroknowledge -> field -> entry
 type reactive_info = {(*information required by the compiler of the VM *)
   vm_compiling :
       (*fastcomputation flag -> continuation -> result *)
-      (bool->Cbytecodes.comp_env->constr array ->
-       int->Cbytecodes.bytecodes->Cbytecodes.bytecodes)
+      (bool -> Cinstr.lambda array -> Cinstr.lambda)
       option;
   vm_constant_static :
       (*fastcomputation flag -> constructor -> args -> result*)
-      (bool->constr array->Cbytecodes.structured_constant)
+      (bool -> constr array -> Cinstr.lambda)
       option;
   vm_constant_dynamic :
       (*fastcomputation flag -> constructor -> reloc -> args -> sz -> cont -> result *)
-      (bool->Cbytecodes.comp_env->Cbytecodes.block array->int->
-         Cbytecodes.bytecodes->Cbytecodes.bytecodes)
+      (bool -> Cinstr.lambda array -> Cinstr.lambda)
       option;
   (* fastcomputation flag -> cont -> result *)
-  vm_before_match : (bool -> Cbytecodes.bytecodes -> Cbytecodes.bytecodes) option;
+  vm_before_match : (bool -> Cinstr.lambda -> Cinstr.lambda) option;
   (* tag (= compiled int for instance) -> result *)
   vm_decompile_const : (int -> constr) option;
 

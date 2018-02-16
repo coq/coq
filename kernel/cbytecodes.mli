@@ -171,14 +171,3 @@ type comp_env = {
 
 val pp_bytecodes : bytecodes -> Pp.t
 val pp_fv_elem : fv_elem -> Pp.t
-
-(*spiwack: moved this here because I needed it for retroknowledge *)
-type block =
-  | Bconstr of constr
-  | Bstrconst of structured_constant
-  | Bmakeblock of int * block array
-  | Bconstruct_app of int * int * int * block array
-                  (** tag , nparams, arity *)
-  | Bspecial of (comp_env -> block array -> int -> bytecodes -> bytecodes) * block array
-                (** compilation function (see get_vm_constant_dynamic_info in
-                   retroknowledge.mli for more info) , argument array  *)

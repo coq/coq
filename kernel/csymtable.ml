@@ -164,7 +164,7 @@ and eval_to_patch env (buff,pl,fv) =
   eval_tcode tc vm_env
 
 and val_of_constr env c =
-  match compile true env c with
+  match compile ~fail_on_error:true env c with
   | Some v -> eval_to_patch env (to_memory v)
   | None -> assert false
 
