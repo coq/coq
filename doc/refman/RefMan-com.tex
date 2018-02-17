@@ -241,6 +241,20 @@ The following command-line options are recognized by the commands {\tt
   Collapse the universe hierarchy of {\Coq}. Warning: this makes the
   logic inconsistent.
 
+\item[{\tt -mangle-names} {\em ident}]\ %
+
+  Experimental: Do not depend on this option.
+
+  Replace Coq's auto-generated name scheme with names of the form
+  {\tt ident0}, {\tt ident1}, \ldots etc.
+  The command {\tt Set Mangle Names}\optindex{Mangle Names} turns
+  the behavior on in a document, and {\tt Set Mangle Names Prefix "ident"}
+  \optindex{Mangle Names Prefix} changes the used prefix.
+
+  This feature is intended to be used as a linter for developments that want
+  to be robust to changes in the auto-generated name scheme. The options are
+  provided to facilitate tracking down problems.
+
 \item[{\tt -compat} {\em version}]\ %
 
   Attempt to maintain some backward-compatibility with a previous version.

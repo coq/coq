@@ -74,6 +74,13 @@ Universes
 - Fix #5726: Notations that start with `Type` now support universe instances
   with `@{u}`.
 
+Tools
+
+- Coq can now be run with the option -mangle-names to change the auto-generated
+  name scheme. This is intended to function as a linter for developments that
+  want to be robust to changes in auto-generated names. This feature is experimental,
+  and may change or dissapear without warning.
+
 Checker
 
 - The checker now accepts filenames in addition to logical paths.

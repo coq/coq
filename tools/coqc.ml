@@ -109,7 +109,7 @@ let parse_args () =
       |"-load-ml-source"|"-require"|"-load-ml-object"
       |"-init-file"|"-dump-glob"|"-compat"|"-coqlib"|"-top"
       |"-async-proofs-j" |"-async-proofs-private-flags" |"-async-proofs" |"-w"
-      |"-o"|"-profile-ltac-cutoff"
+      |"-o"|"-profile-ltac-cutoff"|"-mangle-names"
       as o) :: rem ->
 	begin
 	  match rem with

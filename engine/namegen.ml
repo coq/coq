@@ -190,9 +190,45 @@ let it_mkLambda_or_LetIn_name env sigma b hyps =
 (**********************************************************************)
 (* Fresh names *)
 
+(* Introduce a mode where auto-generated names are mangled
+   to test dependence of scripts on auto-generated names *)
+
+let mangle_names = ref false
+
+let _ = Goptions.(
+    declare_bool_option
+      { optdepr  = false;
+        optname  = "mangle auto-generated names";
+        optkey   = ["Mangle";"Names"];
+        optread  = (fun () -> !mangle_names);
+        optwrite = (:=) mangle_names; })
+
+let mangle_names_prefix = ref (Id.of_string "_0")
+let set_prefix x = mangle_names_prefix := forget_subscript x
+
+let set_mangle_names_mode x = begin
+    set_prefix x;
+    mangle_names := true
+  end
+
+let _ = Goptions.(
+    declare_string_option
+      { optdepr  = false;
+        optname  = "mangled names prefix";
+        optkey   = ["Mangle";"Names";"Prefix"];
+        optread  = (fun () -> Id.to_string !mangle_names_prefix);
+        optwrite = begin fun x ->
+                   set_prefix
+                     (try Id.of_string x
+                      with CErrors.UserError _ -> CErrors.user_err Pp.(str ("Not a valid identifier: \"" ^ x ^ "\".")))
+                   end })
+
+let mangle_id id = if !mangle_names then !mangle_names_prefix else id
+
 (* Looks for next "good" name by lifting subscript *)
 
 let next_ident_away_from id bad =
+  let id = mangle_id id in
   let rec name_rec id = if bad id then name_rec (increment_subscript id) else id in
   name_rec id
 
@@ -291,6 +327,7 @@ let next_global_ident_away id avoid =
    looks for same name with lower available subscript *)
 
 let next_ident_away id avoid =
+  let id = mangle_id id in
   if Id.Set.mem id avoid then
     next_ident_away_from (restart_subscript id) (fun id -> Id.Set.mem id avoid)
   else id
