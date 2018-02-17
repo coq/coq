@@ -1010,6 +1010,15 @@ module Unsafe = struct
 
   let tclSETGOALS = Comb.set
 
+  let tclGETSHELF = Shelf.get
+
+  let tclSETSHELF = Shelf.set
+
+  let tclPUTSHELF to_shelve =
+    tclBIND tclGETSHELF (fun shelf -> tclSETSHELF (to_shelve@shelf))
+
+  let tclPUTGIVENUP = Giveup.put
+
   let tclEVARSADVANCE evd =
     Pv.modify (fun ps -> { ps with solution = evd; comb = undefined evd ps.comb })
 

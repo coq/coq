@@ -435,6 +435,18 @@ module Unsafe : sig
   (** [tclGETGOALS] returns the list of goals under focus. *)
   val tclGETGOALS : Proofview_monad.goal_with_state list tactic
 
+  (** [tclSETSHELF gls] sets goals [gls] as the current shelf. *)
+  val tclSETSHELF : Evar.t list -> unit tactic
+
+  (** [tclGETSHELF] returns the list of goals on the shelf. *)
+  val tclGETSHELF : Evar.t list tactic
+
+  (** [tclPUTSHELF] appends goals to the shelf. *)
+  val tclPUTSHELF : Evar.t list -> unit tactic
+
+  (** [tclPUTGIVENUP] add an given up goal. *)
+  val tclPUTGIVENUP : Evar.t list -> unit tactic
+
   (** Sets the evar universe context. *)
   val tclEVARUNIVCONTEXT : UState.t -> unit tactic
 
