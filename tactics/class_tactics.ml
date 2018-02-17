@@ -973,6 +973,8 @@ module Search = struct
          let (), pv', (unsafe, shelved, gaveup), _ =
            Proofview.apply env tac pv
          in
+         if not (List.is_empty gaveup) then
+           CErrors.anomaly (Pp.str "run_on_evars not assumed to apply tactics generating given up goals.");
          if Proofview.finished pv' then
            let evm' = Proofview.return pv' in
            assert(Evd.fold_undefined (fun ev _ acc ->
