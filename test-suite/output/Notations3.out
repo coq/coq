@@ -33,24 +33,24 @@ fun f : forall x : nat * (bool * unit), ?T => CURRY (x : nat) (y : bool), f
      : (forall x : nat * (bool * unit), ?T) ->
        forall (x : nat) (y : bool), ?T@{x:=(x, (y, tt))}
 where
-?T : [x : nat * (bool * unit) |- Type] 
+?T : [x : nat * (bool * unit) |- Type]
 fun f : forall x : bool * (nat * unit), ?T =>
 CURRYINV (x : nat) (y : bool), f
      : (forall x : bool * (nat * unit), ?T) ->
        forall (x : nat) (y : bool), ?T@{x:=(y, (x, tt))}
 where
-?T : [x : bool * (nat * unit) |- Type] 
+?T : [x : bool * (nat * unit) |- Type]
 fun f : forall x : unit * nat * bool, ?T => CURRYLEFT (x : nat) (y : bool), f
      : (forall x : unit * nat * bool, ?T) ->
        forall (x : nat) (y : bool), ?T@{x:=(tt, x, y)}
 where
-?T : [x : unit * nat * bool |- Type] 
+?T : [x : unit * nat * bool |- Type]
 fun f : forall x : unit * bool * nat, ?T =>
 CURRYINVLEFT (x : nat) (y : bool), f
      : (forall x : unit * bool * nat, ?T) ->
        forall (x : nat) (y : bool), ?T@{x:=(tt, y, x)}
 where
-?T : [x : unit * bool * nat |- Type] 
+?T : [x : unit * bool * nat |- Type]
 forall n : nat, {#n | 1 > n}
      : Prop
 forall x : nat, {|x | x > 0|}
