@@ -358,9 +358,7 @@ type ('ty,'a) functorize =
     and won't play any role into the kernel after that : they are kept
     only for short module printing and for extraction. *)
 
-type with_declaration =
-  | WithMod of Id.t list * ModPath.t
-  | WithDef of Id.t list * (constr * Univ.universe_context)
+type with_declaration
 
 type module_alg_expr =
   | MEident of ModPath.t

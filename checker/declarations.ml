@@ -573,14 +573,10 @@ let implem_map fs fa = function
   | Algebraic a -> Algebraic (fa a)
   | impl -> impl
 
-let subst_with_body sub = function
-  | WithMod(id,mp) -> WithMod(id,subst_mp sub mp)
-  | WithDef(id,(c,ctx)) -> WithDef(id,(subst_mps sub c,ctx))
-
 let rec subst_expr sub = function
   | MEident mp -> MEident (subst_mp sub mp)
   | MEapply (me1,mp2)-> MEapply (subst_expr sub me1, subst_mp sub mp2)
-  | MEwith (me,wd)-> MEwith (subst_expr sub me, subst_with_body sub wd)
+  | MEwith (me,wd)-> MEwith (subst_expr sub me, wd)
 
 let rec subst_expression sub me =
   functor_map (subst_module_type sub) (subst_expr sub) me

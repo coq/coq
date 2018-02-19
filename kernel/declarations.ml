@@ -219,7 +219,7 @@ type ('ty,'a) functorize =
 
 type with_declaration =
   | WithMod of Id.t list * ModPath.t
-  | WithDef of Id.t list * constr Univ.in_universe_context
+  | WithDef of Id.t list * (constr * Univ.AUContext.t option)
 
 type module_alg_expr =
   | MEident of ModPath.t
