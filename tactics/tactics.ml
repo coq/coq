@@ -2157,11 +2157,11 @@ let keep hyps =
    and [a1..an:A1..An(a1..an-1)] such that the goal is [G(a1..an)],
    this generalizes [hyps |- goal] into [hyps |- T] *)
 
-let apply_type newcl args =
+let apply_type ~typecheck newcl args =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let store = Proofview.Goal.extra gl in
-    Refine.refine ~typecheck:false begin fun sigma ->
+    Refine.refine ~typecheck begin fun sigma ->
       let newcl = nf_betaiota env sigma newcl (* As in former Logic.refine *) in
       let (sigma, ev) =
         Evarutil.new_evar env sigma ~principal:true ~store newcl in
@@ -2893,7 +2893,7 @@ let generalize_dep ?(with_let=false) c =
   let args = Context.Named.to_instance mkVar to_quantify_rev in
   tclTHENLIST
     [ Proofview.Unsafe.tclEVARS evd;
-      apply_type cl'' (if Option.is_empty body then c::args else args);
+      apply_type ~typecheck:false cl'' (if Option.is_empty body then c::args else args);
       clear (List.rev tothin')]
   end
 
@@ -2907,7 +2907,7 @@ let generalize_gen_let lconstr = Proofview.Goal.enter begin fun gl ->
   let (evd, _) = Typing.type_of env evd newcl in
   let map ((_, c, b),_) = if Option.is_empty b then Some c else None in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd)
-  (apply_type newcl (List.map_filter map lconstr))
+  (apply_type ~typecheck:false newcl (List.map_filter map lconstr))
 end
 
 let new_generalize_gen_let lconstr =
@@ -4282,7 +4282,7 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
     (if isrec then Tacticals.New.tclTHENFIRSTn else Tacticals.New.tclTHENLASTn)
       (Tacticals.New.tclTHENLIST [
         (* Generalize dependent hyps (but not args) *)
-        if deps = [] then Proofview.tclUNIT () else apply_type tmpcl deps_cstr;
+        if deps = [] then Proofview.tclUNIT () else apply_type ~typecheck:false tmpcl deps_cstr;
         (* side-conditions in elim (resp case) schemes come last (resp first) *)
         induct_tac elim;
         Tacticals.New.tclMAP expand_hyp toclear;
