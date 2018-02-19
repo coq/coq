@@ -155,23 +155,21 @@ let exe s = s ^ Coq_config.exec_extension
 
 let ocamlfind () = Coq_config.ocamlfind
 
-(** {2 Camlp4 paths} *)
+(** {2 Camlp5 paths} *)
 
-let guess_camlp4bin () = which (user_path ()) (exe Coq_config.camlp4)
+let guess_camlp5bin () = which (user_path ()) (exe "camlp5")
 
-let camlp4bin () =
-  if !Flags.boot then Coq_config.camlp4bin else
-    try guess_camlp4bin ()
+let camlp5bin () =
+  if !Flags.boot then Coq_config.camlp5bin else
+    try guess_camlp5bin ()
     with Not_found ->
-      Coq_config.camlp4bin
+      Coq_config.camlp5bin
 
-let camlp4 () = camlp4bin () / exe Coq_config.camlp4
-
-let camlp4lib () =
+let camlp5lib () =
   if !Flags.boot then
-    Coq_config.camlp4lib
+    Coq_config.camlp5lib
   else
-    let ex, res = CUnix.run_command (ocamlfind () ^ " query " ^ Coq_config.camlp4) in
+    let ex, res = CUnix.run_command (ocamlfind () ^ " query camlp5") in
     match ex with
       | Unix.WEXITED 0 -> String.strip res
       | _ -> "/dev/null"
@@ -206,11 +204,10 @@ let print_config ?(prefix_var_name="") f coq_src_subdirs =
   fprintf f "%sCOQLIB=%s/\n" prefix_var_name (coqlib ());
   fprintf f "%sDOCDIR=%s/\n" prefix_var_name (docdir ());
   fprintf f "%sOCAMLFIND=%s\n" prefix_var_name (ocamlfind ());
-  fprintf f "%sCAMLP4=%s\n" prefix_var_name Coq_config.camlp4;
-  fprintf f "%sCAMLP4O=%s\n" prefix_var_name Coq_config.camlp4o;
-  fprintf f "%sCAMLP4BIN=%s/\n" prefix_var_name (camlp4bin ());
-  fprintf f "%sCAMLP4LIB=%s\n" prefix_var_name (camlp4lib ());
-  fprintf f "%sCAMLP4OPTIONS=%s\n" prefix_var_name Coq_config.camlp4compat;
+  fprintf f "%sCAMLP5O=%s\n" prefix_var_name Coq_config.camlp5o;
+  fprintf f "%sCAMLP5BIN=%s/\n" prefix_var_name (camlp5bin ());
+  fprintf f "%sCAMLP5LIB=%s\n" prefix_var_name (camlp5lib ());
+  fprintf f "%sCAMLP5OPTIONS=%s\n" prefix_var_name Coq_config.camlp5compat;
   fprintf f "%sCAMLFLAGS=%s\n" prefix_var_name Coq_config.caml_flags;
   fprintf f "%sHASNATDYNLINK=%s\n" prefix_var_name
     (if Coq_config.has_natdynlink then "true" else "false");

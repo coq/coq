@@ -25,7 +25,7 @@ intf :
 
 grammar :
 
- Camlp4 syntax extensions. The file grammar/grammar.cma is used
+ Camlp5 syntax extensions. The file grammar/grammar.cma is used
  to pre-process .ml4 files containing EXTEND constructions,
  either TACTIC EXTEND, ARGUMENTS EXTEND or VERNAC ... EXTEND.
  This grammar.cma incorporates many files from other directories

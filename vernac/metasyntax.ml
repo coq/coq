@@ -606,8 +606,8 @@ let distribute a ll = List.map (fun l -> a @ l) ll
      t;sep;t;...;t;sep;t;...;t;sep;t;LIST1(t,sep) *)
 
 let expand_list_rule typ tkl x n p ll =
-  let camlp4_message_name = Some (add_suffix x ("_"^string_of_int n)) in
-  let main = GramConstrNonTerminal (ETConstr typ, camlp4_message_name) in
+  let camlp5_message_name = Some (add_suffix x ("_"^string_of_int n)) in
+  let main = GramConstrNonTerminal (ETConstr typ, camlp5_message_name) in
   let tks = List.map (fun x -> GramConstrTerminal x) tkl in
   let rec aux i hds ll =
   if i < p then aux (i+1) (main :: tks @ hds) ll

@@ -1,4 +1,4 @@
-source camlp4.dbg
+source camlp5.dbg
 load_printer threads.cma
 load_printer str.cma
 load_printer clib.cma

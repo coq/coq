@@ -7,7 +7,7 @@
 (***********************************************************************)
 
 (** Some excerpts of Util and similar files to avoid depending on them
-    and hence on Compat and Camlp4 *)
+    and hence on Compat and Camlp5 *)
 
 val print_list : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a list -> unit
 

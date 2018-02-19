@@ -3,19 +3,19 @@
 # Wrapper around ocamldebug for Coq
 
 # This file is to be launched via the generated script ocamldebug-coq,
-# which will set the env variables $OCAMLDEBUG, $CAMLP4LIB, $COQTOP
+# which will set the env variables $OCAMLDEBUG, $CAMLP5LIB, $COQTOP
 # Anyway, just in case someone tries to use this script directly,
 # here are some reasonable default values
 
 [ -z "$OCAMLDEBUG" ] && OCAMLDEBUG=ocamldebug
-[ -z "$CAMLP4LIB" ] && CAMLP4LIB=+camlp5
+[ -z "$CAMLP5LIB" ] && CAMLP5LIB=+camlp5
 [ -z "$COQTOP" -a -d "$PWD/kernel" ] && COQTOP=$PWD
 [ -z "$COQTOP" -a -d "$PWD/../kernel" ] && COQTOP=`dirname $PWD`
 
 export CAML_LD_LIBRARY_PATH=$COQTOP/kernel/byterun:$CAML_LD_LIBRARY_PATH
 
 exec $OCAMLDEBUG \
-	-I $CAMLP4LIB -I +threads \
+	-I $CAMLP5LIB -I +threads \
 	-I $COQTOP \
 	-I $COQTOP/config -I $COQTOP/printing -I $COQTOP/grammar -I $COQTOP/clib \
 	-I $COQTOP/lib -I $COQTOP/intf -I $COQTOP/kernel -I $COQTOP/kernel/byterun \

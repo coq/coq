@@ -22,7 +22,7 @@ type t =
 val equal : t -> t -> bool
 val extract_string : t -> string
 val to_string : t -> string
-(* Needed to fit Camlp4 signature *)
+(* Needed to fit Camlp5 signature *)
 val print : Format.formatter -> t -> unit
 val match_keyword : string -> t -> bool
 (** for camlp5 *)

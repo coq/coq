@@ -794,8 +794,8 @@ function make_ocaml {
     # TODO: this might not work if PREFIX contains spaces
     sed -i "s|^PREFIX=.*|PREFIX=$PREFIXOCAML|" config/Makefile
     
-    # We don't want to mess up Coq's dirctory structure so put the OCaml library in a separate folder
-    # If we refer to the make variable ${PREFIX} below, camlp4 ends up having a wrong path:
+    # We don't want to mess up Coq's directory structure so put the OCaml library in a separate folder
+    # If we refer to the make variable ${PREFIX} below, camlp5 ends up having the wrong path:
     # D:\bin\coq64_buildtest_abs_ocaml4\bin>ocamlc -where => D:/bin/coq64_buildtest_abs_ocaml4/libocaml
     # D:\bin\coq64_buildtest_abs_ocaml4\bin>camlp4 -where => ${PREFIX}/libocaml\camlp4
     # So we put an explicit path in there

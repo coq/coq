@@ -88,7 +88,7 @@ bootstrapped. The dependencies of a file FOO are in FOO.d . This
 enables partial recalculation of dependencies (only the dependencies
 of changed files are recomputed).
 
-If you add a dependency to a Coq camlp4 extension (grammar.cma or
+If you add a dependency to a Coq camlp5 extension (grammar.cma or
 q_constr.cmo), then see sections ".ml4 files" and "new files".
 
 Cleaning Targets
@@ -127,7 +127,7 @@ of a grammar extension via a line of the form:
 
 The use of (*i camlp4use: ... i*) to mention uses of standard
 extension such as IFDEF has also been discontinued, the Makefile now
-always calls camlp4 with pa_macros.cmo and a few others by default.
+always calls camlp5 with pa_macros.cmo and a few others by default.
 
 For debugging a Coq grammar extension, it could be interesting
 to use the READABLE_ML4=1 option, otherwise the generated .ml are

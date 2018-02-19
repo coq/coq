@@ -202,7 +202,7 @@ end = struct
 
 end
 
-let camlp4_verbosity silent f x =
+let camlp5_verbosity silent f x =
   let a = !warning_verbose in
   warning_verbose := silent;
   f x;
@@ -274,7 +274,7 @@ type ext_kind =
 
 (** The list of extensions *)
 
-let camlp4_state = ref []
+let camlp5_state = ref []
 
 (** Deletion *)
 
@@ -299,13 +299,13 @@ let grammar_delete e reinit (pos,rls) =
 let grammar_extend e reinit ext =
   let ext = of_coq_extend_statement ext in
   let undo () = grammar_delete e reinit ext in
-  let redo () = camlp4_verbosity false (uncurry (G.extend e)) ext in
-  camlp4_state := ByEXTEND (undo, redo) :: !camlp4_state;
+  let redo () = camlp5_verbosity false (uncurry (G.extend e)) ext in
+  camlp5_state := ByEXTEND (undo, redo) :: !camlp5_state;
   redo ()
 
 let grammar_extend_sync e reinit ext =
-  camlp4_state := ByGrammar (ExtendRule (e, reinit, ext)) :: !camlp4_state;
-  camlp4_verbosity false (uncurry (G.extend e)) (of_coq_extend_statement ext)
+  camlp5_state := ByGrammar (ExtendRule (e, reinit, ext)) :: !camlp5_state;
+  camlp5_verbosity false (uncurry (G.extend e)) (of_coq_extend_statement ext)
 
 (** The apparent parser of Coq; encapsulate G to keep track
     of the extensions. *)
@@ -315,20 +315,20 @@ module Gram =
     include G
     let extend e =
       curry
-	(fun ext ->
-	   camlp4_state :=
-	     (ByEXTEND ((fun () -> grammar_delete e None ext),
-			(fun () -> uncurry (G.extend e) ext)))
-	   :: !camlp4_state;
-	   uncurry (G.extend e) ext)
+    (fun ext ->
+      camlp5_state :=
+        (ByEXTEND ((fun () -> grammar_delete e None ext),
+           (fun () -> uncurry (G.extend e) ext)))
+      :: !camlp5_state;
+      uncurry (G.extend e) ext)
     let delete_rule e pil =
       (* spiwack: if you use load an ML module which contains GDELETE_RULE
-	  in a section, God kills a kitty. As it would corrupt remove_grammars.
+      in a section, God kills a kitty. As it would corrupt remove_grammars.
           There does not seem to be a good way to undo a delete rule. As deleting
-	  takes fewer arguments than extending. The production rule isn't returned
-	  by delete_rule. If we could retrieve the necessary information, then
-	  ByEXTEND provides just the framework we need to allow this in section.
-	  I'm not entirely sure it makes sense, but at least it would be more correct.
+      takes fewer arguments than extending. The production rule isn't returned
+      by delete_rule. If we could retrieve the necessary information, then
+      ByEXTEND provides just the framework we need to allow this in section.
+      I'm not entirely sure it makes sense, but at least it would be more correct.
           *)
       G.delete_rule e pil
   end
@@ -340,18 +340,18 @@ module Gram =
 
 let rec remove_grammars n =
   if n>0 then
-    (match !camlp4_state with
+    (match !camlp5_state with
        | [] -> anomaly ~label:"Pcoq.remove_grammars" (Pp.str "too many rules to remove.")
        | ByGrammar (ExtendRule (g, reinit, ext)) :: t ->
            grammar_delete g reinit (of_coq_extend_statement ext);
-           camlp4_state := t;
+           camlp5_state := t;
            remove_grammars (n-1)
        | ByEXTEND (undo,redo)::t ->
            undo();
-           camlp4_state := t;
+           camlp5_state := t;
            remove_grammars n;
            redo();
-           camlp4_state := ByEXTEND (undo,redo) :: !camlp4_state)
+           camlp5_state := ByEXTEND (undo,redo) :: !camlp5_state)
 
 let make_rule r = [None, None, r]
 

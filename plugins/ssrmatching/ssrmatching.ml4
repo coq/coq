@@ -12,9 +12,6 @@
  * we thus save the lexer to restore it at the end of the file *)
 let frozen_lexer = CLexer.get_keyword_state () ;;
 
-(*i camlp4use: "pa_extend.cmo" i*)
-(*i camlp4deps: "grammar/grammar.cma" i*)
-
 open Ltac_plugin
 open Names
 open Pp

@@ -60,7 +60,7 @@ let match_keyword kwd = function
   | KEYWORD kwd' when kwd = kwd' -> true
   | _ -> false
 
-(* Needed to fix Camlp4 signature.
+(* Needed to fix Camlp5 signature.
  Cannot use Pp because of silly Tox -> Compat -> Pp dependency *)
 let print ppf tok = Format.pp_print_string ppf (to_string tok)
 

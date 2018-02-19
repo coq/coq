@@ -46,7 +46,7 @@ see build-system.txt .
 .ml4 files
 ----------
 
-.ml4 are converted to .ml by camlp4. By default, they are produced
+.ml4 are converted to .ml by camlp5. By default, they are produced
 in the binary ast format understood by ocamlc/ocamlopt/ocamldep.
 Pros:
  - faster than parsing clear-text source file.

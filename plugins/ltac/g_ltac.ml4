@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4deps: "grammar/grammar.cma" i*)
-
 DECLARE PLUGIN "ltac_plugin"
 
 open Util
@@ -17,7 +15,7 @@ open Tacexpr
 open Misctypes
 open Genarg
 open Genredexpr
-open Tok (* necessary for camlp4 *)
+open Tok (* necessary for camlp5 *)
 open Names
 
 open Pcoq

@@ -55,7 +55,7 @@ config/Makefile
 config/coq_config.ml
 config/Info-*.plist
 dev/ocamldebug-coq
-dev/camlp4.dbg
+dev/camlp5.dbg
 plugins/micromega/csdpcert
 plugins/micromega/.micromega.ml.generated
 kernel/byterun/dllcoqrun.so
