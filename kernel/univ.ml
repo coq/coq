@@ -914,6 +914,9 @@ let enforce_eq_instances x y =
 		 (Pp.str " instances of different lengths."));
     CArray.fold_right2 enforce_eq_level ax ay
 
+let enforce_eq_variance_instances = Variance.eq_constraints
+let enforce_leq_variance_instances = Variance.leq_constraints
+
 let subst_instance_level s l =
   match l.Level.data with
   | Level.Var n -> s.(n) 

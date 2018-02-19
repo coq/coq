@@ -204,7 +204,8 @@ type 'a universe_compare =
   { (* Might raise NotConvertible *)
     compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
     compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
-    compare_cumul_instances : Univ.Constraint.t -> 'a -> 'a }
+    compare_cumul_instances : conv_pb -> Univ.Variance.t array ->
+      Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a }
 
 type 'a universe_state = 'a * 'a universe_compare
 
@@ -220,12 +221,12 @@ let sort_cmp_universes env pb s0 s1 (u, check) =
 let convert_instances ~flex u u' (s, check) =
   (check.compare_instances ~flex u u' s, check)
 
-let get_cumulativity_constraints cv_pb cumi u u' =
+let get_cumulativity_constraints cv_pb variance u u' =
   match cv_pb with
   | CONV ->
-    Univ.ACumulativityInfo.eq_constraints cumi u u' Univ.Constraint.empty
+    Univ.enforce_eq_variance_instances variance u u' Univ.Constraint.empty
   | CUMUL ->
-    Univ.ACumulativityInfo.leq_constraints cumi u u' Univ.Constraint.empty
+    Univ.enforce_leq_variance_instances variance u u' Univ.Constraint.empty
 
 let inductive_cumulativity_arguments (mind,ind) =
   mind.Declarations.mind_nparams +
@@ -243,8 +244,7 @@ let convert_inductives_gen cmp_instances cmp_cumul cv_pb (mind,ind) nargs u1 u2 
     if not (Int.equal num_param_arity nargs) then
       cmp_instances u1 u2 s
     else
-      let csts = get_cumulativity_constraints cv_pb cumi u1 u2 in
-      cmp_cumul csts s
+      cmp_cumul cv_pb (Univ.ACumulativityInfo.variance cumi) u1 u2 s
 
 let convert_inductives cv_pb ind nargs u1 u2 (s, check) =
   convert_inductives_gen (check.compare_instances ~flex:false) check.compare_cumul_instances
@@ -271,7 +271,8 @@ let convert_constructors_gen cmp_instances cmp_cumul (mind, ind, cns) nargs u1 u
     else
       (** By invariant, both constructors have a common supertype,
           so they are convertible _at that type_. *)
-      s
+      let variance = Array.make (Univ.Instance.length u1) Univ.Variance.Irrelevant in
+      cmp_cumul CONV variance u1 u2 s
 
 let convert_constructors ctor nargs u1 u2 (s, check) =
   convert_constructors_gen (check.compare_instances ~flex:false) check.compare_cumul_instances
@@ -708,7 +709,8 @@ let check_convert_instances ~flex u u' univs =
   else raise NotConvertible
 
 (* general conversion and inference functions *)
-let check_inductive_instances csts univs =
+let check_inductive_instances cv_pb variance u1 u2 univs =
+  let csts = get_cumulativity_constraints cv_pb variance u1 u2 in
   if (UGraph.check_constraints csts univs) then univs
   else raise NotConvertible
 
@@ -758,7 +760,8 @@ let infer_convert_instances ~flex u u' (univs,cstrs) =
     else Univ.enforce_eq_instances u u' cstrs
   in (univs, cstrs')
 
-let infer_inductive_instances csts (univs,csts') =
+let infer_inductive_instances cv_pb variance u1 u2 (univs,csts') =
+  let csts = get_cumulativity_constraints cv_pb variance u1 u2 in
   (univs, Univ.Constraint.union csts csts')
 
 let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare =

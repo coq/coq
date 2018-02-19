@@ -352,34 +352,13 @@ let exact_ise_stack2 env evd f sk1 sk2 =
     ise_stack2 evd (List.rev sk1) (List.rev sk2)
   else UnifFailure (evd, (* Dummy *) NotSameHead)
 
-let try_soft evd u u' =
-  let open Universes in
-  let make = Univ.Universe.make in
-  try Evd.add_universe_constraints evd (Constraints.singleton (make u,ULub,make u'))
-  with UState.UniversesDiffer | Univ.UniverseInconsistency _ -> evd
-
 (* Add equality constraints for covariant/invariant positions. For
    irrelevant positions, unify universes when flexible. *)
 let compare_cumulative_instances evd variances u u' =
-  let cstrs = Univ.Constraint.empty in
-  let soft = [] in
-  let cstrs, soft = Array.fold_left3 (fun (cstrs, soft) v u u' ->
-      let open Univ.Variance in
-      match v with
-      | Irrelevant -> cstrs, (u,u')::soft
-      | Covariant | Invariant -> Univ.Constraint.add (u,Univ.Eq,u') cstrs, soft)
-      (cstrs,soft) variances (Univ.Instance.to_array u) (Univ.Instance.to_array u')
-  in
-  match Evd.add_constraints evd cstrs with
-  | evd ->
-    Success (List.fold_left (fun evd (u,u') -> try_soft evd u u') evd soft)
-  | exception Univ.UniverseInconsistency p -> UnifFailure (evd, UnifUnivInconsistency p)
-
-(* We should only compare constructors at convertible types, so this
-   is only an opportunity to unify universes. *)
-let compare_constructor_instances evd u u' =
-  Array.fold_left2 try_soft
-    evd (Univ.Instance.to_array u) (Univ.Instance.to_array u')
+  match Evarutil.compare_cumulative_instances CONV variances u u' evd with
+  | Inl evd ->
+    Success evd
+  | Inr p -> UnifFailure (evd, UnifUnivInconsistency p)
 
 let rec evar_conv_x ts env evd pbty term1 term2 =
   let term1 = whd_head_evar evd term1 in

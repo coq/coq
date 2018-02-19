@@ -813,6 +813,34 @@ let subterm_source evk (loc,k) =
     | _ -> evk in
   (loc,Evar_kinds.SubEvar evk)
 
+let try_soft evd u u' =
+  let open Universes in
+  let make = Univ.Universe.make in
+  try Evd.add_universe_constraints evd (Constraints.singleton (make u,ULub,make u'))
+  with UState.UniversesDiffer | Univ.UniverseInconsistency _ -> evd
+
+(* Add equality constraints for covariant/invariant positions. For
+   irrelevant positions, unify universes when flexible. *)
+let compare_cumulative_instances cv_pb variances u u' sigma =
+  let cstrs = Univ.Constraint.empty in
+  let soft = [] in
+  let cstrs, soft = Array.fold_left3 (fun (cstrs, soft) v u u' ->
+      let open Univ.Variance in
+      match v with
+      | Irrelevant -> cstrs, (u,u')::soft
+      | Covariant when cv_pb == Reduction.CUMUL ->
+        Univ.Constraint.add (u,Univ.Le,u') cstrs, soft
+      | Covariant | Invariant -> Univ.Constraint.add (u,Univ.Eq,u') cstrs, soft)
+      (cstrs,soft) variances (Univ.Instance.to_array u) (Univ.Instance.to_array u')
+  in
+  match Evd.add_constraints sigma cstrs with
+  | sigma ->
+    Inl (List.fold_left (fun sigma (u,u') -> try_soft sigma u u') sigma soft)
+  | exception Univ.UniverseInconsistency p -> Inr p
+
+let compare_constructor_instances evd u u' =
+  Array.fold_left2 try_soft
+    evd (Univ.Instance.to_array u) (Univ.Instance.to_array u')
 
 (** [eq_constr_univs_test sigma1 sigma2 t u] tests equality of [t] and
     [u] up to existential variable instantiation and equalisable

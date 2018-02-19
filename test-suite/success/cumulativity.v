@@ -115,3 +115,16 @@ Definition checkcumul :=
 (* They can only be compared at the highest type *)
 Fail Definition checkcumul' :=
   eq_refl _ : @eq twotys@{i k l} (twoconstr@{i j k} Tyi Tyi) (twoconstr@{j i k} Tyi Tyi).
+
+(* An inductive type with an irrelevant universe *)
+Inductive foo@{i} : Type@{i} := mkfoo { }.
+
+Definition bar := foo.
+
+(* The universe on mkfoo is flexible and should be unified with i. *)
+Definition foo1@{i} : foo@{i} := let x := mkfoo in x. (* fast path for conversion *)
+Definition foo2@{i} : bar@{i} := let x := mkfoo in x. (* must reduce *)
+
+(* Rigid universes however should not be unified unnecessarily. *)
+Definition foo3@{i j|} : foo@{i} := let x := mkfoo@{j} in x.
+Definition foo4@{i j|} : bar@{i} := let x := mkfoo@{j} in x.

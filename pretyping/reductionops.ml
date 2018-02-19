@@ -1313,10 +1313,10 @@ let sigma_compare_instances ~flex i0 i1 sigma =
      | Univ.UniverseInconsistency _ ->
 	raise Reduction.NotConvertible
 
-let sigma_check_inductive_instances csts sigma =
-  try Evd.add_constraints sigma csts
-  with Evd.UniversesDiffer
-     | Univ.UniverseInconsistency _ ->
+let sigma_check_inductive_instances cv_pb variance u1 u2 sigma =
+  match Evarutil.compare_cumulative_instances cv_pb variance u1 u2 sigma with
+  | Inl sigma -> sigma
+  | Inr _ ->
     raise Reduction.NotConvertible
 
 let sigma_univ_state = 
