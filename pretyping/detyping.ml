@@ -451,17 +451,15 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
     then
       Anonymous, None, None
     else
-      match Option.map detype p with
-        | None -> Anonymous, None, None
-        | Some p ->
-            let nl,typ = it_destRLambda_or_LetIn_names k p in
-	    let n,typ = match DAst.get typ with
-              | GLambda (x,_,t,c) -> x, c
-	      | _ -> Anonymous, typ in
-	    let aliastyp =
-	      if List.for_all (Name.equal Anonymous) nl then None
-	      else Some (Loc.tag (indsp,nl)) in
-            n, aliastyp, Some typ
+      let p = detype p in
+      let nl,typ = it_destRLambda_or_LetIn_names k p in
+      let n,typ = match DAst.get typ with
+        | GLambda (x,_,t,c) -> x, c
+        | _ -> Anonymous, typ in
+      let aliastyp =
+        if List.for_all (Name.equal Anonymous) nl then None
+        else Some (Loc.tag (indsp,nl)) in
+      n, aliastyp, Some typ
   in
   let constructs = Array.init (Array.length bl) (fun i -> (indsp,i+1)) in
   let tag =
@@ -650,7 +648,7 @@ and detype_r d flags avoid env sigma t =
 	  (is_nondep_branch sigma) avoid
 	  (ci.ci_ind,ci.ci_pp_info.style,
 	   ci.ci_pp_info.cstr_tags,ci.ci_pp_info.ind_tags)
-	  (Some p) c bl
+          p c bl
     | Fix (nvn,recdef) -> detype_fix d flags avoid env sigma nvn recdef
     | CoFix (n,recdef) -> detype_cofix d flags avoid env sigma n recdef
 
