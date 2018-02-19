@@ -41,6 +41,12 @@ type reloc_table = (tag * int) array
 type annot_switch =
    {ci : case_info; rtbl : reloc_table; tailcall : bool; max_stack_size : int}
 
+val eq_structured_constant : structured_constant -> structured_constant -> bool
+val hash_structured_constant : structured_constant -> int
+
+val eq_annot_switch : annot_switch -> annot_switch -> bool
+val hash_annot_switch : annot_switch -> int
+
 module Label :
   sig
     type t = int

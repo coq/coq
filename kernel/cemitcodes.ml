@@ -10,10 +10,15 @@
    machine, Oct 2004 *)
 (* Extension: Arnaud Spiwack (support for native arithmetic), May 2005 *)
 
+open Names
 open Term
 open Cbytecodes
 open Copcodes
 open Mod_subst
+
+type emitcodes = String.t
+
+external tcode_of_code : Bytes.t -> int -> Vmvalues.tcode = "coq_tcode_of_code"
 
 (* Relocation information *)
 type reloc_info =
@@ -21,7 +26,35 @@ type reloc_info =
   | Reloc_const of structured_constant
   | Reloc_getglobal of Names.Constant.t
 
-type patch = reloc_info * int
+let eq_reloc_info r1 r2 = match r1, r2 with
+| Reloc_annot sw1, Reloc_annot sw2 -> eq_annot_switch sw1 sw2
+| Reloc_annot _, _ -> false
+| Reloc_const c1, Reloc_const c2 -> eq_structured_constant c1 c2
+| Reloc_const _, _ -> false
+| Reloc_getglobal c1, Reloc_getglobal c2 -> Constant.equal c1 c2
+| Reloc_getglobal _, _ -> false
+
+let hash_reloc_info r =
+  let open Hashset.Combine in
+  match r with
+  | Reloc_annot sw -> combinesmall 1 (hash_annot_switch sw)
+  | Reloc_const c -> combinesmall 2 (hash_structured_constant c)
+  | Reloc_getglobal c -> combinesmall 3 (Constant.hash c)
+
+module RelocTable = Hashtbl.Make(struct
+  type t = reloc_info
+  let equal = eq_reloc_info
+  let hash = hash_reloc_info
+end)
+
+(** We use arrays for on-disk representation. On 32-bit machines, this means we
+    can only have a maximum amount of about 4.10^6 relocations, which seems
+    quite a lot, but potentially reachable if e.g. compiling big proofs. This
+    would prevent VM computing with these terms on 32-bit architectures. Maybe
+    we should use a more robust data structure? *)
+type patches = {
+  reloc_infos : (reloc_info * int array) array;
+}
 
 let patch_char4 buff pos c1 c2 c3 c4 = 
   Bytes.unsafe_set buff pos       c1;
@@ -29,40 +62,48 @@ let patch_char4 buff pos c1 c2 c3 c4 =
   Bytes.unsafe_set buff (pos + 2) c3;
   Bytes.unsafe_set buff (pos + 3) c4 
   
-let patch buff (pos, n) =
+let patch1 buff pos n =
   patch_char4 buff pos 
     (Char.unsafe_chr n) (Char.unsafe_chr (n asr 8))  (Char.unsafe_chr (n asr 16))
     (Char.unsafe_chr (n asr 24))
 
-(* val patch_int : emitcodes -> ((\*pos*\)int * int) list -> emitcodes *)
-let patch_int buff patches =
+let patch_int buff reloc =
   (* copy code *before* patching because of nested evaluations:
      the code we are patching might be called (and thus "concurrently" patched)
      and results in wrong results. Side-effects... *)
   let buff = Bytes.of_string buff in
-  let () = List.iter (fun p -> patch buff p) patches in
-  (* Note: we follow the apporach suggested by Gabriel Scherer in
-     PR#136 here, and use unsafe as we own buff.
+  let iter (reloc, npos) = Array.iter (fun pos -> patch1 buff pos reloc) npos in
+  let () = CArray.iter iter reloc in
+  buff
 
-     The crux of the question that avoids defining emitcodes just as a
-     Byte.t is the call to hcons in to_memory below. Even if disabling
-     this optimization has no visible time impact, test data shows
-     that the optimization is indeed triggered quite often so we
-     choose ugliness over altering the semantics.
-
-     Handle with care.
-  *)
-  Bytes.unsafe_to_string buff
+let patch buff pl f =
+  (** Order seems important here? *)
+  let reloc = CArray.map (fun (r, pos) -> (f r, pos)) pl.reloc_infos in
+  let buff = patch_int buff reloc in
+  tcode_of_code buff (Bytes.length buff)
 
 (* Buffering of bytecode *)
 
-let out_buffer = ref(Bytes.create 1024)
-and out_position = ref 0
+type label_definition =
+    Label_defined of int
+  | Label_undefined of (int * int) list
 
-let out_word b1 b2 b3 b4 =
-  let p = !out_position in
-  if p >= Bytes.length !out_buffer then begin
-    let len = Bytes.length !out_buffer in
+type env = {
+  mutable out_buffer : Bytes.t;
+  mutable out_position : int;
+  mutable label_table : label_definition array;
+  (* le ieme element de la table = Label_defined n signifie que l'on a
+    deja rencontrer le label i et qu'il est a l'offset n.
+                                = Label_undefined l signifie que l'on a
+    pas encore rencontrer ce label, le premier entier indique ou est l'entier
+    a patcher dans la string, le deuxieme son origine  *)
+  reloc_info : int list RelocTable.t;
+}
+
+let out_word env b1 b2 b3 b4 =
+  let p = env.out_position in
+  if p >= Bytes.length env.out_buffer then begin
+    let len = Bytes.length env.out_buffer in
     let new_len =
       if len <= Sys.max_string_length / 2
       then 2 * len
@@ -71,260 +112,240 @@ let out_word b1 b2 b3 b4 =
 	then invalid_arg "String.create"  (* Pas la bonne exception .... *)
 	else Sys.max_string_length in
     let new_buffer = Bytes.create new_len in
-    Bytes.blit !out_buffer 0 new_buffer 0 len;
-    out_buffer := new_buffer
+    Bytes.blit env.out_buffer 0 new_buffer 0 len;
+    env.out_buffer <- new_buffer
   end;
-  patch_char4 !out_buffer p (Char.unsafe_chr b1)
+  patch_char4 env.out_buffer p (Char.unsafe_chr b1)
    (Char.unsafe_chr b2) (Char.unsafe_chr b3) (Char.unsafe_chr b4);
-  out_position := p + 4
+  env.out_position <- p + 4
 
-let out opcode =
-  out_word opcode 0 0 0
+let out env opcode =
+  out_word env opcode 0 0 0
 
-let out_int n =
-  out_word n (n asr 8) (n asr 16) (n asr 24)
+let out_int env n =
+  out_word env n (n asr 8) (n asr 16) (n asr 24)
 
 (* Handling of local labels and backpatching *)
 
-type label_definition =
-    Label_defined of int
-  | Label_undefined of (int * int) list
-
-let label_table  = ref ([| |] : label_definition array)
-(* le ieme element de la table = Label_defined n signifie que l'on a
-   deja rencontrer le label i et qu'il est a l'offset n.
-                               = Label_undefined l signifie que l'on a
-   pas encore rencontrer ce label, le premier entier indique ou est l'entier
-   a patcher dans la string, le deuxieme son origine  *)
-
-let extend_label_table needed =
-  let new_size = ref(Array.length !label_table) in
+let extend_label_table env needed =
+  let new_size = ref(Array.length env.label_table) in
   while needed >= !new_size do new_size := 2 * !new_size done;
   let new_table = Array.make !new_size (Label_undefined []) in
-  Array.blit !label_table 0 new_table 0 (Array.length !label_table);
-  label_table := new_table
+  Array.blit env.label_table 0 new_table 0 (Array.length env.label_table);
+  env.label_table <- new_table
 
-let backpatch (pos, orig) =
-  let displ = (!out_position - orig) asr 2 in
-  Bytes.set !out_buffer  pos    @@ Char.unsafe_chr displ;
-  Bytes.set !out_buffer (pos+1) @@ Char.unsafe_chr (displ asr 8);
-  Bytes.set !out_buffer (pos+2) @@ Char.unsafe_chr (displ asr 16);
-  Bytes.set !out_buffer (pos+3) @@ Char.unsafe_chr (displ asr 24)
+let backpatch env (pos, orig) =
+  let displ = (env.out_position - orig) asr 2 in
+  Bytes.set env.out_buffer  pos    @@ Char.unsafe_chr displ;
+  Bytes.set env.out_buffer (pos+1) @@ Char.unsafe_chr (displ asr 8);
+  Bytes.set env.out_buffer (pos+2) @@ Char.unsafe_chr (displ asr 16);
+  Bytes.set env.out_buffer (pos+3) @@ Char.unsafe_chr (displ asr 24)
 
-let define_label lbl =
-  if lbl >= Array.length !label_table then extend_label_table lbl;
-  match (!label_table).(lbl) with
+let define_label env lbl =
+  if lbl >= Array.length env.label_table then extend_label_table env lbl;
+  match (env.label_table).(lbl) with
     Label_defined _ ->
       raise(Failure "CEmitcode.define_label")
   | Label_undefined patchlist ->
-      List.iter backpatch patchlist;
-      (!label_table).(lbl) <- Label_defined !out_position
+      List.iter (fun p -> backpatch env p) patchlist;
+      (env.label_table).(lbl) <- Label_defined env.out_position
 
-let out_label_with_orig orig lbl =
-  if lbl >= Array.length !label_table then extend_label_table lbl;
-  match (!label_table).(lbl) with
+let out_label_with_orig env orig lbl =
+  if lbl >= Array.length env.label_table then extend_label_table env lbl;
+  match (env.label_table).(lbl) with
     Label_defined def ->
-      out_int((def - orig) asr 2)
+      out_int env ((def - orig) asr 2)
   | Label_undefined patchlist ->
       (* spiwack: patchlist is supposed to be non-empty all the time
          thus I commented that out. If there is no problem I suggest
          removing it for next release (cur: 8.1) *)
       (*if patchlist = [] then *)
-	(!label_table).(lbl) <-
-          Label_undefined((!out_position, orig) :: patchlist);
-      out_int 0
+        (env.label_table).(lbl) <-
+          Label_undefined((env.out_position, orig) :: patchlist);
+      out_int env 0
 
-let out_label l = out_label_with_orig !out_position l
+let out_label env l = out_label_with_orig env env.out_position l
 
 (* Relocation information *)
 
-let reloc_info = ref ([] : (reloc_info * int) list)
+let enter env info =
+  let pos = env.out_position in
+  let old = try RelocTable.find env.reloc_info info with Not_found -> [] in
+  RelocTable.replace env.reloc_info info (pos :: old)
 
-let enter info =
-  reloc_info := (info, !out_position) :: !reloc_info
+let slot_for_const env c =
+  enter env (Reloc_const c);
+  out_int env 0
 
-let slot_for_const c =
-  enter (Reloc_const c);
-  out_int 0
+let slot_for_annot env a =
+  enter env (Reloc_annot a);
+  out_int env 0
 
-let slot_for_annot a =
-  enter (Reloc_annot a);
-  out_int 0
-
-let slot_for_getglobal p =
-  enter (Reloc_getglobal p);
-  out_int 0
+let slot_for_getglobal env p =
+  enter env (Reloc_getglobal p);
+  out_int env 0
 
 
 (* Emission of one instruction *)
 
 
-let emit_instr = function
-  | Klabel lbl -> define_label lbl
+let emit_instr env = function
+  | Klabel lbl -> define_label env lbl
   | Kacc n ->
-      if n < 8 then out(opACC0 + n) else (out opACC; out_int n)
+      if n < 8 then out env(opACC0 + n) else (out env opACC; out_int env n)
   | Kenvacc n ->
       if n >= 1 && n <= 4
-      then out(opENVACC1 + n - 1)
-      else (out opENVACC; out_int n)
+      then out env(opENVACC1 + n - 1)
+      else (out env opENVACC; out_int env n)
   | Koffsetclosure ofs ->
       if Int.equal ofs (-2) || Int.equal ofs 0 || Int.equal ofs 2
-      then out (opOFFSETCLOSURE0 + ofs / 2)
-      else (out opOFFSETCLOSURE; out_int ofs)
+      then out env (opOFFSETCLOSURE0 + ofs / 2)
+      else (out env opOFFSETCLOSURE; out_int env ofs)
   | Kpush ->
-      out opPUSH
+      out env opPUSH
   | Kpop n ->
-      out opPOP; out_int n
+      out env opPOP; out_int env n
   | Kpush_retaddr lbl ->
-      out opPUSH_RETADDR; out_label lbl
+      out env opPUSH_RETADDR; out_label env lbl
   | Kapply n ->
-      if n < 4 then out(opAPPLY1 + n - 1) else (out opAPPLY; out_int n)
+      if n < 4 then out env(opAPPLY1 + n - 1) else (out env opAPPLY; out_int env n)
   | Kappterm(n, sz) ->
-      if n < 4 then (out(opAPPTERM1 + n - 1); out_int sz)
-               else (out opAPPTERM; out_int n; out_int sz)
+      if n < 4 then (out env(opAPPTERM1 + n - 1); out_int env sz)
+               else (out env opAPPTERM; out_int env n; out_int env sz)
   | Kreturn n ->
-      out opRETURN; out_int n
+      out env opRETURN; out_int env n
   | Kjump ->
-      out opRETURN; out_int 0
+      out env opRETURN; out_int env 0
   | Krestart ->
-      out opRESTART
+      out env opRESTART
   | Kgrab n ->
-      out opGRAB; out_int n
+      out env opGRAB; out_int env n
   | Kgrabrec(rec_arg) ->
-      out opGRABREC; out_int rec_arg
+      out env opGRABREC; out_int env rec_arg
   | Kclosure(lbl, n) ->
-      out opCLOSURE; out_int n; out_label lbl
+      out env opCLOSURE; out_int env n; out_label env lbl
   | Kclosurerec(nfv,init,lbl_types,lbl_bodies) ->
-      out opCLOSUREREC;out_int (Array.length lbl_bodies);
-      out_int nfv; out_int init;
-      let org = !out_position in
-      Array.iter (out_label_with_orig org) lbl_types;
-      let org = !out_position in
-      Array.iter (out_label_with_orig org) lbl_bodies
+      out env opCLOSUREREC;out_int env (Array.length lbl_bodies);
+      out_int env nfv; out_int env init;
+      let org = env.out_position in
+      Array.iter (out_label_with_orig env org) lbl_types;
+      let org = env.out_position in
+      Array.iter (out_label_with_orig env org) lbl_bodies
   | Kclosurecofix(nfv,init,lbl_types,lbl_bodies) ->
-      out opCLOSURECOFIX;out_int (Array.length lbl_bodies);
-      out_int nfv; out_int init;
-      let org = !out_position in
-      Array.iter (out_label_with_orig org) lbl_types;
-      let org = !out_position in
-      Array.iter (out_label_with_orig org) lbl_bodies
+      out env opCLOSURECOFIX;out_int env (Array.length lbl_bodies);
+      out_int env nfv; out_int env init;
+      let org = env.out_position in
+      Array.iter (out_label_with_orig env org) lbl_types;
+      let org = env.out_position in
+      Array.iter (out_label_with_orig env org) lbl_bodies
   | Kgetglobal q ->
-      out opGETGLOBAL; slot_for_getglobal q
+      out env opGETGLOBAL; slot_for_getglobal env q
   | Kconst (Const_b0 i) ->
       if i >= 0 && i <= 3
-          then out (opCONST0 + i)
-          else (out opCONSTINT; out_int i)
+          then out env (opCONST0 + i)
+          else (out env opCONSTINT; out_int env i)
   | Kconst c ->
-      out opGETGLOBAL; slot_for_const c
+      out env opGETGLOBAL; slot_for_const env c
   | Kmakeblock(n, t) ->
       if Int.equal n 0 then invalid_arg "emit_instr : block size = 0"
-      else if n < 4 then (out(opMAKEBLOCK1 + n - 1); out_int t)
-      else (out opMAKEBLOCK; out_int n; out_int t)
+      else if n < 4 then (out env(opMAKEBLOCK1 + n - 1); out_int env t)
+      else (out env opMAKEBLOCK; out_int env n; out_int env t)
   | Kmakeprod ->
-      out opMAKEPROD
+      out env opMAKEPROD
   | Kmakeswitchblock(typlbl,swlbl,annot,sz) ->
-      out opMAKESWITCHBLOCK;
-      out_label typlbl; out_label swlbl;
-      slot_for_annot annot;out_int sz
+      out env opMAKESWITCHBLOCK;
+      out_label env typlbl; out_label env swlbl;
+      slot_for_annot env annot;out_int env sz
   | Kswitch (tbl_const, tbl_block) ->
       let lenb = Array.length tbl_block in
       let lenc = Array.length tbl_const in
       assert (lenb < 0x100 && lenc < 0x1000000);
-      out opSWITCH;
-      out_word lenc (lenc asr 8) (lenc asr 16) (lenb);
-(*      out_int (Array.length tbl_const + (Array.length tbl_block lsl 23)); *)
-      let org = !out_position in
-      Array.iter (out_label_with_orig org) tbl_const;
-      Array.iter (out_label_with_orig org) tbl_block
+      out env opSWITCH;
+      out_word env lenc (lenc asr 8) (lenc asr 16) (lenb);
+(*      out_int env (Array.length tbl_const + (Array.length tbl_block lsl 23)); *)
+      let org = env.out_position in
+      Array.iter (out_label_with_orig env org) tbl_const;
+      Array.iter (out_label_with_orig env org) tbl_block
   | Kpushfields n ->
-      out opPUSHFIELDS;out_int n
+      out env opPUSHFIELDS;out_int env n
   | Kfield n ->
-      if n <= 1 then out (opGETFIELD0+n)
-      else (out opGETFIELD;out_int n)
+      if n <= 1 then out env (opGETFIELD0+n)
+      else (out env opGETFIELD;out_int env n)
   | Ksetfield n ->
-      if n <= 1 then out (opSETFIELD0+n)
-      else (out opSETFIELD;out_int n)
+      if n <= 1 then out env (opSETFIELD0+n)
+      else (out env opSETFIELD;out_int env n)
   | Ksequence _ -> invalid_arg "Cemitcodes.emit_instr"
-  | Kproj (n,p) -> out opPROJ; out_int n; slot_for_const (Const_proj p)
-  | Kensurestackcapacity size -> out opENSURESTACKCAPACITY; out_int size
+  | Kproj (n,p) -> out env opPROJ; out_int env n; slot_for_const env (Const_proj p)
+  | Kensurestackcapacity size -> out env opENSURESTACKCAPACITY; out_int env size
   (* spiwack *)
-  | Kbranch lbl -> out opBRANCH; out_label lbl
-  | Kaddint31 -> out opADDINT31
-  | Kaddcint31 -> out opADDCINT31
-  | Kaddcarrycint31 -> out opADDCARRYCINT31
-  | Ksubint31 -> out opSUBINT31
-  | Ksubcint31 -> out opSUBCINT31
-  | Ksubcarrycint31 -> out opSUBCARRYCINT31
-  | Kmulint31 -> out opMULINT31
-  | Kmulcint31 -> out opMULCINT31
-  | Kdiv21int31 -> out opDIV21INT31
-  | Kdivint31 -> out opDIVINT31
-  | Kaddmuldivint31 -> out opADDMULDIVINT31
-  | Kcompareint31 -> out opCOMPAREINT31
-  | Khead0int31 -> out opHEAD0INT31
-  | Ktail0int31 -> out opTAIL0INT31
-  | Kisconst lbl -> out opISCONST; out_label lbl
-  | Kareconst(n,lbl) -> out opARECONST; out_int n; out_label lbl
-  | Kcompint31 -> out opCOMPINT31
-  | Kdecompint31 -> out opDECOMPINT31
-  | Klorint31 -> out opORINT31
-  | Klandint31 -> out opANDINT31
-  | Klxorint31 -> out opXORINT31
+  | Kbranch lbl -> out env opBRANCH; out_label env lbl
+  | Kaddint31 -> out env opADDINT31
+  | Kaddcint31 -> out env opADDCINT31
+  | Kaddcarrycint31 -> out env opADDCARRYCINT31
+  | Ksubint31 -> out env opSUBINT31
+  | Ksubcint31 -> out env opSUBCINT31
+  | Ksubcarrycint31 -> out env opSUBCARRYCINT31
+  | Kmulint31 -> out env opMULINT31
+  | Kmulcint31 -> out env opMULCINT31
+  | Kdiv21int31 -> out env opDIV21INT31
+  | Kdivint31 -> out env opDIVINT31
+  | Kaddmuldivint31 -> out env opADDMULDIVINT31
+  | Kcompareint31 -> out env opCOMPAREINT31
+  | Khead0int31 -> out env opHEAD0INT31
+  | Ktail0int31 -> out env opTAIL0INT31
+  | Kisconst lbl -> out env opISCONST; out_label env lbl
+  | Kareconst(n,lbl) -> out env opARECONST; out_int env n; out_label env lbl
+  | Kcompint31 -> out env opCOMPINT31
+  | Kdecompint31 -> out env opDECOMPINT31
+  | Klorint31 -> out env opORINT31
+  | Klandint31 -> out env opANDINT31
+  | Klxorint31 -> out env opXORINT31
   (*/spiwack *)
   | Kstop ->
-      out opSTOP
+      out env opSTOP
 
 (* Emission of a current list and remaining lists of instructions. Include some peephole optimization. *)
 
-let rec emit insns remaining = match insns with
+let rec emit env insns remaining = match insns with
   | [] -> 
      (match remaining with 
        [] -> () 
-     | (first::rest) -> emit first rest)
+     | (first::rest) -> emit env first rest)
   (* Peephole optimizations *)
   | Kpush :: Kacc n :: c ->
-      if n < 8 then out(opPUSHACC0 + n) else (out opPUSHACC; out_int n);
-      emit c remaining
+      if n < 8 then out env(opPUSHACC0 + n) else (out env opPUSHACC; out_int env n);
+      emit env c remaining
   | Kpush :: Kenvacc n :: c ->
       if n >= 1 && n <= 4
-      then out(opPUSHENVACC1 + n - 1)
-      else (out opPUSHENVACC; out_int n);
-      emit c remaining
+      then out env(opPUSHENVACC1 + n - 1)
+      else (out env opPUSHENVACC; out_int env n);
+      emit env c remaining
   | Kpush :: Koffsetclosure ofs :: c ->
       if Int.equal ofs (-2) || Int.equal ofs 0 || Int.equal ofs 2
-      then out(opPUSHOFFSETCLOSURE0 + ofs / 2)
-      else (out opPUSHOFFSETCLOSURE; out_int ofs);
-      emit c remaining
+      then out env(opPUSHOFFSETCLOSURE0 + ofs / 2)
+      else (out env opPUSHOFFSETCLOSURE; out_int env ofs);
+      emit env c remaining
   | Kpush :: Kgetglobal id :: c ->
-      out opPUSHGETGLOBAL; slot_for_getglobal id; emit c remaining
+      out env opPUSHGETGLOBAL; slot_for_getglobal env id; emit env c remaining
   | Kpush :: Kconst (Const_b0 i) :: c ->
       if i >= 0 && i <= 3
-      then out (opPUSHCONST0 + i)
-      else (out opPUSHCONSTINT; out_int i);
-      emit c remaining
+      then out env (opPUSHCONST0 + i)
+      else (out env opPUSHCONSTINT; out_int env i);
+      emit env c remaining
   | Kpush :: Kconst const :: c ->
-      out opPUSHGETGLOBAL; slot_for_const const;
-      emit c remaining
+      out env opPUSHGETGLOBAL; slot_for_const env const;
+      emit env c remaining
   | Kpop n :: Kjump :: c ->
-      out opRETURN; out_int n; emit c remaining
+      out env opRETURN; out_int env n; emit env c remaining
   | Ksequence(c1,c2)::c ->
-      emit c1 (c2::c::remaining)
+      emit env c1 (c2::c::remaining)
   (* Default case *)
   | instr :: c ->
-      emit_instr instr; emit c remaining
+      emit_instr env instr; emit env c remaining
 
 (* Initialization *)
 
-let init () =
-  out_position := 0;
-  label_table := Array.make 16 (Label_undefined []);
-  reloc_info := []
-
-type emitcodes = String.t
-
-let length = String.length
-
-type to_patch = emitcodes * (patch list) * fv
+type to_patch = emitcodes * patches * fv
 
 (* Substitution *)
 let rec subst_strcst s sc =
@@ -334,17 +355,21 @@ let rec subst_strcst s sc =
   | Const_bn(tag,args) -> Const_bn(tag,Array.map (subst_strcst s) args)
   | Const_ind ind -> let kn,i = ind in Const_ind (subst_mind s kn, i)
 
-let subst_patch s (ri,pos) =
+let subst_reloc s ri =
   match ri with
   | Reloc_annot a ->
       let (kn,i) = a.ci.ci_ind in
       let ci = {a.ci with ci_ind = (subst_mind s kn,i)} in
-      (Reloc_annot {a with ci = ci},pos)
-  | Reloc_const sc -> (Reloc_const (subst_strcst s sc), pos)
-  | Reloc_getglobal kn -> (Reloc_getglobal (subst_constant s kn), pos)
+      Reloc_annot {a with ci = ci}
+  | Reloc_const sc -> Reloc_const (subst_strcst s sc)
+  | Reloc_getglobal kn -> Reloc_getglobal (subst_constant s kn)
+
+let subst_patches subst p =
+  let infos = CArray.map (fun (r, pos) -> (subst_reloc subst r, pos)) p.reloc_infos in
+  { reloc_infos = infos; }
 
 let subst_to_patch s (code,pl,fv) =
-  code,List.rev_map (subst_patch s) pl,fv
+  code, subst_patches s pl, fv
 
 type body_code =
   | BCdefined of to_patch
@@ -381,16 +406,23 @@ let repr_body_code = function
 | PBCconstant -> (None, BCconstant)
 
 let to_memory (init_code, fun_code, fv) =
-  init();
-  emit init_code [];
-  emit fun_code [];
+  let env = {
+    out_buffer = Bytes.create 1024;
+    out_position = 0;
+    label_table = Array.make 16 (Label_undefined []);
+    reloc_info = RelocTable.create 91;
+  } in
+  emit env init_code [];
+  emit env fun_code [];
   (** Later uses of this string are all purely functional *)
-  let code = Bytes.sub_string !out_buffer 0 !out_position in
+  let code = Bytes.sub_string env.out_buffer 0 env.out_position in
   let code = CString.hcons code in
-  let reloc = List.rev !reloc_info in
+  let fold reloc npos accu = (reloc, Array.of_list npos) :: accu in
+  let reloc = RelocTable.fold fold env.reloc_info [] in
+  let reloc = { reloc_infos = CArray.of_list reloc } in
   Array.iter (fun lbl ->
     (match lbl with
       Label_defined _ -> assert true
     | Label_undefined patchlist ->
-	assert (patchlist = []))) !label_table;
+        assert (patchlist = []))) env.label_table;
   (code, reloc, fv)
