@@ -124,3 +124,13 @@ Inductive Mut1 A :=
 with Mut2 A :=
      | Base2 : Type -> Mut2 A
      | Node2 : Mut1 A -> Mut2 A.
+
+(* If we don't reduce T while inferring cumulativity for the
+   constructor we will see a Rel and believe i is irrelevant. *)
+Inductive withparams@{i j} (T:=Type@{i}:Type@{j}) := mkwithparams : T -> withparams.
+
+Definition withparams_co@{i i' j|i < i', i' < j} : withparams@{i j} -> withparams@{i' j}
+  := fun x => x.
+
+Fail Definition withparams_not_irr@{i i' j|i' < i, i' < j} : withparams@{i j} -> withparams@{i' j}
+  := fun x => x.

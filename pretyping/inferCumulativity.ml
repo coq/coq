@@ -159,34 +159,21 @@ and infer_vect infos variances v =
 
 let infer_term cv_pb env variances c =
   let open CClosure in
-  let reds = RedFlags.red_add_transparent betaiotazeta Names.full_transparent_state in
-  let infos = create_clos_infos reds env in
+  let infos = create_clos_infos all env in
   infer_fterm cv_pb infos variances (CClosure.inject c) []
 
-let infer_arity_constructor env variances arcn is_arity params =
-  let numchecked = ref 0 in
-  let numparams = Context.Rel.nhyps params in
-  let basic_check env variances tp =
-    let variances =
-      if !numchecked >= numparams then
-        infer_term CUMUL env variances tp
-      else
-        variances
-    in
-    numchecked := !numchecked + 1; variances
-  in
+let infer_arity_constructor is_arity env variances arcn =
   let infer_typ typ (env,variances) =
     match typ with
     | Context.Rel.Declaration.LocalAssum (_, typ') ->
-      (Environ.push_rel typ env, basic_check env variances typ')
+      (Environ.push_rel typ env, infer_term CUMUL env variances typ')
     | Context.Rel.Declaration.LocalDef _ -> assert false
   in
-  let arcn' = Term.it_mkProd_or_LetIn arcn params in
-  let typs, codom = Reduction.dest_prod env arcn' in
+  let typs, codom = Reduction.dest_prod env arcn in
   let env, variances = Context.Rel.fold_outside infer_typ typs ~init:(env, variances) in
   (* If we have Inductive foo@{i j} : ... -> Type@{i} := C : ... -> foo Type@{j}
      i is irrelevant, j is invariant. *)
-  if not is_arity then basic_check env variances codom else variances
+  if not is_arity then infer_term CUMUL env variances codom else variances
 
 let infer_inductive env mie =
   let open Entries in
@@ -205,15 +192,12 @@ let infer_inductive env mie =
         Array.fold_left (fun variances u -> LMap.add u Variance.Irrelevant variances)
           LMap.empty uarray
       in
+      let env, _ = Typeops.infer_local_decls env params in
       let variances = List.fold_left (fun variances entry ->
-          let _, params = Typeops.infer_local_decls env params in
-          let variances = infer_arity_constructor
-              env variances entry.mind_entry_arity true params
+          let variances = infer_arity_constructor true
+              env variances entry.mind_entry_arity
           in
-          List.fold_left
-            (fun variances cons ->
-               infer_arity_constructor
-                 env variances cons false params)
+          List.fold_left (infer_arity_constructor false env)
             variances entry.mind_entry_lc)
           variances
           entries
