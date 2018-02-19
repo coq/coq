@@ -458,8 +458,9 @@ let msg_format = ref (fun () ->
 
 (* The loop ignores the command line arguments as the current model delegates
    its handing to the toplevel container. *)
-let loop _args doc =
-  set_doc doc;
+let loop _args ~state =
+  let open Vernac.State in
+  set_doc state.doc;
   init_signal_handler ();
   catch_break := false;
   let in_ch, out_ch = Spawned.get_channels ()                        in

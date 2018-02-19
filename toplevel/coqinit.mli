@@ -10,7 +10,7 @@
 
 val set_debug : unit -> unit
 
-val load_rcfile : rcfile:(string option) -> time:bool -> Stm.doc -> Stateid.t -> Stm.doc * Stateid.t
+val load_rcfile : rcfile:(string option) -> time:bool -> state:Vernac.State.t -> Vernac.State.t
 
 val init_ocaml_path : unit -> unit
 

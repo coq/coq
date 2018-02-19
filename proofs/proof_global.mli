@@ -24,6 +24,7 @@ val discard : Names.Id.t Loc.located -> unit
 val discard_current : unit -> unit
 val discard_all : unit -> unit
 
+val give_me_the_proof_opt : unit -> Proof.t option
 exception NoCurrentProof
 val give_me_the_proof : unit -> Proof.t
 (** @raise NoCurrentProof when outside proof mode. *)

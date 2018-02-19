@@ -33,7 +33,6 @@ val profile : bool
 
 (* -ide_slave: printing will be more verbose, will affect stm caching *)
 val ide_slave : bool ref
-val ideslave_coqtop_flags : string option ref
 
 (* development flag to detect race conditions, it should go away. *)
 val we_are_parsing : bool ref

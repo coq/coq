@@ -258,8 +258,9 @@ let rec discard_to_dot () =
     | Stm.End_of_input -> raise Stm.End_of_input
     | e when CErrors.noncritical e -> ()
 
-let read_sentence ~doc sid input =
-  try Stm.parse_sentence ~doc sid input
+let read_sentence ~state input =
+  let open Vernac.State in
+  try Stm.parse_sentence ~doc:state.doc state.sid input
   with reraise ->
     let reraise = CErrors.push reraise in
     discard_to_dot ();
@@ -300,19 +301,20 @@ let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
     is caught and handled (i.e. not re-raised).
 *)
 
-let do_vernac ~time doc sid =
+let do_vernac ~time ~state =
+  let open Vernac.State in
   top_stderr (fnl());
-  if !print_emacs then top_stderr (str (top_buffer.prompt doc));
+  if !print_emacs then top_stderr (str (top_buffer.prompt state.doc));
   resynch_buffer top_buffer;
   try
     let input = (top_buffer.tokens, None) in
-    Vernac.process_expr ~time doc sid (read_sentence ~doc sid (fst input))
+    Vernac.process_expr ~time ~state (read_sentence ~state (fst input))
   with
     | Stm.End_of_input | CErrors.Quit ->
         top_stderr (fnl ()); raise CErrors.Quit
     | CErrors.Drop ->  (* Last chance *)
         if Mltop.is_ocaml_top() then raise CErrors.Drop
-        else (Feedback.msg_warning (str "There is no ML toplevel."); doc, sid)
+        else (Feedback.msg_warning (str "There is no ML toplevel."); state)
     (* Exception printing should be done by the feedback listener,
        however this is not yet ready so we rely on the exception for
        now. *)
@@ -321,7 +323,7 @@ let do_vernac ~time doc sid =
       let loc = Loc.get_loc info in
       let msg = CErrors.iprint (e, info) in
       TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer;
-      doc, sid
+      state
 
 (** Main coq loop : read vernacular expressions until Drop is entered.
     Ctrl-C is handled internally as Sys.Break instead of aborting Coq.
@@ -337,20 +339,21 @@ let loop_flush_all () =
   Format.pp_print_flush !Topfmt.std_ft ();
   Format.pp_print_flush !Topfmt.err_ft ()
 
-let rec loop ~time doc =
+let rec loop ~time ~state =
+  let open Vernac.State in
   Sys.catch_break true;
   try
-    reset_input_buffer doc stdin top_buffer;
+    reset_input_buffer state.doc stdin top_buffer;
     (* Be careful to keep this loop tail-recursive *)
-    let rec vernac_loop doc sid =
-      let ndoc, nsid = do_vernac ~time doc sid in
+    let rec vernac_loop ~state =
+      let nstate = do_vernac ~time ~state in
       loop_flush_all ();
-      vernac_loop ndoc nsid
+      vernac_loop ~state:nstate
     (* We recover the current stateid, threading from the caller is
        not possible due exceptions. *)
-    in vernac_loop doc (Stm.get_current_state ~doc)
+    in vernac_loop ~state
   with
-    | CErrors.Drop -> doc
+    | CErrors.Drop -> state
     | CErrors.Quit -> exit 0
     | any ->
       top_stderr (str "Anomaly: main loop exited with exception: " ++
@@ -358,4 +361,4 @@ let rec loop ~time doc =
                   fnl() ++
                   str"Please report" ++
                   strbrk" at " ++ str Coq_config.wwwbugtracker ++ str ".");
-      loop ~time doc
+      loop ~time ~state

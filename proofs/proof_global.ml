@@ -146,6 +146,7 @@ let cur_pstate () =
   | [] -> raise NoCurrentProof
 
 let give_me_the_proof () = (cur_pstate ()).proof
+let give_me_the_proof_opt () = try Some (give_me_the_proof ()) with | NoCurrentProof -> None
 let get_current_proof_name () = (cur_pstate ()).pid
 
 let with_current_proof f =
