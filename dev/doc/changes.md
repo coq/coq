@@ -20,6 +20,14 @@ General deprecation
   removed. Please, make sure your plugin is warning-free in 8.7 before
   trying to port it over 8.8.
 
+Proof engine
+
+  Due to the introduction of `EConstr` in 8.7, it is not necessary to
+  track "goal evar normal form status" anymore, thus the type `'a
+  Proofview.Goal.t` loses its ghost argument. This may introduce some
+  minor incompatibilities at the typing level. Code-wise, things
+  should remain the same.
+
 We removed the following functions:
 
 - `Universes.unsafe_constr_of_global`: use `Global.constr_of_global_in_context`

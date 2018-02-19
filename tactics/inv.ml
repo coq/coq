@@ -353,7 +353,7 @@ let projectAndApply as_mode thin avoid id eqname names depids =
     Proofview.Goal.enter begin fun gl ->
     let sigma = project gl in
     (** We only look at the type of hypothesis "id" *)
-    let hyp = pf_nf_evar gl (pf_get_hyp_typ id (Proofview.Goal.assume gl)) in
+    let hyp = pf_nf_evar gl (pf_get_hyp_typ id gl) in
     let (t,t1,t2) = dest_nf_eq (pf_env gl) sigma hyp in
     match (EConstr.kind sigma t1, EConstr.kind sigma t2) with
     | Var id1, _ -> generalizeRewriteIntros as_mode (subst_hyp true id) depids id1

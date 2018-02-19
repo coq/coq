@@ -540,7 +540,6 @@ module New = struct
 
   let nthHypId m gl =
     (** We only use [id] *)
-    let gl = Proofview.Goal.assume gl in
     nthDecl m gl |> NamedDecl.get_id
   let nthHyp m gl = 
     mkVar (nthHypId m gl)
@@ -572,7 +571,7 @@ module New = struct
 
   let afterHyp id tac =
     Proofview.Goal.enter begin fun gl ->
-    let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+    let hyps = Proofview.Goal.hyps gl in
     let rem, _ = List.split_when (NamedDecl.get_id %> Id.equal id) hyps in
     tac rem
     end
@@ -658,12 +657,12 @@ module New = struct
 
   let elimination_sort_of_goal gl =
     (** Retyping will expand evars anyway. *)
-    let c = Proofview.Goal.concl (Goal.assume gl) in
+    let c = Proofview.Goal.concl gl in
     pf_apply Retyping.get_sort_family_of gl c
 
   let elimination_sort_of_hyp id gl =
     (** Retyping will expand evars anyway. *)
-    let c = pf_get_hyp_typ id (Goal.assume gl) in
+    let c = pf_get_hyp_typ id gl in
     pf_apply Retyping.get_sort_family_of gl c
 
   let elimination_sort_of_clause id gl = match id with

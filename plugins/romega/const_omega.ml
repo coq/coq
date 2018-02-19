@@ -223,7 +223,7 @@ let mk_N = function
 
 module type Int = sig
   val typ : constr Lazy.t
-  val is_int_typ : [ `NF ] Proofview.Goal.t -> constr -> bool
+  val is_int_typ : Proofview.Goal.t -> constr -> bool
   val plus : constr Lazy.t
   val mult : constr Lazy.t
   val opp : constr Lazy.t
@@ -231,7 +231,7 @@ module type Int = sig
 
   val mk : Bigint.bigint -> constr
   val parse_term : constr -> parse_term
-  val parse_rel : [ `NF ] Proofview.Goal.t -> constr -> parse_rel
+  val parse_rel : Proofview.Goal.t -> constr -> parse_rel
   (* check whether t is built only with numbers and + * - *)
   val get_scalar : constr -> Bigint.bigint option
 end

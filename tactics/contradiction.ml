@@ -53,7 +53,7 @@ let filter_hyp f tac =
     | d::rest when f (NamedDecl.get_type d) -> tac (NamedDecl.get_id d)
     | _::rest -> seek rest in
   Proofview.Goal.enter begin fun gl ->
-    let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+    let hyps = Proofview.Goal.hyps gl in
     seek hyps
   end
 
@@ -98,7 +98,7 @@ let contradiction_context =
                  end)
 	  | _ -> seek_neg rest
     in
-    let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+    let hyps = Proofview.Goal.hyps gl in
     seek_neg hyps
   end
 

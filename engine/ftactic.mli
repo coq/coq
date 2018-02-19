@@ -39,10 +39,10 @@ val run : 'a t -> ('a -> unit Proofview.tactic) -> unit Proofview.tactic
 
 (** {5 Focussing} *)
 
-val nf_enter : ([ `NF ] Proofview.Goal.t -> 'a t) -> 'a t
+val nf_enter : (Proofview.Goal.t -> 'a t) -> 'a t
 (** Enter a goal. The resulting tactic is focussed. *)
 
-val enter : ([ `LZ ] Proofview.Goal.t -> 'a t) -> 'a t
+val enter : (Proofview.Goal.t -> 'a t) -> 'a t
 (** Enter a goal, without evar normalization. The resulting tactic is
     focussed. *)
 

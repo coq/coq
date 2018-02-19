@@ -37,7 +37,7 @@ let ground_tac solver startseq =
     let () =
       if Tacinterp.get_debug()=Tactic_debug.DebugOn 0
       then
-        let gl = { Evd.it = Proofview.Goal.goal (Proofview.Goal.assume gl); sigma = project gl } in
+        let gl = { Evd.it = Proofview.Goal.goal gl; sigma = project gl } in
         Feedback.msg_debug (Printer.pr_goal gl)
     in
     tclORELSE (axiom_tac seq.gl seq)

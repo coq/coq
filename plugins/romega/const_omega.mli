@@ -105,7 +105,7 @@ module type Int =
     (* the coq type of the numbers *)
     val typ : constr Lazy.t
     (* Is a constr expands to the type of these numbers *)
-    val is_int_typ : [ `NF ] Proofview.Goal.t -> constr -> bool
+    val is_int_typ : Proofview.Goal.t -> constr -> bool
     (* the operations on the numbers *)
     val plus : constr Lazy.t
     val mult : constr Lazy.t
@@ -116,7 +116,7 @@ module type Int =
     (* parsing a term (one level, except if a number is found) *)
     val parse_term : constr -> parse_term
     (* parsing a relation expression, including = < <= >= > *)
-    val parse_rel : [ `NF ] Proofview.Goal.t -> constr -> parse_rel
+    val parse_rel : Proofview.Goal.t -> constr -> parse_rel
     (* Is a particular term only made of numbers and + * - ? *)
     val get_scalar : constr -> Bigint.bigint option
   end

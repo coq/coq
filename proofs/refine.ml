@@ -70,7 +70,6 @@ let add_side_effects env effects =
   List.fold_left (fun env eff -> add_side_effect env eff) env effects
 
 let generic_refine ~typecheck f gl =
-  let gl = Proofview.Goal.assume gl in
   let sigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
@@ -159,7 +158,6 @@ let with_type env evd c t =
   evd , j'.Environ.uj_val
 
 let refine_casted ~typecheck f = Proofview.Goal.enter begin fun gl ->
-  let gl = Proofview.Goal.assume gl in
   let concl = Proofview.Goal.concl gl in
   let env = Proofview.Goal.env gl in
   let f h =

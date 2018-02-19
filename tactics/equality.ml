@@ -266,7 +266,7 @@ let rewrite_elim with_evars frzevars cls c e =
   end
 
 let tclNOTSAMEGOAL tac =
-  let goal gl = Proofview.Goal.goal (Proofview.Goal.assume gl) in
+  let goal gl = Proofview.Goal.goal gl in
   Proofview.Goal.nf_enter begin fun gl ->
     let sigma = project gl in
     let ev = goal gl in
@@ -324,7 +324,7 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
     in
     let typ = match cls with
     | None -> pf_concl gl
-    | Some id -> pf_get_hyp_typ id (Proofview.Goal.assume gl)
+    | Some id -> pf_get_hyp_typ id gl
     in
     let cs = instantiate_lemma typ in
     if firstonly then tclFIRST (List.map try_clause cs)
@@ -970,7 +970,7 @@ let rec build_discriminator env sigma true_0 false_0 dirn c = function
 let gen_absurdity id =
   Proofview.Goal.enter begin fun gl ->
   let sigma = project gl in
-  let hyp_typ = pf_get_hyp_typ id (Proofview.Goal.assume gl) in
+  let hyp_typ = pf_get_hyp_typ id gl in
   if is_empty_type sigma hyp_typ
   then
     simplest_elim (mkVar id)
@@ -1443,7 +1443,7 @@ let get_previous_hyp_position id gl =
     let hyp = Context.Named.Declaration.get_id d in
     if Id.equal hyp id then dest else aux (MoveAfter hyp) right
   in
-  aux MoveLast (Proofview.Goal.hyps (Proofview.Goal.assume gl))
+  aux MoveLast (Proofview.Goal.hyps gl)
 
 let injEq flags ?(old=false) with_evars clear_flag ipats =
   (* Decide which compatibility mode to use *)
@@ -1716,8 +1716,8 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
-  let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-  let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
+  let hyps = Proofview.Goal.hyps gl in
+  let concl = Proofview.Goal.concl gl in
   (* The set of hypotheses using x *)
   let dephyps =
     List.rev (pi3 (List.fold_right (fun dcl (dest,deps,allhyps) ->
@@ -1749,7 +1749,6 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
 
 let subst_one_var dep_proof_ok x =
   Proofview.Goal.enter begin fun gl ->
-    let gl = Proofview.Goal.assume gl in
     let decl = pf_get_hyp x gl in
     (* If x has a body, simply replace x with body and clear x *)
     if is_local_def decl then tclTHEN (unfold_body x) (clear [x]) else
@@ -1790,7 +1789,6 @@ let subst_all ?(flags=default_subst_tactic_flags) () =
 
   (* First step: find hypotheses to treat in linear time *)
   let find_equations gl =
-    let gl = Proofview.Goal.assume gl in
     let env = Proofview.Goal.env gl in
     let sigma = project gl in
     let find_eq_data_decompose = find_eq_data_decompose gl in
@@ -1816,7 +1814,6 @@ let subst_all ?(flags=default_subst_tactic_flags) () =
   (* Second step: treat equations *)
   let process hyp =
     Proofview.Goal.enter begin fun gl ->
-    let gl = Proofview.Goal.assume gl in
     let sigma = project gl in
     let env = Proofview.Goal.env gl in
     let find_eq_data_decompose = find_eq_data_decompose gl in

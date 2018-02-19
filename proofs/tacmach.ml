@@ -150,7 +150,6 @@ module New = struct
 
   let pf_global id gl =
     (** We only check for the existence of an [id] in [hyps] *)
-    let gl = Proofview.Goal.assume gl in
     let hyps = Proofview.Goal.hyps gl in
     Constrintern.construct_reference hyps id
 
@@ -167,13 +166,11 @@ module New = struct
 
   let pf_ids_of_hyps gl =
     (** We only get the identifiers in [hyps] *)
-    let gl = Proofview.Goal.assume gl in
     let hyps = Proofview.Goal.hyps gl in
     ids_of_named_context hyps
 
   let pf_ids_set_of_hyps gl =
     (** We only get the identifiers in [hyps] *)
-    let gl = Proofview.Goal.assume gl in
     let env = Proofview.Goal.env gl in
     Environ.ids_of_named_context_val (Environ.named_context_val env)
 
@@ -204,9 +201,8 @@ module New = struct
     let hyps = Proofview.Goal.hyps gl in
     List.hd hyps
 
-  let pf_nf_concl (gl : [ `LZ ] Proofview.Goal.t) =
+  let pf_nf_concl (gl : Proofview.Goal.t) =
     (** We normalize the conclusion just after *)
-    let gl = Proofview.Goal.assume gl in
     let concl = Proofview.Goal.concl gl in
     let sigma = project gl in
     nf_evar sigma concl
