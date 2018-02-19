@@ -369,26 +369,10 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
       (List.length fields,0,[],[],[]) coers (List.rev fields) (List.rev fieldimpls)
   in (kinds,sp_projs)
 
-let structure_signature ctx =
-  let rec deps_to_evar evm l =
-    match l with [] -> Evd.empty
-      | [decl] ->
-        let env = Environ.empty_named_context_val in
-        let (evm, _) = Evarutil.new_pure_evar env evm (EConstr.of_constr (RelDecl.get_type decl)) in
-        evm
-      | decl::tl ->
-          let env = Environ.empty_named_context_val in
-          let (evm, ev) = Evarutil.new_pure_evar env evm (EConstr.of_constr (RelDecl.get_type decl)) in
-	  let new_tl = Util.List.map_i
-	    (fun pos decl ->
-	       RelDecl.map_type (fun t -> EConstr.Unsafe.to_constr (Termops.replace_term evm (EConstr.mkRel pos) (EConstr.mkEvar(ev,[||])) (EConstr.of_constr t))) decl) 1 tl in
-	  deps_to_evar evm new_tl in
-  deps_to_evar Evd.empty (List.rev ctx)
-
 open Typeclasses
 
 let declare_structure finite ubinders univs id idbuild paramimpls params arity template
-    fieldimpls fields ?(kind=StructureComponent) ?name is_coe coers sign =
+    fieldimpls fields ?(kind=StructureComponent) ?name is_coe coers =
   let nparams = List.length params and nfields = List.length fields in
   let args = Context.Rel.to_extended_list mkRel nfields params in
   let ind = applist (mkRel (1+nparams+nfields), args) in
@@ -444,7 +428,7 @@ let implicits_of_context ctx =
     1 (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
 let declare_class finite def cum ubinders univs id idbuild paramimpls params arity
-    template fieldimpls fields ?(kind=StructureComponent) is_coe coers priorities sign =
+    template fieldimpls fields ?(kind=StructureComponent) is_coe coers priorities =
   let fieldimpls =
     (* Make the class implicit in the projections, and the params if applicable. *)
     let len = List.length params in
@@ -500,7 +484,7 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
        in
        let ind = declare_structure Declarations.BiFinite ubinders univs (snd id) idbuild paramimpls
 	  params arity template fieldimpls fields
-	  ~kind:Method ~name:binder_name false (List.map (fun _ -> false) fields) sign
+          ~kind:Method ~name:binder_name false (List.map (fun _ -> false) fields)
        in
        let coers = List.map2 (fun coe pri -> 
 			      Option.map (fun b -> 
@@ -607,12 +591,11 @@ let definition_structure (kind,cum,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cf
   let pl, univs, arity, template, implpars, params, implfs, fields =
     States.with_state_protection (fun () ->
       typecheck_params_and_fields finite (kind = Class true) idstruc poly pl s ps notations fs) () in
-  let sign = structure_signature (fields@params) in
   let gr = match kind with
   | Class def ->
      let priorities = List.map (fun id -> {hint_priority = id; hint_pattern = None}) priorities in
      let gr = declare_class finite def cum pl univs (loc,idstruc) idbuild
-	  implpars params arity template implfs fields is_coe coers priorities sign in
+          implpars params arity template implfs fields is_coe coers priorities in
 	gr
     | _ ->
       let implfs = List.map
@@ -631,7 +614,7 @@ let definition_structure (kind,cum,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cf
       in
       let ind = declare_structure finite pl univs idstruc
 	  idbuild implpars params arity template implfs 
-	  fields is_coe (List.map (fun coe -> not (Option.is_empty coe)) coers) sign in
+          fields is_coe (List.map (fun coe -> not (Option.is_empty coe)) coers) in
 	IndRef ind
   in
   Declare.declare_univ_binders gr pl;
