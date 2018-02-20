@@ -596,7 +596,6 @@ through the <tt>Require Import</tt> command.</p>
   </dt>
   <dd>
     theories/Compat/AdmitAxiom.v
-    theories/Compat/Coq85.v
     theories/Compat/Coq86.v
     theories/Compat/Coq87.v
   </dd>

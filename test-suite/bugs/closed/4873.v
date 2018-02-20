@@ -1,6 +1,5 @@
 Require Import Coq.Classes.Morphisms.
 Require Import Relation_Definitions.
-Require Import Coq.Compat.Coq85.
 
 Fixpoint tuple' T n : Type :=
   match n with
