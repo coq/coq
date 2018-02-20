@@ -60,18 +60,19 @@ let lookup_module lqid = fst (lookup_module_or_modtype Module lqid)
 let transl_with_decl env = function
   | CWith_Module ((_,fqid),qid) ->
       WithMod (fqid,lookup_module qid), Univ.ContextSet.empty
-  | CWith_Definition ((_,fqid),c) ->
-    let sigma = Evd.from_env env in
+  | CWith_Definition ((_,fqid),udecl,c) ->
+    let sigma, udecl = Univdecls.interp_univ_decl_opt env udecl in
     let c, ectx = interp_constr env sigma c in
-    if Flags.is_universe_polymorphism () then
-      let ctx = UState.context ectx in
-      let inst, ctx = Univ.abstract_universes ctx in
-      let c = EConstr.Vars.subst_univs_level_constr (Univ.make_instance_subst inst) c in
-      let c = EConstr.to_constr sigma c in
-      WithDef (fqid,(c, Some ctx)), Univ.ContextSet.empty
-    else
-      let c = EConstr.to_constr sigma c in
-      WithDef (fqid,(c, None)), UState.context_set ectx
+    begin match UState.check_univ_decl ~poly:(Flags.is_universe_polymorphism()) ectx udecl with
+      | Entries.Polymorphic_const_entry ctx ->
+        let inst, ctx = Univ.abstract_universes ctx in
+        let c = EConstr.Vars.subst_univs_level_constr (Univ.make_instance_subst inst) c in
+        let c = EConstr.to_constr sigma c in
+        WithDef (fqid,(c, Some ctx)), Univ.ContextSet.empty
+      | Entries.Monomorphic_const_entry ctx ->
+        let c = EConstr.to_constr sigma c in
+        WithDef (fqid,(c, None)), ctx
+    end
 
 let loc_of_module l = l.CAst.loc
 

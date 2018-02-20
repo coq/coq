@@ -231,9 +231,9 @@ open Decl_kinds
     hov 2 (keyword "Hint "++ pph ++ opth)
 
   let pr_with_declaration pr_c = function
-    | CWith_Definition (id,c) ->
+    | CWith_Definition (id,udecl,c) ->
       let p = pr_c c in
-      keyword "Definition" ++ spc() ++ pr_lfqid id ++ str" := " ++ p
+      keyword "Definition" ++ spc() ++ pr_lfqid id ++ pr_universe_decl udecl ++ str" := " ++ p
     | CWith_Module (id,qid) ->
       keyword "Module" ++ spc() ++ pr_lfqid id ++ str" := " ++
         pr_located pr_qualid qid

@@ -15,6 +15,11 @@ open Decl_kinds
 
 (** [constr_expr] is the abstract syntax tree produced by the parser *)
 
+type universe_decl_expr = (lident list, glob_constraint list) gen_universe_decl
+
+type ident_decl = lident * universe_decl_expr option
+type name_decl = lname * universe_decl_expr option
+
 type notation = string
 
 type explicitation =
@@ -137,7 +142,7 @@ type constr_pattern_expr = constr_expr
 
 type with_declaration_ast =
   | CWith_Module of Id.t list Loc.located * qualid Loc.located
-  | CWith_Definition of Id.t list Loc.located * constr_expr
+  | CWith_Definition of Id.t list Loc.located * universe_decl_expr option * constr_expr
 
 type module_ast_r =
   | CMident of qualid

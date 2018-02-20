@@ -10,10 +10,10 @@ open Pp
 open CErrors
 open Util
 open Names
+open Vernacexpr
 open Constrexpr
 open Constrexpr_ops
 open Extend
-open Vernacexpr
 open Decl_kinds
 open Declarations
 open Misctypes
@@ -140,7 +140,7 @@ let name_of_ident_decl : ident_decl -> name_decl =
 (* Gallina declarations *)
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion
-    record_field decl_notation rec_definition ident_decl;
+    record_field decl_notation rec_definition ident_decl univ_decl;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
@@ -555,8 +555,8 @@ GEXTEND Gram
     [ [ qid = qualid -> CAst.make ~loc:!@loc @@ CMident (snd qid) | "("; me = module_expr; ")" -> me ] ]
   ;
   with_declaration:
-    [ [ "Definition"; fqid = fullyqualid; ":="; c = Constr.lconstr ->
-          CWith_Definition (fqid,c)
+    [ [ "Definition"; fqid = fullyqualid; udecl = OPT univ_decl; ":="; c = Constr.lconstr ->
+          CWith_Definition (fqid,udecl,c)
       | IDENT "Module"; fqid = fullyqualid; ":="; qid = qualid ->
 	  CWith_Module (fqid,qid)
       ] ]

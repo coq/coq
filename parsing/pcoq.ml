@@ -440,6 +440,7 @@ module Prim =
 
     let name = Gram.entry_create "Prim.name"
     let identref = Gram.entry_create "Prim.identref"
+    let univ_decl = Gram.entry_create "Prim.univ_decl"
     let ident_decl = Gram.entry_create "Prim.ident_decl"
     let pattern_ident = Gram.entry_create "pattern_ident"
     let pattern_identref = Gram.entry_create "pattern_identref"

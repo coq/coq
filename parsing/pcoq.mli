@@ -196,6 +196,7 @@ module Prim :
     val ident : Id.t Gram.entry
     val name : lname Gram.entry
     val identref : lident Gram.entry
+    val univ_decl : universe_decl_expr Gram.entry
     val ident_decl : ident_decl Gram.entry
     val pattern_ident : Id.t Gram.entry
     val pattern_identref : lident Gram.entry

@@ -14,7 +14,6 @@ open Pretyping
 open Evarutil
 open Evarconv
 open Misctypes
-open Vernacexpr
 
 module RelDecl = Context.Rel.Declaration
 
