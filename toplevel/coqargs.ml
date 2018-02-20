@@ -149,7 +149,7 @@ let add_compat_require opts v =
   | Flags.V8_5 -> add_vo_require opts "Coq.Compat.Coq85" None (Some false)
   | Flags.V8_6 -> add_vo_require opts "Coq.Compat.Coq86" None (Some false)
   | Flags.V8_7 -> add_vo_require opts "Coq.Compat.Coq87" None (Some false)
-  | Flags.VOld | Flags.Current -> opts
+  | Flags.Current -> opts
 
 let set_batch_mode opts =
   Flags.quiet := true;
