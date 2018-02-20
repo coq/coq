@@ -32,7 +32,7 @@ The notations printing mode is off
 The backwards-compatible printing of primitive projections mode is on
 The printing of primitive projection parameters mode is on
 The projection printing using dot notation mode is off
-The record printing mode is on
+The record printing mode is off
 The pattern matching return type synthesizability mode is off
 The printing of universes mode is on
 The forced wildcard mode is off
@@ -66,7 +66,7 @@ The notations printing mode is on
 The backwards-compatible printing of primitive projections mode is off
 The printing of primitive projection parameters mode is off
 The projection printing using dot notation mode is on
-The record printing mode is off
+The record printing mode is on
 The pattern matching return type synthesizability mode is on
 The printing of universes mode is off
 The forced wildcard mode is on
@@ -100,7 +100,7 @@ The notations printing mode is off
 The backwards-compatible printing of primitive projections mode is on
 The printing of primitive projection parameters mode is on
 The projection printing using dot notation mode is off
-The record printing mode is on
+The record printing mode is off
 The pattern matching return type synthesizability mode is off
 The printing of universes mode is on
 The forced wildcard mode is off
@@ -134,7 +134,7 @@ The notations printing mode is off
 The backwards-compatible printing of primitive projections mode is on
 The printing of primitive projection parameters mode is on
 The projection printing using dot notation mode is off
-The record printing mode is on
+The record printing mode is off
 The pattern matching return type synthesizability mode is off
 The printing of universes mode is on
 The forced wildcard mode is off

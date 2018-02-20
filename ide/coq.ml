@@ -575,7 +575,7 @@ struct
       { opts0 = proj_parms; init0 = { all = true; defaults = false }; label0 = "Display primitive pro_jection parameters" };
       { opts0 = projections; init0 = { all = false; defaults = false }; label0 = "Display _projections" };
       { opts0 = raw_matching; init0 = { all = false; defaults = true }; label0 = "Display raw _matching expressions" };
-      { opts0 = records; init0 = { all = true; defaults = true }; label0 = "Display _records" };
+      { opts0 = records; init0 = { all = false; defaults = true }; label0 = "Display _records" };
       { opts0 = synth; init0 = { all = false; defaults = true }; label0 = "Do not display synthesi_zable return types" };
       { opts0 = unfocused; init0 = { all = false; defaults = false }; label0 = "Display unfocused _goals" };
       { opts0 = universes; init0 = { all = true; defaults = false }; label0 = "Display _universe levels" };

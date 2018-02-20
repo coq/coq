@@ -134,12 +134,17 @@ Definition half' :=
      Rat_irred_cond := one_two_irred |}.
 \end{coq_example}
 
-This syntax can be disabled globally for printing by
+This syntax can be disabled globally for printing records by
 \begin{quote}
 {\tt Unset Printing Records.}
 \optindex{Printing Records}
 \end{quote}
-For a given type, one can override this using either
+The same option also affects how record types are printed. When the
+option is set, record types are printed using syntax like that used to
+define them. If the option is not set, record types are printed using
+a syntax closer to their internal representation in {\Coq}.
+
+For a given type, one can override the {\tt Printing Records} option using either
 \begin{quote}
 {\tt Add Printing Record {\ident}.}
 \end{quote}
@@ -2024,13 +2029,13 @@ same effect as running:
 \item {\tt Set Printing Let Binder Types.}
 \item {\tt Set Printing Primitive Projection Compatibility.}
 \item {\tt Set Printing Primitive Projection Parameters.}
-\item {\tt Set Printing Records.}
 \item {\tt Set Printing Universes.}
 \item {\tt Unset Printing Allow Default Clause.}
 \item {\tt Unset Printing Factorizable Match Patterns.}
 \item {\tt Unset Printing Matching.}
 \item {\tt Unset Printing Notations.}
 \item {\tt Unset Printing Projections.}
+\item {\tt Unset Printing Records.}
 \item {\tt Unset Printing Synth.}
 \item {\tt Unset Printing Wildcard.}
 \end{itemize}

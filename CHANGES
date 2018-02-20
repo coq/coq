@@ -66,7 +66,7 @@ Focusing
 
 Vernacular Commands
 
-- Printing All is no longer an option as such; instead, the command
+- Printing All is no longer an option as such. Instead, the command
   Set Printing All sets or unsets other Printing options to remove high-level
   printing features. The new command Set Printing Sugared exactly reverses
   those options, providing high-level printing features. Unset Printing All
@@ -79,6 +79,8 @@ Vernacular Commands
 - The command Set Printing Let Binder Types prints the types of binders
   for let-in expressions, disabled by default. Such printing had been
   enabled by Set Printing All.
+- The Printing Records option affects the printing of record types, as well
+  as the instances of such types.
 - Proofs ending in "Qed exporting ident, .., ident" are not supported
   anymore. Constants generated during `abstract` are kept private to the
   local environment.
