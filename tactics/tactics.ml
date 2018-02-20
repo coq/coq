@@ -644,7 +644,8 @@ let cofix ido = match ido with
 (*          Reduction and conversion tactics                  *)
 (**************************************************************)
 
-type tactic_reduction = env -> evar_map -> constr -> constr
+type tactic_reduction = Reductionops.reduction_function
+type e_tactic_reduction = Reductionops.e_reduction_function
 
 let pf_reduce_decl redfun where decl gl =
   let open Context.Named.Declaration in
