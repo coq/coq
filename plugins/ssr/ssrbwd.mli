@@ -13,4 +13,4 @@ open Proofview
 
 val apply_top_tac : unit tactic
 
-val inner_ssrapplytac : ssrterm list -> ssragens -> ist -> unit tactic
+val inner_ssrapplytac : ssrterm list -> ssrterm ssragens -> ist -> unit tactic
