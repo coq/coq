@@ -14,12 +14,12 @@ Local Open Scope Z_scope.
 (** Nota : this file is mostly deprecated. The definition of [Z.pow]
     and its usual properties are now provided by module [BinInt.Z]. *)
 
-Notation Zpower_pos := Z.pow_pos (compat "8.3").
-Notation Zpower := Z.pow (compat "8.3").
-Notation Zpower_0_r := Z.pow_0_r (compat "8.3").
-Notation Zpower_succ_r := Z.pow_succ_r (compat "8.3").
-Notation Zpower_neg_r := Z.pow_neg_r (compat "8.3").
-Notation Zpower_Ppow := Pos2Z.inj_pow (compat "8.3").
+Notation Zpower_pos := Z.pow_pos (only parsing).
+Notation Zpower := Z.pow (only parsing).
+Notation Zpower_0_r := Z.pow_0_r (only parsing).
+Notation Zpower_succ_r := Z.pow_succ_r (only parsing).
+Notation Zpower_neg_r := Z.pow_neg_r (only parsing).
+Notation Zpower_Ppow := Pos2Z.inj_pow (only parsing).
 
 Lemma Zpower_theory : power_theory 1 Z.mul (@eq Z) Z.of_N Z.pow.
 Proof.

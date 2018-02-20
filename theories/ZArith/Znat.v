@@ -951,65 +951,65 @@ Definition inj_gt n m := proj1 (Nat2Z.inj_gt n m).
 
 (** For the others, a Notation is fine *)
 
-Notation inj_0 := Nat2Z.inj_0 (compat "8.3").
-Notation inj_S := Nat2Z.inj_succ (compat "8.3").
-Notation inj_compare := Nat2Z.inj_compare (compat "8.3").
-Notation inj_eq_rev := Nat2Z.inj (compat "8.3").
-Notation inj_eq_iff := (fun n m => iff_sym (Nat2Z.inj_iff n m)) (compat "8.3").
-Notation inj_le_iff := Nat2Z.inj_le (compat "8.3").
-Notation inj_lt_iff := Nat2Z.inj_lt (compat "8.3").
-Notation inj_ge_iff := Nat2Z.inj_ge (compat "8.3").
-Notation inj_gt_iff := Nat2Z.inj_gt (compat "8.3").
-Notation inj_le_rev := (fun n m => proj2 (Nat2Z.inj_le n m)) (compat "8.3").
-Notation inj_lt_rev := (fun n m => proj2 (Nat2Z.inj_lt n m)) (compat "8.3").
-Notation inj_ge_rev := (fun n m => proj2 (Nat2Z.inj_ge n m)) (compat "8.3").
-Notation inj_gt_rev := (fun n m => proj2 (Nat2Z.inj_gt n m)) (compat "8.3").
-Notation inj_plus := Nat2Z.inj_add (compat "8.3").
-Notation inj_mult := Nat2Z.inj_mul (compat "8.3").
-Notation inj_minus1 := Nat2Z.inj_sub (compat "8.3").
-Notation inj_minus := Nat2Z.inj_sub_max (compat "8.3").
-Notation inj_min := Nat2Z.inj_min (compat "8.3").
-Notation inj_max := Nat2Z.inj_max (compat "8.3").
+Notation inj_0 := Nat2Z.inj_0 (only parsing).
+Notation inj_S := Nat2Z.inj_succ (only parsing).
+Notation inj_compare := Nat2Z.inj_compare (only parsing).
+Notation inj_eq_rev := Nat2Z.inj (only parsing).
+Notation inj_eq_iff := (fun n m => iff_sym (Nat2Z.inj_iff n m)) (only parsing).
+Notation inj_le_iff := Nat2Z.inj_le (only parsing).
+Notation inj_lt_iff := Nat2Z.inj_lt (only parsing).
+Notation inj_ge_iff := Nat2Z.inj_ge (only parsing).
+Notation inj_gt_iff := Nat2Z.inj_gt (only parsing).
+Notation inj_le_rev := (fun n m => proj2 (Nat2Z.inj_le n m)) (only parsing).
+Notation inj_lt_rev := (fun n m => proj2 (Nat2Z.inj_lt n m)) (only parsing).
+Notation inj_ge_rev := (fun n m => proj2 (Nat2Z.inj_ge n m)) (only parsing).
+Notation inj_gt_rev := (fun n m => proj2 (Nat2Z.inj_gt n m)) (only parsing).
+Notation inj_plus := Nat2Z.inj_add (only parsing).
+Notation inj_mult := Nat2Z.inj_mul (only parsing).
+Notation inj_minus1 := Nat2Z.inj_sub (only parsing).
+Notation inj_minus := Nat2Z.inj_sub_max (only parsing).
+Notation inj_min := Nat2Z.inj_min (only parsing).
+Notation inj_max := Nat2Z.inj_max (only parsing).
 
-Notation Z_of_nat_of_P := positive_nat_Z (compat "8.3").
+Notation Z_of_nat_of_P := positive_nat_Z (only parsing).
 Notation Zpos_eq_Z_of_nat_o_nat_of_P :=
-  (fun p => eq_sym (positive_nat_Z p)) (compat "8.3").
+  (fun p => eq_sym (positive_nat_Z p)) (only parsing).
 
-Notation Z_of_nat_of_N := N_nat_Z (compat "8.3").
-Notation Z_of_N_of_nat := nat_N_Z (compat "8.3").
+Notation Z_of_nat_of_N := N_nat_Z (only parsing).
+Notation Z_of_N_of_nat := nat_N_Z (only parsing).
 
-Notation Z_of_N_eq := (f_equal Z.of_N) (compat "8.3").
-Notation Z_of_N_eq_rev := N2Z.inj (compat "8.3").
-Notation Z_of_N_eq_iff := (fun n m => iff_sym (N2Z.inj_iff n m)) (compat "8.3").
-Notation Z_of_N_compare := N2Z.inj_compare (compat "8.3").
-Notation Z_of_N_le_iff := N2Z.inj_le (compat "8.3").
-Notation Z_of_N_lt_iff := N2Z.inj_lt (compat "8.3").
-Notation Z_of_N_ge_iff := N2Z.inj_ge (compat "8.3").
-Notation Z_of_N_gt_iff := N2Z.inj_gt (compat "8.3").
-Notation Z_of_N_le := (fun n m => proj1 (N2Z.inj_le n m)) (compat "8.3").
-Notation Z_of_N_lt := (fun n m => proj1 (N2Z.inj_lt n m)) (compat "8.3").
-Notation Z_of_N_ge := (fun n m => proj1 (N2Z.inj_ge n m)) (compat "8.3").
-Notation Z_of_N_gt := (fun n m => proj1 (N2Z.inj_gt n m)) (compat "8.3").
-Notation Z_of_N_le_rev := (fun n m => proj2 (N2Z.inj_le n m)) (compat "8.3").
-Notation Z_of_N_lt_rev := (fun n m => proj2 (N2Z.inj_lt n m)) (compat "8.3").
-Notation Z_of_N_ge_rev := (fun n m => proj2 (N2Z.inj_ge n m)) (compat "8.3").
-Notation Z_of_N_gt_rev := (fun n m => proj2 (N2Z.inj_gt n m)) (compat "8.3").
-Notation Z_of_N_pos := N2Z.inj_pos (compat "8.3").
-Notation Z_of_N_abs := N2Z.inj_abs_N (compat "8.3").
-Notation Z_of_N_le_0 := N2Z.is_nonneg (compat "8.3").
-Notation Z_of_N_plus := N2Z.inj_add (compat "8.3").
-Notation Z_of_N_mult := N2Z.inj_mul (compat "8.3").
-Notation Z_of_N_minus := N2Z.inj_sub_max (compat "8.3").
-Notation Z_of_N_succ := N2Z.inj_succ (compat "8.3").
-Notation Z_of_N_min := N2Z.inj_min (compat "8.3").
-Notation Z_of_N_max := N2Z.inj_max (compat "8.3").
-Notation Zabs_of_N := Zabs2N.id (compat "8.3").
-Notation Zabs_N_succ_abs := Zabs2N.inj_succ_abs (compat "8.3").
-Notation Zabs_N_succ := Zabs2N.inj_succ (compat "8.3").
-Notation Zabs_N_plus_abs := Zabs2N.inj_add_abs (compat "8.3").
-Notation Zabs_N_plus := Zabs2N.inj_add (compat "8.3").
-Notation Zabs_N_mult_abs := Zabs2N.inj_mul_abs (compat "8.3").
-Notation Zabs_N_mult := Zabs2N.inj_mul (compat "8.3").
+Notation Z_of_N_eq := (f_equal Z.of_N) (only parsing).
+Notation Z_of_N_eq_rev := N2Z.inj (only parsing).
+Notation Z_of_N_eq_iff := (fun n m => iff_sym (N2Z.inj_iff n m)) (only parsing).
+Notation Z_of_N_compare := N2Z.inj_compare (only parsing).
+Notation Z_of_N_le_iff := N2Z.inj_le (only parsing).
+Notation Z_of_N_lt_iff := N2Z.inj_lt (only parsing).
+Notation Z_of_N_ge_iff := N2Z.inj_ge (only parsing).
+Notation Z_of_N_gt_iff := N2Z.inj_gt (only parsing).
+Notation Z_of_N_le := (fun n m => proj1 (N2Z.inj_le n m)) (only parsing).
+Notation Z_of_N_lt := (fun n m => proj1 (N2Z.inj_lt n m)) (only parsing).
+Notation Z_of_N_ge := (fun n m => proj1 (N2Z.inj_ge n m)) (only parsing).
+Notation Z_of_N_gt := (fun n m => proj1 (N2Z.inj_gt n m)) (only parsing).
+Notation Z_of_N_le_rev := (fun n m => proj2 (N2Z.inj_le n m)) (only parsing).
+Notation Z_of_N_lt_rev := (fun n m => proj2 (N2Z.inj_lt n m)) (only parsing).
+Notation Z_of_N_ge_rev := (fun n m => proj2 (N2Z.inj_ge n m)) (only parsing).
+Notation Z_of_N_gt_rev := (fun n m => proj2 (N2Z.inj_gt n m)) (only parsing).
+Notation Z_of_N_pos := N2Z.inj_pos (only parsing).
+Notation Z_of_N_abs := N2Z.inj_abs_N (only parsing).
+Notation Z_of_N_le_0 := N2Z.is_nonneg (only parsing).
+Notation Z_of_N_plus := N2Z.inj_add (only parsing).
+Notation Z_of_N_mult := N2Z.inj_mul (only parsing).
+Notation Z_of_N_minus := N2Z.inj_sub_max (only parsing).
+Notation Z_of_N_succ := N2Z.inj_succ (only parsing).
+Notation Z_of_N_min := N2Z.inj_min (only parsing).
+Notation Z_of_N_max := N2Z.inj_max (only parsing).
+Notation Zabs_of_N := Zabs2N.id (only parsing).
+Notation Zabs_N_succ_abs := Zabs2N.inj_succ_abs (only parsing).
+Notation Zabs_N_succ := Zabs2N.inj_succ (only parsing).
+Notation Zabs_N_plus_abs := Zabs2N.inj_add_abs (only parsing).
+Notation Zabs_N_plus := Zabs2N.inj_add (only parsing).
+Notation Zabs_N_mult_abs := Zabs2N.inj_mul_abs (only parsing).
+Notation Zabs_N_mult := Zabs2N.inj_mul (only parsing).
 
 Theorem inj_minus2 : forall n m:nat, (m > n)%nat -> Z.of_nat (n - m) = 0.
 Proof.

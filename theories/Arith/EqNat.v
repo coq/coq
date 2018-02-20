@@ -69,10 +69,10 @@ Defined.
    We reuse the one already defined in module [Nat].
    In scope [nat_scope], the notation "=?" can be used. *)
 
-Notation beq_nat := Nat.eqb (compat "8.4").
+Notation beq_nat := Nat.eqb (only parsing).
 
-Notation beq_nat_true_iff := Nat.eqb_eq (compat "8.4").
-Notation beq_nat_false_iff := Nat.eqb_neq (compat "8.4").
+Notation beq_nat_true_iff := Nat.eqb_eq (only parsing).
+Notation beq_nat_false_iff := Nat.eqb_neq (only parsing).
 
 Lemma beq_nat_refl n : true = (n =? n).
 Proof.

@@ -1308,11 +1308,11 @@ Qed.
 (**********************************************************************)
 (** * Compatibility notations *)
 Notation description_rel_choice_imp_funct_choice :=
-  functional_rel_reification_and_rel_choice_imp_fun_choice (compat "8.6").
+  functional_rel_reification_and_rel_choice_imp_fun_choice (only parsing).
 
-Notation funct_choice_imp_rel_choice := fun_choice_imp_rel_choice (compat "8.6").
+Notation funct_choice_imp_rel_choice := fun_choice_imp_rel_choice (only parsing).
 
 Notation FunChoice_Equiv_RelChoice_and_ParamDefinDescr :=
- fun_choice_iff_rel_choice_and_functional_rel_reification (compat "8.6").
+ fun_choice_iff_rel_choice_and_functional_rel_reification (only parsing).
 
-Notation funct_choice_imp_description := fun_choice_imp_functional_rel_reification (compat "8.6").
+Notation funct_choice_imp_description := fun_choice_imp_functional_rel_reification (only parsing).

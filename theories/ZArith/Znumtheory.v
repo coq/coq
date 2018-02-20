@@ -25,20 +25,20 @@ Open Scope Z_scope.
      - properties of the efficient [Z.gcd] function
 *)
 
-Notation Zgcd := Z.gcd (compat "8.3").
-Notation Zggcd := Z.ggcd (compat "8.3").
-Notation Zggcd_gcd := Z.ggcd_gcd (compat "8.3").
-Notation Zggcd_correct_divisors := Z.ggcd_correct_divisors (compat "8.3").
-Notation Zgcd_divide_l := Z.gcd_divide_l (compat "8.3").
-Notation Zgcd_divide_r := Z.gcd_divide_r (compat "8.3").
-Notation Zgcd_greatest := Z.gcd_greatest (compat "8.3").
-Notation Zgcd_nonneg := Z.gcd_nonneg (compat "8.3").
-Notation Zggcd_opp := Z.ggcd_opp (compat "8.3").
+Notation Zgcd := Z.gcd (compat "8.6").
+Notation Zggcd := Z.ggcd (compat "8.6").
+Notation Zggcd_gcd := Z.ggcd_gcd (compat "8.6").
+Notation Zggcd_correct_divisors := Z.ggcd_correct_divisors (compat "8.6").
+Notation Zgcd_divide_l := Z.gcd_divide_l (compat "8.6").
+Notation Zgcd_divide_r := Z.gcd_divide_r (compat "8.6").
+Notation Zgcd_greatest := Z.gcd_greatest (compat "8.6").
+Notation Zgcd_nonneg := Z.gcd_nonneg (compat "8.6").
+Notation Zggcd_opp := Z.ggcd_opp (compat "8.6").
 
 (** The former specialized inductive predicate [Z.divide] is now
     a generic existential predicate. *)
 
-Notation Zdivide := Z.divide (compat "8.3").
+Notation Zdivide := Z.divide (compat "8.6").
 
 (** Its former constructor is now a pseudo-constructor. *)
 
@@ -46,17 +46,17 @@ Definition Zdivide_intro a b q (H:b=q*a) : Z.divide a b := ex_intro _ q H.
 
 (** Results concerning divisibility*)
 
-Notation Zdivide_refl := Z.divide_refl (compat "8.3").
-Notation Zone_divide := Z.divide_1_l (compat "8.3").
-Notation Zdivide_0 := Z.divide_0_r (compat "8.3").
-Notation Zmult_divide_compat_l := Z.mul_divide_mono_l (compat "8.3").
-Notation Zmult_divide_compat_r := Z.mul_divide_mono_r (compat "8.3").
-Notation Zdivide_plus_r := Z.divide_add_r (compat "8.3").
-Notation Zdivide_minus_l := Z.divide_sub_r (compat "8.3").
-Notation Zdivide_mult_l := Z.divide_mul_l (compat "8.3").
-Notation Zdivide_mult_r := Z.divide_mul_r (compat "8.3").
-Notation Zdivide_factor_r := Z.divide_factor_l (compat "8.3").
-Notation Zdivide_factor_l := Z.divide_factor_r (compat "8.3").
+Notation Zdivide_refl := Z.divide_refl (compat "8.6").
+Notation Zone_divide := Z.divide_1_l (only parsing).
+Notation Zdivide_0 := Z.divide_0_r (only parsing).
+Notation Zmult_divide_compat_l := Z.mul_divide_mono_l (only parsing).
+Notation Zmult_divide_compat_r := Z.mul_divide_mono_r (only parsing).
+Notation Zdivide_plus_r := Z.divide_add_r (only parsing).
+Notation Zdivide_minus_l := Z.divide_sub_r (only parsing).
+Notation Zdivide_mult_l := Z.divide_mul_l (only parsing).
+Notation Zdivide_mult_r := Z.divide_mul_r (only parsing).
+Notation Zdivide_factor_r := Z.divide_factor_l (only parsing).
+Notation Zdivide_factor_l := Z.divide_factor_r (only parsing).
 
 Lemma Zdivide_opp_r a b : (a | b) -> (a | - b).
 Proof. apply Z.divide_opp_r. Qed.
@@ -91,12 +91,12 @@ Qed.
 
 (** Only [1] and [-1] divide [1]. *)
 
-Notation Zdivide_1 := Z.divide_1_r (compat "8.3").
+Notation Zdivide_1 := Z.divide_1_r (only parsing).
 
 (** If [a] divides [b] and [b] divides [a] then [a] is [b] or [-b]. *)
 
-Notation Zdivide_antisym := Z.divide_antisym (compat "8.3").
-Notation Zdivide_trans := Z.divide_trans (compat "8.3").
+Notation Zdivide_antisym := Z.divide_antisym (compat "8.6").
+Notation Zdivide_trans := Z.divide_trans (compat "8.6").
 
 (** If [a] divides [b] and [b<>0] then [|a| <= |b|]. *)
 
@@ -734,7 +734,7 @@ Qed.
 (** we now prove that [Z.gcd] is indeed a gcd in
    the sense of [Zis_gcd]. *)
 
-Notation Zgcd_is_pos := Z.gcd_nonneg (compat "8.3").
+Notation Zgcd_is_pos := Z.gcd_nonneg (only parsing).
 
 Lemma Zgcd_is_gcd : forall a b, Zis_gcd a b (Z.gcd a b).
 Proof.
@@ -767,8 +767,8 @@ Proof.
   - subst. now case (Z.gcd a b).
 Qed.
 
-Notation Zgcd_inv_0_l := Z.gcd_eq_0_l (compat "8.3").
-Notation Zgcd_inv_0_r := Z.gcd_eq_0_r (compat "8.3").
+Notation Zgcd_inv_0_l := Z.gcd_eq_0_l (only parsing).
+Notation Zgcd_inv_0_r := Z.gcd_eq_0_r (only parsing).
 
 Theorem Zgcd_div_swap0 : forall a b : Z,
  0 < Z.gcd a b ->
@@ -798,16 +798,16 @@ Proof.
   rewrite <- Zdivide_Zdiv_eq; auto.
 Qed.
 
-Notation Zgcd_comm := Z.gcd_comm (compat "8.3").
+Notation Zgcd_comm := Z.gcd_comm (compat "8.6").
 
 Lemma Zgcd_ass a b c : Z.gcd (Z.gcd a b) c = Z.gcd a (Z.gcd b c).
 Proof.
  symmetry. apply Z.gcd_assoc.
 Qed.
 
-Notation Zgcd_Zabs := Z.gcd_abs_l (compat "8.3").
-Notation Zgcd_0 := Z.gcd_0_r (compat "8.3").
-Notation Zgcd_1 := Z.gcd_1_r (compat "8.3").
+Notation Zgcd_Zabs := Z.gcd_abs_l (only parsing).
+Notation Zgcd_0 := Z.gcd_0_r (only parsing).
+Notation Zgcd_1 := Z.gcd_1_r (only parsing).
 
 Hint Resolve Z.gcd_0_r Z.gcd_1_r : zarith.
 

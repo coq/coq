@@ -66,7 +66,7 @@ Defined.
 
 Hint Immediate identity_sym not_identity_sym: core.
 
-Notation refl_id := identity_refl (compat "8.3").
-Notation sym_id := identity_sym (compat "8.3").
-Notation trans_id := identity_trans (compat "8.3").
-Notation sym_not_id := not_identity_sym (compat "8.3").
+Notation refl_id := identity_refl (only parsing).
+Notation sym_id := identity_sym (only parsing).
+Notation trans_id := identity_trans (only parsing).
+Notation sym_not_id := not_identity_sym (only parsing).

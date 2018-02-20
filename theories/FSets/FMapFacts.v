@@ -24,7 +24,7 @@ Hint Extern 1 (Equivalence _) => constructor; congruence.
 
 Module WFacts_fun (E:DecidableType)(Import M:WSfun E).
 
-Notation option_map := option_map (compat "8.4").
+Notation option_map := option_map (compat "8.6").
 
 Notation eq_dec := E.eq_dec.
 Definition eqb x y := if eq_dec x y then true else false.

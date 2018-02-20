@@ -27,17 +27,17 @@ Local Open Scope Z_scope.
 (**********************************************************************)
 (** * Properties of absolute value *)
 
-Notation Zabs_eq := Z.abs_eq (compat "8.3").
-Notation Zabs_non_eq := Z.abs_neq (compat "8.3").
-Notation Zabs_Zopp := Z.abs_opp (compat "8.3").
-Notation Zabs_pos := Z.abs_nonneg (compat "8.3").
-Notation Zabs_involutive := Z.abs_involutive (compat "8.3").
-Notation Zabs_eq_case := Z.abs_eq_cases (compat "8.3").
-Notation Zabs_triangle := Z.abs_triangle (compat "8.3").
-Notation Zsgn_Zabs := Z.sgn_abs (compat "8.3").
-Notation Zabs_Zsgn := Z.abs_sgn (compat "8.3").
-Notation Zabs_Zmult := Z.abs_mul (compat "8.3").
-Notation Zabs_square := Z.abs_square (compat "8.3").
+Notation Zabs_eq := Z.abs_eq (compat "8.6").
+Notation Zabs_non_eq := Z.abs_neq (only parsing).
+Notation Zabs_Zopp := Z.abs_opp (only parsing).
+Notation Zabs_pos := Z.abs_nonneg (only parsing).
+Notation Zabs_involutive := Z.abs_involutive (compat "8.6").
+Notation Zabs_eq_case := Z.abs_eq_cases (only parsing).
+Notation Zabs_triangle := Z.abs_triangle (compat "8.6").
+Notation Zsgn_Zabs := Z.sgn_abs (only parsing).
+Notation Zabs_Zsgn := Z.abs_sgn (only parsing).
+Notation Zabs_Zmult := Z.abs_mul (only parsing).
+Notation Zabs_square := Z.abs_square (compat "8.6").
 
 (** * Proving a property of the absolute value by cases *)
 
@@ -68,11 +68,11 @@ Qed.
 
 (** * Some results about the sign function. *)
 
-Notation Zsgn_Zmult := Z.sgn_mul (compat "8.3").
-Notation Zsgn_Zopp := Z.sgn_opp (compat "8.3").
-Notation Zsgn_pos := Z.sgn_pos_iff (compat "8.3").
-Notation Zsgn_neg := Z.sgn_neg_iff (compat "8.3").
-Notation Zsgn_null := Z.sgn_null_iff (compat "8.3").
+Notation Zsgn_Zmult := Z.sgn_mul (only parsing).
+Notation Zsgn_Zopp := Z.sgn_opp (only parsing).
+Notation Zsgn_pos := Z.sgn_pos_iff (only parsing).
+Notation Zsgn_neg := Z.sgn_neg_iff (only parsing).
+Notation Zsgn_null := Z.sgn_null_iff (only parsing).
 
 (** A characterization of the sign function: *)
 
@@ -86,13 +86,13 @@ Qed.
 
 (** Compatibility *)
 
-Notation inj_Zabs_nat := Zabs2Nat.id_abs (compat "8.3").
-Notation Zabs_nat_Z_of_nat := Zabs2Nat.id (compat "8.3").
-Notation Zabs_nat_mult := Zabs2Nat.inj_mul (compat "8.3").
-Notation Zabs_nat_Zsucc := Zabs2Nat.inj_succ (compat "8.3").
-Notation Zabs_nat_Zplus := Zabs2Nat.inj_add (compat "8.3").
-Notation Zabs_nat_Zminus := (fun n m => Zabs2Nat.inj_sub m n) (compat "8.3").
-Notation Zabs_nat_compare := Zabs2Nat.inj_compare (compat "8.3").
+Notation inj_Zabs_nat := Zabs2Nat.id_abs (only parsing).
+Notation Zabs_nat_Z_of_nat := Zabs2Nat.id (only parsing).
+Notation Zabs_nat_mult := Zabs2Nat.inj_mul (only parsing).
+Notation Zabs_nat_Zsucc := Zabs2Nat.inj_succ (only parsing).
+Notation Zabs_nat_Zplus := Zabs2Nat.inj_add (only parsing).
+Notation Zabs_nat_Zminus := (fun n m => Zabs2Nat.inj_sub m n) (only parsing).
+Notation Zabs_nat_compare := Zabs2Nat.inj_compare (only parsing).
 
 Lemma Zabs_nat_le n m : 0 <= n <= m -> (Z.abs_nat n <= Z.abs_nat m)%nat.
 Proof.

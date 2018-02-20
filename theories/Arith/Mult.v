@@ -23,35 +23,35 @@ Local Open Scope nat_scope.
 
 (** ** Zero property *)
 
-Notation mult_0_l := Nat.mul_0_l (compat "8.4"). (* 0 * n = 0 *)
-Notation mult_0_r := Nat.mul_0_r (compat "8.4"). (* n * 0 = 0 *)
+Notation mult_0_l := Nat.mul_0_l (only parsing). (* 0 * n = 0 *)
+Notation mult_0_r := Nat.mul_0_r (only parsing). (* n * 0 = 0 *)
 
 (** ** 1 is neutral *)
 
-Notation mult_1_l := Nat.mul_1_l (compat "8.4"). (* 1 * n = n *)
-Notation mult_1_r := Nat.mul_1_r (compat "8.4"). (* n * 1 = n *)
+Notation mult_1_l := Nat.mul_1_l (only parsing). (* 1 * n = n *)
+Notation mult_1_r := Nat.mul_1_r (only parsing). (* n * 1 = n *)
 
 Hint Resolve mult_1_l mult_1_r: arith.
 
 (** ** Commutativity *)
 
-Notation mult_comm := Nat.mul_comm (compat "8.4"). (* n * m = m * n *)
+Notation mult_comm := Nat.mul_comm (only parsing). (* n * m = m * n *)
 
 Hint Resolve mult_comm: arith.
 
 (** ** Distributivity *)
 
 Notation mult_plus_distr_r :=
-  Nat.mul_add_distr_r (compat "8.4"). (* (n+m)*p = n*p + m*p *)
+  Nat.mul_add_distr_r (only parsing). (* (n+m)*p = n*p + m*p *)
 
 Notation mult_plus_distr_l :=
-  Nat.mul_add_distr_l (compat "8.4"). (* n*(m+p) = n*m + n*p *)
+  Nat.mul_add_distr_l (only parsing). (* n*(m+p) = n*m + n*p *)
 
 Notation mult_minus_distr_r :=
-  Nat.mul_sub_distr_r (compat "8.4"). (* (n-m)*p = n*p - m*p *)
+  Nat.mul_sub_distr_r (only parsing). (* (n-m)*p = n*p - m*p *)
 
 Notation mult_minus_distr_l :=
-  Nat.mul_sub_distr_l (compat "8.4"). (* n*(m-p) = n*m - n*p *)
+  Nat.mul_sub_distr_l (only parsing). (* n*(m-p) = n*m - n*p *)
 
 Hint Resolve mult_plus_distr_r: arith.
 Hint Resolve mult_minus_distr_r: arith.
@@ -59,7 +59,7 @@ Hint Resolve mult_minus_distr_l: arith.
 
 (** ** Associativity *)
 
-Notation mult_assoc := Nat.mul_assoc (compat "8.4"). (* n*(m*p)=n*m*p *)
+Notation mult_assoc := Nat.mul_assoc (only parsing). (* n*(m*p)=n*m*p *)
 
 Lemma mult_assoc_reverse n m p : n * m * p = n * (m * p).
 Proof.
@@ -83,8 +83,8 @@ Qed.
 
 (** ** Multiplication and successor *)
 
-Notation mult_succ_l := Nat.mul_succ_l (compat "8.4"). (* S n * m = n * m + m *)
-Notation mult_succ_r := Nat.mul_succ_r (compat "8.4"). (* n * S m = n * m + n *)
+Notation mult_succ_l := Nat.mul_succ_l (only parsing). (* S n * m = n * m + m *)
+Notation mult_succ_r := Nat.mul_succ_r (only parsing). (* n * S m = n * m + n *)
 
 (** * Compatibility with orders *)
 

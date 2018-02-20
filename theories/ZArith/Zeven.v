@@ -58,8 +58,8 @@ Proof (Zodd_equiv n).
 
 (** Boolean tests of parity (now in BinInt.Z) *)
 
-Notation Zeven_bool := Z.even (compat "8.3").
-Notation Zodd_bool := Z.odd (compat "8.3").
+Notation Zeven_bool := Z.even (only parsing).
+Notation Zodd_bool := Z.odd (only parsing).
 
 Lemma Zeven_bool_iff n : Z.even n = true <-> Zeven n.
 Proof.
@@ -130,17 +130,17 @@ Qed.
 
 Hint Unfold Zeven Zodd: zarith.
 
-Notation Zeven_bool_succ := Z.even_succ (compat "8.3").
-Notation Zeven_bool_pred := Z.even_pred (compat "8.3").
-Notation Zodd_bool_succ := Z.odd_succ (compat "8.3").
-Notation Zodd_bool_pred := Z.odd_pred (compat "8.3").
+Notation Zeven_bool_succ := Z.even_succ (only parsing).
+Notation Zeven_bool_pred := Z.even_pred (only parsing).
+Notation Zodd_bool_succ := Z.odd_succ (only parsing).
+Notation Zodd_bool_pred := Z.odd_pred (only parsing).
 
 (******************************************************************)
 (** * Definition of [Z.quot2], [Z.div2] and properties wrt [Zeven]
   and [Zodd] *)
 
-Notation Zdiv2 := Z.div2 (compat "8.3").
-Notation Zquot2 := Z.quot2 (compat "8.3").
+Notation Zdiv2 := Z.div2 (compat "8.6").
+Notation Zquot2 := Z.quot2 (compat "8.6").
 
 (** Properties of [Z.div2] *)
 

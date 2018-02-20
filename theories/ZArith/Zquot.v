@@ -31,21 +31,21 @@ Local Open Scope Z_scope.
       exploiting the arbitrary value of division by 0).
 *)
 
-Notation Ndiv_Zquot := N2Z.inj_quot (compat "8.3").
-Notation Nmod_Zrem := N2Z.inj_rem (compat "8.3").
-Notation Z_quot_rem_eq := Z.quot_rem' (compat "8.3").
-Notation Zrem_lt := Z.rem_bound_abs (compat "8.3").
-Notation Zquot_unique := Z.quot_unique (compat "8.3").
-Notation Zrem_unique := Z.rem_unique (compat "8.3").
-Notation Zrem_1_r := Z.rem_1_r (compat "8.3").
-Notation Zquot_1_r := Z.quot_1_r (compat "8.3").
-Notation Zrem_1_l := Z.rem_1_l (compat "8.3").
-Notation Zquot_1_l := Z.quot_1_l (compat "8.3").
-Notation Z_quot_same := Z.quot_same (compat "8.3").
-Notation Z_quot_mult := Z.quot_mul (compat "8.3").
-Notation Zquot_small := Z.quot_small (compat "8.3").
-Notation Zrem_small := Z.rem_small (compat "8.3").
-Notation Zquot2_quot := Zquot2_quot (compat "8.3").
+Notation Ndiv_Zquot := N2Z.inj_quot (only parsing).
+Notation Nmod_Zrem := N2Z.inj_rem (only parsing).
+Notation Z_quot_rem_eq := Z.quot_rem' (only parsing).
+Notation Zrem_lt := Z.rem_bound_abs (only parsing).
+Notation Zquot_unique := Z.quot_unique (compat "8.6").
+Notation Zrem_unique := Z.rem_unique (compat "8.6").
+Notation Zrem_1_r := Z.rem_1_r (compat "8.6").
+Notation Zquot_1_r := Z.quot_1_r (compat "8.6").
+Notation Zrem_1_l := Z.rem_1_l (compat "8.6").
+Notation Zquot_1_l := Z.quot_1_l (compat "8.6").
+Notation Z_quot_same := Z.quot_same (compat "8.6").
+Notation Z_quot_mult := Z.quot_mul (only parsing).
+Notation Zquot_small := Z.quot_small (compat "8.6").
+Notation Zrem_small := Z.rem_small (compat "8.6").
+Notation Zquot2_quot := Zquot2_quot (compat "8.6").
 
 (** Particular values taken for [a÷0] and [(Z.rem a 0)].
     We avise to not rely on these arbitrary values. *)

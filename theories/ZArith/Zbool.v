@@ -33,10 +33,10 @@ Definition Zeven_odd_bool (x:Z) := bool_of_sumbool (Zeven_odd_dec x).
 (**********************************************************************)
 (** * Boolean comparisons of binary integers *)
 
-Notation Zle_bool := Z.leb (compat "8.3").
-Notation Zge_bool := Z.geb (compat "8.3").
-Notation Zlt_bool := Z.ltb (compat "8.3").
-Notation Zgt_bool := Z.gtb (compat "8.3").
+Notation Zle_bool := Z.leb (only parsing).
+Notation Zge_bool := Z.geb (only parsing).
+Notation Zlt_bool := Z.ltb (only parsing).
+Notation Zgt_bool := Z.gtb (only parsing).
 
 (** We now provide a direct [Z.eqb] that doesn't refer to [Z.compare].
    The old [Zeq_bool] is kept for compatibility. *)
@@ -87,7 +87,7 @@ Proof.
  apply Z.leb_le.
 Qed.
 
-Notation Zle_bool_refl := Z.leb_refl (compat "8.3").
+Notation Zle_bool_refl := Z.leb_refl (only parsing).
 
 Lemma Zle_bool_antisym n m :
  (n <=? m) = true -> (m <=? n) = true -> n = m.

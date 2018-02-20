@@ -46,7 +46,7 @@ Qed.
 
 (** * Diagonal *)
 
-Notation minus_diag := Nat.sub_diag (compat "8.4"). (* n - n = 0 *)
+Notation minus_diag := Nat.sub_diag (only parsing). (* n - n = 0 *)
 
 Lemma minus_diag_reverse n : 0 = n - n.
 Proof.
@@ -87,13 +87,13 @@ Qed.
 (** * Relation with order *)
 
 Notation minus_le_compat_r :=
-  Nat.sub_le_mono_r (compat "8.4"). (* n <= m -> n - p <= m - p. *)
+  Nat.sub_le_mono_r (only parsing). (* n <= m -> n - p <= m - p. *)
 
 Notation minus_le_compat_l :=
-  Nat.sub_le_mono_l (compat "8.4"). (* n <= m -> p - m <= p - n. *)
+  Nat.sub_le_mono_l (only parsing). (* n <= m -> p - m <= p - n. *)
 
-Notation le_minus := Nat.le_sub_l (compat "8.4"). (* n - m <= n *)
-Notation lt_minus := Nat.sub_lt (compat "8.4"). (* m <= n -> 0 < m -> n-m < n *)
+Notation le_minus := Nat.le_sub_l (only parsing). (* n - m <= n *)
+Notation lt_minus := Nat.sub_lt (only parsing). (* m <= n -> 0 < m -> n-m < n *)
 
 Lemma lt_O_minus_lt n m : 0 < n - m -> m < n.
 Proof.

@@ -742,16 +742,16 @@ Hint Resolve exist exist2 existT existT2: core.
 
 (* Compatibility *)
 
-Notation sigS := sigT (compat "8.2").
-Notation existS := existT (compat "8.2").
-Notation sigS_rect := sigT_rect (compat "8.2").
-Notation sigS_rec := sigT_rec (compat "8.2").
-Notation sigS_ind := sigT_ind (compat "8.2").
-Notation projS1 := projT1 (compat "8.2").
-Notation projS2 := projT2 (compat "8.2").
+Notation sigS := sigT (compat "8.6").
+Notation existS := existT (compat "8.6").
+Notation sigS_rect := sigT_rect (compat "8.6").
+Notation sigS_rec := sigT_rec (compat "8.6").
+Notation sigS_ind := sigT_ind (compat "8.6").
+Notation projS1 := projT1 (compat "8.6").
+Notation projS2 := projT2 (compat "8.6").
 
-Notation sigS2 := sigT2 (compat "8.2").
-Notation existS2 := existT2 (compat "8.2").
-Notation sigS2_rect := sigT2_rect (compat "8.2").
-Notation sigS2_rec := sigT2_rec (compat "8.2").
-Notation sigS2_ind := sigT2_ind (compat "8.2").
+Notation sigS2 := sigT2 (compat "8.6").
+Notation existS2 := existT2 (compat "8.6").
+Notation sigS2_rect := sigT2_rect (compat "8.6").
+Notation sigS2_rec := sigT2_rec (compat "8.6").
+Notation sigS2_ind := sigT2_ind (compat "8.6").

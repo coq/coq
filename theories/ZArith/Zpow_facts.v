@@ -29,17 +29,17 @@ Proof. now apply (Z.pow_0_l (Zpos p)). Qed.
 Lemma Zpower_pos_pos x p : 0 < x -> 0 < Z.pow_pos x p.
 Proof. intros. now apply (Z.pow_pos_nonneg x (Zpos p)). Qed.
 
-Notation Zpower_1_r := Z.pow_1_r (compat "8.3").
-Notation Zpower_1_l := Z.pow_1_l (compat "8.3").
-Notation Zpower_0_l := Z.pow_0_l' (compat "8.3").
-Notation Zpower_0_r := Z.pow_0_r (compat "8.3").
-Notation Zpower_2 := Z.pow_2_r (compat "8.3").
-Notation Zpower_gt_0 := Z.pow_pos_nonneg (compat "8.3").
-Notation Zpower_ge_0 := Z.pow_nonneg (compat "8.3").
-Notation Zpower_Zabs := Z.abs_pow (compat "8.3").
-Notation Zpower_Zsucc := Z.pow_succ_r (compat "8.3").
-Notation Zpower_mult := Z.pow_mul_r (compat "8.3").
-Notation Zpower_le_monotone2 := Z.pow_le_mono_r (compat "8.3").
+Notation Zpower_1_r := Z.pow_1_r (only parsing).
+Notation Zpower_1_l := Z.pow_1_l (only parsing).
+Notation Zpower_0_l := Z.pow_0_l' (only parsing).
+Notation Zpower_0_r := Z.pow_0_r (only parsing).
+Notation Zpower_2 := Z.pow_2_r (only parsing).
+Notation Zpower_gt_0 := Z.pow_pos_nonneg (only parsing).
+Notation Zpower_ge_0 := Z.pow_nonneg (only parsing).
+Notation Zpower_Zabs := Z.abs_pow (only parsing).
+Notation Zpower_Zsucc := Z.pow_succ_r (only parsing).
+Notation Zpower_mult := Z.pow_mul_r (only parsing).
+Notation Zpower_le_monotone2 := Z.pow_le_mono_r (only parsing).
 
 Theorem Zpower_le_monotone a b c :
  0 < a -> 0 <= b <= c -> a^b <= a^c.
@@ -231,7 +231,7 @@ Qed.
 
 (** * Z.square: a direct definition of [z^2] *)
 
-Notation Psquare := Pos.square (compat "8.3").
-Notation Zsquare := Z.square (compat "8.3").
-Notation Psquare_correct := Pos.square_spec (compat "8.3").
-Notation Zsquare_correct := Z.square_spec (compat "8.3").
+Notation Psquare := Pos.square (compat "8.6").
+Notation Zsquare := Z.square (compat "8.6").
+Notation Psquare_correct := Pos.square_spec (only parsing).
+Notation Zsquare_correct := Z.square_spec (only parsing).

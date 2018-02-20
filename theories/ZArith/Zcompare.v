@@ -181,18 +181,18 @@ Qed.
 
 (** Compatibility notations *)
 
-Notation Zcompare_refl := Z.compare_refl (compat "8.3").
-Notation Zcompare_Eq_eq := Z.compare_eq (compat "8.3").
-Notation Zcompare_Eq_iff_eq := Z.compare_eq_iff (compat "8.3").
-Notation Zcompare_spec := Z.compare_spec (compat "8.3").
-Notation Zmin_l := Z.min_l (compat "8.3").
-Notation Zmin_r := Z.min_r (compat "8.3").
-Notation Zmax_l := Z.max_l (compat "8.3").
-Notation Zmax_r := Z.max_r (compat "8.3").
-Notation Zabs_eq := Z.abs_eq (compat "8.3").
-Notation Zabs_non_eq := Z.abs_neq (compat "8.3").
-Notation Zsgn_0 := Z.sgn_null (compat "8.3").
-Notation Zsgn_1 := Z.sgn_pos (compat "8.3").
-Notation Zsgn_m1 := Z.sgn_neg (compat "8.3").
+Notation Zcompare_refl := Z.compare_refl (compat "8.6").
+Notation Zcompare_Eq_eq := Z.compare_eq (only parsing).
+Notation Zcompare_Eq_iff_eq := Z.compare_eq_iff (only parsing).
+Notation Zcompare_spec := Z.compare_spec (compat "8.6").
+Notation Zmin_l := Z.min_l (compat "8.6").
+Notation Zmin_r := Z.min_r (compat "8.6").
+Notation Zmax_l := Z.max_l (compat "8.6").
+Notation Zmax_r := Z.max_r (compat "8.6").
+Notation Zabs_eq := Z.abs_eq (compat "8.6").
+Notation Zabs_non_eq := Z.abs_neq (only parsing).
+Notation Zsgn_0 := Z.sgn_null (only parsing).
+Notation Zsgn_1 := Z.sgn_pos (only parsing).
+Notation Zsgn_m1 := Z.sgn_neg (only parsing).
 
 (** Not kept: Zcompare_egal_dec *)

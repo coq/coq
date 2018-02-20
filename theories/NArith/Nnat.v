@@ -208,30 +208,30 @@ Hint Rewrite Nat2N.id : Nnat.
 
 (** Compatibility notations *)
 
-Notation nat_of_N_inj := N2Nat.inj (compat "8.3").
-Notation N_of_nat_of_N := N2Nat.id (compat "8.3").
-Notation nat_of_Ndouble := N2Nat.inj_double (compat "8.3").
-Notation nat_of_Ndouble_plus_one := N2Nat.inj_succ_double (compat "8.3").
-Notation nat_of_Nsucc := N2Nat.inj_succ (compat "8.3").
-Notation nat_of_Nplus := N2Nat.inj_add (compat "8.3").
-Notation nat_of_Nmult := N2Nat.inj_mul (compat "8.3").
-Notation nat_of_Nminus := N2Nat.inj_sub (compat "8.3").
-Notation nat_of_Npred := N2Nat.inj_pred (compat "8.3").
-Notation nat_of_Ndiv2 := N2Nat.inj_div2 (compat "8.3").
-Notation nat_of_Ncompare := N2Nat.inj_compare (compat "8.3").
-Notation nat_of_Nmax := N2Nat.inj_max (compat "8.3").
-Notation nat_of_Nmin := N2Nat.inj_min (compat "8.3").
+Notation nat_of_N_inj := N2Nat.inj (only parsing).
+Notation N_of_nat_of_N := N2Nat.id (only parsing).
+Notation nat_of_Ndouble := N2Nat.inj_double (only parsing).
+Notation nat_of_Ndouble_plus_one := N2Nat.inj_succ_double (only parsing).
+Notation nat_of_Nsucc := N2Nat.inj_succ (only parsing).
+Notation nat_of_Nplus := N2Nat.inj_add (only parsing).
+Notation nat_of_Nmult := N2Nat.inj_mul (only parsing).
+Notation nat_of_Nminus := N2Nat.inj_sub (only parsing).
+Notation nat_of_Npred := N2Nat.inj_pred (only parsing).
+Notation nat_of_Ndiv2 := N2Nat.inj_div2 (only parsing).
+Notation nat_of_Ncompare := N2Nat.inj_compare (only parsing).
+Notation nat_of_Nmax := N2Nat.inj_max (only parsing).
+Notation nat_of_Nmin := N2Nat.inj_min (only parsing).
 
-Notation nat_of_N_of_nat := Nat2N.id (compat "8.3").
-Notation N_of_nat_inj := Nat2N.inj (compat "8.3").
-Notation N_of_double := Nat2N.inj_double (compat "8.3").
-Notation N_of_double_plus_one := Nat2N.inj_succ_double (compat "8.3").
-Notation N_of_S := Nat2N.inj_succ (compat "8.3").
-Notation N_of_pred := Nat2N.inj_pred (compat "8.3").
-Notation N_of_plus := Nat2N.inj_add (compat "8.3").
-Notation N_of_minus := Nat2N.inj_sub (compat "8.3").
-Notation N_of_mult := Nat2N.inj_mul (compat "8.3").
-Notation N_of_div2 := Nat2N.inj_div2 (compat "8.3").
-Notation N_of_nat_compare := Nat2N.inj_compare (compat "8.3").
-Notation N_of_min := Nat2N.inj_min (compat "8.3").
-Notation N_of_max := Nat2N.inj_max (compat "8.3").
+Notation nat_of_N_of_nat := Nat2N.id (only parsing).
+Notation N_of_nat_inj := Nat2N.inj (only parsing).
+Notation N_of_double := Nat2N.inj_double (only parsing).
+Notation N_of_double_plus_one := Nat2N.inj_succ_double (only parsing).
+Notation N_of_S := Nat2N.inj_succ (only parsing).
+Notation N_of_pred := Nat2N.inj_pred (only parsing).
+Notation N_of_plus := Nat2N.inj_add (only parsing).
+Notation N_of_minus := Nat2N.inj_sub (only parsing).
+Notation N_of_mult := Nat2N.inj_mul (only parsing).
+Notation N_of_div2 := Nat2N.inj_div2 (only parsing).
+Notation N_of_nat_compare := Nat2N.inj_compare (only parsing).
+Notation N_of_min := Nat2N.inj_min (only parsing).
+Notation N_of_max := Nat2N.inj_max (only parsing).

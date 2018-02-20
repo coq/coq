@@ -38,9 +38,9 @@ Qed.
 (**********************************************************************)
 (** * Decidability of equality and order on Z *)
 
-Notation dec_eq := Z.eq_decidable (compat "8.3").
-Notation dec_Zle := Z.le_decidable (compat "8.3").
-Notation dec_Zlt := Z.lt_decidable (compat "8.3").
+Notation dec_eq := Z.eq_decidable (only parsing).
+Notation dec_Zle := Z.le_decidable (only parsing).
+Notation dec_Zlt := Z.lt_decidable (only parsing).
 
 Theorem dec_Zne n m : decidable (Zne n m).
 Proof.
@@ -64,12 +64,12 @@ Qed.
 
 (** * Relating strict and large orders *)
 
-Notation Zgt_lt := Z.gt_lt (compat "8.3").
-Notation Zlt_gt := Z.lt_gt (compat "8.3").
-Notation Zge_le := Z.ge_le (compat "8.3").
-Notation Zle_ge := Z.le_ge (compat "8.3").
-Notation Zgt_iff_lt := Z.gt_lt_iff (compat "8.3").
-Notation Zge_iff_le := Z.ge_le_iff (compat "8.3").
+Notation Zgt_lt := Z.gt_lt (compat "8.6").
+Notation Zlt_gt := Z.lt_gt (compat "8.6").
+Notation Zge_le := Z.ge_le (compat "8.6").
+Notation Zle_ge := Z.le_ge (compat "8.6").
+Notation Zgt_iff_lt := Z.gt_lt_iff (only parsing).
+Notation Zge_iff_le := Z.ge_le_iff (only parsing).
 
 Lemma Zle_not_lt n m : n <= m -> ~ m < n.
 Proof.
@@ -121,18 +121,18 @@ Qed.
 
 (** Reflexivity *)
 
-Notation Zle_refl := Z.le_refl (compat "8.3").
-Notation Zeq_le := Z.eq_le_incl (compat "8.3").
+Notation Zle_refl := Z.le_refl (compat "8.6").
+Notation Zeq_le := Z.eq_le_incl (only parsing).
 
 Hint Resolve Z.le_refl: zarith.
 
 (** Antisymmetry *)
 
-Notation Zle_antisym := Z.le_antisymm (compat "8.3").
+Notation Zle_antisym := Z.le_antisymm (only parsing).
 
 (** Asymmetry *)
 
-Notation Zlt_asym := Z.lt_asymm (compat "8.3").
+Notation Zlt_asym := Z.lt_asymm (only parsing).
 
 Lemma Zgt_asym n m : n > m -> ~ m > n.
 Proof.
@@ -141,8 +141,8 @@ Qed.
 
 (** Irreflexivity *)
 
-Notation Zlt_irrefl := Z.lt_irrefl (compat "8.3").
-Notation Zlt_not_eq := Z.lt_neq (compat "8.3").
+Notation Zlt_irrefl := Z.lt_irrefl (compat "8.6").
+Notation Zlt_not_eq := Z.lt_neq (only parsing).
 
 Lemma Zgt_irrefl n : ~ n > n.
 Proof.
@@ -151,8 +151,8 @@ Qed.
 
 (** Large = strict or equal *)
 
-Notation Zlt_le_weak := Z.lt_le_incl (compat "8.3").
-Notation Zle_lt_or_eq_iff := Z.lt_eq_cases (compat "8.3").
+Notation Zlt_le_weak := Z.lt_le_incl (only parsing).
+Notation Zle_lt_or_eq_iff := Z.lt_eq_cases (only parsing).
 
 Lemma Zle_lt_or_eq n m : n <= m -> n < m \/ n = m.
 Proof.
@@ -161,11 +161,11 @@ Qed.
 
 (** Dichotomy *)
 
-Notation Zle_or_lt := Z.le_gt_cases (compat "8.3").
+Notation Zle_or_lt := Z.le_gt_cases (only parsing).
 
 (** Transitivity of strict orders *)
 
-Notation Zlt_trans := Z.lt_trans (compat "8.3").
+Notation Zlt_trans := Z.lt_trans (compat "8.6").
 
 Lemma Zgt_trans n m p : n > m -> m > p -> n > p.
 Proof.
@@ -174,8 +174,8 @@ Qed.
 
 (** Mixed transitivity *)
 
-Notation Zlt_le_trans := Z.lt_le_trans (compat "8.3").
-Notation Zle_lt_trans := Z.le_lt_trans (compat "8.3").
+Notation Zlt_le_trans := Z.lt_le_trans (compat "8.6").
+Notation Zle_lt_trans := Z.le_lt_trans (compat "8.6").
 
 Lemma Zle_gt_trans n m p : m <= n -> m > p -> n > p.
 Proof.
@@ -189,7 +189,7 @@ Qed.
 
 (** Transitivity of large orders *)
 
-Notation Zle_trans := Z.le_trans (compat "8.3").
+Notation Zle_trans := Z.le_trans (compat "8.6").
 
 Lemma Zge_trans n m p : n >= m -> m >= p -> n >= p.
 Proof.
@@ -240,8 +240,8 @@ Qed.
 
 (** Special base instances of order *)
 
-Notation Zlt_succ := Z.lt_succ_diag_r (compat "8.3").
-Notation Zlt_pred := Z.lt_pred_l (compat "8.3").
+Notation Zlt_succ := Z.lt_succ_diag_r (only parsing).
+Notation Zlt_pred := Z.lt_pred_l (only parsing).
 
 Lemma Zgt_succ n : Z.succ n > n.
 Proof.
@@ -255,8 +255,8 @@ Qed.
 
 (** Relating strict and large order using successor or predecessor *)
 
-Notation Zlt_succ_r := Z.lt_succ_r (compat "8.3").
-Notation Zle_succ_l := Z.le_succ_l (compat "8.3").
+Notation Zlt_succ_r := Z.lt_succ_r (compat "8.6").
+Notation Zle_succ_l := Z.le_succ_l (compat "8.6").
 
 Lemma Zgt_le_succ n m : m > n -> Z.succ n <= m.
 Proof.
@@ -295,10 +295,10 @@ Qed.
 
 (** Weakening order *)
 
-Notation Zle_succ := Z.le_succ_diag_r (compat "8.3").
-Notation Zle_pred := Z.le_pred_l (compat "8.3").
-Notation Zlt_lt_succ := Z.lt_lt_succ_r (compat "8.3").
-Notation Zle_le_succ := Z.le_le_succ_r (compat "8.3").
+Notation Zle_succ := Z.le_succ_diag_r (only parsing).
+Notation Zle_pred := Z.le_pred_l (only parsing).
+Notation Zlt_lt_succ := Z.lt_lt_succ_r (only parsing).
+Notation Zle_le_succ := Z.le_le_succ_r (only parsing).
 
 Lemma Zle_succ_le n m : Z.succ n <= m -> n <= m.
 Proof.
@@ -334,8 +334,8 @@ Qed.
 
 (** Special cases of ordered integers *)
 
-Notation Zlt_0_1 := Z.lt_0_1 (compat "8.3").
-Notation Zle_0_1 := Z.le_0_1 (compat "8.3").
+Notation Zlt_0_1 := Z.lt_0_1 (compat "8.6").
+Notation Zle_0_1 := Z.le_0_1 (compat "8.6").
 
 Lemma Zle_neg_pos : forall p q:positive, Zneg p <= Zpos q.
 Proof.
@@ -375,10 +375,10 @@ Qed.
 (** ** Addition *)
 (** Compatibility of addition wrt to order *)
 
-Notation Zplus_lt_le_compat := Z.add_lt_le_mono (compat "8.3").
-Notation Zplus_le_lt_compat := Z.add_le_lt_mono (compat "8.3").
-Notation Zplus_le_compat := Z.add_le_mono (compat "8.3").
-Notation Zplus_lt_compat := Z.add_lt_mono (compat "8.3").
+Notation Zplus_lt_le_compat := Z.add_lt_le_mono (only parsing).
+Notation Zplus_le_lt_compat := Z.add_le_lt_mono (only parsing).
+Notation Zplus_le_compat := Z.add_le_mono (only parsing).
+Notation Zplus_lt_compat := Z.add_lt_mono (only parsing).
 
 Lemma Zplus_gt_compat_l n m p : n > m -> p + n > p + m.
 Proof.
@@ -412,7 +412,7 @@ Qed.
 
 (** Compatibility of addition wrt to being positive *)
 
-Notation Zplus_le_0_compat := Z.add_nonneg_nonneg (compat "8.3").
+Notation Zplus_le_0_compat := Z.add_nonneg_nonneg (only parsing).
 
 (** Simplification of addition wrt to order *)
 
@@ -570,9 +570,9 @@ Qed.
 
 (** Compatibility of multiplication by a positive wrt to being positive *)
 
-Notation Zmult_le_0_compat := Z.mul_nonneg_nonneg (compat "8.3").
-Notation Zmult_lt_0_compat := Z.mul_pos_pos (compat "8.3").
-Notation Zmult_lt_O_compat := Z.mul_pos_pos (compat "8.3").
+Notation Zmult_le_0_compat := Z.mul_nonneg_nonneg (only parsing).
+Notation Zmult_lt_0_compat := Z.mul_pos_pos (only parsing).
+Notation Zmult_lt_O_compat := Z.mul_pos_pos (only parsing).
 
 Lemma Zmult_gt_0_compat n m : n > 0 -> m > 0 -> n * m > 0.
 Proof.
@@ -624,9 +624,9 @@ Qed.
 
 (** * Equivalence between inequalities *)
 
-Notation Zle_plus_swap := Z.le_add_le_sub_r (compat "8.3").
-Notation Zlt_plus_swap := Z.lt_add_lt_sub_r (compat "8.3").
-Notation Zlt_minus_simpl_swap := Z.lt_sub_pos (compat "8.3").
+Notation Zle_plus_swap := Z.le_add_le_sub_r (only parsing).
+Notation Zlt_plus_swap := Z.lt_add_lt_sub_r (only parsing).
+Notation Zlt_minus_simpl_swap := Z.lt_sub_pos (only parsing).
 
 Lemma Zeq_plus_swap n m p : n + p = m <-> n = m - p.
 Proof.

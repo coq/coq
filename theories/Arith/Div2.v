@@ -18,7 +18,7 @@ Implicit Type n : nat.
 
 (** Here we define [n/2] and prove some of its properties *)
 
-Notation div2 := Nat.div2 (compat "8.4").
+Notation div2 := Nat.div2 (only parsing).
 
 (** Since [div2] is recursively defined on [0], [1] and [(S (S n))], it is
     useful to prove the corresponding induction principle *)
@@ -84,7 +84,7 @@ Qed.
 
 (** Properties related to the double ([2n]) *)
 
-Notation double := Nat.double (compat "8.4").
+Notation double := Nat.double (only parsing).
 
 Hint Unfold double Nat.double: arith.
 
