@@ -716,7 +716,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
        rewrite <- plus_n_Sm, Plus.plus_assoc. reflexivity.
       rewrite <- IHl, <- IHr. rewrite Plus.plus_assoc. reflexivity.
 
-    intros. rewrite <- H. simpl. rewrite Plus.plus_comm. reflexivity.
+    intros. rewrite <- H. simpl. rewrite PeanoNat.Nat.add_comm. reflexivity.
   Qed.
 
   (** Specification of [filter] *)

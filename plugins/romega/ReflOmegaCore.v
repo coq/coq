@@ -174,7 +174,7 @@ Module IntProperties (I:Int).
  Definition opp_def := ring.(Ropp_def).
  Definition minus_def := ring.(Rsub_def).
 
- Opaque plus_assoc plus_comm plus_0_l mult_assoc mult_comm mult_1_l
+ Opaque plus_assoc Nat.add_comm plus_0_l mult_assoc mult_comm mult_1_l
   mult_plus_distr_r opp_def minus_def.
 
  (** More facts about [plus] *)

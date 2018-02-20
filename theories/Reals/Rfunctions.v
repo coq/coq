@@ -149,7 +149,7 @@ Proof.
   apply Rlt_pow_R1; auto with arith.
   apply plus_lt_reg_l with (p := n); auto with arith.
   rewrite le_plus_minus_r; auto with arith; rewrite <- plus_n_O; auto.
-  rewrite plus_comm; auto with arith.
+  rewrite Nat.add_comm; auto with arith.
 Qed.
 Hint Resolve Rlt_pow: real.
 
@@ -475,7 +475,7 @@ Proof.
   apply Rmult_le_compat_l.
   apply pow_le; left; apply Rlt_le_trans with 1; [ apply Rlt_0_1 | assumption ].
   apply pow_R1_Rle; assumption.
-  rewrite plus_comm.
+  rewrite Nat.add_comm.
   symmetry ; apply le_plus_minus; assumption.
 Qed.
 
@@ -602,12 +602,12 @@ Proof.
  - rewrite Pos2Nat.inj_sub by trivial.
    rewrite Pos2Nat.inj_lt in H.
    rewrite (pow_RN_plus x _ (Pos.to_nat n)) by auto with real.
-   rewrite plus_comm, le_plus_minus_r by auto with real.
+   rewrite Nat.add_comm, le_plus_minus_r by auto with real.
    rewrite Rinv_mult_distr, Rinv_involutive; auto with real.
  - rewrite Pos2Nat.inj_sub by trivial.
    rewrite Pos2Nat.inj_lt in H.
    rewrite (pow_RN_plus x _ (Pos.to_nat m)) by auto with real.
-   rewrite plus_comm, le_plus_minus_r by auto with real.
+   rewrite Nat.add_comm, le_plus_minus_r by auto with real.
    reflexivity.
 Qed.
 

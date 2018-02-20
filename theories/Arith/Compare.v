@@ -42,10 +42,10 @@ Proof.
   intro H'; lapply (le_lt_or_eq (S m) n); auto with arith.
   induction 1; auto with arith.
   right; exists (n - S (S m)); simpl.
-  rewrite (plus_comm m (n - S (S m))).
+  rewrite (Nat.add_comm m (n - S (S m))).
   rewrite (plus_n_Sm (n - S (S m)) m).
   rewrite (plus_n_Sm (n - S (S m)) (S m)).
-  rewrite (plus_comm (n - S (S m)) (S (S m))); auto with arith.
+  rewrite (Nat.add_comm (n - S (S m)) (S (S m))); auto with arith.
 Qed.
 
 Require Export Wf_nat.

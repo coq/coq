@@ -108,7 +108,7 @@ Theorem append_correct2 :
  get n s2 = get (n + length s1) (s1 ++ s2).
 Proof.
 intros s1; elim s1; simpl; auto.
-intros s2 n; rewrite plus_comm; simpl; auto.
+intros s2 n; rewrite Nat.add_comm; simpl; auto.
 intros a s1' Rec s2 n; case n; simpl; auto.
 generalize (Rec s2 0); simpl; auto. intros.
 rewrite <- Plus.plus_Snm_nSm; auto.

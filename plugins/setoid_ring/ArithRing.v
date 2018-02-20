@@ -14,7 +14,7 @@ Set Implicit Arguments.
 
 Lemma natSRth : semi_ring_theory O (S O) plus mult (@eq nat).
  Proof.
-  constructor. exact plus_0_l. exact plus_comm. exact plus_assoc.
+  constructor. exact plus_0_l. exact PeanoNat.Nat.add_comm. exact plus_assoc.
   exact mult_1_l. exact mult_0_l. exact mult_comm. exact mult_assoc.
   exact mult_plus_distr_r.
  Qed.

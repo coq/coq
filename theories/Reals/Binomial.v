@@ -19,7 +19,7 @@ Proof.
   intros; unfold C; replace (n - (n - i))%nat with i.
   rewrite Rmult_comm.
   reflexivity.
-  apply plus_minus; rewrite plus_comm; apply le_plus_minus; assumption.
+  apply plus_minus; rewrite Nat.add_comm; apply le_plus_minus; assumption.
 Qed.
 
 Lemma pascal_step2 :
@@ -96,7 +96,7 @@ Proof.
   cut ((n - (n - i))%nat = i).
   intro; rewrite H0; reflexivity.
   symmetry ; apply plus_minus.
-  rewrite plus_comm; rewrite le_plus_minus_r.
+  rewrite Nat.add_comm; rewrite le_plus_minus_r.
   reflexivity.
   apply lt_le_weak; assumption.
   apply le_minusni_n; apply lt_le_weak; assumption.

@@ -1798,7 +1798,7 @@ Proof.
  (* Lt *)
  intros LT LE p Hp1 Hp2. apply IHn; clear IHn; trivial.
  apply le_S_n in LE. eapply Le.le_trans; [|eapply LE].
- rewrite plus_comm, <- plus_n_Sm, <- plus_Sn_m.
+ rewrite PeanoNat.Nat.add_comm, <- plus_n_Sm, <- plus_Sn_m.
  apply plus_le_compat; trivial.
  apply size_nat_monotone, sub_decr, LT.
  apply divide_xO_xI with a; trivial.
