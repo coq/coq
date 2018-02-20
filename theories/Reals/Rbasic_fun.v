@@ -609,7 +609,7 @@ Qed.
 
 Lemma Rabs_Zabs : forall z:Z, Rabs (IZR z) = IZR (Z.abs z).
 Proof.
-  intros z; case z; unfold Zabs.
+  intros z; case z; unfold Z.abs.
   apply Rabs_R0.
   now intros p0; apply Rabs_pos_eq, (IZR_le 0).
   unfold IZR at 1.

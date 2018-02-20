@@ -440,7 +440,7 @@ destruct (eq_dec x y); auto.
 Qed.
 
 Lemma map_o : forall m x (f:elt->elt'),
- find x (map f m) = option_map f (find x m).
+ find x (map f m) = Datatypes.option_map f (find x m).
 Proof.
 intros.
 generalize (find_mapsto_iff (map f m) x) (find_mapsto_iff m x)
@@ -473,7 +473,7 @@ Qed.
 
 Lemma mapi_o : forall m x (f:key->elt->elt'),
  (forall x y e, E.eq x y -> f x e = f y e) ->
- find x (mapi f m) = option_map (f x) (find x m).
+ find x (mapi f m) = Datatypes.option_map (f x) (find x m).
 Proof.
 intros.
 generalize (find_mapsto_iff (mapi f m) x) (find_mapsto_iff m x)
