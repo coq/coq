@@ -13,6 +13,8 @@ Require Import SeqSeries.
 Require Import Ranalysis1.
 Local Open Scope R_scope.
 
+(* simpl issues *)
+Local Unset Fixpoints Lift Arguments.
 Fixpoint Dichotomy_lb (x y:R) (P:R -> bool) (N:nat) {struct N} : R :=
   match N with
     | O => x

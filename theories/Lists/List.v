@@ -738,8 +738,8 @@ Section ListOps.
     intuition.
     subst.
     apply in_or_app; right; simpl; auto.
-    apply in_or_app; left; firstorder.
-    destruct (in_app_or _ _ _ H); firstorder.
+    apply in_or_app; left; apply IHl; auto.
+    destruct (in_app_or _ _ _ H) as [?|H0];try apply IHl in H0; firstorder.
   Qed.
 
   Lemma rev_length : forall l, length (rev l) = length l.

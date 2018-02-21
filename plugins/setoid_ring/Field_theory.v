@@ -1384,7 +1384,7 @@ Proof.
  intros. subst nfe1 nfe2 lmp np1 np2.
  rewrite !(Pphi_pow_ok Rsth Reqe ARth CRmorph pow_th get_sign_spec).
  repeat (rewrite <- (norm_subst_ok Rsth Reqe ARth CRmorph pow_th);trivial).
- simpl. apply Field_simplify_aux_ok; trivial.
+ simpl. refine (Field_simplify_aux_ok _ _ _ _ _ _); trivial.
 Qed.
 
 Theorem Field_simplify_eq_in_correct :

@@ -247,6 +247,95 @@ let interp_fixpoint ~cofix l ntns =
   check_recursive true env evd fix;
   (fix,pl,Evd.evar_universe_context evd,info)
 
+(** Lifting the uniform arguments of a fixpoint out. *)
+let lift_fixpoints = ref true
+let _ =
+  let open Goptions in
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "";
+      optkey   = ["Fixpoints";"Lift";"Arguments"];
+      optread  = (fun () -> !lift_fixpoints);
+      optwrite = (:=) lift_fixpoints; }
+
+let guess_lift_recursive_declaration (indexes:int array) defs =
+  (* Structural argument info is 0-indexed, in other words it's the
+     number of arguments appearing before the structural argument. *)
+  let max = Array.fold_left min indexes.(0) indexes in
+  let fixnum = Array.length defs in
+  let rec fold max i =
+    if Int.equal max 0 then 0
+    else if Int.equal i fixnum then max
+    else
+      let isfixrel k hd =
+        match kind hd with
+        | Rel n -> k < n
+        | _ -> false
+      in
+      let rec fold_constr k max c =
+        if isfixrel k c then 0
+        else
+          match kind c with
+          | App (hd, args) when isfixrel k hd ->
+            let max = Pervasives.min max (Array.length args) in
+            Array.fold_left_i (fun i max arg ->
+                if i < max
+                then
+                  (* [[k=0] fun a b => f a b] is [fun _ _ => [k=2] f 2 1] *)
+                  if isRelN (k-i) arg then max
+                  else fold_constr k i arg
+                else
+                  fold_constr k max arg)
+              max args
+          | _ -> Constr.fold_with_binders succ fold_constr k max c
+      in
+      let max = fold_constr 0 max defs.(i) in
+      fold max (i+1)
+  in
+  fold max 0
+
+let reloc_recursive_definition fixnum max def =
+  let isfixrel k hd =
+    match kind hd with
+    | Rel n -> k < n
+    | _ -> false
+  in
+  let rec repair k c = match kind c with
+    | Rel n ->
+      if k < n then mkRel (n-max) (* fix function: [max] lambdas disappear *)
+      else if k < n + max then mkRel (n+fixnum) (* lifted parameter: [fixnum] binders appear *)
+      else c
+    | App (hd, args) when isfixrel k hd ->
+      let hd = repair k hd in
+      let args = Array.map (repair k) (Array.sub args max (Array.length args - max)) in
+      mkApp (hd, args)
+    | _ -> Constr.map_with_binders succ repair k c
+  in
+  let ctx, def = Term.decompose_lam_n_assum max def in
+  ctx, repair max def
+
+let make_recursive_declarations (indexes:int array) (names,typs,defs as fixdecls) =
+  let max = if !lift_fixpoints then guess_lift_recursive_declaration indexes defs else 0 in
+  let fixnum = Array.length indexes in
+  if Int.equal max 0 then
+    List.init fixnum (fun i ->
+        Safe_typing.mk_pure_proof (mkFix ((indexes,i),fixdecls)))
+  else
+    (* turn [fix f a b c => ...] into [fun a => fix f b c => ...]
+
+       In the types we just pop [max] products.
+
+       In the bodies we pop [max] lambdas, fix recursive calls and
+       relocate DeBruijn indices. *)
+    let indexes = Array.map (fun i -> i - max) indexes in
+    let typs = Array.map (Term.decompose_prod_n max %> snd) typs in
+    let ctxdefs = Array.map (reloc_recursive_definition fixnum max) defs in
+    let ctxs = Array.map fst ctxdefs and defs = Array.map snd ctxdefs in
+    let fixdecls = names, typs, defs in
+    List.init fixnum (fun i ->
+        let fix = mkFix ((indexes, i), fixdecls) in
+        Safe_typing.mk_pure_proof (Term.it_mkLambda_or_LetIn fix ctxs.(i)))
+
 let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) indexes ntns =
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
@@ -265,15 +354,13 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
     let env = Global.env() in
     let indexes = search_guard env indexes fixdecls in
-    let fiximps = List.map (fun (n,r,p) -> r) fiximps in
     let vars = Univops.universes_of_constr env (mkFix ((indexes,0),fixdecls)) in
-    let fixdecls =
-      List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
     let evd = Evd.from_ctx ctx in
     let evd = Evd.restrict_universe_context evd vars in
     let ctx = Evd.check_univ_decl ~poly evd pl in
     let pl = Evd.universe_binders evd in
-    let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
+    let fixdecls = make_recursive_declarations indexes fixdecls in
+    let fiximps = List.map (fun (n,r,p) -> r) fiximps in
     ignore (List.map4 (DeclareDef.declare_fix (local, poly, Fixpoint) pl ctx)
               fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)

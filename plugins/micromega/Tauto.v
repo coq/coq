@@ -432,7 +432,7 @@ Set Implicit Arguments.
     simpl.
     destruct pol ; simpl.
     intros.
-    apply (IHf false) ; auto.
+    apply (IHf false env) ; auto.
     intros.
     generalize (IHf _ _ H).
     tauto.

@@ -143,7 +143,7 @@ Qed.
 Global Instance InA_compat : Proper (eqA==>equivlistA==>iff) InA.
 Proof.
  intros x x' Hxx' l l' Hll'. rewrite (Hll' x).
- rewrite 2 InA_alt; firstorder.
+ rewrite 2 InA_alt; split;intros [y [Heq HIn]];(exists y;split;[firstorder|exact HIn]).
 Qed.
 
 (** For compatibility, an immediate consequence of [InA_compat] *)

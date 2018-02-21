@@ -44,10 +44,11 @@ Argument C is implicit and maximally inserted
 Argument scopes are [type_scope _ _]
 Expands to: Constructor Top.Test1.myrefl
 myplus = 
-fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
+fun (T : Type) (_ : T) =>
+fix myplus (n m : nat) {struct n} : nat :=
   match n with
   | 0 => m
-  | S n' => S (myplus T t n' m)
+  | S n' => S (myplus n' m)
   end
      : forall T : Type, T -> nat -> nat -> nat
 
@@ -81,10 +82,11 @@ Expands to: Constructor Top.myrefl
 myrefl
      : forall (A C : Type) (x : A), C -> myEq A C x x
 myplus = 
-fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
+fun (T : Type) (_ : T) =>
+fix myplus (n m : nat) {struct n} : nat :=
   match n with
   | 0 => m
-  | S n' => S (myplus T t n' m)
+  | S n' => S (myplus n' m)
   end
      : forall T : Type, T -> nat -> nat -> nat
 
