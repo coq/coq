@@ -196,6 +196,8 @@ val whd_evar : Evd.evar_map -> constr -> constr
 
 (** {6 Equality} *)
 
+val cumul_weak_constraints : bool ref
+
 val eq_constr : Evd.evar_map -> t -> t -> bool
 val eq_constr_nounivs : Evd.evar_map -> t -> t -> bool
 val eq_constr_universes : Environ.env -> Evd.evar_map -> t -> t -> Universes.Constraints.t option

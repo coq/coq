@@ -29,6 +29,15 @@ exception Elimconst
     their parameters in its stack.
 *)
 
+let _ = Goptions.declare_bool_option {
+  Goptions.optdepr = false;
+  Goptions.optname =
+    "debug optiosn";
+  Goptions.optkey = ["Cumulativity";"Weak";"Constraints"];
+  Goptions.optread = (fun () -> !cumul_weak_constraints);
+  Goptions.optwrite = (fun a -> cumul_weak_constraints:=a);
+}
+
 (** Support for reduction effects *)
 
 open Mod_subst
