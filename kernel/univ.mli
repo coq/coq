@@ -253,6 +253,9 @@ sig
      A'] as opposed to [A' <= A]. *)
   type t = Irrelevant | Covariant | Invariant
 
+  (** [check_subtype x y] holds if variance [y] is also an instance of [x] *)
+  val check_subtype : t -> t -> bool
+
   val sup : t -> t -> t
 
   val pr : t -> Pp.t

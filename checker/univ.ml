@@ -1011,6 +1011,13 @@ struct
      A'] as opposed to [A' <= A]. *)
   type t = Irrelevant | Covariant | Invariant
 
+  let check_subtype x y = match x, y with
+  | (Irrelevant | Covariant | Invariant), Irrelevant -> true
+  | Irrelevant, Covariant -> false
+  | (Covariant | Invariant), Covariant -> true
+  | (Irrelevant | Covariant), Invariant -> false
+  | Invariant, Invariant -> true
+
   let leq_constraint csts variance u u' =
     match variance with
     | Irrelevant -> csts
