@@ -12,7 +12,6 @@ open Sorts
 open Util
 open Names
 open Nameops
-open Constr
 open Vars
 open Environ
 
@@ -131,17 +130,17 @@ type evar = Evar.t
 
 let string_of_existential evk = "?X" ^ string_of_int (Evar.repr evk)
 
-type evar_body =
+type 'a evar_body =
   | Evar_empty
-  | Evar_defined of constr
+  | Evar_defined of 'a
 
-type evar_info = {
-  evar_concl : constr;
+type 'a evar_ginfo = {
+  evar_concl : 'a;
   evar_hyps : named_context_val;
-  evar_body : evar_body;
+  evar_body : 'a evar_body;
   evar_filter : Filter.t;
   evar_source : Evar_kinds.t Loc.located;
-  evar_candidates : constr list option; (* if not None, list of allowed instances *)
+  evar_candidates : 'a list option; (* if not None, list of allowed instances *)
   evar_extra : Store.t }
 
 let make_evar hyps ccl = {
@@ -243,7 +242,7 @@ let evar_instance_array test_id info args =
     instrec filter (evar_context info) 0
 
 let make_evar_instance_array info args =
-  evar_instance_array (NamedDecl.get_id %> isVarId) info args
+  evar_instance_array (NamedDecl.get_id %> Constr.isVarId) info args
 
 let instantiate_evar_array info c args =
   let inst = make_evar_instance_array info args in
@@ -280,6 +279,7 @@ type 'a freelisted = {
 
 (* Collects all metavars appearing in a constr *)
 let metavars_of c =
+  let open Constr in
   let rec collrec acc c =
     match kind c with
       | Meta mv -> Int.Set.add mv acc
@@ -326,8 +326,8 @@ type instance_status = instance_constraint * instance_typing_status
 (* Clausal environments *)
 
 type clbinding =
-  | Cltyp of Name.t * constr freelisted
-  | Clval of Name.t * (constr freelisted * instance_status) * constr freelisted
+  | Cltyp of Name.t * Constr.t freelisted
+  | Clval of Name.t * (Constr.t freelisted * instance_status) * Constr.t freelisted
 
 let map_clb f = function
   | Cltyp (na,cfl) -> Cltyp (na,map_fl f cfl)
@@ -351,7 +351,7 @@ let metamap_to_list m =
 (* Unification state *)
 
 type conv_pb = Reduction.conv_pb
-type evar_constraint = conv_pb * Environ.env * constr * constr
+type 'a evar_gconstraint = conv_pb * Environ.env * 'a * 'a
 
 module EvMap = Evar.Map
 
@@ -361,7 +361,7 @@ sig
 type t
 
 val empty : t
-val add_name_undefined : Id.t option -> Evar.t -> evar_info -> t -> t
+val add_name_undefined : Id.t option -> Evar.t -> 'a evar_ginfo -> t -> t
 val remove_name_defined : Evar.t -> t -> t
 val rename : Evar.t -> Id.t -> t -> t
 val reassign_name_defined : Evar.t -> Evar.t -> t -> t
@@ -419,15 +419,15 @@ let key id (_, idtoev) =
 
 end
 
-type evar_map = {
+type 'a evar_gmap = {
   (** Existential variables *)
-  defn_evars : evar_info EvMap.t;
-  undf_evars : evar_info EvMap.t;
+  defn_evars : 'a evar_ginfo EvMap.t;
+  undf_evars : 'a evar_ginfo EvMap.t;
   evar_names : EvNames.t;
   (** Universes *)
   universes  : evar_universe_context;
   (** Conversion problems *)
-  conv_pbs   : evar_constraint list;
+  conv_pbs   : 'a evar_gconstraint list;
   last_mods  : Evar.Set.t;
   (** Metas *)
   metas      : clbinding Metamap.t;
@@ -496,8 +496,8 @@ let undefined_map d = d.undf_evars
 
 let drop_all_defined d = { d with defn_evars = EvMap.empty }
 
-(* spiwack: not clear what folding over an evar_map, for now we shall
-    simply fold over the inner evar_map. *)
+(* spiwack: not clear what folding over an evar_gmap, for now we shall
+    simply fold over the inner evar_gmap. *)
 let fold f d a =
   EvMap.fold f d.defn_evars (EvMap.fold f d.undf_evars a)
 
@@ -536,6 +536,7 @@ let is_defined d e = EvMap.mem e d.defn_evars
 
 let is_undefined d e = EvMap.mem e d.undf_evars
 
+type 'a gexistential = Evar.t * 'a array
 let existential_value d (n, args) =
   let info = find d n in
   match evar_body info with
@@ -563,7 +564,7 @@ let add_universe_constraints d c =
 
 (*** /Lifting... ***)
 
-(* evar_map are considered empty disregarding histories *)
+(* evar_gmap are considered empty disregarding histories *)
 let is_empty d =
   EvMap.is_empty d.defn_evars &&
   EvMap.is_empty d.undf_evars &&
@@ -572,7 +573,7 @@ let is_empty d =
 
 let cmap f evd = 
   { evd with
-      metas = Metamap.map (map_clb f) evd.metas;
+      metas      = Metamap.map (map_clb f) evd.metas;
       defn_evars = EvMap.map (map_evar_info f) evd.defn_evars;
       undf_evars = EvMap.map (map_evar_info f) evd.undf_evars
   }
@@ -662,26 +663,26 @@ let is_restricted_evar evi =
 
 let restrict evk filter ?candidates ?src evd =
   let evk' = new_untyped_evar () in
-  let evar_info = EvMap.find evk evd.undf_evars in
-  let evar_info' =
-    { evar_info with evar_filter = filter;
+  let evar_ginfo = EvMap.find evk evd.undf_evars in
+  let evar_ginfo' =
+    { evar_ginfo with evar_filter = filter;
       evar_candidates = candidates;
-      evar_source = (match src with None -> evar_info.evar_source | Some src -> src) } in
+      evar_source = (match src with None -> evar_ginfo.evar_source | Some src -> src) } in
   let last_mods = match evd.conv_pbs with
   | [] ->  evd.last_mods
   | _ -> Evar.Set.add evk evd.last_mods in
   let evar_names = EvNames.reassign_name_defined evk evk' evd.evar_names in
-  let ctxt = Filter.filter_list filter (evar_context evar_info) in
-  let id_inst = Array.map_of_list (NamedDecl.get_id %> mkVar) ctxt in
-  let body = mkEvar(evk',id_inst) in
+  let ctxt = Filter.filter_list filter (evar_context evar_ginfo) in
+  let id_inst = Array.map_of_list (NamedDecl.get_id %> Constr.mkVar) ctxt in
+  let body = Constr.mkEvar(evk',id_inst) in
   let (defn_evars, undf_evars) = define_aux ~dorestrict:evk' evd.defn_evars evd.undf_evars evk body in
-  { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
+  { evd with undf_evars = EvMap.add evk' evar_ginfo' undf_evars;
     defn_evars; last_mods; evar_names }, evk'
 
 let downcast evk ccl evd =
-  let evar_info = EvMap.find evk evd.undf_evars in
-  let evar_info' = { evar_info with evar_concl = ccl } in
-  { evd with undf_evars = EvMap.add evk evar_info' evd.undf_evars }
+  let evar_ginfo = EvMap.find evk evd.undf_evars in
+  let evar_ginfo' = { evar_ginfo with evar_concl = ccl } in
+  { evd with undf_evars = EvMap.add evk evar_ginfo' evd.undf_evars }
 
 (* extracts conversion problems that satisfy predicate p *)
 (* Note: conv_pbs not satisying p are stored back in reverse order *)
@@ -706,6 +707,7 @@ let extract_all_conv_pbs evd =
   extract_conv_pbs evd (fun _ -> true)
 
 let loc_of_conv_pb evd (pbty,env,t1,t2) =
+  let open Constr in
   match kind (fst (decompose_app t1)) with
   | Evar (evk1,_) -> fst (evar_source evk1 evd)
   | _ ->
@@ -719,6 +721,7 @@ let loc_of_conv_pb evd (pbty,env,t1,t2) =
 (* excluding defined evars *)
 
 let evars_of_term c =
+  let open Constr in
   let rec evrec acc c =
     match kind c with
     | Evar (n, l) -> Evar.Set.add n (Array.fold_left evrec acc l)
@@ -1079,7 +1082,7 @@ let meta_merge ?(with_univs = true) evd1 evd2 =
   in
   {evd2 with universes; metas; }
 
-type metabinding = metavariable * constr * instance_status
+type 'a metabinding = Constr.metavariable * 'a * instance_status
 
 let retract_coercible_metas evd =
   let mc = ref [] in
@@ -1111,14 +1114,14 @@ let set_extra_data extras evd = { evd with extras }
 
 (*******************************************************************)
 
-type open_constr = evar_map * constr
+type 'a open_gconstr = 'a evar_gmap * 'a
 
 (*******************************************************************)
 (* The type constructor ['a sigma] adds an evar map to an object of
   type ['a] *)
-type 'a sigma = {
+type ('a,'b) gsigma = {
   it : 'a ;
-  sigma : evar_map
+  sigma : 'b evar_gmap
 }
 
 let sig_it x = x.it
@@ -1133,7 +1136,7 @@ let on_sig s f =
 module MonadR =
   Monad.Make (struct
 
-    type +'a t = evar_map -> evar_map * 'a
+    type +'a t = Constr.t evar_gmap -> Constr.t evar_gmap * 'a
 
     let return a = fun s -> (s,a)
 
@@ -1153,7 +1156,7 @@ module MonadR =
 module Monad =
   Monad.Make (struct
 
-    type +'a t = evar_map -> 'a * evar_map
+    type +'a t = Constr.t evar_gmap -> 'a * Constr.t evar_gmap
 
     let return a = fun s -> (a,s)
 
@@ -1174,3 +1177,10 @@ module Monad =
 (* Failure explanation *)
 
 type unsolvability_explanation = SeveralInstancesFound of int
+
+(*  *)
+type evar_info = Constr.t evar_ginfo
+type evar_map = Constr.t evar_gmap
+type evar_constraint = Constr.t evar_gconstraint
+type 'a sigma = ('a,Constr.t) gsigma
+type open_constr = Constr.t open_gconstr
