@@ -2041,7 +2041,7 @@ let rec compile_deps env sigma prefix ~interactive init t =
       let const_updates = Cmap_env.add c (nameref, name) const_updates in
       comp_stack, (mind_updates, const_updates)
   | Construct (((mind,_),_),u) -> compile_mind_deps env prefix ~interactive init mind
-  | Proj (p,c) ->
+  | Proj (p,unf,c) ->
     let term = mkApp (mkConst (Projection.constant p), [|c|]) in
       compile_deps env sigma prefix ~interactive init term
   | Case (ci, p, c, ac) ->

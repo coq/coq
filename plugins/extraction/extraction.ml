@@ -297,10 +297,10 @@ let rec extract_type env db j c args =
     | Ind ((kn,i),u) ->
 	let s = (extract_ind env kn).ind_packets.(i).ip_sign in
 	extract_type_app env db (IndRef (kn,i),s) args
-    | Proj (p,t) ->
+    | Proj (p,unf,t) ->
        (* Let's try to reduce, if it hasn't already been done. *)
-       if Projection.unfolded p then Tunknown
-       else extract_type env db j (mkProj (Projection.unfold p, t)) args
+       if unf then Tunknown
+       else extract_type env db j (mkProj (p, true, t)) args
     | Case _ | Fix _ | CoFix _ -> Tunknown
     | Var _ | Meta _ | Evar _ | Cast _ | LetIn _ | Construct _ -> assert false
 
@@ -610,7 +610,7 @@ let rec extract_term env mle mlt c args =
 	extract_cst_app env mle mlt kn args
     | Construct (cp,_) ->
 	extract_cons_app env mle mlt cp args
-    | Proj (p, c) ->
+    | Proj (p, unf, c) ->
         let term = Retyping.expand_projection env (Evd.from_env env) p (EConstr.of_constr c) [] in
         let term = EConstr.Unsafe.to_constr term in
 	  extract_term env mle mlt term args

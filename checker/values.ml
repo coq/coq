@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 79ed7b5c069b1994bf1a8d2cec22bdce checker/cic.mli
+MD5 55649b523814464f107de74a9389c02c checker/cic.mli
 
 *)
 
@@ -133,7 +133,7 @@ let v_caseinfo =
   v_tuple "case_info" [|v_ind;Int;Array Int;Array Int;v_cprint|]
 
 let v_cast = v_enum "cast_kind" 4
-let v_proj = v_tuple "projection" [|v_cst; v_bool|]
+let v_proj = v_cst
 
 let rec v_constr =
   Sum ("constr",0,[|
@@ -153,7 +153,7 @@ let rec v_constr =
     [|v_caseinfo;v_constr;v_constr;Array v_constr|]; (* Case *)
     [|v_fix|]; (* Fix *)
     [|v_cofix|]; (* CoFix *)
-    [|v_proj;v_constr|] (* Proj *)
+    [|v_proj;v_bool;v_constr|] (* Proj *)
   |])
 
 and v_prec = Tuple ("prec_declaration",

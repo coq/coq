@@ -121,7 +121,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
 	  let term = 
 	    mkApp (mkRel 2, 
 		   Array.map 
-		   (fun p -> mkProj (Projection.make p true, mkRel 1)) ps) in
+                   (fun p -> mkProj (Projection.make p, true, mkRel 1)) ps) in
 	    if dep then
 	      let ty = mkApp (mkRel 3, [| mkRel 1 |]) in 
 		mkCast (term, DEFAULTcast, ty)

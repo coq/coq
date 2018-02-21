@@ -279,7 +279,7 @@ and nf_atom env sigma atom =
   | Ameta (mv,_) -> mkMeta mv
   | Aproj(p,c) ->
       let c = nf_accu env sigma c in
-	mkProj(Projection.make p true,c)
+        mkProj(Projection.make p, true,c)
   | _ -> fst (nf_atom_type env sigma atom)
 
 and nf_atom_type env sigma atom =
@@ -355,7 +355,7 @@ and nf_atom_type env sigma atom =
   | Aproj(p,c) ->
       let c,tc = nf_accu_type env sigma c in
       let cj = make_judge c tc in
-      let uj = Typeops.judge_of_projection env (Projection.make p true) cj in
+      let uj = Typeops.judge_of_projection env (Projection.make p) true cj in
       uj.uj_val, uj.uj_type
 
 

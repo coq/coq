@@ -2037,7 +2037,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CProj (pr, c) ->
       match intern_reference pr with
       | ConstRef p ->
-        DAst.make ?loc @@ GProj (Projection.make p false, intern env c)
+        DAst.make ?loc @@ GProj (Projection.make p, false, intern env c)
       | _ ->
         raise (InternalizationError (loc,IllegalMetavariable)) (* FIXME *)
     )

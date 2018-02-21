@@ -99,7 +99,7 @@ let head_name sigma c = (* Find the head constant of a constr if any *)
     match EConstr.kind sigma c with
     | Prod (_,_,c) | Lambda (_,_,c) | LetIn (_,_,_,c)
     | Cast (c,_,_) | App (c,_) -> hdrec c
-    | Proj (kn,_) -> Some (Label.to_id (Constant.label (Projection.constant kn)))
+    | Proj (kn,_,_) -> Some (Label.to_id (Constant.label (Projection.constant kn)))
     | Const _ | Ind _ | Construct _ | Var _ as c ->
 	Some (basename_of_global (global_of_constr c))
     | Fix ((_,i),(lna,_,_)) | CoFix (i,(lna,_,_)) ->
@@ -130,7 +130,7 @@ let hdchar env sigma c =
     match EConstr.kind sigma c with
     | Prod (_,_,c) | Lambda (_,_,c) | LetIn (_,_,_,c) -> hdrec (k+1) c
     | Cast (c,_,_) | App (c,_) -> hdrec k c
-    | Proj (kn,_) -> lowercase_first_char (Label.to_id (Constant.label (Projection.constant kn)))
+    | Proj (kn,_,_) -> lowercase_first_char (Label.to_id (Constant.label (Projection.constant kn)))
     | Const (kn,_) -> lowercase_first_char (Label.to_id (Constant.label kn))
     | Ind (x,_) -> (try lowercase_first_char (basename_of_global (IndRef x)) with Not_found when !Flags.in_debugger -> "zz")
     | Construct (x,_) -> (try lowercase_first_char (basename_of_global (ConstructRef x)) with Not_found when !Flags.in_debugger -> "zz")

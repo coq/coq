@@ -264,7 +264,7 @@ let rec execute env cstr =
         let jl = Array.map2 (fun c ty -> c,ty) args jl in
 	judge_of_apply env (f,j) jl
 
-    | Proj (p, c) ->
+    | Proj (p, _, c) ->
         let ct = execute env c in
           judge_of_projection env p c ct
 

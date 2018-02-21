@@ -867,8 +867,8 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
         (* from [params, x:I, field1,..,fieldj |- t(field1,..,fieldj)]
            to [params, x:I |- t(proj1 x,..,projj x)] *)
 	let ty = substl subst t in
-	let term = mkProj (Projection.make kn true, mkRel 1) in
-	let fterm = mkProj (Projection.make kn false, mkRel 1) in
+        let term = mkProj (Projection.make kn, true, mkRel 1) in
+        let fterm = mkProj (Projection.make kn, false, mkRel 1) in
 	let compat = compat_body ty (j - 1) in
 	let etab = it_mkLambda_or_LetIn (mkLambda (x, indty, term)) params in
 	let etat = it_mkProd_or_LetIn (mkProd (x, indty, ty)) params in

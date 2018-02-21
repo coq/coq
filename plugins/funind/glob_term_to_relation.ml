@@ -698,7 +698,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
     | GRec _ -> user_err Pp.(str "Not handled GRec")
     | GCast(b,_) ->
 	build_entry_lc env funnames  avoid b
-    | GProj(_,_) -> user_err Pp.(str "Funind does not support primitive projections")
+    | GProj(_,_,_) -> user_err Pp.(str "Funind does not support primitive projections")
 and build_entry_lc_from_case env funname make_discr
     (el:tomatch_tuples)
     (brl:Glob_term.cases_clauses) avoid :

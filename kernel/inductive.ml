@@ -794,7 +794,7 @@ let rec subterm_specif renv stack t =
       (* Metas and evars are considered OK *)
     | (Meta _|Evar _) -> Dead_code
 
-    | Proj (p, c) -> 
+    | Proj (p, unf, c) ->
       let subt = subterm_specif renv stack c in
       (match subt with
        | Subterm (s, wf) ->
@@ -998,7 +998,7 @@ let check_one_fix renv recpos trees def =
         | (Ind _ | Construct _) ->
             List.iter (check_rec_call renv []) l
 
-	| Proj (p, c) ->
+        | Proj (p, _, c) ->
            List.iter (check_rec_call renv []) l;
            check_rec_call renv [] c
 

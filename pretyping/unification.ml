@@ -480,27 +480,27 @@ let use_metas_pattern_unification sigma flags nb l =
 
 type key = 
   | IsKey of CClosure.table_key
-  | IsProj of projection * EConstr.constr
+  | IsProj of projection * bool * EConstr.constr
 
 let expand_table_key env = function
   | ConstKey cst -> constant_opt_value_in env cst
   | VarKey id -> (try named_body id env with Not_found -> None)
   | RelKey _ -> None
 
-let unfold_projection env p stk =
+let unfold_projection env p unf stk =
   (match try Some (lookup_projection p env) with Not_found -> None with
   | Some pb -> 
     let s = Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, 
-			p, Cst_stack.empty) in
+                        p, unf, Cst_stack.empty) in
       s :: stk
   | None -> assert false)
 
 let expand_key ts env sigma = function
   | Some (IsKey k) -> Option.map EConstr.of_constr (expand_table_key env k)
-  | Some (IsProj (p, c)) -> 
+  | Some (IsProj (p, unf, c)) ->
     let red = Stack.zip sigma (fst (whd_betaiota_deltazeta_for_iota_state ts env sigma
-                               Cst_stack.empty (c, unfold_projection env p [])))
-    in if EConstr.eq_constr sigma (EConstr.mkProj (p, c)) red then None else Some red
+                               Cst_stack.empty (c, unfold_projection env p unf [])))
+    in if EConstr.eq_constr sigma (EConstr.mkProj (p, unf, c)) red then None else Some red
   | None -> None
 
 let isApp_or_Proj sigma c =
@@ -528,10 +528,10 @@ let key_of env sigma b flags f =
   | Var id when is_transparent env (VarKey id) && 
       Id.Pred.mem id (fst flags.modulo_delta) ->
     Some (IsKey (VarKey id))
-  | Proj (p, c) when Projection.unfolded p
+  | Proj (p, unf, c) when unf
     || (is_transparent env (ConstKey (Projection.constant p)) &&
        (Cpred.mem (Projection.constant p) (snd flags.modulo_delta))) ->
-    Some (IsProj (p, c))
+    Some (IsProj (p, unf, c))
   | _ -> None
   
 
@@ -542,7 +542,7 @@ let translate_key = function
 
 let translate_key = function
   | IsKey k -> translate_key k    
-  | IsProj (c, _) -> ConstKey (Projection.constant c)
+  | IsProj (c, _, _) -> ConstKey (Projection.constant c)
   
 let oracle_order env cf1 cf2 =
   match cf1 with
@@ -555,12 +555,12 @@ let oracle_order env cf1 cf2 =
       | None -> Some true
       | Some k2 ->
 	match k1, k2 with
-	| IsProj (p, _), IsKey (ConstKey (p',_)) 
+        | IsProj (p, unf, _), IsKey (ConstKey (p',_))
 	  when Constant.equal (Projection.constant p) p' -> 
-	  Some (not (Projection.unfolded p))
-	| IsKey (ConstKey (p,_)), IsProj (p', _) 
+          Some (not unf)
+        | IsKey (ConstKey (p,_)), IsProj (p', unf', _)
 	  when Constant.equal p (Projection.constant p') -> 
-	  Some (Projection.unfolded p')
+          Some unf'
 	| _ ->
           Some (Conv_oracle.oracle_order (fun x -> x)
 		  (Environ.oracle env) false (translate_key k1) (translate_key k2))
@@ -573,7 +573,7 @@ let is_rigid_head sigma flags t =
   | Fix _ | CoFix _ -> true
   | Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Cast (_, _, _) | Prod (_, _, _)
     | Lambda (_, _, _) | LetIn (_, _, _, _) | App (_, _) | Case (_, _, _, _)
-    | Proj (_, _) -> false (* Why aren't Prod, Sort rigid heads ? *)
+    | Proj (_, _, _) -> false (* Why aren't Prod, Sort rigid heads ? *)
 
 let force_eqs c = 
   Universes.Constraints.fold
@@ -653,7 +653,7 @@ let rec is_neutral env sigma ts t =
     | Rel n -> true
     | Evar _ | Meta _ -> true
     | Case (_, p, c, cl) -> is_neutral env sigma ts c
-    | Proj (p, c) -> is_neutral env sigma ts c
+    | Proj (p, _, c) -> is_neutral env sigma ts c
     | Lambda _ | LetIn _ | Construct _ | CoFix _ -> false
     | Sort _ | Cast (_, _, _) | Prod (_, _, _) | Ind _ -> false (* Really? *)
     | Fix _ -> false (* This is an approximation *)
@@ -791,7 +791,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	| _, LetIn (_,a,_,c) -> unirec_rec curenvnb pb opt substn cM (subst1 a c)
 
 	(** Fast path for projections. *)
-	| Proj (p1,c1), Proj (p2,c2) when Constant.equal
+        | Proj (p1,unf1,c1), Proj (p2,unf2,c2) when Constant.equal
 	    (Projection.constant p1) (Projection.constant p2) ->
 	  (try unify_same_proj curenvnb cv_pb {opt with at_top = true}
 	       substn c1 c2
@@ -860,10 +860,10 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	| App (f1,l1), App (f2,l2) ->
 	  unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
 	    
-	| App (f1,l1), Proj(p2,c2) ->
+        | App (f1,l1), Proj(p2,unf2,c2) ->
 	  unify_app curenvnb pb opt substn cM f1 l1 cN cN [||]
 
-	| Proj (p1,c1), App(f2,l2) ->
+        | Proj (p1,unf1,c1), App(f2,l2) ->
 	  unify_app curenvnb pb opt substn cM cM [||] cN f2 l2
 
 	| _ ->
@@ -893,7 +893,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       in
       let expand_proj c c' l = 
       	match EConstr.kind sigma c with
-      	| Proj (p, t) when not (Projection.unfolded p) && needs_expansion p c' ->
+        | Proj (p, unf, t) when not unf && needs_expansion p c' ->
       	  (try destApp sigma (Retyping.expand_projection curenv sigma p t (Array.to_list l))
       	   with RetypeError _ -> (** Unification can be called on ill-typed terms, due
       				     to FO and eta in particular, fail gracefully in that case *)
@@ -1765,7 +1765,7 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
 	       with ex when precatchable_exception ex ->
 		 matchrec c2)
 
-	  | Proj (p,c) -> matchrec c
+          | Proj (p,_,c) -> matchrec c
 
 	  | Fix(_,(_,types,terms)) ->
 	       (try
@@ -1842,7 +1842,7 @@ let w_unify_to_subterm_all env evd ?(flags=default_unify_flags ()) (op,cl) =
             | Case(_,_,c,lf) -> (* does not search in the predicate *)
 		bind (matchrec c) (bind_iter matchrec lf)
 
-	    | Proj (p,c) -> matchrec c
+            | Proj (p,_,c) -> matchrec c
 
 	    | LetIn(_,c1,_,c2) ->
 		bind (matchrec c1) (matchrec c2)

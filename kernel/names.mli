@@ -709,7 +709,7 @@ type constant = Constant.t
 module Projection : sig
   type t
 
-  val make : Constant.t -> bool -> t
+  val make : Constant.t -> t
 
   module SyntacticOrd : sig
     val compare : t -> t -> int
@@ -718,8 +718,6 @@ module Projection : sig
   end
 
   val constant : t -> Constant.t
-  val unfolded : t -> bool
-  val unfold : t -> t
 
   val equal : t -> t -> bool
   val hash : t -> int

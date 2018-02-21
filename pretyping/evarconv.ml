@@ -69,7 +69,7 @@ let coq_unit_judge =
 let unfold_projection env evd ts p c =
   let cst = Projection.constant p in
     if is_transparent_constant ts cst then
-      Some (mkProj (Projection.make cst true, c))
+      Some (mkProj (Projection.make cst, true, c))
     else None
       
 let eval_flexible_term ts env evd c =
@@ -91,8 +91,8 @@ let eval_flexible_term ts env evd c =
        with Not_found -> None)
   | LetIn (_,b,_,c) -> Some (subst1 b c)
   | Lambda _ -> Some c
-  | Proj (p, c) -> 
-    if Projection.unfolded p then assert false
+  | Proj (p, unf, c) ->
+    if unf then assert false
     else unfold_projection env evd ts p c
   | _ -> assert false
 
@@ -131,7 +131,7 @@ let occur_rigidly (evk,_ as ev) evd t =
     match EConstr.kind evd t with
     | App (f, c) -> if aux f then Array.exists aux c else false
     | Construct _ | Ind _ | Sort _ | Meta _ | Fix _ | CoFix _ -> true
-    | Proj (p, c) -> not (aux c)
+    | Proj (p, unf, c) -> not (aux c)
     | Evar (evk',_) -> if Evar.equal evk evk' then raise Occur else false
     | Cast (p, _, _) -> aux p
     | Lambda _ | LetIn _ -> false
@@ -176,7 +176,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
         let s = ESorts.kind sigma s in
 	lookup_canonical_conversion
 	  (proji, Sort_cs (Sorts.family s)),[]
-      | Proj (p, c) ->
+      | Proj (p, unf, c) ->
         let c2 = Globnames.ConstRef (Projection.constant p) in
         let c = Retyping.expand_projection env sigma p c [] in
         let _, args = destApp sigma c in
@@ -293,7 +293,7 @@ let ise_stack2 no_app env evd f sk1 sk2 =
 	| Success i'' -> ise_stack2 true i'' q1 q2
         | UnifFailure _ as x -> fail x)
       | UnifFailure _ as x -> fail x)
-    | Stack.Proj (n1,a1,p1,_)::q1, Stack.Proj (n2,a2,p2,_)::q2 ->
+    | Stack.Proj (n1,a1,p1,_,_)::q1, Stack.Proj (n2,a2,p2,_,_)::q2 ->
        if Constant.equal (Projection.constant p1) (Projection.constant p2)
        then ise_stack2 true i q1 q2
        else fail (UnifFailure (i, NotSameHead))
@@ -335,7 +335,7 @@ let exact_ise_stack2 env evd f sk1 sk2 =
 	  (fun i -> ise_array2 i (fun ii -> f (push_rec_types recdef1 env) ii CONV) bds1 bds2);
 	  (fun i -> ise_stack2 i a1 a2)]
       else UnifFailure (i,NotSameHead)
-    | Stack.Proj (n1,a1,p1,_)::q1, Stack.Proj (n2,a2,p2,_)::q2 ->
+    | Stack.Proj (n1,a1,p1,_,_)::q1, Stack.Proj (n2,a2,p2,_,_)::q2 ->
        if Constant.equal (Projection.constant p1) (Projection.constant p2)
        then ise_stack2 i q1 q2
        else (UnifFailure (i, NotSameHead))
@@ -566,7 +566,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     let default i = ise_try i [f1; consume apprF apprM; delta]
     in
       match EConstr.kind evd termM with
-      | Proj (p, c) when not (Stack.is_empty skF) ->
+      | Proj (p, unf, c) when not (Stack.is_empty skF) ->
 	(* Might be ?X args = p.c args', and we have to eta-expand the 
 	   primitive projection if |args| >= |args'|+1. *)
 	let nargsF = Stack.args_size skF and nargsM = Stack.args_size skM in
@@ -738,7 +738,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	in
 	ise_try evd [f1; f2]
 
-	| Proj (p, c), Proj (p', c') 
+        | Proj (p, unf, c), Proj (p', unf', c')
 	  when Constant.equal (Projection.constant p) (Projection.constant p') ->
 	  let f1 i = 
 	    ise_and i 
@@ -752,7 +752,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	    ise_try evd [f1; f2]
 	      
 	(* Catch the p.c ~= p c' cases *)
-	| Proj (p,c), Const (p',u) when Constant.equal (Projection.constant p) p' ->
+        | Proj (p,unf,c), Const (p',u) when Constant.equal (Projection.constant p) p' ->
 	  let res = 
 	    try Some (destApp evd (Retyping.expand_projection env evd p c []))
 	    with Retyping.RetypeError _ -> None
@@ -763,7 +763,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 		(appr2,csts2)
 	    | None -> UnifFailure (evd,NotSameHead))
 	      
-	| Const (p,u), Proj (p',c') when Constant.equal p (Projection.constant p') ->
+        | Const (p,u), Proj (p',unf',c') when Constant.equal p (Projection.constant p') ->
 	  let res = 
 	    try Some (destApp evd (Retyping.expand_projection env evd p' c' []))
 	    with Retyping.RetypeError _ -> None
@@ -813,7 +813,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	     (fst (whd_betaiota_deltazeta_for_iota_state
 		      (fst ts) env i Cst_stack.empty (subst1 b c, args)))
 	    | Fix _ -> true (* Partially applied fix can be the result of a whd call *)
-	    | Proj (p, _) -> Projection.unfolded p || Stack.not_purely_applicative args
+            | Proj (p, unf, _) -> unf || Stack.not_purely_applicative args
             | Case _ | App _| Cast _ -> assert false in
           let rhs_is_stuck_and_unnamed () =
 	    let applicative_stack = fst (Stack.strip_app sk2) in
@@ -1033,7 +1033,7 @@ and eta_constructor ts env evd sk1 ((ind, i), u) sk2 term2 =
 	   let l1' = Stack.tail pars sk1 in
 	   let l2' = 
 	     let term = Stack.zip evd (term2,sk2) in 
-	       List.map (fun p -> EConstr.mkProj (Projection.make p false, term)) (Array.to_list projs)
+               List.map (fun p -> EConstr.mkProj (Projection.make p, false, term)) (Array.to_list projs)
 	   in
 	     exact_ise_stack2 env evd (evar_conv_x (fst ts, false)) l1' 
 	       (Stack.append_app_list l2' Stack.empty)

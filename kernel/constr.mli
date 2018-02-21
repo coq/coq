@@ -120,7 +120,7 @@ val mkConst : Constant.t -> constr
 val mkConstU : pconstant -> constr
 
 (** Constructs a projection application *)
-val mkProj : (projection * constr) -> constr
+val mkProj : (projection * bool * constr) -> constr
 
 (** Inductive types *)
 
@@ -218,7 +218,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
-  | Proj      of projection * 'constr
+  | Proj      of projection * bool * 'constr
 
 (** User view of [constr]. For [App], it is ensured there is at
    least one argument and the function is not itself an applicative
@@ -316,7 +316,7 @@ where [info] is pretty-printing information *)
 val destCase : constr -> case_info * constr * constr * constr array
 
 (** Destructs a projection *)
-val destProj : constr -> projection * constr
+val destProj : constr -> projection * bool * constr
 
 (** Destructs the {% $ %}i{% $ %}th function of the block
    [Fixpoint f{_ 1} ctx{_ 1} = b{_ 1}

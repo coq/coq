@@ -59,8 +59,8 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
   fixpoint_eq f1 f2
 | PCoFix f1, PCoFix f2 ->
   cofixpoint_eq f1 f2
-| PProj (p1, t1), PProj (p2, t2) ->
-   Projection.equal p1 p2 && constr_pattern_eq t1 t2
+| PProj (p1, unf1, t1), PProj (p2, unf2, t2) ->
+   Projection.equal p1 p2 && unf1 == unf2 && constr_pattern_eq t1 t2
 | (PRef _ | PVar _ | PEvar _ | PRel _ | PApp _ | PSoApp _
    | PLambda _ | PProd _ | PLetIn _ | PSort _ | PMeta _
    | PIf _ | PCase _ | PFix _ | PCoFix _ | PProj _), _ -> false
@@ -86,7 +86,7 @@ and rec_declaration_eq (n1, c1, r1) (n2, c2, r2) =
 let rec occur_meta_pattern = function
   | PApp (f,args) ->
       (occur_meta_pattern f) || (Array.exists occur_meta_pattern args)
-  | PProj (_,arg) -> occur_meta_pattern arg
+  | PProj (_,_,arg) -> occur_meta_pattern arg
   | PLambda (na,t,c)  -> (occur_meta_pattern t) || (occur_meta_pattern c)
   | PProd (na,t,c)  -> (occur_meta_pattern t) || (occur_meta_pattern c)
   | PLetIn (na,b,t,c)  ->
@@ -105,7 +105,7 @@ let rec occurn_pattern n = function
   | PRel p -> Int.equal n p
   | PApp (f,args) ->
       (occurn_pattern n f) || (Array.exists (occurn_pattern n) args)
-  | PProj (_,arg) -> occurn_pattern n arg
+  | PProj (_,_,arg) -> occurn_pattern n arg
   | PLambda (na,t,c)  -> (occurn_pattern n t) || (occurn_pattern (n+1) c)
   | PProd (na,t,c)  -> (occurn_pattern n t) || (occurn_pattern (n+1) c)
   | PLetIn (na,b,t,c)  ->
@@ -138,7 +138,7 @@ let rec head_pattern_bound t =
     | PRef r         -> r
     | PVar id        -> VarRef id
     | PEvar _ | PRel _ | PMeta _ | PSoApp _  | PSort _ | PFix _ | PProj _
-	-> raise BoundPattern
+        -> raise BoundPattern
     (* Perhaps they were arguments, but we don't beta-reduce *)
     | PLambda _ -> raise BoundPattern
     | PCoFix _ -> anomaly ~label:"head_pattern_bound" (Pp.str "not a type.")
@@ -181,7 +181,7 @@ let pattern_of_constr env sigma t =
     | Const (sp,u)  -> PRef (ConstRef (Constant.make1 (Constant.canonical sp)))
     | Ind (sp,u)    -> PRef (canonical_gr (IndRef sp))
     | Construct (sp,u) -> PRef (canonical_gr (ConstructRef sp))
-    | Proj (p, c) -> 
+    | Proj (p, unf, c) ->
       pattern_of_constr env (EConstr.Unsafe.to_constr (Retyping.expand_projection env sigma p (EConstr.of_constr c) []))
     | Evar (evk,ctxt as ev) ->
       (match snd (Evd.evar_source evk sigma) with
@@ -222,7 +222,7 @@ let map_pattern_with_binders g f l = function
   | PIf (c,b1,b2) -> PIf (f l c,f l b1,f l b2)
   | PCase (ci,po,p,pl) ->
     PCase (ci,f l po,f l p, List.map (fun (i,n,c) -> (i,n,f l c)) pl)
-  | PProj (p,pc) -> PProj (p, f l pc)
+  | PProj (p,unf,pc) -> PProj (p, unf, f l pc)
   (* Non recursive *)
   | (PVar _ | PEvar _ | PRel _ | PRef _  | PSort _  | PMeta _
   (* Bound to terms *)
@@ -282,12 +282,12 @@ let rec subst_pattern subst pat =
   | PVar _
   | PEvar _
   | PRel _ -> pat
-  | PProj (p,c) -> 
+  | PProj (p,unf,c) ->
       let p' = Projection.map (fun p -> 
 	destConstRef (fst (subst_global subst (ConstRef p)))) p in
       let c' = subst_pattern subst c in
 	if p' == p && c' == c then pat else
-	  PProj(p',c')
+          PProj(p',unf,c')
   | PApp (f,args) ->
       let f' = subst_pattern subst f in
       let args' = Array.smartmap (subst_pattern subst) args in
@@ -445,8 +445,8 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
 	 one non-trivial branch. These facts are used in [Constrextern]. *)
       PCase (info, pred, pat_of_raw metas vars c, brs)
 
-  | GProj(p,c) ->
-    PProj(p, pat_of_raw metas vars c)
+  | GProj(p,unf,c) ->
+    PProj(p, unf, pat_of_raw metas vars c)
 
   | GPatVar _ | GIf _ | GLetTuple _ | GCases _ | GEvar _ | GRec _ ->
       err ?loc (Pp.str "Non supported pattern."))

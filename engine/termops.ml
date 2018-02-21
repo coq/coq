@@ -78,7 +78,7 @@ let rec pr_constr c = match kind c with
   | Ind ((sp,i),u) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str")"
   | Construct (((sp,i),j),u) ->
       str"Constr(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"
-  | Proj (p,c) -> str"Proj(" ++ pr_con (Projection.constant p) ++ str"," ++ bool (Projection.unfolded p) ++ pr_constr c ++ str")"
+  | Proj (p,unf,c) -> str"Proj(" ++ pr_con (Projection.constant p) ++ str"," ++ bool unf ++ pr_constr c ++ str")"
   | Case (ci,p,c,bl) -> v 0
       (hv 0 (str"<"++pr_constr p++str">"++ cut() ++ str"Case " ++
              pr_constr c ++ str"of") ++ cut() ++
@@ -674,10 +674,10 @@ let map_constr_with_binders_left_to_right sigma g f l c =
       let a' = f l a in
 	if app' == app && a' == a then c
 	else mkApp (app', [| a' |])
-  | Proj (p,b) ->
+  | Proj (p,unf,b) ->
     let b' = f l b in
       if b' == b then c
-      else mkProj (p, b')
+      else mkProj (p, unf, b')
   | Evar (e,al) -> 
     let al' = Array.map_left (f l) al in
       if Array.for_all2 (==) al' al then c
@@ -730,9 +730,9 @@ let map_constr_with_full_binders sigma g f l cstr =
       let c' = f l c in
       let al' = Array.map (f l) al in
       if c==c' && Array.for_all2 (==) al al' then cstr else mkApp (c', al')
-  | Proj (p,c) -> 
+  | Proj (p,unf,c) ->
       let c' = f l c in
-	if c' == c then cstr else mkProj (p, c')
+        if c' == c then cstr else mkProj (p, unf, c')
   | Evar (e,al) ->
       let al' = Array.map (f l) al in
       if Array.for_all2 (==) al al' then cstr else mkEvar (e, al')
@@ -777,7 +777,7 @@ let fold_constr_with_full_binders sigma g f n acc c =
   | Lambda (na,t,c) -> f (g (LocalAssum (na, inj t)) n) (f n acc t) c
   | LetIn (na,b,t,c) -> f (g (LocalDef (na, inj b, inj t)) n) (f n (f n acc b) t) c
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
-  | Proj (p,c) -> f n acc c
+  | Proj (p,unf,c) -> f n acc c
   | Evar (_,l) -> Array.fold_left (f n) acc l
   | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
   | Fix (_,(lna,tl,bl)) ->
@@ -807,7 +807,7 @@ let iter_constr_with_full_binders g f l c =
   | Lambda (na,t,c) -> f l t; f (g (LocalAssum (na,t)) l) c
   | LetIn (na,b,t,c) -> f l b; f l t; f (g (LocalDef (na,b,t)) l) c
   | App (c,args) -> f l c; Array.iter (f l) args
-  | Proj (p,c) -> f l c
+  | Proj (p,unf,c) -> f l c
   | Evar (_,args) -> Array.iter (f l) args
   | Case (_,p,c,bl) -> f l p; f l c; Array.iter (f l) bl
   | Fix (_,(lna,tl,bl)) ->
@@ -1451,7 +1451,7 @@ let global_app_of_constr sigma c =
   | Ind (i, u) -> (IndRef i, u), None
   | Construct (c, u) -> (ConstructRef c, u), None
   | Var id -> (VarRef id, EConstr.EInstance.empty), None
-  | Proj (p, c) -> (ConstRef (Projection.constant p), EConstr.EInstance.empty), Some c
+  | Proj (p, unf, c) -> (ConstRef (Projection.constant p), EConstr.EInstance.empty), Some c
   | _ -> raise Not_found
 
 let prod_applist sigma c l =

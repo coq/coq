@@ -501,7 +501,7 @@ let rec lambda_of_constr env sigma c =
 
   | Construct _ ->  lambda_of_app env sigma c empty_args
 
-  | Proj (p, c) ->
+  | Proj (p, _, c) ->
     let kn = Projection.constant p in
       mkLapp (Lproj (get_const_prefix !global_env kn, kn)) [|lambda_of_constr env sigma c|]
 

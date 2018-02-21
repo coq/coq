@@ -257,8 +257,8 @@ let eq_constr_univs_infer_with kind1 kind2 univs fold m n accu =
 
 let compare_head_gen_proj env equ eqs eqc' m n =
   match kind m, kind n with
-  | Proj (p, c), App (f, args)
-  | App (f, args), Proj (p, c) -> 
+  | Proj (p, _, c), App (f, args)
+  | App (f, args), Proj (p, _, c) ->
       (match kind f with
       | Const (p', u) when Constant.equal (Projection.constant p) p' -> 
           let pb = Environ.lookup_projection p env in

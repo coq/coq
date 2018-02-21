@@ -599,7 +599,7 @@ let rec compile_constr reloc c sz cont =
   match kind c with
   | Meta _ -> invalid_arg "Cbytegen.compile_constr : Meta"
   | Evar _ -> invalid_arg "Cbytegen.compile_constr : Evar"
-  | Proj (p,c) ->
+  | Proj (p,_,c) ->
      let kn = Projection.constant p in
      let cb = lookup_constant kn !global_env in
      let pb = Option.get cb.const_proj in

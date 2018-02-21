@@ -577,9 +577,9 @@ and detype_r d flags avoid env sigma t =
       mkapp (detype d flags avoid env sigma f)
         (Array.map_to_list (detype d flags avoid env sigma) args)
     | Const (sp,u) -> GRef (ConstRef sp, detype_instance sigma u)
-    | Proj (p,c) ->
+    | Proj (p,unf,c) ->
       let noparams () = 
-    GProj (p, detype d flags avoid env sigma c)
+    GProj (p, unf, detype d flags avoid env sigma c)
       in
       if fst flags || !Flags.in_debugger || !Flags.in_toplevel then
 	try noparams ()
@@ -588,7 +588,7 @@ and detype_r d flags avoid env sigma t =
 	  GApp (DAst.make @@ GRef (ConstRef (Projection.constant p), None), 
 		[detype d flags avoid env sigma c])
       else 
-	if print_primproj_compatibility () && Projection.unfolded p then
+        if print_primproj_compatibility () && unf then
 	  (** Print the compatibility match version *)
 	  let c' = 
 	    try 
@@ -996,12 +996,11 @@ let rec subst_glob_constr subst = DAst.map (function
       let k' = Miscops.smartmap_cast_type (subst_glob_constr subst) k in
       if r1' == r1 && k' == k then raw else GCast (r1',k')
 
-  | GProj (p,c) as raw ->
+  | GProj (p,unf,c) as raw ->
     let kn = Projection.constant p in
-    let b = Projection.unfolded p in
     let kn' = subst_constant subst kn in
     let c' = subst_glob_constr subst c in
-    if kn' == kn && c' == c then raw else GProj(Projection.make kn' b, c')
+    if kn' == kn && c' == c then raw else GProj(Projection.make kn', unf, c')
   )
 
 (* Utilities to transform kernel cases to simple pattern-matching problem *)

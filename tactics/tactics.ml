@@ -1628,7 +1628,7 @@ let make_projection env sigma params cstr sign elim i n c u =
 	  let args = Context.Rel.to_extended_vect mkRel 0 sign in
 	  let proj =
 	    if Environ.is_projection proj env then
-	      mkProj (Projection.make proj false, mkApp (c, args))
+              mkProj (Projection.make proj, false, mkApp (c, args))
 	    else
 	      mkApp (mkConstU (proj,u), Array.append (Array.of_list params)
 		[|mkApp (c, args)|])
@@ -3257,7 +3257,7 @@ let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
 let expand_projections env sigma c =
   let rec aux env c =
     match EConstr.kind sigma c with
-    | Proj (p, c) -> Retyping.expand_projection env sigma p (aux env c) []
+    | Proj (p, unf, c) -> Retyping.expand_projection env sigma p (aux env c) []
     | _ -> map_constr_with_full_binders sigma push_rel aux env c
   in
   aux env c

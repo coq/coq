@@ -311,7 +311,7 @@ struct
     | App (f,ca)     ->
       Array.fold_left (fun c a -> Term (DApp (c,a)))
         (pat_of_constr f) (Array.map pat_of_constr ca)
-    | Proj (p,c) -> 
+    | Proj (p,_,c) ->
         Term (DApp (Term (DRef (ConstRef (Projection.constant p))), pat_of_constr c))
 
     and ctx_of_constr ctx c = match Constr.kind c with

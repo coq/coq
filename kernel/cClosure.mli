@@ -72,7 +72,7 @@ module type RedFlagsSig = sig
 
   (** This tests if the projection is in unfolded state already or
       is unfodable due to delta. *)
-  val red_projection : reds -> projection -> bool
+  val red_projection : reds -> projection -> bool -> bool
 end
 
 module RedFlags : RedFlagsSig
@@ -128,7 +128,7 @@ type fterm =
   | FInd of inductive Univ.puniverses
   | FConstruct of constructor Univ.puniverses
   | FApp of fconstr * fconstr array
-  | FProj of projection * fconstr
+  | FProj of projection * bool * fconstr
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
   | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)
@@ -166,7 +166,7 @@ val stack_tail : int -> stack -> stack
 val stack_nth : stack -> int -> fconstr
 val zip_term : (fconstr -> constr) -> constr -> stack -> constr
 val eta_expand_stack : stack -> stack
-val unfold_projection : 'a infos -> Projection.t -> stack_member option
+val unfold_projection : 'a infos -> Projection.t -> bool -> stack_member option
 
 (** To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use

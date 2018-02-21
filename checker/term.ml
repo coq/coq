@@ -80,7 +80,7 @@ let iter_constr_with_binders g f n c = match c with
   | CoFix (_,(_,tl,bl)) ->
       Array.iter (f n) tl;
       Array.iter (f (iterate g (Array.length tl) n)) bl
-  | Proj (p, c) -> f n c
+  | Proj (p, _, c) -> f n c
 
 exception LocalOccur
 
@@ -157,7 +157,7 @@ let map_constr_with_binders g f l c = match c with
   | CoFix(ln,(lna,tl,bl)) ->
       let l' = iterate g (Array.length tl) l in
       CoFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
-  | Proj (p, c) -> Proj (p, f l c)
+  | Proj (p, unf, c) -> Proj (p, unf, f l c)
 
 (* The generic lifting function *)
 let rec exliftn el c = match c with
@@ -399,7 +399,7 @@ let compare_constr f t1 t2 =
       Array.equal f tl1 tl2 && Array.equal f bl1 bl2
   | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
       Int.equal ln1 ln2 && Array.equal f tl1 tl2 && Array.equal f bl1 bl2
-  | Proj (p1,c1), Proj(p2,c2) -> Projection.equal p1 p2 && f c1 c2
+  | Proj (p1,unf1,c1), Proj(p2,unf2,c2) -> Projection.equal p1 p2 && unf1 == unf2 && f c1 c2
   | _ -> false
 
 let rec eq_constr m n =

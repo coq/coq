@@ -276,12 +276,12 @@ sig
 
   type cst_member =
     | Cst_const of pconstant
-    | Cst_proj of projection
+    | Cst_proj of projection * bool
 
   type 'a member =
   | App of 'a app_node
   | Case of case_info * 'a * 'a array * Cst_stack.t
-  | Proj of int * int * projection * Cst_stack.t
+  | Proj of int * int * projection * bool * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Cst of cst_member * int * int list * 'a t * Cst_stack.t
   and 'a t = 'a member list
@@ -333,12 +333,12 @@ struct
 
   type cst_member =
     | Cst_const of pconstant
-    | Cst_proj of projection
+    | Cst_proj of projection * bool
 
   type 'a member =
   | App of 'a app_node
   | Case of case_info * 'a * 'a array * Cst_stack.t
-  | Proj of int * int * projection * Cst_stack.t
+  | Proj of int * int * projection * bool * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Cst of cst_member * int * int list * 'a t * Cst_stack.t
   and 'a t = 'a member list
@@ -352,7 +352,7 @@ struct
        str "ZCase(" ++
 	 prvect_with_sep (pr_bar) pr_c br
        ++ str ")"
-    | Proj (n,m,p,cst) ->
+    | Proj (n,m,p,unf,cst) ->
       str "ZProj(" ++ int n ++ pr_comma () ++ int m ++
 	pr_comma () ++ Constant.print (Projection.constant p) ++ str ")"
     | Fix (f,args,cst) ->
@@ -374,7 +374,7 @@ struct
 	if Univ.Instance.is_empty u then Constant.print c
 	else str"(" ++ Constant.print c ++ str ", " ++ 
 	  Univ.Instance.pr Univ.Level.pr u ++ str")"
-      | Cst_proj p ->
+      | Cst_proj (p,_) ->
 	str".(" ++ Constant.print (Projection.constant p) ++ str")"
 
   let empty = []
@@ -401,7 +401,7 @@ struct
       match x, y with
       | Cst_const (c1,u1), Cst_const (c2, u2) ->
         Constant.equal c1 c2 && Univ.Instance.equal u1 u2
-      | Cst_proj p1, Cst_proj p2 ->
+      | Cst_proj (p1,unf1), Cst_proj (p2,unf2) ->
         Constant.equal (Projection.constant p1) (Projection.constant p2)
       | _, _ -> false
     in
@@ -414,7 +414,7 @@ struct
         (f t1 t2) && (equal_rec s1' s2')
       | Case (_,t1,a1,_) :: s1, Case (_,t2,a2,_) :: s2 ->
         f t1 t2 && CArray.equal (fun x y -> f x y) a1 a2 && equal_rec s1 s2
-      | (Proj (n1,m1,p,_)::s1, Proj(n2,m2,p2,_)::s2) ->
+      | (Proj (n1,m1,p,_,_)::s1, Proj(n2,m2,p2,_,_)::s2) ->
          Int.equal n1 n2 && Int.equal m1 m2
            && Constant.equal (Projection.constant p) (Projection.constant p2)
            && equal_rec s1 s2
@@ -437,7 +437,7 @@ struct
       | (_, App (i,_,j)::s2) -> compare_rec (bal - j - 1 + i) stk1 s2
       | (Case(c1,_,_,_)::s1, Case(c2,_,_,_)::s2) ->
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
-      | (Proj (n1,m1,p,_)::s1, Proj(n2,m2,p2,_)::s2) ->
+      | (Proj (n1,m1,p,_,_)::s1, Proj(n2,m2,p2,_,_)::s2) ->
 	Int.equal bal 0 && compare_rec 0 s1 s2
       | (Fix(_,a1,_)::s1, Fix(_,a2,_)::s2) ->
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
@@ -457,7 +457,7 @@ struct
         aux (f o t1 t2) l1 l2
       | Case (_,t1,a1,_) :: q1, Case (_,t2,a2,_) :: q2 ->
         aux (Array.fold_left2 f (f o t1 t2) a1 a2) q1 q2
-      | Proj (n1,m1,p1,_) :: q1, Proj (n2,m2,p2,_) :: q2 ->
+      | Proj (n1,m1,p1,_,_) :: q1, Proj (n2,m2,p2,_,_) :: q2 ->
         aux o q1 q2
       | Fix ((_,(_,a1,b1)),s1,_) :: q1, Fix ((_,(_,a2,b2)),s2,_) :: q2 ->
         let o' = aux (Array.fold_left2 f (Array.fold_left2 f o b1 b2) a1 a2) (List.rev s1) (List.rev s2) in
@@ -470,7 +470,7 @@ struct
     in aux o (List.rev sk1) (List.rev sk2)
 
   let rec map f x = List.map (function
-                               | (Proj (_,_,_,_)) as e -> e
+                               | (Proj (_,_,_,_,_)) as e -> e
 			       | App (i,a,j) ->
 				  let le = j - i + 1 in
 				  App (0,Array.map f (Array.sub a i le), le-1)
@@ -514,7 +514,7 @@ struct
   let will_expose_iota args =
     List.exists
       (function (Fix (_,_,l) | Case (_,_,_,l) |
-		 Proj (_,_,_,l) | Cst (_,_,_,_,l)) when Cst_stack.is_empty l -> true | _ -> false)
+                 Proj (_,_,_,_,l) | Cst (_,_,_,_,l)) when Cst_stack.is_empty l -> true | _ -> false)
       args
 
   let list_of_app_stack s =
@@ -567,9 +567,9 @@ struct
   let constr_of_cst_member f sk =
     match f with
     | Cst_const (c, u) -> mkConstU (c, EInstance.make u), sk
-    | Cst_proj p -> 
+    | Cst_proj (p,unf) ->
       match decomp sk with
-      | Some (hd, sk) -> mkProj (p, hd), sk
+      | Some (hd, sk) -> mkProj (p, unf, hd), sk
       | None -> assert false
 
   let zip ?(refold=false) sigma s =
@@ -591,9 +591,9 @@ struct
     zip (best_state sigma (constr_of_cst_member cst (params @ (append_app [|f|] s))) cst_l)
   | f, (Cst (cst,_,_,params,_)::s) ->
     zip (constr_of_cst_member cst (params @ (append_app [|f|] s)))
-  | f, (Proj (n,m,p,cst_l)::s) when refold ->
-    zip (best_state sigma (mkProj (p,f),s) cst_l)
-  | f, (Proj (n,m,p,_)::s) -> zip (mkProj (p,f),s)
+  | f, (Proj (n,m,p,unf,cst_l)::s) when refold ->
+    zip (best_state sigma (mkProj (p,unf,f),s) cst_l)
+  | f, (Proj (n,m,p,unf,_)::s) -> zip (mkProj (p,unf,f),s)
   in
   zip s
 
@@ -913,17 +913,17 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
 		      whrec Cst_stack.empty 
 			(arg,Stack.Cst(Stack.Cst_const (fst const, u'),curr,remains,bef,cst_l)::s')
        ) else fold ()
-    | Proj (p, c) when CClosure.RedFlags.red_projection flags p ->
+    | Proj (p, unf, c) when CClosure.RedFlags.red_projection flags p unf ->
       (let pb = lookup_projection p env in
        let kn = Projection.constant p in
        let npars = pb.Declarations.proj_npars 
        and arg = pb.Declarations.proj_arg in
 	 if not tactic_mode then 
-	   let stack' = (c, Stack.Proj (npars, arg, p, Cst_stack.empty (*cst_l*)) :: stack) in
+           let stack' = (c, Stack.Proj (npars, arg, p, unf, Cst_stack.empty (*cst_l*)) :: stack) in
 	     whrec Cst_stack.empty stack'
 	 else match ReductionBehaviour.get (Globnames.ConstRef kn) with
 	 | None ->
-	   let stack' = (c, Stack.Proj (npars, arg, p, cst_l) :: stack) in
+           let stack' = (c, Stack.Proj (npars, arg, p, unf, cst_l) :: stack) in
 	   let stack'', csts = whrec Cst_stack.empty stack' in
 	     if equal_stacks sigma stack' stack'' then fold ()
 	     else stack'', csts
@@ -940,18 +940,18 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
 	       |[] -> (* if nargs has been specified *)
 		(* CAUTION : the constant is NEVER refold
                    (even when it hides a (co)fix) *)
-		 let stack' = (c, Stack.Proj (npars, arg, p, cst_l) :: stack) in
+                 let stack' = (c, Stack.Proj (npars, arg, p, unf, cst_l) :: stack) in
 		   whrec Cst_stack.empty(* cst_l *) stack'
 	       | curr::remains -> 
 		 if curr == 0 then (* Try to reduce the record argument *)
 		   whrec Cst_stack.empty 
-		     (c, Stack.Cst(Stack.Cst_proj p,curr,remains,Stack.empty,cst_l)::stack)
+                     (c, Stack.Cst(Stack.Cst_proj (p,unf),curr,remains,Stack.empty,cst_l)::stack)
 		 else
 		   match Stack.strip_n_app curr stack with
 		   | None -> fold ()
 		   | Some (bef,arg,s') ->
 		     whrec Cst_stack.empty 
-		       (arg,Stack.Cst(Stack.Cst_proj p,curr,remains,
+                       (arg,Stack.Cst(Stack.Cst_proj (p,unf),curr,remains,
 				      Stack.append_app [|c|] bef,cst_l)::s'))
 
     | LetIn (_,b,_,c) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fZETA ->
@@ -999,7 +999,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
 	match Stack.strip_app stack with
 	|args, (Stack.Case(ci, _, lf,_)::s') when use_match ->
 	  whrec Cst_stack.empty (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
-	|args, (Stack.Proj (n,m,p,_)::s') when use_match ->
+        |args, (Stack.Proj (n,m,p,_,_)::s') when use_match ->
 	  whrec Cst_stack.empty (Stack.nth args (n+m), s')
 	|args, (Stack.Fix (f,s',cst_l)::s'') when use_fix ->
 	  let x' = Stack.zip sigma (x, args) in
@@ -1018,7 +1018,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
                 let body = EConstr.of_constr body in
 		whrec (if refold then Cst_stack.add_cst (mkConstU const) cst_l else cst_l)
 		  (body, s' @ (Stack.append_app [|x'|] s'')))
-	    | Stack.Cst_proj p ->
+            | Stack.Cst_proj (p,unf) ->
 	      let pb = lookup_projection p env in
 	      let npars = pb.Declarations.proj_npars in
 	      let narg = pb.Declarations.proj_arg in
@@ -1026,7 +1026,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
 		match Stack.strip_n_app 0 stack with
 		| None -> assert false
 		| Some (_,arg,s'') ->
-		  whrec Cst_stack.empty (arg, Stack.Proj (npars,narg,p,cst_l) :: s''))
+                  whrec Cst_stack.empty (arg, Stack.Proj (npars,narg,p,unf,cst_l) :: s''))
 	  | next :: remains' -> match Stack.strip_n_app (next-curr-1) s'' with
 	    | None -> fold ()
 	    | Some (bef,arg,s''') ->
@@ -1083,10 +1083,10 @@ let local_whd_state_gen flags sigma =
 	| _ -> s)
       | _ -> s)
 
-    | Proj (p,c) when CClosure.RedFlags.red_projection flags p ->
+    | Proj (p,unf,c) when CClosure.RedFlags.red_projection flags p unf ->
       (let pb = lookup_projection p (Global.env ()) in
 	 whrec (c, Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, 
-			       p, Cst_stack.empty)
+                               p, unf, Cst_stack.empty)
            :: stack))
 
     | Case (ci,p,d,lf) ->
@@ -1110,7 +1110,7 @@ let local_whd_state_gen flags sigma =
 	match Stack.strip_app stack with
 	|args, (Stack.Case(ci, _, lf,_)::s') when use_match ->
 	  whrec (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
-	|args, (Stack.Proj (n,m,p,_) :: s') when use_match ->
+        |args, (Stack.Proj (n,m,p,unf,_) :: s') when use_match ->
 	  whrec (Stack.nth args (n+m), s')
 	|args, (Stack.Fix (f,s',cst)::s'') when use_fix ->
 	  let x' = Stack.zip sigma (x,args) in
@@ -1577,7 +1577,7 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma csts s =
 	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' ~refold ~tactic_mode
 	  (CClosure.RedFlags.red_add_transparent CClosure.all ts) env sigma (t,args) in
 	if isConstruct sigma t_o then whrec csts_o (t_o, stack_o@stack') else s,csts'
-      |args, (Stack.Proj (n,m,p,_) :: stack'') ->
+      |args, (Stack.Proj (n,m,p,unf,_) :: stack'') ->
 	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' ~refold ~tactic_mode
 	  (CClosure.RedFlags.red_add_transparent CClosure.all ts) env sigma (t,args) in
 	if isConstruct sigma t_o then
@@ -1670,7 +1670,7 @@ let meta_reducible_instance evd b =
           let is_coerce = match s with CoerceToType -> true | _ -> false in
           if not is_coerce then irec g else u
 	 with Not_found -> u)
-    | Proj (p,c) when isMeta evd c || isCast evd c && isMeta evd (pi1 (destCast evd c)) (* What if two nested casts? *) ->
+    | Proj (p,unf,c) when isMeta evd c || isCast evd c && isMeta evd (pi1 (destCast evd c)) (* What if two nested casts? *) ->
       let m = try destMeta evd c with _ -> destMeta evd (pi1 (destCast evd c)) (* idem *) in
 	  (match
 	  try
@@ -1680,8 +1680,8 @@ let meta_reducible_instance evd b =
 	    if isConstruct evd g || not is_coerce then Some g else None
 	  with Not_found -> None
 	  with
-	    | Some g -> irec (mkProj (p,g))
-	    | None -> mkProj (p,c))
+            | Some g -> irec (mkProj (p,unf,g))
+            | None -> mkProj (p,unf,c))
     | _ -> EConstr.map evd irec u
   in
   if Metaset.is_empty fm then (* nf_betaiota? *) b.rebus

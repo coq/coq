@@ -911,7 +911,7 @@ let rec extern inctx scopes vars r =
   | GCast (c, c') ->
       CCast (sub_extern true scopes vars c,
 	     Miscops.map_cast_type (extern_typ scopes vars) c')
-  | GProj (p, c) ->
+  | GProj (p, _, c) ->
     let pr = extern_reference ?loc Id.Set.empty (ConstRef (Projection.constant p)) in
     CProj (pr, sub_extern inctx scopes vars c)
   ) r'
@@ -1179,7 +1179,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
       GVar id
   | PMeta None -> GHole (Evar_kinds.InternalHole, Misctypes.IntroAnonymous,None)
   | PMeta (Some n) -> GPatVar (Evar_kinds.FirstOrderPatVar n)
-  | PProj (p,c) -> GApp (DAst.make @@ GRef (ConstRef (Projection.constant p),None),
+  | PProj (p,unf,c) -> GApp (DAst.make @@ GRef (ConstRef (Projection.constant p),None),
 			 [glob_of_pat avoid env sigma c])
   | PApp (f,args) ->
       GApp (glob_of_pat avoid env sigma f,Array.map_to_list (glob_of_pat avoid env sigma) args)

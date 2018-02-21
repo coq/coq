@@ -339,7 +339,7 @@ let rec execute env cstr =
     | Const c ->
       type_of_constant env c
 	
-    | Proj (p, c) ->
+    | Proj (p, _, c) ->
         let ct = execute env c in
           type_of_projection env p c ct
 
@@ -489,8 +489,8 @@ let judge_of_variable env x = make_judge (mkVar x) (type_of_variable env x)
 
 let judge_of_constant env cst = make_judge (mkConstU cst) (type_of_constant env cst)
 
-let judge_of_projection env p cj =
-  make_judge (mkProj (p,cj.uj_val)) (type_of_projection env p cj.uj_val cj.uj_type)
+let judge_of_projection env p unf cj =
+  make_judge (mkProj (p,unf,cj.uj_val)) (type_of_projection env p cj.uj_val cj.uj_type)
 
 let dest_judgev v =
   Array.map j_val v, Array.map j_type v

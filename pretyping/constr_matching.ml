@@ -272,7 +272,7 @@ let matches_core env sigma allow_bound_rels
             Array.fold_left2 (sorec ctx env) subst args1 args22
           else (* Might be a projection on the right *)
 	    match EConstr.kind sigma c2 with
-	    | Proj (pr, c) when not (Projection.unfolded pr) ->
+            | Proj (pr, unf, c) when not unf ->
 	      (try let term = Retyping.expand_projection env sigma pr c (Array.to_list args2) in
 		     sorec ctx env subst p term
 	       with Retyping.RetypeError _ -> raise PatternMatchingFailure)
@@ -280,15 +280,15 @@ let matches_core env sigma allow_bound_rels
 	   
       | PApp (c1,arg1), App (c2,arg2) ->
 	(match c1, EConstr.kind sigma c2 with
-	| PRef (ConstRef r), Proj (pr,c) when not (Constant.equal r (Projection.constant pr))
-	    || Projection.unfolded pr ->
+        | PRef (ConstRef r), Proj (pr,unf,c) when not (Constant.equal r (Projection.constant pr))
+            || unf ->
 	  raise PatternMatchingFailure
-	| PProj (pr1,c1), Proj (pr,c) ->
-	  if Projection.equal pr1 pr then 
+        | PProj (pr1,unf1,c1), Proj (pr,unf,c) ->
+          if Projection.equal pr1 pr && unf1 == unf then
 	    try Array.fold_left2 (sorec ctx env) (sorec ctx env subst c1 c) arg1 arg2
 	    with Invalid_argument _ -> raise PatternMatchingFailure
 	  else raise PatternMatchingFailure
-	| _, Proj (pr,c) when not (Projection.unfolded pr) ->
+        | _, Proj (pr,unf,c) when not unf ->
 	  (try let term = Retyping.expand_projection env sigma pr c (Array.to_list arg2) in
 		 sorec ctx env subst p term
 	   with Retyping.RetypeError _ -> raise PatternMatchingFailure)	    
@@ -296,16 +296,16 @@ let matches_core env sigma allow_bound_rels
           try Array.fold_left2 (sorec ctx env) (sorec ctx env subst c1 c2) arg1 arg2
           with Invalid_argument _ -> raise PatternMatchingFailure)
 	  
-      | PApp (PRef (ConstRef c1), _), Proj (pr, c2) 
-	when Projection.unfolded pr || not (Constant.equal c1 (Projection.constant pr)) -> 
+      | PApp (PRef (ConstRef c1), _), Proj (pr, unf, c2)
+        when unf || not (Constant.equal c1 (Projection.constant pr)) ->
 	raise PatternMatchingFailure
 	
-      | PApp (c, args), Proj (pr, c2) ->
+      | PApp (c, args), Proj (pr, unf, c2) ->
 	(try let term = Retyping.expand_projection env sigma pr c2 [] in
 	       sorec ctx env subst p term
 	 with Retyping.RetypeError _ -> raise PatternMatchingFailure)
 
-      | PProj (p1,c1), Proj (p2,c2) when Projection.equal p1 p2 ->
+      | PProj (p1,unf1,c1), Proj (p2,unf2,c2) when Projection.equal p1 p2 && unf1 == unf2 ->
           sorec ctx env subst c1 c2
 
       | PProd (na1,c1,d1), Prod(na2,c2,d2) ->
@@ -478,7 +478,7 @@ let sub_match ?(closed=true) env sigma pat c =
     let env' = push_rec_types recdefs env in
     let sub = subargs env types @ subargs env' bodies in
     try_aux sub next_mk_ctx next
-  | Proj (p,c') ->
+  | Proj (p,unf,c') ->
     begin try
       let term = Retyping.expand_projection env sigma p c' [] in
       aux env term mk_ctx next

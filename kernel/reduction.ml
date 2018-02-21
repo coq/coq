@@ -430,15 +430,15 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	 in
            eqappr cv_pb l2r infos app1 app2 cuniv)
 
-    | (FProj (p1,c1), FProj (p2, c2)) ->
+    | (FProj (p1,unf1,c1), FProj (p2, unf2, c2)) ->
       (* Projections: prefer unfolding to first-order unification,
 	 which will happen naturally if the terms c1, c2 are not in constructor
 	 form *)
-      (match unfold_projection infos p1 with
+      (match unfold_projection infos p1 unf1 with
       | Some s1 ->
         eqappr cv_pb l2r infos (lft1, (c1, (s1 :: v1))) appr2 cuniv
       | None ->
-        match unfold_projection infos p2 with
+        match unfold_projection infos p2 unf2 with
         | Some s2 ->
           eqappr cv_pb l2r infos appr1 (lft2, (c2, (s2 :: v2))) cuniv
 	| None -> 
@@ -451,8 +451,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	  else (* Two projections in WHNF: unfold *)
 	    raise NotConvertible)
 
-    | (FProj (p1,c1), t2) ->
-      (match unfold_projection infos p1 with
+    | (FProj (p1,unf1,c1), t2) ->
+      (match unfold_projection infos p1 unf1 with
       | Some s1 ->
          eqappr cv_pb l2r infos (lft1, (c1, (s1 :: v1))) appr2 cuniv
       | None -> 
@@ -464,8 +464,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
               | None -> raise NotConvertible)
 	  | _ -> raise NotConvertible))
       
-    | (t1, FProj (p2,c2)) ->
-      (match unfold_projection infos p2 with
+    | (t1, FProj (p2,unf2,c2)) ->
+      (match unfold_projection infos p2 unf2 with
       | Some s2 ->
          eqappr cv_pb l2r infos appr1 (lft2, (c2, (s2 :: v2))) cuniv
       | None -> 

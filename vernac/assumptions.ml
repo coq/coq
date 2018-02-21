@@ -170,7 +170,7 @@ let fold_constr_with_full_binders g f n acc c =
   | Lambda (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
   | LetIn (na,b,t,c) -> f (g (LocalDef (na,b,t)) n) (f n (f n acc b) t) c
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
-  | Proj (p,c) -> f n acc c
+  | Proj (p,_,c) -> f n acc c
   | Evar (_,l) -> Array.fold_left (f n) acc l
   | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
   | Fix (_,(lna,tl,bl)) ->

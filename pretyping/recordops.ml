@@ -180,7 +180,7 @@ let cs_pattern_of_constr env t =
 	end
     | Rel n -> Default_cs, Some n, []
     | Prod (_,a,b) when Vars.noccurn 1 b -> Prod_cs, None, [a; Vars.lift (-1) b]
-    | Proj (p, c) ->
+    | Proj (p, unf, c) ->
       let { Environ.uj_type = ty } = Typeops.infer env c in
       let _, params = Inductive.find_rectype env ty in
       Const_cs (ConstRef (Projection.constant p)), None, params @ [c]
@@ -348,7 +348,7 @@ let decompose_projection sigma c args =
      let _ = Refmap.find (ConstRef c) !object_table in
      let arg = Stack.nth args n in
      arg
-  | Proj (p, c) ->
+  | Proj (p, unf, c) ->
      let _ = Refmap.find (ConstRef (Projection.constant p)) !object_table in
      c
   | _ -> raise Not_found
