@@ -13,6 +13,17 @@ open Globnames
 
 val primitive_flag : bool ref
 
+val declare_projections :
+  inductive ->
+  Entries.constant_universes_entry ->
+  ?kind:Decl_kinds.definition_object_kind ->
+  Id.t ->
+  bool list ->
+  Universes.universe_binders ->
+  Impargs.manual_implicits list ->
+  Context.Rel.t ->
+    (Name.t * bool) list * Constant.t option list
+
 val definition_structure :
   inductive_kind * Decl_kinds.cumulative_inductive_flag * Decl_kinds.polymorphic *
   Declarations.recursivity_kind * ident_decl with_coercion * local_binder_expr list *

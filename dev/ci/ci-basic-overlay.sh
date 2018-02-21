@@ -144,3 +144,9 @@
 ########################################################################
 : "${Equations_CI_BRANCH:=8.8+alpha}"
 : "${Equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations.git}"
+
+########################################################################
+# Elpi
+########################################################################
+: "${Elpi_CI_BRANCH:=coq-master}"
+: "${Elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi.git}"

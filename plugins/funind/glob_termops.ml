@@ -562,7 +562,7 @@ let resolve_and_replace_implicits ?(flags=Pretyping.all_and_fail_flags) ?(expect
   (* we first (pseudo) understand [rt] and get back the computed evar_map *)
   (* FIXME : JF (30/03/2017) I'm not completely sure to have split understand as needed. 
 If someone knows how to prevent solved existantial removal in  understand, please do not hesitate to change the computation of [ctx] here *) 
-  let ctx,_ = Pretyping.ise_pretype_gen flags env sigma Glob_ops.empty_lvar expected_type rt in
+  let ctx,_,_ = Pretyping.ise_pretype_gen flags env sigma Glob_ops.empty_lvar expected_type rt in
   let ctx, f = Evarutil.nf_evars_and_universes ctx in
 
   (* then we map [rt] to replace the implicit holes by their values *)
