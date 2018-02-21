@@ -347,7 +347,11 @@ let run_tactic env tac pr =
     Proofview.tclEVARMAP >>= fun sigma ->
     (* Already solved goals are not to be counted as shelved. Nor are
       they to be marked as unresolvable. *)
-    let retrieved = undef sigma (List.rev (Evd.future_goals sigma)) in
+    let retrieved = Evd.filter_future_goals (Evd.is_undefined sigma) (Evd.save_future_goals sigma) in
+    let retrieved,retrieved_given_up = Evd.extract_given_up_future_goals retrieved in
+    (* Check that retrieved given up is empty *)
+    if not (List.is_empty retrieved_given_up) then
+      CErrors.anomaly Pp.(str "Evars generated outside of proof engine (e.g. V82, clear, ...) are not supposed to be explicitly given up.");
     let sigma = List.fold_left Proofview.Unsafe.mark_as_goal sigma retrieved in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
     Proofview.tclUNIT retrieved
