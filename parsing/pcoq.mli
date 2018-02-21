@@ -315,3 +315,10 @@ val (!@) : Ploc.t -> Loc.t
 
 type frozen_t
 val parser_summary_tag : frozen_t Summary.Dyn.tag
+
+(** Registering grammars by name *)
+
+type any_entry = AnyEntry : 'a Gram.entry -> any_entry
+
+val register_grammars_by_name : string -> any_entry list -> unit
+val find_grammars_by_name : string -> any_entry list

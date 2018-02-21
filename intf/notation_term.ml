@@ -25,11 +25,11 @@ type notation_constr =
   | NVar of Id.t
   | NApp of notation_constr * notation_constr list
   | NHole of Evar_kinds.t * Misctypes.intro_pattern_naming_expr * Genarg.glob_generic_argument option
-  | NList of Id.t * Id.t * notation_constr * notation_constr * bool
+  | NList of Id.t * Id.t * notation_constr * notation_constr * (* associativity: *) bool
   (** Part only in [glob_constr] *)
   | NLambda of Name.t * notation_constr * notation_constr
   | NProd of Name.t * notation_constr * notation_constr
-  | NBinderList of Id.t * Id.t * notation_constr * notation_constr
+  | NBinderList of Id.t * Id.t * notation_constr * notation_constr * (* associativity: *) bool
   | NLetIn of Name.t * notation_constr * notation_constr option * notation_constr
   | NCases of Constr.case_style * notation_constr option *
       (notation_constr * (Name.t * (inductive * Name.t list) option)) list *
@@ -60,21 +60,31 @@ type subscopes = tmp_scope_name option * scope_name list
 
 (** Type of the meta-variables of an notation_constr: in a recursive pattern x..y,
     x carries the sequence of objects bound to the list x..y  *)
-type notation_var_instance_type =
-  | NtnTypeConstr | NtnTypeOnlyBinder | NtnTypeConstrList | NtnTypeBinderList
 
-(** Type of variables when interpreting a constr_expr as an notation_constr:
+type notation_binder_source =
+  (* This accepts only pattern *)
+  (* NtnParsedAsPattern true means only strict pattern (no single variable) at printing *)
+  | NtnParsedAsPattern of bool
+  (* This accepts only ident *)
+  | NtnParsedAsIdent
+  (* This accepts ident, or pattern, or both *)
+  | NtnBinderParsedAsConstr of Extend.constr_as_binder_kind
+
+type notation_var_instance_type =
+  | NtnTypeConstr | NtnTypeBinder of notation_binder_source | NtnTypeConstrList | NtnTypeBinderList
+
+(** Type of variables when interpreting a constr_expr as a notation_constr:
     in a recursive pattern x..y, both x and y carry the individual type
     of each element of the list x..y *)
 type notation_var_internalization_type =
-  | NtnInternTypeConstr | NtnInternTypeBinder | NtnInternTypeIdent
+  | NtnInternTypeAny | NtnInternTypeOnlyBinder
 
 (** This characterizes to what a notation is interpreted to *)
 type interpretation =
     (Id.t * (subscopes * notation_var_instance_type)) list *
     notation_constr
 
-type reversibility_flag = bool
+type reversibility_status = APrioriReversible | HasLtac | NonInjective of Id.t list
 
 type notation_interp_env = {
   ninterp_var_type : notation_var_internalization_type Id.Map.t;
@@ -95,7 +105,7 @@ type precedence = int
 type parenRelation = L | E | Any | Prec of precedence
 type tolerability = precedence * parenRelation
 
-type level = precedence * tolerability list * notation_var_internalization_type list
+type level = precedence * tolerability list * Extend.constr_entry_key list
 
 (** Grammar rules for a notation *)
 

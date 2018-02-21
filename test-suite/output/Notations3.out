@@ -138,3 +138,100 @@ amatch = mmatch 0 (with 0 => 1| 1 => 2 end)
      : unit
 alist = [0; 1; 2]
      : list nat
+! '{{x, y}}, x + y = 0
+     : Prop
+exists x : nat,
+  nat ->
+  exists y : nat,
+    nat ->
+    exists '{{u, t}}, forall z1 : nat, z1 = 0 /\ x + y = 0 /\ u + t = 0
+     : Prop
+exists x : nat,
+  nat ->
+  exists y : nat,
+    nat ->
+    exists '{{z, t}}, forall z2 : nat, z2 = 0 /\ x + y = 0 /\ z + t = 0
+     : Prop
+exists_true '{{x, y}} (u := 0) '{{z, t}}, x + y = 0 /\ z + t = 0
+     : Prop
+exists_true (A : Type) (R : A -> A -> Prop) (_ : Reflexive R),
+(forall x : A, R x x)
+     : Prop
+exists_true (x : nat) (A : Type) (R : A -> A -> Prop) 
+(_ : Reflexive R) (y : nat), x + y = 0 -> forall z : A, R z z
+     : Prop
+{{{{True, nat -> True}}, nat -> True}}
+     : Prop * Prop * Prop
+{{D 1, 2}}
+     : nat * nat * (nat * nat * (nat * nat))
+! a b : nat # True #
+     : Prop * (Prop * Prop)
+!!!! a b : nat # True #
+     : Prop * Prop * (Prop * Prop * Prop)
+@@ a b : nat # a = b # b = a #
+     : Prop * Prop
+exists_non_null x y z t : nat , x = y /\ z = t
+     : Prop
+forall_non_null x y z t : nat , x = y /\ z = t
+     : Prop
+{{RL 1, 2}}
+     : nat * (nat * nat)
+{{RR 1, 2}}
+     : nat * nat * nat
+@pair nat (prod nat nat) (S (S O)) (@pair nat nat (S O) O)
+     : prod nat (prod nat nat)
+@pair (prod nat nat) nat (@pair nat nat O (S (S O))) (S O)
+     : prod (prod nat nat) nat
+{{RLRR 1, 2}}
+     : nat * (nat * nat) * (nat * nat * nat) * (nat * (nat * nat)) *
+       (nat * nat * nat)
+pair
+  (pair
+     (pair (pair (S (S O)) (pair (S O) O)) (pair (pair O (S (S O))) (S O)))
+     (pair (S O) (pair (S (S O)) O))) (pair (pair O (S O)) (S (S O)))
+     : prod
+         (prod (prod (prod nat (prod nat nat)) (prod (prod nat nat) nat))
+            (prod nat (prod nat nat))) (prod (prod nat nat) nat)
+fun x : nat => if x is n .+ 1 then n else 1
+     : nat -> nat
+{'{{x, y}} : nat * nat | x + y = 0}
+     : Set
+exists2' {{x, y}}, x = 0 & y = 0
+     : Prop
+myexists2 x : nat * nat,
+  let '{{y, z}} := x in y > z & let '{{y, z}} := x in z > y
+     : Prop
+fun '({{x, y}} as z) => x + y = 0 /\ z = z
+     : nat * nat -> Prop
+myexists ({{x, y}} as z), x + y = 0 /\ z = z
+     : Prop
+exists '({{x, y}} as z), x + y = 0 /\ z = z
+     : Prop
+∀ '({{x, y}} as z), x + y = 0 /\ z = z
+     : Prop
+fun '({{{{x, y}}, true}} | {{{{x, y}}, false}}) => x + y
+     : nat * nat * bool -> nat
+myexists ({{{{x, y}}, true}} | {{{{x, y}}, false}}), x > y
+     : Prop
+exists '({{{{x, y}}, true}} | {{{{x, y}}, false}}), x > y
+     : Prop
+∀ '({{{{x, y}}, true}} | {{{{x, y}}, false}}), x > y
+     : Prop
+fun p : nat => if p is S n then n else 0
+     : nat -> nat
+fun p : comparison => if p is Lt then 1 else 0
+     : comparison -> nat
+fun S : nat => [S | S + S]
+     : nat -> nat * (nat -> nat)
+fun N : nat => [N | N + 0]
+     : nat -> nat * (nat -> nat)
+fun S : nat => [[S | S + S]]
+     : nat -> nat * (nat -> nat)
+{I : nat | I = I}
+     : Set
+{'I : True | I = I}
+     : Prop
+{'{{x, y}} : nat * nat | x + y = 0}
+     : Set
+exists2 '{{y, z}} : nat * nat, y > z & z > y
+     : Prop

@@ -176,15 +176,19 @@ val scope_class_of_class : Classops.cl_typ -> scope_class
 (** Building notation key *)
 
 type symbol =
-  | Terminal of string
-  | NonTerminal of Id.t
-  | SProdList of Id.t * symbol list
-  | Break of int
+  | Terminal of string              (* an expression including symbols or a simply-quoted ident, e.g. "'U'" or "!" *)
+  | NonTerminal of Id.t             (* an identifier "x" *)
+  | SProdList of Id.t * symbol list (* an expression "x sep .. sep y", remembering x (or y) and sep *)
+  | Break of int                    (* a sequence of blanks > 1, e.g. "   " *)
 
 val symbol_eq : symbol -> symbol -> bool
 
+(** Make/decompose a notation of the form "_ U _" *)
 val make_notation_key : symbol list -> notation
 val decompose_notation_key : notation -> symbol list
+
+(** Decompose a notation of the form "a 'U' b" *)
+val decompose_raw_notation : string -> symbol list
 
 (** Prints scopes (expects a pure aconstr printer) *)
 val pr_scope_class : scope_class -> Pp.t

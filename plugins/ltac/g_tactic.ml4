@@ -115,10 +115,11 @@ let mk_fix_tac (loc,id,bl,ann,ty) =
     match bl,ann with
         [([_],_,_)], None -> 1
       | _, Some x ->
-          let ids = List.map snd (List.flatten (List.map pi1 bl)) in
+          let ids = List.map snd (List.flatten (List.map (fun (nal,_,_) -> nal) bl)) in
           (try List.index Names.Name.equal (snd x) ids
           with Not_found -> user_err Pp.(str "No such fix variable."))
       | _ -> user_err Pp.(str "Cannot guess decreasing argument of fix.") in
+  let bl = List.map (fun (nal,bk,t) -> CLocalAssum (nal,bk,t)) bl in
   (id,n, CAst.make ~loc @@ CProdN(bl,ty))
 
 let mk_cofix_tac (loc,id,bl,ann,ty) =
@@ -126,6 +127,7 @@ let mk_cofix_tac (loc,id,bl,ann,ty) =
     user_err ~loc:aloc
       ~hdr:"Constr:mk_cofix_tac"
       (Pp.str"Annotation forbidden in cofix expression.")) ann in
+  let bl = List.map (fun (nal,bk,t) -> CLocalAssum (nal,bk,t)) bl in
   (id,CAst.make ~loc @@ CProdN(bl,ty))
 
 (* Functions overloaded by quotifier *)
@@ -160,7 +162,7 @@ let mkTacCase with_evar = function
 let rec mkCLambdaN_simple_loc ?loc bll c =
   match bll with
   | ((loc1,_)::_ as idl,bk,t) :: bll ->
-      CAst.make ?loc @@ CLambdaN ([idl,bk,t],mkCLambdaN_simple_loc ?loc:(Loc.merge_opt loc1 loc) bll c)
+      CAst.make ?loc @@ CLambdaN ([CLocalAssum (idl,bk,t)],mkCLambdaN_simple_loc ?loc:(Loc.merge_opt loc1 loc) bll c)
   | ([],_,_) :: bll -> mkCLambdaN_simple_loc ?loc bll c
   | [] -> c
 

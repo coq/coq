@@ -253,3 +253,170 @@ Definition alist := [0;1;2].
 Print alist.
 
 End B.
+
+(* Test contraction of "forall x, let 'pat := x in ..." into "forall 'pat, ..." *)
+(* for isolated "forall" (was not working already in 8.6) *)
+Notation "! x .. y , A" := (id (forall x, .. (id (forall y, A)) .. )) (at level 200, x binder).
+Check ! '(x,y), x+y=0.
+
+(* Check that the terminator of a recursive pattern is interpreted in
+   the correct environment of bindings *)
+Notation "'exists_mixed' x .. y , P" := (ex (fun x => forall z:nat, .. (ex (fun y => forall z:nat, z=0 /\ P)) ..)) (at level 200, x binder).
+Check exists_mixed x y '(u,t), x+y=0/\u+t=0.
+Check exists_mixed x y '(z,t), x+y=0/\z+t=0.
+
+(* Check that intermediary let-in are inserted inbetween instances of
+   the repeated pattern *)
+Notation "'exists_true' x .. y , P" := (exists x, True /\ .. (exists y, True /\ P) ..) (at level 200, x binder).
+Check exists_true '(x,y) (u:=0) '(z,t), x+y=0/\z+t=0.
+
+(* Check that generalized binders are correctly interpreted *)
+
+Module G.
+Generalizable Variables A R.
+Class Reflexive {A:Type} (R : A->A->Prop) := reflexivity : forall x : A, R x x.
+Check exists_true `{Reflexive A R}, forall x, R x x.
+Check exists_true x `{Reflexive A R} y, x+y=0 -> forall z, R z z.
+End G.
+
+(* Allows recursive patterns for binders to be associative on the left *)
+Notation "!! x .. y # A #" := (.. (A,(forall x, True)) ..,(forall y, True)) (at level 200, x binder).
+Check !! a b : nat # True #.
+
+(* Examples where the recursive pattern refer several times to the recursive variable *)
+
+Notation "{{D  x , .. , y }}" := ((x,x), .. ((y,y),(0,0)) ..).
+Check {{D 1, 2 }}.
+
+Notation "! x .. y # A #" :=
+  ((forall x, x=x), .. ((forall y, y=y), A) ..)
+  (at level 200, x binder).
+Check ! a b : nat # True #.
+
+Notation "!!!! x .. y # A #" :=
+  (((forall x, x=x),(forall x, x=0)), .. (((forall y, y=y),(forall y, y=0)), A) ..)
+  (at level 200, x binder).
+Check !!!! a b : nat # True #.
+
+Notation "@@ x .. y # A # B #" :=
+  ((forall x, .. (forall y, A) ..), (forall x, .. (forall y, B) ..))
+  (at level 200, x binder).
+Check @@ a b : nat # a=b # b=a #.
+
+Notation "'exists_non_null' x .. y  , P" :=
+  (ex (fun x => x <> 0 /\ .. (ex (fun y => y <> 0 /\ P)) ..))
+  (at level 200, x binder).
+Check exists_non_null x y z t , x=y/\z=t.
+
+Notation "'forall_non_null' x .. y  , P" :=
+  (forall x, x <> 0 -> .. (forall y, y <> 0 -> P) ..)
+  (at level 200, x binder).
+Check forall_non_null x y z t , x=y/\z=t.
+
+(* Examples where the recursive pattern is in reverse order *)
+
+Notation "{{RL  c , .. , d }}" := (pair d .. (pair c 0) ..).
+Check {{RL 1 , 2}}.
+
+Notation "{{RR  c , .. , d }}" := (pair .. (pair 0 d) .. c).
+Check {{RR 1 , 2}}.
+
+Set Printing All.
+Check {{RL 1 , 2}}.
+Check {{RR 1 , 2}}.
+Unset Printing All.
+
+Notation "{{RLRR  c , .. , d }}" := (pair d .. (pair c 0) .., pair .. (pair 0 d) .. c, pair c .. (pair d 0) .., pair .. (pair 0 c) .. d).
+Check {{RLRR 1 , 2}}.
+Unset Printing Notations.
+Check {{RLRR 1 , 2}}.
+Set Printing Notations.
+
+(* Check insensitivity of "match" clauses to order *)
+
+Notation "'if' t 'is' n .+ 1 'then' p 'else' q" :=
+  (match t with S n => p | 0 => q end)
+  (at level 200).
+Check fun x => if x is n.+1 then n else 1.
+
+(* Examples with binding patterns *)
+
+Check {'(x,y)|x+y=0}.
+
+Module D.
+Notation "'exists2'' x , p & q" := (ex2 (fun x => p) (fun x => q))
+  (at level 200, x pattern, p at level 200, right associativity,
+    format "'[' 'exists2''  '/  ' x ,  '/  ' '[' p  &  '/' q ']' ']'")
+  : type_scope.
+
+Check exists2' (x,y), x=0 & y=0.
+End D.
+
+(* Ensuring for reparsability that printer of notations does not use a
+   pattern where only an ident could be reparsed *)
+
+Module E.
+Inductive myex2 {A:Type} (P Q:A -> Prop) : Prop :=
+  myex_intro2 : forall x:A, P x -> Q x -> myex2 P Q.
+Notation "'myexists2' x : A , p & q" := (myex2 (A:=A) (fun x => p) (fun x => q))
+  (at level 200, x ident, A at level 200, p at level 200, right associativity,
+    format "'[' 'myexists2'  '/  ' x  :  A ,  '/  ' '[' p  &  '/' q ']' ']'")
+  : type_scope.
+Check myex2 (fun x => let '(y,z) := x in y>z) (fun x => let '(y,z) := x in z>y).
+End E.
+
+(* A canonical example of a notation with a non-recursive binder *)
+
+Parameter myex : forall {A}, (A -> Prop) -> Prop.
+Notation "'myexists' x , p" := (myex (fun x => p))
+  (at level 200, x pattern, p at level 200, right associativity).
+
+(* A canonical example of a notation with recursive binders *)
+
+Notation "∀  x .. y , P" := (forall x, .. (forall y, P) ..)
+  (at level 200, x binder, y binder, right associativity) : type_scope.
+
+(* Check that printing 'pat uses an "as" when the variable bound to
+   the pattern is dependent. We check it for the three kinds of
+   notations involving bindings of patterns *)
+
+Check fun '((x,y) as z) => x+y=0/\z=z.    (* Primitive fun/forall *)
+Check myexists ((x,y) as z), x+y=0/\z=z.  (* Isolated binding pattern *)
+Check exists '((x,y) as z), x+y=0/\z=z.   (* Applicative recursive binder *)
+Check ∀ '((x,y) as z), x+y=0/\z=z.        (* Other example of recursive binder, now treated as the exists case *)
+
+(* Check parsability and printability of irrefutable disjunctive patterns *)
+
+Check fun '(((x,y),true)|((x,y),false)) => x+y.
+Check myexists (((x,y),true)|((x,y),false)), x>y.
+Check exists '(((x,y),true)|((x,y),false)), x>y.
+Check ∀ '(((x,y),true)|((x,y),false)), x>y.
+
+(* Check Georges' printability of a "if is then else" notation *)
+
+Notation "'if' c 'is' p 'then' u 'else' v" :=
+  (match c with p => u | _ => v end)
+  (at level 200, p pattern at level 100).
+Check fun p => if p is S n then n else 0.
+Check fun p => if p is Lt then 1 else 0.
+
+(* Check that mixed binders and terms defaults to ident and not pattern *)
+Module F.
+  (* First without an indirection *)
+Notation "[ n | t ]" := (n, (fun n : nat => t)).
+Check fun S : nat => [ S | S+S ].
+Check fun N : nat => (N, (fun n => n+0)). (* another test in passing *)
+  (* Then with an indirection *)
+Notation "[[ n | p | t ]]" := (n, (fun p : nat => t)).
+Notation "[[ n | t ]]" := [[ n | n | t ]].
+Check fun S : nat => [[ S | S+S ]].
+End F.
+
+(* Check parsability/printability of {x|P} and variants *)
+
+Check {I:nat|I=I}.
+Check {'I:True|I=I}.
+Check {'(x,y)|x+y=0}.
+
+(* Check exists2 with a pattern *)
+Check ex2 (fun x => let '(y,z) := x in y>z) (fun x => let '(y,z) := x in z>y).

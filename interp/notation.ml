@@ -82,18 +82,35 @@ let parenRelation_eq t1 t2 = match t1, t2 with
 | Prec l1, Prec l2 -> Int.equal l1 l2
 | _ -> false
 
-let notation_var_internalization_type_eq v1 v2 = match v1, v2 with
-| NtnInternTypeConstr, NtnInternTypeConstr -> true
-| NtnInternTypeBinder, NtnInternTypeBinder -> true
-| NtnInternTypeIdent, NtnInternTypeIdent -> true
-| (NtnInternTypeConstr | NtnInternTypeBinder | NtnInternTypeIdent), _ -> false
+open Extend
 
-let level_eq (l1, t1, u1) (l2, t2, u2) =
-  let tolerability_eq (i1, r1) (i2, r2) =
-    Int.equal i1 i2 && parenRelation_eq r1 r2
-  in
+let production_level_eq l1 l2 = true (* (l1 = l2) *)
+
+let production_position_eq pp1 pp2 = true (* pp1 = pp2 *) (* match pp1, pp2 with
+| NextLevel, NextLevel -> true
+| NumLevel n1, NumLevel n2 -> Int.equal n1 n2
+| (NextLevel | NumLevel _), _ -> false *)
+
+let constr_entry_key_eq eq v1 v2 = match v1, v2 with
+| ETName, ETName -> true
+| ETReference, ETReference -> true
+| ETBigint, ETBigint -> true
+| ETBinder b1, ETBinder b2 -> b1 == b2
+| ETConstr lev1, ETConstr lev2 -> eq lev1 lev2
+| ETConstrAsBinder (bk1,lev1), ETConstrAsBinder (bk2,lev2) -> eq lev1 lev2 && bk1 = bk2
+| ETPattern (b1,n1), ETPattern (b2,n2) -> b1 = b2 && Option.equal Int.equal n1 n2
+| ETOther (s1,s1'), ETOther (s2,s2') -> String.equal s1 s2 && String.equal s1' s2'
+| (ETName | ETReference | ETBigint | ETBinder _ | ETConstr _ | ETPattern _ | ETOther _ | ETConstrAsBinder _), _ -> false
+
+let level_eq_gen strict (l1, t1, u1) (l2, t2, u2) =
+  let tolerability_eq (i1, r1) (i2, r2) = Int.equal i1 i2 && parenRelation_eq r1 r2 in
+  let prod_eq (l1,pp1) (l2,pp2) =
+    if strict then production_level_eq l1 l2 && production_position_eq pp1 pp2
+    else production_level_eq l1 l2 in
   Int.equal l1 l2 && List.equal tolerability_eq t1 t2
-  && List.equal notation_var_internalization_type_eq u1 u2
+  && List.equal (constr_entry_key_eq prod_eq) u1 u2
+
+let level_eq = level_eq_gen false
 
 let declare_scope scope =
   try let _ = String.Map.find scope !scope_map in ()
@@ -292,7 +309,7 @@ let cases_pattern_key c = match DAst.get c with
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
   | NApp (NRef ref,args) -> RefKey(canonical_gr ref), Some (List.length args)
   | NList (_,_,NApp (NRef ref,args),_,_)
-  | NBinderList (_,_,NApp (NRef ref,args),_) ->
+  | NBinderList (_,_,NApp (NRef ref,args),_,_) ->
       RefKey (canonical_gr ref), Some (List.length args)
   | NRef ref -> RefKey(canonical_gr ref), None
   | NApp (_,args) -> Oth, Some (List.length args)
@@ -609,12 +626,18 @@ let availability_of_prim_token n printer_scope local_scopes =
 
 let pair_eq f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
 
+let notation_binder_source_eq s1 s2 = match s1, s2 with
+| NtnParsedAsIdent,  NtnParsedAsIdent -> true
+| NtnParsedAsPattern b1, NtnParsedAsPattern b2 -> b1 = b2
+| NtnBinderParsedAsConstr bk1, NtnBinderParsedAsConstr bk2 -> bk1 = bk2
+| (NtnParsedAsIdent | NtnParsedAsPattern _ | NtnBinderParsedAsConstr _), _ -> false
+
 let ntpe_eq t1 t2 = match t1, t2 with
 | NtnTypeConstr, NtnTypeConstr -> true
-| NtnTypeOnlyBinder, NtnTypeOnlyBinder -> true
+| NtnTypeBinder s1, NtnTypeBinder s2 -> notation_binder_source_eq s1 s2
 | NtnTypeConstrList, NtnTypeConstrList -> true
 | NtnTypeBinderList, NtnTypeBinderList -> true
-| (NtnTypeConstr | NtnTypeOnlyBinder | NtnTypeConstrList | NtnTypeBinderList), _ -> false
+| (NtnTypeConstr | NtnTypeBinder _ | NtnTypeConstrList | NtnTypeBinderList), _ -> false
 
 let var_attributes_eq (_, (sc1, tp1)) (_, (sc2, tp2)) =
   pair_eq (Option.equal String.equal) (List.equal String.equal) sc1 sc2 &&
@@ -926,8 +949,63 @@ let factorize_entries = function
 	  (ntn,[c],[]) l in
       (ntn,l_of_ntn)::rest
 
+type symbol_token = WhiteSpace of int | String of string
+
+let split_notation_string str =
+  let push_token beg i l =
+    if Int.equal beg i then l else
+      let s = String.sub str beg (i - beg) in
+      String s :: l
+  in
+  let push_whitespace beg i l =
+    if Int.equal beg i then l else WhiteSpace (i-beg) :: l
+  in
+  let rec loop beg i =
+    if i < String.length str then
+      if str.[i] == ' ' then
+        push_token beg i (loop_on_whitespace (i+1) (i+1))
+      else
+        loop beg (i+1)
+    else
+      push_token beg i []
+  and loop_on_whitespace beg i =
+    if i < String.length str then
+      if str.[i] != ' ' then
+        push_whitespace beg i (loop i (i+1))
+      else
+        loop_on_whitespace beg (i+1)
+    else
+      push_whitespace beg i []
+  in
+  loop 0 0
+
+let rec raw_analyze_notation_tokens = function
+  | []    -> []
+  | String ".." :: sl -> NonTerminal Notation_ops.ldots_var :: raw_analyze_notation_tokens sl
+  | String "_" :: _ -> user_err Pp.(str "_ must be quoted.")
+  | String x :: sl when Id.is_valid x ->
+      NonTerminal (Names.Id.of_string x) :: raw_analyze_notation_tokens sl
+  | String s :: sl ->
+      Terminal (String.drop_simple_quotes s) :: raw_analyze_notation_tokens sl
+  | WhiteSpace n :: sl ->
+      Break n :: raw_analyze_notation_tokens sl
+
+let decompose_raw_notation ntn = raw_analyze_notation_tokens (split_notation_string ntn)
+
+let possible_notations ntn =
+  (* We collect the possible interpretations of a notation string depending on whether it is
+    in "x 'U' y" or "_ U _" format *)
+  let toks = split_notation_string ntn in
+  if List.exists (function String "_" -> true | _ -> false) toks then
+    (* Only "_ U _" format *)
+    [ntn]
+  else
+    let ntn' = make_notation_key (raw_analyze_notation_tokens toks) in
+    if String.equal ntn ntn' then (* Only symbols *) [ntn] else [ntn;ntn']
+
 let browse_notation strict ntn map =
-  let find ntn' =
+  let ntns = possible_notations ntn in
+  let find ntn' ntn =
     if String.contains ntn ' ' then String.equal ntn ntn'
     else
       let toks = decompose_notation_key ntn' in
@@ -940,7 +1018,7 @@ let browse_notation strict ntn map =
     String.Map.fold
       (fun scope_name sc ->
 	String.Map.fold (fun ntn { not_interp  = (_, r); not_location = df } l ->
-	  if find ntn then (ntn,(scope_name,r,df))::l else l) sc.notations)
+          if List.exists (find ntn) ntns then (ntn,(scope_name,r,df))::l else l) sc.notations)
       map [] in
   List.sort (fun x y -> String.compare (fst x) (fst y)) l
 

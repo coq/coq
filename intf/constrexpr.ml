@@ -46,7 +46,7 @@ type prim_token =
 type instance_expr = Misctypes.glob_level list
 
 type cases_pattern_expr_r =
-  | CPatAlias of cases_pattern_expr * Id.t
+  | CPatAlias of cases_pattern_expr * Name.t Loc.located
   | CPatCstr  of reference
     * cases_pattern_expr list option * cases_pattern_expr list
   (** [CPatCstr (_, c, Some l1, l2)] represents (@c l1) l2 *)
@@ -70,8 +70,8 @@ and constr_expr_r =
   | CRef     of reference * instance_expr option
   | CFix     of Id.t Loc.located * fix_expr list
   | CCoFix   of Id.t Loc.located * cofix_expr list
-  | CProdN   of binder_expr list * constr_expr
-  | CLambdaN of binder_expr list * constr_expr
+  | CProdN   of local_binder_expr list * constr_expr
+  | CLambdaN of local_binder_expr list * constr_expr
   | CLetIn   of Name.t Loc.located * constr_expr * constr_expr option * constr_expr
   | CAppExpl of (proj_flag * reference * instance_expr option) * constr_expr list
   | CApp     of (proj_flag * constr_expr) *
@@ -107,9 +107,6 @@ and case_expr = constr_expr                 (* expression that is being matched 
 and branch_expr =
   (cases_pattern_expr list list * constr_expr) Loc.located
 
-and binder_expr =
-  Name.t Loc.located list * binder_kind * constr_expr
-
 and fix_expr =
     Id.t Loc.located * (Id.t Loc.located option * recursion_order_expr) *
       local_binder_expr list * constr_expr * constr_expr
@@ -131,7 +128,8 @@ and local_binder_expr =
 and constr_notation_substitution =
     constr_expr list *      (** for constr subterms *)
     constr_expr list list * (** for recursive notations *)
-    local_binder_expr list list (** for binders subexpressions *)
+    cases_pattern_expr list *   (** for binders *)
+    local_binder_expr list list (** for binder lists (recursive notations) *)
 
 type constr_pattern_expr = constr_expr
 

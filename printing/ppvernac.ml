@@ -93,16 +93,35 @@ open Decl_kinds
   let sep = fun _ -> spc()
   let sep_v2 = fun _ -> str"," ++ spc()
 
-  let pr_set_entry_type = function
+  let pr_at_level = function
+    | NumLevel n -> keyword "at" ++ spc () ++ keyword "level" ++ spc () ++ int n
+    | NextLevel -> keyword "at" ++ spc () ++ keyword "next" ++ spc () ++ keyword "level"
+
+  let pr_constr_as_binder_kind = function
+    | AsIdent -> keyword "as ident"
+    | AsIdentOrPattern -> keyword "as pattern"
+    | AsStrictPattern -> keyword "as strict pattern"
+
+  let pr_strict b = if b then str "strict " else mt ()
+
+  let pr_set_entry_type pr = function
     | ETName -> str"ident"
     | ETReference -> str"global"
-    | ETPattern -> str"pattern"
-    | ETConstr _ -> str"constr"
+    | ETPattern (b,None) -> pr_strict b ++ str"pattern"
+    | ETPattern (b,Some n) -> pr_strict b ++ str"pattern" ++ spc () ++ pr_at_level (NumLevel n)
+    | ETConstr lev -> str"constr" ++ pr lev
     | ETOther (_,e) -> str e
+    | ETConstrAsBinder (bk,lev) -> pr lev ++ spc () ++ pr_constr_as_binder_kind bk
     | ETBigint -> str "bigint"
     | ETBinder true -> str "binder"
     | ETBinder false -> str "closed binder"
-    | ETBinderList _ | ETConstrList _ -> failwith "Internal entry type"
+
+  let pr_at_level_opt = function
+    | None -> mt ()
+    | Some n -> spc () ++ pr_at_level n
+
+  let pr_set_simple_entry_type =
+    pr_set_entry_type pr_at_level_opt
 
   let pr_comment pr_c = function
     | CommentConstr c -> pr_c c
@@ -360,17 +379,16 @@ open Decl_kinds
   let pr_thm_token k = keyword (Kindops.string_of_theorem_kind k)
 
   let pr_syntax_modifier = function
-    | SetItemLevel (l,NextLevel) ->
+    | SetItemLevel (l,n) ->
+      prlist_with_sep sep_v2 str l ++ spc () ++ pr_at_level n
+    | SetItemLevelAsBinder (l,bk,n) ->
       prlist_with_sep sep_v2 str l ++
-        spc() ++ keyword "at next level"
-    | SetItemLevel (l,NumLevel n) ->
-      prlist_with_sep sep_v2 str l ++
-        spc() ++ keyword "at level" ++ spc() ++ int n
-    | SetLevel n -> keyword "at level" ++ spc() ++ int n
+      spc() ++ pr_at_level_opt n ++ spc() ++ pr_constr_as_binder_kind bk
+    | SetLevel n -> pr_at_level (NumLevel n)
     | SetAssoc LeftA -> keyword "left associativity"
     | SetAssoc RightA -> keyword "right associativity"
     | SetAssoc NonA -> keyword "no associativity"
-    | SetEntryType (x,typ) -> str x ++ spc() ++ pr_set_entry_type typ
+    | SetEntryType (x,typ) -> str x ++ spc() ++ pr_set_simple_entry_type typ
     | SetOnlyPrinting -> keyword "only printing"
     | SetOnlyParsing -> keyword "only parsing"
     | SetCompatVersion v -> keyword("compat \"" ^ Flags.pr_version v ^ "\"")

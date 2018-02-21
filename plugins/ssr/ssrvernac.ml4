@@ -74,7 +74,7 @@ let frozen_lexer = CLexer.get_keyword_state () ;;
 
 let no_ct = None, None and no_rt = None in 
 let aliasvar = function
-  | [[{ CAst.v = CPatAlias (_, id); loc }]] -> Some (loc,Name id)
+  | [[{ CAst.v = CPatAlias (_, na); loc }]] -> Some na
   | _ -> None in
 let mk_cnotype mp = aliasvar mp, None in
 let mk_ctype mp t = aliasvar mp, Some t in
@@ -298,7 +298,7 @@ let interp_search_notation ?loc tag okey =
   let rec sub () = function
   | NVar x when List.mem_assoc x nvars -> DAst.make ?loc @@ GPatVar (FirstOrderPatVar x)
   | c ->
-    glob_constr_of_notation_constr_with_binders ?loc (fun _ x -> (), x) sub () c in
+    glob_constr_of_notation_constr_with_binders ?loc (fun _ x -> (), None, x) sub () c in
   let _, npat = Patternops.pattern_of_glob_constr (sub () body) in
   Search.GlobSearchSubPattern npat
 

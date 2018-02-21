@@ -17,10 +17,9 @@ fun (P : nat -> nat -> Prop) (x : nat) => exists y, P x y
 ∃ n p : nat, n + p = 0
      : Prop
 let a := 0 in
-∃ x y : nat,
-let b := 1 in
-let c := b in
-let d := 2 in ∃ z : nat, let e := 3 in let f := 4 in x + y = z + d
+∃ (x y : nat) (b := 1) (c := b) (d := 2) (z : nat), 
+let e := 3 in
+let f := 4 in x + y = z + d
      : Prop
 ∀ n p : nat, n + p = 0
      : Prop

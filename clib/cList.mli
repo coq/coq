@@ -121,6 +121,14 @@ sig
   val fold_right_and_left :
       ('a -> 'b -> 'b list -> 'a) -> 'b list -> 'a -> 'a
   val fold_left3 : ('a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b list -> 'c list -> 'd list -> 'a
+
+  (** Fold sets, i.e. lists up to order; the folding function tells
+      when elements match by returning a value and raising the given
+      exception otherwise; sets should have the same size; raise the
+      given exception if no pairing of the two sets is found;;
+      complexity in O(n^2) *)
+  val fold_left2_set : exn -> ('a -> 'b -> 'c -> 'b list -> 'c list -> 'a) -> 'a -> 'b list -> 'c list -> 'a
+
   val for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
   val except : 'a eq -> 'a -> 'a list -> 'a list
   val remove : 'a eq -> 'a -> 'a list -> 'a list

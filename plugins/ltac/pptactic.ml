@@ -353,9 +353,10 @@ let string_of_genarg_arg (ArgumentType arg) =
     let rec strip_ty acc n ty =
       match ty.CAst.v with
           Constrexpr.CProdN(bll,a) ->
-            let nb =
-              List.fold_left (fun i (nal,_,_) -> i + List.length nal) 0 bll in
-            let bll = List.map (fun (x, _, y) -> x, y) bll in
+            let bll = List.map (function
+            | CLocalAssum (nal,_,t) -> nal,t
+            | _ -> user_err Pp.(str "Cannot translate fix tactic: not only products")) bll in
+            let nb = List.fold_left (fun i (nal,t) -> i + List.length nal) 0 bll in
             if nb >= n then (List.rev (bll@acc)), a
             else strip_ty (bll@acc) (n-nb) a
         | _ -> user_err Pp.(str "Cannot translate fix tactic: not enough products") in

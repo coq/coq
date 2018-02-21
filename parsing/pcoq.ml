@@ -638,3 +638,15 @@ let () =
   Grammar.register0 wit_constr (Constr.constr);
   Grammar.register0 wit_red_expr (Vernac_.red_expr);
   ()
+
+(** Registering extra grammar *)
+
+type any_entry = AnyEntry : 'a Gram.entry -> any_entry
+
+let grammar_names : any_entry list String.Map.t ref = ref String.Map.empty
+
+let register_grammars_by_name name grams =
+  grammar_names := String.Map.add name grams !grammar_names
+
+let find_grammars_by_name name =
+  String.Map.find name !grammar_names

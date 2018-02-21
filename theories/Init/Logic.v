@@ -267,6 +267,13 @@ Notation "'exists2' x : A , p & q" := (ex2 (A:=A) (fun x => p) (fun x => q))
     format "'[' 'exists2'  '/  ' x  :  A ,  '/  ' '[' p  &  '/' q ']' ']'")
   : type_scope.
 
+Notation "'exists2' ' x , p & q" := (ex2 (fun x => p) (fun x => q))
+  (at level 200, x strict pattern, p at level 200, right associativity) : type_scope.
+Notation "'exists2' ' x : A , p & q" := (ex2 (A:=A) (fun x => p) (fun x => q))
+  (at level 200, x strict pattern, A at level 200, p at level 200, right associativity,
+    format "'[' 'exists2'  '/  ' ' x  :  A ,  '/  ' '[' p  &  '/' q ']' ']'")
+  : type_scope.
+
 (** Derived rules for universal quantification *)
 
 Section universal_quantification.

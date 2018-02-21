@@ -29,12 +29,15 @@ val ldots_var : Id.t
     bound by the notation; also interpret recursive patterns           *)
 
 val notation_constr_of_glob_constr : notation_interp_env ->
-  glob_constr -> notation_constr * reversibility_flag
+  glob_constr -> notation_constr * reversibility_status
 
 (** Re-interpret a notation as a [glob_constr], taking care of binders *)
 
+val apply_cases_pattern : ?loc:Loc.t ->
+  (Id.t list * cases_pattern_disjunction) * Id.t -> glob_constr -> glob_constr
+
 val glob_constr_of_notation_constr_with_binders : ?loc:Loc.t ->
-  ('a -> Name.t -> 'a * Name.t) ->
+  ('a -> Name.t -> 'a * ((Id.t list * cases_pattern_disjunction) * Id.t) option * Name.t) ->
   ('a -> notation_constr -> glob_constr) ->
   'a -> notation_constr -> glob_constr
 
@@ -49,6 +52,7 @@ exception No_match
 
 val match_notation_constr : bool -> 'a glob_constr_g -> interpretation ->
       ('a glob_constr_g * subscopes) list * ('a glob_constr_g list * subscopes) list *
+      ('a cases_pattern_disjunction_g * subscopes) list *
       ('a extended_glob_local_binder_g list * subscopes) list
 
 val match_notation_constr_cases_pattern :

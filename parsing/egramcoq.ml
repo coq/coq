@@ -229,11 +229,11 @@ type (_, _) entry =
 | TTName : ('self, Name.t Loc.located) entry
 | TTReference : ('self, reference) entry
 | TTBigint : ('self, Constrexpr.raw_natural_number) entry
-| TTBinder : ('self, local_binder_expr list) entry
 | TTConstr : prod_info * 'r target -> ('r, 'r) entry
 | TTConstrList : prod_info * Tok.t list * 'r target -> ('r, 'r list) entry
-| TTBinderListT : ('self, local_binder_expr list) entry
-| TTBinderListF : Tok.t list -> ('self, local_binder_expr list list) entry
+| TTPattern : int -> ('self, cases_pattern_expr) entry
+| TTOpenBinderList : ('self, local_binder_expr list) entry
+| TTClosedBinderList : Tok.t list -> ('self, local_binder_expr list list) entry
 
 type _ any_entry = TTAny : ('s, 'r) entry -> 's any_entry
 
@@ -289,31 +289,24 @@ let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) symbol = fun as
   Alist1 (symbol_of_target typ' assoc from forpat)
 | TTConstrList (typ', tkl, forpat) ->
   Alist1sep (symbol_of_target typ' assoc from forpat, make_sep_rules tkl)
-| TTBinderListF [] -> Alist1 (Aentry Constr.binder)
-| TTBinderListF tkl -> Alist1sep (Aentry Constr.binder, make_sep_rules tkl)
+| TTPattern p -> Aentryl (Constr.pattern, p)
+| TTClosedBinderList [] -> Alist1 (Aentry Constr.binder)
+| TTClosedBinderList tkl -> Alist1sep (Aentry Constr.binder, make_sep_rules tkl)
 | TTName -> Aentry Prim.name
-| TTBinder -> Aentry Constr.binder
-| TTBinderListT -> Aentry Constr.open_binders
+| TTOpenBinderList -> Aentry Constr.open_binders
 | TTBigint -> Aentry Prim.bigint
 | TTReference -> Aentry Constr.global
 
 let interp_entry forpat e = match e with
-| ETName -> TTAny TTName
-| ETReference -> TTAny TTReference
-| ETBigint -> TTAny TTBigint
-| ETBinder true -> anomaly (Pp.str "Should occur only as part of BinderList.")
-| ETBinder false  -> TTAny TTBinder
-| ETConstr p -> TTAny (TTConstr (p, forpat))
-| ETPattern -> assert false (** not used *)
-| ETOther _ -> assert false (** not used *)
-| ETConstrList (p, tkl) -> TTAny (TTConstrList (p, tkl, forpat))
-| ETBinderList (true, []) -> TTAny TTBinderListT
-| ETBinderList (true, _) -> assert false
-| ETBinderList (false, tkl) -> TTAny (TTBinderListF tkl)
-
-let constr_expr_of_name (loc,na) = CAst.make ?loc @@ match na with
-  | Anonymous -> CHole (None,Misctypes.IntroAnonymous,None)
-  | Name id   -> CRef (Ident (Loc.tag ?loc id), None)
+| ETProdName -> TTAny TTName
+| ETProdReference -> TTAny TTReference
+| ETProdBigint -> TTAny TTBigint
+| ETProdConstr p -> TTAny (TTConstr (p, forpat))
+| ETProdPattern p -> TTAny (TTPattern p)
+| ETProdOther _ -> assert false (** not used *)
+| ETProdConstrList (p, tkl) -> TTAny (TTConstrList (p, tkl, forpat))
+| ETProdBinderList ETBinderOpen -> TTAny TTOpenBinderList
+| ETProdBinderList (ETBinderClosed tkl) -> TTAny (TTClosedBinderList tkl)
 
 let cases_pattern_expr_of_name (loc,na) = CAst.make ?loc @@ match na with
   | Anonymous -> CPatAtom None
@@ -322,7 +315,8 @@ let cases_pattern_expr_of_name (loc,na) = CAst.make ?loc @@ match na with
 type 'r env = {
   constrs : 'r list;
   constrlists : 'r list list;
-  binders : (local_binder_expr list * bool) list;
+  binders : cases_pattern_expr list;
+  binderlists : local_binder_expr list list;
 }
 
 let push_constr subst v = { subst with constrs = v :: subst.constrs }
@@ -332,12 +326,16 @@ match e with
 | TTConstr _ -> push_constr subst v
 | TTName ->
   begin match forpat with
-  | ForConstr -> push_constr subst (constr_expr_of_name v)
+  | ForConstr -> { subst with binders = cases_pattern_expr_of_name v :: subst.binders }
   | ForPattern -> push_constr subst (cases_pattern_expr_of_name v)
   end
-| TTBinder -> { subst with binders = (v, true) :: subst.binders }
-| TTBinderListT -> { subst with binders = (v, true) :: subst.binders }
-| TTBinderListF _ -> { subst with binders = (List.flatten v, false) :: subst.binders }
+| TTPattern _ ->
+  begin match forpat with
+  | ForConstr -> { subst with binders = v :: subst.binders }
+  | ForPattern -> push_constr subst v
+  end
+| TTOpenBinderList -> { subst with binderlists = v :: subst.binderlists }
+| TTClosedBinderList _ -> { subst with binderlists = List.flatten v :: subst.binderlists }
 | TTBigint ->
   begin match forpat with
   | ForConstr ->  push_constr subst (CAst.make @@ CPrim (Numeral (v,true)))
@@ -437,11 +435,9 @@ let rec pure_sublevels : type a b c. int option -> (a, b, c) rule -> int list = 
 
 let make_act : type r. r target -> _ -> r gen_eval = function
 | ForConstr -> fun notation loc env ->
-  let env = (env.constrs, env.constrlists, List.map fst env.binders) in
-  CAst.make ~loc @@ CNotation (notation , env)
+  let env = (env.constrs, env.constrlists, env.binders, env.binderlists) in
+  CAst.make ~loc @@ CNotation (notation, env)
 | ForPattern -> fun notation loc env ->
-  let invalid = List.exists (fun (_, b) -> not b) env.binders in
-  let () = if invalid then Constrexpr_ops.error_invalid_pattern_notation ~loc () in
   let env = (env.constrs, env.constrlists) in
   CAst.make ~loc @@ CPatNotation (notation, env, [])
 
@@ -457,7 +453,7 @@ let extend_constr state forpat ng =
     let needed_levels, state = register_empty_levels state isforpat pure_sublevels in
     let (pos,p4assoc,name,reinit), state = find_position state isforpat assoc level in
     let empty_rules = List.map (prepare_empty_levels isforpat) needed_levels in
-    let empty = { constrs = []; constrlists = []; binders = [] } in
+    let empty = { constrs = []; constrlists = []; binders = []; binderlists = [] } in
     let act = ty_eval r (make_act forpat ng.notgram_notation) empty in
     let rule = (name, p4assoc, [Rule (symbs, act)]) in
     let r = ExtendRule (entry, reinit, (pos, [rule])) in

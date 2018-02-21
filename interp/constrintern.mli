@@ -87,7 +87,7 @@ val intern_gen : typing_constraint -> env ->
   constr_expr -> glob_constr
 
 val intern_pattern : env -> cases_pattern_expr ->
-  Id.t list * (Id.t Id.Map.t * cases_pattern) list
+  Id.t Loc.located list * (Id.t Id.Map.t * cases_pattern) list
 
 val intern_context : bool -> env -> internalization_env -> local_binder_expr list -> internalization_env * glob_decl list
 
@@ -184,8 +184,7 @@ val global_reference_in_absolute_module : DirPath.t -> Id.t -> Globnames.global_
     guaranteed to have the same domain as the input one. *)
 val interp_notation_constr : env -> ?impls:internalization_env ->
   notation_interp_env -> constr_expr ->
-  (bool * subscopes * notation_var_internalization_type) Id.Map.t *
-  notation_constr * reversibility_flag
+  (bool * subscopes) Id.Map.t * notation_constr * reversibility_status
 
 (** Globalization options *)
 val parsing_explicit : bool ref
