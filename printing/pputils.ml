@@ -13,14 +13,26 @@ open Misctypes
 open Locus
 open Genredexpr
 
+let beautify_comments = ref []
+
+let rec split_comments comacc acc pos = function
+  | [] -> beautify_comments := List.rev acc; comacc
+  | ((b,e),c as com)::coms ->
+      (* Take all comments that terminates before pos, or begin exactly
+         at pos (used to print comments attached after an expression) *)
+      if e<=pos || pos=b then split_comments (c::comacc) acc pos coms
+      else split_comments comacc (com::acc) pos coms
+
+let extract_comments pos = split_comments [] [] pos !beautify_comments
+
 let pr_located pr (loc, x) =
   match loc with
   | Some loc when !Flags.beautify ->
     let (b, e) = Loc.unloc loc in
     (* Side-effect: order matters *)
-    let before = Pp.comment (CLexer.extract_comments b) in
+    let before = Pp.comment (extract_comments b) in
     let x = pr x in
-    let after = Pp.comment (CLexer.extract_comments e) in
+    let after = Pp.comment (extract_comments e) in
     before ++ x ++ after
   | _ -> pr x
 

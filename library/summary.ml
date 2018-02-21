@@ -12,7 +12,9 @@ open Util
 
 module Dyn = Dyn.Make ()
 
-type marshallable = [ `Yes | `No | `Shallow ]
+type marshallable =
+  [ `No        (* Full data will be store in memory, e.g. for Undo            *)
+  | `Shallow ] (* Only part of the data will be marshalled to a slave process *)
 
 type 'a summary_declaration = {
   freeze_function : marshallable -> 'a;

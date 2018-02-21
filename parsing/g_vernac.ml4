@@ -1064,14 +1064,8 @@ END;
 GEXTEND Gram
   command:
     [ [
-(* State management *)
-        IDENT "Write"; IDENT "State"; s = IDENT -> VernacWriteState s
-      | IDENT "Write"; IDENT "State"; s = ne_string -> VernacWriteState s
-      | IDENT "Restore"; IDENT "State"; s = IDENT -> VernacRestoreState s
-      | IDENT "Restore"; IDENT "State"; s = ne_string -> VernacRestoreState s
-
 (* Resetting *)
-      | IDENT "Reset"; IDENT "Initial" -> VernacResetInitial
+        IDENT "Reset"; IDENT "Initial" -> VernacResetInitial
       | IDENT "Reset"; id = identref -> VernacResetName id
       | IDENT "Back" -> VernacBack 1
       | IDENT "Back"; n = natural -> VernacBack n

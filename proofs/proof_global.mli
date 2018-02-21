@@ -133,11 +133,10 @@ module V82 : sig
   Decl_kinds.goal_kind)
 end
 
-val freeze : marshallable:[`Yes | `No | `Shallow] -> t
+val freeze : marshallable:[`No | `Shallow] -> t
 val unfreeze : t -> unit
 val proof_of_state : t -> Proof.t
 val copy_terminators : src:t -> tgt:t -> t
-
 
 (**********************************************************)
 (* Proof Mode API                                         *)

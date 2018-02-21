@@ -767,16 +767,18 @@ module State : sig
       defining a new one.
       Warning: an optimization in installed_cached requires that state
       modifying functions are always executed using this wrapper. *)
+  type cacheable = [`Yes | `Shallow | `No]
+
   val define :
     ?safe_id:Stateid.t ->
-    ?redefine:bool -> ?cache:Summary.marshallable ->
+    ?redefine:bool -> ?cache:cacheable ->
     ?feedback_processed:bool -> (unit -> unit) -> Stateid.t -> unit
 
   val fix_exn_ref : (Exninfo.iexn -> Exninfo.iexn) ref
 
   val install_cached : Stateid.t -> unit
-  val is_cached : ?cache:Summary.marshallable -> Stateid.t -> bool
-  val is_cached_and_valid : ?cache:Summary.marshallable -> Stateid.t -> bool
+  val is_cached : ?cache:cacheable -> Stateid.t -> bool
+  val is_cached_and_valid : ?cache:cacheable -> Stateid.t -> bool
 
   val exn_on : Stateid.t -> valid:Stateid.t -> Exninfo.iexn -> Exninfo.iexn
 
@@ -802,6 +804,8 @@ module State : sig
   val cur_id : Stateid.t ref
 
 end = struct (* {{{ *)
+
+  type cacheable = [`Yes | `Shallow | `No]
 
   (* cur_id holds Stateid.dummy in case the last attempt to define a state
    * failed, so the global state may contain garbage *)
@@ -2101,7 +2105,7 @@ end (* }}} *)
 and Reach : sig
 
   val known_state :
-    ?redefine_qed:bool -> cache:Summary.marshallable -> Stateid.t -> unit
+    ?redefine_qed:bool -> cache:State.cacheable -> Stateid.t -> unit
 
 end = struct (* {{{ *)
 

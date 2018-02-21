@@ -35,9 +35,7 @@ let is_joined_environment () =
 let global_env_summary_tag =
   Summary.declare_summary_tag global_env_summary_name
     { Summary.freeze_function = (function
-        | `Yes -> join_safe_environment (); !global_env
-        | `No -> !global_env
-        | `Shallow -> !global_env);
+        | `No | `Shallow -> !global_env);
       unfreeze_function = (fun fr -> global_env := fr);
       init_function = (fun () -> global_env := Safe_typing.empty_environment) }
 

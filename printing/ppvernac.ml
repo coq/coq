@@ -625,12 +625,6 @@ open Decl_kinds
       | VernacBackTo i ->
         return (keyword "BackTo" ++ pr_intarg i)
 
-    (* State management *)
-      | VernacWriteState s ->
-        return (keyword "Write State" ++ spc () ++ qs s)
-      | VernacRestoreState s ->
-        return  (keyword "Restore State" ++ spc() ++ qs s)
-
     (* Syntax *)
       | VernacOpenCloseScope (opening,sc) ->
         return (

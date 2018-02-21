@@ -75,27 +75,14 @@ let print_memory_stat () =
 let _ = at_exit print_memory_stat
 
 (******************************************************************************)
-(* Input/Output State                                                         *)
-(******************************************************************************)
-let inputstate opts =
-  Option.iter (fun istate_file ->
-    let fname = Loadpath.locate_file (CUnix.make_suffix istate_file ".coq") in
-    States.intern_state fname) opts.inputstate
-
-let outputstate opts =
-  Option.iter (fun ostate_file ->
-    let fname = CUnix.make_suffix ostate_file ".coq" in
-    States.extern_state fname) opts.outputstate
-
-(******************************************************************************)
 (* Interactive Load File Simulation                                           *)
 (******************************************************************************)
 let load_vernacular opts ~state =
   List.fold_left
-    (fun state (f_in, verbosely) ->
+    (fun state (f_in, echo) ->
       let s = Loadpath.locate_file f_in in
       (* Should make the beautify logic clearer *)
-      let load_vernac f = Vernac.load_vernac ~time:opts.time ~verbosely ~interactive:false ~check:true ~state f in
+      let load_vernac f = Vernac.load_vernac ~time:opts.time ~echo ~interactive:false ~check:true ~state f in
       if !Flags.beautify
       then Flags.with_option Flags.beautify_file load_vernac f_in
       else load_vernac s
@@ -194,7 +181,7 @@ let ensure_exists f =
     fatal_error (hov 0 (str "Can't find file" ++ spc () ++ str f))
 
 (* Compile a vernac file *)
-let compile opts ~verbosely ~f_in ~f_out =
+let compile opts ~echo ~f_in ~f_out =
   let open Vernac.State in
   let check_pending_proofs () =
     let pfs = Proof_global.get_all_proof_names () in
@@ -232,7 +219,7 @@ let compile opts ~verbosely ~f_in ~f_out =
       Dumpglob.start_dump_glob ~vfile:long_f_dot_v ~vofile:long_f_dot_vo;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
       let wall_clock1 = Unix.gettimeofday () in
-      let state = Vernac.load_vernac ~time:opts.time ~verbosely ~check:true ~interactive:false ~state long_f_dot_v in
+      let state = Vernac.load_vernac ~time:opts.time ~echo ~check:true ~interactive:false ~state long_f_dot_v in
       let _doc = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
       check_pending_proofs ();
@@ -273,7 +260,7 @@ let compile opts ~verbosely ~f_in ~f_out =
       let state = { doc; sid; proof = None } in
       let state = load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
-      let state = Vernac.load_vernac ~time:opts.time ~verbosely ~check:false ~interactive:false ~state long_f_dot_v in
+      let state = Vernac.load_vernac ~time:opts.time ~echo ~check:false ~interactive:false ~state long_f_dot_v in
       let doc = Stm.finish ~doc:state.doc in
       check_pending_proofs ();
       let _doc = Stm.snapshot_vio ~doc ldir long_f_dot_vio in
@@ -288,17 +275,17 @@ let compile opts ~verbosely ~f_in ~f_out =
       let univs, proofs = Stm.finish_tasks lfdv univs disch proofs tasks in
       Library.save_library_raw lfdv sum lib univs proofs
 
-let compile opts ~verbosely ~f_in ~f_out =
+let compile opts ~echo ~f_in ~f_out =
   ignore(CoqworkmgrApi.get 1);
-  compile opts ~verbosely ~f_in ~f_out;
+  compile opts ~echo ~f_in ~f_out;
   CoqworkmgrApi.giveback 1
 
-let compile_file opts (f_in, verbosely) =
+let compile_file opts (f_in, echo) =
   if !Flags.beautify then
     Flags.with_option Flags.beautify_file
-      (fun f_in -> compile opts ~verbosely ~f_in ~f_out:None) f_in
+      (fun f_in -> compile opts ~echo ~f_in ~f_out:None) f_in
   else
-    compile opts ~verbosely ~f_in ~f_out:None
+    compile opts ~echo ~f_in ~f_out:None
 
 let compile_files opts =
   let compile_list = List.rev opts.compile_list in
@@ -444,9 +431,6 @@ let init_toplevel arglist =
       Mltop.init_known_plugins ();
       Global.set_engagement opts.impredicative_set;
 
-      (* Allow the user to load an arbitrary state here *)
-      inputstate opts;
-
       (* This state will be shared by all the documents *)
       Stm.init_core ();
 
@@ -487,8 +471,6 @@ let init_toplevel arglist =
           if opts.vio_files <> [] then schedule_vio opts;
           (* Vio task pass *)
           check_vio_tasks opts;
-          (* Allow the user to output an arbitrary state *)
-          outputstate opts;
           None, opts
         with any -> flush_all(); fatal_error_exn any
       end;
