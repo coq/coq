@@ -39,7 +39,8 @@
 (defun coqdev-setup-compile-command ()
   "Setup `compile-command' for Coq development."
   (let ((dir (coqdev-default-directory)))
-    (when dir (setq-local compile-command (concat "make -C " (shell-quote-argument dir))))))
+    ;; we add a space at the end to make it easy to add arguments (eg -j or target)
+    (when dir (setq-local compile-command (concat "make -C " (shell-quote-argument dir) " ")))))
 (add-hook 'hack-local-variables-hook #'coqdev-setup-compile-command)
 
 (defvar camldebug-command-name) ; from camldebug.el (caml package)
