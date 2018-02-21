@@ -451,6 +451,22 @@ let vcs =
   else if dir_exists "{arch}" then "gnuarch"
   else "none"
 
+(** * Git Precommit Hook *)
+let _ =
+  let f = ".git/hooks/pre-commit" in
+  if vcs = "git" && dir_exists ".git/hooks" && not (Sys.file_exists f) then begin
+    printf "Creating pre-commit hook in %s\n" f;
+    let o = open_out f in
+    let pr s = fprintf o s in
+    pr "#!/bin/sh\n";
+    pr "\n";
+    pr "if [ -x dev/tools/pre-commit ]; then\n";
+    pr "    exec dev/tools/pre-commit\n";
+    pr "fi\n";
+    close_out o;
+    Unix.chmod f 0o775
+  end
+
 (** * Browser command *)
 
 let browser =
