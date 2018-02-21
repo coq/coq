@@ -86,7 +86,7 @@ let current_options = Summary.ref ~name:"printing options" default_options
 let get_current_options () = !current_options
 let set_current_options opts = current_options := opts
 
-let saved_options = ref None
+let saved_options = Summary.ref ~name:"saved printing options" None
 
 let get_saved_options () = !saved_options
 let set_saved_options opts = saved_options := opts
