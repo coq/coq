@@ -768,6 +768,8 @@ let with_shelf tac =
   tac >>= fun ans ->
   Pv.get >>= fun npv ->
   let { shelf = gls; solution = sigma } = npv in
+  (* The pending future goals are necessarily coming from V82.tactic *)
+  (* and thus considered as to shelve, as in Proof.run_tactic *)
   let gls' = Evd.future_goals sigma in
   let fgoals = Evd.save_future_goals solution in
   let sigma = Evd.restore_future_goals sigma fgoals in
