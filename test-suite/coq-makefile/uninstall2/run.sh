@@ -11,7 +11,12 @@ make install-doc DSTROOT="$PWD/tmp"
 make uninstall DSTROOT="$PWD/tmp"
 make uninstall-doc DSTROOT="$PWD/tmp"
 #make debug
-(for d in `find tmp -name user-contrib` ; do pushd $d >/dev/null && find . && popd >/dev/null; done) | sort -u > actual
+(
+  while IFS= read -r -d '' d
+  do
+    pushd "$d" >/dev/null && find . && popd >/dev/null
+  done < <(find tmp -name user-contrib -print0)
+) | sort -u > actual
 sort -u > desired <<EOT
 .
 EOT

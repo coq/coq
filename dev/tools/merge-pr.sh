@@ -80,8 +80,8 @@ if [ -z "$REMOTE" ]; then
   exit 1
 fi
 REMOTE_URL=$(git remote get-url "$REMOTE" --push)
-if [ "$REMOTE_URL" != "$OFFICIAL_REMOTE_URL" -a \
-     "$REMOTE_URL" != "$OFFICIAL_REMOTE_URL.git" ]; then
+if [ "$REMOTE_URL" != "$OFFICIAL_REMOTE_URL" ] && \
+   [ "$REMOTE_URL" != "$OFFICIAL_REMOTE_URL.git" ]; then
   error "remote ${BLUE}$REMOTE${RESET} does not point to the official Coq repo"
   error "that is ${BLUE}$OFFICIAL_REMOTE_URL"
   error "it points to ${BLUE}$REMOTE_URL${RESET} instead"

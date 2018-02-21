@@ -20,7 +20,8 @@ else
         export CI_PULL_REQUEST="$CIRCLE_PR_NUMBER"
         export CI_BRANCH="$CIRCLE_BRANCH"
     else # assume local
-        export CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+        CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+        export CI_BRANCH
     fi
     export COQBIN="$PWD/bin"
 fi
@@ -35,10 +36,10 @@ ls "$COQBIN"
 CI_BUILD_DIR="$PWD/_build_ci"
 
 # shellcheck source=ci-basic-overlay.sh
-source "${ci_dir}/ci-basic-overlay.sh"
+. "${ci_dir}/ci-basic-overlay.sh"
 for overlay in "${ci_dir}"/user-overlays/*.sh; do
     # shellcheck source=/dev/null
-    source "${overlay}"
+    . "${overlay}"
 done
 
 mathcomp_CI_DIR="${CI_BUILD_DIR}/math-comp"
@@ -68,7 +69,7 @@ git_checkout()
 
 checkout_mathcomp()
 {
-  git_checkout ${mathcomp_CI_BRANCH} ${mathcomp_CI_GITURL} ${1}
+  git_checkout "${mathcomp_CI_BRANCH}" "${mathcomp_CI_GITURL}" "${1}"
 }
 
 make()

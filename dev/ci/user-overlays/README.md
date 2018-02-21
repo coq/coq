@@ -7,6 +7,8 @@ The name of your overlay file should be of the form `five_digit_PR_number-GitHub
 Example: `00669-maximedenes-ssr-merge.sh` containing
 
 ```
+#!/bin/sh
+
 if [ "$CI_PULL_REQUEST" = "669" ] || [ "$CI_BRANCH" = "ssr-merge" ]; then
     mathcomp_CI_BRANCH=ssr-merge
     mathcomp_CI_GITURL=https://github.com/maximedenes/math-comp.git

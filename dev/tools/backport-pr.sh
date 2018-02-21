@@ -27,9 +27,9 @@ BRANCH=backport-pr-${PRNUM}
 RANGE=$(git log master --grep "Merge PR #${PRNUM}" --format="%P" | sed 's/ /../')
 MESSAGE=$(git log master --grep "Merge PR #${PRNUM}" --format="%s" | sed 's/Merge/Backport/')
 
-if git checkout -b ${BRANCH}; then
+if git checkout -b "${BRANCH}"; then
 
-    if ! git cherry-pick -x ${RANGE}; then
+    if ! git cherry-pick -x "${RANGE}"; then
         echo "Please fix the conflicts, then exit."
         bash
         while ! git cherry-pick --continue; do
@@ -50,7 +50,7 @@ else
 
 fi
 
-if ! git diff --exit-code HEAD ${BRANCH} -- "*.mli"; then
+if ! git diff --exit-code HEAD "${BRANCH}" -- "*.mli"; then
     echo
     read -p "Some mli files are modified. Bypass? [y/N] " -n 1 -r
     echo
@@ -63,8 +63,8 @@ if [[ "${OPTION}" == "--stop-before-merging" ]]; then
     exit 0
 fi
 
-git merge -S --no-ff ${BRANCH} -m "${MESSAGE}"
-git branch -d ${BRANCH}
+git merge -S --no-ff "${BRANCH}" -m "${MESSAGE}"
+git branch -d "${BRANCH}"
 
 # To-Do:
 # - Support for backporting a PR before it is merged
