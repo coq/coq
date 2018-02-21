@@ -10,4 +10,4 @@
 
 open Cic
 
-val print_pure_constr : constr -> unit
+val print_pure_constr : Format.formatter -> constr -> unit
