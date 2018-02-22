@@ -271,7 +271,9 @@ type preferences = {
   warn_error : bool;
 }
 
-let default_preferences = {
+module Profiles = struct
+
+let default = {
   prefix = None;
   local = false;
   vmbyteflags = None;
@@ -307,7 +309,25 @@ let default_preferences = {
   warn_error = false;
 }
 
-let prefs = ref default_preferences
+let devel state = { state with
+  local = true;
+  bin_annot = true;
+  annot = true;
+  warn_error = true;
+}
+let devel_doc = "-local -annot -bin-annot -warn-error"
+
+let get = function
+  | "devel" -> devel
+  | s -> raise (Arg.Bad ("profile name expected instead of "^s))
+
+let doc =
+  "<profile> Sets a bunch of flags. Supported profiles:
+     devel = " ^ devel_doc
+
+end
+
+let prefs = ref Profiles.default
 
 
 let get_bool = function
@@ -334,6 +354,8 @@ let arg_set_option f = Arg.Unit (fun () -> prefs := f !prefs (Some true))
 let arg_clear_option f = Arg.Unit (fun () -> prefs := f !prefs (Some false))
 
 let arg_ide f = Arg.String (fun s -> prefs := f !prefs (Some (get_ide s)))
+
+let arg_profile = Arg.String (fun s -> prefs := Profiles.get s !prefs)
 
 (* TODO : earlier any option -foo was also available as --foo *)
 
@@ -388,7 +410,7 @@ let args_options = Arg.align [
     " Compiles only bytecode version of Coq";
   "-nodebug", arg_clear (fun p debug -> { p with debug }),
     " Do not add debugging information in the Coq executables";
-  "-profile", arg_set (fun p profile -> { p with profile }),
+  "-profiling", arg_set (fun p profile -> { p with profile }),
     " Add profiling information in the Coq executables";
   "-annotate", Arg.Unit (fun () -> printf "*Warning* -annotate is deprecated. Please use -annot or -bin-annot instead.\n"),
     " Deprecated. Please use -annot or -bin-annot instead";
@@ -410,6 +432,8 @@ let args_options = Arg.align [
     " Make OCaml warnings into errors";
   "-camldir", Arg.String (fun _ -> ()),
     "<dir> Specifies path to 'ocaml' for running configure script";
+  "-profile", arg_profile,
+    Profiles.doc
 ]
 
 let parse_args () =
