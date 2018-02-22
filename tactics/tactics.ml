@@ -373,8 +373,8 @@ let new_fresh_id avoid id gl =
   fresh_id_in_env avoid id (Proofview.Goal.env gl)
 
 let id_of_name_with_default id = function
-  | Anonymous -> id
-  | Name id   -> id
+  | Name.Anonymous -> id
+  | Name.Name id   -> id
 
 let default_id_of_sort s =
   if Sorts.is_small s then default_small_ident else default_type_ident
@@ -397,8 +397,8 @@ type name_flag =
   | NamingMustBe of Id.t Loc.located
 
 let naming_of_name = function
-  | Anonymous -> NamingAvoid Id.Set.empty
-  | Name id -> NamingMustBe (Loc.tag id)
+  | Name.Anonymous -> NamingAvoid Id.Set.empty
+  | Name.Name id -> NamingMustBe (Loc.tag id)
 
 let find_name mayrepl decl naming gl = match naming with
   | NamingAvoid idl ->
@@ -481,7 +481,7 @@ let internal_cut_gen ?(check=true) dir replace id t =
             let (sigma, ev') = Evarutil.new_evar_from_context sign' sigma ~principal:true ~store concl in
             let (sigma, ev) = Evarutil.new_evar_from_context sign sigma nf_t in
             (sigma,ev,ev') in
-        let term = mkLetIn (Name id, ev, t, EConstr.Vars.subst_var id ev') in
+        let term = mkLetIn (Name.Name id, ev, t, EConstr.Vars.subst_var id ev') in
         (sigma, term)
       end)
   end
@@ -492,7 +492,7 @@ let internal_cut_rev ?(check=true) = internal_cut_gen ~check false
 let assert_before_then_gen b naming t tac =
   let open Context.Rel.Declaration in
   Proofview.Goal.enter begin fun gl ->
-    let id = find_name b (LocalAssum (Anonymous,t)) naming gl in
+    let id = find_name b (LocalAssum (Name.Anonymous,t)) naming gl in
     Tacticals.New.tclTHENLAST
       (internal_cut b id t)
       (tac id)
@@ -507,7 +507,7 @@ let assert_before_replacing id = assert_before_gen true (NamingMustBe (Loc.tag i
 let assert_after_then_gen b naming t tac =
   let open Context.Rel.Declaration in
   Proofview.Goal.enter begin fun gl ->
-    let id = find_name b (LocalAssum (Anonymous,t)) naming gl in
+    let id = find_name b (LocalAssum (Name.Anonymous,t)) naming gl in
     Tacticals.New.tclTHENFIRST
       (internal_cut_rev b id t)
       (tac id)
@@ -571,7 +571,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
     let ids = List.map pi1 all in
     let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
     let indxs = Array.of_list (List.map (fun n -> n-1) (List.map pi2 all)) in
-    let funnames = Array.of_list (List.map (fun i -> Name i) ids) in
+    let funnames = Array.of_list (List.map (fun i -> Name.Name i) ids) in
     let typarray = Array.of_list (List.map pi3 all) in
     let bodies = Array.of_list evs in
     let oterm = mkFix ((indxs,0),(funnames,typarray,bodies)) in
@@ -622,7 +622,7 @@ let mutual_cofix f others j = Proofview.Goal.enter begin fun gl ->
     let (ids, types) = List.split all in
     let (sigma, evs) = mk_holes nenv sigma types in
     let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
-    let funnames = Array.of_list (List.map (fun i -> Name i) ids) in
+    let funnames = Array.of_list (List.map (fun i -> Name.Name i) ids) in
     let typarray = Array.of_list types in
     let bodies = Array.of_list evs in
     let oterm = mkCoFix (0, (funnames, typarray, bodies)) in
@@ -1252,13 +1252,13 @@ let cut c =
       with e when Pretype_errors.precatchable_exception e -> false
     in
     if is_sort then
-      let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_set_of_hyps gl) in
+      let id = next_name_away_with_default "H" Name.Anonymous (Tacmach.New.pf_ids_set_of_hyps gl) in
       (** Backward compat: normalize [c]. *)
       let c = if normalize_cut then local_strong whd_betaiota sigma c else c in
       Refine.refine ~typecheck:false begin fun h ->
         let (h, f) = Evarutil.new_evar ~principal:true env h (mkArrow c (Vars.lift 1 concl)) in
         let (h, x) = Evarutil.new_evar env h c in
-        let f = mkLetIn (Name id, x, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
+        let f = mkLetIn (Name.Name id, x, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
         (h, f)
       end
     else
@@ -1268,7 +1268,7 @@ let cut c =
 let error_uninstantiated_metas t clenv =
   let t = EConstr.Unsafe.to_constr t in
   let na = meta_name clenv.evd (List.hd (Metaset.elements (metavars_of t))) in
-  let id = match na with Name id -> id | _ -> anomaly (Pp.str "unnamed dependent meta.")
+  let id = match na with Name.Name id -> id | _ -> anomaly (Pp.str "unnamed dependent meta.")
   in user_err  (str "Cannot find an instance for " ++ Id.print id ++ str".")
 
 let check_unresolved_evars_of_metas sigma clenv =
@@ -1355,7 +1355,7 @@ let enforce_prop_bound_names rename tac =
       (* elim or induction with schemes built by Indrec.build_induction_scheme *)
       let rec aux env sigma i t =
         if i = 0 then t else match EConstr.kind sigma t with
-        | Prod (Name _ as na,t,t') ->
+        | Prod (Name.Name _ as na,t,t') ->
             let very_standard = true in
             let na =
               if Retyping.get_sort_family_of env sigma t = InProp then
@@ -1364,12 +1364,12 @@ let enforce_prop_bound_names rename tac =
                 let s = match Namegen.head_name sigma t with
                   | Some id when not very_standard -> Id.to_string id
                   | _ -> "" in
-                Name (add_suffix Namegen.default_prop_ident s)
+                Name.Name (add_suffix Namegen.default_prop_ident s)
               else
                 na in
             mkProd (na,t,aux (push_rel (LocalAssum (na,t)) env) sigma (i-1) t')
-        | Prod (Anonymous,t,t') ->
-            mkProd (Anonymous,t,aux (push_rel (LocalAssum (Anonymous,t)) env) sigma (i-1) t')
+        | Prod (Name.Anonymous,t,t') ->
+            mkProd (Name.Anonymous,t,aux (push_rel (LocalAssum (Name.Anonymous,t)) env) sigma (i-1) t')
         | LetIn (na,c,t,t') ->
             mkLetIn (na,c,t,aux (push_rel (LocalDef (na,c,t)) env) sigma (i-1) t')
         | _ -> assert false in
@@ -1884,7 +1884,7 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
     if with_delta then default_unify_flags () else default_no_delta_unify_flags () in
   let t' = Tacmach.New.pf_get_hyp_typ id gl in
   let innerclause = mk_clenv_from_env env sigma (Some 0) (mkVar id,t') in
-  let targetid = find_name true (LocalAssum (Anonymous,t')) naming gl in
+  let targetid = find_name true (LocalAssum (Name.Anonymous,t')) naming gl in
   let rec aux idstoclear with_destruct c =
     Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -1945,7 +1945,7 @@ let cut_and_apply c =
         let concl = Proofview.Goal.concl gl in
         let env = Tacmach.New.pf_env gl in
         Refine.refine ~typecheck:false begin fun sigma ->
-          let typ = mkProd (Anonymous, c2, concl) in
+          let typ = mkProd (Name.Anonymous, c2, concl) in
           let (sigma, f) = Evarutil.new_evar env sigma typ in
           let (sigma, x) = Evarutil.new_evar env sigma c1 in
           (sigma, mkApp (f, [|mkApp (c, [|x|])|]))
@@ -2589,8 +2589,8 @@ let prepare_intros_opt with_evars dft destopt = function
   | Some (loc,ipat) -> prepare_intros ?loc with_evars dft destopt ipat
 
 let ipat_of_name = function
-  | Anonymous -> None
-  | Name id -> Some (Loc.tag @@ IntroNaming (IntroIdentifier id))
+  | Name.Anonymous -> None
+  | Name.Name id -> Some (Loc.tag @@ IntroNaming (IntroIdentifier id))
 
 let head_ident sigma c =
    let c = fst (decompose_app sigma (snd (decompose_lam_assum sigma c))) in
@@ -2683,7 +2683,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
           let refl = EConstr.of_constr refl in
           let eq = applist (eq,args) in
           let refl = applist (refl, [t;mkVar id]) in
-	  let term = mkNamedLetIn id c t (mkLetIn (Name heq, refl, eq, ccl)) in
+          let term = mkNamedLetIn id c t (mkLetIn (Name.Name heq, refl, eq, ccl)) in
 	  let sigma, _ = Typing.type_of env sigma term in
           let ans = term,
             Tacticals.New.tclTHENLIST
@@ -2810,21 +2810,21 @@ let enough_by na t tac = forward false (Some (Some tac)) (ipat_of_name na) t
 (* Compute a name for a generalization *)
 
 let generalized_name env sigma c t ids cl = function
-  | Name id as na ->
+  | Name.Name id as na ->
       if Id.List.mem id ids then
 	user_err  (Id.print id ++ str " is already used.");
       na
-  | Anonymous ->
+  | Name.Anonymous ->
       match EConstr.kind sigma c with
       | Var id ->
 	 (* Keep the name even if not occurring: may be used by intros later *)
-	  Name id
+          Name.Name id
       | _ ->
-	  if noccurn sigma 1 cl then Anonymous else
+          if noccurn sigma 1 cl then Name.Anonymous else
 	    (* On ne s'etait pas casse la tete : on avait pris pour nom de
                variable la premiere lettre du type, meme si "c" avait ete une
                constante dont on aurait pu prendre directement le nom *)
-	    named_hd env sigma t Anonymous
+            named_hd env sigma t Name.Anonymous
 
 (* Abstract over [c] in [forall x1:A1(c)..xi:Ai(c).T(c)] producing
    [forall x, x1:A1(x1), .., xi:Ai(x). T(x)] with all [c] abtracted in [Ai]
@@ -2882,7 +2882,7 @@ let generalize_dep ?(with_let=false) c =
       | _ -> None
     else None
   in
-  let cl'',evd = generalize_goal gl 0 ((AllOccurrences,c,body),Anonymous)
+  let cl'',evd = generalize_goal gl 0 ((AllOccurrences,c,body),Name.Anonymous)
     (cl',project gl) in
   (** Check that the generalization is indeed well-typed *)
   let (evd, _) = Typing.type_of env evd cl'' in
@@ -2938,7 +2938,7 @@ let new_generalize_gen lconstr =
     (occs,c,None),na) lconstr)
 
 let generalize l =
-  new_generalize_gen_let (List.map (fun c -> ((AllOccurrences,c,None),Anonymous)) l)
+  new_generalize_gen_let (List.map (fun c -> ((AllOccurrences,c,None),Name.Anonymous)) l)
 
 (* Faudra-t-il une version avec plusieurs args de generalize_dep ?
 Cela peut-être troublant de faire "Generalize Dependent H n" dans
@@ -3124,8 +3124,8 @@ let check_unused_names env sigma names =
     warn_unused_intro_pattern env sigma names
 
 let intropattern_of_name gl avoid = function
-  | Anonymous -> IntroNaming IntroAnonymous
-  | Name id -> IntroNaming (IntroIdentifier (new_fresh_id avoid id gl))
+  | Name.Anonymous -> IntroNaming IntroAnonymous
+  | Name.Name id -> IntroNaming (IntroIdentifier (new_fresh_id avoid id gl))
 
 let rec consume_pattern avoid na isdep gl = function
   | [] -> ((Loc.tag @@ intropattern_of_name gl avoid na), [])
@@ -3206,12 +3206,12 @@ let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
           | [loc,IntroNaming (IntroIdentifier id) as pat] ->
               let id' = next_ident_away (add_prefix "IH" id) avoid in
 	      (pat, [Loc.tag @@ IntroNaming (IntroIdentifier id')])
-          | _ -> consume_pattern avoid (Name recvarname) deprec gl names in
+          | _ -> consume_pattern avoid Name.(Name recvarname) deprec gl names in
         let dest = get_recarg_dest dests in
         dest_intro_patterns with_evars avoid thin dest [recpat] (fun ids thin ->
         Proofview.Goal.enter begin fun gl ->
           let (hyprec,names) =
-            consume_pattern avoid (Name hyprecname) depind gl names
+            consume_pattern avoid Name.(Name hyprecname) depind gl names
           in
 	  dest_intro_patterns with_evars avoid thin MoveLast [hyprec] (fun ids' thin ->
 	    peel_tac ra' (update_dest dests ids') names thin)
@@ -3221,21 +3221,21 @@ let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
         Proofview.Goal.enter begin fun gl ->
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
         let pat,names =
-          consume_pattern avoid (Name hyprecname) dep gl names in
+          consume_pattern avoid Name.(Name hyprecname) dep gl names in
 	dest_intro_patterns with_evars avoid thin MoveLast [pat] (fun ids thin ->
         peel_tac ra' (update_dest dests ids) names thin)
         end
     | (RecArg,_,dep,recvarname) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
         let (pat,names) =
-          consume_pattern avoid (Name recvarname) dep gl names in
+          consume_pattern avoid Name.(Name recvarname) dep gl names in
         let dest = get_recarg_dest dests in
 	dest_intro_patterns with_evars avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
         end
     | (OtherArg,_,dep,_) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
-        let (pat,names) = consume_pattern avoid Anonymous dep gl names in
+        let (pat,names) = consume_pattern avoid Name.Anonymous dep gl names in
         let dest = get_recarg_dest dests in
 	safe_dest_intro_patterns with_evars avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
@@ -3313,10 +3313,10 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
             | Var id -> id
             | _ ->
             let type_of = Tacmach.New.pf_unsafe_type_of gl in
-            id_of_name_using_hdchar env sigma (type_of c) Anonymous in
+            id_of_name_using_hdchar env sigma (type_of c) Name.Anonymous in
             let x = fresh_id_in_env avoid id env in
 	    Tacticals.New.tclTHEN
-	      (letin_tac None (Name x) c None allHypsAndConcl)
+              (letin_tac None Name.(Name x) c None allHypsAndConcl)
 	      (atomize_one (i-1) (mkVar x::args) (mkVar x::args') (Id.Set.add x avoid))
   in
   atomize_one (List.length argl) [] [] Id.Set.empty
@@ -3645,15 +3645,15 @@ let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
       let homogeneous = Reductionops.is_conv env sigma ty typ in
       let sigma, (eq, refl) =
         mk_term_eq homogeneous (push_rel_context ctx env) sigma ty (mkRel 1) typ (mkVar id) in
-      sigma, mkProd (Anonymous, eq, lift 1 concl), [| refl |]
+      sigma, mkProd (Name.Anonymous, eq, lift 1 concl), [| refl |]
     else sigma, concl, [||]
   in
     (* Abstract by equalities *)
   let eqs = lift_togethern 1 eqs in (* lift together and past genarg *)
-  let abseqs = it_mkProd_or_LetIn (lift eqslen abshypeq) (List.map (fun x -> LocalAssum (Anonymous, x)) eqs) in
+  let abseqs = it_mkProd_or_LetIn (lift eqslen abshypeq) (List.map (fun x -> LocalAssum (Name.Anonymous, x)) eqs) in
   let decl = match body with
-    | None -> LocalAssum (Name id, c)
-    | Some body -> LocalDef (Name id, body, c)
+    | None -> LocalAssum (Name.Name id, c)
+    | Some body -> LocalDef (Name.Name id, body, c)
   in
     (* Abstract by the "generalized" hypothesis. *)
   let genarg = mkProd_or_LetIn decl abseqs in
@@ -3718,7 +3718,7 @@ let abstract_args gl generalize_vars dep id defined f args =
   let dep = dep || local_occur_var !sigma id concl in
   let avoid = ref Id.Set.empty in
   let get_id name =
-    let id = new_fresh_id !avoid (match name with Name n -> n | Anonymous -> Id.of_string "gen_x") gl in
+    let id = new_fresh_id !avoid (match name with Name.Name n -> n | Name.Anonymous -> Id.of_string "gen_x") gl in
       avoid := Id.Set.add id !avoid; id
   in
     (* Build application generalized w.r.t. the argument plus the necessary eqs.
@@ -3745,7 +3745,7 @@ let abstract_args gl generalize_vars dep id defined f args =
       	  Id.Set.add id nongenvars, Id.Set.remove id vars, env)
       | _ ->
 	  let name = get_id name in
-	  let decl = LocalAssum (Name name, ty) in
+          let decl = LocalAssum (Name.Name name, ty) in
 	  let ctx = decl :: ctx in
 	  let c' = mkApp (lift 1 c, [|mkRel 1|]) in
 	  let args = arg :: args in
@@ -4442,7 +4442,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
   let store = Proofview.Goal.extra gl in
   let check = check_enough_applied env sigma elim in
   let (sigma', c) = use_bindings env sigma elim false (c0,lbind) t0 in
-  let abs = AbstractPattern (from_prefix,check,Name id,(pending,c),cls,false) in
+  let abs = AbstractPattern (from_prefix,check,Name.Name id,(pending,c),cls,false) in
   let (id,sign,_,lastlhyp,ccl,res) = make_abstraction env sigma' ccl abs in
   match res with
   | None ->
@@ -4530,7 +4530,7 @@ let induction_gen clear_flag isrec with_evars elim
      declaring the induction argument as a new local variable *)
     let id =
     (* Type not the right one if partially applied but anyway for internal use*)
-      let x = id_of_name_using_hdchar env evd t Anonymous in
+      let x = id_of_name_using_hdchar env evd t Name.Anonymous in
       new_fresh_id Id.Set.empty x gl in
     let info_arg = (is_arg_pure_hyp, not enough_applied) in
     pose_induction_arg_then
@@ -4568,13 +4568,13 @@ let induction_gen_l isrec with_evars elim names lc =
                 let sigma = Tacmach.New.project gl in
                 Proofview.tclENV >>= fun env ->
                 let x =
-		  id_of_name_using_hdchar env sigma (type_of c) Anonymous in
+                  id_of_name_using_hdchar env sigma (type_of c) Name.Anonymous in
 
                 let id = new_fresh_id Id.Set.empty x gl in
 		let newl' = List.map (fun r -> replace_term sigma c (mkVar id) r) l' in
 		let _ = newlc:=id::!newlc in
 		Tacticals.New.tclTHEN
-		  (letin_tac None (Name id) c None allHypsAndConcl)
+                  (letin_tac None (Name.Name id) c None allHypsAndConcl)
 		  (atomize_list newl')
                 end in
   Tacticals.New.tclTHENLIST

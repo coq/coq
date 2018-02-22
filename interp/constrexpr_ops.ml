@@ -482,8 +482,8 @@ let split_at_annot bl na =
     let rec aux acc = function
       | CLocalAssum (bls, k, t) as x :: rest ->
         let test (_, na) = match na with
-          | Name id' -> Id.equal id id'
-          | Anonymous -> false
+          | Name.Name id' -> Id.equal id id'
+          | Name.Anonymous -> false
         in
         let l, r = List.split_when test bls in
         begin match r with
@@ -496,7 +496,7 @@ let split_at_annot bl na =
             (List.rev ans, CLocalAssum (r, k, t) :: rest)
         end
       | CLocalDef ((_,na),_,_) as x :: rest ->
-        if Name.equal (Name id) na then
+        if Name.equal Name.(Name id) na then
           CErrors.user_err ?loc
             (Id.print id ++ str" must be a proper parameter and not a local definition.")
         else
@@ -542,8 +542,8 @@ let coerce_to_id = function
                          (str "This expression should be a simple identifier.")
 
 let coerce_to_name = function
-  | { CAst.v = CRef (Ident (loc,id),None) } -> (loc,Name id)
-  | { CAst.loc; CAst.v = CHole (None,Misctypes.IntroAnonymous,None) } -> (loc,Anonymous)
+  | { CAst.v = CRef (Ident (loc,id),None) } -> (loc,Name.Name id)
+  | { CAst.loc; CAst.v = CHole (None,Misctypes.IntroAnonymous,None) } -> (loc,Name.Anonymous)
   | { CAst.loc; _ } -> CErrors.user_err ?loc ~hdr:"coerce_to_name"
                          (str "This expression should be a name.")
 
@@ -569,8 +569,8 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
      CPatAtom (Some r)
   | CHole (None,Misctypes.IntroAnonymous,None) ->
      CPatAtom None
-  | CLetIn ((loc,Name id),b,None,{ CAst.v = CRef (Ident (_,id'),None) }) when Id.equal id id' ->
-      CPatAlias (coerce_to_cases_pattern_expr b, (loc,Name id))
+  | CLetIn ((loc,Name.Name id),b,None,{ CAst.v = CRef (Ident (_,id'),None) }) when Id.equal id id' ->
+      CPatAlias (coerce_to_cases_pattern_expr b, (loc,Name.Name id))
   | CApp ((None,p),args) when List.for_all (fun (_,e) -> e=None) args ->
      (mkAppPattern (coerce_to_cases_pattern_expr p) (List.map (fun (a,_) -> coerce_to_cases_pattern_expr a) args)).CAst.v
   | CAppExpl ((None,r,i),args) ->

@@ -134,7 +134,7 @@ let test_plural_form_types loc kwd = function
   | _ -> ()
 
 let lname_of_lident : lident -> lname =
-  Loc.map (fun s -> Name s)
+  Loc.map (fun s -> Name.Name s)
 
 let name_of_ident_decl : ident_decl -> name_decl =
   on_fst lname_of_lident
@@ -629,12 +629,12 @@ GEXTEND Gram
 	  VernacCanonical (ByNotation ntn)
       | IDENT "Canonical"; IDENT "Structure"; qid = global; d = def_body ->
           let s = coerce_reference_to_id qid in
-          VernacDefinition ((NoDischarge,CanonicalStructure),((Loc.tag (Name s)),None),d)
+          VernacDefinition ((NoDischarge,CanonicalStructure),((Loc.tag (Name.Name s)),None),d)
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
           let s = coerce_reference_to_id qid in
-          VernacDefinition ((NoDischarge,Coercion),((Loc.tag (Name s)),None),d)
+          VernacDefinition ((NoDischarge,Coercion),((Loc.tag (Name.Name s)),None),d)
       | IDENT "Identity"; IDENT "Coercion"; f = identref; ":";
          s = class_rawexpr; ">->"; t = class_rawexpr ->
            VernacIdentityCoercion (f, s, t)
@@ -800,9 +800,9 @@ GEXTEND Gram
   ;
   instance_name:
     [ [ name = ident_decl; sup = OPT binders ->
-	  (let ((loc,id),l) = name in ((loc, Name id),l)),
+          (let ((loc,id),l) = name in ((loc, Name.Name id),l)),
           (Option.default [] sup)
-      | -> ((Loc.tag ~loc:!@loc Anonymous), None), []  ] ]
+      | -> ((Loc.tag ~loc:!@loc Name.Anonymous), None), []  ] ]
   ;
   hint_info:
     [ [ "|"; i = OPT natural; pat = OPT constr_pattern ->

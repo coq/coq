@@ -16,11 +16,11 @@ let msgnl m =
 
 let fresh_id avoid s = Namegen.next_ident_away_in_goal (Id.of_string s) (Id.Set.of_list avoid)
 
-let fresh_name avoid s = Name (fresh_id avoid s)
+let fresh_name avoid s = Name.Name (fresh_id avoid s)
 
 let get_name avoid ?(default="H") = function
-  | Anonymous -> fresh_name avoid default
-  | Name n -> Name n
+  | Name.Anonymous -> fresh_name avoid default
+  | Name.Name n -> Name.Name n
 
 let array_get_start a =
   Array.init
@@ -28,7 +28,7 @@ let array_get_start a =
     (fun i -> a.(i))
 
 let id_of_name = function
-    Name id -> id
+    Name.Name id -> id
   | _ -> raise Not_found
 
 let locate  ref =

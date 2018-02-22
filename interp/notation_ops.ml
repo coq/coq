@@ -96,10 +96,10 @@ let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
 (* Re-interpret a notation as a glob_constr, taking care of binders   *)
 
 let name_to_ident = function
-  | Anonymous -> CErrors.user_err Pp.(str "This expression should be a simple identifier.")
-  | Name id -> id
+  | Name.Anonymous -> CErrors.user_err Pp.(str "This expression should be a simple identifier.")
+  | Name.Name id -> id
 
-let to_id g e id = let e,na = g e (Name id) in e,name_to_ident na
+let to_id g e id = let e,na = g e (Name.Name id) in e,name_to_ident na
 
 let product_of_cases_patterns patl =
   List.fold_right (fun patl restl ->
@@ -122,25 +122,25 @@ let rec cases_pattern_fold_map ?loc g e = DAst.with_val (function
   )
 
 let subst_binder_type_vars l = function
-  | Evar_kinds.BinderType (Name id) ->
+  | Evar_kinds.BinderType (Name.Name id) ->
      let id =
        try match DAst.get (Id.List.assoc id l) with GVar id' -> id' | _ -> id
        with Not_found -> id in
-     Evar_kinds.BinderType (Name id)
+     Evar_kinds.BinderType (Name.Name id)
   | e -> e
 
 let rec subst_glob_vars l gc = DAst.map (function
   | GVar id as r -> (try DAst.get (Id.List.assoc id l) with Not_found -> r)
-  | GProd (Name id,bk,t,c) ->
+  | GProd (Name.Name id,bk,t,c) ->
       let id =
 	try match DAst.get (Id.List.assoc id l) with GVar id' -> id' | _ -> id
 	with Not_found -> id in
-      GProd (Name id,bk,subst_glob_vars l t,subst_glob_vars l c)
-  | GLambda (Name id,bk,t,c) ->
+      GProd (Name.Name id,bk,subst_glob_vars l t,subst_glob_vars l c)
+  | GLambda (Name.Name id,bk,t,c) ->
       let id =
 	try match DAst.get (Id.List.assoc id l) with GVar id' -> id' | _ -> id
 	with Not_found -> id in
-      GLambda (Name id,bk,subst_glob_vars l t,subst_glob_vars l c)
+      GLambda (Name.Name id,bk,subst_glob_vars l t,subst_glob_vars l c)
   | GHole (x,naming,arg) -> GHole (subst_binder_type_vars l x,naming,arg)
   | _ -> DAst.get (map_glob_constr (subst_glob_vars l) gc) (* assume: id is not binding *)
   ) gc
@@ -155,7 +155,7 @@ let protect g e na =
 let apply_cases_pattern ?loc ((ids,disjpat),id) c =
   let tm = DAst.make ?loc (GVar id) in
   let eqns = List.map (fun pat -> (loc,(ids,[pat],c))) disjpat in
-  DAst.make ?loc @@ GCases (LetPatternStyle, None, [tm,(Anonymous,None)], eqns)
+  DAst.make ?loc @@ GCases (LetPatternStyle, None, [tm,(Name.Anonymous,None)], eqns)
 
 let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
   let lt x = DAst.make ?loc x in lt @@ match nc with
@@ -234,7 +234,7 @@ type found_variables = {
   }
 
 let add_id r id = r := { !r with vars = id :: (!r).vars }
-let add_name r = function Anonymous -> () | Name id -> add_id r id
+let add_name r = function Name.Anonymous -> () | Name.Name id -> add_id r id
 
 let is_gvar id c = match DAst.get c with
 | GVar id' -> Id.equal id id'
@@ -328,8 +328,8 @@ let compare_recursive_parts recvars found f f' (iterator,subc) =
         check_pair_matching ?loc:c1.CAst.loc x y x' y' revert revert';
         true
       end
-  | GLambda (Name x,_,t_x,c), GLambda (Name y,_,t_y,term)
-  | GProd (Name x,_,t_x,c), GProd (Name y,_,t_y,term)
+  | GLambda (Name.Name x,_,t_x,c), GLambda (Name.Name y,_,t_y,term)
+  | GProd (Name.Name x,_,t_x,c), GProd (Name.Name y,_,t_y,term)
         when mem_recursive_pair (x,y) recvars || mem_recursive_pair (y,x) recvars ->
       (* We found a binding position where it differs *)
       check_is_hole x t_x;
@@ -776,13 +776,13 @@ let rec cases_pattern_eq p1 p2 = match DAst.get p1, DAst.get p2 with
 | _ -> false
 
 let rec pat_binder_of_term t = DAst.map (function
-  | GVar id -> PatVar (Name id)
+  | GVar id -> PatVar (Name.Name id)
   | GApp (t, l) ->
     begin match DAst.get t with
     | GRef (ConstructRef cstr,_) ->
      let nparams = Inductiveops.inductive_nparams (fst cstr) in
      let _,l = List.chop nparams l in
-     PatCstr (cstr, List.map pat_binder_of_term l, Anonymous)
+     PatCstr (cstr, List.map pat_binder_of_term l, Name.Anonymous)
     | _ -> raise No_match
     end
   | _ -> raise No_match
@@ -790,9 +790,9 @@ let rec pat_binder_of_term t = DAst.map (function
 
 let unify_name_upto alp na na' =
   match na, na' with
-  | Anonymous, na' -> alp, na'
-  | na, Anonymous -> alp, na
-  | Name id, Name id' ->
+  | Name.Anonymous, na' -> alp, na'
+  | na, Name.Anonymous -> alp, na
+  | Name.Name id, Name.Name id' ->
      if Id.equal id id' then alp, na'
      else (fst alp,(id,id')::snd alp), na'
 
@@ -844,8 +844,8 @@ let rec unify_binders_upto alp bl bl' =
 
 let unify_id alp id na' =
   match na' with
-  | Anonymous -> Name (rename_var (snd alp) id)
-  | Name id' ->
+  | Name.Anonymous -> Name.Name (rename_var (snd alp) id)
+  | Name.Name id' ->
      if Id.equal (rename_var (snd alp) id) id' then na' else raise No_match
 
 let unify_pat alp p p' =
@@ -908,7 +908,7 @@ let force_cases_pattern c =
   DAst.make ?loc:c.CAst.loc (DAst.get c)
 
 let bind_binding_as_term_env alp (terms,termlists,binders,binderlists as sigma) var c =
-  let pat = try force_cases_pattern (cases_pattern_of_glob_constr Anonymous c) with Not_found -> raise No_match in
+  let pat = try force_cases_pattern (cases_pattern_of_glob_constr Name.Anonymous c) with Not_found -> raise No_match in
   try
     (* If already bound to a binder, unify the term and the binder *)
     let patl' = Id.List.assoc var binders in
@@ -970,29 +970,29 @@ let match_opt f sigma t1 t2 = match (t1,t2) with
   | _ -> raise No_match
 
 let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
-  | (na1,Name id2) when is_onlybinding_strict_meta id2 metas ->
+  | (na1,Name.Name id2) when is_onlybinding_strict_meta id2 metas ->
       raise No_match
-  | (na1,Name id2) when is_onlybinding_meta id2 metas ->
+  | (na1,Name.Name id2) when is_onlybinding_meta id2 metas ->
       bind_binding_env alp sigma id2 [DAst.make (PatVar na1)]
-  | (Name id1,Name id2) when is_term_meta id2 metas ->
+  | (Name.Name id1,Name.Name id2) when is_term_meta id2 metas ->
       (* We let the non-binding occurrence define the rhs and hence reason up to *)
       (* alpha-conversion for the given occurrence of the name (see #4592)) *)
       bind_term_as_binding_env alp sigma id2 id1
-  | (Anonymous,Name id2) when is_term_meta id2 metas ->
+  | (Name.Anonymous,Name.Name id2) when is_term_meta id2 metas ->
       (* We let the non-binding occurrence define the rhs *)
       alp, sigma
-  | (Name id1,Name id2) -> ((id1,id2)::fst alp, snd alp),sigma
-  | (Anonymous,Anonymous) -> alp,sigma
+  | (Name.Name id1,Name.Name id2) -> ((id1,id2)::fst alp, snd alp),sigma
+  | (Name.Anonymous,Name.Anonymous) -> alp,sigma
   | _ -> raise No_match
 
 let rec match_cases_pattern_binders allow_catchall metas (alp,sigma as acc) pat1 pat2 =
   match DAst.get pat1, DAst.get pat2 with
-  | PatVar _, PatVar (Name id2) when is_onlybinding_pattern_like_meta true id2 metas ->
+  | PatVar _, PatVar (Name.Name id2) when is_onlybinding_pattern_like_meta true id2 metas ->
       bind_binding_env alp sigma id2 [pat1]
-  | _, PatVar (Name id2) when is_onlybinding_pattern_like_meta false id2 metas ->
+  | _, PatVar (Name.Name id2) when is_onlybinding_pattern_like_meta false id2 metas ->
       bind_binding_env alp sigma id2 [pat1]
   | PatVar na1, PatVar na2 -> match_names metas acc na1 na2
-  | _, PatVar Anonymous when allow_catchall -> acc
+  | _, PatVar Name.Anonymous when allow_catchall -> acc
   | PatCstr (c1,patl1,na1), PatCstr (c2,patl2,na2)
       when eq_constructor c1 c2 && Int.equal (List.length patl1) (List.length patl2) ->
       List.fold_left2 (match_cases_pattern_binders false metas)
@@ -1184,7 +1184,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
 	  in match_names metas (alp,sigma) na1 na2)) (alp,sigma) dll1 dll2 in
       let sigma = Array.fold_left2 (match_in u alp metas) sigma tl1 tl2 in
       let alp,sigma = Array.fold_right2 (fun id1 id2 alsig ->
-	match_names metas alsig (Name id1) (Name id2)) idl1 idl2 (alp,sigma) in
+        match_names metas alsig (Name.Name id1) (Name.Name id2)) idl1 idl2 (alp,sigma) in
       Array.fold_left2 (match_in u alp metas) sigma bl1 bl2
   | GCast(t1, c1), NCast(t2, c2) ->
     match_cast (match_in u alp metas) (match_in u alp metas sigma t1 t2) c1 c2
@@ -1199,20 +1199,20 @@ let rec match_ inner u alp metas sigma a1 a2 =
      otherwise how to ensure it corresponds to a well-typed eta-expansion;
      we make an exception for types which are metavariables: this is useful e.g.
      to print "{x:_ & P x}" knowing that notation "{x & P x}" is not defined. *)
-  | _b1, NLambda (Name id as na,(NHole _ | NVar _ as t2),b2) when inner ->
+  | _b1, NLambda (Name.Name id as na,(NHole _ | NVar _ as t2),b2) when inner ->
       let avoid =
         Id.Set.union (free_glob_vars a1) (* as in Namegen: *) (glob_visible_short_qualid a1) in
       let id' = Namegen.next_ident_away id avoid in
-      let t1 = DAst.make @@ GHole(Evar_kinds.BinderType (Name id'),Misctypes.IntroAnonymous,None) in
+      let t1 = DAst.make @@ GHole(Evar_kinds.BinderType (Name.Name id'),Misctypes.IntroAnonymous,None) in
       let sigma = match t2 with
       | NHole _ -> sigma
       | NVar id2 -> bind_term_env alp sigma id2 t1
       | _ -> assert false in
       let (alp,sigma) =
         if is_bindinglist_meta id metas then
-          bind_bindinglist_env alp sigma id [DAst.make @@ GLocalAssum (Name id',Explicit,t1)]
+          bind_bindinglist_env alp sigma id [DAst.make @@ GLocalAssum (Name.Name id',Explicit,t1)]
         else
-          match_names metas (alp,sigma) (Name id') na in
+          match_names metas (alp,sigma) (Name.Name id') na in
       match_in u alp metas sigma (mkGApp a1 (DAst.make @@ GVar id')) b2
 
   | GProj(p1, t1), NProj(p2, t2) when Projection.equal p1 p2 ->
@@ -1236,7 +1236,7 @@ and match_extended_binders ?loc isprod u alp metas na1 na2 bk t sigma b1 b2 =
   let store, get = set_temporary_memory () in
   match na1, DAst.get b1, na2 with
   (* Matching individual binders as part of a recursive pattern *)
-  | Name p, GCases (LetPatternStyle,None,[(e,_)],(_::_ as eqns)), Name id
+  | Name.Name p, GCases (LetPatternStyle,None,[(e,_)],(_::_ as eqns)), Name.Name id
        when is_gvar p e && is_bindinglist_meta id metas && List.length (store (Detyping.factorize_eqns eqns)) = 1 ->
     (match get () with
      | [(_,(ids,disj_of_patl,b1))] ->
@@ -1245,7 +1245,7 @@ and match_extended_binders ?loc isprod u alp metas na1 na2 bk t sigma b1 b2 =
      let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalPattern ((disjpat,ids),p,bk,t)] in
      match_in u alp metas sigma b1 b2
      | _ -> assert false)
-  | Name p, GCases (LetPatternStyle,None,[(e,_)],(_::_ as eqns)), Name id
+  | Name.Name p, GCases (LetPatternStyle,None,[(e,_)],(_::_ as eqns)), Name.Name id
        when is_gvar p e && is_onlybinding_pattern_like_meta false id metas && List.length (store (Detyping.factorize_eqns eqns)) = 1 ->
     (match get () with
      | [(_,(ids,disj_of_patl,b1))] ->
@@ -1254,7 +1254,7 @@ and match_extended_binders ?loc isprod u alp metas na1 na2 bk t sigma b1 b2 =
      let alp,sigma = bind_binding_env alp sigma id disjpat in
      match_in u alp metas sigma b1 b2
      | _ -> assert false)
-  | _, _, Name id when is_bindinglist_meta id metas && (not isprod || na1 != Anonymous)->
+  | _, _, Name.Name id when is_bindinglist_meta id metas && (not isprod || na1 != Name.Anonymous)->
       let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalAssum (na1,bk,t)] in
       match_in u alp metas sigma b1 b2
   | _, _, _ ->
@@ -1332,7 +1332,7 @@ let match_cases_pattern_list match_fun metas sigma rest x y iter termin revert =
 let rec match_cases_pattern metas (terms,termlists,(),() as sigma) a1 a2 =
  match DAst.get a1, a2 with
   | r1, NVar id2 when Id.List.mem_assoc id2 metas -> (bind_env_cases_pattern sigma id2 a1),(0,[])
-  | PatVar Anonymous, NHole _ -> sigma,(0,[])
+  | PatVar Name.Anonymous, NHole _ -> sigma,(0,[])
   | PatCstr ((ind,_ as r1),largs,_), NRef (ConstructRef r2) when eq_constructor r1 r2 ->
       let l = try add_patterns_for_params_remove_local_defs r1 largs with Not_found -> raise No_match in
       sigma,(0,l)

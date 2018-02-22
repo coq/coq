@@ -118,7 +118,7 @@ GEXTEND Gram
   GLOBAL: closed_binder;
   closed_binder: [
     [ ["of" | "&"]; c = operconstr LEVEL "99" ->
-      [CLocalAssum ([Loc.tag ~loc:!@loc Anonymous], Default Explicit, c)]
+      [CLocalAssum ([Loc.tag ~loc:!@loc Name.Anonymous], Default Explicit, c)]
   ] ];
 END
 (* }}} *)
@@ -553,7 +553,7 @@ GEXTEND Gram
           let s = coerce_reference_to_id qid in
     Vernacexpr.VernacDefinition
       ((Decl_kinds.NoDischarge,Decl_kinds.CanonicalStructure),
-          ((Loc.tag (Name s)),None), d)
+          ((Loc.tag (Name.Name s)),None), d)
   ]];
 END
 

@@ -359,9 +359,9 @@ struct
             
     let to_rel_decl = function
       | LocalAssum (id,t) ->
-          Rel.Declaration.LocalAssum (Name id, t)
+          Rel.Declaration.LocalAssum (Name.Name id, t)
       | LocalDef (id,v,t) ->
-          Rel.Declaration.LocalDef (Name id,v,t)
+          Rel.Declaration.LocalDef (Name.Name id,v,t)
   end
 
   (** Named-context is represented as a list of declarations.

@@ -120,8 +120,8 @@ let combine_args arg args =
 
 
 let ids_of_binder =  function
-  | LetIn Anonymous | Prod Anonymous | Lambda Anonymous -> Id.Set.empty
-  | LetIn (Name id)  | Prod (Name id) | Lambda (Name id) -> Id.Set.singleton id
+  | LetIn Name.Anonymous | Prod Name.Anonymous | Lambda Name.Anonymous -> Id.Set.empty
+  | LetIn (Name.Name id)  | Prod (Name.Name id) | Lambda (Name.Name id) -> Id.Set.singleton id
 
 let rec change_vars_in_binder mapping = function
     [] -> []
@@ -152,9 +152,9 @@ let apply_args ctxt body args =
   in
   let next_name_away (na:Name.t) (mapping: Id.t Id.Map.t) (avoid: Id.Set.t) =
     match na with
-       | Name id when Id.Set.mem id avoid ->
+       | Name.Name id when Id.Set.mem id avoid ->
 	   let new_id = Namegen.next_ident_away id avoid in
-	   Name new_id,Id.Map.add id new_id mapping,Id.Set.add new_id avoid
+           Name.Name new_id,Id.Map.add id new_id mapping,Id.Set.add new_id avoid
        | _ -> na,mapping,avoid
   in
   let next_bt_away bt (avoid:Id.Set.t) =
@@ -176,9 +176,9 @@ let apply_args ctxt body args =
       | [],_ -> (* no more fun *)
 	  let f,args' = glob_decompose_app body in
 	  (ctxt,mkGApp(f,args'@args))
-      | (Lambda Anonymous,t)::ctxt',arg::args' ->
+      | (Lambda Name.Anonymous,t)::ctxt',arg::args' ->
 	  do_apply avoid ctxt' body args'
-      | (Lambda (Name id),t)::ctxt',arg::args' ->
+      | (Lambda (Name.Name id),t)::ctxt',arg::args' ->
 	  let new_avoid,new_ctxt',new_body,new_id =
 	    if need_convert_id avoid id
 	    then
@@ -271,7 +271,7 @@ let coq_False_ref =
   (the list of expressions on which we will do the matching)
  *)
 let make_discr_match_el  =
-  List.map (fun e -> (e,(Anonymous,None)))
+  List.map (fun e -> (e,(Name.Anonymous,None)))
 
 (*
   [make_discr_match_brl i \[pat_1,...,pat_n\]]  constructs a discrimination pattern matching on the ith expression.
@@ -335,7 +335,7 @@ let build_constructors_of_type ind' argl =
 		let pat_as_term =
 		  mkGApp(mkGRef (ConstructRef(ind',i+1)),argl)
 		in
-		cases_pattern_of_glob_constr Anonymous pat_as_term
+                cases_pattern_of_glob_constr Name.Anonymous pat_as_term
 	     )
     ind.Declarations.mind_consnames
 
@@ -347,8 +347,8 @@ let build_constructors_of_type ind' argl =
 
 let raw_push_named (na,raw_value,raw_typ) env =
   match na with
-    | Anonymous -> env
-    | Name id ->
+    | Name.Anonymous -> env
+    | Name.Name id ->
         let typ,_ = Pretyping.understand env (Evd.from_env env) ~expected_type:Pretyping.IsType raw_typ in
         (match raw_value with
         | None ->
@@ -381,8 +381,8 @@ let add_pat_variables pat typ env : Environ.env =
            let open Context.Rel.Declaration in
            let sigma, _ = Pfedit.get_current_context () in
            match decl with
-	   | LocalAssum (Anonymous,_) | LocalDef (Anonymous,_,_) -> assert false
-	   | LocalAssum (Name id, t) ->
+           | LocalAssum (Name.Anonymous,_) | LocalDef (Name.Anonymous,_,_) -> assert false
+           | LocalAssum (Name.Name id, t) ->
              let new_t =  substl ctxt t in
              observe (str "for variable " ++ Ppconstr.pr_id id ++  fnl () ++
                       str "old type := " ++ Printer.pr_lconstr_env env sigma t ++ fnl () ++
@@ -390,7 +390,7 @@ let add_pat_variables pat typ env : Environ.env =
                      );
              let open Context.Named.Declaration in
              (Environ.push_named (LocalAssum (id,new_t)) env,mkVar id::ctxt)
-           | LocalDef (Name id, v, t) ->
+           | LocalDef (Name.Name id, v, t) ->
              let new_t =  substl ctxt t in
              let new_v = substl ctxt v in
              observe (str "for variable " ++ Ppconstr.pr_id id ++  fnl () ++
@@ -413,8 +413,8 @@ let add_pat_variables pat typ env : Environ.env =
 
 
 let rec pattern_to_term_and_type env typ  = DAst.with_val (function
-  | PatVar Anonymous -> assert false
-  | PatVar (Name id) ->
+  | PatVar Name.Anonymous -> assert false
+  | PatVar (Name.Name id) ->
 	mkGVar id
   | PatCstr(constr,patternl,_) ->
       let cst_narg =
@@ -528,8 +528,8 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 		  List.map
 		    (fun arg_res ->
 		       let new_hyps =
-			 [Prod (Name res),res_raw_type;
-			  Prod Anonymous,mkGApp(res_rt,(mkGVar id)::arg_res.value)]
+                         [Prod (Name.Name res),res_raw_type;
+                          Prod Name.Anonymous,mkGApp(res_rt,(mkGVar id)::arg_res.value)]
 		       in
 		       {context =  arg_res.context@new_hyps; value = res_rt }
 		    )
@@ -558,7 +558,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 		*)
 		let new_n,new_b,new_avoid =
 		  match n with
-		    | Name id when List.exists (is_free_in id) args ->
+                    | Name.Name id when List.exists (is_free_in id) args ->
 			(* need to alpha-convert the name *)
 			let new_id = Namegen.next_ident_away id (Id.Set.of_list avoid) in
 			let new_avoid = id:: avoid in
@@ -568,7 +568,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 			    (DAst.make @@ GVar id)
 			    b
 			in
-			(Name new_id,new_b,new_avoid)
+                        (Name.Name new_id,new_b,new_avoid)
 		    | _ -> n,b,avoid
 		in
 		build_entry_lc
@@ -604,8 +604,8 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	let t_res = build_entry_lc env funnames avoid t  in
 	let new_n =
 	  match n with
-	    | Name _ -> n
-	    | Anonymous -> Name (Indfun_common.fresh_id [] "_x")
+            | Name.Name _ -> n
+            | Name.Anonymous -> Name.Name (Indfun_common.fresh_id [] "_x")
 	in
 	let new_env = raw_push_named (new_n,None,t) env in
 	let b_res = build_entry_lc new_env funnames avoid b in
@@ -635,8 +635,8 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	let v_type = EConstr.Unsafe.to_constr v_type in
 	let new_env =
 	  match n with
-	      Anonymous -> env
-	    | Name id -> Environ.push_named (NamedDecl.LocalDef (id,v_as_constr,v_type)) env
+              Name.Anonymous -> env
+            | Name.Name id -> Environ.push_named (NamedDecl.LocalDef (id,v_as_constr,v_type)) env
 	in
 	let b_res = build_entry_lc new_env funnames avoid b in
 	combine_results (combine_letin n) v_res b_res
@@ -665,7 +665,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	    [lhs;rhs]
 	in
 	let match_expr =
-	  mkGCases(None,[(b,(Anonymous,None))],brl)
+          mkGCases(None,[(b,(Name.Anonymous,None))],brl)
 	in
 	(* 		Pp.msgnl (str "new case := " ++ Printer.pr_glob_constr match_expr); *)
 	build_entry_lc env funnames avoid match_expr
@@ -674,8 +674,8 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	  let nal_as_glob_constr =
 	    List.map
 	      (function
-		   Name id -> mkGVar id
-		 | Anonymous -> mkGHole ()
+                   Name.Name id -> mkGVar id
+                 | Name.Anonymous -> mkGHole ()
 	      )
 	      nal
 	  in
@@ -691,7 +691,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	  let case_pats = build_constructors_of_type (fst ind) nal_as_glob_constr in
 	  assert (Int.equal (Array.length case_pats) 1);
 	  let br = Loc.tag ([],[case_pats.(0)],e) in
-	  let match_expr = mkGCases(None,[b,(Anonymous,None)],[br]) in
+          let match_expr = mkGCases(None,[b,(Name.Anonymous,None)],[br]) in
 	  build_entry_lc env funnames avoid match_expr
 
 	end
@@ -779,7 +779,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 			  Detyping.detype Detyping.Now false Id.Set.empty
 			    env_with_pat_ids (Evd.from_env env) typ_of_id
 			in
-			mkGProd (Name id,raw_typ_of_id,acc))
+                        mkGProd (Name.Name id,raw_typ_of_id,acc))
 		     pat_ids
 		     (glob_make_neq pat'_as_term (pattern_to_term renamed_pat))
 	    )
@@ -833,7 +833,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 		 List.fold_right
 		   (fun id  acc ->
 		      if Id.Set.mem id this_pat_ids
-		      then (Prod (Name id),
+                      then (Prod (Name.Name id),
 		      let typ_of_id = Typing.unsafe_type_of new_env (Evd.from_env env) (EConstr.mkVar id) in
 		      let raw_typ_of_id =
 			Detyping.detype Detyping.Now false Id.Set.empty new_env (Evd.from_env env) typ_of_id
@@ -843,7 +843,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 		      else acc
 		   )
 		   idl
-		   [(Prod Anonymous,glob_make_eq ~typ pat_as_term e)]
+                   [(Prod Name.Anonymous,glob_make_eq ~typ pat_as_term e)]
 	      )
 	      patl
 	      matched_expr.value
@@ -859,7 +859,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 	   then
 	     let i = List.length patterns_to_prevent in
 	     let pats_as_constr = List.map2 (pattern_to_term_and_type new_env) types patl in
-	     [(Prod Anonymous,make_discr pats_as_constr i  )]
+             [(Prod Name.Anonymous,make_discr pats_as_constr i  )]
 	   else
 	     []
 	  )
@@ -961,7 +961,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			assert false
 		end
 	    | GApp(eq_as_ref,[ty; id ;rt])
-		when is_gvar id && is_gr eq_as_ref (Lazy.force Coqlib.coq_eq_ref)  && n == Anonymous
+                when is_gvar id && is_gr eq_as_ref (Lazy.force Coqlib.coq_eq_ref)  && n == Name.Anonymous
 		  ->
                 let loc1 = rt.CAst.loc in
                 let loc2 = eq_as_ref.CAst.loc in
@@ -1029,8 +1029,8 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 				 then
 				   let na = RelDecl.get_name (Environ.lookup_rel (destRel var_as_constr) env) in
 				   match na with
-				     | Anonymous -> acc
-				     | Name id' ->
+                                     | Name.Anonymous -> acc
+                                     | Name.Name id' ->
 					 (id',Detyping.detype Detyping.Now false Id.Set.empty
 					    env
                                             (Evd.from_env env)
@@ -1082,7 +1082,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		     else new_b, Id.Set.add id id_to_exclude
 		  *)
 	    | GApp(eq_as_ref,[ty;rt1;rt2])
-		when is_gr eq_as_ref (Lazy.force Coqlib.coq_eq_ref) && n == Anonymous
+                when is_gr eq_as_ref (Lazy.force Coqlib.coq_eq_ref) && n == Name.Anonymous
 		  ->
 	      begin
 		try 
@@ -1092,7 +1092,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    let new_rt =
 		      List.fold_left 
 			(fun acc (lhs,rhs) -> 
-			  mkGProd(Anonymous,
+                          mkGProd(Name.Anonymous,
 				  mkGApp(mkGRef(Lazy.force Coqlib.coq_eq_ref),[mkGHole ();lhs;rhs]),acc)
 			)
 			b
@@ -1111,7 +1111,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    (depth + 1) b
 		in
 		match n with
-		  | Name id when Id.Set.mem id id_to_exclude && depth >= nb_args ->
+                  | Name.Name id when Id.Set.mem id id_to_exclude && depth >= nb_args ->
 		      new_b,Id.Set.remove id
 			(Id.Set.filter not_free_in_t id_to_exclude)
 		  | _ -> mkGProd(n,t,new_b),Id.Set.filter not_free_in_t id_to_exclude
@@ -1127,7 +1127,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    (depth + 1) b
 		in
 		match n with
-		  | Name id when Id.Set.mem id id_to_exclude && depth >= nb_args ->
+                  | Name.Name id when Id.Set.mem id id_to_exclude && depth >= nb_args ->
 		      new_b,Id.Set.remove id
 			(Id.Set.filter not_free_in_t id_to_exclude)
 		  | _ -> mkGProd(n,t,new_b),Id.Set.filter not_free_in_t id_to_exclude
@@ -1139,7 +1139,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
           observe (str "computing new type for lambda : " ++ pr_glob_constr_env env rt);
 	  let t',ctx = Pretyping.understand env (Evd.from_env env) t in
 	  match n with
-	    | Name id ->
+            | Name.Name id ->
 		let new_env = Environ.push_rel (LocalAssum (n,t')) env in
 		let new_b,id_to_exclude =
 		  rebuild_cons new_env
@@ -1172,7 +1172,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 	      args (t::crossed_types)
 	      (depth + 1 ) b in
 	  match n with
-	    | Name id when Id.Set.mem id id_to_exclude && depth >= nb_args  ->
+            | Name.Name id when Id.Set.mem id id_to_exclude && depth >= nb_args  ->
 		new_b,Id.Set.remove id (Id.Set.filter not_free_in_t id_to_exclude)
 	    | _ -> DAst.make @@ GLetIn(n,t,None,new_b), (* HOPING IT WOULD WORK *)
 		Id.Set.filter not_free_in_t id_to_exclude
@@ -1254,7 +1254,7 @@ and compute_cst_params_from_app acc (params,rtl) =
   let is_gid id c = match DAst.get c with GVar id' -> Id.equal id id' | _ -> false in
   match params,rtl with
     | _::_,[] -> assert false (* the rel has at least nargs + 1 arguments ! *)
-    | ((Name id,_,None) as param)::params', c::rtl' when is_gid id c ->
+    | ((Name.Name id,_,None) as param)::params', c::rtl' when is_gid id c ->
 	compute_cst_params_from_app (param::acc) (params',rtl')
     | _  -> List.rev acc
 
@@ -1295,7 +1295,7 @@ let rec rebuild_return_type rt =
         CAst.make ?loc @@ Constrexpr.CProdN(n,rebuild_return_type t')
     | Constrexpr.CLetIn(na,v,t,t') ->
 	CAst.make ?loc @@ Constrexpr.CLetIn(na,v,t,rebuild_return_type t')
-    | _ -> CAst.make ?loc @@ Constrexpr.CProdN([Constrexpr.CLocalAssum ([Loc.tag Anonymous],
+    | _ -> CAst.make ?loc @@ Constrexpr.CProdN([Constrexpr.CLocalAssum ([Loc.tag Name.Anonymous],
                                        Constrexpr.Default Decl_kinds.Explicit, rt)],
 			    CAst.make @@ Constrexpr.CSort(GType []))
 
@@ -1439,8 +1439,8 @@ let do_build_inductive
     List.fold_left
       (fun  acc (na,_,_) ->
        match na with
-	 Anonymous -> acc
-       | Name id -> id::acc
+         Name.Anonymous -> acc
+       | Name.Name id -> id::acc
       )
       []
       rels_params

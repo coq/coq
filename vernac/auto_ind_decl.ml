@@ -142,8 +142,8 @@ let build_beq_scheme mode kn =
   let create_input c =
     let myArrow u v = mkArrow u (lift 1 v)
     and eqName = function
-        | Name s -> Id.of_string ("eq_"^(Id.to_string s))
-        | Anonymous -> Id.of_string "eq_A"
+        | Name.Name s -> Id.of_string ("eq_"^(Id.to_string s))
+        | Name.Anonymous -> Id.of_string "eq_A"
     in
     let ext_rel_list = Context.Rel.to_extended_list mkRel 0 lnamesparrec in
       let lift_cnt = ref 0 in
@@ -163,7 +163,7 @@ let build_beq_scheme mode kn =
         List.fold_left (fun a decl ->(* mkLambda(n,t,a)) eq_input rel_list *)
           (* Same here , hoping the auto renaming will do something good ;)  *)
           mkNamedLambda
-                (match RelDecl.get_name decl with Name s -> s | Anonymous ->  Id.of_string "A")
+                (match RelDecl.get_name decl with Name.Name s -> s | Name.Anonymous ->  Id.of_string "A")
                 (RelDecl.get_type decl)  a) eq_input lnamesparrec
  in
  let make_one_eq cur =
@@ -238,8 +238,8 @@ let build_beq_scheme mode kn =
   in
   (* construct the predicate for the Case part*)
   let do_predicate rel_list n =
-     List.fold_left (fun a b -> mkLambda(Anonymous,b,a))
-      (mkLambda (Anonymous,
+     List.fold_left (fun a b -> mkLambda(Name.Anonymous,b,a))
+      (mkLambda (Name.Anonymous,
                  mkFullInd ind (n+3+(List.length rettyp_l)+nb_ind-1),
                  (Lazy.force bb)))
       (List.rev rettyp_l) in
@@ -300,13 +300,13 @@ let build_beq_scheme mode kn =
  	    mkCase (ci, do_predicate rel_list 0,mkVar (Id.of_string "X"),ar))),
         !eff
     in (* build_beq_scheme *)
-    let names = Array.make nb_ind Anonymous and
+    let names = Array.make nb_ind Name.Anonymous and
         types = Array.make nb_ind mkSet and
         cores = Array.make nb_ind mkSet in
     let eff = ref Safe_typing.empty_private_constants in
     let u = Univ.Instance.empty in
     for i=0 to (nb_ind-1) do
-        names.(i) <- Name (Id.of_string (rec_name i));
+        names.(i) <- Name.Name (Id.of_string (rec_name i));
 	types.(i) <- mkArrow (mkFullInd ((kn,i),u) 0)
                      (mkArrow (mkFullInd ((kn,i),u) 1) (Lazy.force bb));
         let c, eff' = make_one_eq i in
@@ -516,8 +516,8 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
 *)
 let list_id l = List.fold_left ( fun a decl -> let s' =
       match RelDecl.get_name decl with
-        Name s -> Id.to_string s
-      | Anonymous -> "A" in
+        Name.Name s -> Id.to_string s
+      | Name.Anonymous -> "A" in
           (Id.of_string s',Id.of_string ("eq_"^s'),
               Id.of_string (s'^"_bl"),
               Id.of_string (s'^"_lb"))
@@ -560,13 +560,13 @@ let compute_bl_goal ind lnamesparrec nparrec =
         mkNamedProd sbl b a
       ) c (List.rev list_id) (List.rev bl_typ) in
       let eqs_typ = List.map (fun (s,_,_,_) ->
-          mkProd(Anonymous,mkVar s,mkProd(Anonymous,mkVar s,(Lazy.force bb)))
+          mkProd(Name.Anonymous,mkVar s,mkProd(Name.Anonymous,mkVar s,(Lazy.force bb)))
           ) list_id in
       let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
         mkNamedProd seq b a
       ) bl_input (List.rev list_id) (List.rev eqs_typ) in
       List.fold_left (fun a decl -> mkNamedProd
-                (match RelDecl.get_name decl with Name s -> s | Anonymous -> next_ident_away (Id.of_string "A") avoid)
+                (match RelDecl.get_name decl with Name.Name s -> s | Name.Anonymous -> next_ident_away (Id.of_string "A") avoid)
                 (RelDecl.get_type decl) a) eq_input lnamesparrec
     in
       let n = next_ident_away (Id.of_string "x") avoid and
@@ -704,13 +704,13 @@ let compute_lb_goal ind lnamesparrec nparrec =
         mkNamedProd slb b a
       ) c (List.rev list_id) (List.rev lb_typ) in
       let eqs_typ = List.map (fun (s,_,_,_) ->
-          mkProd(Anonymous,mkVar s,mkProd(Anonymous,mkVar s,bb))
+          mkProd(Name.Anonymous,mkVar s,mkProd(Name.Anonymous,mkVar s,bb))
           ) list_id in
       let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
         mkNamedProd seq b a
       ) lb_input (List.rev list_id) (List.rev eqs_typ) in
       List.fold_left (fun a decl -> mkNamedProd
-                (match (RelDecl.get_name decl) with Name s -> s | Anonymous ->  Id.of_string "A")
+                (match (RelDecl.get_name decl) with Name.Name s -> s | Name.Anonymous ->  Id.of_string "A")
                 (RelDecl.get_type decl)  a) eq_input lnamesparrec
     in
       let n = next_ident_away (Id.of_string "x") avoid and
@@ -846,13 +846,13 @@ let compute_dec_goal ind lnamesparrec nparrec =
       ) lb_input (List.rev list_id) (List.rev bl_typ) in
 
       let eqs_typ = List.map (fun (s,_,_,_) ->
-          mkProd(Anonymous,mkVar s,mkProd(Anonymous,mkVar s,bb))
+          mkProd(Name.Anonymous,mkVar s,mkProd(Name.Anonymous,mkVar s,bb))
           ) list_id in
       let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
         mkNamedProd seq b a
       ) bl_input (List.rev list_id) (List.rev eqs_typ) in
       List.fold_left (fun a decl -> mkNamedProd
-                (match RelDecl.get_name decl with Name s -> s | Anonymous ->  Id.of_string "A")
+                (match RelDecl.get_name decl with Name.Name s -> s | Name.Anonymous ->  Id.of_string "A")
                 (RelDecl.get_type decl) a) eq_input lnamesparrec
     in
       let n = next_ident_away (Id.of_string "x") avoid and
@@ -910,7 +910,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
         intros_using fresh_first_intros;
         intros_using [freshn;freshm];
 	(*we do this so we don't have to prove the same goal twice *)
-        assert_by (Name freshH) (EConstr.of_constr (
+        assert_by Name.(Name freshH) (EConstr.of_constr (
           mkApp(sumbool(),[|eqtrue eqbnm; eqfalse eqbnm|])
 	))
 	  (Tacticals.New.tclTHEN (destruct_on (EConstr.of_constr eqbnm)) Auto.default_auto);
@@ -934,7 +934,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
               unfold_constr (Lazy.force Coqlib.coq_not_ref);
               intro;
               Equality.subst_all ();
-              assert_by (Name freshH3)
+              assert_by Name.(Name freshH3)
 		(EConstr.of_constr (mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|])))
 		(Tacticals.New.tclTHENLIST [
 		  apply (EConstr.of_constr (mkApp(lbI,Array.map (fun x->mkVar x) xargs)));

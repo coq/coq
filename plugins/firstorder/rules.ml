@@ -166,9 +166,9 @@ let ll_ind_tac (ind,u as indu) largs backtrack id continue seq =
 let ll_arrow_tac a b c backtrack id continue seq=
   let open EConstr in
   let open Vars in
-  let cc=mkProd(Anonymous,a,(lift 1 b)) in
-  let d idc = mkLambda (Anonymous,b,
-		  mkApp (idc, [|mkLambda (Anonymous,(lift 1 a),(mkRel 2))|])) in
+  let cc=mkProd(Name.Anonymous,a,(lift 1 b)) in
+  let d idc = mkLambda (Name.Anonymous,b,
+                  mkApp (idc, [|mkLambda (Name.Anonymous,(lift 1 a),(mkRel 2))|])) in
     tclORELSE
       (tclTHENS (cut c)
 	 [tclTHENLIST

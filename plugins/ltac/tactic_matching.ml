@@ -50,8 +50,8 @@ let id_map_try_add id x m =
 (** Adds a binding to a {!Id.Map.t} if the name is [Name id] *)
 let id_map_try_add_name id x m =
   match id with
-  | Name id -> Id.Map.add id x m
-  | Anonymous -> m
+  | Name.Name id -> Id.Map.add id x m
+  | Name.Anonymous -> m
 
 (** Takes the union of two {!Id.Map.t}. If there is conflict,
     the binding of the right-hand argument shadows that of the left-hand

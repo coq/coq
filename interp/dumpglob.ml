@@ -254,8 +254,8 @@ let dump_definition (loc, id) sec s =
 
 let dump_constraint (((loc, n),_), _, _) sec ty =
   match n with
-    | Names.Name id -> dump_definition (loc, id) sec ty
-    | Names.Anonymous -> ()
+    | Names.Name.Name id -> dump_definition (loc, id) sec ty
+    | Names.Name.Anonymous -> ()
 
 let dump_moddef ?loc mp ty =
   let (dp, l) = Lib.split_modpath mp in

@@ -198,7 +198,7 @@ let build_sym_scheme env ind =
   let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
   let applied_ind = build_dependent_inductive indu specif in
   let realsign_ind =
-    name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
+    name_context env ((LocalAssum (Name.Name varH,applied_ind))::realsign) in
   let ci = make_case_info (Global.env()) ind RegularStyle in
   let c = 
   (my_it_mkLambda_or_LetIn paramsctxt
@@ -257,7 +257,7 @@ let build_sym_involutive_scheme env ind =
          (Context.Rel.to_extended_vect mkRel (nrealargs+1) mib.mind_params_ctxt)
          (rel_vect (nrealargs+1) nrealargs)) in
   let realsign_ind =
-    name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
+    name_context env ((LocalAssum (Name.Name varH,applied_ind))::realsign) in
   let ci = make_case_info (Global.env()) ind RegularStyle in
   let c = 
     (my_it_mkLambda_or_LetIn paramsctxt
@@ -377,9 +377,9 @@ let build_l2r_rew_scheme dep env ind kind =
         rel_vect 0 nrealargs]) in
   let realsign_P = lift_rel_context nrealargs realsign in
   let realsign_ind_P =
-    name_context env ((LocalAssum (Name varH,applied_ind_P))::realsign_P) in
+    name_context env ((LocalAssum (Name.Name varH,applied_ind_P))::realsign_P) in
   let realsign_ind_G =
-    name_context env ((LocalAssum (Name varH,applied_ind_G))::
+    name_context env ((LocalAssum (Name.Name varH,applied_ind_G))::
                       lift_rel_context (nrealargs+3) realsign) in
   let applied_sym_C n =
      mkApp(sym,
@@ -428,8 +428,8 @@ let build_l2r_rew_scheme dep env ind kind =
   (mkNamedLambda varH (lift 2 applied_ind)
   (if dep then (* we need a coercion *)
      mkCase (cieq,
-       mkLambda (Name varH,lift 3 applied_ind,
-         mkLambda (Anonymous,
+       mkLambda (Name.Name varH,lift 3 applied_ind,
+         mkLambda (Name.Anonymous,
                    mkApp (eq,[|lift 4 applied_ind;applied_sym_sym;mkRel 1|]),
                    applied_PR)),
        mkApp (sym_involutive,
@@ -490,9 +490,9 @@ let build_l2r_forward_rew_scheme dep env ind kind =
         rel_vect (2*nrealargs+1) nrealargs]) in
   let realsign_P n = lift_rel_context (nrealargs*n+n) realsign in
   let realsign_ind =
-    name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
+    name_context env ((LocalAssum (Name.Name varH,applied_ind))::realsign) in
   let realsign_ind_P n aP =
-    name_context env ((LocalAssum (Name varH,aP))::realsign_P n) in
+    name_context env ((LocalAssum (Name.Name varH,aP))::realsign_P n) in
   let s, ctx' = Universes.fresh_sort_in_family (Global.env ()) kind in
   let ctx = Univ.ContextSet.union ctx ctx' in
   let s = mkSort s in
@@ -570,7 +570,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
   let varP = fresh env (Id.of_string "P") in
   let applied_ind = build_dependent_inductive indu specif in
   let realsign_ind =
-    name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
+    name_context env ((LocalAssum (Name.Name varH,applied_ind))::realsign) in
   let s, ctx' = Universes.fresh_sort_in_family (Global.env ()) kind in
   let ctx = Univ.ContextSet.union ctx ctx' in
   let s = mkSort s in
@@ -595,7 +595,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
          (mkArrow applied_PG (lift (2*nrealargs+5) applied_PC)),
        mkRel 3 (* varH *),
        [|mkLambda
-          (Name varHC,
+          (Name.Name varHC,
 	   lift (nrealargs+3) applied_PC,
 	   mkRel 1)|]),
     [|mkVar varHC|]))))))
@@ -792,7 +792,7 @@ let build_congr env (eq,refl,ctx) ind =
        my_it_mkLambda_or_LetIn_name
 	 (lift_rel_context (mip.mind_nrealargs+3) realsign)
          (mkLambda
-           (Anonymous,
+           (Name.Anonymous,
             applist
              (mkIndU indu,
 	        Context.Rel.to_extended_list mkRel (2*mip.mind_nrealdecls+3)

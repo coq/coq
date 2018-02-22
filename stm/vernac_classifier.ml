@@ -50,8 +50,8 @@ let declare_vernac_classifier
 
 let idents_of_name : Names.Name.t -> Names.Id.t list =
   function
-  | Names.Anonymous -> []
-  | Names.Name n -> [n]
+  | Names.Name.Anonymous -> []
+  | Names.Name.Name n -> [n]
 
 let classify_vernac e =
   let static_classifier ~poly e = match e with
@@ -128,7 +128,7 @@ let classify_vernac e =
         | Constructors l -> List.map (fun (_,((_,id),_)) -> id) l
         | RecordDecl (oid,l) -> (match oid with Some (_,x) -> [x] | _ -> []) @
            CList.map_filter (function
-            | ((_,AssumExpr((_,Names.Name n),_)),_),_ -> Some n
+            | ((_,AssumExpr((_,Names.Name.Name n),_)),_),_ -> Some n
             | _ -> None) l) l in
         VtSideff (List.flatten ids), VtLater
     | VernacScheme l ->

@@ -70,7 +70,7 @@ let clenv_push_prod cl =
     | Prod (na,t,u) ->
 	let mv = new_meta () in
 	let dep = not (noccurn (cl_sigma cl) 1 u) in
-	let na' = if dep then na else Anonymous in
+        let na' = if dep then na else Name.Anonymous in
 	let e' = meta_declare mv (EConstr.Unsafe.to_constr t) ~name:na' cl.evd in
 	let concl = if dep then subst1 (mkMeta mv) u else u in
 	let def = applist (cl.templval.rebus,[mkMeta mv]) in
@@ -104,7 +104,7 @@ let clenv_environments evd bound t =
       | (n, Prod (na,t1,t2)) ->
 	  let mv = new_meta () in
 	  let dep = not (noccurn evd 1 t2) in
-	  let na' = if dep then na else Anonymous in
+          let na' = if dep then na else Name.Anonymous in
 	  let t1 = EConstr.Unsafe.to_constr t1 in
 	  let e' = meta_declare mv t1 ~name:na' e in
 	  clrec (e', (mkMeta mv)::metas) (Option.map ((+) (-1)) n)
@@ -151,7 +151,7 @@ let mentions clenv mv0 =
 let error_incompatible_inst clenv mv  =
   let na = meta_name clenv.evd mv in
   match na with
-      Name id ->
+      Name.Name id ->
         user_err ~hdr:"clenv_assign"
           (str "An incompatible instantiation has already been found for " ++
            Id.print id)
@@ -279,7 +279,7 @@ let adjust_meta_source evd mv = function
   | loc,Evar_kinds.VarInstance id ->
     let rec match_name c l =
       match EConstr.kind evd c, l with
-      | Lambda (Name id,_,c), a::l when EConstr.eq_constr evd a (mkMeta mv) -> Some id
+      | Lambda (Name.Name id,_,c), a::l when EConstr.eq_constr evd a (mkMeta mv) -> Some id
       | Lambda (_,_,c), a::l -> match_name c l
       | _ -> None in
     (* This is very ad hoc code so that an evar inherits the name of the binder
@@ -431,7 +431,7 @@ let explain_no_such_bound_variable evd id =
     | Cltyp (na, _) -> na
     | Clval (na, _, _) -> na
     in
-    if na != Anonymous then Name.get_id na :: l else l
+    if na != Name.Anonymous then Name.get_id na :: l else l
   in
   let mvl = List.fold_left fold [] (Evd.meta_list evd) in
   user_err ~hdr:"Evd.meta_with_name"
@@ -443,7 +443,7 @@ let explain_no_such_bound_variable evd id =
          pr_enum Id.print mvl ++ str").")))
 
 let meta_with_name evd id =
-  let na = Name id in
+  let na = Name.Name id in
   let fold (l1, l2 as l) (n, clb) =
     let (na',def) = match clb with
     | Cltyp (na, _) -> (na, false)
@@ -633,8 +633,8 @@ let make_evar_clause env sigma ?len t =
 
 let explain_no_such_bound_variable holes id =
   let fold h accu = match h.hole_name with
-  | Anonymous -> accu
-  | Name id -> id :: accu
+  | Name.Anonymous -> accu
+  | Name.Name id -> id :: accu
   in
   let mvl = List.fold_right fold holes [] in
   let expl = match mvl with
@@ -646,8 +646,8 @@ let explain_no_such_bound_variable holes id =
 
 let evar_with_name holes id =
   let map h = match h.hole_name with
-  | Anonymous -> None
-  | Name id' -> if Id.equal id id' then Some h else None
+  | Name.Anonymous -> None
+  | Name.Name id' -> if Id.equal id id' then Some h else None
   in
   let hole = List.map_filter map holes in
   match hole with

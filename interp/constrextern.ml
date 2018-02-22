@@ -256,8 +256,8 @@ let insert_pat_delimiters ?loc p = function
   | Some sc -> CAst.make ?loc @@ CPatDelimiters (sc,p)
 
 let insert_pat_alias ?loc p = function
-  | Anonymous -> p
-  | Name _ as na -> CAst.make ?loc @@ CPatAlias (p,(loc,na))
+  | Name.Anonymous -> p
+  | Name.Name _ as na -> CAst.make ?loc @@ CPatAlias (p,(loc,na))
 
 (**********************************************************************)
 (* conversion of references                                           *)
@@ -287,7 +287,7 @@ let add_patt_for_params ind l =
 
 let add_cpatt_for_params ind l =
   if !Flags.in_debugger then l else
-    Util.List.addn  (Inductiveops.inductive_nparamdecls ind) (DAst.make @@ PatVar Anonymous) l
+    Util.List.addn  (Inductiveops.inductive_nparamdecls ind) (DAst.make @@ PatVar Name.Anonymous) l
 
 let drop_implicits_in_patt cst nb_expl args =
   let impl_st = (implicits_of_global cst) in
@@ -387,8 +387,8 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
         (uninterp_cases_pattern_notations scopes pat)
     with No_match ->
       lift (fun ?loc -> function
-	| PatVar (Name id) -> CPatAtom (Some (Ident (loc,id)))
-	| PatVar (Anonymous) -> CPatAtom None
+        | PatVar (Name.Name id) -> CPatAtom (Some (Ident (loc,id)))
+        | PatVar (Name.Anonymous) -> CPatAtom None
 	| PatCstr(cstrsp,args,na) ->
 	  let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
 	  let p =
@@ -481,8 +481,8 @@ and extern_notation_pattern (tmp_scope,scopes as allscopes) vars t = function
 	  let p = apply_notation_to_pattern ?loc (ConstructRef cstr)
 	    (match_notation_constr_cases_pattern t pat) allscopes vars keyrule in
 	  insert_pat_alias ?loc p na
-	| PatVar Anonymous -> CAst.make ?loc @@ CPatAtom None
-	| PatVar (Name id) -> CAst.make ?loc @@ CPatAtom (Some (Ident (loc,id)))
+        | PatVar Name.Anonymous -> CAst.make ?loc @@ CPatAtom None
+        | PatVar (Name.Name id) -> CAst.make ?loc @@ CPatAtom (Some (Ident (loc,id)))
     with
 	No_match -> extern_notation_pattern allscopes vars t rules
 
@@ -531,8 +531,8 @@ let extern_cases_pattern vars p =
 
 let occur_name na aty =
   match na with
-    | Name id -> occur_var_constr_expr id aty
-    | Anonymous -> false
+    | Name.Name id -> occur_var_constr_expr id aty
+    | Name.Anonymous -> false
 
 let is_gvar id c = match DAst.get c with
 | GVar id' -> Id.equal id id'
@@ -835,17 +835,17 @@ let rec extern inctx scopes vars r =
     let rtntypopt' = Option.map (extern_typ scopes vars') rtntypopt in
     let tml = List.map (fun (tm,(na,x)) ->
                  let na' = match na, DAst.get tm with
-                   | Anonymous, GVar id ->
+                   | Name.Anonymous, GVar id ->
                       begin match rtntypopt with
                             | None -> None
                             | Some ntn ->
                                if occur_glob_constr id ntn then
-                                 Some (Loc.tag Anonymous)
+                                 Some (Loc.tag Name.Anonymous)
                                else None
                       end
-                   | Anonymous, _ -> None
-                   | Name id, GVar id' when Id.equal id id' -> None
-                   | Name _, _ -> Some (Loc.tag na) in
+                   | Name.Anonymous, _ -> None
+                   | Name.Name id, GVar id' when Id.equal id id' -> None
+                   | Name.Name _, _ -> Some (Loc.tag na) in
                  (sub_extern false scopes vars tm,
                   na',
                   Option.map (fun (loc,(ind,nal)) ->
@@ -924,7 +924,7 @@ and sub_extern inctx (_,scopes) = extern inctx (None,scopes)
 and factorize_prod scopes vars na bk aty c =
   let store, get = set_temporary_memory () in
   match na, DAst.get c with
-  | Name id, GCases (LetPatternStyle, None, [(e,(Anonymous,None))],(_::_ as eqns))
+  | Name.Name id, GCases (LetPatternStyle, None, [(e,(Name.Anonymous,None))],(_::_ as eqns))
          when is_gvar id e && List.length (store (factorize_eqns eqns)) = 1 ->
     (match get () with
      | [(_,(ids,disj_of_patl,b))] ->
@@ -940,7 +940,7 @@ and factorize_prod scopes vars na bk aty c =
   | _, _ ->
       let c = extern_typ scopes vars c in
       match na, c.v with
-      | Name id, CProdN (CLocalAssum(nal,Default bk',ty)::bl,b)
+      | Name.Name id, CProdN (CLocalAssum(nal,Default bk',ty)::bl,b)
            when binding_kind_eq bk bk' && constr_expr_eq aty ty
                 && not (occur_var_constr_expr id ty) (* avoid na in ty escapes scope *) ->
          CProdN (CLocalAssum(Loc.tag na::nal,Default bk,aty)::bl,b)
@@ -952,7 +952,7 @@ and factorize_prod scopes vars na bk aty c =
 and factorize_lambda inctx scopes vars na bk aty c =
   let store, get = set_temporary_memory () in
   match na, DAst.get c with
-  | Name id, GCases (LetPatternStyle, None, [(e,(Anonymous,None))],(_::_ as eqns))
+  | Name.Name id, GCases (LetPatternStyle, None, [(e,(Name.Anonymous,None))],(_::_ as eqns))
          when is_gvar id e && List.length (store (factorize_eqns eqns)) = 1 ->
     (match get () with
      | [(_,(ids,disj_of_patl,b))] ->
@@ -993,7 +993,7 @@ and extern_local_binder scopes vars = function
       (match extern_local_binder scopes (Name.fold_right Id.Set.add na vars) l with
           (assums,ids,CLocalAssum(nal,k,ty')::l)
             when constr_expr_eq ty ty' &&
-              match na with Name id -> not (occur_var_constr_expr id ty')
+              match na with Name.Name id -> not (occur_var_constr_expr id ty')
                 | _ -> true ->
               (na::assums,na::ids,
                CLocalAssum((Loc.tag na)::nal,k,ty')::l)
@@ -1153,7 +1153,7 @@ let extern_closed_glob ?lax goal_concl_style env sigma t =
 
 let any_any_branch =
   (* | _ => _ *)
-  Loc.tag ([],[DAst.make @@ PatVar Anonymous], DAst.make @@ GHole (Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None))
+  Loc.tag ([],[DAst.make @@ PatVar Name.Anonymous], DAst.make @@ GHole (Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None))
 
 let compute_displayed_name_in_pattern sigma avoid na c =
   let open Namegen in
@@ -1172,8 +1172,8 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
       GEvar (id,List.map (on_snd (glob_of_pat avoid env sigma)) l)
   | PRel n ->
       let id = try match lookup_name_of_rel n env with
-	| Name id   -> id
-	| Anonymous ->
+        | Name.Name id   -> id
+        | Name.Anonymous ->
 	    anomaly ~label:"glob_constr_of_pattern" (Pp.str "index to an anonymous variable.")
       with Not_found -> Id.of_string ("_UNBOUND_REL_"^(string_of_int n)) in
       GVar id
@@ -1200,11 +1200,11 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
       let env' = Termops.add_name na' env in
       GLambda (na',Explicit,glob_of_pat avoid env sigma t, glob_of_pat avoid' env' sigma c)
   | PIf (c,b1,b2) ->
-      GIf (glob_of_pat avoid env sigma c, (Anonymous,None),
+      GIf (glob_of_pat avoid env sigma c, (Name.Anonymous,None),
            glob_of_pat avoid env sigma b1, glob_of_pat avoid env sigma b2)
   | PCase ({cip_style=LetStyle; cip_ind_tags=None},PMeta None,tm,[(0,n,b)]) ->
       let nal,b = it_destRLambda_or_LetIn_names n (glob_of_pat avoid env sigma b) in
-      GLetTuple (nal,(Anonymous,None),glob_of_pat avoid env sigma tm,b)
+      GLetTuple (nal,(Name.Anonymous,None),glob_of_pat avoid env sigma tm,b)
   | PCase (info,p,tm,bl) ->
       let mat = match bl, info.cip_ind with
 	| [], _ -> []
@@ -1216,7 +1216,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
       let mat = if info.cip_extensible then mat @ [any_any_branch] else mat
       in
       let indnames,rtn = match p, info.cip_ind, info.cip_ind_tags with
-	| PMeta None, _, _ -> (Anonymous,None),None
+        | PMeta None, _, _ -> (Name.Anonymous,None),None
 	| _, Some ind, Some nargs ->
 	  return_type_of_predicate ind nargs (glob_of_pat avoid env sigma p)
 	| _ -> anomaly (Pp.str "PCase with non-trivial predicate but unknown inductive.")

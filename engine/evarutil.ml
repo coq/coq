@@ -263,7 +263,7 @@ let next_ident_away id avoid =
 
 let next_name_away na avoid =
   let avoid id = Id.Set.mem id avoid in
-  let id = match na with Name id -> id | Anonymous -> default_non_dependent_ident in
+  let id = match na with Name.Name id -> id | Name.Anonymous -> default_non_dependent_ident in
   next_ident_away_from id avoid
 
 type subst_val =
@@ -351,9 +351,9 @@ let push_rel_decl_to_named_context sigma decl (subst, avoid, nc) =
     decl |> NamedDecl.set_id id' |> map_decl (replace_vars vsubst)
   in
   let extract_if_neq id = function
-    | Anonymous -> None
-    | Name id' when Id.compare id id' = 0 -> None
-    | Name id' -> Some id'
+    | Name.Anonymous -> None
+    | Name.Name id' when Id.compare id id' = 0 -> None
+    | Name.Name id' -> Some id'
   in
   let na = RelDecl.get_name decl in
   let id =

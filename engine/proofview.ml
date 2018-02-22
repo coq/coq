@@ -692,7 +692,7 @@ let guard_no_unifiable =
   | [] -> tclUNIT None
   | gls ->
       let l = CList.map (fun g -> Evd.dependent_evar_ident g initial.solution) gls in
-      let l = CList.map (fun id -> Names.Name id) l in
+      let l = CList.map (fun id -> Names.Name.Name id) l in
       tclUNIT (Some l)
 
 (** [unshelve l p] adds all the goals in [l] at the end of the focused
@@ -711,7 +711,7 @@ let mark_in_evm ~goal evd content =
                - GoalEvar (morally not dependent)
                - VarInstance (morally dependent of some name).
                This is a heuristic for naming these evars. *)
-            | loc, (Evar_kinds.QuestionMark (_,Names.Name id) |
+            | loc, (Evar_kinds.QuestionMark (_,Names.Name.Name id) |
                     Evar_kinds.ImplicitArg (_,(_,Some id),_)) -> loc, Evar_kinds.VarInstance id
             | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
             | loc,_ -> loc,Evar_kinds.GoalEvar }

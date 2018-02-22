@@ -228,10 +228,10 @@ let check_fix_reversibility sigma labs args ((lv,i),(_,tys,bds)) =
    components of a mutual fixpoint *)
 
 let invert_name labs l na0 env sigma ref = function
-  | Name id ->
+  | Name.Name id ->
       let minfxargs = List.length l in
       begin match na0 with
-      | Name id' when Id.equal id' id ->
+      | Name.Name id' when Id.equal id' id ->
         Some (minfxargs,ref)
       | _ ->
 	let refi = match ref with
@@ -255,7 +255,7 @@ let invert_name labs l na0 env sigma ref = function
                     else None
 	      with Not_found (* Undefined ref *) -> None
       end
-  | Anonymous -> None (* Actually, should not occur *)
+  | Name.Anonymous -> None (* Actually, should not occur *)
 
 (* [compute_consteval_direct] expand all constant in a whole, but
    [compute_consteval_mutual_fix] only one by one, until finding the
@@ -350,7 +350,7 @@ let reference_eval env sigma = function
    The type Tij' is Tij[yi(j-1)..y1 <- ai(j-1)..a1]
 *)
 
-let x = Name default_dependent_ident
+let x = Name.Name default_dependent_ident
 
 let make_elim_fun (names,(nbfix,lv,n)) u largs =
   let lu = List.firstn n largs in
@@ -512,8 +512,8 @@ let reduce_mind_case_use_function func env sigma mia =
 	    fun i ->
 	      if Int.equal i bodynum then Some (minargs,func)
 	      else match names.(i) with
-		| Anonymous -> None
-		| Name id ->
+                | Name.Anonymous -> None
+                | Name.Name id ->
 		    (* In case of a call to another component of a block of
 		       mutual inductive, try to reuse the global name if
 		       the block was indeed initially built as a global
@@ -1151,7 +1151,7 @@ let compute = cbv_betadeltaiota
 
 let abstract_scheme env sigma (locc,a) (c, sigma) =
   let ta = Retyping.get_type_of env sigma a in
-  let na = named_hd env sigma ta Anonymous in
+  let na = named_hd env sigma ta Name.Anonymous in
   if occur_meta sigma ta then user_err Pp.(str "Cannot find a type for the generalisation.");
   if occur_meta sigma a then
     mkLambda (na,ta,c), sigma

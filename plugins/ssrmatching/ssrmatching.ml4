@@ -131,8 +131,8 @@ let dC t = CastConv t
 let isCVar   = function { CAst.v = CRef (Ident _, _) } -> true | _ -> false
 let destCVar = function { CAst.v = CRef (Ident (_, id), _) } -> id | _ ->
   CErrors.anomaly (str"not a CRef.")
-let isGLambda c = match DAst.get c with GLambda (Name _, _, _, _) -> true | _ -> false
-let destGLambda c = match DAst.get c with GLambda (Name id, _, _, c) -> (id, c)
+let isGLambda c = match DAst.get c with GLambda (Name.Name _, _, _, _) -> true | _ -> false
+let destGLambda c = match DAst.get c with GLambda (Name.Name id, _, _, c) -> (id, c)
   | _ -> CErrors.anomaly (str "not a GLambda")
 let isGHole c = match DAst.get c with GHole _ -> true | _ -> false
 let mkCHole ~loc = CAst.make ?loc @@ CHole (None, IntroAnonymous, None)
@@ -605,7 +605,7 @@ let match_upats_FO upats env sigma0 ise orig_c =
          if skip || not (closed0 c') then () else try
            let _ = match u.up_k with
            | KpatFlex ->
-             let kludge v = mkLambda (Anonymous, mkProp, v) in
+             let kludge v = mkLambda (Name.Anonymous, mkProp, v) in
              unif_FO env ise (kludge u.up_FO) (kludge c')
            | KpatLet ->
              let kludge vla =
@@ -904,10 +904,10 @@ let glob_cpattern gs p =
   pp(lazy(str"globbing pattern: " ++ pr_term p));
   let glob x = snd (glob_ssrterm gs (mk_lterm x)) in
   let encode k s l =
-    let name = Name (Id.of_string ("_ssrpat_" ^ s)) in
+    let name = Name.Name (Id.of_string ("_ssrpat_" ^ s)) in
     k, (mkRCast mkRHole (mkRLambda name mkRHole (mkRApp mkRHole l)), None) in
   let bind_in t1 t2 =
-    let mkCHole = mkCHole ~loc:None in let n = Name (destCVar t1) in
+    let mkCHole = mkCHole ~loc:None in let n = Name.Name (destCVar t1) in
     fst (glob (mkCCast mkCHole (mkCLambda n mkCHole t2))) in
   let check_var t2 = if not (isCVar t2) then
     loc_error (constr_loc t2) "Only identifiers are allowed here" in
@@ -1179,7 +1179,7 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
   | In_T t -> let sigma, t = interp_term ist gl t in sigma, In_T t
   | X_In_T (x, rp) | In_X_In_T (x, rp) ->
     let mk x p = match red with X_In_T _ -> X_In_T(x,p) | _ -> In_X_In_T(x,p) in
-    let rp = mkXLetIn (Name x) rp in
+    let rp = mkXLetIn Name.(Name x) rp in
     let sigma, rp = interp_term ist gl rp in
     let _, h, _, rp = destLetIn rp in
     let sigma = cleanup_XinE h x rp sigma in
@@ -1188,7 +1188,7 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
   | E_In_X_In_T(e, x, rp) | E_As_X_In_T (e, x, rp) ->
     let mk e x p =
       match red with E_In_X_In_T _ ->E_In_X_In_T(e,x,p)|_->E_As_X_In_T(e,x,p) in
-    let rp = mkXLetIn (Name x) rp in
+    let rp = mkXLetIn Name.(Name x) rp in
     let sigma, rp = interp_term ist gl rp in
     let _, h, _, rp = destLetIn rp in
     let sigma = cleanup_XinE h x rp sigma in
@@ -1391,7 +1391,7 @@ let ssrpatterntac _ist (arg_ist,arg) gl =
   let t = EConstr.of_constr t in
   let concl_x = EConstr.of_constr concl_x in
   let gl, tty = pf_type_of gl t in
-  let concl = EConstr.mkLetIn (Name (Id.of_string "selected"), t, tty, concl_x) in
+  let concl = EConstr.mkLetIn (Name.Name (Id.of_string "selected"), t, tty, concl_x) in
   Proofview.V82.of_tactic (convert_concl concl DEFAULTcast) gl
 
 (* Register "ssrpattern" tactic *)
@@ -1404,7 +1404,7 @@ let () =
   let name = { mltac_plugin = "ssrmatching_plugin"; mltac_tactic = "ssrpattern"; } in
   let () = Tacenv.register_ml_tactic name [|mltac|] in
   let tac =
-    TacFun ([Name (Id.of_string "pattern")],
+    TacFun ([Name.Name (Id.of_string "pattern")],
       TacML (Loc.tag ({ mltac_name = name; mltac_index = 0 }, []))) in
   let obj () =
     Tacenv.register_ltac true false (Id.of_string "ssrpattern") tac in

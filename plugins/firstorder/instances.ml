@@ -107,14 +107,14 @@ let mk_open_instance env evmap id idc m t =
 	   reduction is not too expensive *)
       let (nam,_,_)=destProd evmap (whd_all env evmap typ) in
 	match nam with
-	    Name id -> id
-	  | Anonymous ->  dummy_bvid in
+            Name.Name id -> id
+          | Name.Anonymous ->  dummy_bvid in
   let revt=substl (List.init m (fun i->mkRel (m-i))) t in
   let rec aux n avoid env evmap decls =
     if Int.equal n 0 then evmap, decls else
       let nid=(fresh_id_in_env avoid var_id env) in
       let (evmap, (c, _)) = Evarutil.new_type_evar env evmap Evd.univ_flexible in
-      let decl = LocalAssum (Name nid, c) in
+      let decl = LocalAssum (Name.Name nid, c) in
 	aux (n-1) (Id.Set.add nid avoid) (EConstr.push_rel decl env) evmap (decl::decls) in
   let evmap, decls = aux m Id.Set.empty env evmap [] in
   (evmap, decls, revt)

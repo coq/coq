@@ -578,7 +578,7 @@ let ienv_push_inductive (env, ra_env) ((mind,u),lpar) =
   let mib = Environ.lookup_mind mind env in
   let ntypes = mib.mind_ntypes in
   let push_ind specif env =
-    let decl = LocalAssum (Anonymous, hnf_prod_applist env (type_of_inductive env ((mib,specif),u)) lpar) in
+    let decl = LocalAssum (Name.Anonymous, hnf_prod_applist env (type_of_inductive env ((mib,specif),u)) lpar) in
     push_rel decl env
   in
   let env = Array.fold_right push_ind mib.mind_packets env in
@@ -599,7 +599,7 @@ let rec ienv_decompose_prod (env,_ as ienv) n c =
 let lambda_implicit_lift n a =
   let level = Level.make (DirPath.make [Id.of_string "implicit"]) 0 in
   let implicit_sort = mkType (Universe.make level) in
-  let lambda_implicit a = mkLambda (Anonymous, implicit_sort, a) in
+  let lambda_implicit a = mkLambda (Name.Anonymous, implicit_sort, a) in
   iterate lambda_implicit n (lift n a)
 
 (* This removes global parameters of the inductive types in lc (for

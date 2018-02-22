@@ -157,8 +157,8 @@ let pr_explicit env sigma t1 t2 =
 let pr_db env i =
   try
     match env |> lookup_rel i |> get_name with
-      | Name id -> Id.print id
-      | Anonymous -> str "<>"
+      | Name.Name id -> Id.print id
+      | Name.Anonymous -> str "<>"
   with Not_found -> str "UNBOUND_REL_" ++ int i
 
 let explain_unbound_rel env sigma n =
@@ -413,8 +413,8 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
   let pr_lconstr_env env sigma c = pr_leconstr_env env sigma c in
   let prt_name i =
     match names.(i) with
-        Name id -> str "Recursive definition of " ++ Id.print id
-      | Anonymous -> str "The " ++ pr_nth i ++ str " definition" in
+        Name.Name id -> str "Recursive definition of " ++ Id.print id
+      | Name.Anonymous -> str "The " ++ pr_nth i ++ str " definition" in
 
   let st = match err with
 
@@ -428,8 +428,8 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
       let arg_env = make_all_name_different arg_env sigma in
       let called =
         match names.(j) with
-            Name id -> Id.print id
-          | Anonymous -> str "the " ++ pr_nth i ++ str " definition" in
+            Name.Name id -> Id.print id
+          | Name.Anonymous -> str "the " ++ pr_nth i ++ str " definition" in
       let pr_db x = quote (pr_db env x) in
       let vars =
         match (lt,le) with
@@ -448,8 +448,8 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
   | NotEnoughArgumentsForFixCall j ->
       let called =
         match names.(j) with
-            Name id -> Id.print id
-          | Anonymous -> str "the " ++ pr_nth i ++ str " definition" in
+            Name.Name id -> Id.print id
+          | Name.Anonymous -> str "the " ++ pr_nth i ++ str " definition" in
      str "Recursive call to " ++ called ++ str " has not enough arguments"
 
   (* CoFixpoint guard errors *)
@@ -534,9 +534,9 @@ let rec explain_evar_kind env sigma evk ty = function
   | Evar_kinds.CasesType true ->
       strbrk "a subterm of type " ++ ty ++
       strbrk " in the type of this pattern-matching problem"
-  | Evar_kinds.BinderType (Name id) ->
+  | Evar_kinds.BinderType (Name.Name id) ->
       strbrk "the type of " ++ Id.print id
-  | Evar_kinds.BinderType Anonymous ->
+  | Evar_kinds.BinderType Name.Anonymous ->
       strbrk "the type of this anonymous binder"
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
       let id = Option.get ido in
@@ -658,7 +658,7 @@ let explain_wrong_abstraction_type env sigma na abs expected result =
   let abs = EConstr.to_constr sigma abs in
   let expected = EConstr.to_constr sigma expected in
   let result = EConstr.to_constr sigma result in
-  let ppname = match na with Name id -> Id.print id ++ spc () | _ -> mt () in
+  let ppname = match na with Name.Name id -> Id.print id ++ spc () | _ -> mt () in
   str "Cannot instantiate metavariable " ++ ppname ++ strbrk "of type " ++
   pr_lconstr_env env sigma expected ++ strbrk " with abstraction " ++
   pr_lconstr_env env sigma abs ++ strbrk " of incompatible type " ++
@@ -867,7 +867,7 @@ let explain_not_match_error = function
   | RecordProjectionsExpected nal ->
     (if List.length nal >= 2 then str "expected projection names are "
      else str "expected projection name is ") ++
-    pr_enum (function Name id -> Id.print id | _ -> str "_") nal
+    pr_enum (function Name.Name id -> Id.print id | _ -> str "_") nal
   | NotEqualInductiveAliases ->
     str "Aliases to inductive types do not match"
   | NoTypeConstraintExpected ->

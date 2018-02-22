@@ -662,7 +662,7 @@ let subst_var_with_hole occ tid t =
            else
 	     (incr locref;
               DAst.make ~loc:(Loc.make_loc (!locref,0)) @@
-	      GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true,Anonymous),
+              GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true,Name.Anonymous),
                      Misctypes.IntroAnonymous, None)))
         else x
     | _ -> map_glob_constr_left_to_right substrec x in
@@ -674,13 +674,13 @@ let subst_hole_with_term occ tc t =
   let locref = ref 0 in
   let occref = ref occ in
   let rec substrec c = match DAst.get c with
-    | GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true,Anonymous),Misctypes.IntroAnonymous,s) ->
+    | GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true,Name.Anonymous),Misctypes.IntroAnonymous,s) ->
         decr occref;
         if Int.equal !occref 0 then tc
         else
 	  (incr locref;
            DAst.make ~loc:(Loc.make_loc (!locref,0)) @@
-	   GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true,Anonymous),Misctypes.IntroAnonymous,s))
+           GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true,Name.Anonymous),Misctypes.IntroAnonymous,s))
     | _ -> map_glob_constr_left_to_right substrec c
   in
   substrec t

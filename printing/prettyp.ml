@@ -303,7 +303,7 @@ let print_inductive_renames =
   print_args_data_of_inductive_ids
     (fun r ->
       try Arguments_renaming.arguments_names r with Not_found -> [])
-    ((!=) Anonymous)
+    ((!=) Name.Anonymous)
     print_renames_list
 
 let print_inductive_argument_scopes =

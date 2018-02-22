@@ -458,8 +458,8 @@ let argnames_of_global r =
 let msg_of_implicit = function
   | Kimplicit (r,i) ->
      let name = match List.nth (argnames_of_global r) (i-1) with
-       | Anonymous -> ""
-       | Name id -> "(" ^ Id.to_string id ^ ") "
+       | Name.Anonymous -> ""
+       | Name.Name id -> "(" ^ Id.to_string id ^ ") "
      in
      (String.ordinal i)^" argument "^name^"of "^(string_of_global r)
   | Ktype | Kprop -> ""
@@ -724,7 +724,7 @@ let add_implicits r l =
 		  safe_pr_global r)
     | ArgId id ->
        try
-         let i = List.index Name.equal (Name id) names in
+         let i = List.index Name.equal Name.(Name id) names in
          Int.Set.add i s
        with Not_found ->
 	 err (str "No argument " ++ Id.print id ++ str " for " ++

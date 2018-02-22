@@ -116,7 +116,7 @@ let pr_constr_under_binders_env_gen pr env sigma (ids,c) =
   (* Warning: clashes can occur with variables of same name in env but *)
   (* we also need to preserve the actual names of the patterns *)
   (* So what to do? *)
-  let assums = List.map (fun id -> (Name id,(* dummy *) mkProp)) ids in
+  let assums = List.map (fun id -> (Name.Name id,(* dummy *) mkProp)) ids in
   pr (Termops.push_rels_assum assums env) sigma c
 
 let pr_constr_under_binders_env = pr_constr_under_binders_env_gen pr_econstr_env
@@ -354,8 +354,8 @@ let pr_rel_decl env sigma decl =
 	(str":=" ++ spc () ++ pb ++ spc ()) in
   let ptyp = pr_ltype_env env sigma typ in
   match na with
-  | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
-  | Name id -> hov 0 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+  | Name.Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+  | Name.Name id -> hov 0 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
 
 
 (* Prints out an "env" in a nice format.  We print out the

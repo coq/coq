@@ -118,7 +118,7 @@ let accept_before_syms_or_ids syms ids strm =
 
 open Ssrast
 let pr_id = Ppconstr.pr_id
-let pr_name = function Name id -> pr_id id | Anonymous -> str "_"
+let pr_name = function Name.Name id -> pr_id id | Name.Anonymous -> str "_"
 let pr_spc () = str " "
 let pr_bar () = Pp.cut() ++ str "|"
 let pr_list = prlist_with_sep
@@ -1037,7 +1037,7 @@ let rec format_constr_expr h0 c0 = let open CAst in match h0, c0 with
   | BFrec (has_str, has_cast) :: h, 
     { v = CFix ( _, [_, (Some locn, CStructRec), bl, t, c]) } ->
     let bs = format_local_binders h bl in
-    let bstr = if has_str then [Bstruct (Name (snd locn))] else [] in
+    let bstr = if has_str then [Bstruct (Name.Name (snd locn))] else [] in
     bs @ bstr @ (if has_cast then [Bcast t] else []), c 
   | BFrec (_, has_cast) :: h, { v = CCoFix ( _, [_, bl, t, c]) } ->
     format_local_binders h bl @ (if has_cast then [Bcast t] else []), c
@@ -1156,8 +1156,8 @@ ARGUMENT EXTEND ssrbvar TYPED AS constr PRINTED BY pr_ssrbvar
 END
 
 let bvar_lname = let open CAst in function
-  | { v = CRef (Ident (loc, id), _) } -> Loc.tag ?loc @@ Name id
-  | { loc = loc } -> Loc.tag ?loc Anonymous
+  | { v = CRef (Ident (loc, id), _) } -> Loc.tag ?loc @@ Name.Name id
+  | { loc = loc } -> Loc.tag ?loc Name.Anonymous
 
 let pr_ssrbinder prc _ _ (_, c) = prc c
 
@@ -1191,7 +1191,7 @@ GEXTEND Gram
   [  ["of" | "&"]; c = operconstr LEVEL "99" ->
      let loc = !@loc in
      (FwdPose, [BFvar]),
-     CAst.make ~loc @@ CLambdaN ([CLocalAssum ([Loc.tag ~loc Anonymous],Default Explicit,c)],mkCHole (Some loc)) ]
+     CAst.make ~loc @@ CLambdaN ([CLocalAssum ([Loc.tag ~loc Name.Anonymous],Default Explicit,c)],mkCHole (Some loc)) ]
   ];
 END
 
@@ -1265,8 +1265,8 @@ ARGUMENT EXTEND ssrfixfwd TYPED AS ident * ssrfwd PRINTED BY pr_ssrfixfwd
       let lb = fix_binders bs in
       let has_struct, i =
         let rec loop = function
-          (l', Name id') :: _ when Option.equal Id.equal sid (Some id') -> true, (l', id')
-          | [l', Name id'] when sid = None -> false, (l', id')
+          (l', Name.Name id') :: _ when Option.equal Id.equal sid (Some id') -> true, (l', id')
+          | [l', Name.Name id'] when sid = None -> false, (l', id')
           | _ :: bn -> loop bn
           | [] -> CErrors.user_err (Pp.str "Bad structural argument") in
         loop (names_of_local_assums lb) in
@@ -1332,9 +1332,9 @@ let intro_id_to_binder = List.map (function
 let binder_to_intro_id = CAst.(List.map (function
   | (FwdPose, [BFvar]), { v = CLambdaN ([CLocalAssum(ids,_,_)],_) }
   | (FwdPose, [BFdecl _]), { v = CLambdaN ([CLocalAssum(ids,_,_)],_) } ->
-      List.map (function (_, Name id) -> IPatId id | _ -> IPatAnon One) ids
-  | (FwdPose, [BFdef]), { v = CLetIn ((_,Name id),_,_,_) } -> [IPatId id]
-  | (FwdPose, [BFdef]), { v = CLetIn ((_,Anonymous),_,_,_) } -> [IPatAnon One]
+      List.map (function (_, Name.Name id) -> IPatId id | _ -> IPatAnon One) ids
+  | (FwdPose, [BFdef]), { v = CLetIn ((_,Name.Name id),_,_,_) } -> [IPatId id]
+  | (FwdPose, [BFdef]), { v = CLetIn ((_,Name.Anonymous),_,_,_) } -> [IPatAnon One]
   | _ -> anomaly "ssrbinder is not a binder"))
 
 let pr_ssrhavefwdwbinders _ _ prt (tr,((hpats, (fwd, hint)))) =

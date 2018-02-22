@@ -69,8 +69,8 @@ let interp_fields_evars env sigma impls_env nots l =
                       interp_casted_constr_evars_impls env sigma ~impls x t') (sigma,None) b in
       let impls =
 	match i with
-	| Anonymous -> impls
-        | Name id -> Id.Map.add id (compute_internalization_data env Constrintern.Method (EConstr.to_constr sigma t') impl) impls
+        | Name.Anonymous -> impls
+        | Name.Name id -> Id.Map.add id (compute_internalization_data env Constrintern.Method (EConstr.to_constr sigma t') impl) impls
       in
       let d = match b' with
 	      | None -> LocalAssum (i,t')
@@ -103,7 +103,7 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
   let _ =
     let error bk (loc, name) =
       match bk, name with
-      | Default _, Anonymous ->
+      | Default _, Name.Anonymous ->
         user_err ?loc ~hdr:"record" (str "Record parameters must be named")
       | _ -> ()
     in
@@ -140,7 +140,7 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
       sigma, EConstr.mkSort s, s, true
   in
   let arity = EConstr.it_mkProd_or_LetIn typ newps in
-  let env_ar = EConstr.push_rel_context newps (EConstr.push_rel (LocalAssum (Name id,arity)) env0) in
+  let env_ar = EConstr.push_rel_context newps (EConstr.push_rel (LocalAssum (Name.Name id,arity)) env0) in
   let assums = List.filter is_local_assum newps in
   let params = List.map (RelDecl.get_name %> Name.get_id) assums in
   let ty = Inductive (params,(finite != Declarations.BiFinite)) in
@@ -178,8 +178,8 @@ let typecheck_params_and_fields finite def id poly pl t ps nots fs =
 
 let degenerate_decl decl =
   let id = match RelDecl.get_name decl with
-    | Name id -> id
-    | Anonymous -> anomaly (Pp.str "Unnamed record variable.") in
+    | Name.Name id -> id
+    | Name.Anonymous -> anomaly (Pp.str "Unnamed record variable.") in
   match decl with
     | LocalAssum (_,t) -> (id, LocalAssumEntry t)
     | LocalDef (_,b,_) -> (id, LocalDefEntry b)
@@ -243,8 +243,8 @@ let subst_projection fid l c =
         else if k-depth-1 <= lv then
 	  match List.nth l (k-depth-2) with
 	    | Projection t -> lift depth t
-	    | NoProjection (Name id) -> bad_projs := id :: !bad_projs; mkRel k
-	    | NoProjection Anonymous ->
+            | NoProjection (Name.Name id) -> bad_projs := id :: !bad_projs; mkRel k
+            | NoProjection Name.Anonymous ->
                 user_err  (str "Field " ++ Id.print fid ++
                   str " depends on the " ++ pr_nth (k-depth-1) ++ str
                   " field which has no name.")
@@ -282,7 +282,7 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
   let r = mkIndU (indsp,u) in
   let rp = applist (r, Context.Rel.to_extended_list mkRel 0 paramdecls) in
   let paramargs = Context.Rel.to_extended_list mkRel 1 paramdecls in (*def in [[params;x:rp]]*)
-  let x = Name binder_name in
+  let x = Name.Name binder_name in
   let fields = instantiate_possibly_recursive_type indu paramdecls fields in
   let lifted_fields = Termops.lift_rel_context 1 fields in
   let primitive = 
@@ -304,9 +304,9 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
         let ti = RelDecl.get_type decl in
 	let (sp_projs,i,subst) =
 	  match fi with
-	  | Anonymous ->
+          | Name.Anonymous ->
 	      (None::sp_projs,i,NoProjection fi::subst)
-	  | Name fid -> try
+          | Name.Name fid -> try
 	    let kn, term = 
 	      if is_local_assum decl && primitive then
 		(** Already defined in the kernel silently *)
@@ -422,10 +422,10 @@ let implicits_of_context ctx =
   List.map_i (fun i name ->
     let explname =
       match name with
-      | Name n -> Some n
-      | Anonymous -> None
+      | Name.Name n -> Some n
+      | Name.Anonymous -> None
     in ExplByPos (i, explname), (true, true, true))
-    1 (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
+    1 (List.rev (Name.Anonymous :: (List.map RelDecl.get_name ctx)))
 
 let declare_class finite def cum ubinders univs id idbuild paramimpls params arity
     template fieldimpls fields ?(kind=StructureComponent) is_coe coers priorities =
@@ -438,7 +438,7 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
   let binder_name = Namegen.next_ident_away (snd id) (Termops.vars_of_env (Global.env())) in
   let impl, projs =
     match fields with
-    | [LocalAssum (Name proj_name, field) | LocalDef (Name proj_name, _, field)] when def ->
+    | [LocalAssum (Name.Name proj_name, field) | LocalDef (Name.Name proj_name, _, field)] when def ->
       let class_body = it_mkLambda_or_LetIn field params in
       let class_type = it_mkProd_or_LetIn arity params in
       let class_entry = 
@@ -453,9 +453,9 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
       let inst_type = appvectc (mkConstU cstu)
 			       (Termops.rel_vect 0 (List.length params)) in
       let proj_type =
-	it_mkProd_or_LetIn (mkProd(Name binder_name, inst_type, lift 1 field)) params in
+        it_mkProd_or_LetIn (mkProd(Name.Name binder_name, inst_type, lift 1 field)) params in
       let proj_body =
-	it_mkLambda_or_LetIn (mkLambda (Name binder_name, inst_type, mkRel 1)) params in
+        it_mkLambda_or_LetIn (mkLambda (Name.Name binder_name, inst_type, mkRel 1)) params in
       let proj_entry = Declare.definition_entry ~types:proj_type ~univs proj_body in
       let proj_cst = Declare.declare_constant proj_name
         (DefinitionEntry proj_entry, IsDefinition Definition)
@@ -470,7 +470,7 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
 	| Some b -> Some ((if b then Backward else Forward), List.hd priorities) 
 	| None -> None 
       in
-      cref, [Name proj_name, sub, Some proj_cst]
+      cref, [Name.Name proj_name, sub, Some proj_cst]
     | _ ->
        let univs =
          match univs with
@@ -533,7 +533,7 @@ let add_constant_class cst =
     { cl_univs = univs;
       cl_impl = ConstRef cst;
       cl_context = (List.map (const None) ctx, ctx);
-      cl_props = [LocalAssum (Anonymous, arity)];
+      cl_props = [LocalAssum (Name.Anonymous, arity)];
       cl_projs = [];
       cl_strict = !typeclasses_strict;
       cl_unique = !typeclasses_unique
@@ -553,7 +553,7 @@ let add_inductive_class ind =
       { cl_univs = univs;
         cl_impl = IndRef ind;
 	cl_context = List.map (const None) ctx, ctx;
-	cl_props = [LocalAssum (Anonymous, ty)];
+        cl_props = [LocalAssum (Name.Anonymous, ty)];
 	cl_projs = [];
 	cl_strict = !typeclasses_strict;
 	cl_unique = !typeclasses_unique }
@@ -576,8 +576,8 @@ let definition_structure (kind,cum,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cf
   let cfs,priorities = List.split cfs in
   let coers,fs = List.split cfs in
   let extract_name acc = function
-      Vernacexpr.AssumExpr((_,Name id),_) -> id::acc
-    | Vernacexpr.DefExpr ((_,Name id),_,_) -> id::acc
+      Vernacexpr.AssumExpr((_,Name.Name id),_) -> id::acc
+    | Vernacexpr.DefExpr ((_,Name.Name id),_,_) -> id::acc
     | _ -> acc in
   let allnames =  idstruc::(List.fold_left extract_name [] fs) in
   let () = match List.duplicates Id.equal allnames with

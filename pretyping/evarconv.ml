@@ -54,8 +54,8 @@ let impossible_default_case () =
 let coq_unit_judge =
   let open Environ in
   let make_judge c t = make_judge (EConstr.of_constr c) (EConstr.of_constr t) in
-  let na1 = Name (Id.of_string "A") in
-  let na2 = Name (Id.of_string "H") in
+  let na1 = Name.Name (Id.of_string "A") in
+  let na2 = Name.Name (Id.of_string "H") in
   fun () ->
     match impossible_default_case () with
     | Some (id, type_of_id, ctx) ->

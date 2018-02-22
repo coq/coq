@@ -69,7 +69,7 @@ let constrain sigma n (ids, m) (names, terms as subst) =
 
 let add_binders na1 na2 binding_vars (names, terms as subst) =
   match na1, na2 with
-  | Name id1, Name id2 when Id.Set.mem id1 binding_vars ->
+  | Name.Name id1, Name.Name id2 when Id.Set.mem id1 binding_vars ->
     if Id.Map.mem id1 names then
       let () = Glob_ops.warn_variable_collision id1 in
       (names, terms)
@@ -90,7 +90,7 @@ let rec build_lambda sigma vars ctx m = match vars with
   let (na, t, suf) = match suf with
   | [] -> assert false
   | (_, id, t) :: suf ->
-     (Name id, t, suf)
+     (Name.Name id, t, suf)
   in
   (** Check that the abstraction is legal by generating a transitive closure of
       its dependencies. *)
@@ -153,10 +153,10 @@ let rec extract_bound_aux k accu frels ctx = match ctx with
 | (na, _, _) :: ctx ->
   if Int.Set.mem k frels then
     begin match na with
-    | Name id ->
+    | Name.Name id ->
       let () = if Id.Set.mem id accu then raise PatternMatchingFailure in
       extract_bound_aux (k + 1) (Id.Set.add id accu) frels ctx
-    | Anonymous -> raise PatternMatchingFailure
+    | Name.Anonymous -> raise PatternMatchingFailure
     end
   else extract_bound_aux (k + 1) accu frels ctx
 
@@ -166,7 +166,7 @@ let extract_bound_vars frels ctx =
 let dummy_constr = EConstr.mkProp
 
 let make_renaming ids = function
-| (Name id, _, _) ->
+| (Name.Name id, _, _) ->
   begin
     try EConstr.mkRel (List.index Id.equal id ids)
     with Not_found -> dummy_constr
@@ -175,8 +175,8 @@ let make_renaming ids = function
 
 let push_binder na1 na2 t ctx =
   let id2 = match na2 with
-  | Name id2 -> id2
-  | Anonymous ->
+  | Name.Name id2 -> id2
+  | Name.Anonymous ->
      let avoid = Id.Set.of_list (List.map pi2 ctx) in
      Namegen.next_ident_away Namegen.default_non_dependent_ident avoid in
   (na1, id2, t) :: ctx
@@ -330,7 +330,7 @@ let matches_core env sigma allow_bound_rels
 	  let n = Context.Rel.length ctx_b2 in
           let n' = Context.Rel.length ctx_b2' in
 	  if Vars.noccur_between sigma 1 n b2 && Vars.noccur_between sigma 1 n' b2' then
-            let f l (LocalAssum (na,t) | LocalDef (na,_,t)) = push_binder Anonymous na t l in
+            let f l (LocalAssum (na,t) | LocalDef (na,_,t)) = push_binder Name.Anonymous na t l in
 	    let ctx_br = List.fold_left f ctx ctx_b2 in
 	    let ctx_br' = List.fold_left f ctx ctx_b2' in
 	    let b1 = lift_pattern n b1 and b1' = lift_pattern n' b1' in

@@ -309,8 +309,8 @@ let interp_entry forpat e = match e with
 | ETProdBinderList (ETBinderClosed tkl) -> TTAny (TTClosedBinderList tkl)
 
 let cases_pattern_expr_of_name (loc,na) = CAst.make ?loc @@ match na with
-  | Anonymous -> CPatAtom None
-  | Name id   -> CPatAtom (Some (Ident (Loc.tag ?loc id)))
+  | Name.Anonymous -> CPatAtom None
+  | Name.Name id   -> CPatAtom (Some (Ident (Loc.tag ?loc id)))
 
 type 'r env = {
   constrs : 'r list;

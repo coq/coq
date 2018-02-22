@@ -129,7 +129,7 @@ let closed_term_ast l =
     mltac_index = 0;
   } in
   let l = List.map (fun gr -> ArgArg(Loc.tag gr)) l in
-  TacFun([Name(Id.of_string"t")],
+  TacFun([Name.Name(Id.of_string"t")],
   TacML(Loc.tag (tacname,
   [TacGeneric (Genarg.in_gen (Genarg.glbwit Stdarg.wit_constr) (DAst.make @@ GVar(Id.of_string"t"),None));
    TacGeneric (Genarg.in_gen (Genarg.glbwit (Genarg.wit_list Stdarg.wit_ref)) l)])))
@@ -215,7 +215,7 @@ let exec_tactic env evd n f args =
   let lid = List.init n (fun i -> Id.of_string("x"^string_of_int i)) in
   let n = Genarg.in_gen (Genarg.glbwit Stdarg.wit_int) n in
   let get_res = TacML (Loc.tag (get_res, [TacGeneric n])) in
-  let getter = Tacexp (TacFun (List.map (fun n -> Name n) lid, get_res)) in
+  let getter = Tacexp (TacFun (List.map (fun n -> Name.Name n) lid, get_res)) in
   (** Evaluate the whole result *)
   let gl = dummy_goal env evd in
   let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter]))) gl in
@@ -742,8 +742,8 @@ let ltac_ring_structure e =
   let pow_tac = tacarg e.ring_pow_tac in
   let lemma1 = carg e.ring_lemma1 in
   let lemma2 = carg e.ring_lemma2 in
-  let pretac = tacarg (TacFun([Anonymous],e.ring_pre_tac)) in
-  let posttac = tacarg (TacFun([Anonymous],e.ring_post_tac)) in
+  let pretac = tacarg (TacFun([Name.Anonymous],e.ring_pre_tac)) in
+  let posttac = tacarg (TacFun([Name.Anonymous],e.ring_post_tac)) in
   [req;sth;ext;morph;th;cst_tac;pow_tac;
    lemma1;lemma2;pretac;posttac]
 
@@ -1028,8 +1028,8 @@ let ltac_field_structure e =
   let field_simpl_eq_ok = carg e.field_simpl_eq_ok in
   let field_simpl_eq_in_ok = carg e.field_simpl_eq_in_ok in
   let cond_ok = carg e.field_cond in
-  let pretac = tacarg (TacFun([Anonymous],e.field_pre_tac)) in
-  let posttac = tacarg (TacFun([Anonymous],e.field_post_tac)) in
+  let pretac = tacarg (TacFun([Name.Anonymous],e.field_pre_tac)) in
+  let posttac = tacarg (TacFun([Name.Anonymous],e.field_post_tac)) in
   [req;cst_tac;pow_tac;field_ok;field_simpl_ok;field_simpl_eq_ok;
    field_simpl_eq_in_ok;cond_ok;pretac;posttac]
 

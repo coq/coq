@@ -291,7 +291,7 @@ let get_value lc =
   | _ -> raise Not_found
 	
 let make_args start _end =
-  Array.init (start - _end + 1) (fun i -> Lrel (Anonymous, start - i))
+  Array.init (start - _end + 1) (fun i -> Lrel (Name.Anonymous, start - i))
     
 (* Translation of constructors *)	
 
@@ -385,7 +385,7 @@ module Renv =
 
 
     let make () = {
-      name_rel = Vect.make 16 Anonymous;
+      name_rel = Vect.make 16 Name.Anonymous;
       construct_tbl = ConstrTable.create 111
     }
 
@@ -540,7 +540,7 @@ let rec lambda_of_constr env sigma c =
 	  match b with
 	  | Llam(ids, body) when Int.equal (Array.length ids) arity -> (cn, ids, body)
 	  | _ -> 
-	      let ids = Array.make arity Anonymous in
+              let ids = Array.make arity Name.Anonymous in
 	      let args = make_args arity 1 in
 	      let ll = lam_lift arity b in
 	      (cn, ids, mkLapp  ll args) in

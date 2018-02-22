@@ -415,9 +415,9 @@ let new_representative typ =
 
 (* rebuild a constr from an applicative term *)
 
-let _A_ = Name (Id.of_string "A")
-let _B_ = Name (Id.of_string "A")
-let _body_ =  mkProd(Anonymous,mkRel 2,mkRel 2)
+let _A_ = Name.Name (Id.of_string "A")
+let _B_ = Name.Name (Id.of_string "A")
+let _body_ =  mkProd(Name.Anonymous,mkRel 2,mkRel 2)
 
 let cc_product s1 s2 =
   mkLambda(_A_,mkSort(s1),

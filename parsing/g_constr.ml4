@@ -110,13 +110,13 @@ let name_colon =
             (match stream_nth 1 strm with
               | KEYWORD ":" ->
                   stream_njunk 2 strm;
-                  Name (Names.Id.of_string s)
+                  Name.Name (Names.Id.of_string s)
               | _ -> err ())
 	| KEYWORD "_" ->
           (match stream_nth 1 strm with
               | KEYWORD ":" ->
                   stream_njunk 2 strm;
-                  Anonymous
+                  Name.Anonymous
               | _ -> err ())
         | _ -> err ())
 
@@ -131,7 +131,7 @@ GEXTEND Gram
     [ [ id = Prim.ident -> id ] ]
   ;
   Prim.name:
-    [ [ "_" -> Loc.tag ~loc:!@loc Anonymous ] ]
+    [ [ "_" -> Loc.tag ~loc:!@loc Name.Anonymous ] ]
   ;
   global:
     [ [ r = Prim.reference -> r ] ]
@@ -260,7 +260,7 @@ GEXTEND Gram
               CFix(id,_) -> id
             | CCoFix(id,_) -> id
             | _ -> assert false in
-          CAst.make ~loc:!@loc @@ CLetIn((li,Name id),fixp,None,c)
+          CAst.make ~loc:!@loc @@ CLetIn((li,Name.Name id),fixp,None,c)
       | "let"; lb = ["("; l=LIST0 name SEP ","; ")" -> l | "()" -> []];
 	  po = return_type;
 	  ":="; c1 = operconstr LEVEL "200"; "in";
@@ -433,7 +433,7 @@ GEXTEND Gram
     ] ]
   ;
   impl_name_head:
-    [ [ id = impl_ident_head -> (Loc.tag ~loc:!@loc @@ Name id) ] ]
+    [ [ id = impl_ident_head -> (Loc.tag ~loc:!@loc @@ Name.Name id) ] ]
   ;
   binders_fixannot:
     [ [ na = impl_name_head; assum = impl_ident_tail; bl = binders_fixannot ->
@@ -453,7 +453,7 @@ GEXTEND Gram
       | id = name; idl = LIST0 name; bl = binders ->
           binders_of_names (id::idl) @ bl
       | id1 = name; ".."; id2 = name ->
-          [CLocalAssum ([id1;(Loc.tag ~loc:!@loc (Name ldots_var));id2],
+          [CLocalAssum ([id1;(Loc.tag ~loc:!@loc Name.(Name ldots_var));id2],
 	                  Default Explicit, CAst.make ~loc:!@loc @@ CHole (None, IntroAnonymous, None))]
       | bl = closed_binder; bl' = binders ->
 	  bl@bl'
@@ -499,13 +499,13 @@ GEXTEND Gram
     ] ]
   ;
   typeclass_constraint:
-    [ [ "!" ; c = operconstr LEVEL "200" -> (Loc.tag ~loc:!@loc Anonymous), true, c
+    [ [ "!" ; c = operconstr LEVEL "200" -> (Loc.tag ~loc:!@loc Name.Anonymous), true, c
       | "{"; id = name; "}"; ":" ; expl = [ "!" -> true | -> false ] ; c = operconstr LEVEL "200" ->
 	  id, expl, c
       | iid=name_colon ; expl = [ "!" -> true | -> false ] ; c = operconstr LEVEL "200" ->
 	  (Loc.tag ~loc:!@loc iid), expl, c
       | c = operconstr LEVEL "200" ->
-	  (Loc.tag ~loc:!@loc Anonymous), false, c
+          (Loc.tag ~loc:!@loc Name.Anonymous), false, c
     ] ]
   ;
 

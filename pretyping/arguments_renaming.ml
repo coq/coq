@@ -70,7 +70,7 @@ let arguments_names r = Refmap.find r !name_table
 
 let rec rename_prod c = function 
   | [] -> c
-  | (Name _ as n) :: tl -> 
+  | (Name.Name _ as n) :: tl ->
       (match kind_of_type c with
       | ProdType (_, s, t) -> mkProd (n, s, rename_prod t tl)
       | _ -> c)

@@ -430,7 +430,7 @@ let make_arity_signature env sigma dep indf =
   if dep then
     (* We need names everywhere *)
     Namegen.name_context env sigma
-      ((LocalAssum (Anonymous,EConstr.of_constr (build_dependent_inductive env indf)))::arsign)
+      ((LocalAssum (Name.Anonymous,EConstr.of_constr (build_dependent_inductive env indf)))::arsign)
       (* Costly: would be better to name once for all at definition time *)
   else
     (* No need to enforce names *)
@@ -535,8 +535,8 @@ let is_predicate_explicitly_dep env sigma pred arsign =
           the predicate is parametrable! *)
 
           begin match na with
-          | Anonymous -> false
-          | Name _ -> true
+          | Name.Anonymous -> false
+          | Name.Name _ -> true
           end
 
       | _ -> anomaly (Pp.str "Non eta-expanded dep-expanded \"match\" predicate.")

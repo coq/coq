@@ -83,12 +83,12 @@ let ssrmkabs id gl =
       let (sigma, m) = Evarutil.new_evar env sigma abstract_ty in
       (sigma, (m, abstract_ty)) in
     let sigma, kont =
-      let rd = RelDecl.LocalAssum (Name id, abstract_ty) in
+      let rd = RelDecl.LocalAssum (Name.Name id, abstract_ty) in
       let (sigma, ev) = Evarutil.new_evar (EConstr.push_rel rd env) sigma concl in
       (sigma, ev)
     in
 (*    pp(lazy(pr_econstr concl)); *)
-    let term = EConstr.(mkApp (mkLambda(Name id,abstract_ty,kont) ,[|abstract_proof|])) in
+    let term = EConstr.(mkApp (mkLambda(Name.Name id,abstract_ty,kont) ,[|abstract_proof|])) in
     let sigma, _ = Typing.type_of env sigma term in
     (sigma, term)
   end in
@@ -131,7 +131,7 @@ let delayed_clear force rest clr gl =
 let with_defective maintac deps clr ist gl =
   let top_id =
     match EConstr.kind_of_type (project gl) (pf_concl gl) with
-    | ProdType (Name id, _, _)
+    | ProdType (Name.Name id, _, _)
       when has_discharged_tag (Id.to_string id) -> id
     | _ -> top_id in
   let top_gen = mkclr clr, cpattern_of_id top_id in
@@ -141,7 +141,7 @@ let with_defective_a maintac deps clr ist gl =
   let sigma = sig_sig gl in
   let top_id =
     match EConstr.kind_of_type sigma (without_ctx pf_concl gl) with
-    | ProdType (Name id, _, _)
+    | ProdType (Name.Name id, _, _)
       when has_discharged_tag (Id.to_string id) -> id
     | _ -> top_id in
   let top_gen = mkclr clr, cpattern_of_id top_id in
@@ -310,7 +310,7 @@ let elim_intro_tac ipats ?ist what eqid ssrelim is_rec clr gl =
            let gl, case_ty = pfe_type_of gl case in 
            let refl = EConstr.mkApp (eq, [|EConstr.Vars.lift 1 case_ty; EConstr.mkRel 1; EConstr.Vars.lift 1 case|]) in
            let new_concl = fire_subst gl
-                                      EConstr.(mkProd (Name (name gl), case_ty, mkArrow refl (Vars.lift 2 concl))) in 
+                                      EConstr.(mkProd (Name.Name (name gl), case_ty, mkArrow refl (Vars.lift 2 concl))) in
            let erefl, gl = mkRefl case_ty case gl in
            let erefl = fire_subst gl erefl in
            apply_type new_concl [case;erefl] gl in

@@ -12,6 +12,7 @@ open Pp
 open CErrors
 open Util
 open Names
+open Names.Name
 open Nameops
 open Constr
 open Termops

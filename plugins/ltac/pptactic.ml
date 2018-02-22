@@ -403,15 +403,15 @@ let string_of_genarg_arg (ArgumentType arg) =
     | Some ipat -> pr_as_intro_pattern prc ipat
 
   let pr_as_name = function
-    | Anonymous -> mt ()
-    | Name id -> spc () ++ keyword "as" ++ spc () ++ pr_lident (Loc.tag id)
+    | Name.Anonymous -> mt ()
+    | Name.Name id -> spc () ++ keyword "as" ++ spc () ++ pr_lident (Loc.tag id)
 
   let pr_pose_as_style prc na c =
     spc() ++ prc c ++ pr_as_name na
 
   let pr_pose prc prlc na c = match na with
-    | Anonymous -> spc() ++ prc c
-    | Name id -> spc() ++ surround (pr_id id ++ str " :=" ++ spc() ++ prlc c)
+    | Name.Anonymous -> spc() ++ prc c
+    | Name.Name id -> spc() ++ surround (pr_id id ++ str " :=" ++ spc() ++ prlc c)
 
   let pr_assertion prc prdc _prlc ipat c = match ipat with
     (* Use this "optimisation" or use only the general case ?
@@ -692,10 +692,10 @@ let pr_goal_selector ~toplevel s =
         (nal,ty)::bll ->
           if n <= List.length nal then
             match List.chop (n-1) nal with
-                _, (_,Name id) :: _ -> id, (nal,ty)::bll
-              | bef, (loc,Anonymous) :: aft ->
+                _, (_,Name.Name id) :: _ -> id, (nal,ty)::bll
+              | bef, (loc,Name.Anonymous) :: aft ->
                 let id = next_ident_away (Id.of_string"y") avoid in
-                id, ((bef@(loc,Name id)::aft, ty)::bll)
+                id, ((bef@(loc,Name.Name id)::aft, ty)::bll)
               | _ -> assert false
           else
             let (id,bll') = set_nth_name avoid (n-List.length nal) bll in
@@ -705,7 +705,7 @@ let pr_goal_selector ~toplevel s =
         let names =
           List.fold_left
             (fun ln (nal,_) -> List.fold_left
-              (fun ln na -> match na with (_,Name id) -> Id.Set.add id ln | _ -> ln)
+              (fun ln na -> match na with (_,Name.Name id) -> Id.Set.add id ln | _ -> ln)
               ln nal)
             Id.Set.empty bll in
         let idarg,bll = set_nth_name names n bll in
