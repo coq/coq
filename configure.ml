@@ -235,6 +235,81 @@ let _ = if not (dir_exists "bin") then Unix.mkdir "bin" 0o755
 
 type ide = Opt | Byte | No
 
+type preferences = {
+  prefix : string option;
+  local : bool;
+  vmbyteflags : string option;
+  custom : bool option;
+  bindir : string option;
+  libdir : string option;
+  configdir : string option;
+  datadir : string option;
+  mandir : string option;
+  docdir : string option;
+  emacslib : string option;
+  coqdocdir : string option;
+  ocamlfindcmd : string option;
+  lablgtkdir : string option;
+  camlp5dir : string option;
+  arch : string option;
+  natdynlink : bool;
+  coqide : ide option;
+  macintegration : bool;
+  browser : string option;
+  withdoc : bool;
+  byteonly : bool;
+  flambda_flags : string list;
+  debug : bool;
+  profile : bool;
+  bin_annot : bool;
+  annot : bool;
+  bytecodecompiler : bool;
+  nativecompiler : bool;
+  coqwebsite : string;
+  force_caml_version : bool;
+  force_findlib_version : bool;
+  warn_error : bool;
+}
+
+let default_preferences = {
+  prefix = None;
+  local = false;
+  vmbyteflags = None;
+  custom = None;
+  bindir = None;
+  libdir = None;
+  configdir = None;
+  datadir = None;
+  mandir = None;
+  docdir = None;
+  emacslib = None;
+  coqdocdir = None;
+  ocamlfindcmd = None;
+  lablgtkdir = None;
+  camlp5dir = None;
+  arch = None;
+  natdynlink = true;
+  coqide = None;
+  macintegration = true;
+  browser = None;
+  withdoc = false;
+  byteonly = false;
+  flambda_flags = [];
+  debug = true;
+  profile = false;
+  bin_annot = false;
+  annot = false;
+  bytecodecompiler = true;
+  nativecompiler = not (os_type_win32 || os_type_cygwin);
+  coqwebsite = "http://coq.inria.fr/";
+  force_caml_version = false;
+  force_findlib_version = false;
+  warn_error = false;
+}
+
+let prefs = ref default_preferences
+
+
 let get_bool = function
   | "true" | "yes" | "y" | "all" -> true
   | "false" | "no" | "n" -> false
@@ -246,120 +321,92 @@ let get_ide = function
   | "no" -> No
   | s -> raise (Arg.Bad ("(opt|byte|no) argument expected instead of "^s))
 
-let arg_bool r = Arg.String (fun s -> r := get_bool s)
+let arg_bool f = Arg.String (fun s -> prefs := f !prefs (get_bool s))
 
-let arg_string_option r = Arg.String (fun s -> r := Some s)
+let arg_string f = Arg.String (fun s -> prefs := f !prefs s)
+let arg_string_option f = Arg.String (fun s -> prefs := f !prefs (Some s))
+let arg_string_list c f = Arg.String (fun s -> prefs := f !prefs (string_split c s))
 
-module Prefs = struct
-  let prefix = ref (None : string option)
-  let local = ref false
-  let vmbyteflags = ref (None : string option)
-  let custom = ref (None : bool option)
-  let bindir = ref (None : string option)
-  let libdir = ref (None : string option)
-  let configdir = ref (None : string option)
-  let datadir = ref (None : string option)
-  let mandir = ref (None : string option)
-  let docdir = ref (None : string option)
-  let emacslib = ref (None : string option)
-  let coqdocdir = ref (None : string option)
-  let ocamlfindcmd = ref (None : string option)
-  let lablgtkdir = ref (None : string option)
-  let camlp5dir = ref (None : string option)
-  let arch = ref (None : string option)
-  let natdynlink = ref true
-  let coqide = ref (None : ide option)
-  let macintegration = ref true
-  let browser = ref (None : string option)
-  let withdoc = ref false
-  let byteonly = ref false
-  let flambda_flags = ref []
-  let debug = ref true
-  let profile = ref false
-  let bin_annot = ref false
-  let annot = ref false
-  let bytecodecompiler = ref true
-  let nativecompiler = ref (not (os_type_win32 || os_type_cygwin))
-  let coqwebsite = ref "http://coq.inria.fr/"
-  let force_caml_version = ref false
-  let force_findlib_version = ref false
-  let warn_error = ref false
-end
+let arg_set f = Arg.Unit (fun () -> prefs := f !prefs true)
+let arg_clear f = Arg.Unit (fun () -> prefs := f !prefs false)
+
+let arg_set_option f = Arg.Unit (fun () -> prefs := f !prefs (Some true))
+let arg_clear_option f = Arg.Unit (fun () -> prefs := f !prefs (Some false))
+
+let arg_ide f = Arg.String (fun s -> prefs := f !prefs (Some (get_ide s)))
 
 (* TODO : earlier any option -foo was also available as --foo *)
 
 let args_options = Arg.align [
-  "-prefix", arg_string_option Prefs.prefix,
+  "-prefix", arg_string_option (fun p prefix -> { p with prefix }),
     "<dir> Set installation directory to <dir>";
-  "-local", Arg.Set Prefs.local,
+  "-local", arg_set (fun p local -> { p with local }),
     " Set installation directory to the current source tree";
-  "-vmbyteflags", arg_string_option Prefs.vmbyteflags,
+  "-vmbyteflags", arg_string_option (fun p vmbyteflags -> { p with vmbyteflags }),
     "<flags> Comma-separated link flags for the VM of coqtop.byte";
-  "-custom", Arg.Unit (fun () -> Prefs.custom := Some true),
+  "-custom", arg_set_option (fun p custom -> { p with custom }),
     " Build bytecode executables with -custom (not recommended)";
-  "-no-custom", Arg.Unit (fun () -> Prefs.custom := Some false),
+  "-no-custom", arg_clear_option (fun p custom -> { p with custom }),
     " Do not build with -custom on Windows and MacOS";
-  "-bindir", arg_string_option Prefs.bindir,
+  "-bindir", arg_string_option (fun p bindir -> { p with bindir }),
     "<dir> Where to install bin files";
-  "-libdir", arg_string_option Prefs.libdir,
+  "-libdir", arg_string_option (fun p libdir -> { p with libdir }),
     "<dir> Where to install lib files";
-  "-configdir", arg_string_option Prefs.configdir,
+  "-configdir", arg_string_option (fun p configdir -> { p with configdir }),
     "<dir> Where to install config files";
-  "-datadir", arg_string_option Prefs.datadir,
+  "-datadir", arg_string_option (fun p datadir -> { p with datadir }),
     "<dir> Where to install data files";
-  "-mandir", arg_string_option Prefs.mandir,
+  "-mandir", arg_string_option (fun p mandir -> { p with mandir }),
     "<dir> Where to install man files";
-  "-docdir", arg_string_option Prefs.docdir,
+  "-docdir", arg_string_option (fun p docdir -> { p with docdir }),
     "<dir> Where to install doc files";
-  "-emacslib", arg_string_option Prefs.emacslib,
+  "-emacslib", arg_string_option (fun p emacslib -> { p with emacslib }),
     "<dir> Where to install emacs files";
-  "-coqdocdir", arg_string_option Prefs.coqdocdir,
+  "-coqdocdir", arg_string_option (fun p coqdocdir -> { p with coqdocdir }),
     "<dir> Where to install Coqdoc style files";
-  "-ocamlfind", arg_string_option Prefs.ocamlfindcmd,
+  "-ocamlfind", arg_string_option (fun p ocamlfindcmd -> { p with ocamlfindcmd }),
     "<dir> Specifies the ocamlfind command to use";
-  "-lablgtkdir", arg_string_option Prefs.lablgtkdir,
+  "-lablgtkdir", arg_string_option (fun p lablgtkdir -> { p with lablgtkdir }),
     "<dir> Specifies the path to the Lablgtk library";
-  "-camlp5dir",
-    Arg.String (fun s -> Prefs.camlp5dir:=Some s),
+  "-camlp5dir", arg_string_option (fun p camlp5dir -> { p with camlp5dir }),
     "<dir> Specifies where is the Camlp5 library and tells to use it";
-  "-flambda-opts",
-    Arg.String (fun s -> Prefs.flambda_flags := string_split ' ' s),
+  "-flambda-opts", arg_string_list ' ' (fun p flambda_flags -> { p with flambda_flags }),
     "<flags> Specifies additional flags to be passed to the flambda optimizing compiler";
-  "-arch", arg_string_option Prefs.arch,
+  "-arch", arg_string_option (fun p arch -> { p with arch }),
     "<arch> Specifies the architecture";
-  "-natdynlink", arg_bool Prefs.natdynlink,
+  "-natdynlink", arg_bool (fun p natdynlink -> { p with natdynlink }),
     "(yes|no) Use dynamic loading of native code or not";
-  "-coqide", Arg.String (fun s -> Prefs.coqide := Some (get_ide s)),
+  "-coqide", arg_ide (fun p coqide -> { p with coqide }),
     "(opt|byte|no) Specifies whether or not to compile CoqIDE";
-  "-nomacintegration", Arg.Clear Prefs.macintegration,
+  "-nomacintegration", arg_clear (fun p macintegration -> { p with macintegration }),
     " Do not try to build CoqIDE MacOS integration";
-  "-browser", arg_string_option Prefs.browser,
+  "-browser", arg_string_option (fun p browser -> { p with browser }),
     "<command> Use <command> to open URL %s";
-  "-with-doc", arg_bool Prefs.withdoc,
+  "-with-doc", arg_bool (fun p withdoc -> { p with withdoc }),
     "(yes|no) Compile the documentation or not";
-  "-byte-only", Arg.Set Prefs.byteonly,
+  "-byte-only", arg_set (fun p byteonly -> { p with byteonly }),
     " Compiles only bytecode version of Coq";
-  "-nodebug", Arg.Clear Prefs.debug,
+  "-nodebug", arg_clear (fun p debug -> { p with debug }),
     " Do not add debugging information in the Coq executables";
-  "-profile", Arg.Set Prefs.profile,
+  "-profile", arg_set (fun p profile -> { p with profile }),
     " Add profiling information in the Coq executables";
   "-annotate", Arg.Unit (fun () -> printf "*Warning* -annotate is deprecated. Please use -annot or -bin-annot instead.\n"),
     " Deprecated. Please use -annot or -bin-annot instead";
-  "-annot", Arg.Set Prefs.annot,
+  "-annot", arg_set (fun p annot -> { p with annot }),
     " Dumps ml text annotation files while compiling Coq (e.g. for Tuareg)";
-  "-bin-annot", Arg.Set Prefs.bin_annot,
+  "-bin-annot", arg_set (fun p bin_annot -> { p with bin_annot }),
     " Dumps ml binary annotation files while compiling Coq (e.g. for Merlin)";
-  "-bytecode-compiler", arg_bool Prefs.bytecodecompiler,
+  "-bytecode-compiler", arg_bool (fun p bytecodecompiler -> { p with bytecodecompiler }),
     "(yes|no) Enable Coq's bytecode reduction machine (VM)";
-  "-native-compiler", arg_bool Prefs.nativecompiler,
+  "-native-compiler", arg_bool (fun p nativecompiler -> { p with nativecompiler }),
     "(yes|no) Compilation to native code for conversion and normalization";
-  "-coqwebsite", Arg.Set_string Prefs.coqwebsite,
+  "-coqwebsite", arg_string (fun p coqwebsite -> { p with coqwebsite }),
     " URL of the coq website";
-  "-force-caml-version", Arg.Set Prefs.force_caml_version,
+  "-force-caml-version", arg_set (fun p force_caml_version -> { p with force_caml_version }),
     " Force OCaml version";
-  "-force-findlib-version", Arg.Set Prefs.force_findlib_version,
+  "-force-findlib-version", arg_set (fun p force_findlib_version -> { p with force_findlib_version }),
     " Force findlib version";
-  "-warn-error", Arg.Set Prefs.warn_error,
+  "-warn-error", arg_set (fun p warn_error -> { p with warn_error }),
     " Make OCaml warnings into errors";
   "-camldir", Arg.String (fun _ -> ()),
     "<dir> Specifies path to 'ocaml' for running configure script";
@@ -370,7 +417,7 @@ let parse_args () =
     args_options
     (fun s -> raise (Arg.Bad ("Unknown option: "^s)))
     "Available options for configure are:";
-  if !Prefs.local && !Prefs.prefix <> None then
+  if !prefs.local && !prefs.prefix <> None then
     die "Options -prefix and -local are incompatible."
 
 let _ = parse_args ()
@@ -391,10 +438,10 @@ let reset_caml_lex c o = c.lex <- o
 let reset_caml_top c o = c.top <- o
 let reset_caml_find c o = c.find <- o
 
-let coq_debug_flag = if !Prefs.debug then "-g" else ""
-let coq_profile_flag = if !Prefs.profile then "-p" else ""
-let coq_annot_flag = if !Prefs.annot then "-annot" else ""
-let coq_bin_annot_flag = if !Prefs.bin_annot then "-bin-annot" else ""
+let coq_debug_flag = if !prefs.debug then "-g" else ""
+let coq_profile_flag = if !prefs.profile then "-p" else ""
+let coq_annot_flag = if !prefs.annot then "-annot" else ""
+let coq_bin_annot_flag = if !prefs.bin_annot then "-bin-annot" else ""
 
 (* This variable can be overriden only for debug purposes, use with
    care. *)
@@ -423,7 +470,7 @@ let rec try_archs = function
   | _ :: rest -> try_archs rest
   | [] -> query_arch ()
 
-let arch = match !Prefs.arch with
+let arch = match !prefs.arch with
   | Some a -> a
   | None ->
     let arch,_ = tryrun "uname" ["-s"] in
@@ -470,7 +517,7 @@ let _ =
 (** * Browser command *)
 
 let browser =
-  match !Prefs.browser with
+  match !prefs.browser with
   | Some b -> b
   | None when arch_is_win32 -> "start %s"
   | None when arch = "Darwin" -> "open %s"
@@ -479,7 +526,7 @@ let browser =
 (** * OCaml programs *)
 
 let camlbin, caml_version, camllib, findlib_version =
-  let () = match !Prefs.ocamlfindcmd with
+  let () = match !prefs.ocamlfindcmd with
     | Some cmd -> reset_caml_find camlexec cmd
     | None ->
        try reset_caml_find camlexec (which camlexec.find)
@@ -524,7 +571,7 @@ let check_caml_version () =
     printf "You have OCaml %s. Good!\n" caml_version
   else
     let () = printf "Your version of OCaml is %s.\n" caml_version in
-    if !Prefs.force_caml_version then
+    if !prefs.force_caml_version then
       printf "*Warning* Your version of OCaml is outdated.\n"
     else
       die "You need OCaml 4.02.1 or later."
@@ -546,7 +593,7 @@ let check_findlib_version () =
     printf "You have OCamlfind %s. Good!\n" findlib_version
   else
     let () = printf "Your version of OCamlfind is %s.\n" findlib_version in
-    if !Prefs.force_findlib_version then
+    if !prefs.force_findlib_version then
       printf "*Warning* Your version of OCamlfind is outdated.\n"
     else
       die "You need OCamlfind 1.4.1 or later."
@@ -571,7 +618,7 @@ let camltag = match caml_version_list with
 *)
 let coq_warnings = "-w +a-4-9-27-41-42-44-45-48-50"
 let coq_warn_error =
-    if !Prefs.warn_error
+    if !prefs.warn_error
     then "-warn-error +a"
          ^ (if caml_version_nums > [4;2;3]
             then "-56"
@@ -611,7 +658,7 @@ let which_camlp5 base =
 (* TODO: camlp5dir should rather be the *binary* location, just as camldir *)
 (* TODO: remove the late attempts at finding gramlib.cma *)
 
-let check_camlp5 testcma = match !Prefs.camlp5dir with
+let check_camlp5 testcma = match !prefs.camlp5dir with
   | Some dir ->
     if Sys.file_exists (dir/testcma) then
       let camlp5o =
@@ -674,7 +721,7 @@ let msg_no_dynlink_cmxa () =
   printf "and then run ./configure -natdynlink no\n"
 
 let check_native () =
-  let () = if !Prefs.byteonly then raise Not_found in
+  let () = if !prefs.byteonly then raise Not_found in
   let version, _ = tryrun camlexec.find ["opt";"-version"] in
   if version = "" then let () = msg_no_ocamlopt () in raise Not_found
   else if not (Sys.file_exists (fullcamlp5libdir/camlp5mod^".cmxa"))
@@ -693,7 +740,7 @@ let best_compiler =
 
 (** * Native dynlink *)
 
-let hasnatdynlink = !Prefs.natdynlink && best_compiler = "opt"
+let hasnatdynlink = !prefs.natdynlink && best_compiler = "opt"
 
 let natdynlinkflag =
   if hasnatdynlink then "true" else "false"
@@ -753,7 +800,7 @@ let check_lablgtkdir ?(fatal=false) src dir =
 (** Detect and/or verify the Lablgtk2 location *)
 
 let get_lablgtkdir () =
-  match !Prefs.lablgtkdir with
+  match !prefs.lablgtkdir with
   | Some dir ->
     let msg = Manual in
     if check_lablgtkdir ~fatal:true msg dir then dir, msg
@@ -800,7 +847,7 @@ exception Ide of ide
 
 (** If the user asks an impossible coqide, we abort the configuration *)
 
-let set_ide ide msg = match ide, !Prefs.coqide with
+let set_ide ide msg = match ide, !prefs.coqide with
   | No, Some (Byte|Opt)
   | Byte, Some Opt -> die (msg^":\n=> cannot build requested CoqIde")
   | _ ->
@@ -813,7 +860,7 @@ let lablgtkdir = ref ""
     This function also sets the lablgtkdir reference in case of success. *)
 
 let check_coqide () =
-  if !Prefs.coqide = Some No then set_ide No "CoqIde manually disabled";
+  if !prefs.coqide = Some No then set_ide No "CoqIde manually disabled";
   let dir, via = get_lablgtkdir () in
   if dir = "" then set_ide No "LablGtk2 not found";
   let (ok, version) = check_lablgtk_version via dir in
@@ -821,7 +868,7 @@ let check_coqide () =
   if not ok then set_ide No (found^", but too old (required >= 2.18.3, found " ^ version ^ ")");
   (* We're now sure to produce at least one kind of coqide *)
   lablgtkdir := shorten_camllib dir;
-  if !Prefs.coqide = Some Byte then set_ide Byte (found^", bytecode requested");
+  if !prefs.coqide = Some Byte then set_ide Byte (found^", bytecode requested");
   if best_compiler<>"opt" then set_ide Byte (found^", but no native compiler");
   if not (Sys.file_exists (dir/"gtkThread.cmx")) then
     set_ide Byte (found^", but no native LablGtk2");
@@ -844,7 +891,7 @@ let idearchdef = ref "X11"
 let coqide_flags () =
   if !lablgtkdir <> "" then lablgtkincludes := sprintf "-I %S" !lablgtkdir;
   match coqide, arch with
-    | "opt", "Darwin" when !Prefs.macintegration ->
+    | "opt", "Darwin" when !prefs.macintegration ->
       let osxdir,_ = tryrun camlexec.find ["query";"lablgtkosx"] in
       if osxdir <> "" then begin
         lablgtkincludes := sprintf "%s -I %S" !lablgtkincludes osxdir;
@@ -870,7 +917,7 @@ let strip =
   if arch = "Darwin" then
     if hasnatdynlink then "true" else "strip"
   else
-    if !Prefs.profile || !Prefs.debug then "true" else begin
+    if !prefs.profile || !prefs.debug then "true" else begin
     let _, all = run camlexec.find ["ocamlc";"-config"] in
     let strip = String.concat "" (List.map (fun l ->
         match string_split ' ' l with
@@ -890,7 +937,7 @@ let check_doc () =
     raise Not_found
   in
   try
-    if not !Prefs.withdoc then raise Not_found;
+    if not !prefs.withdoc then raise Not_found;
     if not (program_in_path "latex") then err "latex";
     if not (program_in_path "hevea") then err "hevea";
     if not (program_in_path "hacha") then err "hacha";
@@ -908,28 +955,28 @@ let coqtop = Sys.getcwd ()
 
 let unix = os_type_cygwin || not arch_is_win32
 
-(** Variable name, description, ref in Prefs, default dir, prefix-relative *)
+(** Variable name, description, ref in prefs, default dir, prefix-relative *)
 
 type path_style =
   | Absolute of string (* Should start with a "/" *)
   | Relative of string (* Should not start with a "/" *)
 
 let install = [
-  "BINDIR", "the Coq binaries", Prefs.bindir,
+  "BINDIR", "the Coq binaries", !prefs.bindir,
     Relative "bin", Relative "bin", Relative "bin";
-  "COQLIBINSTALL", "the Coq library", Prefs.libdir,
+  "COQLIBINSTALL", "the Coq library", !prefs.libdir,
     Relative "lib", Relative "lib/coq", Relative "";
-  "CONFIGDIR", "the Coqide configuration files", Prefs.configdir,
+  "CONFIGDIR", "the Coqide configuration files", !prefs.configdir,
     Relative "config", Absolute "/etc/xdg/coq", Relative "ide";
-  "DATADIR", "the Coqide data files", Prefs.datadir,
+  "DATADIR", "the Coqide data files", !prefs.datadir,
     Relative "share", Relative "share/coq", Relative "ide";
-  "MANDIR", "the Coq man pages", Prefs.mandir,
+  "MANDIR", "the Coq man pages", !prefs.mandir,
     Relative "man", Relative "share/man", Relative "man";
-  "DOCDIR", "the Coq documentation", Prefs.docdir,
+  "DOCDIR", "the Coq documentation", !prefs.docdir,
     Relative "doc", Relative "share/doc/coq", Relative "doc";
-  "EMACSLIB", "the Coq Emacs mode", Prefs.emacslib,
+  "EMACSLIB", "the Coq Emacs mode", !prefs.emacslib,
     Relative "emacs", Relative "share/emacs/site-lisp", Relative "tools";
-  "COQDOCDIR", "the Coqdoc LaTeX files", Prefs.coqdocdir,
+  "COQDOCDIR", "the Coqdoc LaTeX files", !prefs.coqdocdir,
     Relative "latex", Relative "share/texmf/tex/latex/misc", Relative "tools/coqdoc";
  ]
 
@@ -959,8 +1006,8 @@ let find_suffix prefix path = match prefix with
 
 let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout,locallayout) =
   let dir,suffix =
-    if !Prefs.local then (use_suffix coqtop locallayout,locallayout)
-    else match !uservalue, !Prefs.prefix with
+    if !prefs.local then (use_suffix coqtop locallayout,locallayout)
+    else match uservalue, !prefs.prefix with
     | Some d, p -> d,find_suffix p d
     | _, Some p ->
       let suffix = if arch_is_win32 then selfcontainedlayout else relativize unixlayout in
@@ -992,7 +1039,7 @@ let datadir,datadirsuffix = let (_,_,d,s) = select "DATADIR" in d,s
 
 let custom_os = arch_is_win32 || arch = "Darwin"
 
-let use_custom = match !Prefs.custom with
+let use_custom = match !prefs.custom with
   | Some b -> b
   | None -> custom_os
 
@@ -1002,10 +1049,10 @@ let build_loadpath =
   ref "# you might want to set CAML_LD_LIBRARY_PATH by hand!"
 
 let config_runtime () =
-  match !Prefs.vmbyteflags with
+  match !prefs.vmbyteflags with
   | Some flags -> string_split ',' flags
   | _ when use_custom -> [custom_flag]
-  | _ when !Prefs.local ->
+  | _ when !prefs.local ->
     ["-dllib";"-lcoqrun";"-dllpath";coqtop/"kernel/byterun"]
   | _ ->
     let ld="CAML_LD_LIBRARY_PATH" in
@@ -1029,7 +1076,7 @@ let print_summary () =
   pr "  OCaml version               : %s\n" caml_version;
   pr "  OCaml binaries in           : %s\n" (esc camlbin);
   pr "  OCaml library in            : %s\n" (esc camllib);
-  pr "  OCaml flambda flags         : %s\n" (String.concat " " !Prefs.flambda_flags);
+  pr "  OCaml flambda flags         : %s\n" (String.concat " " !prefs.flambda_flags);
   pr "  Camlp5 version              : %s\n" camlp5_version;
   pr "  Camlp5 binaries in          : %s\n" (esc camlp5bindir);
   pr "  Camlp5 library in           : %s\n" (esc camlp5libdir);
@@ -1043,10 +1090,10 @@ let print_summary () =
   pr "  Documentation               : %s\n"
     (if withdoc then "All" else "None");
   pr "  Web browser                 : %s\n" browser;
-  pr "  Coq web site                : %s\n" !Prefs.coqwebsite;
-  pr "  Bytecode VM enabled         : %B\n" !Prefs.bytecodecompiler;
-  pr "  Native Compiler enabled     : %B\n\n" !Prefs.nativecompiler;
-  if !Prefs.local then
+  pr "  Coq web site                : %s\n" !prefs.coqwebsite;
+  pr "  Bytecode VM enabled         : %B\n" !prefs.bytecodecompiler;
+  pr "  Native Compiler enabled     : %B\n\n" !prefs.nativecompiler;
+  if !prefs.local then
     pr "  Local build, no installation...\n"
   else
     (pr "  Paths for true installation:\n";
@@ -1095,7 +1142,7 @@ let write_configml f =
   pr "(* DO NOT EDIT THIS FILE: automatically generated by ../configure *)\n";
   pr "(* Exact command that generated this file: *)\n";
   pr "(* %s *)\n\n" (String.concat " " (Array.to_list Sys.argv));
-  pr_b "local" !Prefs.local;
+  pr_b "local" !prefs.local;
   pr "let vmbyteflags = ["; List.iter (pr "%S;") vmbyteflags; pr "]\n";
   pr_s "coqlib" coqlib;
   pr_s "configdir" configdir;
@@ -1130,17 +1177,17 @@ let write_configml f =
   pr "let gtk_platform = `%s\n" !idearchdef;
   pr_b "has_natdynlink" hasnatdynlink;
   pr_s "natdynlinkflag" natdynlinkflag;
-  pr_l "flambda_flags" !Prefs.flambda_flags;
+  pr_l "flambda_flags" !prefs.flambda_flags;
   pr_i "vo_magic_number" vo_magic;
   pr_i "state_magic_number" state_magic;
   pr_s "browser" browser;
-  pr_s "wwwcoq" !Prefs.coqwebsite;
-  pr_s "wwwbugtracker" (!Prefs.coqwebsite ^ "bugs/");
-  pr_s "wwwrefman" (!Prefs.coqwebsite ^ "distrib/" ^ coq_version ^ "/refman/");
-  pr_s "wwwstdlib" (!Prefs.coqwebsite ^ "distrib/" ^ coq_version ^ "/stdlib/");
+  pr_s "wwwcoq" !prefs.coqwebsite;
+  pr_s "wwwbugtracker" (!prefs.coqwebsite ^ "bugs/");
+  pr_s "wwwrefman" (!prefs.coqwebsite ^ "distrib/" ^ coq_version ^ "/refman/");
+  pr_s "wwwstdlib" (!prefs.coqwebsite ^ "distrib/" ^ coq_version ^ "/stdlib/");
   pr_s "localwwwrefman"  ("file:/" ^ docdir ^ "/html/refman");
-  pr_b "bytecode_compiler" !Prefs.bytecodecompiler;
-  pr_b "native_compiler" !Prefs.nativecompiler;
+  pr_b "bytecode_compiler" !prefs.bytecodecompiler;
+  pr_b "native_compiler" !prefs.nativecompiler;
 
   let core_src_dirs = [ "config"; "dev"; "lib"; "clib"; "kernel"; "library";
                         "engine"; "pretyping"; "interp"; "parsing"; "proofs";
@@ -1197,7 +1244,7 @@ let write_makefile f =
   pr "#Variable used to detect whether ./configure has run successfully.\n";
   pr "COQ_CONFIGURED=yes\n\n";
   pr "# Local use (no installation)\n";
-  pr "LOCAL=%B\n\n" !Prefs.local;
+  pr "LOCAL=%B\n\n" !prefs.local;
   pr "# Bytecode link flags : should we use -custom or not ?\n";
   pr "CUSTOM=%s\n" custom_flag;
   pr "VMBYTEFLAGS=%s\n" (String.concat " " vmbyteflags);
@@ -1226,7 +1273,7 @@ let write_makefile f =
   pr "# User compilation flag\n";
   pr "USERFLAGS=\n\n";
   (* XXX make this configurable *)
-  pr "FLAMBDA_FLAGS=%s\n" (String.concat " " !Prefs.flambda_flags);
+  pr "FLAMBDA_FLAGS=%s\n" (String.concat " " !prefs.flambda_flags);
   pr "# Flags for GCC\n";
   pr "CFLAGS=%s\n\n" cflags;
   pr "# Compilation debug flags\n";
@@ -1271,7 +1318,7 @@ let write_makefile f =
   pr "# Option to control compilation and installation of the documentation\n";
   pr "WITHDOC=%s\n\n" (if withdoc then "all" else "no");
   pr "# Option to produce precompiled files for native_compute\n";
-  pr "NATIVECOMPUTE=%s\n" (if !Prefs.nativecompiler then "-native-compiler" else "");
+  pr "NATIVECOMPUTE=%s\n" (if !prefs.nativecompiler then "-native-compiler" else "");
   close_out o;
   Unix.chmod f 0o444
 
