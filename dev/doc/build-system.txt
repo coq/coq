@@ -143,7 +143,9 @@ file list(s):
    These files are also used by the experimental ocamlbuild plugin,
    which is quite touchy about them : be careful with order,
    duplicated entries, whitespace errors, and do not mention .mli there.
- - For .v, in the corresponding vo.itarget (e.g theories/Init/vo.itarget)
+   If module B depends on module A, then B should be after A in the .mllib
+   file.
+- For .v, in the corresponding vo.itarget (e.g theories/Init/vo.itarget)
  - The definitions in Makefile.common might have to be adapted too.
  - If your file needs a specific rule, add it to Makefile.build
 
