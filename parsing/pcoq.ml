@@ -111,7 +111,7 @@ end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
     let state = ref (CLexer.init_lexer_state file) in
     CLexer.set_lexer_state !state;
     let a = parsable c in
-    state := CLexer.release_lexer_state ();
+    state := CLexer.get_lexer_state ();
     (a,state)
 
   let action = Gramext.action
@@ -121,7 +121,7 @@ end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
     CLexer.set_lexer_state !state;
     try
       let c = Entry.parse e p in
-      state := CLexer.release_lexer_state ();
+      state := CLexer.get_lexer_state ();
       c
     with Ploc.Exc (loc,e) ->
       CLexer.drop_lexer_state ();
@@ -133,7 +133,7 @@ end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
     CLexer.set_lexer_state !state;
     try
       let a = f x in
-      state := CLexer.release_lexer_state ();
+      state := CLexer.get_lexer_state ();
       a
     with e ->
       CLexer.drop_lexer_state ();
