@@ -77,10 +77,18 @@ module AnnotTable = Hashtbl.Make (struct
   let hash = hash_annot_switch
 end)
 
+module ProjNameTable = Hashtbl.Make (struct
+  type t = Constant.t
+  let equal = Constant.equal
+  let hash = Constant.hash
+end)
+
 let str_cst_tbl : int SConstTable.t = SConstTable.create 31
 
 let annot_tbl : int AnnotTable.t = AnnotTable.create 31
     (* (annot_switch * int) Hashtbl.t  *)
+
+let proj_name_tbl : int ProjNameTable.t = ProjNameTable.create 31
 
 (*************************************************************)
 (*** Mise a jour des valeurs des variables et des constantes *)
@@ -113,6 +121,13 @@ let slot_for_annot key =
   with Not_found ->
     let n =  set_global (val_of_annot_switch key) in
     AnnotTable.add annot_tbl key n;
+    n
+
+let slot_for_proj_name key =
+  try ProjNameTable.find proj_name_tbl key
+  with Not_found ->
+    let n =  set_global (val_of_proj_name key) in
+    ProjNameTable.add proj_name_tbl key n;
     n
 
 let rec slot_for_getglobal env kn =
@@ -170,6 +185,7 @@ and eval_to_patch env (buff,pl,fv) =
     | Reloc_annot a -> slot_for_annot a
     | Reloc_const sc -> slot_for_str_cst sc
     | Reloc_getglobal kn -> slot_for_getglobal env kn
+    | Reloc_proj_name p -> slot_for_proj_name p
   in
   let tc = patch buff pl slots in
   let vm_env = Array.map (slot_for_fv env) fv in

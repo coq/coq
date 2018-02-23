@@ -297,7 +297,6 @@ let rec obj_of_str_const str =
   match str with
   | Const_sort s -> obj_of_atom (Asort s)
   | Const_ind ind -> obj_of_atom (Aind ind)
-  | Const_proj p -> Obj.repr p
   | Const_b0 tag -> Obj.repr tag
   | Const_bn(tag, args) ->
       let len = Array.length args in
@@ -355,6 +354,7 @@ let val_of_constant c = val_of_idkey (ConstKey c)
 let val_of_evar evk = val_of_idkey (EvarKey evk)
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
+external val_of_proj_name : Constant.t -> values = "%identity"
 
 (*************************************************)
 (** Operations manipulating data types ***********)

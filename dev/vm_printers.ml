@@ -15,7 +15,10 @@ let ppripos (ri,pos) =
   | Reloc_const _ ->
       print_string "structured constant\n"
   | Reloc_getglobal kn ->
-      print_string ("getglob "^(Constant.to_string kn)^"\n"));
+    print_string ("getglob "^(Constant.to_string kn)^"\n")
+  | Reloc_proj_name p ->
+    print_string ("proj "^(Constant.to_string p)^"\n")
+  );
    print_flush ()
 
 let print_vfix () = print_string "vfix"
