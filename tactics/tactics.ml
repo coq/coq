@@ -59,16 +59,6 @@ let typ_of env sigma c =
 
 open Goptions
 
-let apply_solve_class_goals = ref false
-
-let _ =
-  declare_bool_option
-    { optdepr = true; (* remove in 8.8 *)
-      optname = "Perform typeclass resolution on apply-generated subgoals.";
-      optkey = ["Typeclass";"Resolution";"After";"Apply"];
-      optread = (fun () -> !apply_solve_class_goals);
-      optwrite = (fun a -> apply_solve_class_goals := a); }
-
 let clear_hyp_by_default = ref false
 
 let use_clear_hyp_by_default () = !clear_hyp_by_default
@@ -1686,22 +1676,6 @@ let descend_in_conjunctions avoid tac (err, info) c =
 (*            Resolution tactics                    *)
 (****************************************************)
 
-let solve_remaining_apply_goals =
-  Proofview.Goal.enter begin fun gl ->
-  let evd = Proofview.Goal.sigma gl in
-  if !apply_solve_class_goals then
-    try 
-      let env = Proofview.Goal.env gl in
-      let concl = Proofview.Goal.concl gl in
-      if Typeclasses.is_class_type evd concl then
-        let evd', c' = Typeclasses.resolve_one_typeclass env evd concl in
-        Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd')
-        (Refine.refine ~typecheck:false (fun h -> (h,c')))
-	else Proofview.tclUNIT ()
-    with Not_found -> Proofview.tclUNIT ()
-  else Proofview.tclUNIT ()
-  end
-
 let tclORELSEOPT t k =
   Proofview.tclORELSE t
     (fun e -> match k e with
@@ -1777,11 +1751,9 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind :
       | _ -> None)
     end
   in
-    Tacticals.New.tclTHENLIST [
-      try_main_apply with_destruct c;
-      solve_remaining_apply_goals;
-      apply_clear_request clear_flag (use_clear_hyp_by_default ()) c
-    ]
+    Tacticals.New.tclTHEN
+      (try_main_apply with_destruct c)
+      (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c)
   end
 
 let rec apply_with_bindings_gen b e = function

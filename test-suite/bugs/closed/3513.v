@@ -69,26 +69,6 @@ Goal forall (T : Type) (O0 : T -> OPred) (O1 : T -> PointedOPred)
     refine (P _ _)
   end; unfold Basics.flip.
   Focus 2.
-  Set Typeclasses Debug.
-  Set Typeclasses Legacy Resolution.
-  apply reflexivity.
-  (* Debug: 1.1: apply @IsPointed_catOP on
-(IsPointed (exists x0 : Actions, (catOP ?Goal O2 : OPred) x0))
-Debug: 1.1.1.1: apply OPred_inhabited on (IsPointed (exists x0 : Actions, ?Goal x0))
-Debug: 1.1.2.1: apply OPred_inhabited on (IsPointed (exists x : Actions, O2 x))
-Debug: 2.1: apply @Equivalence_Reflexive on (Reflexive lentails)
-Debug: 2.1.1: no match for (Equivalence lentails) , 5 possibilities
-Debug: Backtracking after apply @Equivalence_Reflexive
-Debug: 2.2: apply @PreOrder_Reflexive on (Reflexive lentails)
-Debug: 2.2.1.1: apply @lentailsPre on (PreOrder lentails)
-Debug: 2.2.1.1.1.1: apply ILFun_ILogic on (ILogic OPred)
-*)
-  Undo. Unset Typeclasses Legacy Resolution.
-  Test Typeclasses Unique Solutions.
-  Test Typeclasses Unique Instances.
-  Show Existentials.
-  Set Typeclasses Debug Verbosity 2.
-  Set Printing All.
   (* As in 8.5, allow a shelved subgoal to remain *)
   apply reflexivity.
   
