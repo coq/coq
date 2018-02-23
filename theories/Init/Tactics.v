@@ -253,6 +253,7 @@ Tactic Notation "dependent" "induction" ident(H) :=
     writing a version of [inversion] / [dependent destruction] which
     does not lose information, i.e., does not turn a goal which is
     provable into one which requires axiom K / UIP.  *)
+
 Ltac simpl_proj_exist_in H :=
   repeat match type of H with
          | context G[proj1_sig (exist _ ?x ?p)]
@@ -308,6 +309,7 @@ Ltac inversion_sigma_step :=
 Ltac inversion_sigma := repeat inversion_sigma_step.
 
 (** A version of [time] that works for constrs *)
+
 Ltac time_constr tac :=
   let eval_early := match goal with _ => restart_timer end in
   let ret := tac () in
