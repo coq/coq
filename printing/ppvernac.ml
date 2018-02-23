@@ -155,13 +155,6 @@ open Decl_kinds
 
   let pr_locality local = if local then keyword "Local" else keyword "Global"
 
-  let pr_explanation (e,b,f) =
-    let a = match e with
-      | ExplByPos (n,_) -> anomaly (Pp.str "No more supported.")
-      | ExplByName id -> pr_id id in
-    let a = if f then str"!" ++ a else a in
-    if b then str "[" ++ a ++ str "]" else a
-
   let pr_option_ref_value = function
     | QualidRefValue id -> pr_reference id
     | StringRefValue s -> qs s
@@ -653,16 +646,6 @@ open Decl_kinds
           keyword "Bind Scope" ++ spc () ++ str sc ++
             spc() ++ keyword "with" ++ spc () ++ prlist_with_sep spc pr_class_rawexpr cll
         )
-      | VernacArgumentsScope (q,scl) ->
-        let pr_opt_scope = function
-          | None -> str"_"
-          | Some sc -> str sc
-        in
-        return (
-          keyword "Arguments Scope"
-          ++ spc() ++ pr_smart_global q
-          ++ spc() ++ str"[" ++ prlist_with_sep sep pr_opt_scope scl ++ str"]"
-        )
       | VernacInfix (({v=s},mv),q,sn) -> (* A Verifier *)
         return (
           hov 0 (hov 0 (keyword "Infix "
@@ -1015,18 +998,6 @@ open Decl_kinds
                 | None -> []
                 | Some Flags.Current -> [SetOnlyParsing]
                 | Some v -> [SetCompatVersion v]))
-        )
-      | VernacDeclareImplicits (q,[]) ->
-        return (
-          hov 2 (keyword "Implicit Arguments" ++ spc() ++ pr_smart_global q)
-        )
-      | VernacDeclareImplicits (q,impls) ->
-        return (
-          hov 1 (keyword "Implicit Arguments" ++ spc () ++
-                   spc() ++ pr_smart_global q ++ spc() ++
-                   prlist_with_sep spc (fun imps ->
-                     str"[" ++ prlist_with_sep sep pr_explanation imps ++ str"]")
-                   impls)
         )
       | VernacArguments (q, args, more_implicits, nargs, mods) ->
         return (

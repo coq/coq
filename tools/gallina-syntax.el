@@ -432,7 +432,6 @@
      ("Add Semi Ring" nil "Add Semi Ring #." t "Add\\s-+Semi\\s-+Ring")
      ("Add Setoid" nil "Add Setoid #." t "Add\\s-+Setoid")
      ("Admit Obligations" "oblsadmit" "Admit Obligations." nil "Admit\\s-+Obligations")
-     ("Arguments Scope" "argsc" "Arguments Scope @{id} [ @{_} ]" t "Arguments\\s-+Scope")
      ("Bind Scope" "bndsc" "Bind Scope @{scope} with @{type}" t "Bind\\s-+Scope")
      ("Canonical Structure" nil "Canonical Structure #." t "Canonical\\s-+Structure")
      ("Cd" nil "Cd #." nil "Cd")

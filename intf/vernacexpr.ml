@@ -409,8 +409,6 @@ type nonrec vernac_expr =
   | VernacHints of string list * hints_expr
   | VernacSyntacticDefinition of lident * (Id.t list * constr_expr) *
       onlyparsing_flag
-  | VernacDeclareImplicits of reference or_by_notation *
-      (explicitation * bool * bool) list list
   | VernacArguments of reference or_by_notation *
       vernac_argument_status list (* Main arguments status list *) *
         (Name.t * vernac_implicit_status) list list (* Extra implicit status lists *) *
@@ -418,8 +416,6 @@ type nonrec vernac_expr =
         [ `ReductionDontExposeCase | `ReductionNeverUnfold | `Rename |
           `ExtraScopes | `Assert | `ClearImplicits | `ClearScopes |
           `DefaultImplicits ] list
-  | VernacArgumentsScope of reference or_by_notation *
-      scope_name option list
   | VernacReserve of simple_binder list
   | VernacGeneralizable of (lident list) option
   | VernacSetOpacity of (Conv_oracle.level * reference or_by_notation list)
