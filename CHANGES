@@ -54,6 +54,9 @@ Tactics
   with let bindings in the parameters.
 - The tactic "dtauto" now handles some inductives such as
   "@sigT A (fun _ => B)" as non-dependent conjunctions.
+- Added tactics "assert_succeeds tac" and "assert_fails tac" to ensure
+  properties of the executation of a tactic without keeping the effect
+  of the execution.
 
 Focusing
 

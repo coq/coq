@@ -156,6 +156,8 @@ is understood as
 & | & {\tt type\_term} {\term}\\
 & | & {\tt numgoals} \\
 & | & {\tt guard} {\it test}\\
+& | & {\tt assert\_fails} {\tacexprpref}\\
+& | & {\tt assert\_succeds} {\tacexprpref}\\
 & | & \atomictac\\
 & | & {\qualid} \nelist{\tacarg}{}\\
 & | & {\atom}
@@ -597,6 +599,22 @@ two or more successes, {\tt exactly\_once} {\tacexpr} fails.
 The experimental status of this tactic pertains to the fact if $v$ performs side effects, they may occur in a unpredictable way. Indeed, normally $v$ would only be executed up to the first success until backtracking is needed, however {\tt exactly\_once} needs to look ahead to see whether a second success exists, and may run further effects immediately.
 
 \ErrMsg \errindex{This tactic has more than one success}
+
+\subsubsection[Checking the failure]{Checking the failure\tacindex{assert\_fails}\index{Tacticals!assert\_fails@{\tt assert\_fails}}}
+
+Coq provides a derived tactic to check that a tactic \emph{fails}:
+\begin{quote}
+{\tt assert\_fails} {\tacexpr}
+\end{quote}
+This behaves like {\tt tryif {\tacexpr} then fail 0 tac "succeeds" else idtac}.
+
+\subsubsection[Checking the success]{Checking the success\tacindex{assert\_succeeds}\index{Tacticals!assert\_succeeds@{\tt assert\_succeeds}}}
+
+Coq provides a derived tactic to check that a tactic has \emph{at least one} success:
+\begin{quote}
+{\tt assert\_succeeds} {\tacexpr}
+\end{quote}
+This behaves like {\tt tryif (assert\_fails tac) then fail 0 tac "fails" else idtac}.
 
 \subsubsection[Solving]{Solving\tacindex{solve}
 \index{Tacticals!solve@{\tt solve}}}
