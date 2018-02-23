@@ -1021,6 +1021,14 @@ Arguments scopes can be cleared with the following command:
 {\tt Arguments {\qualid} : clear scopes}
 \end{quote}
 
+Extra argument scopes, to be used in case of coercion to Funclass
+(see Chapter~\ref{Coercions-full}) or with a computed type,
+can be given with
+
+\begin{quote}
+{\tt Arguments} {\qualid} \nelist{\textunderscore {\tt \%} \scope}{} {\tt : extra scopes.}
+\end{quote}
+
 \begin{Variants}
 \item {\tt Global Arguments} {\qualid} \nelist{\name {\tt \%}\scope}{}
 
