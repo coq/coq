@@ -55,7 +55,7 @@ matrix:
   include:
     - if: NOT (type = pull_request)
       env:
-      - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
+      - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit" EXTRA_OPAM="ounit"
     - if: NOT (type = pull_request)
       env:
       - TEST_TARGET="validate"                           TW="travis_wait"
@@ -156,7 +156,7 @@ matrix:
       env:
       - TEST_TARGET="test-suite"
       - EXTRA_CONF="-coqide opt -with-doc yes"
-      - EXTRA_OPAM="${LABLGTK}"
+      - EXTRA_OPAM="${LABLGTK} ounit"
       before_install: &sphinx-install
       - sudo pip3 install bs4 sphinx sphinx_rtd_theme pexpect antlr4-python3-runtime sphinxcontrib-bibtex
       addons:
@@ -188,7 +188,7 @@ matrix:
       - FINDLIB_VER="${FINDLIB_VER_BE}"
       - CAMLP5_VER="${CAMLP5_VER_BE}"
       - EXTRA_CONF="-coqide opt -with-doc yes"
-      - EXTRA_OPAM="${LABLGTK_BE}"
+      - EXTRA_OPAM="${LABLGTK_BE} ounit"
       before_install: *sphinx-install
       addons:
         apt:
@@ -205,7 +205,7 @@ matrix:
       - CAMLP5_VER="${CAMLP5_VER_BE}"
       - NATIVE_COMP="no"
       - EXTRA_CONF="-coqide opt -with-doc yes -flambda-opts -O3"
-      - EXTRA_OPAM="${LABLGTK_BE}"
+      - EXTRA_OPAM="${LABLGTK_BE} ounit"
       before_install: *sphinx-install
       addons:
         apt:
@@ -250,6 +250,7 @@ matrix:
       - CAMLP5_VER=".6.17"
       - NATIVE_COMP="no"
       - COQ_DEST="-local"
+      - EXTRA_OPAM="ounit"
       before_install:
       - brew update
       - brew unlink python

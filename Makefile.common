@@ -105,7 +105,7 @@ BYTERUN:=$(addprefix kernel/byterun/, \
 CORECMA:=clib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
         engine/engine.cma pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma printing/printing.cma tactics/tactics.cma vernac/vernac.cma \
-	stm/stm.cma toplevel/toplevel.cma
+        stm/stm.cma toplevel/toplevel.cma
 
 TOPLOOPCMA:=stm/proofworkertop.cma stm/tacworkertop.cma stm/queryworkertop.cma
 
