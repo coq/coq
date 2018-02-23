@@ -48,5 +48,5 @@ Fail Check g 0 0 1. (* 2nd 0 in bool *)
 Fixpoint arr n := match n with 0%nat => nat | S n => nat -> arr n end.
 Fixpoint lam n : arr n := match n with 0%nat => 0%nat | S n => fun x => lam n  end.
 Notation "0" := true.
-Arguments Scope lam [nat_scope nat_scope].
+Arguments lam _%nat_scope _%nat_scope : extra scopes.
 Check (lam 1 0).

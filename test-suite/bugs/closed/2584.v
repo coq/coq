@@ -8,7 +8,7 @@ Inductive res (A: Type) : Type :=
 | OK: A -> res A
 | Error: err -> res A. 
 
-Implicit Arguments Error [A].
+Arguments Error [A].
 
 Set Printing Universes.
 

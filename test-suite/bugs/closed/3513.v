@@ -21,7 +21,7 @@ Section ILogic_Fun.
   Local Instance ILFun_Ops : ILogicOps (@ILFunFrm T _ Frm _) := admit.
   Definition ILFun_ILogic : ILogic (@ILFunFrm T _ Frm _) := admit.
 End ILogic_Fun.
-Implicit Arguments ILFunFrm [[ILOps] [e]].
+Arguments ILFunFrm _ {e} _ {ILOps}.
 Instance ILogicOps_Prop : ILogicOps Prop | 2 := {| lentails P Q := (P : Prop) -> Q;
                                                    ltrue        := True;
                                                    land     P Q := P /\ Q;

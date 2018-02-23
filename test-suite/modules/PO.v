@@ -1,8 +1,8 @@
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Implicit Arguments fst.
-Implicit Arguments snd.
+Arguments fst : default implicits.
+Arguments snd : default implicits.
 
 Module Type PO.
   Parameter T : Set.

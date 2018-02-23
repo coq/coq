@@ -73,7 +73,7 @@ CoInductive LList (A : Set) : Set :=
   | LNil : LList A
   | LCons : A -> LList A -> LList A.
 
-Implicit Arguments LNil [A].
+Arguments LNil [A].
 
 Inductive Finite (A : Set) : LList A -> Prop :=
   | Finite_LNil : Finite LNil

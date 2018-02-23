@@ -33,11 +33,11 @@ Definition eq1 := fun (A:Type) (x y:A) => x=y.
 Definition eq2 := fun (A:Type) (x y:A) => x=y.
 Definition eq3 := fun (A:Type) (x y:A) => x=y.
 
-Implicit Arguments op' [].
-Global Implicit Arguments op'' [].
+Arguments op' : clear implicits.
+Global Arguments op'' : clear implicits.
 
-Implicit Arguments eq2 [].
-Global Implicit Arguments eq3 [].
+Arguments eq2 : clear implicits.
+Global Arguments eq3 : clear implicits.
 
 Check (op 0 0).
 Check (op' nat 0 0).
@@ -89,14 +89,14 @@ Fixpoint plus n m {struct n} :=
 
 (* Check multiple implicit arguments signatures *)
 
-Implicit Arguments eq_refl [[A] [x]] [[A]].
+Arguments eq_refl {A x}, {A}.
 
 Check eq_refl : 0 = 0.
 
 (* Check that notations preserve implicit (since 8.3) *)
 
 Parameter p : forall A, A -> forall n, n = 0 -> True.
-Implicit Arguments p [A n].
+Arguments p [A] _ [n].
 Notation Q := (p 0).
 Check Q eq_refl.
 

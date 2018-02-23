@@ -49,9 +49,9 @@ Record ageable_facts (A:Type) (level: A -> nat) (age1:A -> option A)  :=
 ; af_level2 : forall x y, age1 x = Some y -> level x = S (level y)
 }.
 
-Implicit Arguments af_unage [[A] [level] [age1]].
-Implicit Arguments af_level1 [[A] [level] [age1]].
-Implicit Arguments af_level2 [[A] [level] [age1]].
+Arguments af_unage {A level age1}.
+Arguments af_level1 {A level age1}.
+Arguments af_level2 {A level age1}.
 
 Class ageable (A:Type) := mkAgeable
 { level : A -> nat
@@ -77,7 +77,7 @@ Coercion app_pred : pred >-> Funclass.
 Global Opaque pred.
 
 Definition derives {A} `{ageable A} (P Q:pred A) := forall a:A, P a -> Q a.
-Implicit Arguments derives.
+Arguments derives : default implicits.
 
 Program Definition andp {A} `{ageable A} (P Q:pred A) : pred A :=
    fun a:A => P a /\ Q a.
@@ -170,7 +170,7 @@ Class Functor `(C:Category) `(D:Category) (im : C -> D) := {
     fmap g ∘ fmap f ≈ fmap (g ∘ f)
 }.
 Coercion functor_im : Functor >-> Funclass.
-Implicit Arguments fmap [Object Hom C Object0 Hom0 D im a b].
+Arguments fmap [Object Hom C Object0 Hom0 D im] _ [a b].
 
 Add Parametric Morphism `(C:Category) `(D:Category)
   (Im:C->D) (F:Functor C D Im) (a b:C) : (@fmap _ _ C _ _ D Im F a b)

@@ -5,7 +5,7 @@ Class lops := lmk_ops {
   weq: relation car
 }.
 
-Implicit Arguments car [].
+Arguments car : clear implicits.
 
 Coercion car: lops >-> Sortclass.
 
@@ -23,7 +23,7 @@ Class ops := mk_ops {
   dot: forall n m p, mor n m -> mor m p -> mor n p
 }.
 Coercion mor: ops >-> Funclass.
-Implicit Arguments ob [].
+Arguments ob : clear implicits.
 
 Instance dot_weq `{ops} n m p: Proper (weq ==> weq ==> weq) (dot n m p).
 Proof.

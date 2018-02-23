@@ -82,8 +82,8 @@ Inductive SequenceBase (pu : PatchUniverse)
                      (p : pu_type from mid)
                      (qs : SequenceBase pu mid to),
               SequenceBase pu from to.
-Implicit Arguments Nil [pu cxt].
-Implicit Arguments Cons [pu from mid to].
+Arguments Nil [pu cxt].
+Arguments Cons [pu from mid to].
 
 Program Fixpoint insertBase {pu : PatchUniverse}
                             {from mid to : NameSet}

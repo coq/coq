@@ -128,8 +128,8 @@ Record Monad {m : Type -> Type} := {
 
 Print Visibility.
 Print unit.
-Implicit Arguments unit [[m] [m0] [α]].
-Implicit Arguments Monad [].
+Arguments unit {m m0 α}.
+Arguments Monad : clear implicits.
 Notation "'return' t" := (unit t).
 
 (* Test correct handling of existentials and defined fields. *)

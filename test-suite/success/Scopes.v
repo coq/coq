@@ -11,7 +11,7 @@ Check (A.opp 3).
 
 Record B := { f :> Z -> Z }.
 Variable a:B.
-Arguments Scope a [Z_scope].
+Arguments a _%Z_scope : extra scopes.
 Check a 0.
 
 (* Check that casts activate scopes if ever possible *)

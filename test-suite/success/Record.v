@@ -5,7 +5,7 @@ Require Import Program.
 Require Import List.
 
 Record vector {A : Type} {n : nat} := { vec_list : list A ; vec_len : length vec_list = n }.
-Implicit Arguments vector [].
+Arguments vector : clear implicits.
 
 Coercion vec_list : vector >-> list.
 

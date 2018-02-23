@@ -3,7 +3,7 @@
 
   Definition f (A: Set) (l: T A): unit := tt.
 
-  Implicit Arguments f [A].
+  Arguments f [A].
 
   Lemma L (x: T unit): (unit -> T unit) -> unit.
   Proof.

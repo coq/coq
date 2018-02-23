@@ -63,7 +63,7 @@ Fixpoint lpSat st f: Prop :=
   end.
 End PropLogic.
 
-Implicit Arguments lpSat.
+Arguments lpSat : default implicits.
 
 Fixpoint LPTransfo Pred1 Pred2 p2lp (f: LP Pred1): LP Pred2 :=
   match f with
@@ -71,7 +71,7 @@ Fixpoint LPTransfo Pred1 Pred2 p2lp (f: LP Pred1): LP Pred2 :=
   | LPAnd _ f1 f2 => LPAnd _ (LPTransfo Pred1 Pred2 p2lp f1) (LPTransfo Pred1 Pred2 p2lp f2)
   | LPNot _ f1 => LPNot _ (LPTransfo Pred1 Pred2 p2lp f1)
   end.
-Implicit Arguments LPTransfo.
+Arguments LPTransfo : default implicits.
 
 Definition addIndex (Ind:Type) (Pred: Ind -> Type) (i: Ind) f := 
   LPTransfo (fun p => LPPred _ (existT (fun i => Pred i) i p)) f.
@@ -139,7 +139,7 @@ Definition trProd (State: Type) Ind (Pred: Ind -> Type) (tts: Ind -> TTS State) 
   {i:Ind & Pred i} -> LP (Predicate _ (TTSIndexedProduct _ Ind tts)) :=
   fun p => addIndex Ind _ (projS1 p) (tr (projS1 p) (projS2 p)).
 
-Implicit Arguments trProd.
+Arguments trProd : default implicits.
 Require Import Setoid.
 
 Theorem satTrProd:

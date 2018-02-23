@@ -2,7 +2,7 @@ Inductive vector {A : Type} : nat -> Type :=
 | vnil : vector 0
 | vcons : A -> forall {n'}, vector n' -> vector (S n').
 
-Implicit Arguments vector [].
+Arguments vector A : clear implicits.
 
 Require Import Coq.Program.Program.
 

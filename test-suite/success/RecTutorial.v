@@ -991,10 +991,10 @@ Proof.
 Qed.
 
 
-Implicit Arguments Vector.cons [A n].
-Implicit Arguments Vector.nil [A].
-Implicit Arguments Vector.hd [A n].
-Implicit Arguments Vector.tl [A n].
+Arguments Vector.cons [A] _ [n].
+Arguments Vector.nil [A].
+Arguments Vector.hd [A n].
+Arguments Vector.tl [A n].
 
 Definition Vid : forall (A : Type)(n:nat), Vector.t A n -> Vector.t A n.
 Proof.
@@ -1064,7 +1064,7 @@ Fixpoint vector_nth (A:Set)(n:nat)(p:nat)(v:Vector.t A p){struct v}
   | S n', Vector.cons _ v' => vector_nth A n' _ v'
   end.
 
-Implicit Arguments vector_nth [A p].
+Arguments vector_nth [A] _ [p].
 
 
 Lemma nth_bitwise : forall (n:nat) (v1 v2: Vector.t bool n) i  a b,
@@ -1159,7 +1159,7 @@ infiniteproof map_iterate'.
 Qed.
 
 
-Implicit Arguments LNil [A].
+Arguments LNil [A].
 
 Lemma Lnil_not_Lcons : forall (A:Set)(a:A)(l:LList A),
                                LNil <> (LCons a l).
