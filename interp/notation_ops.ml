@@ -1132,7 +1132,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
 	else f1,l1, f2, l2 in
       let may_use_eta = does_not_come_from_already_eta_expanded_var f1 in
       List.fold_left2 (match_ may_use_eta u alp metas)
-        (match_in u alp metas sigma f1 f2) l1 l2
+        (match_hd u alp metas sigma f1 f2) l1 l2
   | GLambda (na1,bk1,t1,b1), NLambda (na2,t2,b2) ->
      match_extended_binders false u alp metas na1 na2 bk1 t1 (match_in u alp metas sigma t1 t2) b1 b2
   | GProd (na1,bk1,t1,b1), NProd (na2,t2,b2) ->
