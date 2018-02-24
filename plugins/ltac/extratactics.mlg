@@ -98,7 +98,7 @@ let mytclWithHoles tac with_evars c =
   Proofview.Goal.enter begin fun gl ->
     let env = Tacmach.New.pf_env gl in
     let sigma = Tacmach.New.project gl in
-    let sigma',c = Tactics.force_destruction_arg with_evars env sigma c in
+    let sigma',c = Tactics.force_destruction_arg with_evars env sigma (snd c) in
     Tacticals.New.tclWITHHOLES with_evars (tac with_evars (Some c)) sigma'
   end
 

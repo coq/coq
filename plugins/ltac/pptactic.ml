@@ -1281,7 +1281,7 @@ let pr_with_bindings_env bl = Genprint.TopPrinterNeedsContext (fun env sigma ->
     (pr_econstr_env env sigma) (pr_leconstr_env env sigma) bl)
 
 let pr_destruction_arg_env c = Genprint.TopPrinterNeedsContext (fun env sigma ->
-  let sigma, c = match c with
+  let sigma, c = match snd c with
   | clear_flag,ElimOnConstr g -> let sigma,c = g env sigma in sigma,(clear_flag,ElimOnConstr c)
   | clear_flag,ElimOnAnonHyp n as x -> sigma, x
   | clear_flag,ElimOnIdent id as x -> sigma, x in

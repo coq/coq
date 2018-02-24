@@ -164,3 +164,21 @@ Undo.
 destruct 1 as [? IHv].
 exact IHv. (* Check that the name is granted *)
 Qed.
+
+(* Test ability to refer to quantified hypotheses preceding the main
+   quantified hypothesis *)
+
+Goal forall m n, n + m = n + m. (* artificial lemma *)
+induction n in m |- *.
+- apply (eq_refl m).
+- apply (eq_refl (S n + m)).
+Qed.
+
+Section A. (* Same in a section *)
+Variable m:nat.
+Goal forall m n, n + m = n + m. (* artificial lemma *)
+induction n in m0 |- *. (* Is it legitimate to call it m0, as printed, rather than m? *)
+- apply (eq_refl m0).
+- apply (eq_refl (S n + m0)).
+Qed.
+End A.

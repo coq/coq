@@ -313,7 +313,11 @@ let extend_values_with_bindings (ln,lm) lfun =
 (* Evaluation/interpretation *)
 
 let is_variable env id =
-  Id.List.mem id (ids_of_named_context (Environ.named_context env))
+  Id.List.mem id (ids_of_named_context (Environ.named_context env)) ||
+  (* This may happen when interpreting a variable in the context *)
+  (* of a quantified hypothesis (e.g. [induction n in m |- *] when *)
+  (* the goal is [forall m n, P m n]) *)
+  Id.List.mem id (ids_of_rel_context (Environ.rel_context env))
 
 (* Debug reference *)
 let debug = ref DebugOff
@@ -945,22 +949,23 @@ let interp_open_constr_with_bindings_loc ist ((c,_),bl as cb) =
   (loc,f)
 
 let interp_destruction_arg ist gl arg =
+  let env = Proofview.Goal.env gl in
   match arg with
   | keep,ElimOnConstr c ->
-      keep,ElimOnConstr begin fun env sigma ->
+      env,(keep,ElimOnConstr begin fun env sigma ->
         interp_open_constr_with_bindings ist env sigma c
-      end
-  | keep,ElimOnAnonHyp n as x -> x
+      end)
+  | keep,ElimOnAnonHyp n as x -> env,x
   | keep,ElimOnIdent {loc;v=id} ->
       let error () = user_err ?loc
        (strbrk "Cannot coerce " ++ Id.print id ++
         strbrk " neither to a quantified hypothesis nor to a term.")
       in
       let try_cast_id id' =
-        if Tactics.is_quantified_hypothesis id' gl
-        then keep,ElimOnIdent (make ?loc id')
-        else
-          (keep, ElimOnConstr begin fun env sigma ->
+        match Tactics.find_quantified_hypothesis_context id' gl with
+        | Some env -> env,(keep,ElimOnIdent (make ?loc id'))
+        | None ->
+          env,(keep,ElimOnConstr begin fun env sigma ->
           try (sigma, (constr_of_id env id', NoBindings))
           with Not_found ->
             user_err ?loc  ~hdr:"interp_destruction_arg" (
@@ -979,21 +984,21 @@ let interp_destruction_arg ist gl arg =
           let id = out_gen (topwit wit_hyp) v in
           try_cast_id id
         else if has_type v (topwit wit_int) then
-          keep,ElimOnAnonHyp (out_gen (topwit wit_int) v)
+          env,(keep,ElimOnAnonHyp (out_gen (topwit wit_int) v))
         else match Value.to_constr v with
         | None -> error ()
-        | Some c -> keep,ElimOnConstr (fun env sigma -> (sigma, (c,NoBindings)))
+        | Some c -> env,(keep,ElimOnConstr (fun env sigma -> (sigma, (c,NoBindings))))
       with Not_found ->
         (* We were in non strict (interactive) mode *)
-        if Tactics.is_quantified_hypothesis id gl then
-          keep,ElimOnIdent (make ?loc id)
-        else
+        match Tactics.find_quantified_hypothesis_context id gl with
+        | Some env -> env,(keep,ElimOnIdent (make ?loc id))
+        | None ->
           let c = (DAst.make ?loc @@ GVar id,Some (make @@ CRef (qualid_of_ident ?loc id,None))) in
           let f env sigma =
             let (sigma,c) = interp_open_constr ist env sigma c in
             (sigma, (c,NoBindings))
           in
-          keep,ElimOnConstr f
+          env,(keep,ElimOnConstr f)
 
 (* Associates variables with values and gives the remaining variables and
    values *)
@@ -1812,11 +1817,11 @@ and interp_atomic ist tac : unit Proofview.tactic =
             (* TODO: move sigma as a side-effect *)
              (* spiwack: the [*p] variants are for printing *)
             let cp = c in
-            let c = interp_destruction_arg ist gl c in
-            let ipato = interp_intro_pattern_naming_option ist env sigma ipato in
+            let env',c = interp_destruction_arg ist gl c in
+            let ipato = interp_intro_pattern_naming_option ist env' sigma ipato in
             let ipatsp = ipats in
-            let sigma,ipats = interp_or_and_intro_pattern_option ist env sigma ipats in
-            let cls = Option.map (interp_clause ist env sigma) cls in
+            let sigma,ipats = interp_or_and_intro_pattern_option ist env' sigma ipats in
+            let cls = Option.map (interp_clause ist env' sigma) cls in
             sigma,((c,(ipato,ipats),cls),(cp,(ipato,ipatsp),cls))
           end sigma l
         in
