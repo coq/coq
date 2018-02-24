@@ -378,4 +378,22 @@ Definition iter (n:N) {A} (f:A->A) (x:A) : A :=
     | pos p => Pos.iter f x p
   end.
 
+(** Conversion with a decimal representation for printing/parsing *)
+
+Definition of_uint (d:Decimal.uint) := Pos.of_uint d.
+
+Definition of_int (d:Decimal.int) :=
+  match Decimal.norm d with
+  | Decimal.Pos d => Some (Pos.of_uint d)
+  | Decimal.Neg _ => None
+  end.
+
+Definition to_uint n :=
+  match n with
+  | 0 => Decimal.zero
+  | pos p => Pos.to_uint p
+  end.
+
+Definition to_int n := Decimal.Pos (to_uint n).
+
 End N.

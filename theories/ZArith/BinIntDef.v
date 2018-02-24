@@ -299,6 +299,23 @@ Definition to_pos (z:Z) : positive :=
     | _ => 1%positive
   end.
 
+(** Conversion with a decimal representation for printing/parsing *)
+
+Definition of_uint (d:Decimal.uint) := of_N (Pos.of_uint d).
+
+Definition of_int (d:Decimal.int) :=
+  match d with
+  | Decimal.Pos d => of_uint d
+  | Decimal.Neg d => opp (of_uint d)
+  end.
+
+Definition to_int n :=
+  match n with
+  | 0 => Decimal.Pos Decimal.zero
+  | pos p => Decimal.Pos (Pos.to_uint p)
+  | neg p => Decimal.Neg (Pos.to_uint p)
+  end.
+
 (** ** Iteration of a function
 
     By convention, iterating a negative number of times is identity.

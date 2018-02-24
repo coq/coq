@@ -11,6 +11,7 @@ Require Export Logic.
 Require Export Logic_Type.
 Require Export Datatypes.
 Require Export Specif.
+Require Coq.Init.Decimal.
 Require Coq.Init.Nat.
 Require Export Peano.
 Require Export Coq.Init.Wf.
