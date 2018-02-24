@@ -16,6 +16,7 @@ open Termops
 open Mod_subst
 open Evd
 open Ltac_pretype
+open Namegen
 
 type _ delay =
 | Now : 'a delay
@@ -68,6 +69,7 @@ val detype_closed_glob : ?lax:bool -> bool -> Id.Set.t -> env -> evar_map -> clo
 (** look for the index of a named var or a nondep var as it is renamed *)
 val lookup_name_as_displayed  : env -> evar_map -> constr -> Id.t -> int option
 val lookup_index_as_renamed : env -> evar_map -> constr -> int -> int option
+val lookup_quantified_hypothesis_as_displayed : env -> evar_map -> constr -> quantified_hypothesis -> (env * int) option
 
 val force_wildcard : unit -> bool
 val synthetize_type : unit -> bool

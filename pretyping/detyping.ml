@@ -327,46 +327,50 @@ let computable sigma (nas, ccl) =
 
   noccur_between sigma 1 (Array.length nas) ccl
 
-let lookup_name_as_displayed env sigma t s =
-  let rec lookup avoid n c = match EConstr.kind sigma c with
-    | Prod (name,_,c') ->
-        (match compute_displayed_name_in sigma RenamingForGoal avoid name.binder_name c' with
-           | (Name id,avoid') -> if Id.equal id s then Some n else lookup avoid' (n+1) c'
-           | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
-    | LetIn (name,_,_,c') ->
+(* Tells if undocumented "intros until 0" is supported *)
+let accept_0 = true
+
+let isNamedHyp id = function
+  | NamedHyp id' -> Id.equal id id'
+  | AnonHyp _ -> false
+
+let isAnonHyp = function
+  | NamedHyp id' -> false
+  | AnonHyp n' -> n' = 1 || accept_0 && n' = 0
+
+let update na h = match na, h with
+  | Anonymous, AnonHyp n -> AnonHyp (n-1)
+  | _, h -> h
+
+let adjust h n = match h with
+  | AnonHyp 1 -> n
+  | AnonHyp 0 when accept_0 -> n - 1
+  | _ -> assert false
+
+let lookup_quantified_hypothesis_as_displayed env sigma t h =
+  let open Context.Rel.Declaration in
+  let rec lookup env avoid n h c = match EConstr.kind sigma c with
+    | Prod (name,d,c') ->
         (match Namegen.compute_displayed_name_in sigma RenamingForGoal avoid name.binder_name c' with
-           | (Name id,avoid') -> if Id.equal id s then Some n else lookup avoid' (n+1) c'
-           | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
-    | Cast (c,_,_) -> lookup avoid n c
-    | _ -> None
-  in lookup (Environ.ids_of_named_context_val (Environ.named_context_val env)) 1 t
+           | (Name id,avoid') when isNamedHyp id h -> Some (env,n)
+           | (Anonymous,avoid') when isAnonHyp h -> Some (env,if accept_0 then adjust h n else n)
+           | (na,avoid') ->
+               lookup (push_rel (LocalAssum (make_annot na name.binder_relevance,d)) env) avoid' (n+1) (update na h) c')
+    | LetIn (name,b,d,c') ->
+        (match Namegen.compute_displayed_name_in sigma RenamingForGoal avoid name.binder_name c' with
+           | (Name id,avoid') when isNamedHyp id h -> Some (env,n)
+           | (Anonymous,avoid') when isAnonHyp h -> Some (env,if accept_0 then adjust h n else n)
+           | (na,avoid') ->
+                lookup (push_rel (LocalDef (make_annot na name.binder_relevance,b,d)) env) avoid' (n+1) (update na h) c')
+    | Cast (c,_,_) -> lookup env avoid n h c
+    | _ -> if accept_0 && h = AnonHyp 0 then Some (env, n-1) else None
+  in lookup env (Environ.ids_of_named_context_val (Environ.named_context_val env)) 1 h t
+
+let lookup_name_as_displayed env sigma t s =
+  Option.map snd (lookup_quantified_hypothesis_as_displayed env sigma t (NamedHyp s))
 
 let lookup_index_as_renamed env sigma t n =
-  let rec lookup n d c = match EConstr.kind sigma c with
-    | Prod (name,_,c') ->
-          (match Namegen.compute_displayed_name_in sigma RenamingForGoal Id.Set.empty name.binder_name c' with
-               (Name _,_) -> lookup n (d+1) c'
-             | (Anonymous,_) ->
-                 if Int.equal n 0 then
-                   Some (d-1)
-                 else if Int.equal n 1 then
-                   Some d
-                 else
-                   lookup (n-1) (d+1) c')
-    | LetIn (name,_,_,c') ->
-          (match Namegen.compute_displayed_name_in sigma RenamingForGoal Id.Set.empty name.binder_name c' with
-             | (Name _,_) -> lookup n (d+1) c'
-             | (Anonymous,_) ->
-                 if Int.equal n 0 then
-                   Some (d-1)
-                 else if Int.equal n 1 then
-                   Some d
-                 else
-                   lookup (n-1) (d+1) c'
-          )
-    | Cast (c,_,_) -> lookup n d c
-    | _ -> if Int.equal n 0 then Some (d-1) else None
-  in lookup n 1 t
+  Option.map snd (lookup_quantified_hypothesis_as_displayed env sigma t (AnonHyp n))
 
 (**********************************************************************)
 (* Factorization of match patterns *)
