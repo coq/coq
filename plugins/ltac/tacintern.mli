@@ -47,7 +47,7 @@ val intern_constr_with_bindings :
   glob_sign -> constr_expr * constr_expr bindings ->
   glob_constr_and_expr * glob_constr_and_expr bindings
 
-val intern_hyp : glob_sign -> Id.t Loc.located -> Id.t Loc.located
+val intern_hyp : glob_sign -> lident -> lident
 
 (** Adds a globalization function for extra generic arguments *)
 

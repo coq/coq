@@ -561,7 +561,7 @@ let do_universe poly l =
                    (str"Cannot declare polymorphic universes outside sections")
   in
   let l =
-    List.map (fun (l, id) ->
+    List.map (fun {CAst.v=id} ->
       let lev = Universes.new_univ_id () in
       (id, lev)) l
   in

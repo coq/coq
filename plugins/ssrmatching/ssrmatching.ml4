@@ -137,9 +137,9 @@ let destGLambda c = match DAst.get c with GLambda (Name id, _, _, c) -> (id, c)
 let isGHole c = match DAst.get c with GHole _ -> true | _ -> false
 let mkCHole ~loc = CAst.make ?loc @@ CHole (None, IntroAnonymous, None)
 let mkCLambda ?loc name ty t = CAst.make ?loc @@
-   CLambdaN ([CLocalAssum([Loc.tag ?loc name], Default Explicit, ty)], t)
+   CLambdaN ([CLocalAssum([CAst.make ?loc name], Default Explicit, ty)], t)
 let mkCLetIn ?loc name bo t = CAst.make ?loc @@
-   CLetIn ((Loc.tag ?loc name), bo, None, t)
+   CLetIn ((CAst.make ?loc name), bo, None, t)
 let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, dC ty)
 (** Constructors for rawconstr *)
 let mkRHole = DAst.make @@ GHole (InternalHole, IntroAnonymous, None)

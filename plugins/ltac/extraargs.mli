@@ -50,7 +50,7 @@ val lglob : constr_expr Pcoq.Gram.entry
 
 type 'id gen_place= ('id * Locus.hyp_location_flag,unit) location
 
-type loc_place = Id.t Loc.located gen_place
+type loc_place = lident gen_place
 type place = Id.t gen_place
 
 val wit_hloc : (loc_place, loc_place, place) Genarg.genarg_type
@@ -77,6 +77,6 @@ val retroknowledge_field : Retroknowledge.field Pcoq.Gram.entry
 val wit_retroknowledge_field : (Retroknowledge.field, unit, unit) Genarg.genarg_type
 
 val wit_in_clause :
-  (Id.t Loc.located Locus.clause_expr,
-  Id.t Loc.located Locus.clause_expr,
-  Id.t Locus.clause_expr) Genarg.genarg_type
+  (lident Locus.clause_expr,
+   lident Locus.clause_expr,
+   Id.t   Locus.clause_expr) Genarg.genarg_type

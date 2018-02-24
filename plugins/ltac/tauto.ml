@@ -255,10 +255,10 @@ let tauto_power_flags = {
 }
 
 let with_flags flags _ ist =
-  let f = (Loc.tag @@ Id.of_string "f") in
-  let x = (Loc.tag @@ Id.of_string "x") in
+  let f = CAst.make @@ Id.of_string "f" in
+  let x = CAst.make @@ Id.of_string "x" in
   let arg = Val.Dyn (tag_tauto_flags, flags) in
-  let ist = { ist with lfun = Id.Map.add (snd x) arg ist.lfun } in
+  let ist = { ist with lfun = Id.Map.add x.CAst.v arg ist.lfun } in
   eval_tactic_ist ist (TacArg (Loc.tag @@ TacCall (Loc.tag (ArgVar f, [Reference (ArgVar x)]))))
 
 let register_tauto_tactic tac name0 args =

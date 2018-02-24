@@ -6,9 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Loc
 open Names
 open Notation_term
 
-val declare_reserved_type : Id.t located list -> notation_constr -> unit
+val declare_reserved_type : Misctypes.lident list -> notation_constr -> unit
 val find_reserved_type : Id.t -> notation_constr

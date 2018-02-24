@@ -298,16 +298,16 @@ let do_program_recursive local poly fixkind fixl ntns =
 let do_program_fixpoint local poly l =
   let g = List.map (fun ((_,wf,_,_,_),_) -> wf) l in
     match g, l with
-    | [(n, CWfRec r)], [((((_,id),pl),_,bl,typ,def),ntn)] ->
+    | [(n, CWfRec r)], [((({CAst.v=id},pl),_,bl,typ,def),ntn)] ->
         let recarg =
           match n with
-          | Some n -> mkIdentC (snd n)
+          | Some n -> mkIdentC n.CAst.v
           | None ->
               user_err ~hdr:"do_program_fixpoint"
                 (str "Recursive argument required for well-founded fixpoints")
         in build_wellfounded (id, pl, n, bl, typ, out_def def) poly r recarg ntn
 
-    | [(n, CMeasureRec (m, r))], [((((_,id),pl),_,bl,typ,def),ntn)] ->
+    | [(n, CMeasureRec (m, r))], [((({CAst.v=id},pl),_,bl,typ,def),ntn)] ->
         build_wellfounded (id, pl, n, bl, typ, out_def def) poly
           (Option.default (CAst.make @@ CRef (lt_ref,None)) r) m ntn
 
@@ -322,7 +322,7 @@ let do_program_fixpoint local poly l =
 
 let extract_cofixpoint_components l =
   let fixl, ntnl = List.split l in
-  List.map (fun (((_,id),pl),bl,typ,def) ->
+  List.map (fun (({CAst.v=id},pl),bl,typ,def) ->
             {fix_name = id; fix_annot = None; fix_univs = pl;
              fix_binders = bl; fix_body = def; fix_type = typ}) fixl,
   List.flatten ntnl

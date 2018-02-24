@@ -6,10 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Vernacexpr
 open CErrors
 open Util
 open Pp
+open CAst
+open Vernacexpr
 
 let default_proof_mode () = Proof_global.get_default_proof_mode_name () [@ocaml.warning "-3"]
 
@@ -87,13 +88,14 @@ let classify_vernac e =
     | VernacUnsetOption (["Default";"Proof";"Using"])
     | VernacSetOption (["Default";"Proof";"Using"],_) -> VtSideff [], VtNow
     (* StartProof *)
-    | VernacDefinition ((Decl_kinds.DoDischarge,_),((_,i),_),ProveBody _) ->
-        VtStartProof(default_proof_mode (),Doesn'tGuaranteeOpacity, idents_of_name i), VtLater
-    | VernacDefinition (_,((_,i),_),ProveBody _) ->
+    | VernacDefinition ((Decl_kinds.DoDischarge,_),({v=i},_),ProveBody _) ->
+      VtStartProof(default_proof_mode (),Doesn'tGuaranteeOpacity, idents_of_name i), VtLater
+
+    | VernacDefinition (_,({v=i},_),ProveBody _) ->
        let guarantee = if poly then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
         VtStartProof(default_proof_mode (),guarantee, idents_of_name i), VtLater
     | VernacStartTheoremProof (_,l) ->
-        let ids = List.map (fun (((_, i), _), _) -> i) l in
+        let ids = List.map (fun (({v=i}, _), _) -> i) l in
        let guarantee = if poly then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
         VtStartProof (default_proof_mode (),guarantee,ids), VtLater
     | VernacFixpoint (discharge,l) ->
@@ -102,7 +104,7 @@ let classify_vernac e =
          else GuaranteesOpacity
        in
         let ids, open_proof =
-          List.fold_left (fun (l,b) ((((_,id),_),_,_,_,p),_) ->
+          List.fold_left (fun (l,b) ((({v=id},_),_,_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
         then VtStartProof (default_proof_mode (),guarantee,ids), VtLater
@@ -113,29 +115,29 @@ let classify_vernac e =
          else GuaranteesOpacity
        in
         let ids, open_proof =
-          List.fold_left (fun (l,b) ((((_,id),_),_,_,p),_) ->
+          List.fold_left (fun (l,b) ((({v=id},_),_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
         then VtStartProof (default_proof_mode (),guarantee,ids), VtLater
         else VtSideff ids, VtLater
     (* Sideff: apply to all open branches. usually run on master only *)
     | VernacAssumption (_,_,l) ->
-        let ids = List.flatten (List.map (fun (_,(l,_)) -> List.map (fun (id, _) -> snd id) l) l) in
-        VtSideff ids, VtLater    
-    | VernacDefinition (_,((_,id),_),DefineBody _) -> VtSideff (idents_of_name id), VtLater
+        let ids = List.flatten (List.map (fun (_,(l,_)) -> List.map (fun (id, _) -> id.v) l) l) in
+        VtSideff ids, VtLater
+    | VernacDefinition (_,({v=id},_),DefineBody _) -> VtSideff (idents_of_name id), VtLater
     | VernacInductive (_, _,_,l) ->
-        let ids = List.map (fun (((_,((_,id),_)),_,_,_,cl),_) -> id :: match cl with
-        | Constructors l -> List.map (fun (_,((_,id),_)) -> id) l
-        | RecordDecl (oid,l) -> (match oid with Some (_,x) -> [x] | _ -> []) @
+        let ids = List.map (fun (((_,({v=id},_)),_,_,_,cl),_) -> id :: match cl with
+        | Constructors l -> List.map (fun (_,({v=id},_)) -> id) l
+        | RecordDecl (oid,l) -> (match oid with Some {v=x} -> [x] | _ -> []) @
            CList.map_filter (function
-            | ((_,AssumExpr((_,Names.Name n),_)),_),_ -> Some n
+            | ((_,AssumExpr({v=Names.Name n},_)),_),_ -> Some n
             | _ -> None) l) l in
         VtSideff (List.flatten ids), VtLater
     | VernacScheme l ->
-        let ids = List.map snd (CList.map_filter (fun (x,_) -> x) l) in
+        let ids = List.map (fun {v}->v) (CList.map_filter (fun (x,_) -> x) l) in
         VtSideff ids, VtLater
-    | VernacCombinedScheme ((_,id),_) -> VtSideff [id], VtLater
-    | VernacBeginSection (_,id) -> VtSideff [id], VtLater
+    | VernacCombinedScheme ({v=id},_) -> VtSideff [id], VtLater
+    | VernacBeginSection {v=id} -> VtSideff [id], VtLater
     | VernacUniverse _ | VernacConstraint _
     | VernacCanonical _ | VernacCoercion _ | VernacIdentityCoercion _
     | VernacAddLoadPath _ | VernacRemoveLoadPath _ | VernacAddMLPath _
@@ -159,10 +161,10 @@ let classify_vernac e =
     (* (Local) Notations have to disappear *)
     | VernacEndSegment _ -> VtSideff [], VtNow
     (* Modules with parameters have to be executed: can import notations *)
-    | VernacDeclareModule (exp,(_,id),bl,_)
-    | VernacDefineModule (exp,(_,id),bl,_,_) ->
+    | VernacDeclareModule (exp,{v=id},bl,_)
+    | VernacDefineModule (exp,{v=id},bl,_,_) ->
         VtSideff [id], if bl = [] && exp = None then VtLater else VtNow
-    | VernacDeclareModuleType ((_,id),bl,_,_) ->
+    | VernacDeclareModuleType ({v=id},bl,_,_) ->
         VtSideff [id], if bl = [] then VtLater else VtNow
     (* These commands alter the parser *)
     | VernacOpenCloseScope _ | VernacDelimiters _ | VernacBindScope _
@@ -198,7 +200,7 @@ let classify_vernac e =
         ) poly f in
       static_classifier ~poly e
     | VernacTimeout (_,e) -> static_control_classifier ~poly e
-    | VernacTime (_,(_,e)) | VernacRedirect (_, (_,e)) ->
+    | VernacTime (_,{v=e}) | VernacRedirect (_, {v=e}) ->
        static_control_classifier ~poly e
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match static_control_classifier ~poly e with

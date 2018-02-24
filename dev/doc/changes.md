@@ -49,6 +49,14 @@ We changed the type of the following functions:
   a functional way. The old style of passing `evar_map`s as references
   is not supported anymore.
 
+Changes in the abstract syntax tree:
+
+- The practical totality of the AST has been nodified using
+  `CAst.t`. This means that all objects coming from parsing will be
+  indeed wrapped in a `CAst.t`. `Loc.located` is on its way to
+  deprecation. Some minor interfaces changes have resulted from
+  this.
+
 We have changed the representation of the following types:
 
 - `Lib.object_prefix` is now a record instead of a nested tuple.

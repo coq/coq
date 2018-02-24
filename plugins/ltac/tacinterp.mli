@@ -75,7 +75,7 @@ val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr -> Evd.evar_map 
 (** Interprets tactic expressions *)
 
 val interp_hyp : interp_sign -> Environ.env -> Evd.evar_map ->
-  Id.t Loc.located -> Id.t
+  lident -> Id.t
 
 val interp_glob_closure : interp_sign -> Environ.env -> Evd.evar_map ->
   ?kind:Pretyping.typing_constraint -> ?pattern_mode:bool -> glob_constr_and_expr ->
@@ -125,9 +125,9 @@ val hide_interp : bool -> raw_tactic_expr -> unit Proofview.tactic option -> uni
 (** Internals that can be useful for syntax extensions. *)
 
 val interp_ltac_var : (value -> 'a) -> interp_sign ->
-  (Environ.env * Evd.evar_map) option -> Id.t Loc.located -> 'a
+  (Environ.env * Evd.evar_map) option -> lident -> 'a
 
-val interp_int : interp_sign -> Id.t Loc.located -> int
+val interp_int : interp_sign -> lident -> int
 
 val interp_int_or_var : interp_sign -> int or_var -> int
 

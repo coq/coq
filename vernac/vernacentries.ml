@@ -10,6 +10,7 @@
 
 open Pp
 open CErrors
+open CAst
 open Util
 open Names
 open Nameops
@@ -471,13 +472,13 @@ let vernac_definition_hook p = function
 | SubClass -> Class.add_subclass_hook p
 | _ -> no_hook
 
-let vernac_definition ~atts discharge kind ((loc, id), pl) def =
+let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
   let local = enforce_locality_exp atts.locality discharge in
   let hook = vernac_definition_hook atts.polymorphic kind in
   let () =
     match id with
     | Anonymous -> ()
-    | Name n -> let lid = (loc, n) in
+    | Name n -> let lid = CAst.make ?loc n in
       match local with
       | Discharge -> Dumpglob.dump_definition lid true "var"
       | Local | Global -> Dumpglob.dump_definition lid false "def"
@@ -491,7 +492,7 @@ let vernac_definition ~atts discharge kind ((loc, id), pl) def =
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
       start_proof_and_print (local, atts.polymorphic, DefinitionBody kind)
-        [((loc, name), pl), (bl, t)] hook
+        [(CAst.make ?loc name, pl), (bl, t)] hook
     | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
           | None -> None
@@ -546,14 +547,14 @@ let should_treat_as_cumulative cum poly =
 let vernac_record cum k poly finite struc binders sort nameopt cfs =
   let is_cumulative = should_treat_as_cumulative cum poly in
   let const = match nameopt with
-    | None -> add_prefix "Build_" (snd (fst (snd struc)))
-    | Some (_,id as lid) ->
+    | None -> add_prefix "Build_" (fst (snd struc)).v
+    | Some ({v=id} as lid) ->
 	Dumpglob.dump_definition lid false "constr"; id in
     if Dumpglob.dump () then (
       Dumpglob.dump_definition (fst (snd struc)) false "rec";
       List.iter (fun (((_, x), _), _) ->
 	match x with
-	| Vernacexpr.AssumExpr ((loc, Name id), _) -> Dumpglob.dump_definition (loc,id) false "proj"
+        | Vernacexpr.AssumExpr ({loc;v=Name id}, _) -> Dumpglob.dump_definition (make ?loc id) false "proj"
 	| _ -> ()) cfs);
     ignore(Record.definition_structure (k,is_cumulative,poly,finite,struc,binders,cfs,const,sort))
 
@@ -582,9 +583,9 @@ let vernac_inductive ~atts cum lo finite indl =
        atts.polymorphic finite id bl c oc fs
   | [ ( id , bl , c , Class _, Constructors [l]), [] ] ->
       let f =
-	let (coe, ((loc, id), ce)) = l in
+        let (coe, ({loc;v=id}, ce)) = l in
 	let coe' = if coe then Some true else None in
-  	  (((coe', AssumExpr ((loc, Name id), ce)), None), [])
+          (((coe', AssumExpr ((make ?loc @@ Name id), ce)), None), [])
       in vernac_record cum (Class true) atts.polymorphic finite id bl c None [f]
   | [ ( _ , _, _, Class _, Constructors _), [] ] ->
       user_err Pp.(str "Inductive classes not supported")
@@ -637,7 +638,7 @@ let vernac_scheme l =
 let vernac_combined_scheme lid l =
   if Dumpglob.dump () then
     (Dumpglob.dump_definition lid false "def";
-     List.iter (fun lid -> dump_global (Misctypes.AN (Ident lid))) l);
+     List.iter (fun {loc;v=id} -> dump_global (Misctypes.AN (Ident (Loc.tag ?loc id)))) l);
  Indschemes.do_combined_scheme lid l
 
 let vernac_universe ~atts l =
@@ -660,7 +661,7 @@ let vernac_constraint ~atts l =
 let vernac_import export refl =
   Library.import_module export (List.map qualid_of_reference refl)
 
-let vernac_declare_module export (loc, id) binders_ast mty_ast =
+let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
   if Lib.sections_are_opened () then
@@ -678,7 +679,7 @@ let vernac_declare_module export (loc, id) binders_ast mty_ast =
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is declared");
   Option.iter (fun export -> vernac_import export [Ident (Loc.tag id)]) export
 
-let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
+let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mty_ast_o mexpr_ast_l =
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
   if Lib.sections_are_opened () then
@@ -689,7 +690,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
        let binders_ast,argsexport =
         List.fold_right
          (fun (export,idl,ty) (args,argsexport) ->
-           (idl,ty)::args, (List.map (fun (_,i) -> export,i)idl)@argsexport) binders_ast
+           (idl,ty)::args, (List.map (fun {v=i} -> export,i)idl)@argsexport) binders_ast
              ([],[]) in
        let mp =
          Declaremods.start_module Modintern.interp_module_ast
@@ -719,13 +720,13 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
        Option.iter (fun export -> vernac_import export [Ident (Loc.tag id)])
          export
 
-let vernac_end_module export (loc,id as lid) =
+let vernac_end_module export {loc;v=id} =
   let mp = Declaremods.end_module () in
   Dumpglob.dump_modref ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is defined");
-  Option.iter (fun export -> vernac_import export [Ident lid]) export
+  Option.iter (fun export -> vernac_import export [Ident (Loc.tag ?loc id)]) export
 
-let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
+let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
   if Lib.sections_are_opened () then
     user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
 
@@ -735,7 +736,7 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
        let binders_ast,argsexport =
 	 List.fold_right
          (fun (export,idl,ty) (args,argsexport) ->
-           (idl,ty)::args, (List.map (fun (_,i) -> export,i)idl)@argsexport) binders_ast
+           (idl,ty)::args, (List.map (fun {v=i} -> export,i)idl)@argsexport) binders_ast
              ([],[]) in
 
        let mp =
@@ -765,7 +766,7 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
 	Flags.if_verbose Feedback.msg_info
 	  (str "Module Type " ++ Id.print id ++ str " is defined")
 
-let vernac_end_modtype (loc,id) =
+let vernac_end_modtype {loc;v=id} =
   let mp = Declaremods.end_modtype () in
   Dumpglob.dump_modref ?loc mp "modtype";
   Flags.if_verbose Feedback.msg_info (str "Module Type " ++ Id.print id ++ str " is defined")
@@ -778,21 +779,21 @@ let vernac_include l =
 
 (* Sections *)
 
-let vernac_begin_section (_, id as lid) =
+let vernac_begin_section ({v=id} as lid) =
   Proof_global.check_no_pending_proof ();
   Dumpglob.dump_definition lid true "sec";
   Lib.open_section id
 
-let vernac_end_section (loc,_) =
+let vernac_end_section {CAst.loc} =
   Dumpglob.dump_reference ?loc
     (DirPath.to_string (Lib.current_dirpath true)) "<>" "sec";
   Lib.close_section ()
 
-let vernac_name_sec_hyp (_,id) set = Proof_using.name_set id set
+let vernac_name_sec_hyp {v=id} set = Proof_using.name_set id set
 
 (* Dispatcher of the "End" command *)
 
-let vernac_end_segment (_,id as lid) =
+let vernac_end_segment ({v=id} as lid) =
   Proof_global.check_no_pending_proof ();
   match Lib.find_opening_node id with
   | Lib.OpenedModule (false,export,_,_) -> vernac_end_module export lid
@@ -975,7 +976,7 @@ let vernac_hints ~atts lb h =
 let vernac_syntactic_definition ~atts lid x y =
   Dumpglob.dump_definition lid false "syndef";
   let local = enforce_module_locality atts.locality in
-  Metasyntax.add_syntactic_definition (Global.env()) (snd lid) x local y
+  Metasyntax.add_syntactic_definition (Global.env()) lid.v x local y
 
 let vernac_declare_implicits ~atts r l =
   let local = make_section_locality atts.locality in
@@ -1211,7 +1212,7 @@ let vernac_arguments ~atts reference args more_implicits nargs_for_red flags =
   end;
 
   if scopes_specified || clear_scopes_flag then begin
-      let scopes = List.map (Option.map (fun (loc,k) -> 
+      let scopes = List.map (Option.map (fun {loc;v=k} ->
         try ignore (Notation.find_scope k); k
         with UserError _ ->
           Notation.find_delimiters_scope ?loc k)) scopes
@@ -1824,7 +1825,7 @@ let vernac_locate = function
 let vernac_register id r =
  if Proof_global.there_are_pending_proofs () then
     user_err Pp.(str "Cannot register a primitive while in proof editing mode.");
-  let kn = Constrintern.global_reference (snd id) in
+  let kn = Constrintern.global_reference id.v in
   if not (isConstRef kn) then
     user_err Pp.(str "Register inline: a constant is expected");
   match r with
@@ -2015,7 +2016,7 @@ let interp ?proof ~atts ~st c =
   | VernacImport (export,qidl) -> vernac_import export qidl
   | VernacCanonical qid -> vernac_canonical qid
   | VernacCoercion (r,s,t) -> vernac_coercion ~atts r s t
-  | VernacIdentityCoercion ((_,id),s,t) ->
+  | VernacIdentityCoercion ({v=id},s,t) ->
       vernac_identity_coercion ~atts id s t
 
   (* Type classes *)
@@ -2233,12 +2234,12 @@ let interp ?(verbosely=true) ?proof ~st (loc,c) =
     aux ~polymorphism ~atts v
   | VernacFail v -> with_fail st true (fun () -> control v)
   | VernacTimeout (n,v) ->
-      current_timeout := Some n;
-      control v
-  | VernacRedirect (s, (_,v)) ->
-       Topfmt.with_output_to_file s control v
-  | VernacTime (batch, (_loc,v)) ->
-      System.with_time ~batch control v;
+    current_timeout := Some n;
+    control v
+  | VernacRedirect (s, {v}) ->
+    Topfmt.with_output_to_file s control v
+  | VernacTime (batch, {v}) ->
+    System.with_time ~batch control v;
 
   and aux ~polymorphism ~atts : _ -> unit =
     function

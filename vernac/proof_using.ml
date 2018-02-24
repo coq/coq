@@ -51,7 +51,7 @@ let rec process_expr env e ty =
   let rec aux = function
     | SsEmpty -> Id.Set.empty
     | SsType -> set_of_type env ty
-    | SsSingl (_,id) -> set_of_id env id
+    | SsSingl { CAst.v = id } -> set_of_id env id
     | SsUnion(e1,e2) -> Id.Set.union (aux e1) (aux e2)
     | SsSubstr(e1,e2) -> Id.Set.diff (aux e1) (aux e2)
     | SsCompl e -> Id.Set.diff (full_set env) (aux e)

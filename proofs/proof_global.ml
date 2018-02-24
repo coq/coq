@@ -79,7 +79,7 @@ type proof_object = {
 type proof_ending =
   | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry * UState.t
   | Proved of Vernacexpr.opacity_flag *
-              Vernacexpr.lident option *
+              Misctypes.lident option *
               proof_object
 type proof_terminator = proof_ending -> unit
 type closed_proof = proof_object * proof_terminator

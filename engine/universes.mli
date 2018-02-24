@@ -35,7 +35,7 @@ val empty_binders : universe_binders
 val register_universe_binders : Globnames.global_reference -> universe_binders -> unit
 val universe_binders_of_global : Globnames.global_reference -> universe_binders
 
-type univ_name_list = Name.t Loc.located list
+type univ_name_list = Misctypes.lname list
 
 (** [universe_binders_with_opt_names ref u l]
 

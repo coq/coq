@@ -1484,7 +1484,7 @@ let simpleInjClause flags with_evars = function
   | Some c -> onInductionArg (fun clear_flag -> onEquality with_evars (injEq flags ~old:true with_evars clear_flag None)) c
 
 let injConcl flags = injClause flags None false None
-let injHyp flags clear_flag id = injClause flags None false (Some (clear_flag,ElimOnIdent (Loc.tag id)))
+let injHyp flags clear_flag id = injClause flags None false (Some (clear_flag,ElimOnIdent CAst.(make id)))
 
 let decompEqThen keep_proofs ntac (lbeq,_,(t,t1,t2) as u) clause =
   Proofview.Goal.enter begin fun gl ->

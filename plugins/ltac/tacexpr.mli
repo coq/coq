@@ -41,7 +41,7 @@ type goal_selector = Vernacexpr.goal_selector =
 
 type 'a core_destruction_arg = 'a Misctypes.core_destruction_arg =
   | ElimOnConstr of 'a
-  | ElimOnIdent of Id.t located
+  | ElimOnIdent of lident
   | ElimOnAnonHyp of int
 
 type 'a destruction_arg =
@@ -85,8 +85,8 @@ type 'a match_pattern =
 
 (* Type of hypotheses for a Match Context rule *)
 type 'a match_context_hyps =
-  | Hyp of Name.t located * 'a match_pattern
-  | Def of Name.t located * 'a match_pattern * 'a match_pattern
+  | Hyp of lname * 'a match_pattern
+  | Def of lname * 'a match_pattern * 'a match_pattern
 
 (* Type of a Match rule for Match Context and Match *)
 type ('a,'t) match_rule =
@@ -254,7 +254,7 @@ and 'a gen_tactic_expr =
   | TacFail of global_flag * int or_var * 'n message_token list
   | TacInfo of 'a gen_tactic_expr
   | TacLetIn of rec_flag *
-      (Name.t located * 'a gen_tactic_arg) list *
+      (lname * 'a gen_tactic_arg) list *
       'a gen_tactic_expr
   | TacMatch of lazy_flag *
       'a gen_tactic_expr *
@@ -300,7 +300,7 @@ type g_trm = glob_constr_and_expr
 type g_pat = glob_constr_pattern_and_expr
 type g_cst = evaluable_global_reference and_short_name or_var
 type g_ref = ltac_constant located or_var
-type g_nam  = Id.t located
+type g_nam = lident
 
 type g_dispatch =  <
     term:g_trm;
@@ -328,7 +328,7 @@ type r_trm = constr_expr
 type r_pat = constr_pattern_expr
 type r_cst = reference or_by_notation
 type r_ref = reference
-type r_nam  = Id.t located
+type r_nam = lident
 type r_lev = rlevel
 
 type r_dispatch =  <
@@ -357,7 +357,7 @@ type t_trm = EConstr.constr
 type t_pat = constr_pattern
 type t_cst = evaluable_global_reference
 type t_ref = ltac_constant located
-type t_nam  = Id.t
+type t_nam = Id.t
 
 type t_dispatch =  <
     term:t_trm;
@@ -391,5 +391,5 @@ type ltac_call_kind =
 type ltac_trace = ltac_call_kind Loc.located list
 
 type tacdef_body =
-  | TacticDefinition of Id.t Loc.located * raw_tactic_expr  (* indicates that user employed ':=' in Ltac body *)
+  | TacticDefinition of lident * raw_tactic_expr  (* indicates that user employed ':=' in Ltac body *)
   | TacticRedefinition of reference * raw_tactic_expr       (* indicates that user employed '::=' in Ltac body *)

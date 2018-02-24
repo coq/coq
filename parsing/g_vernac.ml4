@@ -115,7 +115,7 @@ GEXTEND Gram
   ;
 
   located_vernac:
-    [ [ v = vernac_control -> Loc.tag ~loc:!@loc v ] ]
+    [ [ v = vernac_control -> CAst.make ~loc:!@loc v ] ]
   ;
 END
 
@@ -134,7 +134,7 @@ let test_plural_form_types loc kwd = function
   | _ -> ()
 
 let lname_of_lident : lident -> lname =
-  Loc.map (fun s -> Name s)
+  CAst.map (fun s -> Name s)
 
 let name_of_ident_decl : ident_decl -> name_decl =
   on_fst lname_of_lident
@@ -629,12 +629,12 @@ GEXTEND Gram
 	  VernacCanonical (ByNotation ntn)
       | IDENT "Canonical"; IDENT "Structure"; qid = global; d = def_body ->
           let s = coerce_reference_to_id qid in
-          VernacDefinition ((NoDischarge,CanonicalStructure),((Loc.tag (Name s)),None),d)
+          VernacDefinition ((NoDischarge,CanonicalStructure),((CAst.make (Name s)),None),d)
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
           let s = coerce_reference_to_id qid in
-          VernacDefinition ((NoDischarge,Coercion),((Loc.tag (Name s)),None),d)
+          VernacDefinition ((NoDischarge,Coercion),((CAst.make (Name s)),None),d)
       | IDENT "Identity"; IDENT "Coercion"; f = identref; ":";
          s = class_rawexpr; ">->"; t = class_rawexpr ->
            VernacIdentityCoercion (f, s, t)
@@ -745,7 +745,7 @@ GEXTEND Gram
   ;
   argument_spec: [
        [ b = OPT "!"; id = name ; s = OPT scope ->
-       snd id, not (Option.is_empty b), Option.map (fun x -> Loc.tag ~loc:!@loc x) s
+       id.CAst.v, not (Option.is_empty b), Option.map (fun x -> CAst.make ~loc:!@loc x) s
     ]
   ];
   (* List of arguments implicit status, scope, modifiers *)
@@ -758,7 +758,7 @@ GEXTEND Gram
     | "/" -> [`Slash]
     | "("; items = LIST1 argument_spec; ")"; sc = OPT scope ->
        let f x = match sc, x with
-         | None, x -> x | x, None -> Option.map (fun y -> Loc.tag ~loc:!@loc y) x
+         | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc:!@loc y) x
          | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
        List.map (fun (name,recarg_like,notation_scope) ->
            `Id { name=name; recarg_like=recarg_like;
@@ -766,7 +766,7 @@ GEXTEND Gram
                  implicit_status = NotImplicit}) items
     | "["; items = LIST1 argument_spec; "]"; sc = OPT scope ->
        let f x = match sc, x with
-         | None, x -> x | x, None -> Option.map (fun y -> Loc.tag ~loc:!@loc y) x
+         | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc:!@loc y) x
          | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
        List.map (fun (name,recarg_like,notation_scope) ->
            `Id { name=name; recarg_like=recarg_like;
@@ -774,7 +774,7 @@ GEXTEND Gram
                  implicit_status = Implicit}) items
     | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope ->
        let f x = match sc, x with
-         | None, x -> x | x, None -> Option.map (fun y -> Loc.tag ~loc:!@loc y) x
+         | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc:!@loc y) x
          | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
        List.map (fun (name,recarg_like,notation_scope) ->
            `Id { name=name; recarg_like=recarg_like;
@@ -784,11 +784,11 @@ GEXTEND Gram
   ];
   (* Same as [argument_spec_block], but with only implicit status and names *)
   more_implicits_block: [
-    [ name = name -> [(snd name, Vernacexpr.NotImplicit)]
+    [ name = name -> [(name.CAst.v, Vernacexpr.NotImplicit)]
     | "["; items = LIST1 name; "]" ->
-       List.map (fun name -> (snd name, Vernacexpr.Implicit)) items
+       List.map (fun name -> (name.CAst.v, Vernacexpr.Implicit)) items
     | "{"; items = LIST1 name; "}" ->
-       List.map (fun name -> (snd name, Vernacexpr.MaximallyImplicit)) items
+       List.map (fun name -> (name.CAst.v, Vernacexpr.MaximallyImplicit)) items
     ]
   ];
   strategy_level:
@@ -800,9 +800,9 @@ GEXTEND Gram
   ;
   instance_name:
     [ [ name = ident_decl; sup = OPT binders ->
-	  (let ((loc,id),l) = name in ((loc, Name id),l)),
+          (CAst.map (fun id -> Name id) (fst name), snd name),
           (Option.default [] sup)
-      | -> ((Loc.tag ~loc:!@loc Anonymous), None), []  ] ]
+      | -> ((CAst.make ~loc:!@loc Anonymous), None), []  ] ]
   ;
   hint_info:
     [ [ "|"; i = OPT natural; pat = OPT constr_pattern ->
@@ -1134,8 +1134,8 @@ GEXTEND Gram
 
      | IDENT "Reserved"; IDENT "Infix"; s = ne_lstring;
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ] ->
-	   let (loc,s) = s in
-           VernacSyntaxExtension (true,((loc,"x '"^s^"' y"),l))
+           let s = CAst.map (fun s -> "x '"^s^"' y") s in
+           VernacSyntaxExtension (true,(s,l))
 
      | IDENT "Reserved"; IDENT "Notation";
 	 s = ne_lstring;
@@ -1166,10 +1166,10 @@ GEXTEND Gram
       | IDENT "only"; IDENT "parsing" -> SetOnlyParsing
       | IDENT "compat"; s = STRING ->
         SetCompatVersion (parse_compat_version s)
-      | IDENT "format"; s1 = [s = STRING -> Loc.tag ~loc:!@loc s];
-                        s2 = OPT [s = STRING -> Loc.tag ~loc:!@loc s] ->
+      | IDENT "format"; s1 = [s = STRING -> CAst.make ~loc:!@loc s];
+                        s2 = OPT [s = STRING -> CAst.make ~loc:!@loc s] ->
           begin match s1, s2 with
-          | (_,k), Some s -> SetFormat(k,s)
+          | { CAst.v = k }, Some s -> SetFormat(k,s)
           | s, None -> SetFormat ("text",s) end
       | x = IDENT; ","; l = LIST1 [id = IDENT -> id ] SEP ","; "at";
         lev = level -> SetItemLevel (x::l,lev)

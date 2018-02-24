@@ -6,12 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pattern
 open Pp
+open CErrors
+open CAst
+open Pattern
 open Genredexpr
 open Glob_term
 open Tacred
-open CErrors
 open Util
 open Names
 open Libnames
@@ -73,11 +74,11 @@ let strict_check = ref false
 let adjust_loc loc = if !strict_check then None else loc
 
 (* Globalize a name which must be bound -- actually just check it is bound *)
-let intern_hyp ist (loc,id as locid) =
+let intern_hyp ist ({loc;v=id} as locid) =
   if not !strict_check then
     locid
   else if find_ident id ist then
-    Loc.tag id
+    make id
   else
     Pretype_errors.error_var_not_found ?loc id
 
@@ -89,7 +90,8 @@ let intern_int_or_var = intern_or_var (fun (n : int) -> n)
 let intern_string_or_var = intern_or_var (fun (s : string) -> s)
 
 let intern_global_reference ist = function
-  | Ident (loc,id) when find_var id ist -> ArgVar (loc,id)
+  | Ident (loc,id) when find_var id ist ->
+    ArgVar CAst.(make ?loc id)
   | r ->
       let loc,_ as lqid = qualid_of_reference r in
       try ArgArg (loc,locate_global_with_alias lqid)
@@ -99,7 +101,7 @@ let intern_ltac_variable ist = function
   | Ident (loc,id) ->
       if find_var id ist then
 	(* A local variable of any type *)
-	ArgVar (loc,id)
+        ArgVar CAst.(make ?loc id)
       else raise Not_found
   | _ ->
       raise Not_found
@@ -249,7 +251,7 @@ and intern_or_and_intro_pattern lf ist = function
       IntroOrPattern (List.map (List.map (intern_intro_pattern lf ist)) ll)
 
 let intern_or_and_intro_pattern_loc lf ist = function
-  | ArgVar (_,id) as x ->
+  | ArgVar {v=id} as x ->
       if find_var id ist then x
       else user_err Pp.(str "Disjunctive/conjunctive introduction pattern expected.")
   | ArgArg (loc,l) -> ArgArg (loc,intern_or_and_intro_pattern lf ist l)
@@ -261,18 +263,18 @@ let intern_intro_pattern_naming_loc lf ist (loc,pat) =
 let intern_destruction_arg ist = function
   | clear,ElimOnConstr c -> clear,ElimOnConstr (intern_constr_with_bindings ist c)
   | clear,ElimOnAnonHyp n as x -> x
-  | clear,ElimOnIdent (loc,id) ->
+  | clear,ElimOnIdent {loc;v=id} ->
       if !strict_check then
 	(* If in a defined tactic, no intros-until *)
 	let c, p = intern_constr ist (CAst.make @@ CRef (Ident (Loc.tag id), None)) in
 	match DAst.get c with
-	| GVar id -> clear,ElimOnIdent (c.CAst.loc,id)
+        | GVar id -> clear,ElimOnIdent CAst.(make ?loc:c.loc id)
 	| _ -> clear,ElimOnConstr ((c, p), NoBindings)
       else
-	clear,ElimOnIdent (loc,id)
+        clear,ElimOnIdent CAst.(make ?loc id)
 
 let short_name = function
-  | AN (Ident (loc,id)) when not !strict_check -> Some (loc,id)
+  | AN (Ident (loc,id)) when not !strict_check -> Some CAst.(make ?loc id)
   | _ -> None
 
 let intern_evaluable_global_reference ist r =
@@ -292,9 +294,9 @@ let intern_evaluable_reference_or_by_notation ist = function
 
 (* Globalize a reduction expression *)
 let intern_evaluable ist = function
-  | AN (Ident (loc,id)) when find_var id ist -> ArgVar (loc,id)
+  | AN (Ident (loc,id)) when find_var id ist -> ArgVar CAst.(make ?loc id)
   | AN (Ident (loc,id)) when not !strict_check && find_hyp id ist ->
-      ArgArg (EvalVarRef id, Some (loc,id))
+      ArgArg (EvalVarRef id, Some CAst.(make ?loc id))
   | r ->
       let e = intern_evaluable_reference_or_by_notation ist r in
       let na = short_name r in
@@ -370,7 +372,7 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
           Inr (bound_names,(c,None),dummy_pat) in
   (l, match p with
   | Inl r -> interp_ref r
-  | Inr { CAst.v = CAppExpl((None,r,None),[]) } ->
+  | Inr { v = CAppExpl((None,r,None),[]) } ->
       (* We interpret similarly @ref and ref *)
       interp_ref (AN r)
   | Inr c ->
@@ -400,8 +402,8 @@ let intern_red_expr ist = function
   | Lazy f -> Lazy (intern_flag ist f)
   | Pattern l -> Pattern (List.map (intern_constr_with_occurrences ist) l)
   | Simpl (f,o) ->
-     Simpl (intern_flag ist f,
-	    Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
+    Simpl (intern_flag ist f,
+           Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
   | CbvVm o -> CbvVm (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
   | CbvNative o -> CbvNative (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
   | (Red _ | Hnf | ExtraRedExpr _ as r ) -> r
@@ -438,7 +440,7 @@ let intern_pattern ist ?(as_type=false) ltacvars = function
 let intern_constr_may_eval ist = function
   | ConstrEval (r,c) -> ConstrEval (intern_red_expr ist r,intern_constr ist c)
   | ConstrContext (locid,c) ->
-      ConstrContext (intern_hyp ist locid,intern_constr ist c)
+    ConstrContext (intern_hyp ist locid,intern_constr ist c)
   | ConstrTypeOf c -> ConstrTypeOf (intern_constr ist c)
   | ConstrTerm c -> ConstrTerm (intern_constr ist c)
 
@@ -452,12 +454,12 @@ let opt_cons accu = function
 
 (* Reads the hypotheses of a "match goal" rule *)
 let rec intern_match_goal_hyps ist ?(as_type=false) lfun = function
-  | (Hyp ((_,na) as locna,mp))::tl ->
+  | (Hyp ({v=na} as locna,mp))::tl ->
       let ido, metas1, pat = intern_pattern ist ~as_type:true lfun mp in
       let lfun, metas2, hyps = intern_match_goal_hyps ist lfun tl in
       let lfun' = name_cons (opt_cons lfun ido) na in
       lfun', metas1@metas2, Hyp (locna,pat)::hyps
-  | (Def ((_,na) as locna,mv,mp))::tl ->
+  | (Def ({v=na} as locna,mv,mp))::tl ->
       let ido, metas1, patv = intern_pattern ist ~as_type:false lfun mv in
       let ido', metas2, patt = intern_pattern ist ~as_type:true lfun mp in
       let lfun, metas3, hyps = intern_match_goal_hyps ist ~as_type lfun tl in
@@ -467,7 +469,7 @@ let rec intern_match_goal_hyps ist ?(as_type=false) lfun = function
 
 (* Utilities *)
 let extract_let_names lrc =
-  let fold accu ((loc, name), _) =
+  let fold accu ({loc;v=name}, _) =
     Nameops.Name.fold_right (fun id accu ->
     if Id.Set.mem id accu then user_err ?loc
       ~hdr:"glob_tactic" (str "This variable is bound several times.")
@@ -813,7 +815,7 @@ let notation_subst bindings tac =
   let fold id c accu =
     let loc = Glob_ops.loc_of_glob_constr (fst c) in
     let c = ConstrMayEval (ConstrTerm c) in
-    ((loc, Name id), c) :: accu
+    (CAst.make ?loc @@ Name id, c) :: accu
   in
   let bindings = Id.Map.fold fold bindings [] in
   (** This is theoretically not correct due to potential variable capture, but

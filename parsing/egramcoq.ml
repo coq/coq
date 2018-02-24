@@ -226,7 +226,7 @@ type _ target =
 type prod_info = production_level * production_position
 
 type (_, _) entry =
-| TTName : ('self, Name.t Loc.located) entry
+| TTName : ('self, Misctypes.lname) entry
 | TTReference : ('self, reference) entry
 | TTBigint : ('self, Constrexpr.raw_natural_number) entry
 | TTConstr : prod_info * 'r target -> ('r, 'r) entry
@@ -308,7 +308,7 @@ let interp_entry forpat e = match e with
 | ETProdBinderList ETBinderOpen -> TTAny TTOpenBinderList
 | ETProdBinderList (ETBinderClosed tkl) -> TTAny (TTClosedBinderList tkl)
 
-let cases_pattern_expr_of_name (loc,na) = CAst.make ?loc @@ match na with
+let cases_pattern_expr_of_name { CAst.loc; v = na } = CAst.make ?loc @@ match na with
   | Anonymous -> CPatAtom None
   | Name id   -> CPatAtom (Some (Ident (Loc.tag ?loc id)))
 

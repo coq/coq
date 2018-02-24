@@ -71,7 +71,7 @@ END
 
 let induction_arg_of_quantified_hyp = function
   | AnonHyp n -> None,ElimOnAnonHyp n
-  | NamedHyp id -> None,ElimOnIdent (Loc.tag id)
+  | NamedHyp id -> None,ElimOnIdent (CAst.make id)
 
 (* Versions *_main must come first!! so that "1" is interpreted as a
    ElimOnAnonHyp and not as a "constr", and "id" is interpreted as a

@@ -306,9 +306,9 @@ module PatternMatching (E:StaticEnvironment) = struct
       [pat] is [Hyp _] or [Def _]. *)
   let hyp_match pat hyps =
     match pat with
-    | Hyp ((_,hypname),typepat) ->
+    | Hyp ({CAst.v=hypname},typepat) ->
         hyp_match_type hypname typepat hyps
-    | Def ((_,hypname),bodypat,typepat) ->
+    | Def ({CAst.v=hypname},bodypat,typepat) ->
         hyp_match_body_and_type hypname bodypat typepat hyps
 
   (** [hyp_pattern_list_match pats hyps lhs], matches the list of

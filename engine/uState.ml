@@ -282,7 +282,7 @@ let pr_uctx_level uctx l =
   Libnames.pr_reference (reference_of_level uctx l)
 
 type universe_decl =
-  (Names.Id.t Loc.located list, Univ.Constraint.t) Misctypes.gen_universe_decl
+  (Misctypes.lident list, Univ.Constraint.t) Misctypes.gen_universe_decl
 
 let error_unbound_universes left uctx =
   let open Univ in
@@ -305,7 +305,7 @@ let universe_context ~names ~extensible uctx =
   let levels = ContextSet.levels uctx.uctx_local in
   let newinst, left =
     List.fold_right
-      (fun (loc,id) (newinst, acc) ->
+      (fun { CAst.loc; v = id } (newinst, acc) ->
          let l =
            try UNameMap.find id (fst uctx.uctx_names)
            with Not_found -> assert false
@@ -325,7 +325,7 @@ let check_universe_context_set ~names ~extensible uctx =
   if extensible then ()
   else
     let open Univ in
-    let left = List.fold_left (fun left (loc,id) ->
+    let left = List.fold_left (fun left { CAst.loc; v = id } ->
         let l =
           try UNameMap.find id (fst uctx.uctx_names)
           with Not_found -> assert false

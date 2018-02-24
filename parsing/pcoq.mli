@@ -192,17 +192,17 @@ module Prim :
     open Libnames
     val preident : string Gram.entry
     val ident : Id.t Gram.entry
-    val name : Name.t located Gram.entry
-    val identref : Id.t located Gram.entry
+    val name : lname Gram.entry
+    val identref : lident Gram.entry
     val ident_decl : ident_decl Gram.entry
     val pattern_ident : Id.t Gram.entry
-    val pattern_identref : Id.t located Gram.entry
+    val pattern_identref : lident Gram.entry
     val base_ident : Id.t Gram.entry
     val natural : int Gram.entry
     val bigint : Constrexpr.raw_natural_number Gram.entry
     val integer : int Gram.entry
     val string : string Gram.entry
-    val lstring : string located Gram.entry
+    val lstring : lstring Gram.entry
     val qualid : qualid located Gram.entry
     val fullyqualid : Id.t list located Gram.entry
     val reference : reference Gram.entry
@@ -210,8 +210,8 @@ module Prim :
     val smart_global : reference or_by_notation Gram.entry
     val dirpath : DirPath.t Gram.entry
     val ne_string : string Gram.entry
-    val ne_lstring : string located Gram.entry
-    val var : Id.t located Gram.entry
+    val ne_lstring : lstring Gram.entry
+    val var : lident Gram.entry
   end
 
 module Constr :
@@ -233,10 +233,10 @@ module Constr :
     val binder : local_binder_expr list Gram.entry (* closed_binder or variable *)
     val binders : local_binder_expr list Gram.entry (* list of binder *)
     val open_binders : local_binder_expr list Gram.entry
-    val binders_fixannot : (local_binder_expr list * (Id.t located option * recursion_order_expr)) Gram.entry
-    val typeclass_constraint : (Name.t located * bool * constr_expr) Gram.entry
+    val binders_fixannot : (local_binder_expr list * (lident option * recursion_order_expr)) Gram.entry
+    val typeclass_constraint : (lname * bool * constr_expr) Gram.entry
     val record_declaration : constr_expr Gram.entry
-    val appl_arg : (constr_expr * explicitation located option) Gram.entry
+    val appl_arg : (constr_expr * explicitation CAst.t option) Gram.entry
   end
 
 module Module :

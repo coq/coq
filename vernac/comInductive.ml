@@ -249,7 +249,7 @@ let inductive_levels env evd poly arities inds =
     (evd,[]) (Array.to_list levels') destarities sizes
   in evd, List.rev arities
 
-let check_named (loc, na) = match na with
+let check_named {CAst.loc;v=na} = match na with
 | Name _ -> ()
 | Anonymous ->
   let msg = str "Parameters must be named." in
@@ -260,7 +260,7 @@ let check_param = function
 | CLocalDef (na, _, _) -> check_named na
 | CLocalAssum (nas, Default _, _) -> List.iter check_named nas
 | CLocalAssum (nas, Generalized _, _) -> ()
-| CLocalPattern (loc,_) ->
+| CLocalPattern {CAst.loc} ->
     Loc.raise ?loc (Stream.Error "pattern with quote not allowed here.")
 
 let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
@@ -364,7 +364,7 @@ let eq_local_binders bl1 bl2 =
   List.equal local_binder_eq bl1 bl2
 
 let extract_coercions indl =
-  let mkqid (_,((_,id),_)) = qualid_of_ident id in
+  let mkqid (_,({CAst.v=id},_)) = qualid_of_ident id in
   let extract lc = List.filter (fun (iscoe,_) -> iscoe) lc in
   List.map mkqid (List.flatten(List.map (fun (_,_,_,lc) -> extract lc) indl))
 
@@ -378,10 +378,10 @@ let extract_params indl =
       params
 
 let extract_inductive indl =
-  List.map (fun (((_,indname),pl),_,ar,lc) -> {
+  List.map (fun (({CAst.v=indname},pl),_,ar,lc) -> {
     ind_name = indname; ind_univs = pl;
     ind_arity = Option.cata (fun x -> x) (CAst.make @@ CSort (GType [])) ar;
-    ind_lc = List.map (fun (_,((_,id),t)) -> (id,t)) lc
+    ind_lc = List.map (fun (_,({CAst.v=id},t)) -> (id,t)) lc
   }) indl
 
 let extract_mutual_inductive_declaration_components indl =

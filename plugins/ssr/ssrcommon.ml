@@ -268,7 +268,7 @@ let interp_wit wit ist gl x =
   sigma, Tacinterp.Value.cast (topwit wit) arg
 
 let interp_hyp ist gl (SsrHyp (loc, id)) =
-  let s, id' = interp_wit wit_var ist gl (loc, id) in
+  let s, id' = interp_wit wit_var ist gl CAst.(make ?loc id) in
   if not_section_id id' then s, SsrHyp (loc, id') else
   hyp_err ?loc "Can't clear section hypothesis " id'
 
@@ -835,9 +835,9 @@ let rec mkCHoles ?loc n =
   if n <= 0 then [] else (CAst.make ?loc @@ CHole (None, IntroAnonymous, None)) :: mkCHoles ?loc (n - 1)
 let mkCHole loc = CAst.make ?loc @@ CHole (None, IntroAnonymous, None)
 let mkCLambda ?loc name ty t =  CAst.make ?loc @@
-   CLambdaN ([CLocalAssum([loc, name], Default Explicit, ty)], t)
+   CLambdaN ([CLocalAssum([CAst.make ?loc name], Default Explicit, ty)], t)
 let mkCArrow ?loc ty t = CAst.make ?loc @@
-   CProdN ([CLocalAssum([Loc.tag Anonymous], Default Explicit, ty)], t)
+   CProdN ([CLocalAssum([CAst.make Anonymous], Default Explicit, ty)], t)
 let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, CastConv ty)
 
 let rec isCHoles = function { CAst.v = CHole _ } :: cl -> isCHoles cl | cl -> cl = []
@@ -855,7 +855,7 @@ let pf_interp_ty ?(resolve_typeclasses=false) ist gl ty =
    | _, (_, Some ty) ->
     let rec force_type ty = CAst.(map (function
      | CProdN (abs, t) ->
-       n_binders := !n_binders + List.length (List.flatten (List.map (function CLocalAssum (nal,_,_) -> nal | CLocalDef (na,_,_) -> [na] | CLocalPattern (_,_) -> (* We count a 'pat for 1; TO BE CHECKED *) [Loc.tag Name.Anonymous]) abs));
+       n_binders := !n_binders + List.length (List.flatten (List.map (function CLocalAssum (nal,_,_) -> nal | CLocalDef (na,_,_) -> [na] | CLocalPattern _ -> (* We count a 'pat for 1; TO BE CHECKED *) [CAst.make Name.Anonymous]) abs));
        CProdN (abs, force_type t)
      | CLetIn (n, v, oty, t) -> incr n_binders; CLetIn (n, v, oty, force_type t)
      | _ -> (mkCCast ty (mkCType None)).v)) ty in

@@ -10,6 +10,7 @@
 open CErrors
 open Util
 open Pp
+open CAst
 open Names
 open Nameops
 open Libnames
@@ -151,7 +152,7 @@ let tag_var = tag Tag.variable
     if !Flags.beautify && not (Int.equal n 0) then comment (CLexer.extract_comments n)
     else mt()
 
-  let pr_with_comments ?loc pp = pr_located (fun x -> x) (Loc.tag ?loc pp)
+  let pr_with_comments ?loc pp = pr_located (fun x -> x) (loc, pp)
 
   let pr_sep_com sep f c = pr_with_comments ?loc:(constr_loc c) (sep() ++ f c)
 
@@ -220,28 +221,28 @@ let tag_var = tag Tag.variable
   let pr_expl_args pr (a,expl) =
     match expl with
       | None -> pr (lapp,L) a
-      | Some (_,ExplByPos (n,_id)) ->
+      | Some {v=ExplByPos (n,_id)} ->
         anomaly (Pp.str "Explicitation by position not implemented.")
-      | Some (_,ExplByName id) ->
+      | Some {v=ExplByName id} ->
         str "(" ++ pr_id id ++ str ":=" ++ pr ltop a ++ str ")"
 
   let pr_opt_type_spc pr = function
     | { CAst.v = CHole (_,Misctypes.IntroAnonymous,_) } -> mt ()
     | t ->  str " :" ++ pr_sep_com (fun()->brk(1,2)) (pr ltop) t
 
-  let pr_lident (loc,id) =
+  let pr_lident {loc; v=id} =
     match loc with
     | None     -> pr_id id
     | Some loc -> let (b,_) = Loc.unloc loc in
-                  pr_located pr_id @@ Loc.tag ~loc:(Loc.make_loc (b,b + String.length (Id.to_string id))) id
+                  pr_located pr_id (Some (Loc.make_loc (b,b + String.length (Id.to_string id))), id)
 
   let pr_lname = function
-    | (loc,Name id) -> pr_lident (loc,id)
-    | lna -> pr_located Name.print lna
+    | {CAst.loc; v=Name id} -> pr_lident CAst.(make ?loc id)
+    | x -> pr_ast Name.print x
 
   let pr_or_var pr = function
     | ArgArg x -> pr x
-    | ArgVar (loc,s) -> pr_lident (loc,s)
+    | ArgVar id -> pr_lident id
 
   let pr_prim_token = function
     | Numeral (n,s) -> str (if s then n else "-"^n)
@@ -315,7 +316,7 @@ let tag_var = tag Tag.variable
 
   let pr_patt = pr_patt mt
 
-  let pr_eqn pr (loc,(pl,rhs)) =
+  let pr_eqn pr {loc;v=(pl,rhs)} =
     spc() ++ hov 4
       (pr_with_comments ?loc
          (str "| " ++
@@ -323,12 +324,12 @@ let tag_var = tag Tag.variable
                    ++ str " =>") ++
             pr_sep_com spc (pr ltop) rhs))
 
-  let begin_of_binder l_bi = 
+  let begin_of_binder l_bi =
     let b_loc l = fst (Option.cata Loc.unloc (0,0) l) in
     match l_bi with
-    | CLocalDef((loc,_),_,_) -> b_loc loc
-    | CLocalAssum((loc,_)::_,_,_) -> b_loc loc
-    | CLocalPattern(loc,(_,_)) -> b_loc loc
+    | CLocalDef({loc},_,_) -> b_loc loc
+    | CLocalAssum({loc}::_,_,_) -> b_loc loc
+    | CLocalPattern{loc} -> b_loc loc
     | _ -> assert false
 
   let begin_of_binders = function
@@ -350,12 +351,12 @@ let tag_var = tag Tag.variable
       | Generalized (b, b', t') ->
         assert (match b with Implicit -> true | _ -> false);
         begin match nal with
-          |[loc,Anonymous] ->
+          |[{loc; v=Anonymous}] ->
             hov 1 (str"`" ++ (surround_impl b'
                                 ((if t' then str "!" else mt ()) ++ pr t)))
-          |[loc,Name id] ->
+          |[{loc; v=Name id}] ->
             hov 1 (str "`" ++ (surround_impl b'
-                                 (pr_lident (loc,id) ++ str " : " ++
+                                 (pr_lident CAst.(make ?loc id) ++ str " : " ++
                                     (if t' then str "!" else mt()) ++ pr t)))
           |_ -> anomaly (Pp.str "List of generalized binders have alwais one element.")
         end
@@ -375,7 +376,7 @@ let tag_var = tag Tag.variable
       surround (pr_lname na ++
                 pr_opt_no_spc (fun t -> str " :" ++ ws 1 ++ pr_c t) topt ++
                 str" :=" ++ spc() ++ pr_c c)
-    | CLocalPattern (loc,(p,tyo)) ->
+    | CLocalPattern {CAst.loc; v = p,tyo} ->
       let p = pr_patt lsimplepatt p in
       match tyo with
         | None ->
@@ -410,7 +411,7 @@ let tag_var = tag Tag.variable
   let pr_guard_annot pr_aux bl (n,ro) =
     match n with
       | None -> mt ()
-      | Some (loc, id) ->
+      | Some {loc; v = id} ->
         match (ro : Constrexpr.recursion_order_expr) with
           | CStructRec ->
             let names_of_binder = function
@@ -427,11 +428,11 @@ let tag_var = tag Tag.variable
             spc() ++ str "{" ++ keyword "measure" ++ spc () ++ pr_aux m ++ spc() ++ pr_id id++
               (match r with None -> mt() | Some r -> str" on " ++ pr_aux r) ++ str"}"
 
-  let pr_fixdecl pr prd dangling_with_for ((_,id),ro,bl,t,c) =
+  let pr_fixdecl pr prd dangling_with_for ({v=id},ro,bl,t,c) =
     let annot = pr_guard_annot (pr lsimpleconstr) bl ro in
     pr_recursive_decl pr prd dangling_with_for id bl annot t c
 
-  let pr_cofixdecl pr prd dangling_with_for ((_,id),bl,t,c) =
+  let pr_cofixdecl pr prd dangling_with_for ({v=id},bl,t,c) =
     pr_recursive_decl pr prd dangling_with_for id bl (mt()) t c
 
   let pr_recursive pr_decl id = function
@@ -461,7 +462,7 @@ let tag_var = tag Tag.variable
 
   let pr_simple_return_type pr na po =
     (match na with
-      | Some (_,Name id) ->
+      | Some {v=Name id} ->
         spc () ++ keyword "as" ++ spc () ++ pr_id id
       | _ -> mt ()) ++
       pr_case_type pr po
@@ -492,7 +493,7 @@ let tag_var = tag Tag.variable
   let pr_fun_sep = spc () ++ str "=>"
 
   let pr_dangling_with_for sep pr inherited a =
-    match a.CAst.v with
+    match a.v with
       | (CFix (_,[_])|CCoFix(_,[_])) ->
         pr sep (latom,E) a
       | _ ->
@@ -507,14 +508,14 @@ let tag_var = tag Tag.variable
         return (
           hov 0 (keyword "fix" ++ spc () ++
                    pr_recursive
-                   (pr_fixdecl (pr mt) (pr_dangling_with_for mt pr)) (snd id) fix),
+                   (pr_fixdecl (pr mt) (pr_dangling_with_for mt pr)) id.v fix),
           lfix
         )
       | CCoFix (id,cofix) ->
         return (
           hov 0 (keyword "cofix" ++ spc () ++
                    pr_recursive
-                   (pr_cofixdecl (pr mt) (pr_dangling_with_for mt pr)) (snd id) cofix),
+                   (pr_cofixdecl (pr mt) (pr_dangling_with_for mt pr)) id.v cofix),
           lfix
         )
       | CProdN (bl,a) ->
@@ -533,8 +534,8 @@ let tag_var = tag Tag.variable
               pr_fun_sep ++ pr spc ltop a),
           llambda
         )
-      | CLetIn ((_,Name x), ({ CAst.v = CFix((_,x'),[_])}
-                          |  { CAst.v = CCoFix((_,x'),[_]) } as fx), t, b)
+      | CLetIn ({v=Name x}, ({ v = CFix({v=x'},[_])}
+                          |  { v = CCoFix({v=x'},[_]) } as fx), t, b)
           when Id.equal x x' ->
         return (
           hv 0 (
@@ -590,7 +591,7 @@ let tag_var = tag Tag.variable
           hv 0 (str"{|" ++ pr_record_body_gen (pr spc) l ++ str" |}"),
           latom
         )
-      | CCases (LetPatternStyle,rtntypopt,[c,as_clause,in_clause],[(_,([[p]],b))]) ->
+      | CCases (LetPatternStyle,rtntypopt,[c,as_clause,in_clause],[{v=([[p]],b)}]) ->
         return (
           hv 0 (
             keyword "let" ++ spc () ++ str"'" ++

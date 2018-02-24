@@ -6,18 +6,17 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Loc
 open Names
 open Glob_term
 open Constrexpr
 open Libnames
 open Globnames
 
-val declare_generalizable : Vernacexpr.locality_flag -> (Id.t located) list option -> unit
+val declare_generalizable : Vernacexpr.locality_flag -> Misctypes.lident list option -> unit
 
 val ids_of_list : Id.t list -> Id.Set.t
-val destClassApp : constr_expr -> (reference * constr_expr list * instance_expr option) located
-val destClassAppExpl : constr_expr -> (reference * (constr_expr * explicitation located option) list * instance_expr option) located
+val destClassApp : constr_expr -> (reference * constr_expr list * instance_expr option) CAst.t
+val destClassAppExpl : constr_expr -> (reference * (constr_expr * explicitation CAst.t option) list * instance_expr option) CAst.t
 
 (** Fragile, should be used only for construction a set of identifiers to avoid *)
 
@@ -31,7 +30,7 @@ val free_vars_of_binders :
    order with the location of their first occurrence *)
 
 val generalizable_vars_of_glob_constr : ?bound:Id.Set.t -> ?allowed:Id.Set.t ->
-  glob_constr -> Id.t located list
+  glob_constr -> Misctypes.lident list
 
 val make_fresh : Id.Set.t -> Environ.env -> Id.t -> Id.t
 

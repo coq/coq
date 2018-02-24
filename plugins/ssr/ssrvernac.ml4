@@ -79,9 +79,9 @@ let aliasvar = function
 let mk_cnotype mp = aliasvar mp, None in
 let mk_ctype mp t = aliasvar mp, Some t in
 let mk_rtype t = Some t in
-let mk_dthen ?loc (mp, ct, rt) c = (Loc.tag ?loc (mp, c)), ct, rt in
+let mk_dthen ?loc (mp, ct, rt) c = (CAst.make ?loc (mp, c)), ct, rt in
 let mk_let ?loc rt ct mp c1 =
-  CAst.make ?loc @@ CCases (LetPatternStyle, rt, ct, [Loc.tag ?loc (mp, c1)]) in
+  CAst.make ?loc @@ CCases (LetPatternStyle, rt, ct, [CAst.make ?loc (mp, c1)]) in
 let mk_pat c (na, t) = (c, na, t) in
 GEXTEND Gram
   GLOBAL: binder_constr;
@@ -94,14 +94,16 @@ GEXTEND Gram
   ] ];
   ssr_dthen: [[ dp = ssr_dpat; "then"; c = lconstr -> mk_dthen ~loc:!@loc dp c ]];
   ssr_elsepat: [[ "else" -> [[CAst.make ~loc:!@loc @@ CPatAtom None]] ]];
-  ssr_else: [[ mp = ssr_elsepat; c = lconstr -> Loc.tag ~loc:!@loc (mp, c) ]];
+  ssr_else: [[ mp = ssr_elsepat; c = lconstr -> CAst.make ~loc:!@loc (mp, c) ]];
   binder_constr: [
     [ "if"; c = operconstr LEVEL "200"; "is"; db1 = ssr_dthen; b2 = ssr_else ->
       let b1, ct, rt = db1 in CAst.make ~loc:!@loc @@ CCases (MatchStyle, rt, [mk_pat c ct], [b1; b2])
     | "if"; c = operconstr LEVEL "200";"isn't";db1 = ssr_dthen; b2 = ssr_else ->
       let b1, ct, rt = db1 in 
-      let b1, b2 = 
-        let (l1, (p1, r1)), (l2, (p2, r2)) = b1, b2 in (l1, (p1, r2)), (l2, (p2, r1)) in
+      let b1, b2 = let open CAst in
+        let {loc=l1; v=(p1, r1)}, {loc=l2; v=(p2, r2)} = b1, b2 in
+        (make ?loc:l1 (p1, r2), make ?loc:l2 (p2, r1))
+      in
       CAst.make ~loc:!@loc @@ CCases (MatchStyle, rt, [mk_pat c ct], [b1; b2])
     | "let"; ":"; mp = ssr_mpat; ":="; c = lconstr; "in"; c1 = lconstr ->
       mk_let ~loc:!@loc no_rt [mk_pat c no_ct] mp c1
@@ -118,7 +120,7 @@ GEXTEND Gram
   GLOBAL: closed_binder;
   closed_binder: [
     [ ["of" | "&"]; c = operconstr LEVEL "99" ->
-      [CLocalAssum ([Loc.tag ~loc:!@loc Anonymous], Default Explicit, c)]
+      [CLocalAssum ([CAst.make ~loc:!@loc Anonymous], Default Explicit, c)]
   ] ];
 END
 (* }}} *)
@@ -553,7 +555,7 @@ GEXTEND Gram
           let s = coerce_reference_to_id qid in
     Vernacexpr.VernacDefinition
       ((Decl_kinds.NoDischarge,Decl_kinds.CanonicalStructure),
-          ((Loc.tag (Name s)),None), d)
+          ((CAst.make (Name s)),None), d)
   ]];
 END
 
@@ -584,10 +586,10 @@ END
 GEXTEND Gram
   GLOBAL: hloc;
 hloc: [
-  [ "in"; "("; "Type"; "of"; id = ident; ")" -> 
-    Tacexpr.HypLocation ((Loc.tag id), Locus.InHypTypeOnly)
-  | "in"; "("; IDENT "Value"; "of"; id = ident; ")" -> 
-    Tacexpr.HypLocation ((Loc.tag id), Locus.InHypValueOnly)
+  [ "in"; "("; "Type"; "of"; id = ident; ")" ->
+    Tacexpr.HypLocation (CAst.make id, Locus.InHypTypeOnly)
+  | "in"; "("; IDENT "Value"; "of"; id = ident; ")" ->
+    Tacexpr.HypLocation (CAst.make id, Locus.InHypValueOnly)
   ] ];
 END
 

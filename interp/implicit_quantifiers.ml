@@ -26,7 +26,7 @@ module RelDecl = Context.Rel.Declaration
 
 let generalizable_table = Summary.ref Id.Pred.empty ~name:"generalizable-ident"
 
-let declare_generalizable_ident table (loc,id) =
+let declare_generalizable_ident table {CAst.loc;v=id} =
   if not (Id.equal id (root_of_id id)) then
     user_err ?loc ~hdr:"declare_generalizable_ident"
     ((Id.print id ++ str
@@ -49,7 +49,7 @@ let cache_generalizable_type (_,(local,cmd)) =
 let load_generalizable_type _ (_,(local,cmd)) =
   generalizable_table := add_generalizable cmd !generalizable_table
 
-let in_generalizable : bool * Id.t Loc.located list option -> obj =
+let in_generalizable : bool * Misctypes.lident list option -> obj =
   declare_object {(default_object "GENERALIZED-IDENT") with
     load_function = load_generalizable_type;
     cache_function = cache_generalizable_type;
@@ -99,7 +99,7 @@ let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
   in aux bound l c
 
 let ids_of_names l =
-  List.fold_left (fun acc x -> match snd x with Name na -> na :: acc | Anonymous -> acc) [] l
+  List.fold_left (fun acc x -> match x.CAst.v with Name na -> na :: acc | Anonymous -> acc) [] l
 
 let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder_expr list) =
   let rec aux bdvars l c = match c with
@@ -109,7 +109,7 @@ let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder_expr li
 	  aux (Id.Set.union (ids_of_list bound) bdvars) l' tl
 
     | ((CLocalDef (n, c, t)) :: tl) ->
-	let bound = match snd n with Anonymous -> [] | Name n -> [n] in
+        let bound = match n.CAst.v with Anonymous -> [] | Name n -> [n] in
 	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
 	let l'' = Option.fold_left (fun l t -> free_vars_of_constr_expr t ~bound:bdvars l) l' t in
 	  aux (Id.Set.union (ids_of_list bound) bdvars) l'' tl
@@ -123,13 +123,13 @@ let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.emp
     | GVar id ->
         let loc = c.CAst.loc in
 	if is_freevar bound (Global.env ()) id then
-	  if Id.List.mem_assoc_sym id vs then vs
-	  else (Loc.tag ?loc id) :: vs
+          if List.exists (fun {CAst.v} -> Id.equal v id) vs then vs
+          else CAst.(make ?loc id) :: vs
 	else vs
     | _ -> Glob_ops.fold_glob_constr_with_binders Id.Set.add vars bound vs c
   in fun rt -> 
     let vars = List.rev (vars bound [] rt) in
-      List.iter (fun (loc, id) ->
+      List.iter (fun {CAst.loc;v=id} ->
 	if not (Id.Set.mem id allowed || find_generalizable_ident id) then 
 	  ungeneralizable loc id) vars;
       vars
@@ -146,7 +146,7 @@ let combine_params avoid fn applied needed =
   let named, applied =
     List.partition
       (function
-	  (t, Some (loc, ExplByName id)) ->
+          (t, Some {CAst.loc;v=ExplByName id}) ->
             let is_id (_, decl) = match RelDecl.get_name decl with
             | Name id' -> Id.equal id id'
             | Anonymous -> false
@@ -157,7 +157,7 @@ let combine_params avoid fn applied needed =
 	| _ -> false) applied
   in
   let named = List.map
-    (fun x -> match x with (t, Some (loc, ExplByName id)) -> id, t | _ -> assert false)
+    (fun x -> match x with (t, Some {CAst.loc;v=ExplByName id}) -> id, t | _ -> assert false)
     named
   in
   let is_unset (_, decl) = match decl with
@@ -198,23 +198,23 @@ let destClassApp cl =
   let open CAst in
   let loc = cl.loc in
   match cl.v with
-    | CApp ((None, { v = CRef (ref, inst) }), l) -> Loc.tag ?loc (ref, List.map fst l, inst)
-    | CAppExpl ((None, ref, inst), l) -> Loc.tag ?loc (ref, l, inst)
-    | CRef (ref, inst) -> Loc.tag ?loc:(loc_of_reference ref) (ref, [], inst)
+    | CApp ((None, { v = CRef (ref, inst) }), l) -> CAst.make ?loc (ref, List.map fst l, inst)
+    | CAppExpl ((None, ref, inst), l) -> CAst.make ?loc (ref, l, inst)
+    | CRef (ref, inst) -> CAst.make ?loc:(loc_of_reference ref) (ref, [], inst)
     | _ -> raise Not_found
 
 let destClassAppExpl cl =
   let open CAst in
   let loc = cl.loc in
   match cl.v with
-    | CApp ((None, { v = CRef (ref, inst) } ), l) -> Loc.tag ?loc (ref, l, inst)
-    | CRef (ref, inst) -> Loc.tag ?loc:(loc_of_reference ref) (ref, [], inst)
+    | CApp ((None, { v = CRef (ref, inst) } ), l) -> CAst.make ?loc (ref, l, inst)
+    | CRef (ref, inst) -> CAst.make ?loc:(loc_of_reference ref) (ref, [], inst)
     | _ -> raise Not_found
 
 let implicit_application env ?(allow_partial=true) f ty =
   let is_class =
     try
-      let (_, (r, _, _) as clapp) = destClassAppExpl ty in
+      let ({CAst.v=(r, _, _)} as clapp) = destClassAppExpl ty in
       let (loc, qid) = qualid_of_reference r in
       let gr = Nametab.locate qid in
 	if Typeclasses.is_class gr then Some (clapp, gr) else None
@@ -222,7 +222,7 @@ let implicit_application env ?(allow_partial=true) f ty =
   in
     match is_class with
     | None -> ty, env
-    | Some ((loc, (id, par, inst)), gr) ->
+    | Some ({CAst.loc;v=(id, par, inst)}, gr) ->
 	let avoid = Id.Set.union env (ids_of_list (free_vars_of_constr_expr ty ~bound:env [])) in
 	let c, avoid =
 	  let c = class_info gr in

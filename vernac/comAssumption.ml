@@ -42,7 +42,7 @@ let should_axiom_into_instance = function
     true
   | Global | Local -> !axiom_into_instance
 
-let declare_assumption is_coe (local,p,kind) (c,ctx) pl imps impl nl (_,ident) =
+let declare_assumption is_coe (local,p,kind) (c,ctx) pl imps impl nl {CAst.v=ident} =
 match local with
 | Discharge when Lib.sections_are_opened () ->
   let ctx = match ctx with
@@ -109,7 +109,7 @@ let declare_assumptions idl is_coe k (c,uctx) pl imps nl =
 
 
 let maybe_error_many_udecls = function
-  | ((loc,id), Some _) ->
+  | ({CAst.loc;v=id}, Some _) ->
     user_err ?loc ~hdr:"many_universe_declarations"
       Pp.(str "When declaring multiple axioms in one command, " ++
           str "only the first is allowed a universe binder " ++
@@ -126,7 +126,7 @@ let process_assumptions_udecls kind l =
   in
   let () = match kind, udecl with
     | (Discharge, _, _), Some _ when Lib.sections_are_opened () ->
-      let loc = fst first_id in
+      let loc = first_id.CAst.loc in
       let msg = Pp.str "Section variables cannot be polymorphic." in
       user_err ?loc  msg
     | _ -> ()
@@ -151,8 +151,8 @@ let do_assumptions kind nl l =
   let (sigma,_,_),l = List.fold_left_map (fun (sigma,env,ienv) (is_coe,(idl,c)) ->
     let sigma,(t,imps) = interp_assumption sigma env ienv [] c in
     let env =
-      push_named_context (List.map (fun (_,id) -> LocalAssum (id,t)) idl) env in
-    let ienv = List.fold_right (fun (_,id) ienv ->
+      push_named_context (List.map (fun {CAst.v=id} -> LocalAssum (id,t)) idl) env in
+    let ienv = List.fold_right (fun {CAst.v=id} ienv ->
       let impls = compute_internalization_data env Variable t imps in
       Id.Map.add id impls ienv) idl ienv in
       ((sigma,env,ienv),((is_coe,idl),t,imps)))
@@ -175,7 +175,7 @@ let do_assumptions kind nl l =
       let t = replace_vars subst t in
       let refs, status' = declare_assumptions idl is_coe kind (t,uctx) ubinders imps nl in
       let subst' = List.map2
-          (fun (_,id) (c,u) -> (id, Universes.constr_of_global_univ (c,u)))
+          (fun {CAst.v=id} (c,u) -> (id, Universes.constr_of_global_univ (c,u)))
           idl refs
       in
       subst'@subst, status' && status, next_uctx uctx)

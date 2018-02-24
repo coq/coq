@@ -6,12 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
 open CErrors
 
 (** Local universes and constraints declarations *)
 type universe_decl =
-  (Id.t Loc.located list, Univ.Constraint.t) Misctypes.gen_universe_decl
+  (Misctypes.lident list, Univ.Constraint.t) Misctypes.gen_universe_decl
 
 let default_univ_decl =
   let open Misctypes in
@@ -34,9 +33,9 @@ let interp_univ_constraints env evd cstrs =
   in
   List.fold_left interp (evd,Univ.Constraint.empty) cstrs
 
-let interp_univ_decl env decl = 
+let interp_univ_decl env decl =
   let open Misctypes in
-  let pl = decl.univdecl_instance in
+  let pl : lident list = decl.univdecl_instance in
   let evd = Evd.from_ctx (Evd.make_evar_universe_context env (Some pl)) in
   let evd, cstrs = interp_univ_constraints env evd decl.univdecl_constraints in
   let decl = { univdecl_instance = pl;

@@ -8,7 +8,13 @@
 
 open Names
 
-(** Basic types used both in [constr_expr] and in [glob_constr] *)
+(** Basic types used both in [constr_expr], [glob_constr], and [vernacexpr] *)
+
+(** Located identifiers and objects with syntax. *)
+
+type lident = Id.t CAst.t
+type lname = Name.t CAst.t
+type lstring = string CAst.t
 
 (** Cases pattern variables *)
 
@@ -101,9 +107,9 @@ type 'a with_bindings = 'a * 'a bindings
 
 type 'a or_var =
   | ArgArg of 'a
-  | ArgVar of Names.Id.t Loc.located
+  | ArgVar of lident
 
-type 'a and_short_name = 'a * Id.t Loc.located option
+type 'a and_short_name = 'a * lident option
 
 type 'a or_by_notation =
   | AN of 'a
@@ -134,7 +140,7 @@ type multi =
 
 type 'a core_destruction_arg =
   | ElimOnConstr of 'a
-  | ElimOnIdent of Id.t Loc.located
+  | ElimOnIdent of lident
   | ElimOnAnonHyp of int
 
 type 'a destruction_arg =

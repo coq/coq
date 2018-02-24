@@ -92,14 +92,14 @@ let register_universe_binders ref ubinders =
   if not (Id.Map.is_empty ubinders)
   then Lib.add_anonymous_leaf (ubinder_obj (ref,ubinders))
 
-type univ_name_list = Name.t Loc.located list
+type univ_name_list = Misctypes.lname list
 
 let universe_binders_with_opt_names ref levels = function
   | None -> universe_binders_of_global ref
   | Some udecl ->
     if Int.equal(List.length levels) (List.length udecl)
     then
-      List.fold_left2 (fun acc (_,na) lvl -> match na with
+      List.fold_left2 (fun acc { CAst.v = na} lvl -> match na with
           | Anonymous -> acc
           | Name na -> Names.Id.Map.add na lvl acc)
         empty_binders udecl levels

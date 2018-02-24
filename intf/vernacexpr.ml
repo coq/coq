@@ -6,19 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Loc
 open Names
 open Misctypes
 open Constrexpr
-open Decl_kinds
 open Libnames
 
 (** Vernac expressions, produced by the parser *)
-
-type lident = Id.t located
-type lname = Name.t located
-type lstring = string located
-
 type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
 
 (* spiwack: I'm choosing, for now, to have [goal_selector] be a
@@ -40,7 +33,8 @@ type goal_reference =
   | NthGoal of int
   | GoalId of Id.t
 
-type univ_name_list = Name.t Loc.located list
+type univ_name_list = Universes.univ_name_list
+[@@ocaml.deprecated "Use [Universes.univ_name_list]"]
 
 type printable =
   | PrintTables
@@ -56,7 +50,7 @@ type printable =
   | PrintMLLoadPath
   | PrintMLModules
   | PrintDebugGC
-  | PrintName of reference or_by_notation * univ_name_list option
+  | PrintName of reference or_by_notation * Universes.univ_name_list option
   | PrintGraph
   | PrintClasses
   | PrintTypeClasses
@@ -72,7 +66,7 @@ type printable =
   | PrintScopes
   | PrintScope of string
   | PrintVisibility of string option
-  | PrintAbout of reference or_by_notation * univ_name_list option * goal_selector option
+  | PrintAbout of reference or_by_notation * Universes.univ_name_list option * goal_selector option
   | PrintImplicit of reference or_by_notation
   | PrintAssumptions of bool * bool * reference or_by_notation
   | PrintStrategy of reference or_by_notation option
@@ -164,7 +158,7 @@ type option_ref_value =
 
 (** Identifier and optional list of bound universes and constraints. *)
 
-type universe_decl_expr = (Id.t Loc.located list, glob_constraint list) gen_universe_decl
+type universe_decl_expr = (lident list, glob_constraint list) gen_universe_decl
 
 type ident_decl = lident * universe_decl_expr option
 type name_decl = lname * universe_decl_expr option
@@ -177,7 +171,7 @@ type definition_expr =
       * constr_expr option
 
 type fixpoint_expr =
-    ident_decl * (Id.t located option * recursion_order_expr) * local_binder_expr list * constr_expr * constr_expr option
+    ident_decl * (lident option * recursion_order_expr) * local_binder_expr list * constr_expr * constr_expr option
 
 type cofixpoint_expr =
     ident_decl * local_binder_expr list * constr_expr * constr_expr option
@@ -205,7 +199,7 @@ type inductive_expr =
 type one_inductive_expr =
   ident_decl * local_binder_expr list * constr_expr option * constructor_expr list
 
-type typeclass_constraint = name_decl * binding_kind * constr_expr
+type typeclass_constraint = name_decl * Decl_kinds.binding_kind * constr_expr
 
 and typeclass_context = typeclass_constraint list
 
@@ -221,7 +215,7 @@ type syntax_modifier =
   | SetOnlyParsing
   | SetOnlyPrinting
   | SetCompatVersion of Flags.compat_version
-  | SetFormat of string * string located
+  | SetFormat of string * lstring
 
 type proof_end =
   | Admitted
@@ -321,7 +315,7 @@ type vernac_implicit_status = Implicit | MaximallyImplicit | NotImplicit
 type vernac_argument_status = {
   name : Name.t;
   recarg_like : bool;
-  notation_scope : string Loc.located option;
+  notation_scope : string CAst.t option;
   implicit_status : vernac_implicit_status;
 }
 
@@ -341,15 +335,15 @@ type nonrec vernac_expr =
   | VernacNotationAddFormat of string * string * string
 
   (* Gallina *)
-  | VernacDefinition of (discharge * definition_object_kind) * name_decl * definition_expr
-  | VernacStartTheoremProof of theorem_kind * proof_expr list
+  | VernacDefinition of (Decl_kinds.discharge * Decl_kinds.definition_object_kind) * name_decl * definition_expr
+  | VernacStartTheoremProof of Decl_kinds.theorem_kind * proof_expr list
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
-  | VernacAssumption of (discharge * assumption_object_kind) *
+  | VernacAssumption of (Decl_kinds.discharge * Decl_kinds.assumption_object_kind) *
       inline * (ident_decl list * constr_expr) with_coercion list
-  | VernacInductive of cumulative_inductive_parsing_flag * private_flag * inductive_flag * (inductive_expr * decl_notation list) list
-  | VernacFixpoint of discharge * (fixpoint_expr * decl_notation list) list
-  | VernacCoFixpoint of discharge * (cofixpoint_expr * decl_notation list) list
+  | VernacInductive of cumulative_inductive_parsing_flag * Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
+  | VernacFixpoint of Decl_kinds.discharge * (fixpoint_expr * decl_notation list) list
+  | VernacCoFixpoint of Decl_kinds.discharge * (cofixpoint_expr * decl_notation list) list
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
@@ -416,7 +410,7 @@ type nonrec vernac_expr =
   | VernacCreateHintDb of string * bool
   | VernacRemoveHints of string list * reference list
   | VernacHints of string list * hints_expr
-  | VernacSyntacticDefinition of Id.t located * (Id.t list * constr_expr) *
+  | VernacSyntacticDefinition of lident * (Id.t list * constr_expr) *
       onlyparsing_flag
   | VernacDeclareImplicits of reference or_by_notation *
       (explicitation * bool * bool) list list
@@ -482,8 +476,8 @@ type vernac_control =
   | VernacExpr of vernac_flag list * vernac_expr
   (* boolean is true when the `-time` batch-mode command line flag was set.
      the flag is used to print differently in `-time` vs `Time foo` *)
-  | VernacTime of bool * vernac_control located
-  | VernacRedirect of string * vernac_control located
+  | VernacTime of bool * vernac_control CAst.t
+  | VernacRedirect of string * vernac_control CAst.t
   | VernacTimeout of int * vernac_control
   | VernacFail of vernac_control
 

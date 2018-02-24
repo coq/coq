@@ -12,6 +12,7 @@ open Notation
 open Constrexpr
 open Notation_term
 open Environ
+open Misctypes
 
 val add_token_obj : string -> unit
 

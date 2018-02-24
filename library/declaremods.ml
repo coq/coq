@@ -451,7 +451,7 @@ let intern_arg interp_modast (acc, cst) (idl,(typ,ann)) =
   let env = Global.env () in
   let sobjs = get_module_sobjs false env inl mty in
   let mp0 = get_module_path mty in
-  let fold acc (_, id) =
+  let fold acc {CAst.v=id} =
     let dir = DirPath.make [id] in
     let mbid = MBId.make lib_dir id in
     let mp = MPbound mbid in
@@ -982,8 +982,7 @@ type 'modast module_interpretor =
     Entries.module_struct_entry * Misctypes.module_kind * Univ.ContextSet.t
 
 type 'modast module_params =
-  (Id.t Loc.located list * ('modast * inline)) list
-
+  (lident list * ('modast * inline)) list
 
 (** {6 Debug} *)
 

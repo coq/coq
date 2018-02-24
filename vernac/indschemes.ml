@@ -367,17 +367,16 @@ requested
               | InType -> recs ^ "t_nodep")
         ) in
         let newid = add_suffix (basename_of_global (IndRef ind)) suffix in
-        let newref = Loc.tag newid in
+        let newref = CAst.make newid in
           ((newref,isdep,ind,z)::l1),l2
       in
 	match t with
 	| CaseScheme (x,y,z) -> names "_case" "_case" x y z
 	| InductionScheme (x,y,z) -> names "_ind" "_rec" x y z
 	| EqualityScheme  x -> l1,((None,smart_global_inductive x)::l2)
-	    
 
 let do_mutual_induction_scheme lnamedepindsort =
-  let lrecnames = List.map (fun ((_,f),_,_,_) -> f) lnamedepindsort
+  let lrecnames = List.map (fun ({CAst.v},_,_,_) -> v) lnamedepindsort
   and env0 = Global.env() in
   let sigma, lrecspec, _ =
     List.fold_right
@@ -416,7 +415,7 @@ let get_common_underlying_mutual_inductive = function
           then user_err Pp.(str "A type occurs twice");
 	  mind,
 	  List.map_filter
-	    (function (Some id,(_,i)) -> Some (i,snd id) | (None,_) -> None) all
+            (function (Some id,(_,i)) -> Some (i,id.CAst.v) | (None,_) -> None) all
 
 let do_scheme l =
   let ischeme,escheme = split_scheme l in
@@ -450,7 +449,7 @@ let fold_left' f = function
 
 let mk_coq_and sigma = Evarutil.new_global sigma (Coqlib.build_coq_and ())
 let mk_coq_conj sigma = Evarutil.new_global sigma (Coqlib.build_coq_conj ())
-             
+
 let build_combined_scheme env schemes =
   let evdref = ref (Evd.from_env env) in
   let defs = List.map (fun cst ->
@@ -492,18 +491,19 @@ let build_combined_scheme env schemes =
   (!evdref, body, typ)
 
 let do_combined_scheme name schemes =
+  let open CAst in
   let csts =
-    List.map (fun x ->
-		let refe = Ident x in
-		let qualid = qualid_of_reference refe in
-		try Nametab.locate_constant (snd qualid)
-                with Not_found -> user_err Pp.(pr_qualid (snd qualid) ++ str " is not declared."))
+    List.map (fun {CAst.loc;v} ->
+        let refe = Ident (Loc.tag ?loc v) in
+        let qualid = qualid_of_reference refe in
+        try Nametab.locate_constant (snd qualid)
+        with Not_found -> user_err Pp.(pr_qualid (snd qualid) ++ str " is not declared."))
       schemes
   in
   let sigma,body,typ = build_combined_scheme (Global.env ()) csts in
   let proof_output = Future.from_val ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
-  ignore (define (snd name) UserIndividualRequest sigma proof_output (Some typ));
-  fixpoint_message None [snd name]
+  ignore (define name.v UserIndividualRequest sigma proof_output (Some typ));
+  fixpoint_message None [name.v]
 
 (**********************************************************************)
 

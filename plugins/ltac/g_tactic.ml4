@@ -115,16 +115,16 @@ let mk_fix_tac (loc,id,bl,ann,ty) =
     match bl,ann with
         [([_],_,_)], None -> 1
       | _, Some x ->
-          let ids = List.map snd (List.flatten (List.map (fun (nal,_,_) -> nal) bl)) in
-          (try List.index Names.Name.equal (snd x) ids
+          let ids = List.map (fun x -> x.CAst.v) (List.flatten (List.map (fun (nal,_,_) -> nal) bl)) in
+          (try List.index Names.Name.equal x.CAst.v ids
           with Not_found -> user_err Pp.(str "No such fix variable."))
       | _ -> user_err Pp.(str "Cannot guess decreasing argument of fix.") in
   let bl = List.map (fun (nal,bk,t) -> CLocalAssum (nal,bk,t)) bl in
   (id,n, CAst.make ~loc @@ CProdN(bl,ty))
 
 let mk_cofix_tac (loc,id,bl,ann,ty) =
-  let _ = Option.map (fun (aloc,_) ->
-    user_err ~loc:aloc
+  let _ = Option.map (fun { CAst.loc = aloc } ->
+    user_err ?loc:aloc
       ~hdr:"Constr:mk_cofix_tac"
       (Pp.str"Annotation forbidden in cofix expression.")) ann in
   let bl = List.map (fun (nal,bk,t) -> CLocalAssum (nal,bk,t)) bl in
@@ -134,7 +134,7 @@ let mk_cofix_tac (loc,id,bl,ann,ty) =
 let destruction_arg_of_constr (c,lbind as clbind) = match lbind with
   | NoBindings ->
     begin
-      try ElimOnIdent (Constrexpr_ops.constr_loc c,snd(Constrexpr_ops.coerce_to_id c))
+      try ElimOnIdent (CAst.make ?loc:(Constrexpr_ops.constr_loc c) (Constrexpr_ops.coerce_to_id c).CAst.v)
       with e when CErrors.noncritical e -> ElimOnConstr clbind
     end
   | _ -> ElimOnConstr clbind
@@ -152,6 +152,7 @@ let mkTacCase with_evar = function
   (* Reinterpret ident as notations for variables in the context *)
   (* because we don't know if they are quantified or not *)
   | [(clear,ElimOnIdent id),(None,None),None],None ->
+    let id = CAst.(id.loc, id.v) in
       TacCase (with_evar,(clear,(CAst.make @@ CRef (Ident id,None),NoBindings)))
   | ic ->
       if List.exists (function ((_, ElimOnAnonHyp _),_,_) -> true | _ -> false) (fst ic)
@@ -161,7 +162,7 @@ let mkTacCase with_evar = function
 
 let rec mkCLambdaN_simple_loc ?loc bll c =
   match bll with
-  | ((loc1,_)::_ as idl,bk,t) :: bll ->
+  | ({CAst.loc = loc1}::_ as idl,bk,t) :: bll ->
       CAst.make ?loc @@ CLambdaN ([CLocalAssum (idl,bk,t)],mkCLambdaN_simple_loc ?loc:(Loc.merge_opt loc1 loc) bll c)
   | ([],_,_) :: bll -> mkCLambdaN_simple_loc ?loc bll c
   | [] -> c
@@ -169,7 +170,7 @@ let rec mkCLambdaN_simple_loc ?loc bll c =
 let mkCLambdaN_simple bl c = match bl with
   | [] -> c
   | h :: _ ->
-    let loc = Loc.merge_opt (fst (List.hd (pi1 h))) (Constrexpr_ops.constr_loc c) in
+    let loc = Loc.merge_opt (List.hd (pi1 h)).CAst.loc (Constrexpr_ops.constr_loc c) in
     mkCLambdaN_simple_loc ?loc bl c
 
 let loc_of_ne_list l = Loc.merge_opt (fst (List.hd l)) (fst (List.last l))
@@ -381,15 +382,20 @@ GEXTEND Gram
   ;
   hypident:
     [ [ id = id_or_meta ->
-          id,InHyp
+        let id : Misctypes.lident = id in
+        id,InHyp
       | "("; IDENT "type"; IDENT "of"; id = id_or_meta; ")" ->
-	  id,InHypTypeOnly
+        let id : Misctypes.lident = id in
+        id,InHypTypeOnly
       | "("; IDENT "value"; IDENT "of"; id = id_or_meta; ")" ->
-	  id,InHypValueOnly
+        let id : Misctypes.lident = id in
+        id,InHypValueOnly
     ] ]
   ;
   hypident_occ:
-    [ [ (id,l)=hypident; occs=occs -> ((occs,id),l) ] ]
+    [ [ (id,l)=hypident; occs=occs ->
+        let id : Misctypes.lident = id in
+        ((occs,id),l) ] ]
   ;
   in_clause:
     [ [ "*"; occs=occs ->
@@ -433,7 +439,8 @@ GEXTEND Gram
       | -> true ]]
   ;
   simple_binder:
-    [ [ na=name -> ([na],Default Explicit, CAst.make ~loc:!@loc @@ CHole (Some (Evar_kinds.BinderType (snd na)), IntroAnonymous, None))
+    [ [ na=name -> ([na],Default Explicit, CAst.make ~loc:!@loc @@
+                    CHole (Some (Evar_kinds.BinderType na.CAst.v), IntroAnonymous, None))
       | "("; nal=LIST1 name; ":"; c=lconstr; ")" -> (nal,Default Explicit,c)
     ] ]
   ;
@@ -565,28 +572,34 @@ GEXTEND Gram
           TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,na,c,p,false,e))
 
       (* Alternative syntax for "pose proof c as id" *)
-      | IDENT "assert"; test_lpar_id_coloneq; "("; (loc,id) = identref; ":=";
+      | IDENT "assert"; test_lpar_id_coloneq; "("; lid = identref; ":=";
 	  c = lconstr; ")" ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,true,None,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
-      | IDENT "eassert"; test_lpar_id_coloneq; "("; (loc,id) = identref; ":=";
+          let { CAst.loc = loc; v = id } = lid in
+          TacAtom (Loc.tag ?loc @@ TacAssert (false,true,None,Some (Loc.tag ?loc @@ IntroNaming (IntroIdentifier id)),c))
+      | IDENT "eassert"; test_lpar_id_coloneq; "("; lid = identref; ":=";
 	  c = lconstr; ")" ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,true,None,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
+          let { CAst.loc = loc; v = id } = lid in
+          TacAtom (Loc.tag ?loc @@ TacAssert (true,true,None,Some (Loc.tag ?loc @@ IntroNaming (IntroIdentifier id)),c))
 
       (* Alternative syntax for "assert c as id by tac" *)
-      | IDENT "assert"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
+      | IDENT "assert"; test_lpar_id_colon; "("; lid = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,true,Some tac,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
-      | IDENT "eassert"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
+          let { CAst.loc = loc; v = id } = lid in
+          TacAtom (Loc.tag ?loc @@ TacAssert (false,true,Some tac,Some (Loc.tag ?loc @@ IntroNaming (IntroIdentifier id)),c))
+      | IDENT "eassert"; test_lpar_id_colon; "("; lid = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,true,Some tac,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
+          let { CAst.loc = loc; v = id } = lid in
+          TacAtom (Loc.tag ?loc @@ TacAssert (true,true,Some tac,Some (Loc.tag ?loc @@ IntroNaming (IntroIdentifier id)),c))
 
       (* Alternative syntax for "enough c as id by tac" *)
-      | IDENT "enough"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
+      | IDENT "enough"; test_lpar_id_colon; "("; lid = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,false,Some tac,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
-      | IDENT "eenough"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
+          let { CAst.loc = loc; v = id } = lid in
+          TacAtom (Loc.tag ?loc @@ TacAssert (false,false,Some tac,Some (Loc.tag ?loc @@ IntroNaming (IntroIdentifier id)),c))
+      | IDENT "eenough"; test_lpar_id_colon; "("; lid = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,false,Some tac,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
+          let { CAst.loc = loc; v = id } = lid in
+          TacAtom (Loc.tag ?loc @@ TacAssert (true,false,Some tac,Some (Loc.tag ?loc @@ IntroNaming (IntroIdentifier id)),c))
 
       | IDENT "assert"; c = constr; ipat = as_ipat; tac = by_tactic ->
 	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,true,Some tac,ipat,c))

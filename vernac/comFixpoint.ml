@@ -102,7 +102,7 @@ let check_mutuality env evd isfix fixl =
 type structured_fixpoint_expr = {
   fix_name : Id.t;
   fix_univs : universe_decl_expr option;
-  fix_annot : Id.t Loc.located option;
+  fix_annot : lident option;
   fix_binders : local_binder_expr list;
   fix_body : constr_expr option;
   fix_type : constr_expr
@@ -175,7 +175,7 @@ let interp_recursive ~program_mode ~cofix fixl notations =
         | x , None -> x
         | Some ls , Some us ->
            let lsu = ls.univdecl_instance and usu = us.univdecl_instance in
-           if not (CList.for_all2eq (fun x y -> Id.equal (snd x) (snd y)) lsu usu) then
+           if not (CList.for_all2eq (fun x y -> Id.equal x.CAst.v y.CAst.v) lsu usu) then
              user_err Pp.(str "(co)-recursive definitions should all have the same universe binders");
            Some us) fixl None in
   let sigma, decl = Univdecls.interp_univ_decl_opt env all_universes in
@@ -323,7 +323,7 @@ let extract_decreasing_argument limit = function
 
 let extract_fixpoint_components limit l =
   let fixl, ntnl = List.split l in
-  let fixl = List.map (fun (((_,id),pl),ann,bl,typ,def) ->
+  let fixl = List.map (fun (({CAst.v=id},pl),ann,bl,typ,def) ->
     let ann = extract_decreasing_argument limit ann in
       {fix_name = id; fix_annot = ann; fix_univs = pl;
        fix_binders = bl; fix_body = def; fix_type = typ}) fixl in
@@ -331,7 +331,7 @@ let extract_fixpoint_components limit l =
 
 let extract_cofixpoint_components l =
   let fixl, ntnl = List.split l in
-  List.map (fun (((_,id),pl),bl,typ,def) ->
+  List.map (fun (({CAst.v=id},pl),bl,typ,def) ->
             {fix_name = id; fix_annot = None; fix_univs = pl;
              fix_binders = bl; fix_body = def; fix_type = typ}) fixl,
   List.flatten ntnl

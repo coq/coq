@@ -374,7 +374,7 @@ let add_ml_tactic_notation name ~level prods =
     in
     let ids = List.map_filter get_id prods in
     let entry = { mltac_name = name; mltac_index = len - i - 1 } in
-    let map id = Reference (Misctypes.ArgVar (Loc.tag id)) in
+    let map id = Reference (Misctypes.ArgVar (CAst.make id)) in
     let tac = TacML (Loc.tag (entry, List.map map ids)) in
     add_glob_tactic_notation false ~level prods true ids tac
   in
@@ -431,11 +431,11 @@ let warn_unusable_identifier =
 let register_ltac local tacl =
   let map tactic_body =
     match tactic_body with
-    | Tacexpr.TacticDefinition ((loc,id), body) ->
+    | Tacexpr.TacticDefinition ({CAst.loc;v=id}, body) ->
         let kn = Lib.make_kn id in
         let id_pp = Id.print id in
         let () = if is_defined_tac kn then
-          CErrors.user_err ?loc 
+          CErrors.user_err ?loc
             (str "There is already an Ltac named " ++ id_pp ++ str".")
         in
         let is_shadowed =
