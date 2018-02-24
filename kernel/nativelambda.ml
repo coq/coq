@@ -83,9 +83,9 @@ let get_const_prefix env c =
 
 (* A generic map function *)
 
-let map_lam_with_binders g f n lam =
+let rec map_lam_with_binders g f n lam =
   match lam with
-  | Lrel _ | Lvar _  | Lconst _ | Lproj _ | Luint _ | Lval _ | Lsort _ | Lind _
+  | Lrel _ | Lvar _  | Lconst _ | Lproj _ | Lval _ | Lsort _ | Lind _
   | Lconstruct _ | Llazy | Lforce | Lmeta _ | Levar _ -> lam
   | Lprod(dom,codom) -> 
       let dom' = f n dom in
@@ -134,6 +134,19 @@ let map_lam_with_binders g f n lam =
   | Lmakeblock(prefix,cn,tag,args) ->
       let args' = Array.smartmap (f n) args in
       if args == args' then lam else Lmakeblock(prefix,cn,tag,args')
+  | Luint u ->
+    let u' = map_uint g f n u in
+    if u == u' then lam else Luint u'
+
+and map_uint g f n u =
+  match u with
+  | UintVal _ -> u
+  | UintDigits(prefix,c,args) ->
+    let args' = Array.smartmap (f n) args in
+    if args == args' then u else UintDigits(prefix,c,args')
+  | UintDecomp(prefix,c,a) ->
+    let a' = f n a in
+    if a == a' then u else UintDecomp(prefix,c,a')
 
 (*s Lift and substitution *)
  

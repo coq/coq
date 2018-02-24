@@ -102,20 +102,18 @@ module Reactive = Map.Make (EntryOrd)
 type reactive_info = {(*information required by the compiler of the VM *)
   vm_compiling :
       (*fastcomputation flag -> continuation -> result *)
-      (bool -> Cbytecodes.comp_env -> constr array ->
-       int->Cbytecodes.bytecodes->Cbytecodes.bytecodes)
+      (bool -> Cinstr.lambda array -> Cinstr.lambda)
       option;
   vm_constant_static :
       (*fastcomputation flag -> constructor -> args -> result*)
-      (bool->constr array->Cbytecodes.structured_constant)
+      (bool -> constr array -> Cinstr.lambda)
       option;
   vm_constant_dynamic :
       (*fastcomputation flag -> constructor -> reloc -> args -> sz -> cont -> result *)
-      (bool->Cbytecodes.comp_env->Cbytecodes.block array->int->
-         Cbytecodes.bytecodes->Cbytecodes.bytecodes)
+      (bool -> Cinstr.lambda array -> Cinstr.lambda)
       option;
   (* fastcomputation flag -> cont -> result *)
-  vm_before_match : (bool -> Cbytecodes.bytecodes -> Cbytecodes.bytecodes) option;
+  vm_before_match : (bool -> Cinstr.lambda -> Cinstr.lambda) option;
   (* tag (= compiled int for instance) -> result *)
   vm_decompile_const : (int -> constr) option;
 

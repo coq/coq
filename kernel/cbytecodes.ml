@@ -350,16 +350,3 @@ and pp_bytecodes c =
       pp_bytecodes l1 ++ pp_bytecodes l2 ++  pp_bytecodes c
   | i :: c ->
       pp_instr i ++ fnl () ++ pp_bytecodes c
-
-(*spiwack: moved this type in this file  because I needed it for
-  retroknowledge which can't depend from cbytegen *)
-type block =
-  | Bconstr of constr
-  | Bstrconst of structured_constant
-  | Bmakeblock of int * block array
-  | Bconstruct_app of int * int * int * block array
-                  (* tag , nparams, arity *)
-  | Bspecial of (comp_env -> block array -> int -> bytecodes -> bytecodes) * block array
-                (* spiwack: compilation given by a function *)
-                (* compilation function (see get_vm_constant_dynamic_info in
-                   retroknowledge.mli for more info) , argument array  *)
