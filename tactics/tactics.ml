@@ -1081,14 +1081,10 @@ let auto_intros_tac ids =
 
 (* User-level introduction tactics *)
 
-let lookup_hypothesis_as_renamed env sigma ccl = function
-  | AnonHyp n -> Detyping.lookup_index_as_renamed env sigma ccl n
-  | NamedHyp id -> Detyping.lookup_name_as_displayed env sigma ccl id
-
 let lookup_hypothesis_as_renamed_gen red h gl =
   let env = Proofview.Goal.env gl in
   let rec aux ccl =
-    match lookup_hypothesis_as_renamed env (Tacmach.New.project gl) ccl h with
+    match Detyping.lookup_quantified_hypothesis_as_displayed env (Tacmach.New.project gl) ccl h with
       | None when red ->
         let (redfun, _) = Redexpr.reduction_of_red_expr env (Red true) in
         let (_, c) = redfun env (Proofview.Goal.sigma gl) ccl in
@@ -1102,6 +1098,11 @@ let is_quantified_hypothesis id gl =
   match lookup_hypothesis_as_renamed_gen false (NamedHyp id) gl with
     | Some _ -> true
     | None -> false
+
+let find_quantified_hypothesis_context id gl =
+  match lookup_hypothesis_as_renamed_gen false (NamedHyp id) gl with
+    | Some (env,_) -> Some env
+    | None -> None
 
 let msg_quantified_hypothesis = function
   | NamedHyp id ->
@@ -1118,7 +1119,7 @@ let warn_deprecated_intros_until_0 =
 let depth_of_quantified_hypothesis red h gl =
   if h = AnonHyp 0 then warn_deprecated_intros_until_0 ();
   match lookup_hypothesis_as_renamed_gen red h gl with
-    | Some depth -> depth
+    | Some (_,depth) -> depth
     | None ->
         user_err ~hdr:"lookup_quantified_hypothesis"
           (str "No " ++ msg_quantified_hypothesis h ++

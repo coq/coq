@@ -29,6 +29,7 @@ open Ltac_pretype
 (** {6 General functions. } *)
 
 val is_quantified_hypothesis : Id.t -> Proofview.Goal.t -> bool
+val find_quantified_hypothesis_context : Id.t -> Proofview.Goal.t -> env option
 
 (** {6 Primitive tactics. } *)
 
