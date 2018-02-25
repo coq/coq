@@ -332,10 +332,11 @@ let check_typeclasses_instances_are_solved env current_sigma frozen =
 
 let check_extra_evars_are_solved env current_sigma frozen = match frozen with
 | FrozenId _ -> ()
-| FrozenProgress (lazy (_, pending)) ->
+| FrozenProgress (lazy (frozen, pending)) ->
   Evar.Set.iter
     (fun evk ->
-      if not (Evd.is_defined current_sigma evk) then
+      if not (Evd.is_defined current_sigma evk)
+       && not (Evarutil.reachable_from_evars current_sigma frozen evk) then
         let (loc,k) = evar_source evk current_sigma in
 	match k with
 	| Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()

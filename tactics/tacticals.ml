@@ -466,6 +466,7 @@ module New = struct
   (* Check that holes in arguments have been resolved *)
 
   let check_evars env sigma extsigma origsigma =
+    let origevars = Evar.Map.domain (Evd.undefined_map origsigma) in
     let rec is_undefined_up_to_restriction sigma evk =
       if Evd.mem origsigma evk then None else
       let evi = Evd.find sigma evk in
@@ -481,7 +482,8 @@ module New = struct
     let rest =
       Evd.fold_undefined (fun evk evi acc ->
         match is_undefined_up_to_restriction sigma evk with
-        | Some (evk',evi) -> (evk',evi)::acc
+        | Some (evk',evi) when not (Evarutil.reachable_from_evars sigma origevars evk) ->
+           (evk',evi)::acc
         | _ -> acc)
         extsigma []
     in

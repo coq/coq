@@ -705,6 +705,24 @@ let rec advance sigma evk =
       | Some evk -> advance sigma evk
       | None -> None
 
+let reachable_from_evars current_sigma evars evk =
+  let rec search evk' visited =
+    if Evar.Set.mem evk' visited then visited
+    else
+      let visited = Evar.Set.add evk' visited in
+      match Evd.evar_body (Evd.find current_sigma evk') with
+      | Evd.Evar_empty -> visited
+      | Evd.Evar_defined c ->
+         match Term.kind_of_term c with
+         | Term.Evar (evk',l) -> if Evar.equal evk' evk then raise Exit
+                                else search evk' visited
+         | _ -> visited
+  in
+  try
+    let _ = Evar.Set.fold (fun evk' visited -> search evk' visited) evars Evar.Set.empty in
+    false
+  with Exit -> true
+
 (** The following functions return the set of undefined evars
     contained in the object, the defined evars being traversed.
     This is roughly a combination of the previous functions and

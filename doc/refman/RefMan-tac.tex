@@ -314,10 +314,16 @@ Section~\ref{pattern} to transform the goal so that it gets the form
 \item \errindex{Unable to find an instance for the variables
 {\ident} \dots\ {\ident}}
 
-  This occurs when some instantiations of the premises of {\term} are not
-  deducible from the unification. This is the case, for instance, when
-  you want to apply a transitivity property. In this case, you have to
-  use one of the variants below:
+This occurs when some instantiations of the dependent premises of
+{\term} are not deducible from the unification. If a dependent premise
+of the lemma is instantiated by a pre-existing existential variable, or
+a pre-existing existential variable is instantiated by a dependent
+premise variable, it is not considered missing, and the remaining
+undefined existential will remain in the subgoals or on the shelf.
+
+The error will happen, for instance, when you want to apply a
+transitivity property. In this case, you have to use one of the
+variants below:
 
 \end{ErrMsgs}
 
